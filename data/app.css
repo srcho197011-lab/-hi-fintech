@@ -1108,3 +1108,46 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .authagree{display:flex;align-items:center;gap:8px;font-size:12.8px;color:#475569;cursor:pointer;}
 .authagree input{width:16px;height:16px;accent-color:#2563EB;}
 @media(max-width:520px){.authcard{padding:24px 18px 18px;border-radius:18px;}.authmask{display:none;}}
+
+/* ===== 홈: 건강검진 리포트 발행 CTA ===== */
+.reportcta{display:flex;align-items:center;gap:18px;margin-top:16px;padding:20px 22px;border-radius:18px;background:linear-gradient(120deg,#0E7490,#2563EB 60%,#7C3AED);color:#fff;box-shadow:0 16px 36px -20px rgba(37,99,235,.6);}
+.reportcta .rcl{flex:1;min-width:0;}
+.rcbadge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;background:rgba(255,255,255,.18);padding:5px 11px;border-radius:999px;}
+.rch{font-size:19px;font-weight:800;margin:9px 0 6px;letter-spacing:-.4px;}
+.rcd{font-size:13px;line-height:1.65;color:rgba(255,255,255,.92);margin:0 0 12px;}
+.rcd b{color:#fff;}
+.rcbtns{display:flex;flex-wrap:wrap;gap:10px;}
+.rcbtn{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:11px;padding:11px 16px;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit;}
+.rcbtn.pri{background:#fff;color:#2563EB;}
+.rcbtn.ghost{background:rgba(255,255,255,.16);color:#fff;border:1.5px solid rgba(255,255,255,.4);}
+.rcnote{display:flex;align-items:center;gap:6px;margin-top:11px;font-size:11.5px;color:rgba(255,255,255,.82);}
+.rcart{flex-shrink:0;}
+.rcic{display:flex;align-items:center;justify-content:center;width:78px;height:78px;border-radius:20px;background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.3);}
+@media(max-width:760px){.reportcta{flex-direction:column;align-items:flex-start;}.rcart{display:none;}}
+
+/* ===== 건강관리: 검진 리포트 보관함 ===== */
+.rvnote{display:flex;gap:9px;align-items:flex-start;background:#F1F8F4;border:1px solid #CDEBD8;border-radius:12px;padding:11px 13px;font-size:12.8px;line-height:1.6;color:#2F6B47;margin:6px 0 12px;}
+.rvnote b{color:#15803D;}
+.rvagree{display:flex;align-items:center;gap:8px;font-size:13px;color:#334155;cursor:pointer;margin-bottom:12px;font-weight:600;}
+.rvagree input{width:16px;height:16px;accent-color:#2563EB;}
+.rvup{display:flex;flex-wrap:wrap;gap:10px;}
+.rvbtn{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:11px;padding:11px 16px;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit;}
+.rvbtn.pri{background:linear-gradient(135deg,#2563EB,#7C3AED);color:#fff;}
+.rvbtn.pri:disabled{opacity:.45;cursor:not-allowed;}
+.rvbtn.ghost{background:#F1F5FB;color:#2563EB;border:1.5px solid #DCE6F5;}
+.rvmsg{display:flex;align-items:center;gap:7px;margin-top:11px;padding:9px 12px;border-radius:10px;font-size:12.8px;font-weight:600;}
+.rvmsg.ok{background:#E7F8EE;color:#15803D;border:1px solid #B6E7C9;}
+.rvmsg.err{background:#FDECEC;color:#B91C1C;border:1px solid #F5C2C2;}
+.rvempty{display:flex;flex-direction:column;align-items:center;gap:12px;padding:34px 16px;text-align:center;color:#94A3B8;font-size:13px;line-height:1.6;}
+.rvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-top:14px;}
+.rvitem{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff;display:flex;flex-direction:column;}
+.rvthumb{height:120px;background:#F4F6FC;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
+.rvthumb img{width:100%;height:100%;object-fit:cover;}
+.rvpdf{display:flex;flex-direction:column;align-items:center;gap:6px;color:#2F5BEA;}
+.rvpdf em{font-size:11px;font-weight:800;font-style:normal;letter-spacing:1px;}
+.rvmeta{padding:10px 12px 4px;}
+.rvmeta b{display:block;font-size:13px;color:#15234A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rvmeta span{font-size:11px;color:var(--muted);}
+.rvact{display:flex;gap:6px;padding:8px 12px 12px;}
+.rvact button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--border);background:#fff;border-radius:8px;padding:7px 0;font-size:12px;font-weight:700;color:#2563EB;cursor:pointer;}
+.rvact button.del{color:#B91C1C;}

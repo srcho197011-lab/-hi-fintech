@@ -1550,7 +1550,7 @@ function HealthManageSection({ onGo }) {
   const [viewer, setViewer] = useState(false);
   const [cat, setCat] = useState("summary");
   const RECS = [[Dumbbell, "주 3회 유산소 운동"], [Salad, "식이섬유·저당 식단"], [Wine, "절주 (하루 2잔 이하)"], [Cigarette, "금연 실천"], [Stethoscope, "복부 초음파(췌장·간)"], [Pill, "간 건강 영양제"], [ClipboardList, "위·대장 내시경"], [HeartHandshake, "정기 건강 모니터링"]];
-  const cats = [["summary", "한눈에 보기", LayoutDashboard], ["bio", "생체나이", Activity], ["disease", "질병 위험", HeartPulse], ["cancer", "암 위험", ShieldCheck], ["warn", "경고신호", AlertTriangle], ["care", "관리·권고", Sparkles]];
+  const cats = [["summary", "한눈에 보기", LayoutDashboard], ["bio", "생체나이", Activity], ["disease", "질병 위험", HeartPulse], ["cancer", "암 위험", ShieldCheck], ["warn", "경고신호", AlertTriangle], ["care", "관리·권고", Sparkles], ["report", "검진 리포트", FileText]];
   const go = onGo || (() => {});
   const Go = ({ to, ic: Ic, pri, children }) => <button className={`gobtn ${pri ? "pri" : ""}`} onClick={() => go(to)}><Ic size={14} /> {children}</button>;
   // 데모 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
@@ -1591,6 +1591,8 @@ function HealthManageSection({ onGo }) {
       </div>
 
       <div className="chtabs">{cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}</div>
+
+      {cat === "report" && <ReportVault user={dm} />}
 
       {cat === "summary" && (<>
         <div className="card">
@@ -4559,6 +4561,19 @@ function HomeView({ onGo }) {
         <div className="art"><ShieldArt /></div>
         <div className="bnext"><div className="l">다음 건강검진 예약</div><div className="d">2025.06.15 (토) 09:00</div><div className="c">서울 KMI 건강검진센터</div><button onClick={() => go("checkup")}>예약 상세보기</button></div>
       </div>
+      <div className="reportcta">
+        <div className="rcl">
+          <span className="rcbadge"><FileText size={14} /> 건강검진 리포트</span>
+          <div className="rch">생체나이 건강검진 리포트 발행</div>
+          <p className="rcd">외부 검진 시스템에서 <b>고객 동의 절차</b>를 거쳐 건강검진 리포트를 발행할 수 있습니다. 발행된 리포트는 <b>건강관리 → 검진 리포트</b>에서 업로드해 보관·확인하세요.</p>
+          <div className="rcbtns">
+            <a className="rcbtn pri" href="https://age.healthketch.com/#/intro" target="_blank" rel="noopener noreferrer">리포트 발행 사이트 열기 <ExternalLink size={15} /></a>
+            <button className="rcbtn ghost" onClick={() => go("manage")}>건강관리에서 업로드 <ChevronRight size={14} /></button>
+          </div>
+          <div className="rcnote"><ShieldCheck size={13} /> 발행은 본인(고객) 동의 하에 외부 검진 시스템에서 진행됩니다.</div>
+        </div>
+        <div className="rcart"><span className="rcic"><FileText size={40} color="#fff" /></span></div>
+      </div>
       <div className="profile">
         <span className="pa">조</span>
         <div><div className="pn">조성래 <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>54.1세 · 남</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {PT.addr} · 검진일 2024.12.26 · 등록번호 {PT.reg}</div></div>
@@ -5263,6 +5278,80 @@ function AuthGate() {
         {tab === "login" ? <AuthLogin /> : <AuthSignup />}
         <div className="authnote">※ 본 서비스는 시연용 데모입니다. 입력 정보는 이 기기(브라우저)에만 저장되며, 실제 본인인증·SMS 발송은 이루어지지 않습니다.</div>
       </div>
+    </div>
+  );
+}
+
+/* ====================== 검진 리포트 보관함 (건강관리 → 검진 리포트) ====================== */
+/* 외부 검진 시스템(age.healthketch.com)에서 발행한 리포트를 고객 동의 후 업로드·보관.
+   백엔드 없는 데모이므로 파일은 base64로 브라우저 localStorage에만 저장(회원별 키). */
+function ReportVault({ user }) {
+  const key = "hifin_reports_" + ((user && user.email) || "default");
+  const load = () => { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; } };
+  const [list, setList] = useState(load);
+  const [agree, setAgree] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const fileRef = useRef(null);
+  const who = (user && user.name) || "조성래";
+
+  const save = (l) => {
+    try { localStorage.setItem(key, JSON.stringify(l)); } catch (e) { setMsg({ t: "저장 공간이 부족합니다. 기존 리포트를 삭제하거나 더 작은 파일을 올려주세요.", e: true }); return false; }
+    setList(l); return true;
+  };
+  const onPick = (e) => {
+    setMsg(null);
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    if (f.size > 3 * 1024 * 1024) { setMsg({ t: "3MB 이하 파일만 업로드할 수 있습니다 (브라우저 로컬 저장 제한).", e: true }); e.target.value = ""; return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const item = { id: "r" + new Date().getTime(), name: f.name, type: f.type || "", size: f.size, dataUrl: reader.result, date: new Date().toLocaleString("ko-KR") };
+      if (save([item, ...list])) setMsg({ t: "검진 리포트가 업로드되었습니다.", e: false });
+    };
+    reader.onerror = () => setMsg({ t: "파일을 읽지 못했습니다. 다시 시도해 주세요.", e: true });
+    reader.readAsDataURL(f);
+    e.target.value = "";
+  };
+  const del = (id) => { setMsg(null); save(list.filter((r) => r.id !== id)); };
+  const open = (r) => {
+    const w = window.open("", "_blank");
+    if (!w) { setMsg({ t: "팝업이 차단되었습니다. 팝업 허용 후 다시 시도해 주세요.", e: true }); return; }
+    if ((r.type || "").indexOf("image") === 0) w.document.write('<title>' + r.name + '</title><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="' + r.dataUrl + '" style="max-width:100%;max-height:100vh"></body>');
+    else w.location.href = r.dataUrl;
+  };
+  const isImg = (r) => (r.type || "").indexOf("image") === 0;
+
+  return (
+    <div className="card">
+      <div className="rct"><FileText size={18} color="#2F5BEA" /> 검진 리포트 <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--muted)" }}>{who}님 · {list.length}건</span></div>
+
+      <div className="rvnote"><ShieldCheck size={16} color="#16A34A" style={{ flexShrink: 0, marginTop: 1 }} />
+        <div><b>고객 동의 후</b> 외부 검진 시스템(age.healthketch.com)에서 발행한 건강검진 리포트를 업로드해 보관·확인하세요. 업로드한 파일은 <b>이 브라우저(기기)에만</b> 저장되며 외부로 전송되지 않습니다.</div></div>
+
+      <label className="rvagree"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> 고객 본인의 동의를 받아 리포트를 등록합니다.</label>
+
+      <div className="rvup">
+        <input ref={fileRef} type="file" accept="application/pdf,image/*" style={{ display: "none" }} onChange={onPick} />
+        <button className="rvbtn pri" disabled={!agree} onClick={() => fileRef.current && fileRef.current.click()}><Plus size={16} /> 리포트 업로드 (PDF·이미지)</button>
+        <a className="rvbtn ghost" href="https://age.healthketch.com/#/intro" target="_blank" rel="noopener noreferrer"><ExternalLink size={15} /> 발행 사이트 열기</a>
+      </div>
+
+      {msg && <div className={`rvmsg ${msg.e ? "err" : "ok"}`}>{msg.e ? <AlertTriangle size={14} /> : <Check size={14} />} {msg.t}</div>}
+
+      {list.length === 0 ? (
+        <div className="rvempty"><FileText size={30} color="#C2CCDD" /><div>아직 업로드된 검진 리포트가 없습니다.<br />동의 확인 후 발행된 리포트를 업로드해 주세요.</div></div>
+      ) : (
+        <div className="rvgrid">
+          {list.map((r) => (
+            <div className="rvitem" key={r.id}>
+              <div className="rvthumb" onClick={() => open(r)} role="button" title="크게 보기">
+                {isImg(r) ? <img src={r.dataUrl} alt={r.name} /> : <span className="rvpdf"><FileText size={30} color="#2F5BEA" /><em>PDF</em></span>}
+              </div>
+              <div className="rvmeta"><b title={r.name}>{r.name}</b><span>{r.date} · {(r.size / 1024).toFixed(0)}KB</span></div>
+              <div className="rvact"><button onClick={() => open(r)}><ExternalLink size={13} /> 보기</button><button className="del" onClick={() => del(r.id)}><X size={13} /> 삭제</button></div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

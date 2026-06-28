@@ -28,3 +28,4 @@ src/components/DemoLoginSelector.jsx
 src/components/DemoMemberRegister.jsx
 src/components/DemoAdminPage.jsx
 src/components/AuthGate.jsx
+src/components/ReportVault.jsx

@@ -59,6 +59,19 @@ function HomeView({ onGo }) {
         <div className="art"><ShieldArt /></div>
         <div className="bnext"><div className="l">다음 건강검진 예약</div><div className="d">2025.06.15 (토) 09:00</div><div className="c">서울 KMI 건강검진센터</div><button onClick={() => go("checkup")}>예약 상세보기</button></div>
       </div>
+      <div className="reportcta">
+        <div className="rcl">
+          <span className="rcbadge"><FileText size={14} /> 건강검진 리포트</span>
+          <div className="rch">생체나이 건강검진 리포트 발행</div>
+          <p className="rcd">외부 검진 시스템에서 <b>고객 동의 절차</b>를 거쳐 건강검진 리포트를 발행할 수 있습니다. 발행된 리포트는 <b>건강관리 → 검진 리포트</b>에서 업로드해 보관·확인하세요.</p>
+          <div className="rcbtns">
+            <a className="rcbtn pri" href="https://age.healthketch.com/#/intro" target="_blank" rel="noopener noreferrer">리포트 발행 사이트 열기 <ExternalLink size={15} /></a>
+            <button className="rcbtn ghost" onClick={() => go("manage")}>건강관리에서 업로드 <ChevronRight size={14} /></button>
+          </div>
+          <div className="rcnote"><ShieldCheck size={13} /> 발행은 본인(고객) 동의 하에 외부 검진 시스템에서 진행됩니다.</div>
+        </div>
+        <div className="rcart"><span className="rcic"><FileText size={40} color="#fff" /></span></div>
+      </div>
       <div className="profile">
         <span className="pa">조</span>
         <div><div className="pn">조성래 <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>54.1세 · 남</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {PT.addr} · 검진일 2024.12.26 · 등록번호 {PT.reg}</div></div>
