@@ -437,7 +437,9 @@ export default function App() {
   const [, setDemoTick] = useState(0);
   useEffect(() => { const h = () => setDemoTick((t) => t + 1); window.addEventListener("demochange", h); return () => window.removeEventListener("demochange", h); }, []);
   const demoU = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-  const greetName = demoU ? demoU.name : "조성래";
+  const authU = (typeof authCurrent === "function") ? authCurrent() : null;
+  const greetName = demoU ? demoU.name : (authU && authU.name ? authU.name : "조성래");
+  const doLogout = () => { setHdr(null); setSecRaw("home"); if (typeof appLogout === "function") appLogout(); };
   // 접근성: 클릭 가능한 div(네비·탭·칩)를 키보드로도 조작 가능하게 (focus + Enter/Space)
   useEffect(() => {
     const SEL = ".iitem, .snav, .chtab, .aitab, .reslink, .fsel, .calc, .slot, .sresult, .adchip, .addept, .actbl tr, .aidcats button, .aidcatlist button, .lf-r button, .aidfilters button";
@@ -458,6 +460,7 @@ export default function App() {
     ["people", "데모 회원 테스트", "demo"],
     ["alert", "알림센터", "__noti__", 3],
   ];
+  if (!authU) return <AuthGate />;
   return (
     <div className="app">
       <header className="top">
@@ -501,7 +504,7 @@ export default function App() {
         <div className="tr">
           <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">3</span></button>
           <button className={`ibtn ${hdr === "msg" ? "on" : ""}`} onClick={() => setHdr((h) => h === "msg" ? null : "msg")} aria-label="메시지"><MessageSquare size={21} /></button>
-          <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? "데모 로그인" : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
+          <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "데모 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
           {hdr && <><div className="hdrov" onClick={() => setHdr(null)} />
             <div className="hdrdrop">
               {hdr === "noti" && <>
@@ -518,12 +521,12 @@ export default function App() {
                 <div className="df" onClick={() => goSec("ai")}>AI 주치의와 상담하기</div>
               </>}
               {hdr === "user" && <>
-                <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? "데모 회원" : "프리미엄 회원"}</span></div>
+                <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? (demoU.isDemoUser ? "데모 회원" : "일반 회원") : "프리미엄 회원"}</span></div>
                 <div className="mi" onClick={() => goSec("mypage")}><CircleUserRound size={17} /> 마이페이지</div>
                 <div className="mi" onClick={() => goSec("manage")}><FileText size={17} /> 내 건강 리포트</div>
                 <div className="mi" onClick={() => goSec("wallet")}><Wallet size={17} /> 건강금융지갑</div>
                 <div className="mi" onClick={() => goSec("mypage")}><Bell size={17} /> 알림 설정</div>
-                <div className="df" onClick={() => setHdr(null)}>로그아웃</div>
+                <div className="df" onClick={doLogout}>로그아웃</div>
               </>}
             </div></>}
         </div>
@@ -536,7 +539,7 @@ export default function App() {
               return (<div key={i} className={`snav ${active ? "on" : ""}`} onClick={() => target === "__noti__" ? setHdr("noti") : setSec(target)}><span className="sico"><SecIcon k={ik} /></span> {t}{b && <span className="sb">{b}</span>}</div>);
             })}
           </div>
-          <div className="agent"><div className="at">AI Health Agent</div><div className="as">조성래님 전담 24시간 상담</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("ai")}>상담하기</button></div>
+          <div className="agent"><div className="at">AI Health Agent</div><div className="as">{greetName}님 전담 24시간 상담</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("ai")}>상담하기</button></div>
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
         <main className="scrollarea">
@@ -4677,8 +4680,29 @@ function demoCancerGrade(g) {
   return ["고위험", "#B91C1C", "#FBD5D5"];
 }
 function demoCostForecast(cost) { return Math.round((cost || 0) * 1.4); }
-/* 이메일 끝 6자리(YYMMDD)에서 주민등록나이 도출 */
-function demoRegAge(m) { const mm = (m.email || "").match(/(\d{6})@/); if (!mm) return Math.round(m.biologicalAge); const yy = parseInt(mm[1].slice(0, 2), 10); return 2026 - (1900 + yy); }
+/* 이메일 끝 6자리(YYMMDD)에서 주민등록나이 도출 (가입회원은 regAge 우선) */
+function demoRegAge(m) { if (typeof m.regAge === "number") return m.regAge; const mm = (m.email || "").match(/(\d{6})@/); if (!mm) return Math.round(m.biologicalAge); const yy = parseInt(mm[1].slice(0, 2), 10); return 2026 - (1900 + yy); }
+/* 실명확인 정보로 가입회원의 개인 건강프로필 결정적 생성(데모) */
+function demoMakeProfile(name, email, birth6, genderCode) {
+  const yy = parseInt((birth6 || "").slice(0, 2), 10); const yyOk = !isNaN(yy);
+  const century = (genderCode === "3" || genderCode === "4") ? 2000 : 1900;
+  const regAge = Math.max(19, Math.min(90, 2026 - (yyOk ? century + yy : 1985)));
+  let h = 2166136261; const seed = (name || "") + (email || ""); for (let i = 0; i < seed.length; i++) { h = (h ^ seed.charCodeAt(i)) >>> 0; h = (h * 16777619) >>> 0; }
+  const rnd = (n) => { h = (h * 1103515245 + 12345) >>> 0; return h % n; };
+  const bio = Math.max(19, regAge + (rnd(9) - 3));
+  const og = () => Math.max(18, bio + (rnd(7) - 3));
+  const grade = 2 + rnd(5); // 2~6
+  const POOL = ["위암", "대장암", "폐암", "간암", "유방암", "전립선암", "갑상선암", "췌장암"];
+  const hr = grade >= 5 ? [POOL[rnd(POOL.length)]] : [];
+  const cost = 800000 + regAge * 30000 + rnd(60) * 10000;
+  return {
+    id: "user-" + ((email || "u").split("@")[0]), name: name, email: email, password: null, regAge: regAge,
+    biologicalAge: bio, obesityAge: og(), heartAge: og(), liverAge: og(), pancreasAge: og(), kidneyAge: og(),
+    cancerRiskGrade: grade, highRiskCancerTypes: hr, estimatedMedicalCost: cost,
+    managementPoints: ["주 150분 이상 유산소 운동", "나트륨·당류 섭취 줄이기", "연 1회 국가건강검진 수검", "금연·절주 실천"],
+    isDemoUser: false, realVerified: true,
+  };
+}
 /* 건강관리 리포트 어댑터 — 데모 회원 가용 필드로 6개 서브섹션 데이터 도출 */
 function demoReport(m) {
   const reg = demoRegAge(m);
@@ -4752,6 +4776,19 @@ function demoCurrentUser() { try { return JSON.parse(localStorage.getItem(DEMO_S
 function demoNotify() { try { window.dispatchEvent(new Event("demochange")); } catch (e) {} }
 function demoSetSession(m) { try { localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(m)); } catch (e) {} demoNotify(); }
 function demoLogout() { try { localStorage.removeItem(DEMO_SESSION_KEY); } catch (e) {} demoNotify(); }
+
+/* ── 일반 로그인/회원가입 인증(게이트) — localStorage 기반 ── */
+const AUTH_KEY = "hifin_authed";       // 게이트 통과(현재 로그인) 사용자 {name,email,realVerified}
+const USERS_KEY = "hifin_users";       // 실명확인 후 가입한 일반 회원 저장소
+function authCurrent() { try { return JSON.parse(localStorage.getItem(AUTH_KEY) || "null"); } catch (e) { return null; } }
+function authSet(u) { try { localStorage.setItem(AUTH_KEY, JSON.stringify(u)); } catch (e) {} demoNotify(); }
+function appLogout() { try { localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); } catch (e) {} demoNotify(); }
+function usersAll() { try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); } catch (e) { return []; } }
+function usersSave(l) { try { localStorage.setItem(USERS_KEY, JSON.stringify(l)); } catch (e) {} }
+function userFindByEmail(email) { const e = (email || "").trim().toLowerCase(); return usersAll().find((u) => (u.email || "").toLowerCase() === e) || null; }
+function userRegister(u) { if (userFindByEmail(u.email)) return false; const l = usersAll(); l.push(u); usersSave(l); return true; }
+/* 데모회원(Demo@1234) → 가입회원(개별 비번) 순으로 인증 */
+function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if (m) return m; const u = userFindByEmail(email); return (u && u.password === pw) ? u : null; }
 
 /* 테스트 시나리오 자가검증(11항목) — 실제 로직/데이터에 대해 단언 */
 function runDemoTests() {
@@ -5042,6 +5079,190 @@ function DemoSection({ onGo }) {
           <button className="cbtn pri" style={{ maxWidth: 260, margin: "14px auto 0" }} onClick={() => setView("login")}><CircleUserRound size={15} /> 데모 회원으로 로그인</button>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ====================== 로그인/회원가입 게이트 ====================== */
+/* 첫 접속 시 메인 앱 대신 표시. 로그인 또는 (실명확인 후) 회원가입을 거쳐야 입장. */
+function AuthBrand() {
+  return (
+    <div className="authbrand">
+      <span className="authlogo">
+        <svg viewBox="0 0 44 44" width="40" height="40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs><linearGradient id="authglg" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#10B9A3" /><stop offset=".55" stopColor="#2563EB" /><stop offset="1" stopColor="#7C3AED" /></linearGradient></defs>
+          <rect x="1.5" y="1.5" width="41" height="41" rx="12" fill="url(#authglg)" />
+          <path d="M8.4 23.2H16l2.5-6.4 3.6 11.6 2.7-7.2 1.9 2h7.5" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="33.6" cy="32.2" r="7.7" fill="#fff" /><text x="33.6" y="36" textAnchor="middle" fontSize="10.5" fontWeight="800" fill="#2563EB" fontFamily="system-ui, sans-serif">₩</text>
+        </svg>
+      </span>
+      <div className="authttl"><span className="hl">HI</span>-Fin Tech</div>
+      <div className="authsub">헬스케어 · 금융보험 · 핀테크 초개인화 건강금융 플랫폼</div>
+    </div>
+  );
+}
+
+function AuthLogin() {
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState("");
+  const [pick, setPick] = useState("");
+  const members = (typeof demoListAll === "function") ? demoListAll() : [];
+  const submit = (e) => {
+    if (e) e.preventDefault();
+    setErr("");
+    const u = appAuthenticate(email, pw);
+    if (!u) { setErr("이메일 또는 비밀번호가 올바르지 않습니다."); return; }
+    authSet({ name: u.name, email: u.email, realVerified: !!u.realVerified });
+    demoSetSession(u);
+  };
+  const quickDemo = () => { const m = demoFindByEmail(pick); if (!m) { setErr("데모 회원을 선택해 주세요."); return; } authSet({ name: m.name, email: m.email }); demoSetSession(m); };
+  const browse = () => { demoLogout(); authSet({ name: "조성래" }); };
+  return (
+    <form className="authform" onSubmit={submit}>
+      <label className="authfield"><span className="authlabel">이메일</span>
+        <input className="authinput" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="username" /></label>
+      <label className="authfield"><span className="authlabel">비밀번호</span>
+        <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" autoComplete="current-password" /></label>
+      {err && <div className="autherr">{err}</div>}
+      <button className="authbtn authprimary" type="submit">로그인</button>
+
+      <div className="authdiv"><span>빠른 체험</span></div>
+      <button type="button" className="authbtn authghost" onClick={browse}>조성래 체험 계정으로 둘러보기</button>
+      <div className="authquick">
+        <select className="authinput" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="데모 회원 선택">
+          <option value="">데모 회원 선택(비밀번호 Demo@1234)</option>
+          {members.map((m) => <option key={m.email} value={m.email}>{m.name} · {m.email}</option>)}
+        </select>
+        <button type="button" className="authbtn authsmall" onClick={quickDemo}>로그인</button>
+      </div>
+    </form>
+  );
+}
+
+function AuthSignup() {
+  const [step, setStep] = useState(1);
+  // 실명확인
+  const [name, setName] = useState("");
+  const [birth, setBirth] = useState("");
+  const [gender, setGender] = useState("");
+  const [carrier, setCarrier] = useState("");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [sentCode, setSentCode] = useState(null);
+  const [verified, setVerified] = useState(false);
+  // 계정
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [agree, setAgree] = useState(false);
+  const [err, setErr] = useState("");
+
+  const phoneDigits = phone.replace(/\D/g, "");
+  const idOk = name.trim() && /^\d{6}$/.test(birth) && /^[1-4]$/.test(gender) && carrier && /^\d{10,11}$/.test(phoneDigits);
+  const sendCode = () => {
+    setErr("");
+    if (!idOk) { setErr("이름·주민번호 앞 6자리·성별·통신사·휴대폰번호를 정확히 입력해 주세요."); return; }
+    const c = String(100000 + (parseInt(phoneDigits.slice(-6) || "0", 10) % 900000)).slice(0, 6);
+    setSentCode(c); setVerified(false); setCode("");
+  };
+  const verify = () => {
+    setErr("");
+    if (!sentCode) { setErr("먼저 인증번호를 받아 주세요."); return; }
+    if (code.trim() !== sentCode) { setErr("인증번호가 일치하지 않습니다."); return; }
+    setVerified(true);
+  };
+  const next = () => { setErr(""); if (!verified) { setErr("실명확인(본인인증)을 완료해 주세요."); return; } setStep(2); };
+  const finish = (e) => {
+    if (e) e.preventDefault();
+    setErr("");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setErr("올바른 이메일 형식을 입력해 주세요."); return; }
+    if (pw.length < 8) { setErr("비밀번호는 8자 이상이어야 합니다."); return; }
+    if (pw !== pw2) { setErr("비밀번호가 일치하지 않습니다."); return; }
+    if (!agree) { setErr("서비스 이용약관·개인정보 처리방침에 동의해 주세요."); return; }
+    if ((typeof demoFindByEmail === "function" && demoFindByEmail(email)) || userFindByEmail(email)) { setErr("이미 가입된 이메일입니다."); return; }
+    const prof = demoMakeProfile(name.trim(), email.trim(), birth, gender);
+    prof.password = pw;
+    userRegister(prof);
+    authSet({ name: prof.name, email: prof.email, realVerified: true });
+    demoSetSession(prof);
+  };
+
+  return (
+    <div className="authform">
+      <div className="authsteps">
+        <span className={`astep ${step === 1 ? "on" : verified ? "done" : ""}`}>1 실명확인</span>
+        <span className="astepline" />
+        <span className={`astep ${step === 2 ? "on" : ""}`}>2 계정 생성</span>
+      </div>
+
+      {step === 1 && (<>
+        <label className="authfield"><span className="authlabel">이름(실명)</span>
+          <input className="authinput" value={name} onChange={(e) => setName(e.target.value)} placeholder="홍길동" /></label>
+        <div className="authfield"><span className="authlabel">주민등록번호</span>
+          <div className="authrrn">
+            <input className="authinput" value={birth} onChange={(e) => setBirth(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="앞 6자리(생년월일)" inputMode="numeric" />
+            <span className="authdash">–</span>
+            <input className="authinput authg" value={gender} onChange={(e) => setGender(e.target.value.replace(/\D/g, "").slice(0, 1))} placeholder="0" inputMode="numeric" maxLength={1} />
+            <span className="authmask">● ● ● ● ● ●</span>
+          </div>
+        </div>
+        <div className="authrow2">
+          <label className="authfield"><span className="authlabel">통신사</span>
+            <select className="authinput" value={carrier} onChange={(e) => setCarrier(e.target.value)}>
+              <option value="">선택</option><option>SKT</option><option>KT</option><option>LG U+</option><option>알뜰폰</option>
+            </select></label>
+          <label className="authfield"><span className="authlabel">휴대폰번호</span>
+            <input className="authinput" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-1234-5678" inputMode="tel" /></label>
+        </div>
+        <button type="button" className="authbtn authghost" onClick={sendCode} disabled={verified}>인증번호 받기</button>
+        {sentCode && (
+          <div className="authcode">
+            <div className="authcodemsg">인증번호가 발송되었습니다. <b className="democode">데모 환경 — 인증번호: {sentCode}</b><button type="button" className="authautofill" onClick={() => setCode(sentCode)}>자동입력</button></div>
+            <div className="authquick">
+              <input className="authinput" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="인증번호 6자리" inputMode="numeric" disabled={verified} />
+              <button type="button" className="authbtn authsmall" onClick={verify} disabled={verified}>확인</button>
+            </div>
+          </div>
+        )}
+        {verified && <div className="authok">✓ 실명확인이 완료되었습니다 ({name}님)</div>}
+        {err && <div className="autherr">{err}</div>}
+        <button type="button" className="authbtn authprimary" onClick={next}>다음 단계</button>
+      </>)}
+
+      {step === 2 && (<form onSubmit={finish}>
+        <div className="authverified">✓ {name}님 실명확인 완료</div>
+        <label className="authfield"><span className="authlabel">이메일</span>
+          <input className="authinput" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="username" /></label>
+        <label className="authfield"><span className="authlabel">비밀번호(8자 이상)</span>
+          <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" autoComplete="new-password" /></label>
+        <label className="authfield"><span className="authlabel">비밀번호 확인</span>
+          <input className="authinput" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="비밀번호 재입력" autoComplete="new-password" /></label>
+        <label className="authagree"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> 서비스 이용약관 및 개인정보 처리방침에 동의합니다.</label>
+        {err && <div className="autherr">{err}</div>}
+        <div className="authrow2">
+          <button type="button" className="authbtn authghost" onClick={() => { setErr(""); setStep(1); }}>이전</button>
+          <button type="submit" className="authbtn authprimary">가입 완료</button>
+        </div>
+      </form>)}
+    </div>
+  );
+}
+
+function AuthGate() {
+  const [tab, setTab] = useState("login");
+  useEffect(() => { try { demoRegisterAll(); } catch (e) {} }, []);
+  return (
+    <div className="authwrap">
+      <div className="authcard">
+        <AuthBrand />
+        <div className="authtabs">
+          <button className={`authtab ${tab === "login" ? "on" : ""}`} onClick={() => setTab("login")}>로그인</button>
+          <button className={`authtab ${tab === "signup" ? "on" : ""}`} onClick={() => setTab("signup")}>회원가입</button>
+        </div>
+        {tab === "login" ? <AuthLogin /> : <AuthSignup />}
+        <div className="authnote">※ 본 서비스는 시연용 데모입니다. 입력 정보는 이 기기(브라우저)에만 저장되며, 실제 본인인증·SMS 발송은 이루어지지 않습니다.</div>
+      </div>
     </div>
   );
 }

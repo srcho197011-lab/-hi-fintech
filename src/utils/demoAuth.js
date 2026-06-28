@@ -18,6 +18,19 @@ function demoNotify() { try { window.dispatchEvent(new Event("demochange")); } c
 function demoSetSession(m) { try { localStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(m)); } catch (e) {} demoNotify(); }
 function demoLogout() { try { localStorage.removeItem(DEMO_SESSION_KEY); } catch (e) {} demoNotify(); }
 
+/* ── 일반 로그인/회원가입 인증(게이트) — localStorage 기반 ── */
+const AUTH_KEY = "hifin_authed";       // 게이트 통과(현재 로그인) 사용자 {name,email,realVerified}
+const USERS_KEY = "hifin_users";       // 실명확인 후 가입한 일반 회원 저장소
+function authCurrent() { try { return JSON.parse(localStorage.getItem(AUTH_KEY) || "null"); } catch (e) { return null; } }
+function authSet(u) { try { localStorage.setItem(AUTH_KEY, JSON.stringify(u)); } catch (e) {} demoNotify(); }
+function appLogout() { try { localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); } catch (e) {} demoNotify(); }
+function usersAll() { try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); } catch (e) { return []; } }
+function usersSave(l) { try { localStorage.setItem(USERS_KEY, JSON.stringify(l)); } catch (e) {} }
+function userFindByEmail(email) { const e = (email || "").trim().toLowerCase(); return usersAll().find((u) => (u.email || "").toLowerCase() === e) || null; }
+function userRegister(u) { if (userFindByEmail(u.email)) return false; const l = usersAll(); l.push(u); usersSave(l); return true; }
+/* 데모회원(Demo@1234) → 가입회원(개별 비번) 순으로 인증 */
+function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if (m) return m; const u = userFindByEmail(email); return (u && u.password === pw) ? u : null; }
+
 /* 테스트 시나리오 자가검증(11항목) — 실제 로직/데이터에 대해 단언 */
 function runDemoTests() {
   const t = [];

@@ -6,8 +6,29 @@ function demoCancerGrade(g) {
   return ["고위험", "#B91C1C", "#FBD5D5"];
 }
 function demoCostForecast(cost) { return Math.round((cost || 0) * 1.4); }
-/* 이메일 끝 6자리(YYMMDD)에서 주민등록나이 도출 */
-function demoRegAge(m) { const mm = (m.email || "").match(/(\d{6})@/); if (!mm) return Math.round(m.biologicalAge); const yy = parseInt(mm[1].slice(0, 2), 10); return 2026 - (1900 + yy); }
+/* 이메일 끝 6자리(YYMMDD)에서 주민등록나이 도출 (가입회원은 regAge 우선) */
+function demoRegAge(m) { if (typeof m.regAge === "number") return m.regAge; const mm = (m.email || "").match(/(\d{6})@/); if (!mm) return Math.round(m.biologicalAge); const yy = parseInt(mm[1].slice(0, 2), 10); return 2026 - (1900 + yy); }
+/* 실명확인 정보로 가입회원의 개인 건강프로필 결정적 생성(데모) */
+function demoMakeProfile(name, email, birth6, genderCode) {
+  const yy = parseInt((birth6 || "").slice(0, 2), 10); const yyOk = !isNaN(yy);
+  const century = (genderCode === "3" || genderCode === "4") ? 2000 : 1900;
+  const regAge = Math.max(19, Math.min(90, 2026 - (yyOk ? century + yy : 1985)));
+  let h = 2166136261; const seed = (name || "") + (email || ""); for (let i = 0; i < seed.length; i++) { h = (h ^ seed.charCodeAt(i)) >>> 0; h = (h * 16777619) >>> 0; }
+  const rnd = (n) => { h = (h * 1103515245 + 12345) >>> 0; return h % n; };
+  const bio = Math.max(19, regAge + (rnd(9) - 3));
+  const og = () => Math.max(18, bio + (rnd(7) - 3));
+  const grade = 2 + rnd(5); // 2~6
+  const POOL = ["위암", "대장암", "폐암", "간암", "유방암", "전립선암", "갑상선암", "췌장암"];
+  const hr = grade >= 5 ? [POOL[rnd(POOL.length)]] : [];
+  const cost = 800000 + regAge * 30000 + rnd(60) * 10000;
+  return {
+    id: "user-" + ((email || "u").split("@")[0]), name: name, email: email, password: null, regAge: regAge,
+    biologicalAge: bio, obesityAge: og(), heartAge: og(), liverAge: og(), pancreasAge: og(), kidneyAge: og(),
+    cancerRiskGrade: grade, highRiskCancerTypes: hr, estimatedMedicalCost: cost,
+    managementPoints: ["주 150분 이상 유산소 운동", "나트륨·당류 섭취 줄이기", "연 1회 국가건강검진 수검", "금연·절주 실천"],
+    isDemoUser: false, realVerified: true,
+  };
+}
 /* 건강관리 리포트 어댑터 — 데모 회원 가용 필드로 6개 서브섹션 데이터 도출 */
 function demoReport(m) {
   const reg = demoRegAge(m);

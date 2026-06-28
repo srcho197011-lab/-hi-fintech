@@ -27,7 +27,9 @@ export default function App() {
   const [, setDemoTick] = useState(0);
   useEffect(() => { const h = () => setDemoTick((t) => t + 1); window.addEventListener("demochange", h); return () => window.removeEventListener("demochange", h); }, []);
   const demoU = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-  const greetName = demoU ? demoU.name : "조성래";
+  const authU = (typeof authCurrent === "function") ? authCurrent() : null;
+  const greetName = demoU ? demoU.name : (authU && authU.name ? authU.name : "조성래");
+  const doLogout = () => { setHdr(null); setSecRaw("home"); if (typeof appLogout === "function") appLogout(); };
   // 접근성: 클릭 가능한 div(네비·탭·칩)를 키보드로도 조작 가능하게 (focus + Enter/Space)
   useEffect(() => {
     const SEL = ".iitem, .snav, .chtab, .aitab, .reslink, .fsel, .calc, .slot, .sresult, .adchip, .addept, .actbl tr, .aidcats button, .aidcatlist button, .lf-r button, .aidfilters button";
@@ -48,6 +50,7 @@ export default function App() {
     ["people", "데모 회원 테스트", "demo"],
     ["alert", "알림센터", "__noti__", 3],
   ];
+  if (!authU) return <AuthGate />;
   return (
     <div className="app">
       <header className="top">
@@ -91,7 +94,7 @@ export default function App() {
         <div className="tr">
           <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">3</span></button>
           <button className={`ibtn ${hdr === "msg" ? "on" : ""}`} onClick={() => setHdr((h) => h === "msg" ? null : "msg")} aria-label="메시지"><MessageSquare size={21} /></button>
-          <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? "데모 로그인" : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
+          <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "데모 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
           {hdr && <><div className="hdrov" onClick={() => setHdr(null)} />
             <div className="hdrdrop">
               {hdr === "noti" && <>
@@ -108,12 +111,12 @@ export default function App() {
                 <div className="df" onClick={() => goSec("ai")}>AI 주치의와 상담하기</div>
               </>}
               {hdr === "user" && <>
-                <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? "데모 회원" : "프리미엄 회원"}</span></div>
+                <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? (demoU.isDemoUser ? "데모 회원" : "일반 회원") : "프리미엄 회원"}</span></div>
                 <div className="mi" onClick={() => goSec("mypage")}><CircleUserRound size={17} /> 마이페이지</div>
                 <div className="mi" onClick={() => goSec("manage")}><FileText size={17} /> 내 건강 리포트</div>
                 <div className="mi" onClick={() => goSec("wallet")}><Wallet size={17} /> 건강금융지갑</div>
                 <div className="mi" onClick={() => goSec("mypage")}><Bell size={17} /> 알림 설정</div>
-                <div className="df" onClick={() => setHdr(null)}>로그아웃</div>
+                <div className="df" onClick={doLogout}>로그아웃</div>
               </>}
             </div></>}
         </div>
@@ -126,7 +129,7 @@ export default function App() {
               return (<div key={i} className={`snav ${active ? "on" : ""}`} onClick={() => target === "__noti__" ? setHdr("noti") : setSec(target)}><span className="sico"><SecIcon k={ik} /></span> {t}{b && <span className="sb">{b}</span>}</div>);
             })}
           </div>
-          <div className="agent"><div className="at">AI Health Agent</div><div className="as">조성래님 전담 24시간 상담</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("ai")}>상담하기</button></div>
+          <div className="agent"><div className="at">AI Health Agent</div><div className="as">{greetName}님 전담 24시간 상담</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("ai")}>상담하기</button></div>
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
         <main className="scrollarea">
