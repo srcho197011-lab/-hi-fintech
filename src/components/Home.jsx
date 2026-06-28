@@ -65,7 +65,7 @@ function HomeView({ onGo }) {
           <div className="rch">생체나이 건강검진 리포트 발행</div>
           <p className="rcd">외부 검진 시스템에서 <b>고객 동의 절차</b>를 거쳐 건강검진 리포트를 발행할 수 있습니다. 발행된 리포트는 <b>건강관리 → 검진 리포트</b>에서 업로드해 보관·확인하세요.</p>
           <div className="rcbtns">
-            <a className="rcbtn pri" href="https://age.healthketch.com/#/intro" target="_blank" rel="noopener noreferrer">리포트 발행 사이트 열기 <ExternalLink size={15} /></a>
+            <a className="rcbtn pri" href="https://www.healthketch.com/outside/event/checkup-analysis/hizencare-pp-0UVIFW" target="_blank" rel="noopener noreferrer">리포트 발행 사이트 열기 <ExternalLink size={15} /></a>
             <button className="rcbtn ghost" onClick={() => go("manage")}>건강관리에서 업로드 <ChevronRight size={14} /></button>
           </div>
           <div className="rcnote"><ShieldCheck size={13} /> 발행은 본인(고객) 동의 하에 외부 검진 시스템에서 진행됩니다.</div>

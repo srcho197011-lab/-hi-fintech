@@ -41,14 +41,14 @@ function ReportVault({ user }) {
       <div className="rct"><FileText size={18} color="#2F5BEA" /> 검진 리포트 <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--muted)" }}>{who}님 · {list.length}건</span></div>
 
       <div className="rvnote"><ShieldCheck size={16} color="#16A34A" style={{ flexShrink: 0, marginTop: 1 }} />
-        <div><b>고객 동의 후</b> 외부 검진 시스템(age.healthketch.com)에서 발행한 건강검진 리포트를 업로드해 보관·확인하세요. 업로드한 파일은 <b>이 브라우저(기기)에만</b> 저장되며 외부로 전송되지 않습니다.</div></div>
+        <div><b>고객 동의 후</b> 외부 검진 시스템(healthketch.com)에서 발행한 건강검진 리포트를 업로드해 보관·확인하세요. 업로드한 파일은 <b>이 브라우저(기기)에만</b> 저장되며 외부로 전송되지 않습니다.</div></div>
 
       <label className="rvagree"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> 고객 본인의 동의를 받아 리포트를 등록합니다.</label>
 
       <div className="rvup">
         <input ref={fileRef} type="file" accept="application/pdf,image/*" style={{ display: "none" }} onChange={onPick} />
         <button className="rvbtn pri" disabled={!agree} onClick={() => fileRef.current && fileRef.current.click()}><Plus size={16} /> 리포트 업로드 (PDF·이미지)</button>
-        <a className="rvbtn ghost" href="https://age.healthketch.com/#/intro" target="_blank" rel="noopener noreferrer"><ExternalLink size={15} /> 발행 사이트 열기</a>
+        <a className="rvbtn ghost" href="https://www.healthketch.com/outside/event/checkup-analysis/hizencare-pp-0UVIFW" target="_blank" rel="noopener noreferrer"><ExternalLink size={15} /> 발행 사이트 열기</a>
       </div>
 
       {msg && <div className={`rvmsg ${msg.e ? "err" : "ok"}`}>{msg.e ? <AlertTriangle size={14} /> : <Check size={14} />} {msg.t}</div>}
