@@ -1,5 +1,5 @@
 export default function App() {
-  const [sec, setSecRaw] = useState("ai");
+  const [sec, setSecRaw] = useState("home");
   const [hist, setHist] = useState([]); // 뒤로 스택(이전 화면)
   const [fut, setFut] = useState([]); // 앞으로 스택(다음 화면)
   const setSec = (s) => { if (s === sec) return; setHist((h) => [...h, sec]); setFut([]); setSecRaw(s); };
