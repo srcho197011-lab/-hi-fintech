@@ -5065,6 +5065,12 @@ function DemoAdminPage({ onLogin, onGoLogin, onChange }) {
       ))}</div>
       {tests && <div className={`chksum ${passed === tests.length ? "all" : ""}`}>{passed} / {tests.length} 통과{passed === tests.length ? " · 전체 정상" : ""}</div>}
     </div>
+    <div className="card">
+      <div className="rct"><Lock size={18} color="#B45309" /> 메디에이지 결과 대시보드 <span className="demobadge" style={{ background: "#FEF3E2", color: "#B45309" }}><Lock size={11} /> 직원 전용</span></div>
+      <div className="adminnote"><AlertTriangle size={15} color="#B45309" style={{ flexShrink: 0, marginTop: 1 }} />
+        <div>메디에이지(gene.imhealth.co.kr) 관리자에서 고객의 건강검진 분석 결과를 확인합니다. <b>로그인은 직원 계정으로 직접</b> 진행하세요. (이 버튼은 고객용 메인 화면에는 노출되지 않습니다.)</div></div>
+      <a className="rvbtn pri" style={{ maxWidth: 280 }} href="https://gene.imhealth.co.kr/Login?redirect=%2Fdashboard" target="_blank" rel="noopener noreferrer"><ExternalLink size={15} /> 결과 대시보드 열기</a>
+    </div>
   </>);
 }
 
