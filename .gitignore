@@ -17,6 +17,8 @@
 
 # 펫 사이트(HI-PET) — Vercel 루트 디렉터리로 배포
 !/pet
+# 휴먼 사이트 공유 썸네일(OG)
+!/og-human.png
 # 펫 설계계획서(참고용)
 !/PetHealth_InsurFin_설계계획서.md
 
