@@ -53,6 +53,10 @@ py kdca_health_download.py --url "URL1,URL2,URL3" --out download_misc
 
 # 국가암정보센터 게시판(첨부 PDF 포함) 통째로 받기
 py kdca_health_download.py --board "https://www.cancer.go.kr/lay1/bbs/S1T261C844/B/77/list.do" --out download_board
+
+# 국가암정보센터 한 섹션을 통째로(메뉴 계층 자동 추적)
+# 보고 있는 페이지 URL만 주면 됨 — leaf면 상위 메뉴로 올라가 형제까지 수집
+py kdca_health_download.py --crawl "https://www.cancer.go.kr/lay1/S1T325C326/sublink.do" --out download_living
 ```
 
 > Windows 콘솔에서 한글 로그가 깨지면 먼저 `chcp 65001` 또는 `$env:PYTHONUTF8="1"` 를 실행하세요.
@@ -65,6 +69,7 @@ py kdca_health_download.py --board "https://www.cancer.go.kr/lay1/bbs/S1T261C844
 | `--source` | `general`/`elderly`/`youth`/`ccvd`/`rdiz`/`ptl`/`cancer` | `general` |
 | `--url` | 단일/다중 페이지 URL 직접 다운로드(자료원 무시, 본문 자동탐지) | - |
 | `--board` | cancer.go.kr 게시판(bbs) list.do URL — 글 본문 + 첨부 PDF 일괄 | - |
+| `--crawl` | cancer.go.kr 페이지 URL — 메뉴 계층을 따라 한 섹션 통째 수집 | - |
 | `--lclas N` | 카테고리 `lclasSn` (0 = 전체) | `0` |
 | `--out DIR` | 출력 폴더 | `download` |
 | `--formats txt,html` | 저장 형식(콤마 구분) | `txt,html` |
@@ -93,6 +98,7 @@ download/
 - **전체 1회 수신형**(rdiz): 희귀질환은 페이지네이션이 불안정하여 `pageUnit`을 키워 전체 목록을 한 번에 받음. `fn_moveDetail('<rdizCd>')`로 코드 수집 → 상세 `selectRdizInfDetail.do?rdizCd=<코드>` GET, `dic_detail` 본문·표에서 질환명 추출
 - **단일 URL형**(`--url`): 자료원에 없는 임의의 페이지를 직접 GET. 본문 컨테이너를 자동탐지(`print-content`→`dic_detail`→`cont_set`→`div_page`→`view-con`→`contents` 등)하고, 제목은 `<h1>` 우선·없으면 breadcrumb 마지막 항목 사용(예: `홈 >…>국가암검진 사업` → `국가암검진 사업`)
 - **게시판형**(`--board`): cancer.go.kr `bbs/.../list.do` 를 `cpage` 순회하며 글 수집 → 각 글의 본문 텍스트 저장 + `download.do` 첨부파일(PDF 등) 원본을 `files/`에 다운로드. 첨부는 이미 받은 파일은 건너뜀
+- **섹션 크롤**(`--crawl`): cancer.go.kr 메뉴는 계층이 번호로 인코딩됨(노드 `S1TaCb`의 자식 링크 = `S1TbC*`). 이를 따라 해당 섹션의 하위 `contents.do`만 재귀 수집(사이트 전체로 번지지 않음). 시작 URL이 leaf면 상위 메뉴로 올라가 형제들까지 포함. 받은 페이지는 `--url`과 동일하게 본문 추출
 - 모든 자료원은 세션 쿠키(JSESSIONID)를 유지하며 요청
 
 ## 책임 있는 사용

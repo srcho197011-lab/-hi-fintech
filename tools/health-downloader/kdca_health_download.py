@@ -367,14 +367,18 @@ def safe_filename(name, maxlen=60):
 
 
 def url_slug(u):
-    """URL에서 파일명용 짧은 식별자 생성(주요 쿼리키 우선, 없으면 경로 끝)."""
+    """URL에서 파일명용 짧은 식별자 생성(주요 쿼리키 우선, 없으면 경로 끝).
+    끝 세그먼트가 contents/list 등 일반명이면 직전 세그먼트(예: S1T327C328) 사용."""
     parts = urllib.parse.urlsplit(u)
     qs = urllib.parse.parse_qs(parts.query)
     for k in ("schSno", "cntnts_sn", "rdizCd", "seq", "id", "sn"):
         if k in qs and qs[k]:
             return f"{k}-{qs[k][0]}"
-    last = parts.path.rstrip("/").split("/")[-1]
-    return os.path.splitext(last)[0] or "page"
+    segs = [s for s in parts.path.split("/") if s]
+    last = os.path.splitext(segs[-1])[0] if segs else "page"
+    if last in ("contents", "list", "view", "index", "main", "sublink") and len(segs) >= 2:
+        return segs[-2]
+    return last or "page"
 
 
 def _already_saved(args, txt_dir, html_dir, base):
@@ -447,6 +451,59 @@ def collect_index(src, lclas, delay, start_page, end_page, log):
         page += 1
         time.sleep(delay)
     return items
+
+
+_LAY_RE = re.compile(r"/lay1/S1T(\d+)C(\d+)/(?:contents|sublink)\.do")
+
+
+def collect_crawl(start_url, log, max_pages):
+    """cancer.go.kr 메뉴 계층을 재귀 수집. 노드 S1TaCb의 자식 링크는 S1TbC* 패턴.
+    시작이 leaf(자식 없음)면 부모(S1T?Ca)로 한 단계 올라가 형제들을 수집."""
+    p = urllib.parse.urlsplit(start_url)
+    origin = f"{p.scheme}://{p.netloc}"
+
+    def get(path):
+        return _request(origin + path)
+
+    def children(path, html):
+        m = re.search(r"/S1T(\d+)C(\d+)/", path)
+        if not m:
+            return []
+        c = m.group(2)  # 이 노드의 C번호 → 자식의 T번호
+        return sorted(set(re.findall(rf"/lay1/S1T{c}C\d+/(?:contents|sublink)\.do", html)))
+
+    start_path = p.path
+    h0 = get(start_path)
+    # leaf이면 부모로 climb (부모 C == 시작노드 T)
+    if not children(start_path, h0):
+        m = re.search(r"/S1T(\d+)C(\d+)/", start_path)
+        if m:
+            par = re.search(rf"/lay1/S1T\d+C{m.group(1)}/(?:contents|sublink)\.do", h0)
+            if par:
+                start_path = par.group(0)
+                log(f"[크롤] 시작 페이지가 leaf → 상위 메뉴로 이동: {start_path}")
+
+    visited, leaves, queue = set(), [], [start_path]
+    while queue and len(leaves) < max_pages:
+        path = queue.pop(0)
+        if path in visited:
+            continue
+        visited.add(path)
+        try:
+            html = get(path)
+        except Exception as e:
+            log(f"[크롤] {path} 실패: {e}")
+            continue
+        kids = children(path, html)
+        for ch in kids:
+            if "contents.do" in ch:
+                if ch not in leaves:
+                    leaves.append(ch)
+            elif ch not in visited and ch not in queue:
+                queue.append(ch)
+        log(f"[크롤] {path} → 자식 {len(kids)} (수집 contents {len(leaves)})")
+        time.sleep(0.2)
+    return origin, leaves
 
 
 def run_board(args, log):
@@ -535,6 +592,15 @@ def run(args):
 
     if args.board:  # 게시판(첨부파일) 모드
         return run_board(args, log)
+
+    if args.crawl:  # 섹션 자동수집: 계층(노드 S1TaCb의 자식 = S1TbC*)을 재귀 수집
+        origin, paths = collect_crawl(args.crawl, log, args.max or 1000)
+        if not paths:
+            log("크롤: 하위 contents.do를 찾지 못했습니다(더 상위 메뉴 URL로 시도해 보세요).")
+            return
+        args.url = ",".join(origin + pp for pp in paths)
+        args.max = 0  # 크롤이 이미 대상 수를 확정함
+        log(f"[크롤] contents.do {len(paths)}건 → 다운로드")
 
     if args.url:  # 범용 단일/다중 URL 모드(자료원 무시)
         urls = [u.strip() for u in args.url.split(",") if u.strip()]
@@ -639,6 +705,8 @@ def main():
                         "콤마로 여러 개 지정 가능")
     p.add_argument("--board", default=None,
                    help="cancer.go.kr 게시판(bbs) list.do URL. 글 본문 + 첨부파일(PDF 등) 일괄 다운로드")
+    p.add_argument("--crawl", default=None,
+                   help="cancer.go.kr 페이지 URL. 좌측 메뉴에 걸린 같은 섹션 contents.do를 모두 자동 수집")
     p.add_argument("--lclas", default="0", help="카테고리 lclasSn (기본 0 = 전체)")
     p.add_argument("--out", default="download", help="출력 폴더 (기본 ./download)")
     p.add_argument("--formats", default="txt,html",
