@@ -10,6 +10,7 @@
 - `ccvd` — **심뇌혈관질환정보** (4건: 뇌졸중·뇌졸중 이후의 삶·심폐소생술·심근경색)
 - `rdiz` — **희귀질환 헬프라인** 질환목록 (helpline.kdca.go.kr, 약 1,314건)
 - `ptl` — **희귀질환 헬프라인 안내자료** (지원사업·통계·교육자료·저작권 등 13건)
+- `cancer` — **국가암정보센터** 전체암 보기 (www.cancer.go.kr, 100건)
 
 - 표준 라이브러리만 사용 → **별도 설치 불필요** (Python 3.9+)
 - 요청 간 지연·재시도·이어받기 내장 → 서버 부담 최소화
@@ -42,6 +43,9 @@ py kdca_health_download.py --source rdiz --delay 1.5 --out download_rdiz
 # 헬프라인 안내자료 묶음(13건) 다운로드
 py kdca_health_download.py --source ptl --out download_ptl
 
+# 국가암정보센터 전체암(100건) 다운로드
+py kdca_health_download.py --source cancer --out download_cancer
+
 # 아무 단일 페이지나 URL로 직접 받기(자료원에 없는 페이지)
 py kdca_health_download.py --url "https://helpline.kdca.go.kr/cdchelp/ph/ptlcontents/selectPtlConSent.do?schSno=155&menu=F0101"
 # 여러 개는 콤마로 구분
@@ -55,7 +59,7 @@ py kdca_health_download.py --url "URL1,URL2,URL3" --out download_misc
 
 | 옵션 | 설명 | 기본값 |
 |------|------|--------|
-| `--source` | `general`/`elderly`/`youth`/`ccvd`/`rdiz`/`ptl` | `general` |
+| `--source` | `general`/`elderly`/`youth`/`ccvd`/`rdiz`/`ptl`/`cancer` | `general` |
 | `--url` | 단일/다중 페이지 URL 직접 다운로드(자료원 무시, 본문 자동탐지) | - |
 | `--lclas N` | 카테고리 `lclasSn` (0 = 전체) | `0` |
 | `--out DIR` | 출력 폴더 | `download` |

@@ -50,6 +50,8 @@ AUTO_CONTAINERS = ("id:print-content", "dic_detail", "id:cont_set", "con_area",
 #  - rdiz형  : fn_moveDetail('<rdizCd>')                → id만(제목은 상세에서)
 ITEM_RE_GOVIEW = re.compile(r"fn_goView\('(\d+)'\s*,\s*'([^']*)'\)")
 ITEM_RE_RDIZ = re.compile(r"fn_moveDetail\('([A-Za-z0-9]+)'\)")
+# 국가암정보센터 목록: <a href="view.do?cancer_seq=NN"> <span class="name">암이름</span>
+ITEM_RE_CANCER = re.compile(r'cancer_seq=(\d+)"[^>]*>\s*<span class="name">([^<]+)</span>')
 
 # 희귀질환 상세의 질환명(상단 표 thead 다음 첫 행의 2번째 td)
 TITLE_RE_RDIZ = re.compile(
@@ -105,6 +107,16 @@ SOURCES = {
             ("F0102", "schSno=156&menu=F0102"),  # 산정특례 신청
             ("H0100", "schSno=124&menu=H0100"),  # 이용안내 - 저작권정책
         ]],
+    },
+    "cancer": {  # 국가암정보센터 전체암 보기 (다른 도메인, 100건, 단일 목록 페이지)
+        "base": "https://www.cancer.go.kr",
+        "list": "/lay1/program/S1T211C223/cancer/list.do",
+        "list_params": {},
+        "item_re": ITEM_RE_CANCER,
+        "detail": "/lay1/program/S1T211C223/cancer/view.do",
+        "detail_param": "cancer_seq",
+        "containers": ("id:div_page",),
+        "name": "국가암정보센터(전체암)",
     },
     "rdiz": {  # 희귀질환 헬프라인 질환목록 (다른 도메인, 약 1,389건)
         "base": "https://helpline.kdca.go.kr",
@@ -471,7 +483,8 @@ def run(args):
                 h1 = re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else ""
                 if h1:
                     title = h1
-            title = title or list_title or sid
+            # 목록에서 얻은 제목(있으면)을 상세<title>보다 우선(예: 암센터 breadcrumb 회피)
+            title = list_title or title or sid
             base = f"{sid}_{safe_filename(title)}"
             if args.resume and _already_saved(args, txt_dir, html_dir, base):
                 skip += 1
@@ -509,7 +522,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--source", default="general", choices=sorted(SOURCES.keys()),
                    help="자료원: general(일반 약660)|elderly(노인 64)|youth(청소년 33)|"
-                        "ccvd(심뇌혈관 4)|rdiz(희귀질환 약1,314)|ptl(헬프라인 안내자료 13). 기본 general")
+                        "ccvd(심뇌혈관 4)|rdiz(희귀질환 약1,314)|ptl(헬프라인 안내 13)|"
+                        "cancer(국가암정보센터 100). 기본 general")
     p.add_argument("--url", default=None,
                    help="단일 페이지 URL 직접 다운로드(자료원 무시, 본문 컨테이너 자동탐지). "
                         "콤마로 여러 개 지정 가능")
