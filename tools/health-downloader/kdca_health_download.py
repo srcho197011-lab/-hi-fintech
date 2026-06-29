@@ -55,6 +55,15 @@ SOURCES = {
         "view": f"{_PREFIX}/gnrlzHealthInfoYouthView.do",
         "name": "청소년 건강정보",
     },
+    "ccvd": {  # 심뇌혈관질환정보 (페이지네이션 목록이 아닌 개별 콘텐츠 페이지 묶음)
+        "name": "심뇌혈관질환정보",
+        "pages": [
+            ("cbvcacdInfo",  "/healthinfo/biz/health/ccvdInfo/ccvcdInfo/cbvcacdInfoMain.do"),
+            ("cbvcacdAfter", "/healthinfo/biz/health/ccvdInfo/ccvcdInfo/cbvcacdAfterMain.do"),
+            ("cprInfo",      "/healthinfo/biz/health/ccvdInfo/cvcdInfo/cprInfoMain.do"),
+            ("miInfo",       "/healthinfo/biz/health/ccvdInfo/cvcdInfo/miInfoMain.do"),
+        ],
+    },
 }
 
 # lclasSn 참고(일반건강정보 메인). 0 = 전체
@@ -97,9 +106,8 @@ def fetch_list_page(src, lclas, page):
     return _request(BASE + src["list"], data={"lclasSn": str(lclas), "pageIndex": str(page)})
 
 
-def fetch_detail(src, cntnts_sn):
-    url = f"{BASE}{src['view']}?cntnts_sn={cntnts_sn}"
-    return url, _request(url)
+def fetch_detail(url):
+    return _request(url)
 
 
 # ----------------------------------------------------------------------------
@@ -238,6 +246,16 @@ def safe_filename(name, maxlen=60):
     return (name[:maxlen].strip() or "untitled")
 
 
+def _already_saved(args, txt_dir, html_dir, base):
+    """요청된 모든 형식이 이미 저장돼 있으면 True(이어받기 판단)."""
+    need = []
+    if "txt" in args.formats:
+        need.append(os.path.join(txt_dir, base + ".txt"))
+    if "html" in args.formats:
+        need.append(os.path.join(html_dir, base + ".html"))
+    return bool(need) and all(os.path.exists(p) for p in need)
+
+
 def build_html_doc(title, url, fragment):
     return (
         "<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n<meta charset=\"utf-8\">\n"
@@ -256,6 +274,14 @@ def build_html_doc(title, url, fragment):
 # 메인 수집 루틴
 # ----------------------------------------------------------------------------
 def collect_index(src, lclas, delay, start_page, end_page, log):
+    """자료원의 (id, title, url) 목록을 반환."""
+    # 개별 페이지 묶음형(ccvd 등): 미리 정의된 페이지 목록
+    if "pages" in src:
+        items = [(slug, "", f"{BASE}{path}") for slug, path in src["pages"]]
+        log(f"[목록] 개별 콘텐츠 페이지 {len(items)}건")
+        return items
+
+    # 페이지네이션 목록형: pageIndex 순회로 cntnts_sn 수집
     items, page = [], start_page
     seen = set()
     while True:
@@ -268,7 +294,8 @@ def collect_index(src, lclas, delay, start_page, end_page, log):
             break
         for sn, title in page_items:
             seen.add(sn)
-        items.extend(page_items)
+        items.extend((sn, title, f"{BASE}{src['view']}?cntnts_sn={sn}")
+                     for sn, title in page_items)
         log(f"[목록] page {page}: {len(page_items)}건 (누적 {len(items)})")
         page += 1
         time.sleep(delay)
@@ -293,9 +320,9 @@ def run(args):
     index_path = os.path.join(args.out, "index.csv")
     with open(index_path, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["cntnts_sn", "title", "url"])
-        for sn, title in items:
-            w.writerow([sn, title, f"{BASE}{src['view']}?cntnts_sn={sn}"])
+        w.writerow(["id", "title", "url"])
+        for sid, title, url in items:
+            w.writerow([sid, title, url])
     log(f"[목록 저장] {index_path}")
 
     if args.list_only:
@@ -310,35 +337,41 @@ def run(args):
         os.makedirs(html_dir, exist_ok=True)
 
     manifest, ok, skip, fail = [], 0, 0, 0
-    for i, (sn, list_title) in enumerate(items, 1):
-        base = f"{sn}_{safe_filename(list_title)}"
-        txt_file = os.path.join(txt_dir, base + ".txt")
-        html_file = os.path.join(html_dir, base + ".html")
-
-        need_txt = "txt" in args.formats and not (args.resume and os.path.exists(txt_file))
-        need_html = "html" in args.formats and not (args.resume and os.path.exists(html_file))
-        if not need_txt and not need_html:
-            skip += 1
-            log(f"  [{i}/{len(items)}] {sn} 이미 존재 → 건너뜀")
-            continue
-
+    for i, (sid, list_title, url) in enumerate(items, 1):
+        # 제목을 미리 아는 목록형은 받기 전에 이어받기 판단(불필요한 요청 생략).
+        # 제목을 모르는 개별페이지형(list_title="")은 받은 뒤 제목으로 파일명 결정.
+        if list_title and args.resume:
+            base = f"{sid}_{safe_filename(list_title)}"
+            if _already_saved(args, txt_dir, html_dir, base):
+                skip += 1
+                log(f"  [{i}/{len(items)}] {sid} 이미 존재 → 건너뜀")
+                continue
         try:
-            url, html = fetch_detail(src, sn)
+            html = fetch_detail(url)
             title, text, fragment = parse_detail(html)
-            title = title or list_title
+            title = title or list_title or sid
+            base = f"{sid}_{safe_filename(title)}"
+            if args.resume and _already_saved(args, txt_dir, html_dir, base):
+                skip += 1
+                log(f"  [{i}/{len(items)}] {sid} {title} 이미 존재 → 건너뜀")
+                continue
+            txt_file = os.path.join(txt_dir, base + ".txt")
+            html_file = os.path.join(html_dir, base + ".html")
+            need_txt = "txt" in args.formats
+            need_html = "html" in args.formats
             if need_txt:
                 with open(txt_file, "w", encoding="utf-8") as f:
                     f.write(f"{title}\n출처: {url}\n{'='*50}\n\n{text}\n")
             if need_html:
                 with open(html_file, "w", encoding="utf-8") as f:
                     f.write(build_html_doc(title, url, fragment))
-            manifest.append({"cntnts_sn": sn, "title": title, "url": url,
+            manifest.append({"id": sid, "title": title, "url": url,
                              "chars": len(text)})
             ok += 1
-            log(f"  [{i}/{len(items)}] {sn} {title} ({len(text)}자) OK")
+            log(f"  [{i}/{len(items)}] {sid} {title} ({len(text)}자) OK")
         except Exception as e:
             fail += 1
-            log(f"  [{i}/{len(items)}] {sn} 실패: {e}")
+            log(f"  [{i}/{len(items)}] {sid} 실패: {e}")
         time.sleep(args.delay)
 
     with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as f:
@@ -353,7 +386,7 @@ def main():
         description="국가건강정보포털(질병관리청) 일반건강정보 일괄 다운로더 (교육 목적)",
         formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--source", default="general", choices=sorted(SOURCES.keys()),
-                   help="자료원: general(일반 약660건) | elderly(노인 약64건) | youth(청소년 약33건). 기본 general")
+                   help="자료원: general(일반 약660건)|elderly(노인 64건)|youth(청소년 33건)|ccvd(심뇌혈관 4건). 기본 general")
     p.add_argument("--lclas", default="0", help="카테고리 lclasSn (기본 0 = 전체)")
     p.add_argument("--out", default="download", help="출력 폴더 (기본 ./download)")
     p.add_argument("--formats", default="txt,html",

@@ -7,6 +7,7 @@
 - `general` — **일반건강정보** (약 660여 건, 기본값)
 - `elderly` — **노인 건강정보** (약 64건)
 - `youth` — **청소년 건강정보** (약 33건)
+- `ccvd` — **심뇌혈관질환정보** (4건: 뇌졸중·뇌졸중 이후의 삶·심폐소생술·심근경색)
 
 - 표준 라이브러리만 사용 → **별도 설치 불필요** (Python 3.9+)
 - 요청 간 지연·재시도·이어받기 내장 → 서버 부담 최소화
@@ -29,6 +30,9 @@ py kdca_health_download.py --source elderly --out download_elderly
 
 # 청소년 건강정보(약 33건) 다운로드
 py kdca_health_download.py --source youth --out download_youth
+
+# 심뇌혈관질환정보(4건) 다운로드
+py kdca_health_download.py --source ccvd --out download_ccvd
 ```
 
 > Windows 콘솔에서 한글 로그가 깨지면 먼저 `chcp 65001` 또는 `$env:PYTHONUTF8="1"` 를 실행하세요.
@@ -38,7 +42,7 @@ py kdca_health_download.py --source youth --out download_youth
 
 | 옵션 | 설명 | 기본값 |
 |------|------|--------|
-| `--source` | 자료원 `general`(일반) / `elderly`(노인) / `youth`(청소년) | `general` |
+| `--source` | 자료원 `general`(일반)/`elderly`(노인)/`youth`(청소년)/`ccvd`(심뇌혈관) | `general` |
 | `--lclas N` | 카테고리 `lclasSn` (0 = 전체) | `0` |
 | `--out DIR` | 출력 폴더 | `download` |
 | `--formats txt,html` | 저장 형식(콤마 구분) | `txt,html` |
@@ -61,8 +65,9 @@ download/
 
 ## 동작 방식
 
-- 목록: 자료원별 목록 페이지(`gnrlzHealthInfoMain.do` / `gnrlzHealthInfoOld.do`)에 `pageIndex`를 POST하며 순회, `fn_goView('<cntnts_sn>', ...)`에서 글 번호 수집(중복 제거, 빈 페이지에서 종료)
-- 상세: 자료원별 상세 페이지(`gnrlzHealthInfoView.do` / `gnrlzHealthInfoOldView.do`)`?cntnts_sn=<번호>` 를 GET, `id="print-content"` 영역의 본문만 추출
+- **목록형**(general/elderly/youth): 자료원별 목록 페이지에 `pageIndex`를 POST하며 순회, `fn_goView('<cntnts_sn>', ...)`에서 글 번호 수집(중복 제거, 빈 페이지에서 종료) → 상세 `...View.do?cntnts_sn=<번호>` GET
+- **개별 페이지형**(ccvd): 페이지네이션 없이 미리 정의된 콘텐츠 페이지(`*Main.do`)를 직접 GET
+- 본문은 두 방식 모두 `id="print-content"` 영역만 추출
 
 ## 책임 있는 사용
 
