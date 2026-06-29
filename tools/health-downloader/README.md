@@ -50,6 +50,9 @@ py kdca_health_download.py --source cancer --out download_cancer
 py kdca_health_download.py --url "https://helpline.kdca.go.kr/cdchelp/ph/ptlcontents/selectPtlConSent.do?schSno=155&menu=F0101"
 # 여러 개는 콤마로 구분
 py kdca_health_download.py --url "URL1,URL2,URL3" --out download_misc
+
+# 국가암정보센터 게시판(첨부 PDF 포함) 통째로 받기
+py kdca_health_download.py --board "https://www.cancer.go.kr/lay1/bbs/S1T261C844/B/77/list.do" --out download_board
 ```
 
 > Windows 콘솔에서 한글 로그가 깨지면 먼저 `chcp 65001` 또는 `$env:PYTHONUTF8="1"` 를 실행하세요.
@@ -61,6 +64,7 @@ py kdca_health_download.py --url "URL1,URL2,URL3" --out download_misc
 |------|------|--------|
 | `--source` | `general`/`elderly`/`youth`/`ccvd`/`rdiz`/`ptl`/`cancer` | `general` |
 | `--url` | 단일/다중 페이지 URL 직접 다운로드(자료원 무시, 본문 자동탐지) | - |
+| `--board` | cancer.go.kr 게시판(bbs) list.do URL — 글 본문 + 첨부 PDF 일괄 | - |
 | `--lclas N` | 카테고리 `lclasSn` (0 = 전체) | `0` |
 | `--out DIR` | 출력 폴더 | `download` |
 | `--formats txt,html` | 저장 형식(콤마 구분) | `txt,html` |
@@ -75,10 +79,11 @@ py kdca_health_download.py --url "URL1,URL2,URL3" --out download_misc
 
 ```
 download/
-├─ index.csv         # cntnts_sn, title, url 전체 목록 (Excel 호환 UTF-8-SIG)
+├─ index.csv         # id, title, url 전체 목록 (Excel 호환 UTF-8-SIG)
 ├─ manifest.json     # 수집 결과 메타(건수·글자수)
 ├─ txt/              # 6722_근 손실.txt ...
-└─ html/             # 6722_근 손실.html ...
+├─ html/             # 6722_근 손실.html ...
+└─ files/            # (게시판 --board 모드) 첨부 PDF 등 원본 파일
 ```
 
 ## 동작 방식
@@ -87,6 +92,7 @@ download/
 - **개별 페이지형**(ccvd): 페이지네이션 없이 미리 정의된 콘텐츠 페이지(`*Main.do`)를 직접 GET
 - **전체 1회 수신형**(rdiz): 희귀질환은 페이지네이션이 불안정하여 `pageUnit`을 키워 전체 목록을 한 번에 받음. `fn_moveDetail('<rdizCd>')`로 코드 수집 → 상세 `selectRdizInfDetail.do?rdizCd=<코드>` GET, `dic_detail` 본문·표에서 질환명 추출
 - **단일 URL형**(`--url`): 자료원에 없는 임의의 페이지를 직접 GET. 본문 컨테이너를 자동탐지(`print-content`→`dic_detail`→`cont_set`→`div_page`→`view-con`→`contents` 등)하고, 제목은 `<h1>` 우선·없으면 breadcrumb 마지막 항목 사용(예: `홈 >…>국가암검진 사업` → `국가암검진 사업`)
+- **게시판형**(`--board`): cancer.go.kr `bbs/.../list.do` 를 `cpage` 순회하며 글 수집 → 각 글의 본문 텍스트 저장 + `download.do` 첨부파일(PDF 등) 원본을 `files/`에 다운로드. 첨부는 이미 받은 파일은 건너뜀
 - 모든 자료원은 세션 쿠키(JSESSIONID)를 유지하며 요청
 
 ## 책임 있는 사용

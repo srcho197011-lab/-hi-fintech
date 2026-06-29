@@ -53,6 +53,12 @@ ITEM_RE_RDIZ = re.compile(r"fn_moveDetail\('([A-Za-z0-9]+)'\)")
 # 국가암정보센터 목록: <a href="view.do?cancer_seq=NN"> <span class="name">암이름</span>
 ITEM_RE_CANCER = re.compile(r'cancer_seq=(\d+)"[^>]*>\s*<span class="name">([^<]+)</span>')
 
+# 게시판(bbs) 모드: cancer.go.kr egov 게시판 (--board)
+# 앵커 안에 썸네일 img가 먼저 오므로 내부 전체를 잡아 태그 제거 후 제목 추출
+BOARD_ITEM_RE = re.compile(r'view\.do\?article_seq=(\d+)[^"]*"[^>]*>(.*?)</a>', re.S)
+BOARD_ATT_RE = re.compile(
+    r'href="([^"]*download\.do[^"]*)"[^>]*>.*?<span>\s*([^<]+\.[A-Za-z0-9]{2,5})\s*</span>', re.S)
+
 # 희귀질환 상세의 질환명(상단 표 thead 다음 첫 행의 2번째 td)
 TITLE_RE_RDIZ = re.compile(
     r"</thead>\s*<tbody>\s*<tr>\s*<td[^>]*>.*?</td>\s*<td[^>]*>(.*?)</td>", re.S)
@@ -196,6 +202,25 @@ def fetch_list_page(src, lclas, page):
 
 def fetch_detail(url):
     return _request(url)
+
+
+def download_binary(url, path, retries=3, timeout=180):
+    """첨부파일 등 바이너리를 내려받아 path에 저장. 저장 바이트수 반환."""
+    parts = urllib.parse.urlsplit(url)
+    referer = f"{parts.scheme}://{parts.netloc}/"
+    last_err = None
+    for attempt in range(retries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA, "Referer": referer})
+            with _OPENER.open(req, timeout=timeout) as resp:
+                data = resp.read()
+            with open(path, "wb") as f:
+                f.write(data)
+            return len(data)
+        except (urllib.error.URLError, IncompleteRead, TimeoutError) as e:
+            last_err = e
+            time.sleep(2 ** attempt)
+    raise RuntimeError(f"파일 다운로드 실패: {url} :: {last_err}")
 
 
 # ----------------------------------------------------------------------------
@@ -424,9 +449,92 @@ def collect_index(src, lclas, delay, start_page, end_page, log):
     return items
 
 
+def run_board(args, log):
+    """cancer.go.kr 게시판(bbs) 모드: 글 목록을 돌며 본문 텍스트 + 첨부파일 다운로드."""
+    list_url = args.board
+    parts = urllib.parse.urlsplit(list_url)
+    origin = f"{parts.scheme}://{parts.netloc}"
+    board_dir = list_url.split("?")[0].rsplit("/", 1)[0] + "/"   # .../B/77/
+    list_base, view_base = board_dir + "list.do", board_dir + "view.do"
+    log(f"=== 건강정보 다운로더 · 게시판 모드 ===")
+    log(f"게시판: {board_dir}")
+    log(f"출력 폴더: {os.path.abspath(args.out)} · 지연 {args.delay}s")
+
+    # 1) 글 목록 수집(cpage 순회, 새 글 없으면 종료)
+    seen, items, cpage = set(), [], 1
+    while cpage <= 500:
+        h = _request(f"{list_base}?cpage={cpage}")
+        rows = []
+        for s, inner in BOARD_ITEM_RE.findall(h):
+            if s in seen:
+                continue
+            # 태그를 줄바꿈으로 바꾸고 첫 비어있지 않은 줄을 제목으로(작성자/날짜 제외)
+            lines = [x.strip() for x in _unescape(re.sub(r"<[^>]+>", "\n", inner)).splitlines()
+                     if x.strip()]
+            seen.add(s)
+            rows.append((s, lines[0] if lines else s))
+        if not rows:
+            break
+        items.extend(rows)
+        log(f"[목록] cpage {cpage}: {len(rows)}건 (누적 {len(items)})")
+        cpage += 1
+        time.sleep(args.delay)
+    if args.max:
+        items = items[:args.max]
+    log(f"총 글: {len(items)}건")
+
+    txt_dir = os.path.join(args.out, "txt")
+    file_dir = os.path.join(args.out, "files")
+    os.makedirs(txt_dir, exist_ok=True)
+    os.makedirs(file_dir, exist_ok=True)
+    with open(os.path.join(args.out, "index.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["article_seq", "title", "url"])
+        for s, t in items:
+            w.writerow([s, t, f"{view_base}?article_seq={s}"])
+
+    manifest, ok, fail, nfiles = [], 0, 0, 0
+    for i, (seq, title) in enumerate(items, 1):
+        url = f"{view_base}?article_seq={seq}"
+        try:
+            d = fetch_detail(url)
+            _, text, _ = parse_detail(d, ("id:div_page", "id:contents"))
+            base = f"{seq}_{safe_filename(title)}"
+            with open(os.path.join(txt_dir, base + ".txt"), "w", encoding="utf-8") as f:
+                f.write(f"{title}\n출처: {url}\n{'='*50}\n\n{text}\n")
+            files = []
+            for href, fn in BOARD_ATT_RE.findall(d):
+                furl = origin + _unescape(href)
+                fname = f"{seq}_{safe_filename(fn, 80)}"
+                fpath = os.path.join(file_dir, fname)
+                if args.resume and os.path.exists(fpath):
+                    files.append(fname)
+                    continue
+                size = download_binary(furl, fpath)
+                files.append(fname)
+                nfiles += 1
+                log(f"      첨부 저장: {fname} ({size//1024:,}KB)")
+                time.sleep(args.delay)
+            manifest.append({"article_seq": seq, "title": title, "url": url, "files": files})
+            ok += 1
+            log(f"  [{i}/{len(items)}] {seq} {title} (첨부 {len(files)}개) OK")
+        except Exception as e:
+            fail += 1
+            log(f"  [{i}/{len(items)}] {seq} 실패: {e}")
+        time.sleep(args.delay)
+
+    with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump({"source": "board", "board": board_dir, "count": len(manifest),
+                   "items": manifest}, f, ensure_ascii=False, indent=2)
+    log(f"\n완료: 글 {ok} · 실패 {fail} · 첨부파일 {nfiles}개 → {os.path.abspath(args.out)}")
+
+
 def run(args):
     os.makedirs(args.out, exist_ok=True)
     log = (lambda m: print(m, flush=True)) if not args.quiet else (lambda m: None)
+
+    if args.board:  # 게시판(첨부파일) 모드
+        return run_board(args, log)
 
     if args.url:  # 범용 단일/다중 URL 모드(자료원 무시)
         urls = [u.strip() for u in args.url.split(",") if u.strip()]
@@ -529,6 +637,8 @@ def main():
     p.add_argument("--url", default=None,
                    help="단일 페이지 URL 직접 다운로드(자료원 무시, 본문 컨테이너 자동탐지). "
                         "콤마로 여러 개 지정 가능")
+    p.add_argument("--board", default=None,
+                   help="cancer.go.kr 게시판(bbs) list.do URL. 글 본문 + 첨부파일(PDF 등) 일괄 다운로드")
     p.add_argument("--lclas", default="0", help="카테고리 lclasSn (기본 0 = 전체)")
     p.add_argument("--out", default="download", help="출력 폴더 (기본 ./download)")
     p.add_argument("--formats", default="txt,html",
