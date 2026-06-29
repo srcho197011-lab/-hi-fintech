@@ -895,7 +895,9 @@ function aiRespond(text, corpus, report, QA) {
     const et = expandAlias((text || "").replace(/\s/g, ""));
     const qcp = qaMatch(et, QA, intentOf(et)) || qaFuzzy(text, QA);
     const isReport = /원으로 예상|생체나이|노화등수|발생 위험도는|리포트\(검진일/.test(ans);
+    const isOnto = /등급 기준은요|보장이 권장|단계로 보여요|부족한\(공백\)|보험대리점\/설계사/.test(ans);
     const quicks = qcp ? [`${qcp.dz} 생활습관 관리법은?`, `${qcp.dz}의 증상은 무엇인가요?`, "내 리포트 요약"]
+      : isOnto ? ["내 보험 보장 공백", "혈당 수치 의미", "내 건강 후속조치"]
       : isReport ? ["내 생체나이", "의료비 예측", "당뇨 예방 관리"] : ["내 리포트 요약", "의료비 예측", "보험금 청구"];
     return { bubbles: [{ kind: "text", text: ans }], quicks };
   }
@@ -929,7 +931,7 @@ function Chat() {
     { id: 1, who: "ai", kind: "text", text: "안녕하세요 조성래님, AI 주치의예요. 👨‍⚕️\n프롬에이지 Premium 건강분석 리포트를 바탕으로 함께 살펴드릴게요.", time: now(), first: true },
     { id: 2, who: "ai", kind: "text", text: "무엇을 도와드릴까요? 아래에서 골라보셔도 돼요.", time: now() },
   ]);
-  const [quicks, setQuicks] = useState(["건강분석 리포트 분석", "당뇨 예방 관리", "간·췌장 건강", "의료비 예측", "보험금 청구"]);
+  const [quicks, setQuicks] = useState(["내 보험 보장 공백", "혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "의료비 예측"]);
   const [input, setInput] = useState(""); const [typing, setTyping] = useState(false); const [plus, setPlus] = useState(false);
   const kb = useKdca();
   const report = useReport();
