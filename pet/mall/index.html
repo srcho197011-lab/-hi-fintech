@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HI-PET Shop · 펫 Health-InsurFin 쇼핑몰</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+:root{
+  --orange:#F4843C; --orange-deep:#E0662A; --orange-soft:#FFE7D3; --amber:#FFB547;
+  --green:#4FB286; --green-soft:#E4F4EC; --cream:#FFF8F1; --white:#fff;
+  --text:#3A2C22; --sub:#6B5B4E; --muted:#A89A8C; --border:#F2E8DC;
+  --shadow:0 6px 22px rgba(196,128,72,.10); --shadow-sm:0 2px 10px rgba(196,128,72,.07);
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{font-family:Pretendard,system-ui,sans-serif;color:var(--text);background:linear-gradient(135deg,#FFF8F1,#FFF1E6);-webkit-font-smoothing:antialiased}
+#loading{font-family:sans-serif;padding:48px;color:#9a8c7e}
+.num{font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#EAD9C6;border-radius:9px}
+</style>
+<script type="importmap">
+{"imports":{"react":"https://esm.sh/react@18.3.1","react/":"https://esm.sh/react@18.3.1/","react-dom":"https://esm.sh/react-dom@18.3.1","react-dom/":"https://esm.sh/react-dom@18.3.1/"}}
+</script>
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+</head>
+<body>
+<div id="root"><div id="loading">로딩 중… (CDN에서 React를 불러오는 중)</div></div>
+<script type="text/babel" data-type="module" data-presets="react">
+import { createRoot } from "react-dom/client";
+import React, { useState, useEffect, useMemo } from "react";
+
+/* ===== 인라인 아이콘 ===== */
+const SVG=({size=22,color="currentColor",fill="none",sw=2,style,children,...p})=>React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",width:size,height:size,viewBox:"0 0 24 24",fill,stroke:color,strokeWidth:sw,strokeLinecap:"round",strokeLinejoin:"round",style,...p},children);
+const mk=(raw)=>(p)=>React.createElement(SVG,p,React.createElement("g",{dangerouslySetInnerHTML:{__html:raw}}));
+const PawPrint=mk('<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/>');
+const Search=mk('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>');
+const Cart=mk('<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>');
+const X=mk('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>');
+const Check=mk('<path d="M20 6 9 17l-5-5"/>');
+const Coins=mk('<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>');
+const Spark=mk('<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>');
+const Shield=mk('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>');
+const Bone=mk('<path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z"/>');
+const Pill=mk('<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>');
+const Bag=mk('<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>');
+const Receipt=mk('<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>');
+const Settings=mk('<circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>');
+const Chev=mk('<path d="m9 18 6-6-6-6"/>');
+const Alert=mk('<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>');
+const Home=mk('<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>');
+
+/* ===== 상품 카탈로그 (products 테이블 형태) ===== */
+const DEFAULT_PRODUCTS=[
+  {id:"f1",emoji:"🥩",name:"관절 처방식 Mobility 2kg",cat:"사료",sub:"건식",origin:"국외",pet:"강아지",presc:"처방식",ftype:"건식",ing:"가수분해단백·EPA/DHA",health:["관절"],brand:"로얄캐닌 Veterinary",price:58000,sale:52000,stock:40,ins:true,ai:true,token:580},
+  {id:"f2",emoji:"🥗",name:"k/d 신장 처방식 2kg",cat:"사료",sub:"건식",origin:"국외",pet:"공용",presc:"처방식",ftype:"건식",ing:"저인·저단백",health:["신장"],brand:"힐스 Prescription Diet",price:62000,stock:30,ins:true,ai:false,token:620},
+  {id:"f3",emoji:"🥫",name:"저지방 체중관리 사료 2kg",cat:"사료",sub:"건식",origin:"국외",pet:"강아지",presc:"일반식",ftype:"건식",ing:"저지방·L-카르니틴",health:["비만"],brand:"퓨리나 Pro Plan",price:42000,stock:60,ai:true,token:420},
+  {id:"f4",emoji:"🍖",name:"그레인프리 어덜트 2kg",cat:"사료",sub:"건식",origin:"국외",pet:"강아지",presc:"일반식",ftype:"건식",ing:"신선육 85%·그레인프리",health:["고단백"],brand:"오리젠",price:55000,stock:25,token:550},
+  {id:"f5",emoji:"🐟",name:"신선육 어덜트 스몰 2kg",cat:"사료",sub:"건식",origin:"국외",pet:"강아지",presc:"일반식",ftype:"건식",ing:"신선 닭·생선",health:["피부","모질"],brand:"아카나",price:49000,stock:25,token:490},
+  {id:"f6",emoji:"🧊",name:"동결건조 오리 100g",cat:"사료",sub:"동결건조",origin:"국내",pet:"강아지",presc:"일반식",ftype:"동결건조",ing:"동결건조 오리",health:["알러지"],brand:"하림 더리얼",price:38000,stock:50,token:380},
+  {id:"f7",emoji:"🌿",name:"6Free 연어 2kg",cat:"사료",sub:"건식",origin:"국내",pet:"공용",presc:"일반식",ftype:"건식",ing:"연어·저알러지",health:["피부","알러지"],brand:"우리와 ANF",price:35000,stock:40,token:350},
+  {id:"f8",emoji:"🍲",name:"신선 화식 닭가슴살 1kg",cat:"사료",sub:"화식",origin:"국내",pet:"강아지",presc:"일반식",ftype:"화식",ing:"국내산 신선육 화식",health:["장"],brand:"펫프레시",price:28000,stock:35,token:280},
+  {id:"f9",emoji:"🐱",name:"고양이 요로건강 1.5kg",cat:"사료",sub:"건식",origin:"국내",pet:"고양이",presc:"일반식",ftype:"건식",ing:"마그네슘 조절",health:["요로"],brand:"대주펫푸드 캐츠랑",price:22000,stock:45,token:220},
+  {id:"s1",emoji:"🦴",name:"덴탈껌 7p",cat:"간식",sub:"덴탈",origin:"국외",pet:"강아지",presc:"일반식",ftype:"저키",ing:"치석분해 효소",health:["구강"],brand:"페디그리 덴타스틱",price:12000,stock:120,ai:true,token:120},
+  {id:"s2",emoji:"🦷",name:"데일리 오랄케어 스틱",cat:"간식",sub:"덴탈",origin:"국외",pet:"강아지",presc:"일반식",ftype:"스틱",ing:"기공구조 세정",health:["구강"],brand:"덴탈라이프",price:11000,stock:90,token:110},
+  {id:"s3",emoji:"🥣",name:"참치 츄르 14p",cat:"간식",sub:"츄르",origin:"국외",pet:"고양이",presc:"일반식",ftype:"츄르",ing:"참치·수분보충",health:["면역"],brand:"이나바 챠오츄르",price:9000,stock:200,token:90},
+  {id:"s4",emoji:"💊",name:"관절 글루코사민 영양제",cat:"간식",sub:"영양제",origin:"국내",pet:"공용",presc:"일반식",ftype:"캡슐",ing:"글루코사민·MSM",health:["관절"],brand:"벳플러스",price:29000,stock:70,ai:true,ins:true,token:290},
+  {id:"s5",emoji:"🐠",name:"오메가3 피쉬오일",cat:"간식",sub:"영양제",origin:"국내",pet:"공용",presc:"일반식",ftype:"캡슐",ing:"EPA·DHA",health:["피부","모질"],brand:"핏펫",price:24000,stock:80,ai:true,token:240},
+  {id:"s6",emoji:"🍗",name:"동결건조 닭가슴살 트릿",cat:"간식",sub:"동결건조",origin:"국내",pet:"강아지",presc:"일반식",ftype:"동결건조",ing:"국내산 닭가슴살",health:["체중관리"],brand:"국내 수제",price:13000,stock:100,token:130},
+  {id:"s7",emoji:"🦠",name:"반려동물 유산균 파우더",cat:"간식",sub:"영양제",origin:"국내",pet:"공용",presc:"일반식",ftype:"파우더",ing:"유산균 10종",health:["장","면역"],brand:"바이오펫",price:19000,stock:80,token:190},
+  {id:"g1",emoji:"🟫",name:"미끄럼 방지 매트",cat:"용품",sub:"안전용품",origin:"국내",pet:"공용",ing:"논슬립 PVC",health:["관절"],brand:"세이프플로어",price:42000,stock:30,ai:true,token:420},
+  {id:"g2",emoji:"🪥",name:"칫솔·치약 세트",cat:"용품",sub:"위생·미용",origin:"국내",pet:"공용",ing:"효소치약",health:["구강"],brand:"덴티펫",price:12000,stock:100,ai:true,token:120},
+  {id:"g3",emoji:"🍚",name:"스마트 자동급식기",cat:"용품",sub:"급식용품",origin:"국내",pet:"공용",ing:"앱 연동·분할급여",health:["비만"],brand:"펫피더",price:68000,stock:20,token:680},
+  {id:"g4",emoji:"🦮",name:"편안한 H형 하네스",cat:"용품",sub:"산책용품",origin:"국내",pet:"강아지",ing:"기관 보호형",health:[],brand:"워크펫",price:28000,stock:60,token:280},
+  {id:"g5",emoji:"⚖️",name:"반려동물 체중계",cat:"용품",sub:"의료·케어",origin:"국내",pet:"공용",ing:"앱 기록 연동",health:["비만"],brand:"헬스펫",price:35000,stock:40,ins:true,token:350},
+  {id:"g6",emoji:"🧴",name:"저자극 약산성 샴푸",cat:"용품",sub:"위생·미용",origin:"국내",pet:"공용",ing:"저자극·보습",health:["피부"],brand:"네이처펫",price:16000,stock:70,ai:true,token:160},
+  {id:"g7",emoji:"🧻",name:"흡수 배변패드 100매",cat:"용품",sub:"배변용품",origin:"국내",pet:"강아지",ing:"6중 흡수",health:[],brand:"클린펫",price:18000,stock:90,token:180},
+  {id:"g8",emoji:"🧳",name:"이동가방(켄넬)",cat:"용품",sub:"이동용품",origin:"국내",pet:"공용",ing:"항공운송 가능",health:[],brand:"트래블펫",price:45000,stock:30,token:450},
+];
+const AI_REASON={"관절":"슬개골 위험 중간 — 관절 보호","구강":"치주질환 위험 중간 — 치석 관리","피부":"피부·모질 관리","모질":"피부·모질 관리","비만":"체중관리 — 목표 4.0kg"};
+
+/* ===== localStorage 헬퍼 ===== */
+const LS={
+  get:(k,d)=>{ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch{ return d; } },
+  set:(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} },
+};
+const won=(n)=>Number(n).toLocaleString()+"원";
+
+/* ===== 공용 UI ===== */
+function Badges({p}){ return (
+  <div className="pbadge">
+    {p.presc==="처방식"&&<span className="pb pur">처방식</span>}
+    {p.ai&&<span className="pb org">AI추천</span>}
+    {p.ins&&<span className="pb grn">보험연계</span>}
+  </div>
+);}
+function ProductCard({p,onOpen,onAdd}){
+  return (
+    <div className="prod" onClick={()=>onOpen(p)}>
+      <div className="pimg">{p.emoji}<Badges p={p}/></div>
+      <div className="pbody">
+        <div className="pbrand">{p.brand}</div>
+        <div className="pname">{p.name||p.product_name}</div>
+        <div className="ptags">{(p.health||[]).slice(0,3).map(h=><span key={h}>{h}</span>)}{p.origin&&<span className="og">{p.origin}</span>}</div>
+        <div className="pbot">
+          <div style={{minWidth:0}}>
+            <div className="pprice num">{p.sale&&<s>{p.price.toLocaleString()}</s>}{(p.sale||p.price).toLocaleString()}<span>원</span></div>
+            <div className="ptok num"><Coins size={11}/> +{p.token} HPET</div>
+          </div>
+          <button className="addbtn" title="담기" onClick={e=>{e.stopPropagation();onAdd(p);}}><Cart size={16}/></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===== 홈 ===== */
+function ShopHome({products,go,open,add}){
+  const ai=products.filter(p=>p.ai);
+  const presc=products.filter(p=>p.presc==="처방식");
+  const joint=products.filter(p=>(p.health||[]).includes("관절"));
+  const pop=[...products].sort((a,b)=>b.token-a.token).slice(0,4);
+  const Sec=({t,note,items})=> items.length?(
+    <section style={{marginBottom:28}}>
+      <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:12}}><h2 className="h2">{t}</h2>{note&&<span className="note">{note}</span>}</div>
+      <div className="grid">{items.map(p=><ProductCard key={p.id} p={p} onOpen={open} onAdd={add}/>)}</div>
+    </section>
+  ):null;
+  return (
+    <div>
+      <div className="hero">
+        <div className="he-sub">HI-PET Health-InsurFin 쇼핑몰</div>
+        <h1 className="he-t">건강데이터로 추천하고, 사면 Health Token이 쌓입니다</h1>
+        <p className="he-p">질병위험도 → AI 추천 → 구매 → 건강지갑 적립 → 보험 혜택까지 하나로.</p>
+        <div className="he-search"><Search size={16} color="#fff"/><input id="homeq" placeholder="상품·브랜드 검색 후 Enter" onKeyDown={e=>{if(e.key==="Enter"){go("feed",{q:e.target.value});}}}/></div>
+      </div>
+      <div className="cattiles">
+        {[["사료","feed","🥩"],["간식","snack","🦴"],["용품","supplies","🧴"]].map(([t,v,e])=>(
+          <button key={v} className="cattile" onClick={()=>go(v)}><span style={{fontSize:24}}>{e}</span><b>{t}</b><Chev size={16} color="var(--muted)"/></button>
+        ))}
+      </div>
+      <Sec t="✨ AI 추천 상품" note="반려동물 건강상태 기반 · 진단 아닌 참고 정보" items={ai}/>
+      <Sec t="처방식 사료" note="수의사 상담 권장" items={presc}/>
+      <Sec t="건강기능별 — 관절 케어" items={joint}/>
+      <Sec t="반복구매 인기상품" items={pop}/>
+    </div>
+  );
+}
+
+/* ===== 카테고리 ===== */
+function Category({cat,products,open,add,initialQ}){
+  const all=products.filter(p=>p.cat===cat);
+  const [origin,setO]=useState("전체"),[pet,setP]=useState("전체"),[fn,setF]=useState("전체"),[q,setQ]=useState(initialQ||""),[sort,setS]=useState("추천순");
+  const fns=useMemo(()=>["전체",...new Set(all.flatMap(p=>p.health||[]))],[cat,products]);
+  const list=useMemo(()=>{
+    let out=all.filter(p=>(origin==="전체"||p.origin===origin)&&(pet==="전체"||p.pet===pet||p.pet==="공용")&&(fn==="전체"||(p.health||[]).includes(fn))&&(!q.trim()||(p.name||"").includes(q)||(p.brand||"").includes(q)));
+    if(sort==="낮은가격")out=[...out].sort((a,b)=>(a.sale||a.price)-(b.sale||b.price));
+    else if(sort==="높은가격")out=[...out].sort((a,b)=>(b.sale||b.price)-(a.sale||a.price));
+    else if(sort==="적립순")out=[...out].sort((a,b)=>b.token-a.token);
+    else out=[...out].sort((a,b)=>Number(b.ai?1:0)-Number(a.ai?1:0));
+    return out;
+  },[cat,products,origin,pet,fn,q,sort]);
+  const Chip=({v,cur,set})=> <button className={`chip ${cur===v?"on":""}`} onClick={()=>set(v)}>{v}</button>;
+  return (
+    <div>
+      <h1 className="h1">{cat}</h1>
+      <div className="chips">{["전체","국내","국외"].map(v=><Chip key={v} v={v} cur={origin} set={setO}/>)}<span className="sep"/>{["전체","강아지","고양이"].map(v=><Chip key={v} v={v} cur={pet} set={setP}/>)}</div>
+      <div className="chips">{fns.map(v=><button key={v} className={`chip ${fn===v?"on":""}`} onClick={()=>setF(v)}>{v==="전체"?"건강기능 전체":v}</button>)}</div>
+      <div className="filtrow">
+        <div className="fsearch"><Search size={15}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="상품명·브랜드 검색"/></div>
+        <select value={sort} onChange={e=>setS(e.target.value)}>{["추천순","낮은가격","높은가격","적립순"].map(s=><option key={s}>{s}</option>)}</select>
+      </div>
+      <div className="count">{cat} <b>{list.length}</b>개</div>
+      <div className="grid">{list.map(p=><ProductCard key={p.id} p={p} onOpen={open} onAdd={add}/>)}</div>
+      {list.length===0&&<div className="empty">조건에 맞는 상품이 없습니다.</div>}
+      <p className="note" style={{marginTop:12}}>※ 처방식 사료는 수의사 상담을 권장합니다.</p>
+    </div>
+  );
+}
+
+/* ===== 상품 상세 ===== */
+const DEMO_COND=["슬개골","치주","비만"];
+function reasonFor(p){ for(const h of (p.health||[])){ if(AI_REASON[h]) return AI_REASON[h]; } return "마루 건강관리에 도움이 되는 상품"; }
+function Detail({p,go,add,buy}){
+  const price=p.sale||p.price;
+  return (
+    <div>
+      <button className="back" onClick={()=>go("shop")}>← 쇼핑 계속하기</button>
+      <div className="detail">
+        <div className="dimg">{p.emoji}<Badges p={p}/></div>
+        <div>
+          <div className="pbrand" style={{fontSize:13}}>{p.brand}</div>
+          <h1 className="h1" style={{margin:"4px 0"}}>{p.name}</h1>
+          <div className="dprice num">{p.sale&&<s>{p.price.toLocaleString()}</s>}{price.toLocaleString()}원</div>
+          <div className="dtok">🪙 구매 시 +{p.token} HPET 적립</div>
+          {p.ai&&<div className="aibox"><b><Spark size={14} color="var(--orange)"/> AI 추천 이유</b><p>{reasonFor(p)}</p><span className="note">※ AI 추천은 진단이 아닌 건강관리 참고 정보입니다.</span></div>}
+          <dl className="dlist">
+            {[["대상",`${p.pet||"-"}${p.ftype?" · "+p.ftype:""}`],["원산지",p.origin||"-"],["주요 성분",p.ing||"-"],["건강 기능",(p.health||[]).join(", ")||"-"],["보험 연계",p.ins?"연계(적립·보장 반영)":"미연계"],["재고",`${p.stock??"-"}개`]].map(([k,v])=>(
+              <div key={k}><dt>{k}</dt><dd>{v}</dd></div>
+            ))}
+          </dl>
+          {p.presc==="처방식"&&<div className="warn"><b><Alert size={14} color="#8A63D2"/> 수의사 상담 권장</b><p>처방식 사료는 반려동물 상태에 따라 급여해야 합니다. 수의사 상담 후 구매하세요.</p></div>}
+          <div className="dbtns"><button className="btn soft" onClick={()=>add(p)}><Cart size={15}/> 장바구니</button><button className="btn pri" onClick={()=>buy(p)}><Check size={15}/> 바로 구매</button></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===== 장바구니 ===== */
+const TOKEN_BAL=12450;
+function CartView({cart,setCart,go}){
+  const [useTok,setUseTok]=useState(false);
+  const sub=cart.reduce((s,x)=>s+(x.p.sale||x.p.price)*x.q,0);
+  const reward=cart.reduce((s,x)=>s+x.p.token*x.q,0);
+  const tokUse=useTok?Math.min(TOKEN_BAL,sub):0;
+  const total=sub-tokUse;
+  const setQ=(id,d)=>setCart(c=>c.map(x=>x.p.id===id?{...x,q:Math.max(1,x.q+d)}:x));
+  const rm=(id)=>setCart(c=>c.filter(x=>x.p.id!==id));
+  if(cart.length===0) return <div className="empty"><Cart size={26}/><p>장바구니가 비어 있습니다.</p><button className="btn pri" onClick={()=>go("shop")}>쇼핑하러 가기</button></div>;
+  return (
+    <div className="cartwrap">
+      <div>
+        <h1 className="h1">장바구니</h1>
+        {cart.map(x=>{ const price=x.p.sale||x.p.price; return (
+          <div className="cline" key={x.p.id}>
+            <span className="cl-img">{x.p.emoji}</span>
+            <div style={{flex:1,minWidth:0}}><div className="cl-n">{x.p.name}</div><div className="cl-m">{x.p.brand} · {won(price)} · +{x.p.token} HPET</div></div>
+            <div className="qty"><button onClick={()=>setQ(x.p.id,-1)}>−</button><span>{x.q}</span><button onClick={()=>setQ(x.p.id,1)}>+</button></div>
+            <button className="rm" onClick={()=>rm(x.p.id)}>삭제</button>
+          </div>
+        );})}
+      </div>
+      <aside className="sumbox">
+        <div className="srow"><span>상품 금액</span><b>{won(sub)}</b></div>
+        <label className="srow tg"><span><input type="checkbox" checked={useTok} onChange={e=>setUseTok(e.target.checked)}/> Health Token 사용 <span className="note">(보유 {TOKEN_BAL.toLocaleString()})</span></span><b style={{color:"var(--green)"}}>{tokUse>0?"-"+won(tokUse):"-"}</b></label>
+        <div className="srow tot"><span>결제금액</span><span className="num" style={{color:"var(--orange-deep)"}}>{won(total)}</span></div>
+        <div className="srow"><span className="note">예상 적립</span><b style={{color:"var(--orange-deep)"}}>+{reward} HPET</b></div>
+        <button className="btn pri full" onClick={()=>go("checkout",{total,tokUse,reward})}>주문하기</button>
+        <p className="note">※ 결제는 데모(mock)입니다.</p>
+      </aside>
+    </div>
+  );
+}
+
+/* ===== 결제 ===== */
+function Checkout({cart,params,clearCart,go,addOrder}){
+  const [addr,setAddr]=useState(""); const [done,setDone]=useState(false);
+  const {total=0,tokUse=0,reward=0}=params||{};
+  const pay=()=>{
+    addOrder({ id:"OD"+(LS.get("hipet_seq",1000)+1), date:new Date().toLocaleDateString("ko"), items:cart.map(x=>({name:x.p.name,q:x.q,price:x.p.sale||x.p.price})), total, tokUse, reward, status:"결제완료(mock)" });
+    LS.set("hipet_seq",LS.get("hipet_seq",1000)+1);
+    clearCart(); setDone(true);
+  };
+  if(done) return (
+    <div className="empty" style={{maxWidth:440,margin:"0 auto"}}>
+      <div style={{fontSize:32}}>✅</div><h1 className="h1">주문이 완료되었습니다</h1>
+      <p className="note">결제금액 {won(total)} · 적립 +{reward} HPET</p>
+      <div style={{textAlign:"left",margin:"14px 0",display:"flex",flexDirection:"column",gap:8}}>
+        <div className="resi">🪙 Health Token +{reward} HPET 적립 (건강금융지갑)</div>
+        <div className="resi">🛡️ 구매 이력이 건강지갑·보험 적립에 반영</div>
+      </div>
+      <div style={{display:"flex",gap:8}}><button className="btn soft full" onClick={()=>go("shop")}>계속 쇼핑</button><button className="btn pri full" onClick={()=>go("orders")}>주문내역 보기</button></div>
+    </div>
+  );
+  return (
+    <div style={{maxWidth:460,margin:"0 auto"}}>
+      <h1 className="h1">결제 (mock)</h1>
+      <div className="sumbox">
+        <label className="lbl">배송지</label>
+        <input className="inp" value={addr} onChange={e=>setAddr(e.target.value)} placeholder="주소를 입력하세요"/>
+        <div className="paybox">
+          <div className="srow"><span className="note">토큰 사용</span><span className="num" style={{color:"var(--green)"}}>-{won(tokUse)}</span></div>
+          <div className="srow tot"><span>결제금액</span><span className="num" style={{color:"var(--orange-deep)"}}>{won(total)}</span></div>
+        </div>
+        <div className="note" style={{margin:"8px 0"}}>결제수단: 데모 mock (실제 PG 미연동). 개인정보·결제정보 분리 저장 설계.</div>
+        <button className="btn pri full" onClick={pay}>{won(total)} 결제하기</button>
+      </div>
+    </div>
+  );
+}
+
+/* ===== 주문내역 ===== */
+function Orders({orders,go}){
+  return (
+    <div>
+      <h1 className="h1">주문내역</h1>
+      {orders.length===0&&<div className="empty">주문 내역이 없습니다.<button className="btn pri" onClick={()=>go("shop")}>쇼핑하러 가기</button></div>}
+      {orders.map(o=>(
+        <div className="ocard" key={o.id}>
+          <div className="orow"><span className="note">주문번호 {o.id} · {o.date}</span><span className="ostat">{o.status}</span></div>
+          <ul className="olist">{o.items.map((it,i)=><li key={i}><span>{it.name} × {it.q}</span><span>{won(it.price*it.q)}</span></li>)}</ul>
+          <div className="ofoot"><span>결제 <b>{won(o.total)}</b> · 적립 <b style={{color:"var(--orange-deep)"}}>+{o.reward} HPET</b></span><span className="ok">✓ 건강지갑 기록</span></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ===== 관리자 (등록·삭제·CSV) ===== */
+const CSV_COLS=["product_name","category","origin","target_pet","prescription_type","health_function","brand","price","sale_price","stock_quantity","token_reward","recommended_by_ai","insurance_linked"];
+function parseCsv(t){ const rows=t.trim().split(/\r?\n/); const head=rows[0].split(",").map(h=>h.trim()); return rows.slice(1).filter(Boolean).map(line=>{ const c=line.split(","); const o={}; head.forEach((h,i)=>o[h]=(c[i]||"").trim()); return o; }); }
+function csvToProduct(o){ const n=v=>v===""?null:Number(v); const b=v=>v==="true"||v==="1"; return { id:"x"+Math.abs(Math.random()*1e9|0)+(o.product_name||"").length, emoji:"🛍️", name:o.product_name, cat:o.category, origin:o.origin||null, pet:o.target_pet||null, presc:o.prescription_type||null, health:o.health_function?o.health_function.split(/[;|]/).map(s=>s.trim()).filter(Boolean):[], brand:o.brand||null, price:n(o.price)||0, sale:n(o.sale_price), stock:n(o.stock_quantity)||0, token:n(o.token_reward)||0, ai:b(o.recommended_by_ai), ins:b(o.insurance_linked) }; }
+function Admin({products,setProducts}){
+  const [f,setF]=useState({name:"",cat:"사료",brand:"",price:"",stock:"0",token:"0",ai:false,ins:false});
+  const [prev,setPrev]=useState(null),[errs,setErrs]=useState([]);
+  const addOne=()=>{ if(!f.name||!f.price)return alert("상품명·가격 필수"); setProducts(ps=>[{id:"x"+Date.now(),emoji:"🛍️",name:f.name,cat:f.cat,brand:f.brand,price:Number(f.price),stock:Number(f.stock),token:Number(f.token),ai:f.ai,ins:f.ins,health:[],origin:"국내",presc:"일반식"},...ps]); setF({...f,name:"",brand:"",price:""}); };
+  const del=(id)=>setProducts(ps=>ps.filter(p=>p.id!==id));
+  const onCsv=async(file)=>{ const t=await file.text(); const rows=parseCsv(t); const e=[]; rows.forEach((r,i)=>{ if(!r.product_name)e.push(`${i+2}행: product_name 누락`); if(!r.category)e.push(`${i+2}행: category 누락`); if(isNaN(Number(r.price)))e.push(`${i+2}행: price 숫자 아님`); }); setPrev(rows); setErrs(e); };
+  const saveCsv=()=>{ setProducts(ps=>[...prev.map(csvToProduct),...ps]); setPrev(null); setErrs([]); alert("CSV 업로드 완료"); };
+  return (
+    <div>
+      <h1 className="h1">상품 관리 (Admin)</h1>
+      <div className="sumbox" style={{marginBottom:16}}>
+        <b>상품 등록</b>
+        <div className="agrid">
+          <input className="inp" placeholder="상품명" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/>
+          <select className="inp" value={f.cat} onChange={e=>setF({...f,cat:e.target.value})}>{["사료","간식","용품"].map(c=><option key={c}>{c}</option>)}</select>
+          <input className="inp" placeholder="브랜드" value={f.brand} onChange={e=>setF({...f,brand:e.target.value})}/>
+          <input className="inp" placeholder="가격" value={f.price} onChange={e=>setF({...f,price:e.target.value})}/>
+          <input className="inp" placeholder="재고" value={f.stock} onChange={e=>setF({...f,stock:e.target.value})}/>
+          <input className="inp" placeholder="토큰적립" value={f.token} onChange={e=>setF({...f,token:e.target.value})}/>
+          <label className="ck"><input type="checkbox" checked={f.ai} onChange={e=>setF({...f,ai:e.target.checked})}/> AI추천</label>
+          <label className="ck"><input type="checkbox" checked={f.ins} onChange={e=>setF({...f,ins:e.target.checked})}/> 보험연계</label>
+        </div>
+        <button className="btn pri" onClick={addOne}>등록</button>
+      </div>
+      <div className="sumbox" style={{marginBottom:16}}>
+        <b>CSV 대량 업로드</b>
+        <p className="note">컬럼: {CSV_COLS.join(", ")} (health_function 은 ; 또는 | 로 구분)</p>
+        <input type="file" accept=".csv" onChange={e=>e.target.files[0]&&onCsv(e.target.files[0])}/>
+        {prev&&<div style={{marginTop:10}}>
+          <div style={{fontSize:13,fontWeight:700}}>미리보기 {prev.length}건 {errs.length?<span style={{color:"#e53"}}>· 오류 {errs.length}</span>:<span style={{color:"var(--green)"}}>· 검증 통과</span>}</div>
+          {errs.length>0&&<ul style={{color:"#e53",fontSize:12}}>{errs.slice(0,6).map((x,i)=><li key={i}>{x}</li>)}</ul>}
+          <button className="btn pri" style={{marginTop:8}} disabled={errs.length>0} onClick={saveCsv}>검증된 {prev.length}건 저장</button>
+        </div>}
+      </div>
+      <div className="sumbox">
+        <b>상품 목록 ({products.length})</b>
+        <div style={{overflowX:"auto",marginTop:8}}>
+          <table className="atbl"><thead><tr>{["상품명","분류","브랜드","가격","재고","배지",""].map(h=><th key={h}>{h}</th>)}</tr></thead>
+          <tbody>{products.map(p=>(<tr key={p.id}><td>{p.name}</td><td>{p.cat}</td><td>{p.brand}</td><td>{(p.sale||p.price).toLocaleString()}원</td><td>{p.stock}</td><td style={{fontSize:11}}>{p.ai?"AI ":""}{p.ins?"보험 ":""}{p.presc==="처방식"?"처방":""}</td><td><button className="rm" onClick={()=>del(p.id)}>삭제</button></td></tr>))}</tbody></table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===== App (해시 라우터) ===== */
+const PETSITE = "../index.html"; // 펫 메인 앱으로 돌아가기
+const PVER=2; // 카탈로그 버전 (DEFAULT_PRODUCTS 변경 시 +1 → 저장된 구버전 자동 갱신)
+function App(){
+  const [products,setProducts]=useState(()=>{
+    if(LS.get("hipet_pver",0)!==PVER){ LS.set("hipet_pver",PVER); LS.set("hipet_products",DEFAULT_PRODUCTS); return DEFAULT_PRODUCTS; }
+    const saved=LS.get("hipet_products",null); return saved&&saved.length?saved:DEFAULT_PRODUCTS;
+  });
+  const [cart,setCart]=useState(()=>LS.get("hipet_cart",[]));
+  const [orders,setOrders]=useState(()=>LS.get("hipet_orders",[]));
+  const [view,setView]=useState("shop");
+  const [sel,setSel]=useState(null);
+  const [params,setParams]=useState(null);
+  useEffect(()=>LS.set("hipet_products",products),[products]);
+  useEffect(()=>LS.set("hipet_cart",cart),[cart]);
+  useEffect(()=>LS.set("hipet_orders",orders),[orders]);
+  const go=(v,p)=>{ setParams(p||null); if(p&&p.q!==undefined){} setView(v); window.scrollTo(0,0); };
+  const open=(p)=>{ setSel(p); setView("product"); window.scrollTo(0,0); };
+  const add=(p,q=1)=>setCart(c=>{ const i=c.findIndex(x=>x.p.id===p.id); if(i>=0){ const n=[...c]; n[i]={...n[i],q:n[i].q+q}; return n; } return [...c,{p,q}]; });
+  const buy=(p)=>{ add(p); setView("cart"); window.scrollTo(0,0); };
+  const count=cart.reduce((s,x)=>s+x.q,0);
+  const nav=[["사료","feed"],["간식","snack"],["용품","supplies"]];
+  return (
+    <div>
+      <header className="hdr">
+        <div className="hdr-in">
+          <button className="logo" onClick={()=>go("shop")}><span className="lg-ic">🐾</span> HI-PET <span style={{color:"var(--text)"}}>Shop</span></button>
+          <nav className="hnav">{nav.map(([t,v])=><button key={v} className={`hn ${view===v?"on":""}`} onClick={()=>go(v)}>{t}</button>)}</nav>
+          <div className="hdr-r">
+            <button className="hn" onClick={()=>go("orders")}><Receipt size={16}/> 주문</button>
+            <button className="hn" onClick={()=>go("admin")}><Settings size={16}/> 관리자</button>
+            <button className="cartbtn" onClick={()=>go("cart")}><Cart size={18}/>{count>0&&<span className="cbad">{count}</span>}</button>
+            <a className="hn back2" href={PETSITE}><Home size={15}/> 펫 앱</a>
+          </div>
+        </div>
+      </header>
+      <main className="wrap">
+        {view==="shop"&&<ShopHome products={products} go={go} open={open} add={add}/>}
+        {view==="feed"&&<Category cat="사료" products={products} open={open} add={add} initialQ={params&&params.q}/>}
+        {view==="snack"&&<Category cat="간식" products={products} open={open} add={add} initialQ={params&&params.q}/>}
+        {view==="supplies"&&<Category cat="용품" products={products} open={open} add={add} initialQ={params&&params.q}/>}
+        {view==="product"&&sel&&<Detail p={sel} go={go} add={add} buy={buy}/>}
+        {view==="cart"&&<CartView cart={cart} setCart={setCart} go={go}/>}
+        {view==="checkout"&&<Checkout cart={cart} params={params} clearCart={()=>setCart([])} go={go} addOrder={(o)=>setOrders(os=>[o,...os])}/>}
+        {view==="orders"&&<Orders orders={orders} go={go}/>}
+        {view==="admin"&&<Admin products={products} setProducts={setProducts}/>}
+      </main>
+      <footer className="ft">🐾 HI-PET Shop — 처방식 사료는 수의사 상담 권장 · AI 추천은 진단이 아닌 건강관리 참고 정보 · 결제는 데모(mock)입니다.</footer>
+    </div>
+  );
+}
+
+const css=document.createElement("style"); css.textContent=`
+.h1{font-size:22px;font-weight:900;margin:0 0 14px} .h2{font-size:18px;font-weight:900;margin:0}
+.note{font-size:11.5px;color:var(--muted);line-height:1.6} .empty{background:#fff;border:1px solid var(--border);border-radius:16px;padding:40px 20px;text-align:center;color:var(--sub);font-weight:600;display:flex;flex-direction:column;align-items:center;gap:10px}
+.hdr{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--border)}
+.hdr-in{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 18px}
+.logo{font-size:20px;font-weight:900;color:var(--orange-deep);display:flex;align-items:center;gap:8px}
+.lg-ic{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--orange),var(--amber));display:grid;place-items:center;font-size:18px}
+.hnav{display:flex;gap:4px;margin-left:6px}
+.hn{padding:8px 13px;border-radius:999px;font-size:13.5px;font-weight:700;color:var(--sub);display:inline-flex;align-items:center;gap:5px}
+.hn:hover,.hn.on{background:var(--orange-soft);color:var(--orange-deep)}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:6px}
+.cartbtn{position:relative;width:40px;height:40px;border-radius:12px;background:var(--orange-soft);color:var(--orange-deep);display:grid;place-items:center}
+.cbad{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#EF5B5B;color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center}
+.back2{border:1px solid var(--border)} .wrap{max-width:1100px;margin:0 auto;padding:22px 18px}
+.hero{background:linear-gradient(135deg,var(--orange),var(--amber));border-radius:22px;padding:26px;color:#fff;margin-bottom:22px}
+.he-sub{font-size:13px;opacity:.9} .he-t{font-size:23px;font-weight:900;margin:6px 0 0;line-height:1.3} .he-p{font-size:14px;opacity:.95;margin:8px 0 0}
+.he-search{margin-top:16px;max-width:440px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.2);border-radius:999px;padding:0 16px}
+.he-search input{flex:1;background:transparent;border:none;outline:none;color:#fff;padding:11px 0;font-size:14px} .he-search input::placeholder{color:rgba(255,255,255,.8)}
+.cattiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.cattile{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px;font-size:15px;box-shadow:var(--shadow-sm)} .cattile:hover{border-color:var(--orange)} .cattile b{flex:1;text-align:left}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.prod{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:transform .18s,box-shadow .18s}
+.prod:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(196,128,72,.16)}
+.pimg{position:relative;aspect-ratio:1/1;display:grid;place-items:center;font-size:46px;background:linear-gradient(150deg,#FFF6EC,#FFE9D6)}
+.pbadge{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.pb{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;color:#fff} .pb.pur{background:#8A63D2}.pb.org{background:var(--orange)}.pb.grn{background:var(--green)}
+.pbody{padding:11px 12px;display:flex;flex-direction:column;flex:1}
+.pbrand{font-size:11px;color:var(--muted);font-weight:700} .pname{font-size:13.5px;font-weight:800;line-height:1.35;margin-top:2px;min-height:36px}
+.ptags{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0} .ptags span{font-size:10.5px;font-weight:700;color:var(--orange-deep);background:var(--orange-soft);border-radius:6px;padding:2px 6px} .ptags span.og{color:var(--sub);background:var(--cream)}
+.pbot{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:auto}
+.pprice{font-size:15px;font-weight:900} .pprice s{font-size:11px;color:var(--muted);font-weight:600;margin-right:4px} .pprice span{font-size:11px;margin-left:1px}
+.ptok{display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--orange-deep);font-weight:700;margin-top:2px}
+.addbtn{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--orange),var(--amber));color:#fff;display:grid;place-items:center;flex-shrink:0}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;align-items:center} .sep{width:1px;height:18px;background:var(--border);margin:0 3px}
+.chip{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;color:var(--sub);background:#fff;border:1px solid var(--border)} .chip:hover{border-color:var(--orange)} .chip.on{color:#fff;background:linear-gradient(135deg,var(--orange),var(--amber));border-color:transparent}
+.filtrow{display:flex;gap:8px;margin-bottom:10px} .fsearch{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:0 13px} .fsearch svg{color:var(--muted)} .fsearch input{flex:1;border:none;outline:none;padding:11px 0;font-size:14px;background:transparent}
+.filtrow select{border:1px solid var(--border);border-radius:12px;padding:0 12px;font-family:inherit;font-size:13.5px;font-weight:700;background:#fff}
+.count{font-size:13px;color:var(--sub);font-weight:600;margin:4px 2px 10px}
+.back{font-size:13px;font-weight:700;color:var(--orange-deep);margin-bottom:12px}
+.detail{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.dimg{position:relative;aspect-ratio:1/1;border-radius:20px;background:linear-gradient(150deg,#FFF6EC,#FFE9D6);display:grid;place-items:center;font-size:84px}
+.dprice{font-size:24px;font-weight:900;color:var(--orange-deep);margin-top:10px} .dprice s{font-size:15px;color:var(--muted);margin-right:8px}
+.dtok{font-size:13px;font-weight:700;color:var(--orange-deep);margin-top:4px}
+.aibox{margin-top:14px;background:linear-gradient(135deg,#FFF6EC,#FFEFDB);border:1px solid #F8E4C3;border-radius:14px;padding:13px} .aibox b{font-size:13px;color:var(--orange-deep);display:flex;align-items:center;gap:5px} .aibox p{margin:5px 0;font-size:13px;color:var(--sub)}
+.dlist{margin:16px 0;display:flex;flex-direction:column} .dlist>div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px} .dlist dt{color:var(--sub);font-weight:700;margin:0} .dlist dd{margin:0;text-align:right}
+.warn{background:#F2E9FF;border:1px solid #D9C7F5;border-radius:14px;padding:13px} .warn b{color:#7C3AED;font-size:13px;display:flex;align-items:center;gap:5px} .warn p{margin:5px 0 0;font-size:13px;color:var(--sub)}
+.dbtns{display:flex;gap:8px;margin-top:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 18px;border-radius:999px;font-weight:800;font-size:14px} .btn.pri{background:linear-gradient(135deg,var(--orange),var(--amber));color:#fff;box-shadow:0 5px 14px rgba(244,132,60,.32)} .btn.soft{background:var(--orange-soft);color:var(--orange-deep)} .btn.full{width:100%} .btn:disabled{opacity:.5}
+.cartwrap{display:grid;grid-template-columns:1fr 320px;gap:22px} .cartwrap .empty{grid-column:1/-1}
+.cline{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:9px}
+.cl-img{width:54px;height:54px;border-radius:12px;background:linear-gradient(150deg,#FFF1E0,#FFE4CC);display:grid;place-items:center;font-size:26px;flex-shrink:0} .cl-n{font-weight:800;font-size:14px} .cl-m{font-size:12px;color:var(--sub);margin-top:3px}
+.qty{display:flex;align-items:center;border:1px solid var(--border);border-radius:10px;overflow:hidden} .qty button{width:30px;height:30px;font-size:16px;font-weight:800;color:var(--orange-deep);background:var(--cream)} .qty span{width:32px;text-align:center;font-weight:800;font-size:13px}
+.rm{font-size:12px;color:var(--muted);font-weight:700}
+.sumbox{background:#fff;border:1px solid var(--border);border-radius:18px;padding:18px;height:fit-content}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;font-size:13.5px;color:var(--sub)} .srow.tg{border-top:1px solid var(--border)} .srow.tot{border-top:1px solid var(--border);font-size:15px;font-weight:900;color:var(--text)}
+.lbl{font-size:13px;font-weight:700} .inp{width:100%;border:1px solid var(--border);border-radius:11px;padding:11px 13px;font-family:inherit;font-size:14px;outline:none;margin-top:5px} .inp:focus{border-color:var(--orange)}
+.paybox{background:var(--cream);border-radius:12px;padding:10px 14px;margin-top:10px}
+.resi{background:var(--cream);border-radius:12px;padding:11px 14px;font-size:13px}
+.ocard{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
+.orow{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px} .ostat{font-size:12px;font-weight:800;color:var(--green);background:var(--green-soft);padding:2px 9px;border-radius:999px}
+.olist{list-style:none;padding:0;margin:10px 0;font-size:13.5px} .olist li{display:flex;justify-content:space-between;padding:3px 0}
+.ofoot{display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:10px;font-size:13px} .ofoot .ok{font-size:12px;font-weight:700;color:var(--green)}
+.agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0} .ck{display:flex;align-items:center;gap:5px;font-size:13px}
+.atbl{width:100%;border-collapse:collapse;font-size:13px} .atbl th{text-align:left;color:var(--muted);font-size:11.5px;padding:8px;background:var(--cream)} .atbl td{padding:8px;border-top:1px solid var(--border)}
+.ft{max-width:1100px;margin:0 auto;padding:24px 18px;text-align:center;font-size:11.5px;color:var(--muted)}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,1fr)} .detail{grid-template-columns:1fr} .cartwrap{grid-template-columns:1fr} .agrid{grid-template-columns:repeat(2,1fr)} .hnav{display:none}}
+`;
+document.head.appendChild(css);
+createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
