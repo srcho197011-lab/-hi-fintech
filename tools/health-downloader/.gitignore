@@ -1,4 +1,4 @@
-# 다운로드 산출물은 저장소에 커밋하지 않음
-download/
+# 다운로드 산출물은 저장소에 커밋하지 않음 (download, download_elderly, download_youth ...)
+download*/
 *.log
 __pycache__/
