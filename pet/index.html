@@ -1,0 +1,2443 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HI-PET · App3 슈퍼 월렛 · 펫 건강관리 대시보드</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+:root{
+  --orange:#F4843C; --orange-deep:#E0662A; --orange-soft:#FFE7D3;
+  --amber:#FFB547; --gold:#F5A623; --green:#4FB286; --green-soft:#E4F4EC;
+  --cream:#FFF8F1; --cream2:#FFF1E6; --white:#fff;
+  --text:#3A2C22; --sub:#6B5B4E; --muted:#A89A8C; --border:#F2E8DC;
+  --shadow:0 6px 22px rgba(196,128,72,.10);
+  --shadow-sm:0 2px 10px rgba(196,128,72,.07);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:Pretendard,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color:var(--text);
+  background:linear-gradient(135deg,#FFF8F1 0%,#FFF1E6 100%);
+  -webkit-font-smoothing:antialiased;
+}
+#loading{font-family:sans-serif;padding:48px;color:#9a8c7e}
+.num{font-variant-numeric:tabular-nums}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#EAD9C6;border-radius:9px}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+a{color:inherit;text-decoration:none}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/"
+  }
+}
+</script>
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+</head>
+<body>
+<div id="root"><div id="loading">로딩 중… (CDN에서 React를 불러오는 중)</div></div>
+
+<script type="text/babel" data-type="module" data-presets="react">
+import { createRoot } from "react-dom/client";
+import React, { useState, useEffect, useRef } from "react";
+
+/* ===== 인라인 SVG 아이콘 (lucide 경로 기반) — 외부 아이콘 CDN 의존 제거로 빠르고 안정적인 로딩 ===== */
+const SVG = ({size=24,color="currentColor",fill="none",strokeWidth=2,style,children,...p}) =>
+  React.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",width:size,height:size,
+    viewBox:"0 0 24 24",fill,stroke:color,strokeWidth,strokeLinecap:"round",strokeLinejoin:"round",style,...p},children);
+const mk = (raw) => (p) => React.createElement(SVG, p,
+  React.createElement("g",{dangerouslySetInnerHTML:{__html:raw}}));
+
+const Home = mk('<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>');
+const Bot = mk('<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>');
+const HeartPulse = mk('<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>');
+const CalendarPlus = mk('<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M12 14v4"/><path d="M10 16h4"/>');
+const ShoppingBag = mk('<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>');
+const ShieldCheck = mk('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>');
+const Wallet = mk('<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>');
+const Award = mk('<path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/>');
+const Users = mk('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>');
+const User = mk('<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>');
+const Bell = mk('<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>');
+const QrCode = mk('<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>');
+const ChevronRight = mk('<path d="m9 18 6-6-6-6"/>');
+const PawPrint = mk('<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/>');
+const Pencil = mk('<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>');
+const Star = mk('<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.69 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.453 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>');
+const Activity = mk('<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>');
+const Bone = mk('<path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z"/>');
+const Scale = mk('<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>');
+const Heart = mk('<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>');
+const Lightbulb = mk('<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>');
+const Coins = mk('<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>');
+const Sparkles = mk('<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>');
+const ArrowRightLeft = mk('<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>');
+const CreditCard = mk('<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>');
+const FileText = mk('<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>');
+const FileSignature = mk('<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z"/>');
+const Syringe = mk('<path d="m18 2 4 4"/><path d="m17 7 3-3"/><path d="M19 9 8.7 19.3c-1 1-2.5 1-3.4 0l-.6-.6c-1-1-1-2.5 0-3.4L15 5"/><path d="m9 11 4 4"/><path d="m5 19-3 3"/><path d="m14 4 6 6"/>');
+const RefreshCw = mk('<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>');
+const Stethoscope = mk('<path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/>');
+const ClipboardCheck = mk('<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>');
+const Building2 = mk('<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>');
+const Droplet = mk('<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>');
+const Smile = mk('<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/>');
+const CheckCircle2 = mk('<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>');
+const Gift = mk('<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>');
+const MapPin = mk('<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>');
+const Search = mk('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>');
+const Phone = mk('<path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/>');
+const X = mk('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>');
+const Check = mk('<path d="M20 6 9 17l-5-5"/>');
+const CalendarCheck = mk('<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>');
+const ExternalLink = mk('<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>');
+const AlertTriangle = mk('<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>');
+const BadgeCheck = mk('<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>');
+const Siren = mk('<path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/>');
+const Pill = mk('<path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/>');
+const TrendingUp = mk('<path d="M16 7h6v6"/><path d="m22 7-8.5 8.5-5-5L2 17"/>');
+const Thermometer = mk('<path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>');
+const FlaskConical = mk('<path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/>');
+const Droplets = mk('<path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 4.7 7 2.3c-.29 2.4-1.14 3.83-2.29 4.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/>');
+const Send = mk('<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>');
+const Receipt = mk('<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>');
+const MessageCircle = mk('<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>');
+const ThumbsUp = mk('<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>');
+const Settings = mk('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>');
+const Trophy = mk('<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>');
+const Plus = mk('<path d="M5 12h14"/><path d="M12 5v14"/>');
+const ShoppingCart = mk('<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>');
+const Footprints = mk('<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/>');
+
+/* 섹션 이동 컨텍스트 — 카드/빠른메뉴에서 nav(메뉴명) 호출 */
+const NavCtx = React.createContext(null);
+
+/* ===== 입체 일러스트 아이콘 (휴먼 스타일: 레이어드 SVG + 광택/그림자) ===== */
+function PetArt({ name, size=34 }){
+  const P={ width:size, height:size, viewBox:"0 0 32 32", xmlns:"http://www.w3.org/2000/svg" };
+  switch(name){
+    case "chat": return (<svg {...P}><path d="M7 7.5h18a2.4 2.4 0 0 1 2.4 2.4v8.6a2.4 2.4 0 0 1-2.4 2.4H14l-5 4v-4H7a2.4 2.4 0 0 1-2.4-2.4V9.9A2.4 2.4 0 0 1 7 7.5z" fill="#F4843C"/><path d="M7 7.5h18a2.4 2.4 0 0 1 2.4 2.4v2.2H4.6V9.9A2.4 2.4 0 0 1 7 7.5z" fill="#fff" opacity=".25"/><g fill="#fff"><circle cx="12" cy="14" r="1.7"/><circle cx="16" cy="14" r="1.7"/><circle cx="20" cy="14" r="1.7"/></g></svg>);
+    case "calendar": return (<svg {...P}><rect x="6" y="9" width="20" height="18" rx="3.2" fill="#fff"/><path d="M6 12.4A3 3 0 0 1 9 9.4h14a3 3 0 0 1 3 3v2.6H6z" fill="#F4843C"/><rect x="6" y="12" width="20" height="3" fill="#fff" opacity=".25"/><rect x="11" y="6.4" width="2.4" height="5.2" rx="1.2" fill="#E0662A"/><rect x="18.6" y="6.4" width="2.4" height="5.2" rx="1.2" fill="#E0662A"/><path d="M11 20.5l3 3 5.2-5.6" stroke="#4FB286" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+    case "bag": return (<svg {...P}><path d="M8 11h16l-1.3 14.6a2 2 0 0 1-2 1.8H11.3a2 2 0 0 1-2-1.8z" fill="#FFB547"/><path d="M8 11h16l-.27 3H8.27z" fill="#fff" opacity=".3"/><path d="M9.3 25.6 8 11h2.1l1.1 14.6z" fill="#E0662A" opacity=".18"/><path d="M11.5 12V9.5a4.5 4.5 0 0 1 9 0V12" fill="none" stroke="#E0662A" strokeWidth="2.4" strokeLinecap="round"/></svg>);
+    case "shield": return (<svg {...P}><path d="M16 5l9.5 3.2v6.8c0 6.3-4.7 10-9.5 11.5-4.8-1.5-9.5-5.2-9.5-11.5V8.2z" fill="#4FB286"/><path d="M16 5l9.5 3.2v6.8c0 6.3-4.7 10-9.5 11.5z" fill="#0b3322" opacity=".14"/><path d="M11.5 16l3.2 3.2 6-6.6" stroke="#fff" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+    case "wallet": return (<svg {...P}><rect x="5" y="9" width="22" height="15" rx="3.2" fill="#E0662A"/><rect x="5" y="9" width="22" height="3" fill="#fff" opacity=".22"/><rect x="5" y="12.4" width="22" height="2.4" fill="#7a2f0e" opacity=".25"/><rect x="17" y="14" width="12" height="7.6" rx="2.2" fill="#FFE7D3"/><circle cx="22.6" cy="17.8" r="2.5" fill="#FFB547"/></svg>);
+    case "gift": return (<svg {...P}><rect x="6" y="14" width="20" height="12.6" rx="1.8" fill="#FF9DBE"/><rect x="6" y="14" width="20" height="4.4" fill="#F4709A"/><rect x="6" y="14" width="20" height="1.6" fill="#fff" opacity=".3"/><rect x="14.4" y="11" width="3.2" height="15.6" fill="#FFD3E1"/><path d="M16 11c-2.6-3.6-6-1.4-3.2.4M16 11c2.6-3.6 6-1.4 3.2.4" fill="#FBA9C4"/></svg>);
+    case "score": return (<svg {...P}><circle cx="16" cy="16" r="11" fill="#E4F4EC"/><circle cx="16" cy="16" r="11" fill="none" stroke="#4FB286" strokeWidth="3" strokeDasharray="55 100" strokeLinecap="round" transform="rotate(-90 16 16)"/><text x="16" y="20.2" textAnchor="middle" fontSize="11" fontWeight="800" fill="#3C9E72" fontFamily="sans-serif">92</text></svg>);
+    case "bell": return (<svg {...P}><rect x="14.7" y="6.3" width="2.6" height="3" rx="1.3" fill="#C2780A"/><path d="M16 8.3c-4.5 0-7 3-7 7.6v3l-1.8 2.7a1 1 0 0 0 .85 1.6h15.9a1 1 0 0 0 .85-1.6L23 18.9v-3c0-4.6-2.5-7.6-7-7.6z" fill="#FFB547"/><path d="M12.8 23.2a3.2 3.2 0 0 0 6.4 0z" fill="#C2780A"/><ellipse cx="12.4" cy="14.3" rx="1.4" ry="2.5" fill="#fff" opacity=".4" transform="rotate(-20 12.4 14.3)"/></svg>);
+    default: return (<svg {...P}><circle cx="16" cy="16" r="10" fill="#F4843C"/></svg>);
+  }
+}
+
+/* ============================ MOCK DATA ============================ */
+const PET = { name:"마루", breed:"말티즈", age:"4세", sex:"수컷(중성화)", weight:"4.2 kg",
+  grade:"GOLD", status:"상태 양호", rfid:"4100-1234-5678-9012" };
+
+const HEALTH = { score:92, status:"양호",
+  metrics:[
+    { label:"활동량", value:90, icon:Activity, color:"var(--green)" },
+    { label:"식습관", value:88, icon:Bone, color:"var(--orange)" },
+    { label:"체중관리", value:95, icon:Scale, color:"var(--orange)" },
+    { label:"예방관리", value:98, icon:ShieldCheck, color:"var(--orange)" },
+  ],
+  prescription:"관절 관리를 시작하고 체중을 0.3kg 감량해 보세요." };
+
+const WALLET = { total:1248500, items:[
+  { label:"Health Token", value:"12,450", unit:"HPET", icon:Coins, bg:"#FFE7D3", fg:"#E0662A" },
+  { label:"포인트", value:"245,300", unit:"P", icon:Sparkles, bg:"#FFF1D6", fg:"#C98A12" },
+  { label:"보험적립금", value:"380,000", unit:"원", icon:ShieldCheck, bg:"#E4F4EC", fg:"#3C9E72" },
+  { label:"NFT 건강인증", value:"7", unit:"건", icon:Award, bg:"#F2E9FF", fg:"#8A63D2" },
+]};
+
+const RECOMMEND = [
+  { tag:"AI 추천 사료", title:"저지방 기능성 사료", desc:"체중 관리에 도움", cta:"구매하기", emoji:"🥫" },
+  { tag:"AI 추천 영양제", title:"관절 케어 영양제", desc:"관절 건강에 도움", cta:"구매하기", emoji:"💊" },
+  { tag:"AI 추천 병원", title:"OO동물병원", desc:"거리 2.1km", cta:"예약하기", emoji:"🏥" },
+];
+
+const SCHEDULE = [
+  { icon:CalendarPlus, label:"병원 예약", when:"6월 30일 (일) 16:30" },
+  { icon:Syringe, label:"예방접종", when:"7월 5일 (금)" },
+  { icon:RefreshCw, label:"보험 갱신", when:"7월 15일 (월)" },
+  { icon:Stethoscope, label:"건강검진", when:"8월 2일 (금)" },
+];
+
+const ACTIVITY = [
+  { icon:Building2, label:"병원 방문 완료", date:"2024.06.10", fg:"#E0662A", bg:"#FFE7D3" },
+  { icon:ShieldCheck, label:"보험금 자동 청구 완료", date:"2024.06.09", fg:"#3C9E72", bg:"#E4F4EC" },
+  { icon:ShoppingBag, label:"영양제 구매", date:"2024.06.08", fg:"#C98A12", bg:"#FFF1D6" },
+  { icon:ClipboardCheck, label:"건강기록 업데이트", date:"2024.06.07", fg:"#5b7cb5", bg:"#E7EEF9" },
+  { icon:Coins, label:"토큰 500 HPET 적립", date:"2024.06.07", fg:"#E0662A", bg:"#FFE7D3" },
+];
+
+const RISK = [
+  { label:"슬개골 위험", level:"중간", dots:2, icon:Bone },
+  { label:"피부질환 위험", level:"낮음", dots:1, icon:Droplet },
+  { label:"치주질환 위험", level:"중간", dots:2, icon:Smile },
+];
+
+/* 마루 실제 사진 (원형, 컨테이너 채움) */
+function MaruImg({ fit="center 30%" }={}){
+  return <img src="./images/maru.jpg" alt="마루" style={{width:"100%",height:"100%",borderRadius:"inherit",objectFit:"cover",objectPosition:fit,display:"block"}}/>;
+}
+
+/* ===== 마루 상세 건강검진 데모 데이터 (각 섹션에서 활용) ===== */
+const MARU_HEALTH = {
+  checkupDate: "2024-06-02",
+  hospital: "OO동물병원 종합건강검진",
+  score: 92, grade: "GOLD", status: "양호",
+  summary: "전반적으로 양호합니다. 양측 슬개골(Grade 1)과 치아(치석 2단계) 관리가 필요하며, 경미한 담낭 슬러지·콜레스테롤 경계는 식이조절로 추적관찰을 권고합니다.",
+  vitals: [
+    { k:"체중", v:"4.2", unit:"kg", ref:"3.8~4.3", st:"정상", note:"적정 체중" },
+    { k:"BCS(체형점수)", v:"5", unit:"/9", ref:"4~5", st:"정상", note:"이상적" },
+    { k:"체온", v:"38.6", unit:"℃", ref:"37.5~39.2", st:"정상" },
+    { k:"심박수", v:"120", unit:"bpm", ref:"70~160", st:"정상" },
+    { k:"호흡수", v:"24", unit:"/min", ref:"18~34", st:"정상" },
+  ],
+  cbc: [
+    { k:"WBC(백혈구)", v:"9.8", unit:"10³/µL", ref:"6.0~17.0", st:"정상" },
+    { k:"RBC(적혈구)", v:"7.2", unit:"10⁶/µL", ref:"5.5~8.5", st:"정상" },
+    { k:"HCT(적혈구용적)", v:"46", unit:"%", ref:"37~55", st:"정상" },
+    { k:"HGB(혈색소)", v:"16.0", unit:"g/dL", ref:"12~18", st:"정상" },
+    { k:"PLT(혈소판)", v:"320", unit:"10³/µL", ref:"200~500", st:"정상" },
+  ],
+  chem: [
+    { k:"ALT(간효소)", v:"62", unit:"U/L", ref:"10~100", st:"정상" },
+    { k:"AST", v:"30", unit:"U/L", ref:"0~50", st:"정상" },
+    { k:"ALP", v:"96", unit:"U/L", ref:"23~212", st:"정상" },
+    { k:"BUN(신장)", v:"18", unit:"mg/dL", ref:"7~27", st:"정상" },
+    { k:"CREA(크레아티닌)", v:"0.9", unit:"mg/dL", ref:"0.5~1.8", st:"정상" },
+    { k:"GLU(혈당)", v:"95", unit:"mg/dL", ref:"70~143", st:"정상" },
+    { k:"T-chol(콜레스테롤)", v:"268", unit:"mg/dL", ref:"110~320", st:"주의" },
+    { k:"ALB(알부민)", v:"3.2", unit:"g/dL", ref:"2.3~4.0", st:"정상" },
+  ],
+  urine: [
+    { k:"pH", v:"6.5", unit:"", ref:"6.0~7.5", st:"정상" },
+    { k:"비중(USG)", v:"1.030", unit:"", ref:"1.015~1.045", st:"정상" },
+    { k:"단백뇨", v:"음성", unit:"", ref:"음성", st:"정상" },
+    { k:"잠혈", v:"음성", unit:"", ref:"음성", st:"정상" },
+    { k:"결정/스트루바이트", v:"미검출", unit:"", ref:"미검출", st:"정상" },
+  ],
+  imaging: [
+    { k:"흉부 X-ray", r:"심장 크기 정상(VHS 10.2) · 폐야 깨끗", st:"정상" },
+    { k:"슬개골 평가", r:"양측 슬개골 탈구 Grade 1 (경미)", st:"주의" },
+    { k:"복부 초음파", r:"간·신장·방광 정상 · 담낭 슬러지 경미", st:"주의" },
+    { k:"심장 청진", r:"심잡음 없음 (MMVD 소견 없음)", st:"정상" },
+    { k:"치과 검진", r:"치석 2/4단계 · 치은염 경미", st:"주의" },
+  ],
+  risks: [
+    { name:"슬개골 탈구", level:"중간", dots:2, icon:Bone, why:"말티즈 호발 질환 + 양측 Grade 1 확인. 체중관리·관절 영양제·미끄럼 방지 매트, 점프 자제를 권고합니다." },
+    { name:"치주질환", level:"중간", dots:2, icon:Smile, why:"치석 2단계·치은염 경미. 6개월 내 스케일링과 매일 양치·덴탈껌 관리를 권고합니다." },
+    { name:"피부질환(아토피/지루)", level:"낮음", dots:1, icon:Droplet, why:"피부·피모 양호, 알레르기 이력 없음. 현재 관리 상태를 유지하세요." },
+    { name:"심장질환(MMVD)", level:"낮음", dots:1, icon:Heart, why:"심잡음 없음. 소형견 호발군이므로 7세 이후 정기 심장검진을 권고합니다." },
+    { name:"백내장·안질환", level:"낮음", dots:1, icon:Activity, why:"수정체 투명. 안구건조 경계로 인공눈물 보조를 권고합니다." },
+    { name:"기관허탈", level:"낮음", dots:1, icon:Stethoscope, why:"소형견 주의군이나 현재 호흡·기침 정상. 목줄 대신 하네스 사용을 권고합니다." },
+  ],
+  vaccines: [
+    { name:"종합백신(DHPPL)", last:"2024-03-12", next:"2025-03-12", cycle:"연 1회", done:true },
+    { name:"광견병", last:"2024-03-12", next:"2025-03-12", cycle:"연 1회", done:true },
+    { name:"켄넬코프(KC)", last:"2024-03-12", next:"2025-03-12", cycle:"연 1회", done:true },
+    { name:"심장사상충 예방", last:"2024-06-01", next:"2024-07-01", cycle:"매월", done:true, soon:true },
+    { name:"내부 구충", last:"2024-05-15", next:"2024-08-15", cycle:"분기", done:true },
+    { name:"외부 기생충(진드기·벼룩)", last:"2024-06-01", next:"2024-07-01", cycle:"매월", done:true, soon:true },
+  ],
+  weightTrend: [ {m:"1월",w:4.5},{m:"2월",w:4.4},{m:"3월",w:4.3},{m:"4월",w:4.3},{m:"5월",w:4.2},{m:"6월",w:4.2} ],
+  weightTarget: 4.0,
+  activityTrend: [ {m:"1월",a:78},{m:"2월",a:82},{m:"3월",a:85},{m:"4월",a:88},{m:"5월",a:90},{m:"6월",a:90} ],
+  recommend: [
+    { ic:Scale, t:"체중 관리", d:"목표 4.0kg — 저지방 기능성 사료로 0.2~0.3kg 감량, 간식 10% 이내" },
+    { ic:Bone, t:"관절 케어", d:"글루코사민·오메가3 관절 영양제, 미끄럼 방지 매트, 높은 곳 점프 자제" },
+    { ic:Smile, t:"치아 관리", d:"6개월 내 스케일링 + 매일 양치·덴탈껌으로 치주질환 예방" },
+    { ic:ShieldCheck, t:"심장사상충 예방", d:"매월 예방약 투여 지속 (다음 7/1) — 모기 시즌 필수" },
+    { ic:Stethoscope, t:"정기 검진", d:"반기 1회 종합검진 — 다음 검진 2024-12 권고" },
+  ],
+};
+
+/* ===== 보험 / 지갑 / NFT / AI상담 데모 데이터 ===== */
+const INSURANCE = {
+  plan:"HI-PET 무상 임베디드 펫보험", status:"가입중", since:"2024-01-15",
+  copay:20, reserve:380000,
+  coverage:[
+    { k:"질병·상해 수술", rate:80, note:"슬개골 외" },
+    { k:"입원", rate:80, note:"1일 한도 15만원" },
+    { k:"통원", rate:70, note:"1일 한도 15만원" },
+    { k:"슬개골 탈구", rate:70, note:"가입 1년 후 보장" },
+    { k:"치과(치주)", rate:50, note:"스케일링·발치" },
+    { k:"피부질환", rate:70, note:"아토피·외이염" },
+  ],
+  estimates:[
+    { name:"슬개골 탈구 교정수술", risk:"슬개골 위험 중간", cost:1400000, rate:70 },
+    { name:"스케일링·치석 제거", risk:"치주질환 위험 중간", cost:350000, rate:50 },
+    { name:"피부질환 통원 치료(회당)", risk:"피부질환 낮음", cost:80000, rate:70 },
+  ],
+  claims:[
+    { date:"2024-06-25", name:"슬개골 정밀검사 (예정)", amount:1120000, status:"자동지급예정" },
+    { date:"2024-06-09", name:"피부 통원 진료", amount:64000, status:"지급완료" },
+    { date:"2024-04-22", name:"예방접종(비보장·적립)", amount:0, status:"적립" },
+  ],
+};
+const WALLET2 = {
+  total:1248500, token:12450, point:245300, reserve:380000, nft:7,
+  earn:[
+    { ic:Stethoscope, t:"종합 건강검진 완료", amt:"+500", d:"2024-06-02" },
+    { ic:Syringe, t:"예방접종 인증", amt:"+200", d:"2024-03-12" },
+    { ic:Activity, t:"산책 챌린지(주간)", amt:"+250", d:"매주 적립" },
+    { ic:FileSignature, t:"건강데이터 제공 동의", amt:"+1,000", d:"2024-01-15" },
+    { ic:ShieldCheck, t:"보험 연계 적립", amt:"+300", d:"월간" },
+  ],
+  use:[
+    { ic:ShieldCheck, t:"보험료 할인·보장 강화", d:"토큰으로 무상 보장을 강화하거나 할인에 사용" },
+    { ic:Building2, t:"병원비 결제", d:"제휴 동물병원 진료비 차감" },
+    { ic:ShoppingBag, t:"제품 구매", d:"사료·영양제·용품 결제" },
+    { ic:Bone, t:"맞춤 식단 구독", d:"처방·기능성 식단 결제" },
+  ],
+};
+
+/* ===== 리워드 센터 — 전 영역 적립 항목 통합 ===== */
+const REWARD = {
+  total:12450, thisMonth:1250, todayGain:250,
+  missions:[
+    { t:"이번 주 산책 챌린지", ic:Footprints, cur:5, goal:7, unit:"일", reward:250, go:"커뮤니티" },
+    { t:"목표 체중 달성 (4.0kg)", ic:Scale, cur:0.2, goal:0.4, unit:"kg 감량", reward:500, go:"건강관리" },
+    { t:"일일 건강 체크 출석", ic:CalendarPlus, cur:18, goal:30, unit:"일", reward:300, go:"홈" },
+  ],
+  earn:[
+    { group:"제품 쇼핑", ic:ShoppingBag, go:"제품 쇼핑", items:[
+      { t:"사료·간식·용품 구매", d:"상품별 결제액에 따라 자동 적립", amt:"최대 +680" },
+      { t:"구매 후기 작성", d:"포토 리뷰 작성 시", amt:"+100" },
+      { t:"반복 구매(정기배송)", d:"동일 상품 재구매 보너스", amt:"+150" },
+    ]},
+    { group:"병원/예약", ic:CalendarPlus, go:"병원/예약", items:[
+      { t:"병원 예약 완료", d:"제휴 동물병원 예약·방문", amt:"+200" },
+      { t:"정기 건강검진", d:"반기 1회 종합검진 완료", amt:"+500" },
+      { t:"예방접종 인증", d:"접종 기록 등록 시", amt:"+200" },
+    ]},
+    { group:"보험", ic:ShieldCheck, go:"보험", items:[
+      { t:"무상 펫보험 가입", d:"임베디드 보험 가입(최초)", amt:"+1,000" },
+      { t:"무사고 보너스", d:"분기 무청구 유지 시", amt:"+300" },
+      { t:"회원 등급 유지(골드↑)", d:"월 등급 유지 시", amt:"+300" },
+    ]},
+    { group:"건강활동", ic:Activity, go:"건강관리", items:[
+      { t:"산책 챌린지 달성", d:"주간 목표 달성", amt:"+250" },
+      { t:"건강점수 90+ 유지", d:"월간 우수 등급", amt:"+200" },
+      { t:"건강데이터 제공 동의", d:"DID 동의(최초)", amt:"+1,000" },
+    ]},
+    { group:"커뮤니티", ic:Users, go:"커뮤니티", items:[
+      { t:"피드·후기 작성", d:"건강 팁·후기 공유", amt:"+50" },
+      { t:"모임 챌린지 참여", d:"견종별 모임 미션", amt:"+100" },
+    ]},
+  ],
+};
+const NFT_LIST = [
+  { t:"종합 건강검진 리포트", ic:Stethoscope, date:"2024-06-02", desc:"건강점수 92 · GOLD 등급 검진 결과", sbt:true },
+  { t:"예방접종 증명서", ic:Syringe, date:"2024-03-12", desc:"DHPPL·광견병·KC 접종 완료", sbt:true },
+  { t:"무상 펫보험 증서", ic:ShieldCheck, date:"2024-01-15", desc:"HI-PET 무상 임베디드 펫보험", sbt:false },
+  { t:"동물등록 인증(RFID)", ic:PawPrint, date:"2023-08-01", desc:"4100-1234-5678-9012", sbt:true },
+  { t:"품종·중성화 인증", ic:Award, date:"2023-08-01", desc:"말티즈 · 수컷(중성화)", sbt:true },
+  { t:"진료기록 해시", ic:FileText, date:"2024-06-09", desc:"피부 통원 진료 무결성 해시", sbt:false },
+  { t:"건강 우수 인증", ic:Heart, date:"2024-06-02", desc:"건강점수 90+ 달성 SBT", sbt:true },
+];
+const COACH_URGENT = ["응급","급해","쓰러","경련","발작","피를","피가","토혈","호흡곤란","숨을","숨이","의식","축 늘어","중독","초콜릿","포도","양파","삼켰","계속 토","계속 구토","피똥","혈변"];
+const COACH_QA = [
+  { k:"슬개골", m:["슬개골","관절","다리","무릎","절뚝","파행","뒷다리"], a:"마루는 말티즈 호발 질환인 슬개골 탈구 위험이 '중간'이고, 검진에서 양측 Grade 1(경미)이 확인됐어요. 체중 관리(목표 4.0kg)와 관절 영양제(글루코사민·오메가3), 미끄럼 방지 매트, 높은 곳 점프 자제를 권고드려요.", fu:"절뚝임이 일시적인가요, 아니면 자주 반복되나요?", chips:["관절 영양제 추천","정형외과 병원 찾기"] },
+  { k:"치주", m:["치아","치석","스케일링","입냄새","구강","치주","양치","잇몸"], a:"마루는 치석 2단계·치은염이 경미해 치주질환 위험이 '중간'이에요. 6개월 내 스케일링과 매일 양치·덴탈껌 관리를 권고드려요.", fu:"잇몸이 붓거나 피가 나는 증상도 있나요?", chips:["치과 가능 병원 찾기","덴탈케어 용품"] },
+  { k:"체중", m:["체중","살","사료","비만","다이어트","먹이","몸무게"], a:"현재 체중 4.2kg, BCS 5/9로 적정이지만 목표 4.0kg까지 0.2kg 감량을 권고해요. 저지방 기능성 사료로 바꾸고 간식은 하루 칼로리의 10% 이내로 유지하세요.", fu:"하루 산책 시간은 어느 정도 되나요?", chips:["저지방 사료 추천","활동량 늘리기 팁"] },
+  { k:"혈액", m:["혈액","콜레스테롤","간수치","수치","피검사","혈당"], a:"혈액검사는 대부분 정상이고, 콜레스테롤(T-chol 268)이 경계 수준이에요. 저지방 식이로 추적관찰하면 좋아요. 간수치(ALT 62)·신장(CREA 0.9)은 정상입니다.", fu:"최근 식단에 지방이 많은 간식이 늘었나요?", chips:["검진 결과 자세히","저지방 식단"] },
+  { k:"예방접종", m:["예방접종","백신","광견병","접종","구충","사상충","심장사상충"], a:"종합백신(DHPPL)·광견병은 2024-03-12 완료, 다음은 2025-03이에요. 심장사상충 예방은 매월이며 다음 투여가 7/1로 곧 예정입니다.", fu:"다음 예방접종 알림을 설정해 드릴까요?", chips:["예방접종 일정 보기","병원 예약"] },
+  { k:"보험", m:["보험","치료비","청구","보장","수술비","비용"], a:"마루는 HI-PET 무상 임베디드 펫보험에 가입돼 있어 추가 보험료 0원으로 치료비가 자동 보장돼요. 예: 슬개골 교정수술(예상 140만원)은 보장률 70% 적용 시 예상 본인부담 약 42만원이에요.", fu:"특정 진료의 예상 본인부담금이 궁금하신가요?", chips:["보장 조회","보험금 청구"] },
+  { k:"건강점수", m:["건강점수","상태","요약","어때","컨디션","종합"], a:"마루의 종합 건강점수는 92점(GOLD·양호)이에요. 활동량 90·식습관 88·체중관리 95·예방관리 98로 균형이 좋아요. 관절·치아 관리만 신경 쓰면 더 좋아질 거예요.", fu:"어떤 항목을 더 자세히 보고 싶으세요?", chips:["건강검진 결과","관리 권고 보기"] },
+  { k:"소화기", m:["설사","구토","토해","장염","소화","변","대변","무름"], a:"가벼운 설사·구토는 12~24시간 금식 후 소량 급여로 지켜볼 수 있어요. 마루는 장 건강 지표가 양호하지만, 유산균 보조가 도움이 됩니다. 다만 24시간 이상 지속되거나 혈변·기력저하가 있으면 병원 진료가 필요해요.", fu:"증상이 하루 이상 지속되나요? 혈변이나 기력 저하가 있나요?", chips:["유산균 추천","병원 예약"] },
+  { k:"기침", m:["기침","켁켁","기관","호흡","거위","역재채기"], a:"마루는 기관허탈 위험이 '낮음'이지만 소형견 주의군이에요. 목줄 대신 하네스를 쓰고, 흥분·비만을 피하세요. 마른 기침이 잦거나 호흡이 거칠어지면 진료를 권고해요.", fu:"기침이 운동 후에만 나나요, 평소에도 나나요?", chips:["하네스 보기","병원 예약"] },
+  { k:"안구", m:["눈","눈물","백내장","충혈","눈곱","안구"], a:"마루는 안질환 위험이 '낮음'이나 안구건조 경계가 있어요. 눈곱·충혈이 늘면 인공눈물 보조와 함께 안과 검진을 권고해요. 말티즈는 눈물자국 관리도 중요합니다.", fu:"한쪽 눈인가요, 양쪽 모두인가요?", chips:["눈 영양제(루테인)","병원 예약"] },
+  { k:"피부", m:["피부","가려","긁","털","비듬","발적","아토피","핥"], a:"마루는 피부질환 위험이 '낮음'이고 피모도 양호해요. 다만 가려움·발적이 보이면 저자극 샴푸와 오메가3 보조가 도움이 됩니다. 자주 핥거나 진물이 나면 진료를 권고해요.", fu:"특정 부위를 집중적으로 긁나요?", chips:["저자극 샴푸","오메가3 보기"] },
+  { k:"노령", m:["노령","나이","늙","시니어","고령"], a:"마루는 4세로 아직 성견 단계예요. 7세 이후부터는 관절·심장·치아·체중관리 중심의 시니어 케어와 반기 1회 정기검진을 권고해요.", fu:"지금부터 준비할 시니어 케어가 궁금하세요?", chips:["관리 권고 보기","정기 검진 예약"] },
+];
+
+/* ===== 제품 쇼핑 — 상품 카탈로그 (products 테이블 형태) ===== */
+// cat: 사료/간식/용품 · origin: 국내/국외 · pet: 강아지/고양이/공용 · presc: 처방식/일반식
+// health: 건강기능 배열 · ai: AI추천 · ins: 보험연계 · token: HPET 적립
+const PRODUCTS = [
+  // 사료
+  { id:"f1", emoji:"🥩", cat:"사료", sub:"건식", origin:"국외", pet:"강아지", presc:"처방식", ftype:"건식", brand:"로얄캐닌 Veterinary", name:"관절 처방식 Mobility 2kg", ing:"가수분해단백·EPA/DHA", health:["관절"], price:58000, sale:52000, ins:true, ai:true, token:580 },
+  { id:"f2", emoji:"🥗", cat:"사료", sub:"건식", origin:"국외", pet:"공용", presc:"처방식", ftype:"건식", brand:"힐스 Prescription Diet", name:"k/d 신장 처방식 2kg", ing:"저인·저단백", health:["신장"], price:62000, ins:true, ai:false, token:620 },
+  { id:"f3", emoji:"🥫", cat:"사료", sub:"건식", origin:"국외", pet:"강아지", presc:"일반식", ftype:"건식", brand:"퓨리나 Pro Plan", name:"저지방 체중관리 2kg", ing:"저지방·L-카르니틴", health:["비만"], price:42000, ai:true, token:420 },
+  { id:"f4", emoji:"🍖", cat:"사료", sub:"건식", origin:"국외", pet:"강아지", presc:"일반식", ftype:"건식", brand:"오리젠", name:"그레인프리 어덜트 2kg", ing:"신선육 85%·그레인프리", health:["고단백"], price:55000, token:550 },
+  { id:"f5", emoji:"🐟", cat:"사료", sub:"건식", origin:"국외", pet:"강아지", presc:"일반식", ftype:"건식", brand:"아카나", name:"신선육 어덜트 스몰 2kg", ing:"신선 닭·생선", health:["피부","모질"], price:49000, token:490 },
+  { id:"f6", emoji:"🧊", cat:"사료", sub:"동결건조", origin:"국내", pet:"강아지", presc:"일반식", ftype:"동결건조", brand:"하림 더리얼", name:"동결건조 오리 100g", ing:"동결건조 오리", health:["알러지"], price:38000, token:380 },
+  { id:"f7", emoji:"🌿", cat:"사료", sub:"건식", origin:"국내", pet:"공용", presc:"일반식", ftype:"건식", brand:"우리와 ANF", name:"6Free 연어 2kg", ing:"연어·저알러지", health:["피부","알러지"], price:35000, token:350 },
+  { id:"f8", emoji:"🍲", cat:"사료", sub:"화식", origin:"국내", pet:"강아지", presc:"일반식", ftype:"화식", brand:"펫프레시", name:"신선 화식 닭가슴살 1kg", ing:"국내산 신선육 화식", health:["장"], price:28000, token:280 },
+  { id:"f9", emoji:"🐱", cat:"사료", sub:"건식", origin:"국내", pet:"고양이", presc:"일반식", ftype:"건식", brand:"대주펫푸드 캐츠랑", name:"고양이 요로건강 1.5kg", ing:"마그네슘 조절", health:["요로"], price:22000, token:220 },
+  // 간식
+  { id:"s1", emoji:"🦴", cat:"간식", sub:"덴탈", origin:"국외", pet:"강아지", presc:"일반식", ftype:"저키", brand:"페디그리 덴타스틱", name:"덴탈껌 7p", ing:"치석분해 효소", health:["구강"], price:12000, ai:true, token:120 },
+  { id:"s2", emoji:"🦷", cat:"간식", sub:"덴탈", origin:"국외", pet:"강아지", presc:"일반식", ftype:"스틱", brand:"덴탈라이프", name:"데일리 오랄케어 스틱", ing:"기공구조 세정", health:["구강"], price:11000, token:110 },
+  { id:"s3", emoji:"🥣", cat:"간식", sub:"츄르", origin:"국외", pet:"고양이", presc:"일반식", ftype:"츄르", brand:"이나바 챠오츄르", name:"참치 츄르 14p", ing:"참치·수분보충", health:["면역"], price:9000, token:90 },
+  { id:"s4", emoji:"💊", cat:"간식", sub:"영양제", origin:"국내", pet:"공용", presc:"일반식", ftype:"캡슐", brand:"벳플러스", name:"관절 글루코사민 영양제", ing:"글루코사민·MSM", health:["관절"], price:29000, ai:true, ins:true, token:290 },
+  { id:"s5", emoji:"🐠", cat:"간식", sub:"영양제", origin:"국내", pet:"공용", presc:"일반식", ftype:"캡슐", brand:"핏펫", name:"오메가3 피쉬오일", ing:"EPA·DHA", health:["피부","모질"], price:24000, ai:true, token:240 },
+  { id:"s6", emoji:"🍗", cat:"간식", sub:"동결건조", origin:"국내", pet:"강아지", presc:"일반식", ftype:"동결건조", brand:"국내 수제", name:"동결건조 닭가슴살 트릿", ing:"국내산 닭가슴살", health:["체중관리"], price:13000, token:130 },
+  { id:"s7", emoji:"🦠", cat:"간식", sub:"영양제", origin:"국내", pet:"공용", presc:"일반식", ftype:"파우더", brand:"바이오펫", name:"반려동물 유산균 파우더", ing:"유산균 10종", health:["장","면역"], price:19000, token:190 },
+  // 용품
+  { id:"g1", emoji:"🟫", cat:"용품", sub:"안전용품", origin:"국내", pet:"공용", brand:"세이프플로어", name:"미끄럼 방지 매트", ing:"논슬립 PVC", health:["관절"], price:42000, ai:true, token:420 },
+  { id:"g2", emoji:"🪥", cat:"용품", sub:"위생·미용", origin:"국내", pet:"공용", brand:"덴티펫", name:"칫솔·치약 세트", ing:"효소치약", health:["구강"], price:12000, ai:true, token:120 },
+  { id:"g3", emoji:"🍚", cat:"용품", sub:"급식용품", origin:"국내", pet:"공용", brand:"펫피더", name:"스마트 자동급식기", ing:"앱 연동·분할급여", health:["비만"], price:68000, token:680 },
+  { id:"g4", emoji:"🦮", cat:"용품", sub:"산책용품", origin:"국내", pet:"강아지", brand:"워크펫", name:"편안한 H형 하네스", ing:"기관 보호형", health:[], price:28000, token:280 },
+  { id:"g5", emoji:"⚖️", cat:"용품", sub:"의료·케어용품", origin:"국내", pet:"공용", brand:"헬스펫", name:"반려동물 체중계", ing:"앱 기록 연동", health:["비만"], price:35000, ins:true, token:350 },
+  { id:"g6", emoji:"🧴", cat:"용품", sub:"위생·미용", origin:"국내", pet:"공용", brand:"네이처펫", name:"저자극 약산성 샴푸", ing:"저자극·보습", health:["피부"], price:16000, ai:true, token:160 },
+  { id:"g7", emoji:"🧻", cat:"용품", sub:"배변용품", origin:"국내", pet:"강아지", brand:"클린펫", name:"흡수 배변패드 100매", ing:"6중 흡수", health:[], price:18000, token:180 },
+  { id:"g8", emoji:"🧳", cat:"용품", sub:"이동용품", origin:"국내", pet:"공용", brand:"트래블펫", name:"이동가방(켄넬)", ing:"항공운송 가능", health:[], price:45000, token:450 },
+];
+// 마루 위험질환 → 추천 건강기능 매핑 (룰 기반)
+const RISK_TO_FN = { "슬개골 탈구":["관절"], "치주질환":["구강"], "피부질환(아토피/지루)":["피부","모질"], "심장질환(MMVD)":["심장"], "백내장·안질환":["안구"], "기관허탈":[] };
+const AI_REASON = { "관절":"슬개골 위험 중간 — 관절 보호", "구강":"치주질환 위험 중간 — 치석 관리", "피부":"피부·모질 관리", "모질":"피부·모질 관리", "비만":"목표 4.0kg 감량 — 체중관리" };
+
+/* ===== 커뮤니티 데모 데이터 ===== */
+const COMMUNITY = {
+  feed:[
+    { who:"코코맘", breed:"말티즈", ago:"2시간 전", text:"슬개골 예방하려고 미끄럼 방지 매트 깔았어요! 확실히 덜 미끄러지네요 🐾", like:42, cmt:8, emoji:"🐶" },
+    { who:"보리아빠", breed:"푸들", ago:"5시간 전", text:"양치 매일 하니까 스케일링 주기가 길어졌어요. 덴탈껌도 같이 주는 중!", like:35, cmt:12, emoji:"🐩" },
+    { who:"흰둥이집사", breed:"말티즈", ago:"어제", text:"저지방 사료로 바꾸고 한 달, 0.3kg 감량 성공 💪 활동량도 늘었어요.", like:58, cmt:15, emoji:"🐕" },
+  ],
+  groups:[
+    { name:"말티즈 사랑방", members:1240, my:true },
+    { name:"소형견 건강관리", members:3580, my:false },
+    { name:"슬개골 케어 모임", members:670, my:false },
+    { name:"펫보험 정보공유", members:2110, my:false },
+  ],
+  qa:[
+    { q:"말티즈 슬개골 예방 운동이 있나요?", a:"평지 산책과 수영이 좋고 점프·계단은 줄이는 게 좋습니다. 체중 관리가 가장 중요해요.", vet:"김수의사 · 정형외과" },
+    { q:"양치를 너무 싫어하는데 방법이 있을까요?", a:"덴탈껌·치약 맛에 먼저 적응시키고, 손가락 칫솔부터 단계적으로 시작하세요.", vet:"이수의사 · 치과" },
+  ],
+};
+
+const NFT = [
+  { label:"예방접종", icon:Syringe }, { label:"건강검진", icon:Stethoscope }, { label:"보험가입", icon:ShieldCheck },
+];
+
+const MENU = [
+  { label:"홈", icon:Home }, { label:"AI 상담", icon:Bot }, { label:"건강관리", icon:HeartPulse },
+  { label:"병원/예약", icon:CalendarPlus }, { label:"제품 쇼핑", icon:ShoppingBag },
+  { label:"보험", icon:ShieldCheck }, { label:"건강금융지갑", icon:Wallet },
+  { label:"리워드", icon:Gift }, { label:"Health NFT", icon:Award },
+  { label:"커뮤니티", icon:Users }, { label:"마이페이지", icon:User },
+];
+
+const QUICK = [
+  { label:"AI 상담", art:"chat", go:"AI 상담" }, { label:"병원 예약", art:"calendar", go:"병원/예약" },
+  { label:"제품 쇼핑", art:"bag", go:"제품 쇼핑" }, { label:"보험 조회", art:"shield", go:"보험" },
+  { label:"건강지갑", art:"wallet", go:"건강금융지갑" }, { label:"리워드", art:"gift", go:"리워드" },
+  { label:"건강점수", art:"score", go:"건강관리" }, { label:"알림센터", art:"bell", count:3 },
+];
+
+/* ============================ HOOKS ============================ */
+function useCountUp(target, dur=1100){
+  const [v,setV]=useState(0);
+  useEffect(()=>{
+    if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches){ setV(target); return; }
+    let raf, start;
+    const step=(t)=>{ if(!start)start=t; const p=Math.min((t-start)/dur,1);
+      setV(Math.round(target*(1-Math.pow(1-p,3)))); if(p<1) raf=requestAnimationFrame(step); };
+    raf=requestAnimationFrame(step); return ()=>cancelAnimationFrame(raf);
+  },[target]);
+  return v;
+}
+
+/* ============================ SHARED UI ============================ */
+function Card({children,style,className,onMouse}){
+  const [hover,setHover]=useState(false);
+  return (
+    <div className={className}
+      onMouseEnter={()=>setHover(true)} onMouseLeave={()=>setHover(false)}
+      style={{background:"var(--white)",border:"1px solid var(--border)",borderRadius:20,
+        padding:20,boxShadow:hover?"0 12px 30px rgba(196,128,72,.16)":"var(--shadow-sm)",
+        transform:hover?"translateY(-3px)":"none",transition:"all .22s ease",...style}}>
+      {children}
+    </div>
+  );
+}
+
+function CardHead({icon:Icon,title,action,onAction,fg="var(--orange)",bg="var(--orange-soft)"}){
+  return (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <span style={{width:34,height:34,borderRadius:11,background:bg,color:fg,
+          display:"grid",placeItems:"center",flexShrink:0}}><Icon size={19}/></span>
+        <h3 style={{margin:0,fontSize:18,fontWeight:800,color:"var(--text)"}}>{title}</h3>
+      </div>
+      {action && <button onClick={onAction} style={{display:"flex",alignItems:"center",gap:2,color:"var(--orange)",
+        fontSize:13,fontWeight:700}}>{action}<ChevronRight size={15}/></button>}
+    </div>
+  );
+}
+
+function Btn({children,icon:Icon,variant="solid",small}){
+  const base={display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+    fontWeight:700,borderRadius:999,transition:"all .18s",
+    padding:small?"7px 14px":"10px 16px",fontSize:small?13:14};
+  const styles=variant==="solid"
+    ? {...base,background:"linear-gradient(135deg,var(--orange),var(--amber))",color:"#fff",boxShadow:"0 4px 12px rgba(244,132,60,.35)"}
+    : {...base,background:"var(--orange-soft)",color:"var(--orange-deep)"};
+  return <button style={styles}>{Icon&&<Icon size={small?15:16}/>}{children}</button>;
+}
+
+/* ============================ SIDEBAR ============================ */
+function Sidebar({active,setActive,open,onClose}){
+  return (
+    <>
+      <div onClick={onClose} style={{display:open?"block":"none",position:"fixed",inset:0,
+        background:"rgba(58,44,34,.4)",zIndex:40}} className="overlay"/>
+      <aside className="sidebar" data-open={open} style={{
+        width:248,flexShrink:0,background:"#fff",borderRight:"1px solid var(--border)",
+        padding:"22px 16px",display:"flex",flexDirection:"column",gap:6,height:"100vh",
+        position:"sticky",top:0,overflowY:"auto"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"4px 8px 18px"}}>
+          <span style={{width:40,height:40,borderRadius:13,
+            background:"linear-gradient(135deg,var(--orange),var(--amber))",
+            display:"grid",placeItems:"center",color:"#fff",boxShadow:"0 4px 12px rgba(244,132,60,.4)"}}>
+            <PawPrint size={23}/></span>
+          <div>
+            <div style={{fontSize:21,fontWeight:900,color:"var(--orange-deep)",letterSpacing:-.5}}>HI-PET</div>
+            <div style={{fontSize:11,color:"var(--muted)",fontWeight:600,marginTop:-2}}>App3 슈퍼 월렛</div>
+          </div>
+        </div>
+
+        {MENU.map((m)=>{
+          const on=active===m.label; const Icon=m.icon;
+          return (
+            <button key={m.label} onClick={()=>{setActive(m.label);onClose&&onClose();}}
+              style={{display:"flex",alignItems:"center",gap:12,padding:"11px 14px",borderRadius:13,
+                fontSize:14.5,fontWeight:on?800:600,textAlign:"left",
+                color:on?"#fff":"var(--sub)",
+                background:on?"linear-gradient(135deg,var(--orange),var(--amber))":"transparent",
+                boxShadow:on?"0 6px 16px rgba(244,132,60,.32)":"none",transition:"all .15s"}}
+              onMouseEnter={(e)=>{if(!on)e.currentTarget.style.background="var(--cream2)";}}
+              onMouseLeave={(e)=>{if(!on)e.currentTarget.style.background="transparent";}}>
+              <Icon size={19}/>{m.label}
+            </button>
+          );
+        })}
+
+        <div style={{marginTop:14,background:"linear-gradient(160deg,#FFF3E8,#FFE7D3)",
+          border:"1px solid #FBDABB",borderRadius:18,padding:"16px 14px",textAlign:"center"}}>
+          <div style={{fontSize:14,fontWeight:800,color:"var(--orange-deep)",marginBottom:8}}>AI 주치의</div>
+          <div style={{width:58,height:58,margin:"0 auto 8px",borderRadius:"50%",
+            background:"#fff",display:"grid",placeItems:"center",boxShadow:"var(--shadow-sm)"}}>
+            <Bot size={32} color="var(--orange)"/></div>
+          <div style={{fontSize:12,color:"var(--sub)",marginBottom:10}}>24시간 상담 가능</div>
+          <Btn small><Bot size={15}/>상담하기</Btn>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+/* ============================ TOPBAR ============================ */
+function TopBar({onMenu}){
+  return (
+    <header style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",
+      gap:16,marginBottom:22,flexWrap:"wrap"}}>
+      <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
+        <button className="hamburger" onClick={onMenu} style={{display:"none",
+          width:42,height:42,borderRadius:12,background:"#fff",border:"1px solid var(--border)",
+          color:"var(--orange)",placeItems:"center"}}>
+          <PawPrint size={22}/></button>
+        <div>
+          <h1 style={{margin:0,fontSize:27,fontWeight:900,letterSpacing:-.6,
+            display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <span style={{color:"var(--orange-deep)"}}>App3 슈퍼 월렛</span>
+            <span style={{color:"var(--border)",fontWeight:300}}>|</span>
+            <span>펫 건강관리 대시보드</span>
+          </h1>
+          <p style={{margin:"6px 0 0",color:"var(--sub)",fontSize:14.5}}>
+            AI가 관리하는 우리 아이의 건강과 자산을 한눈에!</p>
+        </div>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:14}}>
+        <button style={{position:"relative",width:42,height:42,borderRadius:12,background:"#fff",
+          border:"1px solid var(--border)",display:"grid",placeItems:"center",color:"var(--sub)"}}>
+          <Bell size={20}/>
+          <span style={{position:"absolute",top:-5,right:-5,minWidth:19,height:19,padding:"0 5px",
+            borderRadius:999,background:"#EF5B5B",color:"#fff",fontSize:11,fontWeight:800,
+            display:"grid",placeItems:"center"}}>3</span>
+        </button>
+        <button style={{width:42,height:42,borderRadius:12,background:"#fff",
+          border:"1px solid var(--border)",display:"grid",placeItems:"center",color:"var(--sub)"}}>
+          <QrCode size={20}/></button>
+        <div style={{width:1,height:28,background:"var(--border)"}}/>
+        <button style={{display:"flex",alignItems:"center",gap:9}}>
+          <span style={{width:40,height:40,borderRadius:"50%",overflow:"hidden",
+            background:"linear-gradient(135deg,#FFE7D3,#FFF1D6)",display:"grid",placeItems:"center",fontSize:20}}><MaruImg/></span>
+          <span style={{fontSize:14.5,fontWeight:700}}>마루 보호자</span>
+          <ChevronRight size={16} style={{transform:"rotate(90deg)"}} color="var(--muted)"/>
+        </button>
+      </div>
+    </header>
+  );
+}
+
+/* ============================ CARDS ============================ */
+function PetProfileCard(){
+  return (
+    <Card style={{display:"flex",flexDirection:"column",gap:16}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <h3 style={{margin:0,fontSize:21,fontWeight:900}}>{PET.name}</h3>
+        <Pencil size={15} color="var(--muted)"/>
+      </div>
+      <div style={{display:"flex",gap:16,alignItems:"center"}}>
+        <div style={{width:92,height:92,borderRadius:"50%",flexShrink:0,
+          background:"radial-gradient(circle at 50% 35%,#fff,#FFEAD6)",
+          border:"3px solid #fff",boxShadow:"0 4px 14px rgba(196,128,72,.2)",
+          display:"grid",placeItems:"center",fontSize:50,overflow:"hidden"}}><MaruImg/></div>
+        <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:"7px 12px",fontSize:14}}>
+          <span style={{color:"var(--muted)",fontWeight:600}}>견종</span><b>{PET.breed}</b>
+          <span style={{color:"var(--muted)",fontWeight:600}}>나이</span><b>{PET.age}</b>
+          <span style={{color:"var(--muted)",fontWeight:600}}>성별</span><b>{PET.sex}</b>
+          <span style={{color:"var(--muted)",fontWeight:600}}>체중</span><b>{PET.weight}</b>
+        </div>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",
+        background:"linear-gradient(135deg,#FFF8EC,#FFF1D9)",border:"1px solid #F6E2BC",borderRadius:16}}>
+        <div style={{position:"relative",width:46,height:50,flexShrink:0,filter:"drop-shadow(0 3px 5px rgba(213,160,40,.4))"}}>
+          <svg viewBox="0 0 40 44" width="46" height="50">
+            <path d="M20 1 L37 8 V22 C37 33 29 40 20 43 C11 40 3 33 3 22 V8 Z"
+              fill="url(#g)" stroke="#E89B17" strokeWidth="1.5"/>
+            <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#FFD66B"/><stop offset="1" stopColor="#F2A41C"/></linearGradient></defs>
+          </svg>
+          <Star size={18} fill="#fff" color="#fff" style={{position:"absolute",top:13,left:14}}/>
+        </div>
+        <div>
+          <div style={{fontSize:12,color:"#B98714",fontWeight:700}}>건강등급</div>
+          <div style={{fontSize:22,fontWeight:900,color:"#D8920E",lineHeight:1.1}}>{PET.grade}</div>
+          <div style={{fontSize:12,color:"var(--sub)"}}>{PET.status}</div>
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:13,
+        borderTop:"1px dashed var(--border)",paddingTop:13}}>
+        <span style={{color:"var(--muted)",fontWeight:700}}>RFID</span>
+        <span className="num" style={{fontWeight:700,letterSpacing:.3}}>{PET.rfid}</span>
+      </div>
+    </Card>
+  );
+}
+
+function Gauge({score}){
+  const v=useCountUp(score);
+  const R=58, C=Math.PI*R; // semicircle length
+  const off=C*(1-v/100);
+  return (
+    <div style={{position:"relative",width:160,height:96,margin:"0 auto"}}>
+      <svg viewBox="0 0 160 90" width="160" height="90">
+        <path d="M16 84 A64 64 0 0 1 144 84" fill="none" stroke="#F1E7DA" strokeWidth="14" strokeLinecap="round"/>
+        <path d="M16 84 A64 64 0 0 1 144 84" fill="none" stroke="url(#gg)" strokeWidth="14"
+          strokeLinecap="round" strokeDasharray={C} strokeDashoffset={off}
+          style={{transition:"stroke-dashoffset .3s"}}/>
+        <defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#F4843C"/><stop offset="1" stopColor="#FFB547"/></linearGradient></defs>
+      </svg>
+      <div style={{position:"absolute",bottom:2,left:0,right:0,textAlign:"center"}}>
+        <div style={{fontSize:40,fontWeight:900,lineHeight:1,color:"var(--text)"}} className="num">{v}</div>
+        <div style={{fontSize:12,color:"var(--muted)",fontWeight:700}}>/100</div>
+      </div>
+    </div>
+  );
+}
+
+function MetricBar({m,delay}){
+  const [w,setW]=useState(0);
+  useEffect(()=>{ const t=setTimeout(()=>setW(m.value),delay); return ()=>clearTimeout(t); },[]);
+  const Icon=m.icon;
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:10}}>
+      <Icon size={16} color={m.color}/>
+      <span style={{fontSize:13.5,fontWeight:600,width:62,flexShrink:0,color:"var(--sub)"}}>{m.label}</span>
+      <div style={{flex:1,height:8,background:"#F1E7DA",borderRadius:999,overflow:"hidden"}}>
+        <div style={{height:"100%",width:w+"%",borderRadius:999,
+          background:m.color==="var(--green)"?"linear-gradient(90deg,#5BBF8A,#4FB286)":"linear-gradient(90deg,#F4843C,#FFB547)",
+          transition:"width 1s cubic-bezier(.2,.7,.2,1)"}}/>
+      </div>
+      <span className="num" style={{fontSize:13.5,fontWeight:800,width:26,textAlign:"right"}}>{m.value}</span>
+    </div>
+  );
+}
+
+function HealthSummaryCard(){
+  const nav=React.useContext(NavCtx);
+  return (
+    <Card>
+      <CardHead icon={Bot} title="AI 건강 요약"/>
+      <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:18,alignItems:"center"}}>
+        <div>
+          <div style={{fontSize:13,color:"var(--sub)",fontWeight:700,textAlign:"center",marginBottom:2}}>건강점수</div>
+          <Gauge score={HEALTH.score}/>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,marginTop:2}}>
+            <Heart size={15} fill="var(--green)" color="var(--green)"/>
+            <span style={{color:"var(--green)",fontWeight:800,fontSize:14}}>{HEALTH.status}</span>
+          </div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:13}}>
+          {HEALTH.metrics.map((m,i)=><MetricBar key={m.label} m={m} delay={250+i*140}/>)}
+        </div>
+      </div>
+      <div style={{marginTop:16,display:"flex",alignItems:"center",gap:12,padding:"13px 15px",
+        background:"linear-gradient(135deg,#FFF6EC,#FFEFDB)",border:"1px solid #F8E4C3",borderRadius:15}}>
+        <span style={{width:32,height:32,borderRadius:10,background:"#FFE3B8",color:"#D8920E",
+          display:"grid",placeItems:"center",flexShrink:0}}><Lightbulb size={18}/></span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:800,color:"#C98A12"}}>AI 건강처방</div>
+          <div style={{fontSize:13,color:"var(--sub)"}}>{HEALTH.prescription}</div>
+        </div>
+        <button onClick={()=>nav&&nav("건강관리")} style={{flexShrink:0,fontSize:12.5,fontWeight:700,color:"#fff",
+          background:"var(--orange)",borderRadius:999,padding:"7px 12px"}}>자세히 보기</button>
+      </div>
+    </Card>
+  );
+}
+
+function WalletCard(){
+  const total=useCountUp(WALLET.total,1300);
+  const nav=React.useContext(NavCtx);
+  return (
+    <Card style={{background:"linear-gradient(150deg,#FFFDFB,#FFF6EC)"}}>
+      <CardHead icon={Wallet} title="App3 슈퍼 월렛" action="자산보기" onAction={()=>nav&&nav("건강금융지갑")}/>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div>
+          <div style={{fontSize:12.5,color:"var(--muted)",fontWeight:600}}>총 자산 (원화 기준)</div>
+          <div className="num" style={{fontSize:33,fontWeight:900,letterSpacing:-1,marginTop:2}}>
+            <span style={{color:"var(--orange-deep)"}}>₩</span> {total.toLocaleString()}</div>
+        </div>
+        <span style={{fontSize:42,filter:"drop-shadow(0 6px 8px rgba(213,160,40,.3))"}}>👛</span>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:10,margin:"16px 0"}}>
+        {WALLET.items.map((it)=>{ const Icon=it.icon; return (
+          <div key={it.label} style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{width:28,height:28,borderRadius:9,background:it.bg,color:it.fg,
+              display:"grid",placeItems:"center",flexShrink:0}}><Icon size={16}/></span>
+            <span style={{flex:1,fontSize:13.5,color:"var(--sub)",fontWeight:600}}>{it.label}</span>
+            <span className="num" style={{fontWeight:800,fontSize:14.5}}>{it.value}
+              <span style={{fontSize:11.5,color:"var(--muted)",fontWeight:700,marginLeft:3}}>{it.unit}</span></span>
+          </div>
+        );})}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,
+        borderTop:"1px solid var(--border)",paddingTop:14}}>
+        {[{l:"송금",i:ArrowRightLeft},{l:"결제",i:CreditCard},{l:"기록",i:FileText},{l:"스마트컨트랙트",i:FileSignature}].map(b=>{
+          const Icon=b.i; return (
+          <button key={b.l} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
+            padding:"9px 4px",borderRadius:12,background:"var(--cream)",color:"var(--orange-deep)",
+            fontSize:11,fontWeight:700,transition:"background .15s"}}
+            onMouseEnter={e=>e.currentTarget.style.background="var(--orange-soft)"}
+            onMouseLeave={e=>e.currentTarget.style.background="var(--cream)"}>
+            <Icon size={18}/>{b.l}</button>
+        );})}
+      </div>
+    </Card>
+  );
+}
+
+function RecommendCard({nav}){
+  return (
+    <Card>
+      <CardHead icon={Sparkles} title="오늘의 추천"/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+        {RECOMMEND.map(r=>(
+          <div key={r.tag} style={{textAlign:"center",border:"1px solid var(--border)",
+            borderRadius:16,padding:"12px 8px",background:"var(--cream)"}}>
+            <div style={{fontSize:11.5,fontWeight:800,color:"var(--orange-deep)",marginBottom:8}}>{r.tag}</div>
+            <div style={{width:52,height:52,margin:"0 auto 8px",borderRadius:14,background:"#fff",
+              display:"grid",placeItems:"center",fontSize:28,boxShadow:"var(--shadow-sm)"}}>{r.emoji}</div>
+            <div style={{fontSize:13,fontWeight:800,lineHeight:1.3}}>{r.title}</div>
+            <div style={{fontSize:11.5,color:"var(--muted)",margin:"3px 0 10px"}}>{r.desc}</div>
+            <button onClick={()=>{ if(!nav)return; if(r.cta==="예약하기") nav("병원/예약"); else if(r.cta==="구매하기") nav("제품 쇼핑"); }}
+              style={{width:"100%",fontSize:12,fontWeight:700,color:"var(--orange-deep)",
+              background:"var(--orange-soft)",borderRadius:999,padding:"7px 0"}}>{r.cta}</button>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function ScheduleCard(){
+  return (
+    <Card>
+      <CardHead icon={CalendarPlus} title="예정 일정" action="전체보기"/>
+      <div style={{display:"flex",flexDirection:"column"}}>
+        {SCHEDULE.map((s,i)=>{ const Icon=s.icon; return (
+          <div key={s.label} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",
+            borderBottom:i<SCHEDULE.length-1?"1px solid var(--border)":"none"}}>
+            <span style={{width:34,height:34,borderRadius:11,background:"var(--orange-soft)",
+              color:"var(--orange)",display:"grid",placeItems:"center",flexShrink:0}}><Icon size={18}/></span>
+            <span style={{flex:1,fontSize:14,fontWeight:700}}>{s.label}</span>
+            <span className="num" style={{fontSize:13,color:"var(--sub)",fontWeight:600}}>{s.when}</span>
+            <ChevronRight size={16} color="var(--muted)"/>
+          </div>
+        );})}
+      </div>
+    </Card>
+  );
+}
+
+function ActivityCard(){
+  return (
+    <Card>
+      <CardHead icon={ClipboardCheck} title="최근 활동" action="전체보기"/>
+      <div style={{display:"flex",flexDirection:"column"}}>
+        {ACTIVITY.map((a,i)=>{ const Icon=a.icon; return (
+          <div key={a.label} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 0",
+            borderBottom:i<ACTIVITY.length-1?"1px solid var(--border)":"none"}}>
+            <span style={{width:32,height:32,borderRadius:10,background:a.bg,color:a.fg,
+              display:"grid",placeItems:"center",flexShrink:0}}><Icon size={16}/></span>
+            <span style={{flex:1,fontSize:13.5,fontWeight:600}}>{a.label}</span>
+            <span className="num" style={{fontSize:12.5,color:"var(--muted)",fontWeight:600}}>{a.date}</span>
+          </div>
+        );})}
+      </div>
+    </Card>
+  );
+}
+
+function RiskCard(){
+  const nav=React.useContext(NavCtx);
+  return (
+    <Card>
+      <CardHead icon={Activity} title="AI 건강 예측" action="자세히 보기" onAction={()=>nav&&nav("건강관리")}
+        fg="#8A63D2" bg="#F2E9FF"/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+        {RISK.map(r=>{ const Icon=r.icon; const c=r.dots>=2?"#E8913A":"#4FB286"; return (
+          <div key={r.label} style={{textAlign:"center",background:"var(--cream)",
+            border:"1px solid var(--border)",borderRadius:14,padding:"12px 6px"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--sub)",marginBottom:8,lineHeight:1.3}}>{r.label}</div>
+            <div style={{display:"grid",placeItems:"center",height:36,marginBottom:6}}>
+              <Icon size={26} color={c}/></div>
+            <div style={{fontSize:13.5,fontWeight:800,color:c}}>{r.level}</div>
+            <div style={{display:"flex",justifyContent:"center",gap:4,marginTop:6}}>
+              {[0,1,2].map(d=><span key={d} style={{width:7,height:7,borderRadius:"50%",
+                background:d<r.dots?c:"#EADFD0"}}/>)}
+            </div>
+          </div>
+        );})}
+      </div>
+    </Card>
+  );
+}
+
+function SmartContractCard(){
+  const nav=React.useContext(NavCtx);
+  return (
+    <Card>
+      <CardHead icon={FileSignature} title="스마트컨트랙트 알림"/>
+      <div style={{display:"flex",gap:14,alignItems:"center"}}>
+        <span style={{fontSize:38}}>📄</span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,color:"var(--sub)",fontWeight:600}}>보험금 자동지급 예정</div>
+          <div className="num" style={{fontSize:25,fontWeight:900,color:"var(--orange-deep)"}}>1,120,000 원</div>
+          <div style={{fontSize:12,color:"var(--muted)"}}>예상 지급일: 2024.06.25</div>
+        </div>
+      </div>
+      <button onClick={()=>nav&&nav("보험")} style={{width:"100%",marginTop:14,fontSize:13,fontWeight:700,color:"var(--orange-deep)",
+        background:"var(--orange-soft)",borderRadius:999,padding:"9px 0"}}>상세 보기</button>
+    </Card>
+  );
+}
+
+function TokenCard(){
+  const nav=React.useContext(NavCtx);
+  return (
+    <Card>
+      <CardHead icon={Coins} title="토큰 리워드" action="더보기" onAction={()=>nav&&nav("리워드")}
+        fg="#C98A12" bg="#FFF1D6"/>
+      <div style={{display:"flex",alignItems:"center",gap:14,justifyContent:"center",padding:"6px 0"}}>
+        <span style={{fontSize:46,filter:"drop-shadow(0 4px 6px rgba(213,160,40,.35))"}}>🪙</span>
+        <div>
+          <div style={{fontSize:12.5,color:"var(--muted)",fontWeight:600}}>오늘 획득</div>
+          <div className="num" style={{fontSize:24,fontWeight:900,color:"var(--green)"}}>+250 <span style={{fontSize:14}}>HPET</span></div>
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,
+        paddingTop:12,borderTop:"1px solid var(--border)"}}>
+        <span style={{fontSize:13,color:"var(--sub)",fontWeight:600}}>누적 보유</span>
+        <span className="num" style={{fontSize:16,fontWeight:900}}>12,450 <span style={{fontSize:12,color:"var(--muted)"}}>HPET</span></span>
+      </div>
+    </Card>
+  );
+}
+
+function NftCard(){
+  const nav=React.useContext(NavCtx);
+  return (
+    <Card>
+      <CardHead icon={Award} title="NFT 건강 인증" action="더보기" onAction={()=>nav&&nav("Health NFT")}
+        fg="#8A63D2" bg="#F2E9FF"/>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+        {NFT.map(n=>{ const Icon=n.icon; return (
+          <div key={n.label} style={{textAlign:"center"}}>
+            <div style={{position:"relative",width:58,height:64,margin:"0 auto 8px"}}>
+              <svg viewBox="0 0 56 62" width="58" height="64">
+                <path d="M28 2 L52 11 V30 C52 45 41 55 28 60 C15 55 4 45 4 30 V11 Z"
+                  fill="url(#nf)" stroke="#E0662A" strokeWidth="1.5"/>
+                <defs><linearGradient id="nf" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#FFE7D3"/><stop offset="1" stopColor="#FFD0AC"/></linearGradient></defs>
+              </svg>
+              <Icon size={22} color="var(--orange-deep)" style={{position:"absolute",top:18,left:18}}/>
+              <span style={{position:"absolute",bottom:6,right:8,width:18,height:18,borderRadius:"50%",
+                background:"var(--green)",display:"grid",placeItems:"center"}}>
+                <CheckCircle2 size={14} color="#fff"/></span>
+            </div>
+            <div style={{fontSize:12.5,fontWeight:700}}>{n.label}</div>
+            <div style={{fontSize:11,color:"var(--muted)",fontWeight:700}}>NFT</div>
+          </div>
+        );})}
+      </div>
+    </Card>
+  );
+}
+
+/* ============================ QUICK BAR ============================ */
+function QuickBar({nav}){
+  return (
+    <div className="qtop">
+      {QUICK.map(q=>(
+        <button key={q.label} className="qitem" onClick={()=>{ if(nav&&q.go) nav(q.go); }}>
+          <span className="qico">
+            <PetArt name={q.art} size={34}/>
+            {q.count && <span className="qbadge">{q.count}</span>}
+          </span>
+          <span className="qlabel">{q.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ============================ 제품 쇼핑 (펫 Health-InsurFin 쇼핑몰) ============================ */
+const wonp=(n)=>n.toLocaleString()+"원";
+
+function ProductCard({p,onAdd,onOpen}){
+  return (
+    <div className="prod" onClick={()=>onOpen(p)}>
+      <div className="pimg">{p.emoji}
+        <div className="pbadge">
+          {p.presc==="처방식" && <span className="pb pur">처방식</span>}
+          {p.ai && <span className="pb org">AI추천</span>}
+          {p.ins && <span className="pb grn">보험연계</span>}
+        </div>
+      </div>
+      <div className="pbody">
+        <div className="pbrand">{p.brand}</div>
+        <div className="pname">{p.name}</div>
+        <div className="ptags">{(p.health||[]).slice(0,3).map(h=><span key={h}>{h}</span>)}{p.origin&&<span className="og">{p.origin}</span>}</div>
+        <div className="pbot">
+          <div style={{minWidth:0}}>
+            <div className="pprice num">{p.sale&&<s>{p.price.toLocaleString()}</s>}{(p.sale||p.price).toLocaleString()}<span>원</span></div>
+            <div className="ptok num"><Coins size={11}/> +{p.token} HPET</div>
+          </div>
+          <button className="addbtn" title="장바구니 담기" onClick={e=>{e.stopPropagation();onAdd(p);}}><ShoppingCart size={16}/></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProductDetailModal({p,onClose,onAdd,onBuy}){
+  return (
+    <div className="bkov" onClick={onClose}>
+      <div className="bk detailbk" onClick={e=>e.stopPropagation()}>
+        <div className="bkh"><div className="bt">{p.brand}</div><button className="xbtn" onClick={onClose}><X size={20}/></button></div>
+        <div className="dbody">
+          <div style={{display:"flex",gap:16,alignItems:"center",marginBottom:14}}>
+            <div style={{width:96,height:96,borderRadius:18,background:"linear-gradient(150deg,#FFF1E0,#FFE4CC)",display:"grid",placeItems:"center",fontSize:50,flexShrink:0}}>{p.emoji}</div>
+            <div>
+              <div style={{fontSize:16,fontWeight:900,lineHeight:1.3}}>{p.name}</div>
+              <div className="pbadge" style={{position:"static",marginTop:6}}>{p.presc==="처방식"&&<span className="pb pur">처방식</span>}{p.ai&&<span className="pb org">AI추천</span>}{p.ins&&<span className="pb grn">보험연계</span>}</div>
+              <div className="num" style={{fontSize:22,fontWeight:900,color:"var(--orange-deep)",marginTop:8}}>{p.sale&&<s style={{fontSize:14,color:"var(--muted)",marginRight:6}}>{p.price.toLocaleString()}</s>}{(p.sale||p.price).toLocaleString()}원</div>
+            </div>
+          </div>
+          {p.ai && <div className="sumbox" style={{marginTop:0,marginBottom:12}}><Sparkles size={16} color="var(--orange)"/><div><b>AI 추천 이유</b><p>{(p.health||[]).map(h=>AI_REASON[h]).filter(Boolean)[0]||"마루 건강관리에 도움이 되는 상품입니다."}</p><span className="sub2">※ AI 추천은 진단이 아닌 건강관리 참고 정보입니다.</span></div></div>}
+          <div className="dsec"><div className="dh">상품 정보</div>
+            <div className="drow"><span className="dk">대상</span><span className="dv" style={{textAlign:"left"}}>{p.pet}</span></div>
+            <div className="drow"><span className="dk">원산지</span><span className="dv" style={{textAlign:"left"}}>{p.origin}{p.ftype?" · "+p.ftype:""}</span></div>
+            <div className="drow"><span className="dk">주요 성분</span><span className="dv" style={{textAlign:"left"}}>{p.ing}</span></div>
+            <div className="drow"><span className="dk">건강 기능</span><span className="dv" style={{textAlign:"left"}}>{(p.health||[]).join(", ")||"-"}</span></div>
+            <div className="drow"><span className="dk">보험 연계</span><span className="dv" style={{textAlign:"left",color:p.ins?"var(--green)":"var(--muted)"}}>{p.ins?"연계 (적립·보장 반영)":"미연계"}</span></div>
+            <div className="drow"><span className="dk">적립</span><span className="dv num" style={{textAlign:"left",color:"var(--orange-deep)"}}>+{p.token} HPET</span></div>
+          </div>
+          {p.presc==="처방식" && <div className="sumbox" style={{background:"#F2E9FF",borderColor:"#D9C7F5"}}><AlertTriangle size={16} color="#8A63D2"/><div><b style={{color:"#7C3AED"}}>수의사 상담 권장</b><p>처방식 사료는 반려동물 상태에 따라 급여해야 합니다. 수의사 상담 후 구매하세요.</p></div></div>}
+        </div>
+        <div className="bkfoot" style={{display:"flex",gap:8}}>
+          <button className="cbtn" style={{margin:0}} onClick={()=>{onAdd(p);onClose();}}><ShoppingCart size={15}/> 장바구니</button>
+          <button className="cbtn pri" style={{margin:0}} onClick={()=>{onBuy(p);}}><Check size={15}/> 바로 구매</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShopGallery(){
+  const [lb,setLb]=useState(null);
+  const items=Array.from({length:10},(_,i)=>({thumb:`./images/thumbs/image${i+1}.jpg`,full:`./images/image${i+1}.png`}));
+  return (<>
+    <div className="bklbl"><ShoppingBag size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 실제 펫몰 상품 화면 <span className="sub" style={{fontWeight:600,color:"var(--muted)"}}>· 디자인 참고 (클릭하여 크게 보기)</span></div>
+    <div className="gallery">{items.map((it,i)=><button key={i} className="gthumb" onClick={()=>setLb(it.full)}><img src={it.thumb} alt={"펫몰 상품 화면 "+(i+1)}/></button>)}</div>
+    {lb && <div className="bkov" onClick={()=>setLb(null)}><div className="lbwrap" onClick={e=>e.stopPropagation()}><button className="xbtn lbx" onClick={()=>setLb(null)}><X size={22}/></button><img src={lb} alt="상품 화면 확대"/></div></div>}
+    <div className="chnote" style={{marginBottom:6}}>※ 위 화면은 실제 펫 쇼핑몰 상품 구성·디자인 참고용 캡처입니다. 아래 상품은 시연용 데모 카탈로그입니다.</div>
+  </>);
+}
+
+function ShopAI({onAdd,onOpen}){
+  const reco=PRODUCTS.filter(p=>p.ai);
+  const presc=PRODUCTS.filter(p=>p.presc==="처방식");
+  return (<>
+    <ShopGallery/>
+    <div className="airec"><div className="at"><Sparkles size={16} color="var(--orange)"/> 마루 맞춤 AI 추천 상품</div>
+      <div className="ap">AI 건강 예측(슬개골·치주 위험 중간, 체중관리)을 바탕으로 마루에게 도움이 되는 상품을 추천합니다. <span className="sub2">※ 진단이 아닌 건강관리 참고 정보</span></div></div>
+    <div className="shopgrid">{reco.map(p=><ProductCard key={p.id} p={p} onAdd={onAdd} onOpen={onOpen}/>)}</div>
+    <div className="bklbl" style={{marginTop:14}}><FileText size={14} color="#8A63D2" style={{verticalAlign:"-2px"}}/> 처방식 사료 <span className="sub" style={{fontWeight:600,color:"var(--muted)"}}>· 수의사 상담 권장</span></div>
+    <div className="shopgrid">{presc.map(p=><ProductCard key={p.id} p={p} onAdd={onAdd} onOpen={onOpen}/>)}</div>
+    <div className="chnote">※ 상품·브랜드·가격은 시연용 예시입니다. AI 추천은 마루의 건강 데이터 기반 참고 정보이며 진단이 아닙니다.</div>
+  </>);
+}
+
+function ShopCatalog({cat,onAdd,onOpen}){
+  const all=PRODUCTS.filter(p=>p.cat===cat);
+  const [origin,setOrigin]=useState("전체");
+  const [pet,setPet]=useState("전체");
+  const [fn,setFn]=useState("전체");
+  const [q,setQ]=useState("");
+  const [sort,setSort]=useState("추천순");
+  const fns=React.useMemo(()=>["전체",...new Set(all.flatMap(p=>p.health||[]))],[cat]);
+  const list=React.useMemo(()=>{
+    let out=all.filter(p=>(origin==="전체"||p.origin===origin)&&(pet==="전체"||p.pet===pet||p.pet==="공용")&&(fn==="전체"||(p.health||[]).includes(fn))&&(!q.trim()||p.name.includes(q)||p.brand.includes(q)));
+    if(sort==="낮은가격")out=[...out].sort((a,b)=>(a.sale||a.price)-(b.sale||b.price));
+    else if(sort==="높은가격")out=[...out].sort((a,b)=>(b.sale||b.price)-(a.sale||a.price));
+    else out=[...out].sort((a,b)=>(b.ai?1:0)-(a.ai?1:0));
+    return out;
+  },[cat,origin,pet,fn,q,sort]);
+  return (<>
+    <div className="regions">
+      {["전체","국내","국외"].map(o=><button key={o} className={`fsel ${origin===o?"on":""}`} onClick={()=>setOrigin(o)}>{o}</button>)}
+      <span style={{width:1,background:"var(--border)",margin:"0 2px"}}/>
+      {["전체","강아지","고양이"].map(o=><button key={o} className={`fsel ${pet===o?"on":""}`} onClick={()=>setPet(o)}>{o}</button>)}
+    </div>
+    <div className="regions">{fns.map(o=><button key={o} className={`fsel ${fn===o?"on":""}`} onClick={()=>setFn(o)}>{o==="전체"?"건강기능 전체":o}</button>)}</div>
+    <div className="hfilt">
+      <div className="fsearch" style={{margin:0}}><Search size={15}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="상품명·브랜드 검색"/></div>
+      <select value={sort} onChange={e=>setSort(e.target.value)}><option>추천순</option><option>낮은가격</option><option>높은가격</option></select>
+    </div>
+    <div className="chcount">{cat} <b style={{color:"var(--orange-deep)"}}>{list.length}</b>개</div>
+    <div className="shopgrid">{list.map(p=><ProductCard key={p.id} p={p} onAdd={onAdd} onOpen={onOpen}/>)}</div>
+    {list.length===0 && <div className="hload">조건에 맞는 상품이 없습니다.</div>}
+    <div className="chnote">※ 상품·가격은 시연용 예시이며, 처방식 사료는 수의사 상담을 권장합니다.</div>
+  </>);
+}
+
+function CartView({cart,setCart,go}){
+  const [useToken,setUseToken]=useState(false);
+  const [done,setDone]=useState(false);
+  const sub=cart.reduce((s,x)=>s+(x.p.sale||x.p.price)*x.qty,0);
+  const reward=cart.reduce((s,x)=>s+x.p.token*x.qty,0);
+  const tokenBal=12450;
+  const tokenUse=useToken?Math.min(tokenBal,sub):0;
+  const total=sub-tokenUse;
+  const setQty=(id,d)=>setCart(c=>c.map(x=>x.p.id===id?{...x,qty:Math.max(1,x.qty+d)}:x));
+  const remove=(id)=>setCart(c=>c.filter(x=>x.p.id!==id));
+  if(done) return (
+    <div className="bkconfirm card" style={{padding:"28px 20px"}}>
+      <div className="okic"><Check size={30} color="var(--green)"/></div>
+      <div className="ttl">주문이 완료되었습니다</div>
+      <div className="sub2" style={{marginTop:6}}>결제금액 {wonp(total)} · 적립 +{reward} HPET</div>
+      <div className="reslist">
+        <div className="resitem"><span className="ic or"><Coins size={18} color="var(--orange)"/></span><div><b>Health Token 적립</b><div className="sub2">+{reward} HPET가 건강금융지갑에 적립됩니다.</div></div></div>
+        <div className="resitem"><span className="ic gr"><ShieldCheck size={18} color="var(--green)"/></span><div><b>건강금융지갑 기록</b><div className="sub2">구매 상품·건강기능·금액이 마루 건강지갑에 자동 기록됩니다.</div></div></div>
+        <div className="resitem"><span className="ic pu"><Award size={18} color="#8A63D2"/></span><div><b>건강관리·보험 반영</b><div className="sub2">구매 이력이 AI 건강관리 추천과 보험 적립에 반영됩니다.</div></div></div>
+      </div>
+      <div style={{display:"flex",gap:8,marginTop:16}}>
+        <button className="cbtn" style={{margin:0}} onClick={()=>{setCart([]);setDone(false);}}>계속 쇼핑</button>
+        <button className="cbtn pri" style={{margin:0}} onClick={()=>go&&go("건강금융지갑")}>건강지갑 보기</button>
+      </div>
+    </div>
+  );
+  if(cart.length===0) return <div className="hload" style={{marginTop:8}}><ShoppingCart size={26} style={{marginBottom:8}}/><div>장바구니가 비어 있습니다.</div><div style={{fontSize:11.5,marginTop:4}}>상품을 담아보세요.</div></div>;
+  return (<>
+    {cart.map(x=>(
+      <div className="center" key={x.p.id}>
+        <div className="cimg">{x.p.emoji}</div>
+        <div className="cmain" style={{cursor:"default"}}>
+          <div className="cname">{x.p.name}</div>
+          <div className="cmeta"><span className="reg">{x.p.brand}</span> · <span className="num">{wonp(x.p.sale||x.p.price)}</span> · <span className="num" style={{color:"var(--orange-deep)"}}>+{x.p.token} HPET</span></div>
+        </div>
+        <div className="cright">
+          <div className="qty"><button onClick={()=>setQty(x.p.id,-1)}>−</button><span className="num">{x.qty}</span><button onClick={()=>setQty(x.p.id,1)}>+</button></div>
+          <button className="rmbtn" onClick={()=>remove(x.p.id)}><X size={14}/> 삭제</button>
+        </div>
+      </div>
+    ))}
+    <div className="card" style={{marginTop:6}}>
+      <div className="payrow"><span>상품 금액</span><span className="num">{wonp(sub)}</span></div>
+      <div className="payrow tgrow"><label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}><input type="checkbox" checked={useToken} onChange={e=>setUseToken(e.target.checked)}/> Health Token 사용 <span className="sub2">(보유 {tokenBal.toLocaleString()} HPET)</span></label><span className="num" style={{color:"var(--green)"}}>{tokenUse>0?"-"+wonp(tokenUse):"-"}</span></div>
+      <div className="payrow tot"><span>최종 결제금액</span><span className="num">{wonp(total)}</span></div>
+      <div className="payrow"><span className="sub2">예상 적립</span><span className="num" style={{color:"var(--orange-deep)",fontWeight:800}}>+{reward} HPET</span></div>
+      <button className="cbtn pri" onClick={()=>setDone(true)}><CreditCard size={15}/> {wonp(total)} 결제하기 <span style={{fontSize:11,opacity:.85}}>(mock)</span></button>
+      <div className="chnote">※ 결제는 시연용 mock이며 실제 결제·배송은 발생하지 않습니다. 결제·개인정보는 분리 저장 설계입니다.</div>
+    </div>
+  </>);
+}
+
+function ShopSection(){
+  const [tab,setTab]=useState("ai");
+  const [cart,setCart]=useState([]);
+  const [detail,setDetail]=useState(null);
+  const nav=React.useContext(NavCtx);
+  const add=(p,qty=1)=>setCart(c=>{ const i=c.findIndex(x=>x.p.id===p.id); if(i>=0){ const n=[...c]; n[i]={...n[i],qty:n[i].qty+qty}; return n; } return [...c,{p,qty}]; });
+  const buy=(p)=>{ add(p); setDetail(null); setTab("cart"); };
+  const count=cart.reduce((s,x)=>s+x.qty,0);
+  const tabs=[["ai","AI 추천",Sparkles],["사료","사료",Bone],["간식","간식",Pill],["용품","용품",ShoppingBag],["cart","장바구니",ShoppingCart]];
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico"><ShoppingBag size={24} color="#fff"/></span>
+        <div><div className="aih-t">제품 쇼핑 · 펫 마켓</div><div className="aih-s">건강데이터·보험과 연결된 펫 쇼핑 · 구매 시 Health Token 적립·건강지갑 기록 <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
+      <div className="chtabs">{tabs.map(([k,t,Ic])=><button key={k} className={`chtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}><Ic size={15}/> {t}{k==="cart"&&count>0&&<span className="tabbadge">{count}</span>}</button>)}</div>
+      {tab==="ai" && <ShopAI onAdd={add} onOpen={setDetail}/>}
+      {(tab==="사료"||tab==="간식"||tab==="용품") && <ShopCatalog cat={tab} onAdd={add} onOpen={setDetail}/>}
+      {tab==="cart" && <CartView cart={cart} setCart={setCart} go={nav}/>}
+      {detail && <ProductDetailModal p={detail} onClose={()=>setDetail(null)} onAdd={add} onBuy={buy}/>}
+    </div>
+  );
+}
+
+/* ============================ 커뮤니티 ============================ */
+function CommunitySection(){
+  const C=COMMUNITY;
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico"><Users size={24} color="#fff"/></span>
+        <div><div className="aih-t">커뮤니티 · 마루</div><div className="aih-s">보호자 피드 · 견종별 모임 · 전문가 Q&A · 산책 챌린지 <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
+      <div className="card" style={{border:"1.5px solid #FBD3AC",background:"linear-gradient(135deg,#FFF3E8,#FFE7D3)"}}>
+        <div className="rct"><Footprints size={18} color="var(--orange)"/> 이번 주 산책 챌린지</div>
+        <div style={{display:"flex",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}><Trophy size={26} color="#E8913A"/><div><div style={{fontSize:13,color:"var(--sub)",fontWeight:600}}>마루 활동량</div><div className="num" style={{fontSize:24,fontWeight:900,color:"var(--orange-deep)"}}>90 <span style={{fontSize:13}}>점 · 상위 12%</span></div></div></div>
+          <div style={{marginLeft:"auto",textAlign:"right"}}><div className="sub2">달성 시 적립</div><div className="num" style={{fontWeight:900,color:"var(--green)",fontSize:18}}>+250 HPET</div></div>
+        </div>
+      </div>
+      <div className="bklbl"><ThumbsUp size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 인기 피드</div>
+      {C.feed.map((f,i)=>(
+        <div className="card" key={i} style={{marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+            <span style={{width:38,height:38,borderRadius:"50%",background:"linear-gradient(135deg,#FFE7D3,#FFF1D6)",display:"grid",placeItems:"center",fontSize:20}}>{f.emoji}</span>
+            <div><div style={{fontWeight:800,fontSize:13.5}}>{f.who} <span className="cbadge org">{f.breed}</span></div><div className="sub2">{f.ago}</div></div>
+          </div>
+          <div style={{fontSize:13.5,color:"var(--text)",lineHeight:1.6}}>{f.text}</div>
+          <div style={{display:"flex",gap:16,marginTop:10,color:"var(--muted)",fontSize:12.5,fontWeight:700}}>
+            <span style={{display:"flex",alignItems:"center",gap:4}}><ThumbsUp size={14}/> {f.like}</span>
+            <span style={{display:"flex",alignItems:"center",gap:4}}><MessageCircle size={14}/> {f.cmt}</span>
+          </div>
+        </div>
+      ))}
+      <div className="bklbl"><Users size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 견종별 모임</div>
+      {C.groups.map((g,i)=>(
+        <div className="vrow" key={i} style={{background:"#fff",border:"1px solid var(--border)",borderRadius:14,padding:"12px 15px",marginBottom:8}}>
+          <span className="vic" style={{background:g.my?"var(--orange-soft)":"var(--cream)"}}><Users size={16} color="var(--orange)"/></span>
+          <div style={{flex:1}}><div className="vn">{g.name}{g.my&&<span className="cbadge org">가입중</span>}</div><div className="vm num">멤버 {g.members.toLocaleString()}명</div></div>
+          <button className={g.my?"cbtn":"cbtn pri"} style={{width:"auto",margin:0,padding:"8px 16px"}}>{g.my?"입장":"가입"}</button>
+        </div>
+      ))}
+      <div className="bklbl"><Stethoscope size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 전문가 Q&A</div>
+      {C.qa.map((qa,i)=>(
+        <div className="card" key={i} style={{marginBottom:10}}>
+          <div style={{fontWeight:800,fontSize:13.5,marginBottom:6}}>Q. {qa.q}</div>
+          <div style={{fontSize:13,color:"var(--sub)",lineHeight:1.6}}>A. {qa.a}</div>
+          <div className="cbadge grn" style={{marginTop:8}}><BadgeCheck size={11}/> {qa.vet}</div>
+        </div>
+      ))}
+      <div className="chnote">※ 피드·모임·Q&A는 시연용 데모입니다. 전문가 답변은 일반 정보이며 진료를 대체하지 않습니다.</div>
+    </div>
+  );
+}
+
+/* ============================ 마이페이지 ============================ */
+function Toggle({on,onToggle}){ return <button className={`tgl ${on?"on":""}`} onClick={onToggle} aria-pressed={on}><span className="knob"/></button>; }
+
+function MyPageSection(){
+  const nav=React.useContext(NavCtx);
+  const [consent,setConsent]=useState({"검진 데이터 제공":true,"진료기록 제공":true,"보험사 연계":true,"마케팅 수신":false});
+  const [noti,setNoti]=useState({"예방접종 알림":true,"정기검진 알림":true,"보험 갱신 알림":true,"커뮤니티 알림":false});
+  const tg=(set,k)=>set(s=>({...s,[k]:!s[k]}));
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico"><User size={24} color="#fff"/></span>
+        <div><div className="aih-t">마이페이지 · 마루 보호자</div><div className="aih-s">프로필 · 반려동물 · 데이터 동의(DID) · 알림 설정 <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
+      <div className="card" style={{display:"flex",alignItems:"center",gap:16}}>
+        <span style={{width:64,height:64,borderRadius:"50%",overflow:"hidden",background:"linear-gradient(135deg,#FFE7D3,#FFF1D6)",display:"grid",placeItems:"center",fontSize:32}}><MaruImg/></span>
+        <div style={{flex:1}}><div style={{fontSize:18,fontWeight:900}}>마루 보호자</div><div className="sub2">srcho197011@gmail.com · 일반 회원</div>
+          <div className="pbadge" style={{position:"static",marginTop:6}}><span className="pb org">건강등급 GOLD</span><span className="pb grn">무상 펫보험 가입</span></div></div>
+      </div>
+      <div className="bklbl"><PawPrint size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 반려동물</div>
+      <div className="card" style={{display:"flex",alignItems:"center",gap:14}}>
+        <span style={{width:54,height:54,borderRadius:"50%",overflow:"hidden",background:"radial-gradient(circle at 50% 35%,#fff,#FFEAD6)",border:"2px solid #fff",boxShadow:"var(--shadow-sm)",display:"grid",placeItems:"center",fontSize:30}}><MaruImg/></span>
+        <div style={{flex:1}}><div style={{fontSize:15,fontWeight:800}}>마루 <span className="cbadge org">대표</span></div><div className="sub2">말티즈 · 4세 · 수컷(중성화) · 4.2kg · RFID 4100-1234-5678-9012</div></div>
+        <button className="cbtn" style={{width:"auto",margin:0,padding:"8px 13px"}} onClick={()=>nav&&nav("건강관리")}>건강 보기</button>
+      </div>
+      <button className="cbtn" style={{borderStyle:"dashed"}}><Plus size={15}/> 반려동물 추가 등록</button>
+      <div className="bklbl"><FileSignature size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 데이터 제공 동의 (DID) <span className="sub" style={{fontWeight:600,color:"var(--muted)"}}>· 보장의 재원</span></div>
+      <div className="card">
+        {Object.keys(consent).map((k,i)=>(
+          <div className="setrow" key={k} style={{borderBottom:i<3?"1px solid var(--border)":"none"}}>
+            <div><div className="sn">{k}</div><div className="sub2">{k==="마케팅 수신"?"이벤트·혜택 알림 수신":"동의 시 건강 토큰 적립·무상 보장에 반영"}</div></div>
+            <Toggle on={consent[k]} onToggle={()=>tg(setConsent,k)}/>
+          </div>
+        ))}
+      </div>
+      <div className="bklbl"><Bell size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 알림 설정</div>
+      <div className="card">
+        {Object.keys(noti).map((k,i)=>(
+          <div className="setrow" key={k} style={{borderBottom:i<3?"1px solid var(--border)":"none"}}>
+            <div className="sn">{k}</div><Toggle on={noti[k]} onToggle={()=>tg(setNoti,k)}/>
+          </div>
+        ))}
+      </div>
+      <div className="card" style={{padding:0,overflow:"hidden"}}>
+        {[["내 건강금융지갑","건강금융지갑"],["내 보험","보험"],["Health NFT 보관함","Health NFT"]].map(([t,m],i)=>(
+          <button key={t} className="linkrow" style={{borderBottom:i<2?"1px solid var(--border)":"none"}} onClick={()=>nav&&nav(m)}><span>{t}</span><ChevronRight size={16} color="var(--muted)"/></button>
+        ))}
+      </div>
+      <div className="chnote">※ 마이페이지는 시연용 데모입니다. 의료데이터는 일반 프로필과 분리·암호화 저장하며, DID 동의로 접근을 제어하는 설계입니다.</div>
+    </div>
+  );
+}
+
+/* ============================ 보험 자동 펫실손보험 지원 ============================ */
+const INS_PLANS = [
+  { tier:"기본회원", daily:"—", surgery:"—", annual:"—", guardian:"—", color:"#5B8DEF", soft:"#EAF1FD" },
+  { tier:"골드", daily:"10만원", surgery:"100만원", annual:"100만원", guardian:"건강검진 + 일반상해", color:"#F2A30A", soft:"#FFF3DC" },
+  { tier:"프리미엄", daily:"20만원", surgery:"200만원", annual:"2,000만원", guardian:"건강검진 + 일반상해", color:"#8A63D2", soft:"#F1ECFD" },
+  { tier:"VIP", daily:"30만원", surgery:"300만원", annual:"3,000만원", guardian:"일반상해", color:"#EF5350", soft:"#FDE7E7" },
+];
+const INS_ROWS = [["치료비 / 일","daily"],["수술비","surgery"],["연간 한도","annual"],["보호자 혜택","guardian"]];
+const TIER_MIN = { "기본회원":0, "골드":100000, "프리미엄":200000, "VIP":300000 };
+function calculateTier(avg){ if(avg>=300000) return "VIP"; if(avg>=200000) return "프리미엄"; if(avg>=100000) return "골드"; return "기본회원"; }
+
+function AutoPetInsuranceSupport({ onTab }){
+  const nav=React.useContext(NavCtx);
+  const avg=145000;                       // 데모: 최근 3개월 평균 월 구매금액
+  const order=["기본회원","골드","프리미엄","VIP"];
+  const tier=calculateTier(avg);
+  const cur=INS_PLANS.find(p=>p.tier===tier);
+  const idx=order.indexOf(tier);
+  const next=idx<3?order[idx+1]:null;
+  const need=next?TIER_MIN[next]-avg:0;
+  const prog=next?Math.round((avg-TIER_MIN[tier])/(TIER_MIN[next]-TIER_MIN[tier])*100):100;
+  const won=(n)=>n.toLocaleString()+"원";
+  return (<>
+    <div className="airec"><div className="at"><Coins size={16} color="var(--orange)"/> 구매가 곧 보장입니다</div>
+      <div className="ap"><b>사료·간식·용품을 구매하는 일상 소비만으로도</b> 펫 치료비 보장이 자동으로 제공됩니다. 최근 3개월 평균 월 구매금액으로 등급이 자동 산정돼요.</div></div>
+
+    <div className="gradecard" style={{borderColor:cur.color}}>
+      <div className="gc-top">
+        <span className="gc-badge" style={{background:cur.color}}>{tier==="기본회원"?"BASIC":tier==="골드"?"GOLD":tier==="프리미엄"?"PREMIUM":"VIP"}</span>
+        <div><div className="gc-title">마루 보호자님의 현재 등급은 <b style={{color:cur.color}}>{tier}</b>입니다.</div>
+          <div className="sub2">최근 3개월 평균 월 구매금액 기준으로 자동 산정되었습니다.</div></div>
+      </div>
+      <div className="gc-stats">
+        <div><div className="gl">평균 월 구매</div><div className="gv num">{won(avg)}</div></div>
+        <div><div className="gl">다음 등급까지</div><div className="gv num">{next?won(need):"최고 등급"}</div>{next&&<div className="sub2">{next} 승급 시 보장 ↑</div>}</div>
+        <div><div className="gl">현재 보장</div><div className="gv" style={{fontSize:13.5}}>치료비 {cur.daily}/일 · 수술 {cur.surgery}</div><div className="sub2">연간 {cur.annual} · {cur.guardian}</div></div>
+      </div>
+      {next && <div className="gc-prog"><div className="gc-track"><div className="gc-fill" style={{width:prog+"%",background:cur.color}}/></div>
+        <div className="sub2" style={{marginTop:5}}>{tier} → {next} {prog}% 진행</div></div>}
+    </div>
+
+    <p className="ins-intro">3개월 평균 월 구매액을 기준으로 <b>4단계 등급</b>이 자동 적용됩니다. 등급이 높아질수록 보험 보장 한도가 확대되며, 보호자 본인의 보험 혜택도 함께 제공됩니다.</p>
+
+    <div className="instbl-wrap"><div className="instbl">
+      <div className="ic head lbl">구분</div>
+      {INS_PLANS.map(p=><div key={p.tier} className="ic head" style={{background:p.color,color:"#fff"}}>{p.tier}{p.tier===tier&&<span className="nowtag">현재</span>}</div>)}
+      <div className="ic subrow" style={{gridColumn:"1 / -1"}}>월 전자지갑 적립금</div>
+      {INS_ROWS.map(([label,key])=>(<React.Fragment key={key}>
+        <div className="ic rlbl">{label}</div>
+        {INS_PLANS.map(p=><div key={p.tier} className="ic val" style={p.tier===tier?{background:p.soft,fontWeight:800}:undefined}>{p[key]}</div>)}
+      </React.Fragment>))}
+    </div></div>
+
+    <div className="ins-cards">
+      {INS_PLANS.map(p=>(
+        <div key={p.tier} className="ins-card" style={p.tier===tier?{boxShadow:`0 0 0 2px ${p.color}`}:undefined}>
+          <div className="ich" style={{background:p.color}}>{p.tier}{p.tier===tier&&<span className="nowtag">현재</span>}</div>
+          <div className="icb">{INS_ROWS.map(([label,key])=><div key={key} className="icr"><span>{label}</span><b>{p[key]}</b></div>)}</div>
+        </div>
+      ))}
+    </div>
+
+    <div className="infobox">
+      <div className="ib-row"><span className="ib-ico"><ShieldCheck size={15} color="#5B8DEF"/></span><div>모든 <b>골드 이상</b> 등급에는 <b>배상책임보험</b>이 기본 포함됩니다. 반려동물로 인한 제3자 피해를 보장합니다.</div></div>
+      <div className="ib-row"><span className="ib-ico"><Sparkles size={15} color="var(--orange)"/></span><div><b>추가 보험 보장</b> : 보호자 건강검진 대비 보험 가입 · 장례비 보장 · MRI · 관절 별도 보장 등</div></div>
+    </div>
+
+    <div className="ins-cta">
+      <button className="cbtn pri" onClick={()=>onTab&&onTab("my")}><ShieldCheck size={15}/> 내 보험 혜택 확인하기</button>
+      <button className="cbtn" onClick={()=>nav&&nav("건강금융지갑")}><Coins size={15}/> 다음 등급 혜택 보기</button>
+    </div>
+    <div className="chnote">본 보장내용은 예시이며, 실제 보험 보장 여부와 한도는 제휴 보험사의 약관·인수조건·회원 등급·구매 실적에 따라 달라질 수 있습니다.</div>
+  </>);
+}
+
+/* ============================ 보험 (무상 임베디드 펫보험) ============================ */
+function InsuranceSection(){
+  const [tab,setTab]=useState("auto");
+  const [claimed,setClaimed]=useState(false);
+  const I=INSURANCE; const nav=React.useContext(NavCtx);
+  const won=(n)=>n.toLocaleString()+"원";
+  const tabs=[["auto","자동 펫실손 지원",Coins],["my","내 보험",ShieldCheck],["cover","보장 조회",FileText],["claim","보험금 청구",Receipt]];
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico"><ShieldCheck size={24} color="#fff"/></span>
+        <div><div className="aih-t">보험 · 무상 임베디드 펫보험</div><div className="aih-s">추가 보험료 0원 · 치료비 자동 보장 · 적립금 {won(I.reserve)} <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
+      <div className="chtabs">{tabs.map(([k,t,Ic])=><button key={k} className={`chtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}><Ic size={15}/> {t}</button>)}</div>
+      {tab==="auto" && <AutoPetInsuranceSupport onTab={setTab}/>}
+      {tab==="my" && <>
+        <div className="airec"><div className="at"><ShieldCheck size={16} color="var(--orange)"/> {I.plan}</div>
+          <div className="ap">마루의 건강활동·데이터가 보장의 재원이 되어, <b>추가 보험료 없이</b> 치료비가 자동 보장됩니다. 가입일 {I.since} · 상태 <b style={{color:"var(--green)"}}>{I.status}</b></div></div>
+        <div className="hm2">
+          <div className="card"><div className="rct"><Coins size={18} color="var(--orange)"/> 보장 한도·적립</div>
+            <div className="statgrid" style={{gridTemplateColumns:"repeat(3,1fr)"}}>
+              <div className="statc"><div className="sl">연 보장한도</div><div className="sv num" style={{fontSize:18}}>1,000<span className="su">만원</span></div><div className="sr">질병·상해</div></div>
+              <div className="statc"><div className="sl">자기부담률</div><div className="sv num" style={{fontSize:18}}>{I.copay}<span className="su">%</span></div><div className="sr">표준형</div></div>
+              <div className="statc"><div className="sl">보험적립금</div><div className="sv num" style={{fontSize:18}}>{I.reserve/10000}<span className="su">만원</span></div><div className="sr">건강활동 적립</div></div>
+            </div></div>
+          <div className="card" style={{display:"flex",flexDirection:"column"}}><div className="rct"><FileSignature size={18} color="var(--orange)"/> 추가 보험료</div>
+            <div style={{flex:1,display:"grid",placeItems:"center",padding:"6px 0"}}><div style={{textAlign:"center"}}><div className="num" style={{fontSize:46,fontWeight:900,color:"var(--orange-deep)",lineHeight:1}}>0<span style={{fontSize:20}}>원</span></div><div className="sub2" style={{marginTop:6}}>건강활동·데이터로 보험료를 대체합니다</div></div></div></div>
+        </div>
+        <div className="card"><div className="rct"><ShieldCheck size={18} color="var(--orange)"/> 보장 항목</div>
+          {I.coverage.map((c,i)=><div className="covrow" key={i}><span className="ck">{c.k}</span><div className="ctrk"><div className="cf" style={{width:c.rate+"%"}}/></div><span className="cr num">{c.rate}%</span></div>)}
+          <div className="chnote">※ 보장률·한도는 시연용 예시이며, 실제 보장은 제휴 펫보험사 약관·정식 라이선스 채널을 따릅니다.</div></div>
+      </>}
+      {tab==="cover" && <>
+        <div className="airec"><div className="at"><Sparkles size={16} color="var(--orange)"/> 마루 위험질환 기반 예상 치료비·본인부담</div>
+          <div className="ap">AI 건강 예측에서 도출된 위험질환의 예상 진료비에 무상 임베디드 펫보험을 적용한 <b>예상 본인부담금</b>입니다.</div></div>
+        {I.estimates.map((e,i)=>{ const cov=Math.round(e.cost*e.rate/100); const self=e.cost-cov; return (
+          <div className="estc" key={i}><div><div className="en">{e.name}</div><div className="er">{e.risk} · 예상 진료비 {won(e.cost)} · 보장률 {e.rate}%</div></div>
+            <div className="ev"><div className="self num">{won(self)}</div><div className="cov num">보장 {won(cov)} 적용</div></div></div>
+        );})}
+        <button className="cbtn" onClick={()=>nav&&nav("건강관리")}><AlertTriangle size={15}/> 마루 질환 위험 자세히 보기</button>
+        <div className="chnote">※ 예상 금액이며 실제 진료비·보장은 병원·약관에 따라 달라집니다.</div>
+      </>}
+      {tab==="claim" && <>
+        <div className="card" style={{border:"1.5px solid #FBD3AC",background:"linear-gradient(180deg,#FFF8F1,#fff)"}}>
+          <div className="rct"><FileSignature size={18} color="var(--orange)"/> 스마트컨트랙트 자동 청구</div>
+          <div className="estc" style={{background:"#fff"}}><div><div className="en">슬개골 정밀검사</div><div className="er">예상 지급일 2024-06-25 · 서류 없는 자동 청구</div></div>
+            <div className="ev"><div className="self num">1,120,000원</div><div className="cov num">자동지급 예정</div></div></div>
+          {!claimed ? <button className="cbtn pri" onClick={()=>setClaimed(true)}><Check size={15}/> 원클릭 청구 승인</button>
+            : <div className="sumbox" style={{background:"var(--green-soft)",borderColor:"#BFE6D2"}}><Check size={16} color="var(--green)"/><div><b style={{color:"var(--green)"}}>청구가 접수되었습니다</b><p>서류 없이 스마트컨트랙트로 처리되며, 지급 시 건강금융지갑에 자동 기록됩니다.</p></div></div>}
+        </div>
+        <div className="card"><div className="rct"><Receipt size={18} color="var(--orange)"/> 청구·적립 내역</div>
+          {I.claims.map((c,i)=><div className="vrow" key={i}><span className="vic" style={{background:c.status==="지급완료"?"var(--green-soft)":c.status==="적립"?"#FFF1D6":"#FFE7D3"}}>{c.status==="지급완료"?<Check size={16} color="var(--green)"/>:c.status==="적립"?<Coins size={16} color="#C98A12"/>:<FileSignature size={16} color="var(--orange)"/>}</span>
+            <div style={{flex:1,minWidth:0}}><div className="vn">{c.name}</div><div className="vm num">{c.date}</div></div>
+            <div className="vnext"><div className="num" style={{fontWeight:800,fontSize:13}}>{c.amount>0?won(c.amount):"-"}</div><div className="sub2">{c.status}</div></div></div>)}
+        </div>
+        <div className="chnote">※ 보험금·청구는 시연용 예시입니다. 실제 청구·지급은 제휴 펫보험사 정식 채널을 따릅니다.</div>
+      </>}
+    </div>
+  );
+}
+
+/* ============================ AI 상담 (마루 주치의) ============================ */
+function coachReply(text){
+  const raw=text||""; const t=raw.replace(/\s/g,"");
+  // 1) 응급 감지
+  if(COACH_URGENT.some(k=>t.includes(k))){
+    return { urgent:true, a:"⚠️ 응급 상황일 수 있어요. 지체 없이 가까운 24시·응급 동물병원에 연락하거나 방문하세요. 이물·중독(초콜릿·포도·양파 등)이 의심되면 먹은 것과 시간을 메모해 가시면 진료에 도움이 됩니다.", chips:["24시·응급 병원 찾기","보호자 거주지 병원"] };
+  }
+  // 2) 매칭되는 토픽 모두 수집 (증상 조합)
+  const hits=COACH_QA.filter(q=>q.m.some(k=>t.includes(k)));
+  if(hits.length===0){
+    return { a:"마루의 건강검진·예방접종·체중·보험 정보를 바탕으로 답해드려요. 슬개골/치아/체중/혈액수치/예방접종/보험/소화기/기침/눈/피부 등에 대해 물어보세요. 정확한 진단·처방은 동물병원 수의사 상담을 권고드립니다.", chips:["건강점수 어때?","슬개골 괜찮아?","입냄새가 나요","설사를 해요"] };
+  }
+  if(hits.length===1){
+    const q=hits[0];
+    return { a:q.a, fu:q.fu, chips:q.chips };
+  }
+  // 여러 토픽 동시 언급 → 조합 답변
+  const top=hits.slice(0,3);
+  const a="여러 가지가 함께 궁금하시군요. 항목별로 정리해 드릴게요.\n\n"+top.map(q=>"• ["+q.k+"] "+q.a).join("\n\n");
+  const chips=[...new Set(top.flatMap(q=>q.chips))].slice(0,4);
+  return { a, fu:"가장 걱정되는 증상부터 더 자세히 살펴볼까요?", chips };
+}
+function AIConsultSection(){
+  const [msgs,setMsgs]=useState([{r:"ai",t:"안녕하세요! 마루의 AI 주치의예요. 🐶 건강검진 결과와 예방접종·보험 정보를 알고 있어요. 무엇이 궁금하신가요?"}]);
+  const [input,setInput]=useState("");
+  const [chips,setChips]=useState(["건강점수 어때?","슬개골 괜찮아?","스케일링 필요해?","예방접종 일정","치료비 보장돼?"]);
+  const logRef=useRef(null);
+  useEffect(()=>{ if(logRef.current) logRef.current.scrollTop=logRef.current.scrollHeight; },[msgs]);
+  const ask=(text)=>{ if(!text||!text.trim())return; const r=coachReply(text);
+    setMsgs(m=>{ const n=[...m,{r:"me",t:text},{r:"ai",t:r.a,urgent:r.urgent}]; if(r.fu) n.push({r:"ai",t:r.fu,fu:true}); return n; });
+    setInput(""); if(r.chips)setChips(r.chips); };
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico"><Bot size={24} color="#fff"/></span>
+        <div><div className="aih-t">AI 상담 · 마루 주치의</div><div className="aih-s">마루의 건강 데이터 기반 24시간 상담 <span style={{color:"var(--muted)"}}>(시연용 · 수의사 진단 대체 아님)</span></div></div></div>
+      <div className="chatwrap">
+        <div className="chatlog" ref={logRef}>
+          {msgs.map((m,i)=><div key={i} className={`cbub ${m.r==="me"?"me":"ai"}${m.urgent?" urgent":""}${m.fu?" fu":""}`}>{m.r==="ai"&&!m.fu&&<div className="av"><Bot size={14}/> AI 주치의</div>}{m.fu&&<MessageCircle size={13} style={{verticalAlign:"-2px",marginRight:4}}/>}{m.t}</div>)}
+        </div>
+        <div className="chips">{chips.map((c,i)=><button key={i} className="chip" onClick={()=>ask(c)}>{c}</button>)}</div>
+        <div className="chatbar"><input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")ask(input);}} placeholder="마루 건강에 대해 물어보세요"/><button onClick={()=>ask(input)}><Send size={18}/></button></div>
+      </div>
+      <div className="chnote">※ AI 상담은 마루의 데모 건강 데이터 기반 예시입니다. ‘진단/처방’이 아닌 정보 제공이며, 증상이 있으면 동물병원 수의사 상담을 권고합니다.</div>
+    </div>
+  );
+}
+
+/* ============================ Health NFT ============================ */
+function NftSection(){
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico"><Award size={24} color="#fff"/></span>
+        <div><div className="aih-t">Health NFT · 마루</div><div className="aih-s">검진·접종·보험·등록 기록을 위·변조 불가능한 NFT/SBT로 인증 · 총 {NFT_LIST.length}건 <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
+      <div className="benefit"><span><Award size={15}/> SBT(양도불가) 인증</span><span><FileText size={15}/> 검진리포트 무결성</span><span><ShieldCheck size={15}/> 보험·청구 연계</span><span><PawPrint size={15}/> 동물등록 연동</span></div>
+      <div className="nftgrid">
+        {NFT_LIST.map((n,i)=>{ const Ic=n.ic; return (
+          <div className="nftc" key={i}>
+            <div className="shield">
+              <svg viewBox="0 0 64 70" width="64" height="70"><path d="M32 3 L58 12 V34 C58 50 46 62 32 67 C18 62 6 50 6 34 V12 Z" fill="url(#ng)" stroke="var(--orange-deep)" strokeWidth="1.5"/><defs><linearGradient id="ng" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFE7D3"/><stop offset="1" stopColor="#FFD0AC"/></linearGradient></defs></svg>
+              <span style={{position:"absolute",top:20,left:21}}><Ic size={22} color="var(--orange-deep)"/></span>
+              <span style={{position:"absolute",bottom:8,right:9,width:20,height:20,borderRadius:"50%",background:"var(--green)",display:"grid",placeItems:"center"}}><CheckCircle2 size={14} color="#fff"/></span>
+            </div>
+            <div className="nt">{n.t}</div>
+            <div className="nd">{n.desc}</div>
+            <div className="ndt num">발행 {n.date} · {n.sbt?"SBT":"NFT"}</div>
+          </div>
+        );})}
+      </div>
+      <div className="chnote">※ NFT/SBT 인증은 시연용 예시입니다. 실제 발행·온체인 기록은 정식 서비스 연동 시 제공되며, 토큰은 포인트(오프체인) 개념으로 가상자산·블록체인은 법제화 후 적용됩니다.</div>
+    </div>
+  );
+}
+
+/* ============================ 리워드 센터 ============================ */
+function RewardSection(){
+  const R=REWARD; const nav=React.useContext(NavCtx);
+  const won=(n)=>n.toLocaleString();
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico"><Gift size={24} color="#fff"/></span>
+        <div><div className="aih-t">리워드 센터 · Health Token</div><div className="aih-s">제품 구매·병원·보험·건강활동 등 모든 활동으로 HPET를 적립하세요 <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
+
+      <div className="walhero">
+        <div className="wl">누적 Health Token</div>
+        <div className="wv num">🪙 {won(R.total)} <span style={{fontSize:18}}>HPET</span></div>
+        <div className="wsub">
+          <div>오늘 획득<b className="num">+{R.todayGain} HPET</b></div>
+          <div>이번 달 적립<b className="num">+{won(R.thisMonth)} HPET</b></div>
+          <div>사용 가능<b className="num">{won(R.total)} HPET</b></div>
+        </div>
+      </div>
+
+      <div className="bklbl"><Trophy size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 진행 중 미션 <span className="sub" style={{fontWeight:600,color:"var(--muted)"}}>· 달성 시 자동 적립</span></div>
+      <div className="card">
+        {R.missions.map((m,i)=>{ const Ic=m.ic; const pct=Math.min(100,Math.round(m.cur/m.goal*100)); return (
+          <div className="mrow" key={i} style={{borderBottom:i<R.missions.length-1?"1px solid var(--border)":"none"}}>
+            <span className="vic" style={{background:"var(--orange-soft)"}}><Ic size={16} color="var(--orange)"/></span>
+            <div style={{flex:1,minWidth:0}}>
+              <div className="mr-top"><b style={{fontSize:13.5}}>{m.t}</b><span className="num" style={{fontWeight:800,color:"var(--green)",fontSize:13}}>+{m.reward} HPET</span></div>
+              <div className="mr-track"><div className="mr-fill" style={{width:pct+"%"}}/></div>
+              <div className="sub2" style={{marginTop:3}}>{m.cur} / {m.goal} {m.unit} · {pct}%</div>
+            </div>
+            <button className="goarrow" onClick={()=>nav&&nav(m.go)} title="바로가기"><ChevronRight size={18} color="var(--muted)"/></button>
+          </div>
+        );})}
+      </div>
+
+      <div className="bklbl"><Coins size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 리워드 적립 항목 <span className="sub" style={{fontWeight:600,color:"var(--muted)"}}>· 전 영역 통합</span></div>
+      {R.earn.map((g,gi)=>{ const G=g.ic; return (
+        <div className="card" key={gi} style={{marginBottom:10}}>
+          <div className="rct"><span className="vic" style={{background:"var(--orange-soft)",width:30,height:30}}><G size={16} color="var(--orange)"/></span> {g.group}
+            <button className="linkmini" onClick={()=>nav&&nav(g.go)} style={{marginLeft:"auto"}}>바로가기 ›</button></div>
+          {g.items.map((it,i)=>(
+            <div className="erow" key={i} style={{borderBottom:i<g.items.length-1?"1px solid var(--border)":"none"}}>
+              <div style={{flex:1,minWidth:0}}><div className="en2">{it.t}</div><div className="sub2">{it.d}</div></div>
+              <span className="amt2 num">{it.amt} HPET</span>
+            </div>
+          ))}
+        </div>
+      );})}
+
+      <div className="card"><div className="rct"><Wallet size={18} color="var(--orange)"/> 적립한 토큰 사용처</div>
+        <div className="benefit" style={{margin:0,border:"none",padding:0,flexWrap:"wrap"}}>
+          <span><ShieldCheck size={15}/> 보험료 할인·보장 강화</span><span><Building2 size={15}/> 병원비 결제</span><span><ShoppingBag size={15}/> 제품 구매</span><span><Bone size={15}/> 맞춤 식단</span>
+        </div>
+        <button className="cbtn" style={{marginTop:12}} onClick={()=>nav&&nav("건강금융지갑")}><Wallet size={15}/> 건강금융지갑에서 사용·내역 보기</button>
+      </div>
+
+      <div className="bklbl"><TrendingUp size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 최근 적립 내역</div>
+      <div className="card">
+        {WALLET2.earn.map((e,i)=>{ const Ic=e.ic; return (
+          <div className="vrow" key={i} style={{borderBottom:i<WALLET2.earn.length-1?"1px solid var(--border)":"none"}}>
+            <span className="vic" style={{background:"var(--orange-soft)"}}><Ic size={16} color="var(--orange)"/></span>
+            <div style={{flex:1,minWidth:0}}><div className="vn">{e.t}</div><div className="vm">{e.d}</div></div>
+            <span className="num" style={{fontWeight:900,fontSize:14,color:"var(--green)",flexShrink:0}}>{e.amt} <span style={{fontSize:10,color:"var(--muted)"}}>HPET</span></span>
+          </div>
+        );})}
+      </div>
+      <div className="chnote">※ 적립 항목·금액은 시연용 예시입니다. 토큰=포인트(오프체인) 개념이며 실제 적립률·사용처는 정식 서비스 정책을 따릅니다.</div>
+    </div>
+  );
+}
+
+/* ============================ 건강금융지갑 ============================ */
+function WalletSection(){
+  const W=WALLET2; const won=(n)=>n.toLocaleString();
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico"><Wallet size={24} color="#fff"/></span>
+        <div><div className="aih-t">건강금융지갑 · 마루</div><div className="aih-s">건강활동으로 적립한 Health Token·포인트·보험적립금 <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
+      <div className="walhero">
+        <div className="wl">총 자산 (원화 환산 기준)</div>
+        <div className="wv num">₩ {won(W.total)}</div>
+        <div className="wsub">
+          <div>Health Token<b className="num">{won(W.token)} HPET</b></div>
+          <div>포인트<b className="num">{won(W.point)} P</b></div>
+          <div>보험적립금<b className="num">{won(W.reserve)} 원</b></div>
+          <div>NFT 인증<b className="num">{W.nft} 건</b></div>
+        </div>
+      </div>
+      <div className="hm2">
+        <div className="card"><div className="rct"><TrendingUp size={18} color="var(--orange)"/> 토큰 적립 내역</div>
+          {W.earn.map((e,i)=>{ const Ic=e.ic; return (<div className="vrow" key={i}><span className="vic" style={{background:"var(--orange-soft)"}}><Ic size={16} color="var(--orange)"/></span>
+            <div style={{flex:1,minWidth:0}}><div className="vn">{e.t}</div><div className="vm">{e.d}</div></div>
+            <div className="num" style={{fontWeight:900,fontSize:14,color:"var(--green)",flexShrink:0}}>{e.amt} <span style={{fontSize:10,color:"var(--muted)"}}>HPET</span></div></div>);})}
+        </div>
+        <div className="card"><div className="rct"><Coins size={18} color="var(--orange)"/> 토큰 사용처</div>
+          {W.use.map((u,i)=>{ const Ic=u.ic; return (<div className="adv" key={i}><span className="ic"><Ic size={18} color="var(--orange)"/></span><div style={{flex:1}}><b>{u.t}</b><p>{u.d}</p></div></div>);})}
+        </div>
+      </div>
+      <div className="card"><div className="rct"><ShieldCheck size={18} color="var(--orange)"/> 보장의 재원이 되는 건강활동</div>
+        <p style={{margin:0,color:"var(--sub)",fontSize:13,lineHeight:1.6}}>마루의 검진·예방접종·산책·데이터 제공이 토큰 경제를 만들고, 그 가치가 <b>무상 임베디드 펫보험</b>의 재원이 됩니다. 건강하게 관리할수록 보장이 더 단단해집니다.</p>
+      </div>
+      <div className="chnote">※ 토큰=포인트(오프체인) 개념이며 플랫폼 환전 후 사용합니다. 가상자산·블록체인은 법제화 후 적용 예정이며, 모든 수치는 시연용 데모입니다.</div>
+    </div>
+  );
+}
+
+/* ============================ 건강관리 (마루 건강 데이터 활용) ============================ */
+const stColor = (st)=> st==="정상"?"var(--green)": st==="주의"?"#E8913A":"#EF5B5B";
+const stBg = (st)=> st==="정상"?"var(--green-soft)": st==="주의"?"#FFF1DF":"#FDE4E4";
+function StatusTag({st}){ return <span style={{fontSize:11,fontWeight:800,padding:"2px 9px",borderRadius:999,color:stColor(st),background:stBg(st),whiteSpace:"nowrap"}}>{st}</span>; }
+
+function DataTable({rows}){
+  return (
+    <div className="dtable">
+      <div className="drow dhdr"><span>항목</span><span className="num">측정값</span><span className="num">참고범위</span><span>판정</span></div>
+      {rows.map((r,i)=>(
+        <div className="drow" key={i}>
+          <span className="dk">{r.k}</span>
+          <span className="dv num" style={{color:r.st!=="정상"?stColor(r.st):"var(--text)"}}>{r.v}{r.unit?<span className="du">{r.unit}</span>:null}</span>
+          <span className="dref num">{r.ref}</span>
+          <StatusTag st={r.st}/>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WeightSpark({data,target}){
+  const ws=data.map(d=>d.w); const min=Math.min(...ws,target)-0.2, max=Math.max(...ws,target)+0.2;
+  const W=300,Hh=110,pad=22;
+  const X=(i)=>pad+i*(W-2*pad)/(data.length-1);
+  const Y=(w)=>Hh-pad-((w-min)/(max-min))*(Hh-2*pad);
+  const path=data.map((d,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(d.w).toFixed(1)).join(" ");
+  const ty=Y(target);
+  return (
+    <svg viewBox={`0 0 ${W} ${Hh}`} width="100%" height={Hh} style={{overflow:"visible"}}>
+      <line x1={pad} y1={ty} x2={W-pad} y2={ty} stroke="#4FB286" strokeWidth="1.2" strokeDasharray="4 4"/>
+      <text x={W-pad} y={ty-5} fontSize="9" fill="#4FB286" textAnchor="end" fontWeight="700">목표 {target}kg</text>
+      <path d={path} fill="none" stroke="var(--orange)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      {data.map((d,i)=>(<g key={i}>
+        <circle cx={X(i)} cy={Y(d.w)} r="3.5" fill="#fff" stroke="var(--orange)" strokeWidth="2"/>
+        <text x={X(i)} y={Y(d.w)-9} fontSize="9.5" fill="var(--sub)" textAnchor="middle" fontWeight="700" className="num">{d.w}</text>
+        <text x={X(i)} y={Hh-5} fontSize="9.5" fill="var(--muted)" textAnchor="middle">{d.m}</text>
+      </g>))}
+    </svg>
+  );
+}
+
+function ActivityBars({data}){
+  return (
+    <div className="mbars">
+      {data.map((d,i)=>(
+        <div className="mbar" key={i}>
+          <span className="bv num">{d.a}</span>
+          <div className="btrk"><div className="bf" style={{height:d.a+"%"}}/></div>
+          <span className="bl">{d.m}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function HMOverview({H}){
+  return (<>
+    <div className="card">
+      <div className="hmtop">
+        <div style={{textAlign:"center"}}>
+          <div style={{fontSize:13,color:"var(--sub)",fontWeight:700,marginBottom:2}}>종합 건강점수</div>
+          <Gauge score={H.score}/>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5,marginTop:2}}>
+            <Heart size={15} fill="var(--green)" color="var(--green)"/><span style={{color:"var(--green)",fontWeight:800,fontSize:14}}>{H.status} · {H.grade}</span>
+          </div>
+        </div>
+        <div style={{flex:1,minWidth:200,display:"flex",flexDirection:"column",gap:12}}>
+          {HEALTH.metrics.map((m,i)=><MetricBar key={m.label} m={m} delay={200+i*120}/>)}
+        </div>
+      </div>
+      <div className="sumbox"><Stethoscope size={16} color="var(--orange)"/><div><b>수의사 종합 소견</b><p>{H.summary}</p><span className="sub2">검진 {H.checkupDate} · {H.hospital}</span></div></div>
+    </div>
+    <div className="bklbl"><Activity size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 신체 계측</div>
+    <div className="statgrid">
+      {H.vitals.map((v,i)=>(
+        <div className="statc" key={i}>
+          <div className="sl">{v.k}</div>
+          <div className="sv num" style={{color:v.st!=="정상"?stColor(v.st):"var(--text)"}}>{v.v}<span className="su">{v.unit}</span></div>
+          <div className="sr">{v.note||("참고 "+v.ref)}</div>
+          <StatusTag st={v.st}/>
+        </div>
+      ))}
+    </div>
+    <div className="chnote">※ 본 건강 데이터는 시연용 데모이며, 실제 검진·진단을 대체하지 않습니다.</div>
+  </>);
+}
+
+function HMCheckup({H}){
+  return (<>
+    <div className="card"><div className="rct"><Thermometer size={18} color="var(--orange)"/> 신체검사</div><DataTable rows={H.vitals}/></div>
+    <div className="card"><div className="rct"><Droplets size={18} color="var(--orange)"/> 혈액검사 — 혈구(CBC)</div><DataTable rows={H.cbc}/></div>
+    <div className="card"><div className="rct"><FlaskConical size={18} color="var(--orange)"/> 혈액검사 — 혈액화학</div><DataTable rows={H.chem}/>
+      <div className="sub2" style={{marginTop:8}}>· 콜레스테롤(T-chol) 경계 — 저지방 식이로 추적관찰 권고</div></div>
+    <div className="card"><div className="rct"><Droplet size={18} color="var(--orange)"/> 소변검사</div><DataTable rows={H.urine}/></div>
+    <div className="card"><div className="rct"><Activity size={18} color="var(--orange)"/> 영상·기타 검사</div>
+      <div className="dtable">{H.imaging.map((m,i)=>(
+        <div className="drow img" key={i}><span className="dk">{m.k}</span><span className="dimg">{m.r}</span><StatusTag st={m.st}/></div>
+      ))}</div>
+    </div>
+    <div className="chnote">※ 수치·소견은 시연용 데모 데이터입니다. 참고범위는 일반 소형견 기준이며 검사 장비·기관에 따라 다를 수 있습니다.</div>
+  </>);
+}
+
+function HMRisk({H}){
+  return (<>
+    <div className="airec"><div className="at"><Sparkles size={16} color="var(--orange)"/> 품종·검진 기반 질환 위험 예측 (XAI)</div>
+      <div className="ap">말티즈 품종 호발 질환과 마루의 검진 결과를 결합해, 질환별 위험도와 근거·권고를 제시합니다.</div></div>
+    <div className="riskgrid">
+      {H.risks.map((r,i)=>{ const Ic=r.icon; const c=stColor(r.dots>=2?"주의":"정상"); return (
+        <div className="riskc" key={i}>
+          <div className="rh"><span className="ric" style={{background:stBg(r.dots>=2?"주의":"정상")}}><Ic size={18} color={c}/></span>
+            <div style={{flex:1}}><div className="rn">{r.name}</div>
+              <div className="rd"><span style={{color:c,fontWeight:800,fontSize:13}}>{r.level}</span>
+                <span className="dots">{[0,1,2].map(d=><span key={d} style={{background:d<r.dots?c:"#EADFD0"}}/>)}</span></div></div>
+          </div>
+          <p className="rwhy">{r.why}</p>
+        </div>
+      );})}
+    </div>
+    <div className="chnote">※ 위험 예측은 시연용 예시이며, 정확한 진단·처방은 동물병원 수의사 상담을 권고합니다.</div>
+  </>);
+}
+
+function HMVaccine({H}){
+  return (<>
+    <div className="benefit"><span><Syringe size={15}/> 접종 {H.vaccines.filter(v=>v.done).length}건 완료</span><span><CalendarPlus size={15}/> 다음 일정 자동 알림</span><span><Award size={15}/> 접종 이력 NFT 인증</span></div>
+    <div className="card">
+      <div className="rct"><Syringe size={18} color="var(--orange)"/> 예방접종·구충 이력</div>
+      {H.vaccines.map((v,i)=>(
+        <div className="vrow" key={i}>
+          <span className="vic" style={{background:v.soon?"#FFF1DF":"var(--green-soft)"}}>{v.done?<Check size={16} color={v.soon?"#E8913A":"var(--green)"}/>:<Syringe size={16} color="var(--orange)"/>}</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div className="vn">{v.name} {v.soon&&<span className="cbadge red">곧 예정</span>}</div>
+            <div className="vm num">최근 {v.last} · {v.cycle}</div>
+          </div>
+          <div className="vnext"><div className="sub2">다음</div><div className="num" style={{fontWeight:800,fontSize:13,color:v.soon?"#E8913A":"var(--sub)"}}>{v.next}</div></div>
+        </div>
+      ))}
+    </div>
+    <div className="chnote">※ 접종 주기·일정은 시연용 데모이며, 실제 접종 계획은 동물병원 수의사와 상담하세요.</div>
+  </>);
+}
+
+function HMTrend({H}){
+  return (<>
+    <div className="hm2">
+      <div className="card"><div className="rct"><Scale size={18} color="var(--orange)"/> 체중 추이 <span className="sub">· 최근 6개월</span></div>
+        <WeightSpark data={H.weightTrend} target={H.weightTarget}/>
+        <div className="sub2" style={{marginTop:6}}>안정적으로 감량 중 — 목표 {H.weightTarget}kg까지 0.2kg 남았습니다.</div></div>
+      <div className="card"><div className="rct"><TrendingUp size={18} color="var(--orange)"/> 활동량 추이 <span className="sub">· 활동점수</span></div>
+        <ActivityBars data={H.activityTrend}/>
+        <div className="sub2" style={{marginTop:6}}>일 산책 35~45분 유지 — 활동량 우수(90).</div></div>
+    </div>
+    <div className="card"><div className="rct"><Lightbulb size={18} color="var(--orange)"/> AI 맞춤 관리 권고</div>
+      {H.recommend.map((r,i)=>{ const Ic=r.ic; return (
+        <div className="adv" key={i}><span className="ic"><Ic size={18} color="var(--orange)"/></span><div style={{flex:1}}><b>{r.t}</b><p>{r.d}</p></div></div>
+      );})}
+    </div>
+    <div className="chnote">※ 관리 권고는 마루의 검진·체중·활동 데이터를 바탕으로 한 시연용 예시입니다.</div>
+  </>);
+}
+
+function HealthManageSection(){
+  const [tab,setTab]=useState("overview");
+  const H=MARU_HEALTH;
+  const tabs=[["overview","한눈에 보기",Activity],["checkup","건강검진 결과",FlaskConical],["risk","질환 위험 예측",AlertTriangle],["vaccine","예방접종·구충",Syringe],["trend","추이·관리 권고",TrendingUp]];
+  return (
+    <div className="hsec">
+      <div className="aihead">
+        <span className="aiico"><HeartPulse size={24} color="#fff"/></span>
+        <div>
+          <div className="aih-t">건강관리 · 마루</div>
+          <div className="aih-s">말티즈 · 4세 · 수컷(중성화) · 4.2kg · 검진일 {H.checkupDate} · 건강점수 {H.score} <span style={{color:"var(--muted)"}}>(시연용 데모 데이터)</span></div>
+        </div>
+      </div>
+      <div className="chtabs">{tabs.map(([k,t,Ic])=><button key={k} className={`chtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}><Ic size={15}/> {t}</button>)}</div>
+      {tab==="overview" && <HMOverview H={H}/>}
+      {tab==="checkup" && <HMCheckup H={H}/>}
+      {tab==="risk" && <HMRisk H={H}/>}
+      {tab==="vaccine" && <HMVaccine H={H}/>}
+      {tab==="trend" && <HMTrend H={H}/>}
+    </div>
+  );
+}
+
+/* ============================ 병원/예약 (동물병원) ============================ */
+const PET_LOC = { sido:"서울특별시", sigungu:"강남구", addr:"서울특별시 강남구" };
+const SIDO_ORDER = ["서울특별시","부산광역시","대구광역시","인천광역시","광주광역시","대전광역시","울산광역시","세종특별자치시","경기도","강원특별자치도","충청북도","충청남도","전북특별자치도","전라남도","경상북도","경상남도","제주특별자치도"];
+const PARTNER_KEYS = ["대학교 동물병원","대학동물병원","동물대학병원","VIP동물의료센터","이리온","해마루","청담우리","스카이동물메디컬","서울동물메디컬","고려동물","윈동물","아이엠디티","IMDT","헬프동물","24시","응급"];
+const isPartner = (n)=>PARTNER_KEYS.some(k=>n.indexOf(k)>=0);
+const isEmergency = (n)=>n.indexOf("24시")>=0||n.indexOf("응급")>=0||n.indexOf("나이트")>=0;
+const naverHref = (name,region)=>`https://search.naver.com/search.naver?query=${encodeURIComponent(name+" "+region)}`;
+const EXTERNAL_OK = !/localhost|127\.0\.0\.1/.test(location.hostname);
+function fmtTel(t){ if(!t) return ""; t=(""+t).replace(/[^0-9]/g,"");
+  if(t.startsWith("02")){ if(t.length===10) return t.replace(/(02)(\d{4})(\d{4})/,"$1-$2-$3"); if(t.length===9) return t.replace(/(02)(\d{3})(\d{4})/,"$1-$2-$3"); }
+  if(t.length===11) return t.replace(/(\d{3})(\d{4})(\d{4})/,"$1-$2-$3");
+  if(t.length===10) return t.replace(/(\d{3})(\d{3})(\d{4})/,"$1-$2-$3");
+  return t; }
+
+let _petHospPromise=null;
+function usePetHospitals(){
+  const [s,setS]=useState({loading:true,error:null,data:null});
+  useEffect(()=>{
+    if(!_petHospPromise) _petHospPromise=fetch("./data/pet_hospitals.json").then(r=>{ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); });
+    let alive=true;
+    _petHospPromise.then(d=>alive&&setS({loading:false,error:null,data:d})).catch(e=>alive&&setS({loading:false,error:String(e.message||e),data:null}));
+    return ()=>{alive=false;};
+  },[]);
+  return s;
+}
+
+let _leafletPromise=null;
+function ensureLeaflet(){
+  if(window.L) return Promise.resolve(window.L);
+  if(_leafletPromise) return _leafletPromise;
+  _leafletPromise=new Promise((res,rej)=>{
+    const css=document.createElement("link"); css.rel="stylesheet"; css.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(css);
+    const s=document.createElement("script"); s.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    s.onload=()=>res(window.L); s.onerror=()=>rej(new Error("leaflet")); document.body.appendChild(s);
+  });
+  return _leafletPromise;
+}
+
+function MapView({points,height=260}){
+  const ref=useRef(null), mapRef=useRef(null);
+  const [err,setErr]=useState(false);
+  useEffect(()=>{
+    let dead=false;
+    ensureLeaflet().then(L=>{
+      if(dead||!ref.current) return;
+      const pts=points.filter(p=>p.lat&&p.lng).slice(0,200);
+      if(!mapRef.current){
+        mapRef.current=L.map(ref.current,{scrollWheelZoom:false});
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(mapRef.current);
+        mapRef.current._grp=L.layerGroup().addTo(mapRef.current);
+      }
+      const map=mapRef.current; map._grp.clearLayers();
+      const icon=L.divIcon({className:"",html:'<div style="width:16px;height:16px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#F4843C;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>',iconSize:[16,16],iconAnchor:[8,16]});
+      if(pts.length===0){ map.setView([36.4,127.8],7); }
+      else{
+        const b=[];
+        pts.forEach(p=>{ const m=L.marker([p.lat,p.lng],{icon}).addTo(map._grp);
+          m.bindPopup(`<b>${p.name}</b><br>${p.addr||""}${p.tel?"<br>☎ "+fmtTel(p.tel):""}`); b.push([p.lat,p.lng]); });
+        if(b.length===1) map.setView(b[0],15); else map.fitBounds(b,{padding:[28,28]});
+      }
+      setTimeout(()=>map.invalidateSize(),120);
+    }).catch(()=>setErr(true));
+    return ()=>{dead=true;};
+  },[points]);
+  useEffect(()=>()=>{ if(mapRef.current){ mapRef.current.remove(); mapRef.current=null; } },[]);
+  if(err) return <div className="hload">지도를 불러오지 못했습니다. (네트워크 차단 환경일 수 있습니다)</div>;
+  return <div ref={ref} style={{height,borderRadius:14,overflow:"hidden",border:"1px solid var(--border)"}}/>;
+}
+
+function MapCard({title,points}){
+  const [open,setOpen]=useState(false);
+  return (
+    <div className="mapcard">
+      <button className="maphd" onClick={()=>setOpen(o=>!o)}>
+        <span style={{display:"flex",alignItems:"center",gap:7,fontWeight:800,fontSize:13.5}}><MapPin size={15} color="var(--orange)"/> {title}</span>
+        <span style={{display:"flex",alignItems:"center",gap:3,fontSize:12.5,fontWeight:700,color:"var(--orange-deep)"}}>{open?"지도 닫기":"지도 보기"} <ChevronRight size={14} style={{transform:open?"rotate(90deg)":"none",transition:"transform .2s"}}/></span>
+      </button>
+      {open && <div style={{padding:"12px 12px"}}><MapView points={points}/><div className="chnote" style={{marginTop:8}}>지도에는 좌표가 있는 병원이 최대 200곳까지 표시됩니다.</div></div>}
+    </div>
+  );
+}
+
+function HospRow({data,h,onDetail,onBook}){
+  const region=data.sido[h[1]]+" "+h[2];
+  const emer=isEmergency(h[0]), partner=isPartner(h[0]);
+  return (
+    <div className="center">
+      <div className="cimg">🏥</div>
+      <div className="cmain" onClick={()=>onDetail(h)} title="병원 상세 보기">
+        <div className="cname">{h[0]}
+          <span className="cbadge org">동물병원</span>
+          {emer && <span className="cbadge red"><Siren size={10}/> 24시·응급</span>}
+          {partner && !emer && <span className="cbadge pur"><BadgeCheck size={10}/> 제휴</span>}
+        </div>
+        <div className="cmeta"><span className="reg">{region}</span> · <MapPin size={12}/>{h[3]}{h[4]?<> · <Phone size={12}/>{fmtTel(h[4])}</>:null}</div>
+      </div>
+      <div className="cright">
+        {h[4] ? <a className="hlink" href={`tel:${h[4]}`}><Phone size={13}/> {fmtTel(h[4])}</a> : <span className="noinfo">전화정보 없음</span>}
+        <div className="obtns"><button onClick={()=>onDetail(h)}>상세</button><button className="book" onClick={()=>onBook(h)}>예약</button></div>
+      </div>
+    </div>
+  );
+}
+
+function HospitalDirectory({data,preset}){
+  const [sido,setSido]=useState(preset.sido||"전체");
+  const [sgg,setSgg]=useState(preset.sgg||"전체");
+  const [emer,setEmer]=useState(false);
+  const [q,setQ]=useState("");
+  const [shown,setShown]=useState(20);
+  const [sel,setSel]=useState(null);
+  const [detail,setDetail]=useState(null);
+  useEffect(()=>{ setSido(preset.sido||"전체"); setSgg(preset.sgg||"전체"); setShown(20); },[preset]);
+  const {sggBySido,countBySido}=React.useMemo(()=>{ const m={},c={}; for(const h of data.hospitals){ const s=data.sido[h[1]]; c[s]=(c[s]||0)+1; (m[s]||(m[s]=new Set())).add(h[2]); } return {sggBySido:m,countBySido:c}; },[data]);
+  const sidoChips=React.useMemo(()=>["전체",...[...data.sido].sort((a,b)=>SIDO_ORDER.indexOf(a)-SIDO_ORDER.indexOf(b))],[data]);
+  const sggOptions=React.useMemo(()=>sido==="전체"?[]:[...(sggBySido[sido]||[])].sort((a,b)=>a.localeCompare(b,"ko")),[sido,sggBySido]);
+  const list=React.useMemo(()=>{
+    const si=sido==="전체"?-1:data.sido.indexOf(sido); const qq=q.trim();
+    return data.hospitals.filter(h=>(si<0||h[1]===si)&&(sgg==="전체"||h[2]===sgg)&&(!emer||isEmergency(h[0]))&&(!qq||h[0].indexOf(qq)>=0||h[3].indexOf(qq)>=0));
+  },[data,sido,sgg,emer,q]);
+  const view=list.slice(0,shown); const reset=()=>setShown(20);
+  return (<>
+    <div className="benefit">
+      <span><Building2 size={15}/> 전국 동물병원 {data.meta.hospitals.toLocaleString()}곳</span>
+      <span><Siren size={15}/> 24시·응급 동물병원</span>
+      <span><CalendarCheck size={15}/> 실시간 예약</span>
+      <span><Award size={15}/> NFT 예약증 발행</span>
+    </div>
+    <MapCard title={`동물병원 위치 지도 (${(sido==="전체"?"전국":sido)+(sgg!=="전체"?" "+sgg:"")} ${list.length.toLocaleString()}곳)`} points={list.map(h=>({name:h[0],addr:h[3],tel:h[4],lng:h[5],lat:h[6]}))}/>
+    <div className="bklbl">지역(시·도) 선택</div>
+    <div className="regions">{sidoChips.map(r=><button key={r} className={`fsel ${sido===r?"on":""}`} onClick={()=>{setSido(r);setSgg("전체");reset();}}>{r==="서울특별시"&&<Home size={11} style={{verticalAlign:"-1px",marginRight:3}}/>}{r}{r!=="전체"&&countBySido[r]?<span className="cnt">{countBySido[r].toLocaleString()}</span>:""}</button>)}</div>
+    <div className="hfilt">
+      <select value={sgg} onChange={e=>{setSgg(e.target.value);reset();}} disabled={sido==="전체"}>
+        <option value="전체">{sido==="전체"?"시·도 먼저 선택":"시·군·구 전체"}</option>
+        {sggOptions.map(s=><option key={s} value={s}>{s}</option>)}
+      </select>
+      <button className={`fsel big ${emer?"on":""}`} onClick={()=>{setEmer(v=>!v);reset();}}><Siren size={13} style={{verticalAlign:"-2px"}}/> 24시·응급만</button>
+    </div>
+    <div className="filterbar">
+      <div className="fsearch"><Search size={15}/><input value={q} onChange={e=>{setQ(e.target.value);reset();}} placeholder="병원명·주소 검색"/></div>
+    </div>
+    <div className="chcount">{sido==="전체"?"전국":sido}{sgg!=="전체"?" "+sgg:""}{emer?" · 24시·응급":""} <b style={{color:"var(--orange-deep)"}}>{list.length.toLocaleString()}</b>곳</div>
+    {view.map((h,i)=><HospRow key={i} data={data} h={h} onDetail={setDetail} onBook={setSel}/>)}
+    {view.length===0 && <div className="hload">조건에 맞는 동물병원이 없습니다. 필터를 조정해 보세요.</div>}
+    {shown<list.length && <button className="cbtn" onClick={()=>setShown(x=>x+20)}>더 보기 ({(list.length-shown).toLocaleString()}곳 더)</button>}
+    <div className="chnote">※ 동물병원 목록·주소·전화·좌표는 지방행정인허가데이터(LOCALDATA) ‘동물병원’ 공공데이터({data.meta.asof} · 공공누리 제1유형) 기반으로, 영업 중 {data.meta.hospitals.toLocaleString()}곳을 수록했습니다(좌표 {data.meta.withCoord.toLocaleString()}곳). <b>24시·응급 표시는 상호명 기준 추정</b>이며, 실시간 진료시간·예약 슬롯은 제휴 동물병원 API 연동 시 반영됩니다. 의료기관 정보 제공은 이용자의 합리적 선택을 돕기 위한 것입니다.</div>
+    {sel && <HospitalBookingModal data={data} h={sel} onClose={()=>setSel(null)}/>}
+    {detail && <HospitalDetailModal data={data} h={detail} onClose={()=>setDetail(null)} onBook={x=>{setDetail(null);setSel(x);}}/>}
+  </>);
+}
+
+function HospitalRec({data,onGo}){
+  const [region,setRegion]=useState(PET_LOC.sido);
+  const [detail,setDetail]=useState(null), [sel,setSel]=useState(null);
+  const atHome=region===PET_LOC.sido;
+  const {emergency,byGu,regionCount,distribution}=React.useMemo(()=>{
+    const si=data.sido.indexOf(region); const dist={}; const inR=[];
+    for(const h of data.hospitals){ dist[data.sido[h[1]]]=(dist[data.sido[h[1]]]||0)+1; if(h[1]===si) inR.push(h); }
+    const emergency=inR.filter(h=>isEmergency(h[0])).slice(0,6);
+    const guMap={}; for(const h of inR)(guMap[h[2]]||(guMap[h[2]]=[])).push(h);
+    let byGu=Object.keys(guMap).map(gu=>({gu,items:guMap[gu],home:atHome&&gu.indexOf(PET_LOC.sigungu)>=0})).sort((a,b)=>b.items.length-a.items.length);
+    if(atHome){ const hi=byGu.findIndex(g=>g.home); if(hi>0){ const home=byGu.splice(hi,1)[0]; byGu.unshift(home); } }
+    return {emergency,byGu,regionCount:inR.length,distribution:dist};
+  },[data,region]);
+  const sidoChips=React.useMemo(()=>[...data.sido].sort((a,b)=>SIDO_ORDER.indexOf(a)-SIDO_ORDER.indexOf(b)),[data]);
+  const RECO=[
+    {t:"정기 건강검진",ic:Stethoscope,why:"건강점수 92 유지 — 연 1~2회 정기검진 권장"},
+    {t:"치과 · 스케일링",ic:Smile,why:"치주질환 위험 중간 — 구강검진·스케일링 권장"},
+    {t:"정형외과",ic:Bone,why:"슬개골 위험 중간 — 슬개골 탈구 검진·관절 관리"},
+  ];
+  return (<>
+    <div className="airec">
+      <div className="at"><Sparkles size={16} color="var(--orange)"/> 마루 맞춤 동물병원 추천</div>
+      <div className="ap">AI 건강 예측(슬개골·치주질환 위험 <b>중간</b>)과 건강점수(<b>92</b>)를 분석해, 정기검진·치과·정형 진료가 가능한 동물병원을 거주 지역에서 찾아드려요.</div>
+    </div>
+    <div className="card">
+      <div className="rct"><Stethoscope size={18} color="var(--orange)"/> 마루에게 권장되는 진료</div>
+      {RECO.map((r,i)=><div className="adv" key={i}><span className="ic"><r.ic size={18} color="var(--orange)"/></span><div style={{flex:1}}><b>{r.t}</b><p>{r.why}</p></div></div>)}
+      <div className="chnote" style={{marginTop:4}}>※ 권장 진료는 마루의 AI 건강 예측·건강점수 기반 예시입니다. 정확한 진단·처방은 동물병원 수의사 상담을 권고합니다.</div>
+    </div>
+    <div className="bklbl spread"><span><User size={13} style={{verticalAlign:"-2px"}}/> 보호자 거주지 <b style={{color:"var(--orange-deep)"}}>{PET_LOC.addr}</b></span>{!atHome&&<button className="fsel" onClick={()=>setRegion(PET_LOC.sido)}>내 거주지로</button>}<span style={{marginLeft:"auto",color:"var(--muted)"}}>{region} <b style={{color:"var(--orange-deep)"}}>{regionCount.toLocaleString()}</b>곳</span></div>
+    <div className="regions">{sidoChips.map(r=><button key={r} className={`fsel ${region===r?"on":""}`} onClick={()=>setRegion(r)}>{r===PET_LOC.sido&&<Home size={11} style={{verticalAlign:"-1px",marginRight:3}}/>}{r}{distribution[r]?<span className="cnt">{distribution[r].toLocaleString()}</span>:""}</button>)}</div>
+    {emergency.length>0 && <div className="card emer">
+      <div className="rct"><Siren size={18} color="#EF5B5B"/> 24시·응급 동물병원 <span className="sub">· {region} {emergency.length}곳</span></div>
+      <div className="benefit" style={{marginBottom:10}}><span><Siren size={15}/> 야간·응급 진료</span><span><ShieldCheck size={15}/> 무상 임베디드 펫보험 자동 적용</span><span><Award size={15}/> NFT 예약증</span></div>
+      {emergency.map((h,i)=><HospRow key={i} data={data} h={h} onDetail={setDetail} onBook={setSel}/>)}
+    </div>}
+    <div className="bklbl"><MapPin size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> {region} 지역별 추천 동물병원 {atHome&&<span className="sub">· 내 동네({PET_LOC.sigungu}) 우선</span>}</div>
+    {byGu.length===0 && <div className="hload">{region}에서 병원을 찾지 못했습니다. 다른 지역을 선택해 보세요.</div>}
+    {byGu.slice(0,6).map(({gu,items,home})=><div className={`card ${home?"home":""}`} key={gu}>
+      <div className="rct"><MapPin size={16} color={home?"var(--orange-deep)":"var(--orange)"}/> {gu} <span className="sub">· {items.length}곳</span>{home&&<span className="cbadge org"><Home size={10}/> 내 동네</span>}</div>
+      {items.slice(0,3).map((h,i)=><HospRow key={i} data={data} h={h} onDetail={setDetail} onBook={setSel}/>)}
+      {items.length>3 && <button className="cbtn" onClick={()=>onGo({sido:region,sgg:gu})}>{gu} 추천 병원 더 보기 ({items.length-3}곳 더) ›</button>}
+    </div>)}
+    <div className="chnote">※ <b>24시·응급·제휴 표시는 상호명 기준 데모 예시</b>이며, 실제 제휴·우대 혜택은 제휴 동물병원 DB 연동 시 반영됩니다. 목록은 LOCALDATA 공공데이터({data.meta.asof}) 기반입니다.</div>
+    {sel && <HospitalBookingModal data={data} h={sel} onClose={()=>setSel(null)}/>}
+    {detail && <HospitalDetailModal data={data} h={detail} onClose={()=>setDetail(null)} onBook={x=>{setDetail(null);setSel(x);}}/>}
+  </>);
+}
+
+function HospitalDetailModal({data,h,onClose,onBook}){
+  const region=data.sido[h[1]]+" "+h[2];
+  return (
+    <div className="bkov" onClick={onClose}>
+      <div className="bk detailbk" onClick={e=>e.stopPropagation()}>
+        <div className="bkh"><div className="bt">{h[0]}<span className="cbadge org" style={{marginLeft:8}}>동물병원</span>{isEmergency(h[0])&&<span className="cbadge red" style={{marginLeft:6}}><Siren size={10}/> 24시</span>}</div><button className="xbtn" onClick={onClose}><X size={20}/></button></div>
+        <div className="dbody">
+          <div className="dsec"><div className="dh">기본 정보</div>
+            <div className="feat"><MapPin size={15} color="#EF5B5B"/><div><b>{region}</b><div className="sub2">{h[3]}</div></div></div>
+            {h[4] && <div className="feat"><Phone size={15} color="var(--orange)"/><a className="hlink" href={`tel:${h[4]}`}>{fmtTel(h[4])}</a></div>}
+          </div>
+          <div className="dsec"><div className="dh">병원 정보 보기</div>
+            <a className="cbtn pri" style={{textDecoration:"none"}} href={naverHref(h[0],region)} target="_blank" rel="noreferrer noopener"><Search size={15}/> 네이버에서 병원 정보·후기 보기 <ExternalLink size={13}/></a>
+            <div className="sub2" style={{marginTop:6}}>이 병원의 진료시간·후기·전화는 네이버 검색(플레이스)으로 연결됩니다.{!EXTERNAL_OK && <> <b style={{color:"var(--sub)"}}>미리보기에서는 외부 사이트가 차단될 수 있어, 링크 우클릭 → ‘새 탭에서 열기’로 확인하세요.</b></>}</div>
+          </div>
+          <div className="dsec"><div className="dh">위치 지도</div>
+            {h[6]&&h[5] ? <MapView points={[{name:h[0],addr:h[3],tel:h[4],lat:h[6],lng:h[5]}]} height={220}/> : <div className="sub2"><MapPin size={13} color="#EF5B5B" style={{verticalAlign:"-2px"}}/> {region} · {h[3]} (좌표 정보 없음)</div>}
+          </div>
+          <div className="chnote">※ 본 정보는 LOCALDATA 공공데이터({data.meta.asof}) 기반이며, 실시간 진료시간·예약 슬롯은 제휴 동물병원 API 연동 시 반영됩니다.</div>
+        </div>
+        <div className="bkfoot"><button className="cbtn pri" style={{margin:0}} onClick={()=>onBook(h)}><CalendarCheck size={15}/> 예약하기</button></div>
+      </div>
+    </div>
+  );
+}
+
+function HospitalBookingModal({data,h,onClose}){
+  const [date,setDate]=useState(null), [time,setTime]=useState(null), [done,setDone]=useState(false);
+  const W=["일","월","화","수","목","금","토"];
+  const days=Array.from({length:8},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()+i+2); return d; });
+  const slots=["09:00","09:30","10:00","11:00","14:00","15:00","16:00","17:00"];
+  const region=data.sido[h[1]]+" "+h[2];
+  return (
+    <div className="bkov" onClick={onClose}>
+      <div className="bk" onClick={e=>e.stopPropagation()}>
+        <div className="bkh"><div className="bt">{done?"예약 완료":"동물병원 예약"}</div><button className="xbtn" onClick={onClose}><X size={20}/></button></div>
+        <div className="bkb">
+          {!done ? (<>
+            <div className="bkinfo">
+              <div className="n">{h[0]} <span className="cbadge org">동물병원</span></div>
+              <div className="m"><MapPin size={11} style={{verticalAlign:"-1px"}}/> {region} · {h[3]}</div>
+              {h[4] && <div className="t"><Phone size={11} style={{verticalAlign:"-1px"}}/> {fmtTel(h[4])}</div>}
+            </div>
+            <div className="bklbl">반려동물</div>
+            <div className="petpick"><span className="av" style={{overflow:"hidden"}}><MaruImg/></span><div><b>마루</b><div className="sub2">말티즈 · 4세 · 4.2kg</div></div></div>
+            <div className="bklbl">날짜 선택</div>
+            <div className="cal">{days.map((d,i)=>{ const k=`${d.getMonth()+1}/${d.getDate()}`; return <button key={i} className={`calc ${date===k?"on":""}`} onClick={()=>setDate(k)}><div className="d">{d.getDate()}</div><div className="w">{W[d.getDay()]}</div></button>; })}</div>
+            <div className="bklbl">시간 선택</div>
+            <div className="slots">{slots.map(s=><button key={s} className={`slot ${time===s?"on":""}`} onClick={()=>setTime(s)}>{s}</button>)}</div>
+            <button className="cbtn pri" style={{opacity:date&&time?1:.5}} disabled={!date||!time} onClick={()=>setDone(true)}><CalendarCheck size={15}/> {date&&time?`${date} ${time} 예약 확정`:"날짜·시간을 선택하세요"}</button>
+          </>) : (
+            <div className="bkconfirm">
+              <div className="okic"><Check size={30} color="var(--green)"/></div>
+              <div className="ttl">예약이 확정되었습니다</div>
+              <div className="sub2" style={{marginTop:6}}>{h[0]}<br/>{date} {time} · 마루</div>
+              <div className="reslist">
+                <div className="resitem"><span className="ic gr"><ShieldCheck size={18} color="var(--green)"/></span><div><b>건강금융지갑에 예약 기록</b><div className="sub2">진료·검사 이력이 마루 건강지갑에 자동 기록됩니다.</div></div></div>
+                <div className="resitem"><span className="ic pu"><Award size={18} color="#8A63D2"/></span><div><b>NFT 예약증 발행</b><div className="sub2">지갑에 SBT 예약증이 발행되고 알림이 발송됩니다.</div></div></div>
+                <div className="resitem"><span className="ic or"><FileSignature size={18} color="var(--orange)"/></span><div><b>무상 임베디드 펫보험 자동 적용</b><div className="sub2">치료 발생 시 예상 본인부담금이 자동 계산됩니다. (예시)</div></div></div>
+              </div>
+              <button className="cbtn pri" style={{marginTop:16}} onClick={onClose}>확인</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HospitalSection(){
+  const [tab,setTab]=useState("hosp");
+  const [preset,setPreset]=useState({sido:"전체"});
+  const {loading,error,data}=usePetHospitals();
+  const go=(p)=>{ setPreset(p); setTab("hosp"); };
+  const tabs=[["hosp","동물병원 검색",Building2],["rec","AI 추천 동물병원",Sparkles]];
+  return (
+    <div className="hsec">
+      <div className="aihead">
+        <span className="aiico"><Building2 size={24} color="#fff"/></span>
+        <div>
+          <div className="aih-t">병원/예약 · 동물병원</div>
+          <div className="aih-s">{data?`전국 동물병원 ${data.meta.hospitals.toLocaleString()}곳`:"전국 동물병원"} · 지역 검색 · 실시간 예약 <span style={{color:"var(--muted)"}}>(LOCALDATA 공공데이터 {data?data.meta.asof:"2025.12"})</span></div>
+        </div>
+      </div>
+      <div className="chtabs">{tabs.map(([k,t,Ic])=><button key={k} className={`chtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}><Ic size={15}/> {t}</button>)}</div>
+      {loading && <div className="hload"><div className="sp"/>전국 동물병원 데이터를 불러오는 중입니다… <div style={{fontSize:11.5,marginTop:4}}>(영업 중 약 5천 곳, 최초 1회 로딩)</div></div>}
+      {error && <div className="hload" style={{color:"#EF5B5B"}}><AlertTriangle size={26} style={{marginBottom:8}}/><div>동물병원 데이터를 불러오지 못했습니다.</div><div style={{fontSize:11.5,marginTop:4,color:"var(--muted)"}}>{error} · 로컬 서버(http)로 열렸는지 확인해 주세요.</div></div>}
+      {data && tab==="hosp" && <HospitalDirectory data={data} preset={preset}/>}
+      {data && tab==="rec" && <HospitalRec data={data} onGo={go}/>}
+    </div>
+  );
+}
+
+/* ============================ APP ============================ */
+function App(){
+  const [active,setActive]=useState("홈");
+  const [open,setOpen]=useState(false);
+  return (
+    <NavCtx.Provider value={setActive}>
+    <div style={{display:"flex",minHeight:"100vh"}}>
+      <Sidebar active={active} setActive={setActive} open={open} onClose={()=>setOpen(false)}/>
+      <main style={{flex:1,minWidth:0,padding:"24px 28px 8px",display:"flex",flexDirection:"column"}}>
+        <TopBar onMenu={()=>setOpen(true)}/>
+        <QuickBar nav={setActive}/>
+        {active==="병원/예약" ? (
+          <HospitalSection/>
+        ) : active==="건강관리" ? (
+          <HealthManageSection/>
+        ) : active==="보험" ? (
+          <InsuranceSection/>
+        ) : active==="AI 상담" ? (
+          <AIConsultSection/>
+        ) : active==="Health NFT" ? (
+          <NftSection/>
+        ) : active==="건강금융지갑" ? (
+          <WalletSection/>
+        ) : active==="리워드" ? (
+          <RewardSection/>
+        ) : active==="제품 쇼핑" ? (
+          <ShopSection/>
+        ) : active==="커뮤니티" ? (
+          <CommunitySection/>
+        ) : active==="마이페이지" ? (
+          <MyPageSection/>
+        ) : active!=="홈" ? (
+          <div style={{flex:1,display:"grid",placeItems:"center",color:"var(--muted)",
+            textAlign:"center",padding:"60px 0"}}>
+            <div>
+              <PawPrint size={56} color="var(--orange-soft)"/>
+              <div style={{fontSize:18,fontWeight:800,color:"var(--sub)",marginTop:14}}>‘{active}’ 화면</div>
+              <div style={{fontSize:14,marginTop:6}}>좌측 메뉴 10개 항목이 모두 구현되어 있습니다.<br/>해당 메뉴를 눌러 확인하세요.</div>
+            </div>
+          </div>
+        ) : (
+          <div style={{display:"flex",flexDirection:"column",gap:18}}>
+            <div className="grid-3">
+              <PetProfileCard/>
+              <HealthSummaryCard/>
+              <WalletCard/>
+            </div>
+            <div className="grid-3">
+              <RecommendCard nav={setActive}/>
+              <ScheduleCard/>
+              <ActivityCard/>
+            </div>
+            <div className="grid-4">
+              <RiskCard/>
+              <SmartContractCard/>
+              <TokenCard/>
+              <NftCard/>
+            </div>
+          </div>
+        )}
+        <footer style={{textAlign:"center",fontSize:11.5,color:"var(--muted)",padding:"16px 0 20px",lineHeight:1.6}}>
+          🐾 HI-PET · Pet Health-InsurFin Tech · App3 슈퍼 월렛 — 시연용 목업<br/>
+          본 화면의 모든 건강·보험·자산 수치는 플랫폼 소개를 위한 예시(목업)이며, 수의학적 진단이나 구체적 보험금 지급을 보장하지 않습니다.
+        </footer>
+      </main>
+    </div>
+    </NavCtx.Provider>
+  );
+}
+
+/* ============================ RESPONSIVE CSS ============================ */
+const css=document.createElement("style");
+css.textContent=`
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start}
+@media(max-width:1200px){
+  .grid-3{grid-template-columns:repeat(2,1fr)}
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:860px){
+  .sidebar{position:fixed!important;z-index:50;left:0;top:0;transform:translateX(-100%);transition:transform .25s}
+  .sidebar[data-open="true"]{transform:translateX(0)}
+  .hamburger{display:grid!important}
+}
+@media(max-width:680px){
+  .grid-3,.grid-4{grid-template-columns:1fr}
+}
+
+/* ===== 상단 빠른메뉴 (입체 타일) ===== */
+.qtop{display:flex;gap:10px;background:linear-gradient(135deg,#FFFFFF,#FFF6EC);border:1px solid var(--border);
+  border-radius:20px;padding:15px 16px;margin-bottom:20px;box-shadow:var(--shadow-sm);overflow-x:auto}
+.qitem{flex:1;min-width:76px;display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:none;cursor:pointer}
+.qico{position:relative;width:56px;height:56px;border-radius:17px;display:grid;place-items:center;
+  background:linear-gradient(160deg,#FFFFFF 0%,#FFF1E1 100%);
+  box-shadow:0 7px 14px rgba(196,128,72,.18), inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -4px 7px rgba(196,128,72,.12);
+  transition:transform .16s ease, box-shadow .16s ease}
+.qico svg{filter:drop-shadow(0 2px 2px rgba(120,70,30,.22))}
+.qitem:hover .qico{transform:translateY(-4px);box-shadow:0 14px 22px rgba(196,128,72,.28), inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -4px 7px rgba(196,128,72,.12)}
+.qitem:active .qico{transform:translateY(-1px)}
+.qlabel{font-size:12px;font-weight:700;color:var(--sub);white-space:nowrap}
+.qitem:hover .qlabel{color:var(--orange-deep)}
+.qbadge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;
+  background:#EF5B5B;color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;border:2px solid #fff}
+@media(max-width:680px){ .qtop{gap:6px;padding:12px 12px} .qico{width:50px;height:50px;border-radius:15px} .qlabel{font-size:11px} }
+
+/* ===== 병원/예약 (동물병원) ===== */
+.hsec{display:flex;flex-direction:column}
+.aihead{display:flex;align-items:center;gap:13;margin:2px 0 14px}
+.aiico{width:46px;height:46px;border-radius:14px;flex-shrink:0;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--orange),var(--amber));box-shadow:0 5px 14px rgba(244,132,60,.4)}
+.aih-t{font-size:22px;font-weight:900;letter-spacing:-.5px}
+.aih-s{font-size:12.5px;color:var(--sub);margin-top:2px}
+.chtabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.chtab{display:flex;align-items:center;gap:6px;padding:9px 15px;border-radius:999px;font-size:13.5px;
+  font-weight:700;color:var(--sub);background:#fff;border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.chtab.on{color:#fff;background:linear-gradient(135deg,var(--orange),var(--amber));border-color:transparent;
+  box-shadow:0 5px 13px rgba(244,132,60,.32)}
+.hload{background:#fff;border:1px solid var(--border);border-radius:16px;padding:34px 20px;text-align:center;
+  color:var(--sub);font-size:13.5px;font-weight:600;margin:6px 0}
+.sp{width:26px;height:26px;border:3px solid var(--orange-soft);border-top-color:var(--orange);border-radius:50%;
+  margin:0 auto 10px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.benefit{display:flex;flex-wrap:wrap;gap:8px 14px;background:#fff;border:1px solid var(--border);border-radius:14px;
+  padding:12px 16px;margin-bottom:12px}
+.benefit span{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--sub)}
+.benefit svg{color:var(--orange)}
+.mapcard{background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.maphd{width:100%;display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;background:#fff}
+.bklbl{font-size:13px;font-weight:800;color:var(--text);margin:10px 0 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bklbl.spread{font-weight:600;color:var(--sub)}
+.regions{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.fsel{display:inline-flex;align-items:center;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;
+  color:var(--sub);background:#fff;border:1px solid var(--border);cursor:pointer;transition:all .14s;white-space:nowrap}
+.fsel:hover{border-color:var(--orange);color:var(--orange-deep)}
+.fsel.on{color:#fff;background:linear-gradient(135deg,var(--orange),var(--amber));border-color:transparent}
+.fsel .cnt{margin-left:5px;font-weight:600;opacity:.75;font-size:11.5px}
+.fsel.big{padding:9px 14px;font-size:13px}
+.hfilt{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px}
+.hfilt select{padding:10px 12px;border-radius:11px;border:1px solid var(--border);background:#fff;font-family:inherit;
+  font-size:13.5px;color:var(--text);font-weight:600;cursor:pointer}
+.hfilt select:disabled{color:var(--muted);background:var(--cream)}
+.filterbar{margin-bottom:10px}
+.fsearch{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:0 13px}
+.fsearch svg{color:var(--muted);flex-shrink:0}
+.fsearch input{flex:1;border:none;outline:none;padding:11px 0;font-family:inherit;font-size:14px;background:transparent;color:var(--text)}
+.chcount{font-size:13px;color:var(--sub);font-weight:600;margin:4px 2px 10px}
+.center{display:flex;gap:13px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:16px;
+  padding:13px 15px;margin-bottom:9px;transition:box-shadow .18s,transform .18s}
+.center:hover{box-shadow:0 8px 22px rgba(196,128,72,.13);transform:translateY(-2px)}
+.cimg{width:50px;height:50px;border-radius:13px;flex-shrink:0;display:grid;place-items:center;font-size:26px;
+  background:linear-gradient(150deg,#FFF1E0,#FFE4CC)}
+.cmain{flex:1;min-width:0;cursor:pointer}
+.cname{font-size:14.5px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.35}
+.cbadge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px}
+.cbadge.org{color:var(--orange-deep);background:var(--orange-soft)}
+.cbadge.red{color:#D33;background:#FDE4E4}
+.cbadge.pur{color:#7C3AED;background:#F1ECFE}
+.cmeta{font-size:12px;color:var(--sub);margin-top:4px;display:flex;align-items:center;gap:3px;flex-wrap:wrap;line-height:1.5}
+.cmeta svg{color:var(--muted);flex-shrink:0}
+.cmeta .reg{font-weight:800;color:var(--orange-deep)}
+.cright{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.hlink{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;color:var(--orange-deep);white-space:nowrap}
+.noinfo{font-size:11.5px;color:var(--muted)}
+.obtns{display:flex;gap:6px}
+.obtns button{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:10px;cursor:pointer;
+  color:var(--sub);background:var(--cream);border:1px solid var(--border)}
+.obtns button.book{color:#fff;background:linear-gradient(135deg,var(--orange),var(--amber));border-color:transparent}
+.cbtn{width:100%;padding:12px;border-radius:12px;font-size:13.5px;font-weight:800;cursor:pointer;margin-top:4px;
+  color:var(--orange-deep);background:#fff;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;gap:7px}
+.cbtn:hover{border-color:var(--orange)}
+.cbtn.pri{color:#fff;background:linear-gradient(135deg,var(--orange),var(--amber));border-color:transparent;
+  box-shadow:0 5px 14px rgba(244,132,60,.32)}
+.chnote{font-size:11px;color:var(--muted);line-height:1.6;margin-top:8px;padding:0 2px}
+.airec{background:linear-gradient(135deg,#FFF3E8,#FFE7D3);border:1px solid #FBDABB;border-radius:16px;padding:16px 18px;margin-bottom:12px}
+.airec .at{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:900;color:var(--orange-deep)}
+.airec .ap{font-size:13px;color:var(--sub);margin-top:7px;line-height:1.6}
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px}
+.card.emer{border:1.5px solid #FBC6C6;background:linear-gradient(180deg,#FFF7F7,#fff)}
+.card.home{border:1.5px solid #FBD3AC;background:linear-gradient(180deg,#FFF8F1,#fff)}
+.rct{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:800;margin-bottom:10px}
+.rct .sub{font-size:12px;color:var(--muted);font-weight:600}
+.adv{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)}
+.adv:last-of-type{border-bottom:none}
+.adv .ic{width:36px;height:36px;border-radius:11px;flex-shrink:0;display:grid;place-items:center;background:var(--orange-soft)}
+.adv b{font-size:14px}
+.adv p{margin:3px 0 0;font-size:12.5px;color:var(--sub);line-height:1.5}
+.bkov{position:fixed;inset:0;background:rgba(58,44,34,.5);display:grid;place-items:center;z-index:100;padding:18px}
+.bk{background:#fff;border-radius:20px;width:min(460px,100%);max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.bk.detailbk{width:min(520px,100%)}
+.bkh{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border)}
+.bkh .bt{font-size:16px;font-weight:900;display:flex;align-items:center;flex-wrap:wrap;line-height:1.3}
+.xbtn{color:var(--muted);display:grid;place-items:center}
+.dbody,.bkb{padding:16px 18px;overflow-y:auto}
+.dsec{margin-bottom:16px}
+.dh{font-size:13px;font-weight:800;color:var(--orange-deep);margin-bottom:8px}
+.feat{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.feat b{font-size:13.5px}
+.sub2{font-size:11.5px;color:var(--muted);line-height:1.5}
+.bkfoot{padding:14px 18px;border-top:1px solid var(--border)}
+.bkinfo{background:var(--cream);border:1px solid var(--border);border-radius:13px;padding:13px 15px;margin-bottom:6px}
+.bkinfo .n{font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px}
+.bkinfo .m{font-size:12px;color:var(--sub);margin-top:5px}
+.bkinfo .t{font-size:12px;color:var(--orange-deep);font-weight:700;margin-top:4px}
+.petpick{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--border);border-radius:13px;padding:11px 14px}
+.petpick .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:22px;
+  background:linear-gradient(135deg,#FFE7D3,#FFF1D6)}
+.petpick b{font-size:14px}
+.cal{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.calc{padding:9px 0;border-radius:11px;border:1px solid var(--border);background:#fff;cursor:pointer;text-align:center;transition:all .14s}
+.calc.on{background:linear-gradient(135deg,var(--orange),var(--amber));border-color:transparent;color:#fff}
+.calc .d{font-size:15px;font-weight:800}
+.calc .w{font-size:10.5px;color:var(--muted);margin-top:2px}
+.calc.on .w{color:#fff;opacity:.85}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.slot{padding:10px 0;border-radius:11px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:13px;
+  font-weight:700;color:var(--sub);text-align:center;transition:all .14s}
+.slot.on{background:linear-gradient(135deg,var(--orange),var(--amber));border-color:transparent;color:#fff}
+.bkconfirm{text-align:center;padding:8px 0}
+.bkconfirm .okic{width:60px;height:60px;border-radius:50%;background:var(--green-soft);display:grid;place-items:center;margin:0 auto 12px}
+.bkconfirm .ttl{font-size:17px;font-weight:900}
+.reslist{display:flex;flex-direction:column;gap:9px;margin-top:16px;text-align:left}
+.resitem{display:flex;gap:11px;align-items:flex-start;background:var(--cream);border:1px solid var(--border);border-radius:13px;padding:12px 14px}
+.resitem .ic{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:grid;place-items:center;background:#fff}
+.resitem .ic.gr{background:var(--green-soft)}
+.resitem .ic.pu{background:#F2E9FF}
+.resitem .ic.or{background:var(--orange-soft)}
+.resitem b{font-size:13px}
+.leaflet-popup-content{font-family:Pretendard,sans-serif;font-size:12.5px;line-height:1.5}
+
+/* ===== 건강관리 ===== */
+.hmtop{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.sumbox{display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:14px 16px;border-radius:14px;
+  background:linear-gradient(135deg,#FFF6EC,#FFEFDB);border:1px solid #F8E4C3}
+.sumbox b{font-size:13.5px;color:var(--orange-deep)}
+.sumbox p{margin:4px 0 4px;font-size:13px;color:var(--sub);line-height:1.6}
+.statgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:8px}
+.statc{background:#fff;border:1px solid var(--border);border-radius:14px;padding:13px 10px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+.statc .sl{font-size:11.5px;color:var(--sub);font-weight:700}
+.statc .sv{font-size:21px;font-weight:900;line-height:1.1}
+.statc .sv .su{font-size:11px;color:var(--muted);font-weight:700;margin-left:2px}
+.statc .sr{font-size:10.5px;color:var(--muted)}
+.dtable{display:flex;flex-direction:column}
+.drow{display:grid;grid-template-columns:1.5fr 1fr 1fr auto;gap:10px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--border);font-size:13px}
+.drow:last-child{border-bottom:none}
+.drow.dhdr{font-size:11.5px;color:var(--muted);font-weight:800;border-bottom:1.5px solid var(--border)}
+.drow.dhdr span{text-align:inherit}
+.drow.dhdr .num{text-align:right}
+.drow .dk{font-weight:700;color:var(--text)}
+.drow .dv{text-align:right;font-weight:800}
+.drow .dv .du{font-size:10.5px;color:var(--muted);font-weight:700;margin-left:2px}
+.drow .dref{text-align:right;color:var(--muted);font-size:12px}
+.drow.img{grid-template-columns:1.1fr 2fr auto}
+.drow .dimg{font-size:12.5px;color:var(--sub);line-height:1.5}
+.riskgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.riskc{background:#fff;border:1px solid var(--border);border-radius:16px;padding:15px}
+.riskc .rh{display:flex;gap:11px;align-items:center}
+.riskc .ric{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:grid;place-items:center}
+.riskc .rn{font-size:14.5px;font-weight:800}
+.riskc .rd{display:flex;align-items:center;gap:8px;margin-top:3px}
+.riskc .dots{display:inline-flex;gap:4px}
+.riskc .dots span{width:7px;height:7px;border-radius:50%}
+.riskc .rwhy{margin:11px 0 0;font-size:12.5px;color:var(--sub);line-height:1.6}
+.vrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.vrow:last-child{border-bottom:none}
+.vic{width:34px;height:34px;border-radius:11px;flex-shrink:0;display:grid;place-items:center}
+.vrow .vn{font-size:14px;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.vrow .vm{font-size:12px;color:var(--muted);margin-top:3px}
+.vrow .vnext{text-align:right;flex-shrink:0}
+.hm2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0}
+.hm2 .card{margin-bottom:12px}
+.mbars{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;height:130px;padding-top:6px}
+.mbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}
+.mbar .bv{font-size:11px;font-weight:800;color:var(--orange-deep)}
+.mbar .btrk{flex:1;width:60%;max-width:26px;background:#F1E7DA;border-radius:7px;display:flex;align-items:flex-end;overflow:hidden}
+.mbar .bf{width:100%;border-radius:7px;background:linear-gradient(180deg,#FFB547,#F4843C);transition:height 1s cubic-bezier(.2,.7,.2,1)}
+.mbar .bl{font-size:10.5px;color:var(--muted)}
+/* ===== 보험 자동 펫실손 지원 ===== */
+.gradecard{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.gc-top{display:flex;align-items:center;gap:14px}
+.gc-badge{flex-shrink:0;color:#fff;font-weight:900;font-size:15px;letter-spacing:.5px;padding:8px 16px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.12)}
+.gc-title{font-size:16px;font-weight:800}
+.gc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.gc-stats>div{background:var(--cream);border:1px solid var(--border);border-radius:13px;padding:12px 14px}
+.gc-stats .gl{font-size:11.5px;color:var(--muted);font-weight:700}
+.gc-stats .gv{font-size:19px;font-weight:900;margin-top:3px}
+.gc-prog{margin-top:14px}
+.gc-track{height:9px;background:#F1E7DA;border-radius:999px;overflow:hidden}
+.gc-fill{height:100%;border-radius:999px;transition:width 1s cubic-bezier(.2,.7,.2,1)}
+.ins-intro{font-size:13.5px;color:var(--sub);line-height:1.7;margin:0 0 14px}
+.instbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:16px;margin-bottom:14px}
+.instbl{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr 1fr;min-width:680px}
+.instbl .ic{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13.5px}
+.instbl .ic.val{border-left:1px solid var(--border)}
+.instbl .head{font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px}
+.instbl .head.lbl{background:#EDF2F8;color:#45607D}
+.instbl .head.lbl+.head,.instbl .head{border-left:1px solid rgba(255,255,255,.25)}
+.instbl .subrow{background:var(--cream);font-weight:800;color:var(--orange-deep);font-size:12.5px}
+.instbl .rlbl{font-weight:800;color:var(--text)}
+.nowtag{font-size:9.5px;font-weight:800;background:rgba(255,255,255,.3);padding:1px 6px;border-radius:999px}
+.ins-cards{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.ins-card{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff}
+.ins-card .ich{color:#fff;font-weight:800;font-size:14px;padding:10px 12px;display:flex;align-items:center;gap:6px}
+.ins-card .icb{padding:10px 12px}
+.ins-card .icr{display:flex;justify-content:space-between;gap:8px;padding:6px 0;font-size:12.5px;border-bottom:1px solid var(--border)}
+.ins-card .icr:last-child{border-bottom:none}
+.ins-card .icr span{color:var(--sub);font-weight:600}
+.infobox{background:#F5F1EC;border-radius:14px;padding:15px 17px;margin-bottom:14px;display:flex;flex-direction:column;gap:9px}
+.ib-row{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--sub);line-height:1.6}
+.ib-ico{width:24px;height:24px;border-radius:8px;background:#fff;display:grid;place-items:center;flex-shrink:0;box-shadow:var(--shadow-sm)}
+.ins-cta{display:flex;gap:10px;margin-bottom:10px}
+.ins-cta .cbtn{margin-top:0}
+@media(max-width:760px){ .gc-stats{grid-template-columns:1fr} .instbl-wrap{display:none} .ins-cards{display:grid} .ins-cta{flex-direction:column} }
+/* ===== 보험 (기존) ===== */
+.covrow{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}
+.covrow:last-of-type{border-bottom:none}
+.covrow .ck{width:110px;font-size:13px;font-weight:700;flex-shrink:0}
+.covrow .ctrk{flex:1;height:9px;background:#F1E7DA;border-radius:999px;overflow:hidden}
+.covrow .cf{height:100%;border-radius:999px;background:linear-gradient(90deg,#F4843C,#FFB547)}
+.covrow .cr{width:42px;text-align:right;font-weight:800;font-size:13px;color:var(--orange-deep)}
+.estc{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:9px}
+.estc .en{font-weight:800;font-size:14px}
+.estc .er{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+.estc .ev{text-align:right;flex-shrink:0}
+.estc .ev .self{font-size:19px;font-weight:900;color:var(--orange-deep)}
+.estc .ev .cov{font-size:11.5px;color:var(--green);font-weight:700;margin-top:2px}
+/* ===== 지갑 ===== */
+.walhero{background:linear-gradient(135deg,var(--orange),var(--amber));border-radius:20px;padding:22px 24px;color:#fff;margin-bottom:14px;box-shadow:0 10px 26px rgba(244,132,60,.3)}
+.walhero .wl{font-size:13px;opacity:.92;font-weight:600}
+.walhero .wv{font-size:38px;font-weight:900;letter-spacing:-1.2px;margin-top:2px}
+.walhero .wsub{display:flex;gap:22px;flex-wrap:wrap;margin-top:16px}
+.walhero .wsub>div{font-size:12px;opacity:.95}
+.walhero .wsub b{display:block;font-size:16px;font-weight:900;margin-top:3px}
+/* ===== 리워드 센터 ===== */
+.mrow{display:flex;align-items:center;gap:12px;padding:13px 0}
+.mr-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mr-track{height:7px;background:#F1E7DA;border-radius:999px;overflow:hidden;margin-top:6px}
+.mr-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#F4843C,#FFB547);transition:width 1s cubic-bezier(.2,.7,.2,1)}
+.goarrow{flex-shrink:0;width:30px;height:30px;border-radius:9px;background:var(--cream);display:grid;place-items:center}
+.goarrow:hover{background:var(--orange-soft)}
+.erow{display:flex;align-items:center;gap:12px;padding:10px 0}
+.erow .en2{font-size:13.5px;font-weight:700}
+.erow .amt2{flex-shrink:0;font-size:13px;font-weight:900;color:var(--green);background:var(--green-soft);padding:4px 10px;border-radius:999px}
+.linkmini{font-size:12px;font-weight:700;color:var(--orange-deep)}
+.linkmini:hover{text-decoration:underline}
+/* ===== AI 상담 ===== */
+.chatwrap{background:#fff;border:1px solid var(--border);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;height:540px;box-shadow:var(--shadow-sm)}
+.chatlog{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,#FFFDFB,#FFF7EF)}
+.cbub{max-width:80%;padding:11px 14px;border-radius:16px;font-size:13.5px;line-height:1.65;white-space:pre-wrap}
+.cbub.ai{align-self:flex-start;background:#fff;border:1px solid var(--border);border-bottom-left-radius:5px;color:var(--text)}
+.cbub.me{align-self:flex-end;background:linear-gradient(135deg,var(--orange),var(--amber));color:#fff;border-bottom-right-radius:5px}
+.cbub .av{display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;color:var(--orange-deep);margin-bottom:5px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;padding:11px 14px;border-top:1px solid var(--border);background:#fff}
+.chip{font-size:12px;font-weight:700;color:var(--orange-deep);background:var(--orange-soft);border-radius:999px;padding:7px 12px;cursor:pointer;border:none;transition:background .14s}
+.chip:hover{background:#FFD7B8}
+.chatbar{display:flex;gap:9px;padding:12px 14px;border-top:1px solid var(--border);background:#fff;align-items:center}
+.chatbar input{flex:1;border:1px solid var(--border);border-radius:999px;padding:11px 16px;font-family:inherit;font-size:14px;outline:none}
+.chatbar input:focus{border-color:var(--orange)}
+.chatbar button{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--amber));color:#fff;display:grid;place-items:center;flex-shrink:0}
+.cbub.urgent{background:#FDE4E4;border-color:#F6B8B8;color:#B3261E;font-weight:600}
+.cbub.fu{align-self:flex-start;background:var(--cream);border:1px dashed var(--border);color:var(--sub);font-size:12.5px;font-style:italic;padding:8px 12px}
+/* ===== 갤러리 ===== */
+.gallery{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:10px}
+.gthumb{padding:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;aspect-ratio:16/11;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.gthumb:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(196,128,72,.16)}
+.gthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.lbwrap{position:relative;max-width:92vw;max-height:88vh}
+.lbwrap img{max-width:92vw;max-height:88vh;border-radius:14px;display:block;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.lbx{position:absolute;top:-14px;right:-14px;background:#fff;border-radius:50%;width:36px;height:36px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+@media(max-width:860px){.gallery{grid-template-columns:repeat(3,1fr)}}
+/* ===== NFT ===== */
+.nftgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.nftc{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;text-align:center;transition:transform .18s,box-shadow .18s}
+.nftc:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(196,128,72,.14)}
+.nftc .shield{position:relative;width:64px;height:70px;margin:0 auto 10px}
+.nftc .nt{font-size:13.5px;font-weight:800;line-height:1.3}
+.nftc .nd{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.5}
+.nftc .ndt{font-size:11px;color:var(--orange-deep);font-weight:700;margin-top:7px}
+/* ===== 제품 쇼핑 ===== */
+.tabbadge{margin-left:5px;background:#EF5B5B;color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:1px 6px;min-width:16px;display:inline-block;text-align:center}
+.chtab.on .tabbadge{background:#fff;color:var(--orange-deep)}
+.shopgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.prod{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .18s,box-shadow .18s;display:flex;flex-direction:column}
+.prod:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(196,128,72,.16)}
+.pimg{position:relative;aspect-ratio:1/1;display:grid;place-items:center;font-size:46px;background:linear-gradient(150deg,#FFF6EC,#FFE9D6)}
+.pbadge{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.pb{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;color:#fff}
+.pb.pur{background:#8A63D2}.pb.org{background:var(--orange)}.pb.grn{background:var(--green)}
+.pbody{padding:11px 12px 12px;display:flex;flex-direction:column;flex:1}
+.pbrand{font-size:11px;color:var(--muted);font-weight:700}
+.pname{font-size:13.5px;font-weight:800;line-height:1.35;margin-top:2px;min-height:36px}
+.ptags{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0}
+.ptags span{font-size:10.5px;font-weight:700;color:var(--orange-deep);background:var(--orange-soft);border-radius:6px;padding:2px 6px}
+.ptags span.og{color:var(--sub);background:var(--cream)}
+.pbot{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:auto}
+.pprice{font-size:15px;font-weight:900}
+.pprice s{font-size:11px;color:var(--muted);font-weight:600;margin-right:4px}
+.pprice span{font-size:11px;font-weight:700;margin-left:1px}
+.ptok{display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--orange-deep);font-weight:700;margin-top:2px}
+.addbtn{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--orange),var(--amber));color:#fff;display:grid;place-items:center;flex-shrink:0}
+.qty{display:flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.qty button{width:30px;height:30px;font-size:16px;font-weight:800;color:var(--orange-deep);background:var(--cream)}
+.qty span{width:34px;text-align:center;font-weight:800;font-size:13px}
+.rmbtn{display:flex;align-items:center;gap:3px;font-size:11.5px;color:var(--muted);font-weight:700}
+.payrow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;font-size:13.5px;font-weight:600;color:var(--sub)}
+.payrow.tgrow{border-top:1px solid var(--border)}
+.payrow.tot{border-top:1px solid var(--border);font-size:15px;font-weight:900;color:var(--text)}
+.payrow.tot .num{color:var(--orange-deep)}
+/* ===== 마이페이지 토글/설정 ===== */
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0}
+.setrow .sn{font-size:14px;font-weight:700}
+.tgl{width:46px;height:26px;border-radius:999px;background:#E2D5C4;position:relative;transition:background .18s;flex-shrink:0}
+.tgl.on{background:var(--green)}
+.tgl .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .18s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tgl.on .knob{left:23px}
+.linkrow{width:100%;display:flex;align-items:center;justify-content:space-between;padding:15px 16px;font-size:14px;font-weight:700;background:#fff}
+.linkrow:hover{background:var(--cream)}
+@media(max-width:1100px){.shopgrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:860px){
+  .statgrid{grid-template-columns:repeat(3,1fr)}
+  .riskgrid,.hm2{grid-template-columns:1fr}
+  .nftgrid{grid-template-columns:repeat(2,1fr)}
+  .shopgrid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:680px){
+  .cright{flex-direction:row;align-items:center}
+  .cal{grid-template-columns:repeat(4,1fr)}
+  .statgrid{grid-template-columns:repeat(2,1fr)}
+  .nftgrid{grid-template-columns:1fr}
+  .walhero .wv{font-size:30px}
+  .drow{grid-template-columns:1.4fr 1fr auto;font-size:12px}
+  .drow .dref{display:none}
+  .drow.dhdr span:nth-child(3){display:none}
+}
+`;
+document.head.appendChild(css);
+
+createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

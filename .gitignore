@@ -15,4 +15,9 @@
 !/data
 !/src
 
+# 펫 사이트(HI-PET) — Vercel 루트 디렉터리로 배포
+!/pet
+# 펫 설계계획서(참고용)
+!/PetHealth_InsurFin_설계계획서.md
+
 # (data 폴더 안 임시/불필요 파일이 생기면 여기에 추가로 제외)
