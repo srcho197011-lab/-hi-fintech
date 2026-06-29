@@ -316,20 +316,61 @@ function ShopAIRec() {
   </>);
 }
 
+/* ── 스포츠건강 (골프예약·헬스서비스·스포츠용품 + 종목별 구매) ── */
+function SportsHealth() {
+  const services = [
+    [CalendarCheck, "골프예약", "전국 골프장 티타임 예약·부킹 서비스 연결", "골프장 예약하기", "골프장 티타임 예약 부킹", "#16A34A", "#E7F8EE"],
+    [Dumbbell, "헬스서비스", "헬스장·PT·필라테스·요가 등 운동시설 찾기", "운동시설 찾기", "헬스장 PT 필라테스 요가", "#2563EB", "#E8F1FE"],
+    [ShoppingCart, "스포츠용품", "운동·스포츠 장비·웨어 전문 쇼핑", "용품 쇼핑하기", "스포츠용품 운동용품 전문몰", "#7C3AED", "#F1ECFE"],
+  ];
+  const buy = [
+    [Activity, "라켓스포츠", "테니스·배드민턴·스쿼시 라켓·셔틀콕·공", "라켓스포츠 테니스 배드민턴 라켓 용품", "#0E7490", "#E0F2FE"],
+    [Star, "골프", "골프클럽·골프공·골프웨어·액세서리", "골프용품 골프클럽 골프공 골프웨어", "#16A34A", "#E7F8EE"],
+    [Footprints, "런닝", "러닝화·러닝웨어·GPS워치·기능성 양말", "런닝화 러닝화 러닝용품 러닝웨어", "#F59E0B", "#FEF3E2"],
+    [TrendingUp, "라이딩", "자전거·헬멧·라이딩웨어·자전거 용품", "자전거 라이딩 자전거용품 헬멧", "#EF4444", "#FDECEC"],
+  ];
+  return (<>
+    <div className="bklbl" style={{ margin: "2px 0 8px" }}><Activity size={14} color="#16A34A" style={{ verticalAlign: "-2px" }} /> 스포츠건강 서비스</div>
+    <div className="sportsgrid">
+      {services.map(([Ic, t, d, cta, q, col, bg]) => (
+        <div className="sportcard" key={t}>
+          <span className="si" style={{ background: bg, color: col }}><Ic size={24} /></span>
+          <div className="st">{t}</div>
+          <div className="sd">{d}</div>
+          <a className="sbtn" href={naverHref(t, q)} target="_blank" rel="noreferrer noopener"><Search size={13} /> {cta} <ExternalLink size={11} /></a>
+        </div>
+      ))}
+    </div>
+    <div className="bklbl" style={{ margin: "16px 0 8px" }}><ShoppingCart size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 구매 — 종목별 스포츠용품</div>
+    <div className="sportbuygrid">
+      {buy.map(([Ic, t, d, q, col, bg]) => (
+        <a className="buycard" key={t} href={naverHref(t + " 용품", q)} target="_blank" rel="noreferrer noopener" style={{ borderColor: col + "55" }}>
+          <span className="bi" style={{ background: bg, color: col }}><Ic size={22} /></span>
+          <div className="bt">{t}</div>
+          <div className="bd">{d}</div>
+          <span className="bgo" style={{ color: col }}>구매하러 가기 <ChevronRight size={12} /></span>
+        </a>
+      ))}
+    </div>
+    <div className="chnote">※ 스포츠건강 서비스·용품은 외부 예약/쇼핑으로 연결됩니다(새 창{!EXTERNAL_OK && " · 미리보기에선 우클릭 → 새 탭"}). 제휴·구성은 운영 정책에 따라 달라질 수 있습니다.</div>
+  </>);
+}
+
 function ShopSection() {
   const [cat, setCat] = useState("diet");
-  const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["ai", "AI 추천상품", Sparkles]];
+  const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["ai", "AI 추천상품", Sparkles], ["sports", "스포츠건강", Activity]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="shop" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강쇼핑</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 의료기기 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
       <PrecisionNutritionSection />
       <div className="chtabs">{cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}</div>
       {cat === "diet" && <ShopCategory catKey="diet" label="건강식단" />}
       {cat === "supp" && <ShopCategory catKey="supp" label="영양제" />}
       {cat === "device" && <ShopCategory catKey="device" label="의료기기" />}
       {cat === "ai" && <ShopAIRec />}
+      {cat === "sports" && <SportsHealth />}
     </div>
   );
 }
