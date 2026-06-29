@@ -135,6 +135,8 @@ const Footprints = mk('<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6
 
 /* 섹션 이동 컨텍스트 — 카드/빠른메뉴에서 nav(메뉴명) 호출 */
 const NavCtx = React.createContext(null);
+/* 토스트(가벼운 알림) — 어디서든 toast("메시지") 호출 */
+function toast(msg){ if(typeof window!=="undefined" && window.__hipetToast) window.__hipetToast(msg); }
 
 /* ===== 입체 일러스트 아이콘 (휴먼 스타일: 레이어드 SVG + 광택/그림자) ===== */
 function PetArt({ name, size=34 }){
@@ -491,14 +493,14 @@ function CardHead({icon:Icon,title,action,onAction,fg="var(--orange)",bg="var(--
   );
 }
 
-function Btn({children,icon:Icon,variant="solid",small}){
+function Btn({children,icon:Icon,variant="solid",small,onClick}){
   const base={display:"flex",alignItems:"center",justifyContent:"center",gap:6,
     fontWeight:700,borderRadius:999,transition:"all .18s",
     padding:small?"7px 14px":"10px 16px",fontSize:small?13:14};
   const styles=variant==="solid"
     ? {...base,background:"linear-gradient(135deg,var(--orange),var(--amber))",color:"#fff",boxShadow:"0 4px 12px rgba(244,132,60,.35)"}
     : {...base,background:"var(--orange-soft)",color:"var(--orange-deep)"};
-  return <button style={styles}>{Icon&&<Icon size={small?15:16}/>}{children}</button>;
+  return <button onClick={onClick} style={styles}>{Icon&&<Icon size={small?15:16}/>}{children}</button>;
 }
 
 /* ============================ SIDEBAR ============================ */
@@ -545,7 +547,7 @@ function Sidebar({active,setActive,open,onClose}){
             background:"#fff",display:"grid",placeItems:"center",boxShadow:"var(--shadow-sm)"}}>
             <Bot size={32} color="var(--orange)"/></div>
           <div style={{fontSize:12,color:"var(--sub)",marginBottom:10}}>24시간 상담 가능</div>
-          <Btn small><Bot size={15}/>상담하기</Btn>
+          <Btn small onClick={()=>{setActive("AI 상담");onClose&&onClose();}}><Bot size={15}/>상담하기</Btn>
         </div>
       </aside>
     </>
@@ -553,7 +555,14 @@ function Sidebar({active,setActive,open,onClose}){
 }
 
 /* ============================ TOPBAR ============================ */
+const NOTIS=[
+  { t:"병원 예약 D-1", d:"OO동물병원 · 6월 30일(일) 16:30", go:"병원/예약" },
+  { t:"예방접종 예정", d:"종합백신 · 7월 5일(금)", go:"건강관리" },
+  { t:"보험금 자동지급 예정", d:"슬개골 정밀검사 1,120,000원 · 6/25", go:"보험" },
+];
 function TopBar({onMenu}){
+  const nav=React.useContext(NavCtx);
+  const [noti,setNoti]=useState(false);
   return (
     <header style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",
       gap:16,marginBottom:22,flexWrap:"wrap"}}>
@@ -574,18 +583,32 @@ function TopBar({onMenu}){
         </div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:14}}>
-        <button style={{position:"relative",width:42,height:42,borderRadius:12,background:"#fff",
-          border:"1px solid var(--border)",display:"grid",placeItems:"center",color:"var(--sub)"}}>
-          <Bell size={20}/>
-          <span style={{position:"absolute",top:-5,right:-5,minWidth:19,height:19,padding:"0 5px",
-            borderRadius:999,background:"#EF5B5B",color:"#fff",fontSize:11,fontWeight:800,
-            display:"grid",placeItems:"center"}}>3</span>
-        </button>
-        <button style={{width:42,height:42,borderRadius:12,background:"#fff",
-          border:"1px solid var(--border)",display:"grid",placeItems:"center",color:"var(--sub)"}}>
+        <div style={{position:"relative"}}>
+          <button onClick={()=>setNoti(v=>!v)} style={{position:"relative",width:42,height:42,borderRadius:12,background:"#fff",
+            border:"1px solid var(--border)",display:"grid",placeItems:"center",color:"var(--sub)",cursor:"pointer"}}>
+            <Bell size={20}/>
+            <span style={{position:"absolute",top:-5,right:-5,minWidth:19,height:19,padding:"0 5px",
+              borderRadius:999,background:"#EF5B5B",color:"#fff",fontSize:11,fontWeight:800,
+              display:"grid",placeItems:"center"}}>3</span>
+          </button>
+          {noti && <>
+            <div onClick={()=>setNoti(false)} style={{position:"fixed",inset:0,zIndex:60}}/>
+            <div className="notidrop">
+              <div className="notihd">알림 <span>3</span></div>
+              {NOTIS.map((n,i)=>(
+                <button key={i} className="notiitem" onClick={()=>{setNoti(false);nav&&nav(n.go);}}>
+                  <span className="notidot"/><div><div className="notit">{n.t}</div><div className="notid">{n.d}</div></div>
+                </button>
+              ))}
+              <button className="notiall" onClick={()=>{setNoti(false);toast("알림 센터는 데모입니다");}}>모든 알림 보기</button>
+            </div>
+          </>}
+        </div>
+        <button onClick={()=>toast("QR 스캔은 데모입니다 · 동물등록·결제 QR을 지원합니다")} style={{width:42,height:42,borderRadius:12,background:"#fff",
+          border:"1px solid var(--border)",display:"grid",placeItems:"center",color:"var(--sub)",cursor:"pointer"}}>
           <QrCode size={20}/></button>
         <div style={{width:1,height:28,background:"var(--border)"}}/>
-        <button style={{display:"flex",alignItems:"center",gap:9}}>
+        <button onClick={()=>nav&&nav("마이페이지")} style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}>
           <span style={{width:40,height:40,borderRadius:"50%",overflow:"hidden",
             background:"linear-gradient(135deg,#FFE7D3,#FFF1D6)",display:"grid",placeItems:"center",fontSize:20}}><MaruImg/></span>
           <span style={{fontSize:14.5,fontWeight:700}}>마루 보호자</span>
@@ -598,11 +621,12 @@ function TopBar({onMenu}){
 
 /* ============================ CARDS ============================ */
 function PetProfileCard(){
+  const nav=React.useContext(NavCtx);
   return (
     <Card style={{display:"flex",flexDirection:"column",gap:16}}>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
         <h3 style={{margin:0,fontSize:21,fontWeight:900}}>{PET.name}</h3>
-        <Pencil size={15} color="var(--muted)"/>
+        <button onClick={()=>nav&&nav("마이페이지")} title="프로필 편집" style={{display:"grid",placeItems:"center",cursor:"pointer"}}><Pencil size={15} color="var(--muted)"/></button>
       </div>
       <div style={{display:"flex",gap:16,alignItems:"center"}}>
         <div style={{width:92,height:92,borderRadius:"50%",flexShrink:0,
@@ -742,11 +766,11 @@ function WalletCard(){
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,
         borderTop:"1px solid var(--border)",paddingTop:14}}>
-        {[{l:"송금",i:ArrowRightLeft},{l:"결제",i:CreditCard},{l:"기록",i:FileText},{l:"스마트컨트랙트",i:FileSignature}].map(b=>{
+        {[{l:"송금",i:ArrowRightLeft,act:()=>toast("토큰 송금은 데모입니다")},{l:"결제",i:CreditCard,act:()=>toast("토큰 결제는 데모입니다")},{l:"기록",i:FileText,act:()=>nav&&nav("건강금융지갑")},{l:"스마트컨트랙트",i:FileSignature,act:()=>nav&&nav("보험")}].map(b=>{
           const Icon=b.i; return (
-          <button key={b.l} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
+          <button key={b.l} onClick={b.act} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,
             padding:"9px 4px",borderRadius:12,background:"var(--cream)",color:"var(--orange-deep)",
-            fontSize:11,fontWeight:700,transition:"background .15s"}}
+            fontSize:11,fontWeight:700,transition:"background .15s",cursor:"pointer"}}
             onMouseEnter={e=>e.currentTarget.style.background="var(--orange-soft)"}
             onMouseLeave={e=>e.currentTarget.style.background="var(--cream)"}>
             <Icon size={18}/>{b.l}</button>
@@ -780,19 +804,21 @@ function RecommendCard({nav}){
 }
 
 function ScheduleCard(){
+  const nav=React.useContext(NavCtx);
+  const goOf=(label)=> label==="보험 갱신"?"보험": label==="건강검진"?"건강관리":"병원/예약";
   return (
     <Card>
-      <CardHead icon={CalendarPlus} title="예정 일정" action="전체보기"/>
+      <CardHead icon={CalendarPlus} title="예정 일정" action="전체보기" onAction={()=>nav&&nav("병원/예약")}/>
       <div style={{display:"flex",flexDirection:"column"}}>
         {SCHEDULE.map((s,i)=>{ const Icon=s.icon; return (
-          <div key={s.label} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",
-            borderBottom:i<SCHEDULE.length-1?"1px solid var(--border)":"none"}}>
+          <button key={s.label} onClick={()=>nav&&nav(goOf(s.label))} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",
+            borderBottom:i<SCHEDULE.length-1?"1px solid var(--border)":"none",background:"none",width:"100%",cursor:"pointer",textAlign:"left"}}>
             <span style={{width:34,height:34,borderRadius:11,background:"var(--orange-soft)",
               color:"var(--orange)",display:"grid",placeItems:"center",flexShrink:0}}><Icon size={18}/></span>
             <span style={{flex:1,fontSize:14,fontWeight:700}}>{s.label}</span>
             <span className="num" style={{fontSize:13,color:"var(--sub)",fontWeight:600}}>{s.when}</span>
             <ChevronRight size={16} color="var(--muted)"/>
-          </div>
+          </button>
         );})}
       </div>
     </Card>
@@ -800,9 +826,10 @@ function ScheduleCard(){
 }
 
 function ActivityCard(){
+  const nav=React.useContext(NavCtx);
   return (
     <Card>
-      <CardHead icon={ClipboardCheck} title="최근 활동" action="전체보기"/>
+      <CardHead icon={ClipboardCheck} title="최근 활동" action="전체보기" onAction={()=>nav&&nav("리워드")}/>
       <div style={{display:"flex",flexDirection:"column"}}>
         {ACTIVITY.map((a,i)=>{ const Icon=a.icon; return (
           <div key={a.label} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 0",
@@ -1227,7 +1254,7 @@ function CommunitySection(){
         <div className="vrow" key={i} style={{background:"#fff",border:"1px solid var(--border)",borderRadius:14,padding:"12px 15px",marginBottom:8}}>
           <span className="vic" style={{background:g.my?"var(--orange-soft)":"var(--cream)"}}><Users size={16} color="var(--orange)"/></span>
           <div style={{flex:1}}><div className="vn">{g.name}{g.my&&<span className="cbadge org">가입중</span>}</div><div className="vm num">멤버 {g.members.toLocaleString()}명</div></div>
-          <button className={g.my?"cbtn":"cbtn pri"} style={{width:"auto",margin:0,padding:"8px 16px"}}>{g.my?"입장":"가입"}</button>
+          <button className={g.my?"cbtn":"cbtn pri"} style={{width:"auto",margin:0,padding:"8px 16px"}} onClick={()=>toast(g.my?`${g.name} 입장 (데모)`:`${g.name} 가입 신청 완료 (데모)`)}>{g.my?"입장":"가입"}</button>
         </div>
       ))}
       <div className="bklbl"><Stethoscope size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 전문가 Q&A</div>
@@ -1266,7 +1293,7 @@ function MyPageSection(){
         <div style={{flex:1}}><div style={{fontSize:15,fontWeight:800}}>마루 <span className="cbadge org">대표</span></div><div className="sub2">말티즈 · 4세 · 수컷(중성화) · 4.2kg · RFID 4100-1234-5678-9012</div></div>
         <button className="cbtn" style={{width:"auto",margin:0,padding:"8px 13px"}} onClick={()=>nav&&nav("건강관리")}>건강 보기</button>
       </div>
-      <button className="cbtn" style={{borderStyle:"dashed"}}><Plus size={15}/> 반려동물 추가 등록</button>
+      <button className="cbtn" style={{borderStyle:"dashed"}} onClick={()=>toast("반려동물 추가 등록은 데모입니다")}><Plus size={15}/> 반려동물 추가 등록</button>
       <div className="bklbl"><FileSignature size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 데이터 제공 동의 (DID) <span className="sub" style={{fontWeight:600,color:"var(--muted)"}}>· 보장의 재원</span></div>
       <div className="card">
         {Object.keys(consent).map((k,i)=>(
@@ -2089,8 +2116,11 @@ function HospitalSection(){
 function App(){
   const [active,setActive]=useState("홈");
   const [open,setOpen]=useState(false);
+  const [toastMsg,setToastMsg]=useState(null);
+  useEffect(()=>{ window.__hipetToast=(m)=>{ setToastMsg(m); clearTimeout(window.__hipetToastT); window.__hipetToastT=setTimeout(()=>setToastMsg(null),2600); }; return ()=>{ window.__hipetToast=null; }; },[]);
   return (
     <NavCtx.Provider value={setActive}>
+    {toastMsg && <div className="toast">{toastMsg}</div>}
     <div style={{display:"flex",minHeight:"100vh"}}>
       <Sidebar active={active} setActive={setActive} open={open} onClose={()=>setOpen(false)}/>
       <main style={{flex:1,minWidth:0,padding:"24px 28px 8px",display:"flex",flexDirection:"column"}}>
@@ -2173,6 +2203,21 @@ css.textContent=`
   .grid-3,.grid-4{grid-template-columns:1fr}
 }
 
+/* ===== 토스트 / 알림 드롭다운 ===== */
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);z-index:200;
+  background:rgba(58,44,34,.94);color:#fff;font-size:13.5px;font-weight:600;padding:12px 20px;border-radius:999px;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);animation:toastin .25s ease}
+@keyframes toastin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+.notidrop{position:absolute;top:50px;right:0;z-index:61;width:288px;background:#fff;border:1px solid var(--border);
+  border-radius:16px;box-shadow:0 14px 34px rgba(196,128,72,.2);padding:8px;overflow:hidden}
+.notihd{font-size:13px;font-weight:800;padding:8px 10px 6px;display:flex;align-items:center;gap:6px}
+.notihd span{background:#EF5B5B;color:#fff;font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 7px}
+.notiitem{display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;padding:10px;border-radius:11px;background:none;cursor:pointer}
+.notiitem:hover{background:var(--cream)}
+.notidot{width:8px;height:8px;border-radius:50%;background:var(--orange);margin-top:5px;flex-shrink:0}
+.notit{font-size:13px;font-weight:700}
+.notid{font-size:11.5px;color:var(--muted);margin-top:2px}
+.notiall{width:100%;text-align:center;padding:9px;font-size:12.5px;font-weight:700;color:var(--orange-deep);background:var(--cream);border-radius:11px;margin-top:4px;cursor:pointer}
 /* ===== 상단 빠른메뉴 (입체 타일) ===== */
 .qtop{display:flex;gap:10px;background:linear-gradient(135deg,#FFFFFF,#FFF6EC);border:1px solid var(--border);
   border-radius:20px;padding:15px 16px;margin-bottom:20px;box-shadow:var(--shadow-sm);overflow-x:auto}
