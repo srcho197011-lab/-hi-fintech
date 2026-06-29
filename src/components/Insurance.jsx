@@ -543,7 +543,7 @@ function InsuranceSection({ onGo }) {
   const [enroll, setEnroll] = useState(false);
   const [cover, setCover] = useState(null);
   const go = onGo || (() => {});
-  const tabs = [["embed", "건강검진대비보험", ShieldCheck], ["policy", "실손보험 정책", HeartHandshake], ["premium", "맞춤 헬스케어 보험", Sparkles], ["join", "보험가입", FileText], ["coverage", "보장조회", Search], ["claim", "보험금청구", Coins], ["ai", "AI보험상담", MessageSquare]];
+  const tabs = [["embed", "건강검진대비보험", ShieldCheck], ["sports", "스포츠 임베디드 보험", Trophy], ["policy", "실손보험 정책", HeartHandshake], ["premium", "맞춤 헬스케어 보험", Sparkles], ["join", "보험가입", FileText], ["coverage", "보장조회", Search], ["claim", "보험금청구", Coins], ["ai", "AI보험상담", MessageSquare]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="insurance" /></span>
@@ -551,6 +551,7 @@ function InsuranceSection({ onGo }) {
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강검진대비보험 · 가입 · 보장조회 · 청구 · AI상담 — 치료비 걱정 없는 임베디드 보험</div></div></div>
       <div className="chtabs">{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
+      {tab === "sports" && <SportsInsuranceSection onGo={go} />}
       {tab === "policy" && <InsurancePolicySection />}
       {tab === "premium" && <PremiumPolicySection />}
       {tab === "embed" && (<>

@@ -8,7 +8,7 @@ import {
   Gift, CircleUserRound, ArrowLeft, ArrowRight, Menu, Plus, Smile, Send, X,
   Image as ImageIcon, Paperclip, Mic, Volume2, ExternalLink, RefreshCw, Cigarette,
   Wine, Dumbbell, ArrowDown, ArrowUp, Banknote, Ban, Check, AlertTriangle, Printer,
-  MapPin, Star, Clock, Filter, Tag, Percent, BookOpen,
+  MapPin, Star, Clock, Filter, Tag, Percent, BookOpen, Trophy,
 } from "lucide-react";
 const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKET, DISTRICTS, COVER_DETAIL, KDCA_NOTE, DEMO_MEMBERS } = (typeof window !== "undefined" && window.__HHDATA) || {};
 
