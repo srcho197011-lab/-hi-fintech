@@ -1,13 +1,14 @@
 # 국가건강정보포털 일괄 다운로더
 
-질병관리청 **국가건강정보포털**(health.kdca.go.kr)의 건강정보 콘텐츠를
-**교육·연구 목적**으로 보존하기 위한 정중한(rate-limit) 일괄 다운로드 CLI입니다.
+질병관리청 건강정보(국가건강정보포털 등)를 **교육·연구 목적**으로 보존하기 위한
+정중한(rate-limit) 일괄 다운로드 CLI입니다.
 
 지원 자료원(`--source`):
-- `general` — **일반건강정보** (약 660여 건, 기본값)
+- `general` — **일반건강정보** (health.kdca.go.kr, 약 660여 건, 기본값)
 - `elderly` — **노인 건강정보** (약 64건)
 - `youth` — **청소년 건강정보** (약 33건)
 - `ccvd` — **심뇌혈관질환정보** (4건: 뇌졸중·뇌졸중 이후의 삶·심폐소생술·심근경색)
+- `rdiz` — **희귀질환 헬프라인** (helpline.kdca.go.kr, 약 1,314건)
 
 - 표준 라이브러리만 사용 → **별도 설치 불필요** (Python 3.9+)
 - 요청 간 지연·재시도·이어받기 내장 → 서버 부담 최소화
@@ -33,6 +34,9 @@ py kdca_health_download.py --source youth --out download_youth
 
 # 심뇌혈관질환정보(4건) 다운로드
 py kdca_health_download.py --source ccvd --out download_ccvd
+
+# 희귀질환 헬프라인(약 1,314건) 다운로드 — 양이 많으니 지연 넉넉히
+py kdca_health_download.py --source rdiz --delay 1.5 --out download_rdiz
 ```
 
 > Windows 콘솔에서 한글 로그가 깨지면 먼저 `chcp 65001` 또는 `$env:PYTHONUTF8="1"` 를 실행하세요.
@@ -42,7 +46,7 @@ py kdca_health_download.py --source ccvd --out download_ccvd
 
 | 옵션 | 설명 | 기본값 |
 |------|------|--------|
-| `--source` | 자료원 `general`(일반)/`elderly`(노인)/`youth`(청소년)/`ccvd`(심뇌혈관) | `general` |
+| `--source` | `general`/`elderly`/`youth`/`ccvd`/`rdiz`(희귀질환) | `general` |
 | `--lclas N` | 카테고리 `lclasSn` (0 = 전체) | `0` |
 | `--out DIR` | 출력 폴더 | `download` |
 | `--formats txt,html` | 저장 형식(콤마 구분) | `txt,html` |
@@ -65,9 +69,10 @@ download/
 
 ## 동작 방식
 
-- **목록형**(general/elderly/youth): 자료원별 목록 페이지에 `pageIndex`를 POST하며 순회, `fn_goView('<cntnts_sn>', ...)`에서 글 번호 수집(중복 제거, 빈 페이지에서 종료) → 상세 `...View.do?cntnts_sn=<번호>` GET
+- **목록형**(general/elderly/youth): 목록 페이지에 `pageIndex` POST 순회, `fn_goView('<cntnts_sn>', ...)`에서 글 번호 수집(중복 제거, 빈 페이지에서 종료) → 상세 `...View.do?cntnts_sn=<번호>` GET, `id="print-content"` 본문 추출
 - **개별 페이지형**(ccvd): 페이지네이션 없이 미리 정의된 콘텐츠 페이지(`*Main.do`)를 직접 GET
-- 본문은 두 방식 모두 `id="print-content"` 영역만 추출
+- **전체 1회 수신형**(rdiz): 희귀질환은 페이지네이션이 불안정하여 `pageUnit`을 키워 전체 목록을 한 번에 받음. `fn_moveDetail('<rdizCd>')`로 코드 수집 → 상세 `selectRdizInfDetail.do?rdizCd=<코드>` GET, `dic_detail` 본문·표에서 질환명 추출
+- 모든 자료원은 세션 쿠키(JSESSIONID)를 유지하며 요청
 
 ## 책임 있는 사용
 

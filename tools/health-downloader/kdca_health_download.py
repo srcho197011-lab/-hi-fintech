@@ -24,6 +24,7 @@ https://health.kdca.go.kr/  ·  교육/연구 목적의 정중한 수집 도구
 
 import argparse
 import csv
+import http.cookiejar
 import json
 import os
 import re
@@ -35,24 +36,40 @@ import urllib.request
 from html.parser import HTMLParser
 from http.client import IncompleteRead
 
-BASE = "https://health.kdca.go.kr"
+DEFAULT_BASE = "https://health.kdca.go.kr"
 _PREFIX = "/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo"
 
-# 자료원(source) 정의: 목록 페이지 / 상세 페이지 / 표시명
+# 본문 컨테이너 우선순위(class 토큰 또는 "id:..." 정확매칭)
+DEFAULT_CONTAINERS = ("id:print-content", "view-con")
+
+# 목록 항목 추출 정규식
+#  - goView형: fn_goView('<숫자 cntnts_sn>', '<제목>')  → id+제목
+#  - rdiz형  : fn_moveDetail('<rdizCd>')                → id만(제목은 상세에서)
+ITEM_RE_GOVIEW = re.compile(r"fn_goView\('(\d+)'\s*,\s*'([^']*)'\)")
+ITEM_RE_RDIZ = re.compile(r"fn_moveDetail\('([A-Za-z0-9]+)'\)")
+
+# 희귀질환 상세의 질환명(상단 표 thead 다음 첫 행의 2번째 td)
+TITLE_RE_RDIZ = re.compile(
+    r"</thead>\s*<tbody>\s*<tr>\s*<td[^>]*>.*?</td>\s*<td[^>]*>(.*?)</td>", re.S)
+
+# 자료원(source) 정의.
+#   목록형 키: base(기본 health), list, list_params(정적 POST 파라미터),
+#             item_re, detail, detail_param(쿼리키), containers, title_re
+#   개별페이지형 키: pages=[(slug, path)...]
 SOURCES = {
     "general": {  # 일반건강정보 (약 660여 건, 9페이지)
         "list": f"{_PREFIX}/gnrlzHealthInfoMain.do",
-        "view": f"{_PREFIX}/gnrlzHealthInfoView.do",
+        "detail": f"{_PREFIX}/gnrlzHealthInfoView.do",
         "name": "일반건강정보",
     },
     "elderly": {  # 노인 건강정보 (Old, 약 64건)
         "list": f"{_PREFIX}/gnrlzHealthInfoOld.do",
-        "view": f"{_PREFIX}/gnrlzHealthInfoOldView.do",
+        "detail": f"{_PREFIX}/gnrlzHealthInfoOldView.do",
         "name": "노인 건강정보",
     },
     "youth": {  # 청소년 건강정보 (약 33건)
         "list": f"{_PREFIX}/gnrlzHealthInfoYouth.do",
-        "view": f"{_PREFIX}/gnrlzHealthInfoYouthView.do",
+        "detail": f"{_PREFIX}/gnrlzHealthInfoYouthView.do",
         "name": "청소년 건강정보",
     },
     "ccvd": {  # 심뇌혈관질환정보 (페이지네이션 목록이 아닌 개별 콘텐츠 페이지 묶음)
@@ -63,6 +80,19 @@ SOURCES = {
             ("cprInfo",      "/healthinfo/biz/health/ccvdInfo/cvcdInfo/cprInfoMain.do"),
             ("miInfo",       "/healthinfo/biz/health/ccvdInfo/cvcdInfo/miInfoMain.do"),
         ],
+    },
+    "rdiz": {  # 희귀질환 헬프라인 질환목록 (다른 도메인, 약 1,389건)
+        "base": "https://helpline.kdca.go.kr",
+        "list": "/cdchelp/ph/rdiz/selectRdizInfList.do",
+        "list_params": {"menu": "A0100"},
+        # 페이지네이션이 불안정하여 pageUnit을 키워 전체를 1회에 수신(약 1,314건)
+        "fetch_all": {"pageUnit": "5000"},
+        "item_re": ITEM_RE_RDIZ,
+        "detail": "/cdchelp/ph/rdiz/selectRdizInfDetail.do",
+        "detail_param": "rdizCd",
+        "containers": ("dic_detail",),
+        "title_re": TITLE_RE_RDIZ,
+        "name": "희귀질환(헬프라인)",
     },
 }
 
@@ -76,22 +106,30 @@ _SSL = ssl.create_default_context()
 _SSL.check_hostname = False
 _SSL.verify_mode = ssl.CERT_NONE
 
+# 세션 쿠키(JSESSIONID 등)를 유지하는 전역 오프너 — 일부 사이트의 페이지네이션 일관성에 필요
+_OPENER = urllib.request.build_opener(
+    urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()),
+    urllib.request.HTTPSHandler(context=_SSL),
+)
+
 
 # ----------------------------------------------------------------------------
 # HTTP
 # ----------------------------------------------------------------------------
 def _request(url, data=None, retries=3, timeout=40):
-    """GET(data=None) 또는 POST. 지수 백오프 재시도."""
+    """GET(data=None) 또는 POST. 쿠키 유지 + 지수 백오프 재시도."""
     body = urllib.parse.urlencode(data).encode() if data is not None else None
+    parts = urllib.parse.urlsplit(url)
+    referer = f"{parts.scheme}://{parts.netloc}/"
     last_err = None
     for attempt in range(retries):
         try:
             req = urllib.request.Request(url, data=body, headers={
                 "User-Agent": UA,
                 "Accept-Language": "ko-KR,ko;q=0.9",
-                "Referer": BASE + _PREFIX + "/",
+                "Referer": referer,
             })
-            with urllib.request.urlopen(req, context=_SSL, timeout=timeout) as resp:
+            with _OPENER.open(req, timeout=timeout) as resp:
                 raw = resp.read()
             return raw.decode("utf-8", "replace")
         except (urllib.error.URLError, IncompleteRead, TimeoutError) as e:
@@ -102,8 +140,21 @@ def _request(url, data=None, retries=3, timeout=40):
     raise RuntimeError(f"요청 실패: {url} :: {last_err}")
 
 
+def src_base(src):
+    return src.get("base", DEFAULT_BASE)
+
+
+def detail_url(src, sid):
+    param = src.get("detail_param", "cntnts_sn")
+    return f"{src_base(src)}{src['detail']}?{param}={sid}"
+
+
 def fetch_list_page(src, lclas, page):
-    return _request(BASE + src["list"], data={"lclasSn": str(lclas), "pageIndex": str(page)})
+    params = dict(src.get("list_params", {"lclasSn": "0"}))
+    if "lclasSn" in params:
+        params["lclasSn"] = str(lclas)
+    params["pageIndex"] = str(page)
+    return _request(src_base(src) + src["list"], data=params)
 
 
 def fetch_detail(url):
@@ -113,16 +164,18 @@ def fetch_detail(url):
 # ----------------------------------------------------------------------------
 # 파싱
 # ----------------------------------------------------------------------------
-GOVIEW_RE = re.compile(r"fn_goView\('(\d+)'\s*,\s*'([^']*)'\)")
-
-
-def parse_list(html):
-    """목록 페이지 HTML에서 (cntnts_sn, title) 추출. 등장 순서 유지·중복 제거."""
+def parse_list(html, item_re):
+    """목록 페이지 HTML에서 (id, title) 추출. 등장 순서 유지·중복 제거.
+    item_re의 group(1)=id, group(2)=제목(있으면)."""
+    has_title = item_re.groups >= 2
     seen, out = set(), []
-    for sn, title in GOVIEW_RE.findall(html):
-        if sn not in seen:
-            seen.add(sn)
-            out.append((sn, _unescape(title).strip()))
+    for m in item_re.finditer(html):
+        sid = m.group(1)
+        if sid in seen:
+            continue
+        seen.add(sid)
+        title = _unescape(m.group(2)).strip() if has_title else ""
+        out.append((sid, title))
     return out
 
 
@@ -220,12 +273,17 @@ def _unescape(s):
              .replace("&quot;", '"').replace("&#39;", "'").replace("&nbsp;", " "))
 
 
-def parse_detail(html):
+def parse_detail(html, containers=DEFAULT_CONTAINERS, title_re=None):
     """상세 HTML → (title, body_text, body_html_fragment)."""
-    m = re.search(r"<title>([^<]*)</title>", html)
-    title = _unescape(m.group(1)).split("|")[0].strip() if m else ""
-    # 본문 컨테이너 우선순위: id=print-content(순수 인쇄본문) → contents-Div → view-con(상위 래퍼)
-    for target in ("id:print-content", "id:sub-content", "view-con"):
+    if title_re is not None:
+        m = title_re.search(html)
+        title = _unescape(re.sub(r"<[^>]+>", "", m.group(1))).strip() if m else ""
+    else:
+        m = re.search(r"<title>([^<]*)</title>", html)
+        title = _unescape(m.group(1)).split("|")[0].strip() if m else ""
+    # 본문 컨테이너 우선순위대로 시도(첫 충분한 텍스트 채택)
+    text, ext = "", None
+    for target in containers:
         ext = _ContentExtractor(target)
         try:
             ext.feed(html)
@@ -234,7 +292,7 @@ def parse_detail(html):
         text = ext.get_text()
         if len(text) >= 80:
             return title, text, ext.get_html()
-    return title, text, ext.get_html()
+    return title, text, (ext.get_html() if ext else "")
 
 
 # ----------------------------------------------------------------------------
@@ -265,7 +323,7 @@ def build_html_doc(title, url, fragment):
         "table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:6px}"
         ".src{color:#888;font-size:13px;border-top:1px solid #eee;margin-top:32px;padding-top:12px}</style>\n"
         f"</head>\n<body>\n<h1>{title}</h1>\n{fragment}\n"
-        f'<p class="src">출처: 질병관리청 국가건강정보포털 · <a href="{url}">{url}</a></p>\n'
+        f'<p class="src">출처: 질병관리청 · <a href="{url}">{url}</a></p>\n'
         "</body>\n</html>\n"
     )
 
@@ -277,25 +335,41 @@ def collect_index(src, lclas, delay, start_page, end_page, log):
     """자료원의 (id, title, url) 목록을 반환."""
     # 개별 페이지 묶음형(ccvd 등): 미리 정의된 페이지 목록
     if "pages" in src:
-        items = [(slug, "", f"{BASE}{path}") for slug, path in src["pages"]]
+        items = [(slug, "", f"{src_base(src)}{path}") for slug, path in src["pages"]]
         log(f"[목록] 개별 콘텐츠 페이지 {len(items)}건")
         return items
 
-    # 페이지네이션 목록형: pageIndex 순회로 cntnts_sn 수집
+    item_re = src.get("item_re", ITEM_RE_GOVIEW)
+
+    # 전체 1회 수신형(rdiz 등): 큰 pageUnit으로 한 번에 받기(페이지네이션 우회)
+    if "fetch_all" in src:
+        base_params = dict(src.get("list_params", {}))
+        # 세션 쿠키 확보용 1회 GET
+        if base_params:
+            _request(src_base(src) + src["list"] + "?" + urllib.parse.urlencode(base_params))
+        params = dict(base_params)
+        params.update(src["fetch_all"])
+        params["pageIndex"] = "1"
+        html = _request(src_base(src) + src["list"], data=params)
+        parsed = parse_list(html, item_re)
+        items = [(sid, title, detail_url(src, sid)) for sid, title in parsed]
+        log(f"[목록] 전체 {len(items)}건 수신")
+        return items
+
+    # 페이지네이션 목록형: pageIndex 순회로 항목 id 수집
     items, page = [], start_page
     seen = set()
     while True:
         if end_page and page > end_page:
             break
         html = fetch_list_page(src, lclas, page)
-        page_items = [it for it in parse_list(html) if it[0] not in seen]
+        page_items = [it for it in parse_list(html, item_re) if it[0] not in seen]
         if not page_items:
             log(f"[목록] page {page}: 0건 → 종료")
             break
-        for sn, title in page_items:
-            seen.add(sn)
-        items.extend((sn, title, f"{BASE}{src['view']}?cntnts_sn={sn}")
-                     for sn, title in page_items)
+        for sid, title in page_items:
+            seen.add(sid)
+        items.extend((sid, title, detail_url(src, sid)) for sid, title in page_items)
         log(f"[목록] page {page}: {len(page_items)}건 (누적 {len(items)})")
         page += 1
         time.sleep(delay)
@@ -348,7 +422,8 @@ def run(args):
                 continue
         try:
             html = fetch_detail(url)
-            title, text, fragment = parse_detail(html)
+            title, text, fragment = parse_detail(
+                html, src.get("containers", DEFAULT_CONTAINERS), src.get("title_re"))
             title = title or list_title or sid
             base = f"{sid}_{safe_filename(title)}"
             if args.resume and _already_saved(args, txt_dir, html_dir, base):
@@ -386,7 +461,8 @@ def main():
         description="국가건강정보포털(질병관리청) 일반건강정보 일괄 다운로더 (교육 목적)",
         formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--source", default="general", choices=sorted(SOURCES.keys()),
-                   help="자료원: general(일반 약660건)|elderly(노인 64건)|youth(청소년 33건)|ccvd(심뇌혈관 4건). 기본 general")
+                   help="자료원: general(일반 약660)|elderly(노인 64)|youth(청소년 33)|"
+                        "ccvd(심뇌혈관 4)|rdiz(희귀질환 약1,389). 기본 general")
     p.add_argument("--lclas", default="0", help="카테고리 lclasSn (기본 0 = 전체)")
     p.add_argument("--out", default="download", help="출력 폴더 (기본 ./download)")
     p.add_argument("--formats", default="txt,html",
