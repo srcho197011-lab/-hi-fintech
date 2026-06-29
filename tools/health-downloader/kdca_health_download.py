@@ -506,6 +506,80 @@ def collect_crawl(start_url, log, max_pages):
     return origin, leaves
 
 
+EGEN_MENU_RE = re.compile(r'href="(/egen/[a-z_]+\.do\?contentsno=\d+)"[^>]*>(.*?)</a>', re.S)
+EGEN_UI_IMG_RE = re.compile(r"banner|logo|icon|btn|aside|sns|family|footer|header|top|menu|bg_|btm|tab_")
+
+
+def run_egen(args, log):
+    """E-GEN(중앙응급의료센터) 응급처치 모드: 메뉴의 응급처치 페이지들을 돌며
+    본문 텍스트 + 내용 인포그래픽 이미지(/images/egen/)를 다운로드."""
+    url = args.egen
+    p = urllib.parse.urlsplit(url)
+    origin = f"{p.scheme}://{p.netloc}"
+    log("=== 건강정보 다운로더 · E-GEN 응급처치 모드 ===")
+    log(f"출력 폴더: {os.path.abspath(args.out)} · 지연 {args.delay}s")
+
+    h = _request(url)
+    seen, items = set(), []
+    for href, txt in EGEN_MENU_RE.findall(h):
+        if href in seen:
+            continue
+        t = re.sub(r"\s+", " ", _unescape(re.sub(r"<[^>]+>", " ", txt))).strip()
+        if not t:
+            continue
+        seen.add(href)
+        items.append((href, t))
+    if args.max:
+        items = items[:args.max]
+    log(f"응급처치 페이지 {len(items)}건")
+
+    txt_dir = os.path.join(args.out, "txt")
+    img_dir = os.path.join(args.out, "images")
+    os.makedirs(txt_dir, exist_ok=True)
+    os.makedirs(img_dir, exist_ok=True)
+    with open(os.path.join(args.out, "index.csv"), "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["contentsno", "title", "url"])
+        for href, t in items:
+            w.writerow([re.search(r"contentsno=(\d+)", href).group(1), t, origin + href])
+
+    manifest, ok, fail, nimg = [], 0, 0, 0
+    for i, (href, title) in enumerate(items, 1):
+        u = origin + href
+        cno = re.search(r"contentsno=(\d+)", href).group(1)
+        try:
+            d = fetch_detail(u)
+            _, text, _ = parse_detail(d, ("id:layoutContainer",))
+            base = f"{cno}_{safe_filename(title)}"
+            with open(os.path.join(txt_dir, base + ".txt"), "w", encoding="utf-8") as f:
+                f.write(f"{title}\n출처: {u}\n{'='*50}\n\n{text}\n")
+            bi = d.find('id="layoutContainer"')
+            body = d[bi:] if bi >= 0 else d
+            imgs = [s for s in dict.fromkeys(re.findall(r'<img[^>]*src="(/images/egen/[^"]+)"', body))
+                    if not EGEN_UI_IMG_RE.search(s.lower())]
+            files = []
+            for s in imgs:
+                fn = f"{cno}_{safe_filename(os.path.basename(s), 80)}"
+                fp = os.path.join(img_dir, fn)
+                if not (args.resume and os.path.exists(fp)):
+                    download_binary(origin + s, fp)
+                    nimg += 1
+                    time.sleep(args.delay)
+                files.append(fn)
+            manifest.append({"contentsno": cno, "title": title, "url": u, "images": files})
+            ok += 1
+            log(f"  [{i}/{len(items)}] {cno} {title} (이미지 {len(files)}개) OK")
+        except Exception as e:
+            fail += 1
+            log(f"  [{i}/{len(items)}] {cno} 실패: {e}")
+        time.sleep(args.delay)
+
+    with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump({"source": "egen", "count": len(manifest), "items": manifest},
+                  f, ensure_ascii=False, indent=2)
+    log(f"\n완료: 페이지 {ok} · 실패 {fail} · 이미지 {nimg}개 → {os.path.abspath(args.out)}")
+
+
 def run_board(args, log):
     """cancer.go.kr 게시판(bbs) 모드: 글 목록을 돌며 본문 텍스트 + 첨부파일 다운로드."""
     list_url = args.board
@@ -589,6 +663,9 @@ def run_board(args, log):
 def run(args):
     os.makedirs(args.out, exist_ok=True)
     log = (lambda m: print(m, flush=True)) if not args.quiet else (lambda m: None)
+
+    if args.egen:  # E-GEN 응급처치(본문+이미지) 모드
+        return run_egen(args, log)
 
     if args.board:  # 게시판(첨부파일) 모드
         return run_board(args, log)
@@ -707,6 +784,8 @@ def main():
                    help="cancer.go.kr 게시판(bbs) list.do URL. 글 본문 + 첨부파일(PDF 등) 일괄 다운로드")
     p.add_argument("--crawl", default=None,
                    help="cancer.go.kr 페이지 URL. 좌측 메뉴에 걸린 같은 섹션 contents.do를 모두 자동 수집")
+    p.add_argument("--egen", default=None,
+                   help="e-gen.or.kr 응급처치 페이지 URL. 메뉴의 응급처치 페이지 본문 + 인포그래픽 이미지 일괄")
     p.add_argument("--lclas", default="0", help="카테고리 lclasSn (기본 0 = 전체)")
     p.add_argument("--out", default="download", help="출력 폴더 (기본 ./download)")
     p.add_argument("--formats", default="txt,html",

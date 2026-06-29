@@ -1,7 +1,7 @@
 # 국가건강정보포털 일괄 다운로더
 
-질병관리청 건강정보(국가건강정보포털 등)를 **교육·연구 목적**으로 보존하기 위한
-정중한(rate-limit) 일괄 다운로드 CLI입니다.
+질병관리청·국가암정보센터·중앙응급의료센터(E-GEN) 등의 공개 건강정보를
+**교육·연구 목적**으로 보존하기 위한 정중한(rate-limit) 일괄 다운로드 CLI입니다.
 
 지원 자료원(`--source`):
 - `general` — **일반건강정보** (health.kdca.go.kr, 약 660여 건, 기본값)
@@ -57,6 +57,9 @@ py kdca_health_download.py --board "https://www.cancer.go.kr/lay1/bbs/S1T261C844
 # 국가암정보센터 한 섹션을 통째로(메뉴 계층 자동 추적)
 # 보고 있는 페이지 URL만 주면 됨 — leaf면 상위 메뉴로 올라가 형제까지 수집
 py kdca_health_download.py --crawl "https://www.cancer.go.kr/lay1/S1T325C326/sublink.do" --out download_living
+
+# E-GEN 응급처치 전체(본문 + 인포그래픽 이미지)
+py kdca_health_download.py --egen "https://www.e-gen.or.kr/egen/first_aid_basics.do" --out download_egen
 ```
 
 > Windows 콘솔에서 한글 로그가 깨지면 먼저 `chcp 65001` 또는 `$env:PYTHONUTF8="1"` 를 실행하세요.
@@ -70,6 +73,7 @@ py kdca_health_download.py --crawl "https://www.cancer.go.kr/lay1/S1T325C326/sub
 | `--url` | 단일/다중 페이지 URL 직접 다운로드(자료원 무시, 본문 자동탐지) | - |
 | `--board` | cancer.go.kr 게시판(bbs) list.do URL — 글 본문 + 첨부 PDF 일괄 | - |
 | `--crawl` | cancer.go.kr 페이지 URL — 메뉴 계층을 따라 한 섹션 통째 수집 | - |
+| `--egen` | e-gen.or.kr 응급처치 페이지 URL — 본문 + 인포그래픽 이미지 일괄 | - |
 | `--lclas N` | 카테고리 `lclasSn` (0 = 전체) | `0` |
 | `--out DIR` | 출력 폴더 | `download` |
 | `--formats txt,html` | 저장 형식(콤마 구분) | `txt,html` |
@@ -99,6 +103,7 @@ download/
 - **단일 URL형**(`--url`): 자료원에 없는 임의의 페이지를 직접 GET. 본문 컨테이너를 자동탐지(`print-content`→`dic_detail`→`cont_set`→`div_page`→`view-con`→`contents` 등)하고, 제목은 `<h1>` 우선·없으면 breadcrumb 마지막 항목 사용(예: `홈 >…>국가암검진 사업` → `국가암검진 사업`)
 - **게시판형**(`--board`): cancer.go.kr `bbs/.../list.do` 를 `cpage` 순회하며 글 수집 → 각 글의 본문 텍스트 저장 + `download.do` 첨부파일(PDF 등) 원본을 `files/`에 다운로드. 첨부는 이미 받은 파일은 건너뜀
 - **섹션 크롤**(`--crawl`): cancer.go.kr 메뉴는 계층이 번호로 인코딩됨(노드 `S1TaCb`의 자식 링크 = `S1TbC*`). 이를 따라 해당 섹션의 하위 `contents.do`만 재귀 수집(사이트 전체로 번지지 않음). 시작 URL이 leaf면 상위 메뉴로 올라가 형제들까지 포함. 받은 페이지는 `--url`과 동일하게 본문 추출
+- **E-GEN 응급처치**(`--egen`): e-gen.or.kr 응급처치 메뉴(`*.do?contentsno=N`)를 모아 각 페이지의 본문 텍스트(`txt/`) + 내용 인포그래픽 이미지(`/images/egen/`, UI 이미지 제외)를 `images/`에 저장. 응급처치 내용 상당수가 그림이라 이미지까지 받음
 - 모든 자료원은 세션 쿠키(JSESSIONID)를 유지하며 요청
 
 ## 책임 있는 사용
