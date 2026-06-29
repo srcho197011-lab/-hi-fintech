@@ -84,6 +84,28 @@ SOURCES = {
             ("miInfo",       "/healthinfo/biz/health/ccvdInfo/cvcdInfo/miInfoMain.do"),
         ],
     },
+    "ptl": {  # 희귀질환 헬프라인 안내/소개 콘텐츠(정적 포털 페이지 묶음)
+        "base": "https://helpline.kdca.go.kr",
+        "name": "희귀질환 헬프라인 안내자료",
+        "containers": AUTO_CONTAINERS,
+        "title_h1": True,
+        # (slug=menu코드, schSno&menu) — 제목이 '소개' 등으로 겹쳐 menu코드로 파일명 구분
+        "pages": [(slug, f"/cdchelp/ph/ptlcontents/selectPtlConSent.do?{q}") for slug, q in [
+            ("B0101", "schSno=110&menu=B0101"),  # 지원사업 소개
+            ("B0151", "schSno=139&menu=B0151"),  # 지원사업 신청 절차 안내
+            ("B0201", "schSno=163&menu=B0201"),  # 소개
+            ("B0301", "schSno=122&menu=B0301"),  # 소개
+            ("B0501", "schSno=170&menu=B0501"),  # 주문절차 안내
+            ("C0100", "schSno=123&menu=C0100"),  # 등록통계사업 소개
+            ("C0300", "schSno=144&menu=C0300"),  # 자료 수집·분석
+            ("C0400", "schSno=145&menu=C0400"),  # 통계 결과
+            ("D0100", "schSno=169&menu=D0100"),  # 권역별 전문기관 소개
+            ("F0101", "schSno=154&menu=F0101"),  # 전문교육자료 - 신규 희귀질환 지정신청
+            ("F0101b", "schSno=155&menu=F0101"), # 전문교육자료 - 신규 희귀질환 지정신청(추가)
+            ("F0102", "schSno=156&menu=F0102"),  # 산정특례 신청
+            ("H0100", "schSno=124&menu=H0100"),  # 이용안내 - 저작권정책
+        ]],
+    },
     "rdiz": {  # 희귀질환 헬프라인 질환목록 (다른 도메인, 약 1,389건)
         "base": "https://helpline.kdca.go.kr",
         "list": "/cdchelp/ph/rdiz/selectRdizInfList.do",
@@ -487,7 +509,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--source", default="general", choices=sorted(SOURCES.keys()),
                    help="자료원: general(일반 약660)|elderly(노인 64)|youth(청소년 33)|"
-                        "ccvd(심뇌혈관 4)|rdiz(희귀질환 약1,314). 기본 general")
+                        "ccvd(심뇌혈관 4)|rdiz(희귀질환 약1,314)|ptl(헬프라인 안내자료 13). 기본 general")
     p.add_argument("--url", default=None,
                    help="단일 페이지 URL 직접 다운로드(자료원 무시, 본문 컨테이너 자동탐지). "
                         "콤마로 여러 개 지정 가능")
