@@ -41,6 +41,9 @@ _PREFIX = "/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo"
 
 # 본문 컨테이너 우선순위(class 토큰 또는 "id:..." 정확매칭)
 DEFAULT_CONTAINERS = ("id:print-content", "view-con")
+# --url 범용 모드에서 시도할 컨테이너 후보(앞에서부터 충분한 텍스트를 가진 첫 것 채택)
+AUTO_CONTAINERS = ("id:print-content", "dic_detail", "id:cont_set", "con_area",
+                   "view-con", "id:contents", "id:sub-content")
 
 # 목록 항목 추출 정규식
 #  - goView형: fn_goView('<숫자 cntnts_sn>', '<제목>')  → id+제목
@@ -304,6 +307,17 @@ def safe_filename(name, maxlen=60):
     return (name[:maxlen].strip() or "untitled")
 
 
+def url_slug(u):
+    """URL에서 파일명용 짧은 식별자 생성(주요 쿼리키 우선, 없으면 경로 끝)."""
+    parts = urllib.parse.urlsplit(u)
+    qs = urllib.parse.parse_qs(parts.query)
+    for k in ("schSno", "cntnts_sn", "rdizCd", "seq", "id", "sn"):
+        if k in qs and qs[k]:
+            return f"{k}-{qs[k][0]}"
+    last = parts.path.rstrip("/").split("/")[-1]
+    return os.path.splitext(last)[0] or "page"
+
+
 def _already_saved(args, txt_dir, html_dir, base):
     """요청된 모든 형식이 이미 저장돼 있으면 True(이어받기 판단)."""
     need = []
@@ -380,12 +394,18 @@ def run(args):
     os.makedirs(args.out, exist_ok=True)
     log = (lambda m: print(m, flush=True)) if not args.quiet else (lambda m: None)
 
-    src = SOURCES[args.source]
-    cat = CATEGORY_HINT.get(str(args.lclas), f"lclasSn={args.lclas}")
-    log(f"=== 국가건강정보포털 다운로더 · {src['name']}({cat}) ===")
-    log(f"출력 폴더: {os.path.abspath(args.out)} · 지연 {args.delay}s · 형식 {','.join(args.formats)}")
-
-    items = collect_index(src, args.lclas, args.delay, args.start_page, args.end_page, log)
+    if args.url:  # 범용 단일/다중 URL 모드(자료원 무시)
+        urls = [u.strip() for u in args.url.split(",") if u.strip()]
+        src = {"name": "단일 URL", "containers": AUTO_CONTAINERS, "title_h1": True}
+        items = [(url_slug(u), "", u) for u in urls]
+        log(f"=== 건강정보 다운로더 · 단일 URL {len(items)}건 ===")
+        log(f"출력 폴더: {os.path.abspath(args.out)} · 지연 {args.delay}s · 형식 {','.join(args.formats)}")
+    else:
+        src = SOURCES[args.source]
+        cat = CATEGORY_HINT.get(str(args.lclas), f"lclasSn={args.lclas}")
+        log(f"=== 국가건강정보포털 다운로더 · {src['name']}({cat}) ===")
+        log(f"출력 폴더: {os.path.abspath(args.out)} · 지연 {args.delay}s · 형식 {','.join(args.formats)}")
+        items = collect_index(src, args.lclas, args.delay, args.start_page, args.end_page, log)
     if args.max:
         items = items[:args.max]
     log(f"총 대상: {len(items)}건")
@@ -424,6 +444,11 @@ def run(args):
             html = fetch_detail(url)
             title, text, fragment = parse_detail(
                 html, src.get("containers", DEFAULT_CONTAINERS), src.get("title_re"))
+            if src.get("title_h1"):  # 범용 모드: 본문 첫 <h1>을 제목으로 우선
+                m = re.search(r"<h1[^>]*>(.*?)</h1>", fragment, re.S)
+                h1 = re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else ""
+                if h1:
+                    title = h1
             title = title or list_title or sid
             base = f"{sid}_{safe_filename(title)}"
             if args.resume and _already_saved(args, txt_dir, html_dir, base):
@@ -450,8 +475,8 @@ def run(args):
         time.sleep(args.delay)
 
     with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as f:
-        json.dump({"source": args.source, "source_name": src["name"],
-                   "category": cat, "lclasSn": args.lclas, "count": len(manifest),
+        json.dump({"source": "url" if args.url else args.source,
+                   "source_name": src["name"], "count": len(manifest),
                    "items": manifest}, f, ensure_ascii=False, indent=2)
     log(f"\n완료: 성공 {ok} · 건너뜀 {skip} · 실패 {fail} → {os.path.abspath(args.out)}")
 
@@ -462,7 +487,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--source", default="general", choices=sorted(SOURCES.keys()),
                    help="자료원: general(일반 약660)|elderly(노인 64)|youth(청소년 33)|"
-                        "ccvd(심뇌혈관 4)|rdiz(희귀질환 약1,389). 기본 general")
+                        "ccvd(심뇌혈관 4)|rdiz(희귀질환 약1,314). 기본 general")
+    p.add_argument("--url", default=None,
+                   help="단일 페이지 URL 직접 다운로드(자료원 무시, 본문 컨테이너 자동탐지). "
+                        "콤마로 여러 개 지정 가능")
     p.add_argument("--lclas", default="0", help="카테고리 lclasSn (기본 0 = 전체)")
     p.add_argument("--out", default="download", help="출력 폴더 (기본 ./download)")
     p.add_argument("--formats", default="txt,html",
