@@ -43,7 +43,7 @@ _PREFIX = "/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo"
 DEFAULT_CONTAINERS = ("id:print-content", "view-con")
 # --url 범용 모드에서 시도할 컨테이너 후보(앞에서부터 충분한 텍스트를 가진 첫 것 채택)
 AUTO_CONTAINERS = ("id:print-content", "dic_detail", "id:cont_set", "con_area",
-                   "view-con", "id:contents", "id:sub-content")
+                   "id:div_page", "view-con", "id:contents", "id:sub-content")
 
 # 목록 항목 추출 정규식
 #  - goView형: fn_goView('<숫자 cntnts_sn>', '<제목>')  → id+제목
@@ -478,11 +478,13 @@ def run(args):
             html = fetch_detail(url)
             title, text, fragment = parse_detail(
                 html, src.get("containers", DEFAULT_CONTAINERS), src.get("title_re"))
-            if src.get("title_h1"):  # 범용 모드: 본문 첫 <h1>을 제목으로 우선
+            if src.get("title_h1"):  # 범용 모드: 본문 첫 <h1> 우선, 없으면 breadcrumb 마지막 항목
                 m = re.search(r"<h1[^>]*>(.*?)</h1>", fragment, re.S)
                 h1 = re.sub(r"<[^>]+>", "", m.group(1)).strip() if m else ""
                 if h1:
                     title = h1
+                elif ">" in title:  # 예: "홈 >암예방과 검진>검진>국가암검진 사업"
+                    title = title.split(">")[-1].strip()
             # 목록에서 얻은 제목(있으면)을 상세<title>보다 우선(예: 암센터 breadcrumb 회피)
             title = list_title or title or sid
             base = f"{sid}_{safe_filename(title)}"

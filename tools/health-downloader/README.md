@@ -86,7 +86,7 @@ download/
 - **목록형**(general/elderly/youth): 목록 페이지에 `pageIndex` POST 순회, `fn_goView('<cntnts_sn>', ...)`에서 글 번호 수집(중복 제거, 빈 페이지에서 종료) → 상세 `...View.do?cntnts_sn=<번호>` GET, `id="print-content"` 본문 추출
 - **개별 페이지형**(ccvd): 페이지네이션 없이 미리 정의된 콘텐츠 페이지(`*Main.do`)를 직접 GET
 - **전체 1회 수신형**(rdiz): 희귀질환은 페이지네이션이 불안정하여 `pageUnit`을 키워 전체 목록을 한 번에 받음. `fn_moveDetail('<rdizCd>')`로 코드 수집 → 상세 `selectRdizInfDetail.do?rdizCd=<코드>` GET, `dic_detail` 본문·표에서 질환명 추출
-- **단일 URL형**(`--url`): 자료원에 없는 임의의 페이지를 직접 GET. 본문 컨테이너를 자동탐지(`print-content`→`dic_detail`→`cont_set`→`view-con` 등)하고 제목은 `<h1>` 우선
+- **단일 URL형**(`--url`): 자료원에 없는 임의의 페이지를 직접 GET. 본문 컨테이너를 자동탐지(`print-content`→`dic_detail`→`cont_set`→`div_page`→`view-con`→`contents` 등)하고, 제목은 `<h1>` 우선·없으면 breadcrumb 마지막 항목 사용(예: `홈 >…>국가암검진 사업` → `국가암검진 사업`)
 - 모든 자료원은 세션 쿠키(JSESSIONID)를 유지하며 요청
 
 ## 책임 있는 사용
