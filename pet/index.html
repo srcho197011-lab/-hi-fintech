@@ -989,11 +989,10 @@ function ShopGallery(){
   </>);
 }
 
-function ShopAI({onAdd,onOpen}){
-  const reco=PRODUCTS.filter(p=>p.ai);
-  const presc=PRODUCTS.filter(p=>p.presc==="처방식");
+function ShopAI({products,onAdd,onOpen}){
+  const reco=products.filter(p=>p.ai);
+  const presc=products.filter(p=>p.presc==="처방식");
   return (<>
-    <a href="./mall/index.html" className="malllink"><span><Sparkles size={15}/> HI-PET 전체 쇼핑몰 열기 <b>· 사료·간식·용품 전체보기</b></span><ChevronRight size={16}/></a>
     <ShopGallery/>
     <div className="airec"><div className="at"><Sparkles size={16} color="var(--orange)"/> 마루 맞춤 AI 추천 상품</div>
       <div className="ap">AI 건강 예측(슬개골·치주 위험 중간, 체중관리)을 바탕으로 마루에게 도움이 되는 상품을 추천합니다. <span className="sub2">※ 진단이 아닌 건강관리 참고 정보</span></div></div>
@@ -1004,21 +1003,21 @@ function ShopAI({onAdd,onOpen}){
   </>);
 }
 
-function ShopCatalog({cat,onAdd,onOpen}){
-  const all=PRODUCTS.filter(p=>p.cat===cat);
+function ShopCatalog({cat,products,onAdd,onOpen}){
+  const all=products.filter(p=>p.cat===cat);
   const [origin,setOrigin]=useState("전체");
   const [pet,setPet]=useState("전체");
   const [fn,setFn]=useState("전체");
   const [q,setQ]=useState("");
   const [sort,setSort]=useState("추천순");
-  const fns=React.useMemo(()=>["전체",...new Set(all.flatMap(p=>p.health||[]))],[cat]);
+  const fns=React.useMemo(()=>["전체",...new Set(all.flatMap(p=>p.health||[]))],[cat,products]);
   const list=React.useMemo(()=>{
-    let out=all.filter(p=>(origin==="전체"||p.origin===origin)&&(pet==="전체"||p.pet===pet||p.pet==="공용")&&(fn==="전체"||(p.health||[]).includes(fn))&&(!q.trim()||p.name.includes(q)||p.brand.includes(q)));
+    let out=all.filter(p=>(origin==="전체"||p.origin===origin)&&(pet==="전체"||p.pet===pet||p.pet==="공용")&&(fn==="전체"||(p.health||[]).includes(fn))&&(!q.trim()||(p.name||"").includes(q)||(p.brand||"").includes(q)));
     if(sort==="낮은가격")out=[...out].sort((a,b)=>(a.sale||a.price)-(b.sale||b.price));
     else if(sort==="높은가격")out=[...out].sort((a,b)=>(b.sale||b.price)-(a.sale||a.price));
     else out=[...out].sort((a,b)=>(b.ai?1:0)-(a.ai?1:0));
     return out;
-  },[cat,origin,pet,fn,q,sort]);
+  },[cat,products,origin,pet,fn,q,sort]);
   return (<>
     <div className="regions">
       {["전체","국내","국외"].map(o=><button key={o} className={`fsel ${origin===o?"on":""}`} onClick={()=>setOrigin(o)}>{o}</button>)}
@@ -1037,7 +1036,7 @@ function ShopCatalog({cat,onAdd,onOpen}){
   </>);
 }
 
-function CartView({cart,setCart,go}){
+function CartView({cart,setCart,go,addOrder,goTab}){
   const [useToken,setUseToken]=useState(false);
   const [done,setDone]=useState(false);
   const sub=cart.reduce((s,x)=>s+(x.p.sale||x.p.price)*x.qty,0);
@@ -1047,6 +1046,7 @@ function CartView({cart,setCart,go}){
   const total=sub-tokenUse;
   const setQty=(id,d)=>setCart(c=>c.map(x=>x.p.id===id?{...x,qty:Math.max(1,x.qty+d)}:x));
   const remove=(id)=>setCart(c=>c.filter(x=>x.p.id!==id));
+  const pay=()=>{ if(addOrder) addOrder({ id:"OD"+Date.now().toString().slice(-7), date:new Date().toLocaleDateString("ko"), items:cart.map(x=>({name:x.p.name,qty:x.qty,price:x.p.sale||x.p.price})), total, tokenUse, reward, status:"결제완료(mock)" }); setDone(true); };
   if(done) return (
     <div className="bkconfirm card" style={{padding:"28px 20px"}}>
       <div className="okic"><Check size={30} color="var(--green)"/></div>
@@ -1059,7 +1059,7 @@ function CartView({cart,setCart,go}){
       </div>
       <div style={{display:"flex",gap:8,marginTop:16}}>
         <button className="cbtn" style={{margin:0}} onClick={()=>{setCart([]);setDone(false);}}>계속 쇼핑</button>
-        <button className="cbtn pri" style={{margin:0}} onClick={()=>go&&go("건강금융지갑")}>건강지갑 보기</button>
+        <button className="cbtn pri" style={{margin:0}} onClick={()=>{setCart([]);goTab&&goTab("orders");}}>주문내역 보기</button>
       </div>
     </div>
   );
@@ -1083,29 +1083,94 @@ function CartView({cart,setCart,go}){
       <div className="payrow tgrow"><label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}><input type="checkbox" checked={useToken} onChange={e=>setUseToken(e.target.checked)}/> Health Token 사용 <span className="sub2">(보유 {tokenBal.toLocaleString()} HPET)</span></label><span className="num" style={{color:"var(--green)"}}>{tokenUse>0?"-"+wonp(tokenUse):"-"}</span></div>
       <div className="payrow tot"><span>최종 결제금액</span><span className="num">{wonp(total)}</span></div>
       <div className="payrow"><span className="sub2">예상 적립</span><span className="num" style={{color:"var(--orange-deep)",fontWeight:800}}>+{reward} HPET</span></div>
-      <button className="cbtn pri" onClick={()=>setDone(true)}><CreditCard size={15}/> {wonp(total)} 결제하기 <span style={{fontSize:11,opacity:.85}}>(mock)</span></button>
+      <button className="cbtn pri" onClick={pay}><CreditCard size={15}/> {wonp(total)} 결제하기 <span style={{fontSize:11,opacity:.85}}>(mock)</span></button>
       <div className="chnote">※ 결제는 시연용 mock이며 실제 결제·배송은 발생하지 않습니다. 결제·개인정보는 분리 저장 설계입니다.</div>
     </div>
   </>);
 }
 
+const SLS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}}};
+
+function ShopOrders({orders}){
+  if(!orders.length) return <div className="hload" style={{marginTop:8}}><Receipt size={26} style={{marginBottom:8}}/><div>주문 내역이 없습니다.</div><div style={{fontSize:11.5,marginTop:4}}>상품을 구매하면 여기에 기록됩니다.</div></div>;
+  return (<>{orders.map(o=>(
+    <div className="card" key={o.id} style={{marginBottom:10}}>
+      <div style={{display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:8}}><span className="sub2">주문번호 {o.id} · {o.date}</span><span className="cbadge grn">{o.status}</span></div>
+      <div style={{margin:"8px 0"}}>{o.items.map((it,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:13.5,padding:"3px 0"}}><span>{it.name} × {it.qty}</span><span className="num">{wonp(it.price*it.qty)}</span></div>)}</div>
+      <div style={{display:"flex",justifyContent:"space-between",borderTop:"1px solid var(--border)",paddingTop:8,fontSize:13}}><span>결제 <b>{wonp(o.total)}</b> · 적립 <b style={{color:"var(--orange-deep)"}}>+{o.reward} HPET</b></span><span style={{color:"var(--green)",fontWeight:700,fontSize:12}}>✓ 건강지갑 기록</span></div>
+    </div>
+  ))}<div className="chnote">※ 주문·결제는 시연용 mock이며 브라우저(localStorage)에 저장됩니다.</div></>);
+}
+
+const SHOP_CSV_COLS=["product_name","category","origin","target_pet","prescription_type","health_function","brand","price","sale_price","token_reward","recommended_by_ai","insurance_linked"];
+function shopParseCsv(t){ const rows=t.trim().split(/\r?\n/); const head=rows[0].split(",").map(h=>h.trim()); return rows.slice(1).filter(Boolean).map(line=>{ const c=line.split(","); const o={}; head.forEach((h,i)=>o[h]=(c[i]||"").trim()); return o; }); }
+function shopCsvToProduct(o){ const n=v=>v===""?null:Number(v); const b=v=>v==="true"||v==="1"; return { id:"x"+Math.abs((Math.sin((o.product_name||"").length+(o.price||0))*1e9)|0), emoji:"🛍️", name:o.product_name, cat:o.category, origin:o.origin||"국내", pet:o.target_pet||"공용", presc:o.prescription_type||"일반식", health:o.health_function?o.health_function.split(/[;|]/).map(s=>s.trim()).filter(Boolean):[], brand:o.brand||"", price:n(o.price)||0, sale:n(o.sale_price), token:n(o.token_reward)||0, ai:b(o.recommended_by_ai), ins:b(o.insurance_linked), stock:0, ing:"" }; }
+function ShopAdmin({products,setProducts}){
+  const [f,setF]=useState({name:"",cat:"사료",brand:"",price:"",token:"0",ai:false,ins:false});
+  const [prev,setPrev]=useState(null),[errs,setErrs]=useState([]);
+  const addOne=()=>{ if(!f.name||!f.price)return alert("상품명·가격은 필수입니다."); setProducts(ps=>[{id:"x"+Date.now(),emoji:"🛍️",name:f.name,cat:f.cat,brand:f.brand,price:Number(f.price),token:Number(f.token),ai:f.ai,ins:f.ins,health:[],origin:"국내",pet:"공용",presc:"일반식",ing:""},...ps]); setF({...f,name:"",brand:"",price:""}); };
+  const del=(id)=>setProducts(ps=>ps.filter(p=>p.id!==id));
+  const onCsv=async(file)=>{ const t=await file.text(); const rows=shopParseCsv(t); const e=[]; rows.forEach((r,i)=>{ if(!r.product_name)e.push(`${i+2}행: product_name 누락`); if(!r.category)e.push(`${i+2}행: category 누락`); if(isNaN(Number(r.price)))e.push(`${i+2}행: price 숫자 아님`); }); setPrev(rows); setErrs(e); };
+  const saveCsv=()=>{ setProducts(ps=>[...prev.map(shopCsvToProduct),...ps]); setPrev(null); setErrs([]); alert("CSV 업로드 완료"); };
+  return (<>
+    <div className="card" style={{marginBottom:12}}>
+      <div className="rct"><Plus size={18} color="var(--orange)"/> 상품 등록</div>
+      <div className="agrid">
+        <input className="ainp" placeholder="상품명" value={f.name} onChange={e=>setF({...f,name:e.target.value})}/>
+        <select className="ainp" value={f.cat} onChange={e=>setF({...f,cat:e.target.value})}>{["사료","간식","용품"].map(c=><option key={c}>{c}</option>)}</select>
+        <input className="ainp" placeholder="브랜드" value={f.brand} onChange={e=>setF({...f,brand:e.target.value})}/>
+        <input className="ainp" placeholder="가격" value={f.price} onChange={e=>setF({...f,price:e.target.value})}/>
+        <input className="ainp" placeholder="토큰적립" value={f.token} onChange={e=>setF({...f,token:e.target.value})}/>
+        <label className="ack"><input type="checkbox" checked={f.ai} onChange={e=>setF({...f,ai:e.target.checked})}/> AI추천</label>
+        <label className="ack"><input type="checkbox" checked={f.ins} onChange={e=>setF({...f,ins:e.target.checked})}/> 보험연계</label>
+      </div>
+      <button className="cbtn pri" style={{marginTop:4}} onClick={addOne}>등록</button>
+    </div>
+    <div className="card" style={{marginBottom:12}}>
+      <div className="rct"><FileText size={18} color="var(--orange)"/> CSV 대량 업로드</div>
+      <div className="sub2" style={{marginBottom:8}}>컬럼: {SHOP_CSV_COLS.join(", ")} (health_function 은 ; 또는 | 로 구분)</div>
+      <input type="file" accept=".csv" onChange={e=>e.target.files[0]&&onCsv(e.target.files[0])} style={{fontSize:13}}/>
+      {prev && <div style={{marginTop:10}}>
+        <div style={{fontSize:13,fontWeight:700}}>미리보기 {prev.length}건 {errs.length?<span style={{color:"#EF5B5B"}}>· 오류 {errs.length}</span>:<span style={{color:"var(--green)"}}>· 검증 통과</span>}</div>
+        {errs.length>0 && <ul style={{color:"#EF5B5B",fontSize:12,margin:"4px 0"}}>{errs.slice(0,6).map((x,i)=><li key={i}>{x}</li>)}</ul>}
+        <button className="cbtn pri" style={{marginTop:8}} disabled={errs.length>0} onClick={saveCsv}>검증된 {prev.length}건 저장</button>
+      </div>}
+    </div>
+    <div className="card">
+      <div className="rct"><ShoppingBag size={18} color="var(--orange)"/> 상품 목록 ({products.length})</div>
+      <div style={{overflowX:"auto"}}>
+        <table className="atbl"><thead><tr>{["상품명","분류","브랜드","가격","배지",""].map(h=><th key={h}>{h}</th>)}</tr></thead>
+          <tbody>{products.map(p=>(<tr key={p.id}><td style={{fontWeight:700}}>{p.name}</td><td>{p.cat}</td><td>{p.brand}</td><td>{(p.sale||p.price).toLocaleString()}원</td><td style={{fontSize:11}}>{p.ai?"AI ":""}{p.ins?"보험 ":""}{p.presc==="처방식"?"처방":""}</td><td><button className="rmbtn" onClick={()=>del(p.id)}><X size={13}/></button></td></tr>))}</tbody></table>
+      </div>
+    </div>
+  </>);
+}
+
 function ShopSection(){
-  const [tab,setTab]=useState("ai");
-  const [cart,setCart]=useState([]);
-  const [detail,setDetail]=useState(null);
   const nav=React.useContext(NavCtx);
+  const [tab,setTab]=useState("ai");
+  const [cart,setCart]=useState(()=>SLS.get("hipet_app_cart",[]));
+  const [orders,setOrders]=useState(()=>SLS.get("hipet_app_orders",[]));
+  const [products,setProducts]=useState(()=>{ if(SLS.get("hipet_app_pver",0)!==1){SLS.set("hipet_app_pver",1);SLS.set("hipet_app_products",PRODUCTS);return PRODUCTS;} const s=SLS.get("hipet_app_products",null); return s&&s.length?s:PRODUCTS; });
+  const [detail,setDetail]=useState(null);
+  useEffect(()=>SLS.set("hipet_app_cart",cart),[cart]);
+  useEffect(()=>SLS.set("hipet_app_orders",orders),[orders]);
+  useEffect(()=>SLS.set("hipet_app_products",products),[products]);
   const add=(p,qty=1)=>setCart(c=>{ const i=c.findIndex(x=>x.p.id===p.id); if(i>=0){ const n=[...c]; n[i]={...n[i],qty:n[i].qty+qty}; return n; } return [...c,{p,qty}]; });
   const buy=(p)=>{ add(p); setDetail(null); setTab("cart"); };
+  const addOrder=(o)=>setOrders(os=>[o,...os]);
   const count=cart.reduce((s,x)=>s+x.qty,0);
-  const tabs=[["ai","AI 추천",Sparkles],["사료","사료",Bone],["간식","간식",Pill],["용품","용품",ShoppingBag],["cart","장바구니",ShoppingCart]];
+  const tabs=[["ai","AI 추천",Sparkles],["사료","사료",Bone],["간식","간식",Pill],["용품","용품",ShoppingBag],["cart","장바구니",ShoppingCart],["orders","주문내역",Receipt],["admin","관리자",Settings]];
   return (
     <div className="hsec">
       <div className="aihead"><span className="aiico"><ShoppingBag size={24} color="#fff"/></span>
         <div><div className="aih-t">제품 쇼핑 · 펫 마켓</div><div className="aih-s">건강데이터·보험과 연결된 펫 쇼핑 · 구매 시 Health Token 적립·건강지갑 기록 <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
       <div className="chtabs">{tabs.map(([k,t,Ic])=><button key={k} className={`chtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}><Ic size={15}/> {t}{k==="cart"&&count>0&&<span className="tabbadge">{count}</span>}</button>)}</div>
-      {tab==="ai" && <ShopAI onAdd={add} onOpen={setDetail}/>}
-      {(tab==="사료"||tab==="간식"||tab==="용품") && <ShopCatalog cat={tab} onAdd={add} onOpen={setDetail}/>}
-      {tab==="cart" && <CartView cart={cart} setCart={setCart} go={nav}/>}
+      {tab==="ai" && <ShopAI products={products} onAdd={add} onOpen={setDetail}/>}
+      {(tab==="사료"||tab==="간식"||tab==="용품") && <ShopCatalog cat={tab} products={products} onAdd={add} onOpen={setDetail}/>}
+      {tab==="cart" && <CartView cart={cart} setCart={setCart} go={nav} addOrder={addOrder} goTab={setTab}/>}
+      {tab==="orders" && <ShopOrders orders={orders}/>}
+      {tab==="admin" && <ShopAdmin products={products} setProducts={setProducts}/>}
       {detail && <ProductDetailModal p={detail} onClose={()=>setDetail(null)} onAdd={add} onBuy={buy}/>}
     </div>
   );
@@ -2412,6 +2477,14 @@ css.textContent=`
 .payrow.tgrow{border-top:1px solid var(--border)}
 .payrow.tot{border-top:1px solid var(--border);font-size:15px;font-weight:900;color:var(--text)}
 .payrow.tot .num{color:var(--orange-deep)}
+.agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 10px}
+.ainp{border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-family:inherit;font-size:13px;outline:none}
+.ainp:focus{border-color:var(--orange)}
+.ack{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--sub)}
+.atbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.atbl th{text-align:left;color:var(--muted);font-size:11.5px;font-weight:700;padding:8px;background:var(--cream)}
+.atbl td{padding:8px;border-top:1px solid var(--border)}
+@media(max-width:680px){ .agrid{grid-template-columns:repeat(2,1fr)} }
 /* ===== 마이페이지 토글/설정 ===== */
 .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0}
 .setrow .sn{font-size:14px;font-weight:700}
