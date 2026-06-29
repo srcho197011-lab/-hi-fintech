@@ -1,7 +1,11 @@
 # 국가건강정보포털 일괄 다운로더
 
-질병관리청 **국가건강정보포털**(health.kdca.go.kr)의 *일반건강정보* 콘텐츠를
+질병관리청 **국가건강정보포털**(health.kdca.go.kr)의 건강정보 콘텐츠를
 **교육·연구 목적**으로 보존하기 위한 정중한(rate-limit) 일괄 다운로드 CLI입니다.
+
+지원 자료원(`--source`):
+- `general` — **일반건강정보** (약 660여 건, 기본값)
+- `elderly` — **노인 건강정보** (약 64건)
 
 - 표준 라이브러리만 사용 → **별도 설치 불필요** (Python 3.9+)
 - 요청 간 지연·재시도·이어받기 내장 → 서버 부담 최소화
@@ -16,8 +20,11 @@ cd "tools\health-downloader"
 # 앞 20건만 테스트
 py kdca_health_download.py --max 20
 
-# 전체(약 660여 건) 다운로드
+# 일반건강정보 전체(약 660여 건) 다운로드
 py kdca_health_download.py --delay 1.5 --out download
+
+# 노인 건강정보(약 64건) 다운로드
+py kdca_health_download.py --source elderly --out download_elderly
 ```
 
 > Windows 콘솔에서 한글 로그가 깨지면 먼저 `chcp 65001` 또는 `$env:PYTHONUTF8="1"` 를 실행하세요.
@@ -27,7 +34,8 @@ py kdca_health_download.py --delay 1.5 --out download
 
 | 옵션 | 설명 | 기본값 |
 |------|------|--------|
-| `--lclas N` | 카테고리 `lclasSn` (0 = 일반건강정보 전체) | `0` |
+| `--source` | 자료원 `general`(일반건강정보) / `elderly`(노인건강정보) | `general` |
+| `--lclas N` | 카테고리 `lclasSn` (0 = 전체) | `0` |
 | `--out DIR` | 출력 폴더 | `download` |
 | `--formats txt,html` | 저장 형식(콤마 구분) | `txt,html` |
 | `--delay SEC` | 요청 간 지연 초 (예의상 권장 1.0↑) | `1.0` |
@@ -49,8 +57,8 @@ download/
 
 ## 동작 방식
 
-- 목록: `gnrlzHealthInfoMain.do` 에 `pageIndex`를 POST하며 페이지를 순회, `fn_goView('<cntnts_sn>', ...)`에서 글 번호 수집(중복 제거, 빈 페이지에서 종료)
-- 상세: `gnrlzHealthInfoView.do?cntnts_sn=<번호>` 를 GET, `id="print-content"` 영역의 본문만 추출
+- 목록: 자료원별 목록 페이지(`gnrlzHealthInfoMain.do` / `gnrlzHealthInfoOld.do`)에 `pageIndex`를 POST하며 순회, `fn_goView('<cntnts_sn>', ...)`에서 글 번호 수집(중복 제거, 빈 페이지에서 종료)
+- 상세: 자료원별 상세 페이지(`gnrlzHealthInfoView.do` / `gnrlzHealthInfoOldView.do`)`?cntnts_sn=<번호>` 를 GET, `id="print-content"` 영역의 본문만 추출
 
 ## 책임 있는 사용
 

@@ -36,11 +36,24 @@ from html.parser import HTMLParser
 from http.client import IncompleteRead
 
 BASE = "https://health.kdca.go.kr"
-LIST_PATH = "/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoMain.do"
-VIEW_PATH = "/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoView.do"
+_PREFIX = "/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo"
 
-# lclasSn 참고(일반건강정보 메인). 0 = 전체 일반건강정보
-CATEGORY_HINT = {"0": "일반건강정보(전체)"}
+# 자료원(source) 정의: 목록 페이지 / 상세 페이지 / 표시명
+SOURCES = {
+    "general": {  # 일반건강정보 (약 660여 건, 9페이지)
+        "list": f"{_PREFIX}/gnrlzHealthInfoMain.do",
+        "view": f"{_PREFIX}/gnrlzHealthInfoView.do",
+        "name": "일반건강정보",
+    },
+    "elderly": {  # 노인 건강정보 (Old, 약 64건)
+        "list": f"{_PREFIX}/gnrlzHealthInfoOld.do",
+        "view": f"{_PREFIX}/gnrlzHealthInfoOldView.do",
+        "name": "노인 건강정보",
+    },
+}
+
+# lclasSn 참고(일반건강정보 메인). 0 = 전체
+CATEGORY_HINT = {"0": "전체"}
 
 UA = "Mozilla/5.0 (compatible; KDCA-HealthInfo-EduArchiver/1.0; +educational use)"
 
@@ -62,7 +75,7 @@ def _request(url, data=None, retries=3, timeout=40):
             req = urllib.request.Request(url, data=body, headers={
                 "User-Agent": UA,
                 "Accept-Language": "ko-KR,ko;q=0.9",
-                "Referer": BASE + LIST_PATH,
+                "Referer": BASE + _PREFIX + "/",
             })
             with urllib.request.urlopen(req, context=_SSL, timeout=timeout) as resp:
                 raw = resp.read()
@@ -75,12 +88,12 @@ def _request(url, data=None, retries=3, timeout=40):
     raise RuntimeError(f"요청 실패: {url} :: {last_err}")
 
 
-def fetch_list_page(lclas, page):
-    return _request(BASE + LIST_PATH, data={"lclasSn": str(lclas), "pageIndex": str(page)})
+def fetch_list_page(src, lclas, page):
+    return _request(BASE + src["list"], data={"lclasSn": str(lclas), "pageIndex": str(page)})
 
 
-def fetch_detail(cntnts_sn):
-    url = f"{BASE}{VIEW_PATH}?cntnts_sn={cntnts_sn}"
+def fetch_detail(src, cntnts_sn):
+    url = f"{BASE}{src['view']}?cntnts_sn={cntnts_sn}"
     return url, _request(url)
 
 
@@ -237,13 +250,13 @@ def build_html_doc(title, url, fragment):
 # ----------------------------------------------------------------------------
 # 메인 수집 루틴
 # ----------------------------------------------------------------------------
-def collect_index(lclas, delay, start_page, end_page, log):
+def collect_index(src, lclas, delay, start_page, end_page, log):
     items, page = [], start_page
     seen = set()
     while True:
         if end_page and page > end_page:
             break
-        html = fetch_list_page(lclas, page)
+        html = fetch_list_page(src, lclas, page)
         page_items = [it for it in parse_list(html) if it[0] not in seen]
         if not page_items:
             log(f"[목록] page {page}: 0건 → 종료")
@@ -261,11 +274,12 @@ def run(args):
     os.makedirs(args.out, exist_ok=True)
     log = (lambda m: print(m, flush=True)) if not args.quiet else (lambda m: None)
 
+    src = SOURCES[args.source]
     cat = CATEGORY_HINT.get(str(args.lclas), f"lclasSn={args.lclas}")
-    log(f"=== 국가건강정보포털 다운로더 · {cat} ===")
+    log(f"=== 국가건강정보포털 다운로더 · {src['name']}({cat}) ===")
     log(f"출력 폴더: {os.path.abspath(args.out)} · 지연 {args.delay}s · 형식 {','.join(args.formats)}")
 
-    items = collect_index(args.lclas, args.delay, args.start_page, args.end_page, log)
+    items = collect_index(src, args.lclas, args.delay, args.start_page, args.end_page, log)
     if args.max:
         items = items[:args.max]
     log(f"총 대상: {len(items)}건")
@@ -276,7 +290,7 @@ def run(args):
         w = csv.writer(f)
         w.writerow(["cntnts_sn", "title", "url"])
         for sn, title in items:
-            w.writerow([sn, title, f"{BASE}{VIEW_PATH}?cntnts_sn={sn}"])
+            w.writerow([sn, title, f"{BASE}{src['view']}?cntnts_sn={sn}"])
     log(f"[목록 저장] {index_path}")
 
     if args.list_only:
@@ -304,7 +318,7 @@ def run(args):
             continue
 
         try:
-            url, html = fetch_detail(sn)
+            url, html = fetch_detail(src, sn)
             title, text, fragment = parse_detail(html)
             title = title or list_title
             if need_txt:
@@ -323,7 +337,8 @@ def run(args):
         time.sleep(args.delay)
 
     with open(os.path.join(args.out, "manifest.json"), "w", encoding="utf-8") as f:
-        json.dump({"category": cat, "lclasSn": args.lclas, "count": len(manifest),
+        json.dump({"source": args.source, "source_name": src["name"],
+                   "category": cat, "lclasSn": args.lclas, "count": len(manifest),
                    "items": manifest}, f, ensure_ascii=False, indent=2)
     log(f"\n완료: 성공 {ok} · 건너뜀 {skip} · 실패 {fail} → {os.path.abspath(args.out)}")
 
@@ -332,7 +347,9 @@ def main():
     p = argparse.ArgumentParser(
         description="국가건강정보포털(질병관리청) 일반건강정보 일괄 다운로더 (교육 목적)",
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--lclas", default="0", help="카테고리 lclasSn (기본 0 = 일반건강정보 전체)")
+    p.add_argument("--source", default="general", choices=sorted(SOURCES.keys()),
+                   help="자료원: general(일반건강정보 약660건) | elderly(노인건강정보 약64건). 기본 general")
+    p.add_argument("--lclas", default="0", help="카테고리 lclasSn (기본 0 = 전체)")
     p.add_argument("--out", default="download", help="출력 폴더 (기본 ./download)")
     p.add_argument("--formats", default="txt,html",
                    help="저장 형식 콤마구분: txt,html (기본 txt,html)")
