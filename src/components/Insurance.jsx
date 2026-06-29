@@ -483,9 +483,24 @@ function InsurancePolicySection() {
   return (
     <div style={{ marginTop: 4 }}>
       <div className="ipshero">
-        <h2>Health-InsurFin Tech 실손보험 정책</h2>
-        <div className="sub">건강생활이 건강자산이 되고, 건강자산이 의료비 부담을 줄이는 지속가능한 보험지원 모델</div>
-        <div className="desc">HI-Fin Tech는 건강검진, 건강쇼핑, 정밀영양, 건강관리 프로그램 등 회원의 일상 건강활동에서 발생하는 건강자산을 건강금융지갑에 적립하고, 이를 실손보험료 및 의료비 부담 완화 재원으로 활용하는 Health-InsurFin Tech 생태계를 구축합니다.</div>
+        <h2>Health-InsurFin Tech 실손보험지원</h2>
+        <div className="sub">건강생활이 건강자산이 되고, 건강자산이 의료비 부담을 줄이는 지속가능한 포용적 실손보험 지원 모델</div>
+        <div className="desc">HI-Fin Tech는 회원의 일상 건강활동(건강검진·건강쇼핑·정밀영양·건강관리)에서 발생하는 건강자산을 건강금융지갑에 적립해 실손보험료·의료비 부담 완화 재원으로 활용합니다. 특히 <b>고령층(노인)·유병자·보험 사각지대 계층</b>처럼 민간 실손보험에서 배제되기 쉬운 분들을 사회공헌 재원과 연계해 함께 보장하는 <b>포용적 건강보험 생태계</b>를 지향합니다.</div>
+      </div>
+      <div className="bklbl2"><HeartHandshake size={16} color="#2563EB" /> 보험 사각지대 없는 포용적 실손 지원</div>
+      <div className="ipsinclsub">연령·기왕증·경제적 사유로 민간 실손보험 가입이 어려운 계층을, 건강활동 적립금과 사회공헌·ESG 재원으로 함께 보장합니다.</div>
+      <div className="ipsincl">
+        {[
+          ["노인 (고령층)", "65세 이상 고령층", "연령 상한·보험료 급증으로 신규 실손 가입이 어렵습니다.", ["건강활동 적립금으로 의료비 자기부담 완화", "간편심사·무심사형 보장 연계 안내", "사회공헌·ESG 재원 매칭 지원"], HeartHandshake, "#2563EB", "#E8F1FE"],
+          ["유병자 (만성질환자)", "고혈압·당뇨 등 만성질환 보유자", "기왕증으로 인수 거절·보험료 할증되는 경우가 많습니다.", ["유병자 실손(간편심사 보험) 연계 안내", "건강관리 프로그램으로 위험도 개선", "건강 개선 실적에 따른 적립·보장 강화"], Activity, "#16A34A", "#E7F8EE"],
+          ["보험 사각지대 계층", "저소득·청년·1인가구·플랫폼 노동자", "보험료 부담으로 실손에 미가입한 사각지대입니다.", ["일상 건강소비 기반 무상·저비용 임베디드 보장", "공익재단·기부 매칭으로 보험료 지원", "디지털 간편 가입으로 진입장벽 제거"], ShieldCheck, "#7C3AED", "#F1ECFE"],
+        ].map(([t, who, diff, sup, Ic, c, bg]) => (
+          <div className="ipsinclc" key={t} style={{ borderTopColor: c }}>
+            <div className="ih"><span className="ic" style={{ background: bg, color: c }}><Ic size={20} /></span><div><b>{t}</b><span className="who">{who}</span></div></div>
+            <div className="diff"><AlertTriangle size={12} /> {diff}</div>
+            <ul>{sup.map((s) => <li key={s}><Check size={13} color={c} /> {s}</li>)}</ul>
+          </div>
+        ))}
       </div>
       <div className="ipsflow">
         {FLOW.map(([ic, b, p], i) => (
@@ -543,7 +558,7 @@ function InsuranceSection({ onGo }) {
   const [enroll, setEnroll] = useState(false);
   const [cover, setCover] = useState(null);
   const go = onGo || (() => {});
-  const tabs = [["embed", "건강검진대비보험", ShieldCheck], ["sports", "스포츠 임베디드 보험", Trophy], ["policy", "실손보험 정책", HeartHandshake], ["premium", "맞춤 헬스케어 보험", Sparkles], ["join", "보험가입", FileText], ["coverage", "보장조회", Search], ["claim", "보험금청구", Coins], ["ai", "AI보험상담", MessageSquare]];
+  const tabs = [["embed", "건강검진대비보험", ShieldCheck], ["policy", "실손보험지원", HeartHandshake], ["sports", "스포츠 임베디드 보험", Trophy], ["premium", "맞춤 헬스케어 보험", Sparkles], ["join", "보험가입", FileText], ["coverage", "보장조회", Search], ["claim", "보험금청구", Coins], ["ai", "AI보험상담", MessageSquare]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="insurance" /></span>

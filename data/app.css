@@ -1238,3 +1238,16 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .sins-pcard .pk{font-size:14px;font-weight:800;color:#9A3412;}
 .sins-pcard .pv{font-size:12.5px;color:var(--muted);}
 @media(max-width:560px){.sins-hero{padding:24px 18px;}.sins-title{font-size:22px;}.sins-stats{gap:18px;}.sins-stats b{font-size:22px;}}
+
+/* ===== 실손보험지원: 포용 지원(노인·유병자·사각지대) ===== */
+.ipsinclsub{font-size:12.8px;color:var(--muted);margin:-2px 0 10px;line-height:1.6;}
+.ipsincl{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:13px;margin-bottom:8px;}
+.ipsinclc{background:#fff;border:1px solid var(--border);border-top:3px solid #2563EB;border-radius:15px;padding:15px;}
+.ipsinclc .ih{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.ipsinclc .ih .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;}
+.ipsinclc .ih b{font-size:15px;color:#15234A;display:block;letter-spacing:-.3px;}
+.ipsinclc .who{font-size:11.5px;color:var(--muted);}
+.ipsinclc .diff{display:flex;align-items:flex-start;gap:5px;font-size:12px;color:#B45309;background:#FEF6EA;border:1px solid #F5D9A8;border-radius:9px;padding:7px 9px;line-height:1.5;}
+.ipsinclc ul{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:7px;}
+.ipsinclc li{display:flex;align-items:flex-start;gap:7px;font-size:12.7px;color:#3a4659;font-weight:600;line-height:1.45;}
+.ipsinclc li svg{flex-shrink:0;margin-top:2px;}
