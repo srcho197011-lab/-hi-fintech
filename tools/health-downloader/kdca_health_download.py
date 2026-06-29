@@ -50,6 +50,11 @@ SOURCES = {
         "view": f"{_PREFIX}/gnrlzHealthInfoOldView.do",
         "name": "노인 건강정보",
     },
+    "youth": {  # 청소년 건강정보 (약 33건)
+        "list": f"{_PREFIX}/gnrlzHealthInfoYouth.do",
+        "view": f"{_PREFIX}/gnrlzHealthInfoYouthView.do",
+        "name": "청소년 건강정보",
+    },
 }
 
 # lclasSn 참고(일반건강정보 메인). 0 = 전체
@@ -348,7 +353,7 @@ def main():
         description="국가건강정보포털(질병관리청) 일반건강정보 일괄 다운로더 (교육 목적)",
         formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--source", default="general", choices=sorted(SOURCES.keys()),
-                   help="자료원: general(일반건강정보 약660건) | elderly(노인건강정보 약64건). 기본 general")
+                   help="자료원: general(일반 약660건) | elderly(노인 약64건) | youth(청소년 약33건). 기본 general")
     p.add_argument("--lclas", default="0", help="카테고리 lclasSn (기본 0 = 전체)")
     p.add_argument("--out", default="download", help="출력 폴더 (기본 ./download)")
     p.add_argument("--formats", default="txt,html",

@@ -1,0 +1,393 @@
+{
+  "source": "elderly",
+  "source_name": "노인 건강정보",
+  "category": "전체",
+  "lclasSn": "0",
+  "count": 64,
+  "items": [
+    {
+      "cntnts_sn": "6722",
+      "title": "근 손실",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6722",
+      "chars": 8859
+    },
+    {
+      "cntnts_sn": "6725",
+      "title": "정상노화의 이해",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6725",
+      "chars": 10010
+    },
+    {
+      "cntnts_sn": "6726",
+      "title": "노인기능평가",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6726",
+      "chars": 3161
+    },
+    {
+      "cntnts_sn": "6752",
+      "title": "건강노화",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6752",
+      "chars": 7868
+    },
+    {
+      "cntnts_sn": "6754",
+      "title": "남성갱년기",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6754",
+      "chars": 7440
+    },
+    {
+      "cntnts_sn": "6749",
+      "title": "변실금",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6749",
+      "chars": 10344
+    },
+    {
+      "cntnts_sn": "6728",
+      "title": "사전연명의료결정",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6728",
+      "chars": 8488
+    },
+    {
+      "cntnts_sn": "6723",
+      "title": "인지기능저하예방법",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6723",
+      "chars": 21496
+    },
+    {
+      "cntnts_sn": "6751",
+      "title": "장기요양등급결정과 이용",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6751",
+      "chars": 3628
+    },
+    {
+      "cntnts_sn": "6753",
+      "title": "재택의료/방문진료",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6753",
+      "chars": 10613
+    },
+    {
+      "cntnts_sn": "6562",
+      "title": "고관절 전치환술",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6562",
+      "chars": 11213
+    },
+    {
+      "cntnts_sn": "6765",
+      "title": "고혈압",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6765",
+      "chars": 7783
+    },
+    {
+      "cntnts_sn": "5999",
+      "title": "고혈압 환자의 식이요법",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5999",
+      "chars": 3962
+    },
+    {
+      "cntnts_sn": "5303",
+      "title": "고혈압 환자의 운동요법",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5303",
+      "chars": 22491
+    },
+    {
+      "cntnts_sn": "6254",
+      "title": "고혈압과 눈(고혈압망막병증)",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6254",
+      "chars": 5459
+    },
+    {
+      "cntnts_sn": "6697",
+      "title": "고혈압성 콩팥병",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6697",
+      "chars": 7740
+    },
+    {
+      "cntnts_sn": "5302",
+      "title": "고혈압심장질환",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5302",
+      "chars": 6384
+    },
+    {
+      "cntnts_sn": "1738",
+      "title": "골감소증",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=1738",
+      "chars": 6253
+    },
+    {
+      "cntnts_sn": "1988",
+      "title": "골관절염",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=1988",
+      "chars": 16011
+    },
+    {
+      "cntnts_sn": "5833",
+      "title": "골다공증",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5833",
+      "chars": 11640
+    },
+    {
+      "cntnts_sn": "1743",
+      "title": "낙상",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=1743",
+      "chars": 7631
+    },
+    {
+      "cntnts_sn": "5226",
+      "title": "노안",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5226",
+      "chars": 6554
+    },
+    {
+      "cntnts_sn": "6698",
+      "title": "노인 고혈압",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6698",
+      "chars": 7965
+    },
+    {
+      "cntnts_sn": "5306",
+      "title": "노인 당뇨병",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5306",
+      "chars": 5210
+    },
+    {
+      "cntnts_sn": "2447",
+      "title": "노인 변비",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=2447",
+      "chars": 11078
+    },
+    {
+      "cntnts_sn": "6695",
+      "title": "노인 보행장애",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6695",
+      "chars": 12091
+    },
+    {
+      "cntnts_sn": "6262",
+      "title": "노인 부종",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6262",
+      "chars": 9043
+    },
+    {
+      "cntnts_sn": "5314",
+      "title": "노인 삼킴장애",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5314",
+      "chars": 13262
+    },
+    {
+      "cntnts_sn": "5428",
+      "title": "노인 약물복용",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5428",
+      "chars": 10091
+    },
+    {
+      "cntnts_sn": "6766",
+      "title": "노인 어지럼증",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6766",
+      "chars": 6120
+    },
+    {
+      "cntnts_sn": "5783",
+      "title": "노인 요실금",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5783",
+      "chars": 11291
+    },
+    {
+      "cntnts_sn": "6758",
+      "title": "노인 운동",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6758",
+      "chars": 12255
+    },
+    {
+      "cntnts_sn": "5253",
+      "title": "노인 호흡곤란",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5253",
+      "chars": 7481
+    },
+    {
+      "cntnts_sn": "5489",
+      "title": "노인성난청",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5489",
+      "chars": 11498
+    },
+    {
+      "cntnts_sn": "6761",
+      "title": "노인의 영양",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6761",
+      "chars": 8301
+    },
+    {
+      "cntnts_sn": "6690",
+      "title": "녹내장",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6690",
+      "chars": 8963
+    },
+    {
+      "cntnts_sn": "5495",
+      "title": "뇌졸중",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5495",
+      "chars": 15611
+    },
+    {
+      "cntnts_sn": "5221",
+      "title": "당뇨망막병증",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5221",
+      "chars": 12530
+    },
+    {
+      "cntnts_sn": "5305",
+      "title": "당뇨병",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5305",
+      "chars": 53330
+    },
+    {
+      "cntnts_sn": "2347",
+      "title": "당뇨병 합병증(급성 합병증)",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=2347",
+      "chars": 696
+    },
+    {
+      "cntnts_sn": "2348",
+      "title": "당뇨병 합병증(급성 합병증_당뇨병케토산증, 고혈당고삼투질상태)",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=2348",
+      "chars": 1862
+    },
+    {
+      "cntnts_sn": "2350",
+      "title": "당뇨병 합병증(급성 합병증_저혈당)",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=2350",
+      "chars": 2069
+    },
+    {
+      "cntnts_sn": "2351",
+      "title": "당뇨병 합병증(만성 합병증)",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=2351",
+      "chars": 5667
+    },
+    {
+      "cntnts_sn": "6692",
+      "title": "당뇨병성 족부병증",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6692",
+      "chars": 5627
+    },
+    {
+      "cntnts_sn": "3388",
+      "title": "당뇨환자의 식이요법",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=3388",
+      "chars": 13523
+    },
+    {
+      "cntnts_sn": "6471",
+      "title": "당뇨환자의 약물요법",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6471",
+      "chars": 7237
+    },
+    {
+      "cntnts_sn": "3390",
+      "title": "당뇨환자의 운동요법",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=3390",
+      "chars": 15266
+    },
+    {
+      "cntnts_sn": "5969",
+      "title": "무릎관절염, 올바로 운동하기",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5969",
+      "chars": 11140
+    },
+    {
+      "cntnts_sn": "6689",
+      "title": "백내장",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6689",
+      "chars": 9635
+    },
+    {
+      "cntnts_sn": "6487",
+      "title": "손떨림(수전증)",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6487",
+      "chars": 7199
+    },
+    {
+      "cntnts_sn": "6679",
+      "title": "수두와 대상포진",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6679",
+      "chars": 12925
+    },
+    {
+      "cntnts_sn": "6445",
+      "title": "슬관절 전치환술",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6445",
+      "chars": 4635
+    },
+    {
+      "cntnts_sn": "3828",
+      "title": "심부전",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=3828",
+      "chars": 10072
+    },
+    {
+      "cntnts_sn": "6587",
+      "title": "욕창",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6587",
+      "chars": 8488
+    },
+    {
+      "cntnts_sn": "3193",
+      "title": "전립선비대증",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=3193",
+      "chars": 10306
+    },
+    {
+      "cntnts_sn": "6774",
+      "title": "죽상경화증",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6774",
+      "chars": 7595
+    },
+    {
+      "cntnts_sn": "4047",
+      "title": "척추관 협착증",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=4047",
+      "chars": 10753
+    },
+    {
+      "cntnts_sn": "3348",
+      "title": "추간판탈출증(디스크)",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=3348",
+      "chars": 18888
+    },
+    {
+      "cntnts_sn": "6261",
+      "title": "치매환자의 가족을 위한 정보",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6261",
+      "chars": 14653
+    },
+    {
+      "cntnts_sn": "5540",
+      "title": "퇴행슬관절염",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5540",
+      "chars": 3429
+    },
+    {
+      "cntnts_sn": "5809",
+      "title": "파킨슨병",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5809",
+      "chars": 21272
+    },
+    {
+      "cntnts_sn": "5249",
+      "title": "폐렴(성인)",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5249",
+      "chars": 4563
+    },
+    {
+      "cntnts_sn": "6566",
+      "title": "협심증",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=6566",
+      "chars": 17280
+    },
+    {
+      "cntnts_sn": "5269",
+      "title": "황반변성",
+      "url": "https://health.kdca.go.kr/healthinfo/biz/health/gnrlzHealthInfo/gnrlzHealthInfo/gnrlzHealthInfoOldView.do?cntnts_sn=5269",
+      "chars": 10109
+    }
+  ]
+}

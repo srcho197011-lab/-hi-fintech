@@ -6,6 +6,7 @@
 지원 자료원(`--source`):
 - `general` — **일반건강정보** (약 660여 건, 기본값)
 - `elderly` — **노인 건강정보** (약 64건)
+- `youth` — **청소년 건강정보** (약 33건)
 
 - 표준 라이브러리만 사용 → **별도 설치 불필요** (Python 3.9+)
 - 요청 간 지연·재시도·이어받기 내장 → 서버 부담 최소화
@@ -25,6 +26,9 @@ py kdca_health_download.py --delay 1.5 --out download
 
 # 노인 건강정보(약 64건) 다운로드
 py kdca_health_download.py --source elderly --out download_elderly
+
+# 청소년 건강정보(약 33건) 다운로드
+py kdca_health_download.py --source youth --out download_youth
 ```
 
 > Windows 콘솔에서 한글 로그가 깨지면 먼저 `chcp 65001` 또는 `$env:PYTHONUTF8="1"` 를 실행하세요.
@@ -34,7 +38,7 @@ py kdca_health_download.py --source elderly --out download_elderly
 
 | 옵션 | 설명 | 기본값 |
 |------|------|--------|
-| `--source` | 자료원 `general`(일반건강정보) / `elderly`(노인건강정보) | `general` |
+| `--source` | 자료원 `general`(일반) / `elderly`(노인) / `youth`(청소년) | `general` |
 | `--lclas N` | 카테고리 `lclasSn` (0 = 전체) | `0` |
 | `--out DIR` | 출력 폴더 | `download` |
 | `--formats txt,html` | 저장 형식(콤마 구분) | `txt,html` |
