@@ -11,6 +11,7 @@
 - `rdiz` — **희귀질환 헬프라인** 질환목록 (helpline.kdca.go.kr, 약 1,314건)
 - `ptl` — **희귀질환 헬프라인 안내자료** (지원사업·통계·교육자료·저작권 등 13건)
 - `cancer` — **국가암정보센터** 전체암 보기 (www.cancer.go.kr, 100건)
+- `mhealth` — **국가정신건강정보포털** 질환별 정보 (www.mentalhealth.go.kr, 50종)
 
 - 표준 라이브러리만 사용 → **별도 설치 불필요** (Python 3.9+)
 - 요청 간 지연·재시도·이어받기 내장 → 서버 부담 최소화
@@ -46,6 +47,9 @@ py kdca_health_download.py --source ptl --out download_ptl
 # 국가암정보센터 전체암(100건) 다운로드
 py kdca_health_download.py --source cancer --out download_cancer
 
+# 국가정신건강정보포털 질환별 정보(50종) 다운로드
+py kdca_health_download.py --source mhealth --out download_mental
+
 # 아무 단일 페이지나 URL로 직접 받기(자료원에 없는 페이지)
 py kdca_health_download.py --url "https://helpline.kdca.go.kr/cdchelp/ph/ptlcontents/selectPtlConSent.do?schSno=155&menu=F0101"
 # 여러 개는 콤마로 구분
@@ -69,7 +73,7 @@ py kdca_health_download.py --egen "https://www.e-gen.or.kr/egen/first_aid_basics
 
 | 옵션 | 설명 | 기본값 |
 |------|------|--------|
-| `--source` | `general`/`elderly`/`youth`/`ccvd`/`rdiz`/`ptl`/`cancer` | `general` |
+| `--source` | `general`/`elderly`/`youth`/`ccvd`/`rdiz`/`ptl`/`cancer`/`mhealth` | `general` |
 | `--url` | 단일/다중 페이지 URL 직접 다운로드(자료원 무시, 본문 자동탐지) | - |
 | `--board` | cancer.go.kr 게시판(bbs) list.do URL — 글 본문 + 첨부 PDF 일괄 | - |
 | `--crawl` | cancer.go.kr 페이지 URL — 메뉴 계층을 따라 한 섹션 통째 수집 | - |

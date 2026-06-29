@@ -52,6 +52,8 @@ ITEM_RE_GOVIEW = re.compile(r"fn_goView\('(\d+)'\s*,\s*'([^']*)'\)")
 ITEM_RE_RDIZ = re.compile(r"fn_moveDetail\('([A-Za-z0-9]+)'\)")
 # 국가암정보센터 목록: <a href="view.do?cancer_seq=NN"> <span class="name">암이름</span>
 ITEM_RE_CANCER = re.compile(r'cancer_seq=(\d+)"[^>]*>\s*<span class="name">([^<]+)</span>')
+# 국가정신건강정보포털 목록: dissView('25','1형 양극성장애')
+ITEM_RE_MHEALTH = re.compile(r"dissView\('(\d+)'\s*,\s*'([^']*)'\)")
 
 # 게시판(bbs) 모드: cancer.go.kr egov 게시판 (--board)
 # 앵커 안에 썸네일 img가 먼저 오므로 내부 전체를 잡아 태그 제거 후 제목 추출
@@ -123,6 +125,16 @@ SOURCES = {
         "detail_param": "cancer_seq",
         "containers": ("id:div_page",),
         "name": "국가암정보센터(전체암)",
+    },
+    "mhealth": {  # 국가정신건강정보포털 질환별 정보 (다른 도메인, 50종)
+        "base": "https://www.mentalhealth.go.kr",
+        "list": "/portal/disease/diseaseList.do",
+        "list_params": {},
+        "item_re": ITEM_RE_MHEALTH,
+        "detail": "/portal/disease/diseaseDetail.do",
+        "detail_param": "dissId",
+        "containers": ("board_detail",),
+        "name": "정신건강 질환정보",
     },
     "rdiz": {  # 희귀질환 헬프라인 질환목록 (다른 도메인, 약 1,389건)
         "base": "https://helpline.kdca.go.kr",
@@ -776,7 +788,7 @@ def main():
     p.add_argument("--source", default="general", choices=sorted(SOURCES.keys()),
                    help="자료원: general(일반 약660)|elderly(노인 64)|youth(청소년 33)|"
                         "ccvd(심뇌혈관 4)|rdiz(희귀질환 약1,314)|ptl(헬프라인 안내 13)|"
-                        "cancer(국가암정보센터 100). 기본 general")
+                        "cancer(국가암정보센터 100)|mhealth(정신건강 질환 50). 기본 general")
     p.add_argument("--url", default=None,
                    help="단일 페이지 URL 직접 다운로드(자료원 무시, 본문 컨테이너 자동탐지). "
                         "콤마로 여러 개 지정 가능")
