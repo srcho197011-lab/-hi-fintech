@@ -21,5 +21,7 @@
 !/og-human.png
 # 펫 설계계획서(참고용)
 !/PetHealth_InsurFin_설계계획서.md
+# 교육용 데이터 수집 도구(다운로드 산출물은 tools 내부 .gitignore로 제외)
+!/tools
 
 # (data 폴더 안 임시/불필요 파일이 생기면 여기에 추가로 제외)
