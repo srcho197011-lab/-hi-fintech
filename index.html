@@ -3,23 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Human Health-InsurFin Tech · 건강관리만 하면 치료비 자동 보장</title>
-<meta name="description" content="건강검진부터 식단·영양·치료·재가서비스까지 하나로 — 추가 보험료 0원, 무상 임베디드보험으로 치료비 자동 보장. AI 주치의 상담·건강데이터 자산화(Web3)." />
-<meta name="theme-color" content="#0B3C49" />
-<!-- 공유 미리보기(Open Graph). ※ 도메인 확정 후 og:url/og:image를 절대주소(https://도메인/og-human.png)로 바꾸면 카톡에서 가장 안정적입니다. -->
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Human Health-InsurFin Tech" />
-<meta property="og:title" content="건강관리만 하세요. 치료비는 무상 임베디드보험이 보장합니다." />
-<meta property="og:description" content="건강검진·식단·영양·치료·재가서비스를 하나로 연결하고, 추가 보험료 없이 치료비가 자동 보장되는 AI·Web3 건강금융 플랫폼." />
-<meta property="og:image" content="og-human.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta property="og:url" content="./" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="건강관리만 하세요. 치료비는 무상 임베디드보험이 보장합니다." />
-<meta name="twitter:description" content="추가 보험료 0원, 무상 임베디드보험으로 치료비 자동 보장 · AI 주치의 · 건강데이터 자산화." />
-<meta name="twitter:image" content="og-human.png" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230B3C49'/%3E%3Cpath d='M16 25C8 19 9.5 12 14 12c1.7 0 2 1.6 2 1.6s.3-1.6 2-1.6c4.5 0 6 7-2 13z' fill='%232DD4BF'/%3E%3C/svg%3E" />
+<title>HumanHealth SuperApp · Preview</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -828,6 +812,9 @@ function consult(q, corpus, report, QA) {
     if (dz) return hospitalAdvice(dz);
     return "증상이나 질환에 따라 가야 할 진료과가 달라요. 어떤 증상이나 질환인지 알려주시면 알맞은 진료과와 병원을 안내해 드릴게요. 특히 암처럼 정밀검사가 필요한 경우엔, 검사 장비를 갖추고 경험 많은 전문의가 있는 건강검진센터나 상급종합병원이 좋습니다. 앱의 ‘병원 찾기’에서 가까운 병원·검진센터도 찾아보실 수 있어요.";
   }
+  // 0-1) 온톨로지 기반 — 검진항목 해석·보험 보장 공백·후속조치(회원 리포트 연계 + 거버넌스)
+  const onto = (typeof ontologyConsult === "function") ? ontologyConsult(q) : null;
+  if (onto) return onto;
   // 1) 개인 건강분석 리포트(조성래님) 우선 — 개인화 질문이면 리포트로 답변
   const rep = reportAnswer(q, report);
   if (rep) return rep;
@@ -4771,6 +4758,138 @@ function ActivityGauge({ value }) {
 /* 데모 회원 데이터 별칭 — 실제 배열은 data/demo_members.js(plain script) → window.__HHDATA.DEMO_MEMBERS.
    ⚠️ 시연·테스트용 가상 데이터. 모든 회원 isDemoUser:true. */
 const demoMembers = (typeof DEMO_MEMBERS !== "undefined" && DEMO_MEMBERS) || [];
+
+/* ====================== 헬스케어·보험 융합 온톨로지 ======================
+   AI 주치의 상담 기준 체계: 검진항목 → 위험등급 → 질병위험 → 보험보장 → 후속조치.
+   값은 국가건강검진/임상 일반 기준의 안내용 요약이며 확정 진단 기준이 아님. */
+
+/* 3.2 건강검진 온톨로지 — 항목별 등급·연결질병·연결보험 */
+const CHECKUP_ONTOLOGY = [
+  { key: "혈압", aliases: ["혈압", "수축기", "이완기", "고혈압", "혈압수치"], unit: "mmHg",
+    grades: [["정상", "120/80 미만"], ["주의(고혈압 전단계)", "120~139 / 80~89"], ["위험(고혈압)", "140/90 이상"], ["고위험", "160/100 이상 또는 약물치료 중"]],
+    diseases: ["고혈압", "심혈관질환", "뇌졸중", "만성콩팥병"], insurance: ["뇌혈관보험", "심혈관보험", "수술비보험", "실손보험"],
+    explain: "혈압이 높은 상태가 이어지면 혈관에 지속적 부담이 가 심장·뇌혈관·콩팥 위험이 커질 수 있어요." },
+  { key: "공복혈당", aliases: ["혈당", "공복혈당", "당수치", "혈당수치"], unit: "mg/dL",
+    grades: [["정상", "100 미만"], ["주의(공복혈당장애·당뇨 전단계)", "100~125"], ["위험(당뇨 의심)", "126 이상"], ["고위험", "126 이상 지속 또는 합병증 동반"]],
+    diseases: ["당뇨병", "당뇨병성 신장질환", "당뇨망막병증", "심혈관질환"], insurance: ["실손보험", "수술비보험", "특정질병 진단비", "유병자보험"],
+    explain: "혈당이 높은 상태가 이어지면 당뇨와 그 합병증(콩팥·눈·신경) 위험이 올라갈 수 있어요." },
+  { key: "당화혈색소", aliases: ["당화혈색소", "hba1c", "에이원씨", "a1c"], unit: "%",
+    grades: [["정상", "5.7 미만"], ["주의(당뇨 전단계)", "5.7~6.4"], ["위험(당뇨)", "6.5 이상"], ["고위험", "7.0 이상 조절 불량"]],
+    diseases: ["당뇨병"], insurance: ["실손보험", "특정질병 진단비"],
+    explain: "최근 2~3개월 평균 혈당 지표로, 당뇨 위험과 관리 상태를 보여줘요." },
+  { key: "콜레스테롤", aliases: ["콜레스테롤", "이상지질혈증", "고지혈증", "ldl", "hdl", "지질"], unit: "mg/dL",
+    grades: [["적정", "총 200 / LDL 130 미만"], ["주의(경계)", "총 200~239 / LDL 130~159"], ["위험(높음)", "총 240 / LDL 160 이상"], ["고위험", "LDL 190 이상 또는 심혈관 위험군"]],
+    diseases: ["이상지질혈증", "협심증", "심근경색", "동맥경화"], insurance: ["심혈관보험", "수술비보험", "실손보험"],
+    explain: "나쁜 콜레스테롤(LDL)이 높으면 혈관에 쌓여 협심증·심근경색 위험이 커질 수 있어요." },
+  { key: "중성지방", aliases: ["중성지방", "tg", "트리글리세라이드"], unit: "mg/dL",
+    grades: [["정상", "150 미만"], ["주의(경계)", "150~199"], ["위험(높음)", "200~499"], ["고위험", "500 이상(췌장염 위험)"]],
+    diseases: ["이상지질혈증", "지방간", "췌장염", "대사증후군"], insurance: ["실손보험", "수술비보험"],
+    explain: "중성지방이 매우 높으면 췌장염 위험도 있어 식이·음주 관리가 중요해요." },
+  { key: "간수치", aliases: ["간수치", "간기능", "ast", "alt", "지방간", "감마지티피", "ggt", "간"], unit: "IU/L",
+    grades: [["정상", "AST/ALT 약 40 이하"], ["주의(경도 상승)", "약 41~80"], ["위험(상승)", "80 초과"], ["고위험", "지속 상승·간경변 의심"]],
+    diseases: ["지방간", "간염", "간경변", "간암(고위험군 추적)"], insurance: ["실손보험", "특정질병 진단비", "수술비보험"],
+    explain: "간수치 상승은 지방간·간염 등 간 부담의 신호일 수 있어, 원인 확인과 절주가 필요해요." },
+  { key: "신장기능", aliases: ["신장", "콩팥", "크레아티닌", "egfr", "사구체여과율", "신장기능"], unit: "mL/min",
+    grades: [["정상", "eGFR 90 이상"], ["주의(경도 감소)", "eGFR 60~89"], ["위험(만성콩팥병 의심)", "eGFR 60 미만"], ["고위험", "eGFR 30 미만(투석 위험)"]],
+    diseases: ["만성콩팥병", "신부전"], insurance: ["실손보험", "수술비보험", "특정질병 진단비", "간병보험"],
+    explain: "콩팥 기능이 떨어지면 만성콩팥병으로 진행할 수 있어 혈압·혈당 관리가 중요해요." },
+  { key: "요산", aliases: ["요산", "통풍", "uric"], unit: "mg/dL",
+    grades: [["정상", "남 7.0 / 여 6.0 이하"], ["주의(경계)", "7.0~8.0"], ["위험(고요산혈증)", "8.0 이상"], ["고위험", "통풍 발작·결석 동반"]],
+    diseases: ["통풍", "요로결석", "만성콩팥병"], insurance: ["실손보험", "수술비보험"],
+    explain: "요산이 높으면 통풍·결석 위험이 있어 음주·고퓨린 식이 관리가 필요해요." },
+  { key: "체질량지수", aliases: ["체질량", "bmi", "비만", "허리둘레", "복부비만", "체중"], unit: "kg/㎡",
+    grades: [["정상", "18.5~22.9"], ["주의(과체중)", "23~24.9"], ["위험(비만)", "25 이상"], ["고위험", "30 이상 또는 복부비만 동반"]],
+    diseases: ["비만", "당뇨병", "고혈압", "이상지질혈증", "대사증후군"], insurance: ["실손보험", "특정질병 진단비"],
+    explain: "비만은 당뇨·고혈압·이상지질혈증 등 여러 위험을 함께 높여, 체중 관리가 기본이 돼요." },
+  { key: "암검진", aliases: ["암검진", "암", "위암", "대장암", "간암", "폐암", "유방암", "자궁경부암", "췌장암", "갑상선암", "전립선암"], unit: "",
+    grades: [["정상(이상 없음)", "권고 주기 정기검진 유지"], ["주의(경계·양성소견)", "단기 추적검사 권장"], ["위험(의심 소견)", "정밀검사(조직검사 등) 필요"], ["고위험(가족력·고위험군)", "주기 단축·전문의 상담"]],
+    diseases: ["위암", "대장암", "간암", "폐암", "유방암", "자궁경부암"], insurance: ["암보험", "특정질병 진단비", "수술비보험", "실손보험", "간병보험"],
+    explain: "국가암검진(위·대장·간·유방·자궁경부·폐)은 조기발견이 핵심이라, 권고 주기에 맞춰 받는 것이 중요해요." },
+];
+
+/* 3.4 보험 온톨로지 — 질병위험 → 필요 보장 매핑(보장 공백 분석용) */
+const DISEASE_INSURANCE = {
+  "고혈압": ["뇌혈관보험", "심혈관보험", "실손보험", "수술비보험"],
+  "당뇨병": ["실손보험", "특정질병 진단비", "수술비보험", "유병자보험"],
+  "이상지질혈증": ["심혈관보험", "실손보험"],
+  "심혈관질환": ["심혈관보험", "수술비보험", "통원·입원일당", "실손보험"],
+  "협심증": ["심혈관보험", "수술비보험", "실손보험"], "심근경색": ["심혈관보험", "수술비보험", "특정질병 진단비"],
+  "뇌졸중": ["뇌혈관보험", "간병보험", "수술비보험", "실손보험"], "뇌혈관질환": ["뇌혈관보험", "간병보험", "수술비보험"],
+  "만성콩팥병": ["실손보험", "간병보험", "특정질병 진단비"], "간경변": ["실손보험", "특정질병 진단비", "간병보험"],
+  "위암": ["암보험", "특정질병 진단비", "수술비보험", "간병보험"], "대장암": ["암보험", "특정질병 진단비", "수술비보험"],
+  "간암": ["암보험", "특정질병 진단비", "수술비보험", "간병보험"], "폐암": ["암보험", "특정질병 진단비", "수술비보험", "간병보험"],
+  "유방암": ["암보험", "특정질병 진단비", "수술비보험"], "췌장암": ["암보험", "특정질병 진단비", "수술비보험", "간병보험"],
+  "전립선암": ["암보험", "수술비보험", "실손보험"], "갑상선암": ["암보험(소액암)", "수술비보험", "실손보험"],
+  "치매": ["치매보험", "간병보험", "실손보험"], "비만": ["실손보험"], "통풍": ["실손보험"],
+  "고지혈증": ["심혈관보험", "실손보험"], "허혈심장질환": ["심혈관보험", "수술비보험", "실손보험"],
+  "급성심근경색증": ["심혈관보험", "수술비보험", "특정질병 진단비"],
+};
+
+/* 3.5 / 7 상담 거버넌스 — 가능/금지 영역, 표준 고지 문구 */
+const ONTO_GOVERNANCE = {
+  diagnosis: "이는 확정 진단이 아니라 위험 ‘가능성’ 안내예요. 정확한 진단·판단은 의료진 상담이 필요합니다.",
+  insurance: "보장 안내는 일반 정보이며, 구체적 보험 가입·설명·청약은 자격을 갖춘 보험대리점/설계사가 수행합니다(강매가 아닙니다).",
+  highRisk: "고위험 신호가 보여, 가능한 빨리 전문의(의료진) 상담을 권해요.",
+  consent: "건강정보·보험 안내는 회원님의 활용 동의 범위 안에서만 제공돼요.",
+  // 상담 가능 영역 / 금지 영역 (AI 거버넌스 기준)
+  allow: ["검진 결과 해석 보조", "건강위험도 설명", "생활습관 개선 안내", "병원 방문 필요성 안내", "보험 보장 공백 안내", "상담원 연결", "병원·검진센터 예약 안내"],
+  deny: ["확정 진단", "약 처방", "치료 결정", "특정 보험상품 강매", "무자격 보험모집", "동의 없는 민감정보 활용"],
+};
+
+/* ====================== 온톨로지 기반 상담 엔진 ======================
+   검진항목 해석 / 보험 보장 공백 분석 / 후속조치 안내 — 회원 건강리포트 연계 + AI 거버넌스.
+   해당 의도가 아니면 null 반환 → 기존 질환정보 엔진(consult)에 위임. */
+function ontoMember() {
+  try { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return m ? { m, R: demoReport(m) } : null; } catch (e) { return null; }
+}
+function ontoCheckupFind(t) {
+  let best = null, len = 0;
+  for (const it of CHECKUP_ONTOLOGY) for (const a of it.aliases) { const k = a.toLowerCase(); if (t.includes(k) && k.length > len) { best = it; len = k.length; } }
+  return best;
+}
+/* 검진 항목 ↔ 회원 장기(생체나이) 매핑 — 개인화 노트용 */
+const ONTO_ORGAN = { "간수치": "간", "신장기능": "신장", "공복혈당": "췌장", "당화혈색소": "췌장", "콜레스테롤": "심장", "중성지방": "심장", "혈압": "심장", "체질량지수": "비만체형" };
+function ontoCheckupAnswer(it, mr) {
+  const grades = it.grades.map(([g, v]) => `${g} ${v}${it.unit ? " " + it.unit : ""}`).join(" / ");
+  let personal = "";
+  if (mr && mr.R) { const orgn = ONTO_ORGAN[it.key]; if (orgn) { const o = mr.R.organs.find((x) => x[0] === orgn); if (o && o[2] === "나쁨") personal = ` 참고로 ${mr.m.name}님은 ${orgn === "비만체형" ? "비만" : orgn} 생체나이가 다소 높게 나와, 이 항목을 특히 관리하시면 좋아요.`; } }
+  return `${it.key} 검사 결과 해석을 도와드릴게요. ${it.explain} 등급 기준은요, ${grades} 정도로 봐요. 이 수치는 ${it.diseases.slice(0, 3).join("·")} 위험과 연결돼요.${personal} 관련해 점검하면 좋은 보장은 ${it.insurance.slice(0, 3).join("·")}이에요. ${ONTO_GOVERNANCE.diagnosis}`;
+}
+function ontoInsuranceGap(mr) {
+  if (!mr || !mr.R) return "회원 건강리포트가 연동되면, 검진에서 나타난 위험과 현재 보장을 비교해 ‘보장 공백’을 짚어드릴 수 있어요. 로그인 후 ‘내 보험 보장 공백’이라고 물어봐 주세요. " + ONTO_GOVERNANCE.insurance;
+  const R = mr.R, N = mr.m.name, need = new Set();
+  (R.hr || []).forEach((c) => (DISEASE_INSURANCE[c] || ["암보험", "특정질병 진단비"]).forEach((x) => need.add(x)));
+  (R.diseases || []).filter((d) => d[1] > 5).forEach((d) => (DISEASE_INSURANCE[d[0]] || []).forEach((x) => need.add(x)));
+  if (R.cancerTotal >= 6) ["암보험", "특정질병 진단비"].forEach((x) => need.add(x));
+  if (!need.size) ["실손보험", "수술비보험"].forEach((x) => need.add(x));
+  const recs = (typeof demoInsuranceRecs === "function") ? demoInsuranceRecs(mr.m) : [];
+  const recStr = recs.length ? ` 구체적으로는 ${recs.slice(0, 2).map((r) => r[0]).join(", ")} 같은 보장을 살펴보세요.` : "";
+  const hrStr = (R.hr && R.hr.length) ? `${N}님은 ${R.hr.join("·")} 위험이 높게 나와, ` : `${N}님 검진 위험을 보면, `;
+  return `${hrStr}이런 위험에는 보통 ${[...need].slice(0, 5).join("·")} 보장이 권장돼요. 현재 가입하신 보험과 비교해 부족한(공백) 영역이 없는지 점검하시는 게 좋아요.${recStr} ${ONTO_GOVERNANCE.insurance}`;
+}
+function ontoNext(mr) {
+  if (!mr || !mr.R) return "건강검진 결과가 연동되면 다음 행동(병원 진료·상담원 연결·건강관리)을 단계로 안내해 드릴게요. 로그인 후 물어봐 주세요.";
+  const R = mr.R, N = mr.m.name;
+  const high = (R.hr && R.hr.length) || R.cancerTotal >= 8;
+  const lvl = high ? "전문의 상담 권장" : R.cancerTotal >= 6 ? "병원 상담 권장" : "생활관리로 충분";
+  const worst = R.worstNames ? R.worstNames.join("·") : "";
+  const rec = (R.recs && R.recs.length) ? R.recs.slice(0, 2).join(", ") : "규칙적 운동·식이 관리";
+  const head = high ? `${ONTO_GOVERNANCE.highRisk} ` : "";
+  return `${head}${N}님 검진 위험을 종합하면 현재 ‘${lvl}’ 단계로 보여요. 다음 순서로 권해드려요. 1) ${worst ? worst + " 등 노화가 빠른 부분은 관련 진료과 상담" : "필요 시 가까운 병원 진료"}, 2) 앱의 ‘병원 찾기’로 검진센터·전문병원 예약, 3) 건강관리(${rec}) 실천, 4) 보험 보장 공백 점검, 5) 더 궁금하면 전문 상담원 연결. ${ONTO_GOVERNANCE.diagnosis}`;
+}
+function ontologyConsult(q) {
+  const raw = (q || "").trim(); if (!raw) return null;
+  const t = raw.replace(/\s/g, "").toLowerCase();
+  const mr = ontoMember();
+  // B) 보험 보장 공백 분석
+  if (/(보험|보장).*(공백|부족|점검|필요|추천|적정|충분|괜찮|들어야|가입해야)|내보험|어떤보험|보험뭐|보험추천|보장공백/.test(t)) return ontoInsuranceGap(mr);
+  // C) 후속조치 / 다음 행동
+  if (/후속조치|뭘해야|뭘하면|무엇을해야|무엇부터|어떻게관리|다음단계|다음에뭐|관리우선|뭐부터|어떻게해야/.test(t)) return ontoNext(mr);
+  // A) 검진 항목 해석 (수치·기준·해석 맥락일 때만)
+  const it = ontoCheckupFind(t);
+  if (it && /수치|정상|기준|결과|해석|의미|뜻|높|낮|범위|등급|관리|낮추|상승|올라|검진|뭐예|뭔가/.test(t)) return ontoCheckupAnswer(it, mr);
+  return null;
+}
 
 /* 보험 추천 유틸 — 고위험 암·암위험도 등급 기반 맞춤 보장 추천 */
 function demoInsuranceRecs(m) {

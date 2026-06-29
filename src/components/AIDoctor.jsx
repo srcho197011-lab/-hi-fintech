@@ -251,6 +251,9 @@ function consult(q, corpus, report, QA) {
     if (dz) return hospitalAdvice(dz);
     return "증상이나 질환에 따라 가야 할 진료과가 달라요. 어떤 증상이나 질환인지 알려주시면 알맞은 진료과와 병원을 안내해 드릴게요. 특히 암처럼 정밀검사가 필요한 경우엔, 검사 장비를 갖추고 경험 많은 전문의가 있는 건강검진센터나 상급종합병원이 좋습니다. 앱의 ‘병원 찾기’에서 가까운 병원·검진센터도 찾아보실 수 있어요.";
   }
+  // 0-1) 온톨로지 기반 — 검진항목 해석·보험 보장 공백·후속조치(회원 리포트 연계 + 거버넌스)
+  const onto = (typeof ontologyConsult === "function") ? ontologyConsult(q) : null;
+  if (onto) return onto;
   // 1) 개인 건강분석 리포트(조성래님) 우선 — 개인화 질문이면 리포트로 답변
   const rep = reportAnswer(q, report);
   if (rep) return rep;
