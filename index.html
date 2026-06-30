@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=825ead9bf2" />
+<link rel="stylesheet" href="./data/app.css?v=eb5a8d684b" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./data/dummy_data.js?v=825ead9bf2"></script>
-<script src="./data/section_data.js?v=825ead9bf2"></script>
-<script src="./data/demo_members.js?v=825ead9bf2"></script>
+<script src="./data/dummy_data.js?v=eb5a8d684b"></script>
+<script src="./data/section_data.js?v=eb5a8d684b"></script>
+<script src="./data/demo_members.js?v=eb5a8d684b"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -1069,6 +1069,49 @@ function AiLinkBanner({ target }) {
 
 /* 보장 유형별 월 보험료 추정(데모, 원) — 생활관리절감은 할인 */
 const PREMIUM_EST = { "중증질환": 38000, "비급여": 24000, "간병치매": 32000, "특수분야": 18000, "생활관리절감": -8000 };
+/* 회원 건강상태 기반 맞춤 질문 다수 생성 */
+function memberQuestions(m) {
+  if (!m) return [];
+  const qs = ["내 건강상태를 분석해줘", "내 리포트 요약", "내 생체나이는?", "내 의료비 예측", "내 건강 후속조치", "내가 가장 조심해야 할 암은?"];
+  (m.highRiskCancerTypes || []).forEach((c) => { qs.push(`내 ${c} 위험은?`); qs.push(`${c} 검진은 어떻게 받나요?`); });
+  (m.highRiskDiseases || []).forEach((dz) => { qs.push(`내 ${dz} 위험은?`); qs.push(`${dz} 생활관리법은?`); });
+  const hd = m.highRiskDiseases || [];
+  if (hd.includes("당뇨병")) qs.push("혈당 수치 의미");
+  if (hd.includes("고혈압")) qs.push("혈압 기준이 뭐예요?");
+  if (hd.includes("고지혈증")) qs.push("콜레스테롤 기준은?");
+  return [...new Set(qs)];
+}
+const ORGAN_DEPT = { "간": "소화기내과", "췌장": "소화기내과", "심장": "순환기내과", "신장": "신장내과", "비만": "가정의학과", "비만체형": "가정의학과" };
+/* 권고 상태 기반 타 섹션 연계 안내(추가검진·병원·영양제·식단) */
+function MemberCareLinks({ member }) {
+  if (!member) return null;
+  const R = demoReport(member), N = member.name;
+  const cancers = member.highRiskCancerTypes || [], dzs = member.highRiskDiseases || [];
+  const worst = (R.worstNames && R.worstNames[0]) || "";
+  const dept = cancers.length ? (deptFor(cancers[0]).dept || "전문 진료과") : (ORGAN_DEPT[worst] || "내과");
+  const actions = [
+    { ic: CalendarCheck, col: "#2563EB", t: "추가 검진 예약", d: `${cancers.length ? cancers.join("·") + " 등 " : ""}고위험 항목은 권고 주기보다 자주 정밀검진을 받는 것이 좋아요.`, btn: "검진 예약하기", to: "checkup" },
+    { ic: Building2, col: "#7C3AED", t: "병원·진료과 안내", d: `${cancers[0] || worst || "건강"} 관련은 ${dept} 진료가 적합해요. 가까운 병원·검진센터를 찾아드려요.`, btn: "병원 찾기", to: "hospital" },
+    { ic: Pill, col: "#F59E0B", t: "맞춤 영양제 안내", d: `${(R.worstNames || []).join("·") || "건강 관리"}에 맞춘 영양제를 추천해 드려요.`, btn: "영양제 보기", to: "shop" },
+  ];
+  if (dzs.length) actions.push({ ic: Salad, col: "#16A34A", t: "만성질환 관리 식단", d: `${dzs.join("·")} 관리를 위한 저염·저당·균형 식단을 안내해요.`, btn: "식단 보기", to: "shop" });
+  return (
+    <div className="adcard adcare">
+      <div className="adt2"><HeartHandshake size={16} color="#16A34A" /> {N}님 맞춤 건강 액션 — 다른 섹션 연계 안내</div>
+      <div className="caregrid">
+        {actions.map((a, i) => (
+          <div className="carec" key={i} style={{ borderTopColor: a.col }}>
+            <span className="ci" style={{ background: a.col + "1A", color: a.col }}><a.ic size={20} /></span>
+            <div className="ct">{a.t}</div>
+            <div className="cd">{a.d}</div>
+            <button className="cbtn" style={{ margin: "8px 0 0", width: "100%" }} onClick={() => nav(a.to)}>{a.btn} <ChevronRight size={13} /></button>
+          </div>
+        ))}
+      </div>
+      <div className="aiddisc"><AlertTriangle size={14} /> 권고는 검진 데이터 기반 참고 안내이며, 확정 진단·처방은 의료진 상담이 필요합니다.</div>
+    </div>
+  );
+}
 function AIDoctorSection({ onText, onVoice }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState(null);
@@ -1103,7 +1146,7 @@ function AIDoctorSection({ onText, onVoice }) {
     setQ(qq); if (f !== undefined) setFilter(f);
     // 데모 회원 로그인 시 — 개인 데이터 기반 분석 답변
     const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-    if (member && /내 건강|건강상태|분석해|조심|가장.*암|의료비|보험|건강지갑|보험료|줄일|필요한|내가/.test(qq)) {
+    if (member && /내 건강|건강상태|분석해|조심|가장.*암|의료비|보험|건강지갑|보험료|줄일|필요한|내가|내 .*위험|후속조치/.test(qq)) {
       setPersonal(demoPersonalAnswer(member)); setResult(null); setMatches([]); setSubmitted(true); setEasy(false);
       logConsult(qq, null, 0); setLogTick((n) => n + 1);
       setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60);
@@ -1246,8 +1289,8 @@ function AIDoctorSection({ onText, onVoice }) {
 
       {!submitted && (<>
         {(typeof demoCurrentUser === "function" && demoCurrentUser()) && (<>
-          <div className="aidrech">⭐ {demoCurrentUser().name}님 맞춤 질문 <span className="clickhint"><Info size={11} /> 데모 로그인됨</span></div>
-          <div className="aidfav">{["내 건강상태를 분석해줘", "내가 가장 조심해야 할 암은?", "내 의료비가 얼마나 늘어날까?", "나에게 필요한 보험은?", "건강지갑으로 보험료를 얼마나 줄일 수 있어?"].map((qq) => <button key={qq} onClick={() => run(qq)}>{qq}</button>)}</div>
+          <div className="aidrech">⭐ {demoCurrentUser().name}님 맞춤 질문 <span className="clickhint"><Info size={11} /> 건강상태 기반 자동 생성</span></div>
+          <div className="aidfav">{memberQuestions(demoCurrentUser()).slice(0, 14).map((qq) => <button key={qq} onClick={() => run(qq)}>{qq}</button>)}</div>
         </>)}
         {FAVORITES.length > 0 && (
           <div className="aidfnews">
@@ -1272,7 +1315,7 @@ function AIDoctorSection({ onText, onVoice }) {
       {/* 상담 결과 */}
       {submitted && (
         <div className="aidresult" ref={panelRef}>
-          {personal ? (
+          {personal ? (<>
             <div className="adcard adpersonal">
               <div className="adtop"><div><div className="adt">{personal.title}</div><div className="adcat">시연용 데모 데이터 기반 분석</div></div>
                 <span className="adrisk" style={{ color: personal.grade[1], background: personal.grade[2] }}>암위험 {personal.grade[0]}</span></div>
@@ -1286,7 +1329,8 @@ function AIDoctorSection({ onText, onVoice }) {
               </div>
               <div className="aiddisc" style={{ marginTop: 12 }}><AlertTriangle size={14} /> 본 내용은 시연용 데모 데이터 기반 분석이며, 실제 의학적 진단이나 보험 가입 심사를 대체하지 않습니다.</div>
             </div>
-          ) : result ? (<>
+            <MemberCareLinks member={demoCurrentUser()} />
+            </>) : result ? (<>
             <div className="adcard">
               <div className="adtop">
                 <div><div className="adt">{result.title}</div><div className="adcat">{result.category}{result.subCategory ? " · " + result.subCategory : ""}</div></div>
@@ -1490,7 +1534,7 @@ function Chat() {
     { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 👨‍⚕️\n건강분석 리포트를 바탕으로 함께 살펴드릴게요.`, time: now(), first: true },
     { id: 2, who: "ai", kind: "text", text: "무엇을 도와드릴까요? 아래에서 골라보셔도 돼요.", time: now() },
   ]);
-  const [quicks, setQuicks] = useState(["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]);
+  const [quicks, setQuicks] = useState(() => { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return m ? memberQuestions(m).slice(0, 5) : ["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]; });
   const [input, setInput] = useState(""); const [typing, setTyping] = useState(false); const [plus, setPlus] = useState(false);
   const kb = useKdca();
   const report = useReport();
