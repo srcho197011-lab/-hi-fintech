@@ -957,12 +957,9 @@ function aiRespond(text, corpus, report, QA) {
     const qcp = qaMatch(et, QA, intentOf(et)) || qaFuzzy(text, QA);
     const isReport = /생체나이|노화등수|위험도는|리포트 요약이에요|리포트\(검진일|위험은 ‘|원으로 예상/.test(ans);
     const isOnto = /등급 기준은요|단계로 보여요/.test(ans);
-    const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
     const quicks = qcp ? [`${qcp.dz} 생활습관 관리법은?`, `${qcp.dz}의 증상은 무엇인가요?`, "내 리포트 요약"]
       : (isReport || isOnto) ? reportFollowupQuestions() : ["내 리포트 요약", "의료비 예측", "혈당 수치 의미"];
-    const bubbles = [{ kind: "text", text: ans }];
-    if (member && (isReport || isOnto)) bubbles.push({ kind: "card", card: memberActionCard() });
-    return { bubbles, quicks };
+    return { bubbles: [{ kind: "text", text: ans }], quicks };
   }
   if (has("보험", "청구", "보험금", "보장"))
     return { bubbles: [{ kind: "text", text: "저는 건강검진 해석·생활관리·병원 안내를 중심으로 도와드려요. 보험 보장조회·청구는 ‘보험’ 메뉴에서 확인하시거나 전문 상담원 연결을 안내해 드릴게요." }], quicks: ["혈당 수치 의미", "내 건강 후속조치", "내 리포트 요약"] };
@@ -997,6 +994,7 @@ function Chat() {
   const report = useReport();
   const qa = useLearnedQA();
   const endRef = useRef(null);
+  const chatMember = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing, quicks]);
   const send = (textArg) => {
     const text = (textArg ?? input).trim(); if (!text) return;
@@ -1015,6 +1013,14 @@ function Chat() {
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
         <div style={{ flex: 1 }}><div className="nm">AI 주치의</div><div className="st"><span className="dot" /> 온라인 · 24시간 상담</div></div>
         <Search size={18} className="ic" style={{ marginRight: 12 }} /><Menu size={20} className="ic" /></div>
+      {chatMember && (
+        <div className="kt-acts">
+          <button onClick={() => nav("checkup")}>🔬 추가검진</button>
+          <button onClick={() => nav("hospital")}>🏥 병원진료</button>
+          <button onClick={() => nav("shop")}>💊 영양·홈케어</button>
+          <button onClick={() => nav("shop")}>🥗 건강식단</button>
+        </div>
+      )}
       <div className="kt-body">
         <div className="daypill">2026년 5월 8일</div>
         {msgs.map((m) => (
