@@ -281,6 +281,33 @@
 .spinfo .sprate small{color:var(--muted);font-weight:600;font-size:10px;}
 .tmfee{font-size:10.5px;color:#475569;font-weight:700;}
 .tmjoin{margin-top:6px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed #BFD0FF;background:#F7F9FF;color:#2563EB;border-radius:12px;padding:11px;font-size:12.5px;font-weight:800;cursor:pointer;}
+.tmproc.rule{border-color:#B6E7C9;color:#15803D;}
+.tmtier{color:#475569 !important;background:#EEF2F8 !important;}
+.tmtier.hosp{color:#7C3AED !important;background:#F3EDFE !important;}
+/* 비대면 가능 조건 공시 */
+.tcomp{margin:11px 0;border:1px solid #C4ECD3;background:linear-gradient(180deg,#F3FCF6,#fff);border-radius:14px;padding:13px;}
+.tcomph{font-size:12.5px;font-weight:800;color:#15234A;display:flex;align-items:center;gap:6px;}
+.tcomph span{font-size:10.5px;color:#15803D;background:#E7F8EE;border:1px solid #B6E7C9;border-radius:999px;padding:1px 8px;font-weight:700;}
+.tcstat{margin-top:8px;font-size:11px;color:#15803D;background:#fff;border:1px dashed #B6E7C9;border-radius:9px;padding:8px 10px;display:flex;align-items:flex-start;gap:5px;line-height:1.5;font-weight:600;}
+.tcp{font-size:11.5px;color:#334155;line-height:1.6;margin-top:9px;}
+.tcgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.tcb{border:1px solid var(--border);border-radius:11px;padding:10px;background:#fff;}
+.tcb.ok{border-color:#B6E7C9;}.tcb.lim{border-color:#F5D9A8;}
+.tcb b{font-size:11.5px;color:#15234A;display:block;margin-bottom:6px;}
+.tcb.ok b{color:#15803D;}.tcb.lim b{color:#B45309;}
+.tcb ul{margin:0;padding-left:15px;}.tcb li{font-size:11px;color:#475569;line-height:1.65;}
+.tcrow{display:flex;gap:9px;margin-top:9px;align-items:flex-start;}
+.tcic{width:26px;height:26px;border-radius:8px;background:#F1F5F9;display:grid;place-items:center;flex-shrink:0;}
+.tcrow b{font-size:11.5px;color:#15234A;}.tcrow p{font-size:11px;color:#475569;line-height:1.55;margin:2px 0 0;}
+.tcnote{margin-top:10px;font-size:10px;color:var(--muted);line-height:1.55;}
+/* 채팅 비대면 자격 안내 */
+.teli{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:8px 13px;background:#fff;border-bottom:1px solid var(--border);}
+.telil{font-size:11px;font-weight:800;color:#15234A;display:inline-flex;align-items:center;gap:4px;}
+.teli>button{border:1px solid var(--border);background:#fff;color:#475569;border-radius:999px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer;}
+.teli>button.on{background:#16A34A;color:#fff;border-color:#16A34A;}
+.telim{flex-basis:100%;font-size:10.5px;color:#15803D;line-height:1.5;}
+.telim.lim{color:#B45309;}
+@media(max-width:560px){.tcgrid{grid-template-columns:1fr;}}
 /* 내원 연계 CTA */
 .tmcta{background:linear-gradient(120deg,#EAF0FE,#F5F8FF);border-bottom:1px solid var(--border);padding:11px 13px;}
 .tmctat{font-size:12.5px;font-weight:700;color:#15234A;display:flex;align-items:center;gap:5px;}.tmctat b{color:#2563EB;}
