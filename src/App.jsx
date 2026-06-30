@@ -47,7 +47,6 @@ export default function App() {
     ["wallet", "건강금융지갑 현황", "wallet"],
     ["insurance", "보험·실손 지원", "insurance"],
     ["mypage", "마이페이지", "mypage"],
-    ["people", "데모 회원 테스트", "demo"],
     ["alert", "알림센터", "__noti__", 3],
   ];
   if (!authU) return <AuthGate />;
@@ -130,6 +129,7 @@ export default function App() {
             })}
           </div>
           <div className="agent"><div className="at">AI Health Agent</div><div className="as">{greetName}님 전담 24시간 상담</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("ai")}>상담하기</button></div>
+          <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
         <main className="scrollarea">

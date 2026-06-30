@@ -35,7 +35,7 @@ function DemoSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="mypage" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>데모 회원 테스트 <span className="demobadge"><AlertTriangle size={12} /> 시연용 데모 데이터입니다.</span></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>파일럿검증회원 <span className="demobadge"><AlertTriangle size={12} /> 시연용 데모 데이터입니다.</span></div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>관리자 일괄등록 · 데모 로그인 · 회원별 건강분석 대시보드 · AI 상담 연동 · 테스트 체크리스트 (경로: /admin/demo-members)</div></div></div>
       <div className="demotabs">
         <div className={`demotab ${view === "admin" ? "on" : ""}`} onClick={() => setView("admin")}><Settings size={15} /> 관리자</div>

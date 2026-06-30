@@ -457,7 +457,6 @@ export default function App() {
     ["wallet", "건강금융지갑 현황", "wallet"],
     ["insurance", "보험·실손 지원", "insurance"],
     ["mypage", "마이페이지", "mypage"],
-    ["people", "데모 회원 테스트", "demo"],
     ["alert", "알림센터", "__noti__", 3],
   ];
   if (!authU) return <AuthGate />;
@@ -540,6 +539,7 @@ export default function App() {
             })}
           </div>
           <div className="agent"><div className="at">AI Health Agent</div><div className="as">{greetName}님 전담 24시간 상담</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("ai")}>상담하기</button></div>
+          <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
         <main className="scrollarea">
@@ -5311,7 +5311,7 @@ function DemoSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="mypage" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>데모 회원 테스트 <span className="demobadge"><AlertTriangle size={12} /> 시연용 데모 데이터입니다.</span></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>파일럿검증회원 <span className="demobadge"><AlertTriangle size={12} /> 시연용 데모 데이터입니다.</span></div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>관리자 일괄등록 · 데모 로그인 · 회원별 건강분석 대시보드 · AI 상담 연동 · 테스트 체크리스트 (경로: /admin/demo-members)</div></div></div>
       <div className="demotabs">
         <div className={`demotab ${view === "admin" ? "on" : ""}`} onClick={() => setView("admin")}><Settings size={15} /> 관리자</div>
