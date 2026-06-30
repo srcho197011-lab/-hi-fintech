@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css" />
+<link rel="stylesheet" href="./data/app.css?v=825ead9bf2" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./data/dummy_data.js"></script>
-<script src="./data/section_data.js"></script>
-<script src="./data/demo_members.js"></script>
+<script src="./data/dummy_data.js?v=825ead9bf2"></script>
+<script src="./data/section_data.js?v=825ead9bf2"></script>
+<script src="./data/demo_members.js?v=825ead9bf2"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -803,6 +803,7 @@ function Sents({ text, lead }) {
     );
   });
 }
+function aiWho() { try { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return (m && m.name) ? m.name : "조성래"; } catch (e) { return "조성래"; } }
 function consult(q, corpus, report, QA) {
   const raw = (q || "").trim();
   const t = expandAlias(raw.replace(/\s/g, "")); // 동의어·구어 확장
@@ -843,7 +844,7 @@ function consult(q, corpus, report, QA) {
   const fz = qaFuzzy(raw, QA);
   if (fz) return qaAnswer(fz);
   // 5) 대화형 — 인사·감사·이용안내
-  if (/안녕|반가|하이|헬로/.test(t)) return "안녕하세요 조성래님! AI 주치의예요. 질환의 증상, 검사, 치료, 생활습관부터 내 건강리포트, 의료비까지 음성으로 도와드릴게요. 무엇이 궁금하세요?";
+  if (/안녕|반가|하이|헬로/.test(t)) return `안녕하세요 ${aiWho()}님! AI 주치의예요. 질환의 증상, 검사, 치료, 생활습관부터 내 건강리포트, 의료비까지 음성으로 도와드릴게요. 무엇이 궁금하세요?`;
   if (/고마워|고맙|감사|수고|땡큐/.test(t)) return "도움이 되었다니 기뻐요. 더 궁금한 점이 있으면 언제든 말씀해 주세요.";
   if (/안내|어떻게|무엇을|뭘물|뭐물|도와|도움|기능|사용법|할수있|예시|물어보면|물어볼/.test(t))
     return "이렇게 도와드릴 수 있어요. 질환 이름과 함께 증상, 검사, 치료, 생활습관을 물어보시거나, ‘내 리포트 요약’, ‘의료비 예측’처럼 말씀해 주세요. 예를 들어 ‘갑상선염 증상’, ‘고혈압 생활습관 관리’, ‘내 당뇨 위험’처럼요.";
@@ -852,7 +853,7 @@ function consult(q, corpus, report, QA) {
 }
 
 function VoiceDoctor() {
-  const [trans, setTrans] = useState([{ who: "a", text: "안녕하세요 조성래님, AI 주치의예요. 질병관리청 국가건강정보포털, 대한의학회 임상 진료지침, 국립암센터 국가암검진 권고안과 국가암정보센터 자료를 학습해 음성으로 건강상담을 도와드릴게요. 마이크를 누르고 궁금한 점을 말씀해 주세요." }]);
+  const [trans, setTrans] = useState([{ who: "a", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 질병관리청 국가건강정보포털, 대한의학회 임상 진료지침, 국립암센터 국가암검진 권고안과 국가암정보센터 자료를 학습해 음성으로 건강상담을 도와드릴게요. 마이크를 누르고 궁금한 점을 말씀해 주세요.` }]);
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [interim, setInterim] = useState("");
@@ -1467,11 +1468,11 @@ function aiRespond(text, corpus, report, QA) {
   if (has("퇴원", "재가", "수술", "간병", "돌봄", "방문간호", "재활"))
     return { bubbles: [{ kind: "text", text: "퇴원 후 관리가 궁금하시군요. 보통 방문간호·재활·식단관리·원격 모니터링을 함께 설계해요. 필요한 항목을 알려주시면 재가/돌봄서비스를 매칭해 드릴게요." }], quicks: ["재가/돌봄서비스 신청", "방문재활 알아보기", "퇴원 후 회복 관리"] };
   if (has("식단", "영양", "음식"))
-    return { bubbles: [{ kind: "text", text: "조성래님은 간·췌장과 당뇨 관리가 핵심이라, 절주와 함께 채소·식물성 단백질·식이섬유 위주 식단이 좋아요." }, { kind: "card", card: { title: "맞춤 식단 가이드", items: ["식이섬유(잡곡·해조류·채소)", "채소·식물성 단백질 늘리기", "포화지방·가공육 줄이기", "절주(하루 2잔 이하)"], buttons: ["식단 구독하기", "영양제 함께 보기"] } }], quicks: ["식단 구독하기", "간 건강 영양제", "당뇨 예방 운동"] };
+    return { bubbles: [{ kind: "text", text: `${aiWho()}님 건강분석 기준으로, 채소·식물성 단백질·식이섬유 위주의 균형 식단과 절주가 도움이 돼요.` }, { kind: "card", card: { title: "맞춤 식단 가이드", items: ["식이섬유(잡곡·해조류·채소)", "채소·식물성 단백질 늘리기", "포화지방·가공육 줄이기", "절주(하루 2잔 이하)"], buttons: ["식단 구독하기", "영양제 함께 보기"] } }], quicks: ["식단 구독하기", "내 건강 후속조치", "당뇨 예방 운동"] };
   // (질환·리포트·암 등 학습 답변은 위 consult 엔진이 음성 상담과 동일하게 처리)
   // 대화형 — 인사·감사
   if (has("안녕", "반가", "하이", "ㅎㅇ", "헬로"))
-    return { bubbles: [{ kind: "text", text: "안녕하세요 조성래님! 😊 AI 주치의예요. 질환의 증상·검사·치료·생활습관부터 내 건강리포트·의료비까지 도와드릴게요. 무엇이 궁금하세요?" }], quicks: ["내 리포트 요약", "당뇨 검사 방법", "의료비 예측"] };
+    return { bubbles: [{ kind: "text", text: `안녕하세요 ${aiWho()}님! 😊 AI 주치의예요. 질환의 증상·검사·치료·생활습관부터 내 건강리포트·의료비까지 도와드릴게요. 무엇이 궁금하세요?` }], quicks: ["내 리포트 요약", "당뇨 검사 방법", "의료비 예측"] };
   if (has("고마워", "고맙", "감사", "수고", "땡큐"))
     return { bubbles: [{ kind: "text", text: "도움이 되었다니 기뻐요! 더 궁금한 점이 있으면 언제든 물어보세요. 😊" }], quicks: ["내 리포트 요약", "갑상선염의 증상은 무엇인가요?", "의료비 예측"] };
   // 이용 안내 — "안내해줘 / 어떻게 / 뭘 물어보면 돼?" 등
@@ -1486,7 +1487,7 @@ function aiRespond(text, corpus, report, QA) {
 
 function Chat() {
   const [msgs, setMsgs] = useState([
-    { id: 1, who: "ai", kind: "text", text: "안녕하세요 조성래님, AI 주치의예요. 👨‍⚕️\n프롬에이지 Premium 건강분석 리포트를 바탕으로 함께 살펴드릴게요.", time: now(), first: true },
+    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 👨‍⚕️\n건강분석 리포트를 바탕으로 함께 살펴드릴게요.`, time: now(), first: true },
     { id: 2, who: "ai", kind: "text", text: "무엇을 도와드릴까요? 아래에서 골라보셔도 돼요.", time: now() },
   ]);
   const [quicks, setQuicks] = useState(["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]);
@@ -4876,12 +4877,50 @@ function ontoNext(mr) {
   const head = high ? `${ONTO_GOVERNANCE.highRisk} ` : "";
   return `${head}${N}님 검진 위험을 종합하면 현재 ‘${lvl}’ 단계로 보여요. 다음 순서로 권해드려요. 1) ${worst ? worst + " 등 노화가 빠른 부분은 관련 진료과 상담" : "필요 시 가까운 병원 진료"}, 2) 앱의 ‘병원 찾기’로 검진센터·전문병원 예약, 3) 건강관리(${rec}) 실천, 4) 더 궁금하면 전문 상담원 연결. ${ONTO_GOVERNANCE.diagnosis}`;
 }
+/* 로그인 회원 개인 리포트 답변(생체나이·질병·암·의료비·종합) — demoReport 기반, 비로그인 시 null → 기존 report.json 위임 */
+function ontoReportAnswer(q, mr) {
+  if (!mr || !mr.R) return null;
+  const R = mr.R, N = mr.m.name, t = (q || "").replace(/\s/g, "");
+  const won = (n) => Number(n).toLocaleString("ko-KR") + "원";
+  if (/생체나이|노화|장기나이|간나이|췌장나이|심장나이|신장나이|콩팥나이|몇살|몇세/.test(t)) {
+    const bad = R.organs.filter((o) => !o[3]).map((o) => `${o[0].replace("비만체형", "비만")} ${o[1]}세`).join(", ");
+    const yo = R.diff <= 0 ? `${Math.abs(R.diff)}세 젊어요` : `${R.diff}세 많아요`;
+    return `${N}님의 생체나이는 ${R.bio}세로 주민등록나이 ${R.reg}세보다 ${yo}. 노화속도 ${R.agingSpeed}배, 노화등수 ${R.agingRank}등으로 종합 ‘${R.evalLabel}’이에요.${bad ? ` 다만 ${bad}는 노화가 빠른 편이라 관리가 필요해요.` : ""} ${ONTO_GOVERNANCE.diagnosis}`;
+  }
+  if (/의료비|병원비|의료이용|외래|입원|비용|돈/.test(t)) {
+    return `${N}님의 올해 예상 의료비는 약 ${won(R.costThis)}이고, 생체나이 기반으로 10년 후엔 약 ${won(R.cost10)}으로 예상돼요. 위험요인 관리로 의료비 부담을 낮출 수 있어요.`;
+  }
+  const personal = /내|나의|제|저의|위험|등급|얼마|몇|어때|어떤가|상태|높|낮|걸릴|발생|예측|조심/.test(t);
+  if (personal) for (const c of R.cancers) {
+    const base = c[0].replace("암", "");
+    if (t.includes(c[0]) || (base.length >= 2 && t.includes(base))) {
+      const isHr = (R.hr || []).some((h) => h.indexOf(base) >= 0);
+      return `${N}님의 ${c[0]} 위험은 ‘${c[1]}’ 수준이에요${isHr ? "(고위험군 분류)" : ""}. ${isHr ? "권고 주기보다 자주 검진하고 전문의 상담을 권해요." : "권고 주기에 맞춘 정기 검진을 유지하세요."} ${ONTO_GOVERNANCE.diagnosis}`;
+    }
+  }
+  if (personal) for (const dz of R.diseases) {
+    const nm = dz[0];
+    const alias = nm === "당뇨병" ? /당뇨/ : nm === "고지혈증" ? /고지혈|콜레스테롤|이상지질/ : nm === "뇌졸중" ? /뇌졸중|뇌출혈|중풍/ : nm === "뇌혈관질환" ? /뇌혈관|뇌출혈/ : nm === "급성심근경색증" ? /심근경색|심장마비/ : nm === "허혈심장질환" ? /허혈|협심|심장병/ : null;
+    if (t.includes(nm) || (alias && alias.test(t))) {
+      const dir = dz[1] >= 0 ? `${dz[1]}% 높아요` : `${Math.abs(dz[1])}% 낮아요`;
+      return `${N}님의 ${nm} 위험도는 동년배보다 ${dir}. 10년 내 평균 발생률은 약 ${dz[2]} 수준이에요. 생활습관 관리와 정기 검진이 도움이 돼요. ${ONTO_GOVERNANCE.diagnosis}`;
+    }
+  }
+  if (/리포트|종합|요약|분석결과|내건강|전체|총평|어때|상태/.test(t)) {
+    const hiD = R.diseases.filter((d) => d[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 3).map((d) => d[0]).join("·") || "특별히 없음";
+    const warnC = (R.cancers || []).filter((c) => /경고/.test(c[1])).map((c) => c[0]).join("·");
+    const hrdStr = (R.hrd && R.hrd.length) ? ` 특히 ${R.hrd.join("·")}은 적극 관리가 필요해요.` : "";
+    return `${N}님 리포트 요약이에요. 생체나이 ${R.bio}세로 종합 ‘${R.evalLabel}’이에요. 동년배보다 위험이 높은 질병은 ${hiD}이고, 암위험은 ${R.cancerTotal}등급이에요.${warnC ? ` ${warnC}이 ‘경고’ 수준이고,` : ""}${hrdStr} ${ONTO_GOVERNANCE.diagnosis}`;
+  }
+  return null;
+}
 function ontologyConsult(q) {
   const raw = (q || "").trim(); if (!raw) return null;
   const t = raw.replace(/\s/g, "").toLowerCase();
   const mr = ontoMember();
+  // 로그인 회원이면 개인 리포트(생체나이·질병·암·의료비·종합) 우선
+  if (mr && mr.R) { const rep = ontoReportAnswer(q, mr); if (rep) return rep; }
   // 후속조치 / 다음 행동
-
   if (/후속조치|뭘해야|뭘하면|무엇을해야|무엇부터|어떻게관리|다음단계|다음에뭐|관리우선|뭐부터|어떻게해야/.test(t)) return ontoNext(mr);
   // A) 검진 항목 해석 (수치·기준·해석 맥락일 때만)
   const it = ontoCheckupFind(t);
@@ -4947,6 +4986,9 @@ function demoMakeProfile(name, email, birth6, genderCode) {
 }
 /* 건강관리 리포트 어댑터 — 데모 회원 가용 필드로 6개 서브섹션 데이터 도출 */
 function demoReport(m) {
+  // 세션 객체가 과거 데이터여도 항상 최신 소스(demoMembers)로 갱신
+  if (typeof demoMembers !== "undefined" && demoMembers && demoMembers.length) { const src = demoMembers.find((x) => x.email === m.email); if (src) m = src; }
+  const HRD = m.highRiskDiseases || [];
   const reg = demoRegAge(m);
   const bio = m.biologicalAge;
   const diff = +(bio - reg).toFixed(1);
@@ -4960,7 +5002,8 @@ function demoReport(m) {
   const diseases = DZ.map(([nm, organAge]) => {
     const gap = organAge != null ? (organAge - reg) : diff;
     let pct = Math.round(gap * 1.4 + (m.cancerRiskGrade - 5) * 1.5);
-    pct = Math.max(-28, Math.min(38, pct));
+    if (HRD.includes(nm)) pct += 16; // 회원 지정 고위험 질환 가중
+    pct = Math.max(-28, Math.min(45, pct));
     const inc = Math.max(2, Math.round(6 + Math.max(0, pct) / 2 + (reg - 40) / 6)) + "%";
     return [nm, pct, inc];
   });
@@ -4973,9 +5016,10 @@ function demoReport(m) {
   const flags = [];
   flags.push({ t: `노화 빠른 장기: ${worstNames.join("·")}`, c: "#B91C1C", bg: "#FDECEC" });
   if (hr.length) flags.push({ t: `고위험 암: ${hr.join("·")}`, c: "#fff", bg: "#EF4444", ic: "warn" });
+  if (HRD.length) flags.push({ t: `주의 질환: ${HRD.join("·")}`, c: "#B91C1C", bg: "#FDECEC", ic: "warn" });
   flags.push({ t: `암위험 ${m.cancerRiskGrade}등급 · ${cg[0]}`, c: cg[1], bg: cg[2] });
   flags.push({ t: agingSpeed > 1 ? `노화속도 ${agingSpeed}배(빠름)` : `노화속도 ${agingSpeed}배(느림)`, c: agingSpeed > 1 ? "#B45309" : "#15803D", bg: agingSpeed > 1 ? "#FEF3E2" : "#E7F8EE", ic: agingSpeed > 1 ? "up" : "check" });
-  return { bio, reg, diff, agingRank, agingSpeed, organs, worstNames, cg, diseases, cancers, cancerTotal: m.cancerRiskGrade, costThis, cost10, recs: m.managementPoints || [], hr, flags, evalLabel: cg[0] };
+  return { bio, reg, diff, agingRank, agingSpeed, organs, worstNames, cg, diseases, cancers, cancerTotal: m.cancerRiskGrade, costThis, cost10, recs: m.managementPoints || [], hr, hrd: HRD, flags, evalLabel: cg[0] };
 }
 function demoPersonalAnswer(m) {
   const fmt = (n) => Number(n).toLocaleString("ko-KR") + "원";

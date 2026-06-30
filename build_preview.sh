@@ -58,5 +58,10 @@ while IFS= read -r f; do
 done < <(sed 's/\r$//' src/_manifest.txt)
 cat _t.txt >> index.html
 cp index.html preview.html
+# 데이터/CSS 캐시버스팅(?v=hash) — 데이터·스타일 변경 시 배포 후 즉시 반영(브라우저 캐시 무효화)
+VER=$(cat data/dummy_data.js data/section_data.js data/demo_members.js data/app.css 2>/dev/null | md5sum | cut -c1-10)
+for F in index.html preview.html; do
+  sed -i "s#\./data/app\.css#./data/app.css?v=$VER#g; s#\./data/dummy_data\.js#./data/dummy_data.js?v=$VER#g; s#\./data/section_data\.js#./data/section_data.js?v=$VER#g; s#\./data/demo_members\.js#./data/demo_members.js?v=$VER#g" "$F"
+done
 rm _h.txt _t.txt
 echo "rebuilt index.html / preview.html (src/ $(grep -c . src/_manifest.txt) files)"

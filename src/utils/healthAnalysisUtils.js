@@ -31,6 +31,9 @@ function demoMakeProfile(name, email, birth6, genderCode) {
 }
 /* 건강관리 리포트 어댑터 — 데모 회원 가용 필드로 6개 서브섹션 데이터 도출 */
 function demoReport(m) {
+  // 세션 객체가 과거 데이터여도 항상 최신 소스(demoMembers)로 갱신
+  if (typeof demoMembers !== "undefined" && demoMembers && demoMembers.length) { const src = demoMembers.find((x) => x.email === m.email); if (src) m = src; }
+  const HRD = m.highRiskDiseases || [];
   const reg = demoRegAge(m);
   const bio = m.biologicalAge;
   const diff = +(bio - reg).toFixed(1);
@@ -44,7 +47,8 @@ function demoReport(m) {
   const diseases = DZ.map(([nm, organAge]) => {
     const gap = organAge != null ? (organAge - reg) : diff;
     let pct = Math.round(gap * 1.4 + (m.cancerRiskGrade - 5) * 1.5);
-    pct = Math.max(-28, Math.min(38, pct));
+    if (HRD.includes(nm)) pct += 16; // 회원 지정 고위험 질환 가중
+    pct = Math.max(-28, Math.min(45, pct));
     const inc = Math.max(2, Math.round(6 + Math.max(0, pct) / 2 + (reg - 40) / 6)) + "%";
     return [nm, pct, inc];
   });
@@ -57,9 +61,10 @@ function demoReport(m) {
   const flags = [];
   flags.push({ t: `노화 빠른 장기: ${worstNames.join("·")}`, c: "#B91C1C", bg: "#FDECEC" });
   if (hr.length) flags.push({ t: `고위험 암: ${hr.join("·")}`, c: "#fff", bg: "#EF4444", ic: "warn" });
+  if (HRD.length) flags.push({ t: `주의 질환: ${HRD.join("·")}`, c: "#B91C1C", bg: "#FDECEC", ic: "warn" });
   flags.push({ t: `암위험 ${m.cancerRiskGrade}등급 · ${cg[0]}`, c: cg[1], bg: cg[2] });
   flags.push({ t: agingSpeed > 1 ? `노화속도 ${agingSpeed}배(빠름)` : `노화속도 ${agingSpeed}배(느림)`, c: agingSpeed > 1 ? "#B45309" : "#15803D", bg: agingSpeed > 1 ? "#FEF3E2" : "#E7F8EE", ic: agingSpeed > 1 ? "up" : "check" });
-  return { bio, reg, diff, agingRank, agingSpeed, organs, worstNames, cg, diseases, cancers, cancerTotal: m.cancerRiskGrade, costThis, cost10, recs: m.managementPoints || [], hr, flags, evalLabel: cg[0] };
+  return { bio, reg, diff, agingRank, agingSpeed, organs, worstNames, cg, diseases, cancers, cancerTotal: m.cancerRiskGrade, costThis, cost10, recs: m.managementPoints || [], hr, hrd: HRD, flags, evalLabel: cg[0] };
 }
 function demoPersonalAnswer(m) {
   const fmt = (n) => Number(n).toLocaleString("ko-KR") + "원";

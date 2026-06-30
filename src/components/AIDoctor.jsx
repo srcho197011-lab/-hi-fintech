@@ -242,6 +242,7 @@ function Sents({ text, lead }) {
     );
   });
 }
+function aiWho() { try { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return (m && m.name) ? m.name : "조성래"; } catch (e) { return "조성래"; } }
 function consult(q, corpus, report, QA) {
   const raw = (q || "").trim();
   const t = expandAlias(raw.replace(/\s/g, "")); // 동의어·구어 확장
@@ -282,7 +283,7 @@ function consult(q, corpus, report, QA) {
   const fz = qaFuzzy(raw, QA);
   if (fz) return qaAnswer(fz);
   // 5) 대화형 — 인사·감사·이용안내
-  if (/안녕|반가|하이|헬로/.test(t)) return "안녕하세요 조성래님! AI 주치의예요. 질환의 증상, 검사, 치료, 생활습관부터 내 건강리포트, 의료비까지 음성으로 도와드릴게요. 무엇이 궁금하세요?";
+  if (/안녕|반가|하이|헬로/.test(t)) return `안녕하세요 ${aiWho()}님! AI 주치의예요. 질환의 증상, 검사, 치료, 생활습관부터 내 건강리포트, 의료비까지 음성으로 도와드릴게요. 무엇이 궁금하세요?`;
   if (/고마워|고맙|감사|수고|땡큐/.test(t)) return "도움이 되었다니 기뻐요. 더 궁금한 점이 있으면 언제든 말씀해 주세요.";
   if (/안내|어떻게|무엇을|뭘물|뭐물|도와|도움|기능|사용법|할수있|예시|물어보면|물어볼/.test(t))
     return "이렇게 도와드릴 수 있어요. 질환 이름과 함께 증상, 검사, 치료, 생활습관을 물어보시거나, ‘내 리포트 요약’, ‘의료비 예측’처럼 말씀해 주세요. 예를 들어 ‘갑상선염 증상’, ‘고혈압 생활습관 관리’, ‘내 당뇨 위험’처럼요.";
@@ -291,7 +292,7 @@ function consult(q, corpus, report, QA) {
 }
 
 function VoiceDoctor() {
-  const [trans, setTrans] = useState([{ who: "a", text: "안녕하세요 조성래님, AI 주치의예요. 질병관리청 국가건강정보포털, 대한의학회 임상 진료지침, 국립암센터 국가암검진 권고안과 국가암정보센터 자료를 학습해 음성으로 건강상담을 도와드릴게요. 마이크를 누르고 궁금한 점을 말씀해 주세요." }]);
+  const [trans, setTrans] = useState([{ who: "a", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 질병관리청 국가건강정보포털, 대한의학회 임상 진료지침, 국립암센터 국가암검진 권고안과 국가암정보센터 자료를 학습해 음성으로 건강상담을 도와드릴게요. 마이크를 누르고 궁금한 점을 말씀해 주세요.` }]);
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [interim, setInterim] = useState("");
@@ -906,11 +907,11 @@ function aiRespond(text, corpus, report, QA) {
   if (has("퇴원", "재가", "수술", "간병", "돌봄", "방문간호", "재활"))
     return { bubbles: [{ kind: "text", text: "퇴원 후 관리가 궁금하시군요. 보통 방문간호·재활·식단관리·원격 모니터링을 함께 설계해요. 필요한 항목을 알려주시면 재가/돌봄서비스를 매칭해 드릴게요." }], quicks: ["재가/돌봄서비스 신청", "방문재활 알아보기", "퇴원 후 회복 관리"] };
   if (has("식단", "영양", "음식"))
-    return { bubbles: [{ kind: "text", text: "조성래님은 간·췌장과 당뇨 관리가 핵심이라, 절주와 함께 채소·식물성 단백질·식이섬유 위주 식단이 좋아요." }, { kind: "card", card: { title: "맞춤 식단 가이드", items: ["식이섬유(잡곡·해조류·채소)", "채소·식물성 단백질 늘리기", "포화지방·가공육 줄이기", "절주(하루 2잔 이하)"], buttons: ["식단 구독하기", "영양제 함께 보기"] } }], quicks: ["식단 구독하기", "간 건강 영양제", "당뇨 예방 운동"] };
+    return { bubbles: [{ kind: "text", text: `${aiWho()}님 건강분석 기준으로, 채소·식물성 단백질·식이섬유 위주의 균형 식단과 절주가 도움이 돼요.` }, { kind: "card", card: { title: "맞춤 식단 가이드", items: ["식이섬유(잡곡·해조류·채소)", "채소·식물성 단백질 늘리기", "포화지방·가공육 줄이기", "절주(하루 2잔 이하)"], buttons: ["식단 구독하기", "영양제 함께 보기"] } }], quicks: ["식단 구독하기", "내 건강 후속조치", "당뇨 예방 운동"] };
   // (질환·리포트·암 등 학습 답변은 위 consult 엔진이 음성 상담과 동일하게 처리)
   // 대화형 — 인사·감사
   if (has("안녕", "반가", "하이", "ㅎㅇ", "헬로"))
-    return { bubbles: [{ kind: "text", text: "안녕하세요 조성래님! 😊 AI 주치의예요. 질환의 증상·검사·치료·생활습관부터 내 건강리포트·의료비까지 도와드릴게요. 무엇이 궁금하세요?" }], quicks: ["내 리포트 요약", "당뇨 검사 방법", "의료비 예측"] };
+    return { bubbles: [{ kind: "text", text: `안녕하세요 ${aiWho()}님! 😊 AI 주치의예요. 질환의 증상·검사·치료·생활습관부터 내 건강리포트·의료비까지 도와드릴게요. 무엇이 궁금하세요?` }], quicks: ["내 리포트 요약", "당뇨 검사 방법", "의료비 예측"] };
   if (has("고마워", "고맙", "감사", "수고", "땡큐"))
     return { bubbles: [{ kind: "text", text: "도움이 되었다니 기뻐요! 더 궁금한 점이 있으면 언제든 물어보세요. 😊" }], quicks: ["내 리포트 요약", "갑상선염의 증상은 무엇인가요?", "의료비 예측"] };
   // 이용 안내 — "안내해줘 / 어떻게 / 뭘 물어보면 돼?" 등
@@ -925,7 +926,7 @@ function aiRespond(text, corpus, report, QA) {
 
 function Chat() {
   const [msgs, setMsgs] = useState([
-    { id: 1, who: "ai", kind: "text", text: "안녕하세요 조성래님, AI 주치의예요. 👨‍⚕️\n프롬에이지 Premium 건강분석 리포트를 바탕으로 함께 살펴드릴게요.", time: now(), first: true },
+    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 👨‍⚕️\n건강분석 리포트를 바탕으로 함께 살펴드릴게요.`, time: now(), first: true },
     { id: 2, who: "ai", kind: "text", text: "무엇을 도와드릴까요? 아래에서 골라보셔도 돼요.", time: now() },
   ]);
   const [quicks, setQuicks] = useState(["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]);
