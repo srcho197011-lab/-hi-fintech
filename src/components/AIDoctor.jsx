@@ -566,8 +566,14 @@ function MemberCareLinks({ member }) {
 /* ③ 관계레이어 시각화 — 종합 케어플랜 카드(6영역 + 섹션 연계 버튼) */
 function CarePlanCard({ member }) {
   const key = "hifin_careplan_" + ((member && member.email) || "default");
+  const gkey = "hifin_careguard_" + ((member && member.email) || "default");
   const [status, setStatus] = useState({});
-  useEffect(() => { try { setStatus(JSON.parse(localStorage.getItem(key) || "{}")); } catch (e) { setStatus({}); } }, [key]);
+  const [guard, setGuard] = useState(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [gName, setGName] = useState(""); const [gPhone, setGPhone] = useState("");
+  useEffect(() => { try { setStatus(JSON.parse(localStorage.getItem(key) || "{}")); } catch (e) { setStatus({}); } try { setGuard(JSON.parse(localStorage.getItem(gkey) || "null")); } catch (e) { setGuard(null); } }, [key, gkey]);
+  const doShare = () => { if (!gName.trim()) { if (typeof toast === "function") toast("보호자 성함을 입력해 주세요."); return; } const g = { name: gName.trim(), phone: gPhone.trim() }; setGuard(g); try { localStorage.setItem(gkey, JSON.stringify(g)); } catch (e) {} setShareOpen(false); setGName(""); setGPhone(""); if (typeof toast === "function") toast(`✅ (데모) 보호자 ${g.name}님께 케어플랜 공유 안내를 보냈습니다.`); };
+  const unShare = () => { setGuard(null); try { localStorage.removeItem(gkey); } catch (e) {} if (typeof toast === "function") toast("보호자 공유를 해제했습니다."); };
   if (!member || typeof buildCarePlan !== "function") return null;
   const p = buildCarePlan(member);
   if (!p) return null;
@@ -586,7 +592,11 @@ function CarePlanCard({ member }) {
   };
   return (
     <div className="adcard cplan">
-      <div className="adt2"><HeartHandshake size={16} color="#16A34A" /> {p.name}님 종합 케어플랜 <span className="cplvl">{p.level}</span><button className="cpprint" onClick={printPlan}><FileText size={13} /> 인쇄</button></div>
+      <div className="adt2"><HeartHandshake size={16} color="#16A34A" /> {p.name}님 종합 케어플랜 <span className="cplvl">{p.level}</span><button className="cpshare" onClick={() => setShareOpen((v) => !v)}><Users size={13} /> 가족 공유</button><button className="cpprint" onClick={printPlan}><FileText size={13} /> 인쇄</button></div>
+      {guard && (<div className="cpguard"><Users size={13} color="#16A34A" /> 보호자 <b>{guard.name}</b>님과 공유 중{guard.phone ? ` (${guard.phone})` : ""} <button onClick={unShare}>공유 해제</button></div>)}
+      {shareOpen && (<div className="cpshareform"><div className="csfh"><Users size={14} color="#2563EB" /> 보호자(가족)에게 케어플랜 공유 <small>진행상황을 함께 관리할 수 있어요</small></div>
+        <div className="csfin"><input placeholder="보호자 성함" value={gName} onChange={(e) => setGName(e.target.value)} /><input placeholder="휴대폰(선택)" value={gPhone} onChange={(e) => setGPhone(e.target.value)} /><button className="csfgo" onClick={doShare}><Send size={13} /> 공유</button></div>
+        <div className="csfnote">※ 데모 환경에서는 실제 문자가 발송되지 않습니다. 동의한 보호자에게만 공유하세요.</div></div>)}
       <div className="cpprog"><div className="cppt">진행률 <b>{pct}%</b> <span>{done}/{p.domains.length} 완료</span><span className="cprew"><Coins size={12} /> +{earned.toLocaleString("ko-KR")} HTK <small>/ 최대 {maxPts.toLocaleString("ko-KR")}</small></span><button className="cprwbtn" onClick={() => nav("wallet")}>건강금융지갑 ›</button></div><div className="cppbar"><i style={{ width: pct + "%" }} /></div></div>
       <div className="cpgrid">
         {p.domains.map((dmn, i) => { const Ic = ICO[dmn.icon] || Sparkles; const st = status[dmn.title] || 0; return (
@@ -601,6 +611,20 @@ function CarePlanCard({ member }) {
         ); })}
       </div>
       <div className="aiddisc"><AlertTriangle size={14} /> 검진 데이터 기반 참고 안내이며, 확정 진단·처방은 의료진 상담이 필요합니다. 진행상태는 이 기기에 저장됩니다.</div>
+    </div>
+  );
+}
+/* ④ 사례기반 심층 상담 시각화 카드 */
+function CaseCard({ data, onPlan }) {
+  if (!data) return null;
+  return (
+    <div className="adcard casecard">
+      <div className="adt2"><Users size={16} color="#7C3AED" /> 사례기반 심층 상담 <span className="cplvl" style={{ color: "#7C3AED", background: "#F3EDFE", borderColor: "#DDD0F7" }}>의료법 준수 참고</span></div>
+      <div className="ccprof"><span className="ccpi"><ClipboardList size={16} color="#7C3AED" /></span><div><b>{data.name}님과 비슷한 프로필</b><span>{data.profile} 회원들의 일반적 관리 흐름</span></div></div>
+      <div className="cctl">{data.actions.map((a, i) => (<div className="cctli" key={i}><span className="ccn">{i + 1}</span><div className="ccx">{a}</div></div>))}</div>
+      <div className="cctend"><Sparkles size={14} color="#16A34A" /> {data.tendency}</div>
+      <div className="adcta"><button className="cbtn pri" style={{ margin: 0 }} onClick={onPlan}><HeartHandshake size={14} /> 내 케어플랜 보기</button><button className="cbtn" style={{ margin: 0 }} onClick={() => nav("checkup")}><CalendarCheck size={14} /> 검진 예약</button></div>
+      <div className="aiddisc" style={{ marginTop: 10 }}><AlertTriangle size={14} /> 일반적 건강관리 경향에 대한 참고 안내이며 효과를 보장하지 않습니다. 구체적 치료·약물은 의료진과 상담하세요.</div>
     </div>
   );
 }
@@ -623,6 +647,7 @@ function AIDoctorSection({ onText, onVoice }) {
   const [readingKey, setReadingKey] = useState(null);
   const [personal, setPersonal] = useState(null);
   const [ontoTxt, setOntoTxt] = useState(null);
+  const [caseData, setCaseData] = useState(null);
   const [lang, setLang] = useState("ko");
   const T = UI_STR[lang];
   const riskLabel = (i) => lang === "en" ? RISK_EN[i] : RISK[i][0];
@@ -640,16 +665,17 @@ function AIDoctorSection({ onText, onVoice }) {
     // 데모 회원 로그인 시 — 개인 데이터 기반 분석 답변
     const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
     if (member && /사례|비슷한 회원|비슷한분|비슷한 사람|다른 회원|관리 사례|성공 사례/.test(qq)) {
+      const ci = (typeof buildCaseInsight === "function") ? buildCaseInsight(member) : null;
       const onto = (typeof ontologyConsult === "function") ? ontologyConsult(qq) : null;
-      if (onto) { setOntoTxt(onto); setPersonal(null); setResult(null); setMatches([]); setSubmitted(true); setEasy(false); logConsult(qq, null, 0); setLogTick((n) => n + 1); setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60); return; }
+      if (ci || onto) { setCaseData(ci); setOntoTxt(ci ? null : onto); setPersonal(null); setResult(null); setMatches([]); setSubmitted(true); setEasy(false); logConsult(qq, null, 0); setLogTick((n) => n + 1); setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60); return; }
     }
     if (member && /내 건강|건강상태|분석해|조심|가장.*암|의료비|보험|건강지갑|보험료|줄일|필요한|내가|내 .*위험|후속조치|케어플랜|종합 케어|종합관리/.test(qq)) {
-      setOntoTxt(null); setPersonal(demoPersonalAnswer(member)); setResult(null); setMatches([]); setSubmitted(true); setEasy(false);
+      setOntoTxt(null); setCaseData(null); setPersonal(demoPersonalAnswer(member)); setResult(null); setMatches([]); setSubmitted(true); setEasy(false);
       logConsult(qq, null, 0); setLogTick((n) => n + 1);
       setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60);
       return;
     }
-    setPersonal(null); setOntoTxt(null);
+    setPersonal(null); setOntoTxt(null); setCaseData(null);
     const list = searchHealth(qq, ff, kb);
     setMatches(list); setResult(list[0] || null); setSubmitted(true); setEasy(false);
     const rIdx = (detectEmergency(qq) || (list[0] && list[0].risk === 4)) ? 4 : (list[0] ? list[0].risk : 0);
@@ -812,7 +838,9 @@ function AIDoctorSection({ onText, onVoice }) {
       {/* 상담 결과 */}
       {submitted && (
         <div className="aidresult" ref={panelRef}>
-          {ontoTxt ? (
+          {caseData ? (
+            <CaseCard data={caseData} onPlan={() => run("내 종합 케어플랜")} />
+          ) : ontoTxt ? (
             <div className="adcard">
               <div className="adt2"><Sparkles size={16} color="#7C3AED" /> 사례기반 심층 상담 <span className="cplvl" style={{ color: "#7C3AED", background: "#F3EDFE", borderColor: "#DDD0F7" }}>의료법 준수 참고안내</span></div>
               <div className="aianswer" style={{ whiteSpace: "pre-wrap", lineHeight: 1.75, fontSize: 13.5, color: "#2a3550", marginTop: 6 }}>{ontoTxt}</div>
@@ -946,7 +974,7 @@ function AIDoctorSection({ onText, onVoice }) {
           </>) : (
             <div className="aidnone"><Search size={26} color="#B8C2D6" /><div><b>{T.none}</b><p>{T.noneSub}</p></div></div>
           )}
-          <div className="aidreset"><button onClick={() => { setSubmitted(false); setResult(null); setPersonal(null); setOntoTxt(null); setQ(""); setFilter(null); }}><ArrowLeft size={14} /> {T.reset}</button></div>
+          <div className="aidreset"><button onClick={() => { setSubmitted(false); setResult(null); setPersonal(null); setOntoTxt(null); setCaseData(null); setQ(""); setFilter(null); }}><ArrowLeft size={14} /> {T.reset}</button></div>
         </div>
       )}
 

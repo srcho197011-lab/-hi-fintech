@@ -150,6 +150,21 @@ function buildCarePlan(m) {
   domains.sort((a, b) => a.pri - b.pri);
   return { name: m.name, level: high ? "전문의 상담 권장" : R.cancerTotal >= 6 ? "병원 상담 권장" : "생활관리 중심", elder: isElder, domains };
 }
+/* 검진 리마인더 — 회원 위험요인·연령 기반 권장 검진 도출 */
+function buildReminders(m) {
+  if (!m || typeof demoReport !== "function") return [];
+  const R = demoReport(m), out = [];
+  const cancers = m.highRiskCancerTypes || [], dzs = m.highRiskDiseases || [];
+  cancers.forEach((c) => { const s = (typeof SCREENING_KB !== "undefined" && SCREENING_KB[c]); if (s) out.push({ title: `${c} 검진`, when: s, urg: "권장", to: "checkup" }); });
+  if (dzs.includes("당뇨병")) out.push({ title: "당뇨 합병증 검사", when: "안저·미세단백뇨 연 1회", urg: "권장", to: "checkup" });
+  if (dzs.includes("고혈압")) out.push({ title: "혈압·심전도 점검", when: "정기 모니터링", urg: "관리", to: "checkup" });
+  if (dzs.includes("고지혈증")) out.push({ title: "지질 검사", when: "연 1회", urg: "관리", to: "checkup" });
+  if (R.reg >= 40) out.push({ title: "국가 일반건강검진", when: "2년 주기(직장가입 1년)", urg: "권장", to: "checkup" });
+  if (R.reg >= 50 && !cancers.includes("대장암")) out.push({ title: "대장암 검진", when: "분변잠혈 50세↑ 매년", urg: "권장", to: "checkup" });
+  if (R.reg >= 66) out.push({ title: "노인 인지·골밀도 검진", when: "정기 권장", urg: "권장", to: "checkup" });
+  const seen = new Set();
+  return out.filter((x) => { if (seen.has(x.title)) return false; seen.add(x.title); return true; }).slice(0, 5);
+}
 function ontoCarePlan(mr) {
   if (!mr || !mr.R) return "건강검진 결과가 연동되면 진료·추가검진·영양·홈케어 기기·식단·의료지원제도를 한 번에 종합해 드려요. 로그인 후 ‘내 종합 케어플랜’이라고 물어봐 주세요.";
   const p = buildCarePlan(mr.m);
@@ -165,6 +180,14 @@ function ontoCaseConsult(mr) {
   if (typeof CASE_KB !== "undefined") { for (const k of keys) { c = CASE_KB.find((x) => x.dz.some((a) => k.includes(a) || a.includes(k))); if (c) break; } }
   if (!c) return `${m.name}님과 비슷한 위험요인의 회원들도 정기검진·생활습관 관리·맞춤 영양을 꾸준히 실천하는 것이 일반적이에요. 종합 케어플랜을 단계적으로 실천해 보시길 권해요. 다만 개인차가 크고 효과를 보장하지 않으며, 구체적 치료는 의료진과 상담하세요.`;
   return `${m.name}님과 비슷한 ‘${c.profile}’ 회원들은 보통 ① ${c.actions.join(" ② ")} 같은 관리를 실천했어요. ${c.tendency}. 이는 일반적인 건강관리 경향에 대한 참고 안내이고 개인차가 크며 효과를 보장하지 않으니, 구체적 치료·약물은 의료진과 상담하세요. 종합 케어플랜에서 단계별로 실천하면 건강금융지갑 적립도 함께 쌓여요.`;
+}
+function buildCaseInsight(m) {
+  if (!m || typeof CASE_KB === "undefined") return null;
+  const keys = [...(m.highRiskCancerTypes || []), ...(m.highRiskDiseases || [])];
+  let c = null;
+  for (const k of keys) { c = CASE_KB.find((x) => x.dz.some((a) => k.includes(a) || a.includes(k))); if (c) break; }
+  if (!c) return null;
+  return { name: m.name, profile: c.profile, actions: c.actions, tendency: c.tendency };
 }
 function ontologyConsult(q) {
   const raw = (q || "").trim(); if (!raw) return null;

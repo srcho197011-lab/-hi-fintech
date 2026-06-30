@@ -104,6 +104,12 @@ function HomeView({ onGo }) {
           <button className="cbtn pri" style={{ maxWidth: 300 }} onClick={() => go("ai")}><Bot size={15} /> AI 주치의에서 전체 케어플랜 보기</button>
         </div>
       ) : null; })()}
+      {dm && (() => { const rem = (typeof buildReminders === "function") ? buildReminders(dm) : []; return rem.length ? (
+        <div className="homerem">
+          <div className="hrh"><Bell size={15} color="#EF4444" /> {nm}님 맞춤 검진 리마인더 <span className="hrc">{rem.length}</span></div>
+          <div className="hrlist">{rem.map((r, i) => (<div className="hrrow" key={i}><span className={`hru ${r.urg === "권장" ? "u2" : "u3"}`}>{r.urg}</span><div className="hrb"><b>{r.title}</b><span>{r.when}</span></div><button className="hrgo" onClick={() => go("checkup")}>예약 ›</button></div>))}</div>
+        </div>
+      ) : null; })()}
       <div className="row4">
         <div className="card">
           <div className="ch"><div className="ct">생체나이 분석 <Info size={14} color="#B4BECF" /></div></div>
