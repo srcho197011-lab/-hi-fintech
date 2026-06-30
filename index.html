@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=d4d57263b8" />
+<link rel="stylesheet" href="./data/app.css?v=e4f3312e5d" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./data/dummy_data.js?v=d4d57263b8"></script>
-<script src="./data/section_data.js?v=d4d57263b8"></script>
-<script src="./data/demo_members.js?v=d4d57263b8"></script>
+<script src="./data/dummy_data.js?v=e4f3312e5d"></script>
+<script src="./data/section_data.js?v=e4f3312e5d"></script>
+<script src="./data/demo_members.js?v=e4f3312e5d"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -1126,23 +1126,39 @@ function MemberCareLinks({ member }) {
 }
 /* ③ 관계레이어 시각화 — 종합 케어플랜 카드(6영역 + 섹션 연계 버튼) */
 function CarePlanCard({ member }) {
+  const key = "hifin_careplan_" + ((member && member.email) || "default");
+  const [status, setStatus] = useState({});
+  useEffect(() => { try { setStatus(JSON.parse(localStorage.getItem(key) || "{}")); } catch (e) { setStatus({}); } }, [key]);
   if (!member || typeof buildCarePlan !== "function") return null;
   const p = buildCarePlan(member);
   if (!p) return null;
   const ICO = { hospital: Building2, checkup: CalendarCheck, pill: Pill, device: MonitorSmartphone, salad: Salad, shield: ShieldCheck };
+  const STAT = ["할 일", "진행중", "완료 ✓"];
+  const cycle = (title) => { const next = { ...status, [title]: (((status[title] || 0) + 1) % 3) }; setStatus(next); try { localStorage.setItem(key, JSON.stringify(next)); } catch (e) {} };
+  const done = p.domains.filter((dmn) => (status[dmn.title] || 0) === 2).length;
+  const pct = Math.round(done / p.domains.length * 100);
+  const printPlan = () => {
+    const rows = p.domains.map((dmn, i) => `<tr><td>${i + 1}. ${dmn.title} [${dmn.urgency}]</td><td>${dmn.need}</td><td>${STAT[status[dmn.title] || 0].replace(" ✓", "")}</td></tr>`).join("");
+    const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${p.name}님 종합 케어플랜</title><style>body{font-family:system-ui,'Malgun Gothic',sans-serif;padding:30px;color:#1B2A52}h1{font-size:20px;margin:0 0 6px}table{width:100%;border-collapse:collapse;margin-top:10px}td{border-bottom:1px solid #e5e9f0;padding:9px;font-size:13px}.lv{display:inline-block;background:#E7F8EE;color:#16A34A;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700}.disc{margin-top:16px;font-size:11px;color:#a05a00}</style></head><body><div style="font-size:12px;color:#7886a8">HI-Fin Tech · AI 주치의 종합 케어플랜</div><h1>${p.name}님 종합 케어플랜 <span class="lv">${p.level}</span></h1><div style="font-size:12px;color:#667">진행률 ${pct}% (${done}/${p.domains.length})</div><table><thead><tr><td><b>영역</b></td><td><b>권장 내용</b></td><td><b>상태</b></td></tr></thead><tbody>${rows}</tbody></table><div class="disc">※ 검진 데이터 기반 참고 안내이며, 확정 진단·처방은 의료진 상담이 필요합니다.</div></body></html>`;
+    const w = window.open("", "_blank", "width=720,height=900"); if (!w) { if (typeof toast === "function") toast("팝업이 차단되었습니다. 팝업 허용 후 다시 시도하세요."); return; } w.document.write(html); w.document.close(); setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 350);
+  };
   return (
     <div className="adcard cplan">
-      <div className="adt2"><HeartHandshake size={16} color="#16A34A" /> {p.name}님 종합 케어플랜 <span className="cplvl">{p.level}</span></div>
+      <div className="adt2"><HeartHandshake size={16} color="#16A34A" /> {p.name}님 종합 케어플랜 <span className="cplvl">{p.level}</span><button className="cpprint" onClick={printPlan}><FileText size={13} /> 인쇄</button></div>
+      <div className="cpprog"><div className="cppt">진행률 <b>{pct}%</b> <span>{done}/{p.domains.length} 완료</span></div><div className="cppbar"><i style={{ width: pct + "%" }} /></div></div>
       <div className="cpgrid">
-        {p.domains.map((dmn, i) => { const Ic = ICO[dmn.icon] || Sparkles; return (
-          <div className="cprow" key={i} style={{ borderLeftColor: dmn.color }}>
+        {p.domains.map((dmn, i) => { const Ic = ICO[dmn.icon] || Sparkles; const st = status[dmn.title] || 0; return (
+          <div className="cprow" key={i} style={{ borderLeftColor: dmn.color, opacity: st === 2 ? 0.72 : 1 }}>
             <span className="ci" style={{ background: dmn.color + "1A", color: dmn.color }}><Ic size={18} /></span>
             <div className="cpb"><div className="cpt">{dmn.title} {dmn.urgency && <span className={`cpurg ${dmn.urgency === "긴급" ? "u1" : dmn.urgency === "권장" ? "u2" : "u3"}`}>{dmn.urgency}</span>}</div><div className="cpn">{dmn.need}</div><div className="cpr">{dmn.reason}</div></div>
-            <button className="cpgo" style={{ color: dmn.color }} onClick={() => nav(dmn.to)}>{dmn.btn} <ChevronRight size={13} /></button>
+            <div className="cpacts">
+              <button className={`cpstat s${st}`} onClick={() => cycle(dmn.title)} title="상태 변경">{STAT[st]}</button>
+              <button className="cpgo" style={{ color: dmn.color }} onClick={() => nav(dmn.to)}>{dmn.btn} <ChevronRight size={13} /></button>
+            </div>
           </div>
         ); })}
       </div>
-      <div className="aiddisc"><AlertTriangle size={14} /> 검진 데이터 기반 참고 안내이며, 확정 진단·처방은 의료진 상담이 필요합니다.</div>
+      <div className="aiddisc"><AlertTriangle size={14} /> 검진 데이터 기반 참고 안내이며, 확정 진단·처방은 의료진 상담이 필요합니다. 진행상태는 이 기기에 저장됩니다.</div>
     </div>
   );
 }
@@ -4462,6 +4478,7 @@ function MyPageSection({ onGo }) {
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>내 정보 · 동의관리(DID) · 가족 건강관리 · 알림 설정</div></div></div>
 
       <DemoMemberBanner />
+      {dm && typeof CarePlanCard === "function" && <CarePlanCard member={dm} />}
       <div className="profile">
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
         <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${dm.biologicalAge}세 · 데모회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 데모 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
