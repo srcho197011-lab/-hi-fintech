@@ -1,8 +1,8 @@
-/* ── 국가건강정보포털 전체 코퍼스(664개) — data/kdca.json 1회 로드 ── */
+/* ── 국가건강정보포털 전체 코퍼스(664개) — src/data/kdca.json 1회 로드 ── */
 let _kdcaPromise = null;
 function loadKdca() {
   if (!_kdcaPromise) {
-    _kdcaPromise = fetch("./data/kdca.json")
+    _kdcaPromise = fetch("./src/data/kdca.json")
       .then((r) => { if (!r.ok) throw new Error("KB 로드 실패 (" + r.status + ")"); return r.json(); })
       .catch(() => null); // 실패 시 큐레이션 KB로 폴백
   }
@@ -13,11 +13,11 @@ function useKdca() {
   useEffect(() => { let on = true; loadKdca().then((d) => on && setKb(d)); return () => { on = false; }; }, []);
   return kb;
 }
-/* ── 질병관리청 학습용 Q&A 데이터셋(1,947쌍) — data/kdca_qa.json 1회 로드 ── */
+/* ── 질병관리청 학습용 Q&A 데이터셋(1,947쌍) — src/data/kdca_qa.json 1회 로드 ── */
 let _qaPromise = null;
 function loadQA() {
   if (!_qaPromise) {
-    _qaPromise = fetch("./data/kdca_qa.json").then((r) => r.ok ? r.json() : null).catch(() => null);
+    _qaPromise = fetch("./src/data/kdca_qa.json").then((r) => r.ok ? r.json() : null).catch(() => null);
   }
   return _qaPromise;
 }
@@ -26,10 +26,10 @@ function useQA() {
   useEffect(() => { let on = true; loadQA().then((d) => on && setQa(d)); return () => { on = false; }; }, []);
   return qa;
 }
-/* ── 임상 진료지침/환자 리플릿 학습 Q&A — data/guidelines.json 1회 로드 ── */
+/* ── 임상 진료지침/환자 리플릿 학습 Q&A — src/data/guidelines.json 1회 로드 ── */
 let _glPromise = null;
 function loadGuidelines() {
-  if (!_glPromise) _glPromise = fetch("./data/guidelines.json").then((r) => r.ok ? r.json() : null).catch(() => null);
+  if (!_glPromise) _glPromise = fetch("./src/data/guidelines.json").then((r) => r.ok ? r.json() : null).catch(() => null);
   return _glPromise;
 }
 function useGuidelines() {
@@ -132,11 +132,11 @@ function identifyDz(t, QA) {
   for (const k of KDCA_KB) for (const a of k.al) if (t.includes(a)) return k.d;
   return null;
 }
-/* ── 조성래님 개인 건강분석 리포트(프롬에이지 Premium) — data/report.json 1회 로드 ── */
+/* ── 조성래님 개인 건강분석 리포트(프롬에이지 Premium) — src/data/report.json 1회 로드 ── */
 let _reportPromise = null;
 function loadReport() {
   if (!_reportPromise) {
-    _reportPromise = fetch("./data/report.json").then((r) => r.ok ? r.json() : null).catch(() => null);
+    _reportPromise = fetch("./src/data/report.json").then((r) => r.ok ? r.json() : null).catch(() => null);
   }
   return _reportPromise;
 }

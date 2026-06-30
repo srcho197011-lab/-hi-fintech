@@ -363,7 +363,7 @@ function CheckupResults() {
 let _hiraPromise = null;
 function loadHira() {
   if (!_hiraPromise) {
-    _hiraPromise = fetch("./data/hira.json").then((r) => {
+    _hiraPromise = fetch("./src/data/hira.json").then((r) => {
       if (!r.ok) throw new Error("데이터 로드 실패 (" + r.status + ")");
       return r.json();
     });

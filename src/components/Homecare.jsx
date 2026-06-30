@@ -1,6 +1,6 @@
 function loadHomecare() {
   if (!_homecarePromise) {
-    _homecarePromise = fetch("./data/homecare.json").then((r) => { if (!r.ok) throw new Error("데이터 로드 실패 (" + r.status + ")"); return r.json(); });
+    _homecarePromise = fetch("./src/data/homecare.json").then((r) => { if (!r.ok) throw new Error("데이터 로드 실패 (" + r.status + ")"); return r.json(); });
   }
   return _homecarePromise;
 }
