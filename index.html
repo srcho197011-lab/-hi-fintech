@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=75116fbf52" />
+<link rel="stylesheet" href="./data/app.css?v=819c59da88" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./data/dummy_data.js?v=75116fbf52"></script>
-<script src="./data/section_data.js?v=75116fbf52"></script>
-<script src="./data/demo_members.js?v=75116fbf52"></script>
+<script src="./data/dummy_data.js?v=819c59da88"></script>
+<script src="./data/section_data.js?v=819c59da88"></script>
+<script src="./data/demo_members.js?v=819c59da88"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -5532,11 +5532,11 @@ function buildCarePlan(m) {
   const has = (x) => dzs.includes(x);
   const dept = new Set(), screen = new Set(), nutr = new Set(), dev = new Set(), diet = new Set(), prog = new Set(["국가건강검진"]);
   // 암: 진료과·검진 누적
-  cancers.forEach((c) => { if (typeof deptFor === "function") { const dd = deptFor(c).dept; if (dd) dept.add(dd); } screen.add((typeof SCREENING_KB !== "undefined" && SCREENING_KB[c]) || (c + " 정밀검진")); });
+  cancers.forEach((c) => { if (typeof deptFor === "function") { const dd = deptFor(c).dept; if (dd) dd.split("·").forEach((p) => dept.add(p.trim())); } screen.add((typeof SCREENING_KB !== "undefined" && SCREENING_KB[c]) || (c + " 정밀검진")); });
   if (cancers.length) { const n = kbMatch(NUTRITION_KB, "암"); if (n) n.nutrients.slice(0, 2).forEach((x) => nutr.add(x)); }
   // 질환별 누적(모든 위험요인 교차)
   dzs.forEach((dz) => {
-    if (typeof deptFor === "function") { const dd = deptFor(dz).dept; if (dd) dept.add(dd); }
+    if (typeof deptFor === "function") { const dd = deptFor(dz).dept; if (dd) dd.split("·").forEach((p) => dept.add(p.trim())); }
     const n = kbMatch(NUTRITION_KB, dz); if (n) n.nutrients.slice(0, 2).forEach((x) => nutr.add(x));
     const dv = kbMatch(DEVICE_KB, dz); if (dv) dv.items.slice(0, 1).forEach((x) => dev.add(x[0]));
     const di = kbMatch(DIET_KB, dz); if (di) diet.add(di.principle);
@@ -5967,6 +5967,7 @@ function DemoLoginSelector({ onLogin }) {
   );
 }
 
+const DEMO_CAT_COL = { "일반": ["#2563EB", "#EAF0FE"], "여성": ["#DB2777", "#FCE7F3"], "노인": ["#7C3AED", "#F3EDFE"], "아동": ["#F59E0B", "#FEF3E2"] };
 function DemoMemberRegister({ onLogin, onGoLogin, onChange }) {
   const [msg, setMsg] = useState("");
   const [tick, setTick] = useState(0);
@@ -6004,12 +6005,13 @@ function DemoMemberRegister({ onLogin, onGoLogin, onChange }) {
     <div className="card">
       <div className="rct"><ClipboardList size={18} color="#7C3AED" /> 등록된 데모 회원 목록</div>
       <div className="demolistwrap"><table className="demolist">
-        <thead><tr><th>이름</th><th>이메일</th><th>생체나이</th><th>암등급</th><th>예상 의료비</th><th>테스트</th></tr></thead>
-        <tbody>{list.map((m) => { const cg = demoCancerGrade(m.cancerRiskGrade); return (
+        <thead><tr><th>이름</th><th>분류</th><th>이메일</th><th>생체나이</th><th>암등급</th><th>예상 의료비</th><th>테스트</th></tr></thead>
+        <tbody>{list.map((m) => { const cg = demoCancerGrade(m.cancerRiskGrade); const cc = DEMO_CAT_COL[m.category] || ["#64748B", "#EEF2F8"]; return (
           <tr key={m.id}>
             <td className="nm">{m.name}</td>
+            <td>{m.category ? <span className="dcat" style={{ color: cc[0], background: cc[1] }}>{m.category}{m.sex ? "·" + m.sex : ""}</span> : "-"}</td>
             <td className="em">{m.email}</td>
-            <td>{m.biologicalAge}세</td>
+            <td>{m.biologicalAge}세{m.regAge ? <span className="dreg"> (만 {m.regAge})</span> : ""}</td>
             <td><span className="dgrade" style={{ color: cg[1], background: cg[2] }}>{m.cancerRiskGrade}·{cg[0]}</span></td>
             <td>{fmt(m.estimatedMedicalCost)}</td>
             <td className="ta"><button onClick={() => onLogin && onLogin(m)}>로그인</button><button className="dash" onClick={() => onLogin && onLogin(m)}>대시보드</button></td>

@@ -1,3 +1,4 @@
+const DEMO_CAT_COL = { "일반": ["#2563EB", "#EAF0FE"], "여성": ["#DB2777", "#FCE7F3"], "노인": ["#7C3AED", "#F3EDFE"], "아동": ["#F59E0B", "#FEF3E2"] };
 function DemoMemberRegister({ onLogin, onGoLogin, onChange }) {
   const [msg, setMsg] = useState("");
   const [tick, setTick] = useState(0);
@@ -35,12 +36,13 @@ function DemoMemberRegister({ onLogin, onGoLogin, onChange }) {
     <div className="card">
       <div className="rct"><ClipboardList size={18} color="#7C3AED" /> 등록된 데모 회원 목록</div>
       <div className="demolistwrap"><table className="demolist">
-        <thead><tr><th>이름</th><th>이메일</th><th>생체나이</th><th>암등급</th><th>예상 의료비</th><th>테스트</th></tr></thead>
-        <tbody>{list.map((m) => { const cg = demoCancerGrade(m.cancerRiskGrade); return (
+        <thead><tr><th>이름</th><th>분류</th><th>이메일</th><th>생체나이</th><th>암등급</th><th>예상 의료비</th><th>테스트</th></tr></thead>
+        <tbody>{list.map((m) => { const cg = demoCancerGrade(m.cancerRiskGrade); const cc = DEMO_CAT_COL[m.category] || ["#64748B", "#EEF2F8"]; return (
           <tr key={m.id}>
             <td className="nm">{m.name}</td>
+            <td>{m.category ? <span className="dcat" style={{ color: cc[0], background: cc[1] }}>{m.category}{m.sex ? "·" + m.sex : ""}</span> : "-"}</td>
             <td className="em">{m.email}</td>
-            <td>{m.biologicalAge}세</td>
+            <td>{m.biologicalAge}세{m.regAge ? <span className="dreg"> (만 {m.regAge})</span> : ""}</td>
             <td><span className="dgrade" style={{ color: cg[1], background: cg[2] }}>{m.cancerRiskGrade}·{cg[0]}</span></td>
             <td>{fmt(m.estimatedMedicalCost)}</td>
             <td className="ta"><button onClick={() => onLogin && onLogin(m)}>로그인</button><button className="dash" onClick={() => onLogin && onLogin(m)}>대시보드</button></td>

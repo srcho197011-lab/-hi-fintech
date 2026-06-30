@@ -116,11 +116,11 @@ function buildCarePlan(m) {
   const has = (x) => dzs.includes(x);
   const dept = new Set(), screen = new Set(), nutr = new Set(), dev = new Set(), diet = new Set(), prog = new Set(["국가건강검진"]);
   // 암: 진료과·검진 누적
-  cancers.forEach((c) => { if (typeof deptFor === "function") { const dd = deptFor(c).dept; if (dd) dept.add(dd); } screen.add((typeof SCREENING_KB !== "undefined" && SCREENING_KB[c]) || (c + " 정밀검진")); });
+  cancers.forEach((c) => { if (typeof deptFor === "function") { const dd = deptFor(c).dept; if (dd) dd.split("·").forEach((p) => dept.add(p.trim())); } screen.add((typeof SCREENING_KB !== "undefined" && SCREENING_KB[c]) || (c + " 정밀검진")); });
   if (cancers.length) { const n = kbMatch(NUTRITION_KB, "암"); if (n) n.nutrients.slice(0, 2).forEach((x) => nutr.add(x)); }
   // 질환별 누적(모든 위험요인 교차)
   dzs.forEach((dz) => {
-    if (typeof deptFor === "function") { const dd = deptFor(dz).dept; if (dd) dept.add(dd); }
+    if (typeof deptFor === "function") { const dd = deptFor(dz).dept; if (dd) dd.split("·").forEach((p) => dept.add(p.trim())); }
     const n = kbMatch(NUTRITION_KB, dz); if (n) n.nutrients.slice(0, 2).forEach((x) => nutr.add(x));
     const dv = kbMatch(DEVICE_KB, dz); if (dv) dv.items.slice(0, 1).forEach((x) => dev.add(x[0]));
     const di = kbMatch(DIET_KB, dz); if (di) diet.add(di.principle);
