@@ -1385,4 +1385,36 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .faiin input,.faiin select{border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12.5px;}
 .faiin input:first-of-type{flex:1;min-width:110px;}
 .famdisc{margin-top:13px;font-size:10.5px;color:var(--muted);line-height:1.6;display:flex;align-items:flex-start;gap:5px;}
+.fmnoc{color:#B45309;font-weight:700;}
+/* DID 동의 스위치 */
+.fmconsent{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:700;color:#475569;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 11px;}
+.fmconsent>span{display:inline-flex;align-items:center;gap:5px;}
+.fmsw{width:38px;height:21px;border-radius:999px;background:#CBD5E1;border:none;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s;}
+.fmsw i{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.25);}
+.fmsw.on{background:#16A34A;}.fmsw.on i{left:19px;}
+.fmnocons{font-size:12px;color:var(--muted);background:#fff;border:1px dashed var(--border);border-radius:10px;padding:11px;text-align:center;}
+/* 보호자 체크리스트 */
+.fmtasklbl{margin-top:11px;font-size:12px;font-weight:800;color:#15234A;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.fmtasklbl span{font-size:10.5px;color:var(--muted);font-weight:600;}
+.fmtaskbar{height:6px;border-radius:99px;background:#EEF2F8;overflow:hidden;margin:6px 0 8px;}
+.fmtaskbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#2563EB,#60A5FA);transition:width .35s;}
+.fmtasks{display:flex;flex-direction:column;gap:6px;}
+.fmtask{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid var(--border);background:#fff;border-radius:9px;padding:8px 10px;font-size:12px;font-weight:600;color:#334155;cursor:pointer;}
+.fmtask .fmtb{width:14px;height:14px;border:1.5px solid #C3CCDC;border-radius:4px;flex-shrink:0;}
+.fmtask.done{color:#15803D;background:#F1FBF5;border-color:#C4ECD3;}
+.fmtask.done svg{color:#16A34A;}
+.fmcareinfo{margin-top:9px;padding-top:9px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:7px;}
+/* 가족지갑 공동 결제 */
+.famspend{margin-top:13px;border:1px solid var(--border);border-radius:14px;background:#F7FBF8;padding:13px;}
+.fsh{font-size:12.5px;font-weight:800;color:#15234A;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.fsh span{font-size:10.5px;color:var(--muted);font-weight:600;}
+.fsopts{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
+.fsopt{display:inline-flex;align-items:center;gap:5px;border:1px solid #C4ECD3;background:#fff;color:#15803D;border-radius:10px;padding:8px 11px;font-size:11.5px;font-weight:700;cursor:pointer;}
+.fsopt b{color:#DC2626;}
+.fsopt:disabled{opacity:.45;cursor:not-allowed;}
+.fslist{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+.fsrow{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:7px 11px;font-size:12px;}
+.fsi{flex:1;color:#334155;font-weight:600;}
+.fsa{color:#DC2626;font-weight:800;font-size:11.5px;}
+.fsrow button{background:none;border:none;color:#b6bccb;cursor:pointer;display:inline-flex;}
 @media(max-width:560px){.famstat{grid-template-columns:repeat(2,1fr);}.fmd b{width:72px;}}
