@@ -257,6 +257,48 @@
 .spmeta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
 .sprate{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:800;color:#F59E0B;}
 .spgo{background:#2563EB;color:#fff;border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:800;cursor:pointer;}
+/* 원격주치의 — 제도 안내·필터·연계 */
+.tmproc{margin-left:auto;display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #C7D8FB;color:#2563EB;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;}
+.tproc{margin:11px 0;border:1px solid #C7D8FB;background:linear-gradient(180deg,#F5F8FF,#fff);border-radius:14px;padding:13px;}
+.tproch{font-size:12.5px;font-weight:800;color:#15234A;display:flex;align-items:center;gap:6px;}
+.tprocsteps{display:flex;flex-direction:column;gap:0;margin-top:10px;position:relative;}
+.tpstep{display:flex;align-items:flex-start;gap:9px;padding:7px 0;position:relative;}
+.tpstep:not(:last-child)::before{content:"";position:absolute;left:11px;top:30px;bottom:-7px;width:2px;background:#D6E2FB;}
+.tpn{width:24px;height:24px;border-radius:50%;background:#2563EB;color:#fff;font-size:11.5px;font-weight:800;display:grid;place-items:center;flex-shrink:0;position:relative;z-index:1;}
+.tpic{width:26px;height:26px;border-radius:8px;background:#EAF0FE;display:grid;place-items:center;flex-shrink:0;}
+.tpx{flex:1;}.tpx b{display:block;font-size:12.5px;color:#15234A;}.tpx span{font-size:11px;color:var(--muted);line-height:1.5;}
+.tprocnote{margin-top:9px;font-size:11px;color:#475569;background:#fff;border:1px dashed #C7D8FB;border-radius:9px;padding:8px 10px;display:flex;align-items:flex-start;gap:5px;line-height:1.5;}
+.tprocnote b{color:#2563EB;}
+.tmfilter{display:flex;gap:8px;margin:11px 0 9px;}
+.tmf{flex:1;}.tmf label{display:block;font-size:10.5px;font-weight:700;color:var(--muted);margin-bottom:4px;}
+.tmf select{width:100%;border:1px solid var(--border);border-radius:10px;padding:9px 10px;font-size:12.5px;background:#fff;font-weight:600;color:#15234A;}
+.tmcats{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;-webkit-overflow-scrolling:touch;}
+.tmcats button{flex-shrink:0;border:1px solid var(--border);background:#fff;color:#475569;border-radius:999px;padding:7px 12px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.tmcats button.on{background:#2563EB;color:#fff;border-color:#2563EB;}
+.tmcount{font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:8px;}.tmcount b{color:#15234A;font-weight:800;}
+.tmtele{color:#15803D !important;background:#E7F8EE !important;}
+.tmday{color:#B45309 !important;background:#FEF3E2 !important;}
+.spinfo .sprate small{color:var(--muted);font-weight:600;font-size:10px;}
+.tmfee{font-size:10.5px;color:#475569;font-weight:700;}
+.tmjoin{margin-top:6px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed #BFD0FF;background:#F7F9FF;color:#2563EB;border-radius:12px;padding:11px;font-size:12.5px;font-weight:800;cursor:pointer;}
+/* 내원 연계 CTA */
+.tmcta{background:linear-gradient(120deg,#EAF0FE,#F5F8FF);border-bottom:1px solid var(--border);padding:11px 13px;}
+.tmctat{font-size:12.5px;font-weight:700;color:#15234A;display:flex;align-items:center;gap:5px;}.tmctat b{color:#2563EB;}
+.tmcta p{font-size:11px;color:#475569;margin:4px 0 8px;}
+.tmctab{display:flex;gap:7px;}
+.tmctab button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid #C7D8FB;background:#fff;color:#2563EB;border-radius:9px;padding:8px;font-size:12px;font-weight:800;cursor:pointer;}
+.tmctab button.pri{background:#2563EB;color:#fff;border-color:#2563EB;}.tmctab button.pri.done{background:#16A34A;border-color:#16A34A;}
+/* 병원 참여 모달 */
+.hjmodal{position:fixed;inset:0;background:rgba(8,12,24,.55);z-index:1200;display:grid;place-items:center;padding:18px;}
+.hjbox{width:min(420px,94vw);background:#fff;border-radius:18px;padding:16px;box-shadow:0 24px 50px -20px rgba(0,0,0,.5);}
+.hjh{display:flex;align-items:center;gap:6px;font-size:14.5px;font-weight:800;color:#15234A;}
+.hjh button{margin-left:auto;background:none;border:none;color:#94A3B8;cursor:pointer;display:inline-flex;}
+.hjp{font-size:11.5px;color:var(--muted);line-height:1.55;margin:8px 0 12px;}
+.hjf{margin-bottom:10px;flex:1;}.hjf label{display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px;}
+.hjf input,.hjf select{width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12.5px;}
+.hjrow{display:flex;gap:9px;}
+.hjsub{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#2563EB;color:#fff;border:none;border-radius:11px;padding:11px;font-size:13px;font-weight:800;cursor:pointer;margin-top:4px;}
+.hjnote{font-size:10px;color:var(--muted);text-align:center;margin-top:8px;}
 /* report */
 .src{display:flex;align-items:flex-start;gap:10px;background:#F5F3FF;border:1px solid #E4DBFB;border-radius:12px;padding:12px 14px;font-size:12px;color:#5B4A9E;margin-bottom:16px;}
 .src b{color:#4C2FB0;}
