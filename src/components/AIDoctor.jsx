@@ -520,7 +520,7 @@ const PREMIUM_EST = { "중증질환": 38000, "비급여": 24000, "간병치매":
 /* 회원 건강상태 기반 맞춤 질문 다수 생성 */
 function memberQuestions(m) {
   if (!m) return [];
-  const qs = ["내 건강상태를 분석해줘", "내 리포트 요약", "내 생체나이는?", "내 의료비 예측", "내 건강 후속조치", "내가 가장 조심해야 할 암은?"];
+  const qs = ["내 종합 케어플랜", "내 건강상태를 분석해줘", "내 리포트 요약", "내 생체나이는?", "내 의료비 예측", "내 건강 후속조치", "내가 가장 조심해야 할 암은?"];
   (m.highRiskCancerTypes || []).forEach((c) => { qs.push(`내 ${c} 위험은?`); qs.push(`${c} 검진은 어떻게 받나요?`); });
   (m.highRiskDiseases || []).forEach((dz) => { qs.push(`내 ${dz} 위험은?`); qs.push(`${dz} 생활관리법은?`); });
   const hd = m.highRiskDiseases || [];

@@ -99,14 +99,34 @@ function ontoSupport(t, mr) {
   return "의료지원제도는 국가건강검진·본인부담상한제·재난적의료비·중증질환 산정특례·노인장기요양·치매국가책임제·의료급여 등이 있어요. 궁금한 제도명을 말씀해 주세요.";
 }
 function ontoGroup(t) {
-  for (const k in GROUP_KB) { const g = GROUP_KB[k]; if (g.aliases.some((a) => t.includes(a))) return `${k} 건강 안내예요. 주요 질환은 ${g.diseases.join("·")}이고, 관리 포인트는 ${g.focus.join("·")}이에요. 관련 지원제도로는 ${g.support.join("·")}이 있어요. ${ONTO_GOVERNANCE.diagnosis}`; }
+  for (const k in GROUP_KB) { const g = GROUP_KB[k]; if (g.aliases.some((a) => t.includes(a))) return `${k} 건강 안내예요. 주요 질환은 ${g.diseases.slice(0, 6).join("·")} 등이고, 관리 포인트는 ${g.focus.slice(0, 3).join(" / ")}이에요. 권장 검진은 ${g.screening.slice(0, 3).join("·")}, 도움이 되는 영양은 ${g.nutrition.slice(0, 3).join("·")}, 식단은 ‘${g.diet}’예요. 관련 지원제도는 ${g.support.slice(0, 2).join("·")}이에요. ${ONTO_GOVERNANCE.diagnosis}`; }
   return null;
+}
+/* ── ③ 관계레이어 — 회원 상태 → 진료·영양·기기·식단·검진·제도 ‘필요성’ 종합 ── */
+function ontoCarePlan(mr) {
+  if (!mr || !mr.R) return "건강검진 결과가 연동되면 회원님께 필요한 진료·영양·홈케어 기기·식단·추가검진·의료지원제도를 한 번에 종합해 드려요. 로그인 후 ‘내 종합 케어플랜’이라고 물어봐 주세요.";
+  const R = mr.R, m = mr.m, N = m.name;
+  const cancers = m.highRiskCancerTypes || [], dzs = m.highRiskDiseases || [];
+  const dzKey = dzs[0] || (cancers.length ? "암" : "");
+  const worst = (R.worstNames || [])[0] || "";
+  const dept = cancers.length ? ((typeof deptFor === "function" && deptFor(cancers[0]).dept) || "전문 진료과") : ((typeof ORGAN_DEPT !== "undefined" && ORGAN_DEPT[worst]) || "내과");
+  const nut = dzKey ? kbMatch(NUTRITION_KB, dzKey) : null;
+  const dev = dzKey ? kbMatch(DEVICE_KB, dzKey) : null;
+  const diet = dzKey ? kbMatch(DIET_KB, dzKey) : null;
+  const prog = ["국가건강검진"];
+  if (R.cancerTotal >= 6 || cancers.length) prog.push("중증질환 산정특례", "암환자 의료비 지원");
+  if (R.reg >= 65) prog.push("노인장기요양보험");
+  if (dzs.includes("치매")) prog.push("치매국가책임제");
+  const chk = cancers.length ? `${cancers.join("·")} 정밀검진` : "권장 주기 정기검진";
+  return `${N}님 종합 케어플랜이에요(검진 위험 기반 참고 안내). 1) 병원·진료: ${cancers[0] || worst || "건강"} 관련 ${dept} 상담. 2) 추가검진: ${chk}. 3) 영양: ${nut ? nut.nutrients.slice(0, 3).join("·") + " 등" : "균형 영양"}(영양제는 전문가 상담). 4) 홈케어 기기: ${dev ? dev.items.map((x) => x[0]).slice(0, 2).join("·") : "혈압·체성분 모니터"}. 5) 식단: ${diet ? diet.principle : "저염·저당 균형식"}. 6) 의료지원제도: ${[...new Set(prog)].slice(0, 3).join("·")}. ${ONTO_GOVERNANCE.diagnosis}`;
 }
 function ontologyConsult(q) {
   const raw = (q || "").trim(); if (!raw) return null;
   const t = raw.replace(/\s/g, "").toLowerCase();
   const mr = ontoMember();
   // 로그인 회원이면 개인 리포트(생체나이·질병·암·의료비·종합) 우선
+  // ③ 관계레이어 — 종합 케어플랜(진료·검진·영양·기기·식단·제도 통합)
+  if (/종합케어|케어플랜|종합추천|내게필요한|필요한관리|종합관리|토탈케어|한번에추천/.test(t)) return ontoCarePlan(mr);
   // 데이터하우스 — 영양·의료기기·식단·의료지원제도·대상군 (개인 리포트보다 먼저: '영양제'의 '제' 오인 방지)
   if (/영양제|영양소|영양|보충제|뭐먹|뭘먹|먹으면좋|먹어야할/.test(t)) return ontoNutrition(t, mr);
   if (/의료기기|측정기|혈압계|혈당계|홈케어|자가측정|모니터링기|기기추천/.test(t)) return ontoDevice(t, mr);
