@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=efa690ca1a" />
+<link rel="stylesheet" href="./data/app.css?v=75116fbf52" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./data/dummy_data.js?v=efa690ca1a"></script>
-<script src="./data/section_data.js?v=efa690ca1a"></script>
-<script src="./data/demo_members.js?v=efa690ca1a"></script>
+<script src="./data/dummy_data.js?v=75116fbf52"></script>
+<script src="./data/section_data.js?v=75116fbf52"></script>
+<script src="./data/demo_members.js?v=75116fbf52"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -4758,6 +4758,7 @@ function FamilyCareSection({ member, onGo }) {
   const [spend, setSpend] = useState(() => lsLoad("hifin_famspend_" + email, []));
   const [linkMap, setLinkMap] = useState(() => lsLoad("hifin_famlink_" + email, {}));
   const [sosId, setSosId] = useState(null);
+  const [autoAlert, setAutoAlert] = useState(() => lsLoad("hifin_famauto_" + email, true));
   useEffect(() => { setFamily(familyLoad(email, surname)); setTaskMap(lsLoad("hifin_famtask_" + email, {})); setConsentMap(lsLoad("hifin_famconsent_" + email, {})); setSpend(lsLoad("hifin_famspend_" + email, [])); setLinkMap(lsLoad("hifin_famlink_" + email, {})); }, [email, surname]);
 
   const consentOf = (id) => (consentMap[id] !== undefined ? consentMap[id] : true);
@@ -4782,6 +4783,24 @@ function FamilyCareSection({ member, onGo }) {
   const kids = family.filter((x) => famGroupOf(x.age, x.relation) === "아동").length;
   const elders = family.filter((x) => famGroupOf(x.age, x.relation) === "노인").length;
   const memberList = famDemoList();
+  const memberStats = family.map((x) => { const g = famGroupOf(x.age, x.relation); const tks = famTasks(g); const dn = Object.values(taskMap[x.id] || {}).filter(Boolean).length; const pct = tks.length ? Math.round(dn / tks.length * 100) : 0; return { id: x.id, name: x.name, g, total: tks.length, done: dn, pct, consent: consentOf(x.id), linked: famLinkedReport(linkMap[x.id] || "") }; });
+  const openCare = memberStats.reduce((s, x) => s + (x.consent ? (x.total - x.done) : 0), 0);
+  const noConsentN = memberStats.filter((x) => !x.consent).length;
+  const focusN = memberStats.filter((x) => x.g === "노인" || x.g === "아동").length;
+  const linkedN = memberStats.filter((x) => x.linked).length;
+  const alerts = [];
+  memberStats.forEach((x) => { if (!x.consent) { alerts.push({ id: x.id, name: x.name, text: "데이터 공유 동의 필요", col: "#94A3B8" }); return; } if (x.linked && x.linked.cancerTotal >= 6) alerts.push({ id: x.id, name: x.name, text: "고위험 — 병원 상담 권장", col: "#EF4444" }); if (x.pct < 100) alerts.push({ id: x.id, name: x.name, text: `보호자 케어 ${x.total - x.done}건 남음`, col: "#F59E0B" }); });
+  const topAlerts = alerts.slice(0, 4);
+  const ranking = [...memberStats].sort((a, b) => b.pct - a.pct);
+  const totalDone = memberStats.reduce((s, x) => s + x.done, 0);
+  const consentN = memberStats.filter((x) => x.consent).length;
+  const missions = [
+    { t: "가족 전원 데이터 공유 동의", cur: consentN, max: memberStats.length || 1, reward: 200 },
+    { t: "이번 주 보호자 케어 6건 완료", cur: Math.min(totalDone, 6), max: 6, reward: 300 },
+    { t: "가족지갑 1만 HTK 적립", cur: Math.min(totalEarn, 10000), max: 10000, reward: 500 },
+  ];
+  const sendAlert = (a) => { if (typeof toast === "function") toast(`🔔 (데모) ${a.name}님께 '${a.text}' 케어 알림을 발송했습니다.`); };
+  const toggleAuto = () => { const v = !autoAlert; setAutoAlert(v); lsSave("hifin_famauto_" + email, v); if (typeof toast === "function") toast(v ? "가족 케어 자동 알림을 켰어요." : "자동 알림을 껐어요."); };
 
   const printFamilyReport = () => {
     const rows = family.map((x) => { const g = famGroupOf(x.age, x.relation); const tks = famTasks(g); const dn = Object.values(taskMap[x.id] || {}).filter(Boolean).length; const f = famFocus(g); const cons = consentOf(x.id); return `<tr><td>${x.name} (${x.relation})</td><td>${x.age}세 · ${g}</td><td>${tks.length ? Math.round(dn / tks.length * 100) : 0}% (${dn}/${tks.length})</td><td>${cons ? "공유중" : "대기"}</td><td>${cons && f ? (f.screening || []).slice(0, 2).join(", ") : "-"}</td></tr>`; }).join("");
@@ -4795,6 +4814,20 @@ function FamilyCareSection({ member, onGo }) {
         <span className="famico"><Users size={18} color="#16A34A" /></span>
         <div style={{ flex: 1 }}><div className="famt">온가족 케어플랜</div><div className="famsub">가족 경제단위 · 공유지갑 · 보호자 관리 · DID · 계정연동</div></div>
         <button className="famrep" onClick={printFamilyReport}><FileText size={13} /> 가족 리포트</button>
+      </div>
+
+      <div className="famdash">
+        <div className="fdh"><ClipboardList size={14} color="#2563EB" /> 세대주 대시보드 · 가족 통합 관리
+          <button className={`fdauto ${autoAlert ? "on" : ""}`} onClick={toggleAuto}><Bell size={12} /> 자동 알림 {autoAlert ? "ON" : "OFF"}</button></div>
+        <div className="fdgrid">
+          <div className="fdc"><b>{openCare}</b><span>미완료 케어</span></div>
+          <div className="fdc"><b>{noConsentN}</b><span>동의 필요</span></div>
+          <div className="fdc"><b>{focusN}</b><span>집중관리(노·아)</span></div>
+          <div className="fdc"><b>{linkedN}</b><span>데이터 연동</span></div>
+        </div>
+        {topAlerts.length > 0 ? (<div className="fdalerts">{topAlerts.map((a, i) => (
+          <div className="fdalert" key={i}><span className="fdad" style={{ background: a.col }} /><div className="fdax"><b>{a.name}</b> {a.text}</div><button className="fdsend" onClick={() => sendAlert(a)} disabled={!autoAlert}><Bell size={12} /> 알림</button></div>
+        ))}</div>) : (<div className="fdok"><Check size={14} color="#16A34A" /> 가족 케어가 모두 정상입니다.</div>)}
       </div>
 
       <div className="famwallet">
@@ -4811,6 +4844,17 @@ function FamilyCareSection({ member, onGo }) {
         <div className="fst"><span className="fsv">{kids}·{elders}</span><span className="fsl">아동·노인</span></div>
         <div className="fst"><span className="fsv">{totalEarn.toLocaleString()}</span><span className="fsl">건강활동 적립</span></div>
         <div className="fst"><span className="fsv">약 {costSum.toLocaleString()}만</span><span className="fsl">연 의료비 추정</span></div>
+      </div>
+
+      <div className="famrank">
+        <div className="frh"><Sparkles size={14} color="#F59E0B" /> 가족 건강 랭킹 <span>· 보호자 케어 진행률</span></div>
+        <div className="frlist">{ranking.map((x, i) => (
+          <div className="frrow" key={x.id}><span className="frmedal">{["🥇", "🥈", "🥉"][i] || (i + 1)}</span><span className="frn">{x.name} <small>{x.g}</small></span><div className="frbar"><i style={{ width: x.pct + "%", background: famGroupColor(x.g) }} /></div><b className="frp">{x.pct}%</b></div>
+        ))}</div>
+        <div className="frh" style={{ marginTop: 13 }}><Coins size={14} color="#16A34A" /> 가족 건강 미션 <span>· 달성 시 가족지갑 적립</span></div>
+        <div className="fmislist">{missions.map((ms, i) => { const done = ms.cur >= ms.max; const pc = Math.min(100, Math.round(ms.cur / ms.max * 100)); return (
+          <div className={`fmis ${done ? "done" : ""}`} key={i}><div className="fmistop"><span>{done ? <Check size={13} color="#16A34A" /> : <span className="fmisb" />} {ms.t}</span><b>+{ms.reward}</b></div><div className="fmisbar"><i style={{ width: pc + "%" }} /></div><span className="fmisc">{ms.cur.toLocaleString()}/{ms.max.toLocaleString()}{done ? " · 달성!" : ""}</span></div>
+        ); })}</div>
       </div>
 
       <div className="famlistlbl"><HeartHandshake size={14} color="#16A34A" /> 가족 구성원 맞춤 케어 <span>· 클릭하면 동의·연동·SOS·체크리스트가 펼쳐져요</span></div>

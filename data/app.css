@@ -1387,6 +1387,44 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .famdisc{margin-top:13px;font-size:10.5px;color:var(--muted);line-height:1.6;display:flex;align-items:flex-start;gap:5px;}
 .fmnoc{color:#B45309;font-weight:700;}
 .fmlinkb{font-size:10px;font-weight:800;color:#2563EB;background:#EAF0FE;border:1px solid #C7D8FB;border-radius:999px;padding:1px 7px;}
+/* 세대주 대시보드 */
+.famdash{margin-top:13px;border:1px solid #C7D8FB;background:linear-gradient(180deg,#F5F8FF,#fff);border-radius:14px;padding:13px;}
+.fdh{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#15234A;flex-wrap:wrap;}
+.fdauto{margin-left:auto;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);background:#fff;color:#94A3B8;border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:800;cursor:pointer;}
+.fdauto.on{color:#15803D;background:#E7F8EE;border-color:#B6E7C9;}
+.fdgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:11px;}
+.fdc{background:#fff;border:1px solid var(--border);border-radius:11px;padding:9px 6px;text-align:center;}
+.fdc b{display:block;font-size:18px;font-weight:800;color:#2563EB;}
+.fdc span{font-size:10px;color:var(--muted);}
+.fdalerts{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+.fdalert{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 11px;}
+.fdad{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.fdax{flex:1;font-size:12px;color:#475569;}.fdax b{color:#15234A;}
+.fdsend{flex-shrink:0;display:inline-flex;align-items:center;gap:3px;background:#EAF0FE;border:1px solid #C7D8FB;color:#2563EB;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer;}
+.fdsend:disabled{opacity:.45;cursor:not-allowed;}
+.fdok{margin-top:10px;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#15803D;background:#F1FBF5;border:1px solid #C4ECD3;border-radius:10px;padding:9px 11px;}
+/* 가족 랭킹·미션 */
+.famrank{margin-top:13px;border:1px solid var(--border);border-radius:14px;background:#fff;padding:13px;}
+.frh{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#15234A;flex-wrap:wrap;}
+.frh span{font-size:10.5px;color:var(--muted);font-weight:600;}
+.frlist{display:flex;flex-direction:column;gap:7px;margin-top:9px;}
+.frrow{display:flex;align-items:center;gap:9px;}
+.frmedal{width:24px;text-align:center;font-size:14px;font-weight:800;color:#64748B;flex-shrink:0;}
+.frn{width:96px;font-size:12px;font-weight:700;color:#15234A;flex-shrink:0;}.frn small{color:var(--muted);font-weight:600;font-size:10px;}
+.frbar{flex:1;height:8px;border-radius:99px;background:#EEF2F8;overflow:hidden;}
+.frbar i{display:block;height:100%;border-radius:99px;transition:width .4s;}
+.frp{width:38px;text-align:right;font-size:12px;font-weight:800;color:#334155;}
+.fmislist{display:flex;flex-direction:column;gap:8px;margin-top:9px;}
+.fmis{border:1px solid var(--border);border-radius:11px;padding:9px 11px;}
+.fmis.done{background:#F1FBF5;border-color:#C4ECD3;}
+.fmistop{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;color:#334155;}
+.fmistop>span{display:inline-flex;align-items:center;gap:6px;}
+.fmistop b{color:#16A34A;font-size:12.5px;}
+.fmisb{width:14px;height:14px;border:1.5px solid #C3CCDC;border-radius:4px;flex-shrink:0;}
+.fmisbar{height:6px;border-radius:99px;background:#EEF2F8;overflow:hidden;margin:7px 0 4px;}
+.fmisbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#16A34A,#34D399);transition:width .4s;}
+.fmisc{font-size:10.5px;color:var(--muted);}
+@media(max-width:560px){.fdgrid{grid-template-columns:repeat(2,1fr);}.frn{width:74px;}}
 .famrep{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:7px 11px;font-size:11.5px;font-weight:700;color:#2563EB;cursor:pointer;}
 /* 계정 연동 */
 .fmlink{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:700;color:#475569;background:#fff;border:1px solid var(--border);border-radius:10px;padding:7px 11px;margin-top:8px;}
