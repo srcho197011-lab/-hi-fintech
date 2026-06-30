@@ -1386,6 +1386,25 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .faiin input:first-of-type{flex:1;min-width:110px;}
 .famdisc{margin-top:13px;font-size:10.5px;color:var(--muted);line-height:1.6;display:flex;align-items:flex-start;gap:5px;}
 .fmnoc{color:#B45309;font-weight:700;}
+.fmlinkb{font-size:10px;font-weight:800;color:#2563EB;background:#EAF0FE;border:1px solid #C7D8FB;border-radius:999px;padding:1px 7px;}
+.famrep{flex-shrink:0;display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:7px 11px;font-size:11.5px;font-weight:700;color:#2563EB;cursor:pointer;}
+/* 계정 연동 */
+.fmlink{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:700;color:#475569;background:#fff;border:1px solid var(--border);border-radius:10px;padding:7px 11px;margin-top:8px;}
+.fmlink>span{display:inline-flex;align-items:center;gap:5px;}
+.fmlink select{border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:11.5px;max-width:140px;}
+.fmlinked{display:flex;gap:8px;margin-top:8px;background:#F5F8FF;border:1px solid #D6E2FB;border-radius:11px;padding:10px;flex-wrap:wrap;align-items:center;}
+.fmlinked>div{text-align:center;}
+.fmlinked b{display:block;font-size:15px;font-weight:800;color:#2563EB;}
+.fmlinked span{font-size:10px;color:var(--muted);}
+.fmlz{flex:1;min-width:90px;text-align:right;font-size:11px;font-weight:700;color:#B91C1C;}
+/* 노인 응급 SOS */
+.fmsoswrap{margin-top:9px;}
+.fmsosbtn{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#FEECEC;border:1.5px solid #F3B4B4;color:#DC2626;border-radius:11px;padding:10px;font-size:13px;font-weight:800;cursor:pointer;}
+.fmsospanel{margin-top:8px;border:1px solid #F3B4B4;background:#FFF6F6;border-radius:12px;padding:12px;font-size:12px;color:#7F1D1D;line-height:1.6;}
+.fmsospanel b{color:#B91C1C;}
+.fmsospanel p{margin:4px 0;}
+.fmsos119{background:#fff;border:1px dashed #F3B4B4;border-radius:8px;padding:7px 9px;font-weight:700;}
+.fmsosgo{margin-top:8px;display:inline-flex;align-items:center;gap:5px;background:#DC2626;color:#fff;border:none;border-radius:9px;padding:9px 13px;font-size:12px;font-weight:800;cursor:pointer;}
 /* DID 동의 스위치 */
 .fmconsent{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:700;color:#475569;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 11px;}
 .fmconsent>span{display:inline-flex;align-items:center;gap:5px;}
