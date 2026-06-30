@@ -527,6 +527,9 @@ function memberQuestions(m) {
   if (hd.includes("당뇨병")) qs.push("혈당 수치 의미");
   if (hd.includes("고혈압")) qs.push("혈압 기준이 뭐예요?");
   if (hd.includes("고지혈증")) qs.push("콜레스테롤 기준은?");
+  const d0 = hd[0] || (m.highRiskCancerTypes || [])[0];
+  if (d0) { qs.push(`${d0} 영양제 추천`); qs.push(`${d0} 식단`); }
+  qs.push("맞춤 홈케어 의료기기", "내가 받을 수 있는 의료지원제도");
   return [...new Set(qs)];
 }
 const ORGAN_DEPT = { "간": "소화기내과", "췌장": "소화기내과", "심장": "순환기내과", "신장": "신장내과", "비만": "가정의학과", "비만체형": "가정의학과" };

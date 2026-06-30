@@ -40,7 +40,7 @@ function ontoReportAnswer(q, mr) {
   if (/의료비|병원비|의료이용|외래|입원|비용|돈/.test(t)) {
     return `${N}님의 올해 예상 의료비는 약 ${won(R.costThis)}이고, 생체나이 기반으로 10년 후엔 약 ${won(R.cost10)}으로 예상돼요. 위험요인 관리로 의료비 부담을 낮출 수 있어요.`;
   }
-  const personal = /내|나의|제|저의|위험|등급|얼마|몇|어때|어떤가|상태|높|낮|걸릴|발생|예측|조심/.test(t);
+  const personal = /내|나의|제가|제몸|제건강|저의|위험|등급|얼마|몇|어때|어떤가|상태|높|낮|걸릴|발생|예측|조심/.test(t);
   if (personal) for (const c of R.cancers) {
     const base = c[0].replace("암", "");
     if (t.includes(c[0]) || (base.length >= 2 && t.includes(base))) {
@@ -64,11 +64,56 @@ function ontoReportAnswer(q, mr) {
   }
   return null;
 }
+/* ── 데이터하우스 핸들러(영양·의료기기·식단·의료지원제도·대상군) ── */
+function kbMatch(KB, t) { for (const e of KB) for (const a of e.dz) if (t.includes(a)) return e; return null; }
+function ontoMemberDisease(mr) { if (!mr || !mr.m) return ""; if ((mr.m.highRiskDiseases || []).length) return mr.m.highRiskDiseases[0]; if ((mr.m.highRiskCancerTypes || []).length) return "암"; return ""; }
+function ontoNutrition(t, mr) {
+  let e = kbMatch(NUTRITION_KB, t), who = "";
+  if (!e && mr) { const md = ontoMemberDisease(mr); e = md ? kbMatch(NUTRITION_KB, md) : null; if (e) who = `${mr.m.name}님(${md}) 기준 `; }
+  if (!e) return "어떤 질환·증상에 대한 영양인지 알려주시면(예: 당뇨 영양제, 간 건강 영양소) 맞춤으로 안내해 드릴게요.";
+  return `${who}영양 안내예요. 권장 영양소는 ${e.nutrients.join("·")}이고, 도움이 될 수 있는 영양제는 ${e.supp.join("·")}이에요. 권장 식품은 ${e.food.join("·")}, 줄이면 좋은 건 ${e.avoid.join("·")}이에요. ※ 영양제는 의약품이 아니며 개인차가 있어, 복용약·질환이 있으면 섭취 전 전문가와 상담하세요.`;
+}
+function ontoDevice(t, mr) {
+  let e = kbMatch(DEVICE_KB, t), who = "";
+  if (!e && mr) { const md = ontoMemberDisease(mr); e = md ? kbMatch(DEVICE_KB, md) : null; if (e) who = `${mr.m.name}님(${md}) 기준 `; }
+  if (!e) return "어떤 관리(예: 혈압·혈당·심장·호흡·관절)에 쓸 홈케어 기기인지 알려주시면 안내해 드릴게요.";
+  return `${who}홈케어 의료기기 안내예요. ${e.items.map(([n, u]) => `${n}(${u})`).join(", ")} 등이 자가관리에 도움이 돼요. ※ 의료기기는 사용 전 사용법·주의사항을 확인하세요.`;
+}
+function ontoDiet(t, mr) {
+  let e = kbMatch(DIET_KB, t), who = "";
+  if (!e && mr) { const md = ontoMemberDisease(mr); e = md ? kbMatch(DIET_KB, md) : null; if (e) who = `${mr.m.name}님(${md}) 기준 `; }
+  if (!e) return "어떤 질환 관리 식단인지 알려주시면(예: 당뇨 식단, 고혈압 식단) 안내해 드릴게요.";
+  return `${who}식단 안내예요. 원칙은 ‘${e.principle}’이에요. 권장: ${e.rec.join("·")} / 주의: ${e.avoid.join("·")}. ※ 치료식이 필요하면 영양사·의료진 상담을 권해요.`;
+}
+function ontoSupport(t, mr) {
+  const hit = SUPPORT_KB.find((p) => t.includes(p.name.replace(/\s/g, "")) || (/산정특례|특례/.test(t) && p.name.includes("산정특례")) || (/장기요양|요양/.test(t) && p.name.includes("장기요양")) || (/본인부담|상한/.test(t) && p.name.includes("상한")) || (/재난적|고액의료/.test(t) && p.name.includes("재난적")) || (/암환자/.test(t) && p.name.includes("암환자")) || (/영유아|아동검진/.test(t) && p.name.includes("영유아")) || (/치매/.test(t) && p.name.includes("치매")) || (/의료급여/.test(t) && p.name.includes("의료급여")));
+  if (hit) return `${hit.name} 안내예요. 대상은 ${hit.who}, 내용은 ${hit.what}. 신청은 ${hit.how} ※ 대상·금액은 기준·심사에 따라 달라질 수 있어요.`;
+  if (mr && mr.R) {
+    const recs = ["국가건강검진"];
+    if (mr.R.cancerTotal >= 6 || (mr.m.highRiskCancerTypes || []).length) recs.push("중증질환 산정특례", "암환자 의료비 지원");
+    if (mr.R.reg >= 65) recs.push("노인장기요양보험");
+    if ((mr.m.highRiskDiseases || []).includes("치매")) recs.push("치매국가책임제");
+    recs.push("본인부담상한제");
+    return `${mr.m.name}님 상태 기준으로 살펴볼 만한 제도는 ${[...new Set(recs)].slice(0, 4).join(", ")} 등이에요. 어떤 제도가 궁금하세요?(예: 산정특례, 장기요양) ※ 실제 대상·지원은 공단·보건소 심사에 따릅니다.`;
+  }
+  return "의료지원제도는 국가건강검진·본인부담상한제·재난적의료비·중증질환 산정특례·노인장기요양·치매국가책임제·의료급여 등이 있어요. 궁금한 제도명을 말씀해 주세요.";
+}
+function ontoGroup(t) {
+  for (const k in GROUP_KB) { const g = GROUP_KB[k]; if (g.aliases.some((a) => t.includes(a))) return `${k} 건강 안내예요. 주요 질환은 ${g.diseases.join("·")}이고, 관리 포인트는 ${g.focus.join("·")}이에요. 관련 지원제도로는 ${g.support.join("·")}이 있어요. ${ONTO_GOVERNANCE.diagnosis}`; }
+  return null;
+}
 function ontologyConsult(q) {
   const raw = (q || "").trim(); if (!raw) return null;
   const t = raw.replace(/\s/g, "").toLowerCase();
   const mr = ontoMember();
   // 로그인 회원이면 개인 리포트(생체나이·질병·암·의료비·종합) 우선
+  // 데이터하우스 — 영양·의료기기·식단·의료지원제도·대상군 (개인 리포트보다 먼저: '영양제'의 '제' 오인 방지)
+  if (/영양제|영양소|영양|보충제|뭐먹|뭘먹|먹으면좋|먹어야할/.test(t)) return ontoNutrition(t, mr);
+  if (/의료기기|측정기|혈압계|혈당계|홈케어|자가측정|모니터링기|기기추천/.test(t)) return ontoDevice(t, mr);
+  if (/식단|식이|음식|먹거리/.test(t)) return ontoDiet(t, mr);
+  if (/지원제도|의료지원|지원금|의료비지원|산정특례|장기요양|본인부담상한|재난적|의료급여|치매국가|제도안내|받을수있는.*제도|혜택/.test(t)) return ontoSupport(t, mr);
+  { const grp = ontoGroup(t); if (grp) return grp; }
+  // 로그인 회원이면 개인 리포트(생체나이·질병·암·의료비·종합)
   if (mr && mr.R) { const rep = ontoReportAnswer(q, mr); if (rep) return rep; }
   // 후속조치 / 다음 행동
   if (/후속조치|뭘해야|뭘하면|무엇을해야|무엇부터|어떻게관리|다음단계|다음에뭐|관리우선|뭐부터|어떻게해야/.test(t)) return ontoNext(mr);
