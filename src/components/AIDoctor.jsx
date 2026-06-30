@@ -321,13 +321,22 @@ function VoiceDoctor() {
   const qaCount = qa && qa.meta ? qa.meta.count : 0;
   const glChips = qa && qa.qa ? qa.qa.filter((x) => x.src).filter((_, i) => i % 5 === 0).slice(0, 3).map((x) => x.q) : [];
   const qaChips = qa && qa.qa ? qa.qa.filter((x) => !x.src && (x.t === "증상" || x.t === "치료")).filter((_, i) => i % 53 === 0).slice(0, 3).map((x) => x.q) : [];
-  const chips = ["내 리포트 요약", ...(glChips.length ? glChips : ["고혈압 목표 혈압은 얼마인가요?", "당뇨병 진단기준은 무엇인가요?"]), ...(qaChips.length ? qaChips : ["갑상선염의 증상은 무엇인가요?"])];
+  const vMember = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const chips = vMember ? memberQuestions(vMember).slice(0, 6) : ["내 리포트 요약", ...(glChips.length ? glChips : ["고혈압 목표 혈압은 얼마인가요?", "당뇨병 진단기준은 무엇인가요?"]), ...(qaChips.length ? qaChips : ["갑상선염의 증상은 무엇인가요?"])];
   const count = kb && kb.items ? (kb.meta && kb.meta.count || kb.items.length) : "660+";
   return (
     <div className="kt">
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
         <div style={{ flex: 1 }}><div className="nm">AI 주치의 · 음성</div><div className="st"><span className="dot" /> {listening ? "듣는 중…" : speaking ? "답변 중…" : "온라인 · 보이스 상담"}</div></div>
         {speaking ? <button className="cbtn2" style={{ margin: 0, padding: "5px 10px" }} onClick={stopSpeak}><X size={12} /> 멈춤</button> : <Volume2 size={18} className="ic" style={{ color: isMale ? "#2563EB" : "var(--soft)" }} />}</div>
+      {vMember && (
+        <div className="kt-acts">
+          <button onClick={() => nav("checkup")}>🔬 추가검진</button>
+          <button onClick={() => nav("hospital")}>🏥 병원진료</button>
+          <button onClick={() => nav("shop")}>💊 영양·홈케어</button>
+          <button onClick={() => nav("shop")}>🥗 건강식단</button>
+        </div>
+      )}
       <div className="kt-body">
         <div className="daypill"><BookOpen size={12} style={{ verticalAlign: -2, marginRight: 3 }} /> 질병관리청·임상 진료지침·국가암정보센터 {qaCount ? qaCount.toLocaleString("ko-KR") : "1,900+"}건 학습 · {isMale ? "남성 음성" : "남성형 중저음"}</div>
         {trans.map((m, i) => {
