@@ -931,6 +931,22 @@ function AIDoctor() {
 
 let UID = 100;
 const now = () => { const d = new Date(); let h = d.getHours(); const m = String(d.getMinutes()).padStart(2, "0"); const ap = h < 12 ? "오전" : "오후"; h = h % 12 || 12; return `${ap} ${h}:${m}`; };
+/* 채팅 액션 버튼 → 섹션 네비게이션 매핑 */
+const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진료 안내": "hospital", "💊 영양제 안내": "shop", "🥗 건강 식단 안내": "shop" };
+/* 리포트/개인 답변 후 — 회원 병명별 후속질문 */
+function reportFollowupQuestions() {
+  const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  if (!m) return ["내 생체나이", "의료비 예측", "내 건강 후속조치"];
+  const qs = [];
+  (m.highRiskDiseases || []).forEach((dz) => qs.push(`내 ${dz} 위험은?`));
+  (m.highRiskCancerTypes || []).forEach((c) => qs.push(`내 ${c} 위험은?`));
+  qs.push("내 생체나이", "의료비 예측");
+  return [...new Set(qs)].slice(0, 6);
+}
+/* 연계 액션 카드(추가검진·병원·영양제·식단) */
+function memberActionCard() {
+  return { title: `${aiWho()}님 맞춤 건강 액션 — 연계 안내`, items: ["고위험 항목 추가·정밀 검진 권고", "관련 진료과·가까운 병원 안내", "맞춤 영양제 추천", "만성질환 관리 식단"], buttons: ["🔬 추가 검진 예약", "🏥 병원·진료 안내", "💊 영양제 안내", "🥗 건강 식단 안내"] };
+}
 function aiRespond(text, corpus, report, QA) {
   const has = (...ks) => ks.some((k) => text.includes(k));
   // 음성 상담과 동일한 학습 엔진(consult) — 리포트·질병관리청 Q&A·진료지침·국가암검진/암정보, 동의어·구어 대응
@@ -939,12 +955,14 @@ function aiRespond(text, corpus, report, QA) {
   if (ans && !generic) {
     const et = expandAlias((text || "").replace(/\s/g, ""));
     const qcp = qaMatch(et, QA, intentOf(et)) || qaFuzzy(text, QA);
-    const isReport = /원으로 예상|생체나이|노화등수|발생 위험도는|리포트\(검진일/.test(ans);
+    const isReport = /생체나이|노화등수|위험도는|리포트 요약이에요|리포트\(검진일|위험은 ‘|원으로 예상/.test(ans);
     const isOnto = /등급 기준은요|단계로 보여요/.test(ans);
+    const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
     const quicks = qcp ? [`${qcp.dz} 생활습관 관리법은?`, `${qcp.dz}의 증상은 무엇인가요?`, "내 리포트 요약"]
-      : isOnto ? ["혈당 수치 의미", "내 건강 후속조치", "내 리포트 요약"]
-      : isReport ? ["내 생체나이", "의료비 예측", "당뇨 예방 관리"] : ["내 리포트 요약", "의료비 예측", "혈당 수치 의미"];
-    return { bubbles: [{ kind: "text", text: ans }], quicks };
+      : (isReport || isOnto) ? reportFollowupQuestions() : ["내 리포트 요약", "의료비 예측", "혈당 수치 의미"];
+    const bubbles = [{ kind: "text", text: ans }];
+    if (member && (isReport || isOnto)) bubbles.push({ kind: "card", card: memberActionCard() });
+    return { bubbles, quicks };
   }
   if (has("보험", "청구", "보험금", "보장"))
     return { bubbles: [{ kind: "text", text: "저는 건강검진 해석·생활관리·병원 안내를 중심으로 도와드려요. 보험 보장조회·청구는 ‘보험’ 메뉴에서 확인하시거나 전문 상담원 연결을 안내해 드릴게요." }], quicks: ["혈당 수치 의미", "내 건강 후속조치", "내 리포트 요약"] };
@@ -982,6 +1000,7 @@ function Chat() {
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing, quicks]);
   const send = (textArg) => {
     const text = (textArg ?? input).trim(); if (!text) return;
+    if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }
     setInput(""); setPlus(false); setQuicks([]);
     const meId = ++UID;
     setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text, time: now(), unread: true }]);
