@@ -5,28 +5,7 @@ function Toggle({ on, onClick }) {
     </div>
   );
 }
-const MY_CONSENT = [
-  ["lock", "개인정보 수집·이용", "회원가입·서비스 제공을 위한 필수 동의", true, "필수"],
-  ["heartpulse", "민감(건강)정보 처리", "검진·진료·복약 등 건강정보 처리", true, "필수"],
-  ["people", "제3자 제공 (보험·제휴사)", "하이젠케어·보험사·GA 등 제공", true, "선택"],
-  ["coin", "데이터 제공·토큰 보상", "건강데이터 제공 동의 시 Health Token 적립", true, "선택"],
-  ["badge", "보험상담·모집 동의", "정식 라이선스 채널 보험상담 수신", false, "선택"],
-  ["chat", "마케팅 정보 수신", "혜택·이벤트·맞춤 콘텐츠 안내", false, "선택"],
-];
-const MY_NOTI = [
-  ["calendar", "검진·예약 알림", "검진일·병원 예약·결과 도착 알림", true],
-  ["badge", "보험 만기·청구 알림", "보험 갱신·만기·청구 진행 알림", true],
-  ["doc", "건강 리포트·위험 알림", "생체나이·질병/암 위험 변화 알림", true],
-  ["heartpulse", "일일 건강미션·챌린지", "걸음수·운동·챌린지 리마인드", true],
-  ["coin", "토큰 적립·리워드", "Health Token 적립·사용 알림", true],
-  ["people", "커뮤니티 활동", "내 글 댓글·Q&A 답변 알림", false],
-  ["chat", "마케팅·혜택 알림", "이벤트·프로모션 안내", false],
-];
-const MY_FAMILY = [
-  ["김", "김영희", "배우자 · 52세", "건강검진 공유 중 · 생체나이 50.2세", "manage", "#DB2777"],
-  ["조", "조민수", "자녀 · 25세", "계정 연동 대기", "", "#2563EB"],
-  ["조", "조부 어르신", "부모 · 80세", "재가·돌봄(방문요양) 이용 중", "homecare", "#16A34A"],
-];
+/* 마이페이지 데이터(MY_CONSENT·MY_NOTI·MY_FAMILY) → src/data/sectionData.js 로 이관 */
 
 function MyPageSection({ onGo }) {
   const [tab, setTab] = useState("profile");

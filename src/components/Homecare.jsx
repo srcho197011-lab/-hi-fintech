@@ -9,34 +9,8 @@ function useHomecare() {
   useEffect(() => { let on = true; loadHomecare().then((d) => on && setState({ loading: false, error: null, data: d })).catch((e) => on && setState({ loading: false, error: e.message, data: null })); return () => { on = false; }; }, []);
   return state;
 }
-const SVC_META = {
-  "방문요양": { art: "visit", col: "#2563EB", bg: "#E8F1FE", d: "요양보호사가 가정을 방문해 신체·가사활동을 지원" },
-  "방문목욕": { art: "bath", col: "#0EA5E9", bg: "#E0F2FE", d: "이동식 욕조 등 장비로 가정에서 목욕 서비스 제공" },
-  "방문간호": { art: "nurse", col: "#16A34A", bg: "#E7F8EE", d: "간호사가 방문해 진료보조·간호·투약 관리" },
-  "주야간보호": { art: "day", col: "#7C3AED", bg: "#F1ECFE", d: "낮 동안 기관에서 신체활동 지원·기능 회복 프로그램" },
-  "단기보호": { art: "short", col: "#F59E0B", bg: "#FEF3E2", d: "일정 기간(월 최대 일수) 기관 보호·돌봄" },
-  "복지용구": { art: "welfare", col: "#DB2777", bg: "#FCE7F3", d: "전동침대·휠체어 등 복지용구 구입·대여" },
-  "방문재활": { art: "rehab", col: "#0D9488", bg: "#CCFBF1", d: "물리·작업치료사가 방문해 재활 프로그램 제공" },
-};
+/* 재가·돌봄 데이터(SVC_META·GENIEL) → src/data/sectionData.js 로 이관 */
 const svcMeta = (s) => SVC_META[s] || { art: "nurse", col: "#64748B", bg: "#F1F5FB", d: "" };
-
-// 특별제휴업체 — 제니엘그룹(제니엘메디컬): 의료·간병 인력 아웃소싱 전문.
-const GENIEL = {
-  name: "제니엘그룹",
-  div: "제니엘메디컬",
-  tagline: "병원·의료·간병 인력 아웃소싱 전문기업. 검증된 전문 인력과 표준화된 간병 시스템으로 안심 재가·간병을 연결합니다.",
-  home: "https://www.zeniel.com/ko/?c=198&s=178",   // 의료 아웃소싱 (콘텐츠 직접 표시 확인됨)
-  care: "https://www.zeniel.com/ko/?c=198&s=179",   // 간병 서비스 (콘텐츠 직접 표시 확인됨)
-  group: "https://www.zeniel.com/ko/",
-  tel: "1588-1581",
-  strengths: [
-    ["nurse", "의료·간병 인력 운영", "병동·개인·공동간병 및 홈케어 전문 인력 직접 운영"],
-    ["building", "병원 업무 아웃소싱", "안내·예약·콜센터·원무·수납·환자이송·진료보조"],
-    ["people", "의료 전문 인력 DB", "검증된 요양보호사·간병·간호 인력 풀 기반 매칭"],
-    ["badge", "표준 간병 시스템", "직무교육·배상책임보험·품질관리 표준 운영"],
-  ],
-  stats: [["전국", "서비스 권역"], ["병원·요양·재가", "제공 분야"], ["교육·배상책임", "품질 관리"]],
-};
 
 function SpecialPartner({ data }) {
   const [apply, setApply] = useState(false);

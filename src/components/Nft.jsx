@@ -1,31 +1,4 @@
-const NFT_MINE = [
-  { art: "doc", type: "리포트 NFT", name: "프롬에이지 Premium 건강분석 리포트", meta: "검진일 2024.12.26 · 생체나이 52.5세 · 종합 좋음", id: "0x7f3a…b29c", to: "manage", col: "#7C3AED" },
-  { art: "calendar", type: "예약증 SBT", name: "건강검진 예약증", meta: "서울 KMI 광화문센터 · 2025.06.15 (토)", id: "0x91c4…0e7a", to: "checkup", col: "#2563EB" },
-  { art: "badge", type: "보험증서 SBT", name: "건강검진보험 증서 (표준형)", meta: "암 500·뇌·심 500만원 · 검진 연계 자동가입", id: "0x2db8…f5a1", to: "insurance", col: "#2F5BEA" },
-  { art: "check", type: "건강인증서 SBT", name: "건강상태 인증서", meta: "종합 좋음 · 노화등수 37등 · 노화속도 0.97배", id: "0x55a0…9c3d", to: "manage", col: "#16A34A" },
-  { art: "hash", type: "데이터 증명", name: "데이터 제공 동의 증명", meta: "DID 동의 · Health Token +1,900 보상", id: "0xa1f7…7b20", to: "wallet", col: "#0EA5E9" },
-  { art: "building", type: "진료기록 해시", name: "진료·검사 기록 무결성 해시", meta: "온체인 앵커링 · 위·변조 방지 (설계)", id: "0xc803…1d4e", to: "hospital", col: "#0EA5E9" },
-];
-const NFT_ISSUE = [
-  ["calendar", "검진 예약증·결과 NFT", "검진 예약 시 예약증, 결과 확정 시 결과 NFT를 발행합니다."],
-  ["badge", "건강검진보험 증서 SBT", "보험 가입 시 증서를 양도불가 토큰(SBT)으로 발행합니다."],
-  ["check", "건강인증서 SBT", "생체나이·건강등급을 본인 귀속 인증서로 발행합니다."],
-  ["doc", "건강분석 리포트 NFT", "프롬에이지 Premium 리포트를 본인 소유 NFT로 보관합니다."],
-  ["hash", "의료기록 무결성 해시", "검진·진료 기록의 해시를 온체인에 앵커링해 위·변조를 방지합니다."],
-  ["gift", "데이터 제공 동의 증명", "데이터 제공 동의를 증명으로 발행하고 토큰 보상과 연계합니다."],
-];
-const NFT_USE = [
-  { n: 1, t: "보험금 청구 자동 증빙", d: "보험금 청구 시 검진·진료 NFT가 자동 증빙으로 제출되어 서류 없이 간편 청구됩니다.", to: "insurance", chip: "보험·치료비" },
-  { n: 2, t: "병원 진료 시 인증서 제출", d: "건강인증서 SBT로 본인 건강상태를 안전하게 증명하고 진료에 활용합니다.", to: "hospital", chip: "병원/예약" },
-  { n: 3, t: "데이터 제공 → 토큰 보상", d: "데이터 제공 동의 증명이 발행되고 건강금융지갑에 Health Token이 적립됩니다.", to: "wallet", chip: "건강금융지갑" },
-  { n: 4, t: "가족·기관 선택 공개", d: "필요한 항목만 골라(영지식증명 지향) 가족·기관에 안전하게 공유합니다.", to: "mypage", chip: "마이페이지" },
-];
-const NFT_SEC = [
-  ["lock", "SBT(소울바운드 토큰)", "건강·보험 인증서를 양도·매매 불가한 토큰으로 본인에게 귀속시킵니다."],
-  ["hash", "온체인 무결성 앵커", "원문은 오프체인 암호화 보관, 온체인엔 해시만 기록해 위·변조를 방지합니다."],
-  ["badge", "본인 동의 선택공개", "필요한 항목만 검증(영지식증명 지향)하는 프라이버시 보존형 공유."],
-  ["sparkle", "위·변조 탐지", "무결성 검증·이상접근 탐지로 인증서 신뢰성을 강화합니다."],
-];
+/* NFT 데이터(NFT_MINE·NFT_ISSUE·NFT_USE·NFT_SEC) → src/data/sectionData.js 로 이관 */
 
 function NFTSection({ onGo }) {
   const [tab, setTab] = useState("mine");

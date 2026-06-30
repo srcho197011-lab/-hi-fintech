@@ -1,5 +1,6 @@
 src/core.jsx
 src/App.jsx
+src/data/sectionData.js
 src/components/AIDoctor.jsx
 src/components/HealthManage.jsx
 src/components/Checkup.jsx
