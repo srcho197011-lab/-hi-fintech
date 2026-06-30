@@ -1598,3 +1598,6 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 @media(max-width:560px){.famstat{grid-template-columns:repeat(2,1fr);}.fmd b{width:72px;}}
 .dcat{font-size:10.5px;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap;}
 .dreg{font-size:10.5px;color:var(--muted);font-weight:600;}
+.kmibanner{background:linear-gradient(120deg,#0B5FB0,#1D4ED8 60%,#2F5BEA);color:#fff;border-radius:16px;padding:15px 17px;margin-bottom:13px;box-shadow:0 16px 32px -20px rgba(29,78,216,.8);}
+.kmibt{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;letter-spacing:-.3px;}
+.kmibs{font-size:12px;opacity:.95;margin-top:5px;}.kmibs b{color:#FDE68A;}

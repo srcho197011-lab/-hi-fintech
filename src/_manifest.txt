@@ -18,6 +18,7 @@ src/data/demoMembers.js
 src/data/healthOntology.js
 src/data/healthKnowledge.js
 src/data/telemed.js
+src/data/checkupCenters.js
 src/utils/ontologyConsult.js
 src/utils/insuranceRecommendationUtils.js
 src/utils/healthWalletUtils.js

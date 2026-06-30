@@ -85,23 +85,82 @@ function KoreaMap({ selected, onPick }) {
 }
 
 function CheckupSection() {
-  const [cat, setCat] = useState("comp");
-  const cats = [["comp", "종합검진", ClipboardList], ["nat", "국가검진", ShieldCheck], ["biz", "기업검진", Users], ["rec", "AI 맞춤추천", Sparkles]];
+  const [cat, setCat] = useState("kmi");
+  const cats = [["kmi", "KMI 대형검진", Building2], ["brand", "브랜드 검진기관", BadgeCheck], ["comp", "종합검진", ClipboardList], ["nat", "국가검진", ShieldCheck], ["biz", "기업검진", Users], ["rec", "AI 맞춤추천", Sparkles]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="checkup" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강검진</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>종합검진 · 국가검진 · 기업검진 · AI 맞춤추천 · 전국 검진센터 비교·예약</div></div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강검진</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>KMI 대형검진 · 브랜드 검진기관 · 종합·국가·기업검진 · AI 맞춤추천 · 전국 검진센터 비교·예약</div></div></div>
       <AiLinkBanner target="checkup" />
       <div className="chtabs">
         {cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}
         <div className={`reslink ${cat === "result" ? "on" : ""}`} onClick={() => setCat("result")}><FileText size={14} /> 검진결과·사후관리</div>
       </div>
+      {cat === "kmi" && <BrandDirectory kmiOnly />}
+      {cat === "brand" && <BrandDirectory />}
       {cat === "comp" && <CenterDirectory mode="comp" />}
       {cat === "nat" && <NationalCheckup />}
       {cat === "biz" && <BizCheckup />}
       {cat === "rec" && <AICheckupRec onGoCenters={() => setCat("comp")} />}
       {cat === "result" && <CheckupResults />}
     </div>
+  );
+}
+/* 브랜드 검진기관 디렉토리(큐레이션 51곳) — KMI 대형검진센터 별도 카테고리 */
+function BrandDirectory({ kmiOnly }) {
+  const [brand, setBrand] = useState("전체");
+  const [sido, setSido] = useState("전체");
+  const [q, setQ] = useState("");
+  const [shown, setShown] = useState(kmiOnly ? 12 : 10);
+  const ALL = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
+  const META = (typeof CHECKUP_BRAND_META !== "undefined") ? CHECKUP_BRAND_META : {};
+  const ssido = (s) => (typeof tmSidoShort === "function" ? tmSidoShort(s) : s);
+  const base = ALL.filter((c) => kmiOnly ? c.b === "KMI한국의학연구소" : c.b !== "KMI한국의학연구소");
+  const brands = kmiOnly ? [] : ["전체", ...Array.from(new Set(base.map((c) => c.b)))];
+  const sidos = ["전체", ...Array.from(new Set(base.map((c) => c.sd)))];
+  let list = base.filter((c) => (kmiOnly || brand === "전체" || c.b === brand) && (sido === "전체" || c.sd === sido) && (!q || (c.n + c.sd + c.sg + c.ad).includes(q)));
+  const view = list.slice(0, shown);
+  const card = (c, i) => { const m = META[c.b] || {}; return (
+    <div className="center" key={i}>
+      <div className="cimg" style={{ background: (m.col || "#2563EB") + "14" }}><Building2 size={40} color={m.col || "#2563EB"} /></div>
+      <div className="cmain">
+        <div className="cname">{c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n} <span className="cbadge" style={{ color: m.col, background: (m.col || "#2563EB") + "1A" }}>{m.short}</span></div>
+        <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{ssido(c.sd)}</span> · <MapPin size={12} />{c.sg} · {c.t}{c.p !== "-" && <> · <Phone size={12} />{c.p}</>}</div>
+        <div className="ctags"><span>{c.t}</span><span>{m.tier || "검진기관"}</span></div>
+        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, lineHeight: 1.45 }}>{c.ad}</div>
+      </div>
+      <div className="cright">
+        <span className="cbadge"><ShieldCheck size={10} /> 무료 검진보험</span>
+        <div className="obtns"><button onClick={() => openConsult("건강검진 상담 — " + c.n)}>상담</button><button className="book" onClick={() => { if (typeof toast === "function") toast(`✅ (데모) ${c.b === "KMI한국의학연구소" ? "KMI " + c.n : c.n} 검진 예약이 접수되었습니다.`); }}>예약</button></div>
+      </div>
+    </div>
+  ); };
+  return (
+    <>
+      {kmiOnly && (
+        <div className="kmibanner">
+          <div className="kmibt"><Building2 size={18} /> KMI한국의학연구소 — 전국 대형 종합검진센터</div>
+          <div className="kmibs">{CHECKUP_BRAND_META["KMI한국의학연구소"].tag} · 전국 <b>{base.length}</b>개 센터 · 대표 <b>1551-7070</b></div>
+        </div>
+      )}
+      <div className="benefit">
+        <span><Art name="badge" size={16} /> 무료 검진보험 자동가입</span>
+        <span><Art name="sparkle" size={16} /> AI 맞춤 검사 추천</span>
+        <span><Art name="badge" size={16} /> NFT 예약증 발행</span>
+        <span><Art name="check" size={16} /> 검진결과 카톡 수신</span>
+      </div>
+      {!kmiOnly && (
+        <><div className="bklbl" style={{ margin: "0 0 8px" }}>브랜드</div>
+        <div className="regions">{brands.map((b) => <div key={b} className={`fsel ${brand === b ? "on" : ""}`} onClick={() => { setBrand(b); setShown(10); }}>{b === "전체" ? "전체" : (META[b]?.short || b)}</div>)}</div></>
+      )}
+      <div className="bklbl" style={{ margin: "10px 0 8px" }}>지역(시·도)</div>
+      <div className="regions">{sidos.map((s) => <div key={s} className={`fsel ${sido === s ? "on" : ""}`} onClick={() => { setSido(s); setShown(kmiOnly ? 12 : 10); }}>{s === "전체" ? "전체" : ssido(s)}</div>)}</div>
+      <div className="filterbar"><div className="fsearch"><Search size={15} /><input value={q} onChange={(e) => { setQ(e.target.value); setShown(kmiOnly ? 12 : 10); }} placeholder="기관명·지역·주소 검색" /></div></div>
+      <div className="chcount">{kmiOnly ? "KMI 검진센터" : (brand === "전체" ? "브랜드 검진기관" : (META[brand]?.short || brand))} <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳 · 전체 큐레이션 {ALL.length}곳</div>
+      {view.map((c, i) => card(c, i))}
+      {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 10)}>더 보기 ({list.length - shown}곳 더)</button>}
+      <div className="chnote">※ 출처: 국민건강보험공단 병의원·검진기관 찾기 / 기관 공식 사이트(수집일 2026-06-27). "공식 사이트 확인" 항목은 정확한 주소를 기관 홈페이지에서 최종 확인 권장. 본 비교 정보는 이용자의 합리적 선택을 돕기 위한 것으로 의료법(의료광고 심의·환자 유인·알선 금지)을 준수합니다.</div>
+    </>
   );
 }
 

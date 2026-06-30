@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=d160b26ac3" />
+<link rel="stylesheet" href="./data/app.css?v=ebe293edad" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=d160b26ac3"></script>
-<script src="./src/data/section_data.js?v=d160b26ac3"></script>
-<script src="./src/data/demo_members.js?v=d160b26ac3"></script>
+<script src="./src/data/dummy_data.js?v=ebe293edad"></script>
+<script src="./src/data/section_data.js?v=ebe293edad"></script>
+<script src="./src/data/demo_members.js?v=ebe293edad"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -2518,23 +2518,82 @@ function KoreaMap({ selected, onPick }) {
 }
 
 function CheckupSection() {
-  const [cat, setCat] = useState("comp");
-  const cats = [["comp", "종합검진", ClipboardList], ["nat", "국가검진", ShieldCheck], ["biz", "기업검진", Users], ["rec", "AI 맞춤추천", Sparkles]];
+  const [cat, setCat] = useState("kmi");
+  const cats = [["kmi", "KMI 대형검진", Building2], ["brand", "브랜드 검진기관", BadgeCheck], ["comp", "종합검진", ClipboardList], ["nat", "국가검진", ShieldCheck], ["biz", "기업검진", Users], ["rec", "AI 맞춤추천", Sparkles]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="checkup" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강검진</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>종합검진 · 국가검진 · 기업검진 · AI 맞춤추천 · 전국 검진센터 비교·예약</div></div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강검진</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>KMI 대형검진 · 브랜드 검진기관 · 종합·국가·기업검진 · AI 맞춤추천 · 전국 검진센터 비교·예약</div></div></div>
       <AiLinkBanner target="checkup" />
       <div className="chtabs">
         {cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}
         <div className={`reslink ${cat === "result" ? "on" : ""}`} onClick={() => setCat("result")}><FileText size={14} /> 검진결과·사후관리</div>
       </div>
+      {cat === "kmi" && <BrandDirectory kmiOnly />}
+      {cat === "brand" && <BrandDirectory />}
       {cat === "comp" && <CenterDirectory mode="comp" />}
       {cat === "nat" && <NationalCheckup />}
       {cat === "biz" && <BizCheckup />}
       {cat === "rec" && <AICheckupRec onGoCenters={() => setCat("comp")} />}
       {cat === "result" && <CheckupResults />}
     </div>
+  );
+}
+/* 브랜드 검진기관 디렉토리(큐레이션 51곳) — KMI 대형검진센터 별도 카테고리 */
+function BrandDirectory({ kmiOnly }) {
+  const [brand, setBrand] = useState("전체");
+  const [sido, setSido] = useState("전체");
+  const [q, setQ] = useState("");
+  const [shown, setShown] = useState(kmiOnly ? 12 : 10);
+  const ALL = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
+  const META = (typeof CHECKUP_BRAND_META !== "undefined") ? CHECKUP_BRAND_META : {};
+  const ssido = (s) => (typeof tmSidoShort === "function" ? tmSidoShort(s) : s);
+  const base = ALL.filter((c) => kmiOnly ? c.b === "KMI한국의학연구소" : c.b !== "KMI한국의학연구소");
+  const brands = kmiOnly ? [] : ["전체", ...Array.from(new Set(base.map((c) => c.b)))];
+  const sidos = ["전체", ...Array.from(new Set(base.map((c) => c.sd)))];
+  let list = base.filter((c) => (kmiOnly || brand === "전체" || c.b === brand) && (sido === "전체" || c.sd === sido) && (!q || (c.n + c.sd + c.sg + c.ad).includes(q)));
+  const view = list.slice(0, shown);
+  const card = (c, i) => { const m = META[c.b] || {}; return (
+    <div className="center" key={i}>
+      <div className="cimg" style={{ background: (m.col || "#2563EB") + "14" }}><Building2 size={40} color={m.col || "#2563EB"} /></div>
+      <div className="cmain">
+        <div className="cname">{c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n} <span className="cbadge" style={{ color: m.col, background: (m.col || "#2563EB") + "1A" }}>{m.short}</span></div>
+        <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{ssido(c.sd)}</span> · <MapPin size={12} />{c.sg} · {c.t}{c.p !== "-" && <> · <Phone size={12} />{c.p}</>}</div>
+        <div className="ctags"><span>{c.t}</span><span>{m.tier || "검진기관"}</span></div>
+        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, lineHeight: 1.45 }}>{c.ad}</div>
+      </div>
+      <div className="cright">
+        <span className="cbadge"><ShieldCheck size={10} /> 무료 검진보험</span>
+        <div className="obtns"><button onClick={() => openConsult("건강검진 상담 — " + c.n)}>상담</button><button className="book" onClick={() => { if (typeof toast === "function") toast(`✅ (데모) ${c.b === "KMI한국의학연구소" ? "KMI " + c.n : c.n} 검진 예약이 접수되었습니다.`); }}>예약</button></div>
+      </div>
+    </div>
+  ); };
+  return (
+    <>
+      {kmiOnly && (
+        <div className="kmibanner">
+          <div className="kmibt"><Building2 size={18} /> KMI한국의학연구소 — 전국 대형 종합검진센터</div>
+          <div className="kmibs">{CHECKUP_BRAND_META["KMI한국의학연구소"].tag} · 전국 <b>{base.length}</b>개 센터 · 대표 <b>1551-7070</b></div>
+        </div>
+      )}
+      <div className="benefit">
+        <span><Art name="badge" size={16} /> 무료 검진보험 자동가입</span>
+        <span><Art name="sparkle" size={16} /> AI 맞춤 검사 추천</span>
+        <span><Art name="badge" size={16} /> NFT 예약증 발행</span>
+        <span><Art name="check" size={16} /> 검진결과 카톡 수신</span>
+      </div>
+      {!kmiOnly && (
+        <><div className="bklbl" style={{ margin: "0 0 8px" }}>브랜드</div>
+        <div className="regions">{brands.map((b) => <div key={b} className={`fsel ${brand === b ? "on" : ""}`} onClick={() => { setBrand(b); setShown(10); }}>{b === "전체" ? "전체" : (META[b]?.short || b)}</div>)}</div></>
+      )}
+      <div className="bklbl" style={{ margin: "10px 0 8px" }}>지역(시·도)</div>
+      <div className="regions">{sidos.map((s) => <div key={s} className={`fsel ${sido === s ? "on" : ""}`} onClick={() => { setSido(s); setShown(kmiOnly ? 12 : 10); }}>{s === "전체" ? "전체" : ssido(s)}</div>)}</div>
+      <div className="filterbar"><div className="fsearch"><Search size={15} /><input value={q} onChange={(e) => { setQ(e.target.value); setShown(kmiOnly ? 12 : 10); }} placeholder="기관명·지역·주소 검색" /></div></div>
+      <div className="chcount">{kmiOnly ? "KMI 검진센터" : (brand === "전체" ? "브랜드 검진기관" : (META[brand]?.short || brand))} <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳 · 전체 큐레이션 {ALL.length}곳</div>
+      {view.map((c, i) => card(c, i))}
+      {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 10)}>더 보기 ({list.length - shown}곳 더)</button>}
+      <div className="chnote">※ 출처: 국민건강보험공단 병의원·검진기관 찾기 / 기관 공식 사이트(수집일 2026-06-27). "공식 사이트 확인" 항목은 정확한 주소를 기관 홈페이지에서 최종 확인 권장. 본 비교 정보는 이용자의 합리적 선택을 돕기 위한 것으로 의료법(의료광고 심의·환자 유인·알선 금지)을 준수합니다.</div>
+    </>
   );
 }
 
@@ -5753,6 +5812,81 @@ function tmDeptForMember() {
   if (/전립선|요로|배뇨/.test(d)) return "uro";
   return "fm";
 }
+
+/* 전국 건강검진기관 — 브랜드별 큐레이션(51곳). 출처: 국민건강보험공단 병의원·검진기관 찾기 / 기관 공식 사이트.
+   필드: b 브랜드 · n 기관명 · t 유형 · sd 시도 · sg 시군구 · ad 주소 · p 전화 · src 출처 */
+const CHECKUP_BRAND_META = {
+  "KMI한국의학연구소": { short: "KMI", tier: "대형 종합검진센터", col: "#0B5FB0", featured: true, tag: "전국 8대 대형 검진센터 · 종합·정밀·암검진 특화" },
+  "한국건강관리협회": { short: "한건협", tier: "전국 검진기관", col: "#16A34A", tag: "국민건강보험공단 지정 전국 검진·치과 기관" },
+  "하나로의료재단": { short: "하나로", tier: "검진센터", col: "#2563EB", tag: "수도권 프리미엄 검진" },
+  "서울의과학연구소(SCL)": { short: "SCL", tier: "검사·검진", col: "#7C3AED", tag: "정밀 진단검사 전문" },
+  "한신메디피아": { short: "한신", tier: "검진센터", col: "#0EA5E9", tag: "강남권 검진" },
+  "삼성서울병원": { short: "삼성서울", tier: "종합병원 검진", col: "#0F4C99", tag: "상급종합병원 건강의학" },
+  "서울대학교병원": { short: "서울대", tier: "종합병원 검진", col: "#1D4ED8", tag: "상급종합병원 헬스케어" },
+  "세브란스": { short: "세브란스", tier: "종합병원 검진", col: "#1E5BC6", tag: "상급종합병원 헬스체크업" },
+};
+const _N = "국민건강보험공단 병의원·검진기관 찾기", _O = "기관 공식 사이트";
+const CHECKUP_INST = [
+  /* KMI한국의학연구소 (8) */
+  { b: "KMI한국의학연구소", n: "광화문센터", t: "검진센터", sd: "서울특별시", sg: "종로구", ad: "서울 종로구 세종대로 149 동화면세점 B1·3·4층", p: "1551-7070", src: _O },
+  { b: "KMI한국의학연구소", n: "여의도센터", t: "검진센터", sd: "서울특별시", sg: "영등포구", ad: "서울 영등포구 국제금융로2길 24 BNK금융타워 13~18층", p: "1551-7070", src: _O },
+  { b: "KMI한국의학연구소", n: "강남센터", t: "검진센터", sd: "서울특별시", sg: "강남구", ad: "서울 강남구 테헤란로 411 성담빌딩 2~10층", p: "1551-7070", src: _O },
+  { b: "KMI한국의학연구소", n: "수원센터", t: "검진센터", sd: "경기도", sg: "수원시 권선구", ad: "경기 수원시 권선구 동수원로 232 1층", p: "1551-7070", src: _O },
+  { b: "KMI한국의학연구소", n: "대구센터", t: "검진센터", sd: "대구광역시", sg: "중구", ad: "대구 중구 중앙대로66길 20 탑마트 B1~1층", p: "1551-7070", src: _O },
+  { b: "KMI한국의학연구소", n: "부산센터", t: "검진센터", sd: "부산광역시", sg: "동구", ad: "부산 동구 조방로 14 동일타워 5층", p: "1551-7070", src: _O },
+  { b: "KMI한국의학연구소", n: "광주센터", t: "검진센터", sd: "광주광역시", sg: "서구", ad: "광주 서구 상무중앙로 58 타임스타워 8~10층", p: "1551-7070", src: _O },
+  { b: "KMI한국의학연구소", n: "제주센터", t: "검진센터", sd: "제주특별자치도", sg: "서귀포시", ad: "제주 서귀포시 솔오름로 61 1·2층", p: "1551-7070", src: _O },
+  /* 한국건강관리협회 (33) */
+  { b: "한국건강관리협회", n: "(사)한국건강관리협회 건강치과의원", t: "치과의원", sd: "전북특별자치도", sg: "전주시 덕진구", ad: "전북특별자치도 전주시 덕진구 사평로 40 5층 (덕진동1가, 건강검진센터)", p: "063-259-8913", src: _N },
+  { b: "한국건강관리협회", n: "(사)한국건강관리협회 중앙검사본부 중앙검사의원", t: "의원", sd: "서울특별시", sg: "강서구", ad: "서울특별시 강서구 화곡로 372 ND타워 지4,지1, 1~4층 (등촌동)", p: "02-3662-1107", src: _N },
+  { b: "한국건강관리협회", n: "(사)한국건강관리협회건강증진의원", t: "의원", sd: "전북특별자치도", sg: "전주시 덕진구", ad: "전북특별자치도 전주시 덕진구 사평로 40 (덕진동1가)", p: "063-259-8900", src: _N },
+  { b: "한국건강관리협회", n: "(사)한국건강관리협회건강증진의원", t: "의원", sd: "경상남도", sg: "창원시 마산회원구", ad: "경상남도 창원시 마산회원구 3·15대로 606 (석전동)", p: "055-259-0100", src: _N },
+  { b: "한국건강관리협회", n: "(사)한국건강관리협회건강증진의원", t: "의원", sd: "경기도", sg: "수원시 장안구", ad: "경기도 수원시 장안구 경수대로 857 (조원동)", p: "031-250-5800", src: _N },
+  { b: "한국건강관리협회", n: "(사)한국건강관리협회건강증진치과의원", t: "치과의원", sd: "경기도", sg: "수원시 장안구", ad: "경기도 수원시 장안구 경수대로 857 2층 (조원동)", p: "031-250-5800", src: _N },
+  { b: "한국건강관리협회", n: "(사)한국건강관리협회건강증진치과의원", t: "치과의원", sd: "경상남도", sg: "창원시 마산회원구", ad: "경상남도 창원시 마산회원구 3·15대로 606 (석전동)", p: "055-259-0100", src: _N },
+  { b: "한국건강관리협회", n: "(사단법인) 한국건강관리협회건강증진치과의원", t: "치과의원", sd: "광주광역시", sg: "서구", ad: "광주광역시 서구 대남대로 432 3층 (농성동)", p: "062-363-4040", src: _N },
+  { b: "한국건강관리협회", n: "(사단법인)한국건강관리협회건강증진의원", t: "의원", sd: "광주광역시", sg: "서구", ad: "광주광역시 서구 대남대로 432 한국건강관리협회 지하2~지상7층 (농성동)", p: "062-363-4040", src: _N },
+  { b: "한국건강관리협회", n: "사)한국건강관리협회건강증진의원", t: "의원", sd: "대전광역시", sg: "서구", ad: "대전광역시 서구 계룡로 611 (탄방동)", p: "042-532-9890", src: _N },
+  { b: "한국건강관리협회", n: "사)한국건강관리협회치과의원", t: "치과의원", sd: "대전광역시", sg: "서구", ad: "대전광역시 서구 계룡로 611 2층 일부호 (탄방동)", p: "042-532-9890", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진 치과의원", t: "치과의원", sd: "서울특별시", sg: "송파구", ad: "서울특별시 송파구 올림픽로 269 3층 (신천동, 롯데캐슬골드)", p: "02-2140-6000", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진의원", t: "의원", sd: "서울특별시", sg: "송파구", ad: "서울특별시 송파구 올림픽로 269 3,5,9층 (신천동, 롯데캐슬골드)", p: "02-2140-6000", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진의원", t: "의원", sd: "울산광역시", sg: "중구", ad: "울산광역시 중구 번영로 360 (학산동)", p: "052-241-2000", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진의원", t: "의원", sd: "대구광역시", sg: "북구", ad: "대구광역시 북구 팔달로 23 (노원동3가)", p: "053-350-9000", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진의원", t: "의원", sd: "대구광역시", sg: "동구", ad: "대구광역시 동구 장등로 16 (신천동)", p: "053-757-0500", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진의원", t: "의원", sd: "부산광역시", sg: "사상구", ad: "부산광역시 사상구 학감대로 230 (감전동)", p: "051-601-9700", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진치과의원", t: "치과의원", sd: "울산광역시", sg: "중구", ad: "울산광역시 중구 번영로 360 한국건강관리협회 5층 (학산동)", p: "052-241-2000", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진치과의원", t: "치과의원", sd: "부산광역시", sg: "동래구", ad: "부산광역시 동래구 충렬대로 145 (온천동)", p: "051-557-3701", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진치과의원", t: "치과의원", sd: "강원특별자치도", sg: "춘천시", ad: "강원특별자치도 춘천시 남춘로 50 한국건강관리협회 신청사 3층 (효자동)", p: "033-260-0800", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강증진치과의원", t: "치과의원", sd: "부산광역시", sg: "사상구", ad: "부산광역시 사상구 학감대로 230 3층 (감전동)", p: "051-601-9700", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회 건강한치과의원", t: "치과의원", sd: "인천광역시", sg: "남동구", ad: "인천광역시 남동구 인주대로 556 한국건강관리협회 인천광역시지부 6층 일부호 (구월동)", p: "032-890-8700", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진의원", t: "의원", sd: "서울특별시", sg: "강서구", ad: "서울특별시 강서구 화곡로 335 한국건강관리협회서울서부지부 (화곡동)", p: "02-2600-2000", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진의원", t: "의원", sd: "부산광역시", sg: "동래구", ad: "부산광역시 동래구 충렬대로 145 (온천동)", p: "051-553-6400", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진의원", t: "의원", sd: "인천광역시", sg: "남동구", ad: "인천광역시 남동구 인주대로 556 한국건강관리협회 인천광역시지부 2~5, 6층일부, 7층 (구월동)", p: "032-884-7131", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진의원", t: "의원", sd: "제주특별자치도", sg: "제주시", ad: "제주특별자치도 제주시 연북로 111 (연동)", p: "064-740-0200", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진의원", t: "의원", sd: "강원특별자치도", sg: "춘천시", ad: "강원특별자치도 춘천시 남춘로 50 한국건강관리협회 신청사 1-6층 (효자동)", p: "033-260-0800", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진치과의원", t: "치과의원", sd: "서울특별시", sg: "동대문구", ad: "서울특별시 동대문구 왕산로 78 3층 (용두동)", p: "02-3290-9800", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진치과의원", t: "치과의원", sd: "제주특별자치도", sg: "제주시", ad: "제주특별자치도 제주시 연북로 111 (연동)", p: "064-740-0291", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진치과의원", t: "치과의원", sd: "서울특별시", sg: "강서구", ad: "서울특별시 강서구 화곡로 335 한국건강관리협회서울서부지부 5층 (화곡동)", p: "02-2600-2000", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진치과의원", t: "치과의원", sd: "대구광역시", sg: "동구", ad: "대구광역시 동구 장등로 16 4층 (신천동)", p: "053-755-5385", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회건강증진치과의원", t: "치과의원", sd: "대구광역시", sg: "북구", ad: "대구광역시 북구 팔달로 23 6층 (노원동3가)", p: "053-350-9175", src: _N },
+  { b: "한국건강관리협회", n: "한국건강관리협회충북세종지부건강증진의원", t: "의원", sd: "충청북도", sg: "청주시 흥덕구", ad: "충청북도 청주시 흥덕구 직지대로 631 (봉명동)", p: "043-297-1100", src: _N },
+  /* 하나로의료재단 (3) */
+  { b: "하나로의료재단", n: "종로센터", t: "검진센터", sd: "서울특별시", sg: "종로구", ad: "서울 종로구 종로 33 그랑서울1타워 5층", p: "02-2158-7256", src: _O },
+  { b: "하나로의료재단", n: "강남센터(하나로리더스의원)", t: "검진센터", sd: "서울특별시", sg: "강남구", ad: "서울 강남구 테헤란로 326 역삼아이타워 6~11층", p: "02-590-1111", src: _O },
+  { b: "하나로의료재단", n: "The HANARO Black", t: "검진센터", sd: "서울특별시", sg: "강남구", ad: "공식 사이트 확인", p: "-", src: _O },
+  /* 서울의과학연구소(SCL) (2) */
+  { b: "서울의과학연구소(SCL)", n: "SCL의원(본원)", t: "검사센터", sd: "경기도", sg: "용인시 기흥구", ad: "경기 용인시 기흥구 영덕동 일원(공식 사이트 확인)", p: "-", src: _O },
+  { b: "서울의과학연구소(SCL)", n: "SCL강남하나로의원", t: "검진센터", sd: "서울특별시", sg: "강남구", ad: "공식 사이트 확인", p: "-", src: _O },
+  /* 한신메디피아 (1) */
+  { b: "한신메디피아", n: "한신메디피아의원", t: "검진센터", sd: "서울특별시", sg: "서초구", ad: "서울 서초구 잠원동(잠원역 인근, 공식 사이트 확인)", p: "-", src: _O },
+  /* 삼성서울병원 (1) */
+  { b: "삼성서울병원", n: "건강의학센터", t: "종합병원 검진", sd: "서울특별시", sg: "강남구", ad: "서울 강남구 일원로 81(일원동, 공식 사이트 확인)", p: "-", src: _O },
+  /* 서울대학교병원 (1) */
+  { b: "서울대학교병원", n: "헬스케어시스템 강남센터", t: "검진센터", sd: "서울특별시", sg: "강남구", ad: "서울 강남구 테헤란로 152 강남파이낸스센터(공식 사이트 확인)", p: "-", src: _O },
+  /* 세브란스 (2) */
+  { b: "세브란스", n: "세브란스 체크업(신촌)", t: "종합병원 검진", sd: "서울특별시", sg: "서대문구", ad: "서울 서대문구 연세로 50-1(공식 사이트 확인)", p: "-", src: _O },
+  { b: "세브란스", n: "강남세브란스 체크업", t: "종합병원 검진", sd: "서울특별시", sg: "강남구", ad: "서울 강남구 언주로 211(공식 사이트 확인)", p: "-", src: _O },
+];
 
 /* ====================== 온톨로지 기반 상담 엔진 ======================
    검진항목 해석 / 보험 보장 공백 분석 / 후속조치 안내 — 회원 건강리포트 연계 + AI 거버넌스.
