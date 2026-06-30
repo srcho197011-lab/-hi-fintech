@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=cdd0267aec" />
+<link rel="stylesheet" href="./data/app.css?v=2fcd54ec00" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=cdd0267aec"></script>
-<script src="./src/data/section_data.js?v=cdd0267aec"></script>
-<script src="./src/data/demo_members.js?v=cdd0267aec"></script>
+<script src="./src/data/dummy_data.js?v=2fcd54ec00"></script>
+<script src="./src/data/section_data.js?v=2fcd54ec00"></script>
+<script src="./src/data/demo_members.js?v=2fcd54ec00"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -2759,6 +2759,15 @@ function BookingModal({ center, mode, onClose }) {
   const [date, setDate] = useState(null);
   const [time, setTime] = useState(null);
   const [done, setDone] = useState(false);
+  const [insOpen, setInsOpen] = useState(false);
+  const [psych, setPsych] = useState(false);
+  const COVERS = (typeof CHECK_COVERS !== "undefined") ? CHECK_COVERS : [];
+  // 가격 기준 플랜 매칭: 국가검진→기본형, 50만 미만→표준형, 50만 이상→고급형. 심리케어프리미엄은 선택형(+1만원 HTK)
+  const planName = mode === "nat" ? "기본형" : (center.price < 500000 ? "표준형" : "고급형");
+  const planSub = mode === "nat" ? "국가건강검진 연계 · 무상" : (center.price < 500000 ? "종합검진 50만원 미만 · 무상" : "프리미엄검진 50만원 이상 · 무상");
+  const baseIdx = mode === "nat" ? 2 : (center.price < 500000 ? 3 : 4);
+  const colIdx = psych ? 5 : baseIdx;
+  const PSYCH_HTK = 10000;
   const W = ["일", "월", "화", "수", "목", "금", "토"];
   const days = Array.from({ length: 8 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i + 2); return d; });
   const slots = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
@@ -2773,24 +2782,36 @@ function BookingModal({ center, mode, onClose }) {
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {center.r} · {center.area}</div>
               {mode === "nat" ? <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--green)" }}>공단검진 본인부담 0원 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 추가검사 별도</span></div> : <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--blue)" }}>{won(center.price)} <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600, textDecoration: "line-through" }}>{won(center.orig)}</span></div>}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(120deg,#0E9F6E,#16A34A)", color: "#fff", borderRadius: 12, padding: "12px 14px", marginTop: 12, boxShadow: "0 12px 24px -16px rgba(16,163,74,.75)" }}>
+            <div onClick={() => setInsOpen((v) => !v)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(120deg,#0E9F6E,#16A34A)", color: "#fff", borderRadius: 12, padding: "12px 14px", marginTop: 12, boxShadow: "0 12px 24px -16px rgba(16,163,74,.75)" }}>
               <span style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={20} color="#fff" /></span>
-              <div style={{ fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>건강검진 예약과 동시에 <b style={{ color: "#FDE68A" }}>무상 건강검진 대비보험</b>이 자동 적용됩니다.</div>
+              <div style={{ flex: 1, fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>건강검진 예약과 동시에 <b style={{ color: "#FDE68A" }}>무상 건강검진 대비보험</b>이 자동 적용됩니다. <u>보장 조회 ›</u></div>
+              <ChevronDown size={18} color="#fff" style={{ transform: insOpen ? "rotate(180deg)" : "none", transition: ".2s", flexShrink: 0 }} />
             </div>
+            {insOpen && (
+              <div className="bkins">
+                <div className="bkinst"><BadgeCheck size={14} color="#16A34A" /> 적용 플랜 <b style={{ color: psych ? "#7C3AED" : "#16A34A" }}>{psych ? "심리케어 프리미엄" : planName}</b> <span>{psych ? "선택형 · 정신질환 진단 포함" : planSub}</span></div>
+                <div className="bkinsrows">{COVERS.map((r, i) => { const amt = r[colIdx]; if (!amt || amt === "-") return null; return (<div className="bkinsrow" key={i}><span>{r[1]}</span><b>{amt}</b></div>); })}</div>
+                <button className={`bkpsych ${psych ? "on" : ""}`} onClick={() => setPsych((v) => !v)}>
+                  <span className="pchk">{psych ? <Check size={13} color="#fff" /> : null}</span>
+                  <div className="ptxt"><b>심리케어 프리미엄 추가 <em>선택형</em></b><span>정신질환(F코드) 진단 보장 포함 · 가입 시 <b>1만원(10,000 HTK)</b> 차감</span></div>
+                </button>
+                <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>되며, 심리케어 프리미엄만 선택 시 건강금융지갑에서 {PSYCH_HTK.toLocaleString()} HTK가 차감됩니다(데모). 실제 보장·인수는 보험사 심사에 따릅니다.</div>
+              </div>
+            )}
             <div className="bklbl">날짜 선택</div>
             <div className="cal">{days.map((d, i) => { const k = `${d.getMonth() + 1}/${d.getDate()}`; return (<div key={i} className={`calc ${date === k ? "on" : ""}`} onClick={() => setDate(k)}><div className="d">{d.getDate()}</div><div className="w">{W[d.getDay()]}</div></div>); })}</div>
             <div className="bklbl">시간 선택</div>
             <div className="slots">{slots.map((s) => <div key={s} className={`slot ${time === s ? "on" : ""}`} onClick={() => setTime(s)}>{s}</div>)}</div>
             <div className="bklbl">검진 항목</div>
             <div className="ctags">{center.tags.map((t) => <span key={t}>{t}</span>)}</div>
-            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => setDone(true)}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
+            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => { setDone(true); if (psych && typeof toast === "function") toast(`심리케어 프리미엄 적용 · 건강금융지갑 ${PSYCH_HTK.toLocaleString()} HTK 차감(데모)`); }}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
           </>) : (
             <div className="bkconfirm">
               <div className="ic"><Check size={30} color="#16A34A" /></div>
               <div style={{ fontWeight: 800, fontSize: 17 }}>예약이 확정되었습니다</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{center.name}<br />{date} {time}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
-                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>무료 검진보험 자동가입</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>추가 보험료 없이 검진 대비 보장이 적용됩니다.</div></div></div>
+                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: psych ? "#F1ECFE" : "#E7F8EE" }}><ShieldCheck size={18} color={psych ? "#7C3AED" : "#16A34A"} /></span><div><b style={{ fontSize: 13 }}>무상 건강검진 대비보험 — {psych ? "심리케어 프리미엄" : planName}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{psych ? `정신질환 진단 보장 포함 · 건강금융지갑 ${PSYCH_HTK.toLocaleString()} HTK 차감` : "추가 보험료 없이 검진 대비 보장이 무상 적용됩니다."}</div></div></div>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic"><BadgeCheck size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>NFT 예약증 발행</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>지갑에 SBT 예약증이 발행되고 알림톡이 발송됩니다.</div></div></div>
               </div>
               <button className="cbtn pri" style={{ marginTop: 16 }} onClick={onClose}>확인</button>
