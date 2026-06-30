@@ -1284,3 +1284,16 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .cpr{font-size:11px;color:var(--muted);margin-top:1px;}
 .cpgo{flex-shrink:0;display:inline-flex;align-items:center;gap:3px;background:#F7F9FC;border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
 @media(max-width:560px){.cprow{flex-wrap:wrap;}.cpgo{width:100%;justify-content:center;margin-top:2px;}}
+.cpurg{font-size:10px;font-weight:800;border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:1px;}
+.cpurg.u1{color:#fff;background:#EF4444;}
+.cpurg.u2{color:#B45309;background:#FEF3E2;}
+.cpurg.u3{color:#15803D;background:#E7F8EE;}
+/* 홈 — 오늘의 종합 케어플랜 요약 */
+.homecare{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px 18px;margin-top:16px;box-shadow:0 12px 28px -22px rgba(22,163,74,.5);}
+.hch{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:15px;font-weight:800;color:#15234A;}
+.hch>span:first-child{display:inline-flex;align-items:center;gap:7px;}
+.hclvl{font-size:11.5px;font-weight:800;color:#16A34A;background:#E7F8EE;border:1px solid #B6E7C9;border-radius:999px;padding:3px 11px;}
+.hcrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:13px 0;}
+.hcc{border:1px solid var(--border);border-top:3px solid #16A34A;border-radius:12px;padding:10px 12px;}
+.hcc b{display:block;font-size:12.5px;color:#15234A;}
+.hcc span{font-size:11.5px;color:var(--muted);line-height:1.45;display:block;margin-top:3px;}

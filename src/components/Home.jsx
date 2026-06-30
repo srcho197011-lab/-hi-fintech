@@ -97,6 +97,13 @@ function HomeView({ onGo }) {
           <div className="pstat"><span className="tag-w" style={{ color: R ? R.cg[1] : "#16A34A", background: R ? R.cg[2] : "#E7F8EE" }}>종합 {R ? R.evalLabel : "좋음"}</span><div className="k" style={{ marginTop: 6 }}>생체나이</div></div>
         </div>
       </div>
+      {dm && (() => { const cp = (typeof buildCarePlan === "function") ? buildCarePlan(dm) : null; return cp ? (
+        <div className="homecare">
+          <div className="hch"><span><HeartHandshake size={16} color="#16A34A" /> {nm}님 오늘의 종합 케어플랜</span><span className="hclvl">{cp.level}</span></div>
+          <div className="hcrow">{cp.domains.slice(0, 4).map((dmn, i) => (<div className="hcc" key={i} style={{ borderTopColor: dmn.color }}><b>{dmn.title}</b><span>{dmn.need}</span></div>))}</div>
+          <button className="cbtn pri" style={{ maxWidth: 300 }} onClick={() => go("ai")}><Bot size={15} /> AI 주치의에서 전체 케어플랜 보기</button>
+        </div>
+      ) : null; })()}
       <div className="row4">
         <div className="card">
           <div className="ch"><div className="ct">생체나이 분석 <Info size={14} color="#B4BECF" /></div></div>

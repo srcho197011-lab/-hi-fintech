@@ -576,7 +576,7 @@ function CarePlanCard({ member }) {
         {p.domains.map((dmn, i) => { const Ic = ICO[dmn.icon] || Sparkles; return (
           <div className="cprow" key={i} style={{ borderLeftColor: dmn.color }}>
             <span className="ci" style={{ background: dmn.color + "1A", color: dmn.color }}><Ic size={18} /></span>
-            <div className="cpb"><div className="cpt">{dmn.title}</div><div className="cpn">{dmn.need}</div><div className="cpr">{dmn.reason}</div></div>
+            <div className="cpb"><div className="cpt">{dmn.title} {dmn.urgency && <span className={`cpurg ${dmn.urgency === "긴급" ? "u1" : dmn.urgency === "권장" ? "u2" : "u3"}`}>{dmn.urgency}</span>}</div><div className="cpn">{dmn.need}</div><div className="cpr">{dmn.reason}</div></div>
             <button className="cpgo" style={{ color: dmn.color }} onClick={() => nav(dmn.to)}>{dmn.btn} <ChevronRight size={13} /></button>
           </div>
         ); })}
@@ -619,7 +619,7 @@ function AIDoctorSection({ onText, onVoice }) {
     setQ(qq); if (f !== undefined) setFilter(f);
     // 데모 회원 로그인 시 — 개인 데이터 기반 분석 답변
     const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-    if (member && /내 건강|건강상태|분석해|조심|가장.*암|의료비|보험|건강지갑|보험료|줄일|필요한|내가|내 .*위험|후속조치/.test(qq)) {
+    if (member && /내 건강|건강상태|분석해|조심|가장.*암|의료비|보험|건강지갑|보험료|줄일|필요한|내가|내 .*위험|후속조치|케어플랜|종합 케어|종합관리/.test(qq)) {
       setPersonal(demoPersonalAnswer(member)); setResult(null); setMatches([]); setSubmitted(true); setEasy(false);
       logConsult(qq, null, 0); setLogTick((n) => n + 1);
       setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60);
