@@ -520,7 +520,7 @@ const PREMIUM_EST = { "중증질환": 38000, "비급여": 24000, "간병치매":
 /* 회원 건강상태 기반 맞춤 질문 다수 생성 */
 function memberQuestions(m) {
   if (!m) return [];
-  const qs = ["내 종합 케어플랜", "내 건강상태를 분석해줘", "내 리포트 요약", "내 생체나이는?", "내 의료비 예측", "내 건강 후속조치", "내가 가장 조심해야 할 암은?"];
+  const qs = ["내 종합 케어플랜", "나와 비슷한 회원 관리 사례", "내 건강상태를 분석해줘", "내 리포트 요약", "내 생체나이는?", "내 의료비 예측", "내 건강 후속조치", "내가 가장 조심해야 할 암은?"];
   (m.highRiskCancerTypes || []).forEach((c) => { qs.push(`내 ${c} 위험은?`); qs.push(`${c} 검진은 어떻게 받나요?`); });
   (m.highRiskDiseases || []).forEach((dz) => { qs.push(`내 ${dz} 위험은?`); qs.push(`${dz} 생활관리법은?`); });
   const hd = m.highRiskDiseases || [];
@@ -622,6 +622,7 @@ function AIDoctorSection({ onText, onVoice }) {
   const [browseCat, setBrowseCat] = useState(null);
   const [readingKey, setReadingKey] = useState(null);
   const [personal, setPersonal] = useState(null);
+  const [ontoTxt, setOntoTxt] = useState(null);
   const [lang, setLang] = useState("ko");
   const T = UI_STR[lang];
   const riskLabel = (i) => lang === "en" ? RISK_EN[i] : RISK[i][0];
@@ -638,13 +639,17 @@ function AIDoctorSection({ onText, onVoice }) {
     setQ(qq); if (f !== undefined) setFilter(f);
     // 데모 회원 로그인 시 — 개인 데이터 기반 분석 답변
     const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+    if (member && /사례|비슷한 회원|비슷한분|비슷한 사람|다른 회원|관리 사례|성공 사례/.test(qq)) {
+      const onto = (typeof ontologyConsult === "function") ? ontologyConsult(qq) : null;
+      if (onto) { setOntoTxt(onto); setPersonal(null); setResult(null); setMatches([]); setSubmitted(true); setEasy(false); logConsult(qq, null, 0); setLogTick((n) => n + 1); setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60); return; }
+    }
     if (member && /내 건강|건강상태|분석해|조심|가장.*암|의료비|보험|건강지갑|보험료|줄일|필요한|내가|내 .*위험|후속조치|케어플랜|종합 케어|종합관리/.test(qq)) {
-      setPersonal(demoPersonalAnswer(member)); setResult(null); setMatches([]); setSubmitted(true); setEasy(false);
+      setOntoTxt(null); setPersonal(demoPersonalAnswer(member)); setResult(null); setMatches([]); setSubmitted(true); setEasy(false);
       logConsult(qq, null, 0); setLogTick((n) => n + 1);
       setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60);
       return;
     }
-    setPersonal(null);
+    setPersonal(null); setOntoTxt(null);
     const list = searchHealth(qq, ff, kb);
     setMatches(list); setResult(list[0] || null); setSubmitted(true); setEasy(false);
     const rIdx = (detectEmergency(qq) || (list[0] && list[0].risk === 4)) ? 4 : (list[0] ? list[0].risk : 0);
@@ -807,7 +812,17 @@ function AIDoctorSection({ onText, onVoice }) {
       {/* 상담 결과 */}
       {submitted && (
         <div className="aidresult" ref={panelRef}>
-          {personal ? (<>
+          {ontoTxt ? (
+            <div className="adcard">
+              <div className="adt2"><Sparkles size={16} color="#7C3AED" /> 사례기반 심층 상담 <span className="cplvl" style={{ color: "#7C3AED", background: "#F3EDFE", borderColor: "#DDD0F7" }}>의료법 준수 참고안내</span></div>
+              <div className="aianswer" style={{ whiteSpace: "pre-wrap", lineHeight: 1.75, fontSize: 13.5, color: "#2a3550", marginTop: 6 }}>{ontoTxt}</div>
+              <div className="adcta">
+                <button className="cbtn pri" style={{ margin: 0 }} onClick={() => run("내 종합 케어플랜")}><HeartHandshake size={14} /> 내 케어플랜 보기</button>
+                <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("checkup")}><CalendarCheck size={14} /> 검진 예약</button>
+              </div>
+              <div className="aiddisc" style={{ marginTop: 10 }}><AlertTriangle size={14} /> 일반적 건강관리 경향에 대한 참고 안내이며, 효과를 보장하지 않습니다. 구체적 치료·약물은 의료진과 상담하세요.</div>
+            </div>
+          ) : personal ? (<>
             <div className="adcard adpersonal">
               <div className="adtop"><div><div className="adt">{personal.title}</div><div className="adcat">시연용 데모 데이터 기반 분석</div></div>
                 <span className="adrisk" style={{ color: personal.grade[1], background: personal.grade[2] }}>암위험 {personal.grade[0]}</span></div>
@@ -931,7 +946,7 @@ function AIDoctorSection({ onText, onVoice }) {
           </>) : (
             <div className="aidnone"><Search size={26} color="#B8C2D6" /><div><b>{T.none}</b><p>{T.noneSub}</p></div></div>
           )}
-          <div className="aidreset"><button onClick={() => { setSubmitted(false); setResult(null); setPersonal(null); setQ(""); setFilter(null); }}><ArrowLeft size={14} /> {T.reset}</button></div>
+          <div className="aidreset"><button onClick={() => { setSubmitted(false); setResult(null); setPersonal(null); setOntoTxt(null); setQ(""); setFilter(null); }}><ArrowLeft size={14} /> {T.reset}</button></div>
         </div>
       )}
 

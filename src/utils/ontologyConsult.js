@@ -156,10 +156,22 @@ function ontoCarePlan(mr) {
   const parts = p.domains.map((dmn, i) => `${i + 1}) ${dmn.title}: ${dmn.need}`);
   return `${p.name}님 종합 케어플랜이에요(현재 ‘${p.level}’ 단계). ${parts.join(". ")}. ${ONTO_GOVERNANCE.diagnosis}`;
 }
+/* ── ④ 실행레이어 — 사례기반 심층 상담(의료법 준수: 효과 보장 아님, 일반 경향 참고) ── */
+function ontoCaseConsult(mr) {
+  if (!mr || !mr.m) return "로그인하시면 회원님 건강상태를 바탕으로 ‘비슷한 회원들의 관리 사례’를 참고로 안내해 드려요.";
+  const m = mr.m;
+  const keys = [...(m.highRiskCancerTypes || []), ...(m.highRiskDiseases || [])];
+  let c = null;
+  if (typeof CASE_KB !== "undefined") { for (const k of keys) { c = CASE_KB.find((x) => x.dz.some((a) => k.includes(a) || a.includes(k))); if (c) break; } }
+  if (!c) return `${m.name}님과 비슷한 위험요인의 회원들도 정기검진·생활습관 관리·맞춤 영양을 꾸준히 실천하는 것이 일반적이에요. 종합 케어플랜을 단계적으로 실천해 보시길 권해요. 다만 개인차가 크고 효과를 보장하지 않으며, 구체적 치료는 의료진과 상담하세요.`;
+  return `${m.name}님과 비슷한 ‘${c.profile}’ 회원들은 보통 ① ${c.actions.join(" ② ")} 같은 관리를 실천했어요. ${c.tendency}. 이는 일반적인 건강관리 경향에 대한 참고 안내이고 개인차가 크며 효과를 보장하지 않으니, 구체적 치료·약물은 의료진과 상담하세요. 종합 케어플랜에서 단계별로 실천하면 건강금융지갑 적립도 함께 쌓여요.`;
+}
 function ontologyConsult(q) {
   const raw = (q || "").trim(); if (!raw) return null;
   const t = raw.replace(/\s/g, "").toLowerCase();
   const mr = ontoMember();
+  // ④ 실행레이어 — 사례기반 심층 상담
+  if (/사례|비슷한회원|비슷한분|비슷한사람|다른사람들|남들은|보통어떻게|관리사례|성공사례|다른회원/.test(t)) return ontoCaseConsult(mr);
   // 로그인 회원이면 개인 리포트(생체나이·질병·암·의료비·종합) 우선
   // ③ 관계레이어 — 종합 케어플랜(진료·검진·영양·기기·식단·제도 통합)
   if (/종합케어|케어플랜|종합추천|내게필요한|필요한관리|종합관리|토탈케어|한번에추천/.test(t)) return ontoCarePlan(mr);

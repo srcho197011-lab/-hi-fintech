@@ -1081,7 +1081,7 @@ const PREMIUM_EST = { "중증질환": 38000, "비급여": 24000, "간병치매":
 /* 회원 건강상태 기반 맞춤 질문 다수 생성 */
 function memberQuestions(m) {
   if (!m) return [];
-  const qs = ["내 종합 케어플랜", "내 건강상태를 분석해줘", "내 리포트 요약", "내 생체나이는?", "내 의료비 예측", "내 건강 후속조치", "내가 가장 조심해야 할 암은?"];
+  const qs = ["내 종합 케어플랜", "나와 비슷한 회원 관리 사례", "내 건강상태를 분석해줘", "내 리포트 요약", "내 생체나이는?", "내 의료비 예측", "내 건강 후속조치", "내가 가장 조심해야 할 암은?"];
   (m.highRiskCancerTypes || []).forEach((c) => { qs.push(`내 ${c} 위험은?`); qs.push(`${c} 검진은 어떻게 받나요?`); });
   (m.highRiskDiseases || []).forEach((dz) => { qs.push(`내 ${dz} 위험은?`); qs.push(`${dz} 생활관리법은?`); });
   const hd = m.highRiskDiseases || [];
@@ -1183,6 +1183,7 @@ function AIDoctorSection({ onText, onVoice }) {
   const [browseCat, setBrowseCat] = useState(null);
   const [readingKey, setReadingKey] = useState(null);
   const [personal, setPersonal] = useState(null);
+  const [ontoTxt, setOntoTxt] = useState(null);
   const [lang, setLang] = useState("ko");
   const T = UI_STR[lang];
   const riskLabel = (i) => lang === "en" ? RISK_EN[i] : RISK[i][0];
@@ -1199,13 +1200,17 @@ function AIDoctorSection({ onText, onVoice }) {
     setQ(qq); if (f !== undefined) setFilter(f);
     // 데모 회원 로그인 시 — 개인 데이터 기반 분석 답변
     const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+    if (member && /사례|비슷한 회원|비슷한분|비슷한 사람|다른 회원|관리 사례|성공 사례/.test(qq)) {
+      const onto = (typeof ontologyConsult === "function") ? ontologyConsult(qq) : null;
+      if (onto) { setOntoTxt(onto); setPersonal(null); setResult(null); setMatches([]); setSubmitted(true); setEasy(false); logConsult(qq, null, 0); setLogTick((n) => n + 1); setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60); return; }
+    }
     if (member && /내 건강|건강상태|분석해|조심|가장.*암|의료비|보험|건강지갑|보험료|줄일|필요한|내가|내 .*위험|후속조치|케어플랜|종합 케어|종합관리/.test(qq)) {
-      setPersonal(demoPersonalAnswer(member)); setResult(null); setMatches([]); setSubmitted(true); setEasy(false);
+      setOntoTxt(null); setPersonal(demoPersonalAnswer(member)); setResult(null); setMatches([]); setSubmitted(true); setEasy(false);
       logConsult(qq, null, 0); setLogTick((n) => n + 1);
       setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60);
       return;
     }
-    setPersonal(null);
+    setPersonal(null); setOntoTxt(null);
     const list = searchHealth(qq, ff, kb);
     setMatches(list); setResult(list[0] || null); setSubmitted(true); setEasy(false);
     const rIdx = (detectEmergency(qq) || (list[0] && list[0].risk === 4)) ? 4 : (list[0] ? list[0].risk : 0);
@@ -1368,7 +1373,17 @@ function AIDoctorSection({ onText, onVoice }) {
       {/* 상담 결과 */}
       {submitted && (
         <div className="aidresult" ref={panelRef}>
-          {personal ? (<>
+          {ontoTxt ? (
+            <div className="adcard">
+              <div className="adt2"><Sparkles size={16} color="#7C3AED" /> 사례기반 심층 상담 <span className="cplvl" style={{ color: "#7C3AED", background: "#F3EDFE", borderColor: "#DDD0F7" }}>의료법 준수 참고안내</span></div>
+              <div className="aianswer" style={{ whiteSpace: "pre-wrap", lineHeight: 1.75, fontSize: 13.5, color: "#2a3550", marginTop: 6 }}>{ontoTxt}</div>
+              <div className="adcta">
+                <button className="cbtn pri" style={{ margin: 0 }} onClick={() => run("내 종합 케어플랜")}><HeartHandshake size={14} /> 내 케어플랜 보기</button>
+                <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("checkup")}><CalendarCheck size={14} /> 검진 예약</button>
+              </div>
+              <div className="aiddisc" style={{ marginTop: 10 }}><AlertTriangle size={14} /> 일반적 건강관리 경향에 대한 참고 안내이며, 효과를 보장하지 않습니다. 구체적 치료·약물은 의료진과 상담하세요.</div>
+            </div>
+          ) : personal ? (<>
             <div className="adcard adpersonal">
               <div className="adtop"><div><div className="adt">{personal.title}</div><div className="adcat">시연용 데모 데이터 기반 분석</div></div>
                 <span className="adrisk" style={{ color: personal.grade[1], background: personal.grade[2] }}>암위험 {personal.grade[0]}</span></div>
@@ -1492,7 +1507,7 @@ function AIDoctorSection({ onText, onVoice }) {
           </>) : (
             <div className="aidnone"><Search size={26} color="#B8C2D6" /><div><b>{T.none}</b><p>{T.noneSub}</p></div></div>
           )}
-          <div className="aidreset"><button onClick={() => { setSubmitted(false); setResult(null); setPersonal(null); setQ(""); setFilter(null); }}><ArrowLeft size={14} /> {T.reset}</button></div>
+          <div className="aidreset"><button onClick={() => { setSubmitted(false); setResult(null); setPersonal(null); setOntoTxt(null); setQ(""); setFilter(null); }}><ArrowLeft size={14} /> {T.reset}</button></div>
         </div>
       )}
 
@@ -5104,6 +5119,21 @@ const SCREENING_KB = {
   "위암": "위내시경 40세↑ 2년 주기", "대장암": "대장내시경·분변잠혈검사 50세↑(가족력 시 조기)", "간암": "간초음파+AFP 고위험군 6개월", "유방암": "유방촬영 40세↑ 2년", "자궁경부암": "자궁경부세포검사 20세↑ 2년", "폐암": "저선량 흉부CT 54~74세 고위험 흡연자", "전립선암": "PSA 검사 50세↑(상담 후)", "갑상선암": "갑상선 초음파(증상·고위험 시)", "췌장암": "고위험군 영상검사(전문의 상담)",
 };
 
+/* ⑤-3 사례기반 심층 상담 KB(④실행레이어) — 의료법 준수: 효과 보장 아님, ‘일반적 건강관리 경향’ 참고 */
+const CASE_KB = [
+  { dz: ["고혈압", "혈압"], profile: "50~60대 고혈압 위험군", actions: ["저염식(DASH)·체중 5% 감량", "주 150분 이상 유산소 운동", "가정용 혈압계로 아침·저녁 측정", "금연·절주"], tendency: "꾸준히 병행한 분들은 일반적으로 혈압 수치 관리와 심뇌혈관 합병증 예방에 도움을 받는 것으로 알려져 있어요" },
+  { dz: ["당뇨", "당뇨병", "혈당"], profile: "당뇨 전단계·당뇨 위험군", actions: ["정제 탄수화물·당류 줄이기", "식후 걷기 등 규칙적 운동", "자가혈당 모니터링", "안저·미세단백뇨 합병증 검진"], tendency: "생활습관 관리와 정기 검진을 병행한 분들은 일반적으로 혈당 관리와 합병증 조기발견에 도움을 받는 것으로 보고됩니다" },
+  { dz: ["고지혈", "이상지질", "콜레스테롤"], profile: "이상지질혈증 위험군", actions: ["포화·트랜스지방 줄이기", "오메가3·식이섬유 섭취", "유산소+근력 운동", "정기 지질검사"], tendency: "식이·운동을 꾸준히 한 분들은 일반적으로 지질 수치 관리에 도움을 받는 것으로 알려져 있어요" },
+  { dz: ["대장암", "대장"], profile: "대장암 위험군(가족력·연령)", actions: ["50세부터 대장내시경 정기검진", "붉은 고기·가공육 줄이기", "식이섬유·채소 늘리기", "금연·절주·체중관리"], tendency: "정기 검진으로 용종을 조기에 발견·제거한 분들이 많아, 검진이 가장 중요한 관리로 알려져 있어요" },
+  { dz: ["위암", "위"], profile: "위암 위험군", actions: ["40세부터 위내시경 정기검진", "헬리코박터 검사·제균(필요 시)", "짠 음식·훈제식품 줄이기", "금연"], tendency: "정기 내시경으로 조기에 발견한 분들의 예후가 좋은 것으로 알려져, 검진 주기 준수가 핵심이에요" },
+  { dz: ["전립선암", "전립선"], profile: "중장년 남성 전립선 위험군", actions: ["50세부터 PSA 검사 상담", "비만·대사 관리", "규칙적 운동", "배뇨장애 등 증상 시 비뇨의학과"], tendency: "정기 PSA·전문의 상담을 한 분들이 조기 발견에 도움을 받는 것으로 알려져 있어요" },
+  { dz: ["뇌졸중", "뇌혈관", "뇌출혈"], profile: "뇌혈관질환 위험군", actions: ["혈압·혈당·지질 동시 관리", "경동맥 초음파 등 정기 평가", "금연·절주", "마비·언어장애 시 즉시 119"], tendency: "위험인자(혈압·혈당·지질)를 함께 관리한 분들은 일반적으로 발생·재발 위험 관리에 도움을 받는 것으로 알려져 있어요" },
+  { dz: ["유방암", "자궁", "여성암", "난소"], profile: "여성암 위험군", actions: ["국가 여성암검진 주기 준수(유방 40세↑·자궁경부 20세↑)", "자가검진 습관", "체중·음주 관리", "가족력 시 전문 상담"], tendency: "정기 검진을 준수한 분들이 조기 발견에 도움을 받는 것으로 알려져 있어요" },
+  { dz: ["비만", "체중", "대사"], profile: "대사증후군·비만 위험군", actions: ["하루 300~500kcal 적자 식단", "주 4회 이상 유산소+근력", "수면·스트레스 관리", "체성분 정기 측정"], tendency: "점진적 체중감량을 이룬 분들은 일반적으로 혈압·혈당·지질 지표 관리에 함께 도움을 받는 경향이 있어요" },
+  { dz: ["골다공", "골밀도", "골절"], profile: "폐경 후·고령 골건강 위험군", actions: ["칼슘·비타민D 섭취", "체중부하·균형 운동", "골밀도 정기검사", "낙상 예방 환경"], tendency: "꾸준한 운동·영양과 정기 골밀도 검사를 한 분들은 일반적으로 골절 위험 관리에 도움을 받는 것으로 알려져 있어요" },
+  { dz: ["치매", "인지"], profile: "고령 인지건강 관리군", actions: ["유산소·인지 활동", "사회적 교류 유지", "혈관위험인자 관리", "조기 인지선별검사"], tendency: "신체·인지·사회 활동을 유지한 분들은 일반적으로 인지건강 관리에 도움을 받는 것으로 알려져 있어요" },
+];
+
 /* ⑥ 의미레이어 — 엔티티 정의(개념 혼동 방지용 경량 사전) */
 const ENTITY_DEFS = {
   "검진항목": "건강검진에서 측정하는 지표(혈압·혈당 등)로 위험을 가늠하는 신호. 진단명이 아님.",
@@ -5272,10 +5302,22 @@ function ontoCarePlan(mr) {
   const parts = p.domains.map((dmn, i) => `${i + 1}) ${dmn.title}: ${dmn.need}`);
   return `${p.name}님 종합 케어플랜이에요(현재 ‘${p.level}’ 단계). ${parts.join(". ")}. ${ONTO_GOVERNANCE.diagnosis}`;
 }
+/* ── ④ 실행레이어 — 사례기반 심층 상담(의료법 준수: 효과 보장 아님, 일반 경향 참고) ── */
+function ontoCaseConsult(mr) {
+  if (!mr || !mr.m) return "로그인하시면 회원님 건강상태를 바탕으로 ‘비슷한 회원들의 관리 사례’를 참고로 안내해 드려요.";
+  const m = mr.m;
+  const keys = [...(m.highRiskCancerTypes || []), ...(m.highRiskDiseases || [])];
+  let c = null;
+  if (typeof CASE_KB !== "undefined") { for (const k of keys) { c = CASE_KB.find((x) => x.dz.some((a) => k.includes(a) || a.includes(k))); if (c) break; } }
+  if (!c) return `${m.name}님과 비슷한 위험요인의 회원들도 정기검진·생활습관 관리·맞춤 영양을 꾸준히 실천하는 것이 일반적이에요. 종합 케어플랜을 단계적으로 실천해 보시길 권해요. 다만 개인차가 크고 효과를 보장하지 않으며, 구체적 치료는 의료진과 상담하세요.`;
+  return `${m.name}님과 비슷한 ‘${c.profile}’ 회원들은 보통 ① ${c.actions.join(" ② ")} 같은 관리를 실천했어요. ${c.tendency}. 이는 일반적인 건강관리 경향에 대한 참고 안내이고 개인차가 크며 효과를 보장하지 않으니, 구체적 치료·약물은 의료진과 상담하세요. 종합 케어플랜에서 단계별로 실천하면 건강금융지갑 적립도 함께 쌓여요.`;
+}
 function ontologyConsult(q) {
   const raw = (q || "").trim(); if (!raw) return null;
   const t = raw.replace(/\s/g, "").toLowerCase();
   const mr = ontoMember();
+  // ④ 실행레이어 — 사례기반 심층 상담
+  if (/사례|비슷한회원|비슷한분|비슷한사람|다른사람들|남들은|보통어떻게|관리사례|성공사례|다른회원/.test(t)) return ontoCaseConsult(mr);
   // 로그인 회원이면 개인 리포트(생체나이·질병·암·의료비·종합) 우선
   // ③ 관계레이어 — 종합 케어플랜(진료·검진·영양·기기·식단·제도 통합)
   if (/종합케어|케어플랜|종합추천|내게필요한|필요한관리|종합관리|토탈케어|한번에추천/.test(t)) return ontoCarePlan(mr);
