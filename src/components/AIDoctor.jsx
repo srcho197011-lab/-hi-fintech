@@ -573,9 +573,12 @@ function CarePlanCard({ member }) {
   if (!p) return null;
   const ICO = { hospital: Building2, checkup: CalendarCheck, pill: Pill, device: MonitorSmartphone, salad: Salad, shield: ShieldCheck };
   const STAT = ["할 일", "진행중", "완료 ✓"];
-  const cycle = (title) => { const next = { ...status, [title]: (((status[title] || 0) + 1) % 3) }; setStatus(next); try { localStorage.setItem(key, JSON.stringify(next)); } catch (e) {} };
+  const REWARD = { "병원·진료": 300, "추가 검진": 500, "영양·홈케어의료기": 100, "홈케어 기기": 100, "맞춤 식단": 100, "의료지원제도": 50 };
+  const cycle = (title) => { const nx = (((status[title] || 0) + 1) % 3); const next = { ...status, [title]: nx }; setStatus(next); try { localStorage.setItem(key, JSON.stringify(next)); } catch (e) {} if (nx === 2 && typeof toast === "function") toast(`✅ ${title} 완료 · +${REWARD[title] || 100} HPET 적립!`); };
   const done = p.domains.filter((dmn) => (status[dmn.title] || 0) === 2).length;
   const pct = Math.round(done / p.domains.length * 100);
+  const earned = p.domains.reduce((s, dmn) => s + (((status[dmn.title] || 0) === 2) ? (REWARD[dmn.title] || 100) : 0), 0);
+  const maxPts = p.domains.reduce((s, dmn) => s + (REWARD[dmn.title] || 100), 0);
   const printPlan = () => {
     const rows = p.domains.map((dmn, i) => `<tr><td>${i + 1}. ${dmn.title} [${dmn.urgency}]</td><td>${dmn.need}</td><td>${STAT[status[dmn.title] || 0].replace(" ✓", "")}</td></tr>`).join("");
     const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${p.name}님 종합 케어플랜</title><style>body{font-family:system-ui,'Malgun Gothic',sans-serif;padding:30px;color:#1B2A52}h1{font-size:20px;margin:0 0 6px}table{width:100%;border-collapse:collapse;margin-top:10px}td{border-bottom:1px solid #e5e9f0;padding:9px;font-size:13px}.lv{display:inline-block;background:#E7F8EE;color:#16A34A;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:700}.disc{margin-top:16px;font-size:11px;color:#a05a00}</style></head><body><div style="font-size:12px;color:#7886a8">HI-Fin Tech · AI 주치의 종합 케어플랜</div><h1>${p.name}님 종합 케어플랜 <span class="lv">${p.level}</span></h1><div style="font-size:12px;color:#667">진행률 ${pct}% (${done}/${p.domains.length})</div><table><thead><tr><td><b>영역</b></td><td><b>권장 내용</b></td><td><b>상태</b></td></tr></thead><tbody>${rows}</tbody></table><div class="disc">※ 검진 데이터 기반 참고 안내이며, 확정 진단·처방은 의료진 상담이 필요합니다.</div></body></html>`;
@@ -584,7 +587,7 @@ function CarePlanCard({ member }) {
   return (
     <div className="adcard cplan">
       <div className="adt2"><HeartHandshake size={16} color="#16A34A" /> {p.name}님 종합 케어플랜 <span className="cplvl">{p.level}</span><button className="cpprint" onClick={printPlan}><FileText size={13} /> 인쇄</button></div>
-      <div className="cpprog"><div className="cppt">진행률 <b>{pct}%</b> <span>{done}/{p.domains.length} 완료</span></div><div className="cppbar"><i style={{ width: pct + "%" }} /></div></div>
+      <div className="cpprog"><div className="cppt">진행률 <b>{pct}%</b> <span>{done}/{p.domains.length} 완료</span><span className="cprew"><Coins size={12} /> +{earned.toLocaleString("ko-KR")} HPET <small>/ 최대 {maxPts.toLocaleString("ko-KR")}</small></span><button className="cprwbtn" onClick={() => nav("wallet")}>건강금융지갑 ›</button></div><div className="cppbar"><i style={{ width: pct + "%" }} /></div></div>
       <div className="cpgrid">
         {p.domains.map((dmn, i) => { const Ic = ICO[dmn.icon] || Sparkles; const st = status[dmn.title] || 0; return (
           <div className="cprow" key={i} style={{ borderLeftColor: dmn.color, opacity: st === 2 ? 0.72 : 1 }}>
