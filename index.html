@@ -5636,6 +5636,8 @@ const DEPT_CATS = [
   { key: "ent", label: "이비인후과", tags: ["비염", "중이염", "어지럼"], clinic: "이비인후과" },
   { key: "uro", label: "비뇨의학과", tags: ["전립선", "요로결석", "배뇨장애"], clinic: "비뇨의학과" },
   { key: "psych", label: "정신건강의학과", tags: ["우울", "불면", "불안"], clinic: "정신건강의학과" },
+  { key: "dental", label: "치과", tags: ["충치·신경치료", "임플란트", "교정·스케일링"], clinic: "치과" },
+  { key: "kmed", label: "한의원", tags: ["침·뜸", "한약", "추나·통증"], clinic: "한의원" },
 ];
 const TM_SUR = ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신", "권", "황", "안", "송", "전", "홍", "고", "문", "손", "배", "백", "허", "유", "남", "심", "노"];
 const TM_GIV = ["민준", "서연", "도윤", "지우", "예준", "하준", "지호", "수아", "지민", "현우", "서준", "유진", "지훈", "채원", "건우", "다은", "승현", "나윤", "준영", "가은", "태현", "소율", "우진", "하린", "재원", "예린", "성호", "은정", "동현", "혜진"];
@@ -5653,7 +5655,7 @@ function genSpecialists(sido, sigungu, deptKey, n) {
   const out = [], seenH = new Set(), seenN = new Set();
   for (let i = 0; i < cnt; i++) {
     let nm; for (let k = 0; k < 6; k++) { nm = pick(TM_SUR) + pick(TM_GIV); if (!seenN.has(nm)) break; } seenN.add(nm);
-    let hosp; for (let k = 0; k < 6; k++) { hosp = TM_BRAND[Math.floor(rnd() * TM_BRAND.length)] + cat.clinic + TM_TYPE[Math.floor(rnd() * TM_TYPE.length)]; if (!seenH.has(hosp)) break; } seenH.add(hosp);
+    let hosp; for (let k = 0; k < 6; k++) { const b = TM_BRAND[Math.floor(rnd() * TM_BRAND.length)] + cat.clinic; hosp = (cat.clinic === "한의원") ? b : b + TM_TYPE[Math.floor(rnd() * TM_TYPE.length)]; if (!seenH.has(hosp)) break; } seenH.add(hosp);
     out.push({
       id: `${deptKey}-${sigungu}-${i}`, name: `${nm} ${TM_TITLE[Math.floor(rnd() * TM_TITLE.length)]}`, dept: cat.label, deptKey,
       hosp, sido, sigungu, tags: cat.tags, rating: +(4.3 + rnd() * 0.6).toFixed(1), exp: (8 + Math.floor(rnd() * 23)) + "년",
