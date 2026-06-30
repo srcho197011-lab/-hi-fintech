@@ -1272,3 +1272,15 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .carec .ct{font-size:14.5px;font-weight:800;color:#15234A;}
 .carec .cd{font-size:12px;color:var(--muted);line-height:1.55;margin-top:5px;flex:1;}
 .carec .cbtn{font-size:12.5px;padding:9px 0;}
+/* 종합 케어플랜 카드(관계레이어) */
+.cplan{margin-top:12px;}
+.cplvl{margin-left:8px;font-size:11.5px;font-weight:800;color:#16A34A;background:#E7F8EE;border:1px solid #B6E7C9;border-radius:999px;padding:3px 10px;}
+.cpgrid{display:flex;flex-direction:column;gap:9px;margin-top:8px;}
+.cprow{display:flex;align-items:center;gap:11px;border:1px solid var(--border);border-left:3px solid #16A34A;border-radius:12px;background:#fff;padding:11px 13px;}
+.cprow .ci{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;}
+.cpb{flex:1;min-width:0;}
+.cpt{font-size:13.5px;font-weight:800;color:#15234A;}
+.cpn{font-size:12.5px;color:#3a4659;font-weight:600;margin-top:1px;}
+.cpr{font-size:11px;color:var(--muted);margin-top:1px;}
+.cpgo{flex-shrink:0;display:inline-flex;align-items:center;gap:3px;background:#F7F9FC;border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+@media(max-width:560px){.cprow{flex-wrap:wrap;}.cpgo{width:100%;justify-content:center;margin-top:2px;}}

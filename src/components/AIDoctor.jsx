@@ -563,6 +563,28 @@ function MemberCareLinks({ member }) {
     </div>
   );
 }
+/* ③ 관계레이어 시각화 — 종합 케어플랜 카드(6영역 + 섹션 연계 버튼) */
+function CarePlanCard({ member }) {
+  if (!member || typeof buildCarePlan !== "function") return null;
+  const p = buildCarePlan(member);
+  if (!p) return null;
+  const ICO = { hospital: Building2, checkup: CalendarCheck, pill: Pill, device: MonitorSmartphone, salad: Salad, shield: ShieldCheck };
+  return (
+    <div className="adcard cplan">
+      <div className="adt2"><HeartHandshake size={16} color="#16A34A" /> {p.name}님 종합 케어플랜 <span className="cplvl">{p.level}</span></div>
+      <div className="cpgrid">
+        {p.domains.map((dmn, i) => { const Ic = ICO[dmn.icon] || Sparkles; return (
+          <div className="cprow" key={i} style={{ borderLeftColor: dmn.color }}>
+            <span className="ci" style={{ background: dmn.color + "1A", color: dmn.color }}><Ic size={18} /></span>
+            <div className="cpb"><div className="cpt">{dmn.title}</div><div className="cpn">{dmn.need}</div><div className="cpr">{dmn.reason}</div></div>
+            <button className="cpgo" style={{ color: dmn.color }} onClick={() => nav(dmn.to)}>{dmn.btn} <ChevronRight size={13} /></button>
+          </div>
+        ); })}
+      </div>
+      <div className="aiddisc"><AlertTriangle size={14} /> 검진 데이터 기반 참고 안내이며, 확정 진단·처방은 의료진 상담이 필요합니다.</div>
+    </div>
+  );
+}
 function AIDoctorSection({ onText, onVoice }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState(null);
@@ -780,7 +802,7 @@ function AIDoctorSection({ onText, onVoice }) {
               </div>
               <div className="aiddisc" style={{ marginTop: 12 }}><AlertTriangle size={14} /> 본 내용은 시연용 데모 데이터 기반 분석이며, 실제 의학적 진단이나 보험 가입 심사를 대체하지 않습니다.</div>
             </div>
-            <MemberCareLinks member={demoCurrentUser()} />
+            <CarePlanCard member={demoCurrentUser()} />
             </>) : result ? (<>
             <div className="adcard">
               <div className="adtop">
