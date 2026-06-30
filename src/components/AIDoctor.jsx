@@ -531,7 +531,7 @@ function MemberCareLinks({ member }) {
   const actions = [
     { ic: CalendarCheck, col: "#2563EB", t: "추가 검진 예약", d: `${cancers.length ? cancers.join("·") + " 등 " : ""}고위험 항목은 권고 주기보다 자주 정밀검진을 받는 것이 좋아요.`, btn: "검진 예약하기", to: "checkup" },
     { ic: Building2, col: "#7C3AED", t: "병원·진료과 안내", d: `${cancers[0] || worst || "건강"} 관련은 ${dept} 진료가 적합해요. 가까운 병원·검진센터를 찾아드려요.`, btn: "병원 찾기", to: "hospital" },
-    { ic: Pill, col: "#F59E0B", t: "맞춤 영양제 안내", d: `${(R.worstNames || []).join("·") || "건강 관리"}에 맞춘 영양제를 추천해 드려요.`, btn: "영양제 보기", to: "shop" },
+    { ic: Pill, col: "#F59E0B", t: "영양 및 홈케어의료기", d: `${(R.worstNames || []).join("·") || "건강 관리"}에 맞춘 영양제·홈케어 의료기기를 추천해 드려요.`, btn: "보러 가기", to: "shop" },
   ];
   if (dzs.length) actions.push({ ic: Salad, col: "#16A34A", t: "만성질환 관리 식단", d: `${dzs.join("·")} 관리를 위한 저염·저당·균형 식단을 안내해요.`, btn: "식단 보기", to: "shop" });
   return (
@@ -932,7 +932,7 @@ function AIDoctor() {
 let UID = 100;
 const now = () => { const d = new Date(); let h = d.getHours(); const m = String(d.getMinutes()).padStart(2, "0"); const ap = h < 12 ? "오전" : "오후"; h = h % 12 || 12; return `${ap} ${h}:${m}`; };
 /* 채팅 액션 버튼 → 섹션 네비게이션 매핑 */
-const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진료 안내": "hospital", "💊 영양제 안내": "shop", "🥗 건강 식단 안내": "shop" };
+const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진료 안내": "hospital", "💊 영양 및 홈케어의료기": "shop", "🥗 건강 식단 안내": "shop" };
 /* 리포트/개인 답변 후 — 회원 병명별 후속질문 */
 function reportFollowupQuestions() {
   const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -945,7 +945,7 @@ function reportFollowupQuestions() {
 }
 /* 연계 액션 카드(추가검진·병원·영양제·식단) */
 function memberActionCard() {
-  return { title: `${aiWho()}님 맞춤 건강 액션 — 연계 안내`, items: ["고위험 항목 추가·정밀 검진 권고", "관련 진료과·가까운 병원 안내", "맞춤 영양제 추천", "만성질환 관리 식단"], buttons: ["🔬 추가 검진 예약", "🏥 병원·진료 안내", "💊 영양제 안내", "🥗 건강 식단 안내"] };
+  return { compact: true, title: `${aiWho()}님 맞춤 건강 액션 — 연계 안내`, items: ["고위험 항목 추가·정밀 검진 권고", "관련 진료과·가까운 병원 안내", "영양 및 홈케어 의료기기 추천", "만성질환 관리 식단"], buttons: ["🔬 추가 검진 예약", "🏥 병원·진료 안내", "💊 영양 및 홈케어의료기", "🥗 건강 식단 안내"] };
 }
 function aiRespond(text, corpus, report, QA) {
   const has = (...ks) => ks.some((k) => text.includes(k));
@@ -1043,7 +1043,7 @@ function Chat() {
   );
 }
 function KCard({ card, onBtn }) {
-  return (<div className="kcard"><div className="kt-t">{card.title}</div>
+  return (<div className={`kcard ${card.compact ? "compact" : ""}`}><div className="kt-t">{card.title}</div>
     <div className="kt-i">{card.items.map((it, i) => <div className="li" key={i}><span className="d" />{it}</div>)}</div>
     <div className="kt-b">{card.buttons.map((b) => <button key={b} onClick={() => onBtn(b)}>{b}</button>)}</div></div>);
 }
