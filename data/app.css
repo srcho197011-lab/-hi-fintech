@@ -1601,3 +1601,5 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .kmibanner{background:linear-gradient(120deg,#0B5FB0,#1D4ED8 60%,#2F5BEA);color:#fff;border-radius:16px;padding:15px 17px;margin-bottom:13px;box-shadow:0 16px 32px -20px rgba(29,78,216,.8);}
 .kmibt{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;letter-spacing:-.3px;}
 .kmibs{font-size:12px;opacity:.95;margin-top:5px;}.kmibs b{color:#FDE68A;}
+.kmibanner.kahp{background:linear-gradient(120deg,#0B7A4B,#16A34A 58%,#15803D);box-shadow:0 16px 32px -20px rgba(22,163,74,.8);}
+.kahptag{display:inline-block;background:rgba(255,255,255,.22);border-radius:999px;padding:1px 9px;font-size:10.5px;font-weight:800;margin-left:6px;}
