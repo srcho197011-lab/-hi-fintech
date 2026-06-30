@@ -997,10 +997,22 @@ const REC_Q = [
   ["콜레스테롤이 높다는데 어떻게 관리하나요?", "고지혈증"], ["잠이 잘 안 올 때 어떻게 해야 하나요?", "불면"], ["유방암 검진은 언제 받아야 하나요?", "유방암"],
 ];
 const HC_CATS = [
-  ["질병 정보", HeartPulse, "고혈압"], ["증상 정보", Activity, "가슴 통증"], ["검사 정보", Stethoscope, "혈압"], ["치료 정보", Pill, "당뇨"], ["생활습관 관리", Salad, "고혈압"],
-  ["심뇌혈관질환", Brain, "뇌졸중"], ["암 정보", ShieldCheck, "비급여"], ["희귀질환", FileText, "루게릭"], ["정신건강", Users, "우울"], ["응급상황", AlertTriangle, "가슴 통증"],
-  ["청소년 건강", Users, "청소년"], ["노인 건강", HeartHandshake, "노인"], ["약품·식품", Pill, "약물"], ["예방접종", ShieldCheck, "예방접종"], ["금연·생활", Salad, "금연"],
+  ["질병 정보", HeartPulse, "고혈압"], ["증상 정보", Activity, "가슴 통증"], ["검진항목 해석", Stethoscope, "혈압 수치"], ["치료 정보", Pill, "당뇨"], ["생활습관 관리", Salad, "고혈압 생활습관 관리법은?"],
+  ["영양·홈케어기기", HeartPulse, "당뇨 영양제 추천"], ["건강 식단", Salad, "고혈압 식단"], ["의료지원제도", ShieldCheck, "내가 받을 수 있는 의료지원제도"], ["심뇌혈관질환", Brain, "뇌졸중"], ["암 정보", ShieldCheck, "대장암 검진"],
+  ["대상군 케어(노인·여성·아동)", Users, "노인 건강관리"], ["정신건강", Users, "우울"], ["희귀질환", FileText, "루게릭"], ["예방접종", ShieldCheck, "예방접종"], ["응급상황", AlertTriangle, "가슴 통증"],
 ];
+/* 데이터하우스 온톨로지 — 카테고리별 전체 목록(실데이터 기반 카운트·브라우즈) */
+function ontoCategories() {
+  const out = [];
+  if (typeof NUTRITION_KB !== "undefined" && NUTRITION_KB) out.push({ name: "영양 가이드", key: "nutr", count: NUTRITION_KB.length, items: NUTRITION_KB.map((e) => ({ t: e.dz[0], s: `영양소 ${e.nutrients.slice(0, 3).join("·")} · 식품 ${(e.food || []).slice(0, 2).join("·")}`, q: `${e.dz[0]} 영양제 추천` })) });
+  if (typeof DEVICE_KB !== "undefined" && DEVICE_KB) out.push({ name: "홈케어 의료기기", key: "dev", count: DEVICE_KB.length, items: DEVICE_KB.map((e) => ({ t: e.dz[0], s: e.items.map((it) => it[0]).slice(0, 2).join("·"), q: `${e.dz[0]} 홈케어 의료기기` })) });
+  if (typeof DIET_KB !== "undefined" && DIET_KB) out.push({ name: "건강 식단", key: "diet", count: DIET_KB.length, items: DIET_KB.map((e) => ({ t: e.dz[0], s: e.principle, q: `${e.dz[0]} 식단` })) });
+  if (typeof SUPPORT_KB !== "undefined" && SUPPORT_KB) out.push({ name: "의료지원제도", key: "support", count: SUPPORT_KB.length, items: SUPPORT_KB.map((e) => ({ t: e.name, s: e.who, q: `${e.name} 지원제도` })) });
+  if (typeof CHECKUP_ONTOLOGY !== "undefined" && CHECKUP_ONTOLOGY) out.push({ name: "검진항목 해석", key: "checkup", count: CHECKUP_ONTOLOGY.length, items: CHECKUP_ONTOLOGY.map((e) => ({ t: e.key, s: `${e.unit || ""} · 정상 ${(e.grades && e.grades[0] && e.grades[0][1]) || ""}`, q: `${e.key} 수치` })) });
+  if (typeof CASE_KB !== "undefined" && CASE_KB) out.push({ name: "맞춤 사례", key: "case", count: CASE_KB.length, items: CASE_KB.map((e) => ({ t: e.profile, s: e.actions.slice(0, 2).join("·"), q: "나와 비슷한 회원 관리 사례" })) });
+  if (typeof GROUP_KB !== "undefined" && GROUP_KB) out.push({ name: "대상군 케어", key: "group", count: Object.keys(GROUP_KB).length, items: Object.entries(GROUP_KB).map(([k, e]) => ({ t: k, s: (e.focus || []).slice(0, 2).join("·"), q: `${k} 건강관리` })) });
+  return out;
+}
 const CAT_GROUPS = [
   ["만성질환", (c) => c.subCategory === "만성질환"],
   ["암 정보", (c) => c.subCategory === "암정보"],
@@ -1218,6 +1230,7 @@ function AIDoctorSection({ onText, onVoice }) {
   const ttsOK = typeof window !== "undefined" && !!window.speechSynthesis;
   const emergencyHit = detectEmergency(q) || (result && result.risk === 4);
   const FILTERS = [["증상", "증상으로 찾기"], ["질병", "질병명으로 찾기"], ["검사", "검사·치료로 찾기"], ["생활관리", "생활관리로 찾기"]];
+  const ontoCats = (typeof ontoCategories === "function") ? ontoCategories() : [];
 
   const run = (query, f) => {
     const qq = query !== undefined ? query : q;
@@ -1235,6 +1248,12 @@ function AIDoctorSection({ onText, onVoice }) {
       logConsult(qq, null, 0); setLogTick((n) => n + 1);
       setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60);
       return;
+    }
+    // 데이터하우스 온톨로지(영양·기기·식단·제도·검진·대상군) — 코퍼스 검색보다 우선
+    { const ontoG = (typeof ontologyConsult === "function") ? ontologyConsult(qq) : null;
+      if (ontoG && /영양|보충제|식단|식이|의료기기|혈압계|혈당계|홈케어|지원제도|의료지원|산정특례|장기요양|치매국가|본인부담상한|검진|수치|기준|노인|여성|아동|소아|대상군|건강관리/.test(qq)) {
+        setOntoTxt(ontoG); setCaseData(null); setPersonal(null); setResult(null); setMatches([]); setSubmitted(true); setEasy(false); logConsult(qq, null, 0); setLogTick((n) => n + 1); setTimeout(() => { try { panelRef.current && panelRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {} }, 60); return;
+      }
     }
     setPersonal(null); setOntoTxt(null); setCaseData(null);
     const list = searchHealth(qq, ff, kb);
@@ -1386,12 +1405,12 @@ function AIDoctorSection({ onText, onVoice }) {
         <div className="aidrecq">{REC_Q.map(([disp, query]) => <button key={disp} onClick={() => run(query)}><HelpDot /> {disp}</button>)}</div>
         <div className="aidrech">{T.cats}</div>
         <div className="aidcats">{HC_CATS.map(([t, Ic, query]) => <button key={t} onClick={() => run(query)}><span className="ci"><Ic size={17} /></span>{t}</button>)}</div>
-        <div className="aidrech">{T.catlist}</div>
-        <div className="aidcatlist">{CAT_GROUPS.map(([name, pred]) => { const n = kb.filter(pred).length; return <button key={name} className={browseCat === name ? "on" : ""} onClick={() => setBrowseCat(browseCat === name ? null : name)}>{name} <span>{n}</span></button>; })}</div>
-        {browseCat && (() => { const grp = CAT_GROUPS.find((g) => g[0] === browseCat); const list = grp ? kb.filter(grp[1]) : []; return (
+        <div className="aidrech">건강 지식 데이터하우스 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>· AI 주치의 온톨로지(영양·기기·식단·제도·검진·사례·대상군)</span></div>
+        <div className="aidcatlist">{ontoCats.map((c) => <button key={c.key} className={browseCat === c.key ? "on" : ""} onClick={() => setBrowseCat(browseCat === c.key ? null : c.key)}>{c.name} <span>{c.count}</span></button>)}</div>
+        {browseCat && (() => { const grp = ontoCats.find((g) => g.key === browseCat); if (!grp) return null; return (
           <div className="aidbrowse">
-            <div className="bbh">{browseCat} <b>{list.length}{lang === "en" ? "" : "건"}</b><span className="bbx" onClick={() => setBrowseCat(null)}>{T.close}</span></div>
-            {list.map((c) => <button className="brow" key={c.id} onClick={() => run(c.title)}><span className="bl"><span className="bt">{c.title}</span><span className="bs">{c.summary}</span></span><span className="brisk" style={{ color: RISK[c.risk][1], background: RISK[c.risk][2] }}>{riskLabel(c.risk)}</span></button>)}
+            <div className="bbh">{grp.name} <b>{grp.items.length}{lang === "en" ? "" : "건"}</b><span className="bbx" onClick={() => setBrowseCat(null)}>{T.close}</span></div>
+            {grp.items.map((it, i) => <button className="brow" key={i} onClick={() => run(it.q)}><span className="bl"><span className="bt">{it.t}</span><span className="bs">{it.s}</span></span><span className="brisk" style={{ color: "#2563EB", background: "#EAF0FE" }}>AI 상담 ›</span></button>)}
           </div>
         ); })()}
       </>)}
