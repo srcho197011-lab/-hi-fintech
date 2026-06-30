@@ -115,10 +115,13 @@ function BrandDirectory({ kmiOnly }) {
   const ALL = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
   const META = (typeof CHECKUP_BRAND_META !== "undefined") ? CHECKUP_BRAND_META : {};
   const ssido = (s) => (typeof tmSidoShort === "function" ? tmSidoShort(s) : s);
+  const rank = (s) => (typeof SIDO_RANK !== "undefined" && SIDO_RANK[s]) || 99;
   const base = ALL.filter((c) => kmiOnly ? c.b === "KMI한국의학연구소" : c.b !== "KMI한국의학연구소");
   const brands = kmiOnly ? [] : ["전체", ...Array.from(new Set(base.map((c) => c.b)))];
-  const sidos = ["전체", ...Array.from(new Set(base.map((c) => c.sd)))];
-  let list = base.filter((c) => (kmiOnly || brand === "전체" || c.b === brand) && (sido === "전체" || c.sd === sido) && (!q || (c.n + c.sd + c.sg + c.ad).includes(q)));
+  const brandList = base.filter((c) => kmiOnly || brand === "전체" || c.b === brand);
+  const sidos = ["전체", ...Array.from(new Set(brandList.map((c) => c.sd))).sort((a, b) => rank(a) - rank(b))];
+  let list = brandList.filter((c) => (sido === "전체" || c.sd === sido) && (!q || (c.n + c.sd + c.sg + c.ad).includes(q)));
+  list = list.sort((a, b) => rank(a.sd) - rank(b.sd) || a.sg.localeCompare(b.sg, "ko"));
   const view = list.slice(0, shown);
   const card = (c, i) => { const m = META[c.b] || {}; return (
     <div className="center" key={i}>
@@ -151,7 +154,7 @@ function BrandDirectory({ kmiOnly }) {
       </div>
       {!kmiOnly && (
         <><div className="bklbl" style={{ margin: "0 0 8px" }}>브랜드</div>
-        <div className="regions">{brands.map((b) => <div key={b} className={`fsel ${brand === b ? "on" : ""}`} onClick={() => { setBrand(b); setShown(10); }}>{b === "전체" ? "전체" : (META[b]?.short || b)}</div>)}</div></>
+        <div className="regions">{brands.map((b) => <div key={b} className={`fsel ${brand === b ? "on" : ""}`} onClick={() => { setBrand(b); setSido("전체"); setShown(10); }}>{b === "전체" ? "전체" : (META[b]?.short || b)}</div>)}</div></>
       )}
       <div className="bklbl" style={{ margin: "10px 0 8px" }}>지역(시·도)</div>
       <div className="regions">{sidos.map((s) => <div key={s} className={`fsel ${sido === s ? "on" : ""}`} onClick={() => { setSido(s); setShown(kmiOnly ? 12 : 10); }}>{s === "전체" ? "전체" : ssido(s)}</div>)}</div>
