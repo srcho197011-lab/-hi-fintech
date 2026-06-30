@@ -105,9 +105,9 @@ export default function App() {
               </>}
               {hdr === "msg" && <>
                 <div className="dh">메시지</div>
-                <div className="ni" onClick={() => goSec("ai")}><span className="ic" style={{ background: "transparent", padding: 0 }}><SecIcon k="ai" /></span><div><b>AI 주치의</b><p>건강 상담을 도와드릴게요. 무엇이든 물어보세요.</p><span className="tm" style={{ color: "#16A34A" }}>● 온라인 · 24시간</span></div></div>
+                <div className="ni" onClick={() => goSec("ai")}><span className="ic" style={{ background: "transparent", padding: 0 }}><SecIcon k="ai" /></span><div><b>나의 주치의</b><p>AI·전문의 상담, 음성·화상·기기연동까지.</p><span className="tm" style={{ color: "#16A34A" }}>● 온라인 · 24시간</span></div></div>
                 <div className="ni" onClick={() => goSec("community")}><span className="ic"><Art name="people" size={18} /></span><div><b>커뮤니티</b><p>새 댓글·전문가 답변을 확인해 보세요.</p><span className="tm">2개 새 소식</span></div></div>
-                <div className="df" onClick={() => goSec("ai")}>AI 주치의와 상담하기</div>
+                <div className="df" onClick={() => goSec("ai")}>나의 주치의와 상담하기</div>
               </>}
               {hdr === "user" && <>
                 <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? (demoU.isDemoUser ? "데모 회원" : "일반 회원") : "프리미엄 회원"}</span></div>

@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=819c59da88" />
+<link rel="stylesheet" href="./data/app.css?v=102da02f09" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./data/dummy_data.js?v=819c59da88"></script>
-<script src="./data/section_data.js?v=819c59da88"></script>
-<script src="./data/demo_members.js?v=819c59da88"></script>
+<script src="./data/dummy_data.js?v=102da02f09"></script>
+<script src="./data/section_data.js?v=102da02f09"></script>
+<script src="./data/demo_members.js?v=102da02f09"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -276,7 +276,7 @@ function Art({ name, size = 26 }) {
   }
 }
 const SECTIONS = [
-  { k: "home", ic: Home, t: "홈", s: "건강지갑 통합 대시보드" }, { k: "ai", ic: Bot, t: "AI 주치의", s: "생성형 AI 건강상담" },
+  { k: "home", ic: Home, t: "홈", s: "건강지갑 통합 대시보드" }, { k: "ai", ic: Bot, t: "나의 주치의", s: "AI·전문의 상담 · 음성·화상·기기연동" },
   { k: "checkup", ic: ClipboardList, t: "건강검진", s: "예약·결과조회·검진보험" }, { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" }, { k: "manage", ic: HeartPulse, t: "건강관리", s: "건강점수·질병위험도" },
   { k: "hospital", ic: Building2, t: "병원/예약", s: "병원검색·정밀검사" }, { k: "homecare", ic: HeartHandshake, t: "재가·돌봄", s: "방문요양·간병·돌봄" },
   { k: "shop", ic: ShoppingCart, t: "건강쇼핑", s: "영양제·식단·의료기기" },
@@ -515,9 +515,9 @@ export default function App() {
               </>}
               {hdr === "msg" && <>
                 <div className="dh">메시지</div>
-                <div className="ni" onClick={() => goSec("ai")}><span className="ic" style={{ background: "transparent", padding: 0 }}><SecIcon k="ai" /></span><div><b>AI 주치의</b><p>건강 상담을 도와드릴게요. 무엇이든 물어보세요.</p><span className="tm" style={{ color: "#16A34A" }}>● 온라인 · 24시간</span></div></div>
+                <div className="ni" onClick={() => goSec("ai")}><span className="ic" style={{ background: "transparent", padding: 0 }}><SecIcon k="ai" /></span><div><b>나의 주치의</b><p>AI·전문의 상담, 음성·화상·기기연동까지.</p><span className="tm" style={{ color: "#16A34A" }}>● 온라인 · 24시간</span></div></div>
                 <div className="ni" onClick={() => goSec("community")}><span className="ic"><Art name="people" size={18} /></span><div><b>커뮤니티</b><p>새 댓글·전문가 답변을 확인해 보세요.</p><span className="tm">2개 새 소식</span></div></div>
-                <div className="df" onClick={() => goSec("ai")}>AI 주치의와 상담하기</div>
+                <div className="df" onClick={() => goSec("ai")}>나의 주치의와 상담하기</div>
               </>}
               {hdr === "user" && <>
                 <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? (demoU.isDemoUser ? "데모 회원" : "일반 회원") : "프리미엄 회원"}</span></div>
@@ -1563,25 +1563,131 @@ function AIDoctorSection({ onText, onVoice }) {
 }
 function HelpDot() { return <span className="hdq">Q</span>; }
 
+/* ===== 나의 주치의 — 웨어러블·홈케어기기 / 화상상담 / 전문의 1:1 ===== */
+const MD_DEVICES = [
+  { k: "watch", name: "스마트워치", brand: "Galaxy/Apple Watch", icon: "activity", vitals: [["심박수", "72 bpm"], ["걸음수", "8,420보"], ["수면", "6h 40m"]] },
+  { k: "bp", name: "가정용 혈압계", brand: "오므론·휴비딕", icon: "heart", vitals: [["혈압", "128/82"], ["맥박", "70 bpm"]] },
+  { k: "glucose", name: "혈당측정기/CGM", brand: "케어센스·덱스콤", icon: "activity", vitals: [["공복혈당", "104 mg/dL"], ["식후 2h", "142 mg/dL"]] },
+  { k: "body", name: "체성분계", brand: "인바디·샤오미", icon: "monitor", vitals: [["체중", "72.4 kg"], ["체지방", "23.1%"], ["근육량", "31.2 kg"]] },
+];
+const MD_SPECIALISTS = [
+  { id: "sp1", name: "김재현 교수", dept: "순환기내과", hosp: "서울대병원", tags: ["고혈압", "부정맥", "심부전"], rating: 4.9, exp: "23년" },
+  { id: "sp2", name: "이서윤 교수", dept: "내분비내과", hosp: "세브란스병원", tags: ["당뇨", "갑상선", "골다공증"], rating: 4.8, exp: "18년" },
+  { id: "sp3", name: "박준호 교수", dept: "소화기내과", hosp: "서울아산병원", tags: ["위·대장내시경", "간질환"], rating: 4.9, exp: "21년" },
+  { id: "sp4", name: "정민아 교수", dept: "산부인과", hosp: "삼성서울병원", tags: ["여성암검진", "갱년기", "골반건강"], rating: 4.9, exp: "16년" },
+  { id: "sp5", name: "최우성 교수", dept: "신경과", hosp: "분당서울대병원", tags: ["뇌졸중", "치매", "두통"], rating: 4.7, exp: "20년" },
+  { id: "sp6", name: "한지후 교수", dept: "소아청소년과", hosp: "서울아산병원", tags: ["성장·발달", "예방접종", "소아비만"], rating: 4.8, exp: "15년" },
+];
+function VideoCallModal({ title, sub, onClose }) {
+  const [t, setT] = useState(0);
+  useEffect(() => { const id = setInterval(() => setT((x) => x + 1), 1000); return () => clearInterval(id); }, []);
+  const mm = String(Math.floor(t / 60)).padStart(2, "0"), ss = String(t % 60).padStart(2, "0");
+  return (
+    <div className="vcall" onClick={onClose}>
+      <div className="vcbox" onClick={(e) => e.stopPropagation()}>
+        <div className="vcmain"><span className="vcav"><Stethoscope size={42} color="#fff" /></span><div className="vcnm">{title}</div><div className="vcsub">{sub}</div><div className="vctime"><span className="vcrec" /> {mm}:{ss}</div></div>
+        <div className="vcself"><HeartPulse size={18} color="#fff" /><span>나</span></div>
+        <div className="vcctrl">
+          <button className="vcb" title="마이크"><Mic size={17} /></button>
+          <button className="vcb" title="화면"><MonitorSmartphone size={17} /></button>
+          <button className="vcb end" onClick={onClose} title="종료"><Phone size={17} /></button>
+        </div>
+        <div className="vcnote">데모 화상상담 화면입니다. 실제 영상 연결은 제공되지 않습니다.</div>
+      </div>
+    </div>
+  );
+}
+function DeviceSheet({ onClose, onShare }) {
+  const [conn, setConn] = useState({});
+  const toggle = (k) => setConn((c) => ({ ...c, [k]: !c[k] }));
+  const anyConn = Object.values(conn).some(Boolean);
+  const ICO = { activity: Activity, heart: HeartPulse, monitor: MonitorSmartphone };
+  const share = () => { const lines = MD_DEVICES.filter((d) => conn[d.k]).flatMap((d) => d.vitals.map((v) => `${v[0]} ${v[1]}`)); onShare(lines.length ? lines.join(" · ") : ""); onClose(); };
+  return (
+    <div className="dsheet">
+      <div className="dsh"><HeartPulse size={15} color="#16A34A" /> 웨어러블·홈케어 의료기기 연결 <button onClick={onClose} aria-label="닫기"><X size={15} /></button></div>
+      <div className="dslist">{MD_DEVICES.map((d) => { const Ic = ICO[d.icon] || Activity; const on = !!conn[d.k]; return (
+        <div className={`drow ${on ? "on" : ""}`} key={d.k}>
+          <span className="dav"><Ic size={18} color={on ? "#16A34A" : "#94A3B8"} /></span>
+          <div className="dinfo"><b>{d.name}</b><span>{d.brand}</span>{on && <div className="dvit">{d.vitals.map((v, i) => <em key={i}>{v[0]} <b>{v[1]}</b></em>)}</div>}</div>
+          <button className={`dconn ${on ? "on" : ""}`} onClick={() => toggle(d.k)}>{on ? "연결됨" : "연결"}</button>
+        </div>
+      ); })}</div>
+      <button className="dshare" disabled={!anyConn} onClick={share}><Send size={14} /> 연결된 건강데이터 주치의에게 공유</button>
+      <div className="dsnote">데모: 실제 기기 연동(BLE·HealthKit·Google Fit)은 향후 제공하며 수치는 예시입니다.</div>
+    </div>
+  );
+}
+function SpecialistChat() {
+  const [sel, setSel] = useState(null);
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState(""); const [typing, setTyping] = useState(false);
+  const [video, setVideo] = useState(false); const [plus, setPlus] = useState(false);
+  const fileRef = useRef(null); const endRef = useRef(null);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
+  const pick = (s) => { setSel(s); setMsgs([{ id: ++UID, who: "ai", kind: "text", text: `안녕하세요, ${s.hosp} ${s.dept} ${s.name}입니다. 어떤 점이 궁금하신가요? 검진 결과나 사진을 첨부해 주시면 함께 살펴보겠습니다.`, first: true, time: now() }]); };
+  const reply = () => { if (!sel) return; const canned = `말씀 주신 내용 잘 확인했습니다. ${sel.dept} 관점에서는 ${sel.tags[0]} 관련 정기적 관찰과 생활관리가 우선이며, 필요 시 정밀검사를 권합니다. 자세한 진단·처방은 화상상담 또는 내원 진료로 도와드리겠습니다.`; setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: canned, first: true, time: now() }]); }, 1300); };
+  const send = (textArg) => { const text = (textArg ?? input).trim(); if (!text || !sel) return; setInput(""); setPlus(false); setMsgs((m) => [...m, { id: ++UID, who: "me", kind: "text", text, time: now() }]); reply(); };
+  const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); reply(); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
+  if (!sel) return (
+    <div className="spwrap">
+      <div className="splbl"><Stethoscope size={15} color="#2563EB" /> 전문의를 선택해 1:1 상담을 시작하세요 <span>· 채팅·화상·파일첨부</span></div>
+      <div className="splist">{MD_SPECIALISTS.map((s) => (
+        <div className="spcard" key={s.id} onClick={() => pick(s)}>
+          <span className="spav"><Stethoscope size={20} color="#2563EB" /></span>
+          <div className="spinfo"><b>{s.name} <small>{s.dept}</small></b><span>{s.hosp} · 경력 {s.exp}</span><div className="sptags">{s.tags.map((t) => <em key={t}>{t}</em>)}</div></div>
+          <div className="spmeta"><span className="sprate"><Star size={11} /> {s.rating}</span><button className="spgo">상담</button></div>
+        </div>
+      ))}</div>
+      <div className="kt-disc">데모: 실제 의료진과의 상담이 아니며, 응답은 시연용 예시입니다. 실제 진단·처방은 의료기관에서 받으세요.</div>
+    </div>
+  );
+  return (
+    <div className="kt">
+      {video && <VideoCallModal title={`${sel.name} · ${sel.dept}`} sub={`${sel.hosp} 화상상담`} onClose={() => setVideo(false)} />}
+      <div className="kt-head"><ArrowLeft size={20} className="ic" onClick={() => setSel(null)} style={{ cursor: "pointer" }} /><span className="av-ai" style={{ width: 32, height: 32, background: "#EAF0FE" }}><Stethoscope size={18} color="#2563EB" /></span>
+        <div style={{ flex: 1 }}><div className="nm">{sel.name} · {sel.dept}</div><div className="st"><span className="dot" /> {sel.hosp} · 온라인</div></div>
+        <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={18} /></button></div>
+      <div className="kt-body">
+        <div className="daypill"><Stethoscope size={12} style={{ verticalAlign: -2, marginRight: 3 }} /> 전문의 1:1 상담 · 참고용</div>
+        {msgs.map((m) => (
+          <div className={`msg ${m.who}`} key={m.id}>
+            {m.who === "ai" && <span className="av-ai" style={{ background: "#EAF0FE" }}>{m.first ? <Stethoscope size={16} color="#2563EB" /> : null}</span>}
+            <div className="col">{m.who === "ai" && m.first && <div className="who">{sel.name}</div>}
+              <div className="bubble-row">{m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
+                <div className="meta"><span>{m.time}</span></div></div></div></div>
+        ))}
+        {typing && <div className="msg ai"><span className="av-ai" style={{ background: "#EAF0FE" }}><Stethoscope size={16} color="#2563EB" /></span><div className="typing"><i /><i /><i /></div></div>}
+        <div ref={endRef} />
+      </div>
+      <div className="quicks"><button onClick={() => setVideo(true)}>📹 화상상담 시작</button><button onClick={() => send("검진 결과를 상담받고 싶어요")}>검진 결과 상담</button><button onClick={() => send("처방·복약 문의드려요")}>처방·복약 문의</button></div>
+      <div className="kt-input">
+        {plus && (<div className="plus-sheet"><button onClick={() => fileRef.current && fileRef.current.click()}><ImageIcon size={20} color="#2563EB" />사진·검진결과</button><button onClick={() => fileRef.current && fileRef.current.click()}><Paperclip size={20} color="#16A34A" />파일</button><button onClick={() => { setPlus(false); setVideo(true); }}><MonitorSmartphone size={20} color="#7C3AED" />화상상담</button></div>)}
+        <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={onFile} />
+        <button className="pl" onClick={() => setPlus((p) => !p)}>{plus ? <X size={22} /> : <Plus size={22} />}</button>
+        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="전문의에게 메시지를 입력하세요" />
+        <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
+      </div>
+      <div className="kt-disc">데모 전문의 상담 · 참고용이며 실제 진단·처방을 대체하지 않습니다. 응급 시 119.</div>
+    </div>
+  );
+}
+
 function AIDoctor() {
-  const [mode, setMode] = useState("chat");
+  const [thread, setThread] = useState("ai");
   const tabsRef = useRef(null);
-  const goTabs = (m) => { setMode(m); setTimeout(() => { try { tabsRef.current && tabsRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }, 60); };
+  const goThread = (t) => { setThread(t); setTimeout(() => { try { tabsRef.current && tabsRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }, 60); };
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="ai" /></span>
-        <div><div className="scaffold stitle" style={{ fontSize: 22, fontWeight: 800 }}>AI 주치의 건강상담</div>
-          <div className="ssub" style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> 질병관리청 국가건강정보포털 기반 공신력 있는 건강정보로 질병·증상·검사·치료·생활습관 상담 · 음성(STT·TTS) · 진단이 아닌 위험 가능성 안내</div></div></div>
-      <div className="conn" style={{ marginBottom: 14 }}>
-        <span className="cdot" style={{ background: "#16A34A", boxShadow: "0 0 0 4px rgba(22,163,74,.15)" }} />
-        <div className="ctxt"><b>질병관리청 국가건강정보포털 · 대한의학회 임상 진료지침 · 국립암센터 국가암검진 권고안 · 국가암정보센터 암정보 학습</b><div style={{ color: "var(--muted)", marginTop: 2 }}>664개 질환의 증상·검사·치료·생활습관, 전문 학회(대한고혈압·당뇨병·금연학회 등) 진료지침, 7대암 검진 권고와 암별 증상·원인·예방을 학습해 음성·텍스트로 상담합니다. (참고용·진단 아님)</div></div>
-      </div>
-      <AIDoctorSection onText={() => goTabs("chat")} onVoice={() => goTabs("voice")} />
+        <div><div className="scaffold stitle" style={{ fontSize: 22, fontWeight: 800 }}>나의 주치의</div>
+          <div className="ssub" style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> 24시간 AI 주치의 + 전문의 1:1 상담 · 텍스트·음성·화상 · 파일첨부 · 웨어러블/홈케어기기 연동 · 진단이 아닌 참고용 안내</div></div></div>
+      <AIDoctorSection onText={() => goThread("ai")} onVoice={() => goThread("ai")} />
       <div className="aitabs" ref={tabsRef} style={{ marginTop: 18 }}>
-        <div className={`aitab ${mode === "chat" ? "on" : ""}`} onClick={() => setMode("chat")}><MessageSquare size={15} /> 텍스트 상담(대화형)</div>
-        <div className={`aitab ${mode === "voice" ? "on" : ""}`} onClick={() => setMode("voice")}><Mic size={15} /> 음성 상담(대화형)</div>
+        <div className={`aitab ${thread === "ai" ? "on" : ""}`} onClick={() => setThread("ai")}><Bot size={15} /> AI 주치의 · 24시간</div>
+        <div className={`aitab ${thread === "specialist" ? "on" : ""}`} onClick={() => setThread("specialist")}><Stethoscope size={15} /> 전문의 상담</div>
       </div>
-      {mode === "voice" ? <VoiceDoctor /> : <Chat />}
+      {thread === "specialist" ? <SpecialistChat /> : <Chat />}
     </div>
   );
 }
@@ -1647,12 +1753,20 @@ function Chat() {
   ]);
   const [quicks, setQuicks] = useState(() => { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return m ? memberQuestions(m).slice(0, 5) : ["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]; });
   const [input, setInput] = useState(""); const [typing, setTyping] = useState(false); const [plus, setPlus] = useState(false);
+  const [listening, setListening] = useState(false); const [interim, setInterim] = useState(""); const [tts, setTts] = useState(false);
+  const [video, setVideo] = useState(false); const [devOpen, setDevOpen] = useState(false);
   const kb = useKdca();
   const report = useReport();
   const qa = useLearnedQA();
-  const endRef = useRef(null);
+  const endRef = useRef(null); const recogRef = useRef(null); const fileRef = useRef(null); const voicesRef = useRef([]);
   const chatMember = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const ttsOK = typeof window !== "undefined" && !!window.speechSynthesis;
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing, quicks]);
+  useEffect(() => { if (!ttsOK) return; const load = () => { voicesRef.current = window.speechSynthesis.getVoices().filter((v) => /ko/i.test(v.lang)); }; load(); window.speechSynthesis.onvoiceschanged = load; return () => { try { window.speechSynthesis.onvoiceschanged = null; window.speechSynthesis.cancel(); } catch (e) {} }; }, []);
+  useEffect(() => () => { if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } }, []);
+  const speak = (t) => { if (!ttsOK || !tts || !t) return; try { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t.replace(/[#*•]/g, "")); u.lang = "ko-KR"; u.rate = 1.03; const ko = voicesRef.current; const male = ko.find((v) => /injoon|hyunsu|male|남/i.test(v.name)); if (male) u.voice = male; else if (ko[0]) u.voice = ko[0]; window.speechSynthesis.speak(u); } catch (e) {} };
+  const pushAI = (res) => { setMsgs((m) => [...m, ...res.bubbles.map((b, i) => ({ id: ++UID, who: "ai", kind: b.kind, text: b.text, card: b.card, time: now(), first: i === 0 }))]); setQuicks(res.quicks || []); const firstText = (res.bubbles.find((b) => b.kind !== "card") || {}).text; if (firstText) speak(firstText); };
   const send = (textArg) => {
     const text = (textArg ?? input).trim(); if (!text) return;
     if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }
@@ -1660,16 +1774,21 @@ function Chat() {
     const meId = ++UID;
     setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text, time: now(), unread: true }]);
     setTimeout(() => { setMsgs((m) => m.map((x) => x.id === meId ? { ...x, unread: false } : x)); setTyping(true); }, 500);
-    setTimeout(() => { const res = aiRespond(text, kb, report, qa); setTyping(false);
-      setMsgs((m) => [...m, ...res.bubbles.map((b, i) => ({ id: ++UID, who: "ai", kind: b.kind, text: b.text, card: b.card, time: now(), first: i === 0 }))]);
-      setQuicks(res.quicks || []); }, 1400);
+    setTimeout(() => { const res = aiRespond(text, kb, report, qa); setTyping(false); pushAI(res); }, 1400);
   };
-  const attach = (label) => { setPlus(false); send(label === "리포트" ? "📄 프롬에이지 Premium 리포트를 공유했어요. 분석해줘" : label === "사진" ? "🖼️ 사진을 보냈어요" : "📎 파일을 보냈어요"); };
+  const startStt = () => { if (!sttOK) return; if (ttsOK) window.speechSynthesis.cancel(); const R = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new R(); recogRef.current = r; r.lang = "ko-KR"; r.interimResults = true; r.continuous = false; let fin = ""; r.onstart = () => { setListening(true); setInterim(""); }; r.onresult = (e) => { let itm = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const tr = e.results[i]; if (tr.isFinal) fin += tr[0].transcript; else itm += tr[0].transcript; } setInterim(itm); }; r.onerror = () => setListening(false); r.onend = () => { setListening(false); setInterim(""); if (fin.trim()) send(fin.trim()); }; try { r.start(); } catch (e) { setListening(false); } };
+  const stopStt = () => { if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } setListening(false); };
+  const aiAck = (label) => { setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `${label}을(를) 잘 받았어요. 내용을 참고해 건강관리 안내를 도와드릴게요. 더 궁금한 점이 있으면 말씀해 주세요.`, time: now(), first: true }]); }, 1200); };
+  const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); aiAck(isImg ? "사진" : "파일"); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
+  const shareDevice = (summary) => { setDevOpen(false); if (!summary) return; const meId = ++UID; setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text: `🩺 기기 측정값 공유 — ${summary}`, time: now() }]); setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `연동된 측정값을 확인했어요(${summary}). 수치 추이를 바탕으로 생활관리·검진을 안내해 드릴게요. 이상 수치가 지속되면 진료를 권합니다. (참고용)`, time: now(), first: true }]); }, 1300); };
   return (
     <div className="kt">
+      {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담(데모)" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
         <div style={{ flex: 1 }}><div className="nm">AI 주치의</div><div className="st"><span className="dot" /> 온라인 · 24시간 상담</div></div>
-        <Search size={18} className="ic" style={{ marginRight: 12 }} /><Menu size={20} className="ic" /></div>
+        {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
+        <button className="ktib" onClick={() => setDevOpen((v) => !v)} title="기기 연결"><HeartPulse size={17} /></button>
+        <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={17} /></button></div>
       {chatMember && (
         <div className="kt-acts">
           <button onClick={() => nav("checkup")}>🔬 추가검진</button>
@@ -1678,30 +1797,35 @@ function Chat() {
           <button onClick={() => nav("shop")}>🥗 건강식단</button>
         </div>
       )}
+      {devOpen && <DeviceSheet onClose={() => setDevOpen(false)} onShare={shareDevice} />}
       <div className="kt-body">
-        <div className="daypill">2026년 5월 8일</div>
+        <div className="daypill"><Bot size={12} style={{ verticalAlign: -2, marginRight: 3 }} /> 질병관리청·임상 진료지침·국가암정보센터 학습 · 참고용</div>
         {msgs.map((m) => (
           <div className={`msg ${m.who}`} key={m.id}>
             {m.who === "ai" && <span className="av-ai">{m.first ? <SecIcon k="ai" /> : null}</span>}
             <div className="col">{m.who === "ai" && m.first && <div className="who">AI 주치의</div>}
-              <div className="bubble-row">{m.kind === "card" ? <KCard card={m.card} onBtn={(b) => send(b)} /> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
+              <div className="bubble-row">{m.kind === "card" ? <KCard card={m.card} onBtn={(b) => send(b)} /> : m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부 이미지" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
                 <div className="meta">{m.who === "me" && m.unread && <span className="unread">1</span>}<span>{m.time}</span></div></div></div></div>
         ))}
         {typing && <div className="msg ai"><span className="av-ai"><SecIcon k="ai" /></span><div className="typing"><i /><i /><i /></div></div>}
         <div ref={endRef} />
       </div>
+      {(listening || interim) && <div className="kt-listening">{listening ? "🎙 듣는 중… 말씀하세요 " : ""}{interim && "“" + interim + "”"}</div>}
       {quicks.length > 0 && !typing && <div className="quicks">{quicks.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}</div>}
       <div className="kt-input">
         {plus && (<div className="plus-sheet">
-          <button onClick={() => attach("리포트")}><FileText size={20} color="#7C3AED" />리포트 공유</button>
-          <button onClick={() => attach("사진")}><ImageIcon size={20} color="#2563EB" />사진</button>
-          <button onClick={() => attach("파일")}><Paperclip size={20} color="#16A34A" />파일</button>
-          <button onClick={() => { setPlus(false); send("음성으로 상담하고 싶어요"); }}><Mic size={20} color="#F59E0B" />음성 상담</button></div>)}
+          <button onClick={() => { setPlus(false); send("📄 프롬에이지 Premium 리포트를 공유했어요. 분석해줘"); }}><FileText size={20} color="#7C3AED" />리포트 공유</button>
+          <button onClick={() => fileRef.current && fileRef.current.click()}><ImageIcon size={20} color="#2563EB" />사진</button>
+          <button onClick={() => fileRef.current && fileRef.current.click()}><Paperclip size={20} color="#16A34A" />파일</button>
+          <button onClick={() => { setPlus(false); setDevOpen(true); }}><HeartPulse size={20} color="#EF4444" />기기 연결</button>
+          <button onClick={() => { setPlus(false); setVideo(true); }}><MonitorSmartphone size={20} color="#0EA5E9" />화상상담</button></div>)}
+        <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={onFile} />
         <button className="pl" onClick={() => setPlus((p) => !p)}>{plus ? <X size={22} /> : <Plus size={22} />}</button>
-        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="메시지를 입력하세요" />
-        <Smile size={22} className="pl" /><button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
+        {sttOK && <button className="pl" onClick={() => listening ? stopStt() : startStt()} style={{ color: listening ? "#EF4444" : "var(--blue)" }} title="음성 입력">{listening ? <X size={22} /> : <Mic size={22} />}</button>}
+        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={sttOK ? "메시지 입력 또는 🎤 음성" : "메시지를 입력하세요"} />
+        <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
       </div>
-      <div className="kt-disc">AI 상담은 의료진의 진단을 대체하지 않으며, 참고용 건강정보 안내입니다.</div>
+      <div className="kt-disc">AI 상담은 의료진의 진단을 대체하지 않으며, 참고용 건강정보 안내입니다. 음성·화상·파일첨부·기기연동은 데모이며 응급 시 119.</div>
     </div>
   );
 }

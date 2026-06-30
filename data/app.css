@@ -205,6 +205,58 @@
 .plus-sheet button{display:flex;flex-direction:column;align-items:center;gap:6px;background:#F7F9FC;border:1px solid var(--border);border-radius:11px;padding:12px 6px;font-size:11.5px;font-weight:700;color:#3a4b6b;cursor:pointer;}
 .plus-sheet button:hover{background:#EAF0FE;}
 .kt-disc{text-align:center;font-size:10.5px;color:#46586c;padding:6px 12px 12px;background:var(--kt-bg);}
+/* 나의 주치의 — 통합 메신저 추가요소 */
+.ktib{background:none;border:none;cursor:pointer;color:#64748B;padding:5px;border-radius:9px;display:inline-flex;margin-left:2px;}
+.ktib:hover{background:#F1F5F9;}.ktib.on{color:#2563EB;background:#EAF0FE;}
+.kt-listening{padding:7px 14px;font-size:12.8px;color:var(--blue);font-weight:600;background:#EEF3FF;border-top:1px solid var(--border);}
+.chatimg{max-width:200px;max-height:220px;border-radius:13px;border:1px solid var(--border);display:block;object-fit:cover;}
+.chatfile{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:13px;padding:10px 13px;font-size:12.5px;font-weight:700;color:#334155;}
+/* 화상상담 모달 */
+.vcall{position:fixed;inset:0;background:rgba(8,12,24,.72);z-index:1200;display:grid;place-items:center;padding:18px;}
+.vcbox{position:relative;width:min(420px,94vw);height:min(560px,82vh);border-radius:22px;overflow:hidden;background:linear-gradient(160deg,#1E293B,#0F172A);box-shadow:0 30px 60px -20px rgba(0,0,0,.7);}
+.vcmain{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;}
+.vcav{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,#2563EB,#7C3AED);display:grid;place-items:center;box-shadow:0 0 0 8px rgba(255,255,255,.08);}
+.vcnm{font-size:18px;font-weight:800;margin-top:6px;}.vcsub{font-size:12.5px;opacity:.8;}
+.vctime{margin-top:8px;font-size:12px;font-weight:700;color:#FCA5A5;display:flex;align-items:center;gap:5px;}
+.vcrec{width:8px;height:8px;border-radius:50%;background:#EF4444;display:inline-block;animation:vcblink 1.1s infinite;}
+@keyframes vcblink{50%{opacity:.25;}}
+.vcself{position:absolute;top:14px;right:14px;width:74px;height:96px;border-radius:12px;background:linear-gradient(160deg,#334155,#1E293B);border:1.5px solid rgba(255,255,255,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff;font-size:10px;font-weight:700;}
+.vcctrl{position:absolute;bottom:22px;left:0;right:0;display:flex;justify-content:center;gap:14px;}
+.vcb{width:50px;height:50px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;cursor:pointer;display:grid;place-items:center;}
+.vcb:hover{background:rgba(255,255,255,.28);}.vcb.end{background:#EF4444;}.vcb.end:hover{background:#DC2626;}
+.vcnote{position:absolute;bottom:84px;left:0;right:0;text-align:center;font-size:10.5px;color:rgba(255,255,255,.7);padding:0 16px;}
+/* 기기 연결 시트 */
+.dsheet{background:#fff;border-bottom:1px solid var(--border);padding:12px;}
+.dsh{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#15234A;}
+.dsh button{margin-left:auto;background:none;border:none;color:#94A3B8;cursor:pointer;display:inline-flex;}
+.dslist{display:flex;flex-direction:column;gap:7px;margin-top:9px;}
+.drow{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:11px;padding:9px 11px;}
+.drow.on{border-color:#B6E7C9;background:#F1FBF5;}
+.dav{width:36px;height:36px;border-radius:10px;background:#F1F5F9;display:grid;place-items:center;flex-shrink:0;}
+.drow.on .dav{background:#E7F8EE;}
+.dinfo{flex:1;min-width:0;}.dinfo b{display:block;font-size:12.5px;color:#15234A;}.dinfo>span{font-size:11px;color:var(--muted);}
+.dvit{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;}
+.dvit em{font-style:normal;font-size:10.5px;color:#15803D;background:#E7F8EE;border-radius:999px;padding:2px 8px;font-weight:600;}.dvit em b{font-weight:800;}
+.dconn{flex-shrink:0;border:1px solid #C7D8FB;background:#EAF0FE;color:#2563EB;border-radius:9px;padding:7px 12px;font-size:11.5px;font-weight:800;cursor:pointer;}
+.dconn.on{border-color:#B6E7C9;background:#16A34A;color:#fff;}
+.dshare{margin-top:10px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#16A34A;color:#fff;border:none;border-radius:11px;padding:11px;font-size:12.5px;font-weight:800;cursor:pointer;}
+.dshare:disabled{opacity:.45;cursor:not-allowed;}
+.dsnote{font-size:10px;color:var(--muted);margin-top:8px;text-align:center;}
+/* 전문의 상담 */
+.spwrap{background:var(--kt-bg);border:1px solid var(--border);border-radius:18px;padding:14px;}
+.splbl{font-size:13px;font-weight:800;color:#15234A;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.splbl span{font-size:11px;color:var(--muted);font-weight:600;}
+.splist{display:flex;flex-direction:column;gap:9px;margin:11px 0;}
+.spcard{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--border);border-radius:13px;padding:11px 13px;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.spcard:hover{border-color:#BFD0FF;box-shadow:0 8px 20px -16px rgba(37,99,235,.6);}
+.spav{width:44px;height:44px;border-radius:12px;background:#EAF0FE;display:grid;place-items:center;flex-shrink:0;}
+.spinfo{flex:1;min-width:0;}.spinfo b{font-size:13.5px;color:#15234A;}.spinfo b small{color:#2563EB;font-weight:700;font-size:11.5px;margin-left:4px;}
+.spinfo>span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px;}
+.sptags{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+.sptags em{font-style:normal;font-size:10.5px;color:#475569;background:#EEF2F8;border-radius:999px;padding:2px 8px;}
+.spmeta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+.sprate{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:800;color:#F59E0B;}
+.spgo{background:#2563EB;color:#fff;border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:800;cursor:pointer;}
 /* report */
 .src{display:flex;align-items:flex-start;gap:10px;background:#F5F3FF;border:1px solid #E4DBFB;border-radius:12px;padding:12px 14px;font-size:12px;color:#5B4A9E;margin-bottom:16px;}
 .src b{color:#4C2FB0;}
