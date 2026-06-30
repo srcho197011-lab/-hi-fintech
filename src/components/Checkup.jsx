@@ -115,9 +115,12 @@ function BrandDirectory({ only }) {
   const [sido, setSido] = useState("전체");
   const [q, setQ] = useState("");
   const [shown, setShown] = useState(single ? 12 : 10);
+  const [sel, setSel] = useState(null);
   const ALL = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
   const META = (typeof CHECKUP_BRAND_META !== "undefined") ? CHECKUP_BRAND_META : {};
   const ssido = (s) => (typeof tmSidoShort === "function" ? tmSidoShort(s) : s);
+  // 큐레이션 검진기관 → 예약 모달용 센터 객체(무가격). 한건협=기본형(공공), 그 외=고급형(프리미엄)
+  const toCenter = (c) => ({ name: c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n, r: ssido(c.sd), area: c.sg, tags: [c.t, META[c.b]?.tier || "검진기관"], _noPrice: true, _plan: c.b === "한국건강관리협회" ? "basic" : "premium" });
   const rank = (s) => (typeof SIDO_RANK !== "undefined" && SIDO_RANK[s]) || 99;
   const base = ALL.filter((c) => only ? c.b === only : !FEATURED_BRANDS.includes(c.b));
   const brands = single ? [] : ["전체", ...Array.from(new Set(base.map((c) => c.b)))];
@@ -137,7 +140,7 @@ function BrandDirectory({ only }) {
       </div>
       <div className="cright">
         <span className="cbadge"><ShieldCheck size={10} /> 무료 검진보험</span>
-        <div className="obtns"><button onClick={() => openConsult("건강검진 상담 — " + c.n)}>상담</button><button className="book" onClick={() => { if (typeof toast === "function") toast(`✅ (데모) ${c.b === "KMI한국의학연구소" ? "KMI " + c.n : c.n} 검진 예약이 접수되었습니다.`); }}>예약</button></div>
+        <div className="obtns"><button onClick={() => openConsult("건강검진 상담 — " + c.n)}>상담</button><button className="book" onClick={() => setSel(c)}>예약</button></div>
       </div>
     </div>
   ); };
@@ -172,6 +175,7 @@ function BrandDirectory({ only }) {
       {view.map((c, i) => card(c, i))}
       {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 10)}>더 보기 ({list.length - shown}곳 더)</button>}
       <div className="chnote">※ 출처: 국민건강보험공단 병의원·검진기관 찾기 / 기관 공식 사이트(수집일 2026-06-27). "공식 사이트 확인" 항목은 정확한 주소를 기관 홈페이지에서 최종 확인 권장. 본 비교 정보는 이용자의 합리적 선택을 돕기 위한 것으로 의료법(의료광고 심의·환자 유인·알선 금지)을 준수합니다.</div>
+      {sel && <BookingModal center={toCenter(sel)} mode="comp" onClose={() => setSel(null)} />}
     </>
   );
 }
@@ -329,12 +333,17 @@ function BookingModal({ center, mode, onClose }) {
   const [insOpen, setInsOpen] = useState(false);
   const [psych, setPsych] = useState(false);
   const COVERS = (typeof CHECK_COVERS !== "undefined") ? CHECK_COVERS : [];
-  // 가격 기준 플랜 매칭: 국가검진→기본형, 50만 미만→표준형, 50만 이상→고급형. 심리케어프리미엄은 선택형(+1만원 HTK)
-  const planName = mode === "nat" ? "기본형" : (center.price < 500000 ? "표준형" : "고급형");
-  const planSub = mode === "nat" ? "국가건강검진 연계 · 무상" : (center.price < 500000 ? "종합검진 50만원 미만 · 무상" : "프리미엄검진 50만원 이상 · 무상");
-  const baseIdx = mode === "nat" ? 2 : (center.price < 500000 ? 3 : 4);
+  // 플랜 매칭: 국가검진/공공→기본형, 50만 미만→표준형, 50만 이상→고급형. 심리케어 프리미엄 선택 시 플랜별 차등 HTK 차감
+  const PLAN_MAP = {
+    basic: { name: "기본형", sub: "국가건강검진 연계 · 무상", col: 2, htk: 10000 },
+    standard: { name: "표준형", sub: "종합검진 50만원 미만 · 무상", col: 3, htk: 7000 },
+    premium: { name: "고급형", sub: "프리미엄검진 50만원 이상 · 무상", col: 4, htk: 5000 },
+  };
+  const planKey = center._plan ? center._plan : (mode === "nat" ? "basic" : ((center.price || 0) < 500000 ? "standard" : "premium"));
+  const P = PLAN_MAP[planKey] || PLAN_MAP.basic;
+  const planName = P.name, planSub = P.sub, baseIdx = P.col, PSYCH_HTK = P.htk;
+  const psychWon = PSYCH_HTK >= 10000 ? "1만원" : (PSYCH_HTK / 1000) + "천원";
   const colIdx = psych ? 5 : baseIdx;
-  const PSYCH_HTK = 10000;
   const W = ["일", "월", "화", "수", "목", "금", "토"];
   const days = Array.from({ length: 8 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i + 2); return d; });
   const slots = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
@@ -347,7 +356,7 @@ function BookingModal({ center, mode, onClose }) {
             <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
               <div style={{ fontWeight: 800, fontSize: 14 }}>{center.name}</div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {center.r} · {center.area}</div>
-              {mode === "nat" ? <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--green)" }}>공단검진 본인부담 0원 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 추가검사 별도</span></div> : <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--blue)" }}>{won(center.price)} <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600, textDecoration: "line-through" }}>{won(center.orig)}</span></div>}
+              {center._noPrice ? <div style={{ marginTop: 6, fontSize: 12.5, fontWeight: 800, color: "var(--blue)" }}>{(center.tags && center.tags[0]) || "검진"} · 검진비 기관 문의 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 무상 검진대비보험 자동적용</span></div> : mode === "nat" ? <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--green)" }}>공단검진 본인부담 0원 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 추가검사 별도</span></div> : <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--blue)" }}>{won(center.price)} <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600, textDecoration: "line-through" }}>{won(center.orig)}</span></div>}
             </div>
             <div onClick={() => setInsOpen((v) => !v)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(120deg,#0E9F6E,#16A34A)", color: "#fff", borderRadius: 12, padding: "12px 14px", marginTop: 12, boxShadow: "0 12px 24px -16px rgba(16,163,74,.75)" }}>
               <span style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={20} color="#fff" /></span>
@@ -360,7 +369,7 @@ function BookingModal({ center, mode, onClose }) {
                 <div className="bkinsrows">{COVERS.map((r, i) => { const amt = r[colIdx]; if (!amt || amt === "-") return null; return (<div className="bkinsrow" key={i}><span>{r[1]}</span><b>{amt}</b></div>); })}</div>
                 <button className={`bkpsych ${psych ? "on" : ""}`} onClick={() => setPsych((v) => !v)}>
                   <span className="pchk">{psych ? <Check size={13} color="#fff" /> : null}</span>
-                  <div className="ptxt"><b>심리케어 프리미엄 추가 <em>선택형</em></b><span>정신질환(F코드) 진단 보장 포함 · 가입 시 <b>1만원(10,000 HTK)</b> 차감</span></div>
+                  <div className="ptxt"><b>심리케어 프리미엄 추가 <em>선택형</em></b><span>정신질환(F코드) 진단 보장 포함 · 가입 시 <b>{psychWon}({PSYCH_HTK.toLocaleString()} HTK)</b> 차감</span></div>
                 </button>
                 <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>되며, 심리케어 프리미엄만 선택 시 건강금융지갑에서 {PSYCH_HTK.toLocaleString()} HTK가 차감됩니다(데모). 실제 보장·인수는 보험사 심사에 따릅니다.</div>
               </div>
