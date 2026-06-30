@@ -70,6 +70,7 @@ function MyPageSection({ onGo }) {
 
       <DemoMemberBanner />
       {dm && typeof CarePlanCard === "function" && <CarePlanCard member={dm} />}
+      {dm && typeof FamilyCareSection === "function" && <FamilyCareSection member={dm} onGo={onGo} />}
       <div className="profile">
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
         <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${dm.biologicalAge}세 · 데모회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 데모 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>

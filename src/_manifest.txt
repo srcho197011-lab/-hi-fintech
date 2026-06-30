@@ -10,6 +10,7 @@ src/components/Insurance.jsx
 src/components/Wallet.jsx
 src/components/Nft.jsx
 src/components/MyPage.jsx
+src/components/FamilyCare.jsx
 src/components/Community.jsx
 src/components/Home.jsx
 src/data/demoMembers.js
