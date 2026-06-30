@@ -102,6 +102,11 @@ function ontoGroup(t) {
   for (const k in GROUP_KB) { const g = GROUP_KB[k]; if (g.aliases.some((a) => t.includes(a))) return `${k} 건강 안내예요. 주요 질환은 ${g.diseases.slice(0, 6).join("·")} 등이고, 관리 포인트는 ${g.focus.slice(0, 3).join(" / ")}이에요. 권장 검진은 ${g.screening.slice(0, 3).join("·")}, 도움이 되는 영양은 ${g.nutrition.slice(0, 3).join("·")}, 식단은 ‘${g.diet}’예요. 관련 지원제도는 ${g.support.slice(0, 2).join("·")}이에요. ${ONTO_GOVERNANCE.diagnosis}`; }
   return null;
 }
+/* 케어플랜 실천 적립표(영역별 HTK) — 카드·지갑 공용 단일 소스 */
+const CAREPLAN_REWARD = { "병원·진료": 300, "추가 검진": 500, "영양·홈케어의료기": 100, "홈케어 기기": 100, "맞춤 식단": 100, "의료지원제도": 50 };
+function careplanEarned(email) {
+  try { const st = JSON.parse(localStorage.getItem("hifin_careplan_" + (email || "default")) || "{}"); return Object.keys(st).reduce((s, k) => s + (st[k] === 2 ? (CAREPLAN_REWARD[k] || 100) : 0), 0); } catch (e) { return 0; }
+}
 /* ── ③ 관계레이어 — 회원 상태 → 진료·검진·영양·기기·식단·제도 ‘필요성’ 구조화 도출 ── */
 function buildCarePlan(m) {
   if (!m || typeof demoReport !== "function") return null;

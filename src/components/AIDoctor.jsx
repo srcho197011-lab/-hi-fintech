@@ -573,8 +573,8 @@ function CarePlanCard({ member }) {
   if (!p) return null;
   const ICO = { hospital: Building2, checkup: CalendarCheck, pill: Pill, device: MonitorSmartphone, salad: Salad, shield: ShieldCheck };
   const STAT = ["할 일", "진행중", "완료 ✓"];
-  const REWARD = { "병원·진료": 300, "추가 검진": 500, "영양·홈케어의료기": 100, "홈케어 기기": 100, "맞춤 식단": 100, "의료지원제도": 50 };
-  const cycle = (title) => { const nx = (((status[title] || 0) + 1) % 3); const next = { ...status, [title]: nx }; setStatus(next); try { localStorage.setItem(key, JSON.stringify(next)); } catch (e) {} if (nx === 2 && typeof toast === "function") toast(`✅ ${title} 완료 · +${REWARD[title] || 100} HPET 적립!`); };
+  const REWARD = (typeof CAREPLAN_REWARD !== "undefined") ? CAREPLAN_REWARD : { "병원·진료": 300, "추가 검진": 500, "영양·홈케어의료기": 100, "홈케어 기기": 100, "맞춤 식단": 100, "의료지원제도": 50 };
+  const cycle = (title) => { const nx = (((status[title] || 0) + 1) % 3); const next = { ...status, [title]: nx }; setStatus(next); try { localStorage.setItem(key, JSON.stringify(next)); } catch (e) {} if (nx === 2 && typeof toast === "function") toast(`✅ ${title} 완료 · +${REWARD[title] || 100} HTK 건강금융지갑 적립!`); };
   const done = p.domains.filter((dmn) => (status[dmn.title] || 0) === 2).length;
   const pct = Math.round(done / p.domains.length * 100);
   const earned = p.domains.reduce((s, dmn) => s + (((status[dmn.title] || 0) === 2) ? (REWARD[dmn.title] || 100) : 0), 0);
@@ -587,7 +587,7 @@ function CarePlanCard({ member }) {
   return (
     <div className="adcard cplan">
       <div className="adt2"><HeartHandshake size={16} color="#16A34A" /> {p.name}님 종합 케어플랜 <span className="cplvl">{p.level}</span><button className="cpprint" onClick={printPlan}><FileText size={13} /> 인쇄</button></div>
-      <div className="cpprog"><div className="cppt">진행률 <b>{pct}%</b> <span>{done}/{p.domains.length} 완료</span><span className="cprew"><Coins size={12} /> +{earned.toLocaleString("ko-KR")} HPET <small>/ 최대 {maxPts.toLocaleString("ko-KR")}</small></span><button className="cprwbtn" onClick={() => nav("wallet")}>건강금융지갑 ›</button></div><div className="cppbar"><i style={{ width: pct + "%" }} /></div></div>
+      <div className="cpprog"><div className="cppt">진행률 <b>{pct}%</b> <span>{done}/{p.domains.length} 완료</span><span className="cprew"><Coins size={12} /> +{earned.toLocaleString("ko-KR")} HTK <small>/ 최대 {maxPts.toLocaleString("ko-KR")}</small></span><button className="cprwbtn" onClick={() => nav("wallet")}>건강금융지갑 ›</button></div><div className="cppbar"><i style={{ width: pct + "%" }} /></div></div>
       <div className="cpgrid">
         {p.domains.map((dmn, i) => { const Ic = ICO[dmn.icon] || Sparkles; const st = status[dmn.title] || 0; return (
           <div className="cprow" key={i} style={{ borderLeftColor: dmn.color, opacity: st === 2 ? 0.72 : 1 }}>

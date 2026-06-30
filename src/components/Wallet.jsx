@@ -38,6 +38,9 @@ function WalletSection({ onGo }) {
   const [tab, setTab] = useState("earn");
   const go = onGo || (() => {});
   const tabs = [["earn", "적립 현황", Coins], ["use", "사용처", Wallet], ["guide", "사용방법", Sparkles], ["sec", "AI·블록체인 보안", ShieldCheck]];
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const cpPts = (dm && typeof careplanEarned === "function") ? careplanEarned(dm.email) : 0;
+  const total = WALLET.total + cpPts;
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="wallet" /></span>
@@ -48,8 +51,8 @@ function WalletSection({ onGo }) {
       <div className="wbal">
         <span className="wglow" />
         <div className="wlbl"><Coins size={14} /> 총 적립 Health Token</div>
-        <div className="wtot">{WALLET.total.toLocaleString()} <small>HTK</small></div>
-        <div className="wsub">≈ {(WALLET.total * WALLET.rate).toLocaleString()}원 상당 · 멤버십 등급 <b>{WALLET.grade}</b></div>
+        <div className="wtot">{total.toLocaleString()} <small>HTK</small></div>
+        <div className="wsub">≈ {(total * WALLET.rate).toLocaleString()}원 상당 · 멤버십 등급 <b>{WALLET.grade}</b>{cpPts > 0 && <span style={{ marginLeft: 8, color: "#A7F3D0", fontWeight: 700 }}>· AI 케어플랜 실천 +{cpPts.toLocaleString()} 포함</span>}</div>
         <div className="wrow">
           <div><b style={{ color: "#A7F3D0" }}>+{WALLET.monthEarn.toLocaleString()}</b><span>이번 달 적립</span></div>
           <div><b style={{ color: "#FECACA" }}>−{WALLET.monthUse.toLocaleString()}</b><span>이번 달 사용</span></div>
@@ -62,7 +65,13 @@ function WalletSection({ onGo }) {
 
       {tab === "earn" && (<>
         <div className="bklbl" style={{ margin: "2px 0 8px" }}><Coins size={14} color="#16A34A" style={{ verticalAlign: "-2px" }} /> 항목별 적립 토큰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· {WALLET_EARN.length}개 적립 채널</span></div>
-        <div className="wgrid">{WALLET_EARN.map(([a, t, amt, d, c], i) => (
+        <div className="wgrid">
+          {dm && (
+          <div className="wcard" style={{ borderColor: "#16A34A", background: "linear-gradient(180deg,#F3FCF6,#fff)" }}><span className="wi" style={{ background: "#E7F8EE" }}><Art name="heart" size={22} /></span>
+            <div style={{ flex: 1 }}><div className="wn">AI 케어플랜 실천 적립 <span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE", fontSize: 10, padding: "1px 6px" }}>NEW</span></div><div className="wd">종합 케어플랜 영역을 완료하면 자동 적립 (병원·검진·영양·기기·식단·제도)</div></div>
+            <span className="wamt" style={{ color: "#16A34A" }}>+{cpPts.toLocaleString()}</span></div>
+          )}
+          {WALLET_EARN.map(([a, t, amt, d, c], i) => (
           <div className="wcard" key={i}><span className="wi" style={{ background: c + "1A" }}><Art name={a} size={22} /></span>
             <div style={{ flex: 1 }}><div className="wn">{t}</div><div className="wd">{d}</div></div>
             <span className="wamt" style={{ color: "#16A34A" }}>{amt}</span></div>
