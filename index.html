@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=0033221d54" />
+<link rel="stylesheet" href="./data/app.css?v=7f7988f18b" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=0033221d54"></script>
-<script src="./src/data/section_data.js?v=0033221d54"></script>
-<script src="./src/data/demo_members.js?v=0033221d54"></script>
+<script src="./src/data/dummy_data.js?v=7f7988f18b"></script>
+<script src="./src/data/section_data.js?v=7f7988f18b"></script>
+<script src="./src/data/demo_members.js?v=7f7988f18b"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -3844,7 +3844,33 @@ function WaterBanner() {
     </div>
   );
 }
+function MemberCard({ mm }) {
+  const hasUrl = mm.url && /^https?:/.test(mm.url);
+  return (
+    <div className="mcard">
+      <div className="mtop" style={{ background: `linear-gradient(135deg, ${mm.col}, ${mm.col}cc)` }}>
+        <span className="mtag">{mm.tag}</span><b>{mm.company}</b>
+      </div>
+      <div className="mmid">
+        <div className="mprod">{mm.product}</div>
+        <div className="mben">{mm.desc}</div>
+        <div className="mtags2"><span className="mtype">{mm.type}</span><span className="mmem"><BadgeCheck size={10} /> 정밀영양협회 회원사</span></div>
+      </div>
+      <a className="mbtn" href={hasUrl ? mm.url : naverHref(mm.company, mm.q)} target="_blank" rel="noreferrer noopener">{hasUrl ? <><MonitorSmartphone size={12} /> 공식몰 바로가기 <ExternalLink size={10} /></> : <><Search size={12} /> 제품 검색 <ExternalLink size={10} /></>}</a>
+    </div>
+  );
+}
 function MemberMall({ catKey }) {
+  const members = (catKey === "supp" && typeof SUPP_MEMBERS !== "undefined") ? SUPP_MEMBERS : null;
+  if (members) {
+    return (
+      <>
+        <div className="bklbl" style={{ margin: "12px 0 8px" }}><BadgeCheck size={14} color="#2563EB" style={{ verticalAlign: "-2px" }} /> 정밀영양협회 회원사 대표 제품 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· {members.length}곳 · 공식몰 연동</span></div>
+        <div className="mallgrid">{members.map((mm) => <MemberCard key={mm.company} mm={mm} />)}</div>
+        <div className="chnote" style={{ marginBottom: 4 }}>※ 사단법인 정밀영양협회 회원사의 <b>대표 제품</b>입니다. 공식몰이 확인된 곳은 <b>공식몰로 바로 연결</b>되고, 미확인 회원사는 제품 검색으로 안내됩니다(외부 링크 새 창{!EXTERNAL_OK && " · 미리보기에선 우클릭 → 새 탭"}). 원료·소재(B2B) 회원사 포함이며, 회원사·제품 구성은 운영 정책에 따라 달라질 수 있습니다.</div>
+      </>
+    );
+  }
   const items = MEMBER_PRODUCTS[catKey] || [];
   if (!items.length) return null;
   return (
@@ -6152,6 +6178,21 @@ const SUPP_MEDIA = {
   "milk-gnm": { image: "https://img.danuri.io/catalog-image/019/917/004/cd64e1fc5f964bc49af2d14d1664468f.jpg", danawa: "https://prod.danawa.com/info/?pcode=4917019" },
   "zinc-eundan": { image: "https://img.danuri.io/catalog-image/281/976/003/bc0cfb83d09f49268005ce58e91cc4fc.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=3976281" },
 };
+
+/* 정밀영양협회 회원사 대표 제품(11곳) — 실제 공식몰 URL 연동(member_companies.json, 2026-07-01). url 없으면 검색 폴백 */
+const SUPP_MEMBERS = [
+  { tag: "면역·장건강", company: "유니베라", product: "알로에 정/겔", desc: "알로에 기반 면역·장 건강 건강기능식품", type: "소비자제품", url: "https://www.univeramall.com/", col: "#2E7D32", q: "유니베라 알로에" },
+  { tag: "종합비타민", company: "헤일리온 코리아", product: "센트룸", desc: "전 연령 종합비타민·미네랄(센트룸 브랜드)", type: "소비자제품", url: "https://www.haleon.com/kr/our-brands", col: "#C2185B", q: "센트룸 종합비타민" },
+  { tag: "장 건강", company: "한독", product: "사라플러스", desc: "식이섬유·장 건강 기능성 제품", type: "소비자제품", url: "http://mall.handok.co.kr/", col: "#0067AC", q: "한독 사라플러스" },
+  { tag: "개인맞춤 영양", company: "알고케어", product: "맞춤영양 디스펜서(앳홈/E1)", desc: "AI가 개인 맞춤 영양제를 자동 조합·공급하는 디스펜서", type: "디바이스·서비스", url: "https://www.algocare.me/", col: "#1F2937", q: "알고케어 맞춤영양" },
+  { tag: "맞춤 구독", company: "필워크", product: "맞춤영양제 구독", desc: "건강설문 기반 개인 맞춤 영양제 정기구독 서비스", type: "맞춤영양 서비스", url: "", col: "#16A34A", q: "필워크 맞춤영양제 구독" },
+  { tag: "오메가3", company: "DSM코리아", product: "라이프스DHA 오메가3", desc: "조류 유래 DHA·오메가3 뉴트리션 원료", type: "원료·소재", url: "https://www.dsm-firmenich.com/ko-kr/businesses/health-nutrition-care/products/consumer-brands/lifesDHA.html", col: "#1A56DB", q: "DSM 라이프스DHA 오메가3" },
+  { tag: "건강기능식품", company: "광헬스케어", product: "프리미엄 건강기능식품", desc: "면역·항산화 기능성 라인업(정밀영양협회 회원사)", type: "소비자제품", url: "", col: "#0EA5E9", q: "광헬스케어 건강기능식품" },
+  { tag: "건강기능식품", company: "크레놀", product: "크레놀 건강기능식품", desc: "근거 기반 기능성 건강기능식품", type: "소비자제품", url: "", col: "#EA580C", q: "크레놀 crenor 건강기능식품" },
+  { tag: "효소·소재", company: "제노포커스", product: "기능성 효소·프리바이오틱스(GOS)", desc: "기능성 효소 소재 및 건강기능식품", type: "원료·소재·자사몰", url: "https://genofocusmall.co.kr/", col: "#1E40AF", q: "제노포커스 효소" },
+  { tag: "맞춤 영양", company: "바이오뉴트리온", product: "맞춤영양 솔루션", desc: "데이터 기반 개인 맞춤 영양설계·디지털 헬스", type: "맞춤영양 서비스", url: "https://www.bionutrion.kr/", col: "#166534", q: "바이오뉴트리온 맞춤영양" },
+  { tag: "맞춤 영양", company: "디이프", product: "데이터 맞춤영양(iFood)", desc: "푸드데이터·유전자 기반 개인 맞춤 식품·영양 추천", type: "맞춤영양 앱", url: "https://d-if.kr/", col: "#7C3AED", q: "디이프 DIIF 맞춤영양" },
+];
 
 /* ====================== 온톨로지 기반 상담 엔진 ======================
    검진항목 해석 / 보험 보장 공백 분석 / 후속조치 안내 — 회원 건강리포트 연계 + AI 거버넌스.

@@ -1691,3 +1691,5 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .pdrlbl{font-size:13px;font-weight:800;color:#15234A;display:flex;align-items:center;gap:6px;}
 .pdrlbl small{font-size:11px;font-weight:700;color:#B45309;}
 .pdramt{font-size:20px;font-weight:800;color:#B45309;white-space:nowrap;}
+.mtags2{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:7px;}
+.mtype{font-size:10px;font-weight:700;color:#475569;background:#EEF2F8;border-radius:999px;padding:2px 8px;}

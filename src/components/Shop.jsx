@@ -228,7 +228,33 @@ function WaterBanner() {
     </div>
   );
 }
+function MemberCard({ mm }) {
+  const hasUrl = mm.url && /^https?:/.test(mm.url);
+  return (
+    <div className="mcard">
+      <div className="mtop" style={{ background: `linear-gradient(135deg, ${mm.col}, ${mm.col}cc)` }}>
+        <span className="mtag">{mm.tag}</span><b>{mm.company}</b>
+      </div>
+      <div className="mmid">
+        <div className="mprod">{mm.product}</div>
+        <div className="mben">{mm.desc}</div>
+        <div className="mtags2"><span className="mtype">{mm.type}</span><span className="mmem"><BadgeCheck size={10} /> 정밀영양협회 회원사</span></div>
+      </div>
+      <a className="mbtn" href={hasUrl ? mm.url : naverHref(mm.company, mm.q)} target="_blank" rel="noreferrer noopener">{hasUrl ? <><MonitorSmartphone size={12} /> 공식몰 바로가기 <ExternalLink size={10} /></> : <><Search size={12} /> 제품 검색 <ExternalLink size={10} /></>}</a>
+    </div>
+  );
+}
 function MemberMall({ catKey }) {
+  const members = (catKey === "supp" && typeof SUPP_MEMBERS !== "undefined") ? SUPP_MEMBERS : null;
+  if (members) {
+    return (
+      <>
+        <div className="bklbl" style={{ margin: "12px 0 8px" }}><BadgeCheck size={14} color="#2563EB" style={{ verticalAlign: "-2px" }} /> 정밀영양협회 회원사 대표 제품 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· {members.length}곳 · 공식몰 연동</span></div>
+        <div className="mallgrid">{members.map((mm) => <MemberCard key={mm.company} mm={mm} />)}</div>
+        <div className="chnote" style={{ marginBottom: 4 }}>※ 사단법인 정밀영양협회 회원사의 <b>대표 제품</b>입니다. 공식몰이 확인된 곳은 <b>공식몰로 바로 연결</b>되고, 미확인 회원사는 제품 검색으로 안내됩니다(외부 링크 새 창{!EXTERNAL_OK && " · 미리보기에선 우클릭 → 새 탭"}). 원료·소재(B2B) 회원사 포함이며, 회원사·제품 구성은 운영 정책에 따라 달라질 수 있습니다.</div>
+      </>
+    );
+  }
   const items = MEMBER_PRODUCTS[catKey] || [];
   if (!items.length) return null;
   return (
