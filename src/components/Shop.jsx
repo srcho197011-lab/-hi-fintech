@@ -380,8 +380,12 @@ function SportsHealth() {
 
 /* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 25%) ===== */
 const shopWon = (n) => (Number(n) || 0).toLocaleString("ko-KR") + "원";
-/* 제품별 구분 이미지(SVG) — 성분 카테고리 컬러 + 브랜드·용량 라벨. 외부 이미지 핫링크 대신 자체 생성(저작권·안정성) */
+const suppMedia = (id) => (typeof SUPP_MEDIA !== "undefined" && SUPP_MEDIA[id]) || {};
+/* 제품 이미지 — 실제 상품 이미지(다나와 CDN) 우선, 로드 실패 시 성분 컬러 SVG로 폴백 */
 function SuppImage({ p }) {
+  const [imgErr, setImgErr] = useState(false);
+  const media = suppMedia(p.id);
+  if (media.image && !imgErr) return <img className="pimgphoto" src={media.image} alt={`${p.brand} ${p.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setImgErr(true)} />;
   const m = (typeof SUPP_CATS !== "undefined" && SUPP_CATS[p.category]) || { col: "#7C3AED" };
   const col = m.col, gid = "sg-" + p.id;
   const pouch = /포|스틱/.test(p.volume || "");
@@ -475,7 +479,7 @@ function SupplementShop() {
               <div className="pdrr tot"><span>건강적립금 (마진의 50% = 판매가 25%)</span><b>{shopWon(r.reward)}</b></div>
             </div>
             <div className="pdbtns">
-              <a className="ghost" href={detail.url || naverHref(detail.name, detail.brand)} target="_blank" rel="noreferrer noopener"><Search size={14} /> 출처·상세 <ExternalLink size={11} /></a>
+              <a className="ghost" href={suppMedia(detail.id).danawa || detail.url || naverHref(detail.name, detail.brand)} target="_blank" rel="noreferrer noopener"><Search size={14} /> {suppMedia(detail.id).danawa ? "다나와 최저가" : "출처·상세"} <ExternalLink size={11} /></a>
               <button className="pri" onClick={() => { add(detail); setDetail(null); }}><ShoppingCart size={14} /> 장바구니 담기</button>
             </div>
             <div className="chnote" style={{ marginTop: 6 }}>※ {detail.source === "brand_mall" ? "브랜드 공식몰" : detail.source === "coupang" ? "쿠팡" : "네이버쇼핑"} 기준 수집 예시가(2026-07-01). 표시가는 수집 시점 기준이며 실제 가격·구매는 출처에서 확인하세요.</div>

@@ -59,3 +59,27 @@ const SUPP_PRODUCTS = [
   { id: "collagen-ever", name: "에버콜라겐 타임", brand: "뉴트리", category: "콜라겐", volume: "30포", claim: "피부 보습·자외선에 의한 피부 손상 개선에 도움", desc: "저분자 콜라겐펩타이드에 비타민C를 더한 이너뷰티 제품. 피부 탄력·보습 관리.", price: 35000, source: "brand_mall", url: "https://search.shopping.naver.com" },
   { id: "zinc-eundan", name: "고려은단 아연", brand: "고려은단", category: "아연", volume: "90정", claim: "정상적인 면역 기능·세포 분열에 필요", desc: "면역·피부 건강에 관여하는 아연 단일제. 환절기 면역 관리 보조.", price: 11900, source: "brand_mall", url: "https://www.koreaeundan.com" },
 ];
+
+/* 실제 상품 이미지·상세링크(다나와/다누리 CDN 수집, 2026-07-01). image 없으면 자체 SVG로 폴백. 상용화 시 정식 이미지 URL/제휴로 교체 */
+const SUPP_MEDIA = {
+  "hongsam-jung": { image: "https://img.danuri.io/catalog-image/860/958/001/bf4114182dc441fea28f1dfce189ebbf.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=1958860" },
+  "hongsam-everytime": { image: "https://img.danuri.io/catalog-image/230/954/001/8169472407bc4f24ad6ed6fda0d6e023.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=1954230" },
+  "collagen-ever": { image: "https://img.danuri.io/catalog-image/105/933/004/7b9023af241d433a80699df39ebe41f0.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=4933105" },
+  "multi-centrum-silver": { image: "https://img.danuri.io/catalog-image/836/978/005/d0284a4f966a4aaa9be2296488562ac3.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=5978836" },
+  "omega-gc-rtg": { image: "https://img.danuri.io/catalog-image/654/251/006/c4d7983df40248699443a72cc8d4466b.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6251654" },
+  "multi-impactamin": { image: "", danawa: "" },
+  "lutein-nd": { image: "https://img.danuri.io/catalog-image/648/653/003/71f1a911fa374e84afcd010d42950439.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=7178290" },
+  "prob-lactofit-core": { image: "https://img.danawa.com/prod_img/500000/591/160/img/6160591_1.jpg", danawa: "https://prod.danawa.com/info/?pcode=6160567" },
+  "omega-promega": { image: "https://img.danuri.io/catalog-image/730/745/005/19247b0a134a45ce9d1e8bfd42f68361.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=5745730" },
+  "vitc-eundan-1000": { image: "https://img.danuri.io/catalog-image/426/012/002/86fb6a9b98574da0bc152f8c1490a83f.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=2012426" },
+  "vitd-solgar": { image: "https://img.danuri.io/catalog-image/136/147/013/09a5f0f31fb64de190c08733d70985a9.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=13147136" },
+  "prob-lactofit-gold": { image: "https://img.danuri.io/catalog-image/689/112/004/c6db096bdfdf4798b35c81f140dc0a14.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=4112689" },
+  "lutein-agh": { image: "https://img.danuri.io/catalog-image/675/943/006/f15c45606fb640b78f286faa3f5b5bfa.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6943675" },
+  "milk-jw": { image: "https://img.danuri.io/catalog-image/594/365/015/b905445f5f15424baa78d0d3d97361af.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=15365594" },
+  "mag-now": { image: "https://img.danuri.io/catalog-image/274/267/006/5cffef157432492692e1315ed4f3074a.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6267274" },
+  "vitc-yuhan": { image: "https://img.danuri.io/catalog-image/833/256/029/ec7ca6be403d4aaaa1226b58ad49aff4.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=29256833" },
+  "vitd-nc": { image: "https://img.danuri.io/catalog-image/856/295/012/f5065b3bbef44bbbaaa0302f7ebe1eb2.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=12295856" },
+  "mag-ckd": { image: "https://img.danuri.io/catalog-image/613/751/018/5e692ee340034869a8da4c961ff8baa7.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=18751613" },
+  "milk-gnm": { image: "https://img.danuri.io/catalog-image/019/917/004/cd64e1fc5f964bc49af2d14d1664468f.jpg", danawa: "https://prod.danawa.com/info/?pcode=4917019" },
+  "zinc-eundan": { image: "https://img.danuri.io/catalog-image/281/976/003/bc0cfb83d09f49268005ce58e91cc4fc.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=3976281" },
+};

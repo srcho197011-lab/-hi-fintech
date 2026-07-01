@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=dbaf0b4573" />
+<link rel="stylesheet" href="./data/app.css?v=b2363cf7ee" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=dbaf0b4573"></script>
-<script src="./src/data/section_data.js?v=dbaf0b4573"></script>
-<script src="./src/data/demo_members.js?v=dbaf0b4573"></script>
+<script src="./src/data/dummy_data.js?v=b2363cf7ee"></script>
+<script src="./src/data/section_data.js?v=b2363cf7ee"></script>
+<script src="./src/data/demo_members.js?v=b2363cf7ee"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -3996,8 +3996,12 @@ function SportsHealth() {
 
 /* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 25%) ===== */
 const shopWon = (n) => (Number(n) || 0).toLocaleString("ko-KR") + "원";
-/* 제품별 구분 이미지(SVG) — 성분 카테고리 컬러 + 브랜드·용량 라벨. 외부 이미지 핫링크 대신 자체 생성(저작권·안정성) */
+const suppMedia = (id) => (typeof SUPP_MEDIA !== "undefined" && SUPP_MEDIA[id]) || {};
+/* 제품 이미지 — 실제 상품 이미지(다나와 CDN) 우선, 로드 실패 시 성분 컬러 SVG로 폴백 */
 function SuppImage({ p }) {
+  const [imgErr, setImgErr] = useState(false);
+  const media = suppMedia(p.id);
+  if (media.image && !imgErr) return <img className="pimgphoto" src={media.image} alt={`${p.brand} ${p.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setImgErr(true)} />;
   const m = (typeof SUPP_CATS !== "undefined" && SUPP_CATS[p.category]) || { col: "#7C3AED" };
   const col = m.col, gid = "sg-" + p.id;
   const pouch = /포|스틱/.test(p.volume || "");
@@ -4091,7 +4095,7 @@ function SupplementShop() {
               <div className="pdrr tot"><span>건강적립금 (마진의 50% = 판매가 25%)</span><b>{shopWon(r.reward)}</b></div>
             </div>
             <div className="pdbtns">
-              <a className="ghost" href={detail.url || naverHref(detail.name, detail.brand)} target="_blank" rel="noreferrer noopener"><Search size={14} /> 출처·상세 <ExternalLink size={11} /></a>
+              <a className="ghost" href={suppMedia(detail.id).danawa || detail.url || naverHref(detail.name, detail.brand)} target="_blank" rel="noreferrer noopener"><Search size={14} /> {suppMedia(detail.id).danawa ? "다나와 최저가" : "출처·상세"} <ExternalLink size={11} /></a>
               <button className="pri" onClick={() => { add(detail); setDetail(null); }}><ShoppingCart size={14} /> 장바구니 담기</button>
             </div>
             <div className="chnote" style={{ marginTop: 6 }}>※ {detail.source === "brand_mall" ? "브랜드 공식몰" : detail.source === "coupang" ? "쿠팡" : "네이버쇼핑"} 기준 수집 예시가(2026-07-01). 표시가는 수집 시점 기준이며 실제 가격·구매는 출처에서 확인하세요.</div>
@@ -6126,6 +6130,30 @@ const SUPP_PRODUCTS = [
   { id: "collagen-ever", name: "에버콜라겐 타임", brand: "뉴트리", category: "콜라겐", volume: "30포", claim: "피부 보습·자외선에 의한 피부 손상 개선에 도움", desc: "저분자 콜라겐펩타이드에 비타민C를 더한 이너뷰티 제품. 피부 탄력·보습 관리.", price: 35000, source: "brand_mall", url: "https://search.shopping.naver.com" },
   { id: "zinc-eundan", name: "고려은단 아연", brand: "고려은단", category: "아연", volume: "90정", claim: "정상적인 면역 기능·세포 분열에 필요", desc: "면역·피부 건강에 관여하는 아연 단일제. 환절기 면역 관리 보조.", price: 11900, source: "brand_mall", url: "https://www.koreaeundan.com" },
 ];
+
+/* 실제 상품 이미지·상세링크(다나와/다누리 CDN 수집, 2026-07-01). image 없으면 자체 SVG로 폴백. 상용화 시 정식 이미지 URL/제휴로 교체 */
+const SUPP_MEDIA = {
+  "hongsam-jung": { image: "https://img.danuri.io/catalog-image/860/958/001/bf4114182dc441fea28f1dfce189ebbf.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=1958860" },
+  "hongsam-everytime": { image: "https://img.danuri.io/catalog-image/230/954/001/8169472407bc4f24ad6ed6fda0d6e023.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=1954230" },
+  "collagen-ever": { image: "https://img.danuri.io/catalog-image/105/933/004/7b9023af241d433a80699df39ebe41f0.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=4933105" },
+  "multi-centrum-silver": { image: "https://img.danuri.io/catalog-image/836/978/005/d0284a4f966a4aaa9be2296488562ac3.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=5978836" },
+  "omega-gc-rtg": { image: "https://img.danuri.io/catalog-image/654/251/006/c4d7983df40248699443a72cc8d4466b.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6251654" },
+  "multi-impactamin": { image: "", danawa: "" },
+  "lutein-nd": { image: "https://img.danuri.io/catalog-image/648/653/003/71f1a911fa374e84afcd010d42950439.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=7178290" },
+  "prob-lactofit-core": { image: "https://img.danawa.com/prod_img/500000/591/160/img/6160591_1.jpg", danawa: "https://prod.danawa.com/info/?pcode=6160567" },
+  "omega-promega": { image: "https://img.danuri.io/catalog-image/730/745/005/19247b0a134a45ce9d1e8bfd42f68361.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=5745730" },
+  "vitc-eundan-1000": { image: "https://img.danuri.io/catalog-image/426/012/002/86fb6a9b98574da0bc152f8c1490a83f.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=2012426" },
+  "vitd-solgar": { image: "https://img.danuri.io/catalog-image/136/147/013/09a5f0f31fb64de190c08733d70985a9.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=13147136" },
+  "prob-lactofit-gold": { image: "https://img.danuri.io/catalog-image/689/112/004/c6db096bdfdf4798b35c81f140dc0a14.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=4112689" },
+  "lutein-agh": { image: "https://img.danuri.io/catalog-image/675/943/006/f15c45606fb640b78f286faa3f5b5bfa.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6943675" },
+  "milk-jw": { image: "https://img.danuri.io/catalog-image/594/365/015/b905445f5f15424baa78d0d3d97361af.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=15365594" },
+  "mag-now": { image: "https://img.danuri.io/catalog-image/274/267/006/5cffef157432492692e1315ed4f3074a.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6267274" },
+  "vitc-yuhan": { image: "https://img.danuri.io/catalog-image/833/256/029/ec7ca6be403d4aaaa1226b58ad49aff4.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=29256833" },
+  "vitd-nc": { image: "https://img.danuri.io/catalog-image/856/295/012/f5065b3bbef44bbbaaa0302f7ebe1eb2.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=12295856" },
+  "mag-ckd": { image: "https://img.danuri.io/catalog-image/613/751/018/5e692ee340034869a8da4c961ff8baa7.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=18751613" },
+  "milk-gnm": { image: "https://img.danuri.io/catalog-image/019/917/004/cd64e1fc5f964bc49af2d14d1664468f.jpg", danawa: "https://prod.danawa.com/info/?pcode=4917019" },
+  "zinc-eundan": { image: "https://img.danuri.io/catalog-image/281/976/003/bc0cfb83d09f49268005ce58e91cc4fc.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=3976281" },
+};
 
 /* ====================== 온톨로지 기반 상담 엔진 ======================
    검진항목 해석 / 보험 보장 공백 분석 / 후속조치 안내 — 회원 건강리포트 연계 + AI 거버넌스.

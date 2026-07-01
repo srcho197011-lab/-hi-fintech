@@ -1683,3 +1683,5 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .ordok .ic{width:56px;height:56px;border-radius:50%;background:#E7F8EE;display:grid;place-items:center;margin:0 auto 12px;}
 .ordok b{font-size:17px;color:#15234A;}.ordok p{font-size:13px;color:var(--muted);line-height:1.7;margin:8px 0 16px;}
 @media(max-width:420px){.prodgrid{grid-template-columns:1fr;}}
+.pimgphoto{width:100%;height:100%;object-fit:contain;background:#fff;border-radius:9px;display:block;}
+.pdimg .pimgphoto{border-radius:12px;}
