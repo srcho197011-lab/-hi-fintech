@@ -380,6 +380,31 @@ function SportsHealth() {
 
 /* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 25%) ===== */
 const shopWon = (n) => (Number(n) || 0).toLocaleString("ko-KR") + "원";
+/* 제품별 구분 이미지(SVG) — 성분 카테고리 컬러 + 브랜드·용량 라벨. 외부 이미지 핫링크 대신 자체 생성(저작권·안정성) */
+function SuppImage({ p }) {
+  const m = (typeof SUPP_CATS !== "undefined" && SUPP_CATS[p.category]) || { col: "#7C3AED" };
+  const col = m.col, gid = "sg-" + p.id;
+  const pouch = /포|스틱/.test(p.volume || "");
+  const brand = (p.brand || "").length > 8 ? p.brand.slice(0, 8) : p.brand;
+  const nm = (p.name || "").replace(/\(.*\)/, "").trim();
+  const name = nm.length > 9 ? nm.slice(0, 9) : nm;
+  return (
+    <svg viewBox="0 0 132 116" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${p.brand} ${p.name} 제품 이미지`}>
+      <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={col} /><stop offset="1" stopColor={col} stopOpacity="0.7" /></linearGradient></defs>
+      {pouch ? (
+        <g><rect x="38" y="14" width="56" height="90" rx="9" fill={`url(#${gid})`} /><rect x="38" y="14" width="56" height="10" rx="4" fill={col} /><path d="M40 20 h52" stroke="#fff" strokeOpacity=".45" strokeWidth="1" strokeDasharray="2 3" /></g>
+      ) : (
+        <g><rect x="54" y="8" width="24" height="12" rx="4" fill={col} /><rect x="57" y="18" width="18" height="8" fill={col} opacity=".92" /><rect x="40" y="24" width="52" height="80" rx="13" fill={`url(#${gid})`} /></g>
+      )}
+      <rect x={pouch ? 44 : 46} y="44" width={pouch ? 44 : 40} height="46" rx="6" fill="#fff" />
+      <rect x={pouch ? 52 : 53} y="50" width="14" height="7" rx="3.5" fill={col} opacity=".22" />
+      <rect x={pouch ? 52 : 53} y="50" width="7" height="7" rx="3.5" fill={col} />
+      <text x={pouch ? 66 : 66} y="70" textAnchor="middle" fontSize="8.5" fontWeight="800" fill="#334155" fontFamily="system-ui,'Malgun Gothic',sans-serif">{brand}</text>
+      <text x={pouch ? 66 : 66} y="81" textAnchor="middle" fontSize="7.5" fontWeight="700" fill={col} fontFamily="system-ui,'Malgun Gothic',sans-serif">{name}</text>
+      <text x={pouch ? 66 : 66} y="90" textAnchor="middle" fontSize="6" fill="#94A3B8" fontFamily="system-ui,'Malgun Gothic',sans-serif">{p.volume}</text>
+    </svg>
+  );
+}
 function SupplementShop() {
   const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
@@ -414,7 +439,7 @@ function SupplementShop() {
       </div>
       <div className="prodgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
         <div className="prodcard" key={p.id} onClick={() => setDetail(p)}>
-          <div className="pimg" style={{ background: (m.col || "#7C3AED") + "16" }}><Art name={m.icon || "capsule"} size={38} /></div>
+          <div className="pimg" style={{ background: (m.col || "#7C3AED") + "10" }}><SuppImage p={p} /></div>
           <div className="pinfo">
             <div className="pbrand">{p.brand}</div>
             <div className="pname2">{p.name}</div>
@@ -439,7 +464,7 @@ function SupplementShop() {
         <div className="pdov" onClick={() => setDetail(null)}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
           <div className="pdh"><b>{detail.name}</b><button onClick={() => setDetail(null)}><X size={19} /></button></div>
           <div className="pdbody">
-            <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#7C3AED") + "16" }}><Art name={m.icon || "capsule"} size={48} /></span>
+            <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#7C3AED") + "10" }}><SuppImage p={detail} /></span>
               <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
             <p className="pddesc">{detail.desc}</p>
             <div className="pdprice">{shopWon(detail.price)}</div>
