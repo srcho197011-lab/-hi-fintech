@@ -257,9 +257,9 @@ function ShopPartnerCardSm({ p }) {
   );
 }
 
-function ShopCategory({ catKey, label }) {
+function ShopCategory({ catKey, label, hideBrands }) {
   const partners = SHOP_PARTNERS[catKey] || [];
-  const brands = SHOP_BRANDS[catKey] || [];
+  const brands = hideBrands ? [] : (SHOP_BRANDS[catKey] || []);
   const compact = catKey === "diet" || catKey === "supp"; // 특별제휴 50% 축소
   return (
     <>
@@ -269,15 +269,17 @@ function ShopCategory({ catKey, label }) {
         : partners.map((p) => <ShopPartnerCard key={p.name} p={p} />)}
       {catKey === "diet" && <WaterBanner />}
       <MemberMall catKey={catKey} />
-      <div className="bklbl" style={{ margin: "6px 0 8px" }}><Star size={14} color="#F59E0B" style={{ verticalAlign: "-2px" }} /> 그 외 유력 {label} 브랜드 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 평판·인지도 기준 예시 {brands.length}곳</span></div>
-      {brands.map(([n, s], i) => (
-        <div className="brandrow" key={n}>
-          <span className={`rk ${i < 3 ? "top" : ""}`}>{i + 1}</span>
-          <div><div className="bn">{n}</div><div className="bs">{s}</div></div>
-          <a className="hlink bl" href={naverHref(n, label)} target="_blank" rel="noreferrer noopener"><Search size={13} /> 검색 <ExternalLink size={11} /></a>
-        </div>
-      ))}
-      <div className="chnote">※ 위 순서는 시장 인지도·평판을 참고한 <b>예시</b>이며 공식 순위가 아닙니다. 브랜드 정보·후기는 네이버 검색으로 연결됩니다. 실제 제휴·입점사는 운영 정책에 따라 달라질 수 있습니다.</div>
+      {!hideBrands && (<>
+        <div className="bklbl" style={{ margin: "6px 0 8px" }}><Star size={14} color="#F59E0B" style={{ verticalAlign: "-2px" }} /> 그 외 유력 {label} 브랜드 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 평판·인지도 기준 예시 {brands.length}곳</span></div>
+        {brands.map(([n, s], i) => (
+          <div className="brandrow" key={n}>
+            <span className={`rk ${i < 3 ? "top" : ""}`}>{i + 1}</span>
+            <div><div className="bn">{n}</div><div className="bs">{s}</div></div>
+            <a className="hlink bl" href={naverHref(n, label)} target="_blank" rel="noreferrer noopener"><Search size={13} /> 검색 <ExternalLink size={11} /></a>
+          </div>
+        ))}
+        <div className="chnote">※ 위 순서는 시장 인지도·평판을 참고한 <b>예시</b>이며 공식 순위가 아닙니다. 브랜드 정보·후기는 네이버 검색으로 연결됩니다. 실제 제휴·입점사는 운영 정책에 따라 달라질 수 있습니다.</div>
+      </>)}
     </>
   );
 }
@@ -376,6 +378,110 @@ function SportsHealth() {
   </>);
 }
 
+/* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 25%) ===== */
+const shopWon = (n) => (Number(n) || 0).toLocaleString("ko-KR") + "원";
+function SupplementShop() {
+  const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
+  const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25), supply: Math.floor(p * 0.5), margin: p - Math.floor(p * 0.5) };
+  const [cat, setCat] = useState("전체");
+  const [sort, setSort] = useState("reward");
+  const [detail, setDetail] = useState(null);
+  const [cart, setCart] = useState({});
+  const [cartOpen, setCartOpen] = useState(false);
+  const [ordered, setOrdered] = useState(false);
+  const cats = ["전체", ...Object.keys(CATS)];
+  let list = PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
+  if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
+  else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
+  else if (sort === "priceHigh") list = [...list].sort((a, b) => b.price - a.price);
+  const add = (p) => { setCart((c) => ({ ...c, [p.id]: (c[p.id] || 0) + 1 })); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${shopWon(rw(p.price).reward)}`); };
+  const setQty = (id, q) => setCart((c) => { const n = { ...c }; if (q <= 0) delete n[id]; else n[id] = q; return n; });
+  const cartItems = Object.keys(cart).map((id) => ({ p: PRODUCTS.find((x) => x.id === id), qty: cart[id] })).filter((x) => x.p);
+  const totalCnt = cartItems.reduce((s, x) => s + x.qty, 0);
+  const totalPrice = cartItems.reduce((s, x) => s + x.p.price * x.qty, 0);
+  const totalReward = cartItems.reduce((s, x) => s + rw(x.p.price).reward * x.qty, 0);
+  const icoOf = (p) => (CATS[p.category] || {});
+  return (
+    <>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></div>
+      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
+      <div className="sssort">
+        <span>정렬</span>
+        {[["reward", "적립높은순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        <span className="sscount">{list.length}종</span>
+      </div>
+      <div className="prodgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
+        <div className="prodcard" key={p.id} onClick={() => setDetail(p)}>
+          <div className="pimg" style={{ background: (m.col || "#7C3AED") + "16" }}><Art name={m.icon || "capsule"} size={38} /></div>
+          <div className="pinfo">
+            <div className="pbrand">{p.brand}</div>
+            <div className="pname2">{p.name}</div>
+            <div className="pvol">{p.category} · {p.volume}</div>
+            <div className="pprice">{shopWon(p.price)}</div>
+            <div className="preward"><Coins size={11} /> 적립 {shopWon(r.reward)} <small>25%</small></div>
+          </div>
+          <button className="paddbtn" onClick={(e) => { e.stopPropagation(); add(p); }}><Plus size={14} /> 담기</button>
+        </div>
+      ); })}</div>
+      <div className="chnote">※ 가격은 브랜드 공식몰/네이버·쿠팡 최저가 <b>수집 예시(2026-07-01 시점)</b>로 변동될 수 있습니다. 기능성 문구는 식약처 인정 기능성 요약(원문 복제 아님)이며, 이미지·후기·구매는 각 출처로 연결됩니다. 건강기능식품은 질병의 예방·치료 의약품이 아니며, 실제 판매는 브랜드 제휴·오픈마켓 API 연동이 필요합니다.</div>
+
+      {totalCnt > 0 && (
+        <div className="cartbar" onClick={() => setCartOpen(true)}>
+          <span className="cbico"><ShoppingCart size={17} /><i>{totalCnt}</i></span>
+          <div className="cbinfo"><b>합계 {shopWon(totalPrice)}</b><span><Coins size={11} color="#FDE68A" /> 건강적립금 {shopWon(totalReward)}</span></div>
+          <button className="cbgo">주문하기 ›</button>
+        </div>
+      )}
+
+      {detail && (() => { const r = rw(detail.price), m = icoOf(detail); return (
+        <div className="pdov" onClick={() => setDetail(null)}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
+          <div className="pdh"><b>{detail.name}</b><button onClick={() => setDetail(null)}><X size={19} /></button></div>
+          <div className="pdbody">
+            <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#7C3AED") + "16" }}><Art name={m.icon || "capsule"} size={48} /></span>
+              <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
+            <p className="pddesc">{detail.desc}</p>
+            <div className="pdprice">{shopWon(detail.price)}</div>
+            <div className="pdreward">
+              <div className="pdrh"><Coins size={14} color="#B45309" /> 건강적립금 산정</div>
+              <div className="pdrr"><span>제품공급가 (판매가 50%)</span><b>{shopWon(r.supply)}</b></div>
+              <div className="pdrr"><span>매출마진 (판매가 50%)</span><b>{shopWon(r.margin)}</b></div>
+              <div className="pdrr tot"><span>건강적립금 (마진의 50% = 판매가 25%)</span><b>{shopWon(r.reward)}</b></div>
+            </div>
+            <div className="pdbtns">
+              <a className="ghost" href={detail.url || naverHref(detail.name, detail.brand)} target="_blank" rel="noreferrer noopener"><Search size={14} /> 출처·상세 <ExternalLink size={11} /></a>
+              <button className="pri" onClick={() => { add(detail); setDetail(null); }}><ShoppingCart size={14} /> 장바구니 담기</button>
+            </div>
+            <div className="chnote" style={{ marginTop: 6 }}>※ {detail.source === "brand_mall" ? "브랜드 공식몰" : detail.source === "coupang" ? "쿠팡" : "네이버쇼핑"} 기준 수집 예시가(2026-07-01). 표시가는 수집 시점 기준이며 실제 가격·구매는 출처에서 확인하세요.</div>
+          </div>
+        </div></div>
+      ); })()}
+
+      {cartOpen && (
+        <div className="pdov" onClick={() => { setCartOpen(false); setOrdered(false); }}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
+          <div className="pdh"><b>{ordered ? "주문 접수" : "장바구니"}</b><button onClick={() => { setCartOpen(false); setOrdered(false); }}><X size={19} /></button></div>
+          <div className="pdbody">
+            {ordered ? (
+              <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · {shopWon(totalPrice)}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 결제 확정 시 건강금융지갑에 적립됩니다.</p><button className="cbtn pri" onClick={() => { setCart({}); setCartOpen(false); setOrdered(false); }}>확인</button></div>
+            ) : (<>
+              {cartItems.map(({ p, qty }) => { const r = rw(p.price); return (
+                <div className="citem" key={p.id}>
+                  <span className="ci" style={{ background: (icoOf(p).col || "#7C3AED") + "16" }}><Art name={icoOf(p).icon || "capsule"} size={22} /></span>
+                  <div className="cinfo"><b>{p.name}</b><span>{shopWon(p.price)} · 적립 {shopWon(r.reward)}</span></div>
+                  <div className="cqty"><button onClick={() => setQty(p.id, qty - 1)}>−</button><b>{qty}</b><button onClick={() => setQty(p.id, qty + 1)}>+</button></div>
+                </div>
+              ); })}
+              <div className="csum"><div><span>합계 금액</span><b>{shopWon(totalPrice)}</b></div><div className="rew"><span><Coins size={12} /> 건강적립금</span><b>{shopWon(totalReward)}</b></div></div>
+              <button className="cbtn pri" onClick={() => setOrdered(true)}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
+              <div className="chnote" style={{ marginTop: 4 }}>※ 결제는 목업이며 실결제·재고 연동은 별도입니다. 건강적립금은 결제 확정 시 적립됩니다.</div>
+            </>)}
+          </div>
+        </div></div>
+      )}
+    </>
+  );
+}
 function ShopSection() {
   const [cat, setCat] = useState("diet");
   const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["ai", "AI 추천상품", Sparkles], ["sports", "스포츠건강", Activity]];
@@ -387,7 +493,7 @@ function ShopSection() {
       <PrecisionNutritionSection />
       <div className="chtabs">{cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}</div>
       {cat === "diet" && <ShopCategory catKey="diet" label="건강식단" />}
-      {cat === "supp" && <ShopCategory catKey="supp" label="영양제" />}
+      {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
       {cat === "device" && <ShopCategory catKey="device" label="의료기기" />}
       {cat === "ai" && <ShopAIRec />}
       {cat === "sports" && <SportsHealth />}

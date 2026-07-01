@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=64478284ff" />
+<link rel="stylesheet" href="./data/app.css?v=dbaf0b4573" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=64478284ff"></script>
-<script src="./src/data/section_data.js?v=64478284ff"></script>
-<script src="./src/data/demo_members.js?v=64478284ff"></script>
+<script src="./src/data/dummy_data.js?v=dbaf0b4573"></script>
+<script src="./src/data/section_data.js?v=dbaf0b4573"></script>
+<script src="./src/data/demo_members.js?v=dbaf0b4573"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -3873,9 +3873,9 @@ function ShopPartnerCardSm({ p }) {
   );
 }
 
-function ShopCategory({ catKey, label }) {
+function ShopCategory({ catKey, label, hideBrands }) {
   const partners = SHOP_PARTNERS[catKey] || [];
-  const brands = SHOP_BRANDS[catKey] || [];
+  const brands = hideBrands ? [] : (SHOP_BRANDS[catKey] || []);
   const compact = catKey === "diet" || catKey === "supp"; // 특별제휴 50% 축소
   return (
     <>
@@ -3885,15 +3885,17 @@ function ShopCategory({ catKey, label }) {
         : partners.map((p) => <ShopPartnerCard key={p.name} p={p} />)}
       {catKey === "diet" && <WaterBanner />}
       <MemberMall catKey={catKey} />
-      <div className="bklbl" style={{ margin: "6px 0 8px" }}><Star size={14} color="#F59E0B" style={{ verticalAlign: "-2px" }} /> 그 외 유력 {label} 브랜드 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 평판·인지도 기준 예시 {brands.length}곳</span></div>
-      {brands.map(([n, s], i) => (
-        <div className="brandrow" key={n}>
-          <span className={`rk ${i < 3 ? "top" : ""}`}>{i + 1}</span>
-          <div><div className="bn">{n}</div><div className="bs">{s}</div></div>
-          <a className="hlink bl" href={naverHref(n, label)} target="_blank" rel="noreferrer noopener"><Search size={13} /> 검색 <ExternalLink size={11} /></a>
-        </div>
-      ))}
-      <div className="chnote">※ 위 순서는 시장 인지도·평판을 참고한 <b>예시</b>이며 공식 순위가 아닙니다. 브랜드 정보·후기는 네이버 검색으로 연결됩니다. 실제 제휴·입점사는 운영 정책에 따라 달라질 수 있습니다.</div>
+      {!hideBrands && (<>
+        <div className="bklbl" style={{ margin: "6px 0 8px" }}><Star size={14} color="#F59E0B" style={{ verticalAlign: "-2px" }} /> 그 외 유력 {label} 브랜드 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 평판·인지도 기준 예시 {brands.length}곳</span></div>
+        {brands.map(([n, s], i) => (
+          <div className="brandrow" key={n}>
+            <span className={`rk ${i < 3 ? "top" : ""}`}>{i + 1}</span>
+            <div><div className="bn">{n}</div><div className="bs">{s}</div></div>
+            <a className="hlink bl" href={naverHref(n, label)} target="_blank" rel="noreferrer noopener"><Search size={13} /> 검색 <ExternalLink size={11} /></a>
+          </div>
+        ))}
+        <div className="chnote">※ 위 순서는 시장 인지도·평판을 참고한 <b>예시</b>이며 공식 순위가 아닙니다. 브랜드 정보·후기는 네이버 검색으로 연결됩니다. 실제 제휴·입점사는 운영 정책에 따라 달라질 수 있습니다.</div>
+      </>)}
     </>
   );
 }
@@ -3992,6 +3994,110 @@ function SportsHealth() {
   </>);
 }
 
+/* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 25%) ===== */
+const shopWon = (n) => (Number(n) || 0).toLocaleString("ko-KR") + "원";
+function SupplementShop() {
+  const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
+  const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25), supply: Math.floor(p * 0.5), margin: p - Math.floor(p * 0.5) };
+  const [cat, setCat] = useState("전체");
+  const [sort, setSort] = useState("reward");
+  const [detail, setDetail] = useState(null);
+  const [cart, setCart] = useState({});
+  const [cartOpen, setCartOpen] = useState(false);
+  const [ordered, setOrdered] = useState(false);
+  const cats = ["전체", ...Object.keys(CATS)];
+  let list = PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
+  if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
+  else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
+  else if (sort === "priceHigh") list = [...list].sort((a, b) => b.price - a.price);
+  const add = (p) => { setCart((c) => ({ ...c, [p.id]: (c[p.id] || 0) + 1 })); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${shopWon(rw(p.price).reward)}`); };
+  const setQty = (id, q) => setCart((c) => { const n = { ...c }; if (q <= 0) delete n[id]; else n[id] = q; return n; });
+  const cartItems = Object.keys(cart).map((id) => ({ p: PRODUCTS.find((x) => x.id === id), qty: cart[id] })).filter((x) => x.p);
+  const totalCnt = cartItems.reduce((s, x) => s + x.qty, 0);
+  const totalPrice = cartItems.reduce((s, x) => s + x.p.price * x.qty, 0);
+  const totalReward = cartItems.reduce((s, x) => s + rw(x.p.price).reward * x.qty, 0);
+  const icoOf = (p) => (CATS[p.category] || {});
+  return (
+    <>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></div>
+      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
+      <div className="sssort">
+        <span>정렬</span>
+        {[["reward", "적립높은순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        <span className="sscount">{list.length}종</span>
+      </div>
+      <div className="prodgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
+        <div className="prodcard" key={p.id} onClick={() => setDetail(p)}>
+          <div className="pimg" style={{ background: (m.col || "#7C3AED") + "16" }}><Art name={m.icon || "capsule"} size={38} /></div>
+          <div className="pinfo">
+            <div className="pbrand">{p.brand}</div>
+            <div className="pname2">{p.name}</div>
+            <div className="pvol">{p.category} · {p.volume}</div>
+            <div className="pprice">{shopWon(p.price)}</div>
+            <div className="preward"><Coins size={11} /> 적립 {shopWon(r.reward)} <small>25%</small></div>
+          </div>
+          <button className="paddbtn" onClick={(e) => { e.stopPropagation(); add(p); }}><Plus size={14} /> 담기</button>
+        </div>
+      ); })}</div>
+      <div className="chnote">※ 가격은 브랜드 공식몰/네이버·쿠팡 최저가 <b>수집 예시(2026-07-01 시점)</b>로 변동될 수 있습니다. 기능성 문구는 식약처 인정 기능성 요약(원문 복제 아님)이며, 이미지·후기·구매는 각 출처로 연결됩니다. 건강기능식품은 질병의 예방·치료 의약품이 아니며, 실제 판매는 브랜드 제휴·오픈마켓 API 연동이 필요합니다.</div>
+
+      {totalCnt > 0 && (
+        <div className="cartbar" onClick={() => setCartOpen(true)}>
+          <span className="cbico"><ShoppingCart size={17} /><i>{totalCnt}</i></span>
+          <div className="cbinfo"><b>합계 {shopWon(totalPrice)}</b><span><Coins size={11} color="#FDE68A" /> 건강적립금 {shopWon(totalReward)}</span></div>
+          <button className="cbgo">주문하기 ›</button>
+        </div>
+      )}
+
+      {detail && (() => { const r = rw(detail.price), m = icoOf(detail); return (
+        <div className="pdov" onClick={() => setDetail(null)}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
+          <div className="pdh"><b>{detail.name}</b><button onClick={() => setDetail(null)}><X size={19} /></button></div>
+          <div className="pdbody">
+            <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#7C3AED") + "16" }}><Art name={m.icon || "capsule"} size={48} /></span>
+              <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
+            <p className="pddesc">{detail.desc}</p>
+            <div className="pdprice">{shopWon(detail.price)}</div>
+            <div className="pdreward">
+              <div className="pdrh"><Coins size={14} color="#B45309" /> 건강적립금 산정</div>
+              <div className="pdrr"><span>제품공급가 (판매가 50%)</span><b>{shopWon(r.supply)}</b></div>
+              <div className="pdrr"><span>매출마진 (판매가 50%)</span><b>{shopWon(r.margin)}</b></div>
+              <div className="pdrr tot"><span>건강적립금 (마진의 50% = 판매가 25%)</span><b>{shopWon(r.reward)}</b></div>
+            </div>
+            <div className="pdbtns">
+              <a className="ghost" href={detail.url || naverHref(detail.name, detail.brand)} target="_blank" rel="noreferrer noopener"><Search size={14} /> 출처·상세 <ExternalLink size={11} /></a>
+              <button className="pri" onClick={() => { add(detail); setDetail(null); }}><ShoppingCart size={14} /> 장바구니 담기</button>
+            </div>
+            <div className="chnote" style={{ marginTop: 6 }}>※ {detail.source === "brand_mall" ? "브랜드 공식몰" : detail.source === "coupang" ? "쿠팡" : "네이버쇼핑"} 기준 수집 예시가(2026-07-01). 표시가는 수집 시점 기준이며 실제 가격·구매는 출처에서 확인하세요.</div>
+          </div>
+        </div></div>
+      ); })()}
+
+      {cartOpen && (
+        <div className="pdov" onClick={() => { setCartOpen(false); setOrdered(false); }}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
+          <div className="pdh"><b>{ordered ? "주문 접수" : "장바구니"}</b><button onClick={() => { setCartOpen(false); setOrdered(false); }}><X size={19} /></button></div>
+          <div className="pdbody">
+            {ordered ? (
+              <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · {shopWon(totalPrice)}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 결제 확정 시 건강금융지갑에 적립됩니다.</p><button className="cbtn pri" onClick={() => { setCart({}); setCartOpen(false); setOrdered(false); }}>확인</button></div>
+            ) : (<>
+              {cartItems.map(({ p, qty }) => { const r = rw(p.price); return (
+                <div className="citem" key={p.id}>
+                  <span className="ci" style={{ background: (icoOf(p).col || "#7C3AED") + "16" }}><Art name={icoOf(p).icon || "capsule"} size={22} /></span>
+                  <div className="cinfo"><b>{p.name}</b><span>{shopWon(p.price)} · 적립 {shopWon(r.reward)}</span></div>
+                  <div className="cqty"><button onClick={() => setQty(p.id, qty - 1)}>−</button><b>{qty}</b><button onClick={() => setQty(p.id, qty + 1)}>+</button></div>
+                </div>
+              ); })}
+              <div className="csum"><div><span>합계 금액</span><b>{shopWon(totalPrice)}</b></div><div className="rew"><span><Coins size={12} /> 건강적립금</span><b>{shopWon(totalReward)}</b></div></div>
+              <button className="cbtn pri" onClick={() => setOrdered(true)}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
+              <div className="chnote" style={{ marginTop: 4 }}>※ 결제는 목업이며 실결제·재고 연동은 별도입니다. 건강적립금은 결제 확정 시 적립됩니다.</div>
+            </>)}
+          </div>
+        </div></div>
+      )}
+    </>
+  );
+}
 function ShopSection() {
   const [cat, setCat] = useState("diet");
   const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["ai", "AI 추천상품", Sparkles], ["sports", "스포츠건강", Activity]];
@@ -4003,7 +4109,7 @@ function ShopSection() {
       <PrecisionNutritionSection />
       <div className="chtabs">{cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}</div>
       {cat === "diet" && <ShopCategory catKey="diet" label="건강식단" />}
-      {cat === "supp" && <ShopCategory catKey="supp" label="영양제" />}
+      {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
       {cat === "device" && <ShopCategory catKey="device" label="의료기기" />}
       {cat === "ai" && <ShopAIRec />}
       {cat === "sports" && <SportsHealth />}
@@ -5932,6 +6038,68 @@ const CHECKUP_INST = [
   /* 세브란스 (2) */
   { b: "세브란스", n: "세브란스 체크업(신촌)", t: "종합병원 검진", sd: "서울특별시", sg: "서대문구", ad: "서울 서대문구 연세로 50-1(공식 사이트 확인)", p: "-", src: _O },
   { b: "세브란스", n: "강남세브란스 체크업", t: "종합병원 검진", sd: "서울특별시", sg: "강남구", ad: "서울 강남구 언주로 211(공식 사이트 확인)", p: "-", src: _O },
+];
+
+/* ====================== 건강쇼핑 — 영양제 상품 데이터셋 + 건강적립금 모듈 ======================
+   출처: 브랜드 공식몰 / 네이버쇼핑·쿠팡 최저가(수집 예시 시점 2026-07-01). 가격은 변동되며 표시가는 수집 시점 기준.
+   ⚠️ 기능성 문구는 식약처 인정 기능성 '요약·재작성'(원문 복제 아님). 이미지는 재호스팅하지 않고 출처 링크 참조.
+   실제 상용 판매에는 각 브랜드 제휴 또는 네이버/쿠팡 오픈마켓·제휴 API 연동이 필요함.
+
+   건강적립금 규칙:  공급가 = P×SUPPLY_RATE(0.5) · 마진 = P−공급가 · 적립금 = 마진×MARGIN_REWARD_RATE(0.5) = P×0.25 (원 단위 내림) */
+const SHOP_REWARD_CFG = { supplyRate: 0.50, marginRewardRate: 0.50 };
+function healthReward(price, cfg) {
+  const c = cfg || SHOP_REWARD_CFG;
+  const p = Math.max(0, Math.floor(Number(price) || 0));
+  const supply = Math.floor(p * c.supplyRate);
+  const margin = p - supply;
+  const reward = Math.floor(margin * c.marginRewardRate);
+  return { supply, margin, reward, rate: p ? reward / p : 0 };
+}
+/* 단위 테스트(콘솔): runShopRewardTests() — 예시값 검증 */
+function runShopRewardTests() {
+  const cases = [[30000, 7500], [19900, 4975], [45000, 11250], [0, 0]];
+  const out = cases.map(([p, exp]) => { const got = healthReward(p).reward; return { price: p, expected: exp, got, ok: got === exp }; });
+  const pass = out.every((x) => x.ok);
+  try { console.log("[shopReward test]", pass ? "PASS" : "FAIL", out); } catch (e) {}
+  return { pass, out };
+}
+
+/* 성분 카테고리 메타(아이콘·색) */
+const SUPP_CATS = {
+  "프로바이오틱스": { icon: "capsule", col: "#16A34A" },
+  "홍삼": { icon: "leaf", col: "#B91C1C" },
+  "비타민C": { icon: "pill", col: "#F59E0B" },
+  "종합비타민": { icon: "capsule", col: "#2563EB" },
+  "오메가3": { icon: "brain", col: "#0EA5E9" },
+  "루테인": { icon: "eye", col: "#16A34A" },
+  "밀크씨슬": { icon: "capsule", col: "#7C3AED" },
+  "마그네슘": { icon: "capsule", col: "#0D9488" },
+  "비타민D": { icon: "pill", col: "#F59E0B" },
+  "콜라겐": { icon: "capsule", col: "#DB2777" },
+  "아연": { icon: "capsule", col: "#64748B" },
+};
+/* 상품 20종: id·name·brand·category·volume·claim(기능성 요약)·desc(재작성)·price·source·url(공식몰/상세) */
+const SUPP_PRODUCTS = [
+  { id: "prob-lactofit-gold", name: "락토핏 골드", brand: "종근당건강", category: "프로바이오틱스", volume: "50포", claim: "유익균 증식·유해균 억제로 배변활동 원활에 도움", desc: "국내 판매량 상위 유산균. 포당 다수의 프로바이오틱스와 아연을 함께 담아 장 건강과 면역에 도움을 주는 스틱형 제품.", price: 19900, source: "naver", url: "https://www.ckdhc.com" },
+  { id: "prob-lactofit-core", name: "락토핏 코어", brand: "종근당건강", category: "프로바이오틱스", volume: "60캡슐", claim: "유산균 증식·배변활동 원활에 도움", desc: "장용성 캡슐로 유산균 생존율을 높인 코어 라인. 아연·프리바이오틱스를 함께 배합.", price: 25900, source: "naver", url: "https://www.ckdhc.com" },
+  { id: "hongsam-everytime", name: "정관장 홍삼정 에브리타임", brand: "KGC인삼공사", category: "홍삼", volume: "30포", claim: "면역력 증진·피로 개선·혈행 개선에 도움(홍삼)", desc: "6년근 홍삼농축액 스틱. 물 없이 짜먹는 형태로 일상 면역·활력 관리에 적합.", price: 60000, source: "brand_mall", url: "https://www.jungkwanjang.com" },
+  { id: "hongsam-jung", name: "정관장 홍삼정 (100g)", brand: "KGC인삼공사", category: "홍삼", volume: "100g", claim: "면역력 증진·피로 개선·기억력 개선에 도움(홍삼)", desc: "6년근 홍삼 농축액 정과 형태. 물이나 차에 타서 섭취하는 대표 홍삼 제품.", price: 90000, source: "brand_mall", url: "https://www.jungkwanjang.com" },
+  { id: "vitc-eundan-1000", name: "고려은단 비타민C 1000", brand: "고려은단", category: "비타민C", volume: "600정", claim: "항산화·결합조직 형성·철 흡수에 필요", desc: "영국산 원료의 고함량 비타민C. 하루 1정으로 항산화·피로 개선 관리.", price: 22000, source: "brand_mall", url: "https://www.koreaeundan.com" },
+  { id: "vitc-yuhan", name: "유한양행 비타민C", brand: "유한양행", category: "비타민C", volume: "300정", claim: "항산화·면역·철 흡수에 필요", desc: "가성비 고함량 비타민C 제품. 데일리 항산화 보충용.", price: 15000, source: "naver", url: "https://search.shopping.naver.com" },
+  { id: "multi-impactamin", name: "임팩타민", brand: "대웅제약", category: "종합비타민", volume: "100정", claim: "에너지 대사·피로 개선에 필요한 비타민B군 고함량", desc: "고함량 활성비타민B군 중심 종합비타민. 피로·활력 관리에 널리 쓰이는 제품.", price: 28000, source: "naver", url: "https://search.shopping.naver.com" },
+  { id: "multi-centrum-silver", name: "센트룸 실버", brand: "화이자", category: "종합비타민", volume: "125정", claim: "다양한 비타민·미네랄 보충(에너지 대사·항산화)", desc: "50세 이상을 위한 종합비타민·미네랄. 눈·뼈·심장 건강 성분을 폭넓게 배합.", price: 32000, source: "coupang", url: "https://www.coupang.com" },
+  { id: "omega-promega", name: "프로메가 오메가3 코어", brand: "종근당건강", category: "오메가3", volume: "60캡슐", claim: "혈중 중성지방 개선·혈행 개선에 도움(EPA·DHA)", desc: "고순도 rTG 오메가3. 심혈관·혈행 관리를 위한 대표 제품.", price: 24900, source: "naver", url: "https://www.ckdhc.com" },
+  { id: "omega-gc-rtg", name: "뉴트리 알티지 오메가3", brand: "GC녹십자웰빙", category: "오메가3", volume: "60캡슐", claim: "혈중 중성지방·혈행 개선·기억력에 도움(EPA·DHA)", desc: "알티지(rTG) 형태로 흡수율을 높인 오메가3. 비타민E 항산화 배합.", price: 29000, source: "naver", url: "https://search.shopping.naver.com" },
+  { id: "lutein-agh", name: "안국건강 루테인 지아잔틴", brand: "안국건강", category: "루테인", volume: "60캡슐", claim: "노화로 인한 황반색소 밀도 유지로 눈 건강에 도움", desc: "루테인·지아잔틴에 비타민A를 더한 눈 영양제. 디지털 시대 눈 피로 관리.", price: 19800, source: "brand_mall", url: "https://www.shopagh.com" },
+  { id: "lutein-nd", name: "뉴트리디데이 루테인", brand: "뉴트리디데이", category: "루테인", volume: "90캡슐", claim: "황반색소 밀도 유지로 눈 건강에 도움", desc: "3개월분 대용량 루테인. 마리골드 추출물 기반.", price: 26000, source: "naver", url: "https://search.shopping.naver.com" },
+  { id: "milk-gnm", name: "GNM 밀크씨슬", brand: "GNM자연의품격", category: "밀크씨슬", volume: "90정", claim: "간 건강에 도움(실리마린)", desc: "실리마린 고함량 밀크씨슬. 음주·피로가 잦은 현대인의 간 건강 관리.", price: 12900, source: "coupang", url: "https://www.coupang.com" },
+  { id: "milk-jw", name: "JW중외제약 밀크씨슬", brand: "JW중외제약", category: "밀크씨슬", volume: "60캡슐", claim: "간 건강에 도움(실리마린)", desc: "제약사 품질관리 밀크씨슬. 간수치·피로 관리 보조.", price: 18000, source: "naver", url: "https://search.shopping.naver.com" },
+  { id: "mag-now", name: "나우푸드 마그네슘", brand: "NOW Foods", category: "마그네슘", volume: "200정", claim: "에너지 생성·신경·근육 기능 유지에 필요", desc: "미국 직수입 대용량 마그네슘. 근육 경련·수면·스트레스 관리 보조.", price: 16500, source: "coupang", url: "https://www.coupang.com" },
+  { id: "mag-ckd", name: "종근당건강 마그네슘", brand: "종근당건강", category: "마그네슘", volume: "90정", claim: "에너지 대사·신경·근육 기능 유지에 필요", desc: "일상 마그네슘 보충용. 비타민B6 배합으로 흡수 보조.", price: 13900, source: "naver", url: "https://www.ckdhc.com" },
+  { id: "vitd-nc", name: "뉴트리코어 비타민D 2000IU", brand: "뉴트리코어", category: "비타민D", volume: "180캡슐", claim: "칼슘 흡수·뼈 형성과 유지에 필요", desc: "6개월분 대용량 비타민D. 실내 생활·겨울철 부족하기 쉬운 비타민D 보충.", price: 14900, source: "coupang", url: "https://www.coupang.com" },
+  { id: "vitd-solgar", name: "솔가 비타민D3", brand: "솔가", category: "비타민D", volume: "100캡슐", claim: "칼슘·인 흡수와 뼈 건강에 필요", desc: "글로벌 브랜드 비타민D3. 뼈·면역 건강 관리.", price: 21000, source: "naver", url: "https://search.shopping.naver.com" },
+  { id: "collagen-ever", name: "에버콜라겐 타임", brand: "뉴트리", category: "콜라겐", volume: "30포", claim: "피부 보습·자외선에 의한 피부 손상 개선에 도움", desc: "저분자 콜라겐펩타이드에 비타민C를 더한 이너뷰티 제품. 피부 탄력·보습 관리.", price: 35000, source: "brand_mall", url: "https://search.shopping.naver.com" },
+  { id: "zinc-eundan", name: "고려은단 아연", brand: "고려은단", category: "아연", volume: "90정", claim: "정상적인 면역 기능·세포 분열에 필요", desc: "면역·피부 건강에 관여하는 아연 단일제. 환절기 면역 관리 보조.", price: 11900, source: "brand_mall", url: "https://www.koreaeundan.com" },
 ];
 
 /* ====================== 온톨로지 기반 상담 엔진 ======================
