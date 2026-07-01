@@ -1620,7 +1620,7 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .ptxt b{font-size:12.5px;color:#15234A;}.ptxt em{font-style:normal;font-size:10px;font-weight:800;color:#7C3AED;background:#F1ECFE;border-radius:999px;padding:1px 7px;margin-left:4px;}
 .ptxt span{display:block;font-size:11px;color:var(--muted);margin-top:2px;}.ptxt span b{color:#7C3AED;}
 .bkinsnote{font-size:10px;color:var(--muted);line-height:1.55;margin-top:9px;}
-.center.seoul{background:#F5F8FF;}
-.center.gangnam{background:linear-gradient(90deg,#EAF2FF,#F5F9FF);border-color:#C7D8FB;box-shadow:0 6px 18px -14px rgba(37,99,235,.5);}
-.center.gangnam .cimg{background:#DCE9FF !important;}
-.gnbadge{color:#1D4ED8 !important;background:#DCE9FF !important;display:inline-flex;align-items:center;gap:2px;}
+.center.partner{background:linear-gradient(90deg,#FFF7ED,#FFFDF8);border:1.5px solid #F5D9A8;box-shadow:0 10px 24px -14px rgba(245,158,11,.6);position:relative;margin-top:8px;}
+.center.partner::before{content:"⭐ 특별제휴";position:absolute;top:-9px;left:14px;background:linear-gradient(90deg,#F59E0B,#F97316);color:#fff;font-size:9.5px;font-weight:800;padding:2px 10px;border-radius:999px;box-shadow:0 4px 10px -4px rgba(245,158,11,.7);letter-spacing:-.2px;}
+.center.partner .cimg{background:#FEF3E2 !important;}
+.partnerbadge{color:#B45309 !important;background:#FEF3E2 !important;border:1px solid #F5D9A8;display:inline-flex;align-items:center;gap:2px;}
