@@ -472,11 +472,9 @@ function SupplementShop() {
               <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
             <p className="pddesc">{detail.desc}</p>
             <div className="pdprice">{shopWon(detail.price)}</div>
-            <div className="pdreward">
-              <div className="pdrh"><Coins size={14} color="#B45309" /> 건강적립금 산정</div>
-              <div className="pdrr"><span>제품공급가 (판매가 50%)</span><b>{shopWon(r.supply)}</b></div>
-              <div className="pdrr"><span>매출마진 (판매가 50%)</span><b>{shopWon(r.margin)}</b></div>
-              <div className="pdrr tot"><span>건강적립금 (마진의 50% = 판매가 25%)</span><b>{shopWon(r.reward)}</b></div>
+            <div className="pdreward simple">
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 25%</small></div>
+              <b className="pdramt">{shopWon(r.reward)}</b>
             </div>
             <div className="pdbtns">
               <a className="ghost" href={suppMedia(detail.id).danawa || detail.url || naverHref(detail.name, detail.brand)} target="_blank" rel="noreferrer noopener"><Search size={14} /> {suppMedia(detail.id).danawa ? "다나와 최저가" : "출처·상세"} <ExternalLink size={11} /></a>
