@@ -52,7 +52,7 @@ function MyPageSection({ onGo }) {
       {dm && typeof FamilyCareSection === "function" && <FamilyCareSection member={dm} onGo={onGo} />}
       <div className="profile">
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
-        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${dm.biologicalAge}세 · 데모회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 데모 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
+        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${dm.biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
         <div className="pstats">
           {[["12,480", "Health Token", "wallet"], ["6", "Health NFT", "nft"], ["1", "검진 예약", "checkup"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
         </div>
@@ -100,7 +100,7 @@ function MyPageSection({ onGo }) {
                 </div>
               ); })}
             <div className="logmeta">{sessions.length}건 표시 · 전체 {AI_SESSIONS.length}건</div>
-            <div className="chnote">※ 본 기록은 데모용 세션 로그입니다. 실서비스에서는 <b>ai_doctor_sessions</b>·<b>insurance_recommendation_logs</b> 테이블에 개인정보보호 기준으로 분리·암호화 저장되며, <b>동의 철회 시 즉시 삭제</b>됩니다.</div>
+            <div className="chnote">※ 본 기록은 예시용 세션 로그입니다. 실서비스에서는 <b>ai_doctor_sessions</b>·<b>insurance_recommendation_logs</b> 테이블에 개인정보보호 기준으로 분리·암호화 저장되며, <b>동의 철회 시 즉시 삭제</b>됩니다.</div>
             <div className="gorow" style={{ marginTop: 4 }}><button className="gobtn pri" onClick={() => go("ai")}><MessageSquare size={14} /> 상담 계속하기</button><button className="gobtn" onClick={() => exportLog("csv")}><FileText size={14} /> CSV 내보내기</button><button className="gobtn" onClick={() => exportLog("json")}><FileText size={14} /> JSON 내보내기</button><button className="gobtn" onClick={() => { if (AI_SESSIONS.length) { AI_SESSIONS.length = 0; INS_REC_LOGS.length = 0; setLogVer((v) => v + 1); toast("상담 기록을 모두 삭제했습니다."); } }}><X size={14} /> 기록 전체 삭제</button></div>
           </>)}
         </div>);

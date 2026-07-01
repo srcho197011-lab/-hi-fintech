@@ -94,7 +94,7 @@ function InsModal({ title, sub, items, onClose }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
               {(items || []).map(([a, t, d], i) => <div className="resitem" key={i} style={{ margin: 0 }}><span className="ic" style={{ background: "#EAF0FE" }}><Art name={a} size={20} /></span><div><b style={{ fontSize: 13 }}>{t}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d}</div></div></div>)}
             </div>
-            <div className="chnote" style={{ textAlign: "left", marginTop: 14 }}>※ 보험 가입·청구·상담은 <b>정식 라이선스 설계사·보험사 채널</b>을 통해 진행됩니다. 본 화면은 정보 제공·연결 목적의 데모이며, 보험료·보장은 상품·고지·심사에 따라 달라집니다.</div>
+            <div className="chnote" style={{ textAlign: "left", marginTop: 14 }}>※ 보험 가입·청구·상담은 <b>정식 라이선스 설계사·보험사 채널</b>을 통해 진행됩니다. 본 화면은 정보 제공·연결 목적의 예시이며, 보험료·보장은 상품·고지·심사에 따라 달라집니다.</div>
             <button className="cbtn pri" style={{ marginTop: 14 }} onClick={onClose}>확인</button>
           </div>
         </div>
@@ -247,7 +247,7 @@ function InsJoin({ onGo }) {
       <div style={{ fontSize: 12.5, color: "#3a4659", lineHeight: 1.6 }}>본인은 상기 내용을 충분히 읽고 이해하였으며 자발적인 의사에 따라 본 동의서를 작성·제출합니다. <b>(전자서명)</b></div>
       <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>신청인: <b style={{ color: "var(--text)" }}>{info.name || "—"}</b> · 하이젠케어 주식회사 귀중</div>
       <button className="cbtn pri" style={{ marginTop: 12, opacity: allReq && rrnOk ? 1 : .5 }} disabled={!(allReq && rrnOk)} onClick={() => setDone(true)}><ShieldCheck size={15} /> {!allReq ? "필수 항목에 모두 동의해 주세요" : !rrnOk ? "주민등록번호를 입력해 주세요" : "전자서명 후 건강검진보험 가입 동의 제출"}</button>
-      <div className="chnote" style={{ marginTop: 8 }}>※ 보험가입·청약·심사는 정식 라이선스 보험대리점 글로벌예방금융㈜·GA코리아㈜ 및 보험사를 통해 진행됩니다. 본 화면은 동의서 양식 데모입니다.</div>
+      <div className="chnote" style={{ marginTop: 8 }}>※ 보험가입·청약·심사는 정식 라이선스 보험대리점 글로벌예방금융㈜·GA코리아㈜ 및 보험사를 통해 진행됩니다. 본 화면은 동의서 양식 예시입니다.</div>
     </div>
   </>);
 }
@@ -403,7 +403,7 @@ function HealthAssetWallet() {
 }
 function InsuranceRecommendationCard({ report }) {
   const age = (report && report.meta && report.meta.regAge) || 54.1;
-  const chronic = false; // 데모: 위험도는 높으나 진단 보유는 아님
+  const chronic = false; // 안내: 위험도는 높으나 진단 보유는 아님
   const rec = age >= 60 ? "노후실손보험" : chronic ? "유병력자 실손보험" : "5세대 실손보험";
   const TYPES = [
     ["일반 회원", "5세대 실손보험", "최신 기준의 표준형 실손보험. 자기부담·보장구조가 5세대 기준으로 설계됩니다."],
@@ -433,8 +433,8 @@ function InsuranceSupportAdmin() {
   ];
   return (
     <div className="ipsadmin">
-      <div className="ahd" onClick={() => setOpen((o) => !o)}><Settings size={16} color="#2563EB" /> 실손보험 정책 관리 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>· 관리자 설정(데모)</span><ChevronDown size={16} style={{ marginLeft: "auto", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
-      {open && <div className="abd">{ROWS.map(([l, v]) => <div className="arow" key={l}><span className="lbl">{l}</span><span className="val">{v}</span></div>)}<div className="chnote" style={{ marginTop: 11 }}>※ 적립률·지원한도·재원은 운영 정책 및 참여기관 협약에 따라 설정됩니다. 본 화면은 관리자 설정 예시(데모)입니다.</div></div>}
+      <div className="ahd" onClick={() => setOpen((o) => !o)}><Settings size={16} color="#2563EB" /> 실손보험 정책 관리 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>· 관리자 설정</span><ChevronDown size={16} style={{ marginLeft: "auto", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
+      {open && <div className="abd">{ROWS.map(([l, v]) => <div className="arow" key={l}><span className="lbl">{l}</span><span className="val">{v}</span></div>)}<div className="chnote" style={{ marginTop: 11 }}>※ 적립률·지원한도·재원은 운영 정책 및 참여기관 협약에 따라 설정됩니다. 본 화면은 관리자 설정 예시입니다.</div></div>}
     </div>
   );
 }
@@ -629,7 +629,7 @@ function InsuranceSection({ onGo }) {
             {c.status === "미가입" && <button className="cbtn" style={{ marginTop: 4 }} onClick={() => setTab("join")}><FileText size={14} /> 이 보장 가입하기</button>}
           </div>
         ))}
-        <div className="chnote">※ 보장 내역은 데모 예시입니다. 실제 보유계약은 신용정보원·보험사 연동(본인 인증) 시 조회됩니다.</div>
+        <div className="chnote">※ 보장 내역은 예시입니다. 실제 보유계약은 신용정보원·보험사 연동(본인 인증) 시 조회됩니다.</div>
       </>)}
 
       {tab === "claim" && (<>
@@ -646,7 +646,7 @@ function InsuranceSection({ onGo }) {
             <div className="costrow" key={i}><span className="cl">{d} · {t}</span><span className="cv" style={{ color: "var(--green)" }}>{v}</span><span className="ca">지급완료</span></div>
           ))}
         </div>
-        <div className="chnote">※ 청구·지급은 보험사 심사 결과에 따라 확정됩니다. 본 화면은 데모입니다.</div>
+        <div className="chnote">※ 청구·지급은 보험사 심사 결과에 따라 확정됩니다. 본 화면은 예시입니다.</div>
       </>)}
 
       {tab === "ai" && (<>

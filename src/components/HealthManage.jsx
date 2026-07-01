@@ -6,7 +6,7 @@ function HealthManageSection({ onGo }) {
   const cats = [["summary", "한눈에 보기", LayoutDashboard], ["bio", "생체나이", Activity], ["disease", "질병 위험", HeartPulse], ["cancer", "암 위험", ShieldCheck], ["warn", "경고신호", AlertTriangle], ["care", "관리·권고", Sparkles], ["report", "검진 리포트", FileText]];
   const go = onGo || (() => {});
   const Go = ({ to, ic: Ic, pri, children }) => <button className={`gobtn ${pri ? "pri" : ""}`} onClick={() => go(to)}><Ic size={14} /> {children}</button>;
-  // 데모 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
+  // 체험 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const R = dm ? demoReport(dm) : null;
   const won = (n) => Number(n).toLocaleString("ko-KR") + "원";
@@ -39,7 +39,7 @@ function HealthManageSection({ onGo }) {
 
       <div className="conn">
         <span className="cdot" style={{ background: synced ? "#16A34A" : "#F59E0B", boxShadow: synced ? "0 0 0 4px rgba(22,163,74,.15)" : "0 0 0 4px rgba(245,158,11,.15)" }} />
-        <div className="ctxt"><b>{R ? "데모 회원 리포트 표시 중" : `메디에이지 연동 ${synced ? "완료" : "필요"}`}</b><div style={{ color: "var(--muted)", marginTop: 2 }}>{R ? `${dm.name}님 시연용 데모 건강 리포트가 표시되고 있습니다.` : (synced ? "조성래님 프롬에이지 Premium 리포트가 표시되고 있습니다." : "계정 인증 후 실데이터를 불러옵니다.")}</div></div>
+        <div className="ctxt"><b>{R ? "체험 회원 리포트 표시 중" : `메디에이지 연동 ${synced ? "완료" : "필요"}`}</b><div style={{ color: "var(--muted)", marginTop: 2 }}>{R ? `${dm.name}님 시연용 예시 건강 리포트가 표시되고 있습니다.` : (synced ? "조성래님 프롬에이지 Premium 리포트가 표시되고 있습니다." : "계정 인증 후 실데이터를 불러옵니다.")}</div></div>
         <button className="cbtn2" onClick={() => setSynced(true)}><RefreshCw size={14} /> 새로고침</button>
       </div>
 
@@ -86,7 +86,7 @@ function HealthManageSection({ onGo }) {
         </div>
         {R ? (
           <div className="card"><div className="rct"><TrendingUp size={18} color="#2563EB" /> 생체나이 vs 주민등록나이</div>
-            <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{dm.name}님 생체나이 <b style={{ color: "var(--blue)" }}>{bioAge}세</b>는 주민등록나이 {regAge}세보다 {diffGood ? `${Math.abs(diffN)}세 낮아(노화 느림)` : `${diffN}세 높아(노화 빠름)`}, 노화속도 {agingSpeed}배입니다. <span style={{ color: "var(--soft)" }}>※ 시연용 데모 데이터 · 연도별 추이는 실연동 시 제공됩니다.</span></p>
+            <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{dm.name}님 생체나이 <b style={{ color: "var(--blue)" }}>{bioAge}세</b>는 주민등록나이 {regAge}세보다 {diffGood ? `${Math.abs(diffN)}세 낮아(노화 느림)` : `${diffN}세 높아(노화 빠름)`}, 노화속도 {agingSpeed}배입니다. <span style={{ color: "var(--soft)" }}>※ 시연용 예시 데이터 · 연도별 추이는 실연동 시 제공됩니다.</span></p>
           </div>
         ) : (
           <div className="card">
@@ -112,7 +112,7 @@ function HealthManageSection({ onGo }) {
                 <span className="dp" style={{ color: up ? "#B45309" : "#15803D", background: up ? "#FEF3E2" : "#E7F8EE" }}>{up ? <ArrowUp size={11} /> : <ArrowDown size={11} />}{up ? "+" : ""}{pct}%</span>
                 <span className="di">10년 발생률 {inc}</span></div>);
             })}
-            <p style={{ fontSize: 11, color: "var(--soft)", marginTop: 10 }}>※ 동년배 평균 대비 상대 위험도{R ? " · 시연용 데모 추정치" : ". 당뇨병만 평균보다 높습니다."}</p>
+            <p style={{ fontSize: 11, color: "var(--soft)", marginTop: 10 }}>※ 동년배 평균 대비 상대 위험도{R ? " · 시연용 예시 추정치" : ". 당뇨병만 평균보다 높습니다."}</p>
           </div>
           <div className="card">
             <div className="rct"><Banknote size={18} color="#16A34A" /> 의료비·의료이용 예측</div>
@@ -120,7 +120,7 @@ function HealthManageSection({ onGo }) {
             <div className="costrow"><span className="cl">10년 후 의료비</span><span className="cv">{won(cost10v)}</span><span className="ca">동년배 {won(Math.round(cost10v * 0.95))}</span></div>
             <div className="costrow"><span className="cl">외래진료(올해)</span><span className="cv">{R ? 18 + cancerTotal : 24}일</span><span className="ca">동년배 {R ? 16 + cancerTotal : 22}일</span></div>
             <div className="costrow"><span className="cl">입원(올해)</span><span className="cv">{R ? Math.max(2, cancerTotal) : 24}일</span><span className="ca">동년배 {R ? Math.max(1, cancerTotal - 2) : 22}일</span></div>
-            <p style={{ fontSize: 11, color: "var(--soft)", marginTop: 10 }}>※ 생체나이 기반 예측{R ? "(시연용 데모)" : ""}. 예방 관리로 의료비를 낮출 수 있습니다.</p>
+            <p style={{ fontSize: 11, color: "var(--soft)", marginTop: 10 }}>※ 생체나이 기반 예측{R ? "(시연용 예시)" : ""}. 예방 관리로 의료비를 낮출 수 있습니다.</p>
           </div>
         </div>
         <div className="gorow"><Go to="hospital" ic={Building2} pri>병원 찾기</Go><Go to="insurance" ic={ShieldCheck}>보험 보기</Go><Go to="shop" ic={ShoppingCart}>혈당·영양 관리</Go></div>

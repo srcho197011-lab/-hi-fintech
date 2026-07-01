@@ -1,4 +1,4 @@
-/* 시연·테스트용 가상 데모 회원 16명 — plain script(Babel 미경유). window.__HHDATA.DEMO_MEMBERS 노출.
+/* 시연·테스트용 가상 체험 회원 16명 — plain script(Babel 미경유). window.__HHDATA.DEMO_MEMBERS 노출.
    ⚠️ 실제 개인정보 아님. 모든 회원 isDemoUser:true.
    카테고리: 일반남녀(5) · 여성특화(4) · 노인(5) · 아동(2). sex/category/regAge로 연령·성별·분류 제어. */
 window.__HHDATA = Object.assign(window.__HHDATA || {}, {

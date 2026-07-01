@@ -30,7 +30,7 @@ function CommunitySection({ onGo }) {
             <div className="pstat"><span><Heart size={14} color="#EF4444" /> {p[5].toLocaleString()}</span><span><MessageSquare size={14} /> {p[6]}</span><span style={{ marginLeft: "auto", color: "var(--blue)", cursor: "pointer" }} onClick={() => go("manage")}>관련 건강관리 ›</span></div>
           </div>
         ))}
-        <div className="chnote">※ 데모 게시물입니다. 의학 정보는 참고용이며 진단·치료는 전문의와 상담하세요. 커뮤니티 활동(글·후기·Q&A) 시 Health Token이 적립됩니다.</div>
+        <div className="chnote">※ 예시 게시물입니다. 의학 정보는 참고용이며 진단·치료는 전문의와 상담하세요. 커뮤니티 활동(글·후기·Q&A) 시 Health Token이 적립됩니다.</div>
       </>)}
 
       {tab === "groups" && (<>
@@ -40,7 +40,7 @@ function CommunitySection({ onGo }) {
             <div style={{ flex: 1 }}><div className="wn">{name}{rec && <span className="cbadge" style={{ color: "#7C3AED", background: "#F1ECFE", marginLeft: 5 }}><Sparkles size={10} /> 추천</span>}</div><div className="wd">{d}</div><div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 3, fontWeight: 700 }}><Users size={11} style={{ verticalAlign: "-2px" }} /> {mem}</div></div>
             <button className="book" style={{ alignSelf: "center", padding: "7px 12px" }} onClick={() => toast(`'${name}' 모임에 가입했습니다. Health Token이 적립됩니다.`)}>가입</button></div>
         ))}</div>
-        <div className="chnote">※ 추천 모임은 조성래님 리포트(당뇨 위험·간 54.4세·췌장암 경고) 기반 데모입니다.</div>
+        <div className="chnote">※ 추천 모임은 조성래님 리포트(당뇨 위험·간 54.4세·췌장암 경고) 기반 예시입니다.</div>
       </>)}
 
       {tab === "qna" && (<>
@@ -53,7 +53,7 @@ function CommunitySection({ onGo }) {
           </div>
         ))}
         <button className="cbtn pri" onClick={() => go("ai")}><MessageSquare size={15} /> 질문하기 · AI 1차 상담</button>
-        <div className="chnote">※ 데모 Q&A입니다. 보험·의료 권유가 아닌 일반 건강정보 제공이며, 구체적 진단·처방은 의료기관에서 받으세요.</div>
+        <div className="chnote">※ 예시 Q&A입니다. 보험·의료 권유가 아닌 일반 건강정보 제공이며, 구체적 진단·처방은 의료기관에서 받으세요.</div>
       </>)}
 
       {tab === "review" && (<>
@@ -68,7 +68,7 @@ function CommunitySection({ onGo }) {
             <div className="pstat"><span><Heart size={14} color="#EF4444" /> {(120 + i * 47).toLocaleString()}</span><span style={{ marginLeft: "auto", color: "var(--blue)", cursor: "pointer" }} onClick={() => go(type === "검진센터" ? "checkup" : type === "병원" ? "hospital" : "shop")}>해당 서비스 ›</span></div>
           </div>
         ))}
-        <div className="chnote">※ 후기는 데모이며, 특정 기관·제품에 대한 의료광고·유인·알선이 아닙니다. 이용자의 합리적 선택을 돕기 위한 참고 정보입니다(의료법 준수).</div>
+        <div className="chnote">※ 후기는 예시이며, 특정 기관·제품에 대한 의료광고·유인·알선이 아닙니다. 이용자의 합리적 선택을 돕기 위한 참고 정보입니다(의료법 준수).</div>
       </>)}
     </div>
   );

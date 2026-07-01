@@ -1,4 +1,4 @@
-/* 데모 회원 보험추천 카드 (기존 InsuranceRecommendationCard와 이름 충돌 방지 위해 DemoInsuranceCard) */
+/* 체험 회원 보험추천 카드 (기존 InsuranceRecommendationCard와 이름 충돌 방지 위해 DemoInsuranceCard) */
 function DemoInsuranceCard({ member, onGo }) {
   const recs = demoInsuranceRecs(member);
   const go = onGo || (() => {});

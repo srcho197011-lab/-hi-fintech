@@ -35,11 +35,11 @@ function DemoSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="mypage" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>파일럿검증회원 <span className="demobadge"><AlertTriangle size={12} /> 시연용 데모 데이터입니다.</span></div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>관리자 일괄등록 · 데모 로그인 · 회원별 건강분석 대시보드 · AI 상담 연동 · 테스트 체크리스트 (경로: /admin/demo-members)</div></div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>파일럿검증회원 <span className="demobadge"><AlertTriangle size={12} /> 시연용 예시 데이터입니다.</span></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>관리자 일괄등록 · 체험 로그인 · 회원별 건강분석 대시보드 · AI 상담 연동 · 테스트 체크리스트 (경로: /admin/demo-members)</div></div></div>
       <div className="demotabs">
         <div className={`demotab ${view === "admin" ? "on" : ""}`} onClick={() => setView("admin")}><Settings size={15} /> 관리자</div>
-        <div className={`demotab ${view === "login" ? "on" : ""}`} onClick={() => setView("login")}><CircleUserRound size={15} /> 데모 로그인</div>
+        <div className={`demotab ${view === "login" ? "on" : ""}`} onClick={() => setView("login")}><CircleUserRound size={15} /> 체험 로그인</div>
         <div className={`demotab ${view === "dash" ? "on" : ""}`} onClick={() => setView("dash")}><Activity size={15} /> 내 대시보드{user ? ` · ${user.name}` : ""}</div>
       </div>
       {view === "admin" && <DemoAdminPage onLogin={onLogin} onGoLogin={() => setView("login")} onChange={() => force((x) => x + 1)} />}
@@ -47,8 +47,8 @@ function DemoSection({ onGo }) {
       {view === "dash" && (user ? <MemberHealthDashboard member={user} onGo={go} onLogout={onLogout} /> : (
         <div className="card" style={{ textAlign: "center", padding: "30px 16px" }}>
           <CircleUserRound size={28} color="#B8C2D6" style={{ marginBottom: 8 }} />
-          <div style={{ fontSize: 13.5, color: "var(--muted)" }}>로그인된 데모 회원이 없습니다.</div>
-          <button className="cbtn pri" style={{ maxWidth: 260, margin: "14px auto 0" }} onClick={() => setView("login")}><CircleUserRound size={15} /> 데모 회원으로 로그인</button>
+          <div style={{ fontSize: 13.5, color: "var(--muted)" }}>로그인된 체험 회원이 없습니다.</div>
+          <button className="cbtn pri" style={{ maxWidth: 260, margin: "14px auto 0" }} onClick={() => setView("login")}><CircleUserRound size={15} /> 체험 회원으로 로그인</button>
         </div>
       ))}
     </div>

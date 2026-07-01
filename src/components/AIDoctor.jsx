@@ -492,7 +492,7 @@ function searchHealth(query, filter, list) {
 }
 function citeText(c) { return `출처: ${HC_SRC} · ${c.title} · ${c.sourceUrl} · 확인일 2026-06-28`; }
 
-/* 상담 세션·보험추천 로그 — 명세 8항 테이블 구조(메모리 데모, 실서비스는 DB insert) */
+/* 상담 세션·보험추천 로그 — 명세 8항 테이블 구조(메모리 시연용, 실서비스는 DB insert) */
 let LOGID = 1000;
 let LOG_CONSENT = true;   // 동의관리(DID) — 동의 시에만 상담로그 저장
 const FAV_KEY = "hifin_ai_fav";
@@ -527,7 +527,7 @@ function AiLinkBanner({ target }) {
   );
 }
 
-/* 보장 유형별 월 보험료 추정(데모, 원) — 생활관리절감은 할인 */
+/* 보장 유형별 월 보험료 추정(시연용, 원) — 생활관리절감은 할인 */
 const PREMIUM_EST = { "중증질환": 38000, "비급여": 24000, "간병치매": 32000, "특수분야": 18000, "생활관리절감": -8000 };
 /* 회원 건강상태 기반 맞춤 질문 다수 생성 */
 function memberQuestions(m) {
@@ -584,7 +584,7 @@ function CarePlanCard({ member }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [gName, setGName] = useState(""); const [gPhone, setGPhone] = useState("");
   useEffect(() => { try { setStatus(JSON.parse(localStorage.getItem(key) || "{}")); } catch (e) { setStatus({}); } try { setGuard(JSON.parse(localStorage.getItem(gkey) || "null")); } catch (e) { setGuard(null); } }, [key, gkey]);
-  const doShare = () => { if (!gName.trim()) { if (typeof toast === "function") toast("보호자 성함을 입력해 주세요."); return; } const g = { name: gName.trim(), phone: gPhone.trim() }; setGuard(g); try { localStorage.setItem(gkey, JSON.stringify(g)); } catch (e) {} setShareOpen(false); setGName(""); setGPhone(""); if (typeof toast === "function") toast(`✅ (데모) 보호자 ${g.name}님께 케어플랜 공유 안내를 보냈습니다.`); };
+  const doShare = () => { if (!gName.trim()) { if (typeof toast === "function") toast("보호자 성함을 입력해 주세요."); return; } const g = { name: gName.trim(), phone: gPhone.trim() }; setGuard(g); try { localStorage.setItem(gkey, JSON.stringify(g)); } catch (e) {} setShareOpen(false); setGName(""); setGPhone(""); if (typeof toast === "function") toast(`✅ 보호자 ${g.name}님께 케어플랜 공유 안내를 보냈습니다.`); };
   const unShare = () => { setGuard(null); try { localStorage.removeItem(gkey); } catch (e) {} if (typeof toast === "function") toast("보호자 공유를 해제했습니다."); };
   if (!member || typeof buildCarePlan !== "function") return null;
   const p = buildCarePlan(member);
@@ -608,7 +608,7 @@ function CarePlanCard({ member }) {
       {guard && (<div className="cpguard"><Users size={13} color="#16A34A" /> 보호자 <b>{guard.name}</b>님과 공유 중{guard.phone ? ` (${guard.phone})` : ""} <button onClick={unShare}>공유 해제</button></div>)}
       {shareOpen && (<div className="cpshareform"><div className="csfh"><Users size={14} color="#2563EB" /> 보호자(가족)에게 케어플랜 공유 <small>진행상황을 함께 관리할 수 있어요</small></div>
         <div className="csfin"><input placeholder="보호자 성함" value={gName} onChange={(e) => setGName(e.target.value)} /><input placeholder="휴대폰(선택)" value={gPhone} onChange={(e) => setGPhone(e.target.value)} /><button className="csfgo" onClick={doShare}><Send size={13} /> 공유</button></div>
-        <div className="csfnote">※ 데모 환경에서는 실제 문자가 발송되지 않습니다. 동의한 보호자에게만 공유하세요.</div></div>)}
+        <div className="csfnote">※ 현재 환경에서는 실제 문자가 발송되지 않습니다. 동의한 보호자에게만 공유하세요.</div></div>)}
       <div className="cpprog"><div className="cppt">진행률 <b>{pct}%</b> <span>{done}/{p.domains.length} 완료</span><span className="cprew"><Coins size={12} /> +{earned.toLocaleString("ko-KR")} HTK <small>/ 최대 {maxPts.toLocaleString("ko-KR")}</small></span><button className="cprwbtn" onClick={() => nav("wallet")}>건강금융지갑 ›</button></div><div className="cppbar"><i style={{ width: pct + "%" }} /></div></div>
       <div className="cpgrid">
         {p.domains.map((dmn, i) => { const Ic = ICO[dmn.icon] || Sparkles; const st = status[dmn.title] || 0; return (
@@ -675,7 +675,7 @@ function AIDoctorSection({ onText, onVoice }) {
     const qq = query !== undefined ? query : q;
     const ff = f !== undefined ? f : filter;
     setQ(qq); if (f !== undefined) setFilter(f);
-    // 데모 회원 로그인 시 — 개인 데이터 기반 분석 답변
+    // 체험 회원 로그인 시 — 개인 데이터 기반 분석 답변
     const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
     if (member && /사례|비슷한 회원|비슷한분|비슷한 사람|다른 회원|관리 사례|성공 사례/.test(qq)) {
       const ci = (typeof buildCaseInsight === "function") ? buildCaseInsight(member) : null;
@@ -871,7 +871,7 @@ function AIDoctorSection({ onText, onVoice }) {
             </div>
           ) : personal ? (<>
             <div className="adcard adpersonal">
-              <div className="adtop"><div><div className="adt">{personal.title}</div><div className="adcat">시연용 데모 데이터 기반 분석</div></div>
+              <div className="adtop"><div><div className="adt">{personal.title}</div><div className="adcat">시연용 예시 데이터 기반 분석</div></div>
                 <span className="adrisk" style={{ color: personal.grade[1], background: personal.grade[2] }}>암위험 {personal.grade[0]}</span></div>
               {personal.sections.map(([label, items], i) => (
                 <div className="adsec" key={i}><div className="adsl"><Check size={14} color="#2563EB" /> {i + 1}. {label}</div><ul>{(items || []).map((x, j) => <li key={j}>{x}</li>)}</ul></div>
@@ -881,7 +881,7 @@ function AIDoctorSection({ onText, onVoice }) {
                 <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={14} /> 건강지갑 보기</button>
                 <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("demo")}><CircleUserRound size={14} /> 내 대시보드</button>
               </div>
-              <div className="aiddisc" style={{ marginTop: 12 }}><AlertTriangle size={14} /> 본 내용은 시연용 데모 데이터 기반 분석이며, 실제 의학적 진단이나 보험 가입 심사를 대체하지 않습니다.</div>
+              <div className="aiddisc" style={{ marginTop: 12 }}><AlertTriangle size={14} /> 본 내용은 시연용 예시 데이터 기반 분석이며, 실제 의학적 진단이나 보험 가입 심사를 대체하지 않습니다.</div>
             </div>
             <CarePlanCard member={demoCurrentUser()} />
             </>) : result ? (<>
@@ -970,7 +970,7 @@ function AIDoctorSection({ onText, onVoice }) {
                   <button className="cbtn pri" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={14} /> {lang === "en" ? "Open Health Wallet" : "건강지갑에서 적립 늘리기"}</button>
                   <button className="cbtn" style={{ margin: 0 }} onClick={() => openConsult("내 몸 맞춤 프리미엄보험")}><Sparkles size={14} /> {lang === "en" ? "Get a tailored quote" : "맞춤 보험료 상담받기"}</button>
                 </div>
-                <div className="adinsnote">{lang === "en" ? "Demo estimate; actual premium/earning depends on insurer underwriting & terms." : "※ 데모 추정치입니다. 실제 보험료·적립·지원액은 보험사 인수·심사 및 약관에 따릅니다."}</div>
+                <div className="adinsnote">{lang === "en" ? "Demo estimate; actual premium/earning depends on insurer underwriting & terms." : "※ 예시 추정치입니다. 실제 보험료·적립·지원액은 보험사 인수·심사 및 약관에 따릅니다."}</div>
               </div>
             )}
 
@@ -1009,7 +1009,7 @@ function AIDoctorSection({ onText, onVoice }) {
                   <div className="lm">권장: {s.recommended_action} · 참조: {s.referenced_content_ids.join(", ") || "-"}{ins && ins.recommended_coverages.length ? " · 보장: " + ins.recommended_coverages.join(", ") : ""}</div>
                 </div>
               ); })}
-            <div className="aidlognote">※ 데모용 메모리 기록입니다. 실서비스에서는 <b>ai_doctor_sessions</b>·<b>insurance_recommendation_logs</b> 테이블에 개인정보보호 기준으로 분리·암호화 저장됩니다.</div>
+            <div className="aidlognote">※ 예시용 메모리 기록입니다. 실서비스에서는 <b>ai_doctor_sessions</b>·<b>insurance_recommendation_logs</b> 테이블에 개인정보보호 기준으로 분리·암호화 저장됩니다.</div>
           </div>
         )}
       </div>
@@ -1050,7 +1050,7 @@ function VideoCallModal({ title, sub, onClose }) {
           <button className="vcb" title="화면"><MonitorSmartphone size={17} /></button>
           <button className="vcb end" onClick={onClose} title="종료"><Phone size={17} /></button>
         </div>
-        <div className="vcnote">데모 화상상담 화면입니다. 실제 영상 연결은 제공되지 않습니다.</div>
+        <div className="vcnote">시연용 화상상담 화면입니다. 실제 영상 연결은 제공되지 않습니다.</div>
       </div>
     </div>
   );
@@ -1072,7 +1072,7 @@ function DeviceSheet({ onClose, onShare }) {
         </div>
       ); })}</div>
       <button className="dshare" disabled={!anyConn} onClick={share}><Send size={14} /> 연결된 건강데이터 주치의에게 공유</button>
-      <div className="dsnote">데모: 실제 기기 연동(BLE·HealthKit·Google Fit)은 향후 제공하며 수치는 예시입니다.</div>
+      <div className="dsnote">안내: 실제 기기 연동(BLE·HealthKit·Google Fit)은 향후 제공하며 수치는 예시입니다.</div>
     </div>
   );
 }
@@ -1109,22 +1109,22 @@ function TeleCompliance() {
       </div>
       <div className="tcrow"><span className="tcic"><Building2 size={13} color="#2563EB" /></span><div><b>의료기관 종별</b><p>{r.tier}</p></div></div>
       <div className="tcrow"><span className="tcic"><FileText size={13} color="#7C3AED" /></span><div><b>처방전</b><p>{r.rx}</p></div></div>
-      <div className="tcnote">※ 본 서비스의 전문의 상담은 시연용 데모이며, 실제 비대면진료는 위 제도 요건과 의료진 판단에 따라 진행됩니다. 의료인이 부적절하다고 판단하면 대면진료로 전환됩니다.</div>
+      <div className="tcnote">※ 본 서비스의 전문의 상담은 시연용 예시이며, 실제 비대면진료는 위 제도 요건과 의료진 판단에 따라 진행됩니다. 의료인이 부적절하다고 판단하면 대면진료로 전환됩니다.</div>
     </div>
   );
 }
 function HospitalJoinModal({ onClose }) {
   const [hn, setHn] = useState(""); const [dp, setDp] = useState(DEPT_CATS[0].label); const [mgr, setMgr] = useState(""); const [tel, setTel] = useState("");
-  const submit = () => { if (!hn.trim() || !mgr.trim()) { if (typeof toast === "function") toast("병원명과 담당자를 입력해 주세요."); return; } if (typeof toast === "function") toast(`🏥 (데모) ${hn.trim()} 원격주치의 참여 신청이 접수되었습니다. 심사 후 등록 안내드립니다.`); onClose(); };
+  const submit = () => { if (!hn.trim() || !mgr.trim()) { if (typeof toast === "function") toast("병원명과 담당자를 입력해 주세요."); return; } if (typeof toast === "function") toast(`🏥 ${hn.trim()} 원격주치의 참여 신청이 접수되었습니다. 심사 후 등록 안내드립니다.`); onClose(); };
   return (
     <div className="hjmodal" onClick={onClose}><div className="hjbox" onClick={(e) => e.stopPropagation()}>
       <div className="hjh"><Building2 size={16} color="#2563EB" /> 우리 병원 원격주치의 참여 신청 <button onClick={onClose} aria-label="닫기"><X size={16} /></button></div>
-      <p className="hjp">비대면 상담으로 신규 환자를 만나 내원 진료로 연계하세요. 면허·진료과 인증 후 등록됩니다(데모).</p>
+      <p className="hjp">비대면 상담으로 신규 환자를 만나 내원 진료로 연계하세요. 면허·진료과 인증 후 등록됩니다.</p>
       <div className="hjf"><label>의료기관명</label><input value={hn} onChange={(e) => setHn(e.target.value)} placeholder="예: 연세내과의원" /></div>
       <div className="hjf"><label>진료과</label><select value={dp} onChange={(e) => setDp(e.target.value)}>{DEPT_CATS.map((c) => <option key={c.key}>{c.label}</option>)}</select></div>
       <div className="hjrow"><div className="hjf"><label>담당자</label><input value={mgr} onChange={(e) => setMgr(e.target.value)} placeholder="성함" /></div><div className="hjf"><label>연락처</label><input value={tel} onChange={(e) => setTel(e.target.value)} placeholder="전화(선택)" /></div></div>
-      <button className="hjsub" onClick={submit}><BadgeCheck size={14} /> 참여 신청(데모)</button>
-      <div className="hjnote">데모 환경: 실제 심사·계약·정산은 진행되지 않습니다.</div>
+      <button className="hjsub" onClick={submit}><BadgeCheck size={14} /> 참여 신청</button>
+      <div className="hjnote">안내: 실제 심사·계약·정산은 진행되지 않습니다.</div>
     </div></div>
   );
 }
@@ -1146,8 +1146,8 @@ function SpecialistChat() {
   const reply = () => { if (!sel) return; const canned = `말씀 주신 내용 잘 확인했습니다. ${sel.dept} 관점에서는 ${sel.tags[0]} 관련 정기적 관찰과 생활관리가 우선이며, 필요 시 정밀검사를 권합니다. 정확한 진단·처방은 화상상담 또는 ${sel.hosp} 내원 진료로 도와드리겠습니다.`; setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: canned, first: true, time: now() }]); }, 1300); };
   const send = (textArg) => { const text = (textArg ?? input).trim(); if (!text || !sel) return; setInput(""); setPlus(false); setMsgs((m) => [...m, { id: ++UID, who: "me", kind: "text", text, time: now() }]); reply(); };
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); reply(); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
-  const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 내원 예약이 접수되었습니다(데모). 비대면 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 (데모) ${sel.hosp} 내원 예약 접수 · 상담내역 전달`); };
-  const rxIssue = () => { if (!sel) return; setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `💊 전자처방전을 발행해 지정 약국으로 전송했습니다(데모). 약국에서 조제 후 수령(방문·배송) 안내를 받으실 수 있습니다. 비대면진료 후 처방은 의료인의 진료 판단에 따라 발행됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast("💊 (데모) 전자처방전 약국 전송 완료"); };
+  const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 내원 예약이 접수되었습니다. 비대면 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 ${sel.hosp} 내원 예약 접수 · 상담내역 전달`); };
+  const rxIssue = () => { if (!sel) return; setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `💊 전자처방전을 발행해 지정 약국으로 전송했습니다. 약국에서 조제 후 수령(방문·배송) 안내를 받으실 수 있습니다. 비대면진료 후 처방은 의료인의 진료 판단에 따라 발행됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast("💊 전자처방전 약국 전송 완료"); };
   const tier = sel ? ((typeof tmHospTier === "function") ? tmHospTier(sel.hosp) : "의원급") : "";
   const eligMsg = visit === "재진" ? "재진·만성질환 관리·경과관찰은 비대면 상담이 폭넓게 가능합니다." : (tier === "병원급" ? "병원급 초진 비대면은 희귀질환·제1형 당뇨·수술 후 경과관찰 등에 한해 허용됩니다." : "초진은 의료취약지·거동불편·장애·희귀질환 등에 한해 제한적으로 허용되며, 해당하지 않으면 대면진료로 안내됩니다.");
   if (!sel) {
@@ -1175,7 +1175,7 @@ function SpecialistChat() {
         ))}</div>
         <button className="tmjoin" onClick={() => setJoin(true)}><Building2 size={15} /> 우리 병원도 원격주치의로 참여하기</button>
         {join && <HospitalJoinModal onClose={() => setJoin(false)} />}
-        <div className="kt-disc">데모: 전국 전문의는 시연용 가상 데이터이며 응답은 예시입니다. 실제 진단·처방은 의료기관에서 받으세요. 응급 시 119.</div>
+        <div className="kt-disc">안내: 전국 전문의는 시연용 가상 데이터이며 응답은 예시입니다. 실제 진단·처방은 의료기관에서 받으세요. 응급 시 119.</div>
       </div>
     );
   }
@@ -1216,7 +1216,7 @@ function SpecialistChat() {
         <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="전문의에게 메시지를 입력하세요" />
         <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
       </div>
-      <div className="kt-disc">데모 원격주치의 상담 · 참고용이며 실제 진단·처방을 대체하지 않습니다. 응급 시 119.</div>
+      <div className="kt-disc">원격주치의 상담 · 참고용이며 실제 진단·처방을 대체하지 않습니다. 응급 시 119.</div>
     </div>
   );
 }
@@ -1331,7 +1331,7 @@ function Chat() {
   const shareDevice = (summary) => { setDevOpen(false); if (!summary) return; const meId = ++UID; setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text: `🩺 기기 측정값 공유 — ${summary}`, time: now() }]); setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `연동된 측정값을 확인했어요(${summary}). 수치 추이를 바탕으로 생활관리·검진을 안내해 드릴게요. 이상 수치가 지속되면 진료를 권합니다. (참고용)`, time: now(), first: true }]); }, 1300); };
   return (
     <div className="kt">
-      {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담(데모)" onClose={() => setVideo(false)} />}
+      {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
         <div style={{ flex: 1 }}><div className="nm">AI 주치의</div><div className="st"><span className="dot" /> 온라인 · 24시간 상담</div></div>
         {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
@@ -1373,7 +1373,7 @@ function Chat() {
         <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={sttOK ? "메시지 입력 또는 🎤 음성" : "메시지를 입력하세요"} />
         <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
       </div>
-      <div className="kt-disc">AI 상담은 의료진의 진단을 대체하지 않으며, 참고용 건강정보 안내입니다. 음성·화상·파일첨부·기기연동은 데모이며 응급 시 119.</div>
+      <div className="kt-disc">AI 상담은 의료진의 진단을 대체하지 않으며, 참고용 건강정보 안내입니다. 음성·화상·파일첨부·기기연동은 예시이며 응급 시 119.</div>
     </div>
   );
 }

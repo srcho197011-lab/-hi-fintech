@@ -23,7 +23,7 @@ export default function App() {
   useEffect(() => { if (!toastMsg) return; const id = setTimeout(() => setToastMsg(null), 2800); return () => clearTimeout(id); }, [toastMsg]);
   // 런타임 JS 오류 추적(데모 체크리스트 '콘솔 오류 없음' 검증용)
   useEffect(() => { if (typeof window === "undefined") return; window.__demoErrors = window.__demoErrors || []; const h = (e) => { try { window.__demoErrors.push(String((e && (e.message || (e.error && e.error.message))) || e)); } catch (_) {} }; window.addEventListener("error", h); return () => window.removeEventListener("error", h); }, []);
-  // 데모 로그인/로그아웃 시 전체 화면(헤더·섹션) 재렌더
+  // 체험 로그인/로그아웃 시 전체 화면(헤더·섹션) 재렌더
   const [, setDemoTick] = useState(0);
   useEffect(() => { const h = () => setDemoTick((t) => t + 1); window.addEventListener("demochange", h); return () => window.removeEventListener("demochange", h); }, []);
   const demoU = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -93,7 +93,7 @@ export default function App() {
         <div className="tr">
           <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">3</span></button>
           <button className={`ibtn ${hdr === "msg" ? "on" : ""}`} onClick={() => setHdr((h) => h === "msg" ? null : "msg")} aria-label="메시지"><MessageSquare size={21} /></button>
-          <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "데모 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
+          <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "체험 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
           {hdr && <><div className="hdrov" onClick={() => setHdr(null)} />
             <div className="hdrdrop">
               {hdr === "noti" && <>
@@ -110,7 +110,7 @@ export default function App() {
                 <div className="df" onClick={() => goSec("ai")}>나의 주치의와 상담하기</div>
               </>}
               {hdr === "user" && <>
-                <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? (demoU.isDemoUser ? "데모 회원" : "일반 회원") : "프리미엄 회원"}</span></div>
+                <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? (demoU.isDemoUser ? "체험 회원" : "일반 회원") : "프리미엄 회원"}</span></div>
                 <div className="mi" onClick={() => goSec("mypage")}><CircleUserRound size={17} /> 마이페이지</div>
                 <div className="mi" onClick={() => goSec("manage")}><FileText size={17} /> 내 건강 리포트</div>
                 <div className="mi" onClick={() => goSec("wallet")}><Wallet size={17} /> 건강금융지갑</div>

@@ -172,7 +172,7 @@ function PharmacyDirectory({ data }) {
           <div className="cmain">
             <div className="cname">{p[0]}<span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE" }}>약국</span>{o.night && <span className="cbadge" style={{ color: "#4338CA", background: "#E8EAFE" }}><Moon size={10} /> 야간</span>}{o.holiday && <span className="cbadge" style={{ color: "#B45309", background: "#FEF3E2" }}>공휴일</span>}</div>
             <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{data.sido[p[1]]} {p[2]}</span> · <MapPin size={12} />{p[3]}{p[4] ? <> · <Phone size={12} />{p[4]}</> : null}</div>
-            <div className="cmeta" style={{ marginTop: 3 }}><Clock size={12} /> 평일 {o.weekday} · {o.sat} <span style={{ color: "var(--soft)" }}>(데모·추정)</span></div>
+            <div className="cmeta" style={{ marginTop: 3 }}><Clock size={12} /> 평일 {o.weekday} · {o.sat} <span style={{ color: "var(--soft)" }}>(예시·추정)</span></div>
           </div>
           <div className="cright">
             {p[4] ? <a className="hlink" href={`tel:${p[4]}`}><Phone size={13} /> {p[4]}</a> : <span style={{ fontSize: 11.5, color: "var(--soft)" }}>전화정보 없음</span>}
@@ -183,12 +183,12 @@ function PharmacyDirectory({ data }) {
       })}
       {view.length === 0 && <div className="hload" style={{ marginTop: 8 }}>조건에 맞는 약국이 없습니다.</div>}
       {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 20)}>더 보기 ({(list.length - shown).toLocaleString()}곳 더)</button>}
-      <div className="chnote">※ 약국 목록·주소·전화·좌표는 건강보험심사평가원 ‘전국 병의원 및 약국 현황({data.meta.asof})’ 공공데이터(공공누리 제1유형) 기반입니다. <b>영업시간·야간·공휴일 운영 표시는 데모용 예시(추정)</b>이며 실제와 다를 수 있습니다 — 실시간 운영정보는 약국 API(e약은요·심야약국 등) 연동 시 반영됩니다.</div>
+      <div className="chnote">※ 약국 목록·주소·전화·좌표는 건강보험심사평가원 ‘전국 병의원 및 약국 현황({data.meta.asof})’ 공공데이터(공공누리 제1유형) 기반입니다. <b>영업시간·야간·공휴일 운영 표시는 예시(추정)</b>이며 실제와 다를 수 있습니다 — 실시간 운영정보는 약국 API(e약은요·심야약국 등) 연동 시 반영됩니다.</div>
     </>
   );
 }
 
-// 제휴 병원(데모): 전국 주요 대형병원 브랜드 키워드로 식별. 실제 제휴 DB 연동 시 대체.
+// 제휴 병원: 전국 주요 대형병원 브랜드 키워드로 식별. 실제 제휴 DB 연동 시 대체.
 const PARTNER_KEYS = ["서울아산", "삼성서울", "세브란스", "서울대학교병원", "서울성모", "은평성모", "여의도성모", "분당서울대", "보라매병원", "아주대", "가천대", "길병원", "인하대", "고려대", "한양대", "경희대", "중앙대학교병원", "이대목동", "이대서울", "순천향", "건국대", "강북삼성", "삼성창원", "부산대학교병원", "양산부산대", "동아대", "인제대", "백병원", "경북대학교병원", "칠곡경북대", "영남대", "계명대", "대구가톨릭", "충남대학교병원", "건양대", "을지대", "전남대학교병원", "화순전남대", "조선대", "전북대학교병원", "원광대", "충북대학교병원", "강원대학교병원", "한림대", "제주대학교병원", "국립암센터", "분당차", "차의과학", "원주세브란스", "단국대", "동국대"];
 const isPartner = (name) => PARTNER_KEYS.some((k) => name.indexOf(k) >= 0);
 
@@ -296,7 +296,7 @@ function HospitalRec({ data, onGo }) {
         {items.length > 3 && <button className="cbtn" style={{ marginTop: 4 }} onClick={() => onGo({ sido: region, sgg: gu, dept: "내과" })}>{gu} 추천 병원 더 보기 ({items.length - 3}곳 더) ›</button>}
       </div>
     ))}
-    <div className="chnote">※ <b>제휴 병원 표시는 데모용 예시</b>(주요 대형병원 기준)이며, 실제 제휴 여부·우대 혜택은 제휴 병원 DB 연동 시 반영됩니다. 병원 목록·진료과목은 심평원 공공데이터({data.meta.asof}) 기반입니다.</div>
+    <div className="chnote">※ <b>제휴 병원 표시는 예시</b>(주요 대형병원 기준)이며, 실제 제휴 여부·우대 혜택은 제휴 병원 DB 연동 시 반영됩니다. 병원 목록·진료과목은 심평원 공공데이터({data.meta.asof}) 기반입니다.</div>
     {sel && <HospitalBookingModal data={data} h={sel} onClose={() => setSel(null)} />}
     {detail && <HospitalDetailModal data={data} h={detail} onClose={() => setDetail(null)} onBook={(x) => { setDetail(null); setSel(x); }} />}
   </>);

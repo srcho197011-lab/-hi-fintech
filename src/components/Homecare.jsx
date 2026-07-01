@@ -46,7 +46,7 @@ function HomecareSection() {
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="homecare" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>재가/돌봄서비스</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{data ? `전국 장기요양 재가기관 ${data.meta.count.toLocaleString()}곳 · ` : ""}방문요양·방문목욕·방문간호·주야간보호·단기보호·복지용구 검색·상담 {data && data.meta.demo && <span style={{ color: "var(--orange)", fontWeight: 700 }}>· 데모 데이터</span>}</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{data ? `전국 장기요양 재가기관 ${data.meta.count.toLocaleString()}곳 · ` : ""}방문요양·방문목욕·방문간호·주야간보호·단기보호·복지용구 검색·상담 {data && data.meta.demo && <span style={{ color: "var(--orange)", fontWeight: 700 }}>· 예시 데이터</span>}</div></div></div>
       {loading && <div className="hload"><div className="sp" />재가/돌봄서비스 기관 데이터를 불러오는 중입니다…</div>}
       {error && <div className="hload" style={{ color: "var(--red)" }}><AlertTriangle size={26} style={{ marginBottom: 8 }} /><div>데이터를 불러오지 못했습니다.</div><div style={{ fontSize: 11.5, marginTop: 4, color: "var(--muted)" }}>{error}</div></div>}
       {data && <HomecareDirectory data={data} />}
@@ -134,7 +134,7 @@ function HomecareDirectory({ data }) {
       ))}
       {view.length === 0 && <div className="hload" style={{ marginTop: 8 }}>조건에 맞는 재가기관이 없습니다. 지역·급여종류를 조정해 보세요.</div>}
       {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 20)}>더 보기 ({(list.length - shown).toLocaleString()}곳 더)</button>}
-      <div className="chnote">※ <b>현재 표시되는 재가기관은 데모 데이터(시연용)</b>입니다. 실제 전국 데이터는 국민건강보험공단 ‘장기요양기관 현황’(공공데이터포털) 파일 입수 시 동일 화면에 교체 반영됩니다. 본인부담·급여 한도는 등급·소득에 따라 다릅니다.</div>
+      <div className="chnote">※ <b>현재 표시되는 재가기관은 예시 데이터(시연용)</b>입니다. 실제 전국 데이터는 국민건강보험공단 ‘장기요양기관 현황’(공공데이터포털) 파일 입수 시 동일 화면에 교체 반영됩니다. 본인부담·급여 한도는 등급·소득에 따라 다릅니다.</div>
       {sel && <HomecareBookingModal data={data} p={sel} onClose={() => setSel(null)} />}
       {detail && <HomecareDetailModal data={data} p={detail} onClose={() => setDetail(null)} onApply={(x) => { setDetail(null); setSel(x); }} />}
     </>
@@ -150,7 +150,7 @@ function HomecareDetailModal({ data, p, onApply, onClose }) {
         <div className="dbody">
           <div className="dsec"><div className="dh">기본 정보</div>
             <div className="feat"><MapPin size={15} color="#EF4444" /><div><b style={{ fontSize: 13 }}>{data.sido[p[1]]} {p[2]}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{p[3]}</div></div></div>
-            {p[4] ? <div className="feat"><Phone size={15} color="#2563EB" /><a className="hlink" href={`tel:${p[4]}`}>{p[4]}</a></div> : <div className="feat"><Phone size={15} color="#94A3B8" /><span style={{ fontSize: 12.5, color: "var(--muted)" }}>전화정보 없음 (데모)</span></div>}
+            {p[4] ? <div className="feat"><Phone size={15} color="#2563EB" /><a className="hlink" href={`tel:${p[4]}`}>{p[4]}</a></div> : <div className="feat"><Phone size={15} color="#94A3B8" /><span style={{ fontSize: 12.5, color: "var(--muted)" }}>전화정보 없음</span></div>}
           </div>
           <div className="dsec"><div className="dh">제공 급여종류 ({svcs.length})</div>
             {svcs.map((s) => { const M = svcMeta(s); return (<div className="feat" key={s}><span className="num" style={{ background: M.bg }}><Art name={M.art} size={20} /></span><div><b style={{ fontSize: 13 }}>{s}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{M.d}</div></div></div>); })}
@@ -165,7 +165,7 @@ function HomecareDetailModal({ data, p, onApply, onClose }) {
             <a className="cbtn" style={{ marginTop: 8, textDecoration: "none" }} href="https://www.longtermcare.or.kr/" target="_blank" rel="noreferrer noopener"><ShieldCheck size={15} /> 공단 노인장기요양 기관검색(공식) <ExternalLink size={13} /></a>
             <div style={{ fontSize: 11.5, color: "var(--soft)", marginTop: 6 }}>국민건강보험공단 노인장기요양보험(longtermcare.or.kr)에서 정원·인력·평가등급 등 공식 정보를 확인할 수 있습니다.{!EXTERNAL_OK && <b style={{ color: "var(--muted)" }}> 미리보기에선 링크 우클릭 → ‘새 탭에서 열기’.</b>}</div>
           </div>
-          <div className="chnote" style={{ marginTop: 4 }}>※ 데모 기관 정보입니다. 실제 운영시간·정원·인력·평가등급은 공단 데이터 연동 시 반영됩니다.</div>
+          <div className="chnote" style={{ marginTop: 4 }}>※ 예시 기관 정보입니다. 실제 운영시간·정원·인력·평가등급은 공단 데이터 연동 시 반영됩니다.</div>
         </div>
         <div className="bkfoot"><button className="cbtn pri" style={{ margin: 0 }} onClick={() => onApply(p)}><MessageSquare size={15} /> 상담 신청하기</button></div>
       </div>
@@ -203,7 +203,7 @@ function HomecareBookingModal({ data, p, onClose }) {
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{p[0]}<br />{pick} · {date}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>장기요양 등급 확인</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>등급 보유 여부를 확인해 본인부담·이용 가능 급여를 안내합니다.</div></div></div>
-                <div className="resitem" style={{ margin: 0 }}><span className="ic"><MessageSquare size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>담당자 연결</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>기관 담당자가 연락처로 상담을 진행합니다. (데모)</div></div></div>
+                <div className="resitem" style={{ margin: 0 }}><span className="ic"><MessageSquare size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>담당자 연결</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>기관 담당자가 연락처로 상담을 진행합니다.</div></div></div>
               </div>
               <button className="cbtn pri" style={{ marginTop: 16 }} onClick={onClose}>확인</button>
             </div>

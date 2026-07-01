@@ -31,7 +31,7 @@ function HeroArt() {
 }
 function HomeView({ onGo }) {
   const go = onGo || (() => {});
-  // 로그인한 회원 기준으로 홈 대시보드 개인화 (데모회원/가입회원 → 해당 고객, 없으면 조성래 기본)
+  // 로그인한 회원 기준으로 홈 대시보드 개인화 (체험회원/가입회원 → 해당 고객, 없으면 조성래 기본)
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const authU = (typeof authCurrent === "function") ? authCurrent() : null;
   const R = dm ? demoReport(dm) : null;
@@ -72,7 +72,7 @@ function HomeView({ onGo }) {
         <div className="hart"><HeroArt /></div>
       </div>
       <div className="banner">
-        <div><span className="pchip"><Sparkles size={13} /> {nm}님 맞춤 초개인화 대시보드</span><div className="head">AI가 {nm}님의 건강을 지키고 있습니다.</div><div className="sub">{R ? `${nm}님 시연용 데모 리포트와 생활데이터를 분석해 안내합니다.` : "프롬에이지 Premium 리포트와 생활데이터를 분석해 안내합니다."}</div></div>
+        <div><span className="pchip"><Sparkles size={13} /> {nm}님 맞춤 초개인화 대시보드</span><div className="head">AI가 {nm}님의 건강을 지키고 있습니다.</div><div className="sub">{R ? `${nm}님 시연용 예시 리포트와 생활데이터를 분석해 안내합니다.` : "프롬에이지 Premium 리포트와 생활데이터를 분석해 안내합니다."}</div></div>
         <div className="art"><ShieldArt /></div>
         <div className="bnext"><div className="l">다음 건강검진 예약</div><div className="d">2025.06.15 (토) 09:00</div><div className="c">서울 KMI 건강검진센터</div><button onClick={() => go("checkup")}>예약 상세보기</button></div>
       </div>
@@ -91,7 +91,7 @@ function HomeView({ onGo }) {
       </div>
       <div className="profile">
         <span className="pa">{nm[0]}</span>
-        <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 데모 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 검진일 2024.12.26 · 등록번호 ${PT.reg}`}</div></div>
+        <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 체험 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 검진일 2024.12.26 · 등록번호 ${PT.reg}`}</div></div>
         <div className="pstats">
           {[[regA + "세", "주민등록"], [bioA + "세", "생체나이"], [(R ? R.agingRank : 37) + "등", "노화등수"], [(R ? R.agingSpeed : 0.97) + "배", "노화속도"]].map(([v, k]) => (<div className="pstat" key={k}><div className="v">{v}</div><div className="k">{k}</div></div>))}
           <div className="pstat"><span className="tag-w" style={{ color: R ? R.cg[1] : "#16A34A", background: R ? R.cg[2] : "#E7F8EE" }}>종합 {R ? R.evalLabel : "좋음"}</span><div className="k" style={{ marginTop: 6 }}>생체나이</div></div>

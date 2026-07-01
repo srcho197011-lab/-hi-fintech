@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=2a25379d6a" />
+<link rel="stylesheet" href="./data/app.css?v=a5cd6c9711" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=2a25379d6a"></script>
-<script src="./src/data/section_data.js?v=2a25379d6a"></script>
-<script src="./src/data/demo_members.js?v=2a25379d6a"></script>
+<script src="./src/data/dummy_data.js?v=a5cd6c9711"></script>
+<script src="./src/data/section_data.js?v=a5cd6c9711"></script>
+<script src="./src/data/demo_members.js?v=a5cd6c9711"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -392,7 +392,7 @@ function ConsultModal({ interest, onClose }) {
             <div className="cfield"><label>연락처</label><input value={f.phone} inputMode="numeric" onChange={(e) => setF({ ...f, phone: e.target.value.replace(/[^0-9-]/g, "").slice(0, 13) })} placeholder="휴대전화 번호 (예: 010-1234-5678)" /></div>
             <div className="cfield"><label>관심 분야</label><select value={f.interest} onChange={(e) => setF({ ...f, interest: e.target.value })}>{INTERESTS.map((i) => <option key={i} value={i}>{i}</option>)}</select></div>
             <button className="cbtn pri" style={{ opacity: ok ? 1 : .5 }} disabled={!ok} onClick={() => setDone(true)}><MessageSquare size={15} /> {!f.name.trim() ? "이름을 입력하세요" : f.phone.trim().length < 9 ? "연락처를 입력하세요" : "상담 신청하기"}</button>
-            <div className="chnote" style={{ marginTop: 8 }}>※ 입력 정보는 데모용이며 실제 전송·저장되지 않습니다.</div>
+            <div className="chnote" style={{ marginTop: 8 }}>※ 입력 정보는 예시용이며 실제 전송·저장되지 않습니다.</div>
           </>) : (
             <div className="bkconfirm">
               <div className="ic"><Check size={30} color="#16A34A" /></div>
@@ -433,7 +433,7 @@ export default function App() {
   useEffect(() => { if (!toastMsg) return; const id = setTimeout(() => setToastMsg(null), 2800); return () => clearTimeout(id); }, [toastMsg]);
   // 런타임 JS 오류 추적(데모 체크리스트 '콘솔 오류 없음' 검증용)
   useEffect(() => { if (typeof window === "undefined") return; window.__demoErrors = window.__demoErrors || []; const h = (e) => { try { window.__demoErrors.push(String((e && (e.message || (e.error && e.error.message))) || e)); } catch (_) {} }; window.addEventListener("error", h); return () => window.removeEventListener("error", h); }, []);
-  // 데모 로그인/로그아웃 시 전체 화면(헤더·섹션) 재렌더
+  // 체험 로그인/로그아웃 시 전체 화면(헤더·섹션) 재렌더
   const [, setDemoTick] = useState(0);
   useEffect(() => { const h = () => setDemoTick((t) => t + 1); window.addEventListener("demochange", h); return () => window.removeEventListener("demochange", h); }, []);
   const demoU = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -503,7 +503,7 @@ export default function App() {
         <div className="tr">
           <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">3</span></button>
           <button className={`ibtn ${hdr === "msg" ? "on" : ""}`} onClick={() => setHdr((h) => h === "msg" ? null : "msg")} aria-label="메시지"><MessageSquare size={21} /></button>
-          <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "데모 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
+          <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "체험 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
           {hdr && <><div className="hdrov" onClick={() => setHdr(null)} />
             <div className="hdrdrop">
               {hdr === "noti" && <>
@@ -520,7 +520,7 @@ export default function App() {
                 <div className="df" onClick={() => goSec("ai")}>나의 주치의와 상담하기</div>
               </>}
               {hdr === "user" && <>
-                <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? (demoU.isDemoUser ? "데모 회원" : "일반 회원") : "프리미엄 회원"}</span></div>
+                <div className="dh">{greetName}님 <span className="cnt" style={{ background: "none", color: "var(--soft)" }}>{demoU ? (demoU.isDemoUser ? "체험 회원" : "일반 회원") : "프리미엄 회원"}</span></div>
                 <div className="mi" onClick={() => goSec("mypage")}><CircleUserRound size={17} /> 마이페이지</div>
                 <div className="mi" onClick={() => goSec("manage")}><FileText size={17} /> 내 건강 리포트</div>
                 <div className="mi" onClick={() => goSec("wallet")}><Wallet size={17} /> 건강금융지갑</div>
@@ -1207,7 +1207,7 @@ function searchHealth(query, filter, list) {
 }
 function citeText(c) { return `출처: ${HC_SRC} · ${c.title} · ${c.sourceUrl} · 확인일 2026-06-28`; }
 
-/* 상담 세션·보험추천 로그 — 명세 8항 테이블 구조(메모리 데모, 실서비스는 DB insert) */
+/* 상담 세션·보험추천 로그 — 명세 8항 테이블 구조(메모리 시연용, 실서비스는 DB insert) */
 let LOGID = 1000;
 let LOG_CONSENT = true;   // 동의관리(DID) — 동의 시에만 상담로그 저장
 const FAV_KEY = "hifin_ai_fav";
@@ -1242,7 +1242,7 @@ function AiLinkBanner({ target }) {
   );
 }
 
-/* 보장 유형별 월 보험료 추정(데모, 원) — 생활관리절감은 할인 */
+/* 보장 유형별 월 보험료 추정(시연용, 원) — 생활관리절감은 할인 */
 const PREMIUM_EST = { "중증질환": 38000, "비급여": 24000, "간병치매": 32000, "특수분야": 18000, "생활관리절감": -8000 };
 /* 회원 건강상태 기반 맞춤 질문 다수 생성 */
 function memberQuestions(m) {
@@ -1299,7 +1299,7 @@ function CarePlanCard({ member }) {
   const [shareOpen, setShareOpen] = useState(false);
   const [gName, setGName] = useState(""); const [gPhone, setGPhone] = useState("");
   useEffect(() => { try { setStatus(JSON.parse(localStorage.getItem(key) || "{}")); } catch (e) { setStatus({}); } try { setGuard(JSON.parse(localStorage.getItem(gkey) || "null")); } catch (e) { setGuard(null); } }, [key, gkey]);
-  const doShare = () => { if (!gName.trim()) { if (typeof toast === "function") toast("보호자 성함을 입력해 주세요."); return; } const g = { name: gName.trim(), phone: gPhone.trim() }; setGuard(g); try { localStorage.setItem(gkey, JSON.stringify(g)); } catch (e) {} setShareOpen(false); setGName(""); setGPhone(""); if (typeof toast === "function") toast(`✅ (데모) 보호자 ${g.name}님께 케어플랜 공유 안내를 보냈습니다.`); };
+  const doShare = () => { if (!gName.trim()) { if (typeof toast === "function") toast("보호자 성함을 입력해 주세요."); return; } const g = { name: gName.trim(), phone: gPhone.trim() }; setGuard(g); try { localStorage.setItem(gkey, JSON.stringify(g)); } catch (e) {} setShareOpen(false); setGName(""); setGPhone(""); if (typeof toast === "function") toast(`✅ 보호자 ${g.name}님께 케어플랜 공유 안내를 보냈습니다.`); };
   const unShare = () => { setGuard(null); try { localStorage.removeItem(gkey); } catch (e) {} if (typeof toast === "function") toast("보호자 공유를 해제했습니다."); };
   if (!member || typeof buildCarePlan !== "function") return null;
   const p = buildCarePlan(member);
@@ -1323,7 +1323,7 @@ function CarePlanCard({ member }) {
       {guard && (<div className="cpguard"><Users size={13} color="#16A34A" /> 보호자 <b>{guard.name}</b>님과 공유 중{guard.phone ? ` (${guard.phone})` : ""} <button onClick={unShare}>공유 해제</button></div>)}
       {shareOpen && (<div className="cpshareform"><div className="csfh"><Users size={14} color="#2563EB" /> 보호자(가족)에게 케어플랜 공유 <small>진행상황을 함께 관리할 수 있어요</small></div>
         <div className="csfin"><input placeholder="보호자 성함" value={gName} onChange={(e) => setGName(e.target.value)} /><input placeholder="휴대폰(선택)" value={gPhone} onChange={(e) => setGPhone(e.target.value)} /><button className="csfgo" onClick={doShare}><Send size={13} /> 공유</button></div>
-        <div className="csfnote">※ 데모 환경에서는 실제 문자가 발송되지 않습니다. 동의한 보호자에게만 공유하세요.</div></div>)}
+        <div className="csfnote">※ 현재 환경에서는 실제 문자가 발송되지 않습니다. 동의한 보호자에게만 공유하세요.</div></div>)}
       <div className="cpprog"><div className="cppt">진행률 <b>{pct}%</b> <span>{done}/{p.domains.length} 완료</span><span className="cprew"><Coins size={12} /> +{earned.toLocaleString("ko-KR")} HTK <small>/ 최대 {maxPts.toLocaleString("ko-KR")}</small></span><button className="cprwbtn" onClick={() => nav("wallet")}>건강금융지갑 ›</button></div><div className="cppbar"><i style={{ width: pct + "%" }} /></div></div>
       <div className="cpgrid">
         {p.domains.map((dmn, i) => { const Ic = ICO[dmn.icon] || Sparkles; const st = status[dmn.title] || 0; return (
@@ -1390,7 +1390,7 @@ function AIDoctorSection({ onText, onVoice }) {
     const qq = query !== undefined ? query : q;
     const ff = f !== undefined ? f : filter;
     setQ(qq); if (f !== undefined) setFilter(f);
-    // 데모 회원 로그인 시 — 개인 데이터 기반 분석 답변
+    // 체험 회원 로그인 시 — 개인 데이터 기반 분석 답변
     const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
     if (member && /사례|비슷한 회원|비슷한분|비슷한 사람|다른 회원|관리 사례|성공 사례/.test(qq)) {
       const ci = (typeof buildCaseInsight === "function") ? buildCaseInsight(member) : null;
@@ -1586,7 +1586,7 @@ function AIDoctorSection({ onText, onVoice }) {
             </div>
           ) : personal ? (<>
             <div className="adcard adpersonal">
-              <div className="adtop"><div><div className="adt">{personal.title}</div><div className="adcat">시연용 데모 데이터 기반 분석</div></div>
+              <div className="adtop"><div><div className="adt">{personal.title}</div><div className="adcat">시연용 예시 데이터 기반 분석</div></div>
                 <span className="adrisk" style={{ color: personal.grade[1], background: personal.grade[2] }}>암위험 {personal.grade[0]}</span></div>
               {personal.sections.map(([label, items], i) => (
                 <div className="adsec" key={i}><div className="adsl"><Check size={14} color="#2563EB" /> {i + 1}. {label}</div><ul>{(items || []).map((x, j) => <li key={j}>{x}</li>)}</ul></div>
@@ -1596,7 +1596,7 @@ function AIDoctorSection({ onText, onVoice }) {
                 <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={14} /> 건강지갑 보기</button>
                 <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("demo")}><CircleUserRound size={14} /> 내 대시보드</button>
               </div>
-              <div className="aiddisc" style={{ marginTop: 12 }}><AlertTriangle size={14} /> 본 내용은 시연용 데모 데이터 기반 분석이며, 실제 의학적 진단이나 보험 가입 심사를 대체하지 않습니다.</div>
+              <div className="aiddisc" style={{ marginTop: 12 }}><AlertTriangle size={14} /> 본 내용은 시연용 예시 데이터 기반 분석이며, 실제 의학적 진단이나 보험 가입 심사를 대체하지 않습니다.</div>
             </div>
             <CarePlanCard member={demoCurrentUser()} />
             </>) : result ? (<>
@@ -1685,7 +1685,7 @@ function AIDoctorSection({ onText, onVoice }) {
                   <button className="cbtn pri" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={14} /> {lang === "en" ? "Open Health Wallet" : "건강지갑에서 적립 늘리기"}</button>
                   <button className="cbtn" style={{ margin: 0 }} onClick={() => openConsult("내 몸 맞춤 프리미엄보험")}><Sparkles size={14} /> {lang === "en" ? "Get a tailored quote" : "맞춤 보험료 상담받기"}</button>
                 </div>
-                <div className="adinsnote">{lang === "en" ? "Demo estimate; actual premium/earning depends on insurer underwriting & terms." : "※ 데모 추정치입니다. 실제 보험료·적립·지원액은 보험사 인수·심사 및 약관에 따릅니다."}</div>
+                <div className="adinsnote">{lang === "en" ? "Demo estimate; actual premium/earning depends on insurer underwriting & terms." : "※ 예시 추정치입니다. 실제 보험료·적립·지원액은 보험사 인수·심사 및 약관에 따릅니다."}</div>
               </div>
             )}
 
@@ -1724,7 +1724,7 @@ function AIDoctorSection({ onText, onVoice }) {
                   <div className="lm">권장: {s.recommended_action} · 참조: {s.referenced_content_ids.join(", ") || "-"}{ins && ins.recommended_coverages.length ? " · 보장: " + ins.recommended_coverages.join(", ") : ""}</div>
                 </div>
               ); })}
-            <div className="aidlognote">※ 데모용 메모리 기록입니다. 실서비스에서는 <b>ai_doctor_sessions</b>·<b>insurance_recommendation_logs</b> 테이블에 개인정보보호 기준으로 분리·암호화 저장됩니다.</div>
+            <div className="aidlognote">※ 예시용 메모리 기록입니다. 실서비스에서는 <b>ai_doctor_sessions</b>·<b>insurance_recommendation_logs</b> 테이블에 개인정보보호 기준으로 분리·암호화 저장됩니다.</div>
           </div>
         )}
       </div>
@@ -1765,7 +1765,7 @@ function VideoCallModal({ title, sub, onClose }) {
           <button className="vcb" title="화면"><MonitorSmartphone size={17} /></button>
           <button className="vcb end" onClick={onClose} title="종료"><Phone size={17} /></button>
         </div>
-        <div className="vcnote">데모 화상상담 화면입니다. 실제 영상 연결은 제공되지 않습니다.</div>
+        <div className="vcnote">시연용 화상상담 화면입니다. 실제 영상 연결은 제공되지 않습니다.</div>
       </div>
     </div>
   );
@@ -1787,7 +1787,7 @@ function DeviceSheet({ onClose, onShare }) {
         </div>
       ); })}</div>
       <button className="dshare" disabled={!anyConn} onClick={share}><Send size={14} /> 연결된 건강데이터 주치의에게 공유</button>
-      <div className="dsnote">데모: 실제 기기 연동(BLE·HealthKit·Google Fit)은 향후 제공하며 수치는 예시입니다.</div>
+      <div className="dsnote">안내: 실제 기기 연동(BLE·HealthKit·Google Fit)은 향후 제공하며 수치는 예시입니다.</div>
     </div>
   );
 }
@@ -1824,22 +1824,22 @@ function TeleCompliance() {
       </div>
       <div className="tcrow"><span className="tcic"><Building2 size={13} color="#2563EB" /></span><div><b>의료기관 종별</b><p>{r.tier}</p></div></div>
       <div className="tcrow"><span className="tcic"><FileText size={13} color="#7C3AED" /></span><div><b>처방전</b><p>{r.rx}</p></div></div>
-      <div className="tcnote">※ 본 서비스의 전문의 상담은 시연용 데모이며, 실제 비대면진료는 위 제도 요건과 의료진 판단에 따라 진행됩니다. 의료인이 부적절하다고 판단하면 대면진료로 전환됩니다.</div>
+      <div className="tcnote">※ 본 서비스의 전문의 상담은 시연용 예시이며, 실제 비대면진료는 위 제도 요건과 의료진 판단에 따라 진행됩니다. 의료인이 부적절하다고 판단하면 대면진료로 전환됩니다.</div>
     </div>
   );
 }
 function HospitalJoinModal({ onClose }) {
   const [hn, setHn] = useState(""); const [dp, setDp] = useState(DEPT_CATS[0].label); const [mgr, setMgr] = useState(""); const [tel, setTel] = useState("");
-  const submit = () => { if (!hn.trim() || !mgr.trim()) { if (typeof toast === "function") toast("병원명과 담당자를 입력해 주세요."); return; } if (typeof toast === "function") toast(`🏥 (데모) ${hn.trim()} 원격주치의 참여 신청이 접수되었습니다. 심사 후 등록 안내드립니다.`); onClose(); };
+  const submit = () => { if (!hn.trim() || !mgr.trim()) { if (typeof toast === "function") toast("병원명과 담당자를 입력해 주세요."); return; } if (typeof toast === "function") toast(`🏥 ${hn.trim()} 원격주치의 참여 신청이 접수되었습니다. 심사 후 등록 안내드립니다.`); onClose(); };
   return (
     <div className="hjmodal" onClick={onClose}><div className="hjbox" onClick={(e) => e.stopPropagation()}>
       <div className="hjh"><Building2 size={16} color="#2563EB" /> 우리 병원 원격주치의 참여 신청 <button onClick={onClose} aria-label="닫기"><X size={16} /></button></div>
-      <p className="hjp">비대면 상담으로 신규 환자를 만나 내원 진료로 연계하세요. 면허·진료과 인증 후 등록됩니다(데모).</p>
+      <p className="hjp">비대면 상담으로 신규 환자를 만나 내원 진료로 연계하세요. 면허·진료과 인증 후 등록됩니다.</p>
       <div className="hjf"><label>의료기관명</label><input value={hn} onChange={(e) => setHn(e.target.value)} placeholder="예: 연세내과의원" /></div>
       <div className="hjf"><label>진료과</label><select value={dp} onChange={(e) => setDp(e.target.value)}>{DEPT_CATS.map((c) => <option key={c.key}>{c.label}</option>)}</select></div>
       <div className="hjrow"><div className="hjf"><label>담당자</label><input value={mgr} onChange={(e) => setMgr(e.target.value)} placeholder="성함" /></div><div className="hjf"><label>연락처</label><input value={tel} onChange={(e) => setTel(e.target.value)} placeholder="전화(선택)" /></div></div>
-      <button className="hjsub" onClick={submit}><BadgeCheck size={14} /> 참여 신청(데모)</button>
-      <div className="hjnote">데모 환경: 실제 심사·계약·정산은 진행되지 않습니다.</div>
+      <button className="hjsub" onClick={submit}><BadgeCheck size={14} /> 참여 신청</button>
+      <div className="hjnote">안내: 실제 심사·계약·정산은 진행되지 않습니다.</div>
     </div></div>
   );
 }
@@ -1861,8 +1861,8 @@ function SpecialistChat() {
   const reply = () => { if (!sel) return; const canned = `말씀 주신 내용 잘 확인했습니다. ${sel.dept} 관점에서는 ${sel.tags[0]} 관련 정기적 관찰과 생활관리가 우선이며, 필요 시 정밀검사를 권합니다. 정확한 진단·처방은 화상상담 또는 ${sel.hosp} 내원 진료로 도와드리겠습니다.`; setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: canned, first: true, time: now() }]); }, 1300); };
   const send = (textArg) => { const text = (textArg ?? input).trim(); if (!text || !sel) return; setInput(""); setPlus(false); setMsgs((m) => [...m, { id: ++UID, who: "me", kind: "text", text, time: now() }]); reply(); };
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); reply(); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
-  const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 내원 예약이 접수되었습니다(데모). 비대면 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 (데모) ${sel.hosp} 내원 예약 접수 · 상담내역 전달`); };
-  const rxIssue = () => { if (!sel) return; setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `💊 전자처방전을 발행해 지정 약국으로 전송했습니다(데모). 약국에서 조제 후 수령(방문·배송) 안내를 받으실 수 있습니다. 비대면진료 후 처방은 의료인의 진료 판단에 따라 발행됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast("💊 (데모) 전자처방전 약국 전송 완료"); };
+  const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 내원 예약이 접수되었습니다. 비대면 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 ${sel.hosp} 내원 예약 접수 · 상담내역 전달`); };
+  const rxIssue = () => { if (!sel) return; setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `💊 전자처방전을 발행해 지정 약국으로 전송했습니다. 약국에서 조제 후 수령(방문·배송) 안내를 받으실 수 있습니다. 비대면진료 후 처방은 의료인의 진료 판단에 따라 발행됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast("💊 전자처방전 약국 전송 완료"); };
   const tier = sel ? ((typeof tmHospTier === "function") ? tmHospTier(sel.hosp) : "의원급") : "";
   const eligMsg = visit === "재진" ? "재진·만성질환 관리·경과관찰은 비대면 상담이 폭넓게 가능합니다." : (tier === "병원급" ? "병원급 초진 비대면은 희귀질환·제1형 당뇨·수술 후 경과관찰 등에 한해 허용됩니다." : "초진은 의료취약지·거동불편·장애·희귀질환 등에 한해 제한적으로 허용되며, 해당하지 않으면 대면진료로 안내됩니다.");
   if (!sel) {
@@ -1890,7 +1890,7 @@ function SpecialistChat() {
         ))}</div>
         <button className="tmjoin" onClick={() => setJoin(true)}><Building2 size={15} /> 우리 병원도 원격주치의로 참여하기</button>
         {join && <HospitalJoinModal onClose={() => setJoin(false)} />}
-        <div className="kt-disc">데모: 전국 전문의는 시연용 가상 데이터이며 응답은 예시입니다. 실제 진단·처방은 의료기관에서 받으세요. 응급 시 119.</div>
+        <div className="kt-disc">안내: 전국 전문의는 시연용 가상 데이터이며 응답은 예시입니다. 실제 진단·처방은 의료기관에서 받으세요. 응급 시 119.</div>
       </div>
     );
   }
@@ -1931,7 +1931,7 @@ function SpecialistChat() {
         <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="전문의에게 메시지를 입력하세요" />
         <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
       </div>
-      <div className="kt-disc">데모 원격주치의 상담 · 참고용이며 실제 진단·처방을 대체하지 않습니다. 응급 시 119.</div>
+      <div className="kt-disc">원격주치의 상담 · 참고용이며 실제 진단·처방을 대체하지 않습니다. 응급 시 119.</div>
     </div>
   );
 }
@@ -2046,7 +2046,7 @@ function Chat() {
   const shareDevice = (summary) => { setDevOpen(false); if (!summary) return; const meId = ++UID; setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text: `🩺 기기 측정값 공유 — ${summary}`, time: now() }]); setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `연동된 측정값을 확인했어요(${summary}). 수치 추이를 바탕으로 생활관리·검진을 안내해 드릴게요. 이상 수치가 지속되면 진료를 권합니다. (참고용)`, time: now(), first: true }]); }, 1300); };
   return (
     <div className="kt">
-      {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담(데모)" onClose={() => setVideo(false)} />}
+      {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
         <div style={{ flex: 1 }}><div className="nm">AI 주치의</div><div className="st"><span className="dot" /> 온라인 · 24시간 상담</div></div>
         {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
@@ -2088,7 +2088,7 @@ function Chat() {
         <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={sttOK ? "메시지 입력 또는 🎤 음성" : "메시지를 입력하세요"} />
         <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
       </div>
-      <div className="kt-disc">AI 상담은 의료진의 진단을 대체하지 않으며, 참고용 건강정보 안내입니다. 음성·화상·파일첨부·기기연동은 데모이며 응급 시 119.</div>
+      <div className="kt-disc">AI 상담은 의료진의 진단을 대체하지 않으며, 참고용 건강정보 안내입니다. 음성·화상·파일첨부·기기연동은 예시이며 응급 시 119.</div>
     </div>
   );
 }
@@ -2108,7 +2108,7 @@ function HealthManageSection({ onGo }) {
   const cats = [["summary", "한눈에 보기", LayoutDashboard], ["bio", "생체나이", Activity], ["disease", "질병 위험", HeartPulse], ["cancer", "암 위험", ShieldCheck], ["warn", "경고신호", AlertTriangle], ["care", "관리·권고", Sparkles], ["report", "검진 리포트", FileText]];
   const go = onGo || (() => {});
   const Go = ({ to, ic: Ic, pri, children }) => <button className={`gobtn ${pri ? "pri" : ""}`} onClick={() => go(to)}><Ic size={14} /> {children}</button>;
-  // 데모 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
+  // 체험 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const R = dm ? demoReport(dm) : null;
   const won = (n) => Number(n).toLocaleString("ko-KR") + "원";
@@ -2141,7 +2141,7 @@ function HealthManageSection({ onGo }) {
 
       <div className="conn">
         <span className="cdot" style={{ background: synced ? "#16A34A" : "#F59E0B", boxShadow: synced ? "0 0 0 4px rgba(22,163,74,.15)" : "0 0 0 4px rgba(245,158,11,.15)" }} />
-        <div className="ctxt"><b>{R ? "데모 회원 리포트 표시 중" : `메디에이지 연동 ${synced ? "완료" : "필요"}`}</b><div style={{ color: "var(--muted)", marginTop: 2 }}>{R ? `${dm.name}님 시연용 데모 건강 리포트가 표시되고 있습니다.` : (synced ? "조성래님 프롬에이지 Premium 리포트가 표시되고 있습니다." : "계정 인증 후 실데이터를 불러옵니다.")}</div></div>
+        <div className="ctxt"><b>{R ? "체험 회원 리포트 표시 중" : `메디에이지 연동 ${synced ? "완료" : "필요"}`}</b><div style={{ color: "var(--muted)", marginTop: 2 }}>{R ? `${dm.name}님 시연용 예시 건강 리포트가 표시되고 있습니다.` : (synced ? "조성래님 프롬에이지 Premium 리포트가 표시되고 있습니다." : "계정 인증 후 실데이터를 불러옵니다.")}</div></div>
         <button className="cbtn2" onClick={() => setSynced(true)}><RefreshCw size={14} /> 새로고침</button>
       </div>
 
@@ -2188,7 +2188,7 @@ function HealthManageSection({ onGo }) {
         </div>
         {R ? (
           <div className="card"><div className="rct"><TrendingUp size={18} color="#2563EB" /> 생체나이 vs 주민등록나이</div>
-            <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{dm.name}님 생체나이 <b style={{ color: "var(--blue)" }}>{bioAge}세</b>는 주민등록나이 {regAge}세보다 {diffGood ? `${Math.abs(diffN)}세 낮아(노화 느림)` : `${diffN}세 높아(노화 빠름)`}, 노화속도 {agingSpeed}배입니다. <span style={{ color: "var(--soft)" }}>※ 시연용 데모 데이터 · 연도별 추이는 실연동 시 제공됩니다.</span></p>
+            <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{dm.name}님 생체나이 <b style={{ color: "var(--blue)" }}>{bioAge}세</b>는 주민등록나이 {regAge}세보다 {diffGood ? `${Math.abs(diffN)}세 낮아(노화 느림)` : `${diffN}세 높아(노화 빠름)`}, 노화속도 {agingSpeed}배입니다. <span style={{ color: "var(--soft)" }}>※ 시연용 예시 데이터 · 연도별 추이는 실연동 시 제공됩니다.</span></p>
           </div>
         ) : (
           <div className="card">
@@ -2214,7 +2214,7 @@ function HealthManageSection({ onGo }) {
                 <span className="dp" style={{ color: up ? "#B45309" : "#15803D", background: up ? "#FEF3E2" : "#E7F8EE" }}>{up ? <ArrowUp size={11} /> : <ArrowDown size={11} />}{up ? "+" : ""}{pct}%</span>
                 <span className="di">10년 발생률 {inc}</span></div>);
             })}
-            <p style={{ fontSize: 11, color: "var(--soft)", marginTop: 10 }}>※ 동년배 평균 대비 상대 위험도{R ? " · 시연용 데모 추정치" : ". 당뇨병만 평균보다 높습니다."}</p>
+            <p style={{ fontSize: 11, color: "var(--soft)", marginTop: 10 }}>※ 동년배 평균 대비 상대 위험도{R ? " · 시연용 예시 추정치" : ". 당뇨병만 평균보다 높습니다."}</p>
           </div>
           <div className="card">
             <div className="rct"><Banknote size={18} color="#16A34A" /> 의료비·의료이용 예측</div>
@@ -2222,7 +2222,7 @@ function HealthManageSection({ onGo }) {
             <div className="costrow"><span className="cl">10년 후 의료비</span><span className="cv">{won(cost10v)}</span><span className="ca">동년배 {won(Math.round(cost10v * 0.95))}</span></div>
             <div className="costrow"><span className="cl">외래진료(올해)</span><span className="cv">{R ? 18 + cancerTotal : 24}일</span><span className="ca">동년배 {R ? 16 + cancerTotal : 22}일</span></div>
             <div className="costrow"><span className="cl">입원(올해)</span><span className="cv">{R ? Math.max(2, cancerTotal) : 24}일</span><span className="ca">동년배 {R ? Math.max(1, cancerTotal - 2) : 22}일</span></div>
-            <p style={{ fontSize: 11, color: "var(--soft)", marginTop: 10 }}>※ 생체나이 기반 예측{R ? "(시연용 데모)" : ""}. 예방 관리로 의료비를 낮출 수 있습니다.</p>
+            <p style={{ fontSize: 11, color: "var(--soft)", marginTop: 10 }}>※ 생체나이 기반 예측{R ? "(시연용 예시)" : ""}. 예방 관리로 의료비를 낮출 수 있습니다.</p>
           </div>
         </div>
         <div className="gorow"><Go to="hospital" ic={Building2} pri>병원 찾기</Go><Go to="insurance" ic={ShieldCheck}>보험 보기</Go><Go to="shop" ic={ShoppingCart}>혈당·영양 관리</Go></div>
@@ -2682,7 +2682,7 @@ function CenterDirectory({ mode }) {
         </div>
       ))}
       {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 12)}>더 보기 ({(list.length - shown).toLocaleString()}곳 더)</button>}
-      <div className="chnote">※ 표시된 가격·정보는 데모용 예시이며 실제 비용·운영정보는 검진센터·검진항목·옵션에 따라 다릅니다. 실데이터는 제휴 검진센터 DB 연동 시 반영됩니다. 의료기관 비교·가격 정보는 이용자의 합리적 선택을 돕기 위한 것으로, 특정 기관 직접 후기·의료광고는 의료법(의료광고 심의·환자 유인·알선 금지)을 준수합니다.</div>
+      <div className="chnote">※ 표시된 가격·정보는 예시이며 실제 비용·운영정보는 검진센터·검진항목·옵션에 따라 다릅니다. 실데이터는 제휴 검진센터 DB 연동 시 반영됩니다. 의료기관 비교·가격 정보는 이용자의 합리적 선택을 돕기 위한 것으로, 특정 기관 직접 후기·의료광고는 의료법(의료광고 심의·환자 유인·알선 금지)을 준수합니다.</div>
       {sel && <BookingModal center={sel} mode={mode} onClose={() => setSel(null)} />}
       {detail && <CenterDetailModal center={detail} onClose={() => setDetail(null)} onBook={(c) => { setDetail(null); setSel(c); }} />}
     </>
@@ -2751,7 +2751,7 @@ function CenterDetailModal({ center, onClose, onBook }) {
           </>)}
           {tab === "exam" && (<div className="dsec"><div className="dh">검사 항목</div>{exams.map(([n, d], i) => <div className="feat" key={i}><span className="num" style={{ background: "#EAF0FE", color: "#2563EB" }}>{i + 1}</span><div><b style={{ fontSize: 13 }}>{n}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d}</div></div></div>)}</div>)}
           {tab === "other" && (<div className="dsec"><div className="dh">다른 검진 상품</div>{others.map(([n, d], i) => <div className="resitem" key={i} style={{ margin: "0 0 10px" }}><span className="ic" style={{ background: "#F1ECFE" }}><ClipboardList size={18} color="#7C3AED" /></span><div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>{n}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d}</div></div><button className="cbtn" style={{ width: "auto", margin: 0, padding: "7px 12px" }} onClick={() => toast(`${n} 상품 상세는 준비 중입니다.`)}>보기</button></div>)}</div>)}
-          <div className="chnote" style={{ marginTop: 4 }}>※ 본 병원 상세정보는 데모용 예시이며, 실제 정보는 공공데이터(건강보험공단 검진기관 등)·제휴 검진센터 DB 연동 시 반영됩니다.</div>
+          <div className="chnote" style={{ marginTop: 4 }}>※ 본 병원 상세정보는 예시이며, 실제 정보는 공공데이터(건강보험공단 검진기관 등)·제휴 검진센터 DB 연동 시 반영됩니다.</div>
         </div>
         <div className="bkfoot"><button className="cbtn pri" style={{ margin: 0 }} onClick={() => onBook(center)}><CalendarCheck size={15} /> 예약하기</button></div>
       </div>
@@ -2804,7 +2804,7 @@ function BookingModal({ center, mode, onClose }) {
                   <span className="pchk">{psych ? <Check size={13} color="#fff" /> : null}</span>
                   <div className="ptxt"><b>심리케어 프리미엄 추가 <em>선택형</em></b><span>정신질환(F코드) 진단 보장 포함 · 가입 시 <b>{psychWon}({PSYCH_HTK.toLocaleString()} HTK)</b> 차감</span></div>
                 </button>
-                <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>되며, 심리케어 프리미엄만 선택 시 건강금융지갑에서 {PSYCH_HTK.toLocaleString()} HTK가 차감됩니다(데모). 실제 보장·인수는 보험사 심사에 따릅니다.</div>
+                <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>되며, 심리케어 프리미엄만 선택 시 건강금융지갑에서 {PSYCH_HTK.toLocaleString()} HTK가 차감됩니다. 실제 보장·인수는 보험사 심사에 따릅니다.</div>
               </div>
             )}
             <div className="bklbl">날짜 선택</div>
@@ -2813,7 +2813,7 @@ function BookingModal({ center, mode, onClose }) {
             <div className="slots">{slots.map((s) => <div key={s} className={`slot ${time === s ? "on" : ""}`} onClick={() => setTime(s)}>{s}</div>)}</div>
             <div className="bklbl">검진 항목</div>
             <div className="ctags">{center.tags.map((t) => <span key={t}>{t}</span>)}</div>
-            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => { setDone(true); if (psych && typeof toast === "function") toast(`심리케어 프리미엄 적용 · 건강금융지갑 ${PSYCH_HTK.toLocaleString()} HTK 차감(데모)`); }}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
+            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => { setDone(true); if (psych && typeof toast === "function") toast(`심리케어 프리미엄 적용 · 건강금융지갑 ${PSYCH_HTK.toLocaleString()} HTK 차감`); }}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
           </>) : (
             <div className="bkconfirm">
               <div className="ic"><Check size={30} color="#16A34A" /></div>
@@ -2921,7 +2921,7 @@ const mapsHref = (q) => `https://www.google.com/maps/search/?api=1&query=${encod
 const MAP_CAP = 1000;
 const escHtml = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-// 약국 운영정보(데모·추정): 심평원 기본데이터엔 운영시간이 없어 약국명 기반 결정적 해시로 생성.
+// 약국 운영정보(예시·추정): 심평원 기본데이터엔 운영시간이 없어 약국명 기반 결정적 해시로 생성.
 function pharmOps(name, sgg) {
   let h = 0; const s = (name || "") + (sgg || "");
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -3182,7 +3182,7 @@ function PharmacyDirectory({ data }) {
           <div className="cmain">
             <div className="cname">{p[0]}<span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE" }}>약국</span>{o.night && <span className="cbadge" style={{ color: "#4338CA", background: "#E8EAFE" }}><Moon size={10} /> 야간</span>}{o.holiday && <span className="cbadge" style={{ color: "#B45309", background: "#FEF3E2" }}>공휴일</span>}</div>
             <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{data.sido[p[1]]} {p[2]}</span> · <MapPin size={12} />{p[3]}{p[4] ? <> · <Phone size={12} />{p[4]}</> : null}</div>
-            <div className="cmeta" style={{ marginTop: 3 }}><Clock size={12} /> 평일 {o.weekday} · {o.sat} <span style={{ color: "var(--soft)" }}>(데모·추정)</span></div>
+            <div className="cmeta" style={{ marginTop: 3 }}><Clock size={12} /> 평일 {o.weekday} · {o.sat} <span style={{ color: "var(--soft)" }}>(예시·추정)</span></div>
           </div>
           <div className="cright">
             {p[4] ? <a className="hlink" href={`tel:${p[4]}`}><Phone size={13} /> {p[4]}</a> : <span style={{ fontSize: 11.5, color: "var(--soft)" }}>전화정보 없음</span>}
@@ -3193,12 +3193,12 @@ function PharmacyDirectory({ data }) {
       })}
       {view.length === 0 && <div className="hload" style={{ marginTop: 8 }}>조건에 맞는 약국이 없습니다.</div>}
       {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 20)}>더 보기 ({(list.length - shown).toLocaleString()}곳 더)</button>}
-      <div className="chnote">※ 약국 목록·주소·전화·좌표는 건강보험심사평가원 ‘전국 병의원 및 약국 현황({data.meta.asof})’ 공공데이터(공공누리 제1유형) 기반입니다. <b>영업시간·야간·공휴일 운영 표시는 데모용 예시(추정)</b>이며 실제와 다를 수 있습니다 — 실시간 운영정보는 약국 API(e약은요·심야약국 등) 연동 시 반영됩니다.</div>
+      <div className="chnote">※ 약국 목록·주소·전화·좌표는 건강보험심사평가원 ‘전국 병의원 및 약국 현황({data.meta.asof})’ 공공데이터(공공누리 제1유형) 기반입니다. <b>영업시간·야간·공휴일 운영 표시는 예시(추정)</b>이며 실제와 다를 수 있습니다 — 실시간 운영정보는 약국 API(e약은요·심야약국 등) 연동 시 반영됩니다.</div>
     </>
   );
 }
 
-// 제휴 병원(데모): 전국 주요 대형병원 브랜드 키워드로 식별. 실제 제휴 DB 연동 시 대체.
+// 제휴 병원: 전국 주요 대형병원 브랜드 키워드로 식별. 실제 제휴 DB 연동 시 대체.
 const PARTNER_KEYS = ["서울아산", "삼성서울", "세브란스", "서울대학교병원", "서울성모", "은평성모", "여의도성모", "분당서울대", "보라매병원", "아주대", "가천대", "길병원", "인하대", "고려대", "한양대", "경희대", "중앙대학교병원", "이대목동", "이대서울", "순천향", "건국대", "강북삼성", "삼성창원", "부산대학교병원", "양산부산대", "동아대", "인제대", "백병원", "경북대학교병원", "칠곡경북대", "영남대", "계명대", "대구가톨릭", "충남대학교병원", "건양대", "을지대", "전남대학교병원", "화순전남대", "조선대", "전북대학교병원", "원광대", "충북대학교병원", "강원대학교병원", "한림대", "제주대학교병원", "국립암센터", "분당차", "차의과학", "원주세브란스", "단국대", "동국대"];
 const isPartner = (name) => PARTNER_KEYS.some((k) => name.indexOf(k) >= 0);
 
@@ -3306,7 +3306,7 @@ function HospitalRec({ data, onGo }) {
         {items.length > 3 && <button className="cbtn" style={{ marginTop: 4 }} onClick={() => onGo({ sido: region, sgg: gu, dept: "내과" })}>{gu} 추천 병원 더 보기 ({items.length - 3}곳 더) ›</button>}
       </div>
     ))}
-    <div className="chnote">※ <b>제휴 병원 표시는 데모용 예시</b>(주요 대형병원 기준)이며, 실제 제휴 여부·우대 혜택은 제휴 병원 DB 연동 시 반영됩니다. 병원 목록·진료과목은 심평원 공공데이터({data.meta.asof}) 기반입니다.</div>
+    <div className="chnote">※ <b>제휴 병원 표시는 예시</b>(주요 대형병원 기준)이며, 실제 제휴 여부·우대 혜택은 제휴 병원 DB 연동 시 반영됩니다. 병원 목록·진료과목은 심평원 공공데이터({data.meta.asof}) 기반입니다.</div>
     {sel && <HospitalBookingModal data={data} h={sel} onClose={() => setSel(null)} />}
     {detail && <HospitalDetailModal data={data} h={detail} onClose={() => setDetail(null)} onBook={(x) => { setDetail(null); setSel(x); }} />}
   </>);
@@ -3443,7 +3443,7 @@ function HomecareSection() {
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="homecare" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>재가/돌봄서비스</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{data ? `전국 장기요양 재가기관 ${data.meta.count.toLocaleString()}곳 · ` : ""}방문요양·방문목욕·방문간호·주야간보호·단기보호·복지용구 검색·상담 {data && data.meta.demo && <span style={{ color: "var(--orange)", fontWeight: 700 }}>· 데모 데이터</span>}</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{data ? `전국 장기요양 재가기관 ${data.meta.count.toLocaleString()}곳 · ` : ""}방문요양·방문목욕·방문간호·주야간보호·단기보호·복지용구 검색·상담 {data && data.meta.demo && <span style={{ color: "var(--orange)", fontWeight: 700 }}>· 예시 데이터</span>}</div></div></div>
       {loading && <div className="hload"><div className="sp" />재가/돌봄서비스 기관 데이터를 불러오는 중입니다…</div>}
       {error && <div className="hload" style={{ color: "var(--red)" }}><AlertTriangle size={26} style={{ marginBottom: 8 }} /><div>데이터를 불러오지 못했습니다.</div><div style={{ fontSize: 11.5, marginTop: 4, color: "var(--muted)" }}>{error}</div></div>}
       {data && <HomecareDirectory data={data} />}
@@ -3531,7 +3531,7 @@ function HomecareDirectory({ data }) {
       ))}
       {view.length === 0 && <div className="hload" style={{ marginTop: 8 }}>조건에 맞는 재가기관이 없습니다. 지역·급여종류를 조정해 보세요.</div>}
       {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 20)}>더 보기 ({(list.length - shown).toLocaleString()}곳 더)</button>}
-      <div className="chnote">※ <b>현재 표시되는 재가기관은 데모 데이터(시연용)</b>입니다. 실제 전국 데이터는 국민건강보험공단 ‘장기요양기관 현황’(공공데이터포털) 파일 입수 시 동일 화면에 교체 반영됩니다. 본인부담·급여 한도는 등급·소득에 따라 다릅니다.</div>
+      <div className="chnote">※ <b>현재 표시되는 재가기관은 예시 데이터(시연용)</b>입니다. 실제 전국 데이터는 국민건강보험공단 ‘장기요양기관 현황’(공공데이터포털) 파일 입수 시 동일 화면에 교체 반영됩니다. 본인부담·급여 한도는 등급·소득에 따라 다릅니다.</div>
       {sel && <HomecareBookingModal data={data} p={sel} onClose={() => setSel(null)} />}
       {detail && <HomecareDetailModal data={data} p={detail} onClose={() => setDetail(null)} onApply={(x) => { setDetail(null); setSel(x); }} />}
     </>
@@ -3547,7 +3547,7 @@ function HomecareDetailModal({ data, p, onApply, onClose }) {
         <div className="dbody">
           <div className="dsec"><div className="dh">기본 정보</div>
             <div className="feat"><MapPin size={15} color="#EF4444" /><div><b style={{ fontSize: 13 }}>{data.sido[p[1]]} {p[2]}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{p[3]}</div></div></div>
-            {p[4] ? <div className="feat"><Phone size={15} color="#2563EB" /><a className="hlink" href={`tel:${p[4]}`}>{p[4]}</a></div> : <div className="feat"><Phone size={15} color="#94A3B8" /><span style={{ fontSize: 12.5, color: "var(--muted)" }}>전화정보 없음 (데모)</span></div>}
+            {p[4] ? <div className="feat"><Phone size={15} color="#2563EB" /><a className="hlink" href={`tel:${p[4]}`}>{p[4]}</a></div> : <div className="feat"><Phone size={15} color="#94A3B8" /><span style={{ fontSize: 12.5, color: "var(--muted)" }}>전화정보 없음</span></div>}
           </div>
           <div className="dsec"><div className="dh">제공 급여종류 ({svcs.length})</div>
             {svcs.map((s) => { const M = svcMeta(s); return (<div className="feat" key={s}><span className="num" style={{ background: M.bg }}><Art name={M.art} size={20} /></span><div><b style={{ fontSize: 13 }}>{s}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{M.d}</div></div></div>); })}
@@ -3562,7 +3562,7 @@ function HomecareDetailModal({ data, p, onApply, onClose }) {
             <a className="cbtn" style={{ marginTop: 8, textDecoration: "none" }} href="https://www.longtermcare.or.kr/" target="_blank" rel="noreferrer noopener"><ShieldCheck size={15} /> 공단 노인장기요양 기관검색(공식) <ExternalLink size={13} /></a>
             <div style={{ fontSize: 11.5, color: "var(--soft)", marginTop: 6 }}>국민건강보험공단 노인장기요양보험(longtermcare.or.kr)에서 정원·인력·평가등급 등 공식 정보를 확인할 수 있습니다.{!EXTERNAL_OK && <b style={{ color: "var(--muted)" }}> 미리보기에선 링크 우클릭 → ‘새 탭에서 열기’.</b>}</div>
           </div>
-          <div className="chnote" style={{ marginTop: 4 }}>※ 데모 기관 정보입니다. 실제 운영시간·정원·인력·평가등급은 공단 데이터 연동 시 반영됩니다.</div>
+          <div className="chnote" style={{ marginTop: 4 }}>※ 예시 기관 정보입니다. 실제 운영시간·정원·인력·평가등급은 공단 데이터 연동 시 반영됩니다.</div>
         </div>
         <div className="bkfoot"><button className="cbtn pri" style={{ margin: 0 }} onClick={() => onApply(p)}><MessageSquare size={15} /> 상담 신청하기</button></div>
       </div>
@@ -3600,7 +3600,7 @@ function HomecareBookingModal({ data, p, onClose }) {
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{p[0]}<br />{pick} · {date}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>장기요양 등급 확인</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>등급 보유 여부를 확인해 본인부담·이용 가능 급여를 안내합니다.</div></div></div>
-                <div className="resitem" style={{ margin: 0 }}><span className="ic"><MessageSquare size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>담당자 연결</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>기관 담당자가 연락처로 상담을 진행합니다. (데모)</div></div></div>
+                <div className="resitem" style={{ margin: 0 }}><span className="ic"><MessageSquare size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>담당자 연결</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>기관 담당자가 연락처로 상담을 진행합니다.</div></div></div>
               </div>
               <button className="cbtn pri" style={{ marginTop: 16 }} onClick={onClose}>확인</button>
             </div>
@@ -4109,7 +4109,7 @@ function InsModal({ title, sub, items, onClose }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
               {(items || []).map(([a, t, d], i) => <div className="resitem" key={i} style={{ margin: 0 }}><span className="ic" style={{ background: "#EAF0FE" }}><Art name={a} size={20} /></span><div><b style={{ fontSize: 13 }}>{t}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d}</div></div></div>)}
             </div>
-            <div className="chnote" style={{ textAlign: "left", marginTop: 14 }}>※ 보험 가입·청구·상담은 <b>정식 라이선스 설계사·보험사 채널</b>을 통해 진행됩니다. 본 화면은 정보 제공·연결 목적의 데모이며, 보험료·보장은 상품·고지·심사에 따라 달라집니다.</div>
+            <div className="chnote" style={{ textAlign: "left", marginTop: 14 }}>※ 보험 가입·청구·상담은 <b>정식 라이선스 설계사·보험사 채널</b>을 통해 진행됩니다. 본 화면은 정보 제공·연결 목적의 예시이며, 보험료·보장은 상품·고지·심사에 따라 달라집니다.</div>
             <button className="cbtn pri" style={{ marginTop: 14 }} onClick={onClose}>확인</button>
           </div>
         </div>
@@ -4262,7 +4262,7 @@ function InsJoin({ onGo }) {
       <div style={{ fontSize: 12.5, color: "#3a4659", lineHeight: 1.6 }}>본인은 상기 내용을 충분히 읽고 이해하였으며 자발적인 의사에 따라 본 동의서를 작성·제출합니다. <b>(전자서명)</b></div>
       <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>신청인: <b style={{ color: "var(--text)" }}>{info.name || "—"}</b> · 하이젠케어 주식회사 귀중</div>
       <button className="cbtn pri" style={{ marginTop: 12, opacity: allReq && rrnOk ? 1 : .5 }} disabled={!(allReq && rrnOk)} onClick={() => setDone(true)}><ShieldCheck size={15} /> {!allReq ? "필수 항목에 모두 동의해 주세요" : !rrnOk ? "주민등록번호를 입력해 주세요" : "전자서명 후 건강검진보험 가입 동의 제출"}</button>
-      <div className="chnote" style={{ marginTop: 8 }}>※ 보험가입·청약·심사는 정식 라이선스 보험대리점 글로벌예방금융㈜·GA코리아㈜ 및 보험사를 통해 진행됩니다. 본 화면은 동의서 양식 데모입니다.</div>
+      <div className="chnote" style={{ marginTop: 8 }}>※ 보험가입·청약·심사는 정식 라이선스 보험대리점 글로벌예방금융㈜·GA코리아㈜ 및 보험사를 통해 진행됩니다. 본 화면은 동의서 양식 예시입니다.</div>
     </div>
   </>);
 }
@@ -4418,7 +4418,7 @@ function HealthAssetWallet() {
 }
 function InsuranceRecommendationCard({ report }) {
   const age = (report && report.meta && report.meta.regAge) || 54.1;
-  const chronic = false; // 데모: 위험도는 높으나 진단 보유는 아님
+  const chronic = false; // 안내: 위험도는 높으나 진단 보유는 아님
   const rec = age >= 60 ? "노후실손보험" : chronic ? "유병력자 실손보험" : "5세대 실손보험";
   const TYPES = [
     ["일반 회원", "5세대 실손보험", "최신 기준의 표준형 실손보험. 자기부담·보장구조가 5세대 기준으로 설계됩니다."],
@@ -4448,8 +4448,8 @@ function InsuranceSupportAdmin() {
   ];
   return (
     <div className="ipsadmin">
-      <div className="ahd" onClick={() => setOpen((o) => !o)}><Settings size={16} color="#2563EB" /> 실손보험 정책 관리 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>· 관리자 설정(데모)</span><ChevronDown size={16} style={{ marginLeft: "auto", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
-      {open && <div className="abd">{ROWS.map(([l, v]) => <div className="arow" key={l}><span className="lbl">{l}</span><span className="val">{v}</span></div>)}<div className="chnote" style={{ marginTop: 11 }}>※ 적립률·지원한도·재원은 운영 정책 및 참여기관 협약에 따라 설정됩니다. 본 화면은 관리자 설정 예시(데모)입니다.</div></div>}
+      <div className="ahd" onClick={() => setOpen((o) => !o)}><Settings size={16} color="#2563EB" /> 실손보험 정책 관리 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>· 관리자 설정</span><ChevronDown size={16} style={{ marginLeft: "auto", transform: open ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
+      {open && <div className="abd">{ROWS.map(([l, v]) => <div className="arow" key={l}><span className="lbl">{l}</span><span className="val">{v}</span></div>)}<div className="chnote" style={{ marginTop: 11 }}>※ 적립률·지원한도·재원은 운영 정책 및 참여기관 협약에 따라 설정됩니다. 본 화면은 관리자 설정 예시입니다.</div></div>}
     </div>
   );
 }
@@ -4644,7 +4644,7 @@ function InsuranceSection({ onGo }) {
             {c.status === "미가입" && <button className="cbtn" style={{ marginTop: 4 }} onClick={() => setTab("join")}><FileText size={14} /> 이 보장 가입하기</button>}
           </div>
         ))}
-        <div className="chnote">※ 보장 내역은 데모 예시입니다. 실제 보유계약은 신용정보원·보험사 연동(본인 인증) 시 조회됩니다.</div>
+        <div className="chnote">※ 보장 내역은 예시입니다. 실제 보유계약은 신용정보원·보험사 연동(본인 인증) 시 조회됩니다.</div>
       </>)}
 
       {tab === "claim" && (<>
@@ -4661,7 +4661,7 @@ function InsuranceSection({ onGo }) {
             <div className="costrow" key={i}><span className="cl">{d} · {t}</span><span className="cv" style={{ color: "var(--green)" }}>{v}</span><span className="ca">지급완료</span></div>
           ))}
         </div>
-        <div className="chnote">※ 청구·지급은 보험사 심사 결과에 따라 확정됩니다. 본 화면은 데모입니다.</div>
+        <div className="chnote">※ 청구·지급은 보험사 심사 결과에 따라 확정됩니다. 본 화면은 예시입니다.</div>
       </>)}
 
       {tab === "ai" && (<>
@@ -4736,7 +4736,7 @@ function WalletSection({ onGo }) {
             <div style={{ flex: 1 }}><div className="wn">{t}</div><div className="wd">{d}</div></div>
             <span className="wamt" style={{ color: "#16A34A" }}>{amt}</span></div>
         ))}</div>
-        <div className="chnote">※ 적립률·항목은 데모 예시입니다. 건강활동·데이터 제공·소비에 따라 Health Token이 자동 적립됩니다.</div>
+        <div className="chnote">※ 적립률·항목은 예시입니다. 건강활동·데이터 제공·소비에 따라 Health Token이 자동 적립됩니다.</div>
       </>)}
 
       {tab === "use" && (<>
@@ -4747,7 +4747,7 @@ function WalletSection({ onGo }) {
             <div style={{ alignSelf: "center", textAlign: "right" }}><span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE" }}>{lim}</span><div style={{ marginTop: 6 }}><button className="book" style={{ padding: "7px 12px" }} onClick={() => go(t.includes("보험") ? "insurance" : t.includes("병원") ? "hospital" : t.includes("식단") ? "shop" : "shop")}>사용하기</button></div></div>
           </div>
         ))}
-        <div className="chnote">※ 사용한도는 데모 예시입니다. 적립 토큰은 <b>플랫폼이 환전하여 현금(카드·계좌)으로 결제·정산</b>되며(가상자산 아님), 토큰 우선 차감 후 잔액은 현금결제됩니다. 스테이블코인 등 가상자산 직접 결제는 <b>법률 제정 후 도입</b> 예정입니다.</div>
+        <div className="chnote">※ 사용한도는 예시입니다. 적립 토큰은 <b>플랫폼이 환전하여 현금(카드·계좌)으로 결제·정산</b>되며(가상자산 아님), 토큰 우선 차감 후 잔액은 현금결제됩니다. 스테이블코인 등 가상자산 직접 결제는 <b>법률 제정 후 도입</b> 예정입니다.</div>
       </>)}
 
       {tab === "guide" && (<>
@@ -4759,13 +4759,13 @@ function WalletSection({ onGo }) {
             <div className="gchips">{g.chips.map(([cls, txt], i) => <span key={i} className={cls}>{txt}</span>)}</div>
           </div>
         ))}
-        <div className="chnote">※ 예시 수치는 데모입니다. 실제 적립·사용액은 활동·정책에 따라 달라집니다.</div>
+        <div className="chnote">※ 예시 수치는 예시입니다. 실제 적립·사용액은 활동·정책에 따라 달라집니다.</div>
       </>)}
 
       {tab === "sec" && (<>
         <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(120deg,#0B1F4D,#2F5BEA 60%,#7C3AED)", color: "#fff", borderRadius: 16, padding: "18px 18px", boxShadow: "0 16px 32px -20px rgba(47,91,234,.8)" }}>
           <span style={{ width: 46, height: 46, borderRadius: 12, background: "rgba(255,255,255,.18)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={26} color="#fff" /></span>
-          <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.55 }}><b style={{ color: "#A7F3D0" }}>핀테크·헬스케어급 다층 보안</b>을 적용해 적립·환전·결제의 <b style={{ color: "#FDE68A" }}>위·변조 방지와 이상거래 탐지를 강화</b>합니다. <span style={{ opacity: .82, fontWeight: 600 }}>(설계 목표 · 현재 데모)</span></div>
+          <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.55 }}><b style={{ color: "#A7F3D0" }}>핀테크·헬스케어급 다층 보안</b>을 적용해 적립·환전·결제의 <b style={{ color: "#FDE68A" }}>위·변조 방지와 이상거래 탐지를 강화</b>합니다. <span style={{ opacity: .82, fontWeight: 600 }}>(설계 목표 · 시제품)</span></div>
         </div>
 
         <div className="card" style={{ marginTop: 12, border: "1.5px solid #BFD0FF", background: "linear-gradient(180deg,#F7F9FF,#fff)" }}>
@@ -4781,7 +4781,7 @@ function WalletSection({ onGo }) {
           ))}
           <div className="benefit" style={{ marginTop: 10, marginBottom: 0 }}><span><Art name="lock" size={16} /> 전송·저장 암호화</span><span><Art name="hash" size={16} /> 위·변조 방지</span><span><Art name="badge" size={16} /> 본인인증·MFA</span><span><Art name="sparkle" size={16} /> 이상거래 탐지</span></div>
         </div>
-        <div className="chnote">※ <b>현재는 데모(프론트엔드 시제품)이며 실제 결제·암호화는 구현되어 있지 않습니다.</b> 적립 토큰은 가상자산이 아닌 <b>포인트로 운영되어 플랫폼 환전 후 현금결제</b>되며, 스테이블코인 등 가상자산 결제는 <b>법률 제정 후</b> 진행합니다. 완전한 보안을 보장하는 시스템은 없으며, 실제 서비스는 전자금융거래법·개인정보보호법 및 보안인증(ISMS-P 등)에 따라 단계적으로 구현됩니다.</div>
+        <div className="chnote">※ <b>현재는 시연용(프론트엔드 시제품)이며 실제 결제·암호화는 구현되어 있지 않습니다.</b> 적립 토큰은 가상자산이 아닌 <b>포인트로 운영되어 플랫폼 환전 후 현금결제</b>되며, 스테이블코인 등 가상자산 결제는 <b>법률 제정 후</b> 진행합니다. 완전한 보안을 보장하는 시스템은 없으며, 실제 서비스는 전자금융거래법·개인정보보호법 및 보안인증(ISMS-P 등)에 따라 단계적으로 구현됩니다.</div>
       </>)}
     </div>
   );
@@ -4820,7 +4820,7 @@ function NFTSection({ onGo }) {
             <div className="nfoot"><span className="nftid">{n.id}</span><button className="book" style={{ marginLeft: "auto", padding: "7px 12px" }} onClick={() => go(n.to)}>연계 보기</button></div>
           </div>
         ))}</div>
-        <div className="chnote">※ 표시된 토큰 ID·내역은 데모 예시입니다. NFT/SBT는 검진·보험·건강관리 활동에 따라 본인 건강지갑에 발행됩니다.</div>
+        <div className="chnote">※ 표시된 토큰 ID·내역은 예시입니다. NFT/SBT는 검진·보험·건강관리 활동에 따라 본인 건강지갑에 발행됩니다.</div>
       </>)}
 
       {tab === "issue" && (<>
@@ -4840,13 +4840,13 @@ function NFTSection({ onGo }) {
             <div className="gchips" style={{ alignItems: "center" }}><span className="ern">연계 · {g.chip}</span><button className="book" style={{ padding: "6px 11px", marginLeft: 4 }} onClick={() => go(g.to)}>{g.chip} 이동</button></div>
           </div>
         ))}
-        <div className="chnote">※ 예시 흐름은 데모입니다. 실제 연계·증빙은 각 서비스·기관 연동 시 동작합니다.</div>
+        <div className="chnote">※ 예시 흐름은 예시입니다. 실제 연계·증빙은 각 서비스·기관 연동 시 동작합니다.</div>
       </>)}
 
       {tab === "sec" && (<>
         <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(120deg,#4C1D95,#7C3AED 60%,#2F5BEA)", color: "#fff", borderRadius: 16, padding: "18px 18px", boxShadow: "0 16px 32px -20px rgba(124,58,237,.8)" }}>
           <span style={{ width: 46, height: 46, borderRadius: 12, background: "rgba(255,255,255,.18)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={26} color="#fff" /></span>
-          <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.55 }}>건강·보험 인증서를 <b style={{ color: "#DDD6FE" }}>양도불가 SBT</b>로 발행하고, <b style={{ color: "#FDE68A" }}>온체인 해시로 위·변조를 방지</b>하도록 설계합니다. <span style={{ opacity: .82, fontWeight: 600 }}>(설계 목표 · 현재 데모)</span></div>
+          <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.55 }}>건강·보험 인증서를 <b style={{ color: "#DDD6FE" }}>양도불가 SBT</b>로 발행하고, <b style={{ color: "#FDE68A" }}>온체인 해시로 위·변조를 방지</b>하도록 설계합니다. <span style={{ opacity: .82, fontWeight: 600 }}>(설계 목표 · 시제품)</span></div>
         </div>
         <div className="card" style={{ marginTop: 12 }}>
           <div className="rct"><Lock size={18} color="#7C3AED" /> 무결성·보안 설계</div>
@@ -4855,7 +4855,7 @@ function NFTSection({ onGo }) {
           ))}
           <div className="benefit" style={{ marginTop: 10, marginBottom: 0 }}><span><Art name="lock" size={16} /> 양도불가(SBT)</span><span><Art name="hash" size={16} /> 온체인 무결성</span><span><Art name="badge" size={16} /> 선택 공개</span><span><Art name="sparkle" size={16} /> 위·변조 탐지</span></div>
         </div>
-        <div className="chnote">※ <b>현재는 데모(프론트엔드 시제품)이며 실제 블록체인 발행·온체인 정산은 구현되어 있지 않습니다.</b> 온체인 NFT/SBT·가상자산 연계는 관련 <b>법률 제정 후 단계적으로 도입</b>되며, 그 전까지 인증서는 플랫폼 내 무결성 검증·암호화 보관으로 운영됩니다. 원문 건강정보는 오프체인 암호화 보관, 온체인엔 해시만 기록합니다.</div>
+        <div className="chnote">※ <b>현재는 시연용(프론트엔드 시제품)이며 실제 블록체인 발행·온체인 정산은 구현되어 있지 않습니다.</b> 온체인 NFT/SBT·가상자산 연계는 관련 <b>법률 제정 후 단계적으로 도입</b>되며, 그 전까지 인증서는 플랫폼 내 무결성 검증·암호화 보관으로 운영됩니다. 원문 건강정보는 오프체인 암호화 보관, 온체인엔 해시만 기록합니다.</div>
       </>)}
     </div>
   );
@@ -4917,7 +4917,7 @@ function MyPageSection({ onGo }) {
       {dm && typeof FamilyCareSection === "function" && <FamilyCareSection member={dm} onGo={onGo} />}
       <div className="profile">
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
-        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${dm.biologicalAge}세 · 데모회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 데모 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
+        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${dm.biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
         <div className="pstats">
           {[["12,480", "Health Token", "wallet"], ["6", "Health NFT", "nft"], ["1", "검진 예약", "checkup"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
         </div>
@@ -4965,7 +4965,7 @@ function MyPageSection({ onGo }) {
                 </div>
               ); })}
             <div className="logmeta">{sessions.length}건 표시 · 전체 {AI_SESSIONS.length}건</div>
-            <div className="chnote">※ 본 기록은 데모용 세션 로그입니다. 실서비스에서는 <b>ai_doctor_sessions</b>·<b>insurance_recommendation_logs</b> 테이블에 개인정보보호 기준으로 분리·암호화 저장되며, <b>동의 철회 시 즉시 삭제</b>됩니다.</div>
+            <div className="chnote">※ 본 기록은 예시용 세션 로그입니다. 실서비스에서는 <b>ai_doctor_sessions</b>·<b>insurance_recommendation_logs</b> 테이블에 개인정보보호 기준으로 분리·암호화 저장되며, <b>동의 철회 시 즉시 삭제</b>됩니다.</div>
             <div className="gorow" style={{ marginTop: 4 }}><button className="gobtn pri" onClick={() => go("ai")}><MessageSquare size={14} /> 상담 계속하기</button><button className="gobtn" onClick={() => exportLog("csv")}><FileText size={14} /> CSV 내보내기</button><button className="gobtn" onClick={() => exportLog("json")}><FileText size={14} /> JSON 내보내기</button><button className="gobtn" onClick={() => { if (AI_SESSIONS.length) { AI_SESSIONS.length = 0; INS_REC_LOGS.length = 0; setLogVer((v) => v + 1); toast("상담 기록을 모두 삭제했습니다."); } }}><X size={14} /> 기록 전체 삭제</button></div>
           </>)}
         </div>);
@@ -5099,11 +5099,11 @@ function FamilyMemberRow({ m, expanded, onToggle, onRemove, tasks, taskState, on
             {lr && (<div className="fmlinked"><div><b>{lr.bio}세</b><span>생체나이</span></div><div><b>{lr.diff > 0 ? "+" : ""}{lr.diff}</b><span>실연령차</span></div><div><b>{lr.cancerTotal}등급</b><span>암위험</span></div><div className="fmlz">{lr.tags.length ? lr.tags.join("·") : "양호"}</div></div>)}
             {isElder && (<div className="fmsoswrap">
               <button className="fmsosbtn" onClick={onSOS}><AlertTriangle size={14} /> 응급 SOS {sosActive ? "닫기" : ""}</button>
-              {sosActive && (<div className="fmsospanel"><b>🚨 응급 알림 (데모)</b>
-                <p>보호자 <b>{guardian}</b>님께 {m.name}님의 위치·상태 알림을 발송합니다(데모, 실제 발송 없음).</p>
+              {sosActive && (<div className="fmsospanel"><b>🚨 응급 알림</b>
+                <p>보호자 <b>{guardian}</b>님께 {m.name}님의 위치·상태 알림을 발송합니다(시연용, 실제 발송 없음).</p>
                 <p>낙상·이상징후 자동 감지 시 보호자·지정 연락처에 자동 호출되도록 설계됩니다.</p>
                 <p className="fmsos119">실제 응급 상황에서는 즉시 <b>119</b>에 연락하세요.</p>
-                <button className="fmsosgo" onClick={() => { if (typeof toast === "function") toast(`🚨 (데모) ${m.name}님 응급 알림을 보호자 ${guardian}님께 발송했습니다.`); onSOS(); }}><Bell size={13} /> 보호자에게 알림(데모)</button></div>)}
+                <button className="fmsosgo" onClick={() => { if (typeof toast === "function") toast(`🚨 ${m.name}님 응급 알림을 보호자 ${guardian}님께 발송했습니다.`); onSOS(); }}><Bell size={13} /> 보호자에게 알림</button></div>)}
             </div>)}
             <div className="fmtasklbl"><ClipboardList size={13} color="#2563EB" /> 보호자 관리 체크리스트 <span>{tdone}/{tasks.length} · 완료 시 가족지갑 +{FAM_TASK_EARN} HTK</span></div>
             <div className="fmtaskbar"><i style={{ width: tpct + "%" }} /></div>
@@ -5145,7 +5145,7 @@ function FamilyCareSection({ member, onGo }) {
   const toggleTask = (id, i) => { const cur = { ...(taskMap[id] || {}) }; cur[i] = !cur[i]; const next = { ...taskMap, [id]: cur }; setTaskMap(next); lsSave("hifin_famtask_" + email, next); if (cur[i] && typeof toast === "function") toast(`✅ 보호자 관리 완료 · 가족지갑 +${FAM_TASK_EARN} HTK`); };
   const toggleConsent = (id) => { const next = { ...consentMap, [id]: !consentOf(id) }; setConsentMap(next); lsSave("hifin_famconsent_" + email, next); };
   const setLink = (id, le) => { const next = { ...linkMap, [id]: le }; if (!le) delete next[id]; setLinkMap(next); lsSave("hifin_famlink_" + email, next); if (le && typeof toast === "function") toast("✅ 본인 계정 건강데이터를 연동했어요."); };
-  const addSpendItem = (opt) => { const e = { id: "s" + Date.now(), item: opt.item, amount: opt.amount }; const next = [...spend, e]; setSpend(next); lsSave("hifin_famspend_" + email, next); if (typeof toast === "function") toast(`💳 (데모) 가족지갑에서 ${opt.item} ${opt.amount.toLocaleString()} HTK 결제`); };
+  const addSpendItem = (opt) => { const e = { id: "s" + Date.now(), item: opt.item, amount: opt.amount }; const next = [...spend, e]; setSpend(next); lsSave("hifin_famspend_" + email, next); if (typeof toast === "function") toast(`💳 가족지갑에서 ${opt.item} ${opt.amount.toLocaleString()} HTK 결제`); };
   const removeSpend = (id) => { const next = spend.filter((x) => x.id !== id); setSpend(next); lsSave("hifin_famspend_" + email, next); };
   const addMember = () => { if (!fName.trim() || !fAge) { if (typeof toast === "function") toast("이름과 나이를 입력해 주세요."); return; } const next = [...family, { id: "f" + Date.now(), name: fName.trim(), relation: fRel, age: Number(fAge) }]; setFamily(next); familySave(email, next); setAddOpen(false); setFName(""); setFAge(""); if (typeof toast === "function") toast(`✅ ${fName.trim()}님을 온가족 케어에 추가했어요.`); };
   const removeMember = (id) => { const next = family.filter((x) => x.id !== id); setFamily(next); familySave(email, next); };
@@ -5179,12 +5179,12 @@ function FamilyCareSection({ member, onGo }) {
     { t: "이번 주 보호자 케어 6건 완료", cur: Math.min(totalDone, 6), max: 6, reward: 300 },
     { t: "가족지갑 1만 HTK 적립", cur: Math.min(totalEarn, 10000), max: 10000, reward: 500 },
   ];
-  const sendAlert = (a) => { if (typeof toast === "function") toast(`🔔 (데모) ${a.name}님께 '${a.text}' 케어 알림을 발송했습니다.`); };
+  const sendAlert = (a) => { if (typeof toast === "function") toast(`🔔 ${a.name}님께 '${a.text}' 케어 알림을 발송했습니다.`); };
   const toggleAuto = () => { const v = !autoAlert; setAutoAlert(v); lsSave("hifin_famauto_" + email, v); if (typeof toast === "function") toast(v ? "가족 케어 자동 알림을 켰어요." : "자동 알림을 껐어요."); };
 
   const printFamilyReport = () => {
     const rows = family.map((x) => { const g = famGroupOf(x.age, x.relation); const tks = famTasks(g); const dn = Object.values(taskMap[x.id] || {}).filter(Boolean).length; const f = famFocus(g); const cons = consentOf(x.id); return `<tr><td>${x.name} (${x.relation})</td><td>${x.age}세 · ${g}</td><td>${tks.length ? Math.round(dn / tks.length * 100) : 0}% (${dn}/${tks.length})</td><td>${cons ? "공유중" : "대기"}</td><td>${cons && f ? (f.screening || []).slice(0, 2).join(", ") : "-"}</td></tr>`; }).join("");
-    const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${m.name}님 온가족 케어 리포트</title><style>body{font-family:system-ui,'Malgun Gothic',sans-serif;padding:30px;color:#15234A}h1{font-size:20px;margin:0 0 4px}.sub{color:#7886a8;font-size:12px}.box{background:#F1FBF5;border:1px solid #C4ECD3;border-radius:10px;padding:12px;margin:14px 0;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:8px}td{border-bottom:1px solid #e5e9f0;padding:9px;font-size:12.5px}thead td{font-weight:700;background:#f6f8fc}.disc{margin-top:14px;font-size:11px;color:#a05a00}</style></head><body><div class="sub">HI-Fin Tech · 온가족 케어플랜</div><h1>${m.name}님 가족 건강·금융 리포트</h1><div class="box"><b>가족 경제단위:</b> ${headCount}명(아동 ${kids}·노인 ${elders}) · <b>공유 건강금융지갑:</b> ${sharedAvail.toLocaleString()} HTK(적립 +${totalEarn.toLocaleString()} / 사용 -${spentSum.toLocaleString()}) · <b>연 의료비 추정:</b> 약 ${costSum.toLocaleString()}만원</div><table><thead><tr><td>구성원</td><td>나이·구분</td><td>관리 진행률</td><td>데이터 동의</td><td>권장 검진</td></tr></thead><tbody>${rows}</tbody></table><div class="disc">※ 데모 예시 수치이며 일반 건강관리 참고용입니다. 확정 진단·처방은 의료진과 상담하세요.</div></body></html>`;
+    const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${m.name}님 온가족 케어 리포트</title><style>body{font-family:system-ui,'Malgun Gothic',sans-serif;padding:30px;color:#15234A}h1{font-size:20px;margin:0 0 4px}.sub{color:#7886a8;font-size:12px}.box{background:#F1FBF5;border:1px solid #C4ECD3;border-radius:10px;padding:12px;margin:14px 0;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:8px}td{border-bottom:1px solid #e5e9f0;padding:9px;font-size:12.5px}thead td{font-weight:700;background:#f6f8fc}.disc{margin-top:14px;font-size:11px;color:#a05a00}</style></head><body><div class="sub">HI-Fin Tech · 온가족 케어플랜</div><h1>${m.name}님 가족 건강·금융 리포트</h1><div class="box"><b>가족 경제단위:</b> ${headCount}명(아동 ${kids}·노인 ${elders}) · <b>공유 건강금융지갑:</b> ${sharedAvail.toLocaleString()} HTK(적립 +${totalEarn.toLocaleString()} / 사용 -${spentSum.toLocaleString()}) · <b>연 의료비 추정:</b> 약 ${costSum.toLocaleString()}만원</div><table><thead><tr><td>구성원</td><td>나이·구분</td><td>관리 진행률</td><td>데이터 동의</td><td>권장 검진</td></tr></thead><tbody>${rows}</tbody></table><div class="disc">※ 예시 수치이며 일반 건강관리 참고용입니다. 확정 진단·처방은 의료진과 상담하세요.</div></body></html>`;
     const w = window.open("", "_blank", "width=760,height=900"); if (!w) { if (typeof toast === "function") toast("팝업이 차단되었습니다. 허용 후 다시 시도하세요."); return; } w.document.write(html); w.document.close(); setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 350);
   };
 
@@ -5255,12 +5255,12 @@ function FamilyCareSection({ member, onGo }) {
       ) : (<button className="famaddbtn" onClick={() => setAddOpen(true)}><Plus size={15} /> 가족 구성원 추가</button>)}
 
       <div className="famspend">
-        <div className="fsh"><Wallet size={14} color="#16A34A" /> 가족지갑 공동 결제 <span>· 구성원 의료비를 가족 적립으로 결제(데모)</span></div>
+        <div className="fsh"><Wallet size={14} color="#16A34A" /> 가족지갑 공동 결제 <span>· 구성원 의료비를 가족 적립으로 결제</span></div>
         <div className="fsopts">{FAM_SPEND_OPTS.map((o, i) => (<button key={i} className="fsopt" onClick={() => addSpendItem(o)} disabled={sharedAvail < o.amount}><Coins size={13} /> {o.item} <b>-{o.amount.toLocaleString()}</b></button>))}</div>
         {spend.length > 0 && (<div className="fslist">{spend.slice().reverse().map((s) => (<div className="fsrow" key={s.id}><span className="fsi">{s.item}</span><span className="fsa">-{s.amount.toLocaleString()} HTK</span><button onClick={() => removeSpend(s.id)} aria-label="취소"><X size={12} /></button></div>))}</div>)}
       </div>
 
-      <div className="famdisc"><ShieldCheck size={13} /> 가족 구성원 정보·데이터 공유는 본인/보호자 DID 동의 하에 관리되며, 결제·적립·연동 수치는 데모 예시입니다. 응급 SOS는 데모이며 실제 응급 시 119에 연락하세요.</div>
+      <div className="famdisc"><ShieldCheck size={13} /> 가족 구성원 정보·데이터 공유는 본인/보호자 DID 동의 하에 관리되며, 결제·적립·연동 수치는 예시입니다. 응급 SOS는 예시이며 실제 응급 시 119에 연락하세요.</div>
     </div>
   );
 }
@@ -5297,7 +5297,7 @@ function CommunitySection({ onGo }) {
             <div className="pstat"><span><Heart size={14} color="#EF4444" /> {p[5].toLocaleString()}</span><span><MessageSquare size={14} /> {p[6]}</span><span style={{ marginLeft: "auto", color: "var(--blue)", cursor: "pointer" }} onClick={() => go("manage")}>관련 건강관리 ›</span></div>
           </div>
         ))}
-        <div className="chnote">※ 데모 게시물입니다. 의학 정보는 참고용이며 진단·치료는 전문의와 상담하세요. 커뮤니티 활동(글·후기·Q&A) 시 Health Token이 적립됩니다.</div>
+        <div className="chnote">※ 예시 게시물입니다. 의학 정보는 참고용이며 진단·치료는 전문의와 상담하세요. 커뮤니티 활동(글·후기·Q&A) 시 Health Token이 적립됩니다.</div>
       </>)}
 
       {tab === "groups" && (<>
@@ -5307,7 +5307,7 @@ function CommunitySection({ onGo }) {
             <div style={{ flex: 1 }}><div className="wn">{name}{rec && <span className="cbadge" style={{ color: "#7C3AED", background: "#F1ECFE", marginLeft: 5 }}><Sparkles size={10} /> 추천</span>}</div><div className="wd">{d}</div><div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 3, fontWeight: 700 }}><Users size={11} style={{ verticalAlign: "-2px" }} /> {mem}</div></div>
             <button className="book" style={{ alignSelf: "center", padding: "7px 12px" }} onClick={() => toast(`'${name}' 모임에 가입했습니다. Health Token이 적립됩니다.`)}>가입</button></div>
         ))}</div>
-        <div className="chnote">※ 추천 모임은 조성래님 리포트(당뇨 위험·간 54.4세·췌장암 경고) 기반 데모입니다.</div>
+        <div className="chnote">※ 추천 모임은 조성래님 리포트(당뇨 위험·간 54.4세·췌장암 경고) 기반 예시입니다.</div>
       </>)}
 
       {tab === "qna" && (<>
@@ -5320,7 +5320,7 @@ function CommunitySection({ onGo }) {
           </div>
         ))}
         <button className="cbtn pri" onClick={() => go("ai")}><MessageSquare size={15} /> 질문하기 · AI 1차 상담</button>
-        <div className="chnote">※ 데모 Q&A입니다. 보험·의료 권유가 아닌 일반 건강정보 제공이며, 구체적 진단·처방은 의료기관에서 받으세요.</div>
+        <div className="chnote">※ 예시 Q&A입니다. 보험·의료 권유가 아닌 일반 건강정보 제공이며, 구체적 진단·처방은 의료기관에서 받으세요.</div>
       </>)}
 
       {tab === "review" && (<>
@@ -5335,7 +5335,7 @@ function CommunitySection({ onGo }) {
             <div className="pstat"><span><Heart size={14} color="#EF4444" /> {(120 + i * 47).toLocaleString()}</span><span style={{ marginLeft: "auto", color: "var(--blue)", cursor: "pointer" }} onClick={() => go(type === "검진센터" ? "checkup" : type === "병원" ? "hospital" : "shop")}>해당 서비스 ›</span></div>
           </div>
         ))}
-        <div className="chnote">※ 후기는 데모이며, 특정 기관·제품에 대한 의료광고·유인·알선이 아닙니다. 이용자의 합리적 선택을 돕기 위한 참고 정보입니다(의료법 준수).</div>
+        <div className="chnote">※ 후기는 예시이며, 특정 기관·제품에 대한 의료광고·유인·알선이 아닙니다. 이용자의 합리적 선택을 돕기 위한 참고 정보입니다(의료법 준수).</div>
       </>)}
     </div>
   );
@@ -5375,7 +5375,7 @@ function HeroArt() {
 }
 function HomeView({ onGo }) {
   const go = onGo || (() => {});
-  // 로그인한 회원 기준으로 홈 대시보드 개인화 (데모회원/가입회원 → 해당 고객, 없으면 조성래 기본)
+  // 로그인한 회원 기준으로 홈 대시보드 개인화 (체험회원/가입회원 → 해당 고객, 없으면 조성래 기본)
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const authU = (typeof authCurrent === "function") ? authCurrent() : null;
   const R = dm ? demoReport(dm) : null;
@@ -5416,7 +5416,7 @@ function HomeView({ onGo }) {
         <div className="hart"><HeroArt /></div>
       </div>
       <div className="banner">
-        <div><span className="pchip"><Sparkles size={13} /> {nm}님 맞춤 초개인화 대시보드</span><div className="head">AI가 {nm}님의 건강을 지키고 있습니다.</div><div className="sub">{R ? `${nm}님 시연용 데모 리포트와 생활데이터를 분석해 안내합니다.` : "프롬에이지 Premium 리포트와 생활데이터를 분석해 안내합니다."}</div></div>
+        <div><span className="pchip"><Sparkles size={13} /> {nm}님 맞춤 초개인화 대시보드</span><div className="head">AI가 {nm}님의 건강을 지키고 있습니다.</div><div className="sub">{R ? `${nm}님 시연용 예시 리포트와 생활데이터를 분석해 안내합니다.` : "프롬에이지 Premium 리포트와 생활데이터를 분석해 안내합니다."}</div></div>
         <div className="art"><ShieldArt /></div>
         <div className="bnext"><div className="l">다음 건강검진 예약</div><div className="d">2025.06.15 (토) 09:00</div><div className="c">서울 KMI 건강검진센터</div><button onClick={() => go("checkup")}>예약 상세보기</button></div>
       </div>
@@ -5435,7 +5435,7 @@ function HomeView({ onGo }) {
       </div>
       <div className="profile">
         <span className="pa">{nm[0]}</span>
-        <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 데모 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 검진일 2024.12.26 · 등록번호 ${PT.reg}`}</div></div>
+        <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 체험 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 검진일 2024.12.26 · 등록번호 ${PT.reg}`}</div></div>
         <div className="pstats">
           {[[regA + "세", "주민등록"], [bioA + "세", "생체나이"], [(R ? R.agingRank : 37) + "등", "노화등수"], [(R ? R.agingSpeed : 0.97) + "배", "노화속도"]].map(([v, k]) => (<div className="pstat" key={k}><div className="v">{v}</div><div className="k">{k}</div></div>))}
           <div className="pstat"><span className="tag-w" style={{ color: R ? R.cg[1] : "#16A34A", background: R ? R.cg[2] : "#E7F8EE" }}>종합 {R ? R.evalLabel : "좋음"}</span><div className="k" style={{ marginTop: 6 }}>생체나이</div></div>
@@ -5530,7 +5530,7 @@ function ActivityGauge({ value }) {
     <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>지난주 대비 <b style={{ color: "#EF4444" }}>▲ 8%</b></div></div>);
 }
 
-/* 데모 회원 데이터 별칭 — 실제 배열은 src/data/demo_members.js(plain script) → window.__HHDATA.DEMO_MEMBERS.
+/* 체험 회원 데이터 별칭 — 실제 배열은 src/data/demo_members.js(plain script) → window.__HHDATA.DEMO_MEMBERS.
    ⚠️ 시연·테스트용 가상 데이터. 모든 회원 isDemoUser:true. */
 const demoMembers = (typeof DEMO_MEMBERS !== "undefined" && DEMO_MEMBERS) || [];
 
@@ -6184,7 +6184,7 @@ function demoCancerGrade(g) {
 function demoCostForecast(cost) { return Math.round((cost || 0) * 1.4); }
 /* 이메일 끝 6자리(YYMMDD)에서 주민등록나이 도출 (가입회원은 regAge 우선) */
 function demoRegAge(m) { if (typeof m.regAge === "number") return m.regAge; const mm = (m.email || "").match(/(\d{6})@/); if (!mm) return Math.round(m.biologicalAge); const yy = parseInt(mm[1].slice(0, 2), 10); return 2026 - (1900 + yy); }
-/* 실명확인 정보로 가입회원의 개인 건강프로필 결정적 생성(데모) */
+/* 실명확인 정보로 가입회원의 개인 건강프로필 결정적 생성*/
 function demoMakeProfile(name, email, birth6, genderCode) {
   const yy = parseInt((birth6 || "").slice(0, 2), 10); const yyOk = !isNaN(yy);
   const century = (genderCode === "3" || genderCode === "4") ? 2000 : 1900;
@@ -6205,7 +6205,7 @@ function demoMakeProfile(name, email, birth6, genderCode) {
     isDemoUser: false, realVerified: true,
   };
 }
-/* 건강관리 리포트 어댑터 — 데모 회원 가용 필드로 6개 서브섹션 데이터 도출 */
+/* 건강관리 리포트 어댑터 — 체험 회원 가용 필드로 6개 서브섹션 데이터 도출 */
 function demoReport(m) {
   // 세션 객체가 과거 데이터여도 항상 최신 소스(demoMembers)로 갱신
   if (typeof demoMembers !== "undefined" && demoMembers && demoMembers.length) { const src = demoMembers.find((x) => x.email === m.email); if (src) m = src; }
@@ -6218,7 +6218,7 @@ function demoReport(m) {
   const agingRank = Math.min(100, Math.max(1, Math.round(50 + diff * 2.5)));
   const organs = [["비만체형", m.obesityAge], ["심장", m.heartAge], ["간", m.liverAge], ["췌장", m.pancreasAge], ["신장", m.kidneyAge]].map(([nm, age]) => [nm, age, age <= bio ? "좋음" : "나쁨", age <= bio]);
   const worstNames = organs.slice().sort((a, b) => b[1] - a[1]).slice(0, 2).map((o) => o[0].replace("비만체형", "비만"));
-  // 질병 9종 — 연관 장기나이/암등급 기반 결정적 추정(데모)
+  // 질병 9종 — 연관 장기나이/암등급 기반 결정적 추정
   const DZ = [["비만", m.obesityAge], ["고지혈증", m.heartAge], ["고혈압", m.heartAge], ["당뇨병", m.pancreasAge], ["허혈심장질환", m.heartAge], ["급성심근경색증", m.heartAge], ["뇌혈관질환", m.kidneyAge], ["뇌졸중", m.kidneyAge], ["치매", null]];
   const diseases = DZ.map(([nm, organAge]) => {
     const gap = organAge != null ? (organAge - reg) : diff;
@@ -6294,7 +6294,7 @@ function usersAll() { try { return JSON.parse(localStorage.getItem(USERS_KEY) ||
 function usersSave(l) { try { localStorage.setItem(USERS_KEY, JSON.stringify(l)); } catch (e) {} }
 function userFindByEmail(email) { const e = (email || "").trim().toLowerCase(); return usersAll().find((u) => (u.email || "").toLowerCase() === e) || null; }
 function userRegister(u) { if (userFindByEmail(u.email)) return false; const l = usersAll(); l.push(u); usersSave(l); return true; }
-/* 데모회원(Demo@1234) → 가입회원(개별 비번) 순으로 인증 */
+/* 체험회원(Demo@1234) → 가입회원(개별 비번) 순으로 인증 */
 function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if (m) return m; const u = userFindByEmail(email); return (u && u.password === pw) ? u : null; }
 
 /* 테스트 시나리오 자가검증(11항목) — 실제 로직/데이터에 대해 단언 */
@@ -6302,7 +6302,7 @@ function runDemoTests() {
   const t = [];
   const add = (name, pass, detail) => t.push({ name, pass: !!pass, detail: detail || "" });
   const M = demoMembers || [];
-  add("데모 회원 16명 일괄 등록 가능", M.length === 16 && M.every((m) => m.isDemoUser === true), `${M.length}명 · isDemoUser`);
+  add("체험 회원 16명 일괄 등록 가능", M.length === 16 && M.every((m) => m.isDemoUser === true), `${M.length}명 · isDemoUser`);
   demoRegisterAll();
   const r2 = demoRegisterAll();
   add("중복 등록 방지 가능", r2.added === 0, `재실행 신규 ${r2.added}명`);
@@ -6325,9 +6325,9 @@ function runDemoTests() {
   add("콘솔 오류 없음(런타임)", errs === 0, `JS 오류 ${errs}건`);
   return t;
 }
-const DEMO_CHK_NAMES = ["데모 회원 16명 일괄 등록 가능", "중복 등록 방지 가능", "회원별 로그인 가능", "회원별 대시보드 데이터 상이", "암위험도 등급 색상 정상", "10년 후 의료비 자동 계산", "보험 추천이 암위험도별 상이", "건강지갑 예상 적립액 계산", "AI 주치의 회원별 응답", "모바일/반응형 가로 넘침 없음", "콘솔 오류 없음(런타임)"];
+const DEMO_CHK_NAMES = ["체험 회원 16명 일괄 등록 가능", "중복 등록 방지 가능", "회원별 로그인 가능", "회원별 대시보드 데이터 상이", "암위험도 등급 색상 정상", "10년 후 의료비 자동 계산", "보험 추천이 암위험도별 상이", "건강지갑 예상 적립액 계산", "AI 주치의 회원별 응답", "모바일/반응형 가로 넘침 없음", "콘솔 오류 없음(런타임)"];
 
-/* 데모 회원 로그인 시 각 섹션 상단에 표시되는 개인 건강요약 배너 */
+/* 체험 회원 로그인 시 각 섹션 상단에 표시되는 개인 건강요약 배너 */
 function DemoMemberBanner() {
   const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   if (!m) return null;
@@ -6344,8 +6344,8 @@ function DemoMemberBanner() {
   return (
     <div className="demoband">
       <div className="dbh"><span className="pa">{m.name[0]}</span>
-        <div className="dbt"><b>{m.name}님 데모 건강요약</b><span>로그인한 데모 회원 데이터가 이 섹션에 반영됩니다.</span></div>
-        <span className="demobadge"><AlertTriangle size={12} /> 시연용 데모 데이터</span></div>
+        <div className="dbt"><b>{m.name}님 맞춤 건강요약</b><span>로그인한 체험 회원 데이터가 이 섹션에 반영됩니다.</span></div>
+        <span className="demobadge"><AlertTriangle size={12} /> 시연용 예시 데이터</span></div>
       <div className="dbgrid">{items.map(([l, v, c]) => <div className="dbi" key={l}><span>{l}</span><b style={c ? { color: c } : null}>{v}</b></div>)}</div>
     </div>
   );
@@ -6392,7 +6392,7 @@ function MedicalCostCard({ member }) {
   );
 }
 
-/* 데모 회원 보험추천 카드 (기존 InsuranceRecommendationCard와 이름 충돌 방지 위해 DemoInsuranceCard) */
+/* 체험 회원 보험추천 카드 (기존 InsuranceRecommendationCard와 이름 충돌 방지 위해 DemoInsuranceCard) */
 function DemoInsuranceCard({ member, onGo }) {
   const recs = demoInsuranceRecs(member);
   const go = onGo || (() => {});
@@ -6430,11 +6430,11 @@ function MemberHealthDashboard({ member, onGo, onLogout }) {
   return (
     <>
       <div className="card">
-        <div className="rct"><CircleUserRound size={18} color="#2563EB" /> 회원 기본정보 <span className="demobadge"><AlertTriangle size={12} /> 시연용 데모 데이터입니다.</span></div>
+        <div className="rct"><CircleUserRound size={18} color="#2563EB" /> 회원 기본정보 <span className="demobadge"><AlertTriangle size={12} /> 시연용 예시 데이터입니다.</span></div>
         <div className="demoprofile">
           <span className="pa">{member.name[0]}</span>
           <div><div className="pn">{member.name} <span className="dgrade" style={{ color: cg[1], background: cg[2], marginLeft: 6 }}>암위험 {member.cancerRiskGrade}등급 · {cg[0]}</span></div>
-            <div className="pmeta">{member.email} · 데모회원 {member.isDemoUser ? "예" : "아니오"} · ID {member.id}</div></div>
+            <div className="pmeta">{member.email} · 체험회원 {member.isDemoUser ? "예" : "아니오"} · ID {member.id}</div></div>
           <button className="cbtn2" style={{ marginLeft: "auto" }} onClick={() => onLogout && onLogout()}><X size={13} /> 로그아웃</button>
         </div>
       </div>
@@ -6449,11 +6449,11 @@ function MemberHealthDashboard({ member, onGo, onLogout }) {
       <HealthWalletCard member={member} onGo={go} />
       <div className="card demoai">
         <div className="rct"><Bot size={18} color="#16A34A" /> AI 주치의 상담 (내 데이터 반영)</div>
-        <div className="chnote" style={{ marginTop: 0 }}>로그인한 데모 회원 데이터를 기준으로 AI가 분석합니다. 아래 질문을 눌러보세요.</div>
+        <div className="chnote" style={{ marginTop: 0 }}>로그인한 체험 회원 데이터를 기준으로 AI가 분석합니다. 아래 질문을 눌러보세요.</div>
         <div className="demoaiq">{AIQ.map((q) => <button key={q} onClick={() => go("ai")}><MessageSquare size={13} /> {q}</button>)}</div>
         <button className="cbtn" style={{ marginTop: 10 }} onClick={() => go("ai")}><Bot size={15} /> AI 주치의로 이동</button>
       </div>
-      <div className="demodisc"><AlertTriangle size={14} /> 본 내용은 시연용 데모 데이터 기반 분석이며, 실제 의학적 진단이나 보험 가입 심사를 대체하지 않습니다.</div>
+      <div className="demodisc"><AlertTriangle size={14} /> 본 내용은 시연용 예시 데이터 기반 분석이며, 실제 의학적 진단이나 보험 가입 심사를 대체하지 않습니다.</div>
     </>
   );
 }
@@ -6465,23 +6465,23 @@ function DemoLoginSelector({ onLogin }) {
   const [err, setErr] = useState("");
   const list = demoListAll();
   const tryLogin = (em, password) => { const m = demoAuthenticate(em, password); if (!m) { setErr("이메일 또는 비밀번호가 일치하지 않습니다."); return; } setErr(""); onLogin && onLogin(m); };
-  const quick = () => { const m = list.find((x) => x.id === selId); if (!m) { setErr("데모 회원을 선택하세요."); return; } tryLogin(m.email, "Demo@1234"); };
+  const quick = () => { const m = list.find((x) => x.id === selId); if (!m) { setErr("체험 회원을 선택하세요."); return; } tryLogin(m.email, "Demo@1234"); };
   return (
     <div className="card demologin">
-      <div className="rct"><CircleUserRound size={18} color="#2563EB" /> 데모 회원으로 로그인 <span className="demobadge"><AlertTriangle size={12} /> 시연용 데모 데이터입니다.</span></div>
-      <div className="cfield"><label>데모 회원 선택</label>
+      <div className="rct"><CircleUserRound size={18} color="#2563EB" /> 체험 회원으로 로그인 <span className="demobadge"><AlertTriangle size={12} /> 시연용 예시 데이터입니다.</span></div>
+      <div className="cfield"><label>체험 회원 선택</label>
         <select value={selId} onChange={(e) => { setSelId(e.target.value); const m = list.find((x) => x.id === e.target.value); setEmail(m ? m.email : ""); setErr(""); }}>
           <option value="">— 회원을 선택하세요 —</option>
           {list.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.email})</option>)}
         </select>
       </div>
-      <button className="cbtn pri" style={{ marginTop: 10 }} onClick={quick}><CircleUserRound size={15} /> 선택한 데모 회원으로 로그인</button>
+      <button className="cbtn pri" style={{ marginTop: 10 }} onClick={quick}><CircleUserRound size={15} /> 선택한 체험 회원으로 로그인</button>
       <div className="demoor">또는 직접 입력</div>
       <div className="cfield"><label>이메일</label><input value={email} onChange={(e) => { setEmail(e.target.value); setErr(""); }} placeholder="email@hizenhealth.com" /></div>
       <div className="cfield"><label>비밀번호</label><input type="password" value={pw} onChange={(e) => { setPw(e.target.value); setErr(""); }} placeholder="Demo@1234" /></div>
       {err && <div className="demoerr"><X size={14} /> {err}</div>}
       <button className="cbtn" style={{ marginTop: 10 }} onClick={() => tryLogin(email, pw)}><Lock size={15} /> 로그인</button>
-      <div className="chnote">※ 공통 비밀번호: Demo@1234 · 시연용 데모 데이터이며 실제 개인정보가 아닙니다.</div>
+      <div className="chnote">※ 공통 비밀번호: Demo@1234 · 시연용 예시 데이터이며 실제 개인정보가 아닙니다.</div>
     </div>
   );
 }
@@ -6493,13 +6493,13 @@ function DemoMemberRegister({ onLogin, onGoLogin, onChange }) {
   const fmt = (n) => Number(n).toLocaleString("ko-KR") + "원";
   const registered = demoRegistered();
   const list = demoListAll();
-  const doRegister = () => { const r = demoRegisterAll(); setTick((t) => t + 1); onChange && onChange(); setMsg(r.added === 0 ? "이미 등록된 데모 회원은 제외하고 신규 회원만 등록했습니다." : (r.skipped > 0 ? `이미 등록된 데모 회원은 제외하고 신규 ${r.added}명만 등록했습니다.` : `데모 회원 ${r.added}명이 등록되었습니다.`)); };
+  const doRegister = () => { const r = demoRegisterAll(); setTick((t) => t + 1); onChange && onChange(); setMsg(r.added === 0 ? "이미 등록된 체험 회원은 제외하고 신규 회원만 등록했습니다." : (r.skipped > 0 ? `이미 등록된 체험 회원은 제외하고 신규 ${r.added}명만 등록했습니다.` : `체험 회원 ${r.added}명이 등록되었습니다.`)); };
   const exportDemo = (kind) => {
     const data = registered.length ? registered : list;
     let content, ext, mime;
     if (kind === "json") { content = JSON.stringify(data, null, 2); ext = "json"; mime = "application/json;charset=utf-8"; }
     else { const head = ["id", "name", "email", "biologicalAge", "cancerRiskGrade", "estimatedMedicalCost", "highRiskCancerTypes", "managementPoints"]; const esc = (v) => `"${String(v).replace(/"/g, '""')}"`; const rows = data.map((m) => [m.id, m.name, m.email, m.biologicalAge, m.cancerRiskGrade, m.estimatedMedicalCost, (m.highRiskCancerTypes || []).join("|"), (m.managementPoints || []).join("|")]); content = "﻿" + [head].concat(rows).map((r) => r.map(esc).join(",")).join("\r\n"); ext = "csv"; mime = "text/csv;charset=utf-8"; }
-    try { const b = new Blob([content], { type: mime }); const url = URL.createObjectURL(b); const a = document.createElement("a"); a.href = url; a.download = `demo_members.${ext}`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 1500); toast(`데모 회원을 ${ext.toUpperCase()}로 내보냈습니다.`); } catch (e) { toast("내보내기에 실패했습니다."); }
+    try { const b = new Blob([content], { type: mime }); const url = URL.createObjectURL(b); const a = document.createElement("a"); a.href = url; a.download = `demo_members.${ext}`; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 1500); toast(`체험 회원을 ${ext.toUpperCase()}로 내보냈습니다.`); } catch (e) { toast("내보내기에 실패했습니다."); }
   };
   const statSrc = registered.length ? registered : list;
   const avgBio = statSrc.length ? (statSrc.reduce((s, m) => s + m.biologicalAge, 0) / statSrc.length).toFixed(1) : "0";
@@ -6507,8 +6507,8 @@ function DemoMemberRegister({ onLogin, onGoLogin, onChange }) {
   const sumCost = statSrc.reduce((s, m) => s + m.estimatedMedicalCost, 0);
   return (<>
     <div className="card">
-      <div className="rct"><Users size={18} color="#2563EB" /> 데모 회원 일괄 등록 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "var(--muted)" }}>등록됨 {registered.length} / 전체 {(demoMembers || []).length}명</span></div>
-      <button className="cbtn pri" onClick={doRegister}><Check size={15} /> 데모 회원 16명 등록하기</button>
+      <div className="rct"><Users size={18} color="#2563EB" /> 체험 회원 일괄 등록 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "var(--muted)" }}>등록됨 {registered.length} / 전체 {(demoMembers || []).length}명</span></div>
+      <button className="cbtn pri" onClick={doRegister}><Check size={15} /> 체험 회원 16명 등록하기</button>
       {msg && <div className="demomsg"><Check size={14} /> {msg}</div>}
       <div className="demostats">
         <div className="dst"><div className="l">평균 생체나이</div><div className="v">{avgBio}세</div></div>
@@ -6522,7 +6522,7 @@ function DemoMemberRegister({ onLogin, onGoLogin, onChange }) {
       </div>
     </div>
     <div className="card">
-      <div className="rct"><ClipboardList size={18} color="#7C3AED" /> 등록된 데모 회원 목록</div>
+      <div className="rct"><ClipboardList size={18} color="#7C3AED" /> 등록된 체험 회원 목록</div>
       <div className="demolistwrap"><table className="demolist">
         <thead><tr><th>이름</th><th>분류</th><th>이메일</th><th>생체나이</th><th>암등급</th><th>예상 의료비</th><th>테스트</th></tr></thead>
         <tbody>{list.map((m) => { const cg = demoCancerGrade(m.cancerRiskGrade); const cc = DEMO_CAT_COL[m.category] || ["#64748B", "#EEF2F8"]; return (
@@ -6578,11 +6578,11 @@ function DemoSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="mypage" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>파일럿검증회원 <span className="demobadge"><AlertTriangle size={12} /> 시연용 데모 데이터입니다.</span></div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>관리자 일괄등록 · 데모 로그인 · 회원별 건강분석 대시보드 · AI 상담 연동 · 테스트 체크리스트 (경로: /admin/demo-members)</div></div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>파일럿검증회원 <span className="demobadge"><AlertTriangle size={12} /> 시연용 예시 데이터입니다.</span></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>관리자 일괄등록 · 체험 로그인 · 회원별 건강분석 대시보드 · AI 상담 연동 · 테스트 체크리스트 (경로: /admin/demo-members)</div></div></div>
       <div className="demotabs">
         <div className={`demotab ${view === "admin" ? "on" : ""}`} onClick={() => setView("admin")}><Settings size={15} /> 관리자</div>
-        <div className={`demotab ${view === "login" ? "on" : ""}`} onClick={() => setView("login")}><CircleUserRound size={15} /> 데모 로그인</div>
+        <div className={`demotab ${view === "login" ? "on" : ""}`} onClick={() => setView("login")}><CircleUserRound size={15} /> 체험 로그인</div>
         <div className={`demotab ${view === "dash" ? "on" : ""}`} onClick={() => setView("dash")}><Activity size={15} /> 내 대시보드{user ? ` · ${user.name}` : ""}</div>
       </div>
       {view === "admin" && <DemoAdminPage onLogin={onLogin} onGoLogin={() => setView("login")} onChange={() => force((x) => x + 1)} />}
@@ -6590,8 +6590,8 @@ function DemoSection({ onGo }) {
       {view === "dash" && (user ? <MemberHealthDashboard member={user} onGo={go} onLogout={onLogout} /> : (
         <div className="card" style={{ textAlign: "center", padding: "30px 16px" }}>
           <CircleUserRound size={28} color="#B8C2D6" style={{ marginBottom: 8 }} />
-          <div style={{ fontSize: 13.5, color: "var(--muted)" }}>로그인된 데모 회원이 없습니다.</div>
-          <button className="cbtn pri" style={{ maxWidth: 260, margin: "14px auto 0" }} onClick={() => setView("login")}><CircleUserRound size={15} /> 데모 회원으로 로그인</button>
+          <div style={{ fontSize: 13.5, color: "var(--muted)" }}>로그인된 체험 회원이 없습니다.</div>
+          <button className="cbtn pri" style={{ maxWidth: 260, margin: "14px auto 0" }} onClick={() => setView("login")}><CircleUserRound size={15} /> 체험 회원으로 로그인</button>
         </div>
       ))}
     </div>
@@ -6631,7 +6631,7 @@ function AuthLogin() {
     authSet({ name: u.name, email: u.email, realVerified: !!u.realVerified });
     demoSetSession(u);
   };
-  const quickDemo = () => { const m = demoFindByEmail(pick); if (!m) { setErr("데모 회원을 선택해 주세요."); return; } authSet({ name: m.name, email: m.email }); demoSetSession(m); };
+  const quickDemo = () => { const m = demoFindByEmail(pick); if (!m) { setErr("체험 회원을 선택해 주세요."); return; } authSet({ name: m.name, email: m.email }); demoSetSession(m); };
   const browse = () => { demoLogout(); authSet({ name: "조성래" }); };
   return (
     <form className="authform" onSubmit={submit}>
@@ -6645,8 +6645,8 @@ function AuthLogin() {
       <div className="authdiv"><span>빠른 체험</span></div>
       <button type="button" className="authbtn authghost" onClick={browse}>조성래 체험 계정으로 둘러보기</button>
       <div className="authquick">
-        <select className="authinput" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="데모 회원 선택">
-          <option value="">데모 회원 선택(비밀번호 Demo@1234)</option>
+        <select className="authinput" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="체험 회원 선택">
+          <option value="">체험 회원 선택(비밀번호 Demo@1234)</option>
           {members.map((m) => <option key={m.email} value={m.email}>{m.name} · {m.email}</option>)}
         </select>
         <button type="button" className="authbtn authsmall" onClick={quickDemo}>로그인</button>
@@ -6733,7 +6733,7 @@ function AuthSignup() {
         <button type="button" className="authbtn authghost" onClick={sendCode} disabled={verified}>인증번호 받기</button>
         {sentCode && (
           <div className="authcode">
-            <div className="authcodemsg">인증번호가 발송되었습니다. <b className="democode">데모 환경 — 인증번호: {sentCode}</b><button type="button" className="authautofill" onClick={() => setCode(sentCode)}>자동입력</button></div>
+            <div className="authcodemsg">인증번호가 발송되었습니다. <b className="democode">체험 환경 — 인증번호: {sentCode}</b><button type="button" className="authautofill" onClick={() => setCode(sentCode)}>자동입력</button></div>
             <div className="authquick">
               <input className="authinput" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="인증번호 6자리" inputMode="numeric" disabled={verified} />
               <button type="button" className="authbtn authsmall" onClick={verify} disabled={verified}>확인</button>
@@ -6776,7 +6776,7 @@ function AuthGate() {
           <button className={`authtab ${tab === "signup" ? "on" : ""}`} onClick={() => setTab("signup")}>회원가입</button>
         </div>
         {tab === "login" ? <AuthLogin /> : <AuthSignup />}
-        <div className="authnote">※ 본 서비스는 시연용 데모입니다. 입력 정보는 이 기기(브라우저)에만 저장되며, 실제 본인인증·SMS 발송은 이루어지지 않습니다.</div>
+        <div className="authnote">※ 본 서비스는 시연용 예시입니다. 입력 정보는 이 기기(브라우저)에만 저장되며, 실제 본인인증·SMS 발송은 이루어지지 않습니다.</div>
       </div>
     </div>
   );
@@ -6784,7 +6784,7 @@ function AuthGate() {
 
 /* ====================== 검진 리포트 보관함 (건강관리 → 검진 리포트) ====================== */
 /* 외부 검진 시스템(age.healthketch.com)에서 발행한 리포트를 고객 동의 후 업로드·보관.
-   백엔드 없는 데모이므로 파일은 base64로 브라우저 localStorage에만 저장(회원별 키). */
+   백엔드 없는 예시이므로 파일은 base64로 브라우저 localStorage에만 저장(회원별 키). */
 function ReportVault({ user }) {
   const key = "hifin_reports_" + ((user && user.email) || "default");
   const load = () => { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; } };

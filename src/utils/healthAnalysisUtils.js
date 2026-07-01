@@ -8,7 +8,7 @@ function demoCancerGrade(g) {
 function demoCostForecast(cost) { return Math.round((cost || 0) * 1.4); }
 /* 이메일 끝 6자리(YYMMDD)에서 주민등록나이 도출 (가입회원은 regAge 우선) */
 function demoRegAge(m) { if (typeof m.regAge === "number") return m.regAge; const mm = (m.email || "").match(/(\d{6})@/); if (!mm) return Math.round(m.biologicalAge); const yy = parseInt(mm[1].slice(0, 2), 10); return 2026 - (1900 + yy); }
-/* 실명확인 정보로 가입회원의 개인 건강프로필 결정적 생성(데모) */
+/* 실명확인 정보로 가입회원의 개인 건강프로필 결정적 생성*/
 function demoMakeProfile(name, email, birth6, genderCode) {
   const yy = parseInt((birth6 || "").slice(0, 2), 10); const yyOk = !isNaN(yy);
   const century = (genderCode === "3" || genderCode === "4") ? 2000 : 1900;
@@ -29,7 +29,7 @@ function demoMakeProfile(name, email, birth6, genderCode) {
     isDemoUser: false, realVerified: true,
   };
 }
-/* 건강관리 리포트 어댑터 — 데모 회원 가용 필드로 6개 서브섹션 데이터 도출 */
+/* 건강관리 리포트 어댑터 — 체험 회원 가용 필드로 6개 서브섹션 데이터 도출 */
 function demoReport(m) {
   // 세션 객체가 과거 데이터여도 항상 최신 소스(demoMembers)로 갱신
   if (typeof demoMembers !== "undefined" && demoMembers && demoMembers.length) { const src = demoMembers.find((x) => x.email === m.email); if (src) m = src; }
@@ -42,7 +42,7 @@ function demoReport(m) {
   const agingRank = Math.min(100, Math.max(1, Math.round(50 + diff * 2.5)));
   const organs = [["비만체형", m.obesityAge], ["심장", m.heartAge], ["간", m.liverAge], ["췌장", m.pancreasAge], ["신장", m.kidneyAge]].map(([nm, age]) => [nm, age, age <= bio ? "좋음" : "나쁨", age <= bio]);
   const worstNames = organs.slice().sort((a, b) => b[1] - a[1]).slice(0, 2).map((o) => o[0].replace("비만체형", "비만"));
-  // 질병 9종 — 연관 장기나이/암등급 기반 결정적 추정(데모)
+  // 질병 9종 — 연관 장기나이/암등급 기반 결정적 추정
   const DZ = [["비만", m.obesityAge], ["고지혈증", m.heartAge], ["고혈압", m.heartAge], ["당뇨병", m.pancreasAge], ["허혈심장질환", m.heartAge], ["급성심근경색증", m.heartAge], ["뇌혈관질환", m.kidneyAge], ["뇌졸중", m.kidneyAge], ["치매", null]];
   const diseases = DZ.map(([nm, organAge]) => {
     const gap = organAge != null ? (organAge - reg) : diff;

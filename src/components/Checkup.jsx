@@ -249,7 +249,7 @@ function CenterDirectory({ mode }) {
         </div>
       ))}
       {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 12)}>더 보기 ({(list.length - shown).toLocaleString()}곳 더)</button>}
-      <div className="chnote">※ 표시된 가격·정보는 데모용 예시이며 실제 비용·운영정보는 검진센터·검진항목·옵션에 따라 다릅니다. 실데이터는 제휴 검진센터 DB 연동 시 반영됩니다. 의료기관 비교·가격 정보는 이용자의 합리적 선택을 돕기 위한 것으로, 특정 기관 직접 후기·의료광고는 의료법(의료광고 심의·환자 유인·알선 금지)을 준수합니다.</div>
+      <div className="chnote">※ 표시된 가격·정보는 예시이며 실제 비용·운영정보는 검진센터·검진항목·옵션에 따라 다릅니다. 실데이터는 제휴 검진센터 DB 연동 시 반영됩니다. 의료기관 비교·가격 정보는 이용자의 합리적 선택을 돕기 위한 것으로, 특정 기관 직접 후기·의료광고는 의료법(의료광고 심의·환자 유인·알선 금지)을 준수합니다.</div>
       {sel && <BookingModal center={sel} mode={mode} onClose={() => setSel(null)} />}
       {detail && <CenterDetailModal center={detail} onClose={() => setDetail(null)} onBook={(c) => { setDetail(null); setSel(c); }} />}
     </>
@@ -318,7 +318,7 @@ function CenterDetailModal({ center, onClose, onBook }) {
           </>)}
           {tab === "exam" && (<div className="dsec"><div className="dh">검사 항목</div>{exams.map(([n, d], i) => <div className="feat" key={i}><span className="num" style={{ background: "#EAF0FE", color: "#2563EB" }}>{i + 1}</span><div><b style={{ fontSize: 13 }}>{n}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d}</div></div></div>)}</div>)}
           {tab === "other" && (<div className="dsec"><div className="dh">다른 검진 상품</div>{others.map(([n, d], i) => <div className="resitem" key={i} style={{ margin: "0 0 10px" }}><span className="ic" style={{ background: "#F1ECFE" }}><ClipboardList size={18} color="#7C3AED" /></span><div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>{n}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d}</div></div><button className="cbtn" style={{ width: "auto", margin: 0, padding: "7px 12px" }} onClick={() => toast(`${n} 상품 상세는 준비 중입니다.`)}>보기</button></div>)}</div>)}
-          <div className="chnote" style={{ marginTop: 4 }}>※ 본 병원 상세정보는 데모용 예시이며, 실제 정보는 공공데이터(건강보험공단 검진기관 등)·제휴 검진센터 DB 연동 시 반영됩니다.</div>
+          <div className="chnote" style={{ marginTop: 4 }}>※ 본 병원 상세정보는 예시이며, 실제 정보는 공공데이터(건강보험공단 검진기관 등)·제휴 검진센터 DB 연동 시 반영됩니다.</div>
         </div>
         <div className="bkfoot"><button className="cbtn pri" style={{ margin: 0 }} onClick={() => onBook(center)}><CalendarCheck size={15} /> 예약하기</button></div>
       </div>
@@ -371,7 +371,7 @@ function BookingModal({ center, mode, onClose }) {
                   <span className="pchk">{psych ? <Check size={13} color="#fff" /> : null}</span>
                   <div className="ptxt"><b>심리케어 프리미엄 추가 <em>선택형</em></b><span>정신질환(F코드) 진단 보장 포함 · 가입 시 <b>{psychWon}({PSYCH_HTK.toLocaleString()} HTK)</b> 차감</span></div>
                 </button>
-                <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>되며, 심리케어 프리미엄만 선택 시 건강금융지갑에서 {PSYCH_HTK.toLocaleString()} HTK가 차감됩니다(데모). 실제 보장·인수는 보험사 심사에 따릅니다.</div>
+                <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>되며, 심리케어 프리미엄만 선택 시 건강금융지갑에서 {PSYCH_HTK.toLocaleString()} HTK가 차감됩니다. 실제 보장·인수는 보험사 심사에 따릅니다.</div>
               </div>
             )}
             <div className="bklbl">날짜 선택</div>
@@ -380,7 +380,7 @@ function BookingModal({ center, mode, onClose }) {
             <div className="slots">{slots.map((s) => <div key={s} className={`slot ${time === s ? "on" : ""}`} onClick={() => setTime(s)}>{s}</div>)}</div>
             <div className="bklbl">검진 항목</div>
             <div className="ctags">{center.tags.map((t) => <span key={t}>{t}</span>)}</div>
-            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => { setDone(true); if (psych && typeof toast === "function") toast(`심리케어 프리미엄 적용 · 건강금융지갑 ${PSYCH_HTK.toLocaleString()} HTK 차감(데모)`); }}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
+            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => { setDone(true); if (psych && typeof toast === "function") toast(`심리케어 프리미엄 적용 · 건강금융지갑 ${PSYCH_HTK.toLocaleString()} HTK 차감`); }}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
           </>) : (
             <div className="bkconfirm">
               <div className="ic"><Check size={30} color="#16A34A" /></div>
@@ -488,7 +488,7 @@ const mapsHref = (q) => `https://www.google.com/maps/search/?api=1&query=${encod
 const MAP_CAP = 1000;
 const escHtml = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-// 약국 운영정보(데모·추정): 심평원 기본데이터엔 운영시간이 없어 약국명 기반 결정적 해시로 생성.
+// 약국 운영정보(예시·추정): 심평원 기본데이터엔 운영시간이 없어 약국명 기반 결정적 해시로 생성.
 function pharmOps(name, sgg) {
   let h = 0; const s = (name || "") + (sgg || "");
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;

@@ -28,7 +28,7 @@ function usersAll() { try { return JSON.parse(localStorage.getItem(USERS_KEY) ||
 function usersSave(l) { try { localStorage.setItem(USERS_KEY, JSON.stringify(l)); } catch (e) {} }
 function userFindByEmail(email) { const e = (email || "").trim().toLowerCase(); return usersAll().find((u) => (u.email || "").toLowerCase() === e) || null; }
 function userRegister(u) { if (userFindByEmail(u.email)) return false; const l = usersAll(); l.push(u); usersSave(l); return true; }
-/* 데모회원(Demo@1234) → 가입회원(개별 비번) 순으로 인증 */
+/* 체험회원(Demo@1234) → 가입회원(개별 비번) 순으로 인증 */
 function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if (m) return m; const u = userFindByEmail(email); return (u && u.password === pw) ? u : null; }
 
 /* 테스트 시나리오 자가검증(11항목) — 실제 로직/데이터에 대해 단언 */
@@ -36,7 +36,7 @@ function runDemoTests() {
   const t = [];
   const add = (name, pass, detail) => t.push({ name, pass: !!pass, detail: detail || "" });
   const M = demoMembers || [];
-  add("데모 회원 16명 일괄 등록 가능", M.length === 16 && M.every((m) => m.isDemoUser === true), `${M.length}명 · isDemoUser`);
+  add("체험 회원 16명 일괄 등록 가능", M.length === 16 && M.every((m) => m.isDemoUser === true), `${M.length}명 · isDemoUser`);
   demoRegisterAll();
   const r2 = demoRegisterAll();
   add("중복 등록 방지 가능", r2.added === 0, `재실행 신규 ${r2.added}명`);
@@ -59,4 +59,4 @@ function runDemoTests() {
   add("콘솔 오류 없음(런타임)", errs === 0, `JS 오류 ${errs}건`);
   return t;
 }
-const DEMO_CHK_NAMES = ["데모 회원 16명 일괄 등록 가능", "중복 등록 방지 가능", "회원별 로그인 가능", "회원별 대시보드 데이터 상이", "암위험도 등급 색상 정상", "10년 후 의료비 자동 계산", "보험 추천이 암위험도별 상이", "건강지갑 예상 적립액 계산", "AI 주치의 회원별 응답", "모바일/반응형 가로 넘침 없음", "콘솔 오류 없음(런타임)"];
+const DEMO_CHK_NAMES = ["체험 회원 16명 일괄 등록 가능", "중복 등록 방지 가능", "회원별 로그인 가능", "회원별 대시보드 데이터 상이", "암위험도 등급 색상 정상", "10년 후 의료비 자동 계산", "보험 추천이 암위험도별 상이", "건강지갑 예상 적립액 계산", "AI 주치의 회원별 응답", "모바일/반응형 가로 넘침 없음", "콘솔 오류 없음(런타임)"];

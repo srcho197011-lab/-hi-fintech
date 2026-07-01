@@ -1,6 +1,6 @@
 /* ====================== 검진 리포트 보관함 (건강관리 → 검진 리포트) ====================== */
 /* 외부 검진 시스템(age.healthketch.com)에서 발행한 리포트를 고객 동의 후 업로드·보관.
-   백엔드 없는 데모이므로 파일은 base64로 브라우저 localStorage에만 저장(회원별 키). */
+   백엔드 없는 예시이므로 파일은 base64로 브라우저 localStorage에만 저장(회원별 키). */
 function ReportVault({ user }) {
   const key = "hifin_reports_" + ((user && user.email) || "default");
   const load = () => { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; } };

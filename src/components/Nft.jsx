@@ -28,7 +28,7 @@ function NFTSection({ onGo }) {
             <div className="nfoot"><span className="nftid">{n.id}</span><button className="book" style={{ marginLeft: "auto", padding: "7px 12px" }} onClick={() => go(n.to)}>연계 보기</button></div>
           </div>
         ))}</div>
-        <div className="chnote">※ 표시된 토큰 ID·내역은 데모 예시입니다. NFT/SBT는 검진·보험·건강관리 활동에 따라 본인 건강지갑에 발행됩니다.</div>
+        <div className="chnote">※ 표시된 토큰 ID·내역은 예시입니다. NFT/SBT는 검진·보험·건강관리 활동에 따라 본인 건강지갑에 발행됩니다.</div>
       </>)}
 
       {tab === "issue" && (<>
@@ -48,13 +48,13 @@ function NFTSection({ onGo }) {
             <div className="gchips" style={{ alignItems: "center" }}><span className="ern">연계 · {g.chip}</span><button className="book" style={{ padding: "6px 11px", marginLeft: 4 }} onClick={() => go(g.to)}>{g.chip} 이동</button></div>
           </div>
         ))}
-        <div className="chnote">※ 예시 흐름은 데모입니다. 실제 연계·증빙은 각 서비스·기관 연동 시 동작합니다.</div>
+        <div className="chnote">※ 예시 흐름은 예시입니다. 실제 연계·증빙은 각 서비스·기관 연동 시 동작합니다.</div>
       </>)}
 
       {tab === "sec" && (<>
         <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(120deg,#4C1D95,#7C3AED 60%,#2F5BEA)", color: "#fff", borderRadius: 16, padding: "18px 18px", boxShadow: "0 16px 32px -20px rgba(124,58,237,.8)" }}>
           <span style={{ width: 46, height: 46, borderRadius: 12, background: "rgba(255,255,255,.18)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={26} color="#fff" /></span>
-          <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.55 }}>건강·보험 인증서를 <b style={{ color: "#DDD6FE" }}>양도불가 SBT</b>로 발행하고, <b style={{ color: "#FDE68A" }}>온체인 해시로 위·변조를 방지</b>하도록 설계합니다. <span style={{ opacity: .82, fontWeight: 600 }}>(설계 목표 · 현재 데모)</span></div>
+          <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.55 }}>건강·보험 인증서를 <b style={{ color: "#DDD6FE" }}>양도불가 SBT</b>로 발행하고, <b style={{ color: "#FDE68A" }}>온체인 해시로 위·변조를 방지</b>하도록 설계합니다. <span style={{ opacity: .82, fontWeight: 600 }}>(설계 목표 · 시제품)</span></div>
         </div>
         <div className="card" style={{ marginTop: 12 }}>
           <div className="rct"><Lock size={18} color="#7C3AED" /> 무결성·보안 설계</div>
@@ -63,7 +63,7 @@ function NFTSection({ onGo }) {
           ))}
           <div className="benefit" style={{ marginTop: 10, marginBottom: 0 }}><span><Art name="lock" size={16} /> 양도불가(SBT)</span><span><Art name="hash" size={16} /> 온체인 무결성</span><span><Art name="badge" size={16} /> 선택 공개</span><span><Art name="sparkle" size={16} /> 위·변조 탐지</span></div>
         </div>
-        <div className="chnote">※ <b>현재는 데모(프론트엔드 시제품)이며 실제 블록체인 발행·온체인 정산은 구현되어 있지 않습니다.</b> 온체인 NFT/SBT·가상자산 연계는 관련 <b>법률 제정 후 단계적으로 도입</b>되며, 그 전까지 인증서는 플랫폼 내 무결성 검증·암호화 보관으로 운영됩니다. 원문 건강정보는 오프체인 암호화 보관, 온체인엔 해시만 기록합니다.</div>
+        <div className="chnote">※ <b>현재는 시연용(프론트엔드 시제품)이며 실제 블록체인 발행·온체인 정산은 구현되어 있지 않습니다.</b> 온체인 NFT/SBT·가상자산 연계는 관련 <b>법률 제정 후 단계적으로 도입</b>되며, 그 전까지 인증서는 플랫폼 내 무결성 검증·암호화 보관으로 운영됩니다. 원문 건강정보는 오프체인 암호화 보관, 온체인엔 해시만 기록합니다.</div>
       </>)}
     </div>
   );

@@ -31,7 +31,7 @@ function AuthLogin() {
     authSet({ name: u.name, email: u.email, realVerified: !!u.realVerified });
     demoSetSession(u);
   };
-  const quickDemo = () => { const m = demoFindByEmail(pick); if (!m) { setErr("데모 회원을 선택해 주세요."); return; } authSet({ name: m.name, email: m.email }); demoSetSession(m); };
+  const quickDemo = () => { const m = demoFindByEmail(pick); if (!m) { setErr("체험 회원을 선택해 주세요."); return; } authSet({ name: m.name, email: m.email }); demoSetSession(m); };
   const browse = () => { demoLogout(); authSet({ name: "조성래" }); };
   return (
     <form className="authform" onSubmit={submit}>
@@ -45,8 +45,8 @@ function AuthLogin() {
       <div className="authdiv"><span>빠른 체험</span></div>
       <button type="button" className="authbtn authghost" onClick={browse}>조성래 체험 계정으로 둘러보기</button>
       <div className="authquick">
-        <select className="authinput" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="데모 회원 선택">
-          <option value="">데모 회원 선택(비밀번호 Demo@1234)</option>
+        <select className="authinput" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="체험 회원 선택">
+          <option value="">체험 회원 선택(비밀번호 Demo@1234)</option>
           {members.map((m) => <option key={m.email} value={m.email}>{m.name} · {m.email}</option>)}
         </select>
         <button type="button" className="authbtn authsmall" onClick={quickDemo}>로그인</button>
@@ -133,7 +133,7 @@ function AuthSignup() {
         <button type="button" className="authbtn authghost" onClick={sendCode} disabled={verified}>인증번호 받기</button>
         {sentCode && (
           <div className="authcode">
-            <div className="authcodemsg">인증번호가 발송되었습니다. <b className="democode">데모 환경 — 인증번호: {sentCode}</b><button type="button" className="authautofill" onClick={() => setCode(sentCode)}>자동입력</button></div>
+            <div className="authcodemsg">인증번호가 발송되었습니다. <b className="democode">체험 환경 — 인증번호: {sentCode}</b><button type="button" className="authautofill" onClick={() => setCode(sentCode)}>자동입력</button></div>
             <div className="authquick">
               <input className="authinput" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="인증번호 6자리" inputMode="numeric" disabled={verified} />
               <button type="button" className="authbtn authsmall" onClick={verify} disabled={verified}>확인</button>
@@ -176,7 +176,7 @@ function AuthGate() {
           <button className={`authtab ${tab === "signup" ? "on" : ""}`} onClick={() => setTab("signup")}>회원가입</button>
         </div>
         {tab === "login" ? <AuthLogin /> : <AuthSignup />}
-        <div className="authnote">※ 본 서비스는 시연용 데모입니다. 입력 정보는 이 기기(브라우저)에만 저장되며, 실제 본인인증·SMS 발송은 이루어지지 않습니다.</div>
+        <div className="authnote">※ 본 서비스는 시연용 예시입니다. 입력 정보는 이 기기(브라우저)에만 저장되며, 실제 본인인증·SMS 발송은 이루어지지 않습니다.</div>
       </div>
     </div>
   );

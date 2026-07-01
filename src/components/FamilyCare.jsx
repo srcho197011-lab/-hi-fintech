@@ -67,11 +67,11 @@ function FamilyMemberRow({ m, expanded, onToggle, onRemove, tasks, taskState, on
             {lr && (<div className="fmlinked"><div><b>{lr.bio}세</b><span>생체나이</span></div><div><b>{lr.diff > 0 ? "+" : ""}{lr.diff}</b><span>실연령차</span></div><div><b>{lr.cancerTotal}등급</b><span>암위험</span></div><div className="fmlz">{lr.tags.length ? lr.tags.join("·") : "양호"}</div></div>)}
             {isElder && (<div className="fmsoswrap">
               <button className="fmsosbtn" onClick={onSOS}><AlertTriangle size={14} /> 응급 SOS {sosActive ? "닫기" : ""}</button>
-              {sosActive && (<div className="fmsospanel"><b>🚨 응급 알림 (데모)</b>
-                <p>보호자 <b>{guardian}</b>님께 {m.name}님의 위치·상태 알림을 발송합니다(데모, 실제 발송 없음).</p>
+              {sosActive && (<div className="fmsospanel"><b>🚨 응급 알림</b>
+                <p>보호자 <b>{guardian}</b>님께 {m.name}님의 위치·상태 알림을 발송합니다(시연용, 실제 발송 없음).</p>
                 <p>낙상·이상징후 자동 감지 시 보호자·지정 연락처에 자동 호출되도록 설계됩니다.</p>
                 <p className="fmsos119">실제 응급 상황에서는 즉시 <b>119</b>에 연락하세요.</p>
-                <button className="fmsosgo" onClick={() => { if (typeof toast === "function") toast(`🚨 (데모) ${m.name}님 응급 알림을 보호자 ${guardian}님께 발송했습니다.`); onSOS(); }}><Bell size={13} /> 보호자에게 알림(데모)</button></div>)}
+                <button className="fmsosgo" onClick={() => { if (typeof toast === "function") toast(`🚨 ${m.name}님 응급 알림을 보호자 ${guardian}님께 발송했습니다.`); onSOS(); }}><Bell size={13} /> 보호자에게 알림</button></div>)}
             </div>)}
             <div className="fmtasklbl"><ClipboardList size={13} color="#2563EB" /> 보호자 관리 체크리스트 <span>{tdone}/{tasks.length} · 완료 시 가족지갑 +{FAM_TASK_EARN} HTK</span></div>
             <div className="fmtaskbar"><i style={{ width: tpct + "%" }} /></div>
@@ -113,7 +113,7 @@ function FamilyCareSection({ member, onGo }) {
   const toggleTask = (id, i) => { const cur = { ...(taskMap[id] || {}) }; cur[i] = !cur[i]; const next = { ...taskMap, [id]: cur }; setTaskMap(next); lsSave("hifin_famtask_" + email, next); if (cur[i] && typeof toast === "function") toast(`✅ 보호자 관리 완료 · 가족지갑 +${FAM_TASK_EARN} HTK`); };
   const toggleConsent = (id) => { const next = { ...consentMap, [id]: !consentOf(id) }; setConsentMap(next); lsSave("hifin_famconsent_" + email, next); };
   const setLink = (id, le) => { const next = { ...linkMap, [id]: le }; if (!le) delete next[id]; setLinkMap(next); lsSave("hifin_famlink_" + email, next); if (le && typeof toast === "function") toast("✅ 본인 계정 건강데이터를 연동했어요."); };
-  const addSpendItem = (opt) => { const e = { id: "s" + Date.now(), item: opt.item, amount: opt.amount }; const next = [...spend, e]; setSpend(next); lsSave("hifin_famspend_" + email, next); if (typeof toast === "function") toast(`💳 (데모) 가족지갑에서 ${opt.item} ${opt.amount.toLocaleString()} HTK 결제`); };
+  const addSpendItem = (opt) => { const e = { id: "s" + Date.now(), item: opt.item, amount: opt.amount }; const next = [...spend, e]; setSpend(next); lsSave("hifin_famspend_" + email, next); if (typeof toast === "function") toast(`💳 가족지갑에서 ${opt.item} ${opt.amount.toLocaleString()} HTK 결제`); };
   const removeSpend = (id) => { const next = spend.filter((x) => x.id !== id); setSpend(next); lsSave("hifin_famspend_" + email, next); };
   const addMember = () => { if (!fName.trim() || !fAge) { if (typeof toast === "function") toast("이름과 나이를 입력해 주세요."); return; } const next = [...family, { id: "f" + Date.now(), name: fName.trim(), relation: fRel, age: Number(fAge) }]; setFamily(next); familySave(email, next); setAddOpen(false); setFName(""); setFAge(""); if (typeof toast === "function") toast(`✅ ${fName.trim()}님을 온가족 케어에 추가했어요.`); };
   const removeMember = (id) => { const next = family.filter((x) => x.id !== id); setFamily(next); familySave(email, next); };
@@ -147,12 +147,12 @@ function FamilyCareSection({ member, onGo }) {
     { t: "이번 주 보호자 케어 6건 완료", cur: Math.min(totalDone, 6), max: 6, reward: 300 },
     { t: "가족지갑 1만 HTK 적립", cur: Math.min(totalEarn, 10000), max: 10000, reward: 500 },
   ];
-  const sendAlert = (a) => { if (typeof toast === "function") toast(`🔔 (데모) ${a.name}님께 '${a.text}' 케어 알림을 발송했습니다.`); };
+  const sendAlert = (a) => { if (typeof toast === "function") toast(`🔔 ${a.name}님께 '${a.text}' 케어 알림을 발송했습니다.`); };
   const toggleAuto = () => { const v = !autoAlert; setAutoAlert(v); lsSave("hifin_famauto_" + email, v); if (typeof toast === "function") toast(v ? "가족 케어 자동 알림을 켰어요." : "자동 알림을 껐어요."); };
 
   const printFamilyReport = () => {
     const rows = family.map((x) => { const g = famGroupOf(x.age, x.relation); const tks = famTasks(g); const dn = Object.values(taskMap[x.id] || {}).filter(Boolean).length; const f = famFocus(g); const cons = consentOf(x.id); return `<tr><td>${x.name} (${x.relation})</td><td>${x.age}세 · ${g}</td><td>${tks.length ? Math.round(dn / tks.length * 100) : 0}% (${dn}/${tks.length})</td><td>${cons ? "공유중" : "대기"}</td><td>${cons && f ? (f.screening || []).slice(0, 2).join(", ") : "-"}</td></tr>`; }).join("");
-    const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${m.name}님 온가족 케어 리포트</title><style>body{font-family:system-ui,'Malgun Gothic',sans-serif;padding:30px;color:#15234A}h1{font-size:20px;margin:0 0 4px}.sub{color:#7886a8;font-size:12px}.box{background:#F1FBF5;border:1px solid #C4ECD3;border-radius:10px;padding:12px;margin:14px 0;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:8px}td{border-bottom:1px solid #e5e9f0;padding:9px;font-size:12.5px}thead td{font-weight:700;background:#f6f8fc}.disc{margin-top:14px;font-size:11px;color:#a05a00}</style></head><body><div class="sub">HI-Fin Tech · 온가족 케어플랜</div><h1>${m.name}님 가족 건강·금융 리포트</h1><div class="box"><b>가족 경제단위:</b> ${headCount}명(아동 ${kids}·노인 ${elders}) · <b>공유 건강금융지갑:</b> ${sharedAvail.toLocaleString()} HTK(적립 +${totalEarn.toLocaleString()} / 사용 -${spentSum.toLocaleString()}) · <b>연 의료비 추정:</b> 약 ${costSum.toLocaleString()}만원</div><table><thead><tr><td>구성원</td><td>나이·구분</td><td>관리 진행률</td><td>데이터 동의</td><td>권장 검진</td></tr></thead><tbody>${rows}</tbody></table><div class="disc">※ 데모 예시 수치이며 일반 건강관리 참고용입니다. 확정 진단·처방은 의료진과 상담하세요.</div></body></html>`;
+    const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${m.name}님 온가족 케어 리포트</title><style>body{font-family:system-ui,'Malgun Gothic',sans-serif;padding:30px;color:#15234A}h1{font-size:20px;margin:0 0 4px}.sub{color:#7886a8;font-size:12px}.box{background:#F1FBF5;border:1px solid #C4ECD3;border-radius:10px;padding:12px;margin:14px 0;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:8px}td{border-bottom:1px solid #e5e9f0;padding:9px;font-size:12.5px}thead td{font-weight:700;background:#f6f8fc}.disc{margin-top:14px;font-size:11px;color:#a05a00}</style></head><body><div class="sub">HI-Fin Tech · 온가족 케어플랜</div><h1>${m.name}님 가족 건강·금융 리포트</h1><div class="box"><b>가족 경제단위:</b> ${headCount}명(아동 ${kids}·노인 ${elders}) · <b>공유 건강금융지갑:</b> ${sharedAvail.toLocaleString()} HTK(적립 +${totalEarn.toLocaleString()} / 사용 -${spentSum.toLocaleString()}) · <b>연 의료비 추정:</b> 약 ${costSum.toLocaleString()}만원</div><table><thead><tr><td>구성원</td><td>나이·구분</td><td>관리 진행률</td><td>데이터 동의</td><td>권장 검진</td></tr></thead><tbody>${rows}</tbody></table><div class="disc">※ 예시 수치이며 일반 건강관리 참고용입니다. 확정 진단·처방은 의료진과 상담하세요.</div></body></html>`;
     const w = window.open("", "_blank", "width=760,height=900"); if (!w) { if (typeof toast === "function") toast("팝업이 차단되었습니다. 허용 후 다시 시도하세요."); return; } w.document.write(html); w.document.close(); setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 350);
   };
 
@@ -223,12 +223,12 @@ function FamilyCareSection({ member, onGo }) {
       ) : (<button className="famaddbtn" onClick={() => setAddOpen(true)}><Plus size={15} /> 가족 구성원 추가</button>)}
 
       <div className="famspend">
-        <div className="fsh"><Wallet size={14} color="#16A34A" /> 가족지갑 공동 결제 <span>· 구성원 의료비를 가족 적립으로 결제(데모)</span></div>
+        <div className="fsh"><Wallet size={14} color="#16A34A" /> 가족지갑 공동 결제 <span>· 구성원 의료비를 가족 적립으로 결제</span></div>
         <div className="fsopts">{FAM_SPEND_OPTS.map((o, i) => (<button key={i} className="fsopt" onClick={() => addSpendItem(o)} disabled={sharedAvail < o.amount}><Coins size={13} /> {o.item} <b>-{o.amount.toLocaleString()}</b></button>))}</div>
         {spend.length > 0 && (<div className="fslist">{spend.slice().reverse().map((s) => (<div className="fsrow" key={s.id}><span className="fsi">{s.item}</span><span className="fsa">-{s.amount.toLocaleString()} HTK</span><button onClick={() => removeSpend(s.id)} aria-label="취소"><X size={12} /></button></div>))}</div>)}
       </div>
 
-      <div className="famdisc"><ShieldCheck size={13} /> 가족 구성원 정보·데이터 공유는 본인/보호자 DID 동의 하에 관리되며, 결제·적립·연동 수치는 데모 예시입니다. 응급 SOS는 데모이며 실제 응급 시 119에 연락하세요.</div>
+      <div className="famdisc"><ShieldCheck size={13} /> 가족 구성원 정보·데이터 공유는 본인/보호자 DID 동의 하에 관리되며, 결제·적립·연동 수치는 예시입니다. 응급 SOS는 예시이며 실제 응급 시 119에 연락하세요.</div>
     </div>
   );
 }
