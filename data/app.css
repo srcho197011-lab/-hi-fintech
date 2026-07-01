@@ -1620,3 +1620,7 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .ptxt b{font-size:12.5px;color:#15234A;}.ptxt em{font-style:normal;font-size:10px;font-weight:800;color:#7C3AED;background:#F1ECFE;border-radius:999px;padding:1px 7px;margin-left:4px;}
 .ptxt span{display:block;font-size:11px;color:var(--muted);margin-top:2px;}.ptxt span b{color:#7C3AED;}
 .bkinsnote{font-size:10px;color:var(--muted);line-height:1.55;margin-top:9px;}
+.center.seoul{background:#F5F8FF;}
+.center.gangnam{background:linear-gradient(90deg,#EAF2FF,#F5F9FF);border-color:#C7D8FB;box-shadow:0 6px 18px -14px rgba(37,99,235,.5);}
+.center.gangnam .cimg{background:#DCE9FF !important;}
+.gnbadge{color:#1D4ED8 !important;background:#DCE9FF !important;display:inline-flex;align-items:center;gap:2px;}

@@ -126,14 +126,15 @@ function BrandDirectory({ only }) {
   const brands = single ? [] : ["전체", ...Array.from(new Set(base.map((c) => c.b)))];
   const brandList = base.filter((c) => single || brand === "전체" || c.b === brand);
   const sidos = ["전체", ...Array.from(new Set(brandList.map((c) => c.sd))).sort((a, b) => rank(a) - rank(b))];
+  const isGN = (c) => /강남/.test(c.sg || "");
   let list = brandList.filter((c) => (sido === "전체" || c.sd === sido) && (!q || (c.n + c.sd + c.sg + c.ad).includes(q)));
-  list = list.sort((a, b) => rank(a.sd) - rank(b.sd) || a.sg.localeCompare(b.sg, "ko"));
+  list = list.sort((a, b) => (isGN(a) ? 0 : 1) - (isGN(b) ? 0 : 1) || rank(a.sd) - rank(b.sd) || a.sg.localeCompare(b.sg, "ko"));
   const view = list.slice(0, shown);
-  const card = (c, i) => { const m = META[c.b] || {}; return (
-    <div className="center" key={i}>
+  const card = (c, i) => { const m = META[c.b] || {}; const gn = isGN(c), seoul = c.sd === "서울특별시"; return (
+    <div className={`center${gn ? " gangnam" : seoul ? " seoul" : ""}`} key={i}>
       <div className="cimg" style={{ background: (m.col || "#2563EB") + "14" }}><Building2 size={40} color={m.col || "#2563EB"} /></div>
       <div className="cmain">
-        <div className="cname">{c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n} <span className="cbadge" style={{ color: m.col, background: (m.col || "#2563EB") + "1A" }}>{m.short}</span></div>
+        <div className="cname">{c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n} <span className="cbadge" style={{ color: m.col, background: (m.col || "#2563EB") + "1A" }}>{m.short}</span>{gn && <span className="cbadge gnbadge"><MapPin size={9} /> 강남 대표</span>}</div>
         <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{ssido(c.sd)}</span> · <MapPin size={12} />{c.sg} · {c.t}{c.p !== "-" && <> · <Phone size={12} />{c.p}</>}</div>
         <div className="ctags"><span>{c.t}</span><span>{m.tier || "검진기관"}</span></div>
         <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, lineHeight: 1.45 }}>{c.ad}</div>
