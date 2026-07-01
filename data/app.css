@@ -758,8 +758,12 @@
 .ipstbl th{background:#1B2A52;color:#fff;font-weight:800;padding:9px 11px;text-align:left;font-size:11px;white-space:nowrap;}
 .ipstbl td{padding:9px 11px;border-top:1px solid var(--border);color:#33405C;line-height:1.5;vertical-align:top;}
 .ipstbl td.rh{font-weight:800;color:#1B2A52;background:#F4F7FD;white-space:nowrap;}
-.ipstbl.fee td{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;}
-.ipstbl.fee td.rh{text-align:left;}
+.ipstbl.fee{table-layout:fixed;}
+.ipstbl.fee th{text-align:center;}
+.ipstbl.fee th:first-child,.ipstbl.fee col.rhcol{width:74px;}
+.ipstbl.fee td{text-align:center;font-weight:700;font-variant-numeric:tabular-nums;}
+.ipstbl.fee th:first-child{text-align:left;}
+.ipstbl.fee td.rh{text-align:left;width:74px;}
 .ipstbl .na{color:var(--soft);font-weight:600;}
 .ipstbl tbody tr:hover{background:#F8FAFE;}
 .prods .prod{transition:transform .14s ease,box-shadow .14s ease;}
