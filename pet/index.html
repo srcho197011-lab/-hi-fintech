@@ -1518,13 +1518,59 @@ function vetReply(vet){ return (text)=>{
   return { a:`(${vet.title} ${vet.name}) `+r.a, chips:[...(r.chips||[]).slice(0,2),"화상 상담 예약"] };
 };}
 
-function VetChat({vet,onClose}){
+const feeToToken=(price)=>Math.max(500,Math.round((parseFloat(price)||0)*10000*0.1)); // 상담비의 10%를 HPET로
+
+function VetBooking({vet,onClose}){
+  const [date,setDate]=useState(null),[time,setTime]=useState(null),[done,setDone]=useState(false);
+  const W=["일","월","화","수","목","금","토"];
+  const days=Array.from({length:8},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()+i+2); return d; });
+  const slots=["10:00","11:00","14:00","15:00","16:00","17:00"];
+  const rw=feeToToken(vet.price);
+  const confirm=()=>{
+    const rec={ vet:vet.name, title:vet.title, hosp:vet.hosp, date, time, fee:vet.price, reward:rw, at:new Date().toLocaleDateString("ko") };
+    const list=SLS.get("hipet_visits",[]); list.unshift(rec); SLS.set("hipet_visits",list);
+    setDone(true); toast(`방문예약 완료 · 마루에게 +${rw.toLocaleString()} HPET 적립`);
+  };
+  return (
+    <div className="bkov" onClick={onClose}>
+      <div className="bk" onClick={e=>e.stopPropagation()}>
+        <div className="bkh"><div className="bt">{done?"방문예약 완료":"방문 예약"}</div><button className="xbtn" onClick={onClose}><X size={20}/></button></div>
+        <div className="bkb">
+          {!done ? (<>
+            <div className="bkinfo"><div className="n">{vet.name} <span className="cbadge org">{vet.title}</span></div><div className="m"><Building2 size={11} style={{verticalAlign:"-1px"}}/> {vet.hosp} · 상담 {vet.price}</div></div>
+            <div className="petpick"><span className="av" style={{overflow:"hidden"}}><MaruImg/></span><div><b>마루</b><div className="sub2">말티즈 · 4세 · 4.2kg</div></div></div>
+            <div className="rewhint"><Coins size={16} color="var(--orange)"/><div>방문예약 시 상담비({vet.price})의 10%, <b>+{rw.toLocaleString()} HPET</b>가 마루 건강금융지갑에 적립됩니다.</div></div>
+            <div className="bklbl">날짜 선택</div>
+            <div className="cal">{days.map((d,i)=>{ const k=`${d.getMonth()+1}/${d.getDate()}`; return <button key={i} className={`calc ${date===k?"on":""}`} onClick={()=>setDate(k)}><div className="d">{d.getDate()}</div><div className="w">{W[d.getDay()]}</div></button>; })}</div>
+            <div className="bklbl">시간 선택</div>
+            <div className="slots">{slots.map(s=><button key={s} className={`slot ${time===s?"on":""}`} onClick={()=>setTime(s)}>{s}</button>)}</div>
+            <button className="cbtn pri" style={{opacity:date&&time?1:.5}} disabled={!date||!time} onClick={confirm}><CalendarCheck size={15}/> {date&&time?`${date} ${time} 방문예약 확정`:"날짜·시간을 선택하세요"}</button>
+          </>) : (
+            <div className="bkconfirm">
+              <div className="okic"><Check size={30} color="var(--green)"/></div>
+              <div className="ttl">방문예약이 확정되었습니다</div>
+              <div className="sub2" style={{marginTop:6}}>{vet.name} · {vet.hosp}<br/>{date} {time} · 마루</div>
+              <div className="reslist">
+                <div className="resitem"><span className="ic or"><Coins size={18} color="var(--orange)"/></span><div><b>상담토큰 +{rw.toLocaleString()} HPET 적립</b><div className="sub2">상담비({vet.price})의 10%가 마루 건강금융지갑에 적립되었습니다.</div></div></div>
+                <div className="resitem"><span className="ic gr"><Gift size={18} color="var(--green)"/></span><div><b>리워드 센터 기록</b><div className="sub2">방문예약·적립 내역이 리워드 센터에 기록됩니다.</div></div></div>
+              </div>
+              <button className="cbtn pri" style={{marginTop:16}} onClick={onClose}>확인</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VetChat({vet,onClose,onBook}){
   return (
     <div className="bkov" onClick={onClose}>
       <div className="bk vetbk" onClick={e=>e.stopPropagation()}>
         <div className="vethd">
           <span className="vetav"><Stethoscope size={18} color="#fff"/></span>
           <div style={{flex:1,minWidth:0}}><div className="vetn">{vet.name} <span className="vettag">{vet.title}</span></div><div className="vetsub">{vet.hosp} · 비대면 상담 · ⭐ {vet.rating} · 상담 {vet.price}</div></div>
+          <button className="vetbook" onClick={()=>onBook&&onBook(vet)}><CalendarCheck size={14}/> 방문예약</button>
           <button className="xbtn" onClick={onClose}><X size={20}/></button>
         </div>
         <ChatBox who={vet.name} icon={Stethoscope} height={330}
@@ -1538,7 +1584,7 @@ function VetChat({vet,onClose}){
 
 function VetDirectory(){
   const [sido,setSido]=useState("서울특별시"),[sgg,setSgg]=useState("강남구"),[sp,setSp]=useState("전체");
-  const [sel,setSel]=useState(null);
+  const [sel,setSel]=useState(null),[book,setBook]=useState(null);
   const list=VETS.filter(v=>sp==="전체"||v.title===sp);
   return (<>
     <div className="airec"><div className="at"><Stethoscope size={16} color="var(--orange)"/> 원격주치의 — 전국 비대면 전문 수의사 상담</div>
@@ -1559,13 +1605,17 @@ function VetDirectory(){
         </div>
         <div className="vetright">
           <div className="vetrate">⭐ {v.rating} <span>({v.rev})</span></div>
-          <div className="vetprice">상담 {v.price}</div>
-          <button className="cbtn pri" style={{width:"auto",margin:0,padding:"8px 20px"}} onClick={()=>setSel(v)}>상담</button>
+          <div className="vetprice">상담 {v.price} · 방문예약 시 <b style={{color:"var(--orange-deep)"}}>+{feeToToken(v.price).toLocaleString()} HPET</b></div>
+          <div className="vetbtns">
+            <button className="cbtn" style={{width:"auto",margin:0,padding:"8px 14px"}} onClick={()=>setBook(v)}>방문예약</button>
+            <button className="cbtn pri" style={{width:"auto",margin:0,padding:"8px 18px"}} onClick={()=>setSel(v)}>상담</button>
+          </div>
         </div>
       </div>
     ))}
-    <div className="chnote">※ 전문 수의사·평점·상담비는 시연용 예시입니다. 비대면 상담 가능 여부·처방은 수의사법 및 관련 제도에 따라 제한될 수 있습니다.</div>
-    {sel && <VetChat vet={sel} onClose={()=>setSel(null)}/>}
+    <div className="chnote">※ 전문 수의사·평점·상담비는 시연용 예시입니다. 비대면 상담 가능 여부·처방은 수의사법 및 관련 제도에 따라 제한될 수 있습니다. 방문예약 시 상담비의 10%가 상담토큰(HPET)으로 마루에게 적립됩니다.</div>
+    {sel && <VetChat vet={sel} onClose={()=>setSel(null)} onBook={(v)=>{setSel(null);setBook(v);}}/>}
+    {book && <VetBooking vet={book} onClose={()=>setBook(null)}/>}
   </>);
 }
 
@@ -1622,20 +1672,36 @@ function NftSection(){
 function RewardSection(){
   const R=REWARD; const nav=React.useContext(NavCtx);
   const won=(n)=>n.toLocaleString();
+  const visits=(typeof SLS!=="undefined")?SLS.get("hipet_visits",[]):[];
+  const visitSum=visits.reduce((s,v)=>s+(v.reward||0),0);
+  const total=R.total+visitSum;
   return (
     <div className="hsec">
       <div className="aihead"><span className="aiico"><Gift size={24} color="#fff"/></span>
-        <div><div className="aih-t">리워드 센터 · Health Token</div><div className="aih-s">제품 구매·병원·보험·건강활동 등 모든 활동으로 HPET를 적립하세요 <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
+        <div><div className="aih-t">리워드 센터 · Health Token</div><div className="aih-s">제품 구매·병원·보험·건강활동·상담 방문예약 등 모든 활동으로 HPET를 적립하세요 <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
 
       <div className="walhero">
         <div className="wl">누적 Health Token</div>
-        <div className="wv num">🪙 {won(R.total)} <span style={{fontSize:18}}>HPET</span></div>
+        <div className="wv num">🪙 {won(total)} <span style={{fontSize:18}}>HPET</span></div>
         <div className="wsub">
           <div>오늘 획득<b className="num">+{R.todayGain} HPET</b></div>
-          <div>이번 달 적립<b className="num">+{won(R.thisMonth)} HPET</b></div>
-          <div>사용 가능<b className="num">{won(R.total)} HPET</b></div>
+          <div>이번 달 적립<b className="num">+{won(R.thisMonth+visitSum)} HPET</b></div>
+          <div>상담 방문예약 적립<b className="num">+{won(visitSum)} HPET</b></div>
         </div>
       </div>
+
+      {visits.length>0 && <>
+        <div className="bklbl"><Stethoscope size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 상담 방문예약 적립 <span className="sub" style={{fontWeight:600,color:"var(--muted)"}}>· 마루에게 적립됨</span></div>
+        <div className="card">
+          {visits.map((v,i)=>(
+            <div className="vrow" key={i} style={{borderBottom:i<visits.length-1?"1px solid var(--border)":"none"}}>
+              <span className="vic" style={{background:"var(--orange-soft)"}}><Stethoscope size={16} color="var(--orange)"/></span>
+              <div style={{flex:1,minWidth:0}}><div className="vn">{v.vet} <span className="cbadge org">{v.title}</span></div><div className="vm">{v.hosp} · {v.date} {v.time} · 상담 {v.fee}</div></div>
+              <span className="num" style={{fontWeight:900,fontSize:14,color:"var(--green)",flexShrink:0}}>+{(v.reward||0).toLocaleString()} <span style={{fontSize:10,color:"var(--muted)"}}>HPET</span></span>
+            </div>
+          ))}
+        </div>
+      </>}
 
       <div className="bklbl"><Trophy size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 진행 중 미션 <span className="sub" style={{fontWeight:600,color:"var(--muted)"}}>· 달성 시 자동 적립</span></div>
       <div className="card">
@@ -2584,6 +2650,10 @@ css.textContent=`
 .vettags .gr.hp{color:#7C3AED;background:#F1ECFE}
 .vettags .rm{color:#3C9E72;background:var(--green-soft);border-color:transparent}
 .vettags .sd{color:#C98A12;background:#FFF1D6;border-color:transparent}
+.vetbtns{display:flex;gap:6px;margin-top:2px}
+.vetbook{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;color:var(--orange-deep);background:var(--orange-soft);border-radius:999px;padding:7px 12px;flex-shrink:0;cursor:pointer}
+.vetbook:hover{background:#FFD7B8}
+.rewhint{display:flex;align-items:flex-start;gap:8px;background:linear-gradient(135deg,#FFF6EC,#FFEFDB);border:1px solid #F8E4C3;border-radius:12px;padding:11px 13px;margin:10px 0;font-size:12.5px;color:var(--sub);line-height:1.55}
 .vetright{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
 .vetrate{font-size:12.5px;font-weight:800;color:#E8913A}
 .vetrate span{color:var(--muted);font-weight:600;font-size:11px}
