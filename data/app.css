@@ -669,6 +669,23 @@
 /* 브랜드 취급 약국 찾기 버튼(특별제휴 소형카드) */
 .spcard .bpfind{display:flex;width:100%;align-items:center;justify-content:center;gap:6px;margin-top:8px;border-radius:11px;padding:10px 12px;font-weight:800;font-size:11.5px;cursor:pointer;background:rgba(255,255,255,.94);color:#0F766E;border:none;box-shadow:0 3px 10px -6px rgba(0,0,0,.4);}
 .spcard .bpfind:hover{background:#fff;}
+.spcard .bpfind.galbtn{background:rgba(255,255,255,.98);color:#0369A1;}
+/* 메디콥 제품 갤러리 */
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.mgcard{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff;display:flex;flex-direction:column;box-shadow:0 8px 20px -16px rgba(20,40,90,.4);}
+.mgimg{height:130px;background:#F7F9FC;display:grid;place-items:center;overflow:hidden;border-bottom:1px solid var(--border);}
+.mgimg .mgphoto{width:100%;height:130px;object-fit:contain;display:block;background:#fff;}
+.mgbody{padding:11px 12px;display:flex;flex-direction:column;flex:1;}
+.mgname{font-weight:800;font-size:12.8px;color:#1B2A52;line-height:1.35;}
+.mgdesc{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;}
+.mgchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.mgchips span{background:#EAF1FE;color:#2563EB;border-radius:999px;padding:2px 8px;font-size:9.6px;font-weight:800;}
+.mgmeta{display:flex;align-items:center;justify-content:space-between;margin-top:9px;flex:1;}
+.mgspec{font-size:10.5px;color:var(--soft);font-weight:700;}
+.mgprice{font-size:16px;font-weight:800;color:#0F766E;}
+.mglink{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:9px;border:1px solid var(--border);border-radius:10px;padding:8px;font-size:11px;font-weight:800;color:#2563EB;text-decoration:none;background:#F7F9FC;}
+.mglink:hover{background:#EEF3FB;}
+@media(max-width:640px){.mgrid{grid-template-columns:1fr;}}
 /* 취급 약국 모달 요약 배너 */
 .bpsum{display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:#F1FBF4;border:1px solid #CDEFDA;border-radius:11px;padding:9px 12px;font-size:12.5px;color:#166534;font-weight:600;}
 .bpsum b{font-weight:800;}

@@ -33,7 +33,7 @@ const SHOP_PARTNERS = {
     stats: [["헬스인슈", "건기식+보험"], ["만성질환", "맞춤 설계"], ["국내 최초", "특허 서비스"]],
     home: "https://www.jowin.co.kr", q: "조윈 건강기능식품 헬스인슈",
   }, {
-    name: "㈜메디콥", brand: "밴드닥터 · 클린덤", sub: "의료용품·의약외품 특별제휴", pharmacyFind: true,
+    name: "㈜메디콥", brand: "밴드닥터 · 클린덤", sub: "의료용품·의약외품 특별제휴", pharmacyFind: true, gallery: true,
     bg: "linear-gradient(125deg,#0369A1 0%,#0EA5E9 52%,#38BDF8 100%)",
     tagline: "상처관리 전문 밴드닥터(방수·습윤 밴드)와 클린덤 알콜스왑 등 의약외품·의료용품을 전국 약국·의료기관에 공급하는 유통 전문기업 (대표 조희택 · 경기 화성).",
     strengths: [["badge", "밴드닥터", "방수·습윤(하이드로콜로이드) 상처밴드"], ["capsule", "클린덤 알콜스왑", "일회용 소독솜 · 에탄올 80%"], ["home", "전국 약국 공급", "약국·의료기관 유통망"], ["doc", "의약외품 관리", "허가·품질 관리 체계"]],
@@ -360,8 +360,60 @@ function BrandPharmacyModal({ brand, label, onClose }) {
   );
 }
 
+/* ── ㈜메디콥 제품 갤러리 (밴드닥터·클린덤) ──
+   이미지는 리포 내부 경로(data/img/medicorp/*)로 연결 → 파일이 있으면 실사진, 없으면 제품 박스 SVG 폴백.
+   (밴드닥터 공식몰은 http 전용이라 https 사이트에서 핫링크 불가 → 로컬 이미지 방식) */
+const MEDICOP_PRODUCTS = [
+  { key: "aqua", name: "밴드닥터 워터프룹 아쿠아 대형", en: "Band Doctor · Waterproof Aqua", spec: "8매 × 10개", price: "6,000", claims: ["방수기능", "상처보호", "통풍작용"], desc: "초박형 완벽한 방수 — 하이드로콜로이드 방수밴드", img: "./data/img/medicorp/banddoctor-aqua.jpg", col: "#1E6FD8", col2: "#0EA5E9", brand: "밴드닥터" },
+  { key: "soft", name: "밴드닥터 소프트 스킨 일반", en: "Band Doctor · Soft Skin", spec: "10매 × 10개", price: "5,000", claims: ["고신축성", "상처보호", "통풍작용"], desc: "부드럽고 우수한 밀착력 — 고탄력 원단 상처밴드", img: "./data/img/medicorp/banddoctor-soft.jpg", col: "#DB2777", col2: "#F472B6", brand: "밴드닥터" },
+  { key: "swab", name: "메디콥 클린덤 알콜스왑", en: "Alcohol Swab · Clindum", spec: "100매 · 30×35mm", price: "2,500", claims: ["에탄올 80%", "일회용 소독", "개별 포장"], desc: "주사·처치 전 피부 소독용 일회용 알콜솜 (의약외품)", img: "./data/img/medicorp/clindum-swab.jpg", col: "#1E3A8A", col2: "#F59E0B", brand: "메디콥" },
+];
+function MedProductImg({ p }) {
+  const [err, setErr] = useState(false);
+  if (!err) return <img className="mgphoto" src={p.img} alt={p.name} loading="lazy" referrerPolicy="no-referrer" onError={() => setErr(true)} />;
+  return (
+    <svg className="mgphoto" viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label={p.name}>
+      <defs><linearGradient id={`mg-${p.key}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={p.col} /><stop offset="1" stopColor={p.col2} /></linearGradient></defs>
+      <rect width="160" height="120" rx="12" fill={`url(#mg-${p.key})`} />
+      <rect x="16" y="18" width="128" height="46" rx="9" fill="#fff" opacity="0.96" />
+      <text x="80" y="40" textAnchor="middle" fontSize="15" fontWeight="800" fill={p.col} fontFamily="'Noto Sans KR',sans-serif">{p.brand}</text>
+      <text x="80" y="56" textAnchor="middle" fontSize="8.5" fontWeight="700" fill={p.col2} fontFamily="sans-serif">{p.en}</text>
+      <text x="80" y="92" textAnchor="middle" fontSize="12" fontWeight="800" fill="#fff" fontFamily="'Noto Sans KR',sans-serif">{p.spec}</text>
+      <circle cx="132" cy="100" r="12" fill="#fff" opacity="0.2" /><circle cx="28" cy="102" r="7" fill="#fff" opacity="0.18" />
+    </svg>
+  );
+}
+function ProductGalleryModal({ title, onClose }) {
+  return createPortal(
+    <div className="bkov" onClick={onClose}>
+      <div className="bk detailbk" onClick={(e) => e.stopPropagation()}>
+        <div className="bkh"><div className="bt" style={{ fontSize: 15, lineHeight: 1.3 }}><Tag size={16} color="#0EA5E9" style={{ verticalAlign: -3 }} /> {title} <span style={{ fontWeight: 600, color: "var(--muted)", fontSize: 12.5 }}>제품 보기</span></div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
+        <div className="bkb">
+          <div className="mgrid">
+            {MEDICOP_PRODUCTS.map((p) => (
+              <div className="mgcard" key={p.key}>
+                <div className="mgimg"><MedProductImg p={p} /></div>
+                <div className="mgbody">
+                  <div className="mgname">{p.name}</div>
+                  <div className="mgdesc">{p.desc}</div>
+                  <div className="mgchips">{p.claims.map((c) => <span key={c}>{c}</span>)}</div>
+                  <div className="mgmeta"><span className="mgspec">{p.spec}</span><b className="mgprice">₩{p.price}</b></div>
+                  <a className="mglink" href={naverHref(p.name, "메디콥 " + p.brand)} target="_blank" rel="noreferrer noopener"><Search size={12} /> 제품 검색 <ExternalLink size={10} /></a>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="chnote" style={{ marginTop: 6 }}>※ ㈜메디콥 대표 제품(밴드닥터 방수·습윤 밴드, 클린덤 알콜스왑)입니다. 가격·구성은 판매처·시점에 따라 다를 수 있습니다. 의약외품은 사용 전 사용상 주의사항을 확인하세요. 제품 취급 약국은 카드의 <b>취급 약국 찾기</b>에서 확인할 수 있습니다.</div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function ShopPartnerCardSm({ p }) {
   const [pharm, setPharm] = useState(false);
+  const [gal, setGal] = useState(false);
   return (
     <div className="spcard sm" style={{ background: p.bg }}>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
@@ -375,8 +427,10 @@ function ShopPartnerCardSm({ p }) {
         <a className="pri" href={p.home} target="_blank" rel="noreferrer noopener"><MonitorSmartphone size={13} /> 공식몰 <ExternalLink size={11} /></a>
         <a className="ghost" href={naverHref(p.name, p.q)} target="_blank" rel="noreferrer noopener"><Search size={13} /> 검색</a>
       </div>
+      {p.gallery && <button className="bpfind galbtn" onClick={() => setGal(true)}><Tag size={13} /> 밴드닥터·클린덤 제품 보기</button>}
       {p.pharmacyFind && <button className="bpfind" onClick={() => setPharm(true)}><Pill size={13} /> 이 브랜드 취급 약국 찾기</button>}
       {pharm && <BrandPharmacyModal brand={p.name} label={p.brand || p.name} onClose={() => setPharm(false)} />}
+      {gal && <ProductGalleryModal title={p.name} onClose={() => setGal(false)} />}
     </div>
   );
 }
