@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pet-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-u", "-c", "import os,functools,http.server,socketserver;port=int(os.environ.get('PORT','5601'));socketserver.TCPServer(('',port),functools.partial(http.server.SimpleHTTPRequestHandler)).serve_forever()"],
+      "autoPort": true
+    }
+  ]
+}

@@ -245,7 +245,7 @@ function Art({ name, size = 26 }) {
 const SECTIONS = [
   { k: "home", ic: Home, t: "홈", s: "건강지갑 통합 대시보드" }, { k: "ai", ic: Bot, t: "나의 주치의", s: "AI·전문의 상담 · 음성·화상·기기연동" },
   { k: "checkup", ic: ClipboardList, t: "건강검진", s: "예약·결과조회·검진보험" }, { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" }, { k: "manage", ic: HeartPulse, t: "건강관리", s: "건강점수·질병위험도" },
-  { k: "hospital", ic: Building2, t: "병원/예약", s: "병원검색·정밀검사" }, { k: "homecare", ic: HeartHandshake, t: "재가·돌봄", s: "방문요양·간병·돌봄" },
+  { k: "hospital", ic: Building2, t: "병원/약국예약", s: "병원검색·정밀검사" }, { k: "homecare", ic: HeartHandshake, t: "재가·돌봄", s: "방문요양·간병·돌봄" },
   { k: "shop", ic: ShoppingCart, t: "건강쇼핑", s: "영양제·식단·의료기기" },
   { k: "wallet", ic: Wallet, t: "건강금융지갑", s: "자산·토큰·보험금" }, { k: "nft", ic: "NFT", t: "Health NFT", s: "건강인증서" },
   { k: "community", ic: Users, t: "커뮤니티", s: "건강 커뮤니티" }, { k: "mypage", ic: Settings, t: "마이페이지", s: "개인정보·동의관리" },
@@ -278,7 +278,7 @@ function nav(s) { if (_nav) _nav(s); }
 
 /* 통합 검색 인덱스 — [라벨, 설명, 카테고리, 섹션키] */
 const SEARCH_INDEX = [
-  // 병원/예약
+  // 병원/약국예약
   ["병원 검색·예약", "지역·진료과별 제휴 병원 검색 및 실시간 예약", "병원", "hospital"],
   ["소화기내과 전문병원", "위·대장 내시경, 췌장·간 정밀검사", "병원", "hospital"],
   ["영상의학과", "복부 초음파·CT 추적관찰", "병원", "hospital"],

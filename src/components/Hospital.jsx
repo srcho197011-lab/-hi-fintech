@@ -7,7 +7,7 @@ function HospitalSection() {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="hospital" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>병원/예약</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>병원/약국예약</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{data ? `전국 병·의원 ${data.meta.hospitals.toLocaleString()}곳 · 약국 ${data.meta.pharmacies.toLocaleString()}곳` : "전국 병·의원·약국"} · 지역·진료과목 검색 · 실시간 예약 <span style={{ color: "var(--soft)" }}>(심평원 공공데이터 {data ? data.meta.asof : "2026.3"})</span></div></div></div>
       <AiLinkBanner target="hospital" />
       <div className="chtabs">{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>

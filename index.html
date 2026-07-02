@@ -278,7 +278,7 @@ function Art({ name, size = 26 }) {
 const SECTIONS = [
   { k: "home", ic: Home, t: "홈", s: "건강지갑 통합 대시보드" }, { k: "ai", ic: Bot, t: "나의 주치의", s: "AI·전문의 상담 · 음성·화상·기기연동" },
   { k: "checkup", ic: ClipboardList, t: "건강검진", s: "예약·결과조회·검진보험" }, { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" }, { k: "manage", ic: HeartPulse, t: "건강관리", s: "건강점수·질병위험도" },
-  { k: "hospital", ic: Building2, t: "병원/예약", s: "병원검색·정밀검사" }, { k: "homecare", ic: HeartHandshake, t: "재가·돌봄", s: "방문요양·간병·돌봄" },
+  { k: "hospital", ic: Building2, t: "병원/약국예약", s: "병원검색·정밀검사" }, { k: "homecare", ic: HeartHandshake, t: "재가·돌봄", s: "방문요양·간병·돌봄" },
   { k: "shop", ic: ShoppingCart, t: "건강쇼핑", s: "영양제·식단·의료기기" },
   { k: "wallet", ic: Wallet, t: "건강금융지갑", s: "자산·토큰·보험금" }, { k: "nft", ic: "NFT", t: "Health NFT", s: "건강인증서" },
   { k: "community", ic: Users, t: "커뮤니티", s: "건강 커뮤니티" }, { k: "mypage", ic: Settings, t: "마이페이지", s: "개인정보·동의관리" },
@@ -311,7 +311,7 @@ function nav(s) { if (_nav) _nav(s); }
 
 /* 통합 검색 인덱스 — [라벨, 설명, 카테고리, 섹션키] */
 const SEARCH_INDEX = [
-  // 병원/예약
+  // 병원/약국예약
   ["병원 검색·예약", "지역·진료과별 제휴 병원 검색 및 실시간 예약", "병원", "hospital"],
   ["소화기내과 전문병원", "위·대장 내시경, 췌장·간 정밀검사", "병원", "hospital"],
   ["영상의학과", "복부 초음파·CT 추적관찰", "병원", "hospital"],
@@ -619,7 +619,7 @@ const NFT_ISSUE = [
 ];
 const NFT_USE = [
   { n: 1, t: "보험금 청구 자동 증빙", d: "보험금 청구 시 검진·진료 NFT가 자동 증빙으로 제출되어 서류 없이 간편 청구됩니다.", to: "insurance", chip: "보험·치료비" },
-  { n: 2, t: "병원 진료 시 인증서 제출", d: "건강인증서 SBT로 본인 건강상태를 안전하게 증명하고 진료에 활용합니다.", to: "hospital", chip: "병원/예약" },
+  { n: 2, t: "병원 진료 시 인증서 제출", d: "건강인증서 SBT로 본인 건강상태를 안전하게 증명하고 진료에 활용합니다.", to: "hospital", chip: "병원/약국예약" },
   { n: 3, t: "데이터 제공 → 토큰 보상", d: "데이터 제공 동의 증명이 발행되고 건강금융지갑에 Health Token이 적립됩니다.", to: "wallet", chip: "건강금융지갑" },
   { n: 4, t: "가족·기관 선택 공개", d: "필요한 항목만 골라(영지식증명 지향) 가족·기관에 안전하게 공유합니다.", to: "mypage", chip: "마이페이지" },
 ];
@@ -2894,7 +2894,7 @@ function CheckupResults() {
   </>);
 }
 
-/* ====================== 병원/예약 (심평원 공공데이터 연동) ====================== */
+/* ====================== 병원/약국예약 (심평원 공공데이터 연동) ====================== */
 let _hiraPromise = null;
 function loadHira() {
   if (!_hiraPromise) {
@@ -3018,7 +3018,7 @@ function HospitalSection() {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="hospital" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>병원/예약</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>병원/약국예약</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{data ? `전국 병·의원 ${data.meta.hospitals.toLocaleString()}곳 · 약국 ${data.meta.pharmacies.toLocaleString()}곳` : "전국 병·의원·약국"} · 지역·진료과목 검색 · 실시간 예약 <span style={{ color: "var(--soft)" }}>(심평원 공공데이터 {data ? data.meta.asof : "2026.3"})</span></div></div></div>
       <AiLinkBanner target="hospital" />
       <div className="chtabs">{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
