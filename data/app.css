@@ -664,6 +664,15 @@
 .mcard .mmem{display:inline-flex;align-items:center;gap:3px;margin-top:9px;background:#EAF1FE;color:#2563EB;border-radius:999px;padding:2px 8px;font-size:9.4px;font-weight:800;width:fit-content;}
 .mcard .mbtn{display:flex;align-items:center;justify-content:center;gap:5px;border-top:1px solid var(--border);padding:9px;font-size:11.3px;font-weight:800;color:#2563EB;text-decoration:none;background:#F7F9FC;}
 .mcard .mbtn:hover{background:#EEF3FB;}
+.mcard .mbtn.ph{color:#15803D;background:#F1FBF4;border:none;border-top:1px solid var(--border);cursor:pointer;width:100%;}
+.mcard .mbtn.ph:hover{background:#E4F7EA;}
+/* 브랜드 취급 약국 찾기 버튼(특별제휴 소형카드) */
+.spcard .bpfind{display:flex;width:100%;align-items:center;justify-content:center;gap:6px;margin-top:8px;border-radius:11px;padding:10px 12px;font-weight:800;font-size:11.5px;cursor:pointer;background:rgba(255,255,255,.94);color:#0F766E;border:none;box-shadow:0 3px 10px -6px rgba(0,0,0,.4);}
+.spcard .bpfind:hover{background:#fff;}
+/* 취급 약국 모달 요약 배너 */
+.bpsum{display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:#F1FBF4;border:1px solid #CDEFDA;border-radius:11px;padding:9px 12px;font-size:12.5px;color:#166534;font-weight:600;}
+.bpsum b{font-weight:800;}
+.bppilot{display:inline-flex;align-items:center;background:#FEF3E2;color:#B45309;border-radius:999px;padding:1px 8px;font-size:9.8px;font-weight:800;margin-left:2px;}
 @media(max-width:780px){.mallgrid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:440px){.mallgrid{grid-template-columns:1fr;}}
 /* 풀무원·현대그린푸드 50% 축소 컴팩트 카드 */

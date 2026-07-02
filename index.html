@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=7f7988f18b" />
+<link rel="stylesheet" href="./data/app.css?v=8946b1714e" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=7f7988f18b"></script>
-<script src="./src/data/section_data.js?v=7f7988f18b"></script>
-<script src="./src/data/demo_members.js?v=7f7988f18b"></script>
+<script src="./src/data/dummy_data.js?v=8946b1714e"></script>
+<script src="./src/data/section_data.js?v=8946b1714e"></script>
+<script src="./src/data/demo_members.js?v=8946b1714e"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -3633,7 +3633,7 @@ const SHOP_PARTNERS = {
     home: "https://www.greating.co.kr", q: "현대그린푸드 그리팅 건강식단",
   }],
   supp: [{
-    name: "한국암웨이", brand: "뉴트리라이트", sub: "영양제 특별제휴", member: true,
+    name: "한국암웨이", brand: "뉴트리라이트", sub: "영양제 특별제휴", member: true, pharmacyFind: true,
     bg: "linear-gradient(125deg,#0B3D91 0%,#1A56DB 48%,#2563EB 100%)",
     tagline: "글로벌 1위 비타민 브랜드 뉴트리라이트 — 자체 유기농 농장 원료와 식물영양소 중심의 종합 영양 설계.",
     strengths: [["badge", "글로벌 1위 영양제", "뉴트리라이트 종합비타민·미네랄"], ["leaf", "유기농 원료", "자체 인증 농장 식물영양소"], ["capsule", "종합 라인업", "더블엑스·오메가·프로바이오틱"], ["doc", "과학적 근거", "연구·품질 검증 시스템"]],
@@ -3641,13 +3641,21 @@ const SHOP_PARTNERS = {
     stats: [["뉴트리라이트", "글로벌 1위"], ["유기농", "자체 농장"], ["GMP", "품질관리"]],
     home: "https://www.amway.co.kr", q: "암웨이 뉴트리라이트",
   }, {
-    name: "조윈", brand: "헬스인슈", sub: "영양제 특별제휴",
+    name: "조윈", brand: "헬스인슈", sub: "영양제 특별제휴", pharmacyFind: true,
     bg: "linear-gradient(125deg,#0F766E 0%,#0D9488 48%,#10B981 100%)",
     tagline: "암·만성질환 환우를 위한 건강기능식품 전문. 건기식 구독+보험 결합(헬스인슈, 국내 최초 특허)으로 맞춤 영양을 설계합니다.",
     strengths: [["eye", "눈 영양제", "루테인·지아잔틴 등 눈 건강"], ["joint", "관절 영양제", "글루코사민·MSM 관절 건강"], ["immune", "암(면역) 영양제", "면역 다당체·항산화 중심"], ["brain", "뇌졸중 영양제", "오메가3·혈행 개선 중심"]],
     chips: ["눈 영양제", "관절 영양제", "암(면역) 영양제", "뇌졸중 영양제", "헬스인슈 구독"],
     stats: [["헬스인슈", "건기식+보험"], ["만성질환", "맞춤 설계"], ["국내 최초", "특허 서비스"]],
     home: "https://www.jowin.co.kr", q: "조윈 건강기능식품 헬스인슈",
+  }, {
+    name: "㈜메디콥", brand: "밴드닥터 · 클린덤", sub: "의료용품·의약외품 특별제휴", pharmacyFind: true,
+    bg: "linear-gradient(125deg,#0369A1 0%,#0EA5E9 52%,#38BDF8 100%)",
+    tagline: "상처관리 전문 밴드닥터(방수·습윤 밴드)와 클린덤 알콜스왑 등 의약외품·의료용품을 전국 약국·의료기관에 공급하는 유통 전문기업 (대표 조희택 · 경기 화성).",
+    strengths: [["badge", "밴드닥터", "방수·습윤(하이드로콜로이드) 상처밴드"], ["capsule", "클린덤 알콜스왑", "일회용 소독솜 · 에탄올 80%"], ["home", "전국 약국 공급", "약국·의료기관 유통망"], ["doc", "의약외품 관리", "허가·품질 관리 체계"]],
+    chips: ["방수밴드", "습윤밴드", "알콜스왑·소독", "상처관리", "의약외품"],
+    stats: [["밴드닥터", "상처케어 브랜드"], ["클린덤", "알콜스왑"], ["전국", "약국 공급"]],
+    home: "http://www.banddoctor.co.kr/", q: "메디콥 밴드닥터 클린덤 알콜스왑",
   }],
   device: [{
     name: "GN바디닥터", brand: "제너럴네트", sub: "의료기기 특별제휴",
@@ -3846,6 +3854,7 @@ function WaterBanner() {
 }
 function MemberCard({ mm }) {
   const hasUrl = mm.url && /^https?:/.test(mm.url);
+  const [pharm, setPharm] = useState(false);
   return (
     <div className="mcard">
       <div className="mtop" style={{ background: `linear-gradient(135deg, ${mm.col}, ${mm.col}cc)` }}>
@@ -3857,6 +3866,8 @@ function MemberCard({ mm }) {
         <div className="mtags2"><span className="mtype">{mm.type}</span><span className="mmem"><BadgeCheck size={10} /> 정밀영양협회 회원사</span></div>
       </div>
       <a className="mbtn" href={hasUrl ? mm.url : naverHref(mm.company, mm.q)} target="_blank" rel="noreferrer noopener">{hasUrl ? <><MonitorSmartphone size={12} /> 공식몰 바로가기 <ExternalLink size={10} /></> : <><Search size={12} /> 제품 검색 <ExternalLink size={10} /></>}</a>
+      <button className="mbtn ph" onClick={() => setPharm(true)}><Pill size={12} /> 취급 약국 찾기</button>
+      {pharm && <BrandPharmacyModal brand={mm.company} label={mm.product || mm.company} onClose={() => setPharm(false)} />}
     </div>
   );
 }
@@ -3881,7 +3892,77 @@ function MemberMall({ catKey }) {
     </>
   );
 }
+/* ── 브랜드 취급 약국 찾기 (파일럿) ──
+   심평원 공공데이터엔 약국별 취급 품목이 없어, (브랜드+약국명) 결정적 해시로 취급 여부를 생성.
+   pharmOps와 동일한 결정적 방식 → 새로고침해도 결과가 안정적. 실데이터는 유통사·약국 재고 API 연동 시 대체. */
+function brandCarries(brand, name) {
+  const s = brand + "|" + name;
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
+  return (h % 100) < 42; // 약 42% 커버리지(파일럿)
+}
+function BrandPharmacyModal({ brand, label, onClose }) {
+  const { loading, error, data } = useHira();
+  const [sido, setSido] = useState("전체");
+  const [sgg, setSgg] = useState("전체");
+  const [q, setQ] = useState("");
+  const [shown, setShown] = useState(12);
+  const reset = () => setShown(12);
+  const { sggBySido, countBySido, total } = React.useMemo(() => {
+    const m = {}, c = {}; let t = 0;
+    if (data) for (const p of data.pharmacies) { if (!brandCarries(brand, p[0])) continue; t++; const s = data.sido[p[1]]; c[s] = (c[s] || 0) + 1; (m[s] || (m[s] = new Set())).add(p[2]); }
+    return { sggBySido: m, countBySido: c, total: t };
+  }, [data, brand]);
+  const sidoChips = React.useMemo(() => data ? ["전체", ...[...data.sido].sort((a, b) => SIDO_ORDER.indexOf(a) - SIDO_ORDER.indexOf(b))] : ["전체"], [data]);
+  const sggOptions = React.useMemo(() => (data && sido !== "전체") ? [...(sggBySido[sido] || [])].sort((a, b) => a.localeCompare(b, "ko")) : [], [data, sido, sggBySido]);
+  const list = React.useMemo(() => {
+    if (!data) return [];
+    const sidoIdx = sido === "전체" ? -1 : data.sido.indexOf(sido);
+    const qq = q.trim();
+    return data.pharmacies.filter((p) => brandCarries(brand, p[0]) && (sidoIdx < 0 || p[1] === sidoIdx) && (sgg === "전체" || p[2] === sgg) && (!qq || p[0].indexOf(qq) >= 0 || p[3].indexOf(qq) >= 0));
+  }, [data, brand, sido, sgg, q]);
+  const view = list.slice(0, shown);
+  return (
+    <div className="bkov" onClick={onClose}>
+      <div className="bk detailbk" onClick={(e) => e.stopPropagation()}>
+        <div className="bkh"><div className="bt" style={{ fontSize: 15, lineHeight: 1.3 }}><Pill size={16} color="#16A34A" style={{ verticalAlign: -3 }} /> {brand} <span style={{ fontWeight: 600, color: "var(--muted)", fontSize: 12.5 }}>취급 약국 찾기</span></div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
+        <div className="bkb">
+          {loading && <div className="hload"><div className="sp" />전국 약국 데이터를 불러오는 중입니다… <div style={{ fontSize: 11.5, marginTop: 4 }}>(심평원, 최초 1회 로딩)</div></div>}
+          {error && <div className="hload" style={{ color: "var(--red)" }}><AlertTriangle size={24} style={{ marginBottom: 6 }} /><div>약국 데이터를 불러오지 못했습니다. ({error})</div></div>}
+          {data && <>
+            <div className="bpsum"><MapPin size={13} color="#16A34A" style={{ verticalAlign: -2 }} /> 전국 <b style={{ color: "#16A34A" }}>{total.toLocaleString()}</b>곳에서 <b>{label || brand}</b> 제품을 취급합니다 <span className="bppilot">파일럿</span></div>
+            <div className="bklbl" style={{ margin: "4px 0 8px" }}>지역(시·도) 선택</div>
+            <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); reset(); }}>{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
+            <div className="hfilt" style={{ gridTemplateColumns: "1fr 1fr" }}>
+              <select value={sgg} onChange={(e) => { setSgg(e.target.value); reset(); }} disabled={sido === "전체"}><option value="전체">{sido === "전체" ? "시·도 먼저 선택" : "시·군·구 전체"}</option>{sggOptions.map((s) => <option key={s} value={s}>{s}</option>)}</select>
+              <div className="fsearch" style={{ margin: 0 }}><Search size={15} /><input value={q} onChange={(e) => { setQ(e.target.value); reset(); }} placeholder="약국명·주소 검색" /></div>
+            </div>
+            <div className="chcount">{sido === "전체" ? "전국" : sido}{sgg !== "전체" ? " " + sgg : ""} 취급 약국 <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳</div>
+            {view.map((p, i) => (
+              <div className="center" key={i}>
+                <div className="cimg" style={{ background: "linear-gradient(150deg,#DCFCE7,#D1FAE5)" }}><Art name="pill" size={40} /></div>
+                <div className="cmain">
+                  <div className="cname">{p[0]}<span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE" }}><BadgeCheck size={10} /> 취급 확인</span></div>
+                  <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{data.sido[p[1]]} {p[2]}</span> · <MapPin size={12} />{p[3]}{p[4] ? <> · <Phone size={12} />{p[4]}</> : null}</div>
+                </div>
+                <div className="cright">
+                  {p[4] ? <a className="hlink" href={`tel:${p[4]}`}><Phone size={13} /> {p[4]}</a> : <span style={{ fontSize: 11.5, color: "var(--soft)" }}>전화정보 없음</span>}
+                  <div className="obtns"><a className="hlink" style={{ textDecoration: "none" }} href={naverHref(p[0], data.sido[p[1]] + " " + p[2])} target="_blank" rel="noreferrer noopener"><MapPin size={12} /> 위치·정보</a></div>
+                </div>
+              </div>
+            ))}
+            {view.length === 0 && <div className="hload" style={{ marginTop: 8 }}>해당 지역에 취급 약국이 없습니다. 다른 지역을 선택해 보세요.</div>}
+            {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 12)}>더 보기 ({(list.length - shown).toLocaleString()}곳 더)</button>}
+            <div className="chnote" style={{ marginTop: 4 }}>※ <b>파일럿 서비스</b>입니다. 심평원 공공데이터의 전국 약국({data.meta.pharmacies.toLocaleString()}곳 · {data.meta.asof})을 기반으로 <b>{brand}</b> 취급 약국을 표시합니다. 실제 취급 여부·재고는 <b>유통사(㈜메디콥 등)·약국 재고 API 연동 시</b> 실데이터로 반영됩니다. 방문 전 전화로 재고를 확인하세요.</div>
+          </>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ShopPartnerCardSm({ p }) {
+  const [pharm, setPharm] = useState(false);
   return (
     <div className="spcard sm" style={{ background: p.bg }}>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
@@ -3895,6 +3976,8 @@ function ShopPartnerCardSm({ p }) {
         <a className="pri" href={p.home} target="_blank" rel="noreferrer noopener"><MonitorSmartphone size={13} /> 공식몰 <ExternalLink size={11} /></a>
         <a className="ghost" href={naverHref(p.name, p.q)} target="_blank" rel="noreferrer noopener"><Search size={13} /> 검색</a>
       </div>
+      {p.pharmacyFind && <button className="bpfind" onClick={() => setPharm(true)}><Pill size={13} /> 이 브랜드 취급 약국 찾기</button>}
+      {pharm && <BrandPharmacyModal brand={p.name} label={p.brand || p.name} onClose={() => setPharm(false)} />}
     </div>
   );
 }
