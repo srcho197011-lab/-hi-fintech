@@ -39,6 +39,7 @@ cat > _h.txt <<'HEAD'
 <script src="./src/data/demo_members.js"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
+import { createPortal } from "react-dom";
 HEAD
 
 cat > _t.txt <<'TAIL'

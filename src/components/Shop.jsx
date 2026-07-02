@@ -277,13 +277,12 @@ function MemberMall({ catKey }) {
   );
 }
 /* ── 브랜드 취급 약국 찾기 (파일럿) ──
-   심평원 공공데이터엔 약국별 취급 품목이 없어, (브랜드+약국명) 결정적 해시로 취급 여부를 생성.
-   pharmOps와 동일한 결정적 방식 → 새로고침해도 결과가 안정적. 실데이터는 유통사·약국 재고 API 연동 시 대체. */
-function brandCarries(brand, name) {
-  const s = brand + "|" + name;
+   심평원 공공데이터엔 약국별 취급 품목이 없어, 시·군·구별로 지역 규모의 30%(최대 50곳)를
+   (브랜드+약국명) 결정적 해시 순위로 선정 → 새로고침해도 결과가 안정적. 실데이터는 유통사·약국 재고 API 연동 시 대체. */
+function pnHash(s) {
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
-  return (h % 100) < 42; // 약 42% 커버리지(파일럿)
+  return h >>> 0;
 }
 function BrandPharmacyModal({ brand, label, onClose }) {
   const { loading, error, data } = useHira();
@@ -292,21 +291,36 @@ function BrandPharmacyModal({ brand, label, onClose }) {
   const [q, setQ] = useState("");
   const [shown, setShown] = useState(12);
   const reset = () => setShown(12);
-  const { sggBySido, countBySido, total } = React.useMemo(() => {
-    const m = {}, c = {}; let t = 0;
-    if (data) for (const p of data.pharmacies) { if (!brandCarries(brand, p[0])) continue; t++; const s = data.sido[p[1]]; c[s] = (c[s] || 0) + 1; (m[s] || (m[s] = new Set())).add(p[2]); }
-    return { sggBySido: m, countBySido: c, total: t };
+  // 시·군·구별 취급 약국 선정: 지역 약국 수의 30%(최소 1, 최대 50곳)를 해시 순위로 결정적 선택
+  const carry = React.useMemo(() => {
+    const set = new Set();
+    if (!data) return set;
+    const byDist = {};
+    for (let i = 0; i < data.pharmacies.length; i++) { const p = data.pharmacies[i]; const k = p[1] + "|" + p[2]; (byDist[k] || (byDist[k] = [])).push(i); }
+    for (const k in byDist) {
+      const idxs = byDist[k];
+      const n = Math.min(50, Math.max(1, Math.round(idxs.length * 0.3)));
+      if (idxs.length <= n) { for (const i of idxs) set.add(i); continue; }
+      const ranked = idxs.map((i) => [i, pnHash(brand + "|" + data.pharmacies[i][0])]).sort((a, b) => a[1] - b[1]);
+      for (let j = 0; j < n; j++) set.add(ranked[j][0]);
+    }
+    return set;
   }, [data, brand]);
+  const { sggBySido, countBySido, total } = React.useMemo(() => {
+    const m = {}, c = {};
+    if (data) for (const i of carry) { const p = data.pharmacies[i]; const s = data.sido[p[1]]; c[s] = (c[s] || 0) + 1; (m[s] || (m[s] = new Set())).add(p[2]); }
+    return { sggBySido: m, countBySido: c, total: carry.size };
+  }, [data, carry]);
   const sidoChips = React.useMemo(() => data ? ["전체", ...[...data.sido].sort((a, b) => SIDO_ORDER.indexOf(a) - SIDO_ORDER.indexOf(b))] : ["전체"], [data]);
   const sggOptions = React.useMemo(() => (data && sido !== "전체") ? [...(sggBySido[sido] || [])].sort((a, b) => a.localeCompare(b, "ko")) : [], [data, sido, sggBySido]);
   const list = React.useMemo(() => {
     if (!data) return [];
     const sidoIdx = sido === "전체" ? -1 : data.sido.indexOf(sido);
     const qq = q.trim();
-    return data.pharmacies.filter((p) => brandCarries(brand, p[0]) && (sidoIdx < 0 || p[1] === sidoIdx) && (sgg === "전체" || p[2] === sgg) && (!qq || p[0].indexOf(qq) >= 0 || p[3].indexOf(qq) >= 0));
-  }, [data, brand, sido, sgg, q]);
+    return data.pharmacies.filter((p, i) => carry.has(i) && (sidoIdx < 0 || p[1] === sidoIdx) && (sgg === "전체" || p[2] === sgg) && (!qq || p[0].indexOf(qq) >= 0 || p[3].indexOf(qq) >= 0));
+  }, [data, carry, sido, sgg, q]);
   const view = list.slice(0, shown);
-  return (
+  return createPortal(
     <div className="bkov" onClick={onClose}>
       <div className="bk detailbk" onClick={(e) => e.stopPropagation()}>
         <div className="bkh"><div className="bt" style={{ fontSize: 15, lineHeight: 1.3 }}><Pill size={16} color="#16A34A" style={{ verticalAlign: -3 }} /> {brand} <span style={{ fontWeight: 600, color: "var(--muted)", fontSize: 12.5 }}>취급 약국 찾기</span></div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
@@ -341,7 +355,8 @@ function BrandPharmacyModal({ brand, label, onClose }) {
           </>}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
