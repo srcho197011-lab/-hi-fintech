@@ -17,6 +17,8 @@
 
 # 펫 사이트(HI-PET) — Vercel 루트 디렉터리로 배포
 !/pet
+# 안전관리 사이트(Hi-Safety / AI-SM) — Vercel 루트 디렉터리로 배포
+!/sm
 # 휴먼 사이트 공유 썸네일(OG)
 !/og-human.png
 # 펫 설계계획서(참고용)
