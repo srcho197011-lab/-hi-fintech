@@ -161,7 +161,7 @@ const SAFETY = { score:94, grade:"A", status:"안전 양호",
   ],
   prescription:"B동 UPS 3호기 배터리 온도 상승 추세 — 예지정비 점검을 권고합니다." };
 
-const WALLET = { total:6420000, label:"안전 리워드 자산", items:[
+const WALLET = { total:6420000, label:"안전지갑 자산", items:[
   { label:"Safety Token", value:"18,600", unit:"HSAFE", icon:Coins, bg:"var(--navy-soft)", fg:"var(--navy)" },
   { label:"보험료 절감(연)", value:"3,840,000", unit:"원", icon:ShieldCheck, bg:"var(--green-soft)", fg:"var(--green)" },
   { label:"안전 포인트", value:"254,000", unit:"P", icon:Sparkles, bg:"var(--cyan-soft)", fg:"var(--cyan-deep)" },
@@ -382,6 +382,61 @@ const REWARD = {
   ],
 };
 
+/* ===== 안전지갑 HSAFE 토큰의 쓰임 — 3개 준비금(Fund) 서브섹션 =====
+   총 보유 18,600 HSAFE(1 HSAFE ≈ ₩100 예시)를 목적별 준비금으로 배분 */
+const TOKEN_TOTAL = 18600;      // 총 보유 HSAFE
+const HSAFE_KRW = 100;          // 예시 환산단가(원/HSAFE)
+const FUNDS = [
+  { key:"reserve", tab:"보험료 준비금", name:"보험료 준비금", icon:ShieldCheck, color:"var(--green)", bg:"var(--green-soft)",
+    tagline:"화재·재난보험료를 미리 적립해 갱신 부담을 낮춥니다",
+    balance:8400, target:12000,
+    purpose:"화재특종·재난보험료를 토큰으로 사전 적립하고 갱신 시점 보험료에 자동 충당합니다. 안전점수 A등급 유지로 발생한 절감분을 준비금으로 이월해, 보험료 인상·자기부담을 완충합니다.",
+    inflow:[
+      { t:"무사고 유지 보너스", d:"분기 무청구 유지분의 60%", ic:ShieldCheck },
+      { t:"안전점수 A등급 절감분 이월", d:"손해율 개선분 준비금 적립", ic:TrendingUp },
+      { t:"안전점검 이행 적립분 일부", d:"정기점검 완료 리워드 배분", ic:ClipboardCheck },
+    ],
+    outflow:[
+      { t:"연간 보험료 자동 충당", v:"₩3,840,000", d:"갱신 보험료의 일부를 준비금에서 충당" },
+      { t:"자기부담금 대비 적립", v:"적립형", d:"소액 사고 자기부담금 대비" },
+      { t:"갱신 보험료 인상 완충", v:"이월", d:"차기 계약 인상분 흡수" },
+    ],
+    partner:"하이젠케어㈜ · 제휴 손해보험사", go:"화재특종보험" },
+  { key:"equip", tab:"안전장비·업그레이드", name:"안전장비·시스템 업그레이드", icon:Flame, color:"var(--danger)", bg:"var(--danger-soft)",
+    tagline:"화재·재난 안전장비 구입·교체와 관제 시스템 고도화 자금",
+    balance:5200, target:9000,
+    purpose:"자동소화·전원·센서·대피 장비의 신규 구입·노후 교체와 AI 관제 시스템 고도화 자금으로 사용합니다. 위험개선·데이터 제공으로 적립한 토큰을 설비 투자에 재투입해 안전점수를 끌어올립니다.",
+    inflow:[
+      { t:"위험개선 조치 적립분", d:"핫스팟·열화 개선 리워드", ic:TrendingUp },
+      { t:"안전데이터 제공 동의 적립", d:"DID·센서 연동 리워드", ic:Database },
+      { t:"분기 안전 리워드 배분", d:"우수 등급 인센티브", ic:Gift },
+    ],
+    outflow:[
+      { t:"자동소화 모듈 증설", v:"EGS+", d:"랙단위 청정소화 확장", ic:Flame },
+      { t:"UPS 배터리 선제 교체", v:"아이에프텍", d:"열화 배터리 예지 교체", ic:Battery },
+      { t:"열화상 카메라 증설", v:"ZEN-iPlus", d:"핫스팟 감시 범위 확대", ic:Video },
+      { t:"AI 관제 라이선스 업그레이드", v:"ZEN-iPlus", d:"영상 AI 모델 고도화", ic:Cpu },
+      { t:"비상 산소호흡기 교체", v:"샐릭스", d:"대피 장비 주기 교체", ic:Wind },
+    ],
+    partner:"EGS+ · 아이에프텍 · ZEN-iPlus · 샐릭스", go:"참여사 생태계" },
+  { key:"maint", tab:"유지보수", name:"유지보수 준비금", icon:Settings, color:"var(--cyan-deep)", bg:"var(--cyan-soft)",
+    tagline:"정기점검·예지정비·부품 교체 등 유지관리 비용 적립",
+    balance:3100, target:6000,
+    purpose:"정기점검·예지정비·부품 교체주기·유지관리 계약 비용을 상시 적립합니다. 갑작스런 정비 비용을 준비금으로 평탄화해 무중단 운영과 설비 수명 연장을 지원합니다.",
+    inflow:[
+      { t:"안전점검 이행 적립분", d:"소방·전기 자가점검 완료", ic:ClipboardCheck },
+      { t:"예지정비 실행 적립분", d:"AI 권고 정비 이행", ic:Cpu },
+      { t:"교육·훈련 이수 적립분", d:"관리자·근무자 교육", ic:Users },
+    ],
+    outflow:[
+      { t:"소방시설 정기점검비", v:"반기", d:"자동소화·경보설비 점검", ic:ClipboardCheck },
+      { t:"UPS 예지정비 계약", v:"월", d:"예지진단 유지관리", ic:Cpu },
+      { t:"센서 교정·교체", v:"연", d:"IoT 센서 캘리브레이션", ic:Radio },
+      { t:"소화약제 리필", v:"주기", d:"청정소화약제 보충", ic:Flame },
+    ],
+    partner:"참여사 유지관리 계약", go:"실시간 관제" },
+];
+
 /* ===== 안전 증빙 NFT / SBT (중대재해 대응) ===== */
 const CERTS = [
   { t:"소방시설 정기점검 리포트", ic:ClipboardCheck, date:"2026-07-01", desc:"자동소화·경보설비 점검 결과", sbt:true },
@@ -396,14 +451,14 @@ const MENU = [
   { label:"홈", icon:Home }, { label:"안전 온톨로지", icon:Network },
   { label:"실시간 관제", icon:Radio }, { label:"AI 위험예측", icon:Cpu },
   { label:"대상 솔루션", icon:Building2 }, { label:"화재특종보험", icon:ShieldCheck },
-  { label:"안전 리워드", icon:Gift }, { label:"참여사 생태계", icon:Users },
+  { label:"안전지갑", icon:Gift }, { label:"참여사 생태계", icon:Users },
   { label:"안전 증빙", icon:Award }, { label:"관리자", icon:User },
 ];
 
 const QUICK = [
   { label:"온톨로지", art:"ontology", go:"안전 온톨로지" }, { label:"실시간 관제", art:"monitor", go:"실시간 관제" },
   { label:"위험예측", art:"predict", go:"AI 위험예측" }, { label:"보험 조회", art:"shield", go:"화재특종보험" },
-  { label:"안전지갑", art:"wallet", go:"안전 리워드" }, { label:"리워드", art:"gift", go:"안전 리워드" },
+  { label:"안전지갑", art:"wallet", go:"안전지갑" }, { label:"리워드", art:"gift", go:"안전지갑" },
   { label:"안전점수", art:"score", go:"홈" }, { label:"알림센터", art:"alarm", count:3 },
 ];
 
@@ -698,7 +753,7 @@ function WalletCard(){
           <span style={{width:34,height:34,borderRadius:11,background:"rgba(255,255,255,.16)",display:"grid",placeItems:"center"}}><Wallet size={19}/></span>
           <h3 style={{margin:0,fontSize:17,fontWeight:800}}>{WALLET.label}</h3>
         </div>
-        <button onClick={()=>nav&&nav("안전 리워드")} style={{color:"#BFE6F1",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:2}}>내역<ChevronRight size={15}/></button>
+        <button onClick={()=>nav&&nav("안전지갑")} style={{color:"#BFE6F1",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:2}}>내역<ChevronRight size={15}/></button>
       </div>
       <div style={{fontSize:12.5,color:"#BFD5EA"}}>누적 절감·적립 가치</div>
       <div style={{fontSize:34,fontWeight:900,letterSpacing:-1,margin:"2px 0 16px"}} className="num">₩ {v.toLocaleString()}</div>
@@ -816,7 +871,7 @@ function TokenCard(){
   const nav=React.useContext(NavCtx);
   return (
     <Card>
-      <CardHead icon={Coins} title="Safety Token" action="적립처" onAction={()=>nav&&nav("안전 리워드")} fg="var(--amber)" bg="var(--amber-soft)"/>
+      <CardHead icon={Coins} title="Safety Token" action="적립처" onAction={()=>nav&&nav("안전지갑")} fg="var(--amber)" bg="var(--amber-soft)"/>
       <div style={{textAlign:"center",padding:"6px 0 12px"}}>
         <div style={{fontSize:34,fontWeight:900,color:"var(--navy)"}} className="num">{REWARD.balance}</div>
         <div style={{fontSize:12.5,color:"var(--muted)",fontWeight:700}}>HSAFE 보유</div>
@@ -1306,40 +1361,144 @@ function ClaimFlow(){
   );
 }
 
-/* ============================ REWARD SECTION ============================ */
-function RewardSection(){
-  const total=REWARD.channels.reduce((n,g)=>n+g.items.length,0);
+/* ============================ REWARD (안전지갑) SECTION ============================ */
+const won=(n)=>"₩"+n.toLocaleString();
+function ProgressBar({value,target,color}){
+  const pct=Math.min(100,Math.round(value/target*100));
   return (
-    <div style={{display:"flex",flexDirection:"column",flex:1}}>
-      <SecHead icon={Gift} title="안전 리워드 (HSAFE)" desc="안전을 도입할수록 비용은 감소 — 안전점검·위험개선·무사고 유지로 토큰을 적립합니다" fg="var(--amber)" bg="var(--amber-soft)"/>
-      <Card style={{marginBottom:18,background:"linear-gradient(150deg,#0B2545,#123A63 60%,#0E7490)",color:"#fff",border:"none"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:14}}>
-          <div>
-            <div style={{fontSize:12.5,color:"#BFD5EA",fontWeight:700}}>Safety Token 보유</div>
-            <div style={{fontSize:38,fontWeight:900}} className="num">{REWARD.balance} <span style={{fontSize:16,color:"#BFE6F1"}}>{REWARD.unit}</span></div>
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:11.5,color:"var(--muted)",fontWeight:700,marginBottom:5}}>
+        <span>적립 {value.toLocaleString()} HSAFE</span><span>목표 {target.toLocaleString()}</span></div>
+      <div style={{height:8,background:"var(--border)",borderRadius:99,overflow:"hidden"}}>
+        <div style={{width:pct+"%",height:"100%",background:color,borderRadius:99,transition:"width .4s"}}/></div>
+      <div style={{fontSize:11,color:color,fontWeight:800,marginTop:4}}>{pct}% 적립 · 약 {won(value*HSAFE_KRW)} 상당</div>
+    </div>
+  );
+}
+function AllocBar(){
+  const free=TOKEN_TOTAL-FUNDS.reduce((n,f)=>n+f.balance,0);
+  const segs=[...FUNDS.map(f=>({label:f.name,v:f.balance,c:f.color})),{label:"미배분 가용",v:free,c:"#B9C6D4"}];
+  return (
+    <div>
+      <div style={{display:"flex",height:16,borderRadius:99,overflow:"hidden",boxShadow:"inset 0 0 0 1px rgba(255,255,255,.15)"}}>
+        {segs.map((s,i)=>(<div key={i} title={s.label} style={{width:(s.v/TOKEN_TOTAL*100)+"%",background:s.c}}/>))}
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:"6px 16px",marginTop:12}}>
+        {segs.map((s,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:7,fontSize:12}}>
+            <span style={{width:11,height:11,borderRadius:3,background:s.c}}/>
+            <span style={{color:"#D3E1EE",fontWeight:600}}>{s.label}</span>
+            <b style={{color:"#fff"}} className="num">{s.v.toLocaleString()}</b>
+          </div>))}
+      </div>
+    </div>
+  );
+}
+function FundDetail({f}){
+  const nav=React.useContext(NavCtx);
+  const Icon=f.icon;
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+      <Card>
+        <div style={{display:"flex",gap:14,alignItems:"center",flexWrap:"wrap",marginBottom:14}}>
+          <span style={{width:52,height:52,borderRadius:16,background:f.color,color:"#fff",display:"grid",placeItems:"center",flexShrink:0}}><Icon size={28}/></span>
+          <div style={{flex:1,minWidth:180}}>
+            <div style={{fontSize:19,fontWeight:900}}>{f.name}</div>
+            <div style={{fontSize:12.5,color:"var(--muted)",fontWeight:600}}>{f.tagline}</div>
           </div>
-          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-            {REWARD.usage.map((u,i)=>{ const Icon=u.ic; return (
-              <div key={i} style={{background:"rgba(255,255,255,.12)",borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:8,fontSize:12.5,fontWeight:700}}>
-                <Icon size={15} color="#BFE6F1"/>{u.t}</div>);})}
-          </div>
+          <div style={{minWidth:180,flex:1}}><ProgressBar value={f.balance} target={f.target} color={f.color}/></div>
         </div>
+        <div style={{fontSize:13.5,color:"var(--sub)",lineHeight:1.7,background:f.bg,border:"1px solid var(--border)",borderRadius:14,padding:"14px 16px"}}>{f.purpose}</div>
       </Card>
       <div className="grid-2-r">
-        {REWARD.channels.map((g)=>{ const Icon=g.ic; return (
-          <Card key={g.group}>
-            <CardHead icon={Icon} title={g.group} fg="var(--amber)" bg="var(--amber-soft)"/>
-            <div style={{display:"flex",flexDirection:"column",gap:9}}>
-              {g.items.map((it,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 13px",border:"1px solid var(--border)",borderRadius:13}}>
-                  <div style={{flex:1}}><div style={{fontSize:13.5,fontWeight:700}}>{it.t}</div><div style={{fontSize:12,color:"var(--muted)"}}>{it.d}</div></div>
-                  <span style={{fontSize:14,fontWeight:900,color:"var(--green)"}}>{it.amt}</span>
-                </div>))}
-            </div>
-          </Card>);})}
+        <Card>
+          <CardHead icon={Plus} title="적립 재원 (Inflow)" fg="var(--amber)" bg="var(--amber-soft)"/>
+          <div style={{display:"flex",flexDirection:"column",gap:9}}>
+            {f.inflow.map((it,i)=>{ const I=it.ic; return (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:11,padding:"11px 13px",border:"1px solid var(--border)",borderRadius:13}}>
+                <span style={{width:32,height:32,borderRadius:10,background:"var(--amber-soft)",color:"var(--amber)",display:"grid",placeItems:"center",flexShrink:0}}><I size={16}/></span>
+                <div style={{flex:1}}><div style={{fontSize:13.5,fontWeight:700}}>{it.t}</div><div style={{fontSize:12,color:"var(--muted)"}}>{it.d}</div></div>
+              </div>);})}
+          </div>
+        </Card>
+        <Card>
+          <CardHead icon={ArrowRightLeft} title="사용처 (Outflow)" fg={f.color} bg={f.bg}/>
+          <div style={{display:"flex",flexDirection:"column",gap:9}}>
+            {f.outflow.map((it,i)=>{ const I=it.ic||CheckCircle2; return (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:11,padding:"11px 13px",border:"1px solid var(--border)",borderRadius:13}}>
+                <span style={{width:32,height:32,borderRadius:10,background:f.bg,color:f.color,display:"grid",placeItems:"center",flexShrink:0}}><I size={16}/></span>
+                <div style={{flex:1}}><div style={{fontSize:13.5,fontWeight:700}}>{it.t}</div><div style={{fontSize:12,color:"var(--muted)"}}>{it.d}</div></div>
+                <span style={{fontSize:12.5,fontWeight:800,color:f.color,background:f.bg,padding:"3px 10px",borderRadius:999,whiteSpace:"nowrap"}}>{it.v}</span>
+              </div>);})}
+          </div>
+        </Card>
       </div>
-      <div style={{fontSize:11.5,color:"var(--muted)",marginTop:14,lineHeight:1.6}}>
-        토큰은 포인트(오프체인)로 운영되며 플랫폼 환전 후 사용됩니다. 가상자산·블록체인 적용은 관련 법제화 이후 검토합니다.
+      <Card style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+        <span style={{fontSize:12.5,color:"var(--muted)",fontWeight:700}}>연계 참여사</span>
+        <b style={{fontSize:13.5,flex:1,minWidth:160}}>{f.partner}</b>
+        <Btn small onClick={()=>nav&&nav(f.go)}><ExternalLink size={15}/>{f.go} 바로가기</Btn>
+        <Btn small variant="soft" onClick={()=>toast(f.name+" 배분·집행은 데모입니다")}><Settings size={15}/>배분 조정</Btn>
+      </Card>
+    </div>
+  );
+}
+function RewardSection(){
+  const [tab,setTab]=useState("전체 배분");
+  const nav=React.useContext(NavCtx);
+  const free=TOKEN_TOTAL-FUNDS.reduce((n,f)=>n+f.balance,0);
+  const cur=FUNDS.find(f=>f.tab===tab);
+  return (
+    <div style={{display:"flex",flexDirection:"column",flex:1}}>
+      <SecHead icon={Wallet} title="안전지갑 (HSAFE)" desc="안전을 도입할수록 비용은 감소 — 적립한 토큰을 목적별 준비금으로 나눠 보험료·안전투자·유지보수에 사용합니다" fg="var(--amber)" bg="var(--amber-soft)"/>
+      <Card style={{marginBottom:18,background:"linear-gradient(150deg,#0B2545,#123A63 58%,#0E7490)",color:"#fff",border:"none"}}>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:16,marginBottom:16}}>
+          <div>
+            <div style={{fontSize:12.5,color:"#BFD5EA",fontWeight:700}}>Safety Token 총 보유</div>
+            <div style={{fontSize:38,fontWeight:900}} className="num">{TOKEN_TOTAL.toLocaleString()} <span style={{fontSize:16,color:"#BFE6F1"}}>HSAFE</span></div>
+            <div style={{fontSize:12.5,color:"#9FC0DA",marginTop:2}}>약 {won(TOKEN_TOTAL*HSAFE_KRW)} 상당 · 미배분 가용 {free.toLocaleString()} HSAFE</div>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <Btn small variant="soft" onClick={()=>toast("토큰 배분은 데모입니다")}><ArrowRightLeft size={15}/>준비금 배분</Btn>
+          </div>
+        </div>
+        <AllocBar/>
+      </Card>
+
+      <Tabs tabs={["전체 배분","보험료 준비금","안전장비·업그레이드","유지보수"]} active={tab} onChange={setTab}/>
+
+      {tab==="전체 배분" ? <>
+        <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>토큰의 쓰임 — 목적별 준비금</div>
+        <div className="grid-3" style={{marginBottom:20}}>
+          {FUNDS.map((f)=>{ const Icon=f.icon; return (
+            <Card key={f.key} style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div style={{display:"flex",alignItems:"center",gap:11}}>
+                <span style={{width:44,height:44,borderRadius:13,background:f.color,color:"#fff",display:"grid",placeItems:"center",flexShrink:0}}><Icon size={22}/></span>
+                <div><div style={{fontSize:15.5,fontWeight:900,lineHeight:1.2}}>{f.name}</div>
+                  <div style={{fontSize:11.5,color:"var(--muted)",fontWeight:600}}>{f.tagline}</div></div>
+              </div>
+              <ProgressBar value={f.balance} target={f.target} color={f.color}/>
+              <div style={{fontSize:12.5,color:"var(--sub)",lineHeight:1.6,flex:1}}>{f.purpose.split(".")[0]}.</div>
+              <button onClick={()=>setTab(f.tab)} style={{fontSize:12.5,fontWeight:700,color:f.color,display:"flex",alignItems:"center",gap:3}}>세부 내용 보기<ChevronRight size={14}/></button>
+            </Card>);})}
+        </div>
+        <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>토큰 적립처 — 어떻게 쌓이나</div>
+        <div className="grid-2-r">
+          {REWARD.channels.map((g)=>{ const Icon=g.ic; return (
+            <Card key={g.group}>
+              <CardHead icon={Icon} title={g.group} fg="var(--amber)" bg="var(--amber-soft)"/>
+              <div style={{display:"flex",flexDirection:"column",gap:9}}>
+                {g.items.map((it,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 13px",border:"1px solid var(--border)",borderRadius:13}}>
+                    <div style={{flex:1}}><div style={{fontSize:13.5,fontWeight:700}}>{it.t}</div><div style={{fontSize:12,color:"var(--muted)"}}>{it.d}</div></div>
+                    <span style={{fontSize:14,fontWeight:900,color:"var(--green)"}}>{it.amt}</span>
+                  </div>))}
+              </div>
+            </Card>);})}
+        </div>
+      </> : <FundDetail f={cur}/>}
+
+      <div style={{fontSize:11.5,color:"var(--muted)",marginTop:16,lineHeight:1.7}}>
+        토큰은 포인트(오프체인)로 운영되며 플랫폼 환전 후 사용됩니다. 준비금 배분·집행·환산단가(예: 1 HSAFE≈₩100)는 소개용 예시(데모)이며 실제 적립률·사용처·정산은 참여사 계약 및 관련 법령에 따릅니다. 가상자산·블록체인 적용은 관련 법제화 이후 검토합니다.
       </div>
     </div>
   );
@@ -1520,7 +1679,7 @@ function App(){
         : active==="AI 위험예측" ? <PredictSection/>
         : active==="대상 솔루션" ? <SegmentSection/>
         : active==="화재특종보험" ? <InsuranceSection/>
-        : active==="안전 리워드" ? <RewardSection/>
+        : active==="안전지갑" ? <RewardSection/>
         : active==="참여사 생태계" ? <PartnerSection/>
         : active==="안전 증빙" ? <CertSection/>
         : active==="관리자" ? <AdminSection/>
