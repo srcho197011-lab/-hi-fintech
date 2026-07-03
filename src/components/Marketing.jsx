@@ -171,6 +171,46 @@ function MktLiveAgent() {
   </>);
 }
 
+/* ── 광고 영상 플레이어 (SVG/CSS 애니메이션 · 씬 타이밍 재생) ── */
+function _parseSec(s) { const m = (s || "").match(/(\d+)\D+?(\d+)/); return m ? [+m[1], +m[2]] : [0, 15]; }
+function AdSceneVis({ tag, color }) {
+  if (/문제/.test(tag)) return (<svg className="ad-graph" viewBox="0 0 130 80"><polyline points="8,68 34,60 60,56 84,32 118,8" fill="none" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" /><circle cx="118" cy="8" r="6" fill="#fff" /><text x="118" y="-2" fontSize="11" fill="#fff" textAnchor="middle" fontWeight="800">↑</text></svg>);
+  if (/솔루션|제품/.test(tag)) return (<svg className="ad-prod" viewBox="0 0 70 90"><rect x="22" y="24" width="26" height="58" rx="7" fill="#fff" /><rect x="27" y="12" width="16" height="14" rx="3" fill="#fff" opacity=".85" /><rect x="22" y="46" width="26" height="24" fill={color} opacity=".35" /><path d="M28 58h14M28 64h10" stroke={color} strokeWidth="2.4" strokeLinecap="round" /></svg>);
+  if (/CTA/.test(tag)) return (<div className="ad-ctabtn" style={{ color }}>무료 건강분석 받기 →</div>);
+  if (/UGC/.test(tag)) return (<svg className="ad-prod" viewBox="0 0 80 80"><circle cx="40" cy="30" r="15" fill="#fff" /><path d="M16 74c0-15 11-24 24-24s24 9 24 24z" fill="#fff" /></svg>);
+  return (<div className="ad-hook">?</div>);
+}
+function AdVideoPlayer({ creative }) {
+  const scenes = creative.gen.scenes.map((s) => ({ vis: s[1], sub: s[2], tag: s[3], range: _parseSec(s[0]) }));
+  const total = scenes[scenes.length - 1].range[1] || 15;
+  const [t, setT] = useState(0); const [playing, setPlaying] = useState(true);
+  useEffect(() => { if (!playing) return; const id = setInterval(() => { setT((x) => { const n = Math.round((x + 0.1) * 10) / 10; if (n >= total) { setPlaying(false); return total; } return n; }); }, 100); return () => clearInterval(id); }, [playing, total]);
+  const idx = Math.max(0, scenes.findIndex((s) => t >= s.range[0] && t < s.range[1]));
+  const cur = scenes[idx] || scenes[scenes.length - 1];
+  const c = creative.color; const ended = !playing && t >= total;
+  const hue = ["#1E293B", "#7C1D3E", "#134E4A", "#4C1D95"][idx % 4];
+  const replay = () => { setT(0); setPlaying(true); };
+  const reels = /릴스/.test(creative.fmt);
+  return (
+    <div className="adplayer">
+      <div className="adstage" style={{ background: `linear-gradient(160deg, ${c}, ${hue} 60%, #0B1220)` }}>
+        <span className="ad-badge">{reels ? "REELS" : "SHORTS"}</span>
+        <span className="ad-scenetag" style={{ background: c }}>{cur.tag}</span>
+        <div className="ad-vis" key={"v" + idx}><AdSceneVis tag={cur.tag} color={c} /></div>
+        <div className="ad-caption" key={"c" + idx}>{cur.sub}</div>
+        <div className="ad-brand">HI-Fin Tech</div>
+        {ended && <button className="ad-bigbtn" onClick={replay}><RotateCcw size={22} /></button>}
+        {!playing && !ended && <button className="ad-bigbtn" onClick={() => setPlaying(true)}><Play size={26} /></button>}
+      </div>
+      <div className="ad-ctrl">
+        <button onClick={() => (playing ? setPlaying(false) : ended ? replay() : setPlaying(true))}>{playing ? <Pause size={14} /> : <Play size={14} />}</button>
+        <div className="ad-prog" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setT(Math.round((e.clientX - r.left) / r.width * total * 10) / 10); }}><i style={{ width: (t / total * 100) + "%", background: c }} /></div>
+        <span className="ad-time">0:{String(Math.floor(t)).padStart(2, "0")} / 0:{total}</span>
+      </div>
+    </div>
+  );
+}
+
 /* ── AI 크리에이티브 생성 결과 데모 모달 ── */
 function CreativeGenModal({ creative, onClose }) {
   const g = creative.gen, c = creative.color;
@@ -185,16 +225,7 @@ function CreativeGenModal({ creative, onClose }) {
         <div className="ontmbody">
           {creative.kind === "video" && (<>
             <div className="mktgen-video">
-              <svg className="mktgen-thumb" viewBox="0 0 180 320" xmlns="http://www.w3.org/2000/svg">
-                <defs><linearGradient id="ctgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={c} /><stop offset="1" stopColor="#0B1220" /></linearGradient></defs>
-                <rect width="180" height="320" rx="14" fill="url(#ctgrad)" />
-                <circle cx="150" cy="46" r="24" fill="#fff" opacity=".14" />
-                <rect x="14" y="24" width="56" height="20" rx="10" fill="#000" opacity=".38" /><text x="42" y="38" fontSize="10.5" fill="#fff" textAnchor="middle" fontWeight="800">SHORTS</text>
-                {lines.map((ln, i) => <text key={i} x="16" y={118 + i * 30} fontSize="25" fontWeight="900" fill="#fff" fontFamily="'Noto Sans KR',sans-serif">{ln}</text>)}
-                <text x="16" y={118 + lines.length * 30 + 4} fontSize="12" fill="#fff" opacity=".85" fontFamily="'Noto Sans KR',sans-serif">{g.thumbSub}</text>
-                <circle cx="90" cy="212" r="25" fill="#fff" opacity=".92" /><path d="M83 201l18 11-18 11z" fill={c} />
-                <text x="16" y="302" fontSize="12" fill="#fff" opacity=".9" fontWeight="800" fontFamily="system-ui">HI-Fin Tech</text>
-              </svg>
+              <AdVideoPlayer creative={creative} />
               <div className="mktgen-scenes">
                 <div className="mktgen-lbl">스토리보드 · {g.ratio} · BGM {g.bgm}</div>
                 {g.scenes.map(([t, vis, sub, tag], i) => (
