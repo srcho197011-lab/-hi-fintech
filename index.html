@@ -630,7 +630,7 @@ const WALLET_SEC = [
   ["badge", "본인인증·접근통제", "PASS 본인인증·다중인증(MFA)·최소권한 접근통제를 적용합니다."],
 ];
 /* ── 판매마진 분배(적립 50% · 나눔 30% · 운영 20%) ── */
-const WALLET_SPLIT = { earn: 50, give: 30, ops: 20 }; // 판매마진 대비 %
+const WALLET_SPLIT = { earn: 50, give: 30, ops: 20 }; // 제품마진 대비 % (재무회계·사회적기업 연동: 적립50%·나눔30%·운영20%)
 const WALLET_GIVE = { cum: 97200000, month: 14400000, people: 384, my: 138600 }; // 누적·이번달 기부·수혜 인원·내 기여(예시, 원 · 나눔 30% 반영)
 const WALLET_GIVE_TARGETS = [
   ["heart", "재난적 의료비 사각지대", "소득 대비 과도한 치료비를 감당하기 어렵지만 정부 지원 기준에는 못 미치는 가구", "#E11D48"],
@@ -5054,6 +5054,8 @@ function WalletSection({ onGo }) {
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const cpPts = (dm && typeof careplanEarned === "function") ? careplanEarned(dm.email) : 0;
   const total = WALLET.total + cpPts;
+  // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 50/30/20). 1차연도(10만 회원) 기준 연간.
+  const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 196650000, earn: 327750000, beneficiaries: 771 };
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="wallet" /></span>
@@ -5111,9 +5113,9 @@ function WalletSection({ onGo }) {
           <div className="gh-l"><span className="ic"><HeartHandshake size={24} color="#fff" /></span>
             <div><b>치료비 사각지대 나눔</b><p>판매마진의 <b>{WALLET_SPLIT.give}%</b>를 치료비 사각지대 이웃의 치료비로 기부합니다 — 회원 추가 부담 없이.</p></div></div>
           <div className="gh-stats">
-            <div><b>{manwon(WALLET_GIVE.cum)}</b><span>누적 나눔 기부</span></div>
-            <div><b>{manwon(WALLET_GIVE.month)}</b><span>이번 달 기부</span></div>
-            <div><b>{WALLET_GIVE.people.toLocaleString()}명</b><span>치료비 지원</span></div>
+            <div><b>{manwon(fs.give)}</b><span>연간 나눔 기부</span></div>
+            <div><b>{manwon(Math.round(fs.give / 12))}</b><span>이번 달 기부</span></div>
+            <div><b>{fs.beneficiaries.toLocaleString()}명</b><span>치료비 지원</span></div>
           </div>
         </div>
 
@@ -6612,7 +6614,7 @@ const FIN_MY = {
   serviceRate: 0.30, serviceCommission: 15000, serviceCostRate: 0.05, // 헬스케어 서비스(상담·홈케어·재활·PT) 매칭 수수료 — 1인 연 15만 지출 중 수수료
   resvPerActive: [0.4, 0.7, 1.0, 1.3, 1.6], resvFee: 10000, // 예약 서비스(골프 등) 건당 1만원 · 활성회원 연 예약건수
   arpuInsurance: [3000, 5000, 8000, 12000, 15000], adPerActive: [0, 300, 800, 1500, 2500],
-  opexRate: 0.12, donationRate: 0.05, rewardRate: 0.12, payroll: [3000000000, 8000000000, 15000000000, 40000000000, 80000000000],
+  opexRate: 0.12, donationRate: 0.30, rewardRate: 0.50, payroll: [3000000000, 8000000000, 15000000000, 40000000000, 80000000000], // 적립·나눔은 제품마진 대비 (건강금융지갑 규칙: 적립50%·나눔30%·운영20%)
   deprYear: 1000000000, interestYear: 800000000, taxRate: 0.22, wacc: 0.15, termGrowth: 0.03, evRevMultiple: 4.0, evEbitdaMultiple: 15,
 };
 const FIN_GTM_CHANNELS = [
@@ -6636,12 +6638,20 @@ function finMultiYear() {
     const revInsurance = active * M.arpuInsurance[y], revAd = active * M.adPerActive[y];
     const revenue = revProduct + revCheckup + revService + revReservation + revEmr + revInsurance + revAd;
     const cogsCheckup = Math.round(revCheckup * M.checkupCostRate), cogsService = Math.round(revService * M.serviceCostRate), cogsEmr = Math.round(revEmr * 0.1), cogsPayment = Math.round(revProduct * 0.022), cogs = cogsProduct + cogsCheckup + cogsService + cogsEmr + cogsPayment, gross = revenue - cogs;
-    const marketing = newMembers * M.cac[y], otherOpex = Math.round(revenue * M.opexRate), donation = Math.round(revenue * M.donationRate), reward = Math.round((revProduct - cogsProduct) * M.rewardRate), payroll = M.payroll[y], sga = marketing + otherOpex + donation + reward + payroll;
+    const prodMargin = revProduct - cogsProduct;
+    const marketing = newMembers * M.cac[y], otherOpex = Math.round(revenue * M.opexRate), donation = Math.round(prodMargin * M.donationRate), reward = Math.round(prodMargin * M.rewardRate), payroll = M.payroll[y], sga = marketing + otherOpex + donation + reward + payroll;
     const ebit = gross - sga, ebitda = ebit + M.deprYear, pbt = ebit - M.interestYear, tax = Math.max(0, pbt) * M.taxRate, net = pbt - tax;
     const capex = y < 2 ? 2000000000 : 5000000000, dwc = Math.round(revenue * 0.02), nopat = ebit * (1 - M.taxRate), fcf = nopat + M.deprYear - capex - dwc;
     rows.push({ y, label: M.years[y], membersEnd, membersPrev, newMembers, active, buyers, checkupUsers, serviceUsers, reservations, hospitals, cac: M.cac[y], marketing, revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr, revAd, revenue, cogs, gross, otherOpex, donation, reward, payroll, sga, ebit, ebitda, pbt, tax, net, capex, fcf, opMargin: ebit / revenue, netMargin: net / revenue });
   }
   return rows;
+}
+// ── 건강금융지갑·사회적기업 공통 지표 — 재무모델(제품마진) 연동. 적립20%·나눔10%(+운영·유보 70%)·유기동물 ──
+function finSocial(yi) {
+  const rows = finMultiYear(), r = rows[yi == null ? 0 : Math.max(0, Math.min(4, yi))];
+  const margin = r.revProduct - r.cogsProduct;
+  const earn = r.reward, give = r.donation, ops = Math.round(margin - earn - give), animal = Math.round(margin * 0.25 * 0.05);
+  return { year: r.label, members: r.membersEnd, revenue: r.revenue, margin, earn, give, ops, animal, beneficiaries: Math.max(1, Math.round(give / 255000)) };
 }
 function finValuation() {
   const M = FIN_MY, rows = finMultiYear(); let pvSum = 0; const disc = [];
@@ -7565,14 +7575,12 @@ const socNum = (n) => (n >= 10000 ? (n / 10000).toFixed(n >= 100000 ? 0 : 1).rep
 
 function socialImpact() {
   const agg = (typeof pilotAgg === "function") ? pilotAgg() : { n: 100000, needyN: 8200, gapN: 21000, households: 42000, totalCost: 0 };
-  const give = WALLET_GIVE.cum;                      // 치료비 나눔 누적 (판매마진 30%)
-  const earn = Math.round(give / WALLET_SPLIT.give * WALLET_SPLIT.earn);  // 건강적립 환원 (50%)
-  const ops = Math.round(give / WALLET_SPLIT.give * WALLET_SPLIT.ops);    // 운영 (20%)
-  const marginTotal = earn + give + ops;             // 판매마진 누적
-  const animal = Math.round(marginTotal * 0.25 * 0.05); // 유기동물 지원(마진 25%×5%)
+  // 재무회계 모델 연동 — 제품마진 → 적립50%·나눔30%·운영20%(+유기동물). 1차연도(10만 회원, 파일럿 규모) 기준.
+  const fs = (typeof finSocial === "function") ? finSocial(0) : { margin: 655500000, earn: 327750000, give: 196650000, ops: 131100000, animal: 8193750, beneficiaries: 771 };
+  const earn = fs.earn, give = fs.give, ops = fs.ops, animal = fs.animal, marginTotal = fs.margin;
   const activeRate = 0.45;
   const activeN = Math.round(agg.n * activeRate);
-  const beneficiaries = WALLET_GIVE.people;          // 치료비 수혜자(누적)
+  const beneficiaries = fs.beneficiaries;            // 치료비 수혜자 = 나눔 ÷ 1인 지원액
   const socialValue = give + Math.round(earn * 0.6) + animal; // 사회적 편익 근사
   const sroi = Math.round(socialValue / ops * 10) / 10;
   return { agg, participants: agg.n, activeN, activeRate, earn, give, ops, animal, marginTotal, beneficiaries, needyN: agg.needyN, gapN: agg.gapN, households: agg.households, socialValue, sroi };

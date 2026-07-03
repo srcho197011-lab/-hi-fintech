@@ -9,6 +9,8 @@ function WalletSection({ onGo }) {
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const cpPts = (dm && typeof careplanEarned === "function") ? careplanEarned(dm.email) : 0;
   const total = WALLET.total + cpPts;
+  // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 50/30/20). 1차연도(10만 회원) 기준 연간.
+  const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 196650000, earn: 327750000, beneficiaries: 771 };
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="wallet" /></span>
@@ -66,9 +68,9 @@ function WalletSection({ onGo }) {
           <div className="gh-l"><span className="ic"><HeartHandshake size={24} color="#fff" /></span>
             <div><b>치료비 사각지대 나눔</b><p>판매마진의 <b>{WALLET_SPLIT.give}%</b>를 치료비 사각지대 이웃의 치료비로 기부합니다 — 회원 추가 부담 없이.</p></div></div>
           <div className="gh-stats">
-            <div><b>{manwon(WALLET_GIVE.cum)}</b><span>누적 나눔 기부</span></div>
-            <div><b>{manwon(WALLET_GIVE.month)}</b><span>이번 달 기부</span></div>
-            <div><b>{WALLET_GIVE.people.toLocaleString()}명</b><span>치료비 지원</span></div>
+            <div><b>{manwon(fs.give)}</b><span>연간 나눔 기부</span></div>
+            <div><b>{manwon(Math.round(fs.give / 12))}</b><span>이번 달 기부</span></div>
+            <div><b>{fs.beneficiaries.toLocaleString()}명</b><span>치료비 지원</span></div>
           </div>
         </div>
 

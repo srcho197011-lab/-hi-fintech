@@ -39,7 +39,7 @@ const WALLET_SEC = [
   ["badge", "본인인증·접근통제", "PASS 본인인증·다중인증(MFA)·최소권한 접근통제를 적용합니다."],
 ];
 /* ── 판매마진 분배(적립 50% · 나눔 30% · 운영 20%) ── */
-const WALLET_SPLIT = { earn: 50, give: 30, ops: 20 }; // 판매마진 대비 %
+const WALLET_SPLIT = { earn: 50, give: 30, ops: 20 }; // 제품마진 대비 % (재무회계·사회적기업 연동: 적립50%·나눔30%·운영20%)
 const WALLET_GIVE = { cum: 97200000, month: 14400000, people: 384, my: 138600 }; // 누적·이번달 기부·수혜 인원·내 기여(예시, 원 · 나눔 30% 반영)
 const WALLET_GIVE_TARGETS = [
   ["heart", "재난적 의료비 사각지대", "소득 대비 과도한 치료비를 감당하기 어렵지만 정부 지원 기준에는 못 미치는 가구", "#E11D48"],

@@ -4,14 +4,12 @@ const socNum = (n) => (n >= 10000 ? (n / 10000).toFixed(n >= 100000 ? 0 : 1).rep
 
 function socialImpact() {
   const agg = (typeof pilotAgg === "function") ? pilotAgg() : { n: 100000, needyN: 8200, gapN: 21000, households: 42000, totalCost: 0 };
-  const give = WALLET_GIVE.cum;                      // 치료비 나눔 누적 (판매마진 30%)
-  const earn = Math.round(give / WALLET_SPLIT.give * WALLET_SPLIT.earn);  // 건강적립 환원 (50%)
-  const ops = Math.round(give / WALLET_SPLIT.give * WALLET_SPLIT.ops);    // 운영 (20%)
-  const marginTotal = earn + give + ops;             // 판매마진 누적
-  const animal = Math.round(marginTotal * 0.25 * 0.05); // 유기동물 지원(마진 25%×5%)
+  // 재무회계 모델 연동 — 제품마진 → 적립50%·나눔30%·운영20%(+유기동물). 1차연도(10만 회원, 파일럿 규모) 기준.
+  const fs = (typeof finSocial === "function") ? finSocial(0) : { margin: 655500000, earn: 327750000, give: 196650000, ops: 131100000, animal: 8193750, beneficiaries: 771 };
+  const earn = fs.earn, give = fs.give, ops = fs.ops, animal = fs.animal, marginTotal = fs.margin;
   const activeRate = 0.45;
   const activeN = Math.round(agg.n * activeRate);
-  const beneficiaries = WALLET_GIVE.people;          // 치료비 수혜자(누적)
+  const beneficiaries = fs.beneficiaries;            // 치료비 수혜자 = 나눔 ÷ 1인 지원액
   const socialValue = give + Math.round(earn * 0.6) + animal; // 사회적 편익 근사
   const sroi = Math.round(socialValue / ops * 10) / 10;
   return { agg, participants: agg.n, activeN, activeRate, earn, give, ops, animal, marginTotal, beneficiaries, needyN: agg.needyN, gapN: agg.gapN, households: agg.households, socialValue, sroi };

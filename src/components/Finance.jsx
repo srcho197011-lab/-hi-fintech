@@ -93,7 +93,7 @@ const FIN_MY = {
   serviceRate: 0.30, serviceCommission: 15000, serviceCostRate: 0.05, // 헬스케어 서비스(상담·홈케어·재활·PT) 매칭 수수료 — 1인 연 15만 지출 중 수수료
   resvPerActive: [0.4, 0.7, 1.0, 1.3, 1.6], resvFee: 10000, // 예약 서비스(골프 등) 건당 1만원 · 활성회원 연 예약건수
   arpuInsurance: [3000, 5000, 8000, 12000, 15000], adPerActive: [0, 300, 800, 1500, 2500],
-  opexRate: 0.12, donationRate: 0.05, rewardRate: 0.12, payroll: [3000000000, 8000000000, 15000000000, 40000000000, 80000000000],
+  opexRate: 0.12, donationRate: 0.30, rewardRate: 0.50, payroll: [3000000000, 8000000000, 15000000000, 40000000000, 80000000000], // 적립·나눔은 제품마진 대비 (건강금융지갑 규칙: 적립50%·나눔30%·운영20%)
   deprYear: 1000000000, interestYear: 800000000, taxRate: 0.22, wacc: 0.15, termGrowth: 0.03, evRevMultiple: 4.0, evEbitdaMultiple: 15,
 };
 const FIN_GTM_CHANNELS = [
@@ -117,12 +117,20 @@ function finMultiYear() {
     const revInsurance = active * M.arpuInsurance[y], revAd = active * M.adPerActive[y];
     const revenue = revProduct + revCheckup + revService + revReservation + revEmr + revInsurance + revAd;
     const cogsCheckup = Math.round(revCheckup * M.checkupCostRate), cogsService = Math.round(revService * M.serviceCostRate), cogsEmr = Math.round(revEmr * 0.1), cogsPayment = Math.round(revProduct * 0.022), cogs = cogsProduct + cogsCheckup + cogsService + cogsEmr + cogsPayment, gross = revenue - cogs;
-    const marketing = newMembers * M.cac[y], otherOpex = Math.round(revenue * M.opexRate), donation = Math.round(revenue * M.donationRate), reward = Math.round((revProduct - cogsProduct) * M.rewardRate), payroll = M.payroll[y], sga = marketing + otherOpex + donation + reward + payroll;
+    const prodMargin = revProduct - cogsProduct;
+    const marketing = newMembers * M.cac[y], otherOpex = Math.round(revenue * M.opexRate), donation = Math.round(prodMargin * M.donationRate), reward = Math.round(prodMargin * M.rewardRate), payroll = M.payroll[y], sga = marketing + otherOpex + donation + reward + payroll;
     const ebit = gross - sga, ebitda = ebit + M.deprYear, pbt = ebit - M.interestYear, tax = Math.max(0, pbt) * M.taxRate, net = pbt - tax;
     const capex = y < 2 ? 2000000000 : 5000000000, dwc = Math.round(revenue * 0.02), nopat = ebit * (1 - M.taxRate), fcf = nopat + M.deprYear - capex - dwc;
     rows.push({ y, label: M.years[y], membersEnd, membersPrev, newMembers, active, buyers, checkupUsers, serviceUsers, reservations, hospitals, cac: M.cac[y], marketing, revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr, revAd, revenue, cogs, gross, otherOpex, donation, reward, payroll, sga, ebit, ebitda, pbt, tax, net, capex, fcf, opMargin: ebit / revenue, netMargin: net / revenue });
   }
   return rows;
+}
+// ── 건강금융지갑·사회적기업 공통 지표 — 재무모델(제품마진) 연동. 적립20%·나눔10%(+운영·유보 70%)·유기동물 ──
+function finSocial(yi) {
+  const rows = finMultiYear(), r = rows[yi == null ? 0 : Math.max(0, Math.min(4, yi))];
+  const margin = r.revProduct - r.cogsProduct;
+  const earn = r.reward, give = r.donation, ops = Math.round(margin - earn - give), animal = Math.round(margin * 0.25 * 0.05);
+  return { year: r.label, members: r.membersEnd, revenue: r.revenue, margin, earn, give, ops, animal, beneficiaries: Math.max(1, Math.round(give / 255000)) };
 }
 function finValuation() {
   const M = FIN_MY, rows = finMultiYear(); let pvSum = 0; const disc = [];
