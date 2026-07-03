@@ -3,7 +3,9 @@
 function WalletSection({ onGo }) {
   const [tab, setTab] = useState("earn");
   const go = onGo || (() => {});
-  const tabs = [["earn", "적립 현황", Coins], ["use", "사용처", Wallet], ["guide", "사용방법", Sparkles], ["sec", "AI·블록체인 보안", ShieldCheck]];
+  const tabs = [["earn", "적립 현황", Coins], ["give", "나눔·기부", HeartHandshake], ["use", "사용처", Wallet], ["guide", "사용방법", Sparkles], ["sec", "AI·블록체인 보안", ShieldCheck]];
+  const manwon = (n) => n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원";
+  const won = (n) => n.toLocaleString() + "원";
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const cpPts = (dm && typeof careplanEarned === "function") ? careplanEarned(dm.email) : 0;
   const total = WALLET.total + cpPts;
@@ -11,7 +13,7 @@ function WalletSection({ onGo }) {
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="wallet" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강금융지갑</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>Health Token 적립·사용 · 보험료·병원·건강제품·식단 결제 · AI·블록체인 보안 설계</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>판매마진의 <b style={{ color: "#16A34A" }}>50%는 건강적립금</b>으로, <b style={{ color: "#E11D48" }}>10%는 치료비 사각지대 나눔</b>으로 — 적립하고 나누는 건강금융</div></div></div>
       <DemoMemberBanner />
 
       <div className="wbal">
@@ -24,6 +26,20 @@ function WalletSection({ onGo }) {
           <div><b style={{ color: "#FECACA" }}>−{WALLET.monthUse.toLocaleString()}</b><span>이번 달 사용</span></div>
           <div><b>{(WALLET.total - 8200).toLocaleString()}</b><span>전월 대비 ▲</span></div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, opacity: .95 }}><ShieldCheck size={14} /> AI·블록체인 보안 설계</div>
+        </div>
+      </div>
+
+      <div className="wsplit">
+        <div className="wsplit-h"><span className="ic"><Coins size={16} /></span><div><b>판매마진 분배 구조</b><p>회원의 소비가 <b style={{ color: "#16A34A" }}>나를 위한 적립</b>과 <b style={{ color: "#E11D48" }}>이웃을 위한 나눔</b>이 됩니다</p></div></div>
+        <div className="wsplit-bar">
+          <div className="seg earn" style={{ width: WALLET_SPLIT.earn + "%" }}>{WALLET_SPLIT.earn}%</div>
+          <div className="seg give" style={{ width: WALLET_SPLIT.give + "%" }}>{WALLET_SPLIT.give}%</div>
+          <div className="seg ops" style={{ width: WALLET_SPLIT.ops + "%" }}>{WALLET_SPLIT.ops}%</div>
+        </div>
+        <div className="wsplit-legend">
+          <div><span className="dot earn" /> <b>{WALLET_SPLIT.earn}%</b> 건강적립금 <small>회원에게 Health Token 적립</small></div>
+          <div><span className="dot give" /> <b>{WALLET_SPLIT.give}%</b> 치료비 나눔 <small>치료비 사각지대 기부</small></div>
+          <div><span className="dot ops" /> <b>{WALLET_SPLIT.ops}%</b> 플랫폼 운영 <small>서비스·안전 준비금</small></div>
         </div>
       </div>
 
@@ -43,6 +59,37 @@ function WalletSection({ onGo }) {
             <span className="wamt" style={{ color: "#16A34A" }}>{amt}</span></div>
         ))}</div>
         <div className="chnote">※ 적립률·항목은 예시입니다. 건강활동·데이터 제공·소비에 따라 Health Token이 자동 적립됩니다.</div>
+      </>)}
+
+      {tab === "give" && (<>
+        <div className="wgive-hero">
+          <div className="gh-l"><span className="ic"><HeartHandshake size={24} color="#fff" /></span>
+            <div><b>치료비 사각지대 나눔</b><p>판매마진의 <b>10%</b>를 치료비 사각지대 이웃의 치료비로 기부합니다 — 회원 추가 부담 없이.</p></div></div>
+          <div className="gh-stats">
+            <div><b>{manwon(WALLET_GIVE.cum)}</b><span>누적 나눔 기부</span></div>
+            <div><b>{manwon(WALLET_GIVE.month)}</b><span>이번 달 기부</span></div>
+            <div><b>{WALLET_GIVE.people.toLocaleString()}명</b><span>치료비 지원</span></div>
+          </div>
+        </div>
+
+        <div className="card" style={{ marginTop: 12 }}>
+          <div className="rct"><Coins size={18} color="#E11D48" /> 나눔이 전달되는 과정</div>
+          {WALLET_GIVE_FLOW.map((g) => (
+            <div className="adv" key={g.n}><span className="ic" style={{ background: "#FDE7EC", color: "#E11D48", fontWeight: 800, display: "grid", placeItems: "center" }}>{g.n}</span>
+              <div style={{ flex: 1 }}><b>{g.t}</b><p>{g.d}</p></div></div>
+          ))}
+        </div>
+
+        <div className="bklbl" style={{ margin: "4px 0 8px" }}><HeartHandshake size={14} color="#E11D48" style={{ verticalAlign: "-2px" }} /> 누구를 돕나요 — 치료비 사각지대 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· {WALLET_GIVE_TARGETS.length}개 대상</span></div>
+        <div className="wgrid">
+          {WALLET_GIVE_TARGETS.map(([a, t, d, c], i) => (
+            <div className="wcard" key={i}><span className="wi" style={{ background: c + "1A" }}><Art name={a} size={22} /></span>
+              <div style={{ flex: 1 }}><div className="wn">{t}</div><div className="wd">{d}</div></div></div>
+          ))}
+        </div>
+
+        <div className="wgive-my"><span className="ic"><Heart size={18} color="#E11D48" /></span><div>지금까지 <b>조성래님의 소비로 만들어진 나눔</b> <b style={{ color: "#E11D48" }}>{won(WALLET_GIVE.my)}</b> <small>— 내 건강 관리가 이웃의 치료비가 되었습니다.</small></div></div>
+        <div className="chnote">※ 기부 비율(판매마진의 10%)·수치는 <b>설계 목표·예시</b>입니다. 실제 기부는 제휴 공익재단·의료기관을 통해 심사 후 집행되며, 사용내역은 투명하게 공개하도록 설계합니다. ‘치료비 사각지대’는 재난적 의료비·실손 보장 사각지대·희귀중증질환 본인부담·취약계층 긴급 치료비 등을 포함합니다.</div>
       </>)}
 
       {tab === "use" && (<>
