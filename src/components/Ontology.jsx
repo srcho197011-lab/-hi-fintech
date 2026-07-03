@@ -208,10 +208,10 @@ function OntMemberModal({ m, onClose, onGo }) {
           </div>
 
           <div className="ontmacts">
-            <button className="pri" onClick={() => { onClose(); onGo && onGo("insurance"); }}><ShieldCheck size={14} /> 보장 설계</button>
+            <button className="pri ontmacts-main" onClick={() => { onClose(); onGo && onGo("ai"); }}><Bot size={16} /> AI 케어플랜</button>
             {m.needy && <button className="give" onClick={() => { if (typeof toast === "function") toast(`${m.name}님 · 치료비 나눔 대상 등록(파일럿)`); }}><HeartHandshake size={14} /> 나눔 매칭</button>}
-            <button onClick={() => { onClose(); onGo && onGo("ai"); }}><Bot size={14} /> AI 케어플랜</button>
           </div>
+          <button className="ontmsub" onClick={() => { onClose(); onGo && onGo("insurance"); }}><ShieldCheck size={12} /> 보장 설계</button>
         </div>
       </div>
     </div>

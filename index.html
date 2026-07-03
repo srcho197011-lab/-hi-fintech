@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=fe4d3a37cf" />
+<link rel="stylesheet" href="./data/app.css?v=0073585888" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=fe4d3a37cf"></script>
-<script src="./src/data/section_data.js?v=fe4d3a37cf"></script>
-<script src="./src/data/demo_members.js?v=fe4d3a37cf"></script>
+<script src="./src/data/dummy_data.js?v=0073585888"></script>
+<script src="./src/data/section_data.js?v=0073585888"></script>
+<script src="./src/data/demo_members.js?v=0073585888"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -6191,10 +6191,10 @@ function OntMemberModal({ m, onClose, onGo }) {
           </div>
 
           <div className="ontmacts">
-            <button className="pri" onClick={() => { onClose(); onGo && onGo("insurance"); }}><ShieldCheck size={14} /> 보장 설계</button>
+            <button className="pri ontmacts-main" onClick={() => { onClose(); onGo && onGo("ai"); }}><Bot size={16} /> AI 케어플랜</button>
             {m.needy && <button className="give" onClick={() => { if (typeof toast === "function") toast(`${m.name}님 · 치료비 나눔 대상 등록(파일럿)`); }}><HeartHandshake size={14} /> 나눔 매칭</button>}
-            <button onClick={() => { onClose(); onGo && onGo("ai"); }}><Bot size={14} /> AI 케어플랜</button>
           </div>
+          <button className="ontmsub" onClick={() => { onClose(); onGo && onGo("insurance"); }}><ShieldCheck size={12} /> 보장 설계</button>
         </div>
       </div>
     </div>

@@ -657,6 +657,9 @@
 .ontmacts button{flex:1;min-width:120px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:10px;font-weight:800;font-size:12px;cursor:pointer;background:#15243f;color:#C7D6F0;border:1px solid #2B3B57;}
 .ontmacts button.pri{background:linear-gradient(135deg,#22D3EE,#4F46E5);color:#fff;border:none;}
 .ontmacts button.give{background:linear-gradient(135deg,#E11D48,#FB7185);color:#fff;border:none;}
+.ontmacts button.ontmacts-main{font-size:14px;padding:14px;box-shadow:0 8px 20px -8px rgba(79,70,229,.6);}
+.ontmsub{display:flex;align-items:center;justify-content:center;gap:5px;width:100%;margin-top:8px;background:transparent;border:1px solid #2B3B57;color:#8FA1C0;border-radius:8px;padding:7px;font-size:11px;font-weight:700;cursor:pointer;}
+.ontmsub:hover{color:#C7D6F0;border-color:#3A4E74;}
 
 /* 온톨로지 그래프 */
 .ontgraph{background:#0C1730;border:1px solid #24324D;border-radius:12px;padding:10px;}
