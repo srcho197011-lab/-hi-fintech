@@ -27,12 +27,52 @@ const MKT_SEGMENTS = [
   ["만성질환 시니어 65+", "고혈압·당뇨·관절", "혈압계·관절영양제·재가돌봄", "가족이 함께하는 건강관리", "kakao+b2b", "#0EA5E9"],
   ["아동 부모", "0~19세 자녀 가구", "성장·면역 영양제·어린이보험", "우리 아이 성장·면역 케어", "meta+influencer", "#16A34A"],
 ];
-// AI 크리에이티브 포맷
+// AI 크리에이티브 포맷 + 실제 생성 데모 데이터
 const MKT_CREATIVE = [
-  { fmt: "유튜브 15초 쇼츠", ic: "video", target: "당뇨 위험 40대", copy: "\"식후 혈당, 방치하면 안 돼요\" — 3초 훅 + 제품 + CTA", color: "#EF4444" },
-  { fmt: "인스타 릴스", ic: "video", target: "갱년기 여성", copy: "갱년기 루틴 브이로그형 UGC + 제품 자연노출", color: "#EC4899" },
-  { fmt: "카톡 배너 시안", ic: "image", target: "검진 예정자", copy: "무료 검진대비보험 + 건강리포트, 지금 예약", color: "#FBBF24" },
-  { fmt: "검색 반응형 광고", ic: "doc", target: "간 건강 검색자", copy: "밀크씨슬 최저가·정밀영양협회 인증", color: "#22C55E" },
+  {
+    fmt: "유튜브 15초 쇼츠", ic: "video", target: "당뇨 위험 40대", copy: "\"식후 혈당, 방치하면 안 돼요\" — 3초 훅 + 제품 + CTA", color: "#EF4444", kind: "video",
+    gen: {
+      title: "식후 혈당, 이대로 두면 큰일나요 (40대 필수)", thumbHead: "식후혈당\n관리 시작", thumbSub: "40대 당뇨 예방", ratio: "9:16", bgm: "잔잔 → 긴장감 있는 비트",
+      scenes: [
+        ["0–3초", "클로즈업 · 밥 먹고 졸려하는 40대", "밥 먹고 나면 유독 졸리고 피곤하세요?", "훅"],
+        ["3–7초", "식후 혈당 스파이크 그래프 애니메이션", "그건 '식후 혈당 급상승' 신호일 수 있어요", "문제"],
+        ["7–11초", "혈당케어(바나바·여주) + CGM 제품샷", "식후 혈당 관리, 이제 간편하게", "솔루션"],
+        ["11–15초", "HI-Fin 로고 + 버튼 클로즈업", "무료 건강분석 받기 →", "CTA"],
+      ],
+      caption: "식후 혈당 스파이크는 당뇨의 시작일 수 있습니다. 40대라면 지금 관리하세요.",
+      hashtags: ["#식후혈당", "#혈당관리", "#당뇨예방", "#혈당케어", "#40대건강"],
+    },
+  },
+  {
+    fmt: "인스타 릴스", ic: "video", target: "갱년기 여성", copy: "갱년기 루틴 브이로그형 UGC + 제품 자연노출", color: "#EC4899", kind: "video",
+    gen: {
+      title: "갱년기, 나를 위한 케어 루틴 🌸", thumbHead: "갱년기\n슬기롭게", thumbSub: "45–60 여성 케어", ratio: "9:16", bgm: "따뜻한 어쿠스틱",
+      scenes: [
+        ["0–3초", "창가 인물 클로즈업 · 감성 톤", "요즘 이유 없이 열나고 잠 안 오시죠?", "공감 훅"],
+        ["3–8초", "아침 루틴 브이로그 + 석류·감마리놀렌산 자연노출", "제 갱년기 루틴, 이렇게 챙겨요", "UGC"],
+        ["8–13초", "제품 클로즈업 + 미소", "석류·감마리놀렌산으로 하루를 가볍게", "제품"],
+        ["13–15초", "로고 + 스와이프업 유도", "나를 위한 케어 시작하기", "CTA"],
+      ],
+      caption: "갱년기, 참지 말고 케어하세요 💐 저는 이렇게 하루를 시작해요.",
+      hashtags: ["#갱년기", "#갱년기영양제", "#여성건강", "#석류", "#갱년기극복"],
+    },
+  },
+  {
+    fmt: "카톡 배너 시안", ic: "image", target: "검진 예정자", copy: "무료 검진대비보험 + 건강리포트, 지금 예약", color: "#FBBF24", kind: "banner",
+    gen: {
+      head: "무료 건강검진 대비보험", sub: "검진 예약하면 자동가입 + 건강분석 리포트까지", cta: "무료 예약하기", ratio: "카카오모먼트 가로 배너",
+      variants: ["무료 검진대비보험, 지금 예약", "검진 예약 = 무료 보험 + 건강리포트", "치료비 걱정 ZERO, 무료 자동가입"],
+    },
+  },
+  {
+    fmt: "검색 반응형 광고 (RSA)", ic: "doc", target: "간 건강 검색자", copy: "밀크씨슬 최저가·정밀영양협회 인증", color: "#22C55E", kind: "rsa",
+    gen: {
+      url: "hi-fintech.com › 간건강",
+      titles: ["밀크씨슬 최저가", "간 건강 영양제 추천", "정밀영양협회 인증 밀크씨슬", "간수치 관리 시작"],
+      descs: ["실리마린 고함량, 정밀영양협회 검증 제품. 오늘 주문 시 건강적립금 25%.", "간 건강이 걱정된다면 밀크씨슬부터. 무료 건강분석 리포트 제공."],
+      sitelinks: ["간 건강 영양제", "무료 건강분석", "검진 예약", "건강적립금"],
+    },
+  },
 ];
 // 매출 신호 → 원인 → 액션 (지속 분석 기반 자동 의사결정)
 const MKT_ACTIONS = [
@@ -131,7 +171,77 @@ function MktLiveAgent() {
   </>);
 }
 
+/* ── AI 크리에이티브 생성 결과 데모 모달 ── */
+function CreativeGenModal({ creative, onClose }) {
+  const g = creative.gen, c = creative.color;
+  const lines = (g.thumbHead || "").split("\n");
+  return (
+    <div className="ontov" onClick={onClose}>
+      <div className="ontmodal" onClick={(e) => e.stopPropagation()} style={{ width: "min(640px,96vw)" }}>
+        <div className="ontmh">
+          <div><span className="ontmid" style={{ color: c }}>AI CREATIVE · 생성 완료</span><div className="ontmname">{creative.fmt} <span>· {creative.target}</span></div></div>
+          <button onClick={onClose}><X size={20} color="#8A97AE" /></button>
+        </div>
+        <div className="ontmbody">
+          {creative.kind === "video" && (<>
+            <div className="mktgen-video">
+              <svg className="mktgen-thumb" viewBox="0 0 180 320" xmlns="http://www.w3.org/2000/svg">
+                <defs><linearGradient id="ctgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={c} /><stop offset="1" stopColor="#0B1220" /></linearGradient></defs>
+                <rect width="180" height="320" rx="14" fill="url(#ctgrad)" />
+                <circle cx="150" cy="46" r="24" fill="#fff" opacity=".14" />
+                <rect x="14" y="24" width="56" height="20" rx="10" fill="#000" opacity=".38" /><text x="42" y="38" fontSize="10.5" fill="#fff" textAnchor="middle" fontWeight="800">SHORTS</text>
+                {lines.map((ln, i) => <text key={i} x="16" y={118 + i * 30} fontSize="25" fontWeight="900" fill="#fff" fontFamily="'Noto Sans KR',sans-serif">{ln}</text>)}
+                <text x="16" y={118 + lines.length * 30 + 4} fontSize="12" fill="#fff" opacity=".85" fontFamily="'Noto Sans KR',sans-serif">{g.thumbSub}</text>
+                <circle cx="90" cy="212" r="25" fill="#fff" opacity=".92" /><path d="M83 201l18 11-18 11z" fill={c} />
+                <text x="16" y="302" fontSize="12" fill="#fff" opacity=".9" fontWeight="800" fontFamily="system-ui">HI-Fin Tech</text>
+              </svg>
+              <div className="mktgen-scenes">
+                <div className="mktgen-lbl">스토리보드 · {g.ratio} · BGM {g.bgm}</div>
+                {g.scenes.map(([t, vis, sub, tag], i) => (
+                  <div className="mktgen-scene" key={i}><span className="mktgen-time">{t}</span><div className="mktgen-sc"><div className="mktgen-vis">{vis}</div><div className="mktgen-line">"{sub}"</div></div><span className="mktgen-tag" style={{ color: c, background: c + "1A" }}>{tag}</span></div>
+                ))}
+              </div>
+            </div>
+            <div className="mktgen-field"><b>제목</b> {g.title}</div>
+            <div className="mktgen-field"><b>캡션</b> {g.caption}</div>
+            <div className="mktgen-tags">{g.hashtags.map((h) => <span key={h}>{h}</span>)}</div>
+          </>)}
+          {creative.kind === "banner" && (<>
+            <svg className="mktgen-banner" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="cbgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={c} /><stop offset="1" stopColor="#7C3AED" /></linearGradient></defs>
+              <rect width="400" height="120" rx="12" fill="url(#cbgrad)" />
+              <path d="M330 26 L362 38 V64 C362 84 348 96 330 102 C312 96 298 84 298 64 V38 Z" fill="#fff" opacity=".18" />
+              <g stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity=".9"><line x1="330" y1="48" x2="330" y2="72" /><line x1="318" y1="60" x2="342" y2="60" /></g>
+              <text x="22" y="46" fontSize="21" fontWeight="900" fill="#fff" fontFamily="'Noto Sans KR',sans-serif">{g.head}</text>
+              <text x="22" y="72" fontSize="12" fill="#fff" opacity=".92" fontFamily="'Noto Sans KR',sans-serif">{g.sub}</text>
+              <rect x="22" y="86" width="130" height="24" rx="12" fill="#fff" /><text x="87" y="102" fontSize="12.5" fontWeight="800" fill={c} textAnchor="middle" fontFamily="'Noto Sans KR',sans-serif">{g.cta} ›</text>
+            </svg>
+            <div className="mktgen-lbl" style={{ marginTop: 12 }}>{g.ratio} · 헤드라인 A/B 변형</div>
+            {g.variants.map((v, i) => <div className="mktgen-variant" key={i}><span>{String.fromCharCode(65 + i)}</span> {v}</div>)}
+          </>)}
+          {creative.kind === "rsa" && (<>
+            <div className="mktgen-lbl">검색 광고 미리보기</div>
+            <div className="mktgen-rsa">
+              <div className="rsa-top"><span className="rsa-ad">광고</span><span className="rsa-url">{g.url}</span></div>
+              <div className="rsa-title">{g.titles[0]} | {g.titles[1]}</div>
+              <div className="rsa-desc">{g.descs[0]}</div>
+              <div className="rsa-sl">{g.sitelinks.map((s) => <span key={s}>{s}</span>)}</div>
+            </div>
+            <div className="mktgen-lbl" style={{ marginTop: 12 }}>제목 애셋 ({g.titles.length})</div>
+            <div className="mktgen-tags">{g.titles.map((t) => <span key={t}>{t}</span>)}</div>
+            <div className="mktgen-lbl" style={{ marginTop: 10 }}>설명 애셋 ({g.descs.length})</div>
+            {g.descs.map((dd, i) => <div className="mktgen-variant" key={i}><span>{i + 1}</span> {dd}</div>)}
+          </>)}
+          <div className="ontmacts"><button className="give" onClick={() => { if (typeof toast === "function") toast(`${creative.fmt} A/B 변형 3종 추가 생성 · 캠페인 큐 등록(파일럿)`); }}><Sparkles size={14} /> A/B 변형 3종 추가 생성</button><button onClick={onClose}>닫기</button></div>
+          <div className="chnote" style={{ marginTop: 4 }}>※ AI 자동 생성 데모입니다. 실제 소재는 의료광고 심의·건강기능식품 표시·광고 규제 검수 후 집행됩니다.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MarketingSection({ onGo }) {
+  const [gen, setGen] = useState(null);
   const [tab, setTab] = useState("intel");
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const chMax = Math.max(...MKT_CHANNELS.map((c) => c[5]));
@@ -231,7 +341,7 @@ function MarketingSection({ onGo }) {
           <div className="mktcrea">{MKT_CREATIVE.map((c, i) => (
             <div className="mktcrea-c" key={i}><span className="mktcrea-ic" style={{ background: c.color + "1A" }}><Art name={c.ic} size={20} /></span>
               <div className="mktcrea-b"><div className="mktcrea-f">{c.fmt} <span className="mktcrea-tg">{c.target}</span></div><div className="mktcrea-copy">{c.copy}</div></div>
-              <button className="mktbtn" onClick={() => { if (typeof toast === "function") toast(`${c.fmt} 시안 생성 완료(파일럿) · A/B 변형 3종`); }}>생성</button>
+              <button className="mktbtn" onClick={() => setGen(c)}>생성</button>
             </div>
           ))}</div>
           <div className="chnote">※ 크리에이티브·성과 수치는 <b>파일럿 시연</b>입니다. 실제 광고 집행은 각 매체 정책·의료광고 심의(의료법)·건강기능식품 표시·광고 규제를 준수합니다.</div>
@@ -241,6 +351,7 @@ function MarketingSection({ onGo }) {
       {tab === "agent" && <MktLiveAgent />}
 
       <div className="chnote" style={{ marginTop: 12 }}>※ 마케팅 온톨로지는 운영(코호트)·재무(손익) 데이터를 실시간 분석해 마케팅 의사결정을 자동화하는 <b>파일럿 시연</b>입니다. 매출 증감·ROAS·크리에이티브는 예시이며, 실제 집행은 매체·규제 심의를 거칩니다.</div>
+      {gen && <CreativeGenModal creative={gen} onClose={() => setGen(null)} />}
     </div>
   );
 }
