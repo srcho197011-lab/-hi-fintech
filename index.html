@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=b4aa61c32d" />
+<link rel="stylesheet" href="./data/app.css?v=197e175e07" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=b4aa61c32d"></script>
-<script src="./src/data/section_data.js?v=b4aa61c32d"></script>
-<script src="./src/data/demo_members.js?v=b4aa61c32d"></script>
+<script src="./src/data/dummy_data.js?v=197e175e07"></script>
+<script src="./src/data/section_data.js?v=197e175e07"></script>
+<script src="./src/data/demo_members.js?v=197e175e07"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -2780,19 +2780,17 @@ function BookingModal({ center, mode, onClose }) {
   const [time, setTime] = useState(null);
   const [done, setDone] = useState(false);
   const [insOpen, setInsOpen] = useState(false);
-  const [psych, setPsych] = useState(false);
   const COVERS = (typeof CHECK_COVERS !== "undefined") ? CHECK_COVERS : [];
-  // 플랜 매칭: 국가검진/공공→기본형, 50만 미만→표준형, 50만 이상→고급형. 심리케어 프리미엄 선택 시 플랜별 차등 HTK 차감
+  // 플랜 매칭: 국가검진/공공→기본형, 50만 미만→표준형, 50만 이상→고급형
   const PLAN_MAP = {
-    basic: { name: "기본형", sub: "국가건강검진 연계 · 무상", col: 2, htk: 10000 },
-    standard: { name: "표준형", sub: "종합검진 50만원 미만 · 무상", col: 3, htk: 7000 },
-    premium: { name: "고급형", sub: "프리미엄검진 50만원 이상 · 무상", col: 4, htk: 5000 },
+    basic: { name: "기본형", sub: "국가건강검진 연계 · 무상", col: 2 },
+    standard: { name: "표준형", sub: "종합검진 50만원 미만 · 무상", col: 3 },
+    premium: { name: "고급형", sub: "프리미엄검진 50만원 이상 · 무상", col: 4 },
   };
   const planKey = center._plan ? center._plan : (mode === "nat" ? "basic" : ((center.price || 0) < 500000 ? "standard" : "premium"));
   const P = PLAN_MAP[planKey] || PLAN_MAP.basic;
-  const planName = P.name, planSub = P.sub, baseIdx = P.col, PSYCH_HTK = P.htk;
-  const psychWon = PSYCH_HTK >= 10000 ? "1만원" : (PSYCH_HTK / 1000) + "천원";
-  const colIdx = psych ? 5 : baseIdx;
+  const planName = P.name, planSub = P.sub, baseIdx = P.col;
+  const colIdx = baseIdx;
   const W = ["일", "월", "화", "수", "목", "금", "토"];
   const days = Array.from({ length: 8 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i + 2); return d; });
   const slots = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
@@ -2814,13 +2812,9 @@ function BookingModal({ center, mode, onClose }) {
             </div>
             {insOpen && (
               <div className="bkins">
-                <div className="bkinst"><BadgeCheck size={14} color="#16A34A" /> 적용 플랜 <b style={{ color: psych ? "#7C3AED" : "#16A34A" }}>{psych ? "심리케어 프리미엄" : planName}</b> <span>{psych ? "선택형 · 정신질환 진단 포함" : planSub}</span></div>
+                <div className="bkinst"><BadgeCheck size={14} color="#16A34A" /> 적용 플랜 <b style={{ color: "#16A34A" }}>{planName}</b> <span>{planSub}</span></div>
                 <div className="bkinsrows">{COVERS.map((r, i) => { const amt = r[colIdx]; if (!amt || amt === "-") return null; return (<div className="bkinsrow" key={i}><span>{r[1]}</span><b>{amt}</b></div>); })}</div>
-                <button className={`bkpsych ${psych ? "on" : ""}`} onClick={() => setPsych((v) => !v)}>
-                  <span className="pchk">{psych ? <Check size={13} color="#fff" /> : null}</span>
-                  <div className="ptxt"><b>심리케어 프리미엄 추가 <em>선택형</em></b><span>정신질환(F코드) 진단 보장 포함 · 가입 시 <b>{psychWon}({PSYCH_HTK.toLocaleString()} HTK)</b> 차감</span></div>
-                </button>
-                <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>되며, 심리케어 프리미엄만 선택 시 건강금융지갑에서 {PSYCH_HTK.toLocaleString()} HTK가 차감됩니다. 실제 보장·인수는 보험사 심사에 따릅니다.</div>
+                <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>됩니다. 정신질환 진단은 기본형 100만원·표준형 200만원·고급형 300만원이 포함됩니다. 실제 보장·인수는 보험사 심사에 따릅니다.</div>
               </div>
             )}
             <div className="bklbl">날짜 선택</div>
@@ -2829,14 +2823,14 @@ function BookingModal({ center, mode, onClose }) {
             <div className="slots">{slots.map((s) => <div key={s} className={`slot ${time === s ? "on" : ""}`} onClick={() => setTime(s)}>{s}</div>)}</div>
             <div className="bklbl">검진 항목</div>
             <div className="ctags">{center.tags.map((t) => <span key={t}>{t}</span>)}</div>
-            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => { setDone(true); if (psych && typeof toast === "function") toast(`심리케어 프리미엄 적용 · 건강금융지갑 ${PSYCH_HTK.toLocaleString()} HTK 차감`); }}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
+            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => setDone(true)}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
           </>) : (
             <div className="bkconfirm">
               <div className="ic"><Check size={30} color="#16A34A" /></div>
               <div style={{ fontWeight: 800, fontSize: 17 }}>예약이 확정되었습니다</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{center.name}<br />{date} {time}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
-                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: psych ? "#F1ECFE" : "#E7F8EE" }}><ShieldCheck size={18} color={psych ? "#7C3AED" : "#16A34A"} /></span><div><b style={{ fontSize: 13 }}>무상 건강검진 대비보험 — {psych ? "심리케어 프리미엄" : planName}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{psych ? `정신질환 진단 보장 포함 · 건강금융지갑 ${PSYCH_HTK.toLocaleString()} HTK 차감` : "추가 보험료 없이 검진 대비 보장이 무상 적용됩니다."}</div></div></div>
+                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>무상 건강검진 대비보험 — {planName}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>추가 보험료 없이 검진 대비 보장(정신질환 진단 포함)이 무상 적용됩니다.</div></div></div>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic"><BadgeCheck size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>NFT 예약증 발행</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>지갑에 SBT 예약증이 발행되고 알림톡이 발송됩니다.</div></div></div>
               </div>
               <button className="cbtn pri" style={{ marginTop: 16 }} onClick={onClose}>확인</button>
@@ -4357,15 +4351,14 @@ const CHECK_PLANS = [
   { key: "basic", name: "기본형", sub: "국가검진" },
   { key: "standard", name: "표준형", sub: "종합검진" },
   { key: "premium", name: "고급형", sub: "프리미엄검진" },
-  { key: "psych", name: "심리케어프리미엄", sub: "선택형" },
 ];
-// 담보: [art, 담보명, 기본형, 표준형, 고급형, 심리케어프리미엄, 특약, 비고/정의]
+// 담보: [art, 담보명, 기본형, 표준형, 고급형, (예비), 특약, 비고/정의]
 const CHECK_COVERS = [
   ["immune", "암 진단금", "200만원", "500만원", "1,000만원", "1,000만원", "암치료비보장 특별약관(I)", "암 진단확정 시 1회 (기타암 제외 / 갑상선암·기타피부암·제자리암·경계성종양 해당없음)"],
   ["heartpulse", "급성심근경색", "200만원", "500만원", "1,000만원", "1,000만원", "급성심근경색증치료비보장 특별약관", "급성심근경색증 진단확정 시 가입금액 전액 1회"],
   ["brain", "뇌졸중", "200만원", "500만원", "1,000만원", "1,000만원", "뇌졸중치료비보장 특별약관", "뇌졸중 진단확정 시 가입금액 전액 1회"],
   ["device", "21대 질병 수술비", "100만원", "200만원", "300만원", "300만원", "질병수술비보장 특별약관", "13대·다발성3대·특정5대 질병 수술 1회당 지급"],
-  ["badge", "정신질환 진단", "-", "-", "-", "300만원", "정신질환진단보장 특별약관", "정신질환(F코드) 최초 진단확정 시 1회 (심리케어프리미엄 선택형 한정)"],
+  ["badge", "정신질환 진단", "100만원", "200만원", "300만원", "300만원", "정신질환진단보장 특별약관", "정신질환(F코드) 최초 진단확정 시 1회"],
   ["lock", "보이스피싱", "300만원", "300만원", "300만원", "300만원", "전화금융사기보장 특별약관", "전화금융사기 피해 보장 (보장비율 70%)"],
 ];
 
@@ -4375,7 +4368,7 @@ function EnrollModal({ onClose, onGo }) {
   const [date, setDate] = useState(null);
   const W = ["일", "월", "화", "수", "목", "금", "토"];
   const days = Array.from({ length: 8 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i + 14); return d; });
-  const idx = plan === "basic" ? 2 : plan === "standard" ? 3 : plan === "premium" ? 4 : 5;
+  const idx = plan === "basic" ? 2 : plan === "standard" ? 3 : 4;
   const planName = CHECK_PLANS.find((p) => p.key === plan).name;
   return (
     <div className="bkov" onClick={onClose}>
@@ -4384,7 +4377,7 @@ function EnrollModal({ onClose, onGo }) {
         <div className="dbody">
           {step === 1 && (<>
             <div className="dsec"><div className="dh">1. 검진보험 플랜 선택</div>
-              <div className="plansel">{CHECK_PLANS.map((p) => <div key={p.key} className={`pl ${plan === p.key ? "on" : ""}`} onClick={() => setPlan(p.key)}><div className="pn">{p.name}</div><div className="pp">{p.sub}{p.key === "psych" ? " · 정신질환 포함" : p.key === "basic" ? " · 암 200" : p.key === "standard" ? " · 암 500" : " · 암 1,000"}</div></div>)}</div>
+              <div className="plansel">{CHECK_PLANS.map((p) => <div key={p.key} className={`pl ${plan === p.key ? "on" : ""}`} onClick={() => setPlan(p.key)}><div className="pn">{p.name}</div><div className="pp">{p.sub}{p.key === "basic" ? " · 암 200" : p.key === "standard" ? " · 암 500" : " · 암 1,000"}</div></div>)}</div>
               <div className="chnote" style={{ marginTop: 8 }}>※ 검진 예약과 연계되어 <b>추가 보험료 없이</b> 자동가입됩니다.</div>
             </div>
             <div className="dsec"><div className="dh">2. 검진 희망일</div>
@@ -4477,7 +4470,7 @@ function CoverDetailModal({ name, onClose }) {
         <div className="bkh"><div className="bt" style={{ fontSize: 15 }}><Art name={d.art} size={20} /> {name}<span className="cbadge" style={{ color: "#7C3AED", background: "#F1ECFE", marginLeft: 8 }}><FileText size={10} /> {d.tokyak}</span></div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
         <div className="dbody">
           <div className="dsec"><div className="dh">보장금액 (플랜별)</div>
-            <MiniTbl head={["구분", "기본형", "표준형", "고급형", "심리케어프리미엄"]} rows={[["보험가입금액", ...d.amounts]]} />
+            <MiniTbl head={["구분", "기본형", "표준형", "고급형"]} rows={[["보험가입금액", ...d.amounts.slice(0, 3)]]} />
           </div>
           <div className="dsec"><div className="dh">보험금 지급사유</div><p style={{ fontSize: 12.8, color: "#3a4659", lineHeight: 1.65 }}>{d.pay}</p></div>
           {d.table && <div className="dsec"><div className="dh">{d.tableTitle || "분류·지급 기준"}</div><MiniTbl head={d.table.head} rows={d.table.rows} /></div>}
@@ -4927,10 +4920,10 @@ function InsuranceSection({ onGo }) {
         <div className="card">
           <div className="rct"><Coins size={18} color="#2563EB" /> 플랜별 담보·보장금액</div>
           <table className="instbl">
-            <thead><tr><th>담보</th><th>기본형<div style={{ fontSize: 10, color: "var(--soft)", fontWeight: 600 }}>국가검진</div></th><th>표준형<div style={{ fontSize: 10, color: "var(--soft)", fontWeight: 600 }}>종합검진</div></th><th>고급형<div style={{ fontSize: 10, color: "var(--soft)", fontWeight: 600 }}>프리미엄검진</div></th><th className="hl">심리케어<br />프리미엄<div style={{ fontSize: 10, color: "#0c4a6e", fontWeight: 600 }}>선택형</div></th></tr></thead>
-            <tbody>{CHECK_COVERS.map((c, i) => <tr key={i} style={{ cursor: "pointer" }} onClick={() => setCover(c[1])} title="약관 상세 보기"><td>{c[1]}</td><td>{c[2]}</td><td>{c[3]}</td><td>{c[4]}</td><td className="hl">{c[5]}</td></tr>)}</tbody>
+            <thead><tr><th>담보</th><th>기본형<div style={{ fontSize: 10, color: "var(--soft)", fontWeight: 600 }}>국가검진</div></th><th>표준형<div style={{ fontSize: 10, color: "var(--soft)", fontWeight: 600 }}>종합검진</div></th><th className="hl">고급형<div style={{ fontSize: 10, color: "#0c4a6e", fontWeight: 600 }}>프리미엄검진</div></th></tr></thead>
+            <tbody>{CHECK_COVERS.map((c, i) => <tr key={i} style={{ cursor: "pointer" }} onClick={() => setCover(c[1])} title="약관 상세 보기"><td>{c[1]}</td><td>{c[2]}</td><td>{c[3]}</td><td className="hl">{c[4]}</td></tr>)}</tbody>
           </table>
-          <div className="chnote" style={{ marginTop: 8 }}>※ 암 진단금은 기타암 제외(갑상선암·기타피부암·제자리암·경계성종양 해당없음). 정신질환 진단은 <b>심리케어프리미엄(선택형)</b>에만 300만원 포함. 보이스피싱은 전 플랜 300만원(보장비율 70%).</div>
+          <div className="chnote" style={{ marginTop: 8 }}>※ 암 진단금은 기타암 제외(갑상선암·기타피부암·제자리암·경계성종양 해당없음). 정신질환 진단은 <b>기본형 100만원·표준형 200만원·고급형 300만원</b> 포함. 보이스피싱은 전 플랜 300만원(보장비율 70%).</div>
         </div>
 
         <div className="bklbl" style={{ margin: "2px 0 8px" }}><ShieldCheck size={14} color="#2563EB" style={{ verticalAlign: "-2px" }} /> 담보별 보장 상세 · 특별약관 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 클릭하면 약관·보장표 조회</span></div>
@@ -4938,7 +4931,7 @@ function InsuranceSection({ onGo }) {
           <div className="adv" key={i} style={{ cursor: "pointer" }} onClick={() => setCover(c[1])} title="약관 상세 보기">
             <span className="ic" style={{ background: "#EAF0FE" }}><Art name={c[0]} size={20} /></span>
             <div style={{ flex: 1 }}><b>{c[1]}</b><p>{c[7]}</p><div style={{ fontSize: 10.5, color: "#7C3AED", fontWeight: 700, marginTop: 3 }}><FileText size={11} style={{ verticalAlign: "-2px" }} /> {c[6]} · 약관 보기 ›</div></div>
-            <div style={{ alignSelf: "center", textAlign: "right", whiteSpace: "nowrap" }}><div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--blue)" }}>{c[5]}</div><div style={{ fontSize: 10, color: "var(--soft)" }}>최대 보장</div></div>
+            <div style={{ alignSelf: "center", textAlign: "right", whiteSpace: "nowrap" }}><div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--blue)" }}>{c[4]}</div><div style={{ fontSize: 10, color: "var(--soft)" }}>최대 보장</div></div>
           </div>
         ))}
 
@@ -4948,7 +4941,7 @@ function InsuranceSection({ onGo }) {
             <span style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><Art name="coin" size={28} /></span>
             <div style={{ fontSize: 13.8, fontWeight: 700, lineHeight: 1.55 }}>검진 예약을 하면 자동으로 <b style={{ color: "#FDE68A" }}>건강토큰(Health Token)</b>이 적립되어 <b style={{ color: "#FDE68A" }}>무상 건강검진보험</b>이 가입됩니다.</div>
           </div>
-          {[["검진 예약", "검진센터·일정을 예약하면 건강토큰(Health Token)이 적립되며 검진보험 가입이 함께 시작됩니다."], ["플랜 선택", "기본형·표준형·고급형·심리케어프리미엄 중 선택 (추가 보험료 0원·무상)."], ["자동가입 확정", "적립된 건강토큰으로 무상 가입 — 검진 15일 전부터 3개월간 보장(3개월 단위 연장)."], ["NFT 보험증서·결과 연동", "건강지갑에 SBT 증서 발행, 검진 결과가 자동 연동됩니다."], ["진단·수술 시 자동청구", "보장 사유 발생 시 검진·진료 기록으로 간편 청구."]].map(([t, d], i) => (
+          {[["검진 예약", "검진센터·일정을 예약하면 건강토큰(Health Token)이 적립되며 검진보험 가입이 함께 시작됩니다."], ["플랜 선택", "기본형·표준형·고급형 중 선택 (추가 보험료 0원·무상)."], ["자동가입 확정", "적립된 건강토큰으로 무상 가입 — 검진 15일 전부터 3개월간 보장(3개월 단위 연장)."], ["NFT 보험증서·결과 연동", "건강지갑에 SBT 증서 발행, 검진 결과가 자동 연동됩니다."], ["진단·수술 시 자동청구", "보장 사유 발생 시 검진·진료 기록으로 간편 청구."]].map(([t, d], i) => (
             <div className="istep" key={i}><span className="sn">{i + 1}</span><div><b>{t}</b><p>{d}</p></div></div>
           ))}
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
