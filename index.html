@@ -299,8 +299,7 @@ const SECTIONS = [
   { k: "shop", ic: ShoppingCart, t: "건강쇼핑", s: "영양제·식단·의료기기" },
   { k: "wallet", ic: Wallet, t: "건강금융지갑", s: "자산·토큰·보험금" }, { k: "nft", ic: "NFT", t: "Health NFT", s: "건강인증서" },
   { k: "community", ic: Users, t: "커뮤니티", s: "건강 커뮤니티" }, { k: "mypage", ic: Settings, t: "마이페이지", s: "개인정보·동의관리" },
-  { k: "ontology", ic: Network, t: "온톨로지 운영", s: "코호트·질병·검진·의료비" },
-  { k: "finance", ic: Landmark, t: "재무회계", s: "실시간 손익·부채·회계(IFRS)" },
+  { k: "ontology", ic: Network, t: "온톨로지 운영", s: "코호트·질병·검진·재무회계" },
 ];
 const SCAFFOLDS = {
   checkup: { color: "#2563EB", mods: [[Search, "검진센터 검색", "지역·항목별 제휴 검진센터 검색."], [CalendarCheck, "검진 예약", "예약 및 NFT 예약증 발행."], [ShieldCheck, "무료 검진보험 자동가입", "예약 시 추가 보험료 없이 자동 가입."], [FileText, "결과 업로드·AI 리포트", "검진 결과 연동 후 XAI 리포트."]] },
@@ -566,7 +565,7 @@ export default function App() {
             {SECTIONS.map((x) => (<div key={x.k} className={`iitem ${sec === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
               <span className="ico"><SecIcon k={x.k} /></span><span className="t">{x.t}</span><span className="s">{x.s}</span></div>))}
           </nav>
-          {sec === "home" ? <HomeView onGo={setSec} /> : sec === "ai" ? <AIDoctor /> : sec === "checkup" ? <CheckupSection /> : sec === "manage" ? <HealthManageSection onGo={setSec} /> : sec === "hospital" ? <HospitalSection /> : sec === "homecare" ? <HomecareSection /> : sec === "shop" ? <ShopSection /> : sec === "insurance" ? <InsuranceSection onGo={setSec} /> : sec === "wallet" ? <WalletSection onGo={setSec} /> : sec === "nft" ? <NFTSection onGo={setSec} /> : sec === "community" ? <CommunitySection onGo={setSec} /> : sec === "mypage" ? <MyPageSection onGo={setSec} /> : sec === "ontology" ? <OntologySection onGo={setSec} /> : sec === "finance" ? <FinanceSection onGo={setSec} /> : sec === "demo" ? <DemoSection onGo={setSec} /> : <Scaffold meta={cur} data={SCAFFOLDS[sec]} />}
+          {sec === "home" ? <HomeView onGo={setSec} /> : sec === "ai" ? <AIDoctor /> : sec === "checkup" ? <CheckupSection /> : sec === "manage" ? <HealthManageSection onGo={setSec} /> : sec === "hospital" ? <HospitalSection /> : sec === "homecare" ? <HomecareSection /> : sec === "shop" ? <ShopSection /> : sec === "insurance" ? <InsuranceSection onGo={setSec} /> : sec === "wallet" ? <WalletSection onGo={setSec} /> : sec === "nft" ? <NFTSection onGo={setSec} /> : sec === "community" ? <CommunitySection onGo={setSec} /> : sec === "mypage" ? <MyPageSection onGo={setSec} /> : sec === "ontology" ? <OntologySection onGo={setSec} /> : sec === "demo" ? <DemoSection onGo={setSec} /> : <Scaffold meta={cur} data={SCAFFOLDS[sec]} />}
         </main>
       </div>
       {consult !== null && <ConsultModal interest={consult} onClose={() => setConsult(null)} />}
@@ -5836,19 +5835,9 @@ function HomeView({ onGo }) {
           <span className="ontocta-badge"><Network size={13} /> 운영 · 파일럿 온톨로지</span>
           <div className="ontocta-t">온톨로지 운영시스템</div>
           <p>파일럿 체험회원 <b>1만명 · 가족(가구) 구조</b>를 팔란티어형 온톨로지(객체·관계·액션)로 운영합니다 — 진료과목·질병·건강검진·예상의료비·보험담보·나눔대상을 하나의 지식그래프로.</p>
-          <div className="ontocta-mini"><span><Users size={12} /> 회원 1,000</span><span><HeartPulse size={12} /> 질병·검진</span><span><Banknote size={12} /> 예상의료비</span><span><HeartHandshake size={12} /> 치료비 나눔</span></div>
+          <div className="ontocta-mini"><span><Users size={12} /> 회원·가족</span><span><HeartPulse size={12} /> 질병·검진</span><span><Banknote size={12} /> 예상의료비</span><span><Landmark size={12} /> 재무회계·밸류에이션</span></div>
         </div>
         <div className="ontocta-r"><OntoCtaArt /><button className="ontocta-btn" onClick={(e) => { e.stopPropagation(); go("ontology"); }}><Network size={16} /> 운영시스템 열기 <ChevronRight size={15} /></button></div>
-      </div>
-      <div className="ontocta fin" onClick={() => go("finance")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") go("finance"); }}>
-        <div className="ontocta-glow" style={{ background: "#34D399" }} /><div className="ontocta-glow g2" style={{ background: "#0EA5E9" }} />
-        <div className="ontocta-l">
-          <span className="ontocta-badge" style={{ background: "rgba(52,211,153,.16)", borderColor: "rgba(52,211,153,.4)", color: "#6EE7B7" }}><Landmark size={13} /> 재무회계 · K-IFRS</span>
-          <div className="ontocta-t">재무회계 온톨로지 시스템</div>
-          <p>섹션별 거래를 실시간 분개로 인식해 <b>K-IFRS 손익계산서</b>(매출·영업이익·법인세전·당기순이익)와 <b>부채</b>(토큰적립금·기부금)를 실시간 집계합니다.</p>
-          <div className="ontocta-mini"><span><PieChart size={12} /> 매출 5계정</span><span><Receipt size={12} /> 손익계산서</span><span><Landmark size={12} /> 부채·회계</span><span><Zap size={12} /> 실시간 분개</span></div>
-        </div>
-        <div className="ontocta-r"><button className="ontocta-btn" style={{ background: "linear-gradient(135deg,#34D399,#0EA5E9)" }} onClick={(e) => { e.stopPropagation(); go("finance"); }}><Landmark size={16} /> 회계시스템 열기 <ChevronRight size={15} /></button></div>
       </div>
       <div className="profile">
         <span className="pa">{nm[0]}</span>
@@ -6345,7 +6334,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTab("explorer"); };
-  const tabs = [["overview", "코호트 개요", Activity], ["live", "실시간 시뮬레이션", Zap], ["explorer", "객체 탐색기", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
+  const tabs = [["overview", "코호트 개요", Activity], ["live", "실시간 시뮬레이션", Zap], ["explorer", "객체 탐색기", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles], ["finance", "재무회계", Landmark]];
   if (!agg) return null;
   return (
     <div style={{ marginTop: 16 }}>
@@ -6376,6 +6365,7 @@ function OntologySection({ onGo }) {
       {tab === "explorer" && <OntExplorer cohort={cohort} onGo={onGo} seg={seg} />}
       {tab === "graph" && <div className="ontpanel"><div className="ontph"><Network size={15} color="#22D3EE" /> 온톨로지 스키마 (객체 · 관계)</div><OntGraph agg={agg} /></div>}
       {tab === "actions" && <OntActions agg={agg} onSeg={goSeg} />}
+      {tab === "finance" && <FinanceSection onGo={onGo} />}
 
       <div className="chnote" style={{ marginTop: 12 }}>※ 파일럿 체험회원 {agg.n.toLocaleString()}명은 <b>결정적 시드로 생성한 합성(가명) 데이터</b>이며 실제 개인정보가 아닙니다. 진료과목·질병·검진 지표·질병↔보험 매핑은 실제 온톨로지(DEPT_CATS·CHECKUP_ONTOLOGY·DISEASE_INSURANCE)를 재사용합니다. 예상 의료비·나눔 대상·보장 공백은 시연용 추정입니다.</div>
     </div>

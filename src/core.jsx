@@ -265,8 +265,7 @@ const SECTIONS = [
   { k: "shop", ic: ShoppingCart, t: "건강쇼핑", s: "영양제·식단·의료기기" },
   { k: "wallet", ic: Wallet, t: "건강금융지갑", s: "자산·토큰·보험금" }, { k: "nft", ic: "NFT", t: "Health NFT", s: "건강인증서" },
   { k: "community", ic: Users, t: "커뮤니티", s: "건강 커뮤니티" }, { k: "mypage", ic: Settings, t: "마이페이지", s: "개인정보·동의관리" },
-  { k: "ontology", ic: Network, t: "온톨로지 운영", s: "코호트·질병·검진·의료비" },
-  { k: "finance", ic: Landmark, t: "재무회계", s: "실시간 손익·부채·회계(IFRS)" },
+  { k: "ontology", ic: Network, t: "온톨로지 운영", s: "코호트·질병·검진·재무회계" },
 ];
 const SCAFFOLDS = {
   checkup: { color: "#2563EB", mods: [[Search, "검진센터 검색", "지역·항목별 제휴 검진센터 검색."], [CalendarCheck, "검진 예약", "예약 및 NFT 예약증 발행."], [ShieldCheck, "무료 검진보험 자동가입", "예약 시 추가 보험료 없이 자동 가입."], [FileText, "결과 업로드·AI 리포트", "검진 결과 연동 후 XAI 리포트."]] },

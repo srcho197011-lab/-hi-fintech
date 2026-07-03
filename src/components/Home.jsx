@@ -107,19 +107,9 @@ function HomeView({ onGo }) {
           <span className="ontocta-badge"><Network size={13} /> 운영 · 파일럿 온톨로지</span>
           <div className="ontocta-t">온톨로지 운영시스템</div>
           <p>파일럿 체험회원 <b>1만명 · 가족(가구) 구조</b>를 팔란티어형 온톨로지(객체·관계·액션)로 운영합니다 — 진료과목·질병·건강검진·예상의료비·보험담보·나눔대상을 하나의 지식그래프로.</p>
-          <div className="ontocta-mini"><span><Users size={12} /> 회원 1,000</span><span><HeartPulse size={12} /> 질병·검진</span><span><Banknote size={12} /> 예상의료비</span><span><HeartHandshake size={12} /> 치료비 나눔</span></div>
+          <div className="ontocta-mini"><span><Users size={12} /> 회원·가족</span><span><HeartPulse size={12} /> 질병·검진</span><span><Banknote size={12} /> 예상의료비</span><span><Landmark size={12} /> 재무회계·밸류에이션</span></div>
         </div>
         <div className="ontocta-r"><OntoCtaArt /><button className="ontocta-btn" onClick={(e) => { e.stopPropagation(); go("ontology"); }}><Network size={16} /> 운영시스템 열기 <ChevronRight size={15} /></button></div>
-      </div>
-      <div className="ontocta fin" onClick={() => go("finance")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") go("finance"); }}>
-        <div className="ontocta-glow" style={{ background: "#34D399" }} /><div className="ontocta-glow g2" style={{ background: "#0EA5E9" }} />
-        <div className="ontocta-l">
-          <span className="ontocta-badge" style={{ background: "rgba(52,211,153,.16)", borderColor: "rgba(52,211,153,.4)", color: "#6EE7B7" }}><Landmark size={13} /> 재무회계 · K-IFRS</span>
-          <div className="ontocta-t">재무회계 온톨로지 시스템</div>
-          <p>섹션별 거래를 실시간 분개로 인식해 <b>K-IFRS 손익계산서</b>(매출·영업이익·법인세전·당기순이익)와 <b>부채</b>(토큰적립금·기부금)를 실시간 집계합니다.</p>
-          <div className="ontocta-mini"><span><PieChart size={12} /> 매출 5계정</span><span><Receipt size={12} /> 손익계산서</span><span><Landmark size={12} /> 부채·회계</span><span><Zap size={12} /> 실시간 분개</span></div>
-        </div>
-        <div className="ontocta-r"><button className="ontocta-btn" style={{ background: "linear-gradient(135deg,#34D399,#0EA5E9)" }} onClick={(e) => { e.stopPropagation(); go("finance"); }}><Landmark size={16} /> 회계시스템 열기 <ChevronRight size={15} /></button></div>
       </div>
       <div className="profile">
         <span className="pa">{nm[0]}</span>

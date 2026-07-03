@@ -396,7 +396,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTab("explorer"); };
-  const tabs = [["overview", "코호트 개요", Activity], ["live", "실시간 시뮬레이션", Zap], ["explorer", "객체 탐색기", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
+  const tabs = [["overview", "코호트 개요", Activity], ["live", "실시간 시뮬레이션", Zap], ["explorer", "객체 탐색기", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles], ["finance", "재무회계", Landmark]];
   if (!agg) return null;
   return (
     <div style={{ marginTop: 16 }}>
@@ -427,6 +427,7 @@ function OntologySection({ onGo }) {
       {tab === "explorer" && <OntExplorer cohort={cohort} onGo={onGo} seg={seg} />}
       {tab === "graph" && <div className="ontpanel"><div className="ontph"><Network size={15} color="#22D3EE" /> 온톨로지 스키마 (객체 · 관계)</div><OntGraph agg={agg} /></div>}
       {tab === "actions" && <OntActions agg={agg} onSeg={goSeg} />}
+      {tab === "finance" && <FinanceSection onGo={onGo} />}
 
       <div className="chnote" style={{ marginTop: 12 }}>※ 파일럿 체험회원 {agg.n.toLocaleString()}명은 <b>결정적 시드로 생성한 합성(가명) 데이터</b>이며 실제 개인정보가 아닙니다. 진료과목·질병·검진 지표·질병↔보험 매핑은 실제 온톨로지(DEPT_CATS·CHECKUP_ONTOLOGY·DISEASE_INSURANCE)를 재사용합니다. 예상 의료비·나눔 대상·보장 공백은 시연용 추정입니다.</div>
     </div>
