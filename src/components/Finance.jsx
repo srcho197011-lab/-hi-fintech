@@ -8,17 +8,19 @@ const finWon = (n) => { n = Math.round(n); const s = n < 0 ? "-" : ""; n = Math.
 const finRr = (a, b) => a + Math.random() * (b - a);
 // 매출 유형(수익 계정) — IFRS 15 수익
 const FIN_REVTYPES = [
-  { k: "product", label: "제품판매 매출", src: "건강쇼핑(GMV)", c: "#34D399", w: 40, min: 15000, max: 320000 },
-  { k: "checkup", label: "검진 연계 수수료", src: "건강검진센터", c: "#22D3EE", w: 22, min: 15000, max: 30000 },
-  { k: "emr", label: "병원 EMR·환자연계", src: "제휴 병원(월정액)", c: "#6366F1", w: 8, min: 2500000, max: 3500000 },
-  { k: "insurance", label: "보험 중개 수수료", src: "보험·치료비", c: "#A78BFA", w: 16, min: 30000, max: 320000 },
-  { k: "ad", label: "광고·제휴 매출", src: "제휴·마케팅", c: "#FBBF24", w: 6, min: 40000, max: 260000 },
+  { k: "product", label: "제품판매 매출", src: "건강쇼핑(GMV)", c: "#34D399", w: 38, min: 15000, max: 320000 },
+  { k: "checkup", label: "검진 연계 수수료", src: "건강검진센터", c: "#22D3EE", w: 20, min: 15000, max: 30000 },
+  { k: "service", label: "헬스케어 서비스 수수료", src: "상담·홈케어·재활·PT", c: "#2DD4BF", w: 12, min: 8000, max: 40000 },
+  { k: "reservation", label: "예약 서비스 수수료", src: "골프·시설 예약(건당 1만)", c: "#F97316", w: 10, min: 10000, max: 10000 },
+  { k: "emr", label: "병원 EMR·환자연계", src: "제휴 병원(월정액)", c: "#6366F1", w: 6, min: 2500000, max: 3500000 },
+  { k: "insurance", label: "보험 중개 수수료", src: "보험·치료비", c: "#A78BFA", w: 12, min: 30000, max: 320000 },
+  { k: "ad", label: "광고·제휴 매출", src: "제휴·마케팅", c: "#FBBF24", w: 5, min: 40000, max: 260000 },
 ];
 const FIN_COGS_META = [["product", "제품 원가", "#F472B6"], ["infra", "검진·인프라 원가", "#38BDF8"], ["payment", "결제 대행 수수료", "#94A3B8"]];
 const FIN_SGA_META = [["payroll", "인건비", "#F59E0B"], ["marketing", "마케팅비", "#EC4899"], ["rnd", "연구개발비", "#8B5CF6"], ["rent", "임차료·관리비", "#64748B"], ["depr", "감가상각비", "#0EA5E9"], ["reward", "포인트(토큰적립) 비용", "#22D3EE"], ["donation", "기부금(치료비 나눔)", "#E11D48"]];
 const FIN_LIAB_META = [["token", "토큰적립금 (계약부채)", "#22D3EE"], ["donation", "기부금 준비금 (미지급기부금)", "#E11D48"], ["payable", "매입채무·미지급금", "#94A3B8"]];
 const FIN_FIX = { payroll: [320000, 430000], marketing: [140000, 240000], rnd: [80000, 150000], rent: [50000, 85000], depr: [34000, 58000] };
-const _finZero = () => ({ rev: { product: 0, checkup: 0, emr: 0, insurance: 0, ad: 0 }, cogs: { product: 0, infra: 0, payment: 0 }, sga: { payroll: 0, marketing: 0, rnd: 0, rent: 0, depr: 0, reward: 0, donation: 0 }, other: { income: 0, finIncome: 0, finCost: 0 }, liab: { token: 0, donation: 0, payable: 0 } });
+const _finZero = () => ({ rev: { product: 0, checkup: 0, service: 0, reservation: 0, emr: 0, insurance: 0, ad: 0 }, cogs: { product: 0, infra: 0, payment: 0 }, sga: { payroll: 0, marketing: 0, rnd: 0, rent: 0, depr: 0, reward: 0, donation: 0 }, other: { income: 0, finIncome: 0, finCost: 0 }, liab: { token: 0, donation: 0, payable: 0 } });
 const _finSum = (o) => Object.values(o).reduce((s, v) => s + v, 0);
 function finPL(a) {
   const revenue = _finSum(a.rev), cogs = _finSum(a.cogs), gross = revenue - cogs, sga = _finSum(a.sga), op = gross - sga;
@@ -66,7 +68,7 @@ function finAnnual() {
   const inventory = Math.round(r.cogs * 0.05), receivable = Math.round(r.revenue * 0.08), prepaid = 100000000;
   const cash = assets - (nonCurAssets + inventory + receivable + prepaid), curAssets = cash + receivable + inventory + prepaid;
   return {
-    revProduct: r.revProduct, revCheckup: r.revCheckup, revEmr: r.revEmr, revInsurance: r.revInsurance, revAd: r.revAd, revenue: r.revenue, cogs: r.cogs, gross: r.gross, reward: r.reward, donation: r.donation, sga: r.sga, op, finIncome, finCost, pbt, tax, net, opMargin: op / r.revenue, netMargin: net / r.revenue,
+    revProduct: r.revProduct, catRev: r.catRev, revCheckup: r.revCheckup, revService: r.revService, revReservation: r.revReservation, revEmr: r.revEmr, revInsurance: r.revInsurance, revAd: r.revAd, revenue: r.revenue, cogs: r.cogs, cogsProduct: r.cogsProduct, gross: r.gross, reward: r.reward, donation: r.donation, sga: r.sga, op, finIncome, finCost, pbt, tax, net, opMargin: op / r.revenue, netMargin: net / r.revenue,
     assets, cash, receivable, inventory, prepaid, curAssets, ppe, intangible, rou, nonCurAssets, contractLiab, donationPay, tradePay, taxPay, deposits, curLiab, leaseLiab, longDebt, nonCurLiab, liabilities, capital, surplus, retained, equity,
     debtRatio: liabilities / equity, currentRatio: curAssets / curLiab, equityRatio: equity / assets, roe: retained / equity,
     A: { members: M.membersEnd[2], activeRate: M.activeRate, hospitals: M.hospitals[2], buyerRate: M.productBuyerRate, checkupRate: M.checkupRate },
@@ -79,8 +81,17 @@ const FIN_MY = {
   membersEnd: [100000, 500000, 1000000, 5000000, 10000000], activeRate: 0.45,
   cac: [3000, 4000, 5000, 6000, 7000],
   hospitals: [200, 800, 1500, 2500, 3000], emrFeeMonthly: 3000000, // 병원 EMR·환자연계 월 300만
-  productBuyerRate: 0.35, arpuProductGMV: 320000, productCostRate: 0.52, // 제품 GMV(총액) — 최대 매출
+  // 제품 GMV(총액·건강쇼핑) — 한국인 1인당 연간 건강관리 지출 근거 × 플랫폼 포착. 카테고리별 원가율.
+  productBuyerRate: 0.38,
+  productCats: [
+    { key: "supp", label: "영양제·보충제", arpu: 140000, cost: 0.35 }, // 국내 1인 연 13.5만(건기식협회) 중 포착
+    { key: "diet", label: "건강식단·식품", arpu: 45000, cost: 0.50 }, // 1인 연 4만(HMR 건강세그먼트)
+    { key: "device", label: "홈케어 의료기기", arpu: 45000, cost: 0.40 }, // 1인 연 4만(가정용 기기)
+    { key: "sports", label: "스포츠용품·활동", arpu: 80000, cost: 0.60 }, // 1인 연 25만(스포츠) 중 용품 포착
+  ],
   checkupRate: 0.45, checkupFee: 22500, checkupCostRate: 0.50, // 검진 연계 건당 1.5~3만(평균 2.25만), 원가 50%
+  serviceRate: 0.30, serviceCommission: 15000, serviceCostRate: 0.05, // 헬스케어 서비스(상담·홈케어·재활·PT) 매칭 수수료 — 1인 연 15만 지출 중 수수료
+  resvPerActive: [0.4, 0.7, 1.0, 1.3, 1.6], resvFee: 10000, // 예약 서비스(골프 등) 건당 1만원 · 활성회원 연 예약건수
   arpuInsurance: [3000, 5000, 8000, 12000, 15000], adPerActive: [0, 300, 800, 1500, 2500],
   opexRate: 0.12, donationRate: 0.05, rewardRate: 0.12, payroll: [3000000000, 8000000000, 15000000000, 40000000000, 80000000000],
   deprYear: 1000000000, interestYear: 800000000, taxRate: 0.22, wacc: 0.15, termGrowth: 0.03, evRevMultiple: 4.0, evEbitdaMultiple: 15,
@@ -96,16 +107,20 @@ function finMultiYear() {
   const M = FIN_MY; const rows = [];
   for (let y = 0; y < 5; y++) {
     const membersEnd = M.membersEnd[y], membersPrev = y === 0 ? 0 : M.membersEnd[y - 1], newMembers = membersEnd - membersPrev, active = Math.round(membersEnd * M.activeRate);
-    const buyers = Math.round(membersEnd * M.productBuyerRate), revProduct = buyers * M.arpuProductGMV; // 제품 GMV(총액)
+    const buyers = Math.round(membersEnd * M.productBuyerRate);
+    let revProduct = 0, cogsProduct = 0; const catRev = {}; // 카테고리별 GMV(건강쇼핑) + 원가
+    for (const c of M.productCats) { const rv = buyers * c.arpu; catRev[c.key] = rv; revProduct += rv; cogsProduct += Math.round(rv * c.cost); }
     const checkupUsers = Math.round(membersEnd * M.checkupRate), revCheckup = checkupUsers * M.checkupFee;
+    const serviceUsers = Math.round(membersEnd * M.serviceRate), revService = serviceUsers * M.serviceCommission; // 헬스케어 서비스 매칭 수수료
+    const reservations = Math.round(active * M.resvPerActive[y]), revReservation = reservations * M.resvFee; // 예약 서비스(골프 등) 건당 1만
     const hospitals = M.hospitals[y], revEmr = hospitals * M.emrFeeMonthly * 12;
     const revInsurance = active * M.arpuInsurance[y], revAd = active * M.adPerActive[y];
-    const revenue = revProduct + revCheckup + revEmr + revInsurance + revAd;
-    const cogsProduct = Math.round(revProduct * M.productCostRate), cogsCheckup = Math.round(revCheckup * M.checkupCostRate), cogsEmr = Math.round(revEmr * 0.1), cogsPayment = Math.round(revProduct * 0.022), cogs = cogsProduct + cogsCheckup + cogsEmr + cogsPayment, gross = revenue - cogs;
+    const revenue = revProduct + revCheckup + revService + revReservation + revEmr + revInsurance + revAd;
+    const cogsCheckup = Math.round(revCheckup * M.checkupCostRate), cogsService = Math.round(revService * M.serviceCostRate), cogsEmr = Math.round(revEmr * 0.1), cogsPayment = Math.round(revProduct * 0.022), cogs = cogsProduct + cogsCheckup + cogsService + cogsEmr + cogsPayment, gross = revenue - cogs;
     const marketing = newMembers * M.cac[y], otherOpex = Math.round(revenue * M.opexRate), donation = Math.round(revenue * M.donationRate), reward = Math.round((revProduct - cogsProduct) * M.rewardRate), payroll = M.payroll[y], sga = marketing + otherOpex + donation + reward + payroll;
     const ebit = gross - sga, ebitda = ebit + M.deprYear, pbt = ebit - M.interestYear, tax = Math.max(0, pbt) * M.taxRate, net = pbt - tax;
     const capex = y < 2 ? 2000000000 : 5000000000, dwc = Math.round(revenue * 0.02), nopat = ebit * (1 - M.taxRate), fcf = nopat + M.deprYear - capex - dwc;
-    rows.push({ y, label: M.years[y], membersEnd, membersPrev, newMembers, active, buyers, checkupUsers, hospitals, cac: M.cac[y], marketing, revProduct, revCheckup, revInsurance, revEmr, revAd, revenue, cogs, gross, otherOpex, donation, reward, payroll, sga, ebit, ebitda, pbt, tax, net, capex, fcf, opMargin: ebit / revenue, netMargin: net / revenue });
+    rows.push({ y, label: M.years[y], membersEnd, membersPrev, newMembers, active, buyers, checkupUsers, serviceUsers, reservations, hospitals, cac: M.cac[y], marketing, revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr, revAd, revenue, cogs, gross, otherOpex, donation, reward, payroll, sga, ebit, ebitda, pbt, tax, net, capex, fcf, opMargin: ebit / revenue, netMargin: net / revenue });
   }
   return rows;
 }
@@ -139,14 +154,15 @@ function FinanceLive() {
         const t = _finWpick(); const p = Math.round(finRr(t.min, t.max) / 1000) * 1000; const who = pickWho(t.k);
         a.rev[t.k] += p;
         if (t.k === "product") {
-          const cost = Math.round(p * 0.52); a.cogs.product += cost; a.cogs.payment += Math.round(p * 0.022); a.liab.payable += Math.round(p * 0.3);
+          const cost = Math.round(p * 0.44); a.cogs.product += cost; a.cogs.payment += Math.round(p * 0.022); a.liab.payable += Math.round(p * 0.3);
           const margin = p - cost, reward = Math.round(margin * 0.5), don = Math.round(margin * 0.3);
           a.sga.reward += reward; a.liab.token += reward; a.sga.donation += don; a.liab.donation += don;
           push(t.c, `${who} · ${t.label} (건강쇼핑)`, p, "제품매출");
         } else {
           if (t.k === "checkup") a.cogs.infra += Math.round(p * 0.5);
           else if (t.k === "emr") a.cogs.infra += Math.round(p * 0.1);
-          push(t.c, `${who} · ${t.label}`, p, t.k === "checkup" ? "검진수수료수익" : t.k === "emr" ? "EMR연계수익" : t.k === "insurance" ? "중개수수료" : "광고수익");
+          else if (t.k === "service") a.cogs.infra += Math.round(p * 0.05);
+          push(t.c, `${who} · ${t.label}`, p, t.k === "checkup" ? "검진수수료수익" : t.k === "emr" ? "EMR연계수익" : t.k === "service" ? "서비스수수료수익" : t.k === "reservation" ? "예약수수료수익" : t.k === "insurance" ? "중개수수료" : "광고수익");
         }
       }
       // 고정 판관비(기간 발생)
@@ -322,7 +338,8 @@ function FinanceLive() {
         </div>
         <div className="ontpanel">
           <div className="ontph"><PieChart size={15} color="#22D3EE" /> 연간 예상 매출 구성 <span>· 총 {finWon(an.revenue)}원</span></div>
-          {[["제품판매(GMV·건강쇼핑)", an.revProduct, "#34D399"], ["검진 연계 수수료", an.revCheckup, "#22D3EE"], ["병원 EMR·환자연계", an.revEmr, "#6366F1"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={an.revProduct} color={c} sub="원" />)}
+          {[["제품판매(GMV·건강쇼핑)", an.revProduct, "#34D399"], ["검진 연계 수수료", an.revCheckup, "#22D3EE"], ["헬스케어 서비스 수수료", an.revService, "#2DD4BF"], ["예약 서비스 수수료(골프 등)", an.revReservation, "#F97316"], ["병원 EMR·환자연계", an.revEmr, "#6366F1"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={an.revProduct} color={c} sub="원" />)}
+          <div className="finpl-note" style={{ marginTop: 8 }}>제품 GMV 카테고리: 영양제 {finWon(an.catRev.supp)}(원가35%)·건강식단 {finWon(an.catRev.diet)}(50%)·홈케어기기 {finWon(an.catRev.device)}(40%)·스포츠용품 {finWon(an.catRev.sports)}(60%)</div>
         </div>
       </div>
       <div className="ontgrid2">
@@ -360,7 +377,7 @@ function FinanceLive() {
     </>); })()}
 
     {tab === "my" && (() => { const my = finMultiYear(); const revMax = Math.max(...my.map((r) => r.revenue)); const M = (l, f, cls) => <tr className={cls || ""}><td className="mono0">{l}</td>{my.map((r, i) => <td key={i} className="mono">{f(r)}</td>)}</tr>; return (<>
-      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> 시장조사 기반 <b>3~5개년 중장기 추정</b> — 회원 <b>10만→1,000만</b>(검진 무료서비스 + 지자체·협회 제휴), 제휴병원 200→3,000곳. 제품은 <b>GMV(총액)</b>, 검진 <b>건당 2.25만</b>, 병원 EMR <b>월 300만</b> 인식.</div>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> 시장조사 기반 <b>3~5개년 중장기 추정</b> — 회원 <b>10만→1,000만</b>. 제품 GMV는 <b>한국인 1인당 연 건강관리 지출</b>(영양제 13.5만·기기 4만·식단 4만·스포츠 25만·서비스 15만) 근거로 카테고리별 재산정, <b>원가율 영양제35%·식단50%·기기40%·스포츠60%</b>. 검진 건당 2.25만, 병원 EMR 월 300만, <b>골프 등 예약 수수료 건당 1만원</b> 반영.</div>
       <div className="ontpanel">
         <div className="ontph"><TrendingUp size={15} color="#34D399" /> 중장기 손익 추정 (5개년) <span>· 단위 원</span></div>
         <div className="onttbl-wrap"><table className="onttbl mytbl">
@@ -372,6 +389,8 @@ function FinanceLive() {
             {M("매출액", (r) => finWon(r.revenue), "myrev")}
             {M("　제품판매(GMV)", (r) => finWon(r.revProduct))}
             {M("　검진 연계 수수료", (r) => finWon(r.revCheckup))}
+            {M("　헬스케어 서비스 수수료", (r) => finWon(r.revService))}
+            {M("　예약 서비스(골프 등)", (r) => finWon(r.revReservation))}
             {M("　병원 EMR·환자연계", (r) => finWon(r.revEmr))}
             {M("　보험 중개", (r) => finWon(r.revInsurance))}
             {M("　광고·제휴", (r) => finWon(r.revAd))}
