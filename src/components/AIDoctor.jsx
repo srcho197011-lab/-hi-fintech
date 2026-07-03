@@ -507,6 +507,8 @@ function logConsult(question, content, riskIdx) {
   const session = { id: `sess_${++LOGID}`, user_id: "user_demo", question, answer_summary: content ? content.summary : "(검색 결과 없음)", risk_level: RISK[riskIdx][0], recommended_action: RISK_ACTION[riskIdx], referenced_content_ids: content ? [content.id] : [], created_at: ts };
   AI_SESSIONS.push(session);
   if (content) INS_REC_LOGS.push({ id: `insrec_${LOGID}`, user_id: "user_demo", session_id: session.id, detected_risks: content.ins, recommended_coverages: content.ins.map((t) => (INS_META[t] || [])[3]).filter(Boolean), health_wallet_suggestion: "건강활동 적립 건강자산으로 보험료·의료비 지원 가능", created_at: ts });
+  // Foundry 닫힌 루프: 로그인 회원의 데이터 스토리지에도 상담 이벤트 적재 → 분석 앱에서 5대 안내로 연결
+  try { if (typeof consultAdd === "function" && typeof demoCurrentUser === "function") { const cu = demoCurrentUser(); if (cu) consultAdd(cu, { id: session.id, topic: (content && content.title) || question.slice(0, 12), kind: "증상질문", question, riskIdx, risk: RISK[riskIdx][0], riskColor: RISK[riskIdx][1], riskBg: RISK[riskIdx][2], source: "상담(실시간)" }); } } catch (e) {}
   // saveToBackend(session) — 실서비스: Supabase/PostgreSQL insert (ai_doctor_sessions, insurance_recommendation_logs)
   return session;
 }

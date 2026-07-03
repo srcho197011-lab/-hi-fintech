@@ -18,11 +18,13 @@ src/components/Ontology.jsx
 src/components/Finance.jsx
 src/components/Marketing.jsx
 src/components/Social.jsx
+src/components/ConsultIntel.jsx
 src/data/demoMembers.js
 src/data/healthOntology.js
 src/data/healthKnowledge.js
 src/data/telemed.js
 src/data/pilotCohort.js
+src/data/consultStore.js
 src/data/checkupCenters.js
 src/data/shopProducts.js
 src/utils/ontologyConsult.js
