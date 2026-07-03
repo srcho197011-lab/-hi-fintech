@@ -16,6 +16,7 @@ src/components/Community.jsx
 src/components/Home.jsx
 src/components/Ontology.jsx
 src/components/Finance.jsx
+src/components/Marketing.jsx
 src/data/demoMembers.js
 src/data/healthOntology.js
 src/data/healthKnowledge.js
