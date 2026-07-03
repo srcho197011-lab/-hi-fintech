@@ -1101,6 +1101,7 @@ function CartView({cart,setCart,go,addOrder,goTab}){
         <div className="resitem"><span className="ic or"><Coins size={18} color="var(--orange)"/></span><div><b>Health Token 적립</b><div className="sub2">+{reward} HPET가 건강금융지갑에 적립됩니다.</div></div></div>
         <div className="resitem"><span className="ic gr"><ShieldCheck size={18} color="var(--green)"/></span><div><b>건강금융지갑 기록</b><div className="sub2">구매 상품·건강기능·금액이 마루 건강지갑에 자동 기록됩니다.</div></div></div>
         <div className="resitem"><span className="ic pu"><Award size={18} color="#8A63D2"/></span><div><b>건강관리·보험 반영</b><div className="sub2">구매 이력이 AI 건강관리 추천과 보험 적립에 반영됩니다.</div></div></div>
+        <div className="resitem"><span className="ic" style={{background:"#FFE9E2"}}><Heart size={18} fill="#EF5B5B" color="#EF5B5B"/></span><div><b>유기동물 지원 기부 +{donationOf(total).toLocaleString()}원</b><div className="sub2">이번 구매 판매마진의 5%가 유기동물 보호·치료에 기부됩니다. 🐾</div></div></div>
       </div>
       <div style={{display:"flex",gap:8,marginTop:16}}>
         <button className="cbtn" style={{margin:0}} onClick={()=>{setCart([]);setDone(false);}}>계속 쇼핑</button>
@@ -1755,8 +1756,17 @@ function RewardSection(){
 }
 
 /* ============================ 건강금융지갑 ============================ */
+const PLATFORM_MARGIN=0.25;        // 제품 판매마진(가정)
+const DONATE_RATE=0.05;            // 판매마진의 5%를 유기동물 지원 기부
+const DONATE_BASE=8542000;         // 플랫폼 누적 기부금(데모)
+const donationOf=(total)=>Math.round((total||0)*PLATFORM_MARGIN*DONATE_RATE);
+
 function WalletSection(){
   const W=WALLET2; const won=(n)=>n.toLocaleString();
+  const orders=(typeof SLS!=="undefined")?SLS.get("hipet_app_orders",[]):[];
+  const mySpend=orders.reduce((s,o)=>s+(o.total||0),0);
+  const myDonation=donationOf(mySpend);
+  const fundTotal=DONATE_BASE+myDonation;
   return (
     <div className="hsec">
       <div className="aihead"><span className="aiico"><Wallet size={24} color="#fff"/></span>
@@ -1771,6 +1781,24 @@ function WalletSection(){
           <div>NFT 인증<b className="num">{W.nft} 건</b></div>
         </div>
       </div>
+
+      <div className="donatecard">
+        <div className="donatetop">
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span className="donateic"><Heart size={20} fill="#fff" color="#fff"/></span>
+            <div><div className="dttl">유기동물 지원 기부</div><div className="dsub">제품 판매마진의 <b>5%</b>를 유기동물 보호·치료에 나눔</div></div>
+          </div>
+          <span style={{fontSize:30}}>🐾</span>
+        </div>
+        <div className="donaterow">
+          <div className="dcell"><div className="dcl">플랫폼 누적 기부금</div><div className="dcv num">₩ {won(fundTotal)}</div></div>
+          <div className="dcell"><div className="dcl">내 구매로 적립된 기부</div><div className="dcv num" style={{color:"#EF5B5B"}}>+{won(myDonation)}원</div></div>
+          <div className="dcell"><div className="dcl">이번 달 치료 지원</div><div className="dcv num">37 마리</div></div>
+        </div>
+        <p className="donatep">HI-PET 쇼핑몰에서 발생한 <b>제품 판매마진의 5%</b>가 유기동물 보호·치료·입양 지원에 자동 기부됩니다. 형과 마루의 소비가 갈 곳 없는 아이들을 돕습니다. 🐾</p>
+        <div className="donatepartners"><span>동물보호단체 제휴</span><span>유기동물 보호소</span><span>입양 캠페인</span></div>
+      </div>
+
       <div className="hm2">
         <div className="card"><div className="rct"><TrendingUp size={18} color="var(--orange)"/> 토큰 적립 내역</div>
           {W.earn.map((e,i)=>{ const Ic=e.ic; return (<div className="vrow" key={i}><span className="vic" style={{background:"var(--orange-soft)"}}><Ic size={16} color="var(--orange)"/></span>
@@ -2619,6 +2647,20 @@ css.textContent=`
 .walhero .wsub{display:flex;gap:22px;flex-wrap:wrap;margin-top:16px}
 .walhero .wsub>div{font-size:12px;opacity:.95}
 .walhero .wsub b{display:block;font-size:16px;font-weight:900;margin-top:3px}
+/* ===== 유기동물 지원 기부 ===== */
+.donatecard{background:linear-gradient(135deg,#FFF3EE,#FFE9E2);border:1.5px solid #FBD3C6;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.donatetop{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.donateic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#FF7A6B,#EF5B5B);box-shadow:0 4px 10px rgba(239,91,91,.35);flex-shrink:0}
+.donatecard .dttl{font-size:16px;font-weight:900;color:#D6453C}
+.donatecard .dsub{font-size:12.5px;color:var(--sub);margin-top:1px}
+.donaterow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.donaterow .dcell{background:#fff;border:1px solid #FBDDD4;border-radius:13px;padding:11px 13px}
+.donaterow .dcl{font-size:11.5px;color:var(--muted);font-weight:700}
+.donaterow .dcv{font-size:18px;font-weight:900;margin-top:3px}
+.donatep{font-size:12.5px;color:var(--sub);line-height:1.6;margin:13px 0 10px}
+.donatepartners{display:flex;flex-wrap:wrap;gap:7px}
+.donatepartners span{font-size:11px;font-weight:700;color:#D6453C;background:#fff;border:1px solid #FBD3C6;border-radius:999px;padding:3px 10px}
+@media(max-width:680px){ .donaterow{grid-template-columns:1fr} }
 /* ===== 리워드 센터 ===== */
 .mrow{display:flex;align-items:center;gap:12px;padding:13px 0}
 .mr-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
