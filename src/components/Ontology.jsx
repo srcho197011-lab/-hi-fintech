@@ -63,7 +63,7 @@ function OntOverview({ agg, onSeg }) {
     {audit && (
       <div className={`ontaudit ${audit.ok ? "ok" : "bad"}`}>
         <div className="ontaudit-l"><span className="ontaudit-ic">{audit.ok ? <Check size={18} /> : <AlertTriangle size={18} />}</span>
-          <div><b>데이터 정합성 검증 {audit.ok ? "통과" : "위반 발견"}</b><span>{audit.n.toLocaleString()}명 · {audit.households.toLocaleString()}가구 · 성별/연령/가족 규칙 자동 스캔</span></div></div>
+          <div><b>데이터 정합성 검증 {audit.ok ? "통과" : "위반 발견"}</b><span>{audit.n.toLocaleString()}명 · {audit.households.toLocaleString()}가구 · 아동(0~19) {agg.childN.toLocaleString()}명 · 성별/연령/가족 규칙 자동 스캔</span></div></div>
         <div className="ontaudit-checks">
           <div className={audit.sex ? "v" : "p"}>{audit.sex ? <X size={12} /> : <Check size={12} />} 성별 정합 <em>{audit.sex ? audit.sex + "건" : "0"}</em></div>
           <div className={audit.age ? "v" : "p"}>{audit.age ? <X size={12} /> : <Check size={12} />} 연령 정합 <em>{audit.age ? audit.age + "건" : "0"}</em></div>
@@ -132,9 +132,15 @@ function OntMemberModal({ m, onClose, onGo }) {
             {m.diseases.length ? <div className="ontchips">{m.diseases.map((d) => <span key={d} className="ontchip dz">{d}</span>)}</div> : <div className="ontempty">진단된 질병 없음 (건강 양호)</div>}
           </div>
 
-          <div className="ontmsec"><div className="ontmsh"><Activity size={13} color="#34D399" /> 건강검진 이상 지표 <span>{marks.length}</span></div>
-            {marks.length ? <div className="ontmarks">{marks.map(([k, gi]) => <div className="ontmark" key={k}><span>{k}</span><b style={{ color: gi >= 3 ? "#B91C1C" : gi === 2 ? "#EF4444" : "#F59E0B" }}>{_markL(k, gi)}</b></div>)}</div> : <div className="ontempty">검진 지표 정상 범위</div>}
-          </div>
+          {m.childHealth ? (
+            <div className="ontmsec"><div className="ontmsh"><Activity size={13} color="#34D399" /> 아동·청소년 건강검진 <span>{m.checkupType}</span></div>
+              <div className="ontmarks">{Object.entries(m.childHealth).map(([k, v]) => <div className="ontmark" key={k}><span>{k}</span><b style={{ color: /^정상|^양호/.test(v) ? "#34D399" : /필요|성장지연|소아비만|근시 \(/.test(v) ? "#EF4444" : "#F59E0B" }}>{v}</b></div>)}</div>
+            </div>
+          ) : (
+            <div className="ontmsec"><div className="ontmsh"><Activity size={13} color="#34D399" /> 건강검진 이상 지표 <span>{marks.length}</span></div>
+              {marks.length ? <div className="ontmarks">{marks.map(([k, gi]) => <div className="ontmark" key={k}><span>{k}</span><b style={{ color: gi >= 3 ? "#B91C1C" : gi === 2 ? "#EF4444" : "#F59E0B" }}>{_markL(k, gi)}</b></div>)}</div> : <div className="ontempty">검진 지표 정상 범위</div>}
+            </div>
+          )}
 
           <div className="ontmsec"><div className="ontmsh"><ShieldCheck size={13} color="#A78BFA" /> 필요 보장 · 공백</div>
             <div className="ontchips">{m.coverages.map((c) => <span key={c} className={`ontchip ${m.gap.includes(c) ? "gap" : "held"}`}>{c}{m.gap.includes(c) ? " · 공백" : ""}</span>)}</div>
