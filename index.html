@@ -6438,6 +6438,35 @@ function finCF(a, bs) {
   return { opCF, invCF, finCF: finCFv, endCash, netIncome: bs.retained, dep, wc };
 }
 
+// ── 연간 예상(추정) 재무제표 — 사업계획 가정 기반 Pro-forma P&L + B/S ──
+const FIN_ANNUAL_ASSUMP = {
+  members: 100000, arpuProduct: 150000, arpuInsurance: 9000, partners: 3000, feePerPartner: 1200000, emrPartners: 1500, emrPerPartner: 2400000, adRevenue: 500000000,
+  productCostRate: 0.52, payroll: 4000000000, marketing: 1800000000, rnd: 1100000000, rentDepr: 900000000, interest: 300000000, taxRate: 0.22,
+  capital: 300000000, surplus: 500000000, lease: 120000000, longDebt: 200000000,
+};
+function finAnnual() {
+  const A = FIN_ANNUAL_ASSUMP;
+  const revProduct = A.members * A.arpuProduct, revInsurance = A.members * A.arpuInsurance, revCommission = A.partners * A.feePerPartner, revEmr = A.emrPartners * A.emrPerPartner, revAd = A.adRevenue;
+  const revenue = revProduct + revInsurance + revCommission + revEmr + revAd;
+  const cogsProduct = Math.round(revProduct * A.productCostRate), cogsInfra = Math.round(revEmr * 0.16 + revenue * 0.01), cogsPayment = Math.round(revProduct * 0.022), cogs = cogsProduct + cogsInfra + cogsPayment;
+  const gross = revenue - cogs, productMargin = revProduct - cogsProduct;
+  const reward = Math.round(productMargin * 0.5), donation = Math.round(productMargin * 0.3); // 적립=계약부채(이연), 나눔=비용
+  const sga = A.payroll + A.marketing + A.rnd + A.rentDepr + donation, op = gross - sga;
+  const finCost = A.interest, finIncome = Math.round(revenue * 0.002), pbt = op + finIncome - finCost, tax = Math.max(0, pbt) * A.taxRate, net = pbt - tax;
+  const retained = net, equity = A.capital + A.surplus + retained;
+  const contractLiab = reward, donationPay = Math.round(donation * 0.4), tradePay = Math.round(cogsProduct * 0.15), taxPay = Math.round(tax), deposits = Math.round(revInsurance * 0.1);
+  const curLiab = contractLiab + donationPay + tradePay + taxPay + deposits, nonCurLiab = A.lease + A.longDebt, liabilities = curLiab + nonCurLiab;
+  const assets = liabilities + equity;
+  const ppe = 400000000, intangible = 300000000, rou = A.lease + 30000000, nonCurAssets = ppe + intangible + rou;
+  const inventory = Math.round(cogsProduct * 0.08), receivable = Math.round(revenue * 0.08), prepaid = 40000000;
+  const cash = assets - (nonCurAssets + inventory + receivable + prepaid), curAssets = cash + receivable + inventory + prepaid;
+  return {
+    revProduct, revCommission, revEmr, revInsurance, revAd, revenue, cogs, cogsProduct, gross, reward, donation, sga, op, finIncome, finCost, pbt, tax, net, opMargin: op / revenue, netMargin: net / revenue,
+    assets, cash, receivable, inventory, prepaid, curAssets, ppe, intangible, rou, nonCurAssets, contractLiab, donationPay, tradePay, taxPay, deposits, curLiab, leaseLiab: A.lease, longDebt: A.longDebt, nonCurLiab, liabilities, capital: A.capital, surplus: A.surplus, retained, equity,
+    debtRatio: liabilities / equity, currentRatio: curAssets / curLiab, equityRatio: equity / assets, roe: retained / equity, A,
+  };
+}
+
 function FinanceLive() {
   const [running, setRunning] = useState(true);
   const [speed, setSpeed] = useState(2);
@@ -6520,7 +6549,7 @@ function FinanceLive() {
     </div>
 
     <div className="finlink"><Network size={13} color="#22D3EE" /> 온톨로지 파일럿 <b>{cohort.length.toLocaleString()}명</b>의 건강케어 소비가 <b>실시간 매출</b>로 인식됩니다 (제품판매·보험중개는 회원, 입점수수료·EMR은 제휴 기관).</div>
-    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["trend", "결산 추이", PieChart]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
+    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
     {tab === "pl" && (<>
       <div className="ontgrid2">
@@ -6631,6 +6660,53 @@ function FinanceLive() {
         })()}
       </div>
     )}
+
+    {tab === "annual" && (() => { const an = finAnnual(); const A = an.A; const anPL = [["매출액", an.revenue, 0, "rev"], ["(-) 매출원가", -an.cogs, 0, "neg"], ["매출총이익", an.gross, 1, "sub"], ["(-) 판매비와관리비", -an.sga, 0, "neg"], ["영업이익", an.op, 2, "sub"], ["(+) 금융수익", an.finIncome, 0, "pos"], ["(-) 금융비용(이자)", -an.finCost, 0, "neg"], ["법인세비용차감전순이익", an.pbt, 1, "sub"], ["(-) 법인세비용", -an.tax, 0, "neg"], ["당기순이익", an.net, 3, "net"]]; return (<>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><Banknote size={13} color="#34D399" /> 연간 사업계획 가정 — 활성회원 <b>{A.members.toLocaleString()}명</b> · 회원당 제품소비 <b>{finWon(A.arpuProduct)}원/년</b> · 제휴기관 <b>{A.partners.toLocaleString()}곳</b>(입점) · EMR/SaaS <b>{A.emrPartners.toLocaleString()}곳</b> · 법인세율 22%. <b>추정(Pro-forma) 재무제표</b>입니다.</div>
+      <div className="ontgrid2">
+        <div className="ontpanel">
+          <div className="ontph"><Receipt size={15} color="#34D399" /> 연간 예상 손익계산서 <span>· 1개년 추정</span></div>
+          <div className="finpl">{anPL.map(([l, v, emph, kind], i) => <div className={`finpl-r ${emph ? "sub emph" + emph : ""} ${kind}`} key={i}><span>{l}</span><b>{finWon(v)}원</b></div>)}</div>
+          <div className="finpl-note">영업이익률 {(an.opMargin * 100).toFixed(1)}% · 순이익률 {(an.netMargin * 100).toFixed(1)}% · 토큰적립금 {finWon(an.reward)}(계약부채 이연)·기부금 {finWon(an.donation)}</div>
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><PieChart size={15} color="#22D3EE" /> 연간 예상 매출 구성 <span>· 총 {finWon(an.revenue)}원</span></div>
+          {[["제품판매(건강쇼핑)", an.revProduct, "#34D399"], ["플랫폼 입점 수수료(검진·병원·약국)", an.revCommission, "#22D3EE"], ["EMR·SaaS 사용료", an.revEmr, "#6366F1"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={an.revProduct} color={c} sub="원" />)}
+        </div>
+      </div>
+      <div className="ontgrid2">
+        <div className="ontpanel">
+          <div className="ontph"><Banknote size={15} color="#FBBF24" /> 연간 예상 재무상태표 — 자산 <span>· {finWon(an.assets)}원</span></div>
+          <div className="finpl">
+            <div className="finpl-r sub emph2"><span>Ⅰ. 유동자산</span><b>{finWon(an.curAssets)}원</b></div>
+            <div className="finpl-r"><span>　현금및현금성자산</span><b>{finWon(an.cash)}원</b></div>
+            <div className="finpl-r"><span>　매출채권</span><b>{finWon(an.receivable)}원</b></div>
+            <div className="finpl-r"><span>　재고자산</span><b>{finWon(an.inventory)}원</b></div>
+            <div className="finpl-r"><span>　선급비용</span><b>{finWon(an.prepaid)}원</b></div>
+            <div className="finpl-r sub emph2"><span>Ⅱ. 비유동자산</span><b>{finWon(an.nonCurAssets)}원</b></div>
+            <div className="finpl-r"><span>　유형자산·무형자산·사용권자산</span><b>{finWon(an.nonCurAssets)}원</b></div>
+            <div className="finpl-r net"><span>자산 총계</span><b>{finWon(an.assets)}원</b></div>
+          </div>
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><Landmark size={15} color="#E11D48" /> 연간 예상 재무상태표 — 부채와 자본 <span>· {finWon(an.liabilities + an.equity)}원</span></div>
+          <div className="finpl">
+            <div className="finpl-r sub"><span>Ⅰ. 유동부채</span><b>{finWon(an.curLiab)}원</b></div>
+            <div className="finpl-r"><span>　계약부채(토큰적립금)</span><b>{finWon(an.contractLiab)}원</b></div>
+            <div className="finpl-r"><span>　미지급기부금·매입채무·법인세·예수금</span><b>{finWon(an.donationPay + an.tradePay + an.taxPay + an.deposits)}원</b></div>
+            <div className="finpl-r sub"><span>Ⅱ. 비유동부채(리스·차입)</span><b>{finWon(an.nonCurLiab)}원</b></div>
+            <div className="finpl-r sub emph2"><span>Ⅲ. 자본</span><b>{finWon(an.equity)}원</b></div>
+            <div className="finpl-r"><span>　자본금·자본잉여금</span><b>{finWon(an.capital + an.surplus)}원</b></div>
+            <div className="finpl-r"><span>　이익잉여금(당기순이익)</span><b style={{ color: "#6EE7B7" }}>{finWon(an.retained)}원</b></div>
+            <div className="finpl-r net"><span>부채와 자본 총계</span><b>{finWon(an.liabilities + an.equity)}원</b></div>
+          </div>
+          <div className="ontcostgrid" style={{ gridTemplateColumns: "repeat(4,1fr)", marginTop: 10 }}>
+            {[["부채비율", (an.debtRatio * 100).toFixed(0) + "%", "#A78BFA"], ["유동비율", (an.currentRatio * 100).toFixed(0) + "%", "#22D3EE"], ["자기자본비율", (an.equityRatio * 100).toFixed(0) + "%", "#34D399"], ["ROE", (an.roe * 100).toFixed(1) + "%", "#FBBF24"]].map(([t, v, c], i) => <div className="ontcostcell" key={i} style={{ flexDirection: "column", alignItems: "flex-start", gap: 2 }}><b style={{ color: c }}>{v}</b><span>{t}</span></div>)}
+          </div>
+          <div className="finbalance"><Check size={14} color="#34D399" /> 대차평형 — <b>자산 {finWon(an.assets)}</b> = 부채 {finWon(an.liabilities)} + 자본 {finWon(an.equity)}</div>
+        </div>
+      </div>
+    </>); })()}
 
     <div className="ontpanel">
       <div className="ontph"><Zap size={15} color="#FBBF24" /> 실시간 회계 분개(Journal) <span>· 복식부기 차·대변</span></div>
