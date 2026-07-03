@@ -8,7 +8,7 @@ import {
   Gift, CircleUserRound, ArrowLeft, ArrowRight, Menu, Plus, Smile, Send, X,
   Image as ImageIcon, Paperclip, Mic, Volume2, ExternalLink, RefreshCw, Cigarette,
   Wine, Dumbbell, ArrowDown, ArrowUp, Banknote, Ban, Check, AlertTriangle, Printer,
-  MapPin, Star, Clock, Filter, Tag, Percent, BookOpen, Trophy, Network, Zap, Play, Pause, RotateCcw,
+  MapPin, Star, Clock, Filter, Tag, Percent, BookOpen, Trophy, Network, Zap, Play, Pause, RotateCcw, Landmark, PieChart, Receipt,
 } from "lucide-react";
 const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKET, DISTRICTS, COVER_DETAIL, KDCA_NOTE, DEMO_MEMBERS } = (typeof window !== "undefined" && window.__HHDATA) || {};
 
@@ -57,6 +57,7 @@ const ICONBG = {
   community: "linear-gradient(145deg,#FFA45B,#F97316)",
   mypage: "linear-gradient(145deg,#9AA7BD,#64748B)",
   ontology: "linear-gradient(145deg,#22D3EE,#4F46E5)",
+  finance: "linear-gradient(145deg,#34D399,#0EA5E9)",
 };
 // 입체 일러스트 섹션 아이콘 (배경 없음, 특징 강조)
 function SecIcon({ k }) {
@@ -247,6 +248,13 @@ function Art({ name, size = 26 }) {
       <circle cx="24" cy="15" r="6.2" fill="url(#i-ont-g)" />
       <circle cx="12.5" cy="31" r="5" fill="#22D3EE" /><circle cx="35.5" cy="31" r="5" fill="#6366F1" /><circle cx="24" cy="35" r="4.4" fill="#A78BFA" />
       <circle cx="24" cy="15" r="2.3" fill="#fff" opacity=".85" /></svg>);
+    case "finance": return (<svg {...S}><defs>
+      <linearGradient id="i-fin-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4ADE80" /><stop offset="1" stopColor="#0EA5E9" /></linearGradient></defs>
+      <Sh rx={11} />
+      <rect x="12" y="13" width="24" height="24" rx="4.5" fill="url(#i-fin-g)" />
+      <rect x="15.5" y="16.5" width="17" height="6" rx="1.6" fill="#0B2A33" opacity=".35" />
+      <g stroke="#ECFEFF" strokeWidth="2.4" strokeLinecap="round"><line x1="17" y1="28" x2="17" y2="33" /><line x1="22" y1="25.5" x2="22" y2="33" /><line x1="27" y1="27" x2="27" y2="33" /><line x1="31.5" y1="23.5" x2="31.5" y2="33" /></g>
+      <path d="M16 27l6-3 5 2 5-5" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity=".9" /></svg>);
     default: return (<svg {...P}><circle cx="16" cy="16" r="10" fill="#94A3B8" /><path d="M16 11v10M11 16h10" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" /></svg>);
   }
 }
@@ -258,6 +266,7 @@ const SECTIONS = [
   { k: "wallet", ic: Wallet, t: "건강금융지갑", s: "자산·토큰·보험금" }, { k: "nft", ic: "NFT", t: "Health NFT", s: "건강인증서" },
   { k: "community", ic: Users, t: "커뮤니티", s: "건강 커뮤니티" }, { k: "mypage", ic: Settings, t: "마이페이지", s: "개인정보·동의관리" },
   { k: "ontology", ic: Network, t: "온톨로지 운영", s: "코호트·질병·검진·의료비" },
+  { k: "finance", ic: Landmark, t: "재무회계", s: "실시간 손익·부채·회계(IFRS)" },
 ];
 const SCAFFOLDS = {
   checkup: { color: "#2563EB", mods: [[Search, "검진센터 검색", "지역·항목별 제휴 검진센터 검색."], [CalendarCheck, "검진 예약", "예약 및 NFT 예약증 발행."], [ShieldCheck, "무료 검진보험 자동가입", "예약 시 추가 보험료 없이 자동 가입."], [FileText, "결과 업로드·AI 리포트", "검진 결과 연동 후 XAI 리포트."]] },

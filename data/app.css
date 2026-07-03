@@ -763,6 +763,27 @@
 .ontcostcell b{display:block;font-size:15px;font-weight:800;color:#EAF2FF;letter-spacing:-.3px;}
 .ontcostcell span{font-size:10.5px;color:#90A0BD;}
 @media(max-width:640px){.ontcostgrid{grid-template-columns:1fr;}}
+/* 재무회계 — 손익계산서·부채 */
+.finpl{display:flex;flex-direction:column;}
+.finpl-r{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;font-size:12.5px;color:#AFC0DE;border-bottom:1px solid #1B2942;}
+.finpl-r span{font-weight:600;}
+.finpl-r b{font-weight:700;color:#D3DEF2;font-variant-numeric:tabular-nums;}
+.finpl-r.neg b{color:#F9A8D4;}
+.finpl-r.pos b{color:#6EE7B7;}
+.finpl-r.sub{background:#0C1730;border-radius:8px;margin-top:3px;border-bottom:none;}
+.finpl-r.sub span{font-weight:800;color:#EAF2FF;}
+.finpl-r.sub b{color:#EAF2FF;font-size:13.5px;font-weight:800;}
+.finpl-r.emph2 span,.finpl-r.emph2 b{color:#34D399;}
+.finpl-r.net{background:linear-gradient(120deg,#0C2A20,#0F1B33);border:1px solid #1F5137;border-radius:9px;margin-top:5px;padding:10px 12px;}
+.finpl-r.net span{font-weight:800;color:#fff;font-size:13px;}
+.finpl-r.net b{color:#6EE7B7;font-size:16px;font-weight:800;}
+.finpl-note{font-size:10.8px;color:#7C8BA8;margin-top:9px;line-height:1.5;}
+.finliab{display:flex;flex-direction:column;gap:6px;}
+.finliab-r{display:flex;align-items:center;gap:9px;background:#0C1730;border:1px solid #24324D;border-radius:10px;padding:9px 11px;font-size:12px;color:#C7D6F0;}
+.finliab-r .dot{width:10px;height:10px;border-radius:4px;flex-shrink:0;}
+.finliab-r .ct{flex:1;}
+.finliab-r b{color:#EAF2FF;font-weight:800;font-variant-numeric:tabular-nums;}
+.ontocta.fin{background:linear-gradient(120deg,#062A22,#0B3B3A 55%,#0E4A5C);border-color:#12564F;box-shadow:0 20px 44px -26px rgba(52,211,153,.5);}
 .wcard .wi{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
 .wcard .wn{font-weight:800;font-size:13px;}
 .wcard .wd{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45;}

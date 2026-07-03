@@ -111,6 +111,16 @@ function HomeView({ onGo }) {
         </div>
         <div className="ontocta-r"><OntoCtaArt /><button className="ontocta-btn" onClick={(e) => { e.stopPropagation(); go("ontology"); }}><Network size={16} /> 운영시스템 열기 <ChevronRight size={15} /></button></div>
       </div>
+      <div className="ontocta fin" onClick={() => go("finance")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") go("finance"); }}>
+        <div className="ontocta-glow" style={{ background: "#34D399" }} /><div className="ontocta-glow g2" style={{ background: "#0EA5E9" }} />
+        <div className="ontocta-l">
+          <span className="ontocta-badge" style={{ background: "rgba(52,211,153,.16)", borderColor: "rgba(52,211,153,.4)", color: "#6EE7B7" }}><Landmark size={13} /> 재무회계 · K-IFRS</span>
+          <div className="ontocta-t">재무회계 온톨로지 시스템</div>
+          <p>섹션별 거래를 실시간 분개로 인식해 <b>K-IFRS 손익계산서</b>(매출·영업이익·법인세전·당기순이익)와 <b>부채</b>(토큰적립금·기부금)를 실시간 집계합니다.</p>
+          <div className="ontocta-mini"><span><PieChart size={12} /> 매출 5계정</span><span><Receipt size={12} /> 손익계산서</span><span><Landmark size={12} /> 부채·회계</span><span><Zap size={12} /> 실시간 분개</span></div>
+        </div>
+        <div className="ontocta-r"><button className="ontocta-btn" style={{ background: "linear-gradient(135deg,#34D399,#0EA5E9)" }} onClick={(e) => { e.stopPropagation(); go("finance"); }}><Landmark size={16} /> 회계시스템 열기 <ChevronRight size={15} /></button></div>
+      </div>
       <div className="profile">
         <span className="pa">{nm[0]}</span>
         <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 체험 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 검진일 2024.12.26 · 등록번호 ${PT.reg}`}</div></div>
