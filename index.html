@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=0073585888" />
+<link rel="stylesheet" href="./data/app.css?v=938c7b8576" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=0073585888"></script>
-<script src="./src/data/section_data.js?v=0073585888"></script>
-<script src="./src/data/demo_members.js?v=0073585888"></script>
+<script src="./src/data/dummy_data.js?v=938c7b8576"></script>
+<script src="./src/data/section_data.js?v=938c7b8576"></script>
+<script src="./src/data/demo_members.js?v=938c7b8576"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -7727,9 +7727,15 @@ function ConsultIntel({ onGo }) {
   const members = typeof demoMembers !== "undefined" ? demoMembers : [];
   const cur = typeof demoCurrentUser === "function" ? demoCurrentUser() : null;
   const roster = cur && !members.some((m) => (m.id || m.email) === (cur.id || cur.email)) ? [cur, ...members] : members;
-  const [selId, setSelId] = useState((cur && (cur.id || cur.email)) || (roster[0] && (roster[0].id || roster[0].email)) || "");
-  const member = roster.find((m) => (m.id || m.email) === selId) || roster[0];
-  const A = React.useMemo(() => (member && typeof analyzeConsults === "function" ? analyzeConsults(member) : null), [selId, member]);
+  const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
+  const [member, setMember] = useState(cur || members[0] || cohort[0] || null);
+  const [q, setQ] = useState("");
+  const results = React.useMemo(() => { const qq = q.trim(); if (!qq) return []; const up = qq.toUpperCase(); return cohort.filter((m) => (m.name && m.name.indexOf(qq) >= 0) || (m.id && m.id.indexOf(up) >= 0) || (m.diseases && m.diseases.some((d) => d.indexOf(qq) >= 0))).slice(0, 24); }, [q, cohort]);
+  const A = React.useMemo(() => (member && typeof analyzeConsults === "function" ? analyzeConsults(member) : null), [member]);
+  const catOf = (m) => m.category || (m.isChild ? "아동" : m.age >= 65 ? "노인" : m.sex === "여" ? "여성" : "일반");
+  const ageOf = (m) => (m.regAge != null ? m.regAge : m.age);
+  const mid = member ? (member.id || member.email) : "";
+  const inRoster = roster.some((m) => (m.id || m.email) === mid);
   if (!A) return <div className="ontpanel"><div className="finpl-note">분석할 회원 데이터가 없습니다.</div></div>;
   const kpis = [["총 상담 이벤트", A.stats.total + "건", "#22D3EE"], ["최근 14일", A.stats.last14 + "건", "#F472B6"], ["최다 신호", A.stats.topTopic, "#A78BFA"], ["도출 안내", A.stats.recoCount + "건", "#34D399"], ["안내 커버리지", A.stats.coverage + "/5", "#FBBF24"]];
   return (
@@ -7743,11 +7749,28 @@ function ConsultIntel({ onGo }) {
       {/* 회원 선택 + KPI */}
       <div className="ontpanel">
         <div className="ci-head">
-          <div className="ontph" style={{ margin: 0 }}><Users size={15} color="#38BDF8" /> 분석 대상 회원 <span>· 전체 스토리지는 ‘데이터 스토리지’ 탭</span></div>
-          <select className="ci-sel" value={selId} onChange={(e) => setSelId(e.target.value)}>
-            {roster.map((m) => <option key={m.id || m.email} value={m.id || m.email}>{m.name} · {m.category || "일반"} · {m.regAge}세{cur && (m.id || m.email) === (cur.id || cur.email) ? " (로그인)" : ""}</option>)}
+          <div className="ontph" style={{ margin: 0 }}><Users size={15} color="#38BDF8" /> 분석 대상 회원 <span>· 전체 {cohort.length.toLocaleString()}명 검색</span></div>
+          <select className="ci-sel" value={inRoster ? mid : "__cohort"} onChange={(e) => { if (e.target.value === "__cohort") return; const f = roster.find((m) => (m.id || m.email) === e.target.value); if (f) setMember(f); }}>
+            <optgroup label="샘플·로그인 회원">{roster.map((m) => <option key={m.id || m.email} value={m.id || m.email}>{m.name} · {catOf(m)} · {ageOf(m)}세{cur && (m.id || m.email) === (cur.id || cur.email) ? " (로그인)" : ""}</option>)}</optgroup>
+            {!inRoster && member && <option value="__cohort">{member.name} · {catOf(member)} · {ageOf(member)}세 (검색됨)</option>}
           </select>
         </div>
+        <div className="ci-searchrow">
+          <div className="ci-search2"><Search size={14} color="#8FA1C0" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 · ID(P00001) · 질병으로 10만 회원 검색" />{q && <button className="ci-clr" onClick={() => setQ("")}><X size={13} /></button>}</div>
+          <div className="ci-selnow">분석 중 <b>{member.name}</b> <span className="ci-mono">{mid}</span> · {catOf(member)} {ageOf(member)}세{member.sido ? ` · ${member.sido}` : ""}</div>
+        </div>
+        {q.trim() && (
+          <div className="ci-results">
+            {results.length ? results.map((m) => (
+              <button className="ci-res" key={m.id} onClick={() => { setMember(m); setQ(""); }}>
+                <span className="ci-res-id ci-mono">{m.id}</span><b>{m.name}</b><span className="ci-res-sa">{m.sex} {m.age}</span>
+                <span className="ci-res-dz">{m.diseases && m.diseases.length ? m.diseases.slice(0, 2).join(", ") + (m.diseases.length > 2 ? " 외" : "") : "건강"}</span>
+                {m.riskLabel && <span className="ci-res-risk" style={{ color: m.riskColor, background: (m.riskColor || "#888") + "22" }}>{m.riskLabel}</span>}
+              </button>
+            )) : <div className="ci-nores">'{q}' 검색 결과가 없습니다.</div>}
+            {results.length >= 24 && <div className="ci-more">상위 24명 표시 · 이름·ID·질병으로 더 구체적으로 검색하세요</div>}
+          </div>
+        )}
         <div className="ci-kpis">{kpis.map(([k, v, c], i) => <div className="ci-kpi" key={i}><div className="ci-kpi-v" style={{ color: c }}>{v}</div><div className="ci-kpi-k">{k}</div></div>)}</div>
       </div>
 
