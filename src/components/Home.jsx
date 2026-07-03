@@ -29,6 +29,18 @@ function HeroArt() {
     </svg>
   );
 }
+function OntoCtaArt() {
+  return (
+    <svg viewBox="0 0 120 96" width="118" height="94" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g stroke="rgba(125,211,252,.5)" strokeWidth="1.4">
+        <line x1="60" y1="26" x2="28" y2="56" /><line x1="60" y1="26" x2="92" y2="56" /><line x1="60" y1="26" x2="60" y2="70" />
+        <line x1="28" y1="56" x2="60" y2="70" /><line x1="92" y1="56" x2="60" y2="70" /><line x1="28" y1="56" x2="92" y2="56" />
+      </g>
+      <circle cx="60" cy="24" r="11" fill="#38E0F5" /><circle cx="60" cy="24" r="4" fill="#0B1220" opacity=".55" />
+      <circle cx="28" cy="56" r="8" fill="#818CF8" /><circle cx="92" cy="56" r="8" fill="#F472B6" /><circle cx="60" cy="71" r="7" fill="#34D399" />
+    </svg>
+  );
+}
 function HomeView({ onGo }) {
   const go = onGo || (() => {});
   // 로그인한 회원 기준으로 홈 대시보드 개인화 (체험회원/가입회원 → 해당 고객, 없으면 조성래 기본)
@@ -88,6 +100,16 @@ function HomeView({ onGo }) {
           <div className="rcnote"><ShieldCheck size={13} /> 발행은 본인(고객) 동의 하에 외부 검진 시스템에서 진행됩니다.</div>
         </div>
         <div className="rcart"><span className="rcic"><FileText size={40} color="#fff" /></span></div>
+      </div>
+      <div className="ontocta" onClick={() => go("ontology")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") go("ontology"); }}>
+        <div className="ontocta-glow" /><div className="ontocta-glow g2" />
+        <div className="ontocta-l">
+          <span className="ontocta-badge"><Network size={13} /> 운영 · 파일럿 온톨로지</span>
+          <div className="ontocta-t">온톨로지 운영시스템</div>
+          <p>파일럿 체험회원 <b>1,000명</b>을 팔란티어형 온톨로지(객체·관계·액션)로 운영합니다 — 진료과목·질병·건강검진·예상의료비·보험담보·나눔대상을 하나의 지식그래프로.</p>
+          <div className="ontocta-mini"><span><Users size={12} /> 회원 1,000</span><span><HeartPulse size={12} /> 질병·검진</span><span><Banknote size={12} /> 예상의료비</span><span><HeartHandshake size={12} /> 치료비 나눔</span></div>
+        </div>
+        <div className="ontocta-r"><OntoCtaArt /><button className="ontocta-btn" onClick={(e) => { e.stopPropagation(); go("ontology"); }}><Network size={16} /> 운영시스템 열기 <ChevronRight size={15} /></button></div>
       </div>
       <div className="profile">
         <span className="pa">{nm[0]}</span>

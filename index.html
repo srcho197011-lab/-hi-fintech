@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=258a3bcc49" />
+<link rel="stylesheet" href="./data/app.css?v=ca8e33550d" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=258a3bcc49"></script>
-<script src="./src/data/section_data.js?v=258a3bcc49"></script>
-<script src="./src/data/demo_members.js?v=258a3bcc49"></script>
+<script src="./src/data/dummy_data.js?v=ca8e33550d"></script>
+<script src="./src/data/section_data.js?v=ca8e33550d"></script>
+<script src="./src/data/demo_members.js?v=ca8e33550d"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -42,7 +42,7 @@ import {
   Gift, CircleUserRound, ArrowLeft, ArrowRight, Menu, Plus, Smile, Send, X,
   Image as ImageIcon, Paperclip, Mic, Volume2, ExternalLink, RefreshCw, Cigarette,
   Wine, Dumbbell, ArrowDown, ArrowUp, Banknote, Ban, Check, AlertTriangle, Printer,
-  MapPin, Star, Clock, Filter, Tag, Percent, BookOpen, Trophy,
+  MapPin, Star, Clock, Filter, Tag, Percent, BookOpen, Trophy, Network,
 } from "lucide-react";
 const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKET, DISTRICTS, COVER_DETAIL, KDCA_NOTE, DEMO_MEMBERS } = (typeof window !== "undefined" && window.__HHDATA) || {};
 
@@ -90,6 +90,7 @@ const ICONBG = {
   nft: "linear-gradient(145deg,#B07CFB,#7C3AED)",
   community: "linear-gradient(145deg,#FFA45B,#F97316)",
   mypage: "linear-gradient(145deg,#9AA7BD,#64748B)",
+  ontology: "linear-gradient(145deg,#22D3EE,#4F46E5)",
 };
 // 입체 일러스트 섹션 아이콘 (배경 없음, 특징 강조)
 function SecIcon({ k }) {
@@ -273,6 +274,13 @@ function Art({ name, size = 26 }) {
     case "pin": return (<svg {...P}><path d="M16 5c-5 0-8.5 3.6-8.5 8.3C7.5 19 16 27.5 16 27.5s8.5-8.5 8.5-14.2C24.5 8.6 21 5 16 5z" fill="#EF4444" /><circle cx="16" cy="13.2" r="3.3" fill="#fff" /></svg>);
     case "moon": return (<svg {...P}><path d="M22.5 21.5A9.5 9.5 0 1 1 17 4.6a7.5 7.5 0 0 0 5.5 16.9z" fill="#FBBF24" /></svg>);
     case "phone": return (<svg {...P}><rect x="6" y="6" width="20" height="20" rx="6" fill="#16A34A" /><path d="M12.5 11c-1 0-2 .9-2 2 0 4.7 3.8 8.5 8.5 8.5 1.1 0 2-1 2-2v-1.8l-3.2-1.1-1.4 1.4c-1.4-.8-2.4-1.8-3.2-3.2l1.4-1.4-1.1-3.2z" fill="#fff" /></svg>);
+    case "ontology": return (<svg {...S}><defs>
+      <linearGradient id="i-ont-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#38E0F5" /><stop offset="1" stopColor="#4F46E5" /></linearGradient></defs>
+      <Sh rx={11} />
+      <g stroke="#7DD3FC" strokeWidth="1.8"><line x1="24" y1="16" x2="13" y2="30" /><line x1="24" y1="16" x2="35" y2="30" /><line x1="13" y1="30" x2="35" y2="30" /><line x1="24" y1="16" x2="24" y2="34" /></g>
+      <circle cx="24" cy="15" r="6.2" fill="url(#i-ont-g)" />
+      <circle cx="12.5" cy="31" r="5" fill="#22D3EE" /><circle cx="35.5" cy="31" r="5" fill="#6366F1" /><circle cx="24" cy="35" r="4.4" fill="#A78BFA" />
+      <circle cx="24" cy="15" r="2.3" fill="#fff" opacity=".85" /></svg>);
     default: return (<svg {...P}><circle cx="16" cy="16" r="10" fill="#94A3B8" /><path d="M16 11v10M11 16h10" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" /></svg>);
   }
 }
@@ -283,6 +291,7 @@ const SECTIONS = [
   { k: "shop", ic: ShoppingCart, t: "건강쇼핑", s: "영양제·식단·의료기기" },
   { k: "wallet", ic: Wallet, t: "건강금융지갑", s: "자산·토큰·보험금" }, { k: "nft", ic: "NFT", t: "Health NFT", s: "건강인증서" },
   { k: "community", ic: Users, t: "커뮤니티", s: "건강 커뮤니티" }, { k: "mypage", ic: Settings, t: "마이페이지", s: "개인정보·동의관리" },
+  { k: "ontology", ic: Network, t: "온톨로지 운영", s: "코호트·질병·검진·의료비" },
 ];
 const SCAFFOLDS = {
   checkup: { color: "#2563EB", mods: [[Search, "검진센터 검색", "지역·항목별 제휴 검진센터 검색."], [CalendarCheck, "검진 예약", "예약 및 NFT 예약증 발행."], [ShieldCheck, "무료 검진보험 자동가입", "예약 시 추가 보험료 없이 자동 가입."], [FileText, "결과 업로드·AI 리포트", "검진 결과 연동 후 XAI 리포트."]] },
@@ -548,7 +557,7 @@ export default function App() {
             {SECTIONS.map((x) => (<div key={x.k} className={`iitem ${sec === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
               <span className="ico"><SecIcon k={x.k} /></span><span className="t">{x.t}</span><span className="s">{x.s}</span></div>))}
           </nav>
-          {sec === "home" ? <HomeView onGo={setSec} /> : sec === "ai" ? <AIDoctor /> : sec === "checkup" ? <CheckupSection /> : sec === "manage" ? <HealthManageSection onGo={setSec} /> : sec === "hospital" ? <HospitalSection /> : sec === "homecare" ? <HomecareSection /> : sec === "shop" ? <ShopSection /> : sec === "insurance" ? <InsuranceSection onGo={setSec} /> : sec === "wallet" ? <WalletSection onGo={setSec} /> : sec === "nft" ? <NFTSection onGo={setSec} /> : sec === "community" ? <CommunitySection onGo={setSec} /> : sec === "mypage" ? <MyPageSection onGo={setSec} /> : sec === "demo" ? <DemoSection onGo={setSec} /> : <Scaffold meta={cur} data={SCAFFOLDS[sec]} />}
+          {sec === "home" ? <HomeView onGo={setSec} /> : sec === "ai" ? <AIDoctor /> : sec === "checkup" ? <CheckupSection /> : sec === "manage" ? <HealthManageSection onGo={setSec} /> : sec === "hospital" ? <HospitalSection /> : sec === "homecare" ? <HomecareSection /> : sec === "shop" ? <ShopSection /> : sec === "insurance" ? <InsuranceSection onGo={setSec} /> : sec === "wallet" ? <WalletSection onGo={setSec} /> : sec === "nft" ? <NFTSection onGo={setSec} /> : sec === "community" ? <CommunitySection onGo={setSec} /> : sec === "mypage" ? <MyPageSection onGo={setSec} /> : sec === "ontology" ? <OntologySection onGo={setSec} /> : sec === "demo" ? <DemoSection onGo={setSec} /> : <Scaffold meta={cur} data={SCAFFOLDS[sec]} />}
         </main>
       </div>
       {consult !== null && <ConsultModal interest={consult} onClose={() => setConsult(null)} />}
@@ -5740,6 +5749,18 @@ function HeroArt() {
     </svg>
   );
 }
+function OntoCtaArt() {
+  return (
+    <svg viewBox="0 0 120 96" width="118" height="94" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g stroke="rgba(125,211,252,.5)" strokeWidth="1.4">
+        <line x1="60" y1="26" x2="28" y2="56" /><line x1="60" y1="26" x2="92" y2="56" /><line x1="60" y1="26" x2="60" y2="70" />
+        <line x1="28" y1="56" x2="60" y2="70" /><line x1="92" y1="56" x2="60" y2="70" /><line x1="28" y1="56" x2="92" y2="56" />
+      </g>
+      <circle cx="60" cy="24" r="11" fill="#38E0F5" /><circle cx="60" cy="24" r="4" fill="#0B1220" opacity=".55" />
+      <circle cx="28" cy="56" r="8" fill="#818CF8" /><circle cx="92" cy="56" r="8" fill="#F472B6" /><circle cx="60" cy="71" r="7" fill="#34D399" />
+    </svg>
+  );
+}
 function HomeView({ onGo }) {
   const go = onGo || (() => {});
   // 로그인한 회원 기준으로 홈 대시보드 개인화 (체험회원/가입회원 → 해당 고객, 없으면 조성래 기본)
@@ -5799,6 +5820,16 @@ function HomeView({ onGo }) {
           <div className="rcnote"><ShieldCheck size={13} /> 발행은 본인(고객) 동의 하에 외부 검진 시스템에서 진행됩니다.</div>
         </div>
         <div className="rcart"><span className="rcic"><FileText size={40} color="#fff" /></span></div>
+      </div>
+      <div className="ontocta" onClick={() => go("ontology")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") go("ontology"); }}>
+        <div className="ontocta-glow" /><div className="ontocta-glow g2" />
+        <div className="ontocta-l">
+          <span className="ontocta-badge"><Network size={13} /> 운영 · 파일럿 온톨로지</span>
+          <div className="ontocta-t">온톨로지 운영시스템</div>
+          <p>파일럿 체험회원 <b>1,000명</b>을 팔란티어형 온톨로지(객체·관계·액션)로 운영합니다 — 진료과목·질병·건강검진·예상의료비·보험담보·나눔대상을 하나의 지식그래프로.</p>
+          <div className="ontocta-mini"><span><Users size={12} /> 회원 1,000</span><span><HeartPulse size={12} /> 질병·검진</span><span><Banknote size={12} /> 예상의료비</span><span><HeartHandshake size={12} /> 치료비 나눔</span></div>
+        </div>
+        <div className="ontocta-r"><OntoCtaArt /><button className="ontocta-btn" onClick={(e) => { e.stopPropagation(); go("ontology"); }}><Network size={16} /> 운영시스템 열기 <ChevronRight size={15} /></button></div>
       </div>
       <div className="profile">
         <span className="pa">{nm[0]}</span>
@@ -5895,6 +5926,274 @@ function ActivityGauge({ value }) {
       <text x="60" y="76" textAnchor="middle" fontSize="26" fontWeight="800" fill="#1E293B">{value}</text>
       <text x="78" y="76" textAnchor="start" fontSize="11" fill="#9AA6BC">/100</text></svg>
     <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>지난주 대비 <b style={{ color: "#EF4444" }}>▲ 8%</b></div></div>);
+}
+
+/* ====================== 온톨로지 운영시스템 (팔란티어 Foundry 스타일) ======================
+   1,000명 파일럿 코호트(pilotCohort)를 객체(Object)·관계(Link)·액션(Action) 온톨로지로 운영.
+   개요(코호트 집계) · 객체 탐색기 · 온톨로지 관계 · 액션(세그먼트→보험/나눔/케어). */
+
+const ontWon = (n) => n >= 100000000 ? (n / 100000000).toFixed(2) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : Math.round(n).toLocaleString() + "원";
+const ONT_DEPT_COLORS = ["#22D3EE", "#6366F1", "#F472B6", "#34D399", "#FBBF24", "#F87171", "#A78BFA", "#38BDF8", "#4ADE80", "#FB923C", "#2DD4BF", "#E879F9", "#60A5FA", "#FACC15", "#F43F5E", "#818CF8", "#10B981"];
+
+function OntBar({ label, value, max, color, sub }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="ontbar">
+      <div className="ontbar-l"><span className="ontbar-lbl">{label}</span><span className="ontbar-val">{value.toLocaleString()}{sub || ""}</span></div>
+      <div className="ontbar-track"><i style={{ width: Math.max(2, pct) + "%", background: color || "#22D3EE" }} /></div>
+    </div>
+  );
+}
+
+/* ── 온톨로지 스키마(객체·관계) 다이어그램 ── */
+function OntGraph({ agg }) {
+  const nodes = [
+    { id: "member", t: "회원", n: agg.n, x: 200, y: 40, c: "#22D3EE" },
+    { id: "dept", t: "진료과목", n: Object.keys(agg.byDept).length, x: 40, y: 150, c: "#6366F1" },
+    { id: "disease", t: "질병", n: Object.keys(agg.byDisease).length, x: 200, y: 150, c: "#F472B6" },
+    { id: "checkup", t: "건강검진", n: 13, x: 360, y: 150, c: "#34D399" },
+    { id: "cost", t: "예상의료비", n: 0, x: 60, y: 262, c: "#FBBF24" },
+    { id: "coverage", t: "보험담보", n: 0, x: 210, y: 262, c: "#A78BFA" },
+    { id: "region", t: "지역", n: 17, x: 350, y: 262, c: "#38BDF8" },
+  ];
+  const N = Object.fromEntries(nodes.map((x) => [x.id, x]));
+  const links = [["member", "dept", "진료"], ["member", "disease", "진단"], ["member", "checkup", "수검"], ["member", "cost", "예상"], ["disease", "coverage", "보장"], ["member", "region", "거주"], ["disease", "checkup", "지표"]];
+  return (
+    <div className="ontgraph">
+      <svg viewBox="0 0 420 300" style={{ width: "100%", height: "auto", display: "block" }}>
+        {links.map(([a, b, lbl], i) => { const A = N[a], B = N[b]; return (<g key={i}><line x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke="#2B3B57" strokeWidth="1.4" /><text x={(A.x + B.x) / 2} y={(A.y + B.y) / 2 - 3} fill="#7C8BA8" fontSize="8.5" textAnchor="middle">{lbl}</text></g>); })}
+        {nodes.map((nd) => (<g key={nd.id}>
+          <circle cx={nd.x} cy={nd.y} r="26" fill="#0F1B33" stroke={nd.c} strokeWidth="2" />
+          <text x={nd.x} y={nd.y - 2} fill="#EAF2FF" fontSize="10" fontWeight="800" textAnchor="middle">{nd.t}</text>
+          {nd.n > 0 && <text x={nd.x} y={nd.y + 10} fill={nd.c} fontSize="9" fontWeight="700" textAnchor="middle">{nd.n.toLocaleString()}</text>}
+        </g>))}
+      </svg>
+      <div className="ontgraph-note">Object Types <b>7</b> · Links <b>7</b> · Objects <b>{agg.n.toLocaleString()}+</b> — 회원 객체를 중심으로 진료과목·질병·검진·의료비·보험담보·지역이 관계로 연결됩니다.</div>
+    </div>
+  );
+}
+
+/* ── 코호트 개요 ── */
+function OntOverview({ agg, onSeg }) {
+  const deptTop = Object.entries(agg.byDept).sort((a, b) => b[1] - a[1]);
+  const dzTop = Object.entries(agg.byDisease).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const markTop = Object.entries(agg.markAbn).sort((a, b) => b[1] - a[1]);
+  const deptMax = deptTop[0] ? deptTop[0][1] : 1, dzMax = dzTop[0] ? dzTop[0][1] : 1, markMax = markTop[0] ? markTop[0][1] : 1;
+  const ageMax = Math.max(...Object.values(agg.ageBands));
+  const riskTot = agg.n;
+  const male = Object.entries(agg.bySidoSex).filter(([k]) => k.endsWith("남")).reduce((s, [, v]) => s + v, 0);
+  return (<>
+    <div className="ontkpis">
+      {[["총 회원(객체)", agg.n.toLocaleString() + "명", "#22D3EE"], ["유병 회원", agg.dzMembers.toLocaleString() + "명", "#F472B6"], ["평균 예상의료비", ontWon(agg.avgCost), "#FBBF24"], ["총 예상의료비", ontWon(agg.totalCost), "#F87171"], ["치료비 사각지대", agg.needyN.toLocaleString() + "명", "#E11D48"], ["보장 공백 회원", agg.gapN.toLocaleString() + "명", "#A78BFA"]].map(([k, v, c], i) => (
+        <div className="ontkpi" key={i}><div className="ontkpi-v" style={{ color: c }}>{v}</div><div className="ontkpi-k">{k}</div></div>
+      ))}
+    </div>
+
+    <div className="ontgrid2">
+      <div className="ontpanel">
+        <div className="ontph"><Stethoscope size={15} color="#6366F1" /> 진료과목별 회원 분포 <span>· {deptTop.length}과</span></div>
+        {deptTop.map(([k, v], i) => <OntBar key={k} label={_deptL(k)} value={v} max={deptMax} sub="명" color={ONT_DEPT_COLORS[i % ONT_DEPT_COLORS.length]} />)}
+      </div>
+      <div className="ontpanel">
+        <div className="ontph"><HeartPulse size={15} color="#F472B6" /> 질병 진단 분포 <span>· 상위 10</span></div>
+        {dzTop.map(([k, v]) => <OntBar key={k} label={k} value={v} max={dzMax} sub="명" color="#F472B6" />)}
+      </div>
+    </div>
+
+    <div className="ontgrid2">
+      <div className="ontpanel">
+        <div className="ontph"><Users size={15} color="#38BDF8" /> 연령대 분포 <span>· 남 {male.toLocaleString()} / 여 {(agg.n - male).toLocaleString()}</span></div>
+        {Object.entries(agg.ageBands).map(([k, v]) => <OntBar key={k} label={k} value={v} max={ageMax} sub="명" color="#38BDF8" />)}
+      </div>
+      <div className="ontpanel">
+        <div className="ontph"><AlertTriangle size={15} color="#F59E0B" /> 위험등급 분포</div>
+        <div className="ontrisk">{[1, 2, 3, 4, 5].map((r) => { const v = agg.byRisk[r] || 0; return (<div className="ontrisk-seg" key={r} style={{ flex: Math.max(0.4, v), background: RISK_COLORS[r] }} title={`${RISK_LABELS[r]} ${v}명`}><b>{v}</b><span>{RISK_LABELS[r]}</span></div>); })}</div>
+        <div className="ontph" style={{ marginTop: 14 }}><Activity size={15} color="#34D399" /> 건강검진 지표 이상(위험↑) 회원</div>
+        {markTop.map(([k, v]) => <OntBar key={k} label={k} value={v} max={markMax} sub="명" color="#34D399" />)}
+      </div>
+    </div>
+
+    <div className="ontsegcta">
+      <div><b>온톨로지 액션</b><span>세그먼트를 선택해 보험·나눔·케어 액션을 실행하세요.</span></div>
+      <button onClick={() => onSeg("needy")}><HeartHandshake size={14} /> 치료비 사각지대 {agg.needyN}명 →</button>
+    </div>
+  </>);
+}
+function _deptL(k) { if (typeof DEPT_CATS !== "undefined") { const d = DEPT_CATS.find((x) => x.key === k); if (d) return d.label; } return k; }
+
+/* ── 회원 객체 상세 (온톨로지 링크 뷰) ── */
+function OntMemberModal({ m, onClose, onGo }) {
+  const marks = Object.entries(m.marks).sort((a, b) => b[1] - a[1]);
+  return (
+    <div className="ontov" onClick={onClose}>
+      <div className="ontmodal" onClick={(e) => e.stopPropagation()}>
+        <div className="ontmh">
+          <div><span className="ontmid">{m.id}</span><div className="ontmname">{m.name} <span>· {m.sex} {m.age}세 · {m.sido}</span></div></div>
+          <button onClick={onClose}><X size={20} color="#8A97AE" /></button>
+        </div>
+        <div className="ontmbody">
+          <div className="ontmstat">
+            <div><span className="k">진료과목</span><b>{m.deptLabel}</b></div>
+            <div><span className="k">위험등급</span><b style={{ color: m.riskColor }}>{m.riskLabel}</b></div>
+            <div><span className="k">생체나이</span><b>{m.bioAge}세 <em style={{ color: m.bioDelta > 0 ? "#EF4444" : "#16A34A", fontStyle: "normal", fontSize: 11 }}>({m.bioDelta > 0 ? "+" : ""}{m.bioDelta})</em></b></div>
+            <div><span className="k">예상 연간 의료비</span><b style={{ color: "#F59E0B" }}>{ontWon(m.estCost)}</b></div>
+          </div>
+
+          <div className="ontmsec"><div className="ontmsh"><HeartPulse size={13} color="#F472B6" /> 진단 질병 <span>{m.dzCount}</span></div>
+            {m.diseases.length ? <div className="ontchips">{m.diseases.map((d) => <span key={d} className="ontchip dz">{d}</span>)}</div> : <div className="ontempty">진단된 질병 없음 (건강 양호)</div>}
+          </div>
+
+          <div className="ontmsec"><div className="ontmsh"><Activity size={13} color="#34D399" /> 건강검진 이상 지표 <span>{marks.length}</span></div>
+            {marks.length ? <div className="ontmarks">{marks.map(([k, gi]) => <div className="ontmark" key={k}><span>{k}</span><b style={{ color: gi >= 3 ? "#B91C1C" : gi === 2 ? "#EF4444" : "#F59E0B" }}>{_markL(k, gi)}</b></div>)}</div> : <div className="ontempty">검진 지표 정상 범위</div>}
+          </div>
+
+          <div className="ontmsec"><div className="ontmsh"><ShieldCheck size={13} color="#A78BFA" /> 필요 보장 · 공백</div>
+            <div className="ontchips">{m.coverages.map((c) => <span key={c} className={`ontchip ${m.gap.includes(c) ? "gap" : "held"}`}>{c}{m.gap.includes(c) ? " · 공백" : ""}</span>)}</div>
+          </div>
+
+          <div className="ontmsec ontflags">
+            {m.needy && <span className="ontflag needy"><HeartHandshake size={12} /> 치료비 사각지대(나눔 대상)</span>}
+            {m.hasGap && <span className="ontflag gap"><ShieldCheck size={12} /> 보장 공백 {m.gap.length}건</span>}
+            {m.smoker && <span className="ontflag warn">흡연</span>}
+            {m.drinker && <span className="ontflag warn">음주</span>}
+            <span className="ontflag ok">운동 주 {m.exercise}회</span>
+            <span className="ontflag ok">소득 {m.income}</span>
+          </div>
+
+          <div className="ontmacts">
+            <button className="pri" onClick={() => { onClose(); onGo && onGo("insurance"); }}><ShieldCheck size={14} /> 보장 설계</button>
+            {m.needy && <button className="give" onClick={() => { if (typeof toast === "function") toast(`${m.name}님 · 치료비 나눔 대상 등록(파일럿)`); }}><HeartHandshake size={14} /> 나눔 매칭</button>}
+            <button onClick={() => { onClose(); onGo && onGo("ai"); }}><Bot size={14} /> AI 케어플랜</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+function _markL(key, gi) { if (typeof CHECKUP_ONTOLOGY !== "undefined") { const o = CHECKUP_ONTOLOGY.find((x) => x.key === key); if (o) return o.grades[gi][0]; } return ["정상", "주의", "위험", "고위험"][gi]; }
+
+/* ── 객체 탐색기 (회원 코호트 필터·테이블) ── */
+function OntExplorer({ cohort, onGo, seg }) {
+  const [dept, setDept] = useState("전체");
+  const [band, setBand] = useState("전체");
+  const [sex, setSex] = useState("전체");
+  const [risk, setRisk] = useState("전체");
+  const [flag, setFlag] = useState(seg || "전체");
+  const [q, setQ] = useState("");
+  const [shown, setShown] = useState(30);
+  const [sel, setSel] = useState(null);
+  useEffect(() => { if (seg) { setFlag(seg); setShown(30); } }, [seg]);
+  const depts = React.useMemo(() => ["전체", ...[...new Set(cohort.map((m) => m.deptKey))].sort((a, b) => _deptL(a).localeCompare(_deptL(b), "ko"))], [cohort]);
+  const list = React.useMemo(() => {
+    const qq = q.trim();
+    return cohort.filter((m) => {
+      if (dept !== "전체" && m.deptKey !== dept) return false;
+      if (sex !== "전체" && m.sex !== sex) return false;
+      if (risk !== "전체" && String(m.risk) !== risk) return false;
+      if (band !== "전체") { const b = m.age < 30 ? "20대" : m.age < 40 ? "30대" : m.age < 50 ? "40대" : m.age < 60 ? "50대" : m.age < 70 ? "60대" : "70대+"; if (b !== band) return false; }
+      if (flag === "needy" && !m.needy) return false;
+      if (flag === "gap" && !m.hasGap) return false;
+      if (flag === "high" && m.risk < 4) return false;
+      if (flag === "cancer" && !m.cancer) return false;
+      if (qq && m.name.indexOf(qq) < 0 && m.id.indexOf(qq.toUpperCase()) < 0 && !m.diseases.some((d) => d.indexOf(qq) >= 0)) return false;
+      return true;
+    });
+  }, [cohort, dept, sex, risk, band, flag, q]);
+  const view = list.slice(0, shown);
+  const reset = () => setShown(30);
+  const FLAGS = [["전체", "전체"], ["high", "고위험군"], ["gap", "보장공백"], ["needy", "치료비 사각지대"], ["cancer", "암 진단"]];
+  return (<>
+    <div className="ontfilters">
+      <select value={dept} onChange={(e) => { setDept(e.target.value); reset(); }}>{depts.map((d) => <option key={d} value={d}>{d === "전체" ? "진료과목 전체" : _deptL(d)}</option>)}</select>
+      <select value={band} onChange={(e) => { setBand(e.target.value); reset(); }}>{["전체", "20대", "30대", "40대", "50대", "60대", "70대+"].map((b) => <option key={b} value={b}>{b === "전체" ? "연령대 전체" : b}</option>)}</select>
+      <select value={sex} onChange={(e) => { setSex(e.target.value); reset(); }}>{["전체", "남", "여"].map((s) => <option key={s} value={s}>{s === "전체" ? "성별 전체" : s}</option>)}</select>
+      <select value={risk} onChange={(e) => { setRisk(e.target.value); reset(); }}><option value="전체">위험등급 전체</option>{[1, 2, 3, 4, 5].map((r) => <option key={r} value={String(r)}>{RISK_LABELS[r]}</option>)}</select>
+    </div>
+    <div className="ontflagbar">{FLAGS.map(([k, l]) => <button key={k} className={flag === k ? "on" : ""} onClick={() => { setFlag(k); reset(); }}>{l}</button>)}
+      <div className="ontsearch"><Search size={14} /><input value={q} onChange={(e) => { setQ(e.target.value); reset(); }} placeholder="이름·ID·질병 검색" /></div>
+    </div>
+    <div className="ontcount">필터 결과 <b>{list.length.toLocaleString()}</b>명 <span>/ 전체 {cohort.length.toLocaleString()}명</span></div>
+    <div className="onttbl-wrap">
+      <table className="onttbl">
+        <thead><tr><th>ID</th><th>이름</th><th>성/나이</th><th>지역</th><th>진료과목</th><th>질병</th><th>검진이상</th><th>위험</th><th>예상의료비</th></tr></thead>
+        <tbody>{view.map((m) => (
+          <tr key={m.id} onClick={() => setSel(m)} title="객체 상세">
+            <td className="mono">{m.id}</td><td><b>{m.name}</b>{m.needy && <span className="tdot needy" title="치료비 사각지대" />}{m.hasGap && <span className="tdot gap" title="보장공백" />}</td>
+            <td>{m.sex} {m.age}</td><td>{m.sido}</td><td>{m.deptLabel}</td>
+            <td>{m.dzCount ? <span className="tbadge dz">{m.dzCount}</span> : <span className="tmut">-</span>}</td>
+            <td>{m.abnormalCount ? <span className="tbadge ab">{m.abnormalCount}</span> : <span className="tmut">-</span>}</td>
+            <td><span className="tbadge" style={{ background: m.riskColor + "22", color: m.riskColor }}>{m.riskLabel}</span></td>
+            <td className="mono" style={{ color: "#F59E0B" }}>{ontWon(m.estCost)}</td>
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
+    {view.length === 0 && <div className="ontempty" style={{ margin: "14px 0" }}>조건에 맞는 회원이 없습니다.</div>}
+    {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 30)}>더 보기 ({(list.length - shown).toLocaleString()}명 더)</button>}
+    {sel && <OntMemberModal m={sel} onClose={() => setSel(null)} onGo={onGo} />}
+  </>);
+}
+
+/* ── 액션 (세그먼트 → 보험/나눔/케어) ── */
+function OntActions({ agg, onSeg }) {
+  const cards = [
+    { k: "high", ic: AlertTriangle, c: "#EF4444", t: "고위험군 케어", n: (agg.byRisk[4] || 0) + (agg.byRisk[5] || 0), d: "위험등급 높음·매우높음 회원. 집중 검진·전문의 연계·케어플랜 배정.", act: "케어플랜 일괄 배정", go: "ai" },
+    { k: "gap", ic: ShieldCheck, c: "#A78BFA", t: "보장 공백 해소", n: agg.gapN, d: "질병 위험 대비 보장이 부족한 회원. 맞춤 보장 설계 제안.", act: "보장 설계 제안", go: "insurance" },
+    { k: "needy", ic: HeartHandshake, c: "#E11D48", t: "치료비 사각지대 나눔", n: agg.needyN, d: "저소득·고의료비 부담 회원. 판매마진 30% 나눔 준비금으로 치료비 지원 매칭.", act: "나눔 매칭 실행", go: "wallet" },
+    { k: "cancer", ic: HeartPulse, c: "#DB2777", t: "암 진단 정밀관리", n: Object.entries(agg.byDisease).filter(([d]) => /암$/.test(d)).reduce((s, [, v]) => s + v, 0), d: "암 진단 회원. 정밀검사·수술비 보장·간병 연계 관리.", act: "정밀관리 연계", go: "hospital" },
+  ];
+  return (<>
+    <div className="ontactnote"><Sparkles size={14} color="#22D3EE" /> 온톨로지가 코호트를 실시간 세그먼트로 묶어, 각 군에 맞는 <b>보험·나눔·케어 액션</b>을 실행합니다. <span>(파일럿 시연)</span></div>
+    <div className="ontactgrid">{cards.map((c) => (
+      <div className="ontactcard" key={c.k} style={{ borderTopColor: c.c }}>
+        <div className="ontacth"><span className="ontacti" style={{ background: c.c + "1A" }}><c.ic size={18} color={c.c} /></span><div><b>{c.t}</b><em>{c.n.toLocaleString()}명</em></div></div>
+        <p>{c.d}</p>
+        <div className="ontactbtns"><button className="v" onClick={() => onSeg(c.k)}>대상 보기</button><button className="a" onClick={() => { if (typeof toast === "function") toast(`${c.t} · ${c.n.toLocaleString()}명 ${c.act}(파일럿)`); }}>{c.act}</button></div>
+      </div>
+    ))}</div>
+  </>);
+}
+
+function OntologySection({ onGo }) {
+  const [tab, setTab] = useState("overview");
+  const [seg, setSeg] = useState(null);
+  const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
+  const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
+  const goSeg = (k) => { setSeg(k); setTab("explorer"); };
+  const tabs = [["overview", "코호트 개요", Activity], ["explorer", "객체 탐색기", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
+  if (!agg) return null;
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div className="ontohero">
+        <div className="ontohero-bg"><span /><span /></div>
+        <div className="ontohero-l">
+          <span className="ontotag"><Network size={13} /> Ontology Operations · Palantir-style</span>
+          <div className="ontotitle">온톨로지 운영시스템</div>
+          <p>파일럿 체험회원 <b>{agg.n.toLocaleString()}명</b>을 <b>객체·관계·액션</b> 온톨로지로 운영합니다 — 진료과목·질병·건강검진·예상의료비·보험담보·지역이 하나의 지식그래프로 연결됩니다.</p>
+        </div>
+        <div className="ontohero-kpi">
+          <div><b>{agg.n.toLocaleString()}</b><span>회원 객체</span></div>
+          <div><b>{Object.keys(agg.byDisease).length}</b><span>질병 유형</span></div>
+          <div><b>{ontWon(agg.totalCost)}</b><span>총 예상의료비</span></div>
+        </div>
+      </div>
+
+      <div className="ontobjbar">
+        {[["회원", agg.n, "#22D3EE", Users], ["진료과목", Object.keys(agg.byDept).length, "#6366F1", Stethoscope], ["질병", Object.keys(agg.byDisease).length, "#F472B6", HeartPulse], ["검진지표", 13, "#34D399", Activity], ["보험담보", 12, "#A78BFA", ShieldCheck], ["지역", 17, "#38BDF8", MapPin]].map(([t, n, c, Ic], i) => (
+          <div className="ontobj" key={i}><span className="ontobj-i" style={{ background: c + "1A" }}><Ic size={16} color={c} /></span><div><b>{Number(n).toLocaleString()}</b><span>{t}</span></div></div>
+        ))}
+      </div>
+
+      <div className="chtabs" style={{ marginTop: 14 }}>{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
+
+      {tab === "overview" && <OntOverview agg={agg} onSeg={goSeg} />}
+      {tab === "explorer" && <OntExplorer cohort={cohort} onGo={onGo} seg={seg} />}
+      {tab === "graph" && <div className="ontpanel"><div className="ontph"><Network size={15} color="#22D3EE" /> 온톨로지 스키마 (객체 · 관계)</div><OntGraph agg={agg} /></div>}
+      {tab === "actions" && <OntActions agg={agg} onSeg={goSeg} />}
+
+      <div className="chnote" style={{ marginTop: 12 }}>※ 파일럿 체험회원 {agg.n.toLocaleString()}명은 <b>결정적 시드로 생성한 합성(가명) 데이터</b>이며 실제 개인정보가 아닙니다. 진료과목·질병·검진 지표·질병↔보험 매핑은 실제 온톨로지(DEPT_CATS·CHECKUP_ONTOLOGY·DISEASE_INSURANCE)를 재사용합니다. 예상 의료비·나눔 대상·보장 공백은 시연용 추정입니다.</div>
+    </div>
+  );
 }
 
 /* 체험 회원 데이터 별칭 — 실제 배열은 src/data/demo_members.js(plain script) → window.__HHDATA.DEMO_MEMBERS.
@@ -6221,6 +6520,160 @@ function tmDeptForMember() {
   if (/소아|성장|아토피/.test(d)) return "ped";
   if (/전립선|요로|배뇨/.test(d)) return "uro";
   return "fm";
+}
+
+/* ====================== 파일럿 체험회원 1,000명 · 온톨로지 코호트 ======================
+   결정적(mulberry32 시드) 생성기 — 매 로드 동일 데이터(재현 가능).
+   실제 진료과목(DEPT_CATS)·검진 온톨로지(CHECKUP_ONTOLOGY)·질병↔보험 매핑(DISEASE_INSURANCE)을
+   재사용하여 인구(연령·성별·지역)·진료과목별 질병진단·건강검진 수치·위험등급·예상 의료비·
+   필요 보장·치료비 사각지대(나눔) 대상을 1,000명 규모로 생성한다. (시연용 합성 데이터) */
+
+function _mul32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function _pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+function _wpick(rng, pairs) { const tot = pairs.reduce((s, p) => s + p[1], 0); let r = rng() * tot; for (const p of pairs) { r -= p[1]; if (r <= 0) return p[0]; } return pairs[0][0]; }
+function _round(n, u) { return Math.round(n / u) * u; }
+
+const _SURN = "김이박최정강조윤장임한오서신권황안송전홍고문양손배백허유남심노정하곽성".split("");
+const _GIVN_M = ["민준", "서준", "도윤", "예준", "시우", "하준", "주원", "지호", "준우", "현우", "건우", "우진", "선우", "서진", "정우", "승현", "유준", "은우", "지훈", "준서", "도현", "현준", "성민", "재윤", "동현", "태윤", "민재", "형준", "지환", "찬호", "영수", "종석", "상철", "광호", "덕수"];
+const _GIVN_F = ["서연", "서윤", "지우", "서현", "하은", "하윤", "민서", "지유", "윤서", "채원", "수아", "지아", "은서", "다은", "예은", "수빈", "소율", "예린", "유나", "채은", "지안", "하린", "서아", "가은", "윤아", "연서", "예원", "미영", "정숙", "영자", "순자", "경희", "은주", "혜정", "명숙"];
+const _SIDO = [["서울", 18], ["경기", 22], ["인천", 6], ["부산", 7], ["대구", 5], ["대전", 3], ["광주", 3], ["울산", 2], ["세종", 1], ["강원", 3], ["충북", 3], ["충남", 4], ["전북", 3], ["전남", 3], ["경북", 5], ["경남", 5], ["제주", 2]];
+
+// 진료과목(DEPT_CATS key) → 주요 질병 풀
+const _DEPT_DZ = {
+  fm: ["비만", "이상지질혈증", "고혈압", "당뇨병"],
+  cardio: ["고혈압", "협심증", "심근경색", "심혈관질환", "부정맥"],
+  endo: ["당뇨병", "갑상선기능저하증", "갑상선결절", "골다공증", "이상지질혈증"],
+  gastro: ["지방간", "위암", "대장암", "간경변", "역류성식도염"],
+  pulmo: ["천식", "만성폐쇄성폐질환", "폐암", "폐렴"],
+  nephro: ["만성콩팥병", "고혈압", "신부전"],
+  neuro: ["뇌졸중", "치매", "편두통", "뇌혈관질환"],
+  obgy: ["유방암", "자궁경부암", "갱년기장애", "골다공증"],
+  ped: ["소아비만", "아토피피부염", "천식", "성장지연"],
+  ortho: ["골다공증", "골절", "퇴행성관절염", "척추질환"],
+  derma: ["아토피피부염", "건선", "탈모"],
+  ophtha: ["백내장", "녹내장", "당뇨망막병증"],
+  ent: ["알레르기비염", "중이염", "어지럼증"],
+  uro: ["전립선암", "요로결석", "전립선비대증"],
+  psych: ["우울증", "불안장애", "불면증"],
+  dental: ["치주질환", "충치"],
+  kmed: ["퇴행성관절염", "요통", "만성피로"],
+};
+// 질병 → 관련 검진 온톨로지 key (수치 이상 연동)
+const _DZ_MARK = {
+  "고혈압": "혈압", "심혈관질환": "혈압", "협심증": "콜레스테롤", "심근경색": "콜레스테롤",
+  "당뇨병": "공복혈당", "당뇨망막병증": "공복혈당", "이상지질혈증": "콜레스테롤",
+  "지방간": "간수치", "간경변": "간수치", "만성콩팥병": "신장기능", "신부전": "신장기능",
+  "비만": "체질량지수", "소아비만": "체질량지수", "통풍": "요산", "요로결석": "요산",
+  "골다공증": "골밀도", "골절": "골밀도", "갑상선기능저하증": "갑상선기능", "갑상선결절": "갑상선기능",
+  "위암": "암검진", "대장암": "암검진", "간암": "암검진", "폐암": "암검진", "유방암": "암검진",
+  "자궁경부암": "암검진", "전립선암": "암검진",
+};
+// 연령대별 진료과목 가중치(대략적 임상 경향)
+function _deptWeights(age) {
+  if (age < 18) return [["ped", 40], ["derma", 12], ["ent", 12], ["ophtha", 8], ["dental", 12], ["ortho", 8], ["psych", 8]];
+  if (age < 40) return [["fm", 14], ["gastro", 12], ["derma", 12], ["obgy", 10], ["psych", 12], ["ent", 10], ["ortho", 10], ["ophtha", 6], ["endo", 6], ["dental", 8]];
+  if (age < 60) return [["fm", 12], ["cardio", 12], ["endo", 12], ["gastro", 12], ["ortho", 10], ["obgy", 8], ["uro", 6], ["neuro", 6], ["psych", 8], ["ophtha", 6], ["kmed", 6], ["nephro", 4]];
+  return [["cardio", 14], ["endo", 12], ["neuro", 12], ["ortho", 12], ["gastro", 10], ["nephro", 8], ["ophtha", 8], ["uro", 8], ["pulmo", 6], ["kmed", 6], ["fm", 4]];
+}
+const RISK_LABELS = ["", "낮음", "보통", "주의", "높음", "매우 높음"];
+const RISK_COLORS = ["", "#16A34A", "#0EA5E9", "#F59E0B", "#EF4444", "#B91C1C"];
+
+function _deptLabel(k) {
+  if (typeof DEPT_CATS !== "undefined") { const d = DEPT_CATS.find((x) => x.key === k); if (d) return d.label; }
+  return k;
+}
+function _markLabel(key, gi) {
+  if (typeof CHECKUP_ONTOLOGY !== "undefined") { const o = CHECKUP_ONTOLOGY.find((x) => x.key === key); if (o) return o.grades[gi][0]; }
+  return ["정상", "주의", "위험", "고위험"][gi];
+}
+const CHECK_KEYS = ["혈압", "공복혈당", "당화혈색소", "콜레스테롤", "중성지방", "간수치", "신장기능", "요산", "체질량지수", "빈혈", "갑상선기능", "골밀도", "암검진"];
+
+function _genOne(i) {
+  const rng = _mul32(0x9E37 + i * 2654435761);
+  const sex = rng() < 0.5 ? "남" : "여";
+  const age = _round(20 + Math.floor(Math.pow(rng(), 0.72) * 66), 1); // 20~85, 중고령 편중
+  const sido = _wpick(rng, _SIDO);
+  const name = _pick(rng, _SURN) + _pick(rng, sex === "남" ? _GIVN_M : _GIVN_F);
+  const deptKey = _wpick(rng, _deptWeights(age));
+  // 질병 진단 (연령↑ 유병↑)
+  const pool = _DEPT_DZ[deptKey] || ["이상지질혈증"];
+  const pBase = age < 35 ? 0.35 : age < 55 ? 0.72 : age < 70 ? 0.92 : 0.98;
+  const diseases = [];
+  if (rng() < pBase) {
+    const n = 1 + (rng() < (age > 60 ? 0.6 : 0.3) ? 1 : 0) + (rng() < (age > 70 ? 0.35 : 0.1) ? 1 : 0);
+    const shuffled = [...pool].sort(() => rng() - 0.5);
+    for (let j = 0; j < Math.min(n, shuffled.length); j++) diseases.push(shuffled[j]);
+  }
+  // 검진 수치 등급 (질병 연동 + 연령·생활)
+  const marks = {}; let worst = 0, abn = 0;
+  const dzMarks = new Set(diseases.map((d) => _DZ_MARK[d]).filter(Boolean));
+  for (const key of CHECK_KEYS) {
+    let gi = 0;
+    const ageBump = age > 65 ? 0.28 : age > 50 ? 0.18 : 0.08;
+    if (dzMarks.has(key)) gi = 2 + (rng() < 0.4 ? 1 : 0);
+    else if (rng() < ageBump) gi = 1 + (rng() < 0.35 ? 1 : 0);
+    if (gi > 0) { marks[key] = gi; abn++; if (gi > worst) worst = gi; }
+  }
+  // 생활습관
+  const smoker = sex === "남" ? rng() < 0.32 : rng() < 0.07;
+  const drinker = rng() < (sex === "남" ? 0.45 : 0.22);
+  const exercise = Math.floor(rng() * 4); // 0~3 (주 운동일수 구간)
+  // 위험등급 1~5
+  let risk = 1 + Math.min(2, diseases.length) + (worst >= 3 ? 2 : worst === 2 ? 1 : 0) + (smoker ? 1 : 0) + (age > 70 ? 1 : 0) - (exercise >= 2 ? 1 : 0);
+  risk = Math.max(1, Math.min(5, risk));
+  const bioDelta = _round((risk - 2.5) * 3.2 + (smoker ? 2.5 : 0) - (exercise >= 2 ? 1.8 : 0) + (rng() - 0.5) * 3, 0.1);
+  const bioAge = Math.max(18, _round(age + bioDelta, 0.1));
+  // 예상 연간 의료비(원): 기저 + 위험·질병·연령 가중
+  const cancer = diseases.some((d) => /암$/.test(d));
+  let cost = 220000 + risk * 480000 + diseases.length * 620000 + Math.max(0, age - 45) * 12000 + (cancer ? 6800000 : 0) + worst * 240000;
+  cost = _round(cost * (0.9 + rng() * 0.3), 10000);
+  // 필요 보장 (질병↔보험) & 보장 공백
+  const need = new Set();
+  diseases.forEach((d) => (typeof DISEASE_INSURANCE !== "undefined" && DISEASE_INSURANCE[d] || []).forEach((x) => need.add(x)));
+  if (!need.size) need.add("실손보험");
+  const coverages = [...need];
+  const heldN = Math.round(coverages.length * (0.55 + rng() * 0.45)); // 보유율 55~100%
+  const gap = coverages.slice(heldN); // 미보유(공백) 가정
+  // 소득·치료비 사각지대(나눔) 대상
+  const income = _wpick(rng, [["저", 22], ["중", 56], ["고", 22]]);
+  const needy = (income === "저" && (cost > 2500000 || cancer || risk >= 4) && rng() < 0.72);
+  return {
+    id: "P" + String(i + 1).padStart(4, "0"), name, sex, age, sido, deptKey, deptLabel: _deptLabel(deptKey),
+    diseases, dzCount: diseases.length, marks, worst, worstLabel: worst ? _markLabel([...CHECK_KEYS].find((k) => marks[k] === worst), worst) : "정상", abnormalCount: abn,
+    risk, riskLabel: RISK_LABELS[risk], riskColor: RISK_COLORS[risk],
+    bioAge, bioDelta, estCost: cost, coverages, gap, hasGap: gap.length > 0,
+    income, needy, smoker, drinker, exercise, cancer,
+  };
+}
+
+let _cohort = null;
+function pilotCohort() {
+  if (_cohort) return _cohort;
+  const arr = [];
+  for (let i = 0; i < 1000; i++) arr.push(_genOne(i));
+  _cohort = arr;
+  return arr;
+}
+
+// 코호트 집계(온톨로지 뷰용) — 1회 계산 캐시
+let _cohortAgg = null;
+function pilotAgg() {
+  if (_cohortAgg) return _cohortAgg;
+  const c = pilotCohort();
+  const byDept = {}, byDisease = {}, byRisk = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, bySidoSex = {}, ageBands = { "20대": 0, "30대": 0, "40대": 0, "50대": 0, "60대": 0, "70대+": 0 };
+  const markAbn = {}; let totalCost = 0, needyN = 0, needyCost = 0, gapN = 0, dzMembers = 0;
+  for (const m of c) {
+    byDept[m.deptKey] = (byDept[m.deptKey] || 0) + 1;
+    m.diseases.forEach((d) => (byDisease[d] = (byDisease[d] || 0) + 1));
+    byRisk[m.risk]++;
+    const band = m.age < 30 ? "20대" : m.age < 40 ? "30대" : m.age < 50 ? "40대" : m.age < 60 ? "50대" : m.age < 70 ? "60대" : "70대+";
+    ageBands[band]++;
+    const sk = m.sido + "|" + m.sex; bySidoSex[sk] = (bySidoSex[sk] || 0) + 1;
+    Object.keys(m.marks).forEach((k) => { if (m.marks[k] >= 2) markAbn[k] = (markAbn[k] || 0) + 1; });
+    totalCost += m.estCost; if (m.needy) { needyN++; needyCost += m.estCost; } if (m.hasGap) gapN++; if (m.dzCount) dzMembers++;
+  }
+  _cohortAgg = { n: c.length, byDept, byDisease, byRisk, bySidoSex, ageBands, markAbn, totalCost, needyN, needyCost, gapN, dzMembers, avgAge: Math.round(c.reduce((s, m) => s + m.age, 0) / c.length), avgCost: Math.round(totalCost / c.length) };
+  return _cohortAgg;
 }
 
 /* 전국 건강검진기관 — 브랜드별 큐레이션(51곳). 출처: 국민건강보험공단 병의원·검진기관 찾기 / 기관 공식 사이트.

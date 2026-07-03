@@ -14,10 +14,12 @@ src/components/MyPage.jsx
 src/components/FamilyCare.jsx
 src/components/Community.jsx
 src/components/Home.jsx
+src/components/Ontology.jsx
 src/data/demoMembers.js
 src/data/healthOntology.js
 src/data/healthKnowledge.js
 src/data/telemed.js
+src/data/pilotCohort.js
 src/data/checkupCenters.js
 src/data/shopProducts.js
 src/utils/ontologyConsult.js
