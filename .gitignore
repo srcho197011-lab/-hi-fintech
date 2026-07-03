@@ -9,6 +9,8 @@
 # 배포에 필요한 것만 허용
 !/.gitignore
 !/README.md
+# 루트 배포설정 — HI-Fin(루트 프로젝트)이 fin/ 을 사이트 루트로 서빙하도록 rewrite
+!/vercel.json
 
 # 휴먼 사이트(HI-Fin) — Vercel 루트 디렉터리: fin
 !/fin
