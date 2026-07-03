@@ -83,6 +83,44 @@ function finAnnual() {
   };
 }
 
+// ── 3~5개년 중장기 추정 + 회원 GTM + 밸류에이션(DCF·멀티플) — 시장조사 기반 가정 ──
+const FIN_MY = {
+  years: ["1차연도", "2차연도", "3차연도", "4차연도", "5차연도"],
+  membersEnd: [100000, 250000, 500000, 750000, 1000000], activeRate: 0.65,
+  cac: [6000, 8000, 10000, 12000, 13000], partners: [500, 1200, 2500, 3800, 5000],
+  arpuProductFee: 34000, arpuCheckup: 12000, arpuInsurance: [4000, 6000, 9000, 12000, 15000],
+  revPerPartner: 1500000, adPerActive: [0, 0, 500, 1500, 2500],
+  cogsRate: 0.18, opexRate: 0.12, donationRate: 0.08, payroll: [3000000000, 5000000000, 8000000000, 12000000000, 18000000000],
+  deprYear: 400000000, interestYear: 300000000, taxRate: 0.22, wacc: 0.15, termGrowth: 0.03, evRevMultiple: 4.0, evEbitdaMultiple: 15,
+};
+const FIN_GTM_CHANNELS = [
+  ["검진·병원 B2B 연계", "검진기관·병원 제휴로 검진 예약·결과 연동 회원 유입 — 최우선·최저 CAC", "#22D3EE"],
+  ["기업복지·단체검진 제휴", "기업 복지몰·단체검진 계약으로 대량 가입 확보", "#6366F1"],
+  ["보험 조회·청구 유틸 훅", "내 보험 통합관리로 유입 후 신계약 중개로 전환(굿리치 모델)", "#A78BFA"],
+  ["건강 리워드·바이럴", "걸음·미션 리워드로 습관화·리텐션 강화(캐시워크 모델)", "#34D399"],
+  ["앱 퍼포먼스 마케팅(보조)", "유료 광고 — 가장 비싸 보조 수단, 후기 스케일업", "#FBBF24"],
+];
+function finMultiYear() {
+  const M = FIN_MY; const rows = [];
+  for (let y = 0; y < 5; y++) {
+    const membersEnd = M.membersEnd[y], membersPrev = y === 0 ? 0 : M.membersEnd[y - 1], newMembers = membersEnd - membersPrev, active = Math.round(membersEnd * M.activeRate);
+    const revProduct = active * M.arpuProductFee, revCheckup = active * M.arpuCheckup, revInsurance = active * M.arpuInsurance[y], revB2B = M.partners[y] * M.revPerPartner, revAd = active * M.adPerActive[y];
+    const revenue = revProduct + revCheckup + revInsurance + revB2B + revAd, cogs = Math.round(revenue * M.cogsRate), gross = revenue - cogs;
+    const marketing = newMembers * M.cac[y], otherOpex = Math.round(revenue * M.opexRate), donation = Math.round(revenue * M.donationRate), payroll = M.payroll[y], sga = marketing + otherOpex + donation + payroll;
+    const ebit = gross - sga, ebitda = ebit + M.deprYear, pbt = ebit - M.interestYear, tax = Math.max(0, pbt) * M.taxRate, net = pbt - tax;
+    const capex = y < 2 ? 500000000 : 300000000, dwc = Math.round(revenue * 0.02), nopat = ebit * (1 - M.taxRate), fcf = nopat + M.deprYear - capex - dwc;
+    rows.push({ y, label: M.years[y], membersEnd, membersPrev, newMembers, active, cac: M.cac[y], partners: M.partners[y], marketing, revProduct, revCheckup, revInsurance, revB2B, revAd, revenue, cogs, gross, otherOpex, donation, payroll, sga, ebit, ebitda, pbt, tax, net, capex, fcf, opMargin: ebit / revenue, netMargin: net / revenue });
+  }
+  return rows;
+}
+function finValuation() {
+  const M = FIN_MY, rows = finMultiYear(); let pvSum = 0; const disc = [];
+  rows.forEach((r, i) => { const df = 1 / Math.pow(1 + M.wacc, i + 1), pv = r.fcf * df; pvSum += pv; disc.push({ y: r.label, fcf: r.fcf, df, pv }); });
+  const lastFcf = rows[4].fcf, terminal = lastFcf * (1 + M.termGrowth) / (M.wacc - M.termGrowth), pvTerminal = terminal / Math.pow(1 + M.wacc, 5), evDCF = pvSum + pvTerminal;
+  const evRev = rows[4].revenue * M.evRevMultiple, evEbitda = Math.max(0, rows[4].ebitda) * M.evEbitdaMultiple;
+  return { disc, pvSum, terminal, pvTerminal, evDCF, evRev, evEbitda, wacc: M.wacc, termGrowth: M.termGrowth, evRevMultiple: M.evRevMultiple, evEbitdaMultiple: M.evEbitdaMultiple, lastRevenue: rows[4].revenue, lastEbitda: rows[4].ebitda, lastFcf, lastNet: rows[4].net };
+}
+
 function FinanceLive() {
   const [running, setRunning] = useState(true);
   const [speed, setSpeed] = useState(2);
@@ -165,7 +203,7 @@ function FinanceLive() {
     </div>
 
     <div className="finlink"><Network size={13} color="#22D3EE" /> 온톨로지 파일럿 <b>{cohort.length.toLocaleString()}명</b>의 건강케어 소비가 <b>실시간 매출</b>로 인식됩니다 (제품판매·보험중개는 회원, 입점수수료·EMR은 제휴 기관).</div>
-    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
+    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote], ["my", "중장기 추정(5개년)", TrendingUp], ["gtm", "회원·GTM", Users], ["val", "밸류에이션", PieChart]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
     {tab === "pl" && (<>
       <div className="ontgrid2">
@@ -320,6 +358,87 @@ function FinanceLive() {
             {[["부채비율", (an.debtRatio * 100).toFixed(0) + "%", "#A78BFA"], ["유동비율", (an.currentRatio * 100).toFixed(0) + "%", "#22D3EE"], ["자기자본비율", (an.equityRatio * 100).toFixed(0) + "%", "#34D399"], ["ROE", (an.roe * 100).toFixed(1) + "%", "#FBBF24"]].map(([t, v, c], i) => <div className="ontcostcell" key={i} style={{ flexDirection: "column", alignItems: "flex-start", gap: 2 }}><b style={{ color: c }}>{v}</b><span>{t}</span></div>)}
           </div>
           <div className="finbalance"><Check size={14} color="#34D399" /> 대차평형 — <b>자산 {finWon(an.assets)}</b> = 부채 {finWon(an.liabilities)} + 자본 {finWon(an.equity)}</div>
+        </div>
+      </div>
+    </>); })()}
+
+    {tab === "my" && (() => { const my = finMultiYear(); const revMax = Math.max(...my.map((r) => r.revenue)); const M = (l, f, cls) => <tr className={cls || ""}><td className="mono0">{l}</td>{my.map((r, i) => <td key={i} className="mono">{f(r)}</td>)}</tr>; return (<>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> 시장조사 기반 <b>3~5개년 중장기 추정</b> — 회원 10만→100만, 제휴기관 500→5,000곳. 제품 커머스는 <b>순액(take-rate 10%)</b> 인식.</div>
+      <div className="ontpanel">
+        <div className="ontph"><TrendingUp size={15} color="#34D399" /> 중장기 손익 추정 (5개년) <span>· 단위 원</span></div>
+        <div className="onttbl-wrap"><table className="onttbl mytbl">
+          <thead><tr><th>항목</th>{my.map((r, i) => <th key={i}>{r.label}</th>)}</tr></thead>
+          <tbody>
+            {M("누적 회원", (r) => r.membersEnd.toLocaleString() + "명", "myhead")}
+            {M("활성 회원", (r) => r.active.toLocaleString() + "명")}
+            {M("제휴 기관", (r) => r.partners.toLocaleString() + "곳")}
+            {M("매출액", (r) => finWon(r.revenue), "myrev")}
+            {M("　제품 커머스(수수료)", (r) => finWon(r.revProduct))}
+            {M("　검진 중개", (r) => finWon(r.revCheckup))}
+            {M("　보험 중개", (r) => finWon(r.revInsurance))}
+            {M("　B2B(EMR·입점)", (r) => finWon(r.revB2B))}
+            {M("　광고·제휴", (r) => finWon(r.revAd))}
+            {M("매출총이익", (r) => finWon(r.gross), "mysub")}
+            {M("(-) 판매관리비", (r) => "-" + finWon(r.sga))}
+            {M("영업이익", (r) => finWon(r.ebit), "myop")}
+            {M("EBITDA", (r) => finWon(r.ebitda))}
+            {M("당기순이익", (r) => finWon(r.net), "mynet")}
+            {M("영업이익률", (r) => (r.opMargin * 100).toFixed(1) + "%")}
+          </tbody>
+        </table></div>
+        <div className="fintrend" style={{ height: 130, marginTop: 12 }}>{my.map((r) => <div className="fintrend-col" key={r.y}><div className="fintrend-bars"><i className="rev" style={{ height: (r.revenue / revMax * 100) + "%" }} title={"매출 " + finWon(r.revenue)} /><i className="op" style={{ height: (Math.max(0, r.ebit) / revMax * 100) + "%" }} title={"영업이익 " + finWon(r.ebit)} /></div><span>{r.label.replace("차연도", "차")}</span></div>)}</div>
+        <div className="finpl-note">5차연도 매출 {finWon(my[4].revenue)}원 · 영업이익 {finWon(my[4].ebit)}원({(my[4].opMargin * 100).toFixed(1)}%) · 당기순이익 {finWon(my[4].net)}원. 초기(1~2차) 투자·마케팅으로 적자 후 흑자전환 구조.</div>
+      </div>
+    </>); })()}
+
+    {tab === "gtm" && (() => { const my = finMultiYear(); return (<>
+      <div className="finlink"><Users size={13} color="#22D3EE" /> <b>회원 목표·획득전략(GTM)</b> — 순수 앱마케팅만으론 1M에 100억↑ 소요(비현실) → 검진·B2B·보험 제휴가 회원 과반 담당.</div>
+      <div className="ontpanel">
+        <div className="ontph"><Users size={15} color="#22D3EE" /> 5개년 회원 성장 계획 <span>· 누적회원·CAC·마케팅비</span></div>
+        <div className="onttbl-wrap"><table className="onttbl mytbl">
+          <thead><tr><th>항목</th>{my.map((r, i) => <th key={i}>{r.label}</th>)}</tr></thead>
+          <tbody>
+            <tr className="myrev"><td className="mono0">누적 회원(목표)</td>{my.map((r, i) => <td key={i} className="mono">{r.membersEnd.toLocaleString()}명</td>)}</tr>
+            <tr><td className="mono0">　신규 회원</td>{my.map((r, i) => <td key={i} className="mono">+{r.newMembers.toLocaleString()}</td>)}</tr>
+            <tr><td className="mono0">블렌디드 CAC(원/가입)</td>{my.map((r, i) => <td key={i} className="mono">{r.cac.toLocaleString()}</td>)}</tr>
+            <tr className="mysub"><td className="mono0">회원획득 마케팅비</td>{my.map((r, i) => <td key={i} className="mono">{finWon(r.marketing)}원</td>)}</tr>
+            <tr><td className="mono0">제휴 기관</td>{my.map((r, i) => <td key={i} className="mono">{r.partners.toLocaleString()}곳</td>)}</tr>
+          </tbody>
+        </table></div>
+        <div className="fintrend" style={{ height: 120, marginTop: 12 }}>{my.map((r) => { const mx = my[4].membersEnd; return <div className="fintrend-col" key={r.y}><div className="fintrend-bars"><i className="rev" style={{ height: (r.membersEnd / mx * 100) + "%", width: 16 }} title={r.membersEnd.toLocaleString() + "명"} /></div><span>{r.label.replace("차연도", "차")}</span></div>; })}</div>
+      </div>
+      <div className="ontpanel">
+        <div className="ontph"><Network size={15} color="#A78BFA" /> 회원 획득 채널 (효율 우선순위)</div>
+        {FIN_GTM_CHANNELS.map(([t, d, c], i) => <div className="adv" key={i} style={{ background: "#0C1730", border: "1px solid #24324D", borderRadius: 10, padding: "10px 12px", marginBottom: 7, display: "flex", gap: 10, alignItems: "center" }}><span style={{ width: 24, height: 24, borderRadius: 7, background: c + "22", color: c, display: "grid", placeItems: "center", fontWeight: 800, fontSize: 12, flexShrink: 0 }}>{i + 1}</span><div style={{ flex: 1 }}><b style={{ color: "#EAF2FF", fontSize: 12.5 }}>{t}</b><p style={{ color: "#90A0BD", fontSize: 11, marginTop: 2, lineHeight: 1.5 }}>{d}</p></div></div>)}
+      </div>
+    </>); })()}
+
+    {tab === "val" && (() => { const v = finValuation(); const evLow = Math.min(v.evDCF, v.evEbitda, v.evRev), evHigh = Math.max(v.evDCF, v.evEbitda, v.evRev); return (<>
+      <div className="finlink" style={{ background: "#231A3F", borderColor: "#3f2d5e" }}><PieChart size={13} color="#A78BFA" /> <b>투자유치용 밸류에이션</b> — DCF(현금흐름할인) + 비교기업 멀티플(EV/Revenue·EV/EBITDA). 가정: WACC {(v.wacc * 100).toFixed(0)}%·영구성장 {(v.termGrowth * 100).toFixed(0)}%.</div>
+      <div className="ontgrid2">
+        <div className="ontpanel">
+          <div className="ontph"><TrendingUp size={15} color="#34D399" /> DCF (현금흐름 할인법)</div>
+          <div className="onttbl-wrap"><table className="onttbl mytbl">
+            <thead><tr><th>연도</th><th>FCF</th><th>할인계수</th><th>현재가치(PV)</th></tr></thead>
+            <tbody>{v.disc.map((d, i) => <tr key={i}><td className="mono0">{d.y}</td><td className="mono">{finWon(d.fcf)}</td><td className="mono">{d.df.toFixed(3)}</td><td className="mono">{finWon(d.pv)}</td></tr>)}</tbody>
+          </table></div>
+          <div className="finpl" style={{ marginTop: 8 }}>
+            <div className="finpl-r"><span>5개년 FCF 현재가치 합계</span><b>{finWon(v.pvSum)}원</b></div>
+            <div className="finpl-r"><span>터미널 가치(영구성장)</span><b>{finWon(v.terminal)}원</b></div>
+            <div className="finpl-r"><span>터미널 현재가치</span><b>{finWon(v.pvTerminal)}원</b></div>
+            <div className="finpl-r net"><span>기업가치 EV (DCF)</span><b>{finWon(v.evDCF)}원</b></div>
+          </div>
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><PieChart size={15} color="#FBBF24" /> 비교기업 멀티플 (Trading Multiple)</div>
+          <div className="finpl">
+            <div className="finpl-r sub"><span>5차연도 매출 {finWon(v.lastRevenue)}</span><b></b></div>
+            <div className="finpl-r"><span>EV / Revenue ({v.evRevMultiple.toFixed(1)}x)</span><b>{finWon(v.evRev)}원</b></div>
+            <div className="finpl-r sub"><span>5차연도 EBITDA {finWon(v.lastEbitda)}</span><b></b></div>
+            <div className="finpl-r"><span>EV / EBITDA ({v.evEbitdaMultiple}x)</span><b>{finWon(v.evEbitda)}원</b></div>
+          </div>
+          <div className="finbalance" style={{ background: "#231A3F", borderColor: "#3f2d5e", marginTop: 12 }}><PieChart size={14} color="#C4B5FD" /> 종합 기업가치 범위 <b>{finWon(evLow)} ~ {finWon(evHigh)}원</b></div>
+          <div className="finpl-note">DCF는 초기 적자·높은 WACC로 보수적, 멀티플은 5차연도 실적 기준 시장가. 실제 밸류는 성장률·마일스톤·비교기업에 따라 조정됩니다. (헬스케어 플랫폼 EV/Rev 3~6x 통상)</div>
         </div>
       </div>
     </>); })()}

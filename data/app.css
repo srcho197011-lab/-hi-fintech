@@ -798,6 +798,16 @@
 .fintrend-lgd{display:flex;gap:14px;margin-top:10px;font-size:11px;color:#AFC0DE;}
 .fintrend-lgd span{display:inline-flex;align-items:center;gap:5px;}
 .fintrend-lgd i{width:10px;height:10px;border-radius:3px;}
+/* 다년도 추정 표 */
+.mytbl{min-width:560px;}
+.mytbl td.mono0{color:#C7D6F0;font-weight:600;text-align:left;white-space:nowrap;}
+.mytbl td.mono{text-align:right;color:#D3DEF2;font-variant-numeric:tabular-nums;}
+.mytbl thead th{text-align:right;}.mytbl thead th:first-child{text-align:left;}
+.mytbl tr.myhead td{background:#0C1730;}
+.mytbl tr.myrev td,.mytbl tr.myrev td.mono0{background:#12243a;color:#EAF2FF;font-weight:800;}
+.mytbl tr.mysub td.mono0{color:#8FA1C0;}
+.mytbl tr.myop td,.mytbl tr.myop td.mono0{background:#0C2A20;color:#6EE7B7;font-weight:800;}
+.mytbl tr.mynet td,.mytbl tr.mynet td.mono0{background:#231A3F;color:#C4B5FD;font-weight:800;}
 .wcard .wi{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
 .wcard .wn{font-weight:800;font-size:13px;}
 .wcard .wd{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45;}
