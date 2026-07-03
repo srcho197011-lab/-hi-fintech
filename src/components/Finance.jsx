@@ -124,7 +124,7 @@ function FinanceLive() {
       ref.current = a; tkRef.current += 1;
       // 월 마감(8거래 = 1개월) → 결산 추이 스냅샷
       if (tkRef.current % 8 === 0) {
-        const pn = finPL(a); const mo = { m: moRef.current.length + 1, rev: pn.revenue - snapRef.current.rev, op: pn.op - snapRef.current.op, net: pn.net - snapRef.current.net };
+        const pn = finPL(a); const mo = { m: tkRef.current / 8, rev: pn.revenue - snapRef.current.rev, op: pn.op - snapRef.current.op, net: pn.net - snapRef.current.net };
         snapRef.current = { rev: pn.revenue, op: pn.op, net: pn.net }; moRef.current = [...moRef.current, mo].slice(-12); setMonths(moRef.current);
       }
       setAcct({ ...a, rev: { ...a.rev }, cogs: { ...a.cogs }, sga: { ...a.sga }, other: { ...a.other }, liab: { ...a.liab } });
@@ -267,7 +267,7 @@ function FinanceLive() {
                   <i className="op" style={{ height: (Math.max(0, m.op) / max * 100) + "%" }} title={"영업이익 " + finWon(m.op)} />
                   <i className="net" style={{ height: (Math.max(0, m.net) / max * 100) + "%" }} title={"순이익 " + finWon(m.net)} />
                 </div>
-                <span>{m.m}월</span>
+                <span>{((m.m - 1) % 12) + 1}월</span>
               </div>
             ))}</div>
             <div className="fintrend-lgd"><span><i style={{ background: "#22D3EE" }} />매출</span><span><i style={{ background: "#34D399" }} />영업이익</span><span><i style={{ background: "#FBBF24" }} />당기순이익</span></div>
