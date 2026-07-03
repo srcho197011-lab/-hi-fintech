@@ -747,6 +747,22 @@
 /* KCD 대분류 분포 2열 */
 .ontkcd{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;}
 @media(max-width:680px){.ontkcd{grid-template-columns:1fr;}}
+/* 의료비 구성(급여·비급여·기타) */
+.ontcostbar{display:flex;height:12px;border-radius:7px;overflow:hidden;background:#1B2942;margin-bottom:9px;}
+.ontcostbar.big{height:20px;border-radius:9px;margin-bottom:12px;}
+.ontcostbar i{display:block;height:100%;}
+.ontcostrows{display:flex;flex-direction:column;gap:5px;}
+.ontcostrow{display:flex;align-items:center;gap:8px;font-size:12px;color:#C7D6F0;}
+.ontcostrow .dot{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+.ontcostrow .ct{flex:1;}
+.ontcostrow b{color:#EAF2FF;font-weight:800;}
+.ontcostrow em{font-style:normal;color:#8FA1C0;font-size:10.5px;width:36px;text-align:right;}
+.ontcostgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ontcostcell{display:flex;align-items:center;gap:9px;background:#0C1730;border:1px solid #24324D;border-radius:11px;padding:11px 12px;}
+.ontcostcell .dot{width:11px;height:11px;border-radius:4px;flex-shrink:0;}
+.ontcostcell b{display:block;font-size:15px;font-weight:800;color:#EAF2FF;letter-spacing:-.3px;}
+.ontcostcell span{font-size:10.5px;color:#90A0BD;}
+@media(max-width:640px){.ontcostgrid{grid-template-columns:1fr;}}
 .wcard .wi{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
 .wcard .wn{font-weight:800;font-size:13px;}
 .wcard .wd{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45;}

@@ -163,8 +163,20 @@ function _genMember(idx, f) {
     : Math.round(((risk - 2.5) * 3.2 + (smoker ? 2.5 : 0) - (exercise >= 2 ? 1.8 : 0) + (rng() - 0.5) * 3) * 10) / 10;
   const bioAge = Math.max(1, Math.round((age + bioDelta) * 10) / 10);
   const cancer = diseases.some((d) => /암$/.test(d));
-  let cost = 180000 + risk * 460000 + diseases.length * 600000 + Math.max(0, age - 45) * 12000 + (cancer ? 6800000 : 0) + worst * 230000 + (age < 12 ? 90000 : 0);
-  cost = Math.round(cost * (0.9 + rng() * 0.3) / 10000) * 10000;
+  const severe = worst >= 3 || risk >= 4;
+  // 의료비 세분화: ① 급여 본인부담 ② 비급여 ③ 기타 건강관리
+  let clinical = isChild ? (90000 + diseases.length * 180000 + abn * 60000) : (140000 + risk * 260000 + diseases.length * 430000 + worst * 160000 + Math.max(0, age - 45) * 8000);
+  clinical = Math.round(clinical * (0.85 + rng() * 0.35));
+  const covered = clinical * (0.30 + rng() * 0.20);                                  // 급여 본인부담(급여 진료·입원·수술의 본인부담금)
+  let uncovered = clinical * (0.22 + rng() * 0.22);                                   // 비급여(MRI·초음파·도수·상급병실·비급여약 등)
+  if (cancer) uncovered += 4500000 + rng() * 5000000;                                 // 암: 표적·항암 등 고액 비급여
+  else if (severe) uncovered += 300000 + rng() * 900000;
+  let wellness = isChild ? (120000 + 60000) : (180000 + Math.max(0, age - 35) * 7000 + (exercise >= 2 ? 150000 : 50000)); // 영양제·검진·운동·의료기기·예방접종
+  if (age >= 70) wellness += 400000;                                                  // 재활·간병 등
+  wellness = wellness * (0.8 + rng() * 0.6);
+  const r1 = Math.round(covered / 10000) * 10000, r2 = Math.round(uncovered / 10000) * 10000, r3 = Math.round(wellness / 10000) * 10000;
+  const costBreakdown = { covered: r1, uncovered: r2, wellness: r3 };
+  const cost = r1 + r2 + r3;
   const need = new Set();
   diseases.forEach((d) => (typeof DISEASE_INSURANCE !== "undefined" && DISEASE_INSURANCE[d] || []).forEach((x) => need.add(x)));
   if (isChild) { need.add("어린이보험"); need.add("어린이 실손보험"); }
@@ -177,7 +189,7 @@ function _genMember(idx, f) {
     id: "P" + String(idx + 1).padStart(5, "0"), name, sex, age, sido, hid, rel, deptKey, deptLabel: _deptLabel(deptKey),
     diseases, dzCount: diseases.length, marks, worst, abnormalCount: abn, isChild, childHealth, checkupType,
     risk, riskLabel: RISK_LABELS[risk], riskColor: RISK_COLORS[risk],
-    bioAge, bioDelta, estCost: cost, coverages, gap, hasGap: gap.length > 0,
+    bioAge, bioDelta, estCost: cost, costBreakdown, coverages, gap, hasGap: gap.length > 0,
     income, needy, smoker, drinker, exercise, cancer,
   };
 }
@@ -228,9 +240,10 @@ function pilotAgg() {
   if (_cohortAgg) return _cohortAgg;
   const c = pilotCohort(); const hh = pilotHouseholds();
   const byDept = {}, byDisease = {}, byRisk = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, bySidoSex = {}, ageBands = { "0~19": 0, "20대": 0, "30대": 0, "40대": 0, "50대": 0, "60대": 0, "70대+": 0 }, byRel = {};
-  const markAbn = {}, byKcd = {}; let totalCost = 0, needyN = 0, needyCost = 0, gapN = 0, dzMembers = 0, childN = 0;
+  const markAbn = {}, byKcd = {}; let totalCost = 0, needyN = 0, needyCost = 0, gapN = 0, dzMembers = 0, childN = 0, sumCovered = 0, sumUncovered = 0, sumWellness = 0;
   for (const m of c) {
     if (m.isChild) childN++;
+    if (m.costBreakdown) { sumCovered += m.costBreakdown.covered; sumUncovered += m.costBreakdown.uncovered; sumWellness += m.costBreakdown.wellness; }
     byDept[m.deptKey] = (byDept[m.deptKey] || 0) + 1;
     m.diseases.forEach((d) => { byDisease[d] = (byDisease[d] || 0) + 1; let ch = (typeof _DZ_KCD !== "undefined" && _DZ_KCD[d]) || "기타"; if (ch === "B") ch = "A"; byKcd[ch] = (byKcd[ch] || 0) + 1; });
     byRisk[m.risk]++; byRel[m.rel] = (byRel[m.rel] || 0) + 1;
@@ -240,7 +253,7 @@ function pilotAgg() {
     Object.keys(m.marks).forEach((k) => { if (m.marks[k] >= 2) markAbn[k] = (markAbn[k] || 0) + 1; });
     totalCost += m.estCost; if (m.needy) { needyN++; needyCost += m.estCost; } if (m.hasGap) gapN++; if (m.dzCount) dzMembers++;
   }
-  _cohortAgg = { n: c.length, households: Object.keys(hh).length, childN, byDept, byDisease, byKcd, dzTypes: Object.keys(byDisease).length, byRisk, bySidoSex, ageBands, byRel, markAbn, totalCost, needyN, needyCost, gapN, dzMembers, avgAge: Math.round(c.reduce((s, m) => s + m.age, 0) / c.length), avgCost: Math.round(totalCost / c.length), avgHouseholdSize: Math.round(c.length / Object.keys(hh).length * 10) / 10 };
+  _cohortAgg = { n: c.length, households: Object.keys(hh).length, childN, sumCovered, sumUncovered, sumWellness, byDept, byDisease, byKcd, dzTypes: Object.keys(byDisease).length, byRisk, bySidoSex, ageBands, byRel, markAbn, totalCost, needyN, needyCost, gapN, dzMembers, avgAge: Math.round(c.reduce((s, m) => s + m.age, 0) / c.length), avgCost: Math.round(totalCost / c.length), avgHouseholdSize: Math.round(c.length / Object.keys(hh).length * 10) / 10 };
   return _cohortAgg;
 }
 

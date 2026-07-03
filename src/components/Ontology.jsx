@@ -82,6 +82,14 @@ function OntOverview({ agg, onSeg }) {
     </div>
 
     <div className="ontpanel" style={{ marginTop: 12 }}>
+      <div className="ontph"><Banknote size={15} color="#F59E0B" /> 예상 연간 의료비 구성 <span>· 총 {ontWon(agg.totalCost)}</span></div>
+      {(() => { const tot = (agg.sumCovered + agg.sumUncovered + agg.sumWellness) || 1; const seg = [["급여 본인부담", agg.sumCovered, "#22D3EE"], ["비급여", agg.sumUncovered, "#F472B6"], ["기타 건강관리", agg.sumWellness, "#34D399"]]; return (<>
+        <div className="ontcostbar big">{seg.map(([t, v, c]) => <i key={t} style={{ width: (v / tot * 100) + "%", background: c }} title={t + " " + ontWon(v)} />)}</div>
+        <div className="ontcostgrid">{seg.map(([t, v, c]) => <div className="ontcostcell" key={t}><span className="dot" style={{ background: c }} /><div><b>{ontWon(v)}</b><span>{t} · {Math.round(v / tot * 100)}%</span></div></div>)}</div>
+      </>); })()}
+    </div>
+
+    <div className="ontpanel" style={{ marginTop: 12 }}>
       <div className="ontph"><Network size={15} color="#22D3EE" /> 질병분류(KCD) 대분류 분포 <span>· {kcd.length}개 장 · 질병유형 {agg.dzTypes}종</span></div>
       <div className="ontkcd">{kcd.map(([k, v], i) => <OntBar key={k} label={KCD_LABELS[k] || k} value={v} max={kcdMax} sub="명" color={ONT_DEPT_COLORS[i % ONT_DEPT_COLORS.length]} />)}</div>
     </div>
@@ -136,6 +144,13 @@ function OntMemberModal({ m, onClose, onGo }) {
             <div><span className="k">생체나이</span><b>{m.bioAge}세 <em style={{ color: m.bioDelta > 0 ? "#EF4444" : "#16A34A", fontStyle: "normal", fontSize: 11 }}>({m.bioDelta > 0 ? "+" : ""}{m.bioDelta})</em></b></div>
             <div><span className="k">예상 연간 의료비</span><b style={{ color: "#F59E0B" }}>{ontWon(m.estCost)}</b></div>
           </div>
+
+          {m.costBreakdown && (() => { const cb = m.costBreakdown; const tot = m.estCost || 1; const seg = [["급여 본인부담", cb.covered, "#22D3EE"], ["비급여", cb.uncovered, "#F472B6"], ["기타 건강관리", cb.wellness, "#34D399"]]; return (
+            <div className="ontmsec"><div className="ontmsh"><Banknote size={13} color="#F59E0B" /> 예상 연간 의료비 구성 <span>{ontWon(m.estCost)}</span></div>
+              <div className="ontcostbar">{seg.map(([t, v, c]) => <i key={t} style={{ width: (v / tot * 100) + "%", background: c }} title={t + " " + ontWon(v)} />)}</div>
+              <div className="ontcostrows">{seg.map(([t, v, c]) => <div className="ontcostrow" key={t}><span className="dot" style={{ background: c }} /><span className="ct">{t}</span><b>{ontWon(v)}</b><em>{Math.round(v / tot * 100)}%</em></div>)}</div>
+            </div>
+          ); })()}
 
           <div className="ontmsec"><div className="ontmsh"><HeartPulse size={13} color="#F472B6" /> 진단 질병 <span>{m.dzCount}</span></div>
             {m.diseases.length ? <div className="ontchips">{m.diseases.map((d) => <span key={d} className="ontchip dz">{d}</span>)}</div> : <div className="ontempty">진단된 질병 없음 (건강 양호)</div>}
