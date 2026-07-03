@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=0cd11392ae" />
+<link rel="stylesheet" href="./data/app.css?v=7516c4e552" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=0cd11392ae"></script>
-<script src="./src/data/section_data.js?v=0cd11392ae"></script>
-<script src="./src/data/demo_members.js?v=0cd11392ae"></script>
+<script src="./src/data/dummy_data.js?v=7516c4e552"></script>
+<script src="./src/data/section_data.js?v=7516c4e552"></script>
+<script src="./src/data/demo_members.js?v=7516c4e552"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -6927,6 +6927,26 @@ const MKT_STRATEGIES = [
   ["기업복지·보험사 제휴 B2B2C 게이트웨이", "GC케어·라이프시맨틱스형 · 기관 통한 대량 온보딩", "#6366F1"],
   ["의료광고 전건 사전심의 + 정보제공형 콘텐츠", "치료후기 금지(적발 31.7%) · 규제 준수를 설계 전제로", "#EF4444"],
 ];
+// 대형 플랫폼 제휴 (수백만~수천만 회원 확보) [플랫폼, 회원규모, 제휴유형, 기대효과, 색]
+const MKT_PLATFORMS = [
+  ["카카오 (톡채널·카카오헬스케어)", "5,000만", "톡채널·미니앱·리워드 연계", "대량 유입 + 카톡 CRM 인프라", "#FBBF24"],
+  ["네이버 (파스타·검색·스토어)", "4,000만", "건강판·스마트스토어·검색 제휴", "검진·제품 고전환 유입", "#22C55E"],
+  ["토스 (토스헬스·인슈어런스)", "2,000만+", "보험 조회·건강 미션 연계", "보험중개 시너지·핀테크 회원", "#2563EB"],
+  ["삼성헬스 (갤럭시 번들)", "수천만", "웨어러블·건강데이터 연계", "걸음·바이탈 데이터 확보", "#0EA5E9"],
+  ["캐시워크 (넛지헬스케어)", "2,300만", "걷기 리워드·건강미션 연계", "최저 CAC 대량 유입", "#34D399"],
+  ["통신 3사 멤버십 (SKT·KT·U+)", "각 수천만", "멤버십 혜택·번들 제공", "무료체험 대량 유입", "#EC4899"],
+  ["카드사 (삼성·신한·KB)", "수백만~천만", "카드 혜택·건강적립 제휴", "결제·리워드 연계", "#8B5CF6"],
+  ["대형 커머스 (쿠팡·무신사·오늘의집)", "수천만", "건강 카테고리 입점·공동전", "제품 매출 확대", "#F97316"],
+  ["당근마켓 (지역 생활)", "3,000만", "지역 검진·약국 로컬광고", "지역 기반 유입", "#F59E0B"],
+  ["지자체·국민건강보험공단", "전국민", "공공 검진·건강증진 사업 연계", "공신력 + 대량 회원", "#6366F1"],
+];
+const MKT_PARTNER_MODELS = [
+  ["API·SDK 미니앱 임베드", "제휴 플랫폼 안에 건강검진·리포트·상담 미니앱을 탑재해 이탈 없이 서비스 제공"],
+  ["리워드·건강미션 연계", "걷기·검진·미션 달성 → 플랫폼 포인트 상호 적립(캐시워크형 그로스 루프)"],
+  ["회원 크로스 프로모션", "제휴사 회원에게 무료 검진대비보험·건강분석리포트 제공으로 대량 온보딩"],
+  ["데이터 제휴 (동의 기반)", "건강데이터 옵트인 연계로 맞춤 서비스·보험 설계(라이프시맨틱스형)"],
+  ["공동 마케팅·커머스 입점", "공동 캠페인 + 대형 커머스 건강 카테고리 입점으로 제품 매출·인지도 확대"],
+];
 function MktBar({ label, value, max, color, sub }) {
   const pct = max > 0 ? Math.round(value / max * 100) : 0;
   return (<div className="ontbar"><div className="ontbar-l"><span className="ontbar-lbl">{label}</span><span className="ontbar-val">{value.toLocaleString()}{sub || ""}</span></div><div className="ontbar-track"><i style={{ width: Math.max(2, pct) + "%", background: color }} /></div></div>);
@@ -7047,6 +7067,22 @@ function MarketingSection({ onGo }) {
             <div className="ontph" style={{ marginTop: 14 }}><Sparkles size={15} color="#FBBF24" /> 코호트 타겟 세그먼트 <span>· {MKT_SEGMENTS.length}개</span></div>
             <div className="finpl-note">온톨로지 코호트{agg ? `(${agg.n.toLocaleString()}명)` : ""}를 진료과·연령·질병·위험도로 세분해 정밀 타겟팅합니다.</div>
           </div>
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><Users size={15} color="#FBBF24" /> 대형 플랫폼 제휴 <span>· 수백만~수천만 회원 확보(B2B2C)</span></div>
+          <div className="mktplat">{MKT_PLATFORMS.map(([nm, scale, type, effect, c], i) => (
+            <div className="mktplat-c" key={i} style={{ borderLeftColor: c }}>
+              <div className="mktplat-h"><b>{nm}</b><span className="mktplat-scale" style={{ color: c }}>{scale} 회원</span></div>
+              <div className="mktplat-type">{type}</div>
+              <div className="mktplat-eff"><Sparkles size={10} color="#A78BFA" style={{ verticalAlign: "-1px" }} /> {effect}</div>
+              <button className="mktbtn" onClick={() => { if (typeof toast === "function") toast(`${nm} 제휴 제안서 생성(파일럿) · ${scale} 회원 대상 크로스 프로모션`); }}>제휴 제안</button>
+            </div>
+          ))}</div>
+          <div className="ontph" style={{ marginTop: 14 }}><Network size={15} color="#22D3EE" /> 제휴 실행 모델</div>
+          <div className="mktinst">{MKT_PARTNER_MODELS.map(([t, d], i) => (
+            <div className="mktinst-r" key={i}><span className="mktplat-no" style={{ background: "#12243a", color: "#67E8F9" }}>{i + 1}</span><div><b>{t}</b><p>{d}</p></div></div>
+          ))}</div>
+          <div className="finpl-note">무료 건강검진대비보험·건강분석리포트·상담을 앵커 오퍼로, 대형 플랫폼 회원을 대량 온보딩합니다. 검진 연계 + 지자체·협회 제휴가 5년 1,000만 회원의 핵심 레버.</div>
         </div>
       </>)}
 
