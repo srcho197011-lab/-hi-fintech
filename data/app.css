@@ -678,6 +678,40 @@
 .ontactbtns button{flex:1;border-radius:9px;padding:9px;font-weight:800;font-size:12px;cursor:pointer;}
 .ontactbtns .v{background:#15243f;color:#C7D6F0;border:1px solid #2B3B57;}
 .ontactbtns .a{background:linear-gradient(135deg,#22D3EE,#4F46E5);color:#fff;border:none;}
+
+/* 실시간 시뮬레이션 */
+.ontsimbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;background:#0F1B33;border:1px solid #24406F;border-radius:12px;padding:11px 14px;}
+.ontsimstate{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#8FA1C0;}
+.ontsimstate.on{color:#34D399;}
+.ontsimstate em{font-style:normal;font-weight:600;color:#7C8BA8;font-size:11.5px;}
+.ontsimstate .dot{width:9px;height:9px;border-radius:50%;background:#4E5D7A;}
+.ontsimstate.on .dot{background:#34D399;box-shadow:0 0 0 0 rgba(52,211,153,.7);animation:ontpulse 1.4s infinite;}
+@keyframes ontpulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.6);}70%{box-shadow:0 0 0 7px rgba(52,211,153,0);}100%{box-shadow:0 0 0 0 rgba(52,211,153,0);}}
+.ontsimctl{display:flex;gap:6px;align-items:center;}
+.ontsimctl button{display:inline-flex;align-items:center;gap:5px;background:#15243f;border:1px solid #2B3B57;color:#C7D6F0;border-radius:9px;padding:7px 11px;font-size:12px;font-weight:800;cursor:pointer;}
+.ontsimctl button.on{background:linear-gradient(135deg,#22D3EE,#4F46E5);color:#fff;border-color:transparent;}
+.ontsimctl button.pri{background:linear-gradient(135deg,#34D399,#0EA5E9);color:#fff;border-color:transparent;}
+.ontsimsplit{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:11px;padding-top:11px;border-top:1px solid #24324D;font-size:11.5px;}
+.ontsimsplit span{color:#7C8BA8;font-weight:600;}
+.ontsimsplit b{font-weight:800;}
+/* 세그먼트 라이브 카드 */
+.ontsegcards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+.ontsegcard{background:#0C1730;border:1px solid #24324D;border-radius:11px;padding:11px;text-align:center;}
+.ontsegcard-t{font-size:11px;color:#90A0BD;font-weight:700;}
+.ontsegcard-n{font-size:20px;font-weight:800;margin-top:4px;letter-spacing:-.5px;}
+.ontsegcard-n span{font-size:11px;color:#7C8BA8;font-weight:600;margin-left:2px;}
+.ontsegcard-d{font-size:10.5px;font-weight:800;margin-top:2px;}
+/* 이벤트 피드 */
+.ontfeed{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto;}
+.ontfeed-i{display:flex;align-items:center;gap:9px;background:#0C1730;border:1px solid #1F2E48;border-radius:10px;padding:8px 10px;animation:ontfeedin .35s ease;}
+.ontfeed-i.dx{border-left:2px solid #F472B6;}.ontfeed-i.buy{border-left:2px solid #22D3EE;}
+@keyframes ontfeedin{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+.ontfeed-ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;}
+.ontfeed-b{flex:1;min-width:0;}
+.ontfeed-t{font-size:11.8px;color:#D3DEF2;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ontfeed-t b{color:#EAF2FF;}
+.ontfeed-s{font-size:10.5px;color:#8FA1C0;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ontfeed-tag{font-size:10px;font-weight:800;flex-shrink:0;}
 .wcard .wi{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
 .wcard .wn{font-weight:800;font-size:13px;}
 .wcard .wd{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45;}

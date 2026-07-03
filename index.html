@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=ca8e33550d" />
+<link rel="stylesheet" href="./data/app.css?v=75c6ef7a5b" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=ca8e33550d"></script>
-<script src="./src/data/section_data.js?v=ca8e33550d"></script>
-<script src="./src/data/demo_members.js?v=ca8e33550d"></script>
+<script src="./src/data/dummy_data.js?v=75c6ef7a5b"></script>
+<script src="./src/data/section_data.js?v=75c6ef7a5b"></script>
+<script src="./src/data/demo_members.js?v=75c6ef7a5b"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -42,7 +42,7 @@ import {
   Gift, CircleUserRound, ArrowLeft, ArrowRight, Menu, Plus, Smile, Send, X,
   Image as ImageIcon, Paperclip, Mic, Volume2, ExternalLink, RefreshCw, Cigarette,
   Wine, Dumbbell, ArrowDown, ArrowUp, Banknote, Ban, Check, AlertTriangle, Printer,
-  MapPin, Star, Clock, Filter, Tag, Percent, BookOpen, Trophy, Network,
+  MapPin, Star, Clock, Filter, Tag, Percent, BookOpen, Trophy, Network, Zap, Play, Pause, RotateCcw,
 } from "lucide-react";
 const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKET, DISTRICTS, COVER_DETAIL, KDCA_NOTE, DEMO_MEMBERS } = (typeof window !== "undefined" && window.__HHDATA) || {};
 
@@ -6154,13 +6154,119 @@ function OntActions({ agg, onSeg }) {
   </>);
 }
 
+/* ── 실시간 시뮬레이션: 신규 진단→세그먼트 이동 + 섹션별 건강케어 소비 스트림 ── */
+const SIM_SECTIONS = [
+  { key: "checkup", label: "건강검진", go: "checkup", c: "#2563EB", min: 80000, max: 600000, mrate: 0.10, w: 10 },
+  { key: "supp", label: "영양제", go: "shop", c: "#16A34A", min: 12000, max: 95000, mrate: 0.25, w: 22 },
+  { key: "diet", label: "건강식단", go: "shop", c: "#F59E0B", min: 40000, max: 160000, mrate: 0.20, w: 14 },
+  { key: "device", label: "의료기기", go: "shop", c: "#0EA5E9", min: 30000, max: 420000, mrate: 0.18, w: 8 },
+  { key: "pharm", label: "약국·의약외품", go: "hospital", c: "#0891B2", min: 2500, max: 32000, mrate: 0.25, w: 16 },
+  { key: "homecare", label: "재가·돌봄", go: "homecare", c: "#DB2777", min: 180000, max: 1500000, mrate: 0.12, w: 6 },
+  { key: "insurance", label: "보험료", go: "insurance", c: "#7C3AED", min: 20000, max: 130000, mrate: 0.15, w: 12 },
+];
+function _rr(a, b) { return a + Math.random() * (b - a); }
+function _wsec() { const tot = SIM_SECTIONS.reduce((s, x) => s + x.w, 0); let r = Math.random() * tot; for (const s of SIM_SECTIONS) { r -= s.w; if (r <= 0) return s; } return SIM_SECTIONS[0]; }
+
+function OntoLiveSim({ cohort, agg, onGo }) {
+  const base = { high: (agg.byRisk[4] || 0) + (agg.byRisk[5] || 0), gap: agg.gapN, needy: agg.needyN };
+  const [running, setRunning] = useState(true);
+  const [speed, setSpeed] = useState(2);
+  const [tick, setTick] = useState(0);
+  const [events, setEvents] = useState([]);
+  const ZERO = { dx: 0, buys: 0, spend: 0, accr: 0, don: 0, ops: 0, sec: {}, secN: {}, seg: { high: 0, gap: 0, needy: 0 } };
+  const [st, setSt] = useState(ZERO);
+  const stRef = useRef(ZERO);
+  const idRef = useRef(0);
+  useEffect(() => {
+    if (!running) return;
+    const iv = setInterval(() => {
+      const s = { ...stRef.current, sec: { ...stRef.current.sec }, secN: { ...stRef.current.secN }, seg: { ...stRef.current.seg } };
+      const newEvents = [];
+      const nEv = 1 + (Math.random() < 0.6 ? 1 : 0);
+      for (let e = 0; e < nEv; e++) {
+        const m = cohort[Math.floor(Math.random() * cohort.length)];
+        if (Math.random() < 0.34) { // 신규 진단
+          const pool = (typeof _DEPT_DZ !== "undefined" && _DEPT_DZ[m.deptKey]) || ["이상지질혈증"];
+          const cand = pool.filter((d) => !m.diseases.includes(d));
+          const dz = cand.length ? cand[Math.floor(Math.random() * cand.length)] : pool[0];
+          s.dx++;
+          const moves = [];
+          if ((m.risk >= 4) || (m.risk === 3 && Math.random() < 0.6)) { s.seg.high++; moves.push("고위험군"); }
+          const needCov = (typeof DISEASE_INSURANCE !== "undefined" && DISEASE_INSURANCE[dz]) || [];
+          if (needCov.some((c) => !m.coverages.includes(c)) && Math.random() < 0.55) { s.seg.gap++; moves.push("보장공백"); }
+          if (m.income === "저" && Math.random() < 0.35) { s.seg.needy++; moves.push("치료비 사각지대"); }
+          newEvents.push({ id: ++idRef.current, type: "dx", c: "#F472B6", who: `${m.name} (${m.id})`, text: `${m.deptLabel} · ${dz} 신규 진단`, move: moves.length ? "→ " + moves.join("·") + " 세그먼트 이동" : "위험도 재평가" });
+        } else { // 건강케어 소비
+          const sec = _wsec();
+          const price = Math.round(_rr(sec.min, sec.max) / 1000) * 1000;
+          const margin = Math.round(price * sec.mrate);
+          const accr = Math.round(margin * 0.5), don = Math.round(margin * 0.3), ops = margin - accr - don;
+          s.buys++; s.spend += price; s.accr += accr; s.don += don; s.ops += ops;
+          s.sec[sec.key] = (s.sec[sec.key] || 0) + price; s.secN[sec.key] = (s.secN[sec.key] || 0) + 1;
+          newEvents.push({ id: ++idRef.current, type: "buy", c: sec.c, who: `${m.name} (${m.id})`, text: `${sec.label} 소비 ${ontWon(price)}`, move: `적립 ${accr.toLocaleString()} · 나눔 ${don.toLocaleString()} · 운영 ${ops.toLocaleString()}` });
+        }
+      }
+      stRef.current = s;
+      setSt(s);
+      setEvents((prev) => [...newEvents.reverse(), ...prev].slice(0, 22));
+      setTick((t) => t + 1);
+    }, Math.max(350, 1400 / speed));
+    return () => clearInterval(iv);
+  }, [running, speed, cohort]);
+  const reset = () => { stRef.current = { dx: 0, buys: 0, spend: 0, accr: 0, don: 0, ops: 0, sec: {}, secN: {}, seg: { high: 0, gap: 0, needy: 0 } }; setEvents([]); setTick(0); setSt(stRef.current); };
+  const secMax = Math.max(1, ...SIM_SECTIONS.map((s) => st.sec[s.key] || 0));
+  const segCards = [["고위험군", base.high, st.seg.high, "#EF4444"], ["보장공백", base.gap, st.seg.gap, "#A78BFA"], ["치료비 사각지대", base.needy, st.seg.needy, "#E11D48"]];
+  return (<>
+    <div className="ontsimbar">
+      <div className={`ontsimstate ${running ? "on" : ""}`}><span className="dot" /> {running ? "LIVE 실행 중" : "일시정지"} <em>· tick {tick.toLocaleString()}</em></div>
+      <div className="ontsimctl">
+        <button onClick={() => setRunning((v) => !v)} className="pri">{running ? <><Pause size={14} /> 일시정지</> : <><Play size={14} /> 재생</>}</button>
+        {[1, 2, 4].map((sp) => <button key={sp} className={speed === sp ? "on" : ""} onClick={() => setSpeed(sp)}>{sp}x</button>)}
+        <button onClick={reset}><RotateCcw size={14} /> 리셋</button>
+      </div>
+    </div>
+
+    <div className="ontkpis" style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
+      {[["신규 진단", st.dx.toLocaleString() + "건", "#F472B6"], ["건강케어 소비", ontWon(st.spend), "#22D3EE"], ["적립(50%)", ontWon(st.accr), "#16A34A"], ["나눔(30%)", ontWon(st.don), "#E11D48"], ["운영(20%)", ontWon(st.ops), "#94A3B8"]].map(([k, v, c], i) => (
+        <div className="ontkpi" key={i}><div className="ontkpi-v" style={{ color: c }}>{v}</div><div className="ontkpi-k">{k}</div></div>
+      ))}
+    </div>
+
+    <div className="ontgrid2">
+      <div className="ontpanel">
+        <div className="ontph"><Zap size={15} color="#22D3EE" /> 섹션별 건강케어 소비 <span>· 실시간 누적 · {st.buys.toLocaleString()}건</span></div>
+        {SIM_SECTIONS.map((s) => <OntBar key={s.key} label={`${s.label} (${(st.secN[s.key] || 0).toLocaleString()}건)`} value={st.sec[s.key] || 0} max={secMax} color={s.c} sub="" />)}
+        <div className="ontsimsplit"><span>판매마진 분배</span><b style={{ color: "#16A34A" }}>적립 50%</b><b style={{ color: "#E11D48" }}>나눔 30%</b><b style={{ color: "#94A3B8" }}>운영 20%</b></div>
+      </div>
+      <div className="ontpanel">
+        <div className="ontph"><TrendingUp size={15} color="#EF4444" /> 자동 세그먼트 이동 <span>· 신규 진단 반영</span></div>
+        <div className="ontsegcards">{segCards.map(([t, b, dlt, c]) => (
+          <div className="ontsegcard" key={t}><div className="ontsegcard-t">{t}</div><div className="ontsegcard-n" style={{ color: c }}>{(b + dlt).toLocaleString()}<span>명</span></div>{dlt > 0 && <div className="ontsegcard-d" style={{ color: c }}>▲ +{dlt} 이동</div>}</div>
+        ))}</div>
+        <div className="ontph" style={{ marginTop: 14 }}><Bell size={15} color="#FBBF24" /> 라이브 이벤트 스트림</div>
+        <div className="ontfeed">
+          {events.length === 0 && <div className="ontempty">시뮬레이션 이벤트를 기다리는 중…</div>}
+          {events.map((ev) => (
+            <div className={`ontfeed-i ${ev.type}`} key={ev.id}>
+              <span className="ontfeed-ic" style={{ background: ev.c + "22", color: ev.c }}>{ev.type === "dx" ? <HeartPulse size={13} /> : <Zap size={13} />}</span>
+              <div className="ontfeed-b"><div className="ontfeed-t"><b>{ev.who}</b> {ev.text}</div><div className="ontfeed-s">{ev.move}</div></div>
+              <span className="ontfeed-tag" style={{ color: ev.c }}>{ev.type === "dx" ? "진단" : "소비"}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+    <div className="chnote" style={{ marginTop: 12 }}>※ 실시간 시뮬레이션은 <b>파일럿 시연</b>입니다. 매 틱마다 신규 진단·건강케어 소비 이벤트가 발생하고, 진단 결과에 따라 회원이 <b>고위험군·보장공백·치료비 사각지대</b> 세그먼트로 자동 이동합니다. 소비 판매마진은 <b>적립 50%·나눔 30%·운영 20%</b>로 분배됩니다(건강금융지갑 구조 연동).</div>
+  </>);
+}
+
 function OntologySection({ onGo }) {
   const [tab, setTab] = useState("overview");
   const [seg, setSeg] = useState(null);
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTab("explorer"); };
-  const tabs = [["overview", "코호트 개요", Activity], ["explorer", "객체 탐색기", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
+  const tabs = [["overview", "코호트 개요", Activity], ["live", "실시간 시뮬레이션", Zap], ["explorer", "객체 탐색기", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
   if (!agg) return null;
   return (
     <div style={{ marginTop: 16 }}>
@@ -6187,6 +6293,7 @@ function OntologySection({ onGo }) {
       <div className="chtabs" style={{ marginTop: 14 }}>{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
       {tab === "overview" && <OntOverview agg={agg} onSeg={goSeg} />}
+      {tab === "live" && <OntoLiveSim cohort={cohort} agg={agg} onGo={onGo} />}
       {tab === "explorer" && <OntExplorer cohort={cohort} onGo={onGo} seg={seg} />}
       {tab === "graph" && <div className="ontpanel"><div className="ontph"><Network size={15} color="#22D3EE" /> 온톨로지 스키마 (객체 · 관계)</div><OntGraph agg={agg} /></div>}
       {tab === "actions" && <OntActions agg={agg} onSeg={goSeg} />}
