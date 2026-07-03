@@ -119,6 +119,37 @@ function MyPageSection({ onGo }) {
           <div className="benefit" style={{ marginBottom: 0 }}><span><Art name="coin" size={15} /> 토큰 12,480</span><span><Art name="badge" size={15} /> NFT 6</span><span><Art name="calendar" size={15} /> 예약 1</span><span><Art name="people" size={15} /> 모임 3</span><span><Art name="star" size={15} /> 후기 4</span></div>
           <div className="gorow" style={{ marginTop: 12 }}><button className="gobtn pri" onClick={() => go("manage")}><Activity size={14} /> 건강관리</button><button className="gobtn" onClick={() => go("wallet")}><Coins size={14} /> 건강금융지갑</button><button className="gobtn" onClick={() => go("nft")}><BadgeCheck size={14} /> Health NFT</button></div>
         </div>
+        {(() => {
+          const myGive = WALLET_GIVE.my, myEarn = WALLET.total * WALLET.rate, acts = 14;
+          const score = Math.min(100, Math.round(myGive / 3000 + myEarn / 9000 + acts * 2));
+          const grade = score >= 85 ? "나눔 천사" : score >= 70 ? "건강 나눔러" : score >= 50 ? "참여 시민" : "새싹 기여자";
+          const topPct = score >= 85 ? 3 : score >= 70 ? 12 : score >= 50 ? 30 : 60;
+          const w = (n) => (n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원");
+          const R = 42, C = 2 * Math.PI * R;
+          return (
+            <div className="card socmycard">
+              <div className="rct"><HeartHandshake size={18} color="#E11D48" /> 나의 사회적 기여도 지수 <button className="cbtn2" style={{ marginLeft: "auto" }} onClick={() => go("social")}>사회적기업 지수 <ChevronRight size={13} /></button></div>
+              <div className="socmy">
+                <div className="socmy-g">
+                  <svg viewBox="0 0 100 100"><defs><linearGradient id="socmy-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#FB7185" /><stop offset="1" stopColor="#E11D48" /></linearGradient></defs>
+                    <circle cx="50" cy="50" r={R} fill="none" stroke="#F1E4E7" strokeWidth="8" />
+                    <circle cx="50" cy="50" r={R} fill="none" stroke="url(#socmy-grad)" strokeWidth="8" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - score / 100)} transform="rotate(-90 50 50)" />
+                  </svg>
+                  <div className="socmy-gc"><b>{score}</b><span>{grade}</span></div>
+                </div>
+                <div className="socmy-r">
+                  <div className="socmy-top">상위 <b style={{ color: "#E11D48" }}>{topPct}%</b> 기여 시민 — 형의 소비가 이웃의 치료비가 되었어요.</div>
+                  <div className="socmy-mets">
+                    <div><span><HeartHandshake size={13} color="#E11D48" /> 내가 만든 나눔</span><b>{w(myGive)}</b></div>
+                    <div><span><HandCoins size={13} color="#16A34A" /> 건강적립 환원</span><b>{w(myEarn)}</b></div>
+                    <div><span><Users size={13} color="#22D3EE" /> 참여 활동</span><b>{acts}건</b></div>
+                  </div>
+                </div>
+              </div>
+              <div className="chnote" style={{ marginTop: 8 }}>※ 사회적 기여도는 나눔·적립 환원·참여 활동을 종합한 시연용 지수입니다. ‘사회적기업’ 섹션에서 플랫폼 전체 임팩트를 확인할 수 있어요.</div>
+            </div>
+          );
+        })()}
       </>)}
 
       {tab === "consent" && (<>

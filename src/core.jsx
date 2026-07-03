@@ -9,6 +9,7 @@ import {
   Image as ImageIcon, Paperclip, Mic, Volume2, ExternalLink, RefreshCw, Cigarette,
   Wine, Dumbbell, ArrowDown, ArrowUp, Banknote, Ban, Check, AlertTriangle, Printer,
   MapPin, Star, Clock, Filter, Tag, Percent, BookOpen, Trophy, Network, Zap, Play, Pause, RotateCcw, Landmark, PieChart, Receipt, Megaphone, Target, Video,
+  Scale, Gauge, Globe, Award, PawPrint, Sprout, HandCoins,
 } from "lucide-react";
 const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKET, DISTRICTS, COVER_DETAIL, KDCA_NOTE, DEMO_MEMBERS } = (typeof window !== "undefined" && window.__HHDATA) || {};
 
@@ -255,6 +256,13 @@ function Art({ name, size = 26 }) {
       <rect x="15.5" y="16.5" width="17" height="6" rx="1.6" fill="#0B2A33" opacity=".35" />
       <g stroke="#ECFEFF" strokeWidth="2.4" strokeLinecap="round"><line x1="17" y1="28" x2="17" y2="33" /><line x1="22" y1="25.5" x2="22" y2="33" /><line x1="27" y1="27" x2="27" y2="33" /><line x1="31.5" y1="23.5" x2="31.5" y2="33" /></g>
       <path d="M16 27l6-3 5 2 5-5" fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" opacity=".9" /></svg>);
+    case "social": return (<svg {...S}><defs>
+      <linearGradient id="i-soc-r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF8FA3" /><stop offset="1" stopColor="#E11D48" /></linearGradient>
+      <linearGradient id="i-soc-h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7DE0C7" /><stop offset="1" stopColor="#12A594" /></linearGradient></defs>
+      <Sh rx={12} />
+      <path d="M24 13c-2.2-3-7.4-2-7.4 2.2 0 3.2 3.6 5.6 7.4 8.4 3.8-2.8 7.4-5.2 7.4-8.4 0-4.2-5.2-5.2-7.4-2.2z" fill="url(#i-soc-r)" />
+      <path d="M24 39c-6.2 0-11.4-3.1-13.4-8.2l3.1-1.6c1.6 3.5 5.6 5.8 10.3 5.8s8.7-2.3 10.3-5.8l3.1 1.6C35.4 35.9 30.2 39 24 39z" fill="url(#i-soc-h)" />
+      <circle cx="24" cy="17" r="2" fill="#fff" opacity=".8" /></svg>);
     default: return (<svg {...P}><circle cx="16" cy="16" r="10" fill="#94A3B8" /><path d="M16 11v10M11 16h10" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" /></svg>);
   }
 }
@@ -265,6 +273,7 @@ const SECTIONS = [
   { k: "shop", ic: ShoppingCart, t: "건강쇼핑", s: "영양제·식단·의료기기" },
   { k: "wallet", ic: Wallet, t: "건강금융지갑", s: "자산·토큰·보험금" }, { k: "nft", ic: "NFT", t: "Health NFT", s: "건강인증서" },
   { k: "community", ic: Users, t: "커뮤니티", s: "건강 커뮤니티" }, { k: "mypage", ic: Settings, t: "마이페이지", s: "개인정보·동의관리" },
+  { k: "social", ic: HeartHandshake, t: "사회적기업", s: "참여·환원·나눔 지수" },
   { k: "ontology", ic: Network, t: "온톨로지 운영", s: "코호트·질병·검진·재무회계" },
 ];
 const SCAFFOLDS = {

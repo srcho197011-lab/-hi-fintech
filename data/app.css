@@ -926,6 +926,101 @@
 .mktprop-sc p{font-size:11px;color:#AFC0DE;margin:2px 0 0;}
 .mktprop-arr{color:#3A4A67;font-size:13px;flex-shrink:0;}
 @media(max-width:520px){.mktexec-kpi{grid-template-columns:repeat(2,1fr);}.mktprop-grid{grid-template-columns:1fr;}.mktexec-chr>span{width:96px;}}
+/* ===== 사회적기업 온톨로지 ===== */
+.sochero{position:relative;overflow:hidden;border-radius:18px;padding:22px 24px;background:linear-gradient(120deg,#062B26,#0A2A3A 55%,#3A0E22);display:flex;gap:20px;align-items:center;flex-wrap:wrap;}
+.sochero-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.sochero-bg span{position:absolute;width:200px;height:200px;border-radius:50%;filter:blur(60px);opacity:.28;}
+.sochero-bg span:first-child{top:-70px;left:-40px;}.sochero-bg span:last-child{bottom:-90px;right:60px;}
+.sochero-l{position:relative;flex:1;min-width:260px;}
+.sochero-l .ontotitle{margin:9px 0 6px;}
+.sochero-l p{font-size:12.8px;color:#C9D6E8;line-height:1.65;max-width:560px;}
+.sochero-l p b{color:#5EEAD4;}
+.sochero-kpis{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;}
+.sochero-kpis>div{display:flex;flex-direction:column;}
+.sochero-kpis b{font-size:18px;font-weight:900;color:#EAF2FF;}
+.sochero-kpis span{font-size:10.5px;color:#8FA6C0;margin-top:1px;}
+.sochero-r{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.sochero-sei{font-size:11.5px;color:#9FB3CC;font-weight:700;}
+.sochero-sei b{color:#5EEAD4;font-size:13px;margin-left:2px;}
+.socgauge{position:relative;}
+.socgauge-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;}
+.socgauge-c b{font-size:30px;font-weight:900;color:#fff;}
+.socgauge-c span{font-size:9.5px;color:#8FA6C0;margin-top:2px;}
+.socgauge-c em{font-style:normal;font-size:10.5px;font-weight:800;color:#5EEAD4;margin-top:3px;}
+.socpillars{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-top:14px;}
+.socpillar{background:#0F1B33;border:1px solid #24324D;border-top:2.5px solid;border-radius:13px;padding:13px 14px;cursor:pointer;transition:.15s;}
+.socpillar:hover{transform:translateY(-2px);border-color:#3A4E74;}
+.socpillar-h{display:flex;align-items:center;gap:8px;}
+.socpillar-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;}
+.socpillar-t{flex:1;min-width:0;}
+.socpillar-t b{display:block;font-size:12px;color:#EAF2FF;font-weight:800;line-height:1.25;}
+.socpillar-t span{font-size:10px;color:#8FA6C0;}
+.socpillar-sc{font-size:19px;font-weight:900;flex-shrink:0;}
+.socpillar-v{font-size:17px;font-weight:900;color:#fff;margin:9px 0 6px;}
+.socpillar-bar{height:5px;border-radius:3px;background:#1B2942;overflow:hidden;}
+.socpillar-bar>i{display:block;height:100%;border-radius:3px;}
+.socpillar-sub{font-size:10.6px;color:#93A4BF;margin-top:7px;line-height:1.4;}
+.socsplit-bar{display:flex;height:22px;border-radius:8px;overflow:hidden;margin-bottom:11px;}
+.socsplit-bar>div{height:100%;}
+.socsplit-rows{display:flex;flex-wrap:wrap;gap:7px 16px;}
+.socsplit-r{display:flex;align-items:center;gap:7px;font-size:12px;color:#D3DEF2;}
+.socsplit-r .dot{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+.socsplit-r b{color:#EAF2FF;font-weight:800;}
+.socsplit-r em{font-style:normal;color:#8FA6C0;font-size:11px;font-weight:700;}
+.socsplit-extra{display:flex;align-items:center;gap:7px;margin-top:11px;background:#211803;border:1px solid #4A3A12;border-radius:9px;padding:9px 12px;font-size:11.6px;color:#E7D9B8;}
+.soccerts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.soccert{display:flex;gap:10px;background:#0C1730;border:1px solid #24324D;border-radius:11px;padding:11px 13px;}
+.soccert-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
+.soccert b{font-size:12.5px;color:#EAF2FF;font-weight:800;}
+.soccert p{font-size:11px;color:#9FB0CA;margin:3px 0 0;line-height:1.45;}
+.soclive{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;}
+.soclive-c{display:flex;align-items:center;gap:11px;background:#0C1730;border:1px solid #24324D;border-radius:12px;padding:13px 15px;}
+.soclive-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
+.soclive-v{font-size:19px;font-weight:900;}
+.soclive-k{font-size:11px;color:#93A4BF;margin-top:2px;display:flex;align-items:center;gap:6px;}
+.soclive-dot{width:6px;height:6px;border-radius:50%;animation:socpulse 1.4s ease-in-out infinite;}
+@keyframes socpulse{0%,100%{opacity:.35;}50%{opacity:1;}}
+.socsroi{display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
+.socsroi-big{background:linear-gradient(135deg,#0C2A22,#0E1B33);border:1px solid #1F5137;border-radius:14px;padding:16px 22px;text-align:center;flex-shrink:0;}
+.socsroi-big b{font-size:44px;font-weight:900;color:#34D399;line-height:1;}
+.socsroi-big span{font-size:18px;font-weight:800;color:#34D399;margin-left:3px;}
+.socsroi-big em{display:block;font-style:normal;font-size:10.5px;color:#9FB3CC;margin-top:7px;max-width:150px;}
+.socsroi-brk{flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px;}
+.socsroi-r{display:flex;align-items:center;gap:8px;font-size:12px;color:#D3DEF2;background:#0C1730;border:1px solid #24324D;border-radius:8px;padding:8px 11px;}
+.socsroi-r .dot{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+.socsroi-r em{margin-left:auto;font-style:normal;font-weight:800;color:#EAF2FF;}
+.socsroi-r.tot{background:#0E1E2A;border-color:#1E4258;}
+.socsroi-r.tot em{color:#67E8F9;}
+.socgapkpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.socgapkpi-c{background:#0C1730;border:1px solid #24324D;border-radius:11px;padding:12px;text-align:center;}
+.socgapkpi-v{font-size:20px;font-weight:900;}
+.socgapkpi-k{font-size:10.5px;color:#93A4BF;margin-top:4px;line-height:1.3;}
+.socgive{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.socgive-c{display:flex;gap:11px;background:#0C1730;border:1px solid #24324D;border-left:3px solid;border-radius:11px;padding:12px 14px;}
+.socgive-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
+.socgive-c b{font-size:12.8px;color:#EAF2FF;font-weight:800;}
+.socgive-c p{font-size:11px;color:#9FB0CA;margin:3px 0 0;line-height:1.45;}
+.socgive-cta,.socanimal{display:flex;align-items:center;gap:12px;margin-top:12px;background:#1A0E15;border:1px solid #5A2233;border-radius:12px;padding:13px 16px;font-size:12.5px;color:#EED9DF;line-height:1.5;}
+.socanimal{background:#211803;border-color:#4A3A12;color:#EED9BF;}
+.socgive-cta b,.socanimal b{color:#fff;}
+.socgive-cta>div,.socanimal>div{flex:1;min-width:0;}
+.socanimal-ic{width:42px;height:42px;border-radius:12px;background:#3A2A08;display:grid;place-items:center;flex-shrink:0;}
+.socgive-cta .book,.socanimal .book{flex-shrink:0;}
+/* 마이페이지 나의 사회적 기여도 */
+.socmycard{border:1.5px solid #F5C6D0 !important;background:linear-gradient(180deg,#FFF6F8,#fff) !important;}
+.socmy{display:flex;gap:16px;align-items:center;margin-top:4px;}
+.socmy-g{position:relative;width:96px;height:96px;flex-shrink:0;}
+.socmy-g svg{width:100%;height:100%;}
+.socmy-gc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;}
+.socmy-gc b{font-size:26px;font-weight:900;color:#E11D48;}
+.socmy-gc span{font-size:10px;font-weight:800;color:#9F1239;margin-top:3px;}
+.socmy-r{flex:1;min-width:0;}
+.socmy-top{font-size:12.5px;color:#475569;line-height:1.5;margin-bottom:9px;}
+.socmy-mets{display:flex;flex-wrap:wrap;gap:8px;}
+.socmy-mets>div{flex:1;min-width:96px;background:#FDF2F5;border:1px solid #F6D5DD;border-radius:9px;padding:8px 10px;}
+.socmy-mets span{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#64748B;}
+.socmy-mets b{display:block;font-size:14px;font-weight:900;color:#0F172A;margin-top:3px;}
+@media(max-width:640px){.socpillars{grid-template-columns:1fr 1fr;}.soccerts,.socgive{grid-template-columns:1fr;}.soclive{grid-template-columns:1fr;}.socgapkpi{grid-template-columns:1fr 1fr;}.socmy{flex-direction:column;align-items:stretch;}.socmy-g{align-self:center;}}
 .finbalance{display:flex;align-items:center;gap:7px;margin-top:12px;background:linear-gradient(120deg,#0C2A20,#0F1B33);border:1px solid #1F5137;border-radius:11px;padding:11px 14px;font-size:12px;color:#AFC0DE;line-height:1.5;}
 .finbalance b{color:#6EE7B7;font-weight:800;}
 .finlink{display:flex;align-items:center;gap:7px;margin-top:12px;background:#0F1B33;border:1px solid #24406F;border-radius:11px;padding:10px 13px;font-size:12px;color:#AFC0DE;line-height:1.5;}
