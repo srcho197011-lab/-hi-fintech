@@ -1,29 +1,28 @@
 # ───────────────────────────────────────────────────────────
 #  배포에 '필요한 파일만' GitHub에 올립니다 (화이트리스트 방식).
 #  먼저 전부 무시(/*)한 뒤, 아래 항목만 다시 허용(!)합니다.
-#  → 설치파일(.exe)·zip·pdf·docx·설계문서·이미지폴더 등 무거운
-#    비(非)웹 파일이 실수로 올라가는 것을 막아줍니다.
+#  세 앱은 형제 폴더로 분리 관리: fin/(HI-Fin) · pet/(HI-PET) · sm/(Hi-Safety)
+#  각 앱은 Vercel '루트 디렉터리'를 각자 폴더로 지정해 별도 배포합니다.
 # ───────────────────────────────────────────────────────────
 /*
 
 # 배포에 필요한 것만 허용
 !/.gitignore
-!/index.html
-!/vercel.json
 !/README.md
-!/build_preview.sh
-!/data
-!/src
 
-# 펫 사이트(HI-PET) — Vercel 루트 디렉터리로 배포
+# 휴먼 사이트(HI-Fin) — Vercel 루트 디렉터리: fin
+!/fin
+# 펫 사이트(HI-PET) — Vercel 루트 디렉터리: pet
 !/pet
-# 안전관리 사이트(Hi-Safety / AI-SM) — Vercel 루트 디렉터리로 배포
+# 안전관리 사이트(Hi-Safety / AI-SM) — Vercel 루트 디렉터리: sm
 !/sm
-# 휴먼 사이트 공유 썸네일(OG)
-!/og-human.png
-# 펫 설계계획서(참고용)
+
+# 설계·참고 문서
 !/PetHealth_InsurFin_설계계획서.md
 # 교육용 데이터 수집 도구(다운로드 산출물은 tools 내부 .gitignore로 제외)
 !/tools
 
-# (data 폴더 안 임시/불필요 파일이 생기면 여기에 추가로 제외)
+# 빌드 산출물(각 앱 폴더의 preview.html·임시파일)은 커밋하지 않음
+fin/preview.html
+fin/_h.txt
+fin/_t.txt
