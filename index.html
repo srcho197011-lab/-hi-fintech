@@ -6540,7 +6540,7 @@ const FIN_REVTYPES = [
 const FIN_COGS_META = [["product", "제품 원가", "#F472B6"], ["infra", "검진·인프라 원가", "#38BDF8"], ["payment", "결제 대행 수수료", "#94A3B8"]];
 const FIN_SGA_META = [["payroll", "인건비", "#F59E0B"], ["marketing", "마케팅비", "#EC4899"], ["rnd", "연구개발비", "#8B5CF6"], ["rent", "임차료·관리비", "#64748B"], ["depr", "감가상각비", "#0EA5E9"], ["reward", "포인트(토큰적립) 비용", "#22D3EE"], ["donation", "기부금(치료비 나눔)", "#E11D48"]];
 const FIN_LIAB_META = [["token", "토큰적립금 (계약부채)", "#22D3EE"], ["donation", "기부금 준비금 (미지급기부금)", "#E11D48"], ["payable", "매입채무·미지급금", "#94A3B8"]];
-const FIN_FIX = { payroll: [320000, 430000], marketing: [140000, 240000], rnd: [80000, 150000], rent: [50000, 85000], depr: [34000, 58000] };
+const FIN_FIX = { payroll: [107000, 143000], marketing: [140000, 240000], rnd: [80000, 150000], rent: [50000, 85000], depr: [34000, 58000] };
 const _finZero = () => ({ rev: { product: 0, checkup: 0, service: 0, reservation: 0, emr: 0, insurance: 0, ad: 0 }, cogs: { product: 0, infra: 0, payment: 0 }, sga: { payroll: 0, marketing: 0, rnd: 0, rent: 0, depr: 0, reward: 0, donation: 0 }, other: { income: 0, finIncome: 0, finCost: 0 }, liab: { token: 0, donation: 0, payable: 0 } });
 const _finSum = (o) => Object.values(o).reduce((s, v) => s + v, 0);
 function finPL(a) {
@@ -6618,7 +6618,7 @@ const FIN_MY = {
   serviceRate: 0.30, serviceCommission: 15000, serviceCostRate: 0.05, // 헬스케어 서비스(상담·홈케어·재활·PT) 매칭 수수료 — 1인 연 15만 지출 중 수수료
   resvPerActive: [0.4, 0.7, 1.0, 1.3, 1.6], resvFee: 10000, // 예약 서비스(골프 등) 건당 1만원 · 활성회원 연 예약건수
   arpuInsurance: [3000, 5000, 8000, 12000, 15000], adPerActive: [0, 300, 800, 1500, 2500],
-  opexRate: 0.12, donationRate: 0.30, rewardRate: 0.50, payroll: [3000000000, 8000000000, 15000000000, 40000000000, 80000000000], // 적립·나눔은 제품마진 대비 (건강금융지갑 규칙: 적립50%·나눔30%·운영20%)
+  opexRate: 0.12, donationRate: 0.30, rewardRate: 0.50, payroll: [1000000000, 2700000000, 5000000000, 13300000000, 26700000000], // 적립·나눔은 제품마진 대비(적립50%·나눔30%·운영20%). 인건비는 AI 자동화로 1/3 수준
   deprYear: 1000000000, interestYear: 800000000, taxRate: 0.22, wacc: 0.15, termGrowth: 0.03, evRevMultiple: 4.0, evEbitdaMultiple: 15,
 };
 const FIN_GTM_CHANNELS = [
