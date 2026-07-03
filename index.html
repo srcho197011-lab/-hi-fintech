@@ -5955,28 +5955,36 @@ function OntBar({ label, value, max, color, sub }) {
 
 /* ── 온톨로지 스키마(객체·관계) 다이어그램 ── */
 function OntGraph({ agg }) {
+  // 허브-스포크 배치: 회원(중심) 둘레에 6각형으로 헬스 객체, 하단에 소비→매출→성장 루프(재무·마케팅)
   const nodes = [
-    { id: "member", t: "회원", n: agg.n, x: 200, y: 40, c: "#22D3EE" },
-    { id: "dept", t: "진료과목", n: Object.keys(agg.byDept).length, x: 40, y: 150, c: "#6366F1" },
-    { id: "disease", t: "질병", n: Object.keys(agg.byDisease).length, x: 200, y: 150, c: "#F472B6" },
-    { id: "checkup", t: "건강검진", n: 13, x: 360, y: 150, c: "#34D399" },
-    { id: "cost", t: "예상의료비", n: 0, x: 60, y: 262, c: "#FBBF24" },
-    { id: "coverage", t: "보험담보", n: 0, x: 210, y: 262, c: "#A78BFA" },
-    { id: "region", t: "지역", n: 17, x: 350, y: 262, c: "#38BDF8" },
+    { id: "member", t: "회원", n: agg.n, x: 260, y: 195, c: "#22D3EE" },
+    { id: "disease", t: "질병", n: Object.keys(agg.byDisease).length, x: 260, y: 55, c: "#F472B6" },
+    { id: "checkup", t: "건강검진", n: 13, x: 395, y: 128, c: "#34D399" },
+    { id: "coverage", t: "보험담보", n: 0, x: 125, y: 128, c: "#A78BFA" },
+    { id: "region", t: "지역", n: 17, x: 395, y: 262, c: "#38BDF8" },
+    { id: "dept", t: "진료과목", n: Object.keys(agg.byDept).length, x: 125, y: 262, c: "#6366F1" },
+    { id: "cost", t: "예상의료비", n: 0, x: 260, y: 335, c: "#FBBF24" },
+    { id: "finance", t: "재무회계", n: 0, x: 165, y: 425, c: "#F59E0B" },
+    { id: "marketing", t: "마케팅", n: 0, x: 355, y: 425, c: "#EC4899" },
   ];
   const N = Object.fromEntries(nodes.map((x) => [x.id, x]));
-  const links = [["member", "dept", "진료"], ["member", "disease", "진단"], ["member", "checkup", "수검"], ["member", "cost", "예상"], ["disease", "coverage", "보장"], ["member", "region", "거주"], ["disease", "checkup", "지표"]];
+  const links = [
+    ["member", "disease", "진단"], ["member", "checkup", "수검"], ["member", "dept", "진료"], ["member", "region", "거주"], ["member", "cost", "예상"],
+    ["disease", "checkup", "지표"], ["disease", "coverage", "보장"],
+    ["cost", "finance", "매출"], ["finance", "marketing", "분석"], ["marketing", "member", "타겟"],
+  ];
+  const loop = new Set(["매출", "분석", "타겟"]);
   return (
     <div className="ontgraph">
-      <svg viewBox="0 0 420 300" style={{ width: "100%", height: "auto", display: "block" }}>
-        {links.map(([a, b, lbl], i) => { const A = N[a], B = N[b]; return (<g key={i}><line x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke="#2B3B57" strokeWidth="1.4" /><text x={(A.x + B.x) / 2} y={(A.y + B.y) / 2 - 3} fill="#7C8BA8" fontSize="8.5" textAnchor="middle">{lbl}</text></g>); })}
+      <svg viewBox="0 0 520 480" style={{ width: "100%", height: "auto", display: "block" }}>
+        {links.map(([a, b, lbl], i) => { const A = N[a], B = N[b], big = loop.has(lbl); return (<g key={i}><line x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke={big ? "#3E4E6E" : "#2B3B57"} strokeWidth={big ? "1.8" : "1.4"} strokeDasharray={big ? "5 4" : "none"} /><text x={(A.x + B.x) / 2} y={(A.y + B.y) / 2 - 4} fill={big ? "#9AA9C6" : "#7C8BA8"} fontSize="9.5" fontWeight={big ? "700" : "400"} textAnchor="middle">{lbl}</text></g>); })}
         {nodes.map((nd) => (<g key={nd.id}>
-          <circle cx={nd.x} cy={nd.y} r="26" fill="#0F1B33" stroke={nd.c} strokeWidth="2" />
-          <text x={nd.x} y={nd.y - 2} fill="#EAF2FF" fontSize="10" fontWeight="800" textAnchor="middle">{nd.t}</text>
-          {nd.n > 0 && <text x={nd.x} y={nd.y + 10} fill={nd.c} fontSize="9" fontWeight="700" textAnchor="middle">{nd.n.toLocaleString()}</text>}
+          <circle cx={nd.x} cy={nd.y} r="28" fill="#0F1B33" stroke={nd.c} strokeWidth="2" />
+          <text x={nd.x} y={nd.n > 0 ? nd.y - 3 : nd.y + 4} fill="#EAF2FF" fontSize="10.5" fontWeight="800" textAnchor="middle">{nd.t}</text>
+          {nd.n > 0 && <text x={nd.x} y={nd.y + 11} fill={nd.c} fontSize="9" fontWeight="700" textAnchor="middle">{nd.n.toLocaleString()}</text>}
         </g>))}
       </svg>
-      <div className="ontgraph-note">Object Types <b>7</b> · Links <b>7</b> · Objects <b>{agg.n.toLocaleString()}+</b> — 회원 객체를 중심으로 진료과목·질병·검진·의료비·보험담보·지역이 관계로 연결됩니다.</div>
+      <div className="ontgraph-note">Object Types <b>9</b> · Links <b>10</b> · Objects <b>{agg.n.toLocaleString()}+</b> — 회원을 중심으로 진료과목·질병·검진·의료비·보험담보·지역이 연결되고, <b style={{ color: "#F59E0B" }}>예상의료비→재무회계</b>(매출) <b style={{ color: "#EC4899" }}>→마케팅→회원</b>(타겟)의 <b>소비→매출→성장 루프</b>로 순환합니다.</div>
     </div>
   );
 }
