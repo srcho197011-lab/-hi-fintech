@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=053307949e" />
+<link rel="stylesheet" href="./data/app.css?v=b5ea051442" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=053307949e"></script>
-<script src="./src/data/section_data.js?v=053307949e"></script>
-<script src="./src/data/demo_members.js?v=053307949e"></script>
+<script src="./src/data/dummy_data.js?v=b5ea051442"></script>
+<script src="./src/data/section_data.js?v=b5ea051442"></script>
+<script src="./src/data/demo_members.js?v=b5ea051442"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -6402,13 +6402,16 @@ const FIN_COGS_META = [["product", "제품 원가", "#F472B6"], ["infra", "시�
 const FIN_SGA_META = [["payroll", "인건비", "#F59E0B"], ["marketing", "마케팅비", "#EC4899"], ["rnd", "연구개발비", "#8B5CF6"], ["rent", "임차료·관리비", "#64748B"], ["depr", "감가상각비", "#0EA5E9"], ["reward", "포인트(토큰적립) 비용", "#22D3EE"], ["donation", "기부금(치료비 나눔)", "#E11D48"]];
 const FIN_LIAB_META = [["token", "토큰적립금 (계약부채)", "#22D3EE"], ["donation", "기부금 준비금 (미지급기부금)", "#E11D48"], ["payable", "매입채무·미지급금", "#94A3B8"]];
 const FIN_FIX = { payroll: [320000, 430000], marketing: [140000, 240000], rnd: [80000, 150000], rent: [50000, 85000], depr: [34000, 58000] };
-const _finZero = () => ({ rev: { product: 0, commission: 0, emr: 0, insurance: 0, ad: 0 }, cogs: { product: 0, infra: 0, payment: 0 }, sga: { payroll: 0, marketing: 0, rnd: 0, rent: 0, depr: 0, reward: 0, donation: 0 }, other: { income: 0, expense: 0 }, liab: { token: 0, donation: 0, payable: 0 } });
+const _finZero = () => ({ rev: { product: 0, commission: 0, emr: 0, insurance: 0, ad: 0 }, cogs: { product: 0, infra: 0, payment: 0 }, sga: { payroll: 0, marketing: 0, rnd: 0, rent: 0, depr: 0, reward: 0, donation: 0 }, other: { income: 0, finIncome: 0, finCost: 0 }, liab: { token: 0, donation: 0, payable: 0 } });
 const _finSum = (o) => Object.values(o).reduce((s, v) => s + v, 0);
 function finPL(a) {
   const revenue = _finSum(a.rev), cogs = _finSum(a.cogs), gross = revenue - cogs, sga = _finSum(a.sga), op = gross - sga;
-  const otherNet = a.other.income - a.other.expense, pbt = op + otherNet, tax = Math.max(0, pbt) * FIN_TAX, net = pbt - tax;
-  return { revenue, cogs, gross, sga, op, otherIncome: a.other.income, otherExpense: a.other.expense, pbt, tax, net, opMargin: revenue ? op / revenue : 0, netMargin: revenue ? net / revenue : 0 };
+  const finIncome = a.other.finIncome, finCost = a.other.finCost, otherIncome = a.other.income;
+  const pbt = op + finIncome - finCost + otherIncome, tax = Math.max(0, pbt) * FIN_TAX, net = pbt - tax;
+  return { revenue, cogs, gross, sga, op, finIncome, finCost, otherIncome, pbt, tax, net, opMargin: revenue ? op / revenue : 0, netMargin: revenue ? net / revenue : 0 };
 }
+const FIN_INST = { commission: ["KMI검진센터", "한신메디피아의원", "서울아산병원", "세브란스병원", "365다나약국", "온누리약국"], emr: ["강북삼성병원", "분당서울대병원", "우리동네의원", "건강플러스약국", "메디체크검진센터"], ad: ["제휴 광고주", "제약사 캠페인", "건기식 브랜드"] };
+const _finInst = (k) => { const a = FIN_INST[k]; return a ? a[Math.floor(Math.random() * a.length)] : "제휴사"; };
 const _finWpick = () => { const t = FIN_REVTYPES.reduce((s, x) => s + x.w, 0); let r = Math.random() * t; for (const x of FIN_REVTYPES) { r -= x.w; if (r <= 0) return x; } return FIN_REVTYPES[0]; };
 // 재무상태표(자산=부채+자본). 자본금·잉여금은 초기 자본, 이익잉여금=누적 순이익. 현금은 대차 평형 잔여(plug).
 const FIN_CAPITAL = 300000000, FIN_SURPLUS = 500000000, FIN_LEASE = 120000000, FIN_LONGDEBT = 200000000;
@@ -6419,10 +6422,20 @@ function finBS(a) {
   const curLiab = contractLiab + donationPay + tradePay + taxPay + deposits;
   const nonCurLiab = FIN_LEASE + FIN_LONGDEBT, liabilities = curLiab + nonCurLiab;
   const assets = liabilities + equity;
-  const ppe = Math.max(20000000, 400000000 - Math.round(a.sga.depr * 0.5)), intangible = 200000000, rou = 150000000, nonCurAssets = ppe + intangible + rou;
+  const ppe = Math.max(20000000, 400000000 - a.sga.depr), intangible = 200000000, rou = 150000000, nonCurAssets = ppe + intangible + rou;
   const inventory = 40000000, receivable = Math.round(pl.revenue * 0.12), prepaid = 25000000;
   const cash = assets - (nonCurAssets + inventory + receivable + prepaid), curAssets = cash + receivable + inventory + prepaid;
   return { pl, assets, cash, receivable, inventory, prepaid, curAssets, ppe, intangible, rou, nonCurAssets, contractLiab, donationPay, tradePay, taxPay, deposits, curLiab, leaseLiab: FIN_LEASE, longDebt: FIN_LONGDEBT, nonCurLiab, liabilities, capital: FIN_CAPITAL, surplus: FIN_SURPLUS, retained, equity, debtRatio: equity ? liabilities / equity : 0, currentRatio: curLiab ? curAssets / curLiab : 0, equityRatio: assets ? equity / assets : 0, roe: equity ? retained / equity : 0 };
+}
+// 현금흐름표(간접법): 영업활동(순이익+감가상각±운전자본) / 투자활동(자산취득) / 재무활동(증자·차입). 기말현금 = B/S 현금과 일치.
+function finCF(a, bs) {
+  const dep = a.sga.depr;
+  const wc = bs.curLiab - bs.receivable - bs.inventory - bs.prepaid; // 운전자본 증감(유동부채 증가-유동자산 증가)
+  const opCF = bs.retained + dep + wc;
+  const invCF = -(400000000 + 200000000 + 150000000); // 유형·무형·사용권 자산 취득(설립기)
+  const finCFv = FIN_CAPITAL + FIN_SURPLUS + FIN_LONGDEBT + FIN_LEASE; // 유상증자+차입+리스(설립기)
+  const endCash = opCF + invCF + finCFv;
+  return { opCF, invCF, finCF: finCFv, endCash, netIncome: bs.retained, dep, wc };
 }
 
 function FinanceLive() {
@@ -6432,40 +6445,50 @@ function FinanceLive() {
   const [acct, setAcct] = useState(_finZero());
   const [journal, setJournal] = useState([]);
   const [tab, setTab] = useState("pl");
+  const [months, setMonths] = useState([]);
+  const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const ref = useRef(_finZero());
-  const idRef = useRef(0);
+  const idRef = useRef(0); const tkRef = useRef(0); const snapRef = useRef({ rev: 0, op: 0, net: 0 }); const moRef = useRef([]);
   useEffect(() => {
     if (!running) return;
     const iv = setInterval(() => {
       const a = ref.current; const js = [];
       const push = (c, note, amt, cr) => js.push({ id: ++idRef.current, c, note, amt, cr });
+      const pickWho = (k) => { if ((k === "product" || k === "insurance") && cohort.length) { const m = cohort[Math.floor(Math.random() * cohort.length)]; return `${m.name}(${m.id})`; } return _finInst(k); };
       const nEv = 3 + Math.floor(Math.random() * 3);
       for (let e = 0; e < nEv; e++) {
-        const t = _finWpick(); const p = Math.round(finRr(t.min, t.max) / 1000) * 1000;
+        const t = _finWpick(); const p = Math.round(finRr(t.min, t.max) / 1000) * 1000; const who = pickWho(t.k);
         a.rev[t.k] += p;
         if (t.k === "product") {
           const cost = Math.round(p * 0.52); a.cogs.product += cost; a.cogs.payment += Math.round(p * 0.022); a.liab.payable += Math.round(p * 0.3);
           const margin = p - cost, reward = Math.round(margin * 0.5), don = Math.round(margin * 0.3);
           a.sga.reward += reward; a.liab.token += reward; a.sga.donation += don; a.liab.donation += don;
-          push(t.c, `${t.label} (${t.src})`, p, "제품매출");
+          push(t.c, `${who} · ${t.label} (건강쇼핑)`, p, "제품매출");
         } else {
           if (t.k === "emr") a.cogs.infra += Math.round(p * 0.16);
-          push(t.c, `${t.label} (${t.src})`, p, t.k === "commission" ? "수수료수익" : t.k === "emr" ? "구독수익" : t.k === "insurance" ? "중개수수료" : "광고수익");
+          push(t.c, `${who} · ${t.label}`, p, t.k === "commission" ? "수수료수익" : t.k === "emr" ? "구독수익" : t.k === "insurance" ? "중개수수료" : "광고수익");
         }
       }
       // 고정 판관비(기간 발생)
       for (const [k, [lo, hi]] of Object.entries(FIN_FIX)) a.sga[k] += Math.round(finRr(lo, hi));
       a.cogs.infra += Math.round(finRr(14000, 28000));
-      // 기타비용: 간헐적 보험금 지급
-      if (Math.random() < 0.09) { const amt = Math.round(finRr(120000, 700000)); a.other.expense += amt; push("#EF4444", "보험금 지급 (치료비 보장)", amt, "현금"); }
-      if (Math.random() < 0.10) { const amt = Math.round(finRr(30000, 180000)); a.other.income += amt; }
-      ref.current = a; setAcct({ ...a, rev: { ...a.rev }, cogs: { ...a.cogs }, sga: { ...a.sga }, other: { ...a.other }, liab: { ...a.liab } });
+      // 금융비용(대출·리스 이자) / 금융수익(예금이자)
+      a.other.finCost += Math.round(finRr(40000, 56000));
+      if (Math.random() < 0.5) a.other.finIncome += Math.round(finRr(8000, 28000));
+      if (Math.random() < 0.08) a.other.income += Math.round(finRr(20000, 120000)); // 기타수익(잡이익)
+      ref.current = a; tkRef.current += 1;
+      // 월 마감(8거래 = 1개월) → 결산 추이 스냅샷
+      if (tkRef.current % 8 === 0) {
+        const pn = finPL(a); const mo = { m: moRef.current.length + 1, rev: pn.revenue - snapRef.current.rev, op: pn.op - snapRef.current.op, net: pn.net - snapRef.current.net };
+        snapRef.current = { rev: pn.revenue, op: pn.op, net: pn.net }; moRef.current = [...moRef.current, mo].slice(-12); setMonths(moRef.current);
+      }
+      setAcct({ ...a, rev: { ...a.rev }, cogs: { ...a.cogs }, sga: { ...a.sga }, other: { ...a.other }, liab: { ...a.liab } });
       setJournal((prev) => [...js.reverse(), ...prev].slice(0, 20));
       setTick((x) => x + 1);
     }, Math.max(350, 1400 / speed));
     return () => clearInterval(iv);
-  }, [running, speed]);
-  const reset = () => { ref.current = _finZero(); setAcct(_finZero()); setJournal([]); setTick(0); };
+  }, [running, speed, cohort]);
+  const reset = () => { ref.current = _finZero(); tkRef.current = 0; snapRef.current = { rev: 0, op: 0, net: 0 }; moRef.current = []; setAcct(_finZero()); setJournal([]); setMonths([]); setTick(0); };
   const pl = finPL(acct);
   const bs = finBS(acct);
   const revMax = Math.max(1, ...FIN_REVTYPES.map((t) => acct.rev[t.k]));
@@ -6473,10 +6496,11 @@ function FinanceLive() {
   const costMax = Math.max(1, ...costRows.map((r) => r[1]));
   const liabTot = _finSum(acct.liab);
   // 손익계산서 행 [라벨, 값, 강조여부, 부호]
+  const cf = finCF(acct, bs);
   const plRows = [
     ["매출액", pl.revenue, 0, "rev"], ["(-) 매출원가", -pl.cogs, 0, "neg"], ["매출총이익", pl.gross, 1, "sub"],
     ["(-) 판매비와관리비", -pl.sga, 0, "neg"], ["영업이익", pl.op, 2, "sub"],
-    ["(+) 기타수익", pl.otherIncome, 0, "pos"], ["(-) 기타비용", -pl.otherExpense, 0, "neg"],
+    ["(+) 금융수익(이자수익)", pl.finIncome, 0, "pos"], ["(-) 금융비용(이자비용)", -pl.finCost, 0, "neg"], ["(+) 기타수익", pl.otherIncome, 0, "pos"],
     ["법인세비용차감전순이익", pl.pbt, 1, "sub"], ["(-) 법인세비용", -pl.tax, 0, "neg"], ["당기순이익", pl.net, 3, "net"],
   ];
   return (<>
@@ -6495,7 +6519,8 @@ function FinanceLive() {
       ))}
     </div>
 
-    <div className="chtabs" style={{ marginTop: 14 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
+    <div className="finlink"><Network size={13} color="#22D3EE" /> 온톨로지 파일럿 <b>{cohort.length.toLocaleString()}명</b>의 건강케어 소비가 <b>실시간 매출</b>로 인식됩니다 (제품판매·보험중개는 회원, 입점수수료·EMR은 제휴 기관).</div>
+    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["trend", "결산 추이", PieChart]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
     {tab === "pl" && (<>
       <div className="ontgrid2">
@@ -6565,6 +6590,47 @@ function FinanceLive() {
         <div className="finbalance"><Check size={14} color="#34D399" /> 대차평형 성립 — <b>자산 {finWon(bs.assets)}</b> = 부채 {finWon(bs.liabilities)} + 자본 {finWon(bs.equity)}</div>
       </div>
     </>)}
+
+    {tab === "cf" && (
+      <div className="ontpanel">
+        <div className="ontph"><TrendingUp size={15} color="#34D399" /> 현금흐름표 (간접법) <span>· 영업·투자·재무활동</span></div>
+        <div className="finpl">
+          <div className="finpl-r sub emph2"><span>Ⅰ. 영업활동 현금흐름</span><b>{finWon(cf.opCF)}원</b></div>
+          <div className="finpl-r"><span>　당기순이익</span><b>{finWon(cf.netIncome)}원</b></div>
+          <div className="finpl-r"><span>　(+) 감가상각비(비현금)</span><b>{finWon(cf.dep)}원</b></div>
+          <div className="finpl-r"><span>　(±) 운전자본 증감</span><b>{finWon(cf.wc)}원</b></div>
+          <div className="finpl-r sub"><span>Ⅱ. 투자활동 현금흐름</span><b>{finWon(cf.invCF)}원</b></div>
+          <div className="finpl-r"><span>　유형·무형·사용권자산 취득(설립기)</span><b>{finWon(cf.invCF)}원</b></div>
+          <div className="finpl-r sub"><span>Ⅲ. 재무활동 현금흐름</span><b>{finWon(cf.finCF)}원</b></div>
+          <div className="finpl-r"><span>　유상증자·장기차입금·리스(설립기)</span><b>{finWon(cf.finCF)}원</b></div>
+          <div className="finpl-r net"><span>기말 현금및현금성자산</span><b>{finWon(cf.endCash)}원</b></div>
+        </div>
+        <div className="finbalance"><Check size={14} color="#34D399" /> 현금흐름표 기말현금 = 재무상태표 현금 <b>{finWon(bs.cash)}원</b> 일치</div>
+      </div>
+    )}
+
+    {tab === "trend" && (
+      <div className="ontpanel">
+        <div className="ontph"><PieChart size={15} color="#FBBF24" /> 월별 결산 추이 <span>· 매출·영업이익·당기순이익 ({months.length}개월 · 8거래=1개월)</span></div>
+        {months.length === 0 ? <div className="ontempty">첫 결산(8거래 = 1개월)을 기다리는 중…</div> : (() => {
+          const max = Math.max(1, ...months.map((m) => Math.max(m.rev, m.op, Math.abs(m.net))));
+          return (<>
+            <div className="fintrend">{months.map((m) => (
+              <div className="fintrend-col" key={m.m}>
+                <div className="fintrend-bars">
+                  <i className="rev" style={{ height: (m.rev / max * 100) + "%" }} title={"매출 " + finWon(m.rev)} />
+                  <i className="op" style={{ height: (Math.max(0, m.op) / max * 100) + "%" }} title={"영업이익 " + finWon(m.op)} />
+                  <i className="net" style={{ height: (Math.max(0, m.net) / max * 100) + "%" }} title={"순이익 " + finWon(m.net)} />
+                </div>
+                <span>{m.m}월</span>
+              </div>
+            ))}</div>
+            <div className="fintrend-lgd"><span><i style={{ background: "#22D3EE" }} />매출</span><span><i style={{ background: "#34D399" }} />영업이익</span><span><i style={{ background: "#FBBF24" }} />당기순이익</span></div>
+            <div className="finpl-note">최근 {months.length}개월 · 누적 매출 {finWon(pl.revenue)} · 누적 순이익 {finWon(pl.net)}</div>
+          </>);
+        })()}
+      </div>
+    )}
 
     <div className="ontpanel">
       <div className="ontph"><Zap size={15} color="#FBBF24" /> 실시간 회계 분개(Journal) <span>· 복식부기 차·대변</span></div>

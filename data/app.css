@@ -786,6 +786,18 @@
 .ontocta.fin{background:linear-gradient(120deg,#062A22,#0B3B3A 55%,#0E4A5C);border-color:#12564F;box-shadow:0 20px 44px -26px rgba(52,211,153,.5);}
 .finbalance{display:flex;align-items:center;gap:7px;margin-top:12px;background:linear-gradient(120deg,#0C2A20,#0F1B33);border:1px solid #1F5137;border-radius:11px;padding:11px 14px;font-size:12px;color:#AFC0DE;line-height:1.5;}
 .finbalance b{color:#6EE7B7;font-weight:800;}
+.finlink{display:flex;align-items:center;gap:7px;margin-top:12px;background:#0F1B33;border:1px solid #24406F;border-radius:11px;padding:10px 13px;font-size:12px;color:#AFC0DE;line-height:1.5;}
+.finlink b{color:#67E8F9;font-weight:800;}
+/* 결산 추이 차트 */
+.fintrend{display:flex;align-items:flex-end;gap:8px;height:170px;padding:8px 4px 0;border-bottom:1px solid #24324D;overflow-x:auto;}
+.fintrend-col{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:38px;height:100%;justify-content:flex-end;}
+.fintrend-bars{display:flex;align-items:flex-end;gap:2px;height:100%;width:100%;justify-content:center;}
+.fintrend-bars i{width:9px;border-radius:3px 3px 0 0;min-height:2px;transition:height .3s ease;}
+.fintrend-bars i.rev{background:#22D3EE;}.fintrend-bars i.op{background:#34D399;}.fintrend-bars i.net{background:#FBBF24;}
+.fintrend-col span{font-size:10px;color:#8FA1C0;font-weight:700;}
+.fintrend-lgd{display:flex;gap:14px;margin-top:10px;font-size:11px;color:#AFC0DE;}
+.fintrend-lgd span{display:inline-flex;align-items:center;gap:5px;}
+.fintrend-lgd i{width:10px;height:10px;border-radius:3px;}
 .wcard .wi{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
 .wcard .wn{font-weight:800;font-size:13px;}
 .wcard .wd{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45;}
