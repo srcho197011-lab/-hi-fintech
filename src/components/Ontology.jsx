@@ -134,8 +134,39 @@ function OntOverview({ agg, onSeg }) {
 }
 function _deptL(k) { if (typeof DEPT_CATS !== "undefined") { const d = DEPT_CATS.find((x) => x.key === k); if (d) return d.label; } return k; }
 
+/* ── 질병 관리 가이드 데이터(disease_care.json) 로더 ── */
+let _dzcarePromise = null, _DZCARE = null;
+function loadDzCare() { if (!_dzcarePromise) _dzcarePromise = fetch("./data/disease_care.json").then((r) => (r.ok ? r.json() : null)).then((j) => { _DZCARE = (j && j.diseases) || {}; return _DZCARE; }).catch(() => { _DZCARE = {}; return _DZCARE; }); return _dzcarePromise; }
+function useDzCare() { const [mp, setMp] = useState(_DZCARE); useEffect(() => { if (!_DZCARE) loadDzCare().then(setMp); else setMp(_DZCARE); }, []); return mp || {}; }
+
+/* 질병 1개 관리 가이드 카드(접이식) */
+function DzCareCard({ name, data }) {
+  const [open, setOpen] = useState(false);
+  const rec = data.supplements_recommended || [], avo = data.supplements_avoid || [], dev = data.devices || [], life = data.lifestyle || [], diet = data.diet || {};
+  return (
+    <div className={`dzcare ${open ? "on" : ""}`}>
+      <button className="dzcare-h" onClick={() => setOpen((v) => !v)}>
+        <b>{name}</b>
+        <span className="dzcare-tags"><i className="dzt rec">영양 {rec.length}</i>{avo.length > 0 && <i className="dzt avo">금기 {avo.length}</i>}<i className="dzt dev">기기 {dev.length}</i></span>
+        <ChevronRight size={15} className="dzcare-arr" />
+      </button>
+      {open && (
+        <div className="dzcare-b">
+          {rec.length > 0 && <div className="dzcare-sec"><div className="dzcare-t rec"><Pill size={12} /> 맞춤 영양소·영양제</div>{rec.map((s, i) => <div className="dzcare-row" key={i}><b>{s.name}</b><p>{s.reason}</p><em>{s.source}</em></div>)}</div>}
+          {avo.length > 0 && <div className="dzcare-sec"><div className="dzcare-t avo"><AlertTriangle size={12} /> 복용 주의·금기 영양소</div>{avo.map((s, i) => <div className="dzcare-row avo" key={i}><b>{s.name}</b><p>{s.reason}</p><em>{s.source}</em></div>)}</div>}
+          {dev.length > 0 && <div className="dzcare-sec"><div className="dzcare-t dev"><MonitorSmartphone size={12} /> 홈케어 의료기기</div>{dev.map((s, i) => <div className="dzcare-row" key={i}><b>{s.name}</b><p>{s.use}</p></div>)}</div>}
+          {(diet.principle || (diet.recommend || []).length) && <div className="dzcare-sec"><div className="dzcare-t diet"><Salad size={12} /> 건강 식단</div><div className="dzcare-row"><p>{diet.principle}</p>{(diet.recommend || []).length > 0 && <div className="dzcare-chips">권장 {diet.recommend.map((x, i) => <span key={i}>{x}</span>)}</div>}{(diet.avoid || []).length > 0 && <div className="dzcare-chips avo">주의 {diet.avoid.map((x, i) => <span key={i}>{x}</span>)}</div>}</div></div>}
+          {life.length > 0 && <div className="dzcare-sec"><div className="dzcare-t life"><Activity size={12} /> 생활습관</div><ul className="dzcare-life">{life.map((s, i) => <li key={i}>{s.tip}{s.source ? <em> · {s.source}</em> : null}</li>)}</ul></div>}
+          {(data.sources || []).length > 0 && <div className="dzcare-src">출처: {data.sources.join(" · ")}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── 회원 객체 상세 (온톨로지 링크 뷰) ── */
 function OntMemberModal({ m, onClose, onGo }) {
+  const dzcare = useDzCare();
   const marks = Object.entries(m.marks).sort((a, b) => b[1] - a[1]);
   const fam = typeof pilotFamily === "function" ? pilotFamily(m.hid) : [];
   return (
@@ -163,6 +194,13 @@ function OntMemberModal({ m, onClose, onGo }) {
           <div className="ontmsec"><div className="ontmsh"><HeartPulse size={13} color="#F472B6" /> 진단 질병 <span>{m.dzCount}</span></div>
             {m.diseases.length ? <div className="ontchips">{m.diseases.map((d) => <span key={d} className="ontchip dz">{d}</span>)}</div> : <div className="ontempty">진단된 질병 없음 (건강 양호)</div>}
           </div>
+
+          {(() => { const cds = (m.diseases || []).filter((d) => dzcare[d]); if (!cds.length) return null; return (
+            <div className="ontmsec"><div className="ontmsh"><Pill size={13} color="#16A34A" /> 질병별 관리 가이드 <span>{cds.length}</span></div>
+              <div className="dzcare-list">{cds.map((d) => <DzCareCard key={d} name={d} data={dzcare[d]} />)}</div>
+              <div className="chnote" style={{ marginTop: 8 }}>맞춤 영양소·<b>복용 금기 영양소</b>·홈케어기기·식단·생활습관 — 전세계 권위기관(NIH ODS·Mayo·NHS·WHO·학회·국가건강정보포털) 근거. ※ 교육용 정보이며 진단·처방이 아님. 복용 금기·상호작용은 개인 복용약에 따라 다르니 의사·약사와 상담하세요.</div>
+            </div>
+          ); })()}
 
           {typeof consultGet === "function" && (() => { const ev = consultGet(m); const A = typeof analyzeConsults === "function" ? analyzeConsults(m) : null; return (
             <div className="ontmsec"><div className="ontmsh"><MessageSquare size={13} color="#67E8F9" /> 상담 기록 (시계열) <span>{ev.length}건</span></div>
