@@ -10,6 +10,16 @@ const _CN_RISK = [["일반 정보", "#16A34A", "#DCFCE7"], ["생활관리 필요
 function _cnHash(s) { let h = 0x811c9dc5; s = String(s || ""); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return h >>> 0; }
 function _cnRng(seed) { let a = seed >>> 0; return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
+/* 회원 프로필 정규화 — 데모 회원(demoMembers) + 파일럿 코호트(pilotCohort) 두 형태 모두 지원 */
+function _cnProfile(m) {
+  if (!m) return { id: "?", name: "?", diseases: [], cancers: [], mgmt: [], bioAge: 40, regAge: 40, cancerGrade: 3, category: "일반" };
+  if (m.highRiskDiseases || m.highRiskCancerTypes || m.managementPoints) { // 데모 회원
+    return { id: m.id || m.email, name: m.name, diseases: (m.highRiskDiseases || []).slice(), cancers: (m.highRiskCancerTypes || []).slice(), mgmt: (m.managementPoints || []).slice(), bioAge: m.biologicalAge || m.regAge || 40, regAge: m.regAge || 40, cancerGrade: m.cancerRiskGrade || 3, category: m.category || "일반" };
+  }
+  const all = m.diseases || []; // 파일럿 코호트 회원
+  return { id: m.id || m.name, name: m.name, diseases: all.filter((d) => !/암$/.test(d)), cancers: all.filter((d) => /암$/.test(d)), mgmt: m.marks ? Object.keys(m.marks).slice(0, 3) : [], bioAge: m.bioAge || m.age || 40, regAge: m.age || 40, cancerGrade: m.risk >= 4 ? 7 : m.risk >= 3 ? 5 : 3, category: m.isChild ? "아동" : (m.age >= 65 ? "노인" : (m.sex === "여" ? "여성" : "일반")) };
+}
+
 /* 진료과 매핑(질환 키워드 → DEPT_CATS key) */
 const _CN_DEPT_MAP = [
   [["고혈압", "혈압", "심부전", "부정맥", "허혈", "심장", "심근경색", "협심", "심혈관"], "cardio"],
@@ -53,37 +63,38 @@ function _cnCheckupFor(label, m) {
 /* 증상 문구 */
 const _CN_SYMPTOM = { "고혈압": "두통·어지럼·뒷목 뻐근함", "당뇨": "갈증·잦은 소변·피로", "고지혈": "특별한 증상 없이 걱정되는", "지방간": "피로·오른쪽 윗배 불편", "간": "피로·소화불량", "빈혈": "어지럼·창백·숨참", "골다공": "허리·관절 통증", "갱년기": "안면홍조·수면장애", "뇌졸중": "손저림·어지럼·말어눌", "뇌혈관": "두통·어지럼", "치매": "기억력 저하·깜빡임", "심근경색": "가슴 답답·조임", "허혈": "가슴 답답함", "소아비만": "체중 증가·활동량 저하", "아토피": "가려움·피부 건조", "성장": "또래보다 작은 키", "시력": "칠판이 흐릿하게 보이는" };
 function _cnSymptom(label) { for (const k in _CN_SYMPTOM) if (String(label).includes(k)) return _CN_SYMPTOM[k]; return "불편한"; }
-function _cnRiskIdx(label, m, isCancer) {
-  const grade = m && m.cancerRiskGrade || 3, bioGap = m ? (m.biologicalAge - m.regAge) : 0;
+function _cnRiskIdx(label, p, isCancer) {
+  const grade = (p && p.cancerGrade) || 3, bioGap = p ? (p.bioAge - p.regAge) : 0;
   if (isCancer) return grade >= 7 ? 3 : grade >= 5 ? 2 : 2;
   if (/뇌졸중|심근경색|뇌출혈|허혈/.test(String(label))) return 3;
   return bioGap > 5 ? 2 : 1;
 }
-function _cnQuestion(label, kind, m) {
+function _cnQuestion(label, kind) {
   if (kind === "증상질문") return `요즘 ${_cnSymptom(label)} 증상이 있는데 ${label} 때문일까요?`;
   if (kind === "검진문의") return `${label} 관련해서 어떤 검사를 언제 받는 게 좋을까요? 가족력도 있어요.`;
   if (kind === "질환상담") return `${label} 관리 방법과 합병증 예방이 궁금해요.`;
   return `${label} 관리를 위해 생활습관·식단은 어떻게 하면 좋을까요?`;
 }
-function _cnEvent(m, label, daysAgo, kind, uid) {
+function _cnEvent(p, label, daysAgo, kind, uid) {
   const isCancer = /암$/.test(String(label));
-  const ri = _cnRiskIdx(label, m, isCancer);
+  const ri = _cnRiskIdx(label, p, isCancer);
   const t = Date.now() - daysAgo * 86400000;
-  return { id: `cn_${m.id || m.email}_${uid}`, t, daysAgo, topic: label, kind, question: _cnQuestion(label, kind, m), riskIdx: ri, risk: _CN_RISK[ri][0], riskColor: _CN_RISK[ri][1], riskBg: _CN_RISK[ri][2], source: "상담(데모)" };
+  return { id: `cn_${p.id}_${uid}`, t, daysAgo, topic: label, kind, question: _cnQuestion(label, kind), riskIdx: ri, risk: _CN_RISK[ri][0], riskColor: _CN_RISK[ri][1], riskBg: _CN_RISK[ri][2], source: "상담(데모)" };
 }
 
 /* 시간흐름 데모 상담 시드(최근일수록 현재 위험조건 반영) */
 function consultSeed(m) {
-  const rng = _cnRng(_cnHash(m.id || m.email || m.name));
-  const cancers = m.highRiskCancerTypes || [], dzs = m.highRiskDiseases || [];
+  const p = _cnProfile(m);
+  const rng = _cnRng(_cnHash(p.id || p.name));
+  const cancers = p.cancers, dzs = p.diseases;
   const ev = []; let uid = 0; const r = (n) => Math.floor(rng() * n);
-  if (dzs[0]) ev.push(_cnEvent(m, dzs[0], 1 + r(5), "증상질문", ++uid));
-  if (cancers[0]) ev.push(_cnEvent(m, cancers[0], 4 + r(7), "검진문의", ++uid));
-  if (dzs[1]) ev.push(_cnEvent(m, dzs[1], 9 + r(9), "질환상담", ++uid));
-  if (cancers[1]) ev.push(_cnEvent(m, cancers[1], 16 + r(11), "검진문의", ++uid));
-  if (dzs[0]) ev.push(_cnEvent(m, dzs[0], 26 + r(10), "질환상담", ++uid));
-  (dzs.length ? dzs : ["건강검진"]).forEach((d, i) => ev.push(_cnEvent(m, d, 40 + i * 14 + r(10), "생활습관", ++uid)));
-  ev.push(_cnEvent(m, dzs[0] || cancers[0] || "건강검진", 78 + r(28), "증상질문", ++uid));
+  if (dzs[0]) ev.push(_cnEvent(p, dzs[0], 1 + r(5), "증상질문", ++uid));
+  if (cancers[0]) ev.push(_cnEvent(p, cancers[0], 4 + r(7), "검진문의", ++uid));
+  if (dzs[1]) ev.push(_cnEvent(p, dzs[1], 9 + r(9), "질환상담", ++uid));
+  if (cancers[1]) ev.push(_cnEvent(p, cancers[1], 16 + r(11), "검진문의", ++uid));
+  if (dzs[0]) ev.push(_cnEvent(p, dzs[0], 26 + r(10), "질환상담", ++uid));
+  (dzs.length ? dzs.slice(0, 3) : ["건강검진"]).forEach((d, i) => ev.push(_cnEvent(p, d, 40 + i * 14 + r(10), "생활습관", ++uid)));
+  ev.push(_cnEvent(p, dzs[0] || cancers[0] || "건강검진", 78 + r(28), "증상질문", ++uid));
   ev.sort((a, b) => b.t - a.t);
   return ev;
 }
@@ -101,8 +112,9 @@ function analyzeConsults(m) {
   const bump = (label, w, src, isCancer) => { const s = sig[label] || (sig[label] = { label, score: 0, count: 0, lastDays: 999, isCancer: !!isCancer, sources: [] }); s.score += w; if (src === "상담") s.count++; if (!s.sources.includes(src)) s.sources.push(src); };
   events.forEach((e) => bump(e.topic, _cnWeight(e.daysAgo), "상담", /암$/.test(e.topic), e.daysAgo));
   events.forEach((e) => { const s = sig[e.topic]; if (s && e.daysAgo < s.lastDays) s.lastDays = e.daysAgo; });
-  (m.highRiskDiseases || []).forEach((d) => bump(d, 2.0, "위험도"));
-  (m.highRiskCancerTypes || []).forEach((c) => bump(c, 2.6, "위험도", true));
+  const _p = _cnProfile(m);
+  _p.diseases.forEach((d) => bump(d, 2.0, "위험도"));
+  _p.cancers.forEach((c) => bump(c, 2.6, "위험도", true));
   const signals = Object.values(sig).sort((a, b) => b.score - a.score);
   const reco = { checkup: [], dept: [], nutrition: [], device: [], diet: [] };
   const seen = { checkup: new Set(), dept: new Set(), nutrition: new Set(), device: new Set(), diet: new Set() };

@@ -51,7 +51,7 @@ function ConsultIntel({ onGo }) {
       {/* 회원 선택 + KPI */}
       <div className="ontpanel">
         <div className="ci-head">
-          <div className="ontph" style={{ margin: 0 }}><Users size={15} color="#38BDF8" /> 회원 데이터 스토리지</div>
+          <div className="ontph" style={{ margin: 0 }}><Users size={15} color="#38BDF8" /> 분석 대상 회원 <span>· 전체 스토리지는 ‘데이터 스토리지’ 탭</span></div>
           <select className="ci-sel" value={selId} onChange={(e) => setSelId(e.target.value)}>
             {roster.map((m) => <option key={m.id || m.email} value={m.id || m.email}>{m.name} · {m.category || "일반"} · {m.regAge}세{cur && (m.id || m.email) === (cur.id || cur.email) ? " (로그인)" : ""}</option>)}
           </select>

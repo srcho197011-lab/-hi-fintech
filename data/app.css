@@ -1071,6 +1071,23 @@
 .ci-empty{font-size:10.5px;color:#6B7A93;text-align:center;padding:14px 6px;background:#0A1424;border-radius:8px;}
 @media(max-width:900px){.ci-2col{grid-template-columns:1fr;}.ci-groups{grid-template-columns:1fr 1fr;}.ci-kpis{grid-template-columns:repeat(3,1fr);}}
 @media(max-width:560px){.ci-groups,.ci-kpis{grid-template-columns:1fr;}.ci-pipe-arr{display:none;}}
+/* 데이터 스토리지 정의 배너 + 회원 상담 시계열(모달) */
+.ontstore-def{display:flex;gap:11px;align-items:flex-start;background:linear-gradient(120deg,#0C2230,#0E1B33);border:1px solid #1E4258;border-radius:12px;padding:12px 14px;margin-bottom:12px;}
+.ontstore-ic{width:32px;height:32px;border-radius:9px;background:#0A3040;display:grid;place-items:center;flex-shrink:0;}
+.ontstore-def b{font-size:12.5px;color:#EAF2FF;font-weight:800;}
+.ontstore-def p{font-size:11.3px;color:#9FB3CC;margin:3px 0 0;line-height:1.5;}
+.ontstore-def p b{color:#67E8F9;}
+.tbadge.cn{background:rgba(103,232,249,.14);color:#67E8F9;}
+.ontcns{display:flex;flex-direction:column;gap:6px;}
+.ontcns-r{display:flex;gap:9px;background:#0C1730;border:1px solid #24324D;border-radius:9px;padding:8px 10px;}
+.ontcns-d{flex-shrink:0;width:46px;font-size:10.5px;font-weight:800;color:#67E8F9;text-align:center;border-right:1px solid #24324D;padding-right:7px;padding-top:1px;}
+.ontcns-m{flex:1;min-width:0;}
+.ontcns-t{font-size:11.8px;color:#EAF2FF;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ontcns-k{font-style:normal;font-size:8.8px;font-weight:800;color:#A78BFA;background:#231D3A;border-radius:5px;padding:1px 6px;}
+.ontcns-risk{font-style:normal;font-size:9px;font-weight:800;border-radius:5px;padding:1px 6px;}
+.ontcns-m p{font-size:10.8px;color:#AFC0DE;margin:3px 0 0;line-height:1.4;}
+.ontcns-sum{margin-top:8px;background:#0E1E1B;border:1px solid #1F5137;border-radius:8px;padding:8px 11px;font-size:11px;color:#C7D6F0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ontcns-sum b{color:#34D399;font-weight:800;}
 .finbalance{display:flex;align-items:center;gap:7px;margin-top:12px;background:linear-gradient(120deg,#0C2A20,#0F1B33);border:1px solid #1F5137;border-radius:11px;padding:11px 14px;font-size:12px;color:#AFC0DE;line-height:1.5;}
 .finbalance b{color:#6EE7B7;font-weight:800;}
 .finlink{display:flex;align-items:center;gap:7px;margin-top:12px;background:#0F1B33;border:1px solid #24406F;border-radius:11px;padding:10px 13px;font-size:12px;color:#AFC0DE;line-height:1.5;}

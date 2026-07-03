@@ -164,6 +164,15 @@ function OntMemberModal({ m, onClose, onGo }) {
             {m.diseases.length ? <div className="ontchips">{m.diseases.map((d) => <span key={d} className="ontchip dz">{d}</span>)}</div> : <div className="ontempty">진단된 질병 없음 (건강 양호)</div>}
           </div>
 
+          {typeof consultGet === "function" && (() => { const ev = consultGet(m); const A = typeof analyzeConsults === "function" ? analyzeConsults(m) : null; return (
+            <div className="ontmsec"><div className="ontmsh"><MessageSquare size={13} color="#67E8F9" /> 상담 기록 (시계열) <span>{ev.length}건</span></div>
+              {ev.length ? <div className="ontcns">{ev.slice(0, 6).map((e) => (
+                <div className="ontcns-r" key={e.id}><span className="ontcns-d">{e.daysAgo <= 0 ? "오늘" : e.daysAgo + "일 전"}</span><div className="ontcns-m"><div className="ontcns-t">{e.topic} <i className="ontcns-k">{e.kind}</i> <i className="ontcns-risk" style={{ color: e.riskColor, background: e.riskBg }}>{e.risk}</i></div><p>"{e.question}"</p></div></div>
+              ))}</div> : <div className="ontempty">상담 기록 없음</div>}
+              {A && A.stats.recoCount > 0 && <div className="ontcns-sum"><Sparkles size={11} color="#34D399" /> 상담 기반 분석 → 추가검진 <b>{A.reco.checkup.length}</b> · 진료과 <b>{A.reco.dept.length}</b> · 영양 <b>{A.reco.nutrition.length}</b> · 기기 <b>{A.reco.device.length}</b> · 식단 <b>{A.reco.diet.length}</b></div>}
+            </div>
+          ); })()}
+
           {m.childHealth ? (
             <div className="ontmsec"><div className="ontmsh"><Activity size={13} color="#34D399" /> 아동·청소년 건강검진 <span>{m.checkupType}</span></div>
               <div className="ontmarks">{Object.entries(m.childHealth).map(([k, v]) => <div className="ontmark" key={k}><span>{k}</span><b style={{ color: /^정상|^양호/.test(v) ? "#34D399" : /필요|성장지연|소아비만|근시 \(/.test(v) ? "#EF4444" : "#F59E0B" }}>{v}</b></div>)}</div>
@@ -241,6 +250,7 @@ function OntExplorer({ cohort, onGo, seg }) {
   const reset = () => setShown(30);
   const FLAGS = [["전체", "전체"], ["high", "고위험군"], ["gap", "보장공백"], ["needy", "치료비 사각지대"], ["cancer", "암 진단"]];
   return (<>
+    <div className="ontstore-def"><span className="ontstore-ic"><Search size={15} color="#22D3EE" /></span><div><b>데이터 스토리지 · 객체 탐색기</b><p>{cohort.length.toLocaleString()}명의 회원 객체가 보관된 회원 데이터 스토리지입니다. 각 회원 객체에는 <b>상담 기록이 시계열로 첨부</b>되어 있어, 객체를 열면 상담 이력 → 5대 실행 안내까지 이어집니다.</p></div></div>
     <div className="ontfilters">
       <select value={dept} onChange={(e) => { setDept(e.target.value); reset(); }}>{depts.map((d) => <option key={d} value={d}>{d === "전체" ? "진료과목 전체" : _deptL(d)}</option>)}</select>
       <select value={band} onChange={(e) => { setBand(e.target.value); reset(); }}>{["전체", "0~19", "20대", "30대", "40대", "50대", "60대", "70대+"].map((b) => <option key={b} value={b}>{b === "전체" ? "연령대 전체" : b}</option>)}</select>
@@ -253,17 +263,18 @@ function OntExplorer({ cohort, onGo, seg }) {
     <div className="ontcount">필터 결과 <b>{list.length.toLocaleString()}</b>명 <span>/ 전체 {cohort.length.toLocaleString()}명</span></div>
     <div className="onttbl-wrap">
       <table className="onttbl">
-        <thead><tr><th>ID</th><th>이름</th><th>성/나이</th><th>지역</th><th>진료과목</th><th>질병</th><th>검진이상</th><th>위험</th><th>예상의료비</th></tr></thead>
-        <tbody>{view.map((m) => (
+        <thead><tr><th>ID</th><th>이름</th><th>성/나이</th><th>지역</th><th>진료과목</th><th>질병</th><th>검진이상</th><th>상담</th><th>위험</th><th>예상의료비</th></tr></thead>
+        <tbody>{view.map((m) => { const cn = typeof consultGet === "function" ? consultGet(m).length : 0; return (
           <tr key={m.id} onClick={() => setSel(m)} title="객체 상세">
             <td className="mono">{m.id}</td><td><b>{m.name}</b>{m.needy && <span className="tdot needy" title="치료비 사각지대" />}{m.hasGap && <span className="tdot gap" title="보장공백" />}</td>
             <td>{m.sex} {m.age}</td><td>{m.sido}</td><td>{m.deptLabel}</td>
             <td>{m.dzCount ? <span className="tbadge dz">{m.dzCount}</span> : <span className="tmut">-</span>}</td>
             <td>{m.abnormalCount ? <span className="tbadge ab">{m.abnormalCount}</span> : <span className="tmut">-</span>}</td>
+            <td>{cn ? <span className="tbadge cn"><MessageSquare size={9} style={{ verticalAlign: "-1px" }} /> {cn}</span> : <span className="tmut">-</span>}</td>
             <td><span className="tbadge" style={{ background: m.riskColor + "22", color: m.riskColor }}>{m.riskLabel}</span></td>
             <td className="mono" style={{ color: "#F59E0B" }}>{ontWon(m.estCost)}</td>
           </tr>
-        ))}</tbody>
+        ); })}</tbody>
       </table>
     </div>
     {view.length === 0 && <div className="ontempty" style={{ margin: "14px 0" }}>조건에 맞는 회원이 없습니다.</div>}
@@ -404,7 +415,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTab("explorer"); };
-  const tabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "객체 탐색기", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles], ["finance", "재무회계", Landmark], ["marketing", "마케팅", Megaphone]];
+  const tabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 스토리지", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles], ["finance", "재무회계", Landmark], ["marketing", "마케팅", Megaphone]];
   if (!agg) return null;
   return (
     <div style={{ marginTop: 16 }}>
