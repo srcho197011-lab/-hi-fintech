@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=79f79e6a2b" />
+<link rel="stylesheet" href="./data/app.css?v=690dbf2a85" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=79f79e6a2b"></script>
-<script src="./src/data/section_data.js?v=79f79e6a2b"></script>
-<script src="./src/data/demo_members.js?v=79f79e6a2b"></script>
+<script src="./src/data/dummy_data.js?v=690dbf2a85"></script>
+<script src="./src/data/section_data.js?v=690dbf2a85"></script>
+<script src="./src/data/demo_members.js?v=690dbf2a85"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -6130,7 +6130,7 @@ function DzCareCard({ name, data }) {
     <div className={`dzcare ${open ? "on" : ""}`}>
       <button className="dzcare-h" onClick={() => setOpen((v) => !v)}>
         <b>{name}</b>
-        <span className="dzcare-tags"><i className="dzt rec">영양 {rec.length}</i>{avo.length > 0 && <i className="dzt avo">금기 {avo.length}</i>}<i className="dzt dev">기기 {dev.length}</i></span>
+        <span className="dzcare-tags">{data.dept && typeof _deptL === "function" && <i className="dzt dept">{_deptL(data.dept)}</i>}<i className="dzt rec">영양 {rec.length}</i>{avo.length > 0 && <i className="dzt avo">금기 {avo.length}</i>}<i className="dzt dev">기기 {dev.length}</i></span>
         <ChevronRight size={15} className="dzcare-arr" />
       </button>
       {open && (
@@ -6240,8 +6240,42 @@ function OntMemberModal({ m, onClose, onGo }) {
 }
 function _markL(key, gi) { if (typeof CHECKUP_ONTOLOGY !== "undefined") { const o = CHECKUP_ONTOLOGY.find((x) => x.key === key); if (o) return o.grades[gi][0]; } return ["정상", "주의", "위험", "고위험"][gi]; }
 
+/* ── 질병 케어 라이브러리 (회원 무관, 192개 질병 전체 열람) ── */
+function DzCareLibrary() {
+  const care = useDzCare();
+  const [q, setQ] = useState("");
+  const [dept, setDept] = useState("전체");
+  const entries = React.useMemo(() => Object.keys(care).map((name) => ({ name, data: care[name] })), [care]);
+  const depts = React.useMemo(() => { const s = new Set(entries.map((e) => e.data.dept).filter(Boolean)); return ["전체", ...[...s].sort((a, b) => _deptL(a).localeCompare(_deptL(b), "ko"))]; }, [entries]);
+  const qq = q.trim();
+  const filtered = React.useMemo(() => entries.filter((e) => {
+    if (dept !== "전체" && e.data.dept !== dept) return false;
+    if (!qq) return true;
+    if (e.name.indexOf(qq) >= 0) return true;
+    if (_deptL(e.data.dept || "").indexOf(qq) >= 0) return true;
+    const hit = (arr, k) => (arr || []).some((x) => (x[k] || "").indexOf(qq) >= 0);
+    return hit(e.data.supplements_recommended, "name") || hit(e.data.supplements_avoid, "name") || hit(e.data.devices, "name");
+  }).sort((a, b) => a.name.localeCompare(b.name, "ko")), [entries, dept, qq]);
+  const CAP = 60;
+  return (
+    <div className="dzlib">
+      <div className="ontstore-def" style={{ background: "linear-gradient(120deg,#0C2A20,#0F1B33)", borderColor: "#1F5137" }}><span className="ontstore-ic" style={{ background: "#0E241C" }}><Pill size={15} color="#34D399" /></span><div><b>질병 케어 라이브러리 · {entries.length || 197}개 질병</b><p>192개 질병별 <b>맞춤 영양소·복용 금기 영양소·홈케어 의료기기·건강식단·생활습관</b>을 전세계 권위기관 근거로 정리한 지식 스토리지입니다. 진료과·질병·영양소로 검색하세요.</p></div></div>
+      <div className="ontfilters" style={{ gridTemplateColumns: "220px 1fr" }}>
+        <select value={dept} onChange={(e) => setDept(e.target.value)}>{depts.map((d) => <option key={d} value={d}>{d === "전체" ? "진료과목 전체" : _deptL(d)}</option>)}</select>
+        <div className="ontsearch"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="질병·영양소·기기 검색 (예: 오메가3, 혈당계, 당뇨)" /></div>
+      </div>
+      <div className="ontcount">검색 결과 <b>{filtered.length}</b>개 <span>/ 전체 {entries.length}개 질병</span></div>
+      {!entries.length ? <div className="ontempty" style={{ margin: "14px 0" }}>케어 데이터를 불러오는 중…</div> :
+        <div className="dzcare-list">{filtered.slice(0, CAP).map((e) => <DzCareCard key={e.name} name={e.name} data={e.data} />)}</div>}
+      {filtered.length > CAP && <div className="ontcount" style={{ marginTop: 8 }}>상위 {CAP}개 표시 · 검색·진료과로 좁혀보세요</div>}
+      <div className="chnote" style={{ marginTop: 10 }}>전세계 권위기관(NIH ODS·NCCIH·Mayo·NHS·WHO·Cochrane·질환별 학회·국가건강정보포털·식약처) 근거. ※ 교육용 정보이며 진단·처방이 아님. 복용 금기·상호작용은 개인 복용약에 따라 다르니 의사·약사와 상담하세요.</div>
+    </div>
+  );
+}
+
 /* ── 객체 탐색기 (회원 코호트 필터·테이블) ── */
 function OntExplorer({ cohort, onGo, seg }) {
+  const [smode, setSmode] = useState("members");
   const [dept, setDept] = useState("전체");
   const [band, setBand] = useState("전체");
   const [sex, setSex] = useState("전체");
@@ -6271,6 +6305,12 @@ function OntExplorer({ cohort, onGo, seg }) {
   const reset = () => setShown(30);
   const FLAGS = [["전체", "전체"], ["high", "고위험군"], ["gap", "보장공백"], ["needy", "치료비 사각지대"], ["cancer", "암 진단"]];
   return (<>
+    <div className="ontstore-tabs">
+      <button className={smode === "members" ? "on" : ""} onClick={() => setSmode("members")}><Users size={14} /> 회원 객체 <span>{cohort.length.toLocaleString()}</span></button>
+      <button className={smode === "library" ? "on" : ""} onClick={() => setSmode("library")}><Pill size={14} /> 질병 케어 라이브러리</button>
+    </div>
+    {smode === "library" && <DzCareLibrary />}
+    {smode === "members" && (<>
     <div className="ontstore-def"><span className="ontstore-ic"><Search size={15} color="#22D3EE" /></span><div><b>데이터 스토리지 · 객체 탐색기</b><p>{cohort.length.toLocaleString()}명의 회원 객체가 보관된 회원 데이터 스토리지입니다. 각 회원 객체에는 <b>상담 기록이 시계열로 첨부</b>되어 있어, 객체를 열면 상담 이력 → 5대 실행 안내까지 이어집니다.</p></div></div>
     <div className="ontfilters">
       <select value={dept} onChange={(e) => { setDept(e.target.value); reset(); }}>{depts.map((d) => <option key={d} value={d}>{d === "전체" ? "진료과목 전체" : _deptL(d)}</option>)}</select>
@@ -6301,6 +6341,7 @@ function OntExplorer({ cohort, onGo, seg }) {
     {view.length === 0 && <div className="ontempty" style={{ margin: "14px 0" }}>조건에 맞는 회원이 없습니다.</div>}
     {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 30)}>더 보기 ({(list.length - shown).toLocaleString()}명 더)</button>}
     {sel && <OntMemberModal m={sel} onClose={() => setSel(null)} onGo={onGo} />}
+    </>)}
   </>);
 }
 
