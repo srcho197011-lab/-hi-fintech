@@ -44,8 +44,12 @@ function OntGraph({ agg }) {
 }
 
 /* ── 코호트 개요 ── */
+const KCD_LABELS = { A: "감염성·기생충 (A·B)", C: "신생물(암) (C·D48)", D: "혈액·조혈 (D)", E: "내분비·대사 (E)", F: "정신·행동 (F)", G: "신경계 (G)", H: "눈·귀 (H)", I: "순환기 (I)", J: "호흡기 (J)", K: "소화기 (K)", L: "피부 (L)", M: "근골격 (M)", N: "비뇨생식 (N)", O: "임신·출산 (O)", P: "주산기 (P)", Q: "선천기형 (Q)", R: "증상·징후 (R)", S: "손상·중독 (S)", Z: "건강상태 (Z)", 기타: "기타" };
+const KCD_ORDER = ["A", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "Z", "기타"];
 function OntOverview({ agg, onSeg }) {
   const audit = typeof pilotAudit === "function" ? pilotAudit() : null;
+  const kcd = KCD_ORDER.filter((k) => agg.byKcd && agg.byKcd[k]).map((k) => [k, agg.byKcd[k]]);
+  const kcdMax = kcd.length ? Math.max(...kcd.map((x) => x[1])) : 1;
   const deptTop = Object.entries(agg.byDept).sort((a, b) => b[1] - a[1]);
   const dzTop = Object.entries(agg.byDisease).sort((a, b) => b[1] - a[1]).slice(0, 10);
   const markTop = Object.entries(agg.markAbn).sort((a, b) => b[1] - a[1]);
@@ -75,6 +79,11 @@ function OntOverview({ agg, onSeg }) {
       {[["가구 수", agg.households.toLocaleString(), "#F59E0B"], ["평균 가구원", agg.avgHouseholdSize + "명", "#22D3EE"], ["가구주", (agg.byRel["가구주"] || 0).toLocaleString(), "#6366F1"], ["배우자", (agg.byRel["배우자"] || 0).toLocaleString(), "#F472B6"], ["자녀", (agg.byRel["자녀"] || 0).toLocaleString(), "#34D399"], ["부모", ((agg.byRel["부"] || 0) + (agg.byRel["모"] || 0)).toLocaleString(), "#A78BFA"]].map(([k, v, c], i) => (
         <div className="ontfamcell" key={i}><b style={{ color: c }}>{v}</b><span>{k}</span></div>
       ))}
+    </div>
+
+    <div className="ontpanel" style={{ marginTop: 12 }}>
+      <div className="ontph"><Network size={15} color="#22D3EE" /> 질병분류(KCD) 대분류 분포 <span>· {kcd.length}개 장 · 질병유형 {agg.dzTypes}종</span></div>
+      <div className="ontkcd">{kcd.map(([k, v], i) => <OntBar key={k} label={KCD_LABELS[k] || k} value={v} max={kcdMax} sub="명" color={ONT_DEPT_COLORS[i % ONT_DEPT_COLORS.length]} />)}</div>
     </div>
 
     <div className="ontgrid2">
