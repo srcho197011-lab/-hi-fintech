@@ -12,7 +12,7 @@ const FIN_REVTYPES = [
   { k: "checkup", label: "검진 연계 수수료", src: "건강검진센터", c: "#22D3EE", w: 20, min: 15000, max: 30000 },
   { k: "service", label: "헬스케어 서비스 수수료", src: "상담·홈케어·재활·PT", c: "#2DD4BF", w: 12, min: 8000, max: 40000 },
   { k: "reservation", label: "예약 서비스 수수료", src: "골프·시설 예약(건당 1만)", c: "#F97316", w: 10, min: 10000, max: 10000 },
-  { k: "emr", label: "병원 EMR·환자연계", src: "제휴 병원(월정액)", c: "#6366F1", w: 6, min: 2500000, max: 3500000 },
+  { k: "emr", label: "EMR·UIP 사용료", src: "병원·검진센터·약국(월정액·전액)", c: "#6366F1", w: 7, min: 200000, max: 3500000 },
   { k: "insurance", label: "보험 중개 수수료", src: "보험·치료비", c: "#A78BFA", w: 12, min: 30000, max: 320000 },
   { k: "ad", label: "광고·제휴 매출", src: "제휴·마케팅", c: "#FBBF24", w: 5, min: 40000, max: 260000 },
 ];
@@ -71,7 +71,7 @@ function finAnnual() {
     revProduct: r.revProduct, catRev: r.catRev, revCheckup: r.revCheckup, revService: r.revService, revReservation: r.revReservation, revEmr: r.revEmr, revInsurance: r.revInsurance, revAd: r.revAd, revenue: r.revenue, cogs: r.cogs, cogsProduct: r.cogsProduct, gross: r.gross, reward: r.reward, donation: r.donation, sga: r.sga, op, finIncome, finCost, pbt, tax, net, opMargin: op / r.revenue, netMargin: net / r.revenue,
     assets, cash, receivable, inventory, prepaid, curAssets, ppe, intangible, rou, nonCurAssets, contractLiab, donationPay, tradePay, taxPay, deposits, curLiab, leaseLiab, longDebt, nonCurLiab, liabilities, capital, surplus, retained, equity,
     debtRatio: liabilities / equity, currentRatio: curAssets / curLiab, equityRatio: equity / assets, roe: retained / equity,
-    A: { members: M.membersEnd[2], activeRate: M.activeRate, hospitals: M.hospitals[2], buyerRate: M.productBuyerRate, checkupRate: M.checkupRate },
+    A: { members: M.membersEnd[2], activeRate: M.activeRate, hospitals: M.hospitals[2], institutions: M.hospitals[2] + M.checkupCenters[2] + M.pharmacies[2], buyerRate: M.productBuyerRate, checkupRate: M.checkupRate },
   };
 }
 
@@ -80,7 +80,11 @@ const FIN_MY = {
   years: ["1차연도", "2차연도", "3차연도", "4차연도", "5차연도"],
   membersEnd: [100000, 500000, 1000000, 5000000, 10000000], activeRate: 0.45,
   cac: [3000, 4000, 5000, 6000, 7000],
-  hospitals: [200, 800, 1500, 2500, 3000], emrFeeMonthly: 3000000, // 병원 EMR·환자연계 월 300만
+  // EMR·UIP(플랫폼) 사용료 — 병원·검진센터·약국. 전액 매출 인식(SaaS), 저원가. 적립·기부 미적용.
+  hospitals: [200, 800, 1500, 2500, 3000], emrFeeMonthly: 3000000, // 병원 EMR 월 300만
+  checkupCenters: [50, 150, 300, 500, 700], checkupUipMonthly: 1500000, // 검진센터 UIP 월 150만
+  pharmacies: [500, 2000, 5000, 12000, 20000], pharmacyUipMonthly: 200000, // 약국 UIP 월 20만
+  uipCostRate: 0.05, // EMR·UIP 전액 매출·저원가(운영 인프라만)
   // 제품 GMV(총액·건강쇼핑) — 한국인 1인당 연간 건강관리 지출 근거 × 플랫폼 포착. 카테고리별 원가율.
   productBuyerRate: 0.38,
   productCats: [
@@ -113,15 +117,16 @@ function finMultiYear() {
     const checkupUsers = Math.round(membersEnd * M.checkupRate), revCheckup = checkupUsers * M.checkupFee;
     const serviceUsers = Math.round(membersEnd * M.serviceRate), revService = serviceUsers * M.serviceCommission; // 헬스케어 서비스 매칭 수수료
     const reservations = Math.round(active * M.resvPerActive[y]), revReservation = reservations * M.resvFee; // 예약 서비스(골프 등) 건당 1만
-    const hospitals = M.hospitals[y], revEmr = hospitals * M.emrFeeMonthly * 12;
+    const hospitals = M.hospitals[y], checkupCenters = M.checkupCenters[y], pharmacies = M.pharmacies[y];
+    const revEmr = (hospitals * M.emrFeeMonthly + checkupCenters * M.checkupUipMonthly + pharmacies * M.pharmacyUipMonthly) * 12; // EMR·UIP 전액 매출(병원·검진센터·약국)
     const revInsurance = active * M.arpuInsurance[y], revAd = active * M.adPerActive[y];
     const revenue = revProduct + revCheckup + revService + revReservation + revEmr + revInsurance + revAd;
-    const cogsCheckup = Math.round(revCheckup * M.checkupCostRate), cogsService = Math.round(revService * M.serviceCostRate), cogsEmr = Math.round(revEmr * 0.1), cogsPayment = Math.round(revProduct * 0.022), cogs = cogsProduct + cogsCheckup + cogsService + cogsEmr + cogsPayment, gross = revenue - cogs;
-    const prodMargin = revProduct - cogsProduct;
+    const cogsCheckup = Math.round(revCheckup * M.checkupCostRate), cogsService = Math.round(revService * M.serviceCostRate), cogsEmr = Math.round(revEmr * M.uipCostRate), cogsPayment = Math.round(revProduct * 0.022), cogs = cogsProduct + cogsCheckup + cogsService + cogsEmr + cogsPayment, gross = revenue - cogs;
+    const prodMargin = revProduct - cogsProduct; // 적립·기부는 제품판매 마진에만 적용(EMR·UIP·수수료 매출엔 미적용)
     const marketing = newMembers * M.cac[y], otherOpex = Math.round(revenue * M.opexRate), donation = Math.round(prodMargin * M.donationRate), reward = Math.round(prodMargin * M.rewardRate), payroll = M.payroll[y], sga = marketing + otherOpex + donation + reward + payroll;
     const ebit = gross - sga, ebitda = ebit + M.deprYear, pbt = ebit - M.interestYear, tax = Math.max(0, pbt) * M.taxRate, net = pbt - tax;
     const capex = y < 2 ? 2000000000 : 5000000000, dwc = Math.round(revenue * 0.02), nopat = ebit * (1 - M.taxRate), fcf = nopat + M.deprYear - capex - dwc;
-    rows.push({ y, label: M.years[y], membersEnd, membersPrev, newMembers, active, buyers, checkupUsers, serviceUsers, reservations, hospitals, cac: M.cac[y], marketing, revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr, revAd, revenue, cogs, gross, otherOpex, donation, reward, payroll, sga, ebit, ebitda, pbt, tax, net, capex, fcf, opMargin: ebit / revenue, netMargin: net / revenue });
+    rows.push({ y, label: M.years[y], membersEnd, membersPrev, newMembers, active, buyers, checkupUsers, serviceUsers, reservations, hospitals, checkupCenters, pharmacies, cac: M.cac[y], marketing, revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr, revAd, revenue, cogs, gross, otherOpex, donation, reward, payroll, sga, ebit, ebitda, pbt, tax, net, capex, fcf, opMargin: ebit / revenue, netMargin: net / revenue });
   }
   return rows;
 }
@@ -238,7 +243,7 @@ function FinanceLive() {
         <div className="ontpanel">
           <div className="ontph"><PieChart size={15} color="#22D3EE" /> 매출 구성 <span>· 섹션별 수익 계정</span></div>
           {FIN_REVTYPES.map((t) => <OntBar key={t.k} label={`${t.label} · ${t.src}`} value={acct.rev[t.k]} max={revMax} color={t.c} sub="원" />)}
-          <div className="finpl-note">플랫폼 입점 수수료·EMR/SaaS는 순액(수수료) 인식, 제품판매는 총액 인식(매출-원가).</div>
+          <div className="finpl-note"><b>EMR·UIP 사용료(병원·검진센터·약국)는 전액 매출</b>로 인식(SaaS·저원가), 제품판매는 총액 인식(매출-원가). <b>적립금·기부금은 제품판매 마진에만</b> 적용 — EMR·UIP·수수료 매출엔 미적용.</div>
         </div>
       </div>
       <div className="ontpanel">
@@ -337,7 +342,7 @@ function FinanceLive() {
     )}
 
     {tab === "annual" && (() => { const an = finAnnual(); const A = an.A; const anPL = [["매출액", an.revenue, 0, "rev"], ["(-) 매출원가", -an.cogs, 0, "neg"], ["매출총이익", an.gross, 1, "sub"], ["(-) 판매비와관리비", -an.sga, 0, "neg"], ["영업이익", an.op, 2, "sub"], ["(+) 금융수익", an.finIncome, 0, "pos"], ["(-) 금융비용(이자)", -an.finCost, 0, "neg"], ["법인세비용차감전순이익", an.pbt, 1, "sub"], ["(-) 법인세비용", -an.tax, 0, "neg"], ["당기순이익", an.net, 3, "net"]]; return (<>
-      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><Banknote size={13} color="#34D399" /> 연간 사업계획 가정(3차연도 기준) — 회원 <b>{A.members.toLocaleString()}명</b> · 활성률 {(A.activeRate * 100).toFixed(0)}% · 제품구매율 {(A.buyerRate * 100).toFixed(0)}% · 검진전환 {(A.checkupRate * 100).toFixed(0)}% · 제휴병원(EMR) <b>{A.hospitals.toLocaleString()}곳</b>. <b>추정(Pro-forma) 재무제표</b>입니다.</div>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><Banknote size={13} color="#34D399" /> 연간 사업계획 가정(3차연도 기준) — 회원 <b>{A.members.toLocaleString()}명</b> · 활성률 {(A.activeRate * 100).toFixed(0)}% · 제품구매율 {(A.buyerRate * 100).toFixed(0)}% · 검진전환 {(A.checkupRate * 100).toFixed(0)}% · 제휴 기관(EMR·UIP) <b>{A.institutions.toLocaleString()}곳</b>. <b>추정(Pro-forma) 재무제표</b>입니다.</div>
       <div className="ontgrid2">
         <div className="ontpanel">
           <div className="ontph"><Receipt size={15} color="#34D399" /> 연간 예상 손익계산서 <span>· 1개년 추정</span></div>
@@ -346,7 +351,7 @@ function FinanceLive() {
         </div>
         <div className="ontpanel">
           <div className="ontph"><PieChart size={15} color="#22D3EE" /> 연간 예상 매출 구성 <span>· 총 {finWon(an.revenue)}원</span></div>
-          {[["제품판매(GMV·건강쇼핑)", an.revProduct, "#34D399"], ["검진 연계 수수료", an.revCheckup, "#22D3EE"], ["헬스케어 서비스 수수료", an.revService, "#2DD4BF"], ["예약 서비스 수수료(골프 등)", an.revReservation, "#F97316"], ["병원 EMR·환자연계", an.revEmr, "#6366F1"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={an.revProduct} color={c} sub="원" />)}
+          {[["제품판매(GMV·건강쇼핑)", an.revProduct, "#34D399"], ["검진 연계 수수료", an.revCheckup, "#22D3EE"], ["헬스케어 서비스 수수료", an.revService, "#2DD4BF"], ["예약 서비스 수수료(골프 등)", an.revReservation, "#F97316"], ["EMR·UIP 사용료(병원·검진·약국·전액)", an.revEmr, "#6366F1"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={an.revProduct} color={c} sub="원" />)}
           <div className="finpl-note" style={{ marginTop: 8 }}>제품 GMV 카테고리: 영양제 {finWon(an.catRev.supp)}(원가35%)·건강식단 {finWon(an.catRev.diet)}(50%)·홈케어기기 {finWon(an.catRev.device)}(40%)·스포츠용품 {finWon(an.catRev.sports)}(60%)</div>
         </div>
       </div>
@@ -385,7 +390,7 @@ function FinanceLive() {
     </>); })()}
 
     {tab === "my" && (() => { const my = finMultiYear(); const revMax = Math.max(...my.map((r) => r.revenue)); const M = (l, f, cls) => <tr className={cls || ""}><td className="mono0">{l}</td>{my.map((r, i) => <td key={i} className="mono">{f(r)}</td>)}</tr>; return (<>
-      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> 시장조사 기반 <b>3~5개년 중장기 추정</b> — 회원 <b>10만→1,000만</b>. 제품 GMV는 <b>한국인 1인당 연 건강관리 지출</b>(영양제 13.5만·기기 4만·식단 4만·스포츠 25만·서비스 15만) 근거로 카테고리별 재산정, <b>원가율 영양제35%·식단50%·기기40%·스포츠60%</b>. 검진 건당 2.25만, 병원 EMR 월 300만, <b>골프 등 예약 수수료 건당 1만원</b> 반영.</div>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> 시장조사 기반 <b>3~5개년 중장기 추정</b> — 회원 <b>10만→1,000만</b>. 제품 GMV는 <b>한국인 1인당 연 건강관리 지출</b>(영양제 13.5만·기기 4만·식단 4만·스포츠 25만·서비스 15만) 근거로 카테고리별 재산정, <b>원가율 영양제35%·식단50%·기기40%·스포츠60%</b>. 검진 건당 2.25만, <b>EMR·UIP 사용료 전액 매출</b>(병원 월300만·검진센터 150만·약국 20만), <b>골프 등 예약 수수료 건당 1만원</b>. 적립50%·나눔30%는 <b>제품마진에만</b> 적용(EMR·UIP·수수료 매출 미적용).</div>
       <div className="ontpanel">
         <div className="ontph"><TrendingUp size={15} color="#34D399" /> 중장기 손익 추정 (5개년) <span>· 단위 원</span></div>
         <div className="onttbl-wrap"><table className="onttbl mytbl">
@@ -393,13 +398,13 @@ function FinanceLive() {
           <tbody>
             {M("누적 회원", (r) => r.membersEnd.toLocaleString() + "명", "myhead")}
             {M("활성 회원", (r) => r.active.toLocaleString() + "명")}
-            {M("제휴 병원(EMR)", (r) => r.hospitals.toLocaleString() + "곳")}
+            {M("제휴 기관(EMR·UIP)", (r) => (r.hospitals + r.checkupCenters + r.pharmacies).toLocaleString() + "곳")}
             {M("매출액", (r) => finWon(r.revenue), "myrev")}
             {M("　제품판매(GMV)", (r) => finWon(r.revProduct))}
             {M("　검진 연계 수수료", (r) => finWon(r.revCheckup))}
             {M("　헬스케어 서비스 수수료", (r) => finWon(r.revService))}
             {M("　예약 서비스(골프 등)", (r) => finWon(r.revReservation))}
-            {M("　병원 EMR·환자연계", (r) => finWon(r.revEmr))}
+            {M("　EMR·UIP 사용료(전액)", (r) => finWon(r.revEmr))}
             {M("　보험 중개", (r) => finWon(r.revInsurance))}
             {M("　광고·제휴", (r) => finWon(r.revAd))}
             {M("매출총이익", (r) => finWon(r.gross), "mysub")}
