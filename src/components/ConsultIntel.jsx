@@ -94,7 +94,7 @@ function ConsultIntel({ onGo }) {
               </div>
             ))}
           </div>
-          <div className="finpl-note">{member.name}님의 상담이 회원 데이터 스토리지에 시간순으로 보관됩니다. 최근 상담일수록 분석 가중치가 높습니다.</div>
+          <div className="finpl-note">{member.name}님의 상담이 회원 데이터 하우스에 시간순으로 보관됩니다. 최근 상담일수록 분석 가중치가 높습니다.</div>
         </div>
 
         {/* 신호 집계 */}

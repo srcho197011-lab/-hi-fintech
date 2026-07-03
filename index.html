@@ -6311,7 +6311,7 @@ function OntExplorer({ cohort, onGo, seg }) {
     </div>
     {smode === "library" && <DzCareLibrary />}
     {smode === "members" && (<>
-    <div className="ontstore-def"><span className="ontstore-ic"><Search size={15} color="#22D3EE" /></span><div><b>데이터 스토리지 · 객체 탐색기</b><p>{cohort.length.toLocaleString()}명의 회원 객체가 보관된 회원 데이터 스토리지입니다. 각 회원 객체에는 <b>상담 기록이 시계열로 첨부</b>되어 있어, 객체를 열면 상담 이력 → 5대 실행 안내까지 이어집니다.</p></div></div>
+    <div className="ontstore-def"><span className="ontstore-ic"><Search size={15} color="#22D3EE" /></span><div><b>데이터 하우스 · 객체 탐색기</b><p>{cohort.length.toLocaleString()}명의 회원 객체가 보관된 회원 데이터 하우스입니다. 각 회원 객체에는 <b>상담 기록이 시계열로 첨부</b>되어 있어, 객체를 열면 상담 이력 → 5대 실행 안내까지 이어집니다.</p></div></div>
     <div className="ontfilters">
       <select value={dept} onChange={(e) => { setDept(e.target.value); reset(); }}>{depts.map((d) => <option key={d} value={d}>{d === "전체" ? "진료과목 전체" : _deptL(d)}</option>)}</select>
       <select value={band} onChange={(e) => { setBand(e.target.value); reset(); }}>{["전체", "0~19", "20대", "30대", "40대", "50대", "60대", "70대+"].map((b) => <option key={b} value={b}>{b === "전체" ? "연령대 전체" : b}</option>)}</select>
@@ -6477,7 +6477,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTab("explorer"); };
-  const tabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 스토리지", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles], ["finance", "재무회계", Landmark], ["marketing", "마케팅", Megaphone]];
+  const tabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles], ["finance", "재무회계", Landmark], ["marketing", "마케팅", Megaphone]];
   if (!agg) return null;
   return (
     <div style={{ marginTop: 16 }}>
@@ -7865,7 +7865,7 @@ function ConsultIntel({ onGo }) {
               </div>
             ))}
           </div>
-          <div className="finpl-note">{member.name}님의 상담이 회원 데이터 스토리지에 시간순으로 보관됩니다. 최근 상담일수록 분석 가중치가 높습니다.</div>
+          <div className="finpl-note">{member.name}님의 상담이 회원 데이터 하우스에 시간순으로 보관됩니다. 최근 상담일수록 분석 가중치가 높습니다.</div>
         </div>
 
         {/* 신호 집계 */}
