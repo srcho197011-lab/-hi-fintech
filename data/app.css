@@ -712,6 +712,38 @@
 .ontfeed-t b{color:#EAF2FF;}
 .ontfeed-s{font-size:10.5px;color:#8FA1C0;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .ontfeed-tag{font-size:10px;font-weight:800;flex-shrink:0;}
+
+/* 데이터 정합성 검증 패널 */
+.ontaudit{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;border-radius:14px;padding:13px 16px;border:1px solid;}
+.ontaudit.ok{background:linear-gradient(120deg,#0C2016,#0F1B33);border-color:#1F5137;}
+.ontaudit.bad{background:linear-gradient(120deg,#2A1015,#0F1B33);border-color:#5B2130;}
+.ontaudit-l{display:flex;align-items:center;gap:11px;}
+.ontaudit-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
+.ontaudit.ok .ontaudit-ic{background:rgba(52,211,153,.18);color:#34D399;}
+.ontaudit.bad .ontaudit-ic{background:rgba(248,113,113,.18);color:#F87171;}
+.ontaudit-l b{color:#EAF2FF;font-size:13.5px;font-weight:800;}
+.ontaudit-l span{display:block;color:#90A0BD;font-size:11px;margin-top:2px;}
+.ontaudit-checks{display:flex;gap:8px;flex-wrap:wrap;}
+.ontaudit-checks>div{display:inline-flex;align-items:center;gap:4px;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;}
+.ontaudit-checks .p{background:rgba(52,211,153,.12);color:#6EE7B7;border:1px solid #1F5137;}
+.ontaudit-checks .v{background:rgba(248,113,113,.14);color:#FCA5A5;border:1px solid #5B2130;}
+.ontaudit-checks em{font-style:normal;font-weight:800;opacity:.85;}
+/* 가족 통계 스트립 */
+.ontfamstat{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:10px;}
+.ontfamcell{background:#0F1B33;border:1px solid #24324D;border-radius:11px;padding:11px;text-align:center;}
+.ontfamcell b{display:block;font-size:16px;font-weight:800;letter-spacing:-.3px;}
+.ontfamcell span{font-size:10px;color:#90A0BD;}
+@media(max-width:820px){.ontfamstat{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:520px){.ontfamstat{grid-template-columns:repeat(2,1fr);}}
+/* 가족 리스트(회원 모달) */
+.ontfam{display:flex;flex-direction:column;gap:5px;}
+.ontfam-r{display:flex;align-items:center;gap:8px;background:#0C1730;border:1px solid #24324D;border-radius:9px;padding:7px 10px;font-size:11.5px;color:#C7D6F0;}
+.ontfam-r.self{border-color:#22D3EE;background:#0d2233;}
+.ontfam-rel{background:#1B2942;color:#8FA1C0;border-radius:6px;padding:1px 7px;font-size:10px;font-weight:800;flex-shrink:0;}
+.ontfam-r b{color:#EAF2FF;}
+.ontfam-sa{color:#90A0BD;font-size:10.5px;}
+.ontfam-dz{margin-left:auto;color:#F9A8D4;font-size:10.5px;}
+.ontfam-risk{font-size:10.5px;font-weight:800;flex-shrink:0;}
 .wcard .wi{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
 .wcard .wn{font-weight:800;font-size:13px;}
 .wcard .wd{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45;}

@@ -45,6 +45,7 @@ function OntGraph({ agg }) {
 
 /* ── 코호트 개요 ── */
 function OntOverview({ agg, onSeg }) {
+  const audit = typeof pilotAudit === "function" ? pilotAudit() : null;
   const deptTop = Object.entries(agg.byDept).sort((a, b) => b[1] - a[1]);
   const dzTop = Object.entries(agg.byDisease).sort((a, b) => b[1] - a[1]).slice(0, 10);
   const markTop = Object.entries(agg.markAbn).sort((a, b) => b[1] - a[1]);
@@ -56,6 +57,23 @@ function OntOverview({ agg, onSeg }) {
     <div className="ontkpis">
       {[["총 회원(객체)", agg.n.toLocaleString() + "명", "#22D3EE"], ["유병 회원", agg.dzMembers.toLocaleString() + "명", "#F472B6"], ["평균 예상의료비", ontWon(agg.avgCost), "#FBBF24"], ["총 예상의료비", ontWon(agg.totalCost), "#F87171"], ["치료비 사각지대", agg.needyN.toLocaleString() + "명", "#E11D48"], ["보장 공백 회원", agg.gapN.toLocaleString() + "명", "#A78BFA"]].map(([k, v, c], i) => (
         <div className="ontkpi" key={i}><div className="ontkpi-v" style={{ color: c }}>{v}</div><div className="ontkpi-k">{k}</div></div>
+      ))}
+    </div>
+
+    {audit && (
+      <div className={`ontaudit ${audit.ok ? "ok" : "bad"}`}>
+        <div className="ontaudit-l"><span className="ontaudit-ic">{audit.ok ? <Check size={18} /> : <AlertTriangle size={18} />}</span>
+          <div><b>데이터 정합성 검증 {audit.ok ? "통과" : "위반 발견"}</b><span>{audit.n.toLocaleString()}명 · {audit.households.toLocaleString()}가구 · 성별/연령/가족 규칙 자동 스캔</span></div></div>
+        <div className="ontaudit-checks">
+          <div className={audit.sex ? "v" : "p"}>{audit.sex ? <X size={12} /> : <Check size={12} />} 성별 정합 <em>{audit.sex ? audit.sex + "건" : "0"}</em></div>
+          <div className={audit.age ? "v" : "p"}>{audit.age ? <X size={12} /> : <Check size={12} />} 연령 정합 <em>{audit.age ? audit.age + "건" : "0"}</em></div>
+          <div className={audit.fam ? "v" : "p"}>{audit.fam ? <X size={12} /> : <Check size={12} />} 가족 정합 <em>{audit.fam ? audit.fam + "건" : "0"}</em></div>
+        </div>
+      </div>
+    )}
+    <div className="ontfamstat">
+      {[["가구 수", agg.households.toLocaleString(), "#F59E0B"], ["평균 가구원", agg.avgHouseholdSize + "명", "#22D3EE"], ["가구주", (agg.byRel["가구주"] || 0).toLocaleString(), "#6366F1"], ["배우자", (agg.byRel["배우자"] || 0).toLocaleString(), "#F472B6"], ["자녀", (agg.byRel["자녀"] || 0).toLocaleString(), "#34D399"], ["부모", ((agg.byRel["부"] || 0) + (agg.byRel["모"] || 0)).toLocaleString(), "#A78BFA"]].map(([k, v, c], i) => (
+        <div className="ontfamcell" key={i}><b style={{ color: c }}>{v}</b><span>{k}</span></div>
       ))}
     </div>
 
@@ -94,6 +112,7 @@ function _deptL(k) { if (typeof DEPT_CATS !== "undefined") { const d = DEPT_CATS
 /* ── 회원 객체 상세 (온톨로지 링크 뷰) ── */
 function OntMemberModal({ m, onClose, onGo }) {
   const marks = Object.entries(m.marks).sort((a, b) => b[1] - a[1]);
+  const fam = typeof pilotFamily === "function" ? pilotFamily(m.hid) : [];
   return (
     <div className="ontov" onClick={onClose}>
       <div className="ontmodal" onClick={(e) => e.stopPropagation()}>
@@ -119,6 +138,17 @@ function OntMemberModal({ m, onClose, onGo }) {
 
           <div className="ontmsec"><div className="ontmsh"><ShieldCheck size={13} color="#A78BFA" /> 필요 보장 · 공백</div>
             <div className="ontchips">{m.coverages.map((c) => <span key={c} className={`ontchip ${m.gap.includes(c) ? "gap" : "held"}`}>{c}{m.gap.includes(c) ? " · 공백" : ""}</span>)}</div>
+          </div>
+
+          <div className="ontmsec"><div className="ontmsh"><HeartHandshake size={13} color="#F59E0B" /> 가족 (가구 {m.hid}) <span>{fam.length}명</span></div>
+            <div className="ontfam">{fam.map((f) => (
+              <div className={`ontfam-r ${f.id === m.id ? "self" : ""}`} key={f.id}>
+                <span className="ontfam-rel">{f.rel}</span>
+                <b>{f.name}</b><span className="ontfam-sa">{f.sex} {f.age}세</span>
+                <span className="ontfam-dz">{f.diseases.length ? f.diseases[0] + (f.diseases.length > 1 ? " 외 " + (f.diseases.length - 1) : "") : "건강"}</span>
+                <span className="ontfam-risk" style={{ color: f.riskColor }}>{f.riskLabel}</span>
+              </div>
+            ))}</div>
           </div>
 
           <div className="ontmsec ontflags">
@@ -160,7 +190,7 @@ function OntExplorer({ cohort, onGo, seg }) {
       if (dept !== "전체" && m.deptKey !== dept) return false;
       if (sex !== "전체" && m.sex !== sex) return false;
       if (risk !== "전체" && String(m.risk) !== risk) return false;
-      if (band !== "전체") { const b = m.age < 30 ? "20대" : m.age < 40 ? "30대" : m.age < 50 ? "40대" : m.age < 60 ? "50대" : m.age < 70 ? "60대" : "70대+"; if (b !== band) return false; }
+      if (band !== "전체") { const b = m.age < 20 ? "0~19" : m.age < 30 ? "20대" : m.age < 40 ? "30대" : m.age < 50 ? "40대" : m.age < 60 ? "50대" : m.age < 70 ? "60대" : "70대+"; if (b !== band) return false; }
       if (flag === "needy" && !m.needy) return false;
       if (flag === "gap" && !m.hasGap) return false;
       if (flag === "high" && m.risk < 4) return false;
@@ -175,7 +205,7 @@ function OntExplorer({ cohort, onGo, seg }) {
   return (<>
     <div className="ontfilters">
       <select value={dept} onChange={(e) => { setDept(e.target.value); reset(); }}>{depts.map((d) => <option key={d} value={d}>{d === "전체" ? "진료과목 전체" : _deptL(d)}</option>)}</select>
-      <select value={band} onChange={(e) => { setBand(e.target.value); reset(); }}>{["전체", "20대", "30대", "40대", "50대", "60대", "70대+"].map((b) => <option key={b} value={b}>{b === "전체" ? "연령대 전체" : b}</option>)}</select>
+      <select value={band} onChange={(e) => { setBand(e.target.value); reset(); }}>{["전체", "0~19", "20대", "30대", "40대", "50대", "60대", "70대+"].map((b) => <option key={b} value={b}>{b === "전체" ? "연령대 전체" : b}</option>)}</select>
       <select value={sex} onChange={(e) => { setSex(e.target.value); reset(); }}>{["전체", "남", "여"].map((s) => <option key={s} value={s}>{s === "전체" ? "성별 전체" : s}</option>)}</select>
       <select value={risk} onChange={(e) => { setRisk(e.target.value); reset(); }}><option value="전체">위험등급 전체</option>{[1, 2, 3, 4, 5].map((r) => <option key={r} value={String(r)}>{RISK_LABELS[r]}</option>)}</select>
     </div>
@@ -355,7 +385,7 @@ function OntologySection({ onGo }) {
       </div>
 
       <div className="ontobjbar">
-        {[["회원", agg.n, "#22D3EE", Users], ["진료과목", Object.keys(agg.byDept).length, "#6366F1", Stethoscope], ["질병", Object.keys(agg.byDisease).length, "#F472B6", HeartPulse], ["검진지표", 13, "#34D399", Activity], ["보험담보", 12, "#A78BFA", ShieldCheck], ["지역", 17, "#38BDF8", MapPin]].map(([t, n, c, Ic], i) => (
+        {[["회원", agg.n, "#22D3EE", Users], ["가구", agg.households, "#F59E0B", HeartHandshake], ["진료과목", Object.keys(agg.byDept).length, "#6366F1", Stethoscope], ["질병", Object.keys(agg.byDisease).length, "#F472B6", HeartPulse], ["검진지표", 13, "#34D399", Activity], ["지역", 17, "#38BDF8", MapPin]].map(([t, n, c, Ic], i) => (
           <div className="ontobj" key={i}><span className="ontobj-i" style={{ background: c + "1A" }}><Ic size={16} color={c} /></span><div><b>{Number(n).toLocaleString()}</b><span>{t}</span></div></div>
         ))}
       </div>

@@ -106,7 +106,7 @@ function HomeView({ onGo }) {
         <div className="ontocta-l">
           <span className="ontocta-badge"><Network size={13} /> 운영 · 파일럿 온톨로지</span>
           <div className="ontocta-t">온톨로지 운영시스템</div>
-          <p>파일럿 체험회원 <b>1,000명</b>을 팔란티어형 온톨로지(객체·관계·액션)로 운영합니다 — 진료과목·질병·건강검진·예상의료비·보험담보·나눔대상을 하나의 지식그래프로.</p>
+          <p>파일럿 체험회원 <b>1만명 · 가족(가구) 구조</b>를 팔란티어형 온톨로지(객체·관계·액션)로 운영합니다 — 진료과목·질병·건강검진·예상의료비·보험담보·나눔대상을 하나의 지식그래프로.</p>
           <div className="ontocta-mini"><span><Users size={12} /> 회원 1,000</span><span><HeartPulse size={12} /> 질병·검진</span><span><Banknote size={12} /> 예상의료비</span><span><HeartHandshake size={12} /> 치료비 나눔</span></div>
         </div>
         <div className="ontocta-r"><OntoCtaArt /><button className="ontocta-btn" onClick={(e) => { e.stopPropagation(); go("ontology"); }}><Network size={16} /> 운영시스템 열기 <ChevronRight size={15} /></button></div>
