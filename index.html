@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=ac9613d94a" />
+<link rel="stylesheet" href="./data/app.css?v=af44b360c7" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=ac9613d94a"></script>
-<script src="./src/data/section_data.js?v=ac9613d94a"></script>
-<script src="./src/data/demo_members.js?v=ac9613d94a"></script>
+<script src="./src/data/dummy_data.js?v=af44b360c7"></script>
+<script src="./src/data/section_data.js?v=af44b360c7"></script>
+<script src="./src/data/demo_members.js?v=af44b360c7"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -6980,6 +6980,42 @@ const MKT_PLATFORMS = [
   ["당근마켓 (지역 생활)", "3,000만", "지역 검진·약국 로컬광고", "지역 기반 유입", "#F59E0B"],
   ["지자체·국민건강보험공단", "전국민", "공공 검진·건강증진 사업 연계", "공신력 + 대량 회원", "#6366F1"],
 ];
+/* 기관 대상 자동 광고 — 버튼 클릭 시 실제 집행 데모 데이터 */
+const MKT_ORGADS = [
+  {
+    name: "건강검진센터", desc: "인원수 기반 검진 연계 · 예약 유입 광고", color: "#22D3EE",
+    goal: "검진 예약 유입 극대화", target: "검진 예정·미수검 코호트(지역·연령 타겟)",
+    channels: [["네이버 검색·플레이스", 40], ["유튜브 지역 타겟", 30], ["카톡 채널·리워드", 18], ["인스타·메타", 12]],
+    budget: { daily: 600000, days: 14 }, bid: "목표 CPA · 예약당 자동입찰",
+    creative: { head: "우리 동네 무료 검진대비, 지금 예약", sub: "검진 예약 시 건강분석 리포트 + 검진대비보험 무료 제공", cta: "검진 예약하기" },
+    landing: "온톨로지 → 검진예약(지역 검진센터 매칭)",
+    kpi: { imp: 620000, clk: 15500, ctr: 2.5, conv: 1240, convLabel: "검진 예약 전환", cpa: 6774 },
+    result: { unit: "건당 연계수수료 22,500원", revenue: 27900000, roas: 3.3, extra: "+ 신규회원 1,240명 LTV" },
+    log: ["의료광고 심의 자동검토 통과", "코호트에서 검진 예정 12,400명 세그먼트 추출", "AI 크리에이티브 3종 자동 생성·A/B", "목표 CPA 자동 입찰 세팅", "4개 채널 동시 집행 시작", "전환 상위 소재로 예산 실시간 재분배"],
+  },
+  {
+    name: "병원 (EMR·환자연계)", desc: "환자 송출·EMR 연계 성공사례 B2B 광고", color: "#6366F1",
+    goal: "EMR 도입 리드·계약 확보", target: "개원의·병원 실무진(B2B 결정권자)",
+    channels: [["네이버·구글 검색", 45], ["의사 커뮤니티·전문매체", 30], ["이메일·DM 아웃바운드", 25]],
+    budget: { daily: 400000, days: 20 }, bid: "리드당 목표 CPL 입찰",
+    creative: { head: "환자 송출 + EMR 연계, 매출로 증명", sub: "HI-Fin 연계 병원 평균 신규환자 +18% · 성공사례 자료 제공", cta: "도입 상담 신청" },
+    landing: "병원 EMR 제휴 랜딩(성공사례·ROI 계산기)",
+    kpi: { imp: 210000, clk: 4200, ctr: 2.0, conv: 84, convLabel: "도입 상담 리드", cpa: 95238 },
+    result: { unit: "리드 84건 → 계약 12건", revenue: 432000000, roas: "ARR 54x", extra: "EMR 월 300만원 × 12개월 = 연 4.32억" },
+    log: ["B2B 광고 심의·매체 승인", "병원 세그먼트(지역·진료과) 리스트업", "성공사례·ROI 소재 자동 편성", "검색·커뮤니티·DM 멀티터치 집행", "리드 스코어링·영업 자동 배정", "계약 12건 · EMR ARR 회계 연동"],
+  },
+  {
+    name: "약국", desc: "의약외품·건기식 공급 + 취급약국 유입 광고", color: "#0891B2",
+    goal: "취급약국 확대 + 인근 소비자 유입", target: "제휴 약국 + 반경 3km 건강 관심 소비자",
+    channels: [["지역 검색·당근 로컬", 40], ["카톡 채널·리워드", 30], ["인스타·메타", 30]],
+    budget: { daily: 300000, days: 14 }, bid: "방문·주문 전환 최적화",
+    creative: { head: "우리 약국에서 HI-Fin 건기식 · 지금 할인", sub: "검진 결과 맞춤 건기식 픽업 + 첫 구매 리워드 적립", cta: "가까운 취급약국 찾기" },
+    landing: "취급약국 찾기 → 제품 픽업·주문",
+    kpi: { imp: 480000, clk: 9600, ctr: 2.0, conv: 720, convLabel: "매장 방문·주문", cpa: 5833 },
+    result: { unit: "객단가 45,000원", revenue: 32400000, roas: 7.7, extra: "+ 신규 취급약국 온보딩" },
+    log: ["의약외품·건기식 표시광고 규제 검토 통과", "제휴 약국 반경·재고 세그먼트 매칭", "지역 맞춤 소재 자동 생성", "로컬 검색·당근·카톡 집행", "방문 전환 픽셀·주문 연동", "재고·객단가 기준 예산 최적화"],
+  },
+];
 const MKT_PARTNER_MODELS = [
   ["API·SDK 미니앱 임베드", "제휴 플랫폼 안에 건강검진·리포트·상담 미니앱을 탑재해 이탈 없이 서비스 제공"],
   ["리워드·건강미션 연계", "걷기·검진·미션 달성 → 플랫폼 포인트 상호 적립(캐시워크형 그로스 루프)"],
@@ -7144,8 +7180,104 @@ function CreativeGenModal({ creative, onClose }) {
   );
 }
 
+/* ── 자동 집행 시행 데모 모달 ── */
+function AutoExecModal({ org, onClose }) {
+  const c = org.color, b = org.budget, spend = b.daily * b.days;
+  const won = (n) => (typeof n === "number" ? n.toLocaleString() + "원" : n);
+  return (
+    <div className="ontov" onClick={onClose}>
+      <div className="ontmodal" onClick={(e) => e.stopPropagation()} style={{ width: "min(620px,96vw)" }}>
+        <div className="ontmh">
+          <div><span className="ontmid" style={{ color: c }}>⚡ 자동 집행 완료 · 파일럿</span><div className="ontmname">{org.name} <span>· 자동 광고 캠페인</span></div></div>
+          <button onClick={onClose}><X size={20} color="#8A97AE" /></button>
+        </div>
+        <div className="ontmbody">
+          <div className="mktexec-goal"><span><b>목표</b> {org.goal}</span><span><b>타겟</b> {org.target}</span></div>
+          <div className="mktexec-lbl">채널 믹스 · 예산 배분</div>
+          <div className="mktexec-ch">{org.channels.map(([n, p]) => (<div className="mktexec-chr" key={n}><span>{n}</span><div className="mktexec-bar"><i style={{ width: p + "%", background: c }} /></div><em>{p}%</em></div>))}</div>
+          <div className="mktexec-budget"><div><span>일 예산</span><b>{won(b.daily)}</b></div><div><span>집행 기간</span><b>{b.days}일</b></div><div><span>총 집행액</span><b>{won(spend)}</b></div><div><span>입찰 전략</span><b>{org.bid}</b></div></div>
+          <div className="mktexec-lbl">집행 소재</div>
+          <div className="mktexec-crea" style={{ borderColor: c + "66" }}><div className="mktexec-head" style={{ color: c }}>{org.creative.head}</div><div className="mktexec-sub">{org.creative.sub}</div><span className="mktexec-cta" style={{ background: c }}>{org.creative.cta} →</span></div>
+          <div className="mktexec-land"><b>랜딩</b> {org.landing}</div>
+          <div className="mktexec-lbl">예상 성과 ({b.days}일)</div>
+          <div className="mktexec-kpi">
+            <div><span>노출</span><b>{org.kpi.imp.toLocaleString()}</b></div>
+            <div><span>클릭</span><b>{org.kpi.clk.toLocaleString()}</b></div>
+            <div><span>CTR</span><b>{org.kpi.ctr}%</b></div>
+            <div><span>{org.kpi.convLabel}</span><b>{org.kpi.conv.toLocaleString()}</b></div>
+            <div><span>CPA</span><b>{org.kpi.cpa.toLocaleString()}원</b></div>
+            <div className="hl" style={{ color: c }}><span>ROAS</span><b>{typeof org.result.roas === "number" ? org.result.roas + "x" : org.result.roas}</b></div>
+          </div>
+          <div className="mktexec-rev" style={{ background: c + "16", borderColor: c + "55" }}>예상 매출 <b>{won(org.result.revenue)}</b> <em>({org.result.unit}) {org.result.extra}</em></div>
+          <div className="mktexec-lbl">자동 집행 로그</div>
+          <div className="mktexec-log">{org.log.map((l, i) => (<div className="mktexec-lr" key={i}><span style={{ background: c }}>{i + 1}</span>{l}<em>✓</em></div>))}</div>
+          <div className="ontmacts"><button className="give" onClick={() => { if (typeof toast === "function") toast(`${org.name} 캠페인 라이브 유지 · 실시간 최적화 진행(파일럿)`); }}><Zap size={14} /> 라이브 유지 · 실시간 최적화</button><button onClick={onClose}>닫기</button></div>
+          <div className="chnote" style={{ marginTop: 4 }}>※ 파일럿 시뮬레이션 데이터입니다. 실제 집행은 매체 심의·의료광고 규제 검수 후 진행됩니다.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── 제휴 제안서 발송 데모 모달 ── */
+function _platReach(scale) {
+  if (/전국민/.test(scale)) return 51000000;
+  const m = scale.match(/([\d,]+)\s*만/); if (m) return parseInt(m[1].replace(/,/g, ""), 10) * 10000;
+  if (/수천만/.test(scale)) return 30000000;
+  if (/천만/.test(scale)) return 8000000;
+  if (/수백만/.test(scale)) return 5000000;
+  return 10000000;
+}
+function PartnerProposalModal({ plat, idx, onClose }) {
+  const [nm, scale, type, effect, c] = plat;
+  const reach = _platReach(scale);
+  const rates = [1.6, 1.9, 1.3, 1.0, 2.2, 1.1, 0.9, 1.4, 1.2, 2.5];
+  const rate = rates[idx % rates.length];
+  const members = Math.round(reach * rate / 100);
+  const buyers = Math.round(members * 0.30);
+  const gmv = buyers * 200000;
+  const checkup = Math.round(members * 0.22);
+  const ourRev = Math.round(gmv * 0.25 + checkup * 22500);
+  const won = (n) => (n >= 100000000 ? (n / 100000000).toFixed(1).replace(/\.0$/, "") + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원");
+  const cnt = (n) => (n >= 10000 ? (n / 10000).toFixed(n >= 1000000 ? 0 : 1).replace(/\.0$/, "") + "만명" : n.toLocaleString() + "명");
+  const roadmap = [["MOU 체결", "제휴 범위·정산 구조 합의", "1개월"], ["PoC 연동", "미니앱·API·리워드 기술 연동", "2개월"], ["파일럿", `${cnt(Math.round(members * 0.1))} 대상 크로스 프로모션`, "3개월"], ["정식 런칭", `${cnt(members)} 대량 온보딩·상시 운영`, "6개월~"]];
+  return (
+    <div className="ontov" onClick={onClose}>
+      <div className="ontmodal" onClick={(e) => e.stopPropagation()} style={{ width: "min(640px,96vw)" }}>
+        <div className="ontmh">
+          <div><span className="ontmid" style={{ color: c }}>🤝 제휴 제안서 발송 · 파일럿</span><div className="ontmname">{nm} <span>· {scale} 회원</span></div></div>
+          <button onClick={onClose}><X size={20} color="#8A97AE" /></button>
+        </div>
+        <div className="ontmbody">
+          <div className="mktprop-intro">HI-Fin Tech × {nm} <b>B2B2C 크로스 프로모션</b> 제안 — {effect}. 무료 검진대비보험·건강분석리포트·상담을 <b>앵커 오퍼</b>로 대량 온보딩합니다.</div>
+          <div className="mktprop-grid">
+            <div className="mktprop-col"><div className="mktprop-ch" style={{ color: c }}>HI-Fin 제공</div><ul><li>무료 검진대비보험 + 건강분석 리포트</li><li>AI 건강상담·주치의</li><li>검진 결과 맞춤 제품·리워드</li><li>미니앱·API·SDK 임베드</li></ul></div>
+            <div className="mktprop-col"><div className="mktprop-ch" style={{ color: c }}>{nm} 제공</div><ul><li>{type}</li><li>회원 도달·트래픽 ({scale})</li><li>CRM·리워드 인프라</li><li>공동 마케팅·노출 지면</li></ul></div>
+          </div>
+          <div className="mktexec-lbl">예상 성과 (연간)</div>
+          <div className="mktexec-kpi mktprop-kpi">
+            <div><span>도달 회원</span><b>{cnt(reach)}</b></div>
+            <div><span>온보딩 (전환 {rate}%)</span><b>{cnt(members)}</b></div>
+            <div><span>제품 구매자</span><b>{cnt(buyers)}</b></div>
+            <div><span>제품 GMV</span><b>{won(gmv)}</b></div>
+            <div><span>검진 연계</span><b>{cnt(checkup)}</b></div>
+            <div className="hl" style={{ color: c }}><span>HI-Fin 매출</span><b>{won(ourRev)}</b></div>
+          </div>
+          <div className="mktprop-share" style={{ borderColor: c + "44" }}><b>수익 배분</b> 제품 마진·검진 연계 수수료의 일부를 트래픽 기여도 기준 배분(rev-share) · 리워드 상호 적립 정산</div>
+          <div className="mktexec-lbl">실행 로드맵</div>
+          <div className="mktprop-road">{roadmap.map(([t, d, when], i) => (<div className="mktprop-step" key={i}><span className="mktprop-no" style={{ background: c }}>{i + 1}</span><div className="mktprop-sc"><b>{t} <em>· {when}</em></b><p>{d}</p></div>{i < roadmap.length - 1 && <span className="mktprop-arr">→</span>}</div>))}</div>
+          <div className="ontmacts"><button className="give" onClick={() => { if (typeof toast === "function") toast(`${nm} 제휴 제안서 담당자 발송 완료 · MOU 미팅 요청(파일럿)`); }}><Sparkles size={14} /> 제안서 발송 · MOU 미팅 요청</button><button onClick={onClose}>닫기</button></div>
+          <div className="chnote" style={{ marginTop: 4 }}>※ 파일럿 추정치입니다. 실제 성과는 제휴 조건·연동 범위·회원 동의에 따라 달라집니다.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MarketingSection({ onGo }) {
   const [gen, setGen] = useState(null);
+  const [exec, setExec] = useState(null);
+  const [prop, setProp] = useState(null);
   const [tab, setTab] = useState("intel");
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const chMax = Math.max(...MKT_CHANNELS.map((c) => c[5]));
@@ -7201,8 +7333,8 @@ function MarketingSection({ onGo }) {
           <div className="ontpanel">
             <div className="ontph"><Megaphone size={15} color="#6366F1" /> 기관 대상 자동 광고 (B2B2C)</div>
             <div className="mktinst">
-              {[["건강검진센터", "인원수 기반 검진 연계 · 예약 유입 광고", "#22D3EE"], ["병원 (EMR·환자연계)", "환자 송출·EMR 연계 성공사례 B2B 광고", "#6366F1"], ["약국", "의약외품·건기식 공급 + 취급약국 유입 광고", "#0891B2"]].map(([t, d, c], i) => (
-                <div className="mktinst-r" key={i}><span className="dot" style={{ background: c }} /><div><b>{t}</b><p>{d}</p></div><button className="mktbtn" onClick={() => { if (typeof toast === "function") toast(`${t} 대상 자동 광고 캠페인 생성(파일럿)`); }}>자동 집행</button></div>
+              {MKT_ORGADS.map((o, i) => (
+                <div className="mktinst-r" key={i}><span className="dot" style={{ background: o.color }} /><div><b>{o.name}</b><p>{o.desc}</p></div><button className="mktbtn" onClick={() => setExec(o)}>자동 집행</button></div>
               ))}
             </div>
             <div className="ontph" style={{ marginTop: 14 }}><Sparkles size={15} color="#FBBF24" /> 코호트 타겟 세그먼트 <span>· {MKT_SEGMENTS.length}개</span></div>
@@ -7216,7 +7348,7 @@ function MarketingSection({ onGo }) {
               <div className="mktplat-h"><b>{nm}</b><span className="mktplat-scale" style={{ color: c }}>{scale} 회원</span></div>
               <div className="mktplat-type">{type}</div>
               <div className="mktplat-eff"><Sparkles size={10} color="#A78BFA" style={{ verticalAlign: "-1px" }} /> {effect}</div>
-              <button className="mktbtn" onClick={() => { if (typeof toast === "function") toast(`${nm} 제휴 제안서 생성(파일럿) · ${scale} 회원 대상 크로스 프로모션`); }}>제휴 제안</button>
+              <button className="mktbtn" onClick={() => setProp({ plat: MKT_PLATFORMS[i], idx: i })}>제휴 제안</button>
             </div>
           ))}</div>
           <div className="ontph" style={{ marginTop: 14 }}><Network size={15} color="#22D3EE" /> 제휴 실행 모델</div>
@@ -7256,6 +7388,8 @@ function MarketingSection({ onGo }) {
 
       <div className="chnote" style={{ marginTop: 12 }}>※ 마케팅 온톨로지는 운영(코호트)·재무(손익) 데이터를 실시간 분석해 마케팅 의사결정을 자동화하는 <b>파일럿 시연</b>입니다. 매출 증감·ROAS·크리에이티브는 예시이며, 실제 집행은 매체·규제 심의를 거칩니다.</div>
       {gen && <CreativeGenModal creative={gen} onClose={() => setGen(null)} />}
+      {exec && <AutoExecModal org={exec} onClose={() => setExec(null)} />}
+      {prop && <PartnerProposalModal plat={prop.plat} idx={prop.idx} onClose={() => setProp(null)} />}
     </div>
   );
 }

@@ -874,6 +874,58 @@
 @keyframes adrise{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
 @keyframes adpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
 @media(max-width:520px){.mktgen-video{flex-direction:column;}.mktgen-thumb{width:110px;}.adplayer{width:100%;}.adstage{width:100%;height:auto;aspect-ratio:9/16;max-height:360px;}}
+/* 자동 집행 시행 모달 */
+.mktexec-goal{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:#C7D6F0;margin-bottom:14px;line-height:1.5;}
+.mktexec-goal b{color:#8FA1C0;font-weight:700;margin-right:5px;}
+.mktexec-lbl{font-size:10.5px;font-weight:800;color:#8FA1C0;letter-spacing:.3px;text-transform:uppercase;margin:14px 0 8px;}
+.mktexec-ch{display:flex;flex-direction:column;gap:6px;}
+.mktexec-chr{display:flex;align-items:center;gap:9px;font-size:11.5px;color:#D3DEF2;}
+.mktexec-chr>span{width:118px;flex-shrink:0;}
+.mktexec-bar{flex:1;height:7px;border-radius:4px;background:#182741;overflow:hidden;}
+.mktexec-bar>i{display:block;height:100%;border-radius:4px;}
+.mktexec-chr>em{width:34px;text-align:right;font-style:normal;font-weight:800;color:#EAF2FF;font-size:11px;}
+.mktexec-budget{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+.mktexec-budget>div{background:#0C1730;border:1px solid #24324D;border-radius:9px;padding:8px 11px;}
+.mktexec-budget span{font-size:10px;color:#8FA1C0;display:block;}
+.mktexec-budget b{font-size:12.5px;color:#EAF2FF;font-weight:800;}
+.mktexec-crea{background:#0B1424;border:1px solid;border-radius:11px;padding:12px 14px;}
+.mktexec-head{font-size:14.5px;font-weight:900;line-height:1.35;}
+.mktexec-sub{font-size:11.8px;color:#C7D6F0;margin:5px 0 9px;line-height:1.5;}
+.mktexec-cta{display:inline-block;font-size:11px;font-weight:900;color:#0B1220;border-radius:8px;padding:6px 12px;}
+.mktexec-land{font-size:11.5px;color:#AFC0DE;margin-top:8px;}
+.mktexec-land b{font-size:10px;background:#1B2942;color:#8FA1C0;border-radius:5px;padding:1px 7px;margin-right:6px;}
+.mktexec-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.mktexec-kpi>div{background:#0C1730;border:1px solid #24324D;border-radius:9px;padding:9px 10px;}
+.mktexec-kpi span{font-size:9.8px;color:#8FA1C0;display:block;margin-bottom:3px;}
+.mktexec-kpi b{font-size:15px;color:#EAF2FF;font-weight:800;}
+.mktexec-kpi .hl{background:#0E1E1B;border-color:#1F5137;}
+.mktexec-rev{border:1px solid;border-radius:10px;padding:11px 14px;margin-top:10px;font-size:13px;color:#EAF2FF;font-weight:700;}
+.mktexec-rev b{font-size:16px;font-weight:900;margin:0 4px;}
+.mktexec-rev em{font-style:normal;font-size:11px;color:#AFC0DE;font-weight:600;}
+.mktexec-log{display:flex;flex-direction:column;gap:5px;}
+.mktexec-lr{display:flex;align-items:center;gap:9px;background:#0C1730;border:1px solid #24324D;border-radius:8px;padding:7px 11px;font-size:11.8px;color:#D3DEF2;}
+.mktexec-lr>span{width:19px;height:19px;border-radius:6px;color:#fff;display:grid;place-items:center;font-size:10.5px;font-weight:800;flex-shrink:0;}
+.mktexec-lr>em{margin-left:auto;font-style:normal;color:#34D399;font-weight:900;}
+/* 제휴 제안서 모달 */
+.mktprop-intro{font-size:12.5px;color:#C7D6F0;line-height:1.65;background:#0C1730;border:1px solid #24324D;border-radius:11px;padding:12px 14px;}
+.mktprop-intro b{color:#EAF2FF;}
+.mktprop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.mktprop-col{background:#0B1424;border:1px solid #24324D;border-radius:11px;padding:11px 13px;}
+.mktprop-ch{font-size:11.5px;font-weight:900;margin-bottom:7px;}
+.mktprop-col ul{margin:0;padding-left:15px;display:flex;flex-direction:column;gap:4px;}
+.mktprop-col li{font-size:11.4px;color:#D3DEF2;line-height:1.4;}
+.mktprop-kpi b{font-size:14px;}
+.mktprop-share{border:1px solid;border-radius:10px;padding:10px 13px;margin-top:10px;font-size:11.8px;color:#C7D6F0;line-height:1.55;background:#0B1424;}
+.mktprop-share b{font-size:10px;background:#1B2942;color:#8FA1C0;border-radius:5px;padding:1px 7px;margin-right:7px;}
+.mktprop-road{display:flex;flex-direction:column;gap:6px;}
+.mktprop-step{display:flex;align-items:center;gap:10px;background:#0C1730;border:1px solid #24324D;border-radius:9px;padding:8px 11px;position:relative;}
+.mktprop-no{width:22px;height:22px;border-radius:7px;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;flex-shrink:0;}
+.mktprop-sc{flex:1;min-width:0;}
+.mktprop-sc b{font-size:12.5px;color:#EAF2FF;font-weight:800;}
+.mktprop-sc b em{font-style:normal;font-size:10.5px;color:#8FA1C0;font-weight:700;}
+.mktprop-sc p{font-size:11px;color:#AFC0DE;margin:2px 0 0;}
+.mktprop-arr{color:#3A4A67;font-size:13px;flex-shrink:0;}
+@media(max-width:520px){.mktexec-kpi{grid-template-columns:repeat(2,1fr);}.mktprop-grid{grid-template-columns:1fr;}.mktexec-chr>span{width:96px;}}
 .finbalance{display:flex;align-items:center;gap:7px;margin-top:12px;background:linear-gradient(120deg,#0C2A20,#0F1B33);border:1px solid #1F5137;border-radius:11px;padding:11px 14px;font-size:12px;color:#AFC0DE;line-height:1.5;}
 .finbalance b{color:#6EE7B7;font-weight:800;}
 .finlink{display:flex;align-items:center;gap:7px;margin-top:12px;background:#0F1B33;border:1px solid #24406F;border-radius:11px;padding:10px 13px;font-size:12px;color:#AFC0DE;line-height:1.5;}
