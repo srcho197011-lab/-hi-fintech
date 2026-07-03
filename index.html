@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=197e175e07" />
+<link rel="stylesheet" href="./data/app.css?v=258a3bcc49" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=197e175e07"></script>
-<script src="./src/data/section_data.js?v=197e175e07"></script>
-<script src="./src/data/demo_members.js?v=197e175e07"></script>
+<script src="./src/data/dummy_data.js?v=258a3bcc49"></script>
+<script src="./src/data/section_data.js?v=258a3bcc49"></script>
+<script src="./src/data/demo_members.js?v=258a3bcc49"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -602,7 +602,7 @@ const WALLET_SEC = [
 ];
 /* ── 판매마진 분배(적립 50% · 나눔 30% · 운영 20%) ── */
 const WALLET_SPLIT = { earn: 50, give: 30, ops: 20 }; // 판매마진 대비 %
-const WALLET_GIVE = { cum: 32400000, month: 4800000, people: 128, my: 46200 }; // 누적·이번달 기부·수혜 인원·내 기여(예시, 원)
+const WALLET_GIVE = { cum: 97200000, month: 14400000, people: 384, my: 138600 }; // 누적·이번달 기부·수혜 인원·내 기여(예시, 원 · 나눔 30% 반영)
 const WALLET_GIVE_TARGETS = [
   ["heart", "재난적 의료비 사각지대", "소득 대비 과도한 치료비를 감당하기 어렵지만 정부 지원 기준에는 못 미치는 가구", "#E11D48"],
   ["badge", "실손 보장 사각지대", "고령·기저질환·미가입 등으로 실손보험 보장에서 소외된 분들", "#2563EB"],
@@ -2814,7 +2814,7 @@ function BookingModal({ center, mode, onClose }) {
               <div className="bkins">
                 <div className="bkinst"><BadgeCheck size={14} color="#16A34A" /> 적용 플랜 <b style={{ color: "#16A34A" }}>{planName}</b> <span>{planSub}</span></div>
                 <div className="bkinsrows">{COVERS.map((r, i) => { const amt = r[colIdx]; if (!amt || amt === "-") return null; return (<div className="bkinsrow" key={i}><span>{r[1]}</span><b>{amt}</b></div>); })}</div>
-                <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>됩니다. 정신질환 진단은 기본형 100만원·표준형 200만원·고급형 300만원이 포함됩니다. 실제 보장·인수는 보험사 심사에 따릅니다.</div>
+                <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>됩니다. 마음케어진단은 기본형 100만원·표준형 200만원·고급형 300만원이 포함됩니다. 실제 보장·인수는 보험사 심사에 따릅니다.</div>
               </div>
             )}
             <div className="bklbl">날짜 선택</div>
@@ -2830,7 +2830,7 @@ function BookingModal({ center, mode, onClose }) {
               <div style={{ fontWeight: 800, fontSize: 17 }}>예약이 확정되었습니다</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{center.name}<br />{date} {time}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
-                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>무상 건강검진 대비보험 — {planName}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>추가 보험료 없이 검진 대비 보장(정신질환 진단 포함)이 무상 적용됩니다.</div></div></div>
+                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>무상 건강검진 대비보험 — {planName}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>추가 보험료 없이 검진 대비 보장(마음케어진단 포함)이 무상 적용됩니다.</div></div></div>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic"><BadgeCheck size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>NFT 예약증 발행</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>지갑에 SBT 예약증이 발행되고 알림톡이 발송됩니다.</div></div></div>
               </div>
               <button className="cbtn pri" style={{ marginTop: 16 }} onClick={onClose}>확인</button>
@@ -4358,7 +4358,7 @@ const CHECK_COVERS = [
   ["heartpulse", "급성심근경색", "200만원", "500만원", "1,000만원", "1,000만원", "급성심근경색증치료비보장 특별약관", "급성심근경색증 진단확정 시 가입금액 전액 1회"],
   ["brain", "뇌졸중", "200만원", "500만원", "1,000만원", "1,000만원", "뇌졸중치료비보장 특별약관", "뇌졸중 진단확정 시 가입금액 전액 1회"],
   ["device", "21대 질병 수술비", "100만원", "200만원", "300만원", "300만원", "질병수술비보장 특별약관", "13대·다발성3대·특정5대 질병 수술 1회당 지급"],
-  ["badge", "정신질환 진단", "100만원", "200만원", "300만원", "300만원", "정신질환진단보장 특별약관", "정신질환(F코드) 최초 진단확정 시 1회"],
+  ["badge", "마음케어진단", "100만원", "200만원", "300만원", "300만원", "정신질환진단보장 특별약관", "정신질환(F코드) 최초 진단확정 시 1회"],
   ["lock", "보이스피싱", "300만원", "300만원", "300만원", "300만원", "전화금융사기보장 특별약관", "전화금융사기 피해 보장 (보장비율 70%)"],
 ];
 
@@ -4923,7 +4923,7 @@ function InsuranceSection({ onGo }) {
             <thead><tr><th>담보</th><th>기본형<div style={{ fontSize: 10, color: "var(--soft)", fontWeight: 600 }}>국가검진</div></th><th>표준형<div style={{ fontSize: 10, color: "var(--soft)", fontWeight: 600 }}>종합검진</div></th><th className="hl">고급형<div style={{ fontSize: 10, color: "#0c4a6e", fontWeight: 600 }}>프리미엄검진</div></th></tr></thead>
             <tbody>{CHECK_COVERS.map((c, i) => <tr key={i} style={{ cursor: "pointer" }} onClick={() => setCover(c[1])} title="약관 상세 보기"><td>{c[1]}</td><td>{c[2]}</td><td>{c[3]}</td><td className="hl">{c[4]}</td></tr>)}</tbody>
           </table>
-          <div className="chnote" style={{ marginTop: 8 }}>※ 암 진단금은 기타암 제외(갑상선암·기타피부암·제자리암·경계성종양 해당없음). 정신질환 진단은 <b>기본형 100만원·표준형 200만원·고급형 300만원</b> 포함. 보이스피싱은 전 플랜 300만원(보장비율 70%).</div>
+          <div className="chnote" style={{ marginTop: 8 }}>※ 암 진단금은 기타암 제외(갑상선암·기타피부암·제자리암·경계성종양 해당없음). 마음케어진단은 <b>기본형 100만원·표준형 200만원·고급형 300만원</b> 포함. 보이스피싱은 전 플랜 300만원(보장비율 70%).</div>
         </div>
 
         <div className="bklbl" style={{ margin: "2px 0 8px" }}><ShieldCheck size={14} color="#2563EB" style={{ verticalAlign: "-2px" }} /> 담보별 보장 상세 · 특별약관 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 클릭하면 약관·보장표 조회</span></div>

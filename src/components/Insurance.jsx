@@ -22,7 +22,7 @@ const CHECK_COVERS = [
   ["heartpulse", "급성심근경색", "200만원", "500만원", "1,000만원", "1,000만원", "급성심근경색증치료비보장 특별약관", "급성심근경색증 진단확정 시 가입금액 전액 1회"],
   ["brain", "뇌졸중", "200만원", "500만원", "1,000만원", "1,000만원", "뇌졸중치료비보장 특별약관", "뇌졸중 진단확정 시 가입금액 전액 1회"],
   ["device", "21대 질병 수술비", "100만원", "200만원", "300만원", "300만원", "질병수술비보장 특별약관", "13대·다발성3대·특정5대 질병 수술 1회당 지급"],
-  ["badge", "정신질환 진단", "100만원", "200만원", "300만원", "300만원", "정신질환진단보장 특별약관", "정신질환(F코드) 최초 진단확정 시 1회"],
+  ["badge", "마음케어진단", "100만원", "200만원", "300만원", "300만원", "정신질환진단보장 특별약관", "정신질환(F코드) 최초 진단확정 시 1회"],
   ["lock", "보이스피싱", "300만원", "300만원", "300만원", "300만원", "전화금융사기보장 특별약관", "전화금융사기 피해 보장 (보장비율 70%)"],
 ];
 
@@ -587,7 +587,7 @@ function InsuranceSection({ onGo }) {
             <thead><tr><th>담보</th><th>기본형<div style={{ fontSize: 10, color: "var(--soft)", fontWeight: 600 }}>국가검진</div></th><th>표준형<div style={{ fontSize: 10, color: "var(--soft)", fontWeight: 600 }}>종합검진</div></th><th className="hl">고급형<div style={{ fontSize: 10, color: "#0c4a6e", fontWeight: 600 }}>프리미엄검진</div></th></tr></thead>
             <tbody>{CHECK_COVERS.map((c, i) => <tr key={i} style={{ cursor: "pointer" }} onClick={() => setCover(c[1])} title="약관 상세 보기"><td>{c[1]}</td><td>{c[2]}</td><td>{c[3]}</td><td className="hl">{c[4]}</td></tr>)}</tbody>
           </table>
-          <div className="chnote" style={{ marginTop: 8 }}>※ 암 진단금은 기타암 제외(갑상선암·기타피부암·제자리암·경계성종양 해당없음). 정신질환 진단은 <b>기본형 100만원·표준형 200만원·고급형 300만원</b> 포함. 보이스피싱은 전 플랜 300만원(보장비율 70%).</div>
+          <div className="chnote" style={{ marginTop: 8 }}>※ 암 진단금은 기타암 제외(갑상선암·기타피부암·제자리암·경계성종양 해당없음). 마음케어진단은 <b>기본형 100만원·표준형 200만원·고급형 300만원</b> 포함. 보이스피싱은 전 플랜 300만원(보장비율 70%).</div>
         </div>
 
         <div className="bklbl" style={{ margin: "2px 0 8px" }}><ShieldCheck size={14} color="#2563EB" style={{ verticalAlign: "-2px" }} /> 담보별 보장 상세 · 특별약관 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 클릭하면 약관·보장표 조회</span></div>
