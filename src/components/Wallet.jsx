@@ -13,7 +13,7 @@ function WalletSection({ onGo }) {
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="wallet" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강금융지갑</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>판매마진의 <b style={{ color: "#16A34A" }}>50%는 건강적립금</b>으로, <b style={{ color: "#E11D48" }}>10%는 치료비 사각지대 나눔</b>으로 — 적립하고 나누는 건강금융</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>판매마진의 <b style={{ color: "#16A34A" }}>50%는 건강적립금</b>으로, <b style={{ color: "#E11D48" }}>{WALLET_SPLIT.give}%는 치료비 사각지대 나눔</b>으로 — 적립하고 나누는 건강금융</div></div></div>
       <DemoMemberBanner />
 
       <div className="wbal">
@@ -64,7 +64,7 @@ function WalletSection({ onGo }) {
       {tab === "give" && (<>
         <div className="wgive-hero">
           <div className="gh-l"><span className="ic"><HeartHandshake size={24} color="#fff" /></span>
-            <div><b>치료비 사각지대 나눔</b><p>판매마진의 <b>10%</b>를 치료비 사각지대 이웃의 치료비로 기부합니다 — 회원 추가 부담 없이.</p></div></div>
+            <div><b>치료비 사각지대 나눔</b><p>판매마진의 <b>{WALLET_SPLIT.give}%</b>를 치료비 사각지대 이웃의 치료비로 기부합니다 — 회원 추가 부담 없이.</p></div></div>
           <div className="gh-stats">
             <div><b>{manwon(WALLET_GIVE.cum)}</b><span>누적 나눔 기부</span></div>
             <div><b>{manwon(WALLET_GIVE.month)}</b><span>이번 달 기부</span></div>
@@ -89,7 +89,7 @@ function WalletSection({ onGo }) {
         </div>
 
         <div className="wgive-my"><span className="ic"><Heart size={18} color="#E11D48" /></span><div>지금까지 <b>조성래님의 소비로 만들어진 나눔</b> <b style={{ color: "#E11D48" }}>{won(WALLET_GIVE.my)}</b> <small>— 내 건강 관리가 이웃의 치료비가 되었습니다.</small></div></div>
-        <div className="chnote">※ 기부 비율(판매마진의 10%)·수치는 <b>설계 목표·예시</b>입니다. 실제 기부는 제휴 공익재단·의료기관을 통해 심사 후 집행되며, 사용내역은 투명하게 공개하도록 설계합니다. ‘치료비 사각지대’는 재난적 의료비·실손 보장 사각지대·희귀중증질환 본인부담·취약계층 긴급 치료비 등을 포함합니다.</div>
+        <div className="chnote">※ 기부 비율(판매마진의 {WALLET_SPLIT.give}%)·수치는 <b>설계 목표·예시</b>입니다. 실제 기부는 제휴 공익재단·의료기관을 통해 심사 후 집행되며, 사용내역은 투명하게 공개하도록 설계합니다. ‘치료비 사각지대’는 재난적 의료비·실손 보장 사각지대·희귀중증질환 본인부담·취약계층 긴급 치료비 등을 포함합니다.</div>
       </>)}
 
       {tab === "use" && (<>
