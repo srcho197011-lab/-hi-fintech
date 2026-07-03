@@ -106,6 +106,8 @@ const MKT_PLATFORMS = [
   ["대형 커머스 (쿠팡·무신사·오늘의집)", "수천만", "건강 카테고리 입점·공동전", "제품 매출 확대", "#F97316"],
   ["당근마켓 (지역 생활)", "3,000만", "지역 검진·약국 로컬광고", "지역 기반 유입", "#F59E0B"],
   ["지자체·국민건강보험공단", "전국민", "공공 검진·건강증진 사업 연계", "공신력 + 대량 회원", "#6366F1"],
+  ["마인드카페 (아토머스)", "200만", "비대면 심리상담·정신건강 앱 연계", "마음케어진단·심리케어 고전환", "#A78BFA"],
+  ["허그맘·허그인 (심리상담센터)", "누적 60만", "전국 70+ 심리상담센터·대면 상담 연계", "오프라인 심리케어 딜리버리 확대", "#FB7185"],
 ];
 /* 기관 대상 자동 광고 — 버튼 클릭 시 실제 집행 데모 데이터 */
 const MKT_ORGADS = [
@@ -358,7 +360,7 @@ function _platReach(scale) {
 function PartnerProposalModal({ plat, idx, onClose }) {
   const [nm, scale, type, effect, c] = plat;
   const reach = _platReach(scale);
-  const rates = [1.6, 1.9, 1.3, 1.0, 2.2, 1.1, 0.9, 1.4, 1.2, 2.5];
+  const rates = [1.6, 1.9, 1.3, 1.0, 2.2, 1.1, 0.9, 1.4, 1.2, 2.5, 2.8, 3.2];
   const rate = rates[idx % rates.length];
   const members = Math.round(reach * rate / 100);
   const buyers = Math.round(members * 0.30);
