@@ -70,15 +70,15 @@ function HomeView({ onGo }) {
         <span className="hglow" style={{ width: 220, height: 220, top: -70, right: -40, background: "#22C55E", opacity: .32 }} />
         <span className="hglow" style={{ width: 200, height: 200, bottom: -90, left: 120, background: "#60A5FA", opacity: .3 }} />
         <div className="hcopy">
-          <span className="heyebrow"><Art name="sparkle" size={15} /> 차세대 AI · Web3 기반 헬스·금융 플랫폼</span>
+          <span className="heyebrow"><Art name="sparkle" size={15} /> AI 헬스케어 · 핀테크 임팩트기업</span>
           <div className="htitle">Health-InsurFin Tech<br />치료비 걱정 없는 <b>평생 건강관리 생태계</b></div>
-          <div className="hdesc">건강검진부터 일상 건강관리까지 <b>모든 헬스케어 활동에 임베디드보험을 결합</b>하여, 치료비 걱정 없는 평생 건강관리 생태계를 구현하는 차세대 AI·Web3 기반 헬스·금융 플랫폼입니다.</div>
+          <div className="hdesc">건강검진부터 일상 건강관리까지 <b>모든 헬스케어 활동에 임베디드보험을 결합</b>하고, 소비에서 발생한 가치를 <b>회원 적립·치료비 나눔으로 환원</b>하는 <b>AI 기반 헬스케어·핀테크 임팩트기업</b>입니다.</div>
           <div className="hchips">
             <span><Art name="check" size={16} /> 건강검진</span>
             <span><Art name="heart" size={16} /> 일상 건강관리</span>
             <span><Art name="badge" size={16} /> 임베디드보험</span>
             <span><Art name="coin" size={16} /> 치료비 걱정 ZERO</span>
-            <span><Art name="hash" size={16} /> AI·Web3 생태계</span>
+            <span><Art name="gift" size={16} /> 사회환원 임팩트</span>
           </div>
         </div>
         <div className="hart"><HeroArt /></div>
