@@ -381,6 +381,7 @@ const COACH_QA = [
   { k:"안구", m:["눈","눈물","백내장","충혈","눈곱","안구"], a:"마루는 안질환 위험이 '낮음'이나 안구건조 경계가 있어요. 눈곱·충혈이 늘면 인공눈물 보조와 함께 안과 검진을 권고해요. 말티즈는 눈물자국 관리도 중요합니다.", fu:"한쪽 눈인가요, 양쪽 모두인가요?", chips:["눈 영양제(루테인)","병원 예약"] },
   { k:"피부", m:["피부","가려","긁","털","비듬","발적","아토피","핥"], a:"마루는 피부질환 위험이 '낮음'이고 피모도 양호해요. 다만 가려움·발적이 보이면 저자극 샴푸와 오메가3 보조가 도움이 됩니다. 자주 핥거나 진물이 나면 진료를 권고해요.", fu:"특정 부위를 집중적으로 긁나요?", chips:["저자극 샴푸","오메가3 보기"] },
   { k:"노령", m:["노령","나이","늙","시니어","고령"], a:"마루는 4세로 아직 성견 단계예요. 7세 이후부터는 관절·심장·치아·체중관리 중심의 시니어 케어와 반기 1회 정기검진을 권고해요.", fu:"지금부터 준비할 시니어 케어가 궁금하세요?", chips:["관리 권고 보기","정기 검진 예약"] },
+  { k:"심장", m:["심장","심잡음","mmvd","이첨판","심부전","기침하며헐떡"], a:"말티즈는 이첨판폐쇄부전(MMVD) 호발 품종이라 온톨로지 상 위험이 높게 잡혀요. 마루는 현재 심잡음이 없어 위험 '낮음'이지만, 7세 이후부터 6개월~1년 주기 심장검진(청진·심초음파)을 권고해요. 기침·운동 시 헐떡임이 늘면 바로 진료 받으세요.", fu:"심장검진 예약을 도와드릴까요?", chips:["심장내과 병원 찾기","오메가3 영양제"] },
 ];
 
 /* ===== 제품 쇼핑 — 상품 카탈로그 (products 테이블 형태) ===== */
@@ -1408,14 +1409,16 @@ function InsuranceSection(){
   const [tab,setTab]=useState("auto");
   const [claimed,setClaimed]=useState(false);
   const I=INSURANCE; const nav=React.useContext(NavCtx);
+  const {onto,dz}=usePetOntology();
   const won=(n)=>n.toLocaleString()+"원";
-  const tabs=[["auto","자동 펫실손 지원",Coins],["my","내 보험",ShieldCheck],["cover","보장 조회",FileText],["claim","보험금 청구",Receipt]];
+  const tabs=[["auto","자동 펫실손 지원",Coins],["onto","온톨로지 언더라이팅",NetIcon],["my","내 보험",ShieldCheck],["cover","보장 조회",FileText],["claim","보험금 청구",Receipt]];
   return (
     <div className="hsec">
       <div className="aihead"><span className="aiico"><ShieldCheck size={24} color="#fff"/></span>
         <div><div className="aih-t">보험 · 무상 임베디드 펫보험</div><div className="aih-s">추가 보험료 0원 · 치료비 자동 보장 · 적립금 {won(I.reserve)} <span style={{color:"var(--muted)"}}>(시연용 데모)</span></div></div></div>
       <div className="chtabs">{tabs.map(([k,t,Ic])=><button key={k} className={`chtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}><Ic size={15}/> {t}</button>)}</div>
       {tab==="auto" && <AutoPetInsuranceSupport onTab={setTab}/>}
+      {tab==="onto" && <OntoUnderwriting onto={onto} dz={dz}/>}
       {tab==="my" && <>
         <div className="airec"><div className="at"><ShieldCheck size={16} color="var(--orange)"/> {I.plan}</div>
           <div className="ap">마루의 건강활동·데이터가 보장의 재원이 되어, <b>추가 보험료 없이</b> 치료비가 자동 보장됩니다. 가입일 {I.since} · 상태 <b style={{color:"var(--green)"}}>{I.status}</b></div></div>
@@ -1628,6 +1631,9 @@ function VetDirectory(){
 
 function AIConsultSection(){
   const [tab,setTab]=useState("ai");
+  const {onto,dz}=usePetOntology();
+  const riskNames=computeMaruRisks(onto,dz).slice(0,3).map(r=>r.name);
+  const aiChips=[...(riskNames.length?riskNames.map(n=>n.replace(/\(.*\)/,"").trim()+" 위험 알려줘"):[]),"건강점수 어때?","예방접종 일정","치료비 보장돼?"].slice(0,5);
   return (
     <div className="hsec">
       <div className="aihead"><span className="aiico"><Bot size={24} color="#fff"/></span>
@@ -1638,11 +1644,12 @@ function AIConsultSection(){
         <button className={`chtab ${tab==="vet"?"on":""}`} onClick={()=>setTab("vet")}><Stethoscope size={15}/> 전문수의사 상담</button>
       </div>
       {tab==="ai" && <>
-        <ChatBox who="AI 주치의" icon={Bot}
-          greeting="안녕하세요! 마루의 AI 주치의예요. 🐶 건강검진 결과와 예방접종·보험 정보를 알고 있어요. 무엇이 궁금하신가요?"
-          startChips={["건강점수 어때?","슬개골 괜찮아?","스케일링 필요해?","예방접종 일정","치료비 보장돼?"]}
+        <OntoRiskCard onto={onto} dz={dz}/>
+        <ChatBox key={riskNames.length?"ai-onto":"ai"} who="AI 주치의" icon={Bot}
+          greeting="안녕하세요! 마루의 AI 주치의예요. 🐶 검진 결과·예방접종·보험에 더해, 온톨로지 빅데이터(강아지 7만)로 분석한 마루의 품종 호발질환 위험까지 알고 있어요. 무엇이 궁금하신가요?"
+          startChips={aiChips}
           placeholder="마루 건강에 대해 물어보세요" replyFn={coachReply}/>
-        <div className="chnote">※ AI 상담은 마루의 데모 건강 데이터 기반 예시입니다. ‘진단/처방’이 아닌 정보 제공이며, 증상이 있으면 동물병원 수의사 상담을 권고합니다.</div>
+        <div className="chnote">※ AI 상담은 마루의 데모 건강 데이터·온톨로지 위험 예측 기반 예시입니다. ‘진단/처방’이 아닌 정보 제공이며, 증상이 있으면 동물병원 수의사 상담을 권고합니다.</div>
       </>}
       {tab==="vet" && <VetDirectory/>}
     </div>
@@ -2483,6 +2490,89 @@ function OntologySection(){
   );
 }
 
+/* ===== 온톨로지 위험 엔진 (품종·연령 → 호발질환 → AI/보험 연결) ===== */
+const DISEASE_COST={ "슬개골 탈구":1400000,"치주질환":350000,"이첨판폐쇄부전(MMVD)":900000,"백내장":1800000,
+  "외이염":120000,"기관 허탈":700000,"아토피성 피부염":300000,"슬개골 외 관절 이상":250000,
+  "농피증(세균성)":180000,"만성 신부전":1200000,"당뇨병":900000,"비만":150000,"녹내장":1500000 };
+const CARE_OF={ "슬개골 탈구":"정형외과 · 슬개골 등급평가/교정","치주질환":"치과 · 스케일링/발치","이첨판폐쇄부전(MMVD)":"심장내과 · 심초음파",
+  "백내장":"안과 · 수정체 검사","외이염":"피부과 · 이도 세정","기관 허탈":"내과 · 기관 평가","아토피성 피부염":"피부과 · 알레르기 관리" };
+const PRODUCT_OF={ "슬개골 탈구":"관절 영양제 · 미끄럼방지 매트","치주질환":"덴탈껌 · 칫솔·치약 세트","이첨판폐쇄부전(MMVD)":"오메가3 피쉬오일",
+  "백내장":"눈 건강 루테인","외이염":"저자극 샴푸","아토피성 피부염":"오메가3 · 저자극 샴푸" };
+const covOf=(sys)=> !sys?70 : sys.indexOf("정형")>=0?70 : sys.indexOf("치과")>=0?50 : sys.indexOf("심혈관")>=0?70 : sys.indexOf("안과")>=0?60 : sys.indexOf("비뇨")>=0?70 : 70;
+function computeMaruRisks(onto,dz){
+  if(!onto) return [];
+  const bd=(onto.dogBreedDisease||[]).find(x=>x.breed==="말티즈");
+  const dzmap=Object.fromEntries(((dz&&dz.diseases)||[]).map(d=>[d.name,d]));
+  return (bd?bd.top:[]).map(t=>{ const d=dzmap[t.name]||{}; const cost=DISEASE_COST[t.name]||null; const cov=covOf(d.system); return {
+    name:t.name, pct:t.pct, system:d.system||"", risk:d.risk||(t.pct>=60?"중간":"낮음"), sx:d.sx||"",
+    cost, cov, self: cost?Math.round(cost*(1-cov/100)):null, care:CARE_OF[t.name]||"수의사 상담", product:PRODUCT_OF[t.name]||"" }; });
+}
+
+function OntoRiskCard({onto,dz}){
+  const risks=computeMaruRisks(onto,dz).slice(0,4);
+  if(!risks.length) return null;
+  return (
+    <div className="card" style={{marginBottom:12,border:"1.5px solid #FBD3AC",background:"linear-gradient(180deg,#FFF8F1,#fff)"}}>
+      <div className="rct"><NetIcon size={18} color="var(--orange)"/> 온톨로지 기반 위험 요약 <span className="sub">· 말티즈·4세 × 10만 빅데이터</span></div>
+      <div className="orgrid">{risks.map((r,i)=>{ const c=r.pct>=60?"#EF5B5B":r.pct>=35?"#E8913A":"#4FB286"; return (
+        <div className="orc" key={i}>
+          <div className="orh"><span className="orn">{r.name}</span><span className="orp" style={{color:c}}>{r.pct}%</span></div>
+          <div className="ort"><div className="orf" style={{width:Math.min(100,r.pct)+"%",background:c}}/></div>
+          <div className="ors">{r.system} · 아래 채팅에서 물어보세요</div>
+        </div>
+      );})}</div>
+      <div className="chnote" style={{marginTop:8}}>※ 마루의 품종(말티즈)·연령을 온톨로지 모집단(강아지 7만)에 대입한 <b>예측 위험도</b>입니다. 실제 진단은 검진·수의사 상담을 따릅니다.</div>
+    </div>
+  );
+}
+
+function OntoUnderwriting({onto,dz}){
+  const nav=React.useContext(NavCtx);
+  const risks=computeMaruRisks(onto,dz);
+  const won=(n)=>n.toLocaleString()+"원";
+  const idx = risks.length? Math.round(risks.reduce((s,r)=>s+r.pct,0)/risks.length) : 0;
+  const tier = idx>=60?"프리미엄": idx>=42?"골드":"기본";
+  const tcolor = tier==="프리미엄"?"#8A63D2":tier==="골드"?"#F2A30A":"#5B8DEF";
+  const covered=risks.filter(r=>r.cost);
+  const totalSelf=covered.reduce((s,r)=>s+(r.self||0),0);
+  return (<>
+    <div className="airec"><div className="at"><NetIcon size={16} color="var(--orange)"/> 온톨로지 언더라이팅 — 품종·연령 기반 자동 위험평가</div>
+      <div className="ap">마루의 <b>품종(말티즈)·연령(4세)</b>을 10만 마리 온톨로지에 대입해 호발질환 위험을 산출하고, <b>권장 보장·예상 본인부담</b>을 자동 제안합니다.</div></div>
+    <div className="gradecard" style={{borderColor:tcolor}}>
+      <div className="gc-top">
+        <span className="gc-badge" style={{background:tcolor}}>{tier} 권장</span>
+        <div><div className="gc-title">온톨로지 위험지수 <b style={{color:tcolor}}>{idx}</b> · 권장 보장등급 <b style={{color:tcolor}}>{tier}</b></div>
+          <div className="sub2">품종 호발질환 예측 유병률 평균 기준 자동 산정 (합성 빅데이터)</div></div>
+      </div>
+      <div className="gc-stats">
+        <div><div className="gl">예측 위험 항목</div><div className="gv num">{risks.length}건</div></div>
+        <div><div className="gl">보장 적용 후 예상 본인부담(합)</div><div className="gv num">{won(totalSelf)}</div><div className="sub2">주요 {covered.length}개 질환 기준</div></div>
+        <div><div className="gl">권장 조치</div><div className="gv" style={{fontSize:13.5}}>정기검진·특약 강화</div><div className="sub2">슬개골·치과·심장 중심</div></div>
+      </div>
+    </div>
+    <div className="bklbl"><Activity size={14} color="#EF5B5B" style={{verticalAlign:"-2px"}}/> 예측 위험 × 예상 치료비·본인부담</div>
+    {risks.map((r,i)=>(
+      <div className="estc" key={i}>
+        <div><div className="en">{r.name} <span className="cbadge" style={{color:r.pct>=60?"#D33":"#C98A12",background:r.pct>=60?"#FDE4E4":"#FFF1D6"}}>{r.pct}%</span></div>
+          <div className="er">{r.system} · {r.care}{r.cost?` · 예상 진료비 ${won(r.cost)} · 보장률 ${r.cov}%`:" · 관리 중심"}</div></div>
+        <div className="ev">{r.self!=null?<><div className="self num">{won(r.self)}</div><div className="cov num">보장 후 본인부담</div></>:<div className="cov num" style={{fontSize:12}}>정기관리 권고</div>}</div>
+      </div>
+    ))}
+    <div className="card"><div className="rct"><Sparkles size={18} color="var(--orange)"/> 온톨로지 추천 조치</div>
+      {risks.slice(0,3).map((r,i)=>(
+        <div className="adv" key={i}><span className="ic"><ShieldCheck size={18} color="var(--orange)"/></span>
+          <div style={{flex:1}}><b>{r.name} — 보장·관리 강화</b><p>{r.care} 특약 검토 · 추천 상품: {r.product||"수의사 상담"}</p></div>
+          <button className="linkmini" onClick={()=>nav&&nav(r.system.indexOf("치과")>=0||r.system.indexOf("정형")>=0?"병원/예약":"제품 쇼핑")}>바로가기 ›</button></div>
+      ))}
+    </div>
+    <div className="ins-cta">
+      <button className="cbtn pri" onClick={()=>nav&&nav("건강관리")}><HeartPulse size={15}/> 마루 건강검진 결과 보기</button>
+      <button className="cbtn" onClick={()=>nav&&nav("펫 온톨로지")}><NetIcon size={15}/> 온톨로지 그래프 보기</button>
+    </div>
+    <div className="chnote">※ 온톨로지 언더라이팅은 품종·연령 기반 <b>예측</b>이며 시연용입니다. 실제 인수·보장·보험료는 제휴 보험사 약관·인수기준·검진결과에 따라 달라집니다.</div>
+  </>);
+}
+
 /* ============================ APP ============================ */
 function App(){
   const [active,setActive]=useState("홈");
@@ -2781,6 +2871,15 @@ css.textContent=`
 .mbar .bf{width:100%;border-radius:7px;background:linear-gradient(180deg,#FFB547,#F4843C);transition:height 1s cubic-bezier(.2,.7,.2,1)}
 .mbar .bl{font-size:10.5px;color:var(--muted)}
 /* ===== 보험 자동 펫실손 지원 ===== */
+.orgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.orc{background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px}
+.orh{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.orn{font-size:13px;font-weight:800;color:var(--text)}
+.orp{font-size:15px;font-weight:900}
+.ort{height:6px;background:#F1E7DA;border-radius:999px;overflow:hidden;margin:7px 0 5px}
+.orf{height:100%;border-radius:999px;transition:width .9s cubic-bezier(.2,.7,.2,1)}
+.ors{font-size:11px;color:var(--muted);font-weight:600}
+@media(max-width:600px){ .orgrid{grid-template-columns:1fr} }
 .gradecard{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
 .gc-top{display:flex;align-items:center;gap:14px}
 .gc-badge{flex-shrink:0;color:#fff;font-weight:900;font-size:15px;letter-spacing:.5px;padding:8px 16px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.12)}
