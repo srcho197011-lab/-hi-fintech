@@ -142,6 +142,7 @@ function toast(msg){ if(typeof window!=="undefined" && window.__hipetToast) wind
 const NetIcon=mk('<circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="M12 8v3M10 17l-3-3M14 17l3-3"/>');
 const DbIcon=mk('<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>');
 const DnaIcon=mk('<path d="M4 3c0 5 8 6 8 11s-8 6-8 11"/><path d="M20 3c0 5-8 6-8 11s8 6 8 11"/><path d="M6 6h12M6.5 9h11M6.5 15h11M6 18h12"/>');
+const Lock=mk('<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>');
 
 /* ===== 입체 일러스트 아이콘 (휴먼 스타일: 레이어드 SVG + 광택/그림자) ===== */
 function PetArt({ name, size=34 }){
@@ -381,7 +382,7 @@ const COACH_QA = [
   { k:"안구", m:["눈","눈물","백내장","충혈","눈곱","안구"], a:"마루는 안질환 위험이 '낮음'이나 안구건조 경계가 있어요. 눈곱·충혈이 늘면 인공눈물 보조와 함께 안과 검진을 권고해요. 말티즈는 눈물자국 관리도 중요합니다.", fu:"한쪽 눈인가요, 양쪽 모두인가요?", chips:["눈 영양제(루테인)","병원 예약"] },
   { k:"피부", m:["피부","가려","긁","털","비듬","발적","아토피","핥"], a:"마루는 피부질환 위험이 '낮음'이고 피모도 양호해요. 다만 가려움·발적이 보이면 저자극 샴푸와 오메가3 보조가 도움이 됩니다. 자주 핥거나 진물이 나면 진료를 권고해요.", fu:"특정 부위를 집중적으로 긁나요?", chips:["저자극 샴푸","오메가3 보기"] },
   { k:"노령", m:["노령","나이","늙","시니어","고령"], a:"마루는 4세로 아직 성견 단계예요. 7세 이후부터는 관절·심장·치아·체중관리 중심의 시니어 케어와 반기 1회 정기검진을 권고해요.", fu:"지금부터 준비할 시니어 케어가 궁금하세요?", chips:["관리 권고 보기","정기 검진 예약"] },
-  { k:"심장", m:["심장","심잡음","mmvd","이첨판","심부전","기침하며헐떡"], a:"말티즈는 이첨판폐쇄부전(MMVD) 호발 품종이라 온톨로지 상 위험이 높게 잡혀요. 마루는 현재 심잡음이 없어 위험 '낮음'이지만, 7세 이후부터 6개월~1년 주기 심장검진(청진·심초음파)을 권고해요. 기침·운동 시 헐떡임이 늘면 바로 진료 받으세요.", fu:"심장검진 예약을 도와드릴까요?", chips:["심장내과 병원 찾기","오메가3 영양제"] },
+  { k:"심장", m:["심장","심잡음","mmvd","이첨판","심부전","기침하며헐떡"], a:"말티즈는 이첨판폐쇄부전(MMVD) 호발 품종이라 AI 빅데이터 분석상 위험이 높게 잡혀요. 마루는 현재 심잡음이 없어 위험 '낮음'이지만, 7세 이후부터 6개월~1년 주기 심장검진(청진·심초음파)을 권고해요. 기침·운동 시 헐떡임이 늘면 바로 진료 받으세요.", fu:"심장검진 예약을 도와드릴까요?", chips:["심장내과 병원 찾기","오메가3 영양제"] },
 ];
 
 /* ===== 제품 쇼핑 — 상품 카탈로그 (products 테이블 형태) ===== */
@@ -445,12 +446,13 @@ const NFT = [
 
 const MENU = [
   { label:"홈", icon:Home }, { label:"AI 상담", icon:Bot }, { label:"건강관리", icon:HeartPulse },
-  { label:"펫 온톨로지", icon:NetIcon },
   { label:"병원/예약", icon:CalendarPlus }, { label:"제품 쇼핑", icon:ShoppingBag },
   { label:"보험", icon:ShieldCheck }, { label:"건강금융지갑", icon:Wallet },
   { label:"리워드", icon:Gift }, { label:"Health NFT", icon:Award },
   { label:"커뮤니티", icon:Users }, { label:"마이페이지", icon:User },
 ];
+// 운영자(관리자) 데모 계정 — 이 ID로 로그인해야 '온톨로지 콘솔'이 보임
+const ADMIN_ID="admin", ADMIN_PW="hipet2026";
 
 const QUICK = [
   { label:"AI 상담", art:"chat", go:"AI 상담" }, { label:"병원 예약", art:"calendar", go:"병원/예약" },
@@ -511,7 +513,33 @@ function Btn({children,icon:Icon,variant="solid",small,onClick}){
 }
 
 /* ============================ SIDEBAR ============================ */
-function Sidebar({active,setActive,open,onClose}){
+function AdminLogin({onClose,onOk}){
+  const [id,setId]=useState(""),[pw,setPw]=useState(""),[err,setErr]=useState("");
+  const submit=()=>{ if(id.trim()===ADMIN_ID&&pw===ADMIN_PW){ onOk(); } else { setErr("아이디 또는 비밀번호가 올바르지 않습니다."); } };
+  return (
+    <div className="bkov" onClick={onClose}>
+      <div className="bk" onClick={e=>e.stopPropagation()} style={{maxWidth:360}}>
+        <div className="bkh"><div className="bt"><Lock size={17} style={{verticalAlign:"-3px",marginRight:6}}/>운영자 로그인</div><button className="xbtn" onClick={onClose}><X size={20}/></button></div>
+        <div className="bkb">
+          <div className="sub2" style={{marginBottom:12}}>운영 콘솔(온톨로지·빅데이터)은 관리자 전용입니다. 운영자 계정으로 로그인하세요.</div>
+          <div className="adminf">
+            <label>아이디</label>
+            <input value={id} onChange={e=>{setId(e.target.value);setErr("");}} placeholder="운영자 아이디" onKeyDown={e=>{if(e.key==="Enter")submit();}}/>
+            <label>비밀번호</label>
+            <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} placeholder="비밀번호" onKeyDown={e=>{if(e.key==="Enter")submit();}}/>
+          </div>
+          {err && <div className="aerr">{err}</div>}
+          <button className="cbtn pri" style={{marginTop:14}} onClick={submit}><Lock size={15}/> 로그인</button>
+          <div className="adhint">데모 계정 · <b>{ADMIN_ID}</b> / <b>{ADMIN_PW}</b></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Sidebar({active,setActive,open,onClose,admin,setAdmin}){
+  const [login,setLogin]=useState(false);
+  const go=(l)=>{setActive(l);onClose&&onClose();};
   return (
     <>
       <div onClick={onClose} style={{display:open?"block":"none",position:"fixed",inset:0,
@@ -556,7 +584,21 @@ function Sidebar({active,setActive,open,onClose}){
           <div style={{fontSize:12,color:"var(--sub)",marginBottom:10}}>24시간 상담 가능</div>
           <Btn small onClick={()=>{setActive("AI 상담");onClose&&onClose();}}><Bot size={15}/>상담하기</Btn>
         </div>
+
+        {/* ===== 운영 콘솔 (관리자 전용 · 사이드바 최하단) ===== */}
+        <div style={{marginTop:"auto",paddingTop:14}}>
+          <div style={{height:1,background:"var(--border)",margin:"0 6px 12px"}}/>
+          {admin ? (<>
+            <button onClick={()=>go("펫 온톨로지")} className="opnav" data-on={active==="펫 온톨로지"}>
+              <NetIcon size={18}/><span style={{flex:1,textAlign:"left"}}>온톨로지 콘솔</span><span className="opbadge">운영</span>
+            </button>
+            <button onClick={()=>{ setAdmin(false); if(active==="펫 온톨로지")go("홈"); }} className="oplogout"><Lock size={13}/> 운영자 로그아웃</button>
+          </>) : (
+            <button onClick={()=>setLogin(true)} className="oplogout"><Lock size={13}/> 운영자 로그인</button>
+          )}
+        </div>
       </aside>
+      {login && <AdminLogin onClose={()=>setLogin(false)} onOk={()=>{ setLogin(false); setAdmin(true); go("펫 온톨로지"); toast("운영자 모드 · 온톨로지 콘솔 활성화"); }}/>}
     </>
   );
 }
@@ -875,10 +917,10 @@ function RiskCard(){
           </div>
         );})}
       </div>
-      {top && <button className="ontofoot" onClick={()=>nav&&nav("펫 온톨로지")}>
-        <NetIcon size={14} color="var(--orange)"/>
-        <span>온톨로지 10만 마리 분석 · 최고 위험 <b>{top.name.replace(/\(.*\)/,"").trim()} {top.pct}%</b></span>
-        <span className="of-go">분석 보기 ›</span>
+      {top && <button className="ontofoot" onClick={()=>nav&&nav("건강관리")}>
+        <Sparkles size={14} color="var(--orange)"/>
+        <span>AI 빅데이터 10만 마리 분석 · 최고 위험 <b>{top.name.replace(/\(.*\)/,"").trim()} {top.pct}%</b></span>
+        <span className="of-go">자세히 ›</span>
       </button>}
     </Card>
   );
@@ -1065,7 +1107,7 @@ function ShopAI({products,onAdd,onOpen}){
   return (<>
     <ShopGallery/>
     {picks.length>0 && <div className="card" style={{marginBottom:12,border:"1.5px solid #FBD3AC",background:"linear-gradient(180deg,#FFF8F1,#fff)"}}>
-      <div className="rct"><NetIcon size={18} color="var(--orange)"/> 온톨로지 기반 맞춤 추천 <span className="sub">· 말티즈·4세 호발질환 → 상품</span></div>
+      <div className="rct"><Sparkles size={18} color="var(--orange)"/> AI 맞춤 추천 <span className="sub">· 말티즈·4세 호발질환 → 상품</span></div>
       {picks.map(({risk,prod},i)=>{ const c=risk.pct>=60?"#EF5B5B":risk.pct>=35?"#E8913A":"#4FB286"; return (
         <div className="orx" key={i} onClick={()=>onOpen&&onOpen(prod)}>
           <span className="orxr">{risk.name} <b style={{color:c}}>{risk.pct}%</b></span>
@@ -1074,7 +1116,7 @@ function ShopAI({products,onAdd,onOpen}){
           <button className="linkmini" onClick={e=>{e.stopPropagation(); onAdd&&onAdd(prod); }}>담기</button>
         </div>
       );})}
-      <div className="sub2" style={{marginTop:8}}>※ 온톨로지 10만 마리 모집단에서 마루 품종·연령의 호발질환을 예측해 매칭한 추천입니다. 진단이 아닌 건강관리 참고 정보.</div>
+      <div className="sub2" style={{marginTop:8}}>※ AI가 10만 마리 빅데이터에서 마루 품종·연령의 호발질환을 예측해 매칭한 추천입니다. 진단이 아닌 건강관리 참고 정보.</div>
     </div>}
     <div className="airec"><div className="at"><Sparkles size={16} color="var(--orange)"/> 마루 맞춤 AI 추천 상품</div>
       <div className="ap">AI 건강 예측(슬개골·치주 위험 중간, 체중관리)을 바탕으로 마루에게 도움이 되는 상품을 추천합니다. <span className="sub2">※ 진단이 아닌 건강관리 참고 정보</span></div></div>
@@ -1441,7 +1483,7 @@ function InsuranceSection(){
   const I=INSURANCE; const nav=React.useContext(NavCtx);
   const {onto,dz}=usePetOntology();
   const won=(n)=>n.toLocaleString()+"원";
-  const tabs=[["auto","자동 펫실손 지원",Coins],["onto","온톨로지 언더라이팅",NetIcon],["my","내 보험",ShieldCheck],["cover","보장 조회",FileText],["claim","보험금 청구",Receipt]];
+  const tabs=[["auto","자동 펫실손 지원",Coins],["onto","AI 맞춤 보장분석",Sparkles],["my","내 보험",ShieldCheck],["cover","보장 조회",FileText],["claim","보험금 청구",Receipt]];
   return (
     <div className="hsec">
       <div className="aihead"><span className="aiico"><ShieldCheck size={24} color="#fff"/></span>
@@ -1676,10 +1718,10 @@ function AIConsultSection(){
       {tab==="ai" && <>
         <OntoRiskCard onto={onto} dz={dz}/>
         <ChatBox key={riskNames.length?"ai-onto":"ai"} who="AI 주치의" icon={Bot}
-          greeting="안녕하세요! 마루의 AI 주치의예요. 🐶 검진 결과·예방접종·보험에 더해, 온톨로지 빅데이터(강아지 7만)로 분석한 마루의 품종 호발질환 위험까지 알고 있어요. 무엇이 궁금하신가요?"
+          greeting="안녕하세요! 마루의 AI 주치의예요. 🐶 검진 결과·예방접종·보험에 더해, AI 빅데이터(강아지 7만)로 분석한 마루의 품종 호발질환 위험까지 알고 있어요. 무엇이 궁금하신가요?"
           startChips={aiChips}
           placeholder="마루 건강에 대해 물어보세요" replyFn={coachReply}/>
-        <div className="chnote">※ AI 상담은 마루의 데모 건강 데이터·온톨로지 위험 예측 기반 예시입니다. ‘진단/처방’이 아닌 정보 제공이며, 증상이 있으면 동물병원 수의사 상담을 권고합니다.</div>
+        <div className="chnote">※ AI 상담은 마루의 데모 건강 데이터·AI 위험 예측 기반 예시입니다. ‘진단/처방’이 아닌 정보 제공이며, 증상이 있으면 동물병원 수의사 상담을 권고합니다.</div>
       </>}
       {tab==="vet" && <VetDirectory/>}
     </div>
@@ -2221,16 +2263,16 @@ function HospitalRec({data,onGo}){
   ];
   return (<>
     <div className="airec">
-      <div className="at"><NetIcon size={16} color="var(--orange)"/> 온톨로지 기반 마루 맞춤 동물병원 추천</div>
-      <div className="ap">마루의 <b>품종(말티즈)·연령(4세)</b>을 10만 마리 온톨로지에 대입해 호발질환 위험을 산출하고, <b>필요한 진료과</b>가 가능한 동물병원을 거주 지역에서 찾아드려요. <span className="sub2">※ 진단이 아닌 건강관리 참고 정보</span></div>
+      <div className="at"><Sparkles size={16} color="var(--orange)"/> AI 맞춤 동물병원 추천</div>
+      <div className="ap">마루의 <b>품종(말티즈)·연령(4세)</b>을 10만 마리 빅데이터로 분석해 호발질환 위험을 산출하고, <b>필요한 진료과</b>가 가능한 동물병원을 거주 지역에서 찾아드려요. <span className="sub2">※ 진단이 아닌 건강관리 참고 정보</span></div>
     </div>
     <div className="card">
-      <div className="rct"><Stethoscope size={18} color="var(--orange)"/> 마루에게 권장되는 진료 <span className="sub">· 온톨로지 위험 연동</span></div>
+      <div className="rct"><Stethoscope size={18} color="var(--orange)"/> 마루에게 권장되는 진료 <span className="sub">· AI 위험 분석 연동</span></div>
       {RECO.map((r,i)=>{ const c=r.pct==null?"var(--orange)":r.pct>=60?"#EF5B5B":r.pct>=35?"#E8913A":"#4FB286"; return (
         <div className="adv" key={i}><span className="ic"><r.ic size={18} color={c}/></span>
           <div style={{flex:1}}><b>{r.t}</b>{r.pct!=null&&<span className="cbadge" style={{marginLeft:6,color:c,background:"var(--cream)"}}>위험 {r.pct}%</span>}<p>{r.why}</p></div></div>
       );})}
-      <div className="chnote" style={{marginTop:4}}>※ 권장 진료는 마루의 온톨로지 위험 예측·건강점수 기반 예시입니다. 정확한 진단·처방은 동물병원 수의사 상담을 권고합니다.</div>
+      <div className="chnote" style={{marginTop:4}}>※ 권장 진료는 마루의 AI 위험 예측·건강점수 기반 예시입니다. 정확한 진단·처방은 동물병원 수의사 상담을 권고합니다.</div>
     </div>
     <div className="bklbl spread"><span><User size={13} style={{verticalAlign:"-2px"}}/> 보호자 거주지 <b style={{color:"var(--orange-deep)"}}>{PET_LOC.addr}</b></span>{!atHome&&<button className="fsel" onClick={()=>setRegion(PET_LOC.sido)}>내 거주지로</button>}<span style={{marginLeft:"auto",color:"var(--muted)"}}>{region} <b style={{color:"var(--orange-deep)"}}>{regionCount.toLocaleString()}</b>곳</span></div>
     <div className="regions">{sidoChips.map(r=><button key={r} className={`fsel ${region===r?"on":""}`} onClick={()=>setRegion(r)}>{r===PET_LOC.sido&&<Home size={11} style={{verticalAlign:"-1px",marginRight:3}}/>}{r}{distribution[r]?<span className="cnt">{distribution[r].toLocaleString()}</span>:""}</button>)}</div>
@@ -2551,7 +2593,7 @@ function OntoRiskCard({onto,dz}){
   if(!risks.length) return null;
   return (
     <div className="card" style={{marginBottom:12,border:"1.5px solid #FBD3AC",background:"linear-gradient(180deg,#FFF8F1,#fff)"}}>
-      <div className="rct"><NetIcon size={18} color="var(--orange)"/> 온톨로지 기반 위험 요약 <span className="sub">· 말티즈·4세 × 10만 빅데이터</span></div>
+      <div className="rct"><Sparkles size={18} color="var(--orange)"/> AI 건강위험 요약 <span className="sub">· 말티즈·4세 × 10만 빅데이터</span></div>
       <div className="orgrid">{risks.map((r,i)=>{ const c=r.pct>=60?"#EF5B5B":r.pct>=35?"#E8913A":"#4FB286"; return (
         <div className="orc" key={i}>
           <div className="orh"><span className="orn">{r.name}</span><span className="orp" style={{color:c}}>{r.pct}%</span></div>
@@ -2559,7 +2601,7 @@ function OntoRiskCard({onto,dz}){
           <div className="ors">{r.system} · 아래 채팅에서 물어보세요</div>
         </div>
       );})}</div>
-      <div className="chnote" style={{marginTop:8}}>※ 마루의 품종(말티즈)·연령을 온톨로지 모집단(강아지 7만)에 대입한 <b>예측 위험도</b>입니다. 실제 진단은 검진·수의사 상담을 따릅니다.</div>
+      <div className="chnote" style={{marginTop:8}}>※ 마루의 품종(말티즈)·연령을 AI 빅데이터(강아지 7만)로 분석한 <b>예측 위험도</b>입니다. 실제 진단은 검진·수의사 상담을 따릅니다.</div>
     </div>
   );
 }
@@ -2574,12 +2616,12 @@ function OntoUnderwriting({onto,dz}){
   const covered=risks.filter(r=>r.cost);
   const totalSelf=covered.reduce((s,r)=>s+(r.self||0),0);
   return (<>
-    <div className="airec"><div className="at"><NetIcon size={16} color="var(--orange)"/> 온톨로지 언더라이팅 — 품종·연령 기반 자동 위험평가</div>
-      <div className="ap">마루의 <b>품종(말티즈)·연령(4세)</b>을 10만 마리 온톨로지에 대입해 호발질환 위험을 산출하고, <b>권장 보장·예상 본인부담</b>을 자동 제안합니다.</div></div>
+    <div className="airec"><div className="at"><Sparkles size={16} color="var(--orange)"/> AI 맞춤 보장분석 — 품종·연령 기반 자동 위험평가</div>
+      <div className="ap">마루의 <b>품종(말티즈)·연령(4세)</b>을 10만 마리 빅데이터로 분석해 호발질환 위험을 산출하고, <b>권장 보장·예상 본인부담</b>을 자동 제안합니다.</div></div>
     <div className="gradecard" style={{borderColor:tcolor}}>
       <div className="gc-top">
         <span className="gc-badge" style={{background:tcolor}}>{tier} 권장</span>
-        <div><div className="gc-title">온톨로지 위험지수 <b style={{color:tcolor}}>{idx}</b> · 권장 보장등급 <b style={{color:tcolor}}>{tier}</b></div>
+        <div><div className="gc-title">AI 위험지수 <b style={{color:tcolor}}>{idx}</b> · 권장 보장등급 <b style={{color:tcolor}}>{tier}</b></div>
           <div className="sub2">품종 호발질환 예측 유병률 평균 기준 자동 산정 (합성 빅데이터)</div></div>
       </div>
       <div className="gc-stats">
@@ -2596,7 +2638,7 @@ function OntoUnderwriting({onto,dz}){
         <div className="ev">{r.self!=null?<><div className="self num">{won(r.self)}</div><div className="cov num">보장 후 본인부담</div></>:<div className="cov num" style={{fontSize:12}}>정기관리 권고</div>}</div>
       </div>
     ))}
-    <div className="card"><div className="rct"><Sparkles size={18} color="var(--orange)"/> 온톨로지 추천 조치</div>
+    <div className="card"><div className="rct"><Sparkles size={18} color="var(--orange)"/> AI 추천 조치</div>
       {risks.slice(0,3).map((r,i)=>(
         <div className="adv" key={i}><span className="ic"><ShieldCheck size={18} color="var(--orange)"/></span>
           <div style={{flex:1}}><b>{r.name} — 보장·관리 강화</b><p>{r.care} 특약 검토 · 추천 상품: {r.product||"수의사 상담"}</p></div>
@@ -2605,9 +2647,9 @@ function OntoUnderwriting({onto,dz}){
     </div>
     <div className="ins-cta">
       <button className="cbtn pri" onClick={()=>nav&&nav("건강관리")}><HeartPulse size={15}/> 마루 건강검진 결과 보기</button>
-      <button className="cbtn" onClick={()=>nav&&nav("펫 온톨로지")}><NetIcon size={15}/> 온톨로지 그래프 보기</button>
+      <button className="cbtn" onClick={()=>nav&&nav("제품 쇼핑")}><ShoppingBag size={15}/> AI 추천 상품 보기</button>
     </div>
-    <div className="chnote">※ 온톨로지 언더라이팅은 품종·연령 기반 <b>예측</b>이며 시연용입니다. 실제 인수·보장·보험료는 제휴 보험사 약관·인수기준·검진결과에 따라 달라집니다.</div>
+    <div className="chnote">※ AI 맞춤 보장분석은 품종·연령 기반 <b>예측</b>이며 시연용입니다. 실제 인수·보장·보험료는 제휴 보험사 약관·인수기준·검진결과에 따라 달라집니다.</div>
   </>);
 }
 
@@ -2615,13 +2657,15 @@ function OntoUnderwriting({onto,dz}){
 function App(){
   const [active,setActive]=useState("홈");
   const [open,setOpen]=useState(false);
+  const [admin,setAdmin]=useState(()=>SLS.get("hipet_admin",false));
+  useEffect(()=>{ SLS.set("hipet_admin",admin); },[admin]);
   const [toastMsg,setToastMsg]=useState(null);
   useEffect(()=>{ window.__hipetToast=(m)=>{ setToastMsg(m); clearTimeout(window.__hipetToastT); window.__hipetToastT=setTimeout(()=>setToastMsg(null),2600); }; return ()=>{ window.__hipetToast=null; }; },[]);
   return (
     <NavCtx.Provider value={setActive}>
     {toastMsg && <div className="toast">{toastMsg}</div>}
     <div style={{display:"flex",minHeight:"100vh"}}>
-      <Sidebar active={active} setActive={setActive} open={open} onClose={()=>setOpen(false)}/>
+      <Sidebar active={active} setActive={setActive} open={open} onClose={()=>setOpen(false)} admin={admin} setAdmin={setAdmin}/>
       <main style={{flex:1,minWidth:0,padding:"24px 28px 8px",display:"flex",flexDirection:"column"}}>
         <TopBar onMenu={()=>setOpen(true)}/>
         <QuickBar nav={setActive}/>
@@ -2630,7 +2674,7 @@ function App(){
         ) : active==="건강관리" ? (
           <HealthManageSection/>
         ) : active==="펫 온톨로지" ? (
-          <OntologySection/>
+          admin ? <OntologySection/> : <div style={{flex:1,display:"grid",placeItems:"center",color:"var(--muted)",textAlign:"center",padding:"60px 0"}}><div><Lock size={48} color="var(--orange-soft)"/><div style={{fontSize:17,fontWeight:800,color:"var(--sub)",marginTop:14}}>운영자 전용 콘솔</div><div style={{fontSize:13,marginTop:6}}>온톨로지·빅데이터 콘솔은 관리자만 접근할 수 있습니다.<br/>좌측 하단 ‘운영자 로그인’으로 접속하세요.</div></div></div>
         ) : active==="보험" ? (
           <InsuranceSection/>
         ) : active==="AI 상담" ? (
@@ -2928,6 +2972,21 @@ css.textContent=`
 .ontofoot:hover{border-color:var(--orange)}
 .ontofoot b{color:var(--orange-deep)}
 .ontofoot .of-go{margin-left:auto;color:var(--orange-deep);font-weight:800;white-space:nowrap}
+/* 운영 콘솔 */
+.opnav{width:100%;display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:13px;font-size:14px;font-weight:700;cursor:pointer;color:#41506B;background:#EEF2F8;border:1px solid #DDE5F0;transition:all .15s}
+.opnav:hover{background:#E4EBF5}
+.opnav[data-on="true"]{color:#fff;background:linear-gradient(135deg,#5B6B86,#41506B);border-color:transparent;box-shadow:0 6px 16px rgba(65,80,107,.3)}
+.opnav .opbadge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;background:rgba(120,80,40,.12);color:#7A5A2A}
+.opnav[data-on="true"] .opbadge{background:rgba(255,255,255,.24);color:#fff}
+.oplogout{width:100%;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border-radius:11px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);background:none;border:1px dashed var(--border)}
+.oplogout:hover{color:var(--sub);border-color:var(--sub)}
+.adminf{display:flex;flex-direction:column;gap:5px}
+.adminf label{font-size:12px;font-weight:700;color:var(--sub);margin-top:6px}
+.adminf input{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:11px;font-size:14px;background:var(--cream)}
+.adminf input:focus{outline:none;border-color:var(--orange)}
+.aerr{margin-top:10px;font-size:12.5px;font-weight:700;color:#D33;background:#FDE4E4;padding:8px 11px;border-radius:10px}
+.adhint{margin-top:12px;text-align:center;font-size:12px;color:var(--muted)}
+.adhint b{color:var(--orange-deep)}
 .gradecard{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
 .gc-top{display:flex;align-items:center;gap:14px}
 .gc-badge{flex-shrink:0;color:#fff;font-weight:900;font-size:15px;letter-spacing:.5px;padding:8px 16px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.12)}
