@@ -2198,6 +2198,7 @@ function HospitalDirectory({data,preset}){
 }
 
 function HospitalRec({data,onGo}){
+  const {onto,dz}=usePetOntology();
   const [region,setRegion]=useState(PET_LOC.sido);
   const [detail,setDetail]=useState(null), [sel,setSel]=useState(null);
   const atHome=region===PET_LOC.sido;
@@ -2211,20 +2212,25 @@ function HospitalRec({data,onGo}){
     return {emergency,byGu,regionCount:inR.length,distribution:dist};
   },[data,region]);
   const sidoChips=React.useMemo(()=>[...data.sido].sort((a,b)=>SIDO_ORDER.indexOf(a)-SIDO_ORDER.indexOf(b)),[data]);
+  const iconOf=(sys)=> !sys?Stethoscope : sys.indexOf("정형")>=0?Bone : sys.indexOf("치과")>=0?Smile : sys.indexOf("심혈관")>=0?HeartPulse : sys.indexOf("근골격")>=0?Bone : Activity;
+  const risks=computeMaruRisks(onto,dz).slice(0,3);
   const RECO=[
-    {t:"정기 건강검진",ic:Stethoscope,why:"건강점수 92 유지 — 연 1~2회 정기검진 권장"},
-    {t:"치과 · 스케일링",ic:Smile,why:"치주질환 위험 중간 — 구강검진·스케일링 권장"},
-    {t:"정형외과",ic:Bone,why:"슬개골 위험 중간 — 슬개골 탈구 검진·관절 관리"},
+    {t:"정기 건강검진",ic:Stethoscope,why:"건강점수 92 유지 — 연 1~2회 정기검진 권장",pct:null},
+    ...risks.map(r=>{ const care=CARE_OF[r.name]||"수의사 진료"; const parts=care.split(" · ");
+      return {t:parts[0], ic:iconOf(r.system), why:`${r.name.replace(/\(.*\)/,"").trim()} 예측 위험 ${r.pct}% — ${parts[1]||"정기 점검 권장"}`, pct:r.pct}; }),
   ];
   return (<>
     <div className="airec">
-      <div className="at"><Sparkles size={16} color="var(--orange)"/> 마루 맞춤 동물병원 추천</div>
-      <div className="ap">AI 건강 예측(슬개골·치주질환 위험 <b>중간</b>)과 건강점수(<b>92</b>)를 분석해, 정기검진·치과·정형 진료가 가능한 동물병원을 거주 지역에서 찾아드려요.</div>
+      <div className="at"><NetIcon size={16} color="var(--orange)"/> 온톨로지 기반 마루 맞춤 동물병원 추천</div>
+      <div className="ap">마루의 <b>품종(말티즈)·연령(4세)</b>을 10만 마리 온톨로지에 대입해 호발질환 위험을 산출하고, <b>필요한 진료과</b>가 가능한 동물병원을 거주 지역에서 찾아드려요. <span className="sub2">※ 진단이 아닌 건강관리 참고 정보</span></div>
     </div>
     <div className="card">
-      <div className="rct"><Stethoscope size={18} color="var(--orange)"/> 마루에게 권장되는 진료</div>
-      {RECO.map((r,i)=><div className="adv" key={i}><span className="ic"><r.ic size={18} color="var(--orange)"/></span><div style={{flex:1}}><b>{r.t}</b><p>{r.why}</p></div></div>)}
-      <div className="chnote" style={{marginTop:4}}>※ 권장 진료는 마루의 AI 건강 예측·건강점수 기반 예시입니다. 정확한 진단·처방은 동물병원 수의사 상담을 권고합니다.</div>
+      <div className="rct"><Stethoscope size={18} color="var(--orange)"/> 마루에게 권장되는 진료 <span className="sub">· 온톨로지 위험 연동</span></div>
+      {RECO.map((r,i)=>{ const c=r.pct==null?"var(--orange)":r.pct>=60?"#EF5B5B":r.pct>=35?"#E8913A":"#4FB286"; return (
+        <div className="adv" key={i}><span className="ic"><r.ic size={18} color={c}/></span>
+          <div style={{flex:1}}><b>{r.t}</b>{r.pct!=null&&<span className="cbadge" style={{marginLeft:6,color:c,background:"var(--cream)"}}>위험 {r.pct}%</span>}<p>{r.why}</p></div></div>
+      );})}
+      <div className="chnote" style={{marginTop:4}}>※ 권장 진료는 마루의 온톨로지 위험 예측·건강점수 기반 예시입니다. 정확한 진단·처방은 동물병원 수의사 상담을 권고합니다.</div>
     </div>
     <div className="bklbl spread"><span><User size={13} style={{verticalAlign:"-2px"}}/> 보호자 거주지 <b style={{color:"var(--orange-deep)"}}>{PET_LOC.addr}</b></span>{!atHome&&<button className="fsel" onClick={()=>setRegion(PET_LOC.sido)}>내 거주지로</button>}<span style={{marginLeft:"auto",color:"var(--muted)"}}>{region} <b style={{color:"var(--orange-deep)"}}>{regionCount.toLocaleString()}</b>곳</span></div>
     <div className="regions">{sidoChips.map(r=><button key={r} className={`fsel ${region===r?"on":""}`} onClick={()=>setRegion(r)}>{r===PET_LOC.sido&&<Home size={11} style={{verticalAlign:"-1px",marginRight:3}}/>}{r}{distribution[r]?<span className="cnt">{distribution[r].toLocaleString()}</span>:""}</button>)}</div>
