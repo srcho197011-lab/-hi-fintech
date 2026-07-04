@@ -86,7 +86,7 @@ function KoreaMap({ selected, onPick }) {
 
 function CheckupSection() {
   const [cat, setCat] = useState("kahp");
-  const cats = [["kahp", "한건협 공공검진", HeartHandshake], ["kmi", "KMI 대형검진", Building2], ["brand", "브랜드 검진기관", BadgeCheck], ["comp", "종합검진", ClipboardList], ["nat", "국가검진", ShieldCheck], ["biz", "기업검진", Users], ["rec", "AI 맞춤추천", Sparkles]];
+  const cats = [["kahp", "한건협 공공검진", HeartHandshake], ["kmi", "KMI 대형검진", Building2], ["brand", "브랜드 검진기관", BadgeCheck], ["comp", "종합검진", ClipboardList], ["nat", "국가검진", ShieldCheck], ["gov", "지자체 협력", Landmark], ["biz", "기업검진", Users], ["rec", "AI 맞춤추천", Sparkles]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="checkup" /></span>
@@ -101,6 +101,7 @@ function CheckupSection() {
       {cat === "brand" && <BrandDirectory />}
       {cat === "comp" && <CenterDirectory mode="comp" />}
       {cat === "nat" && <NationalCheckup />}
+      {cat === "gov" && <GovPartnership mode="checkup" />}
       {cat === "biz" && <BizCheckup />}
       {cat === "rec" && <AICheckupRec onGoCenters={() => setCat("comp")} />}
       {cat === "result" && <CheckupResults />}
