@@ -521,6 +521,24 @@
 .wgive-hero .gh-stats>div{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:11px 8px;text-align:center;}
 .wgive-hero .gh-stats b{display:block;font-size:17px;font-weight:800;letter-spacing:-.5px;}
 .wgive-hero .gh-stats span{font-size:10.5px;opacity:.9;}
+/* 소비자 참여형 토큰 환원 — 주식 참여 프로그램 카드 */
+.weq{border-radius:16px;padding:16px 17px;margin-bottom:14px;background:linear-gradient(120deg,#1E1B4B,#4338CA 60%,#7C3AED);color:#fff;box-shadow:0 16px 34px -20px rgba(67,56,202,.75);}
+.weq-h{display:flex;gap:12px;align-items:flex-start;}
+.weq-ic{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex-shrink:0;}
+.weq-h b{font-size:14.5px;font-weight:800;line-height:1.4;display:block;}
+.weq-tag{font-style:normal;font-size:10px;font-weight:800;color:#1E1B4B;background:#FDE68A;border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:2px;}
+.weq-h p{font-size:12.3px;line-height:1.65;margin:6px 0 0;color:#E6E3FF;}
+.weq-h p b{color:#fff;}
+.weq-flow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:12px 0 0;padding:10px 12px;background:rgba(255,255,255,.1);border-radius:11px;}
+.weq-step{font-size:11px;font-weight:800;color:#fff;background:rgba(255,255,255,.16);border-radius:7px;padding:4px 9px;}
+.weq-arr{color:rgba(255,255,255,.6);flex-shrink:0;}
+.weq-note{font-size:10.6px;line-height:1.6;margin-top:11px;color:#CFCBF0;}
+.weq-note b{color:#FDE68A;}
+.weq-lite{display:flex;gap:11px;align-items:flex-start;margin-bottom:12px;border:1px solid #DDD6FE;background:linear-gradient(180deg,#F5F3FF,#fff);border-radius:14px;padding:13px 15px;}
+.weq-lite-ic{width:32px;height:32px;border-radius:9px;background:#EDE9FE;display:grid;place-items:center;flex-shrink:0;}
+.weq-lite b{font-size:13px;font-weight:800;color:#4C1D95;}
+.weq-lite p{font-size:11.8px;color:#3F3A63;line-height:1.6;margin:4px 0 0;}
+.weq-lite p b{color:#5B21B6;font-size:11.8px;}
 .wgive-my{display:flex;align-items:center;gap:11px;margin-top:12px;border:1px solid #FBD0DB;background:linear-gradient(180deg,#FFF5F7,#fff);border-radius:14px;padding:13px 15px;font-size:12.5px;color:#1B2A52;line-height:1.5;}
 .wgive-my .ic{width:34px;height:34px;border-radius:10px;background:#FDE7EC;display:grid;place-items:center;flex-shrink:0;}
 .wgive-my small{color:var(--muted);font-weight:600;}

@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=690dbf2a85" />
+<link rel="stylesheet" href="./data/app.css?v=55c226683d" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -26,9 +26,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=690dbf2a85"></script>
-<script src="./src/data/section_data.js?v=690dbf2a85"></script>
-<script src="./src/data/demo_members.js?v=690dbf2a85"></script>
+<script src="./src/data/dummy_data.js?v=55c226683d"></script>
+<script src="./src/data/section_data.js?v=55c226683d"></script>
+<script src="./src/data/demo_members.js?v=55c226683d"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -5140,6 +5140,13 @@ function WalletSection({ onGo }) {
       </>)}
 
       {tab === "use" && (<>
+        <div className="weq">
+          <div className="weq-h"><span className="weq-ic"><TrendingUp size={22} color="#fff" /></span>
+            <div><b>소비자 참여형 토큰 환원 — 주식 참여 프로그램 <i className="weq-tag">예정</i></b>
+              <p>구매·건강활동으로 적립한 리워드 토큰을, 회사가 정한 기준·관련 법령에 따라 향후 <b>당사 주식 또는 주식 취득 관련 권리</b>의 취득에 활용할 수 있도록 설계할 예정입니다. 소비자가 단순 구매자를 넘어 <b>기업의 성장과 가치 창출에 함께 참여</b>하고, 기업·소비자가 <b>장기 신뢰와 성과를 공유하는 생태계</b>를 지향합니다.</p></div></div>
+          <div className="weq-flow">{["구매·건강활동", "리워드 토큰 적립", "법령·운영기준 검토", "주식·취득권리 참여"].map((s, i, a) => <React.Fragment key={i}><span className="weq-step">{s}</span>{i < a.length - 1 && <ChevronRight size={13} className="weq-arr" />}</React.Fragment>)}</div>
+          <div className="weq-note">※ 토큰의 적립·사용·전환 및 주식(또는 관련 권리) 취득은 관계 법령·감독기관 정책·회사 운영기준·제휴기관 절차에 따라 달라질 수 있으며, <b>토큰이 주식으로 자동 전환되거나 주식 취득이 보장되는 것은 아닙니다.</b> 운영기준·토큰 적립·사용 조건·주식 취득 절차·이용 제한 등 세부 내용은 별도 약관 및 운영정책으로 안내해 드릴 예정입니다. (본 안내는 투자 권유·청약이 아닙니다.)</div>
+        </div>
         <div className="benefit"><span><Art name="badge" size={16} /> 보험료 결제</span><span><Art name="building" size={16} /> 병원·검진비</span><span><Art name="pill" size={16} /> 건강제품</span><span><Art name="meal" size={16} /> 건강식단</span></div>
         {WALLET_USE.map(([a, t, d, lim, c], i) => (
           <div className="adv" key={i}><span className="ic" style={{ background: c + "1A" }}><Art name={a} size={20} /></span>
@@ -5152,6 +5159,7 @@ function WalletSection({ onGo }) {
 
       {tab === "guide" && (<>
         <div className="airec"><div className="at"><Sparkles size={16} color="#7C3AED" /> 이렇게 쓰면 좋아요 · 사용 사례</div><div className="ap">건강활동으로 토큰을 적립하고, 보험료·병원·건강제품·식단 결제에 사용하는 대표 사례예요.</div></div>
+        <div className="weq-lite"><span className="weq-lite-ic"><TrendingUp size={16} color="#7C3AED" /></span><div><b>더 나아가 — 주식 참여 프로그램(예정)</b><p>적립 토큰은 결제뿐 아니라, 회사 기준·법령에 따라 향후 <b>당사 주식·취득 권리 참여</b>에도 활용할 수 있도록 설계될 예정이에요. 소비자가 기업 성장에 함께 참여하는 구조 — <b>단, 자동 전환·취득 보장은 아니며 세부는 별도 약관 안내</b>. (투자 권유 아님)</p></div></div>
         {WALLET_GUIDE.map((g) => (
           <div className="gcase" key={g.n}>
             <div className="gh"><span className="gn">{g.n}</span> {g.t}</div>
