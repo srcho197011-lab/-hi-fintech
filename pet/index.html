@@ -854,6 +854,8 @@ function ActivityCard(){
 
 function RiskCard(){
   const nav=React.useContext(NavCtx);
+  const {onto,dz}=usePetOntology();
+  const top=computeMaruRisks(onto,dz)[0];
   return (
     <Card>
       <CardHead icon={Activity} title="AI 건강 예측" action="자세히 보기" onAction={()=>nav&&nav("건강관리")}
@@ -873,6 +875,11 @@ function RiskCard(){
           </div>
         );})}
       </div>
+      {top && <button className="ontofoot" onClick={()=>nav&&nav("펫 온톨로지")}>
+        <NetIcon size={14} color="var(--orange)"/>
+        <span>온톨로지 10만 마리 분석 · 최고 위험 <b>{top.name.replace(/\(.*\)/,"").trim()} {top.pct}%</b></span>
+        <span className="of-go">분석 보기 ›</span>
+      </button>}
     </Card>
   );
 }
@@ -1042,10 +1049,33 @@ function ShopGallery(){
 }
 
 function ShopAI({products,onAdd,onOpen}){
+  const {onto,dz}=usePetOntology();
+  const nav=React.useContext(NavCtx);
+  const risks=computeMaruRisks(onto,dz).slice(0,4);
+  // 온톨로지 위험 → 건강기능 → 추천 상품 매칭
+  const picks=[]; const seen=new Set();
+  risks.forEach(r=>{
+    const kw=(PRODUCT_OF[r.name]||"").split(/[ ·]/).filter(Boolean)[0];
+    const tags=DISEASE_TO_HEALTH[r.name]||[];
+    let prod = kw && products.find(p=>!seen.has(p.id) && ((p.name||"").includes(kw)||(p.ing||"").includes(kw)));
+    if(!prod) prod = tags.length && products.find(p=>(p.health||[]).some(h=>tags.includes(h)) && !seen.has(p.id));
+    if(prod){ seen.add(prod.id); picks.push({risk:r,prod}); } });
   const reco=products.filter(p=>p.ai);
   const presc=products.filter(p=>p.presc==="처방식");
   return (<>
     <ShopGallery/>
+    {picks.length>0 && <div className="card" style={{marginBottom:12,border:"1.5px solid #FBD3AC",background:"linear-gradient(180deg,#FFF8F1,#fff)"}}>
+      <div className="rct"><NetIcon size={18} color="var(--orange)"/> 온톨로지 기반 맞춤 추천 <span className="sub">· 말티즈·4세 호발질환 → 상품</span></div>
+      {picks.map(({risk,prod},i)=>{ const c=risk.pct>=60?"#EF5B5B":risk.pct>=35?"#E8913A":"#4FB286"; return (
+        <div className="orx" key={i} onClick={()=>onOpen&&onOpen(prod)}>
+          <span className="orxr">{risk.name} <b style={{color:c}}>{risk.pct}%</b></span>
+          <span className="orxa">›</span>
+          <span className="orxp"><span className="e">{prod.emoji}</span> {prod.name}</span>
+          <button className="linkmini" onClick={e=>{e.stopPropagation(); onAdd&&onAdd(prod); }}>담기</button>
+        </div>
+      );})}
+      <div className="sub2" style={{marginTop:8}}>※ 온톨로지 10만 마리 모집단에서 마루 품종·연령의 호발질환을 예측해 매칭한 추천입니다. 진단이 아닌 건강관리 참고 정보.</div>
+    </div>}
     <div className="airec"><div className="at"><Sparkles size={16} color="var(--orange)"/> 마루 맞춤 AI 추천 상품</div>
       <div className="ap">AI 건강 예측(슬개골·치주 위험 중간, 체중관리)을 바탕으로 마루에게 도움이 되는 상품을 추천합니다. <span className="sub2">※ 진단이 아닌 건강관리 참고 정보</span></div></div>
     <div className="shopgrid">{reco.map(p=><ProductCard key={p.id} p={p} onAdd={onAdd} onOpen={onOpen}/>)}</div>
@@ -2498,6 +2528,8 @@ const CARE_OF={ "슬개골 탈구":"정형외과 · 슬개골 등급평가/교�
   "백내장":"안과 · 수정체 검사","외이염":"피부과 · 이도 세정","기관 허탈":"내과 · 기관 평가","아토피성 피부염":"피부과 · 알레르기 관리" };
 const PRODUCT_OF={ "슬개골 탈구":"관절 영양제 · 미끄럼방지 매트","치주질환":"덴탈껌 · 칫솔·치약 세트","이첨판폐쇄부전(MMVD)":"오메가3 피쉬오일",
   "백내장":"눈 건강 루테인","외이염":"저자극 샴푸","아토피성 피부염":"오메가3 · 저자극 샴푸" };
+const DISEASE_TO_HEALTH={ "치주질환":["구강"], "슬개골 탈구":["관절"], "이첨판폐쇄부전(MMVD)":["모질"], "비만":["비만","체중관리"],
+  "외이염":["피부"], "아토피성 피부염":["피부","모질"], "농피증(세균성)":["피부"], "만성 신부전":["신장"], "당뇨병":["비만"] };
 const covOf=(sys)=> !sys?70 : sys.indexOf("정형")>=0?70 : sys.indexOf("치과")>=0?50 : sys.indexOf("심혈관")>=0?70 : sys.indexOf("안과")>=0?60 : sys.indexOf("비뇨")>=0?70 : 70;
 function computeMaruRisks(onto,dz){
   if(!onto) return [];
@@ -2880,6 +2912,16 @@ css.textContent=`
 .orf{height:100%;border-radius:999px;transition:width .9s cubic-bezier(.2,.7,.2,1)}
 .ors{font-size:11px;color:var(--muted);font-weight:600}
 @media(max-width:600px){ .orgrid{grid-template-columns:1fr} }
+.orx{display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px dashed var(--border);cursor:pointer}
+.orx:last-of-type{border-bottom:none}
+.orxr{font-size:12.5px;font-weight:700;color:var(--sub);white-space:nowrap}
+.orxa{color:var(--muted);font-weight:800}
+.orxp{flex:1;font-size:13px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orxp .e{margin-right:2px}
+.ontofoot{width:100%;margin-top:12px;display:flex;align-items:center;gap:8px;background:var(--cream);border:1px solid #FBD3AC;border-radius:12px;padding:10px 12px;cursor:pointer;font-size:12px;color:var(--sub);font-weight:600;text-align:left}
+.ontofoot:hover{border-color:var(--orange)}
+.ontofoot b{color:var(--orange-deep)}
+.ontofoot .of-go{margin-left:auto;color:var(--orange-deep);font-weight:800;white-space:nowrap}
 .gradecard{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
 .gc-top{display:flex;align-items:center;gap:14px}
 .gc-badge{flex-shrink:0;color:#fff;font-weight:900;font-size:15px;letter-spacing:.5px;padding:8px 16px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.12)}
