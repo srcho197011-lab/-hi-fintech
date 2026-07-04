@@ -452,7 +452,7 @@ const MENU = [
   { label:"커뮤니티", icon:Users }, { label:"마이페이지", icon:User },
 ];
 // 운영자(관리자) 데모 계정 — 이 ID로 로그인해야 '온톨로지 콘솔'이 보임
-const ADMIN_ID="admin", ADMIN_PW="hipet2026";
+const ADMIN_ID="admin", ADMIN_PW="hipet2026", ADMIN_NAME="조성래";
 
 const QUICK = [
   { label:"AI 상담", art:"chat", go:"AI 상담" }, { label:"병원 예약", art:"calendar", go:"병원/예약" },
@@ -589,6 +589,7 @@ function Sidebar({active,setActive,open,onClose,admin,setAdmin}){
         <div style={{marginTop:"auto",paddingTop:14}}>
           <div style={{height:1,background:"var(--border)",margin:"0 6px 12px"}}/>
           {admin ? (<>
+            <div className="opwho"><span className="opav">조</span><div><b>{ADMIN_NAME}</b> 님<div className="opro">운영자 · 자동 로그인</div></div></div>
             <button onClick={()=>go("펫 온톨로지")} className="opnav" data-on={active==="펫 온톨로지"}>
               <NetIcon size={18}/><span style={{flex:1,textAlign:"left"}}>온톨로지 콘솔</span><span className="opbadge">운영</span>
             </button>
@@ -2657,7 +2658,7 @@ function OntoUnderwriting({onto,dz}){
 function App(){
   const [active,setActive]=useState("홈");
   const [open,setOpen]=useState(false);
-  const [admin,setAdmin]=useState(()=>SLS.get("hipet_admin",false));
+  const [admin,setAdmin]=useState(true); // 조성래 운영자 자동 로그인
   useEffect(()=>{ SLS.set("hipet_admin",admin); },[admin]);
   const [toastMsg,setToastMsg]=useState(null);
   useEffect(()=>{ window.__hipetToast=(m)=>{ setToastMsg(m); clearTimeout(window.__hipetToastT); window.__hipetToastT=setTimeout(()=>setToastMsg(null),2600); }; return ()=>{ window.__hipetToast=null; }; },[]);
@@ -2973,6 +2974,10 @@ css.textContent=`
 .ontofoot b{color:var(--orange-deep)}
 .ontofoot .of-go{margin-left:auto;color:var(--orange-deep);font-weight:800;white-space:nowrap}
 /* 운영 콘솔 */
+.opwho{display:flex;align-items:center;gap:10px;padding:4px 6px 12px;font-size:13.5px;color:var(--sub)}
+.opwho b{color:var(--text)}
+.opav{width:34px;height:34px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;background:linear-gradient(135deg,#5B6B86,#41506B)}
+.opro{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}
 .opnav{width:100%;display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:13px;font-size:14px;font-weight:700;cursor:pointer;color:#41506B;background:#EEF2F8;border:1px solid #DDE5F0;transition:all .15s}
 .opnav:hover{background:#E4EBF5}
 .opnav[data-on="true"]{color:#fff;background:linear-gradient(135deg,#5B6B86,#41506B);border-color:transparent;box-shadow:0 6px 16px rgba(65,80,107,.3)}
