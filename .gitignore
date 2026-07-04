@@ -17,6 +17,8 @@
 
 # 펫 사이트(HI-PET) — Vercel 루트 디렉터리로 배포
 !/pet
+# 전체 모집단 CSV(18MB, 딜리버러블)는 배포 제외 — 사이트는 집계 JSON만 로드
+pet/data/pet_population.csv
 # 안전관리 사이트(Hi-Safety / AI-SM) — Vercel 루트 디렉터리로 배포
 !/sm
 # 휴먼 사이트 공유 썸네일(OG)

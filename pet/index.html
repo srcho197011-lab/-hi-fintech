@@ -138,6 +138,11 @@ const NavCtx = React.createContext(null);
 /* 토스트(가벼운 알림) — 어디서든 toast("메시지") 호출 */
 function toast(msg){ if(typeof window!=="undefined" && window.__hipetToast) window.__hipetToast(msg); }
 
+/* 온톨로지·데이터 아이콘 (MENU에서 쓰이므로 상단 정의) */
+const NetIcon=mk('<circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="M12 8v3M10 17l-3-3M14 17l3-3"/>');
+const DbIcon=mk('<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>');
+const DnaIcon=mk('<path d="M4 3c0 5 8 6 8 11s-8 6-8 11"/><path d="M20 3c0 5-8 6-8 11s8 6 8 11"/><path d="M6 6h12M6.5 9h11M6.5 15h11M6 18h12"/>');
+
 /* ===== 입체 일러스트 아이콘 (휴먼 스타일: 레이어드 SVG + 광택/그림자) ===== */
 function PetArt({ name, size=34 }){
   const P={ width:size, height:size, viewBox:"0 0 32 32", xmlns:"http://www.w3.org/2000/svg" };
@@ -439,6 +444,7 @@ const NFT = [
 
 const MENU = [
   { label:"홈", icon:Home }, { label:"AI 상담", icon:Bot }, { label:"건강관리", icon:HeartPulse },
+  { label:"펫 온톨로지", icon:NetIcon },
   { label:"병원/예약", icon:CalendarPlus }, { label:"제품 쇼핑", icon:ShoppingBag },
   { label:"보험", icon:ShieldCheck }, { label:"건강금융지갑", icon:Wallet },
   { label:"리워드", icon:Gift }, { label:"Health NFT", icon:Award },
@@ -2296,6 +2302,187 @@ function HospitalSection(){
   );
 }
 
+/* ============================ 펫 온톨로지 (팔란티어형 + 10만 빅데이터) ============================ */
+let _petOntoP=null;
+function usePetOntology(){
+  const [s,setS]=useState({loading:true,error:null,onto:null,dz:null});
+  useEffect(()=>{
+    if(!_petOntoP) _petOntoP=Promise.all([
+      fetch("./data/pet_ontology.json").then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.json();}),
+      fetch("./data/pet_diseases.json").then(r=>r.ok?r.json():{diseases:[]}),
+    ]);
+    let alive=true;
+    _petOntoP.then(([onto,dz])=>alive&&setS({loading:false,error:null,onto,dz})).catch(e=>alive&&setS({loading:false,error:String(e.message||e),onto:null,dz:null}));
+    return ()=>{alive=false;};
+  },[]);
+  return s;
+}
+
+const OTYPES=[
+  { k:"pet", label:"반려동물", color:"#F4843C", icon:PawPrint },
+  { k:"breed", label:"품종", color:"#E0662A", icon:DnaIcon },
+  { k:"disease", label:"질병", color:"#EF5B5B", icon:Activity },
+  { k:"symptom", label:"증상", color:"#E8913A", icon:AlertTriangle },
+  { k:"care", label:"진료·검사", color:"#5B8DEF", icon:Stethoscope },
+  { k:"hospital", label:"동물병원", color:"#3C9E72", icon:Building2 },
+  { k:"vet", label:"수의사", color:"#2FA98B", icon:Stethoscope },
+  { k:"insurance", label:"보험", color:"#8A63D2", icon:ShieldCheck },
+  { k:"product", label:"상품·처방", color:"#C98A12", icon:ShoppingBag },
+  { k:"data", label:"데이터", color:"#6B7280", icon:DbIcon },
+];
+const OTYPE=Object.fromEntries(OTYPES.map(o=>[o.k,o]));
+const ONTO={
+  nodes:[
+    { id:"maru", type:"pet", label:"마루", x:390, y:250, props:{"견종":"말티즈","나이":"4세","성별":"수컷(중성화)","건강점수":"92 (GOLD)","RFID":"4100-…-9012"}, actions:["건강 리포트","AI 위험 재평가"] },
+    { id:"breed", type:"breed", label:"말티즈", x:200, y:120, props:{"분류":"소형견 · 토이","국내 모집단":"70,000중 최다","호발 계통":"정형·치과·심혈관"}, actions:["품종 호발질환 보기"] },
+    { id:"d_knee", type:"disease", label:"슬개골 탈구", x:560, y:110, props:{"위험":"중간 (양측 G1)","계통":"정형·근골격","품종 유병":"말티즈 45%"}, actions:["정형외과 병원 찾기","완화 조치"] },
+    { id:"d_dental", type:"disease", label:"치주질환", x:600, y:250, props:{"위험":"중간 (치석 2단계)","계통":"치과","품종 유병":"말티즈 92%"}, actions:["스케일링 예약"] },
+    { id:"d_mmvd", type:"disease", label:"MMVD", x:560, y:390, props:{"위험":"낮음(심잡음 없음)","계통":"심혈관","권고":"7세 이후 정기검진"}, actions:["심장검진 안내"] },
+    { id:"sx1", type:"symptom", label:"뒷다리 절뚝임", x:680, y:60, props:{"연관":"슬개골 탈구","관찰":"간헐적"}, actions:["증상 기록"] },
+    { id:"sx2", type:"symptom", label:"구취·치석", x:720, y:250, props:{"연관":"치주질환"}, actions:["구강 체크"] },
+    { id:"care_ortho", type:"care", label:"정형외과 진료", x:420, y:60, props:{"검사":"슬개골 등급 평가·X-ray","비대면":"1차 상담 가능"}, actions:["예약하기"] },
+    { id:"care_scale", type:"care", label:"스케일링", x:730, y:390, props:{"권고":"6개월 내","마취":"전신"}, actions:["예약하기"] },
+    { id:"hosp", type:"hospital", label:"OO동물병원", x:250, y:390, props:{"지역":"서울 강남구 2.1km","제휴":"예","전국 DB":"5,446곳"}, actions:["예약","지도"] },
+    { id:"vet", type:"vet", label:"고우진 수의사", x:120, y:300, props:{"진료과":"정형외과","경력":"15년","비대면":"가능"}, actions:["상담","방문예약"] },
+    { id:"ins", type:"insurance", label:"무상 임베디드 펫보험", x:150, y:470, props:{"보험료":"0원","보장":"치료비 자동","등급":"골드"}, actions:["보장 조회","청구"] },
+    { id:"p_joint", type:"product", label:"관절 영양제", x:470, y:470, props:{"성분":"글루코사민·오메가3","적립":"+290 HPET"}, actions:["구매"] },
+    { id:"data", type:"data", label:"건강데이터(DID)", x:390, y:150, props:{"동의":"검진·진료·활동","용도":"AI·보장 재원"}, actions:["동의 관리"] },
+  ],
+  links:[
+    ["maru","breed","품종"],["maru","data","생성"],
+    ["breed","d_knee","호발"],["breed","d_dental","호발"],["breed","d_mmvd","호발"],
+    ["d_knee","sx1","증상"],["d_dental","sx2","증상"],
+    ["d_knee","care_ortho","진료"],["d_dental","care_scale","진료"],
+    ["care_ortho","hosp","제공"],["care_scale","hosp","제공"],["hosp","vet","소속"],
+    ["d_knee","ins","보장"],["d_knee","p_joint","처방"],["data","ins","재원"],["maru","ins","가입"],
+  ],
+};
+
+function OntologyGraph(){
+  const [sel,setSel]=useState(ONTO.nodes[0]);
+  const nmap=Object.fromEntries(ONTO.nodes.map(n=>[n.id,n]));
+  return (
+    <div className="ontowrap">
+      <div className="ontocanvas">
+        <svg viewBox="0 0 820 540" width="100%" style={{display:"block"}}>
+          {ONTO.links.map(([a,b,l],i)=>{ const A=nmap[a],B=nmap[b]; const mx=(A.x+B.x)/2,my=(A.y+B.y)/2; return (
+            <g key={i}>
+              <line x1={A.x} y1={A.y} x2={B.x} y2={B.y} stroke="#E7D8C6" strokeWidth="1.6"/>
+              <text x={mx} y={my-3} fontSize="9.5" fill="#A89A8C" textAnchor="middle">{l}</text>
+            </g>
+          );})}
+          {ONTO.nodes.map(n=>{ const t=OTYPE[n.type]; const on=sel&&sel.id===n.id; const Ic=t.icon; return (
+            <g key={n.id} style={{cursor:"pointer"}} onClick={()=>setSel(n)}>
+              <circle cx={n.x} cy={n.y} r={on?26:22} fill={t.color} opacity={on?1:.92} stroke="#fff" strokeWidth={on?3:2}/>
+              <foreignObject x={n.x-11} y={n.y-11} width="22" height="22"><div xmlns="http://www.w3.org/1999/xhtml" style={{color:"#fff",display:"grid",placeItems:"center"}}><Ic size={16} color="#fff"/></div></foreignObject>
+              <text x={n.x} y={n.y+36} fontSize="11" fontWeight="800" fill="#3A2C22" textAnchor="middle">{n.label}</text>
+            </g>
+          );})}
+        </svg>
+      </div>
+      {sel && <div className="ontopanel">
+        <div className="opt" style={{background:OTYPE[sel.type].color}}>{OTYPE[sel.type].label}</div>
+        <div className="opn">{sel.label}</div>
+        <div className="opprops">{Object.entries(sel.props).map(([k,v])=><div key={k}><span>{k}</span><b>{v}</b></div>)}</div>
+        <div className="opacts">{sel.actions.map((a,i)=><button key={i} onClick={()=>toast(a+" (온톨로지 액션)")}>{a}</button>)}</div>
+      </div>}
+    </div>
+  );
+}
+
+function OBar({label,val,max,color,suffix}){
+  return (
+    <div className="obar">
+      <span className="obl">{label}</span>
+      <div className="obt"><div className="obf" style={{width:Math.max(2,Math.round(val/max*100))+"%",background:color||"linear-gradient(90deg,#F4843C,#FFB547)"}}/></div>
+      <span className="obv num">{val.toLocaleString()}{suffix||""}</span>
+    </div>
+  );
+}
+
+function OntologyInsights({onto}){
+  const won=(n)=>n.toLocaleString();
+  const D=onto.dog, C=onto.cat;
+  const dogDzMax=D.diseaseTop[0]?.count||1, catDzMax=C.diseaseTop[0]?.count||1;
+  const dogBrMax=D.breed[0]?.count||1, catBrMax=C.breed[0]?.count||1;
+  return (<>
+    <div className="walhero" style={{background:"linear-gradient(135deg,#F4843C,#FFB547)"}}>
+      <div className="wl">HI-PET 온톨로지 모집단 (합성 빅데이터)</div>
+      <div className="wv num">🐾 {won(onto.meta.total)} <span style={{fontSize:18}}>마리</span></div>
+      <div className="wsub">
+        <div>강아지<b className="num">{won(D.count)} 마리</b></div>
+        <div>고양이<b className="num">{won(C.count)} 마리</b></div>
+        <div>평균 접종률<b className="num">{D.vaccRate}% / {C.vaccRate}%</b></div>
+        <div>보험 가입률<b className="num">{D.insRate}% / {C.insRate}%</b></div>
+      </div>
+    </div>
+    <div className="hm2">
+      <div className="card"><div className="rct"><PawPrint size={18} color="var(--orange)"/> 강아지 인기 품종 <span className="sub">· TOP 7</span></div>
+        {D.breed.slice(0,7).map((b,i)=><OBar key={i} label={b.name} val={b.count} max={dogBrMax}/>)}</div>
+      <div className="card"><div className="rct"><PawPrint size={18} color="#8A63D2"/> 고양이 인기 품종 <span className="sub">· TOP 7</span></div>
+        {C.breed.slice(0,7).map((b,i)=><OBar key={i} label={b.name} val={b.count} max={catBrMax} color="linear-gradient(90deg,#8A63D2,#B79BEA)"/>)}</div>
+    </div>
+    <div className="hm2">
+      <div className="card"><div className="rct"><Activity size={18} color="#EF5B5B"/> 강아지 호발질환 <span className="sub">· 유병 상위</span></div>
+        {D.diseaseTop.slice(0,10).map((d,i)=><OBar key={i} label={d.name} val={Math.round(d.count/D.count*1000)/10} max={Math.round(dogDzMax/D.count*1000)/10} color="linear-gradient(90deg,#EF5B5B,#F79A9A)" suffix="%"/>)}</div>
+      <div className="card"><div className="rct"><Activity size={18} color="#EF5B5B"/> 고양이 호발질환 <span className="sub">· 유병 상위</span></div>
+        {C.diseaseTop.slice(0,10).map((d,i)=><OBar key={i} label={d.name} val={Math.round(d.count/C.count*1000)/10} max={Math.round(catDzMax/C.count*1000)/10} color="linear-gradient(90deg,#EF5B5B,#F79A9A)" suffix="%"/>)}</div>
+    </div>
+    <div className="card"><div className="rct"><DnaIcon size={18} color="var(--orange)"/> 품종별 대표 호발질환 <span className="sub">· 강아지 상위 품종</span></div>
+      <div className="bdgrid">{onto.dogBreedDisease.map((b,i)=>(
+        <div className="bdc" key={i}><div className="bdh">{b.breed} <span>{won(b.count)}마리</span></div>
+          {b.top.map((t,j)=><div className="bdr" key={j}><span>{t.name}</span><b>{t.pct}%</b></div>)}</div>
+      ))}</div>
+    </div>
+    <div className="chnote">※ 위 수치는 실제 품종 호발 경향을 반영해 생성한 <b>합성 모집단 10만 마리</b>(강아지 7만·고양이 3만) 통계입니다. 실데이터는 MAFRA·동물등록·병원 EMR·WSAVA 가이드 연동 시 반영됩니다.</div>
+  </>);
+}
+
+function DiseaseKB({dz}){
+  const list=dz&&dz.diseases||[];
+  const [sp,setSp]=useState("전체"),[sys,setSys]=useState("전체"),[q,setQ]=useState("");
+  const systems=React.useMemo(()=>["전체",...new Set(list.map(d=>d.system))],[list]);
+  const spLabel={dog:"강아지",cat:"고양이",both:"공용"};
+  const view=list.filter(d=>(sp==="전체"||d.species===sp||(sp!=="both"&&d.species==="both"))&&(sys==="전체"||d.system===sys)&&(!q.trim()||d.name.includes(q)||(d.sx||"").includes(q)));
+  return (<>
+    <div className="regions">{[["전체","전체"],["dog","강아지"],["cat","고양이"]].map(([k,l])=><button key={k} className={`fsel ${sp===k?"on":""}`} onClick={()=>setSp(k)}>{l}</button>)}</div>
+    <div className="regions">{systems.map(s=><button key={s} className={`fsel ${sys===s?"on":""}`} onClick={()=>setSys(s)}>{s==="전체"?"계통 전체":s}</button>)}</div>
+    <div className="filterbar"><div className="fsearch"><Search size={15}/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="질병명·증상 검색"/></div></div>
+    <div className="chcount">질병 <b style={{color:"var(--orange-deep)"}}>{view.length}</b>종 <span className="sub2">(전체 {list.length}종 지식베이스)</span></div>
+    <div className="dzgrid">{view.map((d,i)=>{ const c=d.risk==="높음"?"#EF5B5B":d.risk==="중간"?"#E8913A":"#4FB286"; return (
+      <div className="dzc" key={i}>
+        <div className="dzh"><span className="dzsp">{spLabel[d.species]}</span><span className="dzsys">{d.system}</span><span className="dzrisk" style={{color:c,background:c+"22"}}>{d.risk}</span></div>
+        <div className="dzn">{d.name}</div>
+        <div className="dzsx">{d.sx}</div>
+        {d.breeds&&d.breeds.length>0 && <div className="dzbreeds">호발: {d.breeds.slice(0,4).join(" · ")}{d.breeds.length>4?" 외":""}</div>}
+      </div>
+    );})}</div>
+    <div className="chnote">※ 질병 지식베이스는 수의 임상 일반지식 기반 시연용이며, 정확한 진단·치료는 동물병원 수의사 상담을 권고합니다. (WSAVA/MAFRA 공개자료 참고)</div>
+  </>);
+}
+
+function OntologySection(){
+  const [tab,setTab]=useState("graph");
+  const {loading,error,onto,dz}=usePetOntology();
+  const tabs=[["graph","온톨로지 그래프",NetIcon],["insight","빅데이터 인사이트",DbIcon],["kb","질병 지식베이스",DnaIcon]];
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico"><NetIcon size={24} color="#fff"/></span>
+        <div><div className="aih-t">펫 온톨로지</div><div className="aih-s">품종·질병·증상·진료·병원·보험·상품을 하나로 연결 · 10만 마리 빅데이터 인사이트 <span style={{color:"var(--muted)"}}>(합성 데이터)</span></div></div></div>
+      <div className="chtabs">{tabs.map(([k,t,Ic])=><button key={k} className={`chtab ${tab===k?"on":""}`} onClick={()=>setTab(k)}><Ic size={15}/> {t}</button>)}</div>
+      {loading && <div className="hload"><div className="sp"/>온톨로지·질병 데이터를 불러오는 중…</div>}
+      {error && <div className="hload" style={{color:"#EF5B5B"}}><AlertTriangle size={26} style={{marginBottom:8}}/><div>데이터를 불러오지 못했습니다.</div><div style={{fontSize:11.5,marginTop:4}}>{error}</div></div>}
+      {onto && tab==="graph" && <>
+        <div className="otlegend">{OTYPES.map(o=>{const Ic=o.icon;return <span key={o.k} className="otl"><i style={{background:o.color}}><Ic size={11} color="#fff"/></i>{o.label}</span>;})}</div>
+        <OntologyGraph/>
+        <div className="chnote">※ 노드를 클릭하면 속성과 액션(팔란티어형 온톨로지)이 나타납니다. 마루를 중심으로 품종→질병→증상→진료→병원/수의사→보험→상품이 하나의 지식그래프로 연결됩니다.</div>
+      </>}
+      {onto && tab==="insight" && <OntologyInsights onto={onto}/>}
+      {tab==="kb" && dz && <DiseaseKB dz={dz}/>}
+    </div>
+  );
+}
+
 /* ============================ APP ============================ */
 function App(){
   const [active,setActive]=useState("홈");
@@ -2314,6 +2501,8 @@ function App(){
           <HospitalSection/>
         ) : active==="건강관리" ? (
           <HealthManageSection/>
+        ) : active==="펫 온톨로지" ? (
+          <OntologySection/>
         ) : active==="보험" ? (
           <InsuranceSection/>
         ) : active==="AI 상담" ? (
@@ -2661,6 +2850,43 @@ css.textContent=`
 .donatepartners{display:flex;flex-wrap:wrap;gap:7px}
 .donatepartners span{font-size:11px;font-weight:700;color:#D6453C;background:#fff;border:1px solid #FBD3C6;border-radius:999px;padding:3px 10px}
 @media(max-width:680px){ .donaterow{grid-template-columns:1fr} }
+/* ===== 펫 온톨로지 ===== */
+.otlegend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.otl{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--sub);background:#fff;border:1px solid var(--border);border-radius:999px;padding:5px 11px}
+.otl i{width:18px;height:18px;border-radius:6px;display:grid;place-items:center}
+.ontowrap{display:grid;grid-template-columns:1fr 260px;gap:14px;margin-bottom:12px}
+.ontocanvas{background:linear-gradient(160deg,#fff,#FFF8F1);border:1px solid var(--border);border-radius:18px;padding:8px;overflow:hidden}
+.ontopanel{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;height:fit-content}
+.ontopanel .opt{display:inline-block;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px}
+.ontopanel .opn{font-size:18px;font-weight:900;margin:8px 0 12px}
+.opprops>div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.opprops span{color:var(--muted);font-weight:600}.opprops b{text-align:right}
+.opacts{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.opacts button{font-size:12.5px;font-weight:700;color:var(--orange-deep);background:var(--orange-soft);border-radius:10px;padding:9px;cursor:pointer}
+.opacts button:hover{background:#FFD7B8}
+.obar{display:flex;align-items:center;gap:10px;padding:6px 0}
+.obl{width:130px;flex-shrink:0;font-size:12.5px;font-weight:700;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.obt{flex:1;height:9px;background:#F1E7DA;border-radius:999px;overflow:hidden}
+.obf{height:100%;border-radius:999px;transition:width 1s cubic-bezier(.2,.7,.2,1)}
+.obv{width:64px;text-align:right;font-size:12.5px;font-weight:800}
+.bdgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px}
+.bdc{background:var(--cream);border:1px solid var(--border);border-radius:13px;padding:12px}
+.bdh{font-size:13px;font-weight:800;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline}
+.bdh span{font-size:11px;color:var(--muted);font-weight:600}
+.bdr{display:flex;justify-content:space-between;font-size:11.5px;padding:2px 0;color:var(--sub)}
+.bdr b{color:var(--orange-deep)}
+.dzgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dzc{background:#fff;border:1px solid var(--border);border-radius:14px;padding:13px}
+.dzh{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px}
+.dzh span{font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:999px}
+.dzsp{color:var(--orange-deep);background:var(--orange-soft)}
+.dzsys{color:var(--sub);background:var(--cream);border:1px solid var(--border)}
+.dzrisk{margin-left:auto}
+.dzn{font-size:14.5px;font-weight:800}
+.dzsx{font-size:12px;color:var(--sub);margin-top:4px;line-height:1.5}
+.dzbreeds{font-size:11px;color:var(--muted);margin-top:7px;border-top:1px dashed var(--border);padding-top:6px}
+@media(max-width:900px){ .ontowrap{grid-template-columns:1fr} .bdgrid{grid-template-columns:repeat(2,1fr)} .dzgrid{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:680px){ .bdgrid,.dzgrid{grid-template-columns:1fr} .obl{width:96px} }
 /* ===== 리워드 센터 ===== */
 .mrow{display:flex;align-items:center;gap:12px;padding:13px 0}
 .mr-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
