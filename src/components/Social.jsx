@@ -134,6 +134,11 @@ function SocialSection({ onGo }) {
       <div className="chtabs" style={{ marginTop: 14 }}>{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
       {tab === "index" && (<>
+        <div className="socmission">
+          <div className="socmission-h"><span className="socmission-ic"><HeartHandshake size={17} color="#5EEAD4" /></span><b>미션 · 비전</b><i className="socmission-tag">Impact Mission</i></div>
+          <p><b>AI 헬스케어·핀테크 임팩트기업</b>은 사회적기업의 가치 기반 위에서 <b>의료비 사각지대 해소와 건강 형평성 증진</b>을 핵심 목표로 합니다. AI와 디지털 기술을 활용하여 <b>예방 중심의 건강관리, 의료비 부담 완화, 금융·보험 서비스의 접근성 확대</b>를 지원하고, <b>취약계층 보호와 지역사회 통합돌봄</b>을 사업모델에 내재화하여 사회적 가치와 경제적 가치를 함께 창출합니다. 또한 혁신 역량을 갖춘 <b>헬스케어 중소기업의 ESG 경영과 시장 진출</b>을 지원함으로써 지속가능한 헬스케어 생태계를 조성하고, <b>소비자·기업·지역사회가 함께 성장하는 포용적 가치순환 구조</b>를 실현합니다.</p>
+          <div className="socmission-pills">{["의료비 사각지대 해소", "건강 형평성", "예방 중심 건강관리", "취약계층·통합돌봄", "헬스케어 중소기업 ESG", "포용적 가치순환"].map((t) => <span key={t}>{t}</span>)}</div>
+        </div>
         <div className="socpillars">
           {pillars.map((p) => (
             <div className="socpillar" key={p.key} style={{ borderTopColor: p.color }} onClick={() => go(p.to)}>
