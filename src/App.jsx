@@ -64,7 +64,7 @@ export default function App() {
               <text x="33.6" y="36" textAnchor="middle" fontSize="10.5" fontWeight="800" fill="#2563EB" fontFamily="system-ui, sans-serif">₩</text>
             </svg>
           </span>
-          <div className="nm"><span className="hl">HI</span>-Fin Tech<span className="sub">헬스케어 · 금융보험 · 핀테크</span></div>
+          <div className="nm"><span className="hl">HI</span>-Fin Tech<span className="sub">AI 헬스케어 · 핀테크 <b className="subimp">임팩트기업</b></span></div>
         </div>
         <div className="navbtns"><button className="navbtn" onClick={goBack} disabled={!hist.length} aria-label="이전 화면으로" title="이전 화면으로"><ArrowLeft size={20} strokeWidth={2.6} /></button><button className="navbtn" onClick={goForward} disabled={!fut.length} aria-label="다음 화면으로" title="다음 화면으로"><ArrowRight size={20} strokeWidth={2.6} /></button></div>
         <div className="search">
