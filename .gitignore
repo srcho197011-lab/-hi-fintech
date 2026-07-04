@@ -21,6 +21,7 @@
 !/sm
 # 휴먼 사이트 공유 썸네일(OG)
 !/og-human.png
+!/og.png
 # 펫 설계계획서(참고용)
 !/PetHealth_InsurFin_설계계획서.md
 # 교육용 데이터 수집 도구(다운로드 산출물은 tools 내부 .gitignore로 제외)
