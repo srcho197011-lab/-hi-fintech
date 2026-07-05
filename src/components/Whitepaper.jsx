@@ -55,7 +55,7 @@ function WpBlock({ b }) {
   return null;
 }
 
-function WhitepaperSection() {
+function WhitepaperSection({ onGo }) {
   const [sel, setSel] = useState(1);
   const [showPrin, setShowPrin] = useState(false);
   const [view, setView] = useState("paper"); // paper | refs
@@ -186,6 +186,31 @@ function WhitepaperSection() {
                   <span><b style={{ color: "#334155" }}>{s.title}</b>{s.org ? ` — ${s.org}` : ""}{s.note ? <span style={{ color: "#F59E0B" }}> · {s.note}</span> : ""}</span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* 플랫폼 연계 & 확장성 */}
+          {WP_NEXUS[ch.no] && (
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "2px solid #EEF2F7", background: "linear-gradient(180deg,#FBFCFE,#fff)", borderRadius: 12, padding: 16 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 900, color: "#0F1F45", marginBottom: 12 }}>🔗 플랫폼 연계 &amp; 확장성</div>
+              <div style={{ display: "grid", gap: 11 }}>
+                <div style={{ display: "flex", gap: 9 }}>
+                  <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, color: "#7C3AED", background: "#EDE9FE", padding: "3px 9px", borderRadius: 7, height: "fit-content" }}>확장성</span>
+                  <span style={{ fontSize: 13, color: "#374151", lineHeight: 1.65 }}>{WP_NEXUS[ch.no].ex}</span>
+                </div>
+                <div style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
+                  <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, color: "#1D4ED8", background: "#DBEAFE", padding: "3px 9px", borderRadius: 7, height: "fit-content" }}>관련 섹션</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {WP_NEXUS[ch.no].sec.map((k) => { const s = (typeof SECTIONS !== "undefined" ? SECTIONS : []).find((x) => x.k === k); const label = s ? s.t : k; return (
+                      <span key={k} onClick={() => onGo && onGo(k)} title={`${label} 화면으로 이동`} style={{ cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#1E40AF", background: "#EFF6FF", border: "1px solid #BFDBFE", padding: "4px 11px", borderRadius: 999 }}>{label} ↗</span>
+                    ); })}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 9 }}>
+                  <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, color: "#0F8A74", background: "#D1FAE5", padding: "3px 9px", borderRadius: 7, height: "fit-content" }}>실행 참조</span>
+                  <span style={{ fontSize: 13, color: "#374151", lineHeight: 1.65 }}>{WP_NEXUS[ch.no].impl}</span>
+                </div>
+              </div>
             </div>
           )}
         </div>

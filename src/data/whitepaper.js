@@ -783,6 +783,35 @@ function wpRefStats() {
   return { total: all.length, done: all.filter((r) => r.status === "done").length, byCat: Object.keys(WP_REF_CATS).map((k) => ({ k, n: all.filter((r) => r.cat === k).length })) };
 }
 
+/* ── 장별 플랫폼 연계(Nexus): 확장성 · 관련 섹션 · 실행 참조 ──
+   sec = core.jsx SECTIONS 키(클릭 시 실제 화면으로 이동). */
+const WP_NEXUS = {
+  1:  { ex: "플랫폼 전 영역을 아우르는 상위 비전 — 펫·안전 등 신규 도메인도 같은 비전·가치순환 아래 편입된다.", sec: ["home", "social", "wallet"], impl: "홈 통합 대시보드·사회적기업 지수·건강금융지갑에 비전이 실제 구현되어 있다." },
+  2:  { ex: "인구·의료비·보험 지표는 매년 갱신되는 '살아있는 근거' — 대시보드에 실시간 반영 가능.", sec: ["insurance", "manage", "homecare"], impl: "보험·치료비, 건강관리, 재가·돌봄 섹션이 사각지대 대응을 실제 실행한다." },
+  3:  { ex: "검진·보험·금융·나눔의 결합 논리는 신규 서비스에도 동일하게 적용되는 재사용 가능한 원리다.", sec: ["checkup", "insurance", "shop", "wallet", "social"], impl: "5개 섹션이 온톨로지 관계 탭에서 하나의 지식그래프로 연결된다." },
+  4:  { ex: "객체·관계·액션 스키마에 신규 객체(반려동물·안전설비)를 추가만 하면 도메인이 확장된다.", sec: ["ontology", "manage", "hospital"], impl: "온톨로지 운영 콘솔의 코호트·관계·액션 탭, DEPT_CATS·DISEASE_INSURANCE 스키마." },
+  5:  { ex: "Multi-LLM·모듈 교체로 무한 확장 — 신규 실행모듈은 커넥터 하나 추가로 붙는다.", sec: ["ai", "ontology"], impl: "상담 인텔리전스 탭 — consultStore(세션)·analyzeConsults(오케스트레이터) 닫힌 루프." },
+  6:  { ex: "7계층 파이프라인에 신규 계층·서비스를 삽입해도 상·하위 계층은 그대로 유지된다.", sec: ["ai", "ontology", "insurance", "hospital"], impl: "나의 주치의→온톨로지→보험→병원으로 이어지는 실제 연동 흐름." },
+  7:  { ex: "FHIR 표준 덕에 신규 병원·웨어러블을 커넥터만 추가해 무한 연동한다.", sec: ["checkup", "manage", "hospital"], impl: "건강검진 결과·건강관리 지표·병원 예약이 표준 데이터로 연결된다." },
+  8:  { ex: "포인트 → 리워드 토큰 → (제도화 시)지분성 권리로 단계적으로 확장되는 금융 스택.", sec: ["wallet", "insurance", "shop"], impl: "건강금융지갑(적립·토큰·보험금)과 건강쇼핑 결제에 구현." },
+  9:  { ex: "DID·지갑 구조를 신규 도메인·파트너·자매 플랫폼으로 그대로 확장한다.", sec: ["wallet", "nft", "mypage"], impl: "건강금융지갑 토큰·Health NFT 건강인증서·마이페이지 동의관리." },
+  10: { ex: "Zero Trust·감사로그를 전 모듈과 신규 서비스에 일괄 적용하는 공통 보안 계층.", sec: ["mypage", "ontology"], impl: "마이페이지 개인정보·동의관리, 온톨로지 운영의 감사·거버넌스." },
+  11: { ex: "신규 서비스마다 규제 매트릭스를 갱신·재사용 — 컴플라이언스가 자산이 된다.", sec: ["mypage", "insurance"], impl: "마이페이지 동의관리, 보험 심사의 컴플라이언스 체크." },
+  12: { ex: "국가별 규제를 UIP 커넥터로 추가해 해외 진출 시 재사용한다.", sec: ["ontology", "insurance"], impl: "글로벌 진출 시 규제 커넥터로 확장(설계 단계)." },
+  13: { ex: "커넥터 추가만으로 신규 병원 EMR을 개조 없이 연동한다.", sec: ["hospital", "checkup"], impl: "병원/약국예약·건강검진 결과 연동의 기술 기반." },
+  14: { ex: "자매 플랫폼(펫·안전)도 같은 UIP를 재사용 — 새 사업 비용이 '커넥터 하나'로 수렴.", sec: ["ontology", "hospital", "insurance"], impl: "병원·보험·결제·정부를 잇는 통합 연동 계층." },
+  15: { ex: "동적 언더라이팅을 신규 보험상품·도메인(펫보험 등)으로 확장한다.", sec: ["insurance", "manage"], impl: "보험·치료비 섹션 — 위험프로필·언더라이팅·청구 실제 구현." },
+  16: { ex: "192질병 데이터하우스에 질병·코칭 규칙을 추가하며 지속 확장된다.", sec: ["ai", "manage", "shop", "checkup"], impl: "나의 주치의 5대 실행·건강관리 점수·건강쇼핑 맞춤영양." },
+  17: { ex: "나눔 대상·지자체 협력을 신규 지역·취약계층으로 확장한다.", sec: ["social", "homecare", "wallet"], impl: "사회적기업 지수·재가돌봄·건강금융지갑 나눔 흐름." },
+  18: { ex: "리워드형 → (제도화 시)지분성 참여로 단계 확장 — 규제 진척에 연동.", sec: ["wallet", "social"], impl: "건강금융지갑 토큰·사회적기업 가치환원." },
+  19: { ex: "ESG 지표를 신규 사업·제휴 파트너로 확장해 계량한다.", sec: ["social", "ontology", "hospital"], impl: "사회적기업 지수·온톨로지 재무회계·헬스케어 SME 제휴." },
+  20: { ex: "모델 이식 — 온톨로지·하니스·UIP 코어는 유지, 로컬 규제·결제만 커넥터로 교체.", sec: ["ontology"], impl: "코어 아키텍처 재사용(해외 진출 설계 단계)." },
+  21: { ex: "하나의 아키텍처를 헬스·펫·안전 등 여러 도메인 특허로 확장한다.", sec: ["ontology", "social"], impl: "하이펫·Hi-Safety 자매 플랫폼으로 실증(별도 앱)." },
+  22: { ex: "신규 경쟁자·기술도 동일한 스택 계층으로 매핑해 위치를 규정한다.", sec: ["ontology"], impl: "온톨로지+하니스 '조합' 계층이 곧 차별점." },
+  23: { ex: "연도별 마일스톤은 규제·성장에 맞춰 갱신되는 실행 계획이다.", sec: ["home", "ontology"], impl: "온톨로지 운영 콘솔이 로드맵 실행 현황 대시보드 역할." },
+  24: { ex: "백서 자체가 장별로 계속 검증·업그레이드되는 '살아있는 문서'다.", sec: ["ontology"], impl: "온톨로지 운영 콘솔 [백서] 탭에서 상시 관리·확장." },
+};
+
 /* 진행률 집계 */
 function wpProgress() {
   const total = WHITEPAPER.length;
