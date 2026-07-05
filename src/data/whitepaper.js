@@ -54,7 +54,7 @@ const WP_PHASES = [
 const WHITEPAPER = [
   {
     no: 1, part: "Executive Summary", title: "Executive Summary", subtitle: "플랫폼 비전과 해결하려는 사회문제",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.1", updated: "2026-07-05",
     sections: ["HI-Fin Tech 플랫폼 비전", "해결하려는 사회문제", "의료비 사각지대", "예방중심 의료체계", "사회적경제 모델", "중앙정부 AI기본소득 vs 민간 AI 사회적경제 가치순환"],
     summary: "HI-Fin Tech는 건강검진·보험·건강쇼핑·건강금융을 하나의 AI 온톨로지로 연결해, 예방→진단→치료→돌봄 전주기를 개인화 운영하는 세계 최초의 헬스케어–핀테크 사회적 임팩트 플랫폼이다. 소비가 회원 적립·치료비 나눔으로 순환하는 사회적경제 모델로 의료비 사각지대를 해소한다.",
     body: [
