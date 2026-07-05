@@ -9395,7 +9395,7 @@ const WHITEPAPER = [
   },
   {
     no: 9, part: "기술 아키텍처", title: "Blockchain", subtitle: "왜 Blockchain인가 — 데이터 주권과 투명성이 필요한 지점에만",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["DID", "Wallet", "Token"],
     summary: "건강·금융 데이터는 극도로 민감하다. 블록체인은 중앙기관 없이 신뢰를 검증하는 기술로, HI-Fin은 이를 데이터 주권·동의 투명성이 중요한 지점에만 선택적으로 쓴다. DID(자기주권신원)로 회원이 데이터 접근을 통제하고, 지갑에 신원·건강인증·자산을 담으며, 토큰으로 가치환원을 투명하게 추적한다. 온체인 개인정보 저장은 하지 않는다.",
     body: [
@@ -9415,7 +9415,7 @@ const WHITEPAPER = [
   },
   {
     no: 10, part: "기술 아키텍처", title: "AI Security", subtitle: "의료·금융 AI의 4중 보안 — Zero Trust · Encryption · Sandbox · Audit Log",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["Zero Trust", "Encryption", "Sandbox", "Audit Log"],
     summary: "의료·금융 데이터를 다루는 AI에게 보안은 선택이 아니라 전제다. HI-Fin은 제로트러스트(모든 접근 검증)·암호화(전송·저장)·샌드박스(격리 실행)·감사로그(전 과정 기록)의 4중 원칙을 적용한다. LLM은 데이터에 직접 접근하지 않고 오케스트레이터가 최소권한으로 집행하며, 모든 판단·실행은 감사 로그로 남아 규제 대응과 설명가능성을 보장한다.",
     body: [
@@ -9442,7 +9442,7 @@ const WHITEPAPER = [
   },
   {
     no: 11, part: "법률·규제", title: "국내 법률 검토", subtitle: "적용 법령 분석 — 현행 준수 영역과 제도개선 영역의 구분",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["개인정보 보호법", "의료법", "신용정보법", "전자금융거래법", "AI 기본법", "의료 마이데이터·디지털헬스케어 정책"],
     summary: "HI-Fin은 의료·금융·AI가 교차하므로 다층 규제를 받는다. 데이터3법(가명정보·마이데이터)으로 데이터 활용 기반이 마련됐고, 2026.1.22 시행된 AI 기본법에서 보건·의료·금융신용 AI는 '고영향 AI'로 분류돼 투명성·안전성·영향평가 의무를 진다. HI-Fin은 진단·처방을 대체하지 않는 '건강관리·상담 보조' 설계와 감사로그·계층분리로 이에 대응하며, 실제 사업화 전 전문가 사전검토를 전제로 한다.",
     body: [
@@ -9481,7 +9481,7 @@ const WHITEPAPER = [
   },
   {
     no: 12, part: "법률·규제", title: "해외 법률 비교", subtitle: "글로벌 규제 벤치마크 — HIPAA · GDPR · FDA AI · EU AI Act",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["HIPAA", "GDPR", "FDA AI", "EU AI Act"],
     summary: "글로벌 진출과 국제 신뢰를 위해 해외 규제와의 정합이 필요하다. 미국 HIPAA(의료정보), EU GDPR(건강=특별범주), 미국 FDA(AI 의료기기), EU AI Act(고위험 AI)를 벤치마크한다. 한국 AI 기본법은 EU AI Act의 고위험 접근을 참고했다. HI-Fin의 '진단·치료가 아닌 건강관리 보조' 포지셔닝은 다수 관할에서 의료기기 규제를 피하는 핵심 전략이다.",
     body: [
@@ -9511,7 +9511,7 @@ const WHITEPAPER = [
   },
   {
     no: 13, part: "기술 아키텍처", title: "EMR Integration", subtitle: "병원 연동 — FHIR · CDM · API로 EMR을 개조 없이 연결",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["FHIR", "CDM", "API"],
     summary: "7장이 '무엇을(데이터 표준)'이라면 13장은 '어떻게 병원과 연결하나'다. HI-Fin은 병원 EMR을 직접 개조하지 않고 FHIR API로 연동하며, OMOP CDM으로 병원별 상이한 데이터를 공통 모델로 표준화하고, API Gateway·커넥터로 병원별 차이를 흡수한다. 모든 연동은 본인 동의(마이데이터) 기반이다.",
     body: [
@@ -9531,7 +9531,7 @@ const WHITEPAPER = [
   },
   {
     no: 14, part: "기술 아키텍처", title: "UIP", subtitle: "Unified Integration Platform — 이질적 시스템을 잇는 통합 연동 계층",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["통합 연동 계층", "API Gateway", "커넥터"],
     summary: "EMR·보험·결제·정부·기기 등 이질적 시스템을 하나로 잇는 통합 연동 계층이 UIP다. 온톨로지·하니스가 '두뇌·손발'이라면 UIP는 '신경망'이다. 표준 커넥터로 외부 시스템의 이질성을 추상화해, 온톨로지·하니스는 외부 차이를 몰라도 되고, 신규 제휴처·자매 플랫폼은 커넥터만 추가하면 연결된다.",
     body: [
@@ -9548,7 +9548,7 @@ const WHITEPAPER = [
   },
   {
     no: 15, part: "AI 서비스", title: "AI 보험", subtitle: "동적 언더라이팅 · 자동 클레임 · 이상탐지",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["Underwriting", "Claim", "Fraud Detection"],
     summary: "2장에서 제기한 '동적 언더라이팅'이 여기서 완성된다. AI 보험은 인수(나이 단일위험률→건강상태 기반 재산정)·청구(자동 간편심사)·이상탐지(연 1.15조 규모 보험사기 탐지)의 3영역에서 작동한다. 단 언더라이팅 자동화는 고영향 AI로서 설명가능성·차별금지 의무를 지며, HI-Fin은 건강약자를 배제하지 않는 포용적 언더라이팅을 원칙으로 한다.",
     body: [
@@ -9572,7 +9572,7 @@ const WHITEPAPER = [
   },
   {
     no: 16, part: "AI 서비스", title: "AI 건강관리", subtitle: "예방 중심 개인화 케어 — 예방 · AI Coach · Nutrition · Exercise",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["예방", "AI Coach", "Nutrition", "Exercise"],
     summary: "세계 의료는 치료에서 4P 의학(예측·예방·개인맞춤·참여)으로 이동 중이다. HI-Fin AI 건강관리는 상담→분석→5대 실행 안내로 예방을 개인화·실행가능하게 만들고, 192개 질병별 맞춤영양·식단·기기 데이터하우스로 뒷받침한다. 핵심 차별점은 예방의 성과를 보험·금융 인센티브로 환류해 코칭이 '조언'이 아니라 '보상'으로 이어진다는 점이다.",
     body: [
@@ -9593,7 +9593,7 @@ const WHITEPAPER = [
   },
   {
     no: 17, part: "사회적기업·ESG", title: "사회적기업 모델", subtitle: "이윤과 사회적 가치가 순환하는 임팩트 기업",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["치료비 사각지대", "취약계층", "ESG", "지역사회 돌봄"],
     summary: "HI-Fin은 이윤과 사회적 가치가 대립하지 않고 순환하는 사회적기업이다. 2장에서 규명한 치료비 사각지대(재난적 의료비 가구 7.5%·간병비·소득상실)를 판매마진 30% 나눔으로 지원하고, 저소득·노인·만성질환자를 우선한다. 50/30/20 배분은 선언이 아니라 회계로 추적되어 사회적기업의 진정성을 데이터로 증명한다.",
     body: [
@@ -9619,7 +9619,7 @@ const WHITEPAPER = [
   },
   {
     no: 18, part: "사회적기업·ESG", title: "Consumer Token", subtitle: "소비자 참여형 가치환원 — 현행 리워드와 지분성 권리(제도화)의 명확한 구분",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["Token", "Reward", "Equity Participation"],
     summary: "소비가 회원의 자산, 나아가 기업 성장의 몫으로 되돌아오는 구조다. 반드시 '현재 가능한 리워드'와 '법·제도 정비가 필요한 지분성 권리'를 구분한다. 리워드형 토큰·포인트는 현행법에서 운영 가능하고, '주식 또는 주식 취득 권리' 연계는 2026.1.15 제도화된 토큰증권(STO) 체계와 증권성 판단·전문가 검토를 거쳐 단계적으로 추진한다.",
     body: [
@@ -9651,7 +9651,7 @@ const WHITEPAPER = [
   },
   {
     no: 19, part: "사회적기업·ESG", title: "ESG", subtitle: "부가활동이 아니라 비즈니스 모델 자체 — Social · Governance · Healthcare SMEs",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["Social", "Governance", "Healthcare SMEs"],
     summary: "HI-Fin의 ESG는 비용이 아니라 매출 구조 자체다. 소비마진이 사회환원 재원이 되므로 성장과 임팩트가 동행한다. Social(예방·나눔·건강형평성), Governance(AI 거버넌스·벤더중립), Healthcare SMEs(병원·약국 등 중소사업자의 디지털 전환 상생)의 세 축으로 실현된다.",
     body: [
@@ -9673,7 +9673,7 @@ const WHITEPAPER = [
   },
   {
     no: 20, part: "시장·투자", title: "Global Expansion", subtitle: "해외 진출 전략 — 아키텍처는 유지, 규제·결제는 커넥터로 현지화",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["중국", "미국", "동남아"],
     summary: "아시아태평양은 디지털헬스 최고 성장 지역(CAGR 약 20.6%)이다. HI-Fin은 국내 파일럿 검증 후 단계적으로 진출한다. 중국(세계 최대 환자풀·원격의료 급성장), 미국(높은 OOP·민영보험 중심→동적 언더라이팅 수요), 동남아(낮은 보험침투·모바일 우선·젊은 인구)가 대상이다. 온톨로지·하니스·UIP는 유지하고 각국 규제·EMR·결제는 커넥터로 현지화한다.",
     body: [
@@ -9697,7 +9697,7 @@ const WHITEPAPER = [
   },
   {
     no: 21, part: "시장·투자", title: "기술 특허 출원 예정 분야", subtitle: "지식재산 전략 — 하나의 아키텍처를 여러 도메인으로",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["AI Ontology", "HealthInsur", "AI 보험", "Pet HI-핀테크", "화재안전관리 핀테크"],
     summary: "HI-Fin의 핵심 차별점을 지식재산으로 보호한다. AI 온톨로지 기반 닫힌 루프, 건강데이터-보험 매핑, 동적 언더라이팅, 그리고 같은 아키텍처를 반려동물(하이펫)·화재안전(Hi-Safety)으로 확장하는 5대 분야를 출원 예정이다. 하나의 온톨로지·하니스를 여러 도메인으로 재사용하는 '플랫폼 특허' 전략이다.",
     body: [
@@ -9715,7 +9715,7 @@ const WHITEPAPER = [
   },
   {
     no: 22, part: "시장·투자", title: "Palantir 비교", subtitle: "경쟁·비교 지형 — 경쟁이 아니라 '조합'",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["Palantir", "Oracle", "Salesforce", "Epic", "Claude", "OpenAI"],
     summary: "각 기업은 스택의 다른 층을 차지한다. Palantir(온톨로지·운영), Oracle·Epic(EMR), Salesforce(CRM), Claude·OpenAI(LLM). 이들 중 누구도 헬스케어+핀테크+사회적기업+온톨로지+하니스를 하나로 결합하지 않는다. HI-Fin은 이들의 하위 계층(EMR·LLM·온톨로지 사상)을 활용·재구성해, 소비자·사회 가치순환으로 잇는 최종 계층에서 독보적이다.",
     body: [
@@ -9735,7 +9735,7 @@ const WHITEPAPER = [
   },
   {
     no: 23, part: "시장·투자", title: "Platform Roadmap", subtitle: "단계별 로드맵 — 규제 진척과 연동한 성장",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["2026", "2027", "2028", "2030"],
     summary: "2026 국내 파일럿 검증·리워드형 가치환원·고영향 AI 규제 대응, 2027 제휴 확대·EMR/UIP 상용화·동적 언더라이팅 보험·자매 플랫폼(펫·안전), 2028 마이데이터·FHIR 본격 연계·토큰증권 제도 안 지분성 참여·흑자 전환, 2030 아시아 진출·글로벌 임팩트 플랫폼. 로드맵은 규제 진척과 연동된다.",
     body: [
@@ -9751,7 +9751,7 @@ const WHITEPAPER = [
   },
   {
     no: 24, part: "결론", title: "결론", subtitle: "HI-Fin Tech Vision · 이 백서의 차별점",
-    status: "review", version: "v1.0", updated: "2026-07-05",
+    status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["HI-Fin Tech Vision", "이 백서의 차별점", "하나의 아키텍처로 설명한 백서"],
     summary: "시중에 AI·Healthcare·FinTech 백서는 많지만, Palantir Ontology·Claude Harness·Healthcare·Insurance·Social Enterprise·Blockchain·EMR·ESG·Consumer Value Return을 '하나의 아키텍처'로 설명한 백서는 거의 없다. HI-Fin Tech는 기술·금융·사회를 하나의 닫힌 루프로 통합한 세계 최초의 AI 헬스케어-핀테크 임팩트 플랫폼이며, 본 백서는 그 청사진이다.",
     body: [
