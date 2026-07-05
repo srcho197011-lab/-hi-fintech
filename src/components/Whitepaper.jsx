@@ -58,6 +58,7 @@ function WpBlock({ b }) {
 function WhitepaperSection() {
   const [sel, setSel] = useState(1);
   const [showPrin, setShowPrin] = useState(false);
+  const [view, setView] = useState("paper"); // paper | refs
   const prog = React.useMemo(() => wpProgress(), []);
   const ch = WHITEPAPER.find((c) => c.no === sel) || WHITEPAPER[0];
   const filled = ch.body && ch.body.length > 0;
@@ -71,10 +72,27 @@ function WhitepaperSection() {
         </div>
         <div style={{ fontSize: 23, fontWeight: 900, lineHeight: 1.28, letterSpacing: -0.4 }}>{WP_META.title}</div>
         <div style={{ fontSize: 13.5, opacity: 0.9, marginTop: 6 }}>{WP_META.subtitle}</div>
+        {WP_META.vision ? (
+          <div style={{ marginTop: 14, padding: "12px 16px", background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.2)", borderLeft: "4px solid #FDE68A", borderRadius: 12 }}>
+            <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: -0.3 }}>“{WP_META.vision}”</div>
+            <div style={{ fontSize: 12.5, opacity: 0.9, marginTop: 4 }}>{WP_META.visionSub}</div>
+          </div>
+        ) : null}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
           {WP_META.kinds.map((k, i) => <span key={i} style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.24)", borderRadius: 999, padding: "3px 11px", fontSize: 11.5, fontWeight: 700 }}>{k}</span>)}
         </div>
       </div>
+
+      {/* ── 뷰 토글: 백서 열람 / 근거자료실 ── */}
+      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+        {[["paper", "📖 백서 열람", BookOpen], ["refs", "🔎 근거자료실", Search]].map(([k, label]) => (
+          <button key={k} onClick={() => setView(k)} style={{ cursor: "pointer", border: "1px solid " + (view === k ? "#1D4ED8" : "#D8DEEA"), background: view === k ? "#1D4ED8" : "#fff", color: view === k ? "#fff" : "#475569", fontWeight: 800, fontSize: 13, padding: "9px 18px", borderRadius: 10 }}>{label}</button>
+        ))}
+      </div>
+
+      {view === "refs" ? <WpRefLibrary onGoChapter={(n) => { setSel(n); setView("paper"); }} /> : null}
+      {view === "paper" ? (
+      <React.Fragment>
 
       {/* ── 진도 대시보드 ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10, marginTop: 14 }}>
@@ -174,6 +192,71 @@ function WhitepaperSection() {
       </div>
 
       <div className="chnote" style={{ marginTop: 14 }}>※ 본 백서는 <b>온톨로지 운영 콘솔에서 장별로 조사·작성·검증하며 계속 업그레이드</b>됩니다. Palantir Ontology·Claude Harness는 참고한 설계철학으로 인용하며 HI-Fin Tech 자체 아키텍처로 재구성합니다. 의료·금융·토큰 사항은 현행법 가능 영역과 제도개선 필요 영역을 구분하며, 본 문서는 초안으로 전문가 법률 검토를 전제로 합니다.</div>
+      </React.Fragment>
+      ) : null}
+    </div>
+  );
+}
+
+/* ── 근거자료실(Evidence Library) — 법령·통계·표준 검색 ── */
+function WpRefLibrary({ onGoChapter }) {
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("all");
+  const stats = React.useMemo(() => wpRefStats(), []);
+  const results = React.useMemo(() => wpSearchRefs(q, cat), [q, cat]);
+  const catList = [["all", "전체", stats.total]].concat(Object.keys(WP_REF_CATS).map((k) => [k, WP_REF_CATS[k].label, (stats.byCat.find((b) => b.k === k) || {}).n || 0]));
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div style={{ background: "#F8FAFC", border: "1px solid #E5E9F0", borderRadius: 14, padding: "16px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: "#0F1F45" }}>🔎 근거자료실 · 법령 · 통계 · 표준</div>
+          <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 700 }}>전체 {stats.total}건 · 검증완료 <b style={{ color: "#16A34A" }}>{stats.done}</b>건</div>
+        </div>
+
+        {/* 검색 입력 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid #D8DEEA", borderRadius: 10, padding: "9px 13px" }}>
+          <Search size={16} color="#94A3B8" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="법령·기관·키워드 검색 (예: 마이데이터, FHIR, GDPR, 보장률)" style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, color: "#334155", background: "transparent" }} />
+          {q ? <span onClick={() => setQ("")} style={{ cursor: "pointer", color: "#94A3B8", fontSize: 16 }}>×</span> : null}
+        </div>
+
+        {/* 카테고리 필터 */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {catList.map(([k, label, n]) => {
+            const c = WP_REF_CATS[k];
+            const on = cat === k;
+            return <span key={k} onClick={() => setCat(k)} style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, padding: "5px 12px", borderRadius: 999, background: on ? (c ? c.color : "#1D4ED8") : (c ? c.bg : "#EEF2F7"), color: on ? "#fff" : (c ? c.color : "#475569"), border: "1px solid " + (on ? "transparent" : "#E5E9F0") }}>{label} {n}</span>;
+          })}
+        </div>
+      </div>
+
+      {/* 결과 목록 */}
+      <div style={{ marginTop: 12 }}>
+        {results.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#94A3B8", fontSize: 14 }}>검색 결과가 없습니다.</div>
+        ) : results.map((r) => {
+          const c = WP_REF_CATS[r.cat] || WP_REF_CATS.cite;
+          return (
+            <div key={r.id} style={{ background: "#fff", border: "1px solid #E5E9F0", borderRadius: 12, padding: "13px 16px", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 900, color: c.color, background: c.bg, padding: "3px 9px", borderRadius: 7 }}>{c.label}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: "#12203F", lineHeight: 1.5 }}>{r.title}</div>
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{r.org}{r.year ? ` · ${r.year}` : ""}{r.note ? <span style={{ color: r.status === "done" ? "#16A34A" : "#F59E0B" }}> · {r.status === "done" ? "검증완료" : r.note}</span> : ""}</div>
+                  {r.tags && r.tags.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>{r.tags.map((t, i) => <span key={i} style={{ fontSize: 10.5, color: "#64748B", background: "#F1F5F9", padding: "2px 7px", borderRadius: 6 }}>#{t}</span>)}</div> : null}
+                </div>
+                <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                  {r.ch && r.ch.length ? <span onClick={() => onGoChapter && onGoChapter(r.ch[0])} title={`제${r.ch[0]}장으로 이동`} style={{ cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#1D4ED8", background: "#EFF6FF", padding: "3px 8px", borderRadius: 6 }}>제{r.ch[0]}장</span> : null}
+                  {r.url ? <a href={r.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, fontWeight: 700, color: "#0F8A74", textDecoration: "none" }}>원문 ↗</a> : null}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="chnote" style={{ marginTop: 12 }}>※ 근거자료실은 <b>장별 인용출처(검증완료)</b>와 <b>핵심 법령·표준 카탈로그</b>를 함께 검색합니다. 카탈로그 항목은 해당 장 작성 시 원문·최신개정을 검증해 <b>검증완료</b>로 승격됩니다. 법령 원문은 국가법령정보센터, 통계는 발행기관 원자료를 우선합니다.</div>
     </div>
   );
 }

@@ -18,6 +18,8 @@ const WP_META = {
   code: "HIFIN-WP",
   title: "AI Ontology 기반 Healthcare–FinTech Social Impact Platform",
   subtitle: "세계 최초 · HI-Fin Tech 기술 · 정책 · 투자 통합 백서",
+  vision: "치료비가 두려워 치료를 미루는 사람이 없는 세상",
+  visionSub: "예방은 자산이 되고, 소비는 나눔이 되는 AI 건강금융 생태계",
   ownerLabel: "온톨로지 운영 · 백서편집국",
   version: "v0.1",
   updated: "2026-07-05",
@@ -57,7 +59,8 @@ const WHITEPAPER = [
     summary: "HI-Fin Tech는 건강검진·보험·건강쇼핑·건강금융을 하나의 AI 온톨로지로 연결해, 예방→진단→치료→돌봄 전주기를 개인화 운영하는 세계 최초의 헬스케어–핀테크 사회적 임팩트 플랫폼이다. 소비가 회원 적립·치료비 나눔으로 순환하는 사회적경제 모델로 의료비 사각지대를 해소한다.",
     body: [
       { t: "h", x: "1.1 HI-Fin Tech 플랫폼 비전" },
-      { t: "p", x: "**치료비 걱정 없는 평생 건강관리 생태계.** HI-Fin Tech는 건강검진·보험·건강쇼핑·건강금융지갑을 하나의 **AI 온톨로지(지식그래프)** 로 연결하고, AI 에이전트가 예방→진단→치료→재활→돌봄의 건강 전주기를 개인화하여 운영하는 플랫폼이다." },
+      { t: "quote", x: "치료비가 두려워 치료를 미루는 사람이 없는 세상.", by: "HI-Fin Tech 미션" },
+      { t: "p", x: "**예방은 자산이 되고, 소비는 나눔이 되는 AI 건강금융 생태계.** HI-Fin Tech는 건강검진·보험·건강쇼핑·건강금융지갑을 하나의 **AI 온톨로지(지식그래프)** 로 연결하고, AI 에이전트가 예방→진단→치료→재활→돌봄의 건강 전주기를 개인화하여 운영하는 세계 최초의 헬스케어–핀테크 사회적 임팩트 플랫폼이다." },
       { t: "p", x: "회원의 상담·검진·소비·건강 이벤트는 회원별 **데이터 하우스(영속 이벤트 로그)** 에 시계열로 축적되고, 온톨로지 오케스트레이터가 이를 분석해 ①추가검진 ②진료과 안내 ③영양 ④치료기기 ⑤건강식단의 실행으로 되돌린다(닫힌 루프)." },
       { t: "h", x: "1.2 해결하려는 사회문제" },
       { t: "list", items: [
@@ -93,9 +96,9 @@ const WHITEPAPER = [
       ] },
     ],
     sources: [
-      { title: "2022년도 건강보험환자 진료비 실태조사 — 보장률 65.7%(+1.2%p), 비급여 본인부담률 14.6%, 총진료비 120.6조·비급여 17.6조", org: "국민건강보험공단(2023)", url: "https://www.data.go.kr/data/15103019/fileData.do", note: "검증완료" },
-      { title: "주민등록 인구통계 — 2024.12.23 기준 65세 이상 1,024만명(20.0%) 초고령사회 진입, 고령→초고령 7년(세계 최단)", org: "행정안전부 / UN 고령화 기준", url: "https://www.betterfuture.go.kr/front/policySpace/scrapDetail.do?articleId=344", note: "검증완료" },
-      { title: "Health at a Glance 2023 — 한국 가계직접부담(OOP) 29% vs OECD 평균 18%", org: "OECD(2023)", url: "https://www.oecd.org/en/publications/health-at-a-glance-2023_7a7afb35-en.html", note: "검증완료" },
+      { cat: "stat", title: "2022년도 건강보험환자 진료비 실태조사 — 보장률 65.7%(+1.2%p), 비급여 본인부담률 14.6%, 총진료비 120.6조·비급여 17.6조", org: "국민건강보험공단(2023)", url: "https://www.data.go.kr/data/15103019/fileData.do", note: "검증완료" },
+      { cat: "stat", title: "주민등록 인구통계 — 2024.12.23 기준 65세 이상 1,024만명(20.0%) 초고령사회 진입, 고령→초고령 7년(세계 최단)", org: "행정안전부 / UN 고령화 기준", url: "https://www.betterfuture.go.kr/front/policySpace/scrapDetail.do?articleId=344", note: "검증완료" },
+      { cat: "intl", title: "Health at a Glance 2023 — 한국 가계직접부담(OOP) 29% vs OECD 평균 18%", org: "OECD(2023)", url: "https://www.oecd.org/en/publications/health-at-a-glance-2023_7a7afb35-en.html", note: "검증완료" },
     ],
   },
   ch(2, "Why Now?", "왜 지금 AI Healthcare인가", ["초고령사회", "의료비 폭증", "보험 한계", "예방의학", "AI Agent 시대"]),
@@ -131,6 +134,60 @@ function _wpPart(no) {
   const map = { 1: "Executive Summary", 2: "Why Now?", 3: "융합 논리" };
   for (const p of WP_PHASES) if (p.chapters.includes(no)) return p.title.replace(/^\d단계 · /, "");
   return map[no] || "";
+}
+
+/* ── 근거자료 검색 시스템 — 카테고리 · 카탈로그 · 집계 ── */
+const WP_REF_CATS = {
+  cite:   { k: "cite",   label: "인용출처", color: "#2563EB", bg: "#DBEAFE" },
+  law:    { k: "law",    label: "법령",     color: "#DC2626", bg: "#FEE2E2" },
+  stat:   { k: "stat",   label: "통계",     color: "#0F8A74", bg: "#D1FAE5" },
+  intl:   { k: "intl",   label: "해외·국제", color: "#7C3AED", bg: "#EDE9FE" },
+  tech:   { k: "tech",   label: "기술표준", color: "#EA580C", bg: "#FFEDD5" },
+  policy: { k: "policy", label: "정책",     color: "#0891B2", bg: "#CFFAFE" },
+};
+
+/* 핵심 법령·표준 카탈로그(시드) — 장별 조사 시 status:done으로 검증·확정한다.
+   status: done(원문·수치 검증완료) | todo(원문·최신개정 검증 예정) */
+const WP_REFS = [
+  { id: "law-pipa",   cat: "law",  title: "개인정보 보호법", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/개인정보보호법", tags: ["가명정보", "민감정보", "동의"], ch: [11], status: "todo", note: "제11장에서 조문·최신개정 검증" },
+  { id: "law-med",    cat: "law",  title: "의료법", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/의료법", tags: ["원격의료", "진료기록", "의료기관"], ch: [11, 13], status: "todo", note: "원격의료·EMR 연계 조문 검증 예정" },
+  { id: "law-credit", cat: "law",  title: "신용정보의 이용 및 보호에 관한 법률", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/신용정보의이용및보호에관한법률", tags: ["마이데이터", "본인신용정보관리업"], ch: [11], status: "todo", note: "마이데이터 근거 조문 검증 예정" },
+  { id: "law-efin",   cat: "law",  title: "전자금융거래법", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/전자금융거래법", tags: ["전자지급", "선불전자지급수단", "포인트"], ch: [11, 8], status: "todo", note: "포인트·지급결제 근거 검증 예정" },
+  { id: "law-aibasic",cat: "law",  title: "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법(AI 기본법)", org: "국가법령정보센터", year: "2026 시행", url: "https://www.law.go.kr", tags: ["고영향AI", "투명성", "영향평가"], ch: [11], status: "todo", note: "시행령·고영향AI 범위 검증 예정" },
+  { id: "law-capital",cat: "law",  title: "자본시장과 금융투자업에 관한 법률", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/자본시장과금융투자업에관한법률", tags: ["증권성", "토큰증권", "STO"], ch: [18], status: "todo", note: "토큰 지분성 권리 검토(제18장)" },
+  { id: "law-vasp",   cat: "law",  title: "가상자산 이용자 보호 등에 관한 법률", org: "국가법령정보센터", year: "2024 시행", url: "https://www.law.go.kr", tags: ["가상자산", "이용자보호"], ch: [18], status: "todo", note: "리워드 토큰 규제 구분(제18장)" },
+  { id: "intl-hipaa", cat: "intl", title: "HIPAA (Health Insurance Portability and Accountability Act)", org: "U.S. HHS", year: "", url: "https://www.hhs.gov/hipaa", tags: ["PHI", "Privacy Rule", "Security Rule"], ch: [12], status: "todo", note: "미국 의료정보 보호(제12장)" },
+  { id: "intl-gdpr",  cat: "intl", title: "GDPR (General Data Protection Regulation)", org: "EU", year: "2018", url: "https://gdpr-info.eu", tags: ["special category", "consent", "DPIA"], ch: [12], status: "todo", note: "EU 개인정보(제12장)" },
+  { id: "intl-euai",  cat: "intl", title: "EU AI Act", org: "European Union", year: "2024", url: "https://artificialintelligenceact.eu", tags: ["high-risk", "conformity"], ch: [12], status: "todo", note: "고위험 AI 규제(제12장)" },
+  { id: "intl-fda",   cat: "intl", title: "FDA — AI/ML-Based Software as a Medical Device", org: "U.S. FDA", year: "", url: "https://www.fda.gov/medical-devices/software-medical-device-samd", tags: ["SaMD", "PCCP"], ch: [12], status: "todo", note: "AI 의료기기 규제(제12장)" },
+  { id: "tech-fhir",  cat: "tech", title: "HL7 FHIR (Fast Healthcare Interoperability Resources)", org: "HL7 International", year: "R4/R5", url: "https://hl7.org/fhir", tags: ["Resource", "REST API", "상호운용성"], ch: [7, 13], status: "todo", note: "EMR 표준 연동(제7·13장)" },
+  { id: "tech-cdm",   cat: "tech", title: "OMOP Common Data Model", org: "OHDSI", year: "", url: "https://ohdsi.org/data-standardization", tags: ["CDM", "표준용어"], ch: [13], status: "todo", note: "공통데이터모델(제13장)" },
+];
+
+/* 장별 인용출처 + 카탈로그를 하나의 검색 대상으로 병합 */
+function wpAllRefs() {
+  const fromCh = [];
+  WHITEPAPER.forEach((c) => (c.sources || []).forEach((s, i) => fromCh.push({
+    id: `ch${c.no}-${i}`, cat: s.cat || "cite", title: s.title, org: s.org || "", year: s.year || "",
+    url: s.url || "", tags: s.tags || [], ch: [c.no], note: s.note || "",
+    status: (s.note || "").includes("검증완료") ? "done" : "todo",
+  })));
+  return [...fromCh, ...WP_REFS];
+}
+
+/* 키워드·카테고리 검색 */
+function wpSearchRefs(q, cat) {
+  const t = String(q || "").trim().toLowerCase();
+  return wpAllRefs().filter((r) => {
+    if (cat && cat !== "all" && r.cat !== cat) return false;
+    if (!t) return true;
+    const hay = [r.title, r.org, r.note, (r.tags || []).join(" ")].join(" ").toLowerCase();
+    return hay.includes(t);
+  });
+}
+function wpRefStats() {
+  const all = wpAllRefs();
+  return { total: all.length, done: all.filter((r) => r.status === "done").length, byCat: Object.keys(WP_REF_CATS).map((k) => ({ k, n: all.filter((r) => r.cat === k).length })) };
 }
 
 /* 진행률 집계 */

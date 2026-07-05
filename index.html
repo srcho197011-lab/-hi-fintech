@@ -6656,6 +6656,7 @@ function WpBlock({ b }) {
 function WhitepaperSection() {
   const [sel, setSel] = useState(1);
   const [showPrin, setShowPrin] = useState(false);
+  const [view, setView] = useState("paper"); // paper | refs
   const prog = React.useMemo(() => wpProgress(), []);
   const ch = WHITEPAPER.find((c) => c.no === sel) || WHITEPAPER[0];
   const filled = ch.body && ch.body.length > 0;
@@ -6669,10 +6670,27 @@ function WhitepaperSection() {
         </div>
         <div style={{ fontSize: 23, fontWeight: 900, lineHeight: 1.28, letterSpacing: -0.4 }}>{WP_META.title}</div>
         <div style={{ fontSize: 13.5, opacity: 0.9, marginTop: 6 }}>{WP_META.subtitle}</div>
+        {WP_META.vision ? (
+          <div style={{ marginTop: 14, padding: "12px 16px", background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.2)", borderLeft: "4px solid #FDE68A", borderRadius: 12 }}>
+            <div style={{ fontSize: 17, fontWeight: 900, letterSpacing: -0.3 }}>“{WP_META.vision}”</div>
+            <div style={{ fontSize: 12.5, opacity: 0.9, marginTop: 4 }}>{WP_META.visionSub}</div>
+          </div>
+        ) : null}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
           {WP_META.kinds.map((k, i) => <span key={i} style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.24)", borderRadius: 999, padding: "3px 11px", fontSize: 11.5, fontWeight: 700 }}>{k}</span>)}
         </div>
       </div>
+
+      {/* ── 뷰 토글: 백서 열람 / 근거자료실 ── */}
+      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+        {[["paper", "📖 백서 열람", BookOpen], ["refs", "🔎 근거자료실", Search]].map(([k, label]) => (
+          <button key={k} onClick={() => setView(k)} style={{ cursor: "pointer", border: "1px solid " + (view === k ? "#1D4ED8" : "#D8DEEA"), background: view === k ? "#1D4ED8" : "#fff", color: view === k ? "#fff" : "#475569", fontWeight: 800, fontSize: 13, padding: "9px 18px", borderRadius: 10 }}>{label}</button>
+        ))}
+      </div>
+
+      {view === "refs" ? <WpRefLibrary onGoChapter={(n) => { setSel(n); setView("paper"); }} /> : null}
+      {view === "paper" ? (
+      <React.Fragment>
 
       {/* ── 진도 대시보드 ── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10, marginTop: 14 }}>
@@ -6772,6 +6790,71 @@ function WhitepaperSection() {
       </div>
 
       <div className="chnote" style={{ marginTop: 14 }}>※ 본 백서는 <b>온톨로지 운영 콘솔에서 장별로 조사·작성·검증하며 계속 업그레이드</b>됩니다. Palantir Ontology·Claude Harness는 참고한 설계철학으로 인용하며 HI-Fin Tech 자체 아키텍처로 재구성합니다. 의료·금융·토큰 사항은 현행법 가능 영역과 제도개선 필요 영역을 구분하며, 본 문서는 초안으로 전문가 법률 검토를 전제로 합니다.</div>
+      </React.Fragment>
+      ) : null}
+    </div>
+  );
+}
+
+/* ── 근거자료실(Evidence Library) — 법령·통계·표준 검색 ── */
+function WpRefLibrary({ onGoChapter }) {
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("all");
+  const stats = React.useMemo(() => wpRefStats(), []);
+  const results = React.useMemo(() => wpSearchRefs(q, cat), [q, cat]);
+  const catList = [["all", "전체", stats.total]].concat(Object.keys(WP_REF_CATS).map((k) => [k, WP_REF_CATS[k].label, (stats.byCat.find((b) => b.k === k) || {}).n || 0]));
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div style={{ background: "#F8FAFC", border: "1px solid #E5E9F0", borderRadius: 14, padding: "16px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: "#0F1F45" }}>🔎 근거자료실 · 법령 · 통계 · 표준</div>
+          <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 700 }}>전체 {stats.total}건 · 검증완료 <b style={{ color: "#16A34A" }}>{stats.done}</b>건</div>
+        </div>
+
+        {/* 검색 입력 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid #D8DEEA", borderRadius: 10, padding: "9px 13px" }}>
+          <Search size={16} color="#94A3B8" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="법령·기관·키워드 검색 (예: 마이데이터, FHIR, GDPR, 보장률)" style={{ border: "none", outline: "none", flex: 1, fontSize: 13.5, color: "#334155", background: "transparent" }} />
+          {q ? <span onClick={() => setQ("")} style={{ cursor: "pointer", color: "#94A3B8", fontSize: 16 }}>×</span> : null}
+        </div>
+
+        {/* 카테고리 필터 */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {catList.map(([k, label, n]) => {
+            const c = WP_REF_CATS[k];
+            const on = cat === k;
+            return <span key={k} onClick={() => setCat(k)} style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, padding: "5px 12px", borderRadius: 999, background: on ? (c ? c.color : "#1D4ED8") : (c ? c.bg : "#EEF2F7"), color: on ? "#fff" : (c ? c.color : "#475569"), border: "1px solid " + (on ? "transparent" : "#E5E9F0") }}>{label} {n}</span>;
+          })}
+        </div>
+      </div>
+
+      {/* 결과 목록 */}
+      <div style={{ marginTop: 12 }}>
+        {results.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#94A3B8", fontSize: 14 }}>검색 결과가 없습니다.</div>
+        ) : results.map((r) => {
+          const c = WP_REF_CATS[r.cat] || WP_REF_CATS.cite;
+          return (
+            <div key={r.id} style={{ background: "#fff", border: "1px solid #E5E9F0", borderRadius: 12, padding: "13px 16px", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 900, color: c.color, background: c.bg, padding: "3px 9px", borderRadius: 7 }}>{c.label}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: "#12203F", lineHeight: 1.5 }}>{r.title}</div>
+                  <div style={{ fontSize: 12, color: "#6B7280", marginTop: 3 }}>{r.org}{r.year ? ` · ${r.year}` : ""}{r.note ? <span style={{ color: r.status === "done" ? "#16A34A" : "#F59E0B" }}> · {r.status === "done" ? "검증완료" : r.note}</span> : ""}</div>
+                  {r.tags && r.tags.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>{r.tags.map((t, i) => <span key={i} style={{ fontSize: 10.5, color: "#64748B", background: "#F1F5F9", padding: "2px 7px", borderRadius: 6 }}>#{t}</span>)}</div> : null}
+                </div>
+                <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                  {r.ch && r.ch.length ? <span onClick={() => onGoChapter && onGoChapter(r.ch[0])} title={`제${r.ch[0]}장으로 이동`} style={{ cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#1D4ED8", background: "#EFF6FF", padding: "3px 8px", borderRadius: 6 }}>제{r.ch[0]}장</span> : null}
+                  {r.url ? <a href={r.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, fontWeight: 700, color: "#0F8A74", textDecoration: "none" }}>원문 ↗</a> : null}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="chnote" style={{ marginTop: 12 }}>※ 근거자료실은 <b>장별 인용출처(검증완료)</b>와 <b>핵심 법령·표준 카탈로그</b>를 함께 검색합니다. 카탈로그 항목은 해당 장 작성 시 원문·최신개정을 검증해 <b>검증완료</b>로 승격됩니다. 법령 원문은 국가법령정보센터, 통계는 발행기관 원자료를 우선합니다.</div>
     </div>
   );
 }
@@ -8970,6 +9053,8 @@ const WP_META = {
   code: "HIFIN-WP",
   title: "AI Ontology 기반 Healthcare–FinTech Social Impact Platform",
   subtitle: "세계 최초 · HI-Fin Tech 기술 · 정책 · 투자 통합 백서",
+  vision: "치료비가 두려워 치료를 미루는 사람이 없는 세상",
+  visionSub: "예방은 자산이 되고, 소비는 나눔이 되는 AI 건강금융 생태계",
   ownerLabel: "온톨로지 운영 · 백서편집국",
   version: "v0.1",
   updated: "2026-07-05",
@@ -9009,7 +9094,8 @@ const WHITEPAPER = [
     summary: "HI-Fin Tech는 건강검진·보험·건강쇼핑·건강금융을 하나의 AI 온톨로지로 연결해, 예방→진단→치료→돌봄 전주기를 개인화 운영하는 세계 최초의 헬스케어–핀테크 사회적 임팩트 플랫폼이다. 소비가 회원 적립·치료비 나눔으로 순환하는 사회적경제 모델로 의료비 사각지대를 해소한다.",
     body: [
       { t: "h", x: "1.1 HI-Fin Tech 플랫폼 비전" },
-      { t: "p", x: "**치료비 걱정 없는 평생 건강관리 생태계.** HI-Fin Tech는 건강검진·보험·건강쇼핑·건강금융지갑을 하나의 **AI 온톨로지(지식그래프)** 로 연결하고, AI 에이전트가 예방→진단→치료→재활→돌봄의 건강 전주기를 개인화하여 운영하는 플랫폼이다." },
+      { t: "quote", x: "치료비가 두려워 치료를 미루는 사람이 없는 세상.", by: "HI-Fin Tech 미션" },
+      { t: "p", x: "**예방은 자산이 되고, 소비는 나눔이 되는 AI 건강금융 생태계.** HI-Fin Tech는 건강검진·보험·건강쇼핑·건강금융지갑을 하나의 **AI 온톨로지(지식그래프)** 로 연결하고, AI 에이전트가 예방→진단→치료→재활→돌봄의 건강 전주기를 개인화하여 운영하는 세계 최초의 헬스케어–핀테크 사회적 임팩트 플랫폼이다." },
       { t: "p", x: "회원의 상담·검진·소비·건강 이벤트는 회원별 **데이터 하우스(영속 이벤트 로그)** 에 시계열로 축적되고, 온톨로지 오케스트레이터가 이를 분석해 ①추가검진 ②진료과 안내 ③영양 ④치료기기 ⑤건강식단의 실행으로 되돌린다(닫힌 루프)." },
       { t: "h", x: "1.2 해결하려는 사회문제" },
       { t: "list", items: [
@@ -9045,9 +9131,9 @@ const WHITEPAPER = [
       ] },
     ],
     sources: [
-      { title: "2022년도 건강보험환자 진료비 실태조사 — 보장률 65.7%(+1.2%p), 비급여 본인부담률 14.6%, 총진료비 120.6조·비급여 17.6조", org: "국민건강보험공단(2023)", url: "https://www.data.go.kr/data/15103019/fileData.do", note: "검증완료" },
-      { title: "주민등록 인구통계 — 2024.12.23 기준 65세 이상 1,024만명(20.0%) 초고령사회 진입, 고령→초고령 7년(세계 최단)", org: "행정안전부 / UN 고령화 기준", url: "https://www.betterfuture.go.kr/front/policySpace/scrapDetail.do?articleId=344", note: "검증완료" },
-      { title: "Health at a Glance 2023 — 한국 가계직접부담(OOP) 29% vs OECD 평균 18%", org: "OECD(2023)", url: "https://www.oecd.org/en/publications/health-at-a-glance-2023_7a7afb35-en.html", note: "검증완료" },
+      { cat: "stat", title: "2022년도 건강보험환자 진료비 실태조사 — 보장률 65.7%(+1.2%p), 비급여 본인부담률 14.6%, 총진료비 120.6조·비급여 17.6조", org: "국민건강보험공단(2023)", url: "https://www.data.go.kr/data/15103019/fileData.do", note: "검증완료" },
+      { cat: "stat", title: "주민등록 인구통계 — 2024.12.23 기준 65세 이상 1,024만명(20.0%) 초고령사회 진입, 고령→초고령 7년(세계 최단)", org: "행정안전부 / UN 고령화 기준", url: "https://www.betterfuture.go.kr/front/policySpace/scrapDetail.do?articleId=344", note: "검증완료" },
+      { cat: "intl", title: "Health at a Glance 2023 — 한국 가계직접부담(OOP) 29% vs OECD 평균 18%", org: "OECD(2023)", url: "https://www.oecd.org/en/publications/health-at-a-glance-2023_7a7afb35-en.html", note: "검증완료" },
     ],
   },
   ch(2, "Why Now?", "왜 지금 AI Healthcare인가", ["초고령사회", "의료비 폭증", "보험 한계", "예방의학", "AI Agent 시대"]),
@@ -9083,6 +9169,60 @@ function _wpPart(no) {
   const map = { 1: "Executive Summary", 2: "Why Now?", 3: "융합 논리" };
   for (const p of WP_PHASES) if (p.chapters.includes(no)) return p.title.replace(/^\d단계 · /, "");
   return map[no] || "";
+}
+
+/* ── 근거자료 검색 시스템 — 카테고리 · 카탈로그 · 집계 ── */
+const WP_REF_CATS = {
+  cite:   { k: "cite",   label: "인용출처", color: "#2563EB", bg: "#DBEAFE" },
+  law:    { k: "law",    label: "법령",     color: "#DC2626", bg: "#FEE2E2" },
+  stat:   { k: "stat",   label: "통계",     color: "#0F8A74", bg: "#D1FAE5" },
+  intl:   { k: "intl",   label: "해외·국제", color: "#7C3AED", bg: "#EDE9FE" },
+  tech:   { k: "tech",   label: "기술표준", color: "#EA580C", bg: "#FFEDD5" },
+  policy: { k: "policy", label: "정책",     color: "#0891B2", bg: "#CFFAFE" },
+};
+
+/* 핵심 법령·표준 카탈로그(시드) — 장별 조사 시 status:done으로 검증·확정한다.
+   status: done(원문·수치 검증완료) | todo(원문·최신개정 검증 예정) */
+const WP_REFS = [
+  { id: "law-pipa",   cat: "law",  title: "개인정보 보호법", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/개인정보보호법", tags: ["가명정보", "민감정보", "동의"], ch: [11], status: "todo", note: "제11장에서 조문·최신개정 검증" },
+  { id: "law-med",    cat: "law",  title: "의료법", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/의료법", tags: ["원격의료", "진료기록", "의료기관"], ch: [11, 13], status: "todo", note: "원격의료·EMR 연계 조문 검증 예정" },
+  { id: "law-credit", cat: "law",  title: "신용정보의 이용 및 보호에 관한 법률", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/신용정보의이용및보호에관한법률", tags: ["마이데이터", "본인신용정보관리업"], ch: [11], status: "todo", note: "마이데이터 근거 조문 검증 예정" },
+  { id: "law-efin",   cat: "law",  title: "전자금융거래법", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/전자금융거래법", tags: ["전자지급", "선불전자지급수단", "포인트"], ch: [11, 8], status: "todo", note: "포인트·지급결제 근거 검증 예정" },
+  { id: "law-aibasic",cat: "law",  title: "인공지능 발전과 신뢰 기반 조성 등에 관한 기본법(AI 기본법)", org: "국가법령정보센터", year: "2026 시행", url: "https://www.law.go.kr", tags: ["고영향AI", "투명성", "영향평가"], ch: [11], status: "todo", note: "시행령·고영향AI 범위 검증 예정" },
+  { id: "law-capital",cat: "law",  title: "자본시장과 금융투자업에 관한 법률", org: "국가법령정보센터", year: "", url: "https://www.law.go.kr/법령/자본시장과금융투자업에관한법률", tags: ["증권성", "토큰증권", "STO"], ch: [18], status: "todo", note: "토큰 지분성 권리 검토(제18장)" },
+  { id: "law-vasp",   cat: "law",  title: "가상자산 이용자 보호 등에 관한 법률", org: "국가법령정보센터", year: "2024 시행", url: "https://www.law.go.kr", tags: ["가상자산", "이용자보호"], ch: [18], status: "todo", note: "리워드 토큰 규제 구분(제18장)" },
+  { id: "intl-hipaa", cat: "intl", title: "HIPAA (Health Insurance Portability and Accountability Act)", org: "U.S. HHS", year: "", url: "https://www.hhs.gov/hipaa", tags: ["PHI", "Privacy Rule", "Security Rule"], ch: [12], status: "todo", note: "미국 의료정보 보호(제12장)" },
+  { id: "intl-gdpr",  cat: "intl", title: "GDPR (General Data Protection Regulation)", org: "EU", year: "2018", url: "https://gdpr-info.eu", tags: ["special category", "consent", "DPIA"], ch: [12], status: "todo", note: "EU 개인정보(제12장)" },
+  { id: "intl-euai",  cat: "intl", title: "EU AI Act", org: "European Union", year: "2024", url: "https://artificialintelligenceact.eu", tags: ["high-risk", "conformity"], ch: [12], status: "todo", note: "고위험 AI 규제(제12장)" },
+  { id: "intl-fda",   cat: "intl", title: "FDA — AI/ML-Based Software as a Medical Device", org: "U.S. FDA", year: "", url: "https://www.fda.gov/medical-devices/software-medical-device-samd", tags: ["SaMD", "PCCP"], ch: [12], status: "todo", note: "AI 의료기기 규제(제12장)" },
+  { id: "tech-fhir",  cat: "tech", title: "HL7 FHIR (Fast Healthcare Interoperability Resources)", org: "HL7 International", year: "R4/R5", url: "https://hl7.org/fhir", tags: ["Resource", "REST API", "상호운용성"], ch: [7, 13], status: "todo", note: "EMR 표준 연동(제7·13장)" },
+  { id: "tech-cdm",   cat: "tech", title: "OMOP Common Data Model", org: "OHDSI", year: "", url: "https://ohdsi.org/data-standardization", tags: ["CDM", "표준용어"], ch: [13], status: "todo", note: "공통데이터모델(제13장)" },
+];
+
+/* 장별 인용출처 + 카탈로그를 하나의 검색 대상으로 병합 */
+function wpAllRefs() {
+  const fromCh = [];
+  WHITEPAPER.forEach((c) => (c.sources || []).forEach((s, i) => fromCh.push({
+    id: `ch${c.no}-${i}`, cat: s.cat || "cite", title: s.title, org: s.org || "", year: s.year || "",
+    url: s.url || "", tags: s.tags || [], ch: [c.no], note: s.note || "",
+    status: (s.note || "").includes("검증완료") ? "done" : "todo",
+  })));
+  return [...fromCh, ...WP_REFS];
+}
+
+/* 키워드·카테고리 검색 */
+function wpSearchRefs(q, cat) {
+  const t = String(q || "").trim().toLowerCase();
+  return wpAllRefs().filter((r) => {
+    if (cat && cat !== "all" && r.cat !== cat) return false;
+    if (!t) return true;
+    const hay = [r.title, r.org, r.note, (r.tags || []).join(" ")].join(" ").toLowerCase();
+    return hay.includes(t);
+  });
+}
+function wpRefStats() {
+  const all = wpAllRefs();
+  return { total: all.length, done: all.filter((r) => r.status === "done").length, byCat: Object.keys(WP_REF_CATS).map((k) => ({ k, n: all.filter((r) => r.cat === k).length })) };
 }
 
 /* 진행률 집계 */
@@ -9937,6 +10077,189 @@ function DemoSection({ onGo }) {
   );
 }
 
+/* ====================== 로그인/회원가입 게이트 ====================== */
+/* 첫 접속 시 메인 앱 대신 표시. 로그인 또는 (실명확인 후) 회원가입을 거쳐야 입장. */
+function AuthBrand() {
+  return (
+    <div className="authbrand">
+      <span className="authlogo">
+        <svg viewBox="0 0 44 44" width="40" height="40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs><linearGradient id="authglg" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse"><stop offset="0" stopColor="#10B9A3" /><stop offset=".55" stopColor="#2563EB" /><stop offset="1" stopColor="#7C3AED" /></linearGradient></defs>
+          <rect x="1.5" y="1.5" width="41" height="41" rx="12" fill="url(#authglg)" />
+          <path d="M8.4 23.2H16l2.5-6.4 3.6 11.6 2.7-7.2 1.9 2h7.5" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="33.6" cy="32.2" r="7.7" fill="#fff" /><text x="33.6" y="36" textAnchor="middle" fontSize="10.5" fontWeight="800" fill="#2563EB" fontFamily="system-ui, sans-serif">₩</text>
+        </svg>
+      </span>
+      <div className="authttl"><span className="hl">HI</span>-Fin Tech</div>
+      <div className="authsub">헬스케어 · 금융보험 · 핀테크 초개인화 건강금융 플랫폼</div>
+    </div>
+  );
+}
+
+function AuthLogin() {
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState("");
+  const [pick, setPick] = useState("");
+  const members = (typeof demoListAll === "function") ? demoListAll() : [];
+  const submit = (e) => {
+    if (e) e.preventDefault();
+    setErr("");
+    const u = appAuthenticate(email, pw);
+    if (!u) { setErr("이메일 또는 비밀번호가 올바르지 않습니다."); return; }
+    authSet({ name: u.name, email: u.email, realVerified: !!u.realVerified });
+    demoSetSession(u);
+  };
+  const quickDemo = () => { const m = demoFindByEmail(pick); if (!m) { setErr("체험 회원을 선택해 주세요."); return; } authSet({ name: m.name, email: m.email }); demoSetSession(m); };
+  const browse = () => { demoLogout(); authSet({ name: "조성래" }); };
+  return (
+    <form className="authform" onSubmit={submit}>
+      <label className="authfield"><span className="authlabel">이메일</span>
+        <input className="authinput" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="username" /></label>
+      <label className="authfield"><span className="authlabel">비밀번호</span>
+        <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" autoComplete="current-password" /></label>
+      {err && <div className="autherr">{err}</div>}
+      <button className="authbtn authprimary" type="submit">로그인</button>
+
+      <div className="authdiv"><span>빠른 체험</span></div>
+      <button type="button" className="authbtn authghost" onClick={browse}>조성래 체험 계정으로 둘러보기</button>
+      <div className="authquick">
+        <select className="authinput" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="체험 회원 선택">
+          <option value="">체험 회원 선택(비밀번호 Demo@1234)</option>
+          {members.map((m) => <option key={m.email} value={m.email}>{m.name} · {m.email}</option>)}
+        </select>
+        <button type="button" className="authbtn authsmall" onClick={quickDemo}>로그인</button>
+      </div>
+    </form>
+  );
+}
+
+function AuthSignup() {
+  const [step, setStep] = useState(1);
+  // 실명확인
+  const [name, setName] = useState("");
+  const [birth, setBirth] = useState("");
+  const [gender, setGender] = useState("");
+  const [carrier, setCarrier] = useState("");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [sentCode, setSentCode] = useState(null);
+  const [verified, setVerified] = useState(false);
+  // 계정
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [agree, setAgree] = useState(false);
+  const [err, setErr] = useState("");
+
+  const phoneDigits = phone.replace(/\D/g, "");
+  const idOk = name.trim() && /^\d{6}$/.test(birth) && /^[1-4]$/.test(gender) && carrier && /^\d{10,11}$/.test(phoneDigits);
+  const sendCode = () => {
+    setErr("");
+    if (!idOk) { setErr("이름·주민번호 앞 6자리·성별·통신사·휴대폰번호를 정확히 입력해 주세요."); return; }
+    const c = String(100000 + (parseInt(phoneDigits.slice(-6) || "0", 10) % 900000)).slice(0, 6);
+    setSentCode(c); setVerified(false); setCode("");
+  };
+  const verify = () => {
+    setErr("");
+    if (!sentCode) { setErr("먼저 인증번호를 받아 주세요."); return; }
+    if (code.trim() !== sentCode) { setErr("인증번호가 일치하지 않습니다."); return; }
+    setVerified(true);
+  };
+  const next = () => { setErr(""); if (!verified) { setErr("실명확인(본인인증)을 완료해 주세요."); return; } setStep(2); };
+  const finish = (e) => {
+    if (e) e.preventDefault();
+    setErr("");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setErr("올바른 이메일 형식을 입력해 주세요."); return; }
+    if (pw.length < 8) { setErr("비밀번호는 8자 이상이어야 합니다."); return; }
+    if (pw !== pw2) { setErr("비밀번호가 일치하지 않습니다."); return; }
+    if (!agree) { setErr("서비스 이용약관·개인정보 처리방침에 동의해 주세요."); return; }
+    if ((typeof demoFindByEmail === "function" && demoFindByEmail(email)) || userFindByEmail(email)) { setErr("이미 가입된 이메일입니다."); return; }
+    const prof = demoMakeProfile(name.trim(), email.trim(), birth, gender);
+    prof.password = pw;
+    userRegister(prof);
+    authSet({ name: prof.name, email: prof.email, realVerified: true });
+    demoSetSession(prof);
+  };
+
+  return (
+    <div className="authform">
+      <div className="authsteps">
+        <span className={`astep ${step === 1 ? "on" : verified ? "done" : ""}`}>1 실명확인</span>
+        <span className="astepline" />
+        <span className={`astep ${step === 2 ? "on" : ""}`}>2 계정 생성</span>
+      </div>
+
+      {step === 1 && (<>
+        <label className="authfield"><span className="authlabel">이름(실명)</span>
+          <input className="authinput" value={name} onChange={(e) => setName(e.target.value)} placeholder="홍길동" /></label>
+        <div className="authfield"><span className="authlabel">주민등록번호</span>
+          <div className="authrrn">
+            <input className="authinput" value={birth} onChange={(e) => setBirth(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="앞 6자리(생년월일)" inputMode="numeric" />
+            <span className="authdash">–</span>
+            <input className="authinput authg" value={gender} onChange={(e) => setGender(e.target.value.replace(/\D/g, "").slice(0, 1))} placeholder="0" inputMode="numeric" maxLength={1} />
+            <span className="authmask">● ● ● ● ● ●</span>
+          </div>
+        </div>
+        <div className="authrow2">
+          <label className="authfield"><span className="authlabel">통신사</span>
+            <select className="authinput" value={carrier} onChange={(e) => setCarrier(e.target.value)}>
+              <option value="">선택</option><option>SKT</option><option>KT</option><option>LG U+</option><option>알뜰폰</option>
+            </select></label>
+          <label className="authfield"><span className="authlabel">휴대폰번호</span>
+            <input className="authinput" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="010-1234-5678" inputMode="tel" /></label>
+        </div>
+        <button type="button" className="authbtn authghost" onClick={sendCode} disabled={verified}>인증번호 받기</button>
+        {sentCode && (
+          <div className="authcode">
+            <div className="authcodemsg">인증번호가 발송되었습니다. <b className="democode">체험 환경 — 인증번호: {sentCode}</b><button type="button" className="authautofill" onClick={() => setCode(sentCode)}>자동입력</button></div>
+            <div className="authquick">
+              <input className="authinput" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="인증번호 6자리" inputMode="numeric" disabled={verified} />
+              <button type="button" className="authbtn authsmall" onClick={verify} disabled={verified}>확인</button>
+            </div>
+          </div>
+        )}
+        {verified && <div className="authok">✓ 실명확인이 완료되었습니다 ({name}님)</div>}
+        {err && <div className="autherr">{err}</div>}
+        <button type="button" className="authbtn authprimary" onClick={next}>다음 단계</button>
+      </>)}
+
+      {step === 2 && (<form onSubmit={finish}>
+        <div className="authverified">✓ {name}님 실명확인 완료</div>
+        <label className="authfield"><span className="authlabel">이메일</span>
+          <input className="authinput" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="username" /></label>
+        <label className="authfield"><span className="authlabel">비밀번호(8자 이상)</span>
+          <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" autoComplete="new-password" /></label>
+        <label className="authfield"><span className="authlabel">비밀번호 확인</span>
+          <input className="authinput" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="비밀번호 재입력" autoComplete="new-password" /></label>
+        <label className="authagree"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> 서비스 이용약관 및 개인정보 처리방침에 동의합니다.</label>
+        {err && <div className="autherr">{err}</div>}
+        <div className="authrow2">
+          <button type="button" className="authbtn authghost" onClick={() => { setErr(""); setStep(1); }}>이전</button>
+          <button type="submit" className="authbtn authprimary">가입 완료</button>
+        </div>
+      </form>)}
+    </div>
+  );
+}
+
+function AuthGate() {
+  const [tab, setTab] = useState("login");
+  useEffect(() => { try { demoRegisterAll(); } catch (e) {} }, []);
+  return (
+    <div className="authwrap">
+      <div className="authcard">
+        <AuthBrand />
+        <div className="authtabs">
+          <button className={`authtab ${tab === "login" ? "on" : ""}`} onClick={() => setTab("login")}>로그인</button>
+          <button className={`authtab ${tab === "signup" ? "on" : ""}`} onClick={() => setTab("signup")}>회원가입</button>
+        </div>
+        {tab === "login" ? <AuthLogin /> : <AuthSignup />}
+        <div className="authnote">※ 본 서비스는 시연용 예시입니다. 입력 정보는 이 기기(브라우저)에만 저장되며, 실제 본인인증·SMS 발송은 이루어지지 않습니다.</div>
+      </div>
+    </div>
+  );
+}
 
 /* ====================== 검진 리포트 보관함 (건강관리 → 검진 리포트) ====================== */
 /* 외부 검진 시스템(age.healthketch.com)에서 발행한 리포트를 고객 동의 후 업로드·보관.
