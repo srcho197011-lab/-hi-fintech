@@ -1587,6 +1587,15 @@ function FireComplianceSection(){
         </div>
       </Card>
 
+      <a href="./registry/" target="_blank" rel="noopener" style={{display:"flex",alignItems:"center",gap:12,textDecoration:"none",
+        background:"linear-gradient(135deg,var(--navy),var(--cyan-deep))",color:"#fff",borderRadius:16,padding:"14px 18px",boxShadow:"0 6px 18px rgba(20,58,99,.28)"}}>
+        <span style={{width:38,height:38,borderRadius:12,background:"rgba(255,255,255,.16)",display:"grid",placeItems:"center",flexShrink:0}}><MapPin size={20}/></span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:14.5,fontWeight:800}}>전국 의무가입 대상 업체 조회 (시군구별)</div>
+          <div style={{fontSize:12.5,color:"#D3E1EE"}}>데이터센터·아파트·발전소·ESS·충전소 — 시도/시군구 필터·검색·지도 (현재 샘플, 공공데이터 연동 예정)</div>
+        </div>
+        <span style={{display:"flex",alignItems:"center",gap:3,fontSize:13,fontWeight:800,whiteSpace:"nowrap"}}>조회 열기<ExternalLink size={15}/></span>
+      </a>
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
         <Btn onClick={()=>nav&&nav("대상 솔루션")}><Building2 size={16}/>업종별 솔루션 보기</Btn>
         <Btn variant="soft" onClick={()=>toast("의무가입 대상 진단은 데모입니다")}><ClipboardCheck size={16}/>우리 시설 의무가입 진단</Btn>
