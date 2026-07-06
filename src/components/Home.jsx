@@ -41,6 +41,157 @@ function OntoCtaArt() {
     </svg>
   );
 }
+/* ====================== 홈 히어로 — AI Ontology 플랫폼 다이어그램 (Palantir-style) ====================== */
+function PlatformDiagram() {
+  const CY = "#22D3EE";
+  const glass = { background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.13)", borderRadius: 16, backdropFilter: "blur(6px)" };
+  const wrapMax = { width: "100%", maxWidth: 900, margin: "0 auto" };
+  const Conn = () => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "3px 0" }}>
+      <div className="pdg-flow" style={{ width: 2, height: 20, background: "linear-gradient(#22D3EE,rgba(34,211,238,.15))", borderRadius: 2 }} />
+      <ChevronDown size={15} color={CY} style={{ marginTop: -3 }} />
+    </div>
+  );
+  const Stage = ({ n, tag, title, accent, children }) => (
+    <div style={{ ...glass, ...wrapMax, padding: "13px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: children ? 11 : 0 }}>
+        <span style={{ width: 26, height: 26, borderRadius: 8, background: accent || CY, color: "#04121f", fontWeight: 900, fontSize: 13, display: "grid", placeItems: "center", flexShrink: 0 }}>{n}</span>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: accent || CY, textTransform: "uppercase" }}>{tag}</div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", lineHeight: 1.2 }}>{title}</div>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+  const Chip = ({ ic: Ic, children }) => (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,211,238,.09)", border: "1px solid rgba(34,211,238,.24)", color: "#D6F6FF", fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: 999 }}>
+      {Ic && <Ic size={13} color={CY} />}{children}
+    </span>
+  );
+  const SvcCard = ({ ic: Ic, t, sub, col }) => (
+    <div style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 13, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
+      <span style={{ width: 34, height: 34, borderRadius: 10, background: (col || CY) + "22", border: "1px solid " + (col || CY) + "55", display: "grid", placeItems: "center" }}><Ic size={17} color={col || CY} /></span>
+      <div style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", lineHeight: 1.3 }}>{t}</div>
+      {sub && <div style={{ fontSize: 10.5, color: "#9FD9EC", lineHeight: 1.3 }}>{sub}</div>}
+    </div>
+  );
+  const services = [
+    [Stethoscope, "맞춤 진료안내", "", "#38BDF8"], [Video, "원격진료", "", "#22D3EE"],
+    [Brain, "AI 질병 조기예측", "암 · 파킨슨 · 뇌졸중", "#A78BFA"], [Search, "추가 정밀검사", "", "#34D399"],
+    [Salad, "맞춤 건강식단", "", "#4ADE80"], [Pill, "맞춤 영양제", "", "#FBBF24"],
+    [Activity, "맞춤 홈케어 의료기기", "", "#F472B6"], [ShieldCheck, "맞춤 건강보험", "", "#60A5FA"],
+  ];
+  return (
+    <div className="pdg-wrap" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(165deg,#0B1F3A 0%,#0E2A4E 55%,#0A2340 100%)", borderRadius: 22, padding: "30px 20px 26px", margin: "16px 0" }}>
+      <style>{`@keyframes pdgPulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.14);opacity:.15}}@keyframes pdgFlowMove{0%{background-position:0 0}100%{background-position:0 22px}}@keyframes pdgSpin{to{transform:rotate(360deg)}}.pdg-wrap *{box-sizing:border-box}.pdg-core-ring{animation:pdgPulse 3s ease-in-out infinite}.pdg-spin{animation:pdgSpin 14s linear infinite}@media(max-width:560px){.pdg-vr{grid-template-columns:1fr !important}.pdg-vr>div:nth-child(2){transform:rotate(90deg);margin:2px 0}}`}</style>
+      <span style={{ position: "absolute", width: 320, height: 320, top: -120, right: -80, background: "radial-gradient(circle,#22D3EE55,transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
+      <span style={{ position: "absolute", width: 300, height: 300, bottom: -120, left: -60, background: "radial-gradient(circle,#7C3AED44,transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
+
+      <div style={{ position: "relative", textAlign: "center", marginBottom: 18 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,211,238,.12)", border: "1px solid rgba(34,211,238,.3)", color: CY, fontSize: 11, fontWeight: 800, letterSpacing: 1, padding: "5px 13px", borderRadius: 999 }}><Network size={12} /> AI ONTOLOGY PLATFORM</span>
+        <div style={{ fontSize: 27, fontWeight: 900, color: "#fff", letterSpacing: -0.5, marginTop: 11 }}>HI-Fin Tech Platform</div>
+        <div style={{ fontSize: 13.5, color: "#9FD9EC", marginTop: 5 }}>AI Ontology 기반 평생 건강관리 · 핀테크 사회적경제 플랫폼</div>
+      </div>
+
+      {/* AI Ontology Core */}
+      <div style={{ position: "relative", display: "flex", justifyContent: "center", marginBottom: 6 }}>
+        <div style={{ position: "relative", width: 150, height: 150, display: "grid", placeItems: "center" }}>
+          <span className="pdg-core-ring" style={{ position: "absolute", inset: 6, borderRadius: "50%", border: "2px solid #22D3EE" }} />
+          <span className="pdg-spin" style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px dashed rgba(34,211,238,.35)" }} />
+          <div style={{ width: 104, height: 104, borderRadius: "50%", background: "radial-gradient(circle at 50% 38%,#67E8F9,#0891B2 70%)", boxShadow: "0 0 40px -6px #22D3EEaa", display: "grid", placeItems: "center", textAlign: "center" }}>
+            <div>
+              <Network size={26} color="#04202b" style={{ display: "block", margin: "0 auto 3px" }} />
+              <div style={{ fontSize: 11.5, fontWeight: 900, color: "#04202b", lineHeight: 1.15 }}>AI Healthcare<br />Ontology</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{ textAlign: "center", fontSize: 11, color: "#7FCCE4", marginBottom: 6 }}>모든 서비스가 하나의 지식그래프로 연결됩니다</div>
+      <Conn />
+
+      {/* ① Free Entry */}
+      <div style={wrapMax}><Stage n="①" tag="Free Entry" title="무료 진입 서비스" accent="#34D399">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}><Chip ic={ShieldCheck}>무료 건강검진 대비보험</Chip><Chip ic={FileText}>무료 건강분석보고서</Chip><Chip ic={MessageSquare}>무료 AI 건강상담</Chip></div>
+      </Stage></div>
+      <Conn />
+
+      {/* ② Check-up */}
+      <div style={wrapMax}><Stage n="②" tag="Check-up Center" title="건강검진센터" accent="#38BDF8">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}><Chip ic={Users}>개인검진</Chip><Chip ic={Building2}>직장검진</Chip><Chip ic={ClipboardList}>국가건강검진</Chip></div>
+      </Stage></div>
+      <Conn />
+
+      {/* ③ AI Analysis */}
+      <div style={wrapMax}><Stage n="③" tag="AI Data Analysis" title="AI 건강데이터 분석" accent="#22D3EE">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}><Chip>건강검진</Chip><Chip>EMR</Chip><Chip>생활습관</Chip><Chip>보험</Chip><Chip>건강데이터</Chip></div>
+        <div style={{ fontSize: 12, color: "#9FD9EC", display: "flex", alignItems: "center", gap: 6 }}><Brain size={14} color={CY} /> AI Ontology가 5대 데이터를 통합·분석해 개인 위험을 예측합니다.</div>
+      </Stage></div>
+      <Conn />
+
+      {/* ④ Personalized */}
+      <div style={wrapMax}><Stage n="④" tag="Personalized Healthcare" title="개인 맞춤 헬스케어" accent="#A78BFA">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 9 }}>
+          {services.map(([Ic, t, sub, col], i) => <SvcCard key={i} ic={Ic} t={t} sub={sub} col={col} />)}
+        </div>
+      </Stage></div>
+      <Conn />
+
+      {/* ⑤ Lifetime */}
+      <div style={wrapMax}><div style={{ ...glass, ...wrapMax, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, background: "rgba(34,211,238,.08)", borderColor: "rgba(34,211,238,.3)" }}>
+        <span style={{ width: 46, height: 46, borderRadius: 13, background: "#22D3EE22", border: "1px solid #22D3EE55", display: "grid", placeItems: "center", flexShrink: 0 }}><HeartPulse size={24} color={CY} /></span>
+        <div><div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: CY }}>⑤ LIFETIME HEALTHCARE</div><div style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>예방 중심 · 평생 건강관리</div><div style={{ fontSize: 11.5, color: "#9FD9EC" }}>Preventive · Lifetime Health Management</div></div>
+      </div></div>
+      <Conn />
+
+      {/* ⑥ Consumption */}
+      <div style={wrapMax}><Stage n="⑥" tag="Daily Consumption" title="일상 건강소비" accent="#FBBF24">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}><Chip ic={Salad}>건강식품</Chip><Chip ic={Stethoscope}>의료서비스</Chip><Chip ic={ShieldCheck}>보험</Chip><Chip ic={Activity}>홈케어 제품</Chip></div>
+      </Stage></div>
+      <Conn />
+
+      {/* ⑦ Value Return */}
+      <div style={{ ...wrapMax, position: "relative" }}>
+        <div style={{ textAlign: "center", marginBottom: 10 }}><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#FBBF24" }}>⑦ VALUE RETURN SYSTEM · 가치환원 순환</span></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 12, alignItems: "center" }} className="pdg-vr">
+          <div style={{ ...glass, padding: "16px 16px", textAlign: "center", background: "rgba(34,211,238,.09)", borderColor: "rgba(34,211,238,.3)" }}>
+            <Wallet size={22} color={CY} style={{ marginBottom: 6 }} />
+            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>50<span style={{ fontSize: 16 }}>%</span></div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: CY, marginTop: 3 }}>회원 리워드</div>
+            <div style={{ fontSize: 10.5, color: "#9FD9EC" }}>Member Rewards</div>
+          </div>
+          <div style={{ display: "grid", placeItems: "center" }}><RotateCcw className="pdg-spin" size={34} color="#7DD3FC" /></div>
+          <div style={{ ...glass, padding: "16px 16px", textAlign: "center", background: "rgba(244,114,182,.1)", borderColor: "rgba(244,114,182,.32)" }}>
+            <HeartHandshake size={22} color="#F9A8D4" style={{ marginBottom: 6 }} />
+            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>30<span style={{ fontSize: 16 }}>%</span></div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#F9A8D4", marginTop: 3 }}>치료비 나눔</div>
+            <div style={{ fontSize: 10.5, color: "#F7C6E0" }}>치료비 사각지대 지원</div>
+          </div>
+        </div>
+        <div style={{ textAlign: "center", fontSize: 10.5, color: "#7FCCE4", marginTop: 8 }}>※ 나머지 20%는 플랫폼 운영 — 소비 가치가 개인 적립과 사회 나눔으로 순환합니다.</div>
+      </div>
+
+      {/* Social Impact */}
+      <div style={{ ...wrapMax, marginTop: 22, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,.12)" }}>
+        <div style={{ textAlign: "center", fontSize: 12, fontWeight: 800, letterSpacing: 1, color: "#7DD3FC", marginBottom: 12 }}>SOCIAL IMPACT · 사회적 임팩트</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 10 }}>
+          {[[Users, "건강 형평성", "Healthcare Equality", "#34D399"], [HeartPulse, "예방 의료", "Preventive Medicine", "#22D3EE"], [Landmark, "사회적 경제", "Social Economy", "#A78BFA"]].map(([Ic, t, en, col], i) => (
+            <div key={i} style={{ ...glass, padding: "16px 12px", textAlign: "center" }}>
+              <span style={{ width: 44, height: 44, borderRadius: 14, background: col + "22", border: "1px solid " + col + "55", display: "grid", placeItems: "center", margin: "0 auto 9px" }}><Ic size={22} color={col} /></span>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>{t}</div>
+              <div style={{ fontSize: 10.5, color: "#9FD9EC", marginTop: 2 }}>{en}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ ...wrapMax, textAlign: "center", marginTop: 18, fontSize: 12.5, color: "#B6E3F2", lineHeight: 1.6 }}>
+        “건강 소비의 가치를 <b style={{ color: "#fff" }}>개인과 사회에 함께 환원</b>하는 AI Healthcare &amp; FinTech Social Impact Platform”
+      </div>
+    </div>
+  );
+}
+
 function HomeView({ onGo }) {
   const go = onGo || (() => {});
   // 로그인한 회원 기준으로 홈 대시보드 개인화 (체험회원/가입회원 → 해당 고객, 없으면 조성래 기본)
@@ -83,6 +234,7 @@ function HomeView({ onGo }) {
         </div>
         <div className="hart"><HeroArt /></div>
       </div>
+      <PlatformDiagram />
       <div className="banner">
         <div><span className="pchip"><Sparkles size={13} /> {nm}님 맞춤 초개인화 대시보드</span><div className="head">AI가 {nm}님의 건강을 지키고 있습니다.</div><div className="sub">{R ? `${nm}님 시연용 예시 리포트와 생활데이터를 분석해 안내합니다.` : "프롬에이지 Premium 리포트와 생활데이터를 분석해 안내합니다."}</div></div>
         <div className="art"><ShieldArt /></div>
