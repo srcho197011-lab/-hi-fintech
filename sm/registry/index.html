@@ -93,7 +93,11 @@ select{min-width:130px;cursor:pointer}
 
   <div class="sample">
     <span style="font-size:16px">⚠️</span>
-    <div><b>현재 데이터는 조회 기능 시연용 ‘샘플’입니다.</b> 표시된 시설은 <b>실제 업체가 아니며</b> 지역·좌표만 실제입니다. 심평원·지방행정인허가데이터(LOCALDATA)·전국전기차충전소 표준데이터(data.go.kr)·전력거래소 등 <b>공공데이터를 연동하면 실제 전국 업체로 자동 교체</b>됩니다. (병원 등 일부 업종은 보유 실데이터로 우선 반영 가능)</div>
+    <div><b>데이터센터·아파트·발전소·ESS는 조회 기능 시연용 ‘샘플’입니다.</b> 표시 시설은 실제 업체가 아니며 지역·좌표만 실제입니다. 공공데이터(LOCALDATA·전력거래소 등) 연동 시 실제 전국 업체로 자동 교체됩니다.</div>
+  </div>
+  <div id="evnote" style="display:none;gap:10px;align-items:flex-start;background:var(--green-soft);border:1px solid #C6E7DA;border-radius:14px;padding:12px 16px;font-size:12.5px;color:#0f6b4e;line-height:1.6;margin-bottom:16px">
+    <span style="font-size:16px">✅</span>
+    <div><b>충전소는 실데이터입니다</b> — 한국환경공단 전기차 충전소 정보(data.go.kr, Open API) 전국 <b id="evcount">–</b>곳. 위도·경도·운영기관 실제 데이터.</div>
   </div>
 
   <div class="cats" id="cats"></div>
@@ -252,41 +256,61 @@ select{min-width:130px;cursor:pointer}
   }
 
   var listEl=document.getElementById("list"), cntEl=document.getElementById("cnt");
+  var CAP=1200;
+  function tagHTML(f,c){
+    return '<span class="tag" style="color:'+c.color+';background:'+c.color+'22">'+c.name+'</span>'+
+      (f.real?'<span class="tag" style="color:var(--green);background:var(--green-soft)">실데이터</span>'
+             :'<span class="tag" style="color:var(--muted);background:#EEF2F7">샘플</span>');
+  }
   function render(){
     var rows=filtered();
-    cntEl.textContent=rows.length.toLocaleString()+"곳";
+    var capped=rows.length>CAP, shown=capped?rows.slice(0,CAP):rows;
+    cntEl.textContent=rows.length.toLocaleString()+"곳"+(capped?" (상위 "+CAP.toLocaleString()+" 표시)":"");
     // 리스트
     if(!rows.length){ listEl.innerHTML='<div class="empty">조건에 맞는 시설이 없습니다.<br>필터를 조정해 보세요.</div>'; }
     else {
       listEl.innerHTML="";
-      rows.forEach(function(f){
+      if(capped){ var w=document.createElement("div"); w.style.cssText="padding:10px 12px;font-size:12px;color:var(--muted)"; w.innerHTML="결과가 많습니다 — 상위 "+CAP.toLocaleString()+"곳만 표시. <b>시·군·구를 선택</b>하면 좁혀집니다."; listEl.appendChild(w); }
+      shown.forEach(function(f){
         var c=CMAP[f.cat];
         var d=document.createElement("div"); d.className="item";
         d.innerHTML='<div class="ico" style="background:'+c.color+'">'+c.emoji+'</div>'+
-          '<div style="flex:1;min-width:0"><div class="nm">'+f.name+
-          '<span class="tag" style="color:'+c.color+';background:'+c.color+'22">'+c.name+'</span>'+
-          '<span class="tag" style="color:var(--muted);background:#EEF2F7">샘플</span></div>'+
+          '<div style="flex:1;min-width:0"><div class="nm">'+f.name+tagHTML(f,c)+'</div>'+
           '<div class="ad">'+f.addr+'</div><div class="mt">'+f.meta+'</div></div>';
-        d.onclick=function(){ map.setView([f.lat,f.lng],13); openPopup(f); };
+        d.onclick=function(){ map.setView([f.lat,f.lng],14); openPopup(f); };
         listEl.appendChild(d);
       });
     }
     // 지도 마커
     markers.clearLayers();
     var pts=[];
-    rows.forEach(function(f){
+    shown.forEach(function(f){
       var c=CMAP[f.cat];
-      var m=L.circleMarker([f.lat,f.lng],{radius:8,color:"#fff",weight:2,fillColor:c.color,fillOpacity:.95});
-      m.bindPopup('<b>'+f.name+'</b><br>'+f.addr+'<br><span style="color:#6b7a8c">'+c.name+' · '+f.meta+' · <b>샘플</b></span>');
+      var m=L.circleMarker([f.lat,f.lng],{radius:7,color:"#fff",weight:1.5,fillColor:c.color,fillOpacity:.9});
+      m.bindPopup('<b>'+f.name+'</b><br>'+f.addr+'<br><span style="color:#6b7a8c">'+c.name+' · '+f.meta+' · <b>'+(f.real?'실데이터':'샘플')+'</b></span>');
       m.addTo(markers); pts.push([f.lat,f.lng]);
       f._m=m;
     });
-    if(pts.length){ try{ map.fitBounds(pts,{padding:[40,40],maxZoom:12}); }catch(e){} }
+    if(pts.length){ try{ map.fitBounds(pts,{padding:[40,40],maxZoom:13}); }catch(e){} }
   }
   function openPopup(f){ if(f._m) f._m.openPopup(); }
 
   function sync(){ renderCats(); fillSido(); fillSgg(); render(); }
   sync();
+
+  // 실데이터(전기차 충전소) 로드 — ev.json 있으면 샘플 대체
+  fetch("./data/ev.json?ts="+Date.now()).then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(j){
+    var sidoArr=j.sido||[], st=j.stations||[];
+    if(!st.length) return;
+    var real=st.map(function(s){
+      return { cat:"ev", name:s[0], sido:sidoArr[s[1]]||"", sgg:s[2], addr:s[3], lat:s[4], lng:s[5],
+        meta:(s[6]?s[6]+"기 · ":"")+(s[7]||"충전소"), real:true };
+    });
+    FACIL = FACIL.filter(function(f){ return f.cat!=="ev"; }).concat(real);
+    var note=document.getElementById("evnote"); if(note){ note.style.display="flex"; }
+    var ec=document.getElementById("evcount"); if(ec){ ec.textContent=real.length.toLocaleString(); }
+    sync();
+  }).catch(function(){ /* ev.json 없음 → 충전소 샘플 유지 */ });
 })();
 </script>
 </body>
