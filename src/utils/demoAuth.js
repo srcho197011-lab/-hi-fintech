@@ -21,9 +21,12 @@ function demoLogout() { try { localStorage.removeItem(DEMO_SESSION_KEY); } catch
 /* ── 일반 로그인/회원가입 인증(게이트) — localStorage 기반 ── */
 const AUTH_KEY = "hifin_authed";       // 게이트 통과(현재 로그인) 사용자 {name,email,realVerified}
 const USERS_KEY = "hifin_users";       // 실명확인 후 가입한 일반 회원 저장소
-function authCurrent() { try { return JSON.parse(localStorage.getItem(AUTH_KEY) || "null"); } catch (e) { return null; } }
-function authSet(u) { try { localStorage.setItem(AUTH_KEY, JSON.stringify(u)); } catch (e) {} demoNotify(); }
-function appLogout() { try { localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); } catch (e) {} demoNotify(); }
+/* 게이트 인증은 세션 단위(sessionStorage)로만 유지 — 브라우저/탭을 새로 열면 로그인 페이지부터 시작.
+   (기존 localStorage에 남아있던 로그인 흔적은 무시하고 정리) */
+try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
+function authCurrent() { try { return JSON.parse(sessionStorage.getItem(AUTH_KEY) || "null"); } catch (e) { return null; } }
+function authSet(u) { try { sessionStorage.setItem(AUTH_KEY, JSON.stringify(u)); } catch (e) {} demoNotify(); }
+function appLogout() { try { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); } catch (e) {} demoNotify(); }
 function usersAll() { try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); } catch (e) { return []; } }
 function usersSave(l) { try { localStorage.setItem(USERS_KEY, JSON.stringify(l)); } catch (e) {} }
 function userFindByEmail(email) { const e = (email || "").trim().toLowerCase(); return usersAll().find((u) => (u.email || "").toLowerCase() === e) || null; }
