@@ -1205,16 +1205,7 @@ function InsuranceSection(){
         <AlertTriangle size={18} color="var(--amber)" style={{flexShrink:0,marginTop:1}}/>
         <span>보험료 할인율(예: 20~40%)은 <b>보험사의 실제 손해율 분석·현장 실사·계약 체결 후 확정</b>됩니다. 실증 데이터 없이 확정 수치로 제시하지 않습니다.</span>
       </div>
-      <a href="./cost/" target="_blank" rel="noopener" style={{display:"flex",alignItems:"center",gap:12,textDecoration:"none",
-        background:"linear-gradient(135deg,var(--navy),var(--cyan-deep))",color:"#fff",borderRadius:16,padding:"14px 18px",marginBottom:18,boxShadow:"0 6px 18px rgba(20,58,99,.28)"}}>
-        <span style={{width:38,height:38,borderRadius:12,background:"rgba(255,255,255,.16)",display:"grid",placeItems:"center",flexShrink:0}}><TrendingDown size={20}/></span>
-        <div style={{flex:1}}>
-          <div style={{fontSize:14.5,fontWeight:800}}>HI-IDC 판교 데이터센터 · 비용 절감 관리 리포트</div>
-          <div style={{fontSize:12.5,color:"#D3E1EE"}}>보험료 절감율·절감액 · 안전 인력비·판관비 절감 · 업무 효율성 증대 (근거·산정 상세)</div>
-        </div>
-        <span style={{display:"flex",alignItems:"center",gap:3,fontSize:13,fontWeight:800,whiteSpace:"nowrap"}}>리포트 열기<ExternalLink size={15}/></span>
-      </a>
-      <Tabs tabs={["가입자 대상","보장 안내","보험료 산정","스마트 청구"]} active={tab} onChange={setTab}/>
+      <Tabs tabs={["가입자 대상","보장 안내","보험료 산정","비용 절감","스마트 청구"]} active={tab} onChange={setTab}/>
       {tab==="가입자 대상" && <InsTargetTab/>}
       {tab==="보장 안내" && <>
         <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>{INSURANCE.product}</div>
@@ -1230,6 +1221,7 @@ function InsuranceSection(){
         </div>
       </>}
       {tab==="보험료 산정" && <PremiumEstimator/>}
+      {tab==="비용 절감" && <CostSavingsSection/>}
       {tab==="스마트 청구" && <ClaimFlow/>}
     </div>
   );
@@ -1463,6 +1455,188 @@ function ClaimFlow(){
       </div>
       <div style={{marginTop:12,fontSize:12,color:"var(--muted)"}}>※ 청구·지급 프로세스는 데모이며 실제 보험금 지급은 약관·손해사정 결과에 따릅니다.</div>
     </Card>
+  );
+}
+
+/* ===== 비용 절감 리포트 서브섹션 (구 sm/cost 리포트를 보험 탭으로 통합) ===== */
+function MiniTable({head,rows,aligns}){
+  const al=(i)=>(aligns&&aligns[i])||"left";
+  return (
+    <div style={{border:"1px solid var(--border)",borderRadius:14,overflow:"hidden"}}>
+      <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+        <thead><tr>{head.map((h,i)=>(
+          <th key={i} style={{padding:"11px 12px",textAlign:al(i),color:"var(--muted)",fontWeight:700,fontSize:12,background:"#F7FAFD",borderBottom:"1px solid var(--border)"}}>{h}</th>))}</tr></thead>
+        <tbody>{rows.map((r,ri)=>(
+          <tr key={ri} style={r.tot?{background:"var(--green-soft)"}:{}}>{r.cells.map((c,ci)=>(
+            <td key={ci} className={ci>0?"num":""} style={{padding:"11px 12px",textAlign:al(ci),borderBottom:ri<rows.length-1?"1px solid var(--border)":"none",fontWeight:r.tot?900:600}}>{c}</td>))}</tr>))}</tbody>
+      </table>
+    </div>);
+}
+function CostSavingsSection(){
+  const [score,setScore]=useState(94);
+  const [struct,setStruct]=useState("내화(1급)");
+  const TSI=1920;                 // 억원 (판교 IDC: 24,000㎡×400만 + 12MW×80억)
+  const baseRate=0.0008, addon=2.0;
+  const structs={"내화(1급)":1.0,"준내화(2급)":1.35,"일반(3급)":1.9};
+  const gr = score>=90?{g:"A",d:0.25}:score>=80?{g:"B",d:0.15}:score>=70?{g:"C",d:0.07}:{g:"D",d:0};
+  const sf=structs[struct];
+  const base=TSI*baseRate*sf*addon, prem=base*(1-gr.d), save=base-prem, eff=prem/TSI*100;
+  const uk=(v)=> v>=1 ? (Math.round(v*100)/100).toFixed(2).replace(/\.?0+$/,"")+"억원" : Math.round(v*10000).toLocaleString()+"만원";
+  const gc=LV[gr.g==="A"||gr.g==="B"?"양호":gr.g==="C"?"주의":"위험"];
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+      {/* 히어로 3KPI */}
+      <Card style={{background:"linear-gradient(150deg,#0B2545,#123A63 58%,#0E7490)",color:"#fff",border:"none"}}>
+        <div style={{fontSize:12,fontWeight:800,background:"rgba(255,255,255,.14)",display:"inline-block",padding:"5px 11px",borderRadius:999,marginBottom:10}}>📉 HI-IDC 판교 데이터센터 비용 절감</div>
+        <div style={{fontSize:20,fontWeight:900,letterSpacing:-.4,marginBottom:4}}>통합 안전관리 도입 비용 절감 관리 리포트</div>
+        <div style={{fontSize:13,color:"#C9DCED",lineHeight:1.6,marginBottom:16}}>설비+AI관제+보험+데이터 도입에 따른 ① 화재보험료 절감 ② 안전 인력비·판관비 절감 ③ 업무 효율성 증대. (자산 기준: 연면적 24,000㎡ · IT 12MW · 안전점수 {score} {gr.g}등급)</div>
+        <div className="grid-3">
+          {[["① 화재보험료 절감(연)","약 "+uk(save),gr.g+"등급 · 약 "+Math.round(gr.d*100)+"%"],
+            ["② 인력비·판관비 절감(연)","약 1.95억원","AI관제·예지정비·통합운영"],
+            ["③ 업무 효율 가치(연)","다운타임↓·가동률↑","무중단·감사·청구 효율화"]].map((k,i)=>(
+            <div key={i} style={{background:"rgba(255,255,255,.10)",borderRadius:14,padding:"14px 16px"}}>
+              <div style={{fontSize:12,color:"#BFD5EA",fontWeight:700}}>{k[0]}</div>
+              <div style={{fontSize:20,fontWeight:900,margin:"3px 0"}}>{k[1]}</div>
+              <div style={{fontSize:11.5,color:"#9FC0DA"}}>{k[2]}</div>
+            </div>))}
+        </div>
+      </Card>
+
+      {/* 1. 보험료 절감 */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
+        <span style={{width:30,height:30,borderRadius:9,background:"var(--green)",color:"#fff",display:"grid",placeItems:"center",fontWeight:900,fontSize:15}}>1</span>
+        <h3 style={{margin:0,fontSize:18,fontWeight:900}}>매년 화재보험료 절감율 및 절감액</h3>
+      </div>
+      <Card>
+        <h4 style={{margin:"0 0 10px",fontSize:15,fontWeight:800}}>데이터센터 보험은 “화재보험 하나”가 아닙니다</h4>
+        <div style={{fontSize:13.5,color:"var(--sub)",lineHeight:1.7,marginBottom:12}}>재물보험을 축으로 <b>기업휴지(BI)·배상책임·사이버/기술 E&amp;O·장비고장(기계)</b>이 함께 설계되는 복합 리스크 시설입니다. 전력·냉각·장비·SW가 상호의존해 한 사고가 연쇄손실로 확대됩니다.</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+          {["🔥 재물(화재·폭발)","⏸ 기업휴지(BI)","👥 배상책임","🛡 사이버·기술 E&O","⚙ 장비고장(기계)"].map((c,i)=>(
+            <span key={i} style={{fontSize:12.5,fontWeight:700,color:"var(--navy)",background:"var(--navy-soft)",borderRadius:10,padding:"8px 12px"}}>{c}</span>))}
+        </div>
+        <div style={{borderLeft:"4px solid var(--danger)",background:"var(--danger-soft)",borderRadius:"0 14px 14px 0",padding:"14px 16px",fontSize:13,color:"var(--sub)",lineHeight:1.7}}>
+          <b style={{color:"var(--danger)"}}>실제 사례 · 2022 SK C&amp;C 판교 데이터센터 화재</b> — 현대해상·삼성화재·KB손해보험·롯데손해보험 등에서 <b>재산종합 + INT E&amp;O(기술배상)</b>에 가입, 관련 보험금 <b>약 70억 원 수준</b>으로 보도. 화재가 재물손해를 넘어 서비스 중단·배상으로 번진 대표 사례입니다.
+        </div>
+      </Card>
+      <Card>
+        <CardHead icon={Layers} title="보험가입금액(TSI) 파라메트릭 산정" fg="var(--navy)" bg="var(--navy-soft)"/>
+        <MiniTable head={["구성","산식","추정액"]} aligns={["left","left","right"]} rows={[
+          {cells:["건물·전기·공조 인프라","24,000㎡ × 400만원/㎡","960억원"]},
+          {cells:["IT동산(서버·스토리지·네트워크)","12MW × 80억원/MW","960억원"]},
+          {cells:["총 보험가입금액(TSI)","인프라 + IT동산","1,920억원"],tot:true},
+        ]}/>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:10,lineHeight:1.7}}>단가 근거: 한국 데이터센터 건설비 MW당 약 1,000만~1,100만 달러, 글로벌 700만~1,200만 달러. IT동산·인프라 단가는 공개자료 기반 <b>보수적 예시치</b>이며 재조달가액 평가로 확정됩니다.</div>
+      </Card>
+      <Card>
+        <CardHead icon={TrendingDown} title="안전등급별 연간 보험료·절감 시뮬레이션" fg="var(--green)" bg="var(--green-soft)"/>
+        <div className="grid-2-r">
+          <div>
+            <EstRng label="안전점수" unit={"· "+gr.g+"등급"} val={score} set={setScore} min={50} max={100} step={1}/>
+            <div style={{fontSize:12.5,fontWeight:700,color:"var(--sub)",marginBottom:7}}>건물 구조</div>
+            <EstSeg opts={Object.keys(structs)} val={struct} set={setStruct}/>
+            <div style={{fontSize:11.5,color:"var(--muted)",marginTop:12,lineHeight:1.7}}>기본요율 {(baseRate*100).toFixed(3)}% · 구조계수 {struct} ×{sf} · 특약 종합 ×{addon} · {gr.g}등급 할인 {Math.round(gr.d*100)}%</div>
+          </div>
+          <div style={{background:"linear-gradient(155deg,#0B2545,#123A63 60%,#0E7490)",color:"#fff",borderRadius:16,padding:"18px 20px"}}>
+            <div style={{fontSize:12.5,color:"#BFD5EA",fontWeight:700}}>연 종합 보험료(개략 추정)</div>
+            <div style={{fontSize:30,fontWeight:900,letterSpacing:-1,margin:"2px 0"}}>{uk(prem)}<span style={{fontSize:15,color:"#BFE6F1",fontWeight:700}}> /년</span></div>
+            <div style={{fontSize:12,color:"#9FC0DA"}}>실효요율 {eff.toFixed(3)}% · TSI {TSI.toLocaleString()}억</div>
+            <div style={{display:"flex",gap:10,marginTop:14}}>
+              <div style={{flex:1,background:"rgba(255,255,255,.10)",borderRadius:12,padding:"10px 12px"}}><div style={{fontSize:11,color:"#BFD5EA"}}>할인 전(무개선)</div><div style={{fontSize:15,fontWeight:900}}>{uk(base)}</div></div>
+              <div style={{flex:1,background:"rgba(255,255,255,.10)",borderRadius:12,padding:"10px 12px"}}><div style={{fontSize:11,color:"#BFD5EA"}}>등급 할인율</div><div style={{fontSize:15,fontWeight:900}}>{Math.round(gr.d*100)}%</div></div>
+              <div style={{flex:1,background:"rgba(31,169,122,.28)",borderRadius:12,padding:"10px 12px"}}><div style={{fontSize:11,color:"#BFD5EA"}}>연 절감액</div><div style={{fontSize:15,fontWeight:900}}>{uk(save)}</div></div>
+            </div>
+          </div>
+        </div>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:12,lineHeight:1.7}}>특약 종합계수 ×2.0(BI +50%·배상 +10%·장비고장 +15%·사이버 +25% 가정). 안전등급 할인 A 25%·B 15%·C 7%·D 0%. 검토용 예시이며 실제 인수·할인은 보험사 손해율 분석·현장 실사·계약에 따라 확정됩니다.</div>
+      </Card>
+      <Card>
+        <CardHead icon={RefreshCw} title="다년 절감 로드맵 — 손해율 개선의 복리 효과" fg="var(--cyan-deep)" bg="var(--cyan-soft)"/>
+        <MiniTable head={["연차","적용 상태","연 보험료(추정)","무개선 대비 절감","절감율"]} aligns={["left","left","right","right","right"]} rows={[
+          {cells:["1년차","A등급 달성","2.30억원","0.77억원","25%"]},
+          {cells:["2년차","무사고 + 요율 개선","2.19억원","0.88억원","29%"]},
+          {cells:["3년차","손해율 개선 반영","2.10억원","0.97억원","32%"]},
+          {cells:["3년 누적","절감액 합계","—","약 2.62억원","평균 ~29%"],tot:true},
+        ]}/>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:10,lineHeight:1.7}}>절감분은 <b>안전지갑 → 보험료 준비금</b>으로 이월해 갱신 보험료에 충당할 수 있습니다. 실제 갱신 요율은 보험사 정책에 따릅니다.</div>
+      </Card>
+
+      {/* 2. 인력비·판관비 */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
+        <span style={{width:30,height:30,borderRadius:9,background:"var(--cyan-deep)",color:"#fff",display:"grid",placeItems:"center",fontWeight:900,fontSize:15}}>2</span>
+        <h3 style={{margin:0,fontSize:18,fontWeight:900}}>안전 인력비 절감 및 기타 판매관리비 절감</h3>
+      </div>
+      <Card>
+        <div className="grid-3" style={{marginBottom:16}}>
+          {[["🤖 AI 관제 상시감시","var(--cyan-deep)","var(--cyan-soft)","ZEN-iPlus 열화상·영상 AI가 24시간 이상징후를 자동 감시·기록. 중대재해 증빙을 사람 대신 확보해 야간·상시 감시 인력을 최소화합니다."],
+            ["🔧 예지정비 전환","var(--amber)","var(--amber-soft)","UPS·배터리 예지진단으로 긴급 야간 출동·초과근무·돌발정비를 계획정비로 전환. 돌발 대응 인건비·외주 긴급비를 절감합니다."],
+            ["🧩 통합 운영","var(--green)","var(--green-soft)","소화·전원·관제·유지보수·보험을 단일 SaaS로 관리해 벤더 조달·계약·감사 대응의 관리 간접비(판관비)를 줄입니다."]].map((c,i)=>(
+            <div key={i} style={{background:c[2],borderRadius:14,padding:"16px"}}>
+              <b style={{color:c[1],fontSize:13.5}}>{c[0]}</b>
+              <div style={{fontSize:12.5,color:"var(--sub)",lineHeight:1.6,marginTop:8}}>{c[3]}</div>
+            </div>))}
+        </div>
+        <MiniTable head={["항목","현행(연)","도입 후(연)","절감(연)","근거"]} aligns={["left","right","right","right","left"]} rows={[
+          {cells:["24시간 안전감시 인력","3.6억원","2.4억원","1.20억원","AI 관제로 상시감시 보조·야간 최소화"]},
+          {cells:["예지정비 초과근무·긴급출동","4,000만원","1,500만원","0.25억원","돌발정비 → 계획정비 전환"]},
+          {cells:["벤더·계약 관리 간접비","6,000만원","3,000만원","0.30억원","설비+보험+관제+유지보수 단일 플랫폼"]},
+          {cells:["감사·증빙 문서 대응","3,000만원","1,000만원","0.20억원","중대재해 증빙 자동화(SBT)"]},
+          {cells:["합계","5.20억원","3.25억원","약 1.95억원","연간 절감"],tot:true},
+        ]}/>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:10,lineHeight:1.7}}>인원수·인건비 단가는 시설 규모·조직에 따라 크게 달라지는 <b>추정 예시</b>입니다. 법정 선임(전기·소방안전관리자 등) 인력은 대체가 아닌 <b>업무 보조·효율화</b> 관점이며 관련 법령·안전 기준을 우선합니다.</div>
+      </Card>
+
+      {/* 3. 업무 효율성 */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginTop:4}}>
+        <span style={{width:30,height:30,borderRadius:9,background:"var(--navy)",color:"#fff",display:"grid",placeItems:"center",fontWeight:900,fontSize:15}}>3</span>
+        <h3 style={{margin:0,fontSize:18,fontWeight:900}}>업무 효율성 및 효과성 증대</h3>
+      </div>
+      <Card>
+        <MiniTable head={["지표(KPI)","현행","목표","개선 동인"]} aligns={["left","right","right","left"]} rows={[
+          {cells:["이상감지 → 조치(MTTR)","45분","25분","온톨로지 통합 관제(원인–조치 연결)"]},
+          {cells:["비계획 다운타임","기준","↓ 대폭","예지정비 → 계획정비 전환"]},
+          {cells:["가동률(Uptime)","99.9%","99.98%","무중단 운영 · SLA 위약 감소"]},
+          {cells:["정기점검 소요","8시간","4시간","자가점검·자동 기록"]},
+          {cells:["보험 청구 처리","수 주","수 일","온톨로지 기반 자동 청구·증빙"]},
+          {cells:["감사·규제 대응 준비","수 일","수 시간","중대재해 증빙 SBT 자동 보관"]},
+        ]}/>
+      </Card>
+      <div className="grid-2-r">
+        <Card>
+          <h4 style={{margin:"0 0 8px",fontSize:15,fontWeight:800}}>무중단(가동률)의 경제적 가치</h4>
+          <div style={{fontSize:13,color:"var(--sub)",lineHeight:1.75}}>데이터센터 다운타임 비용은 서비스 규모에 따라 매우 크며, 한 번의 중단이 대규모 손실·배상으로 확대됩니다(FM Global·Swiss Re). 예지정비로 <b>비계획 다운타임을 줄이는 것</b>이 곧 기업휴지 손실·SLA 위약 리스크를 낮추는 직접적 비용 절감입니다.</div>
+        </Card>
+        <Card>
+          <h4 style={{margin:"0 0 8px",fontSize:15,fontWeight:800}}>안전 → 보험 → 자금의 선순환</h4>
+          <div style={{fontSize:13,color:"var(--sub)",lineHeight:1.75}}>안전점수 개선 → 보험료 절감 → 절감분을 <b>안전지갑 준비금</b>으로 이월 → 안전장비·유지보수 재투자 → 안전점수 추가 개선. 사고 시 온톨로지 기반 <b>자동 청구</b>로 복구 자금을 신속히 확보해 복구 시간·기회손실을 줄입니다.</div>
+        </Card>
+      </div>
+
+      {/* 종합 */}
+      <Card style={{background:"linear-gradient(150deg,#EAF6F1,#DFF3EC)",border:"1px solid #C6E7DA"}}>
+        <CardHead icon={TrendingDown} title="연간 비용 절감 종합(추정)" fg="var(--green)" bg="#fff"/>
+        <MiniTable head={["구분","연 절감액(추정)","비고"]} aligns={["left","right","left"]} rows={[
+          {cells:["① 화재보험료 절감","약 0.77억원","A등급 25%, 다년 누적 시 확대"]},
+          {cells:["② 인력비·판관비 절감","약 1.95억원","AI관제·예지정비·통합운영"]},
+          {cells:["③ 업무 효율(무중단·효율화)","정성+α","다운타임↓·SLA위약↓·감사효율↑"]},
+          {cells:["직접 절감 합계","약 2.7억원+/년","③ 무중단 가치는 별도(규모 의존)"],tot:true},
+        ]}/>
+        <div style={{fontSize:11.5,color:"var(--muted)",marginTop:10,lineHeight:1.7}}>“안전을 도입할수록 비용은 감소하고 참여기업의 매출은 반복 증가하는 선순환”이 핵심입니다. 모든 수치는 공개 근거 기반 <b>파라메트릭 추정</b>이며 실증(파일럿)·보험사 인수확약·현장 실사로 확정되어야 합니다.</div>
+      </Card>
+
+      {/* 근거 */}
+      <Card>
+        <CardHead icon={FileText} title="근거 자료 (인용 목적)" fg="var(--cyan-deep)" bg="var(--cyan-soft)"/>
+        <ol style={{margin:0,paddingLeft:20,fontSize:13,color:"var(--sub)",lineHeight:1.9}}>
+          <li>데이터센터 보험 구조(재물+BI+배상+E&amp;O) — <a href="https://www.insnews.co.kr/news/articleView.html?idxno=91317" target="_blank" rel="noopener" style={{color:"var(--cyan-deep)"}}>한국보험신문</a></li>
+          <li>SK C&amp;C 판교 화재·보험(재산종합+INT E&amp;O, 보험금 약 70억) — <a href="https://www.newspim.com/news/view/20221019000618" target="_blank" rel="noopener" style={{color:"var(--cyan-deep)"}}>뉴스핌</a></li>
+          <li>한국 데이터센터 MW당 건설비(약 1,000만~1,100만 달러) — <a href="https://finance.yahoo.com/news/south-korea-data-center-market-103000174.html" target="_blank" rel="noopener" style={{color:"var(--cyan-deep)"}}>Yahoo Finance</a></li>
+          <li>글로벌 건설비(MW당 700만~1,200만 달러) — <a href="https://dgtlinfra.com/how-much-does-it-cost-to-build-a-data-center/" target="_blank" rel="noopener" style={{color:"var(--cyan-deep)"}}>Dgtl Infra</a></li>
+          <li>데이터센터 방재·사업연속성 — <a href="https://fireprotectionsupport.nl/wp-content/uploads/2022/08/FMDS0532-2022-07-Data-Centers-and-Related-Facilities.pdf" target="_blank" rel="noopener" style={{color:"var(--cyan-deep)"}}>FM Global(FMDS 0532)</a></li>
+          <li>데이터센터 리스크 누적·보험 수요 — <a href="https://www.reuters.com/business/demand-risks-global-data-centre-insurance-growing-swiss-re-says-2026-03-27/" target="_blank" rel="noopener" style={{color:"var(--cyan-deep)"}}>Swiss Re(Reuters)</a></li>
+        </ol>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:12,lineHeight:1.7}}>본 리포트의 산정·절감 수치는 공개 자료 기반 <b>개략 추정(파라메트릭)</b>입니다. 실제 보험료·절감은 방재 수준(UPS·배터리실 분리·소방·전력 이중화), 침수·자연재해, SLA 배상한도, BI 보상기간, 보험사 언더라이팅에 따라 달라집니다.</div>
+      </Card>
+    </div>
   );
 }
 
