@@ -1167,7 +1167,7 @@ function SegmentSection(){
           </div>
         </div>
         <div style={{display:"flex",gap:10,marginTop:18,flexWrap:"wrap"}}>
-          <Btn onClick={()=>nav&&nav("화재특종보험")}><ShieldCheck size={16}/>보험료 절감 시뮬</Btn>
+          <Btn onClick={()=>nav&&nav("화재특종보험")}><ShieldCheck size={16}/>보험료 산정</Btn>
           <Btn variant="soft" onClick={()=>nav&&nav("참여사 생태계")}><Users size={16}/>도입 문의</Btn>
         </div>
       </Card>
@@ -1205,7 +1205,16 @@ function InsuranceSection(){
         <AlertTriangle size={18} color="var(--amber)" style={{flexShrink:0,marginTop:1}}/>
         <span>보험료 할인율(예: 20~40%)은 <b>보험사의 실제 손해율 분석·현장 실사·계약 체결 후 확정</b>됩니다. 실증 데이터 없이 확정 수치로 제시하지 않습니다.</span>
       </div>
-      <Tabs tabs={["가입자 대상","보장 안내","보험료 절감 시뮬","스마트 청구"]} active={tab} onChange={setTab}/>
+      <a href="./cost/" target="_blank" rel="noopener" style={{display:"flex",alignItems:"center",gap:12,textDecoration:"none",
+        background:"linear-gradient(135deg,var(--navy),var(--cyan-deep))",color:"#fff",borderRadius:16,padding:"14px 18px",marginBottom:18,boxShadow:"0 6px 18px rgba(20,58,99,.28)"}}>
+        <span style={{width:38,height:38,borderRadius:12,background:"rgba(255,255,255,.16)",display:"grid",placeItems:"center",flexShrink:0}}><TrendingDown size={20}/></span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:14.5,fontWeight:800}}>HI-IDC 판교 데이터센터 · 비용 절감 관리 리포트</div>
+          <div style={{fontSize:12.5,color:"#D3E1EE"}}>보험료 절감율·절감액 · 안전 인력비·판관비 절감 · 업무 효율성 증대 (근거·산정 상세)</div>
+        </div>
+        <span style={{display:"flex",alignItems:"center",gap:3,fontSize:13,fontWeight:800,whiteSpace:"nowrap"}}>리포트 열기<ExternalLink size={15}/></span>
+      </a>
+      <Tabs tabs={["가입자 대상","보장 안내","보험료 산정","스마트 청구"]} active={tab} onChange={setTab}/>
       {tab==="가입자 대상" && <InsTargetTab/>}
       {tab==="보장 안내" && <>
         <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>{INSURANCE.product}</div>
@@ -1220,7 +1229,7 @@ function InsuranceSection(){
             </Card>);})}
         </div>
       </>}
-      {tab==="보험료 절감 시뮬" && <DiscountSim/>}
+      {tab==="보험료 산정" && <PremiumEstimator/>}
       {tab==="스마트 청구" && <ClaimFlow/>}
     </div>
   );
@@ -1289,45 +1298,141 @@ function InsTargetTab(){
     </div>
   );
 }
-function DiscountSim(){
+/* ===== 데이터센터 화재보험료 파라메트릭 산정 모델 (개략 추정 · 데모/조정 가능) ===== */
+const DCP = {
+  infraUnit: 4000000,        // 건물·전기·공조 재조달 단가 (원/㎡)
+  itUnit: 10000000000,       // IT동산 재조달 단가 (원/MW) = 100억/MW
+  baseRate: 0.00045,         // 기본 화재요율 (TSI 대비 연, 내화+자동소화 기준)
+  struct: { "내화(1급)":1.0, "준내화(2급)":1.35, "일반(3급)":1.9 },
+  deduct: { "1천만":0, "5천만":0.08, "1억":0.15 },
+  safety: (s)=> s>=90?{g:"A",d:0.30} : s>=80?{g:"B",d:0.15} : s>=70?{g:"C",d:0.06} : {g:"D",d:0},
+  biAdd: 0.25,   // 기업휴지(BI) 특약 가산
+  liAdd: 0.05,   // 배상책임 특약 가산
+};
+const eok=(n)=>{ n=Math.round(n);
+  if(n>=100000000) return (n/100000000).toFixed(n>=1000000000?0:1).replace(/\.0$/,"")+"억원";
+  if(n>=10000) return Math.round(n/10000).toLocaleString()+"만원";
+  return "₩"+n.toLocaleString(); };
+/* 산정기 입력 컨트롤 (모듈 스코프 — 리렌더 시 리마운트로 슬라이더 드래그 끊김 방지) */
+function EstSeg({opts,val,set}){
+  return (
+    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+      {opts.map(o=>(
+        <button key={o} onClick={()=>set(o)} style={{padding:"7px 12px",borderRadius:10,fontSize:12.5,fontWeight:700,
+          border:val===o?"none":"1px solid var(--border)",background:val===o?"var(--navy)":"#fff",color:val===o?"#fff":"var(--sub)"}}>{o}</button>))}
+    </div>);
+}
+function EstRng({label,unit,val,set,min,max,step}){
+  return (
+    <div style={{marginBottom:15}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+        <span style={{fontSize:12.5,fontWeight:700,color:"var(--sub)"}}>{label}</span>
+        <span><b style={{fontSize:16,color:"var(--navy)"}} className="num">{val.toLocaleString()}</b> <span style={{fontSize:12,color:"var(--muted)"}}>{unit}</span></span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={val} onChange={e=>set(+e.target.value)} style={{width:"100%",accentColor:"var(--navy)"}}/>
+    </div>);
+}
+function EstTgl({on,set,label}){
+  return (
+    <button onClick={()=>set(!on)} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 12px",border:"1px solid var(--border)",borderRadius:11,background:on?"var(--green-soft)":"#fff",flex:1,minWidth:130}}>
+      <span style={{width:36,height:21,borderRadius:999,background:on?"var(--green)":"var(--border)",position:"relative",flexShrink:0}}>
+        <span style={{position:"absolute",top:3,left:on?18:3,width:15,height:15,borderRadius:"50%",background:"#fff",transition:"all .15s"}}/></span>
+      <span style={{fontSize:12.5,fontWeight:700,textAlign:"left"}}>{label}</span>
+    </button>);
+}
+function PremiumEstimator(){
+  const [area,setArea]=useState(24000);
+  const [mw,setMw]=useState(12);
+  const [struct,setStruct]=useState("내화(1급)");
   const [score,setScore]=useState(94);
-  const base=12000000; // 예시 연 보험료
-  const rate = score>=90?0.30 : score>=80?0.15 : score>=70?0.06 : 0;
-  const grade = score>=90?"A":score>=80?"B":score>=70?"C":"D";
-  const saved=Math.round(base*rate);
+  const [deduct,setDeduct]=useState("5천만");
+  const [bi,setBi]=useState(true);
+  const [li,setLi]=useState(true);
+  const infra=area*DCP.infraUnit, it=mw*DCP.itUnit, tsi=infra+it;
+  const sf=DCP.struct[struct], sg=DCP.safety(score), dd=DCP.deduct[deduct];
+  const addon=1+(bi?DCP.biAdd:0)+(li?DCP.liAdd:0);
+  const fireBase=tsi*DCP.baseRate*sf;
+  const premiumNoDisc=Math.round(fireBase*(1-dd)*addon);
+  const premium=Math.round(fireBase*(1-sg.d)*(1-dd)*addon);
+  const saved=premiumNoDisc-premium;
+  const effRate=premium/tsi*100;
+  const itPct=Math.round(it/tsi*100);
+  const gc=LV[sg.g==="A"||sg.g==="B"?"양호":sg.g==="C"?"주의":"위험"];
   return (
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
+      <div style={{fontSize:13,color:"var(--sub)",background:"var(--navy-soft)",borderRadius:14,padding:"12px 16px",lineHeight:1.6}}>
+        데이터센터의 <b>연면적</b>과 <b>IT 용량(MW)</b>으로 보험가입금액(TSI)을 추정하고, 화재요율·안전점수 할인·특약을 반영해 <b>연 화재보험료를 개략 산정</b>합니다.
+      </div>
+      <div className="grid-2-r">
+        {/* 입력 */}
+        <Card>
+          <CardHead icon={Settings} title="시설 조건 입력" fg="var(--navy)" bg="var(--navy-soft)"/>
+          <EstRng label="연면적" unit="㎡" val={area} set={setArea} min={2000} max={60000} step={500}/>
+          <EstRng label="IT 용량" unit="MW" val={mw} set={setMw} min={1} max={50} step={1}/>
+          <div style={{marginBottom:15}}><div style={{fontSize:12.5,fontWeight:700,color:"var(--sub)",marginBottom:7}}>건물 구조</div>
+            <EstSeg opts={Object.keys(DCP.struct)} val={struct} set={setStruct}/></div>
+          <EstRng label="안전점수" unit={"· "+sg.g+"등급"} val={score} set={setScore} min={50} max={100} step={1}/>
+          <div style={{marginBottom:15}}><div style={{fontSize:12.5,fontWeight:700,color:"var(--sub)",marginBottom:7}}>자기부담금(공제)</div>
+            <EstSeg opts={Object.keys(DCP.deduct)} val={deduct} set={setDeduct}/></div>
+          <div><div style={{fontSize:12.5,fontWeight:700,color:"var(--sub)",marginBottom:7}}>특약</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <EstTgl on={bi} set={setBi} label="기업휴지(BI)"/><EstTgl on={li} set={setLi} label="배상책임"/></div></div>
+        </Card>
+        {/* 결과 */}
+        <Card style={{background:"linear-gradient(155deg,#0B2545,#123A63 60%,#0E7490)",color:"#fff",border:"none"}}>
+          <div style={{fontSize:12.5,color:"#BFD5EA",fontWeight:700}}>연 화재보험료 (개략 추정)</div>
+          <div style={{fontSize:38,fontWeight:900,letterSpacing:-1,margin:"2px 0"}}>{eok(premium)}<span style={{fontSize:16,color:"#BFE6F1",fontWeight:700}}> /년</span></div>
+          <div style={{fontSize:12.5,color:"#9FC0DA"}}>실효요율 {effRate.toFixed(3)}% · ₩{premium.toLocaleString()}</div>
+
+          <div style={{background:"rgba(255,255,255,.10)",borderRadius:14,padding:"13px 15px",margin:"16px 0"}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:12.5,marginBottom:8}}>
+              <span style={{color:"#C9DCED",fontWeight:600}}>보험가입금액(TSI) 추정</span><b>{eok(tsi)}</b></div>
+            <div style={{display:"flex",height:12,borderRadius:99,overflow:"hidden"}}>
+              <div style={{width:(100-itPct)+"%",background:"#7ED0E4"}}/><div style={{width:itPct+"%",background:"#F4A93C"}}/></div>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:11.5,marginTop:7,color:"#C9DCED"}}>
+              <span><span style={{color:"#7ED0E4"}}>■</span> 건물·인프라 {eok(infra)}</span>
+              <span><span style={{color:"#F4A93C"}}>■</span> IT동산 {eok(it)}</span></div>
+          </div>
+
+          <div style={{display:"flex",gap:10}}>
+            <div style={{flex:1,background:"rgba(255,255,255,.10)",borderRadius:12,padding:"11px 12px"}}>
+              <div style={{fontSize:11,color:"#BFD5EA"}}>㎡당 보험료</div><div style={{fontSize:16,fontWeight:900}}>{eok(premium/area)}<span style={{fontSize:11}}>/㎡</span></div></div>
+            <div style={{flex:1,background:"rgba(255,255,255,.10)",borderRadius:12,padding:"11px 12px"}}>
+              <div style={{fontSize:11,color:"#BFD5EA"}}>MW당 보험료</div><div style={{fontSize:16,fontWeight:900}}>{eok(premium/mw)}<span style={{fontSize:11}}>/MW</span></div></div>
+          </div>
+        </Card>
+      </div>
+
+      {/* 안전점수 할인 효과 */}
       <Card>
-        <div style={{fontSize:14,fontWeight:800,marginBottom:6}}>안전점수 시뮬레이션</div>
-        <div style={{fontSize:12.5,color:"var(--muted)",marginBottom:16}}>안전점수를 조절해 등급별 보험료 절감(검토 기준)을 확인하세요. 예시 연 보험료 ₩{base.toLocaleString()} 가정.</div>
-        <input type="range" min="50" max="100" value={score} onChange={e=>setScore(+e.target.value)} style={{width:"100%",accentColor:"var(--navy)"}}/>
-        <div style={{display:"flex",justifyContent:"space-between",fontSize:11.5,color:"var(--muted)",marginTop:4}}><span>50</span><span>안전점수 {score}</span><span>100</span></div>
-        <div style={{display:"flex",gap:12,marginTop:18,flexWrap:"wrap"}}>
-          <div style={{flex:1,minWidth:120,background:LV[grade==="A"||grade==="B"?"양호":grade==="C"?"주의":"위험"].b,borderRadius:16,padding:"16px 18px",textAlign:"center"}}>
-            <div style={{fontSize:12,color:"var(--muted)",fontWeight:700}}>위험 등급</div>
-            <div style={{fontSize:30,fontWeight:900,color:LV[grade==="A"||grade==="B"?"양호":grade==="C"?"주의":"위험"].c}}>{grade}</div>
-          </div>
-          <div style={{flex:1,minWidth:120,background:"var(--navy-soft)",borderRadius:16,padding:"16px 18px",textAlign:"center"}}>
-            <div style={{fontSize:12,color:"var(--muted)",fontWeight:700}}>절감률(검토)</div>
-            <div style={{fontSize:30,fontWeight:900,color:"var(--navy)"}}>{Math.round(rate*100)}%</div>
-          </div>
-          <div style={{flex:1,minWidth:120,background:"var(--green-soft)",borderRadius:16,padding:"16px 18px",textAlign:"center"}}>
-            <div style={{fontSize:12,color:"var(--muted)",fontWeight:700}}>연 절감액(예상)</div>
-            <div style={{fontSize:24,fontWeight:900,color:"var(--green)"}} className="num">₩{saved.toLocaleString()}</div>
-          </div>
+        <CardHead icon={TrendingDown} title="안전점수 할인 효과" fg="var(--green)" bg="var(--green-soft)"/>
+        <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:130,background:"var(--panel)",border:"1px solid var(--border)",borderRadius:14,padding:"14px 16px",textAlign:"center"}}>
+            <div style={{fontSize:12,color:"var(--muted)",fontWeight:700}}>할인 전(D등급 가정)</div>
+            <div style={{fontSize:20,fontWeight:900,color:"var(--sub)"}}>{eok(premiumNoDisc)}</div></div>
+          <div style={{flex:1,minWidth:130,background:gc.b,borderRadius:14,padding:"14px 16px",textAlign:"center"}}>
+            <div style={{fontSize:12,color:"var(--muted)",fontWeight:700}}>{sg.g}등급 할인({Math.round(sg.d*100)}%)</div>
+            <div style={{fontSize:20,fontWeight:900,color:gc.c}}>{eok(premium)}</div></div>
+          <div style={{flex:1,minWidth:130,background:"var(--green-soft)",borderRadius:14,padding:"14px 16px",textAlign:"center"}}>
+            <div style={{fontSize:12,color:"var(--muted)",fontWeight:700}}>연 절감(추정)</div>
+            <div style={{fontSize:20,fontWeight:900,color:"var(--green)"}}>{eok(saved)}</div></div>
+        </div>
+        <div style={{fontSize:12,color:"var(--sub)",background:"var(--green-soft)",border:"1px solid #C6E7DA",borderRadius:12,padding:"11px 13px",marginTop:12,lineHeight:1.6}}>
+          안전점수 {score}점({sg.g}등급) 기준 절감분은 <b>안전지갑 → 보험료 준비금</b>으로 이월해 갱신 보험료에 충당할 수 있습니다.
         </div>
       </Card>
+
       <Card>
-        <CardHead icon={Layers} title="등급별 절감 기준(검토)" fg="var(--navy)" bg="var(--navy-soft)"/>
-        <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          {INSURANCE.tiers.map((t,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",border:"1px solid var(--border)",borderRadius:12}}>
-              <span style={{fontSize:14,fontWeight:900,color:"var(--navy)",width:74}}>{t.grade}</span>
-              <span style={{fontSize:14,fontWeight:800,color:"var(--green)",width:110}}>{t.disc}</span>
-              <span style={{fontSize:12.5,color:"var(--sub)",flex:1}}>{t.note}</span>
-            </div>))}
+        <CardHead icon={Layers} title="산정 근거 (개략)" fg="var(--navy)" bg="var(--navy-soft)"/>
+        <div style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:"9px 16px",fontSize:13}}>
+          <span style={{color:"var(--muted)",fontWeight:600}}>보험가입금액</span><b>건물·인프라(면적×{eok(DCP.infraUnit)}/㎡) + IT동산(용량×{eok(DCP.itUnit)}/MW)</b>
+          <span style={{color:"var(--muted)",fontWeight:600}}>기본 화재요율</span><b>{(DCP.baseRate*100).toFixed(3)}% (구조계수 {struct} ×{sf})</b>
+          <span style={{color:"var(--muted)",fontWeight:600}}>자기부담금 할인</span><b>{deduct} · −{Math.round(dd*100)}%</b>
+          <span style={{color:"var(--muted)",fontWeight:600}}>특약 가산</span><b>{[bi&&"기업휴지 +25%",li&&"배상책임 +5%"].filter(Boolean).join(" · ")||"없음"}</b>
         </div>
-        <div style={{fontSize:11,color:"var(--muted)",marginTop:10}}>※ 상기 절감률은 검토 목적의 예시이며 실제 인수·할인은 보험사 기준에 따릅니다.</div>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:12,lineHeight:1.7}}>
+          ※ 본 산정은 면적·용량 기반 <b>개략 추정(파라메트릭)</b>이며 단가·요율은 소개용 예시입니다. 실제 보험료는 재조달가액 평가, 구조·소방·입지 실사, 손해율 분석 및 보험사 언더라이팅을 거쳐 확정됩니다.
+        </div>
       </Card>
     </div>
   );
