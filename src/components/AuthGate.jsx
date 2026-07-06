@@ -17,40 +17,32 @@ function AuthBrand() {
   );
 }
 
+/* 승인된 단일 관리자 계정 — 이 계정만 접속 허용 */
+const AUTH_ALLOWED_ID = "조성래";
+const AUTH_ALLOWED_PW = "HIFIN0701";
+
 function AuthLogin() {
-  const [email, setEmail] = useState("");
+  const [uid, setUid] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
-  const [pick, setPick] = useState("");
-  const members = (typeof demoListAll === "function") ? demoListAll() : [];
   const submit = (e) => {
     if (e) e.preventDefault();
     setErr("");
-    const u = appAuthenticate(email, pw);
-    if (!u) { setErr("이메일 또는 비밀번호가 올바르지 않습니다."); return; }
-    authSet({ name: u.name, email: u.email, realVerified: !!u.realVerified });
-    demoSetSession(u);
+    if (uid.trim() === AUTH_ALLOWED_ID && pw === AUTH_ALLOWED_PW) {
+      try { demoLogout(); } catch (_) {}
+      authSet({ name: "조성래" });
+      return;
+    }
+    setErr("접근 권한이 없습니다. 승인된 계정만 이용할 수 있습니다.");
   };
-  const quickDemo = () => { const m = demoFindByEmail(pick); if (!m) { setErr("체험 회원을 선택해 주세요."); return; } authSet({ name: m.name, email: m.email }); demoSetSession(m); };
-  const browse = () => { demoLogout(); authSet({ name: "조성래" }); };
   return (
     <form className="authform" onSubmit={submit}>
-      <label className="authfield"><span className="authlabel">이메일</span>
-        <input className="authinput" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="username" /></label>
+      <label className="authfield"><span className="authlabel">아이디</span>
+        <input className="authinput" type="text" value={uid} onChange={(e) => setUid(e.target.value)} placeholder="아이디" autoComplete="username" /></label>
       <label className="authfield"><span className="authlabel">비밀번호</span>
         <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" autoComplete="current-password" /></label>
       {err && <div className="autherr">{err}</div>}
       <button className="authbtn authprimary" type="submit">로그인</button>
-
-      <div className="authdiv"><span>빠른 체험</span></div>
-      <button type="button" className="authbtn authghost" onClick={browse}>조성래 체험 계정으로 둘러보기</button>
-      <div className="authquick">
-        <select className="authinput" value={pick} onChange={(e) => setPick(e.target.value)} aria-label="체험 회원 선택">
-          <option value="">체험 회원 선택(비밀번호 Demo@1234)</option>
-          {members.map((m) => <option key={m.email} value={m.email}>{m.name} · {m.email}</option>)}
-        </select>
-        <button type="button" className="authbtn authsmall" onClick={quickDemo}>로그인</button>
-      </div>
     </form>
   );
 }
@@ -165,18 +157,13 @@ function AuthSignup() {
 }
 
 function AuthGate() {
-  const [tab, setTab] = useState("login");
-  useEffect(() => { try { demoRegisterAll(); } catch (e) {} }, []);
   return (
     <div className="authwrap">
       <div className="authcard">
         <AuthBrand />
-        <div className="authtabs">
-          <button className={`authtab ${tab === "login" ? "on" : ""}`} onClick={() => setTab("login")}>로그인</button>
-          <button className={`authtab ${tab === "signup" ? "on" : ""}`} onClick={() => setTab("signup")}>회원가입</button>
-        </div>
-        {tab === "login" ? <AuthLogin /> : <AuthSignup />}
-        <div className="authnote">※ 본 서비스는 시연용 예시입니다. 입력 정보는 이 기기(브라우저)에만 저장되며, 실제 본인인증·SMS 발송은 이루어지지 않습니다.</div>
+        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: "#64748B", background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 10, padding: "9px 12px", margin: "0 0 4px" }}>🔒 승인된 계정만 접속할 수 있습니다.</div>
+        <AuthLogin />
+        <div className="authnote">※ 본 서비스는 비공개 시연 환경입니다. 승인된 관리자 계정만 접속 가능하며, 접속 정보는 이 기기(브라우저)에만 저장됩니다.</div>
       </div>
     </div>
   );
