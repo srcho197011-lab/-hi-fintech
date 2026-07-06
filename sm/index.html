@@ -380,22 +380,34 @@ const MANDATORY_MULTI = ["일반음식점(1층 제외)","휴게음식점(1층 �
 
 /* ===== 화재특종보험 업종별 위험요율표 (보험개발원 참조요율 체계 기반 · 참조/예시) =====
    실제 요율은 보험사 인수·언더라이팅 자료(비공개). 상대 위험등급 + 참조 요율범위(‰/년, 건물화재 기준 예시).
-   obj: 물건구분 · risk: 상대위험(저/중/고) · rate: 참조요율범위 · haz: 주요 화재위험 · imp: 안전관리 개선여지 */
-const FIRE_RATES = [
-  { biz:"데이터센터·전산실", obj:"일반물건(특수)", risk:"중", rate:"0.3~1.0‰", haz:"전기 과부하·발열·배터리 열폭주", imp:"AI관제·랙단위 자동소화·전력 이중화" },
-  { biz:"금융 전산센터", obj:"일반물건", risk:"저", rate:"0.3~0.8‰", haz:"전기·무중단 리스크", imp:"이중화·방재 우수 → 우량 요율" },
-  { biz:"사무실·오피스", obj:"일반물건", risk:"저", rate:"0.2~0.6‰", haz:"전기·OA기기", imp:"감지·소화설비" },
-  { biz:"공동주택(아파트)", obj:"주택물건", risk:"저", rate:"0.1~0.3‰", haz:"세대 전기화재·지하주차장 EV", imp:"주차장 소화·세대 감지" },
-  { biz:"병원·의료시설", obj:"일반물건", risk:"중", rate:"0.4~1.2‰", haz:"산소·전기·거동불편 재실자", imp:"제연·피난·자동소화" },
-  { biz:"호텔·숙박", obj:"일반물건", risk:"중", rate:"0.4~1.2‰", haz:"객실·주방 화재", imp:"스프링클러·경보" },
-  { biz:"대규모점포·백화점", obj:"일반물건", risk:"중", rate:"0.5~1.5‰", haz:"다중이용·전기·판매물", imp:"제연·다중 피난동선" },
-  { biz:"물류창고", obj:"창고물건", risk:"중~고", rate:"0.8~3‰", haz:"고적재·랙크화재·확산", imp:"인랙 스프링클러·구획화" },
-  { biz:"반도체·전자 공장", obj:"공장물건", risk:"중~고", rate:"0.5~2‰", haz:"특수가스·화학·클린룸", imp:"가스감지·특수소화" },
-  { biz:"재생에너지·ESS", obj:"공장물건(특수)", risk:"중~고", rate:"1~4‰", haz:"리튬배터리 열폭주·연쇄발화", imp:"셀 온도 AI·배터리 소화·격리" },
-  { biz:"목재·가구·플라스틱", obj:"공장물건", risk:"고", rate:"1.5~5‰", haz:"높은 가연성·분진", imp:"구획·집진·소화 강화" },
-  { biz:"화학·석유화학", obj:"공장물건", risk:"고", rate:"2~6‰+", haz:"인화성·폭발 위험물", imp:"방폭·위험물 관리(별도 심사)" },
-  { biz:"음식점·다중이용업", obj:"일반물건", risk:"중", rate:"0.5~1.5‰", haz:"주방 화기·튀김·가스", imp:"주방 자동소화·경보" },
-  { biz:"주유소·EV충전", obj:"특수(위험물)", risk:"고", rate:"위험물 별도", haz:"연료·충전 배터리 화재", imp:"충전기 소화모듈·무인 관제" },
+   obj: 물건구분 · risk: 상대위험(저/중/고) · rate: 참조요율범위 · haz: 주요 화재위험 · imp: 안전관리 개선여지
+   그룹 4 '신에너지·배터리'는 리튬 열폭주 등 신종 고위험이라 별도 분류. */
+const FIRE_RATE_GROUPS = [
+  { group:"IT·전산 시설", accent:"var(--navy)", items:[
+    { biz:"데이터센터·전산실", obj:"일반물건(특수)", risk:"중", rate:"0.3~1.0‰", haz:"전기 과부하·발열·배터리 열폭주", imp:"AI관제·랙단위 자동소화·전력 이중화" },
+    { biz:"금융 전산센터", obj:"일반물건", risk:"저", rate:"0.3~0.8‰", haz:"전기·무중단 리스크", imp:"이중화·방재 우수 → 우량 요율" },
+    { biz:"사무실·오피스", obj:"일반물건", risk:"저", rate:"0.2~0.6‰", haz:"전기·OA기기", imp:"감지·소화설비" },
+  ]},
+  { group:"주거·다중이용 시설", accent:"var(--cyan-deep)", items:[
+    { biz:"공동주택(아파트)", obj:"주택물건", risk:"저", rate:"0.1~0.3‰", haz:"세대 전기화재·지하주차장 EV", imp:"주차장 소화·세대 감지" },
+    { biz:"병원·의료시설", obj:"일반물건", risk:"중", rate:"0.4~1.2‰", haz:"산소·전기·거동불편 재실자", imp:"제연·피난·자동소화" },
+    { biz:"호텔·숙박", obj:"일반물건", risk:"중", rate:"0.4~1.2‰", haz:"객실·주방 화재", imp:"스프링클러·경보" },
+    { biz:"대규모점포·백화점", obj:"일반물건", risk:"중", rate:"0.5~1.5‰", haz:"다중이용·전기·판매물", imp:"제연·다중 피난동선" },
+    { biz:"음식점·다중이용업", obj:"일반물건", risk:"중", rate:"0.5~1.5‰", haz:"주방 화기·튀김·가스", imp:"주방 자동소화·경보" },
+  ]},
+  { group:"산업·물류 시설", accent:"var(--amber)", items:[
+    { biz:"물류창고", obj:"창고물건", risk:"중~고", rate:"0.8~3‰", haz:"고적재·랙크화재·확산", imp:"인랙 스프링클러·구획화" },
+    { biz:"반도체·전자 공장", obj:"공장물건", risk:"중~고", rate:"0.5~2‰", haz:"특수가스·화학·클린룸", imp:"가스감지·특수소화" },
+    { biz:"목재·가구·플라스틱", obj:"공장물건", risk:"고", rate:"1.5~5‰", haz:"높은 가연성·분진", imp:"구획·집진·소화 강화" },
+    { biz:"화학·석유화학", obj:"공장물건", risk:"고", rate:"2~6‰+", haz:"인화성·폭발 위험물", imp:"방폭·위험물 관리(별도 심사)" },
+  ]},
+  { group:"신에너지·배터리 (고위험 별도 분류)", accent:"var(--danger)", hot:true, items:[
+    { biz:"태양광 발전설비", obj:"공장물건(특수)", risk:"중", rate:"0.8~2.5‰", haz:"인버터·접속함 아크·모듈 화재", imp:"아크감지·DC차단·원격 감시" },
+    { biz:"풍력 발전설비", obj:"특수", risk:"중~고", rate:"1~3‰", haz:"나셀 화재·낙뢰·윤활유", imp:"나셀 소화·낙뢰보호·원격관제" },
+    { biz:"ESS(에너지저장장치)", obj:"공장물건(특수)", risk:"고", rate:"2~5‰", haz:"리튬 열폭주·연쇄발화·재발화", imp:"셀 온도 AI·격벽·전용 소화·격리운영" },
+    { biz:"EV 충전소", obj:"특수(위험물 준함)", risk:"고", rate:"위험물 준함", haz:"충전 중 배터리 화재·급속충전 과열", imp:"충전기 소화모듈·질식소화·무인 관제" },
+    { biz:"배터리 제조·재활용", obj:"공장물건", risk:"고", rate:"2~6‰", haz:"전해액·분진·열폭주·유독가스", imp:"방폭·특수소화·집진·격리" },
+  ]},
 ];
 
 /* ===== HSAFE 리워드 ===== */
@@ -1553,17 +1565,25 @@ function FireComplianceSection(){
         <div style={{fontSize:11,color:"var(--muted)",marginTop:12,lineHeight:1.7}}>※ 다중이용업소 안전관리 특별법 시행령 기준. 일반·휴게음식점, 제과점은 1층 소재 시 제외 등 업종별 세부 요건이 있습니다.</div>
       </Card>
 
-      {/* 업종별 위험요율표 */}
+      {/* 업종별 위험요율표 (그룹별) */}
       <Card>
         <CardHead icon={TrendingUp} title="화재특종보험 업종별 위험요율표 (참조·예시)" fg="var(--amber)" bg="var(--amber-soft)"/>
-        <MiniTable
-          head={["업종","물건 구분","위험등급","참조 요율(‰/년)","주요 화재위험","안전관리 개선여지"]}
-          aligns={["left","left","center","right","left","left"]}
-          rows={FIRE_RATES.map(f=>({cells:[
-            <b>{f.biz}</b>, f.obj, <RiskBadge r={f.risk}/>, f.rate, f.haz, f.imp
-          ]}))}/>
-        <div style={{fontSize:11,color:"var(--muted)",marginTop:12,lineHeight:1.8}}>
-          ⚠️ <b>실제 화재보험 요율표는 보험사 내부 인수(언더라이팅) 자료로 비공개</b>입니다. 위 수치는 보험개발원 <b>참조순보험요율 체계</b>(물건 구분·건물 급수·업종 급수)를 바탕으로 한 <b>상대 위험등급 및 참조 요율범위(예시)</b>이며, ‰(천분율)은 연간 건물화재 기준 개략치입니다. 실제 요율은 건물 급수(내화 1급~4급), 방재 수준, 소방설비, 입지·자연재해, 특약 구성에 따라 확정됩니다.
+        <div style={{display:"flex",flexDirection:"column",gap:18}}>
+          {FIRE_RATE_GROUPS.map((g,gi)=>(
+            <div key={gi} style={g.hot?{border:"2px solid var(--danger)",background:"var(--danger-soft)",borderRadius:16,padding:"14px 16px"}:{}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <span style={{width:6,height:18,borderRadius:99,background:g.accent}}/>
+                <b style={{fontSize:14.5,color:g.accent}}>{g.group}</b>
+                {g.hot && <span style={{fontSize:11,fontWeight:800,color:"#fff",background:"var(--danger)",padding:"2px 9px",borderRadius:999}}>별도 분류</span>}
+              </div>
+              <MiniTable
+                head={["업종","물건 구분","위험등급","참조 요율(‰/년)","주요 화재위험","안전관리 개선여지"]}
+                aligns={["left","left","center","right","left","left"]}
+                rows={g.items.map(f=>({cells:[<b>{f.biz}</b>, f.obj, <RiskBadge r={f.risk}/>, f.rate, f.haz, f.imp]}))}/>
+            </div>))}
+        </div>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:14,lineHeight:1.8}}>
+          ⚠️ <b>실제 화재보험 요율표는 보험사 내부 인수(언더라이팅) 자료로 비공개</b>입니다. 위 수치는 보험개발원 <b>참조순보험요율 체계</b>(물건 구분·건물 급수·업종 급수)를 바탕으로 한 <b>상대 위험등급 및 참조 요율범위(예시)</b>이며, ‰(천분율)은 연간 건물화재 기준 개략치입니다. <b>신에너지·배터리(태양광·풍력·ESS·EV충전·배터리 제조/재활용)</b>는 리튬 열폭주·재발화 등 신종 고위험으로 별도 분류했습니다. 실제 요율은 건물 급수, 방재 수준, 소방설비, 입지·자연재해, 특약 구성에 따라 확정됩니다.
         </div>
       </Card>
 
