@@ -355,6 +355,49 @@ const FACILITIES = [
     img:"https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=900&q=70" },
 ];
 
+/* ===== 화재보험 의무가입 대상 ① 특수건물(신체손해배상특약부화재보험 · 화재보험법) =====
+   [건물용도, 면적/층수 기준, 근거, 우리 플랫폼 타깃 매핑] */
+const MANDATORY_SPECIAL = [
+  { use:"11층 이상 건물", std:"층수 11층 이상 (아파트·창고·주차장 제외)", basis:"화재보험법", tgt:"데이터센터·오피스빌딩" },
+  { use:"공동주택(아파트)", std:"16층 이상 아파트 및 부속건물", basis:"화재보험법", tgt:"공동주택" },
+  { use:"공장", std:"연면적 3,000㎡ 이상", basis:"화재보험법", tgt:"생산현장·반도체·제조" },
+  { use:"국·공유 건물", std:"연면적 1,000㎡ 이상", basis:"화재보험법", tgt:"공공청사·공공시설" },
+  { use:"병원급 의료기관", std:"연면적 3,000㎡ 이상", basis:"화재보험법", tgt:"의료" },
+  { use:"학교", std:"연면적 3,000㎡ 이상", basis:"화재보험법", tgt:"교육" },
+  { use:"학원", std:"바닥면적 합계 2,000㎡ 이상", basis:"화재보험법", tgt:"교육" },
+  { use:"대규모점포(백화점·마트)", std:"바닥면적 3,000㎡ 이상", basis:"화재보험법", tgt:"유통·판매" },
+  { use:"농수산물도매시장", std:"연면적 3,000㎡ 이상", basis:"화재보험법", tgt:"유통" },
+  { use:"관광숙박·숙박업", std:"연면적/바닥면적 3,000㎡ 이상", basis:"화재보험법", tgt:"호텔·숙박" },
+  { use:"공연장·영화상영관", std:"연면적 3,000㎡ / 바닥 2,000㎡ 이상", basis:"화재보험법", tgt:"문화·집회" },
+  { use:"방송사업 시설", std:"연면적 3,000㎡ 이상", basis:"화재보험법", tgt:"방송·미디어" },
+  { use:"목욕장업", std:"바닥면적 2,000㎡ 이상", basis:"화재보험법", tgt:"생활서비스" },
+  { use:"도시철도 역사·역시설", std:"바닥면적 3,000㎡ 이상", basis:"화재보험법", tgt:"교통" },
+  { use:"다중이용업 밀집 건물", std:"바닥면적 합계 2,000㎡ 이상", basis:"화재보험법", tgt:"상가·근린" },
+  { use:"실내사격장", std:"전 규모 (면적 무관)", basis:"화재보험법", tgt:"레저" },
+];
+/* 화재보험 의무가입 대상 ② 다중이용업소(화재배상책임보험 · 다중이용업소 안전관리 특별법) */
+const MANDATORY_MULTI = ["일반음식점(1층 제외)","휴게음식점(1층 제외)","제과점(1층 제외)","단란주점","유흥주점","영화상영관","비디오물감상실","비디오물소극장","학원","목욕장","게임제공업","PC방(인터넷컴퓨터게임)","복합유통게임제공업","노래연습장","산후조리원","고시원","화상대화방·전화방","수면방","콜라텍","스크린골프장","안마시술소","실내사격장"];
+
+/* ===== 화재특종보험 업종별 위험요율표 (보험개발원 참조요율 체계 기반 · 참조/예시) =====
+   실제 요율은 보험사 인수·언더라이팅 자료(비공개). 상대 위험등급 + 참조 요율범위(‰/년, 건물화재 기준 예시).
+   obj: 물건구분 · risk: 상대위험(저/중/고) · rate: 참조요율범위 · haz: 주요 화재위험 · imp: 안전관리 개선여지 */
+const FIRE_RATES = [
+  { biz:"데이터센터·전산실", obj:"일반물건(특수)", risk:"중", rate:"0.3~1.0‰", haz:"전기 과부하·발열·배터리 열폭주", imp:"AI관제·랙단위 자동소화·전력 이중화" },
+  { biz:"금융 전산센터", obj:"일반물건", risk:"저", rate:"0.3~0.8‰", haz:"전기·무중단 리스크", imp:"이중화·방재 우수 → 우량 요율" },
+  { biz:"사무실·오피스", obj:"일반물건", risk:"저", rate:"0.2~0.6‰", haz:"전기·OA기기", imp:"감지·소화설비" },
+  { biz:"공동주택(아파트)", obj:"주택물건", risk:"저", rate:"0.1~0.3‰", haz:"세대 전기화재·지하주차장 EV", imp:"주차장 소화·세대 감지" },
+  { biz:"병원·의료시설", obj:"일반물건", risk:"중", rate:"0.4~1.2‰", haz:"산소·전기·거동불편 재실자", imp:"제연·피난·자동소화" },
+  { biz:"호텔·숙박", obj:"일반물건", risk:"중", rate:"0.4~1.2‰", haz:"객실·주방 화재", imp:"스프링클러·경보" },
+  { biz:"대규모점포·백화점", obj:"일반물건", risk:"중", rate:"0.5~1.5‰", haz:"다중이용·전기·판매물", imp:"제연·다중 피난동선" },
+  { biz:"물류창고", obj:"창고물건", risk:"중~고", rate:"0.8~3‰", haz:"고적재·랙크화재·확산", imp:"인랙 스프링클러·구획화" },
+  { biz:"반도체·전자 공장", obj:"공장물건", risk:"중~고", rate:"0.5~2‰", haz:"특수가스·화학·클린룸", imp:"가스감지·특수소화" },
+  { biz:"재생에너지·ESS", obj:"공장물건(특수)", risk:"중~고", rate:"1~4‰", haz:"리튬배터리 열폭주·연쇄발화", imp:"셀 온도 AI·배터리 소화·격리" },
+  { biz:"목재·가구·플라스틱", obj:"공장물건", risk:"고", rate:"1.5~5‰", haz:"높은 가연성·분진", imp:"구획·집진·소화 강화" },
+  { biz:"화학·석유화학", obj:"공장물건", risk:"고", rate:"2~6‰+", haz:"인화성·폭발 위험물", imp:"방폭·위험물 관리(별도 심사)" },
+  { biz:"음식점·다중이용업", obj:"일반물건", risk:"중", rate:"0.5~1.5‰", haz:"주방 화기·튀김·가스", imp:"주방 자동소화·경보" },
+  { biz:"주유소·EV충전", obj:"특수(위험물)", risk:"고", rate:"위험물 별도", haz:"연료·충전 배터리 화재", imp:"충전기 소화모듈·무인 관제" },
+];
+
 /* ===== HSAFE 리워드 ===== */
 const REWARD = {
   balance:"18,600", unit:"HSAFE",
@@ -1205,7 +1248,7 @@ function InsuranceSection(){
         <AlertTriangle size={18} color="var(--amber)" style={{flexShrink:0,marginTop:1}}/>
         <span>보험료 할인율(예: 20~40%)은 <b>보험사의 실제 손해율 분석·현장 실사·계약 체결 후 확정</b>됩니다. 실증 데이터 없이 확정 수치로 제시하지 않습니다.</span>
       </div>
-      <Tabs tabs={["가입자 대상","보장 안내","보험료 산정","비용 절감","스마트 청구"]} active={tab} onChange={setTab}/>
+      <Tabs tabs={["가입자 대상","보장 안내","의무가입·요율표","보험료 산정","비용 절감","스마트 청구"]} active={tab} onChange={setTab}/>
       {tab==="가입자 대상" && <InsTargetTab/>}
       {tab==="보장 안내" && <>
         <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>{INSURANCE.product}</div>
@@ -1220,6 +1263,7 @@ function InsuranceSection(){
             </Card>);})}
         </div>
       </>}
+      {tab==="의무가입·요율표" && <FireComplianceSection/>}
       {tab==="보험료 산정" && <PremiumEstimator/>}
       {tab==="비용 절감" && <CostSavingsSection/>}
       {tab==="스마트 청구" && <ClaimFlow/>}
@@ -1455,6 +1499,89 @@ function ClaimFlow(){
       </div>
       <div style={{marginTop:12,fontSize:12,color:"var(--muted)"}}>※ 청구·지급 프로세스는 데모이며 실제 보험금 지급은 약관·손해사정 결과에 따릅니다.</div>
     </Card>
+  );
+}
+
+/* ===== 화재보험 의무가입 대상·업종별 위험요율표 서브섹션 ===== */
+function RiskBadge({r}){
+  const c = /고/.test(r) ? LV["높음"] : /중/.test(r) ? LV["중간"] : LV["낮음"];
+  return <span style={{fontSize:12,fontWeight:800,color:c.c,background:c.b,padding:"3px 10px",borderRadius:999,whiteSpace:"nowrap"}}>{r}</span>;
+}
+function FireComplianceSection(){
+  const nav=React.useContext(NavCtx);
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
+      <div style={{fontSize:13,color:"var(--sub)",background:"var(--navy-soft)",borderRadius:14,padding:"12px 16px",lineHeight:1.7}}>
+        국내 화재 관련 <b>의무보험</b>은 크게 ① <b>특수건물</b>의 신체손해배상특약부화재보험(화재보험법)과 ② <b>다중이용업소</b>의 화재배상책임보험(다중이용업소 안전관리 특별법)으로 나뉩니다. 아래는 대상 업종·기준과 업종별 위험요율(참조·예시)입니다.
+      </div>
+
+      {/* 2대 제도 요약 */}
+      <div className="grid-2-r">
+        <Card>
+          <CardHead icon={ShieldCheck} title="① 특수건물 화재보험" fg="var(--green)" bg="var(--green-soft)"/>
+          <div style={{fontSize:13,color:"var(--sub)",lineHeight:1.7}}>
+            <b>신체손해배상특약부화재보험(신특약)</b> 의무가입. 화재로 인한 건물 손해 + 타인 사망·부상 배상책임 담보. 소유자는 준공·취득일부터 <b>30일 내 가입, 매년 갱신</b>. 미가입 시 500만원 이하 벌금.
+          </div>
+          <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>대인 보상: 사망 1인당 최대 1.5억원(최저 2천만원) 범위.</div>
+        </Card>
+        <Card>
+          <CardHead icon={Users} title="② 다중이용업소 화재배상책임보험" fg="var(--cyan-deep)" bg="var(--cyan-soft)"/>
+          <div style={{fontSize:13,color:"var(--sub)",lineHeight:1.7}}>
+            화재·폭발로 <b>다른 사람의 생명·신체·재산 피해</b>를 보상하는 의무보험. 음식점·노래방·PC방·학원·목욕장 등 <b>22종</b> 대상. 미가입 시 과태료(최대 300만원).
+          </div>
+          <div style={{fontSize:12,color:"var(--muted)",marginTop:8}}>대상 22종은 아래 목록 참조.</div>
+        </Card>
+      </div>
+
+      {/* 특수건물 대상 표 */}
+      <Card>
+        <CardHead icon={Building2} title="특수건물 의무가입 대상 (업종·기준)" fg="var(--navy)" bg="var(--navy-soft)"/>
+        <MiniTable
+          head={["건물 용도","면적·층수 기준","근거","플랫폼 타깃"]}
+          aligns={["left","left","left","left"]}
+          rows={MANDATORY_SPECIAL.map(m=>({cells:[m.use,m.std,m.basis,m.tgt]}))}/>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:10,lineHeight:1.7}}>※ 화재보험법 시행령 별표 기준 요약. 세부 적용·예외(공제 가입 등)는 원문 및 한국화재보험협회(KFPA) 심사에 따릅니다. AI 데이터센터·전산실은 <b>11층 이상 건물</b> 또는 <b>공장(3,000㎡↑)</b> 요건으로 대상이 되는 경우가 많습니다.</div>
+      </Card>
+
+      {/* 다중이용업 22종 */}
+      <Card>
+        <CardHead icon={Flame} title="다중이용업소 화재배상책임보험 의무 업종 (22종)" fg="var(--danger)" bg="var(--danger-soft)"/>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+          {MANDATORY_MULTI.map((m,i)=>(
+            <span key={i} style={{fontSize:12.5,fontWeight:700,color:"var(--danger)",background:"var(--danger-soft)",borderRadius:10,padding:"7px 12px"}}>{m}</span>))}
+        </div>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:12,lineHeight:1.7}}>※ 다중이용업소 안전관리 특별법 시행령 기준. 일반·휴게음식점, 제과점은 1층 소재 시 제외 등 업종별 세부 요건이 있습니다.</div>
+      </Card>
+
+      {/* 업종별 위험요율표 */}
+      <Card>
+        <CardHead icon={TrendingUp} title="화재특종보험 업종별 위험요율표 (참조·예시)" fg="var(--amber)" bg="var(--amber-soft)"/>
+        <MiniTable
+          head={["업종","물건 구분","위험등급","참조 요율(‰/년)","주요 화재위험","안전관리 개선여지"]}
+          aligns={["left","left","center","right","left","left"]}
+          rows={FIRE_RATES.map(f=>({cells:[
+            <b>{f.biz}</b>, f.obj, <RiskBadge r={f.risk}/>, f.rate, f.haz, f.imp
+          ]}))}/>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:12,lineHeight:1.8}}>
+          ⚠️ <b>실제 화재보험 요율표는 보험사 내부 인수(언더라이팅) 자료로 비공개</b>입니다. 위 수치는 보험개발원 <b>참조순보험요율 체계</b>(물건 구분·건물 급수·업종 급수)를 바탕으로 한 <b>상대 위험등급 및 참조 요율범위(예시)</b>이며, ‰(천분율)은 연간 건물화재 기준 개략치입니다. 실제 요율은 건물 급수(내화 1급~4급), 방재 수준, 소방설비, 입지·자연재해, 특약 구성에 따라 확정됩니다.
+        </div>
+      </Card>
+
+      <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+        <Btn onClick={()=>nav&&nav("대상 솔루션")}><Building2 size={16}/>업종별 솔루션 보기</Btn>
+        <Btn variant="soft" onClick={()=>toast("의무가입 대상 진단은 데모입니다")}><ClipboardCheck size={16}/>우리 시설 의무가입 진단</Btn>
+      </div>
+
+      <Card>
+        <CardHead icon={FileText} title="근거 자료" fg="var(--cyan-deep)" bg="var(--cyan-soft)"/>
+        <ol style={{margin:0,paddingLeft:20,fontSize:13,color:"var(--sub)",lineHeight:1.9}}>
+          <li>특수건물 화재보험 의무가입 — <a href="https://easylaw.go.kr/CSP/CnpClsMainBtr.laf?ccfNo=6&cciNo=2&cnpClsNo=1&csmSeq=1169&popMenu=ov" target="_blank" rel="noopener" style={{color:"var(--cyan-deep)"}}>찾기쉬운 생활법령(화재보험법)</a></li>
+          <li>다중이용업소 화재배상책임보험 — <a href="https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=162387" target="_blank" rel="noopener" style={{color:"var(--cyan-deep)"}}>다중이용업소 안전관리 특별법</a></li>
+          <li>화재보험 요율 적용방법(물건·급수·업종) — <a href="https://www.kfpa.or.kr" target="_blank" rel="noopener" style={{color:"var(--cyan-deep)"}}>한국화재보험협회(KFPA)</a></li>
+        </ol>
+        <div style={{fontSize:11,color:"var(--muted)",marginTop:10,lineHeight:1.7}}>본 표는 법령·공개자료 기반 정리이며, 개별 시설의 의무가입 여부·요율은 소관 기관·보험사 판단에 따릅니다.</div>
+      </Card>
+    </div>
   );
 }
 
