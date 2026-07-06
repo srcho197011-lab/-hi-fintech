@@ -1260,7 +1260,7 @@ function InsuranceSection(){
         <AlertTriangle size={18} color="var(--amber)" style={{flexShrink:0,marginTop:1}}/>
         <span>보험료 할인율(예: 20~40%)은 <b>보험사의 실제 손해율 분석·현장 실사·계약 체결 후 확정</b>됩니다. 실증 데이터 없이 확정 수치로 제시하지 않습니다.</span>
       </div>
-      <Tabs tabs={["가입자 대상","보장 안내","의무가입·요율표","보험료 산정","비용 절감","스마트 청구"]} active={tab} onChange={setTab}/>
+      <Tabs tabs={["가입자 대상","보장 안내","보험료 산정","비용 절감","스마트 청구"]} active={tab} onChange={setTab}/>
       {tab==="가입자 대상" && <InsTargetTab/>}
       {tab==="보장 안내" && <>
         <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>{INSURANCE.product}</div>
@@ -1275,7 +1275,6 @@ function InsuranceSection(){
             </Card>);})}
         </div>
       </>}
-      {tab==="의무가입·요율표" && <FireComplianceSection/>}
       {tab==="보험료 산정" && <PremiumEstimator/>}
       {tab==="비용 절감" && <CostSavingsSection/>}
       {tab==="스마트 청구" && <ClaimFlow/>}
@@ -1942,9 +1941,12 @@ function RewardSection(){
 /* ============================ PARTNER SECTION ============================ */
 function PartnerSection(){
   const [sel,setSel]=useState(null);
+  const [tab,setTab]=useState("참여사 생태계");
   return (
     <div style={{display:"flex",flexDirection:"column",flex:1}}>
-      <SecHead icon={Users} title="참여사 생태계" desc="설비+AI+보험+데이터를 결합한 Safety-as-a-Service — 참여사별 역할과 수익 선순환" fg="var(--navy)" bg="var(--navy-soft)"/>
+      <SecHead icon={Users} title="참여사 생태계" desc="설비+AI+보험+데이터를 결합한 Safety-as-a-Service — 참여사별 역할·수익 선순환 및 화재보험 의무가입 대상사" fg="var(--navy)" bg="var(--navy-soft)"/>
+      <Tabs tabs={["참여사 생태계","의무가입사"]} active={tab} onChange={setTab}/>
+      {tab==="의무가입사" ? <FireComplianceSection/> : <>
 
       <Card style={{marginBottom:18,overflowX:"auto"}}>
         <div style={{fontSize:14,fontWeight:800,marginBottom:12}}>참여사별 역할 · 수익구조</div>
@@ -2003,6 +2005,7 @@ function PartnerSection(){
           ※ 사업 추진 전 확보 필요: ① 보험사 인수확약서/상품개발 MOU ② 보험료 할인 근거 데이터 ③ 초기 유료 고객·파일럿 계약 ④ 참여사 역할·수익배분 계약서.
         </div>
       </Card>
+      </>}
     </div>
   );
 }
