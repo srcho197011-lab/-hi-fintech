@@ -927,10 +927,15 @@ function ShopConsultant() {
   const [typing, setTyping] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
+  const [tts, setTts] = useState(false);
   const endRef = useRef(null);
   const recogRef = useRef(null);
+  const voicesRef = useRef([]);
   const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const ttsOK = typeof window !== "undefined" && !!window.speechSynthesis;
   useEffect(() => { if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
+  useEffect(() => { if (!ttsOK) return; const load = () => { voicesRef.current = window.speechSynthesis.getVoices().filter((v) => /ko/i.test(v.lang)); }; load(); window.speechSynthesis.onvoiceschanged = load; return () => { try { window.speechSynthesis.onvoiceschanged = null; window.speechSynthesis.cancel(); } catch (e) {} }; }, []);
+  const speak = (tx) => { if (!ttsOK || !tts || !tx) return; try { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(tx).replace(/[#*•【】]/g, "")); u.lang = "ko-KR"; u.rate = 1.03; const ko = voicesRef.current; if (ko && ko[0]) u.voice = ko[0]; window.speechSynthesis.speak(u); } catch (e) {} };
   const startStt = () => {
     if (!sttOK) return;
     const Rc = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new Rc(); recogRef.current = r;
@@ -951,6 +956,7 @@ function ShopConsultant() {
       const replies = shopConsultReply(text);
       setTyping(false);
       setMsgs((m) => [...m, ...replies.map((r) => ({ id: ++_shopMsgId, who: "ai", ...r }))]);
+      const firstText = replies.find((r) => r.kind === "text"); if (firstText) speak(firstText.text);
       const hasArea = replies.some((r) => r.kind === "area" || r.kind === "dev" || r.kind === "rec");
       setQuicks(hasArea ? ["🎯 내 건강상태 맞춤 추천", "관절·연골 건강", "면역·활력", "홈케어 기기 추천"] : ["🎯 내 건강상태 맞춤 추천", "눈 건강", "혈당 건강", "혈압계 추천"]);
     }, 750);
@@ -971,6 +977,7 @@ function ShopConsultant() {
         <div className="kt-head">
           <span className="av-ai" style={{ width: 34, height: 34 }}><Sparkles size={19} color="#fff" /></span>
           <div style={{ flex: 1 }}><div className="nm">AI 상담사</div><div className="st"><span className="dot" /> 온라인 · 맞춤 건강제품 안내</div></div>
+          {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기" style={{ color: tts ? "#EA580C" : "#9A3412", background: "none", border: "none", cursor: "pointer", padding: 4 }}><Volume2 size={18} /></button>}
         </div>
         <div className="kt-body">
           <div className="daypill"><Sparkles size={12} style={{ verticalAlign: -2, marginRight: 3 }} /> 정밀영양협회 검증 · 식약처 인정 기능성 기반 · 참고용</div>
