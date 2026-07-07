@@ -3023,7 +3023,42 @@ function BizCheckup() {
   </div>);
 }
 
-/* ── 특수검진 — 산업안전보건법상 특수건강진단 ── */
+/* ── 특수검진 — ①첨단 정밀검사(유전자·바이오마커) ②산업안전보건법 특수건강진단 ── */
+const PRECISION_SCREEN = [
+  {
+    dz: "파킨슨병 조기진단", color: "#7C3AED", ic: Brain,
+    desc: "도파민 신경 손상을 뇌 AI영상·혈액 단백질로 증상 전 조기 포착",
+    orgs: [
+      ["휴런 (Heuron)", "AI 뇌 MRI로 흑질 나이그로좀·뉴로멜라닌을 정량 — 파킨슨 조기진단 보조(정확도 90%+, 식약처 2등급 의료기기)"],
+      ["피플바이오", "혈액 내 알파-시누클레인 응집체 측정(CSIC·RT-QuIC 기반) 파킨슨 조기진단 기술"],
+    ],
+  },
+  {
+    dz: "치매(알츠하이머) 조기진단", color: "#2563EB", ic: Activity,
+    desc: "혈액 한 방울로 아밀로이드·타우 등 바이오마커 위험을 평가",
+    orgs: [
+      ["피플바이오 알츠온(AlzOn)", "혈액 베타-아밀로이드 응집도(MDS)로 알츠하이머 위험 평가"],
+      ["퀀타매트릭스 알츠플러스", "아밀로이드 베타 + LGALS3BP·ACE·페리오스틴 등 4종 바이오마커 통합 분석"],
+    ],
+  },
+  {
+    dz: "암 조기진단 (액체생검·유전자)", color: "#DC2626", ic: ShieldCheck,
+    desc: "혈액 속 종양 DNA(ctDNA)·메틸화로 다종 암을 조기에 선별",
+    orgs: [
+      ["아이엠비디엑스(IMBDx) 캔서파인드", "혈액 ctDNA·cfDNA 메틸레이션을 AI로 분석 — 다종 암 혈액 조기검진"],
+      ["지노믹트리 얼리텍(EarlyTec)", "메틸화 DNA 기반 대장암 등 조기진단"],
+      ["젠큐릭스", "액체생검 기반 암 예후·조기진단 검사"],
+    ],
+  },
+  {
+    dz: "발달장애·아동 질병예방 (유전체)", color: "#16A34A", ic: Users,
+    desc: "신생아·아동 유전체로 선천질환·발달 위험을 조기 확인",
+    orgs: [
+      ["EDGC 지스캐닝", "신생아 유전체 분석 — 선천성 염색체 이상·발달 관련 위험 조기 확인"],
+      ["마크로젠 젠톡", "질병예측 유전자검사(DTC) — 예방 중심 정밀의학"],
+    ],
+  },
+];
 function SpecialCheckup() {
   const TYPES = [
     ["배치전 건강진단", "유해업무 배치 전 기초 건강 상태 평가"],
@@ -3037,7 +3072,22 @@ function SpecialCheckup() {
   ];
   return (
     <>
-      <div className="card" style={{ borderTop: "3px solid #EA580C" }}>
+      <div className="card" style={{ borderTop: "3px solid #7C3AED" }}>
+        <div className="rct"><Sparkles size={18} color="#7C3AED" /> 첨단·특수 정밀검사 — 유전자 · 단백질 바이오마커 · AI영상</div>
+        <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>일반 검진으로 잡기 어려운 <b>파킨슨·치매·암·발달장애</b>를 <b>유전자·특수 단백질(바이오마커)·AI 뇌영상</b>으로 증상 전 조기 예측·선별하는 첨단 검사 기술과 대표 기관입니다. HI-Fin은 이들 정밀검사 기관과 연계해 <b>초기 위험 발굴 → 예방·관리</b>로 잇습니다.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 10, marginTop: 10 }}>
+          {PRECISION_SCREEN.map((g, i) => { const Ic = g.ic; return (
+            <div key={i} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "13px 14px", borderLeft: "4px solid " + g.color }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 900, color: g.color }}><Ic size={16} /> {g.dz}</div>
+              <div style={{ fontSize: 11.5, color: "var(--muted)", margin: "4px 0 6px", lineHeight: 1.5 }}>{g.desc}</div>
+              {g.orgs.map((o, j) => (<div key={j} style={{ marginTop: 7 }}><div style={{ fontSize: 12.5, fontWeight: 800, color: "#12203F" }}>{o[0]}</div><div style={{ fontSize: 11, color: "#475569", marginTop: 2, lineHeight: 1.45 }}>{o[1]}</div></div>))}
+            </div>
+          ); })}
+        </div>
+        <div className="socsplit-extra" style={{ marginTop: 12 }}><Sparkles size={13} color="#7C3AED" /> HI-Fin 연계(예정): 정밀검사 결과를 <b>AI 주치의·데이터 하우스</b>와 연동해 개인 맞춤 예방·추적으로 순환</div>
+        <div className="chnote" style={{ marginTop: 10 }}>※ 상기 기술·기관은 국내 대표 사례를 조사·정리한 것으로 대부분 <b>선별·진단 보조 목적</b>이며 확진을 대체하지 않습니다. 실제 검사는 의료기관 처방·전문의 상담이 필요하며 제휴·연계는 예정입니다. (출처: 각 사·식약처·언론보도)</div>
+      </div>
+      <div className="card" style={{ borderTop: "3px solid #EA580C", marginTop: 14 }}>
         <div className="rct"><AlertTriangle size={18} color="#EA580C" /> 특수건강진단 (산업안전보건법)</div>
         <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}><b>유해인자에 노출되는 근로자</b>의 직업병을 조기 발견·예방하기 위해 사업주가 실시하는 법정 건강진단입니다. HI-Fin은 특수건강진단 지정기관과 연계해 <b>기업 근로자 검진 여정</b>을 관리합니다.</p>
         <div className="bklbl" style={{ marginTop: 6 }}>진단 유형</div>
