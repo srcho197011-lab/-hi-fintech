@@ -5255,6 +5255,60 @@ function SuppImage({ p }) {
     </svg>
   );
 }
+/* ── 공유 장바구니 스토어 — 영양제몰과 당당상담 AI가 같은 카트를 사용 ── */
+let _shopCart = {};
+const _shopCartSubs = new Set();
+function _shopCartNotify() { _shopCartSubs.forEach((f) => { try { f(); } catch (e) {} }); }
+function shopCartAdd(id, q) { _shopCart = Object.assign({}, _shopCart, { [id]: (_shopCart[id] || 0) + (q || 1) }); _shopCartNotify(); }
+function shopCartSetQty(id, q) { const n = Object.assign({}, _shopCart); if (q <= 0) delete n[id]; else n[id] = q; _shopCart = n; _shopCartNotify(); }
+function shopCartClear() { _shopCart = {}; _shopCartNotify(); }
+function useShopCart() { const [, force] = useState(0); useEffect(() => { const f = () => force((x) => x + 1); _shopCartSubs.add(f); return () => { _shopCartSubs.delete(f); }; }, []); return _shopCart; }
+/* 재사용 장바구니 바 + 주문 모달 (products: 카트 id 조회용 상품 배열) */
+function ShopCartBar({ products }) {
+  const cart = useShopCart();
+  const [cartOpen, setCartOpen] = useState(false);
+  const [ordered, setOrdered] = useState(false);
+  const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const icoOf = (p) => (CATS[p.category] || {});
+  const cartItems = Object.keys(cart).map((id) => ({ p: (products || []).find((x) => x.id === id), qty: cart[id] })).filter((x) => x.p);
+  const totalCnt = cartItems.reduce((s, x) => s + x.qty, 0);
+  const totalPrice = cartItems.reduce((s, x) => s + x.p.price * x.qty, 0);
+  const totalReward = cartItems.reduce((s, x) => s + rw(x.p.price).reward * x.qty, 0);
+  if (totalCnt === 0 && !cartOpen) return null;
+  return (
+    <>
+      {totalCnt > 0 && (
+        <div className="cartbar" onClick={() => setCartOpen(true)}>
+          <span className="cbico"><ShoppingCart size={17} /><i>{totalCnt}</i></span>
+          <div className="cbinfo"><b>합계 {shopWon(totalPrice)}</b><span><Coins size={11} color="#FDE68A" /> 건강적립금 {shopWon(totalReward)}</span></div>
+          <button className="cbgo">주문하기 ›</button>
+        </div>
+      )}
+      {cartOpen && (
+        <div className="pdov" onClick={() => { setCartOpen(false); setOrdered(false); }}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
+          <div className="pdh"><b>{ordered ? "주문 접수" : "장바구니"}</b><button onClick={() => { setCartOpen(false); setOrdered(false); }}><X size={19} /></button></div>
+          <div className="pdbody">
+            {ordered ? (
+              <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · {shopWon(totalPrice)}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 결제 확정 시 건강금융지갑에 적립됩니다.</p><button className="cbtn pri" onClick={() => { shopCartClear(); setCartOpen(false); setOrdered(false); }}>확인</button></div>
+            ) : (<>
+              {cartItems.map(({ p, qty }) => { const r = rw(p.price); return (
+                <div className="citem" key={p.id}>
+                  <span className="ci" style={{ background: (icoOf(p).col || "#7C3AED") + "16" }}><Art name={icoOf(p).icon || "capsule"} size={22} /></span>
+                  <div className="cinfo"><b>{p.name}</b><span>{shopWon(p.price)} · 적립 {shopWon(r.reward)}</span></div>
+                  <div className="cqty"><button onClick={() => shopCartSetQty(p.id, qty - 1)}>−</button><b>{qty}</b><button onClick={() => shopCartSetQty(p.id, qty + 1)}>+</button></div>
+                </div>
+              ); })}
+              <div className="csum"><div><span>합계 금액</span><b>{shopWon(totalPrice)}</b></div><div className="rew"><span><Coins size={12} /> 건강적립금</span><b>{shopWon(totalReward)}</b></div></div>
+              <button className="cbtn pri" onClick={() => setOrdered(true)}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
+              <div className="chnote" style={{ marginTop: 4 }}>※ 결제는 목업이며 실결제·재고 연동은 별도입니다. 건강적립금은 결제 확정 시 적립됩니다.</div>
+            </>)}
+          </div>
+        </div></div>
+      )}
+    </>
+  );
+}
 function SupplementShop() {
   const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
@@ -5262,20 +5316,12 @@ function SupplementShop() {
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("reward");
   const [detail, setDetail] = useState(null);
-  const [cart, setCart] = useState({});
-  const [cartOpen, setCartOpen] = useState(false);
-  const [ordered, setOrdered] = useState(false);
   const cats = ["전체", ...Object.keys(CATS)];
   let list = PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
   if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
   else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
   else if (sort === "priceHigh") list = [...list].sort((a, b) => b.price - a.price);
-  const add = (p) => { setCart((c) => ({ ...c, [p.id]: (c[p.id] || 0) + 1 })); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${shopWon(rw(p.price).reward)}`); };
-  const setQty = (id, q) => setCart((c) => { const n = { ...c }; if (q <= 0) delete n[id]; else n[id] = q; return n; });
-  const cartItems = Object.keys(cart).map((id) => ({ p: PRODUCTS.find((x) => x.id === id), qty: cart[id] })).filter((x) => x.p);
-  const totalCnt = cartItems.reduce((s, x) => s + x.qty, 0);
-  const totalPrice = cartItems.reduce((s, x) => s + x.p.price * x.qty, 0);
-  const totalReward = cartItems.reduce((s, x) => s + rw(x.p.price).reward * x.qty, 0);
+  const add = (p) => { shopCartAdd(p.id); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${shopWon(rw(p.price).reward)}`); };
   const icoOf = (p) => (CATS[p.category] || {});
   return (
     <>
@@ -5302,13 +5348,7 @@ function SupplementShop() {
       ); })}</div>
       <div className="chnote">※ 가격은 브랜드 공식몰/네이버·쿠팡 최저가 <b>수집 예시(2026-07-01 시점)</b>로 변동될 수 있습니다. 기능성 문구는 식약처 인정 기능성 요약(원문 복제 아님)이며, 이미지·후기·구매는 각 출처로 연결됩니다. 건강기능식품은 질병의 예방·치료 의약품이 아니며, 실제 판매는 브랜드 제휴·오픈마켓 API 연동이 필요합니다.</div>
 
-      {totalCnt > 0 && (
-        <div className="cartbar" onClick={() => setCartOpen(true)}>
-          <span className="cbico"><ShoppingCart size={17} /><i>{totalCnt}</i></span>
-          <div className="cbinfo"><b>합계 {shopWon(totalPrice)}</b><span><Coins size={11} color="#FDE68A" /> 건강적립금 {shopWon(totalReward)}</span></div>
-          <button className="cbgo">주문하기 ›</button>
-        </div>
-      )}
+      <ShopCartBar products={PRODUCTS} />
 
       {detail && (() => { const r = rw(detail.price), m = icoOf(detail); return (
         <div className="pdov" onClick={() => setDetail(null)}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
@@ -5330,28 +5370,6 @@ function SupplementShop() {
           </div>
         </div></div>
       ); })()}
-
-      {cartOpen && (
-        <div className="pdov" onClick={() => { setCartOpen(false); setOrdered(false); }}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
-          <div className="pdh"><b>{ordered ? "주문 접수" : "장바구니"}</b><button onClick={() => { setCartOpen(false); setOrdered(false); }}><X size={19} /></button></div>
-          <div className="pdbody">
-            {ordered ? (
-              <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · {shopWon(totalPrice)}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 결제 확정 시 건강금융지갑에 적립됩니다.</p><button className="cbtn pri" onClick={() => { setCart({}); setCartOpen(false); setOrdered(false); }}>확인</button></div>
-            ) : (<>
-              {cartItems.map(({ p, qty }) => { const r = rw(p.price); return (
-                <div className="citem" key={p.id}>
-                  <span className="ci" style={{ background: (icoOf(p).col || "#7C3AED") + "16" }}><Art name={icoOf(p).icon || "capsule"} size={22} /></span>
-                  <div className="cinfo"><b>{p.name}</b><span>{shopWon(p.price)} · 적립 {shopWon(r.reward)}</span></div>
-                  <div className="cqty"><button onClick={() => setQty(p.id, qty - 1)}>−</button><b>{qty}</b><button onClick={() => setQty(p.id, qty + 1)}>+</button></div>
-                </div>
-              ); })}
-              <div className="csum"><div><span>합계 금액</span><b>{shopWon(totalPrice)}</b></div><div className="rew"><span><Coins size={12} /> 건강적립금</span><b>{shopWon(totalReward)}</b></div></div>
-              <button className="cbtn pri" onClick={() => setOrdered(true)}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
-              <div className="chnote" style={{ marginTop: 4 }}>※ 결제는 목업이며 실결제·재고 연동은 별도입니다. 건강적립금은 결제 확정 시 적립됩니다.</div>
-            </>)}
-          </div>
-        </div></div>
-      )}
     </>
   );
 }
@@ -5406,10 +5424,11 @@ function DangDangDisclaimer() {
     </div>
   );
 }
-function DangDangProduct({ p, onGoSupp }) {
+function DangDangProduct({ p }) {
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
   const m = CATS[p.category] || {};
   const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.25) };
+  const won = (v) => (typeof shopWon === "function") ? shopWon(v) : v + "원";
   return (
     <div className="prodcard" style={{ cursor: "default" }}>
       <div className="pimg" style={{ background: (m.col || "#7C3AED") + "10" }}>{typeof SuppImage === "function" ? <SuppImage p={p} /> : null}</div>
@@ -5417,10 +5436,10 @@ function DangDangProduct({ p, onGoSupp }) {
         <div className="pbrand">{p.brand}</div>
         <div className="pname2">{p.name}</div>
         <div className="pvol" style={{ color: "#0D9488", fontWeight: 600 }}>{p.claim}</div>
-        <div className="pprice">{typeof shopWon === "function" ? shopWon(p.price) : p.price + "원"}</div>
-        <div className="preward"><Coins size={11} /> 적립 {typeof shopWon === "function" ? shopWon(r.reward) : r.reward} <small>25%</small></div>
+        <div className="pprice">{won(p.price)}</div>
+        <div className="preward"><Coins size={11} /> 적립 {won(r.reward)} <small>25%</small></div>
       </div>
-      <button className="paddbtn" onClick={() => onGoSupp && onGoSupp()}><Pill size={13} /> 영양제몰에서 담기</button>
+      <button className="paddbtn" onClick={() => { shopCartAdd(p.id); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${won(r.reward)}`); }}><Plus size={13} /> 담기</button>
     </div>
   );
 }
@@ -5465,7 +5484,7 @@ function DangDangAI({ onGoSupp, onGoDevice }) {
             <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 6 }}>{a.claim}</div>
             <div style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 10 }}>※ 위 문구는 식약처가 인정한 <b>건강기능</b> 표현이며, 특정 질병의 치료·예방을 뜻하지 않습니다.</div>
             {prods.length ? (
-              <div className="prodgrid">{prods.map((p) => <DangDangProduct key={p.id} p={p} onGoSupp={onGoSupp} />)}</div>
+              <div className="prodgrid">{prods.map((p) => <DangDangProduct key={p.id} p={p} />)}</div>
             ) : (
               <div style={{ fontSize: 12.5, color: "var(--muted)" }}>해당 기능성 제품은 <button className="linklike" style={{ color: a.col, fontWeight: 700, background: "none", border: "none", cursor: "pointer", padding: 0 }} onClick={() => onGoSupp && onGoSupp()}>영양제몰</button>에서 더 확인하실 수 있어요. (제휴 라인업 확대 예정)</div>
             )}
@@ -5487,6 +5506,7 @@ function DangDangAI({ onGoSupp, onGoDevice }) {
         </div>
       ))}
       <div className="chnote" style={{ marginTop: 12 }}>※ 당당상담 AI는 정보 제공용 안내이며 진단·처방·의료행위가 아닙니다. 건강기능식품은 질병의 예방·치료를 위한 의약품이 아니고, 의료기기는 허가된 사용목적 범위에서 사용하세요. 복용 중인 약·기저질환이 있으면 반드시 전문가와 상의하세요.</div>
+      <ShopCartBar products={PRODUCTS} />
     </div>
   );
 }

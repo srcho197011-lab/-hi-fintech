@@ -601,7 +601,10 @@ function Sidebar({active,setActive,open,onClose,admin,setAdmin,onExit}){
             <button onClick={()=>go("글로벌 소싱")} className="opnav" data-on={active==="글로벌 소싱"} style={{marginTop:6}}>
               <Globe size={18}/><span style={{flex:1,textAlign:"left"}}>글로벌 소싱</span><span className="opbadge">운영</span>
             </button>
-            <button onClick={()=>{ setAdmin(false); if(active==="펫 온톨로지"||active==="글로벌 소싱")go("홈"); }} className="oplogout"><Lock size={13}/> 운영자 로그아웃</button>
+            <button onClick={()=>go("국내 공급망")} className="opnav" data-on={active==="국내 공급망"} style={{marginTop:6}}>
+              <Building2 size={18}/><span style={{flex:1,textAlign:"left"}}>국내 공급망</span><span className="opbadge">운영</span>
+            </button>
+            <button onClick={()=>{ setAdmin(false); if(active==="펫 온톨로지"||active==="글로벌 소싱"||active==="국내 공급망")go("홈"); }} className="oplogout"><Lock size={13}/> 운영자 로그아웃</button>
           </>) : (
             <button onClick={()=>setLogin(true)} className="oplogout"><Lock size={13}/> 운영자 로그인</button>
           )}
@@ -2786,6 +2789,128 @@ function SourcingSection(){
         <div className="srn"><Coins size={14} color="#41506B"/> <b>Health-InsurFin</b>: 마진의 {pctS(p.ins)}가 무상 실손보험·의료비 지원기금 재원으로 적립 → "일상 구매가 보험이 되는" 구조</div>
       </div>
       <div className="chnote">※ 가격·원가는 2024~2026 공개 소매가 기반 <b>추정치</b>이며 리서치 검증 후 갱신됩니다. 총판 공급가는 소비자가×공급가율 가정 추정. PB 단가는 예시입니다. 처방식 직구·상용수입은 관련 법규·수의사 처방 요건을 반드시 확인하세요.</div>
+    </div>
+  );
+}
+
+/* ============================ 국내 공급망 (운영자 전용) ============================ */
+/* 국내 대형 제조사(하림·우리와·대주 등) 공장 직거래 + OEM 위탁으로 총판·도매 다단계 마진 우회 */
+/* 수치는 2024~2026 공개 소비자가 기반 추정치(리서치 검증 반영 예정). factory=공장 출고가 추정 */
+const DOM_SUPPLY=[
+  { maker:"하림펫푸드", brand:"더리얼", cat:"건식", name:"더리얼 오븐베이크드 닭 1.2kg", retail:28000, factory:14000, rx:false, note:"국내 최대 · 오븐베이크" },
+  { maker:"하림펫푸드", brand:"밥이보약", cat:"기능식", name:"밥이보약 장·관절 기능식 1.2kg", retail:32000, factory:16000, rx:false, note:"기능식 라인" },
+  { maker:"우리와", brand:"ANF", cat:"건식", name:"ANF 6Free 연어 2kg", retail:35000, factory:17000, rx:false, note:"저알러지" },
+  { maker:"우리와", brand:"오래오래", cat:"건식", name:"오래오래 시니어 케어 1.5kg", retail:30000, factory:15000, rx:false, note:"노령견 특화" },
+  { maker:"대주펫푸드", brand:"캐츠랑", cat:"건식", name:"캐츠랑 요로건강 1.5kg", retail:22000, factory:9500, rx:false, note:"고양이 · 자체공장" },
+  { maker:"대주펫푸드", brand:"프로베스트", cat:"처방식", name:"프로베스트 신장 케어 1.5kg", retail:34000, factory:16000, rx:true, note:"국내 처방식 생산" },
+  { maker:"정관장(KGC)", brand:"지니펫", cat:"기능식", name:"지니펫 홍삼 관절 기능식 1kg", retail:38000, factory:19000, rx:false, note:"홍삼 기능식" },
+  { maker:"풀무원아미오", brand:"아미오", cat:"습식", name:"아미오 자연담은 파우치 12입", retail:24000, factory:11000, rx:false, note:"습식 파우치" },
+  { maker:"네추럴코어", brand:"네추럴코어", cat:"건식", name:"네추럴코어 유기농 에코7 2kg", retail:33000, factory:16000, rx:false, note:"유기농" },
+  { maker:"대주펫푸드", brand:"러브잇", cat:"간식", name:"러브잇 동결건조 닭가슴살 50g", retail:15000, factory:6500, rx:false, note:"동결건조 간식" },
+];
+// PB 위탁생산(OEM/ODM) 가능 국내 제조 파트너
+const DOM_OEM=[
+  { name:"하림펫푸드 (익산)", cap:"건식·오븐베이크·화식·습식", moq:"1~2톤", note:"국내 최대 펫푸드 공장 · PB 위탁생산" },
+  { name:"대주펫푸드", cap:"건식·습식·처방식·간식 ODM", moq:"500kg~1톤", note:"캐츠랑 자체공장 · ODM 활발" },
+  { name:"우성사료·카길", cap:"대량 건식 사료", moq:"2톤+", note:"축산사료 인프라 · 저단가 대량" },
+  { name:"기능식 전문 OEM", cap:"기능식·영양제·처방 설계", moq:"소량 가능", note:"기능성 원료 배합 · 소량 다품종" },
+];
+const DOM_DEFAULT={ direct:.08, logi:.06, ops:.06, disc:.12, ins:.70 };
+function computeDom(it,p){
+  const buy=it.factory*(1+p.direct);           // 공장 직거래 매입가
+  const logi=it.factory*p.logi, ops=it.factory*p.ops;
+  const landed=buy+logi+ops;                    // HI-PET 총매입원가
+  const price=Math.round(it.retail*(1-p.disc)/100)*100;
+  const marginW=price-landed, marginPct=price>0?marginW/price:0;
+  const insReserve=marginW>0?marginW*p.ins:0;
+  const saveW=it.retail-price;
+  const traditionalAdd=it.retail-it.factory;    // 공장가→소비자가 유통마진 총합
+  return {buy,logi,ops,landed,price,marginW,marginPct,insReserve,saveW,traditionalAdd};
+}
+function DomesticSupplySection(){
+  const won=(n)=>"₩"+Math.round(n).toLocaleString();
+  const [p,setP]=useState(DOM_DEFAULT);
+  const [cat,setCat]=useState("전체");
+  const set=(k)=>(v)=>setP(o=>({...o,[k]:v}));
+  const cats=["전체","건식","습식","처방식","기능식","간식"];
+  const rows=React.useMemo(()=>DOM_SUPPLY.filter(i=>cat==="전체"||i.cat===cat).map(it=>({it,...computeDom(it,p)})),[cat,p]);
+  const nn=rows.length||1;
+  const avgMargin=rows.reduce((s,r)=>s+r.marginPct,0)/nn;
+  const avgSave=rows.reduce((s,r)=>s+(r.saveW/r.it.retail),0)/nn;
+  const avgAdd=rows.reduce((s,r)=>s+(r.traditionalAdd/r.it.retail),0)/nn;
+  const avgIns=rows.reduce((s,r)=>s+Math.max(0,r.insReserve),0)/nn;
+  const mColor=(m)=>m>=.6?"#3C9E72":m>=.45?"#E8913A":m>=.25?"#C98A12":"#EF5B5B";
+  return (
+    <div className="hsec">
+      <div className="aihead"><span className="aiico" style={{background:"linear-gradient(135deg,#4FB286,#2E8B62)"}}><Building2 size={24} color="#fff"/></span>
+        <div><div className="aih-t">국내 공급망 <span className="opbadge" style={{verticalAlign:"3px"}}>운영</span></div>
+        <div className="aih-s">국내 대형 제조사 공장 직거래 + OEM 위탁 · 총판·도매 다단계 마진 우회 · PB 자체생산</div></div></div>
+
+      <div className="srcprob" style={{background:"#EAF6EF",borderColor:"#BEE4CF"}}><Building2 size={16} color="#2E8B62"/><div><b>국내도 다단계 유통 마진</b> — 공장 출고가에 <b>총판→도매→소매</b> 마진이 겹겹이 얹혀 소비자가가 형성됩니다. HI-PET이 <b>공장과 직거래</b>(또는 <b>OEM 위탁생산</b>)하면 중간 단계를 제거해 저가 공급 + 고마진이 가능하고, 마진의 <b>{pctS(p.ins)}</b>는 무상보험·의료비 재원이 됩니다.</div></div>
+
+      {/* 유통 단계 비교 */}
+      <div className="simcard">
+        <div className="rct"><Ship size={17} color="var(--orange)"/> 유통 구조 비교 <span className="sub">· 중간 마진 제거</span></div>
+        <div className="dflow">
+          <div className="dfrow"><span className="dfl">전통 유통</span>
+            <span className="dfc">공장 출고가</span><i>→</i><span className="dfc cut">총판</span><i>→</i><span className="dfc cut">도매</span><i>→</i><span className="dfc cut">소매</span><i>→</i><span className="dfc">소비자가</span></div>
+          <div className="dfrow"><span className="dfl hp">HI-PET</span>
+            <span className="dfc">공장/OEM 직거래</span><i>→</i><span className="dfc">HI-PET 물류</span><i>→</i><span className="dfc">회원</span>
+            <span className="dfsave">중간 3단계 마진 제거</span></div>
+        </div>
+      </div>
+
+      <div className="skpi">
+        <div><div className="kl">평균 판매마진</div><div className="kv" style={{color:mColor(avgMargin)}}>{pctS(avgMargin)}</div><div className="kx">직거래 기준</div></div>
+        <div><div className="kl">국내가 대비 절감</div><div className="kv" style={{color:"#3C9E72"}}>{pctS(avgSave)}</div><div className="kx">소비자 체감가↓</div></div>
+        <div><div className="kl">제거한 유통마진</div><div className="kv" style={{color:"#2E8B62"}}>{pctS(avgAdd)}</div><div className="kx">공장가→소비자가</div></div>
+        <div><div className="kl">SKU당 평균 보험재원</div><div className="kv" style={{color:"var(--orange-deep)"}}>{won(Math.round(avgIns))}</div><div className="kx">마진의 {pctS(p.ins)}</div></div>
+      </div>
+
+      <div className="simcard">
+        <div className="rct"><Settings size={17} color="var(--orange)"/> 공급 시뮬레이터 <span className="sub">· 직거래·물류·인하율 조정 시 실시간 재계산</span></div>
+        <div className="simgrid">
+          <SimSlider label="공장 직거래 가산율" val={p.direct} min={0} max={.3} step={.01} fmt={pctS} onChange={set("direct")} hint="공장가 대비 매입 웃돈"/>
+          <SimSlider label="국내 물류비" val={p.logi} min={0} max={.2} step={.01} fmt={pctS} onChange={set("logi")} hint="풀필먼트·배송"/>
+          <SimSlider label="운영비" val={p.ops} min={0} max={.2} step={.01} fmt={pctS} onChange={set("ops")} hint="마케팅·CS"/>
+          <SimSlider label="국내가 대비 인하율" val={p.disc} min={0} max={.4} step={.01} fmt={pctS} onChange={set("disc")} hint="우리 소비자가"/>
+          <SimSlider label="보험재원 비율(마진 중)" val={p.ins} min={0} max={1} step={.05} fmt={pctS} onChange={set("ins")} hint="나머지는 회사 이익"/>
+        </div>
+        <button className="cbtn" style={{maxWidth:180}} onClick={()=>setP(DOM_DEFAULT)}>기본값으로 초기화</button>
+      </div>
+
+      <div className="bklbl"><Building2 size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 국내 제조사 직거래 카탈로그</div>
+      <div className="regions">{cats.map(c=><button key={c} className={`fsel ${cat===c?"on":""}`} onClick={()=>setCat(c)}>{c==="전체"?"전체 카테고리":c}</button>)}</div>
+      <div className="srctbl-wrap">
+        <div className="srctbl domtbl">
+          <div className="sh">제조사 · 제품</div><div className="sh r">소비자가</div><div className="sh r">공장 출고가</div><div className="sh r">HI-PET 매입원가</div><div className="sh r">우리 판매가</div><div className="sh r">마진</div><div className="sh r">보험재원</div>
+          {rows.map((r,i)=>(<React.Fragment key={i}>
+            <div className="sc"><div className="sbn">{r.it.maker} <span className={`cbadge ${r.it.rx?"pur":"org"}`} style={{marginLeft:4}}>{r.it.brand}</span></div><div className="spn">{r.it.name}</div><div className="sgap">{r.it.note}</div></div>
+            <div className="sc r"><span className="kstrike">{won(r.it.retail)}</span></div>
+            <div className="sc r">{won(r.it.factory)}</div>
+            <div className="sc r">{won(r.landed)}</div>
+            <div className="sc r"><b>{won(r.price)}</b>{r.saveW>0&&<div className="ssave">−{won(r.saveW)}</div>}</div>
+            <div className="sc r"><b style={{color:mColor(r.marginPct),fontSize:15}}>{pctS(r.marginPct)}</b><div className="ssub">{won(r.marginW)}</div></div>
+            <div className="sc r"><b style={{color:"var(--orange-deep)"}}>{won(r.insReserve)}</b></div>
+          </React.Fragment>))}
+        </div>
+      </div>
+
+      {/* OEM/ODM 파트너 → PB 제조 */}
+      <div className="pbcard" style={{background:"linear-gradient(135deg,#2E8B62,#256E4E)"}}>
+        <div className="rct" style={{color:"#fff"}}><Award size={17} color="#fff"/> 국내 OEM/ODM 위탁생산 → HI-PET Premium 제조</div>
+        <div className="pbflow"><span>AI 건강분석</span><i>→</i><span>맞춤 처방식·기능식 기획</span><i>→</i><span>국내 OEM 위탁</span><i>→</i><span>HI-PET Premium</span></div>
+        <div className="oemgrid">
+          {DOM_OEM.map((o,i)=><div className="oemc" key={i}><div className="oemn">{o.name}</div><div className="oemcap">{o.cap}</div><div className="oemmeta"><span>MOQ {o.moq}</span></div><div className="oemnote">{o.note}</div></div>)}
+        </div>
+        <div className="pbwhy">국내 OEM은 <b>물류·리드타임이 짧고 재고·반품 손실이 낮으며</b>, 처방식·기능식을 <b>수의 자문 + AI 위험분석</b>에 맞춰 소량 다품종으로 생산할 수 있습니다. → 병행수입·직거래를 넘어 <b>HI-PET Premium PB</b>의 실제 생산 기반.</div>
+      </div>
+
+      <div className="srcnote">
+        <div className="srn"><Building2 size={14} color="#2E8B62"/> <b>직거래 조건</b>: 공장 직납·자사몰 전용가·B2B 대량납품 계약으로 총판·도매 마진 제거. 대형사는 최소 발주·정산 조건 협의 필요.</div>
+        <div className="srn"><Coins size={14} color="#2E8B62"/> <b>Health-InsurFin</b>: 마진의 {pctS(p.ins)}가 무상 실손보험·의료비 지원기금 재원으로 적립.</div>
+      </div>
+      <div className="chnote">※ 소비자가·공장 출고가는 2024~2026 공개가 기반 <b>추정치</b>이며 리서치 검증 후 갱신됩니다. OEM MOQ·단가는 일반론 예시로, 실제는 제조사별 계약에 따릅니다.</div>
     </div>
   );
 }
