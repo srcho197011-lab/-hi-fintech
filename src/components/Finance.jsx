@@ -130,7 +130,7 @@ function finMultiYear() {
   }
   return rows;
 }
-// ── 건강금융지갑·사회적기업 공통 지표 — 재무모델(제품마진) 연동. 적립20%·나눔10%(+운영·유보 70%)·유기동물 ──
+// ── 건강금융지갑·사회적기업 공통 지표 — 재무모델(제품마진) 연동. 적립20%·나눔10%(+운영·유보 70%)·특별지원(어르신·장애아동) ──
 function finSocial(yi) {
   const rows = finMultiYear(), r = rows[yi == null ? 0 : Math.max(0, Math.min(4, yi))];
   const margin = r.revProduct - r.cogsProduct;

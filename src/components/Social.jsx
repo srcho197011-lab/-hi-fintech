@@ -4,7 +4,7 @@ const socNum = (n) => (n >= 10000 ? (n / 10000).toFixed(n >= 100000 ? 0 : 1).rep
 
 function socialImpact() {
   const agg = (typeof pilotAgg === "function") ? pilotAgg() : { n: 100000, needyN: 8200, gapN: 21000, households: 42000, totalCost: 0 };
-  // 재무회계 모델 연동 — 제품마진 → 적립50%·나눔30%·운영20%(+유기동물). 1차연도(10만 회원, 파일럿 규모) 기준.
+  // 재무회계 모델 연동 — 제품마진 → 적립50%·나눔30%·운영20%(+특별지원: 어르신 치료비·장애아동 재활). 1차연도(10만 회원, 파일럿 규모) 기준.
   const fs = (typeof finSocial === "function") ? finSocial(0) : { margin: 655500000, earn: 327750000, give: 196650000, ops: 131100000, animal: 8193750, beneficiaries: 771 };
   const earn = fs.earn, give = fs.give, ops = fs.ops, animal = fs.animal, marginTotal = fs.margin;
   const activeRate = 0.45;
@@ -38,7 +38,7 @@ function SocValueGraph() {
     { id: "margin", t: "판매마진", x: 320, y: 70, c: "#818CF8" },
     { id: "earn", t: "건강적립\n환원 50%", x: 250, y: 178, c: "#16A34A" },
     { id: "give", t: "치료비나눔\n30%", x: 390, y: 178, c: "#E11D48" },
-    { id: "animal", t: "유기동물\n지원", x: 490, y: 90, c: "#F59E0B" },
+    { id: "animal", t: "특별지원\n어르신·아동", x: 490, y: 90, c: "#7C3AED" },
     { id: "gap", t: "의료비\n사각지대", x: 470, y: 260, c: "#A78BFA" },
     { id: "impact", t: "사회적\n임팩트", x: 300, y: 285, c: "#FB7185" },
   ];
@@ -53,7 +53,7 @@ function SocValueGraph() {
           {ls.map((l, i) => <text key={i} x={nd.x} y={nd.y + 4 - (ls.length - 1) * 6 + i * 12} fill="#EAF2FF" fontSize="9.5" fontWeight="800" textAnchor="middle">{l}</text>)}
         </g>); })}
       </svg>
-      <div className="ontgraph-note">시민의 <b>참여·소비</b>가 <b style={{ color: "#818CF8" }}>판매마진</b>이 되고 → <b style={{ color: "#16A34A" }}>건강적립(50%)</b>으로 회원에게 환원, <b style={{ color: "#E11D48" }}>치료비 나눔(30%)</b>·<b style={{ color: "#F59E0B" }}>유기동물</b>으로 사각지대에 전달되어 <b style={{ color: "#FB7185" }}>사회적 임팩트</b>로 순환합니다.</div>
+      <div className="ontgraph-note">시민의 <b>참여·소비</b>가 <b style={{ color: "#818CF8" }}>판매마진</b>이 되고 → <b style={{ color: "#16A34A" }}>건강적립(50%)</b>으로 회원에게 환원, <b style={{ color: "#E11D48" }}>치료비 나눔(30%)</b>·<b style={{ color: "#7C3AED" }}>특별지원(어르신·아동)</b>으로 사각지대에 전달되어 <b style={{ color: "#FB7185" }}>사회적 임팩트</b>로 순환합니다.</div>
     </div>
   );
 }
@@ -66,7 +66,7 @@ function SocLiveCounter({ base }) {
     { ic: Users, c: "#22D3EE", label: "오늘 참여 활동", v: 1240 + t * 3, unit: "건" },
     { ic: HandCoins, c: "#16A34A", label: "오늘 건강적립 환원", v: 3120000 + t * 8400, money: true },
     { ic: HeartHandshake, c: "#E11D48", label: "오늘 치료비 나눔", v: 1870000 + t * 5100, money: true },
-    { ic: PawPrint, c: "#F59E0B", label: "오늘 유기동물 지원", v: 78000 + t * 260, money: true },
+    { ic: HeartHandshake, c: "#7C3AED", label: "오늘 어르신·아동 지원", v: 78000 + t * 260, money: true },
   ];
   return (
     <div className="soclive">
@@ -102,7 +102,7 @@ function SocialSection({ onGo }) {
   const pillars = [
     { key: "참여", label: "모든 시민의 참여", score: 84, Ic: Users, color: "#22D3EE", metric: socNum(si.activeN) + "명", sub: `활동 참여 ${Math.round(si.activeRate * 100)}% · 전 연령·계층 개방`, to: "community" },
     { key: "환원", label: "수익의 환원", score: 91, Ic: HandCoins, color: "#16A34A", metric: socWon(si.earn), sub: "판매마진 50%를 건강적립금으로 회원 환원", to: "wallet" },
-    { key: "나눔", label: "기부·나눔", score: 88, Ic: HeartHandshake, color: "#E11D48", metric: socWon(si.give), sub: "판매마진 30% 치료비 사각지대 + 유기동물 지원", to: "wallet" },
+    { key: "나눔", label: "기부·나눔", score: 88, Ic: HeartHandshake, color: "#E11D48", metric: socWon(si.give), sub: "판매마진 30% 치료비 사각지대 + 특별지원(어르신·장애아동)", to: "wallet" },
     { key: "지원", label: "의료비 사각지대 지원", score: 80, Ic: ShieldCheck, color: "#A78BFA", metric: si.beneficiaries.toLocaleString() + "명", sub: `치료비 수혜자 · 잠재대상 ${socNum(si.needyN)}명`, to: "insurance" },
   ];
   const sei = Math.round(pillars.reduce((s, p) => s + p.score, 0) / pillars.length * 10) / 10;
@@ -156,7 +156,7 @@ function SocialSection({ onGo }) {
           <div className="socsplit-rows">
             {splitRows.map(([t, p, c, amt]) => (<div className="socsplit-r" key={t}><span className="dot" style={{ background: c }} /><b>{p}%</b> {t}<em>{socWon(amt)}</em></div>))}
           </div>
-          <div className="socsplit-extra"><PawPrint size={13} color="#F59E0B" /> 추가로 판매마진의 일부(25%×5%)를 <b>유기동물 지원</b>에 기부 — 누적 <b style={{ color: "#F59E0B" }}>{socWon(si.animal)}</b></div>
+          <div className="socsplit-extra"><HeartHandshake size={13} color="#7C3AED" /> 추가로 판매마진의 일부(25%×5%)를 <b>어르신 치료비·장애아동 재활 지원</b>에 기부 — 누적 <b style={{ color: "#7C3AED" }}>{socWon(si.animal)}</b></div>
           <div className="finpl-note">회원 추가 부담 없이, 소비에서 발생한 판매마진의 <b>{WALLET_SPLIT.earn + WALLET_SPLIT.give}%</b>가 회원(적립)과 이웃(나눔)에게 돌아갑니다. 운영({WALLET_SPLIT.ops}%)도 사회적 목적 재투자에 사용됩니다.</div>
         </div>
 
@@ -181,7 +181,7 @@ function SocialSection({ onGo }) {
           <div className="socsroi">
             <div className="socsroi-big"><b>{si.sroi}</b><span>배</span><em>운영 투입 1원당 창출한 사회적 가치</em></div>
             <div className="socsroi-brk">
-              {[["치료비 나눔 편익", si.give, "#E11D48"], ["건강적립 환원 효과", Math.round(si.earn * 0.6), "#16A34A"], ["유기동물 지원", si.animal, "#F59E0B"]].map(([t, v, c]) => (
+              {[["치료비 나눔 편익", si.give, "#E11D48"], ["건강적립 환원 효과", Math.round(si.earn * 0.6), "#16A34A"], ["특별지원(어르신·장애아동)", si.animal, "#7C3AED"]].map(([t, v, c]) => (
                 <div className="socsroi-r" key={t}><span className="dot" style={{ background: c }} />{t}<em>{socWon(v)}</em></div>
               ))}
               <div className="socsroi-r tot"><span className="dot" style={{ background: "#22D3EE" }} />총 사회적 가치<em>{socWon(si.socialValue)}</em></div>
@@ -217,13 +217,18 @@ function SocialSection({ onGo }) {
           <div className="socgive-cta"><Heart size={16} color="#E11D48" /><div>누적 <b style={{ color: "#E11D48" }}>{socWon(si.give)}</b>를 <b>{si.beneficiaries.toLocaleString()}명</b>의 치료비 사각지대 이웃에게 전달했습니다.</div><button className="book" onClick={() => go("wallet")}>나눔 현황 보기</button></div>
         </div>
         <div className="ontpanel">
-          <div className="ontph"><PawPrint size={15} color="#F59E0B" /> 유기동물 지원 <span>· 판매마진 연계 기부</span></div>
+          <div className="ontph"><HeartHandshake size={15} color="#7C3AED" /> 특별 사회공헌 <span>· 판매마진 연계 기부(예정)</span></div>
           <div className="socanimal">
-            <span className="socanimal-ic"><PawPrint size={22} color="#F59E0B" /></span>
-            <div><b>구매가 곧 유기동물 후원</b><p>회원의 제품 구매 판매마진 일부(25%×5%)가 유기동물 보호·치료비로 기부됩니다. 누적 <b style={{ color: "#F59E0B" }}>{socWon(si.animal)}</b> 지원.</p></div>
+            <span className="socanimal-ic" style={{ background: "#EEF2FF" }}><Users size={22} color="#4F46E5" /></span>
+            <div><b>어르신 치료비 사각지대 개선 사업</b><p>회원의 제품 구매 판매마진 일부가 <b>어르신 재난적 의료비·치료비 사각지대</b> 지원에 쓰입니다. 제휴기관: <b>한국노인나눔재단(예정)</b> · 누적 <b style={{ color: "#4F46E5" }}>{socWon(Math.round(si.animal * 0.6))}</b> 지원.</p></div>
             <button className="book" onClick={() => go("shop")}>구매로 후원하기</button>
           </div>
-          <div className="chnote" style={{ marginTop: 10 }}>※ 기부 비율·수치는 설계 목표·예시입니다. 실제 기부는 제휴 공익재단·동물보호단체 심사를 거쳐 집행되며, 집행내역을 투명하게 공개하도록 설계합니다.</div>
+          <div className="socanimal" style={{ marginTop: 10 }}>
+            <span className="socanimal-ic" style={{ background: "#FCE7F3" }}><Activity size={22} color="#DB2777" /></span>
+            <div><b>장애아동 재활사업 지원</b><p>판매마진 일부가 <b>장애아동 재활치료·디지털 치료</b> 지원에 쓰입니다. 제휴기관: <b>잼잼테라퓨틱스 · 장애아동복지 재단 등(예정)</b> · 누적 <b style={{ color: "#DB2777" }}>{socWon(si.animal - Math.round(si.animal * 0.6))}</b> 지원.</p></div>
+            <button className="book" onClick={() => go("shop")}>구매로 후원하기</button>
+          </div>
+          <div className="chnote" style={{ marginTop: 10 }}>※ 기부 비율·수치·제휴기관은 설계 목표·예시(예정)입니다. 실제 기부는 제휴 공익재단·전문기관 심사를 거쳐 집행되며, 집행내역을 투명하게 공개하도록 설계합니다.</div>
         </div>
       </>)}
     </div>
