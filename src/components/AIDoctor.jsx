@@ -183,6 +183,73 @@ function reportAnswer(q, R) {
   }
   return null;
 }
+/* ── 건강분석 리포트 상세 분석(다중 카드) — 원본 리포트(report.json)의 전 항목을 풍부하게 구조화 ── */
+function reportAnalysisCards(R) {
+  if (!R || !R.meta) return null;
+  const M = R.meta;
+  const money = (n) => (typeof won === "function" ? won(n) : Number(n).toLocaleString("ko-KR") + "원");
+  const bubbles = [];
+  bubbles.push({ kind: "text", text: `${M.name}님 건강분석 리포트를 항목별로 자세히 분석해 드릴게요. 📋\n검진일 ${M.date}${M.source ? " · " + M.source : ""}\n※ 참고용 분석이며 의료진의 진단·처방을 대체하지 않아요.` });
+  // 1) 생체나이·노화 종합
+  const younger = M.diff <= 0;
+  bubbles.push({ kind: "card", card: { title: "🧬 생체나이 · 노화 종합", items: [
+    `생체나이 ${M.bioAge}세 — 실제나이 ${M.regAge}세보다 ${Math.abs(M.diff)}세 ${younger ? "젊음 ✅" : "많음 ⚠️"}`,
+    `노화속도 ${M.speed}배 — 동년배 평균보다 ${M.speed <= 1 ? "느림(양호)" : "빠름(주의)"}`,
+    `노화등수 상위 ${M.rank}% · 종합 등급 ‘${M.overall}’`,
+  ], buttons: [] } });
+  // 2) 장기별 생체나이
+  const organs = R.organs || [];
+  if (organs.length) {
+    const worst = organs.slice().sort((a, b) => b[1] - a[1]).slice(0, 2).map((o) => o[0]).join("·");
+    bubbles.push({ kind: "card", card: { title: "🫀 장기별 생체나이 (5개 장기)", items: organs.map((o) => `${o[0]}: ${o[1]}세 · ${o[2]}${o[2] === "나쁨" ? " ⚠️" : ""}`).concat([`→ 가장 관리가 필요한 장기: ${worst}`]), buttons: ["간 췌장 관리 방법"] } });
+  }
+  // 3) 암 위험 종합
+  const cancers = R.cancer || [];
+  const warnCancers = cancers.filter((c) => /경고|고위험|위험/.test(c.grade));
+  if (cancers.length) {
+    const top = cancers.slice().sort((a, b) => (b.risk || 0) - (a.risk || 0)).slice(0, 5);
+    bubbles.push({ kind: "card", card: { title: `🎗 암 위험 종합 — 전체 ${R.cancerTotal.grade}/${R.cancerTotal.of || 10}등급(${R.cancerTotal.label})`, items: top.map((c) => `${c.n}: 위험도 ${c.risk}% · ‘${c.grade}’ (전체대비 ${c.level})`), buttons: ["🔬 특수검진 정밀검사 보기"] } });
+  }
+  // 4) 경고/고위험 암 집중관리(최대 2종)
+  warnCancers.slice(0, 2).forEach((c) => {
+    bubbles.push({ kind: "card", card: { title: `⚠️ ${c.n} — ‘${c.grade}’ 집중관리 (위험도 ${c.risk}%)`, items: []
+      .concat((c.do || []).slice(0, 2).map((x) => `✅ 실천: ${x}`))
+      .concat((c.avoid || []).slice(0, 2).map((x) => `🚫 회피: ${x}`))
+      .concat((c.remember || []).slice(0, 1).map((x) => `💡 ${x}`)), buttons: [`${c.n} 자세히`] } });
+  });
+  // 5) 질병 위험도(동년배 대비)
+  const dz = R.disease || [];
+  const hiDz = dz.filter((d) => d.rel > 0).sort((a, b) => b.rel - a.rel);
+  if (dz.length) {
+    bubbles.push({ kind: "card", card: { title: `🩺 질병 위험도 — ${dz.length}종 (동년배 대비)`, items: dz.slice().sort((a, b) => b.rel - a.rel).map((d) => `${d.n}: ${d.rel >= 0 ? "+" : ""}${d.rel}% · 10년 발생률 ${d.rate}%${d.rel > 0 ? " ⚠️" : ""}`), buttons: [] } });
+  }
+  // 6) 위험 높은 질병 관리 가이드(최대 2종)
+  hiDz.slice(0, 2).forEach((d) => {
+    bubbles.push({ kind: "card", card: { title: `📌 ${d.n} 관리 가이드 (동년배보다 +${d.rel}%)`, items: []
+      .concat((d.guide || []).slice(0, 3).map((x) => `✅ ${x}`))
+      .concat((d.warn || []).slice(0, 2).map((x) => `⚠️ 이런 신호: ${x}`)), buttons: [`${d.n} 자세히`] } });
+  });
+  // 7) 예상 의료비
+  const C = R.cost;
+  if (C) bubbles.push({ kind: "card", card: { title: "💰 예상 의료비 분석", items: [
+    `올해 약 ${money(C.ty)} (동년배 평균 ${money(C.tyAvg)}${C.ty > C.tyAvg ? " · 평균 이상 ⚠️" : ""})`,
+    `10년 후 약 ${money(C.y10)}${C.y10Avg ? ` (평균 ${money(C.y10Avg)})` : ""}`,
+    `연간 외래 ${C.out}일 · 입원 ${C.inp}일 수준`,
+  ], buttons: ["의료비 예측"] } });
+  // 8) 종합 판단 + 맞춤 액션
+  const focusList = [warnCancers.map((c) => c.n).join("·"), hiDz.map((d) => d.n).join("·")].filter(Boolean).join(" / ");
+  bubbles.push({ kind: "card", card: { title: "🧭 종합 판단 · 우선 관리 방향", items: [
+    `전반적으로 생체나이·노화는 ${M.speed <= 1 ? "양호" : "주의"}, 종합 ‘${M.overall}’`,
+    focusList ? `집중 관리 필요: ${focusList}` : "특별한 고위험 항목은 없어요",
+    `노화 빠른 장기(${(organs.slice().sort((a, b) => b[1] - a[1])[0] || [])[0] || "-"}) 중심으로 검진·생활관리 권장`,
+  ], buttons: [] } });
+  bubbles.push({ kind: "card", card: memberActionCard() });
+  const quicks = []
+    .concat(warnCancers[0] ? [`${warnCancers[0].n} 자세히`] : [])
+    .concat(hiDz[0] ? [`${hiDz[0].n} 자세히`] : [])
+    .concat(["의료비 예측", "내 생체나이"]).slice(0, 4);
+  return { bubbles, quicks };
+}
 // 질문 의도 분류
 function intentOf(t) {
   if (/검사|진단|검진|확인하는/.test(t)) return "검사";
@@ -1609,6 +1676,9 @@ function aiRespond(text, corpus, report, QA) {
   const has = (...ks) => ks.some((k) => text.includes(k));
   if (text.includes("다른 약 검색") || (text.includes("약") && has("어떤 약", "약 종류", "무슨 약", "약물 목록")))
     return { bubbles: [{ kind: "text", text: "약 이름을 입력하시면 효능·복용법·부작용·상호작용·응급신호를 안내해 드려요. 아래 예시를 눌러보셔도 돼요.\n※ 정보 제공용이며 진단·처방을 대체하지 않습니다." }], quicks: ["메트포르민 부작용", "와파린 주의사항", "아스피린", "스타틴", "타이레놀 복용법"] };
+  if (report && report.meta && /리포트|건강분석|건강 분석|종합\s*분석|건강\s*총평|전체.*분석|분석.*리포트|리포트.*분석/.test(text)) {
+    const _rc = reportAnalysisCards(report); if (_rc) return _rc;
+  }
   const _topics = multiTopicCounsel(text);
   if (_topics) return _topics;
   const _organs = multiOrganCounsel(text);
