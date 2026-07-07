@@ -128,7 +128,7 @@ export default function App() {
               return (<div key={i} className={`snav ${active ? "on" : ""}`} onClick={() => target === "__noti__" ? setHdr("noti") : setSec(target)}><span className="sico"><SecIcon k={ik} /></span> {t}{b && <span className="sb">{b}</span>}</div>);
             })}
           </div>
-          <div className="agent"><div className="at">AI Health Agent</div><div className="as">{greetName}님 전담 24시간 상담</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("ai")}>상담하기</button></div>
+          <div className="agent"><div className="at">AI Super Agent</div><div className="as">{greetName}님 고객 전담 · 모든 서비스 연결</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("ai")}>상담 시작하기</button></div>
           <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>

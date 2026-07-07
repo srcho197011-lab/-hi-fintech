@@ -741,6 +741,44 @@ let UID = 100;
 const now = () => { const d = new Date(); let h = d.getHours(); const m = String(d.getMinutes()).padStart(2, "0"); const ap = h < 12 ? "오전" : "오후"; h = h % 12 || 12; return `${ap} ${h}:${m}`; };
 /* 채팅 액션 버튼 → 섹션 네비게이션 매핑 */
 const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진료 안내": "hospital", "💊 영양 및 홈케어의료기": "shop", "🥗 건강 식단 안내": "shop" };
+/* ===== AI Super Agent — 사이트 전 섹션을 연결하는 고객 전담 오케스트레이터 =====
+   [라벨, 섹션키, 요약, 인식 키워드[]] — 버튼 이동·자연어 라우팅·연관 안내에 공통 사용 */
+const AGENT_NAV = [
+  ["🩺 건강검진 예약하기", "checkup", "국가·개인·기업·특수검진 예약과 결과조회, 검진보험까지 안내해 드려요.", ["검진", "건강검진", "예약", "국가검진", "특수검진", "내시경", "검진기관", "검진센터", "검진 결과"]],
+  ["🛡️ 나의 보험 알아보기", "insurance", "내 건강위험 기반 보장 분석과 가입·청구, 치료비 지원을 안내해 드려요.", ["보험", "보장", "가입", "청구", "실손", "보험금", "보험료"]],
+  ["💰 나의 적립금(자산) 알아보기", "wallet", "건강활동으로 쌓인 Health Token(건강자산) 적립·사용·나눔을 확인하실 수 있어요.", ["적립금", "자산", "지갑", "포인트", "토큰", "htk", "적립", "건강자산", "리워드", "건강금융"]],
+  ["🛒 건강쇼핑·AI 상담사", "shop", "영양제·건강식단·의료기기와 AI 상담사의 맞춤 추천을 안내해 드려요.", ["쇼핑", "영양제", "의료기기", "상품", "최저가", "건강기능식품", "제품 구매", "건강식단"]],
+  ["🏥 병원 진료 찾기", "hospital", "증상·질환에 맞는 진료과와 가까운 병원을 찾아 안내해 드려요.", ["병원", "진료", "의원", "진료과", "전문의", "외래", "병원 찾"]],
+  ["🏠 재가·돌봄 서비스", "homecare", "퇴원 후 방문간호·재활·돌봄 서비스를 매칭해 드려요.", ["재가", "돌봄", "간병", "방문간호", "요양", "방문재활", "퇴원 후"]],
+  ["📋 내 건강 리포트·관리", "manage", "건강분석 리포트와 맞춤 케어플랜을 관리하실 수 있어요.", ["케어플랜", "관리 리포트", "건강관리 메뉴"]],
+  ["💜 사회공헌·치료비 나눔", "social", "판매마진 기반 치료비 사각지대 나눔(어르신·장애아동) 활동을 소개해 드려요.", ["기부", "나눔", "사회공헌", "사회적기업", "치료비 나눔", "어르신 지원", "장애아동"]],
+  ["🌐 온톨로지·하네스", "ontology", "플랫폼 지식 온톨로지·운영 하네스와 백서를 확인하실 수 있어요.", ["온톨로지", "하네스", "ontology", "harness", "백서", "운영시스템"]],
+];
+function agentNavKey(text) {
+  if (!text) return null;
+  for (const m of AGENT_NAV) { if (text === m[0] || text === `${m[0]} 바로가기`) return m[1]; }
+  if (/바로가기|이동|가기|보러/.test(text)) {
+    const bare = (l) => l.replace(/^[^가-힣a-zA-Z]+/, "").replace(/ 알아보기| 예약하기| 찾기| 서비스| 관리| 하기/g, "").trim();
+    for (const m of AGENT_NAV) { const b = bare(m[0]); if (b && text.includes(b)) return m[1]; }
+  }
+  return null;
+}
+function superAgentRoute(text) {
+  const t = (text || "").toLowerCase();
+  const hit = AGENT_NAV.find((m) => m[3].some((k) => t.includes(k.toLowerCase())));
+  if (!hit) return null;
+  const [label, , sum] = hit;
+  return {
+    bubbles: [
+      { kind: "text", text: `${sum}` },
+      { kind: "card", card: { title: "🧭 AI Super Agent 안내", items: [sum, "아래 버튼을 누르면 해당 서비스로 바로 이동해요."], buttons: [`${label} 바로가기`] } },
+    ],
+    quicks: AGENT_NAV.slice(0, 4).map((m) => m[0]),
+  };
+}
+function agentHubCard() {
+  return { title: "🧭 무엇을 도와드릴까요? — 서비스 바로가기", items: ["궁금한 건 무엇이든 물어보세요. 요약해 드리고 해당 서비스로 안내해요."], buttons: AGENT_NAV.slice(0, 6).map((m) => m[0]) };
+}
 /* 리포트/개인 답변 후 — 회원 병명별 후속질문 */
 function reportFollowupQuestions() {
   const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -1714,6 +1752,7 @@ function aiRespond(text, corpus, report, QA) {
   if (_drug) return _drug;
   const _dh = dataHouseCounsel(text);
   if (!_dh) { const _deep = deepOnlyCounsel(text); if (_deep) return _deep; }
+  if (!_dh) { const _route = superAgentRoute(text); if (_route) return _route; }
   // 음성 상담과 동일한 학습 엔진(consult) — 리포트·질병관리청 Q&A·진료지침·국가암검진/암정보, 동의어·구어 대응
   const ans = consult(text, corpus, report, QA);
   const generic = !ans || ans.startsWith("이렇게 도와드릴 수 있어요") || ans.includes("정보는 찾지 못했어요") || ans.startsWith("안녕하세요 조성래님! AI 주치의예요") || ans.startsWith("도움이 되었다니");
@@ -1751,8 +1790,9 @@ function aiRespond(text, corpus, report, QA) {
 
 function Chat() {
   const [msgs, setMsgs] = useState([
-    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 👨‍⚕️\n건강분석 리포트를 바탕으로 함께 살펴드릴게요.`, time: now(), first: true },
-    { id: 2, who: "ai", kind: "text", text: "무엇을 도와드릴까요? 아래에서 골라보셔도 돼요.", time: now() },
+    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI Super Agent예요. 🤖\n건강 상담부터 검진·보험·적립금·쇼핑까지 모든 서비스를 한 곳에서 도와드릴게요.`, time: now(), first: true },
+    { id: 2, who: "ai", kind: "text", text: "무엇이든 말씀하거나(텍스트·음성) 아래에서 골라보세요.", time: now() },
+    { id: 3, who: "ai", kind: "card", card: (typeof agentHubCard === "function") ? agentHubCard() : { title: "서비스", items: [], buttons: [] }, time: now() },
   ]);
   const [quicks, setQuicks] = useState(() => { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return m ? memberQuestions(m).slice(0, 5) : ["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]; });
   const [input, setInput] = useState(""); const [typing, setTyping] = useState(false); const [plus, setPlus] = useState(false);
@@ -1777,6 +1817,7 @@ function Chat() {
     if (text === "🚨 응급신호 자가체크" || text === "🚨 응급신호 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "emergency"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === SHOP_SUPP_BTN || text === SHOP_DEVICE_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") window._shopIntel = Object.assign({ kind: text === SHOP_DEVICE_BTN ? "device" : "supp" }, window._lastCareRec || {}); } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
     if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }
+    { const _nk = (typeof agentNavKey === "function") ? agentNavKey(text) : null; if (_nk) { setPlus(false); setQuicks([]); if (typeof nav === "function") nav(_nk); return; } }
     setInput(""); setPlus(false); setQuicks([]);
     const meId = ++UID;
     setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text, time: now(), unread: true }]);
