@@ -2421,6 +2421,13 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .lowprice{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:#EA580C;margin-top:7px;text-decoration:none;border:1px solid #FED7AA;border-radius:999px;padding:3px 9px;background:#FFF7ED;}
 .lowprice:hover{background:#FFEDD5;border-color:#FDBA74;}
 .spin{animation:hspin .8s linear infinite;}
+/* AI Super Agent — 섹션 안내 버튼 그리드 */
+.agentgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px;margin:8px 0 16px;}
+.agentcard{display:flex;flex-direction:column;gap:4px;text-align:left;background:#fff;border:1px solid var(--border);border-radius:14px;padding:13px 14px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .1s;}
+.agentcard:hover{border-color:#C4B5FD;box-shadow:0 10px 24px -18px rgba(109,40,217,.6);transform:translateY(-1px);}
+.agentcard .ac-ic{font-size:21px;line-height:1;}
+.agentcard .ac-t{font-size:13.5px;font-weight:800;color:#1B2A52;}
+.agentcard .ac-s{font-size:11px;color:var(--muted);line-height:1.4;}
 .pricefeed{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#EA580C;background:#FFF7ED;border:1px solid #FED7AA;border-radius:999px;padding:4px 11px;margin:2px 0 10px;}
 .paddbtn{margin-top:9px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:4px;background:#7C3AED;color:#fff;border:none;border-radius:9px;padding:8px;font-size:12px;font-weight:800;cursor:pointer;}
 .cartbar{position:sticky;bottom:12px;margin-top:14px;display:flex;align-items:center;gap:12px;background:linear-gradient(120deg,#4C1D95,#7C3AED);color:#fff;border-radius:14px;padding:12px 15px;box-shadow:0 16px 30px -14px rgba(124,58,237,.75);cursor:pointer;z-index:20;}

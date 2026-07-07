@@ -736,6 +736,28 @@ function AIDoctor() {
     </div>
   );
 }
+/* ====================== AI Super Agent — 최상위 고객 전담 관문 ====================== */
+function SuperAgentSection({ onGo }) {
+  const go = onGo || ((s) => { if (typeof nav === "function") nav(s); });
+  const GRID = (typeof AGENT_NAV !== "undefined") ? AGENT_NAV : [];
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div className="aihead"><span className="aiico" style={{ background: "linear-gradient(135deg,#6D28D9,#7C3AED)" }}><SecIcon k="ai" /></span>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>AI Super Agent</div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> {aiWho()}님 고객 전담 · 모든 서비스를 한 곳에서 안내 — 아래 버튼을 고르거나 무엇이든 물어보세요(텍스트·음성)</div></div></div>
+      <div className="agentgrid">
+        {GRID.map((m) => (
+          <button className="agentcard" key={m[1]} onClick={() => go(m[1])}>
+            <span className="ac-ic">{m[0].split(" ")[0]}</span>
+            <span className="ac-t">{m[0].replace(/^\S+\s/, "")}</span>
+            <span className="ac-s">{(m[2] || "").replace(/해 드려요\.?$|하실 수 있어요\.?$/, "")}</span>
+          </button>
+        ))}
+      </div>
+      <Chat superAgent />
+    </div>
+  );
+}
 
 let UID = 100;
 const now = () => { const d = new Date(); let h = d.getHours(); const m = String(d.getMinutes()).padStart(2, "0"); const ap = h < 12 ? "오전" : "오후"; h = h % 12 || 12; return `${ap} ${h}:${m}`; };
@@ -744,7 +766,8 @@ const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진�
 /* ===== AI Super Agent — 사이트 전 섹션을 연결하는 고객 전담 오케스트레이터 =====
    [라벨, 섹션키, 요약, 인식 키워드[]] — 버튼 이동·자연어 라우팅·연관 안내에 공통 사용 */
 const AGENT_NAV = [
-  ["🩺 건강검진 예약하기", "checkup", "국가·개인·기업·특수검진 예약과 결과조회, 검진보험까지 안내해 드려요.", ["검진", "건강검진", "예약", "국가검진", "특수검진", "내시경", "검진기관", "검진센터", "검진 결과"]],
+  ["🩺 건강 상담 (AI 주치의)", "ai", "증상·질환·검사·치료·생활관리를 AI 주치의가 24시간 상담해 드려요.", ["건강 상담", "주치의", "증상 상담", "질환 상담", "전문의 상담"]],
+  ["📅 건강검진 예약하기", "checkup", "국가·개인·기업·특수검진 예약과 결과조회, 검진보험까지 안내해 드려요.", ["검진", "건강검진", "예약", "국가검진", "특수검진", "내시경", "검진기관", "검진센터", "검진 결과"]],
   ["🛡️ 나의 보험 알아보기", "insurance", "내 건강위험 기반 보장 분석과 가입·청구, 치료비 지원을 안내해 드려요.", ["보험", "보장", "가입", "청구", "실손", "보험금", "보험료"]],
   ["💰 나의 적립금(자산) 알아보기", "wallet", "건강활동으로 쌓인 Health Token(건강자산) 적립·사용·나눔을 확인하실 수 있어요.", ["적립금", "자산", "지갑", "포인트", "토큰", "htk", "적립", "건강자산", "리워드", "건강금융"]],
   ["🛒 건강쇼핑·AI 상담사", "shop", "영양제·건강식단·의료기기와 AI 상담사의 맞춤 추천을 안내해 드려요.", ["쇼핑", "영양제", "의료기기", "상품", "최저가", "건강기능식품", "제품 구매", "건강식단"]],
@@ -1788,11 +1811,12 @@ function aiRespond(text, corpus, report, QA) {
   return { bubbles: [{ kind: "text", text: `‘${text}’에 대한 정보를 찾지 못했어요. 😅 질환 이름과 함께 ‘증상·검사·치료·생활습관’을 물어보시거나, 아래 추천 질문을 눌러보세요. 리포트 분석·의료비·검진항목 해석도 도와드려요.` }], quicks: ["내 리포트 요약", "당뇨 검사 방법", "갑상선염의 증상은 무엇인가요?", "의료비 예측", "혈당 수치 의미"] };
 }
 
-function Chat() {
-  const [msgs, setMsgs] = useState([
-    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI Super Agent예요. 🤖\n건강 상담부터 검진·보험·적립금·쇼핑까지 모든 서비스를 한 곳에서 도와드릴게요.`, time: now(), first: true },
-    { id: 2, who: "ai", kind: "text", text: "무엇이든 말씀하거나(텍스트·음성) 아래에서 골라보세요.", time: now() },
-    { id: 3, who: "ai", kind: "card", card: (typeof agentHubCard === "function") ? agentHubCard() : { title: "서비스", items: [], buttons: [] }, time: now() },
+function Chat({ superAgent }) {
+  const [msgs, setMsgs] = useState(() => superAgent ? [
+    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI Super Agent예요. 🤖\n위 버튼에서 원하는 서비스를 고르시거나, 무엇이든 말씀하거나(텍스트·음성) 물어보세요. 요약해 드리고 해당 서비스로 안내해 드릴게요.`, time: now(), first: true },
+  ] : [
+    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 👨‍⚕️\n건강분석 리포트를 바탕으로 증상·질환·검사·치료를 함께 살펴드릴게요.`, time: now(), first: true },
+    { id: 2, who: "ai", kind: "text", text: "무엇을 도와드릴까요? 아래에서 골라보셔도 돼요.", time: now() },
   ]);
   const [quicks, setQuicks] = useState(() => { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return m ? memberQuestions(m).slice(0, 5) : ["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]; });
   const [input, setInput] = useState(""); const [typing, setTyping] = useState(false); const [plus, setPlus] = useState(false);
@@ -1833,7 +1857,7 @@ function Chat() {
     <div className="kt">
       {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
-        <div style={{ flex: 1 }}><div className="nm">AI 주치의</div><div className="st"><span className="dot" /> 온라인 · 24시간 상담</div></div>
+        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "AI Super Agent" : "AI 주치의"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
         {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
         <button className="ktib" onClick={() => setDevOpen((v) => !v)} title="기기 연결"><HeartPulse size={17} /></button>
         <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={17} /></button></div>
