@@ -8,7 +8,9 @@ function WalletSection({ onGo }) {
   const won = (n) => n.toLocaleString() + "원";
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const cpPts = (dm && typeof careplanEarned === "function") ? careplanEarned(dm.email) : 0;
-  const total = WALLET.total + cpPts;
+  const shopPts = (typeof shopHtkPts === "function") ? shopHtkPts(dm ? dm.email : "default") : 0;
+  const shopWonBal = (typeof shopHtkWon === "function") ? shopHtkWon(dm ? dm.email : "default") : 0;
+  const total = WALLET.total + cpPts + shopPts;
   // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 50/30/20). 1차연도(10만 회원) 기준 연간.
   const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 196650000, earn: 327750000, beneficiaries: 771 };
   return (
@@ -54,6 +56,11 @@ function WalletSection({ onGo }) {
           <div className="wcard" style={{ borderColor: "#16A34A", background: "linear-gradient(180deg,#F3FCF6,#fff)" }}><span className="wi" style={{ background: "#E7F8EE" }}><Art name="heart" size={22} /></span>
             <div style={{ flex: 1 }}><div className="wn">AI 케어플랜 실천 적립 <span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE", fontSize: 10, padding: "1px 6px" }}>NEW</span></div><div className="wd">종합 케어플랜 영역을 완료하면 자동 적립 (병원·검진·영양·기기·식단·제도)</div></div>
             <span className="wamt" style={{ color: "#16A34A" }}>+{cpPts.toLocaleString()}</span></div>
+          )}
+          {shopPts > 0 && (
+          <div className="wcard" style={{ borderColor: "#F97316", background: "linear-gradient(180deg,#FFF7ED,#fff)" }}><span className="wi" style={{ background: "#FFEDD5" }}><Art name="capsule" size={22} /></span>
+            <div style={{ flex: 1 }}><div className="wn">건강쇼핑 구매 적립 <span className="cbadge" style={{ color: "#C2410C", background: "#FFEDD5", fontSize: 10, padding: "1px 6px" }}>실적립</span></div><div className="wd">건강쇼핑(영양제·AI 상담사) 주문 시 판매마진 25%를 실제 적립 · 누적 {won(shopWonBal)}</div></div>
+            <span className="wamt" style={{ color: "#F97316" }}>+{shopPts.toLocaleString()}</span></div>
           )}
           {WALLET_EARN.map(([a, t, amt, d, c], i) => (
           <div className="wcard" key={i}><span className="wi" style={{ background: c + "1A" }}><Art name={a} size={22} /></span>

@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=132a841dea" />
+<link rel="stylesheet" href="./data/app.css?v=5f300488d2" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=132a841dea"></script>
-<script src="./src/data/section_data.js?v=132a841dea"></script>
-<script src="./src/data/demo_members.js?v=132a841dea"></script>
+<script src="./src/data/dummy_data.js?v=5f300488d2"></script>
+<script src="./src/data/section_data.js?v=5f300488d2"></script>
+<script src="./src/data/demo_members.js?v=5f300488d2"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -5130,40 +5130,6 @@ function ShopCategory({ catKey, label, hideBrands }) {
   );
 }
 
-function ShopAIRec() {
-  const fields = ["영양제", "건강식단", "의료기기"];
-  const fcolor = { "영양제": ["#7C3AED", "#F1ECFE"], "건강식단": ["#16A34A", "#E7F8EE"], "의료기기": ["#0E7490", "#E0F2FE"] };
-  return (<>
-    <div className="airec">
-      <div className="at"><Sparkles size={16} color="#7C3AED" /> 조성래님 맞춤 건강제품 추천</div>
-      <div className="ap">프롬에이지 Premium 리포트(생체나이 52.5세 · 췌장암 경고 · 간 54.4세 · 당뇨 위험 ↑)를 분석해, 분야별로 꼭 필요한 제품과 그 효과·효능을 추천해 드려요.</div>
-      <div className="pnverify"><ShieldCheck size={13} /> 본 제품들은 사단법인 정밀영양협회의 검증 기준을 통과한 제품입니다.</div>
-    </div>
-    {fields.map((f) => {
-      const items = SHOP_AI.filter((x) => x[0] === f);
-      const [fc, fb] = fcolor[f];
-      return (
-        <div className="card" key={f}>
-          <div className="rct" style={{ marginBottom: 10 }}><Tag size={17} color={fc} /> {f} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>· {items.length}종 추천</span></div>
-          <div className="airecg">
-            {items.map(([, art, prod, benefit, why, partner, col, bg], i) => (
-              <div className="aireccard" key={i}>
-                <span className="af" style={{ color: fc, background: fb }}>{f}</span>
-                <div className="ap2"><span style={{ width: 32, height: 32, borderRadius: 9, background: "#fff", display: "grid", placeItems: "center", flexShrink: 0, boxShadow: "0 2px 6px -2px rgba(0,0,0,.18)" }}><Art name={art} size={22} /></span>{prod}</div>
-                <div className="ab"><b style={{ color: "#27324A" }}>효과·효능</b> — {benefit}</div>
-                <div className="aw"><b>추천 이유</b> · {why}</div>
-                <div className="apt"><BadgeCheck size={12} style={{ verticalAlign: "-2px" }} /> 추천 제휴/브랜드: {partner}</div>
-                <div className="pnbadges"><span className="b ai"><Sparkles size={10} /> AI 추천</span><span className="b ex"><BadgeCheck size={10} /> 전문가 추천</span><span className="b pn"><ShieldCheck size={10} /> 정밀영양 인증</span></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    })}
-    <div className="chnote">※ <b>건강기능식품은 질병의 예방·치료를 위한 의약품이 아닙니다.</b> 효능은 일반적 기능성 정보이며 개인차가 있습니다. 의약품 복용 중이거나 질환이 있는 경우 섭취 전 전문가와 상담하세요. 의료기기는 사용 전 사용방법·주의사항을 확인하세요. 본 추천은 조성래님 리포트 기반 참고용입니다.</div>
-  </>);
-}
-
 /* ── 스포츠건강 (골프예약·헬스서비스·스포츠용품 브랜드 + 종목별 구매) ── */
 const SPORTS_GOLF = [
   ["스마트스코어", "골프장 부킹·스코어·간편결제", "https://www.smartscore.kr/", "linear-gradient(135deg,#0FA968,#14B8A6)", "#fff"],
@@ -5227,6 +5193,12 @@ function SportsHealth() {
 /* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 25%) ===== */
 const shopWon = (n) => (Number(n) || 0).toLocaleString("ko-KR") + "원";
 const suppMedia = (id) => (typeof SUPP_MEDIA !== "undefined" && SUPP_MEDIA[id]) || {};
+/* 국내 최저가 검색 링크 — 다나와(가격비교) 우선, 없으면 네이버쇼핑 낮은가격순 */
+function shopLowestHref(p) {
+  const dan = suppMedia(p.id).danawa; if (dan) return dan;
+  const q = encodeURIComponent(((p.name || "") + " " + (p.brand || "")).trim());
+  return "https://search.shopping.naver.com/search/all?query=" + q + "&sort=price_asc";
+}
 /* 제품 이미지 — 실제 상품 이미지(다나와 CDN) 우선, 로드 실패 시 성분 컬러 SVG로 폴백 */
 function SuppImage({ p }) {
   const [imgErr, setImgErr] = useState(false);
@@ -5268,7 +5240,10 @@ function ShopCartBar({ products }) {
   const cart = useShopCart();
   const [cartOpen, setCartOpen] = useState(false);
   const [ordered, setOrdered] = useState(false);
+  const [walletBal, setWalletBal] = useState(0);
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const dmEmail = dm ? dm.email : "default";
   const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
   const icoOf = (p) => (CATS[p.category] || {});
   const cartItems = Object.keys(cart).map((id) => ({ p: (products || []).find((x) => x.id === id), qty: cart[id] })).filter((x) => x.p);
@@ -5290,7 +5265,9 @@ function ShopCartBar({ products }) {
           <div className="pdh"><b>{ordered ? "주문 접수" : "장바구니"}</b><button onClick={() => { setCartOpen(false); setOrdered(false); }}><X size={19} /></button></div>
           <div className="pdbody">
             {ordered ? (
-              <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · {shopWon(totalPrice)}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 결제 확정 시 건강금융지갑에 적립됩니다.</p><button className="cbtn pri" onClick={() => { shopCartClear(); setCartOpen(false); setOrdered(false); }}>확인</button></div>
+              <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · {shopWon(totalPrice)}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 <b>건강금융지갑에 적립되었습니다.</b></p>
+                <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "9px 12px", margin: "4px 0 12px", fontSize: 12.5, color: "#166534" }}><Wallet size={13} style={{ verticalAlign: -2 }} /> 건강금융지갑 누적 쇼핑 적립: <b>{shopWon(walletBal)}</b></div>
+                <button className="cbtn pri" onClick={() => { shopCartClear(); setCartOpen(false); setOrdered(false); }}>확인</button></div>
             ) : (<>
               {cartItems.map(({ p, qty }) => { const r = rw(p.price); return (
                 <div className="citem" key={p.id}>
@@ -5300,8 +5277,8 @@ function ShopCartBar({ products }) {
                 </div>
               ); })}
               <div className="csum"><div><span>합계 금액</span><b>{shopWon(totalPrice)}</b></div><div className="rew"><span><Coins size={12} /> 건강적립금</span><b>{shopWon(totalReward)}</b></div></div>
-              <button className="cbtn pri" onClick={() => setOrdered(true)}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
-              <div className="chnote" style={{ marginTop: 4 }}>※ 결제는 목업이며 실결제·재고 연동은 별도입니다. 건강적립금은 결제 확정 시 적립됩니다.</div>
+              <button className="cbtn pri" onClick={() => { const nb = (typeof shopHtkAdd === "function") ? shopHtkAdd(dmEmail, totalReward) : totalReward; setWalletBal(nb); if (typeof toast === "function") toast(`💰 건강금융지갑 +${shopWon(totalReward)} 적립!`); setOrdered(true); }}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
+              <div className="chnote" style={{ marginTop: 4 }}>※ 결제는 목업이며 실결제·재고 연동은 별도입니다. 건강적립금은 주문 시 건강금융지갑에 실제 반영됩니다.</div>
             </>)}
           </div>
         </div></div>
@@ -5340,8 +5317,9 @@ function SupplementShop() {
             <div className="pbrand">{p.brand}</div>
             <div className="pname2">{p.name}</div>
             <div className="pvol">{p.category} · {p.volume}</div>
-            <div className="pprice">{shopWon(p.price)}</div>
+            <div className="pprice">{shopWon(p.price)} <small style={{ color: "#EA580C", fontWeight: 700 }}>최저가</small></div>
             <div className="preward"><Coins size={11} /> 적립 {shopWon(r.reward)} <small>25%</small></div>
+            <a className="lowprice" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={11} /> 국내 최저가 검색 <ExternalLink size={9} /></a>
           </div>
           <button className="paddbtn" onClick={(e) => { e.stopPropagation(); add(p); }}><Plus size={14} /> 담기</button>
         </div>
@@ -5403,27 +5381,6 @@ const SHOP_INTEL_DEVICES = [
   { key: "산소", label: "호흡·산소 모니터", col: "#0EA5E9", note: "맥박산소계로 산소포화도를 측정하는 기기예요.", items: [["맥박산소계(산소포화도)", "호흡기질환 자가 모니터"]], partners: ["오므론(OMRON)"], ings: ["산소", "호흡", "copd", "천식", "산소포화도", "폐"] },
   { key: "통증", label: "통증·근육 완화", col: "#7C3AED", note: "가정용 온열·저주파·EMS 등 통증·근육 완화 보조 기기예요. 진단·치료는 의료진과 상의하세요.", items: [["온열·저주파·EMS", "가정용 통증·근육 이완 보조"]], partners: ["세라젬", "GN바디닥터", "코지마"], ings: ["온열", "저주파", "통증", "ems", "고주파", "마사지", "근육통", "관절", "찜질", "안마"] },
 ];
-function DangDangHero() {
-  return (
-    <div className="card" style={{ background: "linear-gradient(125deg,#0B3D91 0%,#1A56DB 50%,#0EA5E9 100%)", color: "#fff", border: "none" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-        <span style={{ fontSize: 30 }}>🧬</span>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.5px" }}>당당상담 AI 인텔리전스</div>
-          <div style={{ fontSize: 12.5, opacity: .92, marginTop: 3 }}>AI 주치의 상담에서 안내된 <b>영양소·홈케어 기기</b>를 넘겨받아, 관련 건강기능에 도움을 줄 수 있는 성분·제품을 <b>당당하게(투명·근거기반)</b> 안내해요.</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-function DangDangDisclaimer() {
-  return (
-    <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12, padding: "11px 13px", margin: "12px 0", fontSize: 12, color: "#9A3412", lineHeight: 1.6 }}>
-      <b>⚖️ 건강기능식품법·표시광고법 준수 안내</b><br />
-      건강기능식품은 <b>질병의 예방·치료를 위한 의약품이 아닙니다.</b> 아래 안내는 특정 질환의 치료·예방이 아니라, 관련 <b>건강기능(식약처 인정 기능성)에 ‘도움을 줄 수 있는’</b> 성분·제품 정보이며, 의사·약사의 진단·처방을 대체하지 않습니다. 개인 상태(복용약·질환·알레르기)에 따라 섭취 전 전문가와 상의하세요.
-    </div>
-  );
-}
 function DangDangProduct({ p }) {
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
   const m = CATS[p.category] || {};
@@ -5436,8 +5393,9 @@ function DangDangProduct({ p }) {
         <div className="pbrand">{p.brand}</div>
         <div className="pname2">{p.name}</div>
         <div className="pvol" style={{ color: "#0D9488", fontWeight: 600 }}>{p.claim}</div>
-        <div className="pprice">{won(p.price)}</div>
+        <div className="pprice">{won(p.price)} <small style={{ color: "#EA580C", fontWeight: 700 }}>최저가</small></div>
         <div className="preward"><Coins size={11} /> 적립 {won(r.reward)} <small>25%</small></div>
+        <a className="lowprice" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={11} /> 국내 최저가 검색 <ExternalLink size={9} /></a>
       </div>
       <button className="paddbtn" onClick={() => { shopCartAdd(p.id); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${won(r.reward)}`); }}><Plus size={13} /> 담기</button>
     </div>
@@ -5574,8 +5532,23 @@ function ShopConsultant() {
   const [quicks, setQuicks] = useState(["🎯 내 건강상태 맞춤 추천", "눈 건강", "혈행·중성지방", "장 건강", "혈압계 추천"]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [interim, setInterim] = useState("");
   const endRef = useRef(null);
+  const recogRef = useRef(null);
+  const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   useEffect(() => { if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
+  const startStt = () => {
+    if (!sttOK) return;
+    const Rc = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new Rc(); recogRef.current = r;
+    r.lang = "ko-KR"; r.interimResults = true; r.continuous = false; let fin = "";
+    r.onstart = () => { setListening(true); setInterim(""); };
+    r.onresult = (e) => { let itm = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const tr = e.results[i]; if (tr.isFinal) fin += tr[0].transcript; else itm += tr[0].transcript; } setInterim(itm); };
+    r.onerror = () => setListening(false);
+    r.onend = () => { setListening(false); setInterim(""); if (fin.trim()) send(fin.trim()); };
+    try { r.start(); } catch (e) { setListening(false); }
+  };
+  const stopStt = () => { if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } setListening(false); };
   const send = (raw) => {
     const text = ((raw !== undefined ? raw : input) || "").trim(); if (!text) return;
     setInput("");
@@ -5620,9 +5593,11 @@ function ShopConsultant() {
           {typing && <div className="msg ai"><span className="av-ai"><Sparkles size={20} color="#fff" /></span><div className="typing"><i /><i /><i /></div></div>}
           <div ref={endRef} />
         </div>
+        {(listening || interim) && <div className="kt-listening">{listening ? "🎙 듣는 중… 말씀하세요 " : ""}{interim && "“" + interim + "”"}</div>}
         {quicks.length > 0 && !typing && <div className="quicks">{quicks.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}</div>}
         <div className="kt-input">
-          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="예: 눈이 침침해요 / 혈당 관리 / 혈압계 추천" />
+          {sttOK && <button className="pl" onClick={() => listening ? stopStt() : startStt()} style={{ color: listening ? "#EF4444" : "#EA580C" }} title="음성 입력">{listening ? <X size={22} /> : <Mic size={22} />}</button>}
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={sttOK ? "메시지 입력 또는 🎤 음성 (예: 눈이 침침해요)" : "예: 눈이 침침해요 / 혈당 관리 / 혈압계 추천"} />
           <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
         </div>
         <div className="kt-disc">AI 상담사는 정보 제공용 안내이며 진단·처방·의료행위가 아닙니다. 건강기능식품은 의약품이 아니고, 의료기기는 허가된 사용목적 범위에서 사용하세요.</div>
@@ -6341,7 +6316,9 @@ function WalletSection({ onGo }) {
   const won = (n) => n.toLocaleString() + "원";
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const cpPts = (dm && typeof careplanEarned === "function") ? careplanEarned(dm.email) : 0;
-  const total = WALLET.total + cpPts;
+  const shopPts = (typeof shopHtkPts === "function") ? shopHtkPts(dm ? dm.email : "default") : 0;
+  const shopWonBal = (typeof shopHtkWon === "function") ? shopHtkWon(dm ? dm.email : "default") : 0;
+  const total = WALLET.total + cpPts + shopPts;
   // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 50/30/20). 1차연도(10만 회원) 기준 연간.
   const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 196650000, earn: 327750000, beneficiaries: 771 };
   return (
@@ -6387,6 +6364,11 @@ function WalletSection({ onGo }) {
           <div className="wcard" style={{ borderColor: "#16A34A", background: "linear-gradient(180deg,#F3FCF6,#fff)" }}><span className="wi" style={{ background: "#E7F8EE" }}><Art name="heart" size={22} /></span>
             <div style={{ flex: 1 }}><div className="wn">AI 케어플랜 실천 적립 <span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE", fontSize: 10, padding: "1px 6px" }}>NEW</span></div><div className="wd">종합 케어플랜 영역을 완료하면 자동 적립 (병원·검진·영양·기기·식단·제도)</div></div>
             <span className="wamt" style={{ color: "#16A34A" }}>+{cpPts.toLocaleString()}</span></div>
+          )}
+          {shopPts > 0 && (
+          <div className="wcard" style={{ borderColor: "#F97316", background: "linear-gradient(180deg,#FFF7ED,#fff)" }}><span className="wi" style={{ background: "#FFEDD5" }}><Art name="capsule" size={22} /></span>
+            <div style={{ flex: 1 }}><div className="wn">건강쇼핑 구매 적립 <span className="cbadge" style={{ color: "#C2410C", background: "#FFEDD5", fontSize: 10, padding: "1px 6px" }}>실적립</span></div><div className="wd">건강쇼핑(영양제·AI 상담사) 주문 시 판매마진 25%를 실제 적립 · 누적 {won(shopWonBal)}</div></div>
+            <span className="wamt" style={{ color: "#F97316" }}>+{shopPts.toLocaleString()}</span></div>
           )}
           {WALLET_EARN.map(([a, t, amt, d, c], i) => (
           <div className="wcard" key={i}><span className="wi" style={{ background: c + "1A" }}><Art name={a} size={22} /></span>
@@ -11607,6 +11589,11 @@ const CAREPLAN_REWARD = { "병원·진료": 300, "추가 검진": 500, "영양·
 function careplanEarned(email) {
   try { const st = JSON.parse(localStorage.getItem("hifin_careplan_" + (email || "default")) || "{}"); return Object.keys(st).reduce((s, k) => s + (st[k] === 2 ? (CAREPLAN_REWARD[k] || 100) : 0), 0); } catch (e) { return 0; }
 }
+/* 건강쇼핑 구매 적립(원) → 건강금융지갑 실제 반영 단일 소스. HTK 환산은 shopHtkPts() */
+function shopHtkKey(email) { return "hifin_shop_htk_" + (email || "default"); }
+function shopHtkWon(email) { try { return Number(JSON.parse(localStorage.getItem(shopHtkKey(email)) || "0")) || 0; } catch (e) { return 0; } }
+function shopHtkAdd(email, won) { try { const nx = shopHtkWon(email) + Math.max(0, Math.floor(won || 0)); localStorage.setItem(shopHtkKey(email), JSON.stringify(nx)); return nx; } catch (e) { return 0; } }
+function shopHtkPts(email) { const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10; return Math.floor(shopHtkWon(email) / rate); }
 /* ── ③ 관계레이어 — 회원 상태 → 진료·검진·영양·기기·식단·제도 ‘필요성’ 구조화 도출 ── */
 function buildCarePlan(m) {
   if (!m || typeof demoReport !== "function") return null;

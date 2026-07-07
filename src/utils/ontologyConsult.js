@@ -107,6 +107,11 @@ const CAREPLAN_REWARD = { "병원·진료": 300, "추가 검진": 500, "영양·
 function careplanEarned(email) {
   try { const st = JSON.parse(localStorage.getItem("hifin_careplan_" + (email || "default")) || "{}"); return Object.keys(st).reduce((s, k) => s + (st[k] === 2 ? (CAREPLAN_REWARD[k] || 100) : 0), 0); } catch (e) { return 0; }
 }
+/* 건강쇼핑 구매 적립(원) → 건강금융지갑 실제 반영 단일 소스. HTK 환산은 shopHtkPts() */
+function shopHtkKey(email) { return "hifin_shop_htk_" + (email || "default"); }
+function shopHtkWon(email) { try { return Number(JSON.parse(localStorage.getItem(shopHtkKey(email)) || "0")) || 0; } catch (e) { return 0; } }
+function shopHtkAdd(email, won) { try { const nx = shopHtkWon(email) + Math.max(0, Math.floor(won || 0)); localStorage.setItem(shopHtkKey(email), JSON.stringify(nx)); return nx; } catch (e) { return 0; } }
+function shopHtkPts(email) { const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10; return Math.floor(shopHtkWon(email) / rate); }
 /* ── ③ 관계레이어 — 회원 상태 → 진료·검진·영양·기기·식단·제도 ‘필요성’ 구조화 도출 ── */
 function buildCarePlan(m) {
   if (!m || typeof demoReport !== "function") return null;
