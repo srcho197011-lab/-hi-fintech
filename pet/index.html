@@ -2604,21 +2604,37 @@ const SOURCING=[
   // 용품 (모래=검역 무관이나 중량커 배송비 부담 → 마진 낮음, 정직 표시)
   { brand:"Dr. Elsey's", country:"미국", flag:"🇺🇸", tier:"프리미엄", cat:"용품", name:"닥터엘시 초강력 응고 모래 18kg", size:"18kg", usd:25, fob:18, kr:55000, risk:"낮음", protein:"모래(검역 무관)", gap:"중량커 배송비 부담" },
 ];
-const SRC_DEFAULT={ fx:1350, ship:.12, duty:0, quar:.03, ops:.10, vat:.10, disc:.15, ins:.70 };
+const SRC_DEFAULT={ fx:1350, ship:.12, duty:0, quar:.03, logi:.08, inv:.04, loss:.03, vat:.10, supply:.65, disc:.15, ins:.70 };
 const RISK_COLOR={ "낮음":"#3C9E72", "중간":"#E8913A", "높음":"#EF5B5B", "규제":"#7C3AED" };
+// 병행수입 총원가 = 7개 항목 합산. 핵심 검증: 이 총원가가 '국내 총판 공급가'(소비자가×공급가율)보다 낮아야 사업성.
 function computeSourcing(it,p){
-  const base=it.fob*p.fx;
-  const ship=base*p.ship, duty=base*p.duty, quar=base*p.quar, ops=base*p.ops;
-  const vat=(base+ship+duty)*p.vat;
-  const landed=base+ship+duty+quar+ops+vat;
+  const buy=it.fob*p.fx;                 // ① 해외 구매가격
+  const ship=buy*p.ship;                 // ② 국제 운송비
+  const duty=buy*p.duty;                 // ③ 관세
+  const vat=(buy+ship+duty)*p.vat;       // ④ 부가세
+  const quar=buy*p.quar;                 // ⑤ 검역·통관
+  const logi=buy*p.logi;                 // ⑥ 국내 물류비
+  const inv=buy*p.inv;                   // ⑦ 재고 비용
+  const loss=buy*p.loss;                 // ⑧ 반품·유통기한 손실
+  const landed=buy+ship+duty+vat+quar+logi+inv+loss;
   const hasKr=it.kr>0;
-  const price=hasKr ? Math.round(it.kr*(1-p.disc)/100)*100      // 국내가 대비 인하
-                    : Math.round(it.usd*p.fx/100)*100;          // 미유통=미국 소매가 환산으로 판매
+  const supply=hasKr?it.kr*p.supply:0;                 // 국내 총판 공급가(추정)
+  const costAdv=supply>0?(supply-landed)/supply:null;  // (+)원가우위 / (-)열위
+  const compet=supply>0?landed<supply:null;            // 가격경쟁력 성립 여부
+  const price=hasKr ? Math.round(it.kr*(1-p.disc)/100)*100
+                    : Math.round(it.usd*p.fx/100)*100;
   const marginW=price-landed, marginPct=price>0?marginW/price:0;
   const insReserve=marginW>0?marginW*p.ins:0, profit=marginW>0?marginW*(1-p.ins):marginW;
   const saveW=hasKr?it.kr-price:0;
-  return {landed,price,marginW,marginPct,insReserve,profit,saveW,hasKr};
+  return {buy,ship,duty,vat,quar,logi,inv,loss,landed,supply,costAdv,compet,price,marginW,marginPct,insReserve,profit,saveW,hasKr};
 }
+// HI-PET Premium PB(자체 브랜드) — AI 분석 연계 맞춤 처방식·기능성. OEM 국내생산 가정(예시 단가).
+const HIPET_PB=[
+  { name:"HI-PET Premium 관절강화 처방식 2kg", cat:"처방식", cost:12000, sell:39000, note:"AI 슬개골 위험군 타깃" },
+  { name:"HI-PET Premium 신장케어 처방식 2kg", cat:"처방식", cost:13000, sell:42000, note:"AI 신장 위험군 · 저인저단백" },
+  { name:"HI-PET Premium 치주·구강 기능식", cat:"기능성", cost:6000, sell:22000, note:"AI 치주 위험군 · 치석분해" },
+  { name:"HI-PET Premium 오메가3 심장케어", cat:"영양제", cost:5000, sell:19000, note:"AI MMVD 위험군 · EPA/DHA" },
+];
 const pctS=(x)=>Math.round(x*100)+"%";
 function SimSlider({label,val,min,max,step,fmt,onChange,hint}){
   return (<div className="simrow">
@@ -2631,30 +2647,92 @@ function SourcingSection(){
   const won=(n)=>"₩"+Math.round(n).toLocaleString();
   const [p,setP]=useState(SRC_DEFAULT);
   const [cat,setCat]=useState("전체");
+  const [selId,setSelId]=useState(SOURCING[0].name);
   const set=(k)=>(v)=>setP(o=>({...o,[k]:v}));
   const cats=["전체","건식","습식","처방식","영양제","용품"];
   const rows=React.useMemo(()=>SOURCING.filter(i=>cat==="전체"||i.cat===cat).map(it=>({it,...computeSourcing(it,p)})),[cat,p]);
   const n=rows.length||1;
+  const krRows=rows.filter(r=>r.hasKr), kn=krRows.length||1;
   const avgMargin=rows.reduce((s,r)=>s+r.marginPct,0)/n;
-  const over60=rows.filter(r=>r.marginPct>=.6).length;
-  const avgSave=rows.reduce((s,r)=>s+(r.it.kr>0?r.saveW/r.it.kr:0),0)/n;
+  const competCnt=krRows.filter(r=>r.compet).length;
+  const avgCostAdv=krRows.reduce((s,r)=>s+r.costAdv,0)/kn;
   const avgIns=rows.reduce((s,r)=>s+Math.max(0,r.insReserve),0)/n;
   const mColor=(m)=>m>=.6?"#3C9E72":m>=.4?"#E8913A":m>=.15?"#C98A12":"#EF5B5B";
+  const aColor=(a)=>a==null?"var(--muted)":a>=.15?"#3C9E72":a>=0?"#E8913A":"#EF5B5B";
+  // 총원가 분해 대상
+  const selItem=SOURCING.find(i=>i.name===selId)||SOURCING[0];
+  const cs=computeSourcing(selItem,p);
+  const brk=[["① 해외 구매가격",cs.buy],["② 국제 운송비",cs.ship],["③ 관세",cs.duty],["④ 부가세",cs.vat],["⑤ 검역·통관",cs.quar],["⑥ 국내 물류비",cs.logi],["⑦ 재고 비용",cs.inv],["⑧ 반품·유통기한 손실",cs.loss]];
   return (
     <div className="hsec">
       <div className="aihead"><span className="aiico" style={{background:"linear-gradient(135deg,#5B6B86,#41506B)"}}><Globe size={24} color="#fff"/></span>
-        <div><div className="aih-t">글로벌 직구 소싱 <span className="opbadge" style={{verticalAlign:"3px"}}>운영</span></div>
-        <div className="aih-s">해외 프리미엄 브랜드 총망라 · 직구 랜딩원가 vs 국내 총판가 · 마진→무상보험 재원 시뮬레이션</div></div></div>
+        <div><div className="aih-t">글로벌 직구 소싱 & PB 전략 <span className="opbadge" style={{verticalAlign:"3px"}}>운영</span></div>
+        <div className="aih-s">병행수입 원가경쟁력 검증 · 3단계 로드맵 · HI-PET Premium 자체 브랜드 · 마진→무상보험·의료비 재원</div></div></div>
 
-      <div className="srcprob"><AlertTriangle size={16} color="#E0662A"/><div><b>총판 헤게모니 문제</b> — 국내 펫사료는 특정 총판이 독점 정식수입으로 마진을 겹겹이 쌓아 소비자가가 높습니다. <b>해외 직구 공급라인</b>으로 총판을 우회하면 동일·상위 품질을 국내가보다 싸게 공급하면서도 <b>판매마진 60%대</b>가 가능합니다. 확보한 마진의 <b>{pctS(p.ins)}</b>는 마루 <b>무상 실손보험 재원</b>으로 적립됩니다.</div></div>
+      {/* 플랫폼 본질 재정의 */}
+      <div className="platb"><span className="pbi"><Bot size={22} color="#fff"/></span>
+        <div><div className="platt">HI-PET는 사료회사가 아니라 <b>AI + 건강관리 + 보험 + 핀테크 + 의료비 지원</b> 플랫폼입니다.</div>
+        <div className="plats">사료는 <b>회원 확보의 수단</b>. 궁극적으로 <b>AI 분석 → 맞춤 처방식 → HI-PET Premium</b>으로 가야 마진도 확보하고 의료비 지원기금도 만들 수 있습니다.</div></div></div>
+
+      {/* 3단계 로드맵 */}
+      <div className="simcard">
+        <div className="rct"><Sparkles size={17} color="var(--orange)"/> 3단계 사업 로드맵</div>
+        <div className="roadmap">
+          <div className="rmstep"><div className="rmnum">1</div><div className="rmt">1단계 · 진입 <span className="rmy">지금~</span></div><div className="rmd"><b>로얄캐닌·힐스 병행수입</b>으로 시작해 회원 확보. 동시에 <b>HI-PET Premium 개발 착수</b>.</div></div>
+          <div className="rmarrow">→</div>
+          <div className="rmstep"><div className="rmnum">2</div><div className="rmt">2단계 · 전환 <span className="rmy">1~2년</span></div><div className="rmd">AI 건강분석과 연계한 <b>맞춤 처방식·기능성 PB</b> 라인업 확대. 병행수입과 PB 병행.</div></div>
+          <div className="rmarrow">→</div>
+          <div className="rmstep hl"><div className="rmnum">3</div><div className="rmt">3단계 · 안착 <span className="rmy">~3년</span></div><div className="rmd">비중 전환: <b>해외 브랜드 20% : HI-PET Premium 80%</b>. 마진·의료비 지원기금 자립.</div>
+            <div className="rmbar"><span style={{width:"20%",background:"#9AA7BC"}}>20%</span><span style={{width:"80%",background:"linear-gradient(90deg,var(--orange),var(--amber))"}}>HI-PET 80%</span></div></div>
+        </div>
+      </div>
+
+      {/* 핵심 리스크 검증 배너 */}
+      <div className="srcprob"><AlertTriangle size={16} color="#E0662A"/><div><b>가장 먼저 검증할 리스크</b> — "총판 없이 공급받을 수 있나"가 아니라 <b>"그때 실제 가격경쟁력이 생기나"</b>입니다. 아래 <b>7개 원가항목 총합(랜딩원가)</b>이 <b>국내 총판 공급가</b>보다 낮아야 사업성이 있습니다. 그렇지 않으면 병행수입은 장기 경쟁력이 약합니다 → 그래서 <b>자체 PB</b>가 본질 전략입니다.</div></div>
 
       <div className="skpi">
-        <div><div className="kl">평균 판매마진</div><div className="kv" style={{color:mColor(avgMargin)}}>{pctS(avgMargin)}</div><div className="kx">목표 60%</div></div>
-        <div><div className="kl">60%↑ 달성 품목</div><div className="kv">{over60}<span className="ku">/{rows.length}</span></div><div className="kx">직구 우위 SKU</div></div>
-        <div><div className="kl">국내 대비 평균 절감</div><div className="kv" style={{color:"#3C9E72"}}>{pctS(avgSave)}</div><div className="kx">소비자 체감가↓</div></div>
+        <div><div className="kl">평균 판매마진</div><div className="kv" style={{color:mColor(avgMargin)}}>{pctS(avgMargin)}</div><div className="kx">우리 소비자가 기준</div></div>
+        <div><div className="kl">원가경쟁력 확보</div><div className="kv" style={{color:competCnt>=krRows.length/2?"#3C9E72":"#E8913A"}}>{competCnt}<span className="ku">/{krRows.length}</span></div><div className="kx">총판공급가보다 저원가</div></div>
+        <div><div className="kl">평균 원가우위</div><div className="kv" style={{color:aColor(avgCostAdv)}}>{pctS(avgCostAdv)}</div><div className="kx">총판공급가 대비</div></div>
         <div><div className="kl">SKU당 평균 보험재원</div><div className="kv" style={{color:"var(--orange-deep)"}}>{won(Math.round(avgIns))}</div><div className="kx">마진의 {pctS(p.ins)}</div></div>
       </div>
 
+      {/* 총원가 분해 (형이 제시한 7개 항목) */}
+      <div className="simcard">
+        <div className="rct"><Coins size={17} color="var(--orange)"/> 총원가 분해 · 가격경쟁력 판정 <span className="sub">· SKU 선택</span></div>
+        <select className="srcsel" value={selId} onChange={e=>setSelId(e.target.value)}>
+          {SOURCING.map(it=><option key={it.name} value={it.name}>{it.flag} {it.brand} — {it.name}</option>)}
+        </select>
+        <div className="costbrk">
+          {brk.map(([l,v],i)=><div className="cbrow" key={i}><span>{l}</span><b>{won(v)}</b></div>)}
+          <div className="cbrow tot"><span>= 직구 랜딩 총원가</span><b>{won(cs.landed)}</b></div>
+          <div className="cbrow"><span>국내 총판 공급가(추정 = 소비자가×{pctS(p.supply)})</span><b>{cs.hasKr?won(cs.supply):"—(미유통)"}</b></div>
+        </div>
+        {cs.hasKr ? <div className={`verdict ${cs.compet?"ok":"no"}`}>
+          {cs.compet ? <><ShieldCheck size={16}/> 가격경쟁력 <b>있음</b> — 총판 공급가 대비 원가 <b>{pctS(cs.costAdv)} 우위</b> ({won(cs.supply-cs.landed)} 저렴)</>
+                     : <><AlertTriangle size={16}/> 가격경쟁력 <b>없음</b> — 랜딩원가가 총판 공급가보다 <b>{pctS(-cs.costAdv)} 높음</b>. 병행수입 실익 낮음 → PB 전환 대상</>}
+        </div> : <div className="verdict warn"><Globe size={16}/> 국내 미유통 품목 — 총판 공급가 비교 불가(격차 자체가 기회)</div>}
+      </div>
+
+      {/* 시뮬레이터 */}
+      <div className="simcard">
+        <div className="rct"><Settings size={17} color="var(--orange)"/> 원가·마진 시뮬레이터 <span className="sub">· 값 조정 시 위 표·판정 실시간 반영</span></div>
+        <div className="simgrid">
+          <SimSlider label="환율 (원/USD)" val={p.fx} min={1100} max={1600} step={10} onChange={set("fx")} hint="① 해외구매가 환산"/>
+          <SimSlider label="국제 운송비" val={p.ship} min={0} max={.4} step={.01} fmt={pctS} onChange={set("ship")} hint="② FOB 대비"/>
+          <SimSlider label="관세율" val={p.duty} min={0} max={.1} step={.005} fmt={pctS} onChange={set("duty")} hint="③ 사료 FTA 대개 0%"/>
+          <SimSlider label="검역·통관" val={p.quar} min={0} max={.15} step={.005} fmt={pctS} onChange={set("quar")} hint="⑤ 신고·검사"/>
+          <SimSlider label="국내 물류비" val={p.logi} min={0} max={.3} step={.01} fmt={pctS} onChange={set("logi")} hint="⑥ 풀필먼트·배송"/>
+          <SimSlider label="재고 비용" val={p.inv} min={0} max={.15} step={.005} fmt={pctS} onChange={set("inv")} hint="⑦ 자본·보관"/>
+          <SimSlider label="반품·유통기한 손실" val={p.loss} min={0} max={.15} step={.005} fmt={pctS} onChange={set("loss")} hint="⑧ 폐기·반품"/>
+          <SimSlider label="총판 공급가율" val={p.supply} min={.5} max={.9} step={.01} fmt={pctS} onChange={set("supply")} hint="소비자가 대비(추정)"/>
+          <SimSlider label="국내가 대비 인하율" val={p.disc} min={0} max={.5} step={.01} fmt={pctS} onChange={set("disc")} hint="우리 소비자가"/>
+          <SimSlider label="보험재원 비율(마진 중)" val={p.ins} min={0} max={1} step={.05} fmt={pctS} onChange={set("ins")} hint="나머지는 회사 이익"/>
+        </div>
+        <button className="cbtn" style={{maxWidth:180}} onClick={()=>setP(SRC_DEFAULT)}>기본값으로 초기화</button>
+      </div>
+
+      {/* 검역 규제 트랙 */}
       <div className="qcard">
         <div className="rct"><ShieldCheck size={17} color="#41506B"/> 검역·수입 규제 트랙 <span className="sub">· 강아지·고양이 사료 직구의 핵심 리스크</span></div>
         <div className="qgrid">
@@ -2665,44 +2743,45 @@ function SourcingSection(){
         <div className="chnote" style={{marginTop:2}}>출처: 농림축산검역본부(QIA), 농민신문(2025 수입위생조건 개정), 데일리벳(검역 불합격 40%). 정식수입 독점사(두원실업=오리진·아카나 등) 우회 = 병행/상업수입 트랙.</div>
       </div>
 
-      <div className="simcard">
-        <div className="rct"><Settings size={17} color="var(--orange)"/> 마진 시뮬레이터 <span className="sub">· 직구 원가·목표가를 조정하면 실시간 재계산</span></div>
-        <div className="simgrid">
-          <SimSlider label="환율 (원/USD)" val={p.fx} min={1100} max={1600} step={10} onChange={set("fx")} hint="직구 원가 환산"/>
-          <SimSlider label="국제배송·배대지" val={p.ship} min={0} max={.4} step={.01} fmt={pctS} onChange={set("ship")} hint="FOB 대비"/>
-          <SimSlider label="관세율" val={p.duty} min={0} max={.1} step={.005} fmt={pctS} onChange={set("duty")} hint="사료 FTA 대개 0%"/>
-          <SimSlider label="국내 물류·운영비" val={p.ops} min={0} max={.3} step={.01} fmt={pctS} onChange={set("ops")} hint="풀필먼트·마케팅"/>
-          <SimSlider label="국내가 대비 인하율" val={p.disc} min={0} max={.5} step={.01} fmt={pctS} onChange={set("disc")} hint="우리 소비자가 = 총판가×(1-인하율)"/>
-          <SimSlider label="보험재원 비율 (마진 중)" val={p.ins} min={0} max={1} step={.05} fmt={pctS} onChange={set("ins")} hint="나머지는 회사 이익"/>
-        </div>
-        <button className="cbtn" style={{maxWidth:180}} onClick={()=>setP(SRC_DEFAULT)}>기본값으로 초기화</button>
-      </div>
-
+      {/* 병행수입 카탈로그 */}
+      <div className="bklbl"><Globe size={14} color="var(--orange)" style={{verticalAlign:"-2px"}}/> 1단계 병행수입 후보 카탈로그 <span className="sub2">· 원가경쟁력 판정 포함</span></div>
       <div className="regions">{cats.map(c=><button key={c} className={`fsel ${cat===c?"on":""}`} onClick={()=>setCat(c)}>{c==="전체"?"전체 카테고리":c}</button>)}</div>
-
       <div className="srctbl-wrap">
         <div className="srctbl">
-          <div className="sh">브랜드 · 제품</div><div className="sh">등급</div><div className="sh r">국내 총판가</div><div className="sh r">우리 소비자가</div><div className="sh r">직구 원가</div><div className="sh r">마진</div><div className="sh r">보험재원</div>
+          <div className="sh">브랜드 · 제품</div><div className="sh r">총판 공급가</div><div className="sh r">직구 랜딩원가</div><div className="sh r">원가경쟁력</div><div className="sh r">우리 소비자가</div><div className="sh r">마진</div><div className="sh r">보험재원</div>
           {rows.map((r,i)=>(<React.Fragment key={i}>
-            <div className="sc"><div className="sbn">{r.it.flag} {r.it.brand} <span className="scnt">{r.it.country}</span></div><div className="spn">{r.it.name}</div>
-              <div className="sgap">{r.it.gap}</div>
+            <div className="sc"><div className="sbn">{r.it.flag} {r.it.brand} <span className={`cbadge ${r.it.tier==="수의처방"?"pur":r.it.tier==="초프리미엄"?"org":""}`} style={{marginLeft:4}}>{r.it.tier}</span></div><div className="spn">{r.it.name}</div>
               <div className="srisk"><span className="rdot" style={{background:RISK_COLOR[r.it.risk]}}/>검역 {r.it.risk} · {r.it.protein}</div></div>
-            <div className="sc"><span className={`cbadge ${r.it.tier==="수의처방"?"pur":r.it.tier==="초프리미엄"?"org":""}`}>{r.it.tier}</span></div>
-            <div className="sc r">{r.hasKr?<span className="kstrike">{won(r.it.kr)}</span>:<span className="scnt">미유통</span>}</div>
+            <div className="sc r">{r.hasKr?won(r.supply):<span className="scnt">미유통</span>}</div>
+            <div className="sc r">{won(r.landed)}</div>
+            <div className="sc r">{r.hasKr?<b style={{color:aColor(r.costAdv)}}>{r.compet?"○ ":"✕ "}{pctS(r.costAdv)}</b>:<span className="scnt">—</span>}</div>
             <div className="sc r"><b>{won(r.price)}</b>{r.hasKr&&r.saveW>0&&<div className="ssave">−{won(r.saveW)}</div>}</div>
-            <div className="sc r">{won(Math.round(r.landed))}</div>
-            <div className="sc r"><b style={{color:mColor(r.marginPct),fontSize:15}}>{pctS(r.marginPct)}</b><div className="ssub">{won(Math.round(r.marginW))}</div></div>
-            <div className="sc r"><b style={{color:"var(--orange-deep)"}}>{won(Math.round(r.insReserve))}</b></div>
+            <div className="sc r"><b style={{color:mColor(r.marginPct),fontSize:15}}>{pctS(r.marginPct)}</b><div className="ssub">{won(r.marginW)}</div></div>
+            <div className="sc r"><b style={{color:"var(--orange-deep)"}}>{won(r.insReserve)}</b></div>
           </React.Fragment>))}
         </div>
       </div>
 
+      {/* HI-PET Premium PB 전략 */}
+      <div className="pbcard">
+        <div className="rct" style={{color:"#fff"}}><Award size={17} color="#fff"/> HI-PET Premium — 자체 PB 브랜드 (장기 핵심 전략)</div>
+        <div className="pbflow"><span>AI 건강분석</span><i>→</i><span>맞춤 처방식·기능성</span><i>→</i><span>HI-PET Premium</span><i>→</i><span>마진 + 의료비 지원기금</span></div>
+        <div className="pbtbl-wrap"><div className="pbtbl">
+          <div className="ph">제품</div><div className="ph">타깃</div><div className="ph r">제조원가</div><div className="ph r">판매가</div><div className="ph r">마진</div>
+          {HIPET_PB.map((x,i)=>{ const m=(x.sell-x.cost)/x.sell; return (<React.Fragment key={i}>
+            <div className="pc"><b>{x.name}</b></div><div className="pc"><span className="pcnote">{x.note}</span></div>
+            <div className="pc r">{won(x.cost)}</div><div className="pc r">{won(x.sell)}</div>
+            <div className="pc r"><b style={{color:"#5BE7B0"}}>{pctS(m)}</b></div>
+          </React.Fragment>);})}
+        </div></div>
+        <div className="pbwhy">PB는 브랜드 로열티·총판 마진이 없어 <b>마진 65~75%</b>가 구조적으로 가능하고, AI가 마루의 호발질환(치주·MMVD·슬개골)에 맞춰 <b>정확히 필요한 제품을 처방</b>하므로 재고·반품 손실도 낮습니다. → 병행수입의 원가 리스크를 넘어서는 <b>장기 경쟁력의 본질</b>.</div>
+      </div>
+
       <div className="srcnote">
         <div className="srn"><Ship size={14} color="#41506B"/> <b>직구 채널</b>: Chewy·Amazon US·Petco·iHerb·브랜드 DTC + 배대지(몰테일 등) / 상용수입 시 현지 도매 계약</div>
-        <div className="srn"><ShieldCheck size={14} color="#41506B"/> <b>검역·통관</b>: 농림축산검역본부 수입사료 신고 대상. 처방식은 수의사 처방·상용수입 규제 확인 필요(개인직구는 자가소비 수량 한도)</div>
-        <div className="srn"><Coins size={14} color="#41506B"/> <b>Health-InsurFin</b>: 마진의 {pctS(p.ins)}가 무상 실손보험 재원으로 적립 → "일상 구매가 보험이 되는" 구조</div>
+        <div className="srn"><Coins size={14} color="#41506B"/> <b>Health-InsurFin</b>: 마진의 {pctS(p.ins)}가 무상 실손보험·의료비 지원기금 재원으로 적립 → "일상 구매가 보험이 되는" 구조</div>
       </div>
-      <div className="chnote">※ 가격은 2024~2026 해외 소매가 기반 <b>추정치</b>이며 리서치 검증 후 갱신됩니다. 마진·보험재원은 위 파라미터 가정에 따른 시뮬레이션입니다. 처방식 직구·상용수입은 관련 법규·수의사 처방 요건을 반드시 확인하세요.</div>
+      <div className="chnote">※ 가격·원가는 2024~2026 공개 소매가 기반 <b>추정치</b>이며 리서치 검증 후 갱신됩니다. 총판 공급가는 소비자가×공급가율 가정 추정. PB 단가는 예시입니다. 처방식 직구·상용수입은 관련 법규·수의사 처방 요건을 반드시 확인하세요.</div>
     </div>
   );
 }
@@ -3172,6 +3251,53 @@ css.textContent=`
 .srn{font-size:12.5px;color:var(--sub);line-height:1.55;display:flex;gap:8px;align-items:flex-start}
 .srn b{color:var(--text)}
 @media(max-width:900px){ .skpi{grid-template-columns:1fr 1fr} .qgrid,.simgrid{grid-template-columns:1fr} }
+/* 플랫폼 본질 배너 */
+.platb{display:flex;gap:13px;align-items:flex-start;background:linear-gradient(135deg,#41506B,#2E3A4F);border-radius:16px;padding:16px 18px;margin-bottom:14px;color:#fff}
+.pbi{flex-shrink:0;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.15);display:grid;place-items:center}
+.platt{font-size:14.5px;font-weight:700;line-height:1.5}
+.platt b{color:#FFC98A}
+.plats{font-size:12.5px;color:#C9D3E0;margin-top:6px;line-height:1.6}
+.plats b{color:#fff}
+/* 로드맵 */
+.roadmap{display:flex;align-items:stretch;gap:8px;margin-top:12px;flex-wrap:wrap}
+.rmstep{flex:1;min-width:180px;background:var(--cream);border:1px solid var(--border);border-radius:14px;padding:13px 14px;position:relative}
+.rmstep.hl{background:#FFF3E8;border-color:#FBD3AC}
+.rmnum{width:26px;height:26px;border-radius:50%;background:#41506B;color:#fff;font-weight:900;font-size:14px;display:grid;place-items:center;margin-bottom:8px}
+.rmstep.hl .rmnum{background:linear-gradient(135deg,var(--orange),var(--amber))}
+.rmt{font-size:13.5px;font-weight:800;color:var(--text)}
+.rmy{font-size:11px;font-weight:700;color:var(--muted);margin-left:4px}
+.rmd{font-size:12px;color:var(--sub);line-height:1.55;margin-top:5px}
+.rmarrow{display:grid;place-items:center;color:var(--muted);font-weight:800;font-size:18px}
+.rmbar{display:flex;height:22px;border-radius:7px;overflow:hidden;margin-top:9px;font-size:10.5px;font-weight:800;color:#fff}
+.rmbar span{display:grid;place-items:center}
+@media(max-width:820px){ .rmarrow{display:none} .rmstep{min-width:100%} }
+/* 총원가 분해 */
+.srcsel{width:100%;max-width:520px;margin:12px 0 6px;padding:10px 12px;border:1px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream)}
+.costbrk{background:var(--cream);border:1px solid var(--border);border-radius:13px;padding:6px 14px;margin:8px 0}
+.cbrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:13px;color:var(--sub);border-bottom:1px dashed var(--border)}
+.cbrow:last-child{border-bottom:none}
+.cbrow b{color:var(--text);font-variant-numeric:tabular-nums}
+.cbrow.tot{font-weight:800;color:var(--text)}
+.cbrow.tot b{color:var(--orange-deep);font-size:15px}
+.verdict{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;padding:12px 14px;border-radius:12px;line-height:1.5}
+.verdict b{font-weight:900}
+.verdict.ok{color:#2C7A55;background:#E4F4EC}
+.verdict.no{color:#C0392B;background:#FDE4E4}
+.verdict.warn{color:#8A6D3B;background:#FBF0DA}
+/* PB 카드 */
+.pbcard{background:linear-gradient(135deg,#2E3A4F,#41506B);border-radius:18px;padding:18px;margin-bottom:14px;color:#fff}
+.pbflow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 14px}
+.pbflow span{background:rgba(255,255,255,.13);border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:700}
+.pbflow i{color:#8FA0B8;font-style:normal;font-weight:800}
+.pbtbl-wrap{overflow-x:auto;background:rgba(255,255,255,.06);border-radius:13px}
+.pbtbl{display:grid;grid-template-columns:1.8fr 1.6fr .9fr .9fr .7fr;min-width:560px}
+.pbtbl .ph{font-size:11.5px;font-weight:800;color:#B7C3D4;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.12)}
+.pbtbl .ph.r,.pbtbl .pc.r{text-align:right}
+.pbtbl .pc{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;color:#EAF0F7;display:flex;flex-direction:column;justify-content:center}
+.pbtbl .pc.r{align-items:flex-end;font-variant-numeric:tabular-nums}
+.pcnote{font-size:11.5px;color:#A9B6C8}
+.pbwhy{font-size:12.5px;color:#C9D3E0;line-height:1.65;margin-top:12px}
+.pbwhy b{color:#FFC98A}
 .gradecard{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
 .gc-top{display:flex;align-items:center;gap:14px}
 .gc-badge{flex-shrink:0;color:#fff;font-weight:900;font-size:15px;letter-spacing:.5px;padding:8px 16px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.12)}
