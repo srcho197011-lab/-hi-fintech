@@ -687,9 +687,144 @@ function SupplementShop() {
     </>
   );
 }
+/* ====================== 당당상담 AI 인텔리전스 ======================
+   AI 주치의의 영양소·홈케어기기 상담 결과를 넘겨받아, 관련 '건강기능(식약처 인정 기능성)'에
+   도움을 줄 수 있는 성분·제품을 안내한다.
+   ⚖️ 건강기능식품법·식품표시광고법 준수: 특정 질병의 '예방·치료' 효능을 표방하지 않는다.
+      → 질환을 '건강 관심영역'으로 재구성하고, 식약처 인정 기능성 문구('~에 도움을 줄 수 있음')만 사용. */
+const SHOP_INTEL_AREAS = [
+  { key: "눈", label: "눈 건강", col: "#16A34A", claim: "루테인·지아잔틴은 노화로 인해 감소할 수 있는 황반색소 밀도 유지에 도움을 줄 수 있어요.", cats: ["루테인"], ings: ["루테인", "지아잔틴", "아스타잔틴", "빌베리", "비타민a", "눈"] },
+  { key: "혈행", label: "혈행·혈중 중성지방", col: "#2563EB", claim: "오메가3(EPA·DHA)는 혈중 중성지방 개선과 혈행 개선에 도움을 줄 수 있어요.", cats: ["오메가3"], ings: ["오메가3", "오메가", "epa", "dha", "혈행", "중성지방"] },
+  { key: "장", label: "장 건강", col: "#0D9488", claim: "프로바이오틱스(유산균)는 유익균 증식·유해균 억제로 배변활동 원활에 도움을 줄 수 있어요.", cats: ["프로바이오틱스"], ings: ["프로바이오틱스", "유산균", "락토", "프리바이오틱스", "신바이오틱스", "식이섬유", "장"] },
+  { key: "간", label: "간 건강", col: "#7C3AED", claim: "밀크씨슬(실리마린)은 간 건강에 도움을 줄 수 있어요.", cats: ["밀크씨슬"], ings: ["밀크씨슬", "실리마린", "간"] },
+  { key: "면역", label: "면역·활력", col: "#DB2777", claim: "홍삼은 면역력 증진·피로 개선에, 아연·비타민C는 정상적인 면역기능 유지에 도움을 줄 수 있어요.", cats: ["홍삼", "아연", "비타민C"], ings: ["홍삼", "인삼", "아연", "비타민c", "베타글루칸", "프로폴리스", "셀레늄", "면역"] },
+  { key: "뼈", label: "뼈·치아 건강", col: "#F59E0B", claim: "비타민D는 칼슘 흡수와 뼈의 형성·유지에 필요하고, 칼슘은 뼈·치아 형성에 필요해요.", cats: ["비타민D"], ings: ["비타민d", "칼슘", "뼈", "골밀도"] },
+  { key: "관절", label: "관절·연골 건강", col: "#0891B2", claim: "글루코사민·MSM·보스웰리아 등은 관절 및 연골 건강에 도움을 줄 수 있어요.", cats: [], ings: ["글루코사민", "msm", "보스웰리아", "콘드로이친", "관절", "연골"] },
+  { key: "에너지", label: "에너지·피로", col: "#EA580C", claim: "비타민B군은 에너지 대사에, 마그네슘은 에너지 생성·신경·근육 기능 유지에 필요해요.", cats: ["종합비타민", "마그네슘"], ings: ["비타민b", "종합비타민", "마그네슘", "코엔자임", "피로", "활력"] },
+  { key: "피부", label: "피부 건강", col: "#DB2777", claim: "콜라겐은 피부 보습·자외선에 의한 피부 손상 개선에, 비타민C는 결합조직 형성에 도움을 줄 수 있어요.", cats: ["콜라겐", "비타민C"], ings: ["콜라겐", "히알루론", "비오틴", "세라마이드", "피부"] },
+  { key: "혈당", label: "혈당 건강", col: "#CA8A04", claim: "바나바잎·여주·크롬 등은 식후 혈당의 급격한 상승을 억제하는 데 도움을 줄 수 있어요.", cats: [], ings: ["바나바", "여주", "크롬", "혈당", "이눌린"] },
+  { key: "요로", label: "요로 건강", col: "#DC2626", claim: "크랜베리 추출물(프로안토시아니딘)은 요로 건강에 도움을 줄 수 있어요.", cats: [], ings: ["크랜베리", "프로안토시아니딘", "요로", "방광"] },
+  { key: "전립선", label: "전립선·배뇨", col: "#4F46E5", claim: "쏘팔메토 열매추출물은 전립선 건강 및 배뇨 기능 개선에 도움을 줄 수 있어요.", cats: [], ings: ["쏘팔메토", "전립선", "배뇨"] },
+  { key: "인지", label: "인지·기억력", col: "#9333EA", claim: "은행잎추출물·포스파티딜세린은 노화로 인한 기억력 개선에 도움을 줄 수 있어요.", cats: [], ings: ["포스파티딜세린", "은행잎", "기억", "인지"] },
+  { key: "수면", label: "수면·스트레스", col: "#6366F1", claim: "L-테아닌은 스트레스로 인한 긴장 완화에, 유단백가수분해물(락티움)은 수면의 질 개선에 도움을 줄 수 있어요.", cats: [], ings: ["테아닌", "락티움", "gaba", "감태", "수면", "스트레스"] },
+  { key: "혈압", label: "혈압 건강", col: "#EF4444", claim: "코엔자임Q10은 높은 혈압 감소에 도움을 줄 수 있어요.", cats: [], ings: ["코엔자임", "q10", "코큐텐", "혈압"] },
+];
+const SHOP_INTEL_DEVICES = [
+  { key: "혈압", label: "혈압 관리 기기", col: "#EF4444", note: "가정에서 혈압을 측정하는 식약처 인증 가정용 의료기기예요.", items: [["가정용 자동 혈압계", "상완·손목 자동 측정, 아침·저녁 기록"]], partners: ["오므론(OMRON)", "휴비딕", "GN바디닥터"], ings: ["혈압", "고혈압", "혈압계"] },
+  { key: "혈당", label: "혈당 관리 기기", col: "#CA8A04", note: "자가혈당측정기·연속혈당측정(CGM)으로 혈당을 추적하는 의료기기예요.", items: [["혈당측정기·CGM", "실시간 혈당 추적·식이 피드백"]], partners: ["자원메디칼", "오므론(OMRON)"], ings: ["혈당", "당뇨", "혈당측정", "cgm", "채혈"] },
+  { key: "체성분", label: "체성분·체중 관리", col: "#0E7490", note: "근육·체지방·복부비만을 측정하는 기기예요.", items: [["체성분 분석기", "근육·체지방·복부지방 추적"]], partners: ["인바디(InBody)", "GN바디닥터"], ings: ["체성분", "비만", "체중", "근육", "인바디"] },
+  { key: "체온", label: "발열·체온 관리", col: "#F97316", note: "비접촉·귀 체온계로 체온을 측정해요.", items: [["체온계(비접촉·귀)", "빠른 체온 측정"]], partners: ["휴비딕"], ings: ["체온", "발열", "고열", "체온계"] },
+  { key: "산소", label: "호흡·산소 모니터", col: "#0EA5E9", note: "맥박산소계로 산소포화도를 측정하는 기기예요.", items: [["맥박산소계(산소포화도)", "호흡기질환 자가 모니터"]], partners: ["오므론(OMRON)"], ings: ["산소", "호흡", "copd", "천식", "산소포화도", "폐"] },
+  { key: "통증", label: "통증·근육 완화", col: "#7C3AED", note: "가정용 온열·저주파·EMS 등 통증·근육 완화 보조 기기예요. 진단·치료는 의료진과 상의하세요.", items: [["온열·저주파·EMS", "가정용 통증·근육 이완 보조"]], partners: ["세라젬", "GN바디닥터", "코지마"], ings: ["온열", "저주파", "통증", "ems", "고주파", "마사지", "근육통", "관절", "찜질", "안마"] },
+];
+function DangDangHero() {
+  return (
+    <div className="card" style={{ background: "linear-gradient(125deg,#0B3D91 0%,#1A56DB 50%,#0EA5E9 100%)", color: "#fff", border: "none" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+        <span style={{ fontSize: 30 }}>🧬</span>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-.5px" }}>당당상담 AI 인텔리전스</div>
+          <div style={{ fontSize: 12.5, opacity: .92, marginTop: 3 }}>AI 주치의 상담에서 안내된 <b>영양소·홈케어 기기</b>를 넘겨받아, 관련 건강기능에 도움을 줄 수 있는 성분·제품을 <b>당당하게(투명·근거기반)</b> 안내해요.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+function DangDangDisclaimer() {
+  return (
+    <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12, padding: "11px 13px", margin: "12px 0", fontSize: 12, color: "#9A3412", lineHeight: 1.6 }}>
+      <b>⚖️ 건강기능식품법·표시광고법 준수 안내</b><br />
+      건강기능식품은 <b>질병의 예방·치료를 위한 의약품이 아닙니다.</b> 아래 안내는 특정 질환의 치료·예방이 아니라, 관련 <b>건강기능(식약처 인정 기능성)에 ‘도움을 줄 수 있는’</b> 성분·제품 정보이며, 의사·약사의 진단·처방을 대체하지 않습니다. 개인 상태(복용약·질환·알레르기)에 따라 섭취 전 전문가와 상의하세요.
+    </div>
+  );
+}
+function DangDangProduct({ p, onGoSupp }) {
+  const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
+  const m = CATS[p.category] || {};
+  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.25) };
+  return (
+    <div className="prodcard" style={{ cursor: "default" }}>
+      <div className="pimg" style={{ background: (m.col || "#7C3AED") + "10" }}>{typeof SuppImage === "function" ? <SuppImage p={p} /> : null}</div>
+      <div className="pinfo">
+        <div className="pbrand">{p.brand}</div>
+        <div className="pname2">{p.name}</div>
+        <div className="pvol" style={{ color: "#0D9488", fontWeight: 600 }}>{p.claim}</div>
+        <div className="pprice">{typeof shopWon === "function" ? shopWon(p.price) : p.price + "원"}</div>
+        <div className="preward"><Coins size={11} /> 적립 {typeof shopWon === "function" ? shopWon(r.reward) : r.reward} <small>25%</small></div>
+      </div>
+      <button className="paddbtn" onClick={() => onGoSupp && onGoSupp()}><Pill size={13} /> 영양제몰에서 담기</button>
+    </div>
+  );
+}
+function DangDangAI({ onGoSupp, onGoDevice }) {
+  const [intel] = useState(() => { try { const x = (typeof window !== "undefined") ? window._shopIntel : null; if (typeof window !== "undefined") window._shopIntel = null; return x || null; } catch (e) { return null; } });
+  const [mode, setMode] = useState(() => (intel && intel.kind === "device") ? "device" : "supp");
+  const initTerms = intel ? [].concat(intel.supp || [], intel.device || [], intel.dz ? [intel.dz] : []) : [];
+  const [picked, setPicked] = useState(initTerms);
+  const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
+  const norm = (s) => (s || "").toString().toLowerCase().replace(/\s/g, "");
+  const termStr = (picked || []).map(norm).join("|");
+  const areaMatch = (a) => termStr.includes(norm(a.key)) || termStr.includes(norm(a.label)) || a.ings.some((i) => termStr.includes(norm(i)));
+  const suppAreas = SHOP_INTEL_AREAS.filter(areaMatch);
+  const devAreas = SHOP_INTEL_DEVICES.filter(areaMatch);
+  const showSupp = mode === "supp";
+  const areasToShow = showSupp ? (suppAreas.length ? suppAreas : []) : (devAreas.length ? devAreas : []);
+  const dz = intel && intel.dz;
+  return (
+    <div style={{ marginTop: 14 }}>
+      <DangDangHero />
+      {dz && <div style={{ marginTop: 10, fontSize: 13, color: "var(--muted)" }}>AI 주치의 <b style={{ color: "var(--text)" }}>‘{dz}’</b> 상담과 관련해, 아래 <b>건강 관심영역</b>의 기능성 성분·기기를 안내해요. <span style={{ color: "#9A3412" }}>(질병의 예방·치료 목적이 아닙니다)</span></div>}
+      <div className="chtabs" style={{ marginTop: 12 }}>
+        <div className={`chtab ${showSupp ? "on" : ""}`} onClick={() => setMode("supp")}><Pill size={15} /> 영양소·건강기능식품</div>
+        <div className={`chtab ${!showSupp ? "on" : ""}`} onClick={() => setMode("device")}><Stethoscope size={15} /> 홈케어 의료기기</div>
+      </div>
+      <DangDangDisclaimer />
+      {/* 관심영역 직접 선택 */}
+      <div className="ssfilter" style={{ marginBottom: 8 }}>
+        {(showSupp ? SHOP_INTEL_AREAS : SHOP_INTEL_DEVICES).map((a) => {
+          const on = picked.includes(a.key);
+          return <button key={a.key} className={on ? "on" : ""} onClick={() => setPicked((ps) => on ? ps.filter((x) => x !== a.key) : [...ps, a.key])}>{a.label}</button>;
+        })}
+      </div>
+      {areasToShow.length === 0 && (
+        <div className="card" style={{ textAlign: "center", color: "var(--muted)", fontSize: 13 }}>위에서 <b>건강 관심영역</b>을 선택하면 관련 성분·제품을 안내해 드려요.</div>
+      )}
+      {showSupp && areasToShow.map((a) => {
+        const prods = PRODUCTS.filter((p) => (a.cats || []).includes(p.category));
+        return (
+          <div className="card" key={a.key} style={{ borderTop: `4px solid ${a.col}`, marginTop: 12 }}>
+            <div style={{ fontWeight: 800, fontSize: 16, color: a.col, marginBottom: 4 }}>🧬 {a.label}</div>
+            <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 6 }}>{a.claim}</div>
+            <div style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 10 }}>※ 위 문구는 식약처가 인정한 <b>건강기능</b> 표현이며, 특정 질병의 치료·예방을 뜻하지 않습니다.</div>
+            {prods.length ? (
+              <div className="prodgrid">{prods.map((p) => <DangDangProduct key={p.id} p={p} onGoSupp={onGoSupp} />)}</div>
+            ) : (
+              <div style={{ fontSize: 12.5, color: "var(--muted)" }}>해당 기능성 제품은 <button className="linklike" style={{ color: a.col, fontWeight: 700, background: "none", border: "none", cursor: "pointer", padding: 0 }} onClick={() => onGoSupp && onGoSupp()}>영양제몰</button>에서 더 확인하실 수 있어요. (제휴 라인업 확대 예정)</div>
+            )}
+          </div>
+        );
+      })}
+      {!showSupp && areasToShow.map((a) => (
+        <div className="card" key={a.key} style={{ borderTop: `4px solid ${a.col}`, marginTop: 12 }}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: a.col, marginBottom: 4 }}>🩺 {a.label}</div>
+          <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>{a.note}</div>
+          {a.items.map((it, j) => (
+            <div key={j} style={{ padding: "8px 0", borderTop: j ? "1px solid var(--line)" : "none" }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{it[0]}</div>
+              <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{it[1]}</div>
+            </div>
+          ))}
+          <div style={{ fontSize: 12, color: "var(--muted)", margin: "6px 0 10px" }}>제휴·취급 브랜드: <b>{a.partners.join(" · ")}</b></div>
+          <button className="cbtn pri" style={{ margin: 0 }} onClick={() => onGoDevice && onGoDevice()}><Stethoscope size={14} /> 의료기기몰에서 보기</button>
+        </div>
+      ))}
+      <div className="chnote" style={{ marginTop: 12 }}>※ 당당상담 AI는 정보 제공용 안내이며 진단·처방·의료행위가 아닙니다. 건강기능식품은 질병의 예방·치료를 위한 의약품이 아니고, 의료기기는 허가된 사용목적 범위에서 사용하세요. 복용 중인 약·기저질환이 있으면 반드시 전문가와 상의하세요.</div>
+    </div>
+  );
+}
 function ShopSection() {
-  const [cat, setCat] = useState("diet");
-  const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["ai", "AI 추천상품", Sparkles], ["sports", "스포츠건강", Activity]];
+  const [cat, setCat] = useState(() => { try { return (typeof window !== "undefined" && window._shopIntel) ? "intel" : "diet"; } catch (e) { return "diet"; } });
+  const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["intel", "당당상담 AI", Sparkles], ["ai", "AI 추천상품", Sparkles], ["sports", "스포츠건강", Activity]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="shop" /></span>
@@ -700,6 +835,7 @@ function ShopSection() {
       {cat === "diet" && <ShopCategory catKey="diet" label="건강식단" />}
       {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
       {cat === "device" && <ShopCategory catKey="device" label="의료기기" />}
+      {cat === "intel" && <DangDangAI onGoSupp={() => setCat("supp")} onGoDevice={() => setCat("device")} />}
       {cat === "ai" && <ShopAIRec />}
       {cat === "sports" && <SportsHealth />}
     </div>

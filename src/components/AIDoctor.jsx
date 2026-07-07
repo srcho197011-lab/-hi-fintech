@@ -1678,6 +1678,10 @@ function _deepFind(name) {
   const partial = keys.filter((k) => { const nk = norm(k); return nk.length >= 2 && (nn.includes(nk) || nk.includes(nn)); }).sort((a, b) => b.length - a.length)[0];
   return partial ? DZ_DEEP[partial] : null;
 }
+/* 최근 상담의 영양소·홈케어기기 추천을 건강쇼핑 당당상담 AI로 넘기기 위해 보관 */
+function careRecSet(supp, device, dz) { try { if (typeof window !== "undefined") window._lastCareRec = { supp: (supp || []).slice(0, 8), device: (device || []).slice(0, 8), dz: dz || "" }; } catch (e) {} }
+const SHOP_SUPP_BTN = "🛒 건강쇼핑에서 성분·제품 보기";
+const SHOP_DEVICE_BTN = "🛒 홈케어 기기 보기";
 function deepCards(name) {
   const d = _deepFind(name); if (!d) return [];
   const out = [];
@@ -1758,12 +1762,13 @@ function groupCounsel(text) {
   for (const g of DZ_GROUPS) {
     const m = g.members.find((x) => x.keys.some((k) => text.includes(k)));
     if (!m) continue;
+    careRecSet(m.nutri, m.device, m.name);
     return {
       bubbles: [
         { kind: "text", text: `${m.name}에 대해 안내해 드릴게요.\n\n${m.def}\n\n주요 증상: ${m.sym}` },
         { kind: "card", card: { title: `🔎 비슷한 ${g.label.split(" ")[0]} 감별 (증상 차이)`, items: g.members.map((x) => `${x.name}: ${x.sym}`), buttons: [] } },
-        { kind: "card", card: { title: "💊 도움되는 영양소 / ⚠️ 주의 영양소", items: m.nutri.map((n) => `✅ ${n}`).concat(m.avoid.map((a) => `⚠️ ${a}`)), buttons: [] } },
-        { kind: "card", card: { title: "🏠 홈케어 기기 · 🩺 생활습관", items: m.device.map((d) => `🏠 ${d}`).concat(m.life.map((l) => `· ${l}`)), buttons: [] } },
+        { kind: "card", card: { title: "💊 도움되는 영양소 / ⚠️ 주의 영양소", items: m.nutri.map((n) => `✅ ${n}`).concat(m.avoid.map((a) => `⚠️ ${a}`)), buttons: [SHOP_SUPP_BTN] } },
+        { kind: "card", card: { title: "🏠 홈케어 기기 · 🩺 생활습관", items: m.device.map((d) => `🏠 ${d}`).concat(m.life.map((l) => `· ${l}`)), buttons: [SHOP_DEVICE_BTN] } },
         { kind: "card", card: { title: "🔬 검진 안내", items: [m.screen], buttons: ["🏥 병원·진료 안내"] } },
         ...deepCards(m.name),
       ],
@@ -1782,8 +1787,10 @@ function dataHouseCounsel(text) {
   const nm = (arr) => (arr || []).map((s) => s.name).filter(Boolean).slice(0, 4);
   const cards = [];
   const rec = nm(e.supplements_recommended), avo = nm(e.supplements_avoid);
-  if (rec.length || avo.length) cards.push({ kind: "card", card: { title: "💊 도움되는 영양소 / ⚠️ 주의 영양소", items: rec.map((n) => `✅ ${n}`).concat(avo.map((n) => `⚠️ ${n}`)), buttons: [] } });
-  const dev = nm(e.devices); if (dev.length) cards.push({ kind: "card", card: { title: "🏠 홈케어 기기", items: dev, buttons: [] } });
+  const dev = nm(e.devices);
+  careRecSet(rec, dev, k);
+  if (rec.length || avo.length) cards.push({ kind: "card", card: { title: "💊 도움되는 영양소 / ⚠️ 주의 영양소", items: rec.map((n) => `✅ ${n}`).concat(avo.map((n) => `⚠️ ${n}`)), buttons: rec.length ? [SHOP_SUPP_BTN] : [] } });
+  if (dev.length) cards.push({ kind: "card", card: { title: "🏠 홈케어 기기", items: dev, buttons: [SHOP_DEVICE_BTN] } });
   const diet = e.diet && (e.diet.recommend || []).slice(0, 5); if (diet && diet.length) cards.push({ kind: "card", card: { title: "🥗 건강 식단", items: diet, buttons: [] } });
   const life = (e.lifestyle || []).map((l) => l.tip).filter(Boolean).slice(0, 4); if (life.length) cards.push({ kind: "card", card: { title: "🩺 생활습관", items: life, buttons: [] } });
   const deep = deepCards(k);
@@ -1863,6 +1870,7 @@ function Chat() {
     const text = (textArg ?? input).trim(); if (!text) return;
     if (text === "🔬 특수검진 정밀검사 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "special"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === "🚨 응급신호 자가체크" || text === "🚨 응급신호 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "emergency"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
+    if (text === SHOP_SUPP_BTN || text === SHOP_DEVICE_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") window._shopIntel = Object.assign({ kind: text === SHOP_DEVICE_BTN ? "device" : "supp" }, window._lastCareRec || {}); } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
     if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }
     setInput(""); setPlus(false); setQuicks([]);
     const meId = ++UID;
