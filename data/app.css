@@ -206,6 +206,17 @@
 .plus-sheet button{display:flex;flex-direction:column;align-items:center;gap:6px;background:#F7F9FC;border:1px solid var(--border);border-radius:11px;padding:12px 6px;font-size:11.5px;font-weight:700;color:#3a4b6b;cursor:pointer;}
 .plus-sheet button:hover{background:#EAF0FE;}
 .kt-disc{text-align:center;font-size:10.5px;color:#46586c;padding:6px 12px 12px;background:var(--kt-bg);}
+/* AI 상담사(건강쇼핑) — 오렌지 테마 */
+.kt.shopai .kt-head{background:linear-gradient(120deg,#FFEDD5 0%,#FED7AA 60%,#FDBA74 100%);}
+.kt.shopai .kt-head .nm{color:#7C2D12;}.kt.shopai .kt-head .st{color:#9A3412;}
+.kt.shopai .av-ai{background:linear-gradient(135deg,#F97316,#FB923C);border-radius:50%;box-shadow:0 4px 10px -3px rgba(249,115,22,.6);}
+.kt.shopai .who{color:#9A3412;}
+.kt.shopai .bubble.me{background:#FFE4CC;color:#7C2D12;}
+.kt.shopai .kt-input .send.on{background:linear-gradient(135deg,#F97316,#EA580C);color:#fff;}
+.kt.shopai .quicks button:hover{background:#FFF7ED;border-color:#FDBA74;}
+.kt.shopai .quicks button{border-color:#FED7AA;color:#9A3412;}
+.kt.shopai .daypill{background:#FFF7ED;color:#9A3412;}
+.kt.shopai .kcard .kt-b button{color:#C2410C;}
 /* 나의 주치의 — 통합 메신저 추가요소 */
 .ktib{background:none;border:none;cursor:pointer;color:#64748B;padding:5px;border-radius:9px;display:inline-flex;margin-left:2px;}
 .ktib:hover{background:#F1F5F9;}.ktib.on{color:#2563EB;background:#EAF0FE;}

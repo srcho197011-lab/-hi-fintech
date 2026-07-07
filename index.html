@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=390a4ed9ac" />
+<link rel="stylesheet" href="./data/app.css?v=132a841dea" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=390a4ed9ac"></script>
-<script src="./src/data/section_data.js?v=390a4ed9ac"></script>
-<script src="./src/data/demo_members.js?v=390a4ed9ac"></script>
+<script src="./src/data/dummy_data.js?v=132a841dea"></script>
+<script src="./src/data/section_data.js?v=132a841dea"></script>
+<script src="./src/data/demo_members.js?v=132a841dea"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -5443,76 +5443,197 @@ function DangDangProduct({ p }) {
     </div>
   );
 }
-function DangDangAI({ onGoSupp, onGoDevice }) {
-  const [intel] = useState(() => { try { const x = (typeof window !== "undefined") ? window._shopIntel : null; if (typeof window !== "undefined") window._shopIntel = null; return x || null; } catch (e) { return null; } });
-  const [mode, setMode] = useState(() => (intel && intel.kind === "device") ? "device" : "supp");
-  const initTerms = intel ? [].concat(intel.supp || [], intel.device || [], intel.dz ? [intel.dz] : []) : [];
-  const [picked, setPicked] = useState(initTerms);
+/* 자연어 상담용 관심영역 동의어 */
+const SHOP_AREA_SYN = {
+  "눈": ["눈", "시력", "침침", "눈피로", "황반", "비문", "루테인", "안구건조", "눈건조"],
+  "혈행": ["혈행", "중성지방", "혈액순환", "콜레스테롤", "오메가", "손발저림"],
+  "장": ["장", "변비", "배변", "설사", "유산균", "장건강", "소화불량"],
+  "간": ["간", "숙취", "음주", "간수치", "간건강"],
+  "면역": ["면역", "감기", "환절기", "기력", "홍삼", "활력", "잔병"],
+  "뼈": ["뼈", "골다공", "골밀도", "칼슘", "비타민d"],
+  "관절": ["관절", "연골", "무릎", "글루코사민", "마디"],
+  "에너지": ["피로", "기운", "활력", "비타민b", "마그네슘", "근육경련", "쥐"],
+  "피부": ["피부", "콜라겐", "탄력", "보습", "주름", "미용"],
+  "혈당": ["혈당", "식후혈당", "당수치"],
+  "요로": ["요로", "방광", "소변", "크랜베리", "잔뇨"],
+  "전립선": ["전립선", "배뇨", "소변줄기"],
+  "인지": ["기억", "인지", "집중", "건망", "깜빡"],
+  "수면": ["수면", "잠", "불면", "스트레스", "긴장"],
+  "혈압": ["혈압"],
+  "체성분": ["체성분", "체지방", "근육량", "비만", "체중", "인바디"],
+  "체온": ["체온", "발열", "체온계"],
+  "산소": ["산소", "산소포화도", "호흡곤란", "숨참"],
+  "통증": ["통증", "저주파", "온열", "찜질", "마사지", "근육통", "안마", "ems", "결림"],
+};
+function shopAreaMatch(a, t) {
+  const nz = (s) => (s || "").toString().toLowerCase().replace(/\s/g, "");
+  const nt = nz(t);
+  const syn = SHOP_AREA_SYN[a.key] || [];
+  return syn.some((k) => nt.includes(nz(k))) || nt.includes(nz(a.label)) || (a.ings || []).some((i) => nt.includes(nz(i)));
+}
+/* 상담 답변 카드 — 영양소 관심영역 (식약처 인정 기능성 문구만) */
+function ConsultAreaCard({ a }) {
   const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
-  const norm = (s) => (s || "").toString().toLowerCase().replace(/\s/g, "");
-  const termStr = (picked || []).map(norm).join("|");
-  const areaMatch = (a) => termStr.includes(norm(a.key)) || termStr.includes(norm(a.label)) || a.ings.some((i) => termStr.includes(norm(i)));
-  const suppAreas = SHOP_INTEL_AREAS.filter(areaMatch);
-  const devAreas = SHOP_INTEL_DEVICES.filter(areaMatch);
-  const showSupp = mode === "supp";
-  const areasToShow = showSupp ? (suppAreas.length ? suppAreas : []) : (devAreas.length ? devAreas : []);
-  const dz = intel && intel.dz;
+  const prods = PRODUCTS.filter((p) => (a.cats || []).includes(p.category));
+  return (
+    <div className="kcard" style={{ borderLeft: `4px solid ${a.col}`, width: "100%" }}>
+      <div className="kt-t" style={{ color: a.col }}>🧬 {a.label}</div>
+      <div style={{ padding: "9px 13px 12px" }}>
+        <div style={{ fontSize: 13, lineHeight: 1.55 }}>{a.claim}</div>
+        <div style={{ fontSize: 11, color: "var(--muted)", margin: "5px 0 10px" }}>※ 식약처 인정 <b>건강기능</b> 표현이며, 특정 질병의 치료·예방을 뜻하지 않습니다.</div>
+        {prods.length ? <div className="prodgrid">{prods.map((p) => <DangDangProduct key={p.id} p={p} />)}</div>
+          : <div style={{ fontSize: 12.5, color: "var(--muted)" }}>관련 기능성 제품 라인업을 확대하고 있어요.</div>}
+      </div>
+    </div>
+  );
+}
+/* 상담 답변 카드 — 홈케어 의료기기 */
+function ConsultDeviceCard({ a }) {
+  return (
+    <div className="kcard" style={{ borderLeft: `4px solid ${a.col}`, width: "100%" }}>
+      <div className="kt-t" style={{ color: a.col }}>🩺 {a.label}</div>
+      <div style={{ padding: "9px 13px 12px" }}>
+        <div style={{ fontSize: 13, lineHeight: 1.55, marginBottom: 8 }}>{a.note}</div>
+        {a.items.map((it, j) => (
+          <div key={j} style={{ padding: "7px 0", borderTop: j ? "1px solid var(--line)" : "none" }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700 }}>{it[0]}</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{it[1]}</div>
+          </div>
+        ))}
+        <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>제휴·취급 브랜드: <b>{a.partners.join(" · ")}</b></div>
+      </div>
+    </div>
+  );
+}
+/* 상담 답변 카드 — 내 건강상태 맞춤 추천(구 AI 추천상품 통합) */
+function ConsultRecCard() {
+  const AI = (typeof SHOP_AI !== "undefined") ? SHOP_AI : [];
+  const fcolor = { "영양제": "#7C3AED", "건강식단": "#16A34A", "의료기기": "#0E7490" };
+  return (
+    <div className="kcard" style={{ borderLeft: "4px solid #F97316", width: "100%" }}>
+      <div className="kt-t" style={{ color: "#EA580C" }}>🎯 조성래님 맞춤 건강제품 추천</div>
+      <div style={{ padding: "8px 13px 12px" }}>
+        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 9 }}>프롬에이지 Premium 리포트(생체나이 52.5세 · 간 54.4세 · 당뇨 위험↑)를 분석한 분야별 참고 추천이에요.</div>
+        {["영양제", "건강식단", "의료기기"].map((f) => {
+          const items = AI.filter((x) => x[0] === f); if (!items.length) return null; const fc = fcolor[f];
+          return (
+            <div key={f} style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: fc, margin: "2px 0 6px" }}>{f}</div>
+              {items.map(([, art, prod, benefit, , partner], i) => (
+                <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0", borderTop: i ? "1px solid var(--line)" : "none" }}>
+                  <span style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", display: "grid", placeItems: "center", flexShrink: 0, boxShadow: "0 2px 6px -2px rgba(0,0,0,.18)" }}>{typeof Art === "function" ? <Art name={art} size={19} /> : null}</span>
+                  <div><div style={{ fontSize: 13, fontWeight: 700 }}>{prod}</div><div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 1 }}>{benefit} · {partner}</div></div>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+        <div style={{ fontSize: 11, color: "#9A3412" }}>※ 건강기능식품은 질병의 예방·치료를 위한 의약품이 아니며, 일반적 기능성 정보입니다. 개인차가 있어요.</div>
+      </div>
+    </div>
+  );
+}
+function shopConsultReply(text) {
+  const nz = (s) => (s || "").toString().toLowerCase().replace(/\s/g, "");
+  const t = nz(text);
+  if (/추천|맞춤|내건강|뭐먹|뭐사|뭘사|골라|나에게|내게|필요한|리포트/.test(t))
+    return [{ kind: "text", text: "조성래님 건강분석 리포트를 바탕으로 분야별 맞춤 제품을 추천해 드릴게요. 😊 (참고용)" }, { kind: "rec" }];
+  const supp = SHOP_INTEL_AREAS.filter((a) => shopAreaMatch(a, t));
+  const dev = SHOP_INTEL_DEVICES.filter((a) => shopAreaMatch(a, t));
+  const out = [];
+  if (supp.length) {
+    out.push({ kind: "text", text: `‘${text}’와 관련해, 아래 건강기능(식약처 인정 기능성)에 도움을 줄 수 있는 성분·제품을 안내해 드릴게요.` });
+    supp.slice(0, 3).forEach((a) => out.push({ kind: "area", areaKey: a.key }));
+  }
+  if (dev.length) {
+    if (!supp.length) out.push({ kind: "text", text: `‘${text}’ 관련 홈케어 의료기기를 안내해 드릴게요.` });
+    dev.slice(0, 2).forEach((a) => out.push({ kind: "dev", devKey: a.key }));
+  }
+  if (out.length) return out;
+  if (/안녕|하이|반가|헬로|ㅎㅇ/.test(t))
+    return [{ kind: "text", text: "안녕하세요! AI 상담사예요. 😊 관심 있는 건강영역(눈·장·혈행·혈당·관절·면역 등)이나 증상을 말씀해 주시면, 도움 될 수 있는 성분·제품과 홈케어 기기를 안내해 드릴게요." }];
+  return [{ kind: "text", text: `‘${text}’에 딱 맞는 항목을 못 찾았어요. 😅 아래 관심영역 버튼을 누르시거나, ‘눈이 침침해요’, ‘혈당 관리’, ‘혈압계 추천’처럼 말씀해 주세요.` }];
+}
+let _shopMsgId = 0;
+function ShopConsultant() {
+  const intel = (() => { try { const x = (typeof window !== "undefined") ? window._shopIntel : null; if (typeof window !== "undefined") window._shopIntel = null; return x || null; } catch (e) { return null; } });
+  const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
+  const AREA_BY = {}; SHOP_INTEL_AREAS.forEach((a) => { AREA_BY[a.key] = a; });
+  const DEV_BY = {}; SHOP_INTEL_DEVICES.forEach((a) => { DEV_BY[a.key] = a; });
+  const [msgs, setMsgs] = useState(() => {
+    const x = intel();
+    const base = [{ id: ++_shopMsgId, who: "ai", kind: "text", first: true, text: "안녕하세요, AI 상담사예요. 🛒\n건강 관심영역이나 증상을 말씀해 주시면, 도움 될 수 있는 성분·제품과 홈케어 기기를 당당하게(투명·근거기반) 안내해 드릴게요." }];
+    if (x) {
+      const terms = [].concat(x.supp || [], x.device || []).join(" ");
+      const reply = shopConsultReply(terms + (x.dz ? " " + x.dz : ""));
+      const intro = { id: ++_shopMsgId, who: "ai", kind: "text", text: `AI 주치의 ${x.dz ? "‘" + x.dz + "’ " : ""}상담에서 안내된 ${x.kind === "device" ? "홈케어 기기" : "영양소"}를 이어받았어요. 관련 항목을 정리해 드릴게요. (질병의 예방·치료 목적이 아닙니다)` };
+      return base.concat([intro], reply.filter((r) => r.kind !== "text").map((r) => ({ id: ++_shopMsgId, who: "ai", ...r })));
+    }
+    return base;
+  });
+  const [quicks, setQuicks] = useState(["🎯 내 건강상태 맞춤 추천", "눈 건강", "혈행·중성지방", "장 건강", "혈압계 추천"]);
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const endRef = useRef(null);
+  useEffect(() => { if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
+  const send = (raw) => {
+    const text = ((raw !== undefined ? raw : input) || "").trim(); if (!text) return;
+    setInput("");
+    setMsgs((m) => [...m, { id: ++_shopMsgId, who: "me", kind: "text", text }]);
+    setTyping(true);
+    setTimeout(() => {
+      const replies = shopConsultReply(text);
+      setTyping(false);
+      setMsgs((m) => [...m, ...replies.map((r) => ({ id: ++_shopMsgId, who: "ai", ...r }))]);
+      const hasArea = replies.some((r) => r.kind === "area" || r.kind === "dev" || r.kind === "rec");
+      setQuicks(hasArea ? ["🎯 내 건강상태 맞춤 추천", "관절·연골 건강", "면역·활력", "홈케어 기기 추천"] : ["🎯 내 건강상태 맞춤 추천", "눈 건강", "혈당 건강", "혈압계 추천"]);
+    }, 750);
+  };
+  const renderMsg = (m) => {
+    if (m.kind === "area") { const a = AREA_BY[m.areaKey]; return a ? <ConsultAreaCard a={a} /> : null; }
+    if (m.kind === "dev") { const a = DEV_BY[m.devKey]; return a ? <ConsultDeviceCard a={a} /> : null; }
+    if (m.kind === "rec") return <ConsultRecCard />;
+    return <div className={`bubble ${m.who}`}>{m.text}</div>;
+  };
+  const isCard = (m) => m.kind === "area" || m.kind === "dev" || m.kind === "rec";
   return (
     <div style={{ marginTop: 14 }}>
-      <DangDangHero />
-      {dz && <div style={{ marginTop: 10, fontSize: 13, color: "var(--muted)" }}>AI 주치의 <b style={{ color: "var(--text)" }}>‘{dz}’</b> 상담과 관련해, 아래 <b>건강 관심영역</b>의 기능성 성분·기기를 안내해요. <span style={{ color: "#9A3412" }}>(질병의 예방·치료 목적이 아닙니다)</span></div>}
-      <div className="chtabs" style={{ marginTop: 12 }}>
-        <div className={`chtab ${showSupp ? "on" : ""}`} onClick={() => setMode("supp")}><Pill size={15} /> 영양소·건강기능식품</div>
-        <div className={`chtab ${!showSupp ? "on" : ""}`} onClick={() => setMode("device")}><Stethoscope size={15} /> 홈케어 의료기기</div>
+      <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12, padding: "10px 13px", marginBottom: 12, fontSize: 11.5, color: "#9A3412", lineHeight: 1.6 }}>
+        <b>⚖️ 건강기능식품법·표시광고법 준수</b> — 건강기능식품은 <b>질병의 예방·치료를 위한 의약품이 아닙니다.</b> AI 상담사 안내는 관련 <b>건강기능(식약처 인정 기능성)에 ‘도움을 줄 수 있는’</b> 정보이며 진단·처방을 대체하지 않습니다. 복용약·질환·알레르기가 있으면 섭취 전 전문가와 상의하세요.
       </div>
-      <DangDangDisclaimer />
-      {/* 관심영역 직접 선택 */}
-      <div className="ssfilter" style={{ marginBottom: 8 }}>
-        {(showSupp ? SHOP_INTEL_AREAS : SHOP_INTEL_DEVICES).map((a) => {
-          const on = picked.includes(a.key);
-          return <button key={a.key} className={on ? "on" : ""} onClick={() => setPicked((ps) => on ? ps.filter((x) => x !== a.key) : [...ps, a.key])}>{a.label}</button>;
-        })}
-      </div>
-      {areasToShow.length === 0 && (
-        <div className="card" style={{ textAlign: "center", color: "var(--muted)", fontSize: 13 }}>위에서 <b>건강 관심영역</b>을 선택하면 관련 성분·제품을 안내해 드려요.</div>
-      )}
-      {showSupp && areasToShow.map((a) => {
-        const prods = PRODUCTS.filter((p) => (a.cats || []).includes(p.category));
-        return (
-          <div className="card" key={a.key} style={{ borderTop: `4px solid ${a.col}`, marginTop: 12 }}>
-            <div style={{ fontWeight: 800, fontSize: 16, color: a.col, marginBottom: 4 }}>🧬 {a.label}</div>
-            <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 6 }}>{a.claim}</div>
-            <div style={{ fontSize: 11.5, color: "var(--muted)", marginBottom: 10 }}>※ 위 문구는 식약처가 인정한 <b>건강기능</b> 표현이며, 특정 질병의 치료·예방을 뜻하지 않습니다.</div>
-            {prods.length ? (
-              <div className="prodgrid">{prods.map((p) => <DangDangProduct key={p.id} p={p} />)}</div>
-            ) : (
-              <div style={{ fontSize: 12.5, color: "var(--muted)" }}>해당 기능성 제품은 <button className="linklike" style={{ color: a.col, fontWeight: 700, background: "none", border: "none", cursor: "pointer", padding: 0 }} onClick={() => onGoSupp && onGoSupp()}>영양제몰</button>에서 더 확인하실 수 있어요. (제휴 라인업 확대 예정)</div>
-            )}
-          </div>
-        );
-      })}
-      {!showSupp && areasToShow.map((a) => (
-        <div className="card" key={a.key} style={{ borderTop: `4px solid ${a.col}`, marginTop: 12 }}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: a.col, marginBottom: 4 }}>🩺 {a.label}</div>
-          <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>{a.note}</div>
-          {a.items.map((it, j) => (
-            <div key={j} style={{ padding: "8px 0", borderTop: j ? "1px solid var(--line)" : "none" }}>
-              <div style={{ fontSize: 14, fontWeight: 700 }}>{it[0]}</div>
-              <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{it[1]}</div>
+      <div className="kt shopai" style={{ maxWidth: 720 }}>
+        <div className="kt-head">
+          <span className="av-ai" style={{ width: 34, height: 34 }}><Sparkles size={19} color="#fff" /></span>
+          <div style={{ flex: 1 }}><div className="nm">AI 상담사</div><div className="st"><span className="dot" /> 온라인 · 맞춤 건강제품 안내</div></div>
+        </div>
+        <div className="kt-body">
+          <div className="daypill"><Sparkles size={12} style={{ verticalAlign: -2, marginRight: 3 }} /> 정밀영양협회 검증 · 식약처 인정 기능성 기반 · 참고용</div>
+          {msgs.map((m) => (
+            <div className={`msg ${m.who}`} key={m.id}>
+              {m.who === "ai" && <span className="av-ai">{m.first ? <Sparkles size={20} color="#fff" /> : null}</span>}
+              <div className="col" style={isCard(m) ? { maxWidth: "100%", width: "100%" } : null}>
+                {m.who === "ai" && m.first && <div className="who">AI 상담사</div>}
+                <div className="bubble-row">{renderMsg(m)}</div>
+              </div>
             </div>
           ))}
-          <div style={{ fontSize: 12, color: "var(--muted)", margin: "6px 0 10px" }}>제휴·취급 브랜드: <b>{a.partners.join(" · ")}</b></div>
-          <button className="cbtn pri" style={{ margin: 0 }} onClick={() => onGoDevice && onGoDevice()}><Stethoscope size={14} /> 의료기기몰에서 보기</button>
+          {typing && <div className="msg ai"><span className="av-ai"><Sparkles size={20} color="#fff" /></span><div className="typing"><i /><i /><i /></div></div>}
+          <div ref={endRef} />
         </div>
-      ))}
-      <div className="chnote" style={{ marginTop: 12 }}>※ 당당상담 AI는 정보 제공용 안내이며 진단·처방·의료행위가 아닙니다. 건강기능식품은 질병의 예방·치료를 위한 의약품이 아니고, 의료기기는 허가된 사용목적 범위에서 사용하세요. 복용 중인 약·기저질환이 있으면 반드시 전문가와 상의하세요.</div>
+        {quicks.length > 0 && !typing && <div className="quicks">{quicks.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}</div>}
+        <div className="kt-input">
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="예: 눈이 침침해요 / 혈당 관리 / 혈압계 추천" />
+          <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
+        </div>
+        <div className="kt-disc">AI 상담사는 정보 제공용 안내이며 진단·처방·의료행위가 아닙니다. 건강기능식품은 의약품이 아니고, 의료기기는 허가된 사용목적 범위에서 사용하세요.</div>
+      </div>
       <ShopCartBar products={PRODUCTS} />
     </div>
   );
 }
 function ShopSection() {
   const [cat, setCat] = useState(() => { try { return (typeof window !== "undefined" && window._shopIntel) ? "intel" : "diet"; } catch (e) { return "diet"; } });
-  const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["intel", "당당상담 AI", Sparkles], ["ai", "AI 추천상품", Sparkles], ["sports", "스포츠건강", Activity]];
+  const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["intel", "AI 상담사", Sparkles], ["sports", "스포츠건강", Activity]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="shop" /></span>
@@ -5523,8 +5644,7 @@ function ShopSection() {
       {cat === "diet" && <ShopCategory catKey="diet" label="건강식단" />}
       {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
       {cat === "device" && <ShopCategory catKey="device" label="의료기기" />}
-      {cat === "intel" && <DangDangAI onGoSupp={() => setCat("supp")} onGoDevice={() => setCat("device")} />}
-      {cat === "ai" && <ShopAIRec />}
+      {cat === "intel" && <ShopConsultant />}
       {cat === "sports" && <SportsHealth />}
     </div>
   );
