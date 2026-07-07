@@ -531,6 +531,49 @@ function shopLowestHref(p) {
   const q = encodeURIComponent(((p.name || "") + " " + (p.brand || "")).trim());
   return "https://search.shopping.naver.com/search/all?query=" + q + "&sort=price_asc";
 }
+/* ============ 실시간 국내 최저가 연동 커넥터 (활성화 가능하도록 설계) ============
+   ▸ 활성화 방법(상용 전환): mode를 "live"로 바꾸고 proxyUrl에 백엔드 프록시 주소만 넣으면 됩니다.
+     - 네이버쇼핑 오픈API(GET /v1/search/shop.json?query=&sort=asc)·다나와는 API 키 보호와 CORS 때문에
+       브라우저에서 직접 호출할 수 없어 서버(프록시)를 경유합니다. 프록시가 { price, mallName, link } 반환.
+   ▸ mode "demo": 백엔드 없이 동작을 시연(수집가 대비 -3~-8% 결정적 시뮬레이션, ‘예시’ 표기).
+   ▸ mode "off": 수집 표시가만 사용(실시간 조회 비활성). */
+const PRICE_FEED_CFG = {
+  mode: "demo",            // "off" | "demo" | "live"
+  provider: "naver",       // "naver" | "danawa"
+  proxyUrl: "",            // live 전환 시 필수. 예: "https://api.hi-fintech.com/price"
+  ttlMs: 1000 * 60 * 30,   // 캐시 30분
+};
+function priceCacheGet(id) {
+  try { const o = JSON.parse(sessionStorage.getItem("hifin_price_" + id) || "null"); if (o && (Date.now() - o.ts) < PRICE_FEED_CFG.ttlMs) return o; } catch (e) {} return null;
+}
+function priceCacheSet(id, o) { try { sessionStorage.setItem("hifin_price_" + id, JSON.stringify(o)); } catch (e) {} }
+function demoLowest(p) {
+  const seed = String(p.id || p.name || "").split("").reduce((s, c) => s + c.charCodeAt(0), 0);
+  const disc = 0.03 + (seed % 6) * 0.01; // 3~8% (결정적)
+  const price = Math.max(1000, Math.round((p.price * (1 - disc)) / 10) * 10);
+  const malls = ["네이버쇼핑", "쿠팡", "다나와", "G마켓", "11번가"];
+  return { price, mall: malls[seed % malls.length], link: shopLowestHref(p), ts: Date.now(), demo: true };
+}
+async function fetchLowestPrice(p) {
+  const cfg = PRICE_FEED_CFG;
+  if (!p || cfg.mode === "off") return null;
+  const cached = priceCacheGet(p.id); if (cached) return cached;
+  let result = null;
+  if (cfg.mode === "demo") { result = demoLowest(p); }
+  else if (cfg.mode === "live" && cfg.proxyUrl) {
+    try {
+      const u = cfg.proxyUrl + "?provider=" + cfg.provider + "&sort=asc&query=" + encodeURIComponent(((p.name || "") + " " + (p.brand || "")).trim());
+      const res = await fetch(u); const j = await res.json();
+      if (j && j.price) result = { price: Math.round(j.price), mall: j.mallName || cfg.provider, link: j.link || shopLowestHref(p), ts: Date.now(), live: true };
+    } catch (e) { result = null; }
+  }
+  if (result) priceCacheSet(p.id, result);
+  return result;
+}
+function priceFeedLabel() {
+  const m = PRICE_FEED_CFG.mode;
+  return m === "live" ? "실시간 연동(네이버쇼핑·다나와)" : m === "demo" ? "실시간 최저가 조회 — 데모 시뮬레이션" : "실시간 연동 비활성";
+}
 /* 제품 이미지 — 실제 상품 이미지(다나와 CDN) 우선, 로드 실패 시 성분 컬러 SVG로 폴백 */
 function SuppImage({ p }) {
   const [imgErr, setImgErr] = useState(false);
@@ -625,6 +668,14 @@ function SupplementShop() {
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("reward");
   const [detail, setDetail] = useState(null);
+  const [live, setLive] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+  useEffect(() => {
+    setLive(null); if (!detail || PRICE_FEED_CFG.mode === "off") return;
+    let alive = true; setLiveLoading(true);
+    fetchLowestPrice(detail).then((r) => { if (alive) { setLive(r); setLiveLoading(false); } });
+    return () => { alive = false; };
+  }, [detail]);
   const cats = ["전체", ...Object.keys(CATS)];
   let list = PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
   if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
@@ -636,6 +687,7 @@ function SupplementShop() {
     <>
       <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
       <div className="bklbl" style={{ margin: "12px 0 8px" }}><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></div>
+      {PRICE_FEED_CFG.mode !== "off" && <div className="pricefeed" title="상품을 누르면 실시간 최저가를 조회합니다"><RefreshCw size={12} /> {priceFeedLabel()} · 상품 클릭 시 조회</div>}
       <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
       <div className="sssort">
         <span>정렬</span>
@@ -667,10 +719,19 @@ function SupplementShop() {
             <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#7C3AED") + "10" }}><SuppImage p={detail} /></span>
               <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
             <p className="pddesc">{detail.desc}</p>
-            <div className="pdprice">{shopWon(detail.price)}</div>
+            <div className="pdprice">{live ? shopWon(live.price) : shopWon(detail.price)}{live && <span style={{ fontSize: 13, color: "#94A3B8", fontWeight: 600, textDecoration: "line-through", marginLeft: 8 }}>{shopWon(detail.price)}</span>}</div>
+            {PRICE_FEED_CFG.mode !== "off" && (
+              <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, padding: "9px 12px", margin: "8px 0", fontSize: 12, color: "#9A3412" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 800 }}><RefreshCw size={13} className={liveLoading ? "spin" : ""} /> {priceFeedLabel()}</div>
+                {liveLoading ? <div style={{ marginTop: 4 }}>최저가 조회 중…</div>
+                  : live ? <div style={{ marginTop: 4 }}>현재 최저가 <b style={{ color: "#EA580C" }}>{shopWon(live.price)}</b> · <b>{live.mall}</b> · {new Date(live.ts).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 기준{live.demo ? " (예시)" : ""}</div>
+                    : <div style={{ marginTop: 4 }}>조회 결과 없음 — <a href={shopLowestHref(detail)} target="_blank" rel="noreferrer noopener" style={{ color: "#EA580C", fontWeight: 700 }}>직접 검색</a></div>}
+                <button className="cbtn" style={{ margin: "8px 0 0", width: "100%", fontSize: 12 }} onClick={() => { try { sessionStorage.removeItem("hifin_price_" + detail.id); } catch (e) {} setLiveLoading(true); setLive(null); fetchLowestPrice(detail).then((rr) => { setLive(rr); setLiveLoading(false); }); }}><RefreshCw size={13} /> 실시간 최저가 다시 조회</button>
+              </div>
+            )}
             <div className="pdreward simple">
               <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 25%</small></div>
-              <b className="pdramt">{shopWon(r.reward)}</b>
+              <b className="pdramt">{shopWon((live ? healthReward(live.price) : r).reward)}</b>
             </div>
             <div className="pdbtns">
               <a className="ghost" href={suppMedia(detail.id).danawa || detail.url || naverHref(detail.name, detail.brand)} target="_blank" rel="noreferrer noopener"><Search size={14} /> {suppMedia(detail.id).danawa ? "다나와 최저가" : "출처·상세"} <ExternalLink size={11} /></a>
