@@ -2797,23 +2797,25 @@ function SourcingSection(){
 /* 국내 대형 제조사(하림·우리와·대주 등) 공장 직거래 + OEM 위탁으로 총판·도매 다단계 마진 우회 */
 /* 수치는 2024~2026 공개 소비자가 기반 추정치(리서치 검증 반영 예정). factory=공장 출고가 추정 */
 const DOM_SUPPLY=[
-  { maker:"하림펫푸드", brand:"더리얼", cat:"건식", name:"더리얼 오븐베이크드 닭 1.2kg", retail:28000, factory:14000, rx:false, note:"국내 최대 · 오븐베이크" },
-  { maker:"하림펫푸드", brand:"밥이보약", cat:"기능식", name:"밥이보약 장·관절 기능식 1.2kg", retail:32000, factory:16000, rx:false, note:"기능식 라인" },
-  { maker:"우리와", brand:"ANF", cat:"건식", name:"ANF 6Free 연어 2kg", retail:35000, factory:17000, rx:false, note:"저알러지" },
-  { maker:"우리와", brand:"오래오래", cat:"건식", name:"오래오래 시니어 케어 1.5kg", retail:30000, factory:15000, rx:false, note:"노령견 특화" },
-  { maker:"대주펫푸드", brand:"캐츠랑", cat:"건식", name:"캐츠랑 요로건강 1.5kg", retail:22000, factory:9500, rx:false, note:"고양이 · 자체공장" },
-  { maker:"대주펫푸드", brand:"프로베스트", cat:"처방식", name:"프로베스트 신장 케어 1.5kg", retail:34000, factory:16000, rx:true, note:"국내 처방식 생산" },
-  { maker:"정관장(KGC)", brand:"지니펫", cat:"기능식", name:"지니펫 홍삼 관절 기능식 1kg", retail:38000, factory:19000, rx:false, note:"홍삼 기능식" },
-  { maker:"풀무원아미오", brand:"아미오", cat:"습식", name:"아미오 자연담은 파우치 12입", retail:24000, factory:11000, rx:false, note:"습식 파우치" },
-  { maker:"네추럴코어", brand:"네추럴코어", cat:"건식", name:"네추럴코어 유기농 에코7 2kg", retail:33000, factory:16000, rx:false, note:"유기농" },
-  { maker:"대주펫푸드", brand:"러브잇", cat:"간식", name:"러브잇 동결건조 닭가슴살 50g", retail:15000, factory:6500, rx:false, note:"동결건조 간식" },
+  { maker:"하림펫푸드", brand:"더리얼", cat:"건식", name:"더리얼 그레인프리 오븐베이크드 닭 1.6kg", retail:31000, factory:15500, made:"자체공장(공주)", note:"휴먼그레이드·오븐공법" },
+  { maker:"하림펫푸드", brand:"밥이보약", cat:"기능식", name:"밥이보약 건강한 장 DOG 3.4kg", retail:33200, factory:16600, made:"자체공장(공주)", note:"기능성 관리식(정가 39,800)" },
+  { maker:"우리와", brand:"ANF", cat:"건식", name:"ANF 6Free 소고기&연어 5.6kg", retail:44730, factory:21000, made:"자체공장(음성)", note:"대한제분·6대 무첨가" },
+  { maker:"카길", brand:"뉴트리나", cat:"건식", name:"뉴트리나 건강백서 건강한 장 2kg", retail:26300, factory:12000, made:"자체공장(평택)", note:"애견 월 2,500톤 국내생산" },
+  { maker:"카길", brand:"뉴트리나", cat:"건식", name:"뉴트리나 마이티 4.5kg", retail:20000, factory:9000, made:"자체공장(평택)", note:"가성비 대용량" },
+  { maker:"대주펫푸드", brand:"캐츠랑", cat:"건식", name:"캐츠랑 키튼 2kg", retail:19000, factory:8000, made:"자체공장(장항)", note:"고양이·가성비(세일 11,400)" },
+  { maker:"대주펫푸드", brand:"캐츠랑", cat:"건식", name:"캐츠랑 맘앤베이비 2kg", retail:24500, factory:10500, made:"자체공장(장항)", note:"고양이·9-FREE" },
+  { maker:"동원F&B", brand:"뉴트리플랜", cat:"건식", name:"뉴트리플랜 캣 어덜트 1.5kg", retail:12000, factory:5500, made:"자체(수산 인프라)", note:"고양이·휴먼그레이드" },
+  { maker:"사조", brand:"벤티", cat:"기능식", name:"사조 벤티 기능식 1.5kg", retail:30000, factory:14000, made:"자체공장(당진)", note:"수의학박사 협업" },
+  { maker:"정관장(KGC)", brand:"지니펫", cat:"기능식", name:"지니펫 홍삼&오리 1.2kg", retail:24000, factory:11000, made:"이레본 OEM", note:"홍삼 초프리미엄(공장無)" },
+  { maker:"풀무원아미오", brand:"아미오", cat:"건식", name:"아미오 자연담은 힘찬연어 1kg", retail:19000, factory:9000, made:"이레본 OEM", note:"국내원료(공장無)" },
+  { maker:"네추럴코어", brand:"네추럴코어", cat:"건식", name:"네추럴코어 에코2 오리 2kg", retail:25220, factory:11500, made:"이레본 OEM", note:"유기농·수출브랜드(공장無)" },
 ];
-// PB 위탁생산(OEM/ODM) 가능 국내 제조 파트너
+// PB 위탁생산(OEM/ODM) 파트너 — 자체공장 대형사는 자사생산 위주라, 실제 PB 수주는 전문 OEM이 담당
 const DOM_OEM=[
-  { name:"하림펫푸드 (익산)", cap:"건식·오븐베이크·화식·습식", moq:"1~2톤", note:"국내 최대 펫푸드 공장 · PB 위탁생산" },
-  { name:"대주펫푸드", cap:"건식·습식·처방식·간식 ODM", moq:"500kg~1톤", note:"캐츠랑 자체공장 · ODM 활발" },
-  { name:"우성사료·카길", cap:"대량 건식 사료", moq:"2톤+", note:"축산사료 인프라 · 저단가 대량" },
-  { name:"기능식 전문 OEM", cap:"기능식·영양제·처방 설계", moq:"소량 가능", note:"기능성 원료 배합 · 소량 다품종" },
+  { name:"㈜이레본 (Erebon)", cap:"건식·유기농 · 국내 최대 펫 OEM", moq:"건식 톤 단위", note:"지니펫·아미오·네추럴코어 제조 · PB 위탁이 본업" },
+  { name:"㈜에이티바이오 (ATBIO)", cap:"습식·레토르트·간식", moq:"소량 배치", note:"이마트·홈플러스·다이소 PB 간식 생산" },
+  { name:"㈜펫원 (PetONE)", cap:"츄르·간식·파우치·영양제", moq:"100~1,000개", note:"사료+간식+영양제 일괄 OEM(안성)" },
+  { name:"FTNB · 대원헬스케어", cap:"기능성 영양제(유산균·관절·오메가3)", moq:"소량 다품종", note:"펫 영양제 전문 · 진입장벽 최저" },
 ];
 const DOM_DEFAULT={ direct:.08, logi:.06, ops:.06, disc:.12, ins:.70 };
 function computeDom(it,p){
@@ -2832,7 +2834,7 @@ function DomesticSupplySection(){
   const [p,setP]=useState(DOM_DEFAULT);
   const [cat,setCat]=useState("전체");
   const set=(k)=>(v)=>setP(o=>({...o,[k]:v}));
-  const cats=["전체","건식","습식","처방식","기능식","간식"];
+  const cats=["전체","건식","기능식","습식","간식"];
   const rows=React.useMemo(()=>DOM_SUPPLY.filter(i=>cat==="전체"||i.cat===cat).map(it=>({it,...computeDom(it,p)})),[cat,p]);
   const nn=rows.length||1;
   const avgMargin=rows.reduce((s,r)=>s+r.marginPct,0)/nn;
@@ -2846,7 +2848,7 @@ function DomesticSupplySection(){
         <div><div className="aih-t">국내 공급망 <span className="opbadge" style={{verticalAlign:"3px"}}>운영</span></div>
         <div className="aih-s">국내 대형 제조사 공장 직거래 + OEM 위탁 · 총판·도매 다단계 마진 우회 · PB 자체생산</div></div></div>
 
-      <div className="srcprob" style={{background:"#EAF6EF",borderColor:"#BEE4CF"}}><Building2 size={16} color="#2E8B62"/><div><b>국내도 다단계 유통 마진</b> — 공장 출고가에 <b>총판→도매→소매</b> 마진이 겹겹이 얹혀 소비자가가 형성됩니다. HI-PET이 <b>공장과 직거래</b>(또는 <b>OEM 위탁생산</b>)하면 중간 단계를 제거해 저가 공급 + 고마진이 가능하고, 마진의 <b>{pctS(p.ins)}</b>는 무상보험·의료비 재원이 됩니다.</div></div>
+      <div className="srcprob" style={{background:"#EAF6EF",borderColor:"#BEE4CF"}}><Building2 size={16} color="#2E8B62"/><div><b>국내 시장 ~2조 · 온라인 68%</b> — 수입 빅3(로얄캐닌·마즈·퓨리나)가 <b>60%+</b> 장악하며 독점총판으로 해외 대비 <b>5~10배</b>(수입가가 국산의 3.5배). 공장 출고가에 <b>총판→도매→소매</b> 마진이 겹겹이 얹힙니다. HI-PET이 <b>공장 직거래</b> 또는 <b>국내 OEM 위탁생산</b>으로 중간단계를 제거하면 저가공급+고마진이 가능하고, 마진의 <b>{pctS(p.ins)}</b>는 무상보험·의료비 재원이 됩니다.</div></div>
 
       {/* 유통 단계 비교 */}
       <div className="simcard">
@@ -2885,7 +2887,7 @@ function DomesticSupplySection(){
         <div className="srctbl domtbl">
           <div className="sh">제조사 · 제품</div><div className="sh r">소비자가</div><div className="sh r">공장 출고가</div><div className="sh r">HI-PET 매입원가</div><div className="sh r">우리 판매가</div><div className="sh r">마진</div><div className="sh r">보험재원</div>
           {rows.map((r,i)=>(<React.Fragment key={i}>
-            <div className="sc"><div className="sbn">{r.it.maker} <span className={`cbadge ${r.it.rx?"pur":"org"}`} style={{marginLeft:4}}>{r.it.brand}</span></div><div className="spn">{r.it.name}</div><div className="sgap">{r.it.note}</div></div>
+            <div className="sc"><div className="sbn">{r.it.maker} <span className={`cbadge ${/OEM/.test(r.it.made)?"pur":"org"}`} style={{marginLeft:4}}>{r.it.brand}</span></div><div className="spn">{r.it.name}</div><div className="sgap">{r.it.note}</div><div className="srisk"><span className="rdot" style={{background:/OEM/.test(r.it.made)?"#7C3AED":"#3C9E72"}}/>{r.it.made}</div></div>
             <div className="sc r"><span className="kstrike">{won(r.it.retail)}</span></div>
             <div className="sc r">{won(r.it.factory)}</div>
             <div className="sc r">{won(r.landed)}</div>
@@ -2900,17 +2902,28 @@ function DomesticSupplySection(){
       <div className="pbcard" style={{background:"linear-gradient(135deg,#2E8B62,#256E4E)"}}>
         <div className="rct" style={{color:"#fff"}}><Award size={17} color="#fff"/> 국내 OEM/ODM 위탁생산 → HI-PET Premium 제조</div>
         <div className="pbflow"><span>AI 건강분석</span><i>→</i><span>맞춤 처방식·기능식 기획</span><i>→</i><span>국내 OEM 위탁</span><i>→</i><span>HI-PET Premium</span></div>
+        <div className="pbwhy" style={{marginTop:0,marginBottom:12}}>자체공장 대형사(하림·대주·카길)는 <b>자사 브랜드 생산 위주</b>라 외부 PB 수주가 제한적입니다. 실제 PB 위탁은 아래 <b>전문 OEM</b>이 담당 — 간식·영양제는 <b>MOQ 100~1,000개</b> 소량부터 가능합니다.</div>
         <div className="oemgrid">
           {DOM_OEM.map((o,i)=><div className="oemc" key={i}><div className="oemn">{o.name}</div><div className="oemcap">{o.cap}</div><div className="oemmeta"><span>MOQ {o.moq}</span></div><div className="oemnote">{o.note}</div></div>)}
         </div>
-        <div className="pbwhy">국내 OEM은 <b>물류·리드타임이 짧고 재고·반품 손실이 낮으며</b>, 처방식·기능식을 <b>수의 자문 + AI 위험분석</b>에 맞춰 소량 다품종으로 생산할 수 있습니다. → 병행수입·직거래를 넘어 <b>HI-PET Premium PB</b>의 실제 생산 기반.</div>
+        <div className="pbwhy"><b>HI-PET 합법 경로(자체공장 불필요)</b>: ①유통전문판매업 신고 ②사료성분 등록 ③HACCP 지정 OEM 위탁 → <b>AI 위험분석 → 맞춤 기능식·영양제 → 국내 OEM → HI-PET Premium</b>. 진입장벽 최저는 <b>유산균·관절·피부 영양제</b>(종근당 라비벳 등 성숙 시장).</div>
+      </div>
+
+      <div className="qcard">
+        <div className="rct"><AlertTriangle size={16} color="#E0662A"/> 규제·포지셔닝 유의 <span className="sub">· 반드시 반영</span></div>
+        <div className="qgrid">
+          <div className="qc"><div className="qh" style={{color:"#EF5B5B"}}>⚠ "처방식" 명칭 리스크</div><div className="qb">2026.1 개정에도 <b>'처방식' 법적 카테고리 부재</b>(검증기관 없음). 치료효능 표방 시 <b>동물용의약품</b> 영역 → 허가 필요.</div></div>
+          <div className="qc"><div className="qh" style={{color:"#3C9E72"}}>✓ 'OO 케어' 기능식 포지셔닝</div><div className="qb">신장/관절/피부 <b>"케어(기능식)"</b>로 표기. AI 위험분석 연계 맞춤 기능식이 현실적·합법적 경로.</div></div>
+          <div className="qc"><div className="qh" style={{color:"#41506B"}}>✓ 온라인 D2C 우위</div><div className="qb">시장 <b>온라인 68~80%</b>, 오픈마켓 수수료 ~10.8% 회피. 자사몰 직판이 마진·확장에 유리.</div></div>
+        </div>
+        <div className="chnote" style={{marginTop:2}}>출처: 농림축산식품부 사료관리법·표시기준(2026.1 시행), 공정위 리퓨어 RPM 판결, 데일리벳·노트펫. 실제 발주 전 규제 재확인 필요.</div>
       </div>
 
       <div className="srcnote">
         <div className="srn"><Building2 size={14} color="#2E8B62"/> <b>직거래 조건</b>: 공장 직납·자사몰 전용가·B2B 대량납품 계약으로 총판·도매 마진 제거. 대형사는 최소 발주·정산 조건 협의 필요.</div>
         <div className="srn"><Coins size={14} color="#2E8B62"/> <b>Health-InsurFin</b>: 마진의 {pctS(p.ins)}가 무상 실손보험·의료비 지원기금 재원으로 적립.</div>
       </div>
-      <div className="chnote">※ 소비자가·공장 출고가는 2024~2026 공개가 기반 <b>추정치</b>이며 리서치 검증 후 갱신됩니다. OEM MOQ·단가는 일반론 예시로, 실제는 제조사별 계약에 따릅니다.</div>
+      <div className="chnote">※ 소비자가·공장 출고가는 2024~2026 공개가 기반 <b>추정치</b>이며 리서치 검증 후 갱신됩니다. 제조사(자체공장/이레본 OEM)는 업계 보도 기반. OEM MOQ·단가는 일반론 예시로 실제는 제조사별 계약에 따릅니다.</div>
     </div>
   );
 }
@@ -3053,6 +3066,8 @@ function App(){
           admin ? <OntologySection/> : <div style={{flex:1,display:"grid",placeItems:"center",color:"var(--muted)",textAlign:"center",padding:"60px 0"}}><div><Lock size={48} color="var(--orange-soft)"/><div style={{fontSize:17,fontWeight:800,color:"var(--sub)",marginTop:14}}>운영자 전용 콘솔</div><div style={{fontSize:13,marginTop:6}}>온톨로지·빅데이터 콘솔은 관리자만 접근할 수 있습니다.<br/>좌측 하단 ‘운영자 로그인’으로 접속하세요.</div></div></div>
         ) : active==="글로벌 소싱" ? (
           admin ? <SourcingSection/> : <div style={{flex:1,display:"grid",placeItems:"center",color:"var(--muted)",textAlign:"center",padding:"60px 0"}}><div><Lock size={48} color="var(--orange-soft)"/><div style={{fontSize:17,fontWeight:800,color:"var(--sub)",marginTop:14}}>운영자 전용 콘솔</div><div style={{fontSize:13,marginTop:6}}>글로벌 소싱·마진 콘솔은 관리자만 접근할 수 있습니다.<br/>좌측 하단 ‘운영자 로그인’으로 접속하세요.</div></div></div>
+        ) : active==="국내 공급망" ? (
+          admin ? <DomesticSupplySection/> : <div style={{flex:1,display:"grid",placeItems:"center",color:"var(--muted)",textAlign:"center",padding:"60px 0"}}><div><Lock size={48} color="var(--orange-soft)"/><div style={{fontSize:17,fontWeight:800,color:"var(--sub)",marginTop:14}}>운영자 전용 콘솔</div><div style={{fontSize:13,marginTop:6}}>국내 공급망 콘솔은 관리자만 접근할 수 있습니다.<br/>좌측 하단 ‘운영자 로그인’으로 접속하세요.</div></div></div>
         ) : active==="보험" ? (
           <InsuranceSection/>
         ) : active==="AI 상담" ? (
@@ -3485,6 +3500,23 @@ css.textContent=`
 .pcnote{font-size:11.5px;color:#A9B6C8}
 .pbwhy{font-size:12.5px;color:#C9D3E0;line-height:1.65;margin-top:12px}
 .pbwhy b{color:#FFC98A}
+/* 국내 공급망 */
+.dflow{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.dfrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.dfl{flex-shrink:0;width:74px;font-size:12px;font-weight:800;color:var(--muted)}
+.dfl.hp{color:#2E8B62}
+.dfc{background:var(--cream);border:1px solid var(--border);border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:700;color:var(--text)}
+.dfc.cut{color:#C0392B;background:#FDE4E4;border-color:#F5C6C6;text-decoration:line-through;opacity:.85}
+.dfrow i{color:var(--muted);font-style:normal;font-weight:800}
+.dfsave{margin-left:6px;font-size:11.5px;font-weight:800;color:#2E8B62;background:#E4F4EC;border-radius:999px;padding:3px 10px}
+.oemgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 2px}
+.oemc{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px 13px}
+.oemn{font-size:13.5px;font-weight:800;color:#fff}
+.oemcap{font-size:12px;color:#CFE6DA;margin-top:3px}
+.oemmeta{margin-top:6px}
+.oemmeta span{font-size:11px;font-weight:800;color:#fff;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 9px}
+.oemnote{font-size:11.5px;color:#B9D4C6;margin-top:6px;line-height:1.5}
+@media(max-width:720px){ .oemgrid{grid-template-columns:1fr} .dfl{width:auto} }
 .gradecard{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
 .gc-top{display:flex;align-items:center;gap:14px}
 .gc-badge{flex-shrink:0;color:#fff;font-weight:900;font-size:15px;letter-spacing:.5px;padding:8px 16px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,.12)}
