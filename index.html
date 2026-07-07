@@ -950,7 +950,7 @@ function reportAnswer(q, R) {
   }
   // 의료비·의료 이용
   if (/의료비|병원비|의료이용|외래|입원|비용|돈/.test(t)) {
-    return `${N}님의 올해 예상 의료비는 약 ${won(R.cost.ty)}으로 동년배 평균 ${won(R.cost.tyAvg)}보다 조금 높아요. 10년 후엔 약 ${won(R.cost.y10)}으로 예상되고, 외래·입원 일수는 각각 ${R.cost.out}일, ${R.cost.inp}일 수준이에요.`;
+    return `${N}님의 올해 예상 의료비는 약 ${won(R.cost.ty)}으로 동년배 평균 ${won(R.cost.tyAvg)}보다 ${R.cost.ty >= R.cost.tyAvg ? "조금 높아요" : "낮은 편이에요"}. 10년 후엔 약 ${won(R.cost.y10)}으로 늘어날 것으로 예상돼요(생체나이 기반 추정). 모두 연간 기준이에요.`;
   }
   const personal = /내|나의|제|저의|위험|등급|얼마|몇|어때|어떤가|상태|높|낮|걸릴|발생|예측/.test(t);
   // 특정 암 (개인화 질문일 때)
@@ -1024,11 +1024,13 @@ function reportAnalysisCards(R) {
   });
   // 7) 예상 의료비
   const C = R.cost;
-  if (C) bubbles.push({ kind: "card", card: { title: "💰 예상 의료비 분석", items: [
-    `올해 약 ${money(C.ty)} (동년배 평균 ${money(C.tyAvg)}${C.ty > C.tyAvg ? " · 평균 이상 ⚠️" : ""})`,
-    `10년 후 약 ${money(C.y10)}${C.y10Avg ? ` (평균 ${money(C.y10Avg)})` : ""}`,
-    `연간 외래 ${C.out}일 · 입원 ${C.inp}일 수준`,
-  ], buttons: ["의료비 예측"] } });
+  if (C) { const dp = C.tyAvg ? Math.round((C.ty - C.tyAvg) / C.tyAvg * 100) : 0;
+    bubbles.push({ kind: "card", card: { title: "💰 예상 의료비 (연간 기준)", items: [
+      `올해 약 ${money(C.ty)} — 동년배 평균 ${money(C.tyAvg)}보다 ${dp >= 0 ? "+" + dp : dp}%${dp > 0 ? " ⚠️" : ""}`,
+      `10년 후 약 ${money(C.y10)}${C.y10Avg ? ` (평균 ${money(C.y10Avg)})` : ""} — 생체나이 기반 증가 추정`,
+      `현 추세 유지 시 10년간 누적 약 ${money(Math.round((C.ty + C.y10) / 2 * 10))} 예상`,
+    ], buttons: ["의료비 예측"] } });
+  }
   // 8) 종합 판단 + 맞춤 액션
   const focusList = [warnCancers.map((c) => c.n).join("·"), hiDz.map((d) => d.n).join("·")].filter(Boolean).join(" / ");
   bubbles.push({ kind: "card", card: { title: "🧭 종합 판단 · 우선 관리 방향", items: [
