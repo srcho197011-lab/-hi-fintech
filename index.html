@@ -2109,10 +2109,60 @@ function counselAnswer(text) {
     quicks: ["치매와 파킨슨 차이", "국가암검진 안내", "내 리포트 요약"],
   };
 }
+/* ── 계통별 질환 카테고리 — 같은 계열 질환을 증상 차이로 감별 + 관리·검진·영양·기기·생활습관 ── */
+const DZ_GROUPS = [
+  {
+    key: "women", label: "여성질환 · 비뇨생식계(N)",
+    members: [
+      { name: "방광염", keys: ["방광염", "빈뇨", "잔뇨", "소변 자주", "오줌 자주", "소변볼때"], def: "방광에 세균(주로 대장균)이 침입해 생기는 염증. 여성은 요도가 짧아(3~4cm) 흔해요.", sym: "빈뇨·배뇨통·잔뇨감·하복부 불편(발열은 드묾)", screen: "소변검사(+문진)로 진단, 항생제 치료. 자주 반복되면 비뇨의학과 정밀검사를 받으세요.", nutri: ["수분 충분히(1.5~2L)", "크랜베리(프로안토시아니딘)", "프로바이오틱스(유산균)", "비타민C"], avoid: ["카페인·알코올(방광 자극)", "탄산·매운 음식", "과도한 당분"], device: ["온열 패드(하복부 완화)", "좌욕기"], life: ["소변 참지 않고 완전 배뇨", "성관계 후 배뇨", "앞→뒤 방향 위생", "면 속옷·통풍"] },
+      { name: "요도염", keys: ["요도염", "요도 분비물", "배뇨통", "소변 따가"], def: "요도에 생기는 염증. 배뇨통·분비물이 특징이며 성매개 감염과 관련될 수 있어요.", sym: "배뇨 시 통증·요도 분비물·가려움(방광염과 혼동 쉬움)", screen: "소변·분비물 검사(필요 시 성매개감염 검사). 원인균에 맞춘 항생제.", nutri: ["수분 충분히", "프로바이오틱스", "비타민C·아연(면역)"], avoid: ["카페인·알코올·자극적 음식"], device: ["좌욕기"], life: ["안전한 성관계·파트너 동시 치료", "위생 관리", "충분한 수분"] },
+      { name: "질염", keys: ["질염", "냉이", "질 분비물", "질 가려움", "칸디다", "냉 증가"], def: "질 내 세균 균형이 무너지거나 곰팡이(칸디다)·세균·트리코모나스에 감염돼 생기는 염증.", sym: "질 분비물(냉) 색·냄새 변화·가려움·작열감(배뇨통보다 분비물·가려움 중심)", screen: "질 분비물 검사(간단·통증 적음). 원인별(항진균·항생제) 치료.", nutri: ["유산균(락토바실러스)·프로바이오틱스", "발효식품", "충분한 수분"], avoid: ["과도한 당분(칸디다 증식)", "잦은 질 세정제(정상 균총 파괴)"], device: ["좌욕기"], life: ["면 속옷·통풍·건조 유지", "꽉 끼는 옷 피하기", "질 내 세정 지양", "면역력 관리"] },
+      { name: "자궁근종", keys: ["자궁근종", "근종", "생리 과다", "월경 과다", "생리량 많"], def: "자궁 근육에 생기는 양성종양. 에스트로겐 영향으로 자라며 가임기 여성에 흔해요.", sym: "생리과다·골반통·빈혈·압박 증상(무증상도 많음)", screen: "골반 초음파로 진단·추적(무증상 시 3~6개월 추적관찰), 필요 시 MRI.", nutri: ["섬유질(과잉 에스트로겐 배출)", "오메가3(연어·고등어·아마씨·호두)", "비타민D", "녹색채소"], avoid: ["과도한 붉은 고기·포화지방", "과음(에스트로겐 대사 부담)", "정제당"], device: ["온열 패드(골반통 완화)"], life: ["정기 초음파 추적", "체중·혈당 관리", "규칙적 운동", "빈혈 시 철분 관리"] },
+      { name: "자궁내막증", keys: ["자궁내막증", "심한 생리통", "골반통", "성교통", "생리통 심"], def: "자궁내막 조직이 자궁 밖(난소·골반)에 자라는 질환. 폐경 전까지 진행돼 평생 관리가 필요해요.", sym: "심한 생리통·만성 골반통·성교통·난임(일반 생리통보다 심함)", screen: "골반 초음파(혹 있으면)·MRI. 유착만 있으면 영상 진단이 어려워 전문의 진료가 필요.", nutri: ["항염 식이·오메가3", "섬유질·과일채소", "비타민D"], avoid: ["트랜스지방·붉은 고기", "과도한 정제당·알코올"], device: ["온열 패드(골반통 완화)"], life: ["당뇨·고혈압처럼 평생 관리", "규칙적 운동·스트레스 관리", "정기 추적"] },
+    ],
+  },
+];
+function groupCounsel(text) {
+  for (const g of DZ_GROUPS) {
+    const m = g.members.find((x) => x.keys.some((k) => text.includes(k)));
+    if (!m) continue;
+    return {
+      bubbles: [
+        { kind: "text", text: `${m.name}에 대해 안내해 드릴게요.\n\n${m.def}\n\n주요 증상: ${m.sym}` },
+        { kind: "card", card: { title: `🔎 비슷한 ${g.label.split(" ")[0]} 감별 (증상 차이)`, items: g.members.map((x) => `${x.name}: ${x.sym}`), buttons: [] } },
+        { kind: "card", card: { title: "💊 도움되는 영양소 / ⚠️ 주의 영양소", items: m.nutri.map((n) => `✅ ${n}`).concat(m.avoid.map((a) => `⚠️ ${a}`)), buttons: [] } },
+        { kind: "card", card: { title: "🏠 홈케어 기기 · 🩺 생활습관", items: m.device.map((d) => `🏠 ${d}`).concat(m.life.map((l) => `· ${l}`)), buttons: [] } },
+        { kind: "card", card: { title: "🔬 검진 안내", items: [m.screen], buttons: ["🏥 병원·진료 안내"] } },
+      ],
+      quicks: g.members.filter((x) => x.name !== m.name).slice(0, 2).map((x) => x.name).concat(["내 리포트 요약"]),
+    };
+  }
+  return null;
+}
+/* 데이터하우스(disease_care.json, 197개 질병) 기반 관리 안내 — 영양·기기·식단·생활습관 */
+function dataHouseCounsel(text) {
+  if (typeof _DZCARE === "undefined" || !_DZCARE) return null;
+  const keys = Object.keys(_DZCARE);
+  const k = keys.filter((x) => x.length >= 2 && text.includes(x)).sort((a, b) => b.length - a.length)[0];
+  if (!k) return null;
+  const e = _DZCARE[k]; if (!e) return null;
+  const nm = (arr) => (arr || []).map((s) => s.name).filter(Boolean).slice(0, 4);
+  const cards = [];
+  const rec = nm(e.supplements_recommended), avo = nm(e.supplements_avoid);
+  if (rec.length || avo.length) cards.push({ kind: "card", card: { title: "💊 도움되는 영양소 / ⚠️ 주의 영양소", items: rec.map((n) => `✅ ${n}`).concat(avo.map((n) => `⚠️ ${n}`)), buttons: [] } });
+  const dev = nm(e.devices); if (dev.length) cards.push({ kind: "card", card: { title: "🏠 홈케어 기기", items: dev, buttons: [] } });
+  const diet = e.diet && (e.diet.recommend || []).slice(0, 5); if (diet && diet.length) cards.push({ kind: "card", card: { title: "🥗 건강 식단", items: diet, buttons: [] } });
+  const life = (e.lifestyle || []).map((l) => l.tip).filter(Boolean).slice(0, 4); if (life.length) cards.push({ kind: "card", card: { title: "🩺 생활습관", items: life, buttons: [] } });
+  if (!cards.length) return null;
+  return { bubbles: [{ kind: "text", text: `${k} 관리 안내예요. 데이터하우스(전 세계 가이드라인 기반)에서 정리한 영양·기기·식단·생활습관입니다.` }, ...cards], quicks: ["관련 진료과·병원 찾기", "추가 정밀검진", "내 리포트 요약"] };
+}
 function aiRespond(text, corpus, report, QA) {
   const has = (...ks) => ks.some((k) => text.includes(k));
+  const _grp = groupCounsel(text);
+  if (_grp) return _grp;
   const _counsel = counselAnswer(text);
   if (_counsel) return _counsel;
+  const _dh = dataHouseCounsel(text);
   // 음성 상담과 동일한 학습 엔진(consult) — 리포트·질병관리청 Q&A·진료지침·국가암검진/암정보, 동의어·구어 대응
   const ans = consult(text, corpus, report, QA);
   const generic = !ans || ans.startsWith("이렇게 도와드릴 수 있어요") || ans.includes("정보는 찾지 못했어요") || ans.startsWith("안녕하세요 조성래님! AI 주치의예요") || ans.startsWith("도움이 되었다니");
@@ -2125,6 +2175,7 @@ function aiRespond(text, corpus, report, QA) {
       : (isReport || isOnto) ? reportFollowupQuestions() : ["내 리포트 요약", "의료비 예측", "혈당 수치 의미"];
     return { bubbles: [{ kind: "text", text: ans }], quicks };
   }
+  if (_dh) return _dh;
   if (has("보험", "청구", "보험금", "보장"))
     return { bubbles: [{ kind: "text", text: "저는 건강검진 해석·생활관리·병원 안내를 중심으로 도와드려요. 보험 보장조회·청구는 ‘보험’ 메뉴에서 확인하시거나 전문 상담원 연결을 안내해 드릴게요." }], quicks: ["혈당 수치 의미", "내 건강 후속조치", "내 리포트 요약"] };
   if (has("퇴원", "재가", "수술", "간병", "돌봄", "방문간호", "재활"))
@@ -2163,6 +2214,7 @@ function Chat() {
   const chatMember = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   const ttsOK = typeof window !== "undefined" && !!window.speechSynthesis;
+  useEffect(() => { try { if (typeof loadDzCare === "function") loadDzCare(); } catch (e) {} }, []);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing, quicks]);
   useEffect(() => { if (!ttsOK) return; const load = () => { voicesRef.current = window.speechSynthesis.getVoices().filter((v) => /ko/i.test(v.lang)); }; load(); window.speechSynthesis.onvoiceschanged = load; return () => { try { window.speechSynthesis.onvoiceschanged = null; window.speechSynthesis.cancel(); } catch (e) {} }; }, []);
   useEffect(() => () => { if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } }, []);
