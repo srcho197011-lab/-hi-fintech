@@ -7,7 +7,7 @@ export default function App() {
   const goForward = () => { if (!fut.length) return; setHist((h) => [...h, sec]); setSecRaw(fut[0]); setFut((f) => f.slice(1)); };
   const [hdr, setHdr] = useState(null); // "noti" | "msg" | "user" | null
   const goSec = (s) => { setSec(s); setHdr(null); };
-  const cur = SECTIONS.find((x) => x.k === sec);
+  const cur = SECTIONS.find((x) => x.k === secParent(sec));
   // 통합 검색
   const [q, setQ] = useState("");
   const ql = q.trim().toLowerCase();
@@ -42,7 +42,7 @@ export default function App() {
     return () => { try { mo.disconnect(); } catch (e) {} document.removeEventListener("keydown", onKey); };
   }, []);
   const SIDE = [
-    ["dashboard", "나의 건강 대시보드", "manage"],
+    ["dashboard", "나의 건강 대시보드", "home"],
     ["calendar", "검진·예약 현황", "checkup"],
     ["wallet", "건강금융지갑 현황", "wallet"],
     ["insurance", "보험·실손 지원", "insurance"],
@@ -81,7 +81,7 @@ export default function App() {
                     {grouped[c].map((r, i) => (
                       <div className="sresult" key={i} onClick={() => goResult(r[3])}>
                         <div><div className="sl">{r[0]}</div><div className="sd">{r[1]}</div></div>
-                        <span className="sgo">{SECTIONS.find((x) => x.k === r[3])?.t} ›</span>
+                        <span className="sgo">{SECTIONS.find((x) => x.k === secParent(r[3]))?.t} ›</span>
                       </div>
                     ))}
                   </div>
@@ -134,10 +134,19 @@ export default function App() {
         </aside>
         <main className="scrollarea">
           <nav className="iconbar">
-            {SECTIONS.map((x) => (<div key={x.k} className={`iitem ${sec === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
+            {SECTIONS.map((x) => (<div key={x.k} className={`iitem ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
               <span className="ico"><SecIcon k={x.k} /></span><span className="t">{x.t}</span><span className="s">{x.s}</span></div>))}
           </nav>
-          {sec === "home" ? <HomeView onGo={setSec} /> : sec === "ai" ? <AIDoctor /> : sec === "checkup" ? <CheckupSection /> : sec === "manage" ? <HealthManageSection onGo={setSec} /> : sec === "hospital" ? <HospitalSection /> : sec === "homecare" ? <HomecareSection /> : sec === "shop" ? <ShopSection /> : sec === "insurance" ? <InsuranceSection onGo={setSec} /> : sec === "wallet" ? <WalletSection onGo={setSec} /> : sec === "nft" ? <NFTSection onGo={setSec} /> : sec === "community" ? <CommunitySection onGo={setSec} /> : sec === "mypage" ? <MyPageSection onGo={setSec} /> : sec === "social" ? <SocialSection onGo={setSec} /> : sec === "ontology" ? <OntologySection onGo={setSec} /> : sec === "demo" ? <DemoSection onGo={setSec} /> : <Scaffold meta={cur} data={SCAFFOLDS[sec]} />}
+          {(() => { const p = secParent(sec);
+            if (p === "home") return <HomeHub initial={sec} onGo={setSec} />;
+            if (p === "checkup") return <CheckupSection />;
+            if (p === "care") return <CareSection initial={sec} onGo={setSec} />;
+            if (p === "insurance") return <InsuranceSection onGo={setSec} />;
+            if (p === "mywallet") return <WalletHubSection initial={sec} onGo={setSec} />;
+            if (p === "ontology") return <OntologySection onGo={setSec} />;
+            if (sec === "demo") return <DemoSection onGo={setSec} />;
+            return <Scaffold meta={cur} data={SCAFFOLDS[sec]} />;
+          })()}
         </main>
       </div>
       {consult !== null && <ConsultModal interest={consult} onClose={() => setConsult(null)} />}

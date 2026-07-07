@@ -14,6 +14,7 @@ src/components/MyPage.jsx
 src/components/FamilyCare.jsx
 src/components/Community.jsx
 src/components/Home.jsx
+src/components/SectionGroups.jsx
 src/components/Ontology.jsx
 src/components/Whitepaper.jsx
 src/components/Finance.jsx

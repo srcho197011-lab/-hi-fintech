@@ -105,6 +105,7 @@ function SecIcon({ k }) {
       <rect x="21" y="34" width="6" height="6" rx="1" fill="#DCEBFF" />
       <rect x="18.8" y="9" width="10.4" height="9.2" rx="2.2" fill="#fff" />
       <path d="M24 11.4v4.4M21.8 13.6h4.4" stroke="#EF4444" strokeWidth="2.1" strokeLinecap="round" /></svg>);
+    case "care":
     case "homecare": return (<svg {...S}><defs>
       <linearGradient id="i-hc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#F77FBE" /><stop offset="1" stopColor="#DB2777" /></linearGradient>
       <linearGradient id="i-hc-s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FAD2B0" /><stop offset="1" stopColor="#EBB48C" /></linearGradient></defs>
@@ -129,6 +130,7 @@ function SecIcon({ k }) {
       <path d="M24 8.5 37 12.8V24c0 8.2-6.2 13.4-13 15.5C17.2 37.4 11 32.2 11 24V12.8z" fill="url(#i-in-g)" />
       <path d="M24 8.5 37 12.8V24c0 8.2-6.2 13.4-13 15.5z" fill="#0b1733" opacity=".1" />
       <path d="M18.5 24l3.7 3.7 6.5-7.4" stroke="#fff" strokeWidth="2.7" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>);
+    case "mywallet":
     case "wallet": return (<svg {...S}><defs>
       <linearGradient id="i-wl-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#37DD9C" /><stop offset="1" stopColor="#059669" /></linearGradient></defs>
       <Sh rx={11} />
@@ -269,16 +271,25 @@ function Art({ name, size = 26 }) {
     default: return (<svg {...P}><circle cx="16" cy="16" r="10" fill="#94A3B8" /><path d="M16 11v10M11 16h10" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" /></svg>);
   }
 }
+/* 고객 여정 기준 6개 섹션 — 검진→케어→보장→내 지갑→(관리자) */
 const SECTIONS = [
-  { k: "home", ic: Home, t: "홈", s: "건강지갑 통합 대시보드" }, { k: "ai", ic: Bot, t: "나의 주치의", s: "AI·전문의 상담 · 음성·화상·기기연동" },
-  { k: "checkup", ic: ClipboardList, t: "건강검진", s: "예약·결과조회·검진보험" }, { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" }, { k: "manage", ic: HeartPulse, t: "건강관리", s: "건강점수·질병위험도" },
-  { k: "hospital", ic: Building2, t: "병원/약국예약", s: "병원검색·정밀검사" }, { k: "homecare", ic: HeartHandshake, t: "재가·돌봄", s: "방문요양·간병·돌봄" },
-  { k: "shop", ic: ShoppingCart, t: "건강쇼핑", s: "영양제·식단·의료기기" },
-  { k: "wallet", ic: Wallet, t: "건강금융지갑", s: "자산·토큰·보험금" }, { k: "nft", ic: "NFT", t: "Health NFT", s: "건강인증서" },
-  { k: "community", ic: Users, t: "커뮤니티", s: "건강 커뮤니티" }, { k: "mypage", ic: Settings, t: "마이페이지", s: "개인정보·동의관리" },
-  { k: "social", ic: HeartHandshake, t: "사회적기업", s: "참여·환원·나눔 지수" },
-  { k: "ontology", ic: Network, t: "온톨로지 운영", s: "코호트·질병·검진·재무회계" },
+  { k: "home", ic: Home, t: "HI-Fin Tech란", s: "회사 소개·비전·사회환원·커뮤니티" },
+  { k: "checkup", ic: ClipboardList, t: "건강검진 예약", s: "예약·결과조회·검진보험" },
+  { k: "care", ic: HeartHandshake, t: "검진 후 케어", s: "병원진료·추가검진·재가돌봄·건강쇼핑" },
+  { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" },
+  { k: "mywallet", ic: Wallet, t: "나의 건강지갑", s: "주치의·건강관리·금융지갑·NFT·마이페이지" },
+  { k: "ontology", ic: Network, t: "온톨로지 · 하네스", s: "Ontology · Harness (운영)" },
 ];
+/* 옛 섹션 키 → 새 부모 섹션 매핑 (딥링크·onGo·헤더·검색 호환) */
+const SEC_PARENT = {
+  home: "home", social: "home", community: "home",
+  checkup: "checkup",
+  care: "care", hospital: "care", homecare: "care", shop: "care",
+  insurance: "insurance",
+  mywallet: "mywallet", ai: "mywallet", manage: "mywallet", wallet: "mywallet", nft: "mywallet", mypage: "mywallet",
+  ontology: "ontology", demo: "demo",
+};
+function secParent(k) { return SEC_PARENT[k] || k; }
 const SCAFFOLDS = {
   checkup: { color: "#2563EB", mods: [[Search, "검진센터 검색", "지역·항목별 제휴 검진센터 검색."], [CalendarCheck, "검진 예약", "예약 및 NFT 예약증 발행."], [ShieldCheck, "무료 검진보험 자동가입", "예약 시 추가 보험료 없이 자동 가입."], [FileText, "결과 업로드·AI 리포트", "검진 결과 연동 후 XAI 리포트."]] },
   manage: { color: "#16A34A", mods: [[Activity, "생체나이·건강점수", "생체나이와 노화 지표 추이."], [Brain, "질병·암 위험도", "9종 질병·10종 암 위험 예측."], [TrendingUp, "지표 추이", "생체나이·장기나이 변화 추적."], [FileText, "AI 건강 리포트", "정기 리포트와 맞춤 권고."]] },

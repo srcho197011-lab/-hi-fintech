@@ -153,6 +153,7 @@ function SecIcon({ k }) {
       <rect x="21" y="34" width="6" height="6" rx="1" fill="#DCEBFF" />
       <rect x="18.8" y="9" width="10.4" height="9.2" rx="2.2" fill="#fff" />
       <path d="M24 11.4v4.4M21.8 13.6h4.4" stroke="#EF4444" strokeWidth="2.1" strokeLinecap="round" /></svg>);
+    case "care":
     case "homecare": return (<svg {...S}><defs>
       <linearGradient id="i-hc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#F77FBE" /><stop offset="1" stopColor="#DB2777" /></linearGradient>
       <linearGradient id="i-hc-s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FAD2B0" /><stop offset="1" stopColor="#EBB48C" /></linearGradient></defs>
@@ -177,6 +178,7 @@ function SecIcon({ k }) {
       <path d="M24 8.5 37 12.8V24c0 8.2-6.2 13.4-13 15.5C17.2 37.4 11 32.2 11 24V12.8z" fill="url(#i-in-g)" />
       <path d="M24 8.5 37 12.8V24c0 8.2-6.2 13.4-13 15.5z" fill="#0b1733" opacity=".1" />
       <path d="M18.5 24l3.7 3.7 6.5-7.4" stroke="#fff" strokeWidth="2.7" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>);
+    case "mywallet":
     case "wallet": return (<svg {...S}><defs>
       <linearGradient id="i-wl-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#37DD9C" /><stop offset="1" stopColor="#059669" /></linearGradient></defs>
       <Sh rx={11} />
@@ -317,16 +319,25 @@ function Art({ name, size = 26 }) {
     default: return (<svg {...P}><circle cx="16" cy="16" r="10" fill="#94A3B8" /><path d="M16 11v10M11 16h10" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" /></svg>);
   }
 }
+/* 고객 여정 기준 6개 섹션 — 검진→케어→보장→내 지갑→(관리자) */
 const SECTIONS = [
-  { k: "home", ic: Home, t: "홈", s: "건강지갑 통합 대시보드" }, { k: "ai", ic: Bot, t: "나의 주치의", s: "AI·전문의 상담 · 음성·화상·기기연동" },
-  { k: "checkup", ic: ClipboardList, t: "건강검진", s: "예약·결과조회·검진보험" }, { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" }, { k: "manage", ic: HeartPulse, t: "건강관리", s: "건강점수·질병위험도" },
-  { k: "hospital", ic: Building2, t: "병원/약국예약", s: "병원검색·정밀검사" }, { k: "homecare", ic: HeartHandshake, t: "재가·돌봄", s: "방문요양·간병·돌봄" },
-  { k: "shop", ic: ShoppingCart, t: "건강쇼핑", s: "영양제·식단·의료기기" },
-  { k: "wallet", ic: Wallet, t: "건강금융지갑", s: "자산·토큰·보험금" }, { k: "nft", ic: "NFT", t: "Health NFT", s: "건강인증서" },
-  { k: "community", ic: Users, t: "커뮤니티", s: "건강 커뮤니티" }, { k: "mypage", ic: Settings, t: "마이페이지", s: "개인정보·동의관리" },
-  { k: "social", ic: HeartHandshake, t: "사회적기업", s: "참여·환원·나눔 지수" },
-  { k: "ontology", ic: Network, t: "온톨로지 운영", s: "코호트·질병·검진·재무회계" },
+  { k: "home", ic: Home, t: "HI-Fin Tech란", s: "회사 소개·비전·사회환원·커뮤니티" },
+  { k: "checkup", ic: ClipboardList, t: "건강검진 예약", s: "예약·결과조회·검진보험" },
+  { k: "care", ic: HeartHandshake, t: "검진 후 케어", s: "병원진료·추가검진·재가돌봄·건강쇼핑" },
+  { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" },
+  { k: "mywallet", ic: Wallet, t: "나의 건강지갑", s: "주치의·건강관리·금융지갑·NFT·마이페이지" },
+  { k: "ontology", ic: Network, t: "온톨로지 · 하네스", s: "Ontology · Harness (운영)" },
 ];
+/* 옛 섹션 키 → 새 부모 섹션 매핑 (딥링크·onGo·헤더·검색 호환) */
+const SEC_PARENT = {
+  home: "home", social: "home", community: "home",
+  checkup: "checkup",
+  care: "care", hospital: "care", homecare: "care", shop: "care",
+  insurance: "insurance",
+  mywallet: "mywallet", ai: "mywallet", manage: "mywallet", wallet: "mywallet", nft: "mywallet", mypage: "mywallet",
+  ontology: "ontology", demo: "demo",
+};
+function secParent(k) { return SEC_PARENT[k] || k; }
 const SCAFFOLDS = {
   checkup: { color: "#2563EB", mods: [[Search, "검진센터 검색", "지역·항목별 제휴 검진센터 검색."], [CalendarCheck, "검진 예약", "예약 및 NFT 예약증 발행."], [ShieldCheck, "무료 검진보험 자동가입", "예약 시 추가 보험료 없이 자동 가입."], [FileText, "결과 업로드·AI 리포트", "검진 결과 연동 후 XAI 리포트."]] },
   manage: { color: "#16A34A", mods: [[Activity, "생체나이·건강점수", "생체나이와 노화 지표 추이."], [Brain, "질병·암 위험도", "9종 질병·10종 암 위험 예측."], [TrendingUp, "지표 추이", "생체나이·장기나이 변화 추적."], [FileText, "AI 건강 리포트", "정기 리포트와 맞춤 권고."]] },
@@ -461,7 +472,7 @@ export default function App() {
   const goForward = () => { if (!fut.length) return; setHist((h) => [...h, sec]); setSecRaw(fut[0]); setFut((f) => f.slice(1)); };
   const [hdr, setHdr] = useState(null); // "noti" | "msg" | "user" | null
   const goSec = (s) => { setSec(s); setHdr(null); };
-  const cur = SECTIONS.find((x) => x.k === sec);
+  const cur = SECTIONS.find((x) => x.k === secParent(sec));
   // 통합 검색
   const [q, setQ] = useState("");
   const ql = q.trim().toLowerCase();
@@ -496,7 +507,7 @@ export default function App() {
     return () => { try { mo.disconnect(); } catch (e) {} document.removeEventListener("keydown", onKey); };
   }, []);
   const SIDE = [
-    ["dashboard", "나의 건강 대시보드", "manage"],
+    ["dashboard", "나의 건강 대시보드", "home"],
     ["calendar", "검진·예약 현황", "checkup"],
     ["wallet", "건강금융지갑 현황", "wallet"],
     ["insurance", "보험·실손 지원", "insurance"],
@@ -535,7 +546,7 @@ export default function App() {
                     {grouped[c].map((r, i) => (
                       <div className="sresult" key={i} onClick={() => goResult(r[3])}>
                         <div><div className="sl">{r[0]}</div><div className="sd">{r[1]}</div></div>
-                        <span className="sgo">{SECTIONS.find((x) => x.k === r[3])?.t} ›</span>
+                        <span className="sgo">{SECTIONS.find((x) => x.k === secParent(r[3]))?.t} ›</span>
                       </div>
                     ))}
                   </div>
@@ -588,10 +599,19 @@ export default function App() {
         </aside>
         <main className="scrollarea">
           <nav className="iconbar">
-            {SECTIONS.map((x) => (<div key={x.k} className={`iitem ${sec === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
+            {SECTIONS.map((x) => (<div key={x.k} className={`iitem ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
               <span className="ico"><SecIcon k={x.k} /></span><span className="t">{x.t}</span><span className="s">{x.s}</span></div>))}
           </nav>
-          {sec === "home" ? <HomeView onGo={setSec} /> : sec === "ai" ? <AIDoctor /> : sec === "checkup" ? <CheckupSection /> : sec === "manage" ? <HealthManageSection onGo={setSec} /> : sec === "hospital" ? <HospitalSection /> : sec === "homecare" ? <HomecareSection /> : sec === "shop" ? <ShopSection /> : sec === "insurance" ? <InsuranceSection onGo={setSec} /> : sec === "wallet" ? <WalletSection onGo={setSec} /> : sec === "nft" ? <NFTSection onGo={setSec} /> : sec === "community" ? <CommunitySection onGo={setSec} /> : sec === "mypage" ? <MyPageSection onGo={setSec} /> : sec === "social" ? <SocialSection onGo={setSec} /> : sec === "ontology" ? <OntologySection onGo={setSec} /> : sec === "demo" ? <DemoSection onGo={setSec} /> : <Scaffold meta={cur} data={SCAFFOLDS[sec]} />}
+          {(() => { const p = secParent(sec);
+            if (p === "home") return <HomeHub initial={sec} onGo={setSec} />;
+            if (p === "checkup") return <CheckupSection />;
+            if (p === "care") return <CareSection initial={sec} onGo={setSec} />;
+            if (p === "insurance") return <InsuranceSection onGo={setSec} />;
+            if (p === "mywallet") return <WalletHubSection initial={sec} onGo={setSec} />;
+            if (p === "ontology") return <OntologySection onGo={setSec} />;
+            if (sec === "demo") return <DemoSection onGo={setSec} />;
+            return <Scaffold meta={cur} data={SCAFFOLDS[sec]} />;
+          })()}
         </main>
       </div>
       {consult !== null && <ConsultModal interest={consult} onClose={() => setConsult(null)} />}
@@ -6209,6 +6229,78 @@ function ActivityGauge({ value }) {
       <text x="60" y="76" textAnchor="middle" fontSize="26" fontWeight="800" fill="#1E293B">{value}</text>
       <text x="78" y="76" textAnchor="start" fontSize="11" fill="#9AA6BC">/100</text></svg>
     <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>지난주 대비 <b style={{ color: "#EF4444" }}>▲ 8%</b></div></div>);
+}
+
+/* ====================== 고객 여정 통합 섹션 래퍼 (탭으로 기존 화면 재사용) ======================
+   - HomeHub: HI-Fin Tech란 (홈 · 사회적기업 · 커뮤니티)
+   - CareSection: 검진 후 케어 (병원 진료·추가검진 · 재가·돌봄 · 건강쇼핑)
+   - WalletHubSection: 나의 건강지갑 (주치의 · 건강관리 · 금융지갑 · Health NFT · 마이페이지)
+   initial = 현재 섹션 키(딥링크) → 해당 탭으로 진입. 탭 클릭은 내부 상태로 전환. */
+
+function GroupHead({ ic: Ic, title, sub, color }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "2px 0 12px" }}>
+      <span style={{ width: 44, height: 44, borderRadius: 13, background: (color || "#2563EB") + "16", display: "grid", placeItems: "center", flexShrink: 0 }}><Ic size={22} color={color || "#2563EB"} /></span>
+      <div><div style={{ fontSize: 19, fontWeight: 900, color: "#0F1F45", letterSpacing: -0.3 }}>{title}</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 1 }}>{sub}</div></div>
+    </div>
+  );
+}
+function GroupTabs({ tabs, tab, setTab }) {
+  return (
+    <div className="chtabs" style={{ marginBottom: 6 }}>
+      {tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}
+    </div>
+  );
+}
+
+function HomeHub({ initial, onGo }) {
+  const map = { home: "home", social: "social", community: "community" };
+  const [tab, setTab] = useState(map[initial] || "home");
+  useEffect(() => { setTab(map[initial] || "home"); }, [initial]);
+  const tabs = [["home", "홈 · 소개", Home], ["social", "사회적기업", HeartHandshake], ["community", "커뮤니티", Users]];
+  return (
+    <div style={{ marginTop: 4 }}>
+      <GroupHead ic={Home} title="HI-Fin Tech란" sub="회사 소개 · 비전 · 사회적 가치환원 · 커뮤니티" color="#2563EB" />
+      <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
+      {tab === "home" && <HomeView onGo={onGo} />}
+      {tab === "social" && <SocialSection onGo={onGo} />}
+      {tab === "community" && <CommunitySection onGo={onGo} />}
+    </div>
+  );
+}
+
+function CareSection({ initial, onGo }) {
+  const map = { care: "hospital", hospital: "hospital", homecare: "homecare", shop: "shop" };
+  const [tab, setTab] = useState(map[initial] || "hospital");
+  useEffect(() => { setTab(map[initial] || "hospital"); }, [initial]);
+  const tabs = [["hospital", "병원 진료·추가검진", Building2], ["homecare", "재가·돌봄", HeartHandshake], ["shop", "건강쇼핑", ShoppingCart]];
+  return (
+    <div style={{ marginTop: 4 }}>
+      <GroupHead ic={HeartHandshake} title="검진 후 케어" sub="검진 결과에 맞춘 병원 진료·추가 정밀검진 · 재가·돌봄 · 맞춤 건강쇼핑" color="#DB2777" />
+      <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
+      {tab === "hospital" && <HospitalSection onGo={onGo} />}
+      {tab === "homecare" && <HomecareSection onGo={onGo} />}
+      {tab === "shop" && <ShopSection onGo={onGo} />}
+    </div>
+  );
+}
+
+function WalletHubSection({ initial, onGo }) {
+  const map = { mywallet: "ai", ai: "ai", manage: "manage", wallet: "wallet", nft: "nft", mypage: "mypage" };
+  const [tab, setTab] = useState(map[initial] || "ai");
+  useEffect(() => { setTab(map[initial] || "ai"); }, [initial]);
+  const tabs = [["ai", "나의 주치의", Bot], ["manage", "건강관리", HeartPulse], ["wallet", "건강금융지갑", Wallet], ["nft", "Health NFT", BadgeCheck], ["mypage", "마이페이지", Settings]];
+  return (
+    <div style={{ marginTop: 4 }}>
+      <GroupHead ic={Wallet} title="나의 건강지갑" sub="AI 주치의 · 건강관리 · 건강금융지갑 · Health NFT · 마이페이지를 한 곳에서" color="#059669" />
+      <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
+      {tab === "ai" && <AIDoctor onGo={onGo} />}
+      {tab === "manage" && <HealthManageSection onGo={onGo} />}
+      {tab === "wallet" && <WalletSection onGo={onGo} />}
+      {tab === "nft" && <NFTSection onGo={onGo} />}
+      {tab === "mypage" && <MyPageSection onGo={onGo} />}
+    </div>
+  );
 }
 
 /* ====================== 온톨로지 운영시스템 (팔란티어 Foundry 스타일) ======================
