@@ -102,9 +102,12 @@ const CHECKUP_CAT_META = {
   special: { label: "특수검진", color: "#EA580C", intro: "산업안전보건법상 유해인자 노출 근로자의 특수건강진단을 수행하는 지정기관입니다." },
 };
 function checkupCats(c) { return CHECKUP_CATS[c.b] || ["personal"]; }
+/* 다른 섹션(AI 주치의 등)에서 특정 검진 탭으로 진입하기 위한 인텐트 */
+let _checkupTab = null;
 
 function CheckupSection() {
-  const [cat, setCat] = useState("nat");
+  const [cat, setCat] = useState(_checkupTab || "nat");
+  useEffect(() => { _checkupTab = null; }, []);
   const cats = [["nat", "국가검진", ShieldCheck], ["personal", "개인검진", BadgeCheck], ["biz", "기업검진", Users], ["special", "특수검진", AlertTriangle], ["public", "공공검진지원", HeartHandshake], ["rec", "AI 맞춤추천", Sparkles]];
   return (
     <div style={{ marginTop: 16 }}>
@@ -512,41 +515,40 @@ function BizCheckup() {
 
 /* ── 특수검진 — ①첨단 정밀검사(유전자·바이오마커) ②산업안전보건법 특수건강진단 ── */
 const PRECISION_SCREEN = [
-  {
-    dz: "파킨슨병 조기진단", color: "#7C3AED", ic: Brain,
-    desc: "도파민 신경 손상을 뇌 AI영상·혈액 단백질로 증상 전 조기 포착",
-    orgs: [
-      ["휴런 (Heuron)", "AI 뇌 MRI로 흑질 나이그로좀·뉴로멜라닌을 정량 — 파킨슨 조기진단 보조(정확도 90%+, 식약처 2등급 의료기기)"],
-      ["피플바이오", "혈액 내 알파-시누클레인 응집체 측정(CSIC·RT-QuIC 기반) 파킨슨 조기진단 기술"],
-    ],
-  },
-  {
-    dz: "치매(알츠하이머) 조기진단", color: "#2563EB", ic: Activity,
-    desc: "혈액 한 방울로 아밀로이드·타우 등 바이오마커 위험을 평가",
-    orgs: [
-      ["피플바이오 알츠온(AlzOn)", "혈액 베타-아밀로이드 응집도(MDS)로 알츠하이머 위험 평가"],
-      ["퀀타매트릭스 알츠플러스", "아밀로이드 베타 + LGALS3BP·ACE·페리오스틴 등 4종 바이오마커 통합 분석"],
-    ],
-  },
-  {
-    dz: "암 조기진단 (액체생검·유전자)", color: "#DC2626", ic: ShieldCheck,
-    desc: "혈액 속 종양 DNA(ctDNA)·메틸화로 다종 암을 조기에 선별",
-    orgs: [
-      ["아이엠비디엑스(IMBDx) 캔서파인드", "혈액 ctDNA·cfDNA 메틸레이션을 AI로 분석 — 다종 암 혈액 조기검진"],
-      ["지노믹트리 얼리텍(EarlyTec)", "메틸화 DNA 기반 대장암 등 조기진단"],
-      ["젠큐릭스", "액체생검 기반 암 예후·조기진단 검사"],
-    ],
-  },
-  {
-    dz: "발달장애·아동 질병예방 (유전체)", color: "#16A34A", ic: Users,
-    desc: "신생아·아동 유전체로 선천질환·발달 위험을 조기 확인",
-    orgs: [
-      ["EDGC 지스캐닝", "신생아 유전체 분석 — 선천성 염색체 이상·발달 관련 위험 조기 확인"],
-      ["마크로젠 젠톡", "질병예측 유전자검사(DTC) — 예방 중심 정밀의학"],
-    ],
-  },
+  { dz: "파킨슨병 조기진단", color: "#7C3AED", ic: Brain, desc: "도파민 신경 손상을 뇌 AI영상·혈액 단백질로 증상 전 조기 포착", orgs: [
+    { name: "휴런 (Heuron)", desc: "AI 뇌 MRI로 흑질 나이그로좀·뉴로멜라닌을 정량 — 파킨슨 조기진단 보조(정확도 90%+, 식약처 2등급 의료기기)", partner: true },
+    { name: "피플바이오", desc: "혈액 내 알파-시누클레인 응집체 측정(CSIC·RT-QuIC 기반) 파킨슨 조기진단 기술" },
+  ] },
+  { dz: "치매(알츠하이머) 조기진단", color: "#2563EB", ic: Activity, desc: "혈액 한 방울로 아밀로이드·타우 등 바이오마커 위험을 평가", orgs: [
+    { name: "피플바이오 알츠온(AlzOn)", desc: "혈액 베타-아밀로이드 응집도(MDS)로 알츠하이머 위험 평가" },
+    { name: "퀀타매트릭스 알츠플러스", desc: "아밀로이드 베타 + LGALS3BP·ACE·페리오스틴 등 4종 바이오마커 통합 분석" },
+  ] },
+  { dz: "암 조기진단 (액체생검·유전자)", color: "#DC2626", ic: ShieldCheck, desc: "혈액 속 종양 DNA(ctDNA)·메틸화로 다종 암을 조기에 선별", orgs: [
+    { name: "아이엠비디엑스(IMBDx) 캔서파인드", desc: "혈액 ctDNA·cfDNA 메틸레이션을 AI로 분석 — 다종 암 혈액 조기검진" },
+    { name: "지노믹트리 얼리텍(EarlyTec)", desc: "메틸화 DNA 기반 대장암 등 조기진단" },
+    { name: "젠큐릭스", desc: "액체생검 기반 암 예후·조기진단 검사" },
+  ] },
+  { dz: "발달장애·아동 질병예방 (유전체)", color: "#16A34A", ic: Users, desc: "신생아·아동 유전체로 선천질환·발달 위험을 조기 확인", orgs: [
+    { name: "EDGC 지스캐닝", desc: "신생아 유전체 분석 — 선천성 염색체 이상·발달 관련 위험 조기 확인" },
+    { name: "마크로젠 젠톡", desc: "질병예측 유전자검사(DTC) — 예방 중심 정밀의학" },
+  ] },
 ];
+/* 제휴사(샘플) 상세 혜택 — 휴런(Heuron) */
+const PRECISION_PARTNERS = {
+  "휴런 (Heuron)": {
+    tagline: "AI 뇌영상 정밀검사 · 파킨슨·치매 조기진단",
+    color: "#7C3AED",
+    tech: "MRI 기반 AI가 뇌 흑질의 나이그로좀·뉴로멜라닌을 정량 분석해 파킨슨병을 증상 전 조기 진단 보조합니다. 정확도 90%+, 식약처 2등급 의료기기 인증(휴런NM·mPDia).",
+    benefits: [
+      ["정밀검사 우대가", "HI-Fin 회원 대상 휴런 AI 뇌영상 정밀검사 제휴 할인가 적용", Percent, "#7C3AED"],
+      ["검사 후 지속케어", "검사 결과를 AI 주치의·데이터 하우스와 연동해 정기 추적·재검 알림 등 평생 케어", Activity, "#2563EB"],
+      ["무상 검진대비보험", "정밀검사 예약 시 무상 건강검진 대비보험 자동 적용(마음케어진단 포함)", ShieldCheck, "#16A34A"],
+      ["공공기관 지원 연계", "치매안심센터·지자체 어르신 건강지원·바우처 등 공공 지원제도와 연계 안내", Landmark, "#F59E0B"],
+    ],
+  },
+};
 function SpecialCheckup() {
+  const [spot, setSpot] = useState(null);
   const TYPES = [
     ["배치전 건강진단", "유해업무 배치 전 기초 건강 상태 평가"],
     ["정기 특수건강진단", "유해인자별 주기(6~24개월) 정기 검진"],
@@ -567,7 +569,18 @@ function SpecialCheckup() {
             <div key={i} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "13px 14px", borderLeft: "4px solid " + g.color }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 900, color: g.color }}><Ic size={16} /> {g.dz}</div>
               <div style={{ fontSize: 11.5, color: "var(--muted)", margin: "4px 0 6px", lineHeight: 1.5 }}>{g.desc}</div>
-              {g.orgs.map((o, j) => (<div key={j} style={{ marginTop: 7 }}><div style={{ fontSize: 12.5, fontWeight: 800, color: "#12203F" }}>{o[0]}</div><div style={{ fontSize: 11, color: "#475569", marginTop: 2, lineHeight: 1.45 }}>{o[1]}</div></div>))}
+              {g.orgs.map((o, j) => (
+                <div key={j} style={{ marginTop: 8, padding: o.partner ? "9px 10px" : 0, background: o.partner ? "#F5F3FF" : "transparent", border: o.partner ? "1px solid #DDD6FE" : "none", borderRadius: o.partner ? 10 : 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 800, color: "#12203F" }}>{o.name}</span>
+                    {o.partner && <span style={{ fontSize: 9.5, fontWeight: 800, color: "#7C3AED", background: "#EDE9FE", padding: "2px 7px", borderRadius: 999 }}>✨ 제휴사</span>}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#475569", marginTop: 2, lineHeight: 1.45 }}>{o.desc}</div>
+                  {o.partner
+                    ? <button onClick={() => setSpot(o.name)} style={{ marginTop: 8, fontSize: 11.5, fontWeight: 800, color: "#fff", background: "#7C3AED", border: "none", borderRadius: 8, padding: "6px 13px", cursor: "pointer" }}>제휴 혜택 보기 ›</button>
+                    : <button onClick={() => openConsult("정밀검사 상담 — " + o.name)} style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: "#475569", background: "#F1F5F9", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 13px", cursor: "pointer" }}>상담 문의</button>}
+                </div>
+              ))}
             </div>
           ); })}
         </div>
@@ -586,7 +599,61 @@ function SpecialCheckup() {
         <div className="chnote" style={{ marginTop: 10 }}>※ 대상 유해인자·검진 주기는 산업안전보건법 시행규칙에 따릅니다. 실제 대상 여부·주기는 사업장 작업환경측정·전문기관 확인이 필요합니다.</div>
       </div>
       <div style={{ marginTop: 14 }}><BrandDirectory catFilter="special" /></div>
+      {spot && <PrecisionPartnerModal name={spot} onClose={() => setSpot(null)} />}
     </>
+  );
+}
+
+/* 제휴사 스포트라이트 모달 — 브랜드 AI 뇌영상 비주얼 + 혜택 */
+function PartnerBrainArt({ color }) {
+  return (
+    <svg viewBox="0 0 200 120" style={{ width: "100%", display: "block" }} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs><radialGradient id="pbg" cx="50%" cy="45%" r="65%"><stop offset="0" stopColor={color} stopOpacity=".28" /><stop offset="1" stopColor={color} stopOpacity="0" /></radialGradient></defs>
+      <rect width="200" height="120" fill="#0B1220" /><rect width="200" height="120" fill="url(#pbg)" />
+      {/* scan lines */}
+      <g stroke={color} strokeOpacity=".18" strokeWidth="1">{Array.from({ length: 9 }, (_, i) => <line key={i} x1="0" y1={13 * i + 8} x2="200" y2={13 * i + 8} />)}</g>
+      {/* brain outline */}
+      <path d="M70 78c-16-2-22-16-16-27 -4-12 8-24 22-20 6-9 24-9 30 0 14-4 26 8 22 20 6 11 0 25-16 27 -3 9-19 9-21 0 -1 2-2 2-3 2 -1 0-2 0-3-2 -2 9-18 9-21 0z" fill="none" stroke={color} strokeWidth="2.4" strokeLinejoin="round" />
+      <path d="M100 34v46M84 46c8 4 8 12 0 16M116 46c-8 4-8 12 0 16M76 62c6 2 10 0 12-4M124 62c-6 2-10 0-12-4" fill="none" stroke={color} strokeWidth="1.6" strokeOpacity=".8" strokeLinecap="round" />
+      {/* AI nodes */}
+      <g fill={color}>{[[52, 40], [148, 44], [44, 84], [156, 86], [100, 100]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.4" />)}</g>
+      <g stroke={color} strokeOpacity=".5" strokeWidth="1">{[[52, 40, 84, 46], [148, 44, 116, 46], [44, 84, 76, 62], [156, 86, 124, 62], [100, 100, 100, 80]].map(([a, b, c, d], i) => <line key={i} x1={a} y1={b} x2={c} y2={d} />)}</g>
+      <text x="100" y="115" textAnchor="middle" fontSize="8" fill={color} fontWeight="700" fontFamily="system-ui">AI Brain MRI · Nigrosome</text>
+    </svg>
+  );
+}
+function PrecisionPartnerModal({ name, onClose }) {
+  const p = PRECISION_PARTNERS[name]; if (!p) return null;
+  return (
+    <div className="bkov" onClick={onClose}>
+      <div className="bk" onClick={(e) => e.stopPropagation()}>
+        <div className="bkh"><div className="bt">제휴사 · {name}</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
+        <div className="bkb">
+          <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }}><PartnerBrainArt color={p.color} /></div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
+            <span style={{ fontSize: 18, fontWeight: 900, color: "#12203F" }}>{name}</span>
+            <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", background: p.color, padding: "3px 9px", borderRadius: 999 }}>✨ HI-Fin 제휴사</span>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: p.color, marginTop: 3 }}>{p.tagline}</div>
+          <div style={{ fontSize: 12, color: "#475569", marginTop: 6, lineHeight: 1.6 }}>{p.tech}</div>
+          <div className="bklbl" style={{ marginTop: 12 }}>HI-Fin 회원 제휴 혜택</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
+            {p.benefits.map(([t, d, Ic, col], i) => (
+              <div key={i} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 13px", borderTop: "3px solid " + col }}>
+                <span style={{ width: 32, height: 32, borderRadius: 9, background: col + "1A", display: "grid", placeItems: "center" }}><Ic size={17} color={col} /></span>
+                <div style={{ fontSize: 12.5, fontWeight: 800, color: "#12203F", marginTop: 7 }}>{t}</div>
+                <div style={{ fontSize: 11, color: "#475569", marginTop: 3, lineHeight: 1.45 }}>{d}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+            <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { onClose(); openConsult("정밀검사 예약·상담 — " + name); }}><CalendarCheck size={15} /> 정밀검사 예약·상담</button>
+            <button className="cbtn" style={{ margin: 0 }} onClick={() => { onClose(); openConsult("제휴 혜택 문의 — " + name); }}>혜택 문의</button>
+          </div>
+          <div className="chnote" style={{ marginTop: 10 }}>※ 제휴 혜택·할인율·보장은 설계 예시(예정)이며, 실제 검사·보장·지원은 제휴기관·보험사·공공기관 정책 및 의료진 상담에 따릅니다.</div>
+        </div>
+      </div>
+    </div>
   );
 }
 

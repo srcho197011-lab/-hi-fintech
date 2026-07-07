@@ -560,6 +560,13 @@ function MemberCareLinks({ member }) {
     { ic: Pill, col: "#F59E0B", t: "영양 및 홈케어의료기", d: `${(R.worstNames || []).join("·") || "건강 관리"}에 맞춘 영양제·홈케어 의료기기를 추천해 드려요.`, btn: "보러 가기", to: "shop" },
   ];
   if (dzs.length) actions.push({ ic: Salad, col: "#16A34A", t: "만성질환 관리 식단", d: `${dzs.join("·")} 관리를 위한 저염·저당·균형 식단을 안내해요.`, btn: "식단 보기", to: "shop" });
+  // 은근한 정밀검사 추천 — 뇌·신경·암 위험 신호가 뚜렷할 때만
+  const _sig = cancers.concat(dzs).join(" ");
+  if (/치매|인지|알츠하이머|파킨슨|뇌졸중|뇌혈관|떨림|손저림|기억/.test(_sig)) {
+    actions.push({ ic: Brain, col: "#7C3AED", t: "뇌 정밀검사 참고", d: "뇌·신경 관련 위험 신호가 보여요. 증상이 나타나기 전 AI 뇌영상 정밀검사(예: 휴런)로 조기에 확인하는 방법도 있어요.", btn: "특수검진 살펴보기", to: "checkup", tab: "special" });
+  } else if (cancers.length) {
+    actions.push({ ic: ShieldCheck, col: "#DC2626", t: "암 정밀검사 참고", d: `${cancers[0]} 위험이 있으니, 혈액 액체생검 등 첨단 정밀 조기검진도 참고해 보세요.`, btn: "특수검진 살펴보기", to: "checkup", tab: "special" });
+  }
   return (
     <div className="adcard adcare">
       <div className="adt2"><HeartHandshake size={16} color="#16A34A" /> {N}님 맞춤 건강 액션 — 다른 섹션 연계 안내</div>
@@ -569,7 +576,7 @@ function MemberCareLinks({ member }) {
             <span className="ci" style={{ background: a.col + "1A", color: a.col }}><a.ic size={20} /></span>
             <div className="ct">{a.t}</div>
             <div className="cd">{a.d}</div>
-            <button className="cbtn" style={{ margin: "8px 0 0", width: "100%" }} onClick={() => nav(a.to)}>{a.btn} <ChevronRight size={13} /></button>
+            <button className="cbtn" style={{ margin: "8px 0 0", width: "100%" }} onClick={() => { if (a.tab) _checkupTab = a.tab; nav(a.to); }}>{a.btn} <ChevronRight size={13} /></button>
           </div>
         ))}
       </div>
