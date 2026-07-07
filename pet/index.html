@@ -144,6 +144,7 @@ const DbIcon=mk('<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.
 const DnaIcon=mk('<path d="M4 3c0 5 8 6 8 11s-8 6-8 11"/><path d="M20 3c0 5-8 6-8 11s8 6 8 11"/><path d="M6 6h12M6.5 9h11M6.5 15h11M6 18h12"/>');
 const Lock=mk('<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>');
 const Globe=mk('<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>');
+const LogOut=mk('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>');
 const Ship=mk('<path d="M12 10.2V14"/><path d="M12 2v3"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M19.4 20A11.6 11.6 0 0 0 21 14l-8.2-3.6a2 2 0 0 0-1.6 0L3 14a11.6 11.6 0 0 0 2.8 7.8"/><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>');
 
 /* ===== 입체 일러스트 아이콘 (휴먼 스타일: 레이어드 SVG + 광택/그림자) ===== */
@@ -455,6 +456,8 @@ const MENU = [
 ];
 // 운영자(관리자) 데모 계정 — 이 ID로 로그인해야 '온톨로지 콘솔'이 보임
 const ADMIN_ID="admin", ADMIN_PW="hipet2026", ADMIN_NAME="조성래";
+// HI-PET 앱 진입 게이트 계정 (승인된 계정만 접속)
+const GATE_ID="hipet", GATE_PW="hipet01";
 
 const QUICK = [
   { label:"AI 상담", art:"chat", go:"AI 상담" }, { label:"병원 예약", art:"calendar", go:"병원/예약" },
@@ -539,7 +542,7 @@ function AdminLogin({onClose,onOk}){
   );
 }
 
-function Sidebar({active,setActive,open,onClose,admin,setAdmin}){
+function Sidebar({active,setActive,open,onClose,admin,setAdmin,onExit}){
   const [login,setLogin]=useState(false);
   const go=(l)=>{setActive(l);onClose&&onClose();};
   return (
@@ -602,6 +605,7 @@ function Sidebar({active,setActive,open,onClose,admin,setAdmin}){
           </>) : (
             <button onClick={()=>setLogin(true)} className="oplogout"><Lock size={13}/> 운영자 로그인</button>
           )}
+          <button onClick={()=>{ if(onExit)onExit(); onClose&&onClose(); }} className="gateout"><LogOut size={13}/> HI-PET 로그아웃</button>
         </div>
       </aside>
       {login && <AdminLogin onClose={()=>setLogin(false)} onOk={()=>{ setLogin(false); setAdmin(true); go("펫 온톨로지"); toast("운영자 모드 · 온톨로지 콘솔 활성화"); }}/>}
@@ -2872,18 +2876,47 @@ function OntoUnderwriting({onto,dz}){
 }
 
 /* ============================ APP ============================ */
+function HipetLogin({onOk}){
+  const [id,setId]=useState(""),[pw,setPw]=useState(""),[err,setErr]=useState(""),[shake,setShake]=useState(false);
+  const submit=()=>{ if(id.trim()===GATE_ID&&pw===GATE_PW){ onOk(); }
+    else { setErr("아이디 또는 비밀번호가 올바르지 않습니다."); setShake(true); setTimeout(()=>setShake(false),480); } };
+  return (
+    <div className="gate">
+      <div className={`gatecard${shake?" shake":""}`}>
+        <div className="gatelogo"><PawPrint size={32} color="#fff"/></div>
+        <div className="gatetitle"><b>HI</b>-PET</div>
+        <div className="gatesub">반려동물 헬스케어 · 펫보험 · 핀테크 통합 플랫폼</div>
+        <div className="gatenotice"><Lock size={13}/> 승인된 계정만 접속할 수 있습니다.</div>
+        <div className="gatef">
+          <label>아이디</label>
+          <input value={id} onChange={e=>{setId(e.target.value);setErr("");}} placeholder="아이디" onKeyDown={e=>{if(e.key==="Enter")submit();}} autoFocus/>
+          <label>비밀번호</label>
+          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} placeholder="비밀번호" onKeyDown={e=>{if(e.key==="Enter")submit();}}/>
+        </div>
+        {err && <div className="aerr" style={{marginTop:12}}>{err}</div>}
+        <button className="gatebtn" onClick={submit}><PawPrint size={16}/> 로그인</button>
+        <div className="gatefoot">※ 본 서비스는 비공개 시연 환경입니다. 승인된 계정만 접속 가능하며, 접속 정보는 이 기기(브라우저)에만 저장됩니다.</div>
+        <div className="gatehint">데모 계정 · <b>{GATE_ID}</b> / <b>{GATE_PW}</b></div>
+      </div>
+    </div>
+  );
+}
+
 function App(){
   const [active,setActive]=useState("홈");
   const [open,setOpen]=useState(false);
+  const [gate,setGate]=useState(()=>SLS.get("hipet_gate",false));
+  useEffect(()=>{ SLS.set("hipet_gate",gate); },[gate]);
   const [admin,setAdmin]=useState(true); // 조성래 운영자 자동 로그인
   useEffect(()=>{ SLS.set("hipet_admin",admin); },[admin]);
   const [toastMsg,setToastMsg]=useState(null);
   useEffect(()=>{ window.__hipetToast=(m)=>{ setToastMsg(m); clearTimeout(window.__hipetToastT); window.__hipetToastT=setTimeout(()=>setToastMsg(null),2600); }; return ()=>{ window.__hipetToast=null; }; },[]);
+  if(!gate) return <HipetLogin onOk={()=>setGate(true)}/>;
   return (
     <NavCtx.Provider value={setActive}>
     {toastMsg && <div className="toast">{toastMsg}</div>}
     <div style={{display:"flex",minHeight:"100vh"}}>
-      <Sidebar active={active} setActive={setActive} open={open} onClose={()=>setOpen(false)} admin={admin} setAdmin={setAdmin}/>
+      <Sidebar active={active} setActive={setActive} open={open} onClose={()=>setOpen(false)} admin={admin} setAdmin={setAdmin} onExit={()=>{ setGate(false); setActive("홈"); }}/>
       <main style={{flex:1,minWidth:0,padding:"24px 28px 8px",display:"flex",flexDirection:"column"}}>
         <TopBar onMenu={()=>setOpen(true)}/>
         <QuickBar nav={setActive}/>
@@ -3211,6 +3244,35 @@ css.textContent=`
 .aerr{margin-top:10px;font-size:12.5px;font-weight:700;color:#D33;background:#FDE4E4;padding:8px 11px;border-radius:10px}
 .adhint{margin-top:12px;text-align:center;font-size:12px;color:var(--muted)}
 .adhint b{color:var(--orange-deep)}
+/* HI-PET 진입 로그인 게이트 */
+.gate{min-height:100vh;display:grid;place-items:center;padding:24px;
+  background:linear-gradient(135deg,#F4843C 0%,#FFB547 55%,#FFD79A 100%)}
+.gatecard{width:100%;max-width:400px;background:#fff;border-radius:26px;padding:38px 34px 28px;
+  box-shadow:0 24px 60px rgba(150,80,30,.32);text-align:center}
+.gatecard.shake{animation:gshake .45s}
+@keyframes gshake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.gatelogo{width:66px;height:66px;margin:0 auto 16px;border-radius:20px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--orange),var(--amber));box-shadow:0 10px 22px rgba(244,132,60,.45)}
+.gatetitle{font-size:30px;font-weight:900;letter-spacing:-1px;color:var(--text)}
+.gatetitle b{color:var(--orange-deep)}
+.gatesub{font-size:12.5px;color:var(--sub);margin-top:6px}
+.gatenotice{margin:20px 0 6px;background:var(--cream);border:1px solid var(--border);border-radius:12px;
+  padding:11px;font-size:12.5px;font-weight:700;color:var(--sub);display:flex;align-items:center;justify-content:center;gap:6px}
+.gatef{text-align:left;margin-top:10px}
+.gatef label{display:block;font-size:12.5px;font-weight:800;color:var(--sub);margin:12px 0 5px}
+.gatef input{width:100%;padding:13px 15px;border:1.5px solid var(--border);border-radius:13px;font-size:14.5px;background:#fff}
+.gatef input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(244,132,60,.15)}
+.gatebtn{width:100%;margin-top:20px;padding:14px;border:none;border-radius:14px;cursor:pointer;
+  font-size:15px;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;gap:7px;
+  background:linear-gradient(135deg,var(--orange),var(--amber));box-shadow:0 8px 20px rgba(244,132,60,.4)}
+.gatebtn:hover{filter:brightness(1.04)}
+.gatebtn:active{transform:translateY(1px)}
+.gatefoot{font-size:11px;color:var(--muted);line-height:1.6;margin-top:20px}
+.gatehint{margin-top:12px;font-size:12px;color:var(--muted)}
+.gatehint b{color:var(--orange-deep)}
+.gateout{width:100%;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;
+  border-radius:11px;font-size:12px;font-weight:700;cursor:pointer;color:var(--orange-deep);background:none;border:1px solid #FBDABB}
+.gateout:hover{background:var(--cream)}
 /* 글로벌 소싱 콘솔 */
 .srcprob{display:flex;gap:10px;background:#FFF3E8;border:1px solid #FBDABB;border-radius:14px;padding:14px 16px;margin-bottom:14px;font-size:13px;color:var(--sub);line-height:1.65}
 .srcprob b{color:var(--text)}

@@ -2478,7 +2478,7 @@ function deepCards(name) {
   if (dc.length) out.push({ kind: "card", card: { title: "💊 주요 약물·치료 · ⚠️ 합병증", items: dc, buttons: [] } });
   if ((d.interact || []).length) out.push({ kind: "card", card: { title: "💊 복약·상호작용 주의 (약·음식 함께 먹을 때)", items: d.interact, buttons: [] } });
   if ((d.age || []).length) out.push({ kind: "card", card: { title: "👶🧓 연령·성별 맞춤 주의신호", items: d.age, buttons: [] } });
-  if ((d.red || []).length) out.push({ kind: "card", card: { title: "🚨 응급신호 — 이럴 땐 즉시 병원·119", items: d.red, buttons: [] } });
+  if ((d.red || []).length) out.push({ kind: "card", card: { title: "🚨 응급신호 — 이럴 땐 즉시 병원·119", items: d.red, buttons: ["🚨 응급신호 자가체크"] } });
   return out;
 }
 /* DZ_DEEP에만 있고 데이터하우스 197개에 없는 질환(예: 뇌수막염)도 상담되도록 */
@@ -2655,6 +2655,7 @@ function Chat() {
   const send = (textArg) => {
     const text = (textArg ?? input).trim(); if (!text) return;
     if (text === "🔬 특수검진 정밀검사 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "special"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
+    if (text === "🚨 응급신호 자가체크" || text === "🚨 응급신호 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "emergency"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }
     setInput(""); setPlus(false); setQuicks([]);
     const meId = ++UID;
@@ -3161,10 +3162,98 @@ function checkupCats(c) { return CHECKUP_CATS[c.b] || ["personal"]; }
 /* 다른 섹션(AI 주치의 등)에서 특정 검진 탭으로 진입하기 위한 인텐트 */
 let _checkupTab = null;
 
+/* ====== 응급신호 통합 뷰 — "이런 증상은 즉시 119" (증상 → 의심질환 → 행동) ======
+   ※ 참고용 자가체크. 판단이 서지 않으면 무조건 119. 진단을 대체하지 않습니다. */
+const EMERGENCY_GUIDE = [
+  { area: "뇌·신경", col: "#DB2777", items: [
+    ["갑자기 한쪽 팔다리 마비·얼굴 비뚤어짐·발음 어눌·시야장애", "뇌졸중", "즉시 119 (골든타임 4.5시간)"],
+    ["번개 치듯 갑작스런 최악의 두통·목 뻣뻣함·구토", "뇌출혈·지주막하출혈", "즉시 119"],
+    ["경련이 5분 이상 지속되거나 의식 회복 없이 반복", "경련지속상태", "즉시 119"],
+  ] },
+  { area: "심장·가슴", col: "#DC2626", items: [
+    ["20분 이상 가슴을 쥐어짜는 통증·식은땀·왼팔/턱 방사통", "급성 심근경색", "즉시 119 (여성·고령·당뇨는 흉통 없이 소화불량·극심한 피로로도)"],
+    ["찢어지는 듯한 갑작스런 가슴·등·복부 통증·실신", "대동맥박리·파열", "즉시 119"],
+    ["실신·심한 어지럼과 함께 심하게 두근거림", "치명적 부정맥", "즉시 119"],
+  ] },
+  { area: "호흡·기도", col: "#0EA5E9", items: [
+    ["숨이 심하게 차고 입술·얼굴이 파랗게 변함(청색증)", "천식·COPD 악화·기흉·폐색전증", "즉시 119"],
+    ["침을 흘리며 삼키지 못하고 앉아서 고개 내밀고 힘겹게 숨쉼", "급성 후두개염(기도폐색)", "즉시 119"],
+    ["한쪽 다리가 붓고 아프면서 갑자기 숨이 참·각혈", "폐색전증", "즉시 119"],
+  ] },
+  { area: "알레르기·쇼크", col: "#F59E0B", items: [
+    ["입술·혀 부종·전신 두드러기·호흡곤란·어지럼", "아나필락시스", "에피네프린 주사 후 즉시 119"],
+    ["고열·오한·의식저하·소변량 급감·혈압저하", "패혈증", "즉시 119"],
+  ] },
+  { area: "복부·소화", col: "#B45309", items: [
+    ["피를 토하거나 짜장 같은 검은 변", "위장관 출혈", "즉시 응급실"],
+    ["배가 판자처럼 딱딱하고 극심한 복통", "장천공·복막염", "즉시 응급실"],
+    ["명치에서 등으로 뻗치는 극심한 통증·구토", "급성 췌장염·담관염", "즉시 응급실"],
+  ] },
+  { area: "대사·당뇨", col: "#7C3AED", items: [
+    ["식은땀·손떨림·혼란 후 의식이 흐려짐", "저혈당", "의식 있으면 당분 섭취, 없으면 즉시 119"],
+    ["심한 갈증·구토·과호흡·의식저하", "당뇨병성 케톤산증·고혈당", "즉시 응급실"],
+  ] },
+  { area: "눈", col: "#16A34A", items: [
+    ["갑작스런 눈 통증·충혈·시력저하·구토·무지개 잔상", "급성 폐쇄각 녹내장", "즉시 안과 응급(실명 위험)"],
+    ["번쩍임·날파리 급증과 함께 커튼이 시야를 가림", "망막박리", "즉시 안과(응급 수술 골든타임)"],
+    ["갑자기 한쪽 귀가 안 들리고 이명·어지럼", "돌발성 난청", "72시간 내 즉시 이비인후과"],
+  ] },
+  { area: "감염·소아", col: "#0D9488", items: [
+    ["고열 + 심한 두통·목 뻣뻣함·구토·자반(점상출혈)", "뇌수막염", "즉시 119"],
+    ["소아가 경련 5분 이상·경련 후 목 뻣뻣·의식 안 돌아옴", "열성경련·뇌수막염 감별", "옆으로 눕히고 즉시 119"],
+    ["아이가 소변·눈물 없이 축 처지고 못 먹음", "중증 탈수", "즉시 응급실"],
+  ] },
+  { area: "사지·혈관", col: "#4F46E5", items: [
+    ["갑자기 한쪽 팔/다리가 창백·차갑고 심한 통증·감각저하", "급성 동맥폐색", "즉시 119 (6시간 골든타임)"],
+    ["소변이 전혀 안 나오고 아랫배가 팽창·통증", "급성 요폐", "즉시 응급실(도뇨)"],
+    ["4시간 이상 지속되는 통증성 발기", "지속발기증", "즉시 응급실(조직손상)"],
+  ] },
+  { area: "임신·산후", col: "#E11D48", items: [
+    ["임신 20주 후 심한 두통·시야 번쩍임·상복부 통증·급격한 부종", "자간전증(임신중독증)", "즉시 진료, 경련 시 119"],
+    ["출산 후 다량 하혈·발열·한쪽 다리가 붓고 아픔", "산후출혈·혈전", "즉시 진료/응급"],
+  ] },
+  { area: "정신 응급", col: "#6366F1", items: [
+    ["자살 생각·자해 충동이 든다", "정신과적 응급", "자살예방상담 1393 · 즉시 응급실"],
+    ["금주 후 심한 손떨림·환각·발한·경련·의식혼탁", "진전섬망(알코올 금단)", "즉시 응급실"],
+  ] },
+];
+function EmergencyGuide() {
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div className="card" style={{ background: "linear-gradient(135deg,#7F1D1D 0%,#B91C1C 55%,#DC2626 100%)", color: "#fff", border: "none" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 30 }}>🚨</span>
+          <div>
+            <div style={{ fontSize: 19, fontWeight: 800 }}>응급신호 — 이런 증상은 즉시 119</div>
+            <div style={{ fontSize: 12.5, opacity: .92, marginTop: 3 }}>증상 → 의심질환 → 행동. 판단이 서지 않으면 <b>무조건 119</b>. 참고용 자가체크이며 진단을 대체하지 않습니다.</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+          <a href="tel:119" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", color: "#B91C1C", fontWeight: 800, fontSize: 13.5, borderRadius: 9, padding: "9px 15px", textDecoration: "none" }}><Phone size={15} /> 119 응급 신고</a>
+          <a href="tel:1393" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.18)", color: "#fff", fontWeight: 800, fontSize: 13.5, borderRadius: 9, padding: "9px 15px", textDecoration: "none", border: "1px solid rgba(255,255,255,.5)" }}><Phone size={15} /> 자살예방 1393</a>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 12, marginTop: 12 }}>
+        {EMERGENCY_GUIDE.map((g, i) => (
+          <div className="card" key={i} style={{ borderTop: `4px solid ${g.col}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 800, fontSize: 15, color: g.col, marginBottom: 8 }}><AlertTriangle size={16} /> {g.area}</div>
+            {g.items.map((it, j) => (
+              <div key={j} style={{ padding: "9px 0", borderTop: j ? "1px solid var(--line)" : "none" }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.45 }}>{it[0]}</div>
+                <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 3 }}>의심: <b style={{ color: g.col }}>{it[1]}</b></div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 2, color: "#DC2626" }}>→ {it[2]}</div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 function CheckupSection() {
   const [cat, setCat] = useState(_checkupTab || "nat");
   useEffect(() => { _checkupTab = null; }, []);
-  const cats = [["nat", "국가검진", ShieldCheck], ["personal", "개인검진", BadgeCheck], ["biz", "기업검진", Users], ["special", "특수검진", AlertTriangle], ["public", "공공검진지원", HeartHandshake], ["rec", "AI 맞춤추천", Sparkles]];
+  const cats = [["nat", "국가검진", ShieldCheck], ["personal", "개인검진", BadgeCheck], ["biz", "기업검진", Users], ["special", "특수검진", AlertTriangle], ["public", "공공검진지원", HeartHandshake], ["rec", "AI 맞춤추천", Sparkles], ["emergency", "🚨 응급신호", AlertTriangle]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="checkup" /></span>
@@ -3180,6 +3269,7 @@ function CheckupSection() {
       {cat === "special" && <SpecialCheckup />}
       {cat === "public" && <PublicSupport />}
       {cat === "rec" && <AICheckupRec onGoCenters={() => setCat("personal")} />}
+      {cat === "emergency" && <EmergencyGuide />}
       {cat === "result" && <CheckupResults />}
     </div>
   );

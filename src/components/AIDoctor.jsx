@@ -1685,7 +1685,7 @@ function deepCards(name) {
   if (dc.length) out.push({ kind: "card", card: { title: "💊 주요 약물·치료 · ⚠️ 합병증", items: dc, buttons: [] } });
   if ((d.interact || []).length) out.push({ kind: "card", card: { title: "💊 복약·상호작용 주의 (약·음식 함께 먹을 때)", items: d.interact, buttons: [] } });
   if ((d.age || []).length) out.push({ kind: "card", card: { title: "👶🧓 연령·성별 맞춤 주의신호", items: d.age, buttons: [] } });
-  if ((d.red || []).length) out.push({ kind: "card", card: { title: "🚨 응급신호 — 이럴 땐 즉시 병원·119", items: d.red, buttons: [] } });
+  if ((d.red || []).length) out.push({ kind: "card", card: { title: "🚨 응급신호 — 이럴 땐 즉시 병원·119", items: d.red, buttons: ["🚨 응급신호 자가체크"] } });
   return out;
 }
 /* DZ_DEEP에만 있고 데이터하우스 197개에 없는 질환(예: 뇌수막염)도 상담되도록 */
@@ -1862,6 +1862,7 @@ function Chat() {
   const send = (textArg) => {
     const text = (textArg ?? input).trim(); if (!text) return;
     if (text === "🔬 특수검진 정밀검사 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "special"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
+    if (text === "🚨 응급신호 자가체크" || text === "🚨 응급신호 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "emergency"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }
     setInput(""); setPlus(false); setQuicks([]);
     const meId = ++UID;
