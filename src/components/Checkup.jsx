@@ -84,33 +84,50 @@ function KoreaMap({ selected, onPick }) {
   );
 }
 
+/* ── 검진 대분류 분류: 각 검진기관의 성격 → 국가·개인·기업·특수 (공공검진지원은 별도 지원 프로그램) ── */
+const CHECKUP_CATS = {
+  "한국건강관리협회": ["nat", "personal", "special"],
+  "KMI한국의학연구소": ["nat", "personal", "biz", "special"],
+  "하나로의료재단": ["personal", "biz", "nat"],
+  "서울의과학연구소(SCL)": ["personal", "special"],
+  "한신메디피아": ["personal", "biz", "nat"],
+  "삼성서울병원": ["nat", "personal", "biz", "special"],
+  "서울대학교병원": ["nat", "personal", "biz", "special"],
+  "세브란스": ["nat", "personal", "biz", "special"],
+};
+const CHECKUP_CAT_META = {
+  nat: { label: "국가검진", color: "#16A34A", intro: "국민건강보험공단 지정기관에서 생애주기별 국가건강검진(일반·암검진)을 본인부담 0원으로 받을 수 있는 기관입니다." },
+  personal: { label: "개인검진", color: "#2563EB", intro: "개인 맞춤 종합검진·정밀검진(암·심뇌혈관 등)을 제공하는 검진센터·병원입니다." },
+  biz: { label: "기업검진", color: "#7C3AED", intro: "기업 임직원 단체검진·복지검진을 제공하는 기관입니다(B2B)." },
+  special: { label: "특수검진", color: "#EA580C", intro: "산업안전보건법상 유해인자 노출 근로자의 특수건강진단을 수행하는 지정기관입니다." },
+};
+function checkupCats(c) { return CHECKUP_CATS[c.b] || ["personal"]; }
+
 function CheckupSection() {
-  const [cat, setCat] = useState("kahp");
-  const cats = [["kahp", "한건협 공공검진", HeartHandshake], ["kmi", "KMI 대형검진", Building2], ["brand", "브랜드 검진기관", BadgeCheck], ["comp", "종합검진", ClipboardList], ["nat", "국가검진", ShieldCheck], ["gov", "지자체 협력", Landmark], ["biz", "기업검진", Users], ["rec", "AI 맞춤추천", Sparkles]];
+  const [cat, setCat] = useState("nat");
+  const cats = [["nat", "국가검진", ShieldCheck], ["personal", "개인검진", BadgeCheck], ["biz", "기업검진", Users], ["special", "특수검진", AlertTriangle], ["public", "공공검진지원", HeartHandshake], ["rec", "AI 맞춤추천", Sparkles]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="checkup" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강검진</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>한건협 공공검진 · KMI 대형검진 · 브랜드 검진기관 · 종합·국가·기업검진 · AI 맞춤추천 · 전국 비교·예약</div></div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강검진</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>국가검진 · 개인검진 · 기업검진 · 특수검진 · 공공검진지원 — 검진기관 성격별 분류·비교·예약</div></div></div>
       <AiLinkBanner target="checkup" />
       <div className="chtabs">
         {cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}
         <div className={`reslink ${cat === "result" ? "on" : ""}`} onClick={() => setCat("result")}><FileText size={14} /> 검진결과·사후관리</div>
       </div>
-      {cat === "kahp" && <BrandDirectory only="한국건강관리협회" />}
-      {cat === "kmi" && <BrandDirectory only="KMI한국의학연구소" />}
-      {cat === "brand" && <BrandDirectory />}
-      {cat === "comp" && <CenterDirectory mode="comp" />}
-      {cat === "nat" && <NationalCheckup />}
-      {cat === "gov" && <GovPartnership mode="checkup" />}
-      {cat === "biz" && <BizCheckup />}
-      {cat === "rec" && <AICheckupRec onGoCenters={() => setCat("comp")} />}
+      {cat === "nat" && <BrandDirectory catFilter="nat" />}
+      {cat === "personal" && <BrandDirectory catFilter="personal" />}
+      {cat === "biz" && <><BrandDirectory catFilter="biz" /><div style={{ marginTop: 14 }}><BizCheckup /></div></>}
+      {cat === "special" && <SpecialCheckup />}
+      {cat === "public" && <PublicSupport />}
+      {cat === "rec" && <AICheckupRec onGoCenters={() => setCat("personal")} />}
       {cat === "result" && <CheckupResults />}
     </div>
   );
 }
 /* 브랜드 검진기관 디렉토리(큐레이션 51곳) — 한건협(공공·대중형)·KMI(대형) 별도 카테고리 */
 const FEATURED_BRANDS = ["한국건강관리협회", "KMI한국의학연구소"];
-function BrandDirectory({ only }) {
+function BrandDirectory({ only, catFilter }) {
   const single = !!only, isKahp = only === "한국건강관리협회", isKmi = only === "KMI한국의학연구소";
   const [brand, setBrand] = useState("전체");
   const [sido, setSido] = useState("전체");
@@ -123,7 +140,7 @@ function BrandDirectory({ only }) {
   // 큐레이션 검진기관 → 예약 모달용 센터 객체(무가격). 한건협=기본형(공공), 그 외=고급형(프리미엄)
   const toCenter = (c) => ({ name: c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n, r: ssido(c.sd), area: c.sg, tags: [c.t, META[c.b]?.tier || "검진기관"], _noPrice: true, _plan: c.b === "한국건강관리협회" ? "basic" : "premium" });
   const rank = (s) => (typeof SIDO_RANK !== "undefined" && SIDO_RANK[s]) || 99;
-  const base = ALL.filter((c) => only ? c.b === only : !FEATURED_BRANDS.includes(c.b));
+  const base = ALL.filter((c) => only ? c.b === only : catFilter ? checkupCats(c).includes(catFilter) : !FEATURED_BRANDS.includes(c.b));
   const brands = single ? [] : ["전체", ...Array.from(new Set(base.map((c) => c.b)))];
   const brandList = base.filter((c) => single || brand === "전체" || c.b === brand);
   const sidos = ["전체", ...Array.from(new Set(brandList.map((c) => c.sd))).sort((a, b) => rank(a) - rank(b))];
@@ -138,6 +155,7 @@ function BrandDirectory({ only }) {
         <div className="cname">{c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n} <span className="cbadge" style={{ color: m.col, background: (m.col || "#2563EB") + "1A" }}>{m.short}</span>{partner && <span className="cbadge partnerbadge"><Sparkles size={9} /> 특별제휴</span>}</div>
         <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{ssido(c.sd)}</span> · <MapPin size={12} />{c.sg} · {c.t}{c.p !== "-" && <> · <Phone size={12} />{c.p}</>}</div>
         <div className="ctags"><span>{c.t}</span><span>{m.tier || "검진기관"}</span></div>
+        <div className="ctags" style={{ marginTop: 4 }}>{checkupCats(c).map((k) => { const cm = CHECKUP_CAT_META[k]; return <span key={k} style={{ background: cm.color + "18", color: cm.color, fontWeight: 800, border: "none" }}>{cm.label}</span>; })}</div>
         <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, lineHeight: 1.45 }}>{c.ad}</div>
       </div>
       <div className="cright">
@@ -148,6 +166,12 @@ function BrandDirectory({ only }) {
   ); };
   return (
     <>
+      {catFilter && CHECKUP_CAT_META[catFilter] && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: CHECKUP_CAT_META[catFilter].color + "12", border: "1px solid " + CHECKUP_CAT_META[catFilter].color + "33", borderRadius: 14, padding: "13px 16px", marginBottom: 12 }}>
+          <span style={{ width: 40, height: 40, borderRadius: 11, background: CHECKUP_CAT_META[catFilter].color + "22", display: "grid", placeItems: "center", flexShrink: 0, fontSize: 18, fontWeight: 900, color: CHECKUP_CAT_META[catFilter].color }}>{CHECKUP_CAT_META[catFilter].label[0]}</span>
+          <div><div style={{ fontSize: 15, fontWeight: 900, color: "#12203F" }}>{CHECKUP_CAT_META[catFilter].label} · 전국 {base.length}개 기관</div><div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>{CHECKUP_CAT_META[catFilter].intro}</div></div>
+        </div>
+      )}
       {isKahp && (
         <div className="kmibanner kahp">
           <div className="kmibt"><HeartHandshake size={18} /> 한국건강관리협회 — 공공·대중형 건강검진</div>
@@ -484,6 +508,89 @@ function BizCheckup() {
     </div>
     <button className="cbtn" style={{ marginTop: 10 }} onClick={() => openConsult("기업검진 도입")}><MessageSquare size={15} /> 기업검진 도입 문의</button>
   </div>);
+}
+
+/* ── 특수검진 — 산업안전보건법상 특수건강진단 ── */
+function SpecialCheckup() {
+  const TYPES = [
+    ["배치전 건강진단", "유해업무 배치 전 기초 건강 상태 평가"],
+    ["정기 특수건강진단", "유해인자별 주기(6~24개월) 정기 검진"],
+    ["수시 건강진단", "직업성 증상·소견 발생 시 수시 실시"],
+    ["임시 건강진단", "집단 발병 우려 시 지방고용노동청 명령"],
+  ];
+  const HAZARDS = [
+    ["소음·진동", "청력·근골격"], ["분진(광물·목재)", "폐기능·흉부"],
+    ["유기용제·중금속", "간·신장·혈액"], ["야간작업", "심혈관·수면"], ["방사선", "혈액·갑상선"],
+  ];
+  return (
+    <>
+      <div className="card" style={{ borderTop: "3px solid #EA580C" }}>
+        <div className="rct"><AlertTriangle size={18} color="#EA580C" /> 특수건강진단 (산업안전보건법)</div>
+        <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}><b>유해인자에 노출되는 근로자</b>의 직업병을 조기 발견·예방하기 위해 사업주가 실시하는 법정 건강진단입니다. HI-Fin은 특수건강진단 지정기관과 연계해 <b>기업 근로자 검진 여정</b>을 관리합니다.</p>
+        <div className="bklbl" style={{ marginTop: 6 }}>진단 유형</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 8 }}>
+          {TYPES.map(([t, d], i) => (<div key={i} style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, padding: "10px 12px" }}><b style={{ fontSize: 12.5, color: "#C2410C" }}>{t}</b><div style={{ fontSize: 11, color: "#9A3412", marginTop: 3, lineHeight: 1.4 }}>{d}</div></div>))}
+        </div>
+        <div className="bklbl" style={{ marginTop: 12 }}>주요 유해인자 · 검사</div>
+        <div className="ctags">{HAZARDS.map(([h, e], i) => <span key={i} style={{ background: "#FFEDD5", color: "#C2410C", border: "none", fontWeight: 700 }}>{h} → {e}</span>)}</div>
+        <div className="chnote" style={{ marginTop: 10 }}>※ 대상 유해인자·검진 주기는 산업안전보건법 시행규칙에 따릅니다. 실제 대상 여부·주기는 사업장 작업환경측정·전문기관 확인이 필요합니다.</div>
+      </div>
+      <div style={{ marginTop: 14 }}><BrandDirectory catFilter="special" /></div>
+    </>
+  );
+}
+
+/* ── 공공검진지원 — 노인 건강지원·장애아동 재활지원 (나눔 연계) ── */
+function SupportCard({ t, d, src, color }) {
+  return (
+    <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "13px 15px", borderLeft: "4px solid " + color }}>
+      <div style={{ fontSize: 13.5, fontWeight: 800, color: "#12203F" }}>{t}</div>
+      <div style={{ fontSize: 12, color: "#475569", marginTop: 5, lineHeight: 1.55 }}>{d}</div>
+      <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 6 }}>근거·출처: {src}</div>
+    </div>
+  );
+}
+function PublicSupport() {
+  const ELDER = [
+    ["치매안심센터 무료 조기검진", "만 60세 이상 누구나 무료 치매 조기검진 · 진단검사비 최대 15만원·감별검사비 최대 11만원 지원(중위소득 120% 이하)", "보건복지부·치매안심센터"],
+    ["노인맞춤돌봄서비스", "65세 이상 취약 노인 대상 안전확인·건강관리·사회참여 등 맞춤 돌봄 제공", "보건복지부"],
+    ["치매 치료관리비 지원", "만 60세 이상 치매환자 진료비·약제비 본인부담 월 3만원 한도(중위소득 140% 이하)", "보건복지부"],
+    ["노인성 질환 의료비 지원", "노인성 질환 예방·조기발견·치료에 필요한 비용 전부/일부 지원(국가·지자체)", "노인복지법"],
+    ["노인 의료·돌봄 통합지원", "살던 곳에서 의료·요양·돌봄을 통합 제공하는 시범사업", "보건복지부·건보공단"],
+  ];
+  const KID = [
+    ["발달재활서비스 바우처", "만 18세 미만 등록장애아동(중위소득 180% 이하)에게 언어·미술·음악·행동·놀이·심리운동 재활치료 바우처 지원", "장애아동복지지원법 제21조"],
+    ["발달재활 제공기관", "장애인복지관·시·군·구 지정기관에서 서비스 제공(사회서비스 전자바우처에서 지역 기관 검색)", "사회서비스전자바우처"],
+    ["권역 공공어린이재활병원", "장애·중증 아동의 재활치료·의료를 지역에서 받을 수 있는 공공 재활의료 기반", "보건복지부"],
+    ["장애 조기발견·발달진단", "장애 조기발견 및 발달진단·부모상담 지원(9세 미만 장애 예견 아동 포함)", "발달재활서비스"],
+  ];
+  return (
+    <>
+      <div style={{ background: "linear-gradient(120deg,#0E9F6E,#16A34A)", color: "#fff", borderRadius: 14, padding: "16px 18px", marginBottom: 14 }}>
+        <div style={{ fontSize: 16, fontWeight: 900, display: "flex", alignItems: "center", gap: 8 }}><HeartHandshake size={18} /> 공공검진지원 — 건강 형평성을 위한 나눔</div>
+        <p style={{ fontSize: 12.5, opacity: .95, marginTop: 6, lineHeight: 1.6 }}>HI-Fin이 지향하는 <b>어르신 건강</b>과 <b>장애아동 재활</b> 지원 제도·기관을 안내하고, 판매마진 나눔을 이 영역으로 순환시킵니다.</p>
+      </div>
+
+      <div className="card" style={{ borderTop: "3px solid #4F46E5" }}>
+        <div className="rct"><Users size={18} color="#4F46E5" /> 어르신 건강·의료비 지원</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 9, marginTop: 8 }}>
+          {ELDER.map((e, i) => <SupportCard key={i} t={e[0]} d={e[1]} src={e[2]} color="#4F46E5" />)}
+        </div>
+        <div className="socsplit-extra" style={{ marginTop: 12 }}><Sparkles size={13} color="#4F46E5" /> HI-Fin 연계(예정): <b>한국노인나눔재단</b>과 함께 판매마진 나눔을 <b>어르신 치료비 사각지대</b> 지원으로 순환</div>
+      </div>
+
+      <div className="card" style={{ borderTop: "3px solid #DB2777", marginTop: 14 }}>
+        <div className="rct"><Activity size={18} color="#DB2777" /> 장애아동 재활 지원</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 9, marginTop: 8 }}>
+          {KID.map((e, i) => <SupportCard key={i} t={e[0]} d={e[1]} src={e[2]} color="#DB2777" />)}
+        </div>
+        <div className="socsplit-extra" style={{ marginTop: 12 }}><Sparkles size={13} color="#DB2777" /> HI-Fin 연계(예정): <b>잼잼테라퓨틱스 · 장애아동복지 재단</b> 등과 함께 <b>장애아동 재활치료</b> 지원</div>
+      </div>
+
+      <button className="cbtn" style={{ marginTop: 12 }} onClick={() => openConsult("공공검진지원·나눔 문의")}><MessageSquare size={15} /> 공공검진지원·나눔 참여 문의</button>
+      <div className="chnote" style={{ marginTop: 10 }}>※ 제도·지원금·대상 기준은 정부·지자체 정책(2025 기준)이며 변동될 수 있습니다. 제휴기관·연계는 예정이며, 실제 지원은 각 기관·제도의 신청·심사 절차에 따릅니다. 정확한 내용은 보건복지부·정부24·사회서비스전자바우처에서 확인하세요.</div>
+    </>
+  );
 }
 
 function CheckupResults() {
