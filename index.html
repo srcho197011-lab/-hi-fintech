@@ -6124,16 +6124,6 @@ function HomeView({ onGo }) {
         </div>
         <div className="rcart"><span className="rcic"><FileText size={40} color="#fff" /></span></div>
       </div>
-      <div className="ontocta" onClick={() => go("ontology")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") go("ontology"); }}>
-        <div className="ontocta-glow" /><div className="ontocta-glow g2" />
-        <div className="ontocta-l">
-          <span className="ontocta-badge"><Network size={13} /> 운영 · 파일럿 온톨로지</span>
-          <div className="ontocta-t">온톨로지 운영시스템</div>
-          <p>파일럿 체험회원 <b>1만명 · 가족(가구) 구조</b>를 팔란티어형 온톨로지(객체·관계·액션)로 운영합니다 — 진료과목·질병·건강검진·예상의료비·보험담보·나눔대상을 하나의 지식그래프로.</p>
-          <div className="ontocta-mini"><span><Users size={12} /> 회원·가족</span><span><HeartPulse size={12} /> 질병·검진</span><span><Banknote size={12} /> 예상의료비</span><span><Landmark size={12} /> 재무회계·밸류에이션</span></div>
-        </div>
-        <div className="ontocta-r"><OntoCtaArt /><button className="ontocta-btn" onClick={(e) => { e.stopPropagation(); go("ontology"); }}><Network size={16} /> 운영시스템 열기 <ChevronRight size={15} /></button></div>
-      </div>
       <div className="profile">
         <span className="pa">{nm[0]}</span>
         <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 체험 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 검진일 2024.12.26 · 등록번호 ${PT.reg}`}</div></div>
