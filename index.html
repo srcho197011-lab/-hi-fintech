@@ -2841,11 +2841,53 @@ function CenterDetailModal({ center, onClose, onBook }) {
   );
 }
 
+/* ── 검진 예약 커넥터 (UIP) — 제휴 검진센터 실제 예약 연동 스위치 ──
+   status "pending"(연동 준비) → "live"(실연동)로 바꾸고 endpoint만 넣으면
+   예약 확정 시 즉시 실제 예약이 전송(API)되거나 예약 페이지로 이동(URL)한다.
+   ★ 실제 연동 확정 시 아래 status/endpoint/method 3개 값만 수정하면 즉시 시행. */
+const PARTNER_BOOKING = {
+  "한신메디피아": {
+    partner: "한신메디피아",
+    uipCode: "HANSHIN-MEDIPIA",   // UIP 통합연동 커넥터 식별자
+    method: "uip",                 // "uip" | "api" | "url" | "tel"
+    status: "pending",             // ★ 실연동 확정 시 "live"
+    endpoint: "",                  // ★ 실제 UIP/예약 API 엔드포인트 또는 예약 URL
+    tel: "1811-0303",              // 폴백 전화예약(예시)
+    note: "UIP 통합연동 준비 중 — 연동 확정 시 예약 요청이 한신메디피아로 실시간 전송됩니다.",
+  },
+};
+function getBooking(center) {
+  if (!center) return null;
+  const key = center.b || center.brand || "";
+  if (PARTNER_BOOKING[key]) return PARTNER_BOOKING[key];
+  const nm = center.name || center.n || "";
+  for (const k in PARTNER_BOOKING) if (nm.indexOf(k) >= 0) return PARTNER_BOOKING[k];
+  return null;
+}
+/* 예약 전송 — live면 실제 연동(URL 이동 또는 API POST), 아니면 요청 접수(대기) */
+function submitCheckupBooking(center, payload) {
+  const cfg = getBooking(center);
+  if (cfg && cfg.status === "live" && cfg.endpoint) {
+    if (cfg.method === "url") { try { window.open(cfg.endpoint, "_blank", "noopener"); } catch (e) {} return { mode: "live-url", cfg }; }
+    try { fetch(cfg.endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }).catch(() => {}); } catch (e) {}
+    return { mode: "live-api", cfg };
+  }
+  return { mode: cfg ? "pending" : "demo", cfg };
+}
+
 function BookingModal({ center, mode, onClose }) {
   const [date, setDate] = useState(null);
   const [time, setTime] = useState(null);
   const [done, setDone] = useState(false);
   const [insOpen, setInsOpen] = useState(false);
+  const [bookRes, setBookRes] = useState(null);
+  const partnerCfg = getBooking(center);
+  const onConfirm = () => {
+    const r = submitCheckupBooking(center, { center: center.name, brand: center.b, date, time, plan: (typeof planName !== "undefined" ? planName : ""), items: center.tags });
+    setBookRes(r); setDone(true);
+  };
+  const rm = bookRes ? bookRes.mode : "demo";
+  const doneTitle = rm === "pending" ? "예약 요청이 접수되었습니다" : rm === "live-url" ? "한신메디피아 예약 페이지로 이동" : rm === "live-api" ? "예약이 전송되었습니다" : "예약이 확정되었습니다";
   const COVERS = (typeof CHECK_COVERS !== "undefined") ? CHECK_COVERS : [];
   // 플랜 매칭: 국가검진/공공→기본형, 50만 미만→표준형, 50만 이상→고급형
   const PLAN_MAP = {
@@ -2871,6 +2913,15 @@ function BookingModal({ center, mode, onClose }) {
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {center.r} · {center.area}</div>
               {center._noPrice ? <div style={{ marginTop: 6, fontSize: 12.5, fontWeight: 800, color: "var(--blue)" }}>{(center.tags && center.tags[0]) || "검진"} · 검진비 기관 문의 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 무상 검진대비보험 자동적용</span></div> : mode === "nat" ? <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--green)" }}>공단검진 본인부담 0원 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 추가검사 별도</span></div> : <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--blue)" }}>{won(center.price)} <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600, textDecoration: "line-through" }}>{won(center.orig)}</span></div>}
             </div>
+            {partnerCfg && (
+              <div style={{ marginTop: 12, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: "11px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 800, color: "#1D4ED8" }}>
+                  <Network size={14} /> {partnerCfg.partner} UIP 실시간 예약 연동
+                  <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 800, padding: "2px 9px", borderRadius: 999, background: partnerCfg.status === "live" ? "#DCFCE7" : "#FEF3C7", color: partnerCfg.status === "live" ? "#15803D" : "#B45309" }}>{partnerCfg.status === "live" ? "● 실시간 연동" : "연동 준비중"}</span>
+                </div>
+                <div style={{ fontSize: 11.5, color: "#475569", marginTop: 5, lineHeight: 1.5 }}>{partnerCfg.status === "live" ? `예약 확정 시 ${partnerCfg.partner} 예약 시스템으로 실시간 전송됩니다.` : partnerCfg.note}</div>
+              </div>
+            )}
             <div onClick={() => setInsOpen((v) => !v)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(120deg,#0E9F6E,#16A34A)", color: "#fff", borderRadius: 12, padding: "12px 14px", marginTop: 12, boxShadow: "0 12px 24px -16px rgba(16,163,74,.75)" }}>
               <span style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={20} color="#fff" /></span>
               <div style={{ flex: 1, fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>건강검진 예약과 동시에 <b style={{ color: "#FDE68A" }}>무상 건강검진 대비보험</b>이 자동 적용됩니다. <u>보장 조회 ›</u></div>
@@ -2889,12 +2940,20 @@ function BookingModal({ center, mode, onClose }) {
             <div className="slots">{slots.map((s) => <div key={s} className={`slot ${time === s ? "on" : ""}`} onClick={() => setTime(s)}>{s}</div>)}</div>
             <div className="bklbl">검진 항목</div>
             <div className="ctags">{center.tags.map((t) => <span key={t}>{t}</span>)}</div>
-            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => setDone(true)}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
+            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={onConfirm}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
           </>) : (
             <div className="bkconfirm">
               <div className="ic"><Check size={30} color="#16A34A" /></div>
-              <div style={{ fontWeight: 800, fontSize: 17 }}>예약이 확정되었습니다</div>
+              <div style={{ fontWeight: 800, fontSize: 17 }}>{doneTitle}</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{center.name}<br />{date} {time}</div>
+              {partnerCfg && rm === "pending" && (
+                <div style={{ marginTop: 12, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 12px", textAlign: "left" }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: "#B45309", display: "flex", alignItems: "center", gap: 6 }}><Network size={13} /> {partnerCfg.partner} UIP 연동 준비중</div>
+                  <div style={{ fontSize: 11.5, color: "#92400E", marginTop: 4, lineHeight: 1.5 }}>예약 요청이 접수되었습니다. 연동 확정 시 <b>{partnerCfg.partner}로 실시간 전송</b>되며, 그 전까지는 아래 번호로 즉시 예약하실 수 있습니다.</div>
+                  <a href={`tel:${partnerCfg.tel}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 12.5, fontWeight: 800, color: "#fff", background: "#2563EB", borderRadius: 8, padding: "7px 13px", textDecoration: "none" }}><Phone size={13} /> {partnerCfg.partner} 전화예약 {partnerCfg.tel}</a>
+                </div>
+              )}
+              {partnerCfg && rm === "live-url" && (<div style={{ marginTop: 10, fontSize: 12, color: "#1D4ED8" }}>새 창에서 {partnerCfg.partner} 예약을 완료해 주세요.</div>)}
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>무상 건강검진 대비보험 — {planName}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>추가 보험료 없이 검진 대비 보장(마음케어진단 포함)이 무상 적용됩니다.</div></div></div>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic"><BadgeCheck size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>NFT 예약증 발행</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>지갑에 SBT 예약증이 발행되고 알림톡이 발송됩니다.</div></div></div>
