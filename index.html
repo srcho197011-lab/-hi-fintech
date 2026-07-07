@@ -2456,6 +2456,34 @@ function multiOrganCounsel(text) {
   });
   return { bubbles, quicks: list.slice(0, 3).map((o) => `${o.short} 정밀검사`).concat(["내 리포트 요약"]) };
 }
+/* ── 다중 질환/암 분리 응답 — "위암 대장암 차이"처럼 여러 주제를 물으면 각각 요약 + 자세히 ── */
+function collectTopics(text) {
+  const t = (text || ""); const out = []; const seen = new Set();
+  const add = (name, obj) => { if (!seen.has(name)) { seen.add(name); out.push(obj); } };
+  CANCER_KB.forEach((c) => { if (c.keys.some((k) => t.includes(k))) add(c.name, { name: c.name, kind: "cancer", c }); });
+  COUNSEL_KB.forEach((e) => { if (e.name !== "암 조기검진" && e.keys.some((k) => t.includes(k))) add(e.name, { name: e.name, kind: "counsel", e }); });
+  if (typeof DZ_GROUPS !== "undefined") DZ_GROUPS.forEach((g) => g.members.forEach((m) => { if (m.keys.some((k) => t.includes(k))) add(m.name, { name: m.name, kind: "disease", m }); }));
+  return out;
+}
+function multiTopicCounsel(text) {
+  if (/자세히|자세하게/.test(text || "")) return null; // 개별 상세 요청은 통과
+  const topics = collectTopics(text);
+  if (topics.length < 2) return null;
+  const cmp = /차이|비교|vs|다른점|구분|감별|둘다|모두/.test(text || "");
+  const first = (s) => (s || "").split(/[.。]\s?/)[0];
+  const list = topics.slice(0, 4);
+  const bubbles = [{ kind: "text", text: `${list.map((x) => x.name).join(" · ")}을(를) 나눠서 ${cmp ? "비교·" : ""}안내해 드릴게요. 🩺\n※ 초안(전문가 검토 전제) — 진단·처방을 대체하지 않아요.` }];
+  list.forEach((x) => {
+    if (x.kind === "cancer") { const c = x.c; const sym = c.sym.find((s) => !/무증상/.test(s)) || c.sym[0];
+      bubbles.push({ kind: "card", card: { title: `🎗 ${c.name}`, items: [`${first(c.desc)}.`, `위험인자: ${c.risk[0]}`, `대표 증상: ${sym}`, `검진: ${c.screen[0]}`], buttons: [`${c.name} 자세히`] } });
+    } else if (x.kind === "counsel") { const e = x.e;
+      bubbles.push({ kind: "card", card: { title: `🩺 ${e.name}`, items: [`${first(e.def)}.`, `차이: ${e.diff[0]}`, `관리: ${e.manage[0]}`], buttons: [`${e.name} 자세히`] } });
+    } else { const m = x.m;
+      bubbles.push({ kind: "card", card: { title: `🩺 ${m.name}`, items: [m.def, `주요 증상: ${m.sym}`, `검진: ${m.screen}`].filter(Boolean), buttons: [`${m.name} 자세히`] } });
+    }
+  });
+  return { bubbles, quicks: list.slice(0, 3).map((x) => `${x.name} 자세히`).concat(["내 리포트 요약"]) };
+}
 function counselAnswer(text) {
   const t = (text || "");
   const e = COUNSEL_KB.find((c) => c.keys.some((k) => t.includes(k)));
@@ -2955,6 +2983,8 @@ function aiRespond(text, corpus, report, QA) {
   const has = (...ks) => ks.some((k) => text.includes(k));
   if (text.includes("다른 약 검색") || (text.includes("약") && has("어떤 약", "약 종류", "무슨 약", "약물 목록")))
     return { bubbles: [{ kind: "text", text: "약 이름을 입력하시면 효능·복용법·부작용·상호작용·응급신호를 안내해 드려요. 아래 예시를 눌러보셔도 돼요.\n※ 정보 제공용이며 진단·처방을 대체하지 않습니다." }], quicks: ["메트포르민 부작용", "와파린 주의사항", "아스피린", "스타틴", "타이레놀 복용법"] };
+  const _topics = multiTopicCounsel(text);
+  if (_topics) return _topics;
   const _organs = multiOrganCounsel(text);
   if (_organs) return _organs;
   const _cancer = cancerCounsel(text);
