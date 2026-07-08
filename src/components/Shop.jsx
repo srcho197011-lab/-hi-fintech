@@ -138,7 +138,22 @@ function PrecisionNutritionSection() {
   );
 }
 
+/* 특별제휴 배너 제품 이미지 갤러리(다나와 CDN) — 투자자용 프리미엄 배너 */
+const SP_GALLERY = {
+  "GN바디닥터": [
+    { name: "요실금 치료기", img: "https://img.danuri.io/catalog-image/873/087/005/dc5f8f1fcf7d4ebfa25a280c1d59f26e.jpg?shrink=300:300" },
+    { name: "EMS 벨트", img: "https://img.danuri.io/catalog-image/806/711/096/8521a2f838bf4ef3977b7d602e06796b.jpg?shrink=300:300" },
+    { name: "고주파 리페어", img: "https://img.danuri.io/catalog-image/661/859/042/10db7d05c42a4d0b8bc7bf5a84569161.jpg?shrink=300:300" },
+    { name: "음파 매트", img: "https://img.danuri.io/catalog-image/664/325/015/34a602c077034c6ebaa72220a9877803.jpg?shrink=300:300" },
+  ],
+};
+function SpGalleryImg({ g }) {
+  const [err, setErr] = useState(false);
+  if (err) return <div className="spgmock"><Stethoscope size={26} /></div>;
+  return <img src={g.img} alt={g.name} loading="lazy" referrerPolicy="no-referrer" onError={() => setErr(true)} />;
+}
 function ShopPartnerCard({ p }) {
+  const gallery = (typeof SP_GALLERY !== "undefined") ? SP_GALLERY[p.name] : null;
   return (
     <div className="spcard" style={{ background: p.bg }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -148,6 +163,9 @@ function ShopPartnerCard({ p }) {
       </div>
       <div className="spname">{p.name}{p.brand && <span> · {p.brand}</span>}</div>
       <div className="spsub">{p.tagline}</div>
+      {gallery && <div className="spgallery">{gallery.map((g, i) => (
+        <div className="spgitem" key={i}><div className="spgimg"><SpGalleryImg g={g} /></div><span className="spgcap">{g.name}</span></div>
+      ))}</div>}
       <div className="spgrid">
         {p.strengths.map(([a, t, d], i) => <div className="spitem" key={i}><span className="si"><Art name={a} size={22} /></span><div><b>{t}</b><p>{d}</p></div></div>)}
       </div>
