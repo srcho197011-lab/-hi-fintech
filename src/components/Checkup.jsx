@@ -196,7 +196,7 @@ function EmergencyGuide() {
 function CheckupSection() {
   const [cat, setCat] = useState(_checkupTab || "nat");
   useEffect(() => { _checkupTab = null; }, []);
-  const cats = [["nat", "국가검진", ShieldCheck], ["personal", "개인검진", BadgeCheck], ["biz", "기업검진", Users], ["special", "특수검진", AlertTriangle], ["public", "공공검진지원", HeartHandshake], ["rec", "AI 맞춤추천", Sparkles], ["emergency", "🚨 응급신호", AlertTriangle]];
+  const cats = [["nat", "국가검진", ShieldCheck], ["personal", "개인검진", BadgeCheck], ["biz", "기업검진", Users], ["special", "특수검진", AlertTriangle], ["public", "공공검진지원", HeartHandshake], ["rec", "AI 맞춤추천", Sparkles], ["doctor", "🩺 AI 주치의", Bot], ["emergency", "🚨 응급신호", AlertTriangle]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="checkup" /></span>
@@ -212,6 +212,7 @@ function CheckupSection() {
       {cat === "special" && <SpecialCheckup />}
       {cat === "public" && <PublicSupport />}
       {cat === "rec" && <AICheckupRec onGoCenters={() => setCat("personal")} />}
+      {cat === "doctor" && <div style={{ marginTop: 8 }}><div className="chnote" style={{ margin: "0 0 10px" }}>검진 관련이나 건강 궁금증을 AI 주치의에게 물어보세요. AI Super Agent에서 넘어온 상담도 여기서 이어집니다.</div><Chat acceptsSeed /></div>}
       {cat === "emergency" && <EmergencyGuide />}
       {cat === "result" && <CheckupResults />}
     </div>
