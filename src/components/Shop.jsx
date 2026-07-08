@@ -1154,14 +1154,18 @@ function MealShop() {
 }
 function ShopSection() {
   const [cat, setCat] = useState(() => { try { return (typeof window !== "undefined" && window._shopIntel) ? "intel" : "diet"; } catch (e) { return "diet"; } });
-  const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["intel", "AI 상담사", Sparkles], ["sports", "스포츠건강", Activity]];
+  const cats = [["diet", "건강식단", Salad, "#16A34A"], ["supp", "영양제", Pill, "#7C3AED"], ["device", "홈케어의료기", Stethoscope, "#0891B2"], ["intel", "AI 상담사", Sparkles, "#EA580C"], ["sports", "스포츠건강", Activity, "#E11D48"]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="shop" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강쇼핑</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
       <PrecisionNutritionSection />
-      <div className="chtabs">{cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}</div>
+      <div className="shopcats">{cats.map(([k, t, Ic, c]) => (
+        <button key={k} className={`shopcat ${cat === k ? "on" : ""}`} style={{ "--cc": c }} onClick={() => setCat(k)}>
+          <span className="sc-ic"><Ic size={17} /></span><span className="sc-t">{t}</span>
+        </button>
+      ))}</div>
       {cat === "diet" && <>
         <div className="bklbl" style={{ margin: "2px 0 8px" }}><Sparkles size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 건강식단 특별제휴사</div>
         <div className="spsm-grid">{(SHOP_PARTNERS.diet || []).map((p) => <ShopPartnerCardSm key={p.name} p={p} />)}</div>
@@ -1170,7 +1174,7 @@ function ShopSection() {
         <MealShop />
       </>}
       {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
-      {cat === "device" && <ShopCategory catKey="device" label="의료기기" />}
+      {cat === "device" && <ShopCategory catKey="device" label="홈케어의료기" />}
       {cat === "intel" && <ShopConsultant />}
       {cat === "sports" && <SportsHealth />}
     </div>
