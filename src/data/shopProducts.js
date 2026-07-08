@@ -97,4 +97,6 @@ const SUPP_MEMBERS = [
   { tag: "효소·소재", company: "제노포커스", product: "기능성 효소·프리바이오틱스(GOS)", desc: "기능성 효소 소재 및 건강기능식품", type: "원료·소재·자사몰", url: "https://genofocusmall.co.kr/", col: "#1E40AF", q: "제노포커스 효소" },
   { tag: "맞춤 영양", company: "바이오뉴트리온", product: "맞춤영양 솔루션", desc: "데이터 기반 개인 맞춤 영양설계·디지털 헬스", type: "맞춤영양 서비스", url: "https://www.bionutrion.kr/", col: "#166534", q: "바이오뉴트리온 맞춤영양" },
   { tag: "맞춤 영양", company: "디이프", product: "데이터 맞춤영양(iFood)", desc: "푸드데이터·유전자 기반 개인 맞춤 식품·영양 추천", type: "맞춤영양 앱", url: "https://d-if.kr/", col: "#7C3AED", q: "디이프 DIIF 맞춤영양" },
+  { tag: "암·만성질환 영양", company: "조윈", product: "헬스인슈 맞춤 건강기능식품", desc: "암·만성질환 환우 맞춤 건기식 구독+보험 결합(헬스인슈, 국내 최초 특허)", type: "맞춤영양·구독", url: "https://www.jowin.co.kr", col: "#0D9488", q: "조윈 건강기능식품 헬스인슈" },
+  { tag: "의약외품·상처케어", company: "㈜메디콥", product: "밴드닥터·클린덤", desc: "방수·습윤 상처밴드(밴드닥터)·알콜스왑(클린덤) 등 의약외품 유통 전문", type: "의약외품·의료용품", url: "https://hkmedi.co.kr/store/615448", col: "#0EA5E9", q: "메디콥 밴드닥터 클린덤 알콜스왑" },
 ];
