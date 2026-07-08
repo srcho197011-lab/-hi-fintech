@@ -2527,6 +2527,8 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .suppmeal .mealthumb .pimgphoto{width:100%;height:100%;object-fit:contain;padding:11px;display:block;}
 .suppmeal .mealthumb > svg{width:100%;height:100%;padding:8px;}
 .mealbadge.rocket{background:#1B6DEF;box-shadow:0 2px 6px -2px rgba(27,109,239,.65);letter-spacing:-.2px;}
+.devmock{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.devmock span{font-size:11px;font-weight:800;}
 /* AI Super Agent — 섹션 안내 버튼 그리드 */
 .agentgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px;margin:8px 0 16px;}
 .agentcard{display:flex;flex-direction:column;gap:4px;text-align:left;background:#fff;border:1px solid var(--border);border-radius:14px;padding:13px 14px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .1s;}

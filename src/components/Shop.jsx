@@ -865,6 +865,102 @@ function SupplementShop() {
     </>
   );
 }
+/* ===== 건강쇼핑 — 홈케어 의료기기몰(영양제몰과 동일 쿠팡 구조·건강적립금 25%) ===== */
+const deviceMedia = (id) => (typeof DEVICE_MEDIA !== "undefined" && DEVICE_MEDIA[id]) || {};
+function deviceLowestHref(p) {
+  const dan = deviceMedia(p.id).danawa; if (dan) return dan;
+  const q = encodeURIComponent(((p.name || "") + " " + (p.brand || "")).trim());
+  return "https://search.shopping.naver.com/search/all?query=" + q + "&sort=price_asc";
+}
+function DeviceImage({ p }) {
+  const [imgErr, setImgErr] = useState(false);
+  const media = deviceMedia(p.id);
+  if (media.image && !imgErr) return <img className="pimgphoto" src={media.image} alt={`${p.brand} ${p.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setImgErr(true)} />;
+  const m = (typeof DEVICE_CATS !== "undefined" && DEVICE_CATS[p.category]) || { col: "#0891B2" };
+  return <div className="devmock" style={{ color: m.col }}><Stethoscope size={40} /><span>{(p.brand || "").slice(0, 10)}</span></div>;
+}
+function DeviceShop() {
+  const PRODUCTS = (typeof DEVICE_PRODUCTS !== "undefined") ? DEVICE_PRODUCTS : [];
+  const CATS = (typeof DEVICE_CATS !== "undefined") ? DEVICE_CATS : {};
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const [cat, setCat] = useState("전체");
+  const [sort, setSort] = useState("reward");
+  const [detail, setDetail] = useState(null);
+  const [live, setLive] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+  useEffect(() => {
+    setLive(null); if (!detail || PRICE_FEED_CFG.mode === "off") return;
+    let alive = true; setLiveLoading(true);
+    fetchLowestPrice(detail).then((r) => { if (alive) { setLive(r); setLiveLoading(false); } });
+    return () => { alive = false; };
+  }, [detail]);
+  if (!PRODUCTS.length) return null;
+  const cats = ["전체", ...Object.keys(CATS)];
+  let list = PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
+  if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
+  else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
+  else if (sort === "priceHigh") list = [...list].sort((a, b) => b.price - a.price);
+  const add = (p) => { shopCartAdd(p.id); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${shopWon(rw(p.price).reward)}`); };
+  const icoOf = (p) => (CATS[p.category] || {});
+  return (
+    <>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 홈케어 의료기기 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Stethoscope size={14} color="#0891B2" style={{ verticalAlign: "-2px" }} /> 홈케어 의료기기몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 가정용 의료기기 상위 {PRODUCTS.length}종</span></div>
+      {PRICE_FEED_CFG.mode !== "off" && <div className="pricefeed"><RefreshCw size={12} /> {priceFeedLabel()} · 상품 클릭 시 조회</div>}
+      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
+      <div className="sssort">
+        <span>정렬</span>
+        {[["reward", "적립높은순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        <span className="sscount">{list.length}종</span>
+      </div>
+      <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p), meta = suppMeta(p); return (
+        <div className="mealcard suppmeal" key={p.id} onClick={() => setDetail(p)}>
+          <div className="mealthumb" style={{ background: (m.col || "#0891B2") + "0d" }}><DeviceImage p={p} /><span className="mealbadge rocket">🚀 {meta.badge}</span></div>
+          <div className="mealbrand">{p.brand}</div>
+          <div className="mealname">{p.name}</div>
+          <div className="mealrate"><span className="stars">★</span> {meta.rating} <span className="rev">({meta.reviews.toLocaleString()})</span></div>
+          <div className="mealprices"><span className="mdisc">{meta.disc}%</span><span className="mprice">{shopWon(p.price)}</span><span className="morig">{shopWon(meta.orig)}</span></div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealbtns">
+            <a className="meallink" href={deviceLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 최저가</a>
+            <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
+          </div>
+        </div>
+      ); })}</div>
+      <div className="chnote">※ 가격은 네이버·쿠팡·다나와 최저가 <b>수집 예시(2026-07-01 시점)</b>로 변동될 수 있습니다. 가정용 의료기기는 사용 전 허가사항·사용상 주의사항을 확인하세요. 이미지·후기·구매는 각 출처로 연결되며, 실제 판매는 제휴·오픈마켓 API 연동이 필요합니다.</div>
+      <ShopCartBar products={PRODUCTS} />
+      {detail && (() => { const r = rw(detail.price), m = icoOf(detail); return (
+        <div className="pdov" onClick={() => setDetail(null)}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
+          <div className="pdh"><b>{detail.name}</b><button onClick={() => setDetail(null)}><X size={19} /></button></div>
+          <div className="pdbody">
+            <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#0891B2") + "10" }}><DeviceImage p={detail} /></span>
+              <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
+            <p className="pddesc">{detail.desc}</p>
+            <div className="pdprice">{live ? shopWon(live.price) : shopWon(detail.price)}{live && <span style={{ fontSize: 13, color: "#94A3B8", fontWeight: 600, textDecoration: "line-through", marginLeft: 8 }}>{shopWon(detail.price)}</span>}</div>
+            {PRICE_FEED_CFG.mode !== "off" && (
+              <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, padding: "9px 12px", margin: "8px 0", fontSize: 12, color: "#9A3412" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 800 }}><RefreshCw size={13} className={liveLoading ? "spin" : ""} /> {priceFeedLabel()}</div>
+                {liveLoading ? <div style={{ marginTop: 4 }}>최저가 조회 중…</div>
+                  : live ? <div style={{ marginTop: 4 }}>현재 최저가 <b style={{ color: "#EA580C" }}>{shopWon(live.price)}</b> · <b>{live.mall}</b> 기준{live.demo ? " (예시)" : ""}</div>
+                    : <div style={{ marginTop: 4 }}>조회 결과 없음 — <a href={deviceLowestHref(detail)} target="_blank" rel="noreferrer noopener" style={{ color: "#EA580C", fontWeight: 700 }}>직접 검색</a></div>}
+                <button className="cbtn" style={{ margin: "8px 0 0", width: "100%", fontSize: 12 }} onClick={() => { try { sessionStorage.removeItem("hifin_price_" + detail.id); } catch (e) {} setLiveLoading(true); setLive(null); fetchLowestPrice(detail).then((rr) => { setLive(rr); setLiveLoading(false); }); }}><RefreshCw size={13} /> 실시간 최저가 다시 조회</button>
+              </div>
+            )}
+            <div className="pdreward simple">
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 25%</small></div>
+              <b className="pdramt">{shopWon((live ? healthReward(live.price) : r).reward)}</b>
+            </div>
+            <div className="pdbtns">
+              <a className="ghost" href={deviceMedia(detail.id).danawa || detail.url || naverHref(detail.name, detail.brand)} target="_blank" rel="noreferrer noopener"><Search size={14} /> {deviceMedia(detail.id).danawa ? "다나와 최저가" : "출처·상세"} <ExternalLink size={11} /></a>
+              <button className="pri" onClick={() => { add(detail); setDetail(null); }}><ShoppingCart size={14} /> 장바구니 담기</button>
+            </div>
+            <div className="chnote" style={{ marginTop: 6 }}>※ 네이버·쿠팡·다나와 기준 수집 예시가(2026-07-01). 가정용 의료기기는 허가·사용상 주의사항을 확인하세요.</div>
+          </div>
+        </div></div>
+      ); })()}
+    </>
+  );
+}
 /* ====================== 당당상담 AI 인텔리전스 ======================
    AI 주치의의 영양소·홈케어기기 상담 결과를 넘겨받아, 관련 '건강기능(식약처 인정 기능성)'에
    도움을 줄 수 있는 성분·제품을 안내한다.
@@ -1260,7 +1356,7 @@ function ShopSection() {
         <MealShop />
       </>}
       {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
-      {cat === "device" && <ShopCategory catKey="device" label="홈케어의료기" />}
+      {cat === "device" && <><ShopCategory catKey="device" label="홈케어의료기" hideBrands /><DeviceShop /></>}
       {cat === "intel" && <ShopConsultant />}
       {cat === "sports" && <SportsHealth />}
     </div>
