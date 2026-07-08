@@ -786,8 +786,30 @@ function agentNavKey(text) {
   }
   return null;
 }
+/* 정밀 인텐트 룰 — 같은 명사라도 동사(결과/조회 vs 예약/청구/가입/사용)에 따라 다른 안내로 분기.
+   질문↔답변 정합성을 높이기 위한 학습 레이어(룰을 추가할수록 정교해짐). */
+const CHK_RESULT = "🗂 검진 결과·사후관리 바로가기";
+const AGENT_INTENTS = [
+  { re: /검진.{0,6}(결과|조회|내역|기록|판정|소견|나왔|받았)|(결과|판정).{0,4}검진|검진.{0,3}봤/, sum: "받으신 건강검진 결과 조회와 사후관리(재검·추적관리)를 안내해 드려요. 상세한 항목별 분석은 ‘건강분석 리포트’에서 확인하실 수 있어요.", btns: [CHK_RESULT, "📋 내 리포트 요약"] },
+  { re: /검진.{0,6}(예약|신청|접수|받고 ?싶|잡|하고 ?싶)/, sum: "국가·개인·기업·특수검진 예약을 도와드릴게요.", btns: ["📅 건강검진 예약하기 바로가기"] },
+  { re: /(보험금|실손).{0,6}(청구|받|신청|서류)|청구.{0,4}(보험|방법|절차)/, sum: "실손·보험금 청구 절차와 필요 서류를 안내해 드려요.", btns: ["🛡️ 나의 보험 알아보기 바로가기"] },
+  { re: /보험.{0,6}(가입|추천|보장|분석|설계|들고|알아)/, sum: "내 건강위험 기반 보장 분석과 가입을 안내해 드려요.", btns: ["🛡️ 나의 보험 알아보기 바로가기"] },
+  { re: /(적립|자산|지갑|토큰|포인트|htk).{0,6}(사용|쓰|결제|어디|얼마|조회|잔액|얼만)/, sum: "적립한 Health Token(건강자산) 잔액·사용처(보험료·의료비·쇼핑)를 안내해 드려요.", btns: ["💰 나의 적립금(자산) 알아보기 바로가기"] },
+  { re: /병원.{0,6}(찾|추천|어디|가까운|진료과)/, sum: "증상·질환에 맞는 진료과와 가까운 병원을 찾아 안내해 드려요.", btns: ["🏥 병원 진료 찾기 바로가기"] },
+];
 function superAgentRoute(text) {
-  const t = (text || "").toLowerCase();
+  const raw = (text || "");
+  // 1) 정밀 인텐트 룰 우선(동사 기반 분기)
+  const it = AGENT_INTENTS.find((r) => r.re.test(raw));
+  if (it) return {
+    bubbles: [
+      { kind: "text", text: it.sum },
+      { kind: "card", card: { title: "🧭 AI Super Agent 안내", items: [it.sum, "아래 버튼을 누르면 바로 이동해요."], buttons: it.btns } },
+    ],
+    quicks: AGENT_NAV.slice(0, 4).map((m) => m[0]),
+  };
+  // 2) 키워드 폴백 라우팅
+  const t = raw.toLowerCase();
   const hit = AGENT_NAV.find((m) => m[3].some((k) => t.includes(k.toLowerCase())));
   if (!hit) return null;
   const [label, , sum] = hit;
@@ -1839,6 +1861,7 @@ function Chat({ superAgent }) {
     const text = (textArg ?? input).trim(); if (!text) return;
     if (text === "🔬 특수검진 정밀검사 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "special"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === "🚨 응급신호 자가체크" || text === "🚨 응급신호 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "emergency"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
+    if (text === "🗂 검진 결과·사후관리 바로가기") { setPlus(false); setQuicks([]); try { _checkupTab = "result"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === SHOP_SUPP_BTN || text === SHOP_DEVICE_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") window._shopIntel = Object.assign({ kind: text === SHOP_DEVICE_BTN ? "device" : "supp" }, window._lastCareRec || {}); } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
     if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }
     { const _nk = (typeof agentNavKey === "function") ? agentNavKey(text) : null; if (_nk) { setPlus(false); setQuicks([]); if (typeof nav === "function") nav(_nk); return; } }
