@@ -494,7 +494,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTab("explorer"); };
-  const tabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles], ["finance", "재무회계", Landmark], ["marketing", "마케팅", Megaphone], ["whitepaper", "백서", BookOpen]];
+  const tabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["graph", "온톨로지 관계", Network], ["supply", "공급망 온톨로지", Truck], ["actions", "액션", Sparkles], ["finance", "재무회계", Landmark], ["marketing", "마케팅", Megaphone], ["whitepaper", "백서", BookOpen]];
   if (!agg) return null;
   return (
     <div style={{ marginTop: 16 }}>
@@ -525,6 +525,7 @@ function OntologySection({ onGo }) {
       {tab === "live" && <OntoLiveSim cohort={cohort} agg={agg} onGo={onGo} />}
       {tab === "explorer" && <OntExplorer cohort={cohort} onGo={onGo} seg={seg} />}
       {tab === "graph" && <div className="ontpanel"><div className="ontph"><Network size={15} color="#22D3EE" /> 온톨로지 스키마 (객체 · 관계)</div><OntGraph agg={agg} /></div>}
+      {tab === "supply" && <SupplyOntology onGo={onGo} />}
       {tab === "actions" && <OntActions agg={agg} onSeg={goSeg} />}
       {tab === "finance" && <FinanceSection onGo={onGo} />}
       {tab === "marketing" && <MarketingSection onGo={onGo} />}
