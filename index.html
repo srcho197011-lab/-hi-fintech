@@ -5907,7 +5907,24 @@ const MEAL_PRODUCTS = [
   { id: "m-dongwon", brand: "동원 더반찬&", name: "더반찬& 건강 간편식 (주간세트)", category: "간편식", price: 21900, orig: 27000, rating: 4.5, reviews: 2765, badge: "새벽배송", emoji: "🍚", url: "https://www.thebanchan.co.kr", desc: "건강 간편식·반찬" },
   { id: "m-spaoeat", brand: "잇메이트(스파오)", name: "닭가슴살 스테이크 고단백 (30팩)", category: "단백질", price: 29900, orig: 39000, rating: 4.6, reviews: 12043, badge: "로켓배송", emoji: "🍗", url: "https://www.eatmate.co.kr", desc: "닭가슴살·고단백식" },
 ];
-const MEAL_MEDIA = {}; /* key→실제 이미지 URL. 채워지면 자동으로 실제 사진 노출(없으면 목업 폴백) */
+/* 실제 제품 이미지(다나와/공식몰 CDN, 2026-07 수집) — 없으면 카테고리 목업 폴백.
+   ※ 헤링스(구독 서비스)·지리산청강원(니치 D2C)·팜킷(B2B SaaS)은 리테일 상품컷이 없어 목업 유지. */
+const MEAL_MEDIA = {
+  "m-designmeal": "https://img.danuri.io/catalog-image/984/375/017/c0116b809e9743adb8c1d3f54c837896.jpg?shrink=330:*&_v=20260504115250",
+  "m-greating": "https://img.danuri.io/catalog-image/142/826/012/6179b2ab5132440e9bbfba6cfe3c96e3.jpg?shrink=330:*&_v=20260614080418",
+  "m-selexcore": "https://img.danuri.io/catalog-image/865/098/014/e34fdcdc6b2148c48e97377b9f0a1dbe.jpg?shrink=330:*&_v=20260708080502",
+  "m-nucare": "https://img.danuri.io/catalog-image/474/008/113/01332c50972d4c99b494357f283293f7.jpg?shrink=330:*&_v=20260708195410",
+  "m-medisola": "https://godomall.speedycdn.net/dff924563d830271d726ec02842aac96/goods/1000000379/image/detail/1000000379_detail_084.jpg",
+  "m-drkitchen": "https://img.danuri.io/catalog-image/794/246/015/1fc5fa0406764a6eaab5811c0d32c407.jpg?shrink=330:*&_v=20260626080444",
+  "m-fresheasy": "https://img.danuri.io/catalog-image/777/255/032/e1f0f417383c481e98529dfa2df7cded.jpg?shrink=330:*&_v=20260407234631",
+  "m-eatson": "https://img.danuri.io/catalog-image/661/739/018/a8f4cf3788dc4e60867b38d91629322a.jpg?shrink=330:*&_v=20260407233719",
+  "m-maeilselex": "https://img.danuri.io/catalog-image/579/275/012/3d301507d68841d6aefdfe5d2467ff6d.jpg?shrink=330:*&_v=20260708090131",
+  "m-ourhome": "https://d1nzxr3h07h50a.cloudfront.net/assets/prod/product/56532914-8651-417f-92fb-b9e8efa02523.jpg",
+  "m-cjfw": "https://img.danuri.io/catalog-image/696/822/008/6b213010dc614b9b980e58c440946e1b.jpg?shrink=330:*&_v=20260609080502",
+  "m-bonjuk": "https://img.danuri.io/catalog-image/594/725/015/8b1f5947ca7c45e48d7a5ad996a22520.jpg?shrink=330:*&_v=20260708120417",
+  "m-dongwon": "https://img.danuri.io/catalog-image/184/888/013/0937e7b4127a4c199faf23d2f1ded1f3.jpg?shrink=330:*&_v=20260407235421",
+  "m-spaoeat": "https://img.danuri.io/catalog-image/263/981/010/40f30db288d1401597791bcb2abc7008.jpg?shrink=330:*&_v=20260707080519",
+};
 function MealMock({ p }) {
   const hue = (String(p.id).split("").reduce((s, c) => s + c.charCodeAt(0), 0) % 360);
   return (
