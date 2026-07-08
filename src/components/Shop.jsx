@@ -24,6 +24,14 @@ const SHOP_PARTNERS = {
     chips: ["더블엑스", "종합비타민", "오메가3", "프로바이오틱스"],
     stats: [["뉴트리라이트", "글로벌 1위"], ["유기농", "자체 농장"], ["GMP", "품질관리"]],
     home: "https://www.amway.co.kr", q: "암웨이 뉴트리라이트",
+  }, {
+    name: "한독", brand: "네이처셋(NatureSet)", sub: "영양제 특별제휴", member: true, pharmacyFind: true,
+    bg: "linear-gradient(125deg,#00417A 0%,#0067AC 50%,#2E97D8 100%)",
+    tagline: "제약사 한독의 건강기능식품 브랜드 네이처셋 — 여성건강·홍삼·초임계 오메가3·면역비타민 등 근거 기반 종합 영양 라인업.",
+    strengths: [["immune", "여성 멀티비타민", "네이처셋 더 액티브 포 우먼(18종)"], ["leaf", "홍삼 애니타임", "6년근 홍삼 면역·활력"], ["brain", "초임계 오메가3", "rTG·초임계 추출 혈행·눈·뇌"], ["capsule", "면역 비타민C 1000", "비타민C·아연 항산화·면역"]],
+    chips: ["여성 멀티비타민", "홍삼 애니타임", "초임계 오메가3", "면역 비타민C"],
+    stats: [["한독", "제약사 품질"], ["네이처셋", "종합 라인업"], ["GMP", "품질관리"]],
+    home: "http://mall.handok.co.kr/", q: "한독 네이처셋 건강기능식품",
   }],
   device: [{
     name: "GN바디닥터", brand: "제너럴네트", sub: "의료기기 특별제휴",
@@ -258,7 +266,6 @@ const MEMBER_MEDIA = {
   "제노포커스": "https://shopping-phinf.pstatic.net/main_8660217/86602176863.2.jpg",
   "㈜메디콥": "https://img.danuri.io/catalog-image/929/529/032/c413b9327a5c4071a5013b76a7be69d3.jpg?shrink=330:*&_v=20260708080418",
   // 유사 제품 컷(투자자 데모용) — 상용화 시 각 회원사 실제 대표 제품 이미지로 교체
-  "한독": "https://img.danuri.io/catalog-image/459/841/100/5f0c1421ffe64dd299546b5a2728c274.jpg?shrink=300:300",
   "알고케어": "./data/img/supp/algocare.png",
   "필워크": "./data/img/supp/pillwork.png",
   "DSM코리아": "https://img.danuri.io/catalog-image/400/776/017/c52dca764b4d42b1855d12602a7c2503.jpg?shrink=300:300",
@@ -470,7 +477,10 @@ function ProductGalleryModal({ title, onClose }) {
 
 const SP_PROD_IMG = { "풀무원": "m-designmeal", "현대그린푸드": "m-greating" };
 /* 특별제휴 제품 이미지 직접 URL(다나와 CDN) — MEAL_MEDIA 키가 없는 브랜드용 */
-const SP_PROD_URL = { "한국암웨이": "https://img.danuri.io/catalog-image/827/874/017/907cd303d49847aeba643d8fd07e5d17.jpg?shrink=300:300" };
+const SP_PROD_URL = {
+  "한국암웨이": "https://img.danuri.io/catalog-image/827/874/017/907cd303d49847aeba643d8fd07e5d17.jpg?shrink=300:300",
+  "한독": "./data/img/supp/handok.png",
+};
 function ShopPartnerCardSm({ p }) {
   const [pharm, setPharm] = useState(false);
   const [gal, setGal] = useState(false);

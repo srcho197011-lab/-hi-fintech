@@ -88,7 +88,6 @@ const SUPP_MEDIA = {
 const SUPP_MEMBERS = [
   { tag: "면역·장건강", company: "유니베라", product: "알로에 정/겔", desc: "알로에 기반 면역·장 건강 건강기능식품", type: "소비자제품", url: "https://www.univeramall.com/", col: "#2E7D32", q: "유니베라 알로에" },
   { tag: "종합비타민", company: "헤일리온 코리아", product: "센트룸", desc: "전 연령 종합비타민·미네랄(센트룸 브랜드)", type: "소비자제품", url: "https://www.haleon.com/kr/our-brands", col: "#C2185B", q: "센트룸 종합비타민" },
-  { tag: "장 건강", company: "한독", product: "사라플러스", desc: "식이섬유·장 건강 기능성 제품", type: "소비자제품", url: "http://mall.handok.co.kr/", col: "#0067AC", q: "한독 사라플러스" },
   { tag: "개인맞춤 영양", company: "알고케어", product: "맞춤영양 디스펜서(앳홈/E1)", desc: "AI가 개인 맞춤 영양제를 자동 조합·공급하는 디스펜서", type: "디바이스·서비스", url: "https://www.algocare.me/", col: "#1F2937", q: "알고케어 맞춤영양" },
   { tag: "맞춤 구독", company: "필워크", product: "맞춤영양제 구독", desc: "건강설문 기반 개인 맞춤 영양제 정기구독 서비스", type: "맞춤영양 서비스", url: "", col: "#16A34A", q: "필워크 맞춤영양제 구독" },
   { tag: "오메가3", company: "DSM코리아", product: "라이프스DHA 오메가3", desc: "조류 유래 DHA·오메가3 뉴트리션 원료", type: "원료·소재", url: "https://www.dsm-firmenich.com/ko-kr/businesses/health-nutrition-care/products/consumer-brands/lifesDHA.html", col: "#1A56DB", q: "DSM 라이프스DHA 오메가3" },
