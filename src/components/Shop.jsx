@@ -262,6 +262,7 @@ function WaterBanner() {
    미확인 회원사는 자동으로 브랜드 그라디언트+이모지 mock으로 대체된다. */
 const MEMBER_MEDIA = {
   "유니베라": "https://img.danuri.io/catalog-image/729/546/009/55f87398d7a34899ab8abdaf9ca5d3ed.jpg?shrink=330:*&_v=20260708080439",
+  "하이-아이즈": "./data/img/supp/jowin-hivision.png",
   "헤일리온 코리아": "https://img.danuri.io/catalog-image/673/404/120/728c05adfff64f18b14744be33fcca37.jpg?shrink=330:*&_v=20260530073620",
   "제노포커스": "https://shopping-phinf.pstatic.net/main_8660217/86602176863.2.jpg",
   "㈜메디콥": "https://img.danuri.io/catalog-image/929/529/032/c413b9327a5c4071a5013b76a7be69d3.jpg?shrink=330:*&_v=20260708080418",
