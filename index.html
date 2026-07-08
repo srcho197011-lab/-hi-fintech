@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=ec2ea01733" />
+<link rel="stylesheet" href="./data/app.css?v=9a3b169d94" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=ec2ea01733"></script>
-<script src="./src/data/section_data.js?v=ec2ea01733"></script>
-<script src="./src/data/demo_members.js?v=ec2ea01733"></script>
+<script src="./src/data/dummy_data.js?v=9a3b169d94"></script>
+<script src="./src/data/section_data.js?v=9a3b169d94"></script>
+<script src="./src/data/demo_members.js?v=9a3b169d94"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -4975,7 +4975,7 @@ function PnLogo() {
     </svg>
   );
 }
-const PN_HERO = "./data/img/pn-hero.png"; /* 정밀영양협회 히어로 이미지(이 경로에 파일을 두면 왼쪽에 크게 표시) */
+const PN_HERO = "https://cdn.imweb.me/thumbnail/20230816/45b2bd403ba1b.jpg"; /* 정밀영양협회 세미나(고려대 의대 협력) 실제 사진 — 배너 왼쪽 히어로 */
 function PrecisionNutritionSection() {
   const SITE = "https://precision-nutrition.kr/";
   const checks = ["전문가 검증 제품", "과학적 근거 기반 추천", "개인 맞춤형 영양관리", "건강검진 데이터 기반 추천"];
