@@ -96,35 +96,27 @@ function PnLogo() {
     </svg>
   );
 }
-const PN_HERO = "./data/img/pn-seminar.png"; /* 정밀영양협회 세미나(고려대 의대 협력 제2차 세미나) 실제 사진 — 배너 왼쪽 히어로 */
+const PN_IMGS = [
+  { src: "./data/img/pn-seminar.png", alt: "사단법인 정밀영양협회 세미나(고려대 의대 협력)", pos: "50% 42%" },
+  { src: "./data/img/pn-hero.png", alt: "Precision Nutrition — 초개인화 시대의 헬스케어", pos: "50% 45%" },
+  { src: "./data/img/pn-vision.png", alt: "사단법인 정밀영양협회 VISION", pos: "10% 50%" },
+];
 function PrecisionNutritionSection() {
   const SITE = "https://precision-nutrition.kr/";
-  const checks = ["전문가 검증 제품", "과학적 근거 기반 추천", "개인 맞춤형 영양관리", "건강검진 데이터 기반 추천"];
-  const [heroErr, setHeroErr] = useState(false);
+  const [errs, setErrs] = useState({});
   return (
     <section className="pnsec" aria-label="사단법인 정밀영양협회 인증 안내">
       <div className="pnban">
-        <div className="pnbanrow">
-          {!heroErr && <a className="pnhero" href={SITE} target="_blank" rel="noreferrer noopener" title="사단법인 정밀영양협회 소개"><img src={PN_HERO} alt="사단법인 정밀영양협회 · Precision Nutrition" loading="lazy" onError={() => setHeroErr(true)} /></a>}
-          <div className="pnbancol">
-        <div className="pnban-top">
-          <div className="pnlogo">
-            <PnLogo />
-            <div>
-              <div className="en">Precision Nutrition Association</div>
-              <div className="nm">사단법인 정밀영양협회</div>
-              <div className="ds">Health-InsurFin Tech의 건강쇼핑은 사단법인 정밀영양협회의 전문적인 자문과 검증을 거쳐 추천 및 인증된 제품만을 엄선하여 제공합니다.</div>
-            </div>
-          </div>
-          <div className="pngrid">
-            {checks.map((c) => <div className="it" key={c}><span className="ic"><Check size={17} /></span><b>{c}</b></div>)}
-          </div>
+        <div className="pnbanrow pn3">
+          {PN_IMGS.map((im, i) => errs[i] ? null : (
+            <a className="pnhero" href={SITE} target="_blank" rel="noreferrer noopener" key={i} title="사단법인 정밀영양협회 소개">
+              <img src={im.src} alt={im.alt} loading="lazy" style={{ objectPosition: im.pos }} onError={() => setErrs((e) => ({ ...e, [i]: true }))} />
+            </a>
+          ))}
         </div>
-        <div className="pncta">
+        <div className="pncta" style={{ marginTop: 12 }}>
           {!EXTERNAL_OK && <span className="nt">미리보기에선 링크 우클릭 → ‘새 탭에서 열기’</span>}
           <a href={SITE} target="_blank" rel="noreferrer noopener">사단법인 정밀영양협회 소개 <ExternalLink size={13} /></a>
-        </div>
-          </div>
         </div>
       </div>
       <div className="pnlede"><h3>회원 개개인의 건강상태, 생활습관, 건강검진 결과 및 영양학적 특성을 종합적으로 분석하여 최적의 맞춤형 건강 솔루션을 제공합니다.</h3></div>
