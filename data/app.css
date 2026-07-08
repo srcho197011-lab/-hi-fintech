@@ -2443,7 +2443,13 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .mealprices .mprice{color:#15234A;font-weight:800;font-size:15px;}
 .mealprices .morig{color:#b6bECA;font-size:11.5px;text-decoration:line-through;}
 .mealreward{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:800;color:#B45309;background:#FEF3E2;border-radius:999px;padding:2px 7px;margin-top:6px;align-self:flex-start;}
-.mealadd{margin-top:9px;display:flex;align-items:center;justify-content:center;gap:5px;background:#fff;border:1px solid #2C6ED5;color:#2C6ED5;font-size:12.5px;font-weight:800;border-radius:8px;padding:8px;cursor:pointer;transition:background .12s;}
+.mealtier{position:absolute;left:7px;bottom:7px;display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:800;border-radius:6px;padding:2px 7px;backdrop-filter:blur(2px);}
+.mealtier.mem{background:rgba(44,110,213,.92);color:#fff;}
+.mealtier.par{background:rgba(22,163,74,.92);color:#fff;}
+.mealbtns{display:flex;gap:6px;margin-top:9px;align-items:stretch;}
+.meallink{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:#5b6b80;text-decoration:none;border:1px solid #e2e6ee;border-radius:8px;padding:8px 9px;white-space:nowrap;}
+.meallink:hover{background:#f4f6fa;border-color:#c9d2e0;}
+.mealadd{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;background:#fff;border:1px solid #2C6ED5;color:#2C6ED5;font-size:12.5px;font-weight:800;border-radius:8px;padding:8px;cursor:pointer;transition:background .12s;}
 .mealadd:hover{background:#EAF1FE;}
 @media(max-width:520px){.mealgrid{grid-template-columns:repeat(2,1fr);gap:10px;}}
 /* AI Super Agent — 섹션 안내 버튼 그리드 */

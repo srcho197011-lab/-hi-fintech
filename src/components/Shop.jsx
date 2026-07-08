@@ -1046,6 +1046,12 @@ const MEAL_MEDIA = {
   "m-dongwon": "https://img.danuri.io/catalog-image/184/888/013/0937e7b4127a4c199faf23d2f1ded1f3.jpg?shrink=330:*&_v=20260407235421",
   "m-spaoeat": "https://img.danuri.io/catalog-image/263/981/010/40f30db288d1401597791bcb2abc7008.jpg?shrink=330:*&_v=20260707080519",
 };
+/* 제품 → 업체 성격 매칭: partner(특별제휴)·member(정밀영양협회 회원사)·brand(유력 브랜드) */
+const MEAL_TIER = {
+  "m-designmeal": "partner", "m-greating": "partner",
+  "m-selexcore": "member", "m-nucare": "member", "m-medisola": "member", "m-herings": "member", "m-cheonggang": "member", "m-farmkit": "member",
+};
+const mealTier = (id) => MEAL_TIER[id] || "brand";
 function MealMock({ p }) {
   const hue = (String(p.id).split("").reduce((s, c) => s + c.charCodeAt(0), 0) % 360);
   return (
@@ -1064,23 +1070,31 @@ function MealImage({ p }) {
 function MealCard({ p, onAdd }) {
   const disc = p.orig && p.orig > p.price ? Math.round((1 - p.price / p.orig) * 100) : 0;
   const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.25) };
+  const tier = mealTier(p.id);
+  const link = (tier === "brand") ? (typeof naverHref === "function" ? naverHref(p.brand, "건강식단") : p.url) : p.url;
+  const linkTxt = (tier === "brand") ? "검색" : "공식몰";
   return (
     <div className="mealcard">
-      <div className="mealthumb"><MealImage p={p} />{p.badge && <span className="mealbadge">{p.badge}</span>}</div>
+      <div className="mealthumb"><MealImage p={p} />{p.badge && <span className="mealbadge">{p.badge}</span>}
+        {tier === "member" && <span className="mealtier mem"><ShieldCheck size={9} /> 정밀영양협회 회원사</span>}
+        {tier === "partner" && <span className="mealtier par"><Sparkles size={9} /> 특별제휴</span>}</div>
       <div className="mealbrand">{p.brand}</div>
       <div className="mealname">{p.name}</div>
       <div className="mealrate"><span className="stars">★</span> {p.rating} <span className="rev">({p.reviews.toLocaleString()})</span></div>
       <div className="mealprices">{disc > 0 && <span className="mdisc">{disc}%</span>}<span className="mprice">{shopWon(p.price)}</span>{disc > 0 && <span className="morig">{shopWon(p.orig)}</span>}</div>
       <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)}</div>
-      <button className="mealadd" onClick={() => onAdd(p)}><ShoppingCart size={13} /> 담기</button>
+      <div className="mealbtns">
+        <a className="meallink" href={link} target="_blank" rel="noreferrer noopener"><Search size={12} /> {linkTxt} <ExternalLink size={9} /></a>
+        <button className="mealadd" onClick={() => onAdd(p)}><ShoppingCart size={13} /> 담기</button>
+      </div>
     </div>
   );
 }
 function MealShop() {
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("reco");
-  const cats = ["전체", ...Array.from(new Set(MEAL_PRODUCTS.map((p) => p.category)))];
-  let list = MEAL_PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
+  const cats = ["전체", "🔵 정밀영양협회 회원사", ...Array.from(new Set(MEAL_PRODUCTS.map((p) => p.category)))];
+  let list = MEAL_PRODUCTS.filter((p) => cat === "전체" || (cat === "🔵 정밀영양협회 회원사" ? mealTier(p.id) === "member" : p.category === cat));
   if (sort === "review") list = [...list].sort((a, b) => b.reviews - a.reviews);
   else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
   else if (sort === "rating") list = [...list].sort((a, b) => b.rating - a.rating);
@@ -1113,7 +1127,13 @@ function ShopSection() {
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
       <PrecisionNutritionSection />
       <div className="chtabs">{cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}</div>
-      {cat === "diet" && <><MealShop /><div style={{ marginTop: 18 }} /><ShopCategory catKey="diet" label="건강식단" /></>}
+      {cat === "diet" && <>
+        <div className="bklbl" style={{ margin: "2px 0 8px" }}><Sparkles size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 건강식단 특별제휴사</div>
+        <div className="spsm-grid">{(SHOP_PARTNERS.diet || []).map((p) => <ShopPartnerCardSm key={p.name} p={p} />)}</div>
+        <WaterBanner />
+        <div style={{ marginTop: 18 }} />
+        <MealShop />
+      </>}
       {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
       {cat === "device" && <ShopCategory catKey="device" label="의료기기" />}
       {cat === "intel" && <ShopConsultant />}
