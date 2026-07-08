@@ -257,6 +257,16 @@ const MEMBER_MEDIA = {
   "헤일리온 코리아": "https://img.danuri.io/catalog-image/673/404/120/728c05adfff64f18b14744be33fcca37.jpg?shrink=330:*&_v=20260530073620",
   "제노포커스": "https://shopping-phinf.pstatic.net/main_8660217/86602176863.2.jpg",
   "㈜메디콥": "https://img.danuri.io/catalog-image/929/529/032/c413b9327a5c4071a5013b76a7be69d3.jpg?shrink=330:*&_v=20260708080418",
+  // 유사 제품 컷(투자자 데모용) — 상용화 시 각 회원사 실제 대표 제품 이미지로 교체
+  "한독": "https://img.danuri.io/catalog-image/459/841/100/5f0c1421ffe64dd299546b5a2728c274.jpg?shrink=300:300",
+  "알고케어": "https://img.danuri.io/catalog-image/858/335/118/2f42eb9e8d7a4e10b608477b56db2280.jpg?shrink=300:300",
+  "필워크": "https://img.danuri.io/catalog-image/424/673/018/fb40fd117e69448eb1517172350a4925.jpg?shrink=300:300",
+  "DSM코리아": "https://img.danuri.io/catalog-image/400/776/017/c52dca764b4d42b1855d12602a7c2503.jpg?shrink=300:300",
+  "광헬스케어": "https://img.danuri.io/catalog-image/172/099/019/300cad05c52c4f898fd2c0864b24bb35.jpg?shrink=300:300",
+  "바이오뉴트리온": "https://img.danuri.io/catalog-image/354/835/079/1b171659455e47dbacb0c5f059027c34.jpg?shrink=300:300",
+  "디이프": "https://img.danuri.io/catalog-image/065/103/056/ec1591c1444141149c27581c9591961b.jpg?shrink=300:300",
+  "조윈": "https://img.danuri.io/catalog-image/725/112/017/2dc4b7885c1b481daaf8d1f9e8841a07.jpg?shrink=300:300",
+  "크레놀": "https://img.danuri.io/catalog-image/394/677/029/57064cd23a634fb8b99860407fb277af.jpg?shrink=300:300",
 };
 function memberEmoji(mm) {
   const t = (mm.tag || "") + (mm.type || "") + (mm.product || "");
@@ -459,12 +469,15 @@ function ProductGalleryModal({ title, onClose }) {
 }
 
 const SP_PROD_IMG = { "풀무원": "m-designmeal", "현대그린푸드": "m-greating" };
+/* 특별제휴 제품 이미지 직접 URL(다나와 CDN) — MEAL_MEDIA 키가 없는 브랜드용 */
+const SP_PROD_URL = { "한국암웨이": "https://img.danuri.io/catalog-image/827/874/017/907cd303d49847aeba643d8fd07e5d17.jpg?shrink=300:300" };
 function ShopPartnerCardSm({ p }) {
   const [pharm, setPharm] = useState(false);
   const [gal, setGal] = useState(false);
   const [imgErr, setImgErr] = useState(false);
   const imgKey = SP_PROD_IMG[p.name];
-  const prodImg = (!imgErr && imgKey && typeof MEAL_MEDIA !== "undefined") ? MEAL_MEDIA[imgKey] : null;
+  const directUrl = (typeof SP_PROD_URL !== "undefined") ? SP_PROD_URL[p.name] : null;
+  const prodImg = imgErr ? null : (directUrl || ((imgKey && typeof MEAL_MEDIA !== "undefined") ? MEAL_MEDIA[imgKey] : null));
   return (
     <div className="spcard sm" style={{ background: p.bg }}>
       {prodImg && <div className="sppimg"><img src={prodImg} alt={`${p.name} ${p.brand || ""} 제품`} loading="lazy" onError={() => setImgErr(true)} /></div>}
