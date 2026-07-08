@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=b94a000ded" />
+<link rel="stylesheet" href="./data/app.css?v=aacbdd9f22" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=b94a000ded"></script>
-<script src="./src/data/section_data.js?v=b94a000ded"></script>
-<script src="./src/data/demo_members.js?v=b94a000ded"></script>
+<script src="./src/data/dummy_data.js?v=aacbdd9f22"></script>
+<script src="./src/data/section_data.js?v=aacbdd9f22"></script>
+<script src="./src/data/demo_members.js?v=aacbdd9f22"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -5290,11 +5290,16 @@ function ProductGalleryModal({ title, onClose }) {
   );
 }
 
+const SP_PROD_IMG = { "풀무원": "m-designmeal", "현대그린푸드": "m-greating" };
 function ShopPartnerCardSm({ p }) {
   const [pharm, setPharm] = useState(false);
   const [gal, setGal] = useState(false);
+  const [imgErr, setImgErr] = useState(false);
+  const imgKey = SP_PROD_IMG[p.name];
+  const prodImg = (!imgErr && imgKey && typeof MEAL_MEDIA !== "undefined") ? MEAL_MEDIA[imgKey] : null;
   return (
     <div className="spcard sm" style={{ background: p.bg }}>
+      {prodImg && <div className="sppimg"><img src={prodImg} alt={`${p.name} ${p.brand || ""} 제품`} loading="lazy" onError={() => setImgErr(true)} /></div>}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
         <span className="sptag"><Sparkles size={11} /> {p.sub}</span>
         {p.member && <span className="pnmember"><PnLogo /> 정밀영양협회 회원사</span>}

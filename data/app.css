@@ -2443,6 +2443,10 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .mealprices .mprice{color:#15234A;font-weight:800;font-size:15px;}
 .mealprices .morig{color:#b6bECA;font-size:11.5px;text-decoration:line-through;}
 .mealreward{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:800;color:#B45309;background:#FEF3E2;border-radius:999px;padding:2px 7px;margin-top:6px;align-self:flex-start;}
+/* 특별제휴사 카드 — 큰 제품 이미지(건강식단 썸네일의 약 2.5배) */
+.spcard.sm .sppimg{width:100%;height:clamp(300px,36vw,400px);background:#fff;border-radius:12px;overflow:hidden;margin-bottom:12px;box-shadow:0 8px 22px -12px rgba(0,0,0,.35);}
+.spcard.sm .sppimg img{width:100%;height:100%;object-fit:contain;display:block;padding:10px;box-sizing:border-box;}
+@media(max-width:520px){.spcard.sm .sppimg{height:240px;}}
 .mealtier{position:absolute;left:7px;bottom:7px;display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:800;border-radius:6px;padding:2px 7px;backdrop-filter:blur(2px);}
 .mealtier.mem{background:rgba(44,110,213,.92);color:#fff;}
 .mealtier.par{background:rgba(22,163,74,.92);color:#fff;}

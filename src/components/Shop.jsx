@@ -411,11 +411,16 @@ function ProductGalleryModal({ title, onClose }) {
   );
 }
 
+const SP_PROD_IMG = { "풀무원": "m-designmeal", "현대그린푸드": "m-greating" };
 function ShopPartnerCardSm({ p }) {
   const [pharm, setPharm] = useState(false);
   const [gal, setGal] = useState(false);
+  const [imgErr, setImgErr] = useState(false);
+  const imgKey = SP_PROD_IMG[p.name];
+  const prodImg = (!imgErr && imgKey && typeof MEAL_MEDIA !== "undefined") ? MEAL_MEDIA[imgKey] : null;
   return (
     <div className="spcard sm" style={{ background: p.bg }}>
+      {prodImg && <div className="sppimg"><img src={prodImg} alt={`${p.name} ${p.brand || ""} 제품`} loading="lazy" onError={() => setImgErr(true)} /></div>}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
         <span className="sptag"><Sparkles size={11} /> {p.sub}</span>
         {p.member && <span className="pnmember"><PnLogo /> 정밀영양협회 회원사</span>}
