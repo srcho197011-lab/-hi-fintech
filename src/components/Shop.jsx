@@ -96,8 +96,7 @@ function PnLogo() {
     </svg>
   );
 }
-const PN_IMGS = [
-  { src: "./data/img/pn-seminar.png", alt: "사단법인 정밀영양협회 세미나(고려대 의대 협력)", pos: "50% 42%" },
+const PN_TOP = [
   { src: "./data/img/pn-hero.png", alt: "Precision Nutrition — 초개인화 시대의 헬스케어", pos: "50% 45%" },
   { src: "./data/img/pn-vision.png", alt: "사단법인 정밀영양협회 VISION", pos: "10% 50%" },
 ];
@@ -107,20 +106,42 @@ function PrecisionNutritionSection() {
   return (
     <section className="pnsec" aria-label="사단법인 정밀영양협회 인증 안내">
       <div className="pnban">
-        <div className="pnbanrow pn3">
-          {PN_IMGS.map((im, i) => errs[i] ? null : (
+        <div className="pnbanrow pn2">
+          {PN_TOP.map((im, i) => errs[i] ? null : (
             <a className="pnhero" href={SITE} target="_blank" rel="noreferrer noopener" key={i} title="사단법인 정밀영양협회 소개">
               <img src={im.src} alt={im.alt} loading="lazy" style={{ objectPosition: im.pos }} onError={() => setErrs((e) => ({ ...e, [i]: true }))} />
             </a>
           ))}
         </div>
+        {!errs.wide && <a className="pnhero pnwide" href={SITE} target="_blank" rel="noreferrer noopener" title="사단법인 정밀영양협회 세미나">
+          <img src="./data/img/pn-seminar.png" alt="사단법인 정밀영양협회 세미나(고려대 의대 협력 제2차 세미나)" loading="lazy" style={{ objectPosition: "50% 38%" }} onError={() => setErrs((e) => ({ ...e, wide: true }))} />
+        </a>}
         <div className="pncta" style={{ marginTop: 12 }}>
           {!EXTERNAL_OK && <span className="nt">미리보기에선 링크 우클릭 → ‘새 탭에서 열기’</span>}
           <a href={SITE} target="_blank" rel="noreferrer noopener">사단법인 정밀영양협회 소개 <ExternalLink size={13} /></a>
         </div>
       </div>
-      <div className="pnlede"><h3>회원 개개인의 건강상태, 생활습관, 건강검진 결과 및 영양학적 특성을 종합적으로 분석하여 최적의 맞춤형 건강 솔루션을 제공합니다.</h3></div>
-      <div className="pnemph">Health-InsurFin Tech는 <b>사단법인 정밀영양협회</b>의 추천과 인증을 받은 제품만을 엄선하여, 과학적 근거에 기반한 개인 맞춤형 건강관리를 제공합니다.</div>
+      <div className="pnintro">
+        <div className="pnintro-head">
+          <span className="pnintro-badge"><Sparkles size={13} /> Precision Nutrition</span>
+          <h3>검진 데이터로 완성하는 <b>나만의 맞춤 건강식단·영양</b></h3>
+          <p>회원 개개인의 건강상태·생활습관·검진결과·영양학적 특성을 종합 분석해, 사단법인 정밀영양협회가 검증한 최적의 건강식단·영양 솔루션을 제공합니다.</p>
+        </div>
+        <div className="pnintro-cards">
+          {[
+            [Activity, "#2563EB", "#E8F1FE", "건강 데이터 분석", "검진 결과·생활습관·영양학적 특성을 종합 분석"],
+            [Salad, "#16A34A", "#E7F8EE", "맞춤 건강식단", "개인별 최적의 저염·저당·균형 케어푸드 설계"],
+            [ShieldCheck, "#7C3AED", "#F1ECFE", "정밀영양협회 검증", "전문가 자문·인증을 거친 제품만 엄선 제공"],
+            [HeartHandshake, "#E11D48", "#FDECEC", "평생 건강관리", "지속 케어와 건강적립으로 비용 부담 완화"],
+          ].map(([Ic, col, bg, t, d], i) => (
+            <div className="pnfeat" key={i}>
+              <span className="pnfeat-ic" style={{ color: col, background: bg }}><Ic size={23} /></span>
+              <div className="pnfeat-t">{t}</div>
+              <div className="pnfeat-d">{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
