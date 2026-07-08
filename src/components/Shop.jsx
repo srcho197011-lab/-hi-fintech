@@ -96,7 +96,7 @@ function PnLogo() {
     </svg>
   );
 }
-const PN_HERO = "https://cdn.imweb.me/thumbnail/20230816/45b2bd403ba1b.jpg"; /* 정밀영양협회 세미나(고려대 의대 협력) 실제 사진 — 배너 왼쪽 히어로 */
+const PN_HERO = "./data/img/pn-seminar.png"; /* 정밀영양협회 세미나(고려대 의대 협력 제2차 세미나) 실제 사진 — 배너 왼쪽 히어로 */
 function PrecisionNutritionSection() {
   const SITE = "https://precision-nutrition.kr/";
   const checks = ["전문가 검증 제품", "과학적 근거 기반 추천", "개인 맞춤형 영양관리", "건강검진 데이터 기반 추천"];
