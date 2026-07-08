@@ -409,9 +409,25 @@
 .coverbox .ct2{font-size:23px;font-weight:800;margin-top:12px;line-height:1.35;}
 .disclaim{font-size:11px;color:var(--muted);line-height:1.7;background:#F7F9FC;border:1px solid var(--border);border-radius:8px;padding:13px;text-align:left;margin-top:8px;}
 @media print{.voverlay{position:static;background:#fff;padding:0;overflow:visible;}.viewer{box-shadow:none;max-height:none;border:none;}.vhead{display:none;}.page{box-shadow:none;page-break-after:always;}}
-.chtabs{display:flex;gap:8px;margin:16px 0;flex-wrap:wrap;}
-.chtab{cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--muted);font-weight:700;font-size:13.5px;padding:10px 16px;border-radius:12px;display:flex;align-items:center;gap:7px;}
-.chtab.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+/* 디렉토리 이정표 탭(입체·컬러) — 기본(섹션 내 탭, 중간 크기) */
+.chtabs{display:flex;gap:10px;margin:16px 0 10px;flex-wrap:wrap;}
+.chtab{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #E6EAF3;border-radius:14px;padding:10px 18px 10px 15px;cursor:pointer;font-size:14px;font-weight:800;color:#37476b;box-shadow:0 4px 0 #E4E9F2,0 8px 16px -9px rgba(20,40,90,.26);transition:transform .12s ease,box-shadow .12s ease,border-color .12s,background .12s;position:relative;--cc:#2563EB;}
+.chtab > svg{color:var(--cc);flex-shrink:0;transition:.12s;}
+.chtab .ch-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--cc) 15%,#fff);color:var(--cc);flex-shrink:0;transition:.12s;}
+.chtab:hover{transform:translateY(-2px);border-color:var(--cc);box-shadow:0 6px 0 color-mix(in srgb,var(--cc) 22%,#E4E9F2),0 14px 24px -10px color-mix(in srgb,var(--cc) 55%,transparent);}
+.chtab:active{transform:translateY(2px);box-shadow:0 1px 0 #E4E9F2,0 4px 10px -8px rgba(20,40,90,.3);}
+.chtab.on{background:linear-gradient(135deg,#FB923C,#EA580C);color:#fff;border-color:transparent;box-shadow:0 5px 0 #C2410C,0 12px 22px -8px rgba(234,88,12,.6);}
+.chtab.on > svg{color:#fff;}
+.chtab.on .ch-ic{background:rgba(255,255,255,.28);color:#fff;}
+.chtab.on:hover{transform:translateY(-1px);}
+/* 색 미지정 탭 자동 팔레트(위치 기반) */
+.chtab:nth-child(6n+1){--cc:#2563EB;}.chtab:nth-child(6n+2){--cc:#DB2777;}.chtab:nth-child(6n+3){--cc:#16A34A;}.chtab:nth-child(6n+4){--cc:#EA580C;}.chtab:nth-child(6n+5){--cc:#7C3AED;}.chtab:nth-child(6n){--cc:#0891B2;}
+/* 상위 디렉토리(lv1: 검진후케어·건강지갑·HI-Fin이란 그룹탭) — 더 크게 */
+.chtabs.lv1{gap:13px;}
+.chtabs.lv1 .chtab{font-size:15.5px;border-radius:17px;padding:12px 22px 12px 14px;gap:11px;box-shadow:0 5px 0 #E4E9F2,0 10px 20px -10px rgba(20,40,90,.3);}
+.chtabs.lv1 .chtab:hover{box-shadow:0 7px 0 color-mix(in srgb,var(--cc) 22%,#E4E9F2),0 16px 28px -10px color-mix(in srgb,var(--cc) 55%,transparent);}
+.chtabs.lv1 .chtab.on{box-shadow:0 6px 0 #C2410C,0 14px 26px -8px rgba(234,88,12,.65);}
+@media(max-width:520px){.chtab{flex:1 1 44%;justify-content:center;padding:10px 12px;}.chtab .ch-ic{width:34px;height:34px;}}
 .reslink{margin-left:auto;border:1px solid var(--border);background:#fff;color:#3a4b6b;border-radius:12px;padding:9px 14px;font-weight:700;font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:6px;}
 .reslink.on{background:#F1ECFE;border-color:#DDD0FA;color:#6A29D6;}
 .regions{display:flex;gap:7px;overflow-x:auto;margin-bottom:12px;padding-bottom:3px;}
@@ -1411,8 +1427,8 @@
 .shopcat .sc-ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--cc) 15%,#fff);color:var(--cc);flex-shrink:0;transition:.12s;}
 .shopcat:hover{transform:translateY(-2px);border-color:var(--cc);box-shadow:0 6px 0 color-mix(in srgb,var(--cc) 22%,#E4E9F2),0 14px 24px -10px color-mix(in srgb,var(--cc) 55%,transparent);}
 .shopcat:active{transform:translateY(2px);box-shadow:0 1px 0 #E4E9F2,0 4px 10px -8px rgba(20,40,90,.3);}
-.shopcat.on{background:linear-gradient(135deg,var(--cc),color-mix(in srgb,var(--cc) 74%,#000));color:#fff;border-color:transparent;box-shadow:0 5px 0 color-mix(in srgb,var(--cc) 62%,#000),0 12px 22px -8px color-mix(in srgb,var(--cc) 70%,transparent);}
-.shopcat.on .sc-ic{background:rgba(255,255,255,.24);color:#fff;}
+.shopcat.on{background:linear-gradient(135deg,#FB923C,#EA580C);color:#fff;border-color:transparent;box-shadow:0 5px 0 #C2410C,0 12px 22px -8px rgba(234,88,12,.6);}
+.shopcat.on .sc-ic{background:rgba(255,255,255,.28);color:#fff;}
 .shopcat.on:hover{transform:translateY(-1px);}
 @media(max-width:520px){.shopcat{flex:1 1 44%;justify-content:center;padding:9px 10px;}}
 /* 건강식단·정밀영양 소개 비주얼 섹션 */

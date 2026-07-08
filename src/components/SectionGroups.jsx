@@ -12,10 +12,15 @@ function GroupHead({ ic: Ic, title, sub, color }) {
     </div>
   );
 }
+const GTAB_PAL = ["#2563EB", "#DB2777", "#16A34A", "#EA580C", "#7C3AED", "#0891B2"];
 function GroupTabs({ tabs, tab, setTab }) {
   return (
-    <div className="chtabs" style={{ marginBottom: 6 }}>
-      {tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}
+    <div className="chtabs lv1" style={{ marginBottom: 8 }}>
+      {tabs.map(([k, t, Ic, c], i) => (
+        <div key={k} className={`chtab ${tab === k ? "on" : ""}`} style={{ "--cc": c || GTAB_PAL[i % GTAB_PAL.length] }} onClick={() => setTab(k)}>
+          <span className="ch-ic"><Ic size={19} /></span><span className="ch-t">{t}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -24,7 +29,7 @@ function HomeHub({ initial, onGo }) {
   const map = { home: "home", social: "social", community: "community" };
   const [tab, setTab] = useState(map[initial] || "home");
   useEffect(() => { setTab(map[initial] || "home"); }, [initial]);
-  const tabs = [["home", "홈 · 소개", Home], ["social", "사회적기업", HeartHandshake], ["community", "커뮤니티", Users]];
+  const tabs = [["home", "홈 · 소개", Home, "#2563EB"], ["social", "사회적기업", HeartHandshake, "#16A34A"], ["community", "커뮤니티", Users, "#7C3AED"]];
   return (
     <div style={{ marginTop: 4 }}>
       <GroupHead ic={Home} title="HI-Fin Tech란" sub="회사 소개 · 비전 · 사회적 가치환원 · 커뮤니티" color="#2563EB" />
@@ -40,7 +45,7 @@ function CareSection({ initial, onGo }) {
   const map = { care: "hospital", hospital: "hospital", homecare: "homecare", shop: "shop" };
   const [tab, setTab] = useState(map[initial] || "hospital");
   useEffect(() => { setTab(map[initial] || "hospital"); }, [initial]);
-  const tabs = [["hospital", "병원 진료·추가검진", Building2], ["homecare", "재가·돌봄", HeartHandshake], ["shop", "건강쇼핑", ShoppingCart]];
+  const tabs = [["hospital", "병원 진료·추가검진", Building2, "#2563EB"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
   return (
     <div style={{ marginTop: 4 }}>
       <GroupHead ic={HeartHandshake} title="검진 후 케어" sub="검진 결과에 맞춘 병원 진료·추가 정밀검진 · 재가·돌봄 · 맞춤 건강쇼핑" color="#DB2777" />
@@ -56,7 +61,7 @@ function WalletHubSection({ initial, onGo }) {
   const map = { mywallet: "ai", ai: "ai", manage: "manage", wallet: "wallet", nft: "nft", mypage: "mypage" };
   const [tab, setTab] = useState(map[initial] || "ai");
   useEffect(() => { setTab(map[initial] || "ai"); }, [initial]);
-  const tabs = [["ai", "나의 주치의", Bot], ["manage", "건강관리", HeartPulse], ["wallet", "건강금융지갑", Wallet], ["nft", "Health NFT", BadgeCheck], ["mypage", "마이페이지", Settings]];
+  const tabs = [["ai", "나의 주치의", Bot, "#7C3AED"], ["manage", "건강관리", HeartPulse, "#E11D48"], ["wallet", "건강금융지갑", Wallet, "#059669"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["mypage", "마이페이지", Settings, "#475569"]];
   return (
     <div style={{ marginTop: 4 }}>
       <GroupHead ic={Wallet} title="나의 건강지갑" sub="AI 주치의 · 건강관리 · 건강금융지갑 · Health NFT · 마이페이지를 한 곳에서" color="#059669" />
