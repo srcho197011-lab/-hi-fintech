@@ -250,15 +250,48 @@ function WaterBanner() {
     </div>
   );
 }
+/* 정밀영양협회 회원사 대표 제품 실제 이미지(2026-07 수집·검증, 다나와/네이버 CDN).
+   미확인 회원사는 자동으로 브랜드 그라디언트+이모지 mock으로 대체된다. */
+const MEMBER_MEDIA = {
+  "유니베라": "https://img.danuri.io/catalog-image/729/546/009/55f87398d7a34899ab8abdaf9ca5d3ed.jpg?shrink=330:*&_v=20260708080439",
+  "헤일리온 코리아": "https://img.danuri.io/catalog-image/673/404/120/728c05adfff64f18b14744be33fcca37.jpg?shrink=330:*&_v=20260530073620",
+  "제노포커스": "https://shopping-phinf.pstatic.net/main_8660217/86602176863.2.jpg",
+  "㈜메디콥": "https://img.danuri.io/catalog-image/929/529/032/c413b9327a5c4071a5013b76a7be69d3.jpg?shrink=330:*&_v=20260708080418",
+};
+function memberEmoji(mm) {
+  const t = (mm.tag || "") + (mm.type || "") + (mm.product || "");
+  if (/상처|의약외품|밴드|스왑|소독/.test(t)) return "🩹";
+  if (/효소|소재|프리바이오|GOS/.test(t)) return "🧪";
+  if (/오메가|DHA|EPA/.test(t)) return "🐟";
+  if (/맞춤|개인|디스펜서|구독|데이터|유전자|앱/.test(t)) return "🧬";
+  if (/면역|알로에|장/.test(t)) return "🌿";
+  return "💊";
+}
+function MemberImage({ mm }) {
+  const [err, setErr] = useState(false);
+  const src = (typeof MEMBER_MEDIA !== "undefined") ? MEMBER_MEDIA[mm.company] : null;
+  if (src && !err) return (
+    <div className="mthumb">
+      <img className="mthumbimg" src={src} alt={mm.product} loading="lazy" onError={() => setErr(true)} />
+      <span className="mthumbtag">{mm.tag}</span>
+    </div>
+  );
+  return (
+    <div className="mthumb mock" style={{ background: `linear-gradient(150deg, ${mm.col}14, ${mm.col}2b)` }}>
+      <span className="mm-emoji">{memberEmoji(mm)}</span>
+      <span className="mm-co" style={{ color: mm.col }}>{mm.company}</span>
+      <span className="mthumbtag">{mm.tag}</span>
+    </div>
+  );
+}
 function MemberCard({ mm }) {
   const hasUrl = mm.url && /^https?:/.test(mm.url);
   const [pharm, setPharm] = useState(false);
   return (
     <div className="mcard">
-      <div className="mtop" style={{ background: `linear-gradient(135deg, ${mm.col}, ${mm.col}cc)` }}>
-        <span className="mtag">{mm.tag}</span><b>{mm.company}</b>
-      </div>
+      <MemberImage mm={mm} />
       <div className="mmid">
+        <div className="mcompany">{mm.company}</div>
         <div className="mprod">{mm.product}</div>
         <div className="mben">{mm.desc}</div>
         <div className="mtags2"><span className="mtype">{mm.type}</span><span className="mmem"><BadgeCheck size={10} /> 정밀영양협회 회원사</span></div>

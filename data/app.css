@@ -1441,6 +1441,14 @@
 .mcard .mbtn:hover{background:#EEF3FB;}
 .mcard .mbtn.ph{color:#15803D;background:#F1FBF4;border:none;border-top:1px solid var(--border);cursor:pointer;width:100%;}
 .mcard .mbtn.ph:hover{background:#E4F7EA;}
+/* 회원사 카드 제품 이미지(건강식단 카드와 동일 형식) */
+.mcard .mthumb{position:relative;width:100%;aspect-ratio:1/1;background:#fff;overflow:hidden;border-bottom:1px solid var(--border);}
+.mcard .mthumbimg{width:100%;height:100%;object-fit:contain;padding:11px;display:block;}
+.mcard .mthumb.mock{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-bottom:none;}
+.mcard .mthumb .mm-emoji{font-size:46px;line-height:1;filter:drop-shadow(0 4px 8px rgba(0,0,0,.14));}
+.mcard .mthumb .mm-co{font-size:12.5px;font-weight:800;letter-spacing:-.3px;text-align:center;padding:0 8px;}
+.mcard .mthumbtag{position:absolute;top:8px;left:8px;background:rgba(17,27,55,.82);color:#fff;border-radius:999px;padding:2px 9px;font-size:9.3px;font-weight:800;backdrop-filter:blur(2px);box-shadow:0 2px 6px -2px rgba(0,0,0,.4);}
+.mcard .mcompany{font-size:13px;font-weight:900;color:#0F1F44;letter-spacing:-.3px;margin-bottom:3px;line-height:1.3;}
 /* 브랜드 취급 약국 찾기 버튼(특별제휴 소형카드) */
 .spcard .bpfind{display:flex;width:100%;align-items:center;justify-content:center;gap:6px;margin-top:8px;border-radius:11px;padding:10px 12px;font-weight:800;font-size:11.5px;cursor:pointer;background:rgba(255,255,255,.94);color:#0F766E;border:none;box-shadow:0 3px 10px -6px rgba(0,0,0,.4);}
 .spcard .bpfind:hover{background:#fff;}
