@@ -96,12 +96,17 @@ function PnLogo() {
     </svg>
   );
 }
+const PN_HERO = "./data/img/pn-hero.png"; /* 정밀영양협회 히어로 이미지(이 경로에 파일을 두면 왼쪽에 크게 표시) */
 function PrecisionNutritionSection() {
   const SITE = "https://precision-nutrition.kr/";
   const checks = ["전문가 검증 제품", "과학적 근거 기반 추천", "개인 맞춤형 영양관리", "건강검진 데이터 기반 추천"];
+  const [heroErr, setHeroErr] = useState(false);
   return (
     <section className="pnsec" aria-label="사단법인 정밀영양협회 인증 안내">
       <div className="pnban">
+        <div className="pnbanrow">
+          {!heroErr && <a className="pnhero" href={SITE} target="_blank" rel="noreferrer noopener" title="사단법인 정밀영양협회 소개"><img src={PN_HERO} alt="사단법인 정밀영양협회 · Precision Nutrition" loading="lazy" onError={() => setHeroErr(true)} /></a>}
+          <div className="pnbancol">
         <div className="pnban-top">
           <div className="pnlogo">
             <PnLogo />
@@ -118,6 +123,8 @@ function PrecisionNutritionSection() {
         <div className="pncta">
           {!EXTERNAL_OK && <span className="nt">미리보기에선 링크 우클릭 → ‘새 탭에서 열기’</span>}
           <a href={SITE} target="_blank" rel="noreferrer noopener">사단법인 정밀영양협회 소개 <ExternalLink size={13} /></a>
+        </div>
+          </div>
         </div>
       </div>
       <div className="pnlede"><h3>회원 개개인의 건강상태, 생활습관, 건강검진 결과 및 영양학적 특성을 종합적으로 분석하여 최적의 맞춤형 건강 솔루션을 제공합니다.</h3></div>
