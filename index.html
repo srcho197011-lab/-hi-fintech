@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=9e20fa2a5e" />
+<link rel="stylesheet" href="./data/app.css?v=e3baaab6ee" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=9e20fa2a5e"></script>
-<script src="./src/data/section_data.js?v=9e20fa2a5e"></script>
-<script src="./src/data/demo_members.js?v=9e20fa2a5e"></script>
+<script src="./src/data/dummy_data.js?v=e3baaab6ee"></script>
+<script src="./src/data/section_data.js?v=e3baaab6ee"></script>
+<script src="./src/data/demo_members.js?v=e3baaab6ee"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -5885,6 +5885,86 @@ function ShopConsultant() {
     </div>
   );
 }
+/* ====================== 건강식단 커머스(쿠팡형) — 실제 건강식단 브랜드 제품 ======================
+   ※ 투자자 데모용 예시 데이터. 가격·평점·리뷰수는 예시이며, image는 실제 제품 이미지 URL(없으면 카테고리 목업 폴백).
+   상업 서비스 전환 시 정식 제휴·상품 API로 교체. */
+const MEAL_PRODUCTS = [
+  { id: "m-designmeal", brand: "풀무원 디자인밀", name: "디자인밀 그린박스 건강도시락 (6팩)", category: "맞춤도시락", price: 39900, orig: 45000, rating: 4.7, reviews: 2314, badge: "새벽배송", emoji: "🍱", url: "https://www.pulmuone.co.kr", desc: "저당·균형식 케어푸드" },
+  { id: "m-greating", brand: "현대그린푸드 그리팅", name: "그리팅 케어 도시락 만성질환 관리식", category: "맞춤도시락", price: 41900, orig: 49000, rating: 4.6, reviews: 1876, badge: "정기배송", emoji: "🍱", url: "https://www.greating.co.kr", desc: "영양사 설계 저염·저당식" },
+  { id: "m-selexcore", brand: "매일헬스뉴트리션", name: "셀렉스 코어프로틴 단백질 파우더 (750g)", category: "단백질", price: 34900, orig: 42000, rating: 4.8, reviews: 5621, badge: "로켓직구", emoji: "🥤", url: "https://www.selex.co.kr", desc: "중장년 근력·단백질 보충" },
+  { id: "m-nucare", brand: "대상웰라이프", name: "뉴케어 균형영양식 200ml (24입)", category: "균형영양식", price: 28900, orig: 33000, rating: 4.7, reviews: 3210, badge: "새벽배송", emoji: "🧉", url: "https://www.daesangwellife.com", desc: "식사대용 균형영양·회복식" },
+  { id: "m-medisola", brand: "메디쏠라", name: "메디푸드 당뇨케어 식단 (7일)", category: "질환케어", price: 45000, orig: 52000, rating: 4.5, reviews: 842, badge: "정기배송", emoji: "🍲", url: "https://www.medisola.co.kr", desc: "당뇨·신장·암 질환별 케어" },
+  { id: "m-herings", brand: "헤링스", name: "힐리어리 암환자 케어식단 (1:1 맞춤)", category: "질환케어", price: 59000, orig: 68000, rating: 4.9, reviews: 512, badge: "맞춤제작", emoji: "🍱", url: "https://www.herings.co.kr", desc: "암환자 1:1 영양관리" },
+  { id: "m-cheonggang", brand: "지리산청강원", name: "오행 약선차 건강차 선물세트", category: "건강차", price: 24000, orig: 29000, rating: 4.6, reviews: 431, badge: "산지직송", emoji: "🍵", url: "https://smartstore.naver.com", desc: "약초 기반 전통 약선차" },
+  { id: "m-farmkit", brand: "팜킷", name: "푸드큐 AI 맞춤식단 (5일 구성)", category: "AI맞춤식", price: 38000, orig: 44000, rating: 4.7, reviews: 1023, badge: "AI추천", emoji: "🥗", url: "https://www.farmkit.co.kr", desc: "AI 개인 맞춤 식단" },
+  { id: "m-drkitchen", brand: "닥터키친", name: "질환별 맞춤 건강식단 밀박스", category: "질환케어", price: 43000, orig: 50000, rating: 4.6, reviews: 1567, badge: "새벽배송", emoji: "🥘", url: "https://www.drkitchen.co.kr", desc: "당뇨·신장·다이어트식" },
+  { id: "m-fresheasy", brand: "프레시지", name: "헬스밀 저칼로리 밀키트 (10종)", category: "밀키트", price: 19900, orig: 25000, rating: 4.5, reviews: 8912, badge: "로켓배송", emoji: "🥘", url: "https://www.fresheasy.co.kr", desc: "헬스밀·간편 밀키트" },
+  { id: "m-eatson", brand: "hy 잇츠온", name: "잇츠온 건강 국·반찬 세트", category: "간편식", price: 15900, orig: 19000, rating: 4.4, reviews: 4231, badge: "새벽배송", emoji: "🍚", url: "https://www.hy.co.kr", desc: "간편 건강식·반찬" },
+  { id: "m-maeilselex", brand: "매일유업 셀렉스", name: "셀렉스 프로틴 음료 190ml (16입)", category: "단백질", price: 32000, orig: 38000, rating: 4.7, reviews: 6742, badge: "로켓배송", emoji: "🥤", url: "https://www.selex.co.kr", desc: "단백질·시니어 케어푸드" },
+  { id: "m-ourhome", brand: "아워홈 케어플러스", name: "케어플러스 연화식 환자식 (부드러운식)", category: "질환케어", price: 36000, orig: 42000, rating: 4.5, reviews: 723, badge: "정기배송", emoji: "🍲", url: "https://www.ourhomemall.com", desc: "연화식·환자식" },
+  { id: "m-cjfw", brand: "CJ프레시웨이", name: "케어푸드 실버 영양식단", category: "간편식", price: 33000, orig: 39000, rating: 4.5, reviews: 634, badge: "정기배송", emoji: "🍱", url: "https://www.cjfreshway.com", desc: "케어푸드·시니어식" },
+  { id: "m-bonjuk", brand: "본죽", name: "전복죽 환자 회복식 (5팩)", category: "죽", price: 27900, orig: 33000, rating: 4.6, reviews: 3892, badge: "새벽배송", emoji: "🥣", url: "https://www.bonif.co.kr", desc: "죽·환자 회복식" },
+  { id: "m-dongwon", brand: "동원 더반찬&", name: "더반찬& 건강 간편식 (주간세트)", category: "간편식", price: 21900, orig: 27000, rating: 4.5, reviews: 2765, badge: "새벽배송", emoji: "🍚", url: "https://www.thebanchan.co.kr", desc: "건강 간편식·반찬" },
+  { id: "m-spaoeat", brand: "잇메이트(스파오)", name: "닭가슴살 스테이크 고단백 (30팩)", category: "단백질", price: 29900, orig: 39000, rating: 4.6, reviews: 12043, badge: "로켓배송", emoji: "🍗", url: "https://www.eatmate.co.kr", desc: "닭가슴살·고단백식" },
+];
+const MEAL_MEDIA = {}; /* key→실제 이미지 URL. 채워지면 자동으로 실제 사진 노출(없으면 목업 폴백) */
+function MealMock({ p }) {
+  const hue = (String(p.id).split("").reduce((s, c) => s + c.charCodeAt(0), 0) % 360);
+  return (
+    <div className="mealmock" style={{ background: `linear-gradient(160deg,hsl(${hue} 55% 96%),hsl(${(hue + 30) % 360} 45% 90%))` }}>
+      <span className="mm-emoji">{p.emoji || "🥗"}</span>
+      <span className="mm-brand">{p.brand.split(" ")[0]}</span>
+    </div>
+  );
+}
+function MealImage({ p }) {
+  const [err, setErr] = useState(false);
+  const src = (typeof MEAL_MEDIA !== "undefined") ? MEAL_MEDIA[p.id] : null;
+  if (src && !err) return <img className="mealimg" src={src} alt={p.name} loading="lazy" onError={() => setErr(true)} />;
+  return <MealMock p={p} />;
+}
+function MealCard({ p, onAdd }) {
+  const disc = p.orig && p.orig > p.price ? Math.round((1 - p.price / p.orig) * 100) : 0;
+  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.25) };
+  return (
+    <div className="mealcard">
+      <div className="mealthumb"><MealImage p={p} />{p.badge && <span className="mealbadge">{p.badge}</span>}</div>
+      <div className="mealbrand">{p.brand}</div>
+      <div className="mealname">{p.name}</div>
+      <div className="mealrate"><span className="stars">★</span> {p.rating} <span className="rev">({p.reviews.toLocaleString()})</span></div>
+      <div className="mealprices">{disc > 0 && <span className="mdisc">{disc}%</span>}<span className="mprice">{shopWon(p.price)}</span>{disc > 0 && <span className="morig">{shopWon(p.orig)}</span>}</div>
+      <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)}</div>
+      <button className="mealadd" onClick={() => onAdd(p)}><ShoppingCart size={13} /> 담기</button>
+    </div>
+  );
+}
+function MealShop() {
+  const [cat, setCat] = useState("전체");
+  const [sort, setSort] = useState("reco");
+  const cats = ["전체", ...Array.from(new Set(MEAL_PRODUCTS.map((p) => p.category)))];
+  let list = MEAL_PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
+  if (sort === "review") list = [...list].sort((a, b) => b.reviews - a.reviews);
+  else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
+  else if (sort === "rating") list = [...list].sort((a, b) => b.rating - a.rating);
+  const add = (p) => { if (typeof shopCartAdd === "function") shopCartAdd(p.id); if (typeof toast === "function") toast(`🛒 ${p.name} 담기`); };
+  return (
+    <div className="mealshop">
+      <div className="mealhead">
+        <div><b>🥗 건강식단 쇼핑</b><span>정밀영양협회 검증 건강식단 브랜드 · {MEAL_PRODUCTS.length}종</span></div>
+        <span className="mealcert"><ShieldCheck size={12} /> Precision Nutrition Certified</span>
+      </div>
+      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
+      <div className="sssort">
+        <span>정렬</span>
+        {[["reco", "추천순"], ["review", "리뷰많은순"], ["priceLow", "낮은가격순"], ["rating", "별점높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        <span className="sscount">{list.length}종</span>
+      </div>
+      <div className="mealgrid">{list.map((p) => <MealCard key={p.id} p={p} onAdd={add} />)}</div>
+      <div className="chnote">※ 상품·가격·평점·리뷰수는 <b>투자자 데모용 예시</b>이며 실제와 다를 수 있습니다. 제품 이미지는 실제 제품 참조용이고, 실제 판매·배송은 각 브랜드/제휴사를 통해 이뤄집니다. 건강식단은 질병의 치료·예방을 위한 의약품이 아닙니다.</div>
+      {typeof ShopCartBar === "function" && <ShopCartBar products={[].concat(typeof SUPP_PRODUCTS !== "undefined" ? SUPP_PRODUCTS : [], MEAL_PRODUCTS)} />}
+    </div>
+  );
+}
 function ShopSection() {
   const [cat, setCat] = useState(() => { try { return (typeof window !== "undefined" && window._shopIntel) ? "intel" : "diet"; } catch (e) { return "diet"; } });
   const cats = [["diet", "건강식단", Salad], ["supp", "영양제", Pill], ["device", "의료기기", Stethoscope], ["intel", "AI 상담사", Sparkles], ["sports", "스포츠건강", Activity]];
@@ -5895,7 +5975,7 @@ function ShopSection() {
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
       <PrecisionNutritionSection />
       <div className="chtabs">{cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}</div>
-      {cat === "diet" && <ShopCategory catKey="diet" label="건강식단" />}
+      {cat === "diet" && <><MealShop /><div style={{ marginTop: 18 }} /><ShopCategory catKey="diet" label="건강식단" /></>}
       {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
       {cat === "device" && <ShopCategory catKey="device" label="의료기기" />}
       {cat === "intel" && <ShopConsultant />}

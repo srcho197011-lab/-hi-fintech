@@ -2421,6 +2421,31 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .lowprice{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:#EA580C;margin-top:7px;text-decoration:none;border:1px solid #FED7AA;border-radius:999px;padding:3px 9px;background:#FFF7ED;}
 .lowprice:hover{background:#FFEDD5;border-color:#FDBA74;}
 .spin{animation:hspin .8s linear infinite;}
+/* 건강식단 커머스(쿠팡형) */
+.mealshop{margin-top:6px;}
+.mealhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 10px;flex-wrap:wrap;}
+.mealhead b{font-size:16px;color:#15234A;}.mealhead span{font-size:11.5px;color:var(--muted);margin-left:8px;font-weight:600;}
+.mealcert{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:#2C6ED5;background:#EAF1FE;border:1px solid #C7DBFB;border-radius:999px;padding:3px 9px;}
+.mealgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:14px;margin-top:8px;}
+.mealcard{background:#fff;border:1px solid #eef0f4;border-radius:12px;padding:10px;display:flex;flex-direction:column;transition:box-shadow .15s,transform .1s;cursor:default;}
+.mealcard:hover{box-shadow:0 12px 26px -18px rgba(20,40,90,.5);transform:translateY(-2px);}
+.mealthumb{position:relative;width:100%;aspect-ratio:1/1;border-radius:9px;overflow:hidden;background:#F5F7FA;margin-bottom:9px;}
+.mealthumb .mealimg{width:100%;height:100%;object-fit:cover;display:block;}
+.mealmock{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.mealmock .mm-emoji{font-size:52px;line-height:1;filter:drop-shadow(0 4px 8px rgba(0,0,0,.12));}
+.mealmock .mm-brand{font-size:11px;font-weight:800;color:#5b6b80;}
+.mealbadge{position:absolute;left:7px;top:7px;background:#2C6ED5;color:#fff;font-size:10px;font-weight:800;border-radius:6px;padding:2px 7px;box-shadow:0 2px 6px -2px rgba(44,110,213,.6);}
+.mealbrand{font-size:11px;color:#8A97AE;font-weight:600;}
+.mealname{font-size:13px;color:#20293c;font-weight:600;line-height:1.34;margin:2px 0 5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:35px;}
+.mealrate{font-size:11.5px;color:#5b6b80;margin-bottom:3px;}.mealrate .stars{color:#FFB300;}.mealrate .rev{color:#9aa6b6;}
+.mealprices{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;}
+.mealprices .mdisc{color:#E53935;font-weight:800;font-size:15px;}
+.mealprices .mprice{color:#15234A;font-weight:800;font-size:15px;}
+.mealprices .morig{color:#b6bECA;font-size:11.5px;text-decoration:line-through;}
+.mealreward{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:800;color:#B45309;background:#FEF3E2;border-radius:999px;padding:2px 7px;margin-top:6px;align-self:flex-start;}
+.mealadd{margin-top:9px;display:flex;align-items:center;justify-content:center;gap:5px;background:#fff;border:1px solid #2C6ED5;color:#2C6ED5;font-size:12.5px;font-weight:800;border-radius:8px;padding:8px;cursor:pointer;transition:background .12s;}
+.mealadd:hover{background:#EAF1FE;}
+@media(max-width:520px){.mealgrid{grid-template-columns:repeat(2,1fr);gap:10px;}}
 /* AI Super Agent — 섹션 안내 버튼 그리드 */
 .agentgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:10px;margin:8px 0 16px;}
 .agentcard{display:flex;flex-direction:column;gap:4px;text-align:left;background:#fff;border:1px solid var(--border);border-radius:14px;padding:13px 14px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .1s;}
