@@ -138,18 +138,19 @@ function PrecisionNutritionSection() {
   );
 }
 
-/* 특별제휴 배너 제품 이미지 갤러리(다나와 CDN) — 투자자용 프리미엄 배너 */
+/* 특별제휴 배너 제품 이미지·영상 갤러리(로컬 실제 제품) — 투자자용 프리미엄 배너 */
 const SP_GALLERY = {
   "GN바디닥터": [
-    { name: "요실금 치료기", img: "https://img.danuri.io/catalog-image/873/087/005/dc5f8f1fcf7d4ebfa25a280c1d59f26e.jpg?shrink=300:300" },
-    { name: "EMS 벨트", img: "https://img.danuri.io/catalog-image/806/711/096/8521a2f838bf4ef3977b7d602e06796b.jpg?shrink=300:300" },
-    { name: "고주파 리페어", img: "https://img.danuri.io/catalog-image/661/859/042/10db7d05c42a4d0b8bc7bf5a84569161.jpg?shrink=300:300" },
-    { name: "음파 매트", img: "https://img.danuri.io/catalog-image/664/325/015/34a602c077034c6ebaa72220a9877803.jpg?shrink=300:300" },
+    { name: "요실금 치료기", img: "./data/img/medi/urinary.png" },
+    { name: "골관절염 치료기", img: "./data/img/medi/joint.png" },
+    { name: "고주파 리페어", video: "./data/img/medi/rf-repair.mp4" },
+    { name: "바디닥터 케어", video: "./data/img/medi/bodydoctor.mp4" },
   ],
 };
 function SpGalleryImg({ g }) {
   const [err, setErr] = useState(false);
   if (err) return <div className="spgmock"><Stethoscope size={26} /></div>;
+  if (g.video) return <video className="spgvid" src={g.video} autoPlay loop muted playsInline preload="metadata" onError={() => setErr(true)} />;
   return <img src={g.img} alt={g.name} loading="lazy" referrerPolicy="no-referrer" onError={() => setErr(true)} />;
 }
 function ShopPartnerCard({ p }) {
