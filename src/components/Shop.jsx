@@ -259,8 +259,8 @@ const MEMBER_MEDIA = {
   "㈜메디콥": "https://img.danuri.io/catalog-image/929/529/032/c413b9327a5c4071a5013b76a7be69d3.jpg?shrink=330:*&_v=20260708080418",
   // 유사 제품 컷(투자자 데모용) — 상용화 시 각 회원사 실제 대표 제품 이미지로 교체
   "한독": "https://img.danuri.io/catalog-image/459/841/100/5f0c1421ffe64dd299546b5a2728c274.jpg?shrink=300:300",
-  "알고케어": "https://img.danuri.io/catalog-image/858/335/118/2f42eb9e8d7a4e10b608477b56db2280.jpg?shrink=300:300",
-  "필워크": "https://img.danuri.io/catalog-image/424/673/018/fb40fd117e69448eb1517172350a4925.jpg?shrink=300:300",
+  "알고케어": "./data/img/supp/algocare.png",
+  "필워크": "./data/img/supp/pillwork.png",
   "DSM코리아": "https://img.danuri.io/catalog-image/400/776/017/c52dca764b4d42b1855d12602a7c2503.jpg?shrink=300:300",
   "광헬스케어": "https://img.danuri.io/catalog-image/172/099/019/300cad05c52c4f898fd2c0864b24bb35.jpg?shrink=300:300",
   "바이오뉴트리온": "https://img.danuri.io/catalog-image/354/835/079/1b171659455e47dbacb0c5f059027c34.jpg?shrink=300:300",
