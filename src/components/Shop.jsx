@@ -272,7 +272,7 @@ const MEMBER_MEDIA = {
   "광헬스케어": "https://img.danuri.io/catalog-image/172/099/019/300cad05c52c4f898fd2c0864b24bb35.jpg?shrink=300:300",
   "바이오뉴트리온": "https://img.danuri.io/catalog-image/354/835/079/1b171659455e47dbacb0c5f059027c34.jpg?shrink=300:300",
   "디이프": "https://img.danuri.io/catalog-image/065/103/056/ec1591c1444141149c27581c9591961b.jpg?shrink=300:300",
-  "조윈": "https://img.danuri.io/catalog-image/725/112/017/2dc4b7885c1b481daaf8d1f9e8841a07.jpg?shrink=300:300",
+  "조윈": "./data/img/supp/jowin.png",
   "크레놀": "https://img.danuri.io/catalog-image/394/677/029/57064cd23a634fb8b99860407fb277af.jpg?shrink=300:300",
 };
 function memberEmoji(mm) {
