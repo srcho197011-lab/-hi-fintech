@@ -510,6 +510,40 @@ function ShopPartnerCardSm({ p }) {
   );
 }
 
+/* ── 모아라이프플러스 가로 풀 배너 (영양제 특별제휴 · 암웨이·한독 아래) ── */
+const MOA_FEATURES = [
+  ["immune", "γ-PGA·아연 면역", "폴리감마글루탐산(PGA-K)+아연으로 면역 기능 관리"],
+  ["badge", "특허 88건", "국내 31·해외 56건 특허 포트폴리오"],
+  ["doc", "식약처 개별인정형", "면역·항산화 개별인정형 기능성 원료"],
+  ["capsule", "바이오 헬스케어", "건기식·코스메슈티컬·펫케어 파이프라인"],
+];
+function MoaBanner() {
+  const [pharm, setPharm] = useState(false);
+  return (
+    <div className="moaban">
+      <div className="moaimgwrap"><img className="moaimg" src="./data/img/supp/moalifeplus.png" alt="모아라이프플러스 닥터스 PGA 면역업 라인업" loading="lazy" /></div>
+      <div className="moainfo">
+        <div className="moatags">
+          <span className="sptag"><Sparkles size={12} /> 영양제 특별제휴</span>
+          <span className="pnmember"><PnLogo /> 정밀영양협회 회원사</span>
+          <span className="pncert"><ShieldCheck size={12} /> Precision Nutrition Certified</span>
+        </div>
+        <div className="moaname">모아라이프플러스 <span>· 닥터스 PGA 면역업</span></div>
+        <div className="moasub">γ-PGA(폴리감마글루탐산)·아연 기반 <b>면역 기능성</b> 바이오 헬스케어 전문. 식약처 개별인정형 면역·항산화 원료와 88건 특허로 근본적인 면역 관리를 설계합니다.</div>
+        <div className="moafeat">
+          {MOA_FEATURES.map(([a, t, d], i) => <div className="mf" key={i}><span className="si"><Art name={a} size={20} /></span><div><b>{t}</b><p>{d}</p></div></div>)}
+        </div>
+        <div className="spchips">{["닥터스 PGA 면역업", "면역88 골드", "면역엔 PGA-K", "키즈맥스", "코스메슈티컬"].map((c) => <span key={c}>{c}</span>)}</div>
+        <div className="moabtns">
+          <a className="pri" href="https://www.moalifeplus.com/" target="_blank" rel="noreferrer noopener"><MonitorSmartphone size={15} /> 공식 홈페이지 <ExternalLink size={12} /></a>
+          <a className="ghost" href={naverHref("모아라이프플러스", "닥터스 PGA 면역업")} target="_blank" rel="noreferrer noopener"><Search size={15} /> 제품·후기 검색</a>
+          <button className="bpfind" onClick={() => setPharm(true)}><Pill size={13} /> 이 브랜드 취급 약국 찾기</button>
+        </div>
+      </div>
+      {pharm && <BrandPharmacyModal brand="모아라이프플러스" label="닥터스 PGA 면역업" onClose={() => setPharm(false)} />}
+    </div>
+  );
+}
 function ShopCategory({ catKey, label, hideBrands }) {
   const partners = SHOP_PARTNERS[catKey] || [];
   const brands = hideBrands ? [] : (SHOP_BRANDS[catKey] || []);
@@ -520,6 +554,7 @@ function ShopCategory({ catKey, label, hideBrands }) {
       {compact
         ? <div className="spsm-grid">{partners.map((p) => <ShopPartnerCardSm key={p.name} p={p} />)}</div>
         : partners.map((p) => <ShopPartnerCard key={p.name} p={p} />)}
+      {catKey === "supp" && <MoaBanner />}
       {catKey === "diet" && <WaterBanner />}
       <MemberMall catKey={catKey} />
       {!hideBrands && (<>
