@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=aacbdd9f22" />
+<link rel="stylesheet" href="./data/app.css?v=8d4bff507d" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=aacbdd9f22"></script>
-<script src="./src/data/section_data.js?v=aacbdd9f22"></script>
-<script src="./src/data/demo_members.js?v=aacbdd9f22"></script>
+<script src="./src/data/dummy_data.js?v=8d4bff507d"></script>
+<script src="./src/data/section_data.js?v=8d4bff507d"></script>
+<script src="./src/data/demo_members.js?v=8d4bff507d"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -5096,12 +5096,22 @@ function WaterArt() {
     </svg>
   );
 }
+/* LG 퓨리케어 정수기·필터 실제 제품 이미지(다나와 CDN, 2026-07 수집) */
+const WATER_IMG = {
+  purifier: "https://img.danuri.io/catalog-image/067/414/103/8bfecfe2df954be189e460d15a40bf88.jpg",
+  filter: "https://img.danuri.io/catalog-image/540/532/019/87bb40e7ff9c4bc6a89e303b97f295b3.jpg",
+};
 function WaterBanner() {
+  const [e1, setE1] = useState(false); const [e2, setE2] = useState(false);
   return (
     <div className="waterban">
       <span className="wbbubble b1" /><span className="wbbubble b2" />
       <div className="wbwrap">
         <WaterArt />
+        {(!e1 || !e2) && <div className="wbimgtile">
+          {!e1 && <img className="wbimg big" src={WATER_IMG.purifier} alt="LG 퓨리케어 정수기" loading="lazy" onError={() => setE1(true)} />}
+          {!e2 && <img className="wbimg sm" src={WATER_IMG.filter} alt="LG 퓨리케어 교체 필터" loading="lazy" onError={() => setE2(true)} />}
+        </div>}
         <div>
           <span className="wbtag"><PnLogo /> LG전자 · 정밀영양협회 회원사</span>
           <div className="wbname">LG 퓨리케어 정수기 · 필터 <span style={{ fontSize: 11.5, fontWeight: 700, opacity: .9 }}>💧 건강한 물</span></div>

@@ -217,12 +217,22 @@ function WaterArt() {
     </svg>
   );
 }
+/* LG 퓨리케어 정수기·필터 실제 제품 이미지(다나와 CDN, 2026-07 수집) */
+const WATER_IMG = {
+  purifier: "https://img.danuri.io/catalog-image/067/414/103/8bfecfe2df954be189e460d15a40bf88.jpg",
+  filter: "https://img.danuri.io/catalog-image/540/532/019/87bb40e7ff9c4bc6a89e303b97f295b3.jpg",
+};
 function WaterBanner() {
+  const [e1, setE1] = useState(false); const [e2, setE2] = useState(false);
   return (
     <div className="waterban">
       <span className="wbbubble b1" /><span className="wbbubble b2" />
       <div className="wbwrap">
         <WaterArt />
+        {(!e1 || !e2) && <div className="wbimgtile">
+          {!e1 && <img className="wbimg big" src={WATER_IMG.purifier} alt="LG 퓨리케어 정수기" loading="lazy" onError={() => setE1(true)} />}
+          {!e2 && <img className="wbimg sm" src={WATER_IMG.filter} alt="LG 퓨리케어 교체 필터" loading="lazy" onError={() => setE2(true)} />}
+        </div>}
         <div>
           <span className="wbtag"><PnLogo /> LG전자 · 정밀영양협회 회원사</span>
           <div className="wbname">LG 퓨리케어 정수기 · 필터 <span style={{ fontSize: 11.5, fontWeight: 700, opacity: .9 }}>💧 건강한 물</span></div>
