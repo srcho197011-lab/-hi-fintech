@@ -147,6 +147,10 @@ const SP_GALLERY = {
     { name: "바디닥터 케어", video: "./data/img/medi/bodydoctor.mp4" },
   ],
 };
+/* 특별제휴 배너 하단 가로 풀 이미지(팝업매장 등) */
+const SP_WIDE = {
+  "GN바디닥터": { img: "./data/img/medi/popup.png", alt: "BODYDOCTOR 현대백화점 목동점 3F 팝업매장" },
+};
 function SpGalleryImg({ g }) {
   const [err, setErr] = useState(false);
   if (err) return <div className="spgmock"><Stethoscope size={26} /></div>;
@@ -155,6 +159,7 @@ function SpGalleryImg({ g }) {
 }
 function ShopPartnerCard({ p }) {
   const gallery = (typeof SP_GALLERY !== "undefined") ? SP_GALLERY[p.name] : null;
+  const wide = (typeof SP_WIDE !== "undefined") ? SP_WIDE[p.name] : null;
   return (
     <div className="spcard" style={{ background: p.bg }}>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
@@ -167,9 +172,10 @@ function ShopPartnerCard({ p }) {
       {gallery && <div className="spgallery">{gallery.map((g, i) => (
         <div className="spgitem" key={i}><div className="spgimg"><SpGalleryImg g={g} /></div><span className="spgcap">{g.name}</span></div>
       ))}</div>}
-      <div className="spgrid">
+      {wide && <div className="spwide"><img src={wide.img} alt={wide.alt} loading="lazy" /></div>}
+      {!wide && <div className="spgrid">
         {p.strengths.map(([a, t, d], i) => <div className="spitem" key={i}><span className="si"><Art name={a} size={22} /></span><div><b>{t}</b><p>{d}</p></div></div>)}
-      </div>
+      </div>}
       {p.chips && <div className="spchips">{p.chips.map((c) => <span key={c}>{c}</span>)}</div>}
       <div className="spstats">{p.stats.map(([v, k], i) => <div key={i}><b>{v}</b><span>{k}</span></div>)}</div>
       <div className="spbtns">
