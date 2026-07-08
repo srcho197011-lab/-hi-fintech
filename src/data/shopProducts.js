@@ -326,3 +326,16 @@ const SUPP_MEMBERS = [
   { tag: "암·만성질환 영양", company: "조윈", product: "헬스인슈 맞춤 건강기능식품", desc: "암·만성질환 환우 맞춤 건기식 구독+보험 결합(헬스인슈, 국내 최초 특허)", type: "맞춤영양·구독", url: "https://www.jowin.co.kr", col: "#0D9488", q: "조윈 건강기능식품 헬스인슈" },
   { tag: "의약외품·상처케어", company: "㈜메디콥", product: "밴드닥터·클린덤", desc: "방수·습윤 상처밴드(밴드닥터)·알콜스왑(클린덤) 등 의약외품 유통 전문", type: "의약외품·의료용품", url: "https://hkmedi.co.kr/store/615448", col: "#0EA5E9", q: "메디콥 밴드닥터 클린덤 알콜스왑" },
 ];
+/* 홈케어의료기 정밀영양협회 회원사 대표 제품(10곳) — MemberCard(실사진/mock) 형식 */
+const DEVICE_MEMBERS = [
+  { tag: "정수기·구독", company: "LG전자", product: "퓨리케어 정수기·구독", desc: "건강한 물 토탈케어 정수기 + 정기 방문관리 구독(케어솔루션)", type: "소비자제품·구독", url: "https://www.lge.co.kr/", col: "#A50034", q: "LG 퓨리케어 정수기 구독" },
+  { tag: "혈당관리", company: "카카오헬스케어", product: "파스타(PASTA)", desc: "연속혈당측정(CGM) 연동 개인 혈당관리 서비스", type: "디바이스·서비스", url: "https://www.kakaohealthcare.com/", col: "#5A4A2E", q: "카카오헬스케어 파스타 혈당" },
+  { tag: "유전자검사", company: "테라젠바이오", product: "DTC 유전자검사", desc: "유전자 기반 영양·건강 위험 분석 검사", type: "검사·서비스", url: "https://www.terragen.co.kr/", col: "#0E7490", q: "테라젠바이오 유전자검사" },
+  { tag: "유전체검사", company: "EDGC", product: "유전체 분석검사", desc: "유전체 기반 질병·건강 위험분석", type: "검사·서비스", url: "https://www.edgc.com/", col: "#1D4ED8", q: "EDGC 유전체검사" },
+  { tag: "AI 식단분석", company: "두잉랩", product: "푸드렌즈", desc: "AI 사진 식단분석·칼로리 자동 측정", type: "AI 서비스", url: "https://www.doinglab.com/", col: "#EF4444", q: "두잉랩 푸드렌즈" },
+  { tag: "검진·의료", company: "TLC메디컬그룹", product: "건강검진·의료 연계", desc: "전문 검진·맞춤 의료 연계 서비스", type: "의료 서비스", url: "", col: "#0D9488", q: "TLC 헬스케어 검진" },
+  { tag: "디지털 헬스", company: "코이헬스케어", product: "디지털 헬스케어 솔루션", desc: "유전자분석·원격의료 디지털 헬스 솔루션", type: "디지털 헬스", url: "", col: "#2563EB", q: "코이헬스케어" },
+  { tag: "데이터 보안", company: "NSHC", product: "헬스 데이터 보안", desc: "건강·의료 데이터 보안 솔루션", type: "보안 솔루션", url: "https://www.nshc.net/", col: "#1E293B", q: "NSHC 헬스케어 보안" },
+  { tag: "진단·검사", company: "에스크랩스", product: "진단·검사 솔루션", desc: "정밀 진단·검사 기반 헬스케어", type: "진단·검사", url: "", col: "#6D28D9", q: "ASK Labs 에스크랩스" },
+  { tag: "전문 자문", company: "제이앤아이드바이저그룹", product: "헬스케어 자문", desc: "정밀영양·헬스케어 전문 자문", type: "전문 자문", url: "", col: "#475569", q: "제이앤아이 어드바이저그룹" },
+];

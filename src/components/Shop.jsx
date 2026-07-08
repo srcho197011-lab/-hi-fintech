@@ -263,6 +263,10 @@ function WaterBanner() {
 const MEMBER_MEDIA = {
   "유니베라": "https://img.danuri.io/catalog-image/729/546/009/55f87398d7a34899ab8abdaf9ca5d3ed.jpg?shrink=330:*&_v=20260708080439",
   "하이-아이즈": "./data/img/supp/jowin-hivision.png",
+  "LG전자": "https://img.danuri.io/catalog-image/067/414/103/8bfecfe2df954be189e460d15a40bf88.jpg",
+  "카카오헬스케어": "https://img.danuri.io/catalog-image/957/550/067/9660f6169cc84cbbb24d399a61fbbb04.jpg?shrink=300:300",
+  "테라젠바이오": "https://shopping-phinf.pstatic.net/main_8824309/88243097733.1.jpg?type=f300",
+  "에스크랩스": "https://img.danuri.io/catalog-image/009/135/014/9e41c71fde5448dc9c64b941d172ae8d.jpg?shrink=300:300",
   "헤일리온 코리아": "https://img.danuri.io/catalog-image/673/404/120/728c05adfff64f18b14744be33fcca37.jpg?shrink=330:*&_v=20260530073620",
   "제노포커스": "https://shopping-phinf.pstatic.net/main_8660217/86602176863.2.jpg",
   "㈜메디콥": "https://img.danuri.io/catalog-image/929/529/032/c413b9327a5c4071a5013b76a7be69d3.jpg?shrink=330:*&_v=20260708080418",
@@ -277,11 +281,20 @@ const MEMBER_MEDIA = {
   "크레놀": "https://img.danuri.io/catalog-image/394/677/029/57064cd23a634fb8b99860407fb277af.jpg?shrink=300:300",
 };
 function memberEmoji(mm) {
-  const t = (mm.tag || "") + (mm.type || "") + (mm.product || "");
+  const t = (mm.tag || "") + (mm.type || "") + (mm.product || "") + (mm.desc || "");
+  if (/정수기|케어솔루션/.test(t)) return "💧";
+  if (/혈당|CGM|파스타/.test(t)) return "🩸";
+  if (/식단분석|푸드렌즈|칼로리/.test(t)) return "🍎";
+  if (/검진|의료 연계/.test(t)) return "🏥";
+  if (/보안/.test(t)) return "🔒";
+  if (/자문/.test(t)) return "🤝";
+  if (/유전자|유전체/.test(t)) return "🧬";
+  if (/진단|검사/.test(t)) return "🔬";
+  if (/디지털 헬스|원격의료/.test(t)) return "📱";
   if (/상처|의약외품|밴드|스왑|소독/.test(t)) return "🩹";
   if (/효소|소재|프리바이오|GOS/.test(t)) return "🧪";
   if (/오메가|DHA|EPA/.test(t)) return "🐟";
-  if (/맞춤|개인|디스펜서|구독|데이터|유전자|앱/.test(t)) return "🧬";
+  if (/맞춤|개인|디스펜서|구독/.test(t)) return "🧬";
   if (/면역|알로에|장/.test(t)) return "🌿";
   return "💊";
 }
@@ -321,7 +334,8 @@ function MemberCard({ mm }) {
   );
 }
 function MemberMall({ catKey }) {
-  const members = (catKey === "supp" && typeof SUPP_MEMBERS !== "undefined") ? SUPP_MEMBERS : null;
+  const members = (catKey === "supp" && typeof SUPP_MEMBERS !== "undefined") ? SUPP_MEMBERS
+    : (catKey === "device" && typeof DEVICE_MEMBERS !== "undefined") ? DEVICE_MEMBERS : null;
   if (members) {
     return (
       <>
