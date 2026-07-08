@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=df0ce7fdc7" />
+<link rel="stylesheet" href="./data/app.css?v=7f81c63607" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=df0ce7fdc7"></script>
-<script src="./src/data/section_data.js?v=df0ce7fdc7"></script>
-<script src="./src/data/demo_members.js?v=df0ce7fdc7"></script>
+<script src="./src/data/dummy_data.js?v=7f81c63607"></script>
+<script src="./src/data/section_data.js?v=7f81c63607"></script>
+<script src="./src/data/demo_members.js?v=7f81c63607"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -5650,6 +5650,16 @@ function ShopCartBar({ products }) {
     </>
   );
 }
+/* 쿠팡형 카드용 결정적 메타(별점·리뷰수·할인율·원가·배송배지) — id 해시 기반이라 새로고침해도 안정적 */
+function suppMeta(p) {
+  const s = String(p.id).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const rating = (4.5 + (s % 5) / 10).toFixed(1);         // 4.5~4.9
+  const reviews = ((s * 37) % 14500) + 520;               // 520~15019
+  const disc = 10 + (s % 5) * 5;                           // 10·15·20·25·30
+  const orig = Math.round((p.price / (1 - disc / 100)) / 10) * 10;
+  const badges = ["로켓배송", "로켓배송", "무료배송", "로켓프레시", "로켓배송"];
+  return { rating, reviews, disc, orig, badge: badges[s % badges.length] };
+}
 function SupplementShop() {
   const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
@@ -5683,18 +5693,18 @@ function SupplementShop() {
         {[["reward", "적립높은순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
         <span className="sscount">{list.length}종</span>
       </div>
-      <div className="prodgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
-        <div className="prodcard" key={p.id} onClick={() => setDetail(p)}>
-          <div className="pimg" style={{ background: (m.col || "#7C3AED") + "10" }}><SuppImage p={p} /></div>
-          <div className="pinfo">
-            <div className="pbrand">{p.brand}</div>
-            <div className="pname2">{p.name}</div>
-            <div className="pvol">{p.category} · {p.volume}</div>
-            <div className="pprice">{shopWon(p.price)} <small style={{ color: "#EA580C", fontWeight: 700 }}>최저가</small></div>
-            <div className="preward"><Coins size={11} /> 적립 {shopWon(r.reward)} <small>25%</small></div>
-            <a className="lowprice" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={11} /> 국내 최저가 검색 <ExternalLink size={9} /></a>
+      <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p), meta = suppMeta(p); return (
+        <div className="mealcard suppmeal" key={p.id} onClick={() => setDetail(p)}>
+          <div className="mealthumb" style={{ background: (m.col || "#7C3AED") + "0d" }}><SuppImage p={p} /><span className="mealbadge rocket">🚀 {meta.badge}</span></div>
+          <div className="mealbrand">{p.brand}</div>
+          <div className="mealname">{p.name}</div>
+          <div className="mealrate"><span className="stars">★</span> {meta.rating} <span className="rev">({meta.reviews.toLocaleString()})</span></div>
+          <div className="mealprices"><span className="mdisc">{meta.disc}%</span><span className="mprice">{shopWon(p.price)}</span><span className="morig">{shopWon(meta.orig)}</span></div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealbtns">
+            <a className="meallink" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 최저가</a>
+            <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
           </div>
-          <button className="paddbtn" onClick={(e) => { e.stopPropagation(); add(p); }}><Plus size={14} /> 담기</button>
         </div>
       ); })}</div>
       <div className="chnote">※ 가격은 브랜드 공식몰/네이버·쿠팡 최저가 <b>수집 예시(2026-07-01 시점)</b>로 변동될 수 있습니다. 기능성 문구는 식약처 인정 기능성 요약(원문 복제 아님)이며, 이미지·후기·구매는 각 출처로 연결됩니다. 건강기능식품은 질병의 예방·치료 의약품이 아니며, 실제 판매는 브랜드 제휴·오픈마켓 API 연동이 필요합니다.</div>
@@ -11949,6 +11959,59 @@ const SUPP_PRODUCTS = [
   { id: "vitd-solgar", name: "솔가 비타민D3", brand: "솔가", category: "비타민D", volume: "100캡슐", claim: "칼슘·인 흡수와 뼈 건강에 필요", desc: "글로벌 브랜드 비타민D3. 뼈·면역 건강 관리.", price: 21000, source: "naver", url: "https://search.shopping.naver.com" },
   { id: "collagen-ever", name: "에버콜라겐 타임", brand: "뉴트리", category: "콜라겐", volume: "30포", claim: "피부 보습·자외선에 의한 피부 손상 개선에 도움", desc: "저분자 콜라겐펩타이드에 비타민C를 더한 이너뷰티 제품. 피부 탄력·보습 관리.", price: 35000, source: "brand_mall", url: "https://search.shopping.naver.com" },
   { id: "zinc-eundan", name: "고려은단 아연", brand: "고려은단", category: "아연", volume: "90정", claim: "정상적인 면역 기능·세포 분열에 필요", desc: "면역·피부 건강에 관여하는 아연 단일제. 환절기 면역 관리 보조.", price: 11900, source: "brand_mall", url: "https://www.koreaeundan.com" },
+  { id: "prob-cenovis-superbiotic", name: "세노비스 슈퍼바이오틱 60캡슐", brand: "세노비스", category: "프로바이오틱스", volume: "60캡슐", claim: "유산균 증식·유해균 억제로 배변활동 원활에 도움", desc: "호주 프리미엄 브랜드의 다균종 프로바이오틱스로 장까지 살아서 도달하도록 설계됐습니다. 하루 한 캡슐로 간편하게 장 환경 관리를 돕습니다.", price: 29340, source: "danawa", url: "https://prod.danawa.com/info/?pcode=3934845" },
+  { id: "prob-gqlab-gold", name: "지큐랩 100억 유산균 골드 60캡슐", brand: "일동제약", category: "프로바이오틱스", volume: "60캡슐", claim: "유산균 증식·유해균 억제로 배변활동 원활에 도움", desc: "투입 균수 100억 CFU를 담은 일동제약의 대표 유산균으로 다양한 균주를 조합했습니다. 특허 코팅으로 위산에 견디도록 만들어 장까지 도달을 돕습니다.", price: 22000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=29174093" },
+  { id: "prob-gqlab-postbiotics", name: "지큐랩 포스트바이오틱스 RHT 30포", brand: "일동제약", category: "프로바이오틱스", volume: "5g x 30포", claim: "유산균 증식·유해균 억제로 배변활동 원활에 도움", desc: "프로바이오틱스와 그 대사산물 개념을 담은 일동제약의 포스트바이오틱스 스틱형 제품입니다. 물 없이 간편하게 섭취하며 장 환경 관리를 돕습니다.", price: 47850, source: "danawa", url: "https://prod.danawa.com/info/?pcode=74985449" },
+  { id: "prob-denps-story", name: "덴마크 유산균이야기 170mg 60캡슐", brand: "덴프스", category: "프로바이오틱스", volume: "170mg x 60캡슐", claim: "유산균 증식·유해균 억제로 배변활동 원활에 도움", desc: "덴마크 균주를 담아 온 가족이 즐겨 찾는 스테디셀러 유산균입니다. 하루 한 캡슐로 부담 없이 장 건강 관리를 돕습니다.", price: 19260, source: "danawa", url: "https://prod.danawa.com/info/?pcode=4087011" },
+  { id: "prob-duolac-gold", name: "듀오락 골드 프로바이오틱스 130포", brand: "쎌바이오텍", category: "프로바이오틱스", volume: "2.5g x 130포", claim: "유산균 증식·유해균 억제로 배변활동 원활에 도움", desc: "듀얼코팅 기술로 유명한 쎌바이오텍의 대표 스틱형 프로바이오틱스 대용량 구성입니다. 물 없이 섭취하는 분말형으로 매일의 장 관리를 돕습니다.", price: 44900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=99865256" },
+  { id: "hongsam-jkjang-hongsamton-gold", name: "정관장 홍삼톤 골드 40ml 30포", brand: "KGC정관장", category: "홍삼", volume: "40ml x 30포", claim: "면역력 증진·피로 개선·혈행 개선·항산화에 도움", desc: "6년근 홍삼 농축액에 다양한 부원료를 더한 정관장의 대표 파우치형 홍삼입니다. 진하면서도 마시기 편해 온 가족 건강 관리에 두루 쓰입니다.", price: 128900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=424649" },
+  { id: "hongsam-jkjang-hongsamton-60", name: "정관장 홍삼톤 50ml 60포", brand: "KGC정관장", category: "홍삼", volume: "50ml x 60포", claim: "면역력 증진·피로 개선·혈행 개선·항산화에 도움", desc: "6년근 홍삼을 담은 홍삼톤의 대용량 60포 구성으로 장기 섭취에 적합합니다. 하루 한 포로 간편하게 활력 관리를 돕습니다.", price: 120570, source: "danawa", url: "https://prod.danawa.com/info/?pcode=18691262" },
+  { id: "hongsam-jkjang-hongsamwon-gold", name: "정관장 홍삼원 골드 50ml 60포", brand: "KGC정관장", category: "홍삼", volume: "50ml x 60포", claim: "면역력 증진·피로 개선·혈행 개선·항산화에 도움", desc: "6년근 홍삼농축액을 부담 없는 가격대로 담은 정관장 홍삼원의 골드 라인입니다. 부드러운 맛으로 홍삼 입문자와 온 가족이 즐기기 좋습니다.", price: 38970, source: "danawa", url: "https://prod.danawa.com/info/?pcode=1667673" },
+  { id: "hongsam-hansamin-stick", name: "한삼인 주머니 속 홍삼정 스틱 10g 30포", brand: "한삼인", category: "홍삼", volume: "10g x 30포", claim: "면역력 증진·피로 개선·혈행 개선·항산화에 도움", desc: "농협 한삼인의 6년근 홍삼농축액을 휴대 편한 스틱 파우치에 담았습니다. 물 없이 짜 먹는 젤 타입으로 언제 어디서나 간편하게 섭취합니다.", price: 36900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=13096868" },
+  { id: "hongsam-hansamin-jeongsim", name: "한삼인 홍삼정심 100g", brand: "한삼인", category: "홍삼", volume: "100g", claim: "면역력 증진·피로 개선·혈행 개선·항산화에 도움", desc: "6년근 홍삼을 진하게 농축한 한삼인의 정과형 홍삼정 제품입니다. 물이나 따뜻한 차에 타서 취향껏 섭취하며 꾸준한 건강 관리를 돕습니다.", price: 56500, source: "danawa", url: "https://prod.danawa.com/info/?pcode=111367190" },
+  { id: "vitc-cenovis-sugarless", name: "세노비스 비타민C 500mg 슈가레스 300정", brand: "세노비스", category: "비타민C", volume: "500mg x 300정", claim: "항산화·결합조직 형성·철 흡수에 필요", desc: "설탕을 넣지 않은 무설탕 츄어블 타입의 대용량 비타민C입니다. 새콤한 맛으로 물 없이 씹어 먹어 온 가족이 매일 챙기기 좋습니다.", price: 16900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=93439742" },
+  { id: "vitc-solgar-esterc", name: "솔가 에스터C 1000mg 30캡슐", brand: "솔가", category: "비타민C", volume: "1000mg x 30캡슐", claim: "항산화·결합조직 형성·철 흡수에 필요", desc: "위에 부담이 적은 에스터화 비타민C를 담은 미국 솔가의 프리미엄 제품입니다. 고함량 1000mg으로 하루 한 캡슐이면 충분합니다.", price: 14900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=122665852" },
+  { id: "vitc-nowfoods-c1000", name: "나우푸드 C-1000 로즈힙 바이오플라보노이드 250캡슐", brand: "나우푸드", category: "비타민C", volume: "1000mg x 250캡슐", claim: "항산화·결합조직 형성·철 흡수에 필요", desc: "로즈힙과 바이오플라보노이드를 함께 넣은 미국 나우푸드의 대용량 비타민C입니다. 넉넉한 250캡슐 구성으로 오래 두고 챙겨 먹기 좋습니다.", price: 24900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=87747479" },
+  { id: "vitc-gnm-liposomal", name: "GNM 자연의품격 프리미엄 리포좀 비타민C 30정", brand: "GNM자연의품격", category: "비타민C", volume: "30정", claim: "항산화·결합조직 형성·철 흡수에 필요", desc: "흡수율을 높인 리포좀 코팅 기술을 적용한 가성비 비타민C입니다. 하루 한 정으로 부담 없이 항산화 관리를 돕습니다.", price: 10000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=28859843" },
+  { id: "vitc-lemona", name: "경남제약 레모나 2g 70포", brand: "경남제약", category: "비타민C", volume: "2g x 70포", claim: "항산화·결합조직 형성·철 흡수에 필요", desc: "세대를 잇는 국민 비타민C 산제로 상큼한 레몬 맛의 분말형 제품입니다. 물 없이 입에 털어 먹어 간편하게 비타민C를 보충합니다.", price: 10980, source: "danawa", url: "https://prod.danawa.com/info/?pcode=28809992" },
+  { id: "multi-nutrione-chewable", name: "뉴트리원 츄어블 온가족 종합비타민&미네랄 1500mg 365정", brand: "뉴트리원", category: "종합비타민", volume: "365정", claim: "13종 비타민·미네랄로 항산화·에너지 생성·면역에 도움", desc: "온 가족이 함께 씹어 먹는 츄어블 종합비타민으로, 하루 한 알에 다양한 비타민과 미네랄을 담았습니다. 1년분(365정) 대용량 구성입니다.", price: 29900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=12641531" },
+  { id: "multi-ckdhc-dailybest", name: "종근당건강 데일리베스트 종합비타민 미네랄 1400mg 180정", brand: "종근당건강", category: "종합비타민", volume: "180정", claim: "13종 비타민·미네랄로 항산화·에너지 생성 대사에 도움", desc: "성인 남녀를 위한 데일리 종합비타민으로, 하루 한 알에 필수 비타민과 미네랄 13종을 균형 있게 담았습니다.", price: 19800, source: "danawa", url: "https://prod.danawa.com/info/?pcode=3123574" },
+  { id: "multi-koreaeundan-allinone", name: "고려은단 멀티비타민 올인원 60정", brand: "고려은단", category: "종합비타민", volume: "60정", claim: "13종 비타민을 한 알에, 항산화·에너지 대사에 도움", desc: "비타민 A부터 K까지 13종 비타민을 한 알에 담은 올인원 종합비타민입니다. 하루 한 알로 간편하게 챙길 수 있습니다.", price: 22110, source: "danawa", url: "https://prod.danawa.com/info/?pcode=13077467" },
+  { id: "multi-ildong-mainimen", name: "일동제약 마이니 활력 멀티맨 60정", brand: "일동제약", category: "종합비타민", volume: "60정", claim: "성인 남성용 비타민·미네랄 배합, 항산화·에너지 대사에 도움", desc: "성인 남성의 활력을 위해 설계된 종합비타민으로, 마그네슘·아연·셀레늄과 비타민B군을 함께 담았습니다. 하루 2정, 1개월분입니다.", price: 18900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=5707926" },
+  { id: "omega-sunsu-rtg", name: "순수식품 rTG 알티지 오메가3 1000mg 60캡슐", brand: "순수식품", category: "오메가3", volume: "60캡슐", claim: "EPA·DHA가 혈중 중성지질 개선·혈행 개선에 도움", desc: "흡수율을 높인 rTG(알티지) 형태의 오메가3로, 1회 섭취량당 EPA와 DHA 600mg을 담았습니다. 하루 한 알로 간편하게 섭취합니다.", price: 11900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=10996620" },
+  { id: "omega-naturalplus-rtg1200", name: "내츄럴플러스 알티지 오메가3 1200 180캡슐", brand: "내츄럴플러스", category: "오메가3", volume: "180캡슐", claim: "EPA·DHA가 혈행 개선·혈중 중성지질 개선·기억력에 도움", desc: "1회 섭취량당 EPA와 DHA 1200mg을 담은 고함량 rTG 오메가3입니다. 6개월분 대용량으로 꾸준히 섭취하기 좋습니다.", price: 23900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=7341727" },
+  { id: "omega-yuhan-rtggold", name: "유한헬스팜 알티지 골드 오메가3 90캡슐", brand: "유한헬스팜", category: "오메가3", volume: "90캡슐", claim: "EPA·DHA가 혈행 개선·혈중 중성지질 개선·기억력 개선에 도움", desc: "1회 섭취량당 EPA·DHA 1200mg을 담은 고함량 알티지 오메가3입니다. 3개월분 구성으로 하루 한 알 섭취합니다.", price: 25900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=14462807" },
+  { id: "omega-nowfoods-ultra", name: "나우푸드 울트라 오메가-3 90정", brand: "나우푸드", category: "오메가3", volume: "90정", claim: "EPA·DHA가 혈중 중성지질 개선·혈행 개선에 도움", desc: "미국 나우푸드의 고함량 피쉬오일 오메가3로, 1정당 EPA·DHA 750mg을 담았습니다. 장용성 코팅으로 비린내 부담을 낮췄습니다.", price: 28000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=29200127" },
+  { id: "lutein-ckdhc-eyeclear-zea", name: "종근당건강 아이클리어 루테인 지아잔틴 500mg 30캡슐", brand: "종근당건강", category: "루테인", volume: "30캡슐", claim: "루테인·지아잔틴이 황반색소밀도 유지로 눈 건강에 도움", desc: "루테인과 지아잔틴을 함께 담은 아이클리어 눈 건강 영양제로, 비타민 A·C·D·E와 아연을 더했습니다. 하루 한 알, 1개월분입니다.", price: 19900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=20229476" },
+  { id: "lutein-koreaeundan-astax", name: "고려은단 루테인 지아잔틴 아스타잔틴 160mg 30캡슐", brand: "고려은단", category: "루테인", volume: "30캡슐", claim: "루테인·지아잔틴이 황반색소밀도 유지에 도움, 아스타잔틴 항산화", desc: "루테인·지아잔틴에 아스타잔틴을 더한 눈 건강 영양제입니다. 하루 한 알로 눈 건강과 항산화를 함께 챙길 수 있습니다.", price: 21880, source: "danawa", url: "https://prod.danawa.com/info/?pcode=17952005" },
+  { id: "lutein-nutrione-zea164", name: "뉴트리원 루테인 지아잔틴 164 500mg 30캡슐", brand: "뉴트리원", category: "루테인", volume: "30캡슐", claim: "루테인·지아잔틴이 황반색소밀도 유지로 눈 건강에 도움", desc: "루테인 16mg과 지아잔틴 4mg을 담은 눈 건강 영양제로, 하루 한 알로 간편하게 눈 건강을 챙길 수 있습니다.", price: 13140, source: "danawa", url: "https://prod.danawa.com/info/?pcode=6941287" },
+  { id: "lutein-gnm-astax", name: "GNM자연의품격 루테인 지아잔틴 아스타잔틴 160mg 30캡슐", brand: "GNM자연의품격", category: "루테인", volume: "30캡슐", claim: "루테인·지아잔틴이 황반색소밀도 유지에 도움, 아스타잔틴·아연 배합", desc: "루테인·지아잔틴에 아스타잔틴과 아연, 셀레늄을 더한 눈 건강 영양제입니다. 가성비 좋은 1개월분 구성입니다.", price: 12900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=12601430" },
+  { id: "lutein-daewoong-astax", name: "대웅제약 대웅 아스타잔틴 루테인 60캡슐", brand: "대웅제약", category: "루테인", volume: "60캡슐", claim: "루테인이 황반색소밀도 유지에 도움, 아스타잔틴·비타민A 배합", desc: "루테인 20mg에 아스타잔틴과 비타민 A·D·E를 더한 눈 건강 영양제입니다. 하루 한 알, 2개월분 구성입니다.", price: 23900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=10541631" },
+  { id: "milk-daewoong-enercyssle", name: "대웅제약 에너씨슬 30캡슐", brand: "대웅제약", category: "밀크씨슬", volume: "30캡슐", claim: "밀크씨슬 추출물(실리마린)이 간 건강에 도움", desc: "대웅제약의 대표 간 건강 브랜드로 누적 리뷰 상위권을 기록한 스테디셀러입니다. 실리마린을 고함량으로 담아 간편하게 하루 한 캡슐로 챙길 수 있습니다.", price: 19900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=14465942" },
+  { id: "milk-ckdhc-supercare", name: "종근당건강 간건강 슈퍼케어 30정", brand: "종근당건강", category: "밀크씨슬", volume: "30정", claim: "밀크씨슬 추출물(실리마린)이 간 건강에 도움", desc: "종근당건강이 밀크씨슬 추출물을 중심으로 설계한 간 건강 종합 케어 제품입니다. 국내 온라인몰에서 수만 건의 리뷰를 확보한 인기 라인입니다.", price: 29900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=8606624" },
+  { id: "milk-nutrideday-gold", name: "뉴트리디데이 프리미엄 밀크씨슬 골드 500mg 90정", brand: "뉴트리디데이", category: "밀크씨슬", volume: "90정", claim: "밀크씨슬 추출물(실리마린)이 간 건강에 도움", desc: "가성비 밀크씨슬의 대표 주자로 90정 대용량 구성이 특징입니다. 부담 없는 가격과 높은 재구매율로 온라인몰 상위권에 오른 제품입니다.", price: 12900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=8894012" },
+  { id: "milk-nowfoods-silymarin", name: "나우푸드 실리마린 밀크씨슬 300mg 200캡슐", brand: "나우푸드", category: "밀크씨슬", volume: "200캡슐", claim: "밀크씨슬 추출물(실리마린)이 간 건강에 도움", desc: "미국 대표 브랜드 나우푸드의 200캡슐 대용량 밀크씨슬로 장기 복용에 적합합니다. 실리마린 표준화 추출물을 담아 해외 직구 인기 상품으로 꾸준히 판매됩니다.", price: 25900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=5056310" },
+  { id: "milk-koreaeundan-pure", name: "고려은단 퓨어 밀크씨슬 180정", brand: "고려은단", category: "밀크씨슬", volume: "180정", claim: "밀크씨슬 추출물(실리마린)이 간 건강에 도움", desc: "비타민 명가 고려은단의 180정 대용량 밀크씨슬입니다. 불필요한 첨가를 줄인 퓨어 콘셉트로 6개월 장기 복용에 알맞은 구성입니다.", price: 24140, source: "danawa", url: "https://prod.danawa.com/info/?pcode=92658143" },
+  { id: "mag-ankuk-anshim", name: "안국건강 안심 마그네슘 90정", brand: "안국건강", category: "마그네슘", volume: "90정", claim: "에너지 생성·신경·근육 기능 유지에 필요", desc: "안국건강의 스테디셀러 단일 마그네슘 제품으로 3개월분 90정 구성입니다. 눈 밑 떨림이 신경 쓰일 때 부담 없이 챙기기 좋은 가성비 라인입니다.", price: 13900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=5963036" },
+  { id: "mag-nutricore-magnesium", name: "뉴트리코어 마그네슘 60정", brand: "뉴트리코어", category: "마그네슘", volume: "60정", claim: "에너지 생성·신경·근육 기능 유지에 필요", desc: "온라인 영양제 전문 브랜드 뉴트리코어의 단일 마그네슘 제품입니다. 깔끔한 성분 구성과 높은 리뷰 평점으로 재구매가 많은 인기 상품입니다.", price: 14900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=20695439" },
+  { id: "mag-doctorsbest-highabsorption", name: "닥터스베스트 하이업소션 마그네슘 100mg 240정", brand: "닥터스베스트", category: "마그네슘", volume: "240정", claim: "에너지 생성·신경·근육 기능 유지에 필요", desc: "글리시네이트·라이시네이트 킬레이트 형태로 설계한 흡수율 중심 마그네슘입니다. 240정 대용량으로 해외 직구 마그네슘 부문 베스트셀러입니다.", price: 19900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=11109768" },
+  { id: "mag-solgar-b6", name: "솔가 마그네슘 위드 비타민B6 100캡슐", brand: "솔가", category: "마그네슘", volume: "100캡슐", claim: "에너지 생성·신경·근육 기능 유지에 필요", desc: "프리미엄 브랜드 솔가의 마그네슘에 비타민B6를 더한 조합 제품입니다. 오랜 신뢰를 쌓아온 솔가 라인으로 직구 마니아층의 꾸준한 선택을 받습니다.", price: 25900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=30747683" },
+  { id: "mag-lifeextension-neuromag", name: "라이프익스텐션 뉴로마그 마그네슘 L-트레오네이트 90캡슐", brand: "라이프익스텐션", category: "마그네슘", volume: "90캡슐", claim: "에너지 생성·신경·근육 기능 유지에 필요", desc: "특허 성분 마그네슘 L-트레오네이트를 사용한 프리미엄 마그네슘입니다. 흡수 형태에 신경 쓰는 소비자층에게 인기가 높은 고급 라인입니다.", price: 39900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=78608333" },
+  { id: "vitd-nowfoods-d3-3000", name: "나우푸드 비타민 D3 3000IU 90정", brand: "나우푸드", category: "비타민D", volume: "90정", claim: "칼슘·인 흡수와 뼈 형성·유지에 필요", desc: "미국 대표 브랜드 나우푸드의 고함량 3000IU 비타민D3입니다. 작은 소프트젤 형태로 부담 없이 매일 섭취하기 좋은 직구 스테디셀러입니다.", price: 12900, source: "danawa", url: "https://prod.danawa.com/info/?pcode=12360962" },
+  { id: "vitd-koreaeundan-megadose", name: "고려은단 메가도스D 비타민D3 4000IU 120정", brand: "고려은단", category: "비타민D", volume: "120정", claim: "칼슘·인 흡수와 뼈 형성·유지에 필요", desc: "고려은단의 고함량 4000IU 비타민D3 라인으로 120정 대용량 구성입니다. 국내 브랜드 비타민D 부문에서 높은 판매량과 리뷰를 확보한 인기 상품입니다.", price: 11910, source: "danawa", url: "https://prod.danawa.com/info/?pcode=17956841" },
+  { id: "vitd-ckdhc-drgoods", name: "종근당건강 닥터굿스 비타민D 4000IU 츄어블 90정", brand: "종근당건강", category: "비타민D", volume: "90정", claim: "칼슘·인 흡수와 뼈 형성·유지에 필요", desc: "물 없이 씹어 먹는 츄어블 타입의 4000IU 고함량 비타민D입니다. 999개 이상의 리뷰와 높은 평점을 기록한 종근당건강의 인기 제품입니다.", price: 15300, source: "danawa", url: "https://prod.danawa.com/info/?pcode=5327156" },
+  { id: "vitd-gnm-premium", name: "GNM자연의품격 프리미엄 비타민D 4000IU 츄어블 90정", brand: "GNM자연의품격", category: "비타민D", volume: "90정", claim: "칼슘·인 흡수와 뼈 형성·유지에 필요", desc: "온라인 판매 강자 GNM의 츄어블 4000IU 비타민D로 새콤한 맛이 특징입니다. 가성비와 높은 재구매율로 온라인몰 비타민D 상위권에 오른 제품입니다.", price: 11760, source: "danawa", url: "https://prod.danawa.com/info/?pcode=120505058" },
+  { id: "vitd-doctorsbest-5000", name: "닥터스베스트 비타민D3 5000IU 360캡슐", brand: "닥터스베스트", category: "비타민D", volume: "360캡슐", claim: "칼슘·인 흡수와 뼈 형성·유지에 필요", desc: "5000IU 고함량 비타민D3를 360캡슐 초대용량으로 담은 장기 복용용 제품입니다. 1캡슐당 단가가 낮아 직구 비타민D 부문에서 꾸준히 사랑받습니다.", price: 15070, source: "danawa", url: "https://prod.danawa.com/info/?pcode=6048458" },
+  { id: "collagen-bblab-low-50po", name: "비비랩 저분자 콜라겐 50포", brand: "비비랩", category: "콜라겐", volume: "1.2g x 50포", claim: "저분자 콜라겐펩타이드가 피부 보습에 도움", desc: "1,000Da 저분자 피쉬 콜라겐펩타이드에 비타민C를 더한 국내 콜라겐 판매 상위 스틱 제품입니다. 물 없이 간편하게 섭취하는 포션 타입으로 데일리 피부 관리에 적합합니다.", price: 25000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=27525611" },
+  { id: "collagen-sebitol-fish-120", name: "세비톨 멀티 프리미엄 저분자 피쉬콜라겐 펩타이드 120정", brand: "세비톨", category: "콜라겐", volume: "120정", claim: "저분자 콜라겐펩타이드가 피부 보습에 도움", desc: "저분자 피쉬 콜라겐펩타이드에 다양한 부원료를 배합한 정제형 프리미엄 콜라겐입니다. 포 타입이 번거로운 분들을 위한 알약 형태로 휴대와 섭취가 편리합니다.", price: 29000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=21657944" },
+  { id: "collagen-bblab-low-s-30po", name: "비비랩 저분자 콜라겐 S 30포", brand: "비비랩", category: "콜라겐", volume: "1.2g x 30포", claim: "저분자 콜라겐펩타이드가 피부 보습에 도움", desc: "비비랩 저분자 콜라겐 라인의 30포 구성으로 첫 섭취나 부담 없는 한 달 체험에 알맞습니다. 저분자 콜라겐펩타이드와 비타민C를 담아 흡수와 맛을 모두 잡았습니다.", price: 18000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=27481460" },
+  { id: "collagen-soonsu-500dalton-90", name: "순수식품 어린 저분자 콜라겐 500달톤 90정", brand: "순수식품", category: "콜라겐", volume: "90정", claim: "저분자 콜라겐펩타이드가 피부 보습에 도움", desc: "약 500달톤 초저분자 콜라겐펩타이드를 내세운 정제형 제품으로 흡수 편의를 강조했습니다. 90정 대용량 구성으로 꾸준히 섭취하기에 부담이 적습니다.", price: 24000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=12623033" },
+  { id: "collagen-vitahalo-pomegranate-30po", name: "비타할로 석류 콜라겐 30포", brand: "비타할로", category: "콜라겐", volume: "30포", claim: "저분자 콜라겐펩타이드가 피부 보습에 도움", desc: "저분자 콜라겐펩타이드에 석류 농축액을 더해 새콤달콤한 맛을 살린 스틱형 제품입니다. 물 없이 마시는 젤리 타입으로 간식처럼 즐기며 섭취할 수 있습니다.", price: 21000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=17585066" },
+  { id: "zinc-thorne-picolinate-30mg-60", name: "쏜리서치 아연 피콜리네이트 30mg 60캡슐", brand: "쏜리서치", category: "아연", volume: "60캡슐", claim: "정상적인 면역 기능·세포분열에 필요", desc: "흡수율을 높인 아연 피콜리네이트 형태로 한 알에 아연 30mg을 담은 고함량 캡슐입니다. 첨가물을 최소화한 처방으로 해외 직구 시장에서 꾸준히 상위권을 지키는 제품입니다.", price: 26400, source: "danawa", url: "https://prod.danawa.com/info/?pcode=93801488" },
+  { id: "zinc-nowfoods-50mg-250", name: "나우푸드 아연 50mg 250캡슐", brand: "나우푸드", category: "아연", volume: "250캡슐", claim: "정상적인 면역 기능·세포분열에 필요", desc: "한 알에 아연 50mg을 담은 250캡슐 대용량 제품으로 정당 단가가 낮아 가성비가 뛰어납니다. GMP 인증 시설에서 생산되어 장기 섭취용으로 인기가 높습니다.", price: 18000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=6267351" },
+  { id: "zinc-solgar-50mg-100", name: "솔가 징크 50mg 100정", brand: "솔가", category: "아연", volume: "100정", claim: "정상적인 면역 기능·세포분열에 필요", desc: "1947년부터 이어온 솔가의 스테디셀러 아연으로 한 알에 아연 50mg을 담았습니다. 글루텐·밀·유제품 프리에 비건 적합 처방으로 폭넓은 소비자층이 선택합니다.", price: 19000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=6148454" },
+  { id: "zinc-nutricore-60", name: "뉴트리코어 아연 60정", brand: "뉴트리코어", category: "아연", volume: "60정", claim: "정상적인 면역 기능·세포분열에 필요", desc: "아연에 셀레늄·요오드·비타민D를 함께 배합한 국내 정제형 아연 제품입니다. 하루 한 알로 간편하게 섭취할 수 있어 데일리 면역 관리에 적합합니다.", price: 16000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=5999145" },
+  { id: "zinc-gnm-propolis-120", name: "GNM 브라질 그린 프로폴리스 아연 500mg 120캡슐", brand: "GNM자연의품격", category: "아연", volume: "500mg x 120캡슐", claim: "프로폴리스 항산화·아연 면역 기능에 도움", desc: "브라질산 그린 프로폴리스 추출물에 아연을 더한 이중 기능성 국내 제품입니다. 120캡슐 대용량 구성으로 면역과 구강 건강을 함께 챙기려는 소비자에게 인기가 높습니다.", price: 28000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=12089024" },
 ];
 
 /* 실제 상품 이미지·상세링크(다나와/다누리 CDN 수집, 2026-07-01). image 없으면 자체 SVG로 폴백. 상용화 시 정식 이미지 URL/제휴로 교체 */
@@ -11973,6 +12036,59 @@ const SUPP_MEDIA = {
   "mag-ckd": { image: "https://img.danuri.io/catalog-image/613/751/018/5e692ee340034869a8da4c961ff8baa7.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=18751613" },
   "milk-gnm": { image: "https://img.danuri.io/catalog-image/019/917/004/cd64e1fc5f964bc49af2d14d1664468f.jpg", danawa: "https://prod.danawa.com/info/?pcode=4917019" },
   "zinc-eundan": { image: "https://img.danuri.io/catalog-image/281/976/003/bc0cfb83d09f49268005ce58e91cc4fc.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=3976281" },
+  "prob-cenovis-superbiotic": { image: "https://img.danuri.io/catalog-image/845/934/003/5c9f6224600f4d3bbba1afe8373954c6.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=3934845" },
+  "prob-gqlab-gold": { image: "https://img.danuri.io/catalog-image/093/174/029/51c7741c54c244569b37dbd30984eaa6.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=29174093" },
+  "prob-gqlab-postbiotics": { image: "https://img.danuri.io/catalog-image/449/985/074/f0ed98269a46477e83b44846fa145ef9.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=74985449" },
+  "prob-denps-story": { image: "https://img.danuri.io/catalog-image/011/087/004/14a11aae695c43ba92b7d4cb1baca7d5.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=4087011" },
+  "prob-duolac-gold": { image: "https://img.danuri.io/catalog-image/256/865/099/8d32705eacf54e54bbe991f6ad16e0a5.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=99865256" },
+  "hongsam-jkjang-hongsamton-gold": { image: "https://img.danuri.io/catalog-image/649/424/000/dfcec5cc4bfc47e5a751c696f84034f8.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=424649" },
+  "hongsam-jkjang-hongsamton-60": { image: "https://img.danuri.io/catalog-image/262/691/018/37f23a82b93f4385aeecdf78c7cdc2df.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=18691262" },
+  "hongsam-jkjang-hongsamwon-gold": { image: "https://img.danuri.io/catalog-image/673/667/001/bc9e0813ad234c28b11e417bc38d270f.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=1667673" },
+  "hongsam-hansamin-stick": { image: "https://img.danuri.io/catalog-image/868/096/013/b89ae00b6e5148c192fa94414f5f7153.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=13096868" },
+  "hongsam-hansamin-jeongsim": { image: "https://img.danuri.io/catalog-image/190/367/111/d3bdeb360c5b4cf6bf773026cfdaede8.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=111367190" },
+  "vitc-cenovis-sugarless": { image: "https://img.danuri.io/catalog-image/742/439/093/3c3ff10076c74ea8836ea5a8f8dacee7.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=93439742" },
+  "vitc-solgar-esterc": { image: "https://img.danuri.io/catalog-image/852/665/122/6734fff37bf741b7a07fa3ead62be390.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=122665852" },
+  "vitc-nowfoods-c1000": { image: "https://img.danuri.io/catalog-image/479/747/087/26f3bb716ae34e25ba05e67bb3e9dfe3.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=87747479" },
+  "vitc-gnm-liposomal": { image: "https://img.danuri.io/catalog-image/843/859/028/72638542377b41adb687cffb3a13b5ac.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=28859843" },
+  "vitc-lemona": { image: "https://img.danuri.io/catalog-image/992/809/028/4304fe745e4547c1b096e135a176a50a.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=28809992" },
+  "multi-nutrione-chewable": { image: "https://img.danuri.io/catalog-image/531/641/012/4b3cd89a259f4d24b86334c3d201fa1b.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=12641531" },
+  "multi-ckdhc-dailybest": { image: "https://img.danuri.io/catalog-image/574/123/003/0966432aaf804a8886f3f2c765bbc23a.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=3123574" },
+  "multi-koreaeundan-allinone": { image: "https://img.danuri.io/catalog-image/467/077/013/50c8c876940042e3be883f45d34a3cc0.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=13077467" },
+  "multi-ildong-mainimen": { image: "https://img.danuri.io/catalog-image/926/707/005/cbdc871980a34770a2bfd95831c57c84.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=5707926" },
+  "omega-sunsu-rtg": { image: "https://img.danuri.io/catalog-image/620/996/010/fd605c41f6cf48a89ea88f3f1d6e41e7.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=10996620" },
+  "omega-naturalplus-rtg1200": { image: "https://img.danuri.io/catalog-image/727/341/007/0bab31b80f914dcdb5699691a9629f59.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=7341727" },
+  "omega-yuhan-rtggold": { image: "https://img.danuri.io/catalog-image/807/462/014/0f2556f61a9e43a1b4e884b50f2c43ed.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=14462807" },
+  "omega-nowfoods-ultra": { image: "https://img.danuri.io/catalog-image/127/200/029/5ca1a8559e5a4d109cc70a9d86b7d68e.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=29200127" },
+  "lutein-ckdhc-eyeclear-zea": { image: "https://img.danuri.io/catalog-image/476/229/020/6924928ad68546dc901e9009d6a042dd.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=20229476" },
+  "lutein-koreaeundan-astax": { image: "https://img.danuri.io/catalog-image/005/952/017/bfe6b41822314172a395d1479b1cb89c.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=17952005" },
+  "lutein-nutrione-zea164": { image: "https://img.danuri.io/catalog-image/287/941/006/0f36ca7e63664958bd01339ba081c17e.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6941287" },
+  "lutein-gnm-astax": { image: "https://img.danuri.io/catalog-image/430/601/012/dca1484ee35f4321b42c702d5b2c28af.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=12601430" },
+  "lutein-daewoong-astax": { image: "https://img.danuri.io/catalog-image/631/541/010/7ad5461368d24baf83350b7abc85cef0.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=10541631" },
+  "milk-daewoong-enercyssle": { image: "https://img.danuri.io/catalog-image/942/465/014/10a20013ee094154a5bc9fa3ff63ea20.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=14465942" },
+  "milk-ckdhc-supercare": { image: "https://img.danuri.io/catalog-image/624/606/008/d86b4d0cc2034ed2b940b1cc8e1221f9.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=8606624" },
+  "milk-nutrideday-gold": { image: "https://img.danuri.io/catalog-image/012/894/008/aadfb280fd2c42218196a2ae6c939ddf.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=8894012" },
+  "milk-nowfoods-silymarin": { image: "https://img.danuri.io/catalog-image/310/056/005/1f20ccba6a334bd7a38df499a815edb8.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=5056310" },
+  "milk-koreaeundan-pure": { image: "https://img.danuri.io/catalog-image/143/658/092/14f24b7fea984dbf88a724f0e91b440c.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=92658143" },
+  "mag-ankuk-anshim": { image: "https://img.danuri.io/catalog-image/036/963/005/c4de58f414b94d05b28c3a09a6e3cc75.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=5963036" },
+  "mag-nutricore-magnesium": { image: "https://img.danuri.io/catalog-image/439/695/020/330af33f8c364f94bfc6acb4e117db25.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=20695439" },
+  "mag-doctorsbest-highabsorption": { image: "https://img.danuri.io/catalog-image/768/109/011/c7a4f52669ad4697b8e23272395049e7.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=11109768" },
+  "mag-solgar-b6": { image: "https://img.danuri.io/catalog-image/683/747/030/94e5068161874047afa9907a15c8a64a.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=30747683" },
+  "mag-lifeextension-neuromag": { image: "https://img.danuri.io/catalog-image/333/608/078/000726c8c4f7479daccb511309bf71dc.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=78608333" },
+  "vitd-nowfoods-d3-3000": { image: "https://img.danuri.io/catalog-image/962/360/012/65e3efac37964aa6ac160ddb29369f1f.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=12360962" },
+  "vitd-koreaeundan-megadose": { image: "https://img.danuri.io/catalog-image/841/956/017/077e75931d84447a86598a3b62eac488.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=17956841" },
+  "vitd-ckdhc-drgoods": { image: "https://img.danuri.io/catalog-image/156/327/005/d292ad3744b8451bab70a3cd4146d0a1.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=5327156" },
+  "vitd-gnm-premium": { image: "https://img.danuri.io/catalog-image/058/505/120/cda2ca9768d64644b3f1b5e2e5839e94.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=120505058" },
+  "vitd-doctorsbest-5000": { image: "https://img.danuri.io/catalog-image/458/048/006/3c29703c37c74b3ea7ff0295a4e27693.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6048458" },
+  "collagen-bblab-low-50po": { image: "https://img.danuri.io/catalog-image/611/525/027/a95f376209b548509500342db533bdfb.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=27525611" },
+  "collagen-sebitol-fish-120": { image: "https://img.danuri.io/catalog-image/944/657/021/ceacd1d5bb7848089573b92f97dfe5b6.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=21657944" },
+  "collagen-bblab-low-s-30po": { image: "https://img.danuri.io/catalog-image/460/481/027/f88957e7749041feb889f047f0b69ac9.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=27481460" },
+  "collagen-soonsu-500dalton-90": { image: "https://img.danuri.io/catalog-image/033/623/012/4983b55800a541d897a5a4aa5d648e88.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=12623033" },
+  "collagen-vitahalo-pomegranate-30po": { image: "https://img.danuri.io/catalog-image/066/585/017/fb09c16b31964d1cb21cf278923592ef.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=17585066" },
+  "zinc-thorne-picolinate-30mg-60": { image: "https://img.danuri.io/catalog-image/488/801/093/4f9e8dc4da034bca9cdcd061677c8a1e.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=93801488" },
+  "zinc-nowfoods-50mg-250": { image: "https://img.danuri.io/catalog-image/351/267/006/08f7ab6b68534a3db6005e3a7e631610.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6267351" },
+  "zinc-solgar-50mg-100": { image: "https://img.danuri.io/catalog-image/454/148/006/3465de8237bb45a2816b3a263403f39e.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=6148454" },
+  "zinc-nutricore-60": { image: "https://img.danuri.io/catalog-image/145/999/005/60646e3520af407d9f70575c96b5da79.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=5999145" },
+  "zinc-gnm-propolis-120": { image: "https://img.danuri.io/catalog-image/024/089/012/e9fe3ee64fd64d8c92965c1cd28dfdb3.jpg?shrink=300:300", danawa: "https://prod.danawa.com/info/?pcode=12089024" },
 };
 
 /* 정밀영양협회 회원사 대표 제품(11곳) — 실제 공식몰 URL 연동(member_companies.json, 2026-07-01). url 없으면 검색 폴백 */

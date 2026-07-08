@@ -771,6 +771,16 @@ function ShopCartBar({ products }) {
     </>
   );
 }
+/* 쿠팡형 카드용 결정적 메타(별점·리뷰수·할인율·원가·배송배지) — id 해시 기반이라 새로고침해도 안정적 */
+function suppMeta(p) {
+  const s = String(p.id).split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const rating = (4.5 + (s % 5) / 10).toFixed(1);         // 4.5~4.9
+  const reviews = ((s * 37) % 14500) + 520;               // 520~15019
+  const disc = 10 + (s % 5) * 5;                           // 10·15·20·25·30
+  const orig = Math.round((p.price / (1 - disc / 100)) / 10) * 10;
+  const badges = ["로켓배송", "로켓배송", "무료배송", "로켓프레시", "로켓배송"];
+  return { rating, reviews, disc, orig, badge: badges[s % badges.length] };
+}
 function SupplementShop() {
   const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
@@ -804,18 +814,18 @@ function SupplementShop() {
         {[["reward", "적립높은순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
         <span className="sscount">{list.length}종</span>
       </div>
-      <div className="prodgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
-        <div className="prodcard" key={p.id} onClick={() => setDetail(p)}>
-          <div className="pimg" style={{ background: (m.col || "#7C3AED") + "10" }}><SuppImage p={p} /></div>
-          <div className="pinfo">
-            <div className="pbrand">{p.brand}</div>
-            <div className="pname2">{p.name}</div>
-            <div className="pvol">{p.category} · {p.volume}</div>
-            <div className="pprice">{shopWon(p.price)} <small style={{ color: "#EA580C", fontWeight: 700 }}>최저가</small></div>
-            <div className="preward"><Coins size={11} /> 적립 {shopWon(r.reward)} <small>25%</small></div>
-            <a className="lowprice" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={11} /> 국내 최저가 검색 <ExternalLink size={9} /></a>
+      <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p), meta = suppMeta(p); return (
+        <div className="mealcard suppmeal" key={p.id} onClick={() => setDetail(p)}>
+          <div className="mealthumb" style={{ background: (m.col || "#7C3AED") + "0d" }}><SuppImage p={p} /><span className="mealbadge rocket">🚀 {meta.badge}</span></div>
+          <div className="mealbrand">{p.brand}</div>
+          <div className="mealname">{p.name}</div>
+          <div className="mealrate"><span className="stars">★</span> {meta.rating} <span className="rev">({meta.reviews.toLocaleString()})</span></div>
+          <div className="mealprices"><span className="mdisc">{meta.disc}%</span><span className="mprice">{shopWon(p.price)}</span><span className="morig">{shopWon(meta.orig)}</span></div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealbtns">
+            <a className="meallink" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 최저가</a>
+            <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
           </div>
-          <button className="paddbtn" onClick={(e) => { e.stopPropagation(); add(p); }}><Plus size={14} /> 담기</button>
         </div>
       ); })}</div>
       <div className="chnote">※ 가격은 브랜드 공식몰/네이버·쿠팡 최저가 <b>수집 예시(2026-07-01 시점)</b>로 변동될 수 있습니다. 기능성 문구는 식약처 인정 기능성 요약(원문 복제 아님)이며, 이미지·후기·구매는 각 출처로 연결됩니다. 건강기능식품은 질병의 예방·치료 의약품이 아니며, 실제 판매는 브랜드 제휴·오픈마켓 API 연동이 필요합니다.</div>
