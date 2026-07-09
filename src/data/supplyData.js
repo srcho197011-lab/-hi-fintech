@@ -49,6 +49,17 @@ const SC_BRAND_ALIAS = {
   "제너럴네트": "GN바디닥터(제너럴네트)", "메디콥": "㈜메디콥(밴드닥터·클린덤)", "밴드닥터": "㈜메디콥(밴드닥터·클린덤)",
   "뉴트리라이트": "한국암웨이(뉴트리라이트)", "네이처셋(NatureSet)": "한독(네이처셋)", "대상웰라이프": "대상웰라이프(뉴케어)",
 };
+/* 카테고리별 원가율(매입가/판매가) 범위 + 기업규모(대>중>소) 경향 — 대기업일수록 원가율↑(마진↓) */
+const SC_COSTRATE = { "영양제": [0.20, 0.60], "홈케어의료기": [0.30, 0.70], "건강식단": [0.40, 0.75], "의약외품": [0.30, 0.50] };
+const SC_BIG = new Set(["화이자", "KGC인삼공사(정관장)", "종근당건강", "대웅제약", "일동제약", "유한양행", "LG전자", "오므론", "필립스", "인바디", "바디프랜드", "세라젬", "샤오미", "브라운", "한국암웨이(뉴트리라이트)", "한독(네이처셋)", "GC녹십자웰빙", "매일헬스뉴트리션(셀렉스)", "대상웰라이프(뉴케어)", "CJ프레시웨이", "동원F&B(더반찬&)", "hy(한국야쿠르트)", "아워홈(케어플러스)", "풀무원(디자인밀)", "현대그린푸드(그리팅)", "카카오헬스케어", "프레시지", "스파오(잇메이트)", "닥터스베스트", "솔가", "나우푸드", "라이프익스텐션", "쏜리서치", "GN바디닥터(제너럴네트)"]);
+const SC_MID = new Set(["고려은단", "안국건강", "뉴트리", "경남제약", "쎌바이오텍", "휴비딕", "케어센스", "아큐첵", "에스디바이오센서", "클럭", "코지마", "덴프스", "세노비스", "닥터웰", "필워크", "알고케어", "DSM코리아", "테라젠바이오", "EDGC", "본죽", "멜킨스포츠", "대일산업", "유니베라", "한삼인", "필립스", "조인메디칼", "참케어", "초이스메드", "시그니아"]);
+function _scScale(nm) { return SC_BIG.has(nm) ? "대" : SC_MID.has(nm) ? "중" : "소"; }
+function _scCostRate(cat, scale, rng) {
+  const r = SC_COSTRATE[cat] || SC_COSTRATE["영양제"];
+  const base = scale === "대" ? 0.62 : scale === "중" ? 0.33 : 0.0;
+  const span = scale === "대" ? 0.38 : scale === "중" ? 0.37 : 0.42;
+  return r[0] + (r[1] - r[0]) * (base + rng() * span);
+}
 function _scBizno(rng) { return String(100 + Math.floor(rng() * 899)).padStart(3, "0") + "-" + String(10 + Math.floor(rng() * 89)) + "-" + String(10000 + Math.floor(rng() * 89999)); }
 function _scDate(rng, y) { return y + "-" + String(1 + Math.floor(rng() * 7)).padStart(2, "0") + "-" + String(1 + Math.floor(rng() * 27)).padStart(2, "0"); }
 
@@ -61,10 +72,11 @@ function supplyData() {
   /* 1) 거래처·공급사 (Vendor) — 건강쇼핑 실제 거래선 전수 */
   const vendors = SC_VENDORS.map((v, i) => {
     const nm = v[0], cat = v[1];
+    const scale = _scScale(nm);
     return {
       id: "V" + String(i + 1).padStart(4, "0"), name: nm, bizno: _scBizno(rng),
-      type: _wpick(rng, SC_VTYPE), category: cat,
-      credit: (5 + Math.floor(rng() * 45)) * 1000000, payable: Math.floor(rng() * 38) * 1000000,
+      type: _wpick(rng, SC_VTYPE), category: cat, scale,
+      credit: (scale === "대" ? 30 + rng() * 70 : scale === "중" ? 10 + rng() * 30 : 3 + rng() * 12) * 1000000, payable: Math.floor(rng() * 38) * 1000000,
       sla: 1 + Math.floor(rng() * 3), trust: (3.9 + rng() * 1.1).toFixed(1),
       ship: true, since: (2013 + Math.floor(rng() * 12)) + "년",
     };
@@ -77,7 +89,7 @@ function supplyData() {
     const a = SC_BRAND_ALIAS[brand] || brand;
     let v = vByKey[_vkey(a)] || vByKey[_vkey(brand)];
     if (!v) { const bk = _vkey(brand); v = vendors.find((x) => { const k = _vkey(x.name); return k === bk || (bk.length > 1 && k.includes(bk)) || (k.length > 1 && bk.includes(k)); }); }
-    if (!v) { v = { id: "V" + String(vendors.length + 1).padStart(4, "0"), name: brand, bizno: _scBizno(rng), type: _wpick(rng, SC_VTYPE), category: supCat, credit: (5 + Math.floor(rng() * 45)) * 1000000, payable: Math.floor(rng() * 38) * 1000000, sla: 1 + Math.floor(rng() * 3), trust: (3.9 + rng() * 1.1).toFixed(1), ship: true, since: (2013 + Math.floor(rng() * 12)) + "년" }; vendors.push(v); vByKey[_vkey(v.name)] = v; }
+    if (!v) { const sc = _scScale(brand); v = { id: "V" + String(vendors.length + 1).padStart(4, "0"), name: brand, bizno: _scBizno(rng), type: _wpick(rng, SC_VTYPE), category: supCat, scale: sc, credit: (sc === "대" ? 30 : sc === "중" ? 12 : 5) * 1000000, payable: Math.floor(rng() * 38) * 1000000, sla: 1 + Math.floor(rng() * 3), trust: (3.9 + rng() * 1.1).toFixed(1), ship: true, since: (2013 + Math.floor(rng() * 12)) + "년" }; vendors.push(v); vByKey[_vkey(v.name)] = v; }
     return v;
   };
   const products = [];
@@ -88,10 +100,10 @@ function supplyData() {
   REAL.forEach(([p, cat]) => {
     const v = resolveVendor(p.brand, cat);
     const salePrice = p.price || ((5 + Math.floor(rng() * 95)) * 1000 + 900);
-    const margin = 0.18 + rng() * 0.22;
+    const cr = _scCostRate(cat, v.scale || "소", rng);
     products.push({
-      id: p.id, name: p.name, category: cat, subcat: p.category || "", vendorId: v.id, vendorName: v.name,
-      salePrice, supplyPrice: Math.round(salePrice * (1 - margin) / 10) * 10, marginPct: Math.round(margin * 100),
+      id: p.id, name: p.name, category: cat, subcat: p.category || "", vendorId: v.id, vendorName: v.name, scale: v.scale,
+      salePrice, supplyPrice: Math.round(salePrice * cr / 10) * 10, marginPct: Math.round((1 - cr) * 100),
       exp: _scDate(rng, 2027 + Math.floor(rng() * 2)), lot: "L" + (230000 + Math.floor(rng() * 69999)), real: true,
     });
   });
@@ -104,10 +116,10 @@ function supplyData() {
     for (let k = 0; k < cnt; k++) {
       const base = _pick(rng, words);
       const salePrice = (5 + Math.floor(rng() * 95)) * 1000 + 900;
-      const margin = 0.18 + rng() * 0.22;
+      const cr = _scCostRate(v.category, v.scale || "소", rng);
       products.push({
         id: "P" + String(products.length + 1).padStart(5, "0"), name: v.name.split("(")[0] + " " + base, category: v.category, subcat: base,
-        vendorId: v.id, vendorName: v.name, salePrice, supplyPrice: Math.round(salePrice * (1 - margin) / 10) * 10, marginPct: Math.round(margin * 100),
+        vendorId: v.id, vendorName: v.name, scale: v.scale, salePrice, supplyPrice: Math.round(salePrice * cr / 10) * 10, marginPct: Math.round((1 - cr) * 100),
         exp: _scDate(rng, 2027), lot: "L" + (230000 + Math.floor(rng() * 69999)), real: false,
       });
     }
