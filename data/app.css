@@ -1996,6 +1996,11 @@
 .aiphi b{font-size:14.5px;font-weight:800;}
 .aiphi span{font-size:10.5px;opacity:.9;}
 .aipbadge{font-size:10px;font-weight:800;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 10px;flex-shrink:0;}
+.aipsimple{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;cursor:pointer;padding:13px 16px;background:linear-gradient(100deg,#F97316,#FB923C 55%,#F59E0B);color:#fff;font-family:inherit;transition:.14s;}
+.aipsimple:hover{filter:brightness(1.05);}
+.aipsimple-l{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:900;letter-spacing:-.2px;}
+.aipsimple-r{display:flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;opacity:.95;white-space:nowrap;}
+@media(max-width:520px){.aipsimple{flex-direction:column;align-items:flex-start;gap:4px;}.aipsimple-r{font-size:11px;}}
 .aipbody{padding:14px;max-height:520px;overflow-y:auto;background:#F7F9FD;display:flex;flex-direction:column;gap:11px;}
 .aiprow{display:flex;gap:8px;align-items:flex-end;}
 .aiprow.me{flex-direction:row-reverse;}

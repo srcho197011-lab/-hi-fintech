@@ -284,7 +284,7 @@ function PremiumNotice() {
 function _insBold(s) {
   return String(s).split(/(\*\*[^*]+\*\*)/g).map((p, i) => (p.startsWith("**") && p.endsWith("**")) ? <b key={i}>{p.slice(2, -2)}</b> : <React.Fragment key={i}>{p}</React.Fragment>);
 }
-function AIPlannerChat() {
+function AIPlannerChat({ onSimple }) {
   const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const nm = member ? member.name : null;
   const PROD = (typeof INS_PRODUCT !== "undefined") ? INS_PRODUCT : { name: "상해보험", insurer: "현대해상", tel: "1588-5656" };
@@ -311,7 +311,8 @@ function AIPlannerChat() {
   };
   return (
     <div className="aipwrap">
-      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 설계사</b><span>{PROD.insurer} · {PROD.name} · 약관 학습</span></div><span className="aipbadge">약관 학습완료</span></div>
+      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 설계사</b><span>약관 학습 · AI 실시간 보험상담</span></div><span className="aipbadge">약관 학습완료</span></div>
+      {onSimple && <button className="aipsimple" onClick={onSimple}><span className="aipsimple-l"><Zap size={17} /> 간편단기특화보험</span><span className="aipsimple-r">위험질병별 1년 단기 밀도가입 <ChevronRight size={16} /></span></button>}
       <div className="aipbody">
         {msgs.map((m, i) => (
           <div key={i} className={`aiprow ${m.who}`}>
@@ -767,7 +768,7 @@ function InsuranceSection({ onGo }) {
           <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 설계사 — 약관 학습 대화형 상담</div>
           <div className="ap">현대해상 <b>현대단체상해보험(직급전용)</b> 약관을 학습한 AI 설계사가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
         </div>
-        <AIPlannerChat />
+        <AIPlannerChat onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
       </>)}
 
       {cover && <CoverDetailModal name={cover} onClose={() => setCover(null)} />}
