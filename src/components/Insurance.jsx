@@ -289,7 +289,7 @@ function AIPlannerChat({ onSimple }) {
   const nm = member ? member.name : null;
   const PROD = (typeof INS_PRODUCT !== "undefined") ? INS_PRODUCT : { name: "상해보험", insurer: "현대해상", tel: "1588-5656" };
   const FAQ = (typeof INS_FAQ !== "undefined") ? INS_FAQ : [];
-  const greet = { who: "ai", bubbles: [{ kind: "text", text: `안녕하세요${nm ? " " + nm + "님" : ""}! ${PROD.name} 담당 **AI 설계사**예요. 🤖\n약관을 학습해 **보장·보험금·청구·면책·계약**을 안내해 드려요. 아래 질문을 눌러보거나 무엇이든 물어보세요.` }] };
+  const greet = { who: "ai", bubbles: [{ kind: "text", text: `안녕하세요${nm ? " " + nm + "님" : ""}! 보험 약관을 학습한 **AI 설계사**예요. 🤖\n**보장·보험금·청구·면책·계약**을 안내해 드려요. 아래 질문을 눌러보거나 무엇이든 물어보세요.` }] };
   const [msgs, setMsgs] = useState([greet]);
   const [quicks, setQuicks] = useState(FAQ.slice(0, 6));
   const [input, setInput] = useState("");
@@ -766,7 +766,7 @@ function InsuranceSection({ onGo }) {
       {tab === "ai" && (<>
         <div className="airec">
           <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 설계사 — 약관 학습 대화형 상담</div>
-          <div className="ap">현대해상 <b>현대단체상해보험(직급전용)</b> 약관을 학습한 AI 설계사가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
+          <div className="ap"><b>보험 약관을 학습한 AI 설계사</b>가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
         </div>
         <AIPlannerChat onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
       </>)}

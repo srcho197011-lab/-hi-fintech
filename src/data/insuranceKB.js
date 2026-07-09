@@ -70,7 +70,7 @@ function insuranceCounsel(text) {
   const raw = String(text || "");
   const has = (...ks) => ks.some((k) => raw.includes(k));
   // 인사
-  if (has("안녕", "반가", "하이", "ㅎㅇ")) return { bubbles: [{ kind: "text", text: `안녕하세요! ${INS_PRODUCT.name} 담당 **AI 설계사**예요. 약관을 학습해 보장·청구·면책·계약을 안내해 드려요. 무엇이 궁금하세요?` }], quicks: INS_FAQ.slice(0, 4) };
+  if (has("안녕", "반가", "하이", "ㅎㅇ")) return { bubbles: [{ kind: "text", text: `안녕하세요! 보험 약관을 학습한 **AI 설계사**예요. 보장·보험금·청구·면책·계약을 안내해 드려요. 무엇이 궁금하세요?` }], quicks: INS_FAQ.slice(0, 4) };
   if (has("고마", "감사", "수고")) return { bubbles: [{ kind: "text", text: "도움이 되었다니 기뻐요! 보장 설계나 청구가 더 궁금하면 언제든 물어보세요. 😊" }], quicks: INS_FAQ.slice(0, 3) };
   // 상담사 연결
   if (has("상담사", "설계사 연결", "사람", "전화", "가입하고", "가입할래", "가입 신청"))
