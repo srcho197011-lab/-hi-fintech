@@ -1989,6 +1989,8 @@ function aiRespond(text, corpus, report, QA) {
   if (report && report.meta && /리포트|건강분석|건강 분석|종합\s*분석|건강\s*총평|전체.*분석|분석.*리포트|리포트.*분석/.test(text)) {
     const _rc = reportAnalysisCards(report); if (_rc) return _rc;
   }
+  // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
+  if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
   const _topics = multiTopicCounsel(text);
   if (_topics) return _topics;
   const _organs = multiOrganCounsel(text);

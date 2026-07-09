@@ -34,6 +34,7 @@ src/data/consultStore.js
 src/data/whitepaper.js
 src/data/checkupCenters.js
 src/data/shopProducts.js
+src/data/commerceOntology.js
 src/utils/ontologyConsult.js
 src/utils/insuranceRecommendationUtils.js
 src/utils/healthWalletUtils.js
