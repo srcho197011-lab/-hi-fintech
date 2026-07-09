@@ -12,6 +12,7 @@ import {
   Scale, Gauge, Globe, Award, PawPrint, Sprout, HandCoins,
   Truck, Boxes, Factory, Warehouse, Package, PackageCheck, Cpu, Workflow, Route, Handshake, ScrollText, Container,
   Database, Server, Blocks, KeyRound, Fingerprint, GitBranch, Building,
+  Download, Trash2,
 } from "lucide-react";
 const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKET, DISTRICTS, COVER_DETAIL, KDCA_NOTE, DEMO_MEMBERS } = (typeof window !== "undefined" && window.__HHDATA) || {};
 

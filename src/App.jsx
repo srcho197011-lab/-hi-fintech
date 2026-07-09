@@ -20,6 +20,10 @@ export default function App() {
   const [consult, setConsult] = useState(null);
   useEffect(() => { _toast = (m) => setToastMsg(m); _consult = (i) => setConsult(i); return () => { _toast = null; _consult = null; }; }, []);
   useEffect(() => { _nav = (s) => setSec(s); return () => { _nav = null; }; });
+  // 시스템 보호 하네스 초기화(콘텐츠 보호·워터마크·접속 로그)
+  useEffect(() => { if (typeof initContentGuard === "function") initContentGuard(); }, []);
+  // 페이지(섹션) 이동마다 접속 로그 기록 + 워터마크 갱신
+  useEffect(() => { if (typeof guardLog === "function") guardLog("view", sec); if (typeof applyGuard === "function") applyGuard(); }, [sec]);
   useEffect(() => { if (!toastMsg) return; const id = setTimeout(() => setToastMsg(null), 2800); return () => clearTimeout(id); }, [toastMsg]);
   // 런타임 JS 오류 추적(데모 체크리스트 '콘솔 오류 없음' 검증용)
   useEffect(() => { if (typeof window === "undefined") return; window.__demoErrors = window.__demoErrors || []; const h = (e) => { try { window.__demoErrors.push(String((e && (e.message || (e.error && e.error.message))) || e)); } catch (_) {} }; window.addEventListener("error", h); return () => window.removeEventListener("error", h); }, []);

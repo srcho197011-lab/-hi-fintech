@@ -161,8 +161,12 @@ function AuthGate() {
     <div className="authwrap">
       <div className="authcard">
         <AuthBrand />
-        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: "#64748B", background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 10, padding: "9px 12px", margin: "0 0 4px" }}>🔒 승인된 계정만 접속할 수 있습니다.</div>
+        <div className="authgate-badge">🔒 승인된 계정만 접속할 수 있습니다.</div>
         <AuthLogin />
+        <div className="authlegal">
+          <div className="authlegal-hd"><span>🛡️</span> 접속·콘텐츠 보호 안내</div>
+          <p>본 홈페이지는 보안 강화를 위해 접속자의 IP 주소, 접속 시간 및 이용 이력 등 접속 로그를 기록·관리합니다. 사전 승인 없이 홈페이지 URL을 제3자에게 공유하거나, 화면 및 콘텐츠를 무단으로 캡처, 복제, 저장 또는 배포하는 행위는 엄격히 금지됩니다. 위반 행위가 확인될 경우 관련 법령 및 계약에 따라 필요한 법적 조치를 취할 수 있습니다.</p>
+        </div>
         <div className="authnote">※ 본 서비스는 비공개 시연 환경입니다. 승인된 관리자 계정만 접속 가능하며, 접속 정보는 이 기기(브라우저)에만 저장됩니다.</div>
       </div>
     </div>

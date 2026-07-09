@@ -2340,23 +2340,29 @@
 
 /* ===== 로그인/회원가입 게이트 ===== */
 .authwrap{min-height:100vh;width:100%;display:flex;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box;background:linear-gradient(135deg,#0E7490 0%,#2563EB 45%,#7C3AED 100%);}
-.authcard{width:100%;max-width:440px;background:#fff;border-radius:22px;box-shadow:0 24px 60px rgba(15,23,42,.28);padding:30px 28px 22px;box-sizing:border-box;}
-.authbrand{text-align:center;margin-bottom:18px;}
-.authlogo{display:inline-flex;}
-.authttl{font-size:24px;font-weight:800;color:#0F172A;margin-top:8px;letter-spacing:-.5px;}
+.authcard{width:100%;max-width:560px;background:#fff;border-radius:26px;box-shadow:0 28px 72px rgba(15,23,42,.32);padding:44px 44px 30px;box-sizing:border-box;}
+.authbrand{text-align:center;margin-bottom:22px;}
+.authlogo{display:inline-flex;transform:scale(1.25);}
+.authttl{font-size:31px;font-weight:800;color:#0F172A;margin-top:14px;letter-spacing:-.5px;}
 .authttl .hl{color:#2563EB;}
-.authsub{font-size:12.5px;color:#64748B;margin-top:4px;}
+.authsub{font-size:14px;color:#64748B;margin-top:6px;}
+.authgate-badge{text-align:center;font-size:14px;font-weight:700;color:#475569;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:12px;padding:12px 14px;margin:0 0 14px;}
+.authlegal{margin-top:18px;background:#F8FAFC;border:1px solid #E2E8F0;border-left:3px solid #2563EB;border-radius:12px;padding:14px 16px;}
+.authlegal-hd{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:#334155;margin-bottom:7px;}
+.authlegal-hd span{font-size:14px;}
+.authlegal p{font-size:12px;line-height:1.72;color:#64748B;margin:0;text-align:justify;word-break:keep-all;}
 .authtabs{display:flex;background:#EEF2F8;border-radius:12px;padding:4px;margin-bottom:18px;}
 .authtab{flex:1;border:0;background:transparent;padding:9px 0;border-radius:9px;font-size:14px;font-weight:700;color:#64748B;cursor:pointer;}
 .authtab.on{background:#fff;color:#2563EB;box-shadow:0 2px 8px rgba(15,23,42,.08);}
 .authform{display:flex;flex-direction:column;gap:13px;}
-.authform form{display:flex;flex-direction:column;gap:13px;}
-.authfield{display:flex;flex-direction:column;gap:6px;}
-.authlabel{font-size:12.5px;font-weight:700;color:#334155;}
-.authinput{width:100%;box-sizing:border-box;border:1.5px solid #D8E0EC;border-radius:11px;padding:12px 13px;font-size:14.5px;color:#0F172A;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;}
+.authform{display:flex;flex-direction:column;gap:15px;}
+.authform form{display:flex;flex-direction:column;gap:15px;}
+.authfield{display:flex;flex-direction:column;gap:7px;}
+.authlabel{font-size:13.5px;font-weight:700;color:#334155;}
+.authinput{width:100%;box-sizing:border-box;border:1.5px solid #D8E0EC;border-radius:12px;padding:15px 15px;font-size:15.5px;color:#0F172A;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;}
 .authinput:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.14);}
 select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px;}
-.authbtn{border:0;border-radius:11px;padding:12px 14px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+.authbtn{border:0;border-radius:12px;padding:15px 16px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;}
 .authprimary{background:linear-gradient(135deg,#2563EB,#7C3AED);color:#fff;box-shadow:0 6px 16px rgba(37,99,235,.28);}
 .authprimary:hover{filter:brightness(1.05);}
 .authghost{background:#F1F5FB;color:#2563EB;border:1.5px solid #DCE6F5;}
@@ -2386,7 +2392,48 @@ select.authinput{appearance:none;background-image:url("data:image/svg+xml;utf8,<
 .authautofill{border:0;background:#E0E7FF;color:#4338CA;border-radius:6px;padding:3px 9px;font-size:11.5px;font-weight:700;cursor:pointer;}
 .authagree{display:flex;align-items:center;gap:8px;font-size:12.8px;color:#475569;cursor:pointer;}
 .authagree input{width:16px;height:16px;accent-color:#2563EB;}
-@media(max-width:520px){.authcard{padding:24px 18px 18px;border-radius:18px;}.authmask{display:none;}}
+@media(max-width:520px){.authcard{padding:28px 20px 20px;border-radius:20px;}.authttl{font-size:26px;}.authmask{display:none;}}
+
+/* ===== 시스템 보호: 워터마크 · 콘텐츠 보호 ===== */
+#guardwm{position:fixed;inset:0;z-index:9997;pointer-events:none;background-repeat:repeat;background-position:0 0;}
+body.guard-nocopy{-webkit-user-select:none;-moz-user-select:none;user-select:none;}
+body.guard-nocopy input,body.guard-nocopy textarea,body.guard-nocopy .authinput,body.guard-nocopy [contenteditable]{-webkit-user-select:text;-moz-user-select:text;user-select:text;}
+body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:none;}
+
+/* ===== 시스템 보호 콘솔(기반 온톨로지) ===== */
+.sgcon{background:linear-gradient(160deg,#0B1E3B,#0E2A4E);border:1px solid #22406b;border-radius:16px;padding:16px 18px;margin:14px 0 6px;color:#EAF2FF;}
+.sgcon-hd{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.sgcon-hd b{font-size:15px;font-weight:800;color:#fff;}
+.sgcon-hd .sgpill{font-size:10px;font-weight:800;letter-spacing:.4px;color:#7DE9FB;background:rgba(34,211,238,.12);border:1px solid rgba(34,211,238,.34);border-radius:20px;padding:3px 9px;}
+.sgcon-sub{font-size:11.5px;color:#9FD9EC;margin-top:5px;line-height:1.6;}
+.sgstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:13px 0;}
+.sgstat{background:#0B1730;border:1px solid #1F3050;border-radius:11px;padding:10px 12px;text-align:center;}
+.sgstat b{display:block;font-size:19px;font-weight:900;color:#67E8F9;line-height:1;font-variant-numeric:tabular-nums;}
+.sgstat span{font-size:10px;color:#8FA0BE;font-weight:700;}
+.sgtog{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:6px 0 12px;}
+.sgtogit{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#0B1730;border:1px solid #1F3050;border-radius:11px;padding:10px 13px;cursor:pointer;transition:.12s;}
+.sgtogit:hover{border-color:#2b4a72;}
+.sgtogit>div{min-width:0;}
+.sgtogit b{display:block;font-size:12.5px;font-weight:700;color:#EAF2FF;}
+.sgtogit span{font-size:10px;color:#8FA0BE;}
+.sgsw{flex-shrink:0;width:40px;height:22px;border-radius:20px;background:#26374f;position:relative;transition:.18s;}
+.sgsw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.18s;}
+.sgtogit.on .sgsw{background:#22C55E;}
+.sgtogit.on .sgsw::after{left:20px;}
+.sgacts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.sgacts button{background:#101f3c;border:1px solid #2b4a72;border-radius:9px;color:#93C5FD;font-size:11.5px;font-weight:800;padding:8px 13px;cursor:pointer;transition:.12s;}
+.sgacts button:hover{border-color:#6366F1;background:#16244a;color:#C7D2FE;}
+.sgacts button.warn{color:#FCA5A5;border-color:#7f2b2b;}
+.sgacts button.warn:hover{background:#2a1414;border-color:#EF4444;}
+.sglog{background:#0B1730;border:1px solid #1F3050;border-radius:11px;max-height:280px;overflow:auto;}
+.sglog table{width:100%;border-collapse:collapse;font-size:11px;}
+.sglog th{position:sticky;top:0;background:#132443;color:#9FD9EC;font-weight:800;text-align:left;padding:7px 9px;white-space:nowrap;z-index:1;}
+.sglog td{padding:6px 9px;color:#CBD6EA;border-top:1px solid #16233d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;}
+.sglog .ev{font-weight:800;}
+.sglog .ev.visit,.sglog .ev.view{color:#67E8F9;}
+.sglog .ev.printscreen,.sglog .ev.devtool,.sglog .ev.print,.sglog .ev.capture{color:#FBBF24;}
+.sglegal{margin-top:12px;font-size:11px;line-height:1.7;color:#9FB2CE;background:#0B1730;border:1px solid #1F3050;border-left:3px solid #22D3EE;border-radius:10px;padding:11px 13px;}
+@media(max-width:640px){.sgstats{grid-template-columns:repeat(2,1fr);}}
 
 /* ===== 홈: 건강검진 리포트 발행 CTA ===== */
 .reportcta{display:flex;align-items:center;gap:18px;margin-top:16px;padding:20px 22px;border-radius:18px;background:linear-gradient(120deg,#0E7490,#2563EB 60%,#7C3AED);color:#fff;box-shadow:0 16px 36px -20px rgba(37,99,235,.6);}

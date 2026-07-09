@@ -286,6 +286,60 @@ function FoundationDomain360({ d, D, onClose }) {
     </React.Fragment>
   );
 }
+/* 시스템 보호 · 접속 로그 관리 콘솔 — 콘텐츠 보호(우클릭/복사/캡처/개발자도구)·워터마크·접속로그 관리 */
+const SG_TOGGLES = [
+  ["log", "접속 로그 기록", "IP·시간·페이지·세션 로그 수집"],
+  ["noContext", "우클릭 방지", "컨텍스트 메뉴 차단"],
+  ["noCopy", "복사·캡처 방지", "복사·잘라내기·드래그·선택 차단"],
+  ["noDevtool", "개발자도구·인쇄 차단", "F12·Ctrl+Shift+I·인쇄 차단"],
+  ["watermark", "화면 워터마크", "세션·날짜 워터마크 표시"],
+  ["shareWarn", "URL 공유 경고", "무단 공유·인쇄 시 로그 기록"],
+];
+function SecurityGuardConsole() {
+  const [cfg, setCfg] = useState(() => (typeof guardCfg === "function" ? guardCfg() : {}));
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const h = () => setTick((t) => t + 1);
+    window.addEventListener("guardlog", h); window.addEventListener("guardchange", h);
+    const id = setInterval(h, 4000);
+    return () => { window.removeEventListener("guardlog", h); window.removeEventListener("guardchange", h); clearInterval(id); };
+  }, []);
+  const logs = (typeof guardLogs === "function" ? guardLogs() : []).slice().reverse();
+  const st = (typeof guardStats === "function" ? guardStats() : { total: 0, today: 0, sessions: 0, capture: 0 });
+  const activeN = SG_TOGGLES.filter(([k]) => cfg[k]).length;
+  const toggle = (k) => { const nc = (typeof guardSet === "function") ? guardSet({ [k]: !cfg[k] }) : cfg; setCfg(Object.assign({}, nc)); const lbl = (SG_TOGGLES.find((t) => t[0] === k) || [])[1] || ""; if (typeof toast === "function") toast((nc[k] ? "✅ " : "⏸ ") + lbl + (nc[k] ? " 적용" : " 해제")); };
+  return (
+    <div className="sgcon">
+      <div className="sgcon-hd"><Fingerprint size={16} color="#22D3EE" /><b>시스템 보호 · 접속 로그 관리 콘솔</b><span className="sgpill">CONTENT GUARD</span><span className="sgpill">ACCESS LOG</span></div>
+      <div className="sgcon-sub">홈페이지가 접속자 IP·접속시간·이용이력을 기록·관리하고, 무단 캡처·복제·저장·배포 및 URL 공유를 차단·경고합니다. 설정·로그는 이 기기(브라우저)에 저장됩니다.</div>
+      <div className="sgstats">
+        <div className="sgstat"><b>{Number(st.total).toLocaleString()}</b><span>총 접속 로그</span></div>
+        <div className="sgstat"><b>{Number(st.today).toLocaleString()}</b><span>오늘 접속</span></div>
+        <div className="sgstat"><b>{Number(st.sessions).toLocaleString()}</b><span>고유 세션</span></div>
+        <div className="sgstat"><b>{activeN}/{SG_TOGGLES.length}</b><span>보호 활성</span></div>
+      </div>
+      <div className="sgtog">
+        {SG_TOGGLES.map(([k, t, d]) => (
+          <div key={k} className={"sgtogit" + (cfg[k] ? " on" : "")} onClick={() => toggle(k)} role="switch" aria-checked={!!cfg[k]}>
+            <div><b>{t}</b><span>{d}</span></div><span className="sgsw" />
+          </div>
+        ))}
+      </div>
+      <div className="sgacts">
+        <button onClick={() => { if (typeof guardExport === "function") guardExport(); }}><Download size={12} /> 로그 CSV 내보내기</button>
+        <button className="warn" onClick={() => { if (typeof window !== "undefined" && window.confirm && !window.confirm("접속 로그를 모두 삭제할까요?")) return; if (typeof guardClearLogs === "function") guardClearLogs(); setTick((t) => t + 1); if (typeof toast === "function") toast("접속 로그를 초기화했습니다."); }}><Trash2 size={12} /> 로그 초기화</button>
+      </div>
+      <div className="sglog">
+        <table><thead><tr><th>시간</th><th>이벤트</th><th>페이지</th><th>세션</th><th>화면</th><th>리퍼러</th></tr></thead>
+          <tbody>
+            {logs.slice(0, 60).map((l, i) => (<tr key={i}><td>{l.tl}</td><td className={"ev " + (l.ev || "")}>{l.ev}</td><td>{l.page}</td><td>{l.sid}</td><td>{l.scr}</td><td>{l.ref}</td></tr>))}
+            {!logs.length && <tr><td colSpan={6} style={{ textAlign: "center", color: "#8FA0BE", padding: "16px" }}>기록된 접속 로그가 없습니다.</td></tr>}
+          </tbody></table>
+      </div>
+      <div className="sglegal">본 홈페이지는 보안 강화를 위해 접속자의 IP 주소, 접속 시간 및 이용 이력 등 접속 로그를 기록·관리합니다. 사전 승인 없이 홈페이지 URL을 제3자에게 공유하거나, 화면 및 콘텐츠를 무단으로 캡처, 복제, 저장 또는 배포하는 행위는 엄격히 금지됩니다. 위반 행위가 확인될 경우 관련 법령 및 계약에 따라 필요한 법적 조치를 취할 수 있습니다.</div>
+    </div>
+  );
+}
 function FoundationOntology({ onGo }) {
   const D = React.useMemo(() => (typeof foundationData === "function" ? foundationData() : null), []);
   const [sel, setSel] = useState(null);
@@ -314,6 +368,11 @@ function FoundationOntology({ onGo }) {
       </div>
 
       <FoundationExplorer />
+
+      <div className="ontpanel" style={{ marginTop: 12 }}>
+        <div className="ontph"><KeyRound size={15} color="#22D3EE" /> 시스템 보호 · 접속 로그 관리 <span>· 보안 도메인 실행 콘솔</span></div>
+        <SecurityGuardConsole />
+      </div>
 
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><Boxes size={15} color="#A78BFA" /> 도메인 온톨로지 · 오브젝트·지표·시스템 <span>· {FND_DOMAINS.length} Domains</span></div>

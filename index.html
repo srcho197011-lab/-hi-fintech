@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=1becc017e1" />
+<link rel="stylesheet" href="./data/app.css?v=77da6f1e3f" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=1becc017e1"></script>
-<script src="./src/data/section_data.js?v=1becc017e1"></script>
-<script src="./src/data/demo_members.js?v=1becc017e1"></script>
+<script src="./src/data/dummy_data.js?v=77da6f1e3f"></script>
+<script src="./src/data/section_data.js?v=77da6f1e3f"></script>
+<script src="./src/data/demo_members.js?v=77da6f1e3f"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -60,6 +60,7 @@ import {
   Scale, Gauge, Globe, Award, PawPrint, Sprout, HandCoins,
   Truck, Boxes, Factory, Warehouse, Package, PackageCheck, Cpu, Workflow, Route, Handshake, ScrollText, Container,
   Database, Server, Blocks, KeyRound, Fingerprint, GitBranch, Building,
+  Download, Trash2,
 } from "lucide-react";
 const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKET, DISTRICTS, COVER_DETAIL, KDCA_NOTE, DEMO_MEMBERS } = (typeof window !== "undefined" && window.__HHDATA) || {};
 
@@ -487,6 +488,10 @@ export default function App() {
   const [consult, setConsult] = useState(null);
   useEffect(() => { _toast = (m) => setToastMsg(m); _consult = (i) => setConsult(i); return () => { _toast = null; _consult = null; }; }, []);
   useEffect(() => { _nav = (s) => setSec(s); return () => { _nav = null; }; });
+  // 시스템 보호 하네스 초기화(콘텐츠 보호·워터마크·접속 로그)
+  useEffect(() => { if (typeof initContentGuard === "function") initContentGuard(); }, []);
+  // 페이지(섹션) 이동마다 접속 로그 기록 + 워터마크 갱신
+  useEffect(() => { if (typeof guardLog === "function") guardLog("view", sec); if (typeof applyGuard === "function") applyGuard(); }, [sec]);
   useEffect(() => { if (!toastMsg) return; const id = setTimeout(() => setToastMsg(null), 2800); return () => clearTimeout(id); }, [toastMsg]);
   // 런타임 JS 오류 추적(데모 체크리스트 '콘솔 오류 없음' 검증용)
   useEffect(() => { if (typeof window === "undefined") return; window.__demoErrors = window.__demoErrors || []; const h = (e) => { try { window.__demoErrors.push(String((e && (e.message || (e.error && e.error.message))) || e)); } catch (_) {} }; window.addEventListener("error", h); return () => window.removeEventListener("error", h); }, []);
@@ -9578,6 +9583,60 @@ function FoundationDomain360({ d, D, onClose }) {
     </React.Fragment>
   );
 }
+/* 시스템 보호 · 접속 로그 관리 콘솔 — 콘텐츠 보호(우클릭/복사/캡처/개발자도구)·워터마크·접속로그 관리 */
+const SG_TOGGLES = [
+  ["log", "접속 로그 기록", "IP·시간·페이지·세션 로그 수집"],
+  ["noContext", "우클릭 방지", "컨텍스트 메뉴 차단"],
+  ["noCopy", "복사·캡처 방지", "복사·잘라내기·드래그·선택 차단"],
+  ["noDevtool", "개발자도구·인쇄 차단", "F12·Ctrl+Shift+I·인쇄 차단"],
+  ["watermark", "화면 워터마크", "세션·날짜 워터마크 표시"],
+  ["shareWarn", "URL 공유 경고", "무단 공유·인쇄 시 로그 기록"],
+];
+function SecurityGuardConsole() {
+  const [cfg, setCfg] = useState(() => (typeof guardCfg === "function" ? guardCfg() : {}));
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const h = () => setTick((t) => t + 1);
+    window.addEventListener("guardlog", h); window.addEventListener("guardchange", h);
+    const id = setInterval(h, 4000);
+    return () => { window.removeEventListener("guardlog", h); window.removeEventListener("guardchange", h); clearInterval(id); };
+  }, []);
+  const logs = (typeof guardLogs === "function" ? guardLogs() : []).slice().reverse();
+  const st = (typeof guardStats === "function" ? guardStats() : { total: 0, today: 0, sessions: 0, capture: 0 });
+  const activeN = SG_TOGGLES.filter(([k]) => cfg[k]).length;
+  const toggle = (k) => { const nc = (typeof guardSet === "function") ? guardSet({ [k]: !cfg[k] }) : cfg; setCfg(Object.assign({}, nc)); const lbl = (SG_TOGGLES.find((t) => t[0] === k) || [])[1] || ""; if (typeof toast === "function") toast((nc[k] ? "✅ " : "⏸ ") + lbl + (nc[k] ? " 적용" : " 해제")); };
+  return (
+    <div className="sgcon">
+      <div className="sgcon-hd"><Fingerprint size={16} color="#22D3EE" /><b>시스템 보호 · 접속 로그 관리 콘솔</b><span className="sgpill">CONTENT GUARD</span><span className="sgpill">ACCESS LOG</span></div>
+      <div className="sgcon-sub">홈페이지가 접속자 IP·접속시간·이용이력을 기록·관리하고, 무단 캡처·복제·저장·배포 및 URL 공유를 차단·경고합니다. 설정·로그는 이 기기(브라우저)에 저장됩니다.</div>
+      <div className="sgstats">
+        <div className="sgstat"><b>{Number(st.total).toLocaleString()}</b><span>총 접속 로그</span></div>
+        <div className="sgstat"><b>{Number(st.today).toLocaleString()}</b><span>오늘 접속</span></div>
+        <div className="sgstat"><b>{Number(st.sessions).toLocaleString()}</b><span>고유 세션</span></div>
+        <div className="sgstat"><b>{activeN}/{SG_TOGGLES.length}</b><span>보호 활성</span></div>
+      </div>
+      <div className="sgtog">
+        {SG_TOGGLES.map(([k, t, d]) => (
+          <div key={k} className={"sgtogit" + (cfg[k] ? " on" : "")} onClick={() => toggle(k)} role="switch" aria-checked={!!cfg[k]}>
+            <div><b>{t}</b><span>{d}</span></div><span className="sgsw" />
+          </div>
+        ))}
+      </div>
+      <div className="sgacts">
+        <button onClick={() => { if (typeof guardExport === "function") guardExport(); }}><Download size={12} /> 로그 CSV 내보내기</button>
+        <button className="warn" onClick={() => { if (typeof window !== "undefined" && window.confirm && !window.confirm("접속 로그를 모두 삭제할까요?")) return; if (typeof guardClearLogs === "function") guardClearLogs(); setTick((t) => t + 1); if (typeof toast === "function") toast("접속 로그를 초기화했습니다."); }}><Trash2 size={12} /> 로그 초기화</button>
+      </div>
+      <div className="sglog">
+        <table><thead><tr><th>시간</th><th>이벤트</th><th>페이지</th><th>세션</th><th>화면</th><th>리퍼러</th></tr></thead>
+          <tbody>
+            {logs.slice(0, 60).map((l, i) => (<tr key={i}><td>{l.tl}</td><td className={"ev " + (l.ev || "")}>{l.ev}</td><td>{l.page}</td><td>{l.sid}</td><td>{l.scr}</td><td>{l.ref}</td></tr>))}
+            {!logs.length && <tr><td colSpan={6} style={{ textAlign: "center", color: "#8FA0BE", padding: "16px" }}>기록된 접속 로그가 없습니다.</td></tr>}
+          </tbody></table>
+      </div>
+      <div className="sglegal">본 홈페이지는 보안 강화를 위해 접속자의 IP 주소, 접속 시간 및 이용 이력 등 접속 로그를 기록·관리합니다. 사전 승인 없이 홈페이지 URL을 제3자에게 공유하거나, 화면 및 콘텐츠를 무단으로 캡처, 복제, 저장 또는 배포하는 행위는 엄격히 금지됩니다. 위반 행위가 확인될 경우 관련 법령 및 계약에 따라 필요한 법적 조치를 취할 수 있습니다.</div>
+    </div>
+  );
+}
 function FoundationOntology({ onGo }) {
   const D = React.useMemo(() => (typeof foundationData === "function" ? foundationData() : null), []);
   const [sel, setSel] = useState(null);
@@ -9606,6 +9665,11 @@ function FoundationOntology({ onGo }) {
       </div>
 
       <FoundationExplorer />
+
+      <div className="ontpanel" style={{ marginTop: 12 }}>
+        <div className="ontph"><KeyRound size={15} color="#22D3EE" /> 시스템 보호 · 접속 로그 관리 <span>· 보안 도메인 실행 콘솔</span></div>
+        <SecurityGuardConsole />
+      </div>
 
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><Boxes size={15} color="#A78BFA" /> 도메인 온톨로지 · 오브젝트·지표·시스템 <span>· {FND_DOMAINS.length} Domains</span></div>
@@ -14316,6 +14380,100 @@ function runDemoTests() {
 }
 const DEMO_CHK_NAMES = ["체험 회원 16명 일괄 등록 가능", "중복 등록 방지 가능", "회원별 로그인 가능", "회원별 대시보드 데이터 상이", "암위험도 등급 색상 정상", "10년 후 의료비 자동 계산", "보험 추천이 암위험도별 상이", "건강지갑 예상 적립액 계산", "AI 주치의 회원별 응답", "모바일/반응형 가로 넘침 없음", "콘솔 오류 없음(런타임)"];
 
+/* ====================== 시스템 보호 · 접속 로그 유틸 (콘텐츠 보호 하네스) ======================
+   접속 로그 기록(시간·페이지·세션·화면·리퍼러·UA), 우클릭/복사/캡처/개발자도구 차단, 화면 워터마크.
+   설정·로그는 이 기기(브라우저) localStorage에 저장. 기반 온톨로지 '시스템 보호 콘솔'에서 관리. */
+const GUARD_KEY = "hifin_guard_cfg";
+const GUARD_LOG_KEY = "hifin_access_log";
+const GUARD_DEFAULT = { log: true, noContext: true, noCopy: true, noDevtool: true, watermark: true, shareWarn: true };
+
+function guardCfg() { try { const s = JSON.parse(localStorage.getItem(GUARD_KEY) || "null"); return Object.assign({}, GUARD_DEFAULT, s || {}); } catch (e) { return Object.assign({}, GUARD_DEFAULT); } }
+function guardSet(patch) {
+  const c = Object.assign(guardCfg(), patch || {});
+  try { localStorage.setItem(GUARD_KEY, JSON.stringify(c)); } catch (e) {}
+  applyGuard();
+  try { window.dispatchEvent(new Event("guardchange")); } catch (e) {}
+  return c;
+}
+function _guardSid() {
+  try { let s = sessionStorage.getItem("hifin_sid"); if (!s) { s = "S" + Date.now().toString(36).toUpperCase() + "-" + Math.floor(Math.random() * 0xffff).toString(16).toUpperCase(); sessionStorage.setItem("hifin_sid", s); } return s; } catch (e) { return "S-EPHEMERAL"; }
+}
+function guardLogs() { try { return JSON.parse(localStorage.getItem(GUARD_LOG_KEY) || "[]"); } catch (e) { return []; } }
+function guardLog(event, page) {
+  try {
+    if (!guardCfg().log) return;
+    const logs = guardLogs(); const d = new Date();
+    logs.push({ t: d.toISOString(), tl: d.toLocaleString("ko-KR", { hour12: false }), ev: event || "view", page: page || (typeof location !== "undefined" ? (location.hash || "/") : "/"), ref: (typeof document !== "undefined" && document.referrer) || "-", ua: (typeof navigator !== "undefined" ? navigator.userAgent : "").slice(0, 140), sid: _guardSid(), scr: (typeof screen !== "undefined" ? screen.width + "×" + screen.height : "-"), lang: (typeof navigator !== "undefined" ? navigator.language : "-") });
+    while (logs.length > 800) logs.shift();
+    localStorage.setItem(GUARD_LOG_KEY, JSON.stringify(logs));
+    try { window.dispatchEvent(new Event("guardlog")); } catch (e) {}
+  } catch (e) {}
+}
+function guardClearLogs() { try { localStorage.removeItem(GUARD_LOG_KEY); } catch (e) {} try { window.dispatchEvent(new Event("guardlog")); } catch (e) {} }
+function guardStats() {
+  const logs = guardLogs(); const today = new Date().toLocaleDateString("ko-KR");
+  const sids = new Set(); let todayN = 0, capN = 0;
+  logs.forEach((l) => { if (l.sid) sids.add(l.sid); if ((l.tl || "").indexOf(today) === 0 || (l.tl || "").indexOf(today) >= 0) { if (new Date(l.t).toLocaleDateString("ko-KR") === today) todayN++; } if (l.ev === "printscreen" || l.ev === "capture" || l.ev === "print") capN++; });
+  return { total: logs.length, today: todayN, sessions: sids.size, capture: capN };
+}
+function guardExport() {
+  try {
+    const logs = guardLogs();
+    const head = ["시간", "이벤트", "페이지", "세션ID", "화면", "언어", "리퍼러", "UserAgent"];
+    const esc = (v) => '"' + String(v == null ? "" : v).replace(/"/g, "'") + '"';
+    const rows = logs.map((l) => [l.tl, l.ev, l.page, l.sid, l.scr, l.lang, l.ref, l.ua].map(esc).join(","));
+    const csv = "﻿" + [head.join(","), ...rows].join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob); const a = document.createElement("a");
+    a.href = url; a.download = "hifin_access_log_" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(() => URL.revokeObjectURL(url), 1500);
+    if (typeof toast === "function") toast("접속 로그 CSV를 내보냈습니다.");
+  } catch (e) {}
+}
+
+function _guardWatermark(onFlag) {
+  if (typeof document === "undefined") return;
+  let el = document.getElementById("guardwm");
+  if (!onFlag) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement("div"); el.id = "guardwm"; el.setAttribute("aria-hidden", "true"); document.body.appendChild(el); }
+  let who = "HI-Fin Tech";
+  try { const a = (typeof authCurrent === "function") ? authCurrent() : null; if (a && a.name) who = a.name; } catch (e) {}
+  const stamp = who + " · " + new Date().toLocaleDateString("ko-KR") + " · " + _guardSid();
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="200"><text x="18" y="120" transform="rotate(-24 180 100)" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="700" fill="rgba(37,99,235,0.07)">' + stamp.replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</text></svg>";
+  el.style.backgroundImage = "url(\"data:image/svg+xml;utf8," + encodeURIComponent(svg) + "\")";
+}
+
+function applyGuard() {
+  if (typeof document === "undefined") return;
+  const cfg = guardCfg();
+  try { if (window.__guardCleanup) window.__guardCleanup.forEach((fn) => { try { fn(); } catch (e) {} }); } catch (e) {}
+  const cleanup = [];
+  const on = (type, fn, opt) => { document.addEventListener(type, fn, opt); cleanup.push(() => document.removeEventListener(type, fn, opt)); };
+  const deny = (msg) => (e) => { e.preventDefault(); if (typeof toast === "function") toast(msg); return false; };
+  if (cfg.noContext) on("contextmenu", deny("🔒 콘텐츠 보호 — 우클릭이 제한됩니다."));
+  if (cfg.noCopy) { const b = deny("🔒 콘텐츠 보호 — 복사·저장·배포가 제한됩니다."); on("copy", b); on("cut", b); on("dragstart", (e) => e.preventDefault()); }
+  if (cfg.noCopy || cfg.noDevtool) on("keydown", (e) => {
+    const k = (e.key || "").toLowerCase(); const ctrl = e.ctrlKey || e.metaKey;
+    if (cfg.noCopy && ctrl && ["c", "x", "s", "u", "a"].indexOf(k) >= 0) { e.preventDefault(); if (typeof toast === "function") toast("🔒 콘텐츠 보호 — 복사·저장이 제한됩니다."); }
+    if (cfg.noDevtool && ((k === "f12") || (ctrl && e.shiftKey && ["i", "j", "c"].indexOf(k) >= 0) || (ctrl && k === "p"))) { e.preventDefault(); if (typeof toast === "function") toast("🔒 보호 — 개발자도구·인쇄가 제한됩니다."); guardLog(ctrl && k === "p" ? "print" : "devtool", location.hash || "/"); }
+    if (e.key === "PrintScreen") { if (typeof toast === "function") toast("⚠️ 화면 캡처는 금지되어 있으며 접속 로그에 기록됩니다."); guardLog("printscreen", location.hash || "/"); try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText("HI-Fin Tech — 무단 캡처 금지 (" + _guardSid() + ")"); } catch (x) {} }
+  });
+  if (cfg.noDevtool || cfg.shareWarn) on("beforeprint" in window ? "beforeprint" : "beforeprint", () => guardLog("print", location.hash || "/"));
+  try { window.addEventListener("beforeprint", () => guardLog("print", location.hash || "/")); } catch (e) {}
+  window.__guardCleanup = cleanup;
+  _guardWatermark(cfg.watermark);
+  try { document.body.classList.toggle("guard-nocopy", !!cfg.noCopy); } catch (e) {}
+}
+
+function initContentGuard() {
+  if (typeof window === "undefined") return;
+  if (window.__guardInit) { applyGuard(); return; }
+  window.__guardInit = true;
+  applyGuard();
+  guardLog("visit", (typeof location !== "undefined" ? (location.hash || "/") : "/"));
+  try { document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") guardLog("focus", location.hash || "/"); }); } catch (e) {}
+}
+
 /* 체험 회원 로그인 시 각 섹션 상단에 표시되는 개인 건강요약 배너 */
 function DemoMemberBanner() {
   const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -14750,8 +14908,12 @@ function AuthGate() {
     <div className="authwrap">
       <div className="authcard">
         <AuthBrand />
-        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: "#64748B", background: "#F1F5F9", border: "1px solid #E2E8F0", borderRadius: 10, padding: "9px 12px", margin: "0 0 4px" }}>🔒 승인된 계정만 접속할 수 있습니다.</div>
+        <div className="authgate-badge">🔒 승인된 계정만 접속할 수 있습니다.</div>
         <AuthLogin />
+        <div className="authlegal">
+          <div className="authlegal-hd"><span>🛡️</span> 접속·콘텐츠 보호 안내</div>
+          <p>본 홈페이지는 보안 강화를 위해 접속자의 IP 주소, 접속 시간 및 이용 이력 등 접속 로그를 기록·관리합니다. 사전 승인 없이 홈페이지 URL을 제3자에게 공유하거나, 화면 및 콘텐츠를 무단으로 캡처, 복제, 저장 또는 배포하는 행위는 엄격히 금지됩니다. 위반 행위가 확인될 경우 관련 법령 및 계약에 따라 필요한 법적 조치를 취할 수 있습니다.</p>
+        </div>
         <div className="authnote">※ 본 서비스는 비공개 시연 환경입니다. 승인된 관리자 계정만 접속 가능하며, 접속 정보는 이 기기(브라우저)에만 저장됩니다.</div>
       </div>
     </div>
