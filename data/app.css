@@ -931,6 +931,20 @@
 .scagentguard svg{color:#67E8F9;flex-shrink:0;}
 @media(max-width:820px){.scobjs{grid-template-columns:repeat(2,1fr);}.scsysgrid{grid-template-columns:1fr;}.scagents{grid-template-columns:1fr;}}
 @media(max-width:520px){.scobjs{grid-template-columns:1fr;}}
+/* HI-Fin 기반 온톨로지 도메인 카드 */
+.fndgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+.fndcard{background:#0F1B33;border:1px solid #24324D;border-top:2px solid var(--oc);border-radius:12px;padding:13px;display:flex;flex-direction:column;}
+.fndcard .scobjhd .scobj-i{background:color-mix(in srgb,var(--oc) 18%,#0F1B33);color:var(--oc);}
+.fndkpi{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;}
+.fndkpi>div{background:#0B1730;border:1px solid #1F3050;border-radius:8px;padding:7px 9px;}
+.fndkpi b{display:block;font-size:14.5px;font-weight:900;color:#EAF2FF;}
+.fndkpi span{font-size:9.5px;color:#8FA0BE;}
+.fndobj{font-size:9.3px;font-weight:700;color:#CBD6EA;background:#152743;border:1px solid #2A3A57;border-radius:6px;padding:2px 7px;}
+.fndfoot{display:flex;flex-direction:column;gap:4px;margin-top:10px;border-top:1px dashed #2A3A57;padding-top:9px;font-size:10.3px;color:#9DABC7;}
+.fndfoot span{display:flex;align-items:center;gap:5px;}
+.fndfoot span svg{color:var(--oc);flex-shrink:0;}
+@media(max-width:900px){.fndgrid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.fndgrid{grid-template-columns:1fr;}.scintro .ontobjbar{grid-template-columns:repeat(3,1fr)!important;}}
 
 /* 액션 */
 .ontactnote{font-size:12.5px;color:#AFC0DE;line-height:1.6;background:#0F1B33;border:1px solid #24406F;border-radius:12px;padding:12px 14px;margin-top:14px;}
