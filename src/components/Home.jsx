@@ -152,7 +152,7 @@ function PlatformDiagram() {
 
       {/* ⑦ Value Return */}
       <div style={{ ...wrapMax, position: "relative" }}>
-        <div style={{ textAlign: "center", marginBottom: 10 }}><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#FBBF24" }}>⑦ VALUE RETURN SYSTEM · 가치환원 순환</span></div>
+        <div style={{ textAlign: "center", marginBottom: 10 }}><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#FBBF24" }}>⑦ VALUE RETURN SYSTEM · 가치환원 순환</span><div style={{ fontSize: 11.5, fontWeight: 700, color: "#CFE3F5", marginTop: 5 }}>매출마진의 50%는 회원 리워드, 30%는 치료비 나눔으로 환원</div></div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 12, alignItems: "center" }} className="pdg-vr">
           <div style={{ ...glass, padding: "16px 16px", textAlign: "center", background: "rgba(34,211,238,.09)", borderColor: "rgba(34,211,238,.3)" }}>
             <Wallet size={22} color={CY} style={{ marginBottom: 6 }} />
@@ -168,7 +168,7 @@ function PlatformDiagram() {
             <div style={{ fontSize: 10.5, color: "#F7C6E0" }}>치료비 사각지대 지원</div>
           </div>
         </div>
-        <div style={{ textAlign: "center", fontSize: 10.5, color: "#7FCCE4", marginTop: 8 }}>※ 나머지 20%는 플랫폼 운영 — 소비 가치가 개인 적립과 사회 나눔으로 순환합니다.</div>
+        <div style={{ textAlign: "center", fontSize: 10.5, color: "#7FCCE4", marginTop: 8 }}>※ 매출마진의 나머지 20%는 플랫폼 운영 — 소비 가치가 개인 적립과 사회 나눔으로 순환합니다.</div>
       </div>
 
       {/* Social Impact */}
