@@ -218,8 +218,9 @@ function HomeView({ onGo }) {
   return (
     <>
       <div className="hero">
-        <span className="hglow" style={{ width: 220, height: 220, top: -70, right: -40, background: "#22C55E", opacity: .32 }} />
-        <span className="hglow" style={{ width: 200, height: 200, bottom: -90, left: 120, background: "#60A5FA", opacity: .3 }} />
+        <span className="hglow" style={{ width: 260, height: 260, top: -90, left: -60, background: "#22D3EE", opacity: .3 }} />
+        <span className="hglow" style={{ width: 230, height: 230, bottom: -110, right: -30, background: "#3B82F6", opacity: .32 }} />
+        <span className="hglow" style={{ width: 180, height: 180, top: 40, right: 220, background: "#0EA5E9", opacity: .18 }} />
         <div className="hcopy">
           <span className="heyebrow"><Art name="sparkle" size={15} /> AI 헬스케어 · 핀테크 임팩트기업</span>
           <div className="htitle">Health-InsurFin Tech<br />치료비 걱정 없는 <b>평생 건강관리 생태계</b></div>
