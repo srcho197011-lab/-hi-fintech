@@ -112,7 +112,7 @@ function PlatformDiagram() {
 
       {/* ① Free Entry */}
       <div style={wrapMax}><Stage n="①" tag="Free Entry" title="무료 진입 서비스" accent="#34D399">
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}><Chip ic={ShieldCheck}>무료 건강검진 대비보험</Chip><Chip ic={FileText}>무료 건강분석보고서</Chip><Chip ic={MessageSquare}>무료 AI 건강상담</Chip></div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}><Chip ic={ShieldCheck}>무료 건강검진 대비보험</Chip><Chip ic={FileText}>무료 건강분석보고서</Chip><Chip ic={MessageSquare}>AI 무료 건강 상담 & 평생케어</Chip></div>
       </Stage></div>
       <Conn />
 
