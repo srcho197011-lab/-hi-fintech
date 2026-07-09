@@ -85,7 +85,100 @@ function SupplyGraph() {
   );
 }
 
+/* ── 데이터 하우스: 오브젝트별 검색 + 온톨로지 관계 드릴다운 ── */
+const SC_MONEY = new Set(["salePrice", "supplyPrice", "amount", "margin", "ltv", "sales", "fee", "supplyCost", "credit", "payable"]);
+function _scCell(v, k) {
+  if (v == null) return "";
+  if (SC_MONEY.has(k) && typeof v === "number") return v >= 100000000 ? (v / 100000000).toFixed(1) + "억" : v >= 10000 ? Math.round(v / 10000).toLocaleString() + "만" : v.toLocaleString();
+  if (k === "marginPct") return v + "%";
+  if (typeof v === "number") return v.toLocaleString();
+  return v;
+}
+const SC_TABLES = [
+  { key: "vendor", label: "거래처·공급사", ic: Factory, c: "#A78BFA", ph: "상호·유형·공급분류 검색", get: (d) => d.vendors, search: (r, q) => (r.name + r.id + r.category + r.type).includes(q), cols: [["id", "ID"], ["name", "상호"], ["type", "유형"], ["category", "공급분류"], ["sla", "SLA(D+)"], ["trust", "신뢰도"]] },
+  { key: "product", label: "제품·SKU", ic: Package, c: "#FBBF24", ph: "품목·거래처·분류 검색", get: (d) => d.products, search: (r, q) => (r.name + r.id + r.vendorName + r.category).includes(q), cols: [["id", "SKU"], ["name", "품목"], ["category", "분류"], ["vendorName", "공급 거래처"], ["salePrice", "판매가"], ["marginPct", "마진"]] },
+  { key: "contract", label: "계약·단가", ic: ScrollText, c: "#2DD4BF", ph: "거래처·분류 검색", get: (d) => d.contracts, search: (r, q) => (r.vendorName + r.id + r.category).includes(q), cols: [["id", "계약ID"], ["vendorName", "거래처"], ["category", "분류"], ["marginPct", "마진"], ["feePct", "수수료%"], ["settleCycle", "정산주기"]] },
+  { key: "availability", label: "공급사 가용재고", ic: Boxes, c: "#22D3EE", ph: "품목·거래처 검색 (당사 미보유)", get: (d) => d.availability, search: (r, q) => (r.skuName + r.id + r.vendorName + r.sku).includes(q), cols: [["id", "ID"], ["skuName", "품목"], ["vendorName", "보유 거래처"], ["qty", "가용수량"], ["leadDays", "출고 D+"], ["asof", "조회시각"]] },
+  { key: "account", label: "고객·계정", ic: Users, c: "#F472B6", ph: "고객명·세그먼트·지역 검색", get: () => null, search: (r, q) => (r.name + r.id + r.seg + r.sido + r.grade).includes(q), cols: [["id", "계정ID"], ["name", "고객명"], ["seg", "세그먼트"], ["grade", "등급"], ["ltv", "LTV"], ["sido", "지역"]] },
+  { key: "order", label: "주문", ic: ClipboardList, c: "#6366F1", ph: "주문ID·품목·거래처·계정 검색", get: (d) => d.orders, search: (r, q) => (r.id + r.skuName + r.vendorName + r.accountId + r.status).includes(q), cols: [["id", "주문ID"], ["accountId", "계정"], ["skuName", "품목"], ["vendorName", "라우팅 거래처"], ["amount", "판매액"], ["status", "상태"]] },
+  { key: "shipment", label: "배송", ic: Truck, c: "#38BDF8", ph: "배송·주문·거래처·송장 검색", get: (d) => d.shipments, search: (r, q) => (r.id + r.orderId + r.vendorName + r.carrier + r.status + r.tracking).includes(q), cols: [["id", "배송ID"], ["orderId", "주문"], ["vendorName", "출고 거래처"], ["carrier", "운송사"], ["status", "상태"], ["eta", "ETA"]] },
+  { key: "settlement", label: "정산", ic: Receipt, c: "#F59E0B", ph: "거래처·기간 검색", get: (d) => d.settlements, search: (r, q) => (r.vendorName + r.id + r.period + r.status).includes(q), cols: [["id", "전표ID"], ["vendorName", "거래처"], ["period", "기간"], ["sales", "매출"], ["fee", "수수료"], ["status", "상태"]] },
+];
+function _scRel(tab, r, IDX) {
+  const L = [];
+  const P = (t, n, k, q) => L.push({ t, n, k, q });
+  if (tab === "vendor") { P("제품", (IDX.pByV[r.id] || []).length, "product", r.name); P("계약", (IDX.cByV[r.id] || []).length, "contract", r.name); P("가용재고", (IDX.aByV[r.id] || []).length, "availability", r.name); P("정산", (IDX.sByV[r.id] || []).length, "settlement", r.name); }
+  else if (tab === "product") { P("공급 거래처", 1, "vendor", r.vendorName); P("가용재고", (IDX.aBySku[r.id] || []).length, "availability", r.id); P("주문(참조)", null, "order", r.name); }
+  else if (tab === "contract") { P("거래처", 1, "vendor", r.vendorName); }
+  else if (tab === "availability") { P("보유 거래처", 1, "vendor", r.vendorName); P("제품", 1, "product", r.sku); }
+  else if (tab === "account") { P("주문", null, "order", r.id); }
+  else if (tab === "order") { P("고객·계정", 1, "account", r.accountId); P("제품", 1, "product", r.skuName); P("라우팅 거래처", 1, "vendor", r.vendorName); P("배송", IDX.shByOrd[r.id] ? 1 : 0, "shipment", r.id); }
+  else if (tab === "shipment") { P("주문", 1, "order", r.orderId); P("출고 거래처", 1, "vendor", r.vendorName); P("고객·계정", 1, "account", r.accountId); }
+  else if (tab === "settlement") { P("거래처", 1, "vendor", r.vendorName); }
+  return L;
+}
+function SupplyDetail({ rec, tab, idx, onClose, onGo }) {
+  const rel = _scRel(tab, rec, idx);
+  const T = SC_TABLES.find((t) => t.key === tab);
+  return (
+    <div className="ontov" onClick={onClose}><div className="ontmodal scdetail" onClick={(e) => e.stopPropagation()}>
+      <div className="ontmh"><div><span className="ontmid">{rec.id}</span><div className="ontmname">{rec.name || rec.skuName || rec.vendorName || rec.id} <span>· {T.label}</span></div></div><button onClick={onClose}><X size={19} /></button></div>
+      <div className="ontmbody">
+        <div className="scdfields">{Object.entries(rec).filter(([k]) => !/^_|^mid$/.test(k)).map(([k, v]) => <div className="scdf" key={k}><span>{k}</span><b>{_scCell(v, k)}</b></div>)}</div>
+        <div className="screlh"><Network size={13} /> 온톨로지 관계 (Links)</div>
+        <div className="screlgrid">{rel.map((x, i) => (
+          <button className="screlcard" key={i} onClick={() => onGo(x.k, x.q)}>
+            <b>{x.t}</b>{x.n != null && <i>{x.n.toLocaleString()}건</i>}<span>{SC_TABLES.find((t) => t.key === x.k).label} 보기 ›</span>
+          </button>
+        ))}</div>
+      </div>
+    </div></div>
+  );
+}
+function SupplyExplorer() {
+  const D = React.useMemo(() => (typeof supplyData === "function" ? supplyData() : null), []);
+  const [tab, setTab] = useState("vendor");
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(0);
+  const [sel, setSel] = useState(null);
+  const accRef = React.useRef(null);
+  const getAcc = () => { if (!accRef.current) accRef.current = (typeof supplyAccounts === "function" ? supplyAccounts() : []); return accRef.current; };
+  const IDX = React.useMemo(() => {
+    if (!D) return {};
+    const pByV = {}, aBySku = {}, aByV = {}, cByV = {}, sByV = {}, shByOrd = {};
+    D.products.forEach((p) => { (pByV[p.vendorId] = pByV[p.vendorId] || []).push(p); });
+    D.availability.forEach((a) => { (aBySku[a.sku] = aBySku[a.sku] || []).push(a); (aByV[a.vendorId] = aByV[a.vendorId] || []).push(a); });
+    D.contracts.forEach((c) => { (cByV[c.vendorId] = cByV[c.vendorId] || []).push(c); });
+    D.settlements.forEach((s) => { (sByV[s.vendorId] = sByV[s.vendorId] || []).push(s); });
+    D.shipments.forEach((s) => { shByOrd[s.orderId] = s; });
+    return { pByV, aBySku, aByV, cByV, sByV, shByOrd };
+  }, [D]);
+  if (!D) return null;
+  const T = SC_TABLES.find((t) => t.key === tab);
+  const rows = tab === "account" ? getAcc() : T.get(D);
+  const qq = q.trim();
+  const filtered = qq ? rows.filter((r) => T.search(r, qq)) : rows;
+  const per = 12; const pages = Math.max(1, Math.ceil(filtered.length / per));
+  const pg = Math.min(page, pages - 1);
+  const view = filtered.slice(pg * per, pg * per + per);
+  const go = (k, query) => { setTab(k); setQ(query || ""); setPage(0); setSel(null); };
+  const tabCount = (t) => t.key === "account" ? D.counts.account : (t.get(D) || []).length;
+  return (
+    <div className="ontpanel" style={{ marginTop: 12 }}>
+      <div className="ontph"><Search size={15} color="#38BDF8" /> 데이터 하우스 · 오브젝트 검색 <span>· 8 Object Types · {(D.counts.account + D.counts.order + D.counts.shipment).toLocaleString()}+ objects</span></div>
+      <div className="sctabs">{SC_TABLES.map((t) => <button key={t.key} className={"sctab" + (tab === t.key ? " on" : "")} style={{ "--tc": t.c }} onClick={() => go(t.key, "")}><t.ic size={13} /> {t.label} <i>{tabCount(t).toLocaleString()}</i></button>)}</div>
+      <div className="scsearch"><Search size={14} /><input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder={T.ph} /><span>{filtered.length.toLocaleString()}건</span></div>
+      <div className="sctablewrap"><table className="sctable"><thead><tr>{T.cols.map(([k, l]) => <th key={k}>{l}</th>)}</tr></thead>
+        <tbody>{view.map((r, i) => <tr key={i} onClick={() => setSel(r)}>{T.cols.map(([k]) => <td key={k}>{_scCell(r[k], k)}</td>)}</tr>)}</tbody></table></div>
+      {filtered.length === 0 && <div className="scempty">검색 결과가 없습니다.</div>}
+      <div className="scpager"><button disabled={pg <= 0} onClick={() => setPage(pg - 1)}>‹ 이전</button><span>{(pg + 1).toLocaleString()} / {pages.toLocaleString()} 페이지</span><button disabled={pg >= pages - 1} onClick={() => setPage(pg + 1)}>다음 ›</button></div>
+      {sel && <SupplyDetail rec={sel} tab={tab} idx={IDX} onClose={() => setSel(null)} onGo={go} />}
+    </div>
+  );
+}
 function SupplyOntology({ onGo }) {
+  const CNT = (typeof supplyData === "function") ? supplyData().counts : {};
+  const _ck = { vendor: "vendor", product: "product", avail: "availability", contract: "contract", account: "account", order: "order", shipment: "shipment", payment: "settlement" };
   return (
     <div>
       <div className="ontpanel scintro">
@@ -98,7 +191,7 @@ function SupplyOntology({ onGo }) {
         <p className="scdesc">제품과 재고는 <b>거래처(공급사)가 보유</b>하고 <b style={{ color: "#38BDF8" }}>고객에게 직접 배송</b>합니다. 당사는 <b>재고 부담 없이</b> <b style={{ color: "#6366F1" }}>주문·데이터·정산을 오케스트레이션</b>하고, <b style={{ color: "#22D3EE" }}>공급사 가용재고를 실시간 조회(가시성)</b>만 합니다. 모든 오브젝트·연결·AI 에이전트가 이 무재고·직배송 모델로 정의됩니다.</p>
         <div className="ontobjbar" style={{ marginTop: 10 }}>
           {SC_OBJECTS.map((o) => (
-            <div className="ontobj" key={o.id}><span className="ontobj-i" style={{ background: o.c + "1A" }}><o.ic size={16} color={o.c} /></span><div><b style={{ fontSize: 12 }}>{o.t.split(" ")[0]}</b><span>{o.sys.join("·")}</span></div></div>
+            <div className="ontobj" key={o.id}><span className="ontobj-i" style={{ background: o.c + "1A" }}><o.ic size={16} color={o.c} /></span><div><b style={{ fontSize: 14 }}>{(CNT[_ck[o.id]] || 0).toLocaleString()}</b><span>{o.t.split(" ")[0]}</span></div></div>
           ))}
         </div>
       </div>
@@ -107,6 +200,8 @@ function SupplyOntology({ onGo }) {
         <div className="ontph"><Workflow size={15} color="#22D3EE" /> 개념도 · Concept Map <span>· 무재고 · 거래처 직배송</span></div>
         <SupplyGraph />
       </div>
+
+      <SupplyExplorer />
 
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><Boxes size={15} color="#FBBF24" /> 오브젝트 정의 · 키 프로퍼티 <span>· {SC_OBJECTS.length} Object Types</span></div>
