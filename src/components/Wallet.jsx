@@ -11,6 +11,9 @@ function WalletSection({ onGo }) {
   const shopPts = (typeof shopHtkPts === "function") ? shopHtkPts(dm ? dm.email : "default") : 0;
   const shopWonBal = (typeof shopHtkWon === "function") ? shopHtkWon(dm ? dm.email : "default") : 0;
   const total = WALLET.total + cpPts + shopPts;
+  const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(total) : Math.floor(total * 0.30);
+  const genRes = total - insRes;
+  const insPct = (typeof HTK_INS_RATE !== "undefined") ? Math.round(HTK_INS_RATE * 100) : 30;
   // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 50/30/20). 1차연도(10만 회원) 기준 연간.
   const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 196650000, earn: 327750000, beneficiaries: 771 };
   return (
@@ -31,6 +34,15 @@ function WalletSection({ onGo }) {
           <div><b>{(WALLET.total - 8200).toLocaleString()}</b><span>전월 대비 ▲</span></div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, opacity: .95 }}><ShieldCheck size={14} /> AI·블록체인 보안 설계</div>
         </div>
+      </div>
+
+      <div className="wins">
+        <div className="wins-h"><span className="wins-ic"><ShieldCheck size={17} /></span><div><b>보험·치료비 적립금 <span className="wins-tag">우선 적립 {insPct}%</span></b><p>적립되는 Health Token의 <b>{insPct}%</b>를 <b>보험료·의료비 결제 전용</b> 적립금으로 <b>우선 적립</b>합니다.</p></div></div>
+        <div className="wins-grid">
+          <div className="wins-box pri"><span className="wl"><ShieldCheck size={12} /> 보험·치료비 적립금 <em>{insPct}% 우선</em></span><b>{insRes.toLocaleString()} <small>HTK</small></b><span className="ww">≈ {(insRes * WALLET.rate).toLocaleString()}원 · 보험료·치료비 결제</span></div>
+          <div className="wins-box"><span className="wl"><Coins size={12} /> 일반 적립금 <em>{100 - insPct}%</em></span><b>{genRes.toLocaleString()} <small>HTK</small></b><span className="ww">≈ {(genRes * WALLET.rate).toLocaleString()}원 · 쇼핑·건강활동 사용</span></div>
+        </div>
+        <div className="wins-bar"><span className="pri" style={{ width: insPct + "%" }}>{insPct}%</span><span className="gen" style={{ width: (100 - insPct) + "%" }}>{100 - insPct}%</span></div>
       </div>
 
       <div className="wsplit">

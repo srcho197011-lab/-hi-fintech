@@ -315,7 +315,7 @@ function HomeView({ onGo }) {
           <div className="ch"><div className="ct" style={{ fontSize: 14 }}>Digital Health Wallet</div><span className="link">자산 상세 <ChevronRight size={13} /></span></div>
           <div style={{ fontSize: 12.5, color: "var(--muted)" }}>총 건강자산</div><div className="wtot">₩2,480,000</div>
           <div className="wrow"><Mini bg="#FFF3E0"><Coins size={16} color="#F59E0B" /></Mini><span className="nm">Health Token</span><span className="vl">12,450 <span style={{ color: "#F59E0B" }}>HT</span></span></div>
-          <div className="wrow"><Mini bg="#E8F1FE"><Wallet size={16} color="#2563EB" /></Mini><span className="nm">보험 적립금</span><span className="vl">₩1,240,000</span></div>
+          <div className="wrow"><Mini bg="#E8F1FE"><ShieldCheck size={16} color="#2563EB" /></Mini><span className="nm">보험·치료비 적립금 <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "#2563EB", borderRadius: 20, padding: "1px 6px", marginLeft: 3, verticalAlign: 1 }}>30% 우선</span></span><span className="vl">3,735 <span style={{ color: "#2563EB" }}>HT</span></span></div>
           <div className="wrow"><Mini bg="#F1ECFE"><BadgeCheck size={16} color="#7C3AED" /></Mini><span className="nm">NFT 건강인증서</span><span className="vl">5 개</span></div>
           <div className="wrow"><Mini bg="#E7F8EE"><Hash size={16} color="#16A34A" /></Mini><span className="nm">의료기록 해시</span><span className="vl">온체인</span></div>
           <button className="cbtn pri" onClick={() => go("wallet")}>지갑 바로가기</button>

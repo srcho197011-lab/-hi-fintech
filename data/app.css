@@ -521,6 +521,27 @@
 .wbal .wrow div span{font-size:10.5px;opacity:.82;display:block;margin-top:1px;}
 .wgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
 .wcard{border:1px solid var(--border);border-radius:13px;padding:13px;display:flex;gap:11px;align-items:flex-start;background:#fff;}
+/* 보험·치료비 적립금 (30% 우선적립) */
+.wins{margin-top:12px;border:1px solid #CFE0FB;border-left:4px solid #2563EB;border-radius:16px;padding:15px 16px;background:linear-gradient(180deg,#F3F8FF,#fff);box-shadow:0 10px 24px -20px rgba(37,99,235,.55);}
+.wins-h{display:flex;gap:11px;align-items:flex-start;}
+.wins-ic{width:36px;height:36px;border-radius:11px;background:#E3EDFE;color:#2563EB;display:grid;place-items:center;flex-shrink:0;}
+.wins-h>div>b{font-size:14px;font-weight:800;color:#1B2A52;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.wins-tag{font-size:10px;font-weight:800;color:#fff;background:#2563EB;border-radius:20px;padding:2px 9px;}
+.wins-h p{font-size:11.5px;color:#46506B;margin-top:3px;line-height:1.55;}
+.wins-h p b{color:#1D4ED8;}
+.wins-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.wins-box{border:1px solid #E2EAF8;border-radius:12px;padding:11px 13px;background:#fff;display:flex;flex-direction:column;}
+.wins-box.pri{border-color:#BFD3FA;background:linear-gradient(160deg,#EAF1FE,#fff);}
+.wins-box .wl{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#5A6885;}
+.wins-box .wl em{font-style:normal;font-size:9px;font-weight:800;color:#2563EB;background:#E3EDFE;border-radius:5px;padding:1px 5px;margin-left:2px;}
+.wins-box.pri .wl{color:#1D4ED8;}
+.wins-box b{font-size:21px;font-weight:900;color:#12203E;letter-spacing:-.5px;margin:5px 0 2px;line-height:1;}
+.wins-box b small{font-size:11px;font-weight:800;color:#2563EB;}
+.wins-box .ww{font-size:9.8px;color:#8794AD;}
+.wins-bar{display:flex;height:10px;border-radius:20px;overflow:hidden;margin-top:11px;font-size:8px;font-weight:800;color:#fff;}
+.wins-bar .pri{background:linear-gradient(90deg,#2563EB,#3B82F6);display:grid;place-items:center;}
+.wins-bar .gen{background:#B8C6E0;display:grid;place-items:center;color:#41506e;}
+@media(max-width:520px){.wins-grid{grid-template-columns:1fr;}}
 /* 판매마진 분배 구조 (적립50·나눔10·운영40) */
 .wsplit{margin-top:13px;border:1px solid var(--border);border-radius:16px;padding:15px 16px;background:linear-gradient(180deg,#F8FBFF,#fff);box-shadow:0 10px 24px -20px rgba(20,40,90,.5);}
 .wsplit-h{display:flex;gap:11px;align-items:center;}

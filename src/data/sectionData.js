@@ -4,6 +4,9 @@
 
 /* ── 건강금융지갑(Wallet) ── */
 const WALLET = { total: 12480, rate: 10, monthEarn: 1840, monthUse: 920, grade: "골드" };
+/* 보험·치료비 적립금 — 적립되는 Health Token의 30%를 '보험·치료비 적립금'으로 우선 적립(보험료·의료비 결제 전용). 전 섹션 공통 적용 */
+const HTK_INS_RATE = 0.30;
+function htkInsReserve(htk) { return Math.floor((Number(htk) || 0) * HTK_INS_RATE); }
 // 적립: [art, 항목, 적립토큰, 설명, 색]
 const WALLET_EARN = [
   ["check", "건강검진 적립", "+3,200", "검진 예약·완료·NFT 예약증 발행 시 적립", "#2563EB"],
