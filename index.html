@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=6f3e487407" />
+<link rel="stylesheet" href="./data/app.css?v=336e402fa6" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=6f3e487407"></script>
-<script src="./src/data/section_data.js?v=6f3e487407"></script>
-<script src="./src/data/demo_members.js?v=6f3e487407"></script>
+<script src="./src/data/dummy_data.js?v=336e402fa6"></script>
+<script src="./src/data/section_data.js?v=336e402fa6"></script>
+<script src="./src/data/demo_members.js?v=336e402fa6"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -8762,6 +8762,82 @@ function SupplyGraph() {
   );
 }
 
+/* ── 운영 현황판: 현재 거래·진행 중 상태 실시간 집계 ── */
+const SC_ST_COLOR = { "접수": "#38BDF8", "출고준비": "#FBBF24", "배송중": "#818CF8", "배송완료": "#34D399", "취소": "#F87171" };
+function _scW(n) { return (typeof ontWon === "function") ? ontWon(n) : (n || 0).toLocaleString() + "원"; }
+function SupplyDashboard() {
+  const D = React.useMemo(() => (typeof supplyData === "function" ? supplyData() : null), []);
+  const dash = React.useMemo(() => {
+    if (!D) return null;
+    const prodById = {}; D.products.forEach((p) => { prodById[p.id] = p; });
+    const st = {}, catSales = {}, venSales = {};
+    let gmv = 0, margin = 0, active = 0, done = 0, cancel = 0, ocount = 0;
+    D.orders.forEach((o) => {
+      st[o.status] = (st[o.status] || 0) + 1;
+      if (o.status === "취소") { cancel++; return; }
+      ocount++; gmv += o.amount; margin += o.margin;
+      if (o.status === "배송완료") done++; else active++;
+      const p = prodById[o.sku]; const cat = p ? p.category : "기타";
+      catSales[cat] = (catSales[cat] || 0) + o.amount;
+      venSales[o.vendorName] = (venSales[o.vendorName] || 0) + o.amount;
+    });
+    const shipSt = {}; D.shipments.forEach((s) => { shipSt[s.status] = (shipSt[s.status] || 0) + 1; });
+    const low = D.availability.filter((a) => a.qty < 80).sort((a, b) => a.qty - b.qty).slice(0, 8);
+    let setDone = 0, setDue = 0; D.settlements.forEach((s) => { if (s.status === "정산완료") setDone += s.sales; else setDue += s.sales; });
+    const venTop = Object.entries(venSales).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const cats = [["영양제", "#7C3AED"], ["홈케어의료기", "#0891B2"], ["건강식단", "#16A34A"], ["의약외품", "#0EA5E9"]].map(([c, col]) => [c, catSales[c] || 0, col]);
+    return { gmv, margin, active, done, cancel, ocount, st, shipSt, low, setDone, setDue, venTop, cats };
+  }, [D]);
+  if (!dash) return null;
+  const PIPE = ["접수", "출고준비", "배송중", "배송완료", "취소"];
+  const totOrd = D.counts.order;
+  const catMax = Math.max(1, ...dash.cats.map((x) => x[1]));
+  const venMax = Math.max(1, ...dash.venTop.map((x) => x[1]));
+  const kpis = [
+    ["총 거래액(GMV)", _scW(dash.gmv), "#22D3EE"], ["플랫폼 마진", _scW(dash.margin), "#34D399"],
+    ["진행 중 주문", dash.active.toLocaleString() + "건", "#818CF8"], ["배송완료율", (dash.done / dash.ocount * 100).toFixed(1) + "%", "#FBBF24"],
+    ["거래 중 거래처", D.counts.vendor.toLocaleString(), "#A78BFA"], ["거래 SKU", D.counts.product.toLocaleString(), "#F472B6"],
+  ];
+  return (
+    <div className="ontpanel scdash">
+      <div className="ontph"><Gauge size={15} color="#22D3EE" /> 운영 현황판 · Live Operations <span>· 현재 거래·진행 중 현황 (주문 {totOrd.toLocaleString()}건 기준)</span></div>
+      <div className="ontkpis">{kpis.map(([k, v, c], i) => <div className="ontkpi" key={i}><div className="ontkpi-v" style={{ color: c }}>{v}</div><div className="ontkpi-k">{k}</div></div>)}</div>
+      <div className="ontgrid2" style={{ marginTop: 12 }}>
+        <div className="ontpanel">
+          <div className="ontph"><Workflow size={14} color="#818CF8" /> 주문 처리 파이프라인</div>
+          <div className="scpipe">{PIPE.map((s) => { const v = dash.st[s] || 0; return <div className="scpipe-seg" key={s} style={{ flex: Math.max(0.5, v), background: SC_ST_COLOR[s] }} title={s + " " + v}><b>{v.toLocaleString()}</b><span>{s}</span></div>; })}</div>
+          <div className="scdashnote">진행 중(접수·출고준비·배송중) <b style={{ color: "#818CF8" }}>{dash.active.toLocaleString()}건</b> · 완료 <b style={{ color: "#34D399" }}>{dash.done.toLocaleString()}건</b> · 취소 <b style={{ color: "#F87171" }}>{dash.cancel.toLocaleString()}건</b></div>
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><Truck size={14} color="#38BDF8" /> 거래처 직배송 현황</div>
+          <div className="scpipe">{["집화대기", "배송중", "배송완료"].map((s) => { const v = dash.shipSt[s] || 0; const col = s === "배송완료" ? "#34D399" : s === "배송중" ? "#818CF8" : "#FBBF24"; return <div className="scpipe-seg" key={s} style={{ flex: Math.max(0.5, v), background: col }} title={s + " " + v}><b>{v.toLocaleString()}</b><span>{s}</span></div>; })}</div>
+          <div className="scdashnote">배송은 <b style={{ color: "#38BDF8" }}>거래처(공급사)가 직배송</b> — 당사 창고·재고 미경유</div>
+        </div>
+      </div>
+      <div className="ontgrid2" style={{ marginTop: 12 }}>
+        <div className="ontpanel">
+          <div className="ontph"><PieChart size={14} color="#7C3AED" /> 카테고리별 거래액</div>
+          {dash.cats.map(([c, v, col]) => <OntBar key={c} label={c} value={Math.round(v / 10000)} max={Math.round(catMax / 10000)} sub="만원" color={col} />)}
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><Factory size={14} color="#A78BFA" /> 거래처 거래액 TOP 8</div>
+          {dash.venTop.map(([nm, v], i) => <OntBar key={i} label={nm} value={Math.round(v / 10000)} max={Math.round(venMax / 10000)} sub="만원" color={ONT_DEPT_COLORS ? ONT_DEPT_COLORS[i % ONT_DEPT_COLORS.length] : "#22D3EE"} />)}
+        </div>
+      </div>
+      <div className="ontgrid2" style={{ marginTop: 12 }}>
+        <div className="ontpanel">
+          <div className="ontph"><AlertTriangle size={14} color="#FBBF24" /> 공급사 가용재고 부족 알림 <span>· 조회 스냅샷</span></div>
+          <div className="scalerts">{dash.low.map((a) => <div className="scalert" key={a.id}><span className={"scalert-q" + (a.qty < 30 ? " crit" : "")}>{a.qty}</span><div><b>{a.skuName}</b><span>{a.vendorName} · 출고 D+{a.leadDays}</span></div><span className="scalert-tag">발주검토</span></div>)}</div>
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><Receipt size={14} color="#F59E0B" /> 정산 현황 <span>· 최근 6개월</span></div>
+          <div className="scsettle"><div className="scset-c"><b style={{ color: "#34D399" }}>{_scW(dash.setDone)}</b><span>정산 완료</span></div><div className="scset-c"><b style={{ color: "#FBBF24" }}>{_scW(dash.setDue)}</b><span>정산 예정</span></div></div>
+          <div className="scdashnote">정산 = 판매대금 수취 → 플랫폼 수수료·마진 차감 → <b>거래처 공급대금 지급</b> (무재고 중개 정산)</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 /* ── 데이터 하우스: 오브젝트별 검색 + 온톨로지 관계 드릴다운 ── */
 const SC_MONEY = new Set(["salePrice", "supplyPrice", "amount", "margin", "ltv", "sales", "fee", "supplyCost", "credit", "payable"]);
 function _scCell(v, k) {
@@ -8872,6 +8948,8 @@ function SupplyOntology({ onGo }) {
           ))}
         </div>
       </div>
+
+      <SupplyDashboard />
 
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><Workflow size={15} color="#22D3EE" /> 개념도 · Concept Map <span>· 무재고 · 거래처 직배송</span></div>
@@ -11305,6 +11383,17 @@ const SC_PROD_WORDS = {
   "의약외품": ["방수 밴드", "습윤 드레싱", "알콜 스왑", "소독 스프레이", "상처연고 키트", "카이로 핫팩", "마스크 KF94", "손소독제"],
 };
 
+/* 브랜드(상품몰 제품의 brand) → 거래처 정규화 매핑 */
+function _vkey(s) { return String(s).replace(/\(.*?\)/g, "").replace(/㈜/g, "").replace(/[\s·&]/g, "").toLowerCase(); }
+const SC_BRAND_ALIAS = {
+  "NOW Foods": "나우푸드", "KGC인삼공사": "KGC인삼공사(정관장)", "KGC정관장": "KGC인삼공사(정관장)",
+  "매일유업 셀렉스": "매일헬스뉴트리션(셀렉스)", "매일헬스뉴트리션": "매일헬스뉴트리션(셀렉스)",
+  "풀무원 디자인밀": "풀무원(디자인밀)", "디자인밀": "풀무원(디자인밀)",
+  "현대그린푸드 그리팅": "현대그린푸드(그리팅)", "그리팅": "현대그린푸드(그리팅)",
+  "동원 더반찬&": "동원F&B(더반찬&)", "hy 잇츠온": "hy(한국야쿠르트)", "아워홈 케어플러스": "아워홈(케어플러스)", "잇메이트(스파오)": "스파오(잇메이트)",
+  "제너럴네트": "GN바디닥터(제너럴네트)", "메디콥": "㈜메디콥(밴드닥터·클린덤)", "밴드닥터": "㈜메디콥(밴드닥터·클린덤)",
+  "뉴트리라이트": "한국암웨이(뉴트리라이트)", "네이처셋(NatureSet)": "한독(네이처셋)", "대상웰라이프": "대상웰라이프(뉴케어)",
+};
 function _scBizno(rng) { return String(100 + Math.floor(rng() * 899)).padStart(3, "0") + "-" + String(10 + Math.floor(rng() * 89)) + "-" + String(10000 + Math.floor(rng() * 89999)); }
 function _scDate(rng, y) { return y + "-" + String(1 + Math.floor(rng() * 7)).padStart(2, "0") + "-" + String(1 + Math.floor(rng() * 27)).padStart(2, "0"); }
 
@@ -11327,20 +11416,44 @@ function supplyData() {
   });
   const V = vendors.length;
 
-  /* 2) 제품·SKU (Product) — 거래처 소유, 각 거래처 2~6종 */
+  /* 2) 제품·SKU (Product) — ★ 실제 상품몰 제품(SUPP·DEVICE·MEAL)을 SKU로 1:1 연결 + 거래처 매핑 */
+  const vByKey = {}; vendors.forEach((v) => { vByKey[_vkey(v.name)] = v; });
+  const resolveVendor = (brand, supCat) => {
+    const a = SC_BRAND_ALIAS[brand] || brand;
+    let v = vByKey[_vkey(a)] || vByKey[_vkey(brand)];
+    if (!v) { const bk = _vkey(brand); v = vendors.find((x) => { const k = _vkey(x.name); return k === bk || (bk.length > 1 && k.includes(bk)) || (k.length > 1 && bk.includes(k)); }); }
+    if (!v) { v = { id: "V" + String(vendors.length + 1).padStart(4, "0"), name: brand, bizno: _scBizno(rng), type: _wpick(rng, SC_VTYPE), category: supCat, credit: (5 + Math.floor(rng() * 45)) * 1000000, payable: Math.floor(rng() * 38) * 1000000, sla: 1 + Math.floor(rng() * 3), trust: (3.9 + rng() * 1.1).toFixed(1), ship: true, since: (2013 + Math.floor(rng() * 12)) + "년" }; vendors.push(v); vByKey[_vkey(v.name)] = v; }
+    return v;
+  };
   const products = [];
+  const REAL = [];
+  if (typeof SUPP_PRODUCTS !== "undefined") SUPP_PRODUCTS.forEach((p) => REAL.push([p, "영양제"]));
+  if (typeof DEVICE_PRODUCTS !== "undefined") DEVICE_PRODUCTS.forEach((p) => REAL.push([p, "홈케어의료기"]));
+  if (typeof MEAL_PRODUCTS !== "undefined") MEAL_PRODUCTS.forEach((p) => REAL.push([p, "건강식단"]));
+  REAL.forEach(([p, cat]) => {
+    const v = resolveVendor(p.brand, cat);
+    const salePrice = p.price || ((5 + Math.floor(rng() * 95)) * 1000 + 900);
+    const margin = 0.18 + rng() * 0.22;
+    products.push({
+      id: p.id, name: p.name, category: cat, subcat: p.category || "", vendorId: v.id, vendorName: v.name,
+      salePrice, supplyPrice: Math.round(salePrice * (1 - margin) / 10) * 10, marginPct: Math.round(margin * 100),
+      exp: _scDate(rng, 2027 + Math.floor(rng() * 2)), lot: "L" + (230000 + Math.floor(rng() * 69999)), real: true,
+    });
+  });
+  /* 실제 제품이 없는 거래처(서비스·회원사 등)는 대표 SKU 합성으로 보강 → 모든 거래처가 SKU 보유 */
+  const _hasP = {}; products.forEach((p) => { _hasP[p.vendorId] = 1; });
   vendors.forEach((v) => {
-    const cnt = 2 + Math.floor(rng() * 5);
+    if (_hasP[v.id]) return;
+    const cnt = 1 + Math.floor(rng() * 3);
     const words = SC_PROD_WORDS[v.category] || SC_PROD_WORDS["영양제"];
     for (let k = 0; k < cnt; k++) {
       const base = _pick(rng, words);
       const salePrice = (5 + Math.floor(rng() * 95)) * 1000 + 900;
       const margin = 0.18 + rng() * 0.22;
       products.push({
-        id: "P" + String(products.length + 1).padStart(5, "0"),
-        name: v.name.split("(")[0] + " " + base, category: v.category, vendorId: v.id, vendorName: v.name,
-        salePrice, supplyPrice: Math.round(salePrice * (1 - margin) / 10) * 10, marginPct: Math.round(margin * 100),
-        exp: _scDate(rng, 2027 + Math.floor(rng() * 2)), lot: "L" + (230000 + Math.floor(rng() * 69999)),
+        id: "P" + String(products.length + 1).padStart(5, "0"), name: v.name.split("(")[0] + " " + base, category: v.category, subcat: base,
+        vendorId: v.id, vendorName: v.name, salePrice, supplyPrice: Math.round(salePrice * (1 - margin) / 10) * 10, marginPct: Math.round(margin * 100),
+        exp: _scDate(rng, 2027), lot: "L" + (230000 + Math.floor(rng() * 69999)), real: false,
       });
     }
   });

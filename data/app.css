@@ -762,6 +762,25 @@
 .screlcard i{font-style:normal;font-size:11px;color:#38BDF8;font-weight:800;}
 .screlcard span{display:block;font-size:10px;color:#8FA0BE;margin-top:3px;}
 @media(max-width:520px){.scdfields,.screlgrid{grid-template-columns:1fr;}}
+/* 운영 현황판 */
+.scpipe{display:flex;gap:4px;margin-top:6px;height:56px;}
+.scpipe-seg{border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:44px;color:#08111f;overflow:hidden;transition:.15s;}
+.scpipe-seg b{font-size:14px;font-weight:900;line-height:1;}
+.scpipe-seg span{font-size:9.5px;font-weight:800;margin-top:2px;opacity:.85;white-space:nowrap;}
+.scdashnote{font-size:11px;color:#8FA0BE;line-height:1.55;margin-top:9px;}
+.scdashnote b{color:#CBD6EA;}
+.scalerts{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+.scalert{display:flex;align-items:center;gap:10px;background:#0B1730;border:1px solid #243b5e;border-radius:9px;padding:7px 10px;}
+.scalert-q{width:34px;height:34px;flex-shrink:0;display:grid;place-items:center;border-radius:8px;background:rgba(251,191,36,.15);color:#FBBF24;font-size:13px;font-weight:900;}
+.scalert-q.crit{background:rgba(248,113,113,.18);color:#F87171;}
+.scalert>div{flex:1;min-width:0;}
+.scalert b{display:block;font-size:12px;color:#EAF2FF;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scalert span{font-size:10px;color:#8FA0BE;}
+.scalert-tag{flex-shrink:0;font-size:9.5px;font-weight:800;color:#FBBF24;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:6px;padding:3px 8px;}
+.scsettle{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 2px;}
+.scset-c{background:#0B1730;border:1px solid #243b5e;border-radius:10px;padding:12px;text-align:center;}
+.scset-c b{display:block;font-size:19px;font-weight:900;}
+.scset-c span{font-size:11px;color:#8FA0BE;margin-top:3px;display:block;}
 .scobjs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;}
 .scobjcard{background:#0F1B33;border:1px solid #24324D;border-top:2px solid var(--oc);border-radius:12px;padding:12px;}
 .scobjhd{display:flex;align-items:center;gap:8px;}

@@ -38,6 +38,17 @@ const SC_PROD_WORDS = {
   "의약외품": ["방수 밴드", "습윤 드레싱", "알콜 스왑", "소독 스프레이", "상처연고 키트", "카이로 핫팩", "마스크 KF94", "손소독제"],
 };
 
+/* 브랜드(상품몰 제품의 brand) → 거래처 정규화 매핑 */
+function _vkey(s) { return String(s).replace(/\(.*?\)/g, "").replace(/㈜/g, "").replace(/[\s·&]/g, "").toLowerCase(); }
+const SC_BRAND_ALIAS = {
+  "NOW Foods": "나우푸드", "KGC인삼공사": "KGC인삼공사(정관장)", "KGC정관장": "KGC인삼공사(정관장)",
+  "매일유업 셀렉스": "매일헬스뉴트리션(셀렉스)", "매일헬스뉴트리션": "매일헬스뉴트리션(셀렉스)",
+  "풀무원 디자인밀": "풀무원(디자인밀)", "디자인밀": "풀무원(디자인밀)",
+  "현대그린푸드 그리팅": "현대그린푸드(그리팅)", "그리팅": "현대그린푸드(그리팅)",
+  "동원 더반찬&": "동원F&B(더반찬&)", "hy 잇츠온": "hy(한국야쿠르트)", "아워홈 케어플러스": "아워홈(케어플러스)", "잇메이트(스파오)": "스파오(잇메이트)",
+  "제너럴네트": "GN바디닥터(제너럴네트)", "메디콥": "㈜메디콥(밴드닥터·클린덤)", "밴드닥터": "㈜메디콥(밴드닥터·클린덤)",
+  "뉴트리라이트": "한국암웨이(뉴트리라이트)", "네이처셋(NatureSet)": "한독(네이처셋)", "대상웰라이프": "대상웰라이프(뉴케어)",
+};
 function _scBizno(rng) { return String(100 + Math.floor(rng() * 899)).padStart(3, "0") + "-" + String(10 + Math.floor(rng() * 89)) + "-" + String(10000 + Math.floor(rng() * 89999)); }
 function _scDate(rng, y) { return y + "-" + String(1 + Math.floor(rng() * 7)).padStart(2, "0") + "-" + String(1 + Math.floor(rng() * 27)).padStart(2, "0"); }
 
@@ -60,20 +71,44 @@ function supplyData() {
   });
   const V = vendors.length;
 
-  /* 2) 제품·SKU (Product) — 거래처 소유, 각 거래처 2~6종 */
+  /* 2) 제품·SKU (Product) — ★ 실제 상품몰 제품(SUPP·DEVICE·MEAL)을 SKU로 1:1 연결 + 거래처 매핑 */
+  const vByKey = {}; vendors.forEach((v) => { vByKey[_vkey(v.name)] = v; });
+  const resolveVendor = (brand, supCat) => {
+    const a = SC_BRAND_ALIAS[brand] || brand;
+    let v = vByKey[_vkey(a)] || vByKey[_vkey(brand)];
+    if (!v) { const bk = _vkey(brand); v = vendors.find((x) => { const k = _vkey(x.name); return k === bk || (bk.length > 1 && k.includes(bk)) || (k.length > 1 && bk.includes(k)); }); }
+    if (!v) { v = { id: "V" + String(vendors.length + 1).padStart(4, "0"), name: brand, bizno: _scBizno(rng), type: _wpick(rng, SC_VTYPE), category: supCat, credit: (5 + Math.floor(rng() * 45)) * 1000000, payable: Math.floor(rng() * 38) * 1000000, sla: 1 + Math.floor(rng() * 3), trust: (3.9 + rng() * 1.1).toFixed(1), ship: true, since: (2013 + Math.floor(rng() * 12)) + "년" }; vendors.push(v); vByKey[_vkey(v.name)] = v; }
+    return v;
+  };
   const products = [];
+  const REAL = [];
+  if (typeof SUPP_PRODUCTS !== "undefined") SUPP_PRODUCTS.forEach((p) => REAL.push([p, "영양제"]));
+  if (typeof DEVICE_PRODUCTS !== "undefined") DEVICE_PRODUCTS.forEach((p) => REAL.push([p, "홈케어의료기"]));
+  if (typeof MEAL_PRODUCTS !== "undefined") MEAL_PRODUCTS.forEach((p) => REAL.push([p, "건강식단"]));
+  REAL.forEach(([p, cat]) => {
+    const v = resolveVendor(p.brand, cat);
+    const salePrice = p.price || ((5 + Math.floor(rng() * 95)) * 1000 + 900);
+    const margin = 0.18 + rng() * 0.22;
+    products.push({
+      id: p.id, name: p.name, category: cat, subcat: p.category || "", vendorId: v.id, vendorName: v.name,
+      salePrice, supplyPrice: Math.round(salePrice * (1 - margin) / 10) * 10, marginPct: Math.round(margin * 100),
+      exp: _scDate(rng, 2027 + Math.floor(rng() * 2)), lot: "L" + (230000 + Math.floor(rng() * 69999)), real: true,
+    });
+  });
+  /* 실제 제품이 없는 거래처(서비스·회원사 등)는 대표 SKU 합성으로 보강 → 모든 거래처가 SKU 보유 */
+  const _hasP = {}; products.forEach((p) => { _hasP[p.vendorId] = 1; });
   vendors.forEach((v) => {
-    const cnt = 2 + Math.floor(rng() * 5);
+    if (_hasP[v.id]) return;
+    const cnt = 1 + Math.floor(rng() * 3);
     const words = SC_PROD_WORDS[v.category] || SC_PROD_WORDS["영양제"];
     for (let k = 0; k < cnt; k++) {
       const base = _pick(rng, words);
       const salePrice = (5 + Math.floor(rng() * 95)) * 1000 + 900;
       const margin = 0.18 + rng() * 0.22;
       products.push({
-        id: "P" + String(products.length + 1).padStart(5, "0"),
-        name: v.name.split("(")[0] + " " + base, category: v.category, vendorId: v.id, vendorName: v.name,
-        salePrice, supplyPrice: Math.round(salePrice * (1 - margin) / 10) * 10, marginPct: Math.round(margin * 100),
-        exp: _scDate(rng, 2027 + Math.floor(rng() * 2)), lot: "L" + (230000 + Math.floor(rng() * 69999)),
+        id: "P" + String(products.length + 1).padStart(5, "0"), name: v.name.split("(")[0] + " " + base, category: v.category, subcat: base,
+        vendorId: v.id, vendorName: v.name, salePrice, supplyPrice: Math.round(salePrice * (1 - margin) / 10) * 10, marginPct: Math.round(margin * 100),
+        exp: _scDate(rng, 2027), lot: "L" + (230000 + Math.floor(rng() * 69999)), real: false,
       });
     }
   });

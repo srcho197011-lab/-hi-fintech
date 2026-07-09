@@ -85,6 +85,82 @@ function SupplyGraph() {
   );
 }
 
+/* ── 운영 현황판: 현재 거래·진행 중 상태 실시간 집계 ── */
+const SC_ST_COLOR = { "접수": "#38BDF8", "출고준비": "#FBBF24", "배송중": "#818CF8", "배송완료": "#34D399", "취소": "#F87171" };
+function _scW(n) { return (typeof ontWon === "function") ? ontWon(n) : (n || 0).toLocaleString() + "원"; }
+function SupplyDashboard() {
+  const D = React.useMemo(() => (typeof supplyData === "function" ? supplyData() : null), []);
+  const dash = React.useMemo(() => {
+    if (!D) return null;
+    const prodById = {}; D.products.forEach((p) => { prodById[p.id] = p; });
+    const st = {}, catSales = {}, venSales = {};
+    let gmv = 0, margin = 0, active = 0, done = 0, cancel = 0, ocount = 0;
+    D.orders.forEach((o) => {
+      st[o.status] = (st[o.status] || 0) + 1;
+      if (o.status === "취소") { cancel++; return; }
+      ocount++; gmv += o.amount; margin += o.margin;
+      if (o.status === "배송완료") done++; else active++;
+      const p = prodById[o.sku]; const cat = p ? p.category : "기타";
+      catSales[cat] = (catSales[cat] || 0) + o.amount;
+      venSales[o.vendorName] = (venSales[o.vendorName] || 0) + o.amount;
+    });
+    const shipSt = {}; D.shipments.forEach((s) => { shipSt[s.status] = (shipSt[s.status] || 0) + 1; });
+    const low = D.availability.filter((a) => a.qty < 80).sort((a, b) => a.qty - b.qty).slice(0, 8);
+    let setDone = 0, setDue = 0; D.settlements.forEach((s) => { if (s.status === "정산완료") setDone += s.sales; else setDue += s.sales; });
+    const venTop = Object.entries(venSales).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const cats = [["영양제", "#7C3AED"], ["홈케어의료기", "#0891B2"], ["건강식단", "#16A34A"], ["의약외품", "#0EA5E9"]].map(([c, col]) => [c, catSales[c] || 0, col]);
+    return { gmv, margin, active, done, cancel, ocount, st, shipSt, low, setDone, setDue, venTop, cats };
+  }, [D]);
+  if (!dash) return null;
+  const PIPE = ["접수", "출고준비", "배송중", "배송완료", "취소"];
+  const totOrd = D.counts.order;
+  const catMax = Math.max(1, ...dash.cats.map((x) => x[1]));
+  const venMax = Math.max(1, ...dash.venTop.map((x) => x[1]));
+  const kpis = [
+    ["총 거래액(GMV)", _scW(dash.gmv), "#22D3EE"], ["플랫폼 마진", _scW(dash.margin), "#34D399"],
+    ["진행 중 주문", dash.active.toLocaleString() + "건", "#818CF8"], ["배송완료율", (dash.done / dash.ocount * 100).toFixed(1) + "%", "#FBBF24"],
+    ["거래 중 거래처", D.counts.vendor.toLocaleString(), "#A78BFA"], ["거래 SKU", D.counts.product.toLocaleString(), "#F472B6"],
+  ];
+  return (
+    <div className="ontpanel scdash">
+      <div className="ontph"><Gauge size={15} color="#22D3EE" /> 운영 현황판 · Live Operations <span>· 현재 거래·진행 중 현황 (주문 {totOrd.toLocaleString()}건 기준)</span></div>
+      <div className="ontkpis">{kpis.map(([k, v, c], i) => <div className="ontkpi" key={i}><div className="ontkpi-v" style={{ color: c }}>{v}</div><div className="ontkpi-k">{k}</div></div>)}</div>
+      <div className="ontgrid2" style={{ marginTop: 12 }}>
+        <div className="ontpanel">
+          <div className="ontph"><Workflow size={14} color="#818CF8" /> 주문 처리 파이프라인</div>
+          <div className="scpipe">{PIPE.map((s) => { const v = dash.st[s] || 0; return <div className="scpipe-seg" key={s} style={{ flex: Math.max(0.5, v), background: SC_ST_COLOR[s] }} title={s + " " + v}><b>{v.toLocaleString()}</b><span>{s}</span></div>; })}</div>
+          <div className="scdashnote">진행 중(접수·출고준비·배송중) <b style={{ color: "#818CF8" }}>{dash.active.toLocaleString()}건</b> · 완료 <b style={{ color: "#34D399" }}>{dash.done.toLocaleString()}건</b> · 취소 <b style={{ color: "#F87171" }}>{dash.cancel.toLocaleString()}건</b></div>
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><Truck size={14} color="#38BDF8" /> 거래처 직배송 현황</div>
+          <div className="scpipe">{["집화대기", "배송중", "배송완료"].map((s) => { const v = dash.shipSt[s] || 0; const col = s === "배송완료" ? "#34D399" : s === "배송중" ? "#818CF8" : "#FBBF24"; return <div className="scpipe-seg" key={s} style={{ flex: Math.max(0.5, v), background: col }} title={s + " " + v}><b>{v.toLocaleString()}</b><span>{s}</span></div>; })}</div>
+          <div className="scdashnote">배송은 <b style={{ color: "#38BDF8" }}>거래처(공급사)가 직배송</b> — 당사 창고·재고 미경유</div>
+        </div>
+      </div>
+      <div className="ontgrid2" style={{ marginTop: 12 }}>
+        <div className="ontpanel">
+          <div className="ontph"><PieChart size={14} color="#7C3AED" /> 카테고리별 거래액</div>
+          {dash.cats.map(([c, v, col]) => <OntBar key={c} label={c} value={Math.round(v / 10000)} max={Math.round(catMax / 10000)} sub="만원" color={col} />)}
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><Factory size={14} color="#A78BFA" /> 거래처 거래액 TOP 8</div>
+          {dash.venTop.map(([nm, v], i) => <OntBar key={i} label={nm} value={Math.round(v / 10000)} max={Math.round(venMax / 10000)} sub="만원" color={ONT_DEPT_COLORS ? ONT_DEPT_COLORS[i % ONT_DEPT_COLORS.length] : "#22D3EE"} />)}
+        </div>
+      </div>
+      <div className="ontgrid2" style={{ marginTop: 12 }}>
+        <div className="ontpanel">
+          <div className="ontph"><AlertTriangle size={14} color="#FBBF24" /> 공급사 가용재고 부족 알림 <span>· 조회 스냅샷</span></div>
+          <div className="scalerts">{dash.low.map((a) => <div className="scalert" key={a.id}><span className={"scalert-q" + (a.qty < 30 ? " crit" : "")}>{a.qty}</span><div><b>{a.skuName}</b><span>{a.vendorName} · 출고 D+{a.leadDays}</span></div><span className="scalert-tag">발주검토</span></div>)}</div>
+        </div>
+        <div className="ontpanel">
+          <div className="ontph"><Receipt size={14} color="#F59E0B" /> 정산 현황 <span>· 최근 6개월</span></div>
+          <div className="scsettle"><div className="scset-c"><b style={{ color: "#34D399" }}>{_scW(dash.setDone)}</b><span>정산 완료</span></div><div className="scset-c"><b style={{ color: "#FBBF24" }}>{_scW(dash.setDue)}</b><span>정산 예정</span></div></div>
+          <div className="scdashnote">정산 = 판매대금 수취 → 플랫폼 수수료·마진 차감 → <b>거래처 공급대금 지급</b> (무재고 중개 정산)</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 /* ── 데이터 하우스: 오브젝트별 검색 + 온톨로지 관계 드릴다운 ── */
 const SC_MONEY = new Set(["salePrice", "supplyPrice", "amount", "margin", "ltv", "sales", "fee", "supplyCost", "credit", "payable"]);
 function _scCell(v, k) {
@@ -195,6 +271,8 @@ function SupplyOntology({ onGo }) {
           ))}
         </div>
       </div>
+
+      <SupplyDashboard />
 
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><Workflow size={15} color="#22D3EE" /> 개념도 · Concept Map <span>· 무재고 · 거래처 직배송</span></div>
