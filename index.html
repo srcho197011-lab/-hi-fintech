@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=9141dbc393" />
+<link rel="stylesheet" href="./data/app.css?v=ba6502aaea" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=9141dbc393"></script>
-<script src="./src/data/section_data.js?v=9141dbc393"></script>
-<script src="./src/data/demo_members.js?v=9141dbc393"></script>
+<script src="./src/data/dummy_data.js?v=ba6502aaea"></script>
+<script src="./src/data/section_data.js?v=ba6502aaea"></script>
+<script src="./src/data/demo_members.js?v=ba6502aaea"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -6588,6 +6588,62 @@ function PremiumNotice() {
     </div>
   );
 }
+/* ── AI 설계사 — 약관 학습 대화형 상담(AI 주치의 형태) ── */
+function _insBold(s) {
+  return String(s).split(/(\*\*[^*]+\*\*)/g).map((p, i) => (p.startsWith("**") && p.endsWith("**")) ? <b key={i}>{p.slice(2, -2)}</b> : <React.Fragment key={i}>{p}</React.Fragment>);
+}
+function AIPlannerChat() {
+  const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const nm = member ? member.name : null;
+  const PROD = (typeof INS_PRODUCT !== "undefined") ? INS_PRODUCT : { name: "상해보험", insurer: "현대해상", tel: "1588-5656" };
+  const FAQ = (typeof INS_FAQ !== "undefined") ? INS_FAQ : [];
+  const greet = { who: "ai", bubbles: [{ kind: "text", text: `안녕하세요${nm ? " " + nm + "님" : ""}! ${PROD.name} 담당 **AI 설계사**예요. 🤖\n약관을 학습해 **보장·보험금·청구·면책·계약**을 안내해 드려요. 아래 질문을 눌러보거나 무엇이든 물어보세요.` }] };
+  const [msgs, setMsgs] = useState([greet]);
+  const [quicks, setQuicks] = useState(FAQ.slice(0, 6));
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const endRef = useRef(null);
+  useEffect(() => { endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
+  const send = (textArg) => {
+    const text = (textArg == null ? input : textArg).trim(); if (!text) return;
+    if (text === "보험상담 신청") { if (typeof openConsult === "function") openConsult(PROD.name + " — AI 설계사 상담"); return; }
+    setInput(""); setQuicks([]);
+    setMsgs((m) => [...m, { who: "me", bubbles: [{ kind: "text", text }] }]);
+    setTyping(true);
+    setTimeout(() => {
+      const res = (typeof insuranceCounsel === "function") ? insuranceCounsel(text) : null;
+      setTyping(false);
+      if (res) { setMsgs((m) => [...m, { who: "ai", bubbles: res.bubbles }]); setQuicks(res.quicks || []); }
+      else { setMsgs((m) => [...m, { who: "ai", bubbles: [{ kind: "text", text: `‘${text}’에 딱 맞는 약관 조항을 찾지 못했어요. 😅 **보장·보험금·청구·면책·계약** 관련으로 물어보시거나 아래 추천 질문을 눌러보세요. 정확한 보장은 증권·약관 원문과 상담사 확인이 필요해요.` }] }]); setQuicks(FAQ.slice(0, 4).concat("보험상담 신청")); }
+    }, 620);
+  };
+  return (
+    <div className="aipwrap">
+      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 설계사</b><span>{PROD.insurer} · {PROD.name} · 약관 학습</span></div><span className="aipbadge">약관 학습완료</span></div>
+      <div className="aipbody">
+        {msgs.map((m, i) => (
+          <div key={i} className={`aiprow ${m.who}`}>
+            {m.who === "ai" && <span className="aipmini"><Bot size={14} /></span>}
+            <div className="aipmsg">
+              {m.bubbles.map((b, j) => b.kind === "card"
+                ? <div className="aipcard" key={j}><div className="aipct">{b.card.title}</div><ul>{b.card.items.map((it, k) => <li key={k}>{it}</li>)}</ul>{b.card.buttons && b.card.buttons.length > 0 && <div className="aipcbtns">{b.card.buttons.map((bt) => <button key={bt} onClick={() => send(bt)}>{bt}</button>)}</div>}</div>
+                : <div className={`aipbub ${m.who}`} key={j}>{String(b.text).split("\n").map((ln, k) => <React.Fragment key={k}>{k > 0 && <br />}{_insBold(ln)}</React.Fragment>)}</div>
+              )}
+            </div>
+          </div>
+        ))}
+        {typing && <div className="aiprow ai"><span className="aipmini"><Bot size={14} /></span><div className="aipmsg"><div className="aipbub ai aiptyping"><span /><span /><span /></div></div></div>}
+        <div ref={endRef} />
+      </div>
+      {quicks.length > 0 && !typing && <div className="aipquicks">{quicks.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}</div>}
+      <div className="aipinput">
+        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="보장·보험금·청구·면책 무엇이든 물어보세요" />
+        <button className={input.trim() ? "on" : ""} onClick={() => send()}><Send size={16} /></button>
+      </div>
+      <div className="chnote">※ AI 설계사 안내는 약관을 요약·재작성한 <b>참고용</b>이며, 실제 보장·지급·면책은 <b>가입 증권·약관 원문·관련 법령</b>을 따릅니다. 보험 권유·가입은 보험업법상 정식 라이선스 채널로만 이루어집니다.</div>
+    </div>
+  );
+}
 /* ── 간편 · 내 몸 맞춤 간편보험 — 발병 위험 질병별 1년 단기 밀도 가입 코너 ── */
 function SimpleBodyInsurance() {
   const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -7016,21 +7072,10 @@ function InsuranceSection({ onGo }) {
 
       {tab === "ai" && (<>
         <div className="airec">
-          <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 보험상담</div>
-          <div className="ap">조성래님 건강상태와 보유 보장을 바탕으로 부족한 보장·치료비 대비를 안내해 드려요. 궁금한 것을 물어보세요.</div>
+          <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 설계사 — 약관 학습 대화형 상담</div>
+          <div className="ap">현대해상 <b>현대단체상해보험(직급전용)</b> 약관을 학습한 AI 설계사가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
         </div>
-        <div className="card">
-          <div className="rct"><Sparkles size={18} color="#2F5BEA" /> 자주 묻는 질문</div>
-          {["췌장암 경고인데 어떤 보장이 필요할까요?", "검진보험은 무엇을 보장하나요?", "실손보험 청구는 어떻게 하나요?", "보험료를 줄이는 방법이 있나요?"].map((q, i) => (
-            <div className="adv" key={i} style={{ cursor: "pointer" }} onClick={() => setModal({ title: "AI 보험상담", sub: "상담이 연결되었습니다", items: [["chat", q, "AI가 1차 안내 후, 정식 라이선스 설계사 상담으로 연결합니다."]] })}><span className="ic" style={{ background: "#EAF0FE" }}><Art name="chat" size={20} /></span><div style={{ flex: 1 }}><b style={{ fontWeight: 700, fontSize: 13 }}>{q}</b></div><ChevronRight size={16} color="#9AA6BC" /></div>
-          ))}
-        </div>
-        <div className="card" style={{ border: "1.5px solid #BFD0FF" }}>
-          <div className="rct"><HeartHandshake size={18} color="#2F5BEA" /> 전문 상담사 연결</div>
-          <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>보험 가입·보장설계는 <b>정식 라이선스 설계사</b>가 고지·심사 안내와 함께 도와드립니다. 상담을 신청하면 채널로 연결됩니다.</p>
-          <button className="cbtn pri" onClick={() => setModal({ title: "보험상담 신청", sub: "상담 신청이 접수되었습니다", items: [["chat", "AI 1차 분석 전달", "조성래님 건강·보장 분석을 상담사에게 전달합니다."], ["badge", "정식 채널 연결", "라이선스 설계사가 연락처로 상담을 진행합니다."]] })}><MessageSquare size={15} /> 보험상담 신청</button>
-        </div>
-        <div className="chnote">※ AI 안내는 참고용이며, 보험 권유·가입·계약은 보험업법상 정식 라이선스 채널을 통해서만 이루어집니다.</div>
+        <AIPlannerChat />
       </>)}
 
       {cover && <CoverDetailModal name={cover} onClose={() => setCover(null)} />}
@@ -14035,6 +14080,94 @@ function commerceCounsel(text) {
     if (/(영양제|보충제|건기식|건강기능식품)/.test(low)) return _catOverview("영양제", kb);
     if (/(의료기|기기|치료기|측정기|혈압계|혈당계|디바이스|정수기)/.test(low)) return _catOverview("홈케어의료기", kb);
     if (/(식단|도시락|케어푸드|밀키트|반찬)/.test(low)) return _catOverview("건강식단", kb);
+  }
+  return null;
+}
+
+/* ====================== AI 설계사 — 현대단체상해보험(직급전용) 약관 학습 KB ======================
+   출처: 현대해상 현대단체상해보험(직급전용) 약관 (약관분류코드 8221-0000-20260101).
+   ⚠️ 약관 원문을 '요약·재작성'한 참고용 안내이며, 실제 보장·지급·면책은 가입 증권과 약관 원문·관련 법령을 따릅니다.
+   AI 설계사는 정보 제공용이며, 보험 권유·가입·계약은 보험업법상 정식 라이선스 채널을 통해서만 이루어집니다. */
+
+const INS_PRODUCT = { name: "현대단체상해보험(직급전용)", insurer: "현대해상", code: "8221-0000-20260101", tel: "1588-5656" };
+
+/* 약관 근거 지식 엔트리 — [id, 카테고리, 키워드[], 대표질문, 답변, 카드?] */
+const INS_KB = [
+  { id: "def-injury", cat: "용어", kw: ["상해가 뭐", "상해란", "상해 정의", "상해 뜻", "급격", "우연", "외래"],
+    q: "상해가 무엇인가요?", a: "이 보험에서 ‘상해’는 **보험기간 중 발생한 급격하고 우연한 외래의 사고**를 말해요. 세 가지(급격성·우연성·외래성)를 모두 충족해야 하며, **질병으로 생긴 손해는 상해에 포함되지 않습니다.**" },
+  { id: "pay-death", cat: "보장", kw: ["사망", "죽으면", "사망보험금", "사망하면"],
+    q: "사망하면 얼마를 받나요?", a: "**상해의 직접 결과로 사망**한 경우 사망보험금(보험가입금액)을 보험수익자에게 지급해요. **질병으로 인한 사망은 제외**됩니다. 실종선고를 받거나 재난으로 사망 통보된 경우도 사망에 포함하고, 연명의료중단 결정·이행도 사망보험금 지급에 영향을 주지 않아요.",
+    card: { title: "🕊️ 사망보험금 요약", items: ["지급사유: 상해의 직접결과로 사망(질병사망 제외)", "지급액: 보험가입금액", "포함: 실종선고·재난사망 통보·연명의료중단"], buttons: ["후유장해는 얼마 받나요?", "안 주는 경우(면책)는?"] } },
+  { id: "pay-disable", cat: "보장", kw: ["후유장해", "장해", "장애", "장해율", "지급률", "장해분류표", "불구"],
+    q: "후유장해가 남으면 얼마를 받나요?", a: "상해로 **장해분류표(별표1)** 에서 정한 지급률에 해당하는 장해상태가 되면 **후유장해보험금 = 장해지급률 × 보험가입금액**으로 지급해요. 장해지급률은 **상해 발생일부터 180일 이내**에 확정하며, 그때까지 확정되지 않으면 180일째 의사 진단으로 고정될 상태를 기준으로 결정해요. 이후 보장기간(효력 상실 시 1년) 내 장해가 더 악화되면 악화된 상태로 다시 정합니다.",
+    card: { title: "🧮 후유장해보험금 계산", items: ["후유장해보험금 = 보험가입금액 × 장해지급률(별표1)", "예) 가입금 1억 × 지급률 30% = 3,000만원", "판정: 상해발생일 180일 이내(미확정 시 180일째 기준)"], buttons: ["보험금은 얼마나 걸려 나오나요?", "청구 서류는 무엇인가요?"] } },
+  { id: "exclusion", cat: "면책", kw: ["면책", "안주", "안 주", "지급 안", "안되", "안 되", "보상 안", "제외되", "못받", "부지급"],
+    q: "보험금을 안 주는 경우(면책)는?", a: "다음과 같은 경우에는 보험금을 지급하지 않아요(주요 면책). ① **피보험자의 고의**로 인한 사고·자해 ② **무면허·음주(혈중알코올 0.03% 이상)·약물 상태 운전 중** 사고 ③ 자동차를 **영업목적으로 운전**하던 중 사고(해당 특약) ④ 산악자전거·경기·시범 등 **위험한 활동** ⑤ 전쟁·내란 등. 특약별로 세부 면책이 다르니 증권·약관을 확인하세요.",
+    card: { title: "🚫 주요 면책(안 주는 경우)", items: ["피보험자 고의·자해", "무면허·음주(0.03%↑)·약물 운전 중 사고", "영업목적 운전 중 사고(해당 특약)", "산악자전거 등 위험활동·경기/시범", "전쟁·내란 등"], buttons: ["음주운전도 안 되나요?", "자살은 보장되나요?"] } },
+  { id: "drunk", cat: "면책", kw: ["음주", "무면허", "술 먹고", "술먹고", "운전 중", "음주운전", "혈중알코올"],
+    q: "음주·무면허 운전 사고도 보장되나요?", a: "**무면허 상태 또는 음주(혈중알코올농도 0.03% 이상)·약물 상태에서 운전하던 중 일으킨 사고**는 보상하지 않아요(도로교통법 제43·44·45조). 정상 운전 중 상대 과실 등은 별개로 판단될 수 있으니 사고 경위를 상담사와 확인하세요." },
+  { id: "suicide", cat: "면책", kw: ["자살", "스스로 목숨", "극단적 선택", "고의로 다"],
+    q: "자살(고의 자해)도 보장되나요?", a: "피보험자의 **고의에 의한 자해·자살은 원칙적으로 보장하지 않습니다.** 다만 표준약관상 계약의 책임개시일부터 일정 기간(통상 2년) 경과 후 등 예외 규정이 있을 수 있으니, 정확한 적용은 **증권·약관 원문과 상담사 확인**이 필요해요." },
+  { id: "claim-docs", cat: "청구", kw: ["청구", "서류", "구비서류", "필요서류", "제출", "어떻게 청구", "청구방법", "청구 방법"],
+    q: "보험금 청구 서류는 무엇인가요?", a: "보험금 청구 시 아래 서류가 필요해요. ① **보험금 청구서**(회사 양식) ② **사고증명서** — 진료비계산서·(사망)진단서·**장해진단서**·입원치료확인서·의사처방전 등 ③ **신분증**(대리 청구 시 위임·인감 등) ④ 기타 필요서류(상속인 확인서 등). 사고증명서는 **의료법상 국내외 의료기관 발급본**이어야 해요.",
+    card: { title: "📄 보험금 청구 구비서류", items: ["① 보험금 청구서(회사 양식)", "② 사고증명서(진단서·장해진단서·입원확인서·진료비계산서·처방전)", "③ 신분증(대리 청구 시 위임서류)", "④ 기타(상속인 확인서 등)"], buttons: ["보험금은 며칠 만에 나오나요?", "청구 기한(소멸시효)은?"] } },
+  { id: "pay-term", cat: "청구", kw: ["며칠", "얼마나 걸", "언제 나오", "지급기일", "기한", "며칠 만에", "언제 지급"],
+    q: "보험금은 며칠 만에 나오나요?", a: "**신체손해(상해) 보험금은 청구서류 접수 후 3영업일 이내**에 지급해요. 배상책임·재산손해 보험금은 결정 후 7일 이내에 지급합니다. 지급사유 조사·확인으로 시간이 더 필요하면 **가지급금(추정 보험금의 50% 이내)** 을 먼저 드리고, 지연 시 약관에 따라 **이자를 더해** 드려요.",
+    card: { title: "⏱️ 지급 기한", items: ["신체손해(상해): 접수 후 3영업일 이내", "배상·재산손해: 결정 후 7일 이내", "조사 필요 시 지급예정일 통지 + 가지급 50% 이내", "지연 시 소정의 지연이자 가산"], buttons: ["청구 서류는 무엇인가요?", "청구 기한(소멸시효)은?"] } },
+  { id: "prescription", cat: "청구", kw: ["소멸시효", "청구 기한", "3년", "늦게 청구", "지나면", "기간 지나"],
+    q: "청구 기한(소멸시효)은?", a: "보험금 청구권은 **사고 발생일부터 3년 이내**에 청구서류를 접수하지 않으면 소멸해요(상법 제662조). 오래된 사고라도 3년이 지나지 않았다면 청구가 가능하니 서둘러 접수하세요." },
+  { id: "cooloff", cat: "계약", kw: ["청약철회", "철회", "취소하고 싶", "물릴", "환불", "가입 취소"],
+    q: "가입을 취소(청약철회)할 수 있나요?", a: "**보험증권을 받은 날부터 15일 이내**에 청약을 철회할 수 있고, 이 경우 납입한 제1회 보험료를 돌려드려요. 다만 ①건강진단 지원 계약 ②보험기간 90일 이내 계약 ③전문금융소비자 계약 ④청약일부터 30일 초과한 계약은 철회가 제한됩니다. 별도로 약관·청약서 미전달·미설명·자필서명 누락 시엔 성립일부터 3개월 내 **계약취소**도 가능해요." },
+  { id: "disclose-pre", cat: "계약", kw: ["고지", "알릴의무", "알려야", "과거 병력", "병력", "계약전 알릴", "고지의무", "치료사실"],
+    q: "가입할 때 과거 병력을 꼭 알려야 하나요?", a: "네. **계약 전 알릴의무(고지의무)** 로, 청약서 질문사항에 **사실대로 기재하고 자필서명(전자서명 포함)** 해야 해요. **설계사에게만 말한 것은 회사에 알린 것으로 보지 않으니** 반드시 청약서에 서면으로 알려야 합니다. 위반 시 계약이 해지되거나 보험금 지급이 제한될 수 있어요." },
+  { id: "disclose-post", cat: "계약", kw: ["직업 변경", "직무 변경", "이직", "직업이 바뀌", "직무가 바뀌", "이륜차", "오토바이", "원동기", "직업 바꾸"],
+    q: "직업·직무가 바뀌면 어떻게 하나요?", a: "**계약 후 알릴의무**로, 피보험자가 **직업 또는 직무를 변경**(자가용→영업용 운전 포함)하거나 **이륜자동차·원동기장치 자전거를 직접 사용**하게 되는 등 위험이 바뀌면 **지체 없이 서면으로 회사에 알리고** 증권에 확인을 받아야 해요. 위험이 감소하면 보험료를 깎아 환급하고, 증가하면 보험료가 오르거나 추가납입이 필요할 수 있어요. 알리지 않으면 해지·지급제한 사유가 됩니다.",
+    card: { title: "🔁 계약 후 알릴의무(직업·직무 변경)", items: ["대상: 직업/직무 변경, 영업용 운전, 이륜차·원동기 사용 등", "방법: 지체없이 서면 통지 + 증권 확인", "위험↓ 보험료 감액·환급 / 위험↑ 증액·추가납입", "미통지 시 해지·보험금 지급제한 가능"], buttons: ["직급전용은 무슨 뜻인가요?", "안 주는 경우(면책)는?"] } },
+  { id: "grade", cat: "상품", kw: ["직급", "직급전용", "단체", "단체보험", "단체상해"],
+    q: "‘직급전용 단체상해’는 무슨 뜻인가요?", a: "**단체(회사 등)가 임직원을 피보험자로 가입**하는 상해보험으로, **직급·직무의 위험등급**을 반영해 보장·보험료를 설계하는 상품이에요. 그래서 **직무가 바뀌면 위험등급이 달라져** 반드시 회사에 통지해야 정확한 보장을 받을 수 있어요." },
+  { id: "coverages", cat: "보장", kw: ["담보", "특약", "보장 종류", "어떤 보장", "뭘 보장", "무엇을 보장", "보장내용", "가입할 수 있는"],
+    q: "어떤 보장(담보)에 가입할 수 있나요?", a: "기본(보통약관)의 **상해 사망·후유장해** 위에, 필요에 따라 다양한 **특별약관**을 더해요. 예) 사망및고도후유장해보장, (△%)이상 고도후유장해, 업무중상해보장, 화재/폭발/붕괴사고상해, 자전거상해, 골절·탈구·신경손상·압착손상 진단비 등. 별표로 장해분류표(별표1), 암분류표(별표3), 허혈성심장·뇌혈관질환(별표22·23) 등이 연결돼요.",
+    card: { title: "🧩 주요 특별약관(담보) 예시", items: ["사망 및 고도후유장해 보장", "업무중상해 보장 / 화재·폭발·붕괴 상해", "자전거상해 / 골절·탈구·신경손상·압착손상 진단비", "(별표) 장해분류표·암분류표·허혈성심장/뇌혈관"], buttons: ["후유장해는 얼마 받나요?", "내 몸 맞춤 간편보험 보기"] } },
+  { id: "hospital", cat: "용어", kw: ["입원", "입원 기준", "입원이 뭐", "입원 정의", "6시간"],
+    q: "‘입원’은 어떤 기준인가요?", a: "**입원**은 의사가 상해·질병 치료가 필요하다고 인정한 경우로서, 자택 등에서 치료가 곤란해 **의료기관에 입실하여 계속 6시간 이상 체류**하면서 의사의 관찰·치료를 받는 것을 말해요." },
+  { id: "advance", cat: "청구", kw: ["가지급", "먼저 받", "선지급", "미리 받"],
+    q: "보험금을 미리 받을 수 있나요?", a: "지급사유 조사로 지급기일 초과가 예상될 때, 피보험자·수익자의 청구가 있으면 **회사가 추정한 보험금의 50% 이내를 가지급보험금**으로 먼저 드려요." },
+  { id: "dispute", cat: "기타", kw: ["분쟁", "민원", "이의", "불만", "금감원", "거절", "부지급 이의", "재심"],
+    q: "지급이 거절되면 어디에 이의를 제기하나요?", a: "먼저 **현대해상 고객센터 1588-5656** 으로 상담하시고, 결과에 이의가 있으면 **금융감독원 금융민원센터(국번없이 1332, www.fcsc.kr)** 또는 **손해보험협회 보험상담소((02)3702-8500)** 에 민원·분쟁조정을 신청할 수 있어요. 부지급 시 회사는 사유와 근거를 제시합니다." },
+];
+
+/* 인사·추천 질문 */
+const INS_FAQ = ["상해가 무엇인가요?", "후유장해가 남으면 얼마를 받나요?", "보험금 청구 서류는?", "보험금은 며칠 만에 나오나요?", "안 주는 경우(면책)는?", "직업이 바뀌면 어떻게 하나요?"];
+
+function _insNorm(s) { return String(s || "").toLowerCase().replace(/\s+/g, ""); }
+function insMatch(text) {
+  const t = _insNorm(text); if (!t) return null;
+  let best = null;
+  INS_KB.forEach((e) => {
+    let score = 0;
+    e.kw.forEach((k) => { const kn = _insNorm(k); if (kn && t.includes(kn)) score = Math.max(score, kn.length); });
+    if (score > 0 && (!best || score > best.score)) best = { e, score };
+  });
+  return best ? best.e : null;
+}
+
+/* AI 설계사 상담 — 약관 근거 답변 {bubbles, quicks} 반환, 못 찾으면 안내 */
+function insuranceCounsel(text) {
+  const raw = String(text || "");
+  const has = (...ks) => ks.some((k) => raw.includes(k));
+  // 인사
+  if (has("안녕", "반가", "하이", "ㅎㅇ")) return { bubbles: [{ kind: "text", text: `안녕하세요! ${INS_PRODUCT.name} 담당 **AI 설계사**예요. 약관을 학습해 보장·청구·면책·계약을 안내해 드려요. 무엇이 궁금하세요?` }], quicks: INS_FAQ.slice(0, 4) };
+  if (has("고마", "감사", "수고")) return { bubbles: [{ kind: "text", text: "도움이 되었다니 기뻐요! 보장 설계나 청구가 더 궁금하면 언제든 물어보세요. 😊" }], quicks: INS_FAQ.slice(0, 3) };
+  // 상담사 연결
+  if (has("상담사", "설계사 연결", "사람", "전화", "가입하고", "가입할래", "가입 신청"))
+    return { bubbles: [{ kind: "text", text: "보험 가입·보장설계는 **정식 라이선스 설계사**가 고지·심사 안내와 함께 도와드려요. 아래 버튼으로 상담을 신청하시면 채널로 연결됩니다." }, { kind: "card", card: { title: "🤝 전문 상담사 연결", items: ["AI 1차 분석을 상담사에게 전달", "라이선스 설계사가 연락처로 상담 진행", `현대해상 고객센터 ${INS_PRODUCT.tel}`], buttons: ["보험상담 신청"] } }], quicks: INS_FAQ.slice(0, 3) };
+
+  const hit = insMatch(raw);
+  if (hit) {
+    const bubbles = [{ kind: "text", text: hit.a }];
+    if (hit.card) bubbles.push({ kind: "card", card: hit.card });
+    const related = INS_KB.filter((e) => e.cat === hit.cat && e.id !== hit.id).slice(0, 2).map((e) => e.q);
+    return { bubbles, quicks: [...related, "보험상담 신청"].slice(0, 3) };
   }
   return null;
 }

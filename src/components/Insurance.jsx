@@ -280,6 +280,62 @@ function PremiumNotice() {
     </div>
   );
 }
+/* ── AI 설계사 — 약관 학습 대화형 상담(AI 주치의 형태) ── */
+function _insBold(s) {
+  return String(s).split(/(\*\*[^*]+\*\*)/g).map((p, i) => (p.startsWith("**") && p.endsWith("**")) ? <b key={i}>{p.slice(2, -2)}</b> : <React.Fragment key={i}>{p}</React.Fragment>);
+}
+function AIPlannerChat() {
+  const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const nm = member ? member.name : null;
+  const PROD = (typeof INS_PRODUCT !== "undefined") ? INS_PRODUCT : { name: "상해보험", insurer: "현대해상", tel: "1588-5656" };
+  const FAQ = (typeof INS_FAQ !== "undefined") ? INS_FAQ : [];
+  const greet = { who: "ai", bubbles: [{ kind: "text", text: `안녕하세요${nm ? " " + nm + "님" : ""}! ${PROD.name} 담당 **AI 설계사**예요. 🤖\n약관을 학습해 **보장·보험금·청구·면책·계약**을 안내해 드려요. 아래 질문을 눌러보거나 무엇이든 물어보세요.` }] };
+  const [msgs, setMsgs] = useState([greet]);
+  const [quicks, setQuicks] = useState(FAQ.slice(0, 6));
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const endRef = useRef(null);
+  useEffect(() => { endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
+  const send = (textArg) => {
+    const text = (textArg == null ? input : textArg).trim(); if (!text) return;
+    if (text === "보험상담 신청") { if (typeof openConsult === "function") openConsult(PROD.name + " — AI 설계사 상담"); return; }
+    setInput(""); setQuicks([]);
+    setMsgs((m) => [...m, { who: "me", bubbles: [{ kind: "text", text }] }]);
+    setTyping(true);
+    setTimeout(() => {
+      const res = (typeof insuranceCounsel === "function") ? insuranceCounsel(text) : null;
+      setTyping(false);
+      if (res) { setMsgs((m) => [...m, { who: "ai", bubbles: res.bubbles }]); setQuicks(res.quicks || []); }
+      else { setMsgs((m) => [...m, { who: "ai", bubbles: [{ kind: "text", text: `‘${text}’에 딱 맞는 약관 조항을 찾지 못했어요. 😅 **보장·보험금·청구·면책·계약** 관련으로 물어보시거나 아래 추천 질문을 눌러보세요. 정확한 보장은 증권·약관 원문과 상담사 확인이 필요해요.` }] }]); setQuicks(FAQ.slice(0, 4).concat("보험상담 신청")); }
+    }, 620);
+  };
+  return (
+    <div className="aipwrap">
+      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 설계사</b><span>{PROD.insurer} · {PROD.name} · 약관 학습</span></div><span className="aipbadge">약관 학습완료</span></div>
+      <div className="aipbody">
+        {msgs.map((m, i) => (
+          <div key={i} className={`aiprow ${m.who}`}>
+            {m.who === "ai" && <span className="aipmini"><Bot size={14} /></span>}
+            <div className="aipmsg">
+              {m.bubbles.map((b, j) => b.kind === "card"
+                ? <div className="aipcard" key={j}><div className="aipct">{b.card.title}</div><ul>{b.card.items.map((it, k) => <li key={k}>{it}</li>)}</ul>{b.card.buttons && b.card.buttons.length > 0 && <div className="aipcbtns">{b.card.buttons.map((bt) => <button key={bt} onClick={() => send(bt)}>{bt}</button>)}</div>}</div>
+                : <div className={`aipbub ${m.who}`} key={j}>{String(b.text).split("\n").map((ln, k) => <React.Fragment key={k}>{k > 0 && <br />}{_insBold(ln)}</React.Fragment>)}</div>
+              )}
+            </div>
+          </div>
+        ))}
+        {typing && <div className="aiprow ai"><span className="aipmini"><Bot size={14} /></span><div className="aipmsg"><div className="aipbub ai aiptyping"><span /><span /><span /></div></div></div>}
+        <div ref={endRef} />
+      </div>
+      {quicks.length > 0 && !typing && <div className="aipquicks">{quicks.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}</div>}
+      <div className="aipinput">
+        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="보장·보험금·청구·면책 무엇이든 물어보세요" />
+        <button className={input.trim() ? "on" : ""} onClick={() => send()}><Send size={16} /></button>
+      </div>
+      <div className="chnote">※ AI 설계사 안내는 약관을 요약·재작성한 <b>참고용</b>이며, 실제 보장·지급·면책은 <b>가입 증권·약관 원문·관련 법령</b>을 따릅니다. 보험 권유·가입은 보험업법상 정식 라이선스 채널로만 이루어집니다.</div>
+    </div>
+  );
+}
 /* ── 간편 · 내 몸 맞춤 간편보험 — 발병 위험 질병별 1년 단기 밀도 가입 코너 ── */
 function SimpleBodyInsurance() {
   const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -708,21 +764,10 @@ function InsuranceSection({ onGo }) {
 
       {tab === "ai" && (<>
         <div className="airec">
-          <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 보험상담</div>
-          <div className="ap">조성래님 건강상태와 보유 보장을 바탕으로 부족한 보장·치료비 대비를 안내해 드려요. 궁금한 것을 물어보세요.</div>
+          <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 설계사 — 약관 학습 대화형 상담</div>
+          <div className="ap">현대해상 <b>현대단체상해보험(직급전용)</b> 약관을 학습한 AI 설계사가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
         </div>
-        <div className="card">
-          <div className="rct"><Sparkles size={18} color="#2F5BEA" /> 자주 묻는 질문</div>
-          {["췌장암 경고인데 어떤 보장이 필요할까요?", "검진보험은 무엇을 보장하나요?", "실손보험 청구는 어떻게 하나요?", "보험료를 줄이는 방법이 있나요?"].map((q, i) => (
-            <div className="adv" key={i} style={{ cursor: "pointer" }} onClick={() => setModal({ title: "AI 보험상담", sub: "상담이 연결되었습니다", items: [["chat", q, "AI가 1차 안내 후, 정식 라이선스 설계사 상담으로 연결합니다."]] })}><span className="ic" style={{ background: "#EAF0FE" }}><Art name="chat" size={20} /></span><div style={{ flex: 1 }}><b style={{ fontWeight: 700, fontSize: 13 }}>{q}</b></div><ChevronRight size={16} color="#9AA6BC" /></div>
-          ))}
-        </div>
-        <div className="card" style={{ border: "1.5px solid #BFD0FF" }}>
-          <div className="rct"><HeartHandshake size={18} color="#2F5BEA" /> 전문 상담사 연결</div>
-          <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>보험 가입·보장설계는 <b>정식 라이선스 설계사</b>가 고지·심사 안내와 함께 도와드립니다. 상담을 신청하면 채널로 연결됩니다.</p>
-          <button className="cbtn pri" onClick={() => setModal({ title: "보험상담 신청", sub: "상담 신청이 접수되었습니다", items: [["chat", "AI 1차 분석 전달", "조성래님 건강·보장 분석을 상담사에게 전달합니다."], ["badge", "정식 채널 연결", "라이선스 설계사가 연락처로 상담을 진행합니다."]] })}><MessageSquare size={15} /> 보험상담 신청</button>
-        </div>
-        <div className="chnote">※ AI 안내는 참고용이며, 보험 권유·가입·계약은 보험업법상 정식 라이선스 채널을 통해서만 이루어집니다.</div>
+        <AIPlannerChat />
       </>)}
 
       {cover && <CoverDetailModal name={cover} onClose={() => setCover(null)} />}
