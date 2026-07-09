@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=800de1c304" />
+<link rel="stylesheet" href="./data/app.css?v=315978abdc" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=800de1c304"></script>
-<script src="./src/data/section_data.js?v=800de1c304"></script>
-<script src="./src/data/demo_members.js?v=800de1c304"></script>
+<script src="./src/data/dummy_data.js?v=315978abdc"></script>
+<script src="./src/data/section_data.js?v=315978abdc"></script>
+<script src="./src/data/demo_members.js?v=315978abdc"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -8762,6 +8762,113 @@ function SupplyGraph() {
   );
 }
 
+/* ── 실시간 시뮬레이션: 주문→출고→배송→정산 이벤트 스트림 ── */
+function SupplyLiveSim() {
+  const D = React.useMemo(() => (typeof supplyData === "function" ? supplyData() : null), []);
+  const [play, setPlay] = useState(false);
+  const [ev, setEv] = useState([]);
+  const [live, setLive] = useState({ ord: 0, gmv: 0, ship: 0 });
+  const tick = React.useRef(0);
+  useEffect(() => {
+    if (!play || !D) return;
+    const id = setInterval(() => {
+      const t = ++tick.current;
+      const p = D.products[(t * 7919) % D.products.length];
+      const qty = 1 + (t % 4); const amt = p.salePrice * qty;
+      const acts = [["주문 접수", "#38BDF8"], ["출고 지시(거래처)", "#FBBF24"], ["직배송 시작", "#818CF8"], ["배송 완료", "#34D399"], ["정산 반영", "#F59E0B"]];
+      const [act, c] = acts[t % acts.length];
+      setLive((s) => ({ ord: s.ord + (act === "주문 접수" ? 1 : 0), gmv: s.gmv + (act === "주문 접수" ? amt : 0), ship: s.ship + (act === "배송 완료" ? 1 : 0) }));
+      setEv((e) => [{ id: t, act, c, txt: p.vendorName + " · " + p.name + " ×" + qty + " · " + _scW(amt) }, ...e].slice(0, 10));
+    }, 850);
+    return () => clearInterval(id);
+  }, [play, D]);
+  if (!D) return null;
+  return (
+    <div className="ontpanel scsim" style={{ marginTop: 12 }}>
+      <div className="ontph"><Zap size={15} color="#FBBF24" /> 실시간 시뮬레이션 · Live Simulation <span>· 주문→출고→직배송→정산 이벤트 스트림</span>
+        <span style={{ marginLeft: "auto", display: "inline-flex", gap: 6 }}>
+          <button className="scsimbtn" onClick={() => setPlay((p) => !p)}>{play ? <><Pause size={13} /> 일시정지</> : <><Play size={13} /> 재생</>}</button>
+          <button className="scsimbtn ghost" onClick={() => { setPlay(false); setEv([]); setLive({ ord: 0, gmv: 0, ship: 0 }); tick.current = 0; }}><RotateCcw size={13} /> 리셋</button>
+        </span>
+      </div>
+      <div className="scsimkpi">
+        <div><b style={{ color: "#38BDF8" }}>{live.ord.toLocaleString()}</b><span>실시간 신규 주문</span></div>
+        <div><b style={{ color: "#34D399" }}>{_scW(live.gmv)}</b><span>실시간 거래액</span></div>
+        <div><b style={{ color: "#818CF8" }}>{live.ship.toLocaleString()}</b><span>직배송 완료</span></div>
+        <div><b style={{ color: play ? "#FBBF24" : "#64748B" }}>{play ? "● LIVE" : "○ 정지"}</b><span>스트림 상태</span></div>
+      </div>
+      <div className="scfeed">{ev.length === 0 ? <div className="scempty">재생을 누르면 실시간 거래 이벤트가 흐릅니다.</div> : ev.map((x) => <div className="scfeedrow" key={x.id}><span className="scfeed-t" style={{ color: x.c, borderColor: x.c }}>{x.act}</span><span className="scfeed-x">{x.txt}</span></div>)}</div>
+    </div>
+  );
+}
+/* ── 책임 AI 에이전트 + 액션 실행 ── */
+const SC_AGENT_ACTIONS = {
+  orch: [{ t: "자동발주 실행", run: (D) => ({ msg: "품절임박 " + D.availability.filter((a) => a.qty < 80).length + "건 → 최적 거래처 자동발주 생성", hitl: true }) }, { t: "가용재고 새로고침", run: (D) => ({ msg: "공급사 가용재고 API 재조회 · " + D.counts.availability + "개 SKU 동기화" }) }],
+  vrisk: [{ t: "여신 재평가", run: (D) => ({ msg: "거래처 " + D.counts.vendor + "곳 신용 스코어 재산정 · 여신초과 0건", hitl: true }) }, { t: "미수 알림 발송", run: () => ({ msg: "연체 거래처 대상 미수 알림 발송 예약" }) }],
+  growth: [{ t: "이탈위험 캠페인", run: () => ({ msg: "이탈스코어 상위 세그먼트 리텐션 캠페인 생성", hitl: true }) }, { t: "업셀 추천 생성", run: () => ({ msg: "재구매 주기 도달 계정 업셀 추천 배치 생성" }) }],
+  logi: [{ t: "지연 배송 재배차", run: (D) => ({ msg: "지연 예상 " + Math.round(D.counts.shipment * 0.03) + "건 → 대체 운송사 재배차 제안", hitl: true }) }, { t: "ETA 재예측", run: () => ({ msg: "진행 중 배송 ETA 재예측 완료" }) }],
+  settle: [{ t: "월 정산 마감", run: () => ({ msg: "이번 달 거래처 정산 마감 · ERP 전표 자동 전기", hitl: true }) }, { t: "세금계산서 발행", run: () => ({ msg: "정산 완료분 세금계산서 발행 대기열 등록" }) }],
+};
+function SupplyAgents() {
+  const D = React.useMemo(() => (typeof supplyData === "function" ? supplyData() : null), []);
+  const [log, setLog] = useState([]);
+  const lid = React.useRef(0);
+  if (!D) return null;
+  const run = (a, act) => { const r = act.run(D); const id = ++lid.current; setLog((l) => [{ id, agent: a.t, c: a.c, msg: r.msg, status: r.hitl ? "승인대기" : "실행완료" }, ...l].slice(0, 12)); if (typeof toast === "function") toast("🤖 " + a.t + " · " + r.msg); };
+  const approve = (id) => { setLog((l) => l.map((x) => x.id === id ? { ...x, status: "승인완료" } : x)); if (typeof toast === "function") toast("✅ 승인 완료 · 액션 실행"); };
+  return (
+    <div className="ontpanel" style={{ marginTop: 12 }}>
+      <div className="ontph"><Bot size={15} color="#F472B6" /> 책임 AI 에이전트 · 액션 실행 <span>· {SC_AGENTS.length} Agents · KPI·가드레일(HITL)</span></div>
+      <div className="scagents">
+        {SC_AGENTS.map((a) => (
+          <div className="scagentcard" key={a.id} style={{ "--ac": a.c }}>
+            <div className="scagenthd"><span className="scagent-i"><a.ic size={18} /></span><div><b>{a.t}</b><span>{a.scope}</span></div></div>
+            <div className="scagentrow"><span className="scal">소관</span><span className="scav">{a.owns.join(" · ")}</span></div>
+            <div className="scagentkpi">{a.kpi.map((k, i) => <span key={i} className="sckpi">{k}</span>)}</div>
+            <div className="scactbtns">{(SC_AGENT_ACTIONS[a.id] || []).map((act, i) => <button key={i} className="scactbtn" style={{ "--ac": a.c }} onClick={() => run(a, act)}><Play size={11} /> {act.t}</button>)}</div>
+            <div className="scagentguard"><ShieldCheck size={11} /> {a.guard}</div>
+          </div>
+        ))}
+      </div>
+      <div className="scjournalh" style={{ marginTop: 12 }}><Workflow size={13} /> 액션 실행 로그</div>
+      <div className="scactlog">{log.length === 0 ? <div className="scempty">에이전트 카드의 액션 버튼을 눌러 실행하세요. (HITL 액션은 승인 필요)</div> : log.map((x) => (
+        <div className="scactrow" key={x.id} style={{ "--ac": x.c }}>
+          <span className="scact-a">{x.agent}</span><span className="scact-m">{x.msg}</span>
+          {x.status === "승인대기" ? <button className="scact-appr" onClick={() => approve(x.id)}>승인</button> : <span className={"scact-st " + (x.status === "승인완료" ? "ok" : "done")}>{x.status}</span>}
+        </div>
+      ))}</div>
+    </div>
+  );
+}
+/* ── 거래처 360° 뷰 ── */
+function Vendor360({ v, D, idx, onClose, onGo }) {
+  const prods = idx.pByV[v.id] || [], conts = idx.cByV[v.id] || [], avails = idx.aByV[v.id] || [], setts = idx.sByV[v.id] || [];
+  const ords = D.orders.filter((o) => o.vendorId === v.id);
+  let sales = 0, mgn = 0; const st = {};
+  ords.forEach((o) => { st[o.status] = (st[o.status] || 0) + 1; if (o.status !== "취소") { sales += o.amount; mgn += o.margin; } });
+  const setSum = setts.reduce((s, x) => s + x.sales, 0);
+  const agents = SC_AGENTS.filter((a) => a.sys.includes("ERP") || a.sys.includes("물류")).slice(0, 3);
+  const kpi = [["총 거래액", _scW(sales), "#34D399"], ["주문", ords.length.toLocaleString() + "건", "#6366F1"], ["제품 SKU", prods.length, "#FBBF24"], ["정산누계", _scW(setSum), "#F59E0B"]];
+  return (
+    <div className="ontov" onClick={onClose}><div className="ontmodal v360" onClick={(e) => e.stopPropagation()}>
+      <div className="ontmh"><div><span className="ontmid">{v.id} · {v.type} · {v.category}</span><div className="ontmname">{v.name} <span>· 360° 뷰 · 신뢰도 {v.trust} · SLA D+{v.sla}</span></div></div><button onClick={onClose}><X size={19} /></button></div>
+      <div className="ontmbody">
+        <div className="v360kpi">{kpi.map(([k, val, c], i) => <div key={i}><b style={{ color: c }}>{val}</b><span>{k}</span></div>)}</div>
+        <div className="v360sec"><b><Package size={12} /> 제품 · SKU ({prods.length})</b><div className="v360chips">{prods.slice(0, 10).map((p) => <span key={p.id} onClick={() => { onGo("product", p.name); onClose(); }}>{p.name} · {_scW(p.salePrice)}</span>)}{prods.length > 10 && <span className="more" onClick={() => { onGo("product", v.name); onClose(); }}>+{prods.length - 10} 더보기 ›</span>}</div></div>
+        <div className="v360grid2">
+          <div className="v360sec"><b><ScrollText size={12} /> 계약·단가</b>{conts.map((c) => <div className="v360li" key={c.id}>{c.category} · 마진 {c.marginPct}% · 수수료 {c.feePct}% · {c.settleCycle}</div>)}</div>
+          <div className="v360sec"><b><Boxes size={12} /> 공급사 가용재고 ({avails.length})</b>{avails.slice(0, 4).map((a) => <div className="v360li" key={a.id}><span style={{ color: a.qty < 30 ? "#F87171" : "#22D3EE", fontWeight: 800 }}>{a.qty}</span> · {a.skuName} · D+{a.leadDays}</div>)}</div>
+        </div>
+        <div className="v360sec"><b><Truck size={12} /> 주문·직배송 상태</b><div className="scpipe" style={{ height: 44 }}>{["접수", "출고준비", "배송중", "배송완료", "취소"].map((s) => { const val = st[s] || 0; return <div className="scpipe-seg" key={s} style={{ flex: Math.max(0.4, val), background: SC_ST_COLOR[s] }} title={s + " " + val}><b>{val}</b><span>{s}</span></div>; })}</div></div>
+        <div className="v360grid2">
+          <div className="v360sec"><b><Receipt size={12} /> 정산 ({setts.length}개월)</b>{setts.slice(-3).map((s) => <div className="v360li" key={s.id}>{s.period} · 매출 {_scW(s.sales)} · 수수료 {_scW(s.fee)} · <span style={{ color: s.status === "정산완료" ? "#34D399" : "#FBBF24" }}>{s.status}</span></div>)}</div>
+          <div className="v360sec"><b><Bot size={12} /> 담당 AI 에이전트</b>{agents.map((a) => <div className="v360li" key={a.id}><span style={{ color: a.c, fontWeight: 800 }}>●</span> {a.t} <span style={{ color: "#34D399" }}>· 정상</span></div>)}</div>
+        </div>
+        <div className="chnote">여신한도 {_scW(v.credit)} · 미지급 {_scW(v.payable)} · 거래시작 {v.since} · ★거래처 직배송(무재고) 수행</div>
+      </div>
+    </div></div>
+  );
+}
 /* ── 운영 현황판: 현재 거래·진행 중 상태 실시간 집계 ── */
 const SC_ST_COLOR = { "접수": "#38BDF8", "출고준비": "#FBBF24", "배송중": "#818CF8", "배송완료": "#34D399", "취소": "#F87171" };
 function _scW(n) { return (typeof ontWon === "function") ? ontWon(n) : (n || 0).toLocaleString() + "원"; }
@@ -8925,7 +9032,7 @@ function SupplyExplorer() {
         <tbody>{view.map((r, i) => <tr key={i} onClick={() => setSel(r)}>{T.cols.map(([k]) => <td key={k}>{_scCell(r[k], k)}</td>)}</tr>)}</tbody></table></div>
       {filtered.length === 0 && <div className="scempty">검색 결과가 없습니다.</div>}
       <div className="scpager"><button disabled={pg <= 0} onClick={() => setPage(pg - 1)}>‹ 이전</button><span>{(pg + 1).toLocaleString()} / {pages.toLocaleString()} 페이지</span><button disabled={pg >= pages - 1} onClick={() => setPage(pg + 1)}>다음 ›</button></div>
-      {sel && <SupplyDetail rec={sel} tab={tab} idx={IDX} onClose={() => setSel(null)} onGo={go} />}
+      {sel && (tab === "vendor" ? <Vendor360 v={sel} D={D} idx={IDX} onClose={() => setSel(null)} onGo={go} /> : <SupplyDetail rec={sel} tab={tab} idx={IDX} onClose={() => setSel(null)} onGo={go} />)}
     </div>
   );
 }
@@ -9012,6 +9119,8 @@ function SupplyOntology({ onGo, onTab }) {
 
       <SupplyDashboard />
 
+      <SupplyLiveSim />
+
       <SupplyCostAccounting />
 
       <SupplyLedger onTab={onTab} />
@@ -9056,20 +9165,7 @@ function SupplyOntology({ onGo, onTab }) {
         </div>
       </div>
 
-      <div className="ontpanel" style={{ marginTop: 12 }}>
-        <div className="ontph"><Bot size={15} color="#F472B6" /> 책임 AI 에이전트 · Accountable Agents <span>· {SC_AGENTS.length} Agents</span></div>
-        <div className="scagents">
-          {SC_AGENTS.map((a) => (
-            <div className="scagentcard" key={a.id} style={{ "--ac": a.c }}>
-              <div className="scagenthd"><span className="scagent-i"><a.ic size={18} /></span><div><b>{a.t}</b><span>{a.scope}</span></div></div>
-              <div className="scagentrow"><span className="scal">담당 시스템</span><span className="scav">{a.sys.join(" · ")}</span></div>
-              <div className="scagentrow"><span className="scal">소관 오브젝트</span><span className="scav">{a.owns.join(" · ")}</span></div>
-              <div className="scagentkpi">{a.kpi.map((k, i) => <span key={i} className="sckpi">{k}</span>)}</div>
-              <div className="scagentguard"><ShieldCheck size={11} /> {a.guard}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <SupplyAgents />
 
       <div className="chnote" style={{ marginTop: 12 }}>※ <b>무재고(Asset-light)·거래처 직배송</b> 모델의 시연용 스키마입니다 — 제품·재고는 거래처(공급사)가 보유·배송하고 당사는 재고자산·창고를 두지 않습니다. 실제 운영 시 ERP(더존·SAP)·CRM(Salesforce)·물류(택배사 API·거래처 WMS) 커넥터 연동과 공급사 <b>가용재고 API</b>·권한·감사(HITL) 구성이 필요합니다.</div>
     </div>
