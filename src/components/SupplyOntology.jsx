@@ -85,6 +85,84 @@ function SupplyGraph() {
   );
 }
 
+/* ── 실시간 진행 현황 대시보드: 공급·진행·관리를 라이브로 갱신 ── */
+function SupplyLiveBoard() {
+  const D = React.useMemo(() => (typeof supplyData === "function" ? supplyData() : null), []);
+  const st = React.useRef(null);
+  const [running, setRunning] = useState(true);
+  const [, force] = useState(0);
+  if (D && !st.current) {
+    let normal = 0, low = 0, out = 0;
+    D.availability.forEach((a) => { a.qty >= 80 ? normal++ : a.qty >= 30 ? low++ : out++; });
+    st.current = { t: 0, pipe: { r: 14, p: 9, s: 22, d: 0 }, live: { ord: 0, gmv: 0, done: 0, po: 0 }, sup: { normal, low, out, base: out }, mg: { sla: 98.4, otd: 97.1, work: 0 }, alerts: [], feed: [] };
+  }
+  useEffect(() => {
+    if (!running || !D) return;
+    const id = setInterval(() => {
+      const s = st.current; const t = (s.t += 1); const p = s.pipe;
+      const no = 1 + Math.floor(Math.random() * 3);
+      const toShip = Math.floor(p.r * 0.45), toTr = Math.floor(p.p * 0.4), toDone = Math.floor(p.s * 0.32);
+      p.r = Math.max(3, p.r + no - toShip); p.p = Math.max(2, p.p + toShip - toTr); p.s = Math.max(4, p.s + toTr - toDone); p.d += toDone;
+      const prod = D.products[(t * 104729) % D.products.length]; const qty = 1 + (t % 4); const amt = prod.salePrice * qty;
+      s.live.ord += no; s.live.gmv += amt; s.live.done += toDone;
+      if (t % 2 === 0 && s.sup.normal > 0) { s.sup.normal--; s.sup.low++; }
+      if (s.sup.low > 0 && Math.random() < 0.4) { s.sup.low--; s.sup.out++; }
+      if (s.sup.out > s.sup.base) { s.sup.out--; s.sup.normal++; s.live.po++; s.feed.unshift({ id: "a" + t, c: "#22D3EE", k: "자동발주", x: "오케스트레이터 · " + prod.vendorName + " 품절임박 → 자동발주 실행" }); }
+      s.mg.work = t % SC_AGENTS.length; s.mg.sla = +(97 + Math.random() * 2.5).toFixed(1); s.mg.otd = +(95 + Math.random() * 4).toFixed(1);
+      if (t % 4 === 0) { const K = [["품절임박", "#FBBF24", prod.name + " 가용 " + Math.floor(Math.random() * 25) + "개"], ["배송지연", "#F87171", "주문 O" + (100000 + Math.floor(Math.random() * 899999)) + " ETA 초과"], ["여신경보", "#A78BFA", prod.vendorName + " 여신 90% 도달"]]; const k = K[Math.floor(t / 4) % K.length]; s.alerts.unshift({ id: t, k: k[0], c: k[1], x: k[2] }); s.alerts = s.alerts.slice(0, 5); }
+      const EV = [["신규주문", "#38BDF8", prod.vendorName + " · " + prod.name + " ×" + qty + " · " + _scW(amt)], ["출고지시", "#FBBF24", prod.vendorName + " 출고 지시(거래처)"], ["직배송", "#818CF8", "거래처 직배송 시작 · " + prod.vendorName], ["배송완료", "#34D399", "배송 완료 +" + toDone + "건"], ["정산반영", "#F59E0B", "ERP 전기 · 손익계산서 반영"]];
+      const e = EV[t % EV.length]; s.feed.unshift({ id: "e" + t, c: e[1], k: e[0], x: e[2] }); s.feed = s.feed.slice(0, 9);
+      force((x) => x + 1);
+    }, 1200);
+    return () => clearInterval(id);
+  }, [running, D]);
+  if (!D || !st.current) return null;
+  const s = st.current;
+  const supTot = s.sup.normal + s.sup.low + s.sup.out || 1;
+  const pipeArr = [["접수", s.pipe.r, "#38BDF8"], ["출고준비", s.pipe.p, "#FBBF24"], ["배송중", s.pipe.s, "#818CF8"], ["배송완료", s.pipe.d, "#34D399"]];
+  const pipeMax = Math.max.apply(null, pipeArr.map((x) => x[1]).concat(1));
+  const kpi = [["실시간 주문", s.live.ord.toLocaleString(), "#38BDF8"], ["실시간 거래액", _scW(s.live.gmv), "#34D399"], ["처리 중", (s.pipe.r + s.pipe.p + s.pipe.s).toLocaleString(), "#818CF8"], ["배송완료", s.live.done.toLocaleString(), "#22D3EE"], ["자동발주", s.live.po.toLocaleString() + "건", "#FBBF24"]];
+  return (
+    <div className="ontpanel lbwrap" style={{ marginTop: 12 }}>
+      <div className="ontph"><Gauge size={15} color="#22D3EE" /> 실시간 진행 현황 대시보드 <span className={"lblive" + (running ? " on" : "")}>{running ? "● LIVE" : "○ 정지"}</span>
+        <span style={{ marginLeft: "auto" }}><button className="scsimbtn" onClick={() => setRunning((r) => !r)}>{running ? <><Pause size={13} /> 정지</> : <><Play size={13} /> 재생</>}</button></span>
+      </div>
+      <div className="lbkpi">{kpi.map(([k, v, c], i) => <div key={i}><b style={{ color: c }}>{v}</b><span>{k}</span></div>)}</div>
+      <div className="lbcols">
+        <div className="lbcol">
+          <div className="lbh"><Boxes size={13} color="#22D3EE" /> 공급 현황</div>
+          {[["정상", s.sup.normal, "#34D399"], ["부족", s.sup.low, "#FBBF24"], ["품절임박", s.sup.out, "#F87171"]].map(([k, v, c]) => (
+            <div className="lbgauge" key={k}><span className="lbg-l">{k}</span><span className="lbg-bar"><i style={{ width: (v / supTot * 100) + "%", background: c }} /></span><span className="lbg-v" style={{ color: c }}>{v}</span></div>
+          ))}
+          <div className="lbmini"><span className="lbdot pulse" style={{ background: "#22D3EE" }} /> 공급사 가용재고 API 실시간 조회 중 · 자동발주 <b style={{ color: "#FBBF24" }}>{s.live.po}</b>건</div>
+        </div>
+        <div className="lbcol">
+          <div className="lbh"><Workflow size={13} color="#818CF8" /> 진행 현황 (파이프라인)</div>
+          {pipeArr.map(([k, v, c]) => (
+            <div className="lbgauge" key={k}><span className="lbg-l">{k}</span><span className="lbg-bar"><i style={{ width: (v / pipeMax * 100) + "%", background: c }} /></span><span className="lbg-v" style={{ color: c }}>{v.toLocaleString()}</span></div>
+          ))}
+          <div className="lbmini">주문 → 출고 → <b style={{ color: "#818CF8" }}>거래처 직배송</b> → 완료 · 실시간 이동</div>
+        </div>
+        <div className="lbcol">
+          <div className="lbh"><Bot size={13} color="#F472B6" /> 관리 현황</div>
+          <div className="lbagents">{SC_AGENTS.map((a, i) => <div className="lbagent" key={a.id}><span className={"lbdot" + (i === s.mg.work ? " pulse" : "")} style={{ background: i === s.mg.work ? "#FBBF24" : "#34D399" }} /><span className="lba-n">{a.t.replace(" 에이전트", "")}</span><span className="lba-s" style={{ color: i === s.mg.work ? "#FBBF24" : "#34D399" }}>{i === s.mg.work ? "작업중" : "정상"}</span></div>)}</div>
+          <div className="lbgauge"><span className="lbg-l">SLA 준수</span><span className="lbg-bar"><i style={{ width: s.mg.sla + "%", background: "#34D399" }} /></span><span className="lbg-v" style={{ color: "#34D399" }}>{s.mg.sla}%</span></div>
+          <div className="lbgauge"><span className="lbg-l">정시배송</span><span className="lbg-bar"><i style={{ width: s.mg.otd + "%", background: "#38BDF8" }} /></span><span className="lbg-v" style={{ color: "#38BDF8" }}>{s.mg.otd}%</span></div>
+        </div>
+      </div>
+      <div className="lbgrid2">
+        <div className="lbcol">
+          <div className="lbh"><AlertTriangle size={13} color="#FBBF24" /> 실시간 알림</div>
+          <div className="lbalerts">{s.alerts.length === 0 ? <div className="scempty">알림 대기 중…</div> : s.alerts.map((a) => <div className="lbalert" key={a.id}><span className="lba-tag" style={{ color: a.c, borderColor: a.c }}>{a.k}</span><span className="lba-x">{a.x}</span></div>)}</div>
+        </div>
+        <div className="lbcol">
+          <div className="lbh"><Zap size={13} color="#818CF8" /> 실시간 이벤트</div>
+          <div className="lbfeed">{s.feed.length === 0 ? <div className="scempty">이벤트 대기 중…</div> : s.feed.map((f) => <div className="lbfeedrow" key={f.id}><span className="lbf-t" style={{ color: f.c, borderColor: f.c }}>{f.k}</span><span className="lbf-x">{f.x}</span></div>)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 /* ── 실시간 시뮬레이션: 주문→출고→배송→정산 이벤트 스트림 ── */
 function SupplyLiveSim() {
   const D = React.useMemo(() => (typeof supplyData === "function" ? supplyData() : null), []);
@@ -440,9 +518,9 @@ function SupplyOntology({ onGo, onTab }) {
         </div>
       </div>
 
-      <SupplyDashboard />
+      <SupplyLiveBoard />
 
-      <SupplyLiveSim />
+      <SupplyDashboard />
 
       <SupplyCostAccounting />
 
