@@ -204,6 +204,52 @@ function FoundationAgents() {
     </div>
   );
 }
+/* ── 추적·검증 하네스: 블록 익스플로러 + 레코드 추적·검증 프로그램 ── */
+function _fndHash(s) { let h = 2166136261 >>> 0; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return "0x" + (h >>> 0).toString(16).padStart(8, "0") + (Math.imul(h, 2654435761) >>> 0).toString(16).padStart(8, "0"); }
+function FoundationBlockExplorer({ block, D, onClose, onNav }) {
+  const txs = D.txs.filter((t) => t.block === block.height);
+  const idx = D.blocks.findIndex((b) => b.height === block.height);
+  const prev = idx > 0 ? D.blocks[idx - 1] : null, next = idx < D.blocks.length - 1 ? D.blocks[idx + 1] : null;
+  const rows = [["블록 번호 (Height)", "#" + block.height.toLocaleString()], ["생성 시간 (Timestamp)", block.ts], ["블록 해시 (Hash)", block.hash], ["이전 블록 해시", block.prevHash], ["거래 수 (Tx Count)", block.txCount + "건"], ["검증자 (Validator)", block.validator], ["Gas Used", block.gas], ["HTK 합계", block.htkSum.toLocaleString() + " HTK"]];
+  return (
+    <div className="ontov" onClick={onClose}><div className="ontmodal v360" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 660 }}>
+      <div className="ontmh"><div><span className="ontmid" style={{ color: "#6366F1" }}>Block Explorer · 온체인 추적·검증</span><div className="ontmname">블록 #{block.height.toLocaleString()} <span>· {block.validator}</span></div></div><button onClick={onClose}><X size={19} /></button></div>
+      <div className="ontmbody">
+        <div className="blkverify"><ShieldCheck size={13} /> 무결성 검증 <b>통과</b> · 해시 체인 일치 · 검증자 서명 유효 · 변조 없음</div>
+        <div className="scdfields">{rows.map(([k, v], i) => <div className="scdf" key={i}><span>{k}</span><b>{v}</b></div>)}</div>
+        <div className="blknav"><button disabled={!prev} onClick={() => prev && onNav(prev)}>‹ 이전 블록 {prev ? "#" + prev.height.toLocaleString() : ""}</button><button disabled={!next} onClick={() => next && onNav(next)}>다음 블록 {next ? "#" + next.height.toLocaleString() : ""} ›</button></div>
+        <div className="screlh"><Blocks size={13} /> 포함된 HTK 거래 ({txs.length})</div>
+        <div className="sctablewrap"><table className="sctable"><thead><tr><th>TX ID</th><th>유형</th><th>금액</th><th>From</th><th>To</th></tr></thead>
+          <tbody>{txs.map((t) => <tr key={t.id}><td>{t.id}</td><td>{t.type}</td><td>{t.amount}</td><td>{t.from}</td><td>{t.to}</td></tr>)}</tbody></table></div>
+        <div className="chnote" style={{ marginTop: 8 }}>※ HTK 적립·사용·전송·정산이 이 블록에 <b>불변 기록</b>됩니다 — 사용자는 지갑주소·TX·블록해시로 실제 온체인 기록을 <b>추적·검증</b>할 수 있습니다.</div>
+      </div>
+    </div></div>
+  );
+}
+const FND_VERIFY = {
+  sec: ["탐지 규칙 매칭", "위협 인텔 대조", "자동 차단 실행", "감사로그 기록"],
+  ai: ["헬스체크 통과", "배포 서명 검증", "SLO 준수 확인", "로그 무결성"],
+  hr: ["신원 확인", "권한 매핑 검증", "개인정보 마스킹", "감사 기록"],
+  ga: ["자산 태그 확인", "실사 대사 일치", "감가상각 계산", "소유·이동 이력"],
+  dg: ["스키마 검증", "품질 규칙 통과", "PII 스캔", "데이터 리니지 추적", "접근통제 확인"],
+  audit: ["해시 체인 무결성", "변조 없음", "온체인 앵커 확인", "보존기간 준수"],
+};
+function FoundationRecordTrace({ rec, tbl, d }) {
+  const hash = _fndHash(JSON.stringify(rec)), anchor = _fndHash(hash + "anchor");
+  const steps = FND_VERIFY[d.id] || ["무결성 검증", "감사 기록"];
+  const fields = Object.entries(rec).filter(([k]) => !/^_/.test(k));
+  return (
+    <div className="ontmbody">
+      <div className="blkverify"><ShieldCheck size={13} /> 하네스 추적·검증 프로그램 실행 <b>완료</b> — 모든 통제 통과</div>
+      <div className="scdfields">{fields.map(([k, v], i) => <div className="scdf" key={i}><span>{k}</span><b>{String(v)}</b></div>)}</div>
+      <div className="screlh"><Fingerprint size={13} /> 무결성 · 앵커</div>
+      <div className="scdfields"><div className="scdf"><span>레코드 해시 (SHA)</span><b>{hash}</b></div><div className="scdf"><span>온체인 앵커 (Audit)</span><b>{anchor}</b></div></div>
+      <div className="screlh"><Workflow size={13} /> 검증 프로그램 단계</div>
+      <div className="tracesteps">{steps.map((s, i) => <div className="tracestep" key={i}><Check size={12} /> {s} <span>통과</span></div>)}</div>
+      <div className="chnote" style={{ marginTop: 8 }}>※ 이 레코드는 하네스 추적·검증 프로그램으로 무결성·통제·감사증적이 검증되며, 해시가 <b>Audit 불변로그·블록체인 앵커</b>에 기록됩니다.</div>
+    </div>
+  );
+}
 /* ── 도메인 360° 뷰 ── */
 const FND_DOMKEY = { sec: "incidents", ai: "services", hr: "employees", ga: "assets", dg: "dataAssets", audit: "auditLogs", chain: "txs" };
 function FoundationDomain360({ d, D, onClose }) {
@@ -211,15 +257,19 @@ function FoundationDomain360({ d, D, onClose }) {
   const tbl = FND_TABLES.find((t) => t.key === d.id);
   const sample = rows.slice(0, 6);
   const acts = FND_AGENT_ACTIONS[d.id] || [];
+  const [drill, setDrill] = useState(null); // {block} | {rec}
+  const isChain = d.id === "chain";
+  const openRow = (r) => { if (isChain) { const b = D.blocks.find((x) => x.height === r.block); if (b) setDrill({ block: b }); } else setDrill({ rec: r }); };
   return (
+    <React.Fragment>
     <div className="ontov" onClick={onClose}><div className="ontmodal v360" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 660 }}>
       <div className="ontmh"><div><span className="ontmid" style={{ color: d.c }}>{d.system}</span><div className="ontmname">{d.name} <span>· 360° 뷰</span></div></div><button onClick={onClose}><X size={19} /></button></div>
       <div className="ontmbody">
         <div className="v360kpi">{d.kpis.map(([k, v], i) => <div key={i}><b style={{ color: d.c }}>{v}</b><span>{k}</span></div>)}</div>
         <div className="v360sec"><b><Hash size={12} /> 핵심 오브젝트</b><div className="v360chips">{d.objects.map((o) => <span key={o}>{o}</span>)}</div></div>
-        <div className="v360sec"><b><Search size={12} /> 인스턴스 샘플 ({rows.length.toLocaleString()}건)</b>
+        <div className="v360sec"><b style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><span><Search size={12} /> 인스턴스 샘플 ({rows.length.toLocaleString()}건)</span><span className="v360hint">{isChain ? "행 클릭 → 블록 익스플로러" : "행 클릭 → 추적·검증 프로그램"} ↗</span></b>
           <div className="sctablewrap" style={{ marginTop: 6 }}><table className="sctable"><thead><tr>{tbl.cols.slice(0, 5).map(([k, l]) => <th key={k}>{l}</th>)}</tr></thead>
-            <tbody>{sample.map((r, i) => <tr key={i}>{tbl.cols.slice(0, 5).map(([k]) => <td key={k}>{_fndCell(r[k], k)}</td>)}</tr>)}</tbody></table></div>
+            <tbody>{sample.map((r, i) => <tr key={i} className="clkrow" onClick={() => openRow(r)}>{tbl.cols.slice(0, 5).map(([k]) => <td key={k}>{_fndCell(r[k], k)}</td>)}</tr>)}</tbody></table></div>
         </div>
         <div className="v360grid2">
           <div className="v360sec"><b><Cpu size={12} /> 연결 시스템</b><div className="v360li">{d.system}</div></div>
@@ -228,6 +278,12 @@ function FoundationDomain360({ d, D, onClose }) {
         </div>
       </div>
     </div></div>
+    {drill && drill.block && <FoundationBlockExplorer block={drill.block} D={D} onClose={() => setDrill(null)} onNav={(b) => setDrill({ block: b })} />}
+    {drill && drill.rec && <div className="ontov" onClick={() => setDrill(null)}><div className="ontmodal v360" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 600 }}>
+      <div className="ontmh"><div><span className="ontmid" style={{ color: d.c }}>{d.name.split(" ")[0]} · 추적·검증 하네스</span><div className="ontmname">{drill.rec.id} <span>· Trace &amp; Verify</span></div></div><button onClick={() => setDrill(null)}><X size={19} /></button></div>
+      <FoundationRecordTrace rec={drill.rec} tbl={tbl} d={d} />
+    </div></div>}
+    </React.Fragment>
   );
 }
 function FoundationOntology({ onGo }) {

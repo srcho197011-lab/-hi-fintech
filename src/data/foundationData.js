@@ -30,8 +30,20 @@ function foundationData() {
   const auditLogs = []; for (let i = 0; i < 1600; i++) auditLogs.push({ id: "AUD" + String(i + 1).padStart(6, "0"), ts: dt(2026), actor: "EMP" + String(1 + Math.floor(rng() * 128)).padStart(4, "0"), action: _pick(rng, auActs), target: _pick(rng, dgDom), result: _wpick(rng, auRes), risk: _pick(rng, ["낮음", "낮음", "중간", "높음"]) });
 
   const txTypes = [["적립", 50], ["사용", 30], ["전송", 12], ["NFT 발행", 5], ["정산", 3]];
-  const txs = []; for (let i = 0; i < 1600; i++) { const ty = _wpick(rng, txTypes); txs.push({ id: "TX" + String(i + 1).padStart(6, "0"), hash: "0x" + Math.floor(rng() * 0xffffffff).toString(16).padStart(8, "0") + "…", type: ty, amount: (Math.floor(rng() * 50000)).toLocaleString() + " HTK", from: "0x" + Math.floor(rng() * 0xfffff).toString(16), to: "0x" + Math.floor(rng() * 0xfffff).toString(16), block: 1800000 + Math.floor(rng() * 99999), status: "confirmed" }); }
+  const hex = (n) => "0x" + Math.floor(rng() * 0xffffffff).toString(16).padStart(8, "0") + Math.floor(rng() * 0xffffffff).toString(16).padStart(8, "0");
+  const wallet = () => "0x" + Array.from({ length: 4 }, () => Math.floor(rng() * 0xffff).toString(16).padStart(4, "0")).join("") + "…";
+  const txs = []; for (let i = 0; i < 1600; i++) { const ty = _wpick(rng, txTypes); txs.push({ id: "TX" + String(i + 1).padStart(6, "0"), hash: hex(), type: ty, amount: (Math.floor(rng() * 50000)).toLocaleString() + " HTK", htk: Math.floor(rng() * 50000), from: wallet(), to: wallet(), status: "confirmed" }); }
+  /* 블록 그룹핑 — 블록당 4~9 TX, 순차 높이·이전해시 체인·검증자 */
+  const VALIDATORS = ["HI-Node-01(Seoul)", "HI-Node-02(Busan)", "HI-Node-03(Gwangju)", "HI-Node-04(Daejeon)", "HI-Node-05(Jeju)"];
+  const blocks = []; let cursor = 0, h = 1800000, prevHash = "0x0000000000000000(genesis)";
+  while (cursor < txs.length) {
+    const size = 4 + Math.floor(rng() * 6); const btx = txs.slice(cursor, cursor + size); const bh = hex();
+    const ts = "2026-" + String(1 + Math.floor(rng() * 7)).padStart(2, "0") + "-" + String(1 + Math.floor(rng() * 27)).padStart(2, "0") + " " + String(Math.floor(rng() * 24)).padStart(2, "0") + ":" + String(Math.floor(rng() * 60)).padStart(2, "0") + ":" + String(Math.floor(rng() * 60)).padStart(2, "0");
+    btx.forEach((t) => { t.block = h; t.blockHash = bh; });
+    blocks.push({ height: h, ts, hash: bh, prevHash, validator: _pick(rng, VALIDATORS), txCount: btx.length, txIds: btx.map((t) => t.id), gas: (18 + Math.floor(rng() * 40)) + "K", htkSum: btx.reduce((s, t) => s + t.htk, 0) });
+    prevHash = bh; cursor += size; h++;
+  }
 
-  _fndData = { incidents, services, employees, assets, dataAssets, auditLogs, txs, wallets: cohort.length || 100000 };
+  _fndData = { incidents, services, employees, assets, dataAssets, auditLogs, txs, blocks, validators: VALIDATORS, wallets: cohort.length || 100000 };
   return _fndData;
 }
