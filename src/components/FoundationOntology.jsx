@@ -166,7 +166,73 @@ function FoundationExplorer() {
     </div>
   );
 }
+/* ── 도메인별 책임 AI 에이전트 + 액션 실행 ── */
+const FND_AGENT_ACTIONS = {
+  sec: [{ t: "위협 자동 차단", run: (D) => ({ msg: "탐지 위협 " + D.incidents.filter((x) => x.status === "차단").length + "건 차단정책 적용" }) }, { t: "취약점 스캔", run: () => ({ msg: "전 자산 취약점 스캔 · 패치 오케스트레이션", hitl: true }) }],
+  ai: [{ t: "오토스케일 실행", run: () => ({ msg: "부하 80% 초과 서비스 오토스케일-out" }) }, { t: "카나리 배포", run: () => ({ msg: "신규 빌드 카나리 5% 배포 시작", hitl: true }) }],
+  hr: [{ t: "근태 마감", run: () => ({ msg: "당월 근태 집계·마감 배치", hitl: true }) }, { t: "채용 파이프 동기화", run: () => ({ msg: "채용 진행 후보 상태 동기화" }) }],
+  ga: [{ t: "자산 실사", run: (D) => ({ msg: "관리 자산 " + D.assets.length + "건 실사 대사 시작", hitl: true }) }, { t: "계약 만료 알림", run: () => ({ msg: "만료 임박 계약 담당자 알림 발송" }) }],
+  dg: [{ t: "데이터 품질 스캔", run: (D) => ({ msg: "데이터 자산 " + D.dataAssets.length + "건 품질·이상 스캔" }) }, { t: "PII 마스킹 검증", run: () => ({ msg: "PII 데이터셋 마스킹 정책 검증·적용", hitl: true }) }],
+  audit: [{ t: "감사 스냅샷", run: () => ({ msg: "불변 감사로그 스냅샷·해시 앵커링" }) }, { t: "이상 접근 감사", run: () => ({ msg: "권한 이상 접근 감사 리포트 생성", hitl: true }) }],
+  chain: [{ t: "HTK 정산 배치", run: () => ({ msg: "온체인 HTK 정산 배치·증명 기록", hitl: true }) }, { t: "증명 앵커링", run: () => ({ msg: "오프체인 데이터 해시 온체인 앵커링" }) }],
+};
+function FoundationAgents() {
+  const D = React.useMemo(() => (typeof foundationData === "function" ? foundationData() : null), []);
+  const [log, setLog] = useState([]);
+  const lid = React.useRef(0);
+  if (!D) return null;
+  const run = (d, act) => { const r = act.run(D); const id = ++lid.current; setLog((l) => [{ id, agent: d.agent, c: d.c, msg: r.msg, status: r.hitl ? "승인대기" : "실행완료" }, ...l].slice(0, 12)); if (typeof toast === "function") toast("🤖 " + d.agent + " · " + r.msg); };
+  const approve = (id) => { setLog((l) => l.map((x) => x.id === id ? { ...x, status: "승인완료" } : x)); if (typeof toast === "function") toast("✅ 승인 완료 · 액션 실행"); };
+  return (
+    <div className="ontpanel" style={{ marginTop: 12 }}>
+      <div className="ontph"><Bot size={15} color="#F472B6" /> 도메인 책임 AI 에이전트 · 액션 실행 <span>· {FND_DOMAINS.length} Agents · HITL 승인</span></div>
+      <div className="scagents">
+        {FND_DOMAINS.map((d) => (
+          <div className="scagentcard" key={d.id} style={{ "--ac": d.c }}>
+            <div className="scagenthd"><span className="scagent-i"><d.ic size={18} /></span><div><b>{d.agent}</b><span>{d.name.split(" ")[0]} · {d.system}</span></div></div>
+            <div className="scactbtns">{(FND_AGENT_ACTIONS[d.id] || []).map((act, i) => <button key={i} className="scactbtn" style={{ "--ac": d.c }} onClick={() => run(d, act)}><Play size={11} /> {act.t}</button>)}</div>
+          </div>
+        ))}
+      </div>
+      <div className="scjournalh" style={{ marginTop: 12 }}><Workflow size={13} /> 액션 실행 로그</div>
+      <div className="scactlog">{log.length === 0 ? <div className="scempty">도메인 에이전트의 액션 버튼을 눌러 실행하세요. (HITL 액션은 승인 필요)</div> : log.map((x) => (
+        <div className="scactrow" key={x.id} style={{ "--ac": x.c }}>
+          <span className="scact-a">{x.agent}</span><span className="scact-m">{x.msg}</span>
+          {x.status === "승인대기" ? <button className="scact-appr" onClick={() => approve(x.id)}>승인</button> : <span className={"scact-st " + (x.status === "승인완료" ? "ok" : "done")}>{x.status}</span>}
+        </div>
+      ))}</div>
+    </div>
+  );
+}
+/* ── 도메인 360° 뷰 ── */
+const FND_DOMKEY = { sec: "incidents", ai: "services", hr: "employees", ga: "assets", dg: "dataAssets", audit: "auditLogs", chain: "txs" };
+function FoundationDomain360({ d, D, onClose }) {
+  const rows = D[FND_DOMKEY[d.id]] || [];
+  const tbl = FND_TABLES.find((t) => t.key === d.id);
+  const sample = rows.slice(0, 6);
+  const acts = FND_AGENT_ACTIONS[d.id] || [];
+  return (
+    <div className="ontov" onClick={onClose}><div className="ontmodal v360" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 660 }}>
+      <div className="ontmh"><div><span className="ontmid" style={{ color: d.c }}>{d.system}</span><div className="ontmname">{d.name} <span>· 360° 뷰</span></div></div><button onClick={onClose}><X size={19} /></button></div>
+      <div className="ontmbody">
+        <div className="v360kpi">{d.kpis.map(([k, v], i) => <div key={i}><b style={{ color: d.c }}>{v}</b><span>{k}</span></div>)}</div>
+        <div className="v360sec"><b><Hash size={12} /> 핵심 오브젝트</b><div className="v360chips">{d.objects.map((o) => <span key={o}>{o}</span>)}</div></div>
+        <div className="v360sec"><b><Search size={12} /> 인스턴스 샘플 ({rows.length.toLocaleString()}건)</b>
+          <div className="sctablewrap" style={{ marginTop: 6 }}><table className="sctable"><thead><tr>{tbl.cols.slice(0, 5).map(([k, l]) => <th key={k}>{l}</th>)}</tr></thead>
+            <tbody>{sample.map((r, i) => <tr key={i}>{tbl.cols.slice(0, 5).map(([k]) => <td key={k}>{_fndCell(r[k], k)}</td>)}</tr>)}</tbody></table></div>
+        </div>
+        <div className="v360grid2">
+          <div className="v360sec"><b><Cpu size={12} /> 연결 시스템</b><div className="v360li">{d.system}</div></div>
+          <div className="v360sec"><b><Bot size={12} /> 담당 AI 에이전트</b><div className="v360li"><span style={{ color: d.c, fontWeight: 800 }}>●</span> {d.agent} <span style={{ color: "#34D399" }}>· 정상 가동</span></div>
+            <div className="scactbtns" style={{ marginTop: 6 }}>{acts.map((a, i) => <span key={i} className="fndobj" style={{ color: d.c }}>{a.t}</span>)}</div></div>
+        </div>
+      </div>
+    </div></div>
+  );
+}
 function FoundationOntology({ onGo }) {
+  const D = React.useMemo(() => (typeof foundationData === "function" ? foundationData() : null), []);
+  const [sel, setSel] = useState(null);
   return (
     <div>
       <div className="ontpanel scintro">
@@ -197,8 +263,8 @@ function FoundationOntology({ onGo }) {
         <div className="ontph"><Boxes size={15} color="#A78BFA" /> 도메인 온톨로지 · 오브젝트·지표·시스템 <span>· {FND_DOMAINS.length} Domains</span></div>
         <div className="fndgrid">
           {FND_DOMAINS.map((d) => (
-            <div className="fndcard" key={d.id} style={{ "--oc": d.c }}>
-              <div className="scobjhd"><span className="scobj-i"><d.ic size={16} /></span><b>{d.name}</b></div>
+            <div className="fndcard clk" key={d.id} style={{ "--oc": d.c }} onClick={() => setSel(d)}>
+              <div className="scobjhd"><span className="scobj-i"><d.ic size={16} /></span><b>{d.name}</b><span className="fnd360">360° ›</span></div>
               <div className="scobjtag">{d.desc}</div>
               <div className="fndkpi">{d.kpis.map(([k, v], i) => <div key={i}><b>{v}</b><span>{k}</span></div>)}</div>
               <div className="scobjsys" style={{ marginTop: 8 }}>{d.objects.map((o) => <span key={o} className="fndobj">{o}</span>)}</div>
@@ -208,7 +274,10 @@ function FoundationOntology({ onGo }) {
         </div>
       </div>
 
+      <FoundationAgents />
+
       <div className="chnote" style={{ marginTop: 12 }}>※ HI-Fin 기반 온톨로지는 <b>운영·거버넌스 백본의 시연용 스키마</b>입니다. 오브젝트·지표·담당 에이전트 정의는 표준 참조모델이며, 실제 운영 시 각 도메인 시스템(IAM·MLOps·HRIS·데이터카탈로그·GRC·체인) 연동과 권한·감사(HITL) 구성이 필요합니다.</div>
+      {sel && D && <FoundationDomain360 d={sel} D={D} onClose={() => setSel(null)} />}
     </div>
   );
 }

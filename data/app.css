@@ -943,6 +943,10 @@
 .fndfoot{display:flex;flex-direction:column;gap:4px;margin-top:10px;border-top:1px dashed #2A3A57;padding-top:9px;font-size:10.3px;color:#9DABC7;}
 .fndfoot span{display:flex;align-items:center;gap:5px;}
 .fndfoot span svg{color:var(--oc);flex-shrink:0;}
+.fndcard.clk{cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;}
+.fndcard.clk:hover{transform:translateY(-2px);border-color:var(--oc);box-shadow:0 12px 26px -14px color-mix(in srgb,var(--oc) 60%,transparent);}
+.fndcard .scobjhd{position:relative;}
+.fnd360{position:absolute;top:0;right:0;font-size:9.5px;font-weight:800;color:var(--oc);opacity:.85;}
 @media(max-width:900px){.fndgrid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:560px){.fndgrid{grid-template-columns:1fr;}.scintro .ontobjbar{grid-template-columns:repeat(3,1fr)!important;}}
 
