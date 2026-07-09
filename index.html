@@ -14772,6 +14772,11 @@ function AuthLogin() {
   const [uid, setUid] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
+  // 브라우저 저장 아이디/비번 자동완성·자동입력 차단: 로드 시 readOnly로 두고 사용자가 포커스하면 해제
+  const [ro, setRo] = useState(true);
+  const unlock = () => setRo(false);
+  // 렌더 후 혹시 자동입력된 값이 있으면 비움(딜레이 클리어)
+  useEffect(() => { const id = setTimeout(() => { setUid((v) => (ro ? "" : v)); setPw((v) => (ro ? "" : v)); }, 400); return () => clearTimeout(id); }, []);
   const submit = (e) => {
     if (e) e.preventDefault();
     setErr("");
@@ -14783,11 +14788,14 @@ function AuthLogin() {
     setErr("접근 권한이 없습니다. 승인된 계정만 이용할 수 있습니다.");
   };
   return (
-    <form className="authform" onSubmit={submit}>
+    <form className="authform" onSubmit={submit} autoComplete="off">
+      {/* 브라우저 자동완성 유인용 히든 디코이(실제 필드 자동입력 차단) */}
+      <input type="text" name="username" autoComplete="username" tabIndex={-1} aria-hidden="true" style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }} />
+      <input type="password" name="password" autoComplete="current-password" tabIndex={-1} aria-hidden="true" style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }} />
       <label className="authfield"><span className="authlabel">아이디</span>
-        <input className="authinput" type="text" value={uid} onChange={(e) => setUid(e.target.value)} placeholder="아이디" autoComplete="username" /></label>
+        <input className="authinput" type="text" value={uid} onChange={(e) => setUid(e.target.value)} placeholder="아이디" name="hifin-login-id" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} readOnly={ro} onFocus={unlock} /></label>
       <label className="authfield"><span className="authlabel">비밀번호</span>
-        <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" autoComplete="current-password" /></label>
+        <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" name="hifin-login-pw" autoComplete="new-password" readOnly={ro} onFocus={unlock} /></label>
       {err && <div className="autherr">{err}</div>}
       <button className="authbtn authprimary" type="submit">로그인</button>
     </form>
