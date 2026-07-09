@@ -7795,9 +7795,47 @@ function PlatformDiagram() {
   ];
   return (
     <div className="pdg-wrap" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(165deg,#0B1F3A 0%,#0E2A4E 55%,#0A2340 100%)", borderRadius: 22, padding: "30px 20px 26px", margin: "16px 0" }}>
-      <style>{`@keyframes pdgPulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.14);opacity:.15}}@keyframes pdgFlowMove{0%{background-position:0 0}100%{background-position:0 22px}}@keyframes pdgSpin{to{transform:rotate(360deg)}}.pdg-wrap *{box-sizing:border-box}.pdg-core-ring{animation:pdgPulse 3s ease-in-out infinite}.pdg-spin{animation:pdgSpin 14s linear infinite}@media(max-width:560px){.pdg-vr{grid-template-columns:1fr !important}.pdg-vr>div:nth-child(2){transform:rotate(90deg);margin:2px 0}}`}</style>
+      <style>{`@keyframes pdgPulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.14);opacity:.15}}@keyframes pdgFlowMove{0%{background-position:0 0}100%{background-position:0 22px}}@keyframes pdgSpin{to{transform:rotate(360deg)}}.pdg-wrap *{box-sizing:border-box}.pdg-core-ring{animation:pdgPulse 3s ease-in-out infinite}.pdg-spin{animation:pdgSpin 14s linear infinite}@media(max-width:560px){.pdg-vr{grid-template-columns:1fr !important}.pdg-vr>div:nth-child(2){transform:rotate(90deg);margin:2px 0}}
+@keyframes pdgGlow{0%,100%{box-shadow:0 0 20px -7px rgba(34,211,238,.55),inset 0 0 0 1px rgba(34,211,238,.14)}50%{box-shadow:0 0 34px -2px rgba(34,211,238,.9),inset 0 0 0 1px rgba(34,211,238,.34)}}
+@keyframes pdgShine{0%{left:-65%}55%,100%{left:135%}}
+.pdg-stat{position:absolute;top:20px;left:18px;width:216px;z-index:6;border-radius:16px;padding:12px 14px 11px;background:linear-gradient(155deg,rgba(8,26,48,.94),rgba(10,35,64,.94));border:1px solid rgba(34,211,238,.42);overflow:hidden;animation:pdgGlow 3s ease-in-out infinite;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.pdg-stat::before{content:"";position:absolute;top:0;left:-65%;width:48%;height:100%;background:linear-gradient(100deg,transparent,rgba(103,232,249,.16),transparent);animation:pdgShine 4.8s ease-in-out infinite;pointer-events:none}
+.pdg-stat-hd{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:800;letter-spacing:.8px;color:#67E8F9}
+.pdg-stat-sub{font-size:10px;color:#7FCCE4;font-weight:600;margin:2px 0 9px}
+.pdg-stat-rows{display:flex;flex-direction:column;gap:5px}
+.pdg-stat-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pdg-stat-row>span{font-size:11px;color:#9FD9EC;font-weight:600;white-space:nowrap}
+.pdg-stat-row>span em{font-style:normal;font-size:8px;color:#8fb4d0;margin-left:4px;background:rgba(255,255,255,.07);padding:1px 4px;border-radius:4px;vertical-align:1px}
+.pdg-stat-row>b{color:#E8FBFF;font-weight:900;font-size:16px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.pdg-stat-row>b i{font-style:normal;font-size:9.5px;font-weight:700;color:#7FCCE4;margin-left:1.5px}
+.pdg-stat-row.dim>b{font-size:13px;color:#8fd3e8}
+.pdg-stat-goal{margin-top:9px;padding-top:9px;border-top:1px dashed rgba(34,211,238,.28)}
+.pdg-goal-hd{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:800;letter-spacing:.6px;color:#FBBF24;margin-bottom:6px}
+.pdg-goal-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:4px}
+.pdg-goal-row>span{font-size:11px;color:#9FD9EC;font-weight:600}
+.pdg-goal-row>b{color:#FDE68A;font-weight:900;font-size:15px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.pdg-goal-row>b i{font-style:normal;font-size:9px;font-weight:700;margin-left:1.5px;opacity:.9}
+.pdg-goal-row.hi>b{color:#34D399;font-size:17px}
+.pdg-goal-row.hi>b i{color:#34D399}
+@media(max-width:640px){.pdg-stat{position:static;width:auto;margin:0 0 14px}}`}</style>
       <span style={{ position: "absolute", width: 320, height: 320, top: -120, right: -80, background: "radial-gradient(circle,#22D3EE55,transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
       <span style={{ position: "absolute", width: 300, height: 300, bottom: -120, left: -60, background: "radial-gradient(circle,#7C3AED44,transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
+
+      {/* 대한민국 건강검진 현황 · HI-Fin 회원 목표 (반짝이는 카드) */}
+      <div className="pdg-stat">
+        <div className="pdg-stat-hd"><TrendingUp size={11} /> KOREA 건강검진 현황</div>
+        <div className="pdg-stat-sub">국가건강검진 · 전 국민 규모</div>
+        <div className="pdg-stat-rows">
+          <div className="pdg-stat-row"><span>매년 건강검진</span><b>2,100<i>만명</i></b></div>
+          <div className="pdg-stat-row"><span>검진 경험자<em>누적</em></span><b>4,200<i>만명</i></b></div>
+          <div className="pdg-stat-row dim"><span>일반검진 수검률</span><b>75.4<i>%</i></b></div>
+        </div>
+        <div className="pdg-stat-goal">
+          <div className="pdg-goal-hd"><Target size={11} /> HI-Fin 회원 목표</div>
+          <div className="pdg-goal-row"><span>5년 내 목표</span><b>1,000<i>만명</i></b></div>
+          <div className="pdg-goal-row hi"><span>최종 목표</span><b>3,000<i>만명+</i></b></div>
+        </div>
+      </div>
 
       <div style={{ position: "relative", textAlign: "center", marginBottom: 18 }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,211,238,.12)", border: "1px solid rgba(34,211,238,.3)", color: CY, fontSize: 11, fontWeight: 800, letterSpacing: 1, padding: "5px 13px", borderRadius: 999 }}><Network size={12} /> AI ONTOLOGY PLATFORM</span>
