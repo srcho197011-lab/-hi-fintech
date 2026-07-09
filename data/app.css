@@ -1640,6 +1640,12 @@
 .spcard .spgimg img{width:100%;height:100%;object-fit:contain;padding:9px;display:block;}
 .spcard .spgimg video.spgvid{width:100%;height:100%;object-fit:cover;display:block;background:#0b1020;}
 .spcard .spgmock{color:#0891B2;display:grid;place-items:center;width:100%;height:100%;}
+.spcard .spgslide{position:relative;width:100%;height:100%;}
+.spcard .spgslide img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:9px;opacity:0;transition:opacity .7s ease;}
+.spcard .spgslide img.on{opacity:1;}
+.spcard .spgdots{position:absolute;left:0;right:0;bottom:7px;display:flex;justify-content:center;gap:5px;z-index:2;}
+.spcard .spgdots span{width:6px;height:6px;border-radius:50%;background:rgba(8,145,178,.28);transition:.3s;}
+.spcard .spgdots span.on{background:#0891B2;width:16px;border-radius:4px;}
 .spcard .spgcap{font-size:11px;font-weight:800;color:#fff;text-align:center;opacity:.95;letter-spacing:-.2px;}
 @media(max-width:760px){.spcard .spgallery{grid-template-columns:repeat(2,1fr);}}
 .spcard .spwide{width:100%;margin-top:10px;border-radius:14px;overflow:hidden;box-shadow:0 12px 26px -14px rgba(0,0,0,.5);background:#fff;}

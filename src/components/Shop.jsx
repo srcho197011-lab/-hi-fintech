@@ -141,7 +141,7 @@ function PrecisionNutritionSection() {
 /* 특별제휴 배너 제품 이미지·영상 갤러리(로컬 실제 제품) — 투자자용 프리미엄 배너 */
 const SP_GALLERY = {
   "GN바디닥터": [
-    { name: "요실금 치료기", img: "./data/img/medi/urinary.png" },
+    { name: "요실금 치료기", imgs: ["./data/img/medi/urinary0.png", "./data/img/medi/urinary1.png", "./data/img/medi/urinary2.png", "./data/img/medi/urinary3.png"] },
     { name: "고주파 리페어", video: "./data/img/medi/rf-repair.mp4" },
     { name: "바디닥터 리페어", img: "./data/img/medi/bodydoctor-repair.png" },
     { name: "골관절염 치료기", img: "./data/img/medi/joint.png" },
@@ -153,8 +153,21 @@ const SP_WIDE = {
 };
 function SpGalleryImg({ g }) {
   const [err, setErr] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const imgs = g.imgs && g.imgs.length ? g.imgs : null;
+  useEffect(() => {
+    if (!imgs || imgs.length < 2) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % imgs.length), 2200);
+    return () => clearInterval(t);
+  }, [imgs]);
   if (err) return <div className="spgmock"><Stethoscope size={26} /></div>;
   if (g.video) return <video className="spgvid" src={g.video} autoPlay loop muted playsInline preload="metadata" onError={() => setErr(true)} />;
+  if (imgs) return (
+    <div className="spgslide">
+      {imgs.map((s, i) => <img key={i} src={s} alt={g.name} loading="lazy" referrerPolicy="no-referrer" className={i === idx ? "on" : ""} onError={() => setErr(true)} />)}
+      <div className="spgdots">{imgs.map((_, i) => <span key={i} className={i === idx ? "on" : ""} />)}</div>
+    </div>
+  );
   return <img src={g.img} alt={g.name} loading="lazy" referrerPolicy="no-referrer" onError={() => setErr(true)} />;
 }
 function ShopPartnerCard({ p }) {
