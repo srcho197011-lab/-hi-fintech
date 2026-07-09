@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=336e402fa6" />
+<link rel="stylesheet" href="./data/app.css?v=800de1c304" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=336e402fa6"></script>
-<script src="./src/data/section_data.js?v=336e402fa6"></script>
-<script src="./src/data/demo_members.js?v=336e402fa6"></script>
+<script src="./src/data/dummy_data.js?v=800de1c304"></script>
+<script src="./src/data/section_data.js?v=800de1c304"></script>
+<script src="./src/data/demo_members.js?v=800de1c304"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -8664,7 +8664,7 @@ function OntologySection({ onGo }) {
       {tab === "live" && <OntoLiveSim cohort={cohort} agg={agg} onGo={onGo} />}
       {tab === "explorer" && <OntExplorer cohort={cohort} onGo={onGo} seg={seg} />}
       {tab === "graph" && <div className="ontpanel"><div className="ontph"><Network size={15} color="#22D3EE" /> 온톨로지 스키마 (객체 · 관계)</div><OntGraph agg={agg} /></div>}
-      {tab === "supply" && <SupplyOntology onGo={onGo} />}
+      {tab === "supply" && <SupplyOntology onGo={onGo} onTab={setTab} />}
       {tab === "actions" && <OntActions agg={agg} onSeg={goSeg} />}
       {tab === "finance" && <FinanceSection onGo={onGo} />}
       {tab === "marketing" && <MarketingSection onGo={onGo} />}
@@ -8929,7 +8929,68 @@ function SupplyExplorer() {
     </div>
   );
 }
-function SupplyOntology({ onGo }) {
+/* ── 원가회계(Cost Accounting): 무재고/직배송 원가구조 → 공헌이익·영업이익 ── */
+function SupplyCostAccounting() {
+  const C = React.useMemo(() => (typeof supplyCost === "function" ? supplyCost() : null), []);
+  if (!C) return null;
+  const CATCOL = { "영양제": "#7C3AED", "홈케어의료기": "#0891B2", "건강식단": "#16A34A", "의약외품": "#0EA5E9", "기타": "#64748B" };
+  return (
+    <div className="ontpanel sccost" style={{ marginTop: 12 }}>
+      <div className="ontph"><Scale size={15} color="#F59E0B" /> 원가회계 · Cost Accounting <span>· 무재고/직배송 원가구조 → 공헌이익·영업이익</span></div>
+      <div className="scwf">{C.steps.map(([label, v, c, sub], i) => {
+        const pct = Math.min(100, Math.abs(v) / C.gmv * 100);
+        return (<div className={"scwf-row" + (sub === "s" ? " sub" : "")} key={i}>
+          <span className="scwf-l">{label}</span>
+          <span className="scwf-bar"><i style={{ width: Math.max(2, pct) + "%", background: c }} /></span>
+          <span className="scwf-v" style={{ color: c }}>{v < 0 ? "−" : ""}{_scW(Math.abs(v))}</span>
+        </div>);
+      })}</div>
+      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금. 영업이익률 <b style={{ color: "#34D399" }}>{(C.op / C.gmv * 100).toFixed(1)}%</b>(GMV 대비) · 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비).</div>
+      <div className="scjournalh" style={{ marginTop: 12 }}><PieChart size={13} /> 카테고리별 원가·마진 구조</div>
+      <div className="sccat">{C.cats.map((x) => (
+        <div className="sccatrow" key={x.cat}>
+          <span className="sccat-n" style={{ color: CATCOL[x.cat] || "#94A3B8" }}>{x.cat}</span>
+          <span className="sccat-bar"><i className="cost" style={{ width: (x.costRate * 100) + "%" }} /><i className="mgn" style={{ width: (x.marginRate * 100) + "%" }} /></span>
+          <span className="sccat-v">매출 {_scW(x.rev)} · 원가율 <b>{(x.costRate * 100).toFixed(0)}%</b> · 마진율 <b style={{ color: "#22D3EE" }}>{(x.marginRate * 100).toFixed(0)}%</b></span>
+        </div>
+      ))}</div>
+    </div>
+  );
+}
+/* ── 회계·재무 전기(ERP Posting): 정산 → 손익계산서로 데이터 전달 ── */
+function SupplyLedger({ onTab }) {
+  const F = React.useMemo(() => (typeof supplyFinance === "function" ? supplyFinance() : null), []);
+  if (!F) return null;
+  const KIND = { "수익": "#34D399", "원가": "#F472B6", "자산": "#38BDF8", "부채": "#94A3B8" };
+  return (
+    <div className="ontpanel scledger" style={{ marginTop: 12 }}>
+      <div className="ontph"><Landmark size={15} color="#34D399" /> 회계·재무 전기 (ERP Posting) <span>· 정산 → 손익계산서 전달</span></div>
+      <div className="scflow">
+        <span className="scflow-n"><Receipt size={13} /> 정산(Settlement)</span><i>→</i>
+        <span className="scflow-n"><ScrollText size={13} /> ERP 전기(전표)</span><i>→</i>
+        <span className="scflow-n on"><Landmark size={13} /> 손익계산서·재무제표</span>
+      </div>
+      <div className="scacct">{F.accounts.map(([label, v, c, kind], i) => (
+        <div className="scacctcard" key={i} style={{ "--vc": c }}>
+          <span className="scacct-kind" style={{ color: KIND[kind], borderColor: KIND[kind] }}>{kind}</span>
+          <b>{_scW(v)}</b><span>{label}</span>
+        </div>
+      ))}</div>
+      <div className="scjournalh"><ScrollText size={13} /> 자동 전표 (분개)</div>
+      <div className="scjournal">{F.journals.map(([t, dr, cr, c], i) => (
+        <div className="scjrow" key={i} style={{ "--jc": c }}><span className="scj-t">{t}</span><span className="scj-dr">{dr}</span><span className="scj-cr">{cr}</span></div>
+      ))}</div>
+      <div className="scfsum">
+        <div><b style={{ color: "#34D399" }}>{_scW(F.gmv)}</b><span>매출(GMV)</span></div>
+        <div><b style={{ color: "#F472B6" }}>{_scW(F.supplyCost)}</b><span>매출원가(거래처 공급대금)</span></div>
+        <div><b style={{ color: "#22D3EE" }}>{_scW(F.margin)}</b><span>매출총이익(플랫폼 마진)</span></div>
+      </div>
+      <div className="scdashnote" style={{ marginTop: 10 }}>정산 데이터가 <b>ERP 전표로 자동 전기</b>되어 재무회계의 <b style={{ color: "#34D399" }}>손익계산서 「제품판매 매출 · 건강쇼핑(GMV)」</b>과 매출원가·매입채무·부가세에 반영됩니다.</div>
+      <button className="scfinbtn" onClick={() => onTab && onTab("finance")}><Landmark size={14} /> 재무회계 손익계산서에서 확인 <ChevronRight size={15} /></button>
+    </div>
+  );
+}
+function SupplyOntology({ onGo, onTab }) {
   const CNT = (typeof supplyData === "function") ? supplyData().counts : {};
   const _ck = { vendor: "vendor", product: "product", avail: "availability", contract: "contract", account: "account", order: "order", shipment: "shipment", payment: "settlement" };
   return (
@@ -8950,6 +9011,10 @@ function SupplyOntology({ onGo }) {
       </div>
 
       <SupplyDashboard />
+
+      <SupplyCostAccounting />
+
+      <SupplyLedger onTab={onTab} />
 
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><Workflow size={15} color="#22D3EE" /> 개념도 · Concept Map <span>· 무재고 · 거래처 직배송</span></div>
@@ -11526,6 +11591,81 @@ function supplyData() {
     counts: { vendor: V, product: P, contract: contracts.length, availability: availability.length, account: n, order: orders.length, shipment: shipments.length, settlement: settlements.length },
   };
   return _scData;
+}
+
+/* 공급망 → 회계·재무 전기(轉記) 집계 — 무재고(에이전트) 모델: 매출=마진(순액), 매입=거래처 공급대금 */
+let _scFin = null;
+function supplyFinance() {
+  if (_scFin) return _scFin;
+  const D = supplyData();
+  let gmv = 0, margin = 0, supplyCost = 0, ordActive = 0, ordDone = 0;
+  D.orders.forEach((o) => {
+    if (o.status === "취소") return;
+    gmv += o.amount; margin += o.margin; supplyCost += (o.amount - o.margin);
+    if (o.status === "배송완료") ordDone++; else ordActive++;
+  });
+  let fee = 0, setDone = 0, setDue = 0;
+  D.settlements.forEach((s) => { fee += s.fee; if (s.status === "정산완료") setDone += s.sales; else setDue += s.sales; });
+  const vat = Math.round(gmv / 11);                 // 부가세 예수(총거래 기준)
+  const receivable = Math.round(gmv * 0.12);        // 고객 미수금(진행분)
+  const payable = Math.round(supplyCost * 0.34);    // 거래처 매입채무(정산 예정분)
+  _scFin = {
+    gmv, revenue: margin, supplyCost, margin, fee, vat, receivable, payable, setDone, setDue, ordActive, ordDone,
+    // 손익 기여(당사 관점): 매출=마진(순액 대행수익), 매출원가=거래처 공급대금은 상계(순액인식)
+    accounts: [
+      ["상품판매수익 (매출·GMV)", gmv, "#34D399", "수익"],
+      ["플랫폼 마진 (순액매출)", margin, "#22D3EE", "수익"],
+      ["거래처 공급대금 (매입원가)", supplyCost, "#F472B6", "원가"],
+      ["매입채무 (거래처 미지급)", payable, "#94A3B8", "부채"],
+      ["미수금 (고객)", receivable, "#38BDF8", "자산"],
+      ["부가세예수금", vat, "#FBBF24", "부채"],
+    ],
+    journals: [
+      ["판매 인식", "(차) 미수금 " + gmv, "(대) 상품판매수익·부가세예수", "#38BDF8"],
+      ["매입 인식", "(차) 상품매입원가 " + supplyCost, "(대) 매입채무(거래처)", "#F472B6"],
+      ["거래처 정산·지급", "(차) 매입채무 " + setDone, "(대) 보통예금", "#94A3B8"],
+      ["고객 수금", "(차) 보통예금", "(대) 미수금", "#34D399"],
+    ],
+  };
+  return _scFin;
+}
+
+/* 원가회계(Cost Accounting) — 무재고/직배송 원가구조 + 카테고리별 원가율·공헌이익 */
+let _scCost = null;
+function supplyCost() {
+  if (_scCost) return _scCost;
+  const D = supplyData(), F = supplyFinance();
+  const prodById = {}; D.products.forEach((p) => { prodById[p.id] = p; });
+  const cat = {};
+  D.orders.forEach((o) => {
+    if (o.status === "취소") return;
+    const p = prodById[o.sku]; const c = p ? p.category : "기타";
+    const x = cat[c] || (cat[c] = { rev: 0, cost: 0, margin: 0, qty: 0 });
+    x.rev += o.amount; x.cost += (o.amount - o.margin); x.margin += o.margin; x.qty += o.qty;
+  });
+  const cats = Object.entries(cat).map(([k, v]) => ({ cat: k, ...v, costRate: v.rev ? v.cost / v.rev : 0, marginRate: v.rev ? v.margin / v.rev : 0 })).sort((a, b) => b.rev - a.rev);
+  const gmv = F.gmv, sCost = F.supplyCost, gross = F.margin;
+  const pay = Math.round(gmv * 0.022);      // 결제대행 수수료 2.2%
+  const token = Math.round(gross * 0.25);   // 건강적립금(마진의 25%)
+  const logistics = Math.round((F.ordActive + F.ordDone) * 3000); // 직배송 택배비(거래처 부담·참고)
+  const variable = pay + token;             // 당사 변동비(무재고 → 물류·재고비 미부담)
+  const contribution = gross - variable;    // 공헌이익
+  const fixed = Math.round(gross * 0.34);   // 고정비 배분(운영·인건·서버, 시연 추정)
+  const op = contribution - fixed;          // 영업이익
+  _scCost = {
+    gmv, supplyCost: sCost, gross, pay, token, logistics, variable, contribution, fixed, op, cats,
+    steps: [
+      ["매출 (GMV)", gmv, "#34D399", "s"],
+      ["− 거래처 공급원가 (매입)", -sCost, "#F472B6", ""],
+      ["= 매출총이익 (플랫폼 마진)", gross, "#22D3EE", "s"],
+      ["− 결제대행 수수료 (2.2%)", -pay, "#94A3B8", ""],
+      ["− 건강적립금 (토큰, 마진25%)", -token, "#67E8F9", ""],
+      ["= 공헌이익 (Contribution)", contribution, "#818CF8", "s"],
+      ["− 고정비 배분 (운영·인건·서버)", -fixed, "#F59E0B", ""],
+      ["= 영업이익 (Operating)", op, "#34D399", "s"],
+    ],
+  };
+  return _scCost;
 }
 
 /* 고객·계정(Account) — pilotCohort(10만) 파생. 세그먼트·등급·LTV·이탈스코어 결정적 부여 */

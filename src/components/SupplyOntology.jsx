@@ -252,7 +252,68 @@ function SupplyExplorer() {
     </div>
   );
 }
-function SupplyOntology({ onGo }) {
+/* ── 원가회계(Cost Accounting): 무재고/직배송 원가구조 → 공헌이익·영업이익 ── */
+function SupplyCostAccounting() {
+  const C = React.useMemo(() => (typeof supplyCost === "function" ? supplyCost() : null), []);
+  if (!C) return null;
+  const CATCOL = { "영양제": "#7C3AED", "홈케어의료기": "#0891B2", "건강식단": "#16A34A", "의약외품": "#0EA5E9", "기타": "#64748B" };
+  return (
+    <div className="ontpanel sccost" style={{ marginTop: 12 }}>
+      <div className="ontph"><Scale size={15} color="#F59E0B" /> 원가회계 · Cost Accounting <span>· 무재고/직배송 원가구조 → 공헌이익·영업이익</span></div>
+      <div className="scwf">{C.steps.map(([label, v, c, sub], i) => {
+        const pct = Math.min(100, Math.abs(v) / C.gmv * 100);
+        return (<div className={"scwf-row" + (sub === "s" ? " sub" : "")} key={i}>
+          <span className="scwf-l">{label}</span>
+          <span className="scwf-bar"><i style={{ width: Math.max(2, pct) + "%", background: c }} /></span>
+          <span className="scwf-v" style={{ color: c }}>{v < 0 ? "−" : ""}{_scW(Math.abs(v))}</span>
+        </div>);
+      })}</div>
+      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금. 영업이익률 <b style={{ color: "#34D399" }}>{(C.op / C.gmv * 100).toFixed(1)}%</b>(GMV 대비) · 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비).</div>
+      <div className="scjournalh" style={{ marginTop: 12 }}><PieChart size={13} /> 카테고리별 원가·마진 구조</div>
+      <div className="sccat">{C.cats.map((x) => (
+        <div className="sccatrow" key={x.cat}>
+          <span className="sccat-n" style={{ color: CATCOL[x.cat] || "#94A3B8" }}>{x.cat}</span>
+          <span className="sccat-bar"><i className="cost" style={{ width: (x.costRate * 100) + "%" }} /><i className="mgn" style={{ width: (x.marginRate * 100) + "%" }} /></span>
+          <span className="sccat-v">매출 {_scW(x.rev)} · 원가율 <b>{(x.costRate * 100).toFixed(0)}%</b> · 마진율 <b style={{ color: "#22D3EE" }}>{(x.marginRate * 100).toFixed(0)}%</b></span>
+        </div>
+      ))}</div>
+    </div>
+  );
+}
+/* ── 회계·재무 전기(ERP Posting): 정산 → 손익계산서로 데이터 전달 ── */
+function SupplyLedger({ onTab }) {
+  const F = React.useMemo(() => (typeof supplyFinance === "function" ? supplyFinance() : null), []);
+  if (!F) return null;
+  const KIND = { "수익": "#34D399", "원가": "#F472B6", "자산": "#38BDF8", "부채": "#94A3B8" };
+  return (
+    <div className="ontpanel scledger" style={{ marginTop: 12 }}>
+      <div className="ontph"><Landmark size={15} color="#34D399" /> 회계·재무 전기 (ERP Posting) <span>· 정산 → 손익계산서 전달</span></div>
+      <div className="scflow">
+        <span className="scflow-n"><Receipt size={13} /> 정산(Settlement)</span><i>→</i>
+        <span className="scflow-n"><ScrollText size={13} /> ERP 전기(전표)</span><i>→</i>
+        <span className="scflow-n on"><Landmark size={13} /> 손익계산서·재무제표</span>
+      </div>
+      <div className="scacct">{F.accounts.map(([label, v, c, kind], i) => (
+        <div className="scacctcard" key={i} style={{ "--vc": c }}>
+          <span className="scacct-kind" style={{ color: KIND[kind], borderColor: KIND[kind] }}>{kind}</span>
+          <b>{_scW(v)}</b><span>{label}</span>
+        </div>
+      ))}</div>
+      <div className="scjournalh"><ScrollText size={13} /> 자동 전표 (분개)</div>
+      <div className="scjournal">{F.journals.map(([t, dr, cr, c], i) => (
+        <div className="scjrow" key={i} style={{ "--jc": c }}><span className="scj-t">{t}</span><span className="scj-dr">{dr}</span><span className="scj-cr">{cr}</span></div>
+      ))}</div>
+      <div className="scfsum">
+        <div><b style={{ color: "#34D399" }}>{_scW(F.gmv)}</b><span>매출(GMV)</span></div>
+        <div><b style={{ color: "#F472B6" }}>{_scW(F.supplyCost)}</b><span>매출원가(거래처 공급대금)</span></div>
+        <div><b style={{ color: "#22D3EE" }}>{_scW(F.margin)}</b><span>매출총이익(플랫폼 마진)</span></div>
+      </div>
+      <div className="scdashnote" style={{ marginTop: 10 }}>정산 데이터가 <b>ERP 전표로 자동 전기</b>되어 재무회계의 <b style={{ color: "#34D399" }}>손익계산서 「제품판매 매출 · 건강쇼핑(GMV)」</b>과 매출원가·매입채무·부가세에 반영됩니다.</div>
+      <button className="scfinbtn" onClick={() => onTab && onTab("finance")}><Landmark size={14} /> 재무회계 손익계산서에서 확인 <ChevronRight size={15} /></button>
+    </div>
+  );
+}
+function SupplyOntology({ onGo, onTab }) {
   const CNT = (typeof supplyData === "function") ? supplyData().counts : {};
   const _ck = { vendor: "vendor", product: "product", avail: "availability", contract: "contract", account: "account", order: "order", shipment: "shipment", payment: "settlement" };
   return (
@@ -273,6 +334,10 @@ function SupplyOntology({ onGo }) {
       </div>
 
       <SupplyDashboard />
+
+      <SupplyCostAccounting />
+
+      <SupplyLedger onTab={onTab} />
 
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><Workflow size={15} color="#22D3EE" /> 개념도 · Concept Map <span>· 무재고 · 거래처 직배송</span></div>

@@ -525,7 +525,7 @@ function OntologySection({ onGo }) {
       {tab === "live" && <OntoLiveSim cohort={cohort} agg={agg} onGo={onGo} />}
       {tab === "explorer" && <OntExplorer cohort={cohort} onGo={onGo} seg={seg} />}
       {tab === "graph" && <div className="ontpanel"><div className="ontph"><Network size={15} color="#22D3EE" /> 온톨로지 스키마 (객체 · 관계)</div><OntGraph agg={agg} /></div>}
-      {tab === "supply" && <SupplyOntology onGo={onGo} />}
+      {tab === "supply" && <SupplyOntology onGo={onGo} onTab={setTab} />}
       {tab === "actions" && <OntActions agg={agg} onSeg={goSeg} />}
       {tab === "finance" && <FinanceSection onGo={onGo} />}
       {tab === "marketing" && <MarketingSection onGo={onGo} />}

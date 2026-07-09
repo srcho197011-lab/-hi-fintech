@@ -183,6 +183,81 @@ function supplyData() {
   return _scData;
 }
 
+/* 공급망 → 회계·재무 전기(轉記) 집계 — 무재고(에이전트) 모델: 매출=마진(순액), 매입=거래처 공급대금 */
+let _scFin = null;
+function supplyFinance() {
+  if (_scFin) return _scFin;
+  const D = supplyData();
+  let gmv = 0, margin = 0, supplyCost = 0, ordActive = 0, ordDone = 0;
+  D.orders.forEach((o) => {
+    if (o.status === "취소") return;
+    gmv += o.amount; margin += o.margin; supplyCost += (o.amount - o.margin);
+    if (o.status === "배송완료") ordDone++; else ordActive++;
+  });
+  let fee = 0, setDone = 0, setDue = 0;
+  D.settlements.forEach((s) => { fee += s.fee; if (s.status === "정산완료") setDone += s.sales; else setDue += s.sales; });
+  const vat = Math.round(gmv / 11);                 // 부가세 예수(총거래 기준)
+  const receivable = Math.round(gmv * 0.12);        // 고객 미수금(진행분)
+  const payable = Math.round(supplyCost * 0.34);    // 거래처 매입채무(정산 예정분)
+  _scFin = {
+    gmv, revenue: margin, supplyCost, margin, fee, vat, receivable, payable, setDone, setDue, ordActive, ordDone,
+    // 손익 기여(당사 관점): 매출=마진(순액 대행수익), 매출원가=거래처 공급대금은 상계(순액인식)
+    accounts: [
+      ["상품판매수익 (매출·GMV)", gmv, "#34D399", "수익"],
+      ["플랫폼 마진 (순액매출)", margin, "#22D3EE", "수익"],
+      ["거래처 공급대금 (매입원가)", supplyCost, "#F472B6", "원가"],
+      ["매입채무 (거래처 미지급)", payable, "#94A3B8", "부채"],
+      ["미수금 (고객)", receivable, "#38BDF8", "자산"],
+      ["부가세예수금", vat, "#FBBF24", "부채"],
+    ],
+    journals: [
+      ["판매 인식", "(차) 미수금 " + gmv, "(대) 상품판매수익·부가세예수", "#38BDF8"],
+      ["매입 인식", "(차) 상품매입원가 " + supplyCost, "(대) 매입채무(거래처)", "#F472B6"],
+      ["거래처 정산·지급", "(차) 매입채무 " + setDone, "(대) 보통예금", "#94A3B8"],
+      ["고객 수금", "(차) 보통예금", "(대) 미수금", "#34D399"],
+    ],
+  };
+  return _scFin;
+}
+
+/* 원가회계(Cost Accounting) — 무재고/직배송 원가구조 + 카테고리별 원가율·공헌이익 */
+let _scCost = null;
+function supplyCost() {
+  if (_scCost) return _scCost;
+  const D = supplyData(), F = supplyFinance();
+  const prodById = {}; D.products.forEach((p) => { prodById[p.id] = p; });
+  const cat = {};
+  D.orders.forEach((o) => {
+    if (o.status === "취소") return;
+    const p = prodById[o.sku]; const c = p ? p.category : "기타";
+    const x = cat[c] || (cat[c] = { rev: 0, cost: 0, margin: 0, qty: 0 });
+    x.rev += o.amount; x.cost += (o.amount - o.margin); x.margin += o.margin; x.qty += o.qty;
+  });
+  const cats = Object.entries(cat).map(([k, v]) => ({ cat: k, ...v, costRate: v.rev ? v.cost / v.rev : 0, marginRate: v.rev ? v.margin / v.rev : 0 })).sort((a, b) => b.rev - a.rev);
+  const gmv = F.gmv, sCost = F.supplyCost, gross = F.margin;
+  const pay = Math.round(gmv * 0.022);      // 결제대행 수수료 2.2%
+  const token = Math.round(gross * 0.25);   // 건강적립금(마진의 25%)
+  const logistics = Math.round((F.ordActive + F.ordDone) * 3000); // 직배송 택배비(거래처 부담·참고)
+  const variable = pay + token;             // 당사 변동비(무재고 → 물류·재고비 미부담)
+  const contribution = gross - variable;    // 공헌이익
+  const fixed = Math.round(gross * 0.34);   // 고정비 배분(운영·인건·서버, 시연 추정)
+  const op = contribution - fixed;          // 영업이익
+  _scCost = {
+    gmv, supplyCost: sCost, gross, pay, token, logistics, variable, contribution, fixed, op, cats,
+    steps: [
+      ["매출 (GMV)", gmv, "#34D399", "s"],
+      ["− 거래처 공급원가 (매입)", -sCost, "#F472B6", ""],
+      ["= 매출총이익 (플랫폼 마진)", gross, "#22D3EE", "s"],
+      ["− 결제대행 수수료 (2.2%)", -pay, "#94A3B8", ""],
+      ["− 건강적립금 (토큰, 마진25%)", -token, "#67E8F9", ""],
+      ["= 공헌이익 (Contribution)", contribution, "#818CF8", "s"],
+      ["− 고정비 배분 (운영·인건·서버)", -fixed, "#F59E0B", ""],
+      ["= 영업이익 (Operating)", op, "#34D399", "s"],
+    ],
+  };
+  return _scCost;
+}
+
 /* 고객·계정(Account) — pilotCohort(10만) 파생. 세그먼트·등급·LTV·이탈스코어 결정적 부여 */
 let _scAccounts = null;
 function supplyAccounts() {
