@@ -77,6 +77,95 @@ function FoundationGraph() {
   );
 }
 
+/* ── HI-Fin 기반 실시간 현황판 ── */
+function FoundationLiveBoard() {
+  const D = React.useMemo(() => (typeof foundationData === "function" ? foundationData() : null), []);
+  const st = React.useRef(null);
+  const [run, setRun] = useState(true);
+  const [, force] = useState(0);
+  if (D && !st.current) st.current = { t: 0, sec: 0, tx: 0, aud: 0, dep: 0, load: 34, sla: 99.97, dq: 96.4, feed: [], alerts: [], work: 0 };
+  useEffect(() => {
+    if (!run || !D) return;
+    const id = setInterval(() => {
+      const s = st.current; const t = (s.t += 1);
+      s.sec += Math.floor(Math.random() * 4); s.tx += Math.floor(2 + Math.random() * 9); s.aud += Math.floor(3 + Math.random() * 11);
+      if (t % 5 === 0) s.dep += 1;
+      s.load = Math.max(18, Math.min(88, s.load + (Math.random() * 10 - 5))); s.sla = +(99.9 + Math.random() * 0.09).toFixed(2); s.dq = +(95.5 + Math.random() * 1.5).toFixed(1); s.work = t % FND_DOMAINS.length;
+      const EV = [["보안", "#F87171", "위협 차단 · " + ["비인가접근", "피싱", "악성코드", "DDoS"][t % 4]], ["배포", "#38BDF8", ["auth", "shop", "doctor-ai", "wallet"][t % 4] + "-svc 배포 완료"], ["감사", "#22D3EE", "감사 로그 기록 · 권한변경 승인"], ["온체인", "#6366F1", "HTK 트랜잭션 confirmed · +" + (Math.floor(Math.random() * 5) * 1000).toLocaleString() + " HTK"], ["데이터", "#A78BFA", "데이터 품질 스캔 완료 · 이상 0"]];
+      const e = EV[t % EV.length]; s.feed.unshift({ id: "e" + t, k: e[0], c: e[1], x: e[2] }); s.feed = s.feed.slice(0, 9);
+      if (t % 4 === 0) { const A = [["보안경보", "#F87171", "취약점 CVE-2026-" + (1000 + Math.floor(Math.random() * 8999)) + " 탐지 → 패치"], ["용량경보", "#FBBF24", "서비스 CPU 80% 초과 → 오토스케일"], ["감사이슈", "#22D3EE", "권한 이상 접근 거부 · EMP" + String(1 + Math.floor(Math.random() * 128)).padStart(4, "0")]]; const a = A[Math.floor(t / 4) % A.length]; s.alerts.unshift({ id: t, k: a[0], c: a[1], x: a[2] }); s.alerts = s.alerts.slice(0, 5); }
+      force((x) => x + 1);
+    }, 1200);
+    return () => clearInterval(id);
+  }, [run, D]);
+  if (!D || !st.current) return null;
+  const s = st.current;
+  const kpi = [["실시간 위협 차단", s.sec.toLocaleString(), "#F87171"], ["온체인 TX", s.tx.toLocaleString(), "#6366F1"], ["감사 이벤트", s.aud.toLocaleString(), "#22D3EE"], ["서비스 부하", Math.round(s.load) + "%", "#38BDF8"], ["누적 배포", s.dep.toLocaleString(), "#34D399"]];
+  return (
+    <div className="ontpanel lbwrap" style={{ marginTop: 12 }}>
+      <div className="ontph"><Gauge size={15} color="#22D3EE" /> HI-Fin 실시간 현황판 <span className={"lblive" + (run ? " on" : "")}>{run ? "● LIVE" : "○ 정지"}</span>
+        <span style={{ marginLeft: "auto" }}><button className="scsimbtn" onClick={() => setRun((r) => !r)}>{run ? <><Pause size={13} /> 정지</> : <><Play size={13} /> 재생</>}</button></span>
+      </div>
+      <div className="lbkpi">{kpi.map(([k, v, c], i) => <div key={i}><b style={{ color: c }}>{v}</b><span>{k}</span></div>)}</div>
+      <div className="lbcols">
+        <div className="lbcol">
+          <div className="lbh"><Server size={13} color="#38BDF8" /> 인프라·보안 상태</div>
+          <div className="lbgauge"><span className="lbg-l">서비스 SLA</span><span className="lbg-bar"><i style={{ width: (s.sla - 99) / 1 * 100 + "%", background: "#34D399" }} /></span><span className="lbg-v" style={{ color: "#34D399" }}>{s.sla}%</span></div>
+          <div className="lbgauge"><span className="lbg-l">서버 부하</span><span className="lbg-bar"><i style={{ width: s.load + "%", background: s.load > 75 ? "#F87171" : "#38BDF8" }} /></span><span className="lbg-v" style={{ color: s.load > 75 ? "#F87171" : "#38BDF8" }}>{Math.round(s.load)}%</span></div>
+          <div className="lbgauge"><span className="lbg-l">데이터 품질</span><span className="lbg-bar"><i style={{ width: s.dq + "%", background: "#A78BFA" }} /></span><span className="lbg-v" style={{ color: "#A78BFA" }}>{s.dq}</span></div>
+          <div className="lbmini"><span className="lbdot pulse" style={{ background: "#F87171" }} /> 보안관제 SOC 실시간 감시 · 위협 자동 차단</div>
+        </div>
+        <div className="lbcol">
+          <div className="lbh"><ShieldCheck size={13} color="#F472B6" /> 도메인 상태</div>
+          <div className="lbagents">{FND_DOMAINS.map((d, i) => <div className="lbagent" key={d.id}><span className={"lbdot" + (i === s.work ? " pulse" : "")} style={{ background: i === s.work ? "#FBBF24" : "#34D399" }} /><span className="lba-n">{d.name.split(" ")[0]}</span><span className="lba-s" style={{ color: i === s.work ? "#FBBF24" : "#34D399" }}>{i === s.work ? "처리중" : "정상"}</span></div>)}</div>
+        </div>
+        <div className="lbcol">
+          <div className="lbh"><AlertTriangle size={13} color="#FBBF24" /> 실시간 알림</div>
+          <div className="lbalerts">{s.alerts.length === 0 ? <div className="scempty">알림 대기 중…</div> : s.alerts.map((a) => <div className="lbalert" key={a.id}><span className="lba-tag" style={{ color: a.c, borderColor: a.c }}>{a.k}</span><span className="lba-x">{a.x}</span></div>)}</div>
+        </div>
+      </div>
+      <div className="lbcol" style={{ marginTop: 10 }}>
+        <div className="lbh"><Zap size={13} color="#818CF8" /> 실시간 이벤트 (보안·배포·감사·온체인·데이터)</div>
+        <div className="lbfeed">{s.feed.length === 0 ? <div className="scempty">이벤트 대기 중…</div> : s.feed.map((f) => <div className="lbfeedrow" key={f.id}><span className="lbf-t" style={{ color: f.c, borderColor: f.c }}>{f.k}</span><span className="lbf-x">{f.x}</span></div>)}</div>
+      </div>
+    </div>
+  );
+}
+/* ── HI-Fin 도메인 데이터 하우스 ── */
+const FND_TABLES = [
+  { key: "sec", label: "보안 인시던트", ic: ShieldCheck, c: "#F87171", ph: "유형·심각도·출처 검색", get: (d) => d.incidents, cols: [["id", "ID"], ["ts", "일시"], ["type", "유형"], ["severity", "심각도"], ["source", "출처IP"], ["status", "상태"]], search: (r, q) => (r.id + r.type + r.severity + r.source + r.status).includes(q) },
+  { key: "ai", label: "IT 서비스", ic: Server, c: "#38BDF8", ph: "서비스·유형·상태 검색", get: (d) => d.services, cols: [["id", "ID"], ["name", "서비스"], ["type", "유형"], ["status", "상태"], ["uptime", "가동률"], ["cpu", "CPU"]], search: (r, q) => (r.id + r.name + r.type + r.status).includes(q) },
+  { key: "hr", label: "임직원", ic: Users, c: "#34D399", ph: "이름·부서·직급 검색", get: (d) => d.employees, cols: [["id", "사번"], ["name", "이름"], ["dept", "부서"], ["position", "직급"], ["join", "입사"], ["status", "상태"]], search: (r, q) => (r.id + r.name + r.dept + r.position + r.status).includes(q) },
+  { key: "ga", label: "자산", ic: Building, c: "#FBBF24", ph: "자산·분류·부서 검색", get: (d) => d.assets, cols: [["id", "ID"], ["name", "자산"], ["category", "분류"], ["value", "가액"], ["dept", "부서"], ["status", "상태"]], search: (r, q) => (r.id + r.name + r.category + r.dept + r.status).includes(q) },
+  { key: "dg", label: "데이터 자산", ic: Database, c: "#A78BFA", ph: "데이터셋·도메인·PII 검색", get: (d) => d.dataAssets, cols: [["id", "ID"], ["name", "데이터셋"], ["domain", "도메인"], ["quality", "품질"], ["pii", "개인정보"], ["masking", "마스킹"]], search: (r, q) => (r.id + r.name + r.domain + r.pii).includes(q) },
+  { key: "audit", label: "감사 로그", ic: ScrollText, c: "#22D3EE", ph: "actor·행위·대상 검색", get: (d) => d.auditLogs, cols: [["id", "ID"], ["ts", "일시"], ["actor", "actor"], ["action", "행위"], ["target", "대상"], ["result", "결과"]], search: (r, q) => (r.id + r.actor + r.action + r.target + r.result).includes(q) },
+  { key: "chain", label: "온체인 TX", ic: Blocks, c: "#6366F1", ph: "해시·유형·블록 검색", get: (d) => d.txs, cols: [["id", "ID"], ["hash", "해시"], ["type", "유형"], ["amount", "금액"], ["block", "블록"], ["status", "상태"]], search: (r, q) => (r.id + r.hash + r.type + String(r.block)).includes(q) },
+];
+function _fndCell(v, k) { if (v == null) return ""; if (k === "value" && typeof v === "number") return (typeof _scW === "function" ? _scW(v) : v.toLocaleString()); if (typeof v === "number") return v.toLocaleString(); return v; }
+function FoundationExplorer() {
+  const D = React.useMemo(() => (typeof foundationData === "function" ? foundationData() : null), []);
+  const [tab, setTab] = useState("sec");
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(0);
+  if (!D) return null;
+  const T = FND_TABLES.find((t) => t.key === tab);
+  const rows = T.get(D); const qq = q.trim();
+  const filtered = qq ? rows.filter((r) => T.search(r, qq)) : rows;
+  const per = 12; const pages = Math.max(1, Math.ceil(filtered.length / per));
+  const pg = Math.min(page, pages - 1);
+  const view = filtered.slice(pg * per, pg * per + per);
+  return (
+    <div className="ontpanel" style={{ marginTop: 12 }}>
+      <div className="ontph"><Search size={15} color="#38BDF8" /> 도메인 데이터 하우스 · 오브젝트 검색 <span>· 7 Domains</span></div>
+      <div className="sctabs">{FND_TABLES.map((t) => <button key={t.key} className={"sctab" + (tab === t.key ? " on" : "")} style={{ "--tc": t.c }} onClick={() => { setTab(t.key); setQ(""); setPage(0); }}><t.ic size={13} /> {t.label} <i>{t.get(D).length.toLocaleString()}</i></button>)}</div>
+      <div className="scsearch"><Search size={14} /><input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder={T.ph} /><span>{filtered.length.toLocaleString()}건</span></div>
+      <div className="sctablewrap"><table className="sctable"><thead><tr>{T.cols.map(([k, l]) => <th key={k}>{l}</th>)}</tr></thead>
+        <tbody>{view.map((r, i) => <tr key={i}>{T.cols.map(([k]) => <td key={k}>{_fndCell(r[k], k)}</td>)}</tr>)}</tbody></table></div>
+      {filtered.length === 0 && <div className="scempty">검색 결과가 없습니다.</div>}
+      <div className="scpager"><button disabled={pg <= 0} onClick={() => setPage(pg - 1)}>‹ 이전</button><span>{(pg + 1).toLocaleString()} / {pages.toLocaleString()} 페이지</span><button disabled={pg >= pages - 1} onClick={() => setPage(pg + 1)}>다음 ›</button></div>
+    </div>
+  );
+}
 function FoundationOntology({ onGo }) {
   return (
     <div>
@@ -95,10 +184,14 @@ function FoundationOntology({ onGo }) {
         </div>
       </div>
 
+      <FoundationLiveBoard />
+
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><Workflow size={15} color="#22D3EE" /> 개념도 · Foundation Map <span>· 7 도메인 × HI-Fin 플랫폼</span></div>
         <FoundationGraph />
       </div>
+
+      <FoundationExplorer />
 
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><Boxes size={15} color="#A78BFA" /> 도메인 온톨로지 · 오브젝트·지표·시스템 <span>· {FND_DOMAINS.length} Domains</span></div>
