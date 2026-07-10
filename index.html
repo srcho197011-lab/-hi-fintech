@@ -1769,7 +1769,7 @@ function SuperAgentSection({ onGo }) {
 let UID = 100;
 const now = () => { const d = new Date(); let h = d.getHours(); const m = String(d.getMinutes()).padStart(2, "0"); const ap = h < 12 ? "오전" : "오후"; h = h % 12 || 12; return `${ap} ${h}:${m}`; };
 /* 채팅 액션 버튼 → 섹션 네비게이션 매핑 */
-const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진료 안내": "hospital", "💊 영양 및 홈케어의료기": "shop", "🥗 건강 식단 안내": "shop" };
+const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진료 안내": "hospital", "💊 영양 및 홈케어의료기": "shop", "🥗 건강 식단 안내": "shop", "간편단기특화보험 보기": "insurance" };
 /* Super Agent → 검진 화면 AI 주치의 핸드오프 씨앗(건강 질문을 넘겨받아 이어서 상담) */
 let _doctorSeed = null;
 const DOCTOR_HANDOFF = "🩺 검진 화면에서 이어 상담";
@@ -2793,6 +2793,8 @@ function aiRespond(text, corpus, report, QA) {
   if (report && report.meta && /리포트|건강분석|건강 분석|종합\s*분석|건강\s*총평|전체.*분석|분석.*리포트|리포트.*분석/.test(text)) {
     const _rc = reportAnalysisCards(report); if (_rc) return _rc;
   }
+  // AI KB 라운지 RAG — 검진 수치 판정 + 근거 + 관련 보험·건강미션(예: '공복혈당 110', '혈압 140/90', 'BMI 27')
+  if (typeof kbCheckupCounsel === "function") { const _kb = kbCheckupCounsel(text); if (_kb) return _kb; }
   // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
   if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
   const _topics = multiTopicCounsel(text);
@@ -14363,6 +14365,70 @@ const KB_CHECKUP = [
 ];
 /* KB 적재 메타(전 항목 공통) */
 const KB_CHECKUP_META = { domain: "건강검진", fresh: "최신", status: "승인", reviewedBy: "의료 자문(검토완료)", loadedAt: "2026-07", count: KB_CHECKUP.length };
+
+/* ── ② RAG 연결: 검진 수치 → KB 판정 + 근거 + 관련 보험·건강미션 ── */
+const KB_CHK_MATCH = [
+  { id: "chk-bp", keys: ["혈압"], special: "bp", rng: [60, 300] },
+  { id: "chk-hba1c", keys: ["당화혈색소", "당화", "hba1c", "a1c"], band: (v) => v < 5.7 ? 0 : v < 6.5 ? 1 : 2, labels: ["정상", "당뇨 전단계", "당뇨병"], rng: [3, 20] },
+  { id: "chk-fbs", keys: ["공복혈당", "혈당"], band: (v) => v < 100 ? 0 : v < 126 ? 1 : 2, labels: ["정상", "공복혈당장애(당뇨 전단계)", "당뇨병 의심"], rng: [40, 600] },
+  { id: "chk-ldl", keys: ["ldl", "엘디엘"], band: (v) => v < 130 ? 0 : v < 160 ? 1 : 2, labels: ["적정~정상", "경계", "높음"], rng: [20, 400] },
+  { id: "chk-hdl", keys: ["hdl", "에이치디엘"], band: (v) => v >= 60 ? 0 : v >= 40 ? 1 : 2, labels: ["좋음", "보통", "낮음"], rng: [10, 150] },
+  { id: "chk-tg", keys: ["중성지방", "트리글리", "tg"], band: (v) => v < 150 ? 0 : v < 200 ? 1 : 2, labels: ["적정", "경계", "높음"], rng: [20, 3000] },
+  { id: "chk-tc", keys: ["총콜레스테롤", "콜레스테롤", "콜레스"], band: (v) => v < 200 ? 0 : v < 240 ? 1 : 2, labels: ["적정", "경계", "높음"], rng: [50, 600] },
+  { id: "chk-bmi", keys: ["bmi", "체질량", "비만도"], band: (v) => v < 18.5 ? 1 : v < 23 ? 0 : v < 25 ? 1 : 2, labels: ["정상", "주의(저체중/과체중)", "비만"], rng: [10, 70] },
+  { id: "chk-ast", keys: ["ast", "sgot"], band: (v) => v <= 40 ? 0 : v <= 50 ? 1 : 2, labels: ["정상", "경계", "상승"], rng: [1, 2000] },
+  { id: "chk-alt", keys: ["alt", "sgpt"], band: (v) => v <= 40 ? 0 : v <= 50 ? 1 : 2, labels: ["정상", "경계", "상승"], rng: [1, 2000] },
+  { id: "chk-ggt", keys: ["감마지티피", "감마", "ggt", "gtp"], band: (v) => v <= 63 ? 0 : v <= 100 ? 1 : 2, labels: ["정상", "경계", "상승"], rng: [1, 3000] },
+  { id: "chk-egfr", keys: ["egfr", "사구체", "여과율"], band: (v) => v >= 90 ? 0 : v >= 60 ? 1 : 2, labels: ["정상", "경도감소", "만성콩팥병 의심"], rng: [1, 200] },
+];
+const KB_CHK_MISSION = {
+  "chk-fbs": ["정상 혈당 유지 — 정제탄수화물 절제·주 150분 유산소", "식후 10분 걷기·정제탄수화물↓·체중 5% 감량·3개월 후 재검", "공복혈당 자가측정·내분비내과 상담·식이·운동 집중관리"],
+  "chk-hba1c": ["균형식·규칙 운동 유지", "저당·고식이섬유 식단·주 3회 운동·3개월 후 재검", "혈당관리 프로그램·내분비내과 상담"],
+  "chk-bp": ["저염식·주 150분 유산소 유지", "저염(하루 5g↓)·체중감량·가정혈압 기록·1개월 관찰", "가정혈압 측정·심장내과 상담·복약 상담"],
+  "chk-tc": ["채소·통곡물 위주 유지", "포화지방↓·유산소 운동·3~6개월 후 재검", "이상지질혈증 관리·순환기내과 상담"],
+  "chk-ldl": ["식이·운동 유지", "포화·트랜스지방↓·유산소·재검", "LDL 목표관리·전문의 상담(약물치료 여부)"],
+  "chk-hdl": ["현 상태 유지", "금연·유산소 운동·불포화지방 섭취", "생활습관 집중 개선·전문의 상담"],
+  "chk-tg": ["절주·당류 절제 유지", "절주·당류↓·유산소·재검", "중성지방 관리·전문의 상담(500↑ 췌장염 주의)"],
+  "chk-bmi": ["현 체중 유지·근력운동", "체중 5~10% 감량·허리둘레 관리·식이일지", "비만 클리닉·대사증후군 관리 상담"],
+  "chk-ast": ["절주·간 부담 줄이기", "절주·체중관리·재검", "간 정밀검사·소화기내과 상담"],
+  "chk-alt": ["절주·지방간 예방 유지", "절주·지방간 관리·재검", "간 정밀검사·소화기내과 상담"],
+  "chk-ggt": ["절주 유지", "절주 4주 후 재검", "알코올성 간질환 평가·전문의 상담"],
+  "chk-egfr": ["수분·혈압·혈당 관리", "염분·단백 과다 주의·혈압/혈당 관리·재검", "신장내과 상담·만성콩팥병 평가"],
+};
+function kbCheckupCounsel(text) {
+  if (!text || typeof KB_CHECKUP === "undefined") return null;
+  const nums = (String(text).match(/\d+(?:\.\d+)?/g) || []).map(Number);
+  if (!nums.length) return null;
+  const low = String(text).toLowerCase().replace(/\s/g, "");
+  let m = null;
+  for (const it of KB_CHK_MATCH) { if (it.keys.some((k) => low.includes(k.toLowerCase().replace(/\s/g, "")))) { m = it; break; } }
+  if (!m) return null;
+  const kb = KB_CHECKUP.find((e) => e.id === m.id); if (!kb) return null;
+  let sev, label, valStr, unit = "";
+  if (m.special === "bp") {
+    const s = nums[0]; if (s < m.rng[0] || s > m.rng[1]) return null;
+    const d = nums.length > 1 ? nums[1] : null;
+    const sB = s >= 140 ? 2 : s >= 120 ? 1 : 0; const dB = (d != null) ? (d >= 90 ? 2 : d >= 80 ? 1 : 0) : 0; const b = Math.max(sB, dB);
+    sev = ["정상", "주의", "위험"][b]; label = ["정상 혈압", "주의혈압·고혈압 전단계", "고혈압"][b]; valStr = d != null ? (s + "/" + d) : ("" + s); unit = " mmHg";
+  } else {
+    const v = nums[0]; if (v < m.rng[0] || v > m.rng[1]) return null;
+    const b = m.band(v); sev = ["정상", "주의", "위험"][b]; label = m.labels[b]; valStr = "" + v; unit = kb.unit && !/정성/.test(kb.unit) ? (" " + kb.unit) : "";
+  }
+  const dz = kb.related || [];
+  const sevIdx = sev === "정상" ? 0 : sev === "주의" ? 1 : 2;
+  const mission = (KB_CHK_MISSION[m.id] || ["균형잡힌 생활습관 유지", "생활습관 개선·재검", "전문의 상담"])[sevIdx];
+  const insNote = dz.length ? `${dz.join("·")} 대비 보장(질병·검진연계·간편단기특화)을 점검해 보세요.` : "필요 보장을 점검해 보세요.";
+  const emoji = sev === "정상" ? "✅" : sev === "주의" ? "⚠️" : "🚨";
+  const items = [`🎯 건강미션: ${mission}`, `🛡️ 관련 보험: ${insNote}`];
+  if (sev !== "정상") items.push("🩺 재검·의료진 상담 시점을 확인하고, 필요 시 진료를 예약하세요.");
+  return {
+    bubbles: [
+      { kind: "text", text: `${emoji} ${kb.item.split(" (")[0]} ${valStr}${unit} → 「${sev}」 ${label}\n${kb.meaning}\n📚 근거: AI KB 라운지 · ${kb.org} ${kb.src}(${kb.date})` },
+      { kind: "card", card: { title: `📋 ${sev} — 관련 보험·건강미션 안내`, items, buttons: ["🛡️ 나의 보험 알아보기 바로가기", "📋 내 건강 리포트·관리 바로가기"] } },
+    ],
+    quicks: [dz[0] ? `${dz[0]} 관리법 알려줘` : "이 수치 관리법", "간편단기특화보험 보기", "내 리포트 요약"],
+  };
+}
 
 /* ====================== 온톨로지 기반 상담 엔진 ======================
    검진항목 해석 / 보험 보장 공백 분석 / 후속조치 안내 — 회원 건강리포트 연계 + AI 거버넌스.

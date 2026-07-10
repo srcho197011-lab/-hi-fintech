@@ -965,7 +965,7 @@ function SuperAgentSection({ onGo }) {
 let UID = 100;
 const now = () => { const d = new Date(); let h = d.getHours(); const m = String(d.getMinutes()).padStart(2, "0"); const ap = h < 12 ? "오전" : "오후"; h = h % 12 || 12; return `${ap} ${h}:${m}`; };
 /* 채팅 액션 버튼 → 섹션 네비게이션 매핑 */
-const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진료 안내": "hospital", "💊 영양 및 홈케어의료기": "shop", "🥗 건강 식단 안내": "shop" };
+const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진료 안내": "hospital", "💊 영양 및 홈케어의료기": "shop", "🥗 건강 식단 안내": "shop", "간편단기특화보험 보기": "insurance" };
 /* Super Agent → 검진 화면 AI 주치의 핸드오프 씨앗(건강 질문을 넘겨받아 이어서 상담) */
 let _doctorSeed = null;
 const DOCTOR_HANDOFF = "🩺 검진 화면에서 이어 상담";
@@ -1989,6 +1989,8 @@ function aiRespond(text, corpus, report, QA) {
   if (report && report.meta && /리포트|건강분석|건강 분석|종합\s*분석|건강\s*총평|전체.*분석|분석.*리포트|리포트.*분석/.test(text)) {
     const _rc = reportAnalysisCards(report); if (_rc) return _rc;
   }
+  // AI KB 라운지 RAG — 검진 수치 판정 + 근거 + 관련 보험·건강미션(예: '공복혈당 110', '혈압 140/90', 'BMI 27')
+  if (typeof kbCheckupCounsel === "function") { const _kb = kbCheckupCounsel(text); if (_kb) return _kb; }
   // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
   if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
   const _topics = multiTopicCounsel(text);
