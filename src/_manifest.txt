@@ -18,6 +18,7 @@ src/components/SectionGroups.jsx
 src/components/Ontology.jsx
 src/components/SupplyOntology.jsx
 src/components/FoundationOntology.jsx
+src/components/KBLounge.jsx
 src/components/Whitepaper.jsx
 src/components/Finance.jsx
 src/components/Marketing.jsx

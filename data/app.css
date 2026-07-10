@@ -2526,6 +2526,57 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .sglog .ev.printscreen,.sglog .ev.devtool,.sglog .ev.print,.sglog .ev.capture{color:#FBBF24;}
 .sglegal{margin-top:12px;font-size:11px;line-height:1.7;color:#9FB2CE;background:#0B1730;border:1px solid #1F3050;border-left:3px solid #22D3EE;border-radius:10px;padding:11px 13px;}
 @media(max-width:640px){.sgstats{grid-template-columns:repeat(2,1fr);}}
+/* AI KB 라운지 */
+.kbgrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.kbcard{background:#0B1730;border:1px solid #1F3050;border-radius:12px;padding:12px 14px;}
+.kbct{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:#7DE9FB;margin-bottom:8px;}
+.kbrow{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.kbrow>span{font-size:11px;color:#CBD6EA;width:130px;flex-shrink:0;}
+.kbrow2{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:#CBD6EA;padding:5px 0;border-top:1px solid #16233d;}
+.kbrow2:first-of-type{border-top:0;}
+.kbrow2 b{color:#67E8F9;font-weight:800;}
+.kbnote{font-size:10.5px;color:#9FB2CE;line-height:1.6;background:#0B1730;border:1px solid #1F3050;border-left:3px solid #22D3EE;border-radius:9px;padding:9px 12px;margin-top:12px;display:flex;gap:6px;align-items:flex-start;}
+.kbnote b{color:#CFE9F5;}
+.kbnote svg{flex-shrink:0;margin-top:2px;color:#22D3EE;}
+.kbdomains{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.kbdom{background:#0B1730;border:1px solid #1F3050;border-top:3px solid var(--kc);border-radius:12px;padding:12px 13px;}
+.kbdom-h{display:flex;align-items:center;gap:8px;}
+.kbdom-i{width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--kc) 20%,#0B1730);color:var(--kc);display:grid;place-items:center;flex-shrink:0;}
+.kbdom-h b{font-size:13px;font-weight:800;color:#EAF2FF;flex:1;}
+.kbdom-n{font-size:14px;font-weight:900;color:var(--kc);}
+.kbdom-subs{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;}
+.kbdom-subs span{font-size:9.8px;color:#9FB2CE;background:#101f3c;border:1px solid #23405f;border-radius:6px;padding:3px 7px;}
+.kbchain{background:#0B1730;border:1px solid #1F3050;border-radius:12px;padding:12px 14px;margin-top:11px;}
+.kbchain-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+.kbchain-n{font-size:10.5px;font-weight:700;color:#CBD6EA;background:#101f3c;border:1px solid #2b4a72;border-radius:7px;padding:5px 9px;}
+.kbchain-a{color:#38BDF8;flex-shrink:0;}
+.kbbadge{font-size:9.5px;font-weight:800;border-radius:20px;padding:2px 8px;white-space:nowrap;}
+.kbbadge.grade-A{color:#052e1a;background:#34D399;}
+.kbbadge.grade-B{color:#0b2338;background:#7DD3FC;}
+.kbbadge.grade-C{color:#3a1d02;background:#FBBF24;}
+.kbbadge.fresh-ok{color:#052e1a;background:#34D399;}
+.kbbadge.fresh-warn{color:#3a1d02;background:#FBBF24;}
+.kbbadge.fresh-old{color:#fff;background:#EF4444;}
+.kbbadge.st-ok{color:#052e1a;background:#A7F3D0;}
+.kbbadge.st-mid{color:#0b2338;background:#93C5FD;}
+.kbbadge.st-wait{color:#fff;background:#64748B;}
+.kbpipe{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+.kbpipe-n{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#CBD6EA;background:#0B1730;border:1px solid #2b4a72;border-radius:8px;padding:7px 10px;}
+.kbpipe-i{width:18px;height:18px;border-radius:50%;background:#22D3EE;color:#04202b;font-size:10px;font-weight:900;display:grid;place-items:center;}
+.kbpipe-a{color:#38BDF8;font-weight:900;}
+.kbchips{display:flex;flex-wrap:wrap;gap:6px;}
+.kbchips span{font-size:10px;color:#CBD6EA;background:#101f3c;border:1px solid #23405f;border-radius:20px;padding:4px 9px;}
+.kbsafety{display:flex;flex-direction:column;gap:6px;}
+.kbsafety div{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#CBD6EA;}
+.kbsafety div span{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+.kbprog{position:relative;height:15px;border-radius:20px;background:#16233d;overflow:hidden;font-size:9px;font-weight:800;color:#EAF2FF;display:flex;align-items:center;justify-content:center;min-width:60px;}
+.kbprog span{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#22D3EE,#3B82F6);border-radius:20px;}
+.kbprog{z-index:0;}
+.kbol,.kbul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;}
+.kbol li,.kbul li{font-size:11px;color:#CBD6EA;line-height:1.55;}
+.kbol li b,.kbul li b{color:#7DE9FB;}
+@media(max-width:760px){.kbdomains{grid-template-columns:1fr 1fr;}.kbgrid2{grid-template-columns:1fr;}}
+@media(max-width:520px){.kbdomains{grid-template-columns:1fr;}}
 
 /* ===== 홈: 건강검진 리포트 발행 CTA ===== */
 .reportcta{display:flex;align-items:center;gap:18px;margin-top:16px;padding:20px 22px;border-radius:18px;background:linear-gradient(120deg,#0E7490,#2563EB 60%,#7C3AED);color:#fff;box-shadow:0 16px 36px -20px rgba(37,99,235,.6);}
