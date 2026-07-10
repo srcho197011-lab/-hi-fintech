@@ -27,6 +27,30 @@ const KB_INSURANCE = [
   { id: "ins-embed", item: "임베디드·미니(소액단기)보험", summary: "상품·서비스에 결합하거나 특정 위험만 단기·소액으로 보장하는 형태. 소액단기전문보험업 제도.", related: ["임베디드보험"], org: "보험업법", src: "소액단기전문보험업(2021)", date: "2021-06", grade: "B" },
 ];
 
+/* ── AI 설계사 RAG: 보험 질의 → KB_INSURANCE 매칭(근거 인용) ── */
+const KB_INS_KW = {
+  "ins-injury": ["상해", "급격", "우연", "외래", "상해가", "상해란"],
+  "ins-pay": ["사망", "후유장해", "장해", "진단금", "지급률", "얼마 받", "보험금 얼마"],
+  "ins-excl": ["면책", "안주", "안 주", "음주", "무면허", "고의", "자살", "보상 안", "제외되", "부지급"],
+  "ins-docs": ["청구", "서류", "구비", "제출", "청구방법", "필요서류"],
+  "ins-term": ["며칠", "지급기한", "소멸시효", "3년", "언제 나오", "기한", "가지급"],
+  "ins-cool": ["청약철회", "철회", "고지", "알릴의무", "취소", "병력", "가입 취소"],
+  "ins-silson": ["실손", "실비", "4세대", "자기부담", "비급여"],
+  "ins-embed": ["임베디드", "미니보험", "소액", "단기보험", "소액단기"],
+};
+function kbInsuranceMatch(text) {
+  if (!text || typeof KB_INSURANCE === "undefined") return null;
+  const low = String(text).toLowerCase();
+  let best = null;
+  KB_INSURANCE.forEach((e) => {
+    const kws = KB_INS_KW[e.id] || [e.item];
+    let sc = 0; kws.forEach((k) => { const kn = k.toLowerCase(); if (kn && low.includes(kn)) sc = Math.max(sc, kn.length); });
+    if (sc > 0 && (!best || sc > best.sc)) best = { e, sc };
+  });
+  return best ? best.e : null;
+}
+function kbInsCite(e) { return e ? `📚 근거: AI KB 라운지 · ${e.org} ${e.src}(${e.date}) · 승인 지식(신뢰도 ${e.grade})` : ""; }
+
 /* 법률·제도 — 사업모델이 검토해야 할 규제(허용/주의/금지 소지 구분) */
 const KB_LEGAL = [
   { id: "law-medi", law: "의료법", article: "제27조·제56조", summary: "환자 유인·알선 금지, 의료광고 사전심의 대상.", risk: "주의", note: "진료 연계·리워드·검진 유인은 ‘환자 유인’ 소지 — 법률 검토 필요", org: "국가법령정보센터", date: "2024-01", grade: "A" },

@@ -304,8 +304,17 @@ function AIPlannerChat({ onSimple }) {
     setTyping(true);
     setTimeout(() => {
       const res = (typeof insuranceCounsel === "function") ? insuranceCounsel(text) : null;
+      const kbE = (typeof kbInsuranceMatch === "function") ? kbInsuranceMatch(text) : null;
       setTyping(false);
-      if (res) { setMsgs((m) => [...m, { who: "ai", bubbles: res.bubbles }]); setQuicks(res.quicks || []); }
+      if (res) {
+        const bubbles = (kbE && typeof kbInsCite === "function") ? res.bubbles.map((b, i) => (i === 0 && b.kind === "text") ? { ...b, text: b.text + "\n" + kbInsCite(kbE) } : b) : res.bubbles;
+        setMsgs((m) => [...m, { who: "ai", bubbles }]); setQuicks(res.quicks || []);
+      } else if (kbE) {
+        setMsgs((m) => [...m, { who: "ai", bubbles: [
+          { kind: "text", text: `${kbE.item} — ${kbE.summary}\n${kbInsCite(kbE)}` },
+          { kind: "card", card: { title: `📋 ${kbE.item}`, items: [kbE.summary, `관련: ${(kbE.related || []).join(" · ")}`, `출처: ${kbE.org} · ${kbE.src} · ${kbE.date}`], buttons: ["보험상담 신청"] } },
+        ] }]); setQuicks(["보험금 청구 서류는?", "면책(안 주는 경우)은?", "보험상담 신청"]);
+      }
       else { setMsgs((m) => [...m, { who: "ai", bubbles: [{ kind: "text", text: `‘${text}’에 딱 맞는 약관 조항을 찾지 못했어요. 😅 **보장·보험금·청구·면책·계약** 관련으로 물어보시거나 아래 추천 질문을 눌러보세요. 정확한 보장은 증권·약관 원문과 상담사 확인이 필요해요.` }] }]); setQuicks(FAQ.slice(0, 4).concat("보험상담 신청")); }
     }, 620);
   };

@@ -6617,8 +6617,17 @@ function AIPlannerChat({ onSimple }) {
     setTyping(true);
     setTimeout(() => {
       const res = (typeof insuranceCounsel === "function") ? insuranceCounsel(text) : null;
+      const kbE = (typeof kbInsuranceMatch === "function") ? kbInsuranceMatch(text) : null;
       setTyping(false);
-      if (res) { setMsgs((m) => [...m, { who: "ai", bubbles: res.bubbles }]); setQuicks(res.quicks || []); }
+      if (res) {
+        const bubbles = (kbE && typeof kbInsCite === "function") ? res.bubbles.map((b, i) => (i === 0 && b.kind === "text") ? { ...b, text: b.text + "\n" + kbInsCite(kbE) } : b) : res.bubbles;
+        setMsgs((m) => [...m, { who: "ai", bubbles }]); setQuicks(res.quicks || []);
+      } else if (kbE) {
+        setMsgs((m) => [...m, { who: "ai", bubbles: [
+          { kind: "text", text: `${kbE.item} — ${kbE.summary}\n${kbInsCite(kbE)}` },
+          { kind: "card", card: { title: `📋 ${kbE.item}`, items: [kbE.summary, `관련: ${(kbE.related || []).join(" · ")}`, `출처: ${kbE.org} · ${kbE.src} · ${kbE.date}`], buttons: ["보험상담 신청"] } },
+        ] }]); setQuicks(["보험금 청구 서류는?", "면책(안 주는 경우)은?", "보험상담 신청"]);
+      }
       else { setMsgs((m) => [...m, { who: "ai", bubbles: [{ kind: "text", text: `‘${text}’에 딱 맞는 약관 조항을 찾지 못했어요. 😅 **보장·보험금·청구·면책·계약** 관련으로 물어보시거나 아래 추천 질문을 눌러보세요. 정확한 보장은 증권·약관 원문과 상담사 확인이 필요해요.` }] }]); setQuicks(FAQ.slice(0, 4).concat("보험상담 신청")); }
     }, 620);
   };
@@ -14553,6 +14562,30 @@ const KB_INSURANCE = [
   { id: "ins-silson", item: "실손의료보험(4세대)", summary: "급여/비급여 보장 분리, 자기부담률 상향, 비급여 이용량과 연계한 보험료 할인·할증(2021.7 도입).", related: ["실손보험", "치료비"], org: "금융위원회·보험업계", src: "4세대 실손 표준약관", date: "2021-07", grade: "B" },
   { id: "ins-embed", item: "임베디드·미니(소액단기)보험", summary: "상품·서비스에 결합하거나 특정 위험만 단기·소액으로 보장하는 형태. 소액단기전문보험업 제도.", related: ["임베디드보험"], org: "보험업법", src: "소액단기전문보험업(2021)", date: "2021-06", grade: "B" },
 ];
+
+/* ── AI 설계사 RAG: 보험 질의 → KB_INSURANCE 매칭(근거 인용) ── */
+const KB_INS_KW = {
+  "ins-injury": ["상해", "급격", "우연", "외래", "상해가", "상해란"],
+  "ins-pay": ["사망", "후유장해", "장해", "진단금", "지급률", "얼마 받", "보험금 얼마"],
+  "ins-excl": ["면책", "안주", "안 주", "음주", "무면허", "고의", "자살", "보상 안", "제외되", "부지급"],
+  "ins-docs": ["청구", "서류", "구비", "제출", "청구방법", "필요서류"],
+  "ins-term": ["며칠", "지급기한", "소멸시효", "3년", "언제 나오", "기한", "가지급"],
+  "ins-cool": ["청약철회", "철회", "고지", "알릴의무", "취소", "병력", "가입 취소"],
+  "ins-silson": ["실손", "실비", "4세대", "자기부담", "비급여"],
+  "ins-embed": ["임베디드", "미니보험", "소액", "단기보험", "소액단기"],
+};
+function kbInsuranceMatch(text) {
+  if (!text || typeof KB_INSURANCE === "undefined") return null;
+  const low = String(text).toLowerCase();
+  let best = null;
+  KB_INSURANCE.forEach((e) => {
+    const kws = KB_INS_KW[e.id] || [e.item];
+    let sc = 0; kws.forEach((k) => { const kn = k.toLowerCase(); if (kn && low.includes(kn)) sc = Math.max(sc, kn.length); });
+    if (sc > 0 && (!best || sc > best.sc)) best = { e, sc };
+  });
+  return best ? best.e : null;
+}
+function kbInsCite(e) { return e ? `📚 근거: AI KB 라운지 · ${e.org} ${e.src}(${e.date}) · 승인 지식(신뢰도 ${e.grade})` : ""; }
 
 /* 법률·제도 — 사업모델이 검토해야 할 규제(허용/주의/금지 소지 구분) */
 const KB_LEGAL = [
