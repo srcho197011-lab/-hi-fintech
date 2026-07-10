@@ -1991,6 +1991,8 @@ function aiRespond(text, corpus, report, QA) {
   }
   // AI KB 라운지 RAG — 검진 수치 판정 + 근거 + 관련 보험·건강미션(예: '공복혈당 110', '혈압 140/90', 'BMI 27')
   if (typeof kbCheckupCounsel === "function") { const _kb = kbCheckupCounsel(text); if (_kb) return _kb; }
+  // AI KB 라운지 RAG — 질환 정의·개요(예: '고혈압이 뭐야?', '당뇨병 위험요인') → KB 정의·위험요인·근거
+  if (typeof kbDiseaseCounsel === "function") { const _dz = kbDiseaseCounsel(text); if (_dz) return _dz; }
   // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
   if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
   const _topics = multiTopicCounsel(text);

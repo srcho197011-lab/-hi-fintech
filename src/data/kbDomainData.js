@@ -27,6 +27,43 @@ const KB_INSURANCE = [
   { id: "ins-embed", item: "임베디드·미니(소액단기)보험", summary: "상품·서비스에 결합하거나 특정 위험만 단기·소액으로 보장하는 형태. 소액단기전문보험업 제도.", related: ["임베디드보험"], org: "보험업법", src: "소액단기전문보험업(2021)", date: "2021-06", grade: "B" },
 ];
 
+/* ── AI 주치의 RAG: 질환 정의·개요 질의 → KB_DISEASE 매칭(근거 인용) ── */
+const KB_DZ_ALIAS = {
+  "dz-htn": ["고혈압"],
+  "dz-dm": ["당뇨병", "당뇨"],
+  "dz-dyslip": ["이상지질혈증", "고지혈증", "고지혈", "콜레스테롤"],
+  "dz-mets": ["대사증후군"],
+  "dz-stroke": ["뇌졸중", "뇌경색", "뇌출혈", "중풍", "뇌혈관"],
+  "dz-mi": ["심근경색", "협심증", "관상동맥", "심장마비", "허혈성심장"],
+  "dz-nafld": ["지방간"],
+  "dz-ckd": ["만성콩팥병", "콩팥병", "신부전", "만성신장", "ckd"],
+};
+function kbDiseaseCounsel(text) {
+  if (!text || typeof KB_DISEASE === "undefined") return null;
+  const raw = String(text);
+  // 증상·검사·치료 등 심화 질의는 기존 상담 엔진에 위임
+  if (/증상|검사|치료|약물|복용|생활습관|합병증|식단|운동|영양|검진|수치는/.test(raw)) return null;
+  let dz = null, alias = "";
+  for (const d of KB_DISEASE) { const al = (KB_DZ_ALIAS[d.id] || [d.name.split("(")[0]]); const hit = al.find((a) => raw.toLowerCase().includes(a.toLowerCase())); if (hit) { dz = d; alias = hit; break; } }
+  if (!dz) return null;
+  const overview = /뭐야|뭔가|무엇|정의|이란|란[\s?]|이 뭐|개요|원인|위험\s?요인|어떤\s?(병|질환)|설명|알려줘|위험은|왜 생/.test(raw);
+  const bareName = raw.replace(/[\s?!.]/g, "").length <= (alias.length + 3);
+  if (!overview && !bareName) return null;
+  const emerg = /🚨/.test(dz.care);
+  return {
+    bubbles: [
+      { kind: "text", text: `${dz.name} — ${dz.summary}\n📚 근거: AI KB 라운지 · ${dz.org} ${dz.src}(${dz.date}) · 승인 지식(신뢰도 ${dz.grade})` },
+      { kind: "card", card: { title: `🩺 ${dz.name} 핵심 안내`, items: [
+        `⚠️ 주요 위험요인: ${dz.risk}`,
+        `🎯 예방·관리: ${dz.manage}`,
+        `${emerg ? "🚑" : "🩺"} 진료·응급 기준: ${dz.care}`,
+        `🔗 관련: ${(dz.related || []).join(" · ")}`,
+      ], buttons: [`${dz.name} 증상은 무엇인가요?`, `${dz.name} 검사 방법`] } },
+    ],
+    quicks: [`${dz.name} 생활습관 관리법은?`, dz.related && dz.related[0] ? `${dz.related[0]} 대비 보험` : "내 리포트 요약", "내 리포트 요약"].slice(0, 3),
+  };
+}
+
 /* ── AI 설계사 RAG: 보험 질의 → KB_INSURANCE 매칭(근거 인용) ── */
 const KB_INS_KW = {
   "ins-injury": ["상해", "급격", "우연", "외래", "상해가", "상해란"],
