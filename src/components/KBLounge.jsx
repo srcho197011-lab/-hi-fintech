@@ -42,6 +42,60 @@ const KB_SAFETY = [["일반 건강정보", "#34D399"], ["예방관리 정보", "
 
 function _kbStars(n) { return "★".repeat(n) + "☆".repeat(5 - n); }
 
+/* ③ 관리자 승인 워크플로 콘솔 (HITL) — 실제 상태 전환 */
+function KBApprovalQueue() {
+  const STAGES = (typeof KB_STAGES !== "undefined") ? KB_STAGES : ["수집", "자동검증", "관리자 검토", "전문가 검토", "승인"];
+  const seed = (typeof KB_QUEUE !== "undefined") ? KB_QUEUE : [];
+  const [items, setItems] = React.useState(() => seed.map((q) => ({ ...q, status: "검토대기" })));
+  const [log, setLog] = React.useState([{ t: "초기 적재", m: `자동 수집 ${seed.length}건이 검증 큐에 등록됨` }]);
+  const addLog = (m) => setLog((l) => [{ t: "방금", m }, ...l].slice(0, 30));
+  const upd = (id, patch, logmsg) => { setItems((arr) => arr.map((it) => it.id === id ? { ...it, ...patch } : it)); if (logmsg) addLog(logmsg); };
+  const approve = (it) => {
+    if (it.flags.indexOf("전문가필요") >= 0 && it.stage < 3) { upd(it.id, { stage: 3 }, `[${it.id}] 위험도 높음 → 전문가 검토로 상향`); if (typeof toast === "function") toast("⚠️ 위험도 높음 — 전문가 검토가 필요합니다."); return; }
+    if (it.stage >= STAGES.length - 1) return;
+    const ns = it.stage + 1;
+    if (ns >= STAGES.length - 1) { upd(it.id, { stage: ns, status: "승인" }, `[${it.id}] 최종 승인 → 지식 항목 브라우저에 반영`); if (typeof toast === "function") toast("✅ 승인 완료 — 지식 항목 브라우저에 반영되었습니다."); }
+    else { upd(it.id, { stage: ns }, `[${it.id}] ${STAGES[it.stage]} 통과 → ${STAGES[ns]}`); if (typeof toast === "function") toast(`${STAGES[ns]} 단계로 이동`); }
+  };
+  const expert = (it) => { upd(it.id, { stage: 3 }, `[${it.id}] 전문가 검토 요청`); if (typeof toast === "function") toast("전문가 검토를 요청했습니다."); };
+  const hold = (it) => { upd(it.id, { status: "보류" }, `[${it.id}] 보류 처리`); };
+  const reject = (it) => { let r = ""; try { r = (typeof window !== "undefined" && window.prompt) ? (window.prompt("반려 사유를 입력하세요", "근거 부족·상충") || "") : "사유 미기재"; } catch (e) { r = "사유 미기재"; } upd(it.id, { status: "반려", reason: r }, `[${it.id}] 반려 — ${r || "사유 미기재"}`); if (typeof toast === "function") toast("반려 처리되었습니다."); };
+  const restore = (it) => { upd(it.id, { status: "검토대기" }, `[${it.id}] 보류 해제 → 검토 재개`); };
+  const pending = items.filter((i) => i.status === "검토대기");
+  const held = items.filter((i) => i.status === "보류");
+  const approved = items.filter((i) => i.status === "승인");
+  const rejected = items.filter((i) => i.status === "반려");
+  const flagCls = (f) => f === "법률변경" || f === "전문가필요" || f === "상충" ? "warn" : "info";
+  const Stepper = ({ stage }) => (<div className="kbq-steps">{STAGES.map((s, i) => <React.Fragment key={s}><span className={"kbq-step" + (i < stage ? " done" : i === stage ? " cur" : "")}>{s}</span>{i < STAGES.length - 1 && <span className="kbq-sa">›</span>}</React.Fragment>)}</div>);
+  const Card = ({ it }) => (
+    <div className="kbq-card">
+      <div className="kbq-hd"><b>{it.title}</b><span className={"kbbadge grade-" + it.grade}>{it.grade}</span><span className={"kbq-risk r-" + (it.risk === "높음" ? "hi" : it.risk === "보통" ? "mid" : "lo")}>위험 {it.risk}</span></div>
+      <div className="kbq-meta">{it.domain} · {it.org} · {it.date} {it.flags.map((f) => <span key={f} className={"kbq-flag " + flagCls(f)}>{f}</span>)}</div>
+      <Stepper stage={it.stage} />
+      {it.status === "검토대기" && <div className="kbq-btns"><button className="ok" onClick={() => approve(it)}>승인</button><button onClick={() => expert(it)}>전문가 요청</button><button onClick={() => hold(it)}>보류</button><button className="no" onClick={() => reject(it)}>반려</button></div>}
+      {it.status === "보류" && <div className="kbq-btns"><button onClick={() => restore(it)}>보류 해제</button><button className="no" onClick={() => reject(it)}>반려</button></div>}
+      {it.status === "반려" && <div className="kbq-res">반려 사유: {it.reason || "사유 미기재"}</div>}
+    </div>
+  );
+  return (
+    <div>
+      <div className="sgstats" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
+        <div className="sgstat"><b style={{ color: "#FBBF24" }}>{pending.length}</b><span>검토 대기</span></div>
+        <div className="sgstat"><b style={{ color: "#A78BFA" }}>{held.length}</b><span>보류</span></div>
+        <div className="sgstat"><b style={{ color: "#34D399" }}>{approved.length}</b><span>승인(반영)</span></div>
+        <div className="sgstat"><b style={{ color: "#F87171" }}>{rejected.length}</b><span>반려</span></div>
+      </div>
+      <div className="kbnote"><ShieldCheck size={12} /> <b>HITL(사람 개입) 승인</b> — 자동 수집 자료는 <b>관리자 검토 → 전문가 검토 → 승인</b>을 거쳐야 회원에게 공개됩니다. 위험도 높음(법률·상충)은 전문가 검토 필수.</div>
+      {pending.length > 0 && <><div className="kbct" style={{ margin: "12px 0 8px" }}><Workflow size={13} /> 검토 대기 큐 ({pending.length})</div>{pending.map((it) => <Card key={it.id} it={it} />)}</>}
+      {held.length > 0 && <><div className="kbct" style={{ margin: "14px 0 8px" }}>⏸ 보류 ({held.length})</div>{held.map((it) => <Card key={it.id} it={it} />)}</>}
+      {(approved.length > 0 || rejected.length > 0) && <div className="kbgrid2" style={{ marginTop: 14 }}>
+        <div className="kbcard"><div className="kbct" style={{ color: "#34D399" }}><Database size={13} /> 승인 완료 → 브라우저 반영 ({approved.length})</div>{approved.length ? approved.map((it) => <div className="kbq-mini ok" key={it.id}>✅ {it.title}</div>) : <div className="kbq-mini empty">아직 없음</div>}</div>
+        <div className="kbcard"><div className="kbct" style={{ color: "#F87171" }}>✕ 반려 ({rejected.length})</div>{rejected.length ? rejected.map((it) => <div className="kbq-mini no" key={it.id}>✕ {it.title} <small>· {it.reason}</small></div>) : <div className="kbq-mini empty">아직 없음</div>}</div>
+      </div>}
+      <div className="kbcard" style={{ marginTop: 12 }}><div className="kbct"><ScrollText size={13} /> 검토·버전 이력 (Audit)</div><div className="kbq-log">{log.map((l, i) => <div key={i} className="kbq-logrow"><span className="kbq-logt">{l.t}</span> {l.m}</div>)}</div></div>
+    </div>
+  );
+}
 function AIKBLounge({ onGo }) {
   const [tab, setTab] = React.useState("dash");
   const [q, setQ] = React.useState("");
@@ -49,7 +103,7 @@ function AIKBLounge({ onGo }) {
   const CHK_META = (typeof KB_CHECKUP_META !== "undefined") ? KB_CHECKUP_META : { count: CHK.length };
   const chkRows = q.trim() ? CHK.filter((r) => (r.item + " " + r.meaning + " " + (r.related || []).join(" ")).toLowerCase().includes(q.trim().toLowerCase())) : CHK;
   const iconOf = (nm) => ({ Stethoscope, HeartPulse, Activity, ShieldCheck, Coins, Scale }[nm] || Database);
-  const subTabs = [["dash", "현황 대시보드", Activity], ["onto", "지식 분류 온톨로지", Network], ["browse", "지식 항목 브라우저", Search], ["pipe", "수집·검증 워크플로", Workflow], ["acq", "데이터 확보전략 AI", Route], ["rag", "AI 답변 근거(RAG)", Bot]];
+  const subTabs = [["dash", "현황 대시보드", Activity], ["onto", "지식 분류 온톨로지", Network], ["browse", "지식 항목 브라우저", Search], ["pipe", "수집·검증 워크플로", Workflow], ["approve", "승인 워크플로(HITL)", ShieldCheck], ["acq", "데이터 확보전략 AI", Route], ["rag", "AI 답변 근거(RAG)", Bot]];
   return (
     <div className="ontpanel" style={{ marginTop: 12 }}>
       <div className="ontph"><Database size={15} color="#22D3EE" /> AI KB 라운지 <span>· 지능형 지식베이스 운영 시스템 · Knowledge Acquisition Engine</span></div>
@@ -112,6 +166,8 @@ function AIKBLounge({ onGo }) {
           <div className="kbcard"><div className="kbct"><ShieldCheck size={13} /> 의료·법률 안전 등급</div><div className="kbsafety">{KB_SAFETY.map(([t, c], i) => <div key={i}><span style={{ background: c }} />{t}</div>)}</div></div>
         </div>
       </>}
+
+      {tab === "approve" && <KBApprovalQueue />}
 
       {tab === "acq" && <>
         <div className="kbct" style={{ marginBottom: 8 }}><Route size={13} /> 데이터 탐색·확보 전략 AI — "목표 달성에 무엇이 더 필요한가?"를 스스로 수행</div>

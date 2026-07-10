@@ -25,6 +25,17 @@ const KB_CHECKUP = [
 /* KB 적재 메타(전 항목 공통) */
 const KB_CHECKUP_META = { domain: "건강검진", fresh: "최신", status: "승인", reviewedBy: "의료 자문(검토완료)", loadedAt: "2026-07", count: KB_CHECKUP.length };
 
+/* ── ③ 관리자 승인 워크플로: 수집 → 자동검증 → 관리자 검토 → 전문가 검토 → 승인 ── */
+const KB_STAGES = ["수집", "자동검증", "관리자 검토", "전문가 검토", "승인"];
+const KB_QUEUE = [
+  { id: "Q1", title: "2026 고혈압 목표혈압 개정안 반영", domain: "질환", org: "대한고혈압학회", date: "2026-06", grade: "A", risk: "보통", flags: ["최신성"], stage: 2 },
+  { id: "Q2", title: "당화혈색소 6.0% 관리 권고 문구", domain: "건강검진", org: "대한당뇨병학회", date: "2026-05", grade: "A", risk: "낮음", flags: [], stage: 2 },
+  { id: "Q3", title: "실손보험 4세대 자기부담 변경 요약", domain: "보험·치료비", org: "금융위원회", date: "2026-06", grade: "B", risk: "높음", flags: ["법률변경", "전문가필요"], stage: 2 },
+  { id: "Q4", title: "가상자산이용자보호법 — 포인트/토큰 구분", domain: "법률·제도", org: "금융위원회", date: "2026-04", grade: "B", risk: "높음", flags: ["법률변경", "전문가필요"], stage: 3 },
+  { id: "Q5", title: "오메가3 기능성 표시 — 상충 자료 검토", domain: "건강소비·자산", org: "식약처/상업자료", date: "2026-03", grade: "C", risk: "보통", flags: ["상충", "중복"], stage: 1 },
+  { id: "Q6", title: "대사증후군 진단기준 요약", domain: "질환", org: "질병관리청", date: "2026-06", grade: "A", risk: "낮음", flags: [], stage: 2 },
+];
+
 /* ── ② RAG 연결: 검진 수치 → KB 판정 + 근거 + 관련 보험·건강미션 ── */
 const KB_CHK_MATCH = [
   { id: "chk-bp", keys: ["혈압"], special: "bp", rng: [60, 300] },
