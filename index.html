@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=64e2ce5bbd" />
+<link rel="stylesheet" href="./data/app.css?v=5eb0b3b842" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=64e2ce5bbd"></script>
-<script src="./src/data/section_data.js?v=64e2ce5bbd"></script>
-<script src="./src/data/demo_members.js?v=64e2ce5bbd"></script>
+<script src="./src/data/dummy_data.js?v=5eb0b3b842"></script>
+<script src="./src/data/section_data.js?v=5eb0b3b842"></script>
+<script src="./src/data/demo_members.js?v=5eb0b3b842"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -9920,9 +9920,16 @@ function KBApprovalQueue() {
 function AIKBLounge({ onGo }) {
   const [tab, setTab] = React.useState("dash");
   const [q, setQ] = React.useState("");
+  const [dom, setDom] = React.useState("checkup");
   const CHK = (typeof KB_CHECKUP !== "undefined") ? KB_CHECKUP : [];
+  const DIS = (typeof KB_DISEASE !== "undefined") ? KB_DISEASE : [];
+  const INS = (typeof KB_INSURANCE !== "undefined") ? KB_INSURANCE : [];
+  const LAW = (typeof KB_LEGAL !== "undefined") ? KB_LEGAL : [];
   const CHK_META = (typeof KB_CHECKUP_META !== "undefined") ? KB_CHECKUP_META : { count: CHK.length };
-  const chkRows = q.trim() ? CHK.filter((r) => (r.item + " " + r.meaning + " " + (r.related || []).join(" ")).toLowerCase().includes(q.trim().toLowerCase())) : CHK;
+  const DOMS = [["checkup", "건강검진", CHK, "국가건강검진·5개 학회 기준 · 검토완료"], ["disease", "질환", DIS, "질병관리청·전문학회 진료지침 · 검토완료"], ["insurance", "보험·치료비", INS, "상해보험 약관·금융위 · 학습·검토"], ["legal", "법률·제도", LAW, "국가법령정보센터 · 규제 검토용"]];
+  const activeDom = DOMS.find((d) => d[0] === dom) || DOMS[0];
+  const _txt = (r) => Object.values(r).map((v) => Array.isArray(v) ? v.join(" ") : v).join(" ").toLowerCase();
+  const domRows = q.trim() ? activeDom[2].filter((r) => _txt(r).includes(q.trim().toLowerCase())) : activeDom[2];
   const iconOf = (nm) => ({ Stethoscope, HeartPulse, Activity, ShieldCheck, Coins, Scale }[nm] || Database);
   const subTabs = [["dash", "현황 대시보드", Activity], ["onto", "지식 분류 온톨로지", Network], ["browse", "지식 항목 브라우저", Search], ["pipe", "수집·검증 워크플로", Workflow], ["approve", "승인 워크플로(HITL)", ShieldCheck], ["acq", "데이터 확보전략 AI", Route], ["rag", "AI 답변 근거(RAG)", Bot]];
   return (
@@ -9959,24 +9966,45 @@ function AIKBLounge({ onGo }) {
       </>}
 
       {tab === "browse" && <>
-        <div className="kbload"><span className="kbload-ic"><Stethoscope size={15} /></span><div><b>건강검진 정상범위·위험구간 <span className="kbload-tag">실측 적재 {CHK_META.count}건</span></b><p>국가건강검진·대한고혈압/당뇨병/비만학회·지질동맥경화학회 기준으로 수집·구조화 · <b>{CHK_META.reviewedBy || "검토완료"}</b> · 적재 {CHK_META.loadedAt || "2026-07"}</p></div></div>
-        <div className="kbsearch"><Search size={13} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="검진 항목·질환 검색 (예: 혈당, 콜레스테롤, 간, 신장)" /><span>{chkRows.length}건</span></div>
-        <div className="sctablewrap"><table className="sctable"><thead><tr><th>검진 항목</th><th>정상</th><th>주의</th><th>위험</th><th>임상적 의미</th><th>관련질환</th><th>출처</th><th>신뢰도</th></tr></thead>
-          <tbody>{chkRows.map((r) => <tr key={r.id}>
-            <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.item}<small style={{ display: "block", color: "#7C8BA8", fontWeight: 500 }}>{r.unit}</small></td>
-            <td style={{ color: "#34D399" }}>{r.normal}</td><td style={{ color: "#FBBF24" }}>{r.caution}</td><td style={{ color: "#F87171" }}>{r.danger}</td>
-            <td style={{ maxWidth: 240, whiteSpace: "normal", color: "#CBD6EA" }}>{r.meaning}</td>
-            <td style={{ whiteSpace: "nowrap" }}>{(r.related || []).map((d) => <span key={d} className="kbtag">{d}</span>)}</td>
-            <td style={{ whiteSpace: "nowrap", fontSize: "10px" }}>{r.org}<small style={{ display: "block", color: "#7C8BA8" }}>{r.src} · {r.date}</small></td>
-            <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}
-            {!chkRows.length && <tr><td colSpan={8} style={{ textAlign: "center", color: "#8FA0BE", padding: "14px" }}>검색 결과가 없습니다.</td></tr>}</tbody></table></div>
-        <div className="kbnote"><Database size={12} /> 각 항목은 표준 스키마(출처·작성기관·발표일·수집일·검토일·신뢰도·최신성·관련 질환·관련 검진·태그)로 저장되며, <b>AI 주치의/설계사가 회원 검진 결과 해석에 근거로 인용</b>합니다(② RAG 연결).</div>
-        <div className="kbct" style={{ margin: "14px 0 8px" }}><Search size={13} /> 기타 도메인 적재 항목(예시)</div>
-        <div className="sctablewrap"><table className="sctable"><thead><tr><th>제목</th><th>대분류</th><th>출처</th><th>작성일</th><th>신뢰도</th><th>최신성</th><th>상태</th></tr></thead>
-          <tbody>{KB_ENTRIES.map((r, i) => <tr key={i}><td style={{ maxWidth: 260, whiteSpace: "normal" }}>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td>
-            <td><span className={"kbbadge grade-" + r[4]}>{r[4]}</span></td>
-            <td><span className={"kbbadge fresh-" + (r[5] === "최신" ? "ok" : r[5] === "검토요" ? "warn" : "old")}>{r[5]}</span></td>
-            <td><span className={"kbbadge st-" + (r[6] === "승인" ? "ok" : r[6] === "검토중" ? "mid" : "wait")}>{r[6]}</span></td></tr>)}</tbody></table></div>
+        <div className="kbdomsel">{DOMS.map(([k, t, arr]) => <button key={k} className={dom === k ? "on" : ""} onClick={() => setDom(k)}>{t} <em>{arr.length}</em></button>)}</div>
+        <div className="kbload"><span className="kbload-ic"><Database size={15} /></span><div><b>{activeDom[1]} 지식 <span className="kbload-tag">실측 적재 {activeDom[2].length}건</span></b><p>{activeDom[3]} · <b>AI 주치의/설계사가 상담 근거로 인용</b>(② RAG)</p></div></div>
+        <div className="kbsearch"><Search size={13} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`${activeDom[1]} 검색 (예: 혈당, 고혈압, 면책, 개인정보)`} /><span>{domRows.length}건</span></div>
+        <div className="sctablewrap">
+          {dom === "checkup" && <table className="sctable"><thead><tr><th>검진 항목</th><th>정상</th><th>주의</th><th>위험</th><th>임상적 의미</th><th>관련질환</th><th>출처</th><th>신뢰도</th></tr></thead>
+            <tbody>{domRows.map((r) => <tr key={r.id}>
+              <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.item}<small style={{ display: "block", color: "#7C8BA8", fontWeight: 500 }}>{r.unit}</small></td>
+              <td style={{ color: "#34D399" }}>{r.normal}</td><td style={{ color: "#FBBF24" }}>{r.caution}</td><td style={{ color: "#F87171" }}>{r.danger}</td>
+              <td style={{ maxWidth: 230, whiteSpace: "normal", color: "#CBD6EA" }}>{r.meaning}</td>
+              <td style={{ whiteSpace: "nowrap" }}>{(r.related || []).map((d) => <span key={d} className="kbtag">{d}</span>)}</td>
+              <td style={{ whiteSpace: "nowrap", fontSize: "10px" }}>{r.org}<small style={{ display: "block", color: "#7C8BA8" }}>{r.src} · {r.date}</small></td>
+              <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}</tbody></table>}
+          {dom === "disease" && <table className="sctable"><thead><tr><th>질환</th><th>정의</th><th>주요 위험요인</th><th>예방·관리</th><th>응급·진료 기준</th><th>출처</th><th>신뢰도</th></tr></thead>
+            <tbody>{domRows.map((r) => <tr key={r.id}>
+              <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.name}</td>
+              <td style={{ maxWidth: 210, whiteSpace: "normal", color: "#CBD6EA" }}>{r.summary}</td>
+              <td style={{ maxWidth: 160, whiteSpace: "normal", color: "#9FB2CE", fontSize: "10.5px" }}>{r.risk}</td>
+              <td style={{ maxWidth: 180, whiteSpace: "normal", color: "#A7F3D0", fontSize: "10.5px" }}>{r.manage}</td>
+              <td style={{ maxWidth: 180, whiteSpace: "normal", color: /🚨/.test(r.care) ? "#FCA5A5" : "#CBD6EA", fontSize: "10.5px" }}>{r.care}</td>
+              <td style={{ whiteSpace: "nowrap", fontSize: "10px" }}>{r.org}<small style={{ display: "block", color: "#7C8BA8" }}>{r.src} · {r.date}</small></td>
+              <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}</tbody></table>}
+          {dom === "insurance" && <table className="sctable"><thead><tr><th>항목</th><th>요약</th><th>관련</th><th>출처</th><th>신뢰도</th></tr></thead>
+            <tbody>{domRows.map((r) => <tr key={r.id}>
+              <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.item}</td>
+              <td style={{ maxWidth: 340, whiteSpace: "normal", color: "#CBD6EA" }}>{r.summary}</td>
+              <td style={{ whiteSpace: "nowrap" }}>{(r.related || []).map((d) => <span key={d} className="kbtag">{d}</span>)}</td>
+              <td style={{ whiteSpace: "nowrap", fontSize: "10px" }}>{r.org}<small style={{ display: "block", color: "#7C8BA8" }}>{r.src} · {r.date}</small></td>
+              <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}</tbody></table>}
+          {dom === "legal" && <table className="sctable"><thead><tr><th>법령</th><th>조문</th><th>요약</th><th>사업 검토사항</th><th>구분</th><th>신뢰도</th></tr></thead>
+            <tbody>{domRows.map((r) => <tr key={r.id}>
+              <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.law}</td>
+              <td style={{ whiteSpace: "nowrap", color: "#9FB2CE", fontSize: "10.5px" }}>{r.article}</td>
+              <td style={{ maxWidth: 240, whiteSpace: "normal", color: "#CBD6EA" }}>{r.summary}</td>
+              <td style={{ maxWidth: 220, whiteSpace: "normal", color: "#FBBF24", fontSize: "10.5px" }}>{r.note}</td>
+              <td><span className={"kbq-risk r-" + (r.risk === "필수" ? "hi" : r.risk === "기회" ? "lo" : "mid")}>{r.risk}</span></td>
+              <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}</tbody></table>}
+          {!domRows.length && <div style={{ textAlign: "center", color: "#8FA0BE", padding: "16px" }}>검색 결과가 없습니다.</div>}
+        </div>
+        <div className="kbnote"><Database size={12} /> 각 항목은 표준 스키마(출처·작성기관·발표일·신뢰도·관련·태그)로 저장되며, <b>AI 주치의/설계사</b>가 상담 근거로 인용합니다. <span style={{ color: "#FBBF24" }}>법률·제도는 사업모델의 규제 검토용이며 확정 해석이 아닙니다.</span></div>
       </>}
 
       {tab === "pipe" && <>
@@ -14496,6 +14524,49 @@ function kbCheckupCounsel(text) {
     quicks: [dz[0] ? `${dz[0]} 관리법 알려줘` : "이 수치 관리법", "간편단기특화보험 보기", "내 리포트 요약"],
   };
 }
+
+/* ====================== AI KB 라운지 — 실측 적재 지식: 질환 · 보험·치료비 · 법률·제도 ======================
+   출처: 질병관리청·국가건강정보포털·관련 전문학회(고혈압·당뇨병·심장·뇌졸중·간·신장·지질) / 보험 약관·금융위 / 국가법령정보센터.
+   ⚠️ 참고용 요약. 진단·치료는 의료진, 보험 보장은 증권·약관, 법률 적용은 관계기관·전문가 검토를 따릅니다.
+   ※ 토큰·보험료 지원·환급·기본소득 등은 확정 제도가 아닌 '규제 검토가 필요한 사업모델'로 표기. */
+
+/* 질환 — 정의·위험요인·예방관리·응급/진료 기준 */
+const KB_DISEASE = [
+  { id: "dz-htn", name: "고혈압", summary: "진료실 혈압 140/90mmHg 이상이 지속되는 상태(가정혈압 135/85↑).", risk: "고령·비만·고염식·과음·운동부족·스트레스·가족력", manage: "저염식·체중감량·주 150분 유산소·금연·절주·필요 시 약물", care: "심한 두통·시야장애·의식저하·흉통 시 즉시 진료(고혈압성 응급)", related: ["심근경색", "뇌졸중", "만성콩팥병"], org: "대한고혈압학회", src: "고혈압 진료지침(2022)", date: "2022-05", grade: "A" },
+  { id: "dz-dm", name: "당뇨병", summary: "공복혈당 126 또는 당화혈색소 6.5% 이상. 인슐린 분비·작용 이상.", risk: "비만·가족력·운동부족·고령·임신성당뇨 과거력", manage: "저당·고식이섬유 식이·규칙 운동·혈당 자가측정·약물", care: "심한 고혈당(다뇨·탈수)·저혈당(의식저하·발한) 시 응급", related: ["신장질환", "망막병증", "심뇌혈관질환"], org: "대한당뇨병학회", src: "당뇨병 진료지침(2023)", date: "2023-05", grade: "A" },
+  { id: "dz-dyslip", name: "이상지질혈증", summary: "LDL·중성지방 상승 또는 HDL 저하로 동맥경화 위험이 커진 상태.", risk: "고지방식·비만·과음·당뇨·흡연·가족성 고지혈증", manage: "포화·트랜스지방↓·유산소 운동·체중관리·스타틴 등 약물", care: "흉통·호흡곤란 등 심혈관 증상 동반 시 진료", related: ["협심증", "심근경색", "뇌졸중"], org: "한국지질동맥경화학회", src: "이상지질혈증 진료지침", date: "2022-11", grade: "A" },
+  { id: "dz-mets", name: "대사증후군", summary: "복부비만·혈압·공복혈당·중성지방·HDL 이상 중 3가지 이상 동반.", risk: "내장비만·인슐린저항성·운동부족·과식", manage: "체중 5~10% 감량·유산소+근력운동·식이개선", care: "동반 질환(당뇨·고혈압) 악화 시 진료", related: ["당뇨병", "심뇌혈관질환"], org: "질병관리청", src: "국가건강정보포털", date: "2025-01", grade: "A" },
+  { id: "dz-stroke", name: "뇌졸중(뇌혈관질환)", summary: "뇌혈관이 막히거나(뇌경색) 터져서(뇌출혈) 뇌 손상이 생기는 질환.", risk: "고혈압·당뇨·심방세동·흡연·고지혈·고령", manage: "위험인자 관리·항혈전제(처방 시)·금연·혈압조절", care: "🚨 FAST(얼굴처짐·팔마비·발음장애) 시 즉시 119 — 골든타임", related: ["고혈압", "후유장해"], org: "대한뇌졸중학회", src: "뇌졸중 진료지침", date: "2022-01", grade: "A" },
+  { id: "dz-mi", name: "심근경색·협심증", summary: "관상동맥이 좁아지거나 막혀 심장근육에 혈류가 부족해지는 질환.", risk: "고지혈·당뇨·고혈압·흡연·비만·가족력", manage: "위험인자 관리·금연·운동·약물·필요 시 시술", care: "🚨 20분 이상 지속되는 흉통·식은땀·좌측팔 통증 시 즉시 119", related: ["이상지질혈증", "돌연사"], org: "대한심장학회", src: "심혈관질환 진료지침", date: "2023-01", grade: "A" },
+  { id: "dz-nafld", name: "지방간", summary: "간에 지방이 과다 축적된 상태(알코올성/비알코올성).", risk: "비만·과음·당뇨·이상지질혈증·운동부족", manage: "체중감량·절주·유산소 운동·혈당·지질 관리", care: "황달·복수·의식저하 등 간부전 징후 시 진료", related: ["간경화", "간암"], org: "대한간학회", src: "간질환 진료지침", date: "2023-01", grade: "B" },
+  { id: "dz-ckd", name: "만성콩팥병(CKD)", summary: "eGFR 60 미만 또는 단백뇨가 3개월 이상 지속되는 상태.", risk: "당뇨·고혈압·고령·신독성 약물·가족력", manage: "혈압·혈당 조절·염분/단백 조절·신독성 약물 주의", care: "부종·소변량 감소·심한 피로 시 신장내과 진료", related: ["당뇨병", "고혈압"], org: "대한신장학회", src: "KDIGO/진료지침 참고", date: "2023-01", grade: "A" },
+];
+
+/* 보험·치료비 — 상해보험 약관 학습 요약(참고용) */
+const KB_INSURANCE = [
+  { id: "ins-injury", item: "상해의 정의", summary: "보험기간 중 발생한 ‘급격하고 우연한 외래의 사고’. 질병은 상해에 미포함.", related: ["상해보험"], org: "상해보험 약관", src: "현대단체상해 약관(학습)", date: "2026-01", grade: "B" },
+  { id: "ins-pay", item: "사망·후유장해 보험금", summary: "상해 직접결과 사망 시 사망보험금(가입금액), 후유장해 시 장해지급률×가입금액.", related: ["상해보험"], org: "상해보험 약관", src: "현대단체상해 약관(학습)", date: "2026-01", grade: "B" },
+  { id: "ins-excl", item: "면책(안 주는 경우)", summary: "고의·자해, 음주(0.03%↑)·무면허·약물 운전 중 사고, 위험활동 등은 보상 제외.", related: ["상해보험"], org: "상해보험 약관", src: "약관 제5조", date: "2026-01", grade: "B" },
+  { id: "ins-docs", item: "보험금 청구서류", summary: "① 청구서 ② 사고증명서(진단서·장해진단서·입원확인서) ③ 신분증 ④ 기타.", related: ["보험금 청구"], org: "상해보험 약관", src: "약관 제7조", date: "2026-01", grade: "B" },
+  { id: "ins-term", item: "지급기한·소멸시효", summary: "신체손해 보험금 접수 후 3영업일 이내 지급·가지급 50%. 청구권 소멸시효 3년(상법 662조).", related: ["보험금 지급"], org: "상법/약관", src: "상법 제662조·약관 제8조", date: "2026-01", grade: "A" },
+  { id: "ins-cool", item: "청약철회·고지의무", summary: "증권 수령 15일 내 청약철회 가능. 계약 전 알릴의무(고지)는 청약서에 사실대로 기재·자필서명.", related: ["계약"], org: "보험업법/약관", src: "약관 계약자 유의사항", date: "2026-01", grade: "A" },
+  { id: "ins-silson", item: "실손의료보험(4세대)", summary: "급여/비급여 보장 분리, 자기부담률 상향, 비급여 이용량과 연계한 보험료 할인·할증(2021.7 도입).", related: ["실손보험", "치료비"], org: "금융위원회·보험업계", src: "4세대 실손 표준약관", date: "2021-07", grade: "B" },
+  { id: "ins-embed", item: "임베디드·미니(소액단기)보험", summary: "상품·서비스에 결합하거나 특정 위험만 단기·소액으로 보장하는 형태. 소액단기전문보험업 제도.", related: ["임베디드보험"], org: "보험업법", src: "소액단기전문보험업(2021)", date: "2021-06", grade: "B" },
+];
+
+/* 법률·제도 — 사업모델이 검토해야 할 규제(허용/주의/금지 소지 구분) */
+const KB_LEGAL = [
+  { id: "law-medi", law: "의료법", article: "제27조·제56조", summary: "환자 유인·알선 금지, 의료광고 사전심의 대상.", risk: "주의", note: "진료 연계·리워드·검진 유인은 ‘환자 유인’ 소지 — 법률 검토 필요", org: "국가법령정보센터", date: "2024-01", grade: "A" },
+  { id: "law-ins", law: "보험업법", article: "제83조·제95조·제97조", summary: "보험모집 자격·권유·광고 규제, 무자격 모집·부당권유 금지.", risk: "주의", note: "보험 권유·가입은 라이선스 채널만 가능 — AI는 정보제공까지", org: "국가법령정보센터", date: "2024-01", grade: "A" },
+  { id: "law-fcp", law: "금융소비자보호법", article: "제17~21조", summary: "6대 판매원칙(적합성·적정성·설명의무·불공정영업·부당권유·광고규제).", risk: "주의", note: "건강·금융 상품 추천 시 설명·적합성 의무 준수 필요", org: "국가법령정보센터", date: "2024-01", grade: "A" },
+  { id: "law-pipa", law: "개인정보보호법", article: "제23조·제29조", summary: "민감정보(건강정보)는 별도 동의·최소수집·암호화 등 안전조치 의무.", risk: "필수", note: "건강 데이터는 목적별 동의 분리·가명처리·접근통제 필수", org: "국가법령정보센터", date: "2024-01", grade: "A" },
+  { id: "law-credit", law: "신용정보법", article: "본인신용정보관리업", summary: "마이데이터(본인신용정보관리업)의 법적 근거·허가 요건.", risk: "주의", note: "의료·금융 마이데이터 연계는 허가·동의 체계 검토 필요", org: "국가법령정보센터", date: "2024-01", grade: "B" },
+  { id: "law-efin", law: "전자금융거래법", article: "선불전자지급수단 등", summary: "전자지급수단·선불충전 등 전자금융업 규율.", risk: "주의", note: "포인트/토큰이 선불전자지급수단·전자금융업 해당 여부 검토 필요", org: "국가법령정보센터", date: "2024-01", grade: "B" },
+  { id: "law-vaupa", law: "가상자산이용자보호법", article: "전부", summary: "가상자산 정의·이용자 자산 보호·불공정거래 금지(2024.7 시행).", risk: "주의", note: "‘Health Token’이 가상자산에 해당하는지·규제 적용 여부 검토 필요", org: "국가법령정보센터", date: "2024-07", grade: "B" },
+  { id: "law-ad", law: "표시·광고의 공정화법", article: "제3조", summary: "거짓·과장·기만적 표시광고 금지.", risk: "주의", note: "건강·기능성·효능 표현은 근거 없는 과장 금지", org: "국가법령정보센터", date: "2024-01", grade: "A" },
+  { id: "law-hff", law: "건강기능식품법", article: "제18조", summary: "기능성 표시·광고 사전심의, 허위·과대광고 금지.", risk: "주의", note: "영양제·건기식 기능성 문구는 식약처 인정 범위 내에서만", org: "국가법령정보센터", date: "2024-01", grade: "A" },
+  { id: "law-sandbox", law: "금융혁신지원 특별법", article: "혁신금융서비스", summary: "규제샌드박스로 한시적 규제특례·지정대리인 제도 운영.", risk: "기회", note: "임베디드보험·건강금융 모델은 규제샌드박스 활용 검토 가능", org: "국가법령정보센터", date: "2024-01", grade: "B" },
+];
 
 /* ====================== 온톨로지 기반 상담 엔진 ======================
    검진항목 해석 / 보험 보장 공백 분석 / 후속조치 안내 — 회원 건강리포트 연계 + AI 거버넌스.

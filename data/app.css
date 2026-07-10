@@ -2587,6 +2587,12 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .kbsearch input::placeholder{color:#6b7c99;}
 .kbsearch>span{font-size:11px;font-weight:800;color:#67E8F9;flex-shrink:0;}
 .kbtag{display:inline-block;font-size:9px;color:#CBD6EA;background:#101f3c;border:1px solid #23405f;border-radius:5px;padding:1px 5px;margin:1px 2px 1px 0;}
+.kbdomsel{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:11px;}
+.kbdomsel button{font-size:12px;font-weight:800;border-radius:20px;padding:8px 14px;cursor:pointer;background:#0B1730;border:1px solid #23405f;color:#9FB2CE;transition:.12s;display:flex;align-items:center;gap:6px;}
+.kbdomsel button:hover{border-color:#2b4a72;}
+.kbdomsel button em{font-style:normal;font-size:10px;font-weight:800;color:#67E8F9;background:#101f3c;border-radius:10px;padding:1px 6px;}
+.kbdomsel button.on{background:linear-gradient(90deg,#22D3EE,#3B82F6);color:#04202b;border-color:transparent;}
+.kbdomsel button.on em{background:rgba(4,32,43,.22);color:#04202b;}
 /* ③ 승인 워크플로 */
 .kbq-card{background:#0B1730;border:1px solid #1F3050;border-radius:12px;padding:12px 14px;margin-bottom:9px;}
 .kbq-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}

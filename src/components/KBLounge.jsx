@@ -99,9 +99,16 @@ function KBApprovalQueue() {
 function AIKBLounge({ onGo }) {
   const [tab, setTab] = React.useState("dash");
   const [q, setQ] = React.useState("");
+  const [dom, setDom] = React.useState("checkup");
   const CHK = (typeof KB_CHECKUP !== "undefined") ? KB_CHECKUP : [];
+  const DIS = (typeof KB_DISEASE !== "undefined") ? KB_DISEASE : [];
+  const INS = (typeof KB_INSURANCE !== "undefined") ? KB_INSURANCE : [];
+  const LAW = (typeof KB_LEGAL !== "undefined") ? KB_LEGAL : [];
   const CHK_META = (typeof KB_CHECKUP_META !== "undefined") ? KB_CHECKUP_META : { count: CHK.length };
-  const chkRows = q.trim() ? CHK.filter((r) => (r.item + " " + r.meaning + " " + (r.related || []).join(" ")).toLowerCase().includes(q.trim().toLowerCase())) : CHK;
+  const DOMS = [["checkup", "건강검진", CHK, "국가건강검진·5개 학회 기준 · 검토완료"], ["disease", "질환", DIS, "질병관리청·전문학회 진료지침 · 검토완료"], ["insurance", "보험·치료비", INS, "상해보험 약관·금융위 · 학습·검토"], ["legal", "법률·제도", LAW, "국가법령정보센터 · 규제 검토용"]];
+  const activeDom = DOMS.find((d) => d[0] === dom) || DOMS[0];
+  const _txt = (r) => Object.values(r).map((v) => Array.isArray(v) ? v.join(" ") : v).join(" ").toLowerCase();
+  const domRows = q.trim() ? activeDom[2].filter((r) => _txt(r).includes(q.trim().toLowerCase())) : activeDom[2];
   const iconOf = (nm) => ({ Stethoscope, HeartPulse, Activity, ShieldCheck, Coins, Scale }[nm] || Database);
   const subTabs = [["dash", "현황 대시보드", Activity], ["onto", "지식 분류 온톨로지", Network], ["browse", "지식 항목 브라우저", Search], ["pipe", "수집·검증 워크플로", Workflow], ["approve", "승인 워크플로(HITL)", ShieldCheck], ["acq", "데이터 확보전략 AI", Route], ["rag", "AI 답변 근거(RAG)", Bot]];
   return (
@@ -138,24 +145,45 @@ function AIKBLounge({ onGo }) {
       </>}
 
       {tab === "browse" && <>
-        <div className="kbload"><span className="kbload-ic"><Stethoscope size={15} /></span><div><b>건강검진 정상범위·위험구간 <span className="kbload-tag">실측 적재 {CHK_META.count}건</span></b><p>국가건강검진·대한고혈압/당뇨병/비만학회·지질동맥경화학회 기준으로 수집·구조화 · <b>{CHK_META.reviewedBy || "검토완료"}</b> · 적재 {CHK_META.loadedAt || "2026-07"}</p></div></div>
-        <div className="kbsearch"><Search size={13} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="검진 항목·질환 검색 (예: 혈당, 콜레스테롤, 간, 신장)" /><span>{chkRows.length}건</span></div>
-        <div className="sctablewrap"><table className="sctable"><thead><tr><th>검진 항목</th><th>정상</th><th>주의</th><th>위험</th><th>임상적 의미</th><th>관련질환</th><th>출처</th><th>신뢰도</th></tr></thead>
-          <tbody>{chkRows.map((r) => <tr key={r.id}>
-            <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.item}<small style={{ display: "block", color: "#7C8BA8", fontWeight: 500 }}>{r.unit}</small></td>
-            <td style={{ color: "#34D399" }}>{r.normal}</td><td style={{ color: "#FBBF24" }}>{r.caution}</td><td style={{ color: "#F87171" }}>{r.danger}</td>
-            <td style={{ maxWidth: 240, whiteSpace: "normal", color: "#CBD6EA" }}>{r.meaning}</td>
-            <td style={{ whiteSpace: "nowrap" }}>{(r.related || []).map((d) => <span key={d} className="kbtag">{d}</span>)}</td>
-            <td style={{ whiteSpace: "nowrap", fontSize: "10px" }}>{r.org}<small style={{ display: "block", color: "#7C8BA8" }}>{r.src} · {r.date}</small></td>
-            <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}
-            {!chkRows.length && <tr><td colSpan={8} style={{ textAlign: "center", color: "#8FA0BE", padding: "14px" }}>검색 결과가 없습니다.</td></tr>}</tbody></table></div>
-        <div className="kbnote"><Database size={12} /> 각 항목은 표준 스키마(출처·작성기관·발표일·수집일·검토일·신뢰도·최신성·관련 질환·관련 검진·태그)로 저장되며, <b>AI 주치의/설계사가 회원 검진 결과 해석에 근거로 인용</b>합니다(② RAG 연결).</div>
-        <div className="kbct" style={{ margin: "14px 0 8px" }}><Search size={13} /> 기타 도메인 적재 항목(예시)</div>
-        <div className="sctablewrap"><table className="sctable"><thead><tr><th>제목</th><th>대분류</th><th>출처</th><th>작성일</th><th>신뢰도</th><th>최신성</th><th>상태</th></tr></thead>
-          <tbody>{KB_ENTRIES.map((r, i) => <tr key={i}><td style={{ maxWidth: 260, whiteSpace: "normal" }}>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td>
-            <td><span className={"kbbadge grade-" + r[4]}>{r[4]}</span></td>
-            <td><span className={"kbbadge fresh-" + (r[5] === "최신" ? "ok" : r[5] === "검토요" ? "warn" : "old")}>{r[5]}</span></td>
-            <td><span className={"kbbadge st-" + (r[6] === "승인" ? "ok" : r[6] === "검토중" ? "mid" : "wait")}>{r[6]}</span></td></tr>)}</tbody></table></div>
+        <div className="kbdomsel">{DOMS.map(([k, t, arr]) => <button key={k} className={dom === k ? "on" : ""} onClick={() => setDom(k)}>{t} <em>{arr.length}</em></button>)}</div>
+        <div className="kbload"><span className="kbload-ic"><Database size={15} /></span><div><b>{activeDom[1]} 지식 <span className="kbload-tag">실측 적재 {activeDom[2].length}건</span></b><p>{activeDom[3]} · <b>AI 주치의/설계사가 상담 근거로 인용</b>(② RAG)</p></div></div>
+        <div className="kbsearch"><Search size={13} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`${activeDom[1]} 검색 (예: 혈당, 고혈압, 면책, 개인정보)`} /><span>{domRows.length}건</span></div>
+        <div className="sctablewrap">
+          {dom === "checkup" && <table className="sctable"><thead><tr><th>검진 항목</th><th>정상</th><th>주의</th><th>위험</th><th>임상적 의미</th><th>관련질환</th><th>출처</th><th>신뢰도</th></tr></thead>
+            <tbody>{domRows.map((r) => <tr key={r.id}>
+              <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.item}<small style={{ display: "block", color: "#7C8BA8", fontWeight: 500 }}>{r.unit}</small></td>
+              <td style={{ color: "#34D399" }}>{r.normal}</td><td style={{ color: "#FBBF24" }}>{r.caution}</td><td style={{ color: "#F87171" }}>{r.danger}</td>
+              <td style={{ maxWidth: 230, whiteSpace: "normal", color: "#CBD6EA" }}>{r.meaning}</td>
+              <td style={{ whiteSpace: "nowrap" }}>{(r.related || []).map((d) => <span key={d} className="kbtag">{d}</span>)}</td>
+              <td style={{ whiteSpace: "nowrap", fontSize: "10px" }}>{r.org}<small style={{ display: "block", color: "#7C8BA8" }}>{r.src} · {r.date}</small></td>
+              <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}</tbody></table>}
+          {dom === "disease" && <table className="sctable"><thead><tr><th>질환</th><th>정의</th><th>주요 위험요인</th><th>예방·관리</th><th>응급·진료 기준</th><th>출처</th><th>신뢰도</th></tr></thead>
+            <tbody>{domRows.map((r) => <tr key={r.id}>
+              <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.name}</td>
+              <td style={{ maxWidth: 210, whiteSpace: "normal", color: "#CBD6EA" }}>{r.summary}</td>
+              <td style={{ maxWidth: 160, whiteSpace: "normal", color: "#9FB2CE", fontSize: "10.5px" }}>{r.risk}</td>
+              <td style={{ maxWidth: 180, whiteSpace: "normal", color: "#A7F3D0", fontSize: "10.5px" }}>{r.manage}</td>
+              <td style={{ maxWidth: 180, whiteSpace: "normal", color: /🚨/.test(r.care) ? "#FCA5A5" : "#CBD6EA", fontSize: "10.5px" }}>{r.care}</td>
+              <td style={{ whiteSpace: "nowrap", fontSize: "10px" }}>{r.org}<small style={{ display: "block", color: "#7C8BA8" }}>{r.src} · {r.date}</small></td>
+              <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}</tbody></table>}
+          {dom === "insurance" && <table className="sctable"><thead><tr><th>항목</th><th>요약</th><th>관련</th><th>출처</th><th>신뢰도</th></tr></thead>
+            <tbody>{domRows.map((r) => <tr key={r.id}>
+              <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.item}</td>
+              <td style={{ maxWidth: 340, whiteSpace: "normal", color: "#CBD6EA" }}>{r.summary}</td>
+              <td style={{ whiteSpace: "nowrap" }}>{(r.related || []).map((d) => <span key={d} className="kbtag">{d}</span>)}</td>
+              <td style={{ whiteSpace: "nowrap", fontSize: "10px" }}>{r.org}<small style={{ display: "block", color: "#7C8BA8" }}>{r.src} · {r.date}</small></td>
+              <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}</tbody></table>}
+          {dom === "legal" && <table className="sctable"><thead><tr><th>법령</th><th>조문</th><th>요약</th><th>사업 검토사항</th><th>구분</th><th>신뢰도</th></tr></thead>
+            <tbody>{domRows.map((r) => <tr key={r.id}>
+              <td style={{ fontWeight: 700, color: "#EAF2FF", whiteSpace: "nowrap" }}>{r.law}</td>
+              <td style={{ whiteSpace: "nowrap", color: "#9FB2CE", fontSize: "10.5px" }}>{r.article}</td>
+              <td style={{ maxWidth: 240, whiteSpace: "normal", color: "#CBD6EA" }}>{r.summary}</td>
+              <td style={{ maxWidth: 220, whiteSpace: "normal", color: "#FBBF24", fontSize: "10.5px" }}>{r.note}</td>
+              <td><span className={"kbq-risk r-" + (r.risk === "필수" ? "hi" : r.risk === "기회" ? "lo" : "mid")}>{r.risk}</span></td>
+              <td><span className={"kbbadge grade-" + r.grade}>{r.grade}</span></td></tr>)}</tbody></table>}
+          {!domRows.length && <div style={{ textAlign: "center", color: "#8FA0BE", padding: "16px" }}>검색 결과가 없습니다.</div>}
+        </div>
+        <div className="kbnote"><Database size={12} /> 각 항목은 표준 스키마(출처·작성기관·발표일·신뢰도·관련·태그)로 저장되며, <b>AI 주치의/설계사</b>가 상담 근거로 인용합니다. <span style={{ color: "#FBBF24" }}>법률·제도는 사업모델의 규제 검토용이며 확정 해석이 아닙니다.</span></div>
       </>}
 
       {tab === "pipe" && <>
