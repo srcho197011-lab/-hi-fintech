@@ -30,6 +30,7 @@ function HospitalDirectory({ data, preset }) {
   const [shown, setShown] = useState(20);
   const [sel, setSel] = useState(null);
   const [detail, setDetail] = useState(null);
+  const [near, setNear] = useState(null);
   useEffect(() => { setSido(preset.sido); setDept(preset.dept); setSgg(preset.sgg || "전체"); setShown(20); }, [preset]);
 
   const { sggBySido, countBySido } = React.useMemo(() => {
@@ -37,6 +38,16 @@ function HospitalDirectory({ data, preset }) {
     for (const h of data.hospitals) { const s = data.sido[h[2]]; c[s] = (c[s] || 0) + 1; (m[s] || (m[s] = new Set())).add(h[3]); }
     return { sggBySido: m, countBySido: c };
   }, [data]);
+  // 내 주변 병원 — 회원 주소의 시·도/시·군·구를 선택(시군구는 근사 매칭)
+  const findNear = () => {
+    const r = (typeof memberRegion === "function") ? memberRegion() : null; if (!r) return;
+    // 병원 data.sido 는 축약형("서울") — sidoShort 로 매칭
+    const key = data.sido.indexOf(r.sidoShort) >= 0 ? r.sidoShort : (data.sido.indexOf(r.sidoFull) >= 0 ? r.sidoFull : null);
+    let msgg = "전체";
+    if (key) { const opts = [...(sggBySido[key] || [])]; const bare = r.sgg.replace(/\s+/g, ""); const core = r.sgg.split(/\s+/).pop(); if (opts.includes(r.sgg)) msgg = r.sgg; else { const f = opts.find((o) => o === core || o.replace(/\s+/g, "") === bare || o.indexOf(core) >= 0 || bare.indexOf(o.replace(/\s+/g, "")) >= 0); if (f) msgg = f; } }
+    setNear(r); setSido(key || "전체"); setSgg(msgg); setQ(""); setShown(20);
+    if (typeof toast === "function") toast(`📍 ${r.name}님 주소(${r.sidoShort} ${r.sgg}) 기준 근처 병원`);
+  };
   const sidoChips = React.useMemo(() => ["전체", ...[...data.sido].sort((a, b) => SIDO_ORDER.indexOf(a) - SIDO_ORDER.indexOf(b))], [data]);
   const sggOptions = React.useMemo(() => sido === "전체" ? [] : [...(sggBySido[sido] || [])].sort((a, b) => a.localeCompare(b, "ko")), [sido, sggBySido]);
   const deptOptions = React.useMemo(() => [...data.dept].sort((a, b) => a.localeCompare(b, "ko")), [data]);
@@ -68,8 +79,10 @@ function HospitalDirectory({ data, preset }) {
         <span><Art name="badge" size={16} /> NFT 예약증 발행</span>
       </div>
       <MapCard title={`병원 위치 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳)`} accent="#2563EB" points={view.length > 0 ? list.map((h) => ({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8] })) : []} />
-      <div className="bklbl" style={{ margin: "0 0 8px" }}>지역(시·도) 선택</div>
-      <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); reset(); }}>{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
+      <div className="bklbl" style={{ margin: "0 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span>지역(시·도) 선택</span>
+        <button className="nearbtn" onClick={findNear}><MapPin size={13} /> 내 주변 병원</button></div>
+      <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); setNear(null); reset(); }}>{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
+      {near && (<div className="nearinfo"><MapPin size={13} /> <b>{near.name}</b>님 주소 <b>{near.sidoShort} {near.sgg}</b> 기준 안내{sgg === "전체" && <span className="nearnote"> · 시·군·구 근사 매칭 실패, 시·도 전체 표시</span>}<button onClick={() => { setNear(null); setSido("전체"); setSgg("전체"); reset(); }}>해제</button></div>)}
       <div className="hfilt">
         <select value={sgg} onChange={(e) => { setSgg(e.target.value); reset(); }} disabled={sido === "전체"}>
           <option value="전체">{sido === "전체" ? "시·도 먼저 선택" : "시·군·구 전체"}</option>

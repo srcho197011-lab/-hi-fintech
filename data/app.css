@@ -3708,3 +3708,13 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .finv-rbctl button:hover{background:#1c3358}
 .finv-rbctl b{min-width:46px;text-align:center;font-family:ui-monospace,monospace;font-size:14px}
 .finv-rbact{text-align:right;font-family:ui-monospace,monospace;font-size:12.5px;font-weight:600}
+
+/* ── 내 주변(검진센터·병원) 추천 ── */
+.nearbtn{display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;border:none;border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,.28);white-space:nowrap}
+.nearbtn:hover{filter:brightness(1.07)}
+.nearbtn:active{transform:translateY(1px)}
+.nearinfo{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;border-radius:11px;padding:9px 13px;margin:8px 0 4px;font-size:12.5px;font-weight:600}
+.nearinfo b{font-weight:900}
+.nearinfo .nearnote{color:#64748B;font-weight:600}
+.nearinfo button{margin-left:auto;background:#fff;border:1px solid #BFDBFE;color:#1D4ED8;border-radius:999px;padding:3px 11px;font-size:11.5px;font-weight:800;cursor:pointer}
+.nearinfo button:hover{background:#DBEAFE}

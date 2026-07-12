@@ -20,6 +20,37 @@ const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKE
 
 /* ====================== real data (조성래 · 프롬에이지 Premium) ====================== */
 const PT = { name: "조성래", sexAge: "남 / 54.1세", checkup: "2024.12.26", analyzed: "2026.05.08", reg: "KRH01778214095470R2083", regAge: 54.1, bioAge: 52.5, agingRank: 37, agingSpeed: 0.97, sido: "서울", sigungu: "은평구", dong: "불광동", addr: "서울특별시 은평구 불광동" };
+
+/* ── 회원 거주지역 추정 — 검진센터·병원 '내 주변' 추천용 ──
+   demoCurrentUser().addr(있으면 파싱) → 없으면 이름/ID 해시로 결정론적 배정 → 게이트 사용자는 PT(은평구). */
+const NEARME_POOL = [
+  ["서울특별시", "은평구"], ["서울특별시", "강남구"], ["서울특별시", "송파구"], ["서울특별시", "영등포구"],
+  ["서울특별시", "종로구"], ["서울특별시", "강서구"], ["서울특별시", "동대문구"], ["경기도", "수원시 장안구"],
+  ["경기도", "수원시 권선구"], ["인천광역시", "남동구"], ["부산광역시", "동구"], ["대구광역시", "북구"],
+  ["대전광역시", "서구"], ["광주광역시", "서구"], ["울산광역시", "중구"], ["제주특별자치도", "제주시"],
+];
+function _regHash(s) { let h = 2166136261; s = String(s || ""); for (let i = 0; i < s.length; i++) { h = (h ^ s.charCodeAt(i)) >>> 0; h = (h * 16777619) >>> 0; } return h >>> 0; }
+function _sidoFull(s) {
+  if (!s) return ""; if (/특별시|광역시|특별자치|도$/.test(s)) return s;
+  const M = { "서울": "서울특별시", "부산": "부산광역시", "인천": "인천광역시", "대구": "대구광역시", "대전": "대전광역시", "광주": "광주광역시", "울산": "울산광역시", "세종": "세종특별자치시", "경기": "경기도", "강원": "강원특별자치도", "충북": "충청북도", "충남": "충청남도", "전북": "전북특별자치도", "전남": "전라남도", "경북": "경상북도", "경남": "경상남도", "제주": "제주특별자치도" };
+  return M[s.replace(/시$/, "")] || M[s] || s;
+}
+function memberRegion() {
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const short = (s) => (typeof tmSidoShort === "function" ? tmSidoShort(s) : _sidoFull(s).replace(/특별자치도|특별자치시|특별시|광역시|도$/, ""));
+  let name = "", sidoFull = "", sgg = "", addr = "", exact = false;
+  if (dm) {
+    name = dm.name || ""; addr = dm.addr || "";
+    if (addr) { const t = addr.trim().split(/\s+/); sidoFull = _sidoFull(t[0] || ""); sgg = (t[1] || "") + (t[2] && /구$|동$/.test(t[2]) && /시$/.test(t[1] || "") ? " " + t[2] : ""); sgg = sgg.replace(/\s+동$/, "").trim(); }
+    if (dm.sido) sidoFull = _sidoFull(dm.sido);
+    if (dm.sigungu) sgg = dm.sigungu;
+    if (sidoFull && sgg) exact = true;
+    else { const p = NEARME_POOL[_regHash(dm.id || dm.name || "m") % NEARME_POOL.length]; sidoFull = p[0]; sgg = p[1]; }
+  } else if (typeof PT !== "undefined") {
+    name = PT.name; addr = PT.addr; sidoFull = "서울특별시"; sgg = PT.sigungu; exact = true;
+  } else { sidoFull = "서울특별시"; sgg = "은평구"; }
+  return { name, sidoFull, sidoShort: short(sidoFull), sgg, addr: addr || (sidoFull + " " + sgg), exact };
+}
 const ORGANS = [["비만체형", "50.9", "좋음", true], ["심장", "50.7", "좋음", true], ["간", "54.4", "나쁨", false], ["췌장", "56.2", "나쁨", false], ["신장", "53.4", "좋음", true]];
 const DISEASES = [["비만", -24.8, "25.5%"], ["고지혈증", -17.1, "46.4%"], ["고혈압", -3.9, "22.3%"], ["당뇨병", 6.2, "10.9%"], ["허혈심장질환", -5.0, "12.0%"], ["급성심근경색증", -8.9, "8.1%"], ["뇌혈관질환", -3.7, "10.8%"], ["뇌졸중", -4.7, "6.9%"], ["치매", -5.5, "5.9%"]];
 const CANCERS = [["간암", "주의"], ["담낭암", "주의"], ["췌장암", "경고"], ["위암", "주의"], ["대장암", "주의"], ["폐암", "양호"], ["신장암", "주의"], ["방광암", "양호"], ["전립선암", "주의"], ["갑상선암", "주의"]];

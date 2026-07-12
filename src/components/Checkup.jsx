@@ -224,6 +224,8 @@ function BrandDirectory({ only, catFilter }) {
   const single = !!only, isKahp = only === "한국건강관리협회", isKmi = only === "KMI한국의학연구소";
   const [brand, setBrand] = useState("전체");
   const [sido, setSido] = useState("전체");
+  const [sgg, setSgg] = useState("전체");
+  const [near, setNear] = useState(null); // 내 주변 활성 시 {name,sidoFull,sidoShort,sgg}
   const [q, setQ] = useState("");
   const [shown, setShown] = useState(single ? 12 : 10);
   const [sel, setSel] = useState(null);
@@ -237,9 +239,20 @@ function BrandDirectory({ only, catFilter }) {
   const brands = single ? [] : ["전체", ...Array.from(new Set(base.map((c) => c.b)))];
   const brandList = base.filter((c) => single || brand === "전체" || c.b === brand);
   const sidos = ["전체", ...Array.from(new Set(brandList.map((c) => c.sd))).sort((a, b) => rank(a) - rank(b))];
+  // 선택 시·도의 시·군·구(큐레이션 센터 보유분)
+  const sggs = sido === "전체" ? [] : ["전체", ...Array.from(new Set(brandList.filter((c) => c.sd === sido).map((c) => c.sg))).sort((a, b) => a.localeCompare(b, "ko"))];
   const isPartner = (c) => c.b === "한신메디피아";
-  let list = brandList.filter((c) => (sido === "전체" || c.sd === sido) && (!q || (c.n + c.sd + c.sg + c.ad).includes(q)));
-  list = list.sort((a, b) => (isPartner(a) ? 0 : 1) - (isPartner(b) ? 0 : 1) || rank(a.sd) - rank(b.sd) || a.sg.localeCompare(b.sg, "ko"));
+  // 내 주변 추천 — 회원 주소 기준. 같은 시·군·구 → 같은 시·도 순으로 정렬
+  const findNear = () => {
+    const r = (typeof memberRegion === "function") ? memberRegion() : null; if (!r) return;
+    const hasSido = brandList.some((c) => c.sd === r.sidoFull);
+    const hasSgg = brandList.some((c) => c.sd === r.sidoFull && c.sg === r.sgg);
+    setNear(r); setSido(hasSido ? r.sidoFull : "전체"); setSgg(hasSgg ? r.sgg : "전체"); setQ(""); setShown(single ? 12 : 10);
+    if (typeof toast === "function") toast(`📍 ${r.name}님 주소(${r.sidoShort} ${r.sgg}) 기준 근처 검진센터`);
+  };
+  const nearScore = (c) => near ? ((c.sg === near.sgg ? 0 : 1) + (c.sd === near.sidoFull ? 0 : 2)) : 0;
+  let list = brandList.filter((c) => (sido === "전체" || c.sd === sido) && (sgg === "전체" || c.sg === sgg) && (!q || (c.n + c.sd + c.sg + c.ad).includes(q)));
+  list = list.sort((a, b) => (near ? nearScore(a) - nearScore(b) : 0) || (isPartner(a) ? 0 : 1) - (isPartner(b) ? 0 : 1) || rank(a.sd) - rank(b.sd) || a.sg.localeCompare(b.sg, "ko"));
   const view = list.slice(0, shown);
   const card = (c, i) => { const m = META[c.b] || {}; const partner = isPartner(c); return (
     <div className={`center${partner ? " partner" : ""}`} key={i}>
@@ -287,8 +300,14 @@ function BrandDirectory({ only, catFilter }) {
         <><div className="bklbl" style={{ margin: "0 0 8px" }}>브랜드</div>
         <div className="regions">{brands.map((b) => <div key={b} className={`fsel ${brand === b ? "on" : ""}`} onClick={() => { setBrand(b); setSido("전체"); setShown(10); }}>{b === "전체" ? "전체" : (META[b]?.short || b)}</div>)}</div></>
       )}
-      <div className="bklbl" style={{ margin: "10px 0 8px" }}>지역(시·도)</div>
-      <div className="regions">{sidos.map((s) => <div key={s} className={`fsel ${sido === s ? "on" : ""}`} onClick={() => { setSido(s); setShown(single ? 12 : 10); }}>{s === "전체" ? "전체" : ssido(s)}</div>)}</div>
+      <div className="bklbl" style={{ margin: "10px 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span>지역(시·도)</span>
+        <button className="nearbtn" onClick={findNear}><MapPin size={13} /> 내 주변 검진센터</button></div>
+      <div className="regions">{sidos.map((s) => <div key={s} className={`fsel ${sido === s ? "on" : ""}`} onClick={() => { setSido(s); setSgg("전체"); setNear(null); setShown(single ? 12 : 10); }}>{s === "전체" ? "전체" : ssido(s)}</div>)}</div>
+      {sido !== "전체" && sggs.length > 1 && (<>
+        <div className="bklbl" style={{ margin: "10px 0 8px" }}>시·군·구</div>
+        <div className="regions">{sggs.map((s) => <div key={s} className={`fsel ${sgg === s ? "on" : ""}`} onClick={() => { setSgg(s); setShown(single ? 12 : 10); }}>{s}</div>)}</div>
+      </>)}
+      {near && (<div className="nearinfo"><MapPin size={13} /> <b>{near.name}</b>님 주소 <b>{near.sidoShort} {near.sgg}</b> 기준 가까운 순 정렬{!brandList.some((c) => c.sd === near.sidoFull && c.sg === near.sgg) && <span className="nearnote"> · 해당 시·군·구 큐레이션 센터가 없어 같은 시·도에서 가까운 순으로 안내</span>}<button onClick={() => { setNear(null); setSido("전체"); setSgg("전체"); }}>해제</button></div>)}
       <div className="filterbar"><div className="fsearch"><Search size={15} /><input value={q} onChange={(e) => { setQ(e.target.value); setShown(single ? 12 : 10); }} placeholder="기관명·지역·주소 검색" /></div></div>
       <div className="chcount">{isKahp ? "한국건강관리협회" : isKmi ? "KMI 검진센터" : (brand === "전체" ? "브랜드 검진기관" : (META[brand]?.short || brand))} <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳 · 전체 큐레이션 {ALL.length}곳</div>
       {view.map((c, i) => card(c, i))}
