@@ -276,6 +276,52 @@ function memberCheckupCounsel(text, m) {
   };
 }
 
+/* ── 로그인 회원 '내 건강상태 정밀 분석'(데이터하우스 세부 검진데이터 기반) ── */
+function memberDeepAnalysis(text, m) {
+  if (!m || typeof genMemberCheckup !== "function") return null;
+  const raw = String(text || "");
+  if (!/건강\s*상태.*분석|정밀\s*분석|종합\s*분석|건강\s*분석해|내\s*건강.*분석|건강상태\s*분석|상세\s*분석|자세.{0,3}분석|정밀.{0,4}건강|분석해\s*줘|분석해\s*주세요|분석 부탁/.test(raw)) return null;
+  const chk = genMemberCheckup(m);
+  const R = (typeof demoReport === "function") ? (() => { try { return demoReport(m); } catch (e) { return null; } })() : null;
+  const N = m.name || "회원";
+  const emoji = ["✅", "⚠️", "🚨"];
+  const fmt = (n) => Number(n).toLocaleString("ko-KR");
+  const shortName = (nm) => nm.split(" (")[0].split("(")[0];
+  // 검진 이상항목 상세(위험>주의 순)
+  const abn = Object.keys(chk.items).map((k) => chk.items[k]).filter((r) => r.sev >= 1 && r.series).sort((a, b) => b.sev - a.sev || b.series[2].value - a.series[2].value);
+  const arrow = (r) => { const a = r.series[0].value, b = r.series[2].value; if (Math.abs(b - a) < Math.abs(a) * 0.02) return "→ 유지"; const worseUp = !(r.item && r.item.lowIsBad); const better = worseUp ? b < a : b > a; return better ? "📉 개선 중" : "📈 악화 중"; };
+  const abnItems = abn.slice(0, 7).map((r) => { const p = r.series[2]; return `${emoji[r.sev]} ${r.name} ${p.value}${r.unit} 「${p.label}」 (참고치 ${r.ref}) · 3년 ${arrow(r)}`; });
+  // 생체나이·장기
+  const organLines = R ? R.organs.map((o) => `${o[0]} ${o[1]}세 ${o[3] ? "✓ 양호" : "▲ 노화 빠름"}`) : [];
+  // 질병 위험 상위 + 암
+  const dzTop = R ? R.diseases.slice().sort((a, b) => b[1] - a[1]).filter((d) => d[1] > 0).slice(0, 5).map((d) => `${d[0]} 동년배 대비 +${d[1]}% (10년 발생률 ${d[2]})`) : [];
+  const cancerHi = R ? R.cancers.filter((c) => c[1] !== "양호").map((c) => `${c[0]} ${c[1]}`) : [];
+  // 카테고리별 관리 액션
+  const cats = {}; abn.forEach((r) => { const it = r.item; if (it && !cats[it.dz]) cats[it.dz] = it.tip; });
+  const actions = Object.keys(cats).slice(0, 5).map((dz) => `${dz} → ${cats[dz]}`);
+  const trendMsg = { improve: "최근 3년 전반적으로 개선되는 흐름이에요. 지금 관리를 계속 유지하세요. 👍", worsen: "최근 3년 악화 흐름이에요. 생활습관 교정과 정밀 추적이 필요해요.", stable: "최근 3년 큰 변화 없이 유지 중이에요. 이상 항목은 목표 범위로 개선을 권해요." }[chk.trend];
+  const costLine = chk.report ? chk.report.years.map((y, i) => `'${String(y).slice(2)} ${fmt(chk.report.cost[i])}원`).join(" → ") : (R ? fmt(R.costThis) + "원" : "-");
+
+  const head = `🔬 ${N}님 정밀 건강분석입니다 (데이터하우스 검진데이터 기반)\n` +
+    (R ? `• 생체나이 ${R.bio}세 (주민등록 ${R.reg}세, ${R.diff <= 0 ? R.diff : "+" + R.diff}세) · 종합평가 「${R.evalLabel}」 · 노화속도 ${R.agingSpeed}배\n` : "") +
+    `• 국가건강검진 판정 「${chk.nat.grade}」 · 종합검진 이상항목 ${abn.length}건 · 최근 3년 진행형태 「${chk.trendLabel}」`;
+
+  const bubbles = [{ kind: "text", text: head }];
+  if (organLines.length) bubbles.push({ kind: "card", card: { title: "🧬 생체나이 · 장기 정밀", items: organLines, buttons: ["내 생체나이는?", "내 3년 검진 추이"] } });
+  if (abnItems.length) bubbles.push({ kind: "card", card: { title: `📋 검진 이상항목 상세 (${abn.length}건)`, items: abnItems, buttons: abn.slice(0, 2).map((r) => `내 ${shortName(r.name)} 결과`) } });
+  else bubbles.push({ kind: "card", card: { title: "📋 종합검진 결과", items: ["주요 항목이 모두 정상 범위입니다. 잘 유지하고 계세요. 👍"], buttons: ["내 3년 검진 추이"] } });
+  const riskItems = dzTop.slice();
+  if (cancerHi.length) riskItems.push(`⚠️ 주의 암종: ${cancerHi.slice(0, 4).join(" · ")}`);
+  if (R) riskItems.push(`전체 암 발생 위험도 ${R.cancerTotal}등급 (${R.evalLabel})`);
+  if (riskItems.length) bubbles.push({ kind: "card", card: { title: "📊 질병 · 암 발생 위험도", items: riskItems, buttons: [dzTop[0] ? `${dzTop[0].split(" ")[0]} 생활습관 관리법은?` : "내가 가장 조심해야 할 암은?", "내가 가장 조심해야 할 암은?"] } });
+  const careItems = [`예상 의료비(3년): ${costLine}`].concat(actions.length ? actions : ["현재 뚜렷한 이상 항목이 없어요. 정기검진·생활습관을 유지하세요."]);
+  bubbles.push({ kind: "card", card: { title: "🎯 핵심 관리 · 의료비", items: careItems, buttons: ["내 의료비 예측", "맞춤 홈케어 의료기기"] } });
+  bubbles.push({ kind: "text", text: `${trendMsg}\n📚 근거: ${chk.nat.src} · ${chk.comp.src} · ${typeof REPORT_SRC !== "undefined" ? REPORT_SRC : "건강분석리포트"} (회원 검진데이터 RAG)\n※ 확정 진단이 아닌 위험 '가능성' 안내이며, 정확한 진단·판단은 의료진 상담이 필요합니다.` });
+
+  const quicks = [abn[0] ? `내 ${shortName(abn[0].name)} 결과` : "내 3년 검진 추이", "내 3년 검진 추이", "내 의료비 예측", "내가 가장 조심해야 할 암은?"].filter((v, i, a) => a.indexOf(v) === i).slice(0, 4);
+  return { bubbles, quicks };
+}
+
 /* ── 검진 이해 교육 상담(회원 불필요) ── */
 function checkupEduCounsel(text) {
   if (typeof CHECKUP_EDU === "undefined") return null;

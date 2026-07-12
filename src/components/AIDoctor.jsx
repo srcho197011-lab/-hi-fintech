@@ -1991,6 +1991,8 @@ function aiRespond(text, corpus, report, QA) {
   }
   // AI KB 라운지 RAG — 검진 수치 판정 + 근거 + 관련 보험·건강미션(예: '공복혈당 110', '혈압 140/90', 'BMI 27')
   if (typeof kbCheckupCounsel === "function") { const _kb = kbCheckupCounsel(text); if (_kb) return _kb; }
+  // 회원 검진데이터 RAG — '내 건강상태 분석'(데이터하우스 세부 검진데이터로 정밀 다중카드 분석)
+  if (typeof memberDeepAnalysis === "function") { const _cm1 = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; const _da = memberDeepAnalysis(text, _cm1); if (_da) return _da; }
   // 회원 검진데이터 RAG — 로그인 회원의 '내 검진 결과'(예: '내 콜레스테롤 결과', '내 검진 결과 요약', '내 공복혈당 어때?')
   if (typeof memberCheckupCounsel === "function") { const _cm0 = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; const _mc = memberCheckupCounsel(text, _cm0); if (_mc) return _mc; }
   // AI KB 라운지 RAG — 질환 정의·개요(예: '고혈압이 뭐야?', '당뇨병 위험요인') → KB 정의·위험요인·근거 (질환명은 항목기준보다 우선)
