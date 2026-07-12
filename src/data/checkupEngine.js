@@ -77,12 +77,70 @@ function _refStr(item, sex) {
   const rr = r[sex] || r.m; if (item.lowIsBad) return `${sex === "f" ? "여" : "남"} ${rr[0]}${item.unit} 이상`; return `${sex === "f" ? "여" : "남"} ${rr[0]}~${rr[1]}${item.unit}`;
 }
 
+/* ═══ 최근 3년 추이(진행형태: 나아짐/악화/유지) ═══ */
+const _CHK_CUR_YEAR = 2026;                                   // 최근(현재) 검진 연도
+const TREND_LABEL = { improve: "나아짐", worsen: "악화", stable: "유지" };
+const TREND_EMOJI = { improve: "📉✅", worsen: "📈⚠️", stable: "➡️" };
+
+/* 값→판정 임계치(t1: 정상상한/경계, t2: 위험, dir 'hi'=높을수록나쁨 'lo'=낮을수록나쁨) */
+const _TH = {
+  bmi: { dir: "hi", t1: 25, t2: 28 }, waist: { dir: "hi", t1: { m: 90, f: 85 }, t2: { m: 100, f: 95 } },
+  sbp: { dir: "hi", t1: 120, t2: 140 }, dbp: { dir: "hi", t1: 80, t2: 90 },
+  fbs: { dir: "hi", t1: 100, t2: 126 }, hba1c: { dir: "hi", t1: 5.7, t2: 6.5 },
+  tc: { dir: "hi", t1: 200, t2: 240 }, tg: { dir: "hi", t1: 150, t2: 200 },
+  hdl: { dir: "lo", t1: { m: 40, f: 50 }, t2: { m: 34, f: 40 } }, ldl: { dir: "hi", t1: 130, t2: 160 },
+  ast: { dir: "hi", t1: 40, t2: 70 }, alt: { dir: "hi", t1: 35, t2: 66 }, ggtp: { dir: "hi", t1: { m: 63, f: 35 }, t2: { m: 130, f: 80 } },
+  cr: { dir: "hi", t1: 1.3, t2: 1.6 }, egfr: { dir: "lo", t1: 60, t2: 45 },
+  hb: { dir: "lo", t1: { m: 13, f: 12 }, t2: { m: 12, f: 11 } }, plt: { dir: "lo", t1: 150, t2: 130 },
+  ua: { dir: "hi", t1: 7.0, t2: 7.5 }, tsh: { dir: "hi", t1: 5.5, t2: 7.0 },
+  psa: { dir: "hi", t1: 3.0, t2: 5.0 }, cea: { dir: "hi", t1: 4.1, t2: 7.0 }, afp: { dir: "hi", t1: 10.9, t2: 22 }, ca199: { dir: "hi", t1: 34, t2: 60 },
+};
+function _thOf(key, sex) { const th = _TH[key]; if (!th) return null; const g = (x) => (x && typeof x === "object") ? (x[sex] || x.m) : x; return { dir: th.dir, t1: g(th.t1), t2: g(th.t2) }; }
+function _judgeVal(key, v, sex) { const th = _thOf(key, sex); if (!th || v == null) return 0; if (th.dir === "lo") { if (v > th.t1) return 0; if (v > th.t2) return 1; return 2; } if (v < th.t1) return 0; if (v < th.t2) return 1; return 2; }
+
+/* 회원 전체 건강 진행형태 결정(결정론) — 회원군을 나아짐·악화·유지로 분산 */
+function _chkTrend(m) {
+  const seed = _chkSeed("trend" + (m.id || m.email || m.name));
+  if (m.category === "아동") return (seed % 2 === 0) ? "improve" : "stable";
+  if (m.category === "노인" && (m.highRiskDiseases || []).length) return (seed % 3 === 0) ? "stable" : "worsen";
+  return ["improve", "stable", "worsen"][seed % 3];
+}
+
+/* 항목별 3년 시계열 생성(현재값 고정, 과거 2년을 진행형태에 맞게 단조 생성) */
+function _chkSeries(it, curVal, curSev, sex, trend, rng) {
+  if (curVal == null) return null;
+  const yrs = [_CHK_CUR_YEAR - 2, _CHK_CUR_YEAR - 1, _CHK_CUR_YEAR];
+  const dec = (String(curVal).split(".")[1] || "").length;
+  const put = (x, f) => { const p = Math.pow(10, dec); return Math.round((x * (1 + f)) * p) / p; };
+  const higherWorse = !it.lowIsBad;
+  let f1, f2;
+  if (trend === "stable") { f1 = rng() * 0.06 - 0.03; f2 = rng() * 0.08 - 0.04; }
+  else { const s1 = 0.05 + rng() * 0.05, s2 = 0.12 + rng() * 0.09; let sign = (trend === "improve") ? 1 : -1; if (!higherWorse) sign = -sign; f1 = sign * s1; f2 = sign * s2; }
+  const clamp = (x) => Math.max(dec ? 0.1 : 1, x);
+  const v2 = clamp(put(curVal, f2)), v1 = clamp(put(curVal, f1));
+  const mk = (y, v, sv) => { const s = sv != null ? sv : _judgeVal(it.key, v, sex); return { year: y, value: v, sev: s, label: _chkLabel(it.key, s) }; };
+  return [mk(yrs[0], v2), mk(yrs[1], v1), mk(yrs[2], curVal, curSev)];
+}
+
+/* 생체나이·의료비 3년 추이 */
+function _reportTrend(m, trend, rng) {
+  if (typeof demoReport !== "function") return null;
+  const R = demoReport(m); const yrs = [_CHK_CUR_YEAR - 2, _CHK_CUR_YEAR - 1, _CHK_CUR_YEAR];
+  const bio = R.bio, cost = R.costThis, sign = (trend === "improve") ? 1 : (trend === "worsen" ? -1 : 0);
+  const s1 = trend === "stable" ? 0 : 0.9 + rng() * 0.8, s2 = trend === "stable" ? 0 : 2.1 + rng() * 1.5;
+  const bioS = [+(bio + sign * s2).toFixed(1), +(bio + sign * s1).toFixed(1), +bio.toFixed(1)];
+  const c1 = trend === "stable" ? 0 : sign * (0.06 + rng() * 0.05), c2 = trend === "stable" ? 0 : sign * (0.13 + rng() * 0.09);
+  const costS = [Math.round(cost * (1 + c2)), Math.round(cost * (1 + c1)), Math.round(cost)];
+  return { years: yrs, bio: bioS, cost: costS, reg: R.reg };
+}
+
 /* ── 회원별 국가검진(nat) + 종합검진(comp) 생성 (캐시) ── */
 function genMemberCheckup(m) {
   if (!m) return null;
   if (m._chk) return m._chk;
   const sex = m.sex === "여" ? "f" : "m";
   const rng = _chkRng(_chkSeed(m.id || m.email || m.name));
+  const trend = _chkTrend(m);
   const items = {};
   (typeof CHECKUP_ITEMS !== "undefined" ? CHECKUP_ITEMS : []).forEach((it) => {
     if (it.male && sex === "f") return;
@@ -93,7 +151,8 @@ function genMemberCheckup(m) {
     if (!rspec) band = null;
     else band = Array.isArray(rspec[0]) ? rspec[Math.min(sev, rspec.length - 1)] : (rspec[sex] || rspec.m)[Math.min(sev, 2)];
     const value = band ? _chkR(rng, band[0], band[1], band[2]) : null;
-    items[it.key] = { key: it.key, name: it.name, value, unit: it.unit, sev, label: _chkLabel(it.key, sev), ref: _refStr(it, sex), item: it };
+    const series = _chkSeries(it, value, sev, sex, trend, rng);
+    items[it.key] = { key: it.key, name: it.name, value, unit: it.unit, sev, label: _chkLabel(it.key, sev), ref: _refStr(it, sex), item: it, series };
   });
   // 국가검진 판정
   const HRD = m.highRiskDiseases || [];
@@ -112,9 +171,10 @@ function genMemberCheckup(m) {
   if (/운동|유산소|신체활동|근력/.test(mp) || (items.bmi && items.bmi.sev >= 1)) life.push("신체활동 필요");
   // 종합검진 소견(이상항목 요약)
   const abn = Object.keys(items).filter((k) => items[k].sev >= 1).map((k) => `${items[k].name} ${items[k].label}`);
-  const nat = { grade, gradeDesc: (typeof NAT_GRADES !== "undefined" && NAT_GRADES[grade]) || "", diseases: HRD.slice(), life, date: "최근 검진", src: typeof NAT_SRC !== "undefined" ? NAT_SRC : "국가건강검진" };
+  const nat = { grade, gradeDesc: (typeof NAT_GRADES !== "undefined" && NAT_GRADES[grade]) || "", diseases: HRD.slice(), life, date: `최근 검진(${_CHK_CUR_YEAR})`, src: typeof NAT_SRC !== "undefined" ? NAT_SRC : "국가건강검진" };
   const comp = { abnormals: abn, src: typeof COMP_SRC !== "undefined" ? COMP_SRC : "종합건강진단결과표" };
-  m._chk = { items, sex, nat, comp };
+  const report = _reportTrend(m, trend, rng);
+  m._chk = { items, sex, nat, comp, trend, trendLabel: TREND_LABEL[trend], years: [_CHK_CUR_YEAR - 2, _CHK_CUR_YEAR - 1, _CHK_CUR_YEAR], report };
   return m._chk;
 }
 
@@ -123,7 +183,13 @@ function _matchItem(text) {
   const t = String(text).toLowerCase();
   let best = null;
   (typeof CHECKUP_ITEMS !== "undefined" ? CHECKUP_ITEMS : []).forEach((it) => {
-    (it.aliases || []).forEach((a) => { if (t.includes(a.toLowerCase()) && (!best || a.length > best.a.length)) best = { it, a }; });
+    (it.aliases || []).forEach((a) => {
+      const al = a.toLowerCase();
+      if (!t.includes(al)) return;
+      const isCode = /^[a-z0-9γ-]+$/.test(al);            // ldl/hdl/psa 등 코드 별칭 우선(총콜레스테롤 오매칭 방지)
+      const score = al.length + (isCode ? 100 : 0);
+      if (!best || score > best.score) best = { it, a, score };
+    });
   });
   return best ? best.it : null;
 }
@@ -136,10 +202,35 @@ function memberCheckupCounsel(text, m) {
   if (/뭐야|뭔가|정의|이란|란\?|무엇인가/.test(raw)) return null; // 정의 질의 → 교육/질환 KB 담당
   if (/위험|예방|증상|합병증|생활습관|식단|운동|보험|영양제|추천/.test(raw)) return null; // 위험도·예방·증상 등은 타 엔진(리포트/질환KB)
   const chk = genMemberCheckup(m);
+  const N = m.name || "회원";
+  const it0 = _matchItem(raw);
+  const trendQ = /추이|추세|변화|경과|3년|삼년|작년|재작년|나아졌|좋아졌|나빠졌|악화|호전|그대로|어떻게 변|추적/.test(raw);
+  const _serLine = (row) => (row && row.series) ? `📈 최근 3년 추이: ${row.series.map((p) => `${p.year} ${p.value}${row.unit}(${p.label})`).join(" → ")} — 「${chk.trendLabel}」` : "";
+  const _trendMsg = { improve: "이전보다 좋아지는 흐름이에요. 지금 관리를 계속 유지하세요. 👍", worsen: "이전보다 나빠지는 흐름이에요. 생활습관 교정과 정밀 추적이 필요해요.", stable: "큰 변화 없이 유지되고 있어요. 목표 범위로 개선해 보면 좋겠어요." }[chk.trend];
+
+  // 최근 3년 전체 추이 요약(특정 항목 없이 추이 질의)
+  if (trendQ && !it0) {
+    const R = chk.report; const fmt = (n) => Number(n).toLocaleString("ko-KR");
+    const worst = Object.keys(chk.items).filter((k) => chk.items[k].sev >= 1).slice(0, 3).map((k) => chk.items[k]);
+    const lines = [
+      `📊 ${N}님 최근 3년 검진 추이 — 전반적으로 「${chk.trendLabel}」 흐름 ${TREND_EMOJI[chk.trend]}`,
+      R ? `• 생체나이: ${R.years.map((y, i) => `${y} ${R.bio[i]}세`).join(" → ")} (주민등록 ${R.reg}세)` : null,
+      R ? `• 예상 의료비: ${R.years.map((y, i) => `${y} ${fmt(R.cost[i])}원`).join(" → ")}` : null,
+      ...worst.map((row) => `• ${row.name}: ${row.series.map((p) => `${p.year} ${p.value}${row.unit}`).join(" → ")} (${row.series[0].label}→${row.series[2].label})`),
+      worst.length ? null : "• 주요 항목이 3년간 정상 범위로 잘 유지되고 있어요.",
+    ].filter(Boolean);
+    const drills = worst.slice(0, 2).map((row) => `내 ${row.name.split("(")[0]} 추이`);
+    return {
+      bubbles: [
+        { kind: "text", text: lines.join("\n") + `\n${_trendMsg}\n📚 근거: ${chk.nat.src} · ${chk.comp.src} · ${typeof REPORT_SRC !== "undefined" ? REPORT_SRC : "건강분석리포트"} (회원 3년 검진데이터 RAG)` },
+        { kind: "card", card: { title: `🩺 ${N}님 3년 추이 코칭`, items: [_trendMsg, "항목별 상세 추이는 아래 버튼으로 확인하세요.", chk.trend === "worsen" ? "악화 항목은 관련 보장·건강미션으로 이어드려요." : "개선 흐름을 이어갈 건강미션을 추천해 드려요."], buttons: [...drills, "내 검진 결과 요약"].slice(0, 3) } },
+      ],
+      quicks: [...drills, "내 생체나이는?", "내 의료비 예측"].filter(Boolean).slice(0, 4),
+    };
+  }
 
   // 검진 결과 종합 요약
   if (/검진.*결과.*요약|결과.*요약|검진 요약|내 검진|국가검진 결과|종합검진 결과|검진결과 요약|검진 판정/.test(raw)) {
-    const N = m.name || "회원";
     const R = (typeof demoReport === "function") ? demoReport(m) : null;
     const abn = chk.comp.abnormals;
     const lines = [
@@ -149,38 +240,39 @@ function memberCheckupCounsel(text, m) {
       chk.nat.life.length ? `• 생활습관 관리: ${chk.nat.life.join(" · ")}` : null,
       R ? `• 생체나이 ${R.bio}세(주민등록 ${R.reg}세, ${R.diff <= 0 ? R.diff + "세" : "+" + R.diff + "세"}) · 암위험 ${R.cancerTotal}등급(${R.evalLabel})` : null,
       R ? `• 올해 예상 의료비 약 ${Number(R.costThis).toLocaleString("ko-KR")}원` : null,
+      `• 최근 3년 진행형태: 「${chk.trendLabel}」 ${TREND_EMOJI[chk.trend]}`,
     ].filter(Boolean);
     const drills = abn.slice(0, 2).map((s) => { const it = _matchItem(s); return it ? `내 ${it.name.split("(")[0]} 결과` : null; }).filter(Boolean);
     return {
       bubbles: [
         { kind: "text", text: lines.join("\n") + `\n📚 근거: ${chk.nat.src} · ${chk.comp.src} · ${typeof REPORT_SRC !== "undefined" ? REPORT_SRC : "건강분석리포트"} (회원 검진데이터 RAG)` },
-        { kind: "card", card: { title: `🩺 ${N}님 사후관리 제안`, items: [chk.nat.grade === "유질환자" ? "진단된 만성질환은 정기 추적·복약 관리가 중요해요." : "정기검진 주기를 지키며 생활습관을 관리하세요.", "이상 항목은 아래 버튼으로 항목별 해석을 확인하세요.", "고위험 항목은 관련 건강미션·보장 안내로 이어드려요."], buttons: [...drills, "내 생체나이는?"].slice(0, 3) } },
+        { kind: "card", card: { title: `🩺 ${N}님 사후관리 제안`, items: [chk.nat.grade === "유질환자" ? "진단된 만성질환은 정기 추적·복약 관리가 중요해요." : "정기검진 주기를 지키며 생활습관을 관리하세요.", "이상 항목은 아래 버튼으로 항목별 해석을 확인하세요.", "고위험 항목은 관련 건강미션·보장 안내로 이어드려요."], buttons: [...drills, "내 3년 검진 추이"].slice(0, 3) } },
       ],
-      quicks: [...drills, "내 의료비 예측", "내가 가장 조심해야 할 암은?"].filter(Boolean).slice(0, 4),
+      quicks: [...drills, "내 3년 검진 추이", "내 의료비 예측"].filter(Boolean).slice(0, 4),
     };
   }
 
   // 항목별 결과 (결과 단서 필요)
-  const it = _matchItem(raw);
+  const it = it0;
   if (!it) return null;
-  const cue = /결과|판정|수치|어때|어떤가|어떠|괜찮|해석|정상|기준|범위|의미|나왔|나온|어땠|내\s|제\s|나의|본인/.test(raw);
+  const cue = trendQ || /결과|판정|수치|어때|어떤가|어떠|괜찮|해석|정상|기준|범위|의미|나왔|나온|어땠|내\s|제\s|나의|본인/.test(raw);
   if (!cue) return null;
   if (it.male && chk.sex === "f") return null;
   const row = chk.items[it.key];
   if (!row || row.value == null) return null;
-  const N = m.name || "회원";
   const emoji = _chkEmoji(row.sev);
   const interp = row.sev === 0 ? "현재 정상 범위입니다. 잘 유지하고 계세요. 👍" : (it.lowIsBad ? it.lo : it.hi);
-  const cardItems = [`🎯 관리: ${it.tip}`, `🔗 관련 질환: ${it.dz}`];
+  const serLine = _serLine(row);
+  const cardItems = [`🎯 관리: ${it.tip}`, `🔗 관련 질환: ${it.dz}`, `🕒 진행형태: ${row.series ? `${row.series[0].label} → ${row.series[2].label}` : ""} (${chk.trendLabel})`];
   if (row.sev >= 1) cardItems.push("관련 건강미션·보장 안내를 이어서 받아보실 수 있어요.");
   const btns = [`${it.dz} 생활습관 관리법은?`];
   if (row.sev >= 1) btns.push(`${it.dz} 대비 보험`); else btns.push("내 검진 결과 요약");
   return {
     bubbles: [
-      { kind: "text", text: `${emoji} ${N}님 ${it.name}: ${row.value}${it.unit} → 「${row.label}」 (참고치 ${row.ref})\n${it.mean}\n${interp}\n📚 근거: ${chk.comp.src} · 회원 검진데이터 · 참고치 국민건강보험공단·대한검진의학회` },
+      { kind: "text", text: `${emoji} ${N}님 ${it.name}: ${row.value}${it.unit} → 「${row.label}」 (참고치 ${row.ref})\n${serLine}\n${it.mean}\n${row.sev === 0 ? interp : interp + " " + _trendMsg}\n📚 근거: ${chk.comp.src} · 회원 검진데이터 · 참고치 국민건강보험공단·대한검진의학회` },
       { kind: "card", card: { title: `🩺 ${it.name} 관리 가이드`, items: cardItems, buttons: btns } },
     ],
-    quicks: [`${it.dz} 생활습관 관리법은?`, "내 검진 결과 요약", row.sev >= 1 ? `${it.dz} 대비 보험` : "내 생체나이는?"].slice(0, 3),
+    quicks: [`${it.dz} 생활습관 관리법은?`, "내 3년 검진 추이", row.sev >= 1 ? `${it.dz} 대비 보험` : "내 검진 결과 요약"].slice(0, 3),
   };
 }
 
