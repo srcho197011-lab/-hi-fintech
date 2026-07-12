@@ -3,12 +3,18 @@ function HealthManageSection({ onGo }) {
   const [viewer, setViewer] = useState(false);
   const [cat, setCat] = useState("summary");
   const RECS = [[Dumbbell, "주 3회 유산소 운동"], [Salad, "식이섬유·저당 식단"], [Wine, "절주 (하루 2잔 이하)"], [Cigarette, "금연 실천"], [Stethoscope, "복부 초음파(췌장·간)"], [Pill, "간 건강 영양제"], [ClipboardList, "위·대장 내시경"], [HeartHandshake, "정기 건강 모니터링"]];
-  const cats = [["summary", "한눈에 보기", LayoutDashboard], ["bio", "생체나이", Activity], ["disease", "질병 위험", HeartPulse], ["cancer", "암 위험", ShieldCheck], ["warn", "경고신호", AlertTriangle], ["care", "관리·권고", Sparkles], ["report", "검진 리포트", FileText]];
+  const cats = [["summary", "한눈에 보기", LayoutDashboard], ["checkup", "검진 항목현황", ClipboardList], ["bio", "생체나이", Activity], ["disease", "질병 위험", HeartPulse], ["cancer", "암 위험", ShieldCheck], ["warn", "경고신호", AlertTriangle], ["care", "관리·권고", Sparkles], ["report", "검진 리포트", FileText]];
   const go = onGo || (() => {});
   const Go = ({ to, ic: Ic, pri, children }) => <button className={`gobtn ${pri ? "pri" : ""}`} onClick={() => go(to)}><Ic size={14} /> {children}</button>;
   // 체험 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const R = dm ? demoReport(dm) : null;
+  const chk = (dm && typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, dm)); } catch (e) { return null; } })() : null;
+  const ckFlags = chk ? [
+    { t: `국가검진 ${chk.nat.grade}`, c: chk.nat.grade === "정상A" ? "#15803D" : chk.nat.grade === "정상B" ? "#B45309" : "#B91C1C", bg: chk.nat.grade === "정상A" ? "#E7F8EE" : chk.nat.grade === "정상B" ? "#FEF3E2" : "#FDECEC" },
+    { t: `검진 이상항목 ${chk.comp.abnormals.length}건`, c: chk.comp.abnormals.length ? "#B91C1C" : "#15803D", bg: chk.comp.abnormals.length ? "#FDECEC" : "#E7F8EE", ic: chk.comp.abnormals.length ? "warn" : "check" },
+    { t: `진행형태 ${chk.trendLabel}`, c: chk.trend === "improve" ? "#15803D" : chk.trend === "worsen" ? "#B45309" : "#475569", bg: chk.trend === "improve" ? "#E7F8EE" : chk.trend === "worsen" ? "#FEF3E2" : "#EEF1F8", ic: chk.trend === "improve" ? "check" : chk.trend === "worsen" ? "up" : null },
+  ] : [];
   const won = (n) => Number(n).toLocaleString("ko-KR") + "원";
   const bioAge = R ? R.bio : PT.bioAge;
   const regAge = R ? R.reg : PT.regAge;
@@ -30,8 +36,8 @@ function HealthManageSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="manage" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강관리</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강분석 리포트 — 생체나이 · 질병/암 위험 · 경고신호 · 맞춤 관리 (프롬에이지 Premium 기반)</div></div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>나의 건강현황</div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>검진 항목현황 · 생체나이 · 질병/암 위험 · 경고신호 · 맞춤 관리 — 내 검진데이터 기반 종합 현황</div></div></div>
       <DemoMemberBanner />
 
       <div className="src"><ExternalLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
@@ -47,6 +53,13 @@ function HealthManageSection({ onGo }) {
 
       {cat === "report" && <ReportVault user={dm} />}
 
+      {cat === "checkup" && (chk ? <HMCheckupTab chk={chk} onGo={go} /> : (
+        <div className="card"><div className="rct"><ClipboardList size={18} color="#2563EB" /> 검진 항목현황</div>
+          <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "4px 0 10px" }}>체험 회원으로 로그인하면 국가검진 판정 · 종합검진 40여 항목의 값·판정·3년 추이를 여기에서 확인할 수 있어요.</p>
+          <DemoLoginSelector />
+        </div>
+      ))}
+
       {cat === "summary" && (<>
         <div className="card">
           <div className="rct"><LayoutDashboard size={18} color="#2F5BEA" /> 한눈에 보기 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: R ? R.cg[1] : "var(--green)", background: R ? R.cg[2] : "#E7F8EE", padding: "4px 10px", borderRadius: 999 }}>종합평가 {evalLabel}</span></div>
@@ -56,9 +69,10 @@ function HealthManageSection({ onGo }) {
             <div className="sumcard"><div className="sl">노화속도</div><div className="sv">{agingSpeed}배</div><span className="sb" style={{ color: agingSpeed > 1 ? "#B45309" : "#15803D", background: agingSpeed > 1 ? "#FEF3E2" : "#E7F8EE" }}>{agingSpeed > 1 ? "평균보다 빠름" : "평균보다 느림"}</span></div>
             <div className="sumcard"><div className="sl">주의 장기</div><div className="sv" style={{ color: "#EF4444", fontSize: 15 }}>{worstStr}</div><span className="sb" style={{ color: "#B91C1C", background: "#FDECEC" }}>노화 빠름</span></div>
           </div>
-          <div className="sumflags">{sumFlags.map((f, i) => (
+          <div className="sumflags">{[...ckFlags, ...sumFlags].map((f, i) => (
             <span className="fl" key={i} style={{ color: f.c, background: f.bg }}>{f.ic === "up" ? <ArrowUp size={12} /> : f.ic === "warn" ? <AlertTriangle size={12} /> : f.ic === "check" ? <Check size={12} /> : null} {f.t}</span>
           ))}</div>
+          {chk && <button className="cbtn" style={{ marginTop: 10 }} onClick={() => setCat("checkup")}><ClipboardList size={15} /> 검진 항목현황 상세 보기 ({chk.comp.abnormals.length}건 이상)</button>}
         </div>
         <div className="card">
           <div className="rct"><Sparkles size={18} color="#7C3AED" /> 지금 할 일 · 맞춤 가이드</div>
@@ -156,6 +170,52 @@ function HealthManageSection({ onGo }) {
       {viewer && <OriginalReport onClose={() => setViewer(false)} />}
     </div>
   );
+}
+
+/* ── 검진 항목현황(내 검진데이터: 판정·이상항목·3년 추이) ── */
+function HMCheckupTab({ chk, onGo }) {
+  const sevCol = ["#16A34A", "#F59E0B", "#EF4444"];
+  const items = Object.keys(chk.items).map((k) => chk.items[k]).filter((r) => r.series);
+  const abn = items.filter((r) => r.sev >= 1).sort((a, b) => b.sev - a.sev || b.series[2].value - a.series[2].value);
+  const normal = items.filter((r) => r.sev === 0);
+  const arrow = (r) => { const a = r.series[0].value, b = r.series[2].value; if (Math.abs(b - a) < Math.abs(a) * 0.02) return ["→", "#64748B", "유지"]; const worseUp = !(r.item && r.item.lowIsBad); const better = worseUp ? b < a : b > a; return better ? ["↘", "#16A34A", "개선 중"] : ["↗", "#EF4444", "악화 중"]; };
+  const Spark = ({ r }) => (<span className="hmspark">{r.series.map((p, i) => <i key={i} title={`${p.year} ${p.value}${r.unit} · ${p.label}`} style={{ background: sevCol[p.sev] }} />)}</span>);
+  const gradeCol = chk.nat.grade === "정상A" ? "#15803D" : chk.nat.grade === "정상B" ? "#B45309" : "#B91C1C";
+  const gradeBg = chk.nat.grade === "정상A" ? "#E7F8EE" : chk.nat.grade === "정상B" ? "#FEF3E2" : "#FDECEC";
+  return (<>
+    <div className="card">
+      <div className="rct"><ClipboardList size={18} color="#2563EB" /> 검진 결과 현황
+        <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 800, color: gradeCol, background: gradeBg, padding: "4px 11px", borderRadius: 999 }}>국가검진 {chk.nat.grade}</span></div>
+      <div className="hmck-sub">{chk.nat.gradeDesc}</div>
+      <div className="hmck-meta">
+        <div><span>최근 3년</span><b>{chk.years[0]}~{chk.years[chk.years.length - 1]}</b></div>
+        <div><span>이상·주의 항목</span><b style={{ color: abn.length ? "#EF4444" : "#16A34A" }}>{abn.length}건</b></div>
+        <div><span>진행형태</span><b style={{ color: chk.trend === "improve" ? "#16A34A" : chk.trend === "worsen" ? "#EF4444" : "#B45309" }}>{chk.trendLabel}</b></div>
+        {chk.nat.life.length ? <div><span>생활습관</span><b style={{ fontSize: 13 }}>{chk.nat.life.join("·")}</b></div> : null}
+      </div>
+    </div>
+    <div className="card">
+      <div className="rct"><AlertTriangle size={18} color="#EF4444" /> 이상·주의 항목 <span className="hmck-cnt">{abn.length}건</span></div>
+      {abn.length ? <div className="hmck-list">{abn.map((r) => { const p = r.series[2]; const [ar, ac, al] = arrow(r); return (
+        <div className="hmck-row" key={r.key}>
+          <div className="hmck-nm">{r.name}<span className="hmck-ref">참고치 {r.ref}</span></div>
+          <div className="hmck-val"><b style={{ color: sevCol[p.sev] }}>{p.value}</b><em>{r.unit}</em></div>
+          <span className="hmck-jg" style={{ color: sevCol[p.sev], background: sevCol[p.sev] + "1A" }}>{p.label}</span>
+          <span className="hmck-tr" style={{ color: ac }}>{ar} {al}</span>
+          <Spark r={r} />
+        </div>); })}</div> : <div className="hmck-empty">✅ 이상·주의 항목이 없습니다. 잘 유지하고 계세요!</div>}
+      <p className="hmck-note">※ 값·판정은 내 검진데이터 기반(참고치 국민건강보험공단·대한검진의학회). 3년 막대는 연도별 판정색(초록 정상·노랑 주의·빨강 위험)입니다.</p>
+    </div>
+    <div className="card">
+      <div className="rct"><Check size={18} color="#16A34A" /> 정상 항목 <span className="hmck-cnt ok">{normal.length}건</span></div>
+      <div className="hmck-chips">{normal.map((r) => <span className="hmck-chip" key={r.key} title={`참고치 ${r.ref} · ${chk.trendLabel}`}>{r.name.split(" (")[0].split("(")[0]} <b>{r.series[2].value}{r.unit}</b></span>)}</div>
+    </div>
+    <div className="gorow">
+      <button className="gobtn pri" onClick={() => onGo && onGo("ai")}><MessageSquare size={14} /> AI 정밀분석 상담</button>
+      <button className="gobtn" onClick={() => onGo && onGo("checkup")}><CalendarCheck size={14} /> 검진 예약</button>
+      <button className="gobtn" onClick={() => onGo && onGo("shop")}><ShoppingCart size={14} /> 맞춤 건강쇼핑</button>
+    </div>
+  </>);
 }
 
 /* ====================== 추이/상세 컴포넌트 ====================== */

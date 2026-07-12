@@ -42,14 +42,16 @@ function HomeHub({ initial, onGo }) {
 }
 
 function CareSection({ initial, onGo }) {
-  const map = { care: "hospital", hospital: "hospital", homecare: "homecare", shop: "shop" };
-  const [tab, setTab] = useState(map[initial] || "hospital");
-  useEffect(() => { setTab(map[initial] || "hospital"); }, [initial]);
-  const tabs = [["hospital", "병원 진료·추가검진", Building2, "#2563EB"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
+  const map = { care: "ai", ai: "ai", manage: "manage", hospital: "hospital", homecare: "homecare", shop: "shop" };
+  const [tab, setTab] = useState(map[initial] || "ai");
+  useEffect(() => { setTab(map[initial] || "ai"); }, [initial]);
+  const tabs = [["ai", "나의 주치의", Bot, "#7C3AED"], ["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["hospital", "병원 진료·추가검진", Building2, "#2563EB"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
   return (
     <div style={{ marginTop: 4 }}>
-      <GroupHead ic={HeartHandshake} title="검진 후 케어" sub="검진 결과에 맞춘 병원 진료·추가 정밀검진 · 재가·돌봄 · 맞춤 건강쇼핑" color="#DB2777" />
+      <GroupHead ic={HeartHandshake} title="검진 후 케어" sub="나의 주치의 상담 · 나의 건강현황 · 병원 진료·추가 정밀검진 · 재가·돌봄 · 맞춤 건강쇼핑" color="#DB2777" />
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
+      {tab === "ai" && <AIDoctor onGo={onGo} />}
+      {tab === "manage" && <HealthManageSection onGo={onGo} />}
       {tab === "hospital" && <HospitalSection onGo={onGo} />}
       {tab === "homecare" && <HomecareSection onGo={onGo} />}
       {tab === "shop" && <ShopSection onGo={onGo} />}
@@ -58,16 +60,14 @@ function CareSection({ initial, onGo }) {
 }
 
 function WalletHubSection({ initial, onGo }) {
-  const map = { mywallet: "ai", ai: "ai", manage: "manage", wallet: "wallet", nft: "nft", mypage: "mypage" };
-  const [tab, setTab] = useState(map[initial] || "ai");
-  useEffect(() => { setTab(map[initial] || "ai"); }, [initial]);
-  const tabs = [["ai", "나의 주치의", Bot, "#7C3AED"], ["manage", "건강관리", HeartPulse, "#E11D48"], ["wallet", "건강금융지갑", Wallet, "#059669"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["mypage", "마이페이지", Settings, "#475569"]];
+  const map = { mywallet: "wallet", wallet: "wallet", nft: "nft", mypage: "mypage" };
+  const [tab, setTab] = useState(map[initial] || "wallet");
+  useEffect(() => { setTab(map[initial] || "wallet"); }, [initial]);
+  const tabs = [["wallet", "건강금융지갑", Wallet, "#059669"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["mypage", "마이페이지", Settings, "#475569"]];
   return (
     <div style={{ marginTop: 4 }}>
-      <GroupHead ic={Wallet} title="나의 건강지갑" sub="AI 주치의 · 건강관리 · 건강금융지갑 · Health NFT · 마이페이지를 한 곳에서" color="#059669" />
+      <GroupHead ic={Wallet} title="나의 건강지갑" sub="건강금융지갑 · Health NFT · 마이페이지를 한 곳에서" color="#059669" />
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
-      {tab === "ai" && <AIDoctor onGo={onGo} />}
-      {tab === "manage" && <HealthManageSection onGo={onGo} />}
       {tab === "wallet" && <WalletSection onGo={onGo} />}
       {tab === "nft" && <NFTSection onGo={onGo} />}
       {tab === "mypage" && <MyPageSection onGo={onGo} />}

@@ -3219,3 +3219,29 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .ontbulk{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#7DD3FC;background:#0F1B33;border:1px solid #24507C;border-radius:8px;padding:5px 12px;cursor:pointer;transition:.15s;}
 .ontbulk:hover{background:#123056;border-color:#0EA5E9;}
 .ontcount{display:flex;align-items:center;}
+
+/* ── 나의 건강현황: 검진 항목현황 탭 ── */
+.hmck-sub{font-size:12.5px;color:var(--muted);margin:2px 0 12px;line-height:1.5;}
+.hmck-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
+.hmck-meta>div{background:#F7F9FC;border:1px solid #E7ECF4;border-radius:11px;padding:9px 11px;}
+.hmck-meta span{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;}
+.hmck-meta b{font-size:15px;color:#0F1F45;font-weight:800;}
+.hmck-cnt{margin-left:auto;font-size:12px;font-weight:800;color:#B91C1C;background:#FDECEC;border-radius:999px;padding:3px 11px;}
+.hmck-cnt.ok{color:#15803D;background:#E7F8EE;}
+.hmck-list{display:flex;flex-direction:column;gap:7px;}
+.hmck-row{display:flex;align-items:center;gap:10px;padding:9px 11px;background:#FBFCFE;border:1px solid #EEF1F8;border-radius:11px;flex-wrap:wrap;}
+.hmck-nm{flex:1 1 130px;font-size:13px;font-weight:700;color:#1B2942;display:flex;flex-direction:column;gap:1px;}
+.hmck-ref{font-size:10.5px;font-weight:500;color:var(--soft);}
+.hmck-val{min-width:64px;text-align:right;font-family:ui-monospace,Menlo,monospace;}
+.hmck-val b{font-size:16px;font-weight:800;}
+.hmck-val em{font-style:normal;font-size:10px;color:var(--soft);margin-left:2px;}
+.hmck-jg{font-size:11px;font-weight:800;border-radius:7px;padding:3px 9px;white-space:nowrap;}
+.hmck-tr{font-size:11.5px;font-weight:700;min-width:52px;white-space:nowrap;}
+.hmspark{display:inline-flex;gap:3px;align-items:center;}
+.hmspark i{width:13px;height:13px;border-radius:3px;opacity:.9;}
+.hmck-empty{padding:14px;text-align:center;font-size:13px;color:#15803D;background:#F0FBF4;border-radius:11px;font-weight:600;}
+.hmck-note{font-size:10.5px;color:var(--soft);margin-top:10px;line-height:1.5;}
+.hmck-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.hmck-chip{font-size:11.5px;color:#3B4A63;background:#F1F5FB;border:1px solid #E3E9F3;border-radius:999px;padding:4px 10px;}
+.hmck-chip b{color:#0F1F45;font-weight:800;}
+@media(max-width:560px){.hmck-meta{grid-template-columns:repeat(2,1fr);}.hmck-val{min-width:52px;}}
