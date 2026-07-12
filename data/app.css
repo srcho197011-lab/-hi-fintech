@@ -3201,3 +3201,21 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .ckrep-chart{background:#0F1B33;border:1px solid #1E2C46;border-radius:10px;padding:9px 8px 4px;}
 .ckrep-ct{font-size:10.5px;font-weight:700;color:#9DB0CE;margin:0 0 2px 4px;}
 @media(max-width:600px){.ckrep-charts{grid-template-columns:1fr;}.ckarch-tools{width:100%;margin:6px 0 0;}}
+
+/* ── 검진 아카이브: 구간밴드 범례·편집이력·일괄CSV ── */
+.ckzone-lg{display:flex;gap:12px;padding:0 14px 8px;}
+.ckzone-lg span{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;color:#8FA1C0;}
+.ckzone-lg i{width:9px;height:9px;border-radius:2px;opacity:.55;}
+.ckloglist{background:#0C1730;border:1px solid #1E3A5F;border-radius:9px;padding:9px 11px;margin-bottom:9px;}
+.ckloghd{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:#B7C6E0;margin-bottom:7px;}
+.ckloghd span{color:#7C8DAB;font-weight:600;}
+.ckloghd button{margin-left:auto;font-size:10px;font-weight:700;color:#F87171;background:#2A1212;border:1px solid #5B1D1D;border-radius:6px;padding:3px 8px;cursor:pointer;}
+.cklogrow{display:flex;gap:9px;padding:6px 0;border-top:1px solid #16233C;}
+.cklogt{flex:0 0 auto;font-size:10px;color:#7C8DAB;font-family:ui-monospace,Menlo,monospace;min-width:104px;}
+.cklogc{display:flex;flex-wrap:wrap;gap:5px;}
+.cklogchg{font-size:10.5px;color:#CFE0FF;background:#0F1B33;border:1px solid #24324D;border-radius:6px;padding:2px 8px;}
+.cklogchg em{font-style:normal;color:#7DD3FC;margin:0 3px;}
+.cklogchg b{color:#FBBF24;}
+.ontbulk{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#7DD3FC;background:#0F1B33;border:1px solid #24507C;border-radius:8px;padding:5px 12px;cursor:pointer;transition:.15s;}
+.ontbulk:hover{background:#123056;border-color:#0EA5E9;}
+.ontcount{display:flex;align-items:center;}

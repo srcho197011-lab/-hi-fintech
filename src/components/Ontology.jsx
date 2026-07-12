@@ -285,18 +285,36 @@ function _archMember(m) {
 
 /* ── 검진 라인 그래프(SVG) ── */
 const _CK_SEVCOL = ["#16A34A", "#F59E0B", "#EF4444", "#38BDF8"];
-function ArchLineChart({ pts, refv, unit, w = 320, h = 104 }) {
+function ArchLineChart({ pts, refv, zones, unit, w = 320, h = 108 }) {
   if (!pts || !pts.length) return null;
   const pad = { l: 30, r: 14, t: 16, b: 20 };
-  const nums = pts.map((p) => p.value).concat(refv != null ? [refv] : []);
+  const nums = pts.map((p) => p.value);
+  if (refv != null) nums.push(refv);
+  if (zones) { nums.push(zones.t1); if (zones.t2 != null) nums.push(zones.t2); }
   let mn = Math.min.apply(null, nums), mx = Math.max.apply(null, nums);
   const rg = (mx - mn) || Math.abs(mx) || 1; mn -= rg * 0.2; mx += rg * 0.22;
   const X = (i) => pad.l + (pts.length === 1 ? (w - pad.l - pad.r) / 2 : i * (w - pad.l - pad.r) / (pts.length - 1));
   const Y = (v) => h - pad.b - (v - mn) / (mx - mn) * (h - pad.t - pad.b);
+  const top = pad.t, bot = h - pad.b, x0 = pad.l, ww = w - pad.l - pad.r;
+  const clampY = (y) => Math.max(top, Math.min(bot, y));
   const d = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.value).toFixed(1)}`).join(" ");
+  // 정상/주의/위험 구간 밴드
+  let bands = null;
+  if (zones && zones.t1 != null && zones.t2 != null) {
+    const y1 = clampY(Y(zones.t1)), y2 = clampY(Y(zones.t2));
+    const rect = (yA, yB, col) => { const a = Math.min(yA, yB), b = Math.max(yA, yB); return b - a > 0.5 ? <rect x={x0} y={a} width={ww} height={b - a} fill={col} /> : null; };
+    if (zones.dir === "lo") { // 높을수록 정상: 위=정상, 중간=주의, 아래=위험
+      bands = <g opacity="0.11">{rect(top, y1, "#16A34A")}{rect(y1, y2, "#F59E0B")}{rect(y2, bot, "#EF4444")}</g>;
+    } else { // 높을수록 위험: 아래=정상, 중간=주의, 위=위험
+      bands = <g opacity="0.11">{rect(y1, bot, "#16A34A")}{rect(y2, y1, "#F59E0B")}{rect(top, y2, "#EF4444")}</g>;
+    }
+  }
   return (
     <svg className="ckchart" viewBox={`0 0 ${w} ${h}`} width="100%" preserveAspectRatio="xMidYMid meet">
-      {refv != null && <g><line x1={pad.l} x2={w - pad.r} y1={Y(refv)} y2={Y(refv)} stroke="#EF4444" strokeDasharray="4 3" strokeWidth="1" opacity=".55" /><text x={w - pad.r} y={Y(refv) - 3} textAnchor="end" fontSize="8" fill="#EF4444">기준 {refv}</text></g>}
+      {bands}
+      {zones && zones.t1 != null && <line x1={x0} x2={w - pad.r} y1={clampY(Y(zones.t1))} y2={clampY(Y(zones.t1))} stroke="#F59E0B" strokeDasharray="4 3" strokeWidth="1" opacity=".5" />}
+      {zones && zones.t2 != null && <line x1={x0} x2={w - pad.r} y1={clampY(Y(zones.t2))} y2={clampY(Y(zones.t2))} stroke="#EF4444" strokeDasharray="4 3" strokeWidth="1" opacity=".5" />}
+      {refv != null && !zones && <g><line x1={x0} x2={w - pad.r} y1={Y(refv)} y2={Y(refv)} stroke="#EF4444" strokeDasharray="4 3" strokeWidth="1" opacity=".55" /><text x={w - pad.r} y={Y(refv) - 3} textAnchor="end" fontSize="8" fill="#EF4444">기준 {refv}</text></g>}
       <path d={d} fill="none" stroke="#38BDF8" strokeWidth="2" />
       {pts.map((p, i) => <g key={i}>
         <circle cx={X(i)} cy={Y(p.value)} r="4" fill={_CK_SEVCOL[p.sev == null ? 3 : p.sev]} stroke="#0C1730" strokeWidth="1.5" />
@@ -309,6 +327,19 @@ function ArchLineChart({ pts, refv, unit, w = 320, h = 104 }) {
 function _ckCsvCell(s) { s = String(s == null ? "" : s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
 function _ckDownload(name, text, mime) { try { const blob = new Blob(["﻿" + text], { type: mime }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1200); } catch (e) { if (typeof toast === "function") toast("내보내기를 지원하지 않는 환경입니다."); } }
 
+/* 여러 회원 검진데이터 일괄 CSV(요약 1행/회원) */
+function archiveBulkCSV(members) {
+  const CAP = 1000; const list = members.slice(0, CAP);
+  const cols = ["ID", "이름", "성별", "나이", "국가검진판정", "진행형태", "생체나이'24", "생체나이'25", "생체나이'26", "이상항목수", "BMI", "수축기", "이완기", "공복혈당", "총콜레스테롤", "LDL", "AST", "eGFR", "예상의료비"];
+  const lines = list.map((mm) => {
+    let chk; try { chk = genMemberCheckup(Object.assign({}, _archMember(mm))); } catch (e) { return null; }
+    const v = (k) => { const it = chk.items[k]; return it && it.series ? it.series[it.series.length - 1].value : ""; };
+    const bio = chk.report ? chk.report.bio : ["", "", ""];
+    return [mm.id, mm.name, mm.sex, mm.age, chk.nat.grade, chk.trendLabel, bio[0], bio[1], bio[2], chk.comp.abnormals.length, v("bmi"), v("sbp"), v("dbp"), v("fbs"), v("tc"), v("ldl"), v("ast"), v("egfr"), mm.estCost].map(_ckCsvCell).join(",");
+  }).filter(Boolean);
+  return { csv: [cols.join(","), ...lines].join("\n"), count: lines.length, capped: members.length > CAP, cap: CAP };
+}
+
 /* ── 회원별 연도별 검진 데이터 아카이브(데이터하우스) ── */
 function MemberCheckupArchive({ m }) {
   const M = React.useMemo(() => _archMember(m), [m && m.id]);
@@ -317,10 +348,13 @@ function MemberCheckupArchive({ m }) {
   const EKEY = "hifin_chk_edits_" + (m && (m.id || m.name));
   const [cat, setCat] = React.useState("nat");
   const [year, setYear] = React.useState(chk ? chk.years[chk.years.length - 1] : 2026);
+  const LKEY = "hifin_chk_editlog_" + (m && (m.id || m.name));
   const [edits, setEdits] = React.useState(() => { try { return JSON.parse(localStorage.getItem(EKEY)) || {}; } catch (e) { return {}; } });
   const [editing, setEditing] = React.useState(false);
   const [openRow, setOpenRow] = React.useState(null);
-  React.useEffect(() => { setOpenRow(null); setEditing(false); }, [m && m.id, cat]);
+  const [log, setLog] = React.useState(() => { try { return JSON.parse(localStorage.getItem(LKEY)) || []; } catch (e) { return []; } });
+  const [showLog, setShowLog] = React.useState(false);
+  React.useEffect(() => { setOpenRow(null); setEditing(false); setShowLog(false); }, [m && m.id, cat]);
   if (!chk || typeof CHECKUP_ITEMS === "undefined") return null;
   const sevCol = ["#16A34A", "#F59E0B", "#EF4444"];
   const trendCol = { improve: "#16A34A", worsen: "#EF4444", stable: "#F59E0B" }[chk.trend];
@@ -340,8 +374,17 @@ function MemberCheckupArchive({ m }) {
   });
   const th = (row) => (typeof _thOf === "function") ? _thOf(row.key, chk.sex) : null;
   const setEdit = (key, y, val) => setEdits((prev) => { const nx = Object.assign({}, prev); nx[key] = Object.assign({}, nx[key], { [y]: val }); return nx; });
-  const saveEdits = () => { try { localStorage.setItem(EKEY, JSON.stringify(edits)); } catch (e) {} setEditing(false); if (typeof toast === "function") toast(`${m.name}님 검진값 저장 완료`); };
+  const _stamp = () => { try { const d = new Date(); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; } catch (e) { return ""; } };
+  const saveEdits = () => {
+    // 원본 대비 변경 추출 → 이력 기록
+    const changes = [];
+    Object.keys(edits).forEach((k) => { const row = chk.items[k]; if (!row) return; chk.years.forEach((y, i) => { const ov = edits[k][y]; if (ov === undefined || ov === "") return; const nv = parseNum(ov); const orig = row.series[i].value; if (nv != null && nv !== orig) changes.push({ item: row.name, year: y, from: orig, to: nv, unit: row.unit }); }); });
+    if (changes.length) { const entry = { at: _stamp(), n: changes.length, changes }; const nl = [entry, ...log].slice(0, 30); setLog(nl); try { localStorage.setItem(LKEY, JSON.stringify(nl)); } catch (e) {} }
+    try { localStorage.setItem(EKEY, JSON.stringify(edits)); } catch (e) {}
+    setEditing(false); if (typeof toast === "function") toast(`${m.name}님 검진값 저장 완료${changes.length ? ` · 변경 ${changes.length}건 이력 기록` : ""}`);
+  };
   const resetEdits = () => { setEdits({}); try { localStorage.removeItem(EKEY); } catch (e) {} if (typeof toast === "function") toast("편집값 초기화(원본 복원)"); };
+  const clearLog = () => { setLog([]); try { localStorage.removeItem(LKEY); } catch (e) {} };
   const Spark = ({ row }) => { const s = eff(row); return (<span className="ckspark">{s.map((p, i) => <i key={i} title={`${p.year} ${p.value}${row.unit} · ${p.label}`} style={{ background: sevCol[p.sev] }} />)}</span>); };
   // 내보내기
   const buildMatrix = () => allItems.map((row) => { const s = eff(row); return { name: row.name, ref: row.ref, unit: row.unit, cells: s }; });
@@ -369,8 +412,13 @@ function MemberCheckupArchive({ m }) {
           <button onClick={exportCSV} title="CSV 내보내기"><Download size={12} /> CSV</button>
           <button onClick={exportPDF} title="PDF(인쇄) 내보내기"><Printer size={12} /> PDF</button>
           <button className={editing ? "on" : ""} onClick={() => setEditing((v) => !v)} title="검진값 편집"><Pencil size={12} /> {editing ? "편집중" : "편집"}</button>
+          <button className={showLog ? "on" : ""} onClick={() => setShowLog((v) => !v)} title="편집 이력"><Clock size={12} /> 이력{log.length ? ` ${log.length}` : ""}</button>
         </div>
       </div>
+      {showLog && <div className="ckloglist">
+        <div className="ckloghd"><Clock size={12} /> 편집 이력 <span>{log.length}건</span>{log.length > 0 && <button onClick={clearLog}>이력 삭제</button>}</div>
+        {log.length ? log.map((e, i) => <div className="cklogrow" key={i}><span className="cklogt">{e.at}</span><div className="cklogc">{e.changes.map((c, j) => <span key={j} className="cklogchg">{c.item} <em>{c.year}</em> {c.from}→<b>{c.to}</b>{c.unit}</span>)}</div></div>) : <div className="ckmut" style={{ padding: "8px 2px" }}>아직 편집 이력이 없습니다. 값을 수정·저장하면 기록됩니다.</div>}
+      </div>}
       <div className="ckarch-sub">국가검진 판정 「<b>{chk.nat.grade}</b>」 · 최근 3년({chk.years[0]}~{chk.years[chk.years.length - 1]}) 시계열 · 이상항목 {chk.comp.abnormals.length}건 · 진행형태 「{chk.trendLabel}」{anyEdited && <span className="ckedited-tag"> · ✏️ 편집값 반영됨</span>}</div>
       <div className="ckarch-cat">{[["nat", "국가건강검진"], ["comp", "종합건강진단"], ["report", "건강분석리포트"]].map(([k, t]) => <button key={k} className={cat === k ? "on" : ""} onClick={() => setCat(k)}>{t}</button>)}</div>
       {editing && cat !== "report" && <div className="ckedit-bar"><span>연도별 값을 직접 입력하면 판정이 자동 재계산됩니다.</span><button className="save" onClick={saveEdits}>저장</button><button className="reset" onClick={resetEdits} disabled={!anyEdited}>초기화</button></div>}
@@ -398,7 +446,7 @@ function MemberCheckupArchive({ m }) {
                   <td><span className="ckbadge" style={{ background: sevCol[p.sev] + "22", color: sevCol[p.sev] }}>{p.label}</span></td>
                   <td><Spark row={row} /> <ChevronRight size={12} className={"ckchev" + (isOpen ? " r" : "")} /></td>
                 </tr>
-                {isOpen && <tr className="ckchart-row"><td colSpan={5}><div className="ckchart-wrap"><div className="ckchart-t">{row.name} · 최근 3년 추이 <span>{row.item && row.item.mean ? "· " + row.item.mean : ""}</span></div><ArchLineChart pts={s.map((x) => ({ year: x.year, value: x.value, sev: x.sev }))} refv={th(row) ? th(row).t1 : null} unit={row.unit} /></div></td></tr>}
+                {isOpen && <tr className="ckchart-row"><td colSpan={5}><div className="ckchart-wrap"><div className="ckchart-t">{row.name} · 최근 3년 추이 <span>{row.item && row.item.mean ? "· " + row.item.mean : ""}</span></div><ArchLineChart pts={s.map((x) => ({ year: x.year, value: x.value, sev: x.sev }))} zones={th(row)} unit={row.unit} /><div className="ckzone-lg"><span><i style={{ background: "#16A34A" }} />정상</span><span><i style={{ background: "#F59E0B" }} />주의</span><span><i style={{ background: "#EF4444" }} />위험</span></div></div></td></tr>}
               </React.Fragment>
             ); })}</tbody>
           </table></div>
@@ -504,7 +552,9 @@ function OntExplorer({ cohort, onGo, seg }) {
     <div className="ontflagbar">{FLAGS.map(([k, l]) => <button key={k} className={flag === k ? "on" : ""} onClick={() => { setFlag(k); reset(); }}>{l}</button>)}
       <div className="ontsearch"><Search size={14} /><input value={q} onChange={(e) => { setQ(e.target.value); reset(); }} placeholder="이름·ID·질병 검색" /></div>
     </div>
-    <div className="ontcount">필터 결과 <b>{list.length.toLocaleString()}</b>명 <span>/ 전체 {cohort.length.toLocaleString()}명</span></div>
+    <div className="ontcount">필터 결과 <b>{list.length.toLocaleString()}</b>명 <span>/ 전체 {cohort.length.toLocaleString()}명</span>
+      <button className="ontbulk" onClick={() => { const r = archiveBulkCSV(list); _ckDownload(`검진데이터_일괄_${r.count}명.csv`, r.csv, "text/csv;charset=utf-8"); if (typeof toast === "function") toast(`검진데이터 ${r.count}명 CSV 내보내기${r.capped ? ` (상위 ${r.cap}명)` : ""}`); }} title="필터된 회원 검진데이터 일괄 CSV"><Download size={12} /> 검진데이터 일괄 CSV</button>
+    </div>
     <div className="onttbl-wrap">
       <table className="onttbl">
         <thead><tr><th>ID</th><th>이름</th><th>성/나이</th><th>지역</th><th>진료과목</th><th>질병</th><th>검진이상</th><th>상담</th><th>위험</th><th>예상의료비</th></tr></thead>
