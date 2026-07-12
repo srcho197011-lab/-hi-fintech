@@ -7496,6 +7496,7 @@ function FamilyHealthCare({ member, onGo }) {
     { l: "10년 후 의료비", v: wonFull(cost10), vc: "#EF4444", dot: "#EF4444", pill: dCost > 0 ? { t: `+${dCost.toLocaleString("ko-KR")}원 (+${pctCost}%)`, ic: "up", c: "#B91C1C", bg: "#FDECEC" } : { t: `${dCost.toLocaleString("ko-KR")}원`, ic: "down", c: "#15803D", bg: "#E7F8EE" } },
   ];
   return (
+    <>
     <div className="fhc">
       <div className="fhc-hd">
         <div className="fhc-eyebrow">— FAMILY HEALTH CARE</div>
@@ -7531,7 +7532,9 @@ function FamilyHealthCare({ member, onGo }) {
         <button className="gobtn" onClick={() => onGo && onGo("checkup")}><CalendarCheck size={14} /> 검진 예약</button>
         <button className="gobtn" onClick={() => onGo && onGo("manage")}><Activity size={14} /> 건강현황</button>
       </div>
-    </div>
+      </div>
+      {typeof CarePlanCard === "function" && <CarePlanCard key={P.id || P.name} member={P} />}
+    </>
   );
 }
 
@@ -7695,7 +7698,6 @@ function MyPageSection({ onGo }) {
 
       {tab === "family" && (() => { const selfM = dm || (typeof selfMember === "function" ? selfMember() : null); return (<>
         {selfM && <FamilyHealthCare member={selfM} onGo={go} />}
-        {selfM && typeof CarePlanCard === "function" && <CarePlanCard member={selfM} />}
         {selfM && typeof FamilyCareSection === "function" && <FamilyCareSection member={selfM} onGo={onGo} />}
         <div className="chnote">※ 가족 건강정보는 본인·가족의 동의(DID) 하에 공유되며, 고령 가족은 재가·돌봄 서비스와 연계됩니다. {dm ? "가족 구성원 데이터는 시연용 예시입니다." : "본인 데이터는 프롬에이지 Premium 리포트 기반, 가족 구성원은 시연용 예시입니다."}</div>
       </>); })()}
