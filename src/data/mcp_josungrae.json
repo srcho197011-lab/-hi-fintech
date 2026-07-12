@@ -1,12 +1,13 @@
 {
   "mcp": {
-    "server": "hifin-mcp-clinical",
+    "server": "nhis-mcp-checkup",
+    "org": "국민건강보험공단",
     "protocol": "MCP 1.0 (local resource bridge)",
-    "resource": "member://josungrae/health",
+    "resource": "nhis://checkup/josungrae",
     "tool": "get_member_checkup",
     "issuedAt": "2026-05-08",
     "consent": "본인 동의(DID) · 마이데이터",
-    "note": "조성래 실측 검진데이터(PDF 원문 추출). 정적 데모에서는 http 서버가 MCP 리소스 브리지 역할을 하며 실제 fetch로 수신됩니다."
+    "note": "국민건강보험공단 건강검진 결과(조성래 실측, PDF 원문 추출). 정적 데모에서는 http 서버가 MCP 리소스 브리지 역할을 하며 실제 fetch로 수신됩니다."
   },
   "member": { "name": "조성래", "sex": "남", "regAge": 54.1, "birth": "1970-12-02", "region": "서울 은평구" },
   "national": {

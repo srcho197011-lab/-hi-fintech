@@ -3400,3 +3400,33 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .dconst-organs{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px;font-size:11px;font-weight:700;}
 .dconst-foot{font-size:10.5px;color:#8593AC;margin-top:10px;display:flex;align-items:center;gap:5px;line-height:1.5;}
 @media(max-width:720px){.dconst-top,.dconst-rep{grid-template-columns:repeat(2,1fr);}}
+
+/* ── 데이터 커넥터: 회원 실데이터 연동 ── */
+.dcms-gate{display:flex;align-items:center;gap:7px;font-size:12px;color:#E7C892;background:#2A210C;border:1px solid #5B4514;border-radius:10px;padding:9px 12px;margin-bottom:11px;flex-wrap:wrap;}
+.dcms-gate b{color:#FBBF24;}
+.dcms-gate button{margin-left:auto;font-size:11px;font-weight:800;color:#7DD3FC;background:#123056;border:1px solid #1E5A8C;border-radius:7px;padding:4px 10px;cursor:pointer;}
+.dcms-top{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:10px;}
+.dcms-kpi{background:#0C1730;border:1px solid #24324D;border-radius:12px;padding:10px 13px;}
+.dcms-kpi span{display:block;font-size:11px;color:#8FA1C0;margin-bottom:4px;}
+.dcms-kpi b{font-size:18px;font-weight:900;color:#EAF2FF;}
+.dcms-kpi b em{font-style:normal;font-size:12px;color:#8FA1C0;}
+.dcms-acts{display:flex;gap:7px;margin-bottom:11px;}
+.dcms-tbl{min-width:640px;}
+.dcms-tbl td{white-space:nowrap;}
+.dcms-mut{color:#7C8DAB;}
+.dcms-ab{font-size:11px;font-weight:800;color:#F59E0B;background:#2A210C;border-radius:6px;padding:1px 7px;}
+.dcms-vok{font-size:11px;font-weight:800;color:#34D399;display:inline-flex;align-items:center;gap:3px;}
+.dcms-vno{font-size:11px;font-weight:800;color:#F87171;}
+.dcms-c{font-size:11px;font-weight:800;color:#fff;background:linear-gradient(120deg,#1D4ED8,#0EA5E9);border:none;border-radius:7px;padding:5px 12px;cursor:pointer;}
+.dcms-x{font-size:11px;font-weight:700;color:#9DB0CE;background:#15233C;border:1px solid #2A3B5A;border-radius:7px;padding:5px 10px;cursor:pointer;}
+.dcms-detail td{background:#0A1428 !important;white-space:normal !important;}
+.dcms-checks{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;}
+.dcms-checks span{font-size:10.5px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-flex;align-items:center;gap:3px;}
+.dcms-checks span.ok{color:#34D399;background:#0E241C;border:1px solid #1F5137;}
+.dcms-checks span.no{color:#F87171;background:#2A1212;border:1px solid #5B1D1D;}
+.dcms-resline{font-size:10.5px;color:#9DB0CE;margin-top:6px;font-family:ui-monospace,Menlo,monospace;}
+.dcms-cohort{display:flex;align-items:center;gap:10px;background:#0C1730;border:1px dashed #2A3B5A;border-radius:12px;padding:12px 14px;margin-top:12px;flex-wrap:wrap;}
+.dcms-ch-l{display:flex;align-items:center;gap:9px;flex:1;min-width:220px;}
+.dcms-ch-l b{font-size:12.5px;font-weight:800;color:#DCE6F7;display:block;}
+.dcms-ch-l span{font-size:11px;color:#8593AC;}
+.dcms-ch-r{margin-left:auto;}
