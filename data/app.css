@@ -3684,3 +3684,27 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .finv-ph em{font-style:normal;font-size:11px;font-weight:600;color:#8FA1C0;margin-left:auto;}
 .finv-pt{font-size:11.8px;color:#9DB0CE;line-height:1.55;margin-top:7px;}
 @media(max-width:760px){.fbank-grid{grid-template-columns:repeat(2,1fr);}.finv-prin{grid-template-columns:1fr;}}
+
+/* ── 재무 출수납/투자 확장: 현금흐름·손익연계·리밸런싱 ── */
+.fflow-legend{display:flex;gap:16px;margin:2px 0 8px;font-size:12px;color:var(--muted)}
+.fflow-legend span{display:inline-flex;align-items:center;gap:6px}
+.fflow-legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.fcash-pl{display:inline-block;padding:2px 8px;border-radius:20px;background:#0b3b2e;color:#6EE7B7;font-size:11px;font-weight:700}
+.fcash-none{color:#8FA1C0;font-size:11px}
+.fpl-map{display:flex;flex-direction:column;gap:6px;margin:4px 0 6px}
+.fpl-row{display:grid;grid-template-columns:1fr auto 1.4fr;align-items:center;gap:10px;padding:9px 12px;background:#0c1730;border:1px solid #1e2c4a;border-radius:9px}
+.fpl-row span{color:var(--text);font-size:13px}
+.fpl-row b{font-family:ui-monospace,monospace;font-size:13px;text-align:right}
+.fpl-row em{color:#8FA1C0;font-size:12px;font-style:normal}
+.fpl-row.total{background:#101f3d;border-color:#2b4a6b}
+.fpl-row.total span{font-weight:700}
+.finv-sum{margin-left:auto;font-weight:700;font-size:13px}
+.finv-rb{display:flex;flex-direction:column;gap:7px;margin:6px 0}
+.finv-rbrow{display:grid;grid-template-columns:1.4fr auto auto 1fr;align-items:center;gap:12px;padding:9px 12px;background:#0c1730;border:1px solid #1e2c4a;border-radius:9px}
+.finv-rbn{display:flex;align-items:center;gap:8px;color:var(--text);font-weight:600;font-size:13px}
+.finv-rbcur{color:#8FA1C0;font-size:12px}
+.finv-rbctl{display:inline-flex;align-items:center;gap:8px}
+.finv-rbctl button{width:26px;height:26px;border-radius:7px;border:1px solid #2b4a6b;background:#13233f;color:#cfe0ff;font-size:15px;font-weight:700;cursor:pointer;line-height:1}
+.finv-rbctl button:hover{background:#1c3358}
+.finv-rbctl b{min-width:46px;text-align:center;font-family:ui-monospace,monospace;font-size:14px}
+.finv-rbact{text-align:right;font-family:ui-monospace,monospace;font-size:12.5px;font-weight:600}
