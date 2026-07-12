@@ -854,7 +854,16 @@ const WP_CHANGELOG = [
   { date: "2026-07-12", ver: "v1.1", ch: [8], feat: "AI 출수납 시스템", src: "온톨로지 › 재무회계 › AI 출수납", summary: "우리은행 데모 5계좌(모·수납·출납·사업비·투자)·AI 자금 스윕(집금/보충/배분)·K-IFRS 자동분개·계좌별 현금흐름 그래프·손익계산서(P&L) 자동연계(수납→매출·사업비→판관비·이체→손익無)", refs: [], status: "반영" },
   { date: "2026-07-12", ver: "v1.1", ch: [8], feat: "AI 투자시스템·리밸런싱", src: "온톨로지 › 재무회계 › AI 투자", summary: "채권·주식·코인·대체 4자산군 투자원칙·평가·손익분석·리밸런싱 시뮬레이터(목표비중 대비 매수/매도 산출)·투자 평가손익→금융수익 자동인식. 시연 데모(투자일임·자본시장법 검토 전제)", refs: [], status: "반영" },
 ];
-function wpLogAll() { let custom = []; try { custom = JSON.parse(localStorage.getItem("hifin_wp_log")) || []; } catch (e) {} return WP_CHANGELOG.concat(custom); }
+function wpLogAll() {
+  let custom = []; try { custom = JSON.parse(localStorage.getItem("hifin_wp_log")) || []; } catch (e) {}
+  const auto = (typeof WP_AUTO_LOG !== "undefined" && Array.isArray(WP_AUTO_LOG)) ? WP_AUTO_LOG : [];
+  const seen = new Set();
+  // 수동(WP_CHANGELOG) 우선 → 자동(커밋 트레일러) → 로컬 추가. date+feat 중복 제거.
+  return WP_CHANGELOG.concat(auto).concat(custom).filter((e) => {
+    const k = (e.date || "") + "|" + (e.feat || "");
+    if (seen.has(k)) return false; seen.add(k); return true;
+  });
+}
 function wpLogAppend(entry) { let custom = []; try { custom = JSON.parse(localStorage.getItem("hifin_wp_log")) || []; } catch (e) {} custom.push(entry); try { localStorage.setItem("hifin_wp_log", JSON.stringify(custom)); } catch (e) {} }
 function wpChapterSources() { return WHITEPAPER.filter((c) => c.sources && c.sources.length).map((c) => ({ no: c.no, title: c.title, ver: c.version, updated: c.updated, sources: c.sources })); }
 

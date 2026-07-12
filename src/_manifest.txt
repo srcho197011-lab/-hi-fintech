@@ -36,6 +36,7 @@ src/data/pilotCohort.js
 src/data/supplyData.js
 src/data/foundationData.js
 src/data/consultStore.js
+src/data/wpAutoLog.js
 src/data/whitepaper.js
 src/data/checkupCenters.js
 src/data/shopProducts.js

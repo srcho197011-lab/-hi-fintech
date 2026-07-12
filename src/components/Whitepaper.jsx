@@ -240,7 +240,7 @@ function WpChangeLog({ onGoChapter, onGoRefs }) {
 
   const download = (name, text, mime) => { try { const blob = new Blob(["﻿" + text], { type: mime }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000); } catch (e) { if (typeof toast === "function") toast("내보내기를 지원하지 않는 환경입니다."); } };
   const esc = (s) => { s = String(s == null ? "" : s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-  const exportCSV = () => { const head = ["일시", "버전", "챕터", "플랫폼 기능", "반영 내용", "근거", "상태"]; const lines = log.map((e) => [e.date, e.ver, (e.ch || []).map((n) => "제" + n + "장").join(" "), e.feat, e.summary, (e.refs || []).join("·"), e.status].map(esc).join(",")); download("백서_반영로그.csv", [head.join(","), ...lines].join("\n"), "text/csv;charset=utf-8"); };
+  const exportCSV = () => { const head = ["일시", "버전", "챕터", "플랫폼 기능", "반영 내용", "근거", "상태", "출처", "커밋"]; const lines = log.map((e) => [e.date, e.ver, (e.ch || []).map((n) => "제" + n + "장").join(" "), e.feat, e.summary, (e.refs || []).join("·"), e.status, e.auto ? "자동(커밋)" : "수동", e.hash || ""].map(esc).join(",")); download("백서_반영로그.csv", [head.join(","), ...lines].join("\n"), "text/csv;charset=utf-8"); };
   const exportJSON = () => download("백서_반영로그.json", JSON.stringify(log, null, 2), "application/json;charset=utf-8");
   const addEntry = () => {
     if (!f.feat.trim() || !f.summary.trim()) { if (typeof toast === "function") toast("플랫폼 기능과 반영 내용을 입력하세요."); return; }
@@ -262,7 +262,7 @@ function WpChangeLog({ onGoChapter, onGoRefs }) {
             <button onClick={() => setAddOpen((v) => !v)} style={btnS(addOpen)}>＋ 기록 추가</button>
           </div>
         </div>
-        <p style={{ fontSize: 12.5, color: "#5A6B86", margin: "8px 0 0", lineHeight: 1.6 }}>플랫폼 기능이 백서에 반영될 때마다 한 줄씩 기록됩니다. <b>챕터에 추가된 근거자료는 근거자료실에 자동 반영</b>되며, 아래 관계표에서 백서↔근거 매핑을 확인할 수 있어요. 로그는 <b>백업(CSV·JSON)</b>으로 내보내 피드백·감사에 활용합니다.</p>
+        <p style={{ fontSize: 12.5, color: "#5A6B86", margin: "8px 0 0", lineHeight: 1.6 }}>플랫폼 기능이 백서에 반영될 때마다 한 줄씩 기록됩니다. <b style={{ color: "#7C3AED" }}>⚙ 자동</b> 표시는 <b>커밋(=배포) 시 <code>WP-Log:</code> 트레일러에서 파이프라인이 자동 기록</b>한 항목이며, 커밋 해시가 함께 남아 추적됩니다. <b>챕터에 추가된 근거자료는 근거자료실에 자동 반영</b>되고, 로그는 <b>백업(CSV·JSON)</b>으로 내보내 피드백·감사에 활용합니다.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10, marginTop: 12 }}>
           {[["반영 기록", reflected + "건", "#16A34A"], ["백서 버전", (log[0] || {}).ver || "v1.1", "#2563EB"], ["반영 챕터", chCovered + "장", "#7C3AED"], ["연동 근거자료", srcCount + "건", "#0F8A74"]].map(([t, v, c], i) => (
             <div key={i} style={{ background: "#fff", border: "1px solid #E5E9F0", borderRadius: 11, padding: "11px 13px" }}><div style={{ fontSize: 18, fontWeight: 900, color: c }}>{v}</div><div style={{ fontSize: 11, color: "#6B7280", fontWeight: 700, marginTop: 2 }}>{t}</div></div>
@@ -293,7 +293,7 @@ function WpChangeLog({ onGoChapter, onGoRefs }) {
               <td style={{ ...tdS, whiteSpace: "nowrap", fontFamily: "ui-monospace,Menlo,monospace", color: "#64748B" }}>{e.date}</td>
               <td style={{ ...tdS, whiteSpace: "nowrap", fontWeight: 800 }}>{e.ver}</td>
               <td style={tdS}>{(e.ch || []).length ? (e.ch || []).map((n) => <span key={n} onClick={() => onGoChapter && onGoChapter(n)} style={{ cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#1D4ED8", background: "#EFF6FF", padding: "2px 7px", borderRadius: 6, marginRight: 4, display: "inline-block" }}>제{n}장</span>) : <span style={{ color: "#94A3B8" }}>—</span>}</td>
-              <td style={{ ...tdS, fontWeight: 700, color: "#12203F" }}>{e.feat}</td>
+              <td style={{ ...tdS, fontWeight: 700, color: "#12203F" }}>{e.feat}{e.auto ? <span title={"커밋 " + (e.hash || "")} style={{ marginLeft: 6, fontSize: 10, fontWeight: 800, color: "#7C3AED", background: "#F1EBFB", padding: "1px 7px", borderRadius: 999, whiteSpace: "nowrap" }}>⚙ 자동{e.hash ? " " + e.hash : ""}</span> : null}</td>
               <td style={{ ...tdS, color: "#475569" }}>{e.summary}{e.refs && e.refs.length ? <span style={{ display: "block", marginTop: 3, fontSize: 11, color: "#0F8A74" }}>근거: {e.refs.join(" · ")}</span> : null}</td>
               <td style={tdS}><span style={{ fontSize: 11, fontWeight: 800, color: s.c, background: s.bg, padding: "3px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>{e.status}</span></td>
             </tr>

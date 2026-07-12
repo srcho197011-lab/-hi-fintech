@@ -5,6 +5,9 @@ set -e
 cd "$(dirname "$0")"
 # 소스의 진실 = src/ 폴더(_manifest.txt 순서). 데이터=data/dummy_data.js(plain), CSS=data/app.css.
 
+# 백서반영표 자동 로그(WP-Log 트레일러 → src/data/wpAutoLog.js) 갱신
+bash scripts/gen_wp_log.sh || true
+
 cat > _h.txt <<'HEAD'
 <!doctype html>
 <html lang="ko">
