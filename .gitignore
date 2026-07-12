@@ -14,6 +14,8 @@
 !/build_preview.sh
 !/data
 !/src
+# 백서반영표 자동 로그 파이프라인(gen_wp_log.sh · githooks/post-commit)
+!/scripts
 
 # 펫 사이트(HI-PET) — Vercel 루트 디렉터리로 배포
 !/pet

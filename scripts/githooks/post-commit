@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# 커밋 직후: 백서반영표 자동 로그(WP-Log 트레일러) 재생성 → 번들 재빌드 →
+# 변경이 있으면 같은 커밋에 자동 편입(amend). WPLOG_SKIP 로 재귀 방지.
+#
+# 성능: 이 커밋이 "백서 반영 대상"일 때만 동작한다. 판단 기준(둘 중 하나):
+#   (1) 커밋 메시지에 WP-Log 트레일러가 있음(= 새 자동 로그 발생), 또는
+#   (2) 백서 소스(whitepaper.js/Whitepaper.jsx/wpAutoLog.js)가 이 커밋에서 변경됨.
+# 그 외 일반 커밋은 재빌드/amend 없이 즉시 통과한다.
+[ -n "$WPLOG_SKIP" ] && exit 0
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 0
+
+# 게이트 — 백서 반영 대상이 아니면 즉시 종료
+_has_trailer=$(git log -1 --pretty=%B | grep -ciE '^WP-Log:' || true)
+_wp_changed=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | grep -cE '(src/data/whitepaper\.js|src/components/Whitepaper\.jsx|src/data/wpAutoLog\.js)' || true)
+if [ "$_has_trailer" = "0" ] && [ "$_wp_changed" = "0" ]; then
+  exit 0
+fi
+
+bash scripts/gen_wp_log.sh >/dev/null 2>&1 || exit 0
+bash build_preview.sh    >/dev/null 2>&1 || exit 0
+
+if ! git diff --quiet -- src/data/wpAutoLog.js index.html preview.html 2>/dev/null; then
+  git add src/data/wpAutoLog.js index.html preview.html
+  WPLOG_SKIP=1 git commit --amend --no-edit --no-verify >/dev/null 2>&1
+fi
+exit 0
