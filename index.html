@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=f10ea80d0c" />
+<link rel="stylesheet" href="./data/app.css?v=54f2f9b781" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=f10ea80d0c"></script>
-<script src="./src/data/section_data.js?v=f10ea80d0c"></script>
-<script src="./src/data/demo_members.js?v=f10ea80d0c"></script>
+<script src="./src/data/dummy_data.js?v=54f2f9b781"></script>
+<script src="./src/data/section_data.js?v=54f2f9b781"></script>
+<script src="./src/data/demo_members.js?v=54f2f9b781"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -8491,6 +8491,9 @@ function WalletHubSection({ initial, onGo }) {
       연결 상태를 관리하며, 저장된 설정을 그대로 백엔드 커넥터에 주입하면 동작합니다. */
 
 const DATA_CONNECTORS = [
+  { id: "mcp-josungrae", name: "조성래 검진 리소스 (실데이터)", org: "HI-Fin MCP · 로컬 브리지", kind: "MCP", cat: "MCP", icon: "database", featured: true,
+    desc: "조성래 실측 검진데이터(국가검진·종합검진·프롬에이지 리포트)를 MCP 리소스로 실제 fetch합니다.",
+    ep: "./src/data/mcp_josungrae.json", auth: "MCP 토큰 + 본인 동의(DID)", fields: ["get_member_checkup", "national", "comprehensive", "report"] },
   { id: "nhis-checkup", name: "국가건강검진 결과", org: "국민건강보험공단", kind: "MyData", cat: "공공", icon: "shield",
     desc: "건강iN·건강모아의 일반/암 검진 결과통보서(판정·계측·혈액·요·문진)를 수집합니다.",
     ep: "https://api.nhis.or.kr/mydata/v1/checkup", auth: "OAuth2 + 본인인증(PASS/공동인증서)", fields: ["검진일", "판정등급", "계측·혈압", "혈액·요검사", "암검진"] },
@@ -8537,6 +8540,7 @@ function DataConnectorHub() {
   const [draft, setDraft] = useState({});
   const [testing, setTesting] = useState({});
   const [catF, setCatF] = useState("전체");
+  const [view, setView] = useState("list");
   const [addName, setAddName] = useState(""); const [addEp, setAddEp] = useState("");
   const [customs, setCustoms] = useState(() => { try { return JSON.parse(localStorage.getItem("hifin_connectors_custom")) || []; } catch (e) { return []; } });
   const persist = (next) => { setCfg(next); try { localStorage.setItem(KEY, JSON.stringify(next)); } catch (e) {} };
@@ -8551,8 +8555,20 @@ function DataConnectorHub() {
     const dd = draft[c.id] || {}; const ep = (dd.endpoint || "").trim();
     if (!ep) { if (typeof toast === "function") toast("엔드포인트 URL을 입력해 주세요."); return; }
     setTesting((t) => ({ ...t, [c.id]: true }));
-    // 시연: 엔드포인트로 핸드셰이크 시도(무CORS) 후 연결 처리. 실제 데이터 수집은 백엔드 커넥터가 수행.
     const done = () => { setTesting((t) => ({ ...t, [c.id]: false })); const next = { ...cfg, [c.id]: { endpoint: ep, key: dd.key || "", enabled: true, lastSync: _dconStamp(), records: _dconRecords(c) } }; persist(next); if (typeof toast === "function") toast(`✅ ${c.name} 커넥터 연결 완료 · 엔드포인트 저장됨`); };
+    // 동일 출처/상대경로(로컬 MCP 리소스 브리지)는 실제 fetch로 데이터 수신
+    const isLocal = /^\.?\//.test(ep) || /\.json(\?|$)/.test(ep) || (typeof location !== "undefined" && ep.indexOf(location.host) >= 0);
+    if (isLocal) {
+      fetch(ep).then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then((j) => {
+        const rec = (j && j.meta && j.meta.recordCount) || _dconRecords(c);
+        setTesting((t) => ({ ...t, [c.id]: false }));
+        const next = { ...cfg, [c.id]: { endpoint: ep, key: dd.key || "", enabled: true, lastSync: _dconStamp(), records: rec, data: j, real: true } };
+        persist(next);
+        if (typeof toast === "function") toast(`✅ 실데이터 수신 완료 · ${rec}건${j && j.member ? " · " + j.member.name : ""}`);
+      }).catch((e) => { setTesting((t) => ({ ...t, [c.id]: false })); if (typeof toast === "function") toast("리소스를 불러오지 못했습니다. 경로를 확인하세요."); });
+      return;
+    }
+    // 외부 엔드포인트: CORS로 본문 접근 불가 → 핸드셰이크만(no-cors). 실제 수집은 백엔드 커넥터가 수행.
     try { const ctrl = new AbortController(); const tid = setTimeout(() => ctrl.abort(), 2500); fetch(ep, { method: "GET", mode: "no-cors", signal: ctrl.signal }).then(() => { clearTimeout(tid); done(); }).catch(() => { clearTimeout(tid); done(); }); } catch (e) { done(); }
   };
   const toggle = (c) => { const cur = cfg[c.id]; if (!cur) { expand(c); return; } const next = { ...cfg, [c.id]: { ...cur, enabled: !cur.enabled } }; persist(next); };
@@ -8571,6 +8587,13 @@ function DataConnectorHub() {
       </div>
 
       <div className="dcon-flow">{PIPE.map((s, i, a) => <React.Fragment key={i}><span className="dcon-fn">{s}</span>{i < a.length - 1 && <ChevronRight size={14} className="dcon-fa" />}</React.Fragment>)}</div>
+
+      <div className="dcon-viewtabs">
+        <button className={view === "list" ? "on" : ""} onClick={() => setView("list")}><Server size={13} /> 커넥터 설정</button>
+        <button className={view === "status" ? "on" : ""} onClick={() => setView("status")}><Activity size={13} /> 연동 현황 {connected.length ? <span className="dcon-vb">{connected.length}</span> : null}</button>
+      </div>
+
+      {view === "status" ? <DconStatus cfg={cfg} all={ALL} onList={() => setView("list")} /> : (<>
 
       <div className="dcon-stats">
         <div className="dcon-st"><span>연결된 커넥터</span><b style={{ color: "#34D399" }}>{connected.length}<em> / {ALL.length}</em></b></div>
@@ -8626,7 +8649,85 @@ function DataConnectorHub() {
         </div>
       </div>
 
+      </>)}
+
       <div className="chnote" style={{ marginTop: 12 }}>※ 본 화면은 데이터 소스 <b>연결 설정(엔드포인트·인증) 관리</b> 콘솔입니다. 실제 개인 건강정보 수집은 <b>본인 동의(마이데이터·DID)</b>와 각 기관 인증 절차를 거쳐 백엔드/에이전트가 수행합니다. 토큰·환급 등 사업모델 요소는 규제 검토 대상입니다.</div>
+    </div>
+  );
+}
+
+/* ── 연동 현황(연결 상태 + 실수신 데이터 뷰) ── */
+function _dconFlagCol(f) { f = String(f || ""); if (/정상/.test(f)) return "#16A34A"; if (/높음|이상|위험/.test(f)) return "#EF4444"; if (/경계|주의|의심|관리|추적|경고/.test(f)) return "#F59E0B"; return "#64748B"; }
+function DconStatus({ cfg, all, onList }) {
+  const connected = all.filter((c) => cfg[c.id] && cfg[c.id].enabled);
+  const totalRec = connected.reduce((s, c) => s + ((cfg[c.id] && cfg[c.id].records) || 0), 0);
+  const lastSync = connected.map((c) => cfg[c.id].lastSync).filter(Boolean).sort().pop() || "-";
+  const withData = connected.find((c) => cfg[c.id] && cfg[c.id].data);
+  const D = withData ? cfg[withData.id].data : null;
+  const kc = (k) => _DCON_KINDCOL[k] || "#8FA1C0";
+  if (!connected.length) {
+    return (<div className="dcon-empty"><Server size={26} color="#3B5478" /><div>아직 연결된 커넥터가 없습니다.</div><button className="dcon-btn pri" onClick={onList}>커넥터 설정으로 이동</button></div>);
+  }
+  return (
+    <div className="dconst">
+      <div className="dconst-top">
+        <div className="dconst-kpi"><span>연결 커넥터</span><b style={{ color: "#34D399" }}>{connected.length}</b></div>
+        <div className="dconst-kpi"><span>수신 레코드</span><b style={{ color: "#38BDF8" }}>{totalRec.toLocaleString()}</b></div>
+        <div className="dconst-kpi"><span>최근 동기화</span><b style={{ fontSize: 13 }}>{lastSync}</b></div>
+        <div className="dconst-kpi"><span>상태</span><b style={{ color: "#34D399", fontSize: 13 }}><span className="dconst-live" /> LIVE</b></div>
+      </div>
+
+      <div className="dconst-list">
+        {connected.map((c) => { const s = cfg[c.id]; return (
+          <div className="dconst-row" key={c.id}>
+            <span className="dconst-dot" style={{ background: "#34D399" }} />
+            <div className="dconst-nm">{c.name} <span className="dcon-kind" style={{ color: kc(c.kind), background: kc(c.kind) + "1A" }}>{c.kind}</span>{s.real && <span className="dconst-real">실 fetch</span>}</div>
+            <span className="dconst-rec">{Number(s.records).toLocaleString()}건</span>
+            <span className="dconst-sync">{s.lastSync}</span>
+            <span className="dconst-ep">{s.endpoint}</span>
+          </div>
+        ); })}
+      </div>
+
+      {D && (
+        <div className="dconst-data">
+          <div className="dconst-dh"><Database size={15} color="#A78BFA" /> 수신 데이터 · <b>{D.member ? D.member.name : "회원"}</b> <span className="dconst-res">{D.mcp ? D.mcp.resource : ""}</span></div>
+          <div className="dconst-meta">{D.mcp ? `${D.mcp.server} · ${D.mcp.protocol}` : ""} · 동의: {D.mcp ? D.mcp.consent : "-"} · 출처: {D.meta ? (D.meta.sources || []).join("·") : "-"}</div>
+
+          {D.national && (<div className="dconst-block">
+            <div className="dconst-bt">🩺 {D.national.title} <span>{D.national.org} · {D.national.date}</span></div>
+            <div className="dconst-judge">판정: <b>{D.national.judgment}</b></div>
+            <div className="dconst-items">{D.national.items.map((it, i) => (
+              <div className="dconst-it" key={i}><span className="dconst-ik">{it.k}</span><b>{it.v}{it.unit ? <em>{it.unit}</em> : null}</b><span className="dconst-if" style={{ color: _dconFlagCol(it.flag), background: _dconFlagCol(it.flag) + "18" }}>{it.flag}</span></div>
+            ))}</div>
+            {D.national.cancer && <div className="dconst-cx">{D.national.cancer.map((cc, i) => <span key={i} style={{ color: _dconFlagCol(cc.flag) }}>{cc.type}: {cc.result}</span>)}</div>}
+          </div>)}
+
+          {D.comprehensive && (<div className="dconst-block">
+            <div className="dconst-bt">📋 {D.comprehensive.title} <span>{D.comprehensive.org} · {D.comprehensive.date}</span></div>
+            <div className="dconst-summary">{D.comprehensive.summary}</div>
+            {Object.keys(D.comprehensive.panels).map((pk) => (
+              <div className="dconst-panel" key={pk}><span className="dconst-pk">{pk}</span><div className="dconst-items">{D.comprehensive.panels[pk].map((it, i) => (
+                <div className="dconst-it" key={i}><span className="dconst-ik">{it.k}</span><b>{it.v}{it.unit ? <em>{it.unit}</em> : null}</b><span className="dconst-if" style={{ color: _dconFlagCol(it.flag), background: _dconFlagCol(it.flag) + "18" }}>{it.flag}</span></div>
+              ))}</div></div>
+            ))}
+            {D.comprehensive.imaging && <div className="dconst-img">{D.comprehensive.imaging.map((im, i) => <div key={i}><b>{im.k}</b> {im.v}</div>)}</div>}
+          </div>)}
+
+          {D.report && (<div className="dconst-block">
+            <div className="dconst-bt">⏳ {D.report.title} <span>{D.report.org} · {D.report.date}</span></div>
+            <div className="dconst-rep">
+              <div><span>생체나이</span><b>{D.report.bioAge}세</b><em>주민등록 {D.report.regAge}세</em></div>
+              <div><span>노화속도</span><b>{D.report.agingSpeed}배</b><em>{D.report.overall}</em></div>
+              <div><span>암 위험도</span><b>{D.report.cancerGrade}</b><em>{(D.report.cancerWarn || []).map((w) => w.type + " " + w.flag).join("·")}</em></div>
+              <div><span>금년 의료비</span><b>{Number(D.report.cost.thisYear).toLocaleString()}원</b><em>10년 {Number(D.report.cost.in10y).toLocaleString()}원</em></div>
+            </div>
+            <div className="dconst-organs">{D.report.organs.map((o, i) => <span key={i} style={{ color: o.flag === "좋음" ? "#34D399" : "#F87171" }}>{o.k} {o.age}세 {o.flag === "좋음" ? "✓" : "▲"}</span>)}</div>
+          </div>)}
+
+          <div className="dconst-foot"><Bot size={12} color="#67E8F9" /> 이 실데이터는 AI 주치의·상담·검진 아카이브에서 그대로 활용됩니다. {D.meta ? D.meta.disclaimer : ""}</div>
+        </div>
+      )}
     </div>
   );
 }
