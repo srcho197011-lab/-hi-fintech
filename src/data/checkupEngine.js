@@ -300,6 +300,32 @@ function memberHealthGrade(m) {
   return { grade, meta, act: meta.act, desc: meta.desc, sev2, sev1 };
 }
 
+/* ── 통합 임상 프로필(§6.4) — 확정진단·복용약·진료필요도·이행상태 ── */
+const _MED_BY_DZ = {
+  "고혈압": { name: "암로디핀 5mg", dose: "1일 1회", cls: "칼슘채널차단제" },
+  "당뇨병": { name: "메트포르민 500mg", dose: "1일 2회", cls: "경구혈당강하제" },
+  "고지혈증": { name: "아토르바스타틴 10mg", dose: "1일 1회(저녁)", cls: "스타틴" },
+  "이상지질혈증": { name: "로수바스타틴 10mg", dose: "1일 1회", cls: "스타틴" },
+  "지방간": { name: "우르소데옥시콜산 200mg", dose: "1일 3회", cls: "간기능 보조" },
+  "골다공증": { name: "알렌드로네이트 70mg", dose: "주 1회 + 칼슘·비타민D", cls: "비스포스포네이트" },
+  "빈혈": { name: "철분제", dose: "1일 1회", cls: "철분보충" },
+  "통풍": { name: "알로퓨리놀 100mg", dose: "1일 1회", cls: "요산저하제" },
+  "갑상선": { name: "레보티록신 50mcg", dose: "1일 1회(공복)", cls: "갑상선호르몬" },
+};
+function memberClinicalProfile(m) {
+  if (!m) return null;
+  const HRD = m.highRiskDiseases || [];
+  const rng = _chkRng(_chkSeed("clin" + (m.id || m.email || m.name)));
+  const diagnoses = HRD.map((d, i) => ({ name: d, since: (2026 - (1 + Math.floor(rng() * 6))) + "년 진단" }));
+  const meds = [];
+  HRD.forEach((d) => { const key = Object.keys(_MED_BY_DZ).find((k) => d.indexOf(k) >= 0); if (key && !meds.some((x) => x.name === _MED_BY_DZ[key].name)) meds.push(_MED_BY_DZ[key]); });
+  const G = (typeof memberHealthGrade === "function") ? memberHealthGrade(m) : null;
+  const CARE = { "긴급": "즉시 진료", "고위험": "우선 진료(1~2주 내)", "이상": "진료 권고", "경계": "재검사·생활관리", "치료중": "정기 추적·복약 관리", "지속관리": "정기 모니터링", "주의": "예방관리", "정상": "정기검진" };
+  const careNeed = G ? (CARE[G.grade] || "정기검진") : "정기검진";
+  const adherence = { med: meds.length ? 70 + Math.floor(rng() * 28) : null, checkupYear: 2026 - Math.floor(rng() * 2), mission: 40 + Math.floor(rng() * 55) };
+  return { diagnoses, meds, careNeed, adherence, grade: G ? G.grade : null };
+}
+
 /* ── 로그인 회원 '내 건강상태 정밀 분석'(데이터하우스 세부 검진데이터 기반) ── */
 function memberDeepAnalysis(text, m) {
   if (!m || typeof genMemberCheckup !== "function") return null;

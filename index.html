@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=44226de76f" />
+<link rel="stylesheet" href="./data/app.css?v=1d7a08027f" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=44226de76f"></script>
-<script src="./src/data/section_data.js?v=44226de76f"></script>
-<script src="./src/data/demo_members.js?v=44226de76f"></script>
+<script src="./src/data/dummy_data.js?v=1d7a08027f"></script>
+<script src="./src/data/section_data.js?v=1d7a08027f"></script>
+<script src="./src/data/demo_members.js?v=1d7a08027f"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -3027,7 +3027,7 @@ function HealthManageSection({ onGo }) {
 
       {cat === "report" && <ReportVault user={dm} />}
 
-      {cat === "checkup" && (chk ? <HMCheckupTab chk={chk} onGo={go} /> : (
+      {cat === "checkup" && (chk ? <HMCheckupTab chk={chk} member={selfM} onGo={go} /> : (
         <div className="card"><div className="rct"><ClipboardList size={18} color="#2563EB" /> 검진 항목현황</div>
           <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "4px 0 10px" }}>체험 회원으로 로그인하면 국가검진 판정 · 종합검진 40여 항목의 값·판정·3년 추이를 여기에서 확인할 수 있어요.</p>
           <DemoLoginSelector />
@@ -3152,7 +3152,8 @@ function HealthManageSection({ onGo }) {
 }
 
 /* ── 검진 항목현황(내 검진데이터: 판정·이상항목·3년 추이) ── */
-function HMCheckupTab({ chk, onGo }) {
+function HMCheckupTab({ chk, member, onGo }) {
+  const cp = (member && typeof memberClinicalProfile === "function") ? (() => { try { return memberClinicalProfile(member); } catch (e) { return null; } })() : null;
   const sevCol = ["#16A34A", "#F59E0B", "#EF4444"];
   const items = Object.keys(chk.items).map((k) => chk.items[k]).filter((r) => r.series);
   const abn = items.filter((r) => r.sev >= 1).sort((a, b) => b.sev - a.sev || b.series[2].value - a.series[2].value);
@@ -3173,6 +3174,19 @@ function HMCheckupTab({ chk, onGo }) {
         {chk.nat.life.length ? <div><span>생활습관</span><b style={{ fontSize: 13 }}>{chk.nat.life.join("·")}</b></div> : null}
       </div>
     </div>
+    {cp && <div className="card">
+      <div className="rct"><FileText size={18} color="#7C3AED" /> 통합 임상 프로필 <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 800, color: "#7C3AED", background: "#F1EBFE", padding: "4px 11px", borderRadius: 999 }}>진료필요도 · {cp.careNeed}</span></div>
+      <div className="cpf-grid">
+        <div className="cpf-col"><div className="cpf-h">확정 진단</div>{cp.diagnoses.length ? cp.diagnoses.map((d) => <div className="cpf-dx" key={d.name}><b>{d.name}</b><span>{d.since}</span></div>) : <div className="cpf-none">진단된 만성질환 없음</div>}</div>
+        <div className="cpf-col"><div className="cpf-h">복용 약물</div>{cp.meds.length ? cp.meds.map((md) => <div className="cpf-med" key={md.name}><b>{md.name}</b><span>{md.dose} · {md.cls}</span></div>) : <div className="cpf-none">복용 중인 약물 없음</div>}</div>
+      </div>
+      <div className="cpf-adh">
+        {cp.adherence.med != null && <div className="cpf-a"><span>복약 순응도</span><div className="cpf-bar"><i style={{ width: cp.adherence.med + "%", background: cp.adherence.med >= 80 ? "#16A34A" : "#F59E0B" }} /></div><b>{cp.adherence.med}%</b></div>}
+        <div className="cpf-a"><span>생활미션 이행</span><div className="cpf-bar"><i style={{ width: cp.adherence.mission + "%", background: cp.adherence.mission >= 70 ? "#16A34A" : "#F59E0B" }} /></div><b>{cp.adherence.mission}%</b></div>
+        <div className="cpf-a"><span>최근 검진 수검</span><b style={{ marginLeft: "auto" }}>{cp.adherence.checkupYear}년</b></div>
+      </div>
+      <div className="chnote" style={{ marginTop: 8 }}>※ 확정진단·처방은 의료기관 진료기록 기반이며, 복약·이행 정보는 회원 관리 데이터입니다. 진단·처방 변경은 의료진과 상의하세요.</div>
+    </div>}
     <div className="card">
       <div className="rct"><AlertTriangle size={18} color="#EF4444" /> 이상·주의 항목 <span className="hmck-cnt">{abn.length}건</span></div>
       {abn.length ? <div className="hmck-list">{abn.map((r) => { const p = r.series[2]; const [ar, ac, al] = arrow(r); return (
@@ -16099,6 +16113,32 @@ function memberHealthGrade(m) {
   else grade = "정상";
   const meta = (typeof HEALTH_GRADES !== "undefined" && HEALTH_GRADES[grade]) || { c: "#64748B", bg: "#EEF1F8", act: "-", desc: "" };
   return { grade, meta, act: meta.act, desc: meta.desc, sev2, sev1 };
+}
+
+/* ── 통합 임상 프로필(§6.4) — 확정진단·복용약·진료필요도·이행상태 ── */
+const _MED_BY_DZ = {
+  "고혈압": { name: "암로디핀 5mg", dose: "1일 1회", cls: "칼슘채널차단제" },
+  "당뇨병": { name: "메트포르민 500mg", dose: "1일 2회", cls: "경구혈당강하제" },
+  "고지혈증": { name: "아토르바스타틴 10mg", dose: "1일 1회(저녁)", cls: "스타틴" },
+  "이상지질혈증": { name: "로수바스타틴 10mg", dose: "1일 1회", cls: "스타틴" },
+  "지방간": { name: "우르소데옥시콜산 200mg", dose: "1일 3회", cls: "간기능 보조" },
+  "골다공증": { name: "알렌드로네이트 70mg", dose: "주 1회 + 칼슘·비타민D", cls: "비스포스포네이트" },
+  "빈혈": { name: "철분제", dose: "1일 1회", cls: "철분보충" },
+  "통풍": { name: "알로퓨리놀 100mg", dose: "1일 1회", cls: "요산저하제" },
+  "갑상선": { name: "레보티록신 50mcg", dose: "1일 1회(공복)", cls: "갑상선호르몬" },
+};
+function memberClinicalProfile(m) {
+  if (!m) return null;
+  const HRD = m.highRiskDiseases || [];
+  const rng = _chkRng(_chkSeed("clin" + (m.id || m.email || m.name)));
+  const diagnoses = HRD.map((d, i) => ({ name: d, since: (2026 - (1 + Math.floor(rng() * 6))) + "년 진단" }));
+  const meds = [];
+  HRD.forEach((d) => { const key = Object.keys(_MED_BY_DZ).find((k) => d.indexOf(k) >= 0); if (key && !meds.some((x) => x.name === _MED_BY_DZ[key].name)) meds.push(_MED_BY_DZ[key]); });
+  const G = (typeof memberHealthGrade === "function") ? memberHealthGrade(m) : null;
+  const CARE = { "긴급": "즉시 진료", "고위험": "우선 진료(1~2주 내)", "이상": "진료 권고", "경계": "재검사·생활관리", "치료중": "정기 추적·복약 관리", "지속관리": "정기 모니터링", "주의": "예방관리", "정상": "정기검진" };
+  const careNeed = G ? (CARE[G.grade] || "정기검진") : "정기검진";
+  const adherence = { med: meds.length ? 70 + Math.floor(rng() * 28) : null, checkupYear: 2026 - Math.floor(rng() * 2), mission: 40 + Math.floor(rng() * 55) };
+  return { diagnoses, meds, careNeed, adherence, grade: G ? G.grade : null };
 }
 
 /* ── 로그인 회원 '내 건강상태 정밀 분석'(데이터하우스 세부 검진데이터 기반) ── */

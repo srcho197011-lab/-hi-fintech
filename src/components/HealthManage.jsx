@@ -55,7 +55,7 @@ function HealthManageSection({ onGo }) {
 
       {cat === "report" && <ReportVault user={dm} />}
 
-      {cat === "checkup" && (chk ? <HMCheckupTab chk={chk} onGo={go} /> : (
+      {cat === "checkup" && (chk ? <HMCheckupTab chk={chk} member={selfM} onGo={go} /> : (
         <div className="card"><div className="rct"><ClipboardList size={18} color="#2563EB" /> 검진 항목현황</div>
           <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "4px 0 10px" }}>체험 회원으로 로그인하면 국가검진 판정 · 종합검진 40여 항목의 값·판정·3년 추이를 여기에서 확인할 수 있어요.</p>
           <DemoLoginSelector />
@@ -180,7 +180,8 @@ function HealthManageSection({ onGo }) {
 }
 
 /* ── 검진 항목현황(내 검진데이터: 판정·이상항목·3년 추이) ── */
-function HMCheckupTab({ chk, onGo }) {
+function HMCheckupTab({ chk, member, onGo }) {
+  const cp = (member && typeof memberClinicalProfile === "function") ? (() => { try { return memberClinicalProfile(member); } catch (e) { return null; } })() : null;
   const sevCol = ["#16A34A", "#F59E0B", "#EF4444"];
   const items = Object.keys(chk.items).map((k) => chk.items[k]).filter((r) => r.series);
   const abn = items.filter((r) => r.sev >= 1).sort((a, b) => b.sev - a.sev || b.series[2].value - a.series[2].value);
@@ -201,6 +202,19 @@ function HMCheckupTab({ chk, onGo }) {
         {chk.nat.life.length ? <div><span>생활습관</span><b style={{ fontSize: 13 }}>{chk.nat.life.join("·")}</b></div> : null}
       </div>
     </div>
+    {cp && <div className="card">
+      <div className="rct"><FileText size={18} color="#7C3AED" /> 통합 임상 프로필 <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 800, color: "#7C3AED", background: "#F1EBFE", padding: "4px 11px", borderRadius: 999 }}>진료필요도 · {cp.careNeed}</span></div>
+      <div className="cpf-grid">
+        <div className="cpf-col"><div className="cpf-h">확정 진단</div>{cp.diagnoses.length ? cp.diagnoses.map((d) => <div className="cpf-dx" key={d.name}><b>{d.name}</b><span>{d.since}</span></div>) : <div className="cpf-none">진단된 만성질환 없음</div>}</div>
+        <div className="cpf-col"><div className="cpf-h">복용 약물</div>{cp.meds.length ? cp.meds.map((md) => <div className="cpf-med" key={md.name}><b>{md.name}</b><span>{md.dose} · {md.cls}</span></div>) : <div className="cpf-none">복용 중인 약물 없음</div>}</div>
+      </div>
+      <div className="cpf-adh">
+        {cp.adherence.med != null && <div className="cpf-a"><span>복약 순응도</span><div className="cpf-bar"><i style={{ width: cp.adherence.med + "%", background: cp.adherence.med >= 80 ? "#16A34A" : "#F59E0B" }} /></div><b>{cp.adherence.med}%</b></div>}
+        <div className="cpf-a"><span>생활미션 이행</span><div className="cpf-bar"><i style={{ width: cp.adherence.mission + "%", background: cp.adherence.mission >= 70 ? "#16A34A" : "#F59E0B" }} /></div><b>{cp.adherence.mission}%</b></div>
+        <div className="cpf-a"><span>최근 검진 수검</span><b style={{ marginLeft: "auto" }}>{cp.adherence.checkupYear}년</b></div>
+      </div>
+      <div className="chnote" style={{ marginTop: 8 }}>※ 확정진단·처방은 의료기관 진료기록 기반이며, 복약·이행 정보는 회원 관리 데이터입니다. 진단·처방 변경은 의료진과 상의하세요.</div>
+    </div>}
     <div className="card">
       <div className="rct"><AlertTriangle size={18} color="#EF4444" /> 이상·주의 항목 <span className="hmck-cnt">{abn.length}건</span></div>
       {abn.length ? <div className="hmck-list">{abn.map((r) => { const p = r.series[2]; const [ar, ac, al] = arrow(r); return (
