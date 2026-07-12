@@ -3584,3 +3584,29 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
   .clp-lead,.clp-rr b,.clp-upd b{color:#EAF2FF;} .clp-result,.clp-upd{background:#0F1B33;border-color:#1E2C46;} .clp-rr{border-color:#1A2740;}
   .clp-btn{background:#1A2740;color:#C6D3EC;} .clp-done{background:#0E241C;border-color:#1F5137;}
 }
+
+/* ── 보험금 청구 지원 워크플로 ── */
+.clm-steps{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:4px 0 14px;}
+.clm-step{font-size:11.5px;font-weight:700;color:#98A6BE;}
+.clm-step.on{color:#2563EB;}
+.clm-a{color:#CBD5E1;}
+.clm-lead{font-size:13.5px;color:#334155;line-height:1.6;margin-bottom:13px;}
+.clm-lead b{color:#1B2942;font-weight:700;}
+.clm-pol{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.clm-pol>div{background:#F7F9FC;border:1px solid #E7ECF4;border-radius:11px;padding:11px 13px;}
+.clm-pol b{display:block;font-size:13px;font-weight:800;color:#1B2942;}
+.clm-pol span{font-size:11px;color:var(--muted);}
+.clm-seven{display:grid;gap:7px;margin-bottom:14px;}
+.clm-row{display:flex;gap:12px;background:#F7F9FC;border:1px solid #E7ECF4;border-radius:10px;padding:9px 13px;font-size:12.5px;}
+.clm-row span{color:var(--muted);flex:0 0 120px;font-weight:600;}
+.clm-row b{color:#1B2942;font-weight:700;flex:1;}
+.clm-docs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.clm-doc{font-size:12px;font-weight:700;color:#475569;background:#EEF2F8;border:1px solid #E1E7F0;border-radius:8px;padding:6px 11px;}
+.clm-doc.auto{color:#15803D;background:#F0FBF4;border-color:#BBF7D0;}
+.clm-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#475569;background:#EEF2F8;border:none;border-radius:9px;padding:11px 18px;cursor:pointer;margin-right:8px;}
+.clm-btn.pri{color:#fff;background:linear-gradient(120deg,#2563EB,#0EA5E9);}
+@media (prefers-color-scheme:dark){
+  .clm-lead,.clm-pol b,.clm-row b{color:#EAF2FF;} .clm-pol>div,.clm-row{background:#0F1B33;border-color:#1E2C46;}
+  .clm-doc{background:#1A2740;color:#C6D3EC;border-color:#26344E;} .clm-btn{background:#1A2740;color:#C6D3EC;}
+}
+@media(max-width:560px){.clm-pol{grid-template-columns:1fr;}.clm-row span{flex-basis:96px;}}

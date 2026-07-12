@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=ef7b7a1df7" />
+<link rel="stylesheet" href="./data/app.css?v=a8be89d39f" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=ef7b7a1df7"></script>
-<script src="./src/data/section_data.js?v=ef7b7a1df7"></script>
-<script src="./src/data/demo_members.js?v=ef7b7a1df7"></script>
+<script src="./src/data/dummy_data.js?v=a8be89d39f"></script>
+<script src="./src/data/section_data.js?v=a8be89d39f"></script>
+<script src="./src/data/demo_members.js?v=a8be89d39f"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -7141,6 +7141,55 @@ function InsurancePolicySection() {
   );
 }
 
+/* ── 보험금 청구지원 워크플로(§6.10): 의료사건→기존계약→청구가능성→보장 7항목→서류 ── */
+function ClaimSupportFlow({ onModal }) {
+  const M = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const [step, setStep] = React.useState(0);
+  if (!M) return null;
+  const cp = (typeof memberClinicalProfile === "function") ? (() => { try { return memberClinicalProfile(M); } catch (e) { return null; } })() : null;
+  const chk = (typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, M)); } catch (e) { return null; } })() : null;
+  const dz = cp && cp.diagnoses.length ? cp.diagnoses[0].name : (chk && chk.comp.abnormals[0] ? chk.comp.abnormals[0].split(" ")[0] : "건강검진 이상소견");
+  const event = cp && cp.diagnoses.length ? `${dz} 진료·처방(의료사건)` : `${dz} 정밀검사 필요`;
+  const SEVEN = [
+    ["관련 보장항목", `${dz} 질병 통원·진단비 / 검진 진단지원금`],
+    ["보장기간", "계약 만기까지(예: 2045년)"],
+    ["예상 보험금", "약 350,000원 (통원·진단 합산 · 심사 후 확정)"],
+    ["예상 자기부담금", "약 20,000원 (통원 공제)"],
+    ["면책 가능성", "가입 전 진단 이력(기왕증)·고지의무 위반 시 부지급 가능"],
+    ["추가심사 가능성", "진단 경위·인과관계 확인 시 추가 심사 가능"],
+    ["필요 청구서류", "진단서 · 진료비 세부내역서 · 영수증 · 신분증 (검진자료는 자동 연동)"],
+  ];
+  const STEPS = ["의료사건", "기존 계약 확인", "보장 7항목 참고분석", "청구 지원"];
+  return (
+    <div className="card">
+      <div className="rct"><ShieldCheck size={18} color="#2563EB" /> 보험금 청구 지원 <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "var(--muted)" }}>{M.name}님</span></div>
+      <div className="clm-steps">{STEPS.map((s, i) => <React.Fragment key={s}><span className={"clm-step" + (i <= step ? " on" : "")}>{i + 1}. {s}</span>{i < STEPS.length - 1 && <span className="clm-a">›</span>}</React.Fragment>)}</div>
+
+      {step === 0 && <div>
+        <div className="clm-lead">최근 <b>{event}</b>이 확인되었습니다. 보유 보험의 치료비 보장 가능성을 참고 분석해 드릴게요.</div>
+        <button className="clm-btn pri" onClick={() => setStep(1)}>기존 보험계약 확인 ›</button>
+      </div>}
+      {step === 1 && <div>
+        <div className="clm-lead">보유 계약을 확인했습니다.</div>
+        <div className="clm-pol"><div><b>실손의료보험(4세대)</b><span>통원·입원 의료비 · 유지 중</span></div><div><b>건강검진 대비보험</b><span>진단지원금 · 유지 중</span></div></div>
+        <button className="clm-btn pri" onClick={() => setStep(2)}>청구 가능성·보장 분석 ›</button>
+      </div>}
+      {step === 2 && <div>
+        <div className="clm-lead"><b>{dz}</b> 관련 보장 가능성 참고 분석(7항목)입니다.</div>
+        <div className="clm-seven">{SEVEN.map(([k, v]) => <div className="clm-row" key={k}><span>{k}</span><b>{v}</b></div>)}</div>
+        <button className="clm-btn pri" onClick={() => setStep(3)}>청구 서류 준비·접수 ›</button>
+      </div>}
+      {step === 3 && <div>
+        <div className="clm-lead">필요 서류를 안내하고 청구를 지원합니다.</div>
+        <div className="clm-docs">{["진단서", "진료비 세부내역서", "영수증", "신분증"].map((d) => <span key={d} className="clm-doc">{d}</span>)}<span className="clm-doc auto">검진자료 자동 연동</span></div>
+        <button className="clm-btn pri" onClick={() => onModal && onModal({ title: "보험금 청구 접수", sub: "청구가 접수되었습니다 · 보험사 심사 후 지급 확정", items: [["coin", "예상 보험금", "약 350,000원 (심사 후 확정)"], ["doc", "청구 서류", "진단서·세부내역서·영수증 (검진자료 자동 연동)"], ["shield", "안내", "지급 여부·금액은 보험사 심사로 결정됩니다"]] })}><Coins size={14} /> 청구 접수하기</button>
+        <button className="clm-btn" onClick={() => setStep(0)}>처음부터</button>
+      </div>}
+      <div className="chnote" style={{ marginTop: 10 }}>※ 보험금은 <b>보험회사 심사</b>를 거쳐 결정되며 AI는 지급을 확정하지 않습니다. 청약·심사·지급은 보험사·정식 모집자격 보유자가 수행합니다(§4.6).</div>
+    </div>
+  );
+}
+
 function InsuranceSection({ onGo }) {
   const [tab, setTab] = useState("embed");
   const [modal, setModal] = useState(null);
@@ -7222,6 +7271,7 @@ function InsuranceSection({ onGo }) {
       </>)}
 
       {tab === "claim" && (<>
+        <ClaimSupportFlow onModal={setModal} />
         <div className="card">
           <div className="rct"><Coins size={18} color="#16A34A" /> 청구 가능 건</div>
           <div className="resitem"><span className="ic" style={{ background: "#E8F1FE" }}><Art name="calendar" size={20} /></span>
