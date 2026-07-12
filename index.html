@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=ebdbf1fec4" />
+<link rel="stylesheet" href="./data/app.css?v=32685e1e6f" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=ebdbf1fec4"></script>
-<script src="./src/data/section_data.js?v=ebdbf1fec4"></script>
-<script src="./src/data/demo_members.js?v=ebdbf1fec4"></script>
+<script src="./src/data/dummy_data.js?v=32685e1e6f"></script>
+<script src="./src/data/section_data.js?v=32685e1e6f"></script>
+<script src="./src/data/demo_members.js?v=32685e1e6f"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -8831,16 +8831,32 @@ function _buildMemberResource(m) {
   const R = (typeof demoReport === "function") ? (() => { try { return demoReport(m); } catch (e) { return null; } })() : null;
   const items = Object.keys(chk.items).map((k) => chk.items[k]).filter((r) => r.series);
   const recordCount = items.length + chk.comp.abnormals.length + (R ? 5 : 0);
-  return { name: m.name, id: m.id || m.email, judgment: chk.nat.grade, itemCount: items.length, abnormals: chk.comp.abnormals.length, trend: chk.trendLabel, bioAge: R ? R.bio : m.biologicalAge, cancerGrade: R ? R.cancerTotal : m.cancerRiskGrade, cost: R ? R.costThis : m.estimatedMedicalCost, recordCount };
+  const uniqueKeys = new Set(items.map((r) => r.key)).size;
+  const unitCount = items.filter((r) => r.unit).length;
+  const refCount = items.filter((r) => r.ref).length;
+  const seriesOk = items.every((r) => r.series && r.series.length === 3 && r.series.every((p) => typeof p.value === "number" && !isNaN(p.value)));
+  const examYear = chk.years ? chk.years[chk.years.length - 1] : null;
+  const checksum = "sha·" + _dconHash(JSON.stringify(items.map((r) => [r.key, r.value]))).toString(16);
+  return {
+    name: m.name, id: m.id || m.email, judgment: chk.nat.grade, itemCount: items.length, abnormals: chk.comp.abnormals.length,
+    trend: chk.trendLabel, bioAge: R ? R.bio : m.biologicalAge, cancerGrade: R ? R.cancerTotal : m.cancerRiskGrade, cost: R ? R.costThis : m.estimatedMedicalCost, recordCount,
+    org: "국민건강보험공단", source: chk.comp && chk.comp.src, modelVersion: "checkup-engine v1.0", examYear, uniqueKeys, unitCount, refCount, seriesOk, checksum,
+  };
 }
+/* 데이터 품질검증 11항목(§6.3) — 미검증 데이터는 AI 확정 상담근거로 미사용 */
 function _verifyResource(m, res) {
   const checks = [
     ["회원 신원 일치", !!(res && res.name === m.name)],
-    ["국가검진 판정 존재", !!(res && res.judgment)],
-    ["검진 항목 ≥ 1", !!(res && res.itemCount > 0)],
-    ["레코드 수 > 0", !!(res && res.recordCount > 0)],
-    ["생체나이 유효", !!(res && res.bioAge > 0)],
-    ["의료비 예측 유효", !!(res && res.cost > 0)],
+    ["데이터 생성기관 확인", !!(res && res.org)],
+    ["검사일(연도) 유효", !!(res && res.examYear)],
+    ["데이터 누락 없음", !!(res && res.itemCount >= 15)],
+    ["중복값 없음", !!(res && res.uniqueKeys === res.itemCount)],
+    ["단위 표기 정상", !!(res && res.unitCount === res.itemCount)],
+    ["기준범위(참고치) 존재", !!(res && res.refCount === res.itemCount)],
+    ["과거 데이터 충돌 없음(3년 일관)", !!(res && res.seriesOk)],
+    ["분석 모델버전 명시", !!(res && res.modelVersion)],
+    ["원천데이터 확인", !!(res && res.source)],
+    ["전송 무결성(체크섬)", !!(res && res.checksum)],
   ];
   return { ok: checks.every((c) => c[1]), passed: checks.filter((c) => c[1]).length, total: checks.length, checks };
 }
@@ -8898,7 +8914,7 @@ function DconMemberSync({ nhisOn, onList }) {
         <div className="dcms-ch-l"><Users size={15} color="#38BDF8" /><div><b>코호트 100,000명 일괄 연동(배치)</b><span>대규모 회원은 백엔드 배치로 커넥터를 통해 검진 레코드를 수신·검증합니다.</span></div></div>
         <div className="dcms-ch-r">{cohortSynced ? <span className="dcms-vok"><Check size={11} /> 배치 완료 {cohortN.toLocaleString()}명</span> : <button className="dcon-btn go" onClick={batchCohort}><Zap size={13} /> 배치 연동 실행</button>}</div>
       </div>
-      <div className="chnote" style={{ marginTop: 10 }}>※ 회원 실데이터는 커넥터(국민건강보험공단 MCP 등)를 통해 수신한 검진 레코드로, <b>genMemberCheckup 엔진의 실구조 데이터</b>를 사용합니다. 각 연동 건은 <b>6개 검증 규칙</b>(신원·판정·항목·레코드·생체나이·의료비)으로 자동 검증됩니다. 실서비스에서는 본인 동의(마이데이터·DID) 하에 각 기관 인증을 거쳐 수신합니다.</div>
+      <div className="chnote" style={{ marginTop: 10 }}>※ 회원 실데이터는 커넥터(국민건강보험공단 MCP 등)를 통해 수신한 검진 레코드로, <b>genMemberCheckup 엔진의 실구조 데이터</b>를 사용합니다. 각 연동 건은 사업방법서 §6.3의 <b>데이터 품질검증 11항목</b>(신원·생성기관·검사일·누락·중복·단위·기준범위·과거충돌·모델버전·원천·무결성)으로 자동 검증되며, <b>검증 미통과 데이터는 AI 확정 상담근거로 사용하지 않습니다.</b> 실서비스에서는 본인 동의(마이데이터·DID) 하에 각 기관 인증을 거쳐 수신합니다.</div>
     </div>
   );
 }
