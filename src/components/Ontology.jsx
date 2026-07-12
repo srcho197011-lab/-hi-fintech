@@ -221,6 +221,8 @@ function OntMemberModal({ m, onClose, onGo }) {
             </div>
           )}
 
+          {!m.childHealth && <MemberCheckupArchive m={m} />}
+
           <div className="ontmsec"><div className="ontmsh"><ShieldCheck size={13} color="#A78BFA" /> 필요 보장 · 공백</div>
             <div className="ontchips">{m.coverages.map((c) => <span key={c} className={`ontchip ${m.gap.includes(c) ? "gap" : "held"}`}>{c}{m.gap.includes(c) ? " · 공백" : ""}</span>)}</div>
           </div>
@@ -256,6 +258,81 @@ function OntMemberModal({ m, onClose, onGo }) {
   );
 }
 function _markL(key, gi) { if (typeof CHECKUP_ONTOLOGY !== "undefined") { const o = CHECKUP_ONTOLOGY.find((x) => x.key === key); if (o) return o.grades[gi][0]; } return ["정상", "주의", "위험", "고위험"][gi]; }
+
+/* ── 코호트 회원 → 검진엔진 프로필 정규화(어댑터) ── */
+function _archMember(m) {
+  if (!m) return m;
+  if (Array.isArray(m.highRiskDiseases) || typeof m.biologicalAge === "number")
+    return Object.assign({}, m, { regAge: (typeof m.regAge === "number" ? m.regAge : (typeof demoRegAge === "function" ? demoRegAge(m) : m.age)) });
+  const dz = m.diseases || [];
+  const has = (k) => dz.some((d) => d.indexOf(k) >= 0);
+  const regAge = m.age || 50, bio = m.bioAge || regAge;
+  const oAge = Math.max(18, regAge + (m.bioDelta > 0 ? Math.round(m.bioDelta) : 0));
+  return {
+    id: m.id, name: m.name, sex: m.sex, regAge, biologicalAge: bio,
+    obesityAge: has("비만") ? regAge + 9 : oAge,
+    heartAge: (has("고혈압") || has("고지혈") || has("이상지질") || has("협심") || has("심근") || has("심장")) ? regAge + 8 : oAge,
+    liverAge: (has("지방간") || has("간염") || has("간경변")) ? regAge + 8 : oAge,
+    pancreasAge: has("당뇨") ? regAge + 9 : oAge,
+    kidneyAge: (has("콩팥") || has("신장") || has("신부전")) ? regAge + 8 : oAge,
+    cancerRiskGrade: Math.min(10, Math.max(1, (m.risk || 3) * 2)),
+    highRiskDiseases: dz, highRiskCancerTypes: dz.filter((d) => /암$/.test(d)),
+    estimatedMedicalCost: m.estCost || 1500000,
+    managementPoints: m.smoker ? ["금연 실천", "주 150분 유산소 운동", "나트륨·당류 줄이기"] : ["주 150분 유산소 운동", "나트륨·당류 줄이기", "연 1회 국가건강검진"],
+    category: m.isChild ? "아동" : (regAge >= 65 ? "노인" : "일반"), isDemoUser: true,
+  };
+}
+
+/* ── 회원별 연도별 검진 데이터 아카이브(데이터하우스) ── */
+function MemberCheckupArchive({ m }) {
+  const M = React.useMemo(() => _archMember(m), [m && m.id]);
+  const chk = React.useMemo(() => (typeof genMemberCheckup === "function" ? genMemberCheckup(Object.assign({}, M)) : null), [M]);
+  const R = React.useMemo(() => (typeof demoReport === "function" ? (() => { try { return demoReport(M); } catch (e) { return null; } })() : null), [M]);
+  const [cat, setCat] = React.useState("nat");
+  const [year, setYear] = React.useState(chk ? chk.years[chk.years.length - 1] : 2026);
+  if (!chk || typeof CHECKUP_ITEMS === "undefined") return null;
+  const sevCol = ["#16A34A", "#F59E0B", "#EF4444"];
+  const trendCol = { improve: "#16A34A", worsen: "#EF4444", stable: "#F59E0B" }[chk.trend];
+  const yIdx = chk.years.indexOf(year);
+  const NAT_KEYS = ["bmi", "waist", "sbp", "dbp", "hb", "fbs", "tc", "hdl", "tg", "ldl", "ast", "alt", "ggtp", "cr", "egfr"];
+  const rows = CHECKUP_ITEMS.filter((it) => chk.items[it.key] && chk.items[it.key].series && (cat === "comp" || NAT_KEYS.indexOf(it.key) >= 0)).map((it) => chk.items[it.key]);
+  const yr2 = (y) => "'" + String(y).slice(2);
+  const Spark = ({ row }) => (<span className="ckspark">{row.series.map((p, i) => <i key={i} title={`${p.year} ${p.value}${row.unit} · ${p.label}`} style={{ background: sevCol[p.sev] }} />)}</span>);
+  return (
+    <div className="ontmsec ckarch">
+      <div className="ontmsh"><Database size={13} color="#67E8F9" /> 연도별 검진 데이터 아카이브 <span className="ckarch-trend" style={{ background: trendCol + "22", color: trendCol }}>{chk.trendLabel}</span></div>
+      <div className="ckarch-sub">국가검진 판정 「<b>{chk.nat.grade}</b>」 · 최근 3년({chk.years[0]}~{chk.years[chk.years.length - 1]}) 시계열 · 이상항목 {chk.comp.abnormals.length}건 · 진행형태 「{chk.trendLabel}」</div>
+      <div className="ckarch-cat">{[["nat", "국가건강검진"], ["comp", "종합건강진단"], ["report", "건강분석리포트"]].map(([k, t]) => <button key={k} className={cat === k ? "on" : ""} onClick={() => setCat(k)}>{t}</button>)}</div>
+      {cat !== "report" && <div className="ckarch-yr">{chk.years.map((y) => <button key={y} className={year === y ? "on" : ""} onClick={() => setYear(y)}>{y}년</button>)}</div>}
+      {cat !== "report" ? (
+        <div className="onttbl-wrap"><table className="onttbl ckarch-tbl">
+          <thead><tr><th>검사항목</th><th>참고치</th><th>{year}년</th><th>판정</th><th>3년 추이</th></tr></thead>
+          <tbody>{rows.map((row) => { const p = row.series[yIdx]; return (
+            <tr key={row.key}><td>{row.name}</td><td className="ckmut">{row.ref}</td>
+              <td className="mono"><b>{p.value}</b><em className="ckunit">{row.unit}</em></td>
+              <td><span className="ckbadge" style={{ background: sevCol[p.sev] + "22", color: sevCol[p.sev] }}>{p.label}</span></td>
+              <td><Spark row={row} /></td></tr>
+          ); })}</tbody>
+        </table></div>
+      ) : (
+        <div className="ckarch-report">
+          <div className="ckrep-grid">
+            <div className="ckrep-c"><span>생체나이 (3년)</span><b>{chk.report ? chk.report.years.map((y, i) => `${yr2(y)} ${chk.report.bio[i]}세`).join(" → ") : M.biologicalAge + "세"}</b></div>
+            <div className="ckrep-c"><span>예상 의료비 (3년)</span><b>{chk.report ? chk.report.years.map((y, i) => `${yr2(y)} ${Math.round(chk.report.cost[i] / 10000)}만`).join(" → ") : "-"}</b></div>
+          </div>
+          {R && <>
+            <div className="ckrep-h">질병 발생 위험도 <em>동년배 대비 · 최근연도</em></div>
+            <div className="ckrep-chips">{R.diseases.map(([nm, pct]) => <span key={nm} className="ckrep-dz" style={{ color: pct > 10 ? "#EF4444" : pct > 0 ? "#F59E0B" : "#16A34A" }}>{nm} {pct > 0 ? "+" : ""}{pct}%</span>)}</div>
+            <div className="ckrep-h">암 발생 위험도 <em>10종</em></div>
+            <div className="ckrep-chips">{R.cancers.map(([nm, lab]) => <span key={nm} className={"ckrep-cx " + (lab === "경고" ? "warn" : lab === "주의" ? "cau" : "ok")}>{nm} {lab}</span>)}</div>
+          </>}
+          <div className="ckmut" style={{ marginTop: 8 }}>※ 위험도는 최근연도 기준이며, 3년 진행형태(「{chk.trendLabel}」)에 따라 생체나이·의료비가 위와 같이 변화합니다.</div>
+        </div>
+      )}
+      <div className="ckmut ckarch-src">📚 {chk.nat.src} · {chk.comp.src} · {typeof REPORT_SRC !== "undefined" ? REPORT_SRC : "건강분석리포트"} · 회원 검진데이터(결정론 생성, 시연·교육용)</div>
+    </div>
+  );
+}
 
 /* ── 질병 케어 라이브러리 (회원 무관, 192개 질병 전체 열람) ── */
 function DzCareLibrary() {

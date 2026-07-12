@@ -74,7 +74,7 @@ function _chkEmoji(sev) { return ["✅", "⚠️", "🚨"][sev]; }
 function _refStr(item, sex) {
   const r = item.ref;
   if (Array.isArray(r)) { if (item.lowIsBad) return `${r[0]}${item.unit} 이상`; if (r[0] === 0) return `${r[1]}${item.unit} 이하`; return `${r[0]}~${r[1]}${item.unit}`; }
-  const rr = r[sex] || r.m; if (item.lowIsBad) return `${sex === "f" ? "여" : "남"} ${rr[0]}${item.unit} 이상`; return `${sex === "f" ? "여" : "남"} ${rr[0]}~${rr[1]}${item.unit}`;
+  const rr = r[sex] || r.m; const g = sex === "f" ? "여" : "남"; if (item.lowIsBad) return `${g} ${rr[0]}${item.unit} 이상`; if (rr[0] === 0) return `${g} ${rr[1]}${item.unit} 미만`; return `${g} ${rr[0]}~${rr[1]}${item.unit}`;
 }
 
 /* ═══ 최근 3년 추이(진행형태: 나아짐/악화/유지) ═══ */

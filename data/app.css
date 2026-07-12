@@ -3136,3 +3136,39 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .pdramt{font-size:20px;font-weight:800;color:#B45309;white-space:nowrap;}
 .mtags2{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:7px;}
 .mtype{font-size:10px;font-weight:700;color:#475569;background:#EEF2F8;border-radius:999px;padding:2px 8px;}
+
+/* ── 연도별 검진 데이터 아카이브(데이터하우스 회원 모달) ── */
+.ckarch{}
+.ckarch .ontmsh{align-items:center;}
+.ckarch-trend{font-size:10px;font-weight:800;border-radius:999px;padding:2px 9px;margin-left:auto;}
+.ckarch-sub{font-size:11.5px;color:#9DB0CE;margin:2px 0 9px;line-height:1.5;}
+.ckarch-sub b{color:#EAF2FF;}
+.ckarch-cat{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.ckarch-cat button{font-size:11.5px;font-weight:700;color:#9DB0CE;background:#0F1B33;border:1px solid #24324D;border-radius:999px;padding:6px 13px;cursor:pointer;transition:.15s;}
+.ckarch-cat button:hover{border-color:#3B82F6;color:#CFE0FF;}
+.ckarch-cat button.on{background:linear-gradient(120deg,#1D4ED8,#0EA5E9);color:#fff;border-color:transparent;}
+.ckarch-yr{display:flex;gap:5px;margin-bottom:9px;}
+.ckarch-yr button{font-size:11px;font-weight:700;color:#8FA1C0;background:#0C1730;border:1px solid #24324D;border-radius:8px;padding:5px 12px;cursor:pointer;}
+.ckarch-yr button.on{background:#123056;color:#7DD3FC;border-color:#0EA5E9;}
+.ckarch-tbl{min-width:520px;}
+.ckarch-tbl td{white-space:nowrap;}
+.ckarch-tbl .ckmut{color:#7C8DAB;font-size:11px;}
+.ckunit{font-style:normal;color:#6B7C99;font-size:10px;margin-left:2px;}
+.ckbadge{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 8px;}
+.ckspark{display:inline-flex;gap:3px;align-items:flex-end;}
+.ckspark i{display:inline-block;width:12px;height:12px;border-radius:3px;opacity:.9;}
+.ckarch-report{background:#0C1730;border:1px solid #24324D;border-radius:12px;padding:12px 13px;}
+.ckrep-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:11px;}
+.ckrep-c{background:#0F1B33;border:1px solid #1E2C46;border-radius:10px;padding:9px 11px;}
+.ckrep-c span{display:block;font-size:10.5px;color:#8FA1C0;margin-bottom:3px;}
+.ckrep-c b{font-size:12.5px;color:#EAF2FF;font-family:ui-monospace,Menlo,monospace;}
+.ckrep-h{font-size:11px;font-weight:800;color:#B7C6E0;margin:9px 0 6px;}
+.ckrep-h em{font-style:normal;font-weight:600;color:#7C8DAB;font-size:10px;margin-left:5px;}
+.ckrep-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.ckrep-dz{font-size:10.5px;font-weight:700;background:#0F1B33;border:1px solid #24324D;border-radius:999px;padding:3px 9px;}
+.ckrep-cx{font-size:10.5px;font-weight:700;border-radius:999px;padding:3px 9px;}
+.ckrep-cx.ok{color:#34D399;background:#0E241C;border:1px solid #1F5137;}
+.ckrep-cx.cau{color:#F59E0B;background:#2A210C;border:1px solid #5B4514;}
+.ckrep-cx.warn{color:#F87171;background:#2A1212;border:1px solid #5B1D1D;}
+.ckarch-src{margin-top:9px;font-size:10px;color:#6B7C99;line-height:1.5;}
+@media(max-width:600px){.ckrep-grid{grid-template-columns:1fr;}}
