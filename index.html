@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=8cab9d68d1" />
+<link rel="stylesheet" href="./data/app.css?v=44226de76f" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=8cab9d68d1"></script>
-<script src="./src/data/section_data.js?v=8cab9d68d1"></script>
-<script src="./src/data/demo_members.js?v=8cab9d68d1"></script>
+<script src="./src/data/dummy_data.js?v=44226de76f"></script>
+<script src="./src/data/section_data.js?v=44226de76f"></script>
+<script src="./src/data/demo_members.js?v=44226de76f"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -2981,7 +2981,9 @@ function HealthManageSection({ onGo }) {
   // 체험 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const R = dm ? demoReport(dm) : null;
-  const chk = (dm && typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, dm)); } catch (e) { return null; } })() : null;
+  const selfM = dm || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const chk = (selfM && typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, selfM)); } catch (e) { return null; } })() : null;
+  const hg = (selfM && typeof memberHealthGrade === "function") ? (() => { try { return memberHealthGrade(selfM); } catch (e) { return null; } })() : null;
   const ckFlags = chk ? [
     { t: `국가검진 ${chk.nat.grade}`, c: chk.nat.grade === "정상A" ? "#15803D" : chk.nat.grade === "정상B" ? "#B45309" : "#B91C1C", bg: chk.nat.grade === "정상A" ? "#E7F8EE" : chk.nat.grade === "정상B" ? "#FEF3E2" : "#FDECEC" },
     { t: `검진 이상항목 ${chk.comp.abnormals.length}건`, c: chk.comp.abnormals.length ? "#B91C1C" : "#15803D", bg: chk.comp.abnormals.length ? "#FDECEC" : "#E7F8EE", ic: chk.comp.abnormals.length ? "warn" : "check" },
@@ -3033,6 +3035,11 @@ function HealthManageSection({ onGo }) {
       ))}
 
       {cat === "summary" && (<>
+        {hg && <div className="hgbanner" style={{ background: hg.meta.bg, borderColor: hg.meta.c + "44" }}>
+          <span className="hgb-badge" style={{ background: hg.meta.c }}>{hg.grade}</span>
+          <div className="hgb-txt"><b style={{ color: hg.meta.c }}>건강상태 「{hg.grade}」</b><span>{hg.desc} · 권장 조치: {hg.act}</span></div>
+          <button className="hgb-btn" onClick={() => setCat("checkup")}>검진 현황 ›</button>
+        </div>}
         <div className="card">
           <div className="rct"><LayoutDashboard size={18} color="#2F5BEA" /> 한눈에 보기 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: R ? R.cg[1] : "var(--green)", background: R ? R.cg[2] : "#E7F8EE", padding: "4px 10px", borderRadius: 999 }}>종합평가 {evalLabel}</span></div>
           <div className="sumgrid">
@@ -7518,7 +7525,7 @@ function FamilyHealthCare({ member, onGo }) {
         ))}
         <button className="fhc-add" onClick={() => { if (typeof toast === "function") toast("아래 가족 건강관리에서 구성원을 추가할 수 있어요."); }} title="가족 추가"><Plus size={16} /></button>
       </div>
-      <div className="fhc-ctx"><b>{P.name}</b> · {cur.rel} · 생체나이 <b style={{ color: "#2563EB" }}>{P.biologicalAge}세</b> <span>(주민등록 {regNum}세{bioDiff === 0 ? "" : bioDiff < 0 ? ` · ${bioDiff}세 젊음` : ` · +${bioDiff}세`})</span></div>
+      <div className="fhc-ctx">{(() => { const g = (typeof memberHealthGrade === "function") ? (() => { try { return memberHealthGrade(P); } catch (e) { return null; } })() : null; return g ? <span className="fhc-grade" style={{ color: g.meta.c, background: g.meta.bg }}>{g.grade}</span> : null; })()}<b>{P.name}</b> · {cur.rel} · 생체나이 <b style={{ color: "#2563EB" }}>{P.biologicalAge}세</b> <span>(주민등록 {regNum}세{bioDiff === 0 ? "" : bioDiff < 0 ? ` · ${bioDiff}세 젊음` : ` · +${bioDiff}세`})</span></div>
       <div className="fhc-cards">
         {cards.map((c) => <div className="fhc-c" key={c.l}>
           <span className="fhc-cl"><i className="fhc-dot" style={{ background: c.dot }} /> {c.l}</span>
@@ -9471,7 +9478,7 @@ function MemberCheckupArchive({ m }) {
   const anyEdited = Object.keys(edits).length > 0;
   return (
     <div className="ontmsec ckarch">
-      <div className="ontmsh"><Database size={13} color="#67E8F9" /> 연도별 검진 데이터 아카이브 <span className="ckarch-trend" style={{ background: trendCol + "22", color: trendCol }}>{chk.trendLabel}</span>
+      <div className="ontmsh"><Database size={13} color="#67E8F9" /> 연도별 검진 데이터 아카이브 {(() => { const g = (typeof memberHealthGrade === "function") ? (() => { try { return memberHealthGrade(M); } catch (e) { return null; } })() : null; return g ? <span className="ckarch-trend" style={{ background: g.meta.c + "26", color: g.meta.c }}>{g.grade}</span> : null; })()}<span className="ckarch-trend" style={{ background: trendCol + "22", color: trendCol }}>{chk.trendLabel}</span>
         <div className="ckarch-tools">
           <button onClick={exportCSV} title="CSV 내보내기"><Download size={12} /> CSV</button>
           <button onClick={exportPDF} title="PDF(인쇄) 내보내기"><Printer size={12} /> PDF</button>
@@ -15775,6 +15782,18 @@ const CHECKUP_EDU = {
   },
 };
 
+/* 회원 건강상태 8등급 분류(사업방법서 §6.7) — label·color·bg·조치 */
+const HEALTH_GRADES = {
+  "정상": { c: "#16A34A", bg: "#E7F8EE", act: "정기검진·생활관리", desc: "현재 주요 이상 없음" },
+  "주의": { c: "#0E8FA6", bg: "#E1F3F6", act: "예방관리", desc: "정상범위이나 위험요인 존재" },
+  "경계": { c: "#CA8A04", bg: "#FEF9C3", act: "재검사·생활관리", desc: "기준치 근접 또는 일부 초과" },
+  "이상": { c: "#EA580C", bg: "#FEEAD6", act: "진료 권고", desc: "의료적 확인 필요" },
+  "고위험": { c: "#DC2626", bg: "#FBE6E3", act: "우선진료", desc: "중대한 위험 가능성" },
+  "긴급": { c: "#B91C1C", bg: "#FBD5D5", act: "즉시 전문기관 안내", desc: "신속한 의료확인 필요" },
+  "치료중": { c: "#7C3AED", bg: "#F1EBFE", act: "복약·진료관리", desc: "의료기관 치료 진행" },
+  "지속관리": { c: "#2563EB", bg: "#E8F1FE", act: "정기상담·모니터링", desc: "장기 추적 필요" },
+};
+
 /* 리포트 근거 문구 */
 const REPORT_SRC = "메디에이지연구소 프롬에이지 Premium(국민건강보험공단 1,000만 명 11년 코호트 + 연세의료원 16만 명 코호트 기반)";
 const NAT_SRC = "국민건강보험공단 국가건강검진";
@@ -16058,6 +16077,30 @@ function memberCheckupCounsel(text, m) {
   };
 }
 
+/* ── 회원 건강상태 8등급 분류(§6.7) → {grade, meta} ── */
+function memberHealthGrade(m) {
+  if (!m || typeof genMemberCheckup !== "function") return null;
+  const chk = genMemberCheckup(m);
+  const items = Object.keys(chk.items).map((k) => chk.items[k]);
+  const sev2 = items.filter((r) => r.sev === 2).length;
+  const sev1 = items.filter((r) => r.sev === 1).length;
+  const HRD = m.highRiskDiseases || [];
+  const cancer = m.cancerRiskGrade || 0;
+  const sbp = chk.items.sbp ? chk.items.sbp.value : 0, dbp = chk.items.dbp ? chk.items.dbp.value : 0, fbs = chk.items.fbs ? chk.items.fbs.value : 0;
+  const emergency = (sbp >= 155 && dbp >= 95) || fbs >= 150 && false; // 극단치만 긴급(데모 보수적)
+  let grade;
+  if (emergency || sbp >= 158) grade = "긴급";
+  else if (cancer >= 7 || sev2 >= 4) grade = "고위험";
+  else if (HRD.length && chk.trend === "worsen") grade = "치료중";
+  else if (HRD.length) grade = "지속관리";
+  else if (sev2 >= 1) grade = "이상";
+  else if (sev1 >= 1) grade = "경계";
+  else if ((typeof m.obesityAge === "number" && typeof m.regAge === "number" && m.obesityAge > m.regAge + 4) || cancer >= 4) grade = "주의";
+  else grade = "정상";
+  const meta = (typeof HEALTH_GRADES !== "undefined" && HEALTH_GRADES[grade]) || { c: "#64748B", bg: "#EEF1F8", act: "-", desc: "" };
+  return { grade, meta, act: meta.act, desc: meta.desc, sev2, sev1 };
+}
+
 /* ── 로그인 회원 '내 건강상태 정밀 분석'(데이터하우스 세부 검진데이터 기반) ── */
 function memberDeepAnalysis(text, m) {
   if (!m || typeof genMemberCheckup !== "function") return null;
@@ -16084,7 +16127,9 @@ function memberDeepAnalysis(text, m) {
   const trendMsg = { improve: "최근 3년 전반적으로 개선되는 흐름이에요. 지금 관리를 계속 유지하세요. 👍", worsen: "최근 3년 악화 흐름이에요. 생활습관 교정과 정밀 추적이 필요해요.", stable: "최근 3년 큰 변화 없이 유지 중이에요. 이상 항목은 목표 범위로 개선을 권해요." }[chk.trend];
   const costLine = chk.report ? chk.report.years.map((y, i) => `'${String(y).slice(2)} ${fmt(chk.report.cost[i])}원`).join(" → ") : (R ? fmt(R.costThis) + "원" : "-");
 
+  const G = (typeof memberHealthGrade === "function") ? memberHealthGrade(m) : null;
   const head = `🔬 ${N}님 정밀 건강분석입니다 (데이터하우스 검진데이터 기반)\n` +
+    (G ? `• 건강상태 등급 「${G.grade}」 — ${G.act}\n` : "") +
     (R ? `• 생체나이 ${R.bio}세 (주민등록 ${R.reg}세, ${R.diff <= 0 ? R.diff : "+" + R.diff}세) · 종합평가 「${R.evalLabel}」 · 노화속도 ${R.agingSpeed}배\n` : "") +
     `• 국가건강검진 판정 「${chk.nat.grade}」 · 종합검진 이상항목 ${abn.length}건 · 최근 3년 진행형태 「${chk.trendLabel}」`;
 

@@ -9,7 +9,9 @@ function HealthManageSection({ onGo }) {
   // 체험 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const R = dm ? demoReport(dm) : null;
-  const chk = (dm && typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, dm)); } catch (e) { return null; } })() : null;
+  const selfM = dm || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const chk = (selfM && typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, selfM)); } catch (e) { return null; } })() : null;
+  const hg = (selfM && typeof memberHealthGrade === "function") ? (() => { try { return memberHealthGrade(selfM); } catch (e) { return null; } })() : null;
   const ckFlags = chk ? [
     { t: `국가검진 ${chk.nat.grade}`, c: chk.nat.grade === "정상A" ? "#15803D" : chk.nat.grade === "정상B" ? "#B45309" : "#B91C1C", bg: chk.nat.grade === "정상A" ? "#E7F8EE" : chk.nat.grade === "정상B" ? "#FEF3E2" : "#FDECEC" },
     { t: `검진 이상항목 ${chk.comp.abnormals.length}건`, c: chk.comp.abnormals.length ? "#B91C1C" : "#15803D", bg: chk.comp.abnormals.length ? "#FDECEC" : "#E7F8EE", ic: chk.comp.abnormals.length ? "warn" : "check" },
@@ -61,6 +63,11 @@ function HealthManageSection({ onGo }) {
       ))}
 
       {cat === "summary" && (<>
+        {hg && <div className="hgbanner" style={{ background: hg.meta.bg, borderColor: hg.meta.c + "44" }}>
+          <span className="hgb-badge" style={{ background: hg.meta.c }}>{hg.grade}</span>
+          <div className="hgb-txt"><b style={{ color: hg.meta.c }}>건강상태 「{hg.grade}」</b><span>{hg.desc} · 권장 조치: {hg.act}</span></div>
+          <button className="hgb-btn" onClick={() => setCat("checkup")}>검진 현황 ›</button>
+        </div>}
         <div className="card">
           <div className="rct"><LayoutDashboard size={18} color="#2F5BEA" /> 한눈에 보기 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: R ? R.cg[1] : "var(--green)", background: R ? R.cg[2] : "#E7F8EE", padding: "4px 10px", borderRadius: 999 }}>종합평가 {evalLabel}</span></div>
           <div className="sumgrid">

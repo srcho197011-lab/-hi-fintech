@@ -407,7 +407,7 @@ function MemberCheckupArchive({ m }) {
   const anyEdited = Object.keys(edits).length > 0;
   return (
     <div className="ontmsec ckarch">
-      <div className="ontmsh"><Database size={13} color="#67E8F9" /> 연도별 검진 데이터 아카이브 <span className="ckarch-trend" style={{ background: trendCol + "22", color: trendCol }}>{chk.trendLabel}</span>
+      <div className="ontmsh"><Database size={13} color="#67E8F9" /> 연도별 검진 데이터 아카이브 {(() => { const g = (typeof memberHealthGrade === "function") ? (() => { try { return memberHealthGrade(M); } catch (e) { return null; } })() : null; return g ? <span className="ckarch-trend" style={{ background: g.meta.c + "26", color: g.meta.c }}>{g.grade}</span> : null; })()}<span className="ckarch-trend" style={{ background: trendCol + "22", color: trendCol }}>{chk.trendLabel}</span>
         <div className="ckarch-tools">
           <button onClick={exportCSV} title="CSV 내보내기"><Download size={12} /> CSV</button>
           <button onClick={exportPDF} title="PDF(인쇄) 내보내기"><Printer size={12} /> PDF</button>

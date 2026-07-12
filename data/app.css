@@ -3524,3 +3524,13 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .cmp-verdict{margin-top:12px;font-size:14px;font-weight:800;border:1px solid;border-radius:12px;padding:14px 16px;}
 .cmp-verdict b{font-family:ui-monospace,Menlo,monospace;}
 @media(max-width:640px){.cmp-2col,.cmp-dbgrid,.cmp-ctrl{grid-template-columns:1fr;}.cmp-sf{flex-basis:100%;}}
+
+/* ── 건강상태 8등급 배지 ── */
+.hgbanner{display:flex;align-items:center;gap:12px;border:1px solid;border-radius:14px;padding:12px 15px;margin-bottom:14px;}
+.hgb-badge{font-size:14px;font-weight:900;color:#fff;border-radius:9px;padding:6px 13px;white-space:nowrap;letter-spacing:.02em;}
+.hgb-txt{flex:1;min-width:0;}
+.hgb-txt b{display:block;font-size:14px;font-weight:800;}
+.hgb-txt span{font-size:11.5px;color:var(--muted);}
+.hgb-btn{font-size:12px;font-weight:800;color:var(--text);background:rgba(255,255,255,.6);border:1px solid rgba(0,0,0,.08);border-radius:9px;padding:7px 12px;cursor:pointer;white-space:nowrap;}
+.fhc-grade{font-size:11px;font-weight:800;border-radius:999px;padding:2px 9px;margin-right:7px;}
+@media (prefers-color-scheme:dark){.hgb-btn{background:rgba(0,0,0,.25);border-color:rgba(255,255,255,.12);}}

@@ -276,6 +276,30 @@ function memberCheckupCounsel(text, m) {
   };
 }
 
+/* ── 회원 건강상태 8등급 분류(§6.7) → {grade, meta} ── */
+function memberHealthGrade(m) {
+  if (!m || typeof genMemberCheckup !== "function") return null;
+  const chk = genMemberCheckup(m);
+  const items = Object.keys(chk.items).map((k) => chk.items[k]);
+  const sev2 = items.filter((r) => r.sev === 2).length;
+  const sev1 = items.filter((r) => r.sev === 1).length;
+  const HRD = m.highRiskDiseases || [];
+  const cancer = m.cancerRiskGrade || 0;
+  const sbp = chk.items.sbp ? chk.items.sbp.value : 0, dbp = chk.items.dbp ? chk.items.dbp.value : 0, fbs = chk.items.fbs ? chk.items.fbs.value : 0;
+  const emergency = (sbp >= 155 && dbp >= 95) || fbs >= 150 && false; // 극단치만 긴급(데모 보수적)
+  let grade;
+  if (emergency || sbp >= 158) grade = "긴급";
+  else if (cancer >= 7 || sev2 >= 4) grade = "고위험";
+  else if (HRD.length && chk.trend === "worsen") grade = "치료중";
+  else if (HRD.length) grade = "지속관리";
+  else if (sev2 >= 1) grade = "이상";
+  else if (sev1 >= 1) grade = "경계";
+  else if ((typeof m.obesityAge === "number" && typeof m.regAge === "number" && m.obesityAge > m.regAge + 4) || cancer >= 4) grade = "주의";
+  else grade = "정상";
+  const meta = (typeof HEALTH_GRADES !== "undefined" && HEALTH_GRADES[grade]) || { c: "#64748B", bg: "#EEF1F8", act: "-", desc: "" };
+  return { grade, meta, act: meta.act, desc: meta.desc, sev2, sev1 };
+}
+
 /* ── 로그인 회원 '내 건강상태 정밀 분석'(데이터하우스 세부 검진데이터 기반) ── */
 function memberDeepAnalysis(text, m) {
   if (!m || typeof genMemberCheckup !== "function") return null;
@@ -302,7 +326,9 @@ function memberDeepAnalysis(text, m) {
   const trendMsg = { improve: "최근 3년 전반적으로 개선되는 흐름이에요. 지금 관리를 계속 유지하세요. 👍", worsen: "최근 3년 악화 흐름이에요. 생활습관 교정과 정밀 추적이 필요해요.", stable: "최근 3년 큰 변화 없이 유지 중이에요. 이상 항목은 목표 범위로 개선을 권해요." }[chk.trend];
   const costLine = chk.report ? chk.report.years.map((y, i) => `'${String(y).slice(2)} ${fmt(chk.report.cost[i])}원`).join(" → ") : (R ? fmt(R.costThis) + "원" : "-");
 
+  const G = (typeof memberHealthGrade === "function") ? memberHealthGrade(m) : null;
   const head = `🔬 ${N}님 정밀 건강분석입니다 (데이터하우스 검진데이터 기반)\n` +
+    (G ? `• 건강상태 등급 「${G.grade}」 — ${G.act}\n` : "") +
     (R ? `• 생체나이 ${R.bio}세 (주민등록 ${R.reg}세, ${R.diff <= 0 ? R.diff : "+" + R.diff}세) · 종합평가 「${R.evalLabel}」 · 노화속도 ${R.agingSpeed}배\n` : "") +
     `• 국가건강검진 판정 「${chk.nat.grade}」 · 종합검진 이상항목 ${abn.length}건 · 최근 3년 진행형태 「${chk.trendLabel}」`;
 
