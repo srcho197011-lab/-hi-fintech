@@ -3296,3 +3296,56 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .fhc-pill{display:inline-flex;align-items:center;gap:3px;align-self:flex-start;font-size:11px;font-weight:800;border-radius:999px;padding:3px 9px;margin-top:8px;}
 .fhc-cs{font-style:normal;font-size:11px;color:var(--soft);margin-top:8px;align-self:flex-start;}
 @media(max-width:720px){.fhc-cards{grid-template-columns:repeat(2,1fr);}}
+
+/* ── 데이터 커넥터 허브 (데이터 하우스) ── */
+.dcon{margin-top:4px;}
+.dcon-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;background:#0C1730;border:1px solid #24324D;border-radius:12px;padding:11px 13px;margin:12px 0;}
+.dcon-fn{font-size:11px;font-weight:700;color:#C6D3EC;background:#12233F;border:1px solid #24507C;border-radius:999px;padding:4px 10px;}
+.dcon-fa{color:#3B82F6;flex-shrink:0;}
+.dcon-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px;}
+.dcon-st{background:#0C1730;border:1px solid #24324D;border-radius:12px;padding:10px 13px;}
+.dcon-st span{display:block;font-size:11px;color:#8FA1C0;margin-bottom:4px;}
+.dcon-st b{font-size:16px;font-weight:900;color:#EAF2FF;letter-spacing:-.3px;}
+.dcon-st b em{font-style:normal;font-size:12px;color:#8FA1C0;}
+.dcon-catbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px;}
+.dcon-catbar button{font-size:11.5px;font-weight:700;color:#9DB0CE;background:#0F1B33;border:1px solid #24324D;border-radius:999px;padding:5px 13px;cursor:pointer;}
+.dcon-catbar button.on{background:#123056;color:#7DD3FC;border-color:#0EA5E9;}
+.dcon-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;}
+.dcon-card{background:#0C1730;border:1px solid #24324D;border-radius:14px;padding:13px 14px;transition:.15s;}
+.dcon-card.on{border-color:#1F5137;background:linear-gradient(160deg,#0C1E1A,#0C1730);}
+.dcon-card.open{border-color:#0EA5E9;}
+.dcon-ch{display:flex;align-items:center;gap:10px;}
+.dcon-cic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;}
+.dcon-cmeta{flex:1;min-width:0;}
+.dcon-cn{font-size:13.5px;font-weight:800;color:#EAF2FF;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.dcon-kind{font-size:9.5px;font-weight:800;border-radius:5px;padding:1px 6px;}
+.dcon-corg{font-size:11px;color:#8FA1C0;margin-top:1px;}
+.dcon-status{font-size:10.5px;font-weight:800;border-radius:999px;padding:3px 9px;white-space:nowrap;display:inline-flex;align-items:center;gap:3px;}
+.dcon-status.ok{color:#34D399;background:#0E241C;border:1px solid #1F5137;}
+.dcon-status.off{color:#8593AC;background:#141F36;border:1px solid #26344E;}
+.dcon-cdesc{font-size:11.8px;color:#AEBBD4;line-height:1.55;margin:9px 0 8px;}
+.dcon-fields{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.dcon-fields span{font-size:10px;color:#9DB0CE;background:#12233F;border:1px solid #24324D;border-radius:6px;padding:2px 7px;}
+.dcon-synced{font-size:10.5px;color:#7FB8A6;background:#0E241C;border:1px solid #1F5137;border-radius:8px;padding:5px 9px;margin-bottom:8px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.dcon-ep{font-family:ui-monospace,Menlo,monospace;color:#7DD3FC;word-break:break-all;}
+.dcon-cacts{display:flex;gap:6px;}
+.dcon-btn{font-size:11.5px;font-weight:700;color:#C6D3EC;background:#15233C;border:1px solid #2A3B5A;border-radius:8px;padding:6px 13px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:4px;}
+.dcon-btn:hover{border-color:#3B82F6;}
+.dcon-btn.pri{background:#123056;color:#7DD3FC;border-color:#1E5A8C;}
+.dcon-btn.go{background:linear-gradient(120deg,#1D4ED8,#0EA5E9);color:#fff;border-color:transparent;}
+.dcon-btn.go:disabled{opacity:.6;cursor:default;}
+.dcon-btn.del{color:#F87171;border-color:#5B1D1D;background:#2A1212;}
+.dcon-cfg{margin-top:11px;padding-top:11px;border-top:1px solid #1E2C46;}
+.dcon-cfg label{display:block;font-size:11px;font-weight:700;color:#9DB0CE;margin:8px 0 4px;}
+.dcon-cfg label em{font-style:normal;color:#38BDF8;font-weight:600;}
+.dcon-in{width:100%;background:#0A1428;border:1px solid #2A3B5A;border-radius:8px;color:#EAF2FF;font-size:12px;font-family:ui-monospace,Menlo,monospace;padding:8px 10px;}
+.dcon-in:focus{border-color:#0EA5E9;outline:none;}
+.dcon-cfgacts{display:flex;gap:6px;margin-top:10px;}
+.dcon-hint{font-size:10px;color:#7C8DAB;line-height:1.5;margin-top:9px;}
+.dcon-spin{animation:dconspin 1s linear infinite;}
+@keyframes dconspin{to{transform:rotate(360deg);}}
+.dcon-add{background:#0C1730;border:1px dashed #2A3B5A;border-radius:12px;padding:12px 14px;margin-top:12px;}
+.dcon-addh{font-size:12.5px;font-weight:800;color:#C6D3EC;display:flex;align-items:center;gap:6px;margin-bottom:9px;}
+.dcon-addh span{font-weight:600;color:#8FA1C0;font-size:11px;}
+.dcon-addrow{display:grid;grid-template-columns:1fr 1.4fr auto;gap:7px;}
+@media(max-width:720px){.dcon-grid,.dcon-stats{grid-template-columns:1fr;}.dcon-stats{grid-template-columns:repeat(2,1fr);}.dcon-addrow{grid-template-columns:1fr;}}
