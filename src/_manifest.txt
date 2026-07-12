@@ -24,6 +24,7 @@ src/components/FoundationOntology.jsx
 src/components/KBLounge.jsx
 src/components/Whitepaper.jsx
 src/components/Finance.jsx
+src/components/FinanceOps.jsx
 src/components/Marketing.jsx
 src/components/Social.jsx
 src/components/ConsultIntel.jsx

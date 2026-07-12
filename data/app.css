@@ -3653,3 +3653,34 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .biz-rkt span{font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 9px;}
 .biz-rkc{font-size:12px;color:#9DB0CE;display:flex;align-items:center;gap:6px;line-height:1.5;}
 @media(max-width:680px){.biz-tiers,.biz-kpi{grid-template-columns:1fr;}.biz-b2b{grid-template-columns:1fr;}}
+
+/* ── 재무회계: AI 출수납 · AI 투자 ── */
+.fbank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px;}
+.fbank{background:#0C1730;border:1px solid #24324D;border-top:3px solid;border-radius:13px;padding:12px 13px;}
+.fbank-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+.fbank-badge{font-size:10px;font-weight:800;color:#fff;border-radius:6px;padding:2px 8px;}
+.fbank-wr{font-size:10px;font-weight:800;color:#4DA8E0;}
+.fbank-nm{font-size:12.5px;font-weight:800;color:#EAF2FF;}
+.fbank-no{font-size:10.5px;color:#7C8DAB;font-family:ui-monospace,Menlo,monospace;margin:2px 0 8px;}
+.fbank-bal{font-size:16px;font-weight:900;color:#EAF2FF;letter-spacing:-.4px;font-variant-numeric:tabular-nums;}
+.fbank-role{font-size:10.5px;color:#8FA1C0;margin-top:6px;line-height:1.5;}
+.fcash-recs{display:flex;flex-direction:column;gap:7px;}
+.fcash-rec{font-size:12.5px;color:#C6D3EC;display:flex;align-items:center;gap:8px;}
+.fcash-rec span{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.fcash-acts{display:flex;gap:8px;margin-top:12px;}
+.fcash-btn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:#C6D3EC;background:#15233C;border:1px solid #2A3B5A;border-radius:9px;padding:9px 15px;cursor:pointer;}
+.fcash-btn.pri{color:#fff;background:linear-gradient(120deg,#0067AC,#0EA5E9);border-color:transparent;}
+.fcash-log{margin-top:11px;background:#0A1428;border:1px solid #1E3A5F;border-radius:10px;padding:11px 13px;font-size:12px;color:#9DB0CE;line-height:1.7;}
+.fcash-log b{color:#7DD3FC;display:block;margin-bottom:4px;}
+.fcash-tbl,.finv-tbl{min-width:640px;}
+.fcash-tbl .r,.finv-tbl .r{text-align:right;}
+.fcash-tbl th.r,.finv-tbl th.r{text-align:right;}
+.fcash-dc{font-size:11px;color:#9DB0CE;}
+.finv-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:0;}
+.finv-total td{border-top:2px solid #2A3B5A;font-weight:800;color:#EAF2FF;}
+.finv-prin{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.finv-pc{background:#0C1730;border:1px solid #24324D;border-left:4px solid;border-radius:11px;padding:11px 13px;}
+.finv-ph{font-size:13px;font-weight:800;color:#EAF2FF;display:flex;align-items:center;gap:5px;}
+.finv-ph em{font-style:normal;font-size:11px;font-weight:600;color:#8FA1C0;margin-left:auto;}
+.finv-pt{font-size:11.8px;color:#9DB0CE;line-height:1.55;margin-top:7px;}
+@media(max-width:760px){.fbank-grid{grid-template-columns:repeat(2,1fr);}.finv-prin{grid-template-columns:1fr;}}
