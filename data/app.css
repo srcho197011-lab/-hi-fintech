@@ -735,6 +735,9 @@
 /* ── 공급망 온톨로지 ── */
 .scintro .scdesc{font-size:12.8px;color:#AEBBD4;line-height:1.65;margin:8px 2px 0;}
 .scintro .scdesc b{color:#EAF2FF;}
+/* 다크 패널(온톨로지·AI KB 라운지) 내 설명문 가독성 */
+.ontpanel .scdesc{font-size:12.8px;color:#C6D3EC;line-height:1.65;margin:8px 2px 0;}
+.ontpanel .scdesc b{color:#EAF2FF;}
 .scmodel{display:flex;flex-wrap:wrap;gap:8px;margin:10px 2px 0;}
 .scmodel-b{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:#67E8F9;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.35);border-radius:999px;padding:5px 12px;}
 .scmodel-b svg{flex-shrink:0;}
