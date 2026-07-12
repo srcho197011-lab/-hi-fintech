@@ -540,8 +540,10 @@ function OntExplorer({ cohort, onGo, seg }) {
       <button className={smode === "members" ? "on" : ""} onClick={() => setSmode("members")}><Users size={14} /> 회원 객체 <span>{cohort.length.toLocaleString()}</span></button>
       <button className={smode === "library" ? "on" : ""} onClick={() => setSmode("library")}><Pill size={14} /> 질병 케어 라이브러리</button>
       <button className={smode === "connector" ? "on" : ""} onClick={() => setSmode("connector")}><Server size={14} /> 데이터 커넥터</button>
+      <button className={smode === "compliance" ? "on" : ""} onClick={() => setSmode("compliance")}><Scale size={14} /> 규제·거버넌스</button>
     </div>
     {smode === "connector" && typeof DataConnectorHub === "function" && <DataConnectorHub />}
+    {smode === "compliance" && typeof ComplianceConsole === "function" && <ComplianceConsole />}
     {smode === "library" && <DzCareLibrary />}
     {smode === "members" && (<>
     <div className="ontstore-def"><span className="ontstore-ic"><Search size={15} color="#22D3EE" /></span><div><b>데이터 하우스 · 객체 탐색기</b><p>{cohort.length.toLocaleString()}명의 회원 객체가 보관된 회원 데이터 하우스입니다. 각 회원 객체에는 <b>상담 기록이 시계열로 첨부</b>되어 있어, 객체를 열면 상담 이력 → 5대 실행 안내까지 이어집니다.</p></div></div>

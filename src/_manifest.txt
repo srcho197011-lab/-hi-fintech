@@ -16,6 +16,7 @@ src/components/Community.jsx
 src/components/Home.jsx
 src/components/SectionGroups.jsx
 src/components/DataConnector.jsx
+src/components/Compliance.jsx
 src/components/Ontology.jsx
 src/components/SupplyOntology.jsx
 src/components/FoundationOntology.jsx

@@ -3478,3 +3478,49 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
   .mdacts{border-color:#1E2C46;} .mdbtn{background:#1A2740;color:#C6D3EC;}
   .mdcard{background:linear-gradient(120deg,#0E2740,#0C1E33);border-color:#1E4064;} .mdcard-ic{background:#0C2036;} .mdcard-b b{color:#EAF2FF;}
 }
+
+/* ── 규제·거버넌스 콘솔 ── */
+.cmp{margin-top:4px;}
+.cmp-h{font-size:14px;font-weight:800;color:#EAF2FF;margin:6px 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.cmp-h span{font-size:11px;font-weight:600;color:#8593AC;}
+.cmp-h .cmp-vgrade{margin-left:auto;font-size:11.5px;font-weight:800;border-radius:999px;padding:3px 11px;}
+.cmp-5{display:flex;flex-direction:column;gap:8px;}
+.cmp-5r{display:flex;align-items:center;gap:12px;background:#0C1730;border:1px solid #24324D;border-left:4px solid;border-radius:11px;padding:11px 14px;flex-wrap:wrap;}
+.cmp-5b{font-size:12px;font-weight:800;border-radius:7px;padding:4px 11px;white-space:nowrap;}
+.cmp-5e{font-size:12.5px;color:#C6D3EC;flex:1;min-width:180px;}
+.cmp-2col{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.cmp-col{background:#0C1730;border:1px solid #24324D;border-radius:12px;padding:12px 14px;}
+.cmp-col.ok{border-color:#1F5137;} .cmp-col.no{border-color:#5B1D1D;}
+.cmp-colh{font-size:13px;font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:9px;}
+.cmp-col.ok .cmp-colh{color:#34D399;} .cmp-col.no .cmp-colh{color:#F87171;}
+.cmp-li{font-size:12.5px;color:#C6D3EC;padding:5px 0;border-top:1px solid #16233C;}
+.cmp-li:first-of-type{border-top:none;}
+.cmp-samd{display:flex;align-items:center;gap:12px;background:#0C1730;border:1px solid #24324D;border-radius:11px;padding:11px 14px;margin-bottom:8px;flex-wrap:wrap;}
+.cmp-sf{font-size:13px;font-weight:700;color:#EAF2FF;flex:0 0 200px;}
+.cmp-sr{font-size:11px;font-weight:800;border-radius:6px;padding:3px 10px;white-space:nowrap;}
+.cmp-sn{font-size:12px;color:#9DB0CE;flex:1;min-width:160px;}
+.cmp-dbgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;}
+.cmp-db{background:#0C1730;border:1px solid #24324D;border-top:3px solid;border-radius:12px;padding:12px 14px;}
+.cmp-dbh{font-size:13px;font-weight:800;color:#EAF2FF;display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+.cmp-dbd{font-size:12px;color:#9DB0CE;line-height:1.5;}
+.cmp-key{margin-top:11px;font-size:12.5px;color:#C6D3EC;background:#160E24;border:1px solid #3B2258;border-radius:11px;padding:11px 14px;display:flex;align-items:center;gap:8px;line-height:1.55;flex-wrap:wrap;}
+.cmp-key b{color:#C4B5FD;}
+.cmp-ctrl{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.cmp-cli{font-size:12.5px;color:#C6D3EC;background:#0C1730;border:1px solid #24324D;border-radius:9px;padding:9px 12px;display:flex;align-items:center;gap:7px;}
+.cmp-vtbl{display:flex;flex-direction:column;gap:7px;}
+.cmp-vrow{display:flex;align-items:center;gap:12px;background:#0C1730;border:1px solid #24324D;border-radius:10px;padding:9px 13px;}
+.cmp-vk{flex:1;}
+.cmp-vk b{font-size:13px;font-weight:700;color:#EAF2FF;}
+.cmp-vk span{display:block;font-size:11px;color:#8593AC;margin-top:1px;}
+.cmp-vsc{display:flex;gap:5px;}
+.cmp-vdot{width:26px;height:26px;border-radius:7px;font-size:11px;font-weight:800;color:#8593AC;background:#12203A;border:1px solid #2A3B5A;cursor:pointer;}
+.cmp-vdot.on{background:#123056;color:#7DD3FC;border-color:#0EA5E9;}
+.cmp-vdot.zero{color:#6B7C99;}
+.cmp-gng{display:flex;flex-direction:column;gap:8px;}
+.cmp-gq{display:flex;align-items:center;gap:11px;font-size:13px;font-weight:600;color:#C6D3EC;background:#0C1730;border:1.5px solid #24324D;border-radius:11px;padding:12px 15px;cursor:pointer;}
+.cmp-gq.on{border-color:#16A34A;background:#0E241C;color:#EAF2FF;}
+.cmp-gc{width:20px;height:20px;border-radius:50%;border:2px solid #3B4E6E;display:grid;place-items:center;flex-shrink:0;color:#fff;}
+.cmp-gq.on .cmp-gc{background:#16A34A;border-color:#16A34A;}
+.cmp-verdict{margin-top:12px;font-size:14px;font-weight:800;border:1px solid;border-radius:12px;padding:14px 16px;}
+.cmp-verdict b{font-family:ui-monospace,Menlo,monospace;}
+@media(max-width:640px){.cmp-2col,.cmp-dbgrid,.cmp-ctrl{grid-template-columns:1fr;}.cmp-sf{flex-basis:100%;}}
