@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=0cc85e20dd" />
+<link rel="stylesheet" href="./data/app.css?v=6d31a4116b" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=0cc85e20dd"></script>
-<script src="./src/data/section_data.js?v=0cc85e20dd"></script>
-<script src="./src/data/demo_members.js?v=0cc85e20dd"></script>
+<script src="./src/data/dummy_data.js?v=6d31a4116b"></script>
+<script src="./src/data/section_data.js?v=6d31a4116b"></script>
+<script src="./src/data/demo_members.js?v=6d31a4116b"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -7426,8 +7426,90 @@ function Toggle({ on, onClick }) {
 }
 /* 마이페이지 데이터(MY_CONSENT·MY_NOTI·MY_FAMILY) → src/data/sectionData.js 로 이관 */
 
+/* ── 가족 구성원 결정론적 건강프로필 합성(나이·성별·관계 기반) ── */
+function _famHash(s) { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h = (h ^ s.charCodeAt(i)) >>> 0; h = (h * 16777619) >>> 0; } return h >>> 0; }
+function famSynthProfile(name, age, sex, relation) {
+  let h = _famHash(name + "|" + age + "|" + relation);
+  const rnd = (n) => { h = (h * 1103515245 + 12345) >>> 0; return h % n; };
+  const bio = Math.max(6, age + (rnd(9) - 3));
+  const og = () => Math.max(6, bio + (rnd(7) - 3));
+  const child = age < 19;
+  const grade = child ? 1 : Math.min(8, 1 + rnd(6));
+  const CPOOL = sex === "여" ? ["유방암", "갑상선암", "위암", "대장암"] : ["위암", "대장암", "폐암", "전립선암", "간암"];
+  const hr = (!child && grade >= 5) ? [CPOOL[rnd(CPOOL.length)]] : [];
+  const DZP = child ? ["소아비만", "아토피피부염"] : age >= 65 ? ["고혈압", "당뇨병", "고지혈증", "골다공증"] : sex === "여" ? ["고지혈증", "빈혈", "갱년기증후군", "골다공증"] : ["고지혈증", "지방간", "고혈압", "당뇨병"];
+  const hrd = []; const nd = child ? (rnd(2)) : (rnd(3)); for (let i = 0; i < nd; i++) { const d = DZP[rnd(DZP.length)]; if (!hrd.includes(d)) hrd.push(d); }
+  const cost = child ? 250000 + rnd(30) * 10000 : 650000 + age * 27000 + rnd(50) * 10000;
+  return {
+    id: "fam-" + _famHash(name + age), name, sex, regAge: age, biologicalAge: bio,
+    obesityAge: og(), heartAge: og(), liverAge: og(), pancreasAge: og(), kidneyAge: og(),
+    cancerRiskGrade: grade, highRiskCancerTypes: hr, highRiskDiseases: hrd, estimatedMedicalCost: cost,
+    managementPoints: child ? ["성장·발달 체크", "균형 식단", "예방접종"] : ["규칙적 운동", "균형 식단", "정기 건강검진"],
+    category: child ? "아동" : age >= 65 ? "노인" : (sex === "여" ? "여성" : "일반"), isDemoUser: true,
+  };
+}
+
+/* ── 우리가족 건강관리(구성원 탭 + 검진결과·예측의료비 한눈에) ── */
+function FamilyHealthCare({ member, onGo }) {
+  const dm = member;
+  const surname = (dm && dm.name && dm.name[0]) || "가";
+  const email = (dm && dm.email) || "default";
+  const fam = (typeof familyLoad === "function") ? familyLoad(email, surname) : [];
+  const guessSex = (f) => f.sex || (f.relation === "배우자" ? (dm && dm.sex === "여" ? "남" : "여") : (/경희|미영|영희|순자|하늘|서아|미선|숙|영애|지민|해윤|정|아$|이$/.test(f.name) ? "여" : (_famHash(f.name) % 2 ? "여" : "남")));
+  const list = [{ rel: "본인", p: dm, self: true }].concat(fam.map((f) => ({ rel: f.relation, p: famSynthProfile(f.name, f.age, guessSex(f), f.relation) }))).filter((x) => x.p);
+  const [sel, setSel] = useState(0);
+  const cur = list[Math.min(sel, list.length - 1)] || list[0];
+  const P = cur.p;
+  const R = (typeof demoReport === "function") ? (() => { try { return demoReport(P); } catch (e) { return null; } })() : null;
+  const chk = (typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, P)); } catch (e) { return null; } })() : null;
+  const isChild = (P.regAge || 30) < 19;
+  const won = (n) => n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : Number(n || 0).toLocaleString() + "원";
+  const relColor = (r) => r === "본인" ? "#EA580C" : r === "배우자" ? "#2563EB" : r === "자녀" ? "#16A34A" : r === "부모" || r === "조부모" ? "#7C3AED" : "#DB2777";
+  const cg = R ? R.cg : ["양호", "#16A34A", "#E7F8EE"];
+  const cards = [
+    { l: "생체나이", v: `${P.biologicalAge}세`, s: `주민등록 ${R ? R.reg : P.regAge}세`, c: "#2563EB" },
+    { l: "암위험", v: `${R ? R.cancerTotal : P.cancerRiskGrade}등급 · ${cg[0]}`, s: "동일 성·연령군 대비", c: cg[1] },
+    { l: "고위험 암", v: (P.highRiskCancerTypes && P.highRiskCancerTypes.length) ? P.highRiskCancerTypes.join("·") : "-", s: (P.highRiskCancerTypes && P.highRiskCancerTypes.length) ? "정기검진 권장" : "특이사항 없음", c: (P.highRiskCancerTypes && P.highRiskCancerTypes.length) ? "#B91C1C" : "#64748B" },
+    { l: "금년 의료비", v: won(R ? R.costThis : P.estimatedMedicalCost), s: "생체나이 기반 예측", c: "#16A34A" },
+    { l: "10년 후 의료비", v: won(R ? R.cost10 : Math.round(P.estimatedMedicalCost * 1.4)), s: "예방관리 시 절감 가능", c: "#EF4444" },
+  ];
+  return (
+    <div className="fhc">
+      <div className="fhc-hd">
+        <div className="fhc-eyebrow">— FAMILY HEALTH CARE</div>
+        <div className="fhc-title">우리가족<span>건강관리</span></div>
+        <div className="fhc-subrow"><div className="fhc-sub">가족 구성원의 건강검진 결과와 예측 의료비를 한눈에 확인하세요.</div><span className="fhc-demo"><AlertTriangle size={12} /> 시연용 예시 데이터</span></div>
+      </div>
+      <div className="fhc-chips">
+        {list.map((x, i) => (
+          <button key={i} className={"fhc-chip" + (sel === i ? " on" : "")} style={sel === i ? { "--fc": relColor(x.rel) } : {}} onClick={() => setSel(i)}>
+            <span className="fhc-av" style={{ background: sel === i ? relColor(x.rel) : "#E7ECF4", color: sel === i ? "#fff" : "#64748B" }}>{(x.p.name || "?")[0]}</span>
+            <b>{x.p.name}</b><em>{x.rel}</em>
+          </button>
+        ))}
+        <button className="fhc-add" onClick={() => { if (typeof toast === "function") toast("아래 가족 건강관리에서 구성원을 추가할 수 있어요."); }} title="가족 추가"><Plus size={16} /></button>
+      </div>
+      <div className="fhc-cards">
+        {cards.map((c) => <div className="fhc-c" key={c.l}><span className="fhc-cl">{c.l}</span><b className="fhc-cv" style={{ color: c.c }}>{c.v}</b><em className="fhc-cs">{c.s}</em></div>)}
+      </div>
+      {isChild ? (
+        <div className="fhc-ck child"><div className="fhc-ckhd"><Activity size={14} color="#16A34A" /> 아동·청소년 건강검진 <b>성장·발달 관리</b></div><div className="fhc-abn"><span>성장발달 체크</span><span>시력·비만 관리</span><span>예방접종(NIP)</span><span>구강검진</span></div></div>
+      ) : chk ? (
+        <div className="fhc-ck"><div className="fhc-ckhd"><ClipboardList size={14} color="#2563EB" /> 국가검진 「<b>{chk.nat.grade}</b>」 · 이상항목 {chk.comp.abnormals.length}건 · 진행형태 「{chk.trendLabel}」</div>
+          {chk.comp.abnormals.length ? <div className="fhc-abn">{chk.comp.abnormals.slice(0, 6).map((a, i) => <span key={i}>{a}</span>)}{chk.comp.abnormals.length > 6 ? <span className="more">+{chk.comp.abnormals.length - 6}</span> : null}</div> : <div className="fhc-okline">✅ 종합검진 주요 항목 정상 범위</div>}
+        </div>
+      ) : null}
+      <div className="fhc-acts">
+        <button className="gobtn pri" onClick={() => onGo && onGo("ai")}><MessageSquare size={14} /> {cur.self ? "내" : cur.p.name + "님"} AI 상담</button>
+        <button className="gobtn" onClick={() => onGo && onGo("checkup")}><CalendarCheck size={14} /> 검진 예약</button>
+        <button className="gobtn" onClick={() => onGo && onGo("manage")}><Activity size={14} /> 건강현황</button>
+      </div>
+    </div>
+  );
+}
+
 function MyPageSection({ onGo }) {
-  const [tab, setTab] = useState("profile");
+  const [tab, setTab] = useState("family");
   const go = onGo || (() => {});
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const [consent, setConsent] = useState(MY_CONSENT.map((c) => c[3]));
@@ -7459,16 +7541,14 @@ function MyPageSection({ onGo }) {
       toast(`상담 기록을 ${ext.toUpperCase()} 파일로 내보냈습니다.`);
     } catch (e) { toast("내보내기에 실패했습니다."); }
   };
-  const tabs = [["profile", "내 정보", CircleUserRound], ["consent", "동의관리", Lock], ["family", "가족 건강", Users], ["ailog", "상담 기록", MessageSquare], ["noti", "알림 설정", Bell]];
+  const tabs = [["family", "우리가족 건강", Users], ["profile", "내 정보", CircleUserRound], ["consent", "동의관리", Lock], ["ailog", "상담 기록", MessageSquare], ["noti", "알림 설정", Bell]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="mypage" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>마이페이지</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>내 정보 · 동의관리(DID) · 가족 건강관리 · 알림 설정</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>우리가족 건강관리 · 내 정보 · 동의관리(DID) · 알림 설정</div></div></div>
 
       <DemoMemberBanner />
-      {dm && typeof CarePlanCard === "function" && <CarePlanCard member={dm} />}
-      {dm && typeof FamilyCareSection === "function" && <FamilyCareSection member={dm} onGo={onGo} />}
       <div className="profile">
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
         <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${dm.biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
@@ -7586,18 +7666,15 @@ function MyPageSection({ onGo }) {
         <div className="chnote">※ DID 기반으로 제공받는 자·목적·항목을 확인하고 동의/철회할 수 있습니다. 필수 동의 철회 시 일부 서비스 이용이 제한될 수 있습니다. <b>AI 상담 기록 저장</b>은 ‘상담 기록’ 탭의 동의 상태와 연동됩니다.</div>
       </>)}
 
-      {tab === "family" && (<>
-        <div className="bklbl" style={{ margin: "2px 0 8px" }}><Users size={14} color="#2563EB" style={{ verticalAlign: "-2px" }} /> 가족 건강관리 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 동의 기반 공유</span></div>
-        {MY_FAMILY.map(([ini, name, rel, status, to, c], i) => (
-          <div className="center" key={i}>
-            <div className="cimg" style={{ width: 56, height: 56, background: c }}><span style={{ color: "#fff", fontWeight: 800, fontSize: 20 }}>{ini}</span></div>
-            <div className="cmain"><div className="cname">{name}<span className="cbadge" style={{ color: "#475569", background: "#EEF1F8" }}>{rel}</span></div><div className="cmeta">{status}</div></div>
-            <div className="cright"><div className="obtns">{to ? <button className="book" onClick={() => go(to)}>건강 보기</button> : <button className="book" onClick={() => toast("가족 건강 연동 요청을 보냈습니다.")}>연동 요청</button>}</div></div>
-          </div>
-        ))}
-        <button className="cbtn" onClick={() => toast("가족 구성원 초대 링크가 생성되었습니다.")}><Plus size={15} /> 가족 구성원 추가</button>
-        <div className="chnote">※ 가족 건강정보는 본인·가족의 동의(DID) 하에 공유되며, 고령 가족은 재가·돌봄 서비스와 연계됩니다.</div>
-      </>)}
+      {tab === "family" && (dm ? (<>
+        <FamilyHealthCare member={dm} onGo={go} />
+        {typeof CarePlanCard === "function" && <CarePlanCard member={dm} />}
+        {typeof FamilyCareSection === "function" && <FamilyCareSection member={dm} onGo={onGo} />}
+        <div className="chnote">※ 가족 건강정보는 본인·가족의 동의(DID) 하에 공유되며, 고령 가족은 재가·돌봄 서비스와 연계됩니다. 가족 구성원 데이터는 시연용 예시입니다.</div>
+      </>) : (<>
+        <div className="bklbl" style={{ margin: "2px 0 8px" }}><Users size={14} color="#2563EB" style={{ verticalAlign: "-2px" }} /> 우리가족 건강관리 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 동의 기반 공유</span></div>
+        <div className="card"><p style={{ fontSize: 12.5, color: "var(--muted)", margin: "2px 0 10px" }}>체험 회원으로 로그인하면 가족 구성원별 건강검진 결과와 예측 의료비를 한눈에 확인할 수 있어요.</p>{typeof DemoLoginSelector === "function" && <DemoLoginSelector />}</div>
+      </>))}
 
       {tab === "noti" && (<>
         <div className="benefit"><span><Art name="badge" size={16} /> 카카오톡 알림</span><span><Art name="hash" size={16} /> 앱 푸시</span><span><Art name="chat" size={16} /> 문자</span></div>
