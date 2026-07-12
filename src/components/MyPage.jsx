@@ -119,8 +119,77 @@ function FamilyHealthCare({ member, onGo }) {
   );
 }
 
+/* ── 의료마이데이터 전송요구 마법사(§6.2) — 데이터·기간·기관 선택 + 필수 고지 ── */
+function MyDataWizard({ onClose }) {
+  const [step, setStep] = useState(0);
+  const [biz, setBiz] = useState("");
+  const DATA = ["건강검진 결과", "진료 내역", "처방·투약", "건강위험 분석"];
+  const ORGS = ["국민건강보험공단", "제휴 검진센터", "제휴 병원(EMR)"];
+  const [items, setItems] = useState(["건강검진 결과", "건강위험 분석"]);
+  const [period, setPeriod] = useState("최근 3년");
+  const [orgs, setOrgs] = useState(["국민건강보험공단"]);
+  const [agree, setAgree] = useState(false);
+  const tog = (arr, set, v) => set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+  const BIZ = ["A 마이데이터 사업자(가칭)", "B 의료마이데이터 전문기관(가칭)"];
+  const STEPS = ["사업자·본인확인", "데이터 항목", "조회 기간", "제공기관", "고지·전송 동의"];
+  const canNext = step === 0 ? !!biz : step === 1 ? items.length > 0 : step === 3 ? orgs.length > 0 : step === 4 ? agree : true;
+  const submit = () => {
+    const rec = { biz, items, period, orgs, at: (() => { try { const d = new Date(); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; } catch (e) { return "방금"; } })() };
+    try { localStorage.setItem("hifin_mydata_req", JSON.stringify(rec)); } catch (e) {}
+    if (typeof toast === "function") toast(`✅ 전송요구 완료 · ${orgs.join("·")}에서 ${items.length}종 데이터 수신 예정`);
+    onClose();
+  };
+  return (
+    <div className="mdov" onClick={onClose}>
+      <div className="mdmodal" onClick={(e) => e.stopPropagation()}>
+        <div className="mdmh"><b>의료마이데이터 전송요구</b><button onClick={onClose}><X size={18} /></button></div>
+        <div className="mdsteps">{STEPS.map((s, i) => <React.Fragment key={i}><span className={"mdstep" + (i < step ? " done" : i === step ? " cur" : "")}>{i + 1}. {s}</span>{i < STEPS.length - 1 && <span className="mdsa">›</span>}</React.Fragment>)}</div>
+        <div className="mdbody">
+          {step === 0 && <>
+            <div className="mdq">마이데이터 사업자를 선택하고 본인확인을 진행합니다.</div>
+            {BIZ.map((b) => <label key={b} className={"mdopt" + (biz === b ? " on" : "")} onClick={() => setBiz(b)}><span className="mdrad">{biz === b ? <Check size={12} /> : null}</span>{b}</label>)}
+            <div className="mdhint">※ 지정·허가된 사업자만 표시됩니다(사업자 자격은 데이터하우스 › 데이터 커넥터에서 검증).</div>
+          </>}
+          {step === 1 && <>
+            <div className="mdq">전송받을 데이터 항목을 선택하세요.</div>
+            <div className="mdchips">{DATA.map((d) => <button key={d} className={"mdchip" + (items.includes(d) ? " on" : "")} onClick={() => tog(items, setItems, d)}>{items.includes(d) ? <Check size={12} /> : null} {d}</button>)}</div>
+            <div className="mdhint">※ 서비스 목적에 필요한 항목만 선택하세요(데이터 최소수집 원칙).</div>
+          </>}
+          {step === 2 && <>
+            <div className="mdq">조회 기간을 선택하세요.</div>
+            <div className="mdchips">{["최근 1년", "최근 3년", "최근 5년", "전체"].map((p) => <button key={p} className={"mdchip" + (period === p ? " on" : "")} onClick={() => setPeriod(p)}>{period === p ? <Check size={12} /> : null} {p}</button>)}</div>
+          </>}
+          {step === 3 && <>
+            <div className="mdq">데이터를 제공받을 기관을 선택하세요.</div>
+            <div className="mdchips">{ORGS.map((o) => <button key={o} className={"mdchip" + (orgs.includes(o) ? " on" : "")} onClick={() => tog(orgs, setOrgs, o)}>{orgs.includes(o) ? <Check size={12} /> : null} {o}</button>)}</div>
+          </>}
+          {step === 4 && <>
+            <div className="mdq">아래 사항을 확인하고 전송에 동의합니다.</div>
+            <div className="mdnotice">
+              <div><span>제공 기관</span><b>{orgs.join(" · ")}</b></div>
+              <div><span>전송 항목</span><b>{items.join(" · ")}</b></div>
+              <div><span>조회 기간</span><b>{period}</b></div>
+              <div><span>분석 주체</span><b>하이젠케어(하이핀) — 건강분석·상담 목적</b></div>
+              <div><span>보관 기간</span><b>동의 유효기간 또는 철회 시까지</b></div>
+              <div><span>제3자 제공</span><b>없음(보험보장 분석은 별도 동의 시에만)</b></div>
+              <div><span>철회 방법</span><b>마이페이지 › 동의관리에서 언제든 철회·전송중단</b></div>
+            </div>
+            <label className={"mdagree" + (agree ? " on" : "")} onClick={() => setAgree(!agree)}><span className="mdrad">{agree ? <Check size={12} /> : null}</span>위 내용을 확인했으며 의료마이데이터 전송에 동의합니다.</label>
+          </>}
+        </div>
+        <div className="mdacts">
+          {step > 0 && <button className="mdbtn" onClick={() => setStep(step - 1)}>이전</button>}
+          {step < 4 ? <button className="mdbtn pri" disabled={!canNext} onClick={() => setStep(step + 1)}>다음</button>
+            : <button className="mdbtn pri" disabled={!agree} onClick={submit}>전송요구 제출</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MyPageSection({ onGo }) {
   const [tab, setTab] = useState("family");
+  const [mdOpen, setMdOpen] = useState(false);
   const go = onGo || (() => {});
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const [consent, setConsent] = useState(MY_CONSENT.map((c) => c[3]));
@@ -263,18 +332,35 @@ function MyPageSection({ onGo }) {
       </>)}
 
       {tab === "consent" && (<>
-        <div className="airec"><div className="at"><Lock size={16} color="#2F5BEA" /> 동의관리 · DID(분산신원)</div><div className="ap">내 데이터 제공·활용 동의를 직접 관리하고 언제든 철회할 수 있어요. 필수 항목은 서비스 이용에 필요합니다.</div></div>
-        {MY_CONSENT.map(([a, t, d, _def, req], i) => (
-          <div className="resitem" key={i}><span className="ic" style={{ background: "#EAF0FE" }}><Art name={a} size={18} /></span>
-            <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>{t} <span className={`reqtag ${req === "필수" ? "req" : "opt"}`} style={{ marginLeft: 4 }}>{req}</span></b><div style={{ fontSize: 11.3, color: "var(--muted)" }}>{d}</div></div>
-            <Toggle on={consent[i]} onClick={() => { if (req === "필수") return; setConsent((p) => p.map((v, j) => j === i ? !v : v)); }} />
-          </div>
-        ))}
-        <div className="resitem"><span className="ic" style={{ background: "#E7F8EE" }}><Art name="lock" size={18} /></span>
-          <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>AI 주치의 상담 기록 저장 <span className="reqtag opt" style={{ marginLeft: 4 }}>선택</span></b><div style={{ fontSize: 11.3, color: "var(--muted)" }}>AI 상담 질문·위험도·보장추천을 내 기록으로 저장합니다(‘상담 기록’ 탭에서 조회·삭제·내보내기).</div></div>
-          <Toggle on={logConsent} onClick={() => { const v = !logConsent; LOG_CONSENT = v; setLogConsent(v); toast(v ? "상담 기록 저장에 동의했습니다." : "동의를 철회했습니다."); }} />
+        <div className="airec"><div className="at"><Lock size={16} color="#2F5BEA" /> 동의관리 · DID(분산신원)</div><div className="ap">목적별로 <b>분리된 동의</b>를 직접 관리하고 언제든 철회할 수 있어요. 필수 항목은 서비스 이용에 필요하며, <b>보험상품 안내 동의와 의료데이터 활용 동의는 묶어서 받지 않습니다.</b></div></div>
+
+        <div className="mdcard">
+          <span className="mdcard-ic"><Art name="doc" size={20} /></span>
+          <div className="mdcard-b"><b>의료마이데이터 연결</b><span>국민건강보험공단·검진센터에서 내 건강정보를 안전하게 불러옵니다. 전송할 데이터·기간·제공기관을 직접 선택합니다.</span></div>
+          <button className="mdcard-btn" onClick={() => setMdOpen(true)}>연결하기 <ChevronRight size={14} /></button>
         </div>
-        <div className="chnote">※ DID 기반으로 제공받는 자·목적·항목을 확인하고 동의/철회할 수 있습니다. 필수 동의 철회 시 일부 서비스 이용이 제한될 수 있습니다. <b>AI 상담 기록 저장</b>은 ‘상담 기록’ 탭의 동의 상태와 연동됩니다.</div>
+
+        {(() => { const CATS = [...new Set(MY_CONSENT.map((c) => c[5]))]; return CATS.map((cat) => (
+          <div className="csgroup" key={cat}>
+            <div className="csgroup-h">{cat}{/보험/.test(cat) && <span className="csgroup-sep">의료데이터 동의와 별도</span>}</div>
+            {MY_CONSENT.map(([a, t, d, _def, req], i) => cat !== MY_CONSENT[i][5] ? null : (
+              <div className="resitem" key={i}><span className="ic" style={{ background: "#EAF0FE" }}><Art name={a} size={18} /></span>
+                <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>{t} <span className={`reqtag ${req === "필수" ? "req" : "opt"}`} style={{ marginLeft: 4 }}>{req}</span></b><div style={{ fontSize: 11.3, color: "var(--muted)" }}>{d}</div></div>
+                <Toggle on={consent[i]} onClick={() => { if (req === "필수") return; setConsent((p) => p.map((v, j) => j === i ? !v : v)); }} />
+              </div>
+            ))}
+          </div>
+        )); })()}
+
+        <div className="csgroup">
+          <div className="csgroup-h">상담 기록</div>
+          <div className="resitem"><span className="ic" style={{ background: "#E7F8EE" }}><Art name="lock" size={18} /></span>
+            <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>AI 주치의 상담 기록 저장 <span className="reqtag opt" style={{ marginLeft: 4 }}>선택</span></b><div style={{ fontSize: 11.3, color: "var(--muted)" }}>AI 상담 질문·위험도·보장추천을 내 기록으로 저장합니다(‘상담 기록’ 탭에서 조회·삭제·내보내기).</div></div>
+            <Toggle on={logConsent} onClick={() => { const v = !logConsent; LOG_CONSENT = v; setLogConsent(v); toast(v ? "상담 기록 저장에 동의했습니다." : "동의를 철회했습니다."); }} />
+          </div>
+        </div>
+        <div className="chnote">※ DID 기반으로 제공받는 자·목적·항목을 확인하고 동의/철회할 수 있습니다. 필수 동의 철회 시 일부 서비스 이용이 제한될 수 있습니다. 의료마이데이터·건강정보 분석·AI 상담·의료기관 제공·보험보장 분석·보험상품 안내 동의는 <b>각각 분리</b>되어 있으며, 목적 외 데이터는 수집하지 않습니다.</div>
+        {mdOpen && <MyDataWizard onClose={() => setMdOpen(false)} />}
       </>)}
 
       {tab === "family" && (() => { const selfM = dm || (typeof selfMember === "function" ? selfMember() : null); return (<>
