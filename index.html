@@ -11350,13 +11350,14 @@ function WhitepaperSection({ onGo }) {
         </div>
       </div>
 
-      {/* ── 뷰 토글: 백서 열람 / 근거자료실 ── */}
-      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-        {[["paper", "📖 백서 열람", BookOpen], ["refs", "🔎 근거자료실", Search]].map(([k, label]) => (
+      {/* ── 뷰 토글: 백서 열람 / 반영 로그 / 근거자료실 ── */}
+      <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+        {[["paper", "📖 백서 열람"], ["log", "🗂 반영 로그"], ["refs", "🔎 근거자료실"]].map(([k, label]) => (
           <button key={k} onClick={() => setView(k)} style={{ cursor: "pointer", border: "1px solid " + (view === k ? "#1D4ED8" : "#D8DEEA"), background: view === k ? "#1D4ED8" : "#fff", color: view === k ? "#fff" : "#475569", fontWeight: 800, fontSize: 13, padding: "9px 18px", borderRadius: 10 }}>{label}</button>
         ))}
       </div>
 
+      {view === "log" ? <WpChangeLog onGoChapter={(n) => { setSel(n); setView("paper"); }} onGoRefs={() => setView("refs")} /> : null}
       {view === "refs" ? <WpRefLibrary onGoChapter={(n) => { setSel(n); setView("paper"); }} /> : null}
       {view === "paper" ? (
       <React.Fragment>
@@ -11489,6 +11490,104 @@ function WhitepaperSection({ onGo }) {
     </div>
   );
 }
+
+/* ── 백서 반영 로그(변경 이력표) — 플랫폼 변경 → 백서 반영 기록·백업 ── */
+function WpChangeLog({ onGoChapter, onGoRefs }) {
+  const [ver, setVer] = useState("all");
+  const [reload, setReload] = useState(0);
+  const [addOpen, setAddOpen] = useState(false);
+  const [f, setF] = useState({ feat: "", ch: "", src: "", summary: "" });
+  const log = React.useMemo(() => (typeof wpLogAll === "function" ? wpLogAll() : []).slice().sort((a, b) => (b.date + b.ver).localeCompare(a.date + a.ver)), [reload]);
+  const rel = React.useMemo(() => (typeof wpChapterSources === "function" ? wpChapterSources() : []), [reload]);
+  const vers = ["all"].concat([...new Set(log.map((e) => e.ver))]);
+  const rows = ver === "all" ? log : log.filter((e) => e.ver === ver);
+  const reflected = log.filter((e) => e.status === "반영").length;
+  const chCovered = new Set(log.flatMap((e) => e.ch || [])).size;
+  const srcCount = rel.reduce((s, c) => s + c.sources.length, 0);
+
+  const download = (name, text, mime) => { try { const blob = new Blob(["﻿" + text], { type: mime }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000); } catch (e) { if (typeof toast === "function") toast("내보내기를 지원하지 않는 환경입니다."); } };
+  const esc = (s) => { s = String(s == null ? "" : s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const exportCSV = () => { const head = ["일시", "버전", "챕터", "플랫폼 기능", "반영 내용", "근거", "상태"]; const lines = log.map((e) => [e.date, e.ver, (e.ch || []).map((n) => "제" + n + "장").join(" "), e.feat, e.summary, (e.refs || []).join("·"), e.status].map(esc).join(",")); download("백서_반영로그.csv", [head.join(","), ...lines].join("\n"), "text/csv;charset=utf-8"); };
+  const exportJSON = () => download("백서_반영로그.json", JSON.stringify(log, null, 2), "application/json;charset=utf-8");
+  const addEntry = () => {
+    if (!f.feat.trim() || !f.summary.trim()) { if (typeof toast === "function") toast("플랫폼 기능과 반영 내용을 입력하세요."); return; }
+    const stamp = (() => { try { const d = new Date(); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; } catch (e) { return "2026-07-12"; } })();
+    const ch = f.ch.split(/[,\s]+/).map((x) => parseInt(x, 10)).filter((x) => !isNaN(x));
+    if (typeof wpLogAppend === "function") wpLogAppend({ date: stamp, ver: "v1.1+", ch, feat: f.feat.trim(), src: f.src.trim() || "플랫폼", summary: f.summary.trim(), refs: [], status: "반영" });
+    setF({ feat: "", ch: "", src: "", summary: "" }); setAddOpen(false); setReload((v) => v + 1); if (typeof toast === "function") toast("✅ 반영 로그에 기록되었습니다.");
+  };
+  const stC = (s) => s === "반영" ? { c: "#16A34A", bg: "#E7F8EE" } : s === "초판" ? { c: "#2563EB", bg: "#E8F1FE" } : { c: "#B45309", bg: "#FEF3E2" };
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div style={{ background: "#F8FAFC", border: "1px solid #E5E9F0", borderRadius: 14, padding: "16px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: "#0F1F45" }}>🗂 백서 반영 로그 · 변경 이력표</div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={exportCSV} style={btnS(false)}>⬇ CSV</button>
+            <button onClick={exportJSON} style={btnS(false)}>⬇ JSON</button>
+            <button onClick={() => setAddOpen((v) => !v)} style={btnS(addOpen)}>＋ 기록 추가</button>
+          </div>
+        </div>
+        <p style={{ fontSize: 12.5, color: "#5A6B86", margin: "8px 0 0", lineHeight: 1.6 }}>플랫폼 기능이 백서에 반영될 때마다 한 줄씩 기록됩니다. <b>챕터에 추가된 근거자료는 근거자료실에 자동 반영</b>되며, 아래 관계표에서 백서↔근거 매핑을 확인할 수 있어요. 로그는 <b>백업(CSV·JSON)</b>으로 내보내 피드백·감사에 활용합니다.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 10, marginTop: 12 }}>
+          {[["반영 기록", reflected + "건", "#16A34A"], ["백서 버전", (log[0] || {}).ver || "v1.1", "#2563EB"], ["반영 챕터", chCovered + "장", "#7C3AED"], ["연동 근거자료", srcCount + "건", "#0F8A74"]].map(([t, v, c], i) => (
+            <div key={i} style={{ background: "#fff", border: "1px solid #E5E9F0", borderRadius: 11, padding: "11px 13px" }}><div style={{ fontSize: 18, fontWeight: 900, color: c }}>{v}</div><div style={{ fontSize: 11, color: "#6B7280", fontWeight: 700, marginTop: 2 }}>{t}</div></div>
+          ))}
+        </div>
+        {addOpen && <div style={{ background: "#fff", border: "1px solid #D8DEEA", borderRadius: 11, padding: 12, marginTop: 10, display: "grid", gap: 7 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 90px", gap: 7 }}>
+            <input value={f.feat} onChange={(e) => setF({ ...f, feat: e.target.value })} placeholder="플랫폼 기능 (예: 청구지원 워크플로)" style={inS} />
+            <input value={f.ch} onChange={(e) => setF({ ...f, ch: e.target.value })} placeholder="챕터 (예: 15)" style={inS} />
+          </div>
+          <input value={f.src} onChange={(e) => setF({ ...f, src: e.target.value })} placeholder="위치 (예: 보험·치료비 › 보험금청구)" style={inS} />
+          <input value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} placeholder="반영 내용 요약" style={inS} />
+          <div style={{ display: "flex", justifyContent: "flex-end" }}><button onClick={addEntry} style={{ ...btnS(true), padding: "8px 16px" }}>기록</button></div>
+        </div>}
+      </div>
+
+      {/* 버전 필터 */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+        {vers.map((v) => <span key={v} onClick={() => setVer(v)} style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, padding: "5px 12px", borderRadius: 999, background: ver === v ? "#1D4ED8" : "#EEF2F7", color: ver === v ? "#fff" : "#475569", border: "1px solid " + (ver === v ? "transparent" : "#E5E9F0") }}>{v === "all" ? "전체" : v}</span>)}
+      </div>
+
+      {/* 로그 테이블 */}
+      <div style={{ overflowX: "auto", border: "1px solid #E5E9F0", borderRadius: 12, marginTop: 10, background: "#fff" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 640 }}>
+          <thead><tr style={{ background: "#F4F7FB" }}>{["일시", "버전", "챕터", "플랫폼 기능", "반영 내용", "상태"].map((h) => <th key={h} style={thS}>{h}</th>)}</tr></thead>
+          <tbody>{rows.map((e, i) => { const s = stC(e.status); return (
+            <tr key={i} style={{ borderTop: "1px solid #EEF1F8" }}>
+              <td style={{ ...tdS, whiteSpace: "nowrap", fontFamily: "ui-monospace,Menlo,monospace", color: "#64748B" }}>{e.date}</td>
+              <td style={{ ...tdS, whiteSpace: "nowrap", fontWeight: 800 }}>{e.ver}</td>
+              <td style={tdS}>{(e.ch || []).length ? (e.ch || []).map((n) => <span key={n} onClick={() => onGoChapter && onGoChapter(n)} style={{ cursor: "pointer", fontSize: 11, fontWeight: 800, color: "#1D4ED8", background: "#EFF6FF", padding: "2px 7px", borderRadius: 6, marginRight: 4, display: "inline-block" }}>제{n}장</span>) : <span style={{ color: "#94A3B8" }}>—</span>}</td>
+              <td style={{ ...tdS, fontWeight: 700, color: "#12203F" }}>{e.feat}</td>
+              <td style={{ ...tdS, color: "#475569" }}>{e.summary}{e.refs && e.refs.length ? <span style={{ display: "block", marginTop: 3, fontSize: 11, color: "#0F8A74" }}>근거: {e.refs.join(" · ")}</span> : null}</td>
+              <td style={tdS}><span style={{ fontSize: 11, fontWeight: 800, color: s.c, background: s.bg, padding: "3px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>{e.status}</span></td>
+            </tr>
+          ); })}</tbody>
+        </table>
+      </div>
+
+      {/* 백서 ↔ 근거자료 관계 */}
+      <div style={{ marginTop: 20, marginBottom: 6, fontSize: 14, fontWeight: 900, color: "#0F1F45", display: "flex", alignItems: "center", gap: 8 }}>🔗 백서 ↔ 근거자료 관계 <span style={{ fontSize: 11.5, fontWeight: 700, color: "#6B7280" }}>챕터별 근거 · 클릭 시 이동</span></div>
+      <div style={{ display: "grid", gap: 8 }}>{rel.map((c) => (
+        <div key={c.no} style={{ background: "#fff", border: "1px solid #E5E9F0", borderRadius: 11, padding: "11px 14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span onClick={() => onGoChapter && onGoChapter(c.no)} style={{ cursor: "pointer", fontSize: 12.5, fontWeight: 800, color: "#1D4ED8" }}>제{c.no}장 {c.title}</span>
+            <span style={{ fontSize: 10.5, fontWeight: 700, color: "#0F8A74", background: "#E7F6F1", padding: "2px 8px", borderRadius: 999 }}>{c.ver}</span>
+            <span style={{ fontSize: 11, color: "#94A3B8", marginLeft: "auto" }}>근거 {c.sources.length}건</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>{c.sources.map((s, i) => <span key={i} onClick={onGoRefs} title={s.org} style={{ cursor: "pointer", fontSize: 11, color: "#475569", background: "#F1F5F9", border: "1px solid #E5E9F0", borderRadius: 7, padding: "3px 8px" }}>{s.title.length > 42 ? s.title.slice(0, 42) + "…" : s.title}</span>)}</div>
+        </div>
+      ))}</div>
+      <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 10, lineHeight: 1.6 }}>※ 챕터에 근거자료를 추가하면 <b onClick={onGoRefs} style={{ cursor: "pointer", color: "#0F8A74" }}>근거자료실</b>에 자동 반영됩니다. 반영 로그는 로컬(브라우저)에 저장되며 CSV·JSON으로 백업할 수 있습니다.</div>
+    </div>
+  );
+}
+function btnS(on) { return { cursor: "pointer", fontSize: 11.5, fontWeight: 800, color: on ? "#fff" : "#475569", background: on ? "#1D4ED8" : "#fff", border: "1px solid " + (on ? "transparent" : "#D8DEEA"), borderRadius: 8, padding: "6px 11px" }; }
+const thS = { fontSize: 11, color: "#64748B", fontWeight: 700, textAlign: "left", padding: "9px 11px", whiteSpace: "nowrap" };
+const tdS = { padding: "9px 11px", verticalAlign: "top", color: "#334155", lineHeight: 1.5 };
+const inS = { border: "1px solid #D8DEEA", borderRadius: 8, padding: "8px 10px", fontSize: 12.5, color: "#334155", outline: "none", width: "100%" };
 
 /* ── 근거자료실(Evidence Library) — 법령·통계·표준 검색 ── */
 function WpRefLibrary({ onGoChapter }) {
@@ -14912,6 +15011,22 @@ function wpRefStats() {
   const all = wpAllRefs();
   return { total: all.length, done: all.filter((r) => r.status === "done").length, byCat: Object.keys(WP_REF_CATS).map((k) => ({ k, n: all.filter((r) => r.cat === k).length })) };
 }
+
+/* ── 백서 반영 로그(변경 이력표) — 플랫폼 변경 → 백서 반영 기록 ──
+   플랫폼 기능이 백서에 반영될 때마다 한 줄씩 기록되어, 백업·피드백·감사에 사용된다.
+   신규 기록은 localStorage(hifin_wp_log)에 추가되어 시드와 병합된다. */
+const WP_CHANGELOG = [
+  { date: "2026-07-05", ver: "v1.0", ch: [], feat: "백서 초판", src: "—", summary: "24개 챕터 초판 작성·근거자료 검증", refs: [], status: "초판" },
+  { date: "2026-07-12", ver: "v1.1", ch: [7], feat: "의료마이데이터 커넥터", src: "데이터하우스 › 데이터 커넥터", summary: "전송요구권(2025.3.13)·MCP/REST/FHIR/MyData·9종 분리동의·전송요구 마법사·품질검증 11항목", refs: ["의료마이데이터 전송요구권", "MCP"], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [10], feat: "데이터 거버넌스", src: "데이터하우스 › 규제·거버넌스", summary: "4-DB 분리(식별·건강·동의권한·상담기억)·외부 생성형 AI 전송통제·ISMS-P", refs: [], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [11], feat: "규제·거버넌스 통제", src: "데이터하우스 › 규제·거버넌스", summary: "전송요구권·전문기관 지정·분석결과 5구분·의료행위 경계·SaMD·사업자평가·Go/No-Go", refs: [], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [15], feat: "보험금 청구지원 워크플로", src: "보험·치료비 › 보험금청구", summary: "보장 7항목 참고분석·AI 지급 미확정 명시", refs: [], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [16], feat: "통합 케어루프", src: "건강현황 · 진료 연계", summary: "건강상태 8등급·통합 임상 프로필·진료결과 폐루프", refs: [], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [23], feat: "사업 운영 콘솔", src: "온톨로지 › 사업 운영", summary: "5단계 추진 게이트·수익모델(구독/B2B 가드레일)·KPI 5범주·리스크 6종", refs: [], status: "반영" },
+];
+function wpLogAll() { let custom = []; try { custom = JSON.parse(localStorage.getItem("hifin_wp_log")) || []; } catch (e) {} return WP_CHANGELOG.concat(custom); }
+function wpLogAppend(entry) { let custom = []; try { custom = JSON.parse(localStorage.getItem("hifin_wp_log")) || []; } catch (e) {} custom.push(entry); try { localStorage.setItem("hifin_wp_log", JSON.stringify(custom)); } catch (e) {} }
+function wpChapterSources() { return WHITEPAPER.filter((c) => c.sources && c.sources.length).map((c) => ({ no: c.no, title: c.title, ver: c.version, updated: c.updated, sources: c.sources })); }
 
 /* ── 장별 플랫폼 연계(Nexus): 확장성 · 관련 섹션 · 실행 참조 ──
    sec = core.jsx SECTIONS 키(클릭 시 실제 화면으로 이동). */

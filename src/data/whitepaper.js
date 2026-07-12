@@ -835,6 +835,22 @@ function wpRefStats() {
   return { total: all.length, done: all.filter((r) => r.status === "done").length, byCat: Object.keys(WP_REF_CATS).map((k) => ({ k, n: all.filter((r) => r.cat === k).length })) };
 }
 
+/* ── 백서 반영 로그(변경 이력표) — 플랫폼 변경 → 백서 반영 기록 ──
+   플랫폼 기능이 백서에 반영될 때마다 한 줄씩 기록되어, 백업·피드백·감사에 사용된다.
+   신규 기록은 localStorage(hifin_wp_log)에 추가되어 시드와 병합된다. */
+const WP_CHANGELOG = [
+  { date: "2026-07-05", ver: "v1.0", ch: [], feat: "백서 초판", src: "—", summary: "24개 챕터 초판 작성·근거자료 검증", refs: [], status: "초판" },
+  { date: "2026-07-12", ver: "v1.1", ch: [7], feat: "의료마이데이터 커넥터", src: "데이터하우스 › 데이터 커넥터", summary: "전송요구권(2025.3.13)·MCP/REST/FHIR/MyData·9종 분리동의·전송요구 마법사·품질검증 11항목", refs: ["의료마이데이터 전송요구권", "MCP"], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [10], feat: "데이터 거버넌스", src: "데이터하우스 › 규제·거버넌스", summary: "4-DB 분리(식별·건강·동의권한·상담기억)·외부 생성형 AI 전송통제·ISMS-P", refs: [], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [11], feat: "규제·거버넌스 통제", src: "데이터하우스 › 규제·거버넌스", summary: "전송요구권·전문기관 지정·분석결과 5구분·의료행위 경계·SaMD·사업자평가·Go/No-Go", refs: [], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [15], feat: "보험금 청구지원 워크플로", src: "보험·치료비 › 보험금청구", summary: "보장 7항목 참고분석·AI 지급 미확정 명시", refs: [], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [16], feat: "통합 케어루프", src: "건강현황 · 진료 연계", summary: "건강상태 8등급·통합 임상 프로필·진료결과 폐루프", refs: [], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [23], feat: "사업 운영 콘솔", src: "온톨로지 › 사업 운영", summary: "5단계 추진 게이트·수익모델(구독/B2B 가드레일)·KPI 5범주·리스크 6종", refs: [], status: "반영" },
+];
+function wpLogAll() { let custom = []; try { custom = JSON.parse(localStorage.getItem("hifin_wp_log")) || []; } catch (e) {} return WP_CHANGELOG.concat(custom); }
+function wpLogAppend(entry) { let custom = []; try { custom = JSON.parse(localStorage.getItem("hifin_wp_log")) || []; } catch (e) {} custom.push(entry); try { localStorage.setItem("hifin_wp_log", JSON.stringify(custom)); } catch (e) {} }
+function wpChapterSources() { return WHITEPAPER.filter((c) => c.sources && c.sources.length).map((c) => ({ no: c.no, title: c.title, ver: c.version, updated: c.updated, sources: c.sources })); }
+
 /* ── 장별 플랫폼 연계(Nexus): 확장성 · 관련 섹션 · 실행 참조 ──
    sec = core.jsx SECTIONS 키(클릭 시 실제 화면으로 이동). */
 const WP_NEXUS = {
