@@ -3,7 +3,7 @@ function HealthManageSection({ onGo }) {
   const [viewer, setViewer] = useState(false);
   const [cat, setCat] = useState("summary");
   const RECS = [[Dumbbell, "주 3회 유산소 운동"], [Salad, "식이섬유·저당 식단"], [Wine, "절주 (하루 2잔 이하)"], [Cigarette, "금연 실천"], [Stethoscope, "복부 초음파(췌장·간)"], [Pill, "간 건강 영양제"], [ClipboardList, "위·대장 내시경"], [HeartHandshake, "정기 건강 모니터링"]];
-  const cats = [["summary", "한눈에 보기", LayoutDashboard], ["checkup", "검진 항목현황", ClipboardList], ["bio", "생체나이", Activity], ["disease", "질병 위험", HeartPulse], ["cancer", "암 위험", ShieldCheck], ["warn", "경고신호", AlertTriangle], ["care", "관리·권고", Sparkles], ["report", "검진 리포트", FileText]];
+  const cats = [["summary", "한눈에 보기", LayoutDashboard], ["checkup", "검진 항목현황", ClipboardList], ["careloop", "진료 연계", Building2], ["bio", "생체나이", Activity], ["disease", "질병 위험", HeartPulse], ["cancer", "암 위험", ShieldCheck], ["warn", "경고신호", AlertTriangle], ["care", "관리·권고", Sparkles], ["report", "검진 리포트", FileText]];
   const go = onGo || (() => {});
   const Go = ({ to, ic: Ic, pri, children }) => <button className={`gobtn ${pri ? "pri" : ""}`} onClick={() => go(to)}><Ic size={14} /> {children}</button>;
   // 체험 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
@@ -54,6 +54,10 @@ function HealthManageSection({ onGo }) {
       <div className="chtabs">{cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}</div>
 
       {cat === "report" && <ReportVault user={dm} />}
+
+      {cat === "careloop" && (chk ? <CareLoopCard member={selfM} chk={chk} onGo={go} /> : (
+        <div className="card"><div className="rct"><Building2 size={18} color="#2563EB" /> 진료 연계</div><p style={{ fontSize: 12.5, color: "var(--muted)", margin: "4px 0 10px" }}>체험 회원으로 로그인하면 이상소견→진료→결과 수신→프로필 갱신 흐름을 체험할 수 있어요.</p><DemoLoginSelector /></div>
+      ))}
 
       {cat === "checkup" && (chk ? <HMCheckupTab chk={chk} member={selfM} onGo={go} /> : (
         <div className="card"><div className="rct"><ClipboardList size={18} color="#2563EB" /> 검진 항목현황</div>
@@ -237,6 +241,60 @@ function HMCheckupTab({ chk, member, onGo }) {
       <button className="gobtn" onClick={() => onGo && onGo("shop")}><ShoppingCart size={14} /> 맞춤 건강쇼핑</button>
     </div>
   </>);
+}
+
+/* ── 진료 연계 폐루프(§6.8): 이상소견→진료→결과수신→프로필 갱신→재평가 ── */
+const _DZ_DEPT = { "고혈압": "순환기내과", "당뇨병": "내분비내과", "이상지질혈증": "순환기내과", "간질환": "소화기내과", "만성콩팥병": "신장내과", "통풍": "류마티스내과", "갑상선질환": "내분비내과", "빈혈": "혈액내과", "비만": "가정의학과", "복부비만": "가정의학과", "전립선암": "비뇨의학과", "대장암": "소화기내과", "간암": "소화기내과", "췌장암": "소화기내과" };
+function CareLoopCard({ member, chk, onGo }) {
+  const KEY = "hifin_careloop_" + (member && (member.id || member.email || member.name));
+  const [stage, setStage] = React.useState(() => { try { return JSON.parse(localStorage.getItem(KEY)) || 0; } catch (e) { return 0; } });
+  const set = (s) => { setStage(s); try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} };
+  const items = Object.keys(chk.items).map((k) => chk.items[k]).filter((r) => r.sev >= 1).sort((a, b) => b.sev - a.sev);
+  const top = items[0];
+  const dz = top && top.item ? top.item.dz : "건강관리";
+  const dept = _DZ_DEPT[dz] || "내과";
+  const STAGES = ["진료 권고", "예약 완료", "진료·결과 수신", "프로필 갱신·재평가"];
+  const rxMap = { "고혈압": "암로디핀 5mg 1일1회", "당뇨병": "메트포르민 500mg 1일2회", "이상지질혈증": "로수바스타틴 10mg 1일1회", "간질환": "생활요법·간기능 추적", "통풍": "알로퓨리놀 100mg", "만성콩팥병": "혈압·혈당 관리, 신장내과 추적" };
+  const rx = rxMap[dz] || "생활요법 + 필요 시 약물";
+  const grade = (typeof memberHealthGrade === "function") ? (() => { try { return memberHealthGrade(member); } catch (e) { return null; } })() : null;
+  return (
+    <div className="card">
+      <div className="rct"><Building2 size={18} color="#2563EB" /> 진료 연계 · 폐루프 <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "var(--muted)" }}>이상소견 → 진료 → 결과 → 갱신</span></div>
+      <div className="clp-steps">{STAGES.map((s, i) => <React.Fragment key={s}><span className={"clp-step" + (i < stage ? " done" : i === stage ? " cur" : "")}><i>{i + 1}</i>{s}</span>{i < STAGES.length - 1 && <span className="clp-arrow">›</span>}</React.Fragment>)}</div>
+
+      {stage === 0 && <div className="clp-body">
+        <div className="clp-lead">{top ? <><b>{top.name} {top.series[2].value}{top.unit} 「{top.label}」</b> 소견으로 <b>{dept}</b> 진료를 권고합니다.</> : <>정기검진 주기에 맞춘 진료·상담을 권고합니다.</>}</div>
+        <div className="clp-acts"><button className="clp-btn pri" onClick={() => set(1)}><CalendarCheck size={14} /> {dept} 진료 예약</button><button className="clp-btn" onClick={() => onGo && onGo("hospital")}><Building2 size={14} /> 병원 찾기</button></div>
+      </div>}
+
+      {stage === 1 && <div className="clp-body">
+        <div className="clp-lead"><b>{dept} 진료 예약이 완료</b>되었습니다. 검진자료 전달 동의 후 진료를 받습니다. 진료가 끝나면 결과를 수신합니다.</div>
+        <div className="clp-acts"><button className="clp-btn pri" onClick={() => set(2)}><FileText size={14} /> 진료 완료 · 결과 수신</button><button className="clp-btn" onClick={() => set(0)}>취소</button></div>
+      </div>}
+
+      {stage === 2 && <div className="clp-body">
+        <div className="clp-result">
+          <div className="clp-rh"><Stethoscope size={14} color="#2563EB" /> 진료결과 회신 · {dept}</div>
+          <div className="clp-rr"><span>진단 소견</span><b>{dz} 관련 소견 확인 · 추가검사 시행</b></div>
+          <div className="clp-rr"><span>처방</span><b>{rx}</b></div>
+          <div className="clp-rr"><span>다음 계획</span><b>3개월 후 추적검사(재검)</b></div>
+        </div>
+        <div className="clp-acts"><button className="clp-btn pri" onClick={() => set(3)}><RefreshCw size={14} /> 통합 프로필 반영 · 위험도 재평가</button></div>
+      </div>}
+
+      {stage === 3 && <div className="clp-body">
+        <div className="clp-done"><Check size={16} color="#16A34A" /> <b>통합 건강프로필이 갱신</b>되었습니다. 진료결과·처방이 반영되어 건강상태·위험도가 재평가되었습니다.</div>
+        <div className="clp-upd">
+          <div><span>건강상태</span><b style={{ color: grade ? grade.meta.c : "#334155" }}>{grade ? grade.grade : "-"} — {grade ? grade.act : ""}</b></div>
+          <div><span>확정진단·처방</span><b>임상 프로필에 반영 완료</b></div>
+          <div><span>다음 재평가</span><b>3개월 후 추적검사 시</b></div>
+        </div>
+        <div className="clp-acts"><button className="clp-btn pri" onClick={() => onGo && onGo("checkup")}><Activity size={14} /> 건강현황 보기</button><button className="clp-btn" onClick={() => set(0)}>처음부터</button></div>
+      </div>}
+
+      <div className="chnote" style={{ marginTop: 10 }}>※ 진료결과 회신 → 통합 프로필 갱신 → 위험도 재평가로 이어지는 폐루프입니다. 진료·처방·확정진단은 의료기관·의료진이 수행하며, 하이핀은 결과를 수신·관리합니다.</div>
+    </div>
+  );
 }
 
 /* ====================== 추이/상세 컴포넌트 ====================== */

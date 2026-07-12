@@ -3552,3 +3552,35 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .cpf-a b{font-variant-numeric:tabular-nums;color:#1B2942;min-width:40px;text-align:right;}
 @media (prefers-color-scheme:dark){.cpf-col{background:#0F1B33;border-color:#1E2C46;}.cpf-dx b,.cpf-med b,.cpf-a b{color:#EAF2FF;}.cpf-dx,.cpf-med{border-color:#1A2740;}.cpf-bar{background:#1A2740;}}
 @media(max-width:560px){.cpf-grid{grid-template-columns:1fr;}}
+
+/* ── 진료 연계 폐루프 ── */
+.clp-steps{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:6px 0 14px;}
+.clp-step{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:#98A6BE;background:#F4F7FB;border:1px solid #E7ECF4;border-radius:999px;padding:5px 12px 5px 5px;}
+.clp-step i{width:19px;height:19px;border-radius:50%;background:#CBD5E1;color:#fff;display:grid;place-items:center;font-size:10px;font-style:normal;}
+.clp-step.cur{color:#1D4ED8;border-color:#93C5FD;background:#EFF6FF;}
+.clp-step.cur i{background:#2563EB;}
+.clp-step.done{color:#15803D;border-color:#BBF7D0;background:#F0FDF4;}
+.clp-step.done i{background:#16A34A;}
+.clp-arrow{color:#CBD5E1;}
+.clp-body{}
+.clp-lead{font-size:13.5px;color:#334155;line-height:1.6;margin-bottom:14px;}
+.clp-lead b{color:#1B2942;font-weight:700;}
+.clp-acts{display:flex;gap:8px;flex-wrap:wrap;}
+.clp-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:#475569;background:#EEF2F8;border:none;border-radius:9px;padding:10px 16px;cursor:pointer;}
+.clp-btn.pri{color:#fff;background:linear-gradient(120deg,#2563EB,#0EA5E9);}
+.clp-result{background:#F7F9FC;border:1px solid #E7ECF4;border-radius:12px;padding:13px 15px;margin-bottom:14px;}
+.clp-rh{font-size:13px;font-weight:800;color:#1B2942;display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.clp-rr{display:flex;gap:10px;font-size:12.5px;padding:5px 0;border-top:1px solid #EBEFF6;}
+.clp-rr span{color:var(--muted);flex:0 0 82px;}
+.clp-rr b{color:#1B2942;font-weight:700;flex:1;}
+.clp-done{font-size:13.5px;color:#15803D;font-weight:600;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:11px;padding:12px 14px;display:flex;align-items:center;gap:8px;margin-bottom:12px;line-height:1.5;}
+.clp-done b{color:#166534;font-weight:800;}
+.clp-upd{display:grid;gap:7px;background:#F7F9FC;border:1px solid #E7ECF4;border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+.clp-upd>div{display:flex;gap:10px;font-size:12.5px;}
+.clp-upd span{color:var(--muted);flex:0 0 96px;}
+.clp-upd b{color:#1B2942;font-weight:700;}
+@media (prefers-color-scheme:dark){
+  .clp-step{background:#12203A;border-color:#26344E;} .clp-step.cur{background:#0E2340;} .clp-step.done{background:#0E241C;}
+  .clp-lead,.clp-rr b,.clp-upd b{color:#EAF2FF;} .clp-result,.clp-upd{background:#0F1B33;border-color:#1E2C46;} .clp-rr{border-color:#1A2740;}
+  .clp-btn{background:#1A2740;color:#C6D3EC;} .clp-done{background:#0E241C;border-color:#1F5137;}
+}
