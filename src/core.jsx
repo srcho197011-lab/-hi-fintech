@@ -280,7 +280,7 @@ const SECTIONS = [
   { k: "checkup", ic: ClipboardList, t: "건강검진 예약", s: "예약·결과조회·검진보험" },
   { k: "care", ic: HeartHandshake, t: "검진 후 케어", s: "주치의·건강현황·병원진료·재가돌봄·건강쇼핑" },
   { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" },
-  { k: "mywallet", ic: Wallet, t: "나의 건강지갑", s: "금융지갑·Health NFT·마이페이지" },
+  { k: "mywallet", ic: Wallet, t: "나의 건강지갑", s: "금융지갑·Health NFT·우리가족건강관리" },
   { k: "ontology", ic: Network, t: "온톨로지 · 하네스", s: "Ontology · Harness (운영)" },
 ];
 /* 옛 섹션 키 → 새 부모 섹션 매핑 (딥링크·onGo·헤더·검색 호환) */

@@ -63,10 +63,10 @@ function WalletHubSection({ initial, onGo }) {
   const map = { mywallet: "wallet", wallet: "wallet", nft: "nft", mypage: "mypage" };
   const [tab, setTab] = useState(map[initial] || "wallet");
   useEffect(() => { setTab(map[initial] || "wallet"); }, [initial]);
-  const tabs = [["wallet", "건강금융지갑", Wallet, "#059669"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["mypage", "마이페이지", Settings, "#475569"]];
+  const tabs = [["wallet", "건강금융지갑", Wallet, "#059669"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["mypage", "우리가족건강관리", Users, "#EA580C"]];
   return (
     <div style={{ marginTop: 4 }}>
-      <GroupHead ic={Wallet} title="나의 건강지갑" sub="건강금융지갑 · Health NFT · 마이페이지를 한 곳에서" color="#059669" />
+      <GroupHead ic={Wallet} title="나의 건강지갑" sub="건강금융지갑 · Health NFT · 우리가족건강관리를 한 곳에서" color="#059669" />
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
       {tab === "wallet" && <WalletSection onGo={onGo} />}
       {tab === "nft" && <NFTSection onGo={onGo} />}

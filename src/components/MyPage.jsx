@@ -47,12 +47,19 @@ function FamilyHealthCare({ member, onGo }) {
   const won = (n) => n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : Number(n || 0).toLocaleString() + "원";
   const relColor = (r) => r === "본인" ? "#EA580C" : r === "배우자" ? "#2563EB" : r === "자녀" ? "#16A34A" : r === "부모" || r === "조부모" ? "#7C3AED" : "#DB2777";
   const cg = R ? R.cg : ["양호", "#16A34A", "#E7F8EE"];
+  const wonFull = (n) => Number(n || 0).toLocaleString("ko-KR") + "원";
+  const hrList = P.highRiskCancerTypes || [];
+  const grade = R ? R.cancerTotal : P.cancerRiskGrade;
+  const costThis = R ? R.costThis : P.estimatedMedicalCost;
+  const cost10 = R ? R.cost10 : Math.round(P.estimatedMedicalCost * 1.4);
+  const dCost = cost10 - costThis, pctCost = costThis ? Math.round((cost10 / costThis - 1) * 100) : 0;
+  const curYear = chk ? chk.years[chk.years.length - 1] : 2026;
+  const regNum = R ? R.reg : P.regAge, bioDiff = +(P.biologicalAge - regNum).toFixed(1);
   const cards = [
-    { l: "생체나이", v: `${P.biologicalAge}세`, s: `주민등록 ${R ? R.reg : P.regAge}세`, c: "#2563EB" },
-    { l: "암위험", v: `${R ? R.cancerTotal : P.cancerRiskGrade}등급 · ${cg[0]}`, s: "동일 성·연령군 대비", c: cg[1] },
-    { l: "고위험 암", v: (P.highRiskCancerTypes && P.highRiskCancerTypes.length) ? P.highRiskCancerTypes.join("·") : "-", s: (P.highRiskCancerTypes && P.highRiskCancerTypes.length) ? "정기검진 권장" : "특이사항 없음", c: (P.highRiskCancerTypes && P.highRiskCancerTypes.length) ? "#B91C1C" : "#64748B" },
-    { l: "금년 의료비", v: won(R ? R.costThis : P.estimatedMedicalCost), s: "생체나이 기반 예측", c: "#16A34A" },
-    { l: "10년 후 의료비", v: won(R ? R.cost10 : Math.round(P.estimatedMedicalCost * 1.4)), s: "예방관리 시 절감 가능", c: "#EF4444" },
+    { l: "암위험", v: `${grade}등급 · ${cg[0]}`, vc: cg[1], dot: cg[1], pill: grade <= 3 ? { t: "정상 범위", ic: "ok", c: "#15803D", bg: "#E7F8EE" } : { t: "관리 필요", ic: "warn", c: "#B45309", bg: "#FEF3E2" } },
+    { l: "고위험 암", v: hrList.length ? hrList.join("·") : "—", vc: hrList.length ? "#B91C1C" : "#94A3B8", dot: hrList.length ? "#EF4444" : "#94A3B8", sub: hrList.length ? "정기검진 권장" : "해당 없음" },
+    { l: "금년 의료비", v: wonFull(costThis), vc: "#1B2942", dot: "#2563EB", sub: `${curYear}년 예측 기준` },
+    { l: "10년 후 의료비", v: wonFull(cost10), vc: "#EF4444", dot: "#EF4444", pill: dCost > 0 ? { t: `+${dCost.toLocaleString("ko-KR")}원 (+${pctCost}%)`, ic: "up", c: "#B91C1C", bg: "#FDECEC" } : { t: `${dCost.toLocaleString("ko-KR")}원`, ic: "down", c: "#15803D", bg: "#E7F8EE" } },
   ];
   return (
     <div className="fhc">
@@ -70,8 +77,13 @@ function FamilyHealthCare({ member, onGo }) {
         ))}
         <button className="fhc-add" onClick={() => { if (typeof toast === "function") toast("아래 가족 건강관리에서 구성원을 추가할 수 있어요."); }} title="가족 추가"><Plus size={16} /></button>
       </div>
+      <div className="fhc-ctx"><b>{P.name}</b> · {cur.rel} · 생체나이 <b style={{ color: "#2563EB" }}>{P.biologicalAge}세</b> <span>(주민등록 {regNum}세{bioDiff === 0 ? "" : bioDiff < 0 ? ` · ${bioDiff}세 젊음` : ` · +${bioDiff}세`})</span></div>
       <div className="fhc-cards">
-        {cards.map((c) => <div className="fhc-c" key={c.l}><span className="fhc-cl">{c.l}</span><b className="fhc-cv" style={{ color: c.c }}>{c.v}</b><em className="fhc-cs">{c.s}</em></div>)}
+        {cards.map((c) => <div className="fhc-c" key={c.l}>
+          <span className="fhc-cl"><i className="fhc-dot" style={{ background: c.dot }} /> {c.l}</span>
+          <b className="fhc-cv" style={{ color: c.vc }}>{c.v}</b>
+          {c.pill ? <span className="fhc-pill" style={{ color: c.pill.c, background: c.pill.bg }}>{c.pill.ic === "ok" ? <Check size={11} /> : c.pill.ic === "up" ? <ArrowUp size={11} /> : c.pill.ic === "down" ? <ArrowDown size={11} /> : <AlertTriangle size={11} />} {c.pill.t}</span> : <em className="fhc-cs">{c.sub}</em>}
+        </div>)}
       </div>
       {isChild ? (
         <div className="fhc-ck child"><div className="fhc-ckhd"><Activity size={14} color="#16A34A" /> 아동·청소년 건강검진 <b>성장·발달 관리</b></div><div className="fhc-abn"><span>성장발달 체크</span><span>시력·비만 관리</span><span>예방접종(NIP)</span><span>구강검진</span></div></div>
@@ -126,8 +138,8 @@ function MyPageSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="mypage" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>마이페이지</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>우리가족 건강관리 · 내 정보 · 동의관리(DID) · 알림 설정</div></div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>우리가족 건강관리</div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>가족 구성원 건강현황 · 내 정보 · 동의관리(DID) · 상담 기록 · 알림 설정</div></div></div>
 
       <DemoMemberBanner />
       <div className="profile">
