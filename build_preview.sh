@@ -4,9 +4,8 @@
 set -e
 cd "$(dirname "$0")"
 # 소스의 진실 = src/ 폴더(_manifest.txt 순서). 데이터=data/dummy_data.js(plain), CSS=data/app.css.
-
-# 백서반영표 자동 로그(WP-Log 트레일러 → src/data/wpAutoLog.js) 갱신
-bash scripts/gen_wp_log.sh || true
+# 참고: 백서반영표 자동 로그(src/data/wpAutoLog.js)는 여기서 갱신하지 않는다.
+#       커밋 시 post-commit 훅(scripts/githooks/post-commit)만 갱신 → 일반 빌드/커밋 속도 유지.
 
 cat > _h.txt <<'HEAD'
 <!doctype html>
