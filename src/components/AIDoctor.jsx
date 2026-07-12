@@ -1991,8 +1991,12 @@ function aiRespond(text, corpus, report, QA) {
   }
   // AI KB 라운지 RAG — 검진 수치 판정 + 근거 + 관련 보험·건강미션(예: '공복혈당 110', '혈압 140/90', 'BMI 27')
   if (typeof kbCheckupCounsel === "function") { const _kb = kbCheckupCounsel(text); if (_kb) return _kb; }
-  // AI KB 라운지 RAG — 질환 정의·개요(예: '고혈압이 뭐야?', '당뇨병 위험요인') → KB 정의·위험요인·근거
+  // 회원 검진데이터 RAG — 로그인 회원의 '내 검진 결과'(예: '내 콜레스테롤 결과', '내 검진 결과 요약', '내 공복혈당 어때?')
+  if (typeof memberCheckupCounsel === "function") { const _cm0 = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; const _mc = memberCheckupCounsel(text, _cm0); if (_mc) return _mc; }
+  // AI KB 라운지 RAG — 질환 정의·개요(예: '고혈압이 뭐야?', '당뇨병 위험요인') → KB 정의·위험요인·근거 (질환명은 항목기준보다 우선)
   if (typeof kbDiseaseCounsel === "function") { const _dz = kbDiseaseCounsel(text); if (_dz) return _dz; }
+  // 검진 이해 KB — 종합검진 목적·체성분·생체나이·암예방·항목 기준(예: '체성분이 뭐예요?', '공복혈당 정상 범위')
+  if (typeof checkupEduCounsel === "function") { const _ec = checkupEduCounsel(text); if (_ec) return _ec; }
   // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
   if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
   const _topics = multiTopicCounsel(text);

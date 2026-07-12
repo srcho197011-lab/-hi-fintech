@@ -39,6 +39,8 @@ src/data/commerceOntology.js
 src/data/insuranceKB.js
 src/data/kbHealthData.js
 src/data/kbDomainData.js
+src/data/checkupCatalog.js
+src/data/checkupEngine.js
 src/utils/ontologyConsult.js
 src/utils/insuranceRecommendationUtils.js
 src/utils/healthWalletUtils.js

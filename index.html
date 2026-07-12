@@ -2795,8 +2795,12 @@ function aiRespond(text, corpus, report, QA) {
   }
   // AI KB 라운지 RAG — 검진 수치 판정 + 근거 + 관련 보험·건강미션(예: '공복혈당 110', '혈압 140/90', 'BMI 27')
   if (typeof kbCheckupCounsel === "function") { const _kb = kbCheckupCounsel(text); if (_kb) return _kb; }
-  // AI KB 라운지 RAG — 질환 정의·개요(예: '고혈압이 뭐야?', '당뇨병 위험요인') → KB 정의·위험요인·근거
+  // 회원 검진데이터 RAG — 로그인 회원의 '내 검진 결과'(예: '내 콜레스테롤 결과', '내 검진 결과 요약', '내 공복혈당 어때?')
+  if (typeof memberCheckupCounsel === "function") { const _cm0 = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; const _mc = memberCheckupCounsel(text, _cm0); if (_mc) return _mc; }
+  // AI KB 라운지 RAG — 질환 정의·개요(예: '고혈압이 뭐야?', '당뇨병 위험요인') → KB 정의·위험요인·근거 (질환명은 항목기준보다 우선)
   if (typeof kbDiseaseCounsel === "function") { const _dz = kbDiseaseCounsel(text); if (_dz) return _dz; }
+  // 검진 이해 KB — 종합검진 목적·체성분·생체나이·암예방·항목 기준(예: '체성분이 뭐예요?', '공복혈당 정상 범위')
+  if (typeof checkupEduCounsel === "function") { const _ec = checkupEduCounsel(text); if (_ec) return _ec; }
   // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
   if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
   const _topics = multiTopicCounsel(text);
@@ -14639,6 +14643,401 @@ const KB_LEGAL = [
   { id: "law-hff", law: "건강기능식품법", article: "제18조", summary: "기능성 표시·광고 사전심의, 허위·과대광고 금지.", risk: "주의", note: "영양제·건기식 기능성 문구는 식약처 인정 범위 내에서만", org: "국가법령정보센터", date: "2024-01", grade: "A" },
   { id: "law-sandbox", law: "금융혁신지원 특별법", article: "혁신금융서비스", summary: "규제샌드박스로 한시적 규제특례·지정대리인 제도 운영.", risk: "기회", note: "임베디드보험·건강금융 모델은 규제샌드박스 활용 검토 가능", org: "국가법령정보센터", date: "2024-01", grade: "B" },
 ];
+
+/* ═══════════════════════════════════════════════════════════════════════
+   건강검진 항목 카탈로그 · 이해 지식베이스
+   출처: 조성래 실측 자료(국가건강검진 결과통보서 / 명지병원 종합건강진단결과표 /
+        프롬에이지 Premium 건강분석리포트 / 종합검진 목적·이해 자료 / 체성분 자료)
+   ⚠️ 참고치·판정기준은 국민건강보험공단·대한검진의학회·각 학회 지침 기반.
+      개인 실제 판정은 검진기관 의사 소견을 따릅니다. AI 상담은 교육·안내 목적.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 검진 항목 카탈로그 — key: 표준키, name: 한글명, unit, ref: 참고치[lo,hi] 또는 {m,f},
+   band: 판정 경계(정상 상한 초과 시 단계), cat: 분류, dz: 관련질환,
+   mean: 의미, hi/lo: 이상 시 해석, tip: 관리, aliases: 사용자 검색어  */
+const CHECKUP_ITEMS = [
+  /* ── 신체계측 / 비만 ── */
+  { key: "bmi", name: "체질량지수(BMI)", unit: "kg/㎡", ref: [18.5, 24.9], cat: "비만", dz: "비만",
+    bands: [["저체중", null, 18.5], ["정상", 18.5, 23], ["과체중", 23, 25], ["비만", 25, 30], ["고도비만", 30, null]],
+    mean: "키와 체중으로 계산한 겉보기 비만 지표입니다.", hi: "과체중·비만은 고혈압·당뇨·이상지질혈증·심뇌혈관질환 위험을 높입니다.",
+    tip: "표준체중 유지, 주 150분 유산소+주2회 근력, 총열량·야식 관리.", aliases: ["bmi", "체질량", "비만도", "비만지수"] },
+  { key: "waist", name: "허리둘레", unit: "cm", ref: { m: [0, 90], f: [0, 85] }, cat: "비만", dz: "복부비만",
+    mean: "복부비만(내장지방) 지표입니다. 남 90cm·여 85cm 이상은 복부비만입니다.",
+    hi: "복부비만은 내장지방 과다를 뜻하며 대사증후군·심혈관질환·당뇨의 핵심 위험요인입니다.",
+    tip: "유산소 운동, 정제탄수·음주 절제, 허리둘레 정기 측정.", aliases: ["허리둘레", "복부", "내장지방", "복부비만"] },
+
+  /* ── 혈압 ── */
+  { key: "sbp", name: "수축기혈압", unit: "mmHg", ref: [0, 120], cat: "혈압", dz: "고혈압",
+    bands: [["정상", 0, 120], ["주의(고혈압전단계)", 120, 140], ["위험(고혈압)", 140, null]],
+    mean: "심장이 수축할 때의 최고 혈압입니다.", hi: "140 이상이 지속되면 고혈압으로, 뇌졸중·심근경색·신장질환 위험이 커집니다.",
+    tip: "저염식(하루 소금<5g), 체중감량, 유산소 운동, 절주·금연, 가정혈압 측정.", aliases: ["수축기", "최고혈압", "혈압", "고혈압"] },
+  { key: "dbp", name: "이완기혈압", unit: "mmHg", ref: [0, 80], cat: "혈압", dz: "고혈압",
+    bands: [["정상", 0, 80], ["주의(고혈압전단계)", 80, 90], ["위험(고혈압)", 90, null]],
+    mean: "심장이 이완할 때의 최저 혈압입니다.", hi: "90 이상이 지속되면 고혈압입니다.",
+    tip: "저염식·체중감량·규칙적 운동·절주.", aliases: ["이완기", "최저혈압"] },
+
+  /* ── 당뇨 ── */
+  { key: "fbs", name: "공복혈당(FBS)", unit: "mg/dL", ref: [70, 99], cat: "당뇨", dz: "당뇨병",
+    bands: [["정상", 0, 100], ["주의(공복혈당장애)", 100, 126], ["위험(당뇨의심)", 126, null]],
+    mean: "8시간 이상 공복 후 측정한 혈당입니다.", hi: "100~125는 공복혈당장애(당뇨 전단계), 126 이상은 당뇨병 의심입니다.",
+    tip: "정제탄수·단순당 줄이기, 식후 걷기, 체중 5~7% 감량, 규칙적 식사.", aliases: ["공복혈당", "혈당", "당뇨", "fbs", "당"] },
+  { key: "hba1c", name: "당화혈색소(HbA1c)", unit: "%", ref: [4.0, 5.6], cat: "당뇨", dz: "당뇨병",
+    bands: [["정상", 0, 5.7], ["주의(당뇨전단계)", 5.7, 6.5], ["위험(당뇨)", 6.5, null]],
+    mean: "최근 2~3개월 평균 혈당을 반영합니다.", hi: "5.7~6.4%는 당뇨 전단계, 6.5% 이상은 당뇨병 진단 기준입니다.",
+    tip: "저당·고식이섬유 식사, 유산소+근력, 정기 혈당·당화혈색소 추적.", aliases: ["당화혈색소", "hba1c", "a1c", "당화"] },
+
+  /* ── 이상지질혈증 ── */
+  { key: "tc", name: "총콜레스테롤", unit: "mg/dL", ref: [0, 199], cat: "지질", dz: "이상지질혈증",
+    bands: [["정상", 0, 200], ["주의(경계)", 200, 240], ["위험(고콜레스테롤)", 240, null]],
+    mean: "혈중 총콜레스테롤 농도입니다.", hi: "240 이상은 고콜레스테롤혈증으로 동맥경화·심뇌혈관질환 위험을 높입니다.",
+    tip: "포화지방·트랜스지방 줄이기, 식이섬유·등푸른생선, 유산소 운동, 필요시 약물.", aliases: ["총콜레스테롤", "콜레스테롤", "고지혈", "고지혈증", "이상지질"] },
+  { key: "tg", name: "중성지방(TG)", unit: "mg/dL", ref: [0, 149], cat: "지질", dz: "이상지질혈증",
+    bands: [["정상", 0, 150], ["주의(경계)", 150, 200], ["위험(고중성지방)", 200, null]],
+    mean: "혈중 중성지방 농도로, 음주·당질 섭취에 민감합니다.", hi: "200 이상은 췌장염·심혈관 위험과 연관됩니다.",
+    tip: "금주·절주, 단순당·정제탄수 줄이기, 체중감량, 오메가-3.", aliases: ["중성지방", "tg", "트리글리세라이드"] },
+  { key: "hdl", name: "HDL 콜레스테롤", unit: "mg/dL", ref: { m: [40, 999], f: [50, 999] }, cat: "지질", dz: "이상지질혈증", lowIsBad: true,
+    mean: "'좋은 콜레스테롤'로 높을수록 심혈관 보호적입니다.", lo: "남 40·여 50 미만은 낮은 HDL로 심혈관 위험이 증가합니다.",
+    tip: "유산소 운동, 금연, 견과류·올리브유 등 건강한 지방.", aliases: ["hdl", "좋은 콜레스테롤"] },
+  { key: "ldl", name: "LDL 콜레스테롤", unit: "mg/dL", ref: [0, 129], cat: "지질", dz: "이상지질혈증",
+    bands: [["정상", 0, 130], ["주의(경계)", 130, 160], ["위험(높음)", 160, null]],
+    mean: "'나쁜 콜레스테롤'로 동맥경화의 주범입니다.", hi: "위험군은 130 미만, 고위험은 100 미만 관리가 권장됩니다.",
+    tip: "포화지방 제한, 체중·복부비만 관리, 필요시 스타틴 상담.", aliases: ["ldl", "나쁜 콜레스테롤", "저밀도"] },
+
+  /* ── 간기능 ── */
+  { key: "ast", name: "AST(SGOT)", unit: "IU/L", ref: [0, 40], cat: "간", dz: "간질환",
+    mean: "간·근육 세포 손상 시 상승하는 효소입니다.", hi: "지속 상승은 지방간·간염·간손상을 시사하므로 추적이 필요합니다.",
+    tip: "금주, 체중감량, 약물·건강기능식품 남용 주의, 간초음파 병행.", aliases: ["ast", "sgot", "간수치", "간기능"] },
+  { key: "alt", name: "ALT(SGPT)", unit: "IU/L", ref: [0, 35], cat: "간", dz: "간질환",
+    mean: "간 특이적 효소로 간세포 손상을 민감하게 반영합니다.", hi: "상승 시 지방간·바이러스간염 등 간기능 이상 확인이 필요합니다.",
+    tip: "금주, 체중·지방간 관리, 간염 항체 확인, 간초음파.", aliases: ["alt", "sgpt"] },
+  { key: "ggtp", name: "감마지티피(γ-GTP)", unit: "IU/L", ref: { m: [0, 63], f: [0, 35] }, cat: "간", dz: "간질환",
+    mean: "음주·담도 이상에 민감한 간효소입니다.", hi: "상승은 알코올성 간질환·담도 이상과 연관됩니다.",
+    tip: "금주·절주, 담도·지방간 확인.", aliases: ["gtp", "감마", "ggtp", "감마지티피"] },
+
+  /* ── 신장기능 ── */
+  { key: "cr", name: "혈청 크레아티닌", unit: "mg/dL", ref: [0.5, 1.5], cat: "신장", dz: "만성콩팥병",
+    mean: "신장 노폐물 배설 지표입니다.", hi: "상승은 신기능 저하를 시사합니다(eGFR와 함께 해석).",
+    tip: "혈압·혈당 관리, 진통제 남용 주의, 수분 섭취, 정기 추적.", aliases: ["크레아티닌", "creatinine", "신장수치"] },
+  { key: "egfr", name: "사구체여과율(eGFR)", unit: "mL/min/1.73㎡", ref: [60, 999], cat: "신장", dz: "만성콩팥병", lowIsBad: true,
+    mean: "신장이 노폐물을 거르는 능력입니다.", lo: "60 미만이 3개월 이상 지속되면 만성콩팥병을 의심합니다.",
+    tip: "혈압·혈당·체중 관리, 저염·적정단백, 신장내과 추적.", aliases: ["egfr", "사구체", "여과율", "신사구체"] },
+
+  /* ── 빈혈 / CBC ── */
+  { key: "hb", name: "혈색소(Hb)", unit: "g/dL", ref: { m: [13, 16.5], f: [12, 15.5] }, cat: "혈액", dz: "빈혈", both: true,
+    mean: "적혈구의 산소운반 단백질입니다.", lo: "낮으면 빈혈, 어지럼·피로·창백을 유발합니다.", hi: "이상 증가(적혈구증다증)는 탈수·흡연·골수질환 확인이 필요합니다.",
+    tip: "빈혈: 철분·엽산·B12 보충; 증다증: 금연·수분·원인 확인.", aliases: ["혈색소", "헤모글로빈", "hb", "빈혈"] },
+  { key: "plt", name: "혈소판(Platelet)", unit: "10³/uL", ref: [148, 371], cat: "혈액", dz: "혈액질환",
+    mean: "지혈에 관여하는 세포입니다.", lo: "감소 시 출혈경향, 증가 시 혈전경향을 볼 수 있습니다.",
+    tip: "이상 시 혈액내과 상담.", aliases: ["혈소판", "platelet", "plt"] },
+
+  /* ── 요산 / 전해질 ── */
+  { key: "ua", name: "요산(Uric acid)", unit: "mg/dL", ref: [3.5, 7.2], cat: "대사", dz: "통풍",
+    mean: "퓨린 대사 산물로, 높으면 통풍·요로결석 위험이 있습니다.", hi: "7.0 이상 지속 시 통풍·결석 위험이 커집니다.",
+    tip: "과음·내장·붉은고기·과당 줄이기, 수분 섭취, 체중관리.", aliases: ["요산", "통풍", "uric"] },
+
+  /* ── 갑상선 ── */
+  { key: "tsh", name: "갑상선자극호르몬(TSH)", unit: "uIU/mL", ref: [0.35, 5.5], cat: "갑상선", dz: "갑상선질환",
+    mean: "갑상선 기능을 조절하는 호르몬입니다.", hi: "상승은 갑상선기능저하", lo: "감소는 갑상선기능항진을 시사합니다.",
+    tip: "이상 시 Free T4와 함께 내분비내과 상담.", aliases: ["tsh", "갑상선자극", "갑상선"] },
+
+  /* ── 종양표지자 ── */
+  { key: "psa", name: "전립선특이항원(PSA)", unit: "ng/mL", ref: [0, 3.0], cat: "종양표지자", dz: "전립선암", male: true,
+    mean: "전립선암 선별 표지자입니다.", hi: "3.0(또는 4.0) 초과 시 비뇨의학과 추가검사가 권장됩니다.",
+    tip: "50세 이상(가족력 시 45세) 정기 확인, 이상 시 전립선초음파·조직검사 상담.", aliases: ["psa", "전립선", "전립선암"] },
+  { key: "cea", name: "암태아성항원(CEA)", unit: "ng/mL", ref: [0, 4.1], cat: "종양표지자", dz: "대장암",
+    mean: "대장암 등에서 상승할 수 있는 표지자입니다(흡연자 상승 가능).", hi: "상승 시 대장내시경 등 원인 확인이 필요합니다.",
+    tip: "표지자만으로 진단 불가 — 대장내시경 등 정밀검사 병행.", aliases: ["cea", "암태아성"] },
+  { key: "afp", name: "알파태아단백(AFP)", unit: "ng/mL", ref: [0, 10.9], cat: "종양표지자", dz: "간암",
+    mean: "간암 선별 표지자입니다.", hi: "상승 시 간초음파 등 정밀검사가 필요합니다.",
+    tip: "만성 B/C형간염·간경변 고위험군은 6개월마다 간초음파+AFP.", aliases: ["afp", "알파태아", "간암표지자"] },
+  { key: "ca199", name: "당쇄항원(CA 19-9)", unit: "U/mL", ref: [0, 34], cat: "종양표지자", dz: "췌장암",
+    mean: "췌장·담도암에서 상승할 수 있는 표지자입니다.", hi: "상승 시 복부 영상(초음파·CT) 확인이 필요합니다.",
+    tip: "표지자 단독 진단 불가 — 고위험군은 초음파내시경 상담.", aliases: ["ca19-9", "ca199", "당쇄항원", "췌장암표지자"] },
+];
+
+/* 국가 암검진 대상·주기 (성별·연령) — 이해 지식 */
+const CANCER_SCREENING = [
+  { name: "위암", method: "위내시경(또는 위장조영)", start: 40, cycle: "2년", who: "40세 이상 남녀", note: "우리나라 암 발생 상위. 조기 발견 시 내시경 치료로 완치 가능." },
+  { name: "대장암", method: "분변잠혈검사→(양성 시)대장내시경", start: 50, cycle: "1년(분변잠혈)", who: "50세 이상 남녀", note: "분변잠혈 양성 시 대장내시경. 체중감소·혈변·대변굵기 변화 시 즉시 진료." },
+  { name: "간암", method: "간초음파+AFP", start: 40, cycle: "6개월", who: "40세 이상 고위험군(B·C형간염, 간경변)", note: "간기능 수치만으로 조기발견 어려움 — 초음파 병행." },
+  { name: "유방암", method: "유방촬영술(맘모그래피)", start: 40, cycle: "2년", who: "40세 이상 여성", note: "치밀유방은 유방초음파 병행 고려." },
+  { name: "자궁경부암", method: "자궁경부세포검사", start: 20, cycle: "2년", who: "20세 이상 여성", note: "HPV 백신·정기검진으로 예방 가능." },
+  { name: "폐암", method: "저선량 흉부CT", start: 54, cycle: "2년", who: "54~74세 고위험 흡연자(30갑년 이상)", note: "금연이 최선의 예방. 흡연력 비례해 위험 증가." },
+];
+
+/* 판정 등급 의미 (국가검진 결과통보서) */
+const NAT_GRADES = {
+  "정상A": "건강이 양호합니다. 다음 정기검진까지 현재 생활습관을 유지하세요.",
+  "정상B": "경미한 이상이 있으나 질환은 아닙니다(경계). 생활습관 관리로 정상 회복이 가능합니다.",
+  "일반질환의심": "고혈압·당뇨 이외 질환이 의심됩니다. 해당 진료과 확인이 필요합니다.",
+  "고혈압·당뇨병 질환의심": "고혈압 또는 당뇨병이 의심됩니다. 2차 확진검사가 필요합니다.",
+  "유질환자": "이미 진단된 만성질환이 있어 지속 관리·치료가 필요합니다.",
+};
+
+/* 건강분석리포트 위험도 등급 */
+const DISEASE_RISK_GRADES = ["양호", "보통", "관심", "주의", "경계", "경고", "위험", "고위험"]; // 8등급
+const CANCER_RISK_GRADES = ["양호", "주의", "경고", "위험", "고위험"]; // 5등급
+
+/* ── 검진 이해 교육 지식베이스 (이해자료 2종 + 리포트 서문 기반) ── */
+const CHECKUP_EDU = {
+  purpose: {
+    title: "종합건강검진의 목적",
+    body: "종합검진은 증상이 없는 상태에서 만성질환·암·대사이상을 조기에 발견해 '치료'가 아닌 '예방·관리'로 전환하기 위한 것입니다. 잘못된 식생활·음주·흡연으로 당뇨·고혈압·심장질환·고지혈증·암 발병률이 증가하는 만큼, 정기검진과 생활습관 교정이 핵심입니다.",
+  },
+  diet5: { title: "건강한 식생활 5원칙",
+    items: ["① 거르지 않고 규칙적으로", "② 알맞게(과식 금지)", "③ 위생적으로", "④ 골고루", "⑤ 싱겁게(저염)"] },
+  cancer15: { title: "암예방 생활수칙(요약)",
+    items: ["편식 없이 균형식", "같은 음식 반복 섭취 피하기", "과식 피하기", "과음 삼가(구강·인두·식도·간암 연관)", "금연·간접흡연 회피", "비타민 A·C·E와 식이섬유는 음식으로", "짜고 맵고 뜨거운 음식 피하기", "탄 음식·가공육 줄이기", "적정 체중 유지", "규칙적 운동", "정기 암검진 수검"] },
+  body: {
+    title: "체성분 불균형은 만병의 근원",
+    intro: "인체는 체수분·단백질·무기질·체지방 4가지로 구성됩니다. 체지방 과다→비만, 체수분 불균형→부종, 무기질 부족→골다공증, 단백질 부족→영양결핍으로 나타납니다.",
+    items: [
+      "골격근-지방: 체중·골격근량·체지방량의 비율이 중요. 골격근량 그래프가 볼록한 'D자(강인)형'이 건강형.",
+      "비만진단: BMI(겉보기)·체지방률·복부지방률(WHR 남0.90·여0.85 이상 복부비만). 복부비만은 내장지방 과다로 대사질환 유발.",
+      "내장지방(VFA): 복부 내장지방 단면적. 증가 시 비만·신체노화·생활습관병 위험 상승.",
+      "부종(Edema): 총체수분 대비 세포외수분 비율. 정상 이상은 부종으로 의사 상담 필요.",
+      "신체발달(Fitness Score): 90↑ 강인형 · 70~90 건강형 · 70↓ 운동·식이조절 필요.",
+      "기초대사량(BMR): 생명 유지 최소 에너지. 근육량이 많을수록 높아 체중관리에 유리.",
+    ],
+  },
+  bioAge: {
+    title: "생체나이란",
+    body: "생체나이는 비만체형·심장·간·췌장·신장 나이를 종합해 '나이'로 표현한 건강지표입니다. 주민등록나이보다 많으면 동년배 대비 노화가 빠른 것으로, 질병·암 발생 위험과 의료비 예측의 기준이 됩니다. 노화속도가 1보다 크면 평균보다 빠른 상태입니다.",
+  },
+};
+
+/* 리포트 근거 문구 */
+const REPORT_SRC = "메디에이지연구소 프롬에이지 Premium(국민건강보험공단 1,000만 명 11년 코호트 + 연세의료원 16만 명 코호트 기반)";
+const NAT_SRC = "국민건강보험공단 국가건강검진";
+const COMP_SRC = "종합건강진단결과표(검진기관 실측)";
+
+/* ═══════════════════════════════════════════════════════════════════════
+   회원별 검진데이터 생성기 + AI 상담엔진(RAG)
+   · genMemberCheckup(m) → { nat(국가건강검진 결과통보서), comp(종합건강진단결과표) }
+     (건강분석리포트는 demoReport(m)를 재사용 — 이미 회원별 생성됨)
+   · memberCheckupCounsel(text, m) → 로그인 회원의 '내 검진 결과' 항목별 상담
+   · checkupEduCounsel(text) → 검진 이해(종합검진 목적·체성분·생체나이·암예방·항목기준)
+   결정론적: 회원 id/email 시드 → 재현 가능. 값은 회원 위험프로필과 정합.
+   ⚠️ 교육·안내 목적. 실제 판정·진단은 검진기관 의사 소견을 따릅니다.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── 결정론적 난수 ── */
+function _chkSeed(s) { let h = 2166136261; s = String(s || "x"); for (let i = 0; i < s.length; i++) { h = (h ^ s.charCodeAt(i)) >>> 0; h = (h * 16777619) >>> 0; } return h >>> 0; }
+function _chkRng(seed) { let h = seed >>> 0; return () => { h = (h * 1103515245 + 12345) >>> 0; return h / 4294967296; }; }
+function _chkR(rng, lo, hi, dec) { const v = lo + (hi - lo) * rng(); const f = Math.pow(10, dec || 0); return Math.round(v * f) / f; }
+
+/* ── 항목별 sev(0정상·1주의·2위험) → 값 범위 [lo,hi,소수] ── */
+const _CHK_RANGE = {
+  bmi: [[20, 24.4, 1], [25, 27.5, 1], [28, 33, 1]],
+  waist: { m: [[76, 88, 0], [90, 95, 0], [96, 105, 0]], f: [[70, 80, 0], [85, 90, 0], [91, 99, 0]] },
+  sbp: [[106, 119, 0], [122, 136, 0], [142, 159, 0]],
+  dbp: [[66, 79, 0], [82, 89, 0], [92, 102, 0]],
+  fbs: [[82, 98, 0], [102, 118, 0], [128, 158, 0]],
+  hba1c: [[4.9, 5.6, 1], [5.8, 6.3, 1], [6.6, 8.0, 1]],
+  tc: [[158, 196, 0], [204, 236, 0], [244, 286, 0]],
+  tg: [[68, 142, 0], [154, 196, 0], [212, 330, 0]],
+  hdl: { m: [[44, 62, 0], [36, 42, 0], [30, 36, 0]], f: [[54, 72, 0], [44, 49, 0], [38, 44, 0]] },
+  ldl: [[88, 126, 0], [132, 157, 0], [162, 198, 0]],
+  ast: [[18, 34, 0], [43, 66, 0], [72, 120, 0]],
+  alt: [[15, 33, 0], [40, 60, 0], [66, 110, 0]],
+  ggtp: { m: [[15, 55, 0], [70, 110, 0], [130, 240, 0]], f: [[11, 30, 0], [40, 68, 0], [80, 160, 0]] },
+  cr: [[0.7, 1.2, 1], [1.3, 1.5, 1], [1.6, 2.4, 1]],
+  egfr: [[78, 112, 0], [58, 66, 0], [34, 54, 0]],
+  hb: { m: [[14, 16.2, 1], [12.4, 13.0, 1], [10.0, 12.2, 1]], f: [[12.6, 15.0, 1], [11.2, 11.9, 1], [9.4, 11.0, 1]] },
+  plt: [[180, 320, 0], [132, 148, 0], [95, 125, 0]],
+  ua: [[4.0, 6.7, 1], [7.1, 7.5, 1], [7.8, 9.2, 1]],
+  tsh: [[0.7, 4.4, 2], [5.6, 7.0, 2], [0.05, 0.30, 2]],
+  psa: [[0.4, 2.5, 1], [3.3, 4.9, 1], [5.5, 8.0, 1]],
+  cea: [[0.6, 3.8, 1], [4.4, 6.5, 1], [7.5, 12, 1]],
+  afp: [[1.5, 8.5, 1], [12, 19, 1], [25, 60, 1]],
+  ca199: [[5, 30, 0], [38, 58, 0], [70, 150, 0]],
+};
+
+function _hrdHas(m, k) { return (m.highRiskDiseases || []).some((d) => d.indexOf(k) >= 0); }
+function _hrcHas(m, k) { return (m.highRiskCancerTypes || []).some((c) => c.indexOf(k) >= 0); }
+
+/* 회원 위험프로필 → 항목 severity */
+function _chkSev(key, m) {
+  const olderOrgan = (age) => (typeof age === "number" && typeof m.regAge === "number") ? (age > m.regAge + 6 ? 2 : age > m.regAge + 2 ? 1 : 0) : 0;
+  switch (key) {
+    case "sbp": case "dbp": return _hrdHas(m, "고혈압") ? 2 : olderOrgan(m.heartAge);
+    case "fbs": case "hba1c": return _hrdHas(m, "당뇨") ? 2 : olderOrgan(m.pancreasAge);
+    case "tc": case "tg": case "ldl": return (_hrdHas(m, "고지혈") || _hrdHas(m, "이상지질")) ? 2 : (_hrdHas(m, "지방간") ? 1 : olderOrgan(m.heartAge) ? 1 : 0);
+    case "hdl": return (_hrdHas(m, "고지혈") || _hrdHas(m, "이상지질")) ? 1 : 0;
+    case "ast": case "alt": case "ggtp": return _hrdHas(m, "지방간") ? 2 : (_hrdHas(m, "간") ? 1 : olderOrgan(m.liverAge));
+    case "cr": case "egfr": return (_hrdHas(m, "콩팥") || _hrdHas(m, "신부전") || _hrdHas(m, "신장")) ? 2 : olderOrgan(m.kidneyAge) === 2 ? 1 : 0;
+    case "hb": return _hrdHas(m, "빈혈") ? 2 : 0;
+    case "ua": return _hrdHas(m, "통풍") ? 2 : 0;
+    case "bmi": case "waist": return olderOrgan(m.obesityAge);
+    case "tsh": return _hrdHas(m, "갑상선") ? 1 : 0;
+    case "psa": return _hrcHas(m, "전립선") ? 1 : 0;
+    case "cea": return _hrcHas(m, "대장") ? 1 : 0;
+    case "afp": return _hrcHas(m, "간") ? 1 : 0;
+    case "ca199": return _hrcHas(m, "췌장") ? 1 : 0;
+    default: return 0;
+  }
+}
+
+function _chkLabel(key, sev) {
+  if (key === "bmi") return ["정상", "과체중", "비만"][sev];
+  if (key === "waist") return ["정상", "복부비만 경계", "복부비만"][sev];
+  return ["정상", "주의", "위험"][sev];
+}
+function _chkEmoji(sev) { return ["✅", "⚠️", "🚨"][sev]; }
+function _refStr(item, sex) {
+  const r = item.ref;
+  if (Array.isArray(r)) { if (item.lowIsBad) return `${r[0]}${item.unit} 이상`; if (r[0] === 0) return `${r[1]}${item.unit} 이하`; return `${r[0]}~${r[1]}${item.unit}`; }
+  const rr = r[sex] || r.m; if (item.lowIsBad) return `${sex === "f" ? "여" : "남"} ${rr[0]}${item.unit} 이상`; return `${sex === "f" ? "여" : "남"} ${rr[0]}~${rr[1]}${item.unit}`;
+}
+
+/* ── 회원별 국가검진(nat) + 종합검진(comp) 생성 (캐시) ── */
+function genMemberCheckup(m) {
+  if (!m) return null;
+  if (m._chk) return m._chk;
+  const sex = m.sex === "여" ? "f" : "m";
+  const rng = _chkRng(_chkSeed(m.id || m.email || m.name));
+  const items = {};
+  (typeof CHECKUP_ITEMS !== "undefined" ? CHECKUP_ITEMS : []).forEach((it) => {
+    if (it.male && sex === "f") return;
+    if (it.female && sex === "m") return;
+    const sev = _chkSev(it.key, m);
+    const rspec = _CHK_RANGE[it.key];
+    let band;
+    if (!rspec) band = null;
+    else band = Array.isArray(rspec[0]) ? rspec[Math.min(sev, rspec.length - 1)] : (rspec[sex] || rspec.m)[Math.min(sev, 2)];
+    const value = band ? _chkR(rng, band[0], band[1], band[2]) : null;
+    items[it.key] = { key: it.key, name: it.name, value, unit: it.unit, sev, label: _chkLabel(it.key, sev), ref: _refStr(it, sex), item: it };
+  });
+  // 국가검진 판정
+  const HRD = m.highRiskDiseases || [];
+  const bpDmRisk = (items.sbp && items.sbp.sev === 2) || (items.fbs && items.fbs.sev === 2);
+  const anyRisk1 = Object.keys(items).some((k) => items[k].sev >= 1);
+  let grade;
+  if (HRD.length) grade = "유질환자";
+  else if (bpDmRisk) grade = "고혈압·당뇨병 질환의심";
+  else if (anyRisk1) grade = "정상B";
+  else grade = "정상A";
+  // 생활습관 문진(관리포인트 기반)
+  const mp = (m.managementPoints || []).join(" ");
+  const life = [];
+  if (/금연|흡연|담배/.test(mp) || _hrcHas(m, "폐")) life.push("금연 필요");
+  if (/절주|음주|금주/.test(mp)) life.push("절주 필요");
+  if (/운동|유산소|신체활동|근력/.test(mp) || (items.bmi && items.bmi.sev >= 1)) life.push("신체활동 필요");
+  // 종합검진 소견(이상항목 요약)
+  const abn = Object.keys(items).filter((k) => items[k].sev >= 1).map((k) => `${items[k].name} ${items[k].label}`);
+  const nat = { grade, gradeDesc: (typeof NAT_GRADES !== "undefined" && NAT_GRADES[grade]) || "", diseases: HRD.slice(), life, date: "최근 검진", src: typeof NAT_SRC !== "undefined" ? NAT_SRC : "국가건강검진" };
+  const comp = { abnormals: abn, src: typeof COMP_SRC !== "undefined" ? COMP_SRC : "종합건강진단결과표" };
+  m._chk = { items, sex, nat, comp };
+  return m._chk;
+}
+
+/* ── 항목 매칭 ── */
+function _matchItem(text) {
+  const t = String(text).toLowerCase();
+  let best = null;
+  (typeof CHECKUP_ITEMS !== "undefined" ? CHECKUP_ITEMS : []).forEach((it) => {
+    (it.aliases || []).forEach((a) => { if (t.includes(a.toLowerCase()) && (!best || a.length > best.a.length)) best = { it, a }; });
+  });
+  return best ? best.it : null;
+}
+
+/* ── 로그인 회원 '내 검진 결과' 상담 ── */
+function memberCheckupCounsel(text, m) {
+  if (!m || typeof CHECKUP_ITEMS === "undefined") return null;
+  const raw = String(text || "");
+  if (/\d{2,}/.test(raw)) return null;                       // 수치 직접 입력 → kbCheckupCounsel 담당
+  if (/뭐야|뭔가|정의|이란|란\?|무엇인가/.test(raw)) return null; // 정의 질의 → 교육/질환 KB 담당
+  if (/위험|예방|증상|합병증|생활습관|식단|운동|보험|영양제|추천/.test(raw)) return null; // 위험도·예방·증상 등은 타 엔진(리포트/질환KB)
+  const chk = genMemberCheckup(m);
+
+  // 검진 결과 종합 요약
+  if (/검진.*결과.*요약|결과.*요약|검진 요약|내 검진|국가검진 결과|종합검진 결과|검진결과 요약|검진 판정/.test(raw)) {
+    const N = m.name || "회원";
+    const R = (typeof demoReport === "function") ? demoReport(m) : null;
+    const abn = chk.comp.abnormals;
+    const lines = [
+      `📋 ${N}님 검진 결과 요약`,
+      `• 국가건강검진 판정: 「${chk.nat.grade}」 — ${chk.nat.gradeDesc}`,
+      abn.length ? `• 주의·이상 항목: ${abn.join(" · ")}` : `• 종합검진 주요 항목 모두 정상 범위입니다.`,
+      chk.nat.life.length ? `• 생활습관 관리: ${chk.nat.life.join(" · ")}` : null,
+      R ? `• 생체나이 ${R.bio}세(주민등록 ${R.reg}세, ${R.diff <= 0 ? R.diff + "세" : "+" + R.diff + "세"}) · 암위험 ${R.cancerTotal}등급(${R.evalLabel})` : null,
+      R ? `• 올해 예상 의료비 약 ${Number(R.costThis).toLocaleString("ko-KR")}원` : null,
+    ].filter(Boolean);
+    const drills = abn.slice(0, 2).map((s) => { const it = _matchItem(s); return it ? `내 ${it.name.split("(")[0]} 결과` : null; }).filter(Boolean);
+    return {
+      bubbles: [
+        { kind: "text", text: lines.join("\n") + `\n📚 근거: ${chk.nat.src} · ${chk.comp.src} · ${typeof REPORT_SRC !== "undefined" ? REPORT_SRC : "건강분석리포트"} (회원 검진데이터 RAG)` },
+        { kind: "card", card: { title: `🩺 ${N}님 사후관리 제안`, items: [chk.nat.grade === "유질환자" ? "진단된 만성질환은 정기 추적·복약 관리가 중요해요." : "정기검진 주기를 지키며 생활습관을 관리하세요.", "이상 항목은 아래 버튼으로 항목별 해석을 확인하세요.", "고위험 항목은 관련 건강미션·보장 안내로 이어드려요."], buttons: [...drills, "내 생체나이는?"].slice(0, 3) } },
+      ],
+      quicks: [...drills, "내 의료비 예측", "내가 가장 조심해야 할 암은?"].filter(Boolean).slice(0, 4),
+    };
+  }
+
+  // 항목별 결과 (결과 단서 필요)
+  const it = _matchItem(raw);
+  if (!it) return null;
+  const cue = /결과|판정|수치|어때|어떤가|어떠|괜찮|해석|정상|기준|범위|의미|나왔|나온|어땠|내\s|제\s|나의|본인/.test(raw);
+  if (!cue) return null;
+  if (it.male && chk.sex === "f") return null;
+  const row = chk.items[it.key];
+  if (!row || row.value == null) return null;
+  const N = m.name || "회원";
+  const emoji = _chkEmoji(row.sev);
+  const interp = row.sev === 0 ? "현재 정상 범위입니다. 잘 유지하고 계세요. 👍" : (it.lowIsBad ? it.lo : it.hi);
+  const cardItems = [`🎯 관리: ${it.tip}`, `🔗 관련 질환: ${it.dz}`];
+  if (row.sev >= 1) cardItems.push("관련 건강미션·보장 안내를 이어서 받아보실 수 있어요.");
+  const btns = [`${it.dz} 생활습관 관리법은?`];
+  if (row.sev >= 1) btns.push(`${it.dz} 대비 보험`); else btns.push("내 검진 결과 요약");
+  return {
+    bubbles: [
+      { kind: "text", text: `${emoji} ${N}님 ${it.name}: ${row.value}${it.unit} → 「${row.label}」 (참고치 ${row.ref})\n${it.mean}\n${interp}\n📚 근거: ${chk.comp.src} · 회원 검진데이터 · 참고치 국민건강보험공단·대한검진의학회` },
+      { kind: "card", card: { title: `🩺 ${it.name} 관리 가이드`, items: cardItems, buttons: btns } },
+    ],
+    quicks: [`${it.dz} 생활습관 관리법은?`, "내 검진 결과 요약", row.sev >= 1 ? `${it.dz} 대비 보험` : "내 생체나이는?"].slice(0, 3),
+  };
+}
+
+/* ── 검진 이해 교육 상담(회원 불필요) ── */
+function checkupEduCounsel(text) {
+  if (typeof CHECKUP_EDU === "undefined") return null;
+  const t = String(text || "");
+  const E = CHECKUP_EDU;
+  const cite = (extra) => `\n📚 근거: 종합검진 목적·결과 이해 자료 · 체성분 자료(InBody) · 대한검진의학회${extra ? " · " + extra : ""}`;
+
+  // 종합검진 목적
+  if (/종합검진.*(왜|목적|이유|필요)|검진.*(왜 받|왜 해야|목적|필요한 이유)|건강검진.*(왜|목적)/.test(t)) {
+    return { bubbles: [{ kind: "text", text: `${E.purpose.title}\n${E.purpose.body}${cite()}` }, { kind: "card", card: { title: "🩺 정기검진 권장", items: ["국가건강검진: 만 20세 이상 2년마다(비사무직 매년)", "종합검진: 40세 전후부터 생활습관병·암 조기발견 목적", "이상 소견은 권고 주기보다 자주 정밀검진 권장"], buttons: ["체성분이 뭐예요?", "암검진 주기 알려줘"] } }], quicks: ["체성분이 뭐예요?", "생체나이란?", "암 예방 수칙", "내 검진 결과 요약"] };
+  }
+  // 체성분 / 내장지방 / 부종 / 골격근 / 신체발달 / 기초대사
+  if (/체성분|내장지방|부종|골격근|체지방률|신체발달|기초대사|inbody|인바디|복부지방/i.test(t)) {
+    return { bubbles: [{ kind: "text", text: `${E.body.title}\n${E.body.intro}${cite()}` }, { kind: "card", card: { title: "🧬 체성분 핵심 개념", items: E.body.items, buttons: ["비만 관리법은?", "내 검진 결과 요약"] } }], quicks: ["종합검진 왜 받아요?", "생체나이란?", "비만 생활습관 관리법은?", "내 검진 결과 요약"] };
+  }
+  // 생체나이
+  if (/생체나이란|생체나이.*(뭐|무엇|의미|개념)|노화속도|노화등수/.test(t)) {
+    return { bubbles: [{ kind: "text", text: `${E.bioAge.title}\n${E.bioAge.body}${cite(typeof REPORT_SRC !== "undefined" ? REPORT_SRC : "")}` }, { kind: "card", card: { title: "⏳ 생체나이 구성", items: ["비만체형·심장·간·췌장·신장 나이를 종합", "주민등록나이보다 많으면 노화가 빠른 것", "질병·암 위험도와 의료비 예측의 기준"], buttons: ["내 생체나이는?", "내 검진 결과 요약"] } }], quicks: ["내 생체나이는?", "체성분이 뭐예요?", "종합검진 왜 받아요?"] };
+  }
+  // 암예방 수칙
+  if (/암\s*예방|암예방|예방\s*수칙|암.*생활수칙|식생활.*원칙|건강.*식습관/.test(t)) {
+    return { bubbles: [{ kind: "text", text: `${E.cancer15.title}${cite()}` }, { kind: "card", card: { title: "🥗 암예방·건강식생활", items: [...E.cancer15.items.slice(0, 8), "─ 건강한 식생활 5원칙 ─", ...E.diet5.items], buttons: ["종합검진 왜 받아요?", "암검진 주기 알려줘"] } }], quicks: ["암검진 주기 알려줘", "체성분이 뭐예요?", "종합검진 왜 받아요?"] };
+  }
+  // 암검진 주기
+  if (/암검진.*(주기|언제|나이|대상)|위암검진|대장암검진|유방암검진|자궁경부암검진|폐암검진|간암검진|검진.*주기/.test(t) && typeof CANCER_SCREENING !== "undefined") {
+    const items = CANCER_SCREENING.map((c) => `${c.name}: ${c.who} · ${c.method} · ${c.cycle}마다`);
+    return { bubbles: [{ kind: "text", text: `국가 암검진 대상·주기 안내입니다.${cite()}` }, { kind: "card", card: { title: "🎗️ 국가 암검진 권장", items, buttons: ["종합검진 왜 받아요?", "내 검진 결과 요약"] } }], quicks: ["종합검진 왜 받아요?", "내가 가장 조심해야 할 암은?", "체성분이 뭐예요?"] };
+  }
+  // 판정 등급 의미
+  if (/정상\s*a|정상\s*b|유질환자|질환의심|판정.*(등급|의미|뜻)|정상B가|정상A가/.test(t) && typeof NAT_GRADES !== "undefined") {
+    const items = Object.keys(NAT_GRADES).map((k) => `${k}: ${NAT_GRADES[k]}`);
+    return { bubbles: [{ kind: "text", text: `국가건강검진 판정 등급의 의미입니다.${cite()}` }, { kind: "card", card: { title: "📊 검진 판정 등급", items, buttons: ["내 검진 결과 요약", "종합검진 왜 받아요?"] } }], quicks: ["내 검진 결과 요약", "종합검진 왜 받아요?"] };
+  }
+  // 항목 기준(비로그인/일반) — 정의성 항목 질의
+  const it = _matchItem(t);
+  if (it && /(정상\s*(범위|치|수치|기준)|기준|참고치|의미|뭐|무엇|어떤 검사|이란)/.test(t)) {
+    const ref = _refStr(it, /여/.test(t) ? "f" : "m");
+    return { bubbles: [{ kind: "text", text: `${it.name} — ${it.mean}\n참고치: ${ref}\n${it.hi || it.lo || ""}${cite()}` }, { kind: "card", card: { title: `🔬 ${it.name}`, items: [`참고치: ${ref}`, `관련 질환: ${it.dz}`, `관리: ${it.tip}`], buttons: ["내 " + it.name.split("(")[0] + " 결과", "종합검진 왜 받아요?"] } }], quicks: ["내 검진 결과 요약", "체성분이 뭐예요?", "종합검진 왜 받아요?"] };
+  }
+  return null;
+}
 
 /* ====================== 온톨로지 기반 상담 엔진 ======================
    검진항목 해석 / 보험 보장 공백 분석 / 후속조치 안내 — 회원 건강리포트 연계 + AI 거버넌스.
