@@ -7449,6 +7449,21 @@ function famSynthProfile(name, age, sex, relation) {
   };
 }
 
+/* ── 본인(로그인) 프로필 — 체험회원이면 그 데이터, 게이트 사용자면 조성래 실측 리포트 기반 ── */
+function selfMember() {
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  if (dm) return dm;
+  const nm = (typeof authCurrent === "function" && authCurrent() && authCurrent().name) || (typeof PT !== "undefined" ? PT.name : "조성래");
+  const em = (typeof authCurrent === "function" && authCurrent() && authCurrent().email) || "srcho197011@hizenhealth.com";
+  return {
+    id: "self-" + (em.split("@")[0] || "user"), name: nm, email: em, sex: "남", regAge: 54,
+    biologicalAge: 52.5, obesityAge: 50.9, heartAge: 50.7, liverAge: 54.4, pancreasAge: 56.2, kidneyAge: 53.4,
+    cancerRiskGrade: 4, highRiskCancerTypes: ["췌장암"], highRiskDiseases: ["당뇨병", "지방간"], estimatedMedicalCost: 2381477,
+    managementPoints: ["금주·절주 실천", "저당 식단·혈당 모니터링", "복부 초음파(췌장·간)", "주 3회 유산소 운동"],
+    category: "일반", isDemoUser: false, realVerified: true, isSelf: true,
+  };
+}
+
 /* ── 우리가족 건강관리(구성원 탭 + 검진결과·예측의료비 한눈에) ── */
 function FamilyHealthCare({ member, onGo }) {
   const dm = member;
@@ -7678,15 +7693,12 @@ function MyPageSection({ onGo }) {
         <div className="chnote">※ DID 기반으로 제공받는 자·목적·항목을 확인하고 동의/철회할 수 있습니다. 필수 동의 철회 시 일부 서비스 이용이 제한될 수 있습니다. <b>AI 상담 기록 저장</b>은 ‘상담 기록’ 탭의 동의 상태와 연동됩니다.</div>
       </>)}
 
-      {tab === "family" && (dm ? (<>
-        <FamilyHealthCare member={dm} onGo={go} />
-        {typeof CarePlanCard === "function" && <CarePlanCard member={dm} />}
-        {typeof FamilyCareSection === "function" && <FamilyCareSection member={dm} onGo={onGo} />}
-        <div className="chnote">※ 가족 건강정보는 본인·가족의 동의(DID) 하에 공유되며, 고령 가족은 재가·돌봄 서비스와 연계됩니다. 가족 구성원 데이터는 시연용 예시입니다.</div>
-      </>) : (<>
-        <div className="bklbl" style={{ margin: "2px 0 8px" }}><Users size={14} color="#2563EB" style={{ verticalAlign: "-2px" }} /> 우리가족 건강관리 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 동의 기반 공유</span></div>
-        <div className="card"><p style={{ fontSize: 12.5, color: "var(--muted)", margin: "2px 0 10px" }}>체험 회원으로 로그인하면 가족 구성원별 건강검진 결과와 예측 의료비를 한눈에 확인할 수 있어요.</p>{typeof DemoLoginSelector === "function" && <DemoLoginSelector />}</div>
-      </>))}
+      {tab === "family" && (() => { const selfM = dm || (typeof selfMember === "function" ? selfMember() : null); return (<>
+        {selfM && <FamilyHealthCare member={selfM} onGo={go} />}
+        {selfM && typeof CarePlanCard === "function" && <CarePlanCard member={selfM} />}
+        {selfM && typeof FamilyCareSection === "function" && <FamilyCareSection member={selfM} onGo={onGo} />}
+        <div className="chnote">※ 가족 건강정보는 본인·가족의 동의(DID) 하에 공유되며, 고령 가족은 재가·돌봄 서비스와 연계됩니다. {dm ? "가족 구성원 데이터는 시연용 예시입니다." : "본인 데이터는 프롬에이지 Premium 리포트 기반, 가족 구성원은 시연용 예시입니다."}</div>
+      </>); })()}
 
       {tab === "noti" && (<>
         <div className="benefit"><span><Art name="badge" size={16} /> 카카오톡 알림</span><span><Art name="hash" size={16} /> 앱 푸시</span><span><Art name="chat" size={16} /> 문자</span></div>
@@ -7733,7 +7745,13 @@ function familyLoad(email, surname) {
   const v = lsLoad("hifin_family_" + (email || "default"), null);
   if (v) return v;
   const s = surname || "가";
-  return [{ id: "f1", name: s + "경희", relation: "배우자", age: 53 }, { id: "f2", name: s + "하준", relation: "자녀", age: 9 }, { id: "f3", name: s + "순자", relation: "부모", age: 76 }];
+  const SP = ["미영", "서연", "은정", "현숙"][((s.charCodeAt(0) || 0) % 4)];
+  return [
+    { id: "f1", name: "김" + SP, relation: "배우자", age: 52, sex: "여" },
+    { id: "f2", name: s + "하늘", relation: "자녀", age: 24, sex: "여" },
+    { id: "f3", name: s + "바다", relation: "자녀", age: 19, sex: "남" },
+    { id: "f4", name: s + "판석", relation: "부모", age: 82, sex: "남" },
+  ];
 }
 function familySave(email, list) { lsSave("hifin_family_" + (email || "default"), list); }
 function famDemoList() { return (typeof demoMembers !== "undefined" && Array.isArray(demoMembers)) ? demoMembers : []; }

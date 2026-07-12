@@ -27,7 +27,13 @@ function familyLoad(email, surname) {
   const v = lsLoad("hifin_family_" + (email || "default"), null);
   if (v) return v;
   const s = surname || "가";
-  return [{ id: "f1", name: s + "경희", relation: "배우자", age: 53 }, { id: "f2", name: s + "하준", relation: "자녀", age: 9 }, { id: "f3", name: s + "순자", relation: "부모", age: 76 }];
+  const SP = ["미영", "서연", "은정", "현숙"][((s.charCodeAt(0) || 0) % 4)];
+  return [
+    { id: "f1", name: "김" + SP, relation: "배우자", age: 52, sex: "여" },
+    { id: "f2", name: s + "하늘", relation: "자녀", age: 24, sex: "여" },
+    { id: "f3", name: s + "바다", relation: "자녀", age: 19, sex: "남" },
+    { id: "f4", name: s + "판석", relation: "부모", age: 82, sex: "남" },
+  ];
 }
 function familySave(email, list) { lsSave("hifin_family_" + (email || "default"), list); }
 function famDemoList() { return (typeof demoMembers !== "undefined" && Array.isArray(demoMembers)) ? demoMembers : []; }
