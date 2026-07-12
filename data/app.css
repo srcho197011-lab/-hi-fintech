@@ -3172,3 +3172,32 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .ckrep-cx.warn{color:#F87171;background:#2A1212;border:1px solid #5B1D1D;}
 .ckarch-src{margin-top:9px;font-size:10px;color:#6B7C99;line-height:1.5;}
 @media(max-width:600px){.ckrep-grid{grid-template-columns:1fr;}}
+
+/* ── 검진 아카이브: 도구·편집·그래프 ── */
+.ckarch-tools{display:flex;gap:5px;margin-left:auto;}
+.ckarch-tools button{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:#9DB0CE;background:#0F1B33;border:1px solid #24324D;border-radius:7px;padding:4px 9px;cursor:pointer;transition:.15s;}
+.ckarch-tools button:hover{border-color:#3B82F6;color:#CFE0FF;}
+.ckarch-tools button.on{background:#123056;color:#7DD3FC;border-color:#0EA5E9;}
+.ckedited-tag{color:#7DD3FC;font-weight:700;}
+.ckedit-bar{display:flex;align-items:center;gap:8px;background:#0C1730;border:1px solid #1E3A5F;border-radius:9px;padding:7px 11px;margin-bottom:9px;font-size:11px;color:#9DB0CE;}
+.ckedit-bar span{flex:1;}
+.ckedit-bar button{font-size:11px;font-weight:800;border-radius:7px;padding:5px 13px;cursor:pointer;border:1px solid transparent;}
+.ckedit-bar .save{background:linear-gradient(120deg,#1D4ED8,#0EA5E9);color:#fff;}
+.ckedit-bar .reset{background:#1A2740;color:#9DB0CE;border-color:#2A3B5A;}
+.ckedit-bar .reset:disabled{opacity:.4;cursor:not-allowed;}
+.ckedit-tbl input.ckedit-input{width:74px;background:#0C1730;border:1px solid #2A3B5A;border-radius:6px;color:#EAF2FF;font-size:12px;font-family:ui-monospace,Menlo,monospace;padding:4px 6px;text-align:right;}
+.ckedit-tbl input.ckedit-input:focus{border-color:#0EA5E9;outline:none;background:#0E1E3A;}
+.ckrow{cursor:pointer;}
+.ckrow.open{background:#15243f;}
+.ckchev{color:#5B6E90;vertical-align:-1px;transition:transform .18s;}
+.ckchev.r{transform:rotate(90deg);color:#38BDF8;}
+.ckdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#38BDF8;margin-left:5px;vertical-align:1px;}
+.ckchart-row td{background:#0A1428 !important;padding:0 !important;cursor:default;}
+.ckchart-wrap{padding:10px 14px 6px;}
+.ckchart-t{font-size:11px;font-weight:700;color:#B7C6E0;margin-bottom:2px;}
+.ckchart-t span{color:#7C8DAB;font-weight:500;font-size:10px;}
+.ckchart{max-width:360px;}
+.ckrep-charts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px;}
+.ckrep-chart{background:#0F1B33;border:1px solid #1E2C46;border-radius:10px;padding:9px 8px 4px;}
+.ckrep-ct{font-size:10.5px;font-weight:700;color:#9DB0CE;margin:0 0 2px 4px;}
+@media(max-width:600px){.ckrep-charts{grid-template-columns:1fr;}.ckarch-tools{width:100%;margin:6px 0 0;}}
