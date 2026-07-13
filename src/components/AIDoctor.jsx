@@ -1867,6 +1867,25 @@ function _deepFind(name) {
 function careRecSet(supp, device, dz) { try { if (typeof window !== "undefined") window._lastCareRec = { supp: (supp || []).slice(0, 8), device: (device || []).slice(0, 8), dz: dz || "" }; } catch (e) {} }
 const SHOP_SUPP_BTN = "🛒 건강쇼핑에서 성분·제품 보기";
 const SHOP_DEVICE_BTN = "🛒 홈케어 기기 보기";
+/* 홈케어 의료기기 직결 명사(질병명 아님) — GN바디닥터가 커버하는 영역을 물으면 AI상담사 대신 device 몰로 안내.
+   질병명(방광염·요실금·골관절염 등)은 질병 KB가 먼저 처리하므로 여기 미포함. */
+const GN_DEVICE_TOPICS = [
+  { keys: ["주름", "리프팅", "탄력", "안티에이징", "동안피부", "피부탄력"], area: "주름·리프팅", prod: "고주파 리페어(RF 리프팅 관리)" },
+  { keys: ["피부관리", "피부미용", "피부톤", "모공", "뷰티디바이스", "피부"], area: "피부·뷰티 케어", prod: "바디닥터 리페어(홈 뷰티 디바이스)" },
+  { keys: ["관절", "무릎관리", "무릎통증", "관절통증", "무릎"], area: "관절 통증 완화", prod: "골관절염 치료기(온열·저주파)" },
+  { keys: ["여성건강", "여성질환", "여성질병", "질건강", "골반저", "케겔", "산후회복"], area: "여성 건강·골반저 케어", prod: "요실금·골반저근 케어 기기" },
+];
+function gnDeviceCounsel(text) {
+  const t = (text || "").replace(/\s/g, "");
+  if (!t || t.length > 24) return null; // 짧은 명사형 질의만
+  const hit = GN_DEVICE_TOPICS.find((g) => g.keys.some((k) => t.includes(k)));
+  if (!hit) return null;
+  if (typeof careRecSet === "function") careRecSet([], [hit.prod], hit.area);
+  return { bubbles: [
+    { kind: "text", text: `${hit.area}에는 가정에서 쓰는 홈케어 의료기기가 도움이 될 수 있어요. 식약처·FDA 인증 가정용 의료기기 전문 브랜드 **GN바디닥터**를 먼저 안내해 드릴게요.\n※ 의료기기는 허가된 사용목적 범위에서 사용하고, 진단·치료는 의료진과 상의하세요.` },
+    { kind: "card", card: { title: "🏠 홈케어 의료기기 · GN바디닥터(제너럴네트)", items: [`추천: ${hit.prod}`, "요실금 치료기 · 고주파 리페어 · 바디닥터 리페어 · 골관절염 치료기", "식약처·FDA 인증 가정용 의료기기 전문 · 건강적립금 25%"], buttons: [SHOP_DEVICE_BTN] } },
+  ], quicks: ["🏥 병원·진료 안내", "GN바디닥터 회사 소개", "내 리포트 요약"] };
+}
 function deepCards(name) {
   const d = _deepFind(name); if (!d) return [];
   const out = [];
@@ -2001,6 +2020,8 @@ function aiRespond(text, corpus, report, QA) {
   if (typeof checkupEduCounsel === "function") { const _ec = checkupEduCounsel(text); if (_ec) return _ec; }
   // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
   if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
+  // 홈케어 의료기기 직결 명사(주름·피부·관절·여성건강) → GN바디닥터 device 몰 안내(AI상담사 우회)
+  if (typeof gnDeviceCounsel === "function") { const _gn = gnDeviceCounsel(text); if (_gn) return _gn; }
   const _topics = multiTopicCounsel(text);
   if (_topics) return _topics;
   const _organs = multiOrganCounsel(text);
@@ -2081,7 +2102,8 @@ function Chat({ superAgent, acceptsSeed }) {
     if (text === "🚨 응급신호 자가체크" || text === "🚨 응급신호 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "emergency"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === "🗂 검진 결과·사후관리 바로가기") { setPlus(false); setQuicks([]); try { _checkupTab = "result"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === DOCTOR_HANDOFF) { setPlus(false); setQuicks([]); try { _doctorSeed = lastQRef.current || null; _checkupTab = "doctor"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
-    if (text === SHOP_SUPP_BTN || text === SHOP_DEVICE_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") window._shopIntel = Object.assign({ kind: text === SHOP_DEVICE_BTN ? "device" : "supp" }, window._lastCareRec || {}); } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
+    if (text === SHOP_DEVICE_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") { window._shopGo = Object.assign({ cat: "device", brand: "GN바디닥터" }, window._lastCareRec || {}); window._shopIntel = null; } } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
+    if (text === SHOP_SUPP_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") window._shopIntel = Object.assign({ kind: "supp" }, window._lastCareRec || {}); } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
     if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }
     { const _nk = (typeof agentNavKey === "function") ? agentNavKey(text) : null; if (_nk) { setPlus(false); setQuicks([]); if (typeof nav === "function") nav(_nk); return; } }
     setInput(""); setPlus(false); setQuicks([]);

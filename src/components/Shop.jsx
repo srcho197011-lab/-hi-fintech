@@ -1387,7 +1387,9 @@ function MealShop() {
   );
 }
 function ShopSection() {
-  const [cat, setCat] = useState(() => { try { return (typeof window !== "undefined" && window._shopIntel) ? "intel" : "diet"; } catch (e) { return "diet"; } });
+  // 홈케어기기 추천 → device 탭 직행(_shopGo.cat), 성분 추천 → AI 상담사(intel), 기본 → 건강식단
+  const [cat, setCat] = useState(() => { try { if (typeof window !== "undefined") { if (window._shopGo && window._shopGo.cat) return window._shopGo.cat; if (window._shopIntel) return "intel"; } return "diet"; } catch (e) { return "diet"; } });
+  useEffect(() => { try { if (typeof window !== "undefined") window._shopGo = null; } catch (e) {} }, []);
   const cats = [["diet", "건강식단", Salad, "#16A34A"], ["supp", "영양제", Pill, "#7C3AED"], ["device", "홈케어의료기", Stethoscope, "#0891B2"], ["intel", "AI 상담사", Sparkles, "#EA580C"], ["sports", "스포츠건강", Activity, "#E11D48"]];
   return (
     <div style={{ marginTop: 16 }}>
