@@ -2733,13 +2733,52 @@ const GN_DEVICE_TOPICS = [
     tips: ["적정 체중 유지로 관절 부담을 줄여요", "저충격 운동(수영·자전거)·근력 강화", "무리한 충격·계단 과사용 주의"],
     red: "붓고 열나거나 극심한 통증이 지속되면 정형외과 진료를 받으세요.",
     dev: "온열·저주파 홈케어 기기가 통증 완화·이완에 도움이 될 수 있어요.",
-    groups: ["msk"] },
-  { keys: ["여성건강", "여성질환", "여성질병", "질건강", "골반저", "케겔", "산후회복"], area: "여성 건강·골반저 케어",
+    groups: ["msk"], care: ["관절 재활 운동"] },
+  { keys: ["여성건강", "여성질환", "여성질병", "질건강"], area: "여성 건강·골반저 케어",
     tips: ["규칙적인 골반저근(케겔) 운동", "수분·배뇨 습관 관리", "정기 부인과 검진"],
     red: "출혈·통증·발열 등 이상 증상은 병원 진료가 우선이에요.",
     dev: "골반저근 강화를 돕는 가정용 기기도 함께 활용할 수 있어요.",
-    groups: ["women"], pin: ["요실금"] },
+    groups: ["women"], pin: ["요실금"], care: ["산후관리", "갱년기 관리"] },
 ];
+/* 비질병 케어 토픽 상담 — 산후관리·골반저근·갱년기·산부인과·관절재활 등. 클릭·질의 시 전용 생활관리 상담. */
+const CARE_TOPICS = [
+  { keys: ["산후관리", "산후회복", "산후조리", "출산후", "산후"], title: "산후 관리",
+    intro: "출산 후 6~8주(산욕기)는 몸이 임신 전으로 회복되는 시기예요. 무리하지 않고 이렇게 관리하면 좋아요.",
+    tips: ["오로(분비물)는 색·양이 점점 줄어드는 게 정상 — 갑자기 늘거나 악취 나면 진료", "골반저근(케겔) 운동으로 요실금·골반 회복", "수분·단백질·철분 충분히(빈혈 예방)", "수유 시 유방 울혈·유선염 주의", "산후 6주 검진 꼭 받기"],
+    red: "대량 출혈·심한 복통·38도 이상 발열·가슴 멍울+발열·심한 우울·무기력은 바로 진료하세요.",
+    dev: "", follow: ["골반저근 관리", "방광염", "🏥 병원·진료 안내"] },
+  { keys: ["골반저", "케겔", "골반저근", "케겔운동"], title: "골반저근(케겔) 관리",
+    intro: "골반저근은 방광·자궁을 받치는 근육이에요. 꾸준히 단련하면 요실금 예방·산후 회복·골반 건강에 도움이 돼요.",
+    tips: ["소변을 참듯 항문·질을 조여 5초 유지 후 이완 — 10회 3세트/일", "배·허벅지 힘은 빼고 숨은 참지 않기", "앉아서·누워서 언제든 가능", "기침·재채기 전 미리 조이면 복압성 요실금 예방"],
+    red: "운동해도 요실금이 지속·악화되거나 골반 통증·묵직함이 심하면 비뇨의학과·산부인과 진료를 받으세요.",
+    dev: "가정용 골반저근 트레이너로 강도를 관리할 수 있어요.", follow: ["요실금", "산후관리", "🏥 병원·진료 안내"] },
+  { keys: ["갱년기", "폐경"], title: "갱년기 관리",
+    intro: "폐경 전후 호르몬 변화로 홍조·수면장애·기분변화·골밀도 감소가 올 수 있어요. 생활관리로 완화할 수 있어요.",
+    tips: ["규칙적 유산소+근력 운동(골밀도·기분)", "칼슘·비타민D·단백질 충분히", "카페인·술·매운 음식(홍조 유발) 줄이기", "수면 위생·스트레스 관리", "증상이 심하면 호르몬치료 등 전문 상담"],
+    red: "폐경 후 질출혈·심한 우울·가슴 통증은 바로 진료하세요.",
+    dev: "", follow: ["골다공증", "자궁근종", "골반저근 관리", "🏥 병원·진료 안내"] },
+  { keys: ["산부인과"], title: "산부인과 진료 안내",
+    intro: "산부인과는 여성 생식기·임신·출산·폐경 전반을 다뤄요. 이럴 때 방문하시면 좋아요.",
+    tips: ["비정상 출혈·심한 생리통·분비물 이상", "계획임신·임신 확인·산전관리", "자궁경부암 검진(만 20세↑ 2년마다)·초음파", "폐경·갱년기 증상 상담", "피임·성건강 상담"],
+    red: "심한 하복통+발열, 임신 중 출혈·복통은 바로 진료하세요.",
+    dev: "", follow: ["질염", "자궁근종", "방광염", "🏥 병원·진료 안내"] },
+  { keys: ["관절재활", "재활운동", "관절운동", "근력강화운동"], title: "관절 재활·운동 관리",
+    intro: "관절은 '안 쓰면 굳고, 무리하면 상해요'. 통증 없는 범위에서 꾸준히 움직이는 게 핵심이에요.",
+    tips: ["저충격 운동(수영·자전거·평지 걷기)", "관절 주변 근력 강화(허벅지·둔부)", "스트레칭·가동범위 운동", "온열로 이완 후 운동, 급성 통증 시 냉찜질·휴식"],
+    red: "갑작스런 심한 통증·부종·무릎이 안 펴짐(잠김)은 진료를 받으세요.",
+    dev: "온열·저주파 홈케어 기기가 이완·통증 완화에 도움이 될 수 있어요.", follow: ["골관절염", "류마티스관절염", "🏥 병원·진료 안내"] },
+];
+function careTopicCounsel(text) {
+  const t = (text || "").replace(/\s/g, ""); if (!t || t.length > 16) return null;
+  const hit = CARE_TOPICS.find((c) => c.keys.some((k) => t.includes(k))); if (!hit) return null;
+  const items = hit.tips.map((x) => `· ${x}`);
+  if (hit.dev) items.push(hit.dev);
+  if (hit.red) items.push(`🚨 ${hit.red}`);
+  return { bubbles: [
+    { kind: "text", text: `${hit.title}에 대해 알려드릴게요.\n${hit.intro}\n※ 참고용 안내이며 진단·치료를 대체하지 않아요.` },
+    { kind: "card", card: { title: `🩺 ${hit.title}`, items, buttons: hit.dev ? [SHOP_DEVICE_BTN] : [] } },
+  ], quicks: (hit.follow || ["🏥 병원·진료 안내", "내 리포트 요약"]).slice(0, 5) };
+}
 /* 주제 → 관련 질환을 질환 온톨로지(DZ_GROUPS)에서 자동 도출 — 그룹에 질환을 추가하면 유도 버튼도 자동 확장.
    pin은 그룹 경계를 넘어 임상적으로 관련된 질환(예: 여성 골반건강↔요실금)을 우선 연결. */
 function _topicDiseases(topic) {
@@ -2755,16 +2794,18 @@ function gnDeviceCounsel(text) {
   const hit = GN_DEVICE_TOPICS.find((g) => g.keys.some((k) => t.includes(k)));
   if (!hit) return null;
   if (typeof careRecSet === "function") careRecSet([], [], hit.area);
-  const dz = _topicDiseases(hit).slice(0, 4);
+  const dz = _topicDiseases(hit).slice(0, 3);
+  const care = hit.care || [];
+  const follow = dz.concat(care).concat(["🏥 병원·진료 안내"]).slice(0, 6);
   const items = hit.tips.map((x) => `· ${x}`);
   if (hit.red) items.push(`※ ${hit.red}`);
   items.push(hit.dev);
-  const picks = dz.slice(0, 3).join(" · ");
+  const picks = dz.concat(care).slice(0, 3).join(" · ");
   return { bubbles: [
     { kind: "text", text: `${hit.area}에 대해 알려드릴게요. 생활 속에서 이렇게 관리하면 도움이 돼요.\n※ 참고용 안내이며 진단·치료를 대체하지 않아요.` },
     { kind: "card", card: { title: `🩺 ${hit.area} 생활관리`, items, buttons: [SHOP_DEVICE_BTN] } },
-    { kind: "text", text: picks ? `혹시 아래 증상·질환이 궁금하시면 눌러 주세요 — 바로 자세히 상담해 드릴게요.\n(예: ${picks} 등)` : "궁금한 증상·질환을 눌러 주시면 자세히 상담해 드릴게요." },
-  ], quicks: dz.concat(["🏥 병원·진료 안내"]).slice(0, 5) };
+    { kind: "text", text: picks ? `혹시 아래 증상·관리가 궁금하시면 눌러 주세요 — 바로 자세히 상담해 드릴게요.\n(예: ${picks} 등)` : "궁금한 증상·관리를 눌러 주시면 자세히 상담해 드릴게요." },
+  ], quicks: follow };
 }
 function deepCards(name) {
   const d = _deepFind(name); if (!d) return [];
@@ -2908,6 +2949,8 @@ function aiRespond(text, corpus, report, QA) {
   if (_cancer) return _cancer;
   const _grp = groupCounsel(text);
   if (_grp) return _grp;
+  // 비질병 케어 토픽(산후관리·골반저근·갱년기·산부인과·관절재활) — 전용 생활관리 상담
+  if (typeof careTopicCounsel === "function") { const _ct = careTopicCounsel(text); if (_ct) return _ct; }
   // 홈케어기기 직결 생활관리 명사(주름·피부·관절·여성건강) — 기존 질병답변이 없을 때만 건강정보+소프트 기기 안내
   if (typeof gnDeviceCounsel === "function") { const _gn = gnDeviceCounsel(text); if (_gn) return _gn; }
   const _counsel = counselAnswer(text);
