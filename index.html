@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=fbdc011808" />
+<link rel="stylesheet" href="./data/app.css?v=8099a67513" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=fbdc011808"></script>
-<script src="./src/data/section_data.js?v=fbdc011808"></script>
-<script src="./src/data/demo_members.js?v=fbdc011808"></script>
+<script src="./src/data/dummy_data.js?v=8099a67513"></script>
+<script src="./src/data/section_data.js?v=8099a67513"></script>
+<script src="./src/data/demo_members.js?v=8099a67513"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -8819,7 +8819,7 @@ const PI_PARAM_DEFAULT = {
   PER: 35,
   TOTAL_SHARES: 1000000,           // 총발행주식수
   ANNUAL_POOL_RATE: 0.10,          // 연간 총 배정 한도 (총발행주식수 대비)
-  PER_MEMBER_RATE: 0.001,          // 1인당 신청 한도 (총발행주식수 대비)
+  PER_MEMBER_RATE: 0.01,           // 1인당 신청 한도 (총발행주식수 대비 1%)
   MEMBER_POINTS: 8000000,          // 회원 보유 적립금(시연값)
   ALLOCATED_SEED: 42000,           // 올해 이미 배정된 수량(시연 시드)
 };
@@ -8880,6 +8880,15 @@ function PiField({ label, val, set, ph, type, err, req, dis, area, maxLen }) {
   );
 }
 function PiBadge() { return <span className="pi-badge"><AlertTriangle size={12} /> 시연용 예시 데이터</span>; }
+function PiDocDownload({ href, name, title, desc }) {
+  return (
+    <a className="pi-doc" href={href} download={name} onClick={() => { if (typeof toast === "function") toast("계약서(안) 워드 파일을 내려받습니다."); }}>
+      <span className="pi-doc-ic"><FileText size={20} /></span>
+      <span className="pi-doc-t"><b>{title}</b><span>{desc}</span></span>
+      <span className="pi-doc-go">.docx 내려받기</span>
+    </a>
+  );
+}
 function PiStages({ active }) {
   return (<div className="pi-stages">{PI_STAGES.map((s, i) => (
     <div key={i} className={"pi-stage" + (i <= active ? " on" : "") + (i === active ? " cur" : "")}>
@@ -8956,6 +8965,7 @@ function PartnershipFlow() {
           <span className="pi-typeic"><PiIco k={t.ic} /></span>
           <span className="pi-typet">{t.t}</span><span className="pi-typed">{t.d}</span>
         </button>))}</div>
+      <PiDocDownload href="./data/docs/hifin_partnership_agreement.docx" name="하이핀_기관_업무제휴_계약서(안).docx" title="기관 업무제휴 계약서(안)" desc="6개 제휴유형·시스템 연동(IP·EMR·UIP·HL7/FHIR)·데이터 보호 표준계약서 · 시연용 예시" />
       <div className="pi-note2"><Lock size={12} /> 입력 정보는 제휴 검토 목적에만 사용되며, 데모 환경에서는 브라우저에만 임시 저장됩니다.</div>
     </div>
   );
@@ -9179,6 +9189,7 @@ function CorporateInvest() {
           <li>2차 라운드: 영업개시 후 <b>Valuation 1,000억</b> 기준 <b>10% 이내</b> 예정</li>
         </ul>
       </div>
+      <PiDocDownload href="./data/docs/hifin_investment_agreement.docx" name="하이핀_전략적투자_업무제휴_계약서(안).docx" title="전략적 투자 · 업무제휴 계약서(안)" desc="본 신청과 동일 조건(Pre 100억·SI 5%·3단계 트랜치·2차 1,000억)의 표준계약서 · 시연용 예시" />
       <div className="pi-block">
         <div className="pi-blockt">투자 신청 정보</div>
         <div className="pi-grid2">
@@ -9214,14 +9225,14 @@ function PiIco({ k }) {
 
 /* ── 자가검증(로직 테스트) ── */
 function piSelfTest() {
-  const base = { NET_INCOME_FORECAST: 4518000000, PER: 35, TOTAL_SHARES: 1000000, ANNUAL_POOL_RATE: 0.10, PER_MEMBER_RATE: 0.001 };
+  const base = { NET_INCOME_FORECAST: 4518000000, PER: 35, TOTAL_SHARES: 1000000, ANNUAL_POOL_RATE: 0.10, PER_MEMBER_RATE: 0.01 };
   const r = [];
   const price = piSharePrice(base);
   r.push({ n: "주당가격 = 당기순이익×PER35÷총주식수", exp: "158,130원", got: piWon(price), pass: price === 158130 });
   r.push({ n: "연간 총 배정(10%)", exp: "100,000주", got: piNum(piAnnualPool(base)), pass: piAnnualPool(base) === 100000 });
-  r.push({ n: "1인당 한도(0.1%)", exp: "1,000주", got: piNum(piPerMemberCap(base)), pass: piPerMemberCap(base) === 1000 });
+  r.push({ n: "1인당 한도(1%)", exp: "10,000주", got: piNum(piPerMemberCap(base)), pass: piPerMemberCap(base) === 10000 });
   const t1 = piMaxQty(base, 100000, 0); r.push({ n: "적립금 부족(10만원)→0주", exp: "0주", got: piNum(t1), pass: t1 === 0 });
-  const t2 = piMaxQty(base, 999999999999, 0); r.push({ n: "1인 상한 초과→1,000주 캡", exp: "1,000주", got: piNum(t2), pass: t2 === 1000 });
+  const t2 = piMaxQty(base, 999999999999, 0); r.push({ n: "1인 상한 초과→10,000주 캡", exp: "10,000주", got: piNum(t2), pass: t2 === 10000 });
   const t3 = piMaxQty(base, 999999999999, 100000); r.push({ n: "연간 총한도 소진→0주(마감)", exp: "0주", got: piNum(t3), pass: t3 === 0 });
   const t4 = piSharePrice({ ...base, PER: 40 }); r.push({ n: "PER 35→40 재계산", exp: "180,720원", got: piWon(t4), pass: t4 === 180720 });
   r.push({ n: "IP 검증: 192.168.0.1(v4)", exp: "유효", got: piIPv4("192.168.0.1") ? "유효" : "무효", pass: piIPv4("192.168.0.1") });

@@ -3879,3 +3879,12 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
   .pi-hero h2{font-size:22px}
   .pi-tabs{flex-direction:column}
 }
+
+/* 제휴/투자 계약서 다운로드 */
+.pi-doc{display:flex;align-items:center;gap:12px;margin:12px 0;padding:13px 16px;border-radius:14px;border:1.5px solid #BFD9F5;background:#F0F7FF;text-decoration:none;transition:.15s}
+.pi-doc:hover{border-color:#1E4C86;box-shadow:0 6px 16px rgba(30,76,134,.12)}
+.pi-doc-ic{width:40px;height:40px;border-radius:11px;background:#1E4C86;color:#fff;display:grid;place-items:center;flex-shrink:0}
+.pi-doc-t{flex:1;display:flex;flex-direction:column;gap:2px}
+.pi-doc-t b{font-size:13.5px;font-weight:900;color:#16345E}
+.pi-doc-t span{font-size:11.5px;color:#5A82B0}
+.pi-doc-go{font-size:12px;font-weight:800;color:#fff;background:linear-gradient(100deg,#F97316,#FB923C);padding:8px 14px;border-radius:999px;white-space:nowrap}
