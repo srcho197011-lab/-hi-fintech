@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=08a90be755" />
+<link rel="stylesheet" href="./data/app.css?v=355aa30b08" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=08a90be755"></script>
-<script src="./src/data/section_data.js?v=08a90be755"></script>
-<script src="./src/data/demo_members.js?v=08a90be755"></script>
+<script src="./src/data/dummy_data.js?v=355aa30b08"></script>
+<script src="./src/data/section_data.js?v=355aa30b08"></script>
+<script src="./src/data/demo_members.js?v=355aa30b08"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -82,6 +82,16 @@ function _sidoFull(s) {
   if (!s) return ""; if (/특별시|광역시|특별자치|도$/.test(s)) return s;
   const M = { "서울": "서울특별시", "부산": "부산광역시", "인천": "인천광역시", "대구": "대구광역시", "대전": "대전광역시", "광주": "광주광역시", "울산": "울산광역시", "세종": "세종특별자치시", "경기": "경기도", "강원": "강원특별자치도", "충북": "충청북도", "충남": "충청남도", "전북": "전북특별자치도", "전남": "전라남도", "경북": "경상북도", "경남": "경상남도", "제주": "제주특별자치도" };
   return M[s.replace(/시$/, "")] || M[s] || s;
+}
+/* 회원 시·군·구 → 데이터셋(HIRA 등) 시군구 옵션 근사 매칭.
+   정확 일치 → 공백제거 일치 → 핵심 구 토큰 포함 → 시 접두(구 없는 시, 예 '부천시'→'부천원미구') 순. */
+function matchSgg(opts, sgg) {
+  if (!sgg || !opts || !opts.length) return null;
+  if (opts.indexOf(sgg) >= 0) return sgg;
+  const bare = sgg.replace(/\s+/g, ""), core = sgg.split(/\s+/).pop();
+  let f = opts.find((o) => o.replace(/\s+/g, "") === bare || o.indexOf(core) >= 0 || bare.indexOf(o.replace(/\s+/g, "")) >= 0);
+  if (!f) { const siPre = (sgg.split(/\s+/)[0] || "").replace(/시$/, ""); if (siPre) f = opts.find((o) => o.indexOf(siPre) === 0); }
+  return f || null;
 }
 function memberRegion() {
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -4481,8 +4491,7 @@ function HospitalDirectory({ data, preset }) {
     const r = (typeof memberRegion === "function") ? memberRegion() : null; if (!r) return;
     // 병원 data.sido 는 축약형("서울") — sidoShort 로 매칭
     const key = data.sido.indexOf(r.sidoShort) >= 0 ? r.sidoShort : (data.sido.indexOf(r.sidoFull) >= 0 ? r.sidoFull : null);
-    let msgg = "전체";
-    if (key) { const opts = [...(sggBySido[key] || [])]; const bare = r.sgg.replace(/\s+/g, ""); const core = r.sgg.split(/\s+/).pop(); if (opts.includes(r.sgg)) msgg = r.sgg; else { const f = opts.find((o) => o === core || o.replace(/\s+/g, "") === bare || o.indexOf(core) >= 0 || bare.indexOf(o.replace(/\s+/g, "")) >= 0); if (f) msgg = f; } }
+    let msgg = key ? matchSgg([...(sggBySido[key] || [])], r.sgg) || "전체" : "전체";
     setNear(r); setSido(key || "전체"); setSgg(msgg); setQ(""); setShown(20);
     if (typeof toast === "function") toast(`📍 ${r.name}님 주소(${r.sidoShort} ${r.sgg}) 기준 근처 병원`);
   };
@@ -4572,6 +4581,7 @@ function PharmacyDirectory({ data }) {
   const [shown, setShown] = useState(20);
   const [mapOpen, setMapOpen] = useState(false);
   const [focus, setFocus] = useState(null);
+  const [near, setNear] = useState(null);
   const mapAnchor = useRef(null);
   const showOnMap = (p) => { setMapOpen(true); setFocus({ lat: p[6], lng: p[5], name: p[0], addr: p[3], n: Date.now() }); setTimeout(() => mapAnchor.current && mapAnchor.current.scrollIntoView({ behavior: "smooth", block: "start" }), 90); };
   const { sggBySido, countBySido } = React.useMemo(() => {
@@ -4581,6 +4591,13 @@ function PharmacyDirectory({ data }) {
   }, [data]);
   const sidoChips = React.useMemo(() => ["전체", ...[...data.sido].sort((a, b) => SIDO_ORDER.indexOf(a) - SIDO_ORDER.indexOf(b))], [data]);
   const sggOptions = React.useMemo(() => sido === "전체" ? [] : [...(sggBySido[sido] || [])].sort((a, b) => a.localeCompare(b, "ko")), [sido, sggBySido]);
+  const findNear = () => {
+    const r = (typeof memberRegion === "function") ? memberRegion() : null; if (!r) return;
+    const key = data.sido.indexOf(r.sidoShort) >= 0 ? r.sidoShort : (data.sido.indexOf(r.sidoFull) >= 0 ? r.sidoFull : null);
+    let msgg = key ? matchSgg([...(sggBySido[key] || [])], r.sgg) || "전체" : "전체";
+    setNear(r); setSido(key || "전체"); setSgg(msgg); setQ(""); reset();
+    if (typeof toast === "function") toast(`📍 ${r.name}님 주소(${r.sidoShort} ${r.sgg}) 기준 근처 약국`);
+  };
   const list = React.useMemo(() => {
     const sidoIdx = sido === "전체" ? -1 : data.sido.indexOf(sido);
     const qq = q.trim();
@@ -4601,8 +4618,10 @@ function PharmacyDirectory({ data }) {
         <span><Art name="phone" size={16} /> 전화·길찾기</span>
       </div>
       <MapCard anchorRef={mapAnchor} open={mapOpen} onToggle={() => setMapOpen((v) => !v)} focus={focus} title={`약국 위치 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳)`} accent="#16A34A" points={list.map((p) => ({ name: p[0], addr: p[3], tel: p[4], tag: "약국", lat: p[6], lng: p[5] }))} />
-      <div className="bklbl" style={{ margin: "0 0 8px" }}>지역(시·도) 선택</div>
-      <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); reset(); }}>{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
+      <div className="bklbl" style={{ margin: "0 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span>지역(시·도) 선택</span>
+        <button className="nearbtn" onClick={findNear}><MapPin size={13} /> 내 주변 약국</button></div>
+      <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); setNear(null); reset(); }}>{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
+      {near && (<div className="nearinfo"><MapPin size={13} /> <b>{near.name}</b>님 주소 <b>{near.sidoShort} {near.sgg}</b> 기준 안내{sgg === "전체" && <span className="nearnote"> · 시·군·구 근사 매칭 실패, 시·도 전체 표시</span>}<button onClick={() => { setNear(null); setSido("전체"); setSgg("전체"); reset(); }}>해제</button></div>)}
       <div className="regions" style={{ marginBottom: 6 }}>
         <div className={`fsel ${night ? "on" : ""}`} onClick={() => { setNight((v) => !v); reset(); }}><Moon size={12} style={{ verticalAlign: "-2px" }} /> 야간·심야 운영</div>
         <div className={`fsel ${holiday ? "on" : ""}`} onClick={() => { setHoliday((v) => !v); reset(); }}><Sparkles size={12} style={{ verticalAlign: "-2px" }} /> 공휴일 운영</div>

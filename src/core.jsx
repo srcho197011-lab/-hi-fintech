@@ -35,6 +35,16 @@ function _sidoFull(s) {
   const M = { "서울": "서울특별시", "부산": "부산광역시", "인천": "인천광역시", "대구": "대구광역시", "대전": "대전광역시", "광주": "광주광역시", "울산": "울산광역시", "세종": "세종특별자치시", "경기": "경기도", "강원": "강원특별자치도", "충북": "충청북도", "충남": "충청남도", "전북": "전북특별자치도", "전남": "전라남도", "경북": "경상북도", "경남": "경상남도", "제주": "제주특별자치도" };
   return M[s.replace(/시$/, "")] || M[s] || s;
 }
+/* 회원 시·군·구 → 데이터셋(HIRA 등) 시군구 옵션 근사 매칭.
+   정확 일치 → 공백제거 일치 → 핵심 구 토큰 포함 → 시 접두(구 없는 시, 예 '부천시'→'부천원미구') 순. */
+function matchSgg(opts, sgg) {
+  if (!sgg || !opts || !opts.length) return null;
+  if (opts.indexOf(sgg) >= 0) return sgg;
+  const bare = sgg.replace(/\s+/g, ""), core = sgg.split(/\s+/).pop();
+  let f = opts.find((o) => o.replace(/\s+/g, "") === bare || o.indexOf(core) >= 0 || bare.indexOf(o.replace(/\s+/g, "")) >= 0);
+  if (!f) { const siPre = (sgg.split(/\s+/)[0] || "").replace(/시$/, ""); if (siPre) f = opts.find((o) => o.indexOf(siPre) === 0); }
+  return f || null;
+}
 function memberRegion() {
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const short = (s) => (typeof tmSidoShort === "function" ? tmSidoShort(s) : _sidoFull(s).replace(/특별자치도|특별자치시|특별시|광역시|도$/, ""));
