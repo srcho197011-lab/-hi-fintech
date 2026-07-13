@@ -68,7 +68,7 @@ function finAnnual() {
   const inventory = Math.round(r.cogs * 0.05), receivable = Math.round(r.revenue * 0.08), prepaid = 100000000;
   const cash = assets - (nonCurAssets + inventory + receivable + prepaid), curAssets = cash + receivable + inventory + prepaid;
   return {
-    revProduct: r.revProduct, catRev: r.catRev, revCheckup: r.revCheckup, revService: r.revService, revReservation: r.revReservation, revEmr: r.revEmr, revInsurance: r.revInsurance, revAd: r.revAd, revenue: r.revenue, cogs: r.cogs, cogsProduct: r.cogsProduct, gross: r.gross, reward: r.reward, donation: r.donation, sga: r.sga, op, finIncome, finCost, pbt, tax, net, opMargin: op / r.revenue, netMargin: net / r.revenue,
+    revProduct: r.revProduct, catRev: r.catRev, revCheckup: r.revCheckup, revService: r.revService, revReservation: r.revReservation, revEmr: r.revEmr, revInsurance: r.revInsurance, revAd: r.revAd, revenue: r.revenue, cogs: r.cogs, cogsProduct: r.cogsProduct, gross: r.gross, reward: r.reward, donation: r.donation, marketing: r.marketing, payroll: r.payroll, otherOpex: r.otherOpex, sga: r.sga, op, finIncome, finCost, pbt, tax, net, opMargin: op / r.revenue, netMargin: net / r.revenue,
     assets, cash, receivable, inventory, prepaid, curAssets, ppe, intangible, rou, nonCurAssets, contractLiab, donationPay, tradePay, taxPay, deposits, curLiab, leaseLiab, longDebt, nonCurLiab, liabilities, capital, surplus, retained, equity,
     debtRatio: liabilities / equity, currentRatio: curAssets / curLiab, equityRatio: equity / assets, roe: retained / equity,
     A: { members: M.membersEnd[2], activeRate: M.activeRate, hospitals: M.hospitals[2], institutions: M.hospitals[2] + M.checkupCenters[2] + M.pharmacies[2], buyerRate: M.productBuyerRate, checkupRate: M.checkupRate },
@@ -206,9 +206,11 @@ function FinanceLive() {
   const liabTot = _finSum(acct.liab);
   // 손익계산서 행 [라벨, 값, 강조여부, 부호]
   const cf = finCF(acct, bs);
+  const sgaKind = { reward: "subitem tok", donation: "subitem don" };
+  const sgaBreak = FIN_SGA_META.filter(([k]) => acct.sga[k] > 0).map(([k, l]) => ["　" + l, -acct.sga[k], 0, sgaKind[k] || "subitem"]);
   const plRows = [
     ["매출액", pl.revenue, 0, "rev"], ["(-) 매출원가", -pl.cogs, 0, "neg"], ["매출총이익", pl.gross, 1, "sub"],
-    ["(-) 판매비와관리비", -pl.sga, 0, "neg"], ["영업이익", pl.op, 2, "sub"],
+    ["(-) 판매비와관리비", -pl.sga, 0, "neg"], ...sgaBreak, ["영업이익", pl.op, 2, "sub"],
     ["(+) 금융수익(이자수익)", pl.finIncome, 0, "pos"], ["(-) 금융비용(이자비용)", -pl.finCost, 0, "neg"], ["(+) 기타수익", pl.otherIncome, 0, "pos"],
     ["법인세비용차감전순이익", pl.pbt, 1, "sub"], ["(-) 법인세비용", -pl.tax, 0, "neg"], ["당기순이익", pl.net, 3, "net"],
   ];
@@ -348,7 +350,7 @@ function FinanceLive() {
       </div>
     )}
 
-    {tab === "annual" && (() => { const an = finAnnual(); const A = an.A; const anPL = [["매출액", an.revenue, 0, "rev"], ["(-) 매출원가", -an.cogs, 0, "neg"], ["매출총이익", an.gross, 1, "sub"], ["(-) 판매비와관리비", -an.sga, 0, "neg"], ["영업이익", an.op, 2, "sub"], ["(+) 금융수익", an.finIncome, 0, "pos"], ["(-) 금융비용(이자)", -an.finCost, 0, "neg"], ["법인세비용차감전순이익", an.pbt, 1, "sub"], ["(-) 법인세비용", -an.tax, 0, "neg"], ["당기순이익", an.net, 3, "net"]]; return (<>
+    {tab === "annual" && (() => { const an = finAnnual(); const A = an.A; const anSga = [["　인건비", -an.payroll, 0, "subitem"], ["　마케팅비", -an.marketing, 0, "subitem"], ["　포인트(토큰)적립", -an.reward, 0, "subitem tok"], ["　기부금(치료비 나눔)", -an.donation, 0, "subitem don"], ["　기타 운영비", -an.otherOpex, 0, "subitem"]]; const anPL = [["매출액", an.revenue, 0, "rev"], ["(-) 매출원가", -an.cogs, 0, "neg"], ["매출총이익", an.gross, 1, "sub"], ["(-) 판매비와관리비", -an.sga, 0, "neg"], ...anSga, ["영업이익", an.op, 2, "sub"], ["(+) 금융수익", an.finIncome, 0, "pos"], ["(-) 금융비용(이자)", -an.finCost, 0, "neg"], ["법인세비용차감전순이익", an.pbt, 1, "sub"], ["(-) 법인세비용", -an.tax, 0, "neg"], ["당기순이익", an.net, 3, "net"]]; return (<>
       <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><Banknote size={13} color="#34D399" /> 연간 사업계획 가정(3차연도 기준) — 회원 <b>{A.members.toLocaleString()}명</b> · 활성률 {(A.activeRate * 100).toFixed(0)}% · 제품구매율 {(A.buyerRate * 100).toFixed(0)}% · 검진전환 {(A.checkupRate * 100).toFixed(0)}% · 제휴 기관(EMR·UIP) <b>{A.institutions.toLocaleString()}곳</b>. <b>추정(Pro-forma) 재무제표</b>입니다.</div>
       <div className="ontgrid2">
         <div className="ontpanel">
@@ -381,7 +383,12 @@ function FinanceLive() {
           <div className="finpl">
             <div className="finpl-r sub"><span>Ⅰ. 유동부채</span><b>{finWon(an.curLiab)}원</b></div>
             <div className="finpl-r"><span>　계약부채(토큰적립금)</span><b>{finWon(an.contractLiab)}원</b></div>
-            <div className="finpl-r"><span>　미지급기부금·매입채무·법인세·예수금</span><b>{finWon(an.donationPay + an.tradePay + an.taxPay + an.deposits)}원</b></div>
+            {(() => { const rt = (typeof HTK_INS_RATE !== "undefined") ? HTK_INS_RATE : 0.30; const ins = Math.round(an.contractLiab * rt); return (<>
+              <div className="finpl-r subitem tok"><span>└ 보험·치료비 적립금({(rt * 100).toFixed(0)}% 우선)</span><b>{finWon(ins)}원</b></div>
+              <div className="finpl-r subitem tok"><span>└ 일반 토큰적립금({(100 - rt * 100).toFixed(0)}%)</span><b>{finWon(an.contractLiab - ins)}원</b></div>
+            </>); })()}
+            <div className="finpl-r subitem don"><span>　미지급기부금(치료비 나눔)</span><b>{finWon(an.donationPay)}원</b></div>
+            <div className="finpl-r"><span>　매입채무·미지급법인세·예수금</span><b>{finWon(an.tradePay + an.taxPay + an.deposits)}원</b></div>
             <div className="finpl-r sub"><span>Ⅱ. 비유동부채(리스·차입)</span><b>{finWon(an.nonCurLiab)}원</b></div>
             <div className="finpl-r sub emph2"><span>Ⅲ. 자본</span><b>{finWon(an.equity)}원</b></div>
             <div className="finpl-r"><span>　자본금·자본잉여금</span><b>{finWon(an.capital + an.surplus)}원</b></div>
@@ -416,6 +423,11 @@ function FinanceLive() {
             {M("　광고·제휴", (r) => finWon(r.revAd))}
             {M("매출총이익", (r) => finWon(r.gross), "mysub")}
             {M("(-) 판매관리비", (r) => "-" + finWon(r.sga))}
+            {M("　인건비", (r) => "-" + finWon(r.payroll), "mysub2")}
+            {M("　마케팅비", (r) => "-" + finWon(r.marketing), "mysub2")}
+            <tr className="mysub2"><td className="mono0 tokc">　포인트(토큰)적립</td>{my.map((r, i) => <td key={i} className="mono tokc">-{finWon(r.reward)}</td>)}</tr>
+            <tr className="mysub2"><td className="mono0 donc">　기부금(치료비 나눔)</td>{my.map((r, i) => <td key={i} className="mono donc">-{finWon(r.donation)}</td>)}</tr>
+            {M("　기타 운영비", (r) => "-" + finWon(r.otherOpex), "mysub2")}
             {M("영업이익", (r) => finWon(r.ebit), "myop")}
             {M("EBITDA", (r) => finWon(r.ebitda))}
             {M("당기순이익", (r) => finWon(r.net), "mynet")}

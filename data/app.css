@@ -3718,3 +3718,15 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .nearinfo .nearnote{color:#64748B;font-weight:600}
 .nearinfo button{margin-left:auto;background:#fff;border:1px solid #BFDBFE;color:#1D4ED8;border-radius:999px;padding:3px 11px;font-size:11.5px;font-weight:800;cursor:pointer}
 .nearinfo button:hover{background:#DBEAFE}
+
+/* 손익계산서 판관비 세부항목(토큰적립·나눔기부 등) */
+.finpl-r.subitem{padding:4px 10px 4px 18px;font-size:11.5px;color:#8AA0C0;border-bottom:none;}
+.finpl-r.subitem span{font-weight:500;color:#8AA0C0;}
+.finpl-r.subitem b{font-weight:600;color:#9FB2D0;font-size:12px;}
+.finpl-r.subitem.tok span,.finpl-r.subitem.tok b{color:#22D3EE;}
+.finpl-r.subitem.don span,.finpl-r.subitem.don b{color:#FB7CA0;}
+/* 5개년 표 판관비 세부행 */
+.mytbl tr.mysub2 td.mono0{color:#7E90B0;font-weight:500;padding-left:16px;font-size:11.5px;}
+.mytbl tr.mysub2 td.mono{color:#93A6C6;font-size:11.5px;}
+.mytbl tr.mysub2 td.tokc{color:#22D3EE;}
+.mytbl tr.mysub2 td.donc{color:#FB7CA0;}
