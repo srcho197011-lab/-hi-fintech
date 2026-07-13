@@ -1867,24 +1867,37 @@ function _deepFind(name) {
 function careRecSet(supp, device, dz) { try { if (typeof window !== "undefined") window._lastCareRec = { supp: (supp || []).slice(0, 8), device: (device || []).slice(0, 8), dz: dz || "" }; } catch (e) {} }
 const SHOP_SUPP_BTN = "🛒 건강쇼핑에서 성분·제품 보기";
 const SHOP_DEVICE_BTN = "🛒 홈케어 기기 보기";
-/* 홈케어 의료기기 직결 명사(질병명 아님) — GN바디닥터가 커버하는 영역을 물으면 AI상담사 대신 device 몰로 안내.
-   질병명(방광염·요실금·골관절염 등)은 질병 KB가 먼저 처리하므로 여기 미포함. */
+/* 홈케어기기 직결 생활관리 명사(질병 KB에 없는 미용·관절·여성건강 등) — 건강 정보를 먼저 알려주고,
+   그 안에서 '홈케어 기기 보기'를 누르면(원할 때만) GN바디닥터로 자연 연결. 상품·가격·브랜드 강조 없음. */
 const GN_DEVICE_TOPICS = [
-  { keys: ["주름", "리프팅", "탄력", "안티에이징", "동안피부", "피부탄력"], area: "주름·리프팅", prod: "고주파 리페어(RF 리프팅 관리)" },
-  { keys: ["피부관리", "피부미용", "피부톤", "모공", "뷰티디바이스", "피부"], area: "피부·뷰티 케어", prod: "바디닥터 리페어(홈 뷰티 디바이스)" },
-  { keys: ["관절", "무릎관리", "무릎통증", "관절통증", "무릎"], area: "관절 통증 완화", prod: "골관절염 치료기(온열·저주파)" },
-  { keys: ["여성건강", "여성질환", "여성질병", "질건강", "골반저", "케겔", "산후회복"], area: "여성 건강·골반저 케어", prod: "요실금·골반저근 케어 기기" },
+  { keys: ["주름", "리프팅", "탄력", "안티에이징", "동안피부", "피부탄력"], area: "피부 탄력·주름 관리",
+    tips: ["자외선 차단이 광노화 예방의 핵심이에요(사계절 SPF)", "보습·충분한 수면·금연", "비타민C·단백질 등 균형 잡힌 영양"],
+    dev: "집에서 꾸준히 관리하고 싶다면 가정용 피부 케어 기기도 도움이 될 수 있어요." },
+  { keys: ["피부관리", "피부미용", "피부톤", "모공", "뷰티디바이스"], area: "피부 관리",
+    tips: ["세안·보습·자외선 차단 기본 루틴", "충분한 수분·수면", "자극(과한 각질제거·뜨거운 물) 최소화"],
+    dev: "홈 뷰티 디바이스로 꾸준한 관리를 이어갈 수 있어요." },
+  { keys: ["관절", "무릎관리", "무릎통증", "관절통증", "무릎"], area: "관절 건강",
+    tips: ["적정 체중 유지로 관절 부담을 줄여요", "저충격 운동(수영·자전거)·근력 강화", "무리한 충격·계단 과사용 주의"],
+    red: "붓고 열나거나 극심한 통증이 지속되면 정형외과 진료를 받으세요.",
+    dev: "온열·저주파 홈케어 기기가 통증 완화·이완에 도움이 될 수 있어요." },
+  { keys: ["여성건강", "여성질환", "여성질병", "질건강", "골반저", "케겔", "산후회복"], area: "여성 건강·골반저 케어",
+    tips: ["규칙적인 골반저근(케겔) 운동", "수분·배뇨 습관 관리", "정기 부인과 검진"],
+    red: "출혈·통증·발열 등 이상 증상은 병원 진료가 우선이에요.",
+    dev: "골반저근 강화를 돕는 가정용 기기도 함께 활용할 수 있어요." },
 ];
 function gnDeviceCounsel(text) {
   const t = (text || "").replace(/\s/g, "");
-  if (!t || t.length > 24) return null; // 짧은 명사형 질의만
+  if (!t || t.length > 16) return null; // 짧은 명사형 질의만(문장형은 일반 상담으로)
   const hit = GN_DEVICE_TOPICS.find((g) => g.keys.some((k) => t.includes(k)));
   if (!hit) return null;
-  if (typeof careRecSet === "function") careRecSet([], [hit.prod], hit.area);
+  if (typeof careRecSet === "function") careRecSet([], [], hit.area);
+  const items = hit.tips.map((x) => `· ${x}`);
+  if (hit.red) items.push(`※ ${hit.red}`);
+  items.push(hit.dev);
   return { bubbles: [
-    { kind: "text", text: `${hit.area}에는 가정에서 쓰는 홈케어 의료기기가 도움이 될 수 있어요. 식약처·FDA 인증 가정용 의료기기 전문 브랜드 **GN바디닥터**를 먼저 안내해 드릴게요.\n※ 의료기기는 허가된 사용목적 범위에서 사용하고, 진단·치료는 의료진과 상의하세요.` },
-    { kind: "card", card: { title: "🏠 홈케어 의료기기 · GN바디닥터(제너럴네트)", items: [`추천: ${hit.prod}`, "요실금 치료기 · 고주파 리페어 · 바디닥터 리페어 · 골관절염 치료기", "식약처·FDA 인증 가정용 의료기기 전문 · 건강적립금 25%"], buttons: [SHOP_DEVICE_BTN] } },
-  ], quicks: ["🏥 병원·진료 안내", "GN바디닥터 회사 소개", "내 리포트 요약"] };
+    { kind: "text", text: `${hit.area}에 대해 알려드릴게요. 생활 속에서 이렇게 관리하면 도움이 돼요.\n※ 참고용 안내이며 진단·치료를 대체하지 않아요.` },
+    { kind: "card", card: { title: `🩺 ${hit.area} 생활관리`, items, buttons: [SHOP_DEVICE_BTN] } },
+  ], quicks: ["🏥 병원·진료 안내", "내 리포트 요약"] };
 }
 function deepCards(name) {
   const d = _deepFind(name); if (!d) return [];
@@ -2020,8 +2033,6 @@ function aiRespond(text, corpus, report, QA) {
   if (typeof checkupEduCounsel === "function") { const _ec = checkupEduCounsel(text); if (_ec) return _ec; }
   // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
   if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
-  // 홈케어 의료기기 직결 명사(주름·피부·관절·여성건강) → GN바디닥터 device 몰 안내(AI상담사 우회)
-  if (typeof gnDeviceCounsel === "function") { const _gn = gnDeviceCounsel(text); if (_gn) return _gn; }
   const _topics = multiTopicCounsel(text);
   if (_topics) return _topics;
   const _organs = multiOrganCounsel(text);
@@ -2030,6 +2041,8 @@ function aiRespond(text, corpus, report, QA) {
   if (_cancer) return _cancer;
   const _grp = groupCounsel(text);
   if (_grp) return _grp;
+  // 홈케어기기 직결 생활관리 명사(주름·피부·관절·여성건강) — 기존 질병답변이 없을 때만 건강정보+소프트 기기 안내
+  if (typeof gnDeviceCounsel === "function") { const _gn = gnDeviceCounsel(text); if (_gn) return _gn; }
   const _counsel = counselAnswer(text);
   if (_counsel) return _counsel;
   const _drug = drugCounsel(text);

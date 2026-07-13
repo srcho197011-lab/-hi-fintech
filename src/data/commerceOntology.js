@@ -156,7 +156,7 @@ function _productCard(p, kb) {
   return { bubbles: [
     { kind: "text", text: p.claim ? `‘${p.name}’ — ${p.claim}` : `‘${p.name}’은(는) ${p.brand || "제휴사"}의 ${p.category || "건강"} 제품이에요.` },
     { kind: "card", card: { title: `🛒 ${p.name}`, items, buttons: [btn] } },
-  ], quicks: [`${p.brand || p.vendor} 회사 소개`, hareas[0] ? `${hareas[0]} 관련 제품 추천` : "🛒 건강쇼핑·AI 상담사 바로가기", "내 리포트 요약"].slice(0, 3) };
+  ], quicks: [hareas[0] ? `${hareas[0]} 생활관리법` : "건강관리 팁", "🏥 병원·진료 안내", "내 리포트 요약"].slice(0, 3) };
 }
 
 function _diseaseReco(dz, kb, text) {
@@ -187,7 +187,7 @@ function _diseaseReco(dz, kb, text) {
 
   if (!cards.length) return null;
   const t0 = `‘${String(text).trim()}’ 관련해서 ${dz.note} 목적의 제품·공급업체를 안내해 드릴게요. (정보 제공용이며 진단·치료를 대체하지 않아요.)`;
-  return { bubbles: [{ kind: "text", text: t0 }, ...cards], quicks: [`${dz.dz} 증상은 무엇인가요?`, vend[0] ? `${vend[0]} 소개` : "🛒 건강쇼핑·AI 상담사 바로가기", "내 리포트 요약"].slice(0, 3) };
+  return { bubbles: [{ kind: "text", text: t0 }, ...cards], quicks: [`${dz.dz} 증상은 무엇인가요?`, `${dz.dz} 생활관리법`, "내 리포트 요약"].slice(0, 3) };
 }
 
 function _catOverview(kind, kb) {
@@ -221,9 +221,8 @@ function commerceCounsel(text) {
   // 3) 질환 + 커머스 의도 — 예: "요실금 영양제", "관절 기기 추천"
   const dHit = COMM_DISEASE.find((d) => d.kw.some((k) => text.includes(k)));
   if (dHit && commerce) { const r = _diseaseReco(dHit, kb, text); if (r) return r; }
-  // 4) 부분(토큰) 제품 매칭 — 예: "락토핏", "센트룸"
-  const pTok = _matchProductToken(text, kb);
-  if (pTok) return _productCard(pTok.item, kb);
+  // 4) 부분(토큰) 제품 매칭 — 커머스 의도가 있을 때만(맨 증상·질환명이 제품명에 부분포함돼 상품으로 오인되는 것 방지: '요실금'→기존 건강답변 유지)
+  if (commerce) { const pTok = _matchProductToken(text, kb); if (pTok) return _productCard(pTok.item, kb); }
   // 5) 카테고리 개요 (커머스 의도만)
   if (commerce) {
     if (/(영양제|보충제|건기식|건강기능식품)/.test(low)) return _catOverview("영양제", kb);
