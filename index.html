@@ -2882,7 +2882,7 @@ function aiRespond(text, corpus, report, QA) {
   if (typeof kbDiseaseCounsel === "function") { const _dz = kbDiseaseCounsel(text); if (_dz) return _dz; }
   // 검진 이해 KB — 종합검진 목적·체성분·생체나이·암예방·항목 기준(예: '체성분이 뭐예요?', '공복혈당 정상 범위')
   if (typeof checkupEduCounsel === "function") { const _ec = checkupEduCounsel(text); if (_ec) return _ec; }
-  // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
+  // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '여성 웰니스 케어기기', '요실금 영양제')
   if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
   const _topics = multiTopicCounsel(text);
   if (_topics) return _topics;
@@ -5201,7 +5201,7 @@ const SHOP_PARTNERS = {
     bg: "linear-gradient(125deg,#0E7490 0%,#0891B2 48%,#6366F1 100%)",
     tagline: "식약처·FDA 인증 가정용 의료기기 전문. 가정에서 안전하게 쓰는 검증된 헬스케어 기기를 공급합니다.",
     strengths: [["badge", "식약처·FDA 인증", "허가받은 가정용 의료기기"], ["device", "헬스케어 기기", "요실금치료기·EMS·고주파"], ["home", "가정용 케어", "집에서 쓰는 전문 기기"], ["badge", "품질·AS", "제조·품질·사후관리"]],
-    chips: ["요실금 치료기", "EMS 벨트", "고주파 리페어", "음파 매트"],
+    chips: ["여성 웰니스 케어기기", "EMS 벨트", "고주파 리페어", "음파 매트"],
     stats: [["식약처·FDA", "인증"], ["가정용", "의료기기"], ["제너럴네트", "GN그룹"]],
     home: "https://www.bodydoctor.co.kr", q: "GN바디닥터 가정용 의료기기",
   }],
@@ -5304,10 +5304,10 @@ function PrecisionNutritionSection() {
 /* 특별제휴 배너 제품 이미지·영상 갤러리(로컬 실제 제품) — 투자자용 프리미엄 배너 */
 const SP_GALLERY = {
   "GN바디닥터": [
-    { name: "요실금 치료기", imgs: ["./data/img/medi/urinary0.png?v=2", "./data/img/medi/urinary1.png?v=2", "./data/img/medi/urinary2.png?v=2", "./data/img/medi/urinary3.png?v=2"] },
+    { name: "여성 웰니스 케어기기", imgs: ["./data/img/medi/urinary0.png?v=2", "./data/img/medi/urinary1.png?v=2", "./data/img/medi/urinary2.png?v=2", "./data/img/medi/urinary3.png?v=2"] },
     { name: "고주파 리페어", video: "./data/img/medi/rf-repair.mp4" },
     { name: "바디닥터 리페어", img: "./data/img/medi/bodydoctor-repair.png" },
-    { name: "골관절염 치료기", img: "./data/img/medi/joint.png" },
+    { name: "관절재활통증기기", img: "./data/img/medi/joint.png" },
   ],
 };
 /* 특별제휴 배너 하단 가로 풀 이미지(팝업매장 등) */
@@ -13583,7 +13583,7 @@ const DEVICE_KB = [
   { dz: ["관절", "통증", "근골격", "허리"], items: [["저주파·EMS 치료기", "근육통 완화"], ["온열 치료기", "혈행·통증 관리"]] },
   { dz: ["수면", "불면"], items: [["수면측정 기기·밴드", "수면 단계·무호흡 모니터"]] },
   { dz: ["신장", "콩팥", "부종"], items: [["가정용 체중계", "부종·체중 변화 모니터"]] },
-  { dz: ["요실금"], items: [["요실금 치료기", "골반저근 자극·관리"]] },
+  { dz: ["요실금"], items: [["여성 웰니스 케어기기", "골반저근 자극·관리"]] },
   { dz: ["노인", "고령", "낙상"], items: [["낙상감지·응급호출 기기", "낙상·응급 알림"], ["복약 알림 기기", "복약 관리"]] },
 ];
 
@@ -13636,7 +13636,7 @@ const GROUP_KB = {
     screening: ["유방촬영", "자궁경부세포검사", "골밀도(폐경 후)", "갑상선기능"],
     nutrition: ["철분·엽산(가임기)", "칼슘·비타민D(폐경 후)", "오메가3"],
     diet: "철분·칼슘 충분, 콩(이소플라본), 저염·균형식",
-    devices: ["가정용 혈압계", "요실금 치료기"],
+    devices: ["가정용 혈압계", "여성 웰니스 케어기기"],
     support: ["국가건강검진(여성암)", "임신·출산 의료비 지원"],
   },
   "아동": {
@@ -15784,8 +15784,8 @@ const DEVICE_PRODUCTS = [
   { id: "neb-joinmedical-hl100a", name: "조인메디칼 메쉬넵2 네블라이저 HL-100A", brand: "조인메디칼", category: "네블라이저", volume: "충전식 1대", claim: "충전식 메쉬형 초음파 흡입기 — 저소음·휴대용", desc: "메쉬(초음파 진동) 방식으로 약액을 미세 분무하는 충전식 휴대용 네뷸라이저입니다. 소음이 거의 없어 수면 중 아이에게도 부담 없이 사용할 수 있습니다.", price: 56100, source: "danawa", url: "https://prod.danawa.com/info/?pcode=4059126" },
   { id: "neb-hubidic-hnb20", name: "휴비딕 메쉬휴 네블라이저 HNB-20", brand: "휴비딕", category: "네블라이저", volume: "충전식 1대", claim: "8ml 대용량 충전식 메쉬 네뷸라이저 — 휴대 호흡기 케어", desc: "8ml 대용량 약액컵과 충전식 배터리를 갖춘 메쉬형 휴대용 네뷸라이저입니다. 저소음 미세 분무로 외출·여행 중에도 간편하게 호흡기 케어가 가능합니다.", price: 73800, source: "danawa", url: "https://prod.danawa.com/info/?pcode=118489148" },
   { id: "neb-omron-nec106", name: "오므론 컴프레셔 네블라이저 NE-C106", brand: "오므론", category: "네블라이저", volume: "1대", claim: "마스크·콧물흡입 겸용 컴프레셔 네뷸라이저", desc: "마스크가 기본 포함되고 콧물흡입 기능까지 지원하는 컴프레셔 방식 가정용 네뷸라이저입니다. 안정적인 분무 성능으로 호흡기 흡입에 폭넓게 쓰입니다.", price: 73800, source: "danawa", url: "https://prod.danawa.com/info/?pcode=18500465" },
-  { id: "pelvic-alphamedic-easyk", name: "알파메딕 이지케이 요실금 치료기", brand: "알파메딕", category: "요실금·골반", volume: "1대", claim: "집에서 쓰는 요실금 치료기 — 5가지 모드 골반저근 케어", desc: "병원에 가지 않고 집에서 앉아 사용하는 요실금 치료기로, 5가지 마사지 모드로 골반저근을 자극합니다. 출산 후 회복이나 중장년층 관리에 적합한 홈케어 의료기기입니다.", price: 1000000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=5087873" },
-  { id: "pelvic-gaponet-druro", name: "가포넷 닥터유로 요실금 치료기", brand: "가포넷", category: "요실금·골반", volume: "1대", claim: "적외선 온열 방식 요실금 치료기 — 골반 케어", desc: "적외선 온열 자극으로 골반 부위를 관리하는 가정용 요실금 치료기입니다. 앉아서 사용하는 방식이라 별도 운동 없이 꾸준한 홈케어가 가능합니다.", price: 388000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=28248485" },
+  { id: "pelvic-alphamedic-easyk", name: "알파메딕 이지케이 여성 웰니스 케어기기", brand: "알파메딕", category: "요실금·골반", volume: "1대", claim: "집에서 쓰는 여성 웰니스 케어기기 — 5가지 모드 골반저근 케어", desc: "병원에 가지 않고 집에서 앉아 사용하는 여성 웰니스 케어기기로, 5가지 마사지 모드로 골반저근을 자극합니다. 출산 후 회복이나 중장년층 관리에 적합한 홈케어 의료기기입니다.", price: 1000000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=5087873" },
+  { id: "pelvic-gaponet-druro", name: "가포넷 닥터유로 여성 웰니스 케어기기", brand: "가포넷", category: "요실금·골반", volume: "1대", claim: "적외선 온열 방식 여성 웰니스 케어기기 — 골반 케어", desc: "적외선 온열 자극으로 골반 부위를 관리하는 가정용 여성 웰니스 케어기기입니다. 앉아서 사용하는 방식이라 별도 운동 없이 꾸준한 홈케어가 가능합니다.", price: 388000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=28248485" },
   { id: "pelvic-ergobody-dislfit", name: "에르고바디 디슬핏 골반·내전근 운동기", brand: "에르고바디", category: "요실금·골반", volume: "1대", claim: "허벅지 조임 방식 골반저근·내전근 트레이너", desc: "허벅지로 조여 내전근과 골반저근을 함께 단련하는 케겔 운동기입니다. 앉은 자세에서 반복 조임 운동으로 골반 하부 근력을 손쉽게 강화할 수 있습니다.", price: 48510, source: "danawa", url: "https://prod.danawa.com/info/?pcode=18457022" },
   { id: "pelvic-cozy-cozyhip", name: "코지헬스케어 코지힙 케겔운동기구", brand: "코지헬스케어", category: "요실금·골반", volume: "1대", claim: "앉아서 하는 케겔 운동기구 — 골반저근·엉덩이 근력", desc: "의자나 바닥에 놓고 앉아 조이는 동작으로 골반저근과 엉덩이 근육을 자극하는 케겔 운동기구입니다. 좌식 생활자나 출산 후 골반 관리에 부담 없이 활용할 수 있습니다.", price: 24000, source: "danawa", url: "https://prod.danawa.com/info/?pcode=30158249" },
   { id: "pelvic-bbeda-superrocket", name: "빼다 슈퍼로켓 파워조절 논슬립 쪼임이", brand: "빼다", category: "요실금·골반", volume: "1대", claim: "파워 조절 허벅지 조임 케겔 트레이너 — 입문용", desc: "탄성 파워를 단계별로 조절하며 허벅지를 조여 골반저근과 내전근을 단련하는 휴대용 케겔 트레이너입니다. 논슬립 설계로 가정에서 간편하게 골반 근력 운동을 시작할 수 있습니다.", price: 6500, source: "danawa", url: "https://prod.danawa.com/info/?pcode=19033217" },
@@ -15898,8 +15898,8 @@ const COMM_DISEASE = [
   { dz: "당뇨", label: "당뇨·혈당 관리", kw: ["당뇨", "혈당", "고혈당", "당화혈색소"], areas: ["혈당"], devProducts: ["혈당측정", "CGM", "연속혈당"], vendors: ["JW중외제약", "자원메디칼", "카카오헬스케어"], note: "식후 혈당 관리와 자가 혈당 모니터링" },
   { dz: "고혈압", label: "고혈압·혈압 관리", kw: ["고혈압", "혈압", "혈압약"], areas: ["혈압"], devProducts: ["혈압계"], vendors: ["오므론", "휴비딕", "GN바디닥터"], note: "혈압 관리와 가정용 혈압 측정" },
   { dz: "고지혈증", label: "고지혈·혈행 관리", kw: ["고지혈", "콜레스테롤", "중성지방", "혈행", "동맥경화", "이상지질"], areas: ["혈행"], devProducts: [], vendors: ["종근당건강", "조윈"], note: "혈중 중성지방·혈행 관리" },
-  { dz: "관절염", label: "관절·연골 건강", kw: ["관절", "무릎", "연골", "골관절염", "퇴행성관절", "류마티스", "오십견", "어깨통증"], areas: ["관절", "통증"], devProducts: ["골관절염 치료기", "고주파 리페어", "바디닥터"], vendors: ["GN바디닥터", "안국약품", "조윈", "세라젬"], note: "관절·연골 건강과 가정용 통증·온열 케어" },
-  { dz: "요실금", label: "요실금·배뇨 건강", kw: ["요실금", "방광", "배뇨", "실금", "소변", "빈뇨", "야뇨"], areas: ["요로", "전립선"], devProducts: ["요실금 치료기"], vendors: ["GN바디닥터"], note: "요로·배뇨 건강과 가정용 요실금 케어" },
+  { dz: "관절염", label: "관절·연골 건강", kw: ["관절", "무릎", "연골", "골관절염", "퇴행성관절", "류마티스", "오십견", "어깨통증"], areas: ["관절", "통증"], devProducts: ["관절재활통증기기", "고주파 리페어", "바디닥터"], vendors: ["GN바디닥터", "안국약품", "조윈", "세라젬"], note: "관절·연골 건강과 가정용 통증·온열 케어" },
+  { dz: "요실금", label: "요실금·배뇨 건강", kw: ["요실금", "방광", "배뇨", "실금", "소변", "빈뇨", "야뇨"], areas: ["요로", "전립선"], devProducts: ["여성 웰니스 케어기기"], vendors: ["GN바디닥터"], note: "요로·배뇨 건강과 가정용 요실금 케어" },
   { dz: "전립선", label: "전립선·배뇨 건강", kw: ["전립선", "전립샘", "배뇨장애"], areas: ["전립선", "요로"], devProducts: [], vendors: [], note: "전립선·배뇨 기능 관리" },
   { dz: "눈질환", label: "눈·시력 건강", kw: ["눈", "시력", "황반", "백내장", "노안", "안구건조", "눈건강", "비문증"], areas: ["눈"], devProducts: [], vendors: ["하이-아이즈", "조윈", "안국약품"], note: "황반색소·눈 건강" },
   { dz: "간질환", label: "간 건강", kw: ["간", "지방간", "간수치", "간기능", "숙취", "b형간염", "c형간염"], areas: ["간"], devProducts: [], vendors: ["JW중외제약", "조윈", "대웅제약"], note: "간세포 보호·항산화" },
@@ -16087,7 +16087,7 @@ function _catOverview(kind, kb) {
   return { bubbles: [
     { kind: "text", text: `${kind} 상품몰을 안내해 드릴게요. 어떤 질환·목적인지 알려주시면 딱 맞는 제품과 공급업체를 연결해 드려요.` },
     { kind: "card", card: { title: `🛒 ${kind} 안내`, items, buttons: [btn] } },
-  ], quicks: kind === "홈케어의료기" ? ["당뇨 혈당측정기 추천", "요실금 치료기 알려줘", "🛒 홈케어 기기 보기"] : ["관절 영양제 추천", "면역 영양제 추천", "🛒 건강쇼핑에서 성분·제품 보기"] };
+  ], quicks: kind === "홈케어의료기" ? ["당뇨 혈당측정기 추천", "여성 웰니스 케어기기 알려줘", "🛒 홈케어 기기 보기"] : ["관절 영양제 추천", "면역 영양제 추천", "🛒 건강쇼핑에서 성분·제품 보기"] };
 }
 
 /* ── 커머스 상담 진입점 — 업체/제품/질환-제품 질의를 응답, 아니면 null ── */
@@ -16098,7 +16098,7 @@ function commerceCounsel(text) {
   const low = String(text).toLowerCase();
   const commerce = _COMM_WORD.test(low);
 
-  // 1) 제품 정확(전체 이름) 매칭 우선 — 예: "요실금 치료기", "락토핏 골드"
+  // 1) 제품 정확(전체 이름) 매칭 우선 — 예: "여성 웰니스 케어기기", "락토핏 골드"
   const pFull = _matchProductFull(text, kb);
   if (pFull) return _productCard(pFull.item, kb);
   // 2) 공급업체 매칭 — 예: "GN바디닥터 찾아줘", "종근당건강"

@@ -2031,7 +2031,7 @@ function aiRespond(text, corpus, report, QA) {
   if (typeof kbDiseaseCounsel === "function") { const _dz = kbDiseaseCounsel(text); if (_dz) return _dz; }
   // 검진 이해 KB — 종합검진 목적·체성분·생체나이·암예방·항목 기준(예: '체성분이 뭐예요?', '공복혈당 정상 범위')
   if (typeof checkupEduCounsel === "function") { const _ec = checkupEduCounsel(text); if (_ec) return _ec; }
-  // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '요실금 치료기', '요실금 영양제')
+  // 커머스 온톨로지 — 공급업체/제품/질환-제품 질의(예: 'GN바디닥터 찾아줘', '여성 웰니스 케어기기', '요실금 영양제')
   if (typeof commerceCounsel === "function") { const _cm = commerceCounsel(text); if (_cm) return _cm; }
   const _topics = multiTopicCounsel(text);
   if (_topics) return _topics;

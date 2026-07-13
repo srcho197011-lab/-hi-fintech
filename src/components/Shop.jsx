@@ -38,7 +38,7 @@ const SHOP_PARTNERS = {
     bg: "linear-gradient(125deg,#0E7490 0%,#0891B2 48%,#6366F1 100%)",
     tagline: "식약처·FDA 인증 가정용 의료기기 전문. 가정에서 안전하게 쓰는 검증된 헬스케어 기기를 공급합니다.",
     strengths: [["badge", "식약처·FDA 인증", "허가받은 가정용 의료기기"], ["device", "헬스케어 기기", "요실금치료기·EMS·고주파"], ["home", "가정용 케어", "집에서 쓰는 전문 기기"], ["badge", "품질·AS", "제조·품질·사후관리"]],
-    chips: ["요실금 치료기", "EMS 벨트", "고주파 리페어", "음파 매트"],
+    chips: ["여성 웰니스 케어기기", "EMS 벨트", "고주파 리페어", "음파 매트"],
     stats: [["식약처·FDA", "인증"], ["가정용", "의료기기"], ["제너럴네트", "GN그룹"]],
     home: "https://www.bodydoctor.co.kr", q: "GN바디닥터 가정용 의료기기",
   }],
@@ -141,10 +141,10 @@ function PrecisionNutritionSection() {
 /* 특별제휴 배너 제품 이미지·영상 갤러리(로컬 실제 제품) — 투자자용 프리미엄 배너 */
 const SP_GALLERY = {
   "GN바디닥터": [
-    { name: "요실금 치료기", imgs: ["./data/img/medi/urinary0.png?v=2", "./data/img/medi/urinary1.png?v=2", "./data/img/medi/urinary2.png?v=2", "./data/img/medi/urinary3.png?v=2"] },
+    { name: "여성 웰니스 케어기기", imgs: ["./data/img/medi/urinary0.png?v=2", "./data/img/medi/urinary1.png?v=2", "./data/img/medi/urinary2.png?v=2", "./data/img/medi/urinary3.png?v=2"] },
     { name: "고주파 리페어", video: "./data/img/medi/rf-repair.mp4" },
     { name: "바디닥터 리페어", img: "./data/img/medi/bodydoctor-repair.png" },
-    { name: "골관절염 치료기", img: "./data/img/medi/joint.png" },
+    { name: "관절재활통증기기", img: "./data/img/medi/joint.png" },
   ],
 };
 /* 특별제휴 배너 하단 가로 풀 이미지(팝업매장 등) */
