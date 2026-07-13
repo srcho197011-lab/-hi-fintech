@@ -32,6 +32,11 @@ function HomeHub({ initial, onGo }) {
   const tabs = [["home", "홈 · 소개", Home, "#2563EB"], ["social", "사회적기업", HeartHandshake, "#16A34A"], ["community", "커뮤니티", Users, "#7C3AED"]];
   return (
     <div style={{ marginTop: 4 }}>
+      <div className="pi-cta" onClick={() => onGo && onGo("partner")} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onGo && onGo("partner"); }}>
+        <span className="pi-ctaic"><Handshake size={20} /></span>
+        <div className="pi-ctat"><b>제휴 · 투자 파트너 모집</b><span>검진센터·병원·요양·돌봄·약국·건강쇼핑 제휴 + 회원/법인 투자 신청</span></div>
+        <span className="pi-ctago">신청하기 <ChevronRight size={16} /></span>
+      </div>
       <GroupHead ic={Home} title="HI-Fin Tech란" sub="회사 소개 · 비전 · 사회적 가치환원 · 커뮤니티" color="#2563EB" />
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
       {tab === "home" && <HomeView onGo={onGo} />}

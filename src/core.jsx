@@ -317,6 +317,7 @@ function Art({ name, size = 26 }) {
 }
 /* 고객 여정 기준 6개 섹션 — 검진→케어→보장→내 지갑→(관리자) */
 const SECTIONS = [
+  { k: "partner", ic: Handshake, t: "제휴·투자 신청", s: "제휴 네트워크·회원/법인 투자" },
   { k: "home", ic: Home, t: "HI-Fin Tech란", s: "회사 소개·비전·사회환원·커뮤니티" },
   { k: "checkup", ic: ClipboardList, t: "건강검진 예약", s: "예약·결과조회·검진보험" },
   { k: "care", ic: HeartHandshake, t: "검진 후 케어", s: "주치의·건강현황·병원진료·재가돌봄·건강쇼핑" },
@@ -326,6 +327,7 @@ const SECTIONS = [
 ];
 /* 옛 섹션 키 → 새 부모 섹션 매핑 (딥링크·onGo·헤더·검색 호환) */
 const SEC_PARENT = {
+  partner: "partner",
   home: "home", social: "home", community: "home",
   checkup: "checkup",
   care: "care", ai: "care", manage: "care", hospital: "care", homecare: "care", shop: "care",

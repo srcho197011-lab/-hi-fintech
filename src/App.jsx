@@ -143,6 +143,7 @@ export default function App() {
           </nav>
           {(() => { const p = secParent(sec);
             if (sec === "agent") return <SuperAgentSection onGo={setSec} />;
+            if (p === "partner") return <PartnerInvestSection onGo={setSec} />;
             if (p === "home") return <HomeHub initial={sec} onGo={setSec} />;
             if (p === "checkup") return <CheckupSection />;
             if (p === "care") return <CareSection initial={sec} onGo={setSec} />;
