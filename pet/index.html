@@ -3167,6 +3167,30 @@ function OntoUnderwriting({onto,dz}){
 }
 
 /* ============================ APP ============================ */
+function HomeInsuranceBanner({nav}){
+  return (
+    <div className="hpban">
+      <div className="hpb-glow g1"/><div className="hpb-glow g2"/>
+      <div className="hpb-left">
+        <div className="hpb-badge"><span className="d"/> 무료 펫보험 · 보험료 0원</div>
+        <div className="hpb-head">사료만 사도, <span className="hl">치료비 걱정 끝.</span></div>
+        <div className="hpb-sub">하이펫에서 <b>사료·간식·펫용품</b>을 구입하면 무료 펫보험이 우리 아이의 <b>병원비</b>를 지켜드립니다.</div>
+        <div className="hpb-cta">
+          <button className="hpb-btn" onClick={()=>nav&&nav("제품 쇼핑")}><ShoppingCart size={16}/> 지금 쇼핑하기</button>
+          <span className="hpb-note">🐾 일상 구매가 우리 아이의 보험이 됩니다</span>
+        </div>
+      </div>
+      <div className="hpb-flow">
+        <div className="hpb-step"><span className="hpb-ic o"><ShoppingCart size={22} color="#fff"/></span><b>사료·간식·용품</b><span>일상 쇼핑 그대로</span></div>
+        <div className="hpb-arw">→</div>
+        <div className="hpb-step"><span className="hpb-ic g"><ShieldCheck size={22} color="#fff"/></span><b>무료 펫보험 자동</b><span>보험료 0원 적립</span></div>
+        <div className="hpb-arw">→</div>
+        <div className="hpb-step"><span className="hpb-ic r"><HeartPulse size={22} color="#fff"/></span><b>병원비 보장</b><span>치료비 자동 지원</span></div>
+      </div>
+    </div>
+  );
+}
+
 function HipetLogin({onOk}){
   const [id,setId]=useState(""),[pw,setPw]=useState(""),[err,setErr]=useState(""),[shake,setShake]=useState(false);
   const submit=()=>{ if(id.trim()===GATE_ID&&pw===GATE_PW){ onOk(); }
@@ -3210,6 +3234,7 @@ function App(){
       <Sidebar active={active} setActive={setActive} open={open} onClose={()=>setOpen(false)} admin={admin} setAdmin={setAdmin} onExit={()=>{ setGate(false); setActive("홈"); }}/>
       <main style={{flex:1,minWidth:0,padding:"24px 28px 8px",display:"flex",flexDirection:"column"}}>
         <TopBar onMenu={()=>setOpen(true)}/>
+        {active==="홈" && <HomeInsuranceBanner nav={setActive}/>}
         <QuickBar nav={setActive}/>
         {active==="병원/예약" ? (
           <HospitalSection/>
@@ -3309,6 +3334,43 @@ css.textContent=`
 .notit{font-size:13px;font-weight:700}
 .notid{font-size:11.5px;color:var(--muted);margin-top:2px}
 .notiall{width:100%;text-align:center;padding:9px;font-size:12.5px;font-weight:700;color:var(--orange-deep);background:var(--cream);border-radius:11px;margin-top:4px;cursor:pointer}
+/* ===== 홈 상단 무료보험 배너 ===== */
+.hpban{position:relative;overflow:hidden;border-radius:22px;padding:24px 26px;margin-bottom:16px;
+  display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+  background:linear-gradient(135deg,#FFF6EC 0%,#FFE7CE 48%,#FFD6AD 100%);
+  box-shadow:0 14px 34px rgba(196,110,40,.22)}
+.hpb-glow{position:absolute;border-radius:50%;filter:blur(44px);opacity:.55;z-index:0}
+.hpb-glow.g1{width:240px;height:240px;background:#FFB86B;top:-90px;right:-60px}
+.hpb-glow.g2{width:200px;height:200px;background:#FFCF9B;bottom:-90px;left:-50px}
+.hpban>*{position:relative;z-index:1}
+.hpb-left{flex:1;min-width:280px}
+.hpb-badge{display:inline-flex;align-items:center;gap:7px;background:#fff;color:var(--orange-deep);
+  font-size:12px;font-weight:800;padding:6px 13px;border-radius:999px;box-shadow:0 4px 12px rgba(196,110,40,.16);margin-bottom:12px}
+.hpb-badge .d{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(79,178,134,.25)}
+.hpb-head{font-size:30px;line-height:1.15;font-weight:900;letter-spacing:-1px;color:#3A2A1C}
+.hpb-head .hl{color:var(--orange-deep);position:relative;white-space:nowrap}
+.hpb-head .hl::after{content:"";position:absolute;left:0;right:0;bottom:3px;height:10px;z-index:-1;background:rgba(255,181,71,.55);border-radius:4px}
+.hpb-sub{margin-top:11px;font-size:15px;line-height:1.65;color:#6E5844;font-weight:500;max-width:520px}
+.hpb-sub b{color:#B4531B;font-weight:800}
+.hpb-cta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px}
+.hpb-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--orange),var(--amber));
+  color:#fff;font-size:14.5px;font-weight:800;padding:12px 22px;border-radius:13px;border:none;cursor:pointer;
+  box-shadow:0 10px 22px rgba(244,132,60,.4);transition:transform .15s,filter .15s}
+.hpb-btn:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.hpb-note{font-size:12.5px;color:#8A6F58;font-weight:600}
+.hpb-flow{display:flex;align-items:stretch;gap:8px;flex-shrink:0}
+.hpb-step{width:126px;background:rgba(255,255,255,.82);border:1px solid rgba(244,132,60,.18);border-radius:16px;
+  padding:14px 8px;text-align:center;display:flex;flex-direction:column;align-items:center}
+.hpb-step b{font-size:13.5px;font-weight:800;color:#3A2A1C;margin-top:9px;line-height:1.25}
+.hpb-step span:last-child{font-size:11px;color:#8A6F58;margin-top:3px;font-weight:600}
+.hpb-ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;
+  box-shadow:0 8px 16px rgba(0,0,0,.13),inset 0 1.5px 0 rgba(255,255,255,.4)}
+.hpb-ic.o{background:linear-gradient(150deg,#F4843C,#FF9E52)}
+.hpb-ic.g{background:linear-gradient(150deg,#4FB286,#3C9E72)}
+.hpb-ic.r{background:linear-gradient(150deg,#FF7B6B,#EF5B5B)}
+.hpb-arw{display:grid;place-items:center;font-size:18px;font-weight:800;color:#E9A968}
+@media(max-width:980px){ .hpb-flow{width:100%;justify-content:center;margin-top:6px} }
+@media(max-width:600px){ .hpb-head{font-size:24px} .hpb-arw{display:none} .hpb-step{width:calc(33% - 6px);min-width:96px} }
 /* ===== 상단 빠른메뉴 (입체 타일) ===== */
 .qtop{display:flex;gap:10px;background:linear-gradient(135deg,#FFFFFF,#FFF6EC);border:1px solid var(--border);
   border-radius:20px;padding:15px 16px;margin-bottom:20px;box-shadow:var(--shadow-sm);overflow-x:auto}
