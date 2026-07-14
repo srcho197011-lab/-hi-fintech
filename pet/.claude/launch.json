@@ -4,7 +4,8 @@
     {
       "name": "pet-preview",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-u", "-c", "import os,http.server;port=int(os.environ.get('PORT','5601'));http.server.ThreadingHTTPServer(('',port),http.server.SimpleHTTPRequestHandler).serve_forever()"],
+      "runtimeArgs": ["-u", "-c", "import os,http.server;port=int(os.environ.get('PORT','5611'));http.server.ThreadingHTTPServer(('',port),http.server.SimpleHTTPRequestHandler).serve_forever()"],
+      "port": 5611,
       "autoPort": true
     }
   ]

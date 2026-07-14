@@ -378,6 +378,7 @@ function CorporateInvest() {
           <li>2차 라운드: 영업개시 후 <b>Valuation 1,000억</b> 기준 <b>10% 이내</b> 예정</li>
         </ul>
       </div>
+      <PiDocDownload href="./data/docs/HiZenCare_HIFin_Investor_IR.docx" name="하이핀_투자제안서_IR.docx" title="투자 제안서(IR) 내려받기" desc="사업개요·팀·트랙션·시장규모(TAM-SAM-SOM)·경쟁차별·자금사용계획(10억) · 대외비" />
       <PiDocDownload href="./data/docs/hifin_investment_agreement.docx" name="하이핀_전략적투자_업무제휴_계약서(안).docx" title="전략적 투자 · 업무제휴 계약서(안)" desc="본 신청과 동일 조건(Pre 100억·SI 5%·3단계 트랜치·2차 1,000억)의 표준계약서 · 시연용 예시" />
       <div className="pi-block">
         <div className="pi-blockt">투자 신청 정보</div>
