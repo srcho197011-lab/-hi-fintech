@@ -284,25 +284,94 @@ function PremiumNotice() {
 function _insBold(s) {
   return String(s).split(/(\*\*[^*]+\*\*)/g).map((p, i) => (p.startsWith("**") && p.endsWith("**")) ? <b key={i}>{p.slice(2, -2)}</b> : <React.Fragment key={i}>{p}</React.Fragment>);
 }
+/* ── 보험 AI 채팅 — 건강×보험 융합 컨텍스트 & 함수 라우팅(Tool Calling) ── */
+function _insWonS(n) { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000).toFixed(n % 100000000 ? 1 : 0) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; }
+function _insParseCost(text) { let m = String(text).match(/([0-9][0-9,]*)\s*만\s*원?/); if (m) return parseInt(m[1].replace(/,/g, ""), 10) * 10000; m = String(text).match(/([0-9][0-9,]{2,})\s*원/); if (m) return parseInt(m[1].replace(/,/g, ""), 10); return null; }
+function _insTreat(text) { const t = String(text); if (/도수|물리치료/.test(t)) return { t: "도수치료", def: 100000 }; if (/mri|엠알아이/i.test(t)) return { t: "MRI", def: 500000 }; if (/비급여\s*주사|주사/.test(t)) return { t: "비급여주사", def: 100000 }; if (/입원/.test(t)) return { t: "입원", def: 3000000 }; if (/비급여/.test(t)) return { t: "비급여 치료", def: 300000 }; return { t: "통원 진료", def: 80000 }; }
+/* 회원 컨텍스트(Mx) × 질문 → 융합 함수 호출 → 카드 응답. null이면 일반 약관상담으로 폴백 */
+function _insFusionRoute(text, Mx, nm) {
+  if (!Mx) return null;
+  const HAND = "전문 설계사 연결", cite = "※ 예시 기준 · 실제 보장·보험료·가입가능 여부는 약관·인수심사로 확정";
+  const who = nm ? nm + "님" : "회원님";
+  // 1) 내 실손 세대/정보
+  if (/몇\s*세대|내\s*실손|실손\s*(정보|뭐|어떤|가입|은|이|현황)|내\s*보험\s*(뭐|어떤|정보|현황)/.test(text)) {
+    const ins = Mx._ins || (typeof memberInsurance === "function" ? memberInsurance(Mx) : null); if (!ins) return null; const s = ins.silson;
+    if (!s.enrolled) return { bubbles: [{ kind: "text", text: `${who}은 현재 **실손보험 미가입** 상태예요. 검진에서 이상이 나와도 치료비 안전망이 없어, 4·5세대 실손 또는 (해당 시)유병자·노후 실손 가입 검토를 권해요.` }, { kind: "card", card: { title: "🛡️ 내 실손 현황", items: ["가입: 미가입", "보장 공백: 치료비 전액 본인부담"], buttons: ["보장 공백 분석", HAND] } }], quicks: ["보장 공백 분석", "암보험 필요할까?", HAND] };
+    return { bubbles: [{ kind: "text", text: `${who}의 실손은 **${s.gen}**(${s.type})이에요. ${s.feature}` }, { kind: "card", card: { title: `🛡️ 내 실손 — ${s.gen}`, items: [`가입시기: ${s.period}${s.enrollYear ? ` (${s.enrollYear}년 가입)` : ""}`, `급여 자기부담 ${s.coGen} · 비급여 ${s.coNon}`, `통원 회당 ${_insWonS(s.outLimit)} · 입원 ${_insWonS(s.inLimit)}`, `갱신 ${s.renew} · 재가입 ${s.reEnroll}`, `비급여 특약: ${s.riderNote}`, `월 보험료(추정) ${_insWonS(s.monthly)}`, `중대질환 진단비: ${ins.riders.length ? ins.riders.map((r) => r.cat).join("·") + " 보유" : "미보유"}`], buttons: ["도수치료 받으면 얼마 나와?", "세대 전환 유불리", "보장 공백 분석"] } }, { kind: "text", text: cite }], quicks: ["도수치료 받으면 얼마 나와?", "세대 전환 유불리", "보장 공백 분석", HAND] };
+  }
+  // 2) 예상 본인부담금 계산
+  if (/얼마\s*(나와|드나|나오|내|들|듦|나감)|본인\s*부담|자기\s*부담|도수|mri|엠알아이|주사.*얼마|치료비.*(얼마|계산)|계산해/.test(text)) {
+    const tr = _insTreat(text), cost = _insParseCost(text) || tr.def;
+    const r = (typeof calcOutOfPocket === "function") ? calcOutOfPocket(Mx, tr.t, cost) : null; if (!r) return null;
+    return { bubbles: [{ kind: "text", text: `**${tr.t}** ${_insWonS(cost)} 기준, ${r.gen} 실손으로 계산하면 예상 **본인부담금은 약 ${_insWonS(r.oop)}**이에요.` }, { kind: "card", card: { title: `💰 예상 본인부담 — ${tr.t}`, items: [`치료비: ${_insWonS(r.cost)} (${r.cat})`, `실손 보장(추정): ${_insWonS(r.covered)}`, `내 본인부담: 약 ${_insWonS(r.oop)}`, r.note], buttons: ["세대 전환 유불리", HAND] } }, { kind: "text", text: cite }], quicks: ["MRI 찍으면 얼마?", "세대 전환 유불리", "보장 공백 분석", HAND] };
+  }
+  // 3) 세대 전환 시뮬레이션
+  if (/전환|바꿀|갈아|4세대|5세대|세대\s*(전환|변경|바꿔)|옮길|유불리/.test(text)) {
+    const r = (typeof simulateGenerationSwitch === "function") ? simulateGenerationSwitch(Mx) : null; if (!r) return null;
+    const items = [`현재: ${r.current.gen} · 월 ${_insWonS(r.current.monthly)} · 비급여 자기부담 ${r.current.coNon}`];
+    r.options.forEach((o) => items.push(`${o.gen} 전환: 월 ${_insWonS(o.monthly)} (${o.saveMonthly > 0 ? "−" + _insWonS(o.saveMonthly) : "+" + _insWonS(-o.saveMonthly)}/월) · ${o.coDelta}`));
+    const bub = [{ kind: "text", text: r.recommend }, { kind: "card", card: { title: "🔄 세대 전환 시뮬레이션", items, buttons: [HAND] } }];
+    if (r.warning) bub.push({ kind: "text", text: `⚠️ ${r.warning}` });
+    bub.push({ kind: "text", text: cite });
+    return { bubbles: bub, quicks: ["보장 공백 분석", "도수치료 받으면 얼마 나와?", HAND] };
+  }
+  // 4) 보장 공백 / 필요 보험
+  if (/공백|부족|필요한?\s*보험|암\s*보험\s*필요|어떤\s*보험|보험\s*추천|보장\s*(분석|점검|봐|괜찮|충분)|내\s*보험\s*(괜찮|충분|점검|봐)/.test(text)) {
+    const g = (typeof analyzeCoverageGap === "function") ? analyzeCoverageGap(Mx) : null; if (!g) return null;
+    const items = g.gaps.slice(0, 4).map((f) => `${f.sev === "crit" ? "🔴" : "🟠"} ${f.t} → ${f.a}`);
+    if (!items.length) items.push("✅ 현재 건강위험 대비 보장이 충실합니다.");
+    return { bubbles: [{ kind: "text", text: `${who} 건강데이터와 보험을 융합 분석한 결과, **보장 충실도 ${g.grade} · ${g.score}점**이에요.${g.top ? ` 가장 시급한 건 **${g.top.t}**입니다.` : ""}` }, { kind: "card", card: { title: "🧩 보장 공백 분석", items, buttons: [HAND, "세대 전환 유불리"] } }, { kind: "text", text: cite }], quicks: ["암보험 필요할까?", "도수치료 받으면 얼마 나와?", "세대 전환 유불리", HAND] };
+  }
+  // 5) 가족 보장 요약
+  if (/가족|아내|배우자|남편|자녀|아이|우리\s*가족/.test(text)) {
+    const f = (typeof getFamilyCoverageSummary === "function") ? getFamilyCoverageSummary(Mx) : null; if (!f) return null;
+    if (!f.available) return { bubbles: [{ kind: "text", text: f.note }], quicks: ["보장 공백 분석", HAND] };
+    return { bubbles: [{ kind: "text", text: "가족 보장 현황을 요약했어요. (동의 범위 내)" }, { kind: "card", card: { title: "👪 가족 보장 요약", items: f.rows.map((r) => `${r.name}${r.rel ? "(" + r.rel + ")" : ""} · ${r.gen} · ${r.grade} · ${r.topGap}`), buttons: [HAND] } }], quicks: ["보장 공백 분석", HAND] };
+  }
+  // 6) 검진지표 → 질환 → 보장(온톨로지)
+  if (/혈당|당뇨|혈압|콜레스테롤|지질|간수치|지방간|신장|콩팥|폐|흡연|대사|암\s*위험|가족력/.test(text)) {
+    const r = (typeof getDiseaseRiskCoverage === "function") ? getDiseaseRiskCoverage(Mx, text) : null; if (!r) return null;
+    const items = [r.note].filter(Boolean).concat(r.mapped.map((x) => `${x.cat} 진단비: ${x.covered ? "보유 " + _insWonS(x.benefit) : "미보유 ⚠️"}`));
+    return { bubbles: [{ kind: "text", text: `**${r.indicator}** 관련 위험은 **${r.disease}**로 이어질 수 있어요. 관련 중대질환 보장을 확인했어요.` }, { kind: "card", card: { title: `🔬 ${r.disease} 관련 보장`, items, buttons: ["보장 공백 분석", HAND] } }, { kind: "text", text: cite }], quicks: ["보장 공백 분석", "암보험 필요할까?", HAND] };
+  }
+  return null;
+}
 function AIPlannerChat({ onSimple }) {
-  const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const _self = !dm && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null;
+  const member = dm || _self;
   const nm = member ? member.name : null;
   const PROD = (typeof INS_PRODUCT !== "undefined") ? INS_PRODUCT : { name: "상해보험", insurer: "현대해상", tel: "1588-5656" };
   const FAQ = (typeof INS_FAQ !== "undefined") ? INS_FAQ : [];
-  const greet = { who: "ai", bubbles: [{ kind: "text", text: `안녕하세요${nm ? " " + nm + "님" : ""}! 보험 약관을 학습한 **AI 설계사**예요. 🤖\n**보장·보험금·청구·면책·계약**을 안내해 드려요. 아래 질문을 눌러보거나 무엇이든 물어보세요.` }] };
+  // 회원 컨텍스트(Mx) — 건강데이터 + 실손/진단비를 융합 분석 함수에 주입(세션 로컬, JSON 형태)
+  const Mx = useMemo(() => {
+    if (!member) return null;
+    const myIns = dm && typeof memberInsurance === "function" ? memberInsurance(dm) : (typeof selfInsurance === "function" ? selfInsurance() : null);
+    // 조성래(시연 기준 인물): 음주·당뇨·지방간 컨텍스트를 주입해 간·신장 보장 공백이 드러나게
+    const selfCtx = !dm ? { drinker: true, regAge: 54, sex: "남", highRiskCancerTypes: ["췌장암"], diseases: (member.diseases && member.diseases.length ? member.diseases : ["당뇨병", "지방간"]) } : {};
+    return Object.assign({}, member, selfCtx, { _ins: myIns });
+  }, [dm, member && member.name]);
+  const topGap = useMemo(() => { if (!Mx || typeof analyzeCoverageGap !== "function") return null; try { const g = analyzeCoverageGap(Mx); return g && g.top ? g.top : null; } catch (e) { return null; } }, [Mx]);
+  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 검진·보험을 함께 학습한 **AI 보험 솔루션 상담사**예요. 🤖\n제 데이터 기준으로 **보장 공백·본인부담·세대 전환**을 분석해 드려요.`
+    + (topGap ? `\n\n${nm ? nm + "님, " : ""}지금 가장 먼저 챙길 지점은 **${topGap.t}**이에요. “보장 공백 분석”을 눌러 자세히 볼까요?` : `\n아래 질문을 눌러보거나 무엇이든 물어보세요.`);
+  const greet = { who: "ai", bubbles: [{ kind: "text", text: greetText }] };
+  const FUSION_QUICKS = ["내 실손 몇 세대야?", "보장 공백 분석", "도수치료 받으면 얼마 나와?", "세대 전환 유불리", "암보험 필요할까?"];
   const [msgs, setMsgs] = useState([greet]);
-  const [quicks, setQuicks] = useState(FAQ.slice(0, 6));
+  const [quicks, setQuicks] = useState(member ? FUSION_QUICKS : FAQ.slice(0, 6));
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const endRef = useRef(null);
   useEffect(() => { endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
   const send = (textArg) => {
     const text = (textArg == null ? input : textArg).trim(); if (!text) return;
-    if (text === "보험상담 신청") { if (typeof openConsult === "function") openConsult(PROD.name + " — AI 설계사 상담"); return; }
+    if (text === "보험상담 신청" || text === "전문 설계사 연결" || text === "간편 가입 상담") { if (typeof openConsult === "function") openConsult(PROD.name + " — 전문 설계사 상담(GA 보험중개)"); return; }
     setInput(""); setQuicks([]);
     setMsgs((m) => [...m, { who: "me", bubbles: [{ kind: "text", text }] }]);
     setTyping(true);
     setTimeout(() => {
+      // ① 건강×보험 융합 함수 라우팅(내 데이터 기반) → 없으면 ② 약관 KB 상담으로 폴백
+      const fusion = (typeof _insFusionRoute === "function") ? (() => { try { return _insFusionRoute(text, Mx, nm); } catch (e) { return null; } })() : null;
+      if (fusion) { setTyping(false); setMsgs((m) => [...m, { who: "ai", bubbles: fusion.bubbles }]); setQuicks(fusion.quicks || FUSION_QUICKS); return; }
       const res = (typeof insuranceCounsel === "function") ? insuranceCounsel(text) : null;
       const kbE = (typeof kbInsuranceMatch === "function") ? kbInsuranceMatch(text) : null;
       setTyping(false);
@@ -320,7 +389,7 @@ function AIPlannerChat({ onSimple }) {
   };
   return (
     <div className="aipwrap">
-      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 설계사</b><span>약관 학습 · AI 실시간 보험상담</span></div><span className="aipbadge">약관 학습완료</span></div>
+      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 보험 솔루션 상담사</b><span>건강데이터 × 실손·중대질환 융합 분석</span></div><span className="aipbadge">{member ? nm + "님 데이터 연동" : "약관 학습완료"}</span></div>
       {onSimple && <button className="aipsimple" onClick={onSimple}><span className="aipsimple-l"><Zap size={17} /> 간편단기특화보험</span><span className="aipsimple-r">위험질병별 1년 단기 밀도가입 <ChevronRight size={16} /></span></button>}
       <div className="aipbody">
         {msgs.map((m, i) => (
@@ -342,7 +411,7 @@ function AIPlannerChat({ onSimple }) {
         <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="보장·보험금·청구·면책 무엇이든 물어보세요" />
         <button className={input.trim() ? "on" : ""} onClick={() => send()}><Send size={16} /></button>
       </div>
-      <div className="chnote">※ AI 설계사 안내는 약관을 요약·재작성한 <b>참고용</b>이며, 실제 보장·지급·면책은 <b>가입 증권·약관 원문·관련 법령</b>을 따릅니다. 보험 권유·가입은 보험업법상 정식 라이선스 채널로만 이루어집니다.</div>
+      <div className="chnote">※ 본 AI 분석은 <b>내 검진·보험 데이터를 융합한 정보 제공용</b>이며 특정 상품 청약 권유가 아닙니다. 모든 보장·보험료 수치는 <b>예시 기준</b>으로 실제 조건은 <b>가입 증권·약관 원문·관련 법령</b>에 따르며, 세대 전환 시 <b>1~2세대 해지의 불이익(재가입 불가)</b>을 반드시 확인하세요. 실제 가입·권유는 보험업법상 정식 라이선스 채널(GA 보험중개)로만 이루어집니다.</div>
     </div>
   );
 }

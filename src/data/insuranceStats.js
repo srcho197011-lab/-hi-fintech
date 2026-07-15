@@ -4,16 +4,20 @@
    출처: 손해보험협회/보험연구원 실손 세대분포(2세대43·3세대22·1세대18·4세대15%, 가입률≈70%),
         금융위 5세대 실손(2025~), 중앙암등록본부 2023, 질병관리청 만성질환. */
 
-/* ── 실손보험 세대별 보장 상세(조사 기반, 대표값) ── */
+/* ── 실손보험 세대별 보장 상세(조사 기반, 대표값 — 부록 A-2 반영) ──
+   필드: 급여/비급여 자기부담률(coGen/coNon), 통원 회당 한도(outLimit), 입원 한도(inLimit),
+        비급여 연간 한도(nonPayAnnual), 갱신주기(renew), 재가입주기(reEnroll),
+        비급여 특약(riderNote), 상품유형(type), 월보험료 기준(monthlyBase).
+   ⚠️ 상품별 편차 존재 — 각 레코드 생성 시 ±범위 변형 허용, 정확 조건은 약관 재검증. */
 const SILSON_SPEC = {
-  "1세대":       { code: "G1", period: "~2009.09",       coGen: "0%",   coNon: "0%(통원 5천원 공제)", outLimit: 300000, inLimit: 100000000, monthlyBase: 42000, feature: "급여·비급여 구분 없이 사실상 전액 보장(자기부담 최소)" },
-  "2세대":       { code: "G2", period: "2009.10~2017.03", coGen: "10%",  coNon: "20%",  outLimit: 250000, inLimit: 50000000, monthlyBase: 28000, feature: "급여/비급여 구분 도입, 자기부담 10~20%" },
-  "3세대":       { code: "G3", period: "2017.04~2021.06", coGen: "10%",  coNon: "20~30%", outLimit: 200000, inLimit: 50000000, monthlyBase: 19000, feature: "‘착한실손’ — 도수·주사·MRI 비급여 특약 분리" },
-  "4세대":       { code: "G4", period: "2021.07~2025.04", coGen: "20%",  coNon: "30%",  outLimit: 200000, inLimit: 50000000, monthlyBase: 13000, feature: "비급여 이용량 연동 할증·할인, 저렴한 보험료" },
-  "5세대":       { code: "G5", period: "2025.05~",        coGen: "20%",  coNon: "중증 20~30% / 경증 50%", outLimit: 200000, inLimit: 50000000, inNote: "경증 비급여 한도 1천만", monthlyBase: 11000, feature: "중증 중심 재편, 경증 비급여 축소, 최저 보험료" },
-  "노인실손":     { code: "GS", period: "실버(50~75 신규)",  coGen: "20%",  coNon: "30%",  outLimit: 100000, inLimit: 30000000, monthlyBase: 33000, feature: "고령자 전용, 보장 축소·고연령 가입 가능" },
-  "어린이 실손":  { code: "GC", period: "어린이보험 부가",     coGen: "연동", coNon: "연동", outLimit: 200000, inLimit: 50000000, monthlyBase: 9000, feature: "어린이보험에 부가된 실손(4·5세대 기준)" },
-  "미가입":       { code: "G0", period: "—", coGen: "-", coNon: "-", outLimit: 0, inLimit: 0, monthlyBase: 0, feature: "실손 미가입 — 검진 후 보장 공백" },
+  "1세대":       { code: "G1", type: "일반(구실손)",  period: "~2009.09",       coGen: "0%",   coNon: "0%(통원 5천원 공제)", outLimit: 300000, inLimit: 100000000, nonPayAnnual: 0, renew: "1~5년", reEnroll: "없음(재가입 조건 없음)", riderNote: "비급여 특약 미분리(포괄 보장)", monthlyBase: 42000, feature: "급여·비급여 구분 없이 사실상 전액 보장(자기부담 최소)" },
+  "2세대":       { code: "G2", type: "일반(표준화)",  period: "2009.10~2017.03", coGen: "10%",  coNon: "20%",  outLimit: 300000, inLimit: 50000000, nonPayAnnual: 0, renew: "1년", reEnroll: "15년", riderNote: "비급여 특약 미분리(포괄)", monthlyBase: 28000, feature: "표준화 실손 — 급여/비급여 자기부담 10~20% 도입" },
+  "3세대":       { code: "G3", type: "일반(착한실손)", period: "2017.04~2021.06", coGen: "10%",  coNon: "20%(특약 30%)", outLimit: 300000, inLimit: 50000000, nonPayAnnual: 3500000, renew: "1년", reEnroll: "15년", riderNote: "도수·비급여주사·MRI 3대 비급여 특약 분리(선택)", monthlyBase: 19000, feature: "‘착한실손’ — 3대 비급여 특약 분리, 보험료 인하" },
+  "4세대":       { code: "G4", type: "일반",          period: "2021.07~2026.05", coGen: "20%",  coNon: "30%",  outLimit: 200000, inLimit: 50000000, nonPayAnnual: 50000000, renew: "1년", reEnroll: "5년", riderNote: "급여/비급여 분리 · 비급여 이용량 연동 할증·할인", monthlyBase: 13000, feature: "급여 연 5천만+비급여 연 5천만, 비급여 이용량별 할인·할증" },
+  "5세대":       { code: "G5", type: "일반",          period: "2026.05~",        coGen: "20%",  coNon: "중증 30% / 비중증 50%", outLimit: 200000, inLimit: 50000000, nonPayAnnual: 10000000, renew: "1년", reEnroll: "5년", inNote: "중증 비급여 5천만 / 비중증 연 1천만", riderNote: "중증 중심 재편 · 비중증 비급여 한도 축소", monthlyBase: 9000, feature: "중증 중심 재편, 4세대比 보험료 30~50%↓, 최저 보험료" },
+  "노인실손":     { code: "GS", type: "노후실손",      period: "실버(50~90 대상)",  coGen: "20%",  coNon: "30%+",  outLimit: 1000000, inLimit: 100000000, nonPayAnnual: 0, renew: "1년", reEnroll: "—", inNote: "입원·통원 합산 연 1억", riderNote: "고령자 전용 · 자기부담↑·보험료↓", monthlyBase: 33000, feature: "50~90세 대상, 노후 의료비 대비 · 요양병원·상급병실 보장" },
+  "어린이 실손":  { code: "GC", type: "어린이(특약)",   period: "0~15세 어린이보험 부가", coGen: "세대 기준 동일", coNon: "세대 기준 동일", outLimit: 200000, inLimit: 50000000, nonPayAnnual: 50000000, renew: "1년", reEnroll: "세대 기준", riderNote: "어린이보험 내 실손 특약(4·5세대 기준)", monthlyBase: 9000, feature: "어린이보험에 부가된 실손(세대 기준 보장 동일)" },
+  "미가입":       { code: "G0", type: "미가입",        period: "—", coGen: "-", coNon: "-", outLimit: 0, inLimit: 0, nonPayAnnual: 0, renew: "-", reEnroll: "-", riderNote: "-", monthlyBase: 0, feature: "실손 미가입 — 검진 후 치료비 보장 공백" },
 };
 
 /* ── 중대질환 10대 구분(형 확정 분류) — 누적 진단율(연령대별 %) + 진단비 특약 ──
@@ -58,14 +62,24 @@ function _insBand(age) { return age <= 18 ? 0 : age <= 29 ? 1 : age <= 39 ? 2 : 
 function _wpickIns(rng, arr) { const t = arr.reduce((s, x) => s + x[1], 0); let r = rng() * t; for (const x of arr) { r -= x[1]; if (r <= 0) return x[0]; } return arr[0][0]; }
 function _pickTier(rng, tiers) { const t = tiers.reduce((s, x) => s + x[2], 0); let r = rng() * t; for (const x of tiers) { r -= x[2]; if (r <= 0) return x; } return tiers[0]; }
 
-/* ── 실손 유형 선택(연령·아동 반영, 세대 분포는 실통계 근사) ── */
+/* ── 실손 유형 선택(연령·아동·가입시기 상관, 세대 분포는 부록 A-1 정합) ──
+   목표(가입자 내): 1세대≈17 · 2세대≈29 · 3세대≈36 · 4세대≈17.7 · 5세대≈0.2(+노후 60세↑ 일부).
+   상관: 50~60대↑→1·2세대, 30~40대→2·3세대, 20대·최근→3·4세대, 5세대는 극소수 신규,
+        미가입률은 20대·70세↑에서 상대적으로 높게(전체≈29%). */
 function _pickSilson(rng, age, isChild) {
-  if (isChild) return rng() < 0.78 ? "어린이 실손" : "미가입";
-  const pUnins = age >= 65 ? 0.40 : age >= 40 ? 0.25 : 0.28;
+  if (isChild) return rng() < 0.82 ? "어린이 실손" : "미가입";
+  const pUnins = age >= 70 ? 0.38 : age >= 60 ? 0.30 : age >= 40 ? 0.26 : age >= 30 ? 0.27 : 0.34;
   if (rng() < pUnins) return "미가입";
-  const dist = age >= 65
-    ? [["1세대", 30], ["2세대", 38], ["노인실손", 18], ["3세대", 10], ["4세대", 4]]
-    : [["2세대", 42], ["3세대", 23], ["1세대", 14], ["4세대", 18], ["5세대", 3]];
+  // 연령밴드별 세대 분포(가중) — 가중치는 코호트 연령분포와 곱해져 A-1 전체 비중에 근사
+  const dist = age >= 60
+    ? [["1세대", 36], ["2세대", 34], ["노인실손", 10], ["3세대", 15], ["4세대", 5]]
+    : age >= 50
+    ? [["1세대", 26], ["2세대", 37], ["3세대", 27], ["4세대", 10]]
+    : age >= 40
+    ? [["1세대", 15], ["2세대", 33], ["3세대", 37], ["4세대", 15]]
+    : age >= 30
+    ? [["1세대", 7], ["2세대", 27], ["3세대", 44], ["4세대", 22]]
+    : [["2세대", 10], ["3세대", 47], ["4세대", 41], ["5세대", 2]];
   return _wpickIns(rng, dist);
 }
 function _silsonMonthly(gen, age) {
@@ -87,28 +101,56 @@ function memberInsurance(m) {
   const drinker = !!m.drinker, smoker = !!m.smoker;
   const cancerHint = !!m.cancer || (Array.isArray(m.highRiskCancerTypes) && m.highRiskCancerTypes.length > 0);
 
-  // 실손 (조성래=실측 4세대 고정)
-  const gen = m.isSelf ? "4세대" : _pickSilson(rng, age, isChild);
+  // 실손 (조성래=시연 기준 인물 → 2세대 실손 고정, 아래 진단비도 지정)
+  const gen = m.isSelf ? (m.forcedGen || "2세대") : _pickSilson(rng, age, isChild);
   const spec = SILSON_SPEC[gen] || SILSON_SPEC["미가입"];
-  const silson = { gen, code: spec.code, period: spec.period, coGen: spec.coGen, coNon: spec.coNon, outLimit: spec.outLimit, inLimit: spec.inLimit, inNote: spec.inNote || "", feature: spec.feature, monthly: _silsonMonthly(gen, age), enrolled: gen !== "미가입" };
+  const enrolled = gen !== "미가입";
+  // 가입일(가입시기 상관): 세대 판매기간 내에서 결정론적으로 배치
+  const enrollYear = enrolled ? _silsonEnrollYear(gen, rng) : null;
+  const silson = { gen, code: spec.code, type: spec.type, period: spec.period,
+    coGen: spec.coGen, coNon: spec.coNon, outLimit: spec.outLimit, inLimit: spec.inLimit,
+    nonPayAnnual: spec.nonPayAnnual || 0, renew: spec.renew, reEnroll: spec.reEnroll,
+    riderNote: spec.riderNote, inNote: spec.inNote || "", feature: spec.feature,
+    monthly: _silsonMonthly(gen, age), enrolled, enrollYear,
+    hasNonPayRider: enrolled && (gen === "3세대" || gen === "4세대" || gen === "5세대") ? rng() < 0.55 : (gen === "1세대" || gen === "2세대") };
 
   // 중대질환 진단 이력 + 진단비 특약
-  const hasRider = rng() < (isChild ? 0.5 : 0.45);
   const dx = [], riders = [];
-  for (const c of CRITICAL_DZ) {
-    let p = (c.prev[band] || 0) / 100;
-    if (c.key === "liver") { p *= (sex === "여" ? (c.femaleX || 0.35) : (c.maleX || 1)); if (drinker) p *= (c.drinkerX || 1.8); }
-    if (c.key === "lung" && smoker) p *= (c.smokerX || 2.2);
-    if (c.key === "cancer" && cancerHint) p = Math.min(0.9, p * 2.4);
-    if (rng() < p) {
-      const tier = _pickTier(rng, c.tiers);
-      dx.push({ key: c.key, cat: c.cat, sub: tier[0], benefit: tier[1], dxAge: Math.max(1, age - Math.floor(rng() * Math.min(8, age))) });
+  if (m.isSelf && Array.isArray(m.forcedRiders)) {
+    // 조성래: 암·뇌·심장 진단비 보유, 간·신장 미보유(보장 공백 시연). 진단 이력 없음(위험군·미진단).
+    for (const c of CRITICAL_DZ) if (m.forcedRiders.includes(c.key)) riders.push({ key: c.key, cat: c.cat, benefit: c.benefit });
+  } else {
+    // 역선택 경미 반영: 위험등급·가족력 높으면 진단비 가입 확률 소폭↑
+    const riskLift = 1 + (cancerHint ? 0.12 : 0) + ((m.risk || 0) >= 4 ? 0.1 : 0);
+    const hasRider = rng() < (isChild ? 0.5 : 0.45) * riskLift;
+    for (const c of CRITICAL_DZ) {
+      let p = (c.prev[band] || 0) / 100;
+      if (c.key === "liver") { p *= (sex === "여" ? (c.femaleX || 0.35) : (c.maleX || 1)); if (drinker) p *= (c.drinkerX || 1.8); }
+      if (c.key === "lung" && smoker) p *= (c.smokerX || 2.2);
+      if (c.key === "cancer" && cancerHint) p = Math.min(0.9, p * 2.4);
+      if (rng() < p) {
+        const tier = _pickTier(rng, c.tiers);
+        dx.push({ key: c.key, cat: c.cat, sub: tier[0], benefit: tier[1], dxAge: Math.max(1, age - Math.floor(rng() * Math.min(8, age))) });
+      }
+      if (hasRider && rng() < c.riderRate * riskLift) riders.push({ key: c.key, cat: c.cat, benefit: _riderBenefit(c, age, rng) });
     }
-    if (hasRider && rng() < c.riderRate) riders.push({ key: c.key, cat: c.cat, benefit: c.benefit });
   }
+  const hasRider = riders.length > 0;
   const riderTotal = riders.reduce((s, r) => s + r.benefit, 0);
   const dxTotal = dx.reduce((s, d) => s + d.benefit, 0);
   return { silson, dx, riders, hasRider, riderTotal, dxTotal, hasCritical: dx.length > 0 };
+}
+/* 세대 판매기간 내 가입연도(결정론) */
+function _silsonEnrollYear(gen, rng) {
+  const R = { "1세대": [2003, 2009], "2세대": [2010, 2017], "3세대": [2017, 2021], "4세대": [2021, 2025], "5세대": [2026, 2026], "노인실손": [2015, 2025], "어린이 실손": [2016, 2025] }[gen] || [2015, 2024];
+  return R[0] + Math.floor(rng() * (R[1] - R[0] + 1));
+}
+/* 진단비 가입금액(로그정규 근사, 연령↑→오래된 계약·낮은 금액 경향) */
+function _riderBenefit(c, age, rng) {
+  const base = c.benefit; const jitter = 0.6 + rng() * 0.9;      // 0.6~1.5배
+  const ageDown = 1 - Math.max(0, age - 45) * 0.006;             // 고연령 소폭↓
+  const v = base * jitter * Math.max(0.6, ageDown);
+  return Math.max(5000000, Math.round(v / 5000000) * 5000000);  // 500만 단위
 }
 
 /* ── 건강데이터 × 보험데이터 융합 보험 솔루션(회원별) ──
@@ -123,6 +165,7 @@ function insuranceSolution(m) {
   const risk = m.risk != null ? m.risk : (m.cancerRiskGrade != null ? Math.min(5, Math.round(m.cancerRiskGrade / 1.6)) : 2);
   const diseases = m.diseases || m.highRiskDiseases || [];
   const cancerRisk = !!m.cancer || (Array.isArray(m.highRiskCancerTypes) && m.highRiskCancerTypes.length > 0);
+  const drinker = !!m.drinker, smoker = !!m.smoker;
   const riderCats = ins.riders.map((r) => r.cat);
   const dxCats = ins.dx.map((d) => d.cat);
   const F = []; // {sev:'crit'|'warn'|'good', t, d, a}
@@ -140,7 +183,8 @@ function insuranceSolution(m) {
   if (cancerRisk && !riderCats.includes("암")) F.push({ sev: "crit", t: "암 진단비 공백 (암 위험군)", d: "검진·가족력상 암 위험군이나 암 진단비 특약 미보유. 고액암 시 수천만원 치료비 자기부담.", a: "일반암 3,000만+·고액암 특약 가입 권고" });
   else if (!riderCats.includes("암") && age >= 40) F.push({ sev: "warn", t: "암 진단비 미보유", d: "40대 이후 암 발생률 상승 구간. 진단비 특약 없음.", a: "일반암 진단비 특약 검토" });
   if (risk >= 4 && !riderCats.includes("뇌") && !riderCats.includes("심장")) F.push({ sev: "warn", t: "뇌·심장 진단비 공백 (고위험)", d: "심뇌혈관 고위험군이나 뇌·심장 진단비 특약 미보유.", a: "뇌졸중·급성심근경색 진단비(허혈성심장질환 확대형) 가입 권고" });
-  if ((diseases.includes("당뇨병") || diseases.includes("만성콩팥병")) && !riderCats.includes("신장")) F.push({ sev: "warn", t: "신장(말기신부전) 대비 필요", d: "당뇨·신장질환 이력 — 투석·이식 시 고액 의료비.", a: "말기신부전 진단비 특약 검토" });
+  if ((diseases.includes("당뇨병") || diseases.includes("만성콩팥병") || diseases.includes("신장질환")) && !riderCats.includes("신장")) F.push({ sev: "warn", t: "신장(말기신부전) 대비 필요", d: "당뇨·신장질환 이력 — 투석·이식 시 고액 의료비.", a: "말기신부전 진단비 특약 검토" });
+  if ((drinker || diseases.includes("지방간") || diseases.includes("간질환") || diseases.includes("간경화")) && !riderCats.includes("간")) F.push({ sev: "warn", t: "간(간경화·간부전) 대비 필요", d: `${drinker ? "음주 이력" : "간질환 이력"} — 간경화·간부전 진행 시 고액 치료비. 간 진단비 미보유.`, a: "간경화·간부전 진단비 특약 검토 + 절주·간수치 추적" });
 
   // 3) 진단 이력 → 재발·후유 보장
   if (dxCats.length) F.push({ sev: "warn", t: `중대질환 진단 이력 (${dxCats.join("·")})`, d: `이미 진단 이력이 있어 신규 가입 제한 가능. 후유·재발·간병 보장 점검 필요.`, a: "간병·후유장해·재진단 담보 및 유병자보험 연계 검토" });
@@ -157,11 +201,120 @@ function insuranceSolution(m) {
   return { ins, findings: F, score, grade, critNeed, silsonMonthly: ins.silson.monthly };
 }
 
-/* ── 조성래(실측 회원, 100,001번째) 실손·중대질환 — 4세대 실손 보유·췌장암 위험군(미진단) ── */
+/* ═══════════ 융합 분석 API — 보험·치료비 AI 솔루션 & AIPlannerChat Tool Calling ═══════════
+   5단계(보험 솔루션) 로직을 함수화하여 데이터하우스·보험 AI분석·채팅 상담이 공용 호출.
+   ⚠️ 모든 수치는 시연용 예시 기준 — 실제 조건은 약관 확인. */
+
+/* 세대별 자기부담률(급여/비급여) 수치 매핑 */
+const SILSON_RATE = {
+  "1세대": { gen: 0.0, non: 0.0 }, "2세대": { gen: 0.1, non: 0.2 }, "3세대": { gen: 0.1, non: 0.2 },
+  "4세대": { gen: 0.2, non: 0.3 }, "5세대": { gen: 0.2, non: 0.5 }, "노인실손": { gen: 0.2, non: 0.3 },
+  "어린이 실손": { gen: 0.2, non: 0.3 }, "미가입": { gen: 1.0, non: 1.0 },
+};
+/* 6단계. 중대질환 온톨로지 매핑: 검진지표 → 질환 → 관련 중대질환(진단비 구분) */
+const CI_ONTOLOGY = [
+  { ind: "공복혈당·당화혈색소(HbA1c)", indKeys: ["혈당", "당화", "hba1c", "당뇨"], disease: "당뇨병", ci: ["심장", "신장"], note: "당뇨 → 허혈성심장질환·말기신부전 위험" },
+  { ind: "수축기·이완기 혈압", indKeys: ["혈압", "고혈압"], disease: "고혈압", ci: ["뇌", "심장"], note: "고혈압 → 뇌졸중·급성심근경색 위험" },
+  { ind: "총콜레스테롤·LDL·중성지방", indKeys: ["콜레스테롤", "ldl", "중성지방", "지질", "고지혈"], disease: "이상지질혈증", ci: ["뇌", "심장"], note: "이상지질혈증 → 심뇌혈관 위험" },
+  { ind: "AST·ALT·γ-GTP(간수치)", indKeys: ["간수치", "ast", "alt", "gtp", "지방간", "간"], disease: "간질환(지방간·간염)", ci: ["간"], note: "간수치 이상 → 간경화·간부전 위험" },
+  { ind: "크레아티닌·eGFR(신장기능)", indKeys: ["크레아티닌", "egfr", "신장", "콩팥", "사구체"], disease: "만성콩팥병", ci: ["신장"], note: "신기능 저하 → 말기신부전(투석·이식) 위험" },
+  { ind: "종양표지자·가족력·영상소견", indKeys: ["종양", "암", "가족력", "결절", "용종", "종괴"], disease: "암 위험", ci: ["암"], note: "암 위험군 → 암 진단비 필요" },
+  { ind: "BMI·복부둘레·대사지표", indKeys: ["bmi", "비만", "복부", "대사"], disease: "대사증후군", ci: ["심장", "뇌", "신장"], note: "대사증후군 → 심뇌혈관·신장 복합 위험" },
+  { ind: "폐기능·흉부영상·흡연", indKeys: ["폐", "흡연", "호흡", "copd", "흉부"], disease: "만성호흡기질환", ci: ["폐"], note: "흡연·폐기능 저하 → 만성호흡부전 위험" },
+];
+function _mIns(m) { return (m && (m._ins || memberInsurance(m))) || null; }
+
+/* (A) 보장 공백 분석 — 건강위험 × 보유보장 매트릭스(우선순위화) */
+function analyzeCoverageGap(m) {
+  const sol = insuranceSolution(m); if (!sol) return null;
+  const rank = { crit: 0, warn: 1, good: 2 };
+  const gaps = sol.findings.filter((f) => f.sev !== "good").sort((a, b) => rank[a.sev] - rank[b.sev]);
+  return { score: sol.score, grade: sol.grade, gaps, top: gaps[0] || null, ins: sol.ins, silsonMonthly: sol.silsonMonthly };
+}
+
+/* (B) 실손 세대별 자기부담률·한도 적용 예상 본인부담금 */
+function calcOutOfPocket(m, treatmentType, cost) {
+  const ins = _mIns(m); if (!ins) return null;
+  cost = Number(cost) || 0;
+  const gen = ins.silson.gen, rate = SILSON_RATE[gen] || SILSON_RATE["미가입"];
+  const t = String(treatmentType || "").toLowerCase();
+  const isNonPayRider = /도수|비급여주사|주사|mri|체외충격파|증식/.test(t);   // 3대 비급여 특약 대상
+  const isNonPay = isNonPayRider || /비급여|미용|점|제모|영양수액|도수/.test(t);
+  const cat = isNonPay ? "비급여" : "급여";
+  let coRate = isNonPay ? rate.non : rate.gen;
+  let note = "";
+  if (!ins.silson.enrolled) { note = "실손 미가입 — 전액 본인부담"; return { gen, cat, cost, coRate: 1, covered: 0, oop: cost, note }; }
+  // 3세대↑ 비급여 특약(도수·주사·MRI) 미가입 시 해당 항목 보장 제외
+  if (isNonPayRider && (gen === "3세대" || gen === "4세대" || gen === "5세대") && !ins.silson.hasNonPayRider) {
+    note = `${gen} 비급여 특약(도수·주사·MRI) 미가입 → 해당 치료비 전액 본인부담`;
+    return { gen, cat: "비급여(특약)", cost, coRate: 1, covered: 0, oop: cost, note };
+  }
+  // 통원 회당 한도 적용(간이)
+  const covBefore = cost * (1 - coRate);
+  const cap = ins.silson.outLimit || 0;
+  let covered = covBefore, capped = false;
+  if (cap && covered > cap) { covered = cap; capped = true; }
+  const oop = cost - covered;
+  note = `${gen} ${cat} 자기부담 ${Math.round(coRate * 100)}%` + (capped ? ` · 통원 회당 한도 ${_insWon(cap)} 적용` : "") + (gen === "1세대" ? " · 사실상 전액 보장" : "");
+  return { gen, cat, cost, coRate, covered: Math.round(covered), oop: Math.round(oop), capped, note };
+}
+
+/* (C) 세대 전환 시뮬레이션 — 유지 vs 4·5세대 전환 보험료·자기부담 비교 */
+function simulateGenerationSwitch(m) {
+  const ins = _mIns(m); if (!ins) return null;
+  const age = m.regAge != null ? Math.round(m.regAge) : (m.age != null ? m.age : 45);
+  const cur = ins.silson;
+  const curRate = SILSON_RATE[cur.gen] || SILSON_RATE["미가입"];
+  const opts = ["4세대", "5세대"].filter((g) => g !== cur.gen).map((g) => {
+    const monthly = _silsonMonthly(g, age), r = SILSON_RATE[g];
+    return { gen: g, monthly, saveMonthly: cur.monthly - monthly, coGen: SILSON_SPEC[g].coGen, coNon: SILSON_SPEC[g].coNon,
+      coDelta: `자기부담 ${Math.round(curRate.non * 100)}%→${Math.round(r.non * 100)}%` };
+  });
+  const heavyUser = (m.estCost || 0) >= 3000000 || (ins.dx.length > 0);
+  const isOldGen = cur.gen === "1세대" || cur.gen === "2세대";
+  let warning = "", recommend = "";
+  if (isOldGen) {
+    warning = `${cur.gen} 실손은 해지 후 재가입이 불가합니다(동일 보장 복원 불가). 전환 시 자기부담률 상승·비급여 축소를 반드시 감안하세요.`;
+    recommend = heavyUser ? `의료 이용량이 많아 ${cur.gen} 유지가 유리할 수 있습니다(보장 우위). 보험료 부담이 크면 5세대 비교 검토.` : `보험료 부담이 크고 의료 이용이 적다면 5세대 전환으로 보험료 절감 가능. 단, 보장 축소 감수.`;
+  } else {
+    recommend = `현 ${cur.gen} 유지 권장. 5세대는 보험료가 더 낮으나 비중증 비급여 보장이 축소됩니다.`;
+  }
+  return { current: { gen: cur.gen, monthly: cur.monthly, coGen: cur.coGen, coNon: cur.coNon }, options: opts, heavyUser, warning, recommend };
+}
+
+/* (D) 온톨로지 기반: 검진지표/질환 → 관련 중대질환 → 진단비 보유 여부 */
+function getDiseaseRiskCoverage(m, query) {
+  const ins = _mIns(m); if (!ins) return null;
+  const q = String(query || "").toLowerCase();
+  const hit = CI_ONTOLOGY.find((o) => o.indKeys.some((k) => q.includes(k))) || null;
+  const riderCats = ins.riders.map((r) => r.cat);
+  if (!hit) {
+    // 질환명 직접 매칭 시도
+    const byCi = CRITICAL_DZ.find((c) => q.includes(c.cat));
+    if (byCi) return { indicator: byCi.cat, disease: byCi.cat, mapped: [{ cat: byCi.cat, covered: riderCats.includes(byCi.cat), benefit: (ins.riders.find((r) => r.cat === byCi.cat) || {}).benefit || 0 }], note: byCi.desc };
+    return null;
+  }
+  const mapped = hit.ci.map((cat) => ({ cat, covered: riderCats.includes(cat), benefit: (ins.riders.find((r) => r.cat === cat) || {}).benefit || 0 }));
+  return { indicator: hit.ind, disease: hit.disease, note: hit.note, mapped, gaps: mapped.filter((x) => !x.covered).map((x) => x.cat) };
+}
+
+/* (E) 가족 전체 보장 현황 요약(동의 범위 내) */
+function getFamilyCoverageSummary(m) {
+  let fam = (m && Array.isArray(m.family) && m.family) || null;
+  if (!fam && typeof familyMembers === "function") { try { fam = familyMembers(m); } catch (e) {} }
+  if (!fam || !fam.length) return { available: false, note: "연동된 가족 구성원 데이터가 없습니다. 우리가족건강관리에서 가족을 등록·동의하면 가족 보장 현황을 함께 분석해 드려요." };
+  const rows = fam.map((f) => { const s = insuranceSolution(f); return { name: f.name, rel: f.rel || "", gen: s ? s.ins.silson.gen : "-", grade: s ? s.grade : "-", topGap: s && s.findings.find((x) => x.sev === "crit") ? s.findings.find((x) => x.sev === "crit").t : (s && s.findings.find((x) => x.sev === "warn") ? s.findings.find((x) => x.sev === "warn").t : "양호") }; });
+  return { available: true, rows };
+}
+
+/* ── 조성래(실측 회원, 100,001번째·시연 기준 인물) ──
+   2세대 실손 보유 + 암·뇌·심장 진단비 보유, 간·신장 진단비 미보유(보장 공백 시연).
+   췌장암 위험군·미진단, 음주 이력 → 간·신장 공백이 융합 솔루션에서 드러나도록 설계. */
 let _selfInsCache = null;
 function selfInsurance() {
   if (_selfInsCache) return _selfInsCache;
-  _selfInsCache = memberInsurance({ id: "SELF-JOSUNGRAE", name: "조성래", sex: "남", regAge: 54, isChild: false, isSelf: true, drinker: true, smoker: false });
+  _selfInsCache = memberInsurance({ id: "SELF-JOSUNGRAE", name: "조성래", sex: "남", regAge: 54, isChild: false,
+    isSelf: true, forcedGen: "2세대", forcedRiders: ["cancer", "brain", "heart"], drinker: true, smoker: false });
   return _selfInsCache;
 }
 
