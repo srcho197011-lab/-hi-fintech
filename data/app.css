@@ -4371,3 +4371,7 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .obkeyrow { display: flex; gap: 7px; padding: 0 12px 12px; }
 .obkeyrow input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; font-size: 12.5px; font-family: inherit; }
 .obkeyrow button { border: none; background: #2563EB; color: #fff; font-weight: 700; font-size: 12.5px; padding: 9px 16px; border-radius: 8px; cursor: pointer; }
+
+/* 데이터 금고 — 추가 연결 버튼 */
+.dv-add { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: none; background: #2563EB; color: #fff; font-size: 12px; font-weight: 800; padding: 8px 14px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
+@media (max-width: 640px) { .dv-add { width: 100%; justify-content: center; margin-top: 8px; } }

@@ -389,7 +389,8 @@ function DataVaultPanel({ onGo }) {
 
   return (
     <div className="dv">
-      <div className="dv-hd"><ShieldCheck size={18} color="#2563EB" /> 데이터 금고 <span className="dv-token">익명 토큰 {token}</span></div>
+      <div className="dv-hd"><ShieldCheck size={18} color="#2563EB" /> 데이터 금고 <span className="dv-token">익명 토큰 {token}</span>
+        <button className="dv-add" onClick={() => nav("onboarding")}><Paperclip size={13} /> 데이터 추가 연결 (검진·보험 업로드)</button></div>
       <div className="dv-integrity"><span className={"dv-ibadge" + (chainOk.ok ? " ok" : " bad")}>{chainOk.ok ? <Check size={13} /> : <AlertTriangle size={13} />} 블록체인 무결성 {chainOk.ok ? "정상" : "위변조 감지"}</span>
         {integ && integ.checked > 0 && <span className={"dv-ibadge" + (integ.ok ? " ok" : " bad")}>{integ.ok ? <Check size={13} /> : <AlertTriangle size={13} />} 데이터 해시 대조 {integ.ok ? "위변조 없음 ✓" : "불일치"}</span>}
         <span className="dv-blk">내 블록 {myBlocks.length} · 전체 {chainOk.blocks}</span></div>
