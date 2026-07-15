@@ -103,7 +103,33 @@ function guestProfile(input) {
   return base;
 }
 function startGuest(input) { const p = guestProfile(input); if (!p) return null; demoSetSession(p); authSet({ name: p.name, role: "GUEST", guest: true, match: p._match }); return p; }
-function guestExit() { try { demoLogout(); } catch (e) {} appLogout(); }
+/* 둘러보기 종료 — 세션 + 게스트 관련 로컬 데이터 즉시 파기 후 회원가입 유도(게이트)로 */
+function guestExit() {
+  try { const rm = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && /guest-|_guest\b|guest@/.test(k)) rm.push(k); } rm.forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} }); } catch (e) {}
+  try { demoLogout(); } catch (e) {} appLogout();
+}
+/* GUEST 쓰기 시뮬레이션 — 둘러보기 세션에서는 회원 데이터의 localStorage 영속화를 차단.
+   세션·인증·시스템 키만 허용 → 화면(React state)에는 반영되되 새로고침/재접속 시 사라짐
+   ("완료 화면은 보여주되 실제 저장되지 않음"). 데이터 소스 차원의 쓰기 시뮬레이션 보장. */
+(function installGuestWriteGuard() {
+  try {
+    if (typeof localStorage === "undefined" || localStorage.__guestGuard) return;
+    const raw = localStorage.setItem.bind(localStorage);
+    const ALLOW = /(hifin_authed|hifin_demo_session|hifin_login_lock|hifin_users|guard)/;
+    let last = 0;
+    localStorage.setItem = function (k, v) {
+      try {
+        if (typeof isGuestRole === "function" && isGuestRole() && !ALLOW.test(String(k))) {
+          const now = Date.now();
+          if (now - last > 2500 && typeof _toast === "function") { _toast("👀 둘러보기 모드 — 실제로 저장되지 않습니다"); last = now; }
+          return;   // 영속화 차단(화면 상태는 React가 유지)
+        }
+      } catch (e) {}
+      return raw(k, v);
+    };
+    localStorage.__guestGuard = true;
+  } catch (e) {}
+})();
 
 /* ── 파일럿 회원 전역 스코프 필터 — GUEST/MEMBER 세션에서 파일럿·데모 회원을 데이터 소스 차원에서 제외 ── */
 function isPilotMember(m) { return !!(m && (m.isPilot || m.isDemoUser || (typeof m.id === "string" && /^SELF-/.test(m.id)))); }
