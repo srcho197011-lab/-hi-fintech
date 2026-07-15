@@ -20355,7 +20355,7 @@ function InsuranceCollect({ member, onDone, onLater }) {
 function DataOnboardingSection({ onGo }) {
   const go = onGo || (() => {});
   const role = (typeof authRole === "function") ? authRole() : "ADMIN";
-  const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const member = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (role !== "GUEST" && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const [step, setStep] = useState(() => { try { const ob = onboardStatus(member); return (ob.step1 && !ob.step2) ? 2 : 1; } catch (e) { return 1; } });
   // GUEST·미가입 세션은 접근 차단 → 가입 유도
   if (role === "GUEST" || !member) return (
@@ -20382,10 +20382,12 @@ function DataOnboardingSection({ onGo }) {
 /* ── 데이터 금고(Vault) — 마이페이지: 내 데이터·블록체인 무결성·접근이력·동의현황·삭제/철회 ── */
 function DataVaultPanel({ onGo }) {
   const nav = onGo || (() => {});
-  const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const member = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const [tick, setTick] = useState(0);
   const [confirm, setConfirm] = useState(false);
-  if (!member) return null;
+  if (!member) return (
+    <div className="card dvempty"><ShieldCheck size={30} color="#94A3B8" /><b>로그인이 필요해요</b><p>회원으로 로그인하면 내 건강·보험 데이터를 안전하게 보관·관리할 수 있어요.</p></div>
+  );
   const token = (typeof anonToken === "function") ? anonToken(member) : "";
   const v = (typeof vaultLoad === "function") ? vaultLoad(token) : null;
   const chainOk = (typeof chainVerify === "function") ? chainVerify() : { ok: true, blocks: 0 };
