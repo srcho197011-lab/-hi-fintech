@@ -32,6 +32,7 @@ function HomeHub({ initial, onGo }) {
   const tabs = [["home", "홈 · 소개", Home, "#2563EB"], ["social", "사회적기업", HeartHandshake, "#16A34A"], ["community", "커뮤니티", Users, "#7C3AED"]];
   return (
     <div style={{ marginTop: 4 }}>
+      {typeof AgentHomeBriefing === "function" && <AgentHomeBriefing />}
       <GroupHead ic={Home} title="HI-Fin Tech란" sub="회사 소개 · 비전 · 사회적 가치환원 · 커뮤니티" color="#2563EB" />
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
       {tab === "home" && <HomeView onGo={onGo} />}

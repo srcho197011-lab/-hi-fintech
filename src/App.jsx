@@ -190,6 +190,7 @@ export default function App() {
         </main>
       </div>
       {consult !== null && <ConsultModal interest={consult} onClose={() => setConsult(null)} />}
+      {typeof AgentDock === "function" && sec !== "agent" && <AgentDock onGo={setSec} />}
       {toastMsg && <div className="toast"><Check size={16} /> {toastMsg}</div>}
     </div>
   );
