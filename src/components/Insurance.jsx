@@ -280,7 +280,7 @@ function PremiumNotice() {
     </div>
   );
 }
-/* ── AI 설계사 — 약관 학습 대화형 상담(AI 주치의 형태) ── */
+/* ── 하이 — 보험·보장 대화 상담(AI 주치의 형태) ── */
 function _insBold(s) {
   return String(s).split(/(\*\*[^*]+\*\*)/g).map((p, i) => (p.startsWith("**") && p.endsWith("**")) ? <b key={i}>{p.slice(2, -2)}</b> : <React.Fragment key={i}>{p}</React.Fragment>);
 }
@@ -352,7 +352,7 @@ function AIPlannerChat({ onSimple, initialAsk }) {
     return Object.assign({}, member, selfCtx, { _ins: myIns });
   }, [dm, member && member.name]);
   const topGap = useMemo(() => { if (!Mx || typeof analyzeCoverageGap !== "function") return null; try { const g = analyzeCoverageGap(Mx); return g && g.top ? g.top : null; } catch (e) { return null; } }, [Mx]);
-  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 검진·보험을 함께 학습한 **AI 보험 솔루션 상담사**예요. 🤖\n제 데이터 기준으로 **보장 공백·본인부담·세대 전환**을 분석해 드려요.`
+  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 하이예요 — 보험·보장도 제가 이어서 봐드려요. 🤖\n제 데이터 기준으로 **보장 공백·본인부담·세대 전환**을 분석해 드려요.`
     + (topGap ? `\n\n${nm ? nm + "님, " : ""}지금 가장 먼저 챙길 지점은 **${topGap.t}**이에요. “보장 공백 분석”을 눌러 자세히 볼까요?` : `\n아래 질문을 눌러보거나 무엇이든 물어보세요.`);
   const greet = { who: "ai", bubbles: [{ kind: "text", text: greetText }] };
   const FUSION_QUICKS = ["내 실손 몇 세대야?", "보장 공백 분석", "도수치료 받으면 얼마 나와?", "세대 전환 유불리", "암보험 필요할까?"];
@@ -391,7 +391,7 @@ function AIPlannerChat({ onSimple, initialAsk }) {
   useEffect(() => { if (initialAsk) { const t = setTimeout(() => send(initialAsk), 650); return () => clearTimeout(t); } }, []);
   return (
     <div className="aipwrap">
-      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 보험 솔루션 상담사</b><span>건강데이터 × 실손·중대질환 융합 분석</span></div><span className="aipbadge">{member ? nm + "님 데이터 연동" : "약관 학습완료"}</span></div>
+      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>하이 · 보험·보장 상담</b><span>건강데이터 × 실손·중대질환 융합 분석</span></div><span className="aipbadge">{member ? nm + "님 데이터 연동" : "약관 학습완료"}</span></div>
       {onSimple && <button className="aipsimple" onClick={onSimple}><span className="aipsimple-l"><Zap size={17} /> 간편단기특화보험</span><span className="aipsimple-r">위험질병별 1년 단기 밀도가입 <ChevronRight size={16} /></span></button>}
       <div className="aipbody">
         {msgs.map((m, i) => (
@@ -1127,8 +1127,8 @@ function InsuranceSection({ onGo }) {
 
       {tab === "ai" && (<>
         <div className="airec">
-          <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 설계사 — 약관 학습 대화형 상담</div>
-          <div className="ap"><b>보험 약관을 학습한 AI 설계사</b>가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
+          <div className="at"><MessageSquare size={16} color="#7C3AED" /> 하이 — 보험·보장 대화 상담</div>
+          <div className="ap">약관과 제 데이터를 함께 학습한 <b>하이</b>가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
         </div>
         <AIPlannerChat initialAsk={askSeed} onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
       </>)}

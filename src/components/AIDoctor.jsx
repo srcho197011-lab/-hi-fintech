@@ -352,7 +352,7 @@ function consult(q, corpus, report, QA) {
   const fz = qaFuzzy(raw, QA);
   if (fz) return qaAnswer(fz);
   // 5) 대화형 — 인사·감사·이용안내
-  if (/안녕|반가|하이|헬로/.test(t)) return `안녕하세요 ${aiWho()}님! AI 주치의예요. 질환의 증상, 검사, 치료, 생활습관부터 내 건강리포트, 의료비까지 음성으로 도와드릴게요. 무엇이 궁금하세요?`;
+  if (/안녕|반가|하이|헬로/.test(t)) return `안녕하세요 ${aiWho()}님! 하이예요. 질환의 증상, 검사, 치료, 생활습관부터 내 건강리포트, 의료비까지 음성으로 도와드릴게요. 무엇이 궁금하세요?`;
   if (/고마워|고맙|감사|수고|땡큐/.test(t)) return "도움이 되었다니 기뻐요. 더 궁금한 점이 있으면 언제든 말씀해 주세요.";
   if (/안내|어떻게|무엇을|뭘물|뭐물|도와|도움|기능|사용법|할수있|예시|물어보면|물어볼/.test(t))
     return "이렇게 도와드릴 수 있어요. 질환 이름과 함께 증상, 검사, 치료, 생활습관을 물어보시거나, ‘내 리포트 요약’, ‘의료비 예측’처럼 말씀해 주세요. 예를 들어 ‘갑상선염 증상’, ‘고혈압 생활습관 관리’, ‘내 당뇨 위험’처럼요.";
@@ -361,7 +361,7 @@ function consult(q, corpus, report, QA) {
 }
 
 function VoiceDoctor() {
-  const [trans, setTrans] = useState([{ who: "a", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 질병관리청 국가건강정보포털, 대한의학회 임상 진료지침, 국립암센터 국가암검진 권고안과 국가암정보센터 자료를 학습해 음성으로 건강상담을 도와드릴게요. 마이크를 누르고 궁금한 점을 말씀해 주세요.` }]);
+  const [trans, setTrans] = useState([{ who: "a", text: `안녕하세요 ${aiWho()}님, 하이예요. 질병관리청 국가건강정보포털, 대한의학회 임상 진료지침, 국립암센터 국가암검진 권고안과 국가암정보센터 자료를 학습해 음성으로 건강상담을 도와드릴게요. 마이크를 누르고 궁금한 점을 말씀해 주세요.` }]);
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [interim, setInterim] = useState("");
@@ -946,7 +946,7 @@ function SuperAgentSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico" style={{ background: "linear-gradient(135deg,#6D28D9,#7C3AED)" }}><SecIcon k="ai" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>AI Super Agent</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>하이 · 하이핀 AI 매니저</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> {aiWho()}님 고객 전담 · 모든 서비스를 한 곳에서 안내 — 아래 버튼을 고르거나 무엇이든 물어보세요(텍스트·음성)</div></div></div>
       <div className="agentgrid">
         {GRID.map((m) => (
@@ -970,11 +970,11 @@ const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진�
 let _doctorSeed = null;
 const DOCTOR_HANDOFF = "🩺 검진 화면에서 이어 상담";
 /* 보험·보장 문의는 약관 학습 보험 AI 상담사(보험·치료비 › AI보험상담)로 연결 */
-const INS_HANDOFF = "🛡️ 보험 AI 상담사에게 연결";
+const INS_HANDOFF = "🛡️ 보험 화면에서 이어서 봐드릴게요";
 function insHandoff() {
   return { bubbles: [
-    { kind: "text", text: "보험·보장은 약관을 학습한 **보험 AI 상담사**가 정확히 도와드려요. 아래 버튼을 누르면 지금 문의를 이어서 **보험 상담사에게 연결**해 드릴게요." },
-    { kind: "card", card: { title: "🛡️ 보험 AI 상담 연결", items: ["질환·검진 위험과 연계한 보장 공백·본인부담·세대 전환 분석", "실손 세대·중대질환 진단비 안내(정보 제공)", "청약·가입은 정식 라이선스 채널(GA)로 안내"], buttons: [INS_HANDOFF] } },
+    { kind: "text", text: "**제가 보험 내용도 이어서 봐드릴게요.** 보험·치료비 화면에서 지금 질문 그대로, 성래님 데이터 기준으로 자세히 분석해 드려요." },
+    { kind: "card", card: { title: "🛡️ 하이의 보험 분석", items: ["질환·검진 위험과 연계한 보장 공백·본인부담·세대 전환 분석", "실손 세대·중대질환 진단비 안내(정보 제공)", "청약·가입은 정식 라이선스 채널(GA)로 안내"], buttons: [INS_HANDOFF] } },
   ], quicks: [INS_HANDOFF, "내 리포트 요약"] };
 }
 /* ===== AI Super Agent — 사이트 전 섹션을 연결하는 고객 전담 오케스트레이터 =====
@@ -1018,7 +1018,7 @@ function superAgentRoute(text) {
   if (it) return {
     bubbles: [
       { kind: "text", text: it.sum },
-      { kind: "card", card: { title: "🧭 AI Super Agent 안내", items: [it.sum, "아래 버튼을 누르면 바로 이동해요."], buttons: it.btns } },
+      { kind: "card", card: { title: "🧭 하이 안내", items: [it.sum, "아래 버튼을 누르면 바로 이동해요."], buttons: it.btns } },
     ],
     quicks: AGENT_NAV.slice(0, 4).map((m) => m[0]),
   };
@@ -1030,7 +1030,7 @@ function superAgentRoute(text) {
   return {
     bubbles: [
       { kind: "text", text: `${sum}` },
-      { kind: "card", card: { title: "🧭 AI Super Agent 안내", items: [sum, "아래 버튼을 누르면 해당 서비스로 바로 이동해요."], buttons: [`${label} 바로가기`] } },
+      { kind: "card", card: { title: "🧭 하이 안내", items: [sum, "아래 버튼을 누르면 해당 서비스로 바로 이동해요."], buttons: [`${label} 바로가기`] } },
     ],
     quicks: AGENT_NAV.slice(0, 4).map((m) => m[0]),
   };
@@ -2141,7 +2141,7 @@ function aiRespond(text, corpus, report, QA) {
   // (질환·리포트·암 등 학습 답변은 위 consult 엔진이 음성 상담과 동일하게 처리)
   // 대화형 — 인사·감사
   if (has("안녕", "반가", "하이", "ㅎㅇ", "헬로"))
-    return { bubbles: [{ kind: "text", text: `안녕하세요 ${aiWho()}님! 😊 AI 주치의예요. 질환의 증상·검사·치료·생활습관부터 내 건강리포트·의료비까지 도와드릴게요. 무엇이 궁금하세요?` }], quicks: ["내 리포트 요약", "당뇨 검사 방법", "의료비 예측"] };
+    return { bubbles: [{ kind: "text", text: `안녕하세요 ${aiWho()}님! 😊 하이예요. 질환의 증상·검사·치료·생활습관부터 내 건강리포트·의료비까지 도와드릴게요. 무엇이 궁금하세요?` }], quicks: ["내 리포트 요약", "당뇨 검사 방법", "의료비 예측"] };
   if (has("고마워", "고맙", "감사", "수고", "땡큐"))
     return { bubbles: [{ kind: "text", text: "도움이 되었다니 기뻐요! 더 궁금한 점이 있으면 언제든 물어보세요. 😊" }], quicks: ["내 리포트 요약", "갑상선염의 증상은 무엇인가요?", "의료비 예측"] };
   // 이용 안내 — "안내해줘 / 어떻게 / 뭘 물어보면 돼?" 등
@@ -2156,9 +2156,9 @@ function aiRespond(text, corpus, report, QA) {
 
 function Chat({ superAgent, acceptsSeed }) {
   const [msgs, setMsgs] = useState(() => superAgent ? [
-    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI Super Agent예요. 🤖\n위 버튼에서 원하는 서비스를 고르시거나, 무엇이든 말씀하거나(텍스트·음성) 물어보세요. 요약해 드리고 해당 서비스로 안내해 드릴게요.`, time: now(), first: true },
+    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, 하이예요. 🤖\n위 버튼에서 원하는 서비스를 고르시거나, 무엇이든 말씀하거나(텍스트·음성) 물어보세요. 요약해 드리고 해당 서비스로 안내해 드릴게요.`, time: now(), first: true },
   ] : [
-    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 👨‍⚕️\n건강분석 리포트를 바탕으로 증상·질환·검사·치료를 함께 살펴드릴게요.`, time: now(), first: true },
+    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, 하이예요. 👨‍⚕️\n건강분석 리포트를 바탕으로 증상·질환·검사·치료를 함께 살펴드릴게요.`, time: now(), first: true },
     { id: 2, who: "ai", kind: "text", text: "무엇을 도와드릴까요? 아래에서 골라보셔도 돼요.", time: now() },
   ]);
   const [quicks, setQuicks] = useState(() => { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return m ? memberQuestions(m).slice(0, 5) : ["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]; });
@@ -2198,7 +2198,7 @@ function Chat({ superAgent, acceptsSeed }) {
       const res = aiRespond(text, kb, report, qa); setTyping(false); pushAI(res);
       // Super Agent에서 실제 건강 상담 답변이면 '검진 화면에서 이어 상담' 버튼 제공(섹션 안내 라우팅은 제외)
       if (superAgent) {
-        const isRoute = (res.bubbles || []).some((b) => b.card && /AI Super Agent 안내/.test(b.card.title || ""));
+        const isRoute = (res.bubbles || []).some((b) => b.card && /하이 안내/.test(b.card.title || ""));
         if (!isRoute) setQuicks((q) => (q || []).includes(DOCTOR_HANDOFF) ? q : [...(q || []), DOCTOR_HANDOFF]);
       }
     }, 1400);
@@ -2213,7 +2213,7 @@ function Chat({ superAgent, acceptsSeed }) {
     <div className="kt">
       {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
-        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "AI Super Agent" : "AI 주치의"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
+        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이 · 하이핀 AI 매니저" : "하이 · 건강 상담"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
         {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
         <button className="ktib" onClick={() => setDevOpen((v) => !v)} title="기기 연결"><HeartPulse size={17} /></button>
         <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={17} /></button></div>

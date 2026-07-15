@@ -153,7 +153,7 @@ export default function App() {
             ))}
             <div className={`snav ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr("noti")}><span className="sico"><SecIcon k="alert" /></span> 알림센터<span className="sb">3</span></div>
           </div>
-          <div className="agent"><div className="at">AI Super Agent</div><div className="as">{greetName}님 고객 전담 · 모든 서비스 연결</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("agent")}>상담 시작하기</button></div>
+          <div className="agent"><div className="at">하이 · AI 매니저</div><div className="as">{greetName}님 전담 · 처음부터 끝까지 함께</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("agent")}>하이와 대화하기</button></div>
           {role === "ADMIN" && <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>}
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>

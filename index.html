@@ -664,7 +664,7 @@ export default function App() {
             ))}
             <div className={`snav ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr("noti")}><span className="sico"><SecIcon k="alert" /></span> 알림센터<span className="sb">3</span></div>
           </div>
-          <div className="agent"><div className="at">AI Super Agent</div><div className="as">{greetName}님 고객 전담 · 모든 서비스 연결</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("agent")}>상담 시작하기</button></div>
+          <div className="agent"><div className="at">하이 · AI 매니저</div><div className="as">{greetName}님 전담 · 처음부터 끝까지 함께</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("agent")}>하이와 대화하기</button></div>
           {role === "ADMIN" && <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>}
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
@@ -1241,7 +1241,7 @@ function consult(q, corpus, report, QA) {
   const fz = qaFuzzy(raw, QA);
   if (fz) return qaAnswer(fz);
   // 5) 대화형 — 인사·감사·이용안내
-  if (/안녕|반가|하이|헬로/.test(t)) return `안녕하세요 ${aiWho()}님! AI 주치의예요. 질환의 증상, 검사, 치료, 생활습관부터 내 건강리포트, 의료비까지 음성으로 도와드릴게요. 무엇이 궁금하세요?`;
+  if (/안녕|반가|하이|헬로/.test(t)) return `안녕하세요 ${aiWho()}님! 하이예요. 질환의 증상, 검사, 치료, 생활습관부터 내 건강리포트, 의료비까지 음성으로 도와드릴게요. 무엇이 궁금하세요?`;
   if (/고마워|고맙|감사|수고|땡큐/.test(t)) return "도움이 되었다니 기뻐요. 더 궁금한 점이 있으면 언제든 말씀해 주세요.";
   if (/안내|어떻게|무엇을|뭘물|뭐물|도와|도움|기능|사용법|할수있|예시|물어보면|물어볼/.test(t))
     return "이렇게 도와드릴 수 있어요. 질환 이름과 함께 증상, 검사, 치료, 생활습관을 물어보시거나, ‘내 리포트 요약’, ‘의료비 예측’처럼 말씀해 주세요. 예를 들어 ‘갑상선염 증상’, ‘고혈압 생활습관 관리’, ‘내 당뇨 위험’처럼요.";
@@ -1250,7 +1250,7 @@ function consult(q, corpus, report, QA) {
 }
 
 function VoiceDoctor() {
-  const [trans, setTrans] = useState([{ who: "a", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 질병관리청 국가건강정보포털, 대한의학회 임상 진료지침, 국립암센터 국가암검진 권고안과 국가암정보센터 자료를 학습해 음성으로 건강상담을 도와드릴게요. 마이크를 누르고 궁금한 점을 말씀해 주세요.` }]);
+  const [trans, setTrans] = useState([{ who: "a", text: `안녕하세요 ${aiWho()}님, 하이예요. 질병관리청 국가건강정보포털, 대한의학회 임상 진료지침, 국립암센터 국가암검진 권고안과 국가암정보센터 자료를 학습해 음성으로 건강상담을 도와드릴게요. 마이크를 누르고 궁금한 점을 말씀해 주세요.` }]);
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [interim, setInterim] = useState("");
@@ -1835,7 +1835,7 @@ function SuperAgentSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico" style={{ background: "linear-gradient(135deg,#6D28D9,#7C3AED)" }}><SecIcon k="ai" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>AI Super Agent</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>하이 · 하이핀 AI 매니저</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> {aiWho()}님 고객 전담 · 모든 서비스를 한 곳에서 안내 — 아래 버튼을 고르거나 무엇이든 물어보세요(텍스트·음성)</div></div></div>
       <div className="agentgrid">
         {GRID.map((m) => (
@@ -1859,11 +1859,11 @@ const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진�
 let _doctorSeed = null;
 const DOCTOR_HANDOFF = "🩺 검진 화면에서 이어 상담";
 /* 보험·보장 문의는 약관 학습 보험 AI 상담사(보험·치료비 › AI보험상담)로 연결 */
-const INS_HANDOFF = "🛡️ 보험 AI 상담사에게 연결";
+const INS_HANDOFF = "🛡️ 보험 화면에서 이어서 봐드릴게요";
 function insHandoff() {
   return { bubbles: [
-    { kind: "text", text: "보험·보장은 약관을 학습한 **보험 AI 상담사**가 정확히 도와드려요. 아래 버튼을 누르면 지금 문의를 이어서 **보험 상담사에게 연결**해 드릴게요." },
-    { kind: "card", card: { title: "🛡️ 보험 AI 상담 연결", items: ["질환·검진 위험과 연계한 보장 공백·본인부담·세대 전환 분석", "실손 세대·중대질환 진단비 안내(정보 제공)", "청약·가입은 정식 라이선스 채널(GA)로 안내"], buttons: [INS_HANDOFF] } },
+    { kind: "text", text: "**제가 보험 내용도 이어서 봐드릴게요.** 보험·치료비 화면에서 지금 질문 그대로, 성래님 데이터 기준으로 자세히 분석해 드려요." },
+    { kind: "card", card: { title: "🛡️ 하이의 보험 분석", items: ["질환·검진 위험과 연계한 보장 공백·본인부담·세대 전환 분석", "실손 세대·중대질환 진단비 안내(정보 제공)", "청약·가입은 정식 라이선스 채널(GA)로 안내"], buttons: [INS_HANDOFF] } },
   ], quicks: [INS_HANDOFF, "내 리포트 요약"] };
 }
 /* ===== AI Super Agent — 사이트 전 섹션을 연결하는 고객 전담 오케스트레이터 =====
@@ -1907,7 +1907,7 @@ function superAgentRoute(text) {
   if (it) return {
     bubbles: [
       { kind: "text", text: it.sum },
-      { kind: "card", card: { title: "🧭 AI Super Agent 안내", items: [it.sum, "아래 버튼을 누르면 바로 이동해요."], buttons: it.btns } },
+      { kind: "card", card: { title: "🧭 하이 안내", items: [it.sum, "아래 버튼을 누르면 바로 이동해요."], buttons: it.btns } },
     ],
     quicks: AGENT_NAV.slice(0, 4).map((m) => m[0]),
   };
@@ -1919,7 +1919,7 @@ function superAgentRoute(text) {
   return {
     bubbles: [
       { kind: "text", text: `${sum}` },
-      { kind: "card", card: { title: "🧭 AI Super Agent 안내", items: [sum, "아래 버튼을 누르면 해당 서비스로 바로 이동해요."], buttons: [`${label} 바로가기`] } },
+      { kind: "card", card: { title: "🧭 하이 안내", items: [sum, "아래 버튼을 누르면 해당 서비스로 바로 이동해요."], buttons: [`${label} 바로가기`] } },
     ],
     quicks: AGENT_NAV.slice(0, 4).map((m) => m[0]),
   };
@@ -3030,7 +3030,7 @@ function aiRespond(text, corpus, report, QA) {
   // (질환·리포트·암 등 학습 답변은 위 consult 엔진이 음성 상담과 동일하게 처리)
   // 대화형 — 인사·감사
   if (has("안녕", "반가", "하이", "ㅎㅇ", "헬로"))
-    return { bubbles: [{ kind: "text", text: `안녕하세요 ${aiWho()}님! 😊 AI 주치의예요. 질환의 증상·검사·치료·생활습관부터 내 건강리포트·의료비까지 도와드릴게요. 무엇이 궁금하세요?` }], quicks: ["내 리포트 요약", "당뇨 검사 방법", "의료비 예측"] };
+    return { bubbles: [{ kind: "text", text: `안녕하세요 ${aiWho()}님! 😊 하이예요. 질환의 증상·검사·치료·생활습관부터 내 건강리포트·의료비까지 도와드릴게요. 무엇이 궁금하세요?` }], quicks: ["내 리포트 요약", "당뇨 검사 방법", "의료비 예측"] };
   if (has("고마워", "고맙", "감사", "수고", "땡큐"))
     return { bubbles: [{ kind: "text", text: "도움이 되었다니 기뻐요! 더 궁금한 점이 있으면 언제든 물어보세요. 😊" }], quicks: ["내 리포트 요약", "갑상선염의 증상은 무엇인가요?", "의료비 예측"] };
   // 이용 안내 — "안내해줘 / 어떻게 / 뭘 물어보면 돼?" 등
@@ -3045,9 +3045,9 @@ function aiRespond(text, corpus, report, QA) {
 
 function Chat({ superAgent, acceptsSeed }) {
   const [msgs, setMsgs] = useState(() => superAgent ? [
-    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI Super Agent예요. 🤖\n위 버튼에서 원하는 서비스를 고르시거나, 무엇이든 말씀하거나(텍스트·음성) 물어보세요. 요약해 드리고 해당 서비스로 안내해 드릴게요.`, time: now(), first: true },
+    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, 하이예요. 🤖\n위 버튼에서 원하는 서비스를 고르시거나, 무엇이든 말씀하거나(텍스트·음성) 물어보세요. 요약해 드리고 해당 서비스로 안내해 드릴게요.`, time: now(), first: true },
   ] : [
-    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, AI 주치의예요. 👨‍⚕️\n건강분석 리포트를 바탕으로 증상·질환·검사·치료를 함께 살펴드릴게요.`, time: now(), first: true },
+    { id: 1, who: "ai", kind: "text", text: `안녕하세요 ${aiWho()}님, 하이예요. 👨‍⚕️\n건강분석 리포트를 바탕으로 증상·질환·검사·치료를 함께 살펴드릴게요.`, time: now(), first: true },
     { id: 2, who: "ai", kind: "text", text: "무엇을 도와드릴까요? 아래에서 골라보셔도 돼요.", time: now() },
   ]);
   const [quicks, setQuicks] = useState(() => { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return m ? memberQuestions(m).slice(0, 5) : ["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]; });
@@ -3087,7 +3087,7 @@ function Chat({ superAgent, acceptsSeed }) {
       const res = aiRespond(text, kb, report, qa); setTyping(false); pushAI(res);
       // Super Agent에서 실제 건강 상담 답변이면 '검진 화면에서 이어 상담' 버튼 제공(섹션 안내 라우팅은 제외)
       if (superAgent) {
-        const isRoute = (res.bubbles || []).some((b) => b.card && /AI Super Agent 안내/.test(b.card.title || ""));
+        const isRoute = (res.bubbles || []).some((b) => b.card && /하이 안내/.test(b.card.title || ""));
         if (!isRoute) setQuicks((q) => (q || []).includes(DOCTOR_HANDOFF) ? q : [...(q || []), DOCTOR_HANDOFF]);
       }
     }, 1400);
@@ -3102,7 +3102,7 @@ function Chat({ superAgent, acceptsSeed }) {
     <div className="kt">
       {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
-        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "AI Super Agent" : "AI 주치의"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
+        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이 · 하이핀 AI 매니저" : "하이 · 건강 상담"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
         {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
         <button className="ktib" onClick={() => setDevOpen((v) => !v)} title="기기 연결"><HeartPulse size={17} /></button>
         <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={17} /></button></div>
@@ -7012,7 +7012,7 @@ function PremiumNotice() {
     </div>
   );
 }
-/* ── AI 설계사 — 약관 학습 대화형 상담(AI 주치의 형태) ── */
+/* ── 하이 — 보험·보장 대화 상담(AI 주치의 형태) ── */
 function _insBold(s) {
   return String(s).split(/(\*\*[^*]+\*\*)/g).map((p, i) => (p.startsWith("**") && p.endsWith("**")) ? <b key={i}>{p.slice(2, -2)}</b> : <React.Fragment key={i}>{p}</React.Fragment>);
 }
@@ -7084,7 +7084,7 @@ function AIPlannerChat({ onSimple, initialAsk }) {
     return Object.assign({}, member, selfCtx, { _ins: myIns });
   }, [dm, member && member.name]);
   const topGap = useMemo(() => { if (!Mx || typeof analyzeCoverageGap !== "function") return null; try { const g = analyzeCoverageGap(Mx); return g && g.top ? g.top : null; } catch (e) { return null; } }, [Mx]);
-  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 검진·보험을 함께 학습한 **AI 보험 솔루션 상담사**예요. 🤖\n제 데이터 기준으로 **보장 공백·본인부담·세대 전환**을 분석해 드려요.`
+  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 하이예요 — 보험·보장도 제가 이어서 봐드려요. 🤖\n제 데이터 기준으로 **보장 공백·본인부담·세대 전환**을 분석해 드려요.`
     + (topGap ? `\n\n${nm ? nm + "님, " : ""}지금 가장 먼저 챙길 지점은 **${topGap.t}**이에요. “보장 공백 분석”을 눌러 자세히 볼까요?` : `\n아래 질문을 눌러보거나 무엇이든 물어보세요.`);
   const greet = { who: "ai", bubbles: [{ kind: "text", text: greetText }] };
   const FUSION_QUICKS = ["내 실손 몇 세대야?", "보장 공백 분석", "도수치료 받으면 얼마 나와?", "세대 전환 유불리", "암보험 필요할까?"];
@@ -7123,7 +7123,7 @@ function AIPlannerChat({ onSimple, initialAsk }) {
   useEffect(() => { if (initialAsk) { const t = setTimeout(() => send(initialAsk), 650); return () => clearTimeout(t); } }, []);
   return (
     <div className="aipwrap">
-      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 보험 솔루션 상담사</b><span>건강데이터 × 실손·중대질환 융합 분석</span></div><span className="aipbadge">{member ? nm + "님 데이터 연동" : "약관 학습완료"}</span></div>
+      <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>하이 · 보험·보장 상담</b><span>건강데이터 × 실손·중대질환 융합 분석</span></div><span className="aipbadge">{member ? nm + "님 데이터 연동" : "약관 학습완료"}</span></div>
       {onSimple && <button className="aipsimple" onClick={onSimple}><span className="aipsimple-l"><Zap size={17} /> 간편단기특화보험</span><span className="aipsimple-r">위험질병별 1년 단기 밀도가입 <ChevronRight size={16} /></span></button>}
       <div className="aipbody">
         {msgs.map((m, i) => (
@@ -7859,8 +7859,8 @@ function InsuranceSection({ onGo }) {
 
       {tab === "ai" && (<>
         <div className="airec">
-          <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 설계사 — 약관 학습 대화형 상담</div>
-          <div className="ap"><b>보험 약관을 학습한 AI 설계사</b>가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
+          <div className="at"><MessageSquare size={16} color="#7C3AED" /> 하이 — 보험·보장 대화 상담</div>
+          <div className="ap">약관과 제 데이터를 함께 학습한 <b>하이</b>가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
         </div>
         <AIPlannerChat initialAsk={askSeed} onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
       </>)}
@@ -15954,7 +15954,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-16", ver:"v1.1", ch:[17], feat:"섹션 활용 가이드 레이어", src:"하이(AgentDock)", summary:"단일 에이전트 하이가 모든 섹션·서브섹션을 대화로 열고 사용법을 안내하는 내비게이션 레이어를 추가해 고객 섹션 활용 에이전트 역할을 완성", refs:[], status:"반영", hash:"cc4ef89", auto:true },
+  { date:"2026-07-16", ver:"v1.1", ch:[17], feat:"단일 에이전트 명칭 통일", src:"하이(전 챗 화면)", summary:"회원을 인도하는 AI를 전 화면에서 '하이' 하나로 통일하고 내부 라우팅이 봇 전환으로 보이지 않도록 문구를 정비", refs:[], status:"반영", hash:"bfa1dfb", auto:true },
+  { date:"2026-07-16", ver:"v1.1", ch:[17], feat:"섹션 활용 가이드 레이어", src:"하이(AgentDock)", summary:"단일 에이전트 하이가 모든 섹션·서브섹션을 대화로 열고 사용법을 안내하는 내비게이션 레이어를 추가해 고객 섹션 활용 에이전트 역할을 완성", refs:[], status:"반영", hash:"323094b", auto:true },
   { date:"2026-07-16", ver:"v1.1", ch:[17], feat:"상주 에이전트 하이 독+대화 우선 홈", src:"AgentDock/홈 브리핑", summary:"단일 에이전트 하이가 모든 화면에 상주하며 버튼·음성·쉬운말 모드로 대화만으로 기능 실행과 화면 이동을 안내하고, 홈은 하이의 브리핑으로 시작하도록 전환", refs:[], status:"반영", hash:"078839d", auto:true },
   { date:"2026-07-16", ver:"v1.1", ch:[17], feat:"AI 네이티브 시맨틱 코어+Q&A 뱅크", src:"단일 에이전트 하이", summary:"플랫폼 전 기능을 용어사전·지식그래프·툴 레지스트리 3층 시맨틱으로 등록하고 110+ 의도 Q&A 뱅크로 단일 에이전트 '하이'가 대화로 기능을 실행·안내하는 코어를 구축", refs:[], status:"반영", hash:"8c14c70", auto:true },
   { date:"2026-07-16", ver:"v1.1", ch:[16], feat:"메인 IA 개편(사이드바 섹션 네비+섹션 배너)", src:"App 사이드바/상단 배너", summary:"플랫폼 실제 구조와 어긋나던 사이드바를 메인 섹션 7개 네비로 재구성하고 상단 아이콘바 자리는 현재 섹션의 제목·설명 배너로 전환", refs:[], status:"반영", hash:"fc0c12a", auto:true },
