@@ -4375,3 +4375,12 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 /* 데이터 금고 — 추가 연결 버튼 */
 .dv-add { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: none; background: #2563EB; color: #fff; font-size: 12px; font-weight: 800; padding: 8px 14px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
 @media (max-width: 640px) { .dv-add { width: 100%; justify-content: center; margin-top: 8px; } }
+
+/* ══════ 현재 섹션 배너 (구 아이콘바 자리) ══════ */
+.secbanner { display: flex; align-items: center; gap: 15px; background: linear-gradient(120deg, #FFFFFF, #F4F8FF); border: 1px solid var(--border); border-radius: 16px; padding: 15px 20px; box-shadow: 0 10px 26px -22px rgba(20, 40, 90, .55); }
+.secbanner .sb-ic { width: 52px; height: 52px; border-radius: 14px; background: #EEF3FB; display: grid; place-items: center; flex-shrink: 0; }
+.secbanner .sb-ic svg, .secbanner .sb-ic img { width: 30px; height: 30px; }
+.secbanner .sb-b { min-width: 0; }
+.secbanner .sb-b b { display: block; font-size: 18px; font-weight: 800; letter-spacing: -.4px; color: #1C2A44; }
+.secbanner .sb-b p { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+@media (max-width: 640px) { .secbanner { padding: 13px 14px; gap: 11px; } .secbanner .sb-ic { width: 44px; height: 44px; } .secbanner .sb-b b { font-size: 16px; } }

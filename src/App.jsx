@@ -58,14 +58,16 @@ export default function App() {
     document.addEventListener("keydown", onKey);
     return () => { try { mo.disconnect(); } catch (e) {} document.removeEventListener("keydown", onKey); };
   }, []);
-  const SIDE = [
-    ["dashboard", "나의 건강 대시보드", "home"],
-    ["calendar", "검진·예약 현황", "checkup"],
-    ["wallet", "건강금융지갑 현황", "wallet"],
-    ["insurance", "보험·실손 지원", "insurance"],
-    ["mypage", "마이페이지", "mypage"],
-    ["alert", "알림센터", "__noti__", 3],
-  ];
+  // 현재 섹션 배너 — 섹션 제목·설명 보완 문구(구 아이콘바 자리)
+  const SEC_BANNER = {
+    home: "AI 헬스케어·핀테크 임팩트기업 — 회사 소개·비전·사회적 가치환원·커뮤니티. 치료비 걱정 없는 평생 건강관리 생태계를 만듭니다.",
+    checkup: "전국 제휴 검진센터 비교·예약과 결과 조회 — 예약만 해도 무료 검진대비보험이 자동 가입되고, 결과는 AI 정밀분석으로 이어집니다.",
+    care: "검진 결과가 관리로 이어지는 케어 루프 — AI 주치의 상담·건강현황·병원진료 안내·재가돌봄·맞춤 건강쇼핑까지 한 곳에서.",
+    insurance: "건강데이터와 융합된 맞춤 보장 — 보장조회·AI 보험솔루션(보장공백·본인부담·세대전환)·간편가입·보험금 청구·치료비 지원.",
+    mywallet: "건강활동이 자산이 되는 곳 — 건강금융지갑(HTK)·우리가족건강관리·Health NFT·데이터 금고(블록체인 보호).",
+    partner: "검진센터·병원·약국·건강쇼핑 제휴 네트워크와 회원 적립금 주식청약·법인 투자 — 하이핀과 함께 성장하세요.",
+    ontology: "회원·질병·보험·공급망·재무를 하나의 지식그래프로 통합 운영 — 데이터 하우스·블록체인 금고·AI KB (관리자 콘솔).",
+  };
   if (!authU) return <AuthGate />;
   return (
     <div className="app">
@@ -146,20 +148,22 @@ export default function App() {
       <div className="body">
         <aside className="side">
           <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-            {SIDE.map(([ik, t, target, b], i) => {
-              const active = target === "__noti__" ? hdr === "noti" : sec === target;
-              return (<div key={i} className={`snav ${active ? "on" : ""}`} onClick={() => target === "__noti__" ? setHdr("noti") : setSec(target)}><span className="sico"><SecIcon k={ik} /></span> {t}{b && <span className="sb">{b}</span>}</div>);
-            })}
+            {SECTIONS.filter((x) => role === "ADMIN" || x.k !== "ontology").map((x) => (
+              <div key={x.k} className={`snav ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}><span className="sico"><SecIcon k={x.k} /></span> {x.t}</div>
+            ))}
+            <div className={`snav ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr("noti")}><span className="sico"><SecIcon k="alert" /></span> 알림센터<span className="sb">3</span></div>
           </div>
           <div className="agent"><div className="at">AI Super Agent</div><div className="as">{greetName}님 고객 전담 · 모든 서비스 연결</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("agent")}>상담 시작하기</button></div>
           {role === "ADMIN" && <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>}
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
         <main className="scrollarea">
-          <nav className="iconbar">
-            {SECTIONS.filter((x) => role === "ADMIN" || x.k !== "ontology").map((x) => (<div key={x.k} className={`iitem ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
-              <span className="ico"><SecIcon k={x.k} /></span><span className="t">{x.t}</span><span className="s">{x.s}</span></div>))}
-          </nav>
+          {(() => { const p = secParent(sec); const cb = SECTIONS.find((x) => x.k === p); if (!cb) return null; return (
+            <div className="secbanner">
+              <span className="sb-ic"><SecIcon k={cb.k} /></span>
+              <div className="sb-b"><b>{cb.t}</b><p>{SEC_BANNER[cb.k] || cb.s}</p></div>
+            </div>
+          ); })()}
           {!onbo.done && secParent(sec) === "home" && sec !== "onboarding" && (
             <div className="obpromo" onClick={() => setSec("onboarding")} role="button" tabIndex={0}>
               <span className="obpromo-ic"><ShieldCheck size={20} /></span>
