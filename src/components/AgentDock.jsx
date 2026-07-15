@@ -10,7 +10,21 @@ function AgentDock({ onGo }) {
   const [easy, setEasy] = useState(() => { try { return !!localStorage.getItem("hifin_easyread"); } catch (e) { return false; } });
   const endRef = useRef(null);
   const recogRef = useRef(null);
+  const lastQRef = useRef("");
   const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  // AI 주치의 지식(KDCA·리포트·학습 Q&A) — 독을 처음 열 때 지연 로드(홈 초기 로딩 부담 없음)
+  const kbRef = useRef({ kb: null, rp: null, qa: null });
+  useEffect(() => {
+    if (!open) return;
+    try { if (typeof loadKdca === "function") loadKdca().then((d) => { kbRef.current.kb = d; }); } catch (e) {}
+    try { if (typeof loadReport === "function") loadReport().then((d) => { kbRef.current.rp = d; }); } catch (e) {}
+    try {
+      if (typeof loadQA === "function" && typeof loadGuidelines === "function") Promise.all([loadGuidelines(), loadQA()]).then(([gl, qa]) => {
+        if (!qa && !gl) return;
+        kbRef.current.qa = { meta: { count: ((gl && gl.qa) ? gl.qa.length : 0) + ((qa && qa.qa) ? qa.qa.length : 0) }, qa: [...((gl && gl.qa) || []), ...((qa && qa.qa) || [])] };
+      });
+    } catch (e) {}
+  }, [open]);
 
   // 첫 오픈 시 재접속 인사(기억 연속성)
   useEffect(() => {
@@ -29,15 +43,42 @@ function AgentDock({ onGo }) {
   const send = (textArg) => {
     const text = (textArg == null ? input : textArg).trim(); if (!text) return;
     if (text === "쉬운 말 모드 켜기") { setEasy(true); setMsgs((m) => [...m, { who: "hi", lines: ["쉬운 말 모드를 켰어요 — 글씨를 키우고 더 쉽게 설명할게요."], buttons: [], nav: null }]); return; }
+    // AI 주치의식 액션 버튼(핸드오프·바로가기) — Chat과 동일하게 화면 이동으로 처리
+    try {
+      if (typeof ACTION_NAV !== "undefined" && ACTION_NAV[text]) { setOpen(false); go(ACTION_NAV[text]); return; }
+      if (typeof INS_HANDOFF !== "undefined" && text === INS_HANDOFF) { try { window.__hifinInsAsk = { tab: "ai", q: lastQRef.current || "보장 공백 분석" }; } catch (e) {} setOpen(false); go("insurance"); return; }
+      if (typeof DOCTOR_HANDOFF !== "undefined" && text === DOCTOR_HANDOFF) { try { _doctorSeed = lastQRef.current || null; _checkupTab = "doctor"; } catch (e) {} setOpen(false); go("checkup"); return; }
+      if (typeof SHOP_SUPP_BTN !== "undefined" && text === SHOP_SUPP_BTN) { try { window._shopIntel = Object.assign({ kind: "supp" }, window._lastCareRec || {}); } catch (e) {} setOpen(false); go("shop"); return; }
+      if (typeof SHOP_DEVICE_BTN !== "undefined" && text === SHOP_DEVICE_BTN) { try { window._shopGo = Object.assign({ cat: "device", brand: "GN바디닥터" }, window._lastCareRec || {}); window._shopIntel = null; } catch (e) {} setOpen(false); go("shop"); return; }
+    } catch (e) {}
     setInput("");
     setMsgs((m) => [...m, { who: "me", lines: [text], buttons: [], nav: null }]);
     setTyping(true);
     setTimeout(() => {
       let res = null;
       try { res = (typeof agentAnswer === "function") ? agentAnswer(text) : null; } catch (e) { res = null; }
+      // Q&A·섹션가이드가 못 받은 질문은 AI 주치의 엔진(질환·증상·약물·리포트·검진해석)이 그대로 답변
+      if (!res || !res.matched || res.matched === "graph") {
+        let doc = null;
+        try { const K = kbRef.current; doc = (typeof aiRespond === "function") ? aiRespond(text, K.kb, K.rp, K.qa) : null; } catch (e) { doc = null; }
+        if (doc && doc.bubbles && doc.bubbles.length) {
+          const first = doc.bubbles[0];
+          const generic = first.kind !== "card" && /정보를 찾지 못했어요|이렇게 안내해 드릴 수 있어요/.test(first.text || "");
+          if (!generic) {
+            lastQRef.current = text;
+            const lines = doc.bubbles.filter((b) => b.kind !== "card").map((b) => b.text).filter(Boolean);
+            const cards = doc.bubbles.filter((b) => b.kind === "card" && b.card).map((b) => b.card);
+            const btns = [...new Set([].concat(...cards.map((c) => c.buttons || [])).concat(doc.quicks || []))].slice(0, 4);
+            setTyping(false);
+            setMsgs((m) => [...m, { who: "hi", lines, cards, buttons: btns, nav: null }]);
+            return;
+          }
+        }
+      }
       setTyping(false);
       if (!res) { setMsgs((m) => [...m, { who: "hi", lines: ["잠시 문제가 있었어요 — 다시 한번 말씀해 주시겠어요?"], buttons: ["사람 상담 연결"], nav: null }]); return; }
       if (res.reset) { setMsgs([{ who: "hi", lines: res.lines, buttons: [], nav: null }]); return; }
+      lastQRef.current = text;
       setMsgs((m) => [...m, { who: "hi", lines: res.lines, buttons: res.buttons || [], nav: res.nav || null }]);
     }, 480);
   };
@@ -75,6 +116,13 @@ function AgentDock({ onGo }) {
                 {m.who === "hi" && <span className="hidock-mini"><Bot size={13} /></span>}
                 <div className="hidock-msg">
                   {m.lines.map((l, j) => <div className={"hidock-bub " + m.who} key={j}>{l}</div>)}
+                  {m.cards && m.cards.map((c, ci) => (
+                    <div className="hidock-card" key={"c" + ci}>
+                      <b>{c.title}</b>
+                      {(c.items || []).length > 0 && <ul>{c.items.map((it, ii) => <li key={ii}>{it}</li>)}</ul>}
+                      {(c.buttons || []).length > 0 && <div className="hidock-btns">{c.buttons.map((b) => <button key={b} onClick={() => send(b)}>{b}</button>)}</div>}
+                    </div>
+                  ))}
                   {m.nav && <button className="hidock-nav" onClick={() => { go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
                   {m.buttons && m.buttons.length > 0 && <div className="hidock-btns">{m.buttons.map((b) => <button key={b} onClick={() => send(b)}>{b}</button>)}</div>}
                 </div>

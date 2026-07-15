@@ -54,7 +54,7 @@
 .snav:hover{background:rgba(255,255,255,.06);color:#fff;}
 .snav.on{background:linear-gradient(120deg,#2F5BEA,#4E63F0);color:#fff;box-shadow:0 8px 18px -8px rgba(47,91,234,.7);}
 .snav .sb{margin-left:auto;background:var(--red);color:#fff;font-size:10.5px;font-weight:800;min-width:18px;height:18px;border-radius:999px;display:grid;place-items:center;}
-.agent{margin-top:14px;border-radius:16px;padding:18px 14px;text-align:center;background:linear-gradient(170deg,#5A4BD6,#3E47C9);color:#fff;}
+.agent{margin-top:14px;border-radius:16px;padding:18px 14px;text-align:center;background:linear-gradient(170deg,#F97316,#EA580C);color:#fff;}
 .agent .at{font-weight:800;font-size:15px;}.agent .as{font-size:11.5px;opacity:.85;margin-top:2px;}
 .agent .bot{width:84px;height:84px;margin:12px auto 4px;border-radius:50%;background:radial-gradient(circle at 50% 35%,rgba(125,224,255,.5),rgba(255,255,255,.05));display:grid;place-items:center;}.agent .bot svg{width:60px;height:60px;overflow:visible;}
 .agent .abtn{margin-top:8px;width:100%;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:9px 0;font-weight:700;font-size:13px;cursor:pointer;}
@@ -4386,61 +4386,68 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 @media (max-width: 640px) { .secbanner { padding: 13px 14px; gap: 11px; } .secbanner .sb-ic { width: 44px; height: 44px; } .secbanner .sb-b b { font-size: 16px; } }
 
 /* ══════ 하이 독(상주 에이전트) ══════ */
-.hidock-fab { position: fixed; right: 22px; bottom: 22px; z-index: 900; display: flex; flex-direction: column; align-items: center; gap: 3px; border: none; background: linear-gradient(135deg, #6D5EF3, #8B5CF6); color: #fff; border-radius: 50%; width: 64px; height: 64px; cursor: pointer; box-shadow: 0 14px 30px -10px rgba(109, 94, 243, .65); transition: transform .15s; }
+.hidock-fab { position: fixed; right: 34px; bottom: 24px; z-index: 900; display: flex; flex-direction: column; align-items: center; gap: 3px; border: none; background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; border-radius: 50%; width: 64px; height: 64px; cursor: pointer; box-shadow: 0 14px 30px -10px rgba(234, 88, 12, .6); transition: transform .15s; }
 .hidock-fab:hover { transform: translateY(-3px) scale(1.04); }
 .hidock-face { display: grid; place-items: center; }
 .hidock-lbl { font-size: 10.5px; font-weight: 800; }
 .hidock { position: fixed; right: 18px; bottom: 18px; z-index: 950; width: 372px; max-width: calc(100vw - 24px); height: 520px; max-height: calc(100vh - 90px); background: #fff; border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 24px 60px -18px rgba(20, 30, 70, .45); display: flex; flex-direction: column; overflow: hidden; }
-.hidock-hd { display: flex; align-items: center; gap: 9px; padding: 11px 13px; background: linear-gradient(120deg, #6D5EF3, #8B5CF6); color: #fff; }
+.hidock-hd { display: flex; align-items: center; gap: 9px; padding: 11px 13px; background: linear-gradient(120deg, #F97316, #FB923C); color: #fff; }
 .hidock-av { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.22); display: grid; place-items: center; flex-shrink: 0; }
 .hidock-t { flex: 1; min-width: 0; } .hidock-t b { font-size: 14px; font-weight: 800; display: block; } .hidock-t span { font-size: 10.5px; opacity: .9; }
 .hidock-ib { border: none; background: rgba(255,255,255,.18); color: #fff; border-radius: 8px; padding: 5px 8px; font-size: 11px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; }
 .hidock-ib.on { background: rgba(255,255,255,.4); }
 .hidock-body { flex: 1; overflow-y: auto; padding: 13px; display: flex; flex-direction: column; gap: 10px; background: #F7F8FC; }
 .hidock-row { display: flex; gap: 7px; } .hidock-row.me { justify-content: flex-end; }
-.hidock-mini { width: 24px; height: 24px; border-radius: 50%; background: #6D5EF3; color: #fff; display: grid; place-items: center; flex-shrink: 0; margin-top: 2px; }
+.hidock-mini { width: 24px; height: 24px; border-radius: 50%; background: #F97316; color: #fff; display: grid; place-items: center; flex-shrink: 0; margin-top: 2px; }
 .hidock-msg { max-width: 84%; display: flex; flex-direction: column; gap: 5px; }
 .hidock-bub { border-radius: 13px; padding: 9px 12px; font-size: 12.8px; line-height: 1.6; }
 .hidock-bub.hi { background: #fff; border: 1px solid var(--border); color: #26324A; border-top-left-radius: 4px; }
-.hidock-bub.me { background: #6D5EF3; color: #fff; border-top-right-radius: 4px; }
-.hidock-nav { display: inline-flex; align-items: center; gap: 3px; align-self: flex-start; border: 1px solid #C9C2F8; background: #F1EEFE; color: #5B4BD6; font-size: 11.5px; font-weight: 800; padding: 7px 12px; border-radius: 10px; cursor: pointer; }
+.hidock-bub.me { background: #F97316; color: #fff; border-top-right-radius: 4px; }
+.hidock-nav { display: inline-flex; align-items: center; gap: 3px; align-self: flex-start; border: 1px solid #FED7AA; background: #FFF7ED; color: #C2410C; font-size: 11.5px; font-weight: 800; padding: 7px 12px; border-radius: 10px; cursor: pointer; }
+.hidock-card { border: 1px solid #FED7AA; background: #fff; border-radius: 13px; padding: 10px 12px; }
+.hidock-card b { display: block; font-size: 12.5px; color: #C2410C; margin-bottom: 6px; }
+.hidock-card ul { margin: 0 0 6px; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; }
+.hidock-card li { font-size: 12.3px; line-height: 1.55; color: #33405C; }
+body.easyread .hidock-card li { font-size: 14.5px; line-height: 1.7; }
 .hidock-btns { display: flex; flex-wrap: wrap; gap: 6px; }
 .hidock-btns button { border: 1px solid #D9DEEC; background: #fff; color: #3A4659; font-size: 11.5px; font-weight: 700; padding: 7px 11px; border-radius: 999px; cursor: pointer; }
-.hidock-btns button:hover { border-color: #6D5EF3; color: #5B4BD6; }
+.hidock-btns button:hover { border-color: #F97316; color: #C2410C; }
 .hidock-typing { display: inline-flex; gap: 4px; align-items: center; }
 .hidock-typing span { width: 6px; height: 6px; border-radius: 50%; background: #A5AFC6; animation: hidotk 1s infinite; }
 .hidock-typing span:nth-child(2) { animation-delay: .16s; } .hidock-typing span:nth-child(3) { animation-delay: .32s; }
 @keyframes hidotk { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
 .hidock-input { display: flex; align-items: center; gap: 7px; padding: 10px 11px; border-top: 1px solid var(--border); background: #fff; }
 .hidock-input input { flex: 1; border: 1px solid var(--border); border-radius: 999px; padding: 9px 14px; font-size: 12.8px; font-family: inherit; }
-.hidock-mic { border: 1px solid var(--border); background: #fff; color: #6D5EF3; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.hidock-mic { border: 1px solid var(--border); background: #fff; color: #F97316; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
 .hidock-mic.on { background: #EF4444; color: #fff; border-color: #EF4444; animation: hipulse 1s infinite; }
 @keyframes hipulse { 50% { box-shadow: 0 0 0 6px rgba(239,68,68,.2); } }
 .hidock-send { border: none; background: #D9DEEC; color: #fff; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
-.hidock-send.on { background: #6D5EF3; }
+.hidock-send.on { background: #F97316; }
 /* 쉬운 말 모드 */
 body.easyread .hidock-bub { font-size: 15.5px; line-height: 1.75; }
 body.easyread .hidock-btns button { font-size: 14px; padding: 9px 14px; }
 body.easyread .hidock-input input { font-size: 15px; }
 /* 홈 브리핑 */
-.hibrief { display: flex; gap: 13px; align-items: flex-start; background: linear-gradient(120deg, #F4F1FF, #FFFFFF); border: 1.5px solid #DCD4FB; border-radius: 16px; padding: 16px 18px; margin-bottom: 14px; }
-.hibrief-av { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #6D5EF3, #8B5CF6); color: #fff; display: grid; place-items: center; flex-shrink: 0; }
+.hibrief { display: flex; gap: 13px; align-items: flex-start; background: linear-gradient(120deg, #FFF7ED, #FFFFFF); border: 1.5px solid #FED7AA; border-radius: 16px; padding: 16px 18px; margin-bottom: 14px; }
+.hibrief-av { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; display: grid; place-items: center; flex-shrink: 0; }
 .hibrief-t { font-size: 14.5px; font-weight: 700; color: #26324A; line-height: 1.6; }
 .hibrief-btns { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
-.hibrief-btns button { border: 1px solid #C9C2F8; background: #fff; color: #5B4BD6; font-size: 12.5px; font-weight: 800; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.hibrief-btns button { border: 1px solid #FED7AA; background: #fff; color: #C2410C; font-size: 12.5px; font-weight: 800; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
 .hibrief-btns button.ghost { border-color: #D9DEEC; color: #64748B; font-weight: 700; }
 body.easyread .hibrief-t { font-size: 17px; }
-@media (max-width: 640px) { .hidock { right: 8px; bottom: 8px; height: 62vh; } .hidock-fab { right: 14px; bottom: 14px; width: 56px; height: 56px; } }
+@media (max-width: 640px) { .hidock { right: 8px; bottom: 8px; height: 62vh; } .hidock-fab { right: 24px; bottom: 16px; width: 56px; height: 56px; } }
+/* 섹션 상단 배너(secbanner)가 있으면 본문 내 섹션 제목(aihead)은 중복이므로 숨김 */
+.scrollarea:has(> .secbanner) .aihead { display: none; }
 
 /* ══════ 하이 커버리지 콘솔 ══════ */
-.hiops-hero { display: flex; align-items: center; gap: 8px; background: linear-gradient(120deg, #6D5EF3, #8B5CF6); color: #fff; border-radius: 13px; padding: 13px 16px; font-size: 14px; }
+.hiops-hero { display: flex; align-items: center; gap: 8px; background: linear-gradient(120deg, #F97316, #FB923C); color: #fff; border-radius: 13px; padding: 13px 16px; font-size: 14px; }
 .hiops-hero b { font-weight: 800; } .hiops-hero span { font-size: 11px; opacity: .9; }
 .hiops-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin: 12px 0; }
 .hiops-stat { border: 1px solid var(--border); border-radius: 11px; padding: 12px; text-align: center; background: #fff; }
-.hiops-stat b { font-size: 19px; font-weight: 800; color: #6D5EF3; display: block; } .hiops-stat span { font-size: 10.5px; color: var(--muted); }
+.hiops-stat b { font-size: 19px; font-weight: 800; color: #EA580C; display: block; } .hiops-stat span { font-size: 10.5px; color: var(--muted); }
 .hiops-sec { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: #1C2A44; margin: 14px 0 8px; }
 .hiops-sec span { font-size: 11px; font-weight: 600; color: var(--muted); }
-.hiops-run { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; border: none; background: #6D5EF3; color: #fff; font-size: 11.5px; font-weight: 800; padding: 7px 12px; border-radius: 9px; cursor: pointer; }
+.hiops-run { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; border: none; background: #EA580C; color: #fff; font-size: 11.5px; font-weight: 800; padding: 7px 12px; border-radius: 9px; cursor: pointer; }
 .hiops-list { display: flex; flex-direction: column; gap: 5px; }
 .hiops-row { display: flex; gap: 10px; align-items: baseline; border: 1px solid var(--border); border-radius: 9px; padding: 8px 11px; background: #FCFDFF; font-size: 12px; }
 .hiops-t { color: #94A3B8; font-size: 10.5px; flex-shrink: 0; min-width: 54px; font-variant-numeric: tabular-nums; }
