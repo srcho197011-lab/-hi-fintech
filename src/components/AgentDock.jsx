@@ -110,3 +110,42 @@ function AgentHomeBriefing() {
     </div>
   );
 }
+
+/* ══════════ 하이 커버리지 콘솔(ADMIN·온톨로지) — 답변 성공률·미답변 로그·주간 학습 루프 ══════════ */
+function AgentOpsConsole() {
+  const [tick, setTick] = useState(0);
+  const [pending, setPending] = useState(() => { try { return JSON.parse(localStorage.getItem("hifin_agent_pending") || "[]"); } catch (e) { return []; } });
+  void tick;
+  const cov = (typeof agentCoverage === "function") ? agentCoverage() : { total: 0, hit: 0 };
+  const misses = (typeof agentMisses === "function") ? agentMisses() : [];
+  const rate = cov.total ? Math.round(cov.hit / cov.total * 1000) / 10 : 0;
+  const qnaN = (typeof AGENT_QNA !== "undefined") ? AGENT_QNA.filter((x) => x.p && x.p.length).length : 0;
+  const patN = (typeof AGENT_QNA !== "undefined") ? AGENT_QNA.reduce((s, x) => s + ((x.p || []).length), 0) : 0;
+  const lexN = (typeof HIFIN_LEXICON !== "undefined") ? HIFIN_LEXICON.reduce((s, x) => s + x[1].length, 0) : 0;
+  const secN = (typeof AGENT_SEC_GUIDES !== "undefined") ? AGENT_SEC_GUIDES.length : 0;
+  const runLoop = () => { try { const r = (typeof agentLearnLoop === "function") ? agentLearnLoop() : null; setPending((r && r.pending) || []); if (typeof toast === "function") toast(`주간 학습 루프 실행 — 미답변 ${misses.length}건에서 신규 Q&A 후보 ${(r && r.generated) || 0}건 생성(검수 대기)`); } catch (e) {} setTick((t) => t + 1); };
+  const fmtT = (ts) => { try { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; } catch (e) { return ""; } };
+  return (
+    <div className="hiops">
+      <div className="hiops-hero"><Bot size={16} /> <b>하이 커버리지 콘솔</b><span>질문 이해율·미답변·학습 루프 운영</span></div>
+      <div className="hiops-stats">
+        <div className="hiops-stat"><b>{rate}%</b><span>답변 성공률 ({cov.hit.toLocaleString()}/{cov.total.toLocaleString()})</span></div>
+        <div className="hiops-stat"><b>{qnaN}</b><span>등록 의도(Q&A)</span></div>
+        <div className="hiops-stat"><b>{(patN + lexN).toLocaleString()}+</b><span>표현 커버(패턴+동의어)</span></div>
+        <div className="hiops-stat"><b>{secN}</b><span>섹션 가이드</span></div>
+      </div>
+      <div className="hiops-sec">미답변 로그 <span>({misses.length}건 · 최근순)</span>
+        <button className="hiops-run" onClick={runLoop}><RefreshCw size={13} /> 주간 학습 루프 실행</button></div>
+      <div className="hiops-list">{misses.slice(-10).reverse().map((m, i) => (
+        <div className="hiops-row" key={i}><span className="hiops-t">{fmtT(m.ts)}</span><span className="hiops-q">"{m.q}"</span></div>
+      ))}{!misses.length && <div className="hiops-row"><span className="hiops-q" style={{ color: "#94A3B8" }}>미답변 없음 — 커버리지 양호</span></div>}</div>
+      {pending.length > 0 && (<>
+        <div className="hiops-sec">신규 Q&A 후보 <span>(검수 대기 {pending.length}건 — 검수 후 뱅크 등록)</span></div>
+        <div className="hiops-list">{pending.slice(0, 6).map((p, i) => (
+          <div className="hiops-row" key={i}><span className="hiops-t">×{p.freq}</span><span className="hiops-q">{p.draft}</span></div>
+        ))}</div>
+      </>)}
+      <div className="chnote" style={{ marginTop: 12 }}>※ <b>배포 표준 절차</b> — 새 기능·용어는 ①AGENT_QNA(의도·표준답변·툴) ②HIFIN_LEXICON(동의어) ③TOOL_RUN/AGENT_SEC_GUIDES(기능·가이드) 3층 등록 없이는 배포 불가. 미답변 상위 질문은 주간 배치로 신규 Q&A 생성·검수·반영합니다.</div>
+    </div>
+  );
+}
