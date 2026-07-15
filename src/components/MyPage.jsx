@@ -237,6 +237,21 @@ function MyPageSection({ onGo }) {
         </div>
       </div>
 
+      {typeof insuranceSolution === "function" && (() => {
+        const M = dm || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+        if (!M) return null;
+        let sol = null; try { sol = insuranceSolution(M); } catch (e) {}
+        if (!sol) return null;
+        const gaps = sol.findings.filter((f) => f.sev !== "good");
+        const col = sol.grade === "충실" ? "#15803D" : sol.grade === "보통" ? "#B45309" : "#B91C1C";
+        return (
+          <div className="myins" onClick={() => go("insurance")} title="보험·치료비에서 보장 설계">
+            <div className="myins-l"><ShieldCheck size={16} color="#2563EB" /><div><b>내 보험 보장 현황</b><span>실손 {sol.ins.silson.gen} · 진단비 {sol.ins.riders.length ? sol.ins.riders.map((r) => r.cat).join("·") : "미보유"}</span></div></div>
+            <div className="myins-r"><span className="myins-grade" style={{ color: col }}>충실도 {sol.grade} {sol.score}점</span><span className="myins-gap">{gaps.length ? "공백 " + gaps.length + "건" : "공백 없음"}</span><ChevronRight size={15} color="#8A97AE" /></div>
+          </div>
+        );
+      })()}
+
       <div className="chtabs">{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
       {tab === "ailog" && (() => {

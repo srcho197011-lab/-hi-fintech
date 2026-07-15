@@ -724,6 +724,22 @@ function SilsonStatsPanel() {
         <div className="sildist">{GEN_ORDER.map((g) => { const c = agg.gens[g] || 0; const pct = c / n * 100; return (
           <div className="sildrow" key={g}><span className="sdlab" style={{ color: GEN_COL[g] }}>{g}</span><div className="sdbar"><i style={{ width: Math.max(0.5, pct) + "%", background: GEN_COL[g] }} /></div><span className="sdval">{pct.toFixed(1)}% · {(c / 10000).toFixed(1)}만</span></div>); })}</div>
 
+        {agg.ageGen && (<>
+          <div className="silsub">연령대 × 실손 세대 분포 히트맵 <span className="silmini">셀 = 해당 연령대 내 세대 비중</span></div>
+          <div className="silt-wrap"><table className="silt silheat">
+            <thead><tr><th>연령대</th>{["1세대", "2세대", "3세대", "4세대", "5세대", "노인실손", "어린이 실손", "미가입"].map((g) => <th key={g} style={{ color: GEN_COL[g] }}>{g.replace(" 실손", "")}</th>)}</tr></thead>
+            <tbody>{["~18", "19-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"].map((lab, bi) => { const row = agg.ageGen[bi] || {}; const tot = row._tot || 1; return (
+              <tr key={lab}><td className="rh">{lab}</td>{["1세대", "2세대", "3세대", "4세대", "5세대", "노인실손", "어린이 실손", "미가입"].map((g) => { const p = (row[g] || 0) / tot * 100; const bg = p <= 0 ? "transparent" : `rgba(37,99,235,${Math.min(0.85, 0.08 + p / 100 * 1.1).toFixed(2)})`; return <td key={g} style={{ background: bg, color: p >= 45 ? "#fff" : "#33405C", fontWeight: p >= 20 ? 700 : 500, textAlign: "center" }}>{p >= 0.5 ? p.toFixed(0) : "·"}</td>; })}</tr>); })}
+            </tbody>
+          </table></div>
+          <div className="silnote">고연령일수록 1·2세대·노후실손, 젊을수록 3·4세대 비중이 높은 상관을 확인할 수 있습니다(단위 %).</div>
+        </>)}
+        {agg.riderBands && (<>
+          <div className="silsub">중대질환 진단비 가입금액대 분포 <span className="silmini">보유 특약 진단비 합계 기준</span></div>
+          <div className="sildist">{["미보유", "~2천만", "2~5천만", "5천만~1억", "1억+"].map((k) => { const c = agg.riderBands[k] || 0; const pct = c / n * 100; const col = k === "미보유" ? "#94A3B8" : ["#93C5FD", "#3B82F6", "#1D4ED8", "#7C3AED"][["~2천만", "2~5천만", "5천만~1억", "1억+"].indexOf(k)]; return (
+            <div className="sildrow" key={k}><span className="sdlab" style={{ color: col, minWidth: 78 }}>{k}</span><div className="sdbar"><i style={{ width: Math.max(0.5, pct) + "%", background: col }} /></div><span className="sdval">{pct.toFixed(1)}% · {(c / 10000).toFixed(1)}만</span></div>); })}</div>
+        </>)}
+
         <div className="silsub">중대질환 10대 구분 진단 분포 <span className="silmini">모집단 진단 이력 · 진단자 {(agg.dxN / 10000).toFixed(1)}만명({(agg.dxRate * 100).toFixed(1)}%)</span></div>
         <div className="silt-wrap"><table className="silt">
           <thead><tr><th>구분</th><th>주요 질환</th><th>대표 진단비</th><th>진단자(모집단)</th><th>진단율</th></tr></thead>

@@ -3955,3 +3955,35 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .silsol-sev{font-size:10px;font-weight:800;padding:1px 8px;border-radius:999px;white-space:nowrap}
 .silsol-f p{margin:4px 0;font-size:12px;color:#4B4266;line-height:1.5}
 .silsol-a{font-size:12px;font-weight:700;color:#6D28D9}
+
+/* ── 연령×세대 히트맵 ── */
+.silt.silheat td { padding: 5px 4px; font-size: 11.5px; border: 1px solid var(--border); }
+.silt.silheat th { font-size: 11px; padding: 5px 3px; }
+.silt.silheat td.rh { background: #F4F7FC; font-weight: 700; color: #33405C; }
+
+/* ── 마이페이지 보험 요약 바 ── */
+.myins { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 2px 0 14px; padding: 11px 14px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(180deg, #F7FAFF, #FFF); cursor: pointer; transition: box-shadow .15s, transform .1s; }
+.myins:hover { box-shadow: 0 8px 20px -16px rgba(20,40,90,.5); transform: translateY(-1px); }
+.myins-l { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.myins-l b { font-size: 13.5px; font-weight: 800; color: #1C2A44; display: block; }
+.myins-l span { font-size: 11.5px; color: var(--muted); }
+.myins-r { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.myins-grade { font-size: 12.5px; font-weight: 800; }
+.myins-gap { font-size: 11px; font-weight: 700; color: #64748B; background: #EEF2F8; padding: 3px 8px; border-radius: 20px; }
+
+/* ── 가족 보험 보장 요약 ── */
+.famins { margin: 14px 0; padding: 14px 15px; border: 1px solid var(--border); border-radius: 14px; background: #FFF; }
+.fih { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 800; color: #1C2A44; }
+.fih span { font-size: 11px; font-weight: 600; color: var(--muted); }
+.fime { margin: 9px 0 11px; padding: 8px 11px; background: #F4F8FF; border-radius: 9px; font-size: 12.5px; color: #33405C; }
+.fitbl { display: flex; flex-direction: column; gap: 5px; }
+.firow { display: grid; grid-template-columns: 1.3fr .9fr .7fr 1.6fr; align-items: center; gap: 8px; font-size: 12px; padding: 6px 4px; border-bottom: 1px dashed var(--border); }
+.firn { font-weight: 700; color: #1C2A44; } .firn small { font-weight: 600; color: var(--muted); margin-left: 4px; }
+.firg { color: #2563EB; font-weight: 700; }
+.firgr { font-weight: 800; text-align: center; border-radius: 6px; padding: 2px 0; font-size: 11px; }
+.firgr.g1 { color: #15803D; background: #E7F6EC; } .firgr.g2 { color: #B45309; background: #FEF3E2; } .firgr.g3 { color: #B91C1C; background: #FDECEC; }
+.firgap { color: #64748B; font-size: 11.5px; }
+.finote, .finone { margin-top: 11px; font-size: 12px; color: #475569; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.filink { display: inline-flex; align-items: center; gap: 2px; border: none; background: #EEF3FB; color: #2563EB; font-weight: 700; font-size: 11.5px; padding: 5px 10px; border-radius: 20px; cursor: pointer; flex-shrink: 0; }
+.fiwarn { margin-top: 10px; font-size: 10.5px; color: #94A3B8; line-height: 1.5; }
+@media (max-width: 640px) { .firow { grid-template-columns: 1fr .8fr .7fr; } .firgap { display: none; } }

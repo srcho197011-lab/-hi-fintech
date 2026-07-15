@@ -92,6 +92,9 @@ function _silsonMonthly(gen, age) {
 /* ── 회원별 실손·중대질환 생성(결정론적) ── */
 function memberInsurance(m) {
   if (!m) return null;
+  // 조성래(시연 기준 인물)는 어느 섹션에서 조회하든 동일한 시연 케이스(2세대+암·뇌·심장)로 통일
+  // (내부 selfInsurance 호출만 forcedRiders를 지니므로 재귀 없이 단일 소스로 수렴)
+  if (!m.forcedRiders && m.name === "조성래" && typeof selfInsurance === "function") return selfInsurance();
   const id = m.id || (m.name + (m.regAge || m.age || ""));
   const rng = _insRng(_insHash(id + "|ins"));
   const age = m.regAge != null ? Math.round(m.regAge) : (m.age != null ? m.age : 45);
@@ -163,9 +166,10 @@ function insuranceSolution(m) {
   if (!ins) return null;
   const age = m.regAge != null ? Math.round(m.regAge) : (m.age != null ? m.age : 45);
   const risk = m.risk != null ? m.risk : (m.cancerRiskGrade != null ? Math.min(5, Math.round(m.cancerRiskGrade / 1.6)) : 2);
-  const diseases = m.diseases || m.highRiskDiseases || [];
-  const cancerRisk = !!m.cancer || (Array.isArray(m.highRiskCancerTypes) && m.highRiskCancerTypes.length > 0);
-  const drinker = !!m.drinker, smoker = !!m.smoker;
+  const isSelfPerson = m.isSelf || m.name === "조성래";
+  const diseases = (m.diseases || m.highRiskDiseases || []).concat(isSelfPerson ? ["당뇨병"] : []);
+  const cancerRisk = !!m.cancer || (Array.isArray(m.highRiskCancerTypes) && m.highRiskCancerTypes.length > 0) || isSelfPerson;
+  const drinker = !!m.drinker || isSelfPerson, smoker = !!m.smoker;
   const riderCats = ins.riders.map((r) => r.cat);
   const dxCats = ins.dx.map((d) => d.cat);
   const F = []; // {sev:'crit'|'warn'|'good', t, d, a}
@@ -324,25 +328,28 @@ function insuranceAgg(cohort) {
   if (_insAggCache) return _insAggCache;
   const list = cohort || (typeof pilotCohort === "function" ? pilotCohort() : []);
   const gens = {}, crit = {}; let enrolled = 0, riderN = 0, dxN = 0, silsonPremium = 0;
+  const GEN_KEYS = Object.keys(SILSON_SPEC);
   Object.keys(SILSON_SPEC).forEach((g) => gens[g] = 0);
   CRITICAL_DZ.forEach((c) => crit[c.cat] = { dx: 0, benefit: 0, riders: 0 });
-  for (const m of list) {
-    const ins = m._ins || memberInsurance(m);
+  // 연령밴드(8) × 세대 크로스탭(히트맵) + 진단비 금액대 분포
+  const ageGen = Array.from({ length: 8 }, () => { const o = {}; GEN_KEYS.forEach((g) => o[g] = 0); o._tot = 0; return o; });
+  const riderBands = { "미보유": 0, "~2천만": 0, "2~5천만": 0, "5천만~1억": 0, "1억+": 0 };
+  const _rband = (v) => v <= 0 ? "미보유" : v < 20000000 ? "~2천만" : v < 50000000 ? "2~5천만" : v < 100000000 ? "5천만~1억" : "1억+";
+  const _tally = (m, ins) => {
+    const age = m.regAge != null ? Math.round(m.regAge) : (m.age != null ? m.age : 45);
+    const b = _insBand(age); ageGen[b][ins.silson.gen] = (ageGen[b][ins.silson.gen] || 0) + 1; ageGen[b]._tot++;
     gens[ins.silson.gen] = (gens[ins.silson.gen] || 0) + 1;
     if (ins.silson.enrolled) { enrolled++; silsonPremium += ins.silson.monthly; }
     if (ins.hasRider) riderN++;
     if (ins.hasCritical) dxN++;
+    riderBands[_rband(ins.riderTotal)]++;
     ins.dx.forEach((d) => { crit[d.cat].dx++; crit[d.cat].benefit += d.benefit; });
     ins.riders.forEach((r) => { crit[r.cat].riders++; });
-  }
+  };
+  for (const m of list) _tally(m, m._ins || memberInsurance(m));
   // + 조성래(실측 회원) → 100,001
-  const s = selfInsurance();
-  gens[s.silson.gen] = (gens[s.silson.gen] || 0) + 1;
-  if (s.silson.enrolled) { enrolled++; silsonPremium += s.silson.monthly; }
-  if (s.hasRider) riderN++; if (s.hasCritical) dxN++;
-  s.dx.forEach((d) => { crit[d.cat].dx++; crit[d.cat].benefit += d.benefit; });
-  s.riders.forEach((r) => { crit[r.cat].riders++; });
+  _tally({ regAge: 54 }, selfInsurance());
   const n = (list.length || 0) + 1;
-  _insAggCache = { n, gens, crit, enrolled, enrollRate: enrolled / n, riderN, dxN, dxRate: dxN / n, avgPremium: enrolled ? Math.round(silsonPremium / enrolled) : 0 };
+  _insAggCache = { n, gens, crit, ageGen, riderBands, enrolled, enrollRate: enrolled / n, riderN, dxN, dxRate: dxN / n, avgPremium: enrolled ? Math.round(silsonPremium / enrolled) : 0 };
   return _insAggCache;
 }

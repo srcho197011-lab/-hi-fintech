@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=e1f33cb493" />
+<link rel="stylesheet" href="./data/app.css?v=579d2eb525" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=e1f33cb493"></script>
-<script src="./src/data/section_data.js?v=e1f33cb493"></script>
-<script src="./src/data/demo_members.js?v=e1f33cb493"></script>
+<script src="./src/data/dummy_data.js?v=579d2eb525"></script>
+<script src="./src/data/section_data.js?v=579d2eb525"></script>
+<script src="./src/data/demo_members.js?v=579d2eb525"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -7371,6 +7371,22 @@ function SilsonStatsPanel() {
         <div className="sildist">{GEN_ORDER.map((g) => { const c = agg.gens[g] || 0; const pct = c / n * 100; return (
           <div className="sildrow" key={g}><span className="sdlab" style={{ color: GEN_COL[g] }}>{g}</span><div className="sdbar"><i style={{ width: Math.max(0.5, pct) + "%", background: GEN_COL[g] }} /></div><span className="sdval">{pct.toFixed(1)}% · {(c / 10000).toFixed(1)}만</span></div>); })}</div>
 
+        {agg.ageGen && (<>
+          <div className="silsub">연령대 × 실손 세대 분포 히트맵 <span className="silmini">셀 = 해당 연령대 내 세대 비중</span></div>
+          <div className="silt-wrap"><table className="silt silheat">
+            <thead><tr><th>연령대</th>{["1세대", "2세대", "3세대", "4세대", "5세대", "노인실손", "어린이 실손", "미가입"].map((g) => <th key={g} style={{ color: GEN_COL[g] }}>{g.replace(" 실손", "")}</th>)}</tr></thead>
+            <tbody>{["~18", "19-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"].map((lab, bi) => { const row = agg.ageGen[bi] || {}; const tot = row._tot || 1; return (
+              <tr key={lab}><td className="rh">{lab}</td>{["1세대", "2세대", "3세대", "4세대", "5세대", "노인실손", "어린이 실손", "미가입"].map((g) => { const p = (row[g] || 0) / tot * 100; const bg = p <= 0 ? "transparent" : `rgba(37,99,235,${Math.min(0.85, 0.08 + p / 100 * 1.1).toFixed(2)})`; return <td key={g} style={{ background: bg, color: p >= 45 ? "#fff" : "#33405C", fontWeight: p >= 20 ? 700 : 500, textAlign: "center" }}>{p >= 0.5 ? p.toFixed(0) : "·"}</td>; })}</tr>); })}
+            </tbody>
+          </table></div>
+          <div className="silnote">고연령일수록 1·2세대·노후실손, 젊을수록 3·4세대 비중이 높은 상관을 확인할 수 있습니다(단위 %).</div>
+        </>)}
+        {agg.riderBands && (<>
+          <div className="silsub">중대질환 진단비 가입금액대 분포 <span className="silmini">보유 특약 진단비 합계 기준</span></div>
+          <div className="sildist">{["미보유", "~2천만", "2~5천만", "5천만~1억", "1억+"].map((k) => { const c = agg.riderBands[k] || 0; const pct = c / n * 100; const col = k === "미보유" ? "#94A3B8" : ["#93C5FD", "#3B82F6", "#1D4ED8", "#7C3AED"][["~2천만", "2~5천만", "5천만~1억", "1억+"].indexOf(k)]; return (
+            <div className="sildrow" key={k}><span className="sdlab" style={{ color: col, minWidth: 78 }}>{k}</span><div className="sdbar"><i style={{ width: Math.max(0.5, pct) + "%", background: col }} /></div><span className="sdval">{pct.toFixed(1)}% · {(c / 10000).toFixed(1)}만</span></div>); })}</div>
+        </>)}
+
         <div className="silsub">중대질환 10대 구분 진단 분포 <span className="silmini">모집단 진단 이력 · 진단자 {(agg.dxN / 10000).toFixed(1)}만명({(agg.dxRate * 100).toFixed(1)}%)</span></div>
         <div className="silt-wrap"><table className="silt">
           <thead><tr><th>구분</th><th>주요 질환</th><th>대표 진단비</th><th>진단자(모집단)</th><th>진단율</th></tr></thead>
@@ -8112,6 +8128,21 @@ function MyPageSection({ onGo }) {
         </div>
       </div>
 
+      {typeof insuranceSolution === "function" && (() => {
+        const M = dm || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+        if (!M) return null;
+        let sol = null; try { sol = insuranceSolution(M); } catch (e) {}
+        if (!sol) return null;
+        const gaps = sol.findings.filter((f) => f.sev !== "good");
+        const col = sol.grade === "충실" ? "#15803D" : sol.grade === "보통" ? "#B45309" : "#B91C1C";
+        return (
+          <div className="myins" onClick={() => go("insurance")} title="보험·치료비에서 보장 설계">
+            <div className="myins-l"><ShieldCheck size={16} color="#2563EB" /><div><b>내 보험 보장 현황</b><span>실손 {sol.ins.silson.gen} · 진단비 {sol.ins.riders.length ? sol.ins.riders.map((r) => r.cat).join("·") : "미보유"}</span></div></div>
+            <div className="myins-r"><span className="myins-grade" style={{ color: col }}>충실도 {sol.grade} {sol.score}점</span><span className="myins-gap">{gaps.length ? "공백 " + gaps.length + "건" : "공백 없음"}</span><ChevronRight size={15} color="#8A97AE" /></div>
+          </div>
+        );
+      })()}
+
       <div className="chtabs">{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
       {tab === "ailog" && (() => {
@@ -8299,6 +8330,18 @@ function familyLoad(email, surname) {
 }
 function familySave(email, list) { lsSave("hifin_family_" + (email || "default"), list); }
 function famDemoList() { return (typeof demoMembers !== "undefined" && Array.isArray(demoMembers)) ? demoMembers : []; }
+/* 보험 융합 분석용 가족 구성원(insuranceStats.getFamilyCoverageSummary가 참조) — 연동 건강데이터 병합 */
+function familyMembers(m) {
+  if (!m) return [];
+  const list = familyLoad(m.email, (m.name || "가")[0]) || [];
+  const links = lsLoad("hifin_famlink_" + (m.email || "default"), {}) || {};
+  return list.map((f) => {
+    const base = { id: (m.email || "self") + "-" + f.id, name: f.name, rel: f.relation, age: f.age, regAge: f.age, sex: f.sex };
+    const le = links[f.id];
+    if (le && typeof demoMembers !== "undefined") { const src = demoMembers.find((x) => x.email === le); if (src) { base.diseases = src.highRiskDiseases || []; base.highRiskCancerTypes = src.highRiskCancerTypes || []; base.cancer = (src.highRiskCancerTypes || []).length > 0; } }
+    return base;
+  });
+}
 function famLinkedReport(linkEmail) {
   if (!linkEmail || typeof demoMembers === "undefined" || typeof demoReport !== "function") return null;
   const src = demoMembers.find((x) => x.email === linkEmail); if (!src) return null;
@@ -8461,6 +8504,27 @@ function FamilyCareSection({ member, onGo }) {
         <div className="fst"><span className="fsv">{totalEarn.toLocaleString()}</span><span className="fsl">건강활동 적립</span></div>
         <div className="fst"><span className="fsv">약 {costSum.toLocaleString()}만</span><span className="fsl">연 의료비 추정</span></div>
       </div>
+
+      {typeof getFamilyCoverageSummary === "function" && (() => {
+        let fam = null, meSol = null;
+        try { fam = getFamilyCoverageSummary(m); } catch (e) {}
+        try { meSol = (typeof insuranceSolution === "function") ? insuranceSolution(m) : null; } catch (e) {}
+        if (!fam) return null;
+        const gaps = (fam.available ? fam.rows : []).filter((r) => r.topGap && r.topGap !== "양호");
+        return (
+          <div className="famins">
+            <div className="fih"><ShieldCheck size={14} color="#2563EB" /> 가족 보험 보장 현황 <span>· 실손 세대 × 중대질환 진단비 융합 분석</span></div>
+            {meSol && <div className="fime"><b>{m.name}</b>(세대주) · 실손 {meSol.ins.silson.gen} · 보장 충실도 <b style={{ color: meSol.grade === "충실" ? "#15803D" : meSol.grade === "보통" ? "#B45309" : "#B91C1C" }}>{meSol.grade} {meSol.score}점</b></div>}
+            {fam.available ? (<>
+              <div className="fitbl">{fam.rows.map((r, i) => (
+                <div className="firow" key={i}><span className="firn">{r.name}<small>{r.rel}</small></span><span className="firg">{r.gen}</span><span className={"firgr " + (r.grade === "충실" ? "g1" : r.grade === "보통" ? "g2" : "g3")}>{r.grade}</span><span className="firgap">{r.topGap}</span></div>
+              ))}</div>
+              <div className="finote">{gaps.length ? `가족 ${gaps.length}명에게 보장 공백이 있어요. 보험·치료비에서 함께 설계할 수 있어요.` : "가족 보장이 대체로 충실합니다."} <button className="filink" onClick={() => go("insurance")}>보험·치료비 <ChevronRight size={12} /></button></div>
+            </>) : (<div className="finone">{fam.note} <button className="filink" onClick={() => go("insurance")}>내 보험 분석 <ChevronRight size={12} /></button></div>)}
+            <div className="fiwarn">※ 예시 기준 융합 분석 · 실제 보장·가입은 약관·인수심사에 따르며 가족 데이터는 동의 범위에서만 사용됩니다.</div>
+          </div>
+        );
+      })()}
 
       <div className="famrank">
         <div className="frh"><Sparkles size={14} color="#F59E0B" /> 가족 건강 랭킹 <span>· 보호자 케어 진행률</span></div>
@@ -14582,6 +14646,9 @@ function _silsonMonthly(gen, age) {
 /* ── 회원별 실손·중대질환 생성(결정론적) ── */
 function memberInsurance(m) {
   if (!m) return null;
+  // 조성래(시연 기준 인물)는 어느 섹션에서 조회하든 동일한 시연 케이스(2세대+암·뇌·심장)로 통일
+  // (내부 selfInsurance 호출만 forcedRiders를 지니므로 재귀 없이 단일 소스로 수렴)
+  if (!m.forcedRiders && m.name === "조성래" && typeof selfInsurance === "function") return selfInsurance();
   const id = m.id || (m.name + (m.regAge || m.age || ""));
   const rng = _insRng(_insHash(id + "|ins"));
   const age = m.regAge != null ? Math.round(m.regAge) : (m.age != null ? m.age : 45);
@@ -14653,9 +14720,10 @@ function insuranceSolution(m) {
   if (!ins) return null;
   const age = m.regAge != null ? Math.round(m.regAge) : (m.age != null ? m.age : 45);
   const risk = m.risk != null ? m.risk : (m.cancerRiskGrade != null ? Math.min(5, Math.round(m.cancerRiskGrade / 1.6)) : 2);
-  const diseases = m.diseases || m.highRiskDiseases || [];
-  const cancerRisk = !!m.cancer || (Array.isArray(m.highRiskCancerTypes) && m.highRiskCancerTypes.length > 0);
-  const drinker = !!m.drinker, smoker = !!m.smoker;
+  const isSelfPerson = m.isSelf || m.name === "조성래";
+  const diseases = (m.diseases || m.highRiskDiseases || []).concat(isSelfPerson ? ["당뇨병"] : []);
+  const cancerRisk = !!m.cancer || (Array.isArray(m.highRiskCancerTypes) && m.highRiskCancerTypes.length > 0) || isSelfPerson;
+  const drinker = !!m.drinker || isSelfPerson, smoker = !!m.smoker;
   const riderCats = ins.riders.map((r) => r.cat);
   const dxCats = ins.dx.map((d) => d.cat);
   const F = []; // {sev:'crit'|'warn'|'good', t, d, a}
@@ -14814,26 +14882,29 @@ function insuranceAgg(cohort) {
   if (_insAggCache) return _insAggCache;
   const list = cohort || (typeof pilotCohort === "function" ? pilotCohort() : []);
   const gens = {}, crit = {}; let enrolled = 0, riderN = 0, dxN = 0, silsonPremium = 0;
+  const GEN_KEYS = Object.keys(SILSON_SPEC);
   Object.keys(SILSON_SPEC).forEach((g) => gens[g] = 0);
   CRITICAL_DZ.forEach((c) => crit[c.cat] = { dx: 0, benefit: 0, riders: 0 });
-  for (const m of list) {
-    const ins = m._ins || memberInsurance(m);
+  // 연령밴드(8) × 세대 크로스탭(히트맵) + 진단비 금액대 분포
+  const ageGen = Array.from({ length: 8 }, () => { const o = {}; GEN_KEYS.forEach((g) => o[g] = 0); o._tot = 0; return o; });
+  const riderBands = { "미보유": 0, "~2천만": 0, "2~5천만": 0, "5천만~1억": 0, "1억+": 0 };
+  const _rband = (v) => v <= 0 ? "미보유" : v < 20000000 ? "~2천만" : v < 50000000 ? "2~5천만" : v < 100000000 ? "5천만~1억" : "1억+";
+  const _tally = (m, ins) => {
+    const age = m.regAge != null ? Math.round(m.regAge) : (m.age != null ? m.age : 45);
+    const b = _insBand(age); ageGen[b][ins.silson.gen] = (ageGen[b][ins.silson.gen] || 0) + 1; ageGen[b]._tot++;
     gens[ins.silson.gen] = (gens[ins.silson.gen] || 0) + 1;
     if (ins.silson.enrolled) { enrolled++; silsonPremium += ins.silson.monthly; }
     if (ins.hasRider) riderN++;
     if (ins.hasCritical) dxN++;
+    riderBands[_rband(ins.riderTotal)]++;
     ins.dx.forEach((d) => { crit[d.cat].dx++; crit[d.cat].benefit += d.benefit; });
     ins.riders.forEach((r) => { crit[r.cat].riders++; });
-  }
+  };
+  for (const m of list) _tally(m, m._ins || memberInsurance(m));
   // + 조성래(실측 회원) → 100,001
-  const s = selfInsurance();
-  gens[s.silson.gen] = (gens[s.silson.gen] || 0) + 1;
-  if (s.silson.enrolled) { enrolled++; silsonPremium += s.silson.monthly; }
-  if (s.hasRider) riderN++; if (s.hasCritical) dxN++;
-  s.dx.forEach((d) => { crit[d.cat].dx++; crit[d.cat].benefit += d.benefit; });
-  s.riders.forEach((r) => { crit[r.cat].riders++; });
+  _tally({ regAge: 54 }, selfInsurance());
   const n = (list.length || 0) + 1;
-  _insAggCache = { n, gens, crit, enrolled, enrollRate: enrolled / n, riderN, dxN, dxRate: dxN / n, avgPremium: enrolled ? Math.round(silsonPremium / enrolled) : 0 };
+  _insAggCache = { n, gens, crit, ageGen, riderBands, enrolled, enrollRate: enrolled / n, riderN, dxN, dxRate: dxN / n, avgPremium: enrolled ? Math.round(silsonPremium / enrolled) : 0 };
   return _insAggCache;
 }
 
@@ -15608,7 +15679,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-15", ver:"v1.1", ch:[15], feat:"건강×보험 융합 API·AIPlannerChat 대화형 보험 솔루션", src:"보험·치료비 › AI보험상담/실손보험지원", summary:"실손 세대분포를 실통계(A-1)에 정합시키고 보장공백·본인부담·세대전환 융합 함수를 AIPlannerChat에 물려 회원 데이터 기반 대화형 보험 솔루션 상담을 구현(가드레일·설계사 핸드오프 포함)", refs:[], status:"반영", hash:"b0a721b", auto:true },
+  { date:"2026-07-15", ver:"v1.1", ch:[15], feat:"보험 융합 대시보드(히트맵·금액대)+가족/마이페이지 단일소스", src:"보험·치료비/마이페이지/우리가족건강관리", summary:"연령×세대 히트맵과 진단비 금액대 분포를 추가하고 마이페이지·우리가족이 보험 온톨로지(insuranceSolution·getFamilyCoverageSummary)를 단일 소스로 참조하도록 연동, 조성래 시연 인물을 전 섹션 단일 케이스로 수렴", refs:[], status:"반영", hash:"f15343a", auto:true },
+  { date:"2026-07-15", ver:"v1.1", ch:[15], feat:"건강×보험 융합 API·AIPlannerChat 대화형 보험 솔루션", src:"보험·치료비 › AI보험상담/실손보험지원", summary:"실손 세대분포를 실통계(A-1)에 정합시키고 보장공백·본인부담·세대전환 융합 함수를 AIPlannerChat에 물려 회원 데이터 기반 대화형 보험 솔루션 상담을 구현(가드레일·설계사 핸드오프 포함)", refs:[], status:"반영", hash:"5a31706", auto:true },
   { date:"2026-07-15", ver:"v1.1", ch:[15], feat:"건강×보험 융합 AI 보험 솔루션", src:"보험·치료비 › 실손보험지원 / 데이터하우스", summary:"회원 건강데이터와 실손세대·중대질환 진단비를 융합해 보장 갭·세대 진단·필요 담보를 도출하는 AI 보험 솔루션을 데이터하우스·보험 AI분석·온톨로지에 반영", refs:[], status:"반영", hash:"4afa6a4", auto:true },
   { date:"2026-07-15", ver:"v1.1", ch:[15], feat:"회원 실손·중대질환 통계 데이터", src:"보험·치료비 › 실손보험지원", summary:"100,001명(10만+조성래) 실손 세대별 보장·중대질환 10대 구분 진단비를 실통계 기반으로 분포 생성해 보장분석·언더라이팅 데이터로 활용", refs:[], status:"반영", hash:"4e7a22b", auto:true },
   { date:"2026-07-13", ver:"v1.1", ch:[23], feat:"제휴·투자 신청 섹션", src:"최상단 제휴·투자 신청", summary:"제휴 네트워크(6유형·EMR/UIP 연동·홈페이지제작 분기)와 회원 적립금 주식청약(당기순이익×PER 밸류·한도로직)·SI/법인 투자 신청을 최상단 섹션으로 신설(시연)", refs:[], status:"반영", hash:"bbf192a", auto:true },

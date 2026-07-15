@@ -37,6 +37,18 @@ function familyLoad(email, surname) {
 }
 function familySave(email, list) { lsSave("hifin_family_" + (email || "default"), list); }
 function famDemoList() { return (typeof demoMembers !== "undefined" && Array.isArray(demoMembers)) ? demoMembers : []; }
+/* 보험 융합 분석용 가족 구성원(insuranceStats.getFamilyCoverageSummary가 참조) — 연동 건강데이터 병합 */
+function familyMembers(m) {
+  if (!m) return [];
+  const list = familyLoad(m.email, (m.name || "가")[0]) || [];
+  const links = lsLoad("hifin_famlink_" + (m.email || "default"), {}) || {};
+  return list.map((f) => {
+    const base = { id: (m.email || "self") + "-" + f.id, name: f.name, rel: f.relation, age: f.age, regAge: f.age, sex: f.sex };
+    const le = links[f.id];
+    if (le && typeof demoMembers !== "undefined") { const src = demoMembers.find((x) => x.email === le); if (src) { base.diseases = src.highRiskDiseases || []; base.highRiskCancerTypes = src.highRiskCancerTypes || []; base.cancer = (src.highRiskCancerTypes || []).length > 0; } }
+    return base;
+  });
+}
 function famLinkedReport(linkEmail) {
   if (!linkEmail || typeof demoMembers === "undefined" || typeof demoReport !== "function") return null;
   const src = demoMembers.find((x) => x.email === linkEmail); if (!src) return null;
@@ -199,6 +211,27 @@ function FamilyCareSection({ member, onGo }) {
         <div className="fst"><span className="fsv">{totalEarn.toLocaleString()}</span><span className="fsl">건강활동 적립</span></div>
         <div className="fst"><span className="fsv">약 {costSum.toLocaleString()}만</span><span className="fsl">연 의료비 추정</span></div>
       </div>
+
+      {typeof getFamilyCoverageSummary === "function" && (() => {
+        let fam = null, meSol = null;
+        try { fam = getFamilyCoverageSummary(m); } catch (e) {}
+        try { meSol = (typeof insuranceSolution === "function") ? insuranceSolution(m) : null; } catch (e) {}
+        if (!fam) return null;
+        const gaps = (fam.available ? fam.rows : []).filter((r) => r.topGap && r.topGap !== "양호");
+        return (
+          <div className="famins">
+            <div className="fih"><ShieldCheck size={14} color="#2563EB" /> 가족 보험 보장 현황 <span>· 실손 세대 × 중대질환 진단비 융합 분석</span></div>
+            {meSol && <div className="fime"><b>{m.name}</b>(세대주) · 실손 {meSol.ins.silson.gen} · 보장 충실도 <b style={{ color: meSol.grade === "충실" ? "#15803D" : meSol.grade === "보통" ? "#B45309" : "#B91C1C" }}>{meSol.grade} {meSol.score}점</b></div>}
+            {fam.available ? (<>
+              <div className="fitbl">{fam.rows.map((r, i) => (
+                <div className="firow" key={i}><span className="firn">{r.name}<small>{r.rel}</small></span><span className="firg">{r.gen}</span><span className={"firgr " + (r.grade === "충실" ? "g1" : r.grade === "보통" ? "g2" : "g3")}>{r.grade}</span><span className="firgap">{r.topGap}</span></div>
+              ))}</div>
+              <div className="finote">{gaps.length ? `가족 ${gaps.length}명에게 보장 공백이 있어요. 보험·치료비에서 함께 설계할 수 있어요.` : "가족 보장이 대체로 충실합니다."} <button className="filink" onClick={() => go("insurance")}>보험·치료비 <ChevronRight size={12} /></button></div>
+            </>) : (<div className="finone">{fam.note} <button className="filink" onClick={() => go("insurance")}>내 보험 분석 <ChevronRight size={12} /></button></div>)}
+            <div className="fiwarn">※ 예시 기준 융합 분석 · 실제 보장·가입은 약관·인수심사에 따르며 가족 데이터는 동의 범위에서만 사용됩니다.</div>
+          </div>
+        );
+      })()}
 
       <div className="famrank">
         <div className="frh"><Sparkles size={14} color="#F59E0B" /> 가족 건강 랭킹 <span>· 보호자 케어 진행률</span></div>
