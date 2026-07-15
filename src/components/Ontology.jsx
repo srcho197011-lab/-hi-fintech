@@ -28,11 +28,14 @@ function OntGraph({ agg }) {
     { id: "cost", t: "예상의료비", n: 0, x: 260, y: 335, c: "#FBBF24" },
     { id: "finance", t: "재무회계", n: 0, x: 165, y: 425, c: "#F59E0B" },
     { id: "marketing", t: "마케팅", n: 0, x: 355, y: 425, c: "#EC4899" },
+    { id: "silson", t: "실손보험", n: 5, x: 460, y: 195, c: "#7C3AED" },
+    { id: "critical", t: "중대질환", n: 10, x: 460, y: 55, c: "#E11D48" },
   ];
   const N = Object.fromEntries(nodes.map((x) => [x.id, x]));
   const links = [
     ["member", "disease", "진단"], ["member", "checkup", "수검"], ["member", "dept", "진료"], ["member", "region", "거주"], ["member", "cost", "예상"],
     ["disease", "checkup", "지표"], ["disease", "coverage", "보장"],
+    ["member", "silson", "가입"], ["disease", "critical", "중증"], ["critical", "coverage", "진단비"], ["silson", "cost", "보장"],
     ["cost", "finance", "매출"], ["finance", "marketing", "분석"], ["marketing", "member", "타겟"],
   ];
   const loop = new Set(["매출", "분석", "타겟"]);
@@ -46,7 +49,7 @@ function OntGraph({ agg }) {
           {nd.n > 0 && <text x={nd.x} y={nd.y + 11} fill={nd.c} fontSize="9" fontWeight="700" textAnchor="middle">{nd.n.toLocaleString()}</text>}
         </g>))}
       </svg>
-      <div className="ontgraph-note">Object Types <b>9</b> · Links <b>10</b> · Objects <b>{agg.n.toLocaleString()}+</b> — 회원을 중심으로 진료과목·질병·검진·의료비·보험담보·지역이 연결되고, <b style={{ color: "#F59E0B" }}>예상의료비→재무회계</b>(매출) <b style={{ color: "#EC4899" }}>→마케팅→회원</b>(타겟)의 <b>소비→매출→성장 루프</b>로 순환합니다.</div>
+      <div className="ontgraph-note">Object Types <b>11</b> · Links <b>14</b> · Objects <b>{agg.n.toLocaleString()}+</b> — 회원을 중심으로 진료과목·질병·검진·의료비·보험담보·지역과 <b style={{ color: "#7C3AED" }}>실손보험(세대)</b>·<b style={{ color: "#E11D48" }}>중대질환(10대)</b>이 연결됩니다. <b style={{ color: "#E11D48" }}>질병→중대질환→진단비</b> 융합으로 보장 갭을 도출하고, <b style={{ color: "#F59E0B" }}>예상의료비→재무회계</b>·<b style={{ color: "#EC4899" }}>→마케팅→회원</b>의 <b>소비→매출→성장 루프</b>로 순환합니다.</div>
     </div>
   );
 }
@@ -194,6 +197,14 @@ function OntMemberModal({ m, onClose, onGo }) {
           <div className="ontmsec"><div className="ontmsh"><HeartPulse size={13} color="#F472B6" /> 진단 질병 <span>{m.dzCount}</span></div>
             {m.diseases.length ? <div className="ontchips">{m.diseases.map((d) => <span key={d} className="ontchip dz">{d}</span>)}</div> : <div className="ontempty">진단된 질병 없음 (건강 양호)</div>}
           </div>
+
+          {(() => { const ins = m._ins || (typeof memberInsurance === "function" ? memberInsurance(m) : null); if (!ins) return null; const sol = typeof insuranceSolution === "function" ? insuranceSolution(m) : null; const SC = { crit: "#EF4444", warn: "#F59E0B", good: "#16A34A" }; return (
+            <div className="ontmsec"><div className="ontmsh"><ShieldCheck size={13} color="#A78BFA" /> 실손·중대질환 보장 <span className={"ontins-b " + (ins.silson.enrolled ? "on" : "off")}>{ins.silson.gen === "미가입" ? "실손 미가입" : "실손 " + ins.silson.gen}</span>{sol && <span className="ontins-score" style={{ color: sol.grade === "충실" ? "#16A34A" : sol.grade === "보통" ? "#F59E0B" : "#EF4444" }}>보장 {sol.grade} {sol.score}점</span>}</div>
+              {ins.silson.enrolled && <div className="ontins-grid"><div><span>급여/비급여 자부담</span><b>{ins.silson.coGen} / {ins.silson.coNon}</b></div><div><span>통원/입원 한도</span><b>{ontWon(ins.silson.outLimit)} / {ontWon(ins.silson.inLimit)}</b></div><div><span>월 보험료(추정)</span><b>{ontWon(ins.silson.monthly)}</b></div><div><span>중대질환 진단비 특약</span><b>{ins.riders.length ? ontWon(ins.riderTotal) + " (" + ins.riders.length + "종)" : "없음"}</b></div></div>}
+              {ins.dx.length > 0 && <div className="ontins-dx">중대질환 진단 이력: {ins.dx.map((d) => <span key={d.cat + d.sub}>{d.cat}·{d.sub} <b>{ontWon(d.benefit)}</b></span>)}</div>}
+              {sol && sol.findings.length > 0 && <div className="ontins-sol"><div className="ontins-solh"><Sparkles size={11} color="#22D3EE" /> AI 보험 솔루션 (건강×보험 융합)</div>{sol.findings.slice(0, 4).map((f, i) => <div className="ontins-f" key={i} style={{ borderLeftColor: SC[f.sev] }}><b style={{ color: SC[f.sev] }}>{f.t}</b><p>{f.d}</p><em>→ {f.a}</em></div>)}<button className="ontins-go" onClick={() => onGo && onGo("insurance")}>보험·치료비에서 보장 설계 <ChevronRight size={13} /></button></div>}
+            </div>
+          ); })()}
 
           {(() => { const cds = (m.diseases || []).filter((d) => dzcare[d]); if (!cds.length) return null; return (
             <div className="ontmsec"><div className="ontmsh"><Pill size={13} color="#16A34A" /> 질병별 관리 가이드 <span>{cds.length}</span></div>
@@ -528,13 +539,14 @@ function OntExplorer({ cohort, onGo, seg }) {
       if (flag === "gap" && !m.hasGap) return false;
       if (flag === "high" && m.risk < 4) return false;
       if (flag === "cancer" && !m.cancer) return false;
+      if (flag === "nosilson" && (m._ins ? m._ins.silson.enrolled : true)) return false;
       if (qq && m.name.indexOf(qq) < 0 && m.id.indexOf(qq.toUpperCase()) < 0 && !m.diseases.some((d) => d.indexOf(qq) >= 0)) return false;
       return true;
     });
   }, [cohort, dept, sex, risk, band, flag, q]);
   const view = list.slice(0, shown);
   const reset = () => setShown(30);
-  const FLAGS = [["전체", "전체"], ["high", "고위험군"], ["gap", "보장공백"], ["needy", "치료비 사각지대"], ["cancer", "암 진단"]];
+  const FLAGS = [["전체", "전체"], ["high", "고위험군"], ["gap", "보장공백"], ["needy", "치료비 사각지대"], ["cancer", "암 진단"], ["nosilson", "실손 미가입"]];
   return (<>
     <div className="ontstore-tabs">
       <button className={smode === "members" ? "on" : ""} onClick={() => setSmode("members")}><Users size={14} /> 회원 객체 <span>{cohort.length.toLocaleString()}</span></button>
@@ -561,12 +573,14 @@ function OntExplorer({ cohort, onGo, seg }) {
     </div>
     <div className="onttbl-wrap">
       <table className="onttbl">
-        <thead><tr><th>ID</th><th>이름</th><th>성/나이</th><th>지역</th><th>진료과목</th><th>질병</th><th>검진이상</th><th>상담</th><th>위험</th><th>예상의료비</th></tr></thead>
+        <thead><tr><th>ID</th><th>이름</th><th>성/나이</th><th>지역</th><th>진료과목</th><th>질병</th><th>실손</th><th>중대질환</th><th>검진이상</th><th>상담</th><th>위험</th><th>예상의료비</th></tr></thead>
         <tbody>{view.map((m) => { const cn = typeof consultGet === "function" ? consultGet(m).length : 0; return (
           <tr key={m.id} onClick={() => setSel(m)} title="객체 상세">
             <td className="mono">{m.id}</td><td><b>{m.name}</b>{m.needy && <span className="tdot needy" title="치료비 사각지대" />}{m.hasGap && <span className="tdot gap" title="보장공백" />}</td>
             <td>{m.sex} {m.age}</td><td>{m.sido}</td><td>{m.deptLabel}</td>
             <td>{m.dzCount ? <span className="tbadge dz">{m.dzCount}</span> : <span className="tmut">-</span>}</td>
+            <td>{(() => { const s = m._ins && m._ins.silson; if (!s) return <span className="tmut">-</span>; return s.enrolled ? <span className="tsil" style={{ color: s.gen === "미가입" ? "#94A3B8" : "#7C3AED" }}>{s.gen.replace(" 실손", "")}</span> : <span className="tsil off">미가입</span>; })()}</td>
+            <td>{m._ins && m._ins.dx.length ? <span className="tbadge crit" title={m._ins.dx.map((d) => d.cat).join("·")}>{m._ins.dx.length}</span> : (m._ins && m._ins.riders.length ? <span className="tmut" title="진단비 특약 보유">특약</span> : <span className="tmut">-</span>)}</td>
             <td>{m.abnormalCount ? <span className="tbadge ab">{m.abnormalCount}</span> : <span className="tmut">-</span>}</td>
             <td>{cn ? <span className="tbadge cn"><MessageSquare size={9} style={{ verticalAlign: "-1px" }} /> {cn}</span> : <span className="tmut">-</span>}</td>
             <td><span className="tbadge" style={{ background: m.riskColor + "22", color: m.riskColor }}>{m.riskLabel}</span></td>

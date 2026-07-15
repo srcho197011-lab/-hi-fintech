@@ -602,7 +602,10 @@ function InsurancePlanCompare() {
 function SilsonStatsPanel() {
   const _w = (n) => { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000).toFixed(n % 100000000 ? 1 : 0) + "억" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; };
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const _self = !dm && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null;
+  const meObj = dm || _self;
   const myIns = dm && typeof memberInsurance === "function" ? memberInsurance(dm) : (typeof selfInsurance === "function" ? selfInsurance() : null);
+  const mySol = meObj && typeof insuranceSolution === "function" ? (() => { try { return insuranceSolution(Object.assign({ _ins: myIns }, meObj)); } catch (e) { return null; } })() : null;
   const myName = dm ? dm.name : "조성래";
   const agg = (typeof insuranceAgg === "function") ? (() => { try { return insuranceAgg(); } catch (e) { return null; } })() : null;
   const SPEC = (typeof SILSON_SPEC !== "undefined") ? SILSON_SPEC : {};
@@ -625,6 +628,17 @@ function SilsonStatsPanel() {
           <div><span>중대질환 진단비 특약</span><b>{myIns.riders.length ? _w(myIns.riderTotal) + " (" + myIns.riders.length + "종)" : "없음"}</b></div>
         </div>) : <div className="silme-none"><AlertTriangle size={13} /> 실손 미가입 — 검진 후 치료비 보장 공백. 무료 검진보험·적립 지원으로 보완 가능</div>}
         {myIns.dx.length > 0 && <div className="sildx">중대질환 진단 이력: {myIns.dx.map((d) => <span key={d.cat + d.sub}>{d.cat}·{d.sub} <b>{_w(d.benefit)}</b></span>)}</div>}
+      </div>)}
+
+      {mySol && (<div className="silsol">
+        <div className="silsol-h"><Sparkles size={15} color="#7C3AED" /> AI 보험 솔루션 <span>건강데이터 × 보험데이터 융합 분석</span>
+          <span className="silsol-score" style={{ color: mySol.grade === "충실" ? "#15803D" : mySol.grade === "보통" ? "#B45309" : "#B91C1C" }}>보장 충실도 {mySol.grade} · {mySol.score}점</span></div>
+        {mySol.findings.length ? <div className="silsol-list">{mySol.findings.map((f, i) => { const C = { crit: "#DC2626", warn: "#D97706", good: "#15803D" }[f.sev]; return (
+          <div className="silsol-f" key={i} style={{ borderLeftColor: C }}>
+            <div className="silsol-ft"><span className="silsol-sev" style={{ background: C + "1A", color: C }}>{f.sev === "crit" ? "시급" : f.sev === "warn" ? "권고" : "양호"}</span> <b>{f.t}</b></div>
+            <p>{f.d}</p><div className="silsol-a">→ {f.a}</div>
+          </div>); })}</div> : <div className="silme-none"><Check size={13} color="#15803D" /> 현재 건강위험 대비 보장이 충실합니다.</div>}
+        <div className="silnote">건강위험(위험등급·진단질병·암위험·예상의료비) × 보험(실손 세대·중대질환 진단비)을 결합한 개인 맞춤 분석입니다. 실제 가입은 전문 설계사 상담·인수심사를 전제로 합니다.</div>
       </div>)}
 
       <div className="silsub">세대별 보장 상세 (실손 1~5세대 + 노인·어린이)</div>

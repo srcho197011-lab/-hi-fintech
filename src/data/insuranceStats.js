@@ -111,6 +111,52 @@ function memberInsurance(m) {
   return { silson, dx, riders, hasRider, riderTotal, dxTotal, hasCritical: dx.length > 0 };
 }
 
+/* ── 건강데이터 × 보험데이터 융합 보험 솔루션(회원별) ──
+   위험등급·진단질병·암위험·예상의료비 + 실손세대·중대질환 진단비를 결합해
+   보장 갭·세대 진단·필요 담보를 도출. 데이터하우스·보험 AI분석·온톨로지 공용. */
+function _insWon(n) { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000).toFixed(n % 100000000 ? 1 : 0) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; }
+function insuranceSolution(m) {
+  if (!m) return null;
+  const ins = m._ins || memberInsurance(m) || (typeof selfInsurance === "function" ? selfInsurance() : null);
+  if (!ins) return null;
+  const age = m.regAge != null ? Math.round(m.regAge) : (m.age != null ? m.age : 45);
+  const risk = m.risk != null ? m.risk : (m.cancerRiskGrade != null ? Math.min(5, Math.round(m.cancerRiskGrade / 1.6)) : 2);
+  const diseases = m.diseases || m.highRiskDiseases || [];
+  const cancerRisk = !!m.cancer || (Array.isArray(m.highRiskCancerTypes) && m.highRiskCancerTypes.length > 0);
+  const riderCats = ins.riders.map((r) => r.cat);
+  const dxCats = ins.dx.map((d) => d.cat);
+  const F = []; // {sev:'crit'|'warn'|'good', t, d, a}
+
+  // 1) 실손 진단
+  if (!ins.silson.enrolled) {
+    F.push({ sev: "crit", t: "실손보험 미가입 — 치료비 보장 공백", d: `연 예상 의료비 ${_insWon(m.estCost || 0)}의 대부분이 자기부담. 검진에서 이상이 나와도 치료비 안전망이 없음.`, a: age >= 60 || diseases.length ? "유병자·노후 간편심사 실손 가입 검토 + 무료 검진보험·적립 지원 연계" : "4·5세대 실손 신규 가입 권고" });
+  } else if (ins.silson.gen === "1세대" && age >= 60) {
+    F.push({ sev: "warn", t: "1세대 실손 — 보장 우수하나 고령 보험료 급등", d: `자기부담 최소(통원 5천 공제)로 보장은 최상이나 갱신 보험료가 급등 구간. 월 ${_insWon(ins.silson.monthly)} 수준.`, a: "보장 가치 대비 보험료 재점검 — 유지 권장(전환 시 보장 축소)" });
+  } else if (ins.silson.gen === "4세대" || ins.silson.gen === "5세대") {
+    F.push({ sev: "good", t: `${ins.silson.gen} 실손 — 합리적 보험료`, d: `자기부담 급여 ${ins.silson.coGen}/비급여 ${ins.silson.coNon}. 저위험·건강관리형에 적합.`, a: "현 세대 유지 · 비급여 이용 관리로 할증 방지" });
+  }
+
+  // 2) 중대질환 진단비 갭(건강위험 융합)
+  if (cancerRisk && !riderCats.includes("암")) F.push({ sev: "crit", t: "암 진단비 공백 (암 위험군)", d: "검진·가족력상 암 위험군이나 암 진단비 특약 미보유. 고액암 시 수천만원 치료비 자기부담.", a: "일반암 3,000만+·고액암 특약 가입 권고" });
+  else if (!riderCats.includes("암") && age >= 40) F.push({ sev: "warn", t: "암 진단비 미보유", d: "40대 이후 암 발생률 상승 구간. 진단비 특약 없음.", a: "일반암 진단비 특약 검토" });
+  if (risk >= 4 && !riderCats.includes("뇌") && !riderCats.includes("심장")) F.push({ sev: "warn", t: "뇌·심장 진단비 공백 (고위험)", d: "심뇌혈관 고위험군이나 뇌·심장 진단비 특약 미보유.", a: "뇌졸중·급성심근경색 진단비(허혈성심장질환 확대형) 가입 권고" });
+  if ((diseases.includes("당뇨병") || diseases.includes("만성콩팥병")) && !riderCats.includes("신장")) F.push({ sev: "warn", t: "신장(말기신부전) 대비 필요", d: "당뇨·신장질환 이력 — 투석·이식 시 고액 의료비.", a: "말기신부전 진단비 특약 검토" });
+
+  // 3) 진단 이력 → 재발·후유 보장
+  if (dxCats.length) F.push({ sev: "warn", t: `중대질환 진단 이력 (${dxCats.join("·")})`, d: `이미 진단 이력이 있어 신규 가입 제한 가능. 후유·재발·간병 보장 점검 필요.`, a: "간병·후유장해·재진단 담보 및 유병자보험 연계 검토" });
+
+  // 보장 충실도 점수(0~100)
+  const critNeed = (cancerRisk ? 1 : 0) + (risk >= 4 ? 1 : 0) + (diseases.length >= 2 ? 1 : 0);
+  let score = 50;
+  score += ins.silson.enrolled ? 25 : -20;
+  score += Math.min(20, ins.riders.length * 6);
+  score -= F.filter((x) => x.sev === "crit").length * 15;
+  score -= F.filter((x) => x.sev === "warn").length * 6;
+  score = Math.max(5, Math.min(98, score));
+  const grade = score >= 80 ? "충실" : score >= 60 ? "보통" : score >= 40 ? "부족" : "취약";
+  return { ins, findings: F, score, grade, critNeed, silsonMonthly: ins.silson.monthly };
+}
+
 /* ── 조성래(실측 회원, 100,001번째) 실손·중대질환 — 4세대 실손 보유·췌장암 위험군(미진단) ── */
 let _selfInsCache = null;
 function selfInsurance() {
