@@ -51,6 +51,8 @@ src/data/checkupEngine.js
 src/data/healthDataVault.js
 src/data/blockchainAnchor.js
 src/data/ocrEngine.js
+src/data/aiQnaBank.js
+src/data/aiNative.js
 src/utils/ontologyConsult.js
 src/utils/insuranceRecommendationUtils.js
 src/utils/healthWalletUtils.js
