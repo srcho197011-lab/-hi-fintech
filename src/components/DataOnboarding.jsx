@@ -333,6 +333,7 @@ function DataVaultPanel({ onGo }) {
   const v = (typeof vaultLoad === "function") ? vaultLoad(token) : null;
   const chainOk = (typeof chainVerify === "function") ? chainVerify() : { ok: true, blocks: 0 };
   const myBlocks = (typeof chainForToken === "function") ? chainForToken(token) : [];
+  const integ = (typeof verifyVaultIntegrity === "function") ? (() => { try { return verifyVaultIntegrity(member); } catch (e) { return null; } })() : null;
   const access = (typeof vaultAccessHistory === "function") ? vaultAccessHistory(token) : [];
   const w = (n) => { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; };
   const fmt = (ts) => { try { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; } catch (e) { return ""; } };
@@ -352,7 +353,9 @@ function DataVaultPanel({ onGo }) {
   return (
     <div className="dv">
       <div className="dv-hd"><ShieldCheck size={18} color="#2563EB" /> 데이터 금고 <span className="dv-token">익명 토큰 {token}</span></div>
-      <div className="dv-integrity"><span className={"dv-ibadge" + (chainOk.ok ? " ok" : " bad")}>{chainOk.ok ? <Check size={13} /> : <AlertTriangle size={13} />} 블록체인 무결성 {chainOk.ok ? "정상" : "위변조 감지"}</span><span className="dv-blk">내 블록 {myBlocks.length} · 전체 {chainOk.blocks}</span></div>
+      <div className="dv-integrity"><span className={"dv-ibadge" + (chainOk.ok ? " ok" : " bad")}>{chainOk.ok ? <Check size={13} /> : <AlertTriangle size={13} />} 블록체인 무결성 {chainOk.ok ? "정상" : "위변조 감지"}</span>
+        {integ && integ.checked > 0 && <span className={"dv-ibadge" + (integ.ok ? " ok" : " bad")}>{integ.ok ? <Check size={13} /> : <AlertTriangle size={13} />} 데이터 해시 대조 {integ.ok ? "위변조 없음 ✓" : "불일치"}</span>}
+        <span className="dv-blk">내 블록 {myBlocks.length} · 전체 {chainOk.blocks}</span></div>
 
       <div className="dv-sec">내 데이터</div>
       {(v.checkups || []).map((c, i) => (

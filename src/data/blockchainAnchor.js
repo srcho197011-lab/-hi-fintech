@@ -85,7 +85,7 @@ function txAnchor(o) {
   const amt = o.amount != null ? Number(o.amount).toLocaleString() + " " + (o.unit || "HTK") : "";
   const note = [o.kind || "거래", amt, o.memo].filter(Boolean).join(" · ");
   const digest = (typeof vaultHash === "function") ? vaultHash("tx|" + token + "|" + (o.kind || "") + "|" + (o.amount || "") + "|" + (o.memo || "") + "|" + (o.ts || "")) : null;
-  return (typeof chainAppend === "function") ? chainAppend({ type: "tx", token, fhirHash: digest, note }) : null;
+  return (typeof chainAppend === "function") ? chainAppend({ type: o.ttype || "tx", token, fhirHash: digest, note }) : null;
 }
 
 /* 위변조 시뮬: 회원 값이 바뀌면 leaf가 달라져 같은 proof·root로 검증 실패 */

@@ -175,6 +175,14 @@ function vaultSaveConsents(member, consentState) {
   const block = chainAppend({ type: "consent", token, consent: consentState, note: "동의 이력 기록" });
   return { block, consentHash };
 }
+/* 실시간 무결성 검증 — 저장된 FHIR 변환본을 재해싱해 저장 해시와 대조(위변조 감지) */
+function verifyVaultIntegrity(member) {
+  const token = anonToken(member); const v = vaultLoad(token);
+  if (!v) return { ok: true, checked: 0, bad: 0 };
+  let checked = 0, bad = 0;
+  (v.checkups || []).forEach((c) => { if (c && c.fhir) { checked++; const h = vaultHash(JSON.stringify(c.fhir.report) + JSON.stringify(c.fhir.observations)); if (h !== c.fhirHash) bad++; } });
+  return { ok: bad === 0, checked, bad };
+}
 /* 온보딩 완료 상태(가입 후 데이터 제공 진행률) */
 function onboardStatus(member) {
   if (!member) return { step1: false, step2: false, done: false };

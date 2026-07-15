@@ -266,6 +266,7 @@ function StockSubscription({ params, setParams }) {
     piAddAllocated(qty, p.ALLOCATED_SEED);
     piStore("member_stock_orders", { code, qty, sharePrice: price, cost, pointsBefore: p.MEMBER_POINTS, pointsAfter: p.MEMBER_POINTS - cost, per: p.PER, netIncome: p.NET_INCOME_FORECAST, at: (new Date()).toISOString() });
     setParams((o) => ({ ...o, MEMBER_POINTS: o.MEMBER_POINTS - cost }));
+    if (typeof txAnchor === "function") txAnchor({ ttype: "invest", kind: "주식 청약", amount: qty, unit: "주", memo: code + " · " + piWon(cost) + " 차감" });
     if (typeof toast === "function") toast(`청약 완료 · ${code} · ${piNum(qty)}주`);
     setDone({ code, sub: `${piNum(qty)}주 · ${piWon(cost)} 차감 · 주당 ${piWon(price)}` });
     setTick((t) => t + 1);
@@ -363,6 +364,7 @@ function CorporateInvest() {
     setErrs(e); if (Object.keys(e).length) { if (typeof toast === "function") toast("입력값을 확인해 주세요."); return; }
     const code = piSeq("IV");
     piStore("corporate_investments", { code, corp: f.corp, biz: f.biz, itype: f.itype, cat: f.itype === "SI" ? f.cat : null, amount: f.amount, equity: f.equity || "", mgr: f.mgr, email: f.email, at: (new Date()).toISOString() });
+    if (typeof txAnchor === "function") txAnchor({ ttype: "invest", kind: f.itype === "SI" ? "SI 투자 신청" : "법인 투자 신청", memo: code + " · " + f.corp });
     if (typeof toast === "function") toast(`투자 신청 접수 · ${code}`);
     setDone({ code, sub: `${f.corp} · ${f.itype === "SI" ? "SI(" + f.cat + ")" : "일반 법인(FI)"}` });
   };
