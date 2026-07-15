@@ -50,6 +50,10 @@ function parseCheckupText(raw) {
   const out = {};
   let m = text.match(/혈압[^0-9]{0,12}(\d{2,3})\s*[\/\-~]\s*(\d{2,3})/);
   if (m) { out.sbp = +m[1]; out.dbp = +m[2]; }
+  // 결합 표기: "키/몸무게 179.9/79.3", "신장/체중(cm/kg) 175/70", "신장 체중 179.9 79.3"
+  let hw = text.match(/(?:신장|키)\s*[\/·]?\s*(?:체중|몸무게)[^0-9]{0,16}(1\d{2}(?:\.\d)?)\s*[\/\s]\s*(\d{2,3}(?:\.\d)?)/);
+  if (!hw) hw = text.match(/(1\d{2}\.\d)\s*\/\s*(\d{2,3}(?:\.\d)?)/); // "179.9/79.3" 단독 — 소수점 필수(혈압 오인 방지)
+  if (hw) { const a = +hw[1], b = +hw[2]; if (a >= 130 && a <= 210 && b >= 25 && b <= 160 && Math.abs(a - b) > 15) { out.height = a; out.weight = b; } }
   const P = [
     ["height", /(?:신장|키)[^0-9]{0,8}(1\d{2}(?:\.\d)?)/],
     ["weight", /(?:체중|몸무게)[^0-9]{0,8}(\d{2,3}(?:\.\d)?)/],
@@ -69,6 +73,9 @@ function parseCheckupText(raw) {
     ["hb", /(?:혈색소|헤모글로빈|\bHb\b|hemoglobin)[^0-9]{0,12}(\d{1,2}\.\d)/i],
   ];
   P.forEach(([k, re]) => { if (out[k] != null) return; const mm = text.match(re); if (mm && mm[1] != null) { const v = parseFloat(mm[1]); if (!isNaN(v)) out[k] = v; } });
+  // 상식 범위 보정: 체중에 신장값(>160)이 들어간 경우 신장으로 이동
+  if (out.weight != null && out.weight > 160) { if (out.height == null) out.height = out.weight; delete out.weight; }
+  if (out.height != null && (out.height < 100 || out.height > 220)) delete out.height;
   const up = text.match(/(?:요단백|단백뇨)[^가-힣0-9]{0,6}(음성|양성|약양성|정상|trace|[+\-])/i);
   if (up) out.uprot = /(양성|\+)/.test(up[1]) ? "양성(+)" : "음성(-)";
   const cxr = text.match(/(?:흉부|폐|chest)[^가-힣]{0,10}(정상|이상|결절|비활동|활동성)/i);
