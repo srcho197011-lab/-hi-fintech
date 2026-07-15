@@ -65,17 +65,18 @@ function CheckupCollect({ member, onDone, onLater }) {
   const onFile = async (e) => {
     const f = e.target.files && e.target.files[0]; if (!f) return; e.target.value = "";
     if (typeof realOcrExtract !== "function") { runOcr(/pdf/i.test(f.type || f.name) ? "nhis-pdf" : "book-photo", f.name); return; }
+    const imgUrl = /image\//.test(f.type || "") ? (() => { try { return URL.createObjectURL(f); } catch (e) { return null; } })() : null;
     setOcrBusy(true); setOcrProg(0);
     try {
       const r = await realOcrExtract(f, (p) => setOcrProg(Math.round((p || 0) * 100)));
-      const warn = r.matchedCount === 0 ? "자동 인식이 어려웠어요. 각 값을 직접 확인·입력해 주세요." : (r.matchedCount < 6 ? `${r.matchedCount}개 항목을 인식했어요. 나머지는 직접 확인·입력해 주세요.` : `${r.matchedCount}개 항목을 인식했어요. 값을 확인해 주세요.`);
-      setOcr({ fileName: f.name, completeness: "full", scenario: "real", warn });
+      const warn = r.matchedCount === 0 ? "자동 인식이 어려웠어요. 아래 원본 사진을 보며 값을 직접 입력해 주세요." : (r.matchedCount < 6 ? `${r.matchedCount}개 항목을 인식했어요. 원본을 보며 나머지를 확인·입력해 주세요.` : `${r.matchedCount}개 항목을 인식했어요. 원본과 대조해 확인해 주세요.`);
+      setOcr({ fileName: f.name, completeness: "full", scenario: "real", warn, imgUrl, rawText: r.rawText || "" });
       setRows(r.items.map((x) => Object.assign({}, x)));
       setPhase("review");
     } catch (err) {
       if (typeof toast === "function") toast("파일을 읽지 못했어요. 다시 시도하거나 값을 직접 입력해 주세요.");
       const rr = ocrParse(member, "lowres");
-      setOcr({ fileName: f.name, completeness: "full", scenario: "real-fail", warn: "자동 인식 실패 — 값을 직접 확인·입력해 주세요." });
+      setOcr({ fileName: f.name, completeness: "full", scenario: "real-fail", warn: "자동 인식 실패 — 아래 원본 사진을 보며 값을 직접 입력해 주세요.", imgUrl });
       setRows(rr.items.map((x) => Object.assign({}, x, { value: "", low: true, confidence: 0 })));
       setPhase("review");
     } finally { setOcrBusy(false); }
@@ -168,7 +169,7 @@ function CheckupCollect({ member, onDone, onLater }) {
         {ocr && ocr.scenario && /real/.test(ocr.scenario) && ocr.warn && <div className="obhint" style={{ color: "#2563EB" }}>🔎 {ocr.warn}</div>}
         {lowN > 0 && <div className="obhint">🟡 인식 안 됨/신뢰도 낮은 {lowN}개 항목은 노란색이에요. 값을 확인·입력해 주세요.</div>}
         <div className="obreview">
-          <div className="obreview-src"><FileText size={22} color="#94A3B8" /><span>{(ocr && ocr.fileName) || "공단 연계"}</span><small>원본 (암호화 보관)</small></div>
+          <div className="obreview-src">{ocr && ocr.imgUrl ? <img src={ocr.imgUrl} alt="검진결과 원본" className="obreview-img" /> : <FileText size={22} color="#94A3B8" />}<span>{(ocr && ocr.fileName) || "공단 연계"}</span><small>원본 (암호화 보관) · 대조하며 입력</small></div>
           <div className="obreview-tbl">
             <div className="obr-head"><span>검진 항목</span><span>LOINC</span><span>값</span></div>
             {rows.map((r, i) => { const fl = flag(r); return (
@@ -179,6 +180,7 @@ function CheckupCollect({ member, onDone, onLater }) {
               </div>); })}
           </div>
         </div>
+        {ocr && ocr.rawText && ocr.rawText.trim() && <details className="obraw"><summary>🔎 OCR가 읽은 원문 보기 (인식 확인용)</summary><pre>{ocr.rawText.slice(0, 1500)}</pre></details>}
         <div className="obfoot2"><button className="oblater" onClick={() => setPhase("channel")}>다시 선택</button><button className="obnext" onClick={confirmSave}><Check size={15} /> 확인 완료 · 저장</button></div>
       </div>
     );

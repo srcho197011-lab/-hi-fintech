@@ -9,9 +9,20 @@ function loadTesseract() { if (_tessP) return _tessP; _tessP = (async () => { if
 let _pdfP = null;
 function loadPdfjs() { if (_pdfP) return _pdfP; _pdfP = (async () => { if (!window.pdfjsLib) await _ocrLoadScript("https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"); try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js"; } catch (e) {} return window.pdfjsLib; })(); return _pdfP; }
 
+/* 이미지 전처리 — 확대·그레이스케일·대비 강화로 검진표 숫자 인식률 개선 */
+function _fileToImage(file) { return new Promise((res, rej) => { const url = URL.createObjectURL(file); const img = new Image(); img.onload = () => res(img); img.onerror = () => rej(new Error("image load")); img.src = url; }); }
+function _preprocess(img) {
+  const scale = Math.min(3, Math.max(1, 1800 / (img.width || 1)));
+  const w = Math.round((img.width || 800) * scale), h = Math.round((img.height || 1000) * scale);
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const x = c.getContext("2d"); x.drawImage(img, 0, 0, w, h);
+  try { const d = x.getImageData(0, 0, w, h), p = d.data; for (let i = 0; i < p.length; i += 4) { let g = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]; g = (g - 128) * 1.5 + 128; g = g < 0 ? 0 : g > 255 ? 255 : g; p[i] = p[i + 1] = p[i + 2] = g; } x.putImageData(d, 0, 0); } catch (e) {}
+  return c;
+}
 async function ocrImageFile(file, onProg) {
   const T = await loadTesseract();
-  const { data } = await T.recognize(file, "kor+eng", { logger: (m) => { if (m.status === "recognizing text" && onProg) onProg(m.progress || 0); } });
+  let target = file; try { target = _preprocess(await _fileToImage(file)); } catch (e) {}
+  const { data } = await T.recognize(target, "kor+eng", { logger: (m) => { if (m.status === "recognizing text" && onProg) onProg(m.progress || 0); } });
   return (data && data.text) || "";
 }
 async function pdfFileToText(file, onProg) {

@@ -4355,3 +4355,11 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .obocr b { font-size: 13.5px; color: #1C2A44; } .obocr span:last-child { font-size: 11px; color: var(--muted); line-height: 1.5; max-width: 320px; }
 .obocr-spin { width: 26px; height: 26px; border: 3px solid #DCE6F7; border-top-color: #2563EB; border-radius: 50%; animation: obspin .8s linear infinite; }
 @keyframes obspin { to { transform: rotate(360deg); } }
+
+/* OCR 원본 미리보기 + 원문 */
+.obreview-img { width: 100%; max-height: 240px; object-fit: contain; border-radius: 9px; border: 1px solid var(--border); background: #fff; cursor: zoom-in; }
+.obreview-src .obreview-img + span { margin-top: 6px; }
+.obraw { margin: 10px 0 0; border: 1px solid var(--border); border-radius: 9px; background: #F8FAFC; }
+.obraw summary { padding: 9px 12px; font-size: 12px; font-weight: 700; color: #2563EB; cursor: pointer; }
+.obraw pre { margin: 0; padding: 0 12px 12px; font-size: 11px; line-height: 1.5; color: #475569; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
+@media (max-width: 640px) { .obreview-img { max-height: 320px; } }
