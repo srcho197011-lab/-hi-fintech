@@ -79,8 +79,10 @@ function parseCheckupText(raw) {
 /* ── 클라우드 OCR(OCR.space) — 백엔드 없이 브라우저에서 직접 호출(CORS 허용). 한글·표 인식 우수 ──
    ⚠️ 무료키 'helloworld'는 제한적(파일 1MB·공용 rate limit). 형 전용 무료키(ocr.space) 발급 시 아래 교체.
    ⚠️ 개인정보: 실서비스는 국내 처리(네이버 CLOVA OCR) 또는 자체 OCR 권장 — OCR.space는 시연/테스트용. */
-/* 무료키 발급: https://ocr.space/ocrapi (개인 무료키는 파일 5MB·월 25,000건). localStorage 'hifin_ocr_key'로 교체 가능 */
-let OCRSPACE_KEY = (() => { try { return localStorage.getItem("hifin_ocr_key") || "helloworld"; } catch (e) { return "helloworld"; } })();
+/* 무료키 발급: https://ocr.space/ocrapi (개인 무료키는 파일 5MB·월 25,000건). localStorage 'hifin_ocr_key'로 교체 가능
+   ⚠️ 아래 기본키는 운영자 발급 무료키(데모용) — 프론트 노출 키이므로 정식 서비스 전 서버측(CLOVA 등)으로 이관 */
+const OCRSPACE_DEFAULT = "K82211429688957";
+let OCRSPACE_KEY = (() => { try { return localStorage.getItem("hifin_ocr_key") || OCRSPACE_DEFAULT; } catch (e) { return OCRSPACE_DEFAULT; } })();
 function setOcrKey(k) { try { localStorage.setItem("hifin_ocr_key", k); OCRSPACE_KEY = k; } catch (e) {} }
 async function _compressImage(file, maxW, q) {
   const img = await _fileToImage(file); const s = Math.min(1, (maxW || 1600) / (img.width || 1600));
