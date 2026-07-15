@@ -181,13 +181,116 @@ function CheckupCollect({ member, onDone, onLater }) {
   );
 }
 
-/* ── STEP 2. 보험가입데이터 제공 (다음 유닛에서 통합조회·증권 OCR 구현) ── */
+/* ── STEP 2. 보험가입데이터 제공 (통합조회 1순위 + 증권 업로드/촬영) ── */
 function InsuranceCollect({ member, onDone, onLater }) {
-  return (
+  const [phase, setPhase] = useState("intro");      // intro | channel | capture | review | done
+  const [consent, setConsent] = useState({ insurance: false, link: false });
+  const [channel, setChannel] = useState("aggregate"); // aggregate(1순위·기본) | upload | photo
+  const [authed, setAuthed] = useState(false);
+  const [data, setData] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [saved, setSaved] = useState(null);
+  const w = (n) => { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; };
+
+  const runAgg = () => { const r = insAggregateFetch(member); setData(Object.assign({ channel: "aggregate" }, r)); setRows(r.contracts); setPhase("review"); };
+  const runOcr = () => { const r = insOcrParse(member); setData(Object.assign({ channel: "ocr" }, r)); setRows(r.contracts); setPhase("review"); };
+  const confirmSave = () => {
+    if (typeof vaultSaveConsents === "function") vaultSaveConsents(member, Object.assign({ step: "insurance" }, consent));
+    const res = (typeof vaultSaveInsurance === "function") ? vaultSaveInsurance(member, rows, { source: channel === "aggregate" ? "aggregate" : "ocr", channel }) : null;
+    setSaved(res); setPhase("done");
+  };
+
+  if (phase === "intro") return (
     <div className="obstep">
-      <div className="obintro"><div className="obintro-t"><ShieldCheck size={16} color="#2563EB" style={{ verticalAlign: -2 }} /> 보험가입데이터 제공 <span className="obchan-badge good" style={{ marginLeft: 6 }}>다음 단계</span></div>
-        <p>통합조회(내보험다보여)로 전 보험사 가입내역을 한 번에 가져오거나, 증권을 업로드·촬영할 수 있어요. (이 화면은 곧 활성화됩니다)</p></div>
-      <div className="obfoot2"><button className="oblater" onClick={onLater}>나중에 하기</button><button className="obnext" onClick={onDone}>홈으로 <ChevronRight size={15} /></button></div>
+      <div className="obintro">
+        <div className="obintro-t">보험가입 내역을 연결하면 <b>보장 공백 분석</b>이 완성돼요</div>
+        <p>본인인증 한 번으로 전 보험사 가입내역을 한 번에 가져올 수 있어요(가장 편리·정확). 실손 세대·중대질환 진단비까지 반영됩니다.</p>
+      </div>
+      <div className="obclbl">보험정보 수집·이용 동의</div>
+      <DataConsentList keys={["insurance"]} state={consent} onToggle={(k) => setConsent((s) => ({ ...s, [k]: !s[k] }))} />
+      <div className="obfoot">
+        <button className="oblater" onClick={onLater}>나중에 하기</button>
+        <button className={"obnext" + (consent.insurance ? "" : " off")} disabled={!consent.insurance} onClick={() => setPhase("channel")}>동의하고 시작 <ChevronRight size={15} /></button>
+      </div>
+    </div>
+  );
+
+  if (phase === "channel") return (
+    <div className="obstep">
+      <div className="obclbl">보험가입 내역 제공 방법 선택</div>
+      <div className="obchans">
+        <button className="obchan reco obchan-lg" onClick={() => { setChannel("aggregate"); setPhase("capture"); }}>
+          <span className="obchan-ic" style={{ background: "#E7F6EC", color: "#16A34A" }}><ShieldCheck size={22} /></span>
+          <div className="obchan-b"><b>보험가입내역 통합조회 <span className="obchan-badge reco2">추천 · 1순위</span></b><p><b>본인인증 한 번으로 모든 보험사의 가입내역을 한 번에</b> 가져옵니다 (가장 편리·정확). 신용정보원 ‘내보험다보여’ 연계</p></div><ChevronRight size={16} />
+        </button>
+        <button className="obchan" onClick={() => { setChannel("upload"); setPhase("capture"); }}>
+          <span className="obchan-ic" style={{ background: "#E8F1FE", color: "#2563EB" }}><Paperclip size={20} /></span>
+          <div className="obchan-b"><b>보험증권 파일 업로드</b><p>통합조회가 어려운 경우. 증권 PDF·이미지에서 담보를 추출</p></div><ChevronRight size={16} />
+        </button>
+        <button className="obchan" onClick={() => { setChannel("photo"); setPhase("capture"); }}>
+          <span className="obchan-ic" style={{ background: "#F1ECFE", color: "#7C3AED" }}><ImageIcon size={20} /></span>
+          <div className="obchan-b"><b>증권·안내장 사진 촬영</b><p>종이 증권·안내장을 촬영해 담보를 추출</p></div><ChevronRight size={16} />
+        </button>
+      </div>
+      <div className="obfoot"><button className="oblater" onClick={() => setPhase("intro")}>이전</button></div>
+    </div>
+  );
+
+  if (phase === "capture") return (
+    <div className="obstep">
+      {channel === "aggregate" && (<>
+        <div className="obclbl">통합조회 연계</div>
+        <div className="obnhis" style={{ borderColor: "#BBE7CC", background: "#F4FCF6" }}>
+          <div className="obnhis-hd" style={{ color: "#15803D" }}><ShieldCheck size={18} color="#16A34A" /> 신용정보원 · 내보험다보여</div>
+          <p style={{ color: "#2F6B45" }}>본인인증 후 <b>전 보험사 가입내역</b>을 일괄 수신합니다. 실손 세대·중대질환 진단비 담보가 자동 반영돼요.</p>
+          <label className="obcon obcon-inline"><span className={"obck" + (consent.link ? " on" : "")} onClick={() => setConsent((s) => ({ ...s, link: !s.link }))}>{consent.link && <Check size={12} />}</span><span className="obcon-t"><b>[필수]</b> 제3자 정보제공·전송요구 동의(통합조회 연계)</span></label>
+          {!authed
+            ? <button className={"obnext" + (consent.link ? "" : " off")} disabled={!consent.link} onClick={() => setAuthed(true)}><Lock size={15} /> 휴대폰 본인인증</button>
+            : <button className="obnext" onClick={runAgg}><ShieldCheck size={15} /> 전 보험사 가입내역 조회</button>}
+        </div>
+        <div className="obfoot"><button className="oblater" onClick={() => setPhase("channel")}>이전</button></div>
+      </>)}
+      {channel === "upload" && (<>
+        <div className="obclbl">보험증권 파일 업로드</div>
+        <label className="obdrop"><input type="file" accept="image/*,application/pdf" hidden onChange={(e) => { runOcr(); e.target.value = ""; }} /><Paperclip size={26} color="#2563EB" /><b>증권 파일 선택</b><span>PDF · JPG · PNG</span></label>
+        <div className="obdemo">시연용 예시: <button onClick={runOcr}>증권 OCR 예시 실행</button></div>
+        <div className="obfoot"><button className="oblater" onClick={() => setPhase("channel")}>이전</button></div>
+      </>)}
+      {channel === "photo" && (<>
+        <div className="obclbl">증권 촬영</div>
+        <div className="obcam"><div className="obframe"><span /><span /><span /><span /><ImageIcon size={30} color="#7C3AED" /><em>증권 전체가 프레임에 들어오게 촬영</em></div></div>
+        <div className="obfoot2"><button className="oblater" onClick={() => setPhase("channel")}>이전</button><button className="obnext" onClick={runOcr}><ImageIcon size={15} /> 촬영 · 인식</button></div>
+      </>)}
+    </div>
+  );
+
+  if (phase === "review") return (
+    <div className="obstep">
+      <div className="obclbl">수신 보험계약 확인 <span>({rows.length}건)</span></div>
+      {data && data.channel === "aggregate" && <div className="obhint">✅ 신용정보원 통합조회로 전 보험사 가입내역을 일괄 수신했어요.</div>}
+      <div className="obcontracts">
+        {rows.map((c, i) => (
+          <div className="obcontract" key={i}>
+            <div className="obc-top"><b>{c.product}</b><span className={"obc-kind " + (c.kind === "실손" ? "sil" : "ci")}>{c.kind}</span></div>
+            <div className="obc-meta">{c.insurer} · 가입 {c.join}{c.gen ? " · " + c.gen : ""}</div>
+            <div className="obc-detail">{c.kind === "실손" ? `급여 자기부담 ${c.coGen || "-"} · 비급여 ${c.coNon || "-"}` : `${c.cat} 진단비 ${w(c.benefit)}`}{c.confidence ? ` · 인식 ${Math.round(c.confidence * 100)}%` : ""}</div>
+            {c.detailLack && <div className="obc-lack"><AlertTriangle size={11} /> 담보 상세(자기부담 등) 일부 부족 — 증권 업로드로 보완 권장</div>}
+          </div>
+        ))}
+      </div>
+      <div className="obfoot2"><button className="oblater" onClick={() => setPhase("channel")}>다시 선택</button><button className="obnext" onClick={confirmSave}><Check size={15} /> 확인 완료 · 저장</button></div>
+    </div>
+  );
+
+  const block = saved && saved.block;
+  return (
+    <div className="obstep obdone">
+      <div className="obdone-ic"><ShieldCheck size={34} /></div>
+      <h3>보험 데이터 연결 완료 ✓</h3>
+      <p className="obdone-sub">{rows.length}건의 보험계약이 저장되어 <b>AI 보험 솔루션·상담</b>에 즉시 반영됐어요.</p>
+      <div className="obdone-steps"><span><Check size={13} /> 실손 세대·진단비 스키마 저장</span><span><Check size={13} /> 암호화·블록체인 기록</span><span><Check size={13} /> AIPlannerChat 반영</span></div>
+      {block && <div className="obhash"><FileText size={12} /> 블록 해시 <code>{block.hash.slice(0, 32)}…</code></div>}
+      <div className="obdone-cta"><button className="obnext" onClick={onDone}>초개인화 홈으로 <ChevronRight size={15} /></button></div>
     </div>
   );
 }
@@ -196,7 +299,7 @@ function DataOnboardingSection({ onGo }) {
   const go = onGo || (() => {});
   const role = (typeof authRole === "function") ? authRole() : "ADMIN";
   const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => { try { const ob = onboardStatus(member); return (ob.step1 && !ob.step2) ? 2 : 1; } catch (e) { return 1; } });
   // GUEST·미가입 세션은 접근 차단 → 가입 유도
   if (role === "GUEST" || !member) return (
     <div className="obwrap"><div className="obgate">

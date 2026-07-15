@@ -130,8 +130,9 @@ function AuthSignup() {
     const prof = demoMakeProfile(name.trim(), email.trim(), birth, gender);
     prof.password = pw;
     userRegister(prof);
-    authSet({ name: prof.name, email: prof.email, realVerified: true });
+    authSet({ name: prof.name, email: prof.email, realVerified: true, role: "MEMBER" });
     demoSetSession(prof);
+    try { sessionStorage.setItem("hifin_force_onboard", "1"); } catch (e) {}   // 가입 직후 데이터 연결 온보딩 강제 진입
   };
 
   return (

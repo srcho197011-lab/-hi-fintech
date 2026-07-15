@@ -37,6 +37,12 @@ export default function App() {
   // RBAC — 현재 역할 + 차단 섹션 라우트 가드(URL 직접 접근·프로그램 이동도 홈으로 리다이렉트, 존재 암시 없이)
   const role = (typeof authRole === "function") ? authRole() : (authU ? "ADMIN" : null);
   useEffect(() => { if (role && role !== "ADMIN" && typeof isRestrictedSection === "function" && isRestrictedSection(sec)) setSecRaw("home"); }, [sec, role]);
+  // 회원가입 완료 직후 데이터 연결 온보딩으로 강제 진입(미완료 시)
+  useEffect(() => {
+    if (role !== "MEMBER") return;
+    let f = null; try { f = sessionStorage.getItem("hifin_force_onboard"); } catch (e) {}
+    if (f && demoU && typeof onboardStatus === "function") { try { if (!onboardStatus(demoU).done) setSecRaw("onboarding"); sessionStorage.removeItem("hifin_force_onboard"); } catch (e) {} }
+  }, [role]);
   const guestMatch = (authU && authU.match) || null;
   // 데이터 연결 온보딩 진행상태(정회원·미완료 시 홈 상단 유도 카드)
   const onbo = (role !== "GUEST" && demoU && typeof onboardStatus === "function") ? (() => { try { return onboardStatus(demoU); } catch (e) { return { done: true }; } })() : { done: true };
