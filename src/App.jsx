@@ -34,6 +34,10 @@ export default function App() {
   const authU = (typeof authCurrent === "function") ? authCurrent() : null;
   const greetName = demoU ? demoU.name : (authU && authU.name ? authU.name : "조성래");
   const doLogout = () => { setHdr(null); setSecRaw("home"); if (typeof appLogout === "function") appLogout(); };
+  // RBAC — 현재 역할 + 차단 섹션 라우트 가드(URL 직접 접근·프로그램 이동도 홈으로 리다이렉트, 존재 암시 없이)
+  const role = (typeof authRole === "function") ? authRole() : (authU ? "ADMIN" : null);
+  useEffect(() => { if (role && role !== "ADMIN" && typeof isRestrictedSection === "function" && isRestrictedSection(sec)) setSecRaw("home"); }, [sec, role]);
+  const guestMatch = (authU && authU.match) || null;
   // 접근성: 클릭 가능한 div(네비·탭·칩)를 키보드로도 조작 가능하게 (focus + Enter/Space)
   useEffect(() => {
     const SEL = ".iitem, .snav, .chtab, .aitab, .reslink, .fsel, .calc, .slot, .sresult, .adchip, .addept, .actbl tr, .aidcats button, .aidcatlist button, .lf-r button, .aidfilters button";
@@ -56,6 +60,12 @@ export default function App() {
   if (!authU) return <AuthGate />;
   return (
     <div className="app">
+      {role === "GUEST" && (
+        <div className="guestband">
+          <span className="gb-l">👀 <b>둘러보기 모드</b>{guestMatch ? ` — 만 ${guestMatch.age}세·${guestMatch.sex}${guestMatch.chronic && guestMatch.chronic.length ? "·" + guestMatch.chronic.slice(0, 2).join("·") : ""} 유사 프로필` : ""} · 시연용 예시 데이터입니다</span>
+          <button className="gb-out" onClick={() => { setSecRaw("home"); if (typeof guestExit === "function") guestExit(); }}>나가기</button>
+        </div>
+      )}
       <header className="top">
         <div className="logo" onClick={() => setSec("home")} role="button" tabIndex={0} title="처음 화면(홈)으로" aria-label="HI-Fin Tech 홈으로" onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSec("home"); }}>
           <span className="mk">
@@ -133,15 +143,17 @@ export default function App() {
             })}
           </div>
           <div className="agent"><div className="at">AI Super Agent</div><div className="as">{greetName}님 고객 전담 · 모든 서비스 연결</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("agent")}>상담 시작하기</button></div>
-          <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>
+          {role === "ADMIN" && <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>}
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
         <main className="scrollarea">
           <nav className="iconbar">
-            {SECTIONS.map((x) => (<div key={x.k} className={`iitem ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
+            {SECTIONS.filter((x) => role === "ADMIN" || x.k !== "ontology").map((x) => (<div key={x.k} className={`iitem ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
               <span className="ico"><SecIcon k={x.k} /></span><span className="t">{x.t}</span><span className="s">{x.s}</span></div>))}
           </nav>
           {(() => { const p = secParent(sec);
+            // 라우트 가드(방어적 이중화): 비관리자는 차단 섹션 렌더 자체를 홈으로 대체(존재 암시 없음)
+            if (role !== "ADMIN" && typeof isRestrictedSection === "function" && isRestrictedSection(sec)) return <HomeHub initial="home" onGo={setSec} />;
             if (sec === "agent") return <SuperAgentSection onGo={setSec} />;
             if (p === "partner") return <PartnerInvestSection onGo={setSec} />;
             if (p === "home") return <HomeHub initial={sec} onGo={setSec} />;

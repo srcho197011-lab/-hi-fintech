@@ -34,6 +34,87 @@ function userRegister(u) { if (userFindByEmail(u.email)) return false; const l =
 /* 체험회원(Demo@1234) → 가입회원(개별 비번) 순으로 인증 */
 function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if (m) return m; const u = userFindByEmail(email); return (u && u.password === pw) ? u : null; }
 
+/* ═══════════════ RBAC — 역할(GUEST·MEMBER·ADMIN) + 둘러보기(게스트) + 로그인 잠금 ═══════════════
+   ⚠️ 백엔드 없는 데모: 서버 토큰/API 403을 프론트 등가(세션 role + 라우트 가드 + 데이터 스코프 필터)로 구현.
+   정식 서버 도입 시 이 role/scope 계층을 그대로 백엔드 미들웨어로 이관. */
+/* 승인된 관리자(전체보기) 계정 — 데모용 임시. ⚠️ 정식 론칭 전 폐기 목록 등록. 설정으로 분리(코드 하드코딩 지양). */
+const AUTH_ADMIN = { id: "hifin", pw: "hifin01" };   // TODO(론칭전 폐기): 환경변수/설정으로 이관
+function authRole() { const a = authCurrent(); if (!a) return null; return a.role || "ADMIN"; }  // 레거시 세션(role 없음)=관리자
+function isAdminRole() { return authRole() === "ADMIN"; }
+function isGuestRole() { return authRole() === "GUEST"; }
+
+/* 로그인 실패 잠금(5회 실패 → 10분) */
+const LOCK_KEY = "hifin_login_lock";
+function loginLockState() { try { return JSON.parse(localStorage.getItem(LOCK_KEY) || "null"); } catch (e) { return null; } }
+function loginLockedMs() { const s = loginLockState(); return (s && s.until && s.until > Date.now()) ? (s.until - Date.now()) : 0; }
+function loginRecordFail() { const s = loginLockState() || { fails: 0, until: 0 }; s.fails = (s.fails || 0) + 1; if (s.fails >= 5) { s.until = Date.now() + 10 * 60 * 1000; s.fails = 0; } try { localStorage.setItem(LOCK_KEY, JSON.stringify(s)); } catch (e) {} return s; }
+function loginRemainFails() { const s = loginLockState(); return 5 - ((s && s.fails) || 0); }
+function loginClearFail() { try { localStorage.removeItem(LOCK_KEY); } catch (e) {} }
+
+/* 관리자/회원 로그인 — 성공 시 게이트 세션에 role 부여 */
+function adminLogin(id, pw) { if (id === AUTH_ADMIN.id && pw === AUTH_ADMIN.pw) { try { demoLogout(); } catch (e) {} authSet({ name: "조성래", role: "ADMIN" }); loginClearFail(); return true; } return false; }
+function memberLogin(email, pw) { const m = appAuthenticate(email, pw); if (!m) return false; authSet({ name: m.name, email: m.email, role: "MEMBER" }); demoSetSession(m); loginClearFail(); return true; }
+
+/* ── 둘러보기(GUEST) — 10만 코호트에서 유사 회원 매칭 → 완전한 게스트 프로필 합성 ── */
+const GUEST_CHRONIC = ["고혈압", "당뇨병", "이상지질혈증", "비만", "대사증후군"];
+function _guestCondToDz(c) { return c === "고지혈증" ? "이상지질" : c === "당뇨" ? "당뇨" : c; }
+/* 매칭 회원의 질병 목록 → 대표 만성질환 canonical 라벨(밴드 표시·건강리포트 가중용) */
+function _canonChronic(diseases) {
+  const set = [];
+  (diseases || []).forEach((d) => {
+    if (/고혈압/.test(d) && set.indexOf("고혈압") < 0) set.push("고혈압");
+    if (/당뇨/.test(d) && set.indexOf("당뇨병") < 0) set.push("당뇨병");
+    if (/(이상지질|고지혈)/.test(d) && set.indexOf("고지혈증") < 0) set.push("고지혈증");
+    if (/비만/.test(d) && set.indexOf("비만") < 0) set.push("비만");
+    if (/대사증후군/.test(d) && set.indexOf("대사증후군") < 0) set.push("대사증후군");
+  });
+  return set;
+}
+/* 후보: 성별 일치 → (있음)만성질환 보유 → 나이 근접순 상위20 중 랜덤1. 0명이면 성별만 최근접 폴백 */
+function guestMatch(input) {
+  const cohort = (typeof pilotCohort === "function") ? pilotCohort() : [];
+  if (!cohort.length) return null;
+  const sexPool = cohort.filter((m) => m.sex === input.sex);
+  let pool = sexPool;
+  if (input.chronic) {
+    const conds = (input.conditions && input.conditions.length) ? input.conditions.map(_guestCondToDz) : null;
+    let want = sexPool.filter((m) => (m.diseases || []).some((d) => conds ? conds.some((c) => d.includes(c)) : GUEST_CHRONIC.some((c) => d.includes(c))));
+    if (!want.length) want = sexPool.filter((m) => (m.diseases || []).some((d) => GUEST_CHRONIC.some((c) => d.includes(c))));
+    if (want.length) pool = want;
+  }
+  if (!pool.length) pool = sexPool;
+  if (!pool.length) return null;
+  const byAge = pool.slice().sort((a, b) => Math.abs(a.age - input.age) - Math.abs(b.age - input.age));
+  const top = byAge.slice(0, Math.min(20, byAge.length));
+  return top[Math.floor(Math.random() * top.length)];   // 반복 시연 시 매번 조금씩 다른 회원
+}
+/* 매칭 코호트 회원 → 데모 화면 전체가 동작하는 완전한 게스트 프로필 합성(파일럿 회원 아님) */
+function guestProfile(input) {
+  const src = guestMatch(input); if (!src) return null;
+  const gc = input.sex === "남" ? "3" : "4";
+  const base = (typeof demoMakeProfile === "function") ? demoMakeProfile("체험회원", "guest-" + src.id + "@hifin.guest", "", gc) : { id: "guest-" + src.id, managementPoints: [] };
+  base.id = "GUEST-" + src.id; base.name = "체험회원"; base.sex = src.sex; base.regAge = input.age || src.age;
+  const chron = _canonChronic(src.diseases);
+  base.diseases = src.diseases || []; base.highRiskDiseases = chron; base.cancer = !!src.cancer;
+  if (src.cancer) { const cz = (src.diseases || []).find((d) => /암$/.test(d)); if (cz) base.highRiskCancerTypes = [cz]; }
+  base.cancerRiskGrade = Math.max(2, Math.min(8, (src.risk || 2) + 2));
+  base.isGuest = true; base.isDemoUser = false; base.isPilot = false; base.email = "guest-" + src.id + "@hifin.guest";
+  base._match = { age: src.age, sex: src.sex, chronic: chron, srcId: src.id };
+  return base;
+}
+function startGuest(input) { const p = guestProfile(input); if (!p) return null; demoSetSession(p); authSet({ name: p.name, role: "GUEST", guest: true, match: p._match }); return p; }
+function guestExit() { try { demoLogout(); } catch (e) {} appLogout(); }
+
+/* ── 파일럿 회원 전역 스코프 필터 — GUEST/MEMBER 세션에서 파일럿·데모 회원을 데이터 소스 차원에서 제외 ── */
+function isPilotMember(m) { return !!(m && (m.isPilot || m.isDemoUser || (typeof m.id === "string" && /^SELF-/.test(m.id)))); }
+function scopeMembers(list) { return isAdminRole() ? (list || []) : (list || []).filter((m) => !isPilotMember(m)); }
+/* GUEST 접근 금지 섹션(온톨로지·하네스 / 파일럿검증회원 / 관리자 화면) */
+function isRestrictedSection(secKey) {
+  if (isAdminRole()) return false;
+  const parent = (typeof secParent === "function") ? secParent(secKey) : secKey;
+  return parent === "ontology" || secKey === "demo";
+}
+
 /* 테스트 시나리오 자가검증(11항목) — 실제 로직/데이터에 대해 단언 */
 function runDemoTests() {
   const t = [];

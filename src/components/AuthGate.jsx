@@ -17,41 +17,72 @@ function AuthBrand() {
   );
 }
 
-/* 승인된 단일 관리자 계정 — 이 계정만 접속 허용 */
-const AUTH_ALLOWED_ID = "hifin";
-const AUTH_ALLOWED_PW = "hifin01";
-
 function AuthLogin() {
   const [uid, setUid] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
+  const [lockMs, setLockMs] = useState(() => (typeof loginLockedMs === "function" ? loginLockedMs() : 0));
   // 브라우저 저장 아이디/비번 자동완성·자동입력 차단: 로드 시 readOnly로 두고 사용자가 포커스하면 해제
   const [ro, setRo] = useState(true);
   const unlock = () => setRo(false);
-  // 렌더 후 혹시 자동입력된 값이 있으면 비움(딜레이 클리어)
   useEffect(() => { const id = setTimeout(() => { setUid((v) => (ro ? "" : v)); setPw((v) => (ro ? "" : v)); }, 400); return () => clearTimeout(id); }, []);
+  // 잠금 남은시간 카운트다운
+  useEffect(() => { if (lockMs <= 0) return; const id = setInterval(() => { const m = (typeof loginLockedMs === "function" ? loginLockedMs() : 0); setLockMs(m); if (m <= 0) clearInterval(id); }, 1000); return () => clearInterval(id); }, [lockMs > 0]);
   const submit = (e) => {
     if (e) e.preventDefault();
     setErr("");
-    if (uid.trim() === AUTH_ALLOWED_ID && pw === AUTH_ALLOWED_PW) {
-      try { demoLogout(); } catch (_) {}
-      authSet({ name: "조성래" });
-      return;
-    }
-    setErr("접근 권한이 없습니다. 승인된 계정만 이용할 수 있습니다.");
+    const ms = (typeof loginLockedMs === "function") ? loginLockedMs() : 0;
+    if (ms > 0) { setLockMs(ms); setErr(`로그인이 잠겼습니다. 약 ${Math.ceil(ms / 60000)}분 후 다시 시도해 주세요.`); return; }
+    if (typeof adminLogin === "function" && adminLogin(uid.trim(), pw)) return;      // ADMIN(전체보기)
+    if (typeof memberLogin === "function" && memberLogin(uid.trim(), pw)) return;    // MEMBER(데모 계정)
+    if (typeof loginRecordFail === "function") loginRecordFail();
+    const nowLock = (typeof loginLockedMs === "function") ? loginLockedMs() : 0;
+    if (nowLock > 0) { setLockMs(nowLock); setErr("로그인 5회 실패 — 10분간 접속이 잠겼습니다."); }
+    else { const rem = (typeof loginRemainFails === "function") ? loginRemainFails() : 0; setErr(`아이디 또는 비밀번호가 올바르지 않습니다. (남은 시도 ${Math.max(0, rem)}회)`); }
   };
+  const locked = lockMs > 0;
   return (
     <form className="authform" onSubmit={submit} autoComplete="off">
-      {/* 브라우저 자동완성 유인용 히든 디코이(실제 필드 자동입력 차단) */}
       <input type="text" name="username" autoComplete="username" tabIndex={-1} aria-hidden="true" style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }} />
       <input type="password" name="password" autoComplete="current-password" tabIndex={-1} aria-hidden="true" style={{ position: "absolute", opacity: 0, height: 0, width: 0, pointerEvents: "none" }} />
       <label className="authfield"><span className="authlabel">아이디</span>
-        <input className="authinput" type="text" value={uid} onChange={(e) => setUid(e.target.value)} placeholder="아이디" name="hifin-login-id" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} readOnly={ro} onFocus={unlock} /></label>
+        <input className="authinput" type="text" value={uid} onChange={(e) => setUid(e.target.value)} placeholder="아이디 또는 이메일" name="hifin-login-id" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} readOnly={ro} onFocus={unlock} disabled={locked} /></label>
       <label className="authfield"><span className="authlabel">비밀번호</span>
-        <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" name="hifin-login-pw" autoComplete="new-password" readOnly={ro} onFocus={unlock} /></label>
+        <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" name="hifin-login-pw" autoComplete="new-password" readOnly={ro} onFocus={unlock} disabled={locked} /></label>
       {err && <div className="autherr">{err}</div>}
-      <button className="authbtn authprimary" type="submit">로그인</button>
+      <button className="authbtn authprimary" type="submit" disabled={locked}>{locked ? `잠금 — ${Math.ceil(lockMs / 60000)}분 후 재시도` : "로그인"}</button>
     </form>
+  );
+}
+
+/* ── 회원가입 없이 둘러보기(GUEST) — 나이·성별·만성질환만 입력 → 유사 샘플 회원 자동 로그인 ── */
+function GuestExplore() {
+  const [age, setAge] = useState(45);
+  const [sex, setSex] = useState("남");
+  const [chronic, setChronic] = useState(false);
+  const [conds, setConds] = useState([]);
+  const CH = ["고혈압", "당뇨", "고지혈증", "기타"];
+  const toggle = (c) => setConds((cs) => cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]);
+  const go = () => { if (typeof startGuest === "function") startGuest({ age: Number(age) || 45, sex, chronic, conditions: chronic ? conds : [] }); };
+  return (
+    <div className="guestcard">
+      <div className="guesthd"><span className="guestpill">👀 회원가입 없이 둘러보기</span></div>
+      <p className="guestlead">가입 없이 <b>10만 명의 예시 회원</b> 중 나와 가장 비슷한 사람의 눈으로 하이핀을 둘러보세요. (10초)</p>
+      <div className="guestrow">
+        <label className="guestf"><span>나이</span>
+          <div className="guestage"><input type="range" min="10" max="90" value={age} onChange={(e) => setAge(e.target.value)} /><b>{age}<em>세</em></b></div>
+        </label>
+      </div>
+      <div className="guestrow2">
+        <label className="guestf"><span>성별</span>
+          <div className="guestseg">{["남", "여"].map((s) => <button key={s} type="button" className={sex === s ? "on" : ""} onClick={() => setSex(s)}>{s}</button>)}</div></label>
+        <label className="guestf"><span>만성질환</span>
+          <div className="guestseg">{[["없음", false], ["있음", true]].map(([l, v]) => <button key={l} type="button" className={chronic === v ? "on" : ""} onClick={() => setChronic(v)}>{l}</button>)}</div></label>
+      </div>
+      {chronic && <div className="guestchips">{CH.map((c) => <button key={c} type="button" className={conds.includes(c) ? "on" : ""} onClick={() => toggle(c)}>{c}</button>)}<span className="guestchiphint">복수 선택 · 선택 안 해도 진행 가능</span></div>}
+      <button className="authbtn guestcta" type="button" onClick={go}>나와 비슷한 회원으로 체험하기 →</button>
+      <div className="guestnote">※ 별도 회원가입·개인정보 수집 없이 <b>시연용 예시 데이터</b>로 둘러봅니다. 온톨로지·관리자 화면은 열리지 않습니다.</div>
+    </div>
   );
 }
 
@@ -171,6 +202,8 @@ function AuthGate() {
         <AuthBrand />
         <div className="authgate-badge">🔒 승인된 계정만 접속할 수 있습니다.</div>
         <AuthLogin />
+        <div className="author"><span>또는</span></div>
+        <GuestExplore />
         <div className="authlegal">
           <div className="authlegal-hd"><span>🛡️</span> 접속·콘텐츠 보호 안내</div>
           <p>본 홈페이지는 보안 강화를 위해 접속자의 IP 주소, 접속 시간 및 이용 이력 등 접속 로그를 기록·관리합니다. 사전 승인 없이 홈페이지 URL을 제3자에게 공유하거나, 화면 및 콘텐츠를 무단으로 캡처, 복제, 저장 또는 배포하는 행위는 엄격히 금지됩니다. 위반 행위가 확인될 경우 관련 법령 및 계약에 따라 필요한 법적 조치를 취할 수 있습니다.</p>
