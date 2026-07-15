@@ -191,6 +191,29 @@ function onboardStatus(member) {
   const step2 = !!(v && v.insurance && v.insurance.length);
   return { step1, step2, done: step1 && step2, partial: step1 && v.checkups.every((c) => c.completeness === "partial") };
 }
+/* 시연 기준 인물(조성래) 데이터 금고 자동 시드 — 투자자·개발자 데모용 기본 데이터 채움(멱등) */
+let _selfSeeded = false;
+function seedSelfVault(member) {
+  if (!member) return false;
+  const token = anonToken(member); const v = vaultLoad(token);
+  if (v && ((v.checkups || []).length || (v.insurance || []).length)) return false;   // 이미 데이터 있음
+  if (_selfSeeded) return false; _selfSeeded = true;
+  try {
+    const vals = synthCheckupValues(member);
+    const items = CKUP_ORDER.map((k) => ({ key: k, value: vals[k], source: "upload", confidence: 0.9 + (_insRng ? 0 : 0) }));
+    vaultSaveConsents(member, { health: true, ai: true, mkt: false, step: "checkup" });
+    vaultSaveCheckup(member, items, { source: "upload", channel: "upload", completeness: "full", fileName: "국가검진결과_2025.pdf", date: "2025-11-01" });
+    const contracts = (typeof insAggregateFetch === "function") ? insAggregateFetch(member).contracts : [];
+    vaultSaveConsents(member, { insurance: true, link: true, step: "insurance" });
+    if (contracts.length) vaultSaveInsurance(member, contracts, { source: "aggregate", channel: "aggregate" });
+    if (typeof txAnchor === "function") {
+      txAnchor({ ttype: "tx", token, kind: "건강쇼핑 적립", amount: 1200, unit: "원", memo: "밀크씨슬 구매 리워드" });
+      txAnchor({ ttype: "swap", token, kind: "HTK 스왑", amount: 300, memo: "HTK → 보험·치료비 크레딧" });
+    }
+  } catch (e) { return false; }
+  return true;
+}
+
 /* 데이터 삭제·철회(파기) — 금고·체인기록(철회 사실은 체인에 남김) */
 function vaultPurge(member) {
   const token = anonToken(member);

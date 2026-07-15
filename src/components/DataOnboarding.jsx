@@ -328,6 +328,8 @@ function DataVaultPanel({ onGo }) {
   const member = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const [tick, setTick] = useState(0);
   const [confirm, setConfirm] = useState(false);
+  // 시연 기준 인물(조성래)은 데모용 기본 데이터를 자동 시드(멱등)
+  useEffect(() => { if (member && (member.isSelf || member.name === "조성래") && typeof seedSelfVault === "function") { try { if (seedSelfVault(member)) setTick((t) => t + 1); } catch (e) {} } }, []);
   if (!member) return (
     <div className="card dvempty"><ShieldCheck size={30} color="#94A3B8" /><b>로그인이 필요해요</b><p>회원으로 로그인하면 내 건강·보험 데이터를 안전하게 보관·관리할 수 있어요.</p></div>
   );
