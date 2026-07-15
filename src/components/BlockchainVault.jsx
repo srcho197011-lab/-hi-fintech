@@ -1,4 +1,9 @@
 /* ══════════ 블록체인 데이터 금고 — 100,001 회원 Merkle 앵커링 콘솔(ADMIN) ══════════ */
+const BCV_TYPE = {
+  checkup: ["검진 데이터", "#2563EB", "#E8F1FE", FileText], insurance: ["보험 데이터", "#16A34A", "#E7F6EC", ShieldCheck],
+  consent: ["동의 이력", "#7C3AED", "#F1ECFE", Lock], anchor: ["Merkle 앵커(100,001)", "#0EA5E9", "#E0F2FE", Blocks],
+  erase: ["파기 이력", "#DC2626", "#FDECEC", Trash2], record: ["기록", "#64748B", "#F1F5FB", Hash],
+};
 function BlockchainAnchorConsole({ cohort }) {
   const [anchor, setAnchor] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -6,6 +11,11 @@ function BlockchainAnchorConsole({ cohort }) {
   const [proof, setProof] = useState(null);
   const [tamper, setTamper] = useState(null);
   const [pid, setPid] = useState("P00001");
+  const [tick, setTick] = useState(0);
+  const chain = (() => { void tick; try { return JSON.parse(localStorage.getItem("hifin_hashchain") || "[]"); } catch (e) { return []; } })();
+  const verify = (typeof chainVerify === "function") ? chainVerify() : { ok: true, blocks: chain.length };
+  const counts = chain.reduce((a, b) => { a[b.type] = (a[b.type] || 0) + 1; return a; }, {});
+  const fmtT = (ts) => { try { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; } catch (e) { return ""; } };
 
   const run = () => {
     setBusy(true);
@@ -14,7 +24,7 @@ function BlockchainAnchorConsole({ cohort }) {
       setBusy(false);
     }, 60);
   };
-  const commit = () => { try { const r = (typeof commitAnchor === "function") ? commitAnchor() : null; setCommitted(r && r.block); } catch (e) {} };
+  const commit = () => { try { const r = (typeof commitAnchor === "function") ? commitAnchor() : null; setCommitted(r && r.block); setTick((t) => t + 1); } catch (e) {} };
   const memberOf = () => {
     if (/^self$|조성래/i.test(pid)) return { id: "SELF-JOSUNGRAE", name: "조성래", sex: "남", regAge: 54, isSelf: true };
     const id = /^P\d+$/i.test(pid) ? pid.toUpperCase() : "P" + String(parseInt(pid, 10) || 1).padStart(5, "0");
@@ -30,6 +40,26 @@ function BlockchainAnchorConsole({ cohort }) {
       <div className="bcv-hero">
         <div className="bcv-hl"><Blocks size={16} /> 블록체인 데이터 금고 <span>Merkle 앵커링</span></div>
         <p>전 회원의 검진·보험 데이터를 <b>FHIR 표준코드</b>로 요약해 leaf 해시를 만들고, <b>Merkle Tree</b>로 묶어 <b>루트 1개</b>만 온체인에 앵커합니다. 회원은 <b>포함 증명(Merkle proof)</b>으로 위변조 없이 자기 데이터가 기록됐음을 검증합니다. <span className="bcv-note">실데이터는 체인에 올리지 않고 해시만 기록</span></p>
+      </div>
+
+      <div className="bcv-ledger">
+        <div className="bcv-lhd"><span className="bcv-lt"><Blocks size={15} color="#2563EB" /> 블록체인으로 보호되는 데이터</span>
+          <span className={"bcv-vbadge" + (verify.ok ? " ok" : " bad")}>{verify.ok ? <Check size={12} /> : <AlertTriangle size={12} />} 무결성 {verify.ok ? "정상" : "위변조"} · {chain.length}블록</span></div>
+        <p className="bcv-lp">블록체인에는 <b>원본이 아니라 데이터의 지문(해시)</b>만 기록됩니다. 원본은 암호화 금고에 별도 보관되고, 지문이 일치하면 <b>위변조되지 않았음</b>이 증명됩니다.</p>
+        {chain.length === 0 ? (
+          <div className="bcv-lempty"><Blocks size={26} color="#94A3B8" /><span>아직 기록된 블록이 없어요. 회원이 검진·보험 데이터를 연결하거나 아래에서 앵커링을 실행하면 이 원장에 기록됩니다.</span></div>
+        ) : (<>
+          <div className="bcv-cats">{Object.keys(BCV_TYPE).filter((k) => counts[k]).map((k) => { const [t, c, bg, Ic] = BCV_TYPE[k]; return (
+            <div className="bcv-cat" key={k} style={{ background: bg }}><Ic size={15} color={c} /><b style={{ color: c }}>{counts[k]}</b><span>{t}</span></div>); })}</div>
+          <div className="bcv-blocks">{chain.slice().reverse().map((b) => { const meta = BCV_TYPE[b.type] || BCV_TYPE.record; const [t, c, bg, Ic] = meta; const digest = b.fhirHash || b.fileHash; return (
+            <div className="bcv-block" key={b.idx}>
+              <span className="bcv-bidx">#{b.idx}</span>
+              <span className="bcv-btype" style={{ background: bg, color: c }}><Ic size={12} /> {t}</span>
+              <div className="bcv-bmid"><div className="bcv-bnote">{b.note || t}</div>{digest && <code className="bcv-bdig" title="데이터 지문(해시)">지문 {digest.slice(0, 20)}…</code>}</div>
+              <div className="bcv-bmeta"><span className="bcv-btime">{fmtT(b.ts)}</span><code className="bcv-bhash">{(b.hash || "").slice(0, 12)}…</code></div>
+            </div>); })}</div>
+          <div className="bcv-lnote">각 블록은 이전 블록 해시(prev)를 포함해 사슬로 연결됩니다 — 한 블록이라도 값이 바뀌면 이후 모든 해시가 어긋나 위변조가 즉시 드러납니다.</div>
+        </>)}
       </div>
 
       <div className="bcv-run">

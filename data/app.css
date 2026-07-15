@@ -4295,3 +4295,23 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .bcv-verdict.ok { color: #15803D; background: #E7F6EC; } .bcv-verdict.bad { color: #B91C1C; background: #FDECEC; }
 .bcv-idle { text-align: center; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; } .bcv-idle p { font-size: 12.5px; color: var(--muted); max-width: 420px; line-height: 1.6; }
 @media (max-width: 640px) { .bcv-stats { grid-template-columns: 1fr 1fr; } }
+
+/* 블록체인 보호 데이터 원장(블록 탐색기) */
+.bcv-ledger { margin-top: 14px; border: 1px solid var(--border); border-radius: 13px; padding: 15px; background: #fff; }
+.bcv-lhd { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.bcv-lt { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: #1C2A44; }
+.bcv-vbadge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; }
+.bcv-vbadge.ok { color: #15803D; background: #E7F6EC; } .bcv-vbadge.bad { color: #B91C1C; background: #FDECEC; }
+.bcv-lp { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 9px 0 12px; } .bcv-lp b { color: #1C2A44; }
+.bcv-lempty { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 22px; color: var(--muted); font-size: 12.5px; }
+.bcv-cats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.bcv-cat { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 10px; font-size: 12px; }
+.bcv-cat b { font-size: 15px; font-weight: 800; } .bcv-cat span { color: #475569; font-weight: 600; }
+.bcv-blocks { display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow-y: auto; }
+.bcv-block { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid var(--border); border-radius: 10px; background: #FCFDFE; }
+.bcv-bidx { font-size: 11px; font-weight: 800; color: #94A3B8; min-width: 26px; }
+.bcv-btype { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
+.bcv-bmid { flex: 1; min-width: 0; } .bcv-bnote { font-size: 12px; color: #1C2A44; font-weight: 600; line-height: 1.4; } .bcv-bdig { font-size: 10px; color: #94A3B8; font-family: ui-monospace, monospace; }
+.bcv-bmeta { text-align: right; flex-shrink: 0; } .bcv-btime { display: block; font-size: 10.5px; color: #94A3B8; } .bcv-bhash { font-size: 10px; color: #0EA5E9; font-family: ui-monospace, monospace; }
+.bcv-lnote { font-size: 10.5px; color: #94A3B8; line-height: 1.5; margin-top: 10px; }
+@media (max-width: 640px) { .bcv-bdig { display: none; } .bcv-block { flex-wrap: wrap; } }
