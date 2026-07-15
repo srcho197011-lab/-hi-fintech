@@ -4263,3 +4263,6 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .dv-danger { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 13px; border: 1px solid #F5C2C2; border-radius: 11px; background: #FEF5F5; }
 .dv-danger div { flex: 1; } .dv-danger b { font-size: 12.8px; font-weight: 800; color: #B91C1C; } .dv-danger p { font-size: 11px; color: #7A2E2E; margin: 3px 0 0; line-height: 1.5; }
 .dv-del { display: inline-flex; align-items: center; gap: 4px; border: none; background: #DC2626; color: #fff; font-size: 12px; font-weight: 800; padding: 8px 14px; border-radius: 9px; cursor: pointer; flex-shrink: 0; }
+
+/* 초개인화 데이터 출처 라벨 */
+.dbsrc { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; color: #15803D; background: #E7F6EC; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
