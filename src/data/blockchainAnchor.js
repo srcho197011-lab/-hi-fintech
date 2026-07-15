@@ -76,6 +76,18 @@ function memberAnchorProof(m, opts) {
   const ok = verifyProof(leaf, proof, batch.root);
   return { globalIndex: gi, batch: bIdx, leaf, proof, proofLen: proof.length, batchRoot: batch.root, superRoot: a.superRoot, ok };
 }
+/* ── HTK 지갑·거래·정산 원장 블록체인 기록 ──
+   적립·사용·전송·정산 트랜잭션을 해시체인에 기록(지문만). 회원/지갑 원장의 위변조 방지. */
+function txAnchor(o) {
+  o = o || {};
+  let token = o.token;
+  if (!token) { try { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; token = m && typeof anonToken === "function" ? anonToken(m) : "wallet"; } catch (e) { token = "wallet"; } }
+  const amt = o.amount != null ? Number(o.amount).toLocaleString() + " " + (o.unit || "HTK") : "";
+  const note = [o.kind || "거래", amt, o.memo].filter(Boolean).join(" · ");
+  const digest = (typeof vaultHash === "function") ? vaultHash("tx|" + token + "|" + (o.kind || "") + "|" + (o.amount || "") + "|" + (o.memo || "") + "|" + (o.ts || "")) : null;
+  return (typeof chainAppend === "function") ? chainAppend({ type: "tx", token, fhirHash: digest, note }) : null;
+}
+
 /* 위변조 시뮬: 회원 값이 바뀌면 leaf가 달라져 같은 proof·root로 검증 실패 */
 function anchorTamperTest(m, opts) {
   const p = memberAnchorProof(m, opts);

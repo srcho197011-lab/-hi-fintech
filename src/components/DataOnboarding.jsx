@@ -368,6 +368,12 @@ function DataVaultPanel({ onGo }) {
       <div className="dv-sec">접근 이력 <span>(내 데이터에 접근한 모든 조회)</span></div>
       <div className="dv-log">{(access.slice(-6).reverse()).map((a, i) => <div className="dv-lrow" key={i}><span>{fmt(a.ts)}</span><b>{a.actor === "member" ? "본인" : a.actor}</b><span className="dv-la">{a.action}</span></div>)}{!access.length && <div className="dv-lrow"><span className="dv-la">기록 없음</span></div>}</div>
 
+      <div className="dv-sec">내 데이터 보호 블록 <span>(블록체인에 기록된 내 데이터 지문 · {myBlocks.length}블록)</span></div>
+      <div className="dvchain">{myBlocks.slice().reverse().map((b) => { const meta = (typeof BCV_TYPE !== "undefined" && BCV_TYPE[b.type]) || ["기록", "#64748B", "#F1F5FB", FileText]; const Ic = meta[3]; return (
+        <div className="dvcblk" key={b.idx}><span className="dvcb-t" style={{ background: meta[2], color: meta[1] }}><Ic size={11} /> {meta[0]}</span><span className="dvcb-n">{b.note || meta[0]}</span><code className="dvcb-h">{(b.hash || "").slice(0, 10)}…</code></div>
+      ); })}{!myBlocks.length && <div className="dv-lrow"><span className="dv-la">기록된 블록이 없어요</span></div>}</div>
+      <div className="dvchain-note">내 검진·보험·동의·거래의 <b>지문(해시)</b>만 블록체인에 기록됩니다. 원본은 암호화 금고 보관 · 지문 일치 시 위변조 없음 증명.</div>
+
       <div className="dv-sec">동의 현황</div>
       <div className="dv-consents">{(typeof VAULT_CONSENTS !== "undefined" ? VAULT_CONSENTS : []).map((c) => { const on = v.consents && v.consents.state && v.consents.state[c.key]; return <span className={"dv-con" + (on ? " on" : "")} key={c.key}>{on ? <Check size={11} /> : <X size={11} />} {c.title.split("(")[0].replace(" 동의", "")}</span>; })}</div>
 

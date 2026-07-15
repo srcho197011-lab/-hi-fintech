@@ -4315,3 +4315,11 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .bcv-bmeta { text-align: right; flex-shrink: 0; } .bcv-btime { display: block; font-size: 10.5px; color: #94A3B8; } .bcv-bhash { font-size: 10px; color: #0EA5E9; font-family: ui-monospace, monospace; }
 .bcv-lnote { font-size: 10.5px; color: #94A3B8; line-height: 1.5; margin-top: 10px; }
 @media (max-width: 640px) { .bcv-bdig { display: none; } .bcv-block { flex-wrap: wrap; } }
+
+/* 데이터 금고 — 내 데이터 보호 블록 */
+.dvchain { display: flex; flex-direction: column; gap: 5px; }
+.dvcblk { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 9px; background: #FCFDFE; }
+.dvcb-t { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
+.dvcb-n { flex: 1; min-width: 0; font-size: 11.5px; color: #33405C; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dvcb-h { font-size: 10px; color: #0EA5E9; font-family: ui-monospace, monospace; flex-shrink: 0; }
+.dvchain-note { font-size: 10.5px; color: #94A3B8; line-height: 1.5; margin-top: 8px; } .dvchain-note b { color: #64748B; }
