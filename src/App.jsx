@@ -38,6 +38,8 @@ export default function App() {
   const role = (typeof authRole === "function") ? authRole() : (authU ? "ADMIN" : null);
   useEffect(() => { if (role && role !== "ADMIN" && typeof isRestrictedSection === "function" && isRestrictedSection(sec)) setSecRaw("home"); }, [sec, role]);
   const guestMatch = (authU && authU.match) || null;
+  // 데이터 연결 온보딩 진행상태(정회원·미완료 시 홈 상단 유도 카드)
+  const onbo = (role !== "GUEST" && demoU && typeof onboardStatus === "function") ? (() => { try { return onboardStatus(demoU); } catch (e) { return { done: true }; } })() : { done: true };
   // 접근성: 클릭 가능한 div(네비·탭·칩)를 키보드로도 조작 가능하게 (focus + Enter/Space)
   useEffect(() => {
     const SEL = ".iitem, .snav, .chtab, .aitab, .reslink, .fsel, .calc, .slot, .sresult, .adchip, .addept, .actbl tr, .aidcats button, .aidcatlist button, .lf-r button, .aidfilters button";
@@ -151,9 +153,18 @@ export default function App() {
             {SECTIONS.filter((x) => role === "ADMIN" || x.k !== "ontology").map((x) => (<div key={x.k} className={`iitem ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}>
               <span className="ico"><SecIcon k={x.k} /></span><span className="t">{x.t}</span><span className="s">{x.s}</span></div>))}
           </nav>
+          {!onbo.done && secParent(sec) === "home" && sec !== "onboarding" && (
+            <div className="obpromo" onClick={() => setSec("onboarding")} role="button" tabIndex={0}>
+              <span className="obpromo-ic"><ShieldCheck size={20} /></span>
+              <div className="obpromo-b"><b>{!onbo.step1 ? "검진결과를 연결하면 AI 건강분석이 시작됩니다" : "보험 데이터를 연결하면 보장 분석이 완성됩니다"} <span>(1분 소요)</span></b>
+                <div className="obpromo-bar"><i style={{ width: (onbo.step1 ? 50 : 5) + "%" }} /></div></div>
+              <span className="obpromo-go">데이터 연결 <ChevronRight size={15} /></span>
+            </div>
+          )}
           {(() => { const p = secParent(sec);
             // 라우트 가드(방어적 이중화): 비관리자는 차단 섹션 렌더 자체를 홈으로 대체(존재 암시 없음)
             if (role !== "ADMIN" && typeof isRestrictedSection === "function" && isRestrictedSection(sec)) return <HomeHub initial="home" onGo={setSec} />;
+            if (sec === "onboarding") return <DataOnboardingSection onGo={setSec} />;
             if (sec === "agent") return <SuperAgentSection onGo={setSec} />;
             if (p === "partner") return <PartnerInvestSection onGo={setSec} />;
             if (p === "home") return <HomeHub initial={sec} onGo={setSec} />;
