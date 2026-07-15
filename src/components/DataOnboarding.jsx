@@ -321,3 +321,68 @@ function DataOnboardingSection({ onGo }) {
     </div>
   );
 }
+
+/* ── 데이터 금고(Vault) — 마이페이지: 내 데이터·블록체인 무결성·접근이력·동의현황·삭제/철회 ── */
+function DataVaultPanel({ onGo }) {
+  const nav = onGo || (() => {});
+  const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const [tick, setTick] = useState(0);
+  const [confirm, setConfirm] = useState(false);
+  if (!member) return null;
+  const token = (typeof anonToken === "function") ? anonToken(member) : "";
+  const v = (typeof vaultLoad === "function") ? vaultLoad(token) : null;
+  const chainOk = (typeof chainVerify === "function") ? chainVerify() : { ok: true, blocks: 0 };
+  const myBlocks = (typeof chainForToken === "function") ? chainForToken(token) : [];
+  const access = (typeof vaultAccessHistory === "function") ? vaultAccessHistory(token) : [];
+  const w = (n) => { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; };
+  const fmt = (ts) => { try { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; } catch (e) { return ""; } };
+  const BT = { checkup: "검진 저장", insurance: "보험 저장", consent: "동의 기록", erase: "데이터 파기", record: "기록" };
+  const purge = () => { if (typeof vaultPurge === "function") vaultPurge(member); setConfirm(false); setTick((t) => t + 1); if (typeof toast === "function") toast("데이터를 파기했습니다. 블록체인에 파기 이력이 기록됐어요."); };
+  void tick;
+
+  if (!v || (!(v.checkups || []).length && !(v.insurance || []).length)) return (
+    <div className="card dvempty">
+      <ShieldCheck size={30} color="#94A3B8" />
+      <b>아직 연결된 데이터가 없어요</b>
+      <p>건강검진·보험 데이터를 연결하면 여기 데이터 금고에서 안전하게 관리하고 언제든 열람·삭제할 수 있어요.</p>
+      <button className="obnext" onClick={() => nav("onboarding")}>데이터 연결하기 <ChevronRight size={15} /></button>
+    </div>
+  );
+
+  return (
+    <div className="dv">
+      <div className="dv-hd"><ShieldCheck size={18} color="#2563EB" /> 데이터 금고 <span className="dv-token">익명 토큰 {token}</span></div>
+      <div className="dv-integrity"><span className={"dv-ibadge" + (chainOk.ok ? " ok" : " bad")}>{chainOk.ok ? <Check size={13} /> : <AlertTriangle size={13} />} 블록체인 무결성 {chainOk.ok ? "정상" : "위변조 감지"}</span><span className="dv-blk">내 블록 {myBlocks.length} · 전체 {chainOk.blocks}</span></div>
+
+      <div className="dv-sec">내 데이터</div>
+      {(v.checkups || []).map((c, i) => (
+        <div className="dv-item" key={"c" + i}><span className="dv-ic" style={{ background: "#E8F1FE", color: "#2563EB" }}><FileText size={16} /></span>
+          <div className="dv-ib"><b>건강검진 {c.date} <span className={"dv-tag " + (c.completeness === "full" ? "full" : "part")}>{c.completeness === "full" ? "전체" : "부분"}</span></b><span>{c.channel === "nhis" ? "공단 연계" : c.channel === "photo" ? "사진 촬영" : "파일 업로드"} · {(c.items || []).length}항목 · FHIR/LOINC</span></div>
+          <code className="dv-hash">{(c.fhirHash || "").slice(0, 10)}…</code></div>
+      ))}
+      {(v.insurance || []).length > 0 && (
+        <div className="dv-item"><span className="dv-ic" style={{ background: "#E7F6EC", color: "#16A34A" }}><ShieldCheck size={16} /></span>
+          <div className="dv-ib"><b>보험 가입내역 <span className="dv-tag full">{v.insurance.length}건</span></b><span>{v.insurance.map((x) => x.product).slice(0, 2).join(" · ")}{v.insurance.length > 2 ? " 외" : ""}</span></div></div>
+      )}
+
+      <div className="dv-sec">접근 이력 <span>(내 데이터에 접근한 모든 조회)</span></div>
+      <div className="dv-log">{(access.slice(-6).reverse()).map((a, i) => <div className="dv-lrow" key={i}><span>{fmt(a.ts)}</span><b>{a.actor === "member" ? "본인" : a.actor}</b><span className="dv-la">{a.action}</span></div>)}{!access.length && <div className="dv-lrow"><span className="dv-la">기록 없음</span></div>}</div>
+
+      <div className="dv-sec">동의 현황</div>
+      <div className="dv-consents">{(typeof VAULT_CONSENTS !== "undefined" ? VAULT_CONSENTS : []).map((c) => { const on = v.consents && v.consents.state && v.consents.state[c.key]; return <span className={"dv-con" + (on ? " on" : "")} key={c.key}>{on ? <Check size={11} /> : <X size={11} />} {c.title.split("(")[0].replace(" 동의", "")}</span>; })}</div>
+
+      <div className="dv-danger">
+        <div><b>데이터 삭제·철회</b><p>내 건강·보험 데이터를 즉시 파기합니다. 파기 이력은 블록체인에 기록됩니다.</p></div>
+        <button className="dv-del" onClick={() => setConfirm(true)}><Trash2 size={14} /> 즉시 삭제</button>
+      </div>
+
+      {confirm && (
+        <div className="bkov" onClick={() => setConfirm(false)}><div className="bk" style={{ maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
+          <div className="bkh"><div className="bt">데이터 파기</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={() => setConfirm(false)}><X size={20} color="#8A97AE" /></button></div>
+          <div className="bkb"><p style={{ fontSize: 13, color: "#33405C", lineHeight: 1.7 }}>연결된 <b>건강검진·보험 데이터</b>를 즉시 파기합니다. 이 작업은 되돌릴 수 없으며, 파기 사실이 블록체인에 기록됩니다. 계속할까요?</p>
+            <div style={{ display: "flex", gap: 9, marginTop: 14 }}><button className="oblater" style={{ flex: 1 }} onClick={() => setConfirm(false)}>취소</button><button className="dv-del" style={{ flex: 1, justifyContent: "center" }} onClick={purge}><Trash2 size={14} /> 파기</button></div></div>
+        </div></div>
+      )}
+    </div>
+  );
+}

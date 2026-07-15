@@ -221,7 +221,7 @@ function MyPageSection({ onGo }) {
       toast(`상담 기록을 ${ext.toUpperCase()} 파일로 내보냈습니다.`);
     } catch (e) { toast("내보내기에 실패했습니다."); }
   };
-  const tabs = [["family", "우리가족 건강", Users], ["profile", "내 정보", CircleUserRound], ["consent", "동의관리", Lock], ["ailog", "상담 기록", MessageSquare], ["noti", "알림 설정", Bell]];
+  const tabs = [["family", "우리가족 건강", Users], ["vault", "데이터 금고", ShieldCheck], ["profile", "내 정보", CircleUserRound], ["consent", "동의관리", Lock], ["ailog", "상담 기록", MessageSquare], ["noti", "알림 설정", Bell]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="mypage" /></span>
@@ -253,6 +253,8 @@ function MyPageSection({ onGo }) {
       })()}
 
       <div className="chtabs">{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
+
+      {tab === "vault" && (typeof DataVaultPanel === "function" ? <DataVaultPanel onGo={go} /> : null)}
 
       {tab === "ailog" && (() => {
         const nowMs = Date.now();

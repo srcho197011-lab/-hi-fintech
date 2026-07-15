@@ -168,7 +168,8 @@ function vaultSaveInsurance(member, contracts, meta) {
 function vaultSaveConsents(member, consentState) {
   const token = anonToken(member);
   const cur = vaultLoad(token) || { token, checkups: [], insurance: [], consents: null };
-  cur.consents = { state: consentState, ts: Date.now() };
+  const prev = (cur.consents && cur.consents.state) || {};
+  cur.consents = { state: Object.assign({}, prev, consentState), ts: Date.now() };   // 단계별 동의 누적 병합
   try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur)); } catch (e) {}
   const consentHash = vaultHash(JSON.stringify(consentState) + Date.now());
   const block = chainAppend({ type: "consent", token, consent: consentState, note: "동의 이력 기록" });
