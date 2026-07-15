@@ -76,13 +76,44 @@ function parseCheckupText(raw) {
   return out;
 }
 
-/* 실제 파일 → 텍스트 추출 → 항목 파싱 → 확인용 items(빈 값은 직접 입력) */
+/* ── 클라우드 OCR(OCR.space) — 백엔드 없이 브라우저에서 직접 호출(CORS 허용). 한글·표 인식 우수 ──
+   ⚠️ 무료키 'helloworld'는 제한적(파일 1MB·공용 rate limit). 형 전용 무료키(ocr.space) 발급 시 아래 교체.
+   ⚠️ 개인정보: 실서비스는 국내 처리(네이버 CLOVA OCR) 또는 자체 OCR 권장 — OCR.space는 시연/테스트용. */
+/* 무료키 발급: https://ocr.space/ocrapi (개인 무료키는 파일 5MB·월 25,000건). localStorage 'hifin_ocr_key'로 교체 가능 */
+let OCRSPACE_KEY = (() => { try { return localStorage.getItem("hifin_ocr_key") || "helloworld"; } catch (e) { return "helloworld"; } })();
+function setOcrKey(k) { try { localStorage.setItem("hifin_ocr_key", k); OCRSPACE_KEY = k; } catch (e) {} }
+async function _compressImage(file, maxW, q) {
+  const img = await _fileToImage(file); const s = Math.min(1, (maxW || 1600) / (img.width || 1600));
+  const w = Math.round((img.width || 1600) * s), h = Math.round((img.height || 2000) * s);
+  const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h);
+  return await new Promise((res) => c.toBlob((b) => res(b || file), "image/jpeg", q || 0.72));
+}
+async function ocrSpaceImage(file, onProg) {
+  let blob = file; try { if (!file.size || file.size > 950000) blob = await _compressImage(file, 1600, 0.7); } catch (e) {}
+  if (onProg) onProg(0.25);
+  const fd = new FormData();
+  fd.append("file", blob, "checkup.jpg");
+  fd.append("language", "kor"); fd.append("OCREngine", "2"); fd.append("isTable", "true"); fd.append("scale", "true"); fd.append("detectOrientation", "true");
+  const res = await fetch("https://api.ocr.space/parse/image", { method: "POST", headers: { apikey: OCRSPACE_KEY }, body: fd });
+  const j = await res.json();
+  if (onProg) onProg(0.9);
+  if (j && j.IsErroredOnProcessing) throw new Error((j.ErrorMessage && j.ErrorMessage[0]) || "OCR.space error");
+  return (j && j.ParsedResults && j.ParsedResults[0] && j.ParsedResults[0].ParsedText) || "";
+}
+
+/* 실제 파일 → 텍스트 추출 → 항목 파싱 → 확인용 items(빈 값은 직접 입력)
+   이미지: 클라우드 OCR(OCR.space) 우선 → 실패 시 브라우저 Tesseract 폴백. PDF: PDF.js. */
 async function realOcrExtract(file, onProg) {
   const isPdf = /pdf/i.test(file.type || "") || /\.pdf$/i.test(file.name || "");
-  const text = isPdf ? await pdfFileToText(file, onProg) : await ocrImageFile(file, onProg);
+  let text = "", engine = "";
+  if (isPdf) { text = await pdfFileToText(file, onProg); engine = "pdf.js"; }
+  else {
+    try { text = await ocrSpaceImage(file, onProg); engine = "ocr.space"; } catch (e) { text = ""; }
+    if (text.replace(/\s/g, "").length < 8) { try { text = await ocrImageFile(file, onProg); engine = "tesseract"; } catch (e) {} }
+  }
   const parsed = parseCheckupText(text);
   const ORDER = (typeof CKUP_ORDER !== "undefined") ? CKUP_ORDER : Object.keys(parsed);
   const L = (typeof CKUP_LOINC !== "undefined") ? CKUP_LOINC : {};
   const items = ORDER.map((k) => { const has = parsed[k] != null && parsed[k] !== ""; const s = L[k] || {}; return { key: k, loinc: s.loinc, ko: s.ko, unit: s.unit, value: has ? parsed[k] : "", confidence: has ? 0.9 : 0, source: "ocr", low: !has }; });
-  return { items, matchedCount: Object.keys(parsed).length, rawText: text };
+  return { items, matchedCount: Object.keys(parsed).length, rawText: text, engine };
 }

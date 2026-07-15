@@ -69,7 +69,8 @@ function CheckupCollect({ member, onDone, onLater }) {
     setOcrBusy(true); setOcrProg(0);
     try {
       const r = await realOcrExtract(f, (p) => setOcrProg(Math.round((p || 0) * 100)));
-      const warn = r.matchedCount === 0 ? "자동 인식이 어려웠어요. 아래 원본 사진을 보며 값을 직접 입력해 주세요." : (r.matchedCount < 6 ? `${r.matchedCount}개 항목을 인식했어요. 원본을 보며 나머지를 확인·입력해 주세요.` : `${r.matchedCount}개 항목을 인식했어요. 원본과 대조해 확인해 주세요.`);
+      const eng = r.engine === "ocr.space" ? "클라우드 OCR" : r.engine === "tesseract" ? "브라우저 OCR" : r.engine === "pdf.js" ? "PDF 텍스트" : "OCR";
+      const warn = (r.matchedCount === 0 ? `자동 인식이 어려웠어요(${eng}). 아래 원본 사진을 보며 값을 직접 입력해 주세요.` : (r.matchedCount < 6 ? `${eng}로 ${r.matchedCount}개 항목을 인식했어요. 원본을 보며 나머지를 확인·입력해 주세요.` : `${eng}로 ${r.matchedCount}개 항목을 인식했어요. 원본과 대조해 확인해 주세요.`));
       setOcr({ fileName: f.name, completeness: "full", scenario: "real", warn, imgUrl, rawText: r.rawText || "" });
       setRows(r.items.map((x) => Object.assign({}, x)));
       setPhase("review");
