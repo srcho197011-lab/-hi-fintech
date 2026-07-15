@@ -3,7 +3,7 @@
 function WalletSection({ onGo }) {
   const [tab, setTab] = useState("earn");
   const go = onGo || (() => {});
-  const tabs = [["earn", "적립 현황", Coins], ["give", "나눔·기부", HeartHandshake], ["use", "사용처", Wallet], ["guide", "사용방법", Sparkles], ["sec", "AI·블록체인 보안", ShieldCheck]];
+  const tabs = [["earn", "적립 현황", Coins], ["give", "나눔·기부", HeartHandshake], ["use", "사용처", Wallet], ["chain", "온체인 원장", Blocks], ["guide", "사용방법", Sparkles], ["sec", "AI·블록체인 보안", ShieldCheck]];
   const manwon = (n) => n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원";
   const won = (n) => n.toLocaleString() + "원";
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -130,6 +130,8 @@ function WalletSection({ onGo }) {
         ))}
         <div className="chnote">※ 사용한도는 예시입니다. 적립 토큰은 <b>플랫폼이 환전하여 현금(카드·계좌)으로 결제·정산</b>되며(가상자산 아님), 토큰 우선 차감 후 잔액은 현금결제됩니다. 스테이블코인 등 가상자산 직접 결제는 <b>법률 제정 후 도입</b> 예정입니다.</div>
       </>)}
+
+      {tab === "chain" && (typeof HtkTokenLedger === "function" ? <HtkTokenLedger member={dm} base={total} /> : null)}
 
       {tab === "guide" && (<>
         <div className="airec"><div className="at"><Sparkles size={16} color="#7C3AED" /> 이렇게 쓰면 좋아요 · 사용 사례</div><div className="ap">건강활동으로 토큰을 적립하고, 보험료·병원·건강제품·식단 결제에 사용하는 대표 사례예요.</div></div>

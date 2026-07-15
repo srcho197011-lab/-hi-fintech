@@ -111,3 +111,46 @@ function BlockchainAnchorConsole({ cohort }) {
     </div>
   );
 }
+
+/* ══════════ HTK 온체인 토큰 원장 (전송·스왑) — 회원 지갑 ══════════ */
+function HtkTokenLedger({ member, base }) {
+  const [tick, setTick] = useState(0);
+  const [to, setTo] = useState("");
+  const [tAmt, setTAmt] = useState("");
+  const [sAmt, setSAmt] = useState("");
+  void tick;
+  if (!member) return <div className="chnote">로그인 후 이용 가능한 온체인 토큰 지갑입니다.</div>;
+  const addr = (typeof htkTokenAddr === "function") ? htkTokenAddr(member) : "0x…";
+  const delta = (typeof htkDelta === "function") ? htkDelta(member) : 0;
+  const bal = Math.max(0, (base || 0) + delta);
+  const led = (typeof htkLedger === "function") ? htkLedger(member) : [];
+  const H = (h, n) => (h || "").slice(0, n || 12) + "…";
+  const doTransfer = () => { const a = parseInt(tAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("전송할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkTransfer === "function") htkTransfer(member, to || "0x수신주소", a); setTAmt(""); setTo(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`온체인 전송 완료 · ${a.toLocaleString()} HTK`); };
+  const doSwap = () => { const a = parseInt(sAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("스왑할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkSwap === "function") htkSwap(member, "HTK", "보험·치료비 크레딧", a); setSAmt(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`스왑 완료 · ${a.toLocaleString()} HTK → 보험·치료비 크레딧`); };
+  return (
+    <div className="htk">
+      <div className="htk-card">
+        <div className="htk-top"><span className="htk-net"><Blocks size={13} /> HI-Chain · HTK</span><span className="htk-addr" title="온체인 지갑 주소">{addr}</span></div>
+        <div className="htk-bal">{bal.toLocaleString()} <small>HTK</small></div>
+        <div className="htk-sub">≈ {(bal * ((typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10)).toLocaleString()}원 상당 · 온체인 토큰 잔액{delta ? ` (거래 반영 ${delta > 0 ? "+" : ""}${delta.toLocaleString()})` : ""}</div>
+      </div>
+      <div className="htk-actions">
+        <div className="htk-act">
+          <div className="htk-at"><Send size={14} color="#2563EB" /> 토큰 전송</div>
+          <input className="htk-in" value={to} onChange={(e) => setTo(e.target.value)} placeholder="수신 주소 (0x…)" />
+          <div className="htk-row"><input className="htk-in" value={tAmt} onChange={(e) => setTAmt(e.target.value.replace(/[^0-9]/g, ""))} placeholder="수량(HTK)" inputMode="numeric" /><button className="htk-btn" onClick={doTransfer}>전송</button></div>
+        </div>
+        <div className="htk-act">
+          <div className="htk-at"><RefreshCw size={14} color="#0891B2" /> 스왑 (HTK → 보험·치료비 크레딧)</div>
+          <div className="htk-row"><input className="htk-in" value={sAmt} onChange={(e) => setSAmt(e.target.value.replace(/[^0-9]/g, ""))} placeholder="수량(HTK)" inputMode="numeric" /><button className="htk-btn cyan" onClick={doSwap}>스왑</button></div>
+          <div className="htk-hint">1 HTK → 1 크레딧 (보험료·의료비 결제 전용)</div>
+        </div>
+      </div>
+      <div className="htk-lhd">온체인 트랜잭션 원장 <span>({led.length}건 · 블록체인 기록)</span></div>
+      <div className="htk-ledger">{led.slice().reverse().map((b) => (
+        <div className="htk-tx" key={b.idx}><span className="htk-txk">{/스왑/.test(b.note) ? "스왑" : "전송"}</span><span className="htk-txn">{b.note}</span><code className="htk-txh">{H(b.hash, 10)}</code></div>
+      ))}{!led.length && <div className="htk-empty">아직 온체인 거래가 없어요. 전송·스왑하면 블록체인에 기록됩니다.</div>}</div>
+      <div className="chnote" style={{ marginTop: 10 }}>※ 시연용 온체인 원장(프라이빗 체인 시뮬). HTK는 건강활동·소비 보상 유틸리티 토큰으로 전송·스왑·정산이 블록체인에 기록되며, 실제 발행·상장·환금성은 관련 법령(가상자산·전자금융 등) 검토와 정식 절차를 전제로 합니다.</div>
+    </div>
+  );
+}

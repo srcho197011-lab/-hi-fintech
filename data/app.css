@@ -4323,3 +4323,27 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .dvcb-n { flex: 1; min-width: 0; font-size: 11.5px; color: #33405C; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dvcb-h { font-size: 10px; color: #0EA5E9; font-family: ui-monospace, monospace; flex-shrink: 0; }
 .dvchain-note { font-size: 10.5px; color: #94A3B8; line-height: 1.5; margin-top: 8px; } .dvchain-note b { color: #64748B; }
+
+/* ══════ HTK 온체인 토큰 원장 ══════ */
+.htk-card { background: linear-gradient(120deg, #0E7490, #0891B2 55%, #06B6D4); color: #E0F7FF; border-radius: 15px; padding: 16px 18px; box-shadow: 0 16px 34px -20px rgba(8,145,178,.7); }
+.htk-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.htk-net { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 800; background: rgba(255,255,255,.18); padding: 3px 10px; border-radius: 999px; }
+.htk-addr { font-family: ui-monospace, monospace; font-size: 11px; color: #BAF0FF; opacity: .9; }
+.htk-bal { font-size: 30px; font-weight: 800; margin-top: 10px; } .htk-bal small { font-size: 14px; font-weight: 700; opacity: .85; }
+.htk-sub { font-size: 12px; opacity: .92; margin-top: 3px; }
+.htk-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 13px; }
+.htk-act { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: #fff; }
+.htk-at { font-size: 12.5px; font-weight: 800; color: #1C2A44; display: flex; align-items: center; gap: 5px; margin-bottom: 9px; }
+.htk-in { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12.5px; font-family: inherit; margin-bottom: 7px; }
+.htk-row { display: flex; gap: 7px; } .htk-row .htk-in { margin-bottom: 0; }
+.htk-btn { border: none; background: #2563EB; color: #fff; font-weight: 800; font-size: 12.5px; padding: 8px 15px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+.htk-btn.cyan { background: #0891B2; }
+.htk-hint { font-size: 10.5px; color: var(--muted); margin-top: 7px; }
+.htk-lhd { font-size: 12.5px; font-weight: 800; color: #1C2A44; margin: 16px 0 8px; } .htk-lhd span { font-size: 11px; font-weight: 600; color: var(--muted); }
+.htk-ledger { display: flex; flex-direction: column; gap: 5px; }
+.htk-tx { display: flex; align-items: center; gap: 9px; padding: 8px 11px; border: 1px solid var(--border); border-radius: 9px; background: #FCFEFF; }
+.htk-txk { font-size: 10px; font-weight: 800; color: #0891B2; background: #E0F2FE; padding: 3px 8px; border-radius: 999px; flex-shrink: 0; }
+.htk-txn { flex: 1; min-width: 0; font-size: 11.5px; color: #33405C; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.htk-txh { font-size: 10px; color: #0891B2; font-family: ui-monospace, monospace; flex-shrink: 0; }
+.htk-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 16px; border: 1px dashed var(--border); border-radius: 10px; }
+@media (max-width: 640px) { .htk-actions { grid-template-columns: 1fr; } }
