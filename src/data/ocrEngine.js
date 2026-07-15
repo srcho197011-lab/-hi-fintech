@@ -72,7 +72,13 @@ function parseCheckupText(raw) {
     ["egfr", /(?:eGFR|사구체여과율|신사구체)[^0-9]{0,12}(\d{2,3})/i],
     ["hb", /(?:혈색소|헤모글로빈|\bHb\b|hemoglobin)[^0-9]{0,12}(\d{1,2}\.\d)/i],
   ];
-  P.forEach(([k, re]) => { if (out[k] != null) return; const mm = text.match(re); if (mm && mm[1] != null) { const v = parseFloat(mm[1]); if (!isNaN(v)) out[k] = v; } });
+  P.forEach(([k, re]) => {
+    if (out[k] != null) return; const mm = text.match(re); if (!mm || mm[1] == null) return;
+    // 기준치 오인 방지: 값 바로 뒤가 '미만/이하/이상/초과'면 결과값이 아니라 판정 기준(예: '비해당 200미만')
+    const after = text.slice(mm.index + mm[0].length);
+    if (/^\s*(?:미만|이하|이상|초과|이내)/.test(after)) return;
+    const v = parseFloat(mm[1]); if (!isNaN(v)) out[k] = v;
+  });
   // 상식 범위 보정: 체중에 신장값(>160)이 들어간 경우 신장으로 이동
   if (out.weight != null && out.weight > 160) { if (out.height == null) out.height = out.weight; delete out.weight; }
   if (out.height != null && (out.height < 100 || out.height > 220)) delete out.height;
