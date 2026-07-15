@@ -291,7 +291,7 @@ function _insTreat(text) { const t = String(text); if (/도수|물리치료/.tes
 /* 회원 컨텍스트(Mx) × 질문 → 융합 함수 호출 → 카드 응답. null이면 일반 약관상담으로 폴백 */
 function _insFusionRoute(text, Mx, nm) {
   if (!Mx) return null;
-  const HAND = "전문 설계사 연결", cite = "※ 예시 기준 · 실제 보장·보험료·가입가능 여부는 약관·인수심사로 확정";
+  const HAND = "맞춤 헬스케어 보험 상담", cite = "※ 예시 기준 · 실제 보장·보험료·가입가능 여부는 약관·인수심사로 확정";
   const who = nm ? nm + "님" : "회원님";
   // 1) 내 실손 세대/정보
   if (/몇\s*세대|내\s*실손|실손\s*(정보|뭐|어떤|가입|은|이|현황)|내\s*보험\s*(뭐|어떤|정보|현황)/.test(text)) {
@@ -364,7 +364,8 @@ function AIPlannerChat({ onSimple, initialAsk }) {
   useEffect(() => { endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
   const send = (textArg) => {
     const text = (textArg == null ? input : textArg).trim(); if (!text) return;
-    if (text === "보험상담 신청" || text === "전문 설계사 연결" || text === "간편 가입 상담") { if (typeof openConsult === "function") openConsult(PROD.name + " — 전문 설계사 상담(GA 보험중개)"); return; }
+    if (text === "맞춤 헬스케어 보험 상담") { if (onSimple) onSimple(); return; }   // 맞춤 헬스케어 보험(내 몸 맞춤 간편보험 종합 상담) 섹션으로 연결
+    if (text === "보험상담 신청" || text === "간편 가입 상담") { if (typeof openConsult === "function") openConsult(PROD.name + " — 맞춤 헬스케어 보험 상담"); return; }
     setInput(""); setQuicks([]);
     setMsgs((m) => [...m, { who: "me", bubbles: [{ kind: "text", text }] }]);
     setTyping(true);
