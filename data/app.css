@@ -4266,3 +4266,32 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 
 /* 초개인화 데이터 출처 라벨 */
 .dbsrc { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; color: #15803D; background: #E7F6EC; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+
+/* ══════ 블록체인 데이터 금고 (Merkle 앵커링 콘솔) ══════ */
+.bcv { color: #0F172A; }
+.bcv-hero { background: linear-gradient(120deg, #0F172A, #1E293B); color: #E2E8F0; border-radius: 14px; padding: 16px 18px; }
+.bcv-hl { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 800; color: #fff; } .bcv-hl span { font-size: 11px; font-weight: 700; color: #38BDF8; background: rgba(56,189,248,.15); padding: 2px 8px; border-radius: 999px; }
+.bcv-hero p { font-size: 12px; line-height: 1.65; color: #CBD5E1; margin: 9px 0 0; } .bcv-hero b { color: #fff; } .bcv-note { color: #7DD3FC; font-weight: 600; }
+.bcv-run { display: flex; gap: 9px; margin: 14px 0; flex-wrap: wrap; }
+.bcv-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+.bcv-stat { border: 1px solid var(--border); border-radius: 11px; padding: 12px; text-align: center; background: #F8FAFC; }
+.bcv-stat b { font-size: 18px; font-weight: 800; color: #0EA5E9; display: block; } .bcv-stat span { font-size: 10.5px; color: var(--muted); }
+.bcv-super { margin-top: 11px; background: #0F172A; border-radius: 11px; padding: 12px 14px; }
+.bcv-super span { display: block; font-size: 10.5px; font-weight: 800; color: #38BDF8; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 5px; }
+.bcv-super code { font-family: ui-monospace, monospace; font-size: 11.5px; color: #7DD3FC; word-break: break-all; }
+.bcv-commit { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: #15803D; background: #E7F6EC; padding: 6px 11px; border-radius: 8px; } .bcv-commit code { font-family: ui-monospace, monospace; color: #15803D; }
+.bcv-sec { font-size: 12.5px; font-weight: 800; color: #1C2A44; margin: 16px 0 8px; } .bcv-sec span { font-size: 11px; font-weight: 600; color: var(--muted); }
+.bcv-batches { display: flex; flex-direction: column; gap: 5px; max-height: 220px; overflow-y: auto; }
+.bcv-batch { display: flex; align-items: center; gap: 10px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 9px; font-size: 12px; }
+.bcv-bi { font-weight: 800; color: #0EA5E9; } .bcv-bc { color: var(--muted); flex: 1; } .bcv-batch code { font-family: ui-monospace, monospace; font-size: 10.5px; color: #64748B; }
+.bcv-proofrun { display: flex; gap: 8px; flex-wrap: wrap; }
+.bcv-proofrun input { flex: 1; min-width: 180px; border: 1px solid var(--border); border-radius: 9px; padding: 9px 12px; font-size: 13px; font-family: inherit; }
+.bcv-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); background: #fff; color: #2563EB; font-weight: 700; font-size: 12.5px; padding: 8px 13px; border-radius: 9px; cursor: pointer; }
+.bcv-btn.danger { color: #B45309; }
+.bcv-proof, .bcv-tamper { margin-top: 11px; border: 1px solid var(--border); border-radius: 11px; padding: 12px; background: #F8FAFC; }
+.bcv-prow { display: flex; gap: 10px; align-items: baseline; font-size: 12px; padding: 4px 0; flex-wrap: wrap; }
+.bcv-prow > span:first-child { color: var(--muted); min-width: 68px; } .bcv-prow b { color: #1C2A44; } .bcv-prow code { font-family: ui-monospace, monospace; font-size: 11px; color: #0EA5E9; word-break: break-all; }
+.bcv-ok { color: #15803D; } .bcv-verdict { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12.5px; font-weight: 700; padding: 8px 11px; border-radius: 9px; line-height: 1.45; }
+.bcv-verdict.ok { color: #15803D; background: #E7F6EC; } .bcv-verdict.bad { color: #B91C1C; background: #FDECEC; }
+.bcv-idle { text-align: center; padding: 30px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; } .bcv-idle p { font-size: 12.5px; color: var(--muted); max-width: 420px; line-height: 1.6; }
+@media (max-width: 640px) { .bcv-stats { grid-template-columns: 1fr 1fr; } }

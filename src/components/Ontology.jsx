@@ -730,7 +730,7 @@ function OntologySection({ onGo }) {
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTop("health"); setSub("explorer"); };
   const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["supply", "공급망 온톨로지", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["whitepaper", "백서", BookOpen, "#6366F1"]];
-  const healthTabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["kb", "AI KB 라운지", Database], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
+  const healthTabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["chain", "블록체인 금고", Blocks], ["kb", "AI KB 라운지", Database], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
   if (!agg) return null;
   return (
     <div style={{ marginTop: 16 }}>
@@ -765,6 +765,7 @@ function OntologySection({ onGo }) {
         {sub === "intel" && <ConsultIntel onGo={onGo} />}
         {sub === "live" && <OntoLiveSim cohort={cohort} agg={agg} onGo={onGo} />}
         {sub === "explorer" && <OntExplorer cohort={cohort} onGo={onGo} seg={seg} />}
+        {sub === "chain" && typeof BlockchainAnchorConsole === "function" && <BlockchainAnchorConsole cohort={cohort} />}
         {sub === "kb" && <AIKBLounge onGo={onGo} />}
         {sub === "graph" && <div className="ontpanel"><div className="ontph"><Network size={15} color="#22D3EE" /> 온톨로지 스키마 (객체 · 관계)</div><OntGraph agg={agg} /></div>}
         {sub === "actions" && <OntActions agg={agg} onSeg={goSeg} />}
