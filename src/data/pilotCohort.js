@@ -189,13 +189,15 @@ function _genMember(idx, f) {
   const heldN = Math.round(coverages.length * (0.55 + rng() * 0.45));
   const gap = coverages.slice(heldN);
   const needy = (income === "저" && (cost > 2500000 || cancer || risk >= 4) && rng() < 0.72);
-  return {
+  const _m = {
     id: "P" + String(idx + 1).padStart(5, "0"), name, sex, age, sido, hid, rel, deptKey, deptLabel: _deptLabel(deptKey),
     diseases, dzCount: diseases.length, marks, worst, abnormalCount: abn, isChild, childHealth, checkupType,
     risk, riskLabel: RISK_LABELS[risk], riskColor: RISK_COLORS[risk],
     bioAge, bioDelta, estCost: cost, costBreakdown, coverages, gap, hasGap: gap.length > 0,
     income, needy, smoker, drinker, exercise, cancer,
   };
+  if (typeof memberInsurance === "function") _m._ins = memberInsurance(_m); // 실손 세대·중대질환 진단·진단비
+  return _m;
 }
 
 // 가구(가족) 단위로 target명 생성

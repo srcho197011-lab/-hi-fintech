@@ -33,6 +33,7 @@ src/data/demoMembers.js
 src/data/healthOntology.js
 src/data/healthKnowledge.js
 src/data/telemed.js
+src/data/insuranceStats.js
 src/data/pilotCohort.js
 src/data/supplyData.js
 src/data/foundationData.js

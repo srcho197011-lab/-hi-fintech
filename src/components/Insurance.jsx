@@ -598,6 +598,62 @@ function InsurancePlanCompare() {
     </>
   );
 }
+/* ── 실손보험·중대질환 통계 패널 (10만+조성래 = 100,001명, 실통계 기반) ── */
+function SilsonStatsPanel() {
+  const _w = (n) => { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000).toFixed(n % 100000000 ? 1 : 0) + "억" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; };
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const myIns = dm && typeof memberInsurance === "function" ? memberInsurance(dm) : (typeof selfInsurance === "function" ? selfInsurance() : null);
+  const myName = dm ? dm.name : "조성래";
+  const agg = (typeof insuranceAgg === "function") ? (() => { try { return insuranceAgg(); } catch (e) { return null; } })() : null;
+  const SPEC = (typeof SILSON_SPEC !== "undefined") ? SILSON_SPEC : {};
+  const CRIT = (typeof CRITICAL_DZ !== "undefined") ? CRITICAL_DZ : [];
+  const GEN_ORDER = ["1세대", "2세대", "3세대", "4세대", "5세대", "노인실손", "어린이 실손", "미가입"];
+  const GEN_COL = { "1세대": "#1D4ED8", "2세대": "#2563EB", "3세대": "#0891B2", "4세대": "#16A34A", "5세대": "#059669", "노인실손": "#D97706", "어린이 실손": "#DB2777", "미가입": "#94A3B8" };
+  const n = agg ? agg.n : 100001;
+  return (
+    <div className="silwrap">
+      <div className="bklbl2"><ShieldCheck size={16} color="#2563EB" /> 실손보험·중대질환 데이터 <span className="siln">회원 {n.toLocaleString()}명(10만 + 조성래) · 실통계 기반</span></div>
+
+      {myIns && (<div className="silme">
+        <div className="silme-h"><b>{myName}</b>님 보장 현황 <span className={"silbadge " + (myIns.silson.enrolled ? "on" : "off")}>{myIns.silson.gen === "미가입" ? "실손 미가입" : "실손 " + myIns.silson.gen}</span></div>
+        {myIns.silson.enrolled ? (<div className="silme-grid">
+          <div><span>급여 자기부담</span><b>{myIns.silson.coGen}</b></div>
+          <div><span>비급여 자기부담</span><b>{myIns.silson.coNon}</b></div>
+          <div><span>통원 한도</span><b>{_w(myIns.silson.outLimit)}/회</b></div>
+          <div><span>입원 한도</span><b>{_w(myIns.silson.inLimit)}</b></div>
+          <div><span>월 보험료(추정)</span><b>{_w(myIns.silson.monthly)}</b></div>
+          <div><span>중대질환 진단비 특약</span><b>{myIns.riders.length ? _w(myIns.riderTotal) + " (" + myIns.riders.length + "종)" : "없음"}</b></div>
+        </div>) : <div className="silme-none"><AlertTriangle size={13} /> 실손 미가입 — 검진 후 치료비 보장 공백. 무료 검진보험·적립 지원으로 보완 가능</div>}
+        {myIns.dx.length > 0 && <div className="sildx">중대질환 진단 이력: {myIns.dx.map((d) => <span key={d.cat + d.sub}>{d.cat}·{d.sub} <b>{_w(d.benefit)}</b></span>)}</div>}
+      </div>)}
+
+      <div className="silsub">세대별 보장 상세 (실손 1~5세대 + 노인·어린이)</div>
+      <div className="silt-wrap"><table className="silt">
+        <thead><tr><th>세대</th><th>판매기간</th><th>급여 자부담</th><th>비급여 자부담</th><th>통원 한도</th><th>입원 한도</th><th>월보험료(기준)</th></tr></thead>
+        <tbody>{["1세대", "2세대", "3세대", "4세대", "5세대", "노인실손", "어린이 실손"].map((g) => { const s = SPEC[g] || {}; return (
+          <tr key={g}><td style={{ color: GEN_COL[g], fontWeight: 800 }}>{g}</td><td>{s.period}</td><td>{s.coGen}</td><td>{s.coNon}</td><td>{_w(s.outLimit)}</td><td>{_w(s.inLimit)}{s.inNote ? " *" : ""}</td><td>{_w(s.monthlyBase)}~</td></tr>); })}
+        </tbody>
+      </table></div>
+      <div className="silnote">* 5세대: 경증 비급여 한도 1천만 축소 · 자기부담 50%. 1세대는 자기부담 최소(통원 5천원 공제)이나 고령 보험료 급등.</div>
+
+      {agg && (<>
+        <div className="silsub">모집단 {n.toLocaleString()}명 실손 세대 분포 <span className="silmini">가입률 {(agg.enrollRate * 100).toFixed(1)}% · 평균 월보험료 {_w(agg.avgPremium)}</span></div>
+        <div className="sildist">{GEN_ORDER.map((g) => { const c = agg.gens[g] || 0; const pct = c / n * 100; return (
+          <div className="sildrow" key={g}><span className="sdlab" style={{ color: GEN_COL[g] }}>{g}</span><div className="sdbar"><i style={{ width: Math.max(0.5, pct) + "%", background: GEN_COL[g] }} /></div><span className="sdval">{pct.toFixed(1)}% · {(c / 10000).toFixed(1)}만</span></div>); })}</div>
+
+        <div className="silsub">중대질환 10대 구분 진단 분포 <span className="silmini">모집단 진단 이력 · 진단자 {(agg.dxN / 10000).toFixed(1)}만명({(agg.dxRate * 100).toFixed(1)}%)</span></div>
+        <div className="silt-wrap"><table className="silt">
+          <thead><tr><th>구분</th><th>주요 질환</th><th>대표 진단비</th><th>진단자(모집단)</th><th>진단율</th></tr></thead>
+          <tbody>{CRIT.map((c) => { const cc = (agg.crit[c.cat] || { dx: 0 }); return (
+            <tr key={c.key}><td style={{ fontWeight: 800, color: "#1D4ED8" }}>{c.cat}</td><td>{c.subs.join(" · ")}</td><td>{_w(c.benefit)}</td><td>{cc.dx.toLocaleString()}명</td><td>{(cc.dx / n * 100).toFixed(2)}%</td></tr>); })}
+          </tbody>
+        </table></div>
+        <div className="silnote">중대질환 진단비는 상품·특약별 차이가 크며(암=일반·소액·고액 3단계, 뇌·심장은 광범위), 위 수치는 실통계 기반 시연용 추정 분포입니다.</div>
+      </>)}
+    </div>
+  );
+}
+
 function InsurancePolicySection() {
   const report = useReport();
   const FLOW = [["heartpulse", "건강활동", "검진·쇼핑·영양·운동"], ["coin", "건강자산 적립", "활동별 HTK 적립"], ["wallet", "건강금융지갑", "자동 반영·관리"], ["badge", "실손보험 지원", "보험료·의료비 재원"], ["heart", "의료비 부담 완화", "치료비 걱정 ↓"]];
@@ -610,6 +666,7 @@ function InsurancePolicySection() {
         <div className="sub">건강생활이 건강자산이 되고, 건강자산이 의료비 부담을 줄이는 지속가능한 포용적 실손보험 지원 모델</div>
         <div className="desc">HI-Fin Tech는 회원의 일상 건강활동(건강검진·건강쇼핑·정밀영양·건강관리)에서 발생하는 건강자산을 건강금융지갑에 적립해 실손보험료·의료비 부담 완화 재원으로 활용합니다. 특히 <b>고령층(노인)·유병자·보험 사각지대 계층</b>처럼 민간 실손보험에서 배제되기 쉬운 분들을 사회공헌 재원과 연계해 함께 보장하는 <b>포용적 건강보험 생태계</b>를 지향합니다.</div>
       </div>
+      <SilsonStatsPanel />
       <div className="bklbl2"><HeartHandshake size={16} color="#2563EB" /> 보험 사각지대 없는 포용적 실손 지원</div>
       <div className="ipsinclsub">연령·기왕증·경제적 사유로 민간 실손보험 가입이 어려운 계층을, 건강활동 적립금과 사회공헌·ESG 재원으로 함께 보장합니다.</div>
       <div className="ipsincl">
