@@ -4347,3 +4347,5 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .htk-txh { font-size: 10px; color: #0891B2; font-family: ui-monospace, monospace; flex-shrink: 0; }
 .htk-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 16px; border: 1px dashed var(--border); border-radius: 10px; }
 @media (max-width: 640px) { .htk-actions { grid-template-columns: 1fr; } }
+
+.dvempty-btns { display: flex; gap: 9px; flex-wrap: wrap; justify-content: center; }

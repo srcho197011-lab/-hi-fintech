@@ -192,12 +192,10 @@ function onboardStatus(member) {
   return { step1, step2, done: step1 && step2, partial: step1 && v.checkups.every((c) => c.completeness === "partial") };
 }
 /* 시연 기준 인물(조성래) 데이터 금고 자동 시드 — 투자자·개발자 데모용 기본 데이터 채움(멱등) */
-let _selfSeeded = false;
 function seedSelfVault(member) {
   if (!member) return false;
   const token = anonToken(member); const v = vaultLoad(token);
   if (v && ((v.checkups || []).length || (v.insurance || []).length)) return false;   // 이미 데이터 있음
-  if (_selfSeeded) return false; _selfSeeded = true;
   try {
     const vals = synthCheckupValues(member);
     const items = CKUP_ORDER.map((k) => ({ key: k, value: vals[k], source: "upload", confidence: 0.9 + (_insRng ? 0 : 0) }));

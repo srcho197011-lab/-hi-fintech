@@ -328,8 +328,7 @@ function DataVaultPanel({ onGo }) {
   const member = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const [tick, setTick] = useState(0);
   const [confirm, setConfirm] = useState(false);
-  // 시연 기준 인물(조성래)은 데모용 기본 데이터를 자동 시드(멱등)
-  useEffect(() => { if (member && (member.isSelf || member.name === "조성래") && typeof seedSelfVault === "function") { try { if (seedSelfVault(member)) setTick((t) => t + 1); } catch (e) {} } }, []);
+  const fillDemo = () => { if (typeof seedSelfVault === "function") { try { seedSelfVault(member); } catch (e) {} } setTick((t) => t + 1); if (typeof toast === "function") toast("데모 데이터를 채웠어요(검진·보험·거래·블록체인)."); };
   if (!member) return (
     <div className="card dvempty"><ShieldCheck size={30} color="#94A3B8" /><b>로그인이 필요해요</b><p>회원으로 로그인하면 내 건강·보험 데이터를 안전하게 보관·관리할 수 있어요.</p></div>
   );
@@ -349,8 +348,11 @@ function DataVaultPanel({ onGo }) {
     <div className="card dvempty">
       <ShieldCheck size={30} color="#94A3B8" />
       <b>아직 연결된 데이터가 없어요</b>
-      <p>건강검진·보험 데이터를 연결하면 여기 데이터 금고에서 안전하게 관리하고 언제든 열람·삭제할 수 있어요.</p>
-      <button className="obnext" onClick={() => nav("onboarding")}>데이터 연결하기 <ChevronRight size={15} /></button>
+      <p>건강검진·보험 데이터를 직접 업로드·연결하면 여기 데이터 금고에서 FHIR 코드화·블록체인으로 안전하게 관리하고 언제든 열람·삭제할 수 있어요.</p>
+      <div className="dvempty-btns">
+        <button className="obnext" onClick={() => nav("onboarding")}>데이터 연결하기 (실제 업로드) <ChevronRight size={15} /></button>
+        <button className="oblater" onClick={fillDemo}>데모 데이터 채우기</button>
+      </div>
     </div>
   );
 

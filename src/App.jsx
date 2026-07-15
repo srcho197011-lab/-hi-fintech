@@ -45,7 +45,8 @@ export default function App() {
   }, [role]);
   const guestMatch = (authU && authU.match) || null;
   // 데이터 연결 온보딩 진행상태(정회원·미완료 시 홈 상단 유도 카드)
-  const onbo = (role !== "GUEST" && demoU && typeof onboardStatus === "function") ? (() => { try { return onboardStatus(demoU); } catch (e) { return { done: true }; } })() : { done: true };
+  const onboMember = demoU || (role !== "GUEST" && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const onbo = (role !== "GUEST" && onboMember && typeof onboardStatus === "function") ? (() => { try { return onboardStatus(onboMember); } catch (e) { return { done: true }; } })() : { done: true };
   // 접근성: 클릭 가능한 div(네비·탭·칩)를 키보드로도 조작 가능하게 (focus + Enter/Space)
   useEffect(() => {
     const SEL = ".iitem, .snav, .chtab, .aitab, .reslink, .fsel, .calc, .slot, .sresult, .adchip, .addept, .actbl tr, .aidcats button, .aidcatlist button, .lf-r button, .aidfilters button";
