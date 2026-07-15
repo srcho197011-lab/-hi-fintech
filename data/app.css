@@ -4363,3 +4363,11 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .obraw summary { padding: 9px 12px; font-size: 12px; font-weight: 700; color: #2563EB; cursor: pointer; }
 .obraw pre { margin: 0; padding: 0 12px 12px; font-size: 11px; line-height: 1.5; color: #475569; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
 @media (max-width: 640px) { .obreview-img { max-height: 320px; } }
+
+/* OCR 키 설정 */
+.obkeyset { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; background: #F8FAFC; }
+.obkeyset summary { padding: 10px 12px; font-size: 12.5px; font-weight: 700; color: #2563EB; cursor: pointer; }
+.obkeyset p { margin: 0 12px 9px; font-size: 11px; color: var(--muted); line-height: 1.6; } .obkeyset p b { color: #1C2A44; }
+.obkeyrow { display: flex; gap: 7px; padding: 0 12px 12px; }
+.obkeyrow input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; font-size: 12.5px; font-family: inherit; }
+.obkeyrow button { border: none; background: #2563EB; color: #fff; font-weight: 700; font-size: 12.5px; padding: 9px 16px; border-radius: 8px; cursor: pointer; }

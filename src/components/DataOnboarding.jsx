@@ -50,6 +50,8 @@ function CheckupCollect({ member, onDone, onLater }) {
   const [nhisAuthed, setNhisAuthed] = useState(false);
   const [ocrBusy, setOcrBusy] = useState(false);
   const [ocrProg, setOcrProg] = useState(0);
+  const [keyInput, setKeyInput] = useState(() => { try { const k = localStorage.getItem("hifin_ocr_key"); return k && k !== "helloworld" ? k : ""; } catch (e) { return ""; } });
+  const saveKey = () => { const k = keyInput.trim(); if (typeof setOcrKey === "function") setOcrKey(k || "helloworld"); if (typeof toast === "function") toast(k ? "OCR API 키를 저장했어요. 이제 더 안정적으로 인식돼요." : "기본 키로 돌아갔어요."); };
   const reqOk = consent.health && consent.ai;
   const w = (n) => { const s = (typeof CKUP_LOINC !== "undefined") ? CKUP_LOINC : {}; return n; };
 
@@ -139,6 +141,11 @@ function CheckupCollect({ member, onDone, onLater }) {
           <label className="obdrop"><input type="file" accept="image/*,application/pdf" onChange={onFile} hidden /><Paperclip size={26} color="#2563EB" /><b>검진결과 파일 선택 (실제 인식)</b><span>PDF · JPG · PNG — 업로드한 파일에서 값을 추출합니다</span></label>
         )}
         <div className="obdemo">인식이 어려우면 예시로 흐름 체험: <button onClick={() => runOcr("nhis-pdf", "예시_국가검진.pdf")}>국가검진(예시)</button><button onClick={() => runOcr("book-photo", "예시_종합검진.jpg")}>종합검진(예시)</button></div>
+        <details className="obkeyset">
+          <summary>⚙️ 인식 정확도 높이기 — 무료 OCR API 키 설정</summary>
+          <p>ocr.space에서 <b>무료 키</b>를 받아 넣으면(월 25,000건·5MB) 공용키 제한 없이 더 안정적으로 인식돼요. 발급: ocr.space/ocrapi/freekey → 이메일 입력 → SUBSCRIBE → 메일로 키 수신.</p>
+          <div className="obkeyrow"><input value={keyInput} onChange={(e) => setKeyInput(e.target.value)} placeholder="OCR.space API 키 붙여넣기" /><button onClick={saveKey}>저장</button></div>
+        </details>
         <div className="obfoot"><button className="oblater" onClick={() => setPhase("channel")}>이전</button></div>
       </>)}
       {channel === "photo" && (<>
