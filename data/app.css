@@ -4349,3 +4349,9 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 @media (max-width: 640px) { .htk-actions { grid-template-columns: 1fr; } }
 
 .dvempty-btns { display: flex; gap: 9px; flex-wrap: wrap; justify-content: center; }
+
+/* 실제 OCR 진행 표시 */
+.obocr { display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; border: 2px dashed #BFD0FF; border-radius: 13px; padding: 24px; background: #F7FAFF; }
+.obocr b { font-size: 13.5px; color: #1C2A44; } .obocr span:last-child { font-size: 11px; color: var(--muted); line-height: 1.5; max-width: 320px; }
+.obocr-spin { width: 26px; height: 26px; border: 3px solid #DCE6F7; border-top-color: #2563EB; border-radius: 50%; animation: obspin .8s linear infinite; }
+@keyframes obspin { to { transform: rotate(360deg); } }

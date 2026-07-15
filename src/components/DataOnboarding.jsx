@@ -48,6 +48,8 @@ function CheckupCollect({ member, onDone, onLater }) {
   const [rows, setRows] = useState([]);
   const [saved, setSaved] = useState(null);
   const [nhisAuthed, setNhisAuthed] = useState(false);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrProg, setOcrProg] = useState(0);
   const reqOk = consent.health && consent.ai;
   const w = (n) => { const s = (typeof CKUP_LOINC !== "undefined") ? CKUP_LOINC : {}; return n; };
 
@@ -59,10 +61,24 @@ function CheckupCollect({ member, onDone, onLater }) {
     const r = nhisFetch(member);
     setOcr(Object.assign({ channel: "nhis" }, r)); setRows(r.items.map((x) => Object.assign({}, x))); setPhase("review");
   };
-  const onFile = (e) => {
-    const f = e.target.files && e.target.files[0]; const name = f ? f.name : "검진결과.pdf";
-    const scen = f && /pdf/i.test(f.type || f.name) ? "nhis-pdf" : "book-photo";
-    runOcr(scen, name); e.target.value = "";
+  // 실제 파일 업로드 → 진짜 OCR(텍스트 추출) → 항목 파싱 → 확인
+  const onFile = async (e) => {
+    const f = e.target.files && e.target.files[0]; if (!f) return; e.target.value = "";
+    if (typeof realOcrExtract !== "function") { runOcr(/pdf/i.test(f.type || f.name) ? "nhis-pdf" : "book-photo", f.name); return; }
+    setOcrBusy(true); setOcrProg(0);
+    try {
+      const r = await realOcrExtract(f, (p) => setOcrProg(Math.round((p || 0) * 100)));
+      const warn = r.matchedCount === 0 ? "자동 인식이 어려웠어요. 각 값을 직접 확인·입력해 주세요." : (r.matchedCount < 6 ? `${r.matchedCount}개 항목을 인식했어요. 나머지는 직접 확인·입력해 주세요.` : `${r.matchedCount}개 항목을 인식했어요. 값을 확인해 주세요.`);
+      setOcr({ fileName: f.name, completeness: "full", scenario: "real", warn });
+      setRows(r.items.map((x) => Object.assign({}, x)));
+      setPhase("review");
+    } catch (err) {
+      if (typeof toast === "function") toast("파일을 읽지 못했어요. 다시 시도하거나 값을 직접 입력해 주세요.");
+      const rr = ocrParse(member, "lowres");
+      setOcr({ fileName: f.name, completeness: "full", scenario: "real-fail", warn: "자동 인식 실패 — 값을 직접 확인·입력해 주세요." });
+      setRows(rr.items.map((x) => Object.assign({}, x, { value: "", low: true, confidence: 0 })));
+      setPhase("review");
+    } finally { setOcrBusy(false); }
   };
   const confirmSave = () => {
     const items = rows.map((r) => ({ key: r.key, value: r.value, source: r.source, confidence: r.confidence }));
@@ -114,9 +130,13 @@ function CheckupCollect({ member, onDone, onLater }) {
     <div className="obstep">
       {channel === "upload" && (<>
         <div className="obclbl">검진결과 파일 업로드</div>
-        <div className="obhelp"><b>📱 카톡에서 받은 파일 올리는 법</b><span>카톡 대화 → 파일 길게 눌러 <b>저장</b> → 아래 업로드에서 선택</span></div>
-        <label className="obdrop"><input type="file" accept="image/*,application/pdf" onChange={onFile} hidden /><Paperclip size={26} color="#2563EB" /><b>파일 선택 또는 여기로 드래그</b><span>PDF · JPG · PNG</span></label>
-        <div className="obdemo">시연용 예시로 바로 체험: <button onClick={() => runOcr("nhis-pdf", "국가검진결과_2025.pdf")}>국가검진 PDF</button><button onClick={() => runOcr("book-photo", "종합검진책자.jpg")}>종합검진 책자사진</button><button onClick={() => runOcr("lowres", "검진지_촬영.jpg")}>저화질 사진</button></div>
+        <div className="obhelp"><b>📱 카톡에서 받은 파일 올리는 법</b><span>카톡 대화 → 파일 길게 눌러 <b>저장</b> → 아래 업로드에서 선택 · <b>실제 파일에서 값을 추출</b>합니다</span></div>
+        {ocrBusy ? (
+          <div className="obocr"><span className="obocr-spin" /><b>파일에서 검진 값을 추출 중… {ocrProg}%</b><span>이미지·PDF를 텍스트로 인식하고 있어요 (처음 실행 시 인식 엔진을 내려받아 조금 걸릴 수 있어요)</span></div>
+        ) : (
+          <label className="obdrop"><input type="file" accept="image/*,application/pdf" onChange={onFile} hidden /><Paperclip size={26} color="#2563EB" /><b>검진결과 파일 선택 (실제 인식)</b><span>PDF · JPG · PNG — 업로드한 파일에서 값을 추출합니다</span></label>
+        )}
+        <div className="obdemo">인식이 어려우면 예시로 흐름 체험: <button onClick={() => runOcr("nhis-pdf", "예시_국가검진.pdf")}>국가검진(예시)</button><button onClick={() => runOcr("book-photo", "예시_종합검진.jpg")}>종합검진(예시)</button></div>
         <div className="obfoot"><button className="oblater" onClick={() => setPhase("channel")}>이전</button></div>
       </>)}
       {channel === "photo" && (<>
@@ -145,7 +165,8 @@ function CheckupCollect({ member, onDone, onLater }) {
       <div className="obstep">
         <div className="obclbl">추출 결과 확인 <span>(값을 확인·수정 후 확정)</span></div>
         {ocr && ocr.completeness === "partial" && <div className="obbanner"><AlertTriangle size={14} /> 공단 제공 항목({rows.length}개) 기준의 <b>부분 데이터</b>입니다. 결과지를 업로드하면 전체 정밀 분석이 가능해요.</div>}
-        {lowN > 0 && <div className="obhint">🟡 신뢰도 낮은 {lowN}개 항목은 노란색이에요. 값을 꼭 확인해 주세요.</div>}
+        {ocr && ocr.scenario && /real/.test(ocr.scenario) && ocr.warn && <div className="obhint" style={{ color: "#2563EB" }}>🔎 {ocr.warn}</div>}
+        {lowN > 0 && <div className="obhint">🟡 인식 안 됨/신뢰도 낮은 {lowN}개 항목은 노란색이에요. 값을 확인·입력해 주세요.</div>}
         <div className="obreview">
           <div className="obreview-src"><FileText size={22} color="#94A3B8" /><span>{(ocr && ocr.fileName) || "공단 연계"}</span><small>원본 (암호화 보관)</small></div>
           <div className="obreview-tbl">
