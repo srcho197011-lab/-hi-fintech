@@ -415,10 +415,143 @@ function AIPlannerChat({ onSimple }) {
     </div>
   );
 }
+/* ══════════ AI 간편가입 마법사 — 상담 전 자기주도 청약 시뮬레이션(현대해상 다이렉트 플로우 참조) ══════════
+   상품확인→계약자정보→계약전 알릴의무(고지)→약관·동의→보험료 납입(시연)→청약완료(증권). ⚠️ 시연용, 실제 청약·결제 아님. */
+function _num(s) { const m = String(s || "").replace(/,/g, "").match(/([0-9]+)/); return m ? parseInt(m[1], 10) : 0; }
+function _wonK(n) { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000).toFixed(n % 100000000 ? 1 : 0) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; }
+const ENROLL_DISCLOSURES = [
+  ["최근 3개월 이내 의사로부터 질병 확정진단·질병의심소견·치료·입원·수술·투약을 받은 사실이 있습니까?"],
+  ["최근 2년 이내 질병·상해로 입원·수술·계속 7일 이상 치료 또는 계속 30일 이상 투약을 받은 사실이 있습니까?"],
+  ["최근 5년 이내 암·협심증·심근경색·심장판막증·간경화·뇌졸중으로 진단·입원·수술·투약을 받은 사실이 있습니까?"],
+];
+const ENROLL_CONSENTS = [
+  ["terms", true, "보험약관·상품설명서를 확인하였으며, 계약자 보관용 청약서·약관을 교부(전자문서)받았습니다."],
+  ["privacy", true, "개인(신용)정보의 수집·이용·제공에 동의합니다. (보험계약 인수·유지·관리 목적)"],
+  ["disclosure", true, "계약 전 알릴 의무(고지의무)의 중요성과 위반 시 불이익을 안내받고 사실대로 알렸습니다."],
+  ["fit", true, "적합성 원칙에 따른 상품 설명을 받았으며 본 상품이 본인에게 적합함을 확인합니다."],
+  ["esign", true, "전자적 청약·전자서명 및 전자문서 수령에 동의합니다."],
+  ["mkt", false, "(선택) 마케팅·상품 안내 목적의 정보 활용에 동의합니다."],
+];
+function SimpleEnrollWizard({ plan, member, onClose, onConsult }) {
+  const [step, setStep] = useState(0);
+  const nm = member ? member.name : "고객";
+  const age = member ? (member.regAge != null ? Math.round(member.regAge) : (member.age || 45)) : 45;
+  const sex = member ? (member.sex || "남") : "남";
+  const byr = 2026 - age;
+  const coverBase = _num(plan.cover) >= 10000 ? _num(plan.cover) : _num(plan.cover) * 10000; // "3,000만원"→30,000,000
+  const premBase = _num(plan.prem); // "월 8,400원~"→8400
+  // 담보(가입금액) 옵션 — 상품 기본 보장 중심 ±
+  const COVERS = [Math.max(10000000, Math.round(coverBase * 0.5 / 10000000) * 10000000), coverBase, coverBase + 20000000].filter((v, i, a) => a.indexOf(v) === i && v > 0);
+  const [cover, setCover] = useState(coverBase);
+  const [term, setTerm] = useState("1년(자동갱신)");
+  const premium = Math.max(1000, Math.round(premBase * (cover / (coverBase || 1)) / 100) * 100);
+  const [f, setF] = useState({ name: nm, birth: `${byr}년 (${age}세)`, sex, phone: "", pay: "wallet" });
+  const [disc, setDisc] = useState([null, null, null]); // 고지: true=예, false=아니오
+  const [con, setCon] = useState(ENROLL_CONSENTS.map((c) => false));
+  const allDisc = disc.every((d) => d !== null);
+  const anyYes = disc.some((d) => d === true);
+  const reqOk = ENROLL_CONSENTS.every((c, i) => !c[1] || con[i]);
+  const [policyNo] = useState(() => "HI-2026-" + String(Math.floor(100000 + Math.random() * 899999)));
+  const STEPS = ["상품 확인", "계약자 정보", "계약 전 알릴의무", "약관·동의", "보험료 납입", "청약 완료"];
+  const canNext = step === 1 ? (f.name && f.phone.replace(/[^0-9]/g, "").length >= 10) : step === 2 ? allDisc : step === 3 ? reqOk : true;
+  const toggleAll = () => { const v = !con.every(Boolean); setCon(ENROLL_CONSENTS.map(() => v)); };
+  return (
+    <div className="bkov" onClick={onClose}>
+      <div className="bk ewz" onClick={(e) => e.stopPropagation()}>
+        <div className="bkh"><div className="bt"><Bot size={17} color="#2563EB" style={{ verticalAlign: "-3px" }} /> AI 간편가입 · {plan.name}</div><button className="ewx" onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
+        <div className="ewsteps">{STEPS.map((s, i) => <React.Fragment key={s}><span className={"ewstep" + (i === step ? " on" : i < step ? " done" : "")}>{i < step ? <Check size={11} /> : i + 1}<em>{s}</em></span>{i < STEPS.length - 1 && <span className="ewsa" />}</React.Fragment>)}</div>
+        <div className="bkb ewb">
+          {step === 0 && (<div className="ewpane">
+            <div className="ewai"><Bot size={15} /> {nm}님, <b>{plan.name}</b> 가입을 도와드릴게요. 보장금액과 기간을 선택하면 예상 보험료를 계산해 드려요.</div>
+            <div className="ewprod"><span className="ewpic" style={{ background: (plan.color || "#2563EB") + "1A", color: plan.color }}><ShieldCheck size={20} /></span><div><b>{plan.name}</b><p>{plan.desc}</p></div></div>
+            <div className="ewfield"><label>보장금액(진단금)</label><div className="ewchips">{COVERS.map((v) => <button key={v} className={"ewchip" + (cover === v ? " on" : "")} onClick={() => setCover(v)}>{_wonK(v)}</button>)}</div></div>
+            <div className="ewfield"><label>보험기간</label><div className="ewchips">{["1년(자동갱신)", "3년", "10년"].map((t) => <button key={t} className={"ewchip" + (term === t ? " on" : "")} onClick={() => setTerm(t)}>{t}</button>)}</div></div>
+            <div className="ewprem"><span>예상 보험료</span><b>월 {premium.toLocaleString()}원</b></div>
+            <div className="ewnote">※ 간편심사형(간편고지) · 표준체 기준 예시. 실제 보험료·인수는 고지·심사 결과에 따라 확정됩니다.</div>
+          </div>)}
+          {step === 1 && (<div className="ewpane">
+            <div className="ewai"><Bot size={15} /> 계약자(피보험자) 정보를 확인해 주세요. 회원 정보는 자동으로 채웠어요.</div>
+            <div className="ewform">
+              <label>이름<input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="성명" /></label>
+              <label>생년(만 나이)<input value={f.birth} readOnly /></label>
+              <label>성별<div className="ewseg">{["남", "여"].map((s) => <button key={s} className={f.sex === s ? "on" : ""} onClick={() => setF({ ...f, sex: s })}>{s}</button>)}</div></label>
+              <label>휴대전화<input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="010-0000-0000" inputMode="numeric" /></label>
+            </div>
+            <div className="ewnote">※ 입력 정보는 <b>시연용</b>으로 실제 전송·저장되지 않습니다. 본인인증은 정식 청약 시 별도 진행됩니다.</div>
+          </div>)}
+          {step === 2 && (<div className="ewpane">
+            <div className="ewai"><Bot size={15} /> 계약 전 알릴 의무(고지)예요. 사실대로 답해 주세요. 간편고지 3가지 모두 <b>‘아니오’</b>면 간편가입이 가능해요.</div>
+            {ENROLL_DISCLOSURES.map(([q], i) => (
+              <div className="ewdisc" key={i}><p><b>Q{i + 1}.</b> {q}</p>
+                <div className="ewseg wide">{[["예", true], ["아니오", false]].map(([lb, v]) => <button key={lb} className={disc[i] === v ? (v ? "on yes" : "on") : ""} onClick={() => { const n = [...disc]; n[i] = v; setDisc(n); }}>{lb}</button>)}</div>
+              </div>
+            ))}
+            {anyYes && <div className="ewwarn"><AlertTriangle size={13} /> ‘예’ 항목이 있어 <b>간편심사(유병자형)·별도 인수심사</b>가 필요할 수 있어요. 시연에서는 계속 진행합니다.</div>}
+            <div className="ewnote">※ 고지의무 위반 시 보장 제한·계약 해지 등 불이익이 있을 수 있습니다.</div>
+          </div>)}
+          {step === 3 && (<div className="ewpane">
+            <div className="ewai"><Bot size={15} /> 약관과 필수 동의를 확인해 주세요. 필수 항목에 동의해야 청약이 진행돼요.</div>
+            <button className="ewallcon" onClick={toggleAll}><span className={"ewck" + (con.every(Boolean) ? " on" : "")}>{con.every(Boolean) && <Check size={12} />}</span> 약관 전체 동의(선택 포함)</button>
+            <div className="ewcons">{ENROLL_CONSENTS.map((c, i) => (
+              <label className="ewcon" key={c[0]}><span className={"ewck" + (con[i] ? " on" : "")} onClick={() => { const n = [...con]; n[i] = !n[i]; setCon(n); }}>{con[i] && <Check size={12} />}</span>
+                <span className="ewcont"><b>{c[1] ? "[필수]" : "[선택]"}</b> {c[2]} <a className="ewview" onClick={(e) => { e.preventDefault(); if (typeof toast === "function") toast("약관·설명서 전문은 청약 단계에서 제공됩니다(시연)."); }}>보기</a></span>
+              </label>
+            ))}</div>
+            {!reqOk && <div className="ewnote" style={{ color: "#B91C1C" }}>필수 동의 항목에 모두 동의해 주세요.</div>}
+          </div>)}
+          {step === 4 && (<div className="ewpane">
+            <div className="ewai"><Bot size={15} /> 마지막이에요. 보험료 납입 수단을 선택해 주세요. <b>시연이라 실제 결제는 이뤄지지 않아요.</b></div>
+            <div className="ewsummary">
+              <div><span>상품</span><b>{plan.name}</b></div>
+              <div><span>보장금액</span><b>{_wonK(cover)}</b></div>
+              <div><span>보험기간</span><b>{term}</b></div>
+              <div><span>월 보험료</span><b style={{ color: "#2563EB" }}>{premium.toLocaleString()}원</b></div>
+            </div>
+            <div className="ewfield"><label>납입 수단</label><div className="ewpays">
+              {[["wallet", "건강지갑(HTK)", Wallet], ["card", "신용/체크카드", Banknote], ["bank", "계좌 자동이체", FileText]].map(([k, t, Ic]) => <button key={k} className={"ewpay" + (f.pay === k ? " on" : "")} onClick={() => setF({ ...f, pay: k })}><Ic size={16} /> {t}</button>)}
+            </div></div>
+            <div className="ewnote">※ 결제·납입은 <b>시연용</b>이며 실제 청구되지 않습니다. 실제 납입은 보험사 정식 청약 절차에서 진행됩니다.</div>
+          </div>)}
+          {step === 5 && (<div className="ewpane ewdone">
+            <div className="ewbadge"><Check size={30} /></div>
+            <h3>청약이 완료되었습니다 🎉</h3>
+            <p className="ewdsub">{nm}님의 <b>{plan.name}</b> 간편가입이 정상 접수되었어요.</p>
+            <div className="ewcert">
+              <div className="ewcert-h"><ShieldCheck size={15} color="#2563EB" /> 전자 보험증권 <span>{policyNo}</span></div>
+              <div className="ewcert-b">
+                <div><span>계약자/피보험자</span><b>{f.name} ({f.sex}·{f.birth})</b></div>
+                <div><span>상품</span><b>{plan.name}</b></div>
+                <div><span>보장금액</span><b>{_wonK(cover)}</b></div>
+                <div><span>보험기간</span><b>{term}</b></div>
+                <div><span>월 보험료</span><b>{premium.toLocaleString()}원 ({({ wallet: "건강지갑", card: "카드", bank: "자동이체" })[f.pay]})</b></div>
+                <div><span>계약일 / 보장개시</span><b>오늘 / 익일 0시</b></div>
+              </div>
+            </div>
+            <div className="ewdbtns">
+              <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { if (typeof toast === "function") toast("전자증권(SBT)이 건강지갑에 발행되었습니다(시연)."); }}><FileText size={14} /> 증권 저장(건강지갑)</button>
+              <button className="cbtn" style={{ margin: 0 }} onClick={() => { onClose(); if (onConsult) onConsult(); }}><MessageSquare size={14} /> 설계사 확인 상담</button>
+            </div>
+            <div className="ewnote" style={{ textAlign: "center" }}>※ 본 청약·증권은 <b>시연용 시뮬레이션</b>입니다. 실제 계약 체결·보장은 보험업법상 정식 라이선스 채널(GA 보험중개)과 보험사 인수심사를 통해 이루어집니다.</div>
+          </div>)}
+        </div>
+        {step < 5 && (<div className="ewfoot">
+          {step > 0 ? <button className="ewback" onClick={() => setStep(step - 1)}>이전</button> : <button className="ewback" onClick={onClose}>취소</button>}
+          <button className={"ewnext" + (canNext ? "" : " off")} disabled={!canNext} onClick={() => canNext && setStep(step + 1)}>
+            {step === 4 ? "청약 완료하기" : "다음"} <ChevronRight size={15} />
+          </button>
+        </div>)}
+      </div>
+    </div>
+  );
+}
+
 /* ── 간편 · 내 몸 맞춤 간편보험 — 발병 위험 질병별 1년 단기 밀도 가입 코너 ── */
-function SimpleBodyInsurance() {
-  const member = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-  let R = null; try { R = (member && typeof demoReport === "function") ? demoReport(member) : null; } catch (e) { R = null; }
+function SimpleBodyInsurance({ initialPlanKey } = {}) {
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const _self = !dm && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null;
+  const member = dm || _self;
+  const [wiz, setWiz] = useState(null);
+  let R = null; try { R = (dm && typeof demoReport === "function") ? demoReport(dm) : null; } catch (e) { R = null; }
   const nm = member ? member.name : null;
   const recos = new Set();
   try {
@@ -444,7 +577,10 @@ function SimpleBodyInsurance() {
     ["sports", "스포츠활동 상해", Trophy, "#F59E0B", "운동 중 골절·수술·입원 등 상해 보장", "골절 30만·수술 100만", "월 2,700원~"],
   ];
   const recoNames = PLANS.filter((p) => recos.has(p[0])).map((p) => p[1]);
-  const go = (name) => openConsult("간편 내몸맞춤 간편보험 — " + name);
+  const planObj = (row) => ({ key: row[0], name: row[1], Ic: row[2], color: row[3], desc: row[4], cover: row[5], prem: row[6] });
+  const openWiz = (row) => setWiz(planObj(row));
+  // 검진 진단비 공백 등에서 특정 상품으로 진입 시 자동 오픈
+  useEffect(() => { if (initialPlanKey) { const row = PLANS.find((p) => p[0] === initialPlanKey); if (row) setWiz(planObj(row)); } }, [initialPlanKey]);
   return (
     <div className="mhbox sbins">
       <div className="bt"><Sparkles size={16} style={{ verticalAlign: "-2px", color: "#F97316" }} /> 간편 · 내 몸 맞춤 간편보험</div>
@@ -453,16 +589,16 @@ function SimpleBodyInsurance() {
         <div className="sbins-reco"><Sparkles size={13} /> AI가 <b>{nm}</b>님 건강리포트 기준으로 <b>{recoNames.slice(0, 3).join(" · ")}</b> 우선 가입을 추천했어요.</div>
       )}
       <div className="sbins-grid">
-        {PLANS.map(([k, name, Ic, c, desc, cover, prem]) => (
+        {PLANS.map((row) => { const [k, name, Ic, c, desc, cover, prem] = row; return (
           <div key={k} className={`sbins-card${recos.has(k) ? " reco" : ""}`} style={{ "--sc": c }}>
             {recos.has(k) && <span className="sbins-badge">AI 추천</span>}
             <div className="sbins-hd"><span className="sbins-ic"><Ic size={18} /></span><b>{name}</b></div>
             <div className="sbins-desc">{desc}</div>
             <div className="sbins-cover"><ShieldCheck size={12} /> {cover}</div>
-            <div className="sbins-foot"><span className="sbins-prem">{prem}<small>1년 단기·간편심사</small></span><button className="sbins-btn" onClick={() => go(name)}>간편 가입</button></div>
-          </div>
-        ))}
+            <div className="sbins-foot"><span className="sbins-prem">{prem}<small>1년 단기·간편심사</small></span><button className="sbins-btn" onClick={() => openWiz(row)}>간편 가입</button></div>
+          </div>); })}
       </div>
+      {wiz && <SimpleEnrollWizard plan={wiz} member={member} onClose={() => setWiz(null)} onConsult={() => openConsult("간편 내몸맞춤 간편보험 — " + wiz.name + " 설계사 확인")} />}
       <div className="sbins-cta">
         <button className="cbtn pri" style={{ margin: 0 }} onClick={() => openConsult("간편 내몸맞춤 간편보험 — 종합 설계")}><MessageSquare size={15} /> 내 몸 맞춤 간편보험 종합 상담</button>
         <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("manage")}><FileText size={15} /> 내 건강리포트로 위험 확인</button>
@@ -472,7 +608,7 @@ function SimpleBodyInsurance() {
   );
 }
 /* ── 맞춤 헬스케어 보험 — 플랫폼 구조도 인포그래픽 ── */
-function PremiumPolicySection() {
+function PremiumPolicySection({ initialPlanKey } = {}) {
   const IMG_EXTS = ["png", "jpg", "jpeg", "svg", "webp"];
   const [imgExt, setImgExt] = useState(0);
   const [useImg, setUseImg] = useState(false); // 인터랙티브 HTML 버전을 기본으로
@@ -538,7 +674,7 @@ function PremiumPolicySection() {
         </div>
       </div>
 
-      <SimpleBodyInsurance />
+      <SimpleBodyInsurance initialPlanKey={initialPlanKey} />
 
       <div className="mhbox">
         <div className="bt">HI-Fin Tech 플랫폼 구조도</div>
@@ -885,7 +1021,13 @@ function InsuranceSection({ onGo }) {
   const [modal, setModal] = useState(null);
   const [enroll, setEnroll] = useState(false);
   const [cover, setCover] = useState(null);
+  const [simplePlan, setSimplePlan] = useState(null);
   const go = onGo || (() => {});
+  // 다른 섹션(검진 진단비 공백 등)에서 특정 간편보험으로 진입하는 라우팅 훅
+  useEffect(() => {
+    let r = null; try { r = window.__hifinInsRoute; } catch (e) {}
+    if (r) { if (r.tab) setTab(r.tab); setSimplePlan(r.planKey || null); try { window.__hifinInsRoute = null; } catch (e) {} }
+  }, []);
   const tabs = [["embed", "건강검진대비보험", ShieldCheck], ["premium", "맞춤 헬스케어 보험", Sparkles], ["policy", "실손보험지원", HeartHandshake], ["sports", "스포츠 임베디드 보험", Trophy], ["join", "보험가입", FileText], ["coverage", "보장조회", Search], ["claim", "보험금청구", Coins], ["ai", "AI보험상담", MessageSquare]];
   return (
     <div style={{ marginTop: 16 }}>
@@ -896,7 +1038,7 @@ function InsuranceSection({ onGo }) {
 
       {tab === "sports" && <SportsInsuranceSection onGo={go} />}
       {tab === "policy" && <InsurancePolicySection />}
-      {tab === "premium" && <PremiumPolicySection />}
+      {tab === "premium" && <PremiumPolicySection initialPlanKey={simplePlan} />}
       {tab === "embed" && (<>
         <div className="benefit">
           <span><Art name="check" size={16} /> 추가 보험료 0원</span>

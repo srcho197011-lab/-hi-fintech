@@ -394,22 +394,61 @@ function CenterDirectory({ mode }) {
   );
 }
 
+/* 질환 → 아이콘·색상 매핑(검진 추천 카드) */
+const CKUP_DZ_STYLE = {
+  "당뇨병": [Activity, "#F59E0B", "#FEF3E2"], "고혈압": [Heart, "#EF4444", "#FDECEC"],
+  "이상지질혈증": [Activity, "#DB2777", "#FCE7F3"], "간질환(지방간·간염)": [Stethoscope, "#7C3AED", "#F1ECFE"],
+  "만성콩팥병": [ShieldCheck, "#0891B2", "#E0F2FE"], "암 위험": [ShieldCheck, "#16A34A", "#E7F8EE"],
+  "대사증후군": [Activity, "#2563EB", "#E8F1FE"], "만성호흡기질환": [Stethoscope, "#0E7490", "#E0F2FE"],
+};
 function AICheckupRec({ onGoCenters }) {
-  const recs = [[Stethoscope, "복부 초음파 (간·췌장)", "간 54.4세·췌장 56.2세 — 생체나이 높음", "#7C3AED", "#F1ECFE"], [Activity, "당화혈색소·공복혈당", "당뇨병 위험 동년배보다 +6.2% 높음", "#F59E0B", "#FEF3E2"], [ClipboardList, "위·대장 내시경", "50대 권장 검진 주기 도래", "#2563EB", "#E8F1FE"], [Heart, "경동맥 초음파", "심뇌혈관 위험 관리", "#EF4444", "#FDECEC"], [ShieldCheck, "갑상선 초음파", "암 정기 관찰", "#16A34A", "#E7F8EE"]];
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const _self = !dm && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null;
+  const M = dm || _self;
+  const nm = M ? M.name : "조성래";
+  const prof = (M && typeof ciRiskProfile === "function") ? (() => { try { return ciRiskProfile(M); } catch (e) { return null; } })() : null;
+  // 폴백: 온톨로지 위험이 없으면 연령대 표준 권장검사
+  if (!prof || !prof.hasRisk) {
+    const base = [[ClipboardList, "국가 일반건강검진", "기본 혈액·소변·혈압·시력 등 정기 점검", "#2563EB", "#E8F1FE"], [Stethoscope, "위·대장 내시경", "40대 이후 권장 검진 주기", "#7C3AED", "#F1ECFE"], [Heart, "경동맥 초음파·심전도", "심뇌혈관 예방 점검", "#EF4444", "#FDECEC"]];
+    return (<>
+      <div className="airec"><div className="at"><Sparkles size={16} color="#7C3AED" /> {nm}님 맞춤 검사 추천</div><div className="ap">검진 데이터 기반 표준 권장검사예요. 검진 결과를 연동하면 위험질환 맞춤 정밀검진을 추천해 드려요.</div></div>
+      <div className="card"><div className="rct"><Stethoscope size={18} color="#7C3AED" /> 권장 검사</div>
+        {base.map(([Ic, t, d, col, bg]) => (<div className="adv" key={t}><span className="ic" style={{ background: bg }}><Ic size={18} color={col} /></span><div style={{ flex: 1 }}><b>{t}</b><p>{d}</p></div><button onClick={onGoCenters} className="ckrecbtn">센터 보기 ›</button></div>))}
+      </div>
+    </>);
+  }
+  const rows = prof.rows.slice(0, 5);
+  const gapRows = prof.rows.filter((r) => r.gaps.length);
   return (<>
     <div className="airec">
-      <div className="at"><Sparkles size={16} color="#7C3AED" /> 조성래님 맞춤 검사 추천</div>
-      <div className="ap">프롬에이지 Premium 리포트(생체나이 52.5세 · 당뇨 위험 ↑ · 췌장암 경고)를 분석해 꼭 필요한 검사를 골라드려요.</div>
+      <div className="at"><Sparkles size={16} color="#7C3AED" /> {nm}님 맞춤 검사 추천 <span className="ckonto">검진 × 보험 온톨로지</span></div>
+      <div className="ap">검진 이상·질환을 <b>중대질환 온톨로지(CI_ONTOLOGY)</b>로 분석해, 위험질환별 꼭 필요한 <b>정밀검진</b>을 골라드려요. 진단비가 없는 질환은 <b>조기발견 검진</b>을 우선합니다.</div>
     </div>
     <div className="card">
-      <div className="rct"><Stethoscope size={18} color="#7C3AED" /> 권장 검사 5</div>
-      {recs.map(([Ic, t, d, col, bg]) => (
-        <div className="adv" key={t}><span className="ic" style={{ background: bg }}><Ic size={18} color={col} /></span><div style={{ flex: 1 }}><b>{t}</b><p>{d}</p></div><button onClick={onGoCenters} style={{ alignSelf: "center", border: "1px solid var(--border)", background: "#fff", color: "var(--blue)", borderRadius: 9, padding: "7px 11px", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>센터 보기 ›</button></div>
-      ))}
+      <div className="rct"><Stethoscope size={18} color="#7C3AED" /> 위험질환별 권장 정밀검진 <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--muted)", fontWeight: 700 }}>{rows.length}개 질환</span></div>
+      {rows.map((r) => { const [Ic, col, bg] = CKUP_DZ_STYLE[r.disease] || [Stethoscope, "#2563EB", "#E8F1FE"]; return (
+        <div className="ckrow" key={r.disease}>
+          <div className="ckrow-h"><span className="ic" style={{ background: bg }}><Ic size={17} color={col} /></span>
+            <div style={{ flex: 1 }}><b>{r.disease}{r.source && !r.disease.includes(r.source) && <span className="cksrc">{r.source}</span>}</b><p>{r.note}</p></div>
+            {r.gaps.length > 0 && <span className="ckgap" title={r.gaps.join("·") + " 진단비 미보유"}>진단비 공백 <b>{r.gaps.join("·")}</b></span>}
+          </div>
+          <div className="ckchips">{r.checkups.map((c) => <button key={c} className="ckchip" onClick={onGoCenters}>{c} <ChevronRight size={11} /></button>)}</div>
+        </div>); })}
     </div>
+    {gapRows.length > 0 && (
+      <div className="card ckgapcard">
+        <div className="rct"><ShieldCheck size={18} color="#B91C1C" /> 진단비 없는 질환 — 조기발견이 최선의 대비</div>
+        <p style={{ fontSize: 12.5, color: "#7A2E2E", lineHeight: 1.6, margin: "2px 0 10px" }}>
+          <b>{prof.gapDiseases.join(" · ")}</b>은(는) 아직 <b>중대질환 진단비가 없어</b> 발병 시 치료비 부담이 큽니다. 위 정밀검진으로 <b>조기에 발견</b>하고, 보험·치료비에서 <b>진단비 보완</b>을 함께 검토하세요.</p>
+        <div className="ckgapbtns">
+          <button className="cbtn pri" style={{ margin: 0 }} onClick={onGoCenters}><ClipboardList size={15} /> 추천 센터에서 예약</button>
+          <button className="cbtn" style={{ margin: 0 }} onClick={() => { const cat = gapRows[0] && gapRows[0].gaps[0]; const CAT2PLAN = { "암": "general", "뇌": "brain", "심장": "heart", "신장": "liver", "간": "liver", "폐": "major" }; try { window.__hifinInsRoute = { tab: "premium", planKey: CAT2PLAN[cat] || "general" }; } catch (e) {} nav("insurance"); }}><ShieldCheck size={15} /> 진단비 보장 설계 · 간편가입</button>
+        </div>
+      </div>
+    )}
     <div className="card" style={{ border: "1.5px solid #BFD0FF" }}>
-      <div className="rct"><Sparkles size={18} color="#2F5BEA" /> 조성래님 맞춤 종합검진 패키지</div>
-      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>위 권장 검사를 묶은 맞춤 패키지예요. 전국 제휴 검진센터에서 합리적인 비용으로 예약할 수 있고, 예약 시 무료 검진보험이 자동 가입됩니다.</p>
+      <div className="rct"><Sparkles size={18} color="#2F5BEA" /> {nm}님 맞춤 종합검진 패키지</div>
+      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>위 위험질환별 권장검사를 묶은 맞춤 패키지예요. 전국 제휴 검진센터에서 합리적인 비용으로 예약할 수 있고, 예약 시 무료 검진보험이 자동 가입됩니다.</p>
       <button className="cbtn pri" onClick={onGoCenters}><ClipboardList size={15} /> 추천 센터에서 예약하기</button>
     </div>
   </>);

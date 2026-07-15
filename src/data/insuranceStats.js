@@ -215,16 +215,25 @@ const SILSON_RATE = {
   "4세대": { gen: 0.2, non: 0.3 }, "5세대": { gen: 0.2, non: 0.5 }, "노인실손": { gen: 0.2, non: 0.3 },
   "어린이 실손": { gen: 0.2, non: 0.3 }, "미가입": { gen: 1.0, non: 1.0 },
 };
-/* 6단계. 중대질환 온톨로지 매핑: 검진지표 → 질환 → 관련 중대질환(진단비 구분) */
+/* 6단계. 중대질환 온톨로지 매핑: 검진지표 → 질환 → 관련 중대질환(진단비 구분)
+   + checkups(권장 정밀검진) · shopCats(관련 커머스 카테고리) — 검진예약·커머스 추천 공용 */
 const CI_ONTOLOGY = [
-  { ind: "공복혈당·당화혈색소(HbA1c)", indKeys: ["혈당", "당화", "hba1c", "당뇨"], disease: "당뇨병", ci: ["심장", "신장"], note: "당뇨 → 허혈성심장질환·말기신부전 위험" },
-  { ind: "수축기·이완기 혈압", indKeys: ["혈압", "고혈압"], disease: "고혈압", ci: ["뇌", "심장"], note: "고혈압 → 뇌졸중·급성심근경색 위험" },
-  { ind: "총콜레스테롤·LDL·중성지방", indKeys: ["콜레스테롤", "ldl", "중성지방", "지질", "고지혈"], disease: "이상지질혈증", ci: ["뇌", "심장"], note: "이상지질혈증 → 심뇌혈관 위험" },
-  { ind: "AST·ALT·γ-GTP(간수치)", indKeys: ["간수치", "ast", "alt", "gtp", "지방간", "간"], disease: "간질환(지방간·간염)", ci: ["간"], note: "간수치 이상 → 간경화·간부전 위험" },
-  { ind: "크레아티닌·eGFR(신장기능)", indKeys: ["크레아티닌", "egfr", "신장", "콩팥", "사구체"], disease: "만성콩팥병", ci: ["신장"], note: "신기능 저하 → 말기신부전(투석·이식) 위험" },
-  { ind: "종양표지자·가족력·영상소견", indKeys: ["종양", "암", "가족력", "결절", "용종", "종괴"], disease: "암 위험", ci: ["암"], note: "암 위험군 → 암 진단비 필요" },
-  { ind: "BMI·복부둘레·대사지표", indKeys: ["bmi", "비만", "복부", "대사"], disease: "대사증후군", ci: ["심장", "뇌", "신장"], note: "대사증후군 → 심뇌혈관·신장 복합 위험" },
-  { ind: "폐기능·흉부영상·흡연", indKeys: ["폐", "흡연", "호흡", "copd", "흉부"], disease: "만성호흡기질환", ci: ["폐"], note: "흡연·폐기능 저하 → 만성호흡부전 위험" },
+  { ind: "공복혈당·당화혈색소(HbA1c)", indKeys: ["혈당", "당화", "hba1c", "당뇨"], disease: "당뇨병", ci: ["심장", "신장"], note: "당뇨 → 허혈성심장질환·말기신부전 위험",
+    checkups: ["당화혈색소(HbA1c)", "공복·식후 혈당", "신장기능(eGFR·요단백)", "안저(당뇨망막) 검사"], shopCats: ["혈당관리 식단", "혈당·혈압 홈케어기기", "오메가3·마그네슘"] },
+  { ind: "수축기·이완기 혈압", indKeys: ["혈압", "고혈압"], disease: "고혈압", ci: ["뇌", "심장"], note: "고혈압 → 뇌졸중·급성심근경색 위험",
+    checkups: ["24시간 활동혈압", "경동맥 초음파", "심전도·심장초음파"], shopCats: ["저염 식단", "가정용 혈압계", "오메가3·코엔자임Q10"] },
+  { ind: "총콜레스테롤·LDL·중성지방", indKeys: ["콜레스테롤", "ldl", "중성지방", "지질", "고지혈"], disease: "이상지질혈증", ci: ["뇌", "심장"], note: "이상지질혈증 → 심뇌혈관 위험",
+    checkups: ["지질패널(LDL·HDL·TG)", "경동맥 초음파", "관상동맥 칼슘 CT"], shopCats: ["저지방·저당 식단", "오메가3·홍국(모나콜린)"] },
+  { ind: "AST·ALT·γ-GTP(간수치)", indKeys: ["간수치", "ast", "alt", "gtp", "지방간", "간"], disease: "간질환(지방간·간염)", ci: ["간"], note: "간수치 이상 → 간경화·간부전 위험",
+    checkups: ["간기능(AST·ALT·γ-GTP)", "복부 초음파(간)", "간섬유화 스캔(파이브로스캔)"], shopCats: ["간 건강 식단", "밀크씨슬(실리마린)"] },
+  { ind: "크레아티닌·eGFR(신장기능)", indKeys: ["크레아티닌", "egfr", "신장", "콩팥", "사구체"], disease: "만성콩팥병", ci: ["신장"], note: "신기능 저하 → 말기신부전(투석·이식) 위험",
+    checkups: ["신장기능(eGFR·크레아티닌)", "요단백·알부민뇨", "신장 초음파"], shopCats: ["신장케어 식단(저염·저인)", "혈압·혈당 관리"] },
+  { ind: "종양표지자·가족력·영상소견", indKeys: ["종양", "암", "가족력", "결절", "용종", "종괴"], disease: "암 위험", ci: ["암"], note: "암 위험군 → 암 진단비 필요",
+    checkups: ["위·대장 내시경", "복부·간·췌장 초음파", "종양표지자(CA19-9 등)", "저선량 흉부 CT"], shopCats: ["항산화 영양제", "면역 강화 식단"] },
+  { ind: "BMI·복부둘레·대사지표", indKeys: ["bmi", "비만", "복부", "대사"], disease: "대사증후군", ci: ["심장", "뇌", "신장"], note: "대사증후군 → 심뇌혈관·신장 복합 위험",
+    checkups: ["체성분·복부지방 CT", "공복혈당·지질패널", "경동맥 초음파"], shopCats: ["체중관리 식단", "프로바이오틱스·식이섬유"] },
+  { ind: "폐기능·흉부영상·흡연", indKeys: ["폐", "흡연", "호흡", "copd", "흉부"], disease: "만성호흡기질환", ci: ["폐"], note: "흡연·폐기능 저하 → 만성호흡부전 위험",
+    checkups: ["폐기능검사(PFT)", "저선량 흉부 CT"], shopCats: ["호흡기 면역 영양제", "금연 보조"] },
 ];
 function _mIns(m) { return (m && (m._ins || memberInsurance(m))) || null; }
 
@@ -309,6 +318,38 @@ function getFamilyCoverageSummary(m) {
   if (!fam || !fam.length) return { available: false, note: "연동된 가족 구성원 데이터가 없습니다. 우리가족건강관리에서 가족을 등록·동의하면 가족 보장 현황을 함께 분석해 드려요." };
   const rows = fam.map((f) => { const s = insuranceSolution(f); return { name: f.name, rel: f.rel || "", gen: s ? s.ins.silson.gen : "-", grade: s ? s.grade : "-", topGap: s && s.findings.find((x) => x.sev === "crit") ? s.findings.find((x) => x.sev === "crit").t : (s && s.findings.find((x) => x.sev === "warn") ? s.findings.find((x) => x.sev === "warn").t : "양호") }; });
   return { available: true, rows };
+}
+
+/* (F) 온톨로지 브릿지 — 회원 건강신호 → CI_ONTOLOGY → 위험질환별 {권장검진·상품카테고리·진단비 공백}
+   검진예약(맞춤 검사 추천)·커머스(맞춤 상품 추천)가 단일 소스로 참조. ⚠️ 시연용. */
+function ciRiskProfile(m) {
+  if (!m) return null;
+  const ins = _mIns(m);
+  const riderCats = ins ? ins.riders.map((r) => r.cat) : [];
+  const isSelfPerson = m.isSelf || m.name === "조성래";
+  const diseases = (m.diseases || m.highRiskDiseases || []).concat(isSelfPerson ? ["당뇨병", "지방간"] : []);
+  const cancerTypes = (m.highRiskCancerTypes || []).concat(isSelfPerson ? ["췌장암"] : []);
+  const dxHist = ins ? ins.dx.map((d) => d.cat) : [];   // 진단 이력(재발·추적 신호)
+  const drinker = !!m.drinker || isSelfPerson, smoker = !!m.smoker;
+  const rows = [];
+  for (const o of CI_ONTOLOGY) {
+    let matched = false, src = "";
+    for (const d of diseases) { const dl = String(d).toLowerCase(); if (o.indKeys.some((k) => dl.includes(k))) { matched = true; src = d; break; } }
+    if (!matched && o.ci.includes("암") && cancerTypes.length) { matched = true; src = cancerTypes[0] + " 위험군"; }
+    if (!matched && o.disease.includes("간") && drinker) { matched = true; src = "음주 이력"; }
+    if (!matched && o.ci.includes("폐") && smoker) { matched = true; src = "흡연 이력"; }
+    if (!matched && o.ci.some((c) => dxHist.includes(c))) { matched = true; src = "진단 이력 추적"; }
+    if (!matched) continue;
+    const ci = o.ci.map((cat) => ({ cat, covered: riderCats.includes(cat), benefit: (ins && ins.riders.find((r) => r.cat === cat) || {}).benefit || 0 }));
+    const gaps = ci.filter((c) => !c.covered).map((c) => c.cat);
+    rows.push({ disease: o.disease, indicator: o.ind, note: o.note, source: src, ci, gaps, checkups: o.checkups || [], shopCats: o.shopCats || [], severity: gaps.length ? (o.ci.includes("암") ? "high" : "mid") : "low" });
+  }
+  rows.sort((a, b) => ({ high: 0, mid: 1, low: 2 }[a.severity] - { high: 0, mid: 1, low: 2 }[b.severity]));
+  const uniq = (a) => a.filter((x, i) => a.indexOf(x) === i);
+  const checkups = uniq(rows.flatMap((r) => r.checkups));
+  const shopCats = uniq(rows.flatMap((r) => r.shopCats));
+  const gapDiseases = uniq(rows.filter((r) => r.gaps.length).map((r) => r.disease));
+  return { rows, checkups, shopCats, gapDiseases, hasRisk: rows.length > 0, silson: ins ? ins.silson.gen : null };
 }
 
 /* ── 조성래(실측 회원, 100,001번째·시연 기준 인물) ──
