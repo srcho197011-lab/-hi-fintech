@@ -969,6 +969,14 @@ const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진�
 /* Super Agent → 검진 화면 AI 주치의 핸드오프 씨앗(건강 질문을 넘겨받아 이어서 상담) */
 let _doctorSeed = null;
 const DOCTOR_HANDOFF = "🩺 검진 화면에서 이어 상담";
+/* 보험·보장 문의는 약관 학습 보험 AI 상담사(보험·치료비 › AI보험상담)로 연결 */
+const INS_HANDOFF = "🛡️ 보험 AI 상담사에게 연결";
+function insHandoff() {
+  return { bubbles: [
+    { kind: "text", text: "보험·보장은 약관을 학습한 **보험 AI 상담사**가 정확히 도와드려요. 아래 버튼을 누르면 지금 문의를 이어서 **보험 상담사에게 연결**해 드릴게요." },
+    { kind: "card", card: { title: "🛡️ 보험 AI 상담 연결", items: ["질환·검진 위험과 연계한 보장 공백·본인부담·세대 전환 분석", "실손 세대·중대질환 진단비 안내(정보 제공)", "청약·가입은 정식 라이선스 채널(GA)로 안내"], buttons: [INS_HANDOFF] } },
+  ], quicks: [INS_HANDOFF, "내 리포트 요약"] };
+}
 /* ===== AI Super Agent — 사이트 전 섹션을 연결하는 고객 전담 오케스트레이터 =====
    [라벨, 섹션키, 요약, 인식 키워드[]] — 버튼 이동·자연어 라우팅·연관 안내에 공통 사용 */
 const AGENT_NAV = [
@@ -2073,6 +2081,8 @@ function dataHouseCounsel(text) {
 }
 function aiRespond(text, corpus, report, QA) {
   const has = (...ks) => ks.some((k) => text.includes(k));
+  // 보험·보장 의도는 질병 정보로 답하지 말고 보험 AI 상담사로 연결(예: 'OO 대비 보험')
+  if (text !== INS_HANDOFF && /(대비\s*보험|보험|보장|실손|진단비|보험금|보험료|청구)/.test(text)) return insHandoff();
   if (text.includes("다른 약 검색") || (text.includes("약") && has("어떤 약", "약 종류", "무슨 약", "약물 목록")))
     return { bubbles: [{ kind: "text", text: "약 이름을 입력하시면 효능·복용법·부작용·상호작용·응급신호를 안내해 드려요. 아래 예시를 눌러보셔도 돼요.\n※ 정보 제공용이며 진단·처방을 대체하지 않습니다." }], quicks: ["메트포르민 부작용", "와파린 주의사항", "아스피린", "스타틴", "타이레놀 복용법"] };
   if (report && report.meta && /리포트|건강분석|건강 분석|종합\s*분석|건강\s*총평|전체.*분석|분석.*리포트|리포트.*분석/.test(text)) {
@@ -2174,6 +2184,7 @@ function Chat({ superAgent, acceptsSeed }) {
     if (text === "🚨 응급신호 자가체크" || text === "🚨 응급신호 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "emergency"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === "🗂 검진 결과·사후관리 바로가기") { setPlus(false); setQuicks([]); try { _checkupTab = "result"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === DOCTOR_HANDOFF) { setPlus(false); setQuicks([]); try { _doctorSeed = lastQRef.current || null; _checkupTab = "doctor"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
+    if (text === INS_HANDOFF) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") window.__hifinInsAsk = { tab: "ai", q: lastQRef.current || "보장 공백 분석" }; } catch (e) {} if (typeof nav === "function") nav("insurance"); return; }
     if (text === SHOP_DEVICE_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") { window._shopGo = Object.assign({ cat: "device", brand: "GN바디닥터" }, window._lastCareRec || {}); window._shopIntel = null; } } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
     if (text === SHOP_SUPP_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") window._shopIntel = Object.assign({ kind: "supp" }, window._lastCareRec || {}); } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
     if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }

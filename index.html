@@ -1835,6 +1835,14 @@ const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진�
 /* Super Agent → 검진 화면 AI 주치의 핸드오프 씨앗(건강 질문을 넘겨받아 이어서 상담) */
 let _doctorSeed = null;
 const DOCTOR_HANDOFF = "🩺 검진 화면에서 이어 상담";
+/* 보험·보장 문의는 약관 학습 보험 AI 상담사(보험·치료비 › AI보험상담)로 연결 */
+const INS_HANDOFF = "🛡️ 보험 AI 상담사에게 연결";
+function insHandoff() {
+  return { bubbles: [
+    { kind: "text", text: "보험·보장은 약관을 학습한 **보험 AI 상담사**가 정확히 도와드려요. 아래 버튼을 누르면 지금 문의를 이어서 **보험 상담사에게 연결**해 드릴게요." },
+    { kind: "card", card: { title: "🛡️ 보험 AI 상담 연결", items: ["질환·검진 위험과 연계한 보장 공백·본인부담·세대 전환 분석", "실손 세대·중대질환 진단비 안내(정보 제공)", "청약·가입은 정식 라이선스 채널(GA)로 안내"], buttons: [INS_HANDOFF] } },
+  ], quicks: [INS_HANDOFF, "내 리포트 요약"] };
+}
 /* ===== AI Super Agent — 사이트 전 섹션을 연결하는 고객 전담 오케스트레이터 =====
    [라벨, 섹션키, 요약, 인식 키워드[]] — 버튼 이동·자연어 라우팅·연관 안내에 공통 사용 */
 const AGENT_NAV = [
@@ -2939,6 +2947,8 @@ function dataHouseCounsel(text) {
 }
 function aiRespond(text, corpus, report, QA) {
   const has = (...ks) => ks.some((k) => text.includes(k));
+  // 보험·보장 의도는 질병 정보로 답하지 말고 보험 AI 상담사로 연결(예: 'OO 대비 보험')
+  if (text !== INS_HANDOFF && /(대비\s*보험|보험|보장|실손|진단비|보험금|보험료|청구)/.test(text)) return insHandoff();
   if (text.includes("다른 약 검색") || (text.includes("약") && has("어떤 약", "약 종류", "무슨 약", "약물 목록")))
     return { bubbles: [{ kind: "text", text: "약 이름을 입력하시면 효능·복용법·부작용·상호작용·응급신호를 안내해 드려요. 아래 예시를 눌러보셔도 돼요.\n※ 정보 제공용이며 진단·처방을 대체하지 않습니다." }], quicks: ["메트포르민 부작용", "와파린 주의사항", "아스피린", "스타틴", "타이레놀 복용법"] };
   if (report && report.meta && /리포트|건강분석|건강 분석|종합\s*분석|건강\s*총평|전체.*분석|분석.*리포트|리포트.*분석/.test(text)) {
@@ -3040,6 +3050,7 @@ function Chat({ superAgent, acceptsSeed }) {
     if (text === "🚨 응급신호 자가체크" || text === "🚨 응급신호 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "emergency"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === "🗂 검진 결과·사후관리 바로가기") { setPlus(false); setQuicks([]); try { _checkupTab = "result"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === DOCTOR_HANDOFF) { setPlus(false); setQuicks([]); try { _doctorSeed = lastQRef.current || null; _checkupTab = "doctor"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
+    if (text === INS_HANDOFF) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") window.__hifinInsAsk = { tab: "ai", q: lastQRef.current || "보장 공백 분석" }; } catch (e) {} if (typeof nav === "function") nav("insurance"); return; }
     if (text === SHOP_DEVICE_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") { window._shopGo = Object.assign({ cat: "device", brand: "GN바디닥터" }, window._lastCareRec || {}); window._shopIntel = null; } } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
     if (text === SHOP_SUPP_BTN) { setPlus(false); setQuicks([]); try { if (typeof window !== "undefined") window._shopIntel = Object.assign({ kind: "supp" }, window._lastCareRec || {}); } catch (e) {} if (typeof nav === "function") nav("shop"); return; }
     if (ACTION_NAV[text]) { setPlus(false); if (typeof nav === "function") nav(ACTION_NAV[text]); return; }
@@ -7034,7 +7045,7 @@ function _insFusionRoute(text, Mx, nm) {
   }
   return null;
 }
-function AIPlannerChat({ onSimple }) {
+function AIPlannerChat({ onSimple, initialAsk }) {
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const _self = !dm && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null;
   const member = dm || _self;
@@ -7085,6 +7096,7 @@ function AIPlannerChat({ onSimple }) {
       else { setMsgs((m) => [...m, { who: "ai", bubbles: [{ kind: "text", text: `‘${text}’에 딱 맞는 약관 조항을 찾지 못했어요. 😅 **보장·보험금·청구·면책·계약** 관련으로 물어보시거나 아래 추천 질문을 눌러보세요. 정확한 보장은 증권·약관 원문과 상담사 확인이 필요해요.` }] }]); setQuicks(FAQ.slice(0, 4).concat("보험상담 신청")); }
     }, 620);
   };
+  useEffect(() => { if (initialAsk) { const t = setTimeout(() => send(initialAsk), 650); return () => clearTimeout(t); } }, []);
   return (
     <div className="aipwrap">
       <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 보험 솔루션 상담사</b><span>건강데이터 × 실손·중대질환 융합 분석</span></div><span className="aipbadge">{member ? nm + "님 데이터 연동" : "약관 학습완료"}</span></div>
@@ -7720,11 +7732,14 @@ function InsuranceSection({ onGo }) {
   const [enroll, setEnroll] = useState(false);
   const [cover, setCover] = useState(null);
   const [simplePlan, setSimplePlan] = useState(null);
+  const [askSeed, setAskSeed] = useState(null);   // AI 주치의/Super Agent에서 넘어온 보험 문의
   const go = onGo || (() => {});
-  // 다른 섹션(검진 진단비 공백 등)에서 특정 간편보험으로 진입하는 라우팅 훅
+  // 다른 섹션에서 특정 간편보험 진입(__hifinInsRoute) / 보험 AI상담 연결·자동질의(__hifinInsAsk) 라우팅 훅
   useEffect(() => {
     let r = null; try { r = window.__hifinInsRoute; } catch (e) {}
     if (r) { if (r.tab) setTab(r.tab); setSimplePlan(r.planKey || null); try { window.__hifinInsRoute = null; } catch (e) {} }
+    let a = null; try { a = window.__hifinInsAsk; } catch (e) {}
+    if (a) { setTab(a.tab || "ai"); setAskSeed(a.q || null); try { window.__hifinInsAsk = null; } catch (e) {} }
   }, []);
   const tabs = [["embed", "건강검진대비보험", ShieldCheck], ["premium", "맞춤 헬스케어 보험", Sparkles], ["policy", "실손보험지원", HeartHandshake], ["sports", "스포츠 임베디드 보험", Trophy], ["join", "보험가입", FileText], ["coverage", "보장조회", Search], ["claim", "보험금청구", Coins], ["ai", "AI보험상담", MessageSquare]];
   return (
@@ -7823,7 +7838,7 @@ function InsuranceSection({ onGo }) {
           <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 설계사 — 약관 학습 대화형 상담</div>
           <div className="ap"><b>보험 약관을 학습한 AI 설계사</b>가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
         </div>
-        <AIPlannerChat onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
+        <AIPlannerChat initialAsk={askSeed} onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
       </>)}
 
       {cover && <CoverDetailModal name={cover} onClose={() => setCover(null)} />}
@@ -15913,7 +15928,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-15", ver:"v1.1", ch:[16], feat:"GUEST 쓰기 시뮬레이션 가드+게스트 AI상담", src:"demoAuth(전역 쓰기 가드)/ConsultModal", summary:"둘러보기 세션의 회원 데이터 영속화를 전역 차단해 쓰기를 시뮬레이션 처리하고 종료 시 세션을 파기하며, AI 보험상담이 게스트 합성 프로필로 정상 동작함을 검증", refs:[], status:"반영", hash:"ae746b4", auto:true },
+  { date:"2026-07-15", ver:"v1.1", ch:[16], feat:"보험 문의 핸드오프(주치의→보험 AI상담사)", src:"AI 주치의/Super Agent → 보험·치료비 AI보험상담", summary:"건강 상담 채팅에서 보험·보장 의도를 감지해 약관 학습 보험 AI 상담사로 문의를 이어 연결하고, 보험 에이전트가 질환 연계 보장(진단비 공백)을 상담하도록 구현", refs:[], status:"반영", hash:"0e569b7", auto:true },
+  { date:"2026-07-15", ver:"v1.1", ch:[16], feat:"GUEST 쓰기 시뮬레이션 가드+게스트 AI상담", src:"demoAuth(전역 쓰기 가드)/ConsultModal", summary:"둘러보기 세션의 회원 데이터 영속화를 전역 차단해 쓰기를 시뮬레이션 처리하고 종료 시 세션을 파기하며, AI 보험상담이 게스트 합성 프로필로 정상 동작함을 검증", refs:[], status:"반영", hash:"cf69b2a", auto:true },
   { date:"2026-07-15", ver:"v1.1", ch:[16], feat:"둘러보기 모드+RBAC 로그인 개편", src:"로그인(AuthGate)/App 라우팅/demoAuth", summary:"가입 없이 나이·성별·만성질환으로 유사 회원을 매칭해 체험하는 둘러보기(GUEST) 모드와, 온톨로지·파일럿검증회원을 GUEST에게 이중 차단하고 hifin/hifin01 ADMIN만 전체 열람하는 3역할 권한 체계를 구현", refs:[], status:"반영", hash:"0810833", auto:true },
   { date:"2026-07-15", ver:"v1.1", ch:[15], feat:"CI 온톨로지 검진연동+AI 간편가입 마법사", src:"건강검진 예약 › AI맞춤추천 / 보험·치료비 › 맞춤 헬스케어 보험", summary:"검진지표→질환→중대질환 온톨로지를 검진 추천에 연결하고, 상담 전 자기주도 AI 간편가입(고지·동의서·납입·전자증권) 시뮬레이션을 구축했으며 검진 진단비 공백에서 해당 간편보험으로 자동 진입하도록 연동", refs:[], status:"반영", hash:"676440f", auto:true },
   { date:"2026-07-15", ver:"v1.1", ch:[15], feat:"보험 융합 대시보드(히트맵·금액대)+가족/마이페이지 단일소스", src:"보험·치료비/마이페이지/우리가족건강관리", summary:"연령×세대 히트맵과 진단비 금액대 분포를 추가하고 마이페이지·우리가족이 보험 온톨로지(insuranceSolution·getFamilyCoverageSummary)를 단일 소스로 참조하도록 연동, 조성래 시연 인물을 전 섹션 단일 케이스로 수렴", refs:[], status:"반영", hash:"bf85596", auto:true },

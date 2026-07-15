@@ -336,7 +336,7 @@ function _insFusionRoute(text, Mx, nm) {
   }
   return null;
 }
-function AIPlannerChat({ onSimple }) {
+function AIPlannerChat({ onSimple, initialAsk }) {
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const _self = !dm && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null;
   const member = dm || _self;
@@ -387,6 +387,7 @@ function AIPlannerChat({ onSimple }) {
       else { setMsgs((m) => [...m, { who: "ai", bubbles: [{ kind: "text", text: `‘${text}’에 딱 맞는 약관 조항을 찾지 못했어요. 😅 **보장·보험금·청구·면책·계약** 관련으로 물어보시거나 아래 추천 질문을 눌러보세요. 정확한 보장은 증권·약관 원문과 상담사 확인이 필요해요.` }] }]); setQuicks(FAQ.slice(0, 4).concat("보험상담 신청")); }
     }, 620);
   };
+  useEffect(() => { if (initialAsk) { const t = setTimeout(() => send(initialAsk), 650); return () => clearTimeout(t); } }, []);
   return (
     <div className="aipwrap">
       <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>AI 보험 솔루션 상담사</b><span>건강데이터 × 실손·중대질환 융합 분석</span></div><span className="aipbadge">{member ? nm + "님 데이터 연동" : "약관 학습완료"}</span></div>
@@ -1022,11 +1023,14 @@ function InsuranceSection({ onGo }) {
   const [enroll, setEnroll] = useState(false);
   const [cover, setCover] = useState(null);
   const [simplePlan, setSimplePlan] = useState(null);
+  const [askSeed, setAskSeed] = useState(null);   // AI 주치의/Super Agent에서 넘어온 보험 문의
   const go = onGo || (() => {});
-  // 다른 섹션(검진 진단비 공백 등)에서 특정 간편보험으로 진입하는 라우팅 훅
+  // 다른 섹션에서 특정 간편보험 진입(__hifinInsRoute) / 보험 AI상담 연결·자동질의(__hifinInsAsk) 라우팅 훅
   useEffect(() => {
     let r = null; try { r = window.__hifinInsRoute; } catch (e) {}
     if (r) { if (r.tab) setTab(r.tab); setSimplePlan(r.planKey || null); try { window.__hifinInsRoute = null; } catch (e) {} }
+    let a = null; try { a = window.__hifinInsAsk; } catch (e) {}
+    if (a) { setTab(a.tab || "ai"); setAskSeed(a.q || null); try { window.__hifinInsAsk = null; } catch (e) {} }
   }, []);
   const tabs = [["embed", "건강검진대비보험", ShieldCheck], ["premium", "맞춤 헬스케어 보험", Sparkles], ["policy", "실손보험지원", HeartHandshake], ["sports", "스포츠 임베디드 보험", Trophy], ["join", "보험가입", FileText], ["coverage", "보장조회", Search], ["claim", "보험금청구", Coins], ["ai", "AI보험상담", MessageSquare]];
   return (
@@ -1125,7 +1129,7 @@ function InsuranceSection({ onGo }) {
           <div className="at"><MessageSquare size={16} color="#7C3AED" /> AI 설계사 — 약관 학습 대화형 상담</div>
           <div className="ap"><b>보험 약관을 학습한 AI 설계사</b>가 보장·보험금·청구·면책·계약을 대화로 안내해 드려요. 무엇이든 물어보세요.</div>
         </div>
-        <AIPlannerChat onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
+        <AIPlannerChat initialAsk={askSeed} onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
       </>)}
 
       {cover && <CoverDetailModal name={cover} onClose={() => setCover(null)} />}
