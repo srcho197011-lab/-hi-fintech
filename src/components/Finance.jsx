@@ -524,7 +524,7 @@ function FinParamsPanel({ onApply }) {
     ["subFeeBase", "구독료 2차연도(원/월·기관)", D.subFeeBase], ["subFeeStep", "구독료 연 인상액(원)", D.subFeeStep], ["subPaidRate", "구독 유료 전환율(0~1)", D.subPaidRate],
     ["instMultPct", "제휴 기관 수 배율(%)", 100], ["payrollPct", "인건비 배율(%)", 100], ["cogsPct", "제품 원가율 배율(%)", 100],
     ["churn", "연 이탈률(0~1)", D.churn], ["wacc", "WACC(0~1)", D.wacc], ["evRevMultiple", "EV/Revenue 배수", D.evRevMultiple],
-    ["cloudPerActive", "클라우드 원가(원/활성회원·년)", D.cloudPerActive], ["gpuPerActive", "GPU 원가(원/활성회원·년)", D.gpuPerActive], ["rndRate", "R&D 비율(매출 대비 0~1)", D.rndRate],
+    ["cloudPerActive", "클라우드 원가(원/활성회원·년)", D.cloudPerActive], ["gpuPerActive", "GPU 원가(원/활성회원·년)", D.gpuPerActive], ["rndRate", "R&D 비율(매출 대비 0~1)", D.rndRate], ["opexScale", "기타 운영비 스케일(0~1)", D.opexScale],
   ];
   return (<>
     <div className="finlink" style={{ background: "#231A3F", borderColor: "#3f2d5e" }}><Zap size={13} color="#C4B5FD" /> <b>파라미터 기반 단일 재무모델</b> — 아래 값을 바꾸면 P/L·B/S·C/F·월별계획·SaaS·KPI·기업가치가 <b>즉시 자동 재계산</b>됩니다(전 화면 동일 데이터 소스). 빈칸이면 기본값 사용.</div>

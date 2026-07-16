@@ -42,6 +42,9 @@ const FIN_P_DEFAULT = {
   // AI 출수납·자동 분개·자동 정산으로 재무/운영 인력 대체 → 동일 회원 규모 대비 30% 추가 절감
   payroll: [700000000, 1890000000, 3500000000, 9310000000, 18690000000],
   rndRate: 0.05, cloudPerActive: 3000, gpuPerActive: 1200, salesRate: 0.02, adminRate: 0.04, brandMktRate: 0.015,
+  // 기타 운영비(R&D·클라우드·GPU·영업·관리) 30% 수준 스케일 — 근거: AI 네이티브 운영으로 고정 운영조직 최소화
+  // (하이 에이전트가 CS·영업지원 흡수, AI 출수납·자동정산으로 관리업무 자동화, 클라우드는 사용량 기반 최적화·자체 경량모델 병행)
+  opexScale: 0.30,
   rewardRate: 0.50, donationRate: 0.30, // 제품마진 대비(기존 원칙)
   deprYear: 1000000000, interestYear: 800000000, taxRate: 0.22,
   churn: 0.18, // 연간 회원 이탈률(SaaS 지표용)
@@ -68,7 +71,7 @@ function finParams() {
   const P = JSON.parse(JSON.stringify(d));
   // 스칼라 오버라이드(회원 목표 members1~5 / cac / activeRate / …)
   for (let i = 0; i < 5; i++) if (o["members" + (i + 1)] != null) P.membersEnd[i] = o["members" + (i + 1)];
-  ["cac", "activeRate", "productBuyerRate", "productCapture", "checkupRate", "serviceRate", "subFeeBase", "subFeeStep", "subFeeCap", "subPaidRate", "tenYearGrowth", "churn", "wacc", "evRevMultiple", "rndRate", "cloudPerActive", "gpuPerActive"].forEach((k) => { if (o[k] != null) P[k] = o[k]; });
+  ["cac", "activeRate", "productBuyerRate", "productCapture", "checkupRate", "serviceRate", "subFeeBase", "subFeeStep", "subFeeCap", "subPaidRate", "tenYearGrowth", "churn", "wacc", "evRevMultiple", "rndRate", "cloudPerActive", "gpuPerActive", "opexScale"].forEach((k) => { if (o[k] != null) P[k] = o[k]; });
   if (o.instMultPct != null) { const m = o.instMultPct / 100; ["checkupCenters", "hospitals", "pharmacies"].forEach((k) => { P[k] = P[k].map((v) => Math.round(v * m)); }); }
   if (o.payrollPct != null) P.payroll = P.payroll.map((v) => Math.round(v * o.payrollPct / 100));
   if (o.cogsPct != null) P.productCats = P.productCats.map((c) => ({ ...c, cost: Math.min(0.95, c.cost * o.cogsPct / 100) }));
@@ -120,10 +123,13 @@ function finYears(nYears) {
     const brandMkt = Math.round(revenue * P.brandMktRate), marketing = cacCost + brandMkt;
     const prodMargin = revProduct - cogsProduct;
     const reward = Math.round(prodMargin * P.rewardRate), donation = Math.round(prodMargin * P.donationRate);
-    const payroll = _finAt(P, P.payroll, y, 0.12), rnd = Math.round(revenue * P.rndRate);
-    const cloud = active * P.cloudPerActive, gpu = active * P.gpuPerActive;
-    const salesCost = Math.round(revenue * P.salesRate), adminCost = Math.round(revenue * P.adminRate);
+    const payroll = _finAt(P, P.payroll, y, 0.12);
+    const os = P.opexScale; // 기타 운영비 30% 스케일(AI 네이티브 운영 — 자동화·사용량 기반 인프라)
+    const rnd = Math.round(revenue * P.rndRate * os);
+    const cloud = Math.round(active * P.cloudPerActive * os), gpu = Math.round(active * P.gpuPerActive * os);
+    const salesCost = Math.round(revenue * P.salesRate * os), adminCost = Math.round(revenue * P.adminRate * os);
     const otherOpex = rnd + cloud + gpu + salesCost + adminCost;
+    L("기타 운영비(R&D·클라우드·GPU·영업·관리)", `표준 요율 합 × 운영 스케일 ${(os * 100).toFixed(0)}% — AI 네이티브 운영(하이 CS 흡수·AI 출수납 자동화·사용량 기반 클라우드)`, otherOpex);
     const sga = marketing + reward + donation + payroll + otherOpex;
     const ebit = L("영업이익(EBIT)", `매출총이익 ${finW(gross)} − 판관비 ${finW(sga)}`, gross - sga);
     const ebitda = ebit + P.deprYear, pbt = ebit - P.interestYear, tax = Math.max(0, pbt) * P.taxRate, net = pbt - tax;
