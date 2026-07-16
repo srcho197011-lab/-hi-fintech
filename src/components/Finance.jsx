@@ -308,7 +308,7 @@ function FinanceLive() {
         </div>
         <div className="ontpanel">
           <div className="ontph"><PieChart size={15} color="#22D3EE" /> 연간 예상 매출 구성 <span>· 총 {finWon(an.revenue)}원</span></div>
-          {[["제품판매(GMV·건강쇼핑)", an.revProduct, "#34D399"], ["AI 플랫폼 구독(舊 EMR·UPI — 검진·병원·약국)", an.revSub, "#6366F1"], ["검진 연계 수수료", an.revCheckup, "#22D3EE"], ["헬스케어 서비스 수수료", an.revService, "#2DD4BF"], ["예약 서비스 수수료(골프 등)", an.revReservation, "#F97316"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["AI Agent 프리미엄", an.revAgent, "#F472B6"], ["API·데이터·분석(B2B)", an.revApi, "#38BDF8"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={Math.max(an.revProduct, an.revSub)} color={c} sub="원" />)}
+          {[["제품판매(GMV·건강쇼핑)", an.revProduct, "#34D399"], ["AI 플랫폼 구독(원격진료·UPI·EMR 사용료 등 — 검진·병원·약국)", an.revSub, "#6366F1"], ["검진 연계 수수료", an.revCheckup, "#22D3EE"], ["헬스케어 서비스 수수료", an.revService, "#2DD4BF"], ["예약 서비스 수수료(골프 등)", an.revReservation, "#F97316"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["AI Agent 프리미엄", an.revAgent, "#F472B6"], ["API·데이터·분석(B2B)", an.revApi, "#38BDF8"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={Math.max(an.revProduct, an.revSub)} color={c} sub="원" />)}
           <div className="finpl-note" style={{ marginTop: 8 }}>{A.y === 0 ? "1차연도 구독매출 0원 — 회원 10만 달성 후(2차연도) AI Healthcare Platform Subscription 과금 시작." : `구독 구성: 병원 ${finWon(an.subSplit.hospital)} · 약국 ${finWon(an.subSplit.pharmacy)} · 검진기관 ${finWon(an.subSplit.checkup)} — AI 건강분석·상담·예측·CRM·원격진료 연계·보험청구 자동화·API를 포함한 통합 구독(단순 EMR 연결비 아님).`}</div>
         </div>
       </div>
@@ -372,7 +372,7 @@ function FinanceLive() {
             {M("　검진 연계 수수료", (r) => finWon(r.revCheckup))}
             {M("　헬스케어 서비스 수수료", (r) => finWon(r.revService))}
             {M("　예약 서비스(골프 등)", (r) => finWon(r.revReservation))}
-            {M("　AI 플랫폼 구독(舊 EMR·UPI)", (r) => finWon(r.revSub))}
+            {M("　AI 플랫폼 구독(원격진료·UPI·EMR 사용료 등)", (r) => finWon(r.revSub))}
             {M("　보험 중개", (r) => finWon(r.revInsurance))}
             {M("　AI Agent·API·데이터", (r) => finWon(r.revAgent + r.revApi))}
             {M("　광고·제휴", (r) => finWon(r.revAd))}
@@ -589,7 +589,7 @@ function FinGraphPanel() {
 
 /* 회계 온톨로지 계정과목(COA) 트리 */
 const FIN_COA = [
-  { g: "수익 (Revenue)", c: "#22D3EE", items: ["제품판매(GMV)", "AI 플랫폼 구독(EMR·UPI 통합)", "검진·서비스·예약 수수료", "보험 중개 수수료", "AI Agent 프리미엄", "API·데이터·분석(B2B)", "광고·제휴"] },
+  { g: "수익 (Revenue)", c: "#22D3EE", items: ["제품판매(GMV)", "AI 플랫폼 구독(원격진료·UPI·EMR 사용료 등)", "검진·서비스·예약 수수료", "보험 중개 수수료", "AI Agent 프리미엄", "API·데이터·분석(B2B)", "광고·제휴"] },
   { g: "매출원가 (COGS)", c: "#F472B6", items: ["제품 원가", "구독 운영(클라우드·연동)", "결제 대행 수수료"] },
   { g: "판매관리비 (SG&A)", c: "#F59E0B", items: ["인건비", "회원확보비(CAC 기간인식)", "브랜드 마케팅", "R&D·클라우드·GPU", "영업·관리비", "포인트(토큰)비용", "기부금(치료비 나눔)"] },
   { g: "자산·부채 (신설)", c: "#E11D48", items: ["구독료 미수금", "계약자산", "이연수익(구독 선수금)", "플랫폼·AI모델·데이터 자산", "토큰적립금(계약부채)", "기부금 준비금"] },

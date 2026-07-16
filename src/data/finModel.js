@@ -100,9 +100,9 @@ function finYears(nYears) {
     const newMembers = Math.max(0, membersEnd - membersPrev), active = Math.round(membersEnd * P.activeRate);
     const checkupCenters = _finAt(P, P.checkupCenters, y, P.instGrowthAfter5), hospitals = _finAt(P, P.hospitals, y, P.instGrowthAfter5), pharmacies = _finAt(P, P.pharmacies, y, P.instGrowthAfter5);
     const insts = checkupCenters + hospitals + pharmacies;
-    // ① AI Platform Subscription(舊 EMR·UPI·플랫폼 사용료 통합) — 1차 0원 전략
+    // ① AI Platform Subscription(원격진료·UPI·EMR 사용료 등 통합) — 1차 0원 전략
     const subFee = finSubFee(P, y), paidInsts = Math.round(insts * P.subPaidRate);
-    const revSub = L("AI 플랫폼 구독(EMR·UPI 통합)", y === 0 ? "1차연도 무료(시장 선점 전략) — 0원" : `기관 ${paidInsts.toLocaleString()}곳 × 월 ${finW(subFee)}원 × 12`, paidInsts * subFee * 12);
+    const revSub = L("AI 플랫폼 구독(원격진료·UPI·EMR 사용료 등)", y === 0 ? "1차연도 무료(시장 선점 전략) — 0원" : `기관 ${paidInsts.toLocaleString()}곳 × 월 ${finW(subFee)}원 × 12`, paidInsts * subFee * 12);
     const subSplit = insts ? { checkup: Math.round(revSub * checkupCenters / insts), hospital: Math.round(revSub * hospitals / insts), pharmacy: Math.round(revSub * pharmacies / insts) } : { checkup: 0, hospital: 0, pharmacy: 0 };
     // 제품 GMV — 지갑 점유율(포착률) 70% 보수화: 매출·원가·마진이 함께 70%로, 적립(마진 50%)·기부(마진 30%)도 자동 연동
     const buyers = Math.round(membersEnd * P.productBuyerRate);
@@ -229,7 +229,7 @@ function finCFYear(yi) {
 const FIN_GRAPH = [
   { k: "members", label: "회원 증가", c: "#22D3EE" }, { k: "cac", label: "회원확보비(CAC)", c: "#F59E0B" },
   { k: "active", label: "활성회원", c: "#34D399" }, { k: "checkup", label: "검진 증가", c: "#2DD4BF" },
-  { k: "inst", label: "병원·약국·검진기관", c: "#6366F1" }, { k: "sub", label: "AI Platform 구독", c: "#A78BFA" },
+  { k: "inst", label: "병원·약국·검진기관", c: "#6366F1" }, { k: "sub", label: "AI 플랫폼 구독(원격진료·UPI·EMR)", c: "#A78BFA" },
   { k: "mrr", label: "MRR·Recurring Revenue", c: "#F472B6" }, { k: "ocf", label: "영업현금흐름", c: "#FBBF24" }, { k: "ev", label: "기업가치(EV)", c: "#EAB308" },
 ];
 /* ── AI 자연어 재무 질의(하이 연동) — 질문 → 수치 + 계보 ── */
@@ -240,7 +240,7 @@ function finAsk(text) {
   const scn = P.scnMeta.label;
   const lines = [];
   if (/시나리오|보수|공격/.test(t)) { lines.push(`현재 시나리오는 '${scn}'이에요. 보수·기준·공격 3종을 온톨로지 › 재무회계 › 파라미터에서 바꾸면 전 재무제표가 즉시 재계산돼요.`); }
-  else if (/구독|사용료|EMR|플랫폼요금|emr/.test(t)) { lines.push(`AI Platform 구독료 정책: 1차연도 0원(시장 선점) → 2차 월 ${finW(finSubFee(P, 1))}원 → 5차 월 ${finW(finSubFee(P, 4))}원(매년 +${finW(P.subFeeStep)}원).`, `${r.label} 구독매출 ${finW(r.revSub)}원 = 기관 ${r.paidInsts.toLocaleString()}곳 × 월 ${finW(r.subFee)}원 × 12.`); }
+  else if (/구독|사용료|EMR|플랫폼요금|emr/.test(t)) { lines.push(`AI 플랫폼 구독료(원격진료·UPI·EMR 사용료 등) 정책: 1차연도 0원(시장 선점) → 2차 월 ${finW(finSubFee(P, 1))}원 → 5차 월 ${finW(finSubFee(P, 4))}원(매년 +${finW(P.subFeeStep)}원).`, `${r.label} 구독매출 ${finW(r.revSub)}원 = 기관 ${r.paidInsts.toLocaleString()}곳 × 월 ${finW(r.subFee)}원 × 12.`); }
   else if (/LTV|엘티비|ltv/.test(t)) { lines.push(`LTV는 ${finW(K.ltv)}원, LTV/CAC는 ${K.ltvCac.toFixed(1)}배예요 (ARPU × 매출총이익률 ÷ 이탈률 ${Math.round(K.churn * 100)}%).`, `CAC 회수기간(Payback)은 약 ${K.payback ? K.payback.toFixed(1) : "-"}개월이에요.`); }
   else if (/CAC|획득비|모집비|확보비|cac/.test(t)) { lines.push(`회원 1인 확보비(CAC)는 ${P.cac.toLocaleString()}원 — 10만 명 목표 시 총 ${finW(P.cac * P.membersEnd[0])}원이 회원 증가 속도에 따라 기간 인식돼요.`, `${r.label} CAC 비용은 신규 ${r.newMembers.toLocaleString()}명 × ${P.cac.toLocaleString()}원 = ${finW(r.cacCost)}원이에요.`); }
   else if (/기업가치|밸류|EV|ev/.test(t)) { lines.push(`기업가치(EV)는 DCF ${finW(V.evDCF)}원, EV/Revenue(${V.evRevMultiple}x) ${finW(V.evRev)}원 범위예요 (WACC ${Math.round(V.wacc * 100)}%).`); }
