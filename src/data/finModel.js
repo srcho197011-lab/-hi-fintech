@@ -14,8 +14,9 @@ const FIN_P_DEFAULT = {
   tenYearGrowth: 0.18, activeRate: 0.45,
   // ② 회원 확보비 — CAC 5,000원(온라인·SNS·검색·콘텐츠·제휴·이벤트·리워드·퍼미션DB 포함), 증가 속도 따라 인식
   cac: 5000,
-  // ① AI Healthcare Platform Subscription — 전 기관 동일, 1차 0원 → 2차 월100만 → 매년 +100만(5차 400만 상한)
-  subFeeBase: 1000000, subFeeStep: 1000000, subFeeCap: 4000000, subPaidRate: 1.0,
+  // ① AI Healthcare Platform Subscription — 전 기관 동일, 1차 0원 → 2차 월50만 → 매년 +50만(한도 300만)
+  //    침투 우선 요금: 2차 50만은 기관의 기존 EMR 유지비 수준으로 진입장벽 최소화 → 기능 확장과 함께 단계 인상
+  subFeeBase: 500000, subFeeStep: 500000, subFeeCap: 3000000, subPaidRate: 1.0,
   // 제휴 기관 수(연말) — 검진기관·병원·약국
   checkupCenters: [50, 150, 300, 500, 700], hospitals: [200, 800, 1500, 2500, 3000], pharmacies: [500, 2000, 5000, 12000, 20000],
   instGrowthAfter5: 0.10, subCostRate: 0.12, // 구독 원가(클라우드·연동 운영)
@@ -46,7 +47,8 @@ const FIN_P_DEFAULT = {
   // (하이 에이전트가 CS·영업지원 흡수, AI 출수납·자동정산으로 관리업무 자동화, 클라우드는 사용량 기반 최적화·자체 경량모델 병행)
   opexScale: 0.30,
   rewardRate: 0.50, donationRate: 0.30, // 제품마진 대비(기존 원칙)
-  deprYear: 1000000000, interestYear: 800000000, taxRate: 0.22,
+  // 감가상각 — 초년도는 자산 취득 직후라 상각 기반이 적어 50% 수준만 인식(EBITDA 과대 방지)
+  deprYear: 1000000000, deprY1Rate: 0.5, interestYear: 800000000, taxRate: 0.22,
   churn: 0.18, // 연간 회원 이탈률(SaaS 지표용)
   wacc: 0.15, termGrowth: 0.03, evRevMultiple: 4.0, evEbitdaMultiple: 15,
   capital: 300000000, surplus: 500000000, leaseLiab: 120000000, longDebt: 2000000000,
@@ -71,7 +73,7 @@ function finParams() {
   const P = JSON.parse(JSON.stringify(d));
   // 스칼라 오버라이드(회원 목표 members1~5 / cac / activeRate / …)
   for (let i = 0; i < 5; i++) if (o["members" + (i + 1)] != null) P.membersEnd[i] = o["members" + (i + 1)];
-  ["cac", "activeRate", "productBuyerRate", "productCapture", "checkupRate", "serviceRate", "subFeeBase", "subFeeStep", "subFeeCap", "subPaidRate", "tenYearGrowth", "churn", "wacc", "evRevMultiple", "rndRate", "cloudPerActive", "gpuPerActive", "opexScale"].forEach((k) => { if (o[k] != null) P[k] = o[k]; });
+  ["cac", "activeRate", "productBuyerRate", "productCapture", "checkupRate", "serviceRate", "subFeeBase", "subFeeStep", "subFeeCap", "subPaidRate", "tenYearGrowth", "churn", "wacc", "evRevMultiple", "rndRate", "cloudPerActive", "gpuPerActive", "opexScale", "deprY1Rate"].forEach((k) => { if (o[k] != null) P[k] = o[k]; });
   if (o.instMultPct != null) { const m = o.instMultPct / 100; ["checkupCenters", "hospitals", "pharmacies"].forEach((k) => { P[k] = P[k].map((v) => Math.round(v * m)); }); }
   if (o.payrollPct != null) P.payroll = P.payroll.map((v) => Math.round(v * o.payrollPct / 100));
   if (o.cogsPct != null) P.productCats = P.productCats.map((c) => ({ ...c, cost: Math.min(0.95, c.cost * o.cogsPct / 100) }));
@@ -132,8 +134,9 @@ function finYears(nYears) {
     L("기타 운영비(R&D·클라우드·GPU·영업·관리)", `표준 요율 합 × 운영 스케일 ${(os * 100).toFixed(0)}% — AI 네이티브 운영(하이 CS 흡수·AI 출수납 자동화·사용량 기반 클라우드)`, otherOpex);
     const sga = marketing + reward + donation + payroll + otherOpex;
     const ebit = L("영업이익(EBIT)", `매출총이익 ${finW(gross)} − 판관비 ${finW(sga)}`, gross - sga);
-    const ebitda = ebit + P.deprYear, pbt = ebit - P.interestYear, tax = Math.max(0, pbt) * P.taxRate, net = pbt - tax;
-    const capex = y < 2 ? 2000000000 : 5000000000, dwc = Math.round(revenue * 0.02), fcf = ebit * (1 - P.taxRate) + P.deprYear - capex - dwc;
+    const depr = Math.round(P.deprYear * (y === 0 ? P.deprY1Rate : 1)); // 초년도 감가상각 50%(상각 기반 적음)
+    const ebitda = ebit + depr, pbt = ebit - P.interestYear, tax = Math.max(0, pbt) * P.taxRate, net = pbt - tax;
+    const capex = y < 2 ? 2000000000 : 5000000000, dwc = Math.round(revenue * 0.02), fcf = ebit * (1 - P.taxRate) + depr - capex - dwc;
     const mrrEnd = paidInsts * subFee + Math.round(agentUsers * P.aiAgentFeeYear / 12); // 월 반복매출(구독)
     rows.push({ y, label: P.years[y], membersEnd, membersPrev, newMembers, active, buyers, checkupUsers, serviceUsers, reservations,
       hospitals, checkupCenters, pharmacies, insts, subFee, paidInsts, cac: P.cac, marketing, cacCost, brandMkt,
@@ -218,8 +221,9 @@ function finBSYear(yi) {
 function finCFYear(yi) {
   const P = finParams(); const r = finYears(Math.max(5, yi + 1))[yi];
   const subCollect = r.revSub + Math.round(r.revSub / 12), insCollect = r.revInsurance, mktCollect = r.revProduct + r.revCheckup + r.revService + r.revReservation + r.revAd + r.revAgent + r.revApi;
-  const opOut = r.cogs + r.sga - P.deprYear * 0; const opCF = r.net + P.deprYear + Math.round(r.revenue * 0.01);
-  return { subCollect, insCollect, mktCollect, cacOut: -r.cacCost, mktOut: -(r.marketing - r.cacCost), cloudOut: -(r.cloud + r.gpu), rndOut: -r.rnd, opCF, invCF: -r.capex, finCF: yi === 0 ? P.capital + P.surplus + P.longDebt + P.leaseLiab : 0, net: r.net, dep: P.deprYear };
+  const dep = Math.round(P.deprYear * (yi === 0 ? P.deprY1Rate : 1));
+  const opCF = r.net + dep + Math.round(r.revenue * 0.01);
+  return { subCollect, insCollect, mktCollect, cacOut: -r.cacCost, mktOut: -(r.marketing - r.cacCost), cloudOut: -(r.cloud + r.gpu), rndOut: -r.rnd, opCF, invCF: -r.capex, finCF: yi === 0 ? P.capital + P.surplus + P.longDebt + P.leaseLiab : 0, net: r.net, dep };
 }
 /* ── 재무회계 온톨로지 그래프 — 회원→CAC→…→EV 인과 사슬 ── */
 const FIN_GRAPH = [
