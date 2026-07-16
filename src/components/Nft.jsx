@@ -15,7 +15,7 @@ function NFTSection({ onGo }) {
 
       {tab === "mine" && (<>
         <div className="benefit">
-          <span><Art name="badge" size={16} /> 보유 {NFT_MINE.length}개</span>
+          <span><Art name="badge" size={16} /> 보유 {NFT_MINE.length + NFT_MINE_FIN.length}개</span>
           <span><Art name="lock" size={16} /> SBT 양도불가</span>
           <span><Art name="hash" size={16} /> 위·변조 방지</span>
           <span><Art name="coin" size={16} /> 데이터 제공 보상 연계</span>
@@ -28,7 +28,15 @@ function NFTSection({ onGo }) {
             <div className="nfoot"><span className="nftid">{n.id}</span><button className="book" style={{ marginLeft: "auto", padding: "7px 12px" }} onClick={() => go(n.to)}>연계 보기</button></div>
           </div>
         ))}</div>
-        <div className="chnote">※ 표시된 토큰 ID·내역은 예시입니다. NFT/SBT는 검진·보험·건강관리 활동에 따라 본인 건강지갑에 발행됩니다.</div>
+        <div className="bklbl" style={{ margin: "16px 0 8px" }}><Coins size={14} color="#EA580C" style={{ verticalAlign: "-2px" }} /> 금융거래 NFT/SBT — 보험거래 · 치료비 결제 · 주식/채권 · 은행 · HTK</div>
+        <div className="nftgrid">{NFT_MINE_FIN.map((n, i) => (
+          <div className="nftc" key={i}>
+            <div className="nh"><span className="ni" style={{ background: n.col + "1A" }}><Art name={n.art} size={24} /></span>
+              <div style={{ flex: 1 }}><span className="cbadge" style={{ color: n.col, background: n.col + "14" }}>{n.type}</span><span className="sbtbadge" style={{ marginLeft: 5 }}>SBT</span><div className="nname" style={{ marginTop: 5 }}>{n.name}</div><div className="nmeta">{n.meta}</div></div></div>
+            <div className="nfoot"><span className="nftid">{n.id}</span><button className="book" style={{ marginLeft: "auto", padding: "7px 12px" }} onClick={() => go(n.to)}>연계 보기</button></div>
+          </div>
+        ))}</div>
+        <div className="chnote">※ 표시된 토큰 ID·내역은 예시입니다. NFT/SBT는 검진·보험·건강관리·금융(결제·청약·정산) 활동에 따라 본인 건강지갑에 발행됩니다. 금융거래 토큰은 관련 법령 정비 후 단계적으로 온체인 발행됩니다(현재 시연·설계).</div>
       </>)}
 
       {tab === "issue" && (<>

@@ -65,6 +65,19 @@ const NFT_MINE = [
   { art: "hash", type: "데이터 증명", name: "데이터 제공 동의 증명", meta: "DID 동의 · Health Token +1,900 보상", id: "0xa1f7…7b20", to: "wallet", col: "#0EA5E9" },
   { art: "building", type: "진료기록 해시", name: "진료·검사 기록 무결성 해시", meta: "온체인 앵커링 · 위·변조 방지 (설계)", id: "0xc803…1d4e", to: "hospital", col: "#0EA5E9" },
 ];
+/* 금융거래 NFT/SBT — 하이핀 금융 축(보험거래·치료비결제·주식/채권·은행·HTK 온체인) 연동 */
+const NFT_MINE_FIN = [
+  { art: "badge", type: "전자증권 NFT", name: "내몸맞춤 간편보험 전자증권", meta: "3대 진단비 간편플랜 · 간편가입 즉시발행 · 월 12,900원", id: "0x4be2…a90f", to: "insurance", col: "#2F5BEA" },
+  { art: "check", type: "청구지급 SBT", name: "보험금 청구·지급 확인서", meta: "외래진료비 84,000원 · 지급완료 2026.06.30 · 자동증빙", id: "0x8d15…c47b", to: "insurance", col: "#2563EB" },
+  { art: "percent", type: "납입영수 SBT", name: "보험료 납입 영수 토큰", meta: "2026년 상반기 6회 납입 · 자동이체 + HTK 30% 병행", id: "0x1fa9…e832", to: "insurance", col: "#0EA5E9" },
+  { art: "heartpulse", type: "진료결제 NFT", name: "진료·치료비 결제 영수증", meta: "제휴병원 외래 · HTK 2,400 + 카드 결제 · 연말정산 증빙", id: "0x6c07…59d2", to: "hospital", col: "#E11D48" },
+  { art: "gift", type: "나눔증명 SBT", name: "치료비 나눔 기여 증명", meta: "소비 마진 30% 나눔 준비금 8,120원 적립 기여", id: "0xb3e8…20fc", to: "social", col: "#DB2777" },
+  { art: "trend", type: "주식청약 NFT", name: "회원 적립금 주식청약 참여증", meta: "HI-Fin 공모 · 12,000 HTK 청약 · 배정 대기", id: "0x970d…41ab", to: "partner", col: "#7C3AED" },
+  { art: "finance", type: "채권증서 NFT", name: "헬스케어 회사채 보유 증서", meta: "HI-Fin 3년물 연 5.2% · 100만원 · 이자 분기지급", id: "0xe24f…8c61", to: "partner", col: "#6D28D9" },
+  { art: "building", type: "은행거래 해시", name: "은행 출·수납 감사추적 해시", meta: "우리은행 5계좌 AI 출수납 · 일마감 원장 앵커링", id: "0x3a5c…d718", to: "wallet", col: "#0D9488" },
+  { art: "coin", type: "토큰거래 NFT", name: "HTK 전송·스왑 트랜잭션 영수", meta: "온체인 원장(tx·swap) · 실시간 무결성 배지 연동", id: "0x52b1…f094", to: "wallet", col: "#F59E0B" },
+  { art: "hash", type: "정산확인 SBT", name: "제휴사 정산 지급 확인서", meta: "월 정산 대사 완료 · 정산 원장 해시 일치 검증", id: "0xd88a…36e5", to: "partner", col: "#16A34A" },
+];
 const NFT_ISSUE = [
   ["calendar", "검진 예약증·결과 NFT", "검진 예약 시 예약증, 결과 확정 시 결과 NFT를 발행합니다."],
   ["badge", "건강검진보험 증서 SBT", "보험 가입 시 증서를 양도불가 토큰(SBT)으로 발행합니다."],
@@ -72,12 +85,20 @@ const NFT_ISSUE = [
   ["doc", "건강분석 리포트 NFT", "프롬에이지 Premium 리포트를 본인 소유 NFT로 보관합니다."],
   ["hash", "의료기록 무결성 해시", "검진·진료 기록의 해시를 온체인에 앵커링해 위·변조를 방지합니다."],
   ["gift", "데이터 제공 동의 증명", "데이터 제공 동의를 증명으로 발행하고 토큰 보상과 연계합니다."],
+  ["badge", "보험 전자증권·청구지급 SBT", "간편보험 가입 전자증권과 보험금 청구·지급 확인서를 토큰으로 발행합니다."],
+  ["heartpulse", "진료·치료비 결제 영수 NFT", "병원 치료비 결제(HTK·카드) 영수증을 위·변조 불가 토큰으로 보관합니다."],
+  ["trend", "주식청약·채권 증서 NFT", "회원 적립금 주식청약 참여증과 회사채 보유 증서를 발행해 권리를 증명합니다."],
+  ["building", "은행거래 감사추적 해시", "AI 출수납(우리은행 5계좌) 일마감 원장을 온체인 해시로 앵커링합니다."],
+  ["coin", "HTK 트랜잭션 영수", "HTK 전송·스왑 온체인 거래 영수를 자동 발행하고 실시간 무결성과 연동합니다."],
 ];
 const NFT_USE = [
   { n: 1, t: "보험금 청구 자동 증빙", d: "보험금 청구 시 검진·진료 NFT가 자동 증빙으로 제출되어 서류 없이 간편 청구됩니다.", to: "insurance", chip: "보험·치료비" },
   { n: 2, t: "병원 진료 시 인증서 제출", d: "건강인증서 SBT로 본인 건강상태를 안전하게 증명하고 진료에 활용합니다.", to: "hospital", chip: "병원/약국예약" },
   { n: 3, t: "데이터 제공 → 토큰 보상", d: "데이터 제공 동의 증명이 발행되고 건강금융지갑에 Health Token이 적립됩니다.", to: "wallet", chip: "건강금융지갑" },
   { n: 4, t: "가족·기관 선택 공개", d: "필요한 항목만 골라(영지식증명 지향) 가족·기관에 안전하게 공유합니다.", to: "mypage", chip: "마이페이지" },
+  { n: 5, t: "치료비 결제 즉시 증빙", d: "진료비 결제 영수 NFT가 보험금 청구·연말정산 의료비 증빙으로 바로 쓰입니다.", to: "insurance", chip: "보험·치료비" },
+  { n: 6, t: "청약·채권 권리 증명", d: "주식청약 참여증·채권 증서 NFT로 배정·이자지급 권리를 투명하게 증명합니다.", to: "partner", chip: "제휴·투자" },
+  { n: 7, t: "은행·정산 감사추적", d: "출수납·정산 원장 해시로 회계 감사와 파트너 정산의 신뢰를 확보합니다.", to: "wallet", chip: "건강금융지갑" },
 ];
 const NFT_SEC = [
   ["lock", "SBT(소울바운드 토큰)", "건강·보험 인증서를 양도·매매 불가한 토큰으로 본인에게 귀속시킵니다."],
