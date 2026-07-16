@@ -357,7 +357,7 @@ function FinanceLive() {
     </>); })()}
 
     {tab === "my" && (() => { const my = finMultiYear(); const revMax = Math.max(...my.map((r) => r.revenue)); const M = (l, f, cls) => <tr className={cls || ""}><td className="mono0">{l}</td>{my.map((r, i) => <td key={i} className="mono">{f(r)}</td>)}</tr>; return (<>
-      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> <b>5개년 중장기 추정(현실화 개편)</b> — 회원 <b>10만→1,000만</b>, CAC <b>5,000원/인(기간 인식)</b>. <b>AI Healthcare Platform Subscription</b>: 1차연도 <b>무료(0원 · 시장 선점)</b> → 2차 기관당 <b>월 100만</b> → 매년 +100만(5차 400만) — 검진·병원·약국 전 기관 동일, AI 건강분석·상담·예측·CRM·원격진료·보험청구 자동화 포함(단순 EMR 연결비 아님). 제품 GMV는 1인당 연 건강지출 근거(영양제35%·식단50%·기기40%·스포츠60% 원가), 적립50%·나눔30%는 <b>제품마진에만</b> 적용.</div>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> <b>5개년 중장기 추정(현실화 개편)</b> — 회원 <b>10만→1,000만</b>, CAC <b>5,000원/인(기간 인식)</b>. <b>AI Healthcare Platform Subscription</b>: 1차연도 <b>무료(0원 · 시장 선점)</b> → 2차 기관당 <b>월 100만</b> → 매년 +100만(5차 400만) — 검진·병원·약국 전 기관 동일, AI 건강분석·상담·예측·CRM·원격진료·보험청구 자동화 포함(단순 EMR 연결비 아님). 제품 GMV는 1인당 연 건강지출 × <b>지갑 점유율 70%</b>(기존 구매채널 병행 보수화), 인건비는 <b>AI 자동화(하이·AI 출수납) 반영 70% 수준</b>. 적립50%·나눔30% <b>비율 약속은 유지</b> — 모수(제품마진)가 70%로 현실화되며 금액도 자동으로 70% 수준.</div>
       <div className="ontpanel">
         <div className="ontph"><TrendingUp size={15} color="#34D399" /> 중장기 손익 추정 (5개년) <span>· 단위 원</span></div>
         <div className="onttbl-wrap"><table className="onttbl mytbl">
@@ -520,7 +520,7 @@ function FinParamsPanel({ onApply }) {
   const set = (k, v) => { finSetParam(k, v); force((x) => x + 1); onApply && onApply(); };
   const FIELDS = [
     ["members1", "1차연도 회원(명)", D.membersEnd[0]], ["members2", "2차연도 회원(명)", D.membersEnd[1]], ["members3", "3차연도 회원(명)", D.membersEnd[2]], ["members4", "4차연도 회원(명)", D.membersEnd[3]], ["members5", "5차연도 회원(명)", D.membersEnd[4]],
-    ["cac", "회원확보비 CAC(원/인)", D.cac], ["activeRate", "활성률(0~1)", D.activeRate], ["productBuyerRate", "제품 구매율(0~1)", D.productBuyerRate], ["checkupRate", "검진 전환율(0~1)", D.checkupRate],
+    ["cac", "회원확보비 CAC(원/인)", D.cac], ["activeRate", "활성률(0~1)", D.activeRate], ["productBuyerRate", "제품 구매율(0~1)", D.productBuyerRate], ["productCapture", "지갑 점유율·포착률(0~1)", D.productCapture], ["checkupRate", "검진 전환율(0~1)", D.checkupRate],
     ["subFeeBase", "구독료 2차연도(원/월·기관)", D.subFeeBase], ["subFeeStep", "구독료 연 인상액(원)", D.subFeeStep], ["subPaidRate", "구독 유료 전환율(0~1)", D.subPaidRate],
     ["instMultPct", "제휴 기관 수 배율(%)", 100], ["payrollPct", "인건비 배율(%)", 100], ["cogsPct", "제품 원가율 배율(%)", 100],
     ["churn", "연 이탈률(0~1)", D.churn], ["wacc", "WACC(0~1)", D.wacc], ["evRevMultiple", "EV/Revenue 배수", D.evRevMultiple],

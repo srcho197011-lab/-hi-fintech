@@ -19,7 +19,9 @@ const FIN_P_DEFAULT = {
   // 제휴 기관 수(연말) — 검진기관·병원·약국
   checkupCenters: [50, 150, 300, 500, 700], hospitals: [200, 800, 1500, 2500, 3000], pharmacies: [500, 2000, 5000, 12000, 20000],
   instGrowthAfter5: 0.10, subCostRate: 0.12, // 구독 원가(클라우드·연동 운영)
-  // 제품 GMV(건강쇼핑·총액) — 1인당 연 지출 근거 카테고리
+  // 제품 GMV(건강쇼핑·총액) — 1인당 연 지출 근거 카테고리 × 지갑 점유율(Share of Wallet) 70% 보수화
+  // 근거: 회원의 연간 건강지출 전액이 아니라, 기존 구매채널(오픈마켓·약국·마트) 병행을 감안한 플랫폼 포착률 70%만 매출로 인식
+  productCapture: 0.70,
   productBuyerRate: 0.38,
   productCats: [
     { key: "supp", label: "영양제·보충제", arpu: 140000, cost: 0.35 },
@@ -36,7 +38,9 @@ const FIN_P_DEFAULT = {
   apiClients: [0, 5, 20, 60, 120], apiFeeYear: 60000000, // 데이터·분석·API 계약(기관·기업, 연 6천만)
   paymentRate: 0.022,
   // 비용 — 인건비·R&D·클라우드·GPU·영업·관리(전부 파라미터)
-  payroll: [1000000000, 2700000000, 5000000000, 13300000000, 26700000000],
+  // 인건비 70% 수준 현실화 근거: 단일 AI 에이전트 '하이'가 CS·상담·안내를 흡수(AI 네이티브 전환 실구현) +
+  // AI 출수납·자동 분개·자동 정산으로 재무/운영 인력 대체 → 동일 회원 규모 대비 30% 추가 절감
+  payroll: [700000000, 1890000000, 3500000000, 9310000000, 18690000000],
   rndRate: 0.05, cloudPerActive: 3000, gpuPerActive: 1200, salesRate: 0.02, adminRate: 0.04, brandMktRate: 0.015,
   rewardRate: 0.50, donationRate: 0.30, // 제품마진 대비(기존 원칙)
   deprYear: 1000000000, interestYear: 800000000, taxRate: 0.22,
@@ -64,7 +68,7 @@ function finParams() {
   const P = JSON.parse(JSON.stringify(d));
   // 스칼라 오버라이드(회원 목표 members1~5 / cac / activeRate / …)
   for (let i = 0; i < 5; i++) if (o["members" + (i + 1)] != null) P.membersEnd[i] = o["members" + (i + 1)];
-  ["cac", "activeRate", "productBuyerRate", "checkupRate", "serviceRate", "subFeeBase", "subFeeStep", "subFeeCap", "subPaidRate", "tenYearGrowth", "churn", "wacc", "evRevMultiple", "rndRate", "cloudPerActive", "gpuPerActive"].forEach((k) => { if (o[k] != null) P[k] = o[k]; });
+  ["cac", "activeRate", "productBuyerRate", "productCapture", "checkupRate", "serviceRate", "subFeeBase", "subFeeStep", "subFeeCap", "subPaidRate", "tenYearGrowth", "churn", "wacc", "evRevMultiple", "rndRate", "cloudPerActive", "gpuPerActive"].forEach((k) => { if (o[k] != null) P[k] = o[k]; });
   if (o.instMultPct != null) { const m = o.instMultPct / 100; ["checkupCenters", "hospitals", "pharmacies"].forEach((k) => { P[k] = P[k].map((v) => Math.round(v * m)); }); }
   if (o.payrollPct != null) P.payroll = P.payroll.map((v) => Math.round(v * o.payrollPct / 100));
   if (o.cogsPct != null) P.productCats = P.productCats.map((c) => ({ ...c, cost: Math.min(0.95, c.cost * o.cogsPct / 100) }));
@@ -95,11 +99,11 @@ function finYears(nYears) {
     const subFee = finSubFee(P, y), paidInsts = Math.round(insts * P.subPaidRate);
     const revSub = L("AI 플랫폼 구독(EMR·UPI 통합)", y === 0 ? "1차연도 무료(시장 선점 전략) — 0원" : `기관 ${paidInsts.toLocaleString()}곳 × 월 ${finW(subFee)}원 × 12`, paidInsts * subFee * 12);
     const subSplit = insts ? { checkup: Math.round(revSub * checkupCenters / insts), hospital: Math.round(revSub * hospitals / insts), pharmacy: Math.round(revSub * pharmacies / insts) } : { checkup: 0, hospital: 0, pharmacy: 0 };
-    // 제품 GMV
+    // 제품 GMV — 지갑 점유율(포착률) 70% 보수화: 매출·원가·마진이 함께 70%로, 적립(마진 50%)·기부(마진 30%)도 자동 연동
     const buyers = Math.round(membersEnd * P.productBuyerRate);
     let revProduct = 0, cogsProduct = 0; const catRev = {};
-    for (const c of P.productCats) { const rv = buyers * c.arpu; catRev[c.key] = rv; revProduct += rv; cogsProduct += Math.round(rv * c.cost); }
-    L("제품판매(GMV·건강쇼핑)", `구매회원 ${buyers.toLocaleString()}명 × 카테고리 ARPU 합 ${finW(P.productCats.reduce((s, c) => s + c.arpu, 0))}원`, revProduct);
+    for (const c of P.productCats) { const rv = Math.round(buyers * c.arpu * P.productCapture); catRev[c.key] = rv; revProduct += rv; cogsProduct += Math.round(rv * c.cost); }
+    L("제품판매(GMV·건강쇼핑)", `구매회원 ${buyers.toLocaleString()}명 × 카테고리 ARPU 합 ${finW(P.productCats.reduce((s, c) => s + c.arpu, 0))}원 × 지갑 점유율 ${(P.productCapture * 100).toFixed(0)}%(기존 채널 병행 보수화)`, revProduct);
     const checkupUsers = Math.round(membersEnd * P.checkupRate), revCheckup = L("검진 연계 수수료", `검진회원 ${checkupUsers.toLocaleString()}명 × 건당 ${finW(P.checkupFee)}원`, checkupUsers * P.checkupFee);
     const serviceUsers = Math.round(membersEnd * P.serviceRate), revService = L("헬스케어 서비스 수수료", `이용 ${serviceUsers.toLocaleString()}명 × ${finW(P.serviceCommission)}원`, serviceUsers * P.serviceCommission);
     const reservations = Math.round(active * _finAt(P, P.resvPerActive, y, 0.05)), revReservation = reservations * P.resvFee;
