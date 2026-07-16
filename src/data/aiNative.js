@@ -83,6 +83,8 @@ const TOOL_RUN = {
   consult() { try { if (typeof openConsult === "function") openConsult("하이(AI 매니저) 경유 — 사람 상담 연결"); } catch (e) {} return { lines: ["상담 신청 창을 열었어요 — 접수되면 상담사가 연락드리고, 저도 옆에서 계속 도와드릴게요."] }; },
   easy() { try { const on = document.body.classList.toggle("easyread"); localStorage.setItem("hifin_easyread", on ? "1" : ""); return { lines: [on ? "쉬운 말 모드를 켰어요 — 글씨를 키우고 더 쉽게 설명할게요." : "쉬운 말 모드를 껐어요."] }; } catch (e) { return null; } },
   reset() { return { lines: ["대화를 새로 시작해요. 무엇이든 물어보세요!"], reset: true }; },
+  // 재무 질의 — 통합 재무엔진(finModel.js) 자연어 인터페이스(매출·손익·구독료·CAC·LTV·EV·런웨이·시나리오)
+  fin(m, text) { try { return (typeof finAsk === "function") ? finAsk(text) : null; } catch (e) { return null; } },
 };
 
 /* ── 미답변 로그 + 커버리지 지표 ── */

@@ -56,50 +56,15 @@ function finCF(a, bs) {
   return { opCF, invCF, finCF: finCFv, endCash, netIncome: bs.retained, dep, wc };
 }
 
-// ── 연간 예상(추정) 재무제표 — 중장기 3차연도(100만 회원) 대표 기준 Pro-forma P&L + B/S ──
-function finAnnual() {
-  const M = FIN_MY, r = finMultiYear()[2]; // 3차연도 · 100만 회원
-  const finIncome = Math.round(r.revenue * 0.001), finCost = M.interestYear, op = r.ebit, pbt = op + finIncome - finCost, tax = Math.max(0, pbt) * M.taxRate, net = pbt - tax;
-  const capital = 300000000, surplus = 500000000, retained = net, equity = capital + surplus + retained;
-  const contractLiab = r.reward, donationPay = Math.round(r.donation * 0.4), tradePay = Math.round(r.cogs * 0.1), taxPay = Math.round(tax), deposits = Math.round(r.revInsurance * 0.1);
-  const curLiab = contractLiab + donationPay + tradePay + taxPay + deposits, leaseLiab = 120000000, longDebt = 2000000000, nonCurLiab = leaseLiab + longDebt, liabilities = curLiab + nonCurLiab;
-  const assets = liabilities + equity;
-  const ppe = 3000000000, intangible = 1500000000, rou = 500000000, nonCurAssets = ppe + intangible + rou;
-  const inventory = Math.round(r.cogs * 0.05), receivable = Math.round(r.revenue * 0.08), prepaid = 100000000;
-  const cash = assets - (nonCurAssets + inventory + receivable + prepaid), curAssets = cash + receivable + inventory + prepaid;
-  return {
-    revProduct: r.revProduct, catRev: r.catRev, revCheckup: r.revCheckup, revService: r.revService, revReservation: r.revReservation, revEmr: r.revEmr, revInsurance: r.revInsurance, revAd: r.revAd, revenue: r.revenue, cogs: r.cogs, cogsProduct: r.cogsProduct, gross: r.gross, reward: r.reward, donation: r.donation, marketing: r.marketing, payroll: r.payroll, otherOpex: r.otherOpex, sga: r.sga, op, finIncome, finCost, pbt, tax, net, opMargin: op / r.revenue, netMargin: net / r.revenue,
-    assets, cash, receivable, inventory, prepaid, curAssets, ppe, intangible, rou, nonCurAssets, contractLiab, donationPay, tradePay, taxPay, deposits, curLiab, leaseLiab, longDebt, nonCurLiab, liabilities, capital, surplus, retained, equity,
-    debtRatio: liabilities / equity, currentRatio: curAssets / curLiab, equityRatio: equity / assets, roe: retained / equity,
-    A: { members: M.membersEnd[2], activeRate: M.activeRate, hospitals: M.hospitals[2], institutions: M.hospitals[2] + M.checkupCenters[2] + M.pharmacies[2], buyerRate: M.productBuyerRate, checkupRate: M.checkupRate },
-  };
+// ── 연간 예상(추정) 재무제표 — 연차 선택형(신 재무엔진 finModel.js 위임 · 파라미터·시나리오 자동 반영) ──
+function finAnnual(yi) {
+  const y = yi == null ? 0 : yi;
+  const bs = finBSYear(y), r = bs.r, P = finParams();
+  return { ...r, ...bs, r,
+    op: r.ebit, finIncome: 0, finCost: P.interestYear, pbt: r.pbt, tax: r.tax, net: r.net,
+    opMargin: r.opMargin, netMargin: r.netMargin,
+    A: { members: r.membersEnd, activeRate: P.activeRate, hospitals: r.hospitals, institutions: r.insts, buyerRate: P.productBuyerRate, checkupRate: P.checkupRate, subFee: r.subFee, y } };
 }
-
-// ── 3~5개년 중장기 추정 + 회원 GTM + 밸류에이션(DCF·멀티플) — 시장조사 기반 가정 ──
-const FIN_MY = {
-  years: ["1차연도", "2차연도", "3차연도", "4차연도", "5차연도"],
-  membersEnd: [100000, 500000, 1000000, 5000000, 10000000], activeRate: 0.45,
-  cac: [8000, 8000, 8000, 8500, 9000], // 회원 획득비 — 무료 검진대비보험 보험료 포함해 약 8천원 수준
-  // EMR·UIP(플랫폼) 사용료 — 병원·검진센터·약국. 전액 매출 인식(SaaS), 저원가. 적립·기부 미적용.
-  hospitals: [200, 800, 1500, 2500, 3000], emrFeeMonthly: 3000000, // 병원 EMR 월 300만
-  checkupCenters: [50, 150, 300, 500, 700], checkupUipMonthly: 1500000, // 검진센터 UIP 월 150만
-  pharmacies: [500, 2000, 5000, 12000, 20000], pharmacyUipMonthly: 200000, // 약국 UIP 월 20만
-  uipCostRate: 0.05, // EMR·UIP 전액 매출·저원가(운영 인프라만)
-  // 제품 GMV(총액·건강쇼핑) — 한국인 1인당 연간 건강관리 지출 근거 × 플랫폼 포착. 카테고리별 원가율.
-  productBuyerRate: 0.38,
-  productCats: [
-    { key: "supp", label: "영양제·보충제", arpu: 140000, cost: 0.35 }, // 국내 1인 연 13.5만(건기식협회) 중 포착
-    { key: "diet", label: "건강식단·식품", arpu: 45000, cost: 0.50 }, // 1인 연 4만(HMR 건강세그먼트)
-    { key: "device", label: "홈케어 의료기기", arpu: 45000, cost: 0.40 }, // 1인 연 4만(가정용 기기)
-    { key: "sports", label: "스포츠용품·활동", arpu: 80000, cost: 0.60 }, // 1인 연 25만(스포츠) 중 용품 포착
-  ],
-  checkupRate: 0.45, checkupFee: 22500, checkupCostRate: 0.50, // 검진 연계 건당 1.5~3만(평균 2.25만), 원가 50%
-  serviceRate: 0.30, serviceCommission: 15000, serviceCostRate: 0.05, // 헬스케어 서비스(상담·홈케어·재활·PT) 매칭 수수료 — 1인 연 15만 지출 중 수수료
-  resvPerActive: [0.4, 0.7, 1.0, 1.3, 1.6], resvFee: 10000, // 예약 서비스(골프 등) 건당 1만원 · 활성회원 연 예약건수
-  arpuInsurance: [3000, 5000, 8000, 12000, 15000], adPerActive: [0, 300, 800, 1500, 2500],
-  opexRate: 0.12, donationRate: 0.30, rewardRate: 0.50, payroll: [1000000000, 2700000000, 5000000000, 13300000000, 26700000000], // 적립·나눔은 제품마진 대비(적립50%·나눔30%·운영20%). 인건비는 AI 자동화로 1/3 수준
-  deprYear: 1000000000, interestYear: 800000000, taxRate: 0.22, wacc: 0.15, termGrowth: 0.03, evRevMultiple: 4.0, evEbitdaMultiple: 15,
-};
 const FIN_GTM_CHANNELS = [
   ["검진·병원 B2B 연계", "검진기관·병원 제휴로 검진 예약·결과 연동 회원 유입 — 최우선·최저 CAC", "#22D3EE"],
   ["기업복지·단체검진 제휴", "기업 복지몰·단체검진 계약으로 대량 가입 확보", "#6366F1"],
@@ -107,29 +72,8 @@ const FIN_GTM_CHANNELS = [
   ["건강 리워드·바이럴", "걸음·미션 리워드로 습관화·리텐션 강화(캐시워크 모델)", "#34D399"],
   ["앱 퍼포먼스 마케팅(보조)", "유료 광고 — 가장 비싸 보조 수단, 후기 스케일업", "#FBBF24"],
 ];
-function finMultiYear() {
-  const M = FIN_MY; const rows = [];
-  for (let y = 0; y < 5; y++) {
-    const membersEnd = M.membersEnd[y], membersPrev = y === 0 ? 0 : M.membersEnd[y - 1], newMembers = membersEnd - membersPrev, active = Math.round(membersEnd * M.activeRate);
-    const buyers = Math.round(membersEnd * M.productBuyerRate);
-    let revProduct = 0, cogsProduct = 0; const catRev = {}; // 카테고리별 GMV(건강쇼핑) + 원가
-    for (const c of M.productCats) { const rv = buyers * c.arpu; catRev[c.key] = rv; revProduct += rv; cogsProduct += Math.round(rv * c.cost); }
-    const checkupUsers = Math.round(membersEnd * M.checkupRate), revCheckup = checkupUsers * M.checkupFee;
-    const serviceUsers = Math.round(membersEnd * M.serviceRate), revService = serviceUsers * M.serviceCommission; // 헬스케어 서비스 매칭 수수료
-    const reservations = Math.round(active * M.resvPerActive[y]), revReservation = reservations * M.resvFee; // 예약 서비스(골프 등) 건당 1만
-    const hospitals = M.hospitals[y], checkupCenters = M.checkupCenters[y], pharmacies = M.pharmacies[y];
-    const revEmr = (hospitals * M.emrFeeMonthly + checkupCenters * M.checkupUipMonthly + pharmacies * M.pharmacyUipMonthly) * 12; // EMR·UIP 전액 매출(병원·검진센터·약국)
-    const revInsurance = active * M.arpuInsurance[y], revAd = active * M.adPerActive[y];
-    const revenue = revProduct + revCheckup + revService + revReservation + revEmr + revInsurance + revAd;
-    const cogsCheckup = Math.round(revCheckup * M.checkupCostRate), cogsService = Math.round(revService * M.serviceCostRate), cogsEmr = Math.round(revEmr * M.uipCostRate), cogsPayment = Math.round(revProduct * 0.022), cogs = cogsProduct + cogsCheckup + cogsService + cogsEmr + cogsPayment, gross = revenue - cogs;
-    const prodMargin = revProduct - cogsProduct; // 적립·기부는 제품판매 마진에만 적용(EMR·UIP·수수료 매출엔 미적용)
-    const marketing = newMembers * M.cac[y], otherOpex = Math.round(revenue * M.opexRate), donation = Math.round(prodMargin * M.donationRate), reward = Math.round(prodMargin * M.rewardRate), payroll = M.payroll[y], sga = marketing + otherOpex + donation + reward + payroll;
-    const ebit = gross - sga, ebitda = ebit + M.deprYear, pbt = ebit - M.interestYear, tax = Math.max(0, pbt) * M.taxRate, net = pbt - tax;
-    const capex = y < 2 ? 2000000000 : 5000000000, dwc = Math.round(revenue * 0.02), nopat = ebit * (1 - M.taxRate), fcf = nopat + M.deprYear - capex - dwc;
-    rows.push({ y, label: M.years[y], membersEnd, membersPrev, newMembers, active, buyers, checkupUsers, serviceUsers, reservations, hospitals, checkupCenters, pharmacies, cac: M.cac[y], marketing, revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr, revAd, revenue, cogs, gross, otherOpex, donation, reward, payroll, sga, ebit, ebitda, pbt, tax, net, capex, fcf, opMargin: ebit / revenue, netMargin: net / revenue });
-  }
-  return rows;
-}
+// 5개년 추정 — 신 재무엔진(finModel.js) 위임. 구독정책(1차 무료→월 100만+연 100만 인상)·CAC 5천원·시나리오 자동 반영.
+function finMultiYear() { return finYears(5); }
 // ── 건강금융지갑·사회적기업 공통 지표 — 재무모델(제품마진) 연동. 적립20%·나눔10%(+운영·유보 70%)·특별지원(어르신·장애아동) ──
 function finSocial(yi) {
   const rows = finMultiYear(), r = rows[yi == null ? 0 : Math.max(0, Math.min(4, yi))];
@@ -137,13 +81,7 @@ function finSocial(yi) {
   const earn = r.reward, give = r.donation, ops = Math.round(margin - earn - give), animal = Math.round(margin * 0.25 * 0.05);
   return { year: r.label, members: r.membersEnd, revenue: r.revenue, margin, earn, give, ops, animal, beneficiaries: Math.max(1, Math.round(give / 255000)) };
 }
-function finValuation() {
-  const M = FIN_MY, rows = finMultiYear(); let pvSum = 0; const disc = [];
-  rows.forEach((r, i) => { const df = 1 / Math.pow(1 + M.wacc, i + 1), pv = r.fcf * df; pvSum += pv; disc.push({ y: r.label, fcf: r.fcf, df, pv }); });
-  const lastFcf = rows[4].fcf, terminal = lastFcf * (1 + M.termGrowth) / (M.wacc - M.termGrowth), pvTerminal = terminal / Math.pow(1 + M.wacc, 5), evDCF = pvSum + pvTerminal;
-  const evRev = rows[4].revenue * M.evRevMultiple, evEbitda = Math.max(0, rows[4].ebitda) * M.evEbitdaMultiple;
-  return { disc, pvSum, terminal, pvTerminal, evDCF, evRev, evEbitda, wacc: M.wacc, termGrowth: M.termGrowth, evRevMultiple: M.evRevMultiple, evEbitdaMultiple: M.evEbitdaMultiple, lastRevenue: rows[4].revenue, lastEbitda: rows[4].ebitda, lastFcf, lastNet: rows[4].net };
-}
+function finValuation() { return finValModel(); }
 
 function FinanceLive() {
   const [running, setRunning] = useState(true);
@@ -152,6 +90,8 @@ function FinanceLive() {
   const [acct, setAcct] = useState(_finZero());
   const [journal, setJournal] = useState([]);
   const [tab, setTab] = useState("pl");
+  const [anYear, setAnYear] = useState(0); // 연간 예상 — 연차 선택(0=1차)
+  const [pTick, setPTick] = useState(0);   // 파라미터·시나리오 변경 → 전체 재계산 트리거
   const [months, setMonths] = useState([]);
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const ref = useRef(_finZero());
@@ -231,7 +171,14 @@ function FinanceLive() {
     </div>
 
     <div className="finlink"><Network size={13} color="#22D3EE" /> 온톨로지 파일럿 <b>{cohort.length.toLocaleString()}명</b>의 건강케어 소비가 <b>실시간 매출</b>로 인식됩니다 (제품판매·보험중개는 회원, 입점수수료·EMR은 제휴 기관).</div>
-    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["cash", "AI 출수납", Landmark], ["invest", "AI 투자", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote], ["my", "중장기 추정(5개년)", TrendingUp], ["gtm", "회원·GTM", Users], ["val", "밸류에이션", PieChart]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
+    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["cash", "AI 출수납", Landmark], ["invest", "AI 투자", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote], ["plan", "사업계획(월·분기)", Receipt], ["my", "중장기(5개년)", TrendingUp], ["ten", "10개년", TrendingUp], ["saas", "SaaS·투자 KPI", Percent], ["params", "파라미터·시나리오", Zap], ["gtm", "회원·GTM", Users], ["val", "밸류에이션", PieChart], ["graph", "재무 온톨로지·AI", Network]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
+    {["annual", "plan", "my", "ten", "saas", "val", "gtm", "graph"].includes(tab) && (
+      <div className="finscn" key={"scn" + pTick}>
+        <span className="finscn-l">시나리오</span>
+        {Object.entries(FIN_SCENARIOS).map(([k, s]) => <button key={k} className={finScenario() === k ? "on" : ""} style={{ "--sc": s.c }} onClick={() => { finSetScenario(k); setPTick((x) => x + 1); }}>{s.label}</button>)}
+        <span className="finscn-note">변경 즉시 P/L·B/S·C/F·KPI·기업가치 전체 자동 재계산 · 세부 수치는 ‘파라미터’ 탭</span>
+      </div>
+    )}
 
     {tab === "cash" && typeof AICashSystem === "function" && <AICashSystem />}
     {tab === "invest" && typeof AIInvestSystem === "function" && <AIInvestSystem />}
@@ -350,18 +297,19 @@ function FinanceLive() {
       </div>
     )}
 
-    {tab === "annual" && (() => { const an = finAnnual(); const A = an.A; const anSga = [["　인건비", -an.payroll, 0, "subitem"], ["　마케팅비", -an.marketing, 0, "subitem"], ["　포인트(토큰)적립", -an.reward, 0, "subitem tok"], ["　기부금(치료비 나눔)", -an.donation, 0, "subitem don"], ["　기타 운영비", -an.otherOpex, 0, "subitem"]]; const anPL = [["매출액", an.revenue, 0, "rev"], ["(-) 매출원가", -an.cogs, 0, "neg"], ["매출총이익", an.gross, 1, "sub"], ["(-) 판매비와관리비", -an.sga, 0, "neg"], ...anSga, ["영업이익", an.op, 2, "sub"], ["(+) 금융수익", an.finIncome, 0, "pos"], ["(-) 금융비용(이자)", -an.finCost, 0, "neg"], ["법인세비용차감전순이익", an.pbt, 1, "sub"], ["(-) 법인세비용", -an.tax, 0, "neg"], ["당기순이익", an.net, 3, "net"]]; return (<>
-      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><Banknote size={13} color="#34D399" /> 연간 사업계획 가정(3차연도 기준) — 회원 <b>{A.members.toLocaleString()}명</b> · 활성률 {(A.activeRate * 100).toFixed(0)}% · 제품구매율 {(A.buyerRate * 100).toFixed(0)}% · 검진전환 {(A.checkupRate * 100).toFixed(0)}% · 제휴 기관(EMR·UIP) <b>{A.institutions.toLocaleString()}곳</b>. <b>추정(Pro-forma) 재무제표</b>입니다.</div>
+    {tab === "annual" && (() => { const an = finAnnual(anYear); const A = an.A; const P = finParams(); const anSga = [["　인건비", -an.payroll, 0, "subitem"], [`　회원확보비(CAC ${P.cac.toLocaleString()}원/인 · 기간인식)`, -an.cacCost, 0, "subitem"], ["　브랜드 마케팅", -an.brandMkt, 0, "subitem"], ["　포인트(토큰)적립", -an.reward, 0, "subitem tok"], ["　기부금(치료비 나눔)", -an.donation, 0, "subitem don"], ["　R&D·클라우드·GPU", -(an.rnd + an.cloud + an.gpu), 0, "subitem"], ["　영업비·관리비", -(an.salesCost + an.adminCost), 0, "subitem"]]; const anPL = [["매출액", an.revenue, 0, "rev"], ["(-) 매출원가", -an.cogs, 0, "neg"], ["매출총이익", an.gross, 1, "sub"], ["(-) 판매비와관리비", -an.sga, 0, "neg"], ...anSga, ["영업이익(EBIT)", an.op, 2, "sub"], ["EBITDA(참고)", an.ebitda, 0, "pos"], ["(-) 금융비용(이자)", -an.finCost, 0, "neg"], ["법인세비용차감전순이익", an.pbt, 1, "sub"], ["(-) 법인세비용", -an.tax, 0, "neg"], ["당기순이익", an.net, 3, "net"]]; return (<>
+      <div className="finyrsel">{P.years.slice(0, 5).map((l, i) => <button key={i} className={anYear === i ? "on" : ""} onClick={() => setAnYear(i)}>{l}</button>)}</div>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><Banknote size={13} color="#34D399" /> {an.label} 가정({P.scnMeta.label} 시나리오) — 회원 <b>{A.members.toLocaleString()}명</b> · 활성률 {(A.activeRate * 100).toFixed(0)}% · 제품구매율 {(A.buyerRate * 100).toFixed(0)}% · 제휴 기관 <b>{A.institutions.toLocaleString()}곳</b> · AI 플랫폼 구독 {A.y === 0 ? <b style={{ color: "#FBBF24" }}>1차연도 무료 — EMR·UPI·플랫폼 사용료 0원(시장 선점 전략적 투자)</b> : <b>기관당 월 {finWon(A.subFee)}원(매년 +100만 인상)</b>}. <b>추정(Pro-forma) 재무제표</b>입니다.</div>
       <div className="ontgrid2">
         <div className="ontpanel">
-          <div className="ontph"><Receipt size={15} color="#34D399" /> 연간 예상 손익계산서 <span>· 1개년 추정</span></div>
+          <div className="ontph"><Receipt size={15} color="#34D399" /> 연간 예상 손익계산서 <span>· {an.label}</span></div>
           <div className="finpl">{anPL.map(([l, v, emph, kind], i) => <div className={`finpl-r ${emph ? "sub emph" + emph : ""} ${kind}`} key={i}><span>{l}</span><b>{finWon(v)}원</b></div>)}</div>
           <div className="finpl-note">영업이익률 {(an.opMargin * 100).toFixed(1)}% · 순이익률 {(an.netMargin * 100).toFixed(1)}% · 토큰적립금 {finWon(an.reward)}(계약부채 이연)·기부금 {finWon(an.donation)}</div>
         </div>
         <div className="ontpanel">
           <div className="ontph"><PieChart size={15} color="#22D3EE" /> 연간 예상 매출 구성 <span>· 총 {finWon(an.revenue)}원</span></div>
-          {[["제품판매(GMV·건강쇼핑)", an.revProduct, "#34D399"], ["검진 연계 수수료", an.revCheckup, "#22D3EE"], ["헬스케어 서비스 수수료", an.revService, "#2DD4BF"], ["예약 서비스 수수료(골프 등)", an.revReservation, "#F97316"], ["EMR·UIP 사용료(병원·검진·약국·전액)", an.revEmr, "#6366F1"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={an.revProduct} color={c} sub="원" />)}
-          <div className="finpl-note" style={{ marginTop: 8 }}>제품 GMV 카테고리: 영양제 {finWon(an.catRev.supp)}(원가35%)·건강식단 {finWon(an.catRev.diet)}(50%)·홈케어기기 {finWon(an.catRev.device)}(40%)·스포츠용품 {finWon(an.catRev.sports)}(60%)</div>
+          {[["제품판매(GMV·건강쇼핑)", an.revProduct, "#34D399"], ["AI 플랫폼 구독(舊 EMR·UPI — 검진·병원·약국)", an.revSub, "#6366F1"], ["검진 연계 수수료", an.revCheckup, "#22D3EE"], ["헬스케어 서비스 수수료", an.revService, "#2DD4BF"], ["예약 서비스 수수료(골프 등)", an.revReservation, "#F97316"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["AI Agent 프리미엄", an.revAgent, "#F472B6"], ["API·데이터·분석(B2B)", an.revApi, "#38BDF8"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={Math.max(an.revProduct, an.revSub)} color={c} sub="원" />)}
+          <div className="finpl-note" style={{ marginTop: 8 }}>{A.y === 0 ? "1차연도 구독매출 0원 — 회원 10만 달성 후(2차연도) AI Healthcare Platform Subscription 과금 시작." : `구독 구성: 병원 ${finWon(an.subSplit.hospital)} · 약국 ${finWon(an.subSplit.pharmacy)} · 검진기관 ${finWon(an.subSplit.checkup)} — AI 건강분석·상담·예측·CRM·원격진료 연계·보험청구 자동화·API를 포함한 통합 구독(단순 EMR 연결비 아님).`}</div>
         </div>
       </div>
       <div className="ontgrid2">
@@ -371,10 +319,14 @@ function FinanceLive() {
             <div className="finpl-r sub emph2"><span>Ⅰ. 유동자산</span><b>{finWon(an.curAssets)}원</b></div>
             <div className="finpl-r"><span>　현금및현금성자산</span><b>{finWon(an.cash)}원</b></div>
             <div className="finpl-r"><span>　매출채권</span><b>{finWon(an.receivable)}원</b></div>
-            <div className="finpl-r"><span>　재고자산</span><b>{finWon(an.inventory)}원</b></div>
-            <div className="finpl-r"><span>　선급비용</span><b>{finWon(an.prepaid)}원</b></div>
+            <div className="finpl-r"><span>　구독료 미수금(Subscription Receivable)</span><b>{finWon(an.subReceivable)}원</b></div>
+            <div className="finpl-r"><span>　계약자산(Contract Asset)</span><b>{finWon(an.contractAsset)}원</b></div>
+            <div className="finpl-r"><span>　재고자산 · 선급비용</span><b>{finWon(an.inventory + an.prepaid)}원</b></div>
             <div className="finpl-r sub emph2"><span>Ⅱ. 비유동자산</span><b>{finWon(an.nonCurAssets)}원</b></div>
-            <div className="finpl-r"><span>　유형자산·무형자산·사용권자산</span><b>{finWon(an.nonCurAssets)}원</b></div>
+            <div className="finpl-r"><span>　유형자산</span><b>{finWon(an.ppe)}원</b></div>
+            <div className="finpl-r"><span>　플랫폼자산 · 소프트웨어자산</span><b>{finWon(an.platformAsset + an.softwareAsset)}원</b></div>
+            <div className="finpl-r"><span>　AI모델자산 · 데이터자산 · 클라우드자산</span><b>{finWon(an.aiModelAsset + an.dataAsset + an.cloudAsset)}원</b></div>
+            <div className="finpl-r"><span>　개발비(무형)</span><b>{finWon(an.devCost)}원</b></div>
             <div className="finpl-r net"><span>자산 총계</span><b>{finWon(an.assets)}원</b></div>
           </div>
         </div>
@@ -388,6 +340,7 @@ function FinanceLive() {
               <div className="finpl-r subitem tok"><span>└ 일반 토큰적립금({(100 - rt * 100).toFixed(0)}%)</span><b>{finWon(an.contractLiab - ins)}원</b></div>
             </>); })()}
             <div className="finpl-r subitem don"><span>　미지급기부금(치료비 나눔)</span><b>{finWon(an.donationPay)}원</b></div>
+            <div className="finpl-r"><span>　이연수익(구독 선수금 · Deferred Revenue)</span><b>{finWon(an.deferredRev)}원</b></div>
             <div className="finpl-r"><span>　매입채무·미지급법인세·예수금</span><b>{finWon(an.tradePay + an.taxPay + an.deposits)}원</b></div>
             <div className="finpl-r sub"><span>Ⅱ. 비유동부채(리스·차입)</span><b>{finWon(an.nonCurLiab)}원</b></div>
             <div className="finpl-r sub emph2"><span>Ⅲ. 자본</span><b>{finWon(an.equity)}원</b></div>
@@ -404,7 +357,7 @@ function FinanceLive() {
     </>); })()}
 
     {tab === "my" && (() => { const my = finMultiYear(); const revMax = Math.max(...my.map((r) => r.revenue)); const M = (l, f, cls) => <tr className={cls || ""}><td className="mono0">{l}</td>{my.map((r, i) => <td key={i} className="mono">{f(r)}</td>)}</tr>; return (<>
-      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> 시장조사 기반 <b>3~5개년 중장기 추정</b> — 회원 <b>10만→1,000만</b>. 제품 GMV는 <b>한국인 1인당 연 건강관리 지출</b>(영양제 13.5만·기기 4만·식단 4만·스포츠 25만·서비스 15만) 근거로 카테고리별 재산정, <b>원가율 영양제35%·식단50%·기기40%·스포츠60%</b>. 검진 건당 2.25만, <b>EMR·UIP 사용료 전액 매출</b>(병원 월300만·검진센터 150만·약국 20만), <b>골프 등 예약 수수료 건당 1만원</b>. 적립50%·나눔30%는 <b>제품마진에만</b> 적용(EMR·UIP·수수료 매출 미적용).</div>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> <b>5개년 중장기 추정(현실화 개편)</b> — 회원 <b>10만→1,000만</b>, CAC <b>5,000원/인(기간 인식)</b>. <b>AI Healthcare Platform Subscription</b>: 1차연도 <b>무료(0원 · 시장 선점)</b> → 2차 기관당 <b>월 100만</b> → 매년 +100만(5차 400만) — 검진·병원·약국 전 기관 동일, AI 건강분석·상담·예측·CRM·원격진료·보험청구 자동화 포함(단순 EMR 연결비 아님). 제품 GMV는 1인당 연 건강지출 근거(영양제35%·식단50%·기기40%·스포츠60% 원가), 적립50%·나눔30%는 <b>제품마진에만</b> 적용.</div>
       <div className="ontpanel">
         <div className="ontph"><TrendingUp size={15} color="#34D399" /> 중장기 손익 추정 (5개년) <span>· 단위 원</span></div>
         <div className="onttbl-wrap"><table className="onttbl mytbl">
@@ -412,14 +365,16 @@ function FinanceLive() {
           <tbody>
             {M("누적 회원", (r) => r.membersEnd.toLocaleString() + "명", "myhead")}
             {M("활성 회원", (r) => r.active.toLocaleString() + "명")}
-            {M("제휴 기관(EMR·UIP)", (r) => (r.hospitals + r.checkupCenters + r.pharmacies).toLocaleString() + "곳")}
+            {M("제휴 기관(검진·병원·약국)", (r) => r.insts.toLocaleString() + "곳")}
+            {M("AI 플랫폼 구독료(월/기관)", (r) => r.subFee ? finWon(r.subFee) + "원" : "무료(선점)")}
             {M("매출액", (r) => finWon(r.revenue), "myrev")}
             {M("　제품판매(GMV)", (r) => finWon(r.revProduct))}
             {M("　검진 연계 수수료", (r) => finWon(r.revCheckup))}
             {M("　헬스케어 서비스 수수료", (r) => finWon(r.revService))}
             {M("　예약 서비스(골프 등)", (r) => finWon(r.revReservation))}
-            {M("　EMR·UIP 사용료(전액)", (r) => finWon(r.revEmr))}
+            {M("　AI 플랫폼 구독(舊 EMR·UPI)", (r) => finWon(r.revSub))}
             {M("　보험 중개", (r) => finWon(r.revInsurance))}
+            {M("　AI Agent·API·데이터", (r) => finWon(r.revAgent + r.revApi))}
             {M("　광고·제휴", (r) => finWon(r.revAd))}
             {M("매출총이익", (r) => finWon(r.gross), "mysub")}
             {M("(-) 판매관리비", (r) => "-" + finWon(r.sga))}
@@ -491,6 +446,56 @@ function FinanceLive() {
       </div>
     </>); })()}
 
+    {tab === "plan" && (() => { const mp = finMonthlyY1(); const P = finParams(); return (<>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><Receipt size={13} color="#34D399" /> <b>1차연도 월별·분기별 사업계획</b> — 회원 {mp.total.toLocaleString()}명 램프, CAC {P.cac.toLocaleString()}원/인 <b>기간 인식</b>(일시 비용화 금지 · 총 {finWon(mp.cacTotal)}원). 회원 10만 달성 → 2차연도부터 기관 구독 과금 시작.</div>
+      <div className="ontpanel">
+        <div className="ontph"><Receipt size={15} color="#34D399" /> 월별 계획 <span>· 회원·CAC·매출·영업이익</span></div>
+        <div className="onttbl-wrap"><table className="onttbl mytbl">
+          <thead><tr><th>월</th><th>신규 회원</th><th>누적 회원</th><th>회원확보비(CAC)</th><th>매출</th><th>영업이익</th></tr></thead>
+          <tbody>{mp.rows.map((r) => <tr key={r.m}><td className="mono0">{r.m}월</td><td className="mono">+{r.add.toLocaleString()}</td><td className="mono">{r.cum.toLocaleString()}</td><td className="mono">-{finWon(r.cacCost)}</td><td className="mono">{finWon(r.rev)}</td><td className="mono" style={{ color: r.op >= 0 ? "#6EE7B7" : "#F9A8D4" }}>{finWon(r.op)}</td></tr>)}</tbody>
+        </table></div>
+        <div className="ontph" style={{ marginTop: 14 }}><PieChart size={15} color="#22D3EE" /> 분기별 요약</div>
+        <div className="onttbl-wrap"><table className="onttbl mytbl">
+          <thead><tr><th>분기</th><th>신규 회원</th><th>누적</th><th>CAC 비용</th><th>매출</th><th>영업이익</th></tr></thead>
+          <tbody>{mp.q.map((r) => <tr key={r.q}><td className="mono0">{r.q}분기</td><td className="mono">+{r.add.toLocaleString()}</td><td className="mono">{r.cum.toLocaleString()}</td><td className="mono">-{finWon(r.cacCost)}</td><td className="mono">{finWon(r.rev)}</td><td className="mono" style={{ color: r.op >= 0 ? "#6EE7B7" : "#F9A8D4" }}>{finWon(r.op)}</td></tr>)}</tbody>
+        </table></div>
+        <div className="finpl-note">회원 수를 바꾸면(파라미터 탭) 월별 CAC 인식·매출·전 재무제표가 자동 재계산됩니다 — 예) 1만 명=5천만 원, 5만 명=2.5억, 10만 명=5억.</div>
+      </div>
+    </>); })()}
+
+    {tab === "ten" && (() => { const ty = finYears(10); return (<>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> <b>10개년 재무추정</b> — 1~5차는 사업계획, 6~10차는 성장률 외삽(연 {(finParams().tenYearGrowth * 100).toFixed(0)}%). 구독료는 5차 이후 월 {finWon(finParams().subFeeCap)}원 상한 유지.</div>
+      <div className="ontpanel">
+        <div className="ontph"><TrendingUp size={15} color="#34D399" /> 10개년 손익·현금 추정</div>
+        <div className="onttbl-wrap"><table className="onttbl mytbl">
+          <thead><tr><th>연차</th><th>회원</th><th>기관</th><th>구독료(월)</th><th>매출</th><th>영업이익</th><th>순이익</th><th>ARR</th><th>FCF</th></tr></thead>
+          <tbody>{ty.map((r) => <tr key={r.y}><td className="mono0">{r.label}</td><td className="mono">{(r.membersEnd / 10000).toFixed(0)}만</td><td className="mono">{r.insts.toLocaleString()}</td><td className="mono">{r.subFee ? finWon(r.subFee) : "무료"}</td><td className="mono">{finWon(r.revenue)}</td><td className="mono" style={{ color: r.ebit >= 0 ? "#6EE7B7" : "#F9A8D4" }}>{finWon(r.ebit)}</td><td className="mono">{finWon(r.net)}</td><td className="mono">{finWon(r.arr)}</td><td className="mono">{finWon(r.fcf)}</td></tr>)}</tbody>
+        </table></div>
+      </div>
+    </>); })()}
+
+    {tab === "saas" && (() => { const ss = finSaaSModel(); const K = finKPIs(); const kpis = [["CAC", K.cac.toLocaleString() + "원", "#F59E0B"], ["LTV", finWon(K.ltv) + "원", "#34D399"], ["LTV/CAC", K.ltvCac.toFixed(1) + "x", K.ltvCac >= 3 ? "#34D399" : "#F59E0B"], ["ARPU(3차)", finWon(K.arpu) + "원", "#22D3EE"], ["ARPPU(3차)", finWon(K.arppu) + "원", "#22D3EE"], ["매출총이익률", (K.grossMargin * 100).toFixed(1) + "%", "#A78BFA"], ["영업이익률(3차)", (K.opMargin * 100).toFixed(1) + "%", "#A78BFA"], ["EBITDA(3차)", finWon(K.ebitda3) + "원", "#6366F1"], ["Cash Burn(1차)", finWon(K.burn1) + "원", "#F472B6"], ["Runway", isFinite(K.runway) ? K.runway.toFixed(1) + "개월" : "흑자", "#F472B6"], ["CAC Payback", K.payback ? K.payback.toFixed(1) + "개월" : "-", "#FBBF24"], ["Magic Number", K.magic ? K.magic.toFixed(2) : "-", "#FBBF24"], ["Rule of 40", K.rule40.toFixed(0), K.rule40 >= 40 ? "#34D399" : "#F59E0B"], ["EV(DCF)", finWon(K.ev) + "원", "#EAB308"], ["EV/Sales", K.evSales.toFixed(1) + "x", "#EAB308"], ["ROI(5차)", (K.roi5 * 100).toFixed(0) + "%", "#34D399"], ["ROIC(3차)", (K.roic3 * 100).toFixed(0) + "%", "#34D399"], ["이탈률(연)", (K.churn * 100).toFixed(0) + "%", "#94A3B8"]]; return (<>
+      <div className="finlink" style={{ background: "#231A3F", borderColor: "#3f2d5e" }}><Percent size={13} color="#A78BFA" /> <b>SaaS 구독 모델 + 투자자 KPI</b> — EMR·UPI·AI 플랫폼 전부 Subscription 관리. 파라미터가 바뀌면 MRR·ARR·전 KPI가 자동 재계산됩니다.</div>
+      <div className="ontpanel">
+        <div className="ontph"><TrendingUp size={15} color="#A78BFA" /> 구독(Subscription) 지표 <span>· MRR·ARR·이탈·확장</span></div>
+        <div className="onttbl-wrap"><table className="onttbl mytbl">
+          <thead><tr><th>연차</th><th>유료 기관</th><th>월 구독료</th><th>MRR(연말)</th><th>ARR</th><th>ARR 성장</th><th>Expansion(인상분)</th><th>갱신율</th></tr></thead>
+          <tbody>{ss.map((s, i) => <tr key={i}><td className="mono0">{s.label}</td><td className="mono">{s.insts.toLocaleString()}곳</td><td className="mono">{s.subFee ? finWon(s.subFee) : "무료"}</td><td className="mono">{finWon(s.mrr)}</td><td className="mono">{finWon(s.arr)}</td><td className="mono">{s.growth == null ? "-" : (s.growth * 100).toFixed(0) + "%"}</td><td className="mono">{finWon(s.expansion)}</td><td className="mono">{(s.renewal * 100).toFixed(0)}%</td></tr>)}</tbody>
+        </table></div>
+      </div>
+      <div className="ontpanel">
+        <div className="ontph"><Percent size={15} color="#FBBF24" /> 투자자 핵심 KPI <span>· 자동 계산</span></div>
+        <div className="ontcostgrid" style={{ gridTemplateColumns: "repeat(6,1fr)" }}>
+          {kpis.map(([t, v, c], i) => <div className="ontcostcell" key={i} style={{ flexDirection: "column", alignItems: "flex-start", gap: 3 }}><b style={{ color: c, fontSize: 13 }}>{v}</b><span>{t}</span></div>)}
+        </div>
+        <div className="finpl-note">LTV = ARPU × 매출총이익률 ÷ 이탈률 · Payback = CAC ÷ 월 공헌이익 · Rule of 40 = 매출성장률 + EBITDA마진 · EV는 밸류에이션 탭(DCF·멀티플)과 동일 엔진.</div>
+      </div>
+    </>); })()}
+
+    {tab === "params" && <FinParamsPanel onApply={() => setPTick((x) => x + 1)} />}
+
+    {tab === "graph" && <FinGraphPanel />}
+
     <div className="ontpanel">
       <div className="ontph"><Zap size={15} color="#FBBF24" /> 실시간 회계 분개(Journal) <span>· 복식부기 차·대변</span></div>
       <div className="ontfeed">
@@ -508,12 +513,86 @@ function FinanceLive() {
   </>);
 }
 
+/* ── 파라미터·시나리오 패널 — 모든 가정은 수정 가능한 변수(하드코딩 금지), 변경 즉시 전 재무모델 재계산 ── */
+function FinParamsPanel({ onApply }) {
+  const [, force] = useState(0);
+  const o = finOverrides(); const D = FIN_P_DEFAULT; const scn = finScenario();
+  const set = (k, v) => { finSetParam(k, v); force((x) => x + 1); onApply && onApply(); };
+  const FIELDS = [
+    ["members1", "1차연도 회원(명)", D.membersEnd[0]], ["members2", "2차연도 회원(명)", D.membersEnd[1]], ["members3", "3차연도 회원(명)", D.membersEnd[2]], ["members4", "4차연도 회원(명)", D.membersEnd[3]], ["members5", "5차연도 회원(명)", D.membersEnd[4]],
+    ["cac", "회원확보비 CAC(원/인)", D.cac], ["activeRate", "활성률(0~1)", D.activeRate], ["productBuyerRate", "제품 구매율(0~1)", D.productBuyerRate], ["checkupRate", "검진 전환율(0~1)", D.checkupRate],
+    ["subFeeBase", "구독료 2차연도(원/월·기관)", D.subFeeBase], ["subFeeStep", "구독료 연 인상액(원)", D.subFeeStep], ["subPaidRate", "구독 유료 전환율(0~1)", D.subPaidRate],
+    ["instMultPct", "제휴 기관 수 배율(%)", 100], ["payrollPct", "인건비 배율(%)", 100], ["cogsPct", "제품 원가율 배율(%)", 100],
+    ["churn", "연 이탈률(0~1)", D.churn], ["wacc", "WACC(0~1)", D.wacc], ["evRevMultiple", "EV/Revenue 배수", D.evRevMultiple],
+    ["cloudPerActive", "클라우드 원가(원/활성회원·년)", D.cloudPerActive], ["gpuPerActive", "GPU 원가(원/활성회원·년)", D.gpuPerActive], ["rndRate", "R&D 비율(매출 대비 0~1)", D.rndRate],
+  ];
+  return (<>
+    <div className="finlink" style={{ background: "#231A3F", borderColor: "#3f2d5e" }}><Zap size={13} color="#C4B5FD" /> <b>파라미터 기반 단일 재무모델</b> — 아래 값을 바꾸면 P/L·B/S·C/F·월별계획·SaaS·KPI·기업가치가 <b>즉시 자동 재계산</b>됩니다(전 화면 동일 데이터 소스). 빈칸이면 기본값 사용.</div>
+    <div className="ontpanel">
+      <div className="ontph"><Zap size={15} color="#FBBF24" /> 시나리오 <span>· 보수 · 기준 · 공격</span></div>
+      <div className="finscn" style={{ margin: 0 }}>
+        {Object.entries(FIN_SCENARIOS).map(([k, s]) => <button key={k} className={scn === k ? "on" : ""} style={{ "--sc": s.c }} onClick={() => { finSetScenario(k); force((x) => x + 1); onApply && onApply(); }}>{s.label} <em>회원×{s.memberMult} · 기관×{s.instMult} · CAC×{s.cacMult}</em></button>)}
+      </div>
+    </div>
+    <div className="ontpanel">
+      <div className="ontph"><Receipt size={15} color="#34D399" /> 사업 가정 파라미터 <span>· {FIELDS.length}개 변수 (저장: 브라우저)</span></div>
+      <div className="finparams">
+        {FIELDS.map(([k, l, d]) => (
+          <label className="finparam" key={k}>
+            <span>{l}</span>
+            <input type="number" step="any" defaultValue={o[k] != null ? o[k] : ""} placeholder={String(d)} onBlur={(e) => set(k, e.target.value === "" ? null : Number(e.target.value))} onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); }} />
+          </label>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <button className="book" onClick={() => { finResetParams(); force((x) => x + 1); onApply && onApply(); if (typeof toast === "function") toast("재무 파라미터를 기본값으로 초기화했어요"); }}>기본값으로 초기화</button>
+      </div>
+      <div className="finpl-note">구독정책: 1차연도 EMR·UPI·플랫폼 사용료 0원(시장 선점) → 회원 10만 달성 후 AI Healthcare Platform Subscription(기관당 월 100만→연 100만 인상, 상한 400만). CAC는 회원 증가 속도에 따라 기간 인식.</div>
+    </div>
+  </>);
+}
+
+/* ── 재무회계 온톨로지 그래프 + 데이터 계보(Lineage) + AI 자연어 질의(하이 연동) ── */
+function FinGraphPanel() {
+  const [yr, setYr] = useState(0);
+  const [q, setQ] = useState("");
+  const [ans, setAns] = useState(null);
+  const rows = finYears(5); const r = rows[yr]; const P = finParams();
+  const ask = (text) => { const t = (text == null ? q : text).trim(); if (!t) return; let res = null; try { res = finAsk(t); } catch (e) {} setAns(res || { lines: ["그 질문은 아직 재무 엔진이 이해하지 못했어요 — 매출·영업이익·구독료·CAC·LTV·기업가치·런웨이·시나리오로 물어봐 주세요."], buttons: [] }); };
+  return (<>
+    <div className="finlink" style={{ background: "#231A3F", borderColor: "#3f2d5e" }}><Network size={13} color="#C4B5FD" /> <b>재무회계 온톨로지</b> — 모든 계정이 인과 사슬로 연결되고, 각 수치는 <b>데이터 계보(입력→계산식→결과)</b>로 추적됩니다. 하이(AI)에게 자연어로 물어보세요.</div>
+    <div className="ontpanel">
+      <div className="ontph"><Network size={15} color="#A78BFA" /> 가치 인과 사슬 <span>· 회원 → 구독 → Recurring Revenue → EV</span></div>
+      <div className="finchain">{FIN_GRAPH.map((n, i) => (<React.Fragment key={n.k}><span className="finchain-n" style={{ borderColor: n.c, color: n.c }}>{n.label}</span>{i < FIN_GRAPH.length - 1 && <ChevronRight size={13} color="#4A5878" />}</React.Fragment>))}</div>
+    </div>
+    <div className="ontgrid2">
+      <div className="ontpanel">
+        <div className="ontph"><Receipt size={15} color="#34D399" /> 데이터 계보(Lineage) <span>· 수치의 근거 추적</span></div>
+        <div className="finyrsel" style={{ marginBottom: 8 }}>{P.years.slice(0, 5).map((l, i) => <button key={i} className={yr === i ? "on" : ""} onClick={() => setYr(i)}>{l}</button>)}</div>
+        <div className="finlin">{r.lin.map((x, i) => (
+          <div className="finlin-r" key={i}><b>{x.label}</b><span>{x.formula}</span><em>{finWon(x.value)}원</em></div>
+        ))}</div>
+      </div>
+      <div className="ontpanel">
+        <div className="ontph"><Bot size={15} color="#F97316" /> 하이에게 재무 질의 <span>· 자연어 → 수치+근거</span></div>
+        <div className="finask">
+          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") ask(); }} placeholder="예: 3차연도 매출 얼마야? / 기업가치는? / 런웨이는?" />
+          <button onClick={() => ask()}>질의</button>
+        </div>
+        <div className="finask-chips">{["3차연도 매출 얼마야?", "구독료 정책 알려줘", "LTV/CAC는?", "기업가치 얼마야?", "런웨이는?"].map((c) => <button key={c} onClick={() => { setQ(c); ask(c); }}>{c}</button>)}</div>
+        {ans && <div className="finask-ans">{ans.lines.map((l, i) => <p key={i}>{l}</p>)}</div>}
+        <div className="finpl-note">같은 엔진(finAsk)이 하이 독에도 연결돼 있어 어느 화면에서든 "예상 매출 얼마야?"라고 물으면 답합니다.</div>
+      </div>
+    </div>
+  </>);
+}
+
 /* 회계 온톨로지 계정과목(COA) 트리 */
 const FIN_COA = [
-  { g: "수익 (Revenue)", c: "#22D3EE", items: ["제품판매 매출", "플랫폼 입점 수수료", "EMR·SaaS 사용료", "보험 중개 수수료", "광고·제휴 매출"] },
-  { g: "매출원가 (COGS)", c: "#F472B6", items: ["제품 원가", "시스템 인프라·클라우드", "결제 대행 수수료"] },
-  { g: "판매관리비 (SG&A)", c: "#F59E0B", items: ["인건비", "마케팅비", "연구개발비", "임차료·감가상각", "포인트(토큰)비용", "기부금(치료비 나눔)"] },
-  { g: "부채 (Liabilities)", c: "#E11D48", items: ["토큰적립금(계약부채)", "기부금 준비금", "매입채무·미지급금"] },
+  { g: "수익 (Revenue)", c: "#22D3EE", items: ["제품판매(GMV)", "AI 플랫폼 구독(EMR·UPI 통합)", "검진·서비스·예약 수수료", "보험 중개 수수료", "AI Agent 프리미엄", "API·데이터·분석(B2B)", "광고·제휴"] },
+  { g: "매출원가 (COGS)", c: "#F472B6", items: ["제품 원가", "구독 운영(클라우드·연동)", "결제 대행 수수료"] },
+  { g: "판매관리비 (SG&A)", c: "#F59E0B", items: ["인건비", "회원확보비(CAC 기간인식)", "브랜드 마케팅", "R&D·클라우드·GPU", "영업·관리비", "포인트(토큰)비용", "기부금(치료비 나눔)"] },
+  { g: "자산·부채 (신설)", c: "#E11D48", items: ["구독료 미수금", "계약자산", "이연수익(구독 선수금)", "플랫폼·AI모델·데이터 자산", "토큰적립금(계약부채)", "기부금 준비금"] },
 ];
 
 function FinanceSection({ onGo }) {
