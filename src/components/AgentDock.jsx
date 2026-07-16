@@ -105,7 +105,7 @@ function AgentDock({ onGo }) {
         <div className="hidock">
           <div className="hidock-hd">
             <span className="hidock-av"><Bot size={16} /></span>
-            <div className="hidock-t"><b>{typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"}</b><span>하이핀 AI 매니저 · 항상 함께해요</span></div>
+            <div className="hidock-t"><b>{typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"}</b><span>AI 매니저 · 항상 함께해요</span></div>
             <button className={"hidock-ib" + (easy ? " on" : "")} title="쉬운 말 모드(큰 글씨)" onClick={() => setEasy((v) => !v)}>가나</button>
             <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>
             <button className="hidock-ib" onClick={() => setOpen(false)} aria-label="닫기"><X size={16} /></button>

@@ -664,7 +664,7 @@ export default function App() {
             ))}
             <div className={`snav ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr("noti")}><span className="sico"><SecIcon k="alert" /></span> 알림센터<span className="sb">3</span></div>
           </div>
-          <div className="agent"><div className="at">하이 · AI 매니저</div><div className="as">{greetName}님 전담 · 처음부터 끝까지 함께</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => setSec("agent")}>하이와 대화하기</button></div>
+          <div className="agent"><div className="at">하이 · AI 매니저</div><div className="as">{greetName}님 전담 · 처음부터 끝까지 함께</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => { if (sec === "agent") return; try { window.dispatchEvent(new CustomEvent("agentask")); } catch (e) {} }}>하이와 대화하기</button></div>
           {role === "ADMIN" && <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>}
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
@@ -1835,7 +1835,7 @@ function SuperAgentSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico" style={{ background: "linear-gradient(135deg,#6D28D9,#7C3AED)" }}><SecIcon k="ai" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>하이 · 하이핀 AI 매니저</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>하이</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> {aiWho()}님 고객 전담 · 모든 서비스를 한 곳에서 안내 — 아래 버튼을 고르거나 무엇이든 물어보세요(텍스트·음성)</div></div></div>
       <div className="agentgrid">
         {GRID.map((m) => (
@@ -3102,7 +3102,7 @@ function Chat({ superAgent, acceptsSeed }) {
     <div className="kt">
       {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
-        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이 · 하이핀 AI 매니저" : "하이 · 건강 상담"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
+        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이" : "하이 · 건강 상담"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
         {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
         <button className="ktib" onClick={() => setDevOpen((v) => !v)} title="기기 연결"><HeartPulse size={17} /></button>
         <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={17} /></button></div>
@@ -19086,7 +19086,7 @@ const AGENT_QNA_CATS = { intro: "플랫폼 소개·첫 이용", join: "가입·�
    ⚠️ 신규 기능·용어는 aiQnaBank(AGENT_QNA)+HIFIN_LEXICON+TOOL_RUN 3층 등록 후 배포(표준 절차). */
 
 /* ── 페르소나(전 화면 동일) ── */
-const AGENT_PERSONA = { name: "하이", full: "하이 · 하이핀 AI 매니저", tone: "따뜻한 존댓말, 짧은 문장, 먼저 챙겨주는 건강 매니저" };
+const AGENT_PERSONA = { name: "하이", full: "하이", tone: "따뜻한 존댓말, 짧은 문장, 먼저 챙겨주는 건강 매니저" };
 function agentWho() { try { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (m && m.name) return m.name; if (typeof authCurrent === "function") { const a = authCurrent(); if (a && a.name) return a.name; } } catch (e) {} return "회원"; }
 
 /* ── ① 용어사전(Lexicon) — 동의어·구어·오타 → 표준어 치환 ── */
@@ -19270,7 +19270,7 @@ function agentGreeting() {
       else parts.push(`${who}님, 어서 오세요! 오늘은 무엇을 도와드릴까요?`);
     }
   } catch (e) { parts.push(`${who}님, 어서 오세요! 무엇을 도와드릴까요?`); }
-  return { text: parts[0], buttons: ["내 건강 봐줘", "보장 공백 분석", "검진결과 올리기"] };
+  return { text: parts[0], buttons: ["검진예약 질문 도우미", "내 건강 봐줘", "보장 공백 분석", "검진결과 올리기"] };
 }
 /* 데모·테스트 노출 */
 try { if (typeof window !== "undefined") { window.__hifinAgent = agentAnswer; window.__hifinAgentGreet = agentGreeting; } } catch (e) {}
@@ -21272,7 +21272,7 @@ function AgentDock({ onGo }) {
         <div className="hidock">
           <div className="hidock-hd">
             <span className="hidock-av"><Bot size={16} /></span>
-            <div className="hidock-t"><b>{typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"}</b><span>하이핀 AI 매니저 · 항상 함께해요</span></div>
+            <div className="hidock-t"><b>{typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"}</b><span>AI 매니저 · 항상 함께해요</span></div>
             <button className={"hidock-ib" + (easy ? " on" : "")} title="쉬운 말 모드(큰 글씨)" onClick={() => setEasy((v) => !v)}>가나</button>
             <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>
             <button className="hidock-ib" onClick={() => setOpen(false)} aria-label="닫기"><X size={16} /></button>

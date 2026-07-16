@@ -4,7 +4,7 @@
    ⚠️ 신규 기능·용어는 aiQnaBank(AGENT_QNA)+HIFIN_LEXICON+TOOL_RUN 3층 등록 후 배포(표준 절차). */
 
 /* ── 페르소나(전 화면 동일) ── */
-const AGENT_PERSONA = { name: "하이", full: "하이 · 하이핀 AI 매니저", tone: "따뜻한 존댓말, 짧은 문장, 먼저 챙겨주는 건강 매니저" };
+const AGENT_PERSONA = { name: "하이", full: "하이", tone: "따뜻한 존댓말, 짧은 문장, 먼저 챙겨주는 건강 매니저" };
 function agentWho() { try { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (m && m.name) return m.name; if (typeof authCurrent === "function") { const a = authCurrent(); if (a && a.name) return a.name; } } catch (e) {} return "회원"; }
 
 /* ── ① 용어사전(Lexicon) — 동의어·구어·오타 → 표준어 치환 ── */
@@ -188,7 +188,7 @@ function agentGreeting() {
       else parts.push(`${who}님, 어서 오세요! 오늘은 무엇을 도와드릴까요?`);
     }
   } catch (e) { parts.push(`${who}님, 어서 오세요! 무엇을 도와드릴까요?`); }
-  return { text: parts[0], buttons: ["내 건강 봐줘", "보장 공백 분석", "검진결과 올리기"] };
+  return { text: parts[0], buttons: ["검진예약 질문 도우미", "내 건강 봐줘", "보장 공백 분석", "검진결과 올리기"] };
 }
 /* 데모·테스트 노출 */
 try { if (typeof window !== "undefined") { window.__hifinAgent = agentAnswer; window.__hifinAgentGreet = agentGreeting; } } catch (e) {}

@@ -946,7 +946,7 @@ function SuperAgentSection({ onGo }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico" style={{ background: "linear-gradient(135deg,#6D28D9,#7C3AED)" }}><SecIcon k="ai" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>하이 · 하이핀 AI 매니저</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>하이</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> {aiWho()}님 고객 전담 · 모든 서비스를 한 곳에서 안내 — 아래 버튼을 고르거나 무엇이든 물어보세요(텍스트·음성)</div></div></div>
       <div className="agentgrid">
         {GRID.map((m) => (
@@ -2213,7 +2213,7 @@ function Chat({ superAgent, acceptsSeed }) {
     <div className="kt">
       {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
-        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이 · 하이핀 AI 매니저" : "하이 · 건강 상담"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
+        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이" : "하이 · 건강 상담"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
         {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
         <button className="ktib" onClick={() => setDevOpen((v) => !v)} title="기기 연결"><HeartPulse size={17} /></button>
         <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={17} /></button></div>
