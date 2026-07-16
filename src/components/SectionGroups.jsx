@@ -33,7 +33,6 @@ function HomeHub({ initial, onGo }) {
   return (
     <div style={{ marginTop: 4 }}>
       {typeof AgentHomeBriefing === "function" && <AgentHomeBriefing />}
-      <GroupHead ic={Home} title="HI-Fin Tech란" sub="회사 소개 · 비전 · 사회적 가치환원 · 커뮤니티" color="#2563EB" />
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
       {tab === "home" && <HomeView onGo={onGo} />}
       {tab === "social" && <SocialSection onGo={onGo} />}
@@ -49,7 +48,6 @@ function CareSection({ initial, onGo }) {
   const tabs = [["ai", "나의 주치의", Bot, "#7C3AED"], ["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["hospital", "병원 진료·추가검진", Building2, "#2563EB"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
   return (
     <div style={{ marginTop: 4 }}>
-      <GroupHead ic={HeartHandshake} title="검진 후 케어" sub="나의 주치의 상담 · 나의 건강현황 · 병원 진료·추가 정밀검진 · 재가·돌봄 · 맞춤 건강쇼핑" color="#DB2777" />
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
       {tab === "ai" && <AIDoctor onGo={onGo} />}
       {tab === "manage" && <HealthManageSection onGo={onGo} />}
@@ -67,7 +65,6 @@ function WalletHubSection({ initial, onGo }) {
   const tabs = [["wallet", "건강금융지갑", Wallet, "#059669"], ["mypage", "우리가족건강관리", Users, "#EA580C"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["vault", "데이터 금고", ShieldCheck, "#2563EB"]];
   return (
     <div style={{ marginTop: 4 }}>
-      <GroupHead ic={Wallet} title="나의 건강지갑" sub="건강금융지갑 · 우리가족건강관리 · Health NFT · 데이터 금고를 한 곳에서" color="#059669" />
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
       {tab === "wallet" && <WalletSection onGo={onGo} />}
       {tab === "mypage" && <MyPageSection onGo={onGo} />}

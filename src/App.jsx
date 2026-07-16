@@ -158,7 +158,7 @@ export default function App() {
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
         <main className="scrollarea">
-          {(() => { const p = secParent(sec); const cb = SECTIONS.find((x) => x.k === p); if (!cb) return null; return (
+          {(() => { const p = secParent(sec); if (p === "partner" || p === "ontology") return null; const cb = SECTIONS.find((x) => x.k === p); if (!cb) return null; return (
             <div className="secbanner">
               <span className="sb-ic"><SecIcon k={cb.k} /></span>
               <div className="sb-b"><b>{cb.t}</b><p>{SEC_BANNER[cb.k] || cb.s}</p></div>
