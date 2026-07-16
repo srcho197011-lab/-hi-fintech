@@ -6,7 +6,8 @@ function WalletSection({ onGo }) {
   const tabs = [["earn", "적립 현황", Coins], ["give", "나눔·기부", HeartHandshake], ["use", "사용처", Wallet], ["chain", "온체인 원장", Blocks], ["guide", "사용방법", Sparkles], ["sec", "AI·블록체인 보안", ShieldCheck]];
   const manwon = (n) => n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원";
   const won = (n) => n.toLocaleString() + "원";
-  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  // 운영자(조성래) 로그인은 데모 세션이 없어 null — 실프로필(selfMember) 폴백으로 온체인 원장 등 블록체인 자료 전부 표시
+  const dm = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null) || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const cpPts = (dm && typeof careplanEarned === "function") ? careplanEarned(dm.email) : 0;
   const shopPts = (typeof shopHtkPts === "function") ? shopHtkPts(dm ? dm.email : "default") : 0;
   const shopWonBal = (typeof shopHtkWon === "function") ? shopHtkWon(dm ? dm.email : "default") : 0;
