@@ -329,19 +329,17 @@ function InsuranceCollect({ member, onDone, onLater }) {
 function DataOnboardingSection({ onGo }) {
   const go = onGo || (() => {});
   const role = (typeof authRole === "function") ? authRole() : "ADMIN";
-  const member = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (role !== "GUEST" && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const isGuest = role === "GUEST";
+  // 체험회원(GUEST)도 차단 없이 전 과정 시연 — 유사회원 매칭 프로필(없으면 체험 프로필)로 진행, 쓰기는 세션 시뮬레이션(쓰기가드)
+  let member = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (!isGuest && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  if (!member) {
+    let gm = null; try { gm = (typeof authCurrent === "function") ? ((authCurrent() || {}).match || null) : null; } catch (e) {}
+    member = { id: "GUEST-DEMO", name: "체험회원", age: (gm && gm.age) || 45, sex: (gm && gm.sex) || "남" };
+  }
   const [step, setStep] = useState(() => { try { const ob = onboardStatus(member); return (ob.step1 && !ob.step2) ? 2 : 1; } catch (e) { return 1; } });
-  // GUEST·미가입 세션은 접근 차단 → 가입 유도
-  if (role === "GUEST" || !member) return (
-    <div className="obwrap"><div className="obgate">
-      <Lock size={30} color="#94A3B8" />
-      <h3>정회원 전용 기능이에요</h3>
-      <p>건강검진·보험 데이터 연결은 회원가입을 완료한 정회원만 이용할 수 있어요. 지금 가입하고 내 데이터로 초개인화 분석을 받아보세요.</p>
-      <button className="obnext" onClick={() => { if (typeof guestExit === "function" && role === "GUEST") guestExit(); else go("home"); }}>회원가입 하러가기 <ChevronRight size={15} /></button>
-    </div></div>
-  );
   return (
     <div className="obwrap">
+      {isGuest && <div className="finlink" style={{ marginBottom: 10 }}><Sparkles size={13} color="#F97316" /> <b>체험 모드</b> — 회원가입 없이 검진결과 업로드→OCR→블록체인 기록까지 전 과정을 그대로 시연합니다. 데이터는 이 세션에만 임시 저장돼요(가입 시 실제 저장).</div>}
       <div className="obhd">
         <div><div className="obhd-t">내 건강·보험 데이터 연결</div><div className="obhd-s">회원으로부터 직접 받는 데이터로 초개인화 분석을 시작합니다 · 2단계 중 {step}단계</div></div>
         <div className="obprog"><i style={{ width: (step === 1 ? 50 : 100) + "%" }} /></div>
