@@ -21300,7 +21300,7 @@ function AgentDock({ onGo }) {
           </div>
           <div className="hidock-input">
             {sttOK && <button className={"hidock-mic" + (listening ? " on" : "")} onClick={startStt} title="음성으로 말하기"><Mic size={16} /></button>}
-            <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} placeholder={listening ? "듣고 있어요…" : "무엇이든 물어보세요 (예: 내 실손 몇 세대야?)"} />
+            <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} placeholder={listening ? "듣고 있어요…" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘"} />
             <button className={"hidock-send" + (input.trim() ? " on" : "")} onClick={() => send()} aria-label="보내기"><Send size={15} /></button>
           </div>
         </div>
