@@ -537,6 +537,29 @@ function submitCheckupBooking(center, payload) {
   return { mode: cfg ? "pending" : "demo", cfg };
 }
 
+/* ── 실물 리포트 원본 뷰어 — PDF 다운로드 없이 페이지 이미지로 바로 넘겨보기(개인정보 마스킹판) ── */
+function ReportPdfViewer({ onClose }) {
+  const PAGES = Array.from({ length: 31 }, (_, i) => "./data/docs/report_sample/p" + String(i + 1).padStart(2, "0") + ".jpg");
+  return (
+    <div className="voverlay" onClick={onClose}>
+      <div className="viewer" onClick={(e) => e.stopPropagation()}>
+        <div className="vhead">
+          <div className="vt"><FileText size={17} color="#7C3AED" /> 실물 리포트 원본 <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B45309", background: "#FEF3E2", borderRadius: 999, padding: "3px 9px", marginLeft: 6 }}>31p · 개인정보 마스킹 샘플</span></div>
+          <div className="vh-actions">
+            <button className="close" onClick={onClose}><X size={15} /> 닫기</button>
+          </div>
+        </div>
+        <div className="vbody" style={{ background: "#EDF0F6" }}>
+          {PAGES.map((src, i) => (
+            <img key={src} src={src} alt={"리포트 " + (i + 1) + "쪽"} loading="lazy" style={{ display: "block", width: "100%", maxWidth: 860, margin: "0 auto 12px", borderRadius: 8, boxShadow: "0 6px 18px -10px rgba(20,30,70,.35)" }} />
+          ))}
+          <div style={{ textAlign: "center", fontSize: 11.5, color: "#64748B", padding: "6px 0 14px" }}>프롬에이지 Premium 실물 리포트(이름·등록번호 마스킹) — 신청 시 내 검진 데이터 기준으로 동일 구성이 생성됩니다.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BookingModal({ center, mode, onClose }) {
   const [date, setDate] = useState(null);
   const [time, setTime] = useState(null);
@@ -549,6 +572,7 @@ function BookingModal({ center, mode, onClose }) {
   /* 무료 건강검진분석 리포트(3무 오퍼 ②) — 상세 접이 + 실물 샘플(신청자 이름 개인화) */
   const [repOpen, setRepOpen] = useState(false);
   const [showSample, setShowSample] = useState(false);
+  const [showPdf, setShowPdf] = useState(false);
   const dmU = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const myAge = dmU && dmU.regAge ? dmU.regAge : 54;
   const mySex = dmU && dmU.sex ? dmU.sex : "남";
@@ -596,6 +620,7 @@ function BookingModal({ center, mode, onClose }) {
       <div className="bk" onClick={(e) => e.stopPropagation()}>
         <div className="bkh"><div className="bt">{done ? "예약 완료" : "검진 예약"}</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
         {showSample && typeof OriginalReport === "function" && <OriginalReport name={dmU && dmU.name ? dmU.name : "조성래"} sample onClose={() => setShowSample(false)} />}
+        {showPdf && <ReportPdfViewer onClose={() => setShowPdf(false)} />}
         <div className="bkb">
           {!done ? (<>
             <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
@@ -649,8 +674,8 @@ function BookingModal({ center, mode, onClose }) {
                 </div>
                 <div className="bkrep-note">국민건강보험공단 1,000만 명 11년 코호트 + 연세의료원 바이오뱅크 16만 명 자료로 검증된 분석이에요. 의학적 진단을 대신하지 않아요.</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
-                  <button className="bkrep-sample" onClick={(e) => { e.stopPropagation(); setShowSample(true); }}><FileText size={14} /> {dmU && dmU.name ? dmU.name : "조성래"}님 이름으로 실물 샘플 보기</button>
-                  <a className="bkrep-sample" href="./data/docs/HiFin_HealthReport_Sample.pdf" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ textDecoration: "none" }}><ExternalLink size={14} /> 실제 리포트 PDF 원본 보기 (30p)</a>
+                  <button className="bkrep-sample" onClick={(e) => { e.stopPropagation(); setShowSample(true); }}><FileText size={14} /> {dmU && dmU.name ? dmU.name : "회원"}님 이름으로 실물 샘플 보기</button>
+                  <button className="bkrep-sample" onClick={(e) => { e.stopPropagation(); setShowPdf(true); }}><FileText size={14} /> 실제 리포트 원본 넘겨보기 (31p·개인정보 마스킹)</button>
                 </div>
               </div>
             )}
