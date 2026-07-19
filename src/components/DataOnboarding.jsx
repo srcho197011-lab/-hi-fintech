@@ -367,6 +367,16 @@ function DataVaultPanel({ onGo }) {
       if (!dm && member && typeof seedSelfVault === "function" && seedSelfVault(member)) setTick((t) => t + 1);
     } catch (e) {}
   }, []);
+  // 신뢰 센터에서 넘어온 딥링크(접근 이력·동의·삭제) — 해당 영역으로 스크롤 + 잠깐 강조
+  useEffect(() => {
+    try {
+      const f = window.__vaultFocus; if (!f) return; window.__vaultFocus = null;
+      setTimeout(() => {
+        const el = document.getElementById("dvf-" + f) || document.querySelector(".dv");
+        if (el) { el.scrollIntoView({ behavior: "smooth", block: f === "top" ? "start" : "center" }); el.classList.add("dv-flash"); setTimeout(() => { try { el.classList.remove("dv-flash"); } catch (e) {} }, 2200); }
+      }, 250);
+    } catch (e) {}
+  }, []);
   if (!member) return (
     <div className="card dvempty"><ShieldCheck size={30} color="#94A3B8" /><b>로그인이 필요해요</b><p>회원으로 로그인하면 내 건강·보험 데이터를 안전하게 보관·관리할 수 있어요.</p></div>
   );
@@ -422,7 +432,7 @@ function DataVaultPanel({ onGo }) {
           <code className="dv-hash">{String(c.hash || "").slice(0, 10)}…</code></div>
       ); } catch (e) { return null; } })()}
 
-      <div className="dv-sec">접근 이력 <span>(내 데이터에 접근한 모든 조회)</span></div>
+      <div className="dv-sec" id="dvf-access">접근 이력 <span>(내 데이터에 접근한 모든 조회)</span></div>
       <div className="dv-log">{(access.slice(-6).reverse()).map((a, i) => <div className="dv-lrow" key={i}><span>{fmt(a.ts)}</span><b>{a.actor === "member" ? "본인" : a.actor}</b><span className="dv-la">{a.action}</span></div>)}{!access.length && <div className="dv-lrow"><span className="dv-la">기록 없음</span></div>}</div>
 
       <div className="dv-sec">내 데이터 보호 블록 <span>(블록체인에 기록된 내 데이터 지문 · {myBlocks.length}블록)</span></div>
@@ -431,10 +441,10 @@ function DataVaultPanel({ onGo }) {
       ); })}{!myBlocks.length && <div className="dv-lrow"><span className="dv-la">기록된 블록이 없어요</span></div>}</div>
       <div className="dvchain-note">내 검진·보험·동의·거래의 <b>지문(해시)</b>만 블록체인에 기록됩니다. 원본은 암호화 금고 보관 · 지문 일치 시 위변조 없음 증명.</div>
 
-      <div className="dv-sec">동의 현황</div>
+      <div className="dv-sec" id="dvf-consents">동의 현황</div>
       <div className="dv-consents">{(typeof VAULT_CONSENTS !== "undefined" ? VAULT_CONSENTS : []).map((c) => { const on = v.consents && v.consents.state && v.consents.state[c.key]; return <span className={"dv-con" + (on ? " on" : "")} key={c.key}>{on ? <Check size={11} /> : <X size={11} />} {c.title.split("(")[0].replace(" 동의", "")}</span>; })}</div>
 
-      <div className="dv-danger">
+      <div className="dv-danger" id="dvf-danger">
         <div><b>데이터 삭제·철회</b><p>내 건강·보험 데이터를 즉시 파기합니다. 파기 이력은 블록체인에 기록됩니다.</p></div>
         <button className="dv-del" onClick={() => setConfirm(true)}><Trash2 size={14} /> 즉시 삭제</button>
       </div>

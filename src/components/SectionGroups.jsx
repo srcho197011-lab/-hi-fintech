@@ -64,6 +64,8 @@ function WalletHubSection({ initial, onGo }) {
   const map = { mywallet: "wallet", wallet: "wallet", nft: "nft", mypage: "mypage", vault: "vault", trust: "trust" };
   const [tab, setTab] = useState(map[initial] || "wallet");
   useEffect(() => { setTab(map[initial] || "wallet"); }, [initial]);
+  // 신뢰 센터 → 데이터 금고 딥링크(같은 섹션 키에서도 탭 전환되도록 이벤트 수신)
+  useEffect(() => { const h = () => setTab("vault"); window.addEventListener("vaultgo", h); return () => window.removeEventListener("vaultgo", h); }, []);
   const tabs = [["wallet", "건강금융지갑", Wallet, "#059669"], ["mypage", "우리가족건강관리", Users, "#EA580C"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["vault", "데이터 금고", ShieldCheck, "#2563EB"], ["trust", "신뢰 센터", Lock, "#0891B2"]];
   return (
     <div style={{ marginTop: 4 }}>

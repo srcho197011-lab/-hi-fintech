@@ -59,11 +59,12 @@ function TrustCenterSection({ onGo }) {
     ["배당", "활용 대가는 약속된 분배율로 회원 지갑에", "📊 분배 내역 공개"],
   ];
   const RIGHTS = [
-    [Search, "접근 이력 보기", "내 데이터를 누가 언제 봤는지 전부", "mywallet"],
-    [ShieldCheck, "동의 관리·철회", "목적별 동의 5종을 한 번의 탭으로", "mywallet"],
-    [Trash2, "즉시 삭제", "이중 확인 후 즉시 파기 — 파기 사실도 기록", "mywallet"],
-    [Download, "데이터 내보내기", "표준 형식 반출(준비 중)", null],
+    [Search, "접근 이력 보기", "내 데이터를 누가 언제 봤는지 전부", "vault", "access"],
+    [ShieldCheck, "동의 관리·철회", "목적별 동의 5종을 한 번의 탭으로", "vault", "consents"],
+    [Trash2, "즉시 삭제", "이중 확인 후 즉시 파기 — 파기 사실도 기록", "vault", "danger"],
+    [Download, "데이터 내보내기", "표준 형식 반출(준비 중)", null, null],
   ];
+  const goVault = (focus) => { try { window.__vaultFocus = focus || "top"; window.dispatchEvent(new CustomEvent("vaultgo")); } catch (e) {} go("vault"); };
   return (
     <div className="trustwrap">
       <div className="trust-hero">
@@ -78,7 +79,7 @@ function TrustCenterSection({ onGo }) {
       <div className="trust-verify">
         <span className="tv-dot" style={{ background: chk && !chk.ok ? "#EF4444" : "#16A34A" }} />
         <div className="tv-t"><b>실시간 무결성 {chk ? (chk.ok ? "정상 — 위변조 없음 ✓" : "확인 필요") : "검증 중…"}</b><span>{chk ? `보호 블록 ${chk.blocks || 0}개 연쇄 해시 검증 완료` : ""} — 말이 아니라 직접 확인할 수 있는 신뢰입니다.</span></div>
-        <button onClick={() => go("mywallet")}>데이터 금고에서 직접 검증 ›</button>
+        <button onClick={() => goVault("top")}>데이터 금고에서 직접 검증 ›</button>
       </div>
       <div className="trust-sec"><b>내 데이터의 여정 — 다섯 단계 모두에 보호 장치</b></div>
       <div className="trust-flow">
@@ -90,8 +91,8 @@ function TrustCenterSection({ onGo }) {
       </div>
       <div className="trust-sec"><b>회원 권리 헌장 — 설명이 아니라 버튼으로</b></div>
       <div className="trust-rights">
-        {RIGHTS.map(([Ic, t, d, target]) => (
-          <button className="tr-card" key={t} disabled={!target} onClick={() => target && go(target)}>
+        {RIGHTS.map(([Ic, t, d, target, focus]) => (
+          <button className="tr-card" key={t} disabled={!target} onClick={() => target && goVault(focus)}>
             <Ic size={18} /><b>{t}</b><p>{d}</p>{!target && <span className="tr-soon">준비 중</span>}
           </button>
         ))}
