@@ -597,6 +597,9 @@ function BookingModal({ center, mode, onClose }) {
   const myAge = dmU && dmU.regAge ? dmU.regAge : 54;
   const mySex = dmU && dmU.sex ? dmU.sex : "남";
   const partnerCfg = getBooking(center);
+  /* 예약 모달 안 위치 지도 — 선택한 센터의 실좌표 핀(카카오맵 길안내 포함) */
+  const hiraBk = useHira();
+  const bkGeo = React.useMemo(() => (typeof hiraMatchCoords === "function") ? hiraMatchCoords(hiraBk.data, center.name) : null, [hiraBk.data, center.name]);
   const onConfirm = () => {
     const r = submitCheckupBooking(center, { center: center.name, brand: center.b, date, time, plan: (typeof planName !== "undefined" ? planName : ""), items: center.tags, freeIns: insAgree });
     /* 동의 시 실제 증서 발급 — 카피가 아니라 체인 기록·금고 감사로그·증서 저장(J2-5) */
@@ -650,6 +653,9 @@ function BookingModal({ center, mode, onClose }) {
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {center.r} · {center.area}</div>
               {center._noPrice ? <div style={{ marginTop: 6, fontSize: 12.5, fontWeight: 800, color: "var(--blue)" }}>{(center.tags && center.tags[0]) || "검진"} · 검진비 기관 문의 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 무상 검진대비보험 자동적용</span></div> : mode === "nat" ? <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--green)" }}>공단검진 본인부담 0원 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 추가검사 별도</span></div> : <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--blue)" }}>{won(center.price)} <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600, textDecoration: "line-through" }}>{won(center.orig)}</span></div>}
             </div>
+            {bkGeo && typeof MapView === "function" && (
+              <div style={{ marginTop: 10 }}><MapView points={[{ name: center.name, addr: `${center.r} ${center.area}`, tel: bkGeo.tel, tag: "검진센터", lat: bkGeo.lat, lng: bkGeo.lng }]} height={185} /></div>
+            )}
             {partnerCfg && (
               <div style={{ marginTop: 12, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: "11px 14px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 800, color: "#1D4ED8" }}>
@@ -1014,6 +1020,17 @@ function loadHira() {
     });
   }
   return _hiraPromise;
+}
+/* 기관명 → 심평원 실좌표 매칭(Phase 4 공용) — 예약·상담 모달, 목록 지도에서 재사용 */
+function hiraMatchCoords(data, name) {
+  try {
+    if (!data || !name) return null;
+    const norm = (s) => String(s || "").replace(/\s|\(주\)|\(사\)|의료법인|재단법인|KMI/g, "");
+    const t = norm(name); if (t.length < 3) return null;
+    const H = data.hospitals || []; let hit = null;
+    for (let i = 0; i < H.length; i++) { const h = H[i]; const n2 = norm(h[0]); if (n2 && h[8] && h[9] && (n2 === t || n2.indexOf(t) >= 0 || t.indexOf(n2) >= 0)) { hit = h; if (n2 === t) break; } }
+    return hit ? { lat: hit[9], lng: hit[8], addr: hit[4], tel: hit[5] } : null;
+  } catch (e) { return null; }
 }
 function useHira() {
   const [state, setState] = useState({ loading: true, error: null, data: null });

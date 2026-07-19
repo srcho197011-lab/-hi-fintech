@@ -431,6 +431,21 @@ function ConsultModal({ interest, onClose }) {
   const [f, setF] = useState({ name: "", phone: "", interest: INTERESTS.includes(interest) ? interest : INTERESTS[0] });
   const [done, setDone] = useState(false);
   const ok = f.name.trim() && f.phone.trim().length >= 9;
+  /* 상담 신청 안 지도(Phase 4) — 상담 대상 기관이 있으면 그 위치, 없으면 내 주변 제휴 검진센터 */
+  const hiraCs = (typeof useHira === "function") ? useHira() : { data: null };
+  const csGeo = React.useMemo(() => {
+    try {
+      const d = hiraCs.data; if (!d || typeof hiraMatchCoords !== "function") return { pts: [], label: null };
+      const mm = /[—-]\s*(.{3,30})$/.exec(String(interest || ""));
+      const instName = mm ? mm[1].trim() : null;
+      if (instName) { const g = hiraMatchCoords(d, instName); if (g) return { pts: [{ name: instName, addr: g.addr, tel: g.tel, tag: "상담 기관", lat: g.lat, lng: g.lng }], label: "상담 기관 위치" }; }
+      const reg = (typeof memberRegion === "function") ? memberRegion() : null;
+      const list = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
+      const pool = list.filter((c) => !reg || (c.sd || "").indexOf(reg.sidoShort) >= 0).slice(0, 6);
+      const pts = pool.map((c) => { const g = hiraMatchCoords(d, c.n); return g ? { name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng } : null; }).filter(Boolean);
+      return { pts, label: pts.length ? "내 주변 제휴 기관" : null };
+    } catch (e) { return { pts: [], label: null }; }
+  }, [hiraCs.data, interest]);
   return (
     <div className="bkov" onClick={onClose}>
       <div className="bk" onClick={(e) => e.stopPropagation()}>
@@ -444,6 +459,9 @@ function ConsultModal({ interest, onClose }) {
             <div className="cfield"><label>이름</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="성명을 입력하세요" /></div>
             <div className="cfield"><label>연락처</label><input value={f.phone} inputMode="numeric" onChange={(e) => setF({ ...f, phone: e.target.value.replace(/[^0-9-]/g, "").slice(0, 13) })} placeholder="휴대전화 번호 (예: 010-1234-5678)" /></div>
             <div className="cfield"><label>관심 분야</label><select value={f.interest} onChange={(e) => setF({ ...f, interest: e.target.value })}>{INTERESTS.map((i) => <option key={i} value={i}>{i}</option>)}</select></div>
+            {csGeo.pts.length > 0 && typeof MapView === "function" && (
+              <div><div className="bklbl" style={{ margin: "2px 0 6px" }}>{csGeo.label}</div><MapView points={csGeo.pts} height={175} accent="#2563EB" /></div>
+            )}
             <button className="cbtn pri" style={{ opacity: ok ? 1 : .5 }} disabled={!ok} onClick={() => { setDone(true); if (typeof isGuestRole === "function" && isGuestRole() && typeof toast === "function") toast("👀 둘러보기 모드 — 실제 신청은 접수되지 않습니다"); }}><MessageSquare size={15} /> {!f.name.trim() ? "이름을 입력하세요" : f.phone.trim().length < 9 ? "연락처를 입력하세요" : "상담 신청하기"}</button>
             <div className="chnote" style={{ marginTop: 8 }}>※ 입력 정보는 예시용이며 실제 전송·저장되지 않습니다.</div>
           </>) : (

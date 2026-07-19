@@ -479,6 +479,21 @@ function ConsultModal({ interest, onClose }) {
   const [f, setF] = useState({ name: "", phone: "", interest: INTERESTS.includes(interest) ? interest : INTERESTS[0] });
   const [done, setDone] = useState(false);
   const ok = f.name.trim() && f.phone.trim().length >= 9;
+  /* 상담 신청 안 지도(Phase 4) — 상담 대상 기관이 있으면 그 위치, 없으면 내 주변 제휴 검진센터 */
+  const hiraCs = (typeof useHira === "function") ? useHira() : { data: null };
+  const csGeo = React.useMemo(() => {
+    try {
+      const d = hiraCs.data; if (!d || typeof hiraMatchCoords !== "function") return { pts: [], label: null };
+      const mm = /[—-]\s*(.{3,30})$/.exec(String(interest || ""));
+      const instName = mm ? mm[1].trim() : null;
+      if (instName) { const g = hiraMatchCoords(d, instName); if (g) return { pts: [{ name: instName, addr: g.addr, tel: g.tel, tag: "상담 기관", lat: g.lat, lng: g.lng }], label: "상담 기관 위치" }; }
+      const reg = (typeof memberRegion === "function") ? memberRegion() : null;
+      const list = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
+      const pool = list.filter((c) => !reg || (c.sd || "").indexOf(reg.sidoShort) >= 0).slice(0, 6);
+      const pts = pool.map((c) => { const g = hiraMatchCoords(d, c.n); return g ? { name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng } : null; }).filter(Boolean);
+      return { pts, label: pts.length ? "내 주변 제휴 기관" : null };
+    } catch (e) { return { pts: [], label: null }; }
+  }, [hiraCs.data, interest]);
   return (
     <div className="bkov" onClick={onClose}>
       <div className="bk" onClick={(e) => e.stopPropagation()}>
@@ -492,6 +507,9 @@ function ConsultModal({ interest, onClose }) {
             <div className="cfield"><label>이름</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="성명을 입력하세요" /></div>
             <div className="cfield"><label>연락처</label><input value={f.phone} inputMode="numeric" onChange={(e) => setF({ ...f, phone: e.target.value.replace(/[^0-9-]/g, "").slice(0, 13) })} placeholder="휴대전화 번호 (예: 010-1234-5678)" /></div>
             <div className="cfield"><label>관심 분야</label><select value={f.interest} onChange={(e) => setF({ ...f, interest: e.target.value })}>{INTERESTS.map((i) => <option key={i} value={i}>{i}</option>)}</select></div>
+            {csGeo.pts.length > 0 && typeof MapView === "function" && (
+              <div><div className="bklbl" style={{ margin: "2px 0 6px" }}>{csGeo.label}</div><MapView points={csGeo.pts} height={175} accent="#2563EB" /></div>
+            )}
             <button className="cbtn pri" style={{ opacity: ok ? 1 : .5 }} disabled={!ok} onClick={() => { setDone(true); if (typeof isGuestRole === "function" && isGuestRole() && typeof toast === "function") toast("👀 둘러보기 모드 — 실제 신청은 접수되지 않습니다"); }}><MessageSquare size={15} /> {!f.name.trim() ? "이름을 입력하세요" : f.phone.trim().length < 9 ? "연락처를 입력하세요" : "상담 신청하기"}</button>
             <div className="chnote" style={{ marginTop: 8 }}>※ 입력 정보는 예시용이며 실제 전송·저장되지 않습니다.</div>
           </>) : (
@@ -4249,6 +4267,9 @@ function BookingModal({ center, mode, onClose }) {
   const myAge = dmU && dmU.regAge ? dmU.regAge : 54;
   const mySex = dmU && dmU.sex ? dmU.sex : "남";
   const partnerCfg = getBooking(center);
+  /* 예약 모달 안 위치 지도 — 선택한 센터의 실좌표 핀(카카오맵 길안내 포함) */
+  const hiraBk = useHira();
+  const bkGeo = React.useMemo(() => (typeof hiraMatchCoords === "function") ? hiraMatchCoords(hiraBk.data, center.name) : null, [hiraBk.data, center.name]);
   const onConfirm = () => {
     const r = submitCheckupBooking(center, { center: center.name, brand: center.b, date, time, plan: (typeof planName !== "undefined" ? planName : ""), items: center.tags, freeIns: insAgree });
     /* 동의 시 실제 증서 발급 — 카피가 아니라 체인 기록·금고 감사로그·증서 저장(J2-5) */
@@ -4302,6 +4323,9 @@ function BookingModal({ center, mode, onClose }) {
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {center.r} · {center.area}</div>
               {center._noPrice ? <div style={{ marginTop: 6, fontSize: 12.5, fontWeight: 800, color: "var(--blue)" }}>{(center.tags && center.tags[0]) || "검진"} · 검진비 기관 문의 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 무상 검진대비보험 자동적용</span></div> : mode === "nat" ? <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--green)" }}>공단검진 본인부담 0원 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 추가검사 별도</span></div> : <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--blue)" }}>{won(center.price)} <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600, textDecoration: "line-through" }}>{won(center.orig)}</span></div>}
             </div>
+            {bkGeo && typeof MapView === "function" && (
+              <div style={{ marginTop: 10 }}><MapView points={[{ name: center.name, addr: `${center.r} ${center.area}`, tel: bkGeo.tel, tag: "검진센터", lat: bkGeo.lat, lng: bkGeo.lng }]} height={185} /></div>
+            )}
             {partnerCfg && (
               <div style={{ marginTop: 12, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: "11px 14px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 800, color: "#1D4ED8" }}>
@@ -4666,6 +4690,17 @@ function loadHira() {
     });
   }
   return _hiraPromise;
+}
+/* 기관명 → 심평원 실좌표 매칭(Phase 4 공용) — 예약·상담 모달, 목록 지도에서 재사용 */
+function hiraMatchCoords(data, name) {
+  try {
+    if (!data || !name) return null;
+    const norm = (s) => String(s || "").replace(/\s|\(주\)|\(사\)|의료법인|재단법인|KMI/g, "");
+    const t = norm(name); if (t.length < 3) return null;
+    const H = data.hospitals || []; let hit = null;
+    for (let i = 0; i < H.length; i++) { const h = H[i]; const n2 = norm(h[0]); if (n2 && h[8] && h[9] && (n2 === t || n2.indexOf(t) >= 0 || t.indexOf(n2) >= 0)) { hit = h; if (n2 === t) break; } }
+    return hit ? { lat: hit[9], lng: hit[8], addr: hit[4], tel: hit[5] } : null;
+  } catch (e) { return null; }
 }
 function useHira() {
   const [state, setState] = useState({ loading: true, error: null, data: null });
