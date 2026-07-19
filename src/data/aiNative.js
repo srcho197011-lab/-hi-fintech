@@ -237,15 +237,35 @@ const TOOL_RUN = {
     return { lines: [`${sido} 기준 가까운 제휴 검진센터예요:`].concat(rows), buttons: ["검진 예약해줘"] };
   } catch (e) { return null; } },
   /* ══ Phase 6 비대면진료 — 하이 퍼스트 경로 ══ */
-  // 원격진료 연결 준비 — 예진 요약 예고 + 전문의 상담 탭 딥링크
+  // 원격진료 연결 준비 — 예진 요약 예고 + 전문의 상담 탭 딥링크(+RPM 경보 컨텍스트)
   teleprep(m) { try {
     try { if (typeof window !== "undefined") window._teleGoSpecialist = true; window.dispatchEvent(new CustomEvent("telego")); } catch (e) {}
     const nm = m && m.name ? m.name : "회원";
+    const a = (typeof rpmAlert === "function") ? rpmAlert(m) : null;
+    if (a) { try { window._teleRPM = `${a.rel} ${a.name}님 ${a.summary}`; } catch (e) {} }
     return { lines: [
       "지금 연결 가능한 원격주치의를 준비했어요 — 지역·진료과별 전문의 중 ● 지금 연결 가능 표시가 있는 분은 평균 2분 안에 연결돼요.",
       `${nm}님의 예진 요약(생체나이·주의 장기·위험도·최근 측정)도 미리 정리해뒀어요 — 의사를 선택하는 순간 가명 요약으로 먼저 전달돼서, 7분 진료가 30분 밀도가 돼요. 열람 기록은 데이터 금고에 남아요.`,
+      a ? `📈 ${a.rel} ${a.name}님의 RPM 혈압 경보(${a.summary})도 예진 요약에 함께 포함해뒀어요.` : null,
       "비대면으로는 문진·처방전(고혈압·당뇨약 등)·검사 의뢰·검진결과 설명·경과관찰까지 가능해요. 진료 후엔 전자처방→약국 선택→약 수령, 그리고 보험 청구는 서류 0장으로 자동 접수돼요(청구 0단계).",
-    ], buttons: ["전문의 상담 열기", "비대면으로 뭐가 가능해?"] };
+    ].filter(Boolean), buttons: ["전문의 상담 열기", "비대면으로 뭐가 가능해?"] };
+  } catch (e) { return null; } },
+  // 가족 RPM 혈압 경보 — 새벽 2:17 장면(I2-6): 경보 상세 + 진료 연결 유도
+  rpmcheck(m) { try {
+    const a = (typeof rpmAlert === "function") ? rpmAlert(m) : null;
+    if (!a) return { lines: ["지금 활성화된 가족 RPM 경보는 없어요 — 연동된 가족 기기에서 이상 추세가 감지되면 제가 먼저 알려드릴게요."], buttons: [] };
+    const rows = a.series.map((s) => `· ${s[0]} — ${s[1]}`).join("\n");
+    try { window._teleRPM = `${a.rel} ${a.name}님 ${a.summary}`; } catch (e) {}
+    return { lines: [
+      `🔴 ${a.rel} ${a.name}님(${a.age}세) 혈압 경보예요 — 가정용 혈압계(RPM)가 자동 감지했어요:\n${rows}`,
+      "사흘 연속 상승에 새벽 급등이 겹쳐 있어요. 지금 연결 가능한 의사에게 비대면으로 먼저 보여드리는 걸 권해요 — 예진 요약에 이 추이를 포함해뒀어요.",
+      "심한 두통·가슴 통증·한쪽 마비·발음 이상 같은 증상이 있다면 진료 연결 말고 즉시 119예요.",
+    ], buttons: ["원격진료 연결해줘", "경보 해제해줘"] };
+  } catch (e) { return null; } },
+  rpmack(m) { try {
+    localStorage.setItem("hifin_rpm_ack_" + m.email, "1");
+    try { window.dispatchEvent(new CustomEvent("rpmrefresh")); } catch (e) {}
+    return { lines: ["경보를 해제했어요 — 같은 추세가 이어지거나 새 이상 신호가 감지되면 다시 알려드릴게요."] };
   } catch (e) { return null; } },
   // 비대면 가능행위 공시 — 의료법·고시 기준 표를 대화로
   telecan() { try {
@@ -367,9 +387,21 @@ function agentGreeting() {
   return { text: parts[0], buttons: ["검진예약 질문 도우미", "내 건강 봐줘", "보장 공백 분석", "검진결과 올리기"] };
 }
 /* ── 선제 알림(Proactive) — 회원이 묻기 전에 하이가 먼저 챙긴다(하이 퍼스트 원칙 3) ── */
+/* 가족 RPM 경보 상태 — 노인 가족 + 미해제 시 활성(새벽 2:17 장면의 데이터 소스) */
+function rpmAlert(m) { try {
+  if (!m || !m.email) return null;
+  if (localStorage.getItem("hifin_rpm_ack_" + m.email)) return null;
+  const fam = (typeof familyLoad === "function") ? familyLoad(m.email, (m.name || "가")[0]) : [];
+  const elder = (fam || []).find((x) => (typeof famGroupOf === "function" ? famGroupOf(x.age, x.relation) : "") === "노인");
+  if (!elder) return null;
+  return { name: elder.name, rel: elder.relation, age: elder.age, series: [["7/17", "132/84"], ["7/18", "141/88"], ["오늘 새벽 2:17", "152/94"]], summary: "혈압 3일 연속 상승 132/84→141/88→152/94 · 오늘 새벽 2:17 급등(RPM 자동 감지)" };
+} catch (e) { return null; } }
+
 function agentProactive() {
   const m = _member(); const out = [];
   if (!m) return out;
+  /* RPM 경보 — 최우선(새벽 2:17 장면): 세션당 1회 선제 안내 */
+  try { const a = rpmAlert(m); if (a && !sessionStorage.getItem("hifin_rpm_seen")) { out.push({ text: `🔴 오늘 새벽 2:17, ${a.rel} ${a.name}님 혈압이 152/94까지 올랐어요(3일 연속 상승 · 가정 혈압계 RPM 자동 감지). 지금 연결 가능한 의사에게 먼저 보여드릴까요?`, buttons: ["원격진료 연결해줘", "가족 혈압 경보 보여줘"] }); sessionStorage.setItem("hifin_rpm_seen", "1"); } } catch (e) {}
   try { const d = JSON.parse(localStorage.getItem("hifin_ins_deferred") || "null"); if (d) out.push({ text: `지난번 ${d.center || "검진"} 예약은 보험 없이 하셨죠 — 무료 검진대비보험, 지금 1분 안에 준비해드릴까요? (이 안내는 한 번만 드려요)`, buttons: ["검진보험 가입해줘", "괜찮아요"] }); } catch (e) {}
   try {
     const ob = (typeof onboardStatus === "function") ? onboardStatus(m) : null;

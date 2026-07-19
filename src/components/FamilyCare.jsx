@@ -134,6 +134,9 @@ function FamilyCareSection({ member, onGo }) {
   }, []);
   const [sosId, setSosId] = useState(null);
   const [autoAlert, setAutoAlert] = useState(() => lsLoad("hifin_famauto_" + email, true));
+  /* Phase 6 — RPM 경보(새벽 2:17 장면): 노인 가족 혈압 이상 추세 → 지금 연결 가능한 의사 */
+  const [rpmAck, setRpmAck] = useState(() => !!lsLoad("hifin_rpm_ack_" + email, false));
+  useEffect(() => { const f = () => setRpmAck(!!lsLoad("hifin_rpm_ack_" + email, false)); window.addEventListener("rpmrefresh", f); return () => window.removeEventListener("rpmrefresh", f); }, [email]);
   useEffect(() => { setFamily(familyLoad(email, surname)); setTaskMap(lsLoad("hifin_famtask_" + email, {})); setConsentMap(lsLoad("hifin_famconsent_" + email, {})); setSpend(lsLoad("hifin_famspend_" + email, [])); setLinkMap(lsLoad("hifin_famlink_" + email, {})); }, [email, surname]);
 
   const consentOf = (id) => (consentMap[id] !== undefined ? consentMap[id] : true);
@@ -190,6 +193,28 @@ function FamilyCareSection({ member, onGo }) {
         <div style={{ flex: 1 }}><div className="famt">온가족 케어플랜</div><div className="famsub">가족 경제단위 · 공유지갑 · 보호자 관리 · DID · 계정연동</div></div>
         <button className="famrep" onClick={printFamilyReport}><FileText size={13} /> 가족 리포트</button>
       </div>
+      {(() => {
+        try {
+          if (rpmAck) return null;
+          const elder = family.find((x) => famGroupOf(x.age, x.relation) === "노인");
+          if (!elder) return null;
+          const series = [["7/17", "132/84", 132], ["7/18", "141/88", 141], ["새벽 2:17", "152/94", 152]];
+          return (
+            <div className="rpmalert">
+              <div className="rpm-hd"><AlertTriangle size={15} /> RPM 경보 — {elder.relation} {elder.name}님 혈압 이상 추세 <span className="rpm-when">오늘 새벽 2:17 자동 감지</span></div>
+              <div className="rpm-series">{series.map(([d, v, n], i) => (
+                <div className={`rpm-bar ${i === series.length - 1 ? "hot" : ""}`} key={d}><i style={{ height: Math.round((n - 110) / 50 * 100) + "%" }} /><b>{v}</b><span>{d}</span></div>
+              ))}</div>
+              <p>가정용 혈압계가 사흘 연속 상승과 새벽 급등을 자동 감지했어요. 심한 두통·가슴 통증·마비 증상이 있다면 즉시 119, 아니면 지금 연결 가능한 의사에게 비대면으로 먼저 보여주세요 — 예진 요약에 이 추이가 자동 포함돼요.</p>
+              <div className="rpm-btns">
+                <button className="pri" onClick={() => { try { window._teleRPM = `${elder.relation} ${elder.name}님 혈압 3일 추이 132/84→141/88→152/94 · 오늘 새벽 2:17 급등(RPM 자동 감지)`; window._teleGoSpecialist = true; } catch (e) {} go("ai"); }}><Stethoscope size={13} /> 지금 연결 가능한 의사</button>
+                <button onClick={() => { if (typeof toast === "function") toast(`🔔 가족 모두에게 ${elder.name}님 혈압 경보를 공유했어요.`); }}><Bell size={13} /> 가족에 공유</button>
+                <button className="dim" onClick={() => { setRpmAck(true); lsSave("hifin_rpm_ack_" + email, 1); if (typeof toast === "function") toast("경보를 해제했어요 — 새 이상 신호가 오면 다시 알려드려요."); }}>확인·해제</button>
+              </div>
+            </div>
+          );
+        } catch (e) { return null; }
+      })()}
 
       <div className="famdash">
         <div className="fdh"><ClipboardList size={14} color="#2563EB" /> 세대주 대시보드 · 가족 통합 관리

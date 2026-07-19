@@ -4757,3 +4757,20 @@ body.easyread .hibrief-t { font-size: 17px; }
 .vcinput { position: absolute; left: 16px; right: 16px; bottom: 108px; margin: 0; }
 .vcnote { bottom: 6px; }
 .vcchat { bottom: 152px; }
+
+/* ═══ Phase 6c — RPM 경보 배너(새벽 2:17 장면) ═══ */
+.rpmalert { background: linear-gradient(135deg, #FEF2F2, #FFF1F2); border: 1.5px solid #FECACA; border-radius: 14px; padding: 13px 15px; margin-bottom: 14px; }
+.rpm-hd { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 800; color: #B91C1C; flex-wrap: wrap; }
+.rpm-when { font-size: 10.5px; font-weight: 700; color: #DC2626; background: #FEE2E2; border-radius: 99px; padding: 2px 9px; }
+.rpm-series { display: flex; gap: 18px; align-items: flex-end; height: 86px; margin: 12px 4px 6px; }
+.rpm-bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; height: 100%; }
+.rpm-bar i { width: 26px; background: linear-gradient(180deg, #FCA5A5, #F87171); border-radius: 6px 6px 2px 2px; min-height: 12px; }
+.rpm-bar.hot i { background: linear-gradient(180deg, #EF4444, #B91C1C); box-shadow: 0 0 0 3px #FEE2E2; }
+.rpm-bar b { font-size: 11px; color: #991B1B; font-variant-numeric: tabular-nums; }
+.rpm-bar span { font-size: 10px; color: #C08484; }
+.rpm-bar.hot b { font-size: 12px; }
+.rpmalert p { margin: 8px 0 0; font-size: 12px; color: #7F5B5B; line-height: 1.55; }
+.rpm-btns { display: flex; gap: 7px; margin-top: 10px; flex-wrap: wrap; }
+.rpm-btns button { display: flex; align-items: center; gap: 5px; border: 1px solid #FECACA; background: #fff; color: #B91C1C; border-radius: 10px; padding: 8px 13px; font-size: 12px; font-weight: 800; cursor: pointer; }
+.rpm-btns button.pri { background: #DC2626; border-color: #DC2626; color: #fff; box-shadow: 0 3px 10px rgba(220, 38, 38, .3); }
+.rpm-btns button.dim { color: #94A3B8; border-color: var(--border); font-weight: 600; }
