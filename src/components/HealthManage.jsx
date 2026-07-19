@@ -93,6 +93,7 @@ function HealthManageSection({ onGo }) {
           <div className="adv"><span className="ic" style={{ background: "#FCE7F3" }}><HeartHandshake size={18} color="#DB2777" /></span><div style={{ flex: 1 }}><b>돌봄·간병 상담</b><p>방문간호·재활 등 재가/돌봄 연계 필요 시</p></div><Go to="homecare" ic={HeartHandshake}>재가·돌봄</Go></div>
           <div className="gorow"><Go to="ai" ic={MessageSquare}>AI 상담</Go><Go to="insurance" ic={ShieldCheck}>보험 보기</Go><button className="gobtn" onClick={() => setViewer(true)}><ExternalLink size={14} /> 원본 리포트</button></div>
         </div>
+        {typeof ActivitySummaryCard === "function" && <ActivitySummaryCard />}
       </>)}
 
       {cat === "bio" && (<>
@@ -169,7 +170,7 @@ function HealthManageSection({ onGo }) {
         <div className="gorow"><Go to="ai" ic={MessageSquare} pri>AI 상담</Go><Go to="hospital" ic={Building2}>병원 예약</Go></div>
       </>)}
 
-      {cat === "care" && (
+      {cat === "care" && (<>
         <div className="card">
           <div className="rct"><Sparkles size={18} color="#7C3AED" /> AI 맞춤 권고</div>
           <div className="recs">{(careRecs && careRecs.length ? careRecs.map((t) => [Sparkles, t]) : RECS).map(([Ic, t]) => <div className="rec" key={t}><Ic size={15} color="#7C3AED" />{t}</div>)}</div>
@@ -177,7 +178,8 @@ function HealthManageSection({ onGo }) {
           <button className="cbtn" onClick={() => toast("데이터 제공에 동의했습니다. Health Token이 적립됩니다.")}><Coins size={15} /> 데이터 제공 동의하고 Health Token 받기</button>
           <div className="gorow"><Go to="shop" ic={ShoppingCart} pri>건강쇼핑</Go><Go to="homecare" ic={HeartHandshake}>재가·돌봄</Go><Go to="checkup" ic={CalendarCheck}>검진 예약</Go><Go to="hospital" ic={Building2}>병원 찾기</Go></div>
         </div>
-      )}
+        {typeof TodayAIRecs === "function" && <TodayAIRecs onGo={go} />}
+      </>)}
       {viewer && <OriginalReport onClose={() => setViewer(false)} />}
     </div>
   );
