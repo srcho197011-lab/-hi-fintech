@@ -154,6 +154,7 @@ const AGENT_QNA = [
   { c: "action", k: "hi_book_do", p: ["이대로예약확정", "이대로확정", "그대로예약", "예약확정해줘"], a: "", tool: "bookdo", b: ["검진 준비사항 알려줘"], nav: "checkup", nx: [], lv: 1 },
   { c: "action", k: "hi_claim_do", p: ["청구접수진행", "접수진행해줘", "청구진행해"], a: "", tool: "claimdo", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
   { c: "action", k: "hi_fam_add", p: ["가족추가", "가족등록", "가족구성원", "구성원추가", "식구추가", "가족넣어", "가족어떻게", "어머니추가", "아버지추가", "아내추가", "남편추가", "아들추가", "딸추가", "노모등록", "어머니등록", "세추가해줘"], a: "", tool: "famadd", b: [], nav: "mypage", nx: [], lv: 1 },
+  { c: "action", k: "hi_fam_del", p: ["가족삭제", "구성원삭제", "구성원제외", "가족제외", "아버지삭제", "어머니삭제", "아버지없애", "어머니없애", "가족없애", "아버지빼", "어머니빼", "가족빼"], a: "", tool: "famdel", b: [], nav: "mypage", nx: [], lv: 1 },
   { c: "action", k: "hi_consent", p: ["동의꺼줘", "동의켜줘", "동의철회해", "마케팅동의", "수신거부해", "동의바꿔", "동의변경해"], a: "", tool: "consentdo", b: [], nav: null, nx: [], lv: 1 },
   { c: "action", k: "hi_insjoin", p: ["검진보험가입해", "무료보험가입해", "검진대비보험가입", "보험가입해줘", "검진보험들어줘"], a: "", tool: "insjoin", b: ["보장 내용 자세히"], nav: "insurance", nx: [], lv: 1, guard: "ins" },
   { c: "action", k: "hi_near_ck", p: ["주변검진센터", "검진센터어디", "검진센터추천"], a: "", tool: "nearfind", b: [], nav: "checkup", nx: [], lv: 1 },

@@ -138,6 +138,24 @@ const TOOL_RUN = {
     try { window.dispatchEvent(new CustomEvent("famrefresh")); } catch (e) {}   // 화면 목록 즉시 갱신
     return { lines: [`${label}(${age}세)님을 우리가족건강관리에 등록했어요 — 검진 일정·응급 안내를 함께 챙겨드릴게요. 가족 등록 보상 +100 HTK도 적립됐어요!`, "가족 정보는 본인 동의 범위에서만 저장되고, 언제든 삭제할 수 있어요."] };
   } catch (e) { return null; } },
+  // 가족 제외 — "아버지 삭제해줘" 한마디로(이름 우선 매칭 → 최근 추가분부터)
+  famdel(m, text) { try {
+    const t = String(text || "");
+    const list = (typeof familyLoad === "function") ? (familyLoad(m.email, (m.name || "가")[0]) || []) : [];
+    let idx = -1;
+    for (let i = list.length - 1; i >= 0; i--) { const f = list[i]; if (f.name && f.name.length >= 2 && t.indexOf(f.name) >= 0) { idx = i; break; } }
+    if (idx < 0) {
+      const REL = [["어머니|노모|모친", "부모"], ["아버지|부친", "부모"], ["아내|배우자", "배우자"], ["남편", "배우자"], ["아들", "자녀"], ["딸", "자녀"]];
+      const hit = REL.find((r) => new RegExp(r[0]).test(t));
+      if (hit) for (let i = list.length - 1; i >= 0; i--) { const f = list[i]; if (f.relation === hit[1] && new RegExp(hit[0]).test(f.name || "")) { idx = i; break; } }
+    }
+    if (idx < 0) return { lines: ["누구를 제외할까요? 등록된 이름이나 관계로 말씀해 주세요 — 예: \"아버지 삭제해줘\"", list.length ? "지금 등록된 가족: " + list.map((f) => `${f.name}(${f.relation})`).join(", ") : "등록된 가족이 없어요."] };
+    const rm = list.splice(idx, 1)[0];
+    if (typeof familySave === "function") familySave(m.email, list);
+    try { window.dispatchEvent(new CustomEvent("famrefresh")); } catch (e) {}
+    try { vaultAccessLog(anonToken(m), "member", `가족 제외(${rm.name} · 하이 대화)`); } catch (e) {}
+    return { lines: [`${rm.name}(${rm.relation})님을 가족 구성원에서 제외했어요.`, "잘못 제외했다면 \"" + rm.name + " " + (rm.age || "") + "세 추가해줘\"라고 하시면 다시 등록돼요."] };
+  } catch (e) { return null; } },
   // 동의 변경 — 목적별 동의를 대화 한마디로(변경 이력은 체인 기록)
   consentdo(m, text) { try {
     const t = String(text || "");
