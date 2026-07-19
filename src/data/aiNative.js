@@ -262,6 +262,14 @@ const TOOL_RUN = {
       "심한 두통·가슴 통증·한쪽 마비·발음 이상 같은 증상이 있다면 진료 연결 말고 즉시 119예요.",
     ], buttons: ["원격진료 연결해줘", "경보 해제해줘"] };
   } catch (e) { return null; } },
+  /* Phase 7 — B2B 콘솔 딥링크: 기관 구독·의사 콘솔·검증 노드·거버넌스 */
+  b2bgo() { try {
+    try { if (typeof window !== "undefined") { window._piB2B = true; window.dispatchEvent(new CustomEvent("b2bgo")); } } catch (e) {}
+    return { lines: [
+      "B2B 콘솔을 열어드릴게요 — 파트너 기관이 쓰는 화면 4종이 모여 있어요:",
+      "① 기관 구독 콘솔 — 침투 요금제(1차 무료→월 50만→상한 300만)·이용량·월 청구서\n② 의사 콘솔 — AI 예진 수신함·대기열·처방 발행·열람 감사\n③ 검증기관 노드 — PoA 컨소시엄 현황·노드 참여 신청\n④ 거버넌스 — 프로토콜 헌법·안건 HTK 가중 투표",
+    ], buttons: ["구독료 정책 알려줘", "제휴 조건이 뭐예요?"] };
+  } catch (e) { return null; } },
   rpmack(m) { try {
     localStorage.setItem("hifin_rpm_ack_" + m.email, "1");
     try { window.dispatchEvent(new CustomEvent("rpmrefresh")); } catch (e) {}

@@ -452,7 +452,9 @@ function PiSelfTest() {
 
 /* ── 메인 섹션 ── */
 function PartnerInvestSection({ onGo }) {
-  const [tab, setTab] = useState("partner");
+  /* 하이 딥링크(b2bgo 툴): window._piB2B 플래그가 있으면 B2B 콘솔 탭으로 바로 진입 */
+  const [tab, setTab] = useState(() => { try { if (typeof window !== "undefined" && window._piB2B) { window._piB2B = false; return "b2b"; } } catch (e) {} return "partner"; });
+  useEffect(() => { const f = () => setTab("b2b"); window.addEventListener("b2bgo", f); return () => window.removeEventListener("b2bgo", f); }, []);
   const [itab, setItab] = useState("stock");
   const [params, setParams] = useState({ ...PI_PARAM_DEFAULT });
   return (
@@ -468,8 +470,10 @@ function PartnerInvestSection({ onGo }) {
       <div className="pi-tabs">
         <button className={"pi-tab" + (tab === "partner" ? " on" : "")} onClick={() => setTab("partner")}><Handshake size={16} /> 제휴 신청</button>
         <button className={"pi-tab" + (tab === "invest" ? " on" : "")} onClick={() => setTab("invest")}><TrendingUp size={16} /> 투자 신청</button>
+        <button className={"pi-tab" + (tab === "b2b" ? " on" : "")} onClick={() => setTab("b2b")}><Building2 size={16} /> B2B 콘솔</button>
       </div>
 
+      {tab === "b2b" && (typeof B2BConsoleSection === "function" ? <B2BConsoleSection onGo={onGo} /> : null)}
       {tab === "partner" && <PartnershipFlow />}
       {tab === "invest" && (<div className="pi-pane">
         <div className="pi-subtabs">
