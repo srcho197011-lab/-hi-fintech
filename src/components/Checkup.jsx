@@ -1189,8 +1189,8 @@ function MapView({ points, accent, focus, height, cap }) {
 
 /* ══ 통합 기관 지도(Phase 4.5) — 병원·약국·검진센터·재가를 한 지도에서 유형 토글(K2-1).
    재가 데이터 로더(loadHomecare)는 Homecare.jsx의 기존 것을 재사용. ══ */
-function UnifiedMapCard({ data }) {
-  const [on, setOn] = useState({ hosp: true, pharm: false, chk: true, care: false });
+function UnifiedMapCard({ data, init }) {
+  const [on, setOn] = useState(init || { hosp: true, pharm: false, chk: true, care: false });
   const [scope, setScope] = useState("near");
   const [hc, setHc] = useState(null);
   const [openMap, setOpenMap] = useState(true);

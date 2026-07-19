@@ -176,6 +176,7 @@ function PharmacyDirectory({ data }) {
         <span><Art name="moon" size={16} /> 야간·심야약국</span>
         <span><Art name="phone" size={16} /> 전화·길찾기</span>
       </div>
+      {typeof UnifiedMapCard === "function" ? <UnifiedMapCard data={data} init={{ hosp: false, pharm: true, chk: false, care: false }} /> : null}
       <MapCard anchorRef={mapAnchor} open={mapOpen} onToggle={() => setMapOpen((v) => !v)} focus={focus} title={`약국 위치 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳)`} accent="#16A34A" points={list.map((p) => ({ name: p[0], addr: p[3], tel: p[4], tag: "약국", lat: p[6], lng: p[5] }))} />
       <div className="bklbl" style={{ margin: "0 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span>지역(시·도) 선택</span>
         <button className="nearbtn" onClick={findNear}><MapPin size={13} /> 내 주변 약국</button></div>
