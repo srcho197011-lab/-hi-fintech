@@ -4435,6 +4435,66 @@ body.easyread .hidock-quick button { font-size: 14px; padding: 9px 15px; }
 body.easyread .hidock-bub { font-size: 15.5px; line-height: 1.75; }
 body.easyread .hidock-btns button { font-size: 14px; padding: 9px 14px; }
 body.easyread .hidock-input input { font-size: 15px; }
+/* ══════ 신뢰 센터(Trust Center) + 전 섹션 신뢰 배지·입력 순간 안내 ══════ */
+.trustbadge { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #BBF7D0; background: #F0FDF4; color: #15803D; font-size: 11.5px; font-weight: 800; padding: 6px 11px; border-radius: 999px; cursor: pointer; margin-right: 4px; }
+.trustbadge:hover { background: #DCFCE7; }
+.trustline { display: flex; align-items: flex-start; gap: 6px; background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 9px; padding: 8px 11px; font-size: 11.5px; color: #075985; line-height: 1.55; margin-top: 10px; }
+.trustline svg { flex-shrink: 0; margin-top: 2px; }
+.trustline i { font-style: normal; font-weight: 800; color: #0369A1; }
+.trustline button { border: none; background: none; color: #0284C7; font-size: 11.5px; font-weight: 800; cursor: pointer; text-decoration: underline; flex-shrink: 0; padding: 0; }
+.trustwrap { margin-top: 16px; }
+.trust-hero { background: linear-gradient(135deg, #082F49, #0C4A6E); border-radius: 18px; padding: 24px 22px; color: #fff; }
+.trust-kicker { display: inline-flex; align-items: center; gap: 6px; background: rgba(56,189,248,.15); border: 1px solid rgba(56,189,248,.4); color: #7DD3FC; font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 5px 12px; border-radius: 999px; }
+.trust-title { font-size: 22px; font-weight: 900; letter-spacing: -.4px; margin: 12px 0 14px; }
+.trust-3s { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.trust-s { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 13px; padding: 13px 14px; }
+.trust-s b { display: block; font-size: 13px; color: #7DD3FC; margin-bottom: 6px; }
+.trust-s p { font-size: 12.3px; line-height: 1.65; color: #D6EDFA; margin: 0; }
+.trust-verify { display: flex; align-items: center; gap: 11px; background: #fff; border: 1.5px solid #BBF7D0; border-radius: 14px; padding: 13px 16px; margin-top: 14px; }
+.trust-verify .tv-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 4px rgba(22,163,74,.15); }
+.trust-verify .tv-t { flex: 1; } .trust-verify .tv-t b { display: block; font-size: 13.5px; color: #15803D; } .trust-verify .tv-t span { font-size: 11.5px; color: var(--muted); }
+.trust-verify button { border: 1px solid #BBF7D0; background: #F0FDF4; color: #15803D; font-size: 12px; font-weight: 800; padding: 8px 13px; border-radius: 10px; cursor: pointer; flex-shrink: 0; }
+.trust-sec { margin: 18px 0 10px; font-size: 14.5px; color: #16233F; }
+.trust-flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.tf-step { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 11px; position: relative; }
+.tf-step .tf-n { width: 22px; height: 22px; border-radius: 50%; background: #0891B2; color: #fff; font-size: 11.5px; font-weight: 900; display: grid; place-items: center; margin-bottom: 7px; }
+.tf-step b { display: block; font-size: 13px; color: #16233F; }
+.tf-step p { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 4px 0 6px; }
+.tf-step span { font-size: 10.5px; font-weight: 800; color: #0369A1; background: #F0F9FF; border-radius: 6px; padding: 3px 7px; display: inline-block; }
+.trust-rights { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tr-card { position: relative; text-align: left; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 13px 12px; cursor: pointer; color: #0F766E; }
+.tr-card:hover:not(:disabled) { border-color: #0891B2; }
+.tr-card:disabled { opacity: .6; cursor: default; }
+.tr-card b { display: block; font-size: 13px; color: #16233F; margin-top: 7px; }
+.tr-card p { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 4px 0 0; }
+.tr-card .tr-soon { position: absolute; top: 10px; right: 10px; font-size: 9.5px; font-weight: 800; color: #B45309; background: #FEF3E2; border-radius: 6px; padding: 2px 7px; }
+.trust-incident { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.trust-incident > div { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 12px 13px; }
+.trust-incident b { display: block; font-size: 13px; color: #92400E; margin-bottom: 4px; }
+.trust-incident p { font-size: 11.5px; color: #78530E; line-height: 1.55; margin: 0; }
+.trust-asks { display: flex; flex-wrap: wrap; gap: 7px; }
+.trust-asks button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #FED7AA; background: #FFF7ED; color: #C2410C; font-size: 12.5px; font-weight: 800; padding: 9px 14px; border-radius: 999px; cursor: pointer; }
+/* 검진 예약 — 보험 3문장·동의 1탭 */
+.bkins3 { background: #F7FDF9; border: 1px solid #BBF7D0; border-radius: 12px; padding: 11px 13px; margin-top: 10px; }
+.bkins3row { display: flex; gap: 8px; font-size: 12.3px; line-height: 1.6; margin-bottom: 4px; }
+.bkins3row b { flex-shrink: 0; color: #15803D; font-size: 11.5px; background: #DCFCE7; border-radius: 6px; padding: 1px 7px; height: fit-content; margin-top: 1px; }
+.bkins3row span { color: #26324A; }
+.bkins3co { font-size: 10.8px; color: var(--muted); margin-top: 6px; border-top: 1px dashed #BBF7D0; padding-top: 7px; }
+.bkins3co button { border: none; background: none; color: #EA580C; font-weight: 800; font-size: 10.8px; cursor: pointer; padding: 0; }
+.bkinsagree { display: flex; align-items: flex-start; gap: 9px; background: #fff; border: 1.5px solid #D9DEEC; border-radius: 11px; padding: 11px 13px; margin-top: 10px; cursor: pointer; }
+.bkinsagree.on { border-color: #16A34A; background: #F7FDF9; }
+.bkinsagree input { display: none; }
+.bkinsagree .ba-box { width: 20px; height: 20px; border-radius: 6px; border: 2px solid #CBD5E1; display: grid; place-items: center; font-size: 13px; font-weight: 900; color: #fff; flex-shrink: 0; }
+.bkinsagree.on .ba-box { background: #16A34A; border-color: #16A34A; }
+.bkinsagree .ba-t { font-size: 12.5px; font-weight: 700; color: #26324A; line-height: 1.55; }
+.bkinsagree .ba-t i { display: block; font-style: normal; font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+@media (max-width: 640px) {
+  .trustbadge .tb-t { display: none; }
+  .trust-3s, .trust-incident { grid-template-columns: 1fr; }
+  .trust-flow { grid-template-columns: 1fr 1fr; }
+  .trust-rights { grid-template-columns: 1fr 1fr; }
+}
+
 /* ══════ 활용 스토리 — '결과지를 버리던 남자' 타임라인 ══════ */
 .storywrap { margin-top: 10px; }
 .story-hero { background: linear-gradient(135deg, #0B1F3A, #14315C); border-radius: 18px; padding: 26px 24px; color: #fff; margin-bottom: 20px; }

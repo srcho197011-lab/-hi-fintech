@@ -126,6 +126,7 @@ function CheckupCollect({ member, onDone, onLater }) {
           <div className="obchan-b"><b>국민건강보험공단 연계 <span className="obchan-badge warn">간편 · 일부 항목만</span></b><p>본인인증 후 최근 10년 국가검진 이력을 한 번에. <b>AI 분석이 제한될 수 있어요</b></p></div><ChevronRight size={16} />
         </button>
       </div>
+      {typeof TrustLine === "function" && <TrustLine ctx="upload" />}
       <div className="obfoot"><button className="oblater" onClick={() => setPhase("intro")}>이전</button></div>
     </div>
   );
@@ -263,6 +264,7 @@ function InsuranceCollect({ member, onDone, onLater }) {
           <div className="obchan-b"><b>증권·안내장 사진 촬영</b><p>종이 증권·안내장을 촬영해 담보를 추출</p></div><ChevronRight size={16} />
         </button>
       </div>
+      {typeof TrustLine === "function" && <TrustLine ctx="upload" />}
       <div className="obfoot"><button className="oblater" onClick={() => setPhase("intro")}>이전</button></div>
     </div>
   );

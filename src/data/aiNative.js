@@ -129,6 +129,7 @@ const AGENT_SEC_GUIDES = [
   { k: "partner", label: "제휴·투자", words: ["제휴신청", "제휴하고", "투자신청", "투자하고", "주식청약", "청약화면", "파트너신청", "입점신청"], guide: "제휴·투자 화면을 안내해 드릴게요. 검진센터·병원·약국 제휴 신청과 회원 적립금 주식청약, 법인 투자까지 여기서 진행돼요.", btns: ["적립금으로 주식 어떻게 사?", "제휴 조건이 뭐예요?"] },
   { k: "onboarding", label: "데이터 연결", words: ["데이터연결", "검진연결", "검진결과업로드", "결과올리", "보험연결", "데이터올리"], guide: "데이터 연결을 열어드릴게요. 검진결과(사진·PDF·공단)와 보험(통합조회)을 연결하면 모든 분석이 내 실제 데이터 기준으로 바뀌어요 — 각 1분이면 돼요.", btns: ["사진으로 올려도 돼요?", "공단 조회는 뭐예요?"] },
   { k: "mywallet", label: "나의 건강지갑(전체)", words: ["데이터금고열", "금고열어", "금고보여"], guide: "데이터 금고를 열어드릴게요. 내 검진·보험 데이터와 블록체인 보호 블록, 접근 이력, 동의 현황을 보고 즉시 삭제도 할 수 있어요.", btns: ["내 정보 안전해요?"] },
+  { k: "trust", label: "신뢰 센터", words: ["신뢰센터", "데이터보호센터", "보안어떻게", "어떻게보호", "안전한지보여", "트러스트"], guide: "신뢰 센터를 열어드릴게요. 내 데이터를 누가·어떻게 지키는지 3문장으로 확인하고, 접근 이력·동의·즉시 삭제까지 버튼으로 직접 실행할 수 있어요.", btns: ["내 검진 결과 누가 볼 수 있어요?", "해킹당하면 어떡해요?"] },
   { k: "intro", label: "회사 소개", words: ["회사소개보", "소개화면", "비전보여", "하이핀이란"], guide: "HI-Fin Tech 소개 화면이에요. 회사 비전·사회적 가치환원·커뮤니티를 볼 수 있어요.", btns: ["하이핀이 뭘 해주는 곳이야?"] },
   { k: "story", label: "활용 스토리", words: ["활용스토리", "활용법", "고객여정", "스토리보여", "이야기로", "성래스토리", "어떻게쓰는지"], guide: "'결과지를 버리던 남자' — 조성래 님의 10년 이야기로 하이핀의 모든 기능을 여행처럼 보여드려요. 장면마다 실제 화면으로 바로 이동할 수 있어요.", btns: ["검진 예약 도와줘", "내 건강 봐줘"] },
   { k: "social", label: "사회적기업", words: ["사회공헌", "사회환원", "기부활동", "나눔활동"], guide: "사회적기업 화면에서 치료비 사각지대 나눔 등 하이핀의 사회환원 활동을 볼 수 있어요. 회원 소비의 30% 마진이 나눔 재원이 돼요.", btns: ["나눔은 어떻게 이뤄져요?"] },
@@ -145,7 +146,7 @@ function agentNavIntent(rawText, normText) {
 
 /* ── 메인: agentAnswer(text) — 단일 에이전트 '하이'의 응답 ──
    반환: { lines:[문장들], buttons:[≤3], nav:{key,label}|null, reset?:bool, matched:intentKey|null } */
-const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", home: "회사 소개", checkup: "건강검진 예약", care: "검진 후 케어", insurance: "보험·치료비", mywallet: "나의 건강지갑", partner: "제휴·투자", onboarding: "데이터 연결", ontology: "온톨로지", shop: "건강쇼핑", ai: "AI 주치의 상담", manage: "내 건강현황", hospital: "병원진료 안내", homecare: "재가돌봄", wallet: "건강금융지갑", nft: "Health NFT", mypage: "우리가족건강관리", social: "사회적기업", community: "커뮤니티" };
+const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", home: "회사 소개", trust: "신뢰 센터", checkup: "건강검진 예약", care: "검진 후 케어", insurance: "보험·치료비", mywallet: "나의 건강지갑", partner: "제휴·투자", onboarding: "데이터 연결", ontology: "온톨로지", shop: "건강쇼핑", ai: "AI 주치의 상담", manage: "내 건강현황", hospital: "병원진료 안내", homecare: "재가돌봄", wallet: "건강금융지갑", nft: "Health NFT", mypage: "우리가족건강관리", social: "사회적기업", community: "커뮤니티" };
 function agentAnswer(text) {
   const m = _member();
   const norm = lexNormalize(text);

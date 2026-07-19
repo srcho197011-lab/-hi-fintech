@@ -61,10 +61,10 @@ function CareSection({ initial, onGo }) {
 }
 
 function WalletHubSection({ initial, onGo }) {
-  const map = { mywallet: "wallet", wallet: "wallet", nft: "nft", mypage: "mypage", vault: "vault" };
+  const map = { mywallet: "wallet", wallet: "wallet", nft: "nft", mypage: "mypage", vault: "vault", trust: "trust" };
   const [tab, setTab] = useState(map[initial] || "wallet");
   useEffect(() => { setTab(map[initial] || "wallet"); }, [initial]);
-  const tabs = [["wallet", "건강금융지갑", Wallet, "#059669"], ["mypage", "우리가족건강관리", Users, "#EA580C"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["vault", "데이터 금고", ShieldCheck, "#2563EB"]];
+  const tabs = [["wallet", "건강금융지갑", Wallet, "#059669"], ["mypage", "우리가족건강관리", Users, "#EA580C"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["vault", "데이터 금고", ShieldCheck, "#2563EB"], ["trust", "신뢰 센터", Lock, "#0891B2"]];
   return (
     <div style={{ marginTop: 4 }}>
       {typeof MyHealthHero === "function" && <MyHealthHero onGo={onGo} />}
@@ -73,6 +73,7 @@ function WalletHubSection({ initial, onGo }) {
       {tab === "mypage" && <MyPageSection onGo={onGo} />}
       {tab === "nft" && <NFTSection onGo={onGo} />}
       {tab === "vault" && (typeof DataVaultPanel === "function" ? <div style={{ marginTop: 16 }}><DataVaultPanel onGo={onGo} /></div> : null)}
+      {tab === "trust" && (typeof TrustCenterSection === "function" ? <TrustCenterSection onGo={onGo} /> : null)}
     </div>
   );
 }

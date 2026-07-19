@@ -257,6 +257,7 @@ function FamilyCareSection({ member, onGo }) {
       {addOpen ? (
         <div className="famadd">
           <div className="faih"><Plus size={14} color="#2563EB" /> 가족 구성원 추가</div>
+          {typeof TrustLine === "function" && <TrustLine ctx="family" />}
           <div className="faiin"><input placeholder="이름" value={fName} onChange={(e) => setFName(e.target.value)} /><select value={fRel} onChange={(e) => setFRel(e.target.value)}>{FAM_REL.map((r) => <option key={r} value={r}>{r}</option>)}</select><input placeholder="나이" type="number" value={fAge} onChange={(e) => setFAge(e.target.value)} style={{ maxWidth: 90 }} /><button className="csfgo" onClick={addMember}><Check size={13} /> 추가</button></div>
         </div>
       ) : (<button className="famaddbtn" onClick={() => setAddOpen(true)}><Plus size={15} /> 가족 구성원 추가</button>)}

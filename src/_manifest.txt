@@ -75,4 +75,5 @@ src/components/ReportVault.jsx
 src/components/SportsInsurance.jsx
 src/components/DataOnboarding.jsx
 src/components/BlockchainVault.jsx
+src/components/TrustCenter.jsx
 src/components/AgentDock.jsx

@@ -332,7 +332,7 @@ const SEC_PARENT = {
   checkup: "checkup",
   care: "care", ai: "care", manage: "care", hospital: "care", homecare: "care", shop: "care",
   insurance: "insurance",
-  mywallet: "mywallet", wallet: "mywallet", nft: "mywallet", mypage: "mywallet",
+  mywallet: "mywallet", wallet: "mywallet", nft: "mywallet", mypage: "mywallet", trust: "mywallet",
   ontology: "ontology", demo: "demo",
 };
 function secParent(k) { return SEC_PARENT[k] || k; }

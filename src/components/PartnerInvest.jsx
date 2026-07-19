@@ -294,6 +294,7 @@ function StockSubscription({ params, setParams }) {
           <div className="pi-invs">FY 예상 당기순이익 {piWon(p.NET_INCOME_FORECAST)}</div>
         </div>
       </div>
+      <div className="chnote" style={{ marginTop: 8 }}>※ 회원 적립금 청약의 주당가는 <b>FY 예상 순이익 × PER 기준(시연용 예시)</b>으로 산정된 별도 프로그램입니다. SI·법인 투자 라운드(Pre-money 100억)와는 조건·기준이 다르며, 실제 청약가는 라운드 확정 조건에 따릅니다.</div>
 
       <div className="pi-alloc">
         <div className="pi-allocbar"><span style={{ width: Math.min(100, (allocated / pool) * 100) + "%" }} /></div>
@@ -321,6 +322,7 @@ function StockSubscription({ params, setParams }) {
         <div className="pi-limitnote">실제 신청 가능 수량 = min(적립금 ÷ 주당가격 <b>{piNum(Math.floor(p.MEMBER_POINTS / price))}</b>, 1인 한도 <b>{piNum(cap)}</b>, 잔여배정 <b>{piNum(remaining)}</b>) = <b>{piNum(maxQty)}주</b></div>
 
         <label className="pi-check"><input type="checkbox" checked={risk} onChange={(e) => setRisk(e.target.checked)} /> <span>비상장주식 투자위험(원금 손실 가능)을 이해했습니다.</span></label>
+        {typeof TrustLine === "function" && <TrustLine ctx="invest" />}
         <label className="pi-check"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> <span>청약 약관 및 개인정보 수집·이용에 동의합니다.</span></label>
         <div className="pi-actions">
           <button className="pi-btn" disabled={closed} onClick={subscribe}><Coins size={15} /> {closed ? "올해 배정 마감" : "주식 청약 신청"}</button>

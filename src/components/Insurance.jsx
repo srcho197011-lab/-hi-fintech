@@ -222,6 +222,7 @@ function InsJoin({ onGo }) {
         <input placeholder="이메일(ID)" value={info.email || ""} onChange={(e) => setInfo({ ...info, email: e.target.value })} />
         <input placeholder="주소" style={{ gridColumn: "1 / -1" }} value={info.addr} onChange={(e) => setInfo({ ...info, addr: e.target.value })} />
         <div style={{ gridColumn: "1 / -1" }}>
+          {typeof TrustLine === "function" && <TrustLine ctx="rrn" />}
           <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B45309", marginBottom: 5 }}><Lock size={11} style={{ verticalAlign: "-2px" }} /> 주민등록번호 <span style={{ color: "var(--soft)", fontWeight: 600 }}>· 건강검진보험 가입 시 필수 (보안입력)</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input inputMode="numeric" maxLength={6} placeholder="앞 6자리" value={info.rrn1} onChange={(e) => setInfo({ ...info, rrn1: e.target.value.replace(/\D/g, "").slice(0, 6) })} style={{ flex: 1, letterSpacing: "2px" }} />

@@ -1,7 +1,7 @@
 /* ══════════ 통합 재무모델 엔진(finModel) — 단일 데이터 모델 · 파라미터 기반 · 자동 재계산 ══════════
    원칙(2026.7.16 개편):
    ① EMR·UPI·플랫폼 사용료 = 1차연도 0원(시장 선점 전략적 투자) → 회원 10만 달성 후
-      "AI Healthcare Platform Subscription"으로 전 기관(검진·병원·약국) 월 100만(2차)→200→300→400만(5차).
+      "AI Healthcare Platform Subscription" 침투 요금제 — 월 50만(2차)부터 연 +50만씩, 한도 월 300만(subFeeBase·subFeeStep·subFeeCap).
    ② 회원 확보비(CAC) 5,000원/인 — 회원 증가 속도에 따라 기간 인식(일시 비용화 금지).
    ③ 모든 수치는 파라미터(finParams) — 하나가 바뀌면 P/L·B/S·C/F·SaaS·KPI·EV 전체 자동 재계산.
    ④ 모든 계산에 데이터 계보(lineage) 기록 — AI(하이)가 자연어로 검증·답변(finAsk).
