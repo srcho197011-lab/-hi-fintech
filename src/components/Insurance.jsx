@@ -1019,6 +1019,30 @@ function ClaimSupportFlow({ onModal }) {
   );
 }
 
+/* ══ Phase 5 — 보험요율 재산정(Dynamic Re-rating, D3) — 인하 전용 옵트인 ══ */
+function ReRatingCard() {
+  const m = (typeof _member === "function") ? _member() : null;
+  const [tick, setTick] = useState(0); void tick;
+  if (!m) return null;
+  const st = (typeof rerateState === "function") ? rerateState() : { status: "none" };
+  const eligible = (typeof rerateEligible === "function") ? rerateEligible(m) : false;
+  const apply = () => { try { const r = rerateApply(m); if (r && typeof toast === "function") toast(`요율 재산정 완료 — 월 ${r.before.toLocaleString()}원 → ${r.after.toLocaleString()}원 (-${r.rate}%)`); } catch (e) {} setTick((t) => t + 1); };
+  return (
+    <div className="rrcard">
+      <div className="rr-hd"><TrendingUp size={16} /> 보험요율 재산정 <span className="rr-tag">Dynamic Re-rating · 인하 전용</span></div>
+      <p className="rr-sub">보험료는 나이가 아니라 <b>내 관리</b>를 따라갑니다 — 4세대 성과 자산(지표 개선 증명)으로 재산정을 신청하면 <b>내려가거나 그대로</b>예요. 미신청·지표 악화가 인상으로 이어지지 않아요(소비자 보호 원칙). 보험사는 원본이 아닌 <b>요약 증명(성과 SBT)만</b> 열람해요.</p>
+      {st.status === "done" ? (
+        <div className="rr-done"><Check size={15} /> 재산정 완료 — 월 보험료 <s>{st.before.toLocaleString()}원</s> → <b>{st.after.toLocaleString()}원</b> (연 {(st.saving * 12).toLocaleString()}원 절감 · -{st.rate}%) · 체인 기록 ✓</div>
+      ) : eligible ? (
+        <div className="rr-act"><span className="rr-eli">✅ 신청 자격 충족 — 2개년 검진의 혈당·중성지방 개선이 성과 자산으로 증명돼요</span><button onClick={apply}><TrendingUp size={14} /> 재산정 신청 (인하 전용)</button></div>
+      ) : (
+        <div className="rr-act"><span className="rr-eli dim">재검진 데이터가 쌓이면 신청할 수 있어요 — 검진결과를 연결해 주세요</span></div>
+      )}
+      <div className="rr-note">※ 시연용 예시 — 실제 재산정은 보험사 심사·약관에 따르며, 하이핀은 검증된 요약 증명 전달만 담당해요.</div>
+    </div>
+  );
+}
+
 function InsuranceSection({ onGo }) {
   const [tab, setTab] = useState("embed");
   const [modal, setModal] = useState(null);
@@ -1057,6 +1081,7 @@ function InsuranceSection({ onGo }) {
           <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.65 }}>건강검진을 예약하면 <b>추가 보험료 없이 검진 대비보험이 자동 가입</b>됩니다. 검진 전후 발견되기 쉬운 <b>암·뇌졸중·급성심근경색·정신질환</b> 등을 진단·수술비로 보장해 치료비 부담을 덜어드립니다.</p>
           <button className="cbtn pri" onClick={() => setEnroll(true)}><CalendarCheck size={15} /> 검진 예약하고 자동가입</button>
         </div>
+        {typeof ReRatingCard === "function" && <ReRatingCard />}
 
         <div className="card">
           <div className="rct"><Coins size={18} color="#2563EB" /> 플랜별 담보·보장금액</div>

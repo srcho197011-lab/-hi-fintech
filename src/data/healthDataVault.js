@@ -270,6 +270,44 @@ function guestVaultDemo(member) {
   } catch (e) { return null; }
 }
 
+/* ══════════ Phase 5 프로토콜 UX — 세대 계보(D1)·데이터 배당(D2)·요율 재산정(D3) ══════════ */
+/* 데이터 활용 배당 — 가명화 데이터가 연구에 활용되면 약속된 분배율로 지급(시연: 검진 보유 시 1건) */
+function dataDividends(m) {
+  try {
+    const v = vaultLoad(anonToken(m)); if (!v || !(v.checkups || []).length) return [];
+    return [{ id: "DIV-2607", study: "췌장질환 조기발견 연구(가명결합 · 기관 IRB 승인)", org: "K-대학병원 연구소", gens: [1, 2], htk: 1200, date: "2026-07-15" }];
+  } catch (e) { return []; }
+}
+/* 보험요율 재산정(Dynamic Re-rating) — 인하 전용 옵트인. 보험사는 원본이 아닌 요약 증명만 열람 */
+function rerateState() { try { return JSON.parse(localStorage.getItem("hifin_rerate") || "null") || { status: "none" }; } catch (e) { return { status: "none" }; } }
+function rerateEligible(m) { try { const v = vaultLoad(anonToken(m)); return !!(v && (v.checkups || []).length >= 2); } catch (e) { return false; } }
+function rerateApply(m) {
+  try {
+    const before = 12400, after = 11100;
+    const s = { status: "done", before, after, saving: before - after, rate: Math.round((before - after) / before * 1000) / 10, at: Date.now() };
+    localStorage.setItem("hifin_rerate", JSON.stringify(s));
+    const tk = anonToken(m);
+    chainAppend({ type: "record", token: tk, note: "보험요율 재산정 — 4세대 성과 증명(혈당·중성지방 개선) 제출 · 인하 적용" });
+    vaultAccessLog(tk, "보험사(요약 증명만)", "성과 SBT 요약 열람 — 요율 재산정 심사(원본 미제공)");
+    return s;
+  } catch (e) { return null; }
+}
+/* 세대형 자산 계보 — 1세대(원본)→2세대(분석)→3세대(활용)→4세대(성과) 자산 수 집계 */
+function assetLineage(m) {
+  try {
+    const tk = anonToken(m); const v = vaultLoad(tk) || {}; const blocks = (typeof chainForToken === "function") ? chainForToken(tk) : [];
+    const g1 = (v.checkups || []).length;
+    const g2 = g1;   // 검진 1건당 AI 정밀리포트 1건(분석 자산)
+    let certs = 0, claims = 0;
+    try { certs = (JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]")).length; } catch (e) {}
+    try { claims = (JSON.parse(localStorage.getItem("hifin_claims") || "[]")).length; } catch (e) {}
+    const g3 = certs + claims + blocks.filter((b) => b.type === "tx" || b.type === "swap").length;
+    const rr = rerateState();
+    const g4 = (g1 >= 2 ? 1 : 0) + (rr.status === "done" ? 1 : 0);   // 2개년 지표 개선 + 재산정 성과 증명
+    return { g1, g2, g3, g4, total: g1 + g2 + g3 + g4 };
+  } catch (e) { return { g1: 0, g2: 0, g3: 0, g4: 0, total: 0 }; }
+}
+
 /* 데이터 삭제·철회(파기) — 금고·체인기록(철회 사실은 체인에 남김) */
 function vaultPurge(member) {
   const token = anonToken(member);

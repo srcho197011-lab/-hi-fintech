@@ -163,6 +163,10 @@ const AGENT_QNA = [
   { c: "book", k: "hi_prep", p: ["검진준비사항", "검진전날", "금식해야", "검진전에뭐"], a: "검진 전날엔 저녁 9시 이후 금식하시고(물은 자정까지), 당일 아침은 물도 삼가는 게 좋아요. 복용 중인 약은 예약 센터와 미리 상의하세요. 편한 복장이면 충분해요!", b: ["내 예약 보기"], nav: "checkup", nx: [], lv: 1, guard: "med" },
   { c: "action", k: "hi_refer", p: ["친구초대", "초대해줘", "추천링크", "초대링크", "친구추천", "리퍼럴", "친구데려", "지인추천"], a: "", tool: "refer", b: [], nav: "mywallet", nx: [], lv: 1 },
   { c: "action", k: "hi_refstat", p: ["초대현황", "추천현황", "리퍼럴현황", "몇명가입"], a: "", tool: "refstat", b: [], nav: null, nx: [], lv: 1 },
+  /* ───────── Phase 5 프로토콜 UX — 계보·배당·재산정 ───────── */
+  { c: "action", k: "hi_lineage", p: ["자산계보", "계보보여", "계보설명", "세대자산", "세대형데이터", "데이터자산이뭐", "내자산계보"], a: "", tool: "lineage", b: [], nav: "mywallet", nx: [], lv: 1 },
+  { c: "action", k: "hi_divi", p: ["배당보여", "배당내역", "데이터배당", "배당얼마", "배당받"], a: "", tool: "divi", b: [], nav: "mywallet", nx: [], lv: 1 },
+  { c: "action", k: "hi_rerate", p: ["요율재산정", "재산정신청", "보험료재산정", "보험료깎", "보험료내려", "요율인하"], a: "", tool: "reratedo", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
 ];
 
 /* 카테고리 라벨(커버리지 대시보드용) */

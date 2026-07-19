@@ -201,8 +201,9 @@ function CheckupCollect({ member, onDone, onLater }) {
   return (
     <div className="obstep obdone">
       <div className="obdone-ic"><ShieldCheck size={34} /></div>
-      <h3>암호화 완료 · 블록체인 기록 완료 ✓</h3>
-      <p className="obdone-sub">{member ? member.name : "회원"}님의 검진데이터가 표준코드(FHIR)로 변환되어 안전하게 보관됐어요.</p>
+      <h3>위변조 없음 ✓ — 이 데이터는 이제 {member ? member.name : "회원"}님의 <b style={{ color: "#7C3AED" }}>디지털 자산</b>입니다</h3>
+      <p className="obdone-sub">검진데이터가 표준코드(FHIR)로 변환·암호화되어 <b>1세대(원본) 자산 SBT</b>로 편입됐어요 — 버려지던 종이가, 배당을 낳는 자산이 됐습니다.</p>
+      <div className="obasset">활용 수익은 스마트컨트랙트 분배율대로 돌아와요 — <b>회원 적립 50% · 보험/치료비 30% · 나눔 20%</b> <button onClick={() => { try { window.dispatchEvent(new CustomEvent("agentask", { detail: "세대형 데이터 자산이 뭐예요?" })); } catch (e) {} }}>🤖 하이에게 물어보기</button></div>
       <div className="obdone-steps">
         <span><Check size={13} /> FHIR 변환({rows.length}항목·LOINC)</span><span><Check size={13} /> AES-256 암호화·식별 분리</span><span><Check size={13} /> 블록 #{block ? block.idx : 0} 기록</span>
       </div>
@@ -416,6 +417,36 @@ function DataVaultPanel({ onGo }) {
         {integ && integ.checked > 0 && <span className={"dv-ibadge" + (integ.ok ? " ok" : " bad")}>{integ.ok ? <Check size={13} /> : <AlertTriangle size={13} />} 데이터 해시 대조 {integ.ok ? "위변조 없음 ✓" : "불일치"}</span>}
         <span className="dv-blk">내 블록 {myBlocks.length} · 전체 {chainOk.blocks}</span></div>
 
+      {(() => { /* Phase 5 — 세대형 자산 계보(D1): 당신의 검진 하나가 이렇게 자랐습니다 */
+        const lin = gd ? { g1: (gd.v.checkups || []).length, g2: (gd.v.checkups || []).length, g3: 2, g4: 1 } : ((typeof assetLineage === "function") ? assetLineage(member) : null);
+        if (!lin) return null;
+        const GENS = [["1세대", "원본 자산", lin.g1, "검진 원본(FHIR)", "#2563EB"], ["2세대", "분석 자산", lin.g2, "AI 정밀리포트", "#7C3AED"], ["3세대", "활용 자산", lin.g3, "증서·청구·거래", "#EA580C"], ["4세대", "성과 자산", lin.g4, "지표 개선 증명(RWE)", "#16A34A"]];
+        return (<>
+          <div className="dv-sec">내 자산 계보 <span>(데이터가 쓰일수록 자산이 늘어나는 복리 구조 — 세대별 SBT)</span></div>
+          <div className="dv-lineage">
+            {GENS.map(([g, t, n, d, col], i) => (<React.Fragment key={g}>
+              <div className="dvlg" style={{ "--lc": col }}><span className="dvlg-g">{g}</span><b>{n}<i>건</i></b><span className="dvlg-t">{t}</span><span className="dvlg-d">{d}</span><span className="dvlg-sbt">SBT</span></div>
+              {i < 3 && <span className="dvlg-arrow">→</span>}
+            </React.Fragment>))}
+          </div>
+          <div className="dvchain-note" style={{ marginTop: 4 }}>각 세대 자산이 만드는 가치(연구·인수심사·추천)는 동일한 분배율(50/30/20)로 제공자에게 귀속돼요 — 계보가 체인으로 연결되어 어떤 파생 자산도 원 제공자를 잃지 않아요. <button className="dv-askhi" onClick={() => { try { window.dispatchEvent(new CustomEvent("agentask", { detail: "내 자산 계보 설명해줘" })); } catch (e) {} }}>🤖 하이가 이야기로 설명</button></div>
+        </>);
+      })()}
+      {(() => { /* Phase 5 — 데이터 활용 배당(D2): 조용한 입금 */
+        const divs = gd ? [{ id: "DIV-2607", study: "췌장질환 조기발견 연구(가명결합)", org: "K-대학병원 연구소", gens: [1, 2], htk: 1200, date: "2026-07-15" }] : ((typeof dataDividends === "function") ? dataDividends(member) : []);
+        if (!divs.length) return null;
+        return (<>
+          <div className="dv-sec">데이터 활용 배당 <span>(내 데이터가 일해서 번 돈 — 동의·계보·분배 전부 공개)</span></div>
+          {divs.map((d) => (
+            <div className="dv-divi" key={d.id}>
+              <span className="dv-divi-ic">💸</span>
+              <div className="dv-divi-b"><b>{d.study}</b><span>{d.org} · {d.date} · 활용 자산: {d.gens.map((g) => g + "세대").join("·")} (가명 요약만 제공)</span></div>
+              <div className="dv-divi-amt">+{d.htk.toLocaleString()} HTK</div>
+            </div>
+          ))}
+          <div className="dvchain-note" style={{ marginTop: 4 }}>배당은 스마트컨트랙트 분배율(회원 50%)대로 자동 지급돼요 — 동의 이력·접근 기록은 위 접근 이력에서 확인할 수 있어요.</div>
+        </>);
+      })()}
       <div className="dv-sec">내 데이터</div>
       {(v.checkups || []).map((c, i) => (
         <div className="dv-item" key={"c" + i}><span className="dv-ic" style={{ background: "#E8F1FE", color: "#2563EB" }}><FileText size={16} /></span>

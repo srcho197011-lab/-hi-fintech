@@ -179,6 +179,11 @@ function ShopPartnerCard({ p }) {
         <span className="sptag"><Sparkles size={12} /> {p.sub}</span>
         {p.member && <span className="pnmember" title="사단법인 정밀영양협회 회원사"><PnLogo /> 정밀영양협회 회원사</span>}
         <span className="pncert" title="사단법인 정밀영양협회 인증"><ShieldCheck size={12} /> Precision Nutrition Certified</span>
+        {(() => { /* Phase 5 D4 — 품질 인증(4세대 실사용 성과): 광고가 아니라 성적표 */
+          let h = 0; const s = String(p.name || ""); for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+          const pct = 2 + (h % 8);
+          return <span className="qcert" title="이 브랜드 제품을 이용한 회원군의 건강지표 개선폭 — 4세대 실사용 성과 데이터(RWE) 기준 · 시연용 예시">📊 품질 인증 · 이용 회원군 지표 개선 상위 {pct}%</span>;
+        })()}
       </div>
       <div className="spname">{p.name}{p.brand && <span> · {p.brand}</span>}</div>
       <div className="spsub">{p.tagline}</div>

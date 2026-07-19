@@ -188,6 +188,31 @@ const TOOL_RUN = {
       "아래 버튼으로 검진 예약 화면에서 바로 확인·예약할 수 있고, 저한테 \"검진 예약해줘\"라고 하시면 제가 예약과 가입까지 한 번에 끝내드려요.",
     ], buttons: ["검진 예약해줘", "보장 내용 자세히"] };
   } catch (e) { return null; } },
+  /* ══ Phase 5 프로토콜 UX — 계보·배당·재산정 툴 ══ */
+  // 자산 계보 — "당신의 검진 하나가 이렇게 자랐습니다"를 이야기로
+  lineage(m) { try {
+    const l = (typeof assetLineage === "function") ? assetLineage(m) : null; if (!l) return null;
+    return { lines: [
+      `${m.name}님의 데이터 자산 계보예요 — 1세대(원본) ${l.g1}건 → 2세대(분석) ${l.g2}건 → 3세대(활용) ${l.g3}건 → 4세대(성과) ${l.g4}건, 총 ${l.total}개 자산이 세대별 SBT로 쌓여 있어요.`,
+      "이야기로 풀면: 올리신 검진 결과지(1세대)가 AI 리포트(2세대)가 되고, 보험 증서·청구·거래(3세대)로 쓰이고, 재검진에서 지표가 좋아지면 성과 증명(4세대)이 돼요 — 쓰일수록 자산이 늘어나는 복리 구조죠.",
+      "각 자산이 연구·심사에 활용되면 분배율(회원 50%)대로 배당이 돌아와요.",
+    ], buttons: ["배당 내역 보여줘", "요율 재산정 신청해줘"] };
+  } catch (e) { return null; } },
+  // 데이터 배당 내역 — 조용한 입금(12월 장면)
+  divi(m) { try {
+    const ds = (typeof dataDividends === "function") ? dataDividends(m) : [];
+    if (!ds.length) return { lines: ["아직 지급된 데이터 배당이 없어요 — 검진결과를 연결하면 가명화 데이터가 연구에 활용될 때마다 배당이 지급돼요."], buttons: ["검진결과 올리기"] };
+    const d = ds[0];
+    return { lines: [`${d.date}에 데이터 활용 배당 +${d.htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 ${d.gens.map((g) => g + "세대").join("·")} 자산이 「${d.study}」에 활용됐어요(${d.org} · 가명 요약만 제공).`, "내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가가 약속대로 돌아온 거예요. 동의·계보·접근 기록은 데이터 금고에서 전부 확인돼요."], buttons: ["내 자산 계보 보여줘"] };
+  } catch (e) { return null; } },
+  // 요율 재산정 — 인하 전용 실행(이듬해 3월 장면)
+  reratedo(m) { try {
+    const st = (typeof rerateState === "function") ? rerateState() : { status: "none" };
+    if (st.status === "done") return { lines: [`이미 재산정이 완료됐어요 — 월 ${st.before.toLocaleString()}원 → ${st.after.toLocaleString()}원(-${st.rate}%), 연 ${(st.saving * 12).toLocaleString()}원 절감이에요.`] };
+    if (!(typeof rerateEligible === "function" && rerateEligible(m))) return { lines: ["아직 재산정 자격 전이에요 — 재검진 데이터가 쌓여 지표 개선이 증명되면 제가 먼저 알려드릴게요. 인하 전용이라 손해 볼 일은 없어요."], buttons: ["검진결과 올리기"] };
+    const r = (typeof rerateApply === "function") ? rerateApply(m) : null; if (!r) return null;
+    return { lines: [`재산정 신청을 제출했어요 — 4세대 성과 증명(혈당·중성지방 개선)이 보험사에 요약으로만 전달됐고, 즉시 반영됐어요: 월 보험료 ${r.before.toLocaleString()}원 → ${r.after.toLocaleString()}원 (-${r.rate}% · 연 ${(r.saving * 12).toLocaleString()}원 절감).`, "보험료가 나이가 아니라 관리를 따라간 순간이에요. 기록은 블록체인·접근 이력에 남았어요."] };
+  } catch (e) { return null; } },
   // 친구 초대(리퍼럴) — "친구 초대해줘" 한마디로 링크 생성·복사·공유까지(획득 채널 ⑥)
   refer(m) { try {
     const r = (typeof refShare === "function") ? refShare(m) : null; if (!r) return null;
@@ -332,6 +357,9 @@ function agentProactive() {
     else if (ob && !ob.step2) out.push({ text: "보험까지 연결하면 보장 공백 분석이 완성돼요 — 이어서 해드릴까요?", buttons: ["보험 연결하기"] });
   } catch (e) {}
   try { const certs = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); const c = certs[certs.length - 1]; if (c && c.date && c.date !== "-") out.push({ text: `${c.date} ${c.center} 검진이 다가와요 — 전날 준비사항(금식 등)을 제가 챙겨드릴게요.`, buttons: ["검진 준비사항 알려줘"] }); } catch (e) {}
+  /* Phase 5 선제 알림 — 배당 지급·요율 재산정 자격(묻기 전에 먼저) */
+  try { if (!localStorage.getItem("hifin_divi_seen")) { const ds = (typeof dataDividends === "function") ? dataDividends(m) : []; if (ds.length) { out.push({ text: `데이터 활용 배당 +${ds[0].htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 데이터가 「${ds[0].study.split("(")[0]}」에 활용됐어요.`, buttons: ["배당 내역 보여줘"] }); localStorage.setItem("hifin_divi_seen", "1"); } } } catch (e) {}
+  try { const st = (typeof rerateState === "function") ? rerateState() : { status: "done" }; if (st.status !== "done" && typeof rerateEligible === "function" && rerateEligible(m)) out.push({ text: "개선된 건강상태로 보험료 재산정을 신청할 수 있어요 — 인하 전용이라 손해 볼 일은 없어요.", buttons: ["요율 재산정 신청해줘"] }); } catch (e) {}
   return out.slice(0, 3);
 }
 
