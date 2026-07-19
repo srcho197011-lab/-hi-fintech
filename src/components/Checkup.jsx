@@ -233,7 +233,7 @@ function BrandDirectory({ only, catFilter }) {
   const META = (typeof CHECKUP_BRAND_META !== "undefined") ? CHECKUP_BRAND_META : {};
   const ssido = (s) => (typeof tmSidoShort === "function" ? tmSidoShort(s) : s);
   // 큐레이션 검진기관 → 예약 모달용 센터 객체(무가격). 한건협=기본형(공공), 그 외=고급형(프리미엄)
-  const toCenter = (c) => ({ name: c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n, r: ssido(c.sd), area: c.sg, tags: [c.t, META[c.b]?.tier || "검진기관"], _noPrice: true, _plan: c.b === "한국건강관리협회" ? "basic" : "premium" });
+  const toCenter = (c) => ({ name: c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n, r: ssido(c.sd), area: c.sg, ad: c.ad, tags: [c.t, META[c.b]?.tier || "검진기관"], _noPrice: true, _plan: c.b === "한국건강관리협회" ? "basic" : "premium" });
   const rank = (s) => (typeof SIDO_RANK !== "undefined" && SIDO_RANK[s]) || 99;
   const base = ALL.filter((c) => only ? c.b === only : catFilter ? checkupCats(c).includes(catFilter) : !FEATURED_BRANDS.includes(c.b));
   const brands = single ? [] : ["전체", ...Array.from(new Set(base.map((c) => c.b)))];
@@ -258,14 +258,10 @@ function BrandDirectory({ only, catFilter }) {
   const hiraGeo = useHira();
   const geoPts = React.useMemo(() => {
     const d = hiraGeo.data; if (!d) return [];
-    const H = d.hospitals || [];
-    const norm = (s) => String(s || "").replace(/\s|\(주\)|의료법인|재단법인/g, "");
     return list.map((c) => {
-      const t = norm(c.n); if (t.length < 3) return null;
-      let hit = null;
-      for (let i = 0; i < H.length; i++) { const h = H[i]; const n2 = norm(h[0]); if (n2 && h[8] && h[9] && (n2 === t || n2.indexOf(t) >= 0 || t.indexOf(n2) >= 0)) { hit = h; if (n2 === t) break; } }
-      if (!hit) return null;
-      return { name: c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: hit[9], lng: hit[8], _bk: { kind: "checkup", center: c } };
+      const g = hiraMatchCoords(d, c.n, c.ad);
+      if (!g) return null;
+      return { name: c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng, _bk: { kind: "checkup", center: c } };
     }).filter(Boolean);
   }, [hiraGeo.data, list]);
   /* 지도 핀의 '바로 예약' → 예약 모달(지도 안에서 예약까지 — K2-3) */
@@ -599,7 +595,7 @@ function BookingModal({ center, mode, onClose }) {
   const partnerCfg = getBooking(center);
   /* 예약 모달 안 위치 지도 — 선택한 센터의 실좌표 핀(카카오맵 길안내 포함) */
   const hiraBk = useHira();
-  const bkGeo = React.useMemo(() => (typeof hiraMatchCoords === "function") ? hiraMatchCoords(hiraBk.data, center.name) : null, [hiraBk.data, center.name]);
+  const bkGeo = React.useMemo(() => (typeof hiraMatchCoords === "function") ? hiraMatchCoords(hiraBk.data, center.name, center.ad || `${center.r || ""} ${center.area || ""}`) : null, [hiraBk.data, center.name, center.ad]);
   const onConfirm = () => {
     const r = submitCheckupBooking(center, { center: center.name, brand: center.b, date, time, plan: (typeof planName !== "undefined" ? planName : ""), items: center.tags, freeIns: insAgree });
     /* 동의 시 실제 증서 발급 — 카피가 아니라 체인 기록·금고 감사로그·증서 저장(J2-5) */
@@ -1021,14 +1017,24 @@ function loadHira() {
   }
   return _hiraPromise;
 }
-/* 기관명 → 심평원 실좌표 매칭(Phase 4 공용) — 예약·상담 모달, 목록 지도에서 재사용 */
-function hiraMatchCoords(data, name) {
+/* 기관 → 심평원 실좌표 매칭(Phase 4 공용) — ①주소(도로명+번지) 우선 ②같은 시군구 내 이름 매칭 폴백.
+   이름만으로 매칭하면 협회 지점처럼 유사 명칭이 타지역을 잡는 오류가 있어 주소를 1순위로 사용. */
+function hiraMatchCoords(data, name, addr) {
   try {
-    if (!data || !name) return null;
+    if (!data) return null;
+    const H = data.hospitals || [];
+    const nz = (s) => String(s || "").replace(/\s/g, "");
+    const toks = String(addr || "").trim().split(/\s+/);
+    const sgg = toks.length > 1 && /(시|군|구)$/.test(toks[1]) ? toks[1] : null;
+    const roadM = /([가-힣A-Za-z0-9·]+(?:로|길)\s*\d+(?:-\d+)?)/.exec(String(addr || ""));
+    const road = roadM ? nz(roadM[1]) : null;
+    if (road) {
+      for (let i = 0; i < H.length; i++) { const h = H[i]; if (!h[8] || !h[9]) continue; const ha = nz(h[4]); if (ha.indexOf(road) >= 0 && (!sgg || ha.indexOf(sgg) >= 0)) return { lat: h[9], lng: h[8], addr: h[4], tel: h[5] }; }
+    }
     const norm = (s) => String(s || "").replace(/\s|\(주\)|\(사\)|의료법인|재단법인|KMI/g, "");
     const t = norm(name); if (t.length < 3) return null;
-    const H = data.hospitals || []; let hit = null;
-    for (let i = 0; i < H.length; i++) { const h = H[i]; const n2 = norm(h[0]); if (n2 && h[8] && h[9] && (n2 === t || n2.indexOf(t) >= 0 || t.indexOf(n2) >= 0)) { hit = h; if (n2 === t) break; } }
+    let hit = null;
+    for (let i = 0; i < H.length; i++) { const h = H[i]; const n2 = norm(h[0]); if (!h[8] || !h[9] || !n2) continue; if (sgg && nz(h[4]).indexOf(sgg) < 0) continue; if (n2 === t || n2.indexOf(t) >= 0 || t.indexOf(n2) >= 0) { hit = h; if (n2 === t) break; } }
     return hit ? { lat: hit[9], lng: hit[8], addr: hit[4], tel: hit[5] } : null;
   } catch (e) { return null; }
 }

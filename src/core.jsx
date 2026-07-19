@@ -438,11 +438,15 @@ function ConsultModal({ interest, onClose }) {
       const d = hiraCs.data; if (!d || typeof hiraMatchCoords !== "function") return { pts: [], label: null };
       const mm = /[—-]\s*(.{3,30})$/.exec(String(interest || ""));
       const instName = mm ? mm[1].trim() : null;
-      if (instName) { const g = hiraMatchCoords(d, instName); if (g) return { pts: [{ name: instName, addr: g.addr, tel: g.tel, tag: "상담 기관", lat: g.lat, lng: g.lng }], label: "상담 기관 위치" }; }
-      const reg = (typeof memberRegion === "function") ? memberRegion() : null;
       const list = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
+      if (instName) {
+        const ci = list.find((x) => x.n === instName || instName.indexOf(x.n) >= 0 || x.n.indexOf(instName) >= 0);
+        const g = hiraMatchCoords(d, instName, ci ? ci.ad : null);
+        if (g) return { pts: [{ name: instName, addr: (ci && ci.ad) || g.addr, tel: g.tel, tag: "상담 기관", lat: g.lat, lng: g.lng }], label: "상담 기관 위치" };
+      }
+      const reg = (typeof memberRegion === "function") ? memberRegion() : null;
       const pool = list.filter((c) => !reg || (c.sd || "").indexOf(reg.sidoShort) >= 0).slice(0, 6);
-      const pts = pool.map((c) => { const g = hiraMatchCoords(d, c.n); return g ? { name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng } : null; }).filter(Boolean);
+      const pts = pool.map((c) => { const g = hiraMatchCoords(d, c.n, c.ad); return g ? { name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng } : null; }).filter(Boolean);
       return { pts, label: pts.length ? "내 주변 제휴 기관" : null };
     } catch (e) { return { pts: [], label: null }; }
   }, [hiraCs.data, interest]);
