@@ -132,6 +132,7 @@ function AuthSignup() {
     userRegister(prof);
     authSet({ name: prof.name, email: prof.email, realVerified: true, role: "MEMBER" });
     demoSetSession(prof);
+    try { const rc = (typeof refConsumeIncoming === "function") ? refConsumeIncoming() : null; if (rc && typeof refAttribute === "function") { const at = refAttribute(rc, prof.email); if (at && at.credited && typeof toast === "function") toast(`${at.owner.name}님의 초대 코드가 확인돼 두 분 모두 100 HTK가 적립됐어요.`); } } catch (e) {}
     try { sessionStorage.setItem("hifin_force_onboard", "1"); } catch (e) {}   // 가입 직후 데이터 연결 온보딩 강제 진입
   };
 
@@ -210,12 +211,13 @@ function TriFreeGate() {
       demoSetSession(prof);
       try { sessionStorage.setItem("hifin_force_onboard", "1"); } catch (e) {}
       const rc = (typeof refConsumeIncoming === "function") ? refConsumeIncoming() : null;
-      if (typeof toast === "function") toast(rc ? `가입 완료! 초대 보너스 500 HTK가 적립됐어요 (코드 ${rc})` : "10초 가입 완료! 검진결과만 연결하면 무료 리포트가 시작돼요.");
+      const at = (rc && typeof refAttribute === "function") ? refAttribute(rc, prof.email) : null;
+      if (typeof toast === "function") toast(at && at.credited ? `가입 완료! ${at.owner.name}님의 초대 코드가 확인돼 두 분 모두 100 HTK가 적립됐어요.` : rc ? `가입 완료! (초대 코드 ${rc}는 ${at && at.reason ? at.reason : "확인 불가"})` : "10초 가입 완료! 검진결과만 연결하면 무료 리포트가 시작돼요.");
     } catch (e) {}
   };
   return (
     <div className="trifree">
-      {refIn && <div className="trifree-ref">🎁 친구 초대로 오셨네요 (코드 {refIn}) — 가입하면 <b>두 분 모두 500 HTK</b>를 드려요!</div>}
+      {refIn && <div className="trifree-ref">🎁 친구 초대로 오셨네요 (코드 {refIn}) — 가입하면 <b>두 분 모두 100 HTK</b>를 드려요!</div>}
       <div className="trifree-hd">가입만 해도 <b>3가지가 무료</b>예요</div>
       <div className="trifree-items">
         <div><span>🛡️</span><b>무료 검진대비보험</b><i>진단금 최대 1,000만 원</i></div>

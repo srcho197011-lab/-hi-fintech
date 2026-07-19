@@ -597,6 +597,8 @@ function BookingModal({ center, mode, onClose }) {
     } else {
       try { localStorage.setItem("hifin_ins_deferred", JSON.stringify({ center: center.name, date, at: Date.now() })); } catch (e) {}
     }
+    /* 리퍼럴 행동 보상 — 초대로 가입한 회원의 첫 검진 예약 시 추천인에게 +300 HTK(1회) */
+    try { if (typeof refActionComplete === "function" && dmU && dmU.email) { const ra = refActionComplete(dmU.email); if (ra && typeof toast === "function") toast(`추천인 ${ra.owner.name}님께 검진 완료 보상 +${ra.reward} HTK가 적립됐어요.`); } } catch (e) {}
     setBookRes(r); setDone(true);
   };
   const rm = bookRes ? bookRes.mode : "demo";

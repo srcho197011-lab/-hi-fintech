@@ -4498,6 +4498,8 @@ body.easyread .hidock-input input { font-size: 15px; }
 .ref-stats b { color: #C2410C; }
 .ref-sims { margin-left: auto; display: flex; gap: 5px; }
 .ref-sims button { border: 1px dashed #D9DEEC; background: #fff; color: #94A3B8; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 7px; cursor: pointer; }
+.ref-legal { font-size: 10.3px; color: #A16207; line-height: 1.6; margin-top: 8px; padding-top: 7px; border-top: 1px dashed #FED7AA; }
+.ref-legal b { color: #92400E; }
 .trifree { background: linear-gradient(135deg, #0E9F6E, #16A34A); border-radius: 14px; padding: 14px 16px; color: #fff; margin-bottom: 14px; }
 .trifree-ref { background: rgba(255,255,255,.18); border: 1px dashed rgba(255,255,255,.5); border-radius: 10px; padding: 8px 11px; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
 .trifree-hd { font-size: 15.5px; font-weight: 900; margin-bottom: 9px; }

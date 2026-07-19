@@ -107,6 +107,7 @@ const TOOL_RUN = {
     try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `무상 검진대비보험 증서 발급(${p.center.name} · 하이 예약)` }); hash = b && b.hash; vaultAccessLog(tk, "member", "하이 대화 예약 — 검진대비보험 증서 발급"); } catch (e) {}
     const cert = { id: "CERT-" + Date.now().toString(36).toUpperCase(), center: p.center.name, date: p.date, time: p.time, at: Date.now(), hash };
     try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push(cert); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); localStorage.removeItem("hifin_ins_deferred"); window._hiBookPending = null; } catch (e) {}
+    try { if (typeof refActionComplete === "function" && m && m.email) refActionComplete(m.email); } catch (e) {}
     return { lines: [`끝났어요! ${p.center.name} ${p.date} ${p.time} 예약을 확정하고, 무료 검진대비보험 증서(${cert.id})까지 발급했어요 — 블록체인에 기록됐고 데이터 금고에서 확인할 수 있어요.`, "검진 전날, 준비사항을 제가 먼저 알려드릴게요."] };
   } catch (e) { return null; } },
   // 보험금 청구 — 서류 자동 구성 제안 → "청구 접수 진행해줘"로 접수
@@ -173,7 +174,8 @@ const TOOL_RUN = {
     return { lines: [
       `초대 링크를 만들었어요${r.mode === "copy" ? " — 클립보드에 복사해뒀으니 붙여넣기만 하세요!" : r.mode === "share" ? " — 공유 창을 열었어요!" : "!"}`,
       r.link,
-      "친구가 이 링크로 가입하면 두 분 모두 500 HTK, 친구가 첫 검진까지 마치면 " + m.name + "님께 +1,000 HTK를 더 드려요(행동 기반 보상).",
+      "이 링크에는 " + m.name + "님의 코드가 심겨 있어요 — 친구가 이 코드로 가입해야 두 분 모두 100 HTK가 적립되고, 친구가 첫 검진을 마치면 +300 HTK를 더 드려요.",
+      "직접 추천 1단계만 인정되고(다단계 아님), 연 50건 한도예요. HTK는 폐쇄형 포인트라 현금이 아니에요.",
     ], buttons: ["초대 현황 보여줘"] };
   } catch (e) { return null; } },
   refstat(m) { try {
