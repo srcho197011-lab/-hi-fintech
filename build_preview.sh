@@ -12,7 +12,7 @@ cat > _h.txt <<'HEAD'
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
 <title>HI-Fin Tech · AI 헬스케어·핀테크 임팩트기업</title>
 <meta name="description" content="치료비 걱정 없는 평생 건강관리 생태계 — 건강검진·보험·건강쇼핑·건강금융을 잇는 AI 헬스케어·핀테크 임팩트기업" />
 <meta property="og:type" content="website" />

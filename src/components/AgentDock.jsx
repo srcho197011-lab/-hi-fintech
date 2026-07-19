@@ -1,5 +1,7 @@
 /* ══════════ 하이 독(AgentDock) — 전 화면 상주 단일 AI 에이전트 미니챗 ══════════
    원칙: 쉬움(3문장+버튼≤3+화면카드), 동일 에이전트(하이), 화면 이동에도 대화 유지, 음성 입력·쉬운말 모드. */
+/* 자주 묻는 질문 칩 — 타이핑 없이 탭 한 번으로 상담 시작(인사말 버튼과 동일한 검증된 의도만 사용) */
+const HIDOCK_QUICKS = ["검진예약 질문 도우미", "내 건강 봐줘", "보장 공백 분석", "검진결과 올리기", "쉬운 말 모드 켜기"];
 function AgentDock({ onGo }) {
   const go = onGo || (() => {});
   const [open, setOpen] = useState(false);
@@ -9,6 +11,7 @@ function AgentDock({ onGo }) {
   const [listening, setListening] = useState(false);
   const [easy, setEasy] = useState(() => { try { return !!localStorage.getItem("hifin_easyread"); } catch (e) { return false; } });
   const endRef = useRef(null);
+  const dockRef = useRef(null);
   const recogRef = useRef(null);
   const lastQRef = useRef("");
   const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -39,6 +42,30 @@ function AgentDock({ onGo }) {
   });
   // 쉬운말 모드 클래스 유지
   useEffect(() => { try { document.body.classList.toggle("easyread", easy); } catch (e) {} }, [easy]);
+  // 모바일 사용성: 독이 열린 동안 배경 스크롤 잠금 + 키보드가 올라오면 visualViewport 높이에 맞춰
+  // 독 높이를 보정(입력창·대화가 키보드에 가려지지 않게). 안드로이드는 뷰포트 메타(resizes-content)와 이중 안전망.
+  useEffect(() => {
+    if (!open) return;
+    try { document.body.classList.add("hidock-open"); } catch (e) {}
+    const vv = (typeof window !== "undefined") ? window.visualViewport : null;
+    const fit = () => {
+      const el = dockRef.current; if (!el) return;
+      // 키보드가 실제로 올라온 경우(뷰포트가 120px 이상 줄어든 경우)에만 높이 보정 — 평소엔 CSS 100dvh 사용
+      const kb = vv ? Math.max(0, window.innerHeight - vv.height) : 0;
+      if (window.innerWidth <= 640 && vv && kb > 120) { el.style.height = Math.round(vv.height) + "px"; window.scrollTo(0, 0); }
+      else el.style.height = "";
+      try { if (endRef.current) endRef.current.scrollIntoView({ block: "end" }); } catch (e) {}
+    };
+    fit();
+    if (vv) vv.addEventListener("resize", fit);
+    window.addEventListener("resize", fit);
+    return () => {
+      try { document.body.classList.remove("hidock-open"); } catch (e) {}
+      if (vv) vv.removeEventListener("resize", fit);
+      window.removeEventListener("resize", fit);
+      const el = dockRef.current; if (el) el.style.height = "";
+    };
+  }, [open]);
 
   const send = (textArg) => {
     const text = (textArg == null ? input : textArg).trim(); if (!text) return;
@@ -102,7 +129,7 @@ function AgentDock({ onGo }) {
         </button>
       )}
       {open && (
-        <div className="hidock">
+        <div className="hidock" ref={dockRef}>
           <div className="hidock-hd">
             <span className="hidock-av"><Bot size={16} /></span>
             <div className="hidock-t"><b>{typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"}</b><span>AI 매니저 · 항상 함께해요</span></div>
@@ -131,9 +158,14 @@ function AgentDock({ onGo }) {
             {typing && <div className="hidock-row hi"><span className="hidock-mini"><Bot size={13} /></span><div className="hidock-bub hi hidock-typing"><span /><span /><span /></div></div>}
             <div ref={endRef} />
           </div>
+          <div className="hidock-quick" role="group" aria-label="자주 묻는 질문 바로가기">
+            {HIDOCK_QUICKS.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}
+          </div>
           <div className="hidock-input">
             {sttOK && <button className={"hidock-mic" + (listening ? " on" : "")} onClick={startStt} title="음성으로 말하기"><Mic size={16} /></button>}
-            <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} placeholder={listening ? "듣고 있어요…" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘"} />
+            <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} enterKeyHint="send"
+              onFocus={() => { try { setTimeout(() => { if (endRef.current) endRef.current.scrollIntoView({ block: "end" }); }, 250); } catch (e) {} }}
+              placeholder={listening ? "듣고 있어요…" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘"} />
             <button className={"hidock-send" + (input.trim() ? " on" : "")} onClick={() => send()} aria-label="보내기"><Send size={15} /></button>
           </div>
         </div>
