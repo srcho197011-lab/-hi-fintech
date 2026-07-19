@@ -4720,3 +4720,40 @@ body.easyread .hibrief-t { font-size: 17px; }
 .tpflowc em { font-style: normal; font-size: 11px; font-weight: 700; color: #1D4ED8; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 99px; padding: 3px 9px; }
 .tpflowc .tpar { color: #CBD5E1; font-size: 11px; font-weight: 800; }
 @media (max-width: 640px) { .tcactg { grid-template-columns: 1fr; } .prebrief, .pharmpick { max-width: 100%; } }
+
+/* ═══ Phase 6b — 화상 중 채팅·법 시행 안내·전자처방전 문서·해외 사례 ═══ */
+.vcchat { position: absolute; left: 14px; right: 14px; bottom: 148px; display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
+.vcmsg { align-self: flex-start; max-width: 88%; background: rgba(15, 23, 42, .55); backdrop-filter: blur(4px); color: #E2E8F0; font-size: 11.5px; border-radius: 10px; padding: 5px 10px; }
+.vcmsg.me { align-self: flex-end; background: rgba(37, 99, 235, .5); }
+.vcinput { display: flex; gap: 6px; margin: 10px 14px 0; }
+.vcinput input { flex: 1; border: 1px solid rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .1); color: #F1F5F9; border-radius: 99px; padding: 8px 14px; font-size: 12px; outline: none; }
+.vcinput input::placeholder { color: #94A3B8; }
+.vcsend { border: none; border-radius: 99px; width: 36px; background: rgba(255, 255, 255, .14); color: #CBD5E1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.vcsend.on { background: #2563EB; color: #fff; }
+.telaw { margin: 8px 14px 0; background: linear-gradient(135deg, #FFFBEB, #FEF3C7); border: 1px solid #FDE68A; border-radius: 12px; padding: 10px 13px; }
+.telaw b { font-size: 12.5px; color: #92400E; display: block; }
+.telaw p { margin: 4px 0 0; font-size: 11.5px; color: #78716C; line-height: 1.55; }
+.telaw em { font-style: normal; font-weight: 800; color: #B45309; }
+.rxdoc { background: #fff; border: 1.5px solid #BFDBFE; border-radius: 14px; padding: 12px 14px; max-width: 86%; box-shadow: 0 2px 8px rgba(37, 99, 235, .08); }
+.rx-hd { font-size: 13px; font-weight: 800; color: #1D4ED8; display: flex; align-items: center; gap: 8px; }
+.rx-no { font-size: 10.5px; font-weight: 700; color: #64748B; background: #F1F5F9; border-radius: 99px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.rx-rows { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: 12px; color: #1E293B; }
+.rx-rows i { font-style: normal; display: inline-block; min-width: 52px; color: #94A3B8; font-size: 10.5px; font-weight: 700; }
+.rx-ft { margin-top: 8px; border-top: 1px dashed #DBEAFE; padding-top: 6px; font-size: 10.5px; color: #7C93C4; }
+.tglobal { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px; }
+.tglobal > b { font-size: 12.5px; color: #0F172A; }
+.tg-head, .tg-foot { font-size: 11.5px; color: #64748B; line-height: 1.55; margin: 5px 0 0; }
+.tg-case { background: #FCFDFF; border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
+.tg-t { display: flex; align-items: baseline; gap: 8px; }
+.tg-t em { font-style: normal; font-weight: 800; font-size: 12.5px; color: #1E293B; }
+.tg-t span { font-size: 11px; font-weight: 700; color: #2563EB; }
+.tg-svc { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.tg-svc i { font-style: normal; font-size: 10.5px; font-weight: 700; color: #475569; background: #F1F5F9; border-radius: 99px; padding: 2px 8px; }
+.tg-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 8px; }
+.tg-flow em { font-style: normal; font-size: 10.5px; font-weight: 700; color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 99px; padding: 2px 8px; }
+.tg-lim { margin-top: 7px; font-size: 10.5px; color: #94A3B8; }
+@media (max-width: 640px) { .rxdoc { max-width: 100%; } .vcchat { bottom: 156px; } }
+/* 화상 모달 오버레이 배치 보정 — 입력창은 컨트롤 위, 자막은 그 위 */
+.vcinput { position: absolute; left: 16px; right: 16px; bottom: 108px; margin: 0; }
+.vcnote { bottom: 6px; }
+.vcchat { bottom: 152px; }

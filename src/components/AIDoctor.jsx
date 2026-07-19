@@ -737,20 +737,25 @@ const MD_SPECIALISTS = [
   { id: "sp5", name: "최우성 교수", dept: "신경과", hosp: "분당서울대병원", tags: ["뇌졸중", "치매", "두통"], rating: 4.7, exp: "20년" },
   { id: "sp6", name: "한지후 교수", dept: "소아청소년과", hosp: "서울아산병원", tags: ["성장·발달", "예방접종", "소아비만"], rating: 4.8, exp: "15년" },
 ];
-function VideoCallModal({ title, sub, onClose }) {
-  const [t, setT] = useState(0);
+function VideoCallModal({ title, sub, onClose, msgs, onSend }) {
+  const [t, setT] = useState(0); const [vin, setVin] = useState("");
   useEffect(() => { const id = setInterval(() => setT((x) => x + 1), 1000); return () => clearInterval(id); }, []);
   const mm = String(Math.floor(t / 60)).padStart(2, "0"), ss = String(t % 60).padStart(2, "0");
+  /* 화상 중에도 텍스트로 대화 — 최근 대화가 자막처럼 겹쳐 보이고 입력창으로 바로 질문 */
+  const chat = Array.isArray(msgs) ? msgs.filter((m) => m.kind === "text").slice(-3) : null;
+  const sendV = () => { const x = vin.trim(); if (!x || !onSend) return; setVin(""); onSend(x); };
   return (
     <div className="vcall" onClick={onClose}>
       <div className="vcbox" onClick={(e) => e.stopPropagation()}>
         <div className="vcmain"><span className="vcav"><Stethoscope size={42} color="#fff" /></span><div className="vcnm">{title}</div><div className="vcsub">{sub}</div><div className="vctime"><span className="vcrec" /> {mm}:{ss}</div></div>
         <div className="vcself"><HeartPulse size={18} color="#fff" /><span>나</span></div>
+        {chat && chat.length > 0 && <div className="vcchat">{chat.map((m) => <div key={m.id} className={`vcmsg ${m.who}`}>{m.who === "ai" ? "👨‍⚕️ " : "🙂 "}{String(m.text).split("\n")[0].slice(0, 64)}</div>)}</div>}
         <div className="vcctrl">
-          <button className="vcb" title="마이크"><Mic size={17} /></button>
+          <button className="vcb" title="마이크(음성 입력)" onClick={() => { if (typeof toast === "function") toast("🎙 음성 입력(시연) — 말씀하시면 텍스트로 변환돼 함께 전달돼요"); }}><Mic size={17} /></button>
           <button className="vcb" title="화면"><MonitorSmartphone size={17} /></button>
           <button className="vcb end" onClick={onClose} title="종료"><Phone size={17} /></button>
         </div>
+        {onSend && <div className="vcinput"><input value={vin} onChange={(e) => setVin(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendV()} placeholder="화상 중에도 텍스트로 질문할 수 있어요" /><button className={`vcsend ${vin.trim() ? "on" : ""}`} onClick={sendV}><Send size={14} /></button></div>}
         <div className="vcnote">시연용 화상상담 화면입니다. 실제 영상 연결은 제공되지 않습니다.</div>
       </div>
     </div>
@@ -796,6 +801,21 @@ function TeleProcess() {
       {typeof TELE_FLOW !== "undefined" && (
         <div className="tpflow"><b>Hi-Fin 활용 흐름 <span>· 현행 제도와 정합하는 모델</span></b>
           <div className="tpflowc">{TELE_FLOW.map((x, i) => <React.Fragment key={x}>{i > 0 && <span className="tpar">→</span>}<em>{x}</em></React.Fragment>)}</div>
+        </div>
+      )}
+      {typeof TELE_GLOBAL !== "undefined" && (
+        <div className="tglobal">
+          <b>🌍 해외 운영 사례 — 같은 모델이 이미 세계 표준</b>
+          <p className="tg-head">{TELE_GLOBAL.head}</p>
+          {TELE_GLOBAL.cases.map((g) => (
+            <div className="tg-case" key={g.c}>
+              <div className="tg-t"><em>{g.c}</em><span>{g.co}</span></div>
+              <div className="tg-svc">{g.svc.map((s) => <i key={s}>{s}</i>)}</div>
+              <div className="tg-flow">{g.flow.map((f, i) => <React.Fragment key={f}>{i > 0 && <span className="tpar">→</span>}<em>{f}</em></React.Fragment>)}</div>
+              <div className="tg-lim">※ {g.lim}</div>
+            </div>
+          ))}
+          <p className="tg-foot">{TELE_GLOBAL.foot}</p>
         </div>
       )}
     </div>
@@ -883,24 +903,32 @@ function SpecialistChat() {
   const reply = () => { if (!sel) return; const canned = `말씀 주신 내용 잘 확인했습니다. ${sel.dept} 관점에서는 ${sel.tags[0]} 관련 정기적 관찰과 생활관리가 우선이며, 필요 시 정밀검사를 권합니다. 정확한 진단·처방은 화상상담 또는 ${sel.hosp} 내원 진료로 도와드리겠습니다.`; setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: canned, first: true, time: now() }]); }, 1300); };
   const send = (textArg) => { const text = (textArg ?? input).trim(); if (!text || !sel) return; setInput(""); setPlus(false); setMsgs((m) => [...m, { id: ++UID, who: "me", kind: "text", text, time: now() }]); reply(); };
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); reply(); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
-  const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 내원 예약이 접수되었습니다. 비대면 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 ${sel.hosp} 내원 예약 접수 · 상담내역 전달`); };
-  /* Phase 6 — 진료 후 팔로업(I2-5)+청구 0단계(I2-7): 처방 발행 시 요약 자산화·자동 청구·복약 리마인드 */
+  const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 원격진료 상담이 접수되었습니다.\n현재는 내원 예약 목적의 상담만 가능해요 — 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다.\n비대면진료 제도화 법령이 시행되면 같은 접수 그대로 진료·처방까지 원격으로 진행되고, ${(typeof _member === "function" && _member()) ? _member().name : "회원"}님은 우선 연결 대상으로 등록돼요. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 ${sel.hosp} 원격진료 상담 접수(내원 연계) · 상담내역 전달`); };
+  /* Phase 6 — 진료 후 팔로업(I2-5)+청구 0단계(I2-7): 처방 발행 시 전자처방전 문서·요약 자산화·자동 청구·복약 리마인드 */
   const rxIssue = () => {
     if (!sel) return;
-    let clmId = null;
+    let clmId = null, hash = null;
+    const rxNo = "RX-" + Date.now().toString(36).toUpperCase();
+    const med = (typeof window !== "undefined" && window._rxMed) || "처방 의약품 — 의료인의 진료 판단에 따름";
+    try { if (typeof window !== "undefined") window._rxMed = null; } catch (e) {}
+    const mName = (typeof _member === "function" && _member()) ? _member().name : "회원";
     try {
       const m = (typeof _member === "function") ? _member() : null;
       if (m) {
         const tk = anonToken(m);
-        chainAppend({ type: "record", token: tk, note: `원격진료 요약 저장(${sel.hosp} ${sel.name}) — 3세대 활용 자산 편입` });
+        const b = chainAppend({ type: "record", token: tk, note: `전자처방전 발행(${rxNo} · ${sel.hosp} ${sel.name}) — 3세대 활용 자산 편입` }); hash = b && b.hash;
         clmId = "CLM-" + Date.now().toString(36).toUpperCase();
         const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id: clmId, at: Date.now(), status: "자동접수(진료 연동)" }); localStorage.setItem("hifin_claims", JSON.stringify(l));
-        localStorage.setItem("hifin_medrem", JSON.stringify({ doctor: sel.name, hosp: sel.hosp, at: Date.now() }));
-        vaultAccessLog(tk, "member", "원격진료 완료 — 요약 자산화 · 보험 청구 자동 접수");
+        const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); rl.push({ id: rxNo, med, doctor: sel.name, hosp: sel.hosp, at: Date.now(), status: "발급됨(약국 미전송)" }); localStorage.setItem("hifin_rx", JSON.stringify(rl));
+        localStorage.setItem("hifin_medrem", JSON.stringify({ doctor: sel.name, hosp: sel.hosp, med, at: Date.now() }));
+        vaultAccessLog(tk, "member", "원격진료 완료 — 전자처방전 발행 · 요약 자산화 · 보험 청구 자동 접수");
       }
     } catch (e) {}
-    setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `💊 전자처방전을 발행했습니다. 수령하실 약국을 선택하시면 처방전이 해당 약국으로 전송됩니다(약사법 절차 준수).${clmId ? `\n📦 진료 요약이 3세대(활용) 자산으로 데이터 금고에 저장됐고, 보험 청구가 자동 접수됐어요(${clmId} · 서류 0장 — 청구 0단계). 복약 리마인드는 하이가 챙겨드릴게요.` : ""}\n비대면진료 후 처방은 의료인의 진료 판단에 따라 발행됩니다.`, first: true, time: now() }, { id: ++UID, who: "ai", kind: "pharm", time: now() }]);
-    if (typeof toast === "function") toast("💊 처방 발행 · 요약 자산화 · 청구 자동 접수 완료");
+    setMsgs((m) => [...m,
+      { id: ++UID, who: "ai", kind: "rx", rx: { no: rxNo, med, pt: mName, dr: `${sel.name} (${sel.hosp})`, date: new Date().toLocaleDateString("ko-KR"), hash }, time: now() },
+      { id: ++UID, who: "ai", kind: "text", text: `💊 전자처방전을 발행했습니다. 아래에서 수령하실 약국을 선택하시면 처방전이 해당 약국으로만 암호화 전송됩니다(약사법 절차 준수).${clmId ? `\n📦 진료 요약이 3세대(활용) 자산으로 데이터 금고에 저장됐고, 보험 청구가 자동 접수됐어요(${clmId} · 서류 0장 — 청구 0단계). 복약 리마인드는 하이가 챙겨드릴게요.` : ""}`, first: true, time: now() },
+      { id: ++UID, who: "ai", kind: "pharm", time: now() }]);
+    if (typeof toast === "function") toast("💊 전자처방전 발행 · 요약 자산화 · 청구 자동 접수");
   };
   /* 검사 의뢰(가능행위) — 혈액검사·영상검사 의뢰서 발행 */
   const labOrder = () => {
@@ -909,14 +937,22 @@ function SpecialistChat() {
     setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🧪 혈액검사·복부초음파 검사 의뢰서를 발행해 가까운 제휴 검진기관으로 전송했습니다. 검사 후 결과가 도착하면 하이가 알려드리고, 비대면으로 결과 설명 상담을 이어드립니다. (검사 의뢰·검사결과 설명은 비대면 가능 행위입니다)`, first: true, time: now() }]);
     if (typeof toast === "function") toast("🧪 검사 의뢰서 전송 완료");
   };
-  /* 약국 선택 → 조제·수령 추적 체인(약사법 절차) */
+  /* 약국 선택 → 전송·접수·조제·수령 실시간 추적 체인(약사법 절차) */
   const pharmPick = (ph, mode) => {
-    setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: mode === "배송" ? `📦 ${ph}에 처방전 전송 · 조제 접수됐어요 — 배송 수령. 조제중 → 배송중 → 수령완료 단계마다 하이가 알려드려요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)` : `🏪 ${ph}에 처방전 전송 · 조제 접수됐어요 — 방문 수령. 조제가 끝나면 하이가 알려드릴게요. 방문 시 신분 확인 후 복약지도와 함께 수령하세요.`, first: true, time: now() }]);
-    if (typeof toast === "function") toast(`💊 ${ph} 조제 접수(${mode})`);
+    try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { rl[rl.length - 1].status = `${ph} 전송(${mode} 수령)`; rl[rl.length - 1].pharm = ph; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
+    setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `📤 ${ph}(으)로 전자처방전 전송 완료 — ${mode} 수령. 처방전은 선택하신 약국으로만 암호화 전송되며, 이후 단계는 하이가 실시간으로 알려드려요.`, first: true, time: now() }]);
+    if (typeof toast === "function") toast(`📤 ${ph} 처방전 전송(${mode})`);
+    setTimeout(() => { setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🏪 ${ph} 접수 완료 — 약사가 처방을 검토하고 조제를 시작했어요. (조제중)`, first: true, time: now() }]); }, 2500);
+    setTimeout(() => {
+      setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: mode === "배송" ? `🚚 조제 완료 · 배송 시작 — 오늘 저녁 도착 예정이에요. 수령이 확인되면 복약지도 안내와 함께 복약 리마인드를 시작할게요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)` : `✅ 조제 완료 — 지금 방문하시면 수령 가능해요. 신분 확인 후 약사의 복약지도와 함께 수령하세요. 수령 확인 후 복약 리마인드를 시작할게요.`, first: true, time: now() }]);
+      try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { rl[rl.length - 1].status = mode === "배송" ? "조제 완료 · 배송중" : "조제 완료 · 방문 수령 대기"; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
+      if (typeof toast === "function") toast(mode === "배송" ? "🚚 조제 완료 · 배송 시작" : "✅ 조제 완료 · 수령 가능");
+    }, 5500);
   };
   /* 처방 가능 대표 사례 시나리오 — 가이드 진료 체험 */
   const runCase = (c) => {
     if (!sel) return;
+    try { if (typeof window !== "undefined") window._rxMed = c.med || null; } catch (e) {}
     setMsgs((m) => [...m, { id: ++UID, who: "me", kind: "text", text: c.me, time: now() }]);
     setTyping(true);
     setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: c.dr, first: true, time: now() }]); setTimeout(() => { if (c.act === "lab") labOrder(); else rxIssue(); }, 900); }, 1300);
@@ -954,15 +990,19 @@ function SpecialistChat() {
   }
   return (
     <div className="kt">
-      {video && <VideoCallModal title={`${sel.name} · ${sel.dept}`} sub={`${sel.hosp} 화상상담`} onClose={() => setVideo(false)} />}
+      {video && <VideoCallModal title={`${sel.name} · ${sel.dept}`} sub={`${sel.hosp} 화상상담`} onClose={() => setVideo(false)} msgs={msgs} onSend={(t) => send(t)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" onClick={() => setSel(null)} style={{ cursor: "pointer" }} /><span className="av-ai" style={{ width: 32, height: 32, background: "#EAF0FE" }}><Stethoscope size={18} color="#2563EB" /></span>
         <div style={{ flex: 1 }}><div className="nm">{sel.name} · {sel.dept}</div><div className="st"><span className="dot" /> {sel.hosp} · {tmSidoShort(sel.sido)} {sel.sigungu}</div></div>
         <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={18} /></button></div>
       <div className="tmcta">
         <div className="tmctat"><Building2 size={14} color="#2563EB" /> <b>{sel.hosp}</b> 원격주치의 · {tmSidoShort(sel.sido)} {sel.sigungu}</div>
         <p>비대면 상담 후, 필요 시 우리 병원 정밀검사·진료로 연계해 드려요.</p>
-        <div className="tmctab"><button onClick={() => setVideo(true)}><MonitorSmartphone size={13} /> 화상상담</button><button className={`pri ${booked ? "done" : ""}`} onClick={book}><CalendarCheck size={13} /> {booked ? "내원 예약 접수됨 ✓" : "내원 예약"}</button></div>
+        <div className="tmctab"><button onClick={() => setVideo(true)}><MonitorSmartphone size={13} /> 화상상담</button><button className={`pri ${booked ? "done" : ""}`} onClick={book}><CalendarCheck size={13} /> {booked ? "원격진료 상담 접수됨 ✓" : "원격진료 상담"}</button></div>
       </div>
+      {typeof TELE_LAW_NOTICE !== "undefined" && (
+        <div className="telaw"><b>⚖️ 원격진료 시스템 완비 — 법 시행 즉시 개시</b>
+          <p>{TELE_LAW_NOTICE.on} {TELE_LAW_NOTICE.wait} <em>{TELE_LAW_NOTICE.now}</em></p></div>
+      )}
       <div className="teli">
         <span className="telil"><ShieldCheck size={12} /> 비대면 진료유형</span>
         <button className={visit === "재진" ? "on" : ""} onClick={() => setVisit("재진")}>재진·만성질환</button>
@@ -987,6 +1027,17 @@ function SpecialistChat() {
                   </div>
                   <div className="pb-note">검진·리포트 기반 가명 요약만 전달 · 열람 기록은 데이터 금고 접근 이력에 남아요</div>
                 </div>
+              ) : m.kind === "rx" ? (
+                <div className="rxdoc">
+                  <div className="rx-hd">📄 전자처방전 <span className="rx-no">{m.rx.no}</span></div>
+                  <div className="rx-rows">
+                    <span><i>환자</i>{m.rx.pt}</span>
+                    <span><i>발행</i>{m.rx.dr} · {m.rx.date}</span>
+                    <span><i>처방</i>{m.rx.med}</span>
+                    <span><i>유효기간</i>발행일로부터 3일 · 지정 약국 접수 기준</span>
+                  </div>
+                  <div className="rx-ft">🔗 위변조 방지 {m.rx.hash ? `해시 ${String(m.rx.hash).slice(0, 16)}…` : "해시 기록"} · 데이터 금고 저장 · 선택한 약국으로만 암호화 전송</div>
+                </div>
               ) : m.kind === "pharm" ? (
                 <div className="pharmpick">
                   <div className="pp-hd">🏪 수령 약국 선택 <span>처방전은 선택한 약국으로만 전송돼요</span></div>
@@ -1004,7 +1055,7 @@ function SpecialistChat() {
       </div>
       {typeof TELE_CASES !== "undefined" && <div className="telcases"><span className="telml">진료 사례 체험</span>{TELE_CASES.map((c) => <button key={c.key} onClick={() => runCase(c)}>{c.label}</button>)}</div>}
       <div className="telmodes"><span className="telml">진료 방식</span><button className="on">💬 메시지(비동기 · 24h 내 답변)</button><button onClick={() => { if (typeof toast === "function") toast("🎙 음성 상담 연결(시연) — 실서비스는 통화로 이어져요"); }}>🎙 음성</button><button onClick={() => setVideo(true)}>📹 화상</button></div>
-      <div className="quicks"><button onClick={() => setVideo(true)}>📹 화상상담</button><button onClick={book}>🏥 내원 예약</button><button onClick={rxIssue}>💊 처방전 발행</button><button onClick={() => send("검진 결과를 상담받고 싶어요")}>검진 결과 상담</button></div>
+      <div className="quicks"><button onClick={() => setVideo(true)}>📹 화상상담</button><button onClick={book}>🏥 원격진료 상담</button><button onClick={rxIssue}>💊 처방전 발행</button><button onClick={() => send("검진 결과를 상담받고 싶어요")}>검진 결과 상담</button></div>
       <div className="kt-input">
         {plus && (<div className="plus-sheet"><button onClick={() => fileRef.current && fileRef.current.click()}><ImageIcon size={20} color="#2563EB" />사진·검진결과</button><button onClick={() => fileRef.current && fileRef.current.click()}><Paperclip size={20} color="#16A34A" />파일</button><button onClick={() => { setPlus(false); setVideo(true); }}><MonitorSmartphone size={20} color="#7C3AED" />화상상담</button></div>)}
         <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={onFile} />
