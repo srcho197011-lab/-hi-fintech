@@ -4443,6 +4443,7 @@ body.easyread .hidock-input input { font-size: 15px; }
 .trustline i { font-style: normal; font-weight: 800; color: #0369A1; }
 .trustline button { border: none; background: none; color: #0284C7; font-size: 11.5px; font-weight: 800; cursor: pointer; text-decoration: underline; flex-shrink: 0; padding: 0; }
 .trustwrap { margin-top: 16px; }
+.dv-guestnote { background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 10px; padding: 9px 13px; font-size: 12px; font-weight: 700; color: #9A3412; margin-bottom: 10px; line-height: 1.55; }
 .trust-hero { background: linear-gradient(135deg, #082F49, #0C4A6E); border-radius: 18px; padding: 24px 22px; color: #fff; }
 .trust-kicker { display: inline-flex; align-items: center; gap: 6px; background: rgba(56,189,248,.15); border: 1px solid rgba(56,189,248,.4); color: #7DD3FC; font-size: 11px; font-weight: 800; letter-spacing: 1px; padding: 5px 12px; border-radius: 999px; }
 .trust-title { font-size: 22px; font-weight: 900; letter-spacing: -.4px; margin: 12px 0 14px; }

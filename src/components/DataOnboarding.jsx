@@ -371,11 +371,14 @@ function DataVaultPanel({ onGo }) {
     <div className="card dvempty"><ShieldCheck size={30} color="#94A3B8" /><b>로그인이 필요해요</b><p>회원으로 로그인하면 내 건강·보험 데이터를 안전하게 보관·관리할 수 있어요.</p></div>
   );
   const token = (typeof anonToken === "function") ? anonToken(member) : "";
-  const v = (typeof vaultLoad === "function") ? vaultLoad(token) : null;
-  const chainOk = (typeof chainVerify === "function") ? chainVerify() : { ok: true, blocks: 0 };
-  const myBlocks = (typeof chainForToken === "function") ? chainForToken(token) : [];
-  const integ = (typeof verifyVaultIntegrity === "function") ? (() => { try { return verifyVaultIntegrity(member); } catch (e) { return null; } })() : null;
-  const access = (typeof vaultAccessHistory === "function") ? vaultAccessHistory(token) : [];
+  /* 둘러보기(GUEST) — 저장 없이 메모리 예시 금고(내 체험 프로필 기준)로 전체 화면 체험 */
+  const guest = (typeof isGuestRole === "function") && isGuestRole();
+  const gd = guest ? ((typeof guestVaultDemo === "function") ? guestVaultDemo(member) : null) : null;
+  const v = gd ? gd.v : ((typeof vaultLoad === "function") ? vaultLoad(token) : null);
+  const chainOk = gd ? { ok: true, blocks: gd.blocks.length } : ((typeof chainVerify === "function") ? chainVerify() : { ok: true, blocks: 0 });
+  const myBlocks = gd ? gd.blocks : ((typeof chainForToken === "function") ? chainForToken(token) : []);
+  const integ = gd ? { ok: true, checked: (gd.v.checkups || []).length, bad: 0 } : ((typeof verifyVaultIntegrity === "function") ? (() => { try { return verifyVaultIntegrity(member); } catch (e) { return null; } })() : null);
+  const access = gd ? gd.access : ((typeof vaultAccessHistory === "function") ? vaultAccessHistory(token) : []);
   const w = (n) => { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; };
   const fmt = (ts) => { try { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; } catch (e) { return ""; } };
   const BT = { checkup: "검진 저장", insurance: "보험 저장", consent: "동의 기록", erase: "데이터 파기", record: "기록" };
@@ -396,6 +399,7 @@ function DataVaultPanel({ onGo }) {
 
   return (
     <div className="dv">
+      {gd && <div className="dv-guestnote">👀 둘러보기 예시 금고 — 내 체험 프로필(나이·성별·질환) 기준으로 즉석 생성된 시연 데이터예요. 실제로 저장되지 않고, 나가면 사라져요.</div>}
       <div className="dv-hd"><ShieldCheck size={18} color="#2563EB" /> 데이터 금고 <span className="dv-token">익명 토큰 {token}</span>
         <button className="dv-add" onClick={() => nav("onboarding")}><Paperclip size={13} /> 데이터 추가 연결 (검진·보험 업로드)</button></div>
       <div className="dv-integrity"><span className={"dv-ibadge" + (chainOk.ok ? " ok" : " bad")}>{chainOk.ok ? <Check size={13} /> : <AlertTriangle size={13} />} 블록체인 무결성 {chainOk.ok ? "정상" : "위변조 감지"}</span>
@@ -412,7 +416,7 @@ function DataVaultPanel({ onGo }) {
         <div className="dv-item"><span className="dv-ic" style={{ background: "#E7F6EC", color: "#16A34A" }}><ShieldCheck size={16} /></span>
           <div className="dv-ib"><b>보험 가입내역 <span className="dv-tag full">{v.insurance.length}건</span></b><span>{v.insurance.map((x) => x.product).slice(0, 2).join(" · ")}{v.insurance.length > 2 ? " 외" : ""}</span></div></div>
       )}
-      {(() => { try { const certs = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!certs.length) return null; const c = certs[certs.length - 1]; return (
+      {(() => { try { const certs = gd ? gd.certs : JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!certs.length) return null; const c = certs[certs.length - 1]; return (
         <div className="dv-item"><span className="dv-ic" style={{ background: "#F0FDF4", color: "#15803D" }}><BadgeCheck size={16} /></span>
           <div className="dv-ib"><b>무상 검진대비보험 증서 <span className="dv-tag full">{certs.length}건</span></b><span>{c.id} · {c.center} · 검진 예약 1탭 동의로 발급 · 블록체인 기록 ✓</span></div>
           <code className="dv-hash">{String(c.hash || "").slice(0, 10)}…</code></div>

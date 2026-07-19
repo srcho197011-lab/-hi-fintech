@@ -230,6 +230,46 @@ function seedSelfVault(member) {
   return true;
 }
 
+/* 둘러보기(GUEST) 금고 예시 — 저장 없이 메모리에서 즉석 생성(쓰기 시뮬레이션 원칙 유지).
+   체험 프로필(나이·성별·질환) 기준으로 검진 2개년·보험·증서·블록·접근 이력을 합성 — 나가면 사라짐 */
+function guestVaultDemo(member) {
+  try {
+    const token = anonToken(member);
+    const now = Date.now(), H = 3600000;
+    const vals = synthCheckupValues(member);
+    const mk = (ks, src, conf) => ks.map((k) => ({ key: k, value: vals[k], source: src, confidence: conf }));
+    const items = mk(CKUP_ORDER, "upload", 0.93);
+    const itemsPrev = mk(CKUP_ORDER.slice(0, Math.max(6, CKUP_ORDER.length - 4)), "photo", 0.88);
+    const rec = (its, date, channel, completeness, fileName) => {
+      const fhir = toFHIR(member, its, { date });
+      return { token, kind: "checkup", date, source: channel, completeness, channel, fileName, items: its, fhir, fileHash: vaultHash("g|" + token + "|" + fileName), fhirHash: vaultHash(JSON.stringify(fhir.report) + JSON.stringify(fhir.observations)), savedAt: now };
+    };
+    const c1 = rec(itemsPrev, "2023-12-26", "photo", "partial", "검진결과_촬영본_2023.jpg");
+    const c2 = rec(items, "2024-12-26", "upload", "full", "국가검진결과_2024.pdf");
+    let contracts = []; try { contracts = insAggregateFetch(member).contracts; } catch (e) {}
+    const B = [];
+    const push = (type, note) => { B.push({ idx: B.length, type, token, note, hash: vaultHash(type + "|" + token + "|" + B.length), ts: now }); };
+    push("consent", "동의 이력 기록(건강·AI — 마케팅 미동의)");
+    push("checkup", "검진결과 저장(photo·partial) " + itemsPrev.length + "항목");
+    push("checkup", "검진결과 저장(upload·full) " + items.length + "항목");
+    push("consent", "동의 이력 기록(보험·연계)");
+    if (contracts.length) push("insurance", "보험가입내역 저장(aggregate) " + contracts.length + "건");
+    push("ins-cert", "무상 검진대비보험 증서 발급(검진 예약 1탭 동의)");
+    push("record", "AI 정밀리포트 생성 — 분석 결과 해시 기록(가명 토큰 기준)");
+    push("tx", "건강쇼핑 적립 1,200원 — 밀크씨슬 구매 리워드");
+    const certs = [{ id: "CERT-GUEST01", center: "내 주변 제휴 검진센터", date: "7/28", time: "09:00", at: now, hash: (B.find((b) => b.type === "ins-cert") || {}).hash }];
+    const access = [
+      { ts: now - 20 * H, actor: "member", action: "검진데이터 저장(2개년)" },
+      { ts: now - 18 * H, actor: "AI 분석엔진", action: "정밀리포트 생성 조회(가명 토큰만 사용)" },
+      { ts: now - 9 * H, actor: "하이(AI 매니저)", action: "건강 상담 참조 조회" },
+      { ts: now - 5 * H, actor: "보험 보장분석", action: "보장 공백 요약 열람(가명 요약만 제공)" },
+      { ts: now - 2 * H, actor: "member", action: "검진대비보험 증서 발급" },
+      { ts: now, actor: "member", action: "접근 이력 열람" },
+    ];
+    return { v: { token, checkups: [c1, c2], insurance: contracts, consents: { state: { health: true, ai: true, mkt: false, insurance: true, link: true }, ts: now } }, blocks: B, access, certs };
+  } catch (e) { return null; }
+}
+
 /* 데이터 삭제·철회(파기) — 금고·체인기록(철회 사실은 체인에 남김) */
 function vaultPurge(member) {
   const token = anonToken(member);
