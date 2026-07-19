@@ -648,7 +648,10 @@ function BookingModal({ center, mode, onClose }) {
                   <div className="bkrep-row"><b>⑤ 의료비 예측</b><span>금년·10년 후 예상 의료비와 외래·입원 일수</span></div>
                 </div>
                 <div className="bkrep-note">국민건강보험공단 1,000만 명 11년 코호트 + 연세의료원 바이오뱅크 16만 명 자료로 검증된 분석이에요. 의학적 진단을 대신하지 않아요.</div>
-                <button className="bkrep-sample" onClick={(e) => { e.stopPropagation(); setShowSample(true); }}><FileText size={14} /> {dmU && dmU.name ? dmU.name : "조성래"}님 이름으로 실물 샘플 보기</button>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                  <button className="bkrep-sample" onClick={(e) => { e.stopPropagation(); setShowSample(true); }}><FileText size={14} /> {dmU && dmU.name ? dmU.name : "조성래"}님 이름으로 실물 샘플 보기</button>
+                  <a className="bkrep-sample" href="./data/docs/HiFin_HealthReport_Sample.pdf" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ textDecoration: "none" }}><ExternalLink size={14} /> 실제 리포트 PDF 원본 보기 (30p)</a>
+                </div>
               </div>
             )}
             {/* 동의 1탭 — 무동의 자동가입 금지(J2-3) · 원치 않으면 해제 = 보험 없이 예약(J2-6) */}
