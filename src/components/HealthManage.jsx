@@ -370,14 +370,15 @@ function WarnSigns() {
   );
 }
 
-/* ====================== 원본 리포트 뷰어 ====================== */
-function OriginalReport({ onClose }) {
-  const PGH = (<div className="pghead"><div className="brand">메디에이지연구소 · 프롬에이지 Premium</div><div className="pinfo">이름 {PT.name} · {PT.sexAge}<br />등록번호 {PT.reg}<br />검진일 {PT.checkup}</div></div>);
+/* ====================== 원본 리포트 뷰어 — name 전달 시 신청자 이름으로 개인화(샘플 모드) ====================== */
+function OriginalReport({ onClose, name, sample }) {
+  const NM = name || PT.name;
+  const PGH = (<div className="pghead"><div className="brand">메디에이지연구소 · 프롬에이지 Premium</div><div className="pinfo">이름 {NM} · {PT.sexAge}<br />등록번호 {PT.reg}<br />검진일 {PT.checkup}</div></div>);
   return (
     <div className="voverlay" onClick={onClose}>
       <div className="viewer" onClick={(e) => e.stopPropagation()}>
         <div className="vhead">
-          <div className="vt"><FileText size={17} color="#7C3AED" /> 건강분석 리포트 (원본)</div>
+          <div className="vt"><FileText size={17} color="#7C3AED" /> 건강분석 리포트 {sample ? <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B45309", background: "#FEF3E2", borderRadius: 999, padding: "3px 9px", marginLeft: 6 }}>실물 샘플 — 신청 시 내 검진 데이터로 생성</span> : "(원본)"}</div>
           <div className="vh-actions">
             <button onClick={() => window.print()}><Printer size={14} /> 인쇄</button>
             <button className="close" onClick={onClose}><X size={15} /> 닫기</button>
@@ -388,7 +389,7 @@ function OriginalReport({ onClose }) {
           <div className="page coverbox">
             <div className="ct1">PROM-AGE PREMIUM · 메디에이지연구소</div>
             <div className="ct2">생체나이 건강지표 기반<br />질병 · 암 발생 위험도 및 의료비 예측 분석</div>
-            <div style={{ margin: "18px 0", fontSize: 14, fontWeight: 700 }}>성명 {PT.name} · {PT.sexAge} · 분석일 {PT.analyzed}</div>
+            <div style={{ margin: "18px 0", fontSize: 14, fontWeight: 700 }}>성명 {NM} · {PT.sexAge} · 분석일 {PT.analyzed}</div>
             <div className="disclaim">본 분석은 의학적으로 검증된 지표로 질병과 암 발생 위험도 및 지출 의료비를 예측합니다. 실제 위험도는 각 개인의 유전적 요인·생활습관·환경적 요인 등에 의해 달라질 수 있습니다. 본 검사의 결과는 의학적 진단을 대신할 수 없으며, 진단 및 치료 결정을 위해서는 반드시 주치의와 상의하세요.</div>
           </div>
 

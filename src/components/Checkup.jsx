@@ -546,6 +546,9 @@ function BookingModal({ center, mode, onClose }) {
   /* 무료 검진대비보험 — 동의 1탭(명시적 옵트인) + 건너뛰기 허용(강매 금지). Phase1 J2-3·J2-6 */
   const [insAgree, setInsAgree] = useState(true);
   const [insCert, setInsCert] = useState(null);
+  /* 무료 건강검진분석 리포트(3무 오퍼 ②) — 상세 접이 + 실물 샘플(신청자 이름 개인화) */
+  const [repOpen, setRepOpen] = useState(false);
+  const [showSample, setShowSample] = useState(false);
   const dmU = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const myAge = dmU && dmU.regAge ? dmU.regAge : 54;
   const mySex = dmU && dmU.sex ? dmU.sex : "남";
@@ -592,6 +595,7 @@ function BookingModal({ center, mode, onClose }) {
     <div className="bkov" onClick={onClose}>
       <div className="bk" onClick={(e) => e.stopPropagation()}>
         <div className="bkh"><div className="bt">{done ? "예약 완료" : "검진 예약"}</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
+        {showSample && typeof OriginalReport === "function" && <OriginalReport name={dmU && dmU.name ? dmU.name : "조성래"} sample onClose={() => setShowSample(false)} />}
         <div className="bkb">
           {!done ? (<>
             <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
@@ -613,18 +617,38 @@ function BookingModal({ center, mode, onClose }) {
               <div style={{ flex: 1, fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>건강검진 예약과 동시에 <b style={{ color: "#FDE68A" }}>무상 건강검진 대비보험</b>이 자동 적용됩니다. <u>보장 조회 ›</u></div>
               <ChevronDown size={18} color="#fff" style={{ transform: insOpen ? "rotate(180deg)" : "none", transition: ".2s", flexShrink: 0 }} />
             </div>
-            {/* 3문장 설명(무엇·왜무료·언제얼마) + 내 나이·성별 예시 + 인수사 — 약관이 아니라 한 문장의 약속(J1) */}
-            <div className="bkins3">
-              <div className="bkins3row"><b>무엇을?</b><span>검진에서 큰 병이 발견되면 치료 준비금을 드리는 보험이에요.</span></div>
-              <div className="bkins3row"><b>왜 무료?</b><span>하이핀 회원 혜택이라 보험료는 0원 — 추가 입력도 없어요.</span></div>
-              <div className="bkins3row"><b>언제 얼마?</b><span>{myAge}세 {mySex}성 기준, 암·뇌졸중·급성심근경색 진단 확정 시 최대 1,000만 원이에요.</span></div>
-              <div className="bkins3co">인수: 현대해상 전속대리점 글로벌예방금융㈜ · 실제 보장·인수는 보험사 심사에 따릅니다 · <button onClick={(e) => { e.stopPropagation(); try { window.dispatchEvent(new CustomEvent("agentask", { detail: "검진대비보험은 어떤 병까지 보장돼요?" })); } catch (err) {} }}>🤖 하이에게 물어보기</button></div>
-            </div>
-            {insOpen && (
+            {insOpen && (<>
+              {/* 3문장 설명(무엇·왜무료·언제얼마) + 내 나이·성별 예시 + 인수사 — 접이식(컴팩트) */}
+              <div className="bkins3">
+                <div className="bkins3row"><b>무엇을?</b><span>검진에서 큰 병이 발견되면 치료 준비금을 드리는 보험이에요.</span></div>
+                <div className="bkins3row"><b>왜 무료?</b><span>하이핀 회원 혜택이라 보험료는 0원 — 추가 입력도 없어요.</span></div>
+                <div className="bkins3row"><b>언제 얼마?</b><span>{myAge}세 {mySex}성 기준, 암·뇌졸중·급성심근경색 진단 확정 시 최대 1,000만 원이에요.</span></div>
+                <div className="bkins3co">인수: 현대해상 전속대리점 글로벌예방금융㈜ · 실제 보장·인수는 보험사 심사에 따릅니다 · <button onClick={(e) => { e.stopPropagation(); try { window.dispatchEvent(new CustomEvent("agentask", { detail: "검진대비보험은 어떤 병까지 보장돼요?" })); } catch (err) {} }}>🤖 하이에게 물어보기</button></div>
+              </div>
               <div className="bkins">
                 <div className="bkinst"><BadgeCheck size={14} color="#16A34A" /> 적용 플랜 <b style={{ color: "#16A34A" }}>{planName}</b> <span>{planSub}</span></div>
                 <div className="bkinsrows">{COVERS.map((r, i) => { const amt = r[colIdx]; if (!amt || amt === "-") return null; return (<div className="bkinsrow" key={i}><span>{r[1]}</span><b>{amt}</b></div>); })}</div>
                 <div className="bkinsnote">※ 기본·표준·고급형은 검진 예약 시 <b>무상 자동적용</b>됩니다. 마음케어진단은 기본형 100만원·표준형 200만원·고급형 300만원이 포함됩니다. 실제 보장·인수는 보험사 심사에 따릅니다.</div>
+              </div>
+            </>)}
+            {/* 3무 오퍼 ② — 무료 건강검진분석 리포트(프롬에이지 Premium · 시가 3만원) */}
+            <div onClick={() => setRepOpen((v) => !v)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(120deg,#6D28D9,#7C3AED)", color: "#fff", borderRadius: 12, padding: "12px 14px", marginTop: 10, boxShadow: "0 12px 24px -16px rgba(124,58,237,.7)" }}>
+              <span style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><FileText size={20} color="#fff" /></span>
+              <div style={{ flex: 1, fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>검진 후 <b style={{ color: "#FDE68A" }}>건강검진분석 리포트</b>(시가 3만 원)를 무료로 드려요. <u>내용 보기 ›</u></div>
+              <ChevronDown size={18} color="#fff" style={{ transform: repOpen ? "rotate(180deg)" : "none", transition: ".2s", flexShrink: 0 }} />
+            </div>
+            {repOpen && (
+              <div className="bkrep">
+                <div className="bkrep-t"><FileText size={13} color="#7C3AED" /> 프롬에이지 Premium — 검진 한 번으로 받는 5부 분석</div>
+                <div className="bkrep-rows">
+                  <div className="bkrep-row"><b>① 종합분석</b><span>생체나이·노화등수·노화속도와 위험 요약을 한 장으로</span></div>
+                  <div className="bkrep-row"><b>② 생체나이</b><span>비만체형 + 심장·간·췌장·신장 5대 장기나이</span></div>
+                  <div className="bkrep-row"><b>③ 질병 위험도 9종</b><span>당뇨·고혈압·뇌졸중·치매 등 — 8등급 + 경고신호·예방가이드</span></div>
+                  <div className="bkrep-row"><b>④ 암 위험도 10종</b><span>위·대장·폐·췌장암 등 — 동년배 대비 상대 위험도</span></div>
+                  <div className="bkrep-row"><b>⑤ 의료비 예측</b><span>금년·10년 후 예상 의료비와 외래·입원 일수</span></div>
+                </div>
+                <div className="bkrep-note">국민건강보험공단 1,000만 명 11년 코호트 + 연세의료원 바이오뱅크 16만 명 자료로 검증된 분석이에요. 의학적 진단을 대신하지 않아요.</div>
+                <button className="bkrep-sample" onClick={(e) => { e.stopPropagation(); setShowSample(true); }}><FileText size={14} /> {dmU && dmU.name ? dmU.name : "조성래"}님 이름으로 실물 샘플 보기</button>
               </div>
             )}
             {/* 동의 1탭 — 무동의 자동가입 금지(J2-3) · 원치 않으면 해제 = 보험 없이 예약(J2-6) */}

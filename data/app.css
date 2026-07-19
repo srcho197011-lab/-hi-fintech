@@ -4485,6 +4485,16 @@ body.easyread .hidock-input input { font-size: 15px; }
 .bkins3row span { color: #26324A; }
 .bkins3co { font-size: 10.8px; color: var(--muted); margin-top: 6px; border-top: 1px dashed #BBF7D0; padding-top: 7px; }
 .bkins3co button { border: none; background: none; color: #EA580C; font-weight: 800; font-size: 10.8px; cursor: pointer; padding: 0; }
+/* 검진 예약 — 무료 리포트 제공란(3무 ②) */
+.bkrep { background: #FAF8FF; border: 1px solid #DDD6FE; border-radius: 12px; padding: 12px 13px; margin-top: 8px; }
+.bkrep-t { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: #6D28D9; margin-bottom: 8px; }
+.bkrep-rows { display: flex; flex-direction: column; gap: 5px; }
+.bkrep-row { display: flex; gap: 8px; font-size: 12px; line-height: 1.55; }
+.bkrep-row b { flex-shrink: 0; color: #6D28D9; font-size: 11px; background: #EDE9FE; border-radius: 6px; padding: 1px 7px; height: fit-content; margin-top: 1px; white-space: nowrap; }
+.bkrep-row span { color: #33405C; }
+.bkrep-note { font-size: 10.8px; color: var(--muted); margin-top: 8px; border-top: 1px dashed #DDD6FE; padding-top: 7px; line-height: 1.5; }
+.bkrep-sample { display: inline-flex; align-items: center; gap: 6px; margin-top: 9px; border: 1px solid #C4B5FD; background: #fff; color: #6D28D9; font-size: 12px; font-weight: 800; padding: 8px 13px; border-radius: 10px; cursor: pointer; }
+.bkrep-sample:hover { background: #F5F3FF; }
 .bkinsagree { display: flex; align-items: flex-start; gap: 9px; background: #fff; border: 1.5px solid #D9DEEC; border-radius: 11px; padding: 11px 13px; margin-top: 10px; cursor: pointer; }
 .bkinsagree.on { border-color: #16A34A; background: #F7FDF9; }
 .bkinsagree input { display: none; }
