@@ -82,7 +82,8 @@ function HospitalDirectory({ data, preset }) {
         <span><Art name="calendar" size={16} /> 실시간 예약</span>
         <span><Art name="badge" size={16} /> NFT 예약증 발행</span>
       </div>
-      <MapCard title={`병원 위치 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳 · 핀에서 바로 예약)`} accent="#2563EB" points={view.length > 0 ? list.map((h) => ({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8], _bk: { kind: "hospital", h } })) : []} />
+      {typeof UnifiedMapCard === "function" ? <UnifiedMapCard data={data} /> : null}
+      <MapCard title={`검색 결과 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳 · 필터 연동 · 핀에서 바로 예약)`} accent="#2563EB" points={view.length > 0 ? list.map((h) => ({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8], hrs: h[10] || "", _bk: { kind: "hospital", h } })) : []} />
       <div className="bklbl" style={{ margin: "0 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span>지역(시·도) 선택</span>
         <button className="nearbtn" onClick={findNear}><MapPin size={13} /> 내 주변 병원</button></div>
       <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); setNear(null); reset(); }}>{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
@@ -112,6 +113,7 @@ function HospitalDirectory({ data, preset }) {
           <div className="cmain" style={{ cursor: "pointer" }} onClick={() => setDetail(h)} title="병원 상세 보기">
             <div className="cname">{h[0]}<span className="cbadge" style={{ color: "#0369A1", background: "#E0F2FE" }}>{data.type[h[1]]}</span></div>
             <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{data.sido[h[2]]} {h[3]}</span> · <MapPin size={12} />{h[4]}{h[5] ? <> · <Phone size={12} />{h[5]}</> : null}</div>
+            {h[10] && <div style={{ fontSize: 11.5, color: "#0F766E", fontWeight: 700, marginTop: 3 }}>🕐 {h[10]} <span style={{ color: "var(--soft)", fontWeight: 600 }}>· 심평원 실데이터</span></div>}
             {h[7] && h[7].length > 0 && <div className="hdept">{h[7].slice(0, 7).map((di) => <span key={di}>{data.dept[di]}</span>)}{h[7].length > 7 && <span className="more">+{h[7].length - 7}</span>}</div>}
           </div>
           <div className="cright">

@@ -446,7 +446,8 @@ function ConsultModal({ interest, onClose }) {
       }
       const reg = (typeof memberRegion === "function") ? memberRegion() : null;
       const pool = list.filter((c) => !reg || (c.sd || "").indexOf(reg.sidoShort) >= 0).slice(0, 6);
-      const pts = pool.map((c) => { const g = hiraMatchCoords(d, c.n, c.ad); return g ? { name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng } : null; }).filter(Boolean);
+      const geo = (typeof checkupGeoAll === "function") ? checkupGeoAll(d) : {};
+      const pts = pool.map((c) => { const g = geo[c.n]; return g ? { name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng } : null; }).filter(Boolean);
       return { pts, label: pts.length ? "내 주변 제휴 기관" : null };
     } catch (e) { return { pts: [], label: null }; }
   }, [hiraCs.data, interest]);

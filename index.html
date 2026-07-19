@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=a0f229643e" />
+<link rel="stylesheet" href="./data/app.css?v=e269f560a2" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=a0f229643e"></script>
-<script src="./src/data/section_data.js?v=a0f229643e"></script>
-<script src="./src/data/demo_members.js?v=a0f229643e"></script>
+<script src="./src/data/dummy_data.js?v=e269f560a2"></script>
+<script src="./src/data/section_data.js?v=e269f560a2"></script>
+<script src="./src/data/demo_members.js?v=e269f560a2"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -494,7 +494,8 @@ function ConsultModal({ interest, onClose }) {
       }
       const reg = (typeof memberRegion === "function") ? memberRegion() : null;
       const pool = list.filter((c) => !reg || (c.sd || "").indexOf(reg.sidoShort) >= 0).slice(0, 6);
-      const pts = pool.map((c) => { const g = hiraMatchCoords(d, c.n, c.ad); return g ? { name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng } : null; }).filter(Boolean);
+      const geo = (typeof checkupGeoAll === "function") ? checkupGeoAll(d) : {};
+      const pts = pool.map((c) => { const g = geo[c.n]; return g ? { name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng } : null; }).filter(Boolean);
       return { pts, label: pts.length ? "내 주변 제휴 기관" : null };
     } catch (e) { return { pts: [], label: null }; }
   }, [hiraCs.data, interest]);
@@ -3932,8 +3933,9 @@ function BrandDirectory({ only, catFilter }) {
   const hiraGeo = useHira();
   const geoPts = React.useMemo(() => {
     const d = hiraGeo.data; if (!d) return [];
+    const geo = checkupGeoAll(d);
     return list.map((c) => {
-      const g = hiraMatchCoords(d, c.n, c.ad);
+      const g = geo[c.n];
       if (!g) return null;
       return { name: c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: g.lat, lng: g.lng, _bk: { kind: "checkup", center: c } };
     }).filter(Boolean);
@@ -4691,6 +4693,39 @@ function loadHira() {
   }
   return _hiraPromise;
 }
+/* 검진센터 전체(51곳) 좌표 일괄 매칭 — 심평원 8만 행을 '한 번만' 스캔해 캐시(성능: 51×80k → 1×80k) */
+let _chkGeoCache = null;
+function checkupGeoAll(data) {
+  if (_chkGeoCache) return _chkGeoCache;
+  try {
+    if (!data || typeof CHECKUP_INST === "undefined") return {};
+    const nz = (s) => String(s || "").replace(/\s/g, "");
+    const nrm = (s) => String(s || "").replace(/\s|\(주\)|\(사\)|의료법인|재단법인|KMI/g, "");
+    const T = CHECKUP_INST.map((c) => {
+      const toks = String(c.ad || "").trim().split(/\s+/);
+      const roadM = /([가-힣A-Za-z0-9·]+(?:로|길)\s*\d+(?:-\d+)?)/.exec(String(c.ad || ""));
+      return { key: c.n, road: roadM ? nz(roadM[1]) : null, sgg: toks.length > 1 && /(시|군|구)$/.test(toks[1]) ? toks[1] : null, nm: nrm(c.n), hit: null };
+    });
+    const H = data.hospitals || [];
+    for (let i = 0; i < H.length; i++) {
+      const h = H[i]; if (!h[8] || !h[9]) continue;
+      const ha = nz(h[4]); let n2 = null;
+      for (let j = 0; j < T.length; j++) {
+        const t = T[j]; if (t.hit) continue;
+        if (t.road && ha.indexOf(t.road) >= 0 && (!t.sgg || ha.indexOf(t.sgg) >= 0)) { t.hit = h; continue; }
+        if (t.nm.length >= 3 && (!t.sgg || ha.indexOf(t.sgg) >= 0)) {
+          if (n2 === null) n2 = nrm(h[0]);
+          if (n2 && (n2 === t.nm || n2.indexOf(t.nm) >= 0 || t.nm.indexOf(n2) >= 0)) t.hit = h;
+        }
+      }
+    }
+    const out = {};
+    T.forEach((t) => { if (t.hit) out[t.key] = { lat: t.hit[9], lng: t.hit[8], addr: t.hit[4], tel: t.hit[5] }; });
+    _chkGeoCache = out;
+    return out;
+  } catch (e) { return {}; }
+}
+
 /* 기관 → 심평원 실좌표 매칭(Phase 4 공용) — ①주소(도로명+번지) 우선 ②같은 시군구 내 이름 매칭 폴백.
    이름만으로 매칭하면 협회 지점처럼 유사 명칭이 타지역을 잡는 오류가 있어 주소를 1순위로 사용. */
 function hiraMatchCoords(data, name, addr) {
@@ -4773,7 +4808,7 @@ function MapView({ points, accent, focus, height }) {
     const bounds = [];
     valid.forEach((p, i) => {
       const m = L.marker([p.lat, p.lng]);
-      m.bindPopup(`<div style="font-size:12.5px;line-height:1.5;min-width:150px"><b>${escHtml(p.name)}</b>${p.tag ? ` <span style="color:${accent || "#2563EB"};font-weight:700">· ${escHtml(p.tag)}</span>` : ""}<br>${escHtml(p.addr)}${p.tel ? `<br>☎ ${escHtml(p.tel)}` : ""}${popupLink(p.name, p.lat, p.lng)}${p._bk ? `<br><a href="#" class="mapbk" data-i="${i}" style="color:#16A34A;font-weight:800">✅ 이 기관 바로 예약 ›</a>` : ""}</div>`);
+      m.bindPopup(`<div style="font-size:12.5px;line-height:1.5;min-width:150px"><b>${escHtml(p.name)}</b>${p.tag ? ` <span style="color:${accent || "#2563EB"};font-weight:700">· ${escHtml(p.tag)}</span>` : ""}<br>${escHtml(p.addr)}${p.tel ? `<br>☎ ${escHtml(p.tel)}` : ""}${p.hrs ? `<br>🕐 ${escHtml(p.hrs)}` : ""}${popupLink(p.name, p.lat, p.lng)}${p._bk ? `<br><a href="#" class="mapbk" data-i="${i}" style="color:#16A34A;font-weight:800">✅ 이 기관 바로 예약 ›</a>` : ""}</div>`);
       group.addLayer(m); bounds.push([p.lat, p.lng]);
     });
     group._pts = valid;
@@ -4821,6 +4856,58 @@ function MapView({ points, accent, focus, height }) {
         <button className="maploc" onClick={locate}><MapPin size={12} /> 내 위치</button>
       </div>
       <div style={{ fontSize: 11, color: "var(--soft)", marginTop: 6 }}>{noCoord ? "좌표 정보가 없어 위치를 표시할 수 없습니다." : "지도 © OpenStreetMap 기여자 · 좌표 출처: 심평원 공공데이터"}{points && points.length > MAP_CAP ? ` · 표시 ${MAP_CAP.toLocaleString()}/${points.length.toLocaleString()}곳(상위)` : ""}</div>
+    </div>
+  );
+}
+
+/* ══ 통합 기관 지도(Phase 4.5) — 병원·약국·검진센터·재가를 한 지도에서 유형 토글(K2-1).
+   재가 데이터 로더(loadHomecare)는 Homecare.jsx의 기존 것을 재사용. ══ */
+function UnifiedMapCard({ data }) {
+  const [on, setOn] = useState({ hosp: true, pharm: false, chk: true, care: false });
+  const [scope, setScope] = useState("near");
+  const [hc, setHc] = useState(null);
+  const [openMap, setOpenMap] = useState(true);
+  useEffect(() => { let ok = true; loadHomecare().then((d) => { if (ok) setHc(d); }).catch(() => {}); return () => { ok = false; }; }, []);
+  const reg = (typeof memberRegion === "function") ? memberRegion() : null;
+  const sidoShort = reg ? reg.sidoShort : "서울";
+  const pts = React.useMemo(() => {
+    const out = [];
+    const inScope = (s) => scope === "all" || String(s || "").indexOf(sidoShort) >= 0;
+    if (data && on.hosp) {
+      const set = new Set(data.sido.map((s, i) => [s, i]).filter(([s]) => inScope(s)).map(([, i]) => i));
+      let n = 0;
+      for (const h of data.hospitals) { if (!set.has(h[2]) || !h[8] || !h[9]) continue; out.push({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8], hrs: h[10] || "", _bk: { kind: "hospital", h } }); if (++n >= 600) break; }
+    }
+    if (data && on.pharm) {
+      const set = new Set(data.sido.map((s, i) => [s, i]).filter(([s]) => inScope(s)).map(([, i]) => i));
+      let n = 0;
+      for (const p of data.pharmacies) { if (!set.has(p[1]) || !p[5] || !p[6]) continue; out.push({ name: p[0], addr: p[3], tel: p[4], tag: "약국", lat: p[6], lng: p[5] }); if (++n >= 400) break; }
+    }
+    if (data && on.chk && typeof CHECKUP_INST !== "undefined") {
+      const geo = checkupGeoAll(data);
+      CHECKUP_INST.forEach((c) => { if (!inScope(c.sd)) return; const g = geo[c.n]; if (g) out.push({ name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: "검진센터", lat: g.lat, lng: g.lng, _bk: { kind: "checkup", center: c } }); });
+    }
+    if (hc && on.care) {
+      let n = 0;
+      for (const v of (hc.providers || [])) { const sname = (hc.sido || [])[v[1]]; if (!inScope(sname) || !v[6] || !v[7]) continue; out.push({ name: v[0], addr: v[3], tel: v[4], tag: "재가·요양", lat: v[7], lng: v[6] }); if (++n >= 300) break; }
+    }
+    return out;
+  }, [data, hc, on, scope, sidoShort]);
+  const TOG = [["hosp", "병원", "#2563EB"], ["pharm", "약국", "#16A34A"], ["chk", "검진센터", "#7C3AED"], ["care", "재가·요양", "#DB2777"]];
+  return (
+    <div className="mapcard">
+      <div className="maphead" onClick={() => setOpenMap((v) => !v)}>
+        <div className="mt"><MapPin size={16} color="#2F5BEA" /> 통합 기관 지도 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>({scope === "near" ? sidoShort + " 기준" : "전국"} · {pts.length.toLocaleString()}곳 · 핀에서 예약)</span></div>
+        <ChevronDown size={18} color="#9AA6BC" style={{ transform: openMap ? "rotate(180deg)" : "none", transition: ".2s" }} />
+      </div>
+      {openMap && (<>
+        <div className="umtogs" onClick={(e) => e.stopPropagation()}>
+          {TOG.map(([k, t, col]) => <button key={k} className={"umtog" + (on[k] ? " on" : "")} style={on[k] ? { background: col, borderColor: col } : null} onClick={() => setOn({ ...on, [k]: !on[k] })}>{t}</button>)}
+          <button className={"umtog" + (scope === "all" ? " on" : "")} style={scope === "all" ? { background: "#0F172A", borderColor: "#0F172A" } : null} onClick={() => setScope(scope === "all" ? "near" : "all")}>전국 보기</button>
+        </div>
+        <div style={{ marginTop: 8 }}><MapView points={pts} accent="#2563EB" /></div>
+        {hc && hc.meta && hc.meta.demo && on.care && <div style={{ fontSize: 10.5, color: "#B45309", marginTop: 5 }}>⚠ 재가·요양 기관은 시연용 예시 데이터예요 — 장기요양기관 공시 실데이터로 교체 예정(tools/homecare_ingest.py).</div>}
+      </>)}
     </div>
   );
 }
@@ -4925,7 +5012,8 @@ function HospitalDirectory({ data, preset }) {
         <span><Art name="calendar" size={16} /> 실시간 예약</span>
         <span><Art name="badge" size={16} /> NFT 예약증 발행</span>
       </div>
-      <MapCard title={`병원 위치 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳 · 핀에서 바로 예약)`} accent="#2563EB" points={view.length > 0 ? list.map((h) => ({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8], _bk: { kind: "hospital", h } })) : []} />
+      {typeof UnifiedMapCard === "function" ? <UnifiedMapCard data={data} /> : null}
+      <MapCard title={`검색 결과 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳 · 필터 연동 · 핀에서 바로 예약)`} accent="#2563EB" points={view.length > 0 ? list.map((h) => ({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8], hrs: h[10] || "", _bk: { kind: "hospital", h } })) : []} />
       <div className="bklbl" style={{ margin: "0 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span>지역(시·도) 선택</span>
         <button className="nearbtn" onClick={findNear}><MapPin size={13} /> 내 주변 병원</button></div>
       <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); setNear(null); reset(); }}>{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
@@ -4955,6 +5043,7 @@ function HospitalDirectory({ data, preset }) {
           <div className="cmain" style={{ cursor: "pointer" }} onClick={() => setDetail(h)} title="병원 상세 보기">
             <div className="cname">{h[0]}<span className="cbadge" style={{ color: "#0369A1", background: "#E0F2FE" }}>{data.type[h[1]]}</span></div>
             <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{data.sido[h[2]]} {h[3]}</span> · <MapPin size={12} />{h[4]}{h[5] ? <> · <Phone size={12} />{h[5]}</> : null}</div>
+            {h[10] && <div style={{ fontSize: 11.5, color: "#0F766E", fontWeight: 700, marginTop: 3 }}>🕐 {h[10]} <span style={{ color: "var(--soft)", fontWeight: 600 }}>· 심평원 실데이터</span></div>}
             {h[7] && h[7].length > 0 && <div className="hdept">{h[7].slice(0, 7).map((di) => <span key={di}>{data.dept[di]}</span>)}{h[7].length > 7 && <span className="more">+{h[7].length - 7}</span>}</div>}
           </div>
           <div className="cright">
@@ -16380,7 +16469,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-19", ver:"v1.1", ch:[17], feat:"기관 지도 완성(Phase4)", src:"건강검진 예약·병원 지도", summary:"검진센터 실좌표 지도와 핀에서 바로 예약, GPS 내 위치, 카카오맵 길안내를 구현해 찾는 지도를 데려다주는 지도로 전환", refs:[], status:"반영", hash:"b36dfbb", auto:true },
+  { date:"2026-07-19", ver:"v1.1", ch:[17], feat:"통합 기관 지도+병원 진료시간 실데이터(Phase4.5)", src:"병원 진료 탭·hira.json", summary:"병원 약국 검진 재가를 한 지도에서 토글하는 통합 지도와 심평원 세부정보 기반 병원 2.8만 곳 실진료시간을 구현하고 재가 실데이터 인제스트 경로를 마련", refs:[], status:"반영", hash:"0683dd8", auto:true },
+  { date:"2026-07-19", ver:"v1.1", ch:[17], feat:"기관 지도 완성(Phase4)", src:"건강검진 예약·병원 지도", summary:"검진센터 실좌표 지도와 핀에서 바로 예약, GPS 내 위치, 카카오맵 길안내를 구현해 찾는 지도를 데려다주는 지도로 전환", refs:[], status:"반영", hash:"1a253fd", auto:true },
   { date:"2026-07-19", ver:"v1.1", ch:[3], feat:"회원 추천 리퍼럴+3무 랜딩+10초 가입(Phase3)", src:"나의 건강지갑 리퍼럴 카드·가입 게이트·하이", summary:"추천 링크 생성과 양측 HTK·행동 기반 보상, 초대 유입 인식·보너스 귀속, 3무 오퍼 전면 랜딩과 10초 간편가입으로 6대 획득 채널의 자기증식 리퍼럴 엔진을 구현", refs:[], status:"반영", hash:"7134809", auto:true },
   { date:"2026-07-19", ver:"v1.1", ch:[17], feat:"하이 퍼스트 거래 실행 툴+선제 알림(Phase2)", src:"하이(AgentDock/aiNative)", summary:"하이가 예약 확정·보험 가입·청구 접수·가족 등록·동의 변경을 대화 한마디로 실제 실행하고 보험 미가입·검진 임박을 먼저 알리는 선제 알림 엔진을 구축해 조회 전용 에이전트를 실행 에이전트로 전환", refs:[], status:"반영", hash:"d0e9847", auto:true },
   { date:"2026-07-19", ver:"v1.1", ch:[10,11], feat:"신뢰 센터+전 섹션 신뢰 상주(Phase1)", src:"나의 건강지갑 › 신뢰 센터·전 섹션", summary:"신뢰의 3문장과 데이터 여정 5단계 보호 시각화를 갖춘 신뢰 센터를 신설하고 전 섹션 위변조 배지·입력 순간 보호 안내·무료보험 동의 1탭과 증서 실기록으로 회원이 확인 가능한 신뢰를 구현", refs:[], status:"반영", hash:"fe1c694", auto:true },

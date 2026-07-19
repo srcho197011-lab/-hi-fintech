@@ -4512,6 +4512,11 @@ body.easyread .hidock-input input { font-size: 15px; }
 .trifree-note { font-size: 10px; opacity: .8; margin-top: 7px; line-height: 1.5; }
 @media (max-width: 640px) { .trifree-items { grid-template-columns: 1fr 1fr 1fr; } .ref-sims { margin-left: 0; } }
 
+/* 통합 기관 지도 — 유형 토글(Phase 4.5) */
+.umtogs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.umtog { border: 1.5px solid #D9DEEC; background: #fff; color: #5B6B84; font-size: 12px; font-weight: 800; padding: 6px 13px; border-radius: 999px; cursor: pointer; }
+.umtog.on { color: #fff; }
+
 /* 지도 — GPS 내 위치 버튼(Phase 4) */
 .maploc { position: absolute; top: 10px; right: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #BFDBFE; background: #fff; color: #2563EB; font-size: 11.5px; font-weight: 800; padding: 7px 11px; border-radius: 999px; cursor: pointer; box-shadow: 0 6px 14px -8px rgba(37,99,235,.5); }
 .maploc:hover { background: #EFF6FF; }
