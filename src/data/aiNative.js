@@ -154,6 +154,19 @@ const TOOL_RUN = {
     try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push(cert); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); localStorage.removeItem("hifin_ins_deferred"); } catch (e) {}
     return { lines: [`무료 검진대비보험 가입을 완료했어요 — 증서 ${cert.id}가 데이터 금고에 기록됐어요(보험료 0원).`, "보장은 검진 예약과 연동돼요. ※ 실제 보장·인수는 보험사 심사에 따라요."] };
   } catch (e) { return null; } },
+  // 무상 검진대비보험 상세 브리핑 — 예약 화면 수준의 플랜·담보·금액을 대화로 + 예약 화면 연결
+  inscover(m) { try {
+    const C = (typeof CHECK_COVERS !== "undefined") ? CHECK_COVERS : [];
+    const age = m && m.regAge ? m.regAge : 54, sex = m && m.sex ? m.sex : "남";
+    const table = C.map((r) => `· ${r[1]} — 기본형 ${r[2]} · 표준형 ${r[3]} · 고급형 ${r[4]}`).join("\n");
+    return { lines: [
+      "건강검진을 예약만 하면 보험료 0원으로 자동 가입되는 '검진대비보험'이에요 — 하이핀 회원 혜택이라 추가 입력도 없어요.",
+      "플랜은 검진에 따라 자동 적용돼요 — 기본형(국가검진) · 표준형(종합검진 50만 원 미만) · 고급형(50만 원 이상).",
+      "보장 내용 전체예요:\n" + table,
+      `${age}세 ${sex}성 기준 고급형이면, 암·뇌졸중·급성심근경색 진단 확정 시 각 최대 1,000만 원까지 받아요. 인수는 현대해상 전속대리점 글로벌예방금융㈜ · 가입 내역은 블록체인에 기록돼요.`,
+      "아래 버튼으로 검진 예약 화면에서 바로 확인·예약할 수 있고, 저한테 \"검진 예약해줘\"라고 하시면 제가 예약과 가입까지 한 번에 끝내드려요.",
+    ], buttons: ["검진 예약해줘", "보장 내용 자세히"] };
+  } catch (e) { return null; } },
   // 근처 검진센터 찾기 — 회원 지역 기준 후보 제시(하이가 조건 해석)
   nearfind(m) { try {
     const list = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
