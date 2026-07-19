@@ -4391,6 +4391,7 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 /* ══════ 하이 독(상주 에이전트) ══════ */
 .hidock-fab { position: fixed; right: 34px; bottom: 24px; z-index: 900; display: flex; flex-direction: column; align-items: center; gap: 3px; border: none; background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; border-radius: 50%; width: 64px; height: 64px; cursor: pointer; box-shadow: 0 14px 30px -10px rgba(234, 88, 12, .6); transition: transform .15s; }
 .hidock-fab:hover { transform: translateY(-3px) scale(1.04); }
+.hidock-fabbdg { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; border-radius: 999px; background: #EF4444; color: #fff; font-size: 11px; font-weight: 900; display: grid; place-items: center; padding: 0 5px; border: 2px solid #fff; box-shadow: 0 4px 10px -4px rgba(239,68,68,.7); }
 .hidock-face { display: grid; place-items: center; }
 .hidock-lbl { font-size: 10.5px; font-weight: 800; }
 .hidock { position: fixed; right: 18px; bottom: 18px; z-index: 950; width: 372px; max-width: calc(100vw - 24px); height: 520px; max-height: calc(100vh - 90px); background: #fff; border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 24px 60px -18px rgba(20, 30, 70, .45); display: flex; flex-direction: column; overflow: hidden; }

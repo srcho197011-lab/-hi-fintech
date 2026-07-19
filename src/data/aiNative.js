@@ -85,6 +85,84 @@ const TOOL_RUN = {
   reset() { return { lines: ["대화를 새로 시작해요. 무엇이든 물어보세요!"], reset: true }; },
   // 재무 질의 — 통합 재무엔진(finModel.js) 자연어 인터페이스(매출·손익·구독료·CAC·LTV·EV·런웨이·시나리오)
   fin(m, text) { try { return (typeof finAsk === "function") ? finAsk(text) : null; } catch (e) { return null; } },
+
+  /* ══ Phase 2 하이 퍼스트 — 거래 실행 툴(조회를 넘어, 말 한마디로 실행) ══ */
+  // 검진 예약 제안(내 지역 기준 센터+일시) → "이대로 예약 확정"으로 bookdo 실행
+  bookprep(m) { try {
+    const list = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
+    const reg = (typeof memberRegion === "function") ? memberRegion() : null;
+    const sido = reg && reg.sidoShort ? reg.sidoShort : "서울";
+    const pool = list.filter((c) => (c.sd || "").indexOf(sido) >= 0);
+    const pick = (pool.length ? pool : list)[0]; if (!pick) return null;
+    const d = new Date(); d.setDate(d.getDate() + 9);
+    const dateK = (d.getMonth() + 1) + "/" + d.getDate();
+    try { window._hiBookPending = { center: { name: pick.n, b: pick.b, r: pick.sd, area: pick.sg, tags: ["종합검진"] }, date: dateK, time: "09:00" }; } catch (e) {}
+    return { lines: [`${m.name}님 지역(${sido}) 기준으로 골라봤어요 — ${pick.n}(${pick.sd} ${pick.sg}), 가장 빠른 자리는 ${dateK}(토) 오전 9시예요.`, "예약과 동시에 무료 검진대비보험(진단금 최대 1,000만 원)이 함께 준비돼요. 이대로 확정할까요?"], buttons: ["이대로 예약 확정", "다른 센터 볼래요"] };
+  } catch (e) { return null; } },
+  bookdo(m) { try {
+    const p = (typeof window !== "undefined") ? window._hiBookPending : null;
+    if (!p) return { lines: ["먼저 \"검진 예약해줘\"라고 말씀해 주시면 센터와 날짜를 골라드릴게요."] };
+    try { if (typeof submitCheckupBooking === "function") submitCheckupBooking(p.center, { center: p.center.name, date: p.date, time: p.time, via: "hi", freeIns: true }); } catch (e) {}
+    let hash = null;
+    try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `무상 검진대비보험 증서 발급(${p.center.name} · 하이 예약)` }); hash = b && b.hash; vaultAccessLog(tk, "member", "하이 대화 예약 — 검진대비보험 증서 발급"); } catch (e) {}
+    const cert = { id: "CERT-" + Date.now().toString(36).toUpperCase(), center: p.center.name, date: p.date, time: p.time, at: Date.now(), hash };
+    try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push(cert); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); localStorage.removeItem("hifin_ins_deferred"); window._hiBookPending = null; } catch (e) {}
+    return { lines: [`끝났어요! ${p.center.name} ${p.date} ${p.time} 예약을 확정하고, 무료 검진대비보험 증서(${cert.id})까지 발급했어요 — 블록체인에 기록됐고 데이터 금고에서 확인할 수 있어요.`, "검진 전날, 준비사항을 제가 먼저 알려드릴게요."] };
+  } catch (e) { return null; } },
+  // 보험금 청구 — 서류 자동 구성 제안 → "청구 접수 진행해줘"로 접수
+  claimprep(m) { try {
+    const R = (typeof demoReport === "function") ? demoReport(m) : null;
+    return { lines: ["청구 준비를 시작할게요 — 데이터 금고의 검진·진료 기록으로 서류를 자동 구성해요(재입력 0).", `대상: 최근 진료·검진 연계 항목${R && R.hr && R.hr.length ? ` (참고: ${R.hr[0]} 관련 정밀검사비도 보장 확인 대상이에요)` : ""}. 이대로 접수할까요?`], buttons: ["청구 접수 진행해줘", "보장 공백 분석"] };
+  } catch (e) { return null; } },
+  claimdo(m) { try {
+    const id = "CLM-" + Date.now().toString(36).toUpperCase(); let hash = null;
+    try { const tk = anonToken(m); const b = chainAppend({ type: "record", token: tk, note: "보험금 청구 접수(하이 대화) — 서류 자동 구성" }); hash = b && b.hash; vaultAccessLog(tk, "member", "보험금 청구 접수(하이)"); } catch (e) {}
+    try { const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id, at: Date.now(), status: "접수", hash }); localStorage.setItem("hifin_claims", JSON.stringify(l)); } catch (e) {}
+    return { lines: [`청구가 접수됐어요 — 접수번호 ${id}. 검진·진료 기록을 자동 첨부했고, 심사 진행 상황은 제가 먼저 알려드릴게요.`, "※ 실제 지급 여부·금액은 보험사 심사에 따라요."] };
+  } catch (e) { return null; } },
+  // 가족 등록 — "어머니 82세 추가해줘" 한마디로 완료
+  famadd(m, text) { try {
+    const t = String(text || "");
+    const REL = [["어머니|노모|모친", "부모", "여"], ["아버지|부친", "부모", "남"], ["아내|와이프|배우자", "배우자", "여"], ["남편", "배우자", "남"], ["아들", "자녀", "남"], ["딸", "자녀", "여"]];
+    const hit = REL.find((r) => new RegExp(r[0]).test(t));
+    if (!hit) return { lines: ["누구를 등록할까요? 예를 들어 \"어머니 82세 추가해줘\"처럼 말씀해 주세요."], buttons: ["어머니 82세 추가해줘", "아내 51세 추가해줘"] };
+    const label = (t.match(new RegExp(hit[0])) || [hit[0].split("|")[0]])[0];
+    const ageM = t.match(/(\d{1,3})\s*세/);
+    const age = ageM ? parseInt(ageM[1], 10) : (hit[1] === "부모" ? 78 : 50);
+    const list = (typeof familyLoad === "function") ? (familyLoad(m.email, (m.name || "가")[0]) || []) : [];
+    list.push({ id: "f" + Date.now().toString(36), name: label, relation: hit[1], age, sex: hit[2] });
+    if (typeof familySave === "function") familySave(m.email, list);
+    try { vaultAccessLog(anonToken(m), "member", `가족 등록(${label} · 하이 대화)`); } catch (e) {}
+    return { lines: [`${label}(${age}세)님을 우리가족건강관리에 등록했어요 — 검진 일정·응급 안내를 함께 챙겨드릴게요.`, "가족 정보는 본인 동의 범위에서만 저장되고, 언제든 삭제할 수 있어요."] };
+  } catch (e) { return null; } },
+  // 동의 변경 — 목적별 동의를 대화 한마디로(변경 이력은 체인 기록)
+  consentdo(m, text) { try {
+    const t = String(text || "");
+    const KEY = [["마케팅|광고|수신", "mkt", "마케팅 알림"], ["보험", "insurance", "보험 연계"], ["연계|제3자|제휴", "link", "기관 연계"], ["ai|분석", "ai", "AI 분석"], ["건강|검진", "health", "건강데이터 활용"]];
+    const hit = KEY.find((k) => new RegExp(k[0], "i").test(t));
+    if (!hit) return { lines: ["어떤 동의를 바꿀까요? 목적별로 하나씩, 말 한마디면 돼요."], buttons: ["마케팅 동의 꺼줘", "마케팅 동의 켜줘"] };
+    const on = /(켜|동의할|허용|받을)/.test(t) && !/(꺼|철회|거부|취소|해제)/.test(t);
+    const st = {}; st[hit[1]] = on;
+    if (typeof vaultSaveConsents === "function") vaultSaveConsents(m, st);
+    return { lines: [`${hit[2]} 동의를 ${on ? "켰어요" : "철회했어요"} — 변경 이력이 블록체인에 기록됐고, 언제든 다시 바꿀 수 있어요.`] };
+  } catch (e) { return null; } },
+  // 무료 검진대비보험 가입 — 건너뛰었던 회원의 재가입을 한마디로(Phase1 deferred 마감)
+  insjoin(m) { try {
+    let hash = null;
+    try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: "무상 검진대비보험 증서 발급(하이 대화 가입)" }); hash = b && b.hash; vaultAccessLog(tk, "member", "검진대비보험 가입(하이)"); } catch (e) {}
+    const cert = { id: "CERT-" + Date.now().toString(36).toUpperCase(), center: "검진 예약 연동", date: "-", time: "", at: Date.now(), hash };
+    try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push(cert); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); localStorage.removeItem("hifin_ins_deferred"); } catch (e) {}
+    return { lines: [`무료 검진대비보험 가입을 완료했어요 — 증서 ${cert.id}가 데이터 금고에 기록됐어요(보험료 0원).`, "보장은 검진 예약과 연동돼요. ※ 실제 보장·인수는 보험사 심사에 따라요."] };
+  } catch (e) { return null; } },
+  // 근처 검진센터 찾기 — 회원 지역 기준 후보 제시(하이가 조건 해석)
+  nearfind(m) { try {
+    const list = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
+    const reg = (typeof memberRegion === "function") ? memberRegion() : null;
+    const sido = reg && reg.sidoShort ? reg.sidoShort : "서울";
+    const pool = list.filter((c) => (c.sd || "").indexOf(sido) >= 0).slice(0, 3);
+    const rows = (pool.length ? pool : list.slice(0, 3)).map((c) => `· ${c.n} (${c.sd} ${c.sg})`);
+    return { lines: [`${sido} 기준 가까운 제휴 검진센터예요:`].concat(rows), buttons: ["검진 예약해줘"] };
+  } catch (e) { return null; } },
 };
 
 /* ── 미답변 로그 + 커버리지 지표 ── */
@@ -173,7 +251,8 @@ function agentAnswer(text) {
   if (!lines.length) lines = ["네, 도와드릴게요!"];
   if (it.guard && AGENT_GUARDS[it.guard]) lines.push(AGENT_GUARDS[it.guard]);
   const nav = it.nav ? { key: it.nav, label: AGENT_NAV_LABEL[it.nav] || "바로가기" } : null;
-  return { lines, buttons: (it.b || []).slice(0, 3), nav, reset: !!(extra && extra.reset), matched: it.k };
+  /* 실행 툴이 다음 행동 버튼을 제안하면 그것이 우선(하이 퍼스트 다단계 실행) */
+  return { lines, buttons: ((extra && extra.buttons) || it.b || []).slice(0, 3), nav, reset: !!(extra && extra.reset), matched: it.k };
 }
 
 /* ── 재접속 인사(기억 연속성) + 오늘의 브리핑 ── */
@@ -194,5 +273,19 @@ function agentGreeting() {
   } catch (e) { parts.push(`${who}님, 어서 오세요! 무엇을 도와드릴까요?`); }
   return { text: parts[0], buttons: ["검진예약 질문 도우미", "내 건강 봐줘", "보장 공백 분석", "검진결과 올리기"] };
 }
+/* ── 선제 알림(Proactive) — 회원이 묻기 전에 하이가 먼저 챙긴다(하이 퍼스트 원칙 3) ── */
+function agentProactive() {
+  const m = _member(); const out = [];
+  if (!m) return out;
+  try { const d = JSON.parse(localStorage.getItem("hifin_ins_deferred") || "null"); if (d) out.push({ text: `지난번 ${d.center || "검진"} 예약은 보험 없이 하셨죠 — 무료 검진대비보험, 지금 1분 안에 준비해드릴까요? (이 안내는 한 번만 드려요)`, buttons: ["검진보험 가입해줘", "괜찮아요"] }); } catch (e) {}
+  try {
+    const ob = (typeof onboardStatus === "function") ? onboardStatus(m) : null;
+    if (ob && !ob.step1) out.push({ text: "검진결과를 아직 안 올리셨어요 — 사진 한 장이면 1분 만에 정밀리포트가 나와요.", buttons: ["검진결과 올리기"] });
+    else if (ob && !ob.step2) out.push({ text: "보험까지 연결하면 보장 공백 분석이 완성돼요 — 이어서 해드릴까요?", buttons: ["보험 연결하기"] });
+  } catch (e) {}
+  try { const certs = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); const c = certs[certs.length - 1]; if (c && c.date && c.date !== "-") out.push({ text: `${c.date} ${c.center} 검진이 다가와요 — 전날 준비사항(금식 등)을 제가 챙겨드릴게요.`, buttons: ["검진 준비사항 알려줘"] }); } catch (e) {}
+  return out.slice(0, 3);
+}
+
 /* 데모·테스트 노출 */
-try { if (typeof window !== "undefined") { window.__hifinAgent = agentAnswer; window.__hifinAgentGreet = agentGreeting; } } catch (e) {}
+try { if (typeof window !== "undefined") { window.__hifinAgent = agentAnswer; window.__hifinAgentGreet = agentGreeting; window.__hifinProactive = agentProactive; } } catch (e) {}

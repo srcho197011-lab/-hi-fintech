@@ -29,10 +29,20 @@ function AgentDock({ onGo }) {
     } catch (e) {}
   }, [open]);
 
-  // 첫 오픈 시 재접속 인사(기억 연속성)
+  // 선제 알림(Proactive) — 묻기 전에 하이가 먼저 챙긴다: FAB 배지 + 첫 오픈 시 우선 표시
+  const [alerts, setAlerts] = useState([]);
+  useEffect(() => { try { setAlerts((typeof agentProactive === "function") ? agentProactive() : []); } catch (e) {} }, []);
+  // 첫 오픈 시 재접속 인사(기억 연속성) + 선제 알림을 이어서 표시
   useEffect(() => {
     if (!open || msgs.length) return;
-    try { const g = (typeof agentGreeting === "function") ? agentGreeting() : null; if (g) setMsgs([{ who: "hi", lines: [g.text], buttons: g.buttons || [], nav: null }]); } catch (e) {}
+    try {
+      const g = (typeof agentGreeting === "function") ? agentGreeting() : null;
+      const first = [];
+      if (g) first.push({ who: "hi", lines: [g.text], buttons: g.buttons || [], nav: null });
+      (alerts || []).forEach((a) => first.push({ who: "hi", lines: ["🔔 " + a.text], buttons: a.buttons || [], nav: null }));
+      if (first.length) setMsgs(first);
+      if (alerts && alerts.length) setAlerts([]);   // 열어봤으면 배지 해제
+    } catch (e) {}
   }, [open]);
   useEffect(() => { if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
   // 홈 브리핑 등 외부에서 질문 주입(agentask 이벤트) — 이중 동선의 대화 진입점
@@ -126,6 +136,7 @@ function AgentDock({ onGo }) {
         <button className="hidock-fab" onClick={() => setOpen(true)} aria-label="하이에게 물어보기" title="하이 — 무엇이든 물어보세요">
           <span className="hidock-face"><Bot size={22} /></span>
           <span className="hidock-lbl">하이</span>
+          {alerts.length > 0 && <span className="hidock-fabbdg">{alerts.length}</span>}
         </button>
       )}
       {open && (
