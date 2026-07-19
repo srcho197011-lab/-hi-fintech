@@ -21690,7 +21690,7 @@ function AgentDock({ onGo }) {
                       {(c.buttons || []).length > 0 && <div className="hidock-btns">{c.buttons.map((b) => <button key={b} onClick={() => send(b)}>{b}</button>)}</div>}
                     </div>
                   ))}
-                  {m.nav && <button className="hidock-nav" onClick={() => { go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
+                  {m.nav && <button className="hidock-nav" onClick={() => { setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
                   {m.buttons && m.buttons.length > 0 && <div className="hidock-btns">{m.buttons.map((b) => <button key={b} onClick={() => send(b)}>{b}</button>)}</div>}
                 </div>
               </div>
