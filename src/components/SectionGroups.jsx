@@ -65,6 +65,7 @@ function WalletHubSection({ initial, onGo }) {
   const tabs = [["wallet", "건강금융지갑", Wallet, "#059669"], ["mypage", "우리가족건강관리", Users, "#EA580C"], ["nft", "Health NFT", BadgeCheck, "#F59E0B"], ["vault", "데이터 금고", ShieldCheck, "#2563EB"]];
   return (
     <div style={{ marginTop: 4 }}>
+      {typeof MyHealthHero === "function" && <MyHealthHero onGo={onGo} />}
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
       {tab === "wallet" && <WalletSection onGo={onGo} />}
       {tab === "mypage" && <MyPageSection onGo={onGo} />}
