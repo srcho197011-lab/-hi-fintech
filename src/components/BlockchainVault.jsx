@@ -2,7 +2,7 @@
 const BCV_TYPE = {
   checkup: ["검진 데이터", "#2563EB", "#E8F1FE", FileText], insurance: ["보험 데이터", "#16A34A", "#E7F6EC", ShieldCheck],
   consent: ["동의 이력", "#7C3AED", "#F1ECFE", Lock], anchor: ["Merkle 앵커(100,001)", "#0EA5E9", "#E0F2FE", Blocks],
-  tx: ["거래·정산(HTK)", "#D97706", "#FEF3E2", Coins], invest: ["투자·청약", "#7C3AED", "#F1ECFE", TrendingUp], swap: ["토큰 전송·스왑", "#0891B2", "#E0F2FE", RefreshCw], erase: ["파기 이력", "#DC2626", "#FDECEC", Trash2], record: ["기록", "#64748B", "#F1F5FB", Hash],
+  tx: ["거래·정산(HTK)", "#D97706", "#FEF3E2", Coins], invest: ["투자·청약", "#7C3AED", "#F1ECFE", TrendingUp], swap: ["토큰 전송·스왑", "#0891B2", "#E0F2FE", RefreshCw], erase: ["파기 이력", "#DC2626", "#FDECEC", Trash2], record: ["기록", "#64748B", "#F1F5FB", Hash], "ins-cert": ["보험 증서", "#15803D", "#F0FDF4", BadgeCheck],
 };
 function BlockchainAnchorConsole({ cohort }) {
   const [anchor, setAnchor] = useState(null);

@@ -360,6 +360,13 @@ function DataVaultPanel({ onGo }) {
   const [tick, setTick] = useState(0);
   const [confirm, setConfirm] = useState(false);
   const fillDemo = () => { if (typeof seedSelfVault === "function") { try { seedSelfVault(member); } catch (e) {} } setTick((t) => t + 1); if (typeof toast === "function") toast("데모 데이터를 채웠어요(검진·보험·거래·블록체인)."); };
+  // 시연 기준 인물(조성래·운영자 로그인)은 금고가 비어 있으면 자동 시드 — 투자자·참여사 데모가 빈 화면으로 시작하지 않게
+  useEffect(() => {
+    try {
+      const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+      if (!dm && member && typeof seedSelfVault === "function" && seedSelfVault(member)) setTick((t) => t + 1);
+    } catch (e) {}
+  }, []);
   if (!member) return (
     <div className="card dvempty"><ShieldCheck size={30} color="#94A3B8" /><b>로그인이 필요해요</b><p>회원으로 로그인하면 내 건강·보험 데이터를 안전하게 보관·관리할 수 있어요.</p></div>
   );
@@ -405,6 +412,11 @@ function DataVaultPanel({ onGo }) {
         <div className="dv-item"><span className="dv-ic" style={{ background: "#E7F6EC", color: "#16A34A" }}><ShieldCheck size={16} /></span>
           <div className="dv-ib"><b>보험 가입내역 <span className="dv-tag full">{v.insurance.length}건</span></b><span>{v.insurance.map((x) => x.product).slice(0, 2).join(" · ")}{v.insurance.length > 2 ? " 외" : ""}</span></div></div>
       )}
+      {(() => { try { const certs = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!certs.length) return null; const c = certs[certs.length - 1]; return (
+        <div className="dv-item"><span className="dv-ic" style={{ background: "#F0FDF4", color: "#15803D" }}><BadgeCheck size={16} /></span>
+          <div className="dv-ib"><b>무상 검진대비보험 증서 <span className="dv-tag full">{certs.length}건</span></b><span>{c.id} · {c.center} · 검진 예약 1탭 동의로 발급 · 블록체인 기록 ✓</span></div>
+          <code className="dv-hash">{String(c.hash || "").slice(0, 10)}…</code></div>
+      ); } catch (e) { return null; } })()}
 
       <div className="dv-sec">접근 이력 <span>(내 데이터에 접근한 모든 조회)</span></div>
       <div className="dv-log">{(access.slice(-6).reverse()).map((a, i) => <div className="dv-lrow" key={i}><span>{fmt(a.ts)}</span><b>{a.actor === "member" ? "본인" : a.actor}</b><span className="dv-la">{a.action}</span></div>)}{!access.length && <div className="dv-lrow"><span className="dv-la">기록 없음</span></div>}</div>

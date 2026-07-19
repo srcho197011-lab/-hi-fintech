@@ -191,23 +191,41 @@ function onboardStatus(member) {
   const step2 = !!(v && v.insurance && v.insurance.length);
   return { step1, step2, done: step1 && step2, partial: step1 && v.checkups.every((c) => c.completeness === "partial") };
 }
-/* 시연 기준 인물(조성래) 데이터 금고 자동 시드 — 투자자·개발자 데모용 기본 데이터 채움(멱등) */
+/* 시연 기준 인물(조성래) 데이터 금고 자동 시드 — 투자자·참여사 데모용(멱등).
+   Phase1 정합: 2개년 검진(계보) + 보험 통합조회 + 무상 검진대비보험 증서(1탭 동의 발급분) +
+   AI 분석 기록 + 거래 앵커 + 다층 접근 이력(누가·언제·무엇을 — 전부 회원에게 공개) */
 function seedSelfVault(member) {
   if (!member) return false;
   const token = anonToken(member); const v = vaultLoad(token);
   if (v && ((v.checkups || []).length || (v.insurance || []).length)) return false;   // 이미 데이터 있음
   try {
-    const vals = synthCheckupValues(member);
-    const items = CKUP_ORDER.map((k) => ({ key: k, value: vals[k], source: "upload", confidence: 0.9 + (_insRng ? 0 : 0) }));
+    // ① 동의 5종 — 목적별 개별 동의(마케팅은 미동의: 일괄동의 없음의 증거)
     vaultSaveConsents(member, { health: true, ai: true, mkt: false, step: "checkup" });
-    vaultSaveCheckup(member, items, { source: "upload", channel: "upload", completeness: "full", fileName: "국가검진결과_2025.pdf", date: "2025-11-01" });
-    const contracts = (typeof insAggregateFetch === "function") ? insAggregateFetch(member).contracts : [];
+    // ② 검진 2개년 — 작년 촬영본(부분)→올해 업로드(전체): 데이터가 해마다 자산으로 쌓이는 계보
+    const vals = synthCheckupValues(member);
+    const items = CKUP_ORDER.map((k) => ({ key: k, value: vals[k], source: "upload", confidence: 0.93 }));
+    const itemsPrev = CKUP_ORDER.slice(0, Math.max(6, CKUP_ORDER.length - 4)).map((k) => ({ key: k, value: vals[k], source: "photo", confidence: 0.88 }));
+    vaultSaveCheckup(member, itemsPrev, { source: "photo", channel: "photo", completeness: "partial", fileName: "검진결과_촬영본_2023.jpg", date: "2023-12-26" });
+    vaultSaveCheckup(member, items, { source: "upload", channel: "upload", completeness: "full", fileName: "국가검진결과_2024.pdf", date: "2024-12-26" });
+    // ③ 보험 통합조회 + 무상 검진대비보험 증서(검진 예약 1탭 동의로 발급된 증서 — Phase1)
     vaultSaveConsents(member, { insurance: true, link: true, step: "insurance" });
+    const contracts = (typeof insAggregateFetch === "function") ? insAggregateFetch(member).contracts : [];
     if (contracts.length) vaultSaveInsurance(member, contracts, { source: "aggregate", channel: "aggregate" });
+    const certB = chainAppend({ type: "ins-cert", token, note: "무상 검진대비보험 증서 발급(강북삼성병원 종합검진)" });
+    try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) { l.push({ id: "CERT-JSR2026A", center: "강북삼성병원 종합검진센터", date: "7/28", time: "09:00", at: Date.now(), hash: certB && certB.hash }); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } } catch (e) {}
+    // ④ 분석·활용 기록 — AI 정밀리포트 생성(분석 결과의 지문도 체인에)
+    chainAppend({ type: "record", token, note: "AI 정밀리포트 생성 — 분석 결과 해시 기록(가명 토큰 기준)" });
+    // ⑤ 거래 앵커 — 쇼핑 적립·HTK 크레딧 전환
     if (typeof txAnchor === "function") {
       txAnchor({ ttype: "tx", token, kind: "건강쇼핑 적립", amount: 1200, unit: "원", memo: "밀크씨슬 구매 리워드" });
       txAnchor({ ttype: "swap", token, kind: "HTK 스왑", amount: 300, memo: "HTK → 보험·치료비 크레딧" });
     }
+    // ⑥ 접근 이력 — "내 데이터를 누가 봤는가"를 회원이 전부 보는 화면의 시연 데이터
+    vaultAccessLog(token, "AI 분석엔진", "정밀리포트 생성 조회(가명 토큰만 사용)");
+    vaultAccessLog(token, "하이(AI 매니저)", "건강 상담 참조 조회");
+    vaultAccessLog(token, "보험 보장분석", "보장 공백 요약 열람(가명 요약만 제공)");
+    vaultAccessLog(token, "member", "검진대비보험 증서 발급");
+    vaultAccessLog(token, "member", "접근 이력 열람");
   } catch (e) { return false; }
   return true;
 }
