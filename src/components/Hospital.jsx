@@ -68,6 +68,11 @@ function HospitalDirectory({ data, preset }) {
   }, [data, sido, sgg, type, dept, q, sort]);
   const view = list.slice(0, shown);
   const reset = () => setShown(20);
+  /* 지도 핀 '바로 예약' → 병원 예약 모달(Phase 4 K2-3) */
+  useEffect(() => {
+    const hh = (e) => { const d = e.detail; if (d && d.kind === "hospital" && d.h) setSel(d.h); };
+    window.addEventListener("mapbook", hh); return () => window.removeEventListener("mapbook", hh);
+  }, []);
 
   return (
     <>
@@ -77,7 +82,7 @@ function HospitalDirectory({ data, preset }) {
         <span><Art name="calendar" size={16} /> 실시간 예약</span>
         <span><Art name="badge" size={16} /> NFT 예약증 발행</span>
       </div>
-      <MapCard title={`병원 위치 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳)`} accent="#2563EB" points={view.length > 0 ? list.map((h) => ({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8] })) : []} />
+      <MapCard title={`병원 위치 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳 · 핀에서 바로 예약)`} accent="#2563EB" points={view.length > 0 ? list.map((h) => ({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8], _bk: { kind: "hospital", h } })) : []} />
       <div className="bklbl" style={{ margin: "0 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span>지역(시·도) 선택</span>
         <button className="nearbtn" onClick={findNear}><MapPin size={13} /> 내 주변 병원</button></div>
       <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); setNear(null); reset(); }}>{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>

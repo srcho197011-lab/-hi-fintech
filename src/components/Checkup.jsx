@@ -254,6 +254,25 @@ function BrandDirectory({ only, catFilter }) {
   let list = brandList.filter((c) => (sido === "전체" || c.sd === sido) && (sgg === "전체" || c.sg === sgg) && (!q || (c.n + c.sd + c.sg + c.ad).includes(q)));
   list = list.sort((a, b) => (near ? nearScore(a) - nearScore(b) : 0) || (isPartner(a) ? 0 : 1) - (isPartner(b) ? 0 : 1) || rank(a.sd) - rank(b.sd) || a.sg.localeCompare(b.sg, "ko"));
   const view = list.slice(0, shown);
+  /* Phase 4 — 검진센터 실좌표 지도: 심평원(hira) 병원 데이터에서 명칭 매칭으로 좌표 확보, 핀에서 바로 예약 */
+  const hiraGeo = useHira();
+  const geoPts = React.useMemo(() => {
+    const d = hiraGeo.data; if (!d) return [];
+    const H = d.hospitals || [];
+    const norm = (s) => String(s || "").replace(/\s|\(주\)|의료법인|재단법인/g, "");
+    return list.map((c) => {
+      const t = norm(c.n); if (t.length < 3) return null;
+      let hit = null;
+      for (let i = 0; i < H.length; i++) { const h = H[i]; const n2 = norm(h[0]); if (n2 && h[8] && h[9] && (n2 === t || n2.indexOf(t) >= 0 || t.indexOf(n2) >= 0)) { hit = h; if (n2 === t) break; } }
+      if (!hit) return null;
+      return { name: c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: c.t, lat: hit[9], lng: hit[8], _bk: { kind: "checkup", center: c } };
+    }).filter(Boolean);
+  }, [hiraGeo.data, list]);
+  /* 지도 핀의 '바로 예약' → 예약 모달(지도 안에서 예약까지 — K2-3) */
+  useEffect(() => {
+    const h = (e) => { const d = e.detail; if (d && d.kind === "checkup" && d.center) setSel(d.center); };
+    window.addEventListener("mapbook", h); return () => window.removeEventListener("mapbook", h);
+  }, []);
   const card = (c, i) => { const m = META[c.b] || {}; const partner = isPartner(c); return (
     <div className={`center${partner ? " partner" : ""}`} key={i}>
       <div className="cimg" style={{ background: (m.col || "#2563EB") + "14" }}><Building2 size={40} color={m.col || "#2563EB"} /></div>
@@ -303,6 +322,7 @@ function BrandDirectory({ only, catFilter }) {
       <div className="bklbl" style={{ margin: "10px 0 8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}><span>지역(시·도)</span>
         <button className="nearbtn" onClick={findNear}><MapPin size={13} /> 내 주변 검진센터</button></div>
       <div className="regions">{sidos.map((s) => <div key={s} className={`fsel ${sido === s ? "on" : ""}`} onClick={() => { setSido(s); setSgg("전체"); setNear(null); setShown(single ? 12 : 10); }}>{s === "전체" ? "전체" : ssido(s)}</div>)}</div>
+      {geoPts.length > 0 && <MapCard title={`검진센터 위치 지도 (${geoPts.length}곳 · 심평원 실좌표 매칭 · 핀에서 바로 예약)`} accent="#2563EB" points={geoPts} />}
       {sido !== "전체" && sggs.length > 1 && (<>
         <div className="bklbl" style={{ margin: "10px 0 8px" }}>시·군·구</div>
         <div className="regions">{sggs.map((s) => <div key={s} className={`fsel ${sgg === s ? "on" : ""}`} onClick={() => { setSgg(s); setShown(single ? 12 : 10); }}>{s}</div>)}</div>
@@ -1032,7 +1052,9 @@ const normUrl = (u) => { if (!u) return ""; const s = String(u).trim(); return /
 const validHomepage = (u) => { if (!u) return false; const s = String(u).trim().replace(/^https?:\/\//i, ""); return /[.][a-z가-힣]{2,}/i.test(s); };
 // 공식 홈페이지가 없는 병원도 정보를 참고할 수 있는 네이버 검색 링크(병원마다 생성).
 const naverHref = (name, region) => `https://search.naver.com/search.naver?query=${encodeURIComponent((name + " " + (region || "")).trim())}`;
-const popupLink = (lat, lng) => EXTERNAL_OK ? `<br><a href="${directionsHref(lat, lng)}" target="_blank" rel="noreferrer" style="color:#2563EB;font-weight:700">길찾기(새 창) ›</a>` : "";
+/* 길안내 — 카카오맵 링크(웹·모바일 앱 연동). Phase 4: OSM 대체, 미리보기에서도 노출 */
+const kakaoHref = (name, lat, lng) => `https://map.kakao.com/link/to/${encodeURIComponent(name || "목적지")},${lat},${lng}`;
+const popupLink = (name, lat, lng) => `<br><a href="${kakaoHref(name, lat, lng)}" target="_blank" rel="noreferrer" style="color:#D97706;font-weight:800">🚕 카카오맵 길안내 ›</a>`;
 
 // Leaflet(OpenStreetMap) 지도 — window.L (UMD)로 로드, 마커클러스터 있으면 사용.
 function MapView({ points, accent, focus, height }) {
@@ -1052,12 +1074,20 @@ function MapView({ points, accent, focus, height }) {
     if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
     const group = L.markerClusterGroup ? L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 50 }) : L.layerGroup();
     const bounds = [];
-    valid.forEach((p) => {
+    valid.forEach((p, i) => {
       const m = L.marker([p.lat, p.lng]);
-      m.bindPopup(`<div style="font-size:12.5px;line-height:1.5;min-width:150px"><b>${escHtml(p.name)}</b>${p.tag ? ` <span style="color:${accent || "#2563EB"};font-weight:700">· ${escHtml(p.tag)}</span>` : ""}<br>${escHtml(p.addr)}${p.tel ? `<br>☎ ${escHtml(p.tel)}` : ""}${popupLink(p.lat, p.lng)}</div>`);
+      m.bindPopup(`<div style="font-size:12.5px;line-height:1.5;min-width:150px"><b>${escHtml(p.name)}</b>${p.tag ? ` <span style="color:${accent || "#2563EB"};font-weight:700">· ${escHtml(p.tag)}</span>` : ""}<br>${escHtml(p.addr)}${p.tel ? `<br>☎ ${escHtml(p.tel)}` : ""}${popupLink(p.name, p.lat, p.lng)}${p._bk ? `<br><a href="#" class="mapbk" data-i="${i}" style="color:#16A34A;font-weight:800">✅ 이 기관 바로 예약 ›</a>` : ""}</div>`);
       group.addLayer(m); bounds.push([p.lat, p.lng]);
     });
+    group._pts = valid;
     group.addTo(map); layerRef.current = group;
+    /* 핀 팝업의 '바로 예약' — 지도에서 나가지 않고 예약 모달로(Phase 4 K2-3) */
+    if (!map._bkWired) {
+      map.on("popupopen", (e) => {
+        try { const el = e.popup.getElement().querySelector(".mapbk"); if (el) el.onclick = (ev) => { ev.preventDefault(); const bi = parseInt(el.getAttribute("data-i"), 10); const pts = (layerRef.current && layerRef.current._pts) || []; if (pts[bi] && pts[bi]._bk) window.dispatchEvent(new CustomEvent("mapbook", { detail: pts[bi]._bk })); }; } catch (err) {}
+      });
+      map._bkWired = true;
+    }
     if (bounds.length) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
     const t = setTimeout(() => map.invalidateSize(), 60);
     return () => clearTimeout(t);
@@ -1070,14 +1100,29 @@ function MapView({ points, accent, focus, height }) {
     map.invalidateSize();
     map.setView([focus.lat, focus.lng], 16, { animate: true });
     L.popup({ offset: [0, -4] }).setLatLng([focus.lat, focus.lng])
-      .setContent(`<div style="font-size:12.5px;line-height:1.5"><b>${escHtml(focus.name)}</b>${focus.addr ? `<br>${escHtml(focus.addr)}` : ""}${popupLink(focus.lat, focus.lng)}</div>`).openOn(map);
+      .setContent(`<div style="font-size:12.5px;line-height:1.5"><b>${escHtml(focus.name)}</b>${focus.addr ? `<br>${escHtml(focus.addr)}` : ""}${popupLink(focus.name, focus.lat, focus.lng)}</div>`).openOn(map);
   }, [focus]);
   useEffect(() => () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } }, []);
+  /* GPS 내 위치 — 위치 권한 허용 시 실제 현재 위치로 이동(Phase 4 K2-2) */
+  const locate = () => {
+    try {
+      if (!navigator.geolocation) { if (typeof toast === "function") toast("이 기기에서 위치 기능을 지원하지 않아요."); return; }
+      navigator.geolocation.getCurrentPosition((pos) => {
+        const L = window.L; const map = mapRef.current; if (!map || !L) return;
+        const { latitude, longitude } = pos.coords;
+        map.setView([latitude, longitude], 14, { animate: true });
+        L.circleMarker([latitude, longitude], { radius: 8, color: "#2563EB", fillColor: "#3B82F6", fillOpacity: .75 }).addTo(map).bindPopup("📍 내 위치").openPopup();
+      }, () => { if (typeof toast === "function") toast("위치 권한이 꺼져 있어요 — 회원 주소 기준으로 안내해 드려요."); }, { timeout: 6000 });
+    } catch (e) {}
+  };
   if (!window.L) return <div className="hload" style={{ marginTop: 0 }}>지도를 불러오지 못했습니다. (인터넷 연결·Leaflet 로드 확인)</div>;
   const noCoord = (points || []).length > 0 && valid.length === 0;
   return (
     <div>
-      <div ref={ref} style={{ height: height || 360, borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }} />
+      <div style={{ position: "relative" }}>
+        <div ref={ref} style={{ height: height || 360, borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }} />
+        <button className="maploc" onClick={locate}><MapPin size={12} /> 내 위치</button>
+      </div>
       <div style={{ fontSize: 11, color: "var(--soft)", marginTop: 6 }}>{noCoord ? "좌표 정보가 없어 위치를 표시할 수 없습니다." : "지도 © OpenStreetMap 기여자 · 좌표 출처: 심평원 공공데이터"}{points && points.length > MAP_CAP ? ` · 표시 ${MAP_CAP.toLocaleString()}/${points.length.toLocaleString()}곳(상위)` : ""}</div>
     </div>
   );

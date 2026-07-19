@@ -389,7 +389,7 @@
 .warn{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#7c3030;padding:6px 0;border-top:1px solid #F6EEEE;}
 .warn:first-child{border-top:none;}.warn .wi{flex-shrink:0;margin-top:1px;}
 @media(max-width:760px){.guide{grid-template-columns:1fr;}}
-.voverlay{position:fixed;inset:0;background:rgba(7,20,40,.55);z-index:100;display:flex;justify-content:center;padding:18px;overflow:auto;}
+.voverlay{position:fixed;inset:0;background:rgba(7,20,40,.55);z-index:1100;display:flex;justify-content:center;padding:18px;overflow:auto;}
 .viewer{background:#EEF1F6;border-radius:16px;width:100%;max-width:860px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
 .vhead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#fff;border-bottom:1px solid var(--border);}
 .vhead .vt{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;}
@@ -1591,7 +1591,7 @@
 .obtns{display:flex;gap:8px;}
 .obtns button{border-radius:10px;padding:9px 14px;font-weight:700;font-size:12.5px;cursor:pointer;border:1px solid var(--border);background:#fff;color:#3a4b6b;}
 .obtns button.book{background:var(--blue);color:#fff;border-color:var(--blue);}.obtns button.book:hover{background:var(--blueDeep);}
-.bkov{position:fixed;inset:0;background:rgba(7,20,40,.55);z-index:100;display:flex;align-items:center;justify-content:center;padding:18px;}
+.bkov{position:fixed;inset:0;background:rgba(7,20,40,.55);z-index:1100;display:flex;align-items:center;justify-content:center;padding:18px;}
 .bk{background:#fff;border-radius:18px;width:100%;max-width:470px;max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);}
 .bkh{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;}
 .bkh .bt{font-weight:800;font-size:15px;}
@@ -4511,6 +4511,10 @@ body.easyread .hidock-input input { font-size: 15px; }
 .trifree-btn { width: 100%; margin-top: 10px; border: none; background: #fff; color: #15803D; font-size: 13.5px; font-weight: 900; padding: 12px; border-radius: 11px; cursor: pointer; box-shadow: 0 8px 18px -10px rgba(0,0,0,.3); }
 .trifree-note { font-size: 10px; opacity: .8; margin-top: 7px; line-height: 1.5; }
 @media (max-width: 640px) { .trifree-items { grid-template-columns: 1fr 1fr 1fr; } .ref-sims { margin-left: 0; } }
+
+/* 지도 — GPS 내 위치 버튼(Phase 4) */
+.maploc { position: absolute; top: 10px; right: 10px; z-index: 500; display: inline-flex; align-items: center; gap: 4px; border: 1px solid #BFDBFE; background: #fff; color: #2563EB; font-size: 11.5px; font-weight: 800; padding: 7px 11px; border-radius: 999px; cursor: pointer; box-shadow: 0 6px 14px -8px rgba(37,99,235,.5); }
+.maploc:hover { background: #EFF6FF; }
 
 /* 검진 예약 — 무료 리포트 제공란(3무 ②) */
 .bkrep { background: #FAF8FF; border: 1px solid #DDD6FE; border-radius: 12px; padding: 12px 13px; margin-top: 8px; }
