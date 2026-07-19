@@ -60,6 +60,32 @@ function CareSection({ initial, onGo }) {
   );
 }
 
+/* ── 추천(리퍼럴) 카드 — 회원이 회원을 모집한다(획득 채널 ⑥). 지갑 허브 상주 ── */
+function ReferralCard() {
+  const m = (typeof _member === "function") ? _member() : null;
+  const [tick, setTick] = useState(0); void tick;
+  if (!m) return null;
+  const s = (typeof refState === "function") ? refState(m.email) : { invited: 0, joined: 0, checked: 0, htk: 0 };
+  const code = (typeof refCode === "function") ? refCode(m) : "";
+  const doShare = () => { try { const r = refShare(m); if (typeof toast === "function") toast(r.mode === "share" ? "공유 창을 열었어요" : "초대 링크를 복사했어요 — 붙여넣어 공유하세요!"); } catch (e) {} setTick((t) => t + 1); };
+  const askHi = () => { try { window.dispatchEvent(new CustomEvent("agentask", { detail: "친구 초대해줘" })); } catch (e) {} };
+  const sim = (fn, msg) => { try { fn(m.email); if (typeof toast === "function") toast(msg); } catch (e) {} setTick((t) => t + 1); };
+  return (
+    <div className="refcard">
+      <div className="ref-hd"><Gift size={16} /> 친구 초대 — 둘 다 500 HTK <span className="ref-code">내 코드 {code}</span></div>
+      <div className="ref-sub">친구가 내 링크로 가입하면 <b>나도 친구도 각 500 HTK</b>, 친구가 첫 검진까지 마치면 <b>나에게 +1,000 HTK</b> 더! <i>(보상 재원은 검진센터 송객 마진 — 시연용 예시)</i></div>
+      <div className="ref-btns">
+        <button className="pri" onClick={doShare}><Send size={13} /> 초대 링크 공유·복사</button>
+        <button onClick={askHi}><Bot size={13} /> 하이에게 "친구 초대해줘"</button>
+      </div>
+      <div className="ref-stats">
+        <span>초대 <b>{s.invited}</b></span><span>가입 <b>{s.joined}</b></span><span>검진완료 <b>{s.checked}</b></span><span>적립 <b>{s.htk.toLocaleString()} HTK</b></span>
+        <span className="ref-sims"><button onClick={() => sim(refSimulateJoin, "친구 1명이 가입했어요 — +500 HTK 적립!")}>시연:가입</button><button onClick={() => sim(refSimulateCheck, "친구가 첫 검진을 완료했어요 — +1,000 HTK 적립!")}>시연:검진</button></span>
+      </div>
+    </div>
+  );
+}
+
 function WalletHubSection({ initial, onGo }) {
   const map = { mywallet: "wallet", wallet: "wallet", nft: "nft", mypage: "mypage", vault: "vault", trust: "trust" };
   const [tab, setTab] = useState(map[initial] || "wallet");
@@ -70,6 +96,7 @@ function WalletHubSection({ initial, onGo }) {
   return (
     <div style={{ marginTop: 4 }}>
       {typeof MyHealthHero === "function" && <MyHealthHero onGo={onGo} />}
+      {typeof ReferralCard === "function" && <ReferralCard />}
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
       {tab === "wallet" && <WalletSection onGo={onGo} />}
       {tab === "mypage" && <MyPageSection onGo={onGo} />}

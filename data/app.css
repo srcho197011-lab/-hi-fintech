@@ -4485,6 +4485,31 @@ body.easyread .hidock-input input { font-size: 15px; }
 .bkins3row span { color: #26324A; }
 .bkins3co { font-size: 10.8px; color: var(--muted); margin-top: 6px; border-top: 1px dashed #BBF7D0; padding-top: 7px; }
 .bkins3co button { border: none; background: none; color: #EA580C; font-weight: 800; font-size: 10.8px; cursor: pointer; padding: 0; }
+/* ══════ 리퍼럴 카드 + 3무 게이트 배너(Phase 3 획득 엔진) ══════ */
+.refcard { background: linear-gradient(120deg, #FFF7ED, #FFFFFF); border: 1.5px solid #FED7AA; border-radius: 15px; padding: 14px 16px; margin: 12px 0; }
+.ref-hd { display: flex; align-items: center; gap: 7px; font-size: 14.5px; font-weight: 900; color: #C2410C; }
+.ref-hd .ref-code { margin-left: auto; font-size: 11px; font-weight: 800; color: #9A3412; background: #FFEDD5; border-radius: 999px; padding: 3px 10px; letter-spacing: .5px; }
+.ref-sub { font-size: 12.3px; color: #6B4A2B; line-height: 1.6; margin: 7px 0 10px; }
+.ref-sub i { font-style: normal; font-size: 10.5px; color: #A16207; }
+.ref-btns { display: flex; flex-wrap: wrap; gap: 7px; }
+.ref-btns button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #FED7AA; background: #fff; color: #C2410C; font-size: 12.5px; font-weight: 800; padding: 9px 14px; border-radius: 11px; cursor: pointer; }
+.ref-btns button.pri { border: none; background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; box-shadow: 0 8px 18px -10px rgba(234,88,12,.6); }
+.ref-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 10px; padding-top: 9px; border-top: 1px dashed #FED7AA; font-size: 12px; color: #7C5230; }
+.ref-stats b { color: #C2410C; }
+.ref-sims { margin-left: auto; display: flex; gap: 5px; }
+.ref-sims button { border: 1px dashed #D9DEEC; background: #fff; color: #94A3B8; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 7px; cursor: pointer; }
+.trifree { background: linear-gradient(135deg, #0E9F6E, #16A34A); border-radius: 14px; padding: 14px 16px; color: #fff; margin-bottom: 14px; }
+.trifree-ref { background: rgba(255,255,255,.18); border: 1px dashed rgba(255,255,255,.5); border-radius: 10px; padding: 8px 11px; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+.trifree-hd { font-size: 15.5px; font-weight: 900; margin-bottom: 9px; }
+.trifree-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.trifree-items > div { background: rgba(255,255,255,.12); border-radius: 10px; padding: 8px 9px; text-align: center; }
+.trifree-items span { font-size: 17px; display: block; }
+.trifree-items b { display: block; font-size: 11.5px; margin-top: 3px; }
+.trifree-items i { display: block; font-style: normal; font-size: 10px; opacity: .85; margin-top: 2px; }
+.trifree-btn { width: 100%; margin-top: 10px; border: none; background: #fff; color: #15803D; font-size: 13.5px; font-weight: 900; padding: 12px; border-radius: 11px; cursor: pointer; box-shadow: 0 8px 18px -10px rgba(0,0,0,.3); }
+.trifree-note { font-size: 10px; opacity: .8; margin-top: 7px; line-height: 1.5; }
+@media (max-width: 640px) { .trifree-items { grid-template-columns: 1fr 1fr 1fr; } .ref-sims { margin-left: 0; } }
+
 /* 검진 예약 — 무료 리포트 제공란(3무 ②) */
 .bkrep { background: #FAF8FF; border: 1px solid #DDD6FE; border-radius: 12px; padding: 12px 13px; margin-top: 8px; }
 .bkrep-t { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; color: #6D28D9; margin-bottom: 8px; }

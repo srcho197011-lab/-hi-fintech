@@ -196,11 +196,44 @@ function AuthSignup() {
   );
 }
 
+/* ── 3무(無) 오퍼 랜딩 배너 + 10초 간편가입 — 획득 채널 ① (Phase 3) ── */
+function TriFreeGate() {
+  const refIn = (typeof refIncoming === "function") ? refIncoming() : null;
+  const quickJoin = () => {
+    try {
+      const seq = Date.now().toString(36);
+      const em = "quick-" + seq + "@hifin.kr";
+      const prof = demoMakeProfile("김하이", em, "800101", "1");
+      prof.password = "Quick@" + seq;
+      userRegister(prof);
+      authSet({ name: prof.name, email: prof.email, realVerified: true, role: "MEMBER" });
+      demoSetSession(prof);
+      try { sessionStorage.setItem("hifin_force_onboard", "1"); } catch (e) {}
+      const rc = (typeof refConsumeIncoming === "function") ? refConsumeIncoming() : null;
+      if (typeof toast === "function") toast(rc ? `가입 완료! 초대 보너스 500 HTK가 적립됐어요 (코드 ${rc})` : "10초 가입 완료! 검진결과만 연결하면 무료 리포트가 시작돼요.");
+    } catch (e) {}
+  };
+  return (
+    <div className="trifree">
+      {refIn && <div className="trifree-ref">🎁 친구 초대로 오셨네요 (코드 {refIn}) — 가입하면 <b>두 분 모두 500 HTK</b>를 드려요!</div>}
+      <div className="trifree-hd">가입만 해도 <b>3가지가 무료</b>예요</div>
+      <div className="trifree-items">
+        <div><span>🛡️</span><b>무료 검진대비보험</b><i>진단금 최대 1,000만 원</i></div>
+        <div><span>📄</span><b>무료 정밀리포트</b><i>시가 3만 원 · 31p 분석</i></div>
+        <div><span>🤖</span><b>무료 AI 건강관리</b><i>하이가 평생 케어</i></div>
+      </div>
+      <button className="trifree-btn" onClick={quickJoin}>📱 간편 본인인증으로 10초 가입 (시연)</button>
+      <div className="trifree-note">시연 환경 — 실서비스는 PASS 간편인증 1회로 가입됩니다. 원가 5천 원 미만의 3무 혜택은 검진센터 송객 수수료로 회수돼요(네거티브 CAC).</div>
+    </div>
+  );
+}
+
 function AuthGate() {
   return (
     <div className="authwrap">
       <div className="authcard">
         <AuthBrand />
+        <TriFreeGate />
         <div className="authgate-badge">🔒 승인된 계정만 접속할 수 있습니다.</div>
         <AuthLogin />
         <div className="author"><span>또는</span></div>

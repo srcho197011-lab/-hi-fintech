@@ -167,6 +167,19 @@ const TOOL_RUN = {
       "아래 버튼으로 검진 예약 화면에서 바로 확인·예약할 수 있고, 저한테 \"검진 예약해줘\"라고 하시면 제가 예약과 가입까지 한 번에 끝내드려요.",
     ], buttons: ["검진 예약해줘", "보장 내용 자세히"] };
   } catch (e) { return null; } },
+  // 친구 초대(리퍼럴) — "친구 초대해줘" 한마디로 링크 생성·복사·공유까지(획득 채널 ⑥)
+  refer(m) { try {
+    const r = (typeof refShare === "function") ? refShare(m) : null; if (!r) return null;
+    return { lines: [
+      `초대 링크를 만들었어요${r.mode === "copy" ? " — 클립보드에 복사해뒀으니 붙여넣기만 하세요!" : r.mode === "share" ? " — 공유 창을 열었어요!" : "!"}`,
+      r.link,
+      "친구가 이 링크로 가입하면 두 분 모두 500 HTK, 친구가 첫 검진까지 마치면 " + m.name + "님께 +1,000 HTK를 더 드려요(행동 기반 보상).",
+    ], buttons: ["초대 현황 보여줘"] };
+  } catch (e) { return null; } },
+  refstat(m) { try {
+    const s = (typeof refState === "function") ? refState(m.email) : null; if (!s) return null;
+    return { lines: [`지금까지 초대 ${s.invited}건 · 가입 ${s.joined}명 · 검진 완료 ${s.checked}명 — 리퍼럴 적립 ${s.htk.toLocaleString()} HTK예요.`, s.joined ? "친구들이 잘 따라오고 있어요 — 검진까지 마치면 보상이 더 커져요!" : "아직 가입한 친구가 없어요 — 등산 모임, 가족 단톡방부터 시작해보실래요?"], buttons: ["친구 초대해줘"] };
+  } catch (e) { return null; } },
   // 근처 검진센터 찾기 — 회원 지역 기준 후보 제시(하이가 조건 해석)
   nearfind(m) { try {
     const list = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
