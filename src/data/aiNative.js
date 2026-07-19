@@ -236,6 +236,26 @@ const TOOL_RUN = {
     const rows = (pool.length ? pool : list.slice(0, 3)).map((c) => `· ${c.n} (${c.sd} ${c.sg})`);
     return { lines: [`${sido} 기준 가까운 제휴 검진센터예요:`].concat(rows), buttons: ["검진 예약해줘"] };
   } catch (e) { return null; } },
+  /* ══ Phase 6 비대면진료 — 하이 퍼스트 경로 ══ */
+  // 원격진료 연결 준비 — 예진 요약 예고 + 전문의 상담 탭 딥링크
+  teleprep(m) { try {
+    try { if (typeof window !== "undefined") window._teleGoSpecialist = true; window.dispatchEvent(new CustomEvent("telego")); } catch (e) {}
+    const nm = m && m.name ? m.name : "회원";
+    return { lines: [
+      "지금 연결 가능한 원격주치의를 준비했어요 — 지역·진료과별 전문의 중 ● 지금 연결 가능 표시가 있는 분은 평균 2분 안에 연결돼요.",
+      `${nm}님의 예진 요약(생체나이·주의 장기·위험도·최근 측정)도 미리 정리해뒀어요 — 의사를 선택하는 순간 가명 요약으로 먼저 전달돼서, 7분 진료가 30분 밀도가 돼요. 열람 기록은 데이터 금고에 남아요.`,
+      "비대면으로는 문진·처방전(고혈압·당뇨약 등)·검사 의뢰·검진결과 설명·경과관찰까지 가능해요. 진료 후엔 전자처방→약국 선택→약 수령, 그리고 보험 청구는 서류 0장으로 자동 접수돼요(청구 0단계).",
+    ], buttons: ["전문의 상담 열기", "비대면으로 뭐가 가능해?"] };
+  } catch (e) { return null; } },
+  // 비대면 가능행위 공시 — 의료법·고시 기준 표를 대화로
+  telecan() { try {
+    const A = (typeof TELE_ACTS !== "undefined") ? TELE_ACTS : [];
+    const rows = A.map((a) => `· ${a.act} — ${a.ok === "가능" ? "가능" : a.ok}(${a.ex})`).join("\n");
+    return { lines: [
+      "현행 의료법·관련 고시 기준, 비대면진료에서 가능한 행위예요(의사의 전문적 판단 전제):\n" + rows,
+      "모든 의료행위가 원격으로 되는 건 아니에요 — 대면진료가 원칙이고 재진·만성질환 중심으로 허용돼요. 의료인이 부적절하다고 판단하면 대면으로 전환돼요.",
+    ], buttons: ["원격진료 연결해줘"] };
+  } catch (e) { return null; } },
 };
 
 /* ── 미답변 로그 + 커버리지 지표 ── */

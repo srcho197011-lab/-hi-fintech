@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=949b68a64f" />
+<link rel="stylesheet" href="./data/app.css?v=e4e7c608d6" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=949b68a64f"></script>
-<script src="./src/data/section_data.js?v=949b68a64f"></script>
-<script src="./src/data/demo_members.js?v=949b68a64f"></script>
+<script src="./src/data/dummy_data.js?v=e4e7c608d6"></script>
+<script src="./src/data/section_data.js?v=e4e7c608d6"></script>
+<script src="./src/data/demo_members.js?v=e4e7c608d6"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -1727,6 +1727,11 @@ function TeleProcess() {
         <div className="tpstep" key={s.n}><span className="tpn">{s.n}</span><span className="tpic"><Ic size={15} color="#2563EB" /></span><div className="tpx"><b>{s.t}</b><span>{s.d}</span></div></div>
       ); })}</div>
       <div className="tprocnote"><Info size={12} /> 병원은 비대면 상담으로 신규 환자를 만나 <b>자기 병원 내원으로 연계(유치)</b>하고, 환자는 가까운 우수 전문의를 빠르게 만납니다.</div>
+      {typeof TELE_FLOW !== "undefined" && (
+        <div className="tpflow"><b>Hi-Fin 활용 흐름 <span>· 현행 제도와 정합하는 모델</span></b>
+          <div className="tpflowc">{TELE_FLOW.map((x, i) => <React.Fragment key={x}>{i > 0 && <span className="tpar">→</span>}<em>{x}</em></React.Fragment>)}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1744,6 +1749,20 @@ function TeleCompliance() {
       </div>
       <div className="tcrow"><span className="tcic"><Building2 size={13} color="#2563EB" /></span><div><b>의료기관 종별</b><p>{r.tier}</p></div></div>
       <div className="tcrow"><span className="tcic"><FileText size={13} color="#7C3AED" /></span><div><b>처방전</b><p>{r.rx}</p></div></div>
+      {typeof TELE_ACTS !== "undefined" && (
+        <div className="tcacts">
+          <b>비대면으로 가능한 행위 <span>의료법·관련 고시 기준 · 의사의 전문적 판단 전제</span></b>
+          <div className="tcactg">{TELE_ACTS.map((a) => (
+            <div className={`tcact ${a.ok === "가능" ? "ok" : "lim"}`} key={a.act}><span className="tcan">{a.act}</span><span className="tcas">{a.ok}</span><span className="tcae">{a.ex}</span></div>
+          ))}</div>
+        </div>
+      )}
+      {typeof TELE_LEGAL !== "undefined" && (
+        <div className="tclegal">
+          <b><ShieldCheck size={13} color="#B45309" /> 사업화 법적 검토 4대 축</b>
+          {TELE_LEGAL.map((l) => <div className="tclrow" key={l.law}><em>{l.law}</em><span>{l.pt}</span></div>)}
+        </div>
+      )}
       <div className="tcnote">※ 본 서비스의 전문의 상담은 시연용 예시이며, 실제 비대면진료는 위 제도 요건과 의료진 판단에 따라 진행됩니다. 의료인이 부적절하다고 판단하면 대면진료로 전환됩니다.</div>
     </div>
   );
@@ -1777,12 +1796,65 @@ function SpecialistChat() {
   const list = (typeof genSpecialists === "function") ? genSpecialists(sido, sigungu, deptKey) : [];
   const sigus = (typeof REGION_KB !== "undefined" && REGION_KB[sido]) || [];
   const onSido = (s) => { setSido(s); const arr = REGION_KB[s] || []; setSigungu(arr[0] || ""); };
-  const pick = (s) => { setSel(s); setBooked(false); setMsgs([{ id: ++UID, who: "ai", kind: "text", text: `안녕하세요, ${s.sigungu} ${s.hosp} ${s.dept} ${s.name}입니다. 비대면으로 먼저 살펴드리고, 필요하면 저희 병원 내원 진료로 연계해 드릴게요. 어떤 점이 궁금하신가요?`, first: true, time: now() }]); };
+  /* Phase 6 — AI 예진 요약(I2-1): 하이가 검진·리포트·RPM을 정리해 의사에게 먼저 전달(7분 진료를 30분 밀도로) */
+  const pick = (s) => {
+    setSel(s); setBooked(false);
+    let brief = null;
+    try {
+      const m = (typeof _member === "function") ? _member() : null;
+      const R = (m && typeof demoReport === "function") ? demoReport(m) : null;
+      if (m && R) {
+        brief = { name: m.name, bio: R.bio, worst: (R.worstNames || []).join("·"), risk: `암위험 ${R.cancerTotal}등급(${R.evalLabel})`, hr: (R.hr || []).join("·"), rpm: (typeof window !== "undefined" && window._teleRPM) || null };
+        try { vaultAccessLog(anonToken(m), `${s.name}(${s.hosp})`, "AI 예진 요약 열람(진료 목적 · 가명 요약만)"); } catch (e) {}
+      }
+    } catch (e) {}
+    try { if (typeof window !== "undefined") window._teleRPM = null; } catch (e) {}
+    setMsgs([
+      ...(brief ? [{ id: ++UID, who: "ai", kind: "brief", brief, time: now() }] : []),
+      { id: ++UID, who: "ai", kind: "text", text: `안녕하세요, ${s.sigungu} ${s.hosp} ${s.dept} ${s.name}입니다.${brief ? " 하이가 정리한 예진 요약을 먼저 확인했습니다 — 핵심만 여쭤볼게요." : " 비대면으로 먼저 살펴드리고, 필요하면 저희 병원 내원 진료로 연계해 드릴게요."} 어떤 점이 궁금하신가요?`, first: true, time: now() },
+    ]);
+  };
   const reply = () => { if (!sel) return; const canned = `말씀 주신 내용 잘 확인했습니다. ${sel.dept} 관점에서는 ${sel.tags[0]} 관련 정기적 관찰과 생활관리가 우선이며, 필요 시 정밀검사를 권합니다. 정확한 진단·처방은 화상상담 또는 ${sel.hosp} 내원 진료로 도와드리겠습니다.`; setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: canned, first: true, time: now() }]); }, 1300); };
   const send = (textArg) => { const text = (textArg ?? input).trim(); if (!text || !sel) return; setInput(""); setPlus(false); setMsgs((m) => [...m, { id: ++UID, who: "me", kind: "text", text, time: now() }]); reply(); };
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); reply(); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
   const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 내원 예약이 접수되었습니다. 비대면 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 ${sel.hosp} 내원 예약 접수 · 상담내역 전달`); };
-  const rxIssue = () => { if (!sel) return; setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `💊 전자처방전을 발행해 지정 약국으로 전송했습니다. 약국에서 조제 후 수령(방문·배송) 안내를 받으실 수 있습니다. 비대면진료 후 처방은 의료인의 진료 판단에 따라 발행됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast("💊 전자처방전 약국 전송 완료"); };
+  /* Phase 6 — 진료 후 팔로업(I2-5)+청구 0단계(I2-7): 처방 발행 시 요약 자산화·자동 청구·복약 리마인드 */
+  const rxIssue = () => {
+    if (!sel) return;
+    let clmId = null;
+    try {
+      const m = (typeof _member === "function") ? _member() : null;
+      if (m) {
+        const tk = anonToken(m);
+        chainAppend({ type: "record", token: tk, note: `원격진료 요약 저장(${sel.hosp} ${sel.name}) — 3세대 활용 자산 편입` });
+        clmId = "CLM-" + Date.now().toString(36).toUpperCase();
+        const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id: clmId, at: Date.now(), status: "자동접수(진료 연동)" }); localStorage.setItem("hifin_claims", JSON.stringify(l));
+        localStorage.setItem("hifin_medrem", JSON.stringify({ doctor: sel.name, hosp: sel.hosp, at: Date.now() }));
+        vaultAccessLog(tk, "member", "원격진료 완료 — 요약 자산화 · 보험 청구 자동 접수");
+      }
+    } catch (e) {}
+    setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `💊 전자처방전을 발행했습니다. 수령하실 약국을 선택하시면 처방전이 해당 약국으로 전송됩니다(약사법 절차 준수).${clmId ? `\n📦 진료 요약이 3세대(활용) 자산으로 데이터 금고에 저장됐고, 보험 청구가 자동 접수됐어요(${clmId} · 서류 0장 — 청구 0단계). 복약 리마인드는 하이가 챙겨드릴게요.` : ""}\n비대면진료 후 처방은 의료인의 진료 판단에 따라 발행됩니다.`, first: true, time: now() }, { id: ++UID, who: "ai", kind: "pharm", time: now() }]);
+    if (typeof toast === "function") toast("💊 처방 발행 · 요약 자산화 · 청구 자동 접수 완료");
+  };
+  /* 검사 의뢰(가능행위) — 혈액검사·영상검사 의뢰서 발행 */
+  const labOrder = () => {
+    if (!sel) return;
+    try { const m = (typeof _member === "function") ? _member() : null; if (m) vaultAccessLog(anonToken(m), `${sel.name}(${sel.hosp})`, "비대면 검사 의뢰서 발행(혈액·영상)"); } catch (e) {}
+    setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🧪 혈액검사·복부초음파 검사 의뢰서를 발행해 가까운 제휴 검진기관으로 전송했습니다. 검사 후 결과가 도착하면 하이가 알려드리고, 비대면으로 결과 설명 상담을 이어드립니다. (검사 의뢰·검사결과 설명은 비대면 가능 행위입니다)`, first: true, time: now() }]);
+    if (typeof toast === "function") toast("🧪 검사 의뢰서 전송 완료");
+  };
+  /* 약국 선택 → 조제·수령 추적 체인(약사법 절차) */
+  const pharmPick = (ph, mode) => {
+    setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: mode === "배송" ? `📦 ${ph}에 처방전 전송 · 조제 접수됐어요 — 배송 수령. 조제중 → 배송중 → 수령완료 단계마다 하이가 알려드려요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)` : `🏪 ${ph}에 처방전 전송 · 조제 접수됐어요 — 방문 수령. 조제가 끝나면 하이가 알려드릴게요. 방문 시 신분 확인 후 복약지도와 함께 수령하세요.`, first: true, time: now() }]);
+    if (typeof toast === "function") toast(`💊 ${ph} 조제 접수(${mode})`);
+  };
+  /* 처방 가능 대표 사례 시나리오 — 가이드 진료 체험 */
+  const runCase = (c) => {
+    if (!sel) return;
+    setMsgs((m) => [...m, { id: ++UID, who: "me", kind: "text", text: c.me, time: now() }]);
+    setTyping(true);
+    setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: c.dr, first: true, time: now() }]); setTimeout(() => { if (c.act === "lab") labOrder(); else rxIssue(); }, 900); }, 1300);
+  };
   const tier = sel ? ((typeof tmHospTier === "function") ? tmHospTier(sel.hosp) : "의원급") : "";
   const eligMsg = visit === "재진" ? "재진·만성질환 관리·경과관찰은 비대면 상담이 폭넓게 가능합니다." : (tier === "병원급" ? "병원급 초진 비대면은 희귀질환·제1형 당뇨·수술 후 경과관찰 등에 한해 허용됩니다." : "초진은 의료취약지·거동불편·장애·희귀질환 등에 한해 제한적으로 허용되며, 해당하지 않으면 대면진료로 안내됩니다.");
   if (!sel) {
@@ -1799,12 +1871,12 @@ function SpecialistChat() {
           <div className="tmf"><label>시·군·구</label><select value={sigungu} onChange={(e) => setSigungu(e.target.value)}>{sigus.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
         </div>
         <div className="tmcats">{DEPT_CATS.map((c) => <button key={c.key} className={deptKey === c.key ? "on" : ""} onClick={() => setDeptKey(c.key)}>{c.label}</button>)}</div>
-        <div className="tmcount"><b>{tmSidoShort(sido)} {sigungu}</b> · {cat.label} · 원격주치의 {list.length}명</div>
+        <div className="tmcount"><b>{tmSidoShort(sido)} {sigungu}</b> · {cat.label} · 원격주치의 {list.length}명 <span style={{ color: "#16A34A", fontWeight: 800 }}>· 지금 연결 가능 {list.filter((s) => (parseInt(String(s.id).replace(/\D/g, "") || "0", 10) % 3) !== 0).length}명 · 평균 대기 2분</span></div>
         <div className="splist">{list.map((s) => (
           <div className="dspcard" key={s.id} onClick={() => pick(s)}>
             <span className="spav"><Stethoscope size={20} color="#2563EB" /></span>
             <div className="spinfo"><b>{s.name} <small>{s.dept}</small></b><span>{s.hosp} · {tmSidoShort(s.sido)} {s.sigungu} · 경력 {s.exp}</span>
-              <div className="sptags">{s.tags.map((t) => <em key={t}>{t}</em>)}<em className={tmHospTier(s.hosp) === "병원급" ? "tmtier hosp" : "tmtier"}>{tmHospTier(s.hosp)}</em><em className="tmtele">비대면 가능</em>{s.sameDay && <em className="tmday">당일</em>}</div></div>
+              <div className="sptags">{s.tags.map((t) => <em key={t}>{t}</em>)}<em className={tmHospTier(s.hosp) === "병원급" ? "tmtier hosp" : "tmtier"}>{tmHospTier(s.hosp)}</em><em className="tmtele">비대면 가능</em>{s.sameDay && <em className="tmday">당일</em>}{(parseInt(String(s.id).replace(/\D/g, "") || "0", 10) % 3) !== 0 && <em className="tmnow">● 지금 연결 가능</em>}</div></div>
             <div className="spmeta"><span className="sprate"><Star size={11} /> {s.rating} <small>({s.reviews})</small></span><span className="tmfee">상담 {(s.fee / 10000).toLocaleString()}만원</span><button className="spgo">상담</button></div>
           </div>
         ))}</div>
@@ -1837,12 +1909,35 @@ function SpecialistChat() {
           <div className={`msg ${m.who}`} key={m.id}>
             {m.who === "ai" && <span className="av-ai" style={{ background: "#EAF0FE" }}>{m.first ? <Stethoscope size={16} color="#2563EB" /> : null}</span>}
             <div className="col">{m.who === "ai" && m.first && <div className="who">{sel.name}</div>}
-              <div className="bubble-row">{m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
+              <div className="bubble-row">{m.kind === "brief" ? (
+                <div className="prebrief">
+                  <div className="pb-hd">🤖 AI 예진 요약 — {sel ? sel.name : "의사"}께 전달됨 <span className="pb-flow">접수 ✓ → 예진 전달 ✓ → 연결됨 · 대기 0분</span></div>
+                  <div className="pb-rows">
+                    <span><b>{m.brief.name}</b> · 생체나이 {m.brief.bio}세</span>
+                    {m.brief.worst && <span>주의 장기: {m.brief.worst}</span>}
+                    <span>{m.brief.risk}</span>
+                    {m.brief.hr && <span>고위험: {m.brief.hr}</span>}
+                    {m.brief.rpm && <span className="pb-rpm">📈 RPM: {m.brief.rpm}</span>}
+                  </div>
+                  <div className="pb-note">검진·리포트 기반 가명 요약만 전달 · 열람 기록은 데이터 금고 접근 이력에 남아요</div>
+                </div>
+              ) : m.kind === "pharm" ? (
+                <div className="pharmpick">
+                  <div className="pp-hd">🏪 수령 약국 선택 <span>처방전은 선택한 약국으로만 전송돼요</span></div>
+                  {[{ n: "온누리약국", d: "150m · 도보 2분" }, { n: "건강제일약국", d: "420m · 도보 6분" }].map((p) => (
+                    <div className="pp-row" key={p.n}><b>{p.n}</b><span>{p.d}</span>
+                      <button onClick={() => pharmPick(p.n, "방문")}>방문 수령</button>
+                      <button className="dv" onClick={() => pharmPick(p.n, "배송")}>배송 수령</button></div>
+                  ))}
+                </div>
+              ) : m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
                 <div className="meta"><span>{m.time}</span></div></div></div></div>
         ))}
         {typing && <div className="msg ai"><span className="av-ai" style={{ background: "#EAF0FE" }}><Stethoscope size={16} color="#2563EB" /></span><div className="typing"><i /><i /><i /></div></div>}
         <div ref={endRef} />
       </div>
+      {typeof TELE_CASES !== "undefined" && <div className="telcases"><span className="telml">진료 사례 체험</span>{TELE_CASES.map((c) => <button key={c.key} onClick={() => runCase(c)}>{c.label}</button>)}</div>}
+      <div className="telmodes"><span className="telml">진료 방식</span><button className="on">💬 메시지(비동기 · 24h 내 답변)</button><button onClick={() => { if (typeof toast === "function") toast("🎙 음성 상담 연결(시연) — 실서비스는 통화로 이어져요"); }}>🎙 음성</button><button onClick={() => setVideo(true)}>📹 화상</button></div>
       <div className="quicks"><button onClick={() => setVideo(true)}>📹 화상상담</button><button onClick={book}>🏥 내원 예약</button><button onClick={rxIssue}>💊 처방전 발행</button><button onClick={() => send("검진 결과를 상담받고 싶어요")}>검진 결과 상담</button></div>
       <div className="kt-input">
         {plus && (<div className="plus-sheet"><button onClick={() => fileRef.current && fileRef.current.click()}><ImageIcon size={20} color="#2563EB" />사진·검진결과</button><button onClick={() => fileRef.current && fileRef.current.click()}><Paperclip size={20} color="#16A34A" />파일</button><button onClick={() => { setPlus(false); setVideo(true); }}><MonitorSmartphone size={20} color="#7C3AED" />화상상담</button></div>)}
@@ -1857,7 +1952,9 @@ function SpecialistChat() {
 }
 
 function AIDoctor() {
-  const [thread, setThread] = useState("ai");
+  /* 하이 딥링크: teleprep 툴이 window._teleGoSpecialist를 세우면 전문의 상담 탭으로 바로 진입 */
+  const [thread, setThread] = useState(() => { try { if (typeof window !== "undefined" && window._teleGoSpecialist) { window._teleGoSpecialist = false; return "specialist"; } } catch (e) {} return "ai"; });
+  useEffect(() => { const f = () => setThread("specialist"); window.addEventListener("telego", f); return () => window.removeEventListener("telego", f); }, []);
   const tabsRef = useRef(null);
   const goThread = (t) => { setThread(t); setTimeout(() => { try { tabsRef.current && tabsRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }, 60); };
   return (
@@ -15290,6 +15387,35 @@ const TELE_RULES = {
   tier: "비대면진료는 원칙적으로 의원급 중심입니다. 병원급은 희귀질환자·제1형 당뇨병 환자·교정시설 수용자·수술 후 경과관찰 환자 등에 한해 예외적으로 허용됩니다.",
   rx: "비대면진료 후 의사는 전자처방전을 발행하여 환자가 지정한 약국으로 전송할 수 있습니다.",
 };
+/* Phase 6 — 비대면으로 가능한 의료행위 표(의료법·관련 고시 기준, 의사의 전문적 판단 전제) */
+const TELE_ACTS = [
+  { act: "문진", ok: "가능", ex: "증상 확인 · 병력 청취" },
+  { act: "진단", ok: "제한적", ex: "문진·영상으로 가능한 범위" },
+  { act: "처방전 발급", ok: "가능", ex: "고혈압약 · 당뇨약 등" },
+  { act: "전자처방전", ok: "가능", ex: "지정 약국 전송" },
+  { act: "검사 의뢰", ok: "가능", ex: "혈액검사 · X-ray · MRI 의뢰" },
+  { act: "검사결과 설명", ok: "가능", ex: "건강검진 결과 상담" },
+  { act: "경과관찰", ok: "가능", ex: "수술 후 회복 확인" },
+  { act: "생활습관 상담", ok: "가능", ex: "운동 · 식이 지도" },
+  { act: "건강관리", ok: "가능", ex: "혈압 · 혈당 모니터링" },
+  { act: "정신건강 상담", ok: "일부", ex: "우울증 추적관찰 등" },
+];
+/* 사업화 법적 검토 4대 축 */
+const TELE_LEGAL = [
+  { law: "의료법", pt: "비대면진료 허용 대상·절차 준수 — 재진 중심 · 의원급 중심 · 의료인 판단 전제" },
+  { law: "약사법", pt: "전자처방전 전달·의약품 수령(방문/배송) 절차의 규정 적합성" },
+  { law: "개인정보보호법 · 의료데이터 법령", pt: "건강정보는 민감정보 — 가명처리·명시적 동의·접근기록 등 고수준 보호(데이터 금고)" },
+  { law: "보험업법", pt: "AI의 보험상품 추천·가입 권유는 별도 규제·인허가 검토 — 본 서비스는 라이선스 대리점 연계·정보 제공 시연" },
+];
+/* 처방 가능 대표 사례 — 원격주치의 채팅 가이드 시나리오(모두 현행 제도에서 가능한 행위) */
+const TELE_CASES = [
+  { key: "htn", label: "💓 고혈압 재진", me: "혈압이 오늘 아침 125/75로 측정됐어요. 약은 그대로 복용 중입니다.", dr: "혈압 125/75 확인했습니다 — 조절이 잘 되고 있어요. 어지럼·마른기침 같은 부작용은 없으신가요? 현재 용량 유지가 적절해 보여 동일 처방으로 전자처방전을 발행해 드리겠습니다.", act: "rx" },
+  { key: "dm", label: "🩸 당뇨 관리", me: "혈당기 기록을 업로드했어요. 최근 공복혈당 평균 112입니다.", dr: "업로드해 주신 혈당 기록과 예진 요약의 검진 수치를 함께 확인했습니다. 조절 범위에 있어 현재 처방 유지가 적절합니다. 당뇨약 전자처방전을 발행하고, 3개월 후 당화혈색소(HbA1c) 재검사를 권합니다.", act: "rx" },
+  { key: "chk", label: "📋 검진결과 상담", me: "건강검진 결과에 이상 소견이 있다고 해서 상담받고 싶어요.", dr: "AI 예진 요약으로 검진 이상 소견을 미리 확인했습니다. 수치상 정밀 확인이 필요한 항목이 있어 혈액검사·복부초음파를 의뢰해 드릴게요. 결과가 나오면 비대면으로 다시 설명드리겠습니다.", act: "lab" },
+  { key: "derm", label: "🧴 피부질환", me: "(피부 사진 업로드) 팔에 붉은 발진이 일주일째 있어요.", dr: "보내주신 사진 확인했습니다. 접촉성 피부염 소견으로 보이며 국소 도포 연고를 처방해 드릴게요. 1주일 사용 후 호전이 없으면 내원 진료를 권합니다.", act: "rx" },
+];
+/* Hi-Fin 활용 흐름(현행 제도 정합 모델) */
+const TELE_FLOW = ["건강검진", "AI 분석", "비대면 진료", "전자처방전", "약국 선택", "약 수령", "보험 연계(청구 0단계)", "AI 사후관리", "다음 검진"];
 function tmHospTier(hosp) { return /병원|메디컬센터/.test(hosp || "") ? "병원급" : "의원급"; }
 const TM_SUR = ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "신", "권", "황", "안", "송", "전", "홍", "고", "문", "손", "배", "백", "허", "유", "남", "심", "노"];
 const TM_GIV = ["민준", "서연", "도윤", "지우", "예준", "하준", "지호", "수아", "지민", "현우", "서준", "유진", "지훈", "채원", "건우", "다은", "승현", "나윤", "준영", "가은", "태현", "소율", "우진", "하린", "재원", "예린", "성호", "은정", "동현", "혜진"];
@@ -20103,6 +20229,9 @@ const AGENT_QNA = [
   { c: "action", k: "hi_lineage", p: ["자산계보", "계보보여", "계보설명", "세대자산", "세대형데이터", "데이터자산이뭐", "내자산계보"], a: "", tool: "lineage", b: [], nav: "mywallet", nx: [], lv: 1 },
   { c: "action", k: "hi_divi", p: ["배당보여", "배당내역", "데이터배당", "배당얼마", "배당받"], a: "", tool: "divi", b: [], nav: "mywallet", nx: [], lv: 1 },
   { c: "action", k: "hi_rerate", p: ["요율재산정", "재산정신청", "보험료재산정", "보험료깎", "보험료내려", "요율인하"], a: "", tool: "reratedo", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
+  /* ───────── Phase 6 비대면진료 — 원격주치의 연결·제도 공시 ───────── */
+  { c: "action", k: "hi_tele", p: ["원격진료연결", "원격진료해줘", "비대면진료연결", "비대면진료받", "의사연결해줘", "지금연결가능한의사", "전문의연결", "원격진료받고싶", "전문의상담열기", "비대면상담연결"], a: "", tool: "teleprep", b: [], nav: "ai", nx: [], lv: 1, guard: "med" },
+  { c: "action", k: "hi_tele_can", p: ["비대면으로뭐가가능", "비대면진료가능한", "원격으로처방", "비대면처방되", "원격진료뭐가돼", "비대면진료범위", "원격으로검사", "비대면가능행위"], a: "", tool: "telecan", b: [], nav: null, nx: [], lv: 1, guard: "med" },
 ];
 
 /* 카테고리 라벨(커버리지 대시보드용) */
@@ -20345,6 +20474,26 @@ const TOOL_RUN = {
     const pool = list.filter((c) => (c.sd || "").indexOf(sido) >= 0).slice(0, 3);
     const rows = (pool.length ? pool : list.slice(0, 3)).map((c) => `· ${c.n} (${c.sd} ${c.sg})`);
     return { lines: [`${sido} 기준 가까운 제휴 검진센터예요:`].concat(rows), buttons: ["검진 예약해줘"] };
+  } catch (e) { return null; } },
+  /* ══ Phase 6 비대면진료 — 하이 퍼스트 경로 ══ */
+  // 원격진료 연결 준비 — 예진 요약 예고 + 전문의 상담 탭 딥링크
+  teleprep(m) { try {
+    try { if (typeof window !== "undefined") window._teleGoSpecialist = true; window.dispatchEvent(new CustomEvent("telego")); } catch (e) {}
+    const nm = m && m.name ? m.name : "회원";
+    return { lines: [
+      "지금 연결 가능한 원격주치의를 준비했어요 — 지역·진료과별 전문의 중 ● 지금 연결 가능 표시가 있는 분은 평균 2분 안에 연결돼요.",
+      `${nm}님의 예진 요약(생체나이·주의 장기·위험도·최근 측정)도 미리 정리해뒀어요 — 의사를 선택하는 순간 가명 요약으로 먼저 전달돼서, 7분 진료가 30분 밀도가 돼요. 열람 기록은 데이터 금고에 남아요.`,
+      "비대면으로는 문진·처방전(고혈압·당뇨약 등)·검사 의뢰·검진결과 설명·경과관찰까지 가능해요. 진료 후엔 전자처방→약국 선택→약 수령, 그리고 보험 청구는 서류 0장으로 자동 접수돼요(청구 0단계).",
+    ], buttons: ["전문의 상담 열기", "비대면으로 뭐가 가능해?"] };
+  } catch (e) { return null; } },
+  // 비대면 가능행위 공시 — 의료법·고시 기준 표를 대화로
+  telecan() { try {
+    const A = (typeof TELE_ACTS !== "undefined") ? TELE_ACTS : [];
+    const rows = A.map((a) => `· ${a.act} — ${a.ok === "가능" ? "가능" : a.ok}(${a.ex})`).join("\n");
+    return { lines: [
+      "현행 의료법·관련 고시 기준, 비대면진료에서 가능한 행위예요(의사의 전문적 판단 전제):\n" + rows,
+      "모든 의료행위가 원격으로 되는 건 아니에요 — 대면진료가 원칙이고 재진·만성질환 중심으로 허용돼요. 의료인이 부적절하다고 판단하면 대면으로 전환돼요.",
+    ], buttons: ["원격진료 연결해줘"] };
   } catch (e) { return null; } },
 };
 

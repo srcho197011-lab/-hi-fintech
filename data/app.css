@@ -4676,3 +4676,47 @@ body.easyread .hibrief-t { font-size: 17px; }
 .hiops-t { color: #94A3B8; font-size: 10.5px; flex-shrink: 0; min-width: 54px; font-variant-numeric: tabular-nums; }
 .hiops-q { color: #33405C; }
 @media (max-width: 640px) { .hiops-stats { grid-template-columns: 1fr 1fr; } }
+
+/* ═══ Phase 6 — 비대면진료 강화(예진 요약·가능행위 공시·사례·약국 체인) ═══ */
+.prebrief { background: linear-gradient(135deg, #F5F3FF, #EEF2FF); border: 1px solid #DDD6FE; border-radius: 14px; padding: 12px 14px; max-width: 86%; }
+.pb-hd { font-size: 12.5px; font-weight: 800; color: #5B21B6; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pb-flow { font-size: 10.5px; font-weight: 700; color: #16A34A; background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 99px; padding: 2px 8px; }
+.pb-rows { display: flex; flex-direction: column; gap: 3px; margin-top: 7px; font-size: 12.5px; color: #3B3663; }
+.pb-rpm { color: #B91C1C; font-weight: 700; }
+.pb-note { margin-top: 7px; font-size: 10.5px; color: #7C74A8; border-top: 1px dashed #DDD6FE; padding-top: 6px; }
+.tmnow { color: #15803D !important; background: #F0FDF4 !important; border-color: #BBF7D0 !important; font-weight: 800; }
+.telcases, .telmodes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 7px 14px 0; }
+.telml { font-size: 10.5px; font-weight: 800; color: #64748B; flex-shrink: 0; }
+.telcases button, .telmodes button { border: 1px solid var(--border); background: #fff; border-radius: 99px; padding: 5px 11px; font-size: 11.5px; font-weight: 700; color: #334155; cursor: pointer; }
+.telcases button:hover { border-color: #2563EB; color: #2563EB; }
+.telmodes button.on { background: #EFF6FF; border-color: #BFDBFE; color: #1D4ED8; }
+.pharmpick { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 11px 13px; max-width: 86%; box-shadow: 0 1px 4px rgba(15, 23, 42, .05); }
+.pp-hd { font-size: 12.5px; font-weight: 800; color: #0F172A; }
+.pp-hd span { font-size: 10.5px; font-weight: 600; color: #94A3B8; margin-left: 4px; }
+.pp-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; flex-wrap: wrap; }
+.pp-row b { color: #1E293B; }
+.pp-row span { color: #94A3B8; font-size: 11px; flex: 1; }
+.pp-row button { border: 1px solid #BFDBFE; background: #EFF6FF; color: #1D4ED8; border-radius: 8px; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer; }
+.pp-row button.dv { border-color: #BBF7D0; background: #F0FDF4; color: #15803D; }
+.tcacts { margin-top: 12px; }
+.tcacts > b { font-size: 12.5px; color: #0F172A; display: block; margin-bottom: 7px; }
+.tcacts > b span { font-size: 10.5px; font-weight: 600; color: #94A3B8; margin-left: 6px; }
+.tcactg { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.tcact { display: flex; align-items: baseline; gap: 6px; border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; background: #FCFDFF; font-size: 11.5px; flex-wrap: wrap; }
+.tcact .tcan { font-weight: 800; color: #1E293B; }
+.tcact .tcas { font-size: 10px; font-weight: 800; border-radius: 99px; padding: 1px 7px; }
+.tcact.ok .tcas { color: #15803D; background: #F0FDF4; border: 1px solid #BBF7D0; }
+.tcact.lim .tcas { color: #B45309; background: #FFFBEB; border: 1px solid #FDE68A; }
+.tcact .tcae { color: #94A3B8; font-size: 10.5px; width: 100%; }
+.tclegal { margin-top: 12px; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 10px 13px; }
+.tclegal > b { font-size: 12.5px; color: #92400E; display: flex; align-items: center; gap: 5px; margin-bottom: 6px; }
+.tclrow { display: flex; gap: 8px; align-items: baseline; font-size: 11.5px; padding: 3px 0; }
+.tclrow em { font-style: normal; font-weight: 800; color: #B45309; flex-shrink: 0; min-width: 64px; }
+.tclrow span { color: #78716C; }
+.tpflow { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px; }
+.tpflow > b { font-size: 12.5px; color: #0F172A; }
+.tpflow > b span { font-size: 10.5px; font-weight: 600; color: #94A3B8; }
+.tpflowc { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 7px; }
+.tpflowc em { font-style: normal; font-size: 11px; font-weight: 700; color: #1D4ED8; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 99px; padding: 3px 9px; }
+.tpflowc .tpar { color: #CBD5E1; font-size: 11px; font-weight: 800; }
+@media (max-width: 640px) { .tcactg { grid-template-columns: 1fr; } .prebrief, .pharmpick { max-width: 100%; } }
