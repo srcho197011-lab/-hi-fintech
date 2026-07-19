@@ -195,16 +195,14 @@ function PlatformDiagram() {
   );
 }
 
-/* ── 나의 건강 히어로 — 맞춤 대시보드 배너·다음 검진 예약·리포트 발행·프로필 요약.
-   홈(회사 소개)에서 "나의 건강지갑" 허브 상단으로 이동(소개 화면은 방문자용, 개인 현황은 '나의' 공간). ── */
-function MyHealthHero({ onGo }) {
+/* ── 검진 히어로 — 맞춤 대시보드 배너·다음 검진 예약·리포트 발행.
+   지갑 허브에서 '검진 후 케어 › 나의 건강현황' 상단으로 이동(발행→업로드→보관이 한 흐름). ── */
+function MyCheckupHero({ onGo, onReport }) {
   const go = onGo || (() => {});
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const authU = (typeof authCurrent === "function") ? authCurrent() : null;
   const R = dm ? demoReport(dm) : null;
   const nm = dm ? dm.name : (authU && authU.name ? authU.name : "조성래");
-  const regA = R ? R.reg : "54.1";
-  const bioA = R ? R.bio : "52.5";
   return (
     <>
       <div className="banner">
@@ -216,15 +214,30 @@ function MyHealthHero({ onGo }) {
         <div className="rcl">
           <span className="rcbadge"><FileText size={14} /> 건강검진 리포트</span>
           <div className="rch">생체나이 건강검진 리포트 발행</div>
-          <p className="rcd">외부 검진 시스템에서 <b>고객 동의 절차</b>를 거쳐 건강검진 리포트를 발행할 수 있습니다. 발행된 리포트는 <b>건강관리 → 검진 리포트</b>에서 업로드해 보관·확인하세요.</p>
+          <p className="rcd">외부 검진 시스템에서 <b>고객 동의 절차</b>를 거쳐 건강검진 리포트를 발행할 수 있습니다. 발행된 리포트는 아래 <b>검진 리포트 탭</b>에서 업로드해 보관·확인하세요.</p>
           <div className="rcbtns">
             <a className="rcbtn pri" href="https://www.healthketch.com/outside/event/checkup-analysis/hizencare-pp-0UVIFW" target="_blank" rel="noopener noreferrer">리포트 발행 사이트 열기 <ExternalLink size={15} /></a>
-            <button className="rcbtn ghost" onClick={() => go("manage")}>건강관리에서 업로드 <ChevronRight size={14} /></button>
+            <button className="rcbtn ghost" onClick={() => (onReport ? onReport() : go("manage"))}>검진 리포트 탭에서 업로드 <ChevronRight size={14} /></button>
           </div>
           <div className="rcnote"><ShieldCheck size={13} /> 발행은 본인(고객) 동의 하에 외부 검진 시스템에서 진행됩니다.</div>
         </div>
         <div className="rcart"><span className="rcic"><FileText size={40} color="#fff" /></span></div>
       </div>
+    </>
+  );
+}
+
+/* ── 나의 프로필 요약 — 나의 건강지갑 허브 상단(자산 공간의 명함) ── */
+function MyHealthHero({ onGo }) {
+  const go = onGo || (() => {}); void go;
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const authU = (typeof authCurrent === "function") ? authCurrent() : null;
+  const R = dm ? demoReport(dm) : null;
+  const nm = dm ? dm.name : (authU && authU.name ? authU.name : "조성래");
+  const regA = R ? R.reg : "54.1";
+  const bioA = R ? R.bio : "52.5";
+  return (
+    <>
       <div className="profile">
         <span className="pa">{nm[0]}</span>
         <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 체험 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 검진일 2024.12.26 · 등록번호 ${PT.reg}`}</div></div>

@@ -41,6 +41,7 @@ function HealthManageSection({ onGo }) {
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>나의 건강현황</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>검진 항목현황 · 생체나이 · 질병/암 위험 · 경고신호 · 맞춤 관리 — 내 검진데이터 기반 종합 현황</div></div></div>
       <DemoMemberBanner />
+      {typeof MyCheckupHero === "function" && <MyCheckupHero onGo={go} onReport={() => setCat("report")} />}
 
       <div className="src"><ExternalLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
         <div>데이터 출처: <b>프롬에이지 Premium · 메디에이지연구소</b> (gene.imhealth.co.kr) · 등록번호 {PT.reg} · 검진일 {PT.checkup} · 분석일 {PT.analyzed}. 의학적 진단을 대신할 수 없으며, 동일 성·연령군 대비 상대 위험도입니다.</div></div>
