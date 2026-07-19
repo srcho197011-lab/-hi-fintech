@@ -106,7 +106,7 @@ function HospitalDirectory({ data, preset }) {
         <div className="fsearch"><Search size={15} /><input value={q} onChange={(e) => { setQ(e.target.value); reset(); }} placeholder="병원명·주소 검색" /></div>
         <div className="fsel" onClick={() => setSort(sort === "관련도순" ? "이름순" : "관련도순")}><Filter size={12} style={{ verticalAlign: "-2px" }} /> {sort}</div>
       </div>
-      <div className="chcount">{sido === "전체" ? "전국" : sido}{sgg !== "전체" ? " " + sgg : ""}{dept !== "전체" ? " · " + dept : ""}{type !== "전체" ? " · " + type : ""} <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳</div>
+      <div className="chcount">{sido === "전체" ? "전국" : sido}{sgg !== "전체" ? " " + sgg : ""}{dept !== "전체" ? " · " + dept : ""}{type !== "전체" ? " · " + type : ""} <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳 <span style={{ fontSize: 10.5, color: "var(--soft)", fontWeight: 600 }}>· 심평원 공공데이터 전 의료기관 전수 — 특정 기관 추천·유인·알선이 아닙니다</span></div>
       {view.map((h, i) => (
         <div className="center" key={i}>
           <div className="cimg"><Art name="building" size={46} /></div>

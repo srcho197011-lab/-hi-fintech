@@ -4761,7 +4761,8 @@ const SIDO_ORDER = ["서울", "경기", "인천", "부산", "대구", "대전", 
 const TYPE_PRIORITY = ["상급종합", "종합병원", "병원", "요양병원", "한방병원", "치과병원", "의원", "한의원", "치과의원", "정신병원", "조산원", "보건의료원", "보건소", "보건지소", "보건진료소"];
 const tpri = (t) => { const i = TYPE_PRIORITY.indexOf(t); return i < 0 ? 99 : i; };
 const mapsHref = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
-const MAP_CAP = 1000;
+/* 의료법 준수 — 특정 의료기관만 선별 노출하면 환자 유인·알선 소지가 있어 전 기관 전수 표시(클러스터). */
+const MAP_CAP = 120000;
 const escHtml = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 // 약국 운영정보(예시·추정): 심평원 기본데이터엔 운영시간이 없어 약국명 기반 결정적 해시로 생성.
@@ -4789,11 +4790,12 @@ const kakaoHref = (name, lat, lng) => `https://map.kakao.com/link/to/${encodeURI
 const popupLink = (name, lat, lng) => `<br><a href="${kakaoHref(name, lat, lng)}" target="_blank" rel="noreferrer" style="color:#D97706;font-weight:800">🚕 카카오맵 길안내 ›</a>`;
 
 // Leaflet(OpenStreetMap) 지도 — window.L (UMD)로 로드, 마커클러스터 있으면 사용.
-function MapView({ points, accent, focus, height }) {
+function MapView({ points, accent, focus, height, cap }) {
   const ref = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
-  const valid = React.useMemo(() => (points || []).filter((p) => p.lat && p.lng).slice(0, MAP_CAP), [points]);
+  const LIM = cap || MAP_CAP;
+  const valid = React.useMemo(() => (points || []).filter((p) => p.lat && p.lng).slice(0, LIM), [points, LIM]);
   useEffect(() => {
     const L = window.L;
     if (!L || !ref.current) return;
@@ -4855,7 +4857,7 @@ function MapView({ points, accent, focus, height }) {
         <div ref={ref} style={{ height: height || 360, borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }} />
         <button className="maploc" onClick={locate}><MapPin size={12} /> 내 위치</button>
       </div>
-      <div style={{ fontSize: 11, color: "var(--soft)", marginTop: 6 }}>{noCoord ? "좌표 정보가 없어 위치를 표시할 수 없습니다." : "지도 © OpenStreetMap 기여자 · 좌표 출처: 심평원 공공데이터"}{points && points.length > MAP_CAP ? ` · 표시 ${MAP_CAP.toLocaleString()}/${points.length.toLocaleString()}곳(상위)` : ""}</div>
+      <div style={{ fontSize: 11, color: "var(--soft)", marginTop: 6 }}>{noCoord ? "좌표 정보가 없어 위치를 표시할 수 없습니다." : "지도 © OpenStreetMap 기여자 · 좌표 출처: 심평원 공공데이터"}{points && points.length > LIM ? ` · 표시 ${LIM.toLocaleString()}/${points.length.toLocaleString()}곳(상위)` : ""}</div>
     </div>
   );
 }
@@ -4875,21 +4877,18 @@ function UnifiedMapCard({ data }) {
     const inScope = (s) => scope === "all" || String(s || "").indexOf(sidoShort) >= 0;
     if (data && on.hosp) {
       const set = new Set(data.sido.map((s, i) => [s, i]).filter(([s]) => inScope(s)).map(([, i]) => i));
-      let n = 0;
-      for (const h of data.hospitals) { if (!set.has(h[2]) || !h[8] || !h[9]) continue; out.push({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8], hrs: h[10] || "", _bk: { kind: "hospital", h } }); if (++n >= 600) break; }
+      for (const h of data.hospitals) { if (!set.has(h[2]) || !h[8] || !h[9]) continue; out.push({ name: h[0], addr: h[4], tel: h[5], tag: data.type[h[1]], lat: h[9], lng: h[8], hrs: h[10] || "", _bk: { kind: "hospital", h } }); }
     }
     if (data && on.pharm) {
       const set = new Set(data.sido.map((s, i) => [s, i]).filter(([s]) => inScope(s)).map(([, i]) => i));
-      let n = 0;
-      for (const p of data.pharmacies) { if (!set.has(p[1]) || !p[5] || !p[6]) continue; out.push({ name: p[0], addr: p[3], tel: p[4], tag: "약국", lat: p[6], lng: p[5] }); if (++n >= 400) break; }
+      for (const p of data.pharmacies) { if (!set.has(p[1]) || !p[5] || !p[6]) continue; out.push({ name: p[0], addr: p[3], tel: p[4], tag: "약국", lat: p[6], lng: p[5] }); }
     }
     if (data && on.chk && typeof CHECKUP_INST !== "undefined") {
       const geo = checkupGeoAll(data);
       CHECKUP_INST.forEach((c) => { if (!inScope(c.sd)) return; const g = geo[c.n]; if (g) out.push({ name: c.n, addr: c.ad, tel: c.p !== "-" ? c.p : "", tag: "검진센터", lat: g.lat, lng: g.lng, _bk: { kind: "checkup", center: c } }); });
     }
     if (hc && on.care) {
-      let n = 0;
-      for (const v of (hc.providers || [])) { const sname = (hc.sido || [])[v[1]]; if (!inScope(sname) || !v[6] || !v[7]) continue; out.push({ name: v[0], addr: v[3], tel: v[4], tag: "재가·요양", lat: v[7], lng: v[6] }); if (++n >= 300) break; }
+      for (const v of (hc.providers || [])) { const sname = (hc.sido || [])[v[1]]; if (!inScope(sname) || !v[6] || !v[7]) continue; out.push({ name: v[0], addr: v[3], tel: v[4], tag: "재가·요양", lat: v[7], lng: v[6] }); }
     }
     return out;
   }, [data, hc, on, scope, sidoShort]);
@@ -4905,7 +4904,8 @@ function UnifiedMapCard({ data }) {
           {TOG.map(([k, t, col]) => <button key={k} className={"umtog" + (on[k] ? " on" : "")} style={on[k] ? { background: col, borderColor: col } : null} onClick={() => setOn({ ...on, [k]: !on[k] })}>{t}</button>)}
           <button className={"umtog" + (scope === "all" ? " on" : "")} style={scope === "all" ? { background: "#0F172A", borderColor: "#0F172A" } : null} onClick={() => setScope(scope === "all" ? "near" : "all")}>전국 보기</button>
         </div>
-        <div style={{ marginTop: 8 }}><MapView points={pts} accent="#2563EB" /></div>
+        <div style={{ marginTop: 8 }}><MapView points={pts} accent="#2563EB" cap={120000} /></div>
+        <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 4 }}>전체 {pts.length.toLocaleString()}곳을 클러스터(숫자 원)로 묶어 전수 표시해요 — 확대할수록 개별 핀으로 펼쳐집니다. ※ 심평원 공공데이터 기반 <b>전 의료기관 정보 제공</b>이며, 특정 의료기관의 추천·유인·알선이 아닙니다(의료법 준수).</div>
         {hc && hc.meta && hc.meta.demo && on.care && <div style={{ fontSize: 10.5, color: "#B45309", marginTop: 5 }}>⚠ 재가·요양 기관은 시연용 예시 데이터예요 — 장기요양기관 공시 실데이터로 교체 예정(tools/homecare_ingest.py).</div>}
       </>)}
     </div>
@@ -5036,7 +5036,7 @@ function HospitalDirectory({ data, preset }) {
         <div className="fsearch"><Search size={15} /><input value={q} onChange={(e) => { setQ(e.target.value); reset(); }} placeholder="병원명·주소 검색" /></div>
         <div className="fsel" onClick={() => setSort(sort === "관련도순" ? "이름순" : "관련도순")}><Filter size={12} style={{ verticalAlign: "-2px" }} /> {sort}</div>
       </div>
-      <div className="chcount">{sido === "전체" ? "전국" : sido}{sgg !== "전체" ? " " + sgg : ""}{dept !== "전체" ? " · " + dept : ""}{type !== "전체" ? " · " + type : ""} <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳</div>
+      <div className="chcount">{sido === "전체" ? "전국" : sido}{sgg !== "전체" ? " " + sgg : ""}{dept !== "전체" ? " · " + dept : ""}{type !== "전체" ? " · " + type : ""} <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳 <span style={{ fontSize: 10.5, color: "var(--soft)", fontWeight: 600 }}>· 심평원 공공데이터 전 의료기관 전수 — 특정 기관 추천·유인·알선이 아닙니다</span></div>
       {view.map((h, i) => (
         <div className="center" key={i}>
           <div className="cimg"><Art name="building" size={46} /></div>
