@@ -8792,7 +8792,7 @@ function FamilyCareSection({ member, onGo }) {
   const setLink = (id, le) => { const next = { ...linkMap, [id]: le }; if (!le) delete next[id]; setLinkMap(next); lsSave("hifin_famlink_" + email, next); if (le && typeof toast === "function") toast("✅ 본인 계정 건강데이터를 연동했어요."); };
   const addSpendItem = (opt) => { const e = { id: "s" + Date.now(), item: opt.item, amount: opt.amount }; const next = [...spend, e]; setSpend(next); lsSave("hifin_famspend_" + email, next); if (typeof txAnchor === "function") txAnchor({ kind: "가족지갑 결제", amount: opt.amount, memo: opt.item }); if (typeof toast === "function") toast(`💳 가족지갑에서 ${opt.item} ${opt.amount.toLocaleString()} HTK 결제`); };
   const removeSpend = (id) => { const next = spend.filter((x) => x.id !== id); setSpend(next); lsSave("hifin_famspend_" + email, next); };
-  const addMember = () => { if (!fName.trim() || !fAge) { if (typeof toast === "function") toast("이름과 나이를 입력해 주세요."); return; } const next = [...family, { id: "f" + Date.now(), name: fName.trim(), relation: fRel, age: Number(fAge) }]; setFamily(next); familySave(email, next); setAddOpen(false); setFName(""); setFAge(""); if (typeof toast === "function") toast(`✅ ${fName.trim()}님을 온가족 케어에 추가했어요.`); };
+  const addMember = () => { if (!fName.trim() || !fAge) { if (typeof toast === "function") toast("이름과 나이를 입력해 주세요."); return; } const next = [...family, { id: "f" + Date.now(), name: fName.trim(), relation: fRel, age: Number(fAge) }]; setFamily(next); familySave(email, next); setAddOpen(false); setFName(""); setFAge(""); try { if (typeof refFamilyAdd === "function") refFamilyAdd(email, fName.trim()); } catch (e) {} if (typeof toast === "function") toast(`✅ ${fName.trim()}님을 온가족 케어에 추가했어요 — 가족 등록 보상 +100 HTK!`); };
   const removeMember = (id) => { const next = family.filter((x) => x.id !== id); setFamily(next); familySave(email, next); };
 
   const base = (typeof WALLET !== "undefined") ? WALLET.total : 12480;
@@ -10004,16 +10004,16 @@ function ReferralCard() {
   return (
     <div className="refcard">
       <div className="ref-hd"><Gift size={16} /> 친구 초대 — 둘 다 100 HTK <span className="ref-code">내 코드 {code}</span></div>
-      <div className="ref-sub">내 코드가 심긴 링크로 친구가 가입하면 <b>나도 친구도 각 100 HTK</b>, 친구가 첫 검진까지 마치면 <b>나에게 +300 HTK</b>! <i>(코드 없는 가입은 적립되지 않아요)</i></div>
+      <div className="ref-sub">내 코드가 심긴 링크로 친구가 가입하면 <b>나도 친구도 각 100 HTK</b>, 친구가 첫 검진까지 마치면 <b>나에게 +300 HTK</b>! <b>가족을 등록해도 +100 HTK</b>예요. <i>(코드 없는 가입은 적립되지 않아요)</i></div>
       <div className="ref-btns">
         <button className="pri" onClick={doShare}><Send size={13} /> 초대 링크 공유·복사</button>
         <button onClick={askHi}><Bot size={13} /> 하이에게 "친구 초대해줘"</button>
       </div>
       <div className="ref-stats">
-        <span>초대 <b>{s.invited}</b></span><span>가입 <b>{s.joined}</b></span><span>검진완료 <b>{s.checked}</b></span><span>적립 <b>{s.htk.toLocaleString()} HTK</b></span>
+        <span>초대 <b>{s.invited}</b></span><span>가입 <b>{s.joined}</b></span><span>가족 <b>{s.family || 0}</b></span><span>검진완료 <b>{s.checked}</b></span><span>적립 <b>{s.htk.toLocaleString()} HTK</b></span>
         <span className="ref-sims"><button onClick={() => sim(refSimulateJoin, "내 코드로 친구 1명이 가입했어요 — +100 HTK 적립!")}>시연:코드가입</button><button onClick={() => sim(refSimulateCheck, "친구가 첫 검진을 완료했어요 — +300 HTK 적립!")}>시연:검진</button></span>
       </div>
-      <div className="ref-legal">직접 추천 <b>1단계만</b> 인정(하위 추천 보상 없음 — 다단계 아님) · 실명 본인인증 <b>1인 1계정</b> · 자기 코드 가입 제외 · 연 <b>50건 한도</b> · HTK는 <b>폐쇄형 포인트</b>(현금 아님·양도 불가·플랫폼 내 사용)이며 부정 수령 시 회수됩니다 · 보상 총액(건당 최대 500 HTK≈5천 원)은 검진센터 송객 수수료 마진 내에서 지급돼요</div>
+      <div className="ref-legal">직접 추천 <b>1단계만</b> 인정(하위 추천 보상 없음 — 다단계 아님) · 실명 본인인증 <b>1인 1계정</b> · 자기 코드 가입 제외 · <b>가족 등록 포함</b>(등록 시 +100) · HTK는 <b>폐쇄형 포인트</b>(현금 아님·양도 불가·플랫폼 내 사용)이며 부정 수령 시 회수됩니다 · 보상 총액(건당 최대 500 HTK≈5천 원)은 검진센터 송객 수수료 마진 내에서 지급돼요</div>
     </div>
   );
 }
@@ -19567,9 +19567,10 @@ try { if (typeof window !== "undefined") window.__hifinFin = finAsk; } catch (e)
       → 1건 최대 500 HTK(≈5,000원) < 검진센터 송객 순마진(5천~1만원) — 역마진 없음(네거티브 CAC 유지)
    ② 1단계만 인정: 직접 추천만 보상, 하위 추천(2단계 이상) 보상 없음 — 다단계판매 구조 아님(방문판매법 준수)
    ③ 코드 귀속(어트리뷰션): 초대 링크에 심긴 공유자 코드로 가입해야만 적립 — 코드 없는 가입은 보상 없음
-   ④ 부정 방지: 실명 본인인증 1인 1계정 · 자기 코드 가입 차단 · 연 50건 한도 · 행동 기반 본보상 · 부정 수령 회수
-   ⑤ HTK는 폐쇄형 포인트(현금 아님·양도 불가·플랫폼 내 사용) — 전자금융/가상자산 규제 비저촉 설계. ⚠️ 수치는 시연용 예시 */
-const REF_POLICY = { joinInviter: 100, joinInvitee: 100, action: 300, annualCap: 50, level: 1 };
+   ④ 부정 방지: 실명 본인인증 1인 1계정 · 자기 코드 가입 차단 · 행동 기반 본보상 · 부정 수령 회수 (건수 한도 없음 — 형 지시 2026-07-19)
+   ⑤ 가족 등록 포함: 우리가족건강관리에 가족을 등록해도 등록 회원에게 100 HTK(가족 확장 채널 ④와 결합)
+   ⑥ HTK는 폐쇄형 포인트(현금 아님·양도 불가·플랫폼 내 사용) — 전자금융/가상자산 규제 비저촉 설계. ⚠️ 수치는 시연용 예시 */
+const REF_POLICY = { joinInviter: 100, joinInvitee: 100, action: 300, family: 100, level: 1 };
 
 function refState(email) { try { return JSON.parse(localStorage.getItem("hifin_ref_" + (email || "default")) || "null") || { invited: 0, joined: 0, checked: 0, htk: 0 }; } catch (e) { return { invited: 0, joined: 0, checked: 0, htk: 0 }; } }
 function refSave(email, s) { try { localStorage.setItem("hifin_ref_" + (email || "default"), JSON.stringify(s)); } catch (e) {} }
@@ -19606,7 +19607,6 @@ function refAttribute(code, newEmail) {
   if (!owner) return { credited: false, reason: "코드 미등록(링크에 코드가 심겨 있어야 적립)" };
   if (owner.email === newEmail) return { credited: false, reason: "자기 코드 가입 — 보상 제외" };
   const s = refState(owner.email);
-  if (s.joined >= REF_POLICY.annualCap) { s.joined += 1; refSave(owner.email, s); return { credited: false, owner, reason: "연간 한도(50건) 초과 — 보상 없이 집계만" }; }
   s.joined += 1; s.htk += REF_POLICY.joinInviter; refSave(owner.email, s);
   try { localStorage.setItem("hifin_ref_by_" + newEmail, String(code).toUpperCase()); } catch (e) {}   // 1단계 귀속 기록(행동 보상용)
   return { credited: true, owner, inviteeBonus: REF_POLICY.joinInvitee };
@@ -19624,6 +19624,13 @@ function refActionComplete(memberEmail) {
     localStorage.setItem(doneK, "1");
     return { owner, reward: REF_POLICY.action };
   } catch (e) { return null; }
+}
+
+/* 가족 등록 보상 — 우리가족건강관리에 가족을 등록하면 등록 회원에게 100 HTK(채널 ④ 가족 확장) */
+function refFamilyAdd(email, label) {
+  const s = refState(email); s.family = (s.family || 0) + 1; s.htk += REF_POLICY.family; refSave(email, s);
+  try { if (typeof vaultAccessLog === "function") vaultAccessLog("", "member", "가족 등록 보상 적립(" + (label || "가족") + ")"); } catch (e) {}
+  return s;
 }
 
 /* 랜딩 유입(?ref=코드) 인식 */
@@ -19953,7 +19960,8 @@ const TOOL_RUN = {
     list.push({ id: "f" + Date.now().toString(36), name: label, relation: hit[1], age, sex: hit[2] });
     if (typeof familySave === "function") familySave(m.email, list);
     try { vaultAccessLog(anonToken(m), "member", `가족 등록(${label} · 하이 대화)`); } catch (e) {}
-    return { lines: [`${label}(${age}세)님을 우리가족건강관리에 등록했어요 — 검진 일정·응급 안내를 함께 챙겨드릴게요.`, "가족 정보는 본인 동의 범위에서만 저장되고, 언제든 삭제할 수 있어요."] };
+    try { if (typeof refFamilyAdd === "function") refFamilyAdd(m.email, label); } catch (e) {}
+    return { lines: [`${label}(${age}세)님을 우리가족건강관리에 등록했어요 — 검진 일정·응급 안내를 함께 챙겨드릴게요. 가족 등록 보상 +100 HTK도 적립됐어요!`, "가족 정보는 본인 동의 범위에서만 저장되고, 언제든 삭제할 수 있어요."] };
   } catch (e) { return null; } },
   // 동의 변경 — 목적별 동의를 대화 한마디로(변경 이력은 체인 기록)
   consentdo(m, text) { try {
@@ -19994,12 +20002,12 @@ const TOOL_RUN = {
       `초대 링크를 만들었어요${r.mode === "copy" ? " — 클립보드에 복사해뒀으니 붙여넣기만 하세요!" : r.mode === "share" ? " — 공유 창을 열었어요!" : "!"}`,
       r.link,
       "이 링크에는 " + m.name + "님의 코드가 심겨 있어요 — 친구가 이 코드로 가입해야 두 분 모두 100 HTK가 적립되고, 친구가 첫 검진을 마치면 +300 HTK를 더 드려요.",
-      "직접 추천 1단계만 인정되고(다단계 아님), 연 50건 한도예요. HTK는 폐쇄형 포인트라 현금이 아니에요.",
+      "직접 추천 1단계만 인정되고(다단계 아님), 가족을 등록해도 100 HTK가 적립돼요. HTK는 폐쇄형 포인트라 현금이 아니에요.",
     ], buttons: ["초대 현황 보여줘"] };
   } catch (e) { return null; } },
   refstat(m) { try {
     const s = (typeof refState === "function") ? refState(m.email) : null; if (!s) return null;
-    return { lines: [`지금까지 초대 ${s.invited}건 · 가입 ${s.joined}명 · 검진 완료 ${s.checked}명 — 리퍼럴 적립 ${s.htk.toLocaleString()} HTK예요.`, s.joined ? "친구들이 잘 따라오고 있어요 — 검진까지 마치면 보상이 더 커져요!" : "아직 가입한 친구가 없어요 — 등산 모임, 가족 단톡방부터 시작해보실래요?"], buttons: ["친구 초대해줘"] };
+    return { lines: [`지금까지 초대 ${s.invited}건 · 가입 ${s.joined}명 · 가족 등록 ${s.family || 0}명 · 검진 완료 ${s.checked}명 — 리퍼럴 적립 ${s.htk.toLocaleString()} HTK예요.`, s.joined || s.family ? "잘 늘고 있어요 — 검진까지 마치면 보상이 더 커져요!" : "아직 가입한 친구가 없어요 — 등산 모임, 가족 단톡방부터 시작해보실래요?"], buttons: ["친구 초대해줘", "어머니 82세 추가해줘"] };
   } catch (e) { return null; } },
   // 근처 검진센터 찾기 — 회원 지역 기준 후보 제시(하이가 조건 해석)
   nearfind(m) { try {

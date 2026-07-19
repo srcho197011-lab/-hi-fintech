@@ -73,16 +73,16 @@ function ReferralCard() {
   return (
     <div className="refcard">
       <div className="ref-hd"><Gift size={16} /> 친구 초대 — 둘 다 100 HTK <span className="ref-code">내 코드 {code}</span></div>
-      <div className="ref-sub">내 코드가 심긴 링크로 친구가 가입하면 <b>나도 친구도 각 100 HTK</b>, 친구가 첫 검진까지 마치면 <b>나에게 +300 HTK</b>! <i>(코드 없는 가입은 적립되지 않아요)</i></div>
+      <div className="ref-sub">내 코드가 심긴 링크로 친구가 가입하면 <b>나도 친구도 각 100 HTK</b>, 친구가 첫 검진까지 마치면 <b>나에게 +300 HTK</b>! <b>가족을 등록해도 +100 HTK</b>예요. <i>(코드 없는 가입은 적립되지 않아요)</i></div>
       <div className="ref-btns">
         <button className="pri" onClick={doShare}><Send size={13} /> 초대 링크 공유·복사</button>
         <button onClick={askHi}><Bot size={13} /> 하이에게 "친구 초대해줘"</button>
       </div>
       <div className="ref-stats">
-        <span>초대 <b>{s.invited}</b></span><span>가입 <b>{s.joined}</b></span><span>검진완료 <b>{s.checked}</b></span><span>적립 <b>{s.htk.toLocaleString()} HTK</b></span>
+        <span>초대 <b>{s.invited}</b></span><span>가입 <b>{s.joined}</b></span><span>가족 <b>{s.family || 0}</b></span><span>검진완료 <b>{s.checked}</b></span><span>적립 <b>{s.htk.toLocaleString()} HTK</b></span>
         <span className="ref-sims"><button onClick={() => sim(refSimulateJoin, "내 코드로 친구 1명이 가입했어요 — +100 HTK 적립!")}>시연:코드가입</button><button onClick={() => sim(refSimulateCheck, "친구가 첫 검진을 완료했어요 — +300 HTK 적립!")}>시연:검진</button></span>
       </div>
-      <div className="ref-legal">직접 추천 <b>1단계만</b> 인정(하위 추천 보상 없음 — 다단계 아님) · 실명 본인인증 <b>1인 1계정</b> · 자기 코드 가입 제외 · 연 <b>50건 한도</b> · HTK는 <b>폐쇄형 포인트</b>(현금 아님·양도 불가·플랫폼 내 사용)이며 부정 수령 시 회수됩니다 · 보상 총액(건당 최대 500 HTK≈5천 원)은 검진센터 송객 수수료 마진 내에서 지급돼요</div>
+      <div className="ref-legal">직접 추천 <b>1단계만</b> 인정(하위 추천 보상 없음 — 다단계 아님) · 실명 본인인증 <b>1인 1계정</b> · 자기 코드 가입 제외 · <b>가족 등록 포함</b>(등록 시 +100) · HTK는 <b>폐쇄형 포인트</b>(현금 아님·양도 불가·플랫폼 내 사용)이며 부정 수령 시 회수됩니다 · 보상 총액(건당 최대 500 HTK≈5천 원)은 검진센터 송객 수수료 마진 내에서 지급돼요</div>
     </div>
   );
 }

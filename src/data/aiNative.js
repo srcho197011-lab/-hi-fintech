@@ -134,7 +134,8 @@ const TOOL_RUN = {
     list.push({ id: "f" + Date.now().toString(36), name: label, relation: hit[1], age, sex: hit[2] });
     if (typeof familySave === "function") familySave(m.email, list);
     try { vaultAccessLog(anonToken(m), "member", `가족 등록(${label} · 하이 대화)`); } catch (e) {}
-    return { lines: [`${label}(${age}세)님을 우리가족건강관리에 등록했어요 — 검진 일정·응급 안내를 함께 챙겨드릴게요.`, "가족 정보는 본인 동의 범위에서만 저장되고, 언제든 삭제할 수 있어요."] };
+    try { if (typeof refFamilyAdd === "function") refFamilyAdd(m.email, label); } catch (e) {}
+    return { lines: [`${label}(${age}세)님을 우리가족건강관리에 등록했어요 — 검진 일정·응급 안내를 함께 챙겨드릴게요. 가족 등록 보상 +100 HTK도 적립됐어요!`, "가족 정보는 본인 동의 범위에서만 저장되고, 언제든 삭제할 수 있어요."] };
   } catch (e) { return null; } },
   // 동의 변경 — 목적별 동의를 대화 한마디로(변경 이력은 체인 기록)
   consentdo(m, text) { try {
@@ -175,12 +176,12 @@ const TOOL_RUN = {
       `초대 링크를 만들었어요${r.mode === "copy" ? " — 클립보드에 복사해뒀으니 붙여넣기만 하세요!" : r.mode === "share" ? " — 공유 창을 열었어요!" : "!"}`,
       r.link,
       "이 링크에는 " + m.name + "님의 코드가 심겨 있어요 — 친구가 이 코드로 가입해야 두 분 모두 100 HTK가 적립되고, 친구가 첫 검진을 마치면 +300 HTK를 더 드려요.",
-      "직접 추천 1단계만 인정되고(다단계 아님), 연 50건 한도예요. HTK는 폐쇄형 포인트라 현금이 아니에요.",
+      "직접 추천 1단계만 인정되고(다단계 아님), 가족을 등록해도 100 HTK가 적립돼요. HTK는 폐쇄형 포인트라 현금이 아니에요.",
     ], buttons: ["초대 현황 보여줘"] };
   } catch (e) { return null; } },
   refstat(m) { try {
     const s = (typeof refState === "function") ? refState(m.email) : null; if (!s) return null;
-    return { lines: [`지금까지 초대 ${s.invited}건 · 가입 ${s.joined}명 · 검진 완료 ${s.checked}명 — 리퍼럴 적립 ${s.htk.toLocaleString()} HTK예요.`, s.joined ? "친구들이 잘 따라오고 있어요 — 검진까지 마치면 보상이 더 커져요!" : "아직 가입한 친구가 없어요 — 등산 모임, 가족 단톡방부터 시작해보실래요?"], buttons: ["친구 초대해줘"] };
+    return { lines: [`지금까지 초대 ${s.invited}건 · 가입 ${s.joined}명 · 가족 등록 ${s.family || 0}명 · 검진 완료 ${s.checked}명 — 리퍼럴 적립 ${s.htk.toLocaleString()} HTK예요.`, s.joined || s.family ? "잘 늘고 있어요 — 검진까지 마치면 보상이 더 커져요!" : "아직 가입한 친구가 없어요 — 등산 모임, 가족 단톡방부터 시작해보실래요?"], buttons: ["친구 초대해줘", "어머니 82세 추가해줘"] };
   } catch (e) { return null; } },
   // 근처 검진센터 찾기 — 회원 지역 기준 후보 제시(하이가 조건 해석)
   nearfind(m) { try {
