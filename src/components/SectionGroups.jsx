@@ -26,10 +26,11 @@ function GroupTabs({ tabs, tab, setTab }) {
 }
 
 function HomeHub({ initial, onGo }) {
-  const map = { home: "home", story: "story", social: "social", community: "community" };
-  const [tab, setTab] = useState(map[initial] || "home");
-  useEffect(() => { setTab(map[initial] || "home"); }, [initial]);
-  const tabs = [["home", "홈 · 소개", Home, "#2563EB"], ["story", "활용 스토리", BookOpen, "#EA580C"], ["social", "사회적기업", HeartHandshake, "#16A34A"], ["community", "커뮤니티", Users, "#7C3AED"]];
+  /* 기본 진입은 '활용 스토리'(이야기로 플랫폼 이해) — 회사 소개는 intro 키로 딥링크 */
+  const map = { home: "story", story: "story", intro: "home", social: "social", community: "community" };
+  const [tab, setTab] = useState(map[initial] || "story");
+  useEffect(() => { setTab(map[initial] || "story"); }, [initial]);
+  const tabs = [["story", "활용 스토리", BookOpen, "#EA580C"], ["home", "홈 · 소개", Home, "#2563EB"], ["social", "사회적기업", HeartHandshake, "#16A34A"], ["community", "커뮤니티", Users, "#7C3AED"]];
   return (
     <div style={{ marginTop: 4 }}>
       {typeof AgentHomeBriefing === "function" && <AgentHomeBriefing />}
