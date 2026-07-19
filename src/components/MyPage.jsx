@@ -91,7 +91,7 @@ function FamilyHealthCare({ member, onGo }) {
             <b>{x.p.name}</b><em>{x.rel}</em>
           </button>
         ))}
-        <button className="fhc-add" onClick={() => { if (typeof toast === "function") toast("아래 가족 건강관리에서 구성원을 추가할 수 있어요."); }} title="가족 추가"><Plus size={16} /></button>
+        <button className="fhc-add" onClick={() => { try { window.dispatchEvent(new CustomEvent("famaddopen")); } catch (e) {} if (typeof toast === "function") toast("가족 추가 폼을 열었어요 — 이름·관계·나이만 넣으면 끝! (+100 HTK)"); }} title="가족 추가"><Plus size={16} /></button>
       </div>
       <div className="fhc-ctx">{(() => { const g = (typeof memberHealthGrade === "function") ? (() => { try { return memberHealthGrade(P); } catch (e) { return null; } })() : null; return g ? <span className="fhc-grade" style={{ color: g.meta.c, background: g.meta.bg }}>{g.grade}</span> : null; })()}<b>{P.name}</b> · {cur.rel} · 생체나이 <b style={{ color: "#2563EB" }}>{P.biologicalAge}세</b> <span>(주민등록 {regNum}세{bioDiff === 0 ? "" : bioDiff < 0 ? ` · ${bioDiff}세 젊음` : ` · +${bioDiff}세`})</span></div>
       <div className="fhc-cards">

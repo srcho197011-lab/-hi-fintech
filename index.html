@@ -8348,7 +8348,7 @@ function FamilyHealthCare({ member, onGo }) {
             <b>{x.p.name}</b><em>{x.rel}</em>
           </button>
         ))}
-        <button className="fhc-add" onClick={() => { if (typeof toast === "function") toast("아래 가족 건강관리에서 구성원을 추가할 수 있어요."); }} title="가족 추가"><Plus size={16} /></button>
+        <button className="fhc-add" onClick={() => { try { window.dispatchEvent(new CustomEvent("famaddopen")); } catch (e) {} if (typeof toast === "function") toast("가족 추가 폼을 열었어요 — 이름·관계·나이만 넣으면 끝! (+100 HTK)"); }} title="가족 추가"><Plus size={16} /></button>
       </div>
       <div className="fhc-ctx">{(() => { const g = (typeof memberHealthGrade === "function") ? (() => { try { return memberHealthGrade(P); } catch (e) { return null; } })() : null; return g ? <span className="fhc-grade" style={{ color: g.meta.c, background: g.meta.bg }}>{g.grade}</span> : null; })()}<b>{P.name}</b> · {cur.rel} · 생체나이 <b style={{ color: "#2563EB" }}>{P.biologicalAge}세</b> <span>(주민등록 {regNum}세{bioDiff === 0 ? "" : bioDiff < 0 ? ` · ${bioDiff}세 젊음` : ` · +${bioDiff}세`})</span></div>
       <div className="fhc-cards">
@@ -8782,6 +8782,15 @@ function FamilyCareSection({ member, onGo }) {
   const [consentMap, setConsentMap] = useState(() => lsLoad("hifin_famconsent_" + email, {}));
   const [spend, setSpend] = useState(() => lsLoad("hifin_famspend_" + email, []));
   const [linkMap, setLinkMap] = useState(() => lsLoad("hifin_famlink_" + email, {}));
+  // 상단 대시보드의 + 버튼(famaddopen 이벤트) → 여기 추가 폼을 즉시 열고 스크롤(하이 famrefresh 이벤트 → 목록 갱신)
+  useEffect(() => {
+    const open = () => { setAddOpen(true); setTimeout(() => { try { const el = document.querySelector(".famadd"); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("dv-flash"); setTimeout(() => { try { el.classList.remove("dv-flash"); } catch (e) {} }, 2200); } } catch (e) {} }, 150);
+    };
+    const refresh = () => { try { setFamily(familyLoad(email, surname)); } catch (e) {} };
+    window.addEventListener("famaddopen", open);
+    window.addEventListener("famrefresh", refresh);
+    return () => { window.removeEventListener("famaddopen", open); window.removeEventListener("famrefresh", refresh); };
+  }, []);
   const [sosId, setSosId] = useState(null);
   const [autoAlert, setAutoAlert] = useState(() => lsLoad("hifin_famauto_" + email, true));
   useEffect(() => { setFamily(familyLoad(email, surname)); setTaskMap(lsLoad("hifin_famtask_" + email, {})); setConsentMap(lsLoad("hifin_famconsent_" + email, {})); setSpend(lsLoad("hifin_famspend_" + email, [])); setLinkMap(lsLoad("hifin_famlink_" + email, {})); }, [email, surname]);
@@ -19810,7 +19819,7 @@ const AGENT_QNA = [
   /* ───────── 하이 퍼스트 실행 의도(action) — Phase 2: 말 한마디로 실행 완결 ───────── */
   { c: "action", k: "hi_book_do", p: ["이대로예약확정", "이대로확정", "그대로예약", "예약확정해줘"], a: "", tool: "bookdo", b: ["검진 준비사항 알려줘"], nav: "checkup", nx: [], lv: 1 },
   { c: "action", k: "hi_claim_do", p: ["청구접수진행", "접수진행해줘", "청구진행해"], a: "", tool: "claimdo", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
-  { c: "action", k: "hi_fam_add", p: ["가족추가", "가족등록해", "어머니추가", "아버지추가", "아내추가", "남편추가", "아들추가", "딸추가", "노모등록", "어머니등록", "세추가해줘"], a: "", tool: "famadd", b: [], nav: "mypage", nx: [], lv: 1 },
+  { c: "action", k: "hi_fam_add", p: ["가족추가", "가족등록", "가족구성원", "구성원추가", "식구추가", "가족넣어", "가족어떻게", "어머니추가", "아버지추가", "아내추가", "남편추가", "아들추가", "딸추가", "노모등록", "어머니등록", "세추가해줘"], a: "", tool: "famadd", b: [], nav: "mypage", nx: [], lv: 1 },
   { c: "action", k: "hi_consent", p: ["동의꺼줘", "동의켜줘", "동의철회해", "마케팅동의", "수신거부해", "동의바꿔", "동의변경해"], a: "", tool: "consentdo", b: [], nav: null, nx: [], lv: 1 },
   { c: "action", k: "hi_insjoin", p: ["검진보험가입해", "무료보험가입해", "검진대비보험가입", "보험가입해줘", "검진보험들어줘"], a: "", tool: "insjoin", b: ["보장 내용 자세히"], nav: "insurance", nx: [], lv: 1, guard: "ins" },
   { c: "action", k: "hi_near_ck", p: ["주변검진센터", "검진센터어디", "검진센터추천"], a: "", tool: "nearfind", b: [], nav: "checkup", nx: [], lv: 1 },
@@ -19961,6 +19970,7 @@ const TOOL_RUN = {
     if (typeof familySave === "function") familySave(m.email, list);
     try { vaultAccessLog(anonToken(m), "member", `가족 등록(${label} · 하이 대화)`); } catch (e) {}
     try { if (typeof refFamilyAdd === "function") refFamilyAdd(m.email, label); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent("famrefresh")); } catch (e) {}   // 화면 목록 즉시 갱신
     return { lines: [`${label}(${age}세)님을 우리가족건강관리에 등록했어요 — 검진 일정·응급 안내를 함께 챙겨드릴게요. 가족 등록 보상 +100 HTK도 적립됐어요!`, "가족 정보는 본인 동의 범위에서만 저장되고, 언제든 삭제할 수 있어요."] };
   } catch (e) { return null; } },
   // 동의 변경 — 목적별 동의를 대화 한마디로(변경 이력은 체인 기록)

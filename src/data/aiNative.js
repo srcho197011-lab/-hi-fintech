@@ -135,6 +135,7 @@ const TOOL_RUN = {
     if (typeof familySave === "function") familySave(m.email, list);
     try { vaultAccessLog(anonToken(m), "member", `가족 등록(${label} · 하이 대화)`); } catch (e) {}
     try { if (typeof refFamilyAdd === "function") refFamilyAdd(m.email, label); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent("famrefresh")); } catch (e) {}   // 화면 목록 즉시 갱신
     return { lines: [`${label}(${age}세)님을 우리가족건강관리에 등록했어요 — 검진 일정·응급 안내를 함께 챙겨드릴게요. 가족 등록 보상 +100 HTK도 적립됐어요!`, "가족 정보는 본인 동의 범위에서만 저장되고, 언제든 삭제할 수 있어요."] };
   } catch (e) { return null; } },
   // 동의 변경 — 목적별 동의를 대화 한마디로(변경 이력은 체인 기록)

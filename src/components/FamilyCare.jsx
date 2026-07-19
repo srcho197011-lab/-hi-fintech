@@ -123,6 +123,15 @@ function FamilyCareSection({ member, onGo }) {
   const [consentMap, setConsentMap] = useState(() => lsLoad("hifin_famconsent_" + email, {}));
   const [spend, setSpend] = useState(() => lsLoad("hifin_famspend_" + email, []));
   const [linkMap, setLinkMap] = useState(() => lsLoad("hifin_famlink_" + email, {}));
+  // 상단 대시보드의 + 버튼(famaddopen 이벤트) → 여기 추가 폼을 즉시 열고 스크롤(하이 famrefresh 이벤트 → 목록 갱신)
+  useEffect(() => {
+    const open = () => { setAddOpen(true); setTimeout(() => { try { const el = document.querySelector(".famadd"); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("dv-flash"); setTimeout(() => { try { el.classList.remove("dv-flash"); } catch (e) {} }, 2200); } } catch (e) {} }, 150);
+    };
+    const refresh = () => { try { setFamily(familyLoad(email, surname)); } catch (e) {} };
+    window.addEventListener("famaddopen", open);
+    window.addEventListener("famrefresh", refresh);
+    return () => { window.removeEventListener("famaddopen", open); window.removeEventListener("famrefresh", refresh); };
+  }, []);
   const [sosId, setSosId] = useState(null);
   const [autoAlert, setAutoAlert] = useState(() => lsLoad("hifin_famauto_" + email, true));
   useEffect(() => { setFamily(familyLoad(email, surname)); setTaskMap(lsLoad("hifin_famtask_" + email, {})); setConsentMap(lsLoad("hifin_famconsent_" + email, {})); setSpend(lsLoad("hifin_famspend_" + email, [])); setLinkMap(lsLoad("hifin_famlink_" + email, {})); }, [email, surname]);
