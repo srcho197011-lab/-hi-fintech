@@ -26,15 +26,16 @@ function GroupTabs({ tabs, tab, setTab }) {
 }
 
 function HomeHub({ initial, onGo }) {
-  const map = { home: "home", social: "social", community: "community" };
+  const map = { home: "home", story: "story", social: "social", community: "community" };
   const [tab, setTab] = useState(map[initial] || "home");
   useEffect(() => { setTab(map[initial] || "home"); }, [initial]);
-  const tabs = [["home", "홈 · 소개", Home, "#2563EB"], ["social", "사회적기업", HeartHandshake, "#16A34A"], ["community", "커뮤니티", Users, "#7C3AED"]];
+  const tabs = [["home", "홈 · 소개", Home, "#2563EB"], ["story", "활용 스토리", BookOpen, "#EA580C"], ["social", "사회적기업", HeartHandshake, "#16A34A"], ["community", "커뮤니티", Users, "#7C3AED"]];
   return (
     <div style={{ marginTop: 4 }}>
       {typeof AgentHomeBriefing === "function" && <AgentHomeBriefing />}
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
       {tab === "home" && <HomeView onGo={onGo} />}
+      {tab === "story" && (typeof StoryJourney === "function" ? <StoryJourney onGo={onGo} /> : null)}
       {tab === "social" && <SocialSection onGo={onGo} />}
       {tab === "community" && <CommunitySection onGo={onGo} />}
     </div>

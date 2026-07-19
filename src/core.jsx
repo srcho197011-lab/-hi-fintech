@@ -328,7 +328,7 @@ const SECTIONS = [
 /* 옛 섹션 키 → 새 부모 섹션 매핑 (딥링크·onGo·헤더·검색 호환) */
 const SEC_PARENT = {
   partner: "partner",
-  home: "home", social: "home", community: "home",
+  home: "home", social: "home", community: "home", story: "home",
   checkup: "checkup",
   care: "care", ai: "care", manage: "care", hospital: "care", homecare: "care", shop: "care",
   insurance: "insurance",
