@@ -1131,7 +1131,7 @@ function MapView({ points, accent, focus, height, cap }) {
     }
     const map = mapRef.current;
     if (layerRef.current) { map.removeLayer(layerRef.current); layerRef.current = null; }
-    const group = L.markerClusterGroup ? L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 50 }) : L.layerGroup();
+    const group = L.markerClusterGroup ? L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 50, disableClusteringAtZoom: 16, zoomToBoundsOnClick: true }) : L.layerGroup();
     const bounds = [];
     valid.forEach((p, i) => {
       const m = L.marker([p.lat, p.lng]);
@@ -1218,18 +1218,23 @@ function UnifiedMapCard({ data, init }) {
     return out;
   }, [data, hc, on, scope, sidoShort]);
   const TOG = [["hosp", "병원", "#2563EB"], ["pharm", "약국", "#16A34A"], ["chk", "검진센터", "#7C3AED"], ["care", "재가·요양", "#DB2777"]];
+  /* M5 — 기관명 직접 검색: 일치 핀만 남기고 지도가 자동으로 그 위치로 이동(fitBounds) */
+  const [q, setQ] = useState("");
+  const shown = q.trim() ? pts.filter((p) => String(p.name || "").indexOf(q.trim()) >= 0) : pts;
   return (
     <div className="mapcard">
       <div className="maphead" onClick={() => setOpenMap((v) => !v)}>
-        <div className="mt"><MapPin size={16} color="#2F5BEA" /> 통합 기관 지도 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>({scope === "near" ? sidoShort + " 기준" : "전국"} · {pts.length.toLocaleString()}곳 · 핀에서 예약)</span></div>
+        <div className="mt"><MapPin size={16} color="#2F5BEA" /> 통합 기관 지도 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>({scope === "near" ? sidoShort + " 기준" : "전국"} · {shown.length.toLocaleString()}곳 · 핀에서 예약)</span></div>
         <ChevronDown size={18} color="#9AA6BC" style={{ transform: openMap ? "rotate(180deg)" : "none", transition: ".2s" }} />
       </div>
       {openMap && (<>
         <div className="umtogs" onClick={(e) => e.stopPropagation()}>
           {TOG.map(([k, t, col]) => <button key={k} className={"umtog" + (on[k] ? " on" : "")} style={on[k] ? { background: col, borderColor: col } : null} onClick={() => setOn({ ...on, [k]: !on[k] })}>{t}</button>)}
           <button className={"umtog" + (scope === "all" ? " on" : "")} style={scope === "all" ? { background: "#0F172A", borderColor: "#0F172A" } : null} onClick={() => setScope(scope === "all" ? "near" : "all")}>전국 보기</button>
+          <input className="umsearch" value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔍 기관명 검색 — 입력하면 바로 이동" />
         </div>
-        <div style={{ marginTop: 8 }}><MapView points={pts} accent="#2563EB" cap={120000} /></div>
+        {q.trim() && !shown.length && <div style={{ fontSize: 11, color: "#B45309", marginTop: 6 }}>"{q.trim()}" 검색 결과가 없어요 — 토글·범위(전국 보기)를 확인해 보세요.</div>}
+        <div style={{ marginTop: 8 }}><MapView points={shown} accent="#2563EB" cap={120000} /></div>
         <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 4 }}>전체 {pts.length.toLocaleString()}곳을 클러스터(숫자 원)로 묶어 전수 표시해요 — 확대할수록 개별 핀으로 펼쳐집니다. ※ 심평원 공공데이터 기반 <b>전 의료기관 정보 제공</b>이며, 특정 의료기관의 추천·유인·알선이 아닙니다(의료법 준수).</div>
         {hc && hc.meta && hc.meta.demo && on.care && <div style={{ fontSize: 10.5, color: "#B45309", marginTop: 5 }}>⚠ 재가·요양 기관은 시연용 예시 데이터예요 — 장기요양기관 공시 실데이터로 교체 예정(tools/homecare_ingest.py).</div>}
       </>)}

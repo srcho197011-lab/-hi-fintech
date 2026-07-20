@@ -5025,3 +5025,38 @@ body.easyread .hibrief-t { font-size: 17px; }
 .pharmpick.wide { max-width: 100%; width: 100%; }
 .pp-mapwrap { margin-top: 9px; }
 .pmapld { font-size: 11.5px; color: #64748B; background: #F8FAFC; border-radius: 9px; padding: 10px; text-align: center; }
+
+/* ═══ 처방 약국 자동 배정 + 2점 지도 ═══ */
+.ph-base { display: flex; align-items: center; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+.ph-base button { border: 1px solid var(--border); background: #fff; border-radius: 99px; padding: 6px 12px; font-size: 11px; font-weight: 800; color: #64748B; cursor: pointer; min-height: 32px; }
+.ph-base button.on { background: #1D4ED8; border-color: #1D4ED8; color: #fff; }
+.ph-base i { font-style: normal; font-size: 9.5px; color: #B45309; margin-left: auto; }
+.ph-assign { background: linear-gradient(135deg, #F0FDF4, #ECFDF5); border: 1.5px solid #86EFAC; border-radius: 13px; padding: 11px 13px; margin-top: 9px; }
+.ph-assign > b { font-size: 14px; color: #14532D; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ph-assign em { font-style: normal; font-size: 9.5px; font-weight: 800; border-radius: 99px; padding: 2px 8px; }
+.ph-assign em.asg { background: #16A34A; color: #fff; }
+.ph-assign em.vf { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+.ph-assign > span { display: block; font-size: 11.5px; color: #15803D; font-weight: 700; margin-top: 3px; }
+.ph-assign p { margin: 6px 0 0; font-size: 11px; color: #4D7C5F; line-height: 1.5; }
+.ph-skip { color: #B45309 !important; }
+.ph-btns { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+.ph-btns button, .ph-btns a { border: 1px solid var(--border); background: #fff; color: #334155; border-radius: 9px; padding: 8px 12px; font-size: 11.5px; font-weight: 800; cursor: pointer; text-decoration: none; min-height: 38px; display: inline-flex; align-items: center; }
+.ph-btns .pri { background: #16A34A; border-color: #16A34A; color: #fff; }
+.pp-row.closed { opacity: .55; }
+.pp-row { cursor: pointer; }
+.phmap { margin-top: 10px; border-radius: 13px; overflow: hidden; border: 1px solid var(--border); }
+.phmap-c { height: 250px; }
+.ph-homepin { font-size: 22px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .35)); }
+.ph-pin { position: relative; font-size: 18px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .3)); }
+.ph-pin span { position: absolute; left: 50%; transform: translateX(-50%); top: -18px; background: rgba(15, 23, 42, .78); color: #fff; font-size: 9.5px; font-weight: 800; border-radius: 99px; padding: 1px 7px; white-space: nowrap; }
+.ph-pin.on { font-size: 26px; }
+.ph-pin.on span { background: #16A34A; font-size: 10.5px; }
+.phsheet { background: #fff; padding: 10px 13px; border-top: 1px solid var(--border); }
+.phsheet b { font-size: 13px; color: #0F172A; display: flex; align-items: center; gap: 6px; }
+.ph-vf { font-style: normal; font-size: 9px; font-weight: 800; color: #1D4ED8; background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 99px; padding: 1px 7px; }
+.phsheet span { display: block; font-size: 11px; color: #64748B; margin-top: 2px; }
+.phsheet em { display: block; font-style: normal; font-size: 11px; font-weight: 800; color: #15803D; margin-top: 2px; }
+.phsheet-b { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.phsheet-b button, .phsheet-b a { border: 1px solid var(--border); background: #fff; color: #334155; border-radius: 9px; padding: 8px 12px; font-size: 11.5px; font-weight: 800; cursor: pointer; text-decoration: none; min-height: 40px; display: inline-flex; align-items: center; }
+.phsheet-b .pri { background: #16A34A; border-color: #16A34A; color: #fff; }
+.umsearch { flex: 1; min-width: 150px; border: 1px solid var(--border); border-radius: 99px; padding: 6px 12px; font-size: 11.5px; outline: none; }

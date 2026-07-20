@@ -172,6 +172,9 @@ const AGENT_QNA = [
   { c: "action", k: "hi_tele_can", p: ["비대면으로뭐가가능", "비대면진료가능한", "원격으로처방", "비대면처방되", "원격진료뭐가돼", "비대면진료범위", "원격으로검사", "비대면가능행위"], a: "", tool: "telecan", b: [], nav: null, nx: [], lv: 1, guard: "med" },
   { c: "action", k: "hi_rpm", p: ["어머니혈압", "아버지혈압", "노모혈압", "혈압경보", "가족경보", "혈압급등", "가족혈압", "혈압이상", "rpm경보", "혈압추세"], a: "", tool: "rpmcheck", b: [], nav: null, nx: [], lv: 1, guard: "med" },
   { c: "action", k: "hi_rpm_ack", p: ["경보해제", "경보꺼줘", "혈압경보끄", "경보확인했"], a: "", tool: "rpmack", b: [], nav: null, nx: [], lv: 1 },
+  { c: "action", k: "hi_pharm", p: ["약어디서받", "가까운약국", "약국배정", "제일가까운약국", "약국추천", "약국어디", "약국찾아줘"], a: "", tool: "pharmassign", b: [], nav: null, nx: [], lv: 1, guard: "med" },
+  { c: "action", k: "hi_pharm_do", p: ["약국확정", "약국으로확정", "그약국으로해줘", "방문수령확정"], a: "", tool: "pharmdo", b: [], nav: null, nx: [], lv: 1 },
+  { c: "action", k: "hi_pharm_dv", p: ["배송으로받을래", "배송수령으로", "약배송해줘", "배송으로해줘"], a: "", tool: "pharmdv", b: [], nav: null, nx: [], lv: 1 },
   /* ───────── Phase 7 — B2B 콘솔(기관 구독·의사·검증 노드·거버넌스) ───────── */
   { c: "invest", k: "hi_b2b", p: ["b2b콘솔", "기관콘솔", "구독콘솔", "기관구독", "의사콘솔", "검증노드", "노드신청", "검증기관노드", "거버넌스", "안건투표", "노드참여"], a: "", tool: "b2bgo", b: [], nav: "partner", nx: [], lv: 2 },
 ];

@@ -270,6 +270,26 @@ const TOOL_RUN = {
       "① 기관 구독 콘솔 — 침투 요금제(1차 무료→월 50만→상한 300만)·이용량·월 청구서\n② 의사 콘솔 — AI 예진 수신함·대기열·처방 발행·열람 감사\n③ 검증기관 노드 — PoA 컨소시엄 현황·노드 참여 신청\n④ 거버넌스 — 프로토콜 헌법·안건 HTK 가중 투표",
     ], buttons: ["구독료 정책 알려줘", "제휴 조건이 뭐예요?"] };
   } catch (e) { return null; } },
+  /* 약국 배정(H1·H2) — "약 어디서 받아?" 한마디로 배정→확정→전송 완결 */
+  pharmassign() { try {
+    if (typeof phRank !== "function") return null;
+    const r = phRank(PH_HOME); const a = r.find((p) => p.open) || r[0];
+    return { lines: [
+      `자택에서 가장 가까운 ${a.n}(${a.d}m · 도보 ${phWalk(a.d)}분 · 영업중${a.part ? " · 위변조 없음 ✓ 제휴" : ""})으로 배정해 드릴까요?`,
+      `차순위는 ${r.filter((p) => p.n !== a.n).slice(0, 2).map((p) => `${p.n}(${p.d}m${p.open ? "" : " · 영업 종료"})`).join(" · ")}이에요. 배송 수령도 가능해요.`,
+      "처방전은 확정한 약국으로만 암호화 전송돼요 ✓",
+    ], buttons: ["약국 확정해줘", "배송으로 받을래"] };
+  } catch (e) { return null; } },
+  pharmdo() { try {
+    const r = phRank(PH_HOME); const a = r.find((p) => p.open) || r[0];
+    try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { rl[rl.length - 1].status = `${a.n} 전송(방문 수령)`; rl[rl.length - 1].pharm = a.n; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
+    return { lines: [`📤 ${a.n}(으)로 처방전 전송 완료 ✓ — 도보 ${phWalk(a.d)}분이에요. 약국 접수·조제가 시작되면 알려드리고, 준비되면 수령 알림을 드릴게요.`, "방문 시 신분 확인 후 약사의 복약지도와 함께 수령하세요."] };
+  } catch (e) { return null; } },
+  pharmdv() { try {
+    const r = phRank(PH_HOME); const a = r.find((p) => p.open) || r[0];
+    try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { rl[rl.length - 1].status = `${a.n} 전송(배송 수령)`; rl[rl.length - 1].pharm = a.n; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
+    return { lines: [`📦 ${a.n}에 배송 수령으로 접수했어요 ✓ — 조제중 → 배송중 → 수령완료 단계마다 알려드릴게요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)`] };
+  } catch (e) { return null; } },
   rpmack(m) { try {
     localStorage.setItem("hifin_rpm_ack_" + m.email, "1");
     try { window.dispatchEvent(new CustomEvent("rpmrefresh")); } catch (e) {}

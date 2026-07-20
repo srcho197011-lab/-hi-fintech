@@ -870,25 +870,95 @@ function HospitalJoinModal({ onClose }) {
     </div></div>
   );
 }
-/* 수령 약국 선택 카드 — 약국 위치 지도(심평원 실데이터·통합지도 엔진 재사용) 토글 */
-function PharmMapInline() {
-  const st = (typeof useHira === "function") ? useHira() : { loading: false, error: "지도 엔진 없음", data: null };
-  if (st.loading) return <div className="pmapld">🗺 약국 지도를 불러오는 중… (심평원 실데이터)</div>;
-  if (st.error || !st.data) return <div className="pmapld">지도를 불러오지 못했어요 — 잠시 후 다시 시도해 주세요.</div>;
-  return (typeof UnifiedMapCard === "function") ? <UnifiedMapCard data={st.data} init={{ hosp: false, pharm: true, chk: false, care: false }} /> : null;
-}
-function PharmPickCard({ onPick }) {
-  const [showMap, setShowMap] = useState(false);
+/* ══ 처방 약국 — 주소 기준 최근접 자동 배정(P1~P4) + 클릭 즉시 2점 지도(M1~M4) ══ */
+/* 시연 좌표: 자택(강남구) 기준 온누리 ≈150m·건강제일 ≈420m가 실제 Haversine 계산과 일치(H4: 상세 주소 비노출) */
+const PH_HOME = { lat: 37.5006, lng: 127.0364, label: "자택 주소 기준" };
+const PH_CUR = { lat: 37.4986, lng: 127.04, label: "현재 위치 기준" };
+const PH_LIST = [
+  { n: "온누리약국", lat: 37.50175, lng: 127.03695, open: true, part: true, addr: "서울 강남구 테헤란로 ○○", tel: "02-555-0001", hrs: "09:00~21:00" },
+  { n: "건강제일약국", lat: 37.49895, lng: 127.04065, open: true, part: true, addr: "서울 강남구 역삼로 ○○", tel: "02-555-0002", hrs: "09:00~20:00" },
+  { n: "새서울약국", lat: 37.5053, lng: 127.0325, open: false, part: false, addr: "서울 강남구 봉은사로 ○○", tel: "02-555-0003", hrs: "오늘 영업 종료" },
+];
+function phDist(a, b) { const R = 6371000, r = Math.PI / 180; const dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r; const s = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) * Math.sin(dLng / 2); return Math.round(2 * R * Math.asin(Math.sqrt(s))); }
+function phWalk(d) { return Math.max(1, Math.round(d / 80)); }
+function phRank(pt) { return PH_LIST.map((p) => ({ ...p, d: phDist(pt, p) })).sort((a, b) => a.d - b.d || (b.open - a.open) || (b.part - a.part)); }
+/* M2·M3 — 자택 핀+배정 약국 핀+도보 경로선 2점 지도, 핀 탭 시 하단 시트(확정·배송·길안내) */
+function PharmAssignMap({ base, target, list, onConfirm }) {
+  const ref = useRef(null); const mapRef = useRef(null); const layRef = useRef(null);
+  const [sheet, setSheet] = useState(target);
+  useEffect(() => { setSheet(target); }, [target && target.n]);
+  useEffect(() => {
+    if (typeof L === "undefined" || !ref.current || !target) return;
+    if (!mapRef.current) { mapRef.current = L.map(ref.current, { scrollWheelZoom: false }).setView([target.lat, target.lng], 16); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(mapRef.current); }
+    const map = mapRef.current;
+    if (layRef.current) map.removeLayer(layRef.current);
+    const g = L.layerGroup().addTo(map); layRef.current = g;
+    L.marker([base.lat, base.lng], { icon: L.divIcon({ className: "", html: '<div class="ph-homepin">🏠</div>', iconSize: [34, 34], iconAnchor: [17, 17] }) }).addTo(g);
+    list.forEach((p) => {
+      L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<div class="ph-pin${p.n === target.n ? " on" : ""}">💊<span>${p.n}</span></div>`, iconSize: [10, 10], iconAnchor: [5, 5] }) }).addTo(g).on("click", () => setSheet(p));
+    });
+    L.polyline([[base.lat, base.lng], [target.lat, target.lng]], { color: "#2563EB", weight: 3, dashArray: "7 7" }).addTo(g);
+    map.flyTo([target.lat, target.lng], 16, { duration: .5 });
+    setTimeout(() => { try { map.invalidateSize(); map.flyTo([target.lat, target.lng], 16, { duration: .3 }); } catch (e) {} }, 250);
+  }, [base && base.label, target && target.n]);
+  if (!target) return null;
+  const s = sheet || target; const d = phDist(base, s);
   return (
-    <div className={`pharmpick ${showMap ? "wide" : ""}`}>
-      <div className="pp-hd">🏪 수령 약국 선택 <span>처방전은 선택한 약국으로만 전송돼요</span></div>
-      {[{ n: "온누리약국", d: "150m · 도보 2분" }, { n: "건강제일약국", d: "420m · 도보 6분" }].map((p) => (
-        <div className="pp-row" key={p.n}><b>{p.n}</b><span>{p.d}</span>
-          <button onClick={() => onPick(p.n, "방문")}>방문 수령</button>
-          <button className="dv" onClick={() => onPick(p.n, "배송")}>배송 수령</button></div>
+    <div className="phmap">
+      <div ref={ref} className="phmap-c" />
+      <div className="phsheet">
+        <b>💊 {s.n} {s.part && <i className="ph-vf">위변조 없음 ✓ 제휴</i>}</b>
+        <span>{s.addr} · {s.hrs} · {s.tel}</span>
+        <em>{base.label} · {d}m · 도보 {phWalk(d)}분 {s.open ? "· 영업중" : "· 영업 종료"}</em>
+        <div className="phsheet-b">
+          <button className="pri" onClick={() => onConfirm(s.n, "방문")}>방문 수령 확정</button>
+          <button onClick={() => onConfirm(s.n, "배송")}>배송 수령</button>
+          <a href={kakaoHref(s.n, s.lat, s.lng)} target="_blank" rel="noreferrer">🚕 길안내</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+/* P1 — "고르세요"가 아니라 "배정해 드렸어요": 기준점 토글·대안 병기·클릭 즉시 지도 포커스 */
+function PharmPickCard({ onPick }) {
+  const [base, setBase] = useState("home");
+  const [showMap, setShowMap] = useState(false);
+  const [focus, setFocus] = useState(null);
+  const pt = base === "home" ? PH_HOME : PH_CUR;
+  const ranked = phRank(pt);
+  const assigned = ranked.find((p) => p.open) || ranked[0];
+  const skipped = ranked[0].open ? null : ranked[0];
+  const others = ranked.filter((p) => p.n !== assigned.n);
+  const focusPharm = (p) => { setFocus(p); setShowMap(true); };
+  return (
+    <div className="pharmpick wide">
+      <div className="pp-hd">🏪 수령 약국 배정 <span>처방전은 선택한 약국으로만 암호화 전송돼요 ✓</span></div>
+      <div className="ph-base">
+        <button className={base === "home" ? "on" : ""} onClick={() => { setBase("home"); setFocus(null); }}>🏠 자택 주소 기준</button>
+        <button className={base === "cur" ? "on" : ""} onClick={() => { setBase("cur"); setFocus(null); }}>📍 현재 위치 기준</button>
+        <i>⚠ 시연용 예시 데이터</i>
+      </div>
+      <div className="ph-assign">
+        <b>{assigned.n} <em className="asg">배정</em> {assigned.part && <em className="vf">위변조 없음 ✓ 제휴</em>}</b>
+        <span>{pt.label} · {assigned.d}m · 도보 {phWalk(assigned.d)}분 · {assigned.open ? "영업중" : "영업 종료"}</span>
+        <p>{pt.label.replace(" 기준", "")}에서 가장 가까운 약국으로 자동 배정했어요 — 변경하시려면 아래 다른 약국을 누르세요.</p>
+        {skipped && <p className="ph-skip">※ 최근접 {skipped.n}({skipped.d}m)은 지금 영업 종료라, 영업중인 약국으로 배정했어요.</p>}
+        <div className="ph-btns">
+          <button className="pri" onClick={() => onPick(assigned.n, "방문")}>방문 수령 확정</button>
+          <button onClick={() => onPick(assigned.n, "배송")}>배송 수령</button>
+          <button onClick={() => focusPharm(assigned)}>🗺 지도</button>
+          <a href={kakaoHref(assigned.n, assigned.lat, assigned.lng)} target="_blank" rel="noreferrer">🚕 길안내</a>
+        </div>
+      </div>
+      {others.map((p) => (
+        <div className={`pp-row ${!p.open ? "closed" : ""}`} key={p.n} onClick={() => focusPharm(p)}>
+          <b>{p.n}</b><span>{p.d}m · 도보 {phWalk(p.d)}분 {p.open ? "· 영업중" : "· 영업 종료"}</span>
+          <button onClick={(e) => { e.stopPropagation(); onPick(p.n, "방문"); }}>방문 수령</button>
+          <button className="dv" onClick={(e) => { e.stopPropagation(); onPick(p.n, "배송"); }}>배송 수령</button>
+        </div>
       ))}
-      <button className="pp-map" onClick={() => setShowMap((v) => !v)}>🗺 {showMap ? "지도 접기 ▲" : "약국 위치 지도 보기 — 내 주변 전체 약국"}</button>
-      {showMap && <div className="pp-mapwrap"><PharmMapInline /></div>}
+      {showMap && <PharmAssignMap base={pt} target={focus || assigned} list={ranked} onConfirm={onPick} />}
+      {!showMap && <button className="pp-map" onClick={() => focusPharm(assigned)}>🗺 지도에서 위치 보기 — 자택 핀 + 배정 약국 핀 + 도보 경로</button>}
     </div>
   );
 }
