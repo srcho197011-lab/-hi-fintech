@@ -239,7 +239,7 @@ const TOOL_RUN = {
   /* ══ Phase 6 비대면진료 — 하이 퍼스트 경로 ══ */
   // 원격진료 연결 준비 — 예진 요약 예고 + 전문의 상담 탭 딥링크(+RPM 경보 컨텍스트)
   teleprep(m) { try {
-    try { if (typeof window !== "undefined") window._teleGoSpecialist = true; window.dispatchEvent(new CustomEvent("telego")); } catch (e) {}
+    try { if (typeof window !== "undefined") { window._teleGoSpecialist = true; window._teleAutoStart = true; } window.dispatchEvent(new CustomEvent("telego")); } catch (e) {}
     const nm = m && m.name ? m.name : "회원";
     const a = (typeof rpmAlert === "function") ? rpmAlert(m) : null;
     if (a) { try { window._teleRPM = `${a.rel} ${a.name}님 ${a.summary}`; } catch (e) {} }

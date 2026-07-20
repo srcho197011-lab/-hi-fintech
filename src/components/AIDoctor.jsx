@@ -878,8 +878,24 @@ function SpecialistChat() {
   const [sel, setSel] = useState(null); const [booked, setBooked] = useState(false); const [visit, setVisit] = useState("재진");
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState(""); const [typing, setTyping] = useState(false);
-  const [video, setVideo] = useState(false); const [plus, setPlus] = useState(false);
+  const [plus, setPlus] = useState(false);
+  /* 통합 상담(UnifiedConsult) — 화상+텍스트 한 화면: session(상담 시작됨)·vmode(null=텍스트만/split=기본/full=확대/pip=축소)·camOff(음성만) */
+  const [session, setSession] = useState(false);
+  const [vmode, setVmode] = useState(null);
+  const [camOff, setCamOff] = useState(false);
+  const [vidErr, setVidErr] = useState(false);
+  const [lawOpen, setLawOpen] = useState(false);
+  const [csEnded, setCsEnded] = useState(false);
   const fileRef = useRef(null); const endRef = useRef(null);
+  const vmodeRef = useRef(null); useEffect(() => { vmodeRef.current = vmode; }, [vmode]);
+  const kbAutoRef = useRef(null);
+  /* M1: 키보드가 올라오면 화상은 자동 PIP로 축소, 내려가면 원복(visualViewport) */
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const f = () => { try { const kb = window.innerHeight - vv.height; if (kb > 120) { if ((vmodeRef.current === "split" || vmodeRef.current === "full") && !kbAutoRef.current) { kbAutoRef.current = vmodeRef.current; setVmode("pip"); } } else if (kbAutoRef.current) { setVmode(kbAutoRef.current); kbAutoRef.current = null; } } catch (e) {} };
+    vv.addEventListener("resize", f); return () => vv.removeEventListener("resize", f);
+  }, []);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
   const list = (typeof genSpecialists === "function") ? genSpecialists(sido, sigungu, deptKey) : [];
   const sigus = (typeof REGION_KB !== "undefined" && REGION_KB[sido]) || [];
@@ -906,6 +922,29 @@ function SpecialistChat() {
   const send = (textArg) => { const text = (textArg ?? input).trim(); if (!text || !sel) return; setInput(""); setPlus(false); setMsgs((m) => [...m, { id: ++UID, who: "me", kind: "text", text, time: now() }]); reply(); };
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); reply(); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
   const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 원격진료 상담이 접수되었습니다.\n현재는 내원 예약 목적의 상담만 가능해요 — 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다.\n비대면진료 제도화 법령이 시행되면 같은 접수 그대로 진료·처방까지 원격으로 진행되고, ${(typeof _member === "function" && _member()) ? _member().name : "회원"}님은 우선 연결 대상으로 등록돼요. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 ${sel.hosp} 원격진료 상담 접수(내원 연계) · 상담내역 전달`); };
+  /* U1·U4 — 원격상담 시작: 접수는 별도 화면 없이 스트림 카드로, 화상은 선택(나중에 '화상 켜기'로 승격) */
+  const startConsult = (withVideo) => {
+    if (!sel) return;
+    if (!session) {
+      setSession(true); setCsEnded(false);
+      setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🩺 원격상담이 시작됐어요 — 화상과 텍스트를 한 화면에서 함께 쓸 수 있어요. 말로 하셔도 되고, 의사가 글로 남긴 안내는 통화 중에도 말풍선으로 보여요.\n(현재는 내원 예약 목적 상담 — 법 시행 즉시 이 화면 그대로 진료로 전환됩니다)`, first: true, time: now() }]);
+    }
+    if (withVideo) { setVmode("split"); setCamOff(false); setVidErr(false); }
+    if (typeof toast === "function") toast(withVideo ? "📹 화상 연결(시연) — 텍스트 입력도 계속 열려 있어요" : "💬 텍스트 상담 시작 — 언제든 '화상 켜기'로 승격돼요");
+  };
+  /* A3 — 상담 종료: 하이 요약 카드 자동 생성 + 2세대 자산 편입(위변조 없음 ✓) */
+  const endConsult = () => {
+    setVmode(null); kbAutoRef.current = null;
+    if (csEnded || !sel) return; setCsEnded(true);
+    let hash = null;
+    try { const m2 = (typeof _member === "function") ? _member() : null; if (m2) { const tk = anonToken(m2); const b = chainAppend({ type: "record", token: tk, note: `원격상담 요약(${sel.hosp} ${sel.name}) — 2세대 분석 자산 편입` }); hash = b && b.hash; vaultAccessLog(tk, "member", "원격상담 종료 — 하이 요약 생성·자산 편입"); } } catch (e) {}
+    setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "hisum", hisum: { dr: `${sel.name} (${sel.hosp})`, tips: `${sel.tags[0]} 관련 생활관리 유지 · 이상 증상 시 즉시 재상담`, next: "2주 후 재측정 리마인드 · 필요 시 내원 정밀검사 연계(하이가 챙겨드려요)", hash }, time: now() }]);
+    if (typeof toast === "function") toast("🤖 하이가 상담 요약을 남겼어요 — 기록은 데이터 금고에 편입");
+  };
+  /* M5 — 네트워크 불안정: 영상이 끊겨도 텍스트는 유지, 재연결 안내 */
+  const netNotice = () => { setVidErr(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: "📶 영상이 불안정해요 — 텍스트로 계속 상담할 수 있어요. 화상 영역의 '화상 재연결'을 누르면 다시 시도하고, 그동안의 채팅 기록은 그대로 보존돼요.", first: true, time: now() }]); };
+  /* 하이 퍼스트: "원격상담 시작해줘" 딥링크 — 의사 선택 직후 자동 시작 */
+  useEffect(() => { try { if (sel && typeof window !== "undefined" && window._teleAutoStart) { window._teleAutoStart = false; setTimeout(() => startConsult(true), 250); } } catch (e) {} }, [sel]);
   /* Phase 6 — 진료 후 팔로업(I2-5)+청구 0단계(I2-7): 처방 발행 시 전자처방전 문서·요약 자산화·자동 청구·복약 리마인드 */
   const rxIssue = () => {
     if (!sel) return;
@@ -991,19 +1030,24 @@ function SpecialistChat() {
     );
   }
   return (
-    <div className="kt">
-      {video && <VideoCallModal title={`${sel.name} · ${sel.dept}`} sub={`${sel.hosp} 화상상담`} onClose={() => setVideo(false)} msgs={msgs} onSend={(t) => send(t)} />}
+    <div className={`kt ktuni ${vmode || "novid"}`}>
       <div className="kt-head"><ArrowLeft size={20} className="ic" onClick={() => setSel(null)} style={{ cursor: "pointer" }} /><span className="av-ai" style={{ width: 32, height: 32, background: "#EAF0FE" }}><Stethoscope size={18} color="#2563EB" /></span>
         <div style={{ flex: 1 }}><div className="nm">{sel.name} · {sel.dept}</div><div className="st"><span className="dot" /> {sel.hosp} · {tmSidoShort(sel.sido)} {sel.sigungu}</div></div>
-        <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={18} /></button></div>
+        <button className="ktib" onClick={() => (vmode ? setVmode(null) : startConsult(true))} title={vmode ? "화상 끄기" : "화상 켜기"}><MonitorSmartphone size={18} /></button></div>
       <div className="tmcta">
         <div className="tmctat"><Building2 size={14} color="#2563EB" /> <b>{sel.hosp}</b> 원격주치의 · {tmSidoShort(sel.sido)} {sel.sigungu}</div>
-        <p>비대면 상담 후, 필요 시 우리 병원 정밀검사·진료로 연계해 드려요.</p>
-        <div className="tmctab"><button onClick={() => setVideo(true)}><MonitorSmartphone size={13} /> 화상상담</button><button className={`pri ${booked ? "done" : ""}`} onClick={book}><CalendarCheck size={13} /> {booked ? "원격진료 상담 접수됨 ✓" : "원격진료 상담"}</button></div>
+        <p>화상·음성·텍스트를 한 화면에서 — 접수·예진 전달·연결이 이 화면 안에서 끝나요. 필요 시 우리 병원 정밀검사·진료로 연계해 드려요.</p>
+        <div className="tmctab">
+          <button className={`pri ${session ? "done" : ""}`} onClick={() => startConsult(true)}><MonitorSmartphone size={13} /> {session ? (vmode ? "원격상담 진행 중 ✓" : "화상 다시 켜기") : "원격상담 시작"}</button>
+          {!session && <button onClick={() => startConsult(false)}>💬 텍스트로만 시작</button>}
+          {session && <button className={booked ? "done" : ""} onClick={book}><CalendarCheck size={13} /> {booked ? "내원 연계 접수됨 ✓" : "내원 진료 연계"}</button>}
+        </div>
       </div>
       {typeof TELE_LAW_NOTICE !== "undefined" && (
-        <div className="telaw"><b>⚖️ 원격진료 시스템 완비 — 법 시행 즉시 개시</b>
-          <p>{TELE_LAW_NOTICE.on} {TELE_LAW_NOTICE.wait} <em>{TELE_LAW_NOTICE.now}</em></p></div>
+        <div className={`telaw fold ${lawOpen ? "open" : ""}`} onClick={() => setLawOpen(!lawOpen)} role="button">
+          <b>⚖️ 원격진료 시스템 완비 — 법 시행 즉시 개시 <i className="telaw-tg">{lawOpen ? "▲ 접기" : "▼ 자세히"}</i></b>
+          {lawOpen ? <p>{TELE_LAW_NOTICE.on} {TELE_LAW_NOTICE.wait} <em>{TELE_LAW_NOTICE.now}</em></p> : <span className="telaw-min">{TELE_LAW_NOTICE.now}</span>}
+        </div>
       )}
       <div className="teli">
         <span className="telil"><ShieldCheck size={12} /> 비대면 진료유형</span>
@@ -1011,6 +1055,24 @@ function SpecialistChat() {
         <button className={visit === "초진" ? "on" : ""} onClick={() => setVisit("초진")}>초진</button>
         <span className={`telim ${visit === "초진" ? "lim" : ""}`}>{tier} · {eligMsg}</span>
       </div>
+      {vmode && (
+        <div className={`uvc ${vmode} ${camOff ? "cam0" : ""}`}>
+          {!camOff && !vidErr ? (
+            <video src="data/media/tele_doctor.mp4" autoPlay loop muted playsInline onError={netNotice} />
+          ) : (
+            <div className="uvc-audio"><span className="uvc-prof"><Stethoscope size={28} color="#fff" /></span><div className="uvc-wave"><i /><i /><i /><i /><i /></div><em>{vidErr ? "영상 불안정 — 음성·텍스트로 계속 상담 중" : "카메라 꺼짐 — 음성 상담 중"}</em></div>
+          )}
+          <div className="uvc-ov"><b>{sel.name} · {sel.dept}</b><span>{sel.hosp} · 의료인 면허 확인 ✓</span><em>🔒 이 상담은 안전하게 암호화됩니다 ✓ · ⚠ 시연용</em></div>
+          <div className="uvc-self">나</div>
+          {vmode === "full" && <div className="uvc-cap">{msgs.filter((m) => m.kind === "text").slice(-2).map((m) => <div key={m.id} className={`uvc-c ${m.who}`}>{m.who === "me" ? "🙂 " : "👨‍⚕️ "}{String(m.text).split("\n")[0].slice(0, 56)}</div>)}</div>}
+          <div className="uvc-ctl">
+            <button onClick={() => { if (vidErr) { setVidErr(false); setCamOff(false); } else setCamOff(!camOff); }}>{vidErr ? "📷 화상 재연결" : camOff ? "📷 켜기" : "📷 끄기"}</button>
+            <button onClick={() => setVmode(vmode === "full" ? "split" : "full")}>{vmode === "full" ? "▣ 기본" : "⛶ 확대"}</button>
+            <button onClick={() => setVmode(vmode === "pip" ? "split" : "pip")}>{vmode === "pip" ? "▣ 기본" : "◱ 축소"}</button>
+            <button className="end" onClick={endConsult}>종료</button>
+          </div>
+        </div>
+      )}
       <div className="kt-body">
         <div className="daypill"><Stethoscope size={12} style={{ verticalAlign: -2, marginRight: 3 }} /> 원격주치의 1:1 상담 · 참고용</div>
         {msgs.map((m) => (
@@ -1028,6 +1090,16 @@ function SpecialistChat() {
                     {m.brief.rpm && <span className="pb-rpm">📈 RPM: {m.brief.rpm}</span>}
                   </div>
                   <div className="pb-note">검진·리포트 기반 가명 요약만 전달 · 열람 기록은 데이터 금고 접근 이력에 남아요</div>
+                </div>
+              ) : m.kind === "hisum" ? (
+                <div className="hisum">
+                  <div className="hs-hd">🤖 하이 상담 요약 — 종료 시 자동 생성</div>
+                  <div className="hs-rows">
+                    <span><i>의사 안내</i>{m.hisum.tips}</span>
+                    <span><i>다음 일정</i>{m.hisum.next}</span>
+                    <span><i>담당</i>{m.hisum.dr}</span>
+                  </div>
+                  <div className="hs-ft">진료 기록이 2세대(분석) 자산으로 데이터 금고에 편입 — 위변조 없음 ✓{m.hisum.hash ? ` · 해시 ${String(m.hisum.hash).slice(0, 12)}…` : ""}</div>
                 </div>
               ) : m.kind === "rx" ? (
                 <div className="rxdoc">
@@ -1056,13 +1128,14 @@ function SpecialistChat() {
         <div ref={endRef} />
       </div>
       {typeof TELE_CASES !== "undefined" && <div className="telcases"><span className="telml">진료 사례 체험</span>{TELE_CASES.map((c) => <button key={c.key} onClick={() => runCase(c)}>{c.label}</button>)}</div>}
-      <div className="telmodes"><span className="telml">진료 방식</span><button className="on">💬 메시지(비동기 · 24h 내 답변)</button><button onClick={() => { if (typeof toast === "function") toast("🎙 음성 상담 연결(시연) — 실서비스는 통화로 이어져요"); }}>🎙 음성</button><button onClick={() => setVideo(true)}>📹 화상</button></div>
-      <div className="quicks"><button onClick={() => setVideo(true)}>📹 화상상담</button><button onClick={book}>🏥 원격진료 상담</button><button onClick={rxIssue}>💊 처방전 발행</button><button onClick={() => send("검진 결과를 상담받고 싶어요")}>검진 결과 상담</button></div>
+      <div className="telmodes"><span className="telml">진료 방식</span><button className={!vmode ? "on" : ""} onClick={() => setVmode(null)}>💬 메시지(비동기 · 24h 내 답변)</button><button className={vmode && camOff ? "on" : ""} onClick={() => { startConsult(true); setCamOff(true); }}>🎙 음성</button><button className={vmode && !camOff ? "on" : ""} onClick={() => startConsult(true)}>📹 화상</button></div>
+      <div className="quicks"><button onClick={() => (vmode ? setVmode(null) : startConsult(true))}>📹 {vmode ? "화상 끄기" : "화상 켜기"}</button><button onClick={book}>🏥 내원 연계</button><button onClick={rxIssue}>💊 처방전 발행</button><button onClick={() => send("검진 결과를 상담받고 싶어요")}>검진 결과 상담</button></div>
       <div className="kt-input">
-        {plus && (<div className="plus-sheet"><button onClick={() => fileRef.current && fileRef.current.click()}><ImageIcon size={20} color="#2563EB" />사진·검진결과</button><button onClick={() => fileRef.current && fileRef.current.click()}><Paperclip size={20} color="#16A34A" />파일</button><button onClick={() => { setPlus(false); setVideo(true); }}><MonitorSmartphone size={20} color="#7C3AED" />화상상담</button></div>)}
+        {plus && (<div className="plus-sheet"><button onClick={() => fileRef.current && fileRef.current.click()}><ImageIcon size={20} color="#2563EB" />사진·검진결과</button><button onClick={() => fileRef.current && fileRef.current.click()}><Paperclip size={20} color="#16A34A" />파일</button><button onClick={() => { setPlus(false); startConsult(true); }}><MonitorSmartphone size={20} color="#7C3AED" />화상 켜기</button></div>)}
         <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={onFile} />
         <button className="pl" onClick={() => setPlus((p) => !p)}>{plus ? <X size={22} /> : <Plus size={22} />}</button>
-        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="전문의에게 메시지를 입력하세요" />
+        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={vmode ? "화상 중에도 텍스트로 질문할 수 있어요" : "전문의에게 메시지를 입력하세요"} />
+        <button className="mic" onClick={() => { if (typeof toast === "function") toast("🎤 음성 입력(시연) — 말씀하시면 텍스트로 변환돼 입력창에 들어가요"); }} title="음성으로 입력"><Mic size={18} /></button>
         <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
       </div>
       <div className="kt-disc">원격주치의 상담 · 참고용이며 실제 진단·처방을 대체하지 않습니다. 응급 시 119.</div>
