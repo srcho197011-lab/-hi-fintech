@@ -5078,3 +5078,48 @@ body.easyread .hibrief-t { font-size: 17px; }
 .pharmpick .pp-row button { flex-shrink: 0; min-height: 36px; }
 .ph-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 6px; }
 .ph-btns button, .ph-btns a { justify-content: center; width: 100%; box-sizing: border-box; }
+
+/* ═══ 방문수령증 QR + 약국 검수 ═══ */
+.pucard { background: linear-gradient(135deg, #FFFBEB, #FEF9C3); border: 1.5px solid #FDE047; border-radius: 14px; padding: 12px 14px; max-width: 86%; }
+.pucard.done { background: linear-gradient(135deg, #F0FDF4, #ECFDF5); border-color: #86EFAC; }
+.pu-hd { font-size: 13px; font-weight: 800; color: #854D0E; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pucard.done .pu-hd { color: #14532D; }
+.pu-hd em { font-style: normal; font-size: 10px; font-weight: 800; border-radius: 99px; padding: 2px 9px; }
+.pu-hd em.wait { background: #FEF08A; color: #854D0E; }
+.pu-hd em.ok { background: #16A34A; color: #fff; }
+.pu-body { display: flex; gap: 12px; margin-top: 9px; align-items: center; }
+.pu-qr { width: 128px; height: 128px; background: #fff; border-radius: 12px; padding: 8px; box-sizing: content-box; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .08); flex-shrink: 0; }
+.pu-qr img, .pu-qr canvas { width: 100% !important; height: 100% !important; }
+.pu-qr.big { width: 260px; height: 260px; cursor: default; margin: 12px auto; }
+.pu-fb { font-size: 18px; font-weight: 900; color: #0F172A; text-align: center; font-variant-numeric: tabular-nums; }
+.pu-fb.big { font-size: 28px; }
+.pu-info { min-width: 0; }
+.pu-info b { font-size: 16px; color: #0F172A; font-variant-numeric: tabular-nums; display: block; }
+.pu-info span { display: block; font-size: 11px; color: #78716C; margin-top: 2px; }
+.pu-info i { display: block; font-style: normal; font-size: 10px; color: #A16207; margin-top: 5px; line-height: 1.45; }
+.pucard.done .pu-info i { color: #3D7A55; }
+.pu-ft { margin-top: 9px; border-top: 1px dashed #FDE047; padding-top: 6px; font-size: 10.5px; color: #A16207; }
+.pucard.done .pu-ft { border-color: #86EFAC; color: #15803D; font-weight: 700; }
+.pufull { position: fixed; inset: 0; background: rgba(15, 23, 42, .7); z-index: 1400; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.pufull-b { background: #fff; border-radius: 20px; padding: 20px 22px; text-align: center; max-width: 340px; width: 100%; }
+.pufull-b > b { font-size: 15px; color: #0F172A; }
+.pufull-b span { display: block; font-size: 11px; color: #64748B; line-height: 1.5; }
+.pufull-b button { margin-top: 12px; width: 100%; border: none; background: #0F172A; color: #fff; border-radius: 11px; padding: 12px; font-size: 13px; font-weight: 800; cursor: pointer; min-height: 44px; }
+.puv-in { display: flex; gap: 7px; margin-top: 9px; }
+.puv-in input { flex: 1; border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 13px; font-size: 13px; font-variant-numeric: tabular-nums; outline: none; }
+.puv-in button { border: none; background: #1D4ED8; color: #fff; border-radius: 10px; padding: 10px 18px; font-size: 12.5px; font-weight: 800; cursor: pointer; min-height: 44px; }
+.puv-steps { margin-top: 9px; display: flex; flex-direction: column; gap: 5px; }
+.puv-s { font-size: 11.5px; font-weight: 700; border-radius: 8px; padding: 7px 10px; }
+.puv-s.ok { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+.puv-s.no { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+.puv-fail { font-size: 11.5px; font-weight: 800; color: #B91C1C; background: #FEF2F2; border: 1.5px solid #FCA5A5; border-radius: 9px; padding: 8px 11px; }
+.puv-ok { margin-top: 10px; background: #F0FDF4; border: 1.5px solid #86EFAC; border-radius: 11px; padding: 10px 12px; }
+.puv-ok b { font-size: 13px; color: #14532D; display: block; font-variant-numeric: tabular-nums; }
+.puv-ok span { display: block; font-size: 11px; color: #3D7A55; margin-top: 2px; }
+.puv-id { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #14532D; font-weight: 700; margin-top: 8px; cursor: pointer; }
+.puv-id input { width: 16px; height: 16px; }
+.puv-done { margin-top: 9px; width: 100%; border: none; background: #16A34A; color: #fff; border-radius: 10px; padding: 11px; font-size: 12.5px; font-weight: 800; cursor: pointer; min-height: 44px; }
+.puv-done:disabled { background: #CBD5E1; cursor: not-allowed; }
+.puv-donemsg { margin-top: 9px; font-size: 11.5px; font-weight: 700; color: #15803D; background: #F0FDF4; border-radius: 9px; padding: 8px 11px; }
+.puv-fill { border: 1px solid #BFDBFE; background: #EFF6FF; color: #1D4ED8; border-radius: 8px; padding: 4px 10px; font-size: 10.5px; font-weight: 800; cursor: pointer; }
+@media (max-width: 560px) { .pu-body { flex-direction: column; align-items: flex-start; } .pucard { max-width: 100%; } }

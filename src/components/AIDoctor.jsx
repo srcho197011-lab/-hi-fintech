@@ -919,6 +919,36 @@ function PharmAssignMap({ base, target, list, onConfirm }) {
     </div>
   );
 }
+/* 방문수령증 QR 카드(Q1~Q5) — 실제 스캔 가능 QR(qrcodejs), 실패 시 수령번호 폴백, 수령 완료 실시간 동기화 */
+function PickupCard({ pu }) {
+  const qrRef = useRef(null); const bigRef = useRef(null);
+  const [full, setFull] = useState(false);
+  const [, setTick] = useState(0);
+  useEffect(() => { const f = () => setTick((t) => t + 1); window.addEventListener("pudone", f); return () => window.removeEventListener("pudone", f); }, []);
+  const rec = (() => { try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); return rl.find((r) => r.pu === pu.pu) || null; } catch (e) { return null; } })();
+  const used = !!(rec && rec.puUsed);
+  const status = used ? "수령 완료 ✓" : (rec && /조제 완료/.test(rec.status || "") ? "수령 대기" : "조제중");
+  const payload = `HIFIN|${pu.pu}|${pu.rxNo}|${String(pu.hash || "").slice(0, 16)}`;
+  const drawQR = (el, size) => { if (!el) return false; try { el.innerHTML = ""; if (typeof QRCode !== "undefined") { new QRCode(el, { text: payload, width: size, height: size, correctLevel: QRCode.CorrectLevel.M }); return true; } } catch (e) {} return false; };
+  useEffect(() => { if (!drawQR(qrRef.current, 128) && qrRef.current) qrRef.current.innerHTML = '<div class="pu-fb">' + pu.pu + "</div>"; }, [pu.pu]);
+  useEffect(() => { if (full) setTimeout(() => { if (!drawQR(bigRef.current, 260) && bigRef.current) bigRef.current.innerHTML = '<div class="pu-fb big">' + pu.pu + "</div>"; }, 60); }, [full]);
+  return (
+    <div className={`pucard ${used ? "done" : ""}`}>
+      {full && <div className="pufull" onClick={() => setFull(false)}><div className="pufull-b" onClick={(e) => e.stopPropagation()}><b>🎫 방문수령증 · {pu.pu}</b><div ref={bigRef} className="pu-qr big" /><span>약국 카운터에서 이 화면을 보여주세요 — 화면 밝기를 최대로 하면 스캔이 잘 돼요</span><button onClick={() => setFull(false)}>닫기</button></div></div>}
+      <div className="pu-hd">🎫 방문수령증 — 핸드폰으로 제시 <em className={used ? "ok" : "wait"}>{status}</em></div>
+      <div className="pu-body">
+        <div ref={qrRef} className="pu-qr" onClick={() => setFull(true)} title="탭하면 크게 보기" />
+        <div className="pu-info">
+          <b>{pu.pu}</b>
+          <span>{pu.pharm} · 처방 {pu.rxNo}</span>
+          <span>유효 24시간 · 1회용{used && rec && rec.puAt ? ` · ${new Date(rec.puAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 수령` : ""}</span>
+          <i>약국은 이 QR로 처방 위변조 없음을 확인해요 ✓ · 이름·주민번호는 담기지 않아요</i>
+        </div>
+      </div>
+      <div className="pu-ft">{used ? "수령 완료 — 복약 리마인드는 하이가 챙겨드려요 💊" : "QR을 탭하면 크게 보여요 · 약사가 신분 확인 후 조제약을 드려요 · ⚠ 시연용"}</div>
+    </div>
+  );
+}
 /* P1 — "고르세요"가 아니라 "배정해 드렸어요": 기준점 토글·대안 병기·클릭 즉시 지도 포커스 */
 function PharmPickCard({ onPick }) {
   const [base, setBase] = useState("home");
@@ -1070,11 +1100,26 @@ function SpecialistChat() {
     setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🧪 혈액검사·복부초음파 검사 의뢰서를 발행해 가까운 제휴 검진기관으로 전송했습니다. 검사 후 결과가 도착하면 하이가 알려드리고, 비대면으로 결과 설명 상담을 이어드립니다. (검사 의뢰·검사결과 설명은 비대면 가능 행위입니다)`, first: true, time: now() }]);
     if (typeof toast === "function") toast("🧪 검사 의뢰서 전송 완료");
   };
-  /* 약국 선택 → 전송·접수·조제·수령 실시간 추적 체인(약사법 절차) */
+  /* 약국 선택 → 전송·접수·조제·수령 실시간 추적 체인(약사법 절차) + 방문 수령 시 수령증 QR 발급(Q1) */
   const pharmPick = (ph, mode) => {
-    try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { rl[rl.length - 1].status = `${ph} 전송(${mode} 수령)`; rl[rl.length - 1].pharm = ph; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
-    setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `📤 ${ph}(으)로 전자처방전 전송 완료 — ${mode} 수령. 처방전은 선택하신 약국으로만 암호화 전송되며, 이후 단계는 하이가 실시간으로 알려드려요.`, first: true, time: now() }]);
-    if (typeof toast === "function") toast(`📤 ${ph} 처방전 전송(${mode})`);
+    let pu = null, puData = null;
+    try {
+      const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]");
+      if (rl.length) {
+        const last = rl[rl.length - 1];
+        last.status = `${ph} 전송(${mode} 수령)`; last.pharm = ph;
+        if (mode === "방문") {
+          pu = "PU-" + Date.now().toString(36).toUpperCase().slice(-6);
+          last.pu = pu; last.puExp = Date.now() + 24 * 3600 * 1000; last.puUsed = false;
+          puData = { pu, pharm: ph, rxNo: last.id, hash: last.hash || null, exp: last.puExp };
+        }
+        localStorage.setItem("hifin_rx", JSON.stringify(rl));
+      }
+    } catch (e) {}
+    setMsgs((m) => [...m,
+      { id: ++UID, who: "ai", kind: "text", text: `📤 ${ph}(으)로 전자처방전 전송 완료 — ${mode} 수령. 처방전은 선택하신 약국으로만 암호화 전송되며, 이후 단계는 하이가 실시간으로 알려드려요.`, first: true, time: now() },
+      ...(puData ? [{ id: ++UID, who: "ai", kind: "pickup", pu: puData, time: now() }] : [])]);
+    if (typeof toast === "function") toast(pu ? `📤 ${ph} 처방전 전송 · 방문수령증 QR 발급(${pu})` : `📤 ${ph} 처방전 전송(${mode})`);
     setTimeout(() => { setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🏪 ${ph} 접수 완료 — 약사가 처방을 검토하고 조제를 시작했어요. (조제중)`, first: true, time: now() }]); }, 2500);
     setTimeout(() => {
       setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: mode === "배송" ? `🚚 조제 완료 · 배송 시작 — 오늘 저녁 도착 예정이에요. 수령이 확인되면 복약지도 안내와 함께 복약 리마인드를 시작할게요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)` : `✅ 조제 완료 — 지금 방문하시면 수령 가능해요. 신분 확인 후 약사의 복약지도와 함께 수령하세요. 수령 확인 후 복약 리마인드를 시작할게요.`, first: true, time: now() }]);
@@ -1206,6 +1251,8 @@ function SpecialistChat() {
                 </div>
               ) : m.kind === "pharm" ? (
                 <PharmPickCard onPick={pharmPick} />
+              ) : m.kind === "pickup" ? (
+                <PickupCard pu={m.pu} />
               ) : m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
                 <div className="meta"><span>{m.time}</span></div></div></div></div>
         ))}
