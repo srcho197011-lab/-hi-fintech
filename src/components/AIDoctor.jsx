@@ -893,9 +893,9 @@ function PharmAssignMap({ base, target, list, onConfirm }) {
     const map = mapRef.current;
     if (layRef.current) map.removeLayer(layRef.current);
     const g = L.layerGroup().addTo(map); layRef.current = g;
-    L.marker([base.lat, base.lng], { icon: L.divIcon({ className: "", html: '<div class="ph-homepin">🏠</div>', iconSize: [34, 34], iconAnchor: [17, 17] }) }).addTo(g);
+    L.marker([base.lat, base.lng], { icon: L.divIcon({ className: "", html: '<div class="ph-homepin">🏠<i>자택</i></div>', iconSize: [34, 42], iconAnchor: [17, 38] }) }).addTo(g);
     list.forEach((p) => {
-      L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<div class="ph-pin${p.n === target.n ? " on" : ""}">💊<span>${p.n}</span></div>`, iconSize: [10, 10], iconAnchor: [5, 5] }) }).addTo(g).on("click", () => setSheet(p));
+      L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<div class="ph-pin${p.n === target.n ? " on" : ""}"><span>${p.n}</span><b>💊</b><u></u></div>`, iconSize: [30, 46], iconAnchor: [15, 44] }) }).addTo(g).on("click", () => setSheet(p));
     });
     L.polyline([[base.lat, base.lng], [target.lat, target.lng]], { color: "#2563EB", weight: 3, dashArray: "7 7" }).addTo(g);
     map.flyTo([target.lat, target.lng], 16, { duration: .5 });
@@ -952,7 +952,7 @@ function PharmPickCard({ onPick }) {
       </div>
       {others.map((p) => (
         <div className={`pp-row ${!p.open ? "closed" : ""}`} key={p.n} onClick={() => focusPharm(p)}>
-          <b>{p.n}</b><span>{p.d}m · 도보 {phWalk(p.d)}분 {p.open ? "· 영업중" : "· 영업 종료"}</span>
+          <div className="ppr-i"><b>{p.n}</b><span>{p.d}m · 도보 {phWalk(p.d)}분 · {p.open ? "영업중" : "영업 종료"}</span></div>
           <button onClick={(e) => { e.stopPropagation(); onPick(p.n, "방문"); }}>방문 수령</button>
           <button className="dv" onClick={(e) => { e.stopPropagation(); onPick(p.n, "배송"); }}>배송 수령</button>
         </div>
