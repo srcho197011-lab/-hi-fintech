@@ -1063,7 +1063,7 @@ function SpecialistChat() {
             <div className="uvc-audio"><span className="uvc-prof"><Stethoscope size={28} color="#fff" /></span><div className="uvc-wave"><i /><i /><i /><i /><i /></div><em>{vidErr ? "영상 불안정 — 음성·텍스트로 계속 상담 중" : "카메라 꺼짐 — 음성 상담 중"}</em></div>
           )}
           <div className="uvc-ov"><b>{sel.name} · {sel.dept}</b><span>{sel.hosp} · 의료인 면허 확인 ✓</span><em>🔒 이 상담은 안전하게 암호화됩니다 ✓ · ⚠ 시연용</em></div>
-          <div className="uvc-self">나</div>
+          <div className="uvc-self"><video src="data/media/tele_pt_male.mp4" autoPlay loop muted playsInline /><span>나</span></div>
           {vmode === "full" && <div className="uvc-cap">{msgs.filter((m) => m.kind === "text").slice(-2).map((m) => <div key={m.id} className={`uvc-c ${m.who}`}>{m.who === "me" ? "🙂 " : "👨‍⚕️ "}{String(m.text).split("\n")[0].slice(0, 56)}</div>)}</div>}
           <div className="uvc-ctl">
             <button onClick={() => { if (vidErr) { setVidErr(false); setCamOff(false); } else setCamOff(!camOff); }}>{vidErr ? "📷 화상 재연결" : camOff ? "📷 켜기" : "📷 끄기"}</button>

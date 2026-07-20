@@ -5016,3 +5016,7 @@ body.easyread .hibrief-t { font-size: 17px; }
 /* sticky top 보정 — 고정 헤더 아래에 붙도록 */
 .uvc.split { top: 64px; }
 @media (max-width: 640px) { .uvc.split { top: 150px; } }
+/* 내 카메라 PIP — 회원(환자) 데모 영상 */
+.uvc-self { overflow: hidden; padding: 0; width: 92px; height: 66px; position: absolute; }
+.uvc-self video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.uvc-self span { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(2, 6, 23, .55); font-size: 9px; text-align: center; padding: 1px 0; }
