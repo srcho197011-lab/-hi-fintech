@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=1f44f18f0c" />
+<link rel="stylesheet" href="./data/app.css?v=f3850306ae" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -40,9 +40,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=1f44f18f0c"></script>
-<script src="./src/data/section_data.js?v=1f44f18f0c"></script>
-<script src="./src/data/demo_members.js?v=1f44f18f0c"></script>
+<script src="./src/data/dummy_data.js?v=f3850306ae"></script>
+<script src="./src/data/section_data.js?v=f3850306ae"></script>
+<script src="./src/data/demo_members.js?v=f3850306ae"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -9905,17 +9905,78 @@ function B2BSubsConsole() {
 }
 
 /* ── ② 의사 콘솔 ── */
+/* 의사 시점 상담 화면 — 예진 고정 + 환자 채팅 + 처방·검사·내원·진료종료 액션(시연 스크립트) */
+const DRC_SCRIPT = {
+  q1: ["아버지 혈압이 오늘 새벽 152/94까지 올라서 걱정돼서 연결했어요. 어지럼은 없다고 하시는데 약은 드시고 계세요.", "네, 암로디핀 5mg 하루 한 번 드세요. 최근 며칠 잠을 잘 못 주무시긴 했어요.", "알겠습니다, 말씀하신 대로 아침·저녁으로 재서 올릴게요. 감사합니다 선생님."],
+  q2: ["팔 안쪽에 붉은 발진이 일주일째예요. 사진 첨부했는데 가렵기도 해요.", "생각해보니 새 세제로 바꾼 뒤부터 그런 것 같아요.", "네, 연고 처방해주시면 잘 바르고 일주일 뒤에 다시 보여드릴게요!"],
+  q3: ["혈압이 오늘 아침 125에 75였어요. 약은 꼬박꼬박 먹고 있습니다.", "부작용은 특별히 없어요. 가끔 발목이 조금 붓는 느낌은 있어요.", "네 선생님, 다음 달에도 측정해서 보내드릴게요."],
+};
+const DRC_MED = { q1: "암로디핀정 5mg — 1일 1회(부친 재진 연계)", q2: "하이드로코르티손 연고 1% — 1일 2회 도포 · 7일분", q3: "암로디핀정 5mg — 1일 1회 아침 · 28일분" };
+function DoctorChatModal({ q, onClose }) {
+  let uid = 0;
+  const [msgs, setMsgs] = useState(() => [{ id: "d0", who: "pt", text: (DRC_SCRIPT[q.id] || [])[0] || "안녕하세요 선생님, 상담 부탁드려요.", time: now() }]);
+  const [input, setInput] = useState(""); const [typing, setTyping] = useState(false);
+  const [step, setStep] = useState(1); const [video, setVideo] = useState(false); const [ended, setEnded] = useState(false);
+  const endRef = useRef(null);
+  useEffect(() => { try { endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); } catch (e) {} }, [msgs, typing]);
+  const push = (who, text) => setMsgs((m) => [...m, { id: "d" + (++uid) + "_" + m.length, who, text, time: now() }]);
+  const send = (t) => {
+    const x = (t != null ? t : input).trim(); if (!x || ended) return; setInput("");
+    push("dr", x);
+    const script = DRC_SCRIPT[q.id] || [];
+    const nx = script[step];
+    if (nx) { setTyping(true); setStep(step + 1); setTimeout(() => { setTyping(false); push("pt", nx); }, 1200); }
+  };
+  const actRx = () => { if (ended) return; push("sys", `💊 전자처방전 발행 — ${DRC_MED[q.id] || "진료 판단 처방"} · 환자가 약국을 선택하면 암호화 전송됩니다(약사법 절차).`); if (typeof toast === "function") toast("💊 전자처방전 발행(의사 화면 시연)"); };
+  const actLab = () => { if (ended) return; push("sys", "🧪 검사 의뢰서 발행 — 혈액검사·영상검사를 제휴 검진기관에 의뢰했습니다. 결과 도착 시 비대면 결과 설명으로 이어집니다."); if (typeof toast === "function") toast("🧪 검사 의뢰(의사 화면 시연)"); };
+  const actVisit = () => { if (ended) return; push("sys", "🏥 내원 안내 — 우리 병원 정밀검사·대면 진료 예약을 환자에게 전송했습니다(비대면→내원 연계)."); if (typeof toast === "function") toast("🏥 내원 안내 전송"); };
+  const actEnd = () => { if (ended) return; setEnded(true); push("sys", "📋 진료 종료 — 진료 요약이 환자 데이터 금고(3세대 자산)로 전달되고 보험 청구가 자동 접수됩니다(청구 0단계). 복약·재진 리마인드는 하이가 이어받습니다."); if (typeof toast === "function") toast("📋 진료 요약 저장 · 청구 자동 접수(시연)"); };
+  return (
+    <div className="drc" onClick={onClose}>
+      {video && <VideoCallModal title={q.name} sub="환자 화상 연결 · 의사 화면(시연)" onClose={() => setVideo(false)} msgs={msgs.filter((m) => m.who !== "sys").map((m) => ({ id: m.id, kind: "text", who: m.who === "dr" ? "me" : "ai", text: m.text }))} onSend={(t) => send(t)} />}
+      <div className="drcbox" onClick={(e) => e.stopPropagation()}>
+        <div className="drc-hd"><span className="drc-av"><HeartPulse size={16} color="#fff" /></span>
+          <div style={{ flex: 1 }}><b>{q.name} <em>환자</em></b><span>{q.mode} 진료 · {q.wait} · 의사 화면(윤우진 진료과장) 시연</span></div>
+          <button className="drc-vc" onClick={() => setVideo(true)} title="화상 전환"><MonitorSmartphone size={15} /></button>
+          <button className="drc-x" onClick={onClose} aria-label="닫기"><X size={16} /></button></div>
+        <div className="drc-brief"><b>🤖 AI 예진 요약</b><span>{q.brief}</span>{q.rpm && <span className="drc-rpm">📈 {q.rpm}</span>}<i>열람 기록은 환자 데이터 금고에 남습니다</i></div>
+        <div className="drc-body">
+          {msgs.map((m) => m.who === "sys" ? (
+            <div className="drc-sys" key={m.id}>{m.text}</div>
+          ) : (
+            <div className={`drc-msg ${m.who}`} key={m.id}><div className="drc-bub">{m.text}</div><span>{m.time}</span></div>
+          ))}
+          {typing && <div className="drc-msg pt"><div className="drc-bub drc-typing">환자가 입력 중…</div></div>}
+          <div ref={endRef} />
+        </div>
+        <div className="drc-acts">
+          <button onClick={actRx}>💊 처방 발행</button>
+          <button onClick={actLab}>🧪 검사 의뢰</button>
+          <button onClick={actVisit}>🏥 내원 안내</button>
+          <button className="end" onClick={ended ? onClose : actEnd}>{ended ? "닫기" : "📋 진료 종료·요약"}</button>
+        </div>
+        <div className="drc-in">
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={ended ? "진료가 종료되었습니다" : "환자에게 메시지를 입력하세요 (의사)"} disabled={ended} />
+          <button className={input.trim() && !ended ? "on" : ""} onClick={() => send()}><Send size={15} /></button>
+        </div>
+        <div className="drc-disc">의사 화면 시연 — 실제 진료·처방이 아니며, 모든 열람·발행은 감사 기록을 전제로 합니다.</div>
+      </div>
+    </div>
+  );
+}
 function DoctorConsole() {
   const [done, setDone] = useState({});
+  const [live, setLive] = useState(null);
   const rxList = (() => { try { return JSON.parse(localStorage.getItem("hifin_rx") || "[]").slice(-3).reverse(); } catch (e) { return []; } })();
   const queue = [
     { id: "q1", name: "조성래(54)", brief: "생체나이 52.5 · 주의 장기 췌장·간 · 암위험 4등급", rpm: "부모 혈압 152/94 급등(RPM)", mode: "메시지", wait: "대기 2분" },
     { id: "q2", name: "김하늘(29)", brief: "피부 발진 사진 2매 첨부 · 초진(경증)", rpm: null, mode: "화상", wait: "대기 5분" },
     { id: "q3", name: "박정순(71)", brief: "고혈압 재진 · 최근 혈압 125/75 안정", rpm: null, mode: "메시지", wait: "비동기 · 24h 내" },
   ];
-  const accept = (q) => { setDone((d) => ({ ...d, [q.id]: true })); if (typeof toast === "function") toast(`🩺 ${q.name} 예진 확인 · 상담 시작(시연) — 열람 기록이 회원 데이터 금고에 남습니다.`); };
+  const accept = (q) => { setDone((d) => ({ ...d, [q.id]: true })); setLive(q); if (typeof toast === "function") toast(`🩺 ${q.name} 예진 확인 · 상담 연결 — 열람 기록이 회원 데이터 금고에 남습니다.`); };
   return (
     <div className="b2b-pane">
+      {live && <DoctorChatModal q={live} onClose={() => setLive(null)} />}
       <div className="b2b-grid2">
         <div className="b2b-card">
           <div className="b2b-ch"><Stethoscope size={15} color="#7C3AED" /> 예진 수신함 — 오늘 대기열 <span className="b2b-demo">의사 화면 시연(윤우진 진료과장)</span></div>
@@ -9925,7 +9986,7 @@ function DoctorConsole() {
               <div className="b2b-qh"><b>{q.name}</b><span className="b2b-qm">{q.mode}</span><span className="b2b-qw">{q.wait}</span></div>
               <div className="b2b-qb">🤖 {q.brief}</div>
               {q.rpm && <div className="b2b-qr">📈 {q.rpm}</div>}
-              <button onClick={() => accept(q)}>{done[q.id] ? "상담 중 ✓" : "예진 확인 → 상담 시작"}</button>
+              <button onClick={() => accept(q)}>{done[q.id] ? "상담 화면 다시 열기 ✓" : "예진 확인 → 상담 시작"}</button>
             </div>
           ))}
         </div>
@@ -16911,7 +16972,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-20", ver:"v1.1", ch:[23], feat:"B2B 콘솔(기관 구독·의사·검증 노드·거버넌스)", src:"B2BConsole.jsx,PartnerInvest.jsx,aiNative.js", summary:"파트너 기관용 구독 콘솔과 의사 예진 수신함, 검증 노드 컨소시엄 신청, 프로토콜 거버넌스 투표를 신설", refs:[], status:"반영", hash:"ed428ff", auto:true },
+  { date:"2026-07-20", ver:"v1.1", ch:[23], feat:"의사 시점 상담 화면(의사 콘솔 진료 모달)", src:"B2BConsole.jsx", summary:"예진 수신함에서 바로 열리는 의사 화면 진료 모달과 처방·검사·내원·진료종료 액션을 구현", refs:[], status:"반영", hash:"39c7f82", auto:true },
+  { date:"2026-07-20", ver:"v1.1", ch:[23], feat:"B2B 콘솔(기관 구독·의사·검증 노드·거버넌스)", src:"B2BConsole.jsx,PartnerInvest.jsx,aiNative.js", summary:"파트너 기관용 구독 콘솔과 의사 예진 수신함, 검증 노드 컨소시엄 신청, 프로토콜 거버넌스 투표를 신설", refs:[], status:"반영", hash:"87e116d", auto:true },
   { date:"2026-07-20", ver:"v1.1", ch:[9], feat:"원격진료 세부 시스템(화상 채팅·법 시행 공시·전자처방전·해외 사례)", src:"AIDoctor.jsx,telemed.js", summary:"화상 중 텍스트 대화와 전자처방전 문서·약국 추적 체인, 법 시행 대기 공시와 해외 벤치마크를 구현", refs:[], status:"반영", hash:"211ad09", auto:true },
   { date:"2026-07-20", ver:"v1.1", ch:[9], feat:"RPM 경보-진료 연결 체인(새벽 2:17 장면)", src:"FamilyCare.jsx,aiNative.js,aiQnaBank.js", summary:"가정 혈압계 이상 추세 경보에서 지금 연결 가능한 의사, RPM 포함 예진 전달까지 원스톱 체인을 구현", refs:[], status:"반영", hash:"917ad34", auto:true },
   { date:"2026-07-20", ver:"v1.1", ch:[9], feat:"비대면진료 강화(예진 요약·가능행위 공시·약국 체인·청구 0단계)", src:"AIDoctor.jsx,telemed.js,aiNative.js,aiQnaBank.js", summary:"의료법 기준 가능행위 공시와 예진 요약 전달, 전자처방-약국-보험 자동 청구 체인을 구현", refs:[], status:"반영", hash:"129d378", auto:true },
