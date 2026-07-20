@@ -5020,3 +5020,8 @@ body.easyread .hibrief-t { font-size: 17px; }
 .uvc-self { overflow: hidden; padding: 0; width: 92px; height: 66px; position: absolute; }
 .uvc-self video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .uvc-self span { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(2, 6, 23, .55); font-size: 9px; text-align: center; padding: 1px 0; }
+/* 약국 카드 — 위치 지도 토글 */
+.pp-map { margin-top: 9px; width: 100%; border: 1px solid #BFDBFE; background: #EFF6FF; color: #1D4ED8; border-radius: 9px; padding: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer; }
+.pharmpick.wide { max-width: 100%; width: 100%; }
+.pp-mapwrap { margin-top: 9px; }
+.pmapld { font-size: 11.5px; color: #64748B; background: #F8FAFC; border-radius: 9px; padding: 10px; text-align: center; }

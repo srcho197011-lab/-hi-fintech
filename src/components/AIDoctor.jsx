@@ -870,6 +870,28 @@ function HospitalJoinModal({ onClose }) {
     </div></div>
   );
 }
+/* 수령 약국 선택 카드 — 약국 위치 지도(심평원 실데이터·통합지도 엔진 재사용) 토글 */
+function PharmMapInline() {
+  const st = (typeof useHira === "function") ? useHira() : { loading: false, error: "지도 엔진 없음", data: null };
+  if (st.loading) return <div className="pmapld">🗺 약국 지도를 불러오는 중… (심평원 실데이터)</div>;
+  if (st.error || !st.data) return <div className="pmapld">지도를 불러오지 못했어요 — 잠시 후 다시 시도해 주세요.</div>;
+  return (typeof UnifiedMapCard === "function") ? <UnifiedMapCard data={st.data} init={{ hosp: false, pharm: true, chk: false, care: false }} /> : null;
+}
+function PharmPickCard({ onPick }) {
+  const [showMap, setShowMap] = useState(false);
+  return (
+    <div className={`pharmpick ${showMap ? "wide" : ""}`}>
+      <div className="pp-hd">🏪 수령 약국 선택 <span>처방전은 선택한 약국으로만 전송돼요</span></div>
+      {[{ n: "온누리약국", d: "150m · 도보 2분" }, { n: "건강제일약국", d: "420m · 도보 6분" }].map((p) => (
+        <div className="pp-row" key={p.n}><b>{p.n}</b><span>{p.d}</span>
+          <button onClick={() => onPick(p.n, "방문")}>방문 수령</button>
+          <button className="dv" onClick={() => onPick(p.n, "배송")}>배송 수령</button></div>
+      ))}
+      <button className="pp-map" onClick={() => setShowMap((v) => !v)}>🗺 {showMap ? "지도 접기 ▲" : "약국 위치 지도 보기 — 내 주변 전체 약국"}</button>
+      {showMap && <div className="pp-mapwrap"><PharmMapInline /></div>}
+    </div>
+  );
+}
 function SpecialistChat() {
   const [sido, setSido] = useState("서울특별시");
   const [sigungu, setSigungu] = useState("강남구");
@@ -1113,14 +1135,7 @@ function SpecialistChat() {
                   <div className="rx-ft">🔗 위변조 방지 {m.rx.hash ? `해시 ${String(m.rx.hash).slice(0, 16)}…` : "해시 기록"} · 데이터 금고 저장 · 선택한 약국으로만 암호화 전송</div>
                 </div>
               ) : m.kind === "pharm" ? (
-                <div className="pharmpick">
-                  <div className="pp-hd">🏪 수령 약국 선택 <span>처방전은 선택한 약국으로만 전송돼요</span></div>
-                  {[{ n: "온누리약국", d: "150m · 도보 2분" }, { n: "건강제일약국", d: "420m · 도보 6분" }].map((p) => (
-                    <div className="pp-row" key={p.n}><b>{p.n}</b><span>{p.d}</span>
-                      <button onClick={() => pharmPick(p.n, "방문")}>방문 수령</button>
-                      <button className="dv" onClick={() => pharmPick(p.n, "배송")}>배송 수령</button></div>
-                  ))}
-                </div>
+                <PharmPickCard onPick={pharmPick} />
               ) : m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
                 <div className="meta"><span>{m.time}</span></div></div></div></div>
         ))}
