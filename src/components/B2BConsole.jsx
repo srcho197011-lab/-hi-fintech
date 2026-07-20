@@ -57,6 +57,64 @@ const DRC_SCRIPT = {
   q3: ["혈압이 오늘 아침 125에 75였어요. 약은 꼬박꼬박 먹고 있습니다.", "부작용은 특별히 없어요. 가끔 발목이 조금 붓는 느낌은 있어요.", "네 선생님, 다음 달에도 측정해서 보내드릴게요."],
 };
 const DRC_MED = { q1: "암로디핀정 5mg — 1일 1회(부친 재진 연계)", q2: "하이드로코르티손 연고 1% — 1일 2회 도포 · 7일분", q3: "암로디핀정 5mg — 1일 1회 아침 · 28일분" };
+/* 실시간 영상 상담 데모 — 실물 데모 영상(의사 1 · 남성 환자 1 · 여성 환자 2 재사용) */
+const DRC_VID = { doctor: "data/media/tele_doctor.mp4", q1: "data/media/tele_pt_male.mp4", q2: "data/media/tele_pt_female.mp4", q3: "data/media/tele_pt_female.mp4" };
+const DRC_SHARE = {
+  q1: [{ k: "rpm", t: "혈압 추이(RPM 자동수집)", kind: "chart", data: [["7/17", "132/84", 132], ["7/18", "141/88", 141], ["새벽 2:17", "152/94", 152]] }, { k: "med", t: "복약 기록", kind: "note", text: "암로디핀 5mg — 매일 아침 1회 · 최근 7일 복용률 100% · 어지럼 보고 없음" }],
+  q2: [{ k: "p1", t: "피부 발진 사진(환자 제공)", kind: "photo", src: "data/media/tele_pt_female.mp4" }, { k: "v1", t: "환부 영상(환자 제공)", kind: "video", src: "data/media/tele_pt_female.mp4" }],
+  q3: [{ k: "bp", t: "자가 혈압 기록(30일)", kind: "chart", data: [["6/22", "128/78", 128], ["7/5", "126/76", 126], ["오늘", "125/75", 125]] }, { k: "med", t: "복약 기록", kind: "note", text: "암로디핀 5mg — 아침 1회 · 부작용 보고 없음 · 가끔 발목 부종 언급" }],
+};
+/* SOAP 진료기록 — 의사 화면 전용 메모(localStorage 저장) */
+function DrcSoap({ qid }) {
+  const key = "hifin_soap_" + qid;
+  const [v, setV] = useState(() => { try { return JSON.parse(localStorage.getItem(key) || "null") || { s: "", o: "", a: "", p: "" }; } catch (e) { return { s: "", o: "", a: "", p: "" }; } });
+  const set = (k) => (e) => setV({ ...v, [k]: e.target.value });
+  const save = () => { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} if (typeof toast === "function") toast("📋 SOAP 진료기록 저장 — 진료 종료 시 요약에 반영됩니다."); };
+  const F = [["s", "S · 주관적(환자 호소)", "예: 새벽 혈압 상승 걱정, 어지럼은 없음"], ["o", "O · 객관적(측정·소견)", "예: BP 152/94(새벽) · RPM 3일 연속 상승"], ["a", "A · 평가(판단)", "예: 조절 양호하나 야간 상승 관찰 필요"], ["p", "P · 계획(처방·추적)", "예: 동일 처방 유지 · 2주 후 재측정 리마인드"]];
+  return (<div className="dvm-soap">{F.map(([k, l, ph]) => (<div key={k}><label>{l}</label><textarea rows={2} value={v[k]} onChange={set(k)} placeholder={ph} /></div>))}<button onClick={save}>💾 진료기록 저장</button><span>의사 화면 전용 — 환자에게는 진료 요약만 전달됩니다</span></div>);
+}
+/* 의사용 실시간 영상 상담 — 환자 영상 스테이지 + 의사 PIP + 공유 자료 + SOAP */
+function DoctorVideoModal({ q, onClose, msgs, onSend }) {
+  const [vin, setVin] = useState(""); const [panel, setPanel] = useState("share"); const [shared, setShared] = useState(null);
+  const chat = msgs.filter((m) => m.who !== "sys").slice(-3);
+  const sendV = () => { const x = vin.trim(); if (!x) return; setVin(""); onSend(x); };
+  const items = DRC_SHARE[q.id] || [];
+  return (
+    <div className="dvm" onClick={onClose}>
+      <div className="dvm-box" onClick={(e) => e.stopPropagation()}>
+        <div className="dvm-hd"><b>🔴 LIVE 실시간 영상 상담</b><span>{q.name} · 의사 화면(윤우진 진료과장) · 데모 영상</span><button onClick={onClose} aria-label="닫기"><X size={16} /></button></div>
+        <div className="dvm-main">
+          <div className="dvm-stage">
+            <video key={q.id} src={DRC_VID[q.id]} autoPlay loop muted playsInline />
+            <span className="dvm-who">👤 {q.name} <i>환자 · LIVE</i></span>
+            {shared && (
+              <div className="dvm-share-ov" onClick={() => setShared(null)}>
+                {shared.kind === "chart" ? (
+                  <div className="dvm-chart"><b>📈 {shared.t}</b><div className="dvm-bars">{shared.data.map(([d, v2, n]) => (<div key={d} className="dvm-bar"><i style={{ height: Math.max(10, Math.round((n - 100) / 60 * 100)) + "%" }} /><b>{v2}</b><span>{d}</span></div>))}</div><em>닫으려면 클릭</em></div>
+                ) : shared.kind === "note" ? (
+                  <div className="dvm-chart"><b>📄 {shared.t}</b><p>{shared.text}</p><em>닫으려면 클릭</em></div>
+                ) : (
+                  <div className="dvm-photo"><video src={shared.src} autoPlay={shared.kind === "video"} loop muted playsInline /><b>{shared.kind === "photo" ? "🖼" : "🎬"} {shared.t}</b><em>닫으려면 클릭</em></div>
+                )}
+              </div>
+            )}
+            <div className="dvm-pip"><video src={DRC_VID.doctor} autoPlay loop muted playsInline /><span>나 · 의사</span></div>
+            <div className="dvm-cap">{chat.map((m) => (<div key={m.id} className={`dvm-c ${m.who}`}>{m.who === "dr" ? "🩺 " : "👤 "}{String(m.text).slice(0, 58)}</div>))}</div>
+          </div>
+          <div className="dvm-side">
+            <div className="dvm-tabs"><button className={panel === "share" ? "on" : ""} onClick={() => setPanel("share")}>📎 공유 자료</button><button className={panel === "soap" ? "on" : ""} onClick={() => setPanel("soap")}>📋 SOAP 기록</button></div>
+            {panel === "share" ? (
+              <div className="dvm-items">{items.map((it) => (<button key={it.k} className={shared && shared.k === it.k ? "on" : ""} onClick={() => setShared(shared && shared.k === it.k ? null : it)}>{it.kind === "photo" ? "🖼" : it.kind === "video" ? "🎬" : it.kind === "chart" ? "📈" : "📄"} {it.t}</button>))}
+                <span>클릭하면 화상 화면에 크게 공유돼요 — 환자와 동시 열람</span></div>
+            ) : <DrcSoap qid={q.id} />}
+          </div>
+        </div>
+        <div className="dvm-in"><input value={vin} onChange={(e) => setVin(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendV()} placeholder="화상 중 텍스트 메시지 (의사)" /><button className={vin.trim() ? "on" : ""} onClick={sendV}><Send size={14} /></button></div>
+        <div className="dvm-disc">시연용 데모 영상 — 실제 환자·의료진·영상 연결이 아니며, 모든 공유·열람은 감사 기록을 전제로 합니다.</div>
+      </div>
+    </div>
+  );
+}
 function DoctorChatModal({ q, onClose }) {
   let uid = 0;
   const [msgs, setMsgs] = useState(() => [{ id: "d0", who: "pt", text: (DRC_SCRIPT[q.id] || [])[0] || "안녕하세요 선생님, 상담 부탁드려요.", time: now() }]);
@@ -79,7 +137,7 @@ function DoctorChatModal({ q, onClose }) {
   const actEnd = () => { if (ended) return; setEnded(true); push("sys", "📋 진료 종료 — 진료 요약이 환자 데이터 금고(3세대 자산)로 전달되고 보험 청구가 자동 접수됩니다(청구 0단계). 복약·재진 리마인드는 하이가 이어받습니다."); if (typeof toast === "function") toast("📋 진료 요약 저장 · 청구 자동 접수(시연)"); };
   return (
     <div className="drc" onClick={onClose}>
-      {video && <VideoCallModal title={q.name} sub="환자 화상 연결 · 의사 화면(시연)" onClose={() => setVideo(false)} msgs={msgs.filter((m) => m.who !== "sys").map((m) => ({ id: m.id, kind: "text", who: m.who === "dr" ? "me" : "ai", text: m.text }))} onSend={(t) => send(t)} />}
+      {video && <DoctorVideoModal q={q} onClose={() => setVideo(false)} msgs={msgs} onSend={(t) => send(t)} />}
       <div className="drcbox" onClick={(e) => e.stopPropagation()}>
         <div className="drc-hd"><span className="drc-av"><HeartPulse size={16} color="#fff" /></span>
           <div style={{ flex: 1 }}><b>{q.name} <em>환자</em></b><span>{q.mode} 진료 · {q.wait} · 의사 화면(윤우진 진료과장) 시연</span></div>

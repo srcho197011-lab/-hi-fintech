@@ -739,6 +739,7 @@ const MD_SPECIALISTS = [
 ];
 function VideoCallModal({ title, sub, onClose, msgs, onSend }) {
   const [t, setT] = useState(0); const [vin, setVin] = useState("");
+  const [vidOk, setVidOk] = useState(true);
   useEffect(() => { const id = setInterval(() => setT((x) => x + 1), 1000); return () => clearInterval(id); }, []);
   const mm = String(Math.floor(t / 60)).padStart(2, "0"), ss = String(t % 60).padStart(2, "0");
   /* 화상 중에도 텍스트로 대화 — 최근 대화가 자막처럼 겹쳐 보이고 입력창으로 바로 질문 */
@@ -747,7 +748,8 @@ function VideoCallModal({ title, sub, onClose, msgs, onSend }) {
   return (
     <div className="vcall" onClick={onClose}>
       <div className="vcbox" onClick={(e) => e.stopPropagation()}>
-        <div className="vcmain"><span className="vcav"><Stethoscope size={42} color="#fff" /></span><div className="vcnm">{title}</div><div className="vcsub">{sub}</div><div className="vctime"><span className="vcrec" /> {mm}:{ss}</div></div>
+        {vidOk && <video className="vcvid" src="data/media/tele_doctor.mp4" autoPlay loop muted playsInline onError={() => setVidOk(false)} />}
+        <div className={"vcmain" + (vidOk ? " hasvid" : "")}>{!vidOk && <span className="vcav"><Stethoscope size={42} color="#fff" /></span>}<div className="vcnm">{title}</div><div className="vcsub">{sub} · 데모 영상</div><div className="vctime"><span className="vcrec" /> {mm}:{ss}</div></div>
         <div className="vcself"><HeartPulse size={18} color="#fff" /><span>나</span></div>
         {chat && chat.length > 0 && <div className="vcchat">{chat.map((m) => <div key={m.id} className={`vcmsg ${m.who}`}>{m.who === "ai" ? "👨‍⚕️ " : "🙂 "}{String(m.text).split("\n")[0].slice(0, 64)}</div>)}</div>}
         <div className="vcctrl">
