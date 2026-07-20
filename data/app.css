@@ -4898,3 +4898,6 @@ body.easyread .hibrief-t { font-size: 17px; }
 .drc-in button { border: none; width: 38px; border-radius: 99px; background: #E2E8F0; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .drc-in button.on { background: #1D4ED8; color: #fff; }
 .drc-disc { text-align: center; font-size: 9.5px; color: #A6ADC4; padding: 0 12px 10px; }
+/* Phase 7c — 비동기 메시지 진료 표시 */
+.drc-async { background: #FFFBEB; border-bottom: 1px solid #FDE68A; color: #92400E; font-size: 10.5px; padding: 7px 14px; line-height: 1.5; }
+.drc-late { font-style: normal; font-size: 9.5px; font-weight: 800; color: #B45309; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 99px; padding: 2px 8px; margin-bottom: 3px; }

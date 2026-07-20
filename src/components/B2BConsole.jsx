@@ -64,13 +64,14 @@ function DoctorChatModal({ q, onClose }) {
   const [step, setStep] = useState(1); const [video, setVideo] = useState(false); const [ended, setEnded] = useState(false);
   const endRef = useRef(null);
   useEffect(() => { try { endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }); } catch (e) {} }, [msgs, typing]);
-  const push = (who, text) => setMsgs((m) => [...m, { id: "d" + (++uid) + "_" + m.length, who, text, time: now() }]);
+  const isAsync = !!q.async;
+  const push = (who, text, late) => setMsgs((m) => [...m, { id: "d" + (++uid) + "_" + m.length, who, text, late: late || null, time: now() }]);
   const send = (t) => {
     const x = (t != null ? t : input).trim(); if (!x || ended) return; setInput("");
     push("dr", x);
     const script = DRC_SCRIPT[q.id] || [];
     const nx = script[step];
-    if (nx) { setTyping(true); setStep(step + 1); setTimeout(() => { setTyping(false); push("pt", nx); }, 1200); }
+    if (nx) { setTyping(true); setStep(step + 1); const lateLabel = isAsync ? ["3시간 뒤", "5시간 뒤", "이튿날 아침"][Math.min(step - 1, 2)] : null; setTimeout(() => { setTyping(false); push("pt", nx, lateLabel); }, isAsync ? 2600 : 1200); }
   };
   const actRx = () => { if (ended) return; push("sys", `💊 전자처방전 발행 — ${DRC_MED[q.id] || "진료 판단 처방"} · 환자가 약국을 선택하면 암호화 전송됩니다(약사법 절차).`); if (typeof toast === "function") toast("💊 전자처방전 발행(의사 화면 시연)"); };
   const actLab = () => { if (ended) return; push("sys", "🧪 검사 의뢰서 발행 — 혈액검사·영상검사를 제휴 검진기관에 의뢰했습니다. 결과 도착 시 비대면 결과 설명으로 이어집니다."); if (typeof toast === "function") toast("🧪 검사 의뢰(의사 화면 시연)"); };
@@ -85,13 +86,14 @@ function DoctorChatModal({ q, onClose }) {
           <button className="drc-vc" onClick={() => setVideo(true)} title="화상 전환"><MonitorSmartphone size={15} /></button>
           <button className="drc-x" onClick={onClose} aria-label="닫기"><X size={16} /></button></div>
         <div className="drc-brief"><b>🤖 AI 예진 요약</b><span>{q.brief}</span>{q.rpm && <span className="drc-rpm">📈 {q.rpm}</span>}<i>열람 기록은 환자 데이터 금고에 남습니다</i></div>
+        {isAsync && <div className="drc-async">⏱ 비동기 메시지 진료 — 환자가 편한 시간에 확인하고 답장합니다(24시간 내 응답). 실시간 대기가 없어 의사도 진료 사이사이에 답할 수 있어요. 시연에서는 몇 초로 압축됩니다.</div>}
         <div className="drc-body">
           {msgs.map((m) => m.who === "sys" ? (
             <div className="drc-sys" key={m.id}>{m.text}</div>
           ) : (
-            <div className={`drc-msg ${m.who}`} key={m.id}><div className="drc-bub">{m.text}</div><span>{m.time}</span></div>
+            <div className={`drc-msg ${m.who}`} key={m.id}>{m.late && <em className="drc-late">🕐 {m.late} 도착한 답장 (비동기)</em>}<div className="drc-bub">{m.text}</div><span>{m.time}</span></div>
           ))}
-          {typing && <div className="drc-msg pt"><div className="drc-bub drc-typing">환자가 입력 중…</div></div>}
+          {typing && <div className="drc-msg pt"><div className="drc-bub drc-typing">{isAsync ? "환자가 나중에 확인 후 답장합니다… (비동기 · 시연 압축)" : "환자가 입력 중…"}</div></div>}
           <div ref={endRef} />
         </div>
         <div className="drc-acts">
@@ -116,7 +118,7 @@ function DoctorConsole() {
   const queue = [
     { id: "q1", name: "조성래(54)", brief: "생체나이 52.5 · 주의 장기 췌장·간 · 암위험 4등급", rpm: "부모 혈압 152/94 급등(RPM)", mode: "메시지", wait: "대기 2분" },
     { id: "q2", name: "김하늘(29)", brief: "피부 발진 사진 2매 첨부 · 초진(경증)", rpm: null, mode: "화상", wait: "대기 5분" },
-    { id: "q3", name: "박정순(71)", brief: "고혈압 재진 · 최근 혈압 125/75 안정", rpm: null, mode: "메시지", wait: "비동기 · 24h 내" },
+    { id: "q3", name: "박정순(71)", brief: "고혈압 재진 · 최근 혈압 125/75 안정", rpm: null, mode: "메시지", wait: "비동기 · 24h 내", async: true },
   ];
   const accept = (q) => { setDone((d) => ({ ...d, [q.id]: true })); setLive(q); if (typeof toast === "function") toast(`🩺 ${q.name} 예진 확인 · 상담 연결 — 열람 기록이 회원 데이터 금고에 남습니다.`); };
   return (
