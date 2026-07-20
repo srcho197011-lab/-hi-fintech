@@ -949,6 +949,40 @@ function PickupCard({ pu }) {
     </div>
   );
 }
+/* 배송추적 QR 카드 — 접수→조제→배송→수령 확인 4단계 실시간 스테퍼, 도착 시 기사에게 QR 제시 */
+const DL_STEPS = ["약국 접수", "조제중", "배송중", "수령 완료"];
+function DeliveryCard({ dl }) {
+  const qrRef = useRef(null); const bigRef = useRef(null);
+  const [full, setFull] = useState(false);
+  const [, setTick] = useState(0);
+  useEffect(() => { const f = () => setTick((t) => t + 1); window.addEventListener("dlmove", f); window.addEventListener("pudone", f); return () => { window.removeEventListener("dlmove", f); window.removeEventListener("pudone", f); }; }, []);
+  const rec = (() => { try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); return rl.find((r) => r.dl === dl.dl) || null; } catch (e) { return null; } })();
+  const step = rec ? (rec.dlStep || 0) : 0;
+  const done = step >= 3;
+  const payload = `HIFIN-DL|${dl.dl}|${dl.rxNo}|${String(dl.hash || "").slice(0, 16)}`;
+  const drawQR = (el, size) => { if (!el) return false; try { el.innerHTML = ""; if (typeof QRCode !== "undefined") { new QRCode(el, { text: payload, width: size, height: size, correctLevel: QRCode.CorrectLevel.M }); return true; } } catch (e) {} return false; };
+  useEffect(() => { if (!drawQR(qrRef.current, 128) && qrRef.current) qrRef.current.innerHTML = '<div class="pu-fb">' + dl.dl + "</div>"; }, [dl.dl]);
+  useEffect(() => { if (full) setTimeout(() => { if (!drawQR(bigRef.current, 260) && bigRef.current) bigRef.current.innerHTML = '<div class="pu-fb big">' + dl.dl + "</div>"; }, 60); }, [full]);
+  return (
+    <div className={`pucard dlv ${done ? "done" : ""}`}>
+      {full && <div className="pufull" onClick={() => setFull(false)}><div className="pufull-b" onClick={(e) => e.stopPropagation()}><b>🚚 배송추적 QR · {dl.dl}</b><div ref={bigRef} className="pu-qr big" /><span>기사님 도착 시 이 화면을 보여주세요 — 스캔으로 의약품 수령이 확인됩니다(약사법 수령 확인)</span><button onClick={() => setFull(false)}>닫기</button></div></div>}
+      <div className="pu-hd">🚚 배송추적 QR — 도착 시 기사에게 제시 <em className={done ? "ok" : "wait"}>{done ? "수령 완료 ✓" : DL_STEPS[step]}</em></div>
+      <div className="dl-steps">{DL_STEPS.map((s, i) => (
+        <div className={`dl-st ${i < step ? "past" : ""} ${i === step ? "now" : ""} ${done && i === 3 ? "past" : ""}`} key={s}><i>{i < step || (done && i === 3) ? "✓" : i + 1}</i><span>{s}</span></div>
+      ))}</div>
+      <div className="pu-body">
+        <div ref={qrRef} className="pu-qr" onClick={() => setFull(true)} title="탭하면 크게 보기" />
+        <div className="pu-info">
+          <b>{dl.dl}</b>
+          <span>{dl.pharm} → 자택 배송 (상세 주소 비노출)</span>
+          <span>{done && rec && rec.dlAt ? `${new Date(rec.dlAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 수령 완료` : "도착 예정 오늘 저녁 · 유효 48시간 · 1회용"}</span>
+          <i>기사 스캔으로 위변조 없음 ✓·수령이 확인돼요 · 이름·주민번호는 담기지 않아요</i>
+        </div>
+      </div>
+      <div className="pu-ft">{done ? "배송 수령 완료 — 복약 리마인드는 하이가 챙겨드려요 💊" : "QR을 탭하면 크게 보여요 · 단계가 바뀔 때마다 자동 갱신돼요 · ⚠ 시연용"}</div>
+    </div>
+  );
+}
 /* P1 — "고르세요"가 아니라 "배정해 드렸어요": 기준점 토글·대안 병기·클릭 즉시 지도 포커스 */
 function PharmPickCard({ onPick }) {
   const [base, setBase] = useState("home");
@@ -1102,7 +1136,7 @@ function SpecialistChat() {
   };
   /* 약국 선택 → 전송·접수·조제·수령 실시간 추적 체인(약사법 절차) + 방문 수령 시 수령증 QR 발급(Q1) */
   const pharmPick = (ph, mode) => {
-    let pu = null, puData = null;
+    let pu = null, puData = null, dlData = null;
     try {
       const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]");
       if (rl.length) {
@@ -1112,18 +1146,26 @@ function SpecialistChat() {
           pu = "PU-" + Date.now().toString(36).toUpperCase().slice(-6);
           last.pu = pu; last.puExp = Date.now() + 24 * 3600 * 1000; last.puUsed = false;
           puData = { pu, pharm: ph, rxNo: last.id, hash: last.hash || null, exp: last.puExp };
+        } else {
+          const dl = "DL-" + Date.now().toString(36).toUpperCase().slice(-6);
+          last.dl = dl; last.dlStep = 0; last.dlExp = Date.now() + 48 * 3600 * 1000;
+          dlData = { dl, pharm: ph, rxNo: last.id, hash: last.hash || null };
         }
         localStorage.setItem("hifin_rx", JSON.stringify(rl));
       }
     } catch (e) {}
     setMsgs((m) => [...m,
       { id: ++UID, who: "ai", kind: "text", text: `📤 ${ph}(으)로 전자처방전 전송 완료 — ${mode} 수령. 처방전은 선택하신 약국으로만 암호화 전송되며, 이후 단계는 하이가 실시간으로 알려드려요.`, first: true, time: now() },
-      ...(puData ? [{ id: ++UID, who: "ai", kind: "pickup", pu: puData, time: now() }] : [])]);
-    if (typeof toast === "function") toast(pu ? `📤 ${ph} 처방전 전송 · 방문수령증 QR 발급(${pu})` : `📤 ${ph} 처방전 전송(${mode})`);
-    setTimeout(() => { setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🏪 ${ph} 접수 완료 — 약사가 처방을 검토하고 조제를 시작했어요. (조제중)`, first: true, time: now() }]); }, 2500);
+      ...(puData ? [{ id: ++UID, who: "ai", kind: "pickup", pu: puData, time: now() }] : []),
+      ...(dlData ? [{ id: ++UID, who: "ai", kind: "delivery", dl: dlData, time: now() }] : [])]);
+    if (typeof toast === "function") toast(pu ? `📤 ${ph} 처방전 전송 · 방문수령증 QR 발급(${pu})` : dlData ? `📤 ${ph} 처방전 전송 · 배송추적 QR 발급(${dlData.dl})` : `📤 ${ph} 처방전 전송(${mode})`);
     setTimeout(() => {
-      setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: mode === "배송" ? `🚚 조제 완료 · 배송 시작 — 오늘 저녁 도착 예정이에요. 수령이 확인되면 복약지도 안내와 함께 복약 리마인드를 시작할게요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)` : `✅ 조제 완료 — 지금 방문하시면 수령 가능해요. 신분 확인 후 약사의 복약지도와 함께 수령하세요. 수령 확인 후 복약 리마인드를 시작할게요.`, first: true, time: now() }]);
-      try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { rl[rl.length - 1].status = mode === "배송" ? "조제 완료 · 배송중" : "조제 완료 · 방문 수령 대기"; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
+      setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🏪 ${ph} 접수 완료 — 약사가 처방을 검토하고 조제를 시작했어요. (조제중)`, first: true, time: now() }]);
+      try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = rl[rl.length - 1]; if (r && r.dl != null) { r.dlStep = 1; localStorage.setItem("hifin_rx", JSON.stringify(rl)); window.dispatchEvent(new CustomEvent("dlmove")); } } catch (e) {}
+    }, 2500);
+    setTimeout(() => {
+      setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: mode === "배송" ? `🚚 조제 완료 · 배송 시작 — 오늘 저녁 도착 예정이에요. 기사님이 도착하면 배송추적 QR을 보여주고 수령을 확인하세요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)` : `✅ 조제 완료 — 지금 방문하시면 수령 가능해요. 신분 확인 후 약사의 복약지도와 함께 수령하세요. 수령 확인 후 복약 리마인드를 시작할게요.`, first: true, time: now() }]);
+      try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { const r = rl[rl.length - 1]; r.status = mode === "배송" ? "조제 완료 · 배송중" : "조제 완료 · 방문 수령 대기"; if (r.dl != null) { r.dlStep = 2; } localStorage.setItem("hifin_rx", JSON.stringify(rl)); if (r.dl != null) window.dispatchEvent(new CustomEvent("dlmove")); } } catch (e) {}
       if (typeof toast === "function") toast(mode === "배송" ? "🚚 조제 완료 · 배송 시작" : "✅ 조제 완료 · 수령 가능");
     }, 5500);
   };
@@ -1253,6 +1295,8 @@ function SpecialistChat() {
                 <PharmPickCard onPick={pharmPick} />
               ) : m.kind === "pickup" ? (
                 <PickupCard pu={m.pu} />
+              ) : m.kind === "delivery" ? (
+                <DeliveryCard dl={m.dl} />
               ) : m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
                 <div className="meta"><span>{m.time}</span></div></div></div></div>
         ))}

@@ -303,50 +303,53 @@ function PharmacyVerify() {
   const [code, setCode] = useState(""); const [steps, setSteps] = useState([]); const [fail, setFail] = useState(false);
   const [target, setTarget] = useState(null); const [idOk, setIdOk] = useState(false); const [doneMsg, setDoneMsg] = useState(null);
   const [, setTick] = useState(0);
-  const pending = (() => { try { return JSON.parse(localStorage.getItem("hifin_rx") || "[]").filter((r) => r.pu && !r.puUsed).slice(-5).reverse(); } catch (e) { return []; } })();
+  const pending = (() => { try { return JSON.parse(localStorage.getItem("hifin_rx") || "[]").filter((r) => (r.pu && !r.puUsed) || (r.dl && (r.dlStep || 0) < 3)).slice(-5).reverse(); } catch (e) { return []; } })();
   const verify = (c) => {
     const v = String(c != null ? c : code).trim().toUpperCase(); if (!v) return;
     setFail(false); setSteps([]); setTarget(null); setIdOk(false); setDoneMsg(null);
-    let rec = null; try { rec = JSON.parse(localStorage.getItem("hifin_rx") || "[]").find((r) => r.pu === v) || null; } catch (e) {}
-    const ok1 = !!rec, ok2 = !!rec, ok3 = !!rec && !rec.puUsed && (!rec.puExp || Date.now() < rec.puExp);
+    let rec = null; try { rec = JSON.parse(localStorage.getItem("hifin_rx") || "[]").find((r) => r.pu === v || r.dl === v) || null; } catch (e) {}
+    const isDl = !!(rec && rec.dl === v);
+    const ok1 = !!rec, ok2 = !!rec;
+    const ok3 = !!rec && (isDl ? ((rec.dlStep || 0) >= 2 && (rec.dlStep || 0) < 3 && (!rec.dlExp || Date.now() < rec.dlExp)) : (!rec.puUsed && (!rec.puExp || Date.now() < rec.puExp)));
     const seq = [
       { t: `처방 대조 ${rec ? `— ${rec.id} 일치` : "— 일치하는 처방 없음"}`, ok: ok1 },
       { t: ok2 ? "온체인 해시 재검증 — 위변조 없음 ✓" : "온체인 해시 재검증 — 검증 실패", ok: ok2 },
-      { t: ok3 ? "유효기간·1회용 확인 — 유효" : "유효기간·1회용 확인 — 만료 또는 이미 사용됨", ok: ok3 },
+      { t: isDl ? (ok3 ? "배송 상태 확인 — 배송중(수령 확인 가능)" : "배송 상태 확인 — 배송 출발 전이거나 이미 수령됨") : (ok3 ? "유효기간·1회용 확인 — 유효" : "유효기간·1회용 확인 — 만료 또는 이미 사용됨"), ok: ok3 },
     ];
-    seq.forEach((s, i) => setTimeout(() => { setSteps((p) => [...p, s]); if (!s.ok) setFail(true); if (i === seq.length - 1 && ok1 && ok2 && ok3) setTarget(rec); }, 380 * (i + 1)));
+    seq.forEach((s, i) => setTimeout(() => { setSteps((p) => [...p, s]); if (!s.ok) setFail(true); if (i === seq.length - 1 && ok1 && ok2 && ok3) setTarget({ ...rec, _dl: isDl }); }, 380 * (i + 1)));
   };
   const complete = () => {
     if (!target || !idOk) return;
-    try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = rl.find((x) => x.pu === target.pu); if (r) { r.puUsed = true; r.puAt = Date.now(); r.status = "수령 완료"; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
-    try { const m = (typeof _member === "function") ? _member() : null; if (m && typeof vaultAccessLog === "function") vaultAccessLog(anonToken(m), target.pharm || "약국", "방문수령증 QR 검증 · 수령 완료 처리(약사 신분 확인)"); } catch (e) {}
-    try { window.dispatchEvent(new CustomEvent("pudone", { detail: target.pu })); } catch (e) {}
-    setDoneMsg(`✅ ${target.pu} 수령 완료 처리 — 회원 수령증이 '수령 완료 ✓'로 바뀌고, 복약 리마인드 안내가 전달됩니다.`);
+    const codeNo = target._dl ? target.dl : target.pu;
+    try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = rl.find((x) => (target._dl ? x.dl === target.dl : x.pu === target.pu)); if (r) { if (target._dl) { r.dlStep = 3; r.dlAt = Date.now(); r.status = "배송 수령 완료"; } else { r.puUsed = true; r.puAt = Date.now(); r.status = "수령 완료"; } localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
+    try { const m = (typeof _member === "function") ? _member() : null; if (m && typeof vaultAccessLog === "function") vaultAccessLog(anonToken(m), target.pharm || "약국", target._dl ? "배송추적 QR 스캔 · 배송 수령 확인(기사 대면 전달)" : "방문수령증 QR 검증 · 수령 완료 처리(약사 신분 확인)"); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent(target._dl ? "dlmove" : "pudone", { detail: codeNo })); window.dispatchEvent(new CustomEvent("pudone", { detail: codeNo })); } catch (e) {}
+    setDoneMsg(target._dl ? `✅ ${codeNo} 배송 수령 확인 — 회원 배송추적 카드가 '수령 완료 ✓'로 바뀌고, 복약 리마인드 안내가 전달됩니다.` : `✅ ${codeNo} 수령 완료 처리 — 회원 수령증이 '수령 완료 ✓'로 바뀌고, 복약 리마인드 안내가 전달됩니다.`);
     setTarget(null); setSteps([]); setIdOk(false); setCode(""); setTick((x) => x + 1);
-    if (typeof toast === "function") toast("✅ 수령 완료 — 회원에게 복약 리마인드 안내 전달");
+    if (typeof toast === "function") toast("✅ 수령 확인 완료 — 회원에게 복약 리마인드 안내 전달");
   };
   return (
     <div className="b2b-pane"><div className="b2b-grid2">
       <div className="b2b-card">
-        <div className="b2b-ch">🎫 방문수령증 검증 <span className="b2b-demo">약국 화면 시연(온누리약국)</span></div>
-        <p className="b2b-p">회원 핸드폰의 수령증 QR을 스캔하거나 수령번호를 입력하세요 — 시연에서는 번호 입력으로 대신해요(실서비스는 카메라 스캔). QR에는 이름·주민번호가 담기지 않습니다(가명 검증).</p>
-        <div className="puv-in"><input value={code} onChange={(e) => setCode(e.target.value)} placeholder="수령번호 입력 (예: PU-XXXXXX)" onKeyDown={(e) => e.key === "Enter" && verify()} /><button onClick={() => verify()}>검증</button></div>
+        <div className="b2b-ch">🎫 방문수령증·배송 QR 검증 <span className="b2b-demo">약국·배송 화면 시연(온누리약국)</span></div>
+        <p className="b2b-p">방문 수령은 약국 카운터에서(PU-), 배송 수령은 기사가 도착 시(DL-) 회원 QR을 스캔합니다 — 시연에서는 번호 입력으로 대신해요. QR에는 이름·주민번호가 담기지 않습니다(가명 검증).</p>
+        <div className="puv-in"><input value={code} onChange={(e) => setCode(e.target.value)} placeholder="수령번호 입력 (PU-XXXXXX / DL-XXXXXX)" onKeyDown={(e) => e.key === "Enter" && verify()} /><button onClick={() => verify()}>검증</button></div>
         <div className="puv-steps">
           {steps.map((s, i) => <div key={i} className={`puv-s ${s.ok ? "ok" : "no"}`}>{s.ok ? "✓" : "✗"} {s.t}</div>)}
           {fail && <div className="puv-fail">❌ 대조 실패 — 위변조·만료 또는 잘못된 번호예요. 회원 화면의 수령번호를 다시 확인하세요.</div>}
         </div>
         {target && (<div className="puv-ok">
-          <b>{target.pu} · {target.id}</b><span>{(target.med || "").split("—")[0]} · {target.pharm}</span>
-          <label className="puv-id"><input type="checkbox" checked={idOk} onChange={(e) => setIdOk(e.target.checked)} /> 약사 신분 확인 완료(수령인 본인 확인)</label>
-          <button className="puv-done" disabled={!idOk} onClick={complete}>수령 완료 처리 + 복약지도</button>
+          <b>{target._dl ? target.dl : target.pu} · {target.id}</b><span>{(target.med || "").split("—")[0]} · {target.pharm}{target._dl ? " → 자택 배송" : ""}</span>
+          <label className="puv-id"><input type="checkbox" checked={idOk} onChange={(e) => setIdOk(e.target.checked)} /> {target._dl ? "기사 수령 확인(대면 전달 · 수령인 확인)" : "약사 신분 확인 완료(수령인 본인 확인)"}</label>
+          <button className="puv-done" disabled={!idOk} onClick={complete}>{target._dl ? "배송 수령 확인 처리" : "수령 완료 처리 + 복약지도"}</button>
         </div>)}
         {doneMsg && <div className="puv-donemsg">{doneMsg}</div>}
       </div>
       <div className="b2b-card">
         <div className="b2b-ch">⏳ 수령 대기 목록</div>
-        {pending.length ? pending.map((r) => (
-          <div className="b2b-rx" key={r.pu}><b>{r.pu}</b><span>{r.id} · {(r.med || "").split("—")[0]}</span><em>{r.status}</em><button className="puv-fill" onClick={() => { setCode(r.pu); verify(r.pu); }}>검증</button></div>
-        )) : <div className="b2b-empty">수령 대기 중인 처방이 없어요 — 회원이 방문 수령을 확정하면 여기 나타나요.</div>}
+        {pending.length ? pending.map((r) => { const cno = r.pu || r.dl; return (
+          <div className="b2b-rx" key={cno}><b>{cno}</b><span>{r.id} · {(r.med || "").split("—")[0]}{r.dl && !r.pu ? " · 배송" : ""}</span><em>{r.status}</em><button className="puv-fill" onClick={() => { setCode(cno); verify(cno); }}>검증</button></div>
+        ); }) : <div className="b2b-empty">수령 대기 중인 처방이 없어요 — 회원이 방문·배송 수령을 확정하면 여기 나타나요.</div>}
         <div className="b2b-audit"><ShieldCheck size={13} color="#16A34A" /> 검증·수령 처리는 회원 데이터 금고 접근 이력에 기록됩니다 — 위변조 없음 ✓ 해시 재검증 · 1회용 소진 관리.</div>
       </div>
     </div></div>

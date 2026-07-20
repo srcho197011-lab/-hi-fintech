@@ -175,7 +175,7 @@ const AGENT_QNA = [
   { c: "action", k: "hi_pharm", p: ["약어디서받", "가까운약국", "약국배정", "제일가까운약국", "약국추천", "약국어디", "약국찾아줘"], a: "", tool: "pharmassign", b: [], nav: null, nx: [], lv: 1, guard: "med" },
   { c: "action", k: "hi_pharm_do", p: ["약국확정", "약국으로확정", "그약국으로해줘", "방문수령확정"], a: "", tool: "pharmdo", b: [], nav: null, nx: [], lv: 1 },
   { c: "action", k: "hi_pharm_dv", p: ["배송으로받을래", "배송수령으로", "약배송해줘", "배송으로해줘"], a: "", tool: "pharmdv", b: [], nav: null, nx: [], lv: 1 },
-  { c: "action", k: "hi_pickup", p: ["수령증보여줘", "수령증", "큐알보여줘", "qr보여줘", "수령번호", "약받았", "약수령했", "수령상태"], a: "", tool: "pickup", b: [], nav: null, nx: [], lv: 1 },
+  { c: "action", k: "hi_pickup", p: ["수령증보여줘", "수령증", "큐알보여줘", "qr보여줘", "수령번호", "약받았", "약수령했", "수령상태", "배송조회", "배송추적", "약어디쯤", "배송어디", "배송상태", "약배송됐"], a: "", tool: "pickup", b: [], nav: null, nx: [], lv: 1 },
   /* ───────── Phase 7 — B2B 콘솔(기관 구독·의사·검증 노드·거버넌스) ───────── */
   { c: "invest", k: "hi_b2b", p: ["b2b콘솔", "기관콘솔", "구독콘솔", "기관구독", "의사콘솔", "검증노드", "노드신청", "검증기관노드", "거버넌스", "안건투표", "노드참여"], a: "", tool: "b2bgo", b: [], nav: "partner", nx: [], lv: 2 },
 ];

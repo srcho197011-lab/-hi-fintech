@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=67183b822d" />
+<link rel="stylesheet" href="./data/app.css?v=ad37237136" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=67183b822d"></script>
-<script src="./src/data/section_data.js?v=67183b822d"></script>
-<script src="./src/data/demo_members.js?v=67183b822d"></script>
+<script src="./src/data/dummy_data.js?v=ad37237136"></script>
+<script src="./src/data/section_data.js?v=ad37237136"></script>
+<script src="./src/data/demo_members.js?v=ad37237136"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -1884,6 +1884,40 @@ function PickupCard({ pu }) {
     </div>
   );
 }
+/* 배송추적 QR 카드 — 접수→조제→배송→수령 확인 4단계 실시간 스테퍼, 도착 시 기사에게 QR 제시 */
+const DL_STEPS = ["약국 접수", "조제중", "배송중", "수령 완료"];
+function DeliveryCard({ dl }) {
+  const qrRef = useRef(null); const bigRef = useRef(null);
+  const [full, setFull] = useState(false);
+  const [, setTick] = useState(0);
+  useEffect(() => { const f = () => setTick((t) => t + 1); window.addEventListener("dlmove", f); window.addEventListener("pudone", f); return () => { window.removeEventListener("dlmove", f); window.removeEventListener("pudone", f); }; }, []);
+  const rec = (() => { try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); return rl.find((r) => r.dl === dl.dl) || null; } catch (e) { return null; } })();
+  const step = rec ? (rec.dlStep || 0) : 0;
+  const done = step >= 3;
+  const payload = `HIFIN-DL|${dl.dl}|${dl.rxNo}|${String(dl.hash || "").slice(0, 16)}`;
+  const drawQR = (el, size) => { if (!el) return false; try { el.innerHTML = ""; if (typeof QRCode !== "undefined") { new QRCode(el, { text: payload, width: size, height: size, correctLevel: QRCode.CorrectLevel.M }); return true; } } catch (e) {} return false; };
+  useEffect(() => { if (!drawQR(qrRef.current, 128) && qrRef.current) qrRef.current.innerHTML = '<div class="pu-fb">' + dl.dl + "</div>"; }, [dl.dl]);
+  useEffect(() => { if (full) setTimeout(() => { if (!drawQR(bigRef.current, 260) && bigRef.current) bigRef.current.innerHTML = '<div class="pu-fb big">' + dl.dl + "</div>"; }, 60); }, [full]);
+  return (
+    <div className={`pucard dlv ${done ? "done" : ""}`}>
+      {full && <div className="pufull" onClick={() => setFull(false)}><div className="pufull-b" onClick={(e) => e.stopPropagation()}><b>🚚 배송추적 QR · {dl.dl}</b><div ref={bigRef} className="pu-qr big" /><span>기사님 도착 시 이 화면을 보여주세요 — 스캔으로 의약품 수령이 확인됩니다(약사법 수령 확인)</span><button onClick={() => setFull(false)}>닫기</button></div></div>}
+      <div className="pu-hd">🚚 배송추적 QR — 도착 시 기사에게 제시 <em className={done ? "ok" : "wait"}>{done ? "수령 완료 ✓" : DL_STEPS[step]}</em></div>
+      <div className="dl-steps">{DL_STEPS.map((s, i) => (
+        <div className={`dl-st ${i < step ? "past" : ""} ${i === step ? "now" : ""} ${done && i === 3 ? "past" : ""}`} key={s}><i>{i < step || (done && i === 3) ? "✓" : i + 1}</i><span>{s}</span></div>
+      ))}</div>
+      <div className="pu-body">
+        <div ref={qrRef} className="pu-qr" onClick={() => setFull(true)} title="탭하면 크게 보기" />
+        <div className="pu-info">
+          <b>{dl.dl}</b>
+          <span>{dl.pharm} → 자택 배송 (상세 주소 비노출)</span>
+          <span>{done && rec && rec.dlAt ? `${new Date(rec.dlAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 수령 완료` : "도착 예정 오늘 저녁 · 유효 48시간 · 1회용"}</span>
+          <i>기사 스캔으로 위변조 없음 ✓·수령이 확인돼요 · 이름·주민번호는 담기지 않아요</i>
+        </div>
+      </div>
+      <div className="pu-ft">{done ? "배송 수령 완료 — 복약 리마인드는 하이가 챙겨드려요 💊" : "QR을 탭하면 크게 보여요 · 단계가 바뀔 때마다 자동 갱신돼요 · ⚠ 시연용"}</div>
+    </div>
+  );
+}
 /* P1 — "고르세요"가 아니라 "배정해 드렸어요": 기준점 토글·대안 병기·클릭 즉시 지도 포커스 */
 function PharmPickCard({ onPick }) {
   const [base, setBase] = useState("home");
@@ -2037,7 +2071,7 @@ function SpecialistChat() {
   };
   /* 약국 선택 → 전송·접수·조제·수령 실시간 추적 체인(약사법 절차) + 방문 수령 시 수령증 QR 발급(Q1) */
   const pharmPick = (ph, mode) => {
-    let pu = null, puData = null;
+    let pu = null, puData = null, dlData = null;
     try {
       const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]");
       if (rl.length) {
@@ -2047,18 +2081,26 @@ function SpecialistChat() {
           pu = "PU-" + Date.now().toString(36).toUpperCase().slice(-6);
           last.pu = pu; last.puExp = Date.now() + 24 * 3600 * 1000; last.puUsed = false;
           puData = { pu, pharm: ph, rxNo: last.id, hash: last.hash || null, exp: last.puExp };
+        } else {
+          const dl = "DL-" + Date.now().toString(36).toUpperCase().slice(-6);
+          last.dl = dl; last.dlStep = 0; last.dlExp = Date.now() + 48 * 3600 * 1000;
+          dlData = { dl, pharm: ph, rxNo: last.id, hash: last.hash || null };
         }
         localStorage.setItem("hifin_rx", JSON.stringify(rl));
       }
     } catch (e) {}
     setMsgs((m) => [...m,
       { id: ++UID, who: "ai", kind: "text", text: `📤 ${ph}(으)로 전자처방전 전송 완료 — ${mode} 수령. 처방전은 선택하신 약국으로만 암호화 전송되며, 이후 단계는 하이가 실시간으로 알려드려요.`, first: true, time: now() },
-      ...(puData ? [{ id: ++UID, who: "ai", kind: "pickup", pu: puData, time: now() }] : [])]);
-    if (typeof toast === "function") toast(pu ? `📤 ${ph} 처방전 전송 · 방문수령증 QR 발급(${pu})` : `📤 ${ph} 처방전 전송(${mode})`);
-    setTimeout(() => { setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🏪 ${ph} 접수 완료 — 약사가 처방을 검토하고 조제를 시작했어요. (조제중)`, first: true, time: now() }]); }, 2500);
+      ...(puData ? [{ id: ++UID, who: "ai", kind: "pickup", pu: puData, time: now() }] : []),
+      ...(dlData ? [{ id: ++UID, who: "ai", kind: "delivery", dl: dlData, time: now() }] : [])]);
+    if (typeof toast === "function") toast(pu ? `📤 ${ph} 처방전 전송 · 방문수령증 QR 발급(${pu})` : dlData ? `📤 ${ph} 처방전 전송 · 배송추적 QR 발급(${dlData.dl})` : `📤 ${ph} 처방전 전송(${mode})`);
     setTimeout(() => {
-      setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: mode === "배송" ? `🚚 조제 완료 · 배송 시작 — 오늘 저녁 도착 예정이에요. 수령이 확인되면 복약지도 안내와 함께 복약 리마인드를 시작할게요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)` : `✅ 조제 완료 — 지금 방문하시면 수령 가능해요. 신분 확인 후 약사의 복약지도와 함께 수령하세요. 수령 확인 후 복약 리마인드를 시작할게요.`, first: true, time: now() }]);
-      try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { rl[rl.length - 1].status = mode === "배송" ? "조제 완료 · 배송중" : "조제 완료 · 방문 수령 대기"; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
+      setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `🏪 ${ph} 접수 완료 — 약사가 처방을 검토하고 조제를 시작했어요. (조제중)`, first: true, time: now() }]);
+      try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = rl[rl.length - 1]; if (r && r.dl != null) { r.dlStep = 1; localStorage.setItem("hifin_rx", JSON.stringify(rl)); window.dispatchEvent(new CustomEvent("dlmove")); } } catch (e) {}
+    }, 2500);
+    setTimeout(() => {
+      setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: mode === "배송" ? `🚚 조제 완료 · 배송 시작 — 오늘 저녁 도착 예정이에요. 기사님이 도착하면 배송추적 QR을 보여주고 수령을 확인하세요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)` : `✅ 조제 완료 — 지금 방문하시면 수령 가능해요. 신분 확인 후 약사의 복약지도와 함께 수령하세요. 수령 확인 후 복약 리마인드를 시작할게요.`, first: true, time: now() }]);
+      try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { const r = rl[rl.length - 1]; r.status = mode === "배송" ? "조제 완료 · 배송중" : "조제 완료 · 방문 수령 대기"; if (r.dl != null) { r.dlStep = 2; } localStorage.setItem("hifin_rx", JSON.stringify(rl)); if (r.dl != null) window.dispatchEvent(new CustomEvent("dlmove")); } } catch (e) {}
       if (typeof toast === "function") toast(mode === "배송" ? "🚚 조제 완료 · 배송 시작" : "✅ 조제 완료 · 수령 가능");
     }, 5500);
   };
@@ -2188,6 +2230,8 @@ function SpecialistChat() {
                 <PharmPickCard onPick={pharmPick} />
               ) : m.kind === "pickup" ? (
                 <PickupCard pu={m.pu} />
+              ) : m.kind === "delivery" ? (
+                <DeliveryCard dl={m.dl} />
               ) : m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
                 <div className="meta"><span>{m.time}</span></div></div></div></div>
         ))}
@@ -10371,50 +10415,53 @@ function PharmacyVerify() {
   const [code, setCode] = useState(""); const [steps, setSteps] = useState([]); const [fail, setFail] = useState(false);
   const [target, setTarget] = useState(null); const [idOk, setIdOk] = useState(false); const [doneMsg, setDoneMsg] = useState(null);
   const [, setTick] = useState(0);
-  const pending = (() => { try { return JSON.parse(localStorage.getItem("hifin_rx") || "[]").filter((r) => r.pu && !r.puUsed).slice(-5).reverse(); } catch (e) { return []; } })();
+  const pending = (() => { try { return JSON.parse(localStorage.getItem("hifin_rx") || "[]").filter((r) => (r.pu && !r.puUsed) || (r.dl && (r.dlStep || 0) < 3)).slice(-5).reverse(); } catch (e) { return []; } })();
   const verify = (c) => {
     const v = String(c != null ? c : code).trim().toUpperCase(); if (!v) return;
     setFail(false); setSteps([]); setTarget(null); setIdOk(false); setDoneMsg(null);
-    let rec = null; try { rec = JSON.parse(localStorage.getItem("hifin_rx") || "[]").find((r) => r.pu === v) || null; } catch (e) {}
-    const ok1 = !!rec, ok2 = !!rec, ok3 = !!rec && !rec.puUsed && (!rec.puExp || Date.now() < rec.puExp);
+    let rec = null; try { rec = JSON.parse(localStorage.getItem("hifin_rx") || "[]").find((r) => r.pu === v || r.dl === v) || null; } catch (e) {}
+    const isDl = !!(rec && rec.dl === v);
+    const ok1 = !!rec, ok2 = !!rec;
+    const ok3 = !!rec && (isDl ? ((rec.dlStep || 0) >= 2 && (rec.dlStep || 0) < 3 && (!rec.dlExp || Date.now() < rec.dlExp)) : (!rec.puUsed && (!rec.puExp || Date.now() < rec.puExp)));
     const seq = [
       { t: `처방 대조 ${rec ? `— ${rec.id} 일치` : "— 일치하는 처방 없음"}`, ok: ok1 },
       { t: ok2 ? "온체인 해시 재검증 — 위변조 없음 ✓" : "온체인 해시 재검증 — 검증 실패", ok: ok2 },
-      { t: ok3 ? "유효기간·1회용 확인 — 유효" : "유효기간·1회용 확인 — 만료 또는 이미 사용됨", ok: ok3 },
+      { t: isDl ? (ok3 ? "배송 상태 확인 — 배송중(수령 확인 가능)" : "배송 상태 확인 — 배송 출발 전이거나 이미 수령됨") : (ok3 ? "유효기간·1회용 확인 — 유효" : "유효기간·1회용 확인 — 만료 또는 이미 사용됨"), ok: ok3 },
     ];
-    seq.forEach((s, i) => setTimeout(() => { setSteps((p) => [...p, s]); if (!s.ok) setFail(true); if (i === seq.length - 1 && ok1 && ok2 && ok3) setTarget(rec); }, 380 * (i + 1)));
+    seq.forEach((s, i) => setTimeout(() => { setSteps((p) => [...p, s]); if (!s.ok) setFail(true); if (i === seq.length - 1 && ok1 && ok2 && ok3) setTarget({ ...rec, _dl: isDl }); }, 380 * (i + 1)));
   };
   const complete = () => {
     if (!target || !idOk) return;
-    try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = rl.find((x) => x.pu === target.pu); if (r) { r.puUsed = true; r.puAt = Date.now(); r.status = "수령 완료"; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
-    try { const m = (typeof _member === "function") ? _member() : null; if (m && typeof vaultAccessLog === "function") vaultAccessLog(anonToken(m), target.pharm || "약국", "방문수령증 QR 검증 · 수령 완료 처리(약사 신분 확인)"); } catch (e) {}
-    try { window.dispatchEvent(new CustomEvent("pudone", { detail: target.pu })); } catch (e) {}
-    setDoneMsg(`✅ ${target.pu} 수령 완료 처리 — 회원 수령증이 '수령 완료 ✓'로 바뀌고, 복약 리마인드 안내가 전달됩니다.`);
+    const codeNo = target._dl ? target.dl : target.pu;
+    try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = rl.find((x) => (target._dl ? x.dl === target.dl : x.pu === target.pu)); if (r) { if (target._dl) { r.dlStep = 3; r.dlAt = Date.now(); r.status = "배송 수령 완료"; } else { r.puUsed = true; r.puAt = Date.now(); r.status = "수령 완료"; } localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
+    try { const m = (typeof _member === "function") ? _member() : null; if (m && typeof vaultAccessLog === "function") vaultAccessLog(anonToken(m), target.pharm || "약국", target._dl ? "배송추적 QR 스캔 · 배송 수령 확인(기사 대면 전달)" : "방문수령증 QR 검증 · 수령 완료 처리(약사 신분 확인)"); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent(target._dl ? "dlmove" : "pudone", { detail: codeNo })); window.dispatchEvent(new CustomEvent("pudone", { detail: codeNo })); } catch (e) {}
+    setDoneMsg(target._dl ? `✅ ${codeNo} 배송 수령 확인 — 회원 배송추적 카드가 '수령 완료 ✓'로 바뀌고, 복약 리마인드 안내가 전달됩니다.` : `✅ ${codeNo} 수령 완료 처리 — 회원 수령증이 '수령 완료 ✓'로 바뀌고, 복약 리마인드 안내가 전달됩니다.`);
     setTarget(null); setSteps([]); setIdOk(false); setCode(""); setTick((x) => x + 1);
-    if (typeof toast === "function") toast("✅ 수령 완료 — 회원에게 복약 리마인드 안내 전달");
+    if (typeof toast === "function") toast("✅ 수령 확인 완료 — 회원에게 복약 리마인드 안내 전달");
   };
   return (
     <div className="b2b-pane"><div className="b2b-grid2">
       <div className="b2b-card">
-        <div className="b2b-ch">🎫 방문수령증 검증 <span className="b2b-demo">약국 화면 시연(온누리약국)</span></div>
-        <p className="b2b-p">회원 핸드폰의 수령증 QR을 스캔하거나 수령번호를 입력하세요 — 시연에서는 번호 입력으로 대신해요(실서비스는 카메라 스캔). QR에는 이름·주민번호가 담기지 않습니다(가명 검증).</p>
-        <div className="puv-in"><input value={code} onChange={(e) => setCode(e.target.value)} placeholder="수령번호 입력 (예: PU-XXXXXX)" onKeyDown={(e) => e.key === "Enter" && verify()} /><button onClick={() => verify()}>검증</button></div>
+        <div className="b2b-ch">🎫 방문수령증·배송 QR 검증 <span className="b2b-demo">약국·배송 화면 시연(온누리약국)</span></div>
+        <p className="b2b-p">방문 수령은 약국 카운터에서(PU-), 배송 수령은 기사가 도착 시(DL-) 회원 QR을 스캔합니다 — 시연에서는 번호 입력으로 대신해요. QR에는 이름·주민번호가 담기지 않습니다(가명 검증).</p>
+        <div className="puv-in"><input value={code} onChange={(e) => setCode(e.target.value)} placeholder="수령번호 입력 (PU-XXXXXX / DL-XXXXXX)" onKeyDown={(e) => e.key === "Enter" && verify()} /><button onClick={() => verify()}>검증</button></div>
         <div className="puv-steps">
           {steps.map((s, i) => <div key={i} className={`puv-s ${s.ok ? "ok" : "no"}`}>{s.ok ? "✓" : "✗"} {s.t}</div>)}
           {fail && <div className="puv-fail">❌ 대조 실패 — 위변조·만료 또는 잘못된 번호예요. 회원 화면의 수령번호를 다시 확인하세요.</div>}
         </div>
         {target && (<div className="puv-ok">
-          <b>{target.pu} · {target.id}</b><span>{(target.med || "").split("—")[0]} · {target.pharm}</span>
-          <label className="puv-id"><input type="checkbox" checked={idOk} onChange={(e) => setIdOk(e.target.checked)} /> 약사 신분 확인 완료(수령인 본인 확인)</label>
-          <button className="puv-done" disabled={!idOk} onClick={complete}>수령 완료 처리 + 복약지도</button>
+          <b>{target._dl ? target.dl : target.pu} · {target.id}</b><span>{(target.med || "").split("—")[0]} · {target.pharm}{target._dl ? " → 자택 배송" : ""}</span>
+          <label className="puv-id"><input type="checkbox" checked={idOk} onChange={(e) => setIdOk(e.target.checked)} /> {target._dl ? "기사 수령 확인(대면 전달 · 수령인 확인)" : "약사 신분 확인 완료(수령인 본인 확인)"}</label>
+          <button className="puv-done" disabled={!idOk} onClick={complete}>{target._dl ? "배송 수령 확인 처리" : "수령 완료 처리 + 복약지도"}</button>
         </div>)}
         {doneMsg && <div className="puv-donemsg">{doneMsg}</div>}
       </div>
       <div className="b2b-card">
         <div className="b2b-ch">⏳ 수령 대기 목록</div>
-        {pending.length ? pending.map((r) => (
-          <div className="b2b-rx" key={r.pu}><b>{r.pu}</b><span>{r.id} · {(r.med || "").split("—")[0]}</span><em>{r.status}</em><button className="puv-fill" onClick={() => { setCode(r.pu); verify(r.pu); }}>검증</button></div>
-        )) : <div className="b2b-empty">수령 대기 중인 처방이 없어요 — 회원이 방문 수령을 확정하면 여기 나타나요.</div>}
+        {pending.length ? pending.map((r) => { const cno = r.pu || r.dl; return (
+          <div className="b2b-rx" key={cno}><b>{cno}</b><span>{r.id} · {(r.med || "").split("—")[0]}{r.dl && !r.pu ? " · 배송" : ""}</span><em>{r.status}</em><button className="puv-fill" onClick={() => { setCode(cno); verify(cno); }}>검증</button></div>
+        ); }) : <div className="b2b-empty">수령 대기 중인 처방이 없어요 — 회원이 방문·배송 수령을 확정하면 여기 나타나요.</div>}
         <div className="b2b-audit"><ShieldCheck size={13} color="#16A34A" /> 검증·수령 처리는 회원 데이터 금고 접근 이력에 기록됩니다 — 위변조 없음 ✓ 해시 재검증 · 1회용 소진 관리.</div>
       </div>
     </div></div>
@@ -17300,7 +17347,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-20", ver:"v1.1", ch:[9], feat:"방문수령증 QR 발급·약국 검증 체인", src:"AIDoctor.jsx,B2BConsole.jsx,aiNative.js", summary:"핸드폰 QR 수령증 발급과 약국 3단계 검증·수령 완료 처리, 복약 리마인드 연계를 구현", refs:[], status:"반영", hash:"bccae3b", auto:true },
+  { date:"2026-07-20", ver:"v1.1", ch:[9], feat:"배송추적 QR·기사 수령 확인 체인", src:"AIDoctor.jsx,B2BConsole.jsx,aiNative.js", summary:"배송 수령에도 QR 추적 4단계 스테퍼와 기사 스캔 수령 확인, 하이 배송 조회를 구현", refs:[], status:"반영", hash:"54b38a8", auto:true },
+  { date:"2026-07-20", ver:"v1.1", ch:[9], feat:"방문수령증 QR 발급·약국 검증 체인", src:"AIDoctor.jsx,B2BConsole.jsx,aiNative.js", summary:"핸드폰 QR 수령증 발급과 약국 3단계 검증·수령 완료 처리, 복약 리마인드 연계를 구현", refs:[], status:"반영", hash:"65269af", auto:true },
   { date:"2026-07-20", ver:"v1.1", ch:[9], feat:"약국 배정 UI 정렬 보정", src:"AIDoctor.jsx", summary:"지도 핀 앵커와 약국 목록 정렬을 바로잡아 배정 화면 가독성을 개선", refs:[], status:"반영", hash:"257d381", auto:true },
   { date:"2026-07-20", ver:"v1.1", ch:[9], feat:"처방 약국 자동 배정·2점 지도(약국 단계 개선)", src:"AIDoctor.jsx,Checkup.jsx,aiNative.js", summary:"주소 기준 최근접 약국 자동 배정과 클릭 즉시 포커스 지도, 지도 기관명 검색을 구현해 약국 탐색 단계를 제거", refs:[], status:"반영", hash:"807031c", auto:true },
   { date:"2026-07-20", ver:"v1.1", ch:[9], feat:"약국 선택 위치 지도(원격진료 채팅)", src:"AIDoctor.jsx", summary:"전자처방 약국 선택 카드에 심평원 실데이터 약국 지도를 인라인으로 연동", refs:[], status:"반영", hash:"733cd1c", auto:true },
@@ -20924,7 +20972,7 @@ const AGENT_QNA = [
   { c: "action", k: "hi_pharm", p: ["약어디서받", "가까운약국", "약국배정", "제일가까운약국", "약국추천", "약국어디", "약국찾아줘"], a: "", tool: "pharmassign", b: [], nav: null, nx: [], lv: 1, guard: "med" },
   { c: "action", k: "hi_pharm_do", p: ["약국확정", "약국으로확정", "그약국으로해줘", "방문수령확정"], a: "", tool: "pharmdo", b: [], nav: null, nx: [], lv: 1 },
   { c: "action", k: "hi_pharm_dv", p: ["배송으로받을래", "배송수령으로", "약배송해줘", "배송으로해줘"], a: "", tool: "pharmdv", b: [], nav: null, nx: [], lv: 1 },
-  { c: "action", k: "hi_pickup", p: ["수령증보여줘", "수령증", "큐알보여줘", "qr보여줘", "수령번호", "약받았", "약수령했", "수령상태"], a: "", tool: "pickup", b: [], nav: null, nx: [], lv: 1 },
+  { c: "action", k: "hi_pickup", p: ["수령증보여줘", "수령증", "큐알보여줘", "qr보여줘", "수령번호", "약받았", "약수령했", "수령상태", "배송조회", "배송추적", "약어디쯤", "배송어디", "배송상태", "약배송됐"], a: "", tool: "pickup", b: [], nav: null, nx: [], lv: 1 },
   /* ───────── Phase 7 — B2B 콘솔(기관 구독·의사·검증 노드·거버넌스) ───────── */
   { c: "invest", k: "hi_b2b", p: ["b2b콘솔", "기관콘솔", "구독콘솔", "기관구독", "의사콘솔", "검증노드", "노드신청", "검증기관노드", "거버넌스", "안건투표", "노드참여"], a: "", tool: "b2bgo", b: [], nav: "partner", nx: [], lv: 2 },
 ];
@@ -21224,10 +21272,17 @@ const TOOL_RUN = {
     try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); if (rl.length) { rl[rl.length - 1].status = `${a.n} 전송(배송 수령)`; rl[rl.length - 1].pharm = a.n; localStorage.setItem("hifin_rx", JSON.stringify(rl)); } } catch (e) {}
     return { lines: [`📦 ${a.n}에 배송 수령으로 접수했어요 ✓ — 조제중 → 배송중 → 수령완료 단계마다 알려드릴게요. (의약품 배송은 약사법 허용 범위에서 운영됩니다)`] };
   } catch (e) { return null; } },
-  /* 방문수령증(Q4·H1) — "수령증 보여줘"·"약 받았어?" 상태 조회 */
+  /* 방문수령증·배송추적(Q4·H1) — "수령증 보여줘"·"약 어디쯤이야?"·"약 받았어?" 상태 조회 */
   pickup() { try {
-    const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu);
-    if (!r) return { lines: ["아직 발급된 방문수령증이 없어요 — 처방 후 '방문 수령 확정'을 누르면 핸드폰에 QR 수령증이 발급돼요."], buttons: [] };
+    const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu || x.dl);
+    if (!r) return { lines: ["아직 발급된 수령증·배송추적 QR이 없어요 — 처방 후 방문/배송 수령을 확정하면 핸드폰에 QR이 발급돼요."], buttons: [] };
+    if (r.dl && !r.pu) {
+      const step = r.dlStep || 0; const names = ["약국 접수", "조제중", "배송중", "배송 수령 완료 ✓"];
+      return { lines: [
+        `🚚 배송추적 ${r.dl} — ${r.pharm || "약국"} → 자택 · 처방 ${r.id} · 상태: ${names[step]}${step < 3 ? " (도착 예정 오늘 저녁)" : ""}`,
+        step >= 3 ? "배송 수령까지 끝났어요 — 복약 리마인드는 제가 챙기고 있어요 💊" : "기사님이 도착하면 원격상담 화면의 배송추적 QR을 보여주세요 — 스캔으로 수령이 확인돼요(약사법 수령 확인 · 이름·주민번호 미포함).",
+      ] };
+    }
     const st = r.puUsed ? "수령 완료 ✓" : (/조제 완료/.test(r.status || "") ? "수령 대기(조제 완료)" : "조제중");
     return { lines: [
       `🎫 방문수령증 ${r.pu} — ${r.pharm || "약국"} · 처방 ${r.id} · 상태: ${st}`,
@@ -21375,7 +21430,7 @@ function agentProactive() {
   /* RPM 경보 — 최우선(새벽 2:17 장면): 세션당 1회 선제 안내 */
   try { const a = rpmAlert(m); if (a && !sessionStorage.getItem("hifin_rpm_seen")) { out.push({ text: `🔴 오늘 새벽 2:17, ${a.rel} ${a.name}님 혈압이 152/94까지 올랐어요(3일 연속 상승 · 가정 혈압계 RPM 자동 감지). 지금 연결 가능한 의사에게 먼저 보여드릴까요?`, buttons: ["원격진료 연결해줘", "가족 혈압 경보 보여줘"] }); sessionStorage.setItem("hifin_rpm_seen", "1"); } } catch (e) {}
   /* 방문수령증(V4) — 수령 완료 시 복약 리마인드 시작 안내(1회), 조제 완료 시 QR 준비 안내(세션 1회) */
-  try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu); if (r && r.puUsed && !localStorage.getItem("hifin_pu_done_" + r.pu)) { out.push({ text: `💊 ${r.pharm || "약국"} 수령 완료 확인! 오늘부터 복약 리마인드를 시작할게요 — ${(r.med || "").split("—")[0].trim()}`, buttons: [] }); localStorage.setItem("hifin_pu_done_" + r.pu, "1"); } else if (r && !r.puUsed && /조제 완료/.test(r.status || "") && !sessionStorage.getItem("hifin_pu_ready")) { out.push({ text: "🎫 조제가 끝났어요 — 약국 방문 시 수령증 QR을 준비하세요. '수령증 보여줘'라고 하시면 바로 확인돼요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_pu_ready", "1"); } } catch (e) {}
+  try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu || x.dl); if (r && ((r.pu && r.puUsed) || (r.dl && (r.dlStep || 0) >= 3)) && !localStorage.getItem("hifin_pu_done_" + (r.pu || r.dl))) { out.push({ text: `💊 ${r.pharm || "약국"} ${r.dl && !r.pu ? "배송 " : ""}수령 완료 확인! 오늘부터 복약 리마인드를 시작할게요 — ${(r.med || "").split("—")[0].trim()}`, buttons: [] }); localStorage.setItem("hifin_pu_done_" + (r.pu || r.dl), "1"); } else if (r && r.pu && !r.puUsed && /조제 완료/.test(r.status || "") && !sessionStorage.getItem("hifin_pu_ready")) { out.push({ text: "🎫 조제가 끝났어요 — 약국 방문 시 수령증 QR을 준비하세요. '수령증 보여줘'라고 하시면 바로 확인돼요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_pu_ready", "1"); } else if (r && r.dl && !r.pu && (r.dlStep || 0) === 2 && !sessionStorage.getItem("hifin_dl_ready")) { out.push({ text: "🚚 약이 배송 중이에요 — 기사님 도착 시 배송추적 QR을 보여주시면 수령이 확인돼요. '배송 어디쯤이야?'로 언제든 확인하세요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_dl_ready", "1"); } } catch (e) {}
   try { const d = JSON.parse(localStorage.getItem("hifin_ins_deferred") || "null"); if (d) out.push({ text: `지난번 ${d.center || "검진"} 예약은 보험 없이 하셨죠 — 무료 검진대비보험, 지금 1분 안에 준비해드릴까요? (이 안내는 한 번만 드려요)`, buttons: ["검진보험 가입해줘", "괜찮아요"] }); } catch (e) {}
   try {
     const ob = (typeof onboardStatus === "function") ? onboardStatus(m) : null;
