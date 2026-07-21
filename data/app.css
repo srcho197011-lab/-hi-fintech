@@ -5137,3 +5137,5 @@ body.easyread .hibrief-t { font-size: 17px; }
 .dl-st.now i { background: #1D4ED8; color: #fff; box-shadow: 0 0 0 4px #DBEAFE; }
 .dl-st span { font-size: 9.5px; font-weight: 700; color: #94A3B8; }
 .dl-st.past span, .dl-st.now span { color: #1E293B; }
+/* 박정순 PIP — 환자 영상 속 노트북 화면(의사)만 줌인 크롭 */
+.dvm-pip video.pipzoom { width: 512px; height: 288px; max-width: none; object-fit: fill; position: absolute; left: -265px; top: -92px; }

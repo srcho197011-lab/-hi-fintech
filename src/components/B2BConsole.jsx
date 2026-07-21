@@ -98,7 +98,8 @@ function DoctorVideoModal({ q, onClose, msgs, onSend }) {
                 )}
               </div>
             )}
-            <div className="dvm-pip"><video src={DRC_VID.doctor} autoPlay loop muted playsInline /><span>나 · 의사</span></div>
+            {/* 박정순(q3)은 환자 영상 속 노트북 화면(남자 의사)을 줌인해 PIP로 — 진료 중인 의사와 인물 일치 */}
+            <div className="dvm-pip">{q.id === "q3" ? <video className="pipzoom" src={DRC_VID.q3} autoPlay loop muted playsInline /> : <video src={DRC_VID.doctor} autoPlay loop muted playsInline />}<span>나 · 의사</span></div>
             <div className="dvm-cap">{chat.map((m) => (<div key={m.id} className={`dvm-c ${m.who}`}>{m.who === "dr" ? "🩺 " : "👤 "}{String(m.text).slice(0, 58)}</div>))}</div>
           </div>
           <div className="dvm-side">
