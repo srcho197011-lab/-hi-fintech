@@ -400,6 +400,14 @@ function agentAnswer(text) {
     if (g.length) { const h = g[0]; return { lines: [`${h.ind} 관련 질문이시군요 — ${h.note}.`, "리포트에서 내 수치 기준으로 자세히 봐드릴까요?"], buttons: ["내 리포트 요약", "관련 보장 확인", "사람 상담 연결"], nav: null, matched: "graph" }; }
     return { lines: [`아직 그 질문은 제가 정확히 답하기 어려워요 — 놓치지 않게 기록해 뒀어요.`, "비슷한 걸로 도와드릴 수 있는지 아래에서 골라보시겠어요?"], buttons: ["하이핀 소개해줘", "내 건강 봐줘", "사람 상담 연결"], nav: null, matched: null };
   }
+  /* 재무 내부지표(매출·영업이익·구독료 정책·CAC/LTV·기업가치)는 관리자 세션에서만 응답 — 회원에게 원가·수익구조 비노출 */
+  if (it.c === "fin" && !(typeof isAdminRole === "function" && isAdminRole())) {
+    agentStats(true);
+    return { lines: [
+      "회사 매출·수익성 같은 재무 정보는 투자자·파트너 대상 자료라 회원 화면에서는 안내해 드리지 않아요.",
+      "제휴나 투자에 관심 있으시면 '제휴·투자 신청'에서 상담을 도와드릴게요.",
+    ], buttons: ["제휴 신청 가기"], nav: { key: "partner", label: "제휴·투자" }, matched: "fin_restricted" };
+  }
   agentStats(true);
   agentMemSave({ lastIntent: it.k, lastCat: it.c, lastQ: String(text).slice(0, 60) });
   let lines = it.a ? [it.a.replace(/성래님/g, agentWho() + "님")] : [];

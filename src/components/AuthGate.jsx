@@ -225,7 +225,7 @@ function TriFreeGate() {
         <div><span>🤖</span><b>무료 AI 건강관리</b><i>하이가 평생 케어</i></div>
       </div>
       <button className="trifree-btn" onClick={quickJoin}>📱 간편 본인인증으로 10초 가입 (시연)</button>
-      <div className="trifree-note">시연 환경 — 실서비스는 PASS 간편인증 1회로 가입됩니다. 원가 5천 원 미만의 3무 혜택은 검진센터 송객 수수료로 회수돼요(네거티브 CAC).</div>
+      <div className="trifree-note">시연 환경 — 실서비스는 PASS 간편인증 1회로 가입됩니다.</div>
     </div>
   );
 }
