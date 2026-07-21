@@ -171,7 +171,6 @@ function DoctorChatModal({ q, onClose }) {
   );
 }
 function DoctorConsole() {
-  const [done, setDone] = useState({});
   const [live, setLive] = useState(null);
   const rxList = (() => { try { return JSON.parse(localStorage.getItem("hifin_rx") || "[]").slice(-3).reverse(); } catch (e) { return []; } })();
   const queue = [
@@ -179,7 +178,8 @@ function DoctorConsole() {
     { id: "q2", name: "김하늘(29)", brief: "피부 발진 사진 2매 첨부 · 초진(경증)", rpm: null, mode: "화상", wait: "대기 5분" },
     { id: "q3", name: "박정순(71)", brief: "고혈압 재진 · 최근 혈압 125/75 안정", rpm: null, mode: "메시지", wait: "비동기 · 24h 내", async: true },
   ];
-  const accept = (q) => { setDone((d) => ({ ...d, [q.id]: true })); setLive(q); if (typeof toast === "function") toast(`🩺 ${q.name} 예진 확인 · 상담 연결 — 열람 기록이 회원 데이터 금고에 남습니다.`); };
+  /* 시연 초기화 원칙: 모달을 닫으면 대기열은 항상 클릭 전 상태로 복귀 — done 표시 없이 반복 시연 가능 */
+  const accept = (q) => { setLive(q); if (typeof toast === "function") toast(`🩺 ${q.name} 예진 확인 · 상담 연결 — 열람 기록이 회원 데이터 금고에 남습니다.`); };
   return (
     <div className="b2b-pane">
       {live && <DoctorChatModal q={live} onClose={() => setLive(null)} />}
@@ -188,11 +188,11 @@ function DoctorConsole() {
           <div className="b2b-ch"><Stethoscope size={15} color="#7C3AED" /> 예진 수신함 — 오늘 대기열 <span className="b2b-demo">의사 화면 시연(윤우진 진료과장)</span></div>
           <p className="b2b-p">하이가 정리한 <b>AI 예진 요약이 먼저 도착</b>합니다 — 7분 진료를 30분 밀도로. 열람은 전부 회원 데이터 금고 접근 이력에 기록돼요.</p>
           {queue.map((q) => (
-            <div className={`b2b-q ${done[q.id] ? "done" : ""}`} key={q.id}>
+            <div className="b2b-q" key={q.id}>
               <div className="b2b-qh"><b>{q.name}</b><span className="b2b-qm">{q.mode}</span><span className="b2b-qw">{q.wait}</span></div>
               <div className="b2b-qb">🤖 {q.brief}</div>
               {q.rpm && <div className="b2b-qr">📈 {q.rpm}</div>}
-              <button onClick={() => accept(q)}>{done[q.id] ? "상담 화면 다시 열기 ✓" : "예진 확인 → 상담 시작"}</button>
+              <button onClick={() => accept(q)}>예진 확인 → 상담 시작</button>
             </div>
           ))}
         </div>
