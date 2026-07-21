@@ -58,7 +58,7 @@ const DRC_SCRIPT = {
 };
 const DRC_MED = { q1: "암로디핀정 5mg — 1일 1회(부친 재진 연계)", q2: "하이드로코르티손 연고 1% — 1일 2회 도포 · 7일분", q3: "암로디핀정 5mg — 1일 1회 아침 · 28일분" };
 /* 실시간 영상 상담 데모 — 실물 데모 영상(의사 1 · 남성 환자 1 · 여성 환자 2 재사용) */
-const DRC_VID = { doctor: "data/media/tele_doctor.mp4", q1: "data/media/tele_pt_male.mp4", q2: "data/media/tele_pt_female.mp4", q3: "data/media/tele_pt_female.mp4" };
+const DRC_VID = { doctor: "data/media/tele_doctor.mp4", q1: "data/media/tele_pt_male.mp4", q2: "data/media/tele_pt_female.mp4", q3: "data/media/tele_pt_female2.mp4" };
 const DRC_SHARE = {
   q1: [{ k: "rpm", t: "혈압 추이(RPM 자동수집)", kind: "chart", data: [["7/17", "132/84", 132], ["7/18", "141/88", 141], ["새벽 2:17", "152/94", 152]] }, { k: "med", t: "복약 기록", kind: "note", text: "암로디핀 5mg — 매일 아침 1회 · 최근 7일 복용률 100% · 어지럼 보고 없음" }],
   q2: [{ k: "p1", t: "피부 발진 사진(환자 제공)", kind: "photo", src: "data/media/tele_pt_female.mp4" }, { k: "v1", t: "환부 영상(환자 제공)", kind: "video", src: "data/media/tele_pt_female.mp4" }],
