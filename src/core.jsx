@@ -330,7 +330,7 @@ const SEC_PARENT = {
   partner: "partner",
   home: "home", intro: "home", social: "home", community: "home", story: "home",
   checkup: "checkup",
-  care: "care", ai: "care", manage: "care", hospital: "care", homecare: "care", shop: "care",
+  care: "care", ai: "care", manage: "care", tele: "care", hospital: "care", homecare: "care", shop: "care",
   insurance: "insurance",
   mywallet: "mywallet", wallet: "mywallet", nft: "mywallet", mypage: "mywallet", trust: "mywallet", vault: "mywallet",
   ontology: "ontology", demo: "demo",

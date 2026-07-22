@@ -379,7 +379,7 @@ const SEC_PARENT = {
   partner: "partner",
   home: "home", intro: "home", social: "home", community: "home", story: "home",
   checkup: "checkup",
-  care: "care", ai: "care", manage: "care", hospital: "care", homecare: "care", shop: "care",
+  care: "care", ai: "care", manage: "care", tele: "care", hospital: "care", homecare: "care", shop: "care",
   insurance: "insurance",
   mywallet: "mywallet", wallet: "mywallet", nft: "mywallet", mypage: "mywallet", trust: "mywallet", vault: "mywallet",
   ontology: "ontology", demo: "demo",
@@ -541,7 +541,6 @@ export default function App() {
   const goBack = () => { if (!hist.length) return; setFut((f) => [sec, ...f]); setSecRaw(hist[hist.length - 1]); setHist((h) => h.slice(0, -1)); };
   const goForward = () => { if (!fut.length) return; setHist((h) => [...h, sec]); setSecRaw(fut[0]); setFut((f) => f.slice(1)); };
   const [hdr, setHdr] = useState(null); // "noti" | "msg" | "user" | null
-  const [careSub, setCareSub] = useState("ai"); // 검진 후 케어 서브메뉴 활성 표시(비대면 원격진료 vs AI 주치의 구분)
   const goSec = (s) => { setSec(s); setHdr(null); };
   const cur = SECTIONS.find((x) => x.k === secParent(sec));
   // 통합 검색
@@ -691,15 +690,9 @@ export default function App() {
                 {/* 검진 후 케어 선택 시: 서브메뉴를 한 칸 들여써서 펼침 — 메인 화면에서 바로 선택 */}
                 {x.k === "care" && secParent(sec) === "care" && (
                   <div className="subnav">
-                    {[["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "AI 주치의", Bot, "#7C3AED"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]].map(([k, t, Ic, c]) => {
-                      const active = k === "tele" ? (sec === "ai" && careSub === "tele") : k === "ai" ? (sec === "ai" && careSub !== "tele") : (sec === k);
-                      const onClick = () => {
-                        if (k === "tele") { setCareSub("tele"); try { window._teleGoSpecialist = true; } catch (e) {} setSec("ai"); setTimeout(() => { try { window.dispatchEvent(new CustomEvent("telego")); } catch (e) {} }, 60); }
-                        else if (k === "ai") { setCareSub("ai"); try { window._teleGoSpecialist = false; } catch (e) {} setSec("ai"); setTimeout(() => { try { window.dispatchEvent(new CustomEvent("teleai")); } catch (e) {} }, 60); }
-                        else { setCareSub(""); setSec(k); }
-                      };
-                      return <div key={k} className={`subnav-i ${active ? "on" : ""}`} onClick={onClick}><Ic size={15} color={c} /> {t}</div>;
-                    })}
+                    {[["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "AI 주치의", Bot, "#7C3AED"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]].map(([k, t, Ic, c]) => (
+                      <div key={k} className={`subnav-i ${sec === k ? "on" : ""}`} onClick={() => setSec(k)}><Ic size={15} color={c} /> {t}</div>
+                    ))}
                   </div>
                 )}
               </React.Fragment>
@@ -2271,18 +2264,28 @@ function SpecialistChat() {
   );
 }
 
-function AIDoctor() {
-  /* 하이 딥링크: teleprep 툴이 window._teleGoSpecialist를 세우면 전문의 상담 탭으로 바로 진입 */
+/* mode: "ai"=AI 주치의(24시간)만 · "specialist"=전문의 원격상담만 · 미지정=이중 탭(레거시 호환) */
+function AIDoctor({ mode }) {
   const [thread, setThread] = useState(() => { try { if (typeof window !== "undefined" && window._teleGoSpecialist) { window._teleGoSpecialist = false; return "specialist"; } } catch (e) {} return "ai"; });
   useEffect(() => { const f = () => setThread("specialist"); const g = () => setThread("ai"); window.addEventListener("telego", f); window.addEventListener("teleai", g); return () => { window.removeEventListener("telego", f); window.removeEventListener("teleai", g); }; }, []);
   const tabsRef = useRef(null);
-  const goThread = (t) => { setThread(t); setTimeout(() => { try { tabsRef.current && tabsRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }, 60); };
+  /* AI 주치의 전용 — 24시간 상담 바로 노출(이중 탭 제거) */
+  if (mode === "ai") {
+    return (
+      <div style={{ marginTop: 16 }}>
+        <div className="aihead"><span className="aiico"><SecIcon k="ai" /></span>
+          <div><div className="scaffold stitle" style={{ fontSize: 22, fontWeight: 800 }}>AI 주치의 · 24시간</div>
+            <div className="ssub" style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> 24시간 AI 건강상담 · 텍스트·음성 · 검진 리포트 기반 안내 · 진단이 아닌 참고용</div></div></div>
+        <Chat />
+      </div>
+    );
+  }
+  /* 전문의 원격상담 전용 */
+  if (mode === "specialist") return <SpecialistChat />;
+  /* 레거시: 이중 탭 */
   return (
     <div style={{ marginTop: 16 }}>
-      <div className="aihead"><span className="aiico"><SecIcon k="ai" /></span>
-        <div><div className="scaffold stitle" style={{ fontSize: 22, fontWeight: 800 }}>나의 주치의</div>
-          <div className="ssub" style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> 24시간 AI 주치의 + 전문의 1:1 상담 · 텍스트·음성·화상 · 파일첨부 · 웨어러블/홈케어기기 연동 · 진단이 아닌 참고용 안내</div></div></div>
-      <div className="aitabs" ref={tabsRef} style={{ marginTop: 18 }}>
+      <div className="aitabs" ref={tabsRef} style={{ marginTop: 4 }}>
         <div className={`aitab ${thread === "ai" ? "on" : ""}`} onClick={() => setThread("ai")}><Bot size={15} /> AI 주치의 · 24시간</div>
         <div className={`aitab ${thread === "specialist" ? "on" : ""}`} onClick={() => setThread("specialist")}><Stethoscope size={15} /> 전문의 상담</div>
       </div>
@@ -11038,17 +11041,31 @@ function HomeHub({ initial, onGo }) {
   );
 }
 
+/* 비대면 원격진료 — 전문의 원격상담 + 병원·약국 검색(내원 연계)을 하나의 탭으로 통합 */
+function TeleCareSection({ onGo }) {
+  const [sub, setSub] = useState("consult");
+  const subs = [["consult", "전문의 원격상담", Stethoscope, "#2563EB"], ["hospital", "병원·추가검진 찾기", Building2, "#0EA5E9"]];
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div className="chtabs lv2" style={{ marginBottom: 6 }}>
+        {subs.map(([k, t, Ic, c]) => <div key={k} className={`chtab ${sub === k ? "on" : ""}`} onClick={() => setSub(k)}><Ic size={14} color={sub === k ? "#fff" : c} /> {t}</div>)}
+      </div>
+      {sub === "consult" ? <AIDoctor mode="specialist" onGo={onGo} /> : <HospitalSection onGo={onGo} />}
+    </div>
+  );
+}
 function CareSection({ initial, onGo }) {
-  const map = { care: "ai", ai: "ai", manage: "manage", hospital: "hospital", homecare: "homecare", shop: "shop" };
+  /* 탭 순서 = 사이드 서브메뉴 순서: 나의 건강현황 · 비대면 원격진료 · AI 주치의 · 재가·돌봄 · 건강쇼핑 */
+  const map = { care: "ai", ai: "ai", manage: "manage", tele: "tele", hospital: "tele", homecare: "homecare", shop: "shop" };
   const [tab, setTab] = useState(map[initial] || "ai");
   useEffect(() => { setTab(map[initial] || "ai"); }, [initial]);
-  const tabs = [["ai", "나의 주치의", Bot, "#7C3AED"], ["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["hospital", "병원 진료·추가검진", Building2, "#2563EB"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
+  const tabs = [["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "AI 주치의", Bot, "#7C3AED"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
   return (
     <div style={{ marginTop: 4 }}>
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
-      {tab === "ai" && <AIDoctor onGo={onGo} />}
       {tab === "manage" && <HealthManageSection onGo={onGo} />}
-      {tab === "hospital" && <HospitalSection onGo={onGo} />}
+      {tab === "tele" && <TeleCareSection onGo={onGo} />}
+      {tab === "ai" && <AIDoctor mode="ai" onGo={onGo} />}
       {tab === "homecare" && <HomecareSection onGo={onGo} />}
       {tab === "shop" && <ShopSection onGo={onGo} />}
     </div>
@@ -17365,7 +17382,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-22", ver:"v1.1", ch:[4], feat:"검진 후 케어 사이드 서브메뉴 펼침", src:"App.jsx,AIDoctor.jsx", summary:"검진 후 케어의 5개 서브메뉴를 사이드바에 들여쓰기로 노출하고 메인 화면에서 직접 선택 가능하게 함", refs:[], status:"반영", hash:"bc69f38", auto:true },
+  { date:"2026-07-22", ver:"v1.1", ch:[4], feat:"검진 후 케어 탭 통합·순서 정렬", src:"SectionGroups.jsx,AIDoctor.jsx,App.jsx", summary:"전문의 상담을 비대면 원격진료로 통합하고 AI 주치의 이중탭을 단일화, 상단 탭 순서를 사이드 메뉴와 일치시킴", refs:[], status:"반영", hash:"96a3949", auto:true },
+  { date:"2026-07-22", ver:"v1.1", ch:[4], feat:"검진 후 케어 사이드 서브메뉴 펼침", src:"App.jsx,AIDoctor.jsx", summary:"검진 후 케어의 5개 서브메뉴를 사이드바에 들여쓰기로 노출하고 메인 화면에서 직접 선택 가능하게 함", refs:[], status:"반영", hash:"cb25433", auto:true },
   { date:"2026-07-22", ver:"v1.1", ch:[9], feat:"의사 콘솔 대기열 시연 초기화", src:"B2BConsole.jsx", summary:"상담 종료 후 대기열 버튼이 클릭 전 상태로 복귀하도록 정리해 반복 시연 품질을 확보", refs:[], status:"반영", hash:"b32d114", auto:true },
   { date:"2026-07-22", ver:"v1.1", ch:[9], feat:"박정순 PIP 의사 인물 일치(줌인 크롭)", src:"B2BConsole.jsx", summary:"환자 영상 속 진료 의사를 PIP로 줌인해 의사 콘솔 시연의 인물 일관성을 확보", refs:[], status:"반영", hash:"719632f", auto:true },
   { date:"2026-07-21", ver:"v1.1", ch:[9], feat:"박정순 고혈압 재진 데모 영상 교체", src:"B2BConsole.jsx,data/media", summary:"고령 환자 혈압계 착용 원격진료 영상을 적용해 의사 콘솔 시연의 시나리오 정합성을 높임", refs:[], status:"반영", hash:"5f8c00b", auto:true },

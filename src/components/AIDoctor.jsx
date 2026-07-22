@@ -1319,18 +1319,28 @@ function SpecialistChat() {
   );
 }
 
-function AIDoctor() {
-  /* 하이 딥링크: teleprep 툴이 window._teleGoSpecialist를 세우면 전문의 상담 탭으로 바로 진입 */
+/* mode: "ai"=AI 주치의(24시간)만 · "specialist"=전문의 원격상담만 · 미지정=이중 탭(레거시 호환) */
+function AIDoctor({ mode }) {
   const [thread, setThread] = useState(() => { try { if (typeof window !== "undefined" && window._teleGoSpecialist) { window._teleGoSpecialist = false; return "specialist"; } } catch (e) {} return "ai"; });
   useEffect(() => { const f = () => setThread("specialist"); const g = () => setThread("ai"); window.addEventListener("telego", f); window.addEventListener("teleai", g); return () => { window.removeEventListener("telego", f); window.removeEventListener("teleai", g); }; }, []);
   const tabsRef = useRef(null);
-  const goThread = (t) => { setThread(t); setTimeout(() => { try { tabsRef.current && tabsRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }, 60); };
+  /* AI 주치의 전용 — 24시간 상담 바로 노출(이중 탭 제거) */
+  if (mode === "ai") {
+    return (
+      <div style={{ marginTop: 16 }}>
+        <div className="aihead"><span className="aiico"><SecIcon k="ai" /></span>
+          <div><div className="scaffold stitle" style={{ fontSize: 22, fontWeight: 800 }}>AI 주치의 · 24시간</div>
+            <div className="ssub" style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> 24시간 AI 건강상담 · 텍스트·음성 · 검진 리포트 기반 안내 · 진단이 아닌 참고용</div></div></div>
+        <Chat />
+      </div>
+    );
+  }
+  /* 전문의 원격상담 전용 */
+  if (mode === "specialist") return <SpecialistChat />;
+  /* 레거시: 이중 탭 */
   return (
     <div style={{ marginTop: 16 }}>
-      <div className="aihead"><span className="aiico"><SecIcon k="ai" /></span>
-        <div><div className="scaffold stitle" style={{ fontSize: 22, fontWeight: 800 }}>나의 주치의</div>
-          <div className="ssub" style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> 24시간 AI 주치의 + 전문의 1:1 상담 · 텍스트·음성·화상 · 파일첨부 · 웨어러블/홈케어기기 연동 · 진단이 아닌 참고용 안내</div></div></div>
-      <div className="aitabs" ref={tabsRef} style={{ marginTop: 18 }}>
+      <div className="aitabs" ref={tabsRef} style={{ marginTop: 4 }}>
         <div className={`aitab ${thread === "ai" ? "on" : ""}`} onClick={() => setThread("ai")}><Bot size={15} /> AI 주치의 · 24시간</div>
         <div className={`aitab ${thread === "specialist" ? "on" : ""}`} onClick={() => setThread("specialist")}><Stethoscope size={15} /> 전문의 상담</div>
       </div>

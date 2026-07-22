@@ -43,17 +43,31 @@ function HomeHub({ initial, onGo }) {
   );
 }
 
+/* 비대면 원격진료 — 전문의 원격상담 + 병원·약국 검색(내원 연계)을 하나의 탭으로 통합 */
+function TeleCareSection({ onGo }) {
+  const [sub, setSub] = useState("consult");
+  const subs = [["consult", "전문의 원격상담", Stethoscope, "#2563EB"], ["hospital", "병원·추가검진 찾기", Building2, "#0EA5E9"]];
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div className="chtabs lv2" style={{ marginBottom: 6 }}>
+        {subs.map(([k, t, Ic, c]) => <div key={k} className={`chtab ${sub === k ? "on" : ""}`} onClick={() => setSub(k)}><Ic size={14} color={sub === k ? "#fff" : c} /> {t}</div>)}
+      </div>
+      {sub === "consult" ? <AIDoctor mode="specialist" onGo={onGo} /> : <HospitalSection onGo={onGo} />}
+    </div>
+  );
+}
 function CareSection({ initial, onGo }) {
-  const map = { care: "ai", ai: "ai", manage: "manage", hospital: "hospital", homecare: "homecare", shop: "shop" };
+  /* 탭 순서 = 사이드 서브메뉴 순서: 나의 건강현황 · 비대면 원격진료 · AI 주치의 · 재가·돌봄 · 건강쇼핑 */
+  const map = { care: "ai", ai: "ai", manage: "manage", tele: "tele", hospital: "tele", homecare: "homecare", shop: "shop" };
   const [tab, setTab] = useState(map[initial] || "ai");
   useEffect(() => { setTab(map[initial] || "ai"); }, [initial]);
-  const tabs = [["ai", "나의 주치의", Bot, "#7C3AED"], ["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["hospital", "병원 진료·추가검진", Building2, "#2563EB"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
+  const tabs = [["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "AI 주치의", Bot, "#7C3AED"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
   return (
     <div style={{ marginTop: 4 }}>
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
-      {tab === "ai" && <AIDoctor onGo={onGo} />}
       {tab === "manage" && <HealthManageSection onGo={onGo} />}
-      {tab === "hospital" && <HospitalSection onGo={onGo} />}
+      {tab === "tele" && <TeleCareSection onGo={onGo} />}
+      {tab === "ai" && <AIDoctor mode="ai" onGo={onGo} />}
       {tab === "homecare" && <HomecareSection onGo={onGo} />}
       {tab === "shop" && <ShopSection onGo={onGo} />}
     </div>
