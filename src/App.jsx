@@ -152,10 +152,10 @@ export default function App() {
             {SECTIONS.filter((x) => role === "ADMIN" || x.k !== "ontology").map((x) => (
               <React.Fragment key={x.k}>
                 <div className={`snav ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}><span className="sico"><SecIcon k={x.k} /></span> {x.t}</div>
-                {/* 검진 후 케어 선택 시: 서브메뉴를 한 칸 들여써서 펼침 — 메인 화면에서 바로 선택 */}
-                {x.k === "care" && secParent(sec) === "care" && (
-                  <div className="subnav">
-                    {[["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "AI 주치의", Bot, "#7C3AED"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]].map(([k, t, Ic, c]) => (
+                {/* 검진 후 케어 서브메뉴 — 항상 펼침(메인에서 바로 선택). 현재 케어 하위 화면이면 강조 */}
+                {x.k === "care" && (
+                  <div className={`subnav ${secParent(sec) === "care" ? "active" : ""}`}>
+                    {[["manage", "나의 건강현황", HeartPulse, "#F87171"], ["tele", "비대면 원격진료", Building2, "#60A5FA"], ["ai", "AI 주치의", Bot, "#A78BFA"], ["homecare", "재가·돌봄", HeartHandshake, "#F472B6"], ["shop", "건강쇼핑", ShoppingCart, "#34D399"]].map(([k, t, Ic, c]) => (
                       <div key={k} className={`subnav-i ${sec === k ? "on" : ""}`} onClick={() => setSec(k)}><Ic size={15} color={c} /> {t}</div>
                     ))}
                   </div>

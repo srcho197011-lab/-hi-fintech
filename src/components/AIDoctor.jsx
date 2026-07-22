@@ -1311,7 +1311,7 @@ function SpecialistChat() {
           <button role="tab" className={vmode && camOff ? "on" : ""} onClick={() => { startConsult(true); setCamOff(true); }}><Mic size={13} /> 음성</button>
           <button role="tab" className={vmode && !camOff ? "on" : ""} onClick={() => startConsult(true)}><MonitorSmartphone size={13} /> 화상</button>
         </div>
-        <button className={`tt-trigger ${toolOpen ? "on" : ""}`} onClick={() => setToolOpen((v) => !v)} title="진료 도구"><Stethoscope size={14} /> 도구<ChevronDown size={13} className="tt-chev" /></button>
+        <button className={`tt-trigger ${toolOpen ? "on" : ""}`} onClick={() => setToolOpen((v) => !v)} title="처방·검사·내원 등 진료 작업"><Pill size={13} /> 처방·검사·내원<ChevronDown size={12} className="tt-chev" /></button>
       </div>
       {/* 진료 도구 — 접이식(빠른 작업 + 시연 시나리오) */}
       {toolOpen && (
