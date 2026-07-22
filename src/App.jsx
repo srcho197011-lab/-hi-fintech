@@ -91,7 +91,7 @@ export default function App() {
           </span>
           <div className="nm"><span className="hl">HI</span>-Fin Tech<span className="sub">AI 헬스케어 · 핀테크 <b className="subimp">임팩트기업</b></span></div>
         </div>
-        <div className="navbtns"><button className="navbtn" onClick={goBack} disabled={!hist.length} aria-label="이전 화면으로" title="이전 화면으로"><ArrowLeft size={20} strokeWidth={2.6} /></button><button className="navbtn" onClick={goForward} disabled={!fut.length} aria-label="다음 화면으로" title="다음 화면으로"><ArrowRight size={20} strokeWidth={2.6} /></button></div>
+        <div className="navbtns"><button className="navbtn" onClick={goBack} disabled={!hist.length} aria-label="이전 화면으로" title="이전 화면으로"><ArrowLeft size={20} strokeWidth={2.6} /></button><button className="navbtn" onClick={goForward} disabled={!fut.length} aria-label="다음 화면으로" title="다음 화면으로"><ArrowRight size={20} strokeWidth={2.6} /></button><button className="navbtn navrefresh" onClick={() => { try { window.location.reload(); } catch (e) {} }} aria-label="새로고침" title="새로고침 — 최신 내용 다시 불러오기"><RefreshCw size={18} strokeWidth={2.6} /></button></div>
         <div className="search">
           <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && results.length) goResult(results[0][3]); if (e.key === "Escape") setQ(""); }} placeholder="통합 검색 (병원, 질환, 검진, 제품 등)" />
           {q ? <button className="sclear" onClick={() => setQ("")} aria-label="검색어 지우기"><X size={16} /></button> : <Search size={18} className="si" />}
