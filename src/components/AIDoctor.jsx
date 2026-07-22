@@ -1042,6 +1042,7 @@ function SpecialistChat() {
   const [vidErr, setVidErr] = useState(false);
   const [lawOpen, setLawOpen] = useState(false);
   const [csEnded, setCsEnded] = useState(false);
+  const [toolOpen, setToolOpen] = useState(false); // 진료 도구 접이식(빠른 작업·시나리오) 기본 숨김
   const fileRef = useRef(null); const endRef = useRef(null);
   const vmodeRef = useRef(null); useEffect(() => { vmodeRef.current = vmode; }, [vmode]);
   const kbAutoRef = useRef(null);
@@ -1303,9 +1304,31 @@ function SpecialistChat() {
         {typing && <div className="msg ai"><span className="av-ai" style={{ background: "#EAF0FE" }}><Stethoscope size={16} color="#2563EB" /></span><div className="typing"><i /><i /><i /></div></div>}
         <div ref={endRef} />
       </div>
-      {typeof TELE_CASES !== "undefined" && <div className="telcases"><span className="telml">진료 사례 체험</span>{TELE_CASES.map((c) => <button key={c.key} onClick={() => runCase(c)}>{c.label}</button>)}</div>}
-      <div className="telmodes"><span className="telml">진료 방식</span><button className={!vmode ? "on" : ""} onClick={() => setVmode(null)}>💬 메시지(비동기 · 24h 내 답변)</button><button className={vmode && camOff ? "on" : ""} onClick={() => { startConsult(true); setCamOff(true); }}>🎙 음성</button><button className={vmode && !camOff ? "on" : ""} onClick={() => startConsult(true)}>📹 화상</button></div>
-      <div className="quicks"><button onClick={() => (vmode ? setVmode(null) : startConsult(true))}>📹 {vmode ? "화상 끄기" : "화상 켜기"}</button><button onClick={book}>🏥 내원 연계</button><button onClick={rxIssue}>💊 처방전 발행</button><button onClick={() => send("검진 결과를 상담받고 싶어요")}>검진 결과 상담</button></div>
+      {/* 진료 방식 — 세그먼트 컨트롤(해외 telehealth 표준: 모달리티 단일 선택) */}
+      <div className="telseg" role="tablist" aria-label="진료 방식">
+        <button role="tab" className={!vmode ? "on" : ""} onClick={() => setVmode(null)}><MessageSquare size={14} /> 메시지<em>비동기 · 24h</em></button>
+        <button role="tab" className={vmode && camOff ? "on" : ""} onClick={() => { startConsult(true); setCamOff(true); }}><Mic size={14} /> 음성</button>
+        <button role="tab" className={vmode && !camOff ? "on" : ""} onClick={() => startConsult(true)}><MonitorSmartphone size={14} /> 화상</button>
+      </div>
+      {/* 진료 도구 — 접이식(빠른 작업 + 시연 시나리오). 기본 숨김으로 화면 간결화 */}
+      <div className={`teltools ${toolOpen ? "open" : ""}`}>
+        <button className="tt-hd" onClick={() => setToolOpen((v) => !v)}><Stethoscope size={13} /> 진료 도구 <ChevronDown size={14} className="tt-chev" /></button>
+        {toolOpen && (
+          <div className="tt-body">
+            <div className="tt-grp"><span className="tt-lb">빠른 작업</span>
+              <button onClick={rxIssue}><Pill size={13} color="#DC2626" /> 처방전</button>
+              <button onClick={labOrder}><Activity size={13} color="#7C3AED" /> 검사 의뢰</button>
+              <button onClick={book}><Building2 size={13} color="#2563EB" /> 내원 연계</button>
+              <button onClick={() => send("검진 결과를 상담받고 싶어요")}><FileText size={13} color="#16A34A" /> 검진 상담</button>
+            </div>
+            {typeof TELE_CASES !== "undefined" && (
+              <div className="tt-grp"><span className="tt-lb">시나리오 체험 <i>시연</i></span>
+                {TELE_CASES.map((c) => <button key={c.key} onClick={() => runCase(c)}>{c.label}</button>)}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       <div className="kt-input">
         {plus && (<div className="plus-sheet"><button onClick={() => fileRef.current && fileRef.current.click()}><ImageIcon size={20} color="#2563EB" />사진·검진결과</button><button onClick={() => fileRef.current && fileRef.current.click()}><Paperclip size={20} color="#16A34A" />파일</button><button onClick={() => { setPlus(false); startConsult(true); }}><MonitorSmartphone size={20} color="#7C3AED" />화상 켜기</button></div>)}
         <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={onFile} />

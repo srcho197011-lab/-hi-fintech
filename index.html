@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=d9d1ad4aa2" />
+<link rel="stylesheet" href="./data/app.css?v=39c4f0abd0" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=d9d1ad4aa2"></script>
-<script src="./src/data/section_data.js?v=d9d1ad4aa2"></script>
-<script src="./src/data/demo_members.js?v=d9d1ad4aa2"></script>
+<script src="./src/data/dummy_data.js?v=39c4f0abd0"></script>
+<script src="./src/data/section_data.js?v=39c4f0abd0"></script>
+<script src="./src/data/demo_members.js?v=39c4f0abd0"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -1987,6 +1987,7 @@ function SpecialistChat() {
   const [vidErr, setVidErr] = useState(false);
   const [lawOpen, setLawOpen] = useState(false);
   const [csEnded, setCsEnded] = useState(false);
+  const [toolOpen, setToolOpen] = useState(false); // 진료 도구 접이식(빠른 작업·시나리오) 기본 숨김
   const fileRef = useRef(null); const endRef = useRef(null);
   const vmodeRef = useRef(null); useEffect(() => { vmodeRef.current = vmode; }, [vmode]);
   const kbAutoRef = useRef(null);
@@ -2248,9 +2249,31 @@ function SpecialistChat() {
         {typing && <div className="msg ai"><span className="av-ai" style={{ background: "#EAF0FE" }}><Stethoscope size={16} color="#2563EB" /></span><div className="typing"><i /><i /><i /></div></div>}
         <div ref={endRef} />
       </div>
-      {typeof TELE_CASES !== "undefined" && <div className="telcases"><span className="telml">진료 사례 체험</span>{TELE_CASES.map((c) => <button key={c.key} onClick={() => runCase(c)}>{c.label}</button>)}</div>}
-      <div className="telmodes"><span className="telml">진료 방식</span><button className={!vmode ? "on" : ""} onClick={() => setVmode(null)}>💬 메시지(비동기 · 24h 내 답변)</button><button className={vmode && camOff ? "on" : ""} onClick={() => { startConsult(true); setCamOff(true); }}>🎙 음성</button><button className={vmode && !camOff ? "on" : ""} onClick={() => startConsult(true)}>📹 화상</button></div>
-      <div className="quicks"><button onClick={() => (vmode ? setVmode(null) : startConsult(true))}>📹 {vmode ? "화상 끄기" : "화상 켜기"}</button><button onClick={book}>🏥 내원 연계</button><button onClick={rxIssue}>💊 처방전 발행</button><button onClick={() => send("검진 결과를 상담받고 싶어요")}>검진 결과 상담</button></div>
+      {/* 진료 방식 — 세그먼트 컨트롤(해외 telehealth 표준: 모달리티 단일 선택) */}
+      <div className="telseg" role="tablist" aria-label="진료 방식">
+        <button role="tab" className={!vmode ? "on" : ""} onClick={() => setVmode(null)}><MessageSquare size={14} /> 메시지<em>비동기 · 24h</em></button>
+        <button role="tab" className={vmode && camOff ? "on" : ""} onClick={() => { startConsult(true); setCamOff(true); }}><Mic size={14} /> 음성</button>
+        <button role="tab" className={vmode && !camOff ? "on" : ""} onClick={() => startConsult(true)}><MonitorSmartphone size={14} /> 화상</button>
+      </div>
+      {/* 진료 도구 — 접이식(빠른 작업 + 시연 시나리오). 기본 숨김으로 화면 간결화 */}
+      <div className={`teltools ${toolOpen ? "open" : ""}`}>
+        <button className="tt-hd" onClick={() => setToolOpen((v) => !v)}><Stethoscope size={13} /> 진료 도구 <ChevronDown size={14} className="tt-chev" /></button>
+        {toolOpen && (
+          <div className="tt-body">
+            <div className="tt-grp"><span className="tt-lb">빠른 작업</span>
+              <button onClick={rxIssue}><Pill size={13} color="#DC2626" /> 처방전</button>
+              <button onClick={labOrder}><Activity size={13} color="#7C3AED" /> 검사 의뢰</button>
+              <button onClick={book}><Building2 size={13} color="#2563EB" /> 내원 연계</button>
+              <button onClick={() => send("검진 결과를 상담받고 싶어요")}><FileText size={13} color="#16A34A" /> 검진 상담</button>
+            </div>
+            {typeof TELE_CASES !== "undefined" && (
+              <div className="tt-grp"><span className="tt-lb">시나리오 체험 <i>시연</i></span>
+                {TELE_CASES.map((c) => <button key={c.key} onClick={() => runCase(c)}>{c.label}</button>)}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       <div className="kt-input">
         {plus && (<div className="plus-sheet"><button onClick={() => fileRef.current && fileRef.current.click()}><ImageIcon size={20} color="#2563EB" />사진·검진결과</button><button onClick={() => fileRef.current && fileRef.current.click()}><Paperclip size={20} color="#16A34A" />파일</button><button onClick={() => { setPlus(false); startConsult(true); }}><MonitorSmartphone size={20} color="#7C3AED" />화상 켜기</button></div>)}
         <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={onFile} />
@@ -17382,7 +17405,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-22", ver:"v1.1", ch:[4], feat:"검진 후 케어 탭 통합·순서 정렬", src:"SectionGroups.jsx,AIDoctor.jsx,App.jsx", summary:"전문의 상담을 비대면 원격진료로 통합하고 AI 주치의 이중탭을 단일화, 상단 탭 순서를 사이드 메뉴와 일치시킴", refs:[], status:"반영", hash:"96a3949", auto:true },
+  { date:"2026-07-22", ver:"v1.1", ch:[9], feat:"원격상담 하단 컨트롤 재설계(세그먼트+접이식)", src:"AIDoctor.jsx", summary:"진료 방식을 세그먼트로, 진료 액션·시나리오를 접이식 도구로 정리해 화상상담 화면을 간결화", refs:[], status:"반영", hash:"b2ad695", auto:true },
+  { date:"2026-07-22", ver:"v1.1", ch:[4], feat:"검진 후 케어 탭 통합·순서 정렬", src:"SectionGroups.jsx,AIDoctor.jsx,App.jsx", summary:"전문의 상담을 비대면 원격진료로 통합하고 AI 주치의 이중탭을 단일화, 상단 탭 순서를 사이드 메뉴와 일치시킴", refs:[], status:"반영", hash:"aaf061c", auto:true },
   { date:"2026-07-22", ver:"v1.1", ch:[4], feat:"검진 후 케어 사이드 서브메뉴 펼침", src:"App.jsx,AIDoctor.jsx", summary:"검진 후 케어의 5개 서브메뉴를 사이드바에 들여쓰기로 노출하고 메인 화면에서 직접 선택 가능하게 함", refs:[], status:"반영", hash:"cb25433", auto:true },
   { date:"2026-07-22", ver:"v1.1", ch:[9], feat:"의사 콘솔 대기열 시연 초기화", src:"B2BConsole.jsx", summary:"상담 종료 후 대기열 버튼이 클릭 전 상태로 복귀하도록 정리해 반복 시연 품질을 확보", refs:[], status:"반영", hash:"b32d114", auto:true },
   { date:"2026-07-22", ver:"v1.1", ch:[9], feat:"박정순 PIP 의사 인물 일치(줌인 크롭)", src:"B2BConsole.jsx", summary:"환자 영상 속 진료 의사를 PIP로 줌인해 의사 콘솔 시연의 인물 일관성을 확보", refs:[], status:"반영", hash:"719632f", auto:true },
