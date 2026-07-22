@@ -1322,7 +1322,7 @@ function SpecialistChat() {
 function AIDoctor() {
   /* 하이 딥링크: teleprep 툴이 window._teleGoSpecialist를 세우면 전문의 상담 탭으로 바로 진입 */
   const [thread, setThread] = useState(() => { try { if (typeof window !== "undefined" && window._teleGoSpecialist) { window._teleGoSpecialist = false; return "specialist"; } } catch (e) {} return "ai"; });
-  useEffect(() => { const f = () => setThread("specialist"); window.addEventListener("telego", f); return () => window.removeEventListener("telego", f); }, []);
+  useEffect(() => { const f = () => setThread("specialist"); const g = () => setThread("ai"); window.addEventListener("telego", f); window.addEventListener("teleai", g); return () => { window.removeEventListener("telego", f); window.removeEventListener("teleai", g); }; }, []);
   const tabsRef = useRef(null);
   const goThread = (t) => { setThread(t); setTimeout(() => { try { tabsRef.current && tabsRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }, 60); };
   return (
