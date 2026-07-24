@@ -336,6 +336,72 @@ function _insFusionRoute(text, Mx, nm) {
   }
   return null;
 }
+/* ══════════ 전용 「AI 보험·치료비 상담사」 업무 실행 층 (Phase1 §4 본체) ══════════
+   insService(단일 출처)를 소비해 상담 중 실제 업무(납부·심사지급·재산정)를 실행한다.
+   실수 방지: 금액이 움직이는 행동은 [진행 → 확인 카드 → ✅ 확정] 2단계 — 버튼 라벨에 대상 ID를 인코딩(무상태 확인 흐름).
+   정책(INS_AI_POLICY) 상속: 가입·모집 요청은 실행하지 않고 GA 채널 안내로 응답. */
+function _insServiceRoute(text, member) {
+  if (typeof insService === "undefined" || !member) return null;
+  const won = (n) => Number(n || 0).toLocaleString() + "원";
+  const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
+  // ⓐ 정책 가드 — 청약·모집 실행 요청은 정보 제공+GA 안내로 한정
+  if (/가입\s*시켜|청약\s*해\s*줘|계약\s*해\s*줘|들어\s*줘.*보험/.test(text))
+    return { bubbles: [{ kind: "text", text: "가입·청약은 제가 직접 실행할 수 없어요 — 보험업법상 모집은 **라이선스 채널(GA 보험중개)**을 통해서만 가능해요. 대신 **맞춤보험 탭의 간편가입(시연)**으로 절차를 체험하시거나, 보장 공백 분석으로 무엇이 필요한지 먼저 확인해 드릴게요." }], quicks: ["보장 공백 분석", "보장 사다리 확인", "맞춤 헬스케어 보험 상담"] };
+  // ⓑ 납부 확정(2단계) — "✅ 납부 확정 · BILL-…"
+  let mm = text.match(/^✅ 납부 확정 · (\S+)/);
+  if (mm) { const r = insService.pay(member, mm[1]);
+    return { bubbles: [{ kind: "text", text: r.ok ? `납부 완료 ✓ — ${r.bill.product} ${r.bill.ym}월분 ${won(r.bill.amount)}(${r.bill.htk.toLocaleString()} HTK)이 원장에서 차감됐어요. 잔액 ${r.balance.toLocaleString()} HTK. 순환의 30%는 나눔 재원에 적립됐고, 내역은 온체인에 기록됐어요.` : "🔒 " + r.reason }], quicks: r.ok ? ["나눔 현황 보여줘", "내 잔액 알려줘"] : ["지갑 충전은 어떻게 해?"] }; }
+  // "납부 진행 · BILL-…" → 확인 카드
+  mm = text.match(/^납부 진행 · (\S+)/);
+  if (mm) { const S = insService.bills(member); const b = S && S.bills.find((x) => x.id === mm[1]);
+    if (!b) return { bubbles: [{ kind: "text", text: "해당 청구서를 찾지 못했어요." }] };
+    return { bubbles: [{ kind: "card", card: { title: "🧾 납부 확인", items: [`${b.product} · ${b.ym}월분`, `금액 ${won(b.amount)} → 약 ${Math.ceil(b.amount / rate).toLocaleString()} HTK 차감`, `납기 ${b.due} · 상태 ${b.status}`], buttons: [`✅ 납부 확정 · ${b.id}`] } }, { kind: "text", text: "확정을 누르면 지갑 토큰이 실제로 차감돼요 — 취소하려면 그냥 다른 질문을 이어가세요." }], quicks: [] }; }
+  // 납부 조회 — "이번 달 보험료", "납부해 줘"
+  if (/납부|보험료\s*(내|납|얼마|청구)|낼\s*(돈|보험료)|청구서/.test(text)) {
+    const S = insService.bills(member);
+    if (!S || !S.policies.length) return { bubbles: [{ kind: "text", text: "아직 납부할 계약이 없어요 — **맞춤보험 탭에서 간편가입(시연)**을 완료하면 매달 청구서가 생기고, 여기서 바로 납부까지 도와드려요." }], quicks: ["보장 사다리 확인", "보장 공백 분석"] };
+    if (!S.unpaid.length) return { bubbles: [{ kind: "text", text: `이번 달 낼 보험료가 없어요 — 전부 납부 완료! (누적 수납 ${S.paidCount}건 · ${won(S.paidTotal)}) 잔액은 ${S.balance != null ? S.balance.toLocaleString() : "-"} HTK예요.` }], quicks: ["내 잔액 알려줘", "나눔 현황 보여줘"] };
+    return { bubbles: [{ kind: "card", card: { title: `🧾 납부할 청구서 ${S.unpaid.length}건`, items: S.unpaid.slice(0, 4).map((b) => `${b.ym} ${b.product} · ${won(b.amount)} · ${b.status}`), buttons: S.unpaid.slice(0, 3).map((b) => `납부 진행 · ${b.id}`) } }, { kind: "text", text: `잔액 ${S.balance != null ? S.balance.toLocaleString() : "-"} HTK — 납부하면 원장에서 차감되고 온체인에 기록돼요.` }], quicks: [] };
+  }
+  // ⓒ 지급 확정(2단계) — "✅ 지급 확정 · CLM-…"
+  mm = text.match(/^✅ 지급 확정 · (\S+)/);
+  if (mm) { const r = insService.claimPay(member, mm[1]);
+    return { bubbles: [{ kind: "text", text: r.ok ? `지급 완료 ✓ — ${r.claim.id} 보험금 ${won(r.payout)}(${r.htk.toLocaleString()} HTK)이 지갑에 입금됐어요. 잔액 ${r.balance.toLocaleString()} HTK · 온체인 기록 완료.` : "🔒 " + r.reason }], quicks: r.ok ? ["내 잔액 알려줘"] : ["보장 공백 분석"] }; }
+  // "심사 진행 · CLM-…" → 심사 결과+확정 버튼
+  mm = text.match(/^심사 진행 · (\S+)/);
+  if (mm) { const rv = insService.claimReview(member, mm[1]);
+    if (!rv.ok) return { bubbles: [{ kind: "text", text: "🔒 " + rv.reason }], quicks: ["보장 공백 분석"] };
+    return { bubbles: [{ kind: "card", card: { title: "🩺 심사 결과", items: [rv.explain, `근거: ${rv.silson.product}${rv.silson.gen ? ` (${rv.silson.gen})` : ""} · 자기부담 ${rv.silson.coGen}`], buttons: [`✅ 지급 확정 · ${rv.claim.id}`] } }], quicks: [] }; }
+  // 청구·지급 조회
+  if (/청구\s*(현황|내역|상태|어떻|해줘)|보험금\s*(받|줘|지급|청구)|지급\s*해/.test(text)) {
+    const cl = insService.claims(); const pending = cl.filter((c) => !/지급/.test(c.status || ""));
+    if (!cl.length) return { bubbles: [{ kind: "text", text: "아직 청구가 없어요 — 비대면 진료를 마치면 서류 없이 자동으로 접수돼요(청구 0단계)." }], quicks: ["보장 공백 분석"] };
+    if (!pending.length) return { bubbles: [{ kind: "text", text: `진행 중 청구는 없고, 지급 완료 ${cl.filter((c) => /지급/.test(c.status || "")).length}건이 있어요.` }], quicks: ["내 잔액 알려줘"] };
+    return { bubbles: [{ kind: "card", card: { title: `📄 진행 중 청구 ${pending.length}건`, items: pending.slice(0, 4).map((c) => `${c.id} · ${c.kind || "진료"} · ${c.status}`), buttons: pending.slice(0, 3).map((c) => `심사 진행 · ${c.id}`) } }, { kind: "text", text: "심사를 진행하면 실손 계약 확인 후 지급액을 계산해 보여드리고, 확정 시 지갑으로 즉시 입금돼요." }], quicks: [] };
+  }
+  // ⓓ 재산정 — 확정 2단계
+  if (/^✅ 인하 적용 확정$/.test(text)) { const r = insService.rerateApply(member);
+    return { bubbles: [{ kind: "text", text: r.ok ? `재산정 적용 ✓ — 월 ${won(r.state.before)} → ${won(r.state.after)} (−${r.state.rate}%), 연 ${won(r.state.saving * 12)} 절감. 근거(${(r.state.improved || []).join("·")})는 4세대 자산으로 기록됐어요.` : r.reason }], quicks: ["내 자산 계보 보여줘"] }; }
+  if (/재산정|보험료\s*(깎|내려|인하|다시\s*계산)/.test(text)) {
+    const R = insService.rerate(member);
+    if (R.state && R.state.status === "done") return { bubbles: [{ kind: "text", text: `이미 적용돼 있어요 — 월 ${won(R.state.before)} → ${won(R.state.after)} (−${R.state.rate}%).` }], quicks: [] };
+    const C = R.compute;
+    if (!C.eligible) return { bubbles: [{ kind: "text", text: C.reason + " 인하 전용이라 손해 볼 일은 없어요." }], quicks: ["검진결과 올리기"] };
+    if (C.pct <= 0) return { bubbles: [{ kind: "text", text: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하 전용·불이익 없음). 다음 검진에서 다시 계산해 드릴게요." }], quicks: [] };
+    return { bubbles: [{ kind: "card", card: { title: "📉 재산정 계산 결과", items: [`개선 지표 ${C.improvedN}건: ${C.improved.map((x) => x.ko).join("·")}`, `월 ${won(C.before)} → ${won(C.after)} (−${C.pct}%)`, "인하 전용 — 악화 지표로 오르는 일은 없어요"], buttons: ["✅ 인하 적용 확정"] } }], quicks: [] };
+  }
+  // ⓔ 사다리·나눔·잔액
+  if (/사다리|실손부터|뭐부터\s*(가입|시작)|기초\s*보장/.test(text)) { const L = insService.ladderCheck(member);
+    return { bubbles: [{ kind: "text", text: L.note + (L.stage === "silson-first" ? "\n" + L.legal : "") }], quicks: ["보장 공백 분석", "맞춤 헬스케어 보험 상담"] }; }
+  if (/나눔|기부|30\s*%|사각지대/.test(text)) { const S = insService.donateStatus();
+    return { bubbles: [{ kind: "text", text: S.count ? `나눔 재원에 ${won(S.balance)}(${S.count}건)이 건별 적립돼 있어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${won(v)}`).join(" · ")}. 치료비 사각지대 지원에 쓰이는 순환의 30% 몫이에요.` : "아직 나눔 적립이 없어요 — 보험료 납부·건강쇼핑이 생기면 순환의 30%가 여기 쌓여요." }], quicks: ["치료비 지원 신청은 어떻게 해?"] }; }
+  if (/잔액|얼마\s*있|토큰\s*(얼마|몇)/.test(text)) { const bal = (typeof tlBalance === "function") ? tlBalance(member) : null;
+    if (bal == null) return null;
+    const res = (typeof htkInsReserve === "function") ? htkInsReserve(bal) : Math.floor(bal * 0.3);
+    return { bubbles: [{ kind: "text", text: `지금 ${bal.toLocaleString()} HTK(≈${won(bal * rate)})가 있어요 — 그중 보험·치료비 전용 ${res.toLocaleString()} HTK, 일반 ${(bal - res).toLocaleString()} HTK. 트랜잭션 원장 합산 기준이라 온체인 원장 탭에서 전건 검증할 수 있어요.` }], quicks: ["납부할 보험료 있어?", "나눔 현황 보여줘"] }; }
+  return null;
+}
+
 function AIPlannerChat({ onSimple, initialAsk }) {
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const _self = !dm && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null;
@@ -352,10 +418,14 @@ function AIPlannerChat({ onSimple, initialAsk }) {
     return Object.assign({}, member, selfCtx, { _ins: myIns });
   }, [dm, member && member.name]);
   const topGap = useMemo(() => { if (!Mx || typeof analyzeCoverageGap !== "function") return null; try { const g = analyzeCoverageGap(Mx); return g && g.top ? g.top : null; } catch (e) { return null; } }, [Mx]);
-  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 하이예요 — 보험·보장도 제가 이어서 봐드려요. 🤖\n제 데이터 기준으로 **보장 공백·본인부담·세대 전환**을 분석해 드려요.`
-    + (topGap ? `\n\n${nm ? nm + "님, " : ""}지금 가장 먼저 챙길 지점은 **${topGap.t}**이에요. “보장 공백 분석”을 눌러 자세히 볼까요?` : `\n아래 질문을 눌러보거나 무엇이든 물어보세요.`);
+  // 전용 상담사 컨텍스트 인계(Phase1 §4) — 탭에서 넘어온 ctx + 진행 중 건으로 문맥 있는 인사
+  const insCtx = useMemo(() => { let c = null; try { c = window.__hifinInsCtx; window.__hifinInsCtx = null; } catch (e) {} if (!c && typeof insService !== "undefined") { try { c = insService.ctx(null, member); } catch (e) {} } return c; }, []);
+  const ctxLine = insCtx && insCtx.pending && (insCtx.pending.bills > 0 || insCtx.pending.claims > 0)
+    ? `\n\n📌 지금 진행 중인 건이 있어요 — ${[insCtx.pending.bills > 0 ? `납부 대기 청구서 ${insCtx.pending.bills}건` : null, insCtx.pending.claims > 0 ? `심사 대기 청구 ${insCtx.pending.claims}건` : null].filter(Boolean).join(" · ")}. 제가 바로 처리 도와드릴까요?` : "";
+  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 보험·치료비 전용 상담사예요. 🤖\n보장 분석부터 **납부·청구 지급·요율 재산정 실행**까지 — 확인만 해주시면 제가 처리해요.`
+    + (topGap ? `\n\n${nm ? nm + "님, " : ""}지금 가장 먼저 챙길 지점은 **${topGap.t}**이에요.` : "") + ctxLine;
   const greet = { who: "ai", bubbles: [{ kind: "text", text: greetText }] };
-  const FUSION_QUICKS = ["내 실손 몇 세대야?", "보장 공백 분석", "도수치료 받으면 얼마 나와?", "세대 전환 유불리", "암보험 필요할까?"];
+  const FUSION_QUICKS = ["납부할 보험료 있어?", "청구 현황 보여줘", "보장 공백 분석", "재산정 해줘", "내 잔액 알려줘", "나눔 현황 보여줘"];
   const [msgs, setMsgs] = useState([greet]);
   const [quicks, setQuicks] = useState(member ? FUSION_QUICKS : FAQ.slice(0, 6));
   const [input, setInput] = useState("");
@@ -370,6 +440,9 @@ function AIPlannerChat({ onSimple, initialAsk }) {
     setMsgs((m) => [...m, { who: "me", bubbles: [{ kind: "text", text }] }]);
     setTyping(true);
     setTimeout(() => {
+      // ⓪ 전용 상담사 업무 실행 층(insService — 납부·심사지급·재산정·사다리·나눔·잔액, 확인 2단계) → ① 융합 분석 → ② 약관 KB 폴백
+      const svc = (typeof _insServiceRoute === "function") ? (() => { try { return _insServiceRoute(text, member); } catch (e) { return null; } })() : null;
+      if (svc) { setTyping(false); setMsgs((m) => [...m, { who: "ai", bubbles: svc.bubbles }]); setQuicks(svc.quicks && svc.quicks.length ? svc.quicks : []); return; }
       // ① 건강×보험 융합 함수 라우팅(내 데이터 기반) → 없으면 ② 약관 KB 상담으로 폴백
       const fusion = (typeof _insFusionRoute === "function") ? (() => { try { return _insFusionRoute(text, Mx, nm); } catch (e) { return null; } })() : null;
       if (fusion) { setTyping(false); setMsgs((m) => [...m, { who: "ai", bubbles: fusion.bubbles }]); setQuicks(fusion.quicks || FUSION_QUICKS); return; }
