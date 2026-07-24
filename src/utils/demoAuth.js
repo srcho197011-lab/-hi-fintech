@@ -24,7 +24,7 @@ const USERS_KEY = "hifin_users";       // 실명확인 후 가입한 일반 회�
 /* 게이트 인증은 세션 단위(sessionStorage)로만 유지 — 브라우저/탭을 새로 열면 로그인 페이지부터 시작.
    (기존 localStorage에 남아있던 로그인 흔적은 무시하고 정리) */
 try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
-function authCurrent() { try { return JSON.parse(sessionStorage.getItem(AUTH_KEY) || "null"); } catch (e) { return null; } }
+function authCurrent() { try { const a = JSON.parse(sessionStorage.getItem(AUTH_KEY) || "null"); if (a && a.role === "GUEST") { try { sessionStorage.removeItem(AUTH_KEY); } catch (e2) {} try { localStorage.removeItem(DEMO_SESSION_KEY); } catch (e2) {} return null; } return a; } catch (e) { return null; } }   // 콘텐츠 보호(2026-07-24): 기존 GUEST 세션도 발견 즉시 파기
 function authSet(u) { try { sessionStorage.setItem(AUTH_KEY, JSON.stringify(u)); } catch (e) {} demoNotify(); }
 function appLogout() { try { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); } catch (e) {} demoNotify(); }
 function usersAll() { try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); } catch (e) { return []; } }
@@ -102,7 +102,8 @@ function guestProfile(input) {
   base._match = { age: src.age, sex: src.sex, chronic: chron, srcId: src.id };
   return base;
 }
-function startGuest(input) { const p = guestProfile(input); if (!p) return null; demoSetSession(p); authSet({ name: p.name, role: "GUEST", guest: true, match: p._match }); return p; }
+/* 콘텐츠 보호 조치(2026-07-24): 둘러보기(GUEST) 진입 원천 차단 — UI 제거와 별개로 콘솔·딥링크 호출도 무력화 */
+function startGuest(input) { try { if (typeof toast === "function") toast("🔒 비회원 둘러보기는 콘텐츠 보호를 위해 중단되었습니다. 승인된 계정으로 로그인해 주세요."); } catch (e) {} return null; }
 /* 둘러보기 종료 — 세션 + 게스트 관련 로컬 데이터 즉시 파기 후 회원가입 유도(게이트)로 */
 function guestExit() {
   try { const rm = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && /guest-|_guest\b|guest@/.test(k)) rm.push(k); } rm.forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} }); } catch (e) {}

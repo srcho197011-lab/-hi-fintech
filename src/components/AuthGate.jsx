@@ -235,11 +235,9 @@ function AuthGate() {
     <div className="authwrap">
       <div className="authcard">
         <AuthBrand />
-        <TriFreeGate />
+        {/* 콘텐츠 보호 조치(2026-07-24): 3무 가입 배너(TriFreeGate)·둘러보기(GuestExplore) 노출 중단 — 승인 계정 로그인만 허용 */}
         <div className="authgate-badge">🔒 승인된 계정만 접속할 수 있습니다.</div>
         <AuthLogin />
-        <div className="author"><span>또는</span></div>
-        <GuestExplore />
         <div className="authlegal">
           <div className="authlegal-hd"><span>🛡️</span> 접속·콘텐츠 보호 안내</div>
           <p>본 홈페이지는 보안 강화를 위해 접속자의 IP 주소, 접속 시간 및 이용 이력 등 접속 로그를 기록·관리합니다. 사전 승인 없이 홈페이지 URL을 제3자에게 공유하거나, 화면 및 콘텐츠를 무단으로 캡처, 복제, 저장 또는 배포하는 행위는 엄격히 금지됩니다. 위반 행위가 확인될 경우 관련 법령 및 계약에 따라 필요한 법적 조치를 취할 수 있습니다.</p>
