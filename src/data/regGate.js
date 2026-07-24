@@ -18,7 +18,19 @@ const REG_GATE_DEFS = {
     note: "데이터 배당의 증권형 분배는 STO 트랙으로 분리 — 시행일 도래+발행 절차 전 개방 불가." },
   openChain: { title: "개방형 체인·코인 발행(L3)", law: "디지털자산기본법 + 코인 발행 6조건(백서·사업계획서)", mode: "off", effectiveDate: null,
     note: "L3 앱체인 우선 전략 — 법제 확정과 6조건 충족 전 차단." },
+  publicAnchor: { title: "퍼블릭 체인 머클루트 앵커", law: "가상자산 규제·수수료 모델 확정 전", mode: "simulation", effectiveDate: null,
+    note: "머클루트 스냅샷은 내부 보관 — 퍼블릭 전송은 시뮬레이션만(실전송 차단·시도 기록)." },
+  leadDb: { title: "마케팅 리드 DB 생성·제공", law: "신용정보법·개인정보보호법(2026.9 강화)·보험업법 모집 규제", mode: "simulation", effectiveDate: null,
+    note: "ConsentNFT 보유 회원 한정 — 법률 검토·GA 경유 확정 전 시뮬레이션만." },
+  dataFee: { title: "데이터 이용 대가(dataFee) 지급", law: "개인정보 전송요구권·데이터 이용대가 법제(협의 중)", mode: "simulation", effectiveDate: null,
+    note: "이자·배당이 아닌 '내 데이터를 쓴 대가' — 법적 성격 확정 전 시뮬레이션만." },
 };
+/* C3: 퍼블릭 앵커 전송 스텁 — live는 항상 게이트 거부(시도는 체인에 기록) */
+function publicAnchorSend(root) {
+  const g = regGateAllowed("publicAnchor", "live");
+  if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: g.ok ? "퍼블릭 앵커 전송" : `퍼블릭 앵커 전송 시도 차단 — ${g.reason}` });
+  return g.ok ? { ok: true } : { ok: false, reason: g.reason, sim: true, root: root || null };
+}
 
 /* ── 관리자 운영 모드 저장(override) — live 하드 플로어는 regGateAllowed에서 별도 강제 ── */
 function _rgOverrides() { try { return JSON.parse(localStorage.getItem("hifin_reggate") || "{}"); } catch (e) { return {}; } }

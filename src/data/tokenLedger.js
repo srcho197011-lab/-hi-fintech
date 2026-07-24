@@ -13,7 +13,19 @@
 /* ── 저장/조회 ── */
 function _tlEmail(m) { return (typeof m === "string") ? (m || "default") : ((m && m.email) || "default"); }
 function _tlKey(email) { return "hifin_htk_tl_" + (email || "default"); }
-function tlAll(m) { try { return JSON.parse(localStorage.getItem(_tlKey(_tlEmail(m))) || "[]"); } catch (e) { return []; } }
+/* C3: 원장 트랜잭션 해시도 SHA-256으로 1회 재봉인(백업 _legacy 보존 — tlVerify 정합 유지) */
+function _tlMigrateV2(email, arr) {
+  try {
+    if (!arr.length || localStorage.getItem(_tlKey(email) + "_v2")) return arr;
+    localStorage.setItem(_tlKey(email) + "_legacy", JSON.stringify(arr));
+    let prev = "0".repeat(64);
+    const re = arr.map((t) => { const nt = Object.assign({}, t); delete nt.hash; nt.prev = prev; nt.hash = _tlHash(nt, prev); prev = nt.hash; return nt; });
+    _tlSave(email, re);
+    localStorage.setItem(_tlKey(email) + "_v2", "1");
+    return re;
+  } catch (e) { return arr; }
+}
+function tlAll(m) { try { const email = _tlEmail(m); return _tlMigrateV2(email, JSON.parse(localStorage.getItem(_tlKey(email)) || "[]")); } catch (e) { return []; } }
 function _tlSave(m, arr) { try { localStorage.setItem(_tlKey(_tlEmail(m)), JSON.stringify(arr)); return true; } catch (e) { return false; } }
 
 /* ── 트랜잭션 유형 화이트리스트(방향) — 이자·배당 없음(유사수신·증권성 원천 차단). topup=선불 충전(현금→HTK 유입만, 역방향은 RegGate 차단) ── */

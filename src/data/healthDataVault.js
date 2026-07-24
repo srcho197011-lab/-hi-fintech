@@ -40,8 +40,37 @@ function ckupFlag(key, value) {
 /* ── 결정론 RNG(회원 시드) ── */
 function _vHash(s) { let h = 2166136261 >>> 0; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function _vRng(seed) { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-/* sha256 유사 64-hex 해시(데모 시뮬 — 무결성 체감용) */
-function vaultHash(str) { str = String(str); let out = ""; for (let s = 0; s < 4; s++) { let h = (2166136261 ^ Math.imul(s + 1, 2654435761)) >>> 0; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } const g = Math.imul(h ^ (s * 40503), 2246822519) >>> 0; out += ("00000000" + h.toString(16)).slice(-8) + ("00000000" + g.toString(16)).slice(-8); } return out.slice(0, 64); }
+/* ── C3: 실제 SHA-256(동기 순수 JS 구현 — FIPS 180-4) — 구 FNV 시뮬을 대체, API 불변(무중단) ── */
+const _SHA_K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+function sha256Hex(str) {
+  const msg = unescape(encodeURIComponent(String(str)));
+  const len = msg.length, bitLen = len * 8;
+  const withOne = len + 1, total = (((withOne + 8 + 63) >> 6) << 6);
+  const w = new Uint8Array(total);
+  for (let i = 0; i < len; i++) w[i] = msg.charCodeAt(i);
+  w[len] = 0x80;
+  w[total - 4] = (bitLen >>> 24) & 255; w[total - 3] = (bitLen >>> 16) & 255; w[total - 2] = (bitLen >>> 8) & 255; w[total - 1] = bitLen & 255;
+  let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a, h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+  const W = new Int32Array(64);
+  const rr = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let off = 0; off < total; off += 64) {
+    for (let t = 0; t < 16; t++) W[t] = (w[off + t * 4] << 24) | (w[off + t * 4 + 1] << 16) | (w[off + t * 4 + 2] << 8) | w[off + t * 4 + 3];
+    for (let t = 16; t < 64; t++) { const s0 = rr(W[t - 15], 7) ^ rr(W[t - 15], 18) ^ (W[t - 15] >>> 3); const s1 = rr(W[t - 2], 17) ^ rr(W[t - 2], 19) ^ (W[t - 2] >>> 10); W[t] = (W[t - 16] + s0 + W[t - 7] + s1) | 0; }
+    let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+    for (let t = 0; t < 64; t++) {
+      const S1 = rr(e, 6) ^ rr(e, 11) ^ rr(e, 25), ch = (e & f) ^ (~e & g);
+      const t1 = (h + S1 + ch + _SHA_K[t] + W[t]) | 0;
+      const S0 = rr(a, 2) ^ rr(a, 13) ^ rr(a, 22), maj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + maj) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    h0 = (h0 + a) | 0; h1 = (h1 + b) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0; h4 = (h4 + e) | 0; h5 = (h5 + f) | 0; h6 = (h6 + g) | 0; h7 = (h7 + h) | 0;
+  }
+  return [h0, h1, h2, h3, h4, h5, h6, h7].map((x) => ("00000000" + ((x >>> 0).toString(16))).slice(-8)).join("");
+}
+/* 구 FNV 시뮬(레거시 검증·이관 증빙용으로 보존) */
+function vaultHashLegacy(str) { str = String(str); let out = ""; for (let s = 0; s < 4; s++) { let h = (2166136261 ^ Math.imul(s + 1, 2654435761)) >>> 0; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } const g = Math.imul(h ^ (s * 40503), 2246822519) >>> 0; out += ("00000000" + h.toString(16)).slice(-8) + ("00000000" + g.toString(16)).slice(-8); } return out.slice(0, 64); }
+function vaultHash(str) { return sha256Hex(str); }   // C3: 전 호출부가 실제 SHA-256 사용(표기 정직성 완성)
 /* 가명처리 ID(익명 토큰) — 식별정보와 건강값을 분리 연결하는 키 */
 function anonToken(member) { const id = (member && (member.email || member.id || member.name)) || "anon"; return "pt-" + vaultHash("hifin-pseudonym|" + id).slice(0, 20); }
 
@@ -120,7 +149,34 @@ function toFHIR(member, items, meta) {
 const VAULT_CHAIN_KEY = "hifin_hashchain";
 function _chainLoad() { try { return JSON.parse(localStorage.getItem(VAULT_CHAIN_KEY) || "[]"); } catch (e) { return []; } }
 function _chainSave(c) { try { localStorage.setItem(VAULT_CHAIN_KEY, JSON.stringify(c)); } catch (e) {} }
+/* C3 이관 — 구(FNV) 체인을 SHA-256으로 1회 재봉인: 백업(hifin_hashchain_legacy) 보존 + 이관 블록에 구 최종해시 봉인(연속성 증빙·롤백 경로) */
+function _chainMigrateV2() {
+  try {
+    if (localStorage.getItem("hifin_hash_v2")) return;
+    const chain = _chainLoad();
+    if (chain.length) {
+      localStorage.setItem("hifin_hashchain_legacy", JSON.stringify(chain));
+      const legacyFinal = chain[chain.length - 1].hash;
+      let prev = "0".repeat(64);
+      const re = chain.map((b) => { const nb = Object.assign({}, b); delete nb.hash; nb.prev = prev; nb.hash = vaultHash(JSON.stringify(nb)); prev = nb.hash; return nb; });
+      const mig = { idx: re.length, prev, ts: Date.now(), type: "migration", token: null, fileHash: null, fhirHash: legacyFinal, consent: null, actor: "system", note: "해시 이관(FNV 시뮬→SHA-256) — 구 체인 최종해시 봉인·백업 보존" };
+      mig.hash = vaultHash(JSON.stringify(mig));
+      re.push(mig); _chainSave(re);
+    }
+    localStorage.setItem("hifin_hash_v2", "1");
+  } catch (e) {}
+}
+/* 머클루트 스냅샷(주기 앵커 준비) — 전 블록 해시의 머클루트를 보관 */
+function chainSnapshot() {
+  _chainMigrateV2();
+  const chain = _chainLoad();
+  const root = (typeof merkleRoot === "function") ? merkleRoot(chain.map((b) => b.hash)) : null;
+  const snap = { ts: Date.now(), blocks: chain.length, root };
+  try { const l = JSON.parse(localStorage.getItem("hifin_chain_snapshots") || "[]"); l.push(snap); localStorage.setItem("hifin_chain_snapshots", JSON.stringify(l.slice(-20))); } catch (e) {}
+  return snap;
+}
 function chainAppend(payload) {
+  _chainMigrateV2();
   const chain = _chainLoad();
   const prev = chain.length ? chain[chain.length - 1].hash : "0".repeat(64);
   const body = { idx: chain.length, prev, ts: payload.ts || Date.now(), type: payload.type || "record", token: payload.token || null, fileHash: payload.fileHash || null, fhirHash: payload.fhirHash || null, consent: payload.consent || null, actor: payload.actor || "member", note: payload.note || "" };
@@ -128,6 +184,7 @@ function chainAppend(payload) {
   chain.push(body); _chainSave(chain); return body;
 }
 function chainVerify() {
+  _chainMigrateV2();
   const chain = _chainLoad(); let prev = "0".repeat(64);
   for (const b of chain) { if (b.prev !== prev) return { ok: false, at: b.idx, reason: "이전 블록 해시 불일치" }; const rest = Object.assign({}, b); delete rest.hash; if (vaultHash(JSON.stringify(rest)) !== b.hash) return { ok: false, at: b.idx, reason: "블록 해시 위변조" }; prev = b.hash; }
   return { ok: true, blocks: chain.length };
@@ -136,7 +193,17 @@ function chainForToken(token) { return _chainLoad().filter((b) => b.token === to
 
 /* ── 데이터 금고(Vault) 저장·조회 + 접근 감사로그 ── */
 function _vaultKey(token) { return "hifin_vault_" + token; }
-function vaultLoad(token) { try { return JSON.parse(localStorage.getItem(_vaultKey(token)) || "null"); } catch (e) { return null; } }
+/* C3: 금고 저장 해시(fhirHash/fileHash)도 SHA-256으로 1회 재계산(verifyVaultIntegrity 정합 유지) */
+function _vaultMigrateV2(token, v) {
+  try {
+    if (!v || localStorage.getItem("hifin_vault_v2_" + token)) return v;
+    (v.checkups || []).forEach((c) => { if (c && c.fhir) { c.fhirHash = vaultHash(JSON.stringify(c.fhir.report) + JSON.stringify(c.fhir.observations)); if (c.items) c.fileHash = vaultHash("rawfile|" + token + "|" + (c.fileName || "checkup") + "|" + JSON.stringify(c.items.map((i) => i.value))); } });
+    localStorage.setItem(_vaultKey(token), JSON.stringify(v));
+    localStorage.setItem("hifin_vault_v2_" + token, "1");
+  } catch (e) {}
+  return v;
+}
+function vaultLoad(token) { try { return _vaultMigrateV2(token, JSON.parse(localStorage.getItem(_vaultKey(token)) || "null")); } catch (e) { return null; } }
 function vaultAccessLog(token, actor, action) { try { const k = "hifin_vaultlog_" + token; const l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ ts: Date.now(), actor: actor || "member", action: action || "view" }); localStorage.setItem(k, JSON.stringify(l.slice(-100))); } catch (e) {} }
 function vaultAccessHistory(token) { try { return JSON.parse(localStorage.getItem("hifin_vaultlog_" + token) || "[]"); } catch (e) { return []; } }
 /* 확정 검진데이터 저장 — FHIR 변환 + 필드암호화(시뮬) + 원본/변환본 해시 체인기록 */

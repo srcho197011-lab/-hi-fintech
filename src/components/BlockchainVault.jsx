@@ -157,8 +157,94 @@ function HtkTokenLedger({ member, base }) {
       ))}{!led.length && <div className="htk-empty">아직 원장 거래가 없어요. 전송·스왑하면 트랜잭션이 기록됩니다.</div>}</div>
       <div className="chnote" style={{ marginTop: 10 }}>※ 시연용 로컬 원장(프라이빗 체인 시뮬). 잔액은 숫자 카운터가 아니라 <b>건별 트랜잭션 합산</b>으로 재구성되며, 차감은 잔액 검증을 통과해야만 기록됩니다(이중지불 차단). 이자·배당 유형은 원장에 정의되어 있지 않습니다(증권성 차단). 실제 발행·상장·환금성은 관련 법령(가상자산·전자금융 등) 검토와 정식 절차를 전제로 합니다.</div>
       {typeof regGateAll === "function" && <RegGatePanel member={member} />}
+      <WalletPortability member={member} />
+      <ChainExplorer member={member} />
     </div>
   );
+}
+
+/* ══════════ C3 — 지갑 이동성(export/import): "플랫폼이 사라져도 자산은 회원에게" 물리 증명 ══════════ */
+function WalletPortability({ member }) {
+  const [msg, setMsg] = useState(null);
+  const fileRef = useRef(null);
+  if (!member) return null;
+  const email = member.email || "default";
+  const token = (typeof anonToken === "function") ? anonToken(member) : "";
+  const doExport = () => {
+    try {
+      const pack = { format: "hifin-wallet-v2", exportedAt: Date.now(), email, token,
+        vault: JSON.parse(localStorage.getItem("hifin_vault_" + token) || "null"),
+        ledger: JSON.parse(localStorage.getItem("hifin_htk_tl_" + email) || "[]"),
+        policies: JSON.parse(localStorage.getItem("hifin_policies_" + email) || "[]"),
+        bills: JSON.parse(localStorage.getItem("hifin_bills_" + email) || "[]"),
+        chain: JSON.parse(localStorage.getItem("hifin_hashchain") || "[]") };
+      pack.checksum = (typeof vaultHash === "function") ? vaultHash(JSON.stringify([pack.vault, pack.ledger, pack.policies, pack.bills, pack.chain])) : null;
+      const blob = new Blob([JSON.stringify(pack, null, 1)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "hifin-wallet-" + email.split("@")[0] + ".json"; a.click(); URL.revokeObjectURL(a.href);
+      setMsg({ ok: true, t: "내보내기 완료 — 이 파일이 곧 내 자산이에요(금고·원장·계약·체인 포함, 무결성 체크섬 봉인)." });
+    } catch (e) { setMsg({ ok: false, t: "내보내기 실패" }); }
+  };
+  const doImport = (file) => {
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const p = JSON.parse(rd.result);
+        if (p.format !== "hifin-wallet-v2") return setMsg({ ok: false, t: "지원하지 않는 파일 형식이에요" });
+        const sum = (typeof vaultHash === "function") ? vaultHash(JSON.stringify([p.vault, p.ledger, p.policies, p.bills, p.chain])) : null;
+        if (sum !== p.checksum) return setMsg({ ok: false, t: "무결성 검증 실패 — 파일이 변조되었을 수 있어 불러오지 않았어요" });
+        // 원장 재검증(연결·해시·잔액)
+        let prev = "0".repeat(64), bal = 0, ok = true;
+        (p.ledger || []).forEach((t) => { if (t.prev !== prev) ok = false; prev = t.hash; bal += (({ genesis: 1, earn: 1, topup: 1, dataFee: 1 })[t.type]) ? t.amount : -t.amount; if (bal < 0) ok = false; });
+        if (!ok) return setMsg({ ok: false, t: "원장 검증 실패 — 불러오지 않았어요" });
+        if (p.vault) localStorage.setItem("hifin_vault_" + token, JSON.stringify(p.vault));
+        localStorage.setItem("hifin_htk_tl_" + email, JSON.stringify(p.ledger || []));
+        localStorage.setItem("hifin_policies_" + email, JSON.stringify(p.policies || []));
+        localStorage.setItem("hifin_bills_" + email, JSON.stringify(p.bills || []));
+        if (p.chain && p.chain.length) localStorage.setItem("hifin_hashchain", JSON.stringify(p.chain));
+        setMsg({ ok: true, t: `불러오기 완료 ✓ — 무결성·원장 검증 통과(트랜잭션 ${(p.ledger || []).length}건 · 잔액 ${bal.toLocaleString()} HTK). 새로고침하면 반영돼요.` });
+      } catch (e) { setMsg({ ok: false, t: "파일을 읽을 수 없어요" }); }
+    };
+    rd.readAsText(file);
+  };
+  return (
+    <div className="htk-card" style={{ marginTop: 14, background: "#0B1220" }}>
+      <div className="htk-top"><span className="htk-net"><Wallet size={13} /> 내 자산 이동성 — 지갑 내보내기/불러오기</span><span style={{ fontSize: 10.5, color: "#94A3B8" }}>플랫폼이 사라져도 자산은 나에게</span></div>
+      <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+        <button className="htk-btn" onClick={doExport}>💾 내 지갑 내보내기(JSON)</button>
+        <button className="htk-btn cyan" onClick={() => fileRef.current && fileRef.current.click()}>📥 불러오기(무결성 검증)</button>
+        <input ref={fileRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) doImport(f); e.target.value = ""; }} />
+      </div>
+      {msg && <div style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: msg.ok ? "#6EE7B7" : "#F87171" }}>{msg.t}</div>}
+      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "#94A3B8" }}>금고·토큰 원장·계약·청구서·체인이 한 파일로 내보내져요 — 체크섬과 원장 재검증을 통과해야만 불러올 수 있어요.</div>
+    </div>);
+}
+
+/* ══════════ C3 — 내 체인 보기(블록 탐색기) — "위조되지 않았음"을 눈으로 ══════════ */
+function ChainExplorer({ member }) {
+  const [res, setRes] = useState(null);
+  const chain = (() => { try { return JSON.parse(localStorage.getItem("hifin_hashchain") || "[]"); } catch (e) { return []; } })();
+  const last5 = chain.slice(-5).reverse();
+  const H = (h) => (h || "").slice(0, 12) + "…";
+  return (
+    <div className="htk-card" style={{ marginTop: 14, background: "#0B1220" }}>
+      <div className="htk-top"><span className="htk-net"><Blocks size={13} /> 내 체인 보기 — 블록 {chain.length}개</span>
+        <button className="htk-btn" style={{ fontSize: 11 }} onClick={() => { const v = (typeof chainVerify === "function") ? chainVerify() : null; const s = (typeof chainSnapshot === "function") ? chainSnapshot() : null; const p = (typeof publicAnchorSend === "function") ? publicAnchorSend(s && s.root) : null; setRes({ v, s, p }); }}>전체 검증 + 스냅샷</button></div>
+      <div style={{ display: "grid", gap: 5, marginTop: 10 }}>
+        {last5.map((b) => (
+          <div key={b.idx} style={{ display: "flex", gap: 8, alignItems: "center", background: "rgba(255,255,255,.04)", borderRadius: 8, padding: "6px 10px", fontSize: 11 }}>
+            <span style={{ color: "#93C5FD", fontWeight: 800 }}>#{b.idx}</span>
+            <span style={{ color: "#E2E8F0", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.note || b.type}</span>
+            <code style={{ color: "#94A3B8" }}>{H(b.hash)}</code>
+          </div>))}
+      </div>
+      {res && res.v && (
+        <div style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: res.v.ok ? "#6EE7B7" : "#F87171" }}>
+          {res.v.ok ? `블록 ${res.v.blocks}개 전부 이어짐 ✓ — 하나라도 고치면 여기서 바로 표시돼요(SHA-256 실해시).` : `⚠️ ${res.v.at}번 블록 이상: ${res.v.reason}`}
+          {res.s && <div style={{ color: "#93C5FD", marginTop: 3 }}>머클루트 스냅샷 보관: {H(res.s.root)} ({res.s.blocks}블록)</div>}
+          {res.p && !res.p.ok && <div style={{ color: "#FBBF24", marginTop: 3 }}>퍼블릭 앵커: {res.p.reason} (시도는 기록됨)</div>}
+        </div>)}
+      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "#94A3B8" }}>쉽게 말하면: 내 기록들이 <b style={{ color: "#CBD5E1" }}>번호표 있는 사슬</b>로 묶여 있어서, 중간을 몰래 바꾸면 사슬이 끊겨 바로 들통나요. 지금은 SHA-256 실제 해시로 봉인돼요(로컬 시뮬 · 퍼블릭 앵커는 규제 게이트 뒤).</div>
+    </div>);
 }
 
 /* ══════════ C1-2 RegGate 패널 — 규제 시행일 동기화 게이트 상태 + 차단 실증 ══════════ */
