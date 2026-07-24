@@ -26,19 +26,24 @@ function notifPush(o) { try { const l = notifAll(); l.unshift({ ts: Date.now(), 
 
 /* ══ SharingPool(S1-1 기초) — 나눔 재원 기금 원장: 거래 건별 적립 tx(연출 카운터 아님) ══ */
 function spLedger() { try { return JSON.parse(localStorage.getItem("hifin_sharing_pool") || "[]"); } catch (e) { return []; } }
+/* dir: +1 적립(기본) / -1 지출(병원 직접 정산 — S3-1). 지출은 잔액 검증 통과 시에만 기록 */
 function spAppend(o) {
   o = o || {}; const amount = Math.max(0, Math.round(o.amount || 0)); if (!amount) return null;
+  const dir = o.dir === -1 ? -1 : 1;
   const l = spLedger();
-  const tx = { seq: l.length, ts: Date.now(), source: o.source || "기타", amount, ref: o.ref || null, by: o.by || null };
+  if (dir < 0) { const bal = l.reduce((s, t) => s + (t.dir === -1 ? -t.amount : t.amount), 0); if (bal < amount) return null; }   // 기금 음수 차단
+  const tx = { seq: l.length, ts: Date.now(), source: o.source || "기타", amount, dir, ref: o.ref || null, by: o.by || null };
   l.push(tx);
   try { localStorage.setItem("hifin_sharing_pool", JSON.stringify(l)); } catch (e) { return null; }
-  if (typeof chainAppend === "function") chainAppend({ type: "share", token: o.token || null, note: `나눔 재원 적립 — ${tx.source} · ${amount.toLocaleString()}원 (순환 ${Math.round(INS_CONFIG.SHARE_RATE * 100)}%)` });
+  if (typeof chainAppend === "function") chainAppend({ type: "share", token: o.token || null, note: dir > 0 ? `나눔 재원 적립 — ${tx.source} · ${amount.toLocaleString()}원 (순환 ${Math.round(INS_CONFIG.SHARE_RATE * 100)}%)` : `나눔 기금 집행 — ${tx.source} · ${amount.toLocaleString()}원` });
   return tx;
 }
 function spSummary() {
   const l = spLedger();
-  return { count: l.length, balance: l.reduce((s, t) => s + t.amount, 0), recent: l.slice(-8).reverse(),
-    bySource: l.reduce((m, t) => { m[t.source] = (m[t.source] || 0) + t.amount; return m; }, {}) };
+  const inTotal = l.filter((t) => t.dir !== -1).reduce((s, t) => s + t.amount, 0);
+  const outTotal = l.filter((t) => t.dir === -1).reduce((s, t) => s + t.amount, 0);
+  return { count: l.length, balance: inTotal - outTotal, inTotal, outTotal, recent: l.slice(-8).reverse(),
+    bySource: l.filter((t) => t.dir !== -1).reduce((m, t) => { m[t.source] = (m[t.source] || 0) + t.amount; return m; }, {}) };
 }
 
 /* ══ ClaimEngine-lite(P2 기초) — 심사 규칙 + 지급 실행(잔액 실이동) ══ */
@@ -147,8 +152,11 @@ const insService = {
   /* ⑤ 재산정 */
   rerate(m) { m = m || _isMember(); return { state: (typeof rerateState === "function") ? rerateState() : null, compute: rerateCompute(m) }; },
   rerateApply(m) { return rerateApplyReal(m || _isMember()); },
-  /* ⑥ 나눔 */
+  /* ⑥ 나눔 (S2/S3 — sharingEngine 연동) */
   donateStatus() { return spSummary(); },
+  donateApply(m, o) { m = m || _isMember(); return (typeof needApply === "function") ? needApply(m, o) : { ok: false, reason: "엔진 미탑재" }; },
+  donateReview(m) { m = m || _isMember(); return (typeof myApplications === "function") ? myApplications(m) : []; },
+  donateImpact() { return (typeof impactSummary === "function") ? impactSummary() : null; },
   /* 상담사 컨텍스트 인계 규약 — {tab, member요약, 진행 중 건} */
   ctx(tab, m) {
     m = m || _isMember();

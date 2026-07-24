@@ -393,6 +393,15 @@ function _insServiceRoute(text, member) {
   // ⓔ 사다리·나눔·잔액
   if (/사다리|실손부터|뭐부터\s*(가입|시작)|기초\s*보장/.test(text)) { const L = insService.ladderCheck(member);
     return { bubbles: [{ kind: "text", text: L.note + (L.stage === "silson-first" ? "\n" + L.legal : "") }], quicks: ["보장 공백 분석", "맞춤 헬스케어 보험 상담"] }; }
+  // 나눔 신청(상담사) — "지원 신청 — <사유>" 패턴으로 확인 후 실행
+  mm = text.match(/^지원 신청 — (.+)/);
+  if (mm) { const r = insService.donateApply(member, { reason: mm[1], channel: "상담사 접수" });
+    return { bubbles: [{ kind: "text", text: r.ok ? `접수 완료 ✓ — ${r.app.id} · 긴급도 ${r.app.urgency.grade}(${r.app.urgency.score}점, 근거: ${r.app.urgency.basis.join("·") || "기본"}). 심사 진행 상황은 치료비·나눔 탭에서 늘 보여요.` : "🔒 " + r.reason }], quicks: ["나눔 현황 보여줘"] }; }
+  if (/치료비\s*지원\s*신청|지원\s*신청\s*해/.test(text)) {
+    const my = insService.donateReview(member);
+    if (my.some((a) => a.status === "심사 대기" || a.status === "선정")) return { bubbles: [{ kind: "text", text: `이미 진행 중인 신청(${my[0].id} · ${my[0].status})이 있어요 — 치료비·나눔 탭에서 상태를 확인하세요.` }], quicks: ["나눔 현황 보여줘"] };
+    return { bubbles: [{ kind: "text", text: "치료비 지원 신청을 도와드릴게요. 어떤 상황인지 한 줄로 보내주세요 — 예시처럼 **\"지원 신청 — 항암 치료 중 수술비 부담\"** 형식이면 바로 접수돼요. 신청 정보는 최고 민감등급으로 보호되고, 긴급도 기준은 공개돼 있어요." }], quicks: ["지원 신청 — 수술비 부담이 커요"] };
+  }
   if (/나눔|기부|30\s*%|사각지대/.test(text)) { const S = insService.donateStatus();
     return { bubbles: [{ kind: "text", text: S.count ? `나눔 재원에 ${won(S.balance)}(${S.count}건)이 건별 적립돼 있어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${won(v)}`).join(" · ")}. 치료비 사각지대 지원에 쓰이는 순환의 30% 몫이에요.` : "아직 나눔 적립이 없어요 — 보험료 납부·건강쇼핑이 생기면 순환의 30%가 여기 쌓여요." }], quicks: ["치료비 지원 신청은 어떻게 해?"] }; }
   if (/잔액|얼마\s*있|토큰\s*(얼마|몇)/.test(text)) { const bal = (typeof tlBalance === "function") ? tlBalance(member) : null;
@@ -1303,7 +1312,7 @@ function InsShareTab() {
   const m = insService.member();
   const S = insService.donateStatus();
   const won = (n) => Number(n || 0).toLocaleString() + "원";
-  const myApply = (() => { try { return JSON.parse(localStorage.getItem("hifin_share_apply") || "[]"); } catch (e) { return []; } })();
+  const myApply = (typeof myApplications === "function") ? myApplications(m) : [];   // S2: 내 신청만(계정 격리)
   return (<>
     <div className="card" style={{ border: "1.5px solid #FECDD3", background: "#FFF7F8" }}>
       <div className="rct"><HeartHandshake size={17} color="#E11D48" /> 나눔 재원 (순환의 {Math.round(insService.config.SHARE_RATE * 100)}%) <span className="cbadge" style={{ marginLeft: 8, color: "#BE123C", background: "#FFE4E6" }}>건별 실적립 원장</span></div>
@@ -1318,18 +1327,48 @@ function InsShareTab() {
     </div>
     <div className="card">
       <div className="rct"><FileText size={16} color="#7C3AED" /> 치료비 지원 신청 (사각지대 지원)</div>
-      {myApply.length > 0 && myApply.map((a, i) => <div className="costrow" key={i}><span className="cl">{new Date(a.at).toLocaleDateString("ko-KR")} 신청</span><span className="cv">{a.reason.slice(0, 24)}…</span><span className="ca" style={{ color: "#B45309" }}>{a.status}</span></div>)}
+      {myApply.map((a) => (
+        <div key={a.id || a.at} style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "10px 12px", margin: "6px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <b style={{ fontSize: 13 }}>{a.id || "신청"}</b>
+            {a.urgency && <span className="cbadge" style={{ color: a.urgency.grade === "긴급" ? "#B91C1C" : a.urgency.grade === "높음" ? "#B45309" : "#1D4ED8", background: a.urgency.grade === "긴급" ? "#FDECEC" : a.urgency.grade === "높음" ? "#FEF3E2" : "#EAF0FE" }}>긴급도 {a.urgency.grade} · {a.urgency.score}점</span>}
+            <span className="cbadge" style={{ marginLeft: "auto", color: a.status === "집행 완료" ? "#15803D" : "#B45309", background: a.status === "집행 완료" ? "#E7F8EE" : "#FEF3E2" }}>{a.status}</span>
+          </div>
+          {/* 상태 타임라인 — 문의할 필요 없이 진행이 늘 보이게 */}
+          <div style={{ display: "flex", gap: 4, margin: "8px 0 4px", fontSize: 10.5, fontWeight: 700 }}>
+            {["심사 대기", "선정", "집행 완료"].map((s, i) => { const on = ["심사 대기", "선정", "집행 완료"].indexOf(a.status) >= i || a.status === "보류" && i === 0; return <span key={s} style={{ flex: 1, textAlign: "center", padding: "4px 0", borderRadius: 8, background: on ? "#DBEAFE" : "#F1F5F9", color: on ? "#1D4ED8" : "#94A3B8" }}>{s}</span>; })}
+          </div>
+          {a.settle && <div style={{ fontSize: 11.5, color: "var(--green)", fontWeight: 700 }}>✓ {a.settle.hosp}에 {a.settle.amount.toLocaleString()}원 직접 정산 — 현금을 거치지 않고 치료가 진행돼요{a.outcome ? ` · 성과: ${a.outcome.note}` : ""}</div>}
+          {/* 심사·집행 시연 흐름(운영 심사 시뮬 — 정직 표기) */}
+          {a.status === "심사 대기" && <button className="cbtn" style={{ marginTop: 6, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { const r = (typeof grantApprove === "function") ? grantApprove(a.id) : null; if (typeof toast === "function") toast(r && r.ok ? `선정 ✓ ${r.amount.toLocaleString()}원 배정(운영 심사 시연)` : "보류 — " + ((r && r.reason) || "")); setTick((t) => t + 1); }}><ShieldCheck size={12} /> 자격·긴급도 심사 실행 (운영 시연)</button>}
+          {a.status === "선정" && <button className="cbtn pri" style={{ marginTop: 6, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { const r = (typeof directSettle === "function") ? directSettle(a.id) : null; if (typeof toast === "function") toast(r && r.ok ? `집행 완료 ✓ ${r.hosp} 직접 정산 ${r.amount.toLocaleString()}원 (기금 잔액 ${r.fundAfter.toLocaleString()}원)` : "🔒 " + ((r && r.reason) || "")); setTick((t) => t + 1); }}><HeartHandshake size={12} /> 병원 직접 정산 실행 (운영 시연)</button>}
+          {a.status === "집행 완료" && !a.outcome && <button className="cbtn" style={{ marginTop: 6, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { const r = (typeof outcomeRecord === "function") ? outcomeRecord(a.id, "치료 진행·회복 확인") : null; if (typeof toast === "function") toast(r && r.ok ? "성과가 기록됐어요 — 지원 효과가 기준 개선에 환류돼요" : ""); setTick((t) => t + 1); }}><Check size={12} /> 치료 성과 기록</button>}
+        </div>
+      ))}
       {!applying ? (
         <button className="cbtn" style={{ marginTop: 4 }} onClick={() => setApplying(true)}><HeartHandshake size={14} /> 치료비 지원 신청하기</button>
       ) : (<>
         <textarea className="authinput" style={{ width: "100%", minHeight: 64, marginTop: 6, fontFamily: "inherit" }} placeholder="어떤 치료비 지원이 필요한지 적어 주세요 (예: 수술비 부담, 항암 치료 중)" value={reason} onChange={(e) => setReason(e.target.value)} />
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <button className="cbtn" style={{ margin: 0 }} onClick={() => setApplying(false)}>취소</button>
-          <button className="cbtn pri" style={{ margin: 0, opacity: reason.trim().length >= 10 ? 1 : .5 }} disabled={reason.trim().length < 10} onClick={() => { try { const l = JSON.parse(localStorage.getItem("hifin_share_apply") || "[]"); l.push({ at: Date.now(), by: m ? m.name : "회원", reason: reason.trim(), status: "심사 대기" }); localStorage.setItem("hifin_share_apply", JSON.stringify(l)); } catch (e) {} if (typeof toast === "function") toast("신청이 접수됐어요 — 자격·긴급도 심사 후 안내드려요(시연)."); setApplying(false); setReason(""); setTick((t) => t + 1); }}>신청 접수</button>
+          <button className="cbtn pri" style={{ margin: 0, opacity: reason.trim().length >= 10 ? 1 : .5 }} disabled={reason.trim().length < 10} onClick={() => { const r = (typeof needApply === "function") ? needApply(m, { reason: reason.trim(), channel: "본인 신청" }) : { ok: false, reason: "엔진 미탑재" }; if (typeof toast === "function") toast(r.ok ? `접수 완료 — 긴급도 ${r.app.urgency.grade}(${r.app.urgency.score}점)로 분류됐어요. 심사 기준: ${r.app.urgency.basis.join("·") || "기본"}` : "🔒 " + r.reason); if (r.ok) { setApplying(false); setReason(""); } setTick((t) => t + 1); }}>신청 접수</button>
         </div>
-        <div className="chnote" style={{ marginTop: 6 }}>신청 정보는 최고 민감등급으로 보호되며 심사(자격·긴급도) 목적에만 사용돼요.</div>
+        <div className="chnote" style={{ marginTop: 6 }}>신청 정보는 최고 민감등급으로 보호되며 심사(자격·긴급도) 목적에만 사용돼요. 긴급도 기준(키워드·저소득·유병·실손 미가입 가중)은 공개돼 있어요.</div>
       </>)}
     </div>
+    {/* S3-2 ImpactLedger — 집행 투명 공개(통계+마스킹+병원·금액만, 개인 식별 불가) */}
+    {(() => { const I = (typeof impactSummary === "function") ? impactSummary() : null; if (!I) return null; return (
+      <div className="card">
+        <div className="rct"><ShieldCheck size={16} color="#0891B2" /> 집행 투명 공개 (ImpactLedger)</div>
+        <div className="wins-grid" style={{ marginBottom: 8 }}>
+          <div className="wins-box"><span className="wl">누적 적립</span><b>{I.inTotal.toLocaleString()} <small>원</small></b><span className="ww">순환의 30% 건별</span></div>
+          <div className="wins-box pri"><span className="wl">누적 집행</span><b>{I.outTotal.toLocaleString()} <small>원</small></b><span className="ww">수혜 {I.settledN}건{I.avgDays != null ? ` · 평균 ${I.avgDays}일 내 집행` : ""}</span></div>
+        </div>
+        {I.rows.length ? I.rows.map((r) => (
+          <div className="costrow" key={r.id}><span className="cl">{new Date(r.at).toLocaleDateString("ko-KR")} · {r.by} → {r.hosp}</span><span className="cv" style={{ color: "#E11D48" }}>{r.amount.toLocaleString()}원</span><span className="ca">{r.outcome ? "성과 확인" : "집행"}</span></div>
+        )) : <p style={{ fontSize: 12.5, color: "var(--muted)" }}>아직 집행 내역이 없어요 — 선정·정산이 이루어지면 여기 공개돼요(이름은 마스킹).</p>}
+        <div className="chnote" style={{ marginTop: 8 }}>수혜자 보호를 위해 <b>통계·마스킹된 내역·온체인 증빙</b>만 공개해요. 선정 기준(긴급도 스코어·중복 확인·기금 잔액)도 함께 공개됩니다.</div>
+      </div>); })()}
   </>);
 }
 

@@ -7890,6 +7890,15 @@ function _insServiceRoute(text, member) {
   // ⓔ 사다리·나눔·잔액
   if (/사다리|실손부터|뭐부터\s*(가입|시작)|기초\s*보장/.test(text)) { const L = insService.ladderCheck(member);
     return { bubbles: [{ kind: "text", text: L.note + (L.stage === "silson-first" ? "\n" + L.legal : "") }], quicks: ["보장 공백 분석", "맞춤 헬스케어 보험 상담"] }; }
+  // 나눔 신청(상담사) — "지원 신청 — <사유>" 패턴으로 확인 후 실행
+  mm = text.match(/^지원 신청 — (.+)/);
+  if (mm) { const r = insService.donateApply(member, { reason: mm[1], channel: "상담사 접수" });
+    return { bubbles: [{ kind: "text", text: r.ok ? `접수 완료 ✓ — ${r.app.id} · 긴급도 ${r.app.urgency.grade}(${r.app.urgency.score}점, 근거: ${r.app.urgency.basis.join("·") || "기본"}). 심사 진행 상황은 치료비·나눔 탭에서 늘 보여요.` : "🔒 " + r.reason }], quicks: ["나눔 현황 보여줘"] }; }
+  if (/치료비\s*지원\s*신청|지원\s*신청\s*해/.test(text)) {
+    const my = insService.donateReview(member);
+    if (my.some((a) => a.status === "심사 대기" || a.status === "선정")) return { bubbles: [{ kind: "text", text: `이미 진행 중인 신청(${my[0].id} · ${my[0].status})이 있어요 — 치료비·나눔 탭에서 상태를 확인하세요.` }], quicks: ["나눔 현황 보여줘"] };
+    return { bubbles: [{ kind: "text", text: "치료비 지원 신청을 도와드릴게요. 어떤 상황인지 한 줄로 보내주세요 — 예시처럼 **\"지원 신청 — 항암 치료 중 수술비 부담\"** 형식이면 바로 접수돼요. 신청 정보는 최고 민감등급으로 보호되고, 긴급도 기준은 공개돼 있어요." }], quicks: ["지원 신청 — 수술비 부담이 커요"] };
+  }
   if (/나눔|기부|30\s*%|사각지대/.test(text)) { const S = insService.donateStatus();
     return { bubbles: [{ kind: "text", text: S.count ? `나눔 재원에 ${won(S.balance)}(${S.count}건)이 건별 적립돼 있어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${won(v)}`).join(" · ")}. 치료비 사각지대 지원에 쓰이는 순환의 30% 몫이에요.` : "아직 나눔 적립이 없어요 — 보험료 납부·건강쇼핑이 생기면 순환의 30%가 여기 쌓여요." }], quicks: ["치료비 지원 신청은 어떻게 해?"] }; }
   if (/잔액|얼마\s*있|토큰\s*(얼마|몇)/.test(text)) { const bal = (typeof tlBalance === "function") ? tlBalance(member) : null;
@@ -8800,7 +8809,7 @@ function InsShareTab() {
   const m = insService.member();
   const S = insService.donateStatus();
   const won = (n) => Number(n || 0).toLocaleString() + "원";
-  const myApply = (() => { try { return JSON.parse(localStorage.getItem("hifin_share_apply") || "[]"); } catch (e) { return []; } })();
+  const myApply = (typeof myApplications === "function") ? myApplications(m) : [];   // S2: 내 신청만(계정 격리)
   return (<>
     <div className="card" style={{ border: "1.5px solid #FECDD3", background: "#FFF7F8" }}>
       <div className="rct"><HeartHandshake size={17} color="#E11D48" /> 나눔 재원 (순환의 {Math.round(insService.config.SHARE_RATE * 100)}%) <span className="cbadge" style={{ marginLeft: 8, color: "#BE123C", background: "#FFE4E6" }}>건별 실적립 원장</span></div>
@@ -8815,18 +8824,48 @@ function InsShareTab() {
     </div>
     <div className="card">
       <div className="rct"><FileText size={16} color="#7C3AED" /> 치료비 지원 신청 (사각지대 지원)</div>
-      {myApply.length > 0 && myApply.map((a, i) => <div className="costrow" key={i}><span className="cl">{new Date(a.at).toLocaleDateString("ko-KR")} 신청</span><span className="cv">{a.reason.slice(0, 24)}…</span><span className="ca" style={{ color: "#B45309" }}>{a.status}</span></div>)}
+      {myApply.map((a) => (
+        <div key={a.id || a.at} style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "10px 12px", margin: "6px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <b style={{ fontSize: 13 }}>{a.id || "신청"}</b>
+            {a.urgency && <span className="cbadge" style={{ color: a.urgency.grade === "긴급" ? "#B91C1C" : a.urgency.grade === "높음" ? "#B45309" : "#1D4ED8", background: a.urgency.grade === "긴급" ? "#FDECEC" : a.urgency.grade === "높음" ? "#FEF3E2" : "#EAF0FE" }}>긴급도 {a.urgency.grade} · {a.urgency.score}점</span>}
+            <span className="cbadge" style={{ marginLeft: "auto", color: a.status === "집행 완료" ? "#15803D" : "#B45309", background: a.status === "집행 완료" ? "#E7F8EE" : "#FEF3E2" }}>{a.status}</span>
+          </div>
+          {/* 상태 타임라인 — 문의할 필요 없이 진행이 늘 보이게 */}
+          <div style={{ display: "flex", gap: 4, margin: "8px 0 4px", fontSize: 10.5, fontWeight: 700 }}>
+            {["심사 대기", "선정", "집행 완료"].map((s, i) => { const on = ["심사 대기", "선정", "집행 완료"].indexOf(a.status) >= i || a.status === "보류" && i === 0; return <span key={s} style={{ flex: 1, textAlign: "center", padding: "4px 0", borderRadius: 8, background: on ? "#DBEAFE" : "#F1F5F9", color: on ? "#1D4ED8" : "#94A3B8" }}>{s}</span>; })}
+          </div>
+          {a.settle && <div style={{ fontSize: 11.5, color: "var(--green)", fontWeight: 700 }}>✓ {a.settle.hosp}에 {a.settle.amount.toLocaleString()}원 직접 정산 — 현금을 거치지 않고 치료가 진행돼요{a.outcome ? ` · 성과: ${a.outcome.note}` : ""}</div>}
+          {/* 심사·집행 시연 흐름(운영 심사 시뮬 — 정직 표기) */}
+          {a.status === "심사 대기" && <button className="cbtn" style={{ marginTop: 6, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { const r = (typeof grantApprove === "function") ? grantApprove(a.id) : null; if (typeof toast === "function") toast(r && r.ok ? `선정 ✓ ${r.amount.toLocaleString()}원 배정(운영 심사 시연)` : "보류 — " + ((r && r.reason) || "")); setTick((t) => t + 1); }}><ShieldCheck size={12} /> 자격·긴급도 심사 실행 (운영 시연)</button>}
+          {a.status === "선정" && <button className="cbtn pri" style={{ marginTop: 6, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { const r = (typeof directSettle === "function") ? directSettle(a.id) : null; if (typeof toast === "function") toast(r && r.ok ? `집행 완료 ✓ ${r.hosp} 직접 정산 ${r.amount.toLocaleString()}원 (기금 잔액 ${r.fundAfter.toLocaleString()}원)` : "🔒 " + ((r && r.reason) || "")); setTick((t) => t + 1); }}><HeartHandshake size={12} /> 병원 직접 정산 실행 (운영 시연)</button>}
+          {a.status === "집행 완료" && !a.outcome && <button className="cbtn" style={{ marginTop: 6, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { const r = (typeof outcomeRecord === "function") ? outcomeRecord(a.id, "치료 진행·회복 확인") : null; if (typeof toast === "function") toast(r && r.ok ? "성과가 기록됐어요 — 지원 효과가 기준 개선에 환류돼요" : ""); setTick((t) => t + 1); }}><Check size={12} /> 치료 성과 기록</button>}
+        </div>
+      ))}
       {!applying ? (
         <button className="cbtn" style={{ marginTop: 4 }} onClick={() => setApplying(true)}><HeartHandshake size={14} /> 치료비 지원 신청하기</button>
       ) : (<>
         <textarea className="authinput" style={{ width: "100%", minHeight: 64, marginTop: 6, fontFamily: "inherit" }} placeholder="어떤 치료비 지원이 필요한지 적어 주세요 (예: 수술비 부담, 항암 치료 중)" value={reason} onChange={(e) => setReason(e.target.value)} />
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <button className="cbtn" style={{ margin: 0 }} onClick={() => setApplying(false)}>취소</button>
-          <button className="cbtn pri" style={{ margin: 0, opacity: reason.trim().length >= 10 ? 1 : .5 }} disabled={reason.trim().length < 10} onClick={() => { try { const l = JSON.parse(localStorage.getItem("hifin_share_apply") || "[]"); l.push({ at: Date.now(), by: m ? m.name : "회원", reason: reason.trim(), status: "심사 대기" }); localStorage.setItem("hifin_share_apply", JSON.stringify(l)); } catch (e) {} if (typeof toast === "function") toast("신청이 접수됐어요 — 자격·긴급도 심사 후 안내드려요(시연)."); setApplying(false); setReason(""); setTick((t) => t + 1); }}>신청 접수</button>
+          <button className="cbtn pri" style={{ margin: 0, opacity: reason.trim().length >= 10 ? 1 : .5 }} disabled={reason.trim().length < 10} onClick={() => { const r = (typeof needApply === "function") ? needApply(m, { reason: reason.trim(), channel: "본인 신청" }) : { ok: false, reason: "엔진 미탑재" }; if (typeof toast === "function") toast(r.ok ? `접수 완료 — 긴급도 ${r.app.urgency.grade}(${r.app.urgency.score}점)로 분류됐어요. 심사 기준: ${r.app.urgency.basis.join("·") || "기본"}` : "🔒 " + r.reason); if (r.ok) { setApplying(false); setReason(""); } setTick((t) => t + 1); }}>신청 접수</button>
         </div>
-        <div className="chnote" style={{ marginTop: 6 }}>신청 정보는 최고 민감등급으로 보호되며 심사(자격·긴급도) 목적에만 사용돼요.</div>
+        <div className="chnote" style={{ marginTop: 6 }}>신청 정보는 최고 민감등급으로 보호되며 심사(자격·긴급도) 목적에만 사용돼요. 긴급도 기준(키워드·저소득·유병·실손 미가입 가중)은 공개돼 있어요.</div>
       </>)}
     </div>
+    {/* S3-2 ImpactLedger — 집행 투명 공개(통계+마스킹+병원·금액만, 개인 식별 불가) */}
+    {(() => { const I = (typeof impactSummary === "function") ? impactSummary() : null; if (!I) return null; return (
+      <div className="card">
+        <div className="rct"><ShieldCheck size={16} color="#0891B2" /> 집행 투명 공개 (ImpactLedger)</div>
+        <div className="wins-grid" style={{ marginBottom: 8 }}>
+          <div className="wins-box"><span className="wl">누적 적립</span><b>{I.inTotal.toLocaleString()} <small>원</small></b><span className="ww">순환의 30% 건별</span></div>
+          <div className="wins-box pri"><span className="wl">누적 집행</span><b>{I.outTotal.toLocaleString()} <small>원</small></b><span className="ww">수혜 {I.settledN}건{I.avgDays != null ? ` · 평균 ${I.avgDays}일 내 집행` : ""}</span></div>
+        </div>
+        {I.rows.length ? I.rows.map((r) => (
+          <div className="costrow" key={r.id}><span className="cl">{new Date(r.at).toLocaleDateString("ko-KR")} · {r.by} → {r.hosp}</span><span className="cv" style={{ color: "#E11D48" }}>{r.amount.toLocaleString()}원</span><span className="ca">{r.outcome ? "성과 확인" : "집행"}</span></div>
+        )) : <p style={{ fontSize: 12.5, color: "var(--muted)" }}>아직 집행 내역이 없어요 — 선정·정산이 이루어지면 여기 공개돼요(이름은 마스킹).</p>}
+        <div className="chnote" style={{ marginTop: 8 }}>수혜자 보호를 위해 <b>통계·마스킹된 내역·온체인 증빙</b>만 공개해요. 선정 기준(긴급도 스코어·중복 확인·기금 잔액)도 함께 공개됩니다.</div>
+      </div>); })()}
   </>);
 }
 
@@ -17900,7 +17939,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-25", ver:"v1.1", ch:[15], feat:"보험 전용 AI 상담사", src:"보험·치료비(AIPlannerChat/_insServiceRoute)", summary:"보험·치료비 전용 상담사가 컨텍스트 인계 인사와 확인 2단계를 거쳐 납부·심사지급·재산정을 대화로 실제 실행하고 모집 요청은 정책 가드로 GA 채널 안내", refs:[], status:"반영", hash:"0d5272e", auto:true },
+  { date:"2026-07-25", ver:"v1.1", ch:[17], feat:"나눔 전주기 시스템", src:"치료비·나눔(sharingEngine)/SharingPool", summary:"치료비 지원의 신청·긴급도 심사·병원 직접 정산·투명 공개·성과 환류 전 주기를 실적립 기금 원장 위에 완성하고 상담사 대화 접수까지 연동", refs:[], status:"반영", hash:"99e3e86", auto:true },
+  { date:"2026-07-25", ver:"v1.1", ch:[15], feat:"보험 전용 AI 상담사", src:"보험·치료비(AIPlannerChat/_insServiceRoute)", summary:"보험·치료비 전용 상담사가 컨텍스트 인계 인사와 확인 2단계를 거쳐 납부·심사지급·재산정을 대화로 실제 실행하고 모집 요청은 정책 가드로 GA 채널 안내", refs:[], status:"반영", hash:"b10ac96", auto:true },
   { date:"2026-07-25", ver:"v1.1", ch:[15], feat:"전 섹션 정산 연동", src:"원격진료·B2B·쇼핑·하이·알림·Social(insService 연동)", summary:"원격진료와 의사콘솔의 청구 접수를 지급 엔진에 실연결하고 쇼핑 마진의 나눔 적립·실알림·임팩트 실적립 병기로 전 섹션이 단일 원장을 소비하게 완성", refs:[], status:"반영", hash:"3bf7f3b", auto:true },
   { date:"2026-07-25", ver:"v1.1", ch:[15], feat:"보험 6탭 리뉴얼·정산 실동작", src:"보험·치료비(insService/6탭)/SharingPool", summary:"보험 섹션을 6탭 서비스층 구조로 재편해 수납·지급·나눔 적립·재산정이 원장 실차감과 건별 적립으로 동작하게 하고 전용 상담사 슬롯과 보장 사다리를 배치", refs:[], status:"반영", hash:"cb78391", auto:true },
   { date:"2026-07-25", ver:"v1.1", ch:[7], feat:"원장 수신크레딧·세대 실자산", src:"TokenLedger/lineageBridge/보험가입", summary:"HTK 전송의 수신자 크레딧과 리퍼럴 원장 흡수로 단일 원장 통합을 완성하고 2·4세대 자산을 생성 이벤트 실레코드로 전환하며 주민번호 평문 수집 폼을 본인인증 방식으로 제거", refs:[], status:"반영", hash:"0a86be4", auto:true },
@@ -21321,19 +21361,24 @@ function notifPush(o) { try { const l = notifAll(); l.unshift({ ts: Date.now(), 
 
 /* ══ SharingPool(S1-1 기초) — 나눔 재원 기금 원장: 거래 건별 적립 tx(연출 카운터 아님) ══ */
 function spLedger() { try { return JSON.parse(localStorage.getItem("hifin_sharing_pool") || "[]"); } catch (e) { return []; } }
+/* dir: +1 적립(기본) / -1 지출(병원 직접 정산 — S3-1). 지출은 잔액 검증 통과 시에만 기록 */
 function spAppend(o) {
   o = o || {}; const amount = Math.max(0, Math.round(o.amount || 0)); if (!amount) return null;
+  const dir = o.dir === -1 ? -1 : 1;
   const l = spLedger();
-  const tx = { seq: l.length, ts: Date.now(), source: o.source || "기타", amount, ref: o.ref || null, by: o.by || null };
+  if (dir < 0) { const bal = l.reduce((s, t) => s + (t.dir === -1 ? -t.amount : t.amount), 0); if (bal < amount) return null; }   // 기금 음수 차단
+  const tx = { seq: l.length, ts: Date.now(), source: o.source || "기타", amount, dir, ref: o.ref || null, by: o.by || null };
   l.push(tx);
   try { localStorage.setItem("hifin_sharing_pool", JSON.stringify(l)); } catch (e) { return null; }
-  if (typeof chainAppend === "function") chainAppend({ type: "share", token: o.token || null, note: `나눔 재원 적립 — ${tx.source} · ${amount.toLocaleString()}원 (순환 ${Math.round(INS_CONFIG.SHARE_RATE * 100)}%)` });
+  if (typeof chainAppend === "function") chainAppend({ type: "share", token: o.token || null, note: dir > 0 ? `나눔 재원 적립 — ${tx.source} · ${amount.toLocaleString()}원 (순환 ${Math.round(INS_CONFIG.SHARE_RATE * 100)}%)` : `나눔 기금 집행 — ${tx.source} · ${amount.toLocaleString()}원` });
   return tx;
 }
 function spSummary() {
   const l = spLedger();
-  return { count: l.length, balance: l.reduce((s, t) => s + t.amount, 0), recent: l.slice(-8).reverse(),
-    bySource: l.reduce((m, t) => { m[t.source] = (m[t.source] || 0) + t.amount; return m; }, {}) };
+  const inTotal = l.filter((t) => t.dir !== -1).reduce((s, t) => s + t.amount, 0);
+  const outTotal = l.filter((t) => t.dir === -1).reduce((s, t) => s + t.amount, 0);
+  return { count: l.length, balance: inTotal - outTotal, inTotal, outTotal, recent: l.slice(-8).reverse(),
+    bySource: l.filter((t) => t.dir !== -1).reduce((m, t) => { m[t.source] = (m[t.source] || 0) + t.amount; return m; }, {}) };
 }
 
 /* ══ ClaimEngine-lite(P2 기초) — 심사 규칙 + 지급 실행(잔액 실이동) ══ */
@@ -21442,8 +21487,11 @@ const insService = {
   /* ⑤ 재산정 */
   rerate(m) { m = m || _isMember(); return { state: (typeof rerateState === "function") ? rerateState() : null, compute: rerateCompute(m) }; },
   rerateApply(m) { return rerateApplyReal(m || _isMember()); },
-  /* ⑥ 나눔 */
+  /* ⑥ 나눔 (S2/S3 — sharingEngine 연동) */
   donateStatus() { return spSummary(); },
+  donateApply(m, o) { m = m || _isMember(); return (typeof needApply === "function") ? needApply(m, o) : { ok: false, reason: "엔진 미탑재" }; },
+  donateReview(m) { m = m || _isMember(); return (typeof myApplications === "function") ? myApplications(m) : []; },
+  donateImpact() { return (typeof impactSummary === "function") ? impactSummary() : null; },
   /* 상담사 컨텍스트 인계 규약 — {tab, member요약, 진행 중 건} */
   ctx(tab, m) {
     m = m || _isMember();
@@ -21454,6 +21502,114 @@ const insService = {
       ladder: m ? (this.ladderCheck(m) || {}).stage : null, policy: INS_AI_POLICY };
   },
 };
+
+/* ══════════════ S2/S3 — 나눔 지원 엔진 (NeedFinder · GrantEngine · DirectSettle · ImpactLedger) ══════════════
+   진단 보고서 축5 잔여 구현. 원칙: 신속(심사 단계 최소)·적기적소(긴급도 스코어링)·효율(병원 직접 정산 — 수혜자 현금 비경유)·효과(성과 기록·환류).
+   가드레일 ⓞ: 신청 정보는 최고 민감등급 — 공개는 통계·마스킹·증빙 해시만. ⓝ: 플랫폼 자체 재원의 약정 배분(기부금품법 모집 아님)·선정 기준 공개. */
+
+/* 불가피한 상수(config) — 사유 주석(하드코딩 금지 원칙의 예외 등록) */
+const SHARE_CONFIG = {
+  GRANT_CAP: 500000,          // 1건 지원 상한(시연) — 실서비스는 기금 규모·심사위원회 규정으로 확정
+  URGENT: [["항암|암\\s*치료|백혈병", 40], ["수술|중환자|응급", 30], ["입원", 20], ["투석|희귀", 25], ["치료비\\s*부담|생계", 10]],  // 긴급도 키워드 가중치(심사 기준 공개용)
+  PARTNER_HOSPS: ["서울아산병원", "세브란스병원", "강북삼성병원", "분당서울대병원"],   // 직접 정산 제휴 의료기관(시연)
+};
+
+function _shApps() { try { return JSON.parse(localStorage.getItem("hifin_share_apply") || "[]"); } catch (e) { return []; } }
+function _shSave(l) { try { localStorage.setItem("hifin_share_apply", JSON.stringify(l)); } catch (e) {} }
+
+/* ── S2-1 NeedFinder — 신청 접수(중복 확인) + 긴급도 스코어링(기준 공개) ── */
+function needUrgency(reason, member) {
+  let score = 20, hits = [];   // 기본 20 — 신청 자체가 필요 신호
+  SHARE_CONFIG.URGENT.forEach(([re, w]) => { if (new RegExp(re).test(reason)) { score += w; hits.push(re.split("|")[0].replace(/\\s\*/g, "")); } });
+  try {
+    if (member) {
+      if (member.income === "저") { score += 15; hits.push("저소득"); }
+      if ((member.diseases || []).some((d) => /암$/.test(d))) { score += 15; hits.push("암 이력"); }
+      if (member.cohortIndex && typeof cohortInsurance === "function") { const r = cohortInsurance(member.cohortIndex); if (r && !r.hasSilson) { score += 15; hits.push("실손 미가입"); } }
+    }
+  } catch (e) {}
+  score = Math.min(100, score);
+  return { score, grade: score >= 70 ? "긴급" : score >= 45 ? "높음" : "보통", basis: hits };
+}
+function needApply(member, o) {
+  o = o || {};
+  const reason = String(o.reason || "").trim();
+  if (reason.length < 10) return { ok: false, reason: "지원이 필요한 상황을 조금 더 자세히(10자 이상) 적어 주세요" };
+  const l = _shApps();
+  const email = (member && member.email) || "default";
+  if (l.some((a) => a.email === email && a.status !== "집행 완료" && a.status !== "보류")) return { ok: false, reason: "이미 진행 중인 신청이 있어요 — 심사 결과를 먼저 확인해 주세요(중복 신청 방지)" };
+  const u = needUrgency(reason, member);
+  const app = { id: "GR-" + Date.now().toString(36).toUpperCase(), at: Date.now(), by: (member && member.name) || "회원", email,
+    channel: o.channel || "본인 신청", reason, urgency: u, status: "심사 대기" };
+  l.push(app); _shSave(l);
+  if (typeof chainAppend === "function") chainAppend({ type: "grant-apply", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, note: `치료비 지원 신청 접수 — ${app.id} · 긴급도 ${u.grade}(${u.score}점)` });
+  return { ok: true, app };
+}
+
+/* ── S2-2 GrantEngine — 자격·배정 심사(공정성 규칙 공개) ── */
+function grantReview(id) {
+  const l = _shApps(); const a = l.find((x) => x.id === id);
+  if (!a) return { ok: false, reason: "신청 건을 찾을 수 없습니다" };
+  if (a.status === "집행 완료") return { ok: false, reason: "이미 집행 완료된 신청입니다" };
+  const S = (typeof spSummary === "function") ? spSummary() : { balance: 0 };
+  const rules = [];
+  const dupPaid = l.some((x) => x.email === a.email && x.id !== id && x.status === "집행 완료" && (Date.now() - (x.settledAt || 0)) < 180 * 86400000);
+  rules.push({ rule: "중복 수혜 확인(최근 180일)", pass: !dupPaid });
+  rules.push({ rule: "긴급도 45점 이상(높음·긴급 우선)", pass: a.urgency.score >= 45 });
+  rules.push({ rule: "기금 잔액 존재", pass: S.balance > 0 });
+  const eligible = rules.every((r) => r.pass);
+  const amount = eligible ? Math.min(SHARE_CONFIG.GRANT_CAP, S.balance) : 0;
+  return { ok: true, app: a, rules, eligible, amount, fund: S.balance,
+    note: eligible ? `배정 가능액 ${amount.toLocaleString()}원 (기금 잔액 ${S.balance.toLocaleString()}원 · 상한 ${SHARE_CONFIG.GRANT_CAP.toLocaleString()}원)` : "자격 규칙 미충족 — 보류(사유는 규칙별 표시)" };
+}
+function grantApprove(id) {
+  const rv = grantReview(id); if (!rv.ok) return rv;
+  const l = _shApps(); const a = l.find((x) => x.id === id);
+  if (!rv.eligible) { a.status = "보류"; a.review = { at: Date.now(), rules: rv.rules }; _shSave(l); return { ok: false, reason: "자격 규칙 미충족 — 보류 처리(재신청 가능)", rules: rv.rules }; }
+  a.status = "선정"; a.grant = { amount: rv.amount, at: Date.now() }; a.review = { at: Date.now(), rules: rv.rules };
+  _shSave(l);
+  if (typeof chainAppend === "function") chainAppend({ type: "grant", token: null, note: `나눔 지원 선정 — ${a.id} · ${rv.amount.toLocaleString()}원 배정(긴급도 ${a.urgency.grade})` });
+  return { ok: true, app: a, amount: rv.amount };
+}
+
+/* ── S3-1 DirectSettle — 병원 직접 정산(수혜자 현금 비경유) + 기금 지출 원장 ── */
+function directSettle(id) {
+  const l = _shApps(); const a = l.find((x) => x.id === id);
+  if (!a) return { ok: false, reason: "신청 건을 찾을 수 없습니다" };
+  if (a.status !== "선정") return { ok: false, reason: "선정 상태의 신청만 집행할 수 있어요(현재: " + a.status + ")" };
+  const amt = a.grant.amount;
+  const S = (typeof spSummary === "function") ? spSummary() : { balance: 0 };
+  if (S.balance < amt) return { ok: false, reason: `기금 잔액 부족(${S.balance.toLocaleString()}원) — 순환 적립을 기다려 주세요` };
+  const hosp = SHARE_CONFIG.PARTNER_HOSPS[(a.id.charCodeAt(a.id.length - 1) || 0) % SHARE_CONFIG.PARTNER_HOSPS.length];   // 결정론 배정(시연)
+  const out = (typeof spAppend === "function") ? spAppend({ source: "치료비 직접 정산 — " + hosp, amount: amt, ref: a.id, dir: -1 }) : null;
+  if (!out) return { ok: false, reason: "기금 지출 기록 실패" };
+  a.status = "집행 완료"; a.settledAt = Date.now(); a.settle = { hosp, amount: amt, txSeq: out.seq };
+  _shSave(l);
+  if (typeof chainAppend === "function") chainAppend({ type: "settle", token: null, note: `병원 직접 정산 — ${a.id} · ${hosp} · ${amt.toLocaleString()}원(수혜자 현금 비경유)` });
+  if (typeof notifPush === "function") notifPush({ ic: "check", t: "치료비 지원 집행", d: `${hosp}에 ${amt.toLocaleString()}원이 직접 정산됐어요(나눔 기금)`, target: "insurance" });
+  return { ok: true, app: a, hosp, amount: amt, fundAfter: (typeof spSummary === "function") ? spSummary().balance : null };
+}
+
+/* ── S3-2 ImpactLedger — 투명 공개(통계+마스킹+증빙만) · 성과 기록·환류 ── */
+function _shMask(name) { const s = String(name || "회원"); return s[0] + "*".repeat(Math.max(1, s.length - 1)); }
+function impactSummary() {
+  const l = _shApps(); const S = (typeof spSummary === "function") ? spSummary() : { balance: 0, inTotal: 0, outTotal: 0 };
+  const settled = l.filter((a) => a.status === "집행 완료");
+  const avgDays = settled.length ? Math.round(settled.reduce((s, a) => s + Math.max(0, (a.settledAt - a.at)), 0) / settled.length / 86400000 * 10) / 10 : null;
+  return { applied: l.length, pending: l.filter((a) => a.status === "심사 대기").length, granted: l.filter((a) => a.status === "선정").length,
+    settledN: settled.length, settledTotal: settled.reduce((s, a) => s + (a.settle ? a.settle.amount : 0), 0),
+    outcomes: l.filter((a) => a.outcome).length, avgDays, fund: S.balance, inTotal: S.inTotal, outTotal: S.outTotal,
+    rows: settled.slice(-6).reverse().map((a) => ({ id: a.id, by: _shMask(a.by), hosp: a.settle.hosp, amount: a.settle.amount, at: a.settledAt, outcome: a.outcome || null })) };
+}
+function outcomeRecord(id, note) {
+  const l = _shApps(); const a = l.find((x) => x.id === id);
+  if (!a || a.status !== "집행 완료") return { ok: false, reason: "집행 완료 건만 성과를 기록할 수 있어요" };
+  a.outcome = { note: note || "치료 진행·회복 확인", at: Date.now() };
+  _shSave(l);
+  if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `나눔 성과 기록 — ${a.id} · ${a.outcome.note}(효과 측정·기준 환류)` });
+  return { ok: true, app: a };
+}
+function myApplications(member) { const email = (member && member.email) || "default"; return _shApps().filter((a) => a.email === email).reverse(); }
 
 /* ══════════════ 실제 OCR 엔진 — 업로드 파일에서 검진 항목 텍스트 추출 ══════════════
    이미지 → Tesseract.js(kor+eng), PDF → PDF.js 텍스트 추출(스캔본이면 canvas 렌더 후 OCR).
