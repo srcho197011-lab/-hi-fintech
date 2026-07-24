@@ -167,6 +167,9 @@ const AGENT_QNA = [
   { c: "action", k: "hi_lineage", p: ["자산계보", "계보보여", "계보설명", "세대자산", "세대형데이터", "데이터자산이뭐", "내자산계보"], a: "", tool: "lineage", b: [], nav: "mywallet", nx: [], lv: 1 },
   { c: "action", k: "hi_divi", p: ["배당보여", "배당내역", "데이터배당", "배당얼마", "배당받"], a: "", tool: "divi", b: [], nav: "mywallet", nx: [], lv: 1 },
   { c: "action", k: "hi_rerate", p: ["요율재산정", "재산정신청", "보험료재산정", "보험료깎", "보험료내려", "요율인하"], a: "", tool: "reratedo", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
+  /* ───────── Phase1 리뉴얼 — 보장 사다리·나눔 현황 (과업4 신설 툴) ───────── */
+  { c: "action", k: "hi_ladder", p: ["보장사다리", "실손부터", "실손우선", "실손없는데", "뭐부터가입", "기초보장", "사다리확인"], a: "", tool: "ladder", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
+  { c: "action", k: "hi_donate", p: ["나눔현황", "나눔재원", "치료비나눔", "기부현황", "30퍼센트어디", "나눔얼마"], a: "", tool: "donate", b: [], nav: "insurance", nx: [], lv: 1 },
   /* ───────── Phase 6 비대면진료 — 원격주치의 연결·제도 공시 ───────── */
   { c: "action", k: "hi_tele", p: ["원격진료연결", "원격진료해줘", "비대면진료연결", "비대면진료받", "의사연결해줘", "지금연결가능한의사", "전문의연결", "원격진료받고싶", "전문의상담열기", "비대면상담연결", "원격상담시작", "원격상담해줘", "원격상담연결", "화상상담시작"], a: "", tool: "teleprep", b: [], nav: "ai", nx: [], lv: 1, guard: "med" },
   { c: "action", k: "hi_tele_can", p: ["비대면으로뭐가가능", "비대면진료가능한", "원격으로처방", "비대면처방되", "원격진료뭐가돼", "비대면진료범위", "원격으로검사", "비대면가능행위"], a: "", tool: "telecan", b: [], nav: null, nx: [], lv: 1, guard: "med" },

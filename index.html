@@ -652,13 +652,17 @@ export default function App() {
         </div>
         <div className="tr">
           {typeof TrustBadge === "function" && <TrustBadge onGo={goSec} />}
-          <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">3</span></button>
+          <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">{((typeof notifAll === "function" ? notifAll().length : 0) + HDR_NOTI.length)}</span></button>
           <button className={`ibtn ${hdr === "msg" ? "on" : ""}`} onClick={() => setHdr((h) => h === "msg" ? null : "msg")} aria-label="메시지"><MessageSquare size={21} /></button>
           <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "체험 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
           {hdr && <><div className="hdrov" onClick={() => setHdr(null)} />
             <div className="hdrdrop">
               {hdr === "noti" && <>
-                <div className="dh">알림 <span className="cnt">3건</span></div>
+                <div className="dh">알림 <span className="cnt">{((typeof notifAll === "function" ? notifAll().length : 0) + HDR_NOTI.length)}건</span></div>
+                {/* 과업4: 수납·지급·재산정 실이벤트 알림(원장 연동) — 정적 안내 알림 위에 최신순 병합 */}
+                {(typeof notifAll === "function" ? notifAll() : []).slice(0, 5).map((n, i) => (
+                  <div className="ni" key={"r" + i} onClick={() => goSec(n.target)}><span className="ic"><Art name={n.ic} size={18} /></span><div><b>{n.t}</b><p>{n.d}</p><span className="tm">{new Date(n.ts).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span></div></div>
+                ))}
                 {HDR_NOTI.map(([ic, t, d, tm, target], i) => (
                   <div className="ni" key={i} onClick={() => goSec(target)}><span className="ic"><Art name={ic} size={18} /></span><div><b>{t}</b><p>{d}</p><span className="tm">{tm}</span></div></div>
                 ))}
@@ -2061,7 +2065,7 @@ function SpecialistChat() {
         const tk = anonToken(m);
         const b = chainAppend({ type: "record", token: tk, note: `전자처방전 발행(${rxNo} · ${sel.hosp} ${sel.name}) — 3세대 활용 자산 편입` }); hash = b && b.hash;
         clmId = "CLM-" + Date.now().toString(36).toUpperCase();
-        const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id: clmId, at: Date.now(), status: "자동접수(진료 연동)" }); localStorage.setItem("hifin_claims", JSON.stringify(l));
+        const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id: clmId, at: Date.now(), status: "자동접수(진료 연동)", fee: (typeof INS_CONFIG !== "undefined" ? INS_CONFIG.TELE_VISIT_FEE : 15900), kind: "비대면 진료" }); localStorage.setItem("hifin_claims", JSON.stringify(l));   // 과업4: 진료비 기록 → ClaimEngine 지급 산정 근거
         const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); rl.push({ id: rxNo, med, doctor: sel.name, hosp: sel.hosp, at: Date.now(), status: "발급됨(약국 미전송)" }); localStorage.setItem("hifin_rx", JSON.stringify(rl));
         localStorage.setItem("hifin_medrem", JSON.stringify({ doctor: sel.name, hosp: sel.hosp, med, at: Date.now() }));
         vaultAccessLog(tk, "member", "원격진료 완료 — 전자처방전 발행 · 요약 자산화 · 보험 청구 자동 접수");
@@ -10503,7 +10507,10 @@ function DoctorChatModal({ q, onClose }) {
   const actRx = () => { if (ended) return; push("sys", `💊 전자처방전 발행 — ${DRC_MED[q.id] || "진료 판단 처방"} · 환자가 약국을 선택하면 암호화 전송됩니다(약사법 절차).`); if (typeof toast === "function") toast("💊 전자처방전 발행(의사 화면 시연)"); };
   const actLab = () => { if (ended) return; push("sys", "🧪 검사 의뢰서 발행 — 혈액검사·영상검사를 제휴 검진기관에 의뢰했습니다. 결과 도착 시 비대면 결과 설명으로 이어집니다."); if (typeof toast === "function") toast("🧪 검사 의뢰(의사 화면 시연)"); };
   const actVisit = () => { if (ended) return; push("sys", "🏥 내원 안내 — 우리 병원 정밀검사·대면 진료 예약을 환자에게 전송했습니다(비대면→내원 연계)."); if (typeof toast === "function") toast("🏥 내원 안내 전송"); };
-  const actEnd = () => { if (ended) return; setEnded(true); push("sys", "📋 진료 종료 — 진료 요약이 환자 데이터 금고(3세대 자산)로 전달되고 보험 청구가 자동 접수됩니다(청구 0단계). 복약·재진 리마인드는 하이가 이어받습니다."); if (typeof toast === "function") toast("📋 진료 요약 저장 · 청구 자동 접수(시연)"); };
+  const actEnd = () => { if (ended) return; setEnded(true);
+    // 과업4 P2-3: 의사콘솔 진료 종료 → 실제 청구 접수(카피가 아니라 hifin_claims 영속 — AIDoctor rxIssue와 동일 파이프라인)
+    try { const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id: "CLM-" + Date.now().toString(36).toUpperCase(), at: Date.now(), status: "자동접수(진료 연동)", fee: (typeof INS_CONFIG !== "undefined" ? INS_CONFIG.TELE_VISIT_FEE : 15900), kind: "비대면 진료(의사콘솔)", pt: q && q.name }, ); localStorage.setItem("hifin_claims", JSON.stringify(l)); if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `진료 종료 — 청구 자동 접수(의사콘솔 · ${(q && q.name) || "환자"})` }); } catch (e) {}
+    push("sys", "📋 진료 종료 — 진료 요약이 환자 데이터 금고(3세대 자산)로 전달되고 보험 청구가 자동 접수됐습니다(청구 0단계). 복약·재진 리마인드는 하이가 이어받습니다."); if (typeof toast === "function") toast("📋 진료 요약 저장 · 청구 자동 접수 완료"); };
   return (
     <div className="drc" onClick={onClose}>
       {video && <DoctorVideoModal q={q} onClose={() => setVideo(false)} msgs={msgs} onSend={(t) => send(t)} />}
@@ -15783,7 +15790,9 @@ function SocLiveCounter({ base }) {
     { ic: HeartHandshake, c: "#E11D48", label: "오늘 치료비 나눔", v: 1870000 + t * 5100, money: true },
     { ic: HeartHandshake, c: "#7C3AED", label: "오늘 어르신·아동 지원", v: 78000 + t * 260, money: true },
   ];
-  return (
+  // 과업4: 모델 추정(연출 카운터)과 SharingPool 실적립 원장을 라벨로 구분 병기 — 시뮬레이션 정직성
+  const sp = (typeof spSummary === "function") ? (() => { try { return spSummary(); } catch (e) { return null; } })() : null;
+  return (<>
     <div className="soclive">
       {items.map((it, i) => (
         <div className="soclive-c" key={i}>
@@ -15792,7 +15801,8 @@ function SocLiveCounter({ base }) {
         </div>
       ))}
     </div>
-  );
+    <div className="chnote" style={{ marginTop: 8 }}>위 카운터는 <b>재무 모델 추정(시연 연출)</b>이에요. 내 행동으로 실제 쌓인 <b>나눔 재원 실적립 원장</b>은 {sp && sp.count ? <b style={{ color: "#E11D48" }}>{sp.balance.toLocaleString()}원 · {sp.count}건</b> : "아직 0건"} — 보험·치료비 › 치료비·나눔 탭에서 건별로 확인·검증할 수 있어요.</div>
+  </>);
 }
 
 const SOC_CERTS = [
@@ -21180,6 +21190,7 @@ function pbPay(m, billId) {
   if (typeof vaultAccessLog === "function" && _pbToken(m)) vaultAccessLog(_pbToken(m), "수납 엔진", `보험료 수납 ${b.ym}`);
   // 축5 S1-1: 수납 발생 시 순환 마진의 30%를 나눔 재원에 건별 적립(연출 아님 — SharingPool 원장 tx)
   if (typeof spAppend === "function" && typeof INS_CONFIG !== "undefined") spAppend({ source: "보험료 수납 마진", amount: b.amount * INS_CONFIG.PREMIUM_MARGIN_RATE * INS_CONFIG.SHARE_RATE, ref: b.id, token: _pbToken(m) });
+  if (typeof notifPush === "function") notifPush({ ic: "coin", t: "보험료 수납 완료", d: `${b.product} ${b.ym} · ${b.amount.toLocaleString()}원 — 순환의 30%가 나눔 재원에 적립됐어요`, target: "insurance" });
   return { ok: true, bill: b, balance: r.balance, block };
 }
 
@@ -21229,6 +21240,10 @@ const INS_CONFIG = {
 
 function _isMember() { try { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (dm) return dm; if (typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") return selfMember(); } catch (e) {} return null; }
 
+/* ══ 실알림(과업4) — 수납·지급·재산정 이벤트가 알림센터에 실제로 쌓인다 ══ */
+function notifAll() { try { return JSON.parse(localStorage.getItem("hifin_notifs") || "[]"); } catch (e) { return []; } }
+function notifPush(o) { try { const l = notifAll(); l.unshift({ ts: Date.now(), ic: o.ic || "check", t: o.t || "알림", d: o.d || "", target: o.target || "insurance" }); localStorage.setItem("hifin_notifs", JSON.stringify(l.slice(0, 20))); } catch (e) {} }
+
 /* ══ SharingPool(S1-1 기초) — 나눔 재원 기금 원장: 거래 건별 적립 tx(연출 카운터 아님) ══ */
 function spLedger() { try { return JSON.parse(localStorage.getItem("hifin_sharing_pool") || "[]"); } catch (e) { return []; } }
 function spAppend(o) {
@@ -21275,6 +21290,7 @@ function claimPay(m, claimId) {
   c.status = "지급완료"; c.paidAt = Date.now(); c.payout = rv.payout; c.txRef = r.tx && r.tx.hash;
   _claimsSave(l);
   if (typeof chainAppend === "function") chainAppend({ type: "payout", token: (typeof anonToken === "function") ? anonToken(m) : null, fhirHash: c.txRef || null, note: `보험금 지급 실행 — ${c.id} · ${rv.payout.toLocaleString()}원 (${htk.toLocaleString()} HTK 크레딧)` });
+  notifPush({ ic: "coin", t: "보험금 지급 완료", d: `${c.id} · ${rv.payout.toLocaleString()}원이 지갑에 입금됐어요`, target: "insurance" });
   return { ok: true, claim: c, payout: rv.payout, htk, balance: r.balance };
 }
 
@@ -21309,6 +21325,7 @@ function rerateApplyReal(m) {
     if (typeof chainAppend === "function") chainAppend({ type: "record", token: tk, note: `보험요율 재산정 — 4세대 성과(${s.improved.join("·")}) 실증 · 월 ${c.before.toLocaleString()}→${c.after.toLocaleString()}원 인하` });
     try { const k = "hifin_g4_" + tk; const l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ kind: "rerate", saving: s.saving, improved: s.improved, at: s.at }); localStorage.setItem(k, JSON.stringify(l)); } catch (e2) {}
     if (typeof vaultAccessLog === "function") vaultAccessLog(tk, "보험사(요약 증명만)", "성과 요약 열람 — 요율 재산정 심사(원본 미제공)");
+    notifPush({ ic: "check", t: "요율 재산정 적용", d: `월 ${c.before.toLocaleString()}→${c.after.toLocaleString()}원 (−${c.pct}%) — 관리 성과가 보험료가 됐어요`, target: "insurance" });
     return { ok: true, state: s, compute: c };
   } catch (e) { return { ok: false, reason: "적용 저장 실패" }; }
 }
@@ -22016,6 +22033,9 @@ const AGENT_QNA = [
   { c: "action", k: "hi_lineage", p: ["자산계보", "계보보여", "계보설명", "세대자산", "세대형데이터", "데이터자산이뭐", "내자산계보"], a: "", tool: "lineage", b: [], nav: "mywallet", nx: [], lv: 1 },
   { c: "action", k: "hi_divi", p: ["배당보여", "배당내역", "데이터배당", "배당얼마", "배당받"], a: "", tool: "divi", b: [], nav: "mywallet", nx: [], lv: 1 },
   { c: "action", k: "hi_rerate", p: ["요율재산정", "재산정신청", "보험료재산정", "보험료깎", "보험료내려", "요율인하"], a: "", tool: "reratedo", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
+  /* ───────── Phase1 리뉴얼 — 보장 사다리·나눔 현황 (과업4 신설 툴) ───────── */
+  { c: "action", k: "hi_ladder", p: ["보장사다리", "실손부터", "실손우선", "실손없는데", "뭐부터가입", "기초보장", "사다리확인"], a: "", tool: "ladder", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
+  { c: "action", k: "hi_donate", p: ["나눔현황", "나눔재원", "치료비나눔", "기부현황", "30퍼센트어디", "나눔얼마"], a: "", tool: "donate", b: [], nav: "insurance", nx: [], lv: 1 },
   /* ───────── Phase 6 비대면진료 — 원격주치의 연결·제도 공시 ───────── */
   { c: "action", k: "hi_tele", p: ["원격진료연결", "원격진료해줘", "비대면진료연결", "비대면진료받", "의사연결해줘", "지금연결가능한의사", "전문의연결", "원격진료받고싶", "전문의상담열기", "비대면상담연결", "원격상담시작", "원격상담해줘", "원격상담연결", "화상상담시작"], a: "", tool: "teleprep", b: [], nav: "ai", nx: [], lv: 1, guard: "med" },
   { c: "action", k: "hi_tele_can", p: ["비대면으로뭐가가능", "비대면진료가능한", "원격으로처방", "비대면처방되", "원격진료뭐가돼", "비대면진료범위", "원격으로검사", "비대면가능행위"], a: "", tool: "telecan", b: [], nav: null, nx: [], lv: 1, guard: "med" },
@@ -22239,13 +22259,25 @@ const TOOL_RUN = {
     const d = ds[0];
     return { lines: [`${d.date}에 데이터 활용 배당 +${d.htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 ${d.gens.map((g) => g + "세대").join("·")} 자산이 「${d.study}」에 활용됐어요(${d.org} · 가명 요약만 제공).`, "내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가가 약속대로 돌아온 거예요. 동의·계보·접근 기록은 데이터 금고에서 전부 확인돼요."], buttons: ["내 자산 계보 보여줘"] };
   } catch (e) { return null; } },
-  // 요율 재산정 — 인하 전용 실행(이듬해 3월 장면)
+  // 요율 재산정 — 인하 전용 실행(과업4: insService 실지표 계산으로 재배선 — 고정값 경로 폐기)
   reratedo(m) { try {
     const st = (typeof rerateState === "function") ? rerateState() : { status: "none" };
     if (st.status === "done") return { lines: [`이미 재산정이 완료됐어요 — 월 ${st.before.toLocaleString()}원 → ${st.after.toLocaleString()}원(-${st.rate}%), 연 ${(st.saving * 12).toLocaleString()}원 절감이에요.`] };
-    if (!(typeof rerateEligible === "function" && rerateEligible(m))) return { lines: ["아직 재산정 자격 전이에요 — 재검진 데이터가 쌓여 지표 개선이 증명되면 제가 먼저 알려드릴게요. 인하 전용이라 손해 볼 일은 없어요."], buttons: ["검진결과 올리기"] };
-    const r = (typeof rerateApply === "function") ? rerateApply(m) : null; if (!r) return null;
-    return { lines: [`재산정 신청을 제출했어요 — 4세대 성과 증명(혈당·중성지방 개선)이 보험사에 요약으로만 전달됐고, 즉시 반영됐어요: 월 보험료 ${r.before.toLocaleString()}원 → ${r.after.toLocaleString()}원 (-${r.rate}% · 연 ${(r.saving * 12).toLocaleString()}원 절감).`, "보험료가 나이가 아니라 관리를 따라간 순간이에요. 기록은 블록체인·접근 이력에 남았어요."] };
+    const r = (typeof insService !== "undefined") ? insService.rerateApply(m) : null; if (!r) return null;
+    if (!r.ok) return { lines: [r.reason + " — 인하 전용이라 손해 볼 일은 없어요."], buttons: ["검진결과 올리기"] };
+    const s = r.state;
+    return { lines: [`재산정 신청을 제출했어요 — 실측 개선 지표(${(s.improved || []).join("·")})가 보험사에 요약으로만 전달됐고, 즉시 반영됐어요: 월 보험료 ${s.before.toLocaleString()}원 → ${s.after.toLocaleString()}원 (-${s.rate}% · 연 ${(s.saving * 12).toLocaleString()}원 절감).`, "보험료가 나이가 아니라 관리를 따라간 순간이에요. 기록은 블록체인·접근 이력에 남았어요."] };
+  } catch (e) { return null; } },
+  // 보장 사다리(과업4 신설) — 실손 확인 선행 → 미가입자 토큰 우선 충당 안내
+  ladder(m) { try {
+    const L = (typeof insService !== "undefined") ? insService.ladderCheck(m) : null; if (!L) return null;
+    return { lines: [L.note, L.stage === "silson-first" ? "보험·치료비 섹션 › 맞춤보험 탭에서 사다리 1단계(실손)부터 밟아보세요." : "맞춤보험 탭에서 예측 위험 기반 보장을 추천받을 수 있어요."], buttons: ["맞춤보험 열어줘"], nav: "insurance" };
+  } catch (e) { return null; } },
+  // 나눔 현황(과업4 신설) — SharingPool 실적립 원장
+  donate() { try {
+    const S = (typeof insService !== "undefined") ? insService.donateStatus() : null; if (!S) return null;
+    if (!S.count) return { lines: ["아직 나눔 재원 적립 내역이 없어요 — 보험료 납부나 건강쇼핑이 생기면 순환의 30%가 건별로 쌓이고, 여기서 바로 보여드려요."] };
+    return { lines: [`지금까지 나눔 재원에 ${S.balance.toLocaleString()}원(${S.count}건)이 건별 적립됐어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${v.toLocaleString()}원`).join(" · ")}.`, "치료비 사각지대 지원에 쓰이는 순환의 30% 몫이에요 — 집행은 제휴 재단 심사 후 투명 공개돼요."] };
   } catch (e) { return null; } },
   // 친구 초대(리퍼럴) — "친구 초대해줘" 한마디로 링크 생성·복사·공유까지(획득 채널 ⑥)
   refer(m) { try {
@@ -22619,7 +22651,10 @@ function careplanEarned(email) {
 /* 건강쇼핑 구매 적립(원) → 건강금융지갑 실제 반영 단일 소스. HTK 환산은 shopHtkPts() */
 function shopHtkKey(email) { return "hifin_shop_htk_" + (email || "default"); }
 function shopHtkWon(email) { try { return Number(JSON.parse(localStorage.getItem(shopHtkKey(email)) || "0")) || 0; } catch (e) { return 0; } }
-function shopHtkAdd(email, won) { try { const add = Math.max(0, Math.floor(won || 0)); const nx = shopHtkWon(email) + add; localStorage.setItem(shopHtkKey(email), JSON.stringify(nx)); if (add > 0 && typeof txAnchor === "function") txAnchor({ kind: "건강쇼핑 적립", amount: add, unit: "원", memo: "구매 리워드" }); return nx; } catch (e) { return 0; } }
+function shopHtkAdd(email, won) { try { const add = Math.max(0, Math.floor(won || 0)); const nx = shopHtkWon(email) + add; localStorage.setItem(shopHtkKey(email), JSON.stringify(nx)); if (add > 0 && typeof txAnchor === "function") txAnchor({ kind: "건강쇼핑 적립", amount: add, unit: "원", memo: "구매 리워드" });
+  // 과업4 축5: 커머스 순환의 나눔 몫 — 적립(add)=마진의 50%(WALLET_SPLIT.earn) 정의에서 마진 역산 → 마진×30%(give)를 SharingPool에 건별 적립
+  if (add > 0 && typeof spAppend === "function" && typeof WALLET_SPLIT !== "undefined") spAppend({ source: "건강쇼핑 마진", amount: add / (WALLET_SPLIT.earn / 100) * (WALLET_SPLIT.give / 100), ref: "shop-" + Date.now().toString(36) });
+  return nx; } catch (e) { return 0; } }
 function shopHtkPts(email) { const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10; return Math.floor(shopHtkWon(email) / rate); }
 /* ── ③ 관계레이어 — 회원 상태 → 진료·검진·영양·기기·식단·제도 ‘필요성’ 구조화 도출 ── */
 function buildCarePlan(m) {

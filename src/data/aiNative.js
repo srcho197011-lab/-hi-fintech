@@ -205,13 +205,25 @@ const TOOL_RUN = {
     const d = ds[0];
     return { lines: [`${d.date}에 데이터 활용 배당 +${d.htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 ${d.gens.map((g) => g + "세대").join("·")} 자산이 「${d.study}」에 활용됐어요(${d.org} · 가명 요약만 제공).`, "내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가가 약속대로 돌아온 거예요. 동의·계보·접근 기록은 데이터 금고에서 전부 확인돼요."], buttons: ["내 자산 계보 보여줘"] };
   } catch (e) { return null; } },
-  // 요율 재산정 — 인하 전용 실행(이듬해 3월 장면)
+  // 요율 재산정 — 인하 전용 실행(과업4: insService 실지표 계산으로 재배선 — 고정값 경로 폐기)
   reratedo(m) { try {
     const st = (typeof rerateState === "function") ? rerateState() : { status: "none" };
     if (st.status === "done") return { lines: [`이미 재산정이 완료됐어요 — 월 ${st.before.toLocaleString()}원 → ${st.after.toLocaleString()}원(-${st.rate}%), 연 ${(st.saving * 12).toLocaleString()}원 절감이에요.`] };
-    if (!(typeof rerateEligible === "function" && rerateEligible(m))) return { lines: ["아직 재산정 자격 전이에요 — 재검진 데이터가 쌓여 지표 개선이 증명되면 제가 먼저 알려드릴게요. 인하 전용이라 손해 볼 일은 없어요."], buttons: ["검진결과 올리기"] };
-    const r = (typeof rerateApply === "function") ? rerateApply(m) : null; if (!r) return null;
-    return { lines: [`재산정 신청을 제출했어요 — 4세대 성과 증명(혈당·중성지방 개선)이 보험사에 요약으로만 전달됐고, 즉시 반영됐어요: 월 보험료 ${r.before.toLocaleString()}원 → ${r.after.toLocaleString()}원 (-${r.rate}% · 연 ${(r.saving * 12).toLocaleString()}원 절감).`, "보험료가 나이가 아니라 관리를 따라간 순간이에요. 기록은 블록체인·접근 이력에 남았어요."] };
+    const r = (typeof insService !== "undefined") ? insService.rerateApply(m) : null; if (!r) return null;
+    if (!r.ok) return { lines: [r.reason + " — 인하 전용이라 손해 볼 일은 없어요."], buttons: ["검진결과 올리기"] };
+    const s = r.state;
+    return { lines: [`재산정 신청을 제출했어요 — 실측 개선 지표(${(s.improved || []).join("·")})가 보험사에 요약으로만 전달됐고, 즉시 반영됐어요: 월 보험료 ${s.before.toLocaleString()}원 → ${s.after.toLocaleString()}원 (-${s.rate}% · 연 ${(s.saving * 12).toLocaleString()}원 절감).`, "보험료가 나이가 아니라 관리를 따라간 순간이에요. 기록은 블록체인·접근 이력에 남았어요."] };
+  } catch (e) { return null; } },
+  // 보장 사다리(과업4 신설) — 실손 확인 선행 → 미가입자 토큰 우선 충당 안내
+  ladder(m) { try {
+    const L = (typeof insService !== "undefined") ? insService.ladderCheck(m) : null; if (!L) return null;
+    return { lines: [L.note, L.stage === "silson-first" ? "보험·치료비 섹션 › 맞춤보험 탭에서 사다리 1단계(실손)부터 밟아보세요." : "맞춤보험 탭에서 예측 위험 기반 보장을 추천받을 수 있어요."], buttons: ["맞춤보험 열어줘"], nav: "insurance" };
+  } catch (e) { return null; } },
+  // 나눔 현황(과업4 신설) — SharingPool 실적립 원장
+  donate() { try {
+    const S = (typeof insService !== "undefined") ? insService.donateStatus() : null; if (!S) return null;
+    if (!S.count) return { lines: ["아직 나눔 재원 적립 내역이 없어요 — 보험료 납부나 건강쇼핑이 생기면 순환의 30%가 건별로 쌓이고, 여기서 바로 보여드려요."] };
+    return { lines: [`지금까지 나눔 재원에 ${S.balance.toLocaleString()}원(${S.count}건)이 건별 적립됐어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${v.toLocaleString()}원`).join(" · ")}.`, "치료비 사각지대 지원에 쓰이는 순환의 30% 몫이에요 — 집행은 제휴 재단 심사 후 투명 공개돼요."] };
   } catch (e) { return null; } },
   // 친구 초대(리퍼럴) — "친구 초대해줘" 한마디로 링크 생성·복사·공유까지(획득 채널 ⑥)
   refer(m) { try {

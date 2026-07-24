@@ -20,6 +20,10 @@ const INS_CONFIG = {
 
 function _isMember() { try { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (dm) return dm; if (typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") return selfMember(); } catch (e) {} return null; }
 
+/* ══ 실알림(과업4) — 수납·지급·재산정 이벤트가 알림센터에 실제로 쌓인다 ══ */
+function notifAll() { try { return JSON.parse(localStorage.getItem("hifin_notifs") || "[]"); } catch (e) { return []; } }
+function notifPush(o) { try { const l = notifAll(); l.unshift({ ts: Date.now(), ic: o.ic || "check", t: o.t || "알림", d: o.d || "", target: o.target || "insurance" }); localStorage.setItem("hifin_notifs", JSON.stringify(l.slice(0, 20))); } catch (e) {} }
+
 /* ══ SharingPool(S1-1 기초) — 나눔 재원 기금 원장: 거래 건별 적립 tx(연출 카운터 아님) ══ */
 function spLedger() { try { return JSON.parse(localStorage.getItem("hifin_sharing_pool") || "[]"); } catch (e) { return []; } }
 function spAppend(o) {
@@ -66,6 +70,7 @@ function claimPay(m, claimId) {
   c.status = "지급완료"; c.paidAt = Date.now(); c.payout = rv.payout; c.txRef = r.tx && r.tx.hash;
   _claimsSave(l);
   if (typeof chainAppend === "function") chainAppend({ type: "payout", token: (typeof anonToken === "function") ? anonToken(m) : null, fhirHash: c.txRef || null, note: `보험금 지급 실행 — ${c.id} · ${rv.payout.toLocaleString()}원 (${htk.toLocaleString()} HTK 크레딧)` });
+  notifPush({ ic: "coin", t: "보험금 지급 완료", d: `${c.id} · ${rv.payout.toLocaleString()}원이 지갑에 입금됐어요`, target: "insurance" });
   return { ok: true, claim: c, payout: rv.payout, htk, balance: r.balance };
 }
 
@@ -100,6 +105,7 @@ function rerateApplyReal(m) {
     if (typeof chainAppend === "function") chainAppend({ type: "record", token: tk, note: `보험요율 재산정 — 4세대 성과(${s.improved.join("·")}) 실증 · 월 ${c.before.toLocaleString()}→${c.after.toLocaleString()}원 인하` });
     try { const k = "hifin_g4_" + tk; const l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ kind: "rerate", saving: s.saving, improved: s.improved, at: s.at }); localStorage.setItem(k, JSON.stringify(l)); } catch (e2) {}
     if (typeof vaultAccessLog === "function") vaultAccessLog(tk, "보험사(요약 증명만)", "성과 요약 열람 — 요율 재산정 심사(원본 미제공)");
+    notifPush({ ic: "check", t: "요율 재산정 적용", d: `월 ${c.before.toLocaleString()}→${c.after.toLocaleString()}원 (−${c.pct}%) — 관리 성과가 보험료가 됐어요`, target: "insurance" });
     return { ok: true, state: s, compute: c };
   } catch (e) { return { ok: false, reason: "적용 저장 실패" }; }
 }

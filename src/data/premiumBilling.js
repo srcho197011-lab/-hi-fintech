@@ -89,6 +89,7 @@ function pbPay(m, billId) {
   if (typeof vaultAccessLog === "function" && _pbToken(m)) vaultAccessLog(_pbToken(m), "수납 엔진", `보험료 수납 ${b.ym}`);
   // 축5 S1-1: 수납 발생 시 순환 마진의 30%를 나눔 재원에 건별 적립(연출 아님 — SharingPool 원장 tx)
   if (typeof spAppend === "function" && typeof INS_CONFIG !== "undefined") spAppend({ source: "보험료 수납 마진", amount: b.amount * INS_CONFIG.PREMIUM_MARGIN_RATE * INS_CONFIG.SHARE_RATE, ref: b.id, token: _pbToken(m) });
+  if (typeof notifPush === "function") notifPush({ ic: "coin", t: "보험료 수납 완료", d: `${b.product} ${b.ym} · ${b.amount.toLocaleString()}원 — 순환의 30%가 나눔 재원에 적립됐어요`, target: "insurance" });
   return { ok: true, bill: b, balance: r.balance, block };
 }
 

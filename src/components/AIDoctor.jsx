@@ -1116,7 +1116,7 @@ function SpecialistChat() {
         const tk = anonToken(m);
         const b = chainAppend({ type: "record", token: tk, note: `전자처방전 발행(${rxNo} · ${sel.hosp} ${sel.name}) — 3세대 활용 자산 편입` }); hash = b && b.hash;
         clmId = "CLM-" + Date.now().toString(36).toUpperCase();
-        const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id: clmId, at: Date.now(), status: "자동접수(진료 연동)" }); localStorage.setItem("hifin_claims", JSON.stringify(l));
+        const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id: clmId, at: Date.now(), status: "자동접수(진료 연동)", fee: (typeof INS_CONFIG !== "undefined" ? INS_CONFIG.TELE_VISIT_FEE : 15900), kind: "비대면 진료" }); localStorage.setItem("hifin_claims", JSON.stringify(l));   // 과업4: 진료비 기록 → ClaimEngine 지급 산정 근거
         const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); rl.push({ id: rxNo, med, doctor: sel.name, hosp: sel.hosp, at: Date.now(), status: "발급됨(약국 미전송)" }); localStorage.setItem("hifin_rx", JSON.stringify(rl));
         localStorage.setItem("hifin_medrem", JSON.stringify({ doctor: sel.name, hosp: sel.hosp, med, at: Date.now() }));
         vaultAccessLog(tk, "member", "원격진료 완료 — 전자처방전 발행 · 요약 자산화 · 보험 청구 자동 접수");

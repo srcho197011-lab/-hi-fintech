@@ -117,13 +117,17 @@ export default function App() {
         </div>
         <div className="tr">
           {typeof TrustBadge === "function" && <TrustBadge onGo={goSec} />}
-          <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">3</span></button>
+          <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">{((typeof notifAll === "function" ? notifAll().length : 0) + HDR_NOTI.length)}</span></button>
           <button className={`ibtn ${hdr === "msg" ? "on" : ""}`} onClick={() => setHdr((h) => h === "msg" ? null : "msg")} aria-label="메시지"><MessageSquare size={21} /></button>
           <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "체험 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
           {hdr && <><div className="hdrov" onClick={() => setHdr(null)} />
             <div className="hdrdrop">
               {hdr === "noti" && <>
-                <div className="dh">알림 <span className="cnt">3건</span></div>
+                <div className="dh">알림 <span className="cnt">{((typeof notifAll === "function" ? notifAll().length : 0) + HDR_NOTI.length)}건</span></div>
+                {/* 과업4: 수납·지급·재산정 실이벤트 알림(원장 연동) — 정적 안내 알림 위에 최신순 병합 */}
+                {(typeof notifAll === "function" ? notifAll() : []).slice(0, 5).map((n, i) => (
+                  <div className="ni" key={"r" + i} onClick={() => goSec(n.target)}><span className="ic"><Art name={n.ic} size={18} /></span><div><b>{n.t}</b><p>{n.d}</p><span className="tm">{new Date(n.ts).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span></div></div>
+                ))}
                 {HDR_NOTI.map(([ic, t, d, tm, target], i) => (
                   <div className="ni" key={i} onClick={() => goSec(target)}><span className="ic"><Art name={ic} size={18} /></span><div><b>{t}</b><p>{d}</p><span className="tm">{tm}</span></div></div>
                 ))}

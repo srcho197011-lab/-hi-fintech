@@ -68,7 +68,9 @@ function SocLiveCounter({ base }) {
     { ic: HeartHandshake, c: "#E11D48", label: "오늘 치료비 나눔", v: 1870000 + t * 5100, money: true },
     { ic: HeartHandshake, c: "#7C3AED", label: "오늘 어르신·아동 지원", v: 78000 + t * 260, money: true },
   ];
-  return (
+  // 과업4: 모델 추정(연출 카운터)과 SharingPool 실적립 원장을 라벨로 구분 병기 — 시뮬레이션 정직성
+  const sp = (typeof spSummary === "function") ? (() => { try { return spSummary(); } catch (e) { return null; } })() : null;
+  return (<>
     <div className="soclive">
       {items.map((it, i) => (
         <div className="soclive-c" key={i}>
@@ -77,7 +79,8 @@ function SocLiveCounter({ base }) {
         </div>
       ))}
     </div>
-  );
+    <div className="chnote" style={{ marginTop: 8 }}>위 카운터는 <b>재무 모델 추정(시연 연출)</b>이에요. 내 행동으로 실제 쌓인 <b>나눔 재원 실적립 원장</b>은 {sp && sp.count ? <b style={{ color: "#E11D48" }}>{sp.balance.toLocaleString()}원 · {sp.count}건</b> : "아직 0건"} — 보험·치료비 › 치료비·나눔 탭에서 건별로 확인·검증할 수 있어요.</div>
+  </>);
 }
 
 const SOC_CERTS = [

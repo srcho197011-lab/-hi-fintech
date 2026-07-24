@@ -135,7 +135,10 @@ function DoctorChatModal({ q, onClose }) {
   const actRx = () => { if (ended) return; push("sys", `💊 전자처방전 발행 — ${DRC_MED[q.id] || "진료 판단 처방"} · 환자가 약국을 선택하면 암호화 전송됩니다(약사법 절차).`); if (typeof toast === "function") toast("💊 전자처방전 발행(의사 화면 시연)"); };
   const actLab = () => { if (ended) return; push("sys", "🧪 검사 의뢰서 발행 — 혈액검사·영상검사를 제휴 검진기관에 의뢰했습니다. 결과 도착 시 비대면 결과 설명으로 이어집니다."); if (typeof toast === "function") toast("🧪 검사 의뢰(의사 화면 시연)"); };
   const actVisit = () => { if (ended) return; push("sys", "🏥 내원 안내 — 우리 병원 정밀검사·대면 진료 예약을 환자에게 전송했습니다(비대면→내원 연계)."); if (typeof toast === "function") toast("🏥 내원 안내 전송"); };
-  const actEnd = () => { if (ended) return; setEnded(true); push("sys", "📋 진료 종료 — 진료 요약이 환자 데이터 금고(3세대 자산)로 전달되고 보험 청구가 자동 접수됩니다(청구 0단계). 복약·재진 리마인드는 하이가 이어받습니다."); if (typeof toast === "function") toast("📋 진료 요약 저장 · 청구 자동 접수(시연)"); };
+  const actEnd = () => { if (ended) return; setEnded(true);
+    // 과업4 P2-3: 의사콘솔 진료 종료 → 실제 청구 접수(카피가 아니라 hifin_claims 영속 — AIDoctor rxIssue와 동일 파이프라인)
+    try { const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id: "CLM-" + Date.now().toString(36).toUpperCase(), at: Date.now(), status: "자동접수(진료 연동)", fee: (typeof INS_CONFIG !== "undefined" ? INS_CONFIG.TELE_VISIT_FEE : 15900), kind: "비대면 진료(의사콘솔)", pt: q && q.name }, ); localStorage.setItem("hifin_claims", JSON.stringify(l)); if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `진료 종료 — 청구 자동 접수(의사콘솔 · ${(q && q.name) || "환자"})` }); } catch (e) {}
+    push("sys", "📋 진료 종료 — 진료 요약이 환자 데이터 금고(3세대 자산)로 전달되고 보험 청구가 자동 접수됐습니다(청구 0단계). 복약·재진 리마인드는 하이가 이어받습니다."); if (typeof toast === "function") toast("📋 진료 요약 저장 · 청구 자동 접수 완료"); };
   return (
     <div className="drc" onClick={onClose}>
       {video && <DoctorVideoModal q={q} onClose={() => setVideo(false)} msgs={msgs} onSend={(t) => send(t)} />}

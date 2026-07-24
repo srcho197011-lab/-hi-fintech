@@ -110,7 +110,10 @@ function careplanEarned(email) {
 /* 건강쇼핑 구매 적립(원) → 건강금융지갑 실제 반영 단일 소스. HTK 환산은 shopHtkPts() */
 function shopHtkKey(email) { return "hifin_shop_htk_" + (email || "default"); }
 function shopHtkWon(email) { try { return Number(JSON.parse(localStorage.getItem(shopHtkKey(email)) || "0")) || 0; } catch (e) { return 0; } }
-function shopHtkAdd(email, won) { try { const add = Math.max(0, Math.floor(won || 0)); const nx = shopHtkWon(email) + add; localStorage.setItem(shopHtkKey(email), JSON.stringify(nx)); if (add > 0 && typeof txAnchor === "function") txAnchor({ kind: "건강쇼핑 적립", amount: add, unit: "원", memo: "구매 리워드" }); return nx; } catch (e) { return 0; } }
+function shopHtkAdd(email, won) { try { const add = Math.max(0, Math.floor(won || 0)); const nx = shopHtkWon(email) + add; localStorage.setItem(shopHtkKey(email), JSON.stringify(nx)); if (add > 0 && typeof txAnchor === "function") txAnchor({ kind: "건강쇼핑 적립", amount: add, unit: "원", memo: "구매 리워드" });
+  // 과업4 축5: 커머스 순환의 나눔 몫 — 적립(add)=마진의 50%(WALLET_SPLIT.earn) 정의에서 마진 역산 → 마진×30%(give)를 SharingPool에 건별 적립
+  if (add > 0 && typeof spAppend === "function" && typeof WALLET_SPLIT !== "undefined") spAppend({ source: "건강쇼핑 마진", amount: add / (WALLET_SPLIT.earn / 100) * (WALLET_SPLIT.give / 100), ref: "shop-" + Date.now().toString(36) });
+  return nx; } catch (e) { return 0; } }
 function shopHtkPts(email) { const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10; return Math.floor(shopHtkWon(email) / rate); }
 /* ── ③ 관계레이어 — 회원 상태 → 진료·검진·영양·기기·식단·제도 ‘필요성’ 구조화 도출 ── */
 function buildCarePlan(m) {
