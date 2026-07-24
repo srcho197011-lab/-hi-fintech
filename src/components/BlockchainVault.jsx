@@ -118,13 +118,17 @@ function HtkTokenLedger({ member, base }) {
   const [to, setTo] = useState("");
   const [tAmt, setTAmt] = useState("");
   const [sAmt, setSAmt] = useState("");
+  const [vres, setVres] = useState(null);            // C1-1: 원장 전건 검증 결과
   void tick;
   if (!member) return <div className="chnote">로그인 후 이용 가능한 온체인 토큰 지갑입니다.</div>;
   const addr = (typeof htkTokenAddr === "function") ? htkTokenAddr(member) : "0x…";
   const delta = (typeof htkDelta === "function") ? htkDelta(member) : 0;
-  const bal = Math.max(0, (base || 0) + delta);
-  const led = (typeof htkLedger === "function") ? htkLedger(member) : [];
+  // C1-1 TokenLedger: 잔액 = Σ트랜잭션. 원장 미영속 환경만 레거시(base+delta) 폴백.
+  const tlBal = (typeof tlSync === "function") ? (() => { try { return tlSync(member); } catch (e) { return null; } })() : null;
+  const bal = (tlBal != null) ? tlBal : Math.max(0, (base || 0) + delta);
+  const led = (typeof tlAll === "function") ? tlAll(member) : [];
   const H = (h, n) => (h || "").slice(0, n || 12) + "…";
+  const doVerify = () => { const r = (typeof tlVerify === "function") ? tlVerify(member) : null; setVres(r); if (typeof toast === "function" && r) toast(r.ok ? `원장 검증 완료 — ${r.n}건 전건 무결 ✓` : `⚠️ 위변조 감지: ${r.reason}`); };
   const doTransfer = () => { const a = parseInt(tAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("전송할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkTransfer === "function") htkTransfer(member, to || "0x수신주소", a); setTAmt(""); setTo(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`온체인 전송 완료 · ${a.toLocaleString()} HTK`); };
   const doSwap = () => { const a = parseInt(sAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("스왑할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkSwap === "function") htkSwap(member, "HTK", "보험·치료비 크레딧", a); setSAmt(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`스왑 완료 · ${a.toLocaleString()} HTK → 보험·치료비 크레딧`); };
   return (
@@ -146,11 +150,12 @@ function HtkTokenLedger({ member, base }) {
           <div className="htk-hint">1 HTK → 1 크레딧 (보험료·의료비 결제 전용)</div>
         </div>
       </div>
-      <div className="htk-lhd">온체인 트랜잭션 원장 <span>({led.length}건 · 블록체인 기록)</span></div>
-      <div className="htk-ledger">{led.slice().reverse().map((b) => (
-        <div className="htk-tx" key={b.idx}><span className="htk-txk">{/스왑/.test(b.note) ? "스왑" : "전송"}</span><span className="htk-txn">{b.note}</span><code className="htk-txh">{H(b.hash, 10)}</code></div>
-      ))}{!led.length && <div className="htk-empty">아직 온체인 거래가 없어요. 전송·스왑하면 블록체인에 기록됩니다.</div>}</div>
-      <div className="chnote" style={{ marginTop: 10 }}>※ 시연용 온체인 원장(프라이빗 체인 시뮬). HTK는 건강활동·소비 보상 유틸리티 토큰으로 전송·스왑·정산이 블록체인에 기록되며, 실제 발행·상장·환금성은 관련 법령(가상자산·전자금융 등) 검토와 정식 절차를 전제로 합니다.</div>
+      <div className="htk-lhd">HTK 트랜잭션 원장 <span>({led.length}건 · 잔액 = 전체 거래 합산)</span><button className="htk-btn" style={{ marginLeft: "auto", fontSize: 11.5, padding: "4px 10px" }} onClick={doVerify}>원장 검증</button></div>
+      {vres && <div className={"bcv-verdict" + (vres.ok ? " ok" : " bad")} style={{ marginBottom: 8 }}>{vres.ok ? <Check size={14} /> : <X size={14} />} {vres.ok ? `전건 무결 ✓ — 트랜잭션 ${vres.n}건의 연결 해시·내용 해시·잔액을 재계산해 대조했습니다 (재구성 잔액 ${vres.balance.toLocaleString()} HTK)` : `위변조 감지 — #${vres.at}: ${vres.reason}`}</div>}
+      <div className="htk-ledger">{led.slice().reverse().map((t) => (
+        <div className="htk-tx" key={t.seq}><span className="htk-txk">{(typeof tlTypeLabel === "function") ? tlTypeLabel(t.type) : t.type}</span><span className="htk-txn">{t.memo || t.type}<b style={{ marginLeft: 6, color: (({ genesis: 1, earn: 1 })[t.type]) ? "#16A34A" : "#E11D48" }}>{(({ genesis: 1, earn: 1 })[t.type]) ? "+" : "−"}{t.amount.toLocaleString()}</b></span><code className="htk-txh">{H(t.hash, 10)}</code></div>
+      ))}{!led.length && <div className="htk-empty">아직 원장 거래가 없어요. 전송·스왑하면 트랜잭션이 기록됩니다.</div>}</div>
+      <div className="chnote" style={{ marginTop: 10 }}>※ 시연용 로컬 원장(프라이빗 체인 시뮬). 잔액은 숫자 카운터가 아니라 <b>건별 트랜잭션 합산</b>으로 재구성되며, 차감은 잔액 검증을 통과해야만 기록됩니다(이중지불 차단). 이자·배당 유형은 원장에 정의되어 있지 않습니다(증권성 차단). 실제 발행·상장·환금성은 관련 법령(가상자산·전자금융 등) 검토와 정식 절차를 전제로 합니다.</div>
     </div>
   );
 }

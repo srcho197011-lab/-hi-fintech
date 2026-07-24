@@ -11,7 +11,9 @@ function WalletSection({ onGo }) {
   const cpPts = (dm && typeof careplanEarned === "function") ? careplanEarned(dm.email) : 0;
   const shopPts = (typeof shopHtkPts === "function") ? shopHtkPts(dm ? dm.email : "default") : 0;
   const shopWonBal = (typeof shopHtkWon === "function") ? shopHtkWon(dm ? dm.email : "default") : 0;
-  const total = WALLET.total + cpPts + shopPts;
+  // C1-1 TokenLedger: 잔액 = Σ트랜잭션(단일 원장). 원장 미영속 환경(쓰기가드)만 레거시 합산 폴백.
+  const ledgerBal = (dm && typeof tlSync === "function") ? (() => { try { return tlSync(dm); } catch (e) { return null; } })() : null;
+  const total = (ledgerBal != null) ? ledgerBal : WALLET.total + cpPts + shopPts;
   const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(total) : Math.floor(total * 0.30);
   const genRes = total - insRes;
   const insPct = (typeof HTK_INS_RATE !== "undefined") ? Math.round(HTK_INS_RATE * 100) : 30;
