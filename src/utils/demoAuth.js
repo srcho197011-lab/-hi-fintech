@@ -38,7 +38,7 @@ function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if 
    ⚠️ 백엔드 없는 데모: 서버 토큰/API 403을 프론트 등가(세션 role + 라우트 가드 + 데이터 스코프 필터)로 구현.
    정식 서버 도입 시 이 role/scope 계층을 그대로 백엔드 미들웨어로 이관. */
 /* 승인된 관리자(전체보기) 계정 — 데모용 임시. ⚠️ 정식 론칭 전 폐기 목록 등록. 설정으로 분리(코드 하드코딩 지양). */
-const AUTH_ADMIN = { id: "hifin", pw: "hifin01" };   // TODO(론칭전 폐기): 환경변수/설정으로 이관
+const AUTH_ADMIN = { id: "hifin", pw: "hifin002" };   // 콘텐츠 보호(2026-07-24): 비밀번호 교체, 이 계정만 로그인 허용. TODO(론칭전 폐기): 환경변수/설정으로 이관
 function authRole() { const a = authCurrent(); if (!a) return null; return a.role || "ADMIN"; }  // 레거시 세션(role 없음)=관리자
 function isAdminRole() { return authRole() === "ADMIN"; }
 function isGuestRole() { return authRole() === "GUEST"; }

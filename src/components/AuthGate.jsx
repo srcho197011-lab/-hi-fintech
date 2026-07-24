@@ -33,8 +33,9 @@ function AuthLogin() {
     setErr("");
     const ms = (typeof loginLockedMs === "function") ? loginLockedMs() : 0;
     if (ms > 0) { setLockMs(ms); setErr(`로그인이 잠겼습니다. 약 ${Math.ceil(ms / 60000)}분 후 다시 시도해 주세요.`); return; }
-    if (typeof adminLogin === "function" && adminLogin(uid.trim(), pw)) return;      // ADMIN(전체보기)
-    if (typeof memberLogin === "function" && memberLogin(uid.trim(), pw)) return;    // MEMBER(데모 계정)
+    if (typeof adminLogin === "function" && adminLogin(uid.trim(), pw)) return;      // ADMIN(전체보기) — 콘텐츠 보호(2026-07-24): 이 계정만 허용
+    // 콘텐츠 보호(2026-07-24): 데모 회원(MEMBER) 로그인 경로 차단 — memberLogin 호출 중단(재개 시 아래 주석 해제)
+    // if (typeof memberLogin === "function" && memberLogin(uid.trim(), pw)) return;    // MEMBER(데모 계정)
     if (typeof loginRecordFail === "function") loginRecordFail();
     const nowLock = (typeof loginLockedMs === "function") ? loginLockedMs() : 0;
     if (nowLock > 0) { setLockMs(nowLock); setErr("로그인 5회 실패 — 10분간 접속이 잠겼습니다."); }
