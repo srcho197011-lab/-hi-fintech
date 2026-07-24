@@ -53,6 +53,7 @@ src/data/healthDataVault.js
 src/data/lineageBridge.js
 src/data/blockchainAnchor.js
 src/data/tokenLedger.js
+src/data/regGate.js
 src/data/ocrEngine.js
 src/data/finModel.js
 src/data/referral.js

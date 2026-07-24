@@ -20465,9 +20465,10 @@ function txAnchor(o) {
 function htkTokenAddr(member) { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return "0x" + vaultHash("htk-addr|" + t).slice(0, 16); }
 function htkDelta(member) { try { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return Number(JSON.parse(localStorage.getItem("hifin_htkbal_" + t) || "0")) || 0; } catch (e) { return 0; } }
 function _htkAdjust(member, d) { try { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; localStorage.setItem("hifin_htkbal_" + t, JSON.stringify(htkDelta(member) + d)); } catch (e) {} }
-/* C1-1: 차감은 TokenLedger(단일 원장) 검증을 먼저 통과해야 실행 — 이중지불·음수 잔액 차단. 레거시 델타는 무중단 병행. */
-function htkTransfer(member, to, amount, memo) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof tlSpend === "function") { const r = tlSpend(member, amount, "전송 → " + (to || "0x…") + (memo ? " · " + memo : ""), "transfer"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 전송", amount, memo: "→ " + (to || "0x…") + (memo ? " · " + memo : "") }); }
-function htkSwap(member, from, to, amount) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof tlSpend === "function") { const r = tlSpend(member, amount, (from || "HTK") + " → " + (to || "보험·치료비 크레딧"), "swap"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 스왑", amount, memo: (from || "HTK") + " → " + (to || "보험·치료비 크레딧") }); }
+/* C1-1: 차감은 TokenLedger(단일 원장) 검증을 먼저 통과해야 실행 — 이중지불·음수 잔액 차단. 레거시 델타는 무중단 병행.
+   C1-2: 현금성 목적지(현금·원화·출금·스테이블 등)는 RegGate(폐쇄형·시행일 동기화)가 코드로 차단. */
+function htkTransfer(member, to, amount, memo) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "") + " " + String(memo || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, "전송 → " + (to || "0x…") + (memo ? " · " + memo : ""), "transfer"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 전송", amount, memo: "→ " + (to || "0x…") + (memo ? " · " + memo : "") }); }
+function htkSwap(member, from, to, amount) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, (from || "HTK") + " → " + (to || "보험·치료비 크레딧"), "swap"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 스왑", amount, memo: (from || "HTK") + " → " + (to || "보험·치료비 크레딧") }); }
 function htkLedger(member) { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return (typeof chainForToken === "function") ? chainForToken(t).filter((b) => b.type === "swap") : []; }
 
 /* 위변조 시뮬: 회원 값이 바뀌면 leaf가 달라져 같은 proof·root로 검증 실패 */
@@ -20571,6 +20572,71 @@ function tlVerify(m) {
     prev = t.hash;
   }
   return { ok: true, n: arr.length, balance: bal };
+}
+
+/* ══════════════ C1-2 RegGate — 규제 시행일 동기화 기능 게이트 ══════════════
+   진단 보고서(HIFIN-AUDIT-INS-20260724) 축3 C1-2 구현. (사업계획서 원칙5 · IDF-14의 코드 실체화)
+   문제: "폐쇄형 HTK·법제화 후 도입·L3 우선"이 전부 UI 문구였고 기능 게이팅 조건문이 0건.
+   해결: 규제 민감 기능 4종을 중앙 게이트로 등록하고, 호출부가 반드시 게이트 판정을 통과해야 실행.
+   원칙:
+   - live(실운영) 전환은 근거 법령 시행일이 코드로 확인돼야만 가능 — 시행일 미확정/미도래면 관리자 override로도 불가(하드 플로어).
+   - 시행일이 도래하면 재배포 없이 자동 개방 판정(시행일 동기화) — IDF-14 "재배포 없이 일괄 전환".
+   - 법제 확정 전에는 simulation 모드만 허용(가드레일 ⓒ) — UI에 시뮬레이션임을 상시 표기.
+   - 배당·이자는 게이트 이전에 TokenLedger 화이트리스트에서 유형 자체가 없음(가드레일 ⓗ) — 이 게이트는 그 위의 2차 방어선. */
+
+/* ── 게이트 정의(기본값) — 외부 환경 확인 2026-07: 디지털자산기본법 2단계 입법 협의 중 · 토큰증권 2027-02-04 시행 예정 ── */
+const REG_GATE_DEFS = {
+  closedLoop: { title: "폐쇄형 HTK — 현금 교환·출금 차단", law: "가상자산이용자보호법 정합 · 디지털자산기본법(협의 중)", mode: "locked", effectiveDate: null,
+    note: "HTK의 현금 인출·환전·원화 전환 경로를 코드로 차단합니다. 법제 확정 전 고정." },
+  stablecoin: { title: "스테이블코인 정산(보험료·보험금)", law: "디지털자산기본법 2단계(스테이블 발행·유통 규율 — 입법 협의 중)", mode: "simulation", effectiveDate: null,
+    note: "법제 확정 전에는 시뮬레이션 모드만 — 실자금 정산 경로 차단." },
+  sto: { title: "배당·토큰증권(STO) 트랙", law: "토큰증권 제도(자본시장법·전자증권법 개정 — 2027-02-04 시행 예정)", mode: "off", effectiveDate: "2027-02-04",
+    note: "데이터 배당의 증권형 분배는 STO 트랙으로 분리 — 시행일 도래+발행 절차 전 개방 불가." },
+  openChain: { title: "개방형 체인·코인 발행(L3)", law: "디지털자산기본법 + 코인 발행 6조건(백서·사업계획서)", mode: "off", effectiveDate: null,
+    note: "L3 앱체인 우선 전략 — 법제 확정과 6조건 충족 전 차단." },
+};
+
+/* ── 관리자 운영 모드 저장(override) — live 하드 플로어는 regGateAllowed에서 별도 강제 ── */
+function _rgOverrides() { try { return JSON.parse(localStorage.getItem("hifin_reggate") || "{}"); } catch (e) { return {}; } }
+function regGateState(key) {
+  const def = REG_GATE_DEFS[key]; if (!def) return null;
+  const ov = _rgOverrides()[key] || {};
+  return Object.assign({ key }, def, ov.mode ? { mode: ov.mode, overridden: true } : {});
+}
+function regGateAll() { return Object.keys(REG_GATE_DEFS).map(regGateState); }
+
+/* ── 판정 — want: "simulation" | "live". 반환 {ok, sim?, reason?} ── */
+function regGateAllowed(key, want) {
+  const st = regGateState(key);
+  if (!st) return { ok: false, reason: "미등록 게이트: " + key };
+  if (st.mode === "locked") return { ok: false, reason: `${st.title} — 규제 게이트 잠금(${st.law})` };
+  if (want === "live") {
+    if (!st.effectiveDate) return { ok: false, reason: `${st.title} — 근거 법령 시행일 미확정: 실운영 개방 불가(코드 차단)` };
+    if (new Date() < new Date(st.effectiveDate + "T00:00:00")) return { ok: false, reason: `${st.title} — 시행일(${st.effectiveDate}) 도래 전: 실운영 개방 불가(코드 차단)` };
+    if (st.mode !== "live") return { ok: false, reason: `${st.title} — 시행일은 도래했으나 운영 전환 미승인(현재 모드: ${st.mode})` };
+    return { ok: true };
+  }
+  if (st.mode === "off") return { ok: false, reason: `${st.title} — 비활성(시뮬레이션 포함)` };
+  return { ok: true, sim: st.mode !== "live" };
+}
+
+/* ── 운영 모드 전환(관리자 전용) — live는 시행일 하드 플로어를 여기서도 강제 ── */
+function regGateSet(key, mode) {
+  if (!(typeof isAdminRole === "function" && isAdminRole())) return { ok: false, reason: "관리자만 게이트 모드를 변경할 수 있습니다" };
+  const def = REG_GATE_DEFS[key]; if (!def) return { ok: false, reason: "미등록 게이트" };
+  if (def.mode === "locked") return { ok: false, reason: def.title + " — 잠금 게이트는 법제 확정 전 전환 불가" };
+  if (mode === "live") { const chk = regGateState(key); if (!chk.effectiveDate || new Date() < new Date(chk.effectiveDate + "T00:00:00")) return { ok: false, reason: "시행일 미확정/미도래 — live 전환은 코드가 거부합니다" }; }
+  if (["off", "simulation", "live"].indexOf(mode) < 0) return { ok: false, reason: "허용되지 않은 모드" };
+  try { const ov = _rgOverrides(); ov[key] = { mode }; localStorage.setItem("hifin_reggate", JSON.stringify(ov)); } catch (e) {}
+  return { ok: true, state: regGateState(key) };
+}
+
+/* ── 현금성 전환 감지 — 폐쇄형 강제의 실행 지점(htkSwap/htkTransfer 등에서 호출) ── */
+function regGateCashGuard(targetText) {
+  const t = String(targetText || "");
+  if (/현금|원화|KRW|출금|인출|환전|계좌|이체(?!.*크레딧)/.test(t)) return regGateAllowed("closedLoop", "live");   // closedLoop는 locked → 항상 차단 사유 반환
+  if (/스테이블|USDK|KRWx|stable/i.test(t)) { const r = regGateAllowed("stablecoin", "live"); return r.ok ? r : { ok: false, reason: r.reason + " — 현재는 시뮬레이션만 가능해요" }; }
+  return { ok: true };
 }
 
 /* ══════════════ 실제 OCR 엔진 — 업로드 파일에서 검진 항목 텍스트 추출 ══════════════
@@ -23718,6 +23784,41 @@ function HtkTokenLedger({ member, base }) {
         <div className="htk-tx" key={t.seq}><span className="htk-txk">{(typeof tlTypeLabel === "function") ? tlTypeLabel(t.type) : t.type}</span><span className="htk-txn">{t.memo || t.type}<b style={{ marginLeft: 6, color: (({ genesis: 1, earn: 1 })[t.type]) ? "#16A34A" : "#E11D48" }}>{(({ genesis: 1, earn: 1 })[t.type]) ? "+" : "−"}{t.amount.toLocaleString()}</b></span><code className="htk-txh">{H(t.hash, 10)}</code></div>
       ))}{!led.length && <div className="htk-empty">아직 원장 거래가 없어요. 전송·스왑하면 트랜잭션이 기록됩니다.</div>}</div>
       <div className="chnote" style={{ marginTop: 10 }}>※ 시연용 로컬 원장(프라이빗 체인 시뮬). 잔액은 숫자 카운터가 아니라 <b>건별 트랜잭션 합산</b>으로 재구성되며, 차감은 잔액 검증을 통과해야만 기록됩니다(이중지불 차단). 이자·배당 유형은 원장에 정의되어 있지 않습니다(증권성 차단). 실제 발행·상장·환금성은 관련 법령(가상자산·전자금융 등) 검토와 정식 절차를 전제로 합니다.</div>
+      {typeof regGateAll === "function" && <RegGatePanel member={member} />}
+    </div>
+  );
+}
+
+/* ══════════ C1-2 RegGate 패널 — 규제 시행일 동기화 게이트 상태 + 차단 실증 ══════════ */
+function RegGatePanel({ member }) {
+  const [msg, setMsg] = useState(null);
+  const gates = (typeof regGateAll === "function") ? regGateAll() : [];
+  const MODE = { locked: ["잠금", "#B91C1C", "#FDECEC"], off: ["비활성", "#64748B", "#F1F5F9"], simulation: ["시뮬레이션", "#B45309", "#FEF3E2"], live: ["운영", "#15803D", "#E7F8EE"] };
+  // 차단 실증 — 실제 htkTransfer 경로로 '현금 출금'을 시도해 게이트가 코드로 막는 것을 보여줌
+  const tryCashout = () => {
+    const before = (typeof tlBalance === "function" && member) ? tlBalance(member) : null;
+    const r = (typeof htkTransfer === "function") ? htkTransfer(member, "현금 출금(은행 계좌)", 100) : null;
+    const after = (typeof tlBalance === "function" && member) ? tlBalance(member) : null;
+    setMsg(r === null ? { ok: false, t: `차단됨 — 폐쇄형 게이트가 현금성 전환을 거부했습니다 (원장 잔액 불변: ${before != null ? before.toLocaleString() : "-"} → ${after != null ? after.toLocaleString() : "-"} HTK)` } : { ok: true, t: "⚠️ 게이트 미작동 — 점검 필요" });
+  };
+  return (
+    <div className="htk-card" style={{ marginTop: 14, background: "#0B1220" }}>
+      <div className="htk-top"><span className="htk-net"><ShieldCheck size={13} /> RegGate · 규제 시행일 동기화 게이트</span><span style={{ fontSize: 10.5, color: "#94A3B8" }}>시행일 도래 시 재배포 없이 전환</span></div>
+      <div style={{ display: "grid", gap: 7, marginTop: 10 }}>
+        {gates.map((g) => { const md = MODE[g.mode] || MODE.off; return (
+          <div key={g.key} style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 10px" }}>
+            <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 800, color: md[1], background: md[2], borderRadius: 99, padding: "2px 9px", marginTop: 1 }}>{md[0]}</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0" }}>{g.title}{g.effectiveDate && <em style={{ fontStyle: "normal", marginLeft: 6, fontSize: 10.5, color: "#93C5FD" }}>시행 {g.effectiveDate}</em>}</div>
+              <div style={{ fontSize: 10.8, color: "#94A3B8", lineHeight: 1.5 }}>{g.law} — {g.note}</div>
+            </div>
+          </div>); })}
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
+        <button className="htk-btn" style={{ fontSize: 11.5 }} onClick={tryCashout}>현금 출금 시도 — 차단 실증</button>
+        {msg && <span style={{ fontSize: 11.5, fontWeight: 700, color: msg.ok ? "#F87171" : "#6EE7B7" }}>{msg.t}</span>}
+      </div>
+      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "#94A3B8" }}>※ 폐쇄형(현금 교환 불가)·스테이블 시뮬레이션 한정·배당의 STO 트랙 분리는 문구가 아니라 <b style={{ color: "#CBD5E1" }}>코드 게이트</b>로 강제됩니다. live 전환은 근거 법령 시행일이 도래해야만 가능하며, 관리자 설정으로도 시행일 이전에는 열 수 없습니다.</div>
     </div>
   );
 }

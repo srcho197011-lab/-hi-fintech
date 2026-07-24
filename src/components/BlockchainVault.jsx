@@ -156,6 +156,41 @@ function HtkTokenLedger({ member, base }) {
         <div className="htk-tx" key={t.seq}><span className="htk-txk">{(typeof tlTypeLabel === "function") ? tlTypeLabel(t.type) : t.type}</span><span className="htk-txn">{t.memo || t.type}<b style={{ marginLeft: 6, color: (({ genesis: 1, earn: 1 })[t.type]) ? "#16A34A" : "#E11D48" }}>{(({ genesis: 1, earn: 1 })[t.type]) ? "+" : "−"}{t.amount.toLocaleString()}</b></span><code className="htk-txh">{H(t.hash, 10)}</code></div>
       ))}{!led.length && <div className="htk-empty">아직 원장 거래가 없어요. 전송·스왑하면 트랜잭션이 기록됩니다.</div>}</div>
       <div className="chnote" style={{ marginTop: 10 }}>※ 시연용 로컬 원장(프라이빗 체인 시뮬). 잔액은 숫자 카운터가 아니라 <b>건별 트랜잭션 합산</b>으로 재구성되며, 차감은 잔액 검증을 통과해야만 기록됩니다(이중지불 차단). 이자·배당 유형은 원장에 정의되어 있지 않습니다(증권성 차단). 실제 발행·상장·환금성은 관련 법령(가상자산·전자금융 등) 검토와 정식 절차를 전제로 합니다.</div>
+      {typeof regGateAll === "function" && <RegGatePanel member={member} />}
+    </div>
+  );
+}
+
+/* ══════════ C1-2 RegGate 패널 — 규제 시행일 동기화 게이트 상태 + 차단 실증 ══════════ */
+function RegGatePanel({ member }) {
+  const [msg, setMsg] = useState(null);
+  const gates = (typeof regGateAll === "function") ? regGateAll() : [];
+  const MODE = { locked: ["잠금", "#B91C1C", "#FDECEC"], off: ["비활성", "#64748B", "#F1F5F9"], simulation: ["시뮬레이션", "#B45309", "#FEF3E2"], live: ["운영", "#15803D", "#E7F8EE"] };
+  // 차단 실증 — 실제 htkTransfer 경로로 '현금 출금'을 시도해 게이트가 코드로 막는 것을 보여줌
+  const tryCashout = () => {
+    const before = (typeof tlBalance === "function" && member) ? tlBalance(member) : null;
+    const r = (typeof htkTransfer === "function") ? htkTransfer(member, "현금 출금(은행 계좌)", 100) : null;
+    const after = (typeof tlBalance === "function" && member) ? tlBalance(member) : null;
+    setMsg(r === null ? { ok: false, t: `차단됨 — 폐쇄형 게이트가 현금성 전환을 거부했습니다 (원장 잔액 불변: ${before != null ? before.toLocaleString() : "-"} → ${after != null ? after.toLocaleString() : "-"} HTK)` } : { ok: true, t: "⚠️ 게이트 미작동 — 점검 필요" });
+  };
+  return (
+    <div className="htk-card" style={{ marginTop: 14, background: "#0B1220" }}>
+      <div className="htk-top"><span className="htk-net"><ShieldCheck size={13} /> RegGate · 규제 시행일 동기화 게이트</span><span style={{ fontSize: 10.5, color: "#94A3B8" }}>시행일 도래 시 재배포 없이 전환</span></div>
+      <div style={{ display: "grid", gap: 7, marginTop: 10 }}>
+        {gates.map((g) => { const md = MODE[g.mode] || MODE.off; return (
+          <div key={g.key} style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 10px" }}>
+            <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 800, color: md[1], background: md[2], borderRadius: 99, padding: "2px 9px", marginTop: 1 }}>{md[0]}</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0" }}>{g.title}{g.effectiveDate && <em style={{ fontStyle: "normal", marginLeft: 6, fontSize: 10.5, color: "#93C5FD" }}>시행 {g.effectiveDate}</em>}</div>
+              <div style={{ fontSize: 10.8, color: "#94A3B8", lineHeight: 1.5 }}>{g.law} — {g.note}</div>
+            </div>
+          </div>); })}
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
+        <button className="htk-btn" style={{ fontSize: 11.5 }} onClick={tryCashout}>현금 출금 시도 — 차단 실증</button>
+        {msg && <span style={{ fontSize: 11.5, fontWeight: 700, color: msg.ok ? "#F87171" : "#6EE7B7" }}>{msg.t}</span>}
+      </div>
+      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "#94A3B8" }}>※ 폐쇄형(현금 교환 불가)·스테이블 시뮬레이션 한정·배당의 STO 트랙 분리는 문구가 아니라 <b style={{ color: "#CBD5E1" }}>코드 게이트</b>로 강제됩니다. live 전환은 근거 법령 시행일이 도래해야만 가능하며, 관리자 설정으로도 시행일 이전에는 열 수 없습니다.</div>
     </div>
   );
 }
