@@ -207,6 +207,11 @@ const insService = {
   claimSubmit(m, o) { return claimSubmit(m || _isMember(), o); },
   claimAppeal(m, id, reason) { return claimAppeal(m || _isMember(), id, reason); },
   claimLimits(m) { m = m || _isMember(); return _limitUsed(m); },
+  /* ②+ M2 — 위험 예측·보장 매칭·인수 시뮬·사다리 플랜(riskEngine 연동) */
+  riskExplain(m) { m = m || _isMember(); return (typeof riskPredict === "function") ? riskPredict(m) : null; },
+  coverageMatch(m) { m = m || _isMember(); return (typeof coverageMatch === "function") ? coverageMatch(m) : null; },
+  underwrite(m, product) { m = m || _isMember(); return (typeof underwrite === "function") ? underwrite(m, product) : null; },
+  ladderPlan(m) { m = m || _isMember(); return (typeof ladderPlan === "function") ? ladderPlan(m) : null; },
   /* ⑤ 재산정 */
   rerate(m) { m = m || _isMember(); return { state: (typeof rerateState === "function") ? rerateState() : null, compute: rerateCompute(m) }; },
   rerateApply(m) { return rerateApplyReal(m || _isMember()); },

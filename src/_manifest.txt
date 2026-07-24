@@ -58,6 +58,7 @@ src/data/regGate.js
 src/data/premiumBilling.js
 src/data/insService.js
 src/data/sharingEngine.js
+src/data/riskEngine.js
 src/data/ocrEngine.js
 src/data/finModel.js
 src/data/referral.js

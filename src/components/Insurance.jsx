@@ -400,6 +400,17 @@ function _insServiceRoute(text, member) {
     if (C.pct <= 0) return { bubbles: [{ kind: "text", text: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하 전용·불이익 없음). 다음 검진에서 다시 계산해 드릴게요." }], quicks: [] };
     return { bubbles: [{ kind: "card", card: { title: "📉 재산정 계산 결과", items: [`개선 지표 ${C.improvedN}건: ${C.improved.map((x) => x.ko).join("·")}`, `월 ${won(C.before)} → ${won(C.after)} (−${C.pct}%)`, "인하 전용 — 악화 지표로 오르는 일은 없어요"], buttons: ["✅ 인하 적용 확정"] } }], quicks: [] };
   }
+  // M2 — 위험 예측·인수 시뮬(상담사)
+  if (/위험\s*(예측|알려|얼마|분석)|무슨\s*병|질병\s*위험/.test(text)) {
+    const R = insService.riskExplain(member);
+    if (!R || !R.ok) return { bubbles: [{ kind: "text", text: (R && R.reason) || "검진 연결이 필요해요." }], quicks: ["검진결과 올리기"] };
+    return { bubbles: [{ kind: "card", card: { title: `🔮 질병별 위험 — 같은 ${R.band} ${R.sex}성 대비`, items: R.risks.slice(0, 3).map((r) => `${r.ko}: 상위 ${r.topPct}% · ${r.trend} (근거: ${r.basis.map((b) => b.ko).join("·") || "정상"})`), buttons: ["가입 심사 미리보기"] } }, { kind: "text", text: R.honesty }], quicks: ["가입 심사 미리보기", "보장 공백 분석"] };
+  }
+  if (/가입\s*심사\s*미리보기|인수\s*(시뮬|예측|심사)/.test(text)) {
+    const U = insService.underwrite(member, "맞춤보험");
+    if (!U || !U.ok) return { bubbles: [{ kind: "text", text: (U && U.reason) || "검진 연결이 필요해요." }] };
+    return { bubbles: [{ kind: "text", text: `예상 결과: **${U.decision}**\n${U.note}${U.disclosures.length ? `\n고지 자동 구성: ${U.disclosures.map((d) => d.item).join(" · ")} (다시 입력 안 하셔도 돼요)` : ""}\n${U.ga}` }], quicks: ["보장 사다리 확인", "맞춤 헬스케어 보험 상담"] };
+  }
   // ⓔ 사다리·나눔·잔액
   if (/사다리|실손부터|뭐부터\s*(가입|시작)|기초\s*보장/.test(text)) { const L = insService.ladderCheck(member);
     return { bubbles: [{ kind: "text", text: L.note + (L.stage === "silson-first" ? "\n" + L.legal : "") }], quicks: ["보장 공백 분석", "맞춤 헬스케어 보험 상담"] }; }
@@ -1170,10 +1181,11 @@ function InsAnalysisTab({ onGo, onTab }) {
   </>);
 }
 
-/* ② 보장 사다리 카드(M3-1) — 실손 확인 선행 → 미가입자 토큰 우선 충당 */
+/* ② 보장 사다리 카드(M3-1→M3 고도화) — 실손 확인 선행 + 자동 플랜(목표·진행률·달성 예상) */
 function InsLadderCard({ onTab }) {
   const m = insService.member();
   const L = m ? insService.ladderCheck(m) : null;
+  const P = m ? insService.ladderPlan(m) : null;
   if (!m || !L) return null;
   const first = L.stage === "silson-first";
   return (
@@ -1181,7 +1193,47 @@ function InsLadderCard({ onTab }) {
       <div className="rct"><HeartHandshake size={17} color={first ? "#EA580C" : "#16A34A"} /> 보장 사다리 — {first ? "1단계: 실손부터" : "다음 단계: 맞춤 보장"}</div>
       <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.65 }}>{L.note}</p>
       <div className="costrow"><span className="cl">내 보험·치료비 적립금 (토큰의 30% 우선 적립)</span><span className="cv" style={{ color: "var(--blue)" }}>{L.reserve.toLocaleString()} HTK</span><span className="ca">{first ? "실손 우선 충당" : "맞춤보험 활용"}</span></div>
+      {first && P && (<>
+        <div style={{ margin: "8px 0 4px", fontSize: 12, fontWeight: 700 }}>자동 적립 플랜 — 목표 {P.goalWon.toLocaleString()}원(첫 3개월 보험료) · 진행 {P.progress}%</div>
+        <div style={{ height: 10, background: "#FDE8D8", borderRadius: 99, overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: P.progress + "%", background: "linear-gradient(90deg,#F97316,#FB923C)" }} /></div>
+        <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>{P.note}{P.monthlyEarn ? ` (최근 월 적립 속도 ≈ ${P.monthlyEarn.toLocaleString()} HTK)` : ""}</div>
+      </>)}
       {first && <div className="chnote" style={{ marginTop: 8 }}>{L.legal}</div>}
+    </div>);
+}
+
+/* ②+ M2 위험 예측 카드 — 질병군 확률·동연령 백분위·근거·추세 + 인수 시뮬(포용 경로) */
+function InsRiskCard() {
+  const [uw, setUw] = useState(null);
+  const m = insService.member();
+  const R = m ? insService.riskExplain(m) : null;
+  const CM = (R && R.ok) ? insService.coverageMatch(m) : null;
+  if (!m) return null;
+  if (!R || !R.ok) return (
+    <div className="card"><div className="rct"><Sparkles size={16} color="#7C3AED" /> 질병별 위험 예측</div>
+      <p style={{ fontSize: 12.5, color: "var(--muted)" }}>{(R && R.reason) || "검진 데이터를 연결하면 질병별 위험과 맞춤 보장을 예측해 드려요."}</p></div>);
+  return (
+    <div className="card" style={{ border: "1.5px solid #DDD6FE" }}>
+      <div className="rct"><Sparkles size={17} color="#7C3AED" /> 질병별 위험 예측 <span className="cbadge" style={{ marginLeft: 8, color: "#6D28D9", background: "#EDE9FE" }}>내 검진 실측 기반 · {R.date}</span></div>
+      {R.risks.slice(0, 3).map((r) => (
+        <div key={r.code} style={{ border: "1px solid #EEF2F7", borderRadius: 10, padding: "8px 12px", margin: "5px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+            <b>{r.ko} <span style={{ fontSize: 10.5, color: "var(--soft)" }}>{r.code}</span></b>
+            <span className="cbadge" style={{ color: r.topPct <= 30 ? "#B91C1C" : "#B45309", background: r.topPct <= 30 ? "#FDECEC" : "#FEF3E2" }}>같은 {R.band} {R.sex}성 중 상위 {r.topPct}%</span>
+            <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: r.trend === "악화 추세" ? "#B91C1C" : r.trend === "개선 추세" ? "#15803D" : "var(--muted)" }}>{r.trend}</span>
+          </div>
+          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 3 }}>근거: {r.basis.length ? r.basis.map((b) => `${b.ko} ${b.value}`).join(" · ") : "전 지표 정상범위"}</div>
+        </div>))}
+      {CM && CM.ok && CM.rows.filter((r) => r.gap > 0).slice(0, 2).map((r) => (
+        <div className="costrow" key={r.code}><span className="cl">🧩 {r.ko} 보장 갭</span><span className="cv" style={{ color: "#B45309" }}>{r.gap.toLocaleString()}원 부족</span><span className="ca">보완 권장</span></div>))}
+      <button className="cbtn" style={{ marginTop: 6 }} onClick={() => setUw(insService.underwrite(m, "맞춤보험"))}><ShieldCheck size={14} /> 가입 심사 미리보기 (인수 시뮬레이션)</button>
+      {uw && uw.ok && (
+        <div style={{ background: "#F8FAFF", border: "1px solid #DBEAFE", borderRadius: 10, padding: "9px 12px", marginTop: 8, fontSize: 12.2, lineHeight: 1.65 }}>
+          <b style={{ color: "#1D4ED8" }}>예상 결과: {uw.decision}</b><br />{uw.note}
+          {uw.disclosures.length > 0 && <div style={{ marginTop: 4, color: "var(--muted)" }}>고지 자동 구성: {uw.disclosures.map((d) => d.item).join(" · ")} <i>(다시 입력하실 필요 없어요)</i></div>}
+          <div style={{ marginTop: 4, fontSize: 11, color: "var(--soft)" }}>{uw.ga}</div>
+        </div>)}
+      <div className="chnote" style={{ marginTop: 8 }}>{R.honesty} 모델 성능(구분력·캘리브레이션)은 백테스트로 측정·공개돼요.</div>
     </div>);
 }
 
@@ -1434,6 +1486,7 @@ function InsuranceSection({ onGo }) {
       {tab === "sports" && <SportsInsuranceSection onGo={go} />}
       {tab === "custom" && (<>
         <InsLadderCard onTab={setTab} />
+        <InsRiskCard />
         <PremiumPolicySection initialPlanKey={simplePlan} />
         <div style={{ display: "flex", gap: 8, margin: "4px 0 10px" }}>
           <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => setTab("sports")}><Trophy size={13} /> 스포츠 임베디드 보험</button>
