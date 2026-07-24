@@ -1,7 +1,8 @@
 /* 체험 회원 로그인 시 각 섹션 상단에 표시되는 개인 건강요약 배너 */
 function DemoMemberBanner() {
-  const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  let m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   if (!m) return null;
+  m = (typeof lineageMember === "function") ? lineageMember(m) : m;   // M1-1: 금고 실검진값 기반 보정
   const cg = demoCancerGrade(m.cancerRiskGrade);
   // 초개인화: 회원이 직접 제공한 데이터가 연결되면 출처 라벨 표시
   let src = null, integ = null; try { const v = (typeof vaultLoad === "function" && typeof anonToken === "function") ? vaultLoad(anonToken(m)) : null; const ck = v && v.checkups && v.checkups[v.checkups.length - 1]; if (ck) { const y = (ck.date || "2025").slice(0, 4); src = (ck.channel === "nhis" ? `내 ${y}년 국가검진(공단연계·부분)` : ck.channel === "photo" ? `내 ${y}년 검진결과(촬영)` : `내 ${y}년 국가검진 기준`); integ = (typeof verifyVaultIntegrity === "function") ? verifyVaultIntegrity(m) : null; } } catch (e) {}

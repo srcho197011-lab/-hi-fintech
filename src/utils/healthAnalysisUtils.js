@@ -33,6 +33,10 @@ function demoMakeProfile(name, email, birth6, genderCode) {
 function demoReport(m) {
   // 세션 객체가 과거 데이터여도 항상 최신 소스(demoMembers)로 갱신
   if (typeof demoMembers !== "undefined" && demoMembers && demoMembers.length) { const src = demoMembers.find((x) => x.email === m.email); if (src) m = src; }
+  // M1-1 계보 실연결: 금고에 1세대 실검진값이 있으면 분석 입력(생체·장기나이·암등급)을 실측 기반 프로필로 교체 — 난수 프로필은 금고 없는 회원의 폴백
+  let _lb = null;
+  if (typeof lineageProfile === "function") { try { _lb = lineageProfile(m); } catch (e) { _lb = null; } }
+  if (_lb) m = Object.assign({}, m, _lb.fields);
   const HRD = m.highRiskDiseases || [];
   const reg = demoRegAge(m);
   const bio = m.biologicalAge;
@@ -59,12 +63,19 @@ function demoReport(m) {
   const costThis = m.estimatedMedicalCost;
   const cost10 = demoCostForecast(costThis);
   const flags = [];
+  // M1-1: 분석 입력의 출처 표기 — 실측(금고) 기반이면 계보 배지 + 근거 요약(설명가능성 가드레일 ⓖ)
+  if (_lb) {
+    flags.push({ t: `1세대 실측 검진 연동 ✓ ${_lb.date}${_lb.history > 1 ? ` · ${_lb.history}개년` : ""} · ${_lb.n}항목`, c: "#065F46", bg: "#D1FAE5", ic: "check" });
+    const ev = (typeof lineageEvidenceLine === "function") ? lineageEvidenceLine(_lb) : "";
+    if (ev) flags.push({ t: ev, c: "#1E40AF", bg: "#DBEAFE" });
+  }
   flags.push({ t: `노화 빠른 장기: ${worstNames.join("·")}`, c: "#B91C1C", bg: "#FDECEC" });
   if (hr.length) flags.push({ t: `고위험 암: ${hr.join("·")}`, c: "#fff", bg: "#EF4444", ic: "warn" });
   if (HRD.length) flags.push({ t: `주의 질환: ${HRD.join("·")}`, c: "#B91C1C", bg: "#FDECEC", ic: "warn" });
   flags.push({ t: `암위험 ${m.cancerRiskGrade}등급 · ${cg[0]}`, c: cg[1], bg: cg[2] });
   flags.push({ t: agingSpeed > 1 ? `노화속도 ${agingSpeed}배(빠름)` : `노화속도 ${agingSpeed}배(느림)`, c: agingSpeed > 1 ? "#B45309" : "#15803D", bg: agingSpeed > 1 ? "#FEF3E2" : "#E7F8EE", ic: agingSpeed > 1 ? "up" : "check" });
-  return { bio, reg, diff, agingRank, agingSpeed, organs, worstNames, cg, diseases, cancers, cancerTotal: m.cancerRiskGrade, costThis, cost10, recs: m.managementPoints || [], hr, hrd: HRD, flags, evalLabel: cg[0] };
+  return { bio, reg, diff, agingRank, agingSpeed, organs, worstNames, cg, diseases, cancers, cancerTotal: m.cancerRiskGrade, costThis, cost10, recs: m.managementPoints || [], hr, hrd: HRD, flags, evalLabel: cg[0],
+    _lineage: _lb ? { source: "vault", date: _lb.date, n: _lb.n, history: _lb.history, evidence: _lb.evidence, totalSev: _lb.totalSev } : { source: "synthetic" } };   // M1-1 계보 메타(근거 전건 추적)
 }
 function demoPersonalAnswer(m) {
   const fmt = (n) => Number(n).toLocaleString("ko-KR") + "원";

@@ -8978,7 +8978,7 @@ function FamilyHealthCare({ member, onGo }) {
   const list = [{ rel: "본인", p: dm, self: true }].concat(fam.map((f) => ({ rel: f.relation, p: famSynthProfile(f.name, f.age, guessSex(f), f.relation) }))).filter((x) => x.p);
   const [sel, setSel] = useState(0);
   const cur = list[Math.min(sel, list.length - 1)] || list[0];
-  const P = cur.p;
+  const P = (typeof lineageMember === "function") ? lineageMember(cur.p) : cur.p;   // M1-1: 금고 실검진값 기반 보정(금고 없으면 원본)
   const R = (typeof demoReport === "function") ? (() => { try { return demoReport(P); } catch (e) { return null; } })() : null;
   const chk = (typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, P)); } catch (e) { return null; } })() : null;
   const isChild = (P.regAge || 30) < 19;
@@ -9154,7 +9154,7 @@ function MyPageSection({ onGo }) {
       <DemoMemberBanner />
       <div className="profile">
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
-        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${dm.biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
+        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${((typeof lineageMember === "function") ? lineageMember(dm) : dm).biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
         <div className="pstats">
           {[["12,480", "Health Token", "wallet"], ["3,744", "보험·치료비 적립금", "wallet"], ["6", "Health NFT", "nft"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
         </div>
@@ -20282,6 +20282,94 @@ const VAULT_CONSENTS = [
 ];
 const VAULT_LEGAL_NOTICE = "※ 본 동의문은 초안이며, 시행 전 법무 검토가 필요합니다. 14세 미만(어린이 검진·어린이실손)은 법정대리인 동의 절차가 별도 적용됩니다.";
 
+/* ══════════════ M1-1 계보 실연결(Lineage Bridge) — 1세대(금고 실검진값) → 2세대(AI 분석) ══════════════
+   진단 보고서(HIFIN-AUDIT-INS-20260724) 축2 M1-1 구현.
+   문제: 생체나이·장기나이·암위험이 이름 시드 난수(demoMakeProfile)로 생성되어 금고의 실검진값과 단절.
+   해결: 금고(hifin_vault_*)에 검진 레코드가 있으면 AI 분석 입력을 "실측값의 결정론 함수"로 교체.
+   - 계산은 CKUP_LOINC 정상범위 대비 편차 등급(0~3)의 합산 — 어떤 지표가 몇 점 기여했는지 근거(evidence) 전건 추적.
+   - 금고가 비어 있으면 기존 합성 프로필 폴백(무중단) — demoReport._lineage.source 로 구분 표기.
+   - 가드레일 ⓔ/ⓖ: 위험 정보이지 진단이 아니며, 산출 근거를 회원이 확인할 수 있는 구조. */
+
+/* ── 금고 최신 검진 레코드 → key→value 맵 ── */
+function vaultCheckupMap(member) {
+  try {
+    if (!member) return null;
+    const v = (typeof vaultLoad === "function") ? vaultLoad(anonToken(member)) : null;
+    if (!v || !v.checkups || !v.checkups.length) return null;
+    const sorted = v.checkups.slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
+    const latest = sorted[sorted.length - 1];
+    const map = {};
+    (latest.items || []).forEach((it) => { if (it && it.key != null && it.value != null) map[it.key] = it.value; });
+    if (!Object.keys(map).length) return null;
+    return { map, date: latest.date, channel: latest.channel, completeness: latest.completeness, n: Object.keys(map).length, history: sorted.length };
+  } catch (e) { return null; }
+}
+
+/* ── 지표 편차 등급 — 정상범위(ref) 초과율 → 0(정상)·1(경계)·2(주의)·3(위험) ── */
+function _lbSev(key, val) {
+  const s = (typeof CKUP_LOINC !== "undefined") ? CKUP_LOINC[key] : null;
+  if (!s) return { sev: 0, flag: "" };
+  if (s.qual) { const f = (typeof ckupFlag === "function") ? ckupFlag(key, val) : ""; return { sev: f ? 2 : 0, flag: f }; }
+  const n = Number(val);
+  if (isNaN(n) || !s.ref) return { sev: 0, flag: "" };
+  let ratio = 0, flag = "";
+  if (key === "hdl") { if (n < 40) { ratio = (40 - n) / 40; flag = "low"; } }
+  else if (n > s.ref[1]) { ratio = (n - s.ref[1]) / Math.max(1, s.ref[1]); flag = "high"; }
+  else if (n < s.ref[0]) { ratio = (s.ref[0] - n) / Math.max(1, s.ref[0]); flag = "low"; }
+  const sev = ratio >= 0.5 ? 3 : ratio >= 0.22 ? 2 : ratio > 0 ? 1 : 0;
+  return { sev, flag, ratio: Math.round(ratio * 100) / 100 };
+}
+
+/* ── 장기 그룹 ↔ 지표 매핑(근거 추적의 기본 단위) ── */
+const LB_ORGANS = [
+  { field: "obesityAge", ko: "비만체형", keys: ["bmi", "waist", "weight"] },
+  { field: "heartAge", ko: "심장", keys: ["sbp", "dbp", "ldl", "tchol", "tg", "hdl"] },
+  { field: "liverAge", ko: "간", keys: ["ast", "alt", "ggt"] },
+  { field: "pancreasAge", ko: "췌장", keys: ["glucose", "hba1c"] },
+  { field: "kidneyAge", ko: "신장", keys: ["cr", "egfr", "uprot"] },
+];
+
+/* ── 2세대 분석 프로필 — 실검진값의 결정론 함수(설명가능) ──
+   반환: { fields:{biologicalAge, 장기나이 5종, cancerRiskGrade}, evidence, date, n } 또는 null(금고 비어있음) */
+function lineageProfile(member) {
+  const ck = vaultCheckupMap(member);
+  if (!ck) return null;
+  const reg = (typeof demoRegAge === "function") ? demoRegAge(member) : (member.regAge || member.age || 45);
+  const fields = {}, evidence = [];
+  let totalSev = 0, riskyOrgans = 0;
+  LB_ORGANS.forEach((org) => {
+    let sevSum = 0; const items = [];
+    org.keys.forEach((k) => {
+      if (ck.map[k] == null) return;
+      const r = _lbSev(k, ck.map[k]);
+      sevSum += r.sev;
+      const spec = CKUP_LOINC[k];
+      items.push({ key: k, ko: spec.ko, value: ck.map[k], unit: spec.unit, sev: r.sev, flag: r.flag });
+    });
+    const delta = sevSum === 0 ? (items.length ? -2 : 0) : Math.min(10, Math.round(sevSum * 1.7));
+    fields[org.field] = Math.max(18, reg + delta);
+    if (sevSum >= 3) riskyOrgans++;
+    totalSev += sevSum;
+    evidence.push({ organ: org.ko, field: org.field, age: fields[org.field], delta, sevSum, items: items.sort((a, b) => b.sev - a.sev) });
+  });
+  const bioDelta = totalSev === 0 ? -2 : Math.min(9, Math.round(totalSev * 0.6));
+  fields.biologicalAge = Math.max(19, reg + bioDelta);
+  const cxrAbn = _lbSev("cxr", ck.map.cxr).sev > 0 ? 1 : 0;
+  fields.cancerRiskGrade = Math.max(2, Math.min(8, 2 + riskyOrgans + cxrAbn + (reg >= 60 ? 1 : 0)));
+  return { fields, evidence, date: ck.date, channel: ck.channel, completeness: ck.completeness, n: ck.n, history: ck.history, reg, totalSev };
+}
+
+/* ── 표시용 회원 보정 — 금고 실측 기반이면 생체·장기나이·암등급을 교체한 회원 객체 반환(없으면 원본) ── */
+function lineageMember(m) { try { const lp = lineageProfile(m); return lp ? Object.assign({}, m, lp.fields, { _lineageVault: true }) : m; } catch (e) { return m; } }
+
+/* ── 근거 요약 한 줄(회원 표시용) — 이상 지표 상위 3개 ── */
+function lineageEvidenceLine(lp) {
+  if (!lp) return "";
+  const abn = lp.evidence.flatMap((e) => e.items).filter((i) => i.sev > 0).sort((a, b) => b.sev - a.sev).slice(0, 3);
+  if (!abn.length) return "전 지표 정상범위 — 관리 상태 양호";
+  return "근거: " + abn.map((i) => `${i.ko} ${i.value}${i.unit}(${i.sev >= 3 ? "위험" : i.sev >= 2 ? "주의" : "경계"})`).join(" · ");
+}
+
 /* ══════════════ 100,001 회원 데이터 블록체인 앵커링 (FHIR leaf → Merkle Tree → 배치 앵커 → proof 검증) ══════════════
    전 회원의 검진·보험 데이터를 FHIR 표준코드로 요약해 leaf 해시를 만들고, Merkle Tree로 묶어 루트 1개만 온체인 앵커.
    회원은 Merkle proof로 자기 데이터가 루트에 포함됐음을 검증하고, 값이 바뀌면 루트 불일치로 위변조가 드러난다.
@@ -21909,6 +21997,10 @@ function demoMakeProfile(name, email, birth6, genderCode) {
 function demoReport(m) {
   // 세션 객체가 과거 데이터여도 항상 최신 소스(demoMembers)로 갱신
   if (typeof demoMembers !== "undefined" && demoMembers && demoMembers.length) { const src = demoMembers.find((x) => x.email === m.email); if (src) m = src; }
+  // M1-1 계보 실연결: 금고에 1세대 실검진값이 있으면 분석 입력(생체·장기나이·암등급)을 실측 기반 프로필로 교체 — 난수 프로필은 금고 없는 회원의 폴백
+  let _lb = null;
+  if (typeof lineageProfile === "function") { try { _lb = lineageProfile(m); } catch (e) { _lb = null; } }
+  if (_lb) m = Object.assign({}, m, _lb.fields);
   const HRD = m.highRiskDiseases || [];
   const reg = demoRegAge(m);
   const bio = m.biologicalAge;
@@ -21935,12 +22027,19 @@ function demoReport(m) {
   const costThis = m.estimatedMedicalCost;
   const cost10 = demoCostForecast(costThis);
   const flags = [];
+  // M1-1: 분석 입력의 출처 표기 — 실측(금고) 기반이면 계보 배지 + 근거 요약(설명가능성 가드레일 ⓖ)
+  if (_lb) {
+    flags.push({ t: `1세대 실측 검진 연동 ✓ ${_lb.date}${_lb.history > 1 ? ` · ${_lb.history}개년` : ""} · ${_lb.n}항목`, c: "#065F46", bg: "#D1FAE5", ic: "check" });
+    const ev = (typeof lineageEvidenceLine === "function") ? lineageEvidenceLine(_lb) : "";
+    if (ev) flags.push({ t: ev, c: "#1E40AF", bg: "#DBEAFE" });
+  }
   flags.push({ t: `노화 빠른 장기: ${worstNames.join("·")}`, c: "#B91C1C", bg: "#FDECEC" });
   if (hr.length) flags.push({ t: `고위험 암: ${hr.join("·")}`, c: "#fff", bg: "#EF4444", ic: "warn" });
   if (HRD.length) flags.push({ t: `주의 질환: ${HRD.join("·")}`, c: "#B91C1C", bg: "#FDECEC", ic: "warn" });
   flags.push({ t: `암위험 ${m.cancerRiskGrade}등급 · ${cg[0]}`, c: cg[1], bg: cg[2] });
   flags.push({ t: agingSpeed > 1 ? `노화속도 ${agingSpeed}배(빠름)` : `노화속도 ${agingSpeed}배(느림)`, c: agingSpeed > 1 ? "#B45309" : "#15803D", bg: agingSpeed > 1 ? "#FEF3E2" : "#E7F8EE", ic: agingSpeed > 1 ? "up" : "check" });
-  return { bio, reg, diff, agingRank, agingSpeed, organs, worstNames, cg, diseases, cancers, cancerTotal: m.cancerRiskGrade, costThis, cost10, recs: m.managementPoints || [], hr, hrd: HRD, flags, evalLabel: cg[0] };
+  return { bio, reg, diff, agingRank, agingSpeed, organs, worstNames, cg, diseases, cancers, cancerTotal: m.cancerRiskGrade, costThis, cost10, recs: m.managementPoints || [], hr, hrd: HRD, flags, evalLabel: cg[0],
+    _lineage: _lb ? { source: "vault", date: _lb.date, n: _lb.n, history: _lb.history, evidence: _lb.evidence, totalSev: _lb.totalSev } : { source: "synthetic" } };   // M1-1 계보 메타(근거 전건 추적)
 }
 function demoPersonalAnswer(m) {
   const fmt = (n) => Number(n).toLocaleString("ko-KR") + "원";
@@ -22234,8 +22333,9 @@ function initContentGuard() {
 
 /* 체험 회원 로그인 시 각 섹션 상단에 표시되는 개인 건강요약 배너 */
 function DemoMemberBanner() {
-  const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  let m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   if (!m) return null;
+  m = (typeof lineageMember === "function") ? lineageMember(m) : m;   // M1-1: 금고 실검진값 기반 보정
   const cg = demoCancerGrade(m.cancerRiskGrade);
   // 초개인화: 회원이 직접 제공한 데이터가 연결되면 출처 라벨 표시
   let src = null, integ = null; try { const v = (typeof vaultLoad === "function" && typeof anonToken === "function") ? vaultLoad(anonToken(m)) : null; const ck = v && v.checkups && v.checkups[v.checkups.length - 1]; if (ck) { const y = (ck.date || "2025").slice(0, 4); src = (ck.channel === "nhis" ? `내 ${y}년 국가검진(공단연계·부분)` : ck.channel === "photo" ? `내 ${y}년 검진결과(촬영)` : `내 ${y}년 국가검진 기준`); integ = (typeof verifyVaultIntegrity === "function") ? verifyVaultIntegrity(m) : null; } } catch (e) {}
@@ -22259,6 +22359,7 @@ function DemoMemberBanner() {
 }
 
 function BiologicalAgeCard({ member }) {
+  member = (typeof lineageMember === "function") ? lineageMember(member) : member;   // M1-1: 금고 실검진값 기반 보정
   const organs = [["생체나이", member.biologicalAge, true], ["비만나이", member.obesityAge], ["심장나이", member.heartAge], ["간나이", member.liverAge], ["췌장나이", member.pancreasAge], ["신장나이", member.kidneyAge]];
   return (
     <div className="card">

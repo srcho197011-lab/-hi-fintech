@@ -1,4 +1,5 @@
 function BiologicalAgeCard({ member }) {
+  member = (typeof lineageMember === "function") ? lineageMember(member) : member;   // M1-1: 금고 실검진값 기반 보정
   const organs = [["생체나이", member.biologicalAge, true], ["비만나이", member.obesityAge], ["심장나이", member.heartAge], ["간나이", member.liverAge], ["췌장나이", member.pancreasAge], ["신장나이", member.kidneyAge]];
   return (
     <div className="card">

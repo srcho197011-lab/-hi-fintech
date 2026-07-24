@@ -50,6 +50,7 @@ src/data/kbDomainData.js
 src/data/checkupCatalog.js
 src/data/checkupEngine.js
 src/data/healthDataVault.js
+src/data/lineageBridge.js
 src/data/blockchainAnchor.js
 src/data/tokenLedger.js
 src/data/ocrEngine.js

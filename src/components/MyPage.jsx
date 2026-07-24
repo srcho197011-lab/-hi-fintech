@@ -55,7 +55,7 @@ function FamilyHealthCare({ member, onGo }) {
   const list = [{ rel: "본인", p: dm, self: true }].concat(fam.map((f) => ({ rel: f.relation, p: famSynthProfile(f.name, f.age, guessSex(f), f.relation) }))).filter((x) => x.p);
   const [sel, setSel] = useState(0);
   const cur = list[Math.min(sel, list.length - 1)] || list[0];
-  const P = cur.p;
+  const P = (typeof lineageMember === "function") ? lineageMember(cur.p) : cur.p;   // M1-1: 금고 실검진값 기반 보정(금고 없으면 원본)
   const R = (typeof demoReport === "function") ? (() => { try { return demoReport(P); } catch (e) { return null; } })() : null;
   const chk = (typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, P)); } catch (e) { return null; } })() : null;
   const isChild = (P.regAge || 30) < 19;
@@ -231,7 +231,7 @@ function MyPageSection({ onGo }) {
       <DemoMemberBanner />
       <div className="profile">
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
-        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${dm.biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
+        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${((typeof lineageMember === "function") ? lineageMember(dm) : dm).biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
         <div className="pstats">
           {[["12,480", "Health Token", "wallet"], ["3,744", "보험·치료비 적립금", "wallet"], ["6", "Health NFT", "nft"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
         </div>
