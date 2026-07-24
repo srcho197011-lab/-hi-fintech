@@ -28,9 +28,10 @@ function _tlMigrateV2(email, arr) {
 function tlAll(m) { try { const email = _tlEmail(m); return _tlMigrateV2(email, JSON.parse(localStorage.getItem(_tlKey(email)) || "[]")); } catch (e) { return []; } }
 function _tlSave(m, arr) { try { localStorage.setItem(_tlKey(_tlEmail(m)), JSON.stringify(arr)); return true; } catch (e) { return false; } }
 
-/* ── 트랜잭션 유형 화이트리스트(방향) — 이자·배당 없음(유사수신·증권성 원천 차단). topup=선불 충전(현금→HTK 유입만, 역방향은 RegGate 차단) ── */
-function _tlDir(type) { return ({ genesis: 1, earn: 1, topup: 1, spend: -1, transfer: -1, swap: -1 })[type] || 0; }
-function tlTypeLabel(type) { return ({ genesis: "이월", earn: "적립", topup: "충전", spend: "사용", transfer: "전송", swap: "스왑" })[type] || type; }
+/* ── 트랜잭션 유형 화이트리스트(방향) — 이자·배당 없음(유사수신·증권성 원천 차단). topup=선불 충전(현금→HTK 유입만, 역방향은 RegGate 차단).
+   dataFee(D2)=데이터 "이용 대가"(내 데이터를 쓴 값) — 원금·이자·배당이 아니며 RegGate dataFee 게이트 통과 시에만 발생(가드레일 ⓗ 우회 아님을 명시) ── */
+function _tlDir(type) { return ({ genesis: 1, earn: 1, topup: 1, dataFee: 1, spend: -1, transfer: -1, swap: -1 })[type] || 0; }
+function tlTypeLabel(type) { return ({ genesis: "이월", earn: "적립", topup: "충전", dataFee: "데이터 대가", spend: "사용", transfer: "전송", swap: "스왑" })[type] || type; }
 
 /* ── 해시(결정론 — vaultHash 재사용) ── */
 function _tlHash(tx, prev) { return (typeof vaultHash === "function") ? vaultHash(["tl", prev, tx.seq, tx.type, tx.amount, tx.memo || "", tx.ts].join("|")) : ""; }

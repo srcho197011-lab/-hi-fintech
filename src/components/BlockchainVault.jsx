@@ -157,10 +157,55 @@ function HtkTokenLedger({ member, base }) {
       ))}{!led.length && <div className="htk-empty">아직 원장 거래가 없어요. 전송·스왑하면 트랜잭션이 기록됩니다.</div>}</div>
       <div className="chnote" style={{ marginTop: 10 }}>※ 시연용 로컬 원장(프라이빗 체인 시뮬). 잔액은 숫자 카운터가 아니라 <b>건별 트랜잭션 합산</b>으로 재구성되며, 차감은 잔액 검증을 통과해야만 기록됩니다(이중지불 차단). 이자·배당 유형은 원장에 정의되어 있지 않습니다(증권성 차단). 실제 발행·상장·환금성은 관련 법령(가상자산·전자금융 등) 검토와 정식 절차를 전제로 합니다.</div>
       {typeof regGateAll === "function" && <RegGatePanel member={member} />}
+      {typeof cnList === "function" && <ConsentWallet member={member} />}
       <WalletPortability member={member} />
       <ChainExplorer member={member} />
     </div>
   );
+}
+
+/* ══════════ D2 — 내 동의 지갑(ConsentNFT): 무엇을·누구에게·언제까지 허락했는지 한눈에 + 즉시 철회 ══════════ */
+function ConsentWallet({ member }) {
+  const [tick, setTick] = useState(0); void tick;
+  const [confirm, setConfirm] = useState(null);   // {kind:"issue"|"revoke", id?}
+  const [audit, setAudit] = useState(null);
+  if (!member) return null;
+  const list = cnList(member);
+  return (
+    <div className="htk-card" style={{ marginTop: 14, background: "#0B1220" }}>
+      <div className="htk-top"><span className="htk-net"><ShieldCheck size={13} /> 내 동의 지갑 — 조건부 동의 증서(ConsentNFT)</span><span style={{ fontSize: 10.5, color: "#94A3B8" }}>철회는 즉시 효력 · 전부 체인 기록</span></div>
+      <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
+        {list.length ? list.map((c) => (
+          <div key={c.id} style={{ background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.8 }}>
+              <b style={{ color: "#E2E8F0" }}>{c.id}</b>
+              <span style={{ fontSize: 10, fontWeight: 800, color: c.status === "active" ? "#15803D" : "#B91C1C", background: c.status === "active" ? "#D1FAE5" : "#FDECEC", borderRadius: 99, padding: "1px 8px" }}>{c.status === "active" ? "유효" : "철회됨"}</span>
+              {c.status === "active" && <button className="htk-btn" style={{ marginLeft: "auto", fontSize: 10.5, padding: "3px 9px" }} onClick={() => setConfirm({ kind: "revoke", id: c.id })}>철회</button>}
+            </div>
+            <div style={{ fontSize: 10.8, color: "#94A3B8", marginTop: 3 }}>[{(c.scopeKo || c.scope).join(" · ")}] → {c.to} · ~{c.until} · 목적: {c.purpose}{c.revokedAt ? ` · 철회 ${new Date(c.revokedAt).toLocaleDateString("ko-KR")}` : ""}</div>
+          </div>
+        )) : <div style={{ fontSize: 11.5, color: "#94A3B8", padding: "4px 2px" }}>발행된 동의 증서가 없어요 — 증서를 발행하면 <b style={{ color: "#CBD5E1" }}>동의한 범위·기간 안에서만</b> 내 데이터가 안내에 쓰이고, 쓰일 때마다 <b style={{ color: "#CBD5E1" }}>데이터 이용 대가</b>가 지갑에 들어와요.</div>}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+        {!list.some((c) => c.status === "active") && <button className="htk-btn cyan" onClick={() => setConfirm({ kind: "issue" })}>맞춤 안내 동의 증서 발행</button>}
+        <button className="htk-btn" onClick={() => { const r = (typeof leadDbBuild === "function") ? leadDbBuild() : null; if (r && r.ok) { setAudit(r.audit); const me = list.some((c) => c.status === "active"); if (me) { const f = (typeof dataFeePay === "function") ? dataFeePay(member, (list.find((c) => c.status === "active") || {}).id) : null; if (f && f.ok && typeof toast === "function") toast(`데이터 이용 대가 +${f.htk} HTK 입금(시뮬) — 잔액 ${f.balance.toLocaleString()}`); } } else if (typeof toast === "function") toast("🔒 " + ((r && r.reason) || "게이트 차단")); setTick((t) => t + 1); }}>리드 DB 생성 시뮬 — 동의 감사</button>
+      </div>
+      {audit && <div style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: audit.ok ? "#6EE7B7" : "#F87171" }}>감사 결과: 편입 {audit.rows}건 · 무동의 위반 {audit.violations}건 {audit.ok ? "— 동의 없는 회원은 단 1명도 포함되지 않았어요 ✓" : "⚠️ 위반 발견"}</div>}
+      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "#94A3B8" }}>※ 시뮬레이션(RegGate leadDb·dataFee 게이트) — 실제 DB 제공은 신용정보법·개인정보보호법(2026.9 강화)·보험업법 모집 규제 법률 검토와 GA 경유 확정 후에만 가능해요. 리드에는 건강 원본이 아니라 <b style={{ color: "#CBD5E1" }}>세그먼트 정보만</b> 담겨요.</div>
+      {confirm && (
+        <div className="bkov" onClick={() => setConfirm(null)}><div className="bk" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
+          <div className="bkh"><div className="bt"><ShieldCheck size={16} color={confirm.kind === "issue" ? "#0891B2" : "#B91C1C"} /> {confirm.kind === "issue" ? "동의 증서 발행 확인" : "동의 철회 확인"}</div></div>
+          <div className="bkb" style={{ padding: 18 }}>
+            <p style={{ fontSize: 13, lineHeight: 1.7 }}>{confirm.kind === "issue"
+              ? "맞춤 보험·건강 안내 목적으로, 제휴 보험사·GA에, 1년간, 세그먼트 정보에 한해 동의 증서를 발행할까요? 언제든 즉시 철회할 수 있고 발행·철회 모두 체인에 남아요."
+              : "이 증서를 철회할까요? 철회 즉시 내 데이터의 해당 소비가 전면 차단되고, 진행 중이던 DB 편입·대가 지급도 멈춰요."}</p>
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button className="cbtn" style={{ margin: 0 }} onClick={() => setConfirm(null)}>취소</button>
+              <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { const r = confirm.kind === "issue" ? cnIssue(member, {}) : cnRevoke(member, confirm.id); if (typeof toast === "function") toast(r.ok ? (confirm.kind === "issue" ? "동의 증서 발행 ✓ — 내 동의 지갑에서 언제든 철회할 수 있어요" : "철회 완료 ✓ — 즉시 효력, 체인에 기록됐어요") : "🔒 " + r.reason); setConfirm(null); setTick((t) => t + 1); }}>✅ {confirm.kind === "issue" ? "발행 확정" : "철회 확정"}</button>
+            </div>
+          </div>
+        </div></div>)}
+    </div>);
 }
 
 /* ══════════ C3 — 지갑 이동성(export/import): "플랫폼이 사라져도 자산은 회원에게" 물리 증명 ══════════ */
