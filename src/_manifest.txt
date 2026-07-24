@@ -36,6 +36,7 @@ src/data/healthKnowledge.js
 src/data/telemed.js
 src/data/insuranceStats.js
 src/data/pilotCohort.js
+src/data/insuranceCohort.js
 src/data/supplyData.js
 src/data/foundationData.js
 src/data/consultStore.js
@@ -54,6 +55,7 @@ src/data/lineageBridge.js
 src/data/blockchainAnchor.js
 src/data/tokenLedger.js
 src/data/regGate.js
+src/data/premiumBilling.js
 src/data/ocrEngine.js
 src/data/finModel.js
 src/data/referral.js

@@ -16,9 +16,9 @@ function _tlKey(email) { return "hifin_htk_tl_" + (email || "default"); }
 function tlAll(m) { try { return JSON.parse(localStorage.getItem(_tlKey(_tlEmail(m))) || "[]"); } catch (e) { return []; } }
 function _tlSave(m, arr) { try { localStorage.setItem(_tlKey(_tlEmail(m)), JSON.stringify(arr)); return true; } catch (e) { return false; } }
 
-/* ── 트랜잭션 유형 화이트리스트(방향) — 이자·배당 없음(유사수신·증권성 원천 차단) ── */
-function _tlDir(type) { return ({ genesis: 1, earn: 1, spend: -1, transfer: -1, swap: -1 })[type] || 0; }
-function tlTypeLabel(type) { return ({ genesis: "이월", earn: "적립", spend: "사용", transfer: "전송", swap: "스왑" })[type] || type; }
+/* ── 트랜잭션 유형 화이트리스트(방향) — 이자·배당 없음(유사수신·증권성 원천 차단). topup=선불 충전(현금→HTK 유입만, 역방향은 RegGate 차단) ── */
+function _tlDir(type) { return ({ genesis: 1, earn: 1, topup: 1, spend: -1, transfer: -1, swap: -1 })[type] || 0; }
+function tlTypeLabel(type) { return ({ genesis: "이월", earn: "적립", topup: "충전", spend: "사용", transfer: "전송", swap: "스왑" })[type] || type; }
 
 /* ── 해시(결정론 — vaultHash 재사용) ── */
 function _tlHash(tx, prev) { return (typeof vaultHash === "function") ? vaultHash(["tl", prev, tx.seq, tx.type, tx.amount, tx.memo || "", tx.ts].join("|")) : ""; }
@@ -50,7 +50,7 @@ function tlSpend(m, amount, memo, type, ref) { tlEnsureGenesis(m); return tlAppe
 function tlEnsureGenesis(m) {
   const email = _tlEmail(m);
   if (tlAll(email).length) return false;
-  const base = (typeof WALLET !== "undefined" && WALLET.total) ? WALLET.total : 0;
+  const base = (m && typeof m !== "string" && m.htkBase) ? m.htkBase : ((typeof WALLET !== "undefined" && WALLET.total) ? WALLET.total : 0);   // Phase1 §2-4: 코호트 개인화 이월(인덱스 결정론), 조성래·기존 회원은 기존값 보존
   const cp = (typeof careplanEarned === "function") ? careplanEarned(email) : 0;
   const shop = (typeof shopHtkPts === "function") ? shopHtkPts(email) : 0;
   const legacy = (typeof htkDelta === "function" && m && typeof m !== "string") ? htkDelta(m) : 0;   // 기존 온체인 델타(감소 전용)

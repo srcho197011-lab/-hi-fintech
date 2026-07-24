@@ -33,8 +33,9 @@ function AuthLogin() {
     setErr("");
     const ms = (typeof loginLockedMs === "function") ? loginLockedMs() : 0;
     if (ms > 0) { setLockMs(ms); setErr(`로그인이 잠겼습니다. 약 ${Math.ceil(ms / 60000)}분 후 다시 시도해 주세요.`); return; }
-    if (typeof adminLogin === "function" && adminLogin(uid.trim(), pw)) return;      // ADMIN(전체보기) — 콘텐츠 보호(2026-07-24): 이 계정만 허용
-    // 콘텐츠 보호(2026-07-24): 데모 회원(MEMBER) 로그인 경로 차단 — memberLogin 호출 중단(재개 시 아래 주석 해제)
+    if (typeof adminLogin === "function" && adminLogin(uid.trim(), pw)) return;      // ADMIN(전체보기) — hifin 계정
+    if (typeof cohortLogin === "function" && cohortLogin(uid.trim(), pw)) return;    // Phase1 §2-4: 코호트 체험 계정 000001~100000(공용 데모 비밀번호)
+    // 콘텐츠 보호(2026-07-24): 이메일 데모 회원(MEMBER) 로그인 경로 차단 — memberLogin 호출 중단(재개 시 아래 주석 해제)
     // if (typeof memberLogin === "function" && memberLogin(uid.trim(), pw)) return;    // MEMBER(데모 계정)
     if (typeof loginRecordFail === "function") loginRecordFail();
     const nowLock = (typeof loginLockedMs === "function") ? loginLockedMs() : 0;
@@ -52,6 +53,7 @@ function AuthLogin() {
         <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" name="hifin-login-pw" autoComplete="new-password" readOnly={ro} onFocus={unlock} disabled={locked} /></label>
       {err && <div className="autherr">{err}</div>}
       <button className="authbtn authprimary" type="submit" disabled={locked}>{locked ? `잠금 — ${Math.ceil(lockMs / 60000)}분 후 재시도` : "로그인"}</button>
+      <div className="guestnote" style={{ marginTop: 10 }}>👥 <b>체험 계정</b>: 아이디 <b>000001</b>~<b>100000</b>(합성 코호트 10만 명 중 한 명의 건강지갑) · 데모 공용 비밀번호 <b>hifin002</b> — 어떤 번호로 들어와도 그 회원의 실데이터 기준으로 전 화면이 동작합니다.</div>
     </form>
   );
 }

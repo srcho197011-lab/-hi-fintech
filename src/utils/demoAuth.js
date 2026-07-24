@@ -53,6 +53,56 @@ function loginClearFail() { try { localStorage.removeItem(LOCK_KEY); } catch (e)
 
 /* 관리자/회원 로그인 — 성공 시 게이트 세션에 role 부여 */
 function adminLogin(id, pw) { if (id === AUTH_ADMIN.id && pw === AUTH_ADMIN.pw) { try { demoLogout(); } catch (e) {} authSet({ name: "조성래", role: "ADMIN" }); loginClearFail(); return true; } return false; }
+
+/* ══ Phase1 §2-4 — 코호트 데모 계정 체계: 아이디 000001~100000(6자리) + 공용 비밀번호 hifin002 ══
+   어떤 아이디로 로그인해도 그 인덱스의 결정론 데이터(나이·성별·질병·보험·실손 세대·HTK)가 전 섹션에 일관 반영.
+   최초 로그인 시 검진 합성값·보험 계약을 해당 회원 가명 토큰 금고에 정식 시드(지연 초기화) — 이후 행동은 개별 영속. */
+function cohortLoginProfile(i) {
+  const m = (typeof cohortMemberAt === "function") ? cohortMemberAt(i) : null; if (!m) return null;
+  const ins = (typeof cohortInsurance === "function") ? cohortInsurance(i) : null;
+  const idx6 = String(i).padStart(6, "0");
+  const email = "p" + idx6 + "@cohort.hifin";
+  const dz = m.diseases || [];
+  const cancers = dz.filter((d) => /암$/.test(d));
+  const prof = { id: "C" + idx6, cohortIndex: i, name: m.name, email, sex: m.sex, age: m.age, regAge: m.age,
+    biologicalAge: m.bioAge || m.age, obesityAge: m.age + 2, heartAge: m.age + 1, liverAge: m.age + 1, pancreasAge: m.age + 2, kidneyAge: m.age,
+    cancerRiskGrade: Math.max(2, Math.min(8, (m.risk || 2) + 2)), highRiskCancerTypes: cancers, highRiskDiseases: dz,
+    diseases: dz, estimatedMedicalCost: m.estCost || 900000, income: m.income, sido: m.sido,
+    managementPoints: ["주 150분 유산소 운동", "나트륨·당류 줄이기", "연 1회 검진 수검", "복약·측정 꾸준히"],
+    htkBase: ins ? ins.htkBase : undefined, isDemoUser: false, isCohort: true, realVerified: true };
+  return prof;
+}
+function cohortSeedVault(prof, i) {
+  try {
+    if (typeof vaultLoad !== "function" || typeof anonToken !== "function") return;
+    const v = vaultLoad(anonToken(prof));
+    if (v && ((v.checkups || []).length || (v.insurance || []).length)) return;   // 이미 시드됨 — 재로그인 시 이어짐
+    if (typeof vaultSaveConsents === "function") vaultSaveConsents(prof, { health: true, ai: true, mkt: false, step: "cohort-login" });
+    if (typeof synthCheckupValues === "function" && typeof vaultSaveCheckup === "function" && typeof CKUP_ORDER !== "undefined") {
+      const vals = synthCheckupValues(prof);
+      const items = CKUP_ORDER.map((k) => ({ key: k, value: vals[k], source: "cohort", confidence: 0.92 }));
+      vaultSaveCheckup(prof, items, { source: "cohort", channel: "upload", completeness: "full", fileName: "국가검진결과_" + prof.id + ".pdf", date: "2025-11-01" });
+    }
+    const ins = (typeof cohortInsurance === "function") ? cohortInsurance(i) : null;
+    if (ins && typeof vaultSaveInsurance === "function") {
+      const contracts = ins.contracts.map((c) => ({ insurer: ["현대해상", "삼성화재", "DB손해보험", "메리츠화재"][(i + c.name.length) % 4], product: c.name, kind: c.type === "cancer" ? "암" : "일반", benefit: c.benefit, monthly: c.monthly, years: c.years }));
+      if (ins.silson) contracts.unshift({ insurer: "현대해상", product: "실손의료보험", kind: "실손", gen: ins.silson.gen + "세대", join: String(ins.silson.joinYear), coGen: ins.silson.selfPayGen + "%", coNon: ins.silson.selfPayNon + "%", monthly: ins.silson.monthly });
+      vaultSaveInsurance(prof, contracts, { source: "cohort", channel: "aggregate" });
+    }
+  } catch (e) {}
+}
+function cohortLogin(id, pw) {
+  if (!/^\d{6}$/.test(id) || pw !== "hifin002") return false;
+  const i = parseInt(id, 10);
+  if (i < 1 || i > 100000) return false;
+  const prof = cohortLoginProfile(i); if (!prof) return false;
+  try { demoLogout(); } catch (e) {}
+  cohortSeedVault(prof, i);
+  demoSetSession(prof);
+  authSet({ name: prof.name, email: prof.email, role: "MEMBER", cohort: i });
+  loginClearFail();
+  return true;
+}
 function memberLogin(email, pw) { const m = appAuthenticate(email, pw); if (!m) return false; authSet({ name: m.name, email: m.email, role: "MEMBER" }); demoSetSession(m); loginClearFail(); return true; }
 
 /* ── 둘러보기(GUEST) — 10만 코호트에서 유사 회원 매칭 → 완전한 게스트 프로필 합성 ── */

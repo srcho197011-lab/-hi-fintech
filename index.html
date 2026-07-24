@@ -16929,6 +16929,205 @@ function pilotAudit() {
   return _audit;
 }
 
+/* ══════════════ 과업1 — 국가 표준 보험 데이터셋 (100,001명, 전 섹션 공용 단일 출처) ══════════════
+   Phase 1 실행 지시서 §2 구현. pilotCohort(100,000명) + 조성래(100,001)와 동일 인덱스 1:1 결합.
+   원칙(§2-1):
+   - 결정론·재현성: mulberry32 시드(인덱스별 독립 시드) — Math.random 미사용. 같은 인덱스→항상 같은 레코드.
+   - 평균 수렴: 금액은 로그정규(우측 꼬리), 목표 평균은 INS_TARGETS에 단일 선언 — cohortInsSelfTest()가 ±2% 수렴을 코드로 검증.
+   - 한국 정합: 유병률·가입율·세대 구성은 연령·성별·소득 조건부(고령 실손 미가입↑·유병 할증·여성 갑상선 우세 등은 pilotCohort 질병 규칙 상속).
+   - 용량: 인덱스→레코드 on-demand 생성(cohortInsurance(i)), 집계만 캐시. 10만 사전 저장 금지.
+   ⚠️ 합성 코호트(시연·통계용 가명 데이터) — 화면 표기 시 "합성 코호트" 라벨 유지(가드레일 ⓘ). */
+
+/* ── 목표 평균(단일 선언 — 자가 검증의 기준) ── */
+const INS_TARGETS = {
+  cancerBenefitMean: 30000000,   // 암 진단비 평균 3,000만(로그정규, 1천만~1억)
+  bhBenefitMean: 20000000,       // 뇌·심장 진단비 평균 2,000만(로그정규, 5백만~7천만)
+  silsonRate: 0.70,              // 실손 가입율 전체 평균 ~70%
+  monthly40M: [120000, 150000],  // 40대 남성 월 총보험료 평균 목표 구간(12~15만)
+  genMix: { 1: 0.18, 2: 0.34, 3: 0.26, 4: 0.20, 5: 0.02 },  // 실손 세대 구성비(가입자 중 — 장기 보유자일수록 구세대)
+};
+
+/* ── 결정론 도구 — Box-Muller 정규 / 로그정규(평균 보정 μ=ln(m)−σ²/2) ── */
+function _icRng(i) { return _mul32(0x1C5A9E37 ^ Math.imul(i + 1, 2654435761)); }
+function _icNorm(rng) { let u = 0, v = 0; while (u === 0) u = rng(); while (v === 0) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function _icLogn(rng, mean, sigma, lo, hi) { const mu = Math.log(mean) - sigma * sigma / 2; const v = Math.exp(mu + sigma * _icNorm(rng)); return Math.max(lo, Math.min(hi, v)); }
+function _icRound(v, unit) { return Math.round(v / unit) * unit; }
+
+/* ── 코호트 회원 조회(1..100000=pilotCohort, 100001=조성래) ── */
+function cohortMemberAt(i) {
+  if (i === 100001) return (typeof _anchorSelf === "function") ? Object.assign(_anchorSelf(), { age: 54, income: "중", diseases: ["당뇨병", "지방간"], risk: 3, cancer: false, isChild: false }) : null;
+  const c = (typeof pilotCohort === "function") ? pilotCohort() : [];
+  return c[i - 1] || null;
+}
+
+/* ── 실손 세대 규정(항목별 편차의 상한·하한 근거) ── */
+const IC_SILSON_GEN = {
+  1: { name: "1세대(~2009.9)", joinY: [1999, 2009], selfGen: 0, selfNon: 0, monthly40: 46000 },
+  2: { name: "2세대(2009.10~2017.3)", joinY: [2009, 2017], selfGen: 10, selfNon: 20, monthly40: 38000 },
+  3: { name: "3세대(2017.4~2021.6)", joinY: [2017, 2021], selfGen: 10, selfNon: 30, monthly40: 23000 },
+  4: { name: "4세대(2021.7~)", joinY: [2021, 2025], selfGen: 20, selfNon: 30, monthly40: 13000 },
+  5: { name: "5세대(2026~·신규)", joinY: [2026, 2026], selfGen: 20, selfNon: 30, monthly40: 11000 },
+};
+
+/* ── 일반 보험 상품 정의(질병군 KCD 키와 결합) ── */
+const IC_PRODUCTS = [
+  { key: "cancer", name: "암보험", kcd: "C", benefitMean: INS_TARGETS.cancerBenefitMean, sigma: 0.55, lo: 10000000, hi: 100000000, per10M: 14800 },
+  { key: "brain", name: "뇌혈관 진단비", kcd: "I6", benefitMean: INS_TARGETS.bhBenefitMean, sigma: 0.50, lo: 5000000, hi: 70000000, per10M: 12200 },
+  { key: "heart", name: "심장질환 진단비", kcd: "I2", benefitMean: INS_TARGETS.bhBenefitMean, sigma: 0.50, lo: 5000000, hi: 70000000, per10M: 11900 },
+  { key: "life", name: "종신·정기", kcd: null, benefitMean: 50000000, sigma: 0.6, lo: 10000000, hi: 300000000, per10M: 9400 },
+  { key: "injury", name: "상해보험", kcd: "S", benefitMean: 15000000, sigma: 0.5, lo: 5000000, hi: 50000000, per10M: 3200 },
+  { key: "driver", name: "운전자보험", kcd: null, benefitMean: 10000000, sigma: 0.4, lo: 5000000, hi: 30000000, per10M: 2700 },
+  { key: "child", name: "어린이보험", kcd: null, benefitMean: 20000000, sigma: 0.5, lo: 10000000, hi: 60000000, per10M: 5200 },
+];
+
+/* ── i번째 회원의 보험 레코드(결정론) — {contracts, silson, uninsured, monthlyTotal, htkBase} ── */
+const _icCache = new Map();   // LRU 대용 소형 캐시(화면 반복 조회용)
+function cohortInsurance(i) {
+  if (_icCache.has(i)) return _icCache.get(i);
+  const m = cohortMemberAt(i); if (!m) return null;
+  const rng = _icRng(i);
+  const age = m.age || 45, sex = m.sex || "남", inc = m.income || "중";
+  const dzN = (m.diseases || []).length, sick = dzN >= 2 || !!m.cancer;
+  const adult = age >= 19;
+  const loadSick = sick ? 1.35 : dzN === 1 ? 1.12 : 1.0;            // 유병 할증
+  const ageF = 0.55 + Math.max(0, age) / 55;                         // 연령 요율 곡선
+
+  /* A. 일반 계약 — 보유 확률·건수는 연령·소득 조건부 */
+  const contracts = [];
+  const own = (p) => rng() < p;
+  const addC = (prod, pOwn) => {
+    if (!own(pOwn)) return;
+    const benefit = _icRound(_icLogn(rng, prod.benefitMean, prod.sigma, prod.lo, prod.hi), 1000000);
+    const years = Math.min(Math.max(1, Math.floor(rng() * Math.min(20, Math.max(2, age - 18)))), 25);
+    const renewable = rng() < 0.55;
+    const monthly = _icRound(benefit / 10000000 * prod.per10M * ageF * loadSick * (renewable ? 0.85 : 1.1), 100);
+    contracts.push({ type: prod.key, name: prod.name, kcd: prod.kcd, benefit, monthly, years, renewable,
+      detail: { diag: benefit, surgery: _icRound(benefit * 0.2, 500000), daily: _icRound(30000 + rng() * 70000, 10000) } });
+  };
+  if (adult) {
+    const incF = inc === "고" ? 1.25 : inc === "저" ? 0.6 : 1.0;
+    addC(IC_PRODUCTS[0], Math.min(0.9, (age >= 40 ? 0.62 : 0.38) * incF));                 // 암
+    addC(IC_PRODUCTS[1], Math.min(0.8, (age >= 45 ? 0.34 : 0.16) * incF));                 // 뇌
+    addC(IC_PRODUCTS[2], Math.min(0.8, (age >= 45 ? 0.32 : 0.15) * incF));                 // 심장
+    addC(IC_PRODUCTS[3], Math.min(0.85, (age >= 30 && age <= 60 ? 0.42 : 0.2) * incF));    // 종신·정기
+    addC(IC_PRODUCTS[4], 0.30 * incF);                                                     // 상해
+    if (age >= 25 && age <= 65) addC(IC_PRODUCTS[5], 0.28 * incF);                         // 운전자
+  } else addC(IC_PRODUCTS[6], 0.55);                                                       // 어린이
+
+  /* B. 실손 — 가입율은 세그먼트 조건부(전체 평균 ≈ INS_TARGETS.silsonRate 수렴) */
+  let pSil = 0.83;
+  if (!adult) pSil = 0.72;
+  if (age >= 65) pSil = 0.52; else if (age >= 55) pSil = 0.72;
+  if (sick) pSil -= 0.12;
+  if (inc === "저") pSil -= 0.12; if (inc === "고") pSil += 0.07;
+  const hasSilson = rng() < Math.max(0.05, Math.min(0.95, pSil));
+  let silson = null;
+  if (hasSilson) {
+    // 세대: 목표 구성비 가중 추첨 + 나이 제약(그 세대 창(window) 안에 생존 시점이 있어야 — 없으면 다음 세대로)
+    let gen = _wpick(rng, [[1, 21], [2, 33], [3, 24], [4, 20], [5, 2]]);   // 가중치는 연령 보정 후 목표 genMix로 수렴하도록 튜닝(자가 검증 기준)
+    const IC_GEN_MINAGE = { 1: 17, 2: 9, 3: 5, 4: 0, 5: 0 };
+    while (gen < 5 && age < IC_GEN_MINAGE[gen]) gen++;
+    const spec = IC_SILSON_GEN[gen];
+    const loY = Math.max(spec.joinY[0], 2026 - age);          // 출생 이후 연도만
+    const joinYear = loY + Math.floor(rng() * Math.max(1, spec.joinY[1] - loY + 1));
+    silson = { gen, genName: spec.name, joinYear,
+      selfPayGen: spec.selfGen, selfPayNon: spec.selfNon,
+      limitPay: gen <= 2 ? 100000000 : 50000000,                                   // 급여(연간 한도)
+      limitNon: gen <= 2 ? 100000000 : gen === 3 ? 50000000 : 20000000,            // 비급여
+      riders3: gen >= 3 ? { dosu: rng() < 0.62, injection: rng() < 0.55, mri: rng() < 0.66 } : null,  // 3대 비급여 특약(3세대~ 분리)
+      outpatientPerVisit: gen <= 2 ? 300000 : 250000, inpatientLimit: 50000000,
+      monthly: _icRound(spec.monthly40 * ageF * loadSick, 100) };
+  }
+
+  /* C. 미가입 세그먼트(§2-2C) — 나눔·보장 사다리·유병자 포용의 타겟 */
+  let uninsured = null;
+  if (!silson) {
+    const reason = (inc === "저") ? "lowIncome" : (age >= 65) ? "elderly" : sick ? "sick" : "other";
+    uninsured = { reason,
+      reasonKo: ({ lowIncome: "보험료 부담(차상위·저소득)", elderly: "고령 가입 제한·보험료 급증", sick: "유병 이력 인수 거절·고지 부담", other: "미가입(관심 부족 등)" })[reason],
+      estBurden: _icRound((m.costBreakdown ? m.costBreakdown.uncovered : 800000) * (1.1 + rng() * 0.5), 10000),  // 추정 의료비 부담(비급여 중심)
+      ladderTarget: adult,                                    // 축2 M3-1 보장 사다리(실손 우선 충당) 대상 플래그
+      donationTarget: reason === "lowIncome" || (reason === "elderly" && inc !== "고") };  // 축5 나눔 후보
+  }
+
+  const monthlyTotal = contracts.reduce((s, c) => s + c.monthly, 0) + (silson ? silson.monthly : 0);
+  const htkBase = _icRound(4000 + _icLogn(rng, 8480, 0.5, 1000, 40000), 10);   // 개인화 HTK 이월 기준(평균 ≈ 12,480 근사)
+  const rec = { i, id: m.id, contracts, silson, uninsured, hasSilson, monthlyTotal, htkBase,
+    _m: { age, sex, income: inc, diseases: m.diseases || [], risk: m.risk } };
+  if (_icCache.size > 4000) _icCache.clear();
+  _icCache.set(i, rec);
+  return rec;
+}
+
+/* ── 보장 공백 요약(CoverageAnalyzer 입력 형식) ── */
+function cohortGapProfile(i) {
+  const r = cohortInsurance(i); if (!r) return null;
+  const held = {}; r.contracts.forEach((c) => { held[c.key || c.type] = c.benefit; });
+  const dz = r._m.diseases;
+  const needs = [];
+  const needIf = (cond, cat, why) => { if (cond) needs.push({ cat, why, covered: !!held[cat], benefit: held[cat] || 0 }); };
+  needIf(true, "cancer", r._m.age >= 40 ? "연령 기준 암 보장 권장" : "기본 암 보장");
+  needIf(dz.some((d) => /고혈압|뇌|심/.test(d)) || r._m.age >= 50, "brain", "혈압·연령 기준 뇌혈관 보장");
+  needIf(dz.some((d) => /당뇨|심|협심/.test(d)) || r._m.age >= 50, "heart", "혈당·연령 기준 심장 보장");
+  const gaps = needs.filter((n) => !n.covered);
+  return { i, silson: r.silson ? { has: true, gen: r.silson.gen } : { has: false, reason: r.uninsured && r.uninsured.reason },
+    needs, gaps, gapCount: gaps.length + (r.hasSilson ? 0 : 1),
+    ladder: !r.hasSilson && r.uninsured && r.uninsured.ladderTarget ? { first: "silson", note: "실손 미가입 — 적립 HTK는 실손 가입·보험료에 우선 충당" } : null };
+}
+
+/* ── 집계 통계(캐시) — 전 섹션이 같은 숫자를 말하게 하는 단일 출처 ── */
+let _icStats = null;
+function cohortInsStats() {
+  if (_icStats) return _icStats;
+  const N = (typeof PILOT_N !== "undefined") ? PILOT_N : 100000;
+  const band = (a) => a < 20 ? "0~19" : a < 30 ? "20대" : a < 40 ? "30대" : a < 50 ? "40대" : a < 60 ? "50대" : a < 70 ? "60대" : "70대+";
+  const st = { n: 0, silsonN: 0, genMix: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, uninsured: { lowIncome: 0, elderly: 0, sick: 0, other: 0 },
+    ladderN: 0, donationN: 0, sumMonthly: 0, sumCancerBenefit: 0, cancerN: 0, sumBH: 0, bhN: 0,
+    byBand: {}, m40: { n: 0, sum: 0 }, sumHtk: 0, avgContracts: 0, contractsSum: 0 };
+  for (let i = 1; i <= N; i++) {
+    const r = cohortInsurance(i); if (!r) continue;
+    st.n++;
+    const b = band(r._m.age); (st.byBand[b] || (st.byBand[b] = { n: 0, sil: 0 })); st.byBand[b].n++;
+    if (r.hasSilson) { st.silsonN++; st.genMix[r.silson.gen]++; st.byBand[b].sil++; }
+    else if (r.uninsured) { st.uninsured[r.uninsured.reason]++; if (r.uninsured.ladderTarget) st.ladderN++; if (r.uninsured.donationTarget) st.donationN++; }
+    st.sumMonthly += r.monthlyTotal; st.sumHtk += r.htkBase; st.contractsSum += r.contracts.length;
+    r.contracts.forEach((c) => { if (c.type === "cancer") { st.sumCancerBenefit += c.benefit; st.cancerN++; } if (c.type === "brain" || c.type === "heart") { st.sumBH += c.benefit; st.bhN++; } });
+    if (r._m.sex === "남" && r._m.age >= 40 && r._m.age < 50) { st.m40.n++; st.m40.sum += r.monthlyTotal; }
+  }
+  st.silsonRate = st.silsonN / st.n;
+  st.avgCancerBenefit = st.cancerN ? st.sumCancerBenefit / st.cancerN : 0;
+  st.avgBH = st.bhN ? st.sumBH / st.bhN : 0;
+  st.avgMonthly = st.sumMonthly / st.n;
+  st.avgM40 = st.m40.n ? st.m40.sum / st.m40.n : 0;
+  st.avgHtk = st.sumHtk / st.n;
+  st.avgContracts = st.contractsSum / st.n;
+  _icStats = st;
+  return st;
+}
+
+/* ── 자가 검증(§2-1) — 평균 수렴 ±2%·구성비·창 검증. 결과는 콘솔+반환(문서 기록용) ── */
+function cohortInsSelfTest() {
+  const st = cohortInsStats();
+  const pct = (a, b) => Math.abs(a - b) / b;
+  const checks = [
+    { k: "암 진단비 평균", target: INS_TARGETS.cancerBenefitMean, actual: Math.round(st.avgCancerBenefit), ok: pct(st.avgCancerBenefit, INS_TARGETS.cancerBenefitMean) <= 0.02 },
+    { k: "뇌·심장 진단비 평균", target: INS_TARGETS.bhBenefitMean, actual: Math.round(st.avgBH), ok: pct(st.avgBH, INS_TARGETS.bhBenefitMean) <= 0.02 },
+    { k: "실손 가입율", target: INS_TARGETS.silsonRate, actual: Math.round(st.silsonRate * 1000) / 1000, ok: Math.abs(st.silsonRate - INS_TARGETS.silsonRate) <= 0.02 },
+    { k: "40대 남 월보험료(12~15만 창)", target: INS_TARGETS.monthly40M.join("~"), actual: Math.round(st.avgM40), ok: st.avgM40 >= INS_TARGETS.monthly40M[0] && st.avgM40 <= INS_TARGETS.monthly40M[1] },
+  ];
+  const silN = st.silsonN || 1;
+  Object.keys(INS_TARGETS.genMix).forEach((g) => {
+    const actual = st.genMix[g] / silN;
+    checks.push({ k: `실손 ${g}세대 구성비`, target: INS_TARGETS.genMix[g], actual: Math.round(actual * 1000) / 1000, ok: Math.abs(actual - INS_TARGETS.genMix[g]) <= 0.02 });
+  });
+  const allOk = checks.every((c) => c.ok);
+  const out = { ok: allOk, n: st.n, checks, uninsured: st.uninsured, ladderN: st.ladderN, donationN: st.donationN, avgHtk: Math.round(st.avgHtk), avgContracts: Math.round(st.avgContracts * 100) / 100 };
+  try { console.log("[cohortInsSelfTest]", allOk ? "PASS" : "FAIL", JSON.stringify(out)); } catch (e) {}
+  return out;
+}
+/* 검증 훅 — 집계 통계 자가 테스트만 노출(개인 레코드·PII 아님). 온톨로지 검증 화면·감사에서 사용 */
+try { window.__hifinCohortSelfTest = cohortInsSelfTest; } catch (e) {}
+
 /* ====================== 공급망 온톨로지 데모 데이터셋 (결정적 · 무재고/직배송) ======================
    mulberry32 시드로 매 로드 동일 데이터(재현 가능). 고객·계정 = pilotCohort(10만) 재사용.
    나머지 7개 오브젝트(거래처·제품·계약·공급사 가용재고·주문·배송·정산)를 FK로 연결.
@@ -17407,6 +17606,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-07-24", ver:"v1.1", ch:[18], feat:"규제 동기화 게이트", src:"온체인 원장(regGate)/blockchainAnchor", summary:"폐쇄형·스테이블 시뮬레이션 한정·STO 트랙 분리를 UI 문구가 아닌 코드 게이트로 강제하고 법령 시행일 도래 시 재배포 없이 전환되는 규제 동기화 스위치를 구현", refs:[], status:"반영", hash:"ad364b8", auto:true },
   { date:"2026-07-24", ver:"v1.1", ch:[6], feat:"세대 계보 실연결", src:"AI 분석(lineageBridge)/건강리포트", summary:"생체나이·장기나이·암위험 분석이 데이터 금고의 1세대 실검진값을 직접 소비하도록 재배선하고 산출 근거를 전건 추적·표기해 2세대 분석의 데이터 계보를 실동작으로 연결", refs:[], status:"반영", hash:"b3aa2bc", auto:true },
   { date:"2026-07-24", ver:"v1.1", ch:[7], feat:"HTK 트랜잭션 원장", src:"지갑·온체인 원장(tokenLedger)/blockchainAnchor", summary:"HTK 잔액을 숫자 카운터에서 건별 트랜잭션 원장으로 전환해 이중지불 차단·전건 해시 재검증·위변조 감지를 구현하고 기존 적립 소스를 제네시스로 무중단 이월", refs:[], status:"반영", hash:"163ef01", auto:true },
   { date:"2026-07-24", ver:"v1.1", ch:[16], feat:"로그인 단일 계정 잠금", src:"로그인(AuthGate)/demoAuth", summary:"콘텐츠 보호를 위해 승인 관리자 계정 한 쌍만 로그인 허용하고 데모 회원 로그인 경로를 차단", refs:[], status:"반영", hash:"d4379a7", auto:true },
@@ -20496,9 +20696,9 @@ function _tlKey(email) { return "hifin_htk_tl_" + (email || "default"); }
 function tlAll(m) { try { return JSON.parse(localStorage.getItem(_tlKey(_tlEmail(m))) || "[]"); } catch (e) { return []; } }
 function _tlSave(m, arr) { try { localStorage.setItem(_tlKey(_tlEmail(m)), JSON.stringify(arr)); return true; } catch (e) { return false; } }
 
-/* ── 트랜잭션 유형 화이트리스트(방향) — 이자·배당 없음(유사수신·증권성 원천 차단) ── */
-function _tlDir(type) { return ({ genesis: 1, earn: 1, spend: -1, transfer: -1, swap: -1 })[type] || 0; }
-function tlTypeLabel(type) { return ({ genesis: "이월", earn: "적립", spend: "사용", transfer: "전송", swap: "스왑" })[type] || type; }
+/* ── 트랜잭션 유형 화이트리스트(방향) — 이자·배당 없음(유사수신·증권성 원천 차단). topup=선불 충전(현금→HTK 유입만, 역방향은 RegGate 차단) ── */
+function _tlDir(type) { return ({ genesis: 1, earn: 1, topup: 1, spend: -1, transfer: -1, swap: -1 })[type] || 0; }
+function tlTypeLabel(type) { return ({ genesis: "이월", earn: "적립", topup: "충전", spend: "사용", transfer: "전송", swap: "스왑" })[type] || type; }
 
 /* ── 해시(결정론 — vaultHash 재사용) ── */
 function _tlHash(tx, prev) { return (typeof vaultHash === "function") ? vaultHash(["tl", prev, tx.seq, tx.type, tx.amount, tx.memo || "", tx.ts].join("|")) : ""; }
@@ -20530,7 +20730,7 @@ function tlSpend(m, amount, memo, type, ref) { tlEnsureGenesis(m); return tlAppe
 function tlEnsureGenesis(m) {
   const email = _tlEmail(m);
   if (tlAll(email).length) return false;
-  const base = (typeof WALLET !== "undefined" && WALLET.total) ? WALLET.total : 0;
+  const base = (m && typeof m !== "string" && m.htkBase) ? m.htkBase : ((typeof WALLET !== "undefined" && WALLET.total) ? WALLET.total : 0);   // Phase1 §2-4: 코호트 개인화 이월(인덱스 결정론), 조성래·기존 회원은 기존값 보존
   const cp = (typeof careplanEarned === "function") ? careplanEarned(email) : 0;
   const shop = (typeof shopHtkPts === "function") ? shopHtkPts(email) : 0;
   const legacy = (typeof htkDelta === "function" && m && typeof m !== "string") ? htkDelta(m) : 0;   // 기존 온체인 델타(감소 전용)
@@ -20637,6 +20837,122 @@ function regGateCashGuard(targetText) {
   if (/현금|원화|KRW|출금|인출|환전|계좌|이체(?!.*크레딧)/.test(t)) return regGateAllowed("closedLoop", "live");   // closedLoop는 locked → 항상 차단 사유 반환
   if (/스테이블|USDK|KRWx|stable/i.test(t)) { const r = regGateAllowed("stablecoin", "live"); return r.ok ? r : { ok: false, reason: r.reason + " — 현재는 시뮬레이션만 가능해요" }; }
   return { ok: true };
+}
+
+/* ══════════════ P1 PremiumBilling — 실보험료 수납 엔진 (계약 원장 + 월납 청구 + 수납 상태머신) ══════════════
+   진단 보고서(HIFIN-AUDIT-INS-20260724) 축1 Phase 1 구현. (P1-1 계약·청구·상태머신 / P1-2 온램프·잔액 차감 / P1-3 체인 앵커)
+   원칙:
+   - 계약(PolicyLedger)·청구서(Bill)는 회원별 localStorage 원장에 영속 — 화면 카운터가 아니라 레코드.
+   - 수납은 TokenLedger(C1-1) 차감을 통과해야 성립 — 잔액 부족이면 수납 자체가 기록되지 않는다.
+   - 상태머신: 청구 → (납기+7일) 유예 → (납기+30일) 미납 → (미납 3회) 실효. 읽기 시점 lazy 평가(데모: 크론 없음).
+   - 체인 앵커: 계약 체결(policy)·수납(premium)·실효(policy-lapse)를 해시체인에 기록 — 진단 #27 "수납 미기록" 갭 해소.
+   - 충전(온램프)은 시연 PG 시뮬 — 현금→HTK 유입(선불 방향)만 허용, 역방향(현금화)은 RegGate가 차단. */
+
+/* ── 저장/조회 ── */
+function _pbEmail(m) { return (typeof m === "string") ? (m || "default") : ((m && m.email) || "default"); }
+function pbPolicies(m) { try { return JSON.parse(localStorage.getItem("hifin_policies_" + _pbEmail(m)) || "[]"); } catch (e) { return []; } }
+function _pbSavePolicies(m, a) { try { localStorage.setItem("hifin_policies_" + _pbEmail(m), JSON.stringify(a)); } catch (e) {} }
+function pbBills(m) { try { return JSON.parse(localStorage.getItem("hifin_bills_" + _pbEmail(m)) || "[]"); } catch (e) { return []; } }
+function _pbSaveBills(m, a) { try { localStorage.setItem("hifin_bills_" + _pbEmail(m), JSON.stringify(a)); } catch (e) {} }
+function _pbYm(d) { d = d || new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+function _pbToken(m) { return (typeof anonToken === "function" && m && typeof m !== "string") ? anonToken(m) : null; }
+
+/* ── 계약 체결(PolicyLedger) — 같은 상품의 유효 계약이 있으면 재사용(멱등, 데모 반복 대비) ── */
+function pbPolicyCreate(m, o) {
+  o = o || {};
+  const pols = pbPolicies(m);
+  const dup = pols.find((p) => p.product === o.product && p.status === "active");
+  if (dup) return { ok: true, policy: dup, existed: true };
+  const pol = { id: o.policyNo || ("POL-" + Date.now().toString(36).toUpperCase()), product: o.product || "맞춤보험",
+    monthly: Math.max(0, Math.floor(o.monthly || 0)), cover: o.cover || null, term: o.term || "1년(자동갱신)", pay: o.pay || "wallet",
+    start: _pbYm(), status: "active", createdAt: Date.now() };
+  pols.push(pol); _pbSavePolicies(m, pols);
+  if (typeof chainAppend === "function") chainAppend({ type: "policy", token: _pbToken(m), note: `보험계약 체결 — ${pol.product} · 월 ${pol.monthly.toLocaleString()}원 (${pol.id})` });
+  pbEnsureBills(m);
+  return { ok: true, policy: pol };
+}
+
+/* ── 청구서 생성 + 상태머신(lazy) — 유효 계약의 시작월~당월 청구서를 보장하고 미납 단계 평가 ── */
+function pbEnsureBills(m) {
+  const pols = pbPolicies(m); if (!pols.length) return pbBills(m);
+  const bills = pbBills(m);
+  const now = new Date();
+  let changed = false;
+  pols.filter((p) => p.status === "active" && p.monthly > 0).forEach((p) => {
+    const [sy, sm] = p.start.split("-").map(Number);
+    const cur = new Date(sy, sm - 1, 1);
+    while (cur <= now) {
+      const ym = _pbYm(cur);
+      if (!bills.some((b) => b.policyId === p.id && b.ym === ym)) {
+        bills.push({ id: "BILL-" + p.id.slice(-5) + "-" + ym.replace("-", ""), policyId: p.id, product: p.product, ym, amount: p.monthly,
+          due: ym + "-25", status: "청구", attempts: 0, createdAt: Date.now() });
+        changed = true;
+      }
+      cur.setMonth(cur.getMonth() + 1);
+    }
+  });
+  // 상태머신 — 납기 경과 평가(수납 전 청구서만)
+  bills.forEach((b) => {
+    if (b.status === "수납" || b.status === "실효처리") return;
+    const past = (now - new Date(b.due + "T00:00:00")) / 86400000;
+    const next = past > 30 ? "미납" : past > 7 ? "유예" : "청구";
+    if (b.status !== next) { b.status = next; changed = true; }
+  });
+  // 미납 3회 → 계약 실효(체인 기록) + 해당 청구 실효처리
+  pols.forEach((p) => {
+    if (p.status !== "active") return;
+    const overdue = bills.filter((b) => b.policyId === p.id && b.status === "미납");
+    if (overdue.length >= 3) {
+      p.status = "lapsed"; changed = true;
+      overdue.forEach((b) => { b.status = "실효처리"; });
+      if (typeof chainAppend === "function") chainAppend({ type: "policy-lapse", token: _pbToken(m), note: `계약 실효 — ${p.product} (${p.id}) · 3회 연속 미납` });
+    }
+  });
+  if (changed) { _pbSaveBills(m, bills); _pbSavePolicies(m, pols); }
+  return bills;
+}
+
+/* ── 수납 — TokenLedger 차감(이중지불·잔액 검증) 통과 시에만 성립, 체인 앵커(premium) ── */
+function pbPay(m, billId) {
+  const bills = pbBills(m);
+  const b = bills.find((x) => x.id === billId);
+  if (!b) return { ok: false, reason: "청구서를 찾을 수 없습니다" };
+  if (b.status === "수납") return { ok: false, reason: "이미 수납된 청구서입니다" };
+  if (b.status === "실효처리") return { ok: false, reason: "실효된 계약의 청구서입니다 — 부활은 별도 심사가 필요해요" };
+  const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
+  const htk = Math.ceil(b.amount / rate);
+  if (typeof tlSpend !== "function") return { ok: false, reason: "토큰 원장을 사용할 수 없습니다" };
+  const r = tlSpend(m, htk, `보험료 납입 ${b.ym} · ${b.product} (${b.amount.toLocaleString()}원)`, "spend", b.id);
+  if (!r.ok) { b.attempts = (b.attempts || 0) + 1; _pbSaveBills(m, bills); return { ok: false, reason: r.reason + ` — 필요 ${htk.toLocaleString()} HTK`, attempts: b.attempts }; }
+  b.status = "수납"; b.paidAt = Date.now(); b.method = "HTK"; b.htk = htk; b.txRef = r.tx && r.tx.hash;
+  _pbSaveBills(m, bills);
+  const block = (typeof chainAppend === "function") ? chainAppend({ type: "premium", token: _pbToken(m), fhirHash: b.txRef || null, note: `보험료 수납 — ${b.product} ${b.ym} · ${b.amount.toLocaleString()}원 (${htk.toLocaleString()} HTK)` }) : null;
+  if (typeof vaultAccessLog === "function" && _pbToken(m)) vaultAccessLog(_pbToken(m), "수납 엔진", `보험료 수납 ${b.ym}`);
+  return { ok: true, bill: b, balance: r.balance, block };
+}
+
+/* ── 충전(온램프 시연 PG) — 현금→HTK 유입(선불 방향만). 역방향 현금화는 RegGate 차단 ── */
+function pbTopup(m, won) {
+  won = Math.max(0, Math.floor(won || 0));
+  if (!won) return { ok: false, reason: "충전 금액을 입력하세요" };
+  if (won > 2000000) return { ok: false, reason: "1회 충전 한도(200만 원)를 초과했어요" };
+  const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
+  const htk = Math.floor(won / rate);
+  if (typeof tlAppend !== "function") return { ok: false, reason: "토큰 원장을 사용할 수 없습니다" };
+  const r = tlAppend(m, { type: "topup", amount: htk, memo: `충전 ${won.toLocaleString()}원 → ${htk.toLocaleString()} HTK (시연 PG)` });
+  if (!r.ok) return r;
+  if (typeof txAnchor === "function") txAnchor({ ttype: "tx", token: _pbToken(m), kind: "지갑 충전", amount: won, unit: "원", memo: "시연 PG · 선불 충전" });
+  return { ok: true, htk, balance: r.balance };
+}
+
+/* ── 요약 — 화면용 ── */
+function pbSummary(m) {
+  const bills = pbEnsureBills(m);
+  const pols = pbPolicies(m);
+  const unpaid = bills.filter((b) => b.status !== "수납" && b.status !== "실효처리");
+  const paid = bills.filter((b) => b.status === "수납");
+  return { policies: pols, bills: bills.slice().sort((a, b2) => b2.ym.localeCompare(a.ym)), unpaid, paidCount: paid.length,
+    paidTotal: paid.reduce((s, b) => s + b.amount, 0), balance: (typeof tlBalance === "function") ? tlBalance(m) : null };
 }
 
 /* ══════════════ 실제 OCR 엔진 — 업로드 파일에서 검진 항목 텍스트 추출 ══════════════
@@ -22185,6 +22501,56 @@ function loginClearFail() { try { localStorage.removeItem(LOCK_KEY); } catch (e)
 
 /* 관리자/회원 로그인 — 성공 시 게이트 세션에 role 부여 */
 function adminLogin(id, pw) { if (id === AUTH_ADMIN.id && pw === AUTH_ADMIN.pw) { try { demoLogout(); } catch (e) {} authSet({ name: "조성래", role: "ADMIN" }); loginClearFail(); return true; } return false; }
+
+/* ══ Phase1 §2-4 — 코호트 데모 계정 체계: 아이디 000001~100000(6자리) + 공용 비밀번호 hifin002 ══
+   어떤 아이디로 로그인해도 그 인덱스의 결정론 데이터(나이·성별·질병·보험·실손 세대·HTK)가 전 섹션에 일관 반영.
+   최초 로그인 시 검진 합성값·보험 계약을 해당 회원 가명 토큰 금고에 정식 시드(지연 초기화) — 이후 행동은 개별 영속. */
+function cohortLoginProfile(i) {
+  const m = (typeof cohortMemberAt === "function") ? cohortMemberAt(i) : null; if (!m) return null;
+  const ins = (typeof cohortInsurance === "function") ? cohortInsurance(i) : null;
+  const idx6 = String(i).padStart(6, "0");
+  const email = "p" + idx6 + "@cohort.hifin";
+  const dz = m.diseases || [];
+  const cancers = dz.filter((d) => /암$/.test(d));
+  const prof = { id: "C" + idx6, cohortIndex: i, name: m.name, email, sex: m.sex, age: m.age, regAge: m.age,
+    biologicalAge: m.bioAge || m.age, obesityAge: m.age + 2, heartAge: m.age + 1, liverAge: m.age + 1, pancreasAge: m.age + 2, kidneyAge: m.age,
+    cancerRiskGrade: Math.max(2, Math.min(8, (m.risk || 2) + 2)), highRiskCancerTypes: cancers, highRiskDiseases: dz,
+    diseases: dz, estimatedMedicalCost: m.estCost || 900000, income: m.income, sido: m.sido,
+    managementPoints: ["주 150분 유산소 운동", "나트륨·당류 줄이기", "연 1회 검진 수검", "복약·측정 꾸준히"],
+    htkBase: ins ? ins.htkBase : undefined, isDemoUser: false, isCohort: true, realVerified: true };
+  return prof;
+}
+function cohortSeedVault(prof, i) {
+  try {
+    if (typeof vaultLoad !== "function" || typeof anonToken !== "function") return;
+    const v = vaultLoad(anonToken(prof));
+    if (v && ((v.checkups || []).length || (v.insurance || []).length)) return;   // 이미 시드됨 — 재로그인 시 이어짐
+    if (typeof vaultSaveConsents === "function") vaultSaveConsents(prof, { health: true, ai: true, mkt: false, step: "cohort-login" });
+    if (typeof synthCheckupValues === "function" && typeof vaultSaveCheckup === "function" && typeof CKUP_ORDER !== "undefined") {
+      const vals = synthCheckupValues(prof);
+      const items = CKUP_ORDER.map((k) => ({ key: k, value: vals[k], source: "cohort", confidence: 0.92 }));
+      vaultSaveCheckup(prof, items, { source: "cohort", channel: "upload", completeness: "full", fileName: "국가검진결과_" + prof.id + ".pdf", date: "2025-11-01" });
+    }
+    const ins = (typeof cohortInsurance === "function") ? cohortInsurance(i) : null;
+    if (ins && typeof vaultSaveInsurance === "function") {
+      const contracts = ins.contracts.map((c) => ({ insurer: ["현대해상", "삼성화재", "DB손해보험", "메리츠화재"][(i + c.name.length) % 4], product: c.name, kind: c.type === "cancer" ? "암" : "일반", benefit: c.benefit, monthly: c.monthly, years: c.years }));
+      if (ins.silson) contracts.unshift({ insurer: "현대해상", product: "실손의료보험", kind: "실손", gen: ins.silson.gen + "세대", join: String(ins.silson.joinYear), coGen: ins.silson.selfPayGen + "%", coNon: ins.silson.selfPayNon + "%", monthly: ins.silson.monthly });
+      vaultSaveInsurance(prof, contracts, { source: "cohort", channel: "aggregate" });
+    }
+  } catch (e) {}
+}
+function cohortLogin(id, pw) {
+  if (!/^\d{6}$/.test(id) || pw !== "hifin002") return false;
+  const i = parseInt(id, 10);
+  if (i < 1 || i > 100000) return false;
+  const prof = cohortLoginProfile(i); if (!prof) return false;
+  try { demoLogout(); } catch (e) {}
+  cohortSeedVault(prof, i);
+  demoSetSession(prof);
+  authSet({ name: prof.name, email: prof.email, role: "MEMBER", cohort: i });
+  loginClearFail();
+  return true;
+}
 function memberLogin(email, pw) { const m = appAuthenticate(email, pw); if (!m) return false; authSet({ name: m.name, email: m.email, role: "MEMBER" }); demoSetSession(m); loginClearFail(); return true; }
 
 /* ── 둘러보기(GUEST) — 10만 코호트에서 유사 회원 매칭 → 완전한 게스트 프로필 합성 ── */
@@ -22708,8 +23074,9 @@ function AuthLogin() {
     setErr("");
     const ms = (typeof loginLockedMs === "function") ? loginLockedMs() : 0;
     if (ms > 0) { setLockMs(ms); setErr(`로그인이 잠겼습니다. 약 ${Math.ceil(ms / 60000)}분 후 다시 시도해 주세요.`); return; }
-    if (typeof adminLogin === "function" && adminLogin(uid.trim(), pw)) return;      // ADMIN(전체보기) — 콘텐츠 보호(2026-07-24): 이 계정만 허용
-    // 콘텐츠 보호(2026-07-24): 데모 회원(MEMBER) 로그인 경로 차단 — memberLogin 호출 중단(재개 시 아래 주석 해제)
+    if (typeof adminLogin === "function" && adminLogin(uid.trim(), pw)) return;      // ADMIN(전체보기) — hifin 계정
+    if (typeof cohortLogin === "function" && cohortLogin(uid.trim(), pw)) return;    // Phase1 §2-4: 코호트 체험 계정 000001~100000(공용 데모 비밀번호)
+    // 콘텐츠 보호(2026-07-24): 이메일 데모 회원(MEMBER) 로그인 경로 차단 — memberLogin 호출 중단(재개 시 아래 주석 해제)
     // if (typeof memberLogin === "function" && memberLogin(uid.trim(), pw)) return;    // MEMBER(데모 계정)
     if (typeof loginRecordFail === "function") loginRecordFail();
     const nowLock = (typeof loginLockedMs === "function") ? loginLockedMs() : 0;
@@ -22727,6 +23094,7 @@ function AuthLogin() {
         <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" name="hifin-login-pw" autoComplete="new-password" readOnly={ro} onFocus={unlock} disabled={locked} /></label>
       {err && <div className="autherr">{err}</div>}
       <button className="authbtn authprimary" type="submit" disabled={locked}>{locked ? `잠금 — ${Math.ceil(lockMs / 60000)}분 후 재시도` : "로그인"}</button>
+      <div className="guestnote" style={{ marginTop: 10 }}>👥 <b>체험 계정</b>: 아이디 <b>000001</b>~<b>100000</b>(합성 코호트 10만 명 중 한 명의 건강지갑) · 데모 공용 비밀번호 <b>hifin002</b> — 어떤 번호로 들어와도 그 회원의 실데이터 기준으로 전 화면이 동작합니다.</div>
     </form>
   );
 }
