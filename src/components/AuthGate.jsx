@@ -63,7 +63,9 @@ function GuestExplore() {
   const [conds, setConds] = useState([]);
   const CH = ["고혈압", "당뇨", "고지혈증", "기타"];
   const toggle = (c) => setConds((cs) => cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]);
-  const go = () => { if (typeof startGuest === "function") startGuest({ age: Number(age) || 45, sex, chronic, conditions: chronic ? conds : [] }); };
+  // 콘텐츠 보호 조치(2026-07-24): 진입 차단 — startGuest는 무력화 상태, 클릭 시 카드 내 안내만 표시
+  const [blocked, setBlocked] = useState(false);
+  const go = () => { setBlocked(true); if (typeof startGuest === "function") startGuest({ age: Number(age) || 45, sex, chronic, conditions: chronic ? conds : [] }); };
   return (
     <div className="guestcard">
       <div className="guesthd"><span className="guestpill">👀 회원가입 없이 둘러보기</span></div>
@@ -81,6 +83,7 @@ function GuestExplore() {
       </div>
       {chronic && <div className="guestchips">{CH.map((c) => <button key={c} type="button" className={conds.includes(c) ? "on" : ""} onClick={() => toggle(c)}>{c}</button>)}<span className="guestchiphint">복수 선택 · 선택 안 해도 진행 가능</span></div>}
       <button className="authbtn guestcta" type="button" onClick={go}>나와 비슷한 회원으로 체험하기 →</button>
+      {blocked && <div className="autherr">🔒 비회원 둘러보기는 콘텐츠 보호를 위해 일시 중단되었습니다. 승인된 계정으로 로그인해 주세요.</div>}
       <div className="guestnote">※ 별도 회원가입·개인정보 수집 없이 <b>시연용 예시 데이터</b>로 둘러봅니다. 온톨로지·관리자 화면은 열리지 않습니다.</div>
     </div>
   );
@@ -235,9 +238,11 @@ function AuthGate() {
     <div className="authwrap">
       <div className="authcard">
         <AuthBrand />
-        {/* 콘텐츠 보호 조치(2026-07-24): 3무 가입 배너(TriFreeGate)·둘러보기(GuestExplore) 노출 중단 — 승인 계정 로그인만 허용 */}
+        {/* 콘텐츠 보호 조치(2026-07-24): 3무 가입 배너(TriFreeGate) 노출 중단. 둘러보기(GuestExplore)는 화면만 노출하고 진입은 startGuest 무력화로 차단 */}
         <div className="authgate-badge">🔒 승인된 계정만 접속할 수 있습니다.</div>
         <AuthLogin />
+        <div className="author"><span>또는</span></div>
+        <GuestExplore />
         <div className="authlegal">
           <div className="authlegal-hd"><span>🛡️</span> 접속·콘텐츠 보호 안내</div>
           <p>본 홈페이지는 보안 강화를 위해 접속자의 IP 주소, 접속 시간 및 이용 이력 등 접속 로그를 기록·관리합니다. 사전 승인 없이 홈페이지 URL을 제3자에게 공유하거나, 화면 및 콘텐츠를 무단으로 캡처, 복제, 저장 또는 배포하는 행위는 엄격히 금지됩니다. 위반 행위가 확인될 경우 관련 법령 및 계약에 따라 필요한 법적 조치를 취할 수 있습니다.</p>
