@@ -367,11 +367,21 @@ function _insServiceRoute(text, member) {
   mm = text.match(/^✅ 지급 확정 · (\S+)/);
   if (mm) { const r = insService.claimPay(member, mm[1]);
     return { bubbles: [{ kind: "text", text: r.ok ? `지급 완료 ✓ — ${r.claim.id} 보험금 ${won(r.payout)}(${r.htk.toLocaleString()} HTK)이 지갑에 입금됐어요. 잔액 ${r.balance.toLocaleString()} HTK · 온체인 기록 완료.` : "🔒 " + r.reason }], quicks: r.ok ? ["내 잔액 알려줘"] : ["보장 공백 분석"] }; }
+  // 수동 청구 접수(상담사) — "청구 접수 — 도수치료 80000원"
+  mm = text.match(/^청구 접수 — (.+?)\s+([\d,]+)원?$/);
+  if (mm) { const r = insService.claimSubmit(member, { kind: mm[1].trim(), fee: parseInt(mm[2].replace(/,/g, ""), 10) });
+    return { bubbles: [{ kind: "text", text: r.ok ? `접수 완료 ✓ — ${r.claim.id} (${r.claim.kind} · ${won(r.claim.fee)}). 바로 심사해 드릴까요?` : "🔒 " + r.reason }], quicks: r.ok ? [`심사 진행 · ${r.claim.id}`] : [] }; }
+  if (/청구\s*접수\s*해|청구\s*넣어/.test(text))
+    return { bubbles: [{ kind: "text", text: "청구를 접수해 드릴게요 — **\"청구 접수 — 도수치료 80000원\"** 형식으로 진료 종류와 금액을 보내주세요. 비대면 진료는 종료 시 자동 접수돼요(청구 0단계)." }], quicks: ["청구 접수 — 도수치료 80000원"] };
+  // 이의신청(상담사) — "이의신청 — CLM-XXXX"
+  mm = text.match(/^이의신청 — (\S+)/);
+  if (mm) { const r = insService.claimAppeal(member, mm[1], "상담사 경유 재검토 요청");
+    return { bubbles: [{ kind: "text", text: r.ok ? `이의신청이 접수됐어요 ✓ — ${r.claim.id} 재심사가 시작되고, 결과는 알림으로 알려드려요. 부지급이 끝이 아니에요.` : "🔒 " + r.reason }], quicks: ["청구 현황 보여줘"] }; }
   // "심사 진행 · CLM-…" → 심사 결과+확정 버튼
   mm = text.match(/^심사 진행 · (\S+)/);
   if (mm) { const rv = insService.claimReview(member, mm[1]);
     if (!rv.ok) return { bubbles: [{ kind: "text", text: "🔒 " + rv.reason }], quicks: ["보장 공백 분석"] };
-    return { bubbles: [{ kind: "card", card: { title: "🩺 심사 결과", items: [rv.explain, `근거: ${rv.silson.product}${rv.silson.gen ? ` (${rv.silson.gen})` : ""} · 자기부담 ${rv.silson.coGen}`], buttons: [`✅ 지급 확정 · ${rv.claim.id}`] } }], quicks: [] }; }
+    return { bubbles: [{ kind: "card", card: { title: "🩺 심사 결과 — 계산 내역(검증 가능)", items: (rv.breakdown || [rv.explain]).concat([`근거: ${rv.silson.product}${rv.silson.gen ? ` (${rv.silson.gen})` : ""}`]), buttons: [`✅ 지급 확정 · ${rv.claim.id}`] } }], quicks: [] }; }
   // 청구·지급 조회
   if (/청구\s*(현황|내역|상태|어떻|해줘)|보험금\s*(받|줘|지급|청구)|지급\s*해/.test(text)) {
     const cl = insService.claims(); const pending = cl.filter((c) => !/지급/.test(c.status || ""));
@@ -1252,13 +1262,23 @@ function InsClaimPayTab({ onModal }) {
         <p style={{ fontSize: 12.5, color: "var(--muted)" }}>아직 청구가 없어요 — <b>비대면 진료를 마치면 서류 없이 자동으로 청구가 접수</b>돼요(청구 0단계).</p>
       </div>)}
       {claims.map((c) => {
-        const paid = /지급/.test(c.status || "");
+        const paid = /지급완료/.test(c.status || "");
+        const denied = /부지급/.test(c.status || "");
+        const deny = denied && c.denyCode && typeof CLAIM_DENY !== "undefined" ? CLAIM_DENY[c.denyCode] : null;
         return (
-          <div className="costrow" key={c.id}><span className="cl">{c.id}{c.at ? " · " + new Date(c.at).toLocaleDateString("ko-KR") : ""}</span>
-            <span className="cv" style={{ color: paid ? "var(--green)" : "var(--blue)" }}>{paid ? `지급 ${won(c.payout)}` : (c.status || "접수")}</span>
-            <span className="ca">{paid ? "지급완료" : <button className="cbtn" style={{ width: "auto", margin: 0, padding: "5px 10px", fontSize: 11 }} onClick={() => { const rv = insService.claimReview(m, c.id); if (!rv.ok) { if (typeof toast === "function") toast("🔒 " + rv.reason); return; } setConfirm(rv); }}>심사·지급</button>}</span>
-          </div>);
+          <React.Fragment key={c.id}>
+            <div className="costrow"><span className="cl">{c.id}{c.kind ? " · " + c.kind : ""}{c.at ? " · " + new Date(c.at).toLocaleDateString("ko-KR") : ""}</span>
+              <span className="cv" style={{ color: paid ? "var(--green)" : denied ? "#B91C1C" : "var(--blue)" }}>{paid ? `지급 ${won(c.payout)}` : (c.status || "접수")}</span>
+              <span className="ca">{paid ? "지급완료" : denied ? "부지급" : /이의신청/.test(c.status || "") ? "재심사 중" : <button className="cbtn" style={{ width: "auto", margin: 0, padding: "5px 10px", fontSize: 11 }} onClick={() => { const rv = insService.claimReview(m, c.id); if (!rv.ok) { insService.claimPay(m, c.id); if (typeof toast === "function") toast("🔒 " + rv.reason); setTick((t) => t + 1); return; } setConfirm(rv); }}>심사·지급</button>}</span>
+            </div>
+            {denied && deny && (
+              <div style={{ background: "#FFF7F7", border: "1px solid #FECACA", borderRadius: 10, padding: "8px 12px", margin: "2px 0 8px", fontSize: 12 }}>
+                <b style={{ color: "#B91C1C" }}>{deny.ko}</b> — {deny.easy}<br /><span style={{ color: "var(--muted)" }}>해결: {deny.fix}</span>
+                <button className="cbtn" style={{ width: "auto", margin: "6px 0 0", padding: "5px 10px", fontSize: 11 }} onClick={() => { const r = insService.claimAppeal(m, c.id, "재검토 요청"); if (typeof toast === "function") toast(r.ok ? "이의신청이 접수됐어요 — 재심사 결과를 알림으로 알려드려요" : r.reason); setTick((t) => t + 1); }}>이의신청</button>
+              </div>)}
+          </React.Fragment>);
       })}
+      {(() => { const L = insService.claimLimits(m); return <div className="chnote" style={{ marginTop: 6 }}>올해 사용한 보장: 급여 {won(L.pay)} · 비급여 {won(L.non)} — 잔여 한도는 심사 시 계산 내역에서 보여드려요.</div>; })()}
       <div className="chnote" style={{ marginTop: 8 }}>심사 규칙: 실손 계약 확인 → 진료비에서 <b>내가 내는 돈(자기부담)</b>을 뺀 금액을 지급 → 지갑 토큰으로 즉시 입금(온체인 기록). 중복 지급은 차단돼요.</div>
     </div>
     <ClaimSupportFlow onModal={onModal} />
@@ -1267,6 +1287,10 @@ function InsClaimPayTab({ onModal }) {
         <div className="bkh"><div className="bt"><ShieldCheck size={16} color="#16A34A" /> 심사 결과 — 지급 확인</div></div>
         <div className="bkb" style={{ padding: 18 }}>
           <p style={{ fontSize: 13.5, lineHeight: 1.7 }}>{confirm.explain}<br /><span style={{ fontSize: 11.5, color: "var(--muted)" }}>근거: {confirm.silson.product}{confirm.silson.gen ? ` (${confirm.silson.gen})` : ""} · 자기부담 {confirm.silson.coGen}</span></p>
+          {confirm.breakdown && (
+            <details style={{ margin: "4px 0 8px", fontSize: 12 }}><summary style={{ cursor: "pointer", fontWeight: 700, color: "var(--blue)" }}>계산 내역 펼쳐보기 (심사 근거 검증)</summary>
+              <ul style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.7 }}>{confirm.breakdown.map((ln, i) => <li key={i}>{ln}</li>)}</ul>
+            </details>)}
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button className="cbtn" style={{ margin: 0 }} onClick={() => setConfirm(null)}>취소</button>
             <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { const r = insService.claimPay(m, confirm.claim.id); if (typeof toast === "function") toast(r.ok ? `지급 완료 ✓ +${r.htk.toLocaleString()} HTK (잔액 ${r.balance.toLocaleString()})` : "🔒 " + r.reason); setConfirm(null); setTick((t) => t + 1); }}>지급 실행</button>

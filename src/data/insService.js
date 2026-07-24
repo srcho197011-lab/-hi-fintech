@@ -46,26 +46,80 @@ function spSummary() {
     bySource: l.filter((t) => t.dir !== -1).reduce((m, t) => { m[t.source] = (m[t.source] || 0) + t.amount; return m; }, {}) };
 }
 
-/* ══ ClaimEngine-lite(P2 기초) — 심사 규칙 + 지급 실행(잔액 실이동) ══ */
+/* ══ ClaimEngine(P2 고도화) — 자동심사 룰셋 · 급여/비급여 · 연간 한도 · 중복 지문 · 부지급 사유·이의신청 ══ */
 function _claims() { try { return JSON.parse(localStorage.getItem("hifin_claims") || "[]"); } catch (e) { return []; } }
 function _claimsSave(l) { try { localStorage.setItem("hifin_claims", JSON.stringify(l)); } catch (e) {} }
+/* 부지급 사유 코드 — 쉬운 언어 설명 + 해결 경로(거절도 친절하게) */
+const CLAIM_DENY = {
+  NO_CONTRACT: { ko: "실손 계약 미확인", easy: "지급이 안 된 이유: 실손 보험 연결이 확인되지 않았어요", fix: "보장분석 탭에서 내 보험을 연결하면 다시 심사할 수 있어요" },
+  DUP: { ko: "중복 청구", easy: "지급이 안 된 이유: 같은 진료 건으로 이미 지급받으셨어요", fix: "다른 진료 건이라면 이의신청으로 알려주세요" },
+  LIMIT: { ko: "연간 한도 소진", easy: "지급이 안 된 이유: 올해 보장 한도를 모두 사용했어요", fix: "내년 갱신 후 한도가 초기화돼요 — 잔여 한도는 계산 내역에서 확인" },
+  NO_RIDER: { ko: "특약 미가입", easy: "지급이 안 된 이유: 이 항목(3대 비급여)은 별도 특약 가입이 필요해요", fix: "맞춤보험 탭에서 특약 보완을 검토해 보세요" },
+};
+/* 연간 사용 한도 원장 — 급여/비급여 누적(청구 지급 시 차감) */
+function _limitUsed(m) { try { const y = new Date().getFullYear(); const o = JSON.parse(localStorage.getItem("hifin_claim_used_" + ((m && m.email) || "d")) || "{}"); return (o.year === y) ? o : { year: y, pay: 0, non: 0 }; } catch (e) { return { year: new Date().getFullYear(), pay: 0, non: 0 }; } }
+function _limitAdd(m, cls, amt) { try { const o = _limitUsed(m); o[cls === "비급여" ? "non" : "pay"] += amt; localStorage.setItem("hifin_claim_used_" + ((m && m.email) || "d"), JSON.stringify(o)); } catch (e) {} }
+/* 진료건 지문(중복 탐지) — 진료일+종류+금액 */
+function _claimFp(c) { return (typeof vaultHash === "function") ? vaultHash("clmfp|" + new Date(c.at || 0).toDateString() + "|" + (c.kind || "") + "|" + (c.fee || 0)) : String(c.at); }
+function _mySilson(m) { try { const v = (typeof vaultLoad === "function") ? vaultLoad(anonToken(m)) : null; return (v && v.insurance || []).find((k) => k.kind === "실손" || /실손/.test(k.product || "")) || null; } catch (e) { return null; } }
+/* 자동심사 — 산정 근거(breakdown)를 회원이 펼쳐보게 반환 */
 function claimReview(m, claimId) {
   const l = _claims(); const c = l.find((x) => x.id === claimId);
   if (!c) return { ok: false, reason: "청구 건을 찾을 수 없습니다" };
-  if (/지급/.test(c.status || "")) return { ok: false, reason: "이미 지급된 청구입니다(중복 지급 차단)" };
-  // 규칙①: 실손 계약 보유 확인(금고 실데이터)
-  let silson = null;
-  try { const v = (typeof vaultLoad === "function") ? vaultLoad(anonToken(m)) : null; silson = (v && v.insurance || []).find((k) => k.kind === "실손" || /실손/.test(k.product || "")); } catch (e) {}
-  if (!silson) return { ok: false, reason: "실손 계약이 확인되지 않아요 — 보장분석 탭에서 내 보험을 먼저 연결해 주세요" };
-  // 규칙②: 지급액 산정 — 진료비(청구 기록 fee, 없으면 비대면 진찰료 수가)에서 세대별 자기부담률 차감
+  if (/지급/.test(c.status || "")) return { ok: false, code: "DUP", deny: CLAIM_DENY.DUP, reason: "이미 지급된 청구입니다(중복 지급 차단)" };
+  const silson = _mySilson(m);
+  if (!silson) return { ok: false, code: "NO_CONTRACT", deny: CLAIM_DENY.NO_CONTRACT, reason: CLAIM_DENY.NO_CONTRACT.easy };
+  // 중복 지문 — 동일 진료건 기지급 여부
+  const fp = _claimFp(c);
+  if (l.some((x) => x.id !== c.id && /지급/.test(x.status || "") && _claimFp(x) === fp)) return { ok: false, code: "DUP", deny: CLAIM_DENY.DUP, reason: CLAIM_DENY.DUP.easy };
+  // 급여/비급여 분류 — 3대 비급여(도수·주사·MRI)는 특약 확인
   const fee = c.fee || INS_CONFIG.TELE_VISIT_FEE;
-  const genPct = parseInt(String(silson.coGen || "20").replace(/\D/g, ""), 10) || 20;   // 급여 자기부담률
-  const payout = Math.max(0, Math.round(fee * (1 - genPct / 100) / 100) * 100);
-  return { ok: true, claim: c, silson: { product: silson.product, gen: silson.gen, coGen: genPct + "%" }, fee, payout,
-    explain: `진료비 ${fee.toLocaleString()}원 − 내가 내는 돈(자기부담 ${genPct}%) = 지급 ${payout.toLocaleString()}원` };
+  const nonPay = /도수|주사|MRI|엠알아이|비급여/.test(c.kind || "");
+  const riderKey = /도수/.test(c.kind || "") ? "dosu" : /주사/.test(c.kind || "") ? "injection" : /MRI|엠알아이/.test(c.kind || "") ? "mri" : null;
+  const gen = parseInt(String(silson.gen || "4").replace(/\D/g, ""), 10) || 4;
+  if (nonPay && gen >= 3 && riderKey) { const rd = silson.riders3; if (rd && rd[riderKey] === false) return { ok: false, code: "NO_RIDER", deny: CLAIM_DENY.NO_RIDER, reason: CLAIM_DENY.NO_RIDER.easy }; }
+  // 세대별 자기부담 산식(진단 §2-2B 규정) — 계약 저장값 우선, 없으면 세대 기본
+  const GEN_SELF = { 1: [0, 0], 2: [10, 20], 3: [10, 30], 4: [20, 30], 5: [20, 30] };
+  const selfPct = nonPay ? (parseInt(String(silson.coNon || "").replace(/\D/g, ""), 10) || GEN_SELF[gen][1]) : (parseInt(String(silson.coGen || "").replace(/\D/g, ""), 10) || GEN_SELF[gen][0]);
+  // 연간 잔여한도 — 급여/비급여 별도(계약 한도 저장값 없으면 세대 기본: 급여 5천만·비급여 2천만/3세대 5천만)
+  const limit = nonPay ? (gen <= 2 ? 100000000 : gen === 3 ? 50000000 : 20000000) : (gen <= 2 ? 100000000 : 50000000);
+  const used = _limitUsed(m)[nonPay ? "non" : "pay"];
+  const remain = Math.max(0, limit - used);
+  if (remain <= 0) return { ok: false, code: "LIMIT", deny: CLAIM_DENY.LIMIT, reason: CLAIM_DENY.LIMIT.easy };
+  const raw = Math.round(fee * (1 - selfPct / 100) / 100) * 100;
+  const payout = Math.min(raw, remain);
+  // 심사 트랙 — 고액은 수동심사 큐(자동승인 아님)
+  const track = fee >= 1000000 ? "수동심사" : "자동승인";
+  return { ok: true, claim: c, silson: { product: silson.product, gen: silson.gen, coGen: selfPct + "%" }, fee, payout, track,
+    breakdown: [`진료비 ${fee.toLocaleString()}원 (${nonPay ? "비급여" : "급여"} 항목)`, `내가 내는 돈(자기부담 ${selfPct}%) − ${(fee - raw).toLocaleString()}원`, `연간 잔여 한도 ${remain.toLocaleString()}원 중 지급 ${payout.toLocaleString()}원`, `심사 트랙: ${track}${track === "수동심사" ? " (100만 원 이상 고액 — 담당자 확인 후 지급)" : " (규칙 심사 통과)"}`],
+    explain: `진료비 ${fee.toLocaleString()}원 − 내가 내는 돈(자기부담 ${selfPct}%) = 지급 ${payout.toLocaleString()}원` };
+}
+/* 수동 청구 접수(상담사·화면 공용) — 지문 중복 즉시 차단 */
+function claimSubmit(m, o) {
+  o = o || {};
+  const fee = Math.max(0, Math.floor(o.fee || 0));
+  if (!fee) return { ok: false, reason: "진료비 금액을 알려주세요" };
+  const c = { id: "CLM-" + Date.now().toString(36).toUpperCase(), at: o.date || Date.now(), status: "접수", kind: o.kind || "진료", fee, channel: o.channel || "수동 접수" };
+  const l = _claims();
+  const fp = _claimFp(c);
+  if (l.some((x) => /지급/.test(x.status || "") && _claimFp(x) === fp)) return { ok: false, code: "DUP", reason: CLAIM_DENY.DUP.easy };
+  l.push(c); _claimsSave(l);
+  if (typeof chainAppend === "function") chainAppend({ type: "record", token: (typeof anonToken === "function" && m) ? anonToken(m) : null, note: `보험금 청구 접수 — ${c.id} · ${c.kind} ${fee.toLocaleString()}원` });
+  return { ok: true, claim: c };
+}
+/* 이의신청 — 부지급도 끝이 아니게 */
+function claimAppeal(m, claimId, reason) {
+  const l = _claims(); const c = l.find((x) => x.id === claimId);
+  if (!c) return { ok: false, reason: "청구 건을 찾을 수 없습니다" };
+  c.appeal = { at: Date.now(), reason: String(reason || "재검토 요청").slice(0, 200) };
+  c.status = "이의신청 접수";
+  _claimsSave(l);
+  if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `청구 이의신청 접수 — ${c.id}` });
+  if (typeof notifPush === "function") notifPush({ ic: "doc", t: "이의신청 접수", d: `${c.id} 재심사가 시작됐어요 — 결과는 알림으로 알려드려요`, target: "insurance" });
+  return { ok: true, claim: c };
 }
 function claimPay(m, claimId) {
-  const rv = claimReview(m, claimId); if (!rv.ok) return rv;
+  const rv = claimReview(m, claimId); if (!rv.ok) { const l0 = _claims(); const c0 = l0.find((x) => x.id === claimId); if (c0 && rv.code && !/지급/.test(c0.status || "")) { c0.status = "부지급(" + rv.code + ")"; c0.denyCode = rv.code; _claimsSave(l0); } return rv; }
   const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
   const htk = Math.round(rv.payout / rate);
   if (typeof tlEarn !== "function") return { ok: false, reason: "원장을 사용할 수 없습니다" };
@@ -75,6 +129,7 @@ function claimPay(m, claimId) {
   c.status = "지급완료"; c.paidAt = Date.now(); c.payout = rv.payout; c.txRef = r.tx && r.tx.hash;
   _claimsSave(l);
   if (typeof chainAppend === "function") chainAppend({ type: "payout", token: (typeof anonToken === "function") ? anonToken(m) : null, fhirHash: c.txRef || null, note: `보험금 지급 실행 — ${c.id} · ${rv.payout.toLocaleString()}원 (${htk.toLocaleString()} HTK 크레딧)` });
+  _limitAdd(m, /비급여/.test((rv.breakdown && rv.breakdown[0]) || "") ? "비급여" : "급여", rv.payout);   // P2: 연간 한도 누적 차감
   notifPush({ ic: "coin", t: "보험금 지급 완료", d: `${c.id} · ${rv.payout.toLocaleString()}원이 지갑에 입금됐어요`, target: "insurance" });
   return { ok: true, claim: c, payout: rv.payout, htk, balance: r.balance };
 }
@@ -149,6 +204,9 @@ const insService = {
   claimStatus(id) { return _claims().find((c) => c.id === id) || null; },
   claimReview(m, id) { return claimReview(m || _isMember(), id); },
   claimPay(m, id) { return claimPay(m || _isMember(), id); },
+  claimSubmit(m, o) { return claimSubmit(m || _isMember(), o); },
+  claimAppeal(m, id, reason) { return claimAppeal(m || _isMember(), id, reason); },
+  claimLimits(m) { m = m || _isMember(); return _limitUsed(m); },
   /* ⑤ 재산정 */
   rerate(m) { m = m || _isMember(); return { state: (typeof rerateState === "function") ? rerateState() : null, compute: rerateCompute(m) }; },
   rerateApply(m) { return rerateApplyReal(m || _isMember()); },
