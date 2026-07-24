@@ -72,6 +72,16 @@ function lineageProfile(member) {
   fields.biologicalAge = Math.max(19, reg + bioDelta);
   const cxrAbn = _lbSev("cxr", ck.map.cxr).sev > 0 ? 1 : 0;
   fields.cancerRiskGrade = Math.max(2, Math.min(8, 2 + riskyOrgans + cxrAbn + (reg >= 60 ? 1 : 0)));
+  // 과업2ⓑ: 검진(1세대) 기반 분석이 처음 생성되는 시점에 2세대 자산 레코드 append(검진 날짜별 1회 멱등) + 체인 지문
+  try {
+    const tk = anonToken(member); const k = "hifin_g2_" + tk;
+    const l = JSON.parse(localStorage.getItem(k) || "[]");
+    if (!l.some((r) => r.date === ck.date)) {
+      l.push({ date: ck.date, n: ck.n, at: Date.now() });
+      localStorage.setItem(k, JSON.stringify(l));
+      if (typeof chainAppend === "function") chainAppend({ type: "record", token: tk, note: `2세대 분석 자산 생성 — 검진(${ck.date}·${ck.n}항목) 기반 AI 리포트` });
+    }
+  } catch (e) {}
   return { fields, evidence, date: ck.date, channel: ck.channel, completeness: ck.completeness, n: ck.n, history: ck.history, reg, totalSev };
 }
 

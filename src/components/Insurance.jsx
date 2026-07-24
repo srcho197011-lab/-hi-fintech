@@ -156,9 +156,10 @@ function InsJoin({ onGo }) {
   const [ag, setAg] = useState({});
   const [open, setOpen] = useState({});
   const [svc, setSvc] = useState({ s0: true, s1: true, s2: true, s3: true, s4: true });
-  const [info, setInfo] = useState({ name: PT.name, birth: "1970.11.20", sex: "남", phone: "", addr: PT.addr, rrn1: "", rrn2: "" });
-  const [showRrn, setShowRrn] = useState(false);
-  const rrnOk = info.rrn1.length === 6 && info.rrn2.length === 7;
+  const [info, setInfo] = useState({ name: PT.name, birth: "1970.11.20", sex: "남", phone: "", addr: PT.addr });
+  // 가드레일 ⓟ(진단 #46): 주민등록번호 평문 수집 폼 제거 — 실번호 입력 대신 PASS 본인인증(시연) 완료 플래그로 대체
+  const [rrnVerified, setRrnVerified] = useState(false);
+  const rrnOk = rrnVerified;
   const [done, setDone] = useState(false);
   const set = (k, v) => setAg((p) => ({ ...p, [k]: v }));
   const tog = (k) => setOpen((p) => ({ ...p, [k]: !p[k] }));
@@ -223,14 +224,12 @@ function InsJoin({ onGo }) {
         <input placeholder="주소" style={{ gridColumn: "1 / -1" }} value={info.addr} onChange={(e) => setInfo({ ...info, addr: e.target.value })} />
         <div style={{ gridColumn: "1 / -1" }}>
           {typeof TrustLine === "function" && <TrustLine ctx="rrn" />}
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B45309", marginBottom: 5 }}><Lock size={11} style={{ verticalAlign: "-2px" }} /> 주민등록번호 <span style={{ color: "var(--soft)", fontWeight: 600 }}>· 건강검진보험 가입 시 필수 (보안입력)</span></div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B45309", marginBottom: 5 }}><Lock size={11} style={{ verticalAlign: "-2px" }} /> 실명 확인 <span style={{ color: "var(--soft)", fontWeight: 600 }}>· 건강검진보험 가입 시 필수</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input inputMode="numeric" maxLength={6} placeholder="앞 6자리" value={info.rrn1} onChange={(e) => setInfo({ ...info, rrn1: e.target.value.replace(/\D/g, "").slice(0, 6) })} style={{ flex: 1, letterSpacing: "2px" }} />
-            <span style={{ fontWeight: 800, color: "var(--soft)" }}>—</span>
-            <input inputMode="numeric" maxLength={7} type={showRrn ? "text" : "password"} placeholder="뒤 7자리" value={info.rrn2} onChange={(e) => setInfo({ ...info, rrn2: e.target.value.replace(/\D/g, "").slice(0, 7) })} style={{ flex: 1, letterSpacing: "3px" }} />
-            <button type="button" onClick={() => setShowRrn((v) => !v)} style={{ border: "1px solid var(--border)", background: "#fff", borderRadius: 9, padding: "9px 11px", cursor: "pointer", color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, flexShrink: 0 }} title={showRrn ? "가리기" : "표시"}><Lock size={13} /> {showRrn ? "가리기" : "표시"}</button>
+            <div style={{ flex: 1, border: "1px solid var(--border)", borderRadius: 9, padding: "9px 12px", background: "#F8FAFC", color: "var(--soft)", fontSize: 13, letterSpacing: "2px" }}>●●●●●● — ●●●●●●●</div>
+            <button type="button" onClick={() => { setRrnVerified(true); if (typeof toast === "function") toast("PASS 본인인증이 완료되었습니다(시연)."); }} disabled={rrnVerified} style={{ border: "1px solid var(--border)", background: rrnVerified ? "#E7F8EE" : "#2563EB", borderRadius: 9, padding: "9px 13px", cursor: "pointer", color: rrnVerified ? "#15803D" : "#fff", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}><ShieldCheck size={13} /> {rrnVerified ? "인증 완료 ✓" : "PASS 본인인증(시연)"}</button>
           </div>
-          <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 5 }}>※ 뒷자리는 입력 즉시 마스킹(●)되며, 보험 인수심사 목적으로만 <b>암호화 전송·저장</b>됩니다. {rrnOk && <span style={{ color: "var(--green)", fontWeight: 700 }}><Check size={11} style={{ verticalAlign: "-2px" }} /> 입력 완료</span>}</div>
+          <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 5 }}>※ 시연 환경에서는 <b>주민등록번호를 수집하지 않습니다</b> — 실서비스는 PASS 간편 본인인증으로 대체되며, 인수심사 정보는 보험사에 암호화 전송됩니다.</div>
         </div>
       </div>
       <div className="rct" style={{ fontSize: 13.5, marginTop: 14 }}>서비스 이용 신청 <span className="reqtag opt">선택</span></div>
@@ -246,7 +245,7 @@ function InsJoin({ onGo }) {
     <div className="card" style={{ border: "1.5px solid #BFD0FF" }}>
       <div style={{ fontSize: 12.5, color: "#3a4659", lineHeight: 1.6 }}>본인은 상기 내용을 충분히 읽고 이해하였으며 자발적인 의사에 따라 본 동의서를 작성·제출합니다. <b>(전자서명)</b></div>
       <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>신청인: <b style={{ color: "var(--text)" }}>{info.name || "—"}</b> · 하이젠케어 주식회사 귀중</div>
-      <button className="cbtn pri" style={{ marginTop: 12, opacity: allReq && rrnOk ? 1 : .5 }} disabled={!(allReq && rrnOk)} onClick={() => setDone(true)}><ShieldCheck size={15} /> {!allReq ? "필수 항목에 모두 동의해 주세요" : !rrnOk ? "주민등록번호를 입력해 주세요" : "전자서명 후 건강검진보험 가입 동의 제출"}</button>
+      <button className="cbtn pri" style={{ marginTop: 12, opacity: allReq && rrnOk ? 1 : .5 }} disabled={!(allReq && rrnOk)} onClick={() => setDone(true)}><ShieldCheck size={15} /> {!allReq ? "필수 항목에 모두 동의해 주세요" : !rrnOk ? "PASS 본인인증을 완료해 주세요" : "전자서명 후 건강검진보험 가입 동의 제출"}</button>
       <div className="chnote" style={{ marginTop: 8 }}>※ 보험가입·청약·심사는 정식 라이선스 보험대리점 글로벌예방금융㈜·GA코리아㈜ 및 보험사를 통해 진행됩니다. 본 화면은 동의서 양식 예시입니다.</div>
     </div>
   </>);

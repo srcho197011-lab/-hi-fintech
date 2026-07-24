@@ -71,7 +71,7 @@ function BlockchainAnchorConsole({ cohort }) {
         <div className="bcv-stats">
           <div className="bcv-stat"><b>{anchor.n.toLocaleString()}</b><span>앵커된 회원 leaf</span></div>
           <div className="bcv-stat"><b>{anchor.batches.length}</b><span>배치 (각 {anchor.batchSize.toLocaleString()})</span></div>
-          <div className="bcv-stat"><b>SHA-256</b><span>해시 알고리즘(시뮬)</span></div>
+          <div className="bcv-stat"><b>FNV-체인</b><span>해시(시뮬 · 운영 시 SHA-256)</span></div>
           <div className="bcv-stat"><b>{Math.ceil(Math.log2(anchor.batchSize))}</b><span>proof 깊이(배치)</span></div>
         </div>
         <div className="bcv-super"><span>Super Merkle Root</span><code>{anchor.superRoot}</code></div>

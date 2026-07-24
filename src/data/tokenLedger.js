@@ -68,13 +68,15 @@ function tlSync(m) {
   const email = _tlEmail(m);
   tlEnsureGenesis(m);
   if (!tlAll(email).length) return null;                                     // 쓰기 차단 환경 — 폴백 신호
-  let snap = { cp: 0, shop: 0 };
+  let snap = { cp: 0, shop: 0, ref: 0 };
   try { snap = JSON.parse(localStorage.getItem(_tlKey(email) + "_snap") || "{}") || {}; } catch (e) {}
   const cp = (typeof careplanEarned === "function") ? careplanEarned(email) : 0;
   const shop = (typeof shopHtkPts === "function") ? shopHtkPts(email) : 0;
+  const ref = (typeof refState === "function") ? (refState(email).htk || 0) : 0;   // 과업2ⓐ: 리퍼럴 적립도 단일 원장으로 흡수(4계열 통합 완성)
   if (cp > (snap.cp || 0)) tlEarn(email, cp - (snap.cp || 0), "AI 케어플랜 실천 적립");
   if (shop > (snap.shop || 0)) tlEarn(email, shop - (snap.shop || 0), "건강쇼핑 구매 적립");
-  try { localStorage.setItem(_tlKey(email) + "_snap", JSON.stringify({ cp: cp, shop: shop })); } catch (e) {}
+  if (ref > (snap.ref || 0)) tlEarn(email, ref - (snap.ref || 0), "친구초대·가족등록 리워드");
+  try { localStorage.setItem(_tlKey(email) + "_snap", JSON.stringify({ cp: cp, shop: shop, ref: ref })); } catch (e) {}
   return tlBalance(email);
 }
 

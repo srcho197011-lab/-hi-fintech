@@ -89,12 +89,30 @@ function txAnchor(o) {
 }
 
 /* ── HTK 온체인 토큰 원장 (전송·스왑) — 지갑 주소·잔액·트랜잭션 ── */
-function htkTokenAddr(member) { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return "0x" + vaultHash("htk-addr|" + t).slice(0, 16); }
+/* 과업2ⓐ: 주소록(addr→email) — 내부 회원 간 전송 시 수신자 크레딧을 가능하게 하는 해석 계층 */
+function htkTokenAddr(member) {
+  const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet";
+  const addr = "0x" + vaultHash("htk-addr|" + t).slice(0, 16);
+  try { if (member && member.email) { const bk = JSON.parse(localStorage.getItem("hifin_addrbook") || "{}"); if (bk[addr] !== member.email) { bk[addr] = member.email; localStorage.setItem("hifin_addrbook", JSON.stringify(bk)); } } } catch (e) {}
+  return addr;
+}
+/* 수신자 해석 — 0x주소(주소록)·6자리 코호트 아이디·이메일 모두 지원. 미해석 시 null(외부 주소로 처리) */
+function htkResolveRecipient(to) {
+  const t = String(to || "").trim();
+  if (/^\d{6}$/.test(t)) { const i = parseInt(t, 10); if (i >= 1 && i <= 100000) return "p" + t + "@cohort.hifin"; }
+  if (/^[^@\s]+@[^@\s]+$/.test(t)) return t;
+  if (/^0x[0-9a-f]{6,}$/i.test(t)) { try { const bk = JSON.parse(localStorage.getItem("hifin_addrbook") || "{}"); return bk[t] || null; } catch (e) { return null; } }
+  return null;
+}
 function htkDelta(member) { try { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return Number(JSON.parse(localStorage.getItem("hifin_htkbal_" + t) || "0")) || 0; } catch (e) { return 0; } }
 function _htkAdjust(member, d) { try { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; localStorage.setItem("hifin_htkbal_" + t, JSON.stringify(htkDelta(member) + d)); } catch (e) {} }
 /* C1-1: 차감은 TokenLedger(단일 원장) 검증을 먼저 통과해야 실행 — 이중지불·음수 잔액 차단. 레거시 델타는 무중단 병행.
    C1-2: 현금성 목적지(현금·원화·출금·스테이블 등)는 RegGate(폐쇄형·시행일 동기화)가 코드로 차단. */
-function htkTransfer(member, to, amount, memo) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "") + " " + String(memo || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, "전송 → " + (to || "0x…") + (memo ? " · " + memo : ""), "transfer"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 전송", amount, memo: "→ " + (to || "0x…") + (memo ? " · " + memo : "") }); }
+function htkTransfer(member, to, amount, memo) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "") + " " + String(memo || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, "전송 → " + (to || "0x…") + (memo ? " · " + memo : ""), "transfer"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } }
+  // 과업2ⓐ 수신자 크레딧 — 내부 회원 해석 시 수신 원장에 earn 기록(양측 원장 정합). 미해석 주소는 외부 전송으로 기록만.
+  const rcpt = (typeof htkResolveRecipient === "function") ? htkResolveRecipient(to) : null;
+  if (rcpt && rcpt !== (member && member.email) && typeof tlEarn === "function") tlEarn(rcpt, amount, "수신 — " + ((member && member.name) || "회원") + "님 전송" + (memo ? " · " + memo : ""));
+  _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 전송", amount, memo: "→ " + (to || "0x…") + (rcpt ? " (내부 수신 크레딧 완료)" : " (외부 주소 — 시연 기록만)") + (memo ? " · " + memo : "") }); }
 function htkSwap(member, from, to, amount) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, (from || "HTK") + " → " + (to || "보험·치료비 크레딧"), "swap"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 스왑", amount, memo: (from || "HTK") + " → " + (to || "보험·치료비 크레딧") }); }
 function htkLedger(member) { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return (typeof chainForToken === "function") ? chainForToken(t).filter((b) => b.type === "swap") : []; }
 

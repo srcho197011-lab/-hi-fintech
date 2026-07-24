@@ -288,6 +288,8 @@ function rerateApply(m) {
     localStorage.setItem("hifin_rerate", JSON.stringify(s));
     const tk = anonToken(m);
     chainAppend({ type: "record", token: tk, note: "보험요율 재산정 — 4세대 성과 증명(혈당·중성지방 개선) 제출 · 인하 적용" });
+    // 과업2ⓑ: 성과 확정 = 4세대 실자산 레코드 append(프록시 공식 아님)
+    try { const k = "hifin_g4_" + tk; const l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ kind: "rerate", saving: s.saving, at: s.at }); localStorage.setItem(k, JSON.stringify(l)); } catch (e2) {}
     vaultAccessLog(tk, "보험사(요약 증명만)", "성과 SBT 요약 열람 — 요율 재산정 심사(원본 미제공)");
     return s;
   } catch (e) { return null; }
@@ -297,13 +299,17 @@ function assetLineage(m) {
   try {
     const tk = anonToken(m); const v = vaultLoad(tk) || {}; const blocks = (typeof chainForToken === "function") ? chainForToken(tk) : [];
     const g1 = (v.checkups || []).length;
-    const g2 = g1;   // 검진 1건당 AI 정밀리포트 1건(분석 자산)
+    // 과업2ⓑ: g2·g4는 실자산 레코드(생성 이벤트 append) 우선 — 레코드가 없는 기존 회원은 종전 프록시 폴백(무중단)
+    let g2rec = [], g4rec = [];
+    try { g2rec = JSON.parse(localStorage.getItem("hifin_g2_" + tk) || "[]"); } catch (e) {}
+    try { g4rec = JSON.parse(localStorage.getItem("hifin_g4_" + tk) || "[]"); } catch (e) {}
+    const g2 = g2rec.length || g1;   // 실레코드 없으면 검진 1건당 리포트 1건 프록시
     let certs = 0, claims = 0;
     try { certs = (JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]")).length; } catch (e) {}
     try { claims = (JSON.parse(localStorage.getItem("hifin_claims") || "[]")).length; } catch (e) {}
     const g3 = certs + claims + blocks.filter((b) => b.type === "tx" || b.type === "swap").length;
     const rr = rerateState();
-    const g4 = (g1 >= 2 ? 1 : 0) + (rr.status === "done" ? 1 : 0);   // 2개년 지표 개선 + 재산정 성과 증명
+    const g4 = g4rec.length || ((g1 >= 2 ? 1 : 0) + (rr.status === "done" ? 1 : 0));
     return { g1, g2, g3, g4, total: g1 + g2 + g3 + g4 };
   } catch (e) { return { g1: 0, g2: 0, g3: 0, g4: 0, total: 0 }; }
 }

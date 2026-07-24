@@ -7649,9 +7649,10 @@ function InsJoin({ onGo }) {
   const [ag, setAg] = useState({});
   const [open, setOpen] = useState({});
   const [svc, setSvc] = useState({ s0: true, s1: true, s2: true, s3: true, s4: true });
-  const [info, setInfo] = useState({ name: PT.name, birth: "1970.11.20", sex: "남", phone: "", addr: PT.addr, rrn1: "", rrn2: "" });
-  const [showRrn, setShowRrn] = useState(false);
-  const rrnOk = info.rrn1.length === 6 && info.rrn2.length === 7;
+  const [info, setInfo] = useState({ name: PT.name, birth: "1970.11.20", sex: "남", phone: "", addr: PT.addr });
+  // 가드레일 ⓟ(진단 #46): 주민등록번호 평문 수집 폼 제거 — 실번호 입력 대신 PASS 본인인증(시연) 완료 플래그로 대체
+  const [rrnVerified, setRrnVerified] = useState(false);
+  const rrnOk = rrnVerified;
   const [done, setDone] = useState(false);
   const set = (k, v) => setAg((p) => ({ ...p, [k]: v }));
   const tog = (k) => setOpen((p) => ({ ...p, [k]: !p[k] }));
@@ -7716,14 +7717,12 @@ function InsJoin({ onGo }) {
         <input placeholder="주소" style={{ gridColumn: "1 / -1" }} value={info.addr} onChange={(e) => setInfo({ ...info, addr: e.target.value })} />
         <div style={{ gridColumn: "1 / -1" }}>
           {typeof TrustLine === "function" && <TrustLine ctx="rrn" />}
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B45309", marginBottom: 5 }}><Lock size={11} style={{ verticalAlign: "-2px" }} /> 주민등록번호 <span style={{ color: "var(--soft)", fontWeight: 600 }}>· 건강검진보험 가입 시 필수 (보안입력)</span></div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B45309", marginBottom: 5 }}><Lock size={11} style={{ verticalAlign: "-2px" }} /> 실명 확인 <span style={{ color: "var(--soft)", fontWeight: 600 }}>· 건강검진보험 가입 시 필수</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input inputMode="numeric" maxLength={6} placeholder="앞 6자리" value={info.rrn1} onChange={(e) => setInfo({ ...info, rrn1: e.target.value.replace(/\D/g, "").slice(0, 6) })} style={{ flex: 1, letterSpacing: "2px" }} />
-            <span style={{ fontWeight: 800, color: "var(--soft)" }}>—</span>
-            <input inputMode="numeric" maxLength={7} type={showRrn ? "text" : "password"} placeholder="뒤 7자리" value={info.rrn2} onChange={(e) => setInfo({ ...info, rrn2: e.target.value.replace(/\D/g, "").slice(0, 7) })} style={{ flex: 1, letterSpacing: "3px" }} />
-            <button type="button" onClick={() => setShowRrn((v) => !v)} style={{ border: "1px solid var(--border)", background: "#fff", borderRadius: 9, padding: "9px 11px", cursor: "pointer", color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, flexShrink: 0 }} title={showRrn ? "가리기" : "표시"}><Lock size={13} /> {showRrn ? "가리기" : "표시"}</button>
+            <div style={{ flex: 1, border: "1px solid var(--border)", borderRadius: 9, padding: "9px 12px", background: "#F8FAFC", color: "var(--soft)", fontSize: 13, letterSpacing: "2px" }}>●●●●●● — ●●●●●●●</div>
+            <button type="button" onClick={() => { setRrnVerified(true); if (typeof toast === "function") toast("PASS 본인인증이 완료되었습니다(시연)."); }} disabled={rrnVerified} style={{ border: "1px solid var(--border)", background: rrnVerified ? "#E7F8EE" : "#2563EB", borderRadius: 9, padding: "9px 13px", cursor: "pointer", color: rrnVerified ? "#15803D" : "#fff", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}><ShieldCheck size={13} /> {rrnVerified ? "인증 완료 ✓" : "PASS 본인인증(시연)"}</button>
           </div>
-          <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 5 }}>※ 뒷자리는 입력 즉시 마스킹(●)되며, 보험 인수심사 목적으로만 <b>암호화 전송·저장</b>됩니다. {rrnOk && <span style={{ color: "var(--green)", fontWeight: 700 }}><Check size={11} style={{ verticalAlign: "-2px" }} /> 입력 완료</span>}</div>
+          <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 5 }}>※ 시연 환경에서는 <b>주민등록번호를 수집하지 않습니다</b> — 실서비스는 PASS 간편 본인인증으로 대체되며, 인수심사 정보는 보험사에 암호화 전송됩니다.</div>
         </div>
       </div>
       <div className="rct" style={{ fontSize: 13.5, marginTop: 14 }}>서비스 이용 신청 <span className="reqtag opt">선택</span></div>
@@ -7739,7 +7738,7 @@ function InsJoin({ onGo }) {
     <div className="card" style={{ border: "1.5px solid #BFD0FF" }}>
       <div style={{ fontSize: 12.5, color: "#3a4659", lineHeight: 1.6 }}>본인은 상기 내용을 충분히 읽고 이해하였으며 자발적인 의사에 따라 본 동의서를 작성·제출합니다. <b>(전자서명)</b></div>
       <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>신청인: <b style={{ color: "var(--text)" }}>{info.name || "—"}</b> · 하이젠케어 주식회사 귀중</div>
-      <button className="cbtn pri" style={{ marginTop: 12, opacity: allReq && rrnOk ? 1 : .5 }} disabled={!(allReq && rrnOk)} onClick={() => setDone(true)}><ShieldCheck size={15} /> {!allReq ? "필수 항목에 모두 동의해 주세요" : !rrnOk ? "주민등록번호를 입력해 주세요" : "전자서명 후 건강검진보험 가입 동의 제출"}</button>
+      <button className="cbtn pri" style={{ marginTop: 12, opacity: allReq && rrnOk ? 1 : .5 }} disabled={!(allReq && rrnOk)} onClick={() => setDone(true)}><ShieldCheck size={15} /> {!allReq ? "필수 항목에 모두 동의해 주세요" : !rrnOk ? "PASS 본인인증을 완료해 주세요" : "전자서명 후 건강검진보험 가입 동의 제출"}</button>
       <div className="chnote" style={{ marginTop: 8 }}>※ 보험가입·청약·심사는 정식 라이선스 보험대리점 글로벌예방금융㈜·GA코리아㈜ 및 보험사를 통해 진행됩니다. 본 화면은 동의서 양식 예시입니다.</div>
     </div>
   </>);
@@ -17606,6 +17605,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-07-25", ver:"v1.1", ch:[4], feat:"보험 코호트 데이터셋·계정체계", src:"데이터셋(insuranceCohort)/로그인(cohortLogin)", summary:"100,001명 합성 코호트에 결정론 보험 확장 데이터셋과 전원 로그인 계정 체계를 구축하고 평균 수렴 자가검증과 계정 격리를 통과시켜 전 섹션 공용 단일 출처를 마련", refs:[], status:"반영", hash:"4a002f9", auto:true },
   { date:"2026-07-24", ver:"v1.1", ch:[18], feat:"규제 동기화 게이트", src:"온체인 원장(regGate)/blockchainAnchor", summary:"폐쇄형·스테이블 시뮬레이션 한정·STO 트랙 분리를 UI 문구가 아닌 코드 게이트로 강제하고 법령 시행일 도래 시 재배포 없이 전환되는 규제 동기화 스위치를 구현", refs:[], status:"반영", hash:"ad364b8", auto:true },
   { date:"2026-07-24", ver:"v1.1", ch:[6], feat:"세대 계보 실연결", src:"AI 분석(lineageBridge)/건강리포트", summary:"생체나이·장기나이·암위험 분석이 데이터 금고의 1세대 실검진값을 직접 소비하도록 재배선하고 산출 근거를 전건 추적·표기해 2세대 분석의 데이터 계보를 실동작으로 연결", refs:[], status:"반영", hash:"b3aa2bc", auto:true },
   { date:"2026-07-24", ver:"v1.1", ch:[7], feat:"HTK 트랜잭션 원장", src:"지갑·온체인 원장(tokenLedger)/blockchainAnchor", summary:"HTK 잔액을 숫자 카운터에서 건별 트랜잭션 원장으로 전환해 이중지불 차단·전건 해시 재검증·위변조 감지를 구현하고 기존 적립 소스를 제네시스로 무중단 이월", refs:[], status:"반영", hash:"163ef01", auto:true },
@@ -20431,6 +20431,8 @@ function rerateApply(m) {
     localStorage.setItem("hifin_rerate", JSON.stringify(s));
     const tk = anonToken(m);
     chainAppend({ type: "record", token: tk, note: "보험요율 재산정 — 4세대 성과 증명(혈당·중성지방 개선) 제출 · 인하 적용" });
+    // 과업2ⓑ: 성과 확정 = 4세대 실자산 레코드 append(프록시 공식 아님)
+    try { const k = "hifin_g4_" + tk; const l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ kind: "rerate", saving: s.saving, at: s.at }); localStorage.setItem(k, JSON.stringify(l)); } catch (e2) {}
     vaultAccessLog(tk, "보험사(요약 증명만)", "성과 SBT 요약 열람 — 요율 재산정 심사(원본 미제공)");
     return s;
   } catch (e) { return null; }
@@ -20440,13 +20442,17 @@ function assetLineage(m) {
   try {
     const tk = anonToken(m); const v = vaultLoad(tk) || {}; const blocks = (typeof chainForToken === "function") ? chainForToken(tk) : [];
     const g1 = (v.checkups || []).length;
-    const g2 = g1;   // 검진 1건당 AI 정밀리포트 1건(분석 자산)
+    // 과업2ⓑ: g2·g4는 실자산 레코드(생성 이벤트 append) 우선 — 레코드가 없는 기존 회원은 종전 프록시 폴백(무중단)
+    let g2rec = [], g4rec = [];
+    try { g2rec = JSON.parse(localStorage.getItem("hifin_g2_" + tk) || "[]"); } catch (e) {}
+    try { g4rec = JSON.parse(localStorage.getItem("hifin_g4_" + tk) || "[]"); } catch (e) {}
+    const g2 = g2rec.length || g1;   // 실레코드 없으면 검진 1건당 리포트 1건 프록시
     let certs = 0, claims = 0;
     try { certs = (JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]")).length; } catch (e) {}
     try { claims = (JSON.parse(localStorage.getItem("hifin_claims") || "[]")).length; } catch (e) {}
     const g3 = certs + claims + blocks.filter((b) => b.type === "tx" || b.type === "swap").length;
     const rr = rerateState();
-    const g4 = (g1 >= 2 ? 1 : 0) + (rr.status === "done" ? 1 : 0);   // 2개년 지표 개선 + 재산정 성과 증명
+    const g4 = g4rec.length || ((g1 >= 2 ? 1 : 0) + (rr.status === "done" ? 1 : 0));
     return { g1, g2, g3, g4, total: g1 + g2 + g3 + g4 };
   } catch (e) { return { g1: 0, g2: 0, g3: 0, g4: 0, total: 0 }; }
 }
@@ -20557,6 +20563,16 @@ function lineageProfile(member) {
   fields.biologicalAge = Math.max(19, reg + bioDelta);
   const cxrAbn = _lbSev("cxr", ck.map.cxr).sev > 0 ? 1 : 0;
   fields.cancerRiskGrade = Math.max(2, Math.min(8, 2 + riskyOrgans + cxrAbn + (reg >= 60 ? 1 : 0)));
+  // 과업2ⓑ: 검진(1세대) 기반 분석이 처음 생성되는 시점에 2세대 자산 레코드 append(검진 날짜별 1회 멱등) + 체인 지문
+  try {
+    const tk = anonToken(member); const k = "hifin_g2_" + tk;
+    const l = JSON.parse(localStorage.getItem(k) || "[]");
+    if (!l.some((r) => r.date === ck.date)) {
+      l.push({ date: ck.date, n: ck.n, at: Date.now() });
+      localStorage.setItem(k, JSON.stringify(l));
+      if (typeof chainAppend === "function") chainAppend({ type: "record", token: tk, note: `2세대 분석 자산 생성 — 검진(${ck.date}·${ck.n}항목) 기반 AI 리포트` });
+    }
+  } catch (e) {}
   return { fields, evidence, date: ck.date, channel: ck.channel, completeness: ck.completeness, n: ck.n, history: ck.history, reg, totalSev };
 }
 
@@ -20662,12 +20678,30 @@ function txAnchor(o) {
 }
 
 /* ── HTK 온체인 토큰 원장 (전송·스왑) — 지갑 주소·잔액·트랜잭션 ── */
-function htkTokenAddr(member) { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return "0x" + vaultHash("htk-addr|" + t).slice(0, 16); }
+/* 과업2ⓐ: 주소록(addr→email) — 내부 회원 간 전송 시 수신자 크레딧을 가능하게 하는 해석 계층 */
+function htkTokenAddr(member) {
+  const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet";
+  const addr = "0x" + vaultHash("htk-addr|" + t).slice(0, 16);
+  try { if (member && member.email) { const bk = JSON.parse(localStorage.getItem("hifin_addrbook") || "{}"); if (bk[addr] !== member.email) { bk[addr] = member.email; localStorage.setItem("hifin_addrbook", JSON.stringify(bk)); } } } catch (e) {}
+  return addr;
+}
+/* 수신자 해석 — 0x주소(주소록)·6자리 코호트 아이디·이메일 모두 지원. 미해석 시 null(외부 주소로 처리) */
+function htkResolveRecipient(to) {
+  const t = String(to || "").trim();
+  if (/^\d{6}$/.test(t)) { const i = parseInt(t, 10); if (i >= 1 && i <= 100000) return "p" + t + "@cohort.hifin"; }
+  if (/^[^@\s]+@[^@\s]+$/.test(t)) return t;
+  if (/^0x[0-9a-f]{6,}$/i.test(t)) { try { const bk = JSON.parse(localStorage.getItem("hifin_addrbook") || "{}"); return bk[t] || null; } catch (e) { return null; } }
+  return null;
+}
 function htkDelta(member) { try { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return Number(JSON.parse(localStorage.getItem("hifin_htkbal_" + t) || "0")) || 0; } catch (e) { return 0; } }
 function _htkAdjust(member, d) { try { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; localStorage.setItem("hifin_htkbal_" + t, JSON.stringify(htkDelta(member) + d)); } catch (e) {} }
 /* C1-1: 차감은 TokenLedger(단일 원장) 검증을 먼저 통과해야 실행 — 이중지불·음수 잔액 차단. 레거시 델타는 무중단 병행.
    C1-2: 현금성 목적지(현금·원화·출금·스테이블 등)는 RegGate(폐쇄형·시행일 동기화)가 코드로 차단. */
-function htkTransfer(member, to, amount, memo) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "") + " " + String(memo || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, "전송 → " + (to || "0x…") + (memo ? " · " + memo : ""), "transfer"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 전송", amount, memo: "→ " + (to || "0x…") + (memo ? " · " + memo : "") }); }
+function htkTransfer(member, to, amount, memo) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "") + " " + String(memo || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, "전송 → " + (to || "0x…") + (memo ? " · " + memo : ""), "transfer"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } }
+  // 과업2ⓐ 수신자 크레딧 — 내부 회원 해석 시 수신 원장에 earn 기록(양측 원장 정합). 미해석 주소는 외부 전송으로 기록만.
+  const rcpt = (typeof htkResolveRecipient === "function") ? htkResolveRecipient(to) : null;
+  if (rcpt && rcpt !== (member && member.email) && typeof tlEarn === "function") tlEarn(rcpt, amount, "수신 — " + ((member && member.name) || "회원") + "님 전송" + (memo ? " · " + memo : ""));
+  _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 전송", amount, memo: "→ " + (to || "0x…") + (rcpt ? " (내부 수신 크레딧 완료)" : " (외부 주소 — 시연 기록만)") + (memo ? " · " + memo : "") }); }
 function htkSwap(member, from, to, amount) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, (from || "HTK") + " → " + (to || "보험·치료비 크레딧"), "swap"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 스왑", amount, memo: (from || "HTK") + " → " + (to || "보험·치료비 크레딧") }); }
 function htkLedger(member) { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return (typeof chainForToken === "function") ? chainForToken(t).filter((b) => b.type === "swap") : []; }
 
@@ -20748,13 +20782,15 @@ function tlSync(m) {
   const email = _tlEmail(m);
   tlEnsureGenesis(m);
   if (!tlAll(email).length) return null;                                     // 쓰기 차단 환경 — 폴백 신호
-  let snap = { cp: 0, shop: 0 };
+  let snap = { cp: 0, shop: 0, ref: 0 };
   try { snap = JSON.parse(localStorage.getItem(_tlKey(email) + "_snap") || "{}") || {}; } catch (e) {}
   const cp = (typeof careplanEarned === "function") ? careplanEarned(email) : 0;
   const shop = (typeof shopHtkPts === "function") ? shopHtkPts(email) : 0;
+  const ref = (typeof refState === "function") ? (refState(email).htk || 0) : 0;   // 과업2ⓐ: 리퍼럴 적립도 단일 원장으로 흡수(4계열 통합 완성)
   if (cp > (snap.cp || 0)) tlEarn(email, cp - (snap.cp || 0), "AI 케어플랜 실천 적립");
   if (shop > (snap.shop || 0)) tlEarn(email, shop - (snap.shop || 0), "건강쇼핑 구매 적립");
-  try { localStorage.setItem(_tlKey(email) + "_snap", JSON.stringify({ cp: cp, shop: shop })); } catch (e) {}
+  if (ref > (snap.ref || 0)) tlEarn(email, ref - (snap.ref || 0), "친구초대·가족등록 리워드");
+  try { localStorage.setItem(_tlKey(email) + "_snap", JSON.stringify({ cp: cp, shop: shop, ref: ref })); } catch (e) {}
   return tlBalance(email);
 }
 
@@ -24067,7 +24103,7 @@ function BlockchainAnchorConsole({ cohort }) {
         <div className="bcv-stats">
           <div className="bcv-stat"><b>{anchor.n.toLocaleString()}</b><span>앵커된 회원 leaf</span></div>
           <div className="bcv-stat"><b>{anchor.batches.length}</b><span>배치 (각 {anchor.batchSize.toLocaleString()})</span></div>
-          <div className="bcv-stat"><b>SHA-256</b><span>해시 알고리즘(시뮬)</span></div>
+          <div className="bcv-stat"><b>FNV-체인</b><span>해시(시뮬 · 운영 시 SHA-256)</span></div>
           <div className="bcv-stat"><b>{Math.ceil(Math.log2(anchor.batchSize))}</b><span>proof 깊이(배치)</span></div>
         </div>
         <div className="bcv-super"><span>Super Merkle Root</span><code>{anchor.superRoot}</code></div>
