@@ -87,6 +87,8 @@ function pbPay(m, billId) {
   _pbSaveBills(m, bills);
   const block = (typeof chainAppend === "function") ? chainAppend({ type: "premium", token: _pbToken(m), fhirHash: b.txRef || null, note: `보험료 수납 — ${b.product} ${b.ym} · ${b.amount.toLocaleString()}원 (${htk.toLocaleString()} HTK)` }) : null;
   if (typeof vaultAccessLog === "function" && _pbToken(m)) vaultAccessLog(_pbToken(m), "수납 엔진", `보험료 수납 ${b.ym}`);
+  // 축5 S1-1: 수납 발생 시 순환 마진의 30%를 나눔 재원에 건별 적립(연출 아님 — SharingPool 원장 tx)
+  if (typeof spAppend === "function" && typeof INS_CONFIG !== "undefined") spAppend({ source: "보험료 수납 마진", amount: b.amount * INS_CONFIG.PREMIUM_MARGIN_RATE * INS_CONFIG.SHARE_RATE, ref: b.id, token: _pbToken(m) });
   return { ok: true, bill: b, balance: r.balance, block };
 }
 
