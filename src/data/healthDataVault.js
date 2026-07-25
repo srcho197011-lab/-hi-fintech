@@ -297,6 +297,28 @@ function seedSelfVault(member) {
   return true;
 }
 
+/* ══ 과업C — 조성래(hifin) 보험 실현황 1회성 보강 시드(기존 데이터 보존·멱등) ══
+   보험 섹션 진입 시 호출: 검진(seedSelfVault)·실손·일반 보험 2건·검진대비보험 발급 이력을 금고·원장에 정식 저장 — 화면은 그 저장본만 읽는다. */
+function selfEnsureInsSeed(member) {
+  try {
+    if (!member || localStorage.getItem("hifin_self_ins_v3")) return false;
+    seedSelfVault(member);   // 검진 2개년·통합조회·증서(멱등 — 기존 있으면 skip)
+    const token = anonToken(member);
+    const v = vaultLoad(token) || { token, checkups: [], insurance: [], consents: null };
+    const has = (re) => (v.insurance || []).some((c) => re.test((c.kind || "") + (c.product || "")));
+    const add = [];
+    if (!has(/실손/)) add.push({ insurer: "현대해상", product: "실손의료보험", kind: "실손", gen: "2세대", join: "2013", coGen: "10%", coNon: "20%", monthly: 41200 });
+    if (!has(/암/)) add.push({ insurer: "현대해상", product: "암보험(진단비)", kind: "암", benefit: 30000000, monthly: 28400, years: 9, detail: { diag: 30000000, surgery: 6000000, daily: 50000 } });
+    if (!has(/운전자/)) add.push({ insurer: "DB손해보험", product: "운전자보험", kind: "일반", benefit: 10000000, monthly: 9800, years: 5, detail: { diag: 10000000, surgery: 2000000, daily: 30000 } });
+    if (add.length) vaultSaveInsurance(member, (v.insurance || []).concat(add), { source: "self-seed", channel: "aggregate" });
+    // 검진대비보험 발급 이력(무상 계약) — pbPolicyCreate 멱등
+    if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" });
+    if (typeof tlSync === "function") tlSync(member);   // 원장 제네시스 보장(12,480 이월)
+    localStorage.setItem("hifin_self_ins_v3", "1");
+    return true;
+  } catch (e) { return false; }
+}
+
 /* 둘러보기(GUEST) 금고 예시 — 저장 없이 메모리에서 즉석 생성(쓰기 시뮬레이션 원칙 유지).
    체험 프로필(나이·성별·질환) 기준으로 검진 2개년·보험·증서·블록·접근 이력을 합성 — 나가면 사라짐 */
 function guestVaultDemo(member) {

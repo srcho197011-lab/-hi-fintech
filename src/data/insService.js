@@ -67,6 +67,18 @@ function claimReview(m, claimId) {
   const l = _claims(); const c = l.find((x) => x.id === claimId);
   if (!c) return { ok: false, reason: "청구 건을 찾을 수 없습니다" };
   if (/지급/.test(c.status || "")) return { ok: false, code: "DUP", deny: CLAIM_DENY.DUP, reason: "이미 지급된 청구입니다(중복 지급 차단)" };
+  // ① 검진대비보험 정액 트랙(과업B) — 실손이 아닌 검진 연동 무상 보장(진단지원 정액·한도 미차감)
+  if (/검진/.test(c.kind || "")) {
+    const pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product));
+    if (!pol) return { ok: false, code: "NO_CONTRACT", deny: { ko: "검진대비보험 미발급", easy: "지급이 안 된 이유: 검진대비보험이 아직 발급되지 않았어요", fix: "맞춤보험 탭 ①에서 검진 연동 무상 발급을 먼저 받아 주세요" }, reason: "검진대비보험이 발급되어 있지 않아요" };
+    if (Date.now() < pol.createdAt + 86400000) return { ok: false, code: "NO_CONTRACT", deny: { ko: "보장 개시 전", easy: "보장은 발급 다음날 0시부터 시작돼요", fix: "내일 다시 청구해 주세요" }, reason: "보장 개시 전이에요(익일 0시 개시)" };
+    const fp0 = _claimFp(c);
+    if (l.some((x) => x.id !== c.id && /지급/.test(x.status || "") && _claimFp(x) === fp0)) return { ok: false, code: "DUP", deny: CLAIM_DENY.DUP, reason: CLAIM_DENY.DUP.easy };
+    const payout = 100000;   // 카탈로그(기본형 정밀검사 지원금) — CHECK_COVERS 근거
+    return { ok: true, claim: c, silson: { product: pol.product, gen: "무상", coGen: "정액" }, fee: c.fee || payout, payout, track: "자동승인",
+      breakdown: [`검진대비보험 정액 지원 — 정밀검사 지원금 ${payout.toLocaleString()}원(자기부담 없음)`, `근거 계약: ${pol.id} (검진 연동·무상·추가 보험료 0원)`, "심사 트랙: 자동승인(정액 — 연간 실손 한도와 무관)"],
+      explain: `검진대비보험 정액 지원금 ${payout.toLocaleString()}원 지급(내가 내는 돈 0원)` };
+  }
   const silson = _mySilson(m);
   if (!silson) return { ok: false, code: "NO_CONTRACT", deny: CLAIM_DENY.NO_CONTRACT, reason: CLAIM_DENY.NO_CONTRACT.easy };
   // 중복 지문 — 동일 진료건 기지급 여부
@@ -129,7 +141,7 @@ function claimPay(m, claimId) {
   c.status = "지급완료"; c.paidAt = Date.now(); c.payout = rv.payout; c.txRef = r.tx && r.tx.hash;
   _claimsSave(l);
   if (typeof chainAppend === "function") chainAppend({ type: "payout", token: (typeof anonToken === "function") ? anonToken(m) : null, fhirHash: c.txRef || null, note: `보험금 지급 실행 — ${c.id} · ${rv.payout.toLocaleString()}원 (${htk.toLocaleString()} HTK 크레딧)` });
-  _limitAdd(m, /비급여/.test((rv.breakdown && rv.breakdown[0]) || "") ? "비급여" : "급여", rv.payout);   // P2: 연간 한도 누적 차감
+  if (rv.silson.coGen !== "정액") _limitAdd(m, /비급여/.test((rv.breakdown && rv.breakdown[0]) || "") ? "비급여" : "급여", rv.payout);   // P2: 연간 한도 누적 차감(검진 정액 트랙 제외)
   notifPush({ ic: "coin", t: "보험금 지급 완료", d: `${c.id} · ${rv.payout.toLocaleString()}원이 지갑에 입금됐어요`, target: "insurance" });
   return { ok: true, claim: c, payout: rv.payout, htk, balance: r.balance };
 }
@@ -188,7 +200,7 @@ const insService = {
   ladderCheck(m) {
     m = m || _isMember(); if (!m) return null;
     const g = this.gap(m);
-    const bal = (typeof tlBalance === "function") ? tlBalance(m) : 0;
+    const bal = (typeof tlSync === "function") ? (tlSync(m) != null ? tlSync(m) : 0) : ((typeof tlBalance === "function") ? tlBalance(m) : 0);   // 과업C: 제네시스 미생성 계정도 원장 동기화 후 잔액(빈 0 HTK 표시 버그 수정)
     const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(bal) : Math.floor(bal * 0.3);
     if (g && g.silson) return { stage: "custom", silson: g.silson, reserve: insRes, note: "실손 보장이 확인됐어요 — 추가 적립 토큰은 예측 위험 기반 맞춤보험에 쓸 수 있어요." };
     return { stage: "silson-first", reserve: insRes, note: "실손(기초 보장)이 아직 없어요 — 보험·치료비 적립금(" + insRes.toLocaleString() + " HTK)을 실손 가입·보험료에 우선 충당하는 것을 권해요.",
@@ -207,6 +219,65 @@ const insService = {
   claimSubmit(m, o) { return claimSubmit(m || _isMember(), o); },
   claimAppeal(m, id, reason) { return claimAppeal(m || _isMember(), id, reason); },
   claimLimits(m) { m = m || _isMember(); return _limitUsed(m); },
+  /* ═ 맞춤보험 4서브섹션(과업B) — 화면·상담사 공용 ═ */
+  /* ①-1 검진대비보험 현황 — 검진 연동 발급·타임라인·청구 연결 */
+  checkupIns(m) {
+    m = m || _isMember(); if (!m) return null;
+    let hasCheckup = false, checkupDate = null;
+    try { const v = vaultLoad(anonToken(m)); const cks = (v && v.checkups) || []; hasCheckup = cks.length > 0; checkupDate = cks.length ? cks[cks.length - 1].date : null; } catch (e) {}
+    const pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product));
+    let phase = null, timeline = null;
+    if (pol) {
+      const start = pol.createdAt + 86400000, end = pol.createdAt + 90 * 86400000;   // 보장 개시 익일·기간 3개월(카탈로그 규정)
+      phase = Date.now() > end ? "만료" : Date.now() >= start ? "보장 중" : "보장 개시 대기";
+      timeline = { issuedAt: pol.createdAt, start, end, phase };
+    }
+    const claims = _claims().filter((c) => /검진/.test(c.kind || ""));
+    return { hasCheckup, checkupDate, policy: pol || null, timeline, claims,
+      coverage: [["암 진단지원금", 1000000, "검진에서 암 확정 진단 시"], ["뇌·심장 진단지원금", 500000, "뇌졸중·급성심근경색 진단 시"], ["검진 정밀검사 지원", 100000, "복부초음파 등 정밀검사 시"]],   // 카탈로그(CHECK_COVERS 기본형) 근거
+      exclusions: ["보장 개시 전 진단(발급 다음날부터 보장돼요)", "고의 사고", "검진 외 일반 진료(실손 영역)"] };
+  },
+  /* ①-2 검진대비보험 발급 — 검진 기록 필수·PolicyLedger+증서+체인 */
+  issueCheckupIns(m) {
+    m = m || _isMember(); if (!m) return { ok: false, reason: "로그인이 필요해요" };
+    const st = this.checkupIns(m);
+    if (!st.hasCheckup) return { ok: false, reason: "검진 기록이 아직 없어요 — 검진결과를 먼저 연결해 주세요(무상 발급의 연동 조건)" };
+    if (st.policy) return { ok: false, reason: "이미 발급된 검진대비보험이 있어요(" + st.policy.id + ")" };
+    const r = (typeof pbPolicyCreate === "function") ? pbPolicyCreate(m, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" }) : { ok: false };
+    if (!r.ok) return r;
+    try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `검진대비보험 증서 발급 — ${r.policy.id} · 검진(${st.checkupDate}) 연동 무상` }); const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push({ id: "CERT-" + r.policy.id.slice(-5), center: "검진 연동 발급", date: st.checkupDate, at: Date.now(), hash: b && b.hash }); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } catch (e) {}
+    if (typeof notifPush === "function") notifPush({ ic: "check", t: "검진대비보험 발급", d: "검진 기록 연동으로 무상 보장이 시작돼요(익일 0시 개시)", target: "insurance" });
+    return { ok: true, policy: r.policy };
+  },
+  /* ② 실손 현황 — 세대·한도·잔여·코호트 대비 */
+  silStatus(m) {
+    m = m || _isMember(); if (!m) return null;
+    const sil = _mySilson(m);
+    const st = (typeof cohortInsStats === "function") ? (() => { try { return cohortInsStats(); } catch (e) { return null; } })() : null;
+    const peer = st ? { rate: Math.round(st.silsonRate * 100), avgMonthly: Math.round(st.avgMonthly) } : null;
+    if (!sil) return { has: false, peer };
+    const gen = parseInt(String(sil.gen || "4").replace(/\D/g, ""), 10) || 4;
+    const limitPay = gen <= 2 ? 100000000 : 50000000;
+    const limitNon = gen <= 2 ? 100000000 : gen === 3 ? 50000000 : 20000000;
+    const used = _limitUsed(m);
+    return { has: true, contract: sil, gen, peer,
+      limits: { pay: { limit: limitPay, used: used.pay, remain: Math.max(0, limitPay - used.pay) }, non: { limit: limitNon, used: used.non, remain: Math.max(0, limitNon - used.non) } },
+      latestNote: gen >= 4 ? "이미 최신 세대예요 — 자기부담은 있지만 보험료가 가장 낮아요." : `현재 ${gen}세대 → 4세대 전환 시 보험료는 내려가지만 내가 내는 돈(자기부담)이 늘어요. 병원 이용이 많다면 유지가 유리할 수 있어요(전환 전 상담 권장).` };
+  },
+  /* ③ 살아있는 보험 현황 — 일반 계약 집계(보장분석과 동일 소스) */
+  myPolicies(m) {
+    m = m || _isMember(); if (!m) return null;
+    let vaultC = []; try { const v = vaultLoad(anonToken(m)); vaultC = (v && v.insurance) || []; } catch (e) {}
+    const wizard = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).filter((p) => !/검진.?대비/.test(p.product));
+    const alive = vaultC.filter((c) => c.kind !== "실손").map((c) => ({ src: "연동", product: c.product, insurer: c.insurer, monthly: c.monthly || 0, years: c.years, benefit: c.benefit, kind: c.kind, status: "정상", detail: c.detail || null }))
+      .concat(wizard.filter((p) => p.status === "active").map((p) => ({ src: "청약", product: p.product, insurer: "글로벌예방금융(GA)", monthly: p.monthly, years: 0, benefit: null, kind: "맞춤", status: "정상" })));
+    const lapsed = wizard.filter((p) => p.status !== "active").map((p) => ({ product: p.product, monthly: p.monthly, status: "실효" }));
+    const g = this.gap(m);   // 단일 출처 — 보장분석 탭과 같은 함수
+    return { alive, lapsed, count: alive.length, monthlyTotal: alive.reduce((s, c) => s + (c.monthly || 0), 0),
+      byGroup: g && g.solution && g.solution.findings ? null : null, gapLink: true };
+  },
+  /* ④ 프리미엄 적합(위험→추천 랩핑) */
+  premiumFit(m) { m = m || _isMember(); return { risk: this.riskExplain(m), match: this.coverageMatch(m) }; },
   /* ②+ M2 — 위험 예측·보장 매칭·인수 시뮬·사다리 플랜(riskEngine 연동) */
   riskExplain(m) { m = m || _isMember(); return (typeof riskPredict === "function") ? riskPredict(m) : null; },
   coverageMatch(m) { m = m || _isMember(); return (typeof coverageMatch === "function") ? coverageMatch(m) : null; },

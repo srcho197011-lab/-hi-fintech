@@ -400,6 +400,24 @@ function _insServiceRoute(text, member) {
     if (C.pct <= 0) return { bubbles: [{ kind: "text", text: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하 전용·불이익 없음). 다음 검진에서 다시 계산해 드릴게요." }], quicks: [] };
     return { bubbles: [{ kind: "card", card: { title: "📉 재산정 계산 결과", items: [`개선 지표 ${C.improvedN}건: ${C.improved.map((x) => x.ko).join("·")}`, `월 ${won(C.before)} → ${won(C.after)} (−${C.pct}%)`, "인하 전용 — 악화 지표로 오르는 일은 없어요"], buttons: ["✅ 인하 적용 확정"] } }], quicks: [] };
   }
+  // 과업B — 실손 현황·검진보험(상담사)
+  if (/내\s*실손\s*(보여|현황|알려|상태)|실손\s*현황/.test(text)) {
+    const S = insService.silStatus(member);
+    if (!S) return null;
+    if (!S.has) return { bubbles: [{ kind: "text", text: `실손이 아직 없어요 — 같은 코호트 가입율은 ${S.peer ? S.peer.rate + "%" : "-"}예요. 보장 사다리 1단계(실손 우선 충당)부터 시작하는 걸 권해요.` }], quicks: ["보장 사다리 확인"] };
+    return { bubbles: [{ kind: "card", card: { title: `🛡️ 내 실손 — ${S.contract.gen || S.gen + "세대"}`, items: [`${S.contract.product} · 월 ${Number(S.contract.monthly || 0).toLocaleString()}원`, `내가 내는 돈: 급여 ${S.contract.coGen || "-"} · 비급여 ${S.contract.coNon || "-"}`, `올해 남은 한도 — 급여 ${S.limits.pay.remain.toLocaleString()}원 · 비급여 ${S.limits.non.remain.toLocaleString()}원`, S.latestNote], buttons: ["청구 현황 보여줘"] } }], quicks: ["청구 현황 보여줘", "보장 공백 분석"] };
+  }
+  if (/검진\s*보험\s*(청구|현황|보여)|검진대비/.test(text)) {
+    const S = insService.checkupIns(member);
+    if (!S) return null;
+    if (!S.policy) return { bubbles: [{ kind: "text", text: S.hasCheckup ? "검진 기록이 연결돼 있어요 — 맞춤보험 탭 ①에서 무상 발급을 받으실 수 있어요(확인 한 번이면 돼요)." : "검진 기록을 연결하면 무상 검진대비보험을 발급해 드려요." }], quicks: ["맞춤보험 열어줘"] };
+    if (/청구/.test(text) && S.timeline.phase === "보장 중") {
+      const r = insService.claimSubmit(member, { kind: "검진 연계 정밀검사", fee: 100000 });
+      if (r.ok) return { bubbles: [{ kind: "text", text: `접수 완료 ✓ — ${r.claim.id} (검진 연계 정밀검사 지원). 바로 심사할까요?` }], quicks: [`심사 진행 · ${r.claim.id}`] };
+      return { bubbles: [{ kind: "text", text: "🔒 " + r.reason }] };
+    }
+    return { bubbles: [{ kind: "card", card: { title: `🩺 검진대비보험 — ${S.timeline.phase}`, items: [`증서 ${S.policy.id} · 무상(추가 보험료 0원)`, `보장기간 ${new Date(S.timeline.start).toLocaleDateString("ko-KR")}~${new Date(S.timeline.end).toLocaleDateString("ko-KR")}`].concat(S.coverage.map(([t, a]) => `${t}: ${a.toLocaleString()}원`)), buttons: S.timeline.phase === "보장 중" ? ["검진보험 청구해줘"] : [] } }], quicks: [] };
+  }
   // M2 — 위험 예측·인수 시뮬(상담사)
   if (/위험\s*(예측|알려|얼마|분석)|무슨\s*병|질병\s*위험/.test(text)) {
     const R = insService.riskExplain(member);
@@ -1202,6 +1220,104 @@ function InsLadderCard({ onTab }) {
     </div>);
 }
 
+/* ══════════ 맞춤보험 4서브섹션(과업B) — 내 지갑 자산의 다른 뷰 ══════════ */
+/* ① 건강검진대비보험 — 가입부터 청구까지 한 흐름 */
+function InsCheckupInsSection({ onEnroll }) {
+  const [tick, setTick] = useState(0); void tick;
+  const [confirm, setConfirm] = useState(null);   // "issue" | {claim}
+  const m = insService.member();
+  const S = m ? insService.checkupIns(m) : null;
+  const won = (n) => Number(n || 0).toLocaleString() + "원";
+  if (!m || !S) return null;
+  const TL = ["발급", "보장 개시", "보장 중", "만료"];
+  const tlIdx = !S.policy ? -1 : S.timeline.phase === "만료" ? 3 : S.timeline.phase === "보장 중" ? 2 : 1;
+  return (
+    <div className="card" id="cins-checkup" style={{ border: "1.5px solid #BFD0FF" }}>
+      <div className="rct"><ShieldCheck size={17} color="#2563EB" /> ① 건강검진대비보험 <span className="cbadge" style={{ marginLeft: 8, color: "#15803D", background: "#E7F8EE" }}>검진 연동 · 추가 보험료 0원</span></div>
+      {!S.policy ? (
+        S.hasCheckup ? (<>
+          <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.65 }}>검진 기록({S.checkupDate})이 연결돼 있어요 — <b>검진 연동 무상 보장</b>을 바로 발급받을 수 있어요.</p>
+          <button className="cbtn pri" onClick={() => setConfirm("issue")}><CalendarCheck size={15} /> 발급받기 (무상 · 확인 후 발급)</button>
+        </>) : (<>
+          <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.65 }}>검진 기록을 연결하면 <b>추가 보험료 0원</b>으로 검진 대비 보장이 발급돼요 — 지금은 검진 예약으로 시작할 수 있어요.</p>
+          <button className="cbtn pri" onClick={onEnroll}><CalendarCheck size={15} /> 검진 예약하고 자동가입 시작</button>
+        </>)
+      ) : (<>
+        <div style={{ display: "flex", gap: 4, margin: "6px 0 8px", fontSize: 10.5, fontWeight: 700 }}>
+          {TL.map((s, i) => <span key={s} style={{ flex: 1, textAlign: "center", padding: "4px 0", borderRadius: 8, background: i <= tlIdx ? "#DBEAFE" : "#F1F5F9", color: i <= tlIdx ? "#1D4ED8" : "#94A3B8" }}>{s}</span>)}
+        </div>
+        <div className="costrow"><span className="cl">증서 {S.policy.id} · {S.timeline.phase}</span><span className="cv">{new Date(S.timeline.start).toLocaleDateString("ko-KR")} ~ {new Date(S.timeline.end).toLocaleDateString("ko-KR")}</span><span className="ca" style={{ color: tlIdx === 2 ? "var(--green)" : "#B45309" }}>{S.timeline.phase}</span></div>
+        <div style={{ margin: "8px 0 4px", fontSize: 12.5, fontWeight: 800 }}>보장 내용</div>
+        {S.coverage.map(([t, amt, d]) => <div className="costrow" key={t}><span className="cl">{t} — {d}</span><span className="cv" style={{ color: "var(--blue)" }}>{won(amt)}</span><span className="ca">보장</span></div>)}
+        <details style={{ fontSize: 12, margin: "6px 0" }}><summary style={{ cursor: "pointer", fontWeight: 700, color: "#B45309" }}>보장이 안 되는 경우(면책) 보기</summary><ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{S.exclusions.map((x) => <li key={x}>{x}</li>)}</ul></details>
+        {S.claims.length > 0 && S.claims.map((c) => <div className="costrow" key={c.id}><span className="cl">청구 {c.id}</span><span className="cv">{/지급완료/.test(c.status) ? `지급 ${won(c.payout)}` : c.status}</span><span className="ca">{/지급완료/.test(c.status) ? "완료" : "진행"}</span></div>)}
+        {tlIdx === 2 && <button className="cbtn" style={{ marginTop: 6 }} onClick={() => { const r = insService.claimSubmit(m, { kind: "검진 연계 정밀검사", fee: 100000 }); if (r.ok) { const rv = insService.claimReview(m, r.claim.id); if (rv.ok) setConfirm({ claim: rv }); else if (typeof toast === "function") toast("🔒 " + rv.reason); } else if (typeof toast === "function") toast("🔒 " + r.reason); }}><Coins size={14} /> 보험금 청구하기 (정밀검사 지원)</button>}
+      </>)}
+      <div className="chnote" style={{ marginTop: 8 }}>※ 검진 연계 무상 보장은 <b>보험업법 특별이익 제공 금지 규정 정합 검토 전제</b> · 가입은 GA 라이선스 채널 경유 — 발급·청구·지급 전 건이 온체인에 기록돼요.</div>
+      {confirm === "issue" && (
+        <div className="bkov" onClick={() => setConfirm(null)}><div className="bk" style={{ maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
+          <div className="bkh"><div className="bt"><ShieldCheck size={16} color="#2563EB" /> 발급 확인</div></div>
+          <div className="bkb" style={{ padding: 18 }}>
+            <p style={{ fontSize: 13, lineHeight: 1.7 }}>검진 기록 연동으로 <b>건강검진 대비보험(무상)</b>을 발급할까요? 보장은 <b>내일 0시부터 3개월</b>이고, 증서·계약이 내 지갑 원장과 체인에 기록돼요.</p>
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button className="cbtn" style={{ margin: 0 }} onClick={() => setConfirm(null)}>취소</button>
+              <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { const r = insService.issueCheckupIns(m); if (typeof toast === "function") toast(r.ok ? "발급 완료 ✓ — 증서가 온체인에 기록됐어요(보장은 내일 0시 개시)" : "🔒 " + r.reason); setConfirm(null); setTick((t) => t + 1); }}>✅ 발급 확정</button>
+            </div>
+          </div>
+        </div></div>)}
+      {confirm && confirm.claim && (
+        <div className="bkov" onClick={() => setConfirm(null)}><div className="bk" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
+          <div className="bkh"><div className="bt"><ShieldCheck size={16} color="#16A34A" /> 심사 결과 — 지급 확인</div></div>
+          <div className="bkb" style={{ padding: 18 }}>
+            <p style={{ fontSize: 13.5, lineHeight: 1.7 }}>{confirm.claim.explain}</p>
+            <details style={{ margin: "4px 0 8px", fontSize: 12 }}><summary style={{ cursor: "pointer", fontWeight: 700, color: "var(--blue)" }}>계산 내역 펼쳐보기</summary><ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{confirm.claim.breakdown.map((ln, i) => <li key={i}>{ln}</li>)}</ul></details>
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button className="cbtn" style={{ margin: 0 }} onClick={() => setConfirm(null)}>취소</button>
+              <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { const r = insService.claimPay(m, confirm.claim.claim.id); if (typeof toast === "function") toast(r.ok ? `지급 완료 ✓ +${r.htk.toLocaleString()} HTK (잔액 ${r.balance.toLocaleString()})` : "🔒 " + r.reason); setConfirm(null); setTick((t) => t + 1); }}>✅ 지급 실행</button>
+            </div>
+          </div>
+        </div></div>)}
+    </div>);
+}
+/* ② 실손보험현황 */
+function InsSilStatusSection({ onTab }) {
+  const m = insService.member();
+  const S = m ? insService.silStatus(m) : null;
+  const won = (n) => Number(n || 0).toLocaleString() + "원";
+  if (!m || !S) return null;
+  return (
+    <div id="cins-silson">
+      {!S.has ? (<>
+        <div className="rct" style={{ margin: "4px 0 6px" }}><HeartHandshake size={17} color="#EA580C" /> ② 실손보험현황 <span className="cbadge" style={{ marginLeft: 8, color: "#B45309", background: "#FEF3E2" }}>미가입</span>{S.peer && <span style={{ marginLeft: 8, fontSize: 11, color: "var(--muted)" }}>같은 코호트 가입율 {S.peer.rate}%</span>}</div>
+        <InsLadderCard onTab={onTab} />
+      </>) : (
+        <div className="card" style={{ border: "1.5px solid #BBF7D0" }}>
+          <div className="rct"><HeartHandshake size={17} color="#16A34A" /> ② 실손보험현황 <span className="cbadge" style={{ marginLeft: 8, color: "#15803D", background: "#E7F8EE" }}>{S.contract.gen || S.gen + "세대"} 가입 중</span></div>
+          <div className="costrow"><span className="cl">{S.contract.product} ({S.contract.insurer || "보험사"}) · 가입 {S.contract.join || "-"}</span><span className="cv">월 {won(S.contract.monthly)}</span><span className="ca">정상</span></div>
+          <div className="costrow"><span className="cl">내가 내는 돈(자기부담) — 급여 {S.contract.coGen || "-"} · 비급여 {S.contract.coNon || "-"}</span><span className="cv">통원 회당 25만 · 입원 5천만</span><span className="ca">한도</span></div>
+          <div className="costrow"><span className="cl">올해 남은 한도 — 급여</span><span className="cv" style={{ color: "var(--blue)" }}>{won(S.limits.pay.remain)} / {won(S.limits.pay.limit)}</span><span className="ca">사용 {won(S.limits.pay.used)}</span></div>
+          <div className="costrow"><span className="cl">올해 남은 한도 — 비급여</span><span className="cv" style={{ color: "var(--blue)" }}>{won(S.limits.non.remain)} / {won(S.limits.non.limit)}</span><span className="ca">사용 {won(S.limits.non.used)}</span></div>
+          <div className="chnote" style={{ marginTop: 8 }}>🔁 <b>내 세대 vs 최신 세대</b>: {S.latestNote}{S.peer ? ` · 같은 연령·성별 가입율 ${S.peer.rate}%` : ""}</div>
+        </div>)}
+    </div>);
+}
+/* ③ 내가 가입하고 있는 보험현황(살아있는 보험) */
+function InsMyPoliciesSection({ onTab }) {
+  const m = insService.member();
+  const P = m ? insService.myPolicies(m) : null;
+  const won = (n) => Number(n || 0).toLocaleString() + "원";
+  if (!m || !P) return null;
+  return (
+    <div className="card" id="cins-mine">
+      <div className="rct"><FileText size={17} color="#7C3AED" /> ③ 내가 가입하고 있는 보험 <span className="cbadge" style={{ marginLeft: 8, color: "#6D28D9", background: "#EDE9FE" }}>살아있는 보험 {P.count}건 · 월 {won(P.monthlyTotal)}</span></div>
+      {P.alive.length ? P.alive.map((c, i) => (
+        <div className="costrow" key={i}><span className="cl">{c.product} ({c.insurer}){c.years ? ` · ${c.years}년차` : ""}{c.detail ? ` · 진단비 ${won(c.detail.diag)}·수술비 ${won(c.detail.surgery)}·입원일당 ${won(c.detail.daily)}` : c.benefit ? ` · 보장 ${won(c.benefit)}` : ""}</span><span className="cv">월 {won(c.monthly)}</span><span className="ca" style={{ color: "var(--green)" }}>{c.status}</span></div>
+      )) : <p style={{ fontSize: 12.5, color: "var(--muted)" }}>연결된 일반 보험이 아직 없어요 — 보험을 연결하거나 아래 프리미엄 추천에서 시작해 보세요.</p>}
+      {P.lapsed.length > 0 && <details style={{ fontSize: 12, marginTop: 6 }}><summary style={{ cursor: "pointer", color: "var(--soft)", fontWeight: 700 }}>지난 계약(실효·만기) {P.lapsed.length}건 보기</summary>{P.lapsed.map((c, i) => <div className="costrow" key={i}><span className="cl">{c.product}</span><span className="cv">월 {won(c.monthly)}</span><span className="ca" style={{ color: "#B91C1C" }}>{c.status}</span></div>)}</details>}
+      <button className="cbtn" style={{ marginTop: 8 }} onClick={() => onTab && onTab("analysis")}><Search size={14} /> 빠진 보장까지 — 보장분석 탭에서 자세히</button>
+    </div>);
+}
+
 /* ②+ M2 위험 예측 카드 — 질병군 확률·동연령 백분위·근거·추세 + 인수 시뮬(포용 경로) */
 function InsRiskCard() {
   const [uw, setUw] = useState(null);
@@ -1459,6 +1575,9 @@ function InsuranceSection({ onGo }) {
   // 과업3 재편: 구(舊) 8탭 키 → 신(新) 6탭 호환 매핑(딥링크 무중단)
   const TAB_ALIAS = { embed: "custom", premium: "custom", policy: "analysis", coverage: "analysis", claim: "claimpay" };
   const setTabX = (k) => setTab(TAB_ALIAS[k] || k);
+  // 과업C: 조성래(hifin·관리자) 진입 시 보험 실현황 1회성 시드 보강 — 이후 전 화면은 금고·원장 저장본만 읽는다
+  const [, _forceSeed] = useState(0);
+  useEffect(() => { try { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (!dm && typeof selfMember === "function" && typeof selfEnsureInsSeed === "function") { if (selfEnsureInsSeed(selfMember())) _forceSeed((x) => x + 1); } } catch (e) {} }, []);
   // 다른 섹션에서 특정 간편보험 진입(__hifinInsRoute) / 보험 AI상담 연결·자동질의(__hifinInsAsk) 라우팅 훅
   useEffect(() => {
     let r = null; try { r = window.__hifinInsRoute; } catch (e) {}
@@ -1485,15 +1604,26 @@ function InsuranceSection({ onGo }) {
       {tab === "share" && <InsShareTab />}
       {tab === "sports" && <SportsInsuranceSection onGo={go} />}
       {tab === "custom" && (<>
-        <InsLadderCard onTab={setTab} />
-        <InsRiskCard />
-        <PremiumPolicySection initialPlanKey={simplePlan} />
+        {/* 과업B 미니 내비 — 4개 서브섹션 앵커 칩(3클릭 원칙) */}
+        <div className="benefit" style={{ position: "sticky", top: 0, zIndex: 5 }}>
+          {[["cins-checkup", "① 검진대비보험"], ["cins-silson", "② 실손현황"], ["cins-mine", "③ 내 보험현황"], ["cins-premium", "④ 내몸맞춤 프리미엄"]].map(([id, t]) => (
+            <span key={id} style={{ cursor: "pointer" }} onClick={() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}><Sparkles size={14} /> {t}</span>))}
+        </div>
+        <InsCheckupInsSection onEnroll={() => setEnroll(true)} />
+        <InsSilStatusSection onTab={setTab} />
+        <InsMyPoliciesSection onTab={setTab} />
+        <div id="cins-premium">
+          <div className="rct" style={{ margin: "10px 0 6px" }}><Sparkles size={17} color="#7C3AED" /> ④ 내몸맞춤 프리미엄보험</div>
+          <InsRiskCard />
+          <PremiumPolicySection initialPlanKey={simplePlan} />
+        </div>
         <div style={{ display: "flex", gap: 8, margin: "4px 0 10px" }}>
           <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => setTab("sports")}><Trophy size={13} /> 스포츠 임베디드 보험</button>
           <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => setTab("join")}><FileText size={13} /> 가입 동의서 작성</button>
         </div>
       </>)}
       {tab === "custom" && (<>
+        <details style={{ margin: "2px 0 10px" }}><summary style={{ cursor: "pointer", fontWeight: 800, fontSize: 13, color: "var(--blue)", padding: "8px 4px" }}>📋 검진대비보험 상품 상세·플랜 비교 펼쳐보기 (기본형·표준형·고급형 담보표)</summary>
         <div className="benefit">
           <span><Art name="check" size={16} /> 추가 보험료 0원</span>
           <span><Art name="calendar" size={16} /> 검진 연계 자동가입</span>
@@ -1539,6 +1669,7 @@ function InsuranceSection({ onGo }) {
           </div>
         </div>
         <div className="chnote">※ 보험계약기간은 건강검진 15일 전부터 3개월(진단·수술 시까지)이며 3개월 단위로 연장 가능합니다. 보장금액·약관은 현대해상 전속 보험대리점 글로벌예방금융㈜ 및 GA코리아와의 전략적 제휴 운영 자료 기준 정리이며, 실제 가입·보장은 보험사 상품·고지·심사 및 정식 라이선스 채널에 따릅니다.</div>
+        </details>
       </>)}
 
       {tab === "join" && <InsJoin onGo={go} />}
