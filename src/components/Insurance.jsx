@@ -1449,7 +1449,7 @@ function InsShareTab() {
 }
 
 function InsuranceSection({ onGo }) {
-  const [tab, setTab] = useState("analysis");
+  const [tab, setTab] = useState("custom");   // 과업A: 맞춤보험이 기본 랜딩 탭
   const [modal, setModal] = useState(null);
   const [enroll, setEnroll] = useState(false);
   const [cover, setCover] = useState(null);
@@ -1466,8 +1466,8 @@ function InsuranceSection({ onGo }) {
     let a = null; try { a = window.__hifinInsAsk; } catch (e) {}
     if (a) { setTabX(a.tab || "ai"); setAskSeed(a.q || null); try { window.__hifinInsAsk = null; } catch (e) {} }
   }, []);
-  /* 과업3 6탭 — 각 탭 = 내 지갑 자산의 다른 뷰(보장 자산·토큰 사용·순환의 몫) */
-  const tabs = [["analysis", "보장분석", Search], ["custom", "맞춤보험", Sparkles], ["billing", "보험료 납부", Coins], ["claimpay", "청구·지급", FileText], ["rerate", "요율 재산정", ShieldCheck], ["share", "치료비·나눔", HeartHandshake]];
+  /* 과업3 6탭 — 각 탭 = 내 지갑 자산의 다른 뷰(보장 자산·토큰 사용·순환의 몫). 과업A: 맞춤보험 최좌측(기본 랜딩) */
+  const tabs = [["custom", "맞춤보험", Sparkles], ["analysis", "보장분석", Search], ["billing", "보험료 납부", Coins], ["claimpay", "청구·지급", FileText], ["rerate", "요율 재산정", ShieldCheck], ["share", "치료비·나눔", HeartHandshake]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="insurance" /></span>
