@@ -416,7 +416,7 @@ function _insServiceRoute(text, member) {
       if (r.ok) return { bubbles: [{ kind: "text", text: `접수 완료 ✓ — ${r.claim.id} (검진 연계 정밀검사 지원). 바로 심사할까요?` }], quicks: [`심사 진행 · ${r.claim.id}`] };
       return { bubbles: [{ kind: "text", text: "🔒 " + r.reason }] };
     }
-    return { bubbles: [{ kind: "card", card: { title: `🩺 검진대비보험 — ${S.timeline.phase}`, items: [`증서 ${S.policy.id} · 무상(추가 보험료 0원)`, `보장기간 ${new Date(S.timeline.start).toLocaleDateString("ko-KR")}~${new Date(S.timeline.end).toLocaleDateString("ko-KR")}`].concat(S.coverage.map(([t, a]) => `${t}: ${a.toLocaleString()}원`)), buttons: S.timeline.phase === "보장 중" ? ["검진보험 청구해줘"] : [] } }], quicks: [] };
+    return { bubbles: [{ kind: "card", card: { title: `🩺 검진대비보험 — ${S.timeline.phase}`, items: [`증서 ${S.policy.id} · 무상(추가 보험료 0원)`, `보장기간 ${new Date(S.timeline.start).toLocaleDateString("ko-KR")}~${new Date(S.timeline.end).toLocaleDateString("ko-KR")}`].concat(S.coverage.map(([scen, name, amt]) => `${name} ${amt.toLocaleString()}원 — "${scen}"일 때`)), buttons: S.timeline.phase === "보장 중" ? ["검진보험 청구해줘"] : [] } }], quicks: [] };
   }
   // M2 — 위험 예측·인수 시뮬(상담사)
   if (/위험\s*(예측|알려|얼마|분석)|무슨\s*병|질병\s*위험/.test(text)) {
@@ -1227,33 +1227,62 @@ function InsCheckupInsSection({ onEnroll }) {
   const [confirm, setConfirm] = useState(null);   // "issue" | {claim}
   const m = insService.member();
   const S = m ? insService.checkupIns(m) : null;
-  const won = (n) => Number(n || 0).toLocaleString() + "원";
+  const won = (n) => Number(n || 0).toLocaleString();
   if (!m || !S) return null;
-  const TL = ["발급", "보장 개시", "보장 중", "만료"];
+  const nm = m.name || "회원";
+  const TL = ["발급", "보장 시작", "지켜지는 중", "만료"];
   const tlIdx = !S.policy ? -1 : S.timeline.phase === "만료" ? 3 : S.timeline.phase === "보장 중" ? 2 : 1;
+  const active = tlIdx === 2;
   return (
-    <div className="card" id="cins-checkup" style={{ border: "1.5px solid #BFD0FF" }}>
-      <div className="rct"><ShieldCheck size={17} color="#2563EB" /> ① 건강검진대비보험 <span className="cbadge" style={{ marginLeft: 8, color: "#15803D", background: "#E7F8EE" }}>검진 연동 · 추가 보험료 0원</span></div>
+    <div className="card" id="cins-checkup" style={{ border: "1.5px solid #BFD0FF", overflow: "hidden" }}>
+      {/* ── 히어로: 한 문장으로 마음에 닿기 ── */}
+      <div style={{ margin: "-16px -16px 14px", padding: "22px 20px 18px", background: "linear-gradient(120deg,#1D4ED8 0%,#2563EB 55%,#0EA5E9 100%)", color: "#fff" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, opacity: .9, marginBottom: 6 }}><ShieldCheck size={13} style={{ verticalAlign: "-2px" }} /> ① 건강검진대비보험 · 보험료 0원</div>
+        {!S.policy ? (
+          <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님, 검진 받으셨죠?<br />그 순간을 위해 <span style={{ color: "#FDE68A" }}>무료 보장</span>이 준비돼 있어요.</div>
+        ) : (
+          <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님은 지금 <span style={{ color: "#FDE68A" }}>지켜지고 있어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>검진에서 무슨 일이 발견돼도 — 치료비 걱정에 치료를 미루는 일은 없게요.</span></div>
+        )}
+        {S.policy && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.18)", borderRadius: 99, padding: "5px 12px", fontSize: 11.5, fontWeight: 700 }}><Check size={13} /> {active ? "지금 보장되고 있어요" : S.timeline.phase} · {new Date(S.timeline.start).toLocaleDateString("ko-KR")} ~ {new Date(S.timeline.end).toLocaleDateString("ko-KR")}</div>}
+      </div>
+
       {!S.policy ? (
         S.hasCheckup ? (<>
-          <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.65 }}>검진 기록({S.checkupDate})이 연결돼 있어요 — <b>검진 연동 무상 보장</b>을 바로 발급받을 수 있어요.</p>
-          <button className="cbtn pri" onClick={() => setConfirm("issue")}><CalendarCheck size={15} /> 발급받기 (무상 · 확인 후 발급)</button>
+          <p style={{ fontSize: 13.5, color: "#3a4659", lineHeight: 1.7 }}>검진 기록(<b>{S.checkupDate}</b>)이 연결돼 있어요. 버튼 한 번이면 <b>암·뇌졸중·심근경색 진단금과 대부분 질병의 수술비</b>까지 지켜주는 보장이 켜져요 — <b style={{ color: "var(--green)" }}>돈은 한 푼도 들지 않아요.</b></p>
+          <button className="cbtn pri" style={{ fontSize: 15, padding: "14px" }} onClick={() => setConfirm("issue")}><ShieldCheck size={16} /> 내 무료 보장 켜기 (10초)</button>
         </>) : (<>
-          <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.65 }}>검진 기록을 연결하면 <b>추가 보험료 0원</b>으로 검진 대비 보장이 발급돼요 — 지금은 검진 예약으로 시작할 수 있어요.</p>
-          <button className="cbtn pri" onClick={onEnroll}><CalendarCheck size={15} /> 검진 예약하고 자동가입 시작</button>
+          <p style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.7 }}>건강검진을 예약하시면 <b>보험료 0원</b>으로 검진 대비 보장이 함께 준비돼요 — 검진이 곧 보험이 되는 거예요.</p>
+          <button className="cbtn pri" onClick={onEnroll}><CalendarCheck size={15} /> 검진 예약하고 무료 보장 받기</button>
         </>)
       ) : (<>
-        <div style={{ display: "flex", gap: 4, margin: "6px 0 8px", fontSize: 10.5, fontWeight: 700 }}>
-          {TL.map((s, i) => <span key={s} style={{ flex: 1, textAlign: "center", padding: "4px 0", borderRadius: 8, background: i <= tlIdx ? "#DBEAFE" : "#F1F5F9", color: i <= tlIdx ? "#1D4ED8" : "#94A3B8" }}>{s}</span>)}
+        {/* ── 타임라인(진행이 늘 보이게) ── */}
+        <div style={{ display: "flex", gap: 4, margin: "0 0 12px", fontSize: 10.5, fontWeight: 700 }}>
+          {TL.map((s, i) => <span key={s} style={{ flex: 1, textAlign: "center", padding: "5px 0", borderRadius: 8, background: i <= tlIdx ? "#DBEAFE" : "#F1F5F9", color: i <= tlIdx ? "#1D4ED8" : "#94A3B8" }}>{i <= tlIdx ? "✓ " : ""}{s}</span>)}
         </div>
-        <div className="costrow"><span className="cl">증서 {S.policy.id} · {S.timeline.phase}</span><span className="cv">{new Date(S.timeline.start).toLocaleDateString("ko-KR")} ~ {new Date(S.timeline.end).toLocaleDateString("ko-KR")}</span><span className="ca" style={{ color: tlIdx === 2 ? "var(--green)" : "#B45309" }}>{S.timeline.phase}</span></div>
-        <div style={{ margin: "8px 0 4px", fontSize: 12.5, fontWeight: 800 }}>보장 내용</div>
-        {S.coverage.map(([t, amt, d]) => <div className="costrow" key={t}><span className="cl">{t} — {d}</span><span className="cv" style={{ color: "var(--blue)" }}>{won(amt)}</span><span className="ca">보장</span></div>)}
-        <details style={{ fontSize: 12, margin: "6px 0" }}><summary style={{ cursor: "pointer", fontWeight: 700, color: "#B45309" }}>보장이 안 되는 경우(면책) 보기</summary><ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>{S.exclusions.map((x) => <li key={x}>{x}</li>)}</ul></details>
-        {S.claims.length > 0 && S.claims.map((c) => <div className="costrow" key={c.id}><span className="cl">청구 {c.id}</span><span className="cv">{/지급완료/.test(c.status) ? `지급 ${won(c.payout)}` : c.status}</span><span className="ca">{/지급완료/.test(c.status) ? "완료" : "진행"}</span></div>)}
-        {tlIdx === 2 && <button className="cbtn" style={{ marginTop: 6 }} onClick={() => { const r = insService.claimSubmit(m, { kind: "검진 연계 정밀검사", fee: 100000 }); if (r.ok) { const rv = insService.claimReview(m, r.claim.id); if (rv.ok) setConfirm({ claim: rv }); else if (typeof toast === "function") toast("🔒 " + rv.reason); } else if (typeof toast === "function") toast("🔒 " + r.reason); }}><Coins size={14} /> 보험금 청구하기 (정밀검사 지원)</button>}
+        {/* ── "만약에…" 시나리오 카드 — 큰 글씨·상황 언어 ── */}
+        <div style={{ fontSize: 13, fontWeight: 800, margin: "2px 0 8px" }}>만약에 이런 일이 생기면요,</div>
+        <div style={{ display: "grid", gap: 8 }}>
+          {S.coverage.map(([scen, name, amt, d]) => (
+            <div key={name} style={{ display: "flex", alignItems: "center", gap: 12, border: "1px solid #E3ECFB", background: "#F8FAFF", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: "#334155" }}>😟 "{scen}"</div>
+                <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 3 }}>💙 {d}</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "#1D4ED8" }}>{won(amt)}<small style={{ fontSize: 11 }}>원</small></div>
+                <div style={{ fontSize: 10, color: "var(--soft)" }}>{name} · 바로 지급</div>
+              </div>
+            </div>))}
+        </div>
+        {/* ── 약속 한 줄 + 행동 ── */}
+        <div style={{ margin: "12px 0 10px", padding: "12px 14px", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12, fontSize: 13, lineHeight: 1.7, color: "#78350F" }}>
+          <b>치료비 때문에 치료를 포기하지 마세요.</b> 받을 수 있는 치료비는 끝까지 받아서, 제대로 치료받으세요 — 청구는 서류 없이 <b>검진 기록으로 하이가 도와드려요.</b>
+        </div>
+        {S.claims.length > 0 && S.claims.map((c) => <div className="costrow" key={c.id}><span className="cl">청구 {c.id}</span><span className="cv">{/지급완료/.test(c.status) ? `지급 ${won(c.payout)}원 — 지갑에 들어왔어요` : c.status}</span><span className="ca" style={{ color: /지급완료/.test(c.status) ? "var(--green)" : "#B45309" }}>{/지급완료/.test(c.status) ? "완료 ✓" : "진행 중"}</span></div>)}
+        {active && <button className="cbtn pri" style={{ marginTop: 4, fontSize: 14.5, padding: "13px" }} onClick={() => { const r = insService.claimSubmit(m, { kind: "검진 연계 정밀검사", fee: 100000 }); if (r.ok) { const rv = insService.claimReview(m, r.claim.id); if (rv.ok) setConfirm({ claim: rv }); else if (typeof toast === "function") toast("🔒 " + rv.reason); } else if (typeof toast === "function") toast("🔒 " + r.reason); }}><Coins size={15} /> 치료비 청구하기 — 서류 없이 바로</button>}
+        <details style={{ fontSize: 12, margin: "10px 0 0" }}><summary style={{ cursor: "pointer", fontWeight: 700, color: "var(--soft)" }}>미리 알려드려요 — 이런 경우는 보장이 어려워요</summary><ul style={{ margin: "6px 0 0", paddingLeft: 18, color: "var(--muted)", lineHeight: 1.7 }}>{S.exclusions.map((x) => <li key={x}>{x}</li>)}</ul></details>
       </>)}
-      <div className="chnote" style={{ marginTop: 8 }}>※ 검진 연계 무상 보장은 <b>보험업법 특별이익 제공 금지 규정 정합 검토 전제</b> · 가입은 GA 라이선스 채널 경유 — 발급·청구·지급 전 건이 온체인에 기록돼요.</div>
+      <div className="chnote" style={{ marginTop: 10 }}>※ 검진 연계 무상 보장은 보험업법 특별이익 제공 금지 규정 정합 검토 전제 · 가입은 GA 라이선스 채널 경유 — 발급·청구·지급 전 건이 온체인에 기록돼요.</div>
       {confirm === "issue" && (
         <div className="bkov" onClick={() => setConfirm(null)}><div className="bk" style={{ maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
           <div className="bkh"><div className="bt"><ShieldCheck size={16} color="#2563EB" /> 발급 확인</div></div>
