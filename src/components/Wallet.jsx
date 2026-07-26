@@ -3,7 +3,7 @@
 function WalletSection({ onGo }) {
   const [tab, setTab] = useState("earn");
   const go = onGo || (() => {});
-  const tabs = [["earn", "적립 현황", Coins], ["give", "나눔·기부", HeartHandshake], ["use", "사용처", Wallet], ["chain", "온체인 원장", Blocks], ["guide", "사용방법", Sparkles], ["sec", "AI·블록체인 보안", ShieldCheck]];
+  const tabs = [["earn", "적립 현황", Coins], ["topup", "충전", Banknote], ["give", "나눔·기부", HeartHandshake], ["use", "사용처", Wallet], ["chain", "온체인 원장", Blocks], ["guide", "사용방법", Sparkles], ["sec", "AI·블록체인 보안", ShieldCheck]];   // 충전: htk-topup 이식(HtkTopup.jsx)
   const manwon = (n) => n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원";
   const won = (n) => n.toLocaleString() + "원";
   // 운영자(조성래) 로그인은 데모 세션이 없어 null — 실프로필(selfMember) 폴백으로 온체인 원장 등 블록체인 자료 전부 표시
@@ -134,6 +134,7 @@ function WalletSection({ onGo }) {
         <div className="chnote">※ 사용한도는 예시입니다. 적립 토큰은 <b>플랫폼이 환전하여 현금(카드·계좌)으로 결제·정산</b>되며(가상자산 아님), 토큰 우선 차감 후 잔액은 현금결제됩니다. 스테이블코인 등 가상자산 직접 결제는 <b>법률 제정 후 도입</b> 예정입니다.</div>
       </>)}
 
+      {tab === "topup" && (typeof HtkTopupSection === "function" ? <HtkTopupSection /> : null)}
       {tab === "chain" && (typeof HtkTokenLedger === "function" ? <HtkTokenLedger member={dm} base={total} /> : null)}
 
       {tab === "guide" && (<>
