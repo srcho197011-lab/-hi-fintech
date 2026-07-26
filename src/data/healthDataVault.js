@@ -299,9 +299,32 @@ function seedSelfVault(member) {
 
 /* ══ 과업C — 조성래(hifin) 보험 실현황 1회성 보강 시드(기존 데이터 보존·멱등) ══
    보험 섹션 진입 시 호출: 검진(seedSelfVault)·실손·일반 보험 2건·검진대비보험 발급 이력을 금고·원장에 정식 저장 — 화면은 그 저장본만 읽는다. */
+/* 조성래 실계약(2026-07-26 형 제공 — 신용정보원 조회 실데이터 기준) — 월 보험료·가입일·만기 실값 */
+const SELF_REAL_CONTRACTS = [
+  { insurer: "현대해상", product: "무배당 하이라이프 新행복을다모은보험(Hi1112 · 실손 포함 종합)", kind: "실손", gen: "2세대", join: "2012-03-29", end: "2079-03-29", coGen: "10%", coNon: "20%", monthly: 154000, years: 14 },
+  { insurer: "현대해상", product: "무배당 행복가득 생활보장보험(Hi2006 · 가족 실손 포함 종합)", kind: "가족실손종합", gen: "3세대", join: "2020-06-30", end: "2040-06-30", monthly: 150000, years: 6 },
+  { insurer: "현대해상", product: "무배당 내삶엔(3N) 맞춤간편건강보험(세만기형)", kind: "건강", join: "2025-07-28", end: "2070-07-28", monthly: 121000, years: 1 },
+  { insurer: "현대해상", product: "무배당 하이라이프 퍼펙트스타 종합보험(Hi1112)", kind: "건강종합", join: "2012-03-27", end: "2102-03-27", monthly: 98500, years: 14 },
+  { insurer: "현대해상", product: "무배당 하이라이프 퍼펙트스타 종합보험(Hi1112) — 2건차", kind: "건강종합", join: "2012-03-27", end: "2105-03-27", monthly: 97000, years: 14 },
+  { insurer: "현대해상", product: "무배당 뉴하이카 운전자상해보험(Hi2504)", kind: "운전자·상해", join: "2025-07-29", end: "2045-07-29", monthly: 183000, years: 1 },
+  { insurer: "현대해상", product: "Hicar 자동차보험 개인용(CM)", kind: "자동차", join: "2026-05-26", end: "2027-05-26", monthly: 480000, years: 0 },
+  { insurer: "KB손해보험", product: "플러스사랑 단체상해보험(II) — 피보험자", kind: "단체상해", join: "2024-08-01", end: "2027-07-31", monthly: 10000, years: 2 },
+  { insurer: "DB손해보험", product: "나에게 맞춘 초경증 간편건강보험2407", kind: "간편건강", join: "2024-11-15", end: "2044-11-15", monthly: 35000, years: 2 },
+];
 function selfEnsureInsSeed(member) {
   try {
-    if (!member || localStorage.getItem("hifin_self_ins_v3")) return false;
+    if (!member) return false;
+    // v4(2026-07-26): 목업 계약을 형 실계약 9건으로 교체(검진·체인·원장은 보존)
+    if (!localStorage.getItem("hifin_self_ins_v4")) {
+      seedSelfVault(member);
+      vaultSaveInsurance(member, SELF_REAL_CONTRACTS, { source: "self-real", channel: "aggregate" });
+      if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" });
+      if (typeof tlSync === "function") tlSync(member);
+      localStorage.setItem("hifin_self_ins_v4", "1");
+      localStorage.setItem("hifin_self_ins_v3", "1");
+      return true;
+    }
+    if (localStorage.getItem("hifin_self_ins_v3")) return false;
     seedSelfVault(member);   // 검진 2개년·통합조회·증서(멱등 — 기존 있으면 skip)
     const token = anonToken(member);
     const v = vaultLoad(token) || { token, checkups: [], insurance: [], consents: null };

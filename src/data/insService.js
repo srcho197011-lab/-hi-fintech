@@ -274,7 +274,7 @@ const insService = {
     m = m || _isMember(); if (!m) return null;
     let vaultC = []; try { const v = vaultLoad(anonToken(m)); vaultC = (v && v.insurance) || []; } catch (e) {}
     const wizard = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).filter((p) => !/검진.?대비/.test(p.product));
-    const alive = vaultC.filter((c) => c.kind !== "실손").map((c) => ({ src: "연동", product: c.product, insurer: c.insurer, monthly: c.monthly || 0, years: c.years, benefit: c.benefit, kind: c.kind, status: "정상", detail: c.detail || null }))
+    const alive = vaultC.filter((c) => c.kind !== "실손").map((c) => ({ src: "연동", product: c.product, insurer: c.insurer, monthly: c.monthly || 0, years: c.years, benefit: c.benefit, kind: c.kind, status: "정상", detail: c.detail || null, join: c.join || null, end: c.end || null }))
       .concat(wizard.filter((p) => p.status === "active").map((p) => ({ src: "청약", product: p.product, insurer: "글로벌예방금융(GA)", monthly: p.monthly, years: 0, benefit: null, kind: "맞춤", status: "정상" })));
     const lapsed = wizard.filter((p) => p.status !== "active").map((p) => ({ product: p.product, monthly: p.monthly, status: "실효" }));
     const g = this.gap(m);   // 단일 출처 — 보장분석 탭과 같은 함수

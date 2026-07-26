@@ -1340,9 +1340,11 @@ function InsMyPoliciesSection({ onTab }) {
   return (
     <div className="card" id="cins-mine">
       <div className="rct"><FileText size={17} color="#7C3AED" /> ③ 내가 가입하고 있는 보험 <span className="cbadge" style={{ marginLeft: 8, color: "#6D28D9", background: "#EDE9FE" }}>살아있는 보험 {P.count}건 · 월 {won(P.monthlyTotal)}</span></div>
-      {P.alive.length ? P.alive.map((c, i) => (
-        <div className="costrow" key={i}><span className="cl">{c.product} ({c.insurer}){c.years ? ` · ${c.years}년차` : ""}{c.detail ? ` · 진단비 ${won(c.detail.diag)}·수술비 ${won(c.detail.surgery)}·입원일당 ${won(c.detail.daily)}` : c.benefit ? ` · 보장 ${won(c.benefit)}` : ""}</span><span className="cv">월 {won(c.monthly)}</span><span className="ca" style={{ color: "var(--green)" }}>{c.status}</span></div>
-      )) : <p style={{ fontSize: 12.5, color: "var(--muted)" }}>연결된 일반 보험이 아직 없어요 — 보험을 연결하거나 아래 프리미엄 추천에서 시작해 보세요.</p>}
+      {P.alive.length ? P.alive.map((c, i) => {
+        const expSoon = c.end && (new Date(c.end) - Date.now()) < 400 * 86400000;   // 만기 13개월 내 → 임박 배지
+        return (
+          <div className="costrow" key={i}><span className="cl">{c.kind ? `[${c.kind}] ` : ""}{c.product} ({c.insurer}){c.years ? ` · ${c.years}년차` : ""}{c.end ? ` · 만기 ${String(c.end).slice(0, 7)}` : ""}{c.detail ? ` · 진단비 ${won(c.detail.diag)}·수술비 ${won(c.detail.surgery)}·입원일당 ${won(c.detail.daily)}` : c.benefit ? ` · 보장 ${won(c.benefit)}` : ""}</span><span className="cv">월 {won(c.monthly)}</span><span className="ca" style={{ color: expSoon ? "#B45309" : "var(--green)" }}>{expSoon ? "만기 임박" : c.status}</span></div>);
+      }) : <p style={{ fontSize: 12.5, color: "var(--muted)" }}>연결된 일반 보험이 아직 없어요 — 보험을 연결하거나 아래 프리미엄 추천에서 시작해 보세요.</p>}
       {P.lapsed.length > 0 && <details style={{ fontSize: 12, marginTop: 6 }}><summary style={{ cursor: "pointer", color: "var(--soft)", fontWeight: 700 }}>지난 계약(실효·만기) {P.lapsed.length}건 보기</summary>{P.lapsed.map((c, i) => <div className="costrow" key={i}><span className="cl">{c.product}</span><span className="cv">월 {won(c.monthly)}</span><span className="ca" style={{ color: "#B91C1C" }}>{c.status}</span></div>)}</details>}
       <button className="cbtn" style={{ marginTop: 8 }} onClick={() => onTab && onTab("analysis")}><Search size={14} /> 빠진 보장까지 — 보장분석 탭에서 자세히</button>
     </div>);
