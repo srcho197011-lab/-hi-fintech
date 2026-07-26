@@ -1,7 +1,8 @@
 /* 지갑 데이터(WALLET·WALLET_EARN·WALLET_USE·WALLET_GUIDE·WALLET_SEC) → src/data/sectionData.js 로 이관 */
 
 function WalletSection({ onGo }) {
-  const [tab, setTab] = useState("earn");
+  // 하이 딥링크 훅(app://wallet/*): window._walletTab에 탭 키를 심고 진입하면 해당 탭으로 랜딩
+  const [tab, setTab] = useState(() => { try { const t = window._walletTab; window._walletTab = null; return t || "earn"; } catch (e) { return "earn"; } });
   const go = onGo || (() => {});
   const tabs = [["earn", "적립 현황", Coins], ["topup", "충전", Banknote], ["give", "나눔·기부", HeartHandshake], ["use", "사용처", Wallet], ["chain", "온체인 원장", Blocks], ["guide", "사용방법", Sparkles], ["sec", "AI·블록체인 보안", ShieldCheck]];   // 충전: htk-topup 이식(HtkTopup.jsx)
   const manwon = (n) => n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원";

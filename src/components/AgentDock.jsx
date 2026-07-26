@@ -225,6 +225,10 @@ function AgentOpsConsole() {
         <div className="hiops-stat"><b>{(patN + lexN).toLocaleString()}+</b><span>표현 커버(패턴+동의어)</span></div>
         <div className="hiops-stat"><b>{secN}</b><span>섹션 가이드</span></div>
       </div>
+      {(() => { const r = (typeof hiUnansweredReport === "function") ? hiUnansweredReport(7) : null; if (!r || !r.total) return null; const L = { U1: "데이터없음", U2: "권한없음", U3: "미출시", U4: "전문영역", U5: "실시간외부", U6: "시스템", U7: "이해실패", OFFTOPIC: "오프토픽" }; return (
+        <div className="hiops-sec" style={{ display: "block" }}>답변불가·오프토픽 주간 리포트 <span>(최근 7일 {r.total}건)</span>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>{Object.entries(r.byType).map(([k, v]) => <span key={k} className="cbadge" style={{ background: "#FFF3E6", color: "#B45309" }}>{L[k] || k} {v}</span>)}</div>
+        </div> ); })()}
       <div className="hiops-sec">미답변 로그 <span>({misses.length}건 · 최근순)</span>
         <button className="hiops-run" onClick={runLoop}><RefreshCw size={13} /> 주간 학습 루프 실행</button></div>
       <div className="hiops-list">{misses.slice(-10).reverse().map((m, i) => (

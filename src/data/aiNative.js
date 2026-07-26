@@ -30,12 +30,12 @@ const HIFIN_LEXICON = [
   ["둘러보기", ["구경하기", "체험모드", "게스트모드"]],
   ["검진대비보험", ["무료보험", "검진보험", "공짜보험"]],
   ["환불", ["돈돌려", "반품환불"]],
-  ["상담원", ["상담사", "직원", "사람"]],
-  ["가입", ["개설", "등록", "회원되기"]],
+  ["상담원", ["상담사", "직원"]],   // ⚠️ '사람' 치환 금지 — "집사람" 등 합성어 파괴(2026-07-27 수정)
+  ["가입", ["개설", "회원되기"]],   // ⚠️ '등록' 치환 금지 — 가족등록·데이터등록 의도 파괴(famadd 패턴 사문화 버그 수정)
   ["삭제", ["지우기", "없애기", "지워"]],
   ["예약", ["에약", "예악"]],
   ["병원", ["뵹원"]],
-  ["보험", ["보흠", "보험료"]],
+  ["보험", ["보흠"]],   // ⚠️ '보험료'는 치환 금지 — 보험료(S3-PREMIUM)·premium_high 패턴이 죽는 버그(2026-07-27 수정)
 ];
 /* 질의 정규화: 소문자 → 동의어 치환 → 공백·문장부호 제거 */
 function lexNormalize(text) {
@@ -406,10 +406,24 @@ function agentAnswer(text) {
       agentStats(true); agentMemSave({ lastIntent: "nav_" + sg.k, lastCat: "nav", lastQ: String(text).slice(0, 60) });
       return { lines: [sg.guide], buttons: (sg.btns || []).slice(0, 3), nav: { key: sg.k, label: sg.label }, matched: "nav_" + sg.k };
     }
+    // ①.5 하이 NLU 확장 파이프라인(hiNluCore) — S1~S9 슬롯 전수 코퍼스 · U1~U7 답변불가 · 오프토픽 3단계
+    let hi = null;
+    try { hi = (typeof hiRespond === "function") ? hiRespond(text, norm, m) : null; } catch (e) { hi = null; }
+    if (hi && hi.kind === "intent") {
+      agentStats(true); agentMemSave({ lastIntent: hi.intent.id, lastCat: hi.intent.l1, lastQ: String(text).slice(0, 60) });
+      return { lines: hi.res.lines, buttons: (hi.res.buttons || []).slice(0, 3), nav: hi.res.nav || null, matched: hi.intent.id };
+    }
+    if (hi && (hi.kind === "unanswerable" || hi.kind === "offtopic")) {
+      agentStats(true);   // 정직한 한계 안내도 '처리된 답변'(미답변 상세는 hiULog가 유형별 기록)
+      return { lines: hi.res.lines, buttons: (hi.res.buttons || []).slice(0, 3), nav: hi.res.nav || null, matched: hi.u || hi.kind };
+    }
     // ② 그래프 폴백: 검진지표 단어면 관계로 안내
     const g = agentGraphLookup(norm);
     agentStats(false); agentMissLog(text);
+    try { if (!g.length && typeof hiULog === "function") hiULog(text, "U7"); } catch (e) {}   // 이해 실패 전건 유형 로그(학습 루프)
     if (g.length) { const h = g[0]; return { lines: [`${h.ind} 관련 질문이시군요 — ${h.note}.`, "리포트에서 내 수치 기준으로 자세히 봐드릴까요?"], buttons: ["내 리포트 요약", "관련 보장 확인", "사람 상담 연결"], nav: null, matched: "graph" }; }
+    // U7(이해 실패): matched:null로 반환해 독의 주치의 엔진에도 기회를 주고, 실패 시 후보 칩 응답이 노출됨
+    if (hi && hi.kind === "u7") return { lines: hi.res.lines, buttons: (hi.res.buttons || []).slice(0, 3), nav: null, matched: null };
     return { lines: [`아직 그 질문은 제가 정확히 답하기 어려워요 — 놓치지 않게 기록해 뒀어요.`, "비슷한 걸로 도와드릴 수 있는지 아래에서 골라보시겠어요?"], buttons: ["하이핀 소개해줘", "내 건강 봐줘", "사람 상담 연결"], nav: null, matched: null };
   }
   /* 재무 내부지표(매출·영업이익·구독료 정책·CAC/LTV·기업가치)는 관리자 세션에서만 응답 — 회원에게 원가·수익구조 비노출 */
