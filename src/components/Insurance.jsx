@@ -799,7 +799,8 @@ function PremiumPolicySection({ initialPlanKey } = {}) {
 
       <SimpleBodyInsurance initialPlanKey={initialPlanKey} />
 
-      <div className="mhbox">
+      {/* 형 지시(2026-07-26): 플랫폼 구조도는 고객 화면에서 숨김 — 사업 구조 설명은 내부·제휴용. 복원 시 false→true */}
+      {false && <div className="mhbox">
         <div className="bt">HI-Fin Tech 플랫폼 구조도</div>
         <div className="bs">건강관리부터 보험설계, 보험금 청구, 건강자산 관리까지 원스톱 통합 플랫폼</div>
         <div style={{ textAlign: "center", marginTop: 8 }}><span className="clickhint"><Info size={11} /> 각 단계를 클릭하면 상세 설명과 바로가기를 볼 수 있습니다</span></div>
@@ -812,7 +813,7 @@ function PremiumPolicySection({ initialPlanKey } = {}) {
           ))}
         </div></div>
         <div className="platfb"><span className="ln" /><RefreshCw size={14} /> 건강관리 피드백 &amp; 리워드 제공 <span className="ln r" /></div>
-      </div>
+      </div>}
 
       <div className="mhbox">
         <div className="bt">HI-Fin Tech의 핵심 가치</div>
