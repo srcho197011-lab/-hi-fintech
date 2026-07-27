@@ -98,14 +98,15 @@ function hiCtxLast() { return _hiCtx.length ? _hiCtx[_hiCtx.length - 1] : null; 
 /* ── 쉬운말 모드 플래그(전 답변 전파) ── */
 function hiEasyOn() { try { return document.body.classList.contains("easyread") || !!localStorage.getItem("hifin_easyread"); } catch (e) { return false; } }
 
-/* ── 전제조건 검사(U1/U2 판정) ── */
-function hiCheckPre(it, m) {
+/* ── 전제조건 검사(U1/U2 판정) — 2단계: 상태 모델(스냅샷) 기반으로 승격, 구 onboardStatus는 폴백 ── */
+function hiCheckPre(it, m, snap) {
   const pre = it.pre || [];
   if (pre.includes("login") && !m) return { u: "U1", res: {
     lines: [hiEasyOn() ? "이 기능은 로그인하고 쓸 수 있어요. 로그인하면 이어서 도와드릴게요." : "이 기능은 로그인 후에 이용할 수 있어요 — 로그인하시면 제가 이어서 도와드릴게요."],
     buttons: ["하이핀 소개해줘"], nav: null } };
   let ob = null;
-  try { ob = (typeof onboardStatus === "function") ? onboardStatus(m) : null; } catch (e) { ob = null; }
+  if (snap) ob = { step1: !!(snap.s5 && snap.s5.anyLink), step2: !!(snap.s3 && snap.s3.insLinked) };
+  else { try { ob = (typeof onboardStatus === "function") ? onboardStatus(m) : null; } catch (e) { ob = null; } }
   if (pre.includes("dataLink") && ob && !ob.step1) return { u: "U1", res: {
     lines: [hiEasyOn() ? "아직 검진 데이터가 연결 전이에요. 사진 한 장이면 1분에 연결돼요." : "아직 검진 데이터가 연결 전이라 보여드릴 수 없어요. 1분이면 연결할 수 있어요!"],
     buttons: ["검진결과 올리기"], nav: { key: "onboarding", label: "데이터 연결" } } };
@@ -113,9 +114,10 @@ function hiCheckPre(it, m) {
     lines: [hiEasyOn() ? "보험이 아직 연결 전이에요. 인증 한 번이면 1분에 돼요." : "보험이 아직 연결 전이라 확인할 수 없어요. 통합조회 연결이 1분이면 돼요."],
     buttons: ["보험 연결하기"], nav: { key: "onboarding", label: "데이터 연결" } } };
   if (pre.includes("family")) {
-    let fam = [];
-    try { fam = (typeof familyLoad === "function" && m) ? (familyLoad(m.email, (m.name || "가")[0]) || []) : []; } catch (e) { fam = []; }
-    if (!fam.length) return { u: "U2", res: {
+    let famN = 0;
+    if (snap && snap.s6) famN = snap.s6.familyCount || 0;
+    else { try { famN = ((typeof familyLoad === "function" && m) ? (familyLoad(m.email, (m.name || "가")[0]) || []) : []).length; } catch (e) { famN = 0; } }
+    if (!famN) return { u: "U2", res: {
       lines: [hiEasyOn() ? "가족으로 등록하고 동의를 받아야 볼 수 있어요. 등록은 말 한마디면 돼요." : "그분 정보는 가족 등록에 동의하셔야 볼 수 있어요 — 등록은 \"어머니 82세 추가해줘\" 한마디면 돼요."],
       buttons: ["어머니 82세 추가해줘", "아내 51세 추가해줘"], nav: { key: "mypage", label: "우리가족건강관리" } } };
   }
@@ -223,11 +225,22 @@ function hiRespond(rawText, norm, m) {
     const g3 = hiGuardU3(t);
     if (g3) { hiULog(rawText, "U3"); hiCtxPush(rawText, "U-U3"); return { kind: "unanswerable", u: "U3", res: g3.res }; }
 
+    /* [2단계] 상태 스냅샷 — 파이프라인 진입 시 1회 로드(추론·U1/U2 판정의 공통 근거) */
+    let snap = null;
+    try { snap = (m && typeof memberStateSnapshot === "function") ? memberStateSnapshot(m) : null; } catch (e) { snap = null; }
+
     /* [1] 의도분류 성공 경로 */
     if (cls.best && cls.conf >= 0.45) {
       const it = cls.best.it;
-      /* [2] 전제조건 검사(U1/U2) */
-      const pre = hiCheckPre(it, m);
+      /* [1.5·2단계] 상황 추론(SARG) — 상태 의존 상황이 매칭되면 정적 답변보다 우선.
+         인텐트 매칭 실패 시 구어 보조 패턴(qpat)도 시도(허브 분류로 뭉개진 상태 질문 구제) */
+      if (!(it.pre || []).includes("login") || m) {
+        const rz = ((typeof hiReason === "function") ? hiReason(it.id, snap, m, rawText) : null)
+          || ((typeof hiReasonDirect === "function") ? hiReasonDirect(t, snap, m, rawText) : null);
+        if (rz) { hiCtxPush(rawText, it.id); return rz; }
+      }
+      /* [2] 전제조건 검사(U1/U2) — 상태 모델 기반 */
+      const pre = hiCheckPre(it, m, snap);
       if (pre) { hiULog(rawText, pre.u); hiCtxPush(rawText, it.id); return { kind: "unanswerable", u: pre.u, res: pre.res }; }
       /* [5]~[7] 정상 답변(툴 U6 포함) */
       const out = hiAnswer(it, m, rawText);
@@ -240,12 +253,20 @@ function hiRespond(rawText, norm, m) {
     if (last && last.intentId && Object.keys(cls.b).length && !Object.keys(cls.a).length) {
       const it = HI_INTENTS.find((x) => x.id === last.intentId);
       if (it && (it.b || []).some((bg) => cls.b[bg])) {
-        const pre = hiCheckPre(it, m);
+        const rz = (typeof hiReason === "function") ? hiReason(it.id, snap, m, rawText) : null;
+        if (rz) { hiCtxPush(rawText, it.id); return rz; }
+        const pre = hiCheckPre(it, m, snap);
         if (pre) { hiULog(rawText, pre.u); return { kind: "unanswerable", u: pre.u, res: pre.res }; }
         const out = hiAnswer(it, m, rawText);
         hiCtxPush(rawText, it.id);
         return out;
       }
+    }
+
+    /* [2단계] 미분류 보조 추론 — 구어형 상태 질문("돈 찾아준다더니 어디서 봐?")을 세그먼트 qpat으로 직접 매칭 */
+    {
+      const rz = (typeof hiReasonDirect === "function") ? hiReasonDirect(t, snap, m, rawText) : null;
+      if (rz) { hiCtxPush(rawText, rz.seg); return rz; }
     }
 
     /* 오프토픽 3단계 */
@@ -266,5 +287,22 @@ function hiRespond(rawText, norm, m) {
   } catch (e) { return null; }
 }
 
+/* ── [2단계] SARG 프로브 — 섹션 가이드(nav 레이어)보다 먼저 상태 상황만 조용히 탐지 ──
+   agentAnswer 진입부에서 호출: SARG 매칭 시에만 응답을 반환하고, 그 외 경로(U유형·오프토픽·로그)는
+   건드리지 않는다(비매칭 시 기존 레이어 순서 그대로). */
+function hiSargProbe(rawText, norm, m) {
+  try {
+    if (!m || typeof hiReason !== "function") return null;
+    const snap = (typeof memberStateSnapshot === "function") ? memberStateSnapshot(m) : null;
+    if (!snap) return null;
+    const cls = hiClassify(rawText, norm);
+    let rz = null;
+    if (cls.best && cls.conf >= 0.45) rz = hiReason(cls.best.it.id, snap, m, rawText);
+    if (!rz && typeof hiReasonDirect === "function") rz = hiReasonDirect(cls.t, snap, m, rawText);
+    if (rz) hiCtxPush(rawText, rz.seg);
+    return rz;
+  } catch (e) { return null; }
+}
+
 /* 관리자 콘솔용 노출 */
-try { if (typeof window !== "undefined") { window.__hifinHiNlu = { classify: hiClassify, respond: hiRespond, report: hiUnansweredReport }; } } catch (e) {}
+try { if (typeof window !== "undefined") { window.__hifinHiNlu = { classify: hiClassify, respond: hiRespond, report: hiUnansweredReport, probe: hiSargProbe }; } } catch (e) {}

@@ -400,6 +400,13 @@ function agentAnswer(text) {
   const norm = lexNormalize(text);
   const it = agentMatch(norm);
   if (!it) {
+    // ⓪.5 [2단계] 상황 추론(SARG) 프로브 — 회원 상태에 걸린 상황은 섹션 가이드보다 우선(개인화 > 일반 안내)
+    let hiP = null;
+    try { hiP = (typeof hiSargProbe === "function") ? hiSargProbe(text, norm, m) : null; } catch (e) { hiP = null; }
+    if (hiP && hiP.kind === "sarg") {
+      agentStats(true); agentMemSave({ lastIntent: hiP.seg, lastCat: "sarg", lastQ: String(text).slice(0, 60) });
+      return { lines: hiP.res.lines, buttons: (hiP.res.buttons || []).slice(0, 3), nav: hiP.res.nav || null, preview: hiP.res.preview || null, followup: hiP.res.followup || null, matched: hiP.seg };
+    }
     // ① 섹션 활용 가이드(내비게이션 레이어): "검진예약 도와줘" "쇼핑 보여줘" 등 → 사용법 안내 + 화면 열기
     const sg = agentNavIntent(text, norm);
     if (sg) {
@@ -409,6 +416,11 @@ function agentAnswer(text) {
     // ①.5 하이 NLU 확장 파이프라인(hiNluCore) — S1~S9 슬롯 전수 코퍼스 · U1~U7 답변불가 · 오프토픽 3단계
     let hi = null;
     try { hi = (typeof hiRespond === "function") ? hiRespond(text, norm, m) : null; } catch (e) { hi = null; }
+    /* [2단계] 상황 추론(SARG) 응답 — 미리보기 카드(preview)·알림 예약(followup)까지 프론트로 전달 */
+    if (hi && hi.kind === "sarg") {
+      agentStats(true); agentMemSave({ lastIntent: hi.seg, lastCat: "sarg", lastQ: String(text).slice(0, 60) });
+      return { lines: hi.res.lines, buttons: (hi.res.buttons || []).slice(0, 3), nav: hi.res.nav || null, preview: hi.res.preview || null, followup: hi.res.followup || null, matched: hi.seg };
+    }
     if (hi && hi.kind === "intent") {
       agentStats(true); agentMemSave({ lastIntent: hi.intent.id, lastCat: hi.intent.l1, lastQ: String(text).slice(0, 60) });
       return { lines: hi.res.lines, buttons: (hi.res.buttons || []).slice(0, 3), nav: hi.res.nav || null, matched: hi.intent.id };
@@ -479,6 +491,8 @@ function rpmAlert(m) { try {
 function agentProactive() {
   const m = _member(); const out = [];
   if (!m) return out;
+  /* [2단계] 예약된 알림(followup) 도래분 — "결과 나올 때쯤 알려드릴게요"의 실제 발화 지점 */
+  try { if (typeof hiFollowupDue === "function") { hiFollowupDue(m).forEach((f) => out.push({ text: f.message, buttons: [] })); } } catch (e) {}
   /* RPM 경보 — 최우선(새벽 2:17 장면): 세션당 1회 선제 안내 */
   try { const a = rpmAlert(m); if (a && !sessionStorage.getItem("hifin_rpm_seen")) { out.push({ text: `🔴 오늘 새벽 2:17, ${a.rel} ${a.name}님 혈압이 152/94까지 올랐어요(3일 연속 상승 · 가정 혈압계 RPM 자동 감지). 지금 연결 가능한 의사에게 먼저 보여드릴까요?`, buttons: ["원격진료 연결해줘", "가족 혈압 경보 보여줘"] }); sessionStorage.setItem("hifin_rpm_seen", "1"); } } catch (e) {}
   /* 방문수령증(V4) — 수령 완료 시 복약 리마인드 시작 안내(1회), 조제 완료 시 QR 준비 안내(세션 1회) */

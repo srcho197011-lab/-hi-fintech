@@ -116,8 +116,22 @@ function AgentDock({ onGo }) {
       if (!res) { setMsgs((m) => [...m, { who: "hi", lines: ["잠시 문제가 있었어요 — 다시 한번 말씀해 주시겠어요?"], buttons: ["사람 상담 연결"], nav: null }]); return; }
       if (res.reset) { setMsgs([{ who: "hi", lines: res.lines, buttons: [], nav: null }]); return; }
       lastQRef.current = text;
-      setMsgs((m) => [...m, { who: "hi", lines: res.lines, buttons: res.buttons || [], nav: res.nav || null }]);
+      setMsgs((m) => [...m, { who: "hi", lines: res.lines, buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null }]);
     }, 480);
+  };
+  /* [2단계] SARG 응답 칩 처리 — 알림 예약(followup 저장)·미리보기 열기는 대화 재질의 없이 즉시 실행 */
+  const chipClick = (msg, b) => {
+    if (msg.followup && (b === "알림 받기" || b === "알림 예약")) {
+      let ok = false;
+      try { const mm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; ok = (typeof hiFollowupSave === "function") ? hiFollowupSave(mm || { email: "self" }, msg.followup) : false; } catch (e) { ok = false; }
+      setMsgs((mv) => [...mv, { who: "hi", lines: [ok ? "🔔 알림을 예약했어요 — 때가 되면 제가 먼저 말씀드릴게요." : "알림 예약이 잠시 안 됐어요 — 다시 한번 눌러주시겠어요?"], buttons: [], nav: null }]);
+      return;
+    }
+    if (msg.preview && (b.indexOf("미리보기") >= 0 || /화면 열기$/.test(b))) {
+      const key = msg.preview.nav || (msg.nav && msg.nav.key);
+      if (key) { setOpen(false); go(key); return; }
+    }
+    send(b);
   };
   const startStt = () => {
     if (!sttOK) return;
@@ -161,8 +175,15 @@ function AgentDock({ onGo }) {
                       {(c.buttons || []).length > 0 && <div className="hidock-btns">{c.buttons.map((b) => <button key={b} onClick={() => send(b)}>{b}</button>)}</div>}
                     </div>
                   ))}
-                  {m.nav && <button className="hidock-nav" onClick={() => { setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
-                  {m.buttons && m.buttons.length > 0 && <div className="hidock-btns">{m.buttons.map((b) => <button key={b} onClick={() => send(b)}>{b}</button>)}</div>}
+                  {m.preview && (
+                    <div className="hidock-card hidock-preview" role="button" tabIndex={0} onClick={() => { const k = m.preview.nav || (m.nav && m.nav.key); if (k) { setOpen(false); go(k); } }}>
+                      <b>🪟 {m.preview.title}</b>
+                      <div className="hidock-prev-d">{m.preview.description}</div>
+                      <div className="hidock-btns"><button onClick={(e) => { e.stopPropagation(); const k = m.preview.nav || (m.nav && m.nav.key); if (k) { setOpen(false); go(k); } }}>화면 미리보기 열기</button></div>
+                    </div>
+                  )}
+                  {m.nav && !m.preview && <button className="hidock-nav" onClick={() => { setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
+                  {m.buttons && m.buttons.length > 0 && <div className="hidock-btns">{m.buttons.map((b) => <button key={b} onClick={() => chipClick(m, b)}>{b}</button>)}</div>}
                 </div>
               </div>
             ))}

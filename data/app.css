@@ -5183,3 +5183,10 @@ body.easyread .hibrief-t { font-size: 17px; }
 /* 헤더 새로고침 버튼 — hover 시 살짝 회전 */
 .navrefresh:hover svg { transform: rotate(90deg); transition: transform .3s ease; }
 .navrefresh:active svg { transform: rotate(360deg); transition: transform .5s ease; }
+
+/* ══ 하이 2단계 — SARG 미리보기 카드(대화 속 섹션 프리뷰) ══ */
+.hidock-preview { border-color: #C7D2FE; background: linear-gradient(135deg, #EEF2FF, #F8FAFF); cursor: pointer; margin-top: 6px; }
+.hidock-preview b { color: #4338CA; }
+.hidock-preview .hidock-prev-d { font-size: 12px; line-height: 1.55; color: #475569; margin-bottom: 7px; }
+body.easyread .hidock-preview .hidock-prev-d { font-size: 14px; line-height: 1.7; }
+.hidock-preview:hover { border-color: #818CF8; box-shadow: 0 4px 14px rgba(79, 70, 229, .12); }
