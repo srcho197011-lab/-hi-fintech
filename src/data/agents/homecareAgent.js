@@ -233,17 +233,26 @@ function homecareAgent(question, ctx) {
 
   /* ⑦ 응급 — 조치가 먼저지만, 보호자가 그다음에 무엇을 할지도 남겨둔다(경황 없을 때 다시 찾기 어렵다) */
   if (triage) {
-    /* 측정으로 잡힌 경보는 **무슨 수치를 보고 그러는지** 밝힌다 — 근거 없는 경보는 다음번에 무시당한다 */
+    /* 측정으로 잡힌 경보는 **무슨 수치를 보고 그러는지** 밝힌다 — 근거 없는 경보는 다음번에 무시당한다.
+       지표가 여럿 울리면 심한 것부터(rpmTriage가 이미 정렬해 둔 순서) */
     if (triage.rpm) {
       const r = triage.rpm;
-      const trend = r.series.map(function (p) { return p.sys + "/" + p.dia; }).join(" → ");
-      lines.push(`${r.elder.relation} ${r.elder.name}님 혈압이 ${trend}로 올라와 있어요(${r.latest.label} 자동 감지).`);
-      (r.reasons || []).forEach(function (x) { lines.push("· " + x); });
-      lines.push("가정용 기기가 잡은 수치라 진단은 아니에요 — 그래서 더더욱 의료진이 직접 보셔야 해요.");
+      (r.alerts || []).forEach(function (a) {
+        lines.push(`${r.elder.relation} ${r.elder.name}님 ${a.label} — ${a.text}(${a.latest.label} 자동 감지).`);
+        (a.reasons || []).forEach(function (x) { lines.push("· " + x); });
+      });
+      lines.push("가정용 기기가 잡은 값이라 진단은 아니에요 — 그래서 더더욱 의료진이 직접 보셔야 해요.");
+      /* 조용한 지표도 한 줄 — '무엇을 지켜보고 있는지' 알면 보호자의 불안이 줄어든다 */
+      try {
+        const quiet = (typeof rpmQuiet === "function") ? rpmQuiet(r) : [];
+        if (quiet.length) lines.push("같이 보고 있는 " + quiet.map(function (x) { return x.label + " " + x.latest; }).join(" · ") + "는 지금 이상 없어요.");
+      } catch (e) {}
     }
     if (!lines.length) lines.push("지금은 상담보다 조치가 먼저예요 — 진정되고 나면 돌봄 준비를 이어서 도와드릴게요.");
     buttons = triage.level === "critical" ? ["지금 연결 가능한 의사", "재가·돌봄 화면 열기"] : ["지금 연결 가능한 의사", "등급 신청은 어떻게 해?"];
-    if (triage.rpm) cite.unshift({ source: "원격 모니터링(RPM) 측정값", title: `${triage.rpm.elder.name}님 혈압 ${triage.rpm.series.length}일 추이`, snippet: triage.rpm.reasons[0] });
+    if (triage.rpm) cite.unshift({ source: "원격 모니터링(RPM) 측정값",
+      title: `${triage.rpm.elder.name}님 ${triage.rpm.alerts.map(function (a) { return a.label; }).join("·")} 추이`,
+      snippet: triage.rpm.reasons[0] });
   }
 
   if (!lines.length) return null;

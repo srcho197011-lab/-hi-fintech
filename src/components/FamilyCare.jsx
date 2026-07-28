@@ -200,17 +200,33 @@ function FamilyCareSection({ member, onGo }) {
           const st = (typeof rpmState === "function") ? rpmState(email, family) : null;
           if (!st) return null;
           const elder = st.elder;
-          const series = st.series;
           const crisis = st.level === "critical";
+          const quiet = (typeof rpmQuiet === "function") ? rpmQuiet(st) : [];
+          /* 막대 높이는 지표마다 범위가 달라 각 계열 안에서 상대화한다(혈압 152와 산소포화도 94를 같은 자로 재면 안 된다) */
+          const barPct = (a, p) => {
+            const vals = a.series.map((x) => (x.sys != null ? x.sys : x.mgdl != null ? x.mgdl : x.pct != null ? x.pct : 1));
+            const lo = Math.min(...vals), hi = Math.max(...vals);
+            const v = p.sys != null ? p.sys : p.mgdl != null ? p.mgdl : p.pct != null ? p.pct : 1;
+            return hi === lo ? 60 : Math.round(35 + (v - lo) / (hi - lo) * 65);
+          };
           return (
             <div className="rpmalert">
-              <div className="rpm-hd"><AlertTriangle size={15} /> RPM 경보 — {elder.relation} {elder.name}님 혈압 이상 추세 <span className="rpm-when">{st.latest.label} 자동 감지</span></div>
-              <div className="rpm-series">{series.map((p, i) => (
-                <div className={`rpm-bar ${i === series.length - 1 ? "hot" : ""}`} key={p.day}><i style={{ height: Math.round((p.sys - 110) / 50 * 100) + "%" }} /><b>{p.sys}/{p.dia}</b><span>{p.label}</span></div>
-              ))}</div>
+              <div className="rpm-hd"><AlertTriangle size={15} /> RPM 경보 — {elder.relation} {elder.name}님 {st.alerts.map((a) => a.label).join("·")} 이상 <span className="rpm-when">{st.primary.latest.label} 자동 감지</span></div>
+              {st.alerts.map((a) => (
+                <div key={a.metric}>
+                  {st.alerts.length > 1 && <div className="rpm-mlbl">{a.icon} {a.label}</div>}
+                  {a.metric === "fall"
+                    ? <p className="rpm-evt">{a.icon} {a.latest.label} · {a.text}</p>
+                    : <div className="rpm-series">{a.series.map((p, i) => (
+                        <div className={`rpm-bar ${i === a.series.length - 1 ? "hot" : ""}`} key={a.metric + p.label}><i style={{ height: barPct(a, p) + "%" }} /><b>{(RPM_METRICS.find((m) => m.key === a.metric) || { fmt: () => "" }).fmt(p)}</b><span>{p.label}</span></div>
+                      ))}</div>}
+                  <ul className="rpm-why">{a.reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
+                </div>
+              ))}
               <p>{crisis
-                ? "지금 수치는 즉시 진료가 필요한 구간이에요. 심한 두통·가슴 통증·마비 증상이 있다면 먼저 119에 연락해 주세요."
-                : "가정용 혈압계가 사흘 연속 상승과 새벽 급등을 자동 감지했어요. 심한 두통·가슴 통증·마비 증상이 있다면 즉시 119, 아니면 지금 연결 가능한 의사에게 비대면으로 먼저 보여주세요 — 예진 요약에 이 추이가 자동 포함돼요."}</p>
+                ? "지금은 즉시 진료가 필요한 구간이에요. 의식·호흡이 이상하거나 심한 통증·마비가 있다면 먼저 119에 연락해 주세요."
+                : "가정용 기기가 자동 감지한 값이에요. 심한 두통·가슴 통증·마비 증상이 있다면 즉시 119, 아니면 지금 연결 가능한 의사에게 비대면으로 먼저 보여주세요 — 예진 요약에 이 추이가 자동 포함돼요."}</p>
+              {quiet.length > 0 && <p className="rpm-quiet">같이 지켜보는 {quiet.map((x) => `${x.icon} ${x.label} ${x.latest}`).join(" · ")} — 지금 이상 없어요.</p>}
               <div className="rpm-btns">
                 <button className="pri" onClick={() => { try { window._teleRPM = (typeof rpmTeleSummary === "function") ? rpmTeleSummary(st) : ""; window._teleGoSpecialist = true; } catch (e) {} go("ai"); }}><Stethoscope size={13} /> 지금 연결 가능한 의사</button>
                 {/* 경보 다음 단계 — 수치 해석은 위 '의사' 버튼(A1), 여기는 **돌봄 준비**(A4).

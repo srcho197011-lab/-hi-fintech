@@ -4770,6 +4770,12 @@ body.easyread .hibrief-t { font-size: 17px; }
 .rpm-bar span { font-size: 10px; color: #C08484; }
 .rpm-bar.hot b { font-size: 12px; }
 .rpmalert p { margin: 8px 0 0; font-size: 12px; color: #7F5B5B; line-height: 1.55; }
+/* 다지표 경보(혈압·혈당·산소포화도·낙상) — 지표가 둘 이상일 때만 라벨을 붙인다 */
+.rpm-mlbl { font-size: 12px; font-weight: 800; color: #B91C1C; margin: 10px 0 -2px; }
+.rpm-why { margin: 4px 0 0; padding-left: 17px; }
+.rpm-why li { font-size: 11.5px; color: #8B5F5F; line-height: 1.6; }
+.rpm-evt { background: #fff; border: 1px solid #FECACA; border-radius: 10px; padding: 9px 12px; margin: 10px 0 0 !important; font-weight: 700; color: #B91C1C !important; }
+.rpm-quiet { color: #7C8AA0 !important; background: #F8FAFC; border-radius: 9px; padding: 7px 11px; margin-top: 9px !important; font-size: 11.5px !important; }
 .rpm-btns { display: flex; gap: 7px; margin-top: 10px; flex-wrap: wrap; }
 .rpm-btns button { display: flex; align-items: center; gap: 5px; border: 1px solid #FECACA; background: #fff; color: #B91C1C; border-radius: 10px; padding: 8px 13px; font-size: 12px; font-weight: 800; cursor: pointer; }
 .rpm-btns button.pri { background: #DC2626; border-color: #DC2626; color: #fff; box-shadow: 0 3px 10px rgba(220, 38, 38, .3); }
