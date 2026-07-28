@@ -132,7 +132,9 @@ function compareProducts(category, opts) {
       const ca = a && (a.perDayCost / a.nutrient.amount), cb = b.perDayCost / b.nutrient.amount;
       return (!a || cb < ca) ? b : a;
     }, null);
-    if (best) guide.push(`성분 1mg당 가격을 우선한다면 → ${best.name}(${Math.round(best.perDayCost / best.nutrient.amount * 10) / 10}원/${best.nutrient.unit.replace("억 CFU", "억CFU")})`);
+    /* 단위는 성분마다 다르다 — mg으로 못 박으면 CFU 제품에서 "1mg당 3.7원/억CFU" 같은 어긋난 문장이 나온다 */
+    const u = best ? String(best.nutrient.unit).replace("억 CFU", "억CFU") : "";
+    if (best) guide.push(`성분 1${u}당 가격을 우선한다면 → ${best.name}(${Math.round(best.perDayCost / best.nutrient.amount * 10) / 10}원/${u})`);
   }
   if (highlights.bestAfterReward) guide.push(`하이핀 적립까지 감안한다면 → ${highlights.bestAfterReward.name}(적립 반영 ${highlights.bestAfterReward.netPerDay}원/${highlights.bestAfterReward.perDayCost ? "일" : highlights.bestAfterReward.unit})`);
 
