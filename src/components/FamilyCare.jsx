@@ -196,18 +196,26 @@ function FamilyCareSection({ member, onGo }) {
       {(() => {
         try {
           if (rpmAck) return null;
-          const elder = family.find((x) => famGroupOf(x.age, x.relation) === "노인");
-          if (!elder) return null;
-          const series = [["7/17", "132/84", 132], ["7/18", "141/88", 141], ["새벽 2:17", "152/94", 152]];
+          /* 경보 판정은 rpmAlert.js 단일 소스가 한다 — 화면과 하이(A4)가 같은 것을 보고 같은 판단을 하도록 */
+          const st = (typeof rpmState === "function") ? rpmState(email, family) : null;
+          if (!st) return null;
+          const elder = st.elder;
+          const series = st.series;
+          const crisis = st.level === "critical";
           return (
             <div className="rpmalert">
-              <div className="rpm-hd"><AlertTriangle size={15} /> RPM 경보 — {elder.relation} {elder.name}님 혈압 이상 추세 <span className="rpm-when">오늘 새벽 2:17 자동 감지</span></div>
-              <div className="rpm-series">{series.map(([d, v, n], i) => (
-                <div className={`rpm-bar ${i === series.length - 1 ? "hot" : ""}`} key={d}><i style={{ height: Math.round((n - 110) / 50 * 100) + "%" }} /><b>{v}</b><span>{d}</span></div>
+              <div className="rpm-hd"><AlertTriangle size={15} /> RPM 경보 — {elder.relation} {elder.name}님 혈압 이상 추세 <span className="rpm-when">{st.latest.label} 자동 감지</span></div>
+              <div className="rpm-series">{series.map((p, i) => (
+                <div className={`rpm-bar ${i === series.length - 1 ? "hot" : ""}`} key={p.day}><i style={{ height: Math.round((p.sys - 110) / 50 * 100) + "%" }} /><b>{p.sys}/{p.dia}</b><span>{p.label}</span></div>
               ))}</div>
-              <p>가정용 혈압계가 사흘 연속 상승과 새벽 급등을 자동 감지했어요. 심한 두통·가슴 통증·마비 증상이 있다면 즉시 119, 아니면 지금 연결 가능한 의사에게 비대면으로 먼저 보여주세요 — 예진 요약에 이 추이가 자동 포함돼요.</p>
+              <p>{crisis
+                ? "지금 수치는 즉시 진료가 필요한 구간이에요. 심한 두통·가슴 통증·마비 증상이 있다면 먼저 119에 연락해 주세요."
+                : "가정용 혈압계가 사흘 연속 상승과 새벽 급등을 자동 감지했어요. 심한 두통·가슴 통증·마비 증상이 있다면 즉시 119, 아니면 지금 연결 가능한 의사에게 비대면으로 먼저 보여주세요 — 예진 요약에 이 추이가 자동 포함돼요."}</p>
               <div className="rpm-btns">
-                <button className="pri" onClick={() => { try { window._teleRPM = `${elder.relation} ${elder.name}님 혈압 3일 추이 132/84→141/88→152/94 · 오늘 새벽 2:17 급등(RPM 자동 감지)`; window._teleGoSpecialist = true; } catch (e) {} go("ai"); }}><Stethoscope size={13} /> 지금 연결 가능한 의사</button>
+                <button className="pri" onClick={() => { try { window._teleRPM = (typeof rpmTeleSummary === "function") ? rpmTeleSummary(st) : ""; window._teleGoSpecialist = true; } catch (e) {} go("ai"); }}><Stethoscope size={13} /> 지금 연결 가능한 의사</button>
+                {/* 경보 다음 단계 — 수치 해석은 위 '의사' 버튼(A1), 여기는 **돌봄 준비**(A4).
+                    질문에 수치를 넣지 않아도 A4는 경보를 데이터로 이미 알고 있어서 응급 안내부터 꺼낸다. */}
+                <button onClick={() => { try { window.dispatchEvent(new CustomEvent("agentask", { detail: `${elder.name}님 돌봄 준비 뭐부터 해야 해?` })); } catch (e) {} }}>🤖 돌봄 준비 물어보기</button>
                 <button onClick={() => { if (typeof toast === "function") toast(`🔔 가족 모두에게 ${elder.name}님 혈압 경보를 공유했어요.`); }}><Bell size={13} /> 가족에 공유</button>
                 <button className="dim" onClick={() => { setRpmAck(true); lsSave("hifin_rpm_ack_" + email, 1); if (typeof toast === "function") toast("경보를 해제했어요 — 새 이상 신호가 오면 다시 알려드려요."); }}>확인·해제</button>
               </div>

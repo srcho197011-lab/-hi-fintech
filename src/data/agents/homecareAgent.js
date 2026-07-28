@@ -73,15 +73,22 @@ function a4Providers(region, svc, limit) {
 function _a4Need(ctx) {
   const m = (ctx && ctx.m) || null;
   const snap = (ctx && ctx.snap) || null;
-  const out = { hasFamily: false, elder: null, gradeKnown: false };
+  const out = { hasFamily: false, elder: null, gradeKnown: false, rpm: null };
+  let fam = null;
   try {
-    const fam = (m && (m.family || m.familyMembers)) || null;
+    fam = (m && (m.family || m.familyMembers)) || null;
+    /* 화면에서 등록한 가족은 저장소에 있다 — 회원 객체에 없어도 여기서 읽어온다 */
+    if (!Array.isArray(fam) && m && m.email && typeof familyLoad === "function") fam = familyLoad(m.email, (m.name || "").slice(0, 1));
     if (Array.isArray(fam) && fam.length) {
       out.hasFamily = true;
       const e = fam.find(function (f) { return Number(f.age) >= 75 || /모|부|조모|조부/.test(String(f.relation || "")); });
       if (e) out.elder = { name: e.name || "", relation: e.relation || "가족", age: e.age || null };
     }
     if (!out.hasFamily && snap && snap.s6 && snap.s6.familyCount > 0) out.hasFamily = true;
+  } catch (e) {}
+  /* 원격 모니터링 경보 — 보호자가 묻지 않아도 A4는 알고 있어야 한다 */
+  try {
+    if (typeof rpmState === "function" && Array.isArray(fam) && m) out.rpm = rpmState(m.email, fam);
   } catch (e) {}
   return out;
 }
@@ -113,14 +120,19 @@ function homecareAgent(question, ctx) {
   ctx = ctx || {};
   const nav = { key: "homecare", label: "재가·돌봄" };
 
-  /* ⓪ 트리아지 — 담당 밖 판정보다도 먼저. 응급은 어떤 규칙보다 위에 있다. */
-  const triage = (typeof hcTriage === "function") ? hcTriage(q) : null;
+  /* ⓪ 트리아지 — 담당 밖 판정보다도 먼저. 응급은 어떤 규칙보다 위에 있다.
+     말(질문 표현)과 데이터(원격 모니터링 수치)를 함께 읽는다. */
+  const need = _a4Need(ctx);
+  const triage = (typeof hcTriage === "function") ? hcTriage(q, { rpm: need.rpm }) : null;
 
-  const ob = triage ? null : _a4Outbound(q);
+  /* 담당 밖으로 넘길지 판단 — **지금 벌어지는 응급**만 이 판단을 건너뛴다.
+     배경 경보(측정값)가 켜져 있다고 해서 보험금·검진 질문까지 A4가 삼키면 안 된다.
+     다만 측정값이 crisis 구간이면 무엇보다 우선한다. */
+  const nowEmergency = triage && (triage.via === "말" || triage.level === "critical");
+  const ob = nowEmergency ? null : _a4Outbound(q);
   if (ob) return { handback: ob };
 
   let lines = [], buttons = [], cite = [], calc = null, providers = null;
-  const need = _a4Need(ctx);
 
   /* ① 비용 — 한도액을 알려주면 계산하고, 모르면 계산하지 않는다(추정 금지) */
   if (A4_INTENT.cost.test(q)) {
@@ -221,14 +233,24 @@ function homecareAgent(question, ctx) {
 
   /* ⑦ 응급 — 조치가 먼저지만, 보호자가 그다음에 무엇을 할지도 남겨둔다(경황 없을 때 다시 찾기 어렵다) */
   if (triage) {
+    /* 측정으로 잡힌 경보는 **무슨 수치를 보고 그러는지** 밝힌다 — 근거 없는 경보는 다음번에 무시당한다 */
+    if (triage.rpm) {
+      const r = triage.rpm;
+      const trend = r.series.map(function (p) { return p.sys + "/" + p.dia; }).join(" → ");
+      lines.push(`${r.elder.relation} ${r.elder.name}님 혈압이 ${trend}로 올라와 있어요(${r.latest.label} 자동 감지).`);
+      (r.reasons || []).forEach(function (x) { lines.push("· " + x); });
+      lines.push("가정용 기기가 잡은 수치라 진단은 아니에요 — 그래서 더더욱 의료진이 직접 보셔야 해요.");
+    }
     if (!lines.length) lines.push("지금은 상담보다 조치가 먼저예요 — 진정되고 나면 돌봄 준비를 이어서 도와드릴게요.");
     buttons = triage.level === "critical" ? ["지금 연결 가능한 의사", "재가·돌봄 화면 열기"] : ["지금 연결 가능한 의사", "등급 신청은 어떻게 해?"];
+    if (triage.rpm) cite.unshift({ source: "원격 모니터링(RPM) 측정값", title: `${triage.rpm.elder.name}님 혈압 ${triage.rpm.series.length}일 추이`, snippet: triage.rpm.reasons[0] });
   }
 
   if (!lines.length) return null;
 
-  /* 보호자 상황을 알면 한 줄 덧붙인다(등급 유무가 갈림길) */
-  if (need.elder && !/등급/.test(lines.join(""))) {
+  /* 보호자 상황을 알면 한 줄 덧붙인다(등급 유무가 갈림길) — 단 응급일 때는 붙이지 않는다.
+     지금 병원에 가야 하는 사람에게 등급 신청 이야기를 얹으면 정작 해야 할 일이 묻힌다. */
+  if (!triage && need.elder && !/등급/.test(lines.join(""))) {
     lines.push(`${need.elder.relation} ${need.elder.name}님 건강관리가 등록돼 있어요 — 등급이 아직 없으시면 신청부터 도와드릴게요.`);
   }
 

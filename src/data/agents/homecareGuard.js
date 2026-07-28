@@ -61,15 +61,31 @@ const HC_GUARD_RULES = [
       .replace(/당연히\s*하셔야죠|안\s*하시면\s*안\s*돼요|반드시\s*맡기세요/g, "선택은 가족분들이 하시면 돼요") },
 ];
 
-/* ⓪ 응급 트리아지 — 상담보다 먼저. 가드가 아니라 '차단기'다. */
-function hcTriage(question) {
+/* ⓪ 응급 트리아지 — 상담보다 먼저. 가드가 아니라 '차단기'다.
+   두 갈래로 읽는다.
+     ① 말 — 보호자가 쓴 표현("쓰러지셨어요")
+     ② 데이터 — 원격 모니터링이 잡은 수치(rpmState)
+   ②가 필요한 이유: 보호자는 위험을 **모르고 물을 수 있다.** 새벽에 혈압이 급등한 줄 모르고
+   "방문요양 알아봐 줘"라고만 물으면, 말만 읽는 트리아지는 그냥 지나친다. */
+function hcTriage(question, ctx) {
   const q = String(question || "");
+  let byWord = null;
   try {
-    if (typeof LTC_EMERGENCY === "undefined") return null;
-    for (const w of LTC_EMERGENCY.critical) { if (q.indexOf(w) >= 0) return { level: "critical", hit: w }; }
-    for (const w of LTC_EMERGENCY.urgent) { if (q.indexOf(w) >= 0) return { level: "urgent", hit: w }; }
+    if (typeof LTC_EMERGENCY !== "undefined") {
+      for (const w of LTC_EMERGENCY.critical) { if (q.indexOf(w) >= 0) { byWord = { level: "critical", hit: w, via: "말" }; break; } }
+      if (!byWord) for (const w of LTC_EMERGENCY.urgent) { if (q.indexOf(w) >= 0) { byWord = { level: "urgent", hit: w, via: "말" }; break; } }
+    }
   } catch (e) {}
-  return null;
+  let byData = null;
+  try {
+    const rpm = (ctx && ctx.rpm) || null;
+    if (rpm && rpm.level) byData = { level: rpm.level, hit: (rpm.reasons || [])[0] || "원격 모니터링 이상 신호", via: "측정", rpm: rpm };
+  } catch (e) {}
+  if (!byWord) return byData;
+  if (!byData) return byWord;
+  /* 둘 다 걸리면 높은 쪽을 따른다 — 낮춰 잡는 실수는 되돌릴 수 없다 */
+  const win = byWord.level === "critical" || byData.level !== "critical" ? byWord : byData;
+  return Object.assign({}, win, { rpm: byData.rpm, both: true });
 }
 
 /* 응급 안내 — 응답 **맨 앞**에 넣는다(뒤에 붙이면 스크롤 밖으로 밀려 못 본다) */
