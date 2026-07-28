@@ -71,6 +71,10 @@ src/data/hiStateModel.js
 src/data/memberState.js
 src/data/hiCheckupBranch.js
 src/data/hiReasoner.js
+src/data/agentRegistry.js
+src/data/agentHandoff.js
+src/data/agentRouter.js
+src/data/agents/aiDoctorAgent.js
 src/utils/ontologyConsult.js
 src/utils/insuranceRecommendationUtils.js
 src/utils/healthWalletUtils.js

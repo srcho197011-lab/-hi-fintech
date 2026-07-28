@@ -12,7 +12,8 @@ const HIFIN_LEXICON = [
   // [표준어, [변형들]] — 긴 변형 먼저 치환
   ["실손", ["실비보험", "실비", "실손의료보험", "의료실비"]],
   ["체중", ["몸무게", "몸무개", "무게"]],
-  ["신장", ["키"]],
+  // ⚠️ ["신장", ["키"]] 제거(2026-07-28) — "키" 치환이 밀키트·쿠키·키오스크 등 합성어를 파괴(밀키트→밀신장트)
+  ["신장", []],
   ["결제", ["돈내는거", "돈내기", "계산하기", "돈냄"]],
   ["적립금", ["포인트", "마일리지", "캐시", "포인트머니"]],
   ["HTK", ["헬스토큰", "하이토큰", "에이치티케이"]],
@@ -395,18 +396,81 @@ function agentNavIntent(rawText, normText) {
 /* ── 메인: agentAnswer(text) — 단일 에이전트 '하이'의 응답 ──
    반환: { lines:[문장들], buttons:[≤3], nav:{key,label}|null, reset?:bool, matched:intentKey|null } */
 const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", home: "회사 소개", trust: "신뢰 센터", checkup: "건강검진 예약", care: "검진 후 케어", insurance: "보험·치료비", mywallet: "나의 건강지갑", partner: "제휴·투자", onboarding: "데이터 연결", ontology: "온톨로지", shop: "건강쇼핑", ai: "AI 주치의 상담", manage: "내 건강현황", hospital: "병원진료 안내", homecare: "재가돌봄", wallet: "건강금융지갑", nft: "Health NFT", mypage: "우리가족건강관리", social: "사회적기업", community: "커뮤니티" };
+
+/* ══════════ [Phase A] 에이전트 메시 — 호출 어댑터·소유권·응답 장식 ══════════ */
+let _hiTurn = { route: null, reason: null };     // 이번 턴의 라우팅 결과
+let _hiLastOwner = "A0";                          // 직전 턴에 실제로 답한 에이전트(인계 고지 판정용)
+
+/* 담당 에이전트 실행 — 전용 핸들러가 있는 에이전트만. 없으면 null(공용 파이프라인이 응답) */
+function agentInvoke(agentId, text, ctx) {
+  try {
+    const A = (typeof hiAgent === "function") ? hiAgent(agentId) : null;
+    if (!A || !A.handler || !A.ready) return null;
+    const fn = (A.handler === "aiDoctorAgent" && typeof aiDoctorAgent === "function") ? aiDoctorAgent : null;
+    if (!fn) return null;
+    let snap = null;
+    try { snap = (ctx && ctx.m && typeof memberStateSnapshot === "function") ? memberStateSnapshot(ctx.m) : null; } catch (e) {}
+    const out = fn(text, Object.assign({ snap: snap }, ctx || {}));
+    if (!out) return null;
+    /* 범위 밖 — 프로토콜로 이전하고 공용 파이프라인이 이어받는다(고지는 소유권 변경 시 자동 부착) */
+    if (out.handback) {
+      try { if (typeof hiHandoff === "function") hiHandoff({ from: agentId, to: out.handback.to, reason: out.handback.reason, question: text, state: snap }); } catch (e) {}
+      return null;
+    }
+    try { if (typeof hiHandoff === "function" && _hiLastOwner !== agentId) hiHandoff({ from: _hiLastOwner, to: agentId, reason: (_hiTurn.route && _hiTurn.route.reason) || "route", question: text, state: snap }); } catch (e) {}
+    agentStats(true); agentMemSave({ lastIntent: agentId, lastCat: "agent", lastQ: String(text).slice(0, 60) });
+    return { agent: agentId, lines: out.lines, cards: out.cards || null, buttons: (out.buttons || []).slice(0, 3),
+      nav: out.nav || null, cite: out.cite || [], matched: agentId };
+  } catch (e) { return null; }
+}
+
+/* 응답 장식 — 담당 표기·인계 고지·근거를 붙인다(내용은 바꾸지 않는다) */
+function _hiDecorate(res) {
+  try {
+    if (!res) return res;
+    const route = _hiTurn.route || { agent: "A0", reason: "default" };
+    /* Phase A: 실제로 전문 응답을 만든 에이전트만 소유권을 갖는다(전용 핸들러 없는 담당은 하이가 답하되 '담당'만 표기) */
+    const owner = res.agent === "A1" ? "A1" : "A0";
+    res.agent = owner;
+    res.routed = route.agent; res.routeReason = route.reason;
+    if (typeof hiAgentLabel === "function") { res.agentLabel = hiAgentLabel(owner); res.routedLabel = hiAgentLabel(route.agent); }
+    /* 담당은 정해졌지만 전문화 전(Phase B~D 대상)일 때만 '담당' 배지를 단다.
+       상태 상담(SEG-*)·순차 상담(BRANCH-*)은 하이가 소유하는 응답이므로 표시하지 않는다. */
+    res.pending = route.agent !== "A0" && route.agent !== owner && !/^(SEG-|BRANCH-)/.test(String(res.matched || ""));
+    if (owner !== _hiLastOwner && typeof hiPart === "function") {
+      const ann = (typeof hiHandoffAnnounce === "function") ? hiHandoffAnnounce(_hiLastOwner, owner, route.reason) : null;
+      if (ann) res.parts = [hiPart(_hiLastOwner, [ann], { announce: true }), hiPart(owner, res.lines, { cite: res.cite || null, cards: res.cards || null })];
+    }
+    _hiLastOwner = owner;
+    return res;
+  } catch (e) { return res; }
+}
+function agentOwnerReset() { _hiLastOwner = "A0"; }
+
 function agentAnswer(text) {
+  try { if (typeof hiHandoffReset === "function") hiHandoffReset(); } catch (e) {}
+  return _hiDecorate(agentAnswerCore(text));
+}
+function agentAnswerCore(text) {
   const m = _member();
   const norm = lexNormalize(text);
-  /* [2단계 분기 대화] 검진 이력 분기응답의 '선택 이후' 턴 — 분기가 무장된 동안에만 가로챈다(그 외 질문은 그대로 통과) */
-  try {
-    const br = (typeof hiBranchHandle === "function") ? hiBranchHandle(text, norm, m) : null;
-    if (br && br.res) {
-      agentStats(true); agentMemSave({ lastIntent: "BRANCH-" + br.stage, lastCat: "branch", lastQ: String(text).slice(0, 60) });
-      return { lines: br.res.lines, buttons: (br.res.buttons || []).slice(0, 3), nav: br.res.nav || null,
-        preview: br.res.preview || null, followup: br.res.followup || null, matched: "BRANCH-" + br.stage };
-    }
-  } catch (e) {}
+  /* [Phase A] 라우팅 — 담당을 먼저 정한다. 진행 중 대화가 있어도 명백한 타 도메인 질문이면
+     'dialog-interrupt'로 담당 전문가에게 넘긴다(회원을 대화에 가두지 않는다). */
+  let _route = { agent: "A0", reason: "default" };
+  try { if (typeof agentRoute === "function") { _route = agentRoute(text, norm, null, { m: m }); agentRouteLog(text, _route); } } catch (e) {}
+  _hiTurn = { route: _route, reason: _route.reason };
+  /* [2단계 분기 대화] 검진 이력 순차 상담의 '선택 이후' 턴 — 분기가 무장된 동안에만 가로챈다 */
+  if (_route.reason !== "dialog-interrupt") {
+    try {
+      const br = (typeof hiBranchHandle === "function") ? hiBranchHandle(text, norm, m) : null;
+      if (br && br.res) {
+        agentStats(true); agentMemSave({ lastIntent: "BRANCH-" + br.stage, lastCat: "branch", lastQ: String(text).slice(0, 60) });
+        _hiTurn = { route: { agent: "A0", reason: "dialog-ownership" }, reason: "dialog-ownership" };
+        return { agent: "A0", lines: br.res.lines, parts: br.res.parts || null, buttons: (br.res.buttons || []).slice(0, 3), nav: br.res.nav || null,
+          preview: br.res.preview || null, followup: br.res.followup || null, matched: "BRANCH-" + br.stage };
+      }
+    } catch (e) {}
+  }
   const it = agentMatch(norm);
   if (!it) {
     // ⓪.5 [2단계] 상황 추론(SARG) 프로브 — 회원 상태에 걸린 상황은 섹션 가이드보다 우선(개인화 > 일반 안내)
@@ -416,6 +480,11 @@ function agentAnswer(text) {
       const mid = hiP.seg || (hiP.intent && hiP.intent.id) || "sarg";
       agentStats(true); agentMemSave({ lastIntent: mid, lastCat: hiP.kind === "sarg" ? "sarg" : (hiP.intent && hiP.intent.l1) || "intent", lastQ: String(text).slice(0, 60) });
       return { lines: hiP.res.lines, buttons: (hiP.res.buttons || []).slice(0, 3), nav: hiP.res.nav || null, preview: hiP.res.preview || null, followup: hiP.res.followup || null, matched: mid };
+    }
+    // ⓪.7 [Phase A] 전문 에이전트 — 담당이 A1(AI 주치의)이면 섹션 안내·정적 답변보다 먼저 전문 응답을 시도
+    if (_route.agent === "A1") {
+      const a1 = agentInvoke("A1", text, { m: m, norm: norm, route: _route });
+      if (a1) return a1;
     }
     // ① 섹션 활용 가이드(내비게이션 레이어): "검진예약 도와줘" "쇼핑 보여줘" 등 → 사용법 안내 + 화면 열기
     const sg = agentNavIntent(text, norm);

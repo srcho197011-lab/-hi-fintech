@@ -17,14 +17,17 @@ function AgentDock({ onGo }) {
   const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   // AI 주치의 지식(KDCA·리포트·학습 Q&A) — 독을 처음 열 때 지연 로드(홈 초기 로딩 부담 없음)
   const kbRef = useRef({ kb: null, rp: null, qa: null });
+  /* [Phase A] 지식은 A1(AI 주치의) 에이전트가 소유 — 로드되는 대로 에이전트에 주입한다 */
+  const pushKB = () => { try { if (typeof hiDoctorSetKB === "function") hiDoctorSetKB(kbRef.current.kb, kbRef.current.rp, kbRef.current.qa); } catch (e) {} };
   useEffect(() => {
     if (!open) return;
-    try { if (typeof loadKdca === "function") loadKdca().then((d) => { kbRef.current.kb = d; }); } catch (e) {}
-    try { if (typeof loadReport === "function") loadReport().then((d) => { kbRef.current.rp = d; }); } catch (e) {}
+    try { if (typeof loadKdca === "function") loadKdca().then((d) => { kbRef.current.kb = d; pushKB(); }); } catch (e) {}
+    try { if (typeof loadReport === "function") loadReport().then((d) => { kbRef.current.rp = d; pushKB(); }); } catch (e) {}
     try {
       if (typeof loadQA === "function" && typeof loadGuidelines === "function") Promise.all([loadGuidelines(), loadQA()]).then(([gl, qa]) => {
         if (!qa && !gl) return;
         kbRef.current.qa = { meta: { count: ((gl && gl.qa) ? gl.qa.length : 0) + ((qa && qa.qa) ? qa.qa.length : 0) }, qa: [...((gl && gl.qa) || []), ...((qa && qa.qa) || [])] };
+        pushKB();
       });
     } catch (e) {}
   }, [open]);
@@ -94,29 +97,30 @@ function AgentDock({ onGo }) {
     setTimeout(() => {
       let res = null;
       try { res = (typeof agentAnswer === "function") ? agentAnswer(text) : null; } catch (e) { res = null; }
-      // Q&A·섹션가이드가 못 받은 질문은 AI 주치의 엔진(질환·증상·약물·리포트·검진해석)이 그대로 답변
+      // Q&A·섹션가이드가 못 받은 질문은 A1(AI 주치의)이 이어받는다 — 근거 인용(cite)과 담당 표기가 함께 온다
       if (!res || !res.matched || res.matched === "graph") {
-        let doc = null;
-        try { const K = kbRef.current; doc = (typeof aiRespond === "function") ? aiRespond(text, K.kb, K.rp, K.qa) : null; } catch (e) { doc = null; }
-        if (doc && doc.bubbles && doc.bubbles.length) {
-          const first = doc.bubbles[0];
-          const generic = first.kind !== "card" && /정보를 찾지 못했어요|이렇게 안내해 드릴 수 있어요/.test(first.text || "");
-          if (!generic) {
-            lastQRef.current = text;
-            const lines = doc.bubbles.filter((b) => b.kind !== "card").map((b) => b.text).filter(Boolean);
-            const cards = doc.bubbles.filter((b) => b.kind === "card" && b.card).map((b) => b.card);
-            const btns = [...new Set([].concat(...cards.map((c) => c.buttons || [])).concat(doc.quicks || []))].slice(0, 4);
-            setTyping(false);
-            setMsgs((m) => [...m, { who: "hi", lines, cards, buttons: btns, nav: null }]);
-            return;
-          }
+        let a1 = null;
+        try { a1 = (typeof aiDoctorAgent === "function") ? aiDoctorAgent(text, {}) : null; } catch (e) { a1 = null; }
+        if (a1 && !a1.handback && a1.lines && a1.lines.length) {
+          lastQRef.current = text;
+          setTyping(false);
+          setMsgs((m) => [...m, { who: "hi", agent: "A1", lines: a1.lines, cards: a1.cards || [], cite: a1.cite || [], buttons: (a1.buttons || []).slice(0, 4), nav: null }]);
+          return;
         }
       }
       setTyping(false);
       if (!res) { setMsgs((m) => [...m, { who: "hi", lines: ["잠시 문제가 있었어요 — 다시 한번 말씀해 주시겠어요?"], buttons: ["사람 상담 연결"], nav: null }]); return; }
       if (res.reset) { setMsgs([{ who: "hi", lines: res.lines, buttons: [], nav: null }]); return; }
       lastQRef.current = text;
-      setMsgs((m) => [...m, { who: "hi", lines: res.lines, buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null }]);
+      /* [Phase A] 한 턴에 여러 에이전트가 말하면(인계 고지 → 전문 응답) 파트별 말풍선으로 나눠 렌더 */
+      const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel };
+      if (res.parts && res.parts.length) {
+        setMsgs((m) => [...m, ...res.parts.map((p, i) => Object.assign(
+          { who: "hi", agent: p.agent, lines: p.lines, cite: p.cite || [], cards: p.cards || [], announce: !!p.announce },
+          i === res.parts.length - 1 ? tail : { buttons: [] }))]);
+      } else {
+        setMsgs((m) => [...m, Object.assign({ who: "hi", agent: res.agent || "A0", lines: res.lines, cite: res.cite || [] }, tail)]);
+      }
     }, 480);
   };
   /* [2단계] SARG 응답 칩 처리 — 알림 예약(followup 저장)·미리보기 열기는 대화 재질의 없이 즉시 실행 */
@@ -165,9 +169,20 @@ function AgentDock({ onGo }) {
           <div className="hidock-body">
             {msgs.map((m, i) => (
               <div key={i} className={"hidock-row " + m.who}>
-                {m.who === "hi" && <span className="hidock-mini"><Bot size={13} /></span>}
+                {m.who === "hi" && (() => {
+                  const A = (typeof hiAgent === "function") ? hiAgent(m.agent || "A0") : null;
+                  return <span className={"hidock-mini" + (m.agent && m.agent !== "A0" ? " spec" : "")} title={A ? A.label : "하이"}>
+                    {A && A.id !== "A0" ? <span className="hidock-emo">{A.avatar}</span> : <Bot size={13} />}</span>;
+                })()}
                 <div className="hidock-msg">
-                  {m.lines.map((l, j) => <div className={"hidock-bub " + m.who} key={j}>{l}</div>)}
+                  {m.who === "hi" && m.agent && m.agent !== "A0" && (typeof hiAgent === "function") && (
+                    <div className="hidock-who">{hiAgent(m.agent).avatar} {hiAgent(m.agent).badge}</div>
+                  )}
+                  {m.lines.map((l, j) => <div className={"hidock-bub " + m.who + (m.announce ? " announce" : "")} key={j}>{l}</div>)}
+                  {m.cite && m.cite.length > 0 && (
+                    <div className="hidock-cite">📚 근거 {m.cite.map((c, ci) => <span key={ci}>{c.source}{c.title ? ` · ${c.title}` : ""}</span>)}</div>
+                  )}
+                  {m.pending && m.routedLabel && <div className="hidock-pending">담당: {m.routedLabel}</div>}
                   {m.cards && m.cards.map((c, ci) => (
                     <div className="hidock-card" key={"c" + ci}>
                       <b>{c.title}</b>

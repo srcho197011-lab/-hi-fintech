@@ -92,19 +92,36 @@ function hiBranchAnalysis(m, st, opts) {
     lines.push(easy ? "자세한 숫자는 리포트 화면에서 크게 보여드릴게요." : `${y}년 결과의 항목별 수치와 정상 범위는 정밀리포트 화면에서 바로 보실 수 있어요 — 어려운 용어는 제가 쉬운 말로 풀어드릴게요.`);
   }
   if ((st.pastYears || []).length >= 2) lines.push(`${st.pastYears[0]}~${st.pastYears[st.pastYears.length - 1]}년 기록이 있어서 연도별 추이도 함께 보여드릴 수 있어요.`);
+  const analysis = lines.slice();          // 여기까지가 결과 해석 — 담당은 A1(AI 주치의)
+  const ask = [];
   const buttons = [];
   let stage = "analysis-shown";
   if (!(opts && opts.skipAsk)) {
     const nx = _hiBranchNextAsk(st);
-    lines.push(`이 결과는 ${y}년 기준이라 올해 몸 상태는 달라졌을 수 있어요.`);
-    lines.push(nx.line);
+    ask.push(`이 결과는 ${y}년 기준이라 올해 몸 상태는 달라졌을 수 있어요.`);
+    ask.push(nx.line);
     stage = nx.stage;
     buttons.push.apply(buttons, nx.buttons);
   }
   hiBranchSave(Object.assign(st, { stage: stage, ambig: 0 }));
   if ((st.pastYears || []).length >= 2 && buttons.length < 3) buttons.push("추이 비교 보여줘");
+
+  /* [Phase A] 결과 해석은 A1이 담당 — 하이가 인계하고, 다음 행동 제안은 하이가 되돌려받는다 */
+  let parts = null;
+  try {
+    if (typeof hiPart === "function") {
+      const cite = s ? [{ source: "내 데이터 금고", title: `${y}년 검진 결과(항목 ${s.n}개)` }] : [];
+      if (typeof hiHandoff === "function") hiHandoff({ from: "A0", to: "A1", reason: "checkup-result", question: `${y}년 결과 분석`, state: null });
+      parts = [
+        hiPart("A0", [`${y}년 결과 해석은 AI 주치의가 이어서 봐드릴게요.`], { announce: true }),
+        hiPart("A1", analysis, { cite: cite }),
+      ];
+      if (ask.length) parts.push(hiPart("A0", ask));
+    }
+  } catch (e) { parts = null; }
+
   return { kind: "branch", stage: stage, res: {
-    lines: lines, buttons: buttons.slice(0, 3),
+    lines: analysis.concat(ask), parts: parts, buttons: buttons.slice(0, 3),
     nav: { key: "manage", label: "내 건강현황" },
     preview: { route: "app://health/report", title: `${y}년 정밀리포트`, description: "항목별 수치·정상 범위와 쉬운 설명을 한 화면에서", nav: "manage" },
     followup: null } };
