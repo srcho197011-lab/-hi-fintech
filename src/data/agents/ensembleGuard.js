@@ -70,8 +70,8 @@ function ensembleGuard(composed, ctx) {
     }
 
     /* ⑥ 과다 응답 */
-    if (out.lines.length > (typeof ENS_MAX_LINES !== "undefined" ? ENS_MAX_LINES : 12)) {
-      out.lines = out.lines.slice(0, ENS_MAX_LINES);
+    if (out.lines.length > (typeof ensMaxLines === "function" ? ensMaxLines() : 12)) {
+      out.lines = out.lines.slice(0, (typeof ensMaxLines === "function" ? ensMaxLines() : 12));
       out.violations.push({ id: "overflow", law: "⑥과다 응답 금지", mode: "trim" });
     }
 
@@ -90,7 +90,7 @@ function ensembleGuard(composed, ctx) {
       if (!g.blocked) { if (g.violations && g.violations.length) out.violations.push({ id: "recheck-A4", law: "재통과 A4", mode: "fix", n: g.violations.length }); out.lines = g.lines; }
     }
     /* 재통과에서 문장이 바뀌었을 수 있다 — 상한만 다시 맞춘다(내용 생성 없음) */
-    if (out.lines.length > (typeof ENS_MAX_LINES !== "undefined" ? ENS_MAX_LINES : 12)) out.lines = out.lines.slice(0, ENS_MAX_LINES);
+    if (out.lines.length > (typeof ensMaxLines === "function" ? ensMaxLines() : 12)) out.lines = out.lines.slice(0, (typeof ensMaxLines === "function" ? ensMaxLines() : 12));
     if (!out.lines.length) out.blocked = true;
   } catch (e) { out.blocked = true; }
   return out;

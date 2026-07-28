@@ -13,10 +13,14 @@
    합성 중 새 문장을 만들면 그 문장은 어느 가드도 통과하지 않는다 — Phase B~D의 규제 통제가 한 줄로 무너진다.
    쓸 수 있는 문장은 ① 각 에이전트 가드를 통과한 원문과 ② 사전 검수된 이음말, 이 둘뿐이다. */
 
-const ENS_ENABLED = true;          /* 끄면 기존 단일 경로와 100% 동일하게 동작해야 한다 */
-const ENS_MAX_PARTS = 3;           /* 파트 상한 — 그 이상은 회원이 읽지 못한다 */
-const ENS_MAX_LINES = 12;          /* 총 분량 상한(모바일에서 읽히는 길이) */
-const ENS_PART_LINES = 6;          /* 파트당 상한 */
+/* [Phase G] 기본값은 여기 남기고, 운영 설정(hiOpsConfig)이 있으면 그걸 따른다.
+   설정이 없거나 범위를 벗어나면 opsGet이 기본값을 돌려주므로 **설정 없이도 지금과 똑같이 동작한다.** */
+const ENS_DEF = { enabled: true, maxParts: 3, maxLines: 12, partLines: 6 };
+function _ens(key, def) { try { return (typeof opsGet === "function") ? opsGet(key) : def; } catch (e) { return def; } }
+function ensEnabled() { const v = _ens("ensEnabled", ENS_DEF.enabled); return v === undefined ? ENS_DEF.enabled : v; }
+function ensMaxParts() { return _ens("ensMaxParts", ENS_DEF.maxParts) || ENS_DEF.maxParts; }
+function ensMaxLines() { return _ens("ensMaxLines", ENS_DEF.maxLines) || ENS_DEF.maxLines; }
+const ENS_PART_LINES = ENS_DEF.partLines;   /* 파트당 상한 — 조정 대상 아님 */
 
 /* ── 분해·판정 패턴 테이블 ──
    한 항목이 "언제 협주인가(when)"와 "누구에게 무엇을 물을 것인가(parts)"를 함께 정의한다.
@@ -99,7 +103,7 @@ const ENS_OUT_OF_LANE = {
    반환: { on:true, pattern, parts } | { on:false, why } */
 function ensDetect(rawText, norm, route, ctx) {
   const off = function (why) { return { on: false, why: why }; };
-  if (!ENS_ENABLED) return off("disabled");
+  if (!ensEnabled()) return off("disabled");
   const q = String(rawText || "");
   if (q.length < 8) return off("too-short");                       /* 단일 지시는 단독 */
 
@@ -130,7 +134,7 @@ function ensDetect(rawText, norm, route, ctx) {
   /* 확인 사살 — 담당이 준비된(ready) 에이전트만 파트로 세운다 */
   const parts = hit.parts.filter(function (pt) {
     try { const A = (typeof hiAgent === "function") ? hiAgent(pt.agent) : null; return !!(A && A.ready && A.handler); } catch (e) { return false; }
-  }).slice(0, ENS_MAX_PARTS);
+  }).slice(0, ensMaxParts());
   if (parts.length < 2) return off("not-enough-ready");
 
   return { on: true, pattern: hit.id, label: hit.label, parts: parts };
@@ -195,9 +199,9 @@ function ensCompose(parts) {
     /* 5. 이음말 — 화이트리스트에서만 */
     if (prev) {
       const b = ensBridge(prev, p.agent);
-      if (b && lines.length + own.length + 1 <= ENS_MAX_LINES) lines.push(b);
+      if (b && lines.length + own.length + 1 <= ensMaxLines()) lines.push(b);
     }
-    for (const l of own) { if (lines.length < ENS_MAX_LINES) lines.push(l); }
+    for (const l of own) { if (lines.length < ensMaxLines()) lines.push(l); }
     agents.push(p.agent);
     prev = p.agent;
 
@@ -234,7 +238,7 @@ function ensCompose(parts) {
   }
 
   const emergency = sorted.reduce(function (acc, p) { return acc || p.res.emergency || null; }, null);
-  return { lines: lines.slice(0, ENS_MAX_LINES), agents: agents, cite: cite.slice(0, 3), buttons: buttons.slice(0, 3),
+  return { lines: lines.slice(0, ensMaxLines()), agents: agents, cite: cite.slice(0, 3), buttons: buttons.slice(0, 3),
     emergency: emergency, conflictAdjusted: conflictAdjusted,
     nav: (sorted[0] && sorted[0].res.nav) || null };
 }
@@ -273,4 +277,4 @@ function ensLog(q, det, v) {
   } catch (e) {}
 }
 
-try { if (typeof window !== "undefined") { window.__hifinEns = { answer: ensembleAnswer, detect: ensDetect, compose: ensCompose, patterns: ENS_PATTERNS, bridge: ENS_BRIDGE, enabled: ENS_ENABLED }; } } catch (e) {}
+try { if (typeof window !== "undefined") { window.__hifinEns = { answer: ensembleAnswer, detect: ensDetect, compose: ensCompose, patterns: ENS_PATTERNS, bridge: ENS_BRIDGE, enabled: ensEnabled, maxLines: ensMaxLines, maxParts: ensMaxParts }; } } catch (e) {}

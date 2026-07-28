@@ -1,3 +1,5 @@
+src/data/hiOpsConfig.js
+src/data/opsMetrics.js
 src/data/hiTelemetry.js
 src/core.jsx
 src/App.jsx
@@ -21,6 +23,7 @@ src/components/SectionGroups.jsx
 src/components/DataConnector.jsx
 src/components/Compliance.jsx
 src/components/BizOps.jsx
+src/components/OpsConsole.jsx
 src/components/Ontology.jsx
 src/components/SupplyOntology.jsx
 src/components/FoundationOntology.jsx

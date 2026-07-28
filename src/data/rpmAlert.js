@@ -13,8 +13,8 @@
 /* ── 지표별 행동 기준 — 진단 기준이 아니라 '언제 사람을 부를 것인가'의 선 ── */
 const RPM_THRESH = {
   bp: {
-    crisis: { sys: 180, dia: 120 },   /* 즉시 진료 */
-    high: { sys: 160, dia: 100 },     /* 오늘 안에 진료 */
+    crisis: { sys: 180, dia: 120 },   /* 즉시 진료 — **잠금**: 화면에서 못 바꾼다 */
+    high: { sys: 160, dia: 100 },     /* 오늘 안에 진료 — 관찰 임계는 운영 설정으로 조정 가능 */
     riseSys: 15,                       /* 3일 새 수축기 상승 폭(추세 경보) */
   },
   glucose: {
@@ -42,7 +42,11 @@ const RPM_METRICS = [
     key: "bp", label: "혈압", unit: "mmHg", icon: "🩸",
     fmt: function (p) { return p.sys + "/" + p.dia; },
     evaluate: function (s) {
-      const T = RPM_THRESH.bp, last = s[s.length - 1], first = s[0];
+      /* crisis는 코드 상수 그대로(잠금), high만 운영 설정을 따른다 */
+      const _o = (k, d) => { try { return (typeof opsGet === "function") ? opsGet(k) : d; } catch (e) { return d; } };
+      const T = { crisis: RPM_THRESH.bp.crisis, riseSys: RPM_THRESH.bp.riseSys,
+        high: { sys: _o("rpmHighSys", RPM_THRESH.bp.high.sys), dia: _o("rpmHighDia", RPM_THRESH.bp.high.dia) } };
+      const last = s[s.length - 1], first = s[0];
       const reasons = []; let level = null;
       if (last.sys >= T.crisis.sys || last.dia >= T.crisis.dia) {
         level = "critical"; reasons.push(`최근 측정 ${last.sys}/${last.dia} — 즉시 진료가 필요한 구간이에요`);

@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=8248d0a406" />
+<link rel="stylesheet" href="./data/app.css?v=b6224eb84c" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,12 +41,208 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=8248d0a406"></script>
-<script src="./src/data/section_data.js?v=8248d0a406"></script>
-<script src="./src/data/demo_members.js?v=8248d0a406"></script>
+<script src="./src/data/dummy_data.js?v=b6224eb84c"></script>
+<script src="./src/data/section_data.js?v=b6224eb84c"></script>
+<script src="./src/data/demo_members.js?v=b6224eb84c"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
+/* ══════════════ 운영 설정 단일 소스 — 조정 가능한 것만 조정한다 (Phase G) ══════════════
+   임계값이 코드 6곳에 흩어져 있었다(agentEnsemble·rpmAlert·harvest·promote·gate).
+   여기로 모아 화면에서 조정할 수 있게 하되, **조정하면 안 되는 값은 잠근다.**
+
+   ⚠️ 콘솔은 관측이지 조작이 아니다.
+   관제 화면을 만들면 "다 켜고 끌 수 있게" 하고 싶어진다 — 그게 사고의 시작이다.
+   응급 트리아지·가드 조항·이음말·게이트 기준은 **화면에서 못 바꾼다.**
+   안전을 UI 토글로 만들면 언젠가 꺼진다.
+
+   ⚠️ 설정이 없어도 서비스는 돈다.
+   기본값은 코드에 남기고, 저장된 설정이 없거나 깨졌으면 기본값으로 동작한다. */
+
+const OPS_KEY = "hifin_ops_config";
+
+/* ── 조정 가능 — 화면에서 바꾼다 ── */
+const OPS_SPEC = {
+  ensEnabled:   { def: true, type: "bool",  label: "협주 사용", hint: "끄면 Phase E 이전 동작(단일 담당)" },
+  ensMaxLines:  { def: 12,   type: "int", min: 8, max: 16, label: "협주 분량 상한(줄)", hint: "모바일에서 읽히는 길이" },
+  ensMaxParts:  { def: 3,    type: "int", min: 2, max: 3,  label: "협주 파트 수", hint: "그 이상은 회원이 읽지 못한다" },
+  confGap:      { def: 2,    type: "int", min: 1, max: 4,  label: "자동 라벨 확신 기준", hint: "1·2등 점수 격차가 이보다 작으면 사람에게" },
+  impactGuard:  { def: 10,   type: "int", min: 1, max: 10, label: "수확 가중치 · 가드 위반", hint: "규제 사고 — 되돌릴 수 없다" },
+  impactUnans:  { def: 5,    type: "int", min: 1, max: 10, label: "수확 가중치 · 답변불가" },
+  impactHandback: { def: 4,  type: "int", min: 1, max: 10, label: "수확 가중치 · 오배정" },
+  impactEns:    { def: 3,    type: "int", min: 1, max: 10, label: "수확 가중치 · 협주 누락" },
+  impactMiss:   { def: 2,    type: "int", min: 1, max: 10, label: "수확 가중치 · 미매칭" },
+  rpmHighSys:   { def: 160,  type: "int", min: 140, max: 179, label: "RPM 관찰 임계 · 수축기", hint: "오늘 안에 진료(urgent) — crisis(180)는 잠금" },
+  rpmHighDia:   { def: 100,  type: "int", min: 90,  max: 119, label: "RPM 관찰 임계 · 이완기", hint: "crisis(120)는 잠금" },
+};
+
+/* ── 절대 잠금 — 화면에서 못 바꾼다. 존재는 보여주되 회색으로 ── */
+const OPS_LOCKED = [
+  { key: "emergencyDict", label: "응급 징후 사전(LTC_EMERGENCY)", where: "longtermCareKB.js",
+    why: "안전을 UI 토글로 만들면 언젠가 꺼진다" },
+  { key: "rpmCrisis", label: "RPM 즉시 진료 임계(수축기 180 / 이완기 120)", where: "rpmAlert.js",
+    why: "즉시 진료 판단선은 화면에서 낮출 수 없다" },
+  { key: "guardRules", label: "가드 조항 — A2 5조 · A3 6조 · A4 6조 · 협주 6조", where: "agents/*Guard.js",
+    why: "규제 통제는 코드 리뷰와 하네스를 거쳐야 한다" },
+  { key: "guardFix", label: "가드 치환 문구", where: "agents/*Guard.js",
+    why: "문구 부착 ≠ 교정(Phase B) — 사람이 쓰고 하네스가 검증한다" },
+  { key: "ensBridge", label: "협주 이음말 화이트리스트", where: "agentEnsemble.js",
+    why: "협주는 조립이지 생성이 아니다(Phase E)" },
+  { key: "gateCriteria", label: "게이트 통과 기준(정확도·하락폭 등)", where: "scripts/learn/gate.mjs",
+    why: "문지기를 감시받는 쪽이 조정하면 문지기가 아니다" },
+];
+const OPS_LOCKED_KEYS = OPS_LOCKED.map(function (l) { return l.key; });
+
+/* ── 읽기 ── */
+function opsRaw() {
+  try { const v = JSON.parse(localStorage.getItem(OPS_KEY) || "null"); return (v && typeof v === "object") ? v : {}; } catch (e) { return {}; }
+}
+
+/* 값 하나 — 저장값이 없거나 범위를 벗어나면 **기본값**으로 돌아간다 */
+function opsGet(key) {
+  const spec = OPS_SPEC[key];
+  if (!spec) return undefined;
+  const v = opsRaw()[key];
+  if (v === undefined || v === null) return spec.def;
+  if (spec.type === "bool") return typeof v === "boolean" ? v : spec.def;
+  const n = Number(v);
+  if (!isFinite(n)) return spec.def;
+  if (spec.min != null && n < spec.min) return spec.def;
+  if (spec.max != null && n > spec.max) return spec.def;
+  return spec.type === "int" ? Math.round(n) : n;
+}
+
+/* 전체 — 화면·집계가 쓰는 스냅샷 */
+function opsAll() {
+  const out = {};
+  for (const k in OPS_SPEC) out[k] = opsGet(k);
+  return out;
+}
+
+/* ── 쓰기 — 잠금·범위 검증을 통과해야만 저장된다 ──
+   반환: { ok } | { ok:false, reason } */
+function opsSet(key, value) {
+  if (OPS_LOCKED_KEYS.indexOf(key) >= 0) return { ok: false, reason: "locked", msg: "이 값은 코드에서만 변경할 수 있어요(하네스 통과 필요)." };
+  const spec = OPS_SPEC[key];
+  if (!spec) return { ok: false, reason: "unknown", msg: "알 수 없는 설정 항목이에요." };
+  let v = value;
+  if (spec.type === "bool") { if (typeof v !== "boolean") return { ok: false, reason: "type", msg: "true/false만 가능해요." }; }
+  else {
+    v = Number(v);
+    if (!isFinite(v)) return { ok: false, reason: "type", msg: "숫자만 가능해요." };
+    v = Math.round(v);
+    if (spec.min != null && v < spec.min) return { ok: false, reason: "range", msg: `${spec.min} 이상이어야 해요.` };
+    if (spec.max != null && v > spec.max) return { ok: false, reason: "range", msg: `${spec.max} 이하여야 해요.` };
+  }
+  try {
+    const cur = opsRaw();
+    cur[key] = v;
+    cur._at = Date.now();
+    localStorage.setItem(OPS_KEY, JSON.stringify(cur));
+    return { ok: true, value: v };
+  } catch (e) { return { ok: false, reason: "storage", msg: "저장에 실패했어요." }; }
+}
+
+function opsReset(key) {
+  try {
+    const cur = opsRaw();
+    if (key) delete cur[key]; else return localStorage.removeItem(OPS_KEY), { ok: true };
+    localStorage.setItem(OPS_KEY, JSON.stringify(cur));
+    return { ok: true };
+  } catch (e) { return { ok: false }; }
+}
+function opsChangedAt() { const r = opsRaw(); return r._at || null; }
+function opsIsDefault(key) { return opsRaw()[key] === undefined; }
+
+try { if (typeof window !== "undefined") { window.__hifinOps = { get: opsGet, all: opsAll, set: opsSet, reset: opsReset, spec: OPS_SPEC, locked: OPS_LOCKED, changedAt: opsChangedAt, isDefault: opsIsDefault }; } } catch (e) {}
+
+/* ══════════════ 운영 집계 — 콘솔이 보여줄 숫자 (Phase G) ══════════════
+   ⚠️ **콘솔이 거짓말하면 콘솔이 없느니만 못하다.**
+   여기의 집계는 원천(텔레메트리·ledger)과 완전히 일치해야 하고, 하네스가 그걸 검증한다.
+   보기 좋게 반올림하거나 없는 값을 채우지 않는다 — 없으면 없다고 돌려준다.
+
+   ⚠️ 원문·회원 식별자는 다루지 않는다. 텔레메트리가 담지 않는 것을 콘솔이 만들어낼 수는 없다. */
+
+const OPS_WINDOWS = { today: 1, week: 7, all: 0 };
+
+function opsEvents(days) {
+  let l = [];
+  try { l = JSON.parse(localStorage.getItem("hifin_telemetry") || "[]"); } catch (e) { l = []; }
+  if (!days) return l;
+  const since = Date.now() - days * 86400000;
+  return l.filter(function (e) { return Number(e.ts) >= since; });
+}
+
+/* ── 패널 ① 지금 상태 ── */
+function opsLive(days) {
+  const ev = opsEvents(days);
+  const out = { total: ev.length, byKind: {}, byAgent: {}, byReason: {}, byU: {}, byLaw: {},
+    ensPatterns: {}, guardTotal: 0, emergency: 0, rate: {} };
+  for (const e of ev) {
+    out.byKind[e.kind] = (out.byKind[e.kind] || 0) + 1;
+    if (e.agent) out.byAgent[e.agent] = (out.byAgent[e.agent] || 0) + 1;
+    if (e.reason) out.byReason[e.reason] = (out.byReason[e.reason] || 0) + 1;
+    if (e.utype) out.byU[e.utype] = (out.byU[e.utype] || 0) + 1;
+    if (e.pattern) out.ensPatterns[e.pattern] = (out.ensPatterns[e.pattern] || 0) + 1;
+    for (const l of e.laws || []) { out.byLaw[l] = (out.byLaw[l] || 0) + 1; out.guardTotal++; }
+  }
+  const routes = out.byKind.route || 0;
+  /* 비율은 분모가 0이면 계산하지 않는다(0으로 나눠 0%를 만들면 거짓말이 된다) */
+  out.rate.unanswered = routes ? (out.byKind.unanswered || 0) / routes : null;
+  out.rate.ensemble = routes ? (out.byKind.ensemble || 0) / routes : null;
+  out.rate.miss = routes ? (out.byKind.miss || 0) / routes : null;
+  return out;
+}
+
+/* ── 패널 ② 가드 현황 — 조항별 위반 + 최근 사례(정규화 문장만) ── */
+function opsSafety(days) {
+  const ev = opsEvents(days);
+  const byLaw = {}, samples = {};
+  let guardEvents = 0;
+  for (const e of ev) {
+    if (e.kind !== "guard" || !e.laws) continue;
+    guardEvents++;
+    for (const l of e.laws) {
+      byLaw[l] = (byLaw[l] || 0) + 1;
+      if (!samples[l]) samples[l] = [];
+      if (samples[l].length < 3 && e.qn && samples[l].indexOf(e.qn) < 0) samples[l].push(e.qn);
+    }
+  }
+  /* 응급 발동 — 이 숫자가 0이 아니면 회원이 위험했다는 뜻이다 */
+  const emg = { critical: 0, urgent: 0 };
+  for (const e of ev) {
+    if (e.kind !== "guard" || !e.laws) continue;
+    if (e.laws.indexOf("A4:emergency") >= 0) emg.urgent++;
+  }
+  const rank = Object.entries(byLaw).sort(function (a, b) { return b[1] - a[1]; });
+  return { guardEvents: guardEvents, byLaw: byLaw, rank: rank, samples: samples, emergency: emg };
+}
+
+/* ── 패널 ③ 학습 루프 — 산출물이 없으면 **없다고 말한다** ── */
+function opsLearn(ledger) {
+  if (!ledger || !ledger.runs || !ledger.runs.length) {
+    return { available: false, hint: "학습 루프 산출물이 아직 없어요 — `node scripts/learn/run.mjs`를 먼저 돌려 주세요." };
+  }
+  const runs = ledger.runs;
+  const last = runs[runs.length - 1];
+  const keys = [...new Set(runs.reduce(function (a, r) { return a.concat(Object.keys(r.metrics || {})); }, []))];
+  const drops = [];
+  if (runs.length >= 2) {
+    const a = runs[runs.length - 2].metrics || {}, b = last.metrics || {};
+    for (const k of keys) { if (a[k] != null && b[k] != null && b[k] < a[k]) drops.push({ key: k, from: a[k], to: b[k] }); }
+  }
+  return { available: true, runs: runs.length, last: last, keys: keys, drops: drops,
+    promoted: runs.filter(function (r) { return r.pass; }).length,
+    rolledBack: runs.filter(function (r) { return !r.pass; }).length,
+    series: runs.slice(-10).map(function (r, i) { return { i: runs.length - Math.min(10, runs.length) + i + 1, pass: r.pass, failed: r.failed || null, metrics: r.metrics || {} }; }) };
+}
+
+/* ── 콘솔 출력 금지 어휘 — 내부 화면이라도 데모에서 열릴 수 있다 ── */
+const OPS_FORBIDDEN = /(원가율|공급\s*단가|매입가|수수료율|마진율|송객\s*수수료|CAC)/;
+function opsSafeText(s) { return OPS_FORBIDDEN.test(String(s || "")) ? "(비공개 항목)" : s; }
+
+try { if (typeof window !== "undefined") { window.__hifinOpsMetrics = { live: opsLive, safety: opsSafety, learn: opsLearn, events: opsEvents, windows: OPS_WINDOWS, safeText: opsSafeText }; } } catch (e) {}
+
 /* ══════════════ 텔레메트리 — 흩어진 신호를 한 스키마로 (Phase F) ══════════════
    지금까지 신호는 6곳에 각자 형식으로 쌓이고만 있었다. 읽는 사람도, 읽는 길도 없었다.
    여기서 **하나의 이벤트 스키마**로 모아, 수확 → 증분 → 게이트로 이어지는 학습 루프의 입구를 만든다.
@@ -12456,6 +12652,271 @@ function BizOpsConsole({ onGo }) {
   );
 }
 
+/* ══════════ 운영 콘솔(OpsConsole) — 에이전트 메시 관제 (Phase G) ══════════
+   관리자 전용(온톨로지 · 하네스 탭 안). 회원 화면이 아니다.
+
+   ⚠️ 콘솔은 **관측이지 조작이 아니다.**
+   응급 트리아지·가드 조항·이음말·게이트 기준은 화면에서 못 바꾼다(회색으로 존재만 보여준다).
+   ⚠️ 원문·회원 식별자·원가는 표시하지 않는다. */
+
+const OPS_TABS = [["live", "지금 상태"], ["safety", "가드 현황"], ["learn", "학습 루프"], ["review", "검수 큐"], ["config", "설정"]];
+const OPS_WIN = [["today", "오늘"], ["week", "7일"], ["all", "전체"]];
+const OPS_REVIEW_KEY = "hifin_ops_review";
+
+/* 학습 루프 산출물은 파일이다 — 브라우저는 fetch로만 읽을 수 있고, 배포본에는 아예 없다(docs/는 gitignore).
+   그래서 404를 에러로 보여주지 않고 "아직 없음"으로 안내한다. */
+function useLearnFile(name) {
+  const [state, setState] = useState({ loading: true, data: null });
+  useEffect(() => {
+    let on = true;
+    fetch("./docs/hi_learn/" + name)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => on && setState({ loading: false, data: d }))
+      .catch(() => on && setState({ loading: false, data: null }));
+    return () => { on = false; };
+  }, [name]);
+  return state;
+}
+
+function OpsBar({ n, label, tone }) {
+  return (
+    <div className="opsbar">
+      <span className="opsbar-l">{label}</span>
+      <span className="opsbar-t" style={{ background: tone || "#2563EB" }} />
+      <b>{Number(n).toLocaleString()}</b>
+    </div>
+  );
+}
+
+function OpsConsoleSection() {
+  const [tab, setTab] = useState("live");
+  const [win, setWin] = useState("week");
+  const days = win === "today" ? 1 : win === "week" ? 7 : 0;
+  const [tick, setTick] = useState(0);
+
+  const live = React.useMemo(() => (typeof opsLive === "function" ? opsLive(days) : null), [days, tick]);
+  const safety = React.useMemo(() => (typeof opsSafety === "function" ? opsSafety(days) : null), [days, tick]);
+  const ledger = useLearnFile("ledger.json");
+  const queueFile = useLearnFile("review-queue.json");
+  const learn = React.useMemo(() => (typeof opsLearn === "function" ? opsLearn(ledger.data) : null), [ledger.data]);
+
+  const T = (o, n) => Object.entries(o || {}).sort((a, b) => b[1] - a[1]).slice(0, n || 8);
+  const pct = (v) => (v == null ? "—" : (Math.round(v * 1000) / 10) + "%");
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div className="opshead">
+        <div><b>운영 콘솔</b><span>에이전트 메시 관제 · 관리자 전용</span></div>
+        <div className="opswin">{OPS_WIN.map(([k, t]) => (
+          <button key={k} className={win === k ? "on" : ""} onClick={() => setWin(k)}>{t}</button>
+        ))}<button onClick={() => setTick((x) => x + 1)}>새로고침</button></div>
+      </div>
+
+      <div className="opstabs">{OPS_TABS.map(([k, t]) => (
+        <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{t}</button>
+      ))}</div>
+
+      {/* ── ① 지금 상태 ── */}
+      {tab === "live" && (live ? (
+        <div className="opsgrid">
+          <div className="opscard">
+            <h4>신호 {live.total.toLocaleString()}건</h4>
+            {live.total === 0
+              ? <p className="opsnone">아직 신호가 없어요 — 하이와 대화하시면 여기에 쌓입니다.</p>
+              : Object.entries(live.byKind).sort((a, b) => b[1] - a[1]).map(([k, v]) => <OpsBar key={k} label={k} n={v} />)}
+          </div>
+          <div className="opscard">
+            <h4>담당별 라우팅</h4>
+            {T(live.byAgent).length === 0 ? <p className="opsnone">데이터 없음</p>
+              : T(live.byAgent).map(([k, v]) => <OpsBar key={k} label={typeof hiAgent === "function" ? hiAgent(k).badge : k} n={v} tone="#0E7490" />)}
+          </div>
+          <div className="opscard">
+            <h4>비율</h4>
+            <div className="opskpi"><div><b>{pct(live.rate.unanswered)}</b><span>답변불가</span></div>
+              <div><b>{pct(live.rate.ensemble)}</b><span>협주 발동</span></div>
+              <div><b>{pct(live.rate.miss)}</b><span>미매칭</span></div></div>
+            <p className="opsnote">분모(라우팅)가 0이면 계산하지 않고 —로 표시해요.</p>
+          </div>
+          <div className="opscard">
+            <h4>라우팅 근거</h4>
+            {T(live.byReason, 6).length === 0 ? <p className="opsnone">데이터 없음</p>
+              : T(live.byReason, 6).map(([k, v]) => <OpsBar key={k} label={k} n={v} tone="#7C3AED" />)}
+          </div>
+        </div>
+      ) : <p className="opsnone">집계를 불러올 수 없어요.</p>)}
+
+      {/* ── ② 가드 현황 ── */}
+      {tab === "safety" && (safety ? (
+        <div>
+          <div className="opsalert">
+            <div><b>{safety.emergency.urgent.toLocaleString()}</b><span>응급 안내 발동</span></div>
+            <p>이 숫자가 0이 아니면 <b>회원이 위험했다는 뜻</b>이에요 — 건수보다 사례를 보셔야 해요.</p>
+          </div>
+          <div className="opscard" style={{ marginTop: 12 }}>
+            <h4>조항별 위반 {safety.guardEvents.toLocaleString()}건</h4>
+            {safety.rank.length === 0 ? <p className="opsnone">위반 없음</p> : (
+              <table className="opstable"><thead><tr><th>조항</th><th>건수</th><th>최근 사례(정규화 문장)</th></tr></thead>
+                <tbody>{safety.rank.map(([l, n]) => (
+                  <tr key={l}><td><code>{l}</code></td><td>{n}</td>
+                    <td className="opssample">{(safety.samples[l] || []).map((s, i) => <div key={i}>{typeof opsSafeText === "function" ? opsSafeText(s) : s}</div>)}</td></tr>
+                ))}</tbody></table>
+            )}
+            <p className="opsnote">가드 조항은 <b>읽기 전용</b>이에요 — 코드에서만 변경하고 하네스를 통과해야 해요.</p>
+          </div>
+        </div>
+      ) : <p className="opsnone">집계를 불러올 수 없어요.</p>)}
+
+      {/* ── ③ 학습 루프 ── */}
+      {tab === "learn" && (
+        ledger.loading ? <p className="opsnone">불러오는 중…</p>
+          : !learn || !learn.available ? (
+            <div className="opscard"><h4>학습 루프 산출물 없음</h4>
+              <p className="opsnone">{(learn && learn.hint) || "산출물이 없어요."}</p>
+              <p className="opsnote">배포본에는 <code>docs/</code>가 포함되지 않아 항상 이렇게 보여요(정상).</p></div>
+          ) : (
+            <div>
+              <div className="opskpi big">
+                <div><b>{learn.runs}</b><span>게이트 회차</span></div>
+                <div><b>{learn.promoted}</b><span>승격</span></div>
+                <div><b>{learn.rolledBack}</b><span>롤백</span></div>
+              </div>
+              {learn.drops.length > 0 && <div className="opsalert warn"><p>⚠️ 하락 감지 — {learn.drops.map((d) => `${d.key} ${d.from} → ${d.to}`).join(" · ")}</p></div>}
+              <div className="opscard" style={{ marginTop: 12 }}>
+                <h4>회차별 추이</h4>
+                <table className="opstable"><thead><tr><th>회차</th><th>판정</th>{learn.keys.map((k) => <th key={k}>{k}</th>)}</tr></thead>
+                  <tbody>{learn.series.map((r) => (
+                    <tr key={r.i}><td>{r.i}</td><td>{r.pass ? "승격" : `롤백(${r.failed})`}</td>
+                      {learn.keys.map((k) => <td key={k}>{r.metrics[k] != null ? r.metrics[k] : "-"}</td>)}</tr>
+                  ))}</tbody></table>
+              </div>
+            </div>
+          )
+      )}
+
+      {/* ── ④ 검수 큐 ── */}
+      {tab === "review" && <OpsReview file={queueFile} />}
+
+      {/* ── ⑤ 설정 ── */}
+      {tab === "config" && <OpsConfig onChange={() => setTick((x) => x + 1)} />}
+    </div>
+  );
+}
+
+/* ── 검수 큐 — 학습 루프가 사람에게 넘긴 일을 화면에서 처리한다 ── */
+function OpsReview({ file }) {
+  const [items, setItems] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    if (file.loading) return;
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(OPS_REVIEW_KEY) || "null"); } catch (e) {}
+    const base = (file.data && file.data.items) || [];
+    /* 작업 중이던 내용이 있으면 그것을 우선한다(이탈해도 남는다) */
+    setItems(saved && saved.length ? saved : base.map((x) => Object.assign({}, x)));
+    setLoaded(true);
+  }, [file.loading, file.data]);
+
+  const save = (next) => { setItems(next); try { localStorage.setItem(OPS_REVIEW_KEY, JSON.stringify(next)); } catch (e) {} };
+  const setAt = (i, patch) => save(items.map((x, j) => (j === i ? Object.assign({}, x, patch) : x)));
+  const approved = items.filter((x) => x.status === "approved").length;
+
+  const exportJson = () => {
+    try {
+      const payload = { note: "운영 콘솔에서 검수한 결과입니다. docs/hi_learn/review-queue.json 에 덮어쓴 뒤 promote를 돌리세요.", items: items };
+      const blob = new Blob([JSON.stringify(payload, null, 1)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = "review-queue.json"; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      if (typeof toast === "function") toast("📥 내보냈어요 — docs/hi_learn/review-queue.json 에 덮어쓰고 promote를 돌리세요.");
+    } catch (e) {}
+  };
+
+  if (file.loading || !loaded) return <p className="opsnone">불러오는 중…</p>;
+  if (!items.length) return (
+    <div className="opscard"><h4>검수 큐 없음</h4>
+      <p className="opsnone">학습 루프가 아직 넘긴 일이 없어요 — <code>node scripts/learn/run.mjs</code>를 먼저 돌려 주세요.</p>
+      <p className="opsnote">배포본에는 <code>docs/</code>가 포함되지 않아 항상 이렇게 보여요(정상).</p></div>
+  );
+
+  return (
+    <div>
+      <div className="opsreviewbar">
+        <b>검수 큐 {items.length}건 · 승인 {approved}건</b>
+        <button className="pri" onClick={exportJson}>승인분 내보내기(JSON)</button>
+      </div>
+      <p className="opsnote">답변 내용은 <b>자동 생성하지 않아요</b> — 의료·보험·표시광고 경계라서 사람이 확정해야 해요.</p>
+      {items.slice(0, 40).map((it, i) => (
+        <div className={`opsq ${it.status || "pending"}`} key={i}>
+          <div className="opsq-h">
+            <span className="opsq-n">{it.n}회</span>
+            <span className="opsq-s">{it.signal}{(it.utypes || []).length ? " · " + it.utypes.join(",") : ""}</span>
+            <span className="opsq-a">제안 담당 {it.suggestAgent}</span>
+          </div>
+          <div className="opsq-q">{it.qn}</div>
+          <textarea placeholder="이 질문에 뭐라고 답해야 할까요? (사람이 확정합니다)"
+            value={it.answer || ""} onChange={(e) => setAt(i, { answer: e.target.value })} />
+          <div className="opsq-b">
+            <button className={it.status === "approved" ? "on" : ""} onClick={() => setAt(i, { status: "approved" })} disabled={!it.answer}>승인</button>
+            <button className={it.status === "hold" ? "on" : ""} onClick={() => setAt(i, { status: "hold" })}>보류</button>
+            <button className={it.status === "reject" ? "on" : ""} onClick={() => setAt(i, { status: "reject" })}>기각</button>
+            {!it.answer && <span className="opsq-hint">답변을 채워야 승인할 수 있어요</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── 설정 — 조정 가능한 것만. 잠긴 것도 **보여준다**(숨기면 존재를 모른다) ── */
+function OpsConfig({ onChange }) {
+  const [, force] = useState(0);
+  const spec = (typeof OPS_SPEC !== "undefined") ? OPS_SPEC : {};
+  const locked = (typeof OPS_LOCKED !== "undefined") ? OPS_LOCKED : [];
+  const [msg, setMsg] = useState(null);
+
+  const change = (k, v) => {
+    const r = (typeof opsSet === "function") ? opsSet(k, v) : { ok: false };
+    setMsg(r.ok ? null : { k, m: r.msg || "변경할 수 없어요." });
+    force((x) => x + 1);
+    if (r.ok && onChange) onChange();
+  };
+
+  return (
+    <div>
+      <div className="opscard">
+        <h4>조정 가능</h4>
+        <table className="opstable cfg"><thead><tr><th>항목</th><th>현재</th><th>기본</th><th>범위</th><th></th></tr></thead>
+          <tbody>{Object.entries(spec).map(([k, s]) => {
+            const cur = (typeof opsGet === "function") ? opsGet(k) : s.def;
+            const isDef = (typeof opsIsDefault === "function") ? opsIsDefault(k) : true;
+            return (
+              <tr key={k}>
+                <td><b>{s.label}</b>{s.hint && <div className="opsnote">{s.hint}</div>}</td>
+                <td>{s.type === "bool"
+                  ? <button className={`opstoggle ${cur ? "on" : ""}`} onClick={() => change(k, !cur)}>{cur ? "켬" : "끔"}</button>
+                  : <input type="number" value={cur} min={s.min} max={s.max}
+                      onChange={(e) => change(k, e.target.value)} />}
+                  {msg && msg.k === k && <div className="opsbad">{msg.m}</div>}</td>
+                <td>{String(s.def)}{isDef && <span className="opsdef">기본</span>}</td>
+                <td>{s.min != null ? `${s.min}~${s.max}` : "—"}</td>
+                <td>{!isDef && <button onClick={() => { if (typeof opsReset === "function") opsReset(k); force((x) => x + 1); onChange && onChange(); }}>되돌리기</button>}</td>
+              </tr>
+            );
+          })}</tbody></table>
+      </div>
+
+      <div className="opscard locked" style={{ marginTop: 12 }}>
+        <h4>🔒 화면에서 바꿀 수 없는 값</h4>
+        <p className="opsnote">안전을 UI 토글로 만들면 언젠가 꺼져요. 이 값들은 <b>코드에서만</b> 바꾸고 하네스를 통과해야 해요.</p>
+        <table className="opstable"><thead><tr><th>대상</th><th>위치</th><th>이유</th></tr></thead>
+          <tbody>{locked.map((l) => (
+            <tr key={l.key}><td><b>{l.label}</b></td><td><code>{l.where}</code></td><td>{l.why}</td></tr>
+          ))}</tbody></table>
+      </div>
+    </div>
+  );
+}
+
 /* ====================== 온톨로지 운영시스템 (팔란티어 Foundry 스타일) ======================
    1,000명 파일럿 코호트(pilotCohort)를 객체(Object)·관계(Link)·액션(Action) 온톨로지로 운영.
    개요(코호트 집계) · 객체 탐색기 · 온톨로지 관계 · 액션(세그먼트→보험/나눔/케어). */
@@ -13187,7 +13648,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTop("health"); setSub("explorer"); };
-  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["supply", "공급망 온톨로지", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["whitepaper", "백서", BookOpen, "#6366F1"]];
+  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["supply", "공급망 온톨로지", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["whitepaper", "백서", BookOpen, "#6366F1"]];
   const healthTabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["chain", "블록체인 금고", Blocks], ["hiops", "하이 커버리지", Bot], ["kb", "AI KB 라운지", Database], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
   if (!agg) return null;
   return (
@@ -13235,6 +13696,9 @@ function OntologySection({ onGo }) {
       {top === "marketing" && <MarketingSection onGo={onGo} />}
       {top === "bizops" && typeof BizOpsConsole === "function" && <BizOpsConsole onGo={onGo} />}
       {top === "foundation" && <FoundationOntology onGo={onGo} />}
+      {/* [Phase G] 운영 콘솔 — 에이전트 메시 관제(관리자 전용 섹션 안이라 권한을 그대로 상속한다) */}
+      {top === "ops" && typeof OpsConsoleSection === "function" && <OpsConsoleSection />}
+
       {top === "whitepaper" && <WhitepaperSection onGo={onGo} />}
     </div>
   );
@@ -18330,7 +18794,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"학습 루프 — 운영 신호에서 코퍼스 증분·회귀 게이트·자동 롤백(Phase F)", src:"hiTelemetry 단일스키마+scripts/learn 5단 파이프라인+golden-learned 회귀 연결", summary:"흩어진 여섯 로그를 원문 없이 한 스키마로 모아 개선 후보를 우선순위로 뽑고 라우팅 라벨만 자동 증분한 뒤 회귀 8종이 통과시켜야 승격하고 미달이면 증분 전 지점으로 되돌리게 함, 라우팅 골든셋 500→545 확대에도 정확도 100% 유지", refs:[], status:"반영", hash:"33da23c", auto:true },
+  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"운영 콘솔 — 에이전트 메시 관제·검수 큐·안전한 설정(Phase G)", src:"hiOpsConfig 단일소스+잠금6종+opsMetrics 집계+OpsConsole 5패널", summary:"흩어진 임계값을 한 곳으로 모아 화면에서 조정하되 응급과 가드와 게이트 기준은 잠그고 집계가 원천과 일치하는지 하네스로 검증하며 학습 루프가 넘긴 검수 큐를 화면에서 처리하게 함, 표시 정합성 위반 0·잠금 우회 0·회귀 9종 유지", refs:[], status:"반영", hash:"00bec35", auto:true },
+  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"학습 루프 — 운영 신호에서 코퍼스 증분·회귀 게이트·자동 롤백(Phase F)", src:"hiTelemetry 단일스키마+scripts/learn 5단 파이프라인+golden-learned 회귀 연결", summary:"흩어진 여섯 로그를 원문 없이 한 스키마로 모아 개선 후보를 우선순위로 뽑고 라우팅 라벨만 자동 증분한 뒤 회귀 8종이 통과시켜야 승격하고 미달이면 증분 전 지점으로 되돌리게 함, 라우팅 골든셋 500→545 확대에도 정확도 100% 유지", refs:[], status:"반영", hash:"0ace631", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"협주(Ensemble) — 여러 에이전트가 한 답을 함께(Phase E)", src:"agentEnsemble 5단 파이프라인+ensembleGuard 헌법6조+다중 담당 배지", summary:"담당 여럿에 걸친 질문을 담당별 조각으로 나눠 각자 가드를 통과한 답만 받아 하나로 엮되 합성 중 새 문장을 만들지 않도록 원문과 사전 검수 이음말로만 조립하고 응급이면 협주하지 않게 함, 판정 300건 정확도 100%·가드 우회 0·실사용 발동률 0.6%", refs:[], status:"반영", hash:"c11a2ca", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"RPM 감시 지표 확대 — 혈당·산소포화도·낙상(Phase D)", src:"rpmAlert RPM_METRICS 레지스트리+지표별 evaluate+FamilyCare 다지표 카드", summary:"혈압만 보던 원격 모니터링을 지표 레지스트리로 일반화해 혈당 저혈당 반복과 산소포화도 하락과 낙상 응답없음까지 같은 트리아지로 잡고 여러 지표가 울리면 심한 것부터 보여주며 조용한 지표도 함께 알려 보호자가 무엇을 지켜보는지 알게 함, 지표별 임계값 재계산 18건 실패 0", refs:[], status:"반영", hash:"ead6d2f", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"RPM 경보 ↔ A4 트리아지 연결(Phase D)", src:"rpmAlert 단일소스+hcTriage 데이터경로+FamilyCare 경보카드", summary:"원격 모니터링이 잡은 이상 수치를 화면과 하이가 같은 판정으로 공유해 보호자가 위험을 모르고 물어도 응급 안내가 먼저 나가게 함, 근거 수치를 함께 제시하고 배경 경보가 담당 라우팅을 삼키지 않도록 분리, RPM 연계 10건 실패 0", refs:[], status:"반영", hash:"193e2eb", auto:true },
@@ -20366,8 +20831,8 @@ try { if (typeof window !== "undefined") { window.__hifinLtc = { meta: LTC_META,
 /* ── 지표별 행동 기준 — 진단 기준이 아니라 '언제 사람을 부를 것인가'의 선 ── */
 const RPM_THRESH = {
   bp: {
-    crisis: { sys: 180, dia: 120 },   /* 즉시 진료 */
-    high: { sys: 160, dia: 100 },     /* 오늘 안에 진료 */
+    crisis: { sys: 180, dia: 120 },   /* 즉시 진료 — **잠금**: 화면에서 못 바꾼다 */
+    high: { sys: 160, dia: 100 },     /* 오늘 안에 진료 — 관찰 임계는 운영 설정으로 조정 가능 */
     riseSys: 15,                       /* 3일 새 수축기 상승 폭(추세 경보) */
   },
   glucose: {
@@ -20395,7 +20860,11 @@ const RPM_METRICS = [
     key: "bp", label: "혈압", unit: "mmHg", icon: "🩸",
     fmt: function (p) { return p.sys + "/" + p.dia; },
     evaluate: function (s) {
-      const T = RPM_THRESH.bp, last = s[s.length - 1], first = s[0];
+      /* crisis는 코드 상수 그대로(잠금), high만 운영 설정을 따른다 */
+      const _o = (k, d) => { try { return (typeof opsGet === "function") ? opsGet(k) : d; } catch (e) { return d; } };
+      const T = { crisis: RPM_THRESH.bp.crisis, riseSys: RPM_THRESH.bp.riseSys,
+        high: { sys: _o("rpmHighSys", RPM_THRESH.bp.high.sys), dia: _o("rpmHighDia", RPM_THRESH.bp.high.dia) } };
+      const last = s[s.length - 1], first = s[0];
       const reasons = []; let level = null;
       if (last.sys >= T.crisis.sys || last.dia >= T.crisis.dia) {
         level = "critical"; reasons.push(`최근 측정 ${last.sys}/${last.dia} — 즉시 진료가 필요한 구간이에요`);
@@ -28299,8 +28768,8 @@ function ensembleGuard(composed, ctx) {
     }
 
     /* ⑥ 과다 응답 */
-    if (out.lines.length > (typeof ENS_MAX_LINES !== "undefined" ? ENS_MAX_LINES : 12)) {
-      out.lines = out.lines.slice(0, ENS_MAX_LINES);
+    if (out.lines.length > (typeof ensMaxLines === "function" ? ensMaxLines() : 12)) {
+      out.lines = out.lines.slice(0, (typeof ensMaxLines === "function" ? ensMaxLines() : 12));
       out.violations.push({ id: "overflow", law: "⑥과다 응답 금지", mode: "trim" });
     }
 
@@ -28319,7 +28788,7 @@ function ensembleGuard(composed, ctx) {
       if (!g.blocked) { if (g.violations && g.violations.length) out.violations.push({ id: "recheck-A4", law: "재통과 A4", mode: "fix", n: g.violations.length }); out.lines = g.lines; }
     }
     /* 재통과에서 문장이 바뀌었을 수 있다 — 상한만 다시 맞춘다(내용 생성 없음) */
-    if (out.lines.length > (typeof ENS_MAX_LINES !== "undefined" ? ENS_MAX_LINES : 12)) out.lines = out.lines.slice(0, ENS_MAX_LINES);
+    if (out.lines.length > (typeof ensMaxLines === "function" ? ensMaxLines() : 12)) out.lines = out.lines.slice(0, (typeof ensMaxLines === "function" ? ensMaxLines() : 12));
     if (!out.lines.length) out.blocked = true;
   } catch (e) { out.blocked = true; }
   return out;
@@ -28342,10 +28811,14 @@ try { if (typeof window !== "undefined") { window.__hifinEnsGuard = { check: ens
    합성 중 새 문장을 만들면 그 문장은 어느 가드도 통과하지 않는다 — Phase B~D의 규제 통제가 한 줄로 무너진다.
    쓸 수 있는 문장은 ① 각 에이전트 가드를 통과한 원문과 ② 사전 검수된 이음말, 이 둘뿐이다. */
 
-const ENS_ENABLED = true;          /* 끄면 기존 단일 경로와 100% 동일하게 동작해야 한다 */
-const ENS_MAX_PARTS = 3;           /* 파트 상한 — 그 이상은 회원이 읽지 못한다 */
-const ENS_MAX_LINES = 12;          /* 총 분량 상한(모바일에서 읽히는 길이) */
-const ENS_PART_LINES = 6;          /* 파트당 상한 */
+/* [Phase G] 기본값은 여기 남기고, 운영 설정(hiOpsConfig)이 있으면 그걸 따른다.
+   설정이 없거나 범위를 벗어나면 opsGet이 기본값을 돌려주므로 **설정 없이도 지금과 똑같이 동작한다.** */
+const ENS_DEF = { enabled: true, maxParts: 3, maxLines: 12, partLines: 6 };
+function _ens(key, def) { try { return (typeof opsGet === "function") ? opsGet(key) : def; } catch (e) { return def; } }
+function ensEnabled() { const v = _ens("ensEnabled", ENS_DEF.enabled); return v === undefined ? ENS_DEF.enabled : v; }
+function ensMaxParts() { return _ens("ensMaxParts", ENS_DEF.maxParts) || ENS_DEF.maxParts; }
+function ensMaxLines() { return _ens("ensMaxLines", ENS_DEF.maxLines) || ENS_DEF.maxLines; }
+const ENS_PART_LINES = ENS_DEF.partLines;   /* 파트당 상한 — 조정 대상 아님 */
 
 /* ── 분해·판정 패턴 테이블 ──
    한 항목이 "언제 협주인가(when)"와 "누구에게 무엇을 물을 것인가(parts)"를 함께 정의한다.
@@ -28428,7 +28901,7 @@ const ENS_OUT_OF_LANE = {
    반환: { on:true, pattern, parts } | { on:false, why } */
 function ensDetect(rawText, norm, route, ctx) {
   const off = function (why) { return { on: false, why: why }; };
-  if (!ENS_ENABLED) return off("disabled");
+  if (!ensEnabled()) return off("disabled");
   const q = String(rawText || "");
   if (q.length < 8) return off("too-short");                       /* 단일 지시는 단독 */
 
@@ -28459,7 +28932,7 @@ function ensDetect(rawText, norm, route, ctx) {
   /* 확인 사살 — 담당이 준비된(ready) 에이전트만 파트로 세운다 */
   const parts = hit.parts.filter(function (pt) {
     try { const A = (typeof hiAgent === "function") ? hiAgent(pt.agent) : null; return !!(A && A.ready && A.handler); } catch (e) { return false; }
-  }).slice(0, ENS_MAX_PARTS);
+  }).slice(0, ensMaxParts());
   if (parts.length < 2) return off("not-enough-ready");
 
   return { on: true, pattern: hit.id, label: hit.label, parts: parts };
@@ -28524,9 +28997,9 @@ function ensCompose(parts) {
     /* 5. 이음말 — 화이트리스트에서만 */
     if (prev) {
       const b = ensBridge(prev, p.agent);
-      if (b && lines.length + own.length + 1 <= ENS_MAX_LINES) lines.push(b);
+      if (b && lines.length + own.length + 1 <= ensMaxLines()) lines.push(b);
     }
-    for (const l of own) { if (lines.length < ENS_MAX_LINES) lines.push(l); }
+    for (const l of own) { if (lines.length < ensMaxLines()) lines.push(l); }
     agents.push(p.agent);
     prev = p.agent;
 
@@ -28563,7 +29036,7 @@ function ensCompose(parts) {
   }
 
   const emergency = sorted.reduce(function (acc, p) { return acc || p.res.emergency || null; }, null);
-  return { lines: lines.slice(0, ENS_MAX_LINES), agents: agents, cite: cite.slice(0, 3), buttons: buttons.slice(0, 3),
+  return { lines: lines.slice(0, ensMaxLines()), agents: agents, cite: cite.slice(0, 3), buttons: buttons.slice(0, 3),
     emergency: emergency, conflictAdjusted: conflictAdjusted,
     nav: (sorted[0] && sorted[0].res.nav) || null };
 }
@@ -28602,7 +29075,7 @@ function ensLog(q, det, v) {
   } catch (e) {}
 }
 
-try { if (typeof window !== "undefined") { window.__hifinEns = { answer: ensembleAnswer, detect: ensDetect, compose: ensCompose, patterns: ENS_PATTERNS, bridge: ENS_BRIDGE, enabled: ENS_ENABLED }; } } catch (e) {}
+try { if (typeof window !== "undefined") { window.__hifinEns = { answer: ensembleAnswer, detect: ensDetect, compose: ensCompose, patterns: ENS_PATTERNS, bridge: ENS_BRIDGE, enabled: ensEnabled, maxLines: ensMaxLines, maxParts: ensMaxParts }; } } catch (e) {}
 
 /* ====================== 온톨로지 기반 상담 엔진 ======================
    검진항목 해석 / 보험 보장 공백 분석 / 후속조치 안내 — 회원 건강리포트 연계 + AI 거버넌스.
