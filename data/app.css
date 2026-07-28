@@ -4770,6 +4770,9 @@ body.easyread .hibrief-t { font-size: 17px; }
 .rpm-bar span { font-size: 10px; color: #C08484; }
 .rpm-bar.hot b { font-size: 12px; }
 .rpmalert p { margin: 8px 0 0; font-size: 12px; color: #7F5B5B; line-height: 1.55; }
+/* [Phase E] 협주 배지 — 담당이 둘 이상이면 "함께 답했어요"를 덧붙인다(누구 말인지 알 수 있게) */
+.hidock-ens { margin-left: 6px; background: #EEF2FF; color: #4338CA; border-radius: 999px; padding: 1px 7px; font-size: 10.5px; font-weight: 800; }
+
 /* 다지표 경보(혈압·혈당·산소포화도·낙상) — 지표가 둘 이상일 때만 라벨을 붙인다 */
 .rpm-mlbl { font-size: 12px; font-weight: 800; color: #B91C1C; margin: 10px 0 -2px; }
 .rpm-why { margin: 4px 0 0; padding-left: 17px; }

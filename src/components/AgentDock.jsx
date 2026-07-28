@@ -116,10 +116,10 @@ function AgentDock({ onGo }) {
       const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel };
       if (res.parts && res.parts.length) {
         setMsgs((m) => [...m, ...res.parts.map((p, i) => Object.assign(
-          { who: "hi", agent: p.agent, lines: p.lines, cite: p.cite || [], cards: p.cards || [], announce: !!p.announce },
+          { who: "hi", agent: p.agent, agents: res.agents || null, lines: p.lines, cite: p.cite || [], cards: p.cards || [], announce: !!p.announce },
           i === res.parts.length - 1 ? tail : { buttons: [] }))]);
       } else {
-        setMsgs((m) => [...m, Object.assign({ who: "hi", agent: res.agent || "A0", lines: res.lines, cite: res.cite || [] }, tail)]);
+        setMsgs((m) => [...m, Object.assign({ who: "hi", agent: res.agent || "A0", agents: res.agents || null, lines: res.lines, cite: res.cite || [] }, tail)]);
       }
     }, 480);
   };
@@ -175,8 +175,13 @@ function AgentDock({ onGo }) {
                     {A && A.id !== "A0" ? <span className="hidock-emo">{A.avatar}</span> : <Bot size={13} />}</span>;
                 })()}
                 <div className="hidock-msg">
+                  {/* [Phase E] 협주면 담당을 **모두** 표기한다 — 어느 말이 누구 말인지 회원이 알 수 있어야 한다(협주 헌법 ⑤) */}
                   {m.who === "hi" && m.agent && m.agent !== "A0" && (typeof hiAgent === "function") && (
-                    <div className="hidock-who">{hiAgent(m.agent).avatar} {hiAgent(m.agent).badge}</div>
+                    <div className="hidock-who">
+                      {(Array.isArray(m.agents) && m.agents.length > 1 ? m.agents : [m.agent])
+                        .map((a) => `${hiAgent(a).avatar} ${hiAgent(a).badge}`).join(" + ")}
+                      {Array.isArray(m.agents) && m.agents.length > 1 && <span className="hidock-ens">함께 답했어요</span>}
+                    </div>
                   )}
                   {m.lines.map((l, j) => <div className={"hidock-bub " + m.who + (m.announce ? " announce" : "")} key={j}>{l}</div>)}
                   {m.cite && m.cite.length > 0 && (

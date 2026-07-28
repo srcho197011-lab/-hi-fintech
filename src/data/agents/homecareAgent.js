@@ -123,13 +123,18 @@ function homecareAgent(question, ctx) {
   /* ⓪ 트리아지 — 담당 밖 판정보다도 먼저. 응급은 어떤 규칙보다 위에 있다.
      말(질문 표현)과 데이터(원격 모니터링 수치)를 함께 읽는다. */
   const need = _a4Need(ctx);
-  const triage = (typeof hcTriage === "function") ? hcTriage(q, { rpm: need.rpm }) : null;
+  /* [Phase E] 협주 파트에서는 **배경 측정 경보를 앞세우지 않는다.**
+     협주는 이미 "지금 응급이 아니다"라고 판정하고 들어온 경로다(말-응급·critical은 판정에서 걸러진다).
+     그 뒤에 파트가 배경 경보를 첫 줄로 올리면, 등급·실손을 물었는데 혈압 이야기가 답을 가로챈다. */
+  const rpmForTriage = (ctx && ctx.ensemble) ? null : need.rpm;
+  const triage = (typeof hcTriage === "function") ? hcTriage(q, { rpm: rpmForTriage }) : null;
 
   /* 담당 밖으로 넘길지 판단 — **지금 벌어지는 응급**만 이 판단을 건너뛴다.
      배경 경보(측정값)가 켜져 있다고 해서 보험금·검진 질문까지 A4가 삼키면 안 된다.
      다만 측정값이 crisis 구간이면 무엇보다 우선한다. */
   const nowEmergency = triage && (triage.via === "말" || triage.level === "critical");
-  const ob = nowEmergency ? null : _a4Outbound(q);
+  /* [Phase E] 협주 파트 호출에서는 핸드백하지 않는다 — 라우팅은 협주가 이미 정했다(경계는 ensembleGuard ②가 지킨다) */
+  const ob = (nowEmergency || (ctx && ctx.ensemble)) ? null : _a4Outbound(q);
   if (ob) return { handback: ob };
 
   let lines = [], buttons = [], cite = [], calc = null, providers = null;

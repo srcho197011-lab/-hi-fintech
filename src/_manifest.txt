@@ -85,6 +85,8 @@ src/data/agents/shoppingGuard.js
 src/data/agents/shoppingAgent.js
 src/data/agents/homecareGuard.js
 src/data/agents/homecareAgent.js
+src/data/agents/ensembleGuard.js
+src/data/agentEnsemble.js
 src/utils/ontologyConsult.js
 src/utils/insuranceRecommendationUtils.js
 src/utils/healthWalletUtils.js

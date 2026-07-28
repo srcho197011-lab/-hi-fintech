@@ -96,7 +96,8 @@ function insuranceAgent(question, ctx) {
   const q = String(question || "");
   ctx = ctx || {};
   /* ① 담당 밖 → 이전 */
-  const ob = _a2Outbound(q);
+  /* [Phase E] 협주 파트 호출에서는 핸드백하지 않는다 — 라우팅은 협주가 이미 정했다(경계는 ensembleGuard ②가 지킨다) */
+  const ob = (ctx && ctx.ensemble) ? null : _a2Outbound(q);
   if (ob) return { handback: ob };
 
   const snap = ctx.snap || null;

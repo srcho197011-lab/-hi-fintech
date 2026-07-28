@@ -482,6 +482,8 @@ function _hiDecorate(res) {
     if (owner !== _hiLastOwner && typeof hiPart === "function") {
       const ann = (typeof hiHandoffAnnounce === "function") ? hiHandoffAnnounce(_hiLastOwner, owner, route.reason) : null;
       if (ann) res.parts = [hiPart(_hiLastOwner, [ann], { announce: true }), hiPart(owner, res.lines, { cite: res.cite || null, cards: res.cards || null })];
+      /* [Phase E] 협주는 인계 고지를 붙이지 않는다 — 담당이 바뀐 게 아니라 **함께 답한** 것이다(다중 배지로 표기) */
+      if (Array.isArray(res.agents) && res.agents.length > 1) res.parts = null;
     }
     _hiLastOwner = owner;
     return res;
@@ -513,6 +515,19 @@ function agentAnswerCore(text) {
       }
     } catch (e) {}
   }
+  /* [Phase E] 협주 — 질문이 담당 여럿에 걸치면 각 전문가의 답을 하나로 엮는다.
+     기존 경로를 대체하지 않는다: 판정에서 갈라지는 **별도 경로**이고, 판정이 아니면 아래로 그대로 흐른다.
+     (ENS_ENABLED=false면 ensembleAnswer가 항상 null → 지금까지와 100% 동일 동작) */
+  try {
+    if (typeof ensembleAnswer === "function") {
+      const ens = ensembleAnswer(text, norm, _route, { m: m, lastOwner: _hiLastOwner });
+      if (ens) {
+        agentStats(true); agentMemSave({ lastIntent: ens.matched, lastCat: "ensemble", lastQ: String(text).slice(0, 60) });
+        return ens;
+      }
+    }
+  } catch (e) {}
+
   const it = agentMatch(norm);
   /* 감싸기 원칙(검증된 공용 응답을 대체하지 않는다)의 예외는 두 가지뿐이다.
      [Phase C] **비교표** — 성분·가격을 줄 세운 표는 일반 설명으로 대체될 수 없다.

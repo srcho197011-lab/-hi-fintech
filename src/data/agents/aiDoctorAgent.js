@@ -71,7 +71,9 @@ function hiDoctorRetrieve(question, topK) {
 function aiDoctorAgent(question, ctx) {
   const q = String(question || "");
   /* ① 범위 밖 — 프로토콜로 이전(기존 insHandoff 하드코딩을 대체) */
-  const out = _a1Outbound(q);
+  /* [Phase E] 협주 파트 호출에서는 핸드백하지 않는다 — 라우팅은 협주가 이미 정했고,
+     파트 질문에 원문을 붙이는 구조상 상대 도메인 어휘가 섞여 들어온다(경계는 ensembleGuard ②가 지킨다) */
+  const out = (ctx && ctx.ensemble) ? null : _a1Outbound(q);
   if (out) return { handback: out };
 
   /* ② 기존 검증된 주치의 엔진을 그대로 사용(무회귀) */

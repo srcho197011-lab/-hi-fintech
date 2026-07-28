@@ -93,6 +93,15 @@ function agentRoute(rawText, norm, snap, ctx) {
 }
 
 /* 라우팅 로그(하네스·운영 콘솔) — 질문 100자와 판정 근거만, 상태 원데이터 저장 금지 */
+/* [Phase E] 담당별 스코프 점수 전체 — 라우터는 1등만 반환하지만, 협주 판정은 **분포**를 봐야 한다.
+   판정 로직은 건드리지 않는다(읽기 전용 부가 함수). */
+function agentScores(rawText, norm) {
+  const t = String(norm || rawText || "").toLowerCase();
+  const out = {};
+  try { for (const a of HI_AGENTS) { out[a.id] = _hiScopeScore(a, t); } } catch (e) {}
+  return out;
+}
+
 function agentRouteLog(q, route) {
   try {
     const k = "hifin_agent_route";
