@@ -407,7 +407,8 @@ function agentInvoke(agentId, text, ctx) {
     const A = (typeof hiAgent === "function") ? hiAgent(agentId) : null;
     if (!A || !A.handler || !A.ready) return null;
     const fn = (A.handler === "aiDoctorAgent" && typeof aiDoctorAgent === "function") ? aiDoctorAgent
-      : (A.handler === "insuranceAgent" && typeof insuranceAgent === "function") ? insuranceAgent : null;
+      : (A.handler === "insuranceAgent" && typeof insuranceAgent === "function") ? insuranceAgent
+      : (A.handler === "shoppingAgent" && typeof shoppingAgent === "function") ? shoppingAgent : null;
     if (!fn) return null;
     let snap = null;
     try { snap = (ctx && ctx.m && typeof memberStateSnapshot === "function") ? memberStateSnapshot(ctx.m) : null; } catch (e) {}
@@ -421,7 +422,7 @@ function agentInvoke(agentId, text, ctx) {
     try { if (typeof hiHandoff === "function" && _hiLastOwner !== agentId) hiHandoff({ from: _hiLastOwner, to: agentId, reason: (_hiTurn.route && _hiTurn.route.reason) || "route", question: text, state: snap }); } catch (e) {}
     agentStats(true); agentMemSave({ lastIntent: agentId, lastCat: "agent", lastQ: String(text).slice(0, 60) });
     return { agent: agentId, lines: out.lines, cards: out.cards || null, buttons: (out.buttons || []).slice(0, 3),
-      nav: out.nav || null, cite: out.cite || [], matched: agentId };
+      nav: out.nav || null, cite: out.cite || [], compare: out.compare || null, matched: agentId };
   } catch (e) { return null; }
 }
 
@@ -441,6 +442,11 @@ function agentPostProcess(res, agentId, question) {
       res.guard = g.violations;
       if (typeof insRetrieve === "function" && (!res.cite || !res.cite.length)) res.cite = insRetrieve(question, 2);
       res.agent = "A2";
+    } else if (agentId === "A3" && typeof shoppingGuard === "function") {
+      const g = shoppingGuard(res.lines, {});
+      try { if (typeof shopGuardLog === "function") shopGuardLog(question, g.violations); } catch (e) {}
+      if (g.blocked) return res;
+      res.lines = g.lines; res.guard = g.violations; res.agent = "A3";
     } else if (agentId === "A1" && typeof hiDoctorRetrieve === "function") {
       if (!res.cite || !res.cite.length) res.cite = hiDoctorRetrieve(question, 2);
       if (res.cite && res.cite.length) res.agent = "A1";
@@ -497,6 +503,14 @@ function agentAnswerCore(text) {
     } catch (e) {}
   }
   const it = agentMatch(norm);
+  /* [Phase C] 비교 우선권 — 정적 Q&A가 먼저 걸렸더라도, 담당 전문가가 **실제 비교표**를 만들어냈다면 그쪽이 낫다.
+     (감싸기 원칙의 예외는 이 한 가지: 성분·가격을 줄 세운 표는 일반 설명으로 대체될 수 없다) */
+  if (it && _route.agent !== "A0") {
+    try {
+      const spC = agentInvoke(_route.agent, text, { m: m, norm: norm, route: _route });
+      if (spC && spC.compare) return spC;
+    } catch (e) {}
+  }
   if (!it) {
     // ⓪.5 [2단계] 상황 추론(SARG) 프로브 — 회원 상태에 걸린 상황은 섹션 가이드보다 우선(개인화 > 일반 안내)
     let hiP = null;

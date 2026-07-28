@@ -78,9 +78,9 @@ const HI_AGENTS = [
       deny: ["보험", "청구", "간병", "돌봄"],
     },
     outOfScope: ["치료 효과 단정", "진단", "보험"],
-    handler: null,          // Phase C
-    knowledge: ["commerceOntology", "shopProducts", "supplyData"],
-    ready: false,
+    handler: "shoppingAgent",   // Phase C — 비교 추천 엔진(1일 단가·성분 함량·성분당 단가) + 표시·광고 가드 6조
+    knowledge: ["commerceOntology(COMM_DISEASE)", "shopProducts(영양제 73·기기 50)", "shopCompare", "marketReference", "supplyData"],
+    ready: true,
   },
   {
     id: "A4", name: "재가돌봄", label: "재가돌봄 상담", avatar: "🏠", badge: "재가돌봄",
