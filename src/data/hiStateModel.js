@@ -266,29 +266,27 @@ const HI_SEGMENTS = [
       "작년 결과라도 보여줘", "검진 안 받았는데 결과 있어?", "지난번 검진 결과 알려줘", "마지막 검진 언제였지?",
       "예전 검진 결과 볼 수 있어?", "내 검진 이력 보여줘", "결과지 다시 보여줘", "가장 최근 검진 결과 뭐야?",
       "내 수치 어떤지 봐줘", "검진 결과 요약해줘"],
+    /* 순차 상담: 현황 확인 → ①최신 연도 결과 분석 제안(먼저) → 수락·거절 후 ②올해 예약 제안(hiCheckupBranch.js) */
     sarg: function (s) {
       const c = s.checkup || s.s1, ys = c.pastYears || [];
       const multi = ys.length >= 2;
       return {
-        situation: `확인해 보니 ${_d(c.latestYear)}년 검진 기록이 있고, ${_d(c.currentYear)}년 검진은 아직 안 받으셨네요.`,
+        situation: `확인해 보니 가장 최근 검진이 ${_d(c.latestYear)}년이고, ${_d(c.currentYear)}년 검진은 아직 안 받으셨어요.`,
         assess: multi
-          ? `${ys[0]}~${ys[ys.length - 1]}년 기록이 있어요 — 추이도 함께 보여드릴 수 있어요.`
-          : `${_d(c.latestYear)}년 결과는 지금 바로 보여드릴 수 있고, 올해 검진은 예약부터 도와드릴 수 있어요.`,
-        route: `① ${_d(c.latestYear)}년 결과를 알려드릴까요?  ② ${_d(c.currentYear)}년 검진을 예약해 드릴까요?`,
+          ? `${ys[0]}~${ys[ys.length - 1]}년 기록이 연결돼 있어서 연도별 추이까지 함께 볼 수 있어요.`
+          : `${_d(c.latestYear)}년 결과가 연결돼 있어서 지금 바로 분석해 드릴 수 있어요.`,
+        route: `먼저 ${_d(c.latestYear)}년 결과 분석을 보여드릴까요?`,
         guide: c.currentYearBooked
-          ? `참고로 올해 검진 예약(D-${_d(c.bookingInDays)})은 이미 잡혀 있어요 — 결과가 나오면 ${_d(c.latestYear)}년과 비교해 드릴게요.`
-          : "아래 버튼에서 골라주세요 — 어느 쪽을 고르셔도 나머지 하나는 계속 도와드릴 수 있어요.",
+          ? `보고 나면, 이미 잡혀 있는 올해 검진(D-${_d(c.bookingInDays)}) 준비도 이어서 챙겨드릴게요.`
+          : `보고 나서 ${_d(c.currentYear)}년 올해 검진 예약도 이어서 도와드릴게요.`,
       };
     },
     easyLines: function (s) {
       const c = s.checkup || s.s1;
-      return [`작년(${_d(c.latestYear)}년) 검진 기록은 있어요. 올해 검진은 아직이에요.`,
-        `작년 결과를 볼까요, 올해 검진을 예약할까요? 아래 버튼을 눌러 주세요.`];
+      return [`가장 최근 검진은 ${_d(c.latestYear)}년이에요. 올해 검진은 아직이에요.`,
+        `${_d(c.latestYear)}년 결과를 먼저 보여드릴까요? 아래 버튼을 눌러 주세요.`];
     },
-    chipsOf: function (s) {
-      const c = s.checkup || s.s1;
-      return [`${c.latestYear}년 결과 보기`, `${c.currentYear}년 검진 예약`].concat((c.pastYears || []).length >= 2 ? ["추이 비교 보여줘"] : []);
-    },
+    chipsOf: function () { return ["네, 보여주세요", "나중에 볼게요"]; },
     preview: null, followup: null, chips: [],
   },
   {

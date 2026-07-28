@@ -46,6 +46,13 @@ export default function App() {
   const guestMatch = (authU && authU.match) || null;
   // 데이터 연결 온보딩 진행상태(정회원·미완료 시 홈 상단 유도 카드)
   const onboMember = demoU || (role !== "GUEST" && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  /* 시연 기준 인물(조성래) 금고 시드를 로그인 직후 1회 보장 — 특정 화면(데이터 연결·보험)을 거치지 않아도
+     하이가 보유 검진 연도를 알 수 있어야 한다("기록이 한 건도 없어요" 오답변 차단). 멱등이라 반복 호출 안전. */
+  useEffect(() => {
+    if (role === "GUEST" || demoU || !onboMember || !onboMember.isSelf) return;
+    try { if (typeof selfEnsureInsSeed === "function") selfEnsureInsSeed(onboMember); else if (typeof seedSelfVault === "function") seedSelfVault(onboMember); } catch (e) {}
+    try { if (typeof hiStateInvalidate === "function") hiStateInvalidate(); } catch (e) {}
+  }, [role, demoU ? demoU.email : null, onboMember ? onboMember.email : null]);
   const onbo = (role !== "GUEST" && onboMember && typeof onboardStatus === "function") ? (() => { try { return onboardStatus(onboMember); } catch (e) { return { done: true }; } })() : { done: true };
   // 접근성: 클릭 가능한 div(네비·탭·칩)를 키보드로도 조작 가능하게 (focus + Enter/Space)
   useEffect(() => {
