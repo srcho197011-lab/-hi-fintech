@@ -69,6 +69,7 @@ src/data/hiNluDict.js
 src/data/hiNluCore.js
 src/data/hiStateModel.js
 src/data/memberState.js
+src/data/hiCheckupBranch.js
 src/data/hiReasoner.js
 src/utils/ontologyConsult.js
 src/utils/insuranceRecommendationUtils.js

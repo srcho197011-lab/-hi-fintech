@@ -299,8 +299,21 @@ function hiSargProbe(rawText, norm, m) {
     let rz = null;
     if (cls.best && cls.conf >= 0.45) rz = hiReason(cls.best.it.id, snap, m, rawText);
     if (!rz && typeof hiReasonDirect === "function") rz = hiReasonDirect(cls.t, snap, m, rawText);
-    if (rz) hiCtxPush(rawText, rz.seg);
-    return rz;
+    if (rz) { hiCtxPush(rawText, rz.seg); return rz; }
+
+    /* 즉시 분석 경로 — 올해 데이터를 보유한 회원의 결과·리포트 요청은 섹션 안내 대신 실제 분석 답변으로 잇는다
+       (분기응답 대상이 아닌 회원이 "결과 알려줘"에 예약 화면 안내를 받던 경로 교정) */
+    if (cls.best && cls.conf >= 0.45 && typeof hiCheckupRoute === "function" && hiCheckupRoute(snap) === "current") {
+      const ANALYZE = ["S1-RESULT", "S1-EXPLAIN", "S1-BIO", "S1-HUB", "S2-REPORT", "S2-ITEM", "S2-TREND", "S2-RISK"];
+      const id = cls.best.it.id;
+      if (ANALYZE.some(function (p) { return id.indexOf(p) === 0; })) {
+        const it = id.indexOf("S1-HUB") === 0 ? (HI_INTENTS.find(function (x) { return x.id === "S1-RESULT-01"; }) || cls.best.it) : cls.best.it;
+        const out = hiAnswer(it, m, rawText);
+        hiCtxPush(rawText, it.id);
+        return out;
+      }
+    }
+    return null;
   } catch (e) { return null; }
 }
 

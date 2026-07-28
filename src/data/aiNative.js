@@ -398,14 +398,24 @@ const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", hom
 function agentAnswer(text) {
   const m = _member();
   const norm = lexNormalize(text);
+  /* [2단계 분기 대화] 검진 이력 분기응답의 '선택 이후' 턴 — 분기가 무장된 동안에만 가로챈다(그 외 질문은 그대로 통과) */
+  try {
+    const br = (typeof hiBranchHandle === "function") ? hiBranchHandle(text, norm, m) : null;
+    if (br && br.res) {
+      agentStats(true); agentMemSave({ lastIntent: "BRANCH-" + br.stage, lastCat: "branch", lastQ: String(text).slice(0, 60) });
+      return { lines: br.res.lines, buttons: (br.res.buttons || []).slice(0, 3), nav: br.res.nav || null,
+        preview: br.res.preview || null, followup: br.res.followup || null, matched: "BRANCH-" + br.stage };
+    }
+  } catch (e) {}
   const it = agentMatch(norm);
   if (!it) {
     // ⓪.5 [2단계] 상황 추론(SARG) 프로브 — 회원 상태에 걸린 상황은 섹션 가이드보다 우선(개인화 > 일반 안내)
     let hiP = null;
     try { hiP = (typeof hiSargProbe === "function") ? hiSargProbe(text, norm, m) : null; } catch (e) { hiP = null; }
-    if (hiP && hiP.kind === "sarg") {
-      agentStats(true); agentMemSave({ lastIntent: hiP.seg, lastCat: "sarg", lastQ: String(text).slice(0, 60) });
-      return { lines: hiP.res.lines, buttons: (hiP.res.buttons || []).slice(0, 3), nav: hiP.res.nav || null, preview: hiP.res.preview || null, followup: hiP.res.followup || null, matched: hiP.seg };
+    if (hiP && (hiP.kind === "sarg" || hiP.kind === "intent")) {
+      const mid = hiP.seg || (hiP.intent && hiP.intent.id) || "sarg";
+      agentStats(true); agentMemSave({ lastIntent: mid, lastCat: hiP.kind === "sarg" ? "sarg" : (hiP.intent && hiP.intent.l1) || "intent", lastQ: String(text).slice(0, 60) });
+      return { lines: hiP.res.lines, buttons: (hiP.res.buttons || []).slice(0, 3), nav: hiP.res.nav || null, preview: hiP.res.preview || null, followup: hiP.res.followup || null, matched: mid };
     }
     // ① 섹션 활용 가이드(내비게이션 레이어): "검진예약 도와줘" "쇼핑 보여줘" 등 → 사용법 안내 + 화면 열기
     const sg = agentNavIntent(text, norm);
@@ -503,7 +513,12 @@ function agentProactive() {
     if (ob && !ob.step1) out.push({ text: "검진결과를 아직 안 올리셨어요 — 사진 한 장이면 1분 만에 정밀리포트가 나와요.", buttons: ["검진결과 올리기"] });
     else if (ob && !ob.step2) out.push({ text: "보험까지 연결하면 보장 공백 분석이 완성돼요 — 이어서 해드릴까요?", buttons: ["보험 연결하기"] });
   } catch (e) {}
-  try { const certs = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); const c = certs[certs.length - 1]; if (c && c.date && c.date !== "-") out.push({ text: `${c.date} ${c.center} 검진이 다가와요 — 전날 준비사항(금식 등)을 제가 챙겨드릴게요.`, buttons: ["검진 준비사항 알려줘"] }); } catch (e) {}
+  /* 다가오는 검진 안내 — 지난 예약(과거 연도 증서)에는 발화하지 않는다 */
+  try {
+    const certs = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); const c = certs[certs.length - 1];
+    const ts = (c && c.date && c.date !== "-" && typeof _hiParseDate === "function") ? _hiParseDate(c.date, Date.now()) : null;
+    if (c && ts && ts >= Date.now() - 43200000) out.push({ text: `${c.date} ${c.center} 검진이 다가와요 — 전날 준비사항(금식 등)을 제가 챙겨드릴게요.`, buttons: ["검진 준비사항 알려줘"] });
+  } catch (e) {}
   /* Phase 5 선제 알림 — 배당 지급·요율 재산정 자격(묻기 전에 먼저) */
   try { if (!localStorage.getItem("hifin_divi_seen")) { const ds = (typeof dataDividends === "function") ? dataDividends(m) : []; if (ds.length) { out.push({ text: `데이터 활용 배당 +${ds[0].htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 데이터가 「${ds[0].study.split("(")[0]}」에 활용됐어요.`, buttons: ["배당 내역 보여줘"] }); localStorage.setItem("hifin_divi_seen", "1"); } } } catch (e) {}
   try { const st = (typeof rerateState === "function") ? rerateState() : { status: "done" }; if (st.status !== "done" && typeof rerateEligible === "function" && rerateEligible(m)) out.push({ text: "개선된 건강상태로 보험료 재산정을 신청할 수 있어요 — 인하 전용이라 손해 볼 일은 없어요.", buttons: ["요율 재산정 신청해줘"] }); } catch (e) {}

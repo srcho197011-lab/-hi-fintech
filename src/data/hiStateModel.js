@@ -35,11 +35,20 @@ const HI_STATE_DIST = {
       ["경상남도", 0.06], ["제주특별자치도", 0.02] ],
     joinDaysMax: 720,          // 가입 후 최대 2년
   },
+  /* ── 검진 데이터 연차 분포(2단계 파인튜닝 기준) ──
+     A. 과거만 보유(pastOnly) — 최신 연도가 작년 이하 → **분기응답** 대상(가진 것 + 해야 할 것 동시 제시)
+     B. 최신 보유(current)   — 올해 검진 데이터 보유 → 즉시 분석
+     none — 기록 0건(신규 회원). 기본 0(사양의 35/65 정확 반영), 검증·시연 시 override로 코호트 생성 */
+  checkup: {
+    pastOnly: 0.35, current: 0.65, none: 0,
+    /* A그룹 하위 분포 — 보유 연차 수: 작년 1건 60% / 2개년 연속 30% / 3개년 다년 10% */
+    pastOnlyYears: [ [1, 0.60], [2, 0.30], [3, 0.10] ],
+    pastOnlyBooked: 0.15,      // A그룹 중 올해 검진 예약 보유
+    pastOnlyPending: 0.08,     // A그룹 중 수검 완료·결과 미도착(우선순위상 분기응답보다 앞)
+    /* B그룹의 과거 연도 동반 보유(작년 대비 비교 질문 검증용) */
+    currentPastYears: [ [0, 0.35], [1, 0.40], [2, 0.18], [3, 0.07] ],
+  },
   s1: {
-    checkedThisYear: 0.48,     // 올해 수검률
-    resultPendingOfChecked: 0.1667,   // 수검자 중 결과 미도착(전체 8%)
-    checkedLastYear: 0.52,
-    bookingOfUnchecked: 0.15,  // 미수검자 중 예약 보유
     bookingDaysAhead: 21,      // 예약일: 오늘+1~21일
     recheckOfResulted: 0.18,   // 결과 보유자 중 재검 권고
     resultAgeMaxDays: 240,
@@ -100,8 +109,8 @@ function _pickW(rnd, pairs) {
 
 /* ── 합성 상태 생성 — 시드(회원 식별자)만으로 전 상태 변수를 결정론 생성 ──
    nowTs: 기준 시각(ms). 데모 DB·검증은 고정값을 넣어 재현성 확보. */
-function hiSynthState(seedStr, nowTs, demogOpt) {
-  const D = HI_STATE_DIST;
+function hiSynthState(seedStr, nowTs, demogOpt, distOverride) {
+  const D = distOverride ? Object.assign({}, HI_STATE_DIST, { checkup: Object.assign({}, HI_STATE_DIST.checkup, distOverride.checkup || {}) }) : HI_STATE_DIST;
   const rnd = hiRng(hiSeedHash("hi-p2|" + seedStr));
   const day = 86400000;
   /* 인구 */
@@ -116,27 +125,48 @@ function hiSynthState(seedStr, nowTs, demogOpt) {
   const joinDays = 1 + Math.floor(rnd() * D.demo.joinDaysMax);
   const elder = age >= 70;
 
-  /* S1 검진 */
-  const checkedThisYear = rnd() < D.s1.checkedThisYear;
-  const resultArrived = checkedThisYear ? rnd() >= D.s1.resultPendingOfChecked : false;
-  const checkupDaysAgo = checkedThisYear ? 3 + Math.floor(rnd() * 120) : null;
-  const resultAgeDays = resultArrived ? Math.min(checkupDaysAgo || 10, 7 + Math.floor(rnd() * D.s1.resultAgeMaxDays)) : null;
-  const hasBooking = !checkedThisYear && rnd() < D.s1.bookingOfUnchecked;
-  const bookingInDays = hasBooking ? 1 + Math.floor(rnd() * D.s1.bookingDaysAhead) : null;
-  const recheckNeeded = resultArrived && rnd() < D.s1.recheckOfResulted;
-  const checkedLastYear = rnd() < D.s1.checkedLastYear;
-  const nationalTarget = (new Date(nowTs).getFullYear() - age) % 2 === 0 ? rnd() < 0.85 : rnd() < 0.15;   // 출생연도 홀짝 격년(오차 허용)
+  /* ── S1 검진 — 연차 분포(A 과거만 / B 최신보유 / none 기록0) ──
+     latestYear·pastYears가 1차 진실이고, 기존 boolean(checkedThisYear·resultArrived…)은 여기서 파생된다. */
+  const CY = new Date(nowTs).getFullYear();
+  const CK = D.checkup;
+  const grp = _pickW(rnd, [["past", CK.pastOnly], ["current", CK.current], ["none", CK.none]]);
+  const pastYears = [];
+  let hasCurrentYear = false, resultPending = false, currentYearBooked = false;
+  if (grp === "current") {
+    hasCurrentYear = true;
+    const nPast = _pickW(rnd, CK.currentPastYears);
+    for (let k = 1; k <= nPast; k++) pastYears.push(CY - k);
+  } else if (grp === "past") {
+    const nY = _pickW(rnd, CK.pastOnlyYears);          // 1: 작년만 · 2: 2개년 연속 · 3: 3개년 다년
+    for (let k = 1; k <= nY; k++) pastYears.push(CY - k);
+    resultPending = rnd() < CK.pastOnlyPending;        // 올해 수검했으나 결과 미도착(데이터는 아직 없음)
+    currentYearBooked = !resultPending && rnd() < CK.pastOnlyBooked;
+  }
+  pastYears.sort(function (a, b) { return a - b; });
+  const latestYear = hasCurrentYear ? CY : (pastYears.length ? pastYears[pastYears.length - 1] : null);
 
-  /* S5 데이터 */
-  const nhisLinked = rnd() < D.s5.nhisLinked;
-  const uploadCount = _pickW(rnd, D.s5.uploads);
-  const anyLink = nhisLinked || uploadCount > 0 || resultArrived;
+  /* 파생(1단계 호환 필드) */
+  const checkedThisYear = hasCurrentYear || resultPending;              // 올해 '수검 행위' 여부
+  const resultArrived = hasCurrentYear;                                 // 올해 결과(데이터) 보유 여부
+  const checkupDaysAgo = hasCurrentYear ? 3 + Math.floor(rnd() * 120) : (resultPending ? 3 + Math.floor(rnd() * 12) : null);
+  const resultAgeDays = resultArrived ? Math.min(checkupDaysAgo || 10, 7 + Math.floor(rnd() * D.s1.resultAgeMaxDays)) : null;
+  const hasBooking = currentYearBooked;
+  const bookingInDays = hasBooking ? 1 + Math.floor(rnd() * D.s1.bookingDaysAhead) : null;
+  const recheckNeeded = (hasCurrentYear || pastYears.length > 0) && rnd() < D.s1.recheckOfResulted;
+  const checkedLastYear = pastYears.indexOf(CY - 1) >= 0;
+  const nationalTarget = (CY - age) % 2 === 0 ? rnd() < 0.85 : rnd() < 0.15;   // 출생연도 홀짝 격년(오차 허용)
+
+  /* ── S5 데이터 — 보유 검진 연차(recordYears)가 연결 상태의 1차 근거 ── */
+  const recordYears = pastYears.concat(hasCurrentYear ? [CY] : []);     // 실제 데이터로 보유한 연도
+  const anyLink = recordYears.length > 0;
+  const nhisLinked = anyLink ? rnd() < D.s5.nhisLinked : false;         // 연결 경로: 공단 연계 여부
+  const uploadCount = anyLink ? (nhisLinked ? _pickW(rnd, D.s5.uploads) : Math.max(1, _pickW(rnd, D.s5.uploads))) : 0;
   const lastLinkAgeDays = anyLink ? 1 + Math.floor(rnd() * D.s5.linkAgeMaxDays) : null;
   const vaultPermSet = anyLink ? rnd() < D.s5.vaultPermOfLinked : false;
-  const trendYears = (uploadCount >= 2 || (nhisLinked && checkedLastYear)) ? 2 + (uploadCount >= 3 ? 1 : 0) : (anyLink ? 1 : 0);
+  const trendYears = recordYears.length;                                // 추이 비교 가능 연차 = 보유 연도 수
 
-  /* S2 건강분석(파생) */
-  const dataScope = !anyLink ? "none" : (uploadCount > 0 || resultArrived ? "full" : "partial");   // 공단만=부분(항목 제한)
+  /* S2 건강분석(파생) — 공단만 연결이면 항목 제한(부분), 업로드 원본이 있으면 전체 */
+  const dataScope = !anyLink ? "none" : (uploadCount > 0 ? "full" : "partial");
   const bioAgeReady = dataScope === "full";
 
   /* S3 보험 */
@@ -179,9 +209,11 @@ function hiSynthState(seedStr, nowTs, demogOpt) {
   const loginIssue = rnd() < D.s9.loginIssue;
 
   const iso = function (daysAgo) { return daysAgo == null ? null : new Date(nowTs - daysAgo * day).toISOString().slice(0, 10); };
-  return {
+  const snap = {
     member: { age: age, sex: sex, region: region, joinDays: joinDays, joinedAt: iso(joinDays) },
-    s1: { checkedThisYear: checkedThisYear, checkedLastYear: checkedLastYear, hasBooking: hasBooking, bookingInDays: bookingInDays,
+    s1: { currentYear: CY, latestYear: latestYear, pastYears: pastYears, recordYears: recordYears,
+      hasCurrentYear: hasCurrentYear, currentYearBooked: currentYearBooked, resultPending: resultPending, group: grp,
+      checkedThisYear: checkedThisYear, checkedLastYear: checkedLastYear, hasBooking: hasBooking, bookingInDays: bookingInDays,
       bookingDate: bookingInDays != null ? new Date(nowTs + bookingInDays * day).toISOString().slice(0, 10) : null,
       resultArrived: resultArrived, resultAgeDays: resultAgeDays, checkupDaysAgo: checkupDaysAgo, checkupAt: iso(checkupDaysAgo),
       recheckNeeded: recheckNeeded, nationalTarget: nationalTarget },
@@ -195,6 +227,20 @@ function hiSynthState(seedStr, nowTs, demogOpt) {
     s8: { invited: invited, joined: joined, unpaidReward: unpaidReward, codeUsed: codeUsed },
     s9: { certified: certified, notiOn: notiOn, easyMode: easyMode, loginIssue: loginIssue },
   };
+  snap.checkup = snap.s1;   // 사양 별칭 — state.checkup.latestYear 로도 접근
+  return snap;
+}
+
+/* ── 검진 상태 판별(단일 함수) — 사양의 우선순위를 코드로 강제 ──
+   반환: "current"(즉시 분석) | "pending"(결과 대기) | "branch"(과거 보유·올해 미수검 → 분기응답) | "new"(기록 0건)
+   ⚠️ 이 판별은 U1(데이터 없음) 판정보다 먼저 수행된다 — 과거 기록 보유자를 '데이터 없음'으로 처리하던 버그의 차단점. */
+function hiCheckupRoute(snap) {
+  const c = snap && (snap.checkup || snap.s1);
+  if (!c) return "new";
+  if (c.hasCurrentYear) return "current";
+  if (c.resultPending) return "pending";
+  if ((c.pastYears || []).length >= 1) return "branch";
+  return "new";
 }
 
 /* ══════════════ 상황 세그먼트 정의 — 추론형(SARG) 답변의 단일 소스 ══════════════
@@ -208,8 +254,46 @@ function _won10(n) { return (n || 0).toLocaleString() + "원"; }
 const HI_SEGMENTS = [
   /* ───────── S1 검진 ───────── */
   {
+    /* ⚠️ 최우선 세그먼트 — "결과 없음"이 아니라 "가진 것(과거 기록) + 해야 할 것(올해 검진)"을 동시에 제시한다.
+       과거 기록 보유자를 신규회원(데이터 없음)으로 처리하던 버그의 교정점이며, 선택 이후 대화는 hiCheckupBranch.js가 잇는다. */
+    id: "SEG-S1-00", sec: "S1", label: "과거 기록 보유·올해 미수검(분기응답)", def: "작년 이하 검진 기록은 있고 올해 검진 데이터는 없음 — 과거 결과 보기 / 올해 예약 두 갈래 제시",
+    branch: "checkup",
+    when: function (s) { return hiCheckupRoute(s) === "branch"; },
+    intents: ["S1-RESULT", "S1-EXPLAIN", "S1-BIO", "S1-HUB", "S2-REPORT"],
+    qpat: ["작년결과", "지난번결과", "예전결과", "검진안받았는데결과", "결과있어", "기록있어", "마지막검진", "내수치", "검진기록", "검진이력", "결과지다시"],
+    q: ["건강검진 결과 알려줘", "내 건강검진 결과를 알려줘", "검진 결과 보여줘", "내 건강 봐줘", "건강 상태 어때?",
+      "검진결과 설명해줘", "내 리포트 요약해줘", "생체나이 알려줘", "건강분석 해줘", "내 검진 기록 보여줘",
+      "작년 결과라도 보여줘", "검진 안 받았는데 결과 있어?", "지난번 검진 결과 알려줘", "마지막 검진 언제였지?",
+      "예전 검진 결과 볼 수 있어?", "내 검진 이력 보여줘", "결과지 다시 보여줘", "가장 최근 검진 결과 뭐야?",
+      "내 수치 어떤지 봐줘", "검진 결과 요약해줘"],
+    sarg: function (s) {
+      const c = s.checkup || s.s1, ys = c.pastYears || [];
+      const multi = ys.length >= 2;
+      return {
+        situation: `확인해 보니 ${_d(c.latestYear)}년 검진 기록이 있고, ${_d(c.currentYear)}년 검진은 아직 안 받으셨네요.`,
+        assess: multi
+          ? `${ys[0]}~${ys[ys.length - 1]}년 기록이 있어요 — 추이도 함께 보여드릴 수 있어요.`
+          : `${_d(c.latestYear)}년 결과는 지금 바로 보여드릴 수 있고, 올해 검진은 예약부터 도와드릴 수 있어요.`,
+        route: `① ${_d(c.latestYear)}년 결과를 알려드릴까요?  ② ${_d(c.currentYear)}년 검진을 예약해 드릴까요?`,
+        guide: c.currentYearBooked
+          ? `참고로 올해 검진 예약(D-${_d(c.bookingInDays)})은 이미 잡혀 있어요 — 결과가 나오면 ${_d(c.latestYear)}년과 비교해 드릴게요.`
+          : "아래 버튼에서 골라주세요 — 어느 쪽을 고르셔도 나머지 하나는 계속 도와드릴 수 있어요.",
+      };
+    },
+    easyLines: function (s) {
+      const c = s.checkup || s.s1;
+      return [`작년(${_d(c.latestYear)}년) 검진 기록은 있어요. 올해 검진은 아직이에요.`,
+        `작년 결과를 볼까요, 올해 검진을 예약할까요? 아래 버튼을 눌러 주세요.`];
+    },
+    chipsOf: function (s) {
+      const c = s.checkup || s.s1;
+      return [`${c.latestYear}년 결과 보기`, `${c.currentYear}년 검진 예약`].concat((c.pastYears || []).length >= 2 ? ["추이 비교 보여줘"] : []);
+    },
+    preview: null, followup: null, chips: [],
+  },
+  {
     id: "SEG-S1-01", sec: "S1", label: "수검 완료·결과 대기", def: "올해 검진을 받았지만 결과가 아직 등록되지 않음",
-    when: function (s) { return s.s1.checkedThisYear && !s.s1.resultArrived; },
+    when: function (s) { return hiCheckupRoute(s) === "pending"; },
     intents: ["S1-RESULT", "S1-EXPLAIN", "S1-BIO", "S1-HUB", "S2-REPORT", "S2-TREND"], qpat: ["결과언제", "결과안나", "결과아직", "결과안왔", "결과왜안"],
     q: ["내 건강검진 결과를 알려줘", "검진 결과 언제 나와?", "결과지가 아직 안 왔어", "검진 받았는데 결과가 안 보여요", "결과 나왔는지 확인해줘", "검진결과 왜 안 나와", "결과지 도착했어?", "검진 결과 보여줘"],
     sarg: function (s) {
@@ -225,13 +309,13 @@ const HI_SEGMENTS = [
     chips: ["업로드 화면 미리보기", "알림 받기"],
   },
   {
-    id: "SEG-S1-02", sec: "S1", label: "올해 미수검·예약 없음", def: "올해 검진을 받지 않았고 예약도 없음",
-    when: function (s) { return !s.s1.checkedThisYear && !s.s1.hasBooking; },
+    id: "SEG-S1-02", sec: "S1", label: "신규(검진 기록 0건)", def: "검진 기록이 한 건도 없고 예약도 없음 — 과거 기록 보유자는 SEG-S1-00이 처리",
+    when: function (s) { return hiCheckupRoute(s) === "new" && !s.s1.hasBooking; },
     intents: ["S1-RESULT", "S1-EXPLAIN", "S1-BIO", "S1-HUB", "S2-REPORT"], qpat: ["검진안받", "검진아직", "검진언제받", "검진받아야"],
     q: ["내 건강검진 결과를 알려줘", "올해 검진 받아야 해?", "검진 안 받았는데 어떡해", "건강검진 언제 받지", "검진 받은 지 오래됐어", "올해 검진 대상이야?", "검진 뭐부터 해야 해", "결과 보여줘 (미수검)"],
     sarg: function (s) {
       return {
-        situation: "확인해 보니 올해 검진 기록이 아직 없어요" + (s.s1.checkedLastYear ? " — 작년에는 받으셨네요." : "."),
+        situation: "확인해 보니 아직 연결된 검진 기록이 한 건도 없어요 — 과거 결과지가 있으시면 그것부터 살려드릴게요.",
         assess: (s.s1.nationalTarget ? "올해 국가 일반검진 대상이라 본인부담 0원으로 받을 수 있어요. " : "") + "검진을 받아야 결과 분석·생체나이·보장 점검까지 이어져요.",
         route: "① 아직 안 받으셨다면 예약부터 도와드릴게요 — \"검진 예약해줘\" 한마디면 센터·날짜 추천까지 끝나요. ② 이미 받으셨다면 결과지를 사진·PDF로 올려 주시면 바로 분석해 드려요.",
         guide: "예약 화면을 미리 보여드릴게요. 예약하면 무료 검진대비보험도 자동으로 준비돼요.",
@@ -749,7 +833,7 @@ const HI_SEGMENTS = [
   {
     id: "SEG-S6-01", sec: "S6", label: "가족 미등록", def: "등록된 가족이 없음",
     when: function (s) { return s.s6.familyCount === 0; },
-    intents: ["S6-HUB", "S6-VIEW", "S6-CKUP", "S6-ADD", "S6-REWARD"], qpat: ["가족없", "가족등록안", "부모님건강", "가족기능", "가족추가하면"],
+    intents: ["S6-HUB", "S6-VIEW", "S6-CKUP", "S6-ADD", "S6-REWARD"], qpat: ["가족없", "가족등록안", "부모님건강", "가족기능", "가족추가하면", "가족초대"],
     q: ["가족 건강 보여줘 (미등록)", "엄마 검진 챙겨줘 (미등록)", "가족 등록 어떻게 해", "가족 추가하면 뭐가 좋아", "부모님 건강 관리하고 싶어", "가족 초대 어떻게 해", "아내 건강도 볼 수 있어?", "가족 기능 알려줘"],
     sarg: function (s) {
       return {

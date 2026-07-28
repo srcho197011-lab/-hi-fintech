@@ -69,12 +69,22 @@ TAIL
 
 # src/ 컴포넌트 파일들을 manifest 순서대로 이어붙여 단일 Babel 모듈 생성
 cat _h.txt > index.html
+# 무결성 가드 — OneDrive 등에서 소스가 일시적으로 비어 읽히면 파일이 통째로 누락된 번들이 조용히 만들어진다.
+# 파일별로 (1) 원본이 비어있지 않은지 (2) 실제로 바이트가 늘었는지 확인하고, 아니면 즉시 중단한다.
+_expect=$(wc -c < _h.txt)
 while IFS= read -r f; do
   [ -z "$f" ] && continue
+  if [ ! -s "$f" ]; then echo "빌드 중단 — 소스를 읽을 수 없거나 비어 있습니다: $f" >&2; exit 1; fi
+  _expect=$((_expect + $(wc -c < "$f") + 1))
   cat "$f" >> index.html
   printf '\n' >> index.html
 done < <(sed 's/\r$//' src/_manifest.txt)
 cat _t.txt >> index.html
+_expect=$((_expect + $(wc -c < _t.txt)))
+_actual=$(wc -c < index.html)
+if [ "$_actual" -ne "$_expect" ]; then
+  echo "빌드 중단 — 번들 크기 불일치(기대 $_expect / 실제 $_actual). 소스 일부가 누락됐을 수 있습니다." >&2; exit 1
+fi
 cp index.html preview.html
 # 데이터/CSS 캐시버스팅(?v=hash) — 데이터·스타일 변경 시 배포 후 즉시 반영(브라우저 캐시 무효화)
 VER=$(cat src/data/dummy_data.js src/data/section_data.js src/data/demo_members.js data/app.css 2>/dev/null | md5sum | cut -c1-10)

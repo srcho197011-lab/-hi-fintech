@@ -261,25 +261,56 @@ function onboardStatus(member) {
 /* 시연 기준 인물(조성래) 데이터 금고 자동 시드 — 투자자·참여사 데모용(멱등).
    Phase1 정합: 2개년 검진(계보) + 보험 통합조회 + 무상 검진대비보험 증서(1탭 동의 발급분) +
    AI 분석 기록 + 거래 앵커 + 다층 접근 이력(누가·언제·무엇을 — 전부 회원에게 공개) */
+/* ── 시연 기준 인물 검진 연차 시드(2단계 분기응답 기준) ──
+   A그룹 고정: 최신 검진 = 작년(2025) 1건 · 올해(2026) 미수검 → 하이가 "2025년 결과 vs 2026년 예약" 두 갈래를 제시한다.
+   ⚠️ 다년 보유(추이 비교) 시연이 필요하면 years를 [2024, 2025]로 바꾸면 된다(그 외 코드 변경 불필요). */
+const SELF_CHECKUP_SEED = { years: [2025], monthDay: "-12-26" };
+
+/* 구 시드(2023 촬영본 + 2024 업로드본)로 저장된 금고를 새 연차 기준으로 1회 이관 — 회원이 직접 올린 자료는 건드리지 않는다 */
+function _migrateSelfCheckupSeed(member, token, v) {
+  try {
+    const OLD = ["검진결과_촬영본_2023.jpg", "국가검진결과_2024.pdf"];
+    const cks = v.checkups || [];
+    if (!cks.length) return false;
+    if (!cks.every((c) => OLD.indexOf(c.fileName) >= 0)) return false;            // 회원 업로드분 포함 → 이관 대상 아님
+    const target = SELF_CHECKUP_SEED.years.map((y) => String(y) + SELF_CHECKUP_SEED.monthDay);
+    if (cks.some((c) => target.indexOf(c.date) >= 0)) return false;               // 이미 이관됨
+    const cur = vaultLoad(token); cur.checkups = [];
+    try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur)); } catch (e) {}
+    _seedSelfCheckups(member);
+    return true;
+  } catch (e) { return false; }
+}
+function _seedSelfCheckups(member) {
+  const vals = synthCheckupValues(member);
+  const items = CKUP_ORDER.map((k) => ({ key: k, value: vals[k], source: "upload", confidence: 0.93 }));
+  SELF_CHECKUP_SEED.years.forEach((y, i) => {
+    const last = i === SELF_CHECKUP_SEED.years.length - 1;
+    const use = last ? items : CKUP_ORDER.slice(0, Math.max(6, CKUP_ORDER.length - 4)).map((k) => ({ key: k, value: vals[k], source: "photo", confidence: 0.88 }));
+    vaultSaveCheckup(member, use, {
+      source: last ? "upload" : "photo", channel: last ? "upload" : "photo",
+      completeness: last ? "full" : "partial",
+      fileName: last ? `국가검진결과_${y}.pdf` : `검진결과_촬영본_${y}.jpg`,
+      date: String(y) + SELF_CHECKUP_SEED.monthDay,
+    });
+  });
+}
+
 function seedSelfVault(member) {
   if (!member) return false;
   const token = anonToken(member); const v = vaultLoad(token);
-  if (v && ((v.checkups || []).length || (v.insurance || []).length)) return false;   // 이미 데이터 있음
+  if (v && ((v.checkups || []).length || (v.insurance || []).length)) { _migrateSelfCheckupSeed(member, token, v); return false; }   // 이미 데이터 있음
   try {
     // ① 동의 5종 — 목적별 개별 동의(마케팅은 미동의: 일괄동의 없음의 증거)
     vaultSaveConsents(member, { health: true, ai: true, mkt: false, step: "checkup" });
-    // ② 검진 2개년 — 작년 촬영본(부분)→올해 업로드(전체): 데이터가 해마다 자산으로 쌓이는 계보
-    const vals = synthCheckupValues(member);
-    const items = CKUP_ORDER.map((k) => ({ key: k, value: vals[k], source: "upload", confidence: 0.93 }));
-    const itemsPrev = CKUP_ORDER.slice(0, Math.max(6, CKUP_ORDER.length - 4)).map((k) => ({ key: k, value: vals[k], source: "photo", confidence: 0.88 }));
-    vaultSaveCheckup(member, itemsPrev, { source: "photo", channel: "photo", completeness: "partial", fileName: "검진결과_촬영본_2023.jpg", date: "2023-12-26" });
-    vaultSaveCheckup(member, items, { source: "upload", channel: "upload", completeness: "full", fileName: "국가검진결과_2024.pdf", date: "2024-12-26" });
+    // ② 검진 연차 시드 — SELF_CHECKUP_SEED 기준(기본: 2025년 1건 · 2026년 미수검 = 분기응답 대상)
+    _seedSelfCheckups(member);
     // ③ 보험 통합조회 + 무상 검진대비보험 증서(검진 예약 1탭 동의로 발급된 증서 — Phase1)
     vaultSaveConsents(member, { insurance: true, link: true, step: "insurance" });
     const contracts = (typeof insAggregateFetch === "function") ? insAggregateFetch(member).contracts : [];
     if (contracts.length) vaultSaveInsurance(member, contracts, { source: "aggregate", channel: "aggregate" });
     const certB = chainAppend({ type: "ins-cert", token, note: "무상 검진대비보험 증서 발급(강북삼성병원 종합검진)" });
-    try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) { l.push({ id: "CERT-JSR2026A", center: "강북삼성병원 종합검진센터", date: "7/28", time: "09:00", at: Date.now(), hash: certB && certB.hash }); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } } catch (e) {}
+    try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) { l.push({ id: "CERT-JSR2025A", center: "강북삼성병원 종합검진센터", date: "2025-12-26", time: "09:00", at: Date.now(), hash: certB && certB.hash });localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } } catch (e) {}
     // ④ 분석·활용 기록 — AI 정밀리포트 생성(분석 결과의 지문도 체인에)
     chainAppend({ type: "record", token, note: "AI 정밀리포트 생성 — 분석 결과 해시 기록(가명 토큰 기준)" });
     // ⑤ 거래 앵커 — 쇼핑 적립·HTK 크레딧 전환

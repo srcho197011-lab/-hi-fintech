@@ -15,14 +15,20 @@ function _hiSegIntentHit(seg, intentId) {
 function hiSargAssemble(seg, snap, m) {
   const t = seg.sarg(snap);
   const easy = (typeof hiEasyOn === "function") ? hiEasyOn() : false;
-  const lines = easy
+  let lines;
+  if (easy && seg.easyLines) { try { lines = seg.easyLines(snap).filter(Boolean); } catch (e) { lines = null; } }
+  if (!lines) lines = easy
     ? [t.situation, t.route].filter(Boolean)                     // 쉬운말: 상황+행동만 짧게
     : [t.situation, t.assess, t.route, t.guide].filter(Boolean);
   let followup = null;
   try { followup = seg.followup ? seg.followup(snap) : null; } catch (e) { followup = null; }
   const preview = seg.preview ? { route: seg.preview.route, title: seg.preview.title, description: seg.preview.desc, nav: seg.preview.nav || null } : null;
-  /* 버튼: 세그먼트 칩(≤3) — "알림 받기"는 followup이 있을 때만 유효 */
-  const buttons = (seg.chips || []).filter(function (b) { return b !== "알림 받기" || !!followup; }).slice(0, 3);
+  /* 버튼: 동적 칩(chipsOf) 우선 — 연도 등 상태 값이 버튼 라벨에 들어가는 분기응답용 */
+  let chips = seg.chips || [];
+  if (seg.chipsOf) { try { chips = seg.chipsOf(snap) || chips; } catch (e) {} }
+  /* 분기 대화 무장 — 다음 턴에서 선택("2025년 결과 보기" 등)을 받을 수 있게 상태 저장 */
+  if (seg.branch === "checkup" && typeof hiBranchArm === "function") { try { hiBranchArm(snap); } catch (e) {} }
+  const buttons = chips.filter(function (b) { return b !== "알림 받기" || !!followup; }).slice(0, 3);
   const nav = seg.preview && seg.preview.nav ? { key: seg.preview.nav, label: (typeof AGENT_NAV_LABEL !== "undefined" && AGENT_NAV_LABEL[seg.preview.nav]) || seg.preview.title } : null;
   return { kind: "sarg", seg: seg.id, res: { lines: lines, buttons: buttons, nav: nav, preview: preview, followup: followup } };
 }

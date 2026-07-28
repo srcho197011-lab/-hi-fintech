@@ -50,9 +50,15 @@ function _hiLiveOverlay(m, base, nowTs) {
     const ckThisYear = !!years[thisYear];
     live.s5 = { anyLink: !!ob.step1, nhisLinked: nhis, uploadCount: uploads };
     if (lastCk) live.s5.lastLinkAgeDays = Math.max(0, Math.round((nowTs - lastCk) / day));
-    live.s1 = { checkedThisYear: ckThisYear, checkedLastYear: !!years[thisYear - 1], resultArrived: ckThisYear };
+    /* [2단계] 연차 상태 — 보유 연도 목록이 1차 진실(과거 기록 보유자를 '데이터 없음'으로 처리하지 않기 위함) */
+    const recordYears = Object.keys(years).map(Number).sort(function (a, b) { return a - b; });
+    const pastYears = recordYears.filter(function (y) { return y < thisYear; });
+    live.s1 = { currentYear: thisYear, recordYears: recordYears, pastYears: pastYears,
+      hasCurrentYear: ckThisYear, latestYear: recordYears.length ? recordYears[recordYears.length - 1] : null,
+      group: ckThisYear ? "current" : (pastYears.length ? "past" : "none"),
+      checkedThisYear: ckThisYear, checkedLastYear: !!years[thisYear - 1], resultArrived: ckThisYear };
     if (ckThisYear && lastCk) { live.s1.checkupDaysAgo = Math.max(0, Math.round((nowTs - lastCk) / day)); live.s1.resultAgeDays = live.s1.checkupDaysAgo; live.s1.checkupAt = new Date(lastCk).toISOString().slice(0, 10); }
-    const trendYears = Object.keys(years).length;
+    const trendYears = recordYears.length;
     live.s2 = { dataScope: !ob.step1 ? "none" : (fullAny ? "full" : "partial"), bioAgeReady: !!ob.step1 && fullAny, trendYears: trendYears };
     live.s3 = { insLinked: !!ob.step2, contractCount: (v && v.insurance && v.insurance.length) || 0 };
     if (!ob.step1) { live.s1.recheckNeeded = false; live.s2.trendYears = 0; }
@@ -70,13 +76,13 @@ function _hiLiveOverlay(m, base, nowTs) {
       else { if (!past || t > past) past = t; }
     });
     live.s1 = live.s1 || {};
-    if (future) { live.s1.hasBooking = true; live.s1.bookingInDays = Math.max(0, Math.round((future - nowTs) / day)); live.s1.bookingDate = new Date(future).toISOString().slice(0, 10); }
-    else if (certs.length) live.s1.hasBooking = false;
-    if (past && live.s1.checkedThisYear === false && new Date(past).getFullYear() === thisYear) {
-      /* 검진일은 지났는데 결과(금고 데이터)가 아직 없음 → 대표 시나리오 '결과 대기' */
-      live.s1.checkedThisYear = true; live.s1.resultArrived = false;
+    if (future) { live.s1.hasBooking = true; live.s1.currentYearBooked = true; live.s1.bookingInDays = Math.max(0, Math.round((future - nowTs) / day)); live.s1.bookingDate = new Date(future).toISOString().slice(0, 10); }
+    else if (certs.length) { live.s1.hasBooking = false; live.s1.currentYearBooked = false; }
+    if (past && live.s1.hasCurrentYear === false && new Date(past).getFullYear() === thisYear) {
+      /* 올해 검진일은 지났는데 결과(금고 데이터)가 아직 없음 → '결과 대기'(분기응답보다 우선 판정) */
+      live.s1.checkedThisYear = true; live.s1.resultArrived = false; live.s1.resultPending = true;
       live.s1.checkupDaysAgo = Math.max(0, Math.round((nowTs - past) / day)); live.s1.checkupAt = new Date(past).toISOString().slice(0, 10);
-    }
+    } else if (live.s1.hasCurrentYear !== undefined) live.s1.resultPending = false;
     live.s7 = live.s7 || {}; if (certs.length) { live.s7.nftCount = certs.length; live.s7.nftEligible = true; }
   } catch (e) {}
 
@@ -135,6 +141,8 @@ function memberStateSnapshot(m) {
     snap = _hiDeepMerge(base, _hiLiveOverlay(m, base, now));
     /* 데모·시나리오 주입(테스트 표준: localStorage 세션 주입) — 최우선 적용 */
     try { const inj = JSON.parse(localStorage.getItem("hifin_hi_state_" + (m.email || "")) || "null"); if (inj) snap = _hiDeepMerge(snap, inj); } catch (e) {}
+    /* ⚠️ 병합은 새 객체를 만들므로 별칭을 다시 건다 — snap.checkup이 옛 s1을 가리키면 라우팅이 어긋난다 */
+    if (snap && snap.s1) snap.checkup = snap.s1;
   } catch (e) { snap = null; }
   _hiStateCache = { key: key, ts: now, snap: snap };
   return snap;
