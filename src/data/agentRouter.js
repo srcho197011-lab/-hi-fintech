@@ -107,6 +107,7 @@ function agentRouteLog(q, route) {
     const k = "hifin_agent_route";
     const l = JSON.parse(localStorage.getItem(k) || "[]");
     l.push({ q: String(q).slice(0, 100), a: route.agent, r: route.reason, ts: Date.now() });
+  try { if (typeof telemPush === "function") telemPush("route", q, { agent: route.agent, reason: route.reason }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
     localStorage.setItem(k, JSON.stringify(l.slice(-300)));
   } catch (e) {}
 }

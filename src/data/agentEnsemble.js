@@ -268,6 +268,7 @@ function ensLog(q, det, v) {
     const k = "hifin_ensemble";
     const l = JSON.parse(localStorage.getItem(k) || "[]");
     l.push({ q: String(q || "").slice(0, 70), p: det.pattern, a: det.parts.map(function (x) { return x.agent; }), v: (v || []).map(function (x) { return x.id; }), ts: Date.now() });
+  try { if (typeof telemPush === "function") telemPush("ensemble", q, { pattern: det.pattern, agents: det.parts.map(function (x) { return x.agent; }), laws: (v || []).map(function (x) { return "ENS:" + x.id; }) }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
     localStorage.setItem(k, JSON.stringify(l.slice(-200)));
   } catch (e) {}
 }

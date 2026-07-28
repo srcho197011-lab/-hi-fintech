@@ -80,6 +80,7 @@ function shoppingGuard(lines, ctx) {
 function shopGuardLog(q, v) {
   try {
     if (!v || !v.length) return;
+  try { if (typeof telemPush === "function") telemPush("guard", q, { agent: "A3", laws: v.map(function (x) { return "A3:" + x.id; }) }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
     const k = "hifin_shop_guard";
     const l = JSON.parse(localStorage.getItem(k) || "[]");
     l.push({ q: String(q || "").slice(0, 60), ids: v.map((x) => x.id), ts: Date.now() });

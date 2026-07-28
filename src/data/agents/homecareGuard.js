@@ -131,6 +131,7 @@ function homecareGuard(lines, ctx) {
 function hcGuardLog(q, v) {
   try {
     if (!v || !v.length) return;
+  try { if (typeof telemPush === "function") telemPush("guard", q, { agent: "A4", laws: v.map(function (x) { return "A4:" + x.id; }) }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
     const k = "hifin_hc_guard";
     const l = JSON.parse(localStorage.getItem(k) || "[]");
     l.push({ q: String(q || "").slice(0, 60), ids: v.map((x) => x.id), ts: Date.now() });

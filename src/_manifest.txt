@@ -1,3 +1,4 @@
+src/data/hiTelemetry.js
 src/core.jsx
 src/App.jsx
 src/data/sectionData.js

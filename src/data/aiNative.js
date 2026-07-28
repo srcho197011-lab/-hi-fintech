@@ -337,7 +337,8 @@ const TOOL_RUN = {
 };
 
 /* ── 미답변 로그 + 커버리지 지표 ── */
-function agentMissLog(text) { try { const k = "hifin_agent_miss"; const l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ q: String(text).slice(0, 80), ts: Date.now() }); localStorage.setItem(k, JSON.stringify(l.slice(-200))); } catch (e) {} }
+function agentMissLog(text) { try { if (typeof telemPush === "function") telemPush("miss", text, {}); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
+  try { const k = "hifin_agent_miss"; const l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ q: String(text).slice(0, 80), ts: Date.now() }); localStorage.setItem(k, JSON.stringify(l.slice(-200))); } catch (e) {} }
 function agentStats(hit) { try { const k = "hifin_agent_stats"; const s = JSON.parse(localStorage.getItem(k) || "{\"total\":0,\"hit\":0}"); s.total++; if (hit) s.hit++; localStorage.setItem(k, JSON.stringify(s)); } catch (e) {} }
 function agentCoverage() { try { return JSON.parse(localStorage.getItem("hifin_agent_stats") || "{\"total\":0,\"hit\":0}"); } catch (e) { return { total: 0, hit: 0 }; } }
 function agentMisses() { try { return JSON.parse(localStorage.getItem("hifin_agent_miss") || "[]"); } catch (e) { return []; } }

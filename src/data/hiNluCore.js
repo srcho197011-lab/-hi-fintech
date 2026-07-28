@@ -68,6 +68,7 @@ function hiULog(q, type) {
     const k = "hifin_hi_unanswered";
     const l = JSON.parse(localStorage.getItem(k) || "[]");
     l.push({ q: String(q).slice(0, 100), type, ts: Date.now() });
+  try { if (typeof telemPush === "function") telemPush("unanswered", q, { utype: type }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
     localStorage.setItem(k, JSON.stringify(l.slice(-500)));
   } catch (e) {}
 }

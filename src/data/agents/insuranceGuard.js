@@ -84,6 +84,7 @@ function insuranceGuard(lines, ctx) {
 function insGuardLog(question, v) {
   try {
     if (!v || !v.length) return;
+  try { if (typeof telemPush === "function") telemPush("guard", question, { agent: "A2", laws: v.map(function (x) { return "A2:" + x.id; }) }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
     const k = "hifin_ins_guard";
     const l = JSON.parse(localStorage.getItem(k) || "[]");
     l.push({ q: String(question || "").slice(0, 60), ids: v.map((x) => x.id), ts: Date.now() });
