@@ -55,14 +55,15 @@ const HI_AGENTS = [
     role: "specialist",
     scope: {
       intents: ["S3-"],
+      segments: ["SEG-S3-"],
       words: ["보험", "보장", "보장공백", "실손", "세대전환", "진단비", "청구", "보험금", "보험료", "휴면보험금",
         "본인부담", "통합조회", "검진대비보험", "요율", "재산정", "치료비"],
       deny: ["영양제", "구매", "간병", "돌봄", "공단", "국민건강보험", "건강보험공단", "건보"],
     },
     outOfScope: ["진단·처방 판단", "제품 추천", "검진 예약 실행"],
-    handler: null,          // Phase B에서 전용 핸들러 — 그전까지는 공용 파이프라인이 응답(담당만 표기)
-    knowledge: ["insuranceKB", "insuranceStats", "insService", "insuranceCohort"],
-    ready: false,
+    handler: "insuranceAgent",   // Phase B — 전용 핸들러(계산은 툴·설명은 근거·결정은 회원) + 규제 가드 5조
+    knowledge: ["insuranceKB(INS_KB 17)", "SILSON_SPEC", "CLAIM_DENY", "insuranceStats", "insService", "insuranceCohort"],
+    ready: true,
   },
   {
     id: "A3", name: "건강쇼핑", label: "건강쇼핑 상담", avatar: "🛒", badge: "건강쇼핑",

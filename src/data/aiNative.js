@@ -406,7 +406,8 @@ function agentInvoke(agentId, text, ctx) {
   try {
     const A = (typeof hiAgent === "function") ? hiAgent(agentId) : null;
     if (!A || !A.handler || !A.ready) return null;
-    const fn = (A.handler === "aiDoctorAgent" && typeof aiDoctorAgent === "function") ? aiDoctorAgent : null;
+    const fn = (A.handler === "aiDoctorAgent" && typeof aiDoctorAgent === "function") ? aiDoctorAgent
+      : (A.handler === "insuranceAgent" && typeof insuranceAgent === "function") ? insuranceAgent : null;
     if (!fn) return null;
     let snap = null;
     try { snap = (ctx && ctx.m && typeof memberStateSnapshot === "function") ? memberStateSnapshot(ctx.m) : null; } catch (e) {}
@@ -424,13 +425,37 @@ function agentInvoke(agentId, text, ctx) {
   } catch (e) { return null; }
 }
 
+/* [Phase B] 전문가 후처리 — 검증된 공용 응답(AGENT_QNA·툴)을 **대체하지 않고 감싼다**.
+   담당 전문가가 준비된(ready) 도메인이면 그 에이전트의 규제 가드·근거 인용을 통과시키고 소유권만 넘긴다.
+   이렇게 해야 기존 답변 품질(무회귀)과 도메인 통제(가드·근거)를 동시에 만족한다. */
+function agentPostProcess(res, agentId, question) {
+  try {
+    if (!res || !res.lines || !res.lines.length) return res;
+    const A = (typeof hiAgent === "function") ? hiAgent(agentId) : null;
+    if (!A || !A.ready || agentId === "A0") return res;
+    if (agentId === "A2" && typeof insuranceGuard === "function") {
+      const g = insuranceGuard(res.lines, {});
+      try { if (typeof insGuardLog === "function") insGuardLog(question, g.violations); } catch (e) {}
+      if (g.blocked) return res;                       // 진단 단정 등은 원본 유지(상위 U4 가드가 이미 처리)
+      res.lines = g.lines;
+      res.guard = g.violations;
+      if (typeof insRetrieve === "function" && (!res.cite || !res.cite.length)) res.cite = insRetrieve(question, 2);
+      res.agent = "A2";
+    } else if (agentId === "A1" && typeof hiDoctorRetrieve === "function") {
+      if (!res.cite || !res.cite.length) res.cite = hiDoctorRetrieve(question, 2);
+      if (res.cite && res.cite.length) res.agent = "A1";
+    }
+  } catch (e) {}
+  return res;
+}
+
 /* 응답 장식 — 담당 표기·인계 고지·근거를 붙인다(내용은 바꾸지 않는다) */
 function _hiDecorate(res) {
   try {
     if (!res) return res;
     const route = _hiTurn.route || { agent: "A0", reason: "default" };
     /* Phase A: 실제로 전문 응답을 만든 에이전트만 소유권을 갖는다(전용 핸들러 없는 담당은 하이가 답하되 '담당'만 표기) */
-    const owner = res.agent === "A1" ? "A1" : "A0";
+    const owner = (res.agent && res.agent !== "A0") ? res.agent : "A0";
     res.agent = owner;
     res.routed = route.agent; res.routeReason = route.reason;
     if (typeof hiAgentLabel === "function") { res.agentLabel = hiAgentLabel(owner); res.routedLabel = hiAgentLabel(route.agent); }
@@ -457,7 +482,7 @@ function agentAnswerCore(text) {
   /* [Phase A] 라우팅 — 담당을 먼저 정한다. 진행 중 대화가 있어도 명백한 타 도메인 질문이면
      'dialog-interrupt'로 담당 전문가에게 넘긴다(회원을 대화에 가두지 않는다). */
   let _route = { agent: "A0", reason: "default" };
-  try { if (typeof agentRoute === "function") { _route = agentRoute(text, norm, null, { m: m }); agentRouteLog(text, _route); } } catch (e) {}
+  try { if (typeof agentRoute === "function") { _route = agentRoute(text, norm, null, { m: m, lastOwner: _hiLastOwner }); agentRouteLog(text, _route); } } catch (e) {}
   _hiTurn = { route: _route, reason: _route.reason };
   /* [2단계 분기 대화] 검진 이력 순차 상담의 '선택 이후' 턴 — 분기가 무장된 동안에만 가로챈다 */
   if (_route.reason !== "dialog-interrupt") {
@@ -481,10 +506,10 @@ function agentAnswerCore(text) {
       agentStats(true); agentMemSave({ lastIntent: mid, lastCat: hiP.kind === "sarg" ? "sarg" : (hiP.intent && hiP.intent.l1) || "intent", lastQ: String(text).slice(0, 60) });
       return { lines: hiP.res.lines, buttons: (hiP.res.buttons || []).slice(0, 3), nav: hiP.res.nav || null, preview: hiP.res.preview || null, followup: hiP.res.followup || null, matched: mid };
     }
-    // ⓪.7 [Phase A] 전문 에이전트 — 담당이 A1(AI 주치의)이면 섹션 안내·정적 답변보다 먼저 전문 응답을 시도
-    if (_route.agent === "A1") {
-      const a1 = agentInvoke("A1", text, { m: m, norm: norm, route: _route });
-      if (a1) return a1;
+    // ⓪.7 [Phase A·B] 전문 에이전트 — 담당이 전문화 완료(ready) 에이전트면 섹션 안내·정적 답변보다 먼저 시도
+    if (_route.agent !== "A0") {
+      const sp = agentInvoke(_route.agent, text, { m: m, norm: norm, route: _route });
+      if (sp) return sp;
     }
     // ① 섹션 활용 가이드(내비게이션 레이어): "검진예약 도와줘" "쇼핑 보여줘" 등 → 사용법 안내 + 화면 열기
     const sg = agentNavIntent(text, norm);
@@ -535,7 +560,8 @@ function agentAnswerCore(text) {
   if (it.guard && AGENT_GUARDS[it.guard]) lines.push(AGENT_GUARDS[it.guard]);
   const nav = it.nav ? { key: it.nav, label: AGENT_NAV_LABEL[it.nav] || "바로가기" } : null;
   /* 실행 툴이 다음 행동 버튼을 제안하면 그것이 우선(하이 퍼스트 다단계 실행) */
-  return { lines, buttons: ((extra && extra.buttons) || it.b || []).slice(0, 3), nav, reset: !!(extra && extra.reset), matched: it.k };
+  /* [Phase B] 검증된 QNA·툴 응답은 그대로 두고, 담당 전문가의 가드·근거만 덧입힌다(무회귀 + 도메인 통제) */
+  return agentPostProcess({ lines, buttons: ((extra && extra.buttons) || it.b || []).slice(0, 3), nav, reset: !!(extra && extra.reset), matched: it.k }, _route.agent, text);
 }
 
 /* ── 재접속 인사(기억 연속성) + 오늘의 브리핑 ── */

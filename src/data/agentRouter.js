@@ -83,7 +83,12 @@ function agentRoute(rawText, norm, snap, ctx) {
   if (best && best.s >= 2 && best.s > a0Score) return { agent: best.id, reason: "scope", confidence: 0.75, byIntent };   // 동점이면 기본 담당(A0)
   if (intentAgent === "A0") return { agent: "A0", reason: "intent", confidence: 0.9, byIntent };
 
-  /* ⑤ 기본값 */
+  /* ⑤ 직전 소유자 승계 — "그래서 어떻게 해?" 같은 도메인 중립 후속 질문은 대화 중이던 전문가가 이어받는다 */
+  if (ctx && ctx.lastOwner && ctx.lastOwner !== "A0" && !a0Score && !byIntent) {
+    return { agent: ctx.lastOwner, reason: "owner-continuity", confidence: 0.6 };
+  }
+
+  /* ⑥ 기본값 */
   return { agent: "A0", reason: "default", confidence: 0.5, byIntent };
 }
 
