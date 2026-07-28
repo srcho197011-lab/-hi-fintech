@@ -35,6 +35,9 @@ while IFS=$'\x1f' read -r -d $'\x1e' hash date bodz; do
   feat=$(field feat "$payload")
   src=$(field src "$payload")
   summary=$(sumfield "$payload")
+  # 형식을 틀린 트레일러(자유 문장 등)는 빈 행으로 표에 남기지 않는다 — 빈 행은 정보가 아니라 오염이다.
+  # 필요한 커밋은 올바른 형식(feat=…; src=…; summary=…)으로 다시 남기면 이 표에 자동으로 들어온다.
+  [ -z "$feat" ] && continue
   chArr=$(printf '%s' "$ch" | awk -F, '{o="";for(i=1;i<=NF;i++){g=$i;gsub(/[^0-9]/,"",g);if(g!="")o=o (o==""?"":",") g}print o}')
   rows+="  { date:\"$date\", ver:\"$(esc "$ver")\", ch:[$chArr], feat:\"$(esc "$feat")\", src:\"$(esc "$src")\", summary:\"$(esc "$summary")\", refs:[], status:\"반영\", hash:\"$hash\", auto:true },"$'\n'
   n=$((n+1))
