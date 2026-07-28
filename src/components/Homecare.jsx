@@ -1,6 +1,8 @@
 function loadHomecare() {
   if (!_homecarePromise) {
-    _homecarePromise = fetch("./src/data/homecare.json").then((r) => { if (!r.ok) throw new Error("데이터 로드 실패 (" + r.status + ")"); return r.json(); });
+    /* [Phase D] 받은 데이터는 동기 캐시에도 담는다 — A4 에이전트가 대화 중에 기관을 조회할 수 있어야 한다(비동기 대기 불가). */
+    _homecarePromise = fetch("./src/data/homecare.json").then((r) => { if (!r.ok) throw new Error("데이터 로드 실패 (" + r.status + ")"); return r.json(); })
+      .then((d) => { try { _homecareData = d; } catch (e) {} return d; });
   }
   return _homecarePromise;
 }

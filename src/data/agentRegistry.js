@@ -93,9 +93,9 @@ const HI_AGENTS = [
       deny: ["보험금", "청구", "영양제"],
     },
     outOfScope: ["진단", "보험금 지급 판단", "제품 판매"],
-    handler: null,          // Phase D
-    knowledge: ["homecare.json", "telemed"],
-    ready: false,
+    handler: "homecareAgent",   // Phase D — 응급 트리아지 우선 + 제도 절차·본인부담 계산·기관 검색 + 돌봄 가드 6조
+    knowledge: ["longtermCareKB(급여7·등급6·FAQ7·응급징후)", "homecare.json(기관 1,705)", "telemed"],
+    ready: true,
   },
 ];
 

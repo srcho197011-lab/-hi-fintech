@@ -408,7 +408,8 @@ function agentInvoke(agentId, text, ctx) {
     if (!A || !A.handler || !A.ready) return null;
     const fn = (A.handler === "aiDoctorAgent" && typeof aiDoctorAgent === "function") ? aiDoctorAgent
       : (A.handler === "insuranceAgent" && typeof insuranceAgent === "function") ? insuranceAgent
-      : (A.handler === "shoppingAgent" && typeof shoppingAgent === "function") ? shoppingAgent : null;
+      : (A.handler === "shoppingAgent" && typeof shoppingAgent === "function") ? shoppingAgent
+      : (A.handler === "homecareAgent" && typeof homecareAgent === "function") ? homecareAgent : null;
     if (!fn) return null;
     let snap = null;
     try { snap = (ctx && ctx.m && typeof memberStateSnapshot === "function") ? memberStateSnapshot(ctx.m) : null; } catch (e) {}
@@ -422,7 +423,7 @@ function agentInvoke(agentId, text, ctx) {
     try { if (typeof hiHandoff === "function" && _hiLastOwner !== agentId) hiHandoff({ from: _hiLastOwner, to: agentId, reason: (_hiTurn.route && _hiTurn.route.reason) || "route", question: text, state: snap }); } catch (e) {}
     agentStats(true); agentMemSave({ lastIntent: agentId, lastCat: "agent", lastQ: String(text).slice(0, 60) });
     return { agent: agentId, lines: out.lines, cards: out.cards || null, buttons: (out.buttons || []).slice(0, 3),
-      nav: out.nav || null, cite: out.cite || [], compare: out.compare || null, matched: agentId };
+      nav: out.nav || null, cite: out.cite || [], compare: out.compare || null, emergency: out.emergency || null, matched: agentId };
   } catch (e) { return null; }
 }
 
@@ -447,6 +448,16 @@ function agentPostProcess(res, agentId, question) {
       try { if (typeof shopGuardLog === "function") shopGuardLog(question, g.violations); } catch (e) {}
       if (g.blocked) return res;
       res.lines = g.lines; res.guard = g.violations; res.agent = "A3";
+    } else if (agentId === "A4" && typeof homecareGuard === "function") {
+      /* 공용 응답이라도 돌봄 가드를 태운다 — 등급 단정·금액 확정·죄책감 표현은 어느 경로로 나가든 걸러야 한다.
+         트리아지도 함께 태워, 정적 답변이 나가는 경우에도 응급 안내가 맨 앞에 붙도록 한다. */
+      const tri = (typeof hcTriage === "function") ? hcTriage(question) : null;
+      const g = homecareGuard(res.lines, { triage: tri });
+      try { if (typeof hcGuardLog === "function") hcGuardLog(question, g.violations); } catch (e) {}
+      if (g.blocked) return res;
+      res.lines = g.lines; res.guard = g.violations; res.agent = "A4";
+      if (g.emergency) res.emergency = g.emergency;
+      if (typeof a4Retrieve === "function" && (!res.cite || !res.cite.length)) res.cite = a4Retrieve(question, 2);
     } else if (agentId === "A1" && typeof hiDoctorRetrieve === "function") {
       if (!res.cite || !res.cite.length) res.cite = hiDoctorRetrieve(question, 2);
       if (res.cite && res.cite.length) res.agent = "A1";
@@ -503,12 +514,13 @@ function agentAnswerCore(text) {
     } catch (e) {}
   }
   const it = agentMatch(norm);
-  /* [Phase C] 비교 우선권 — 정적 Q&A가 먼저 걸렸더라도, 담당 전문가가 **실제 비교표**를 만들어냈다면 그쪽이 낫다.
-     (감싸기 원칙의 예외는 이 한 가지: 성분·가격을 줄 세운 표는 일반 설명으로 대체될 수 없다) */
+  /* 감싸기 원칙(검증된 공용 응답을 대체하지 않는다)의 예외는 두 가지뿐이다.
+     [Phase C] **비교표** — 성분·가격을 줄 세운 표는 일반 설명으로 대체될 수 없다.
+     [Phase D] **응급 트리아지** — 안전 경로가 정적 매칭에 밀리면 안 된다. 위험 신호 앞에서는 전문가 안내가 우선한다. */
   if (it && _route.agent !== "A0") {
     try {
       const spC = agentInvoke(_route.agent, text, { m: m, norm: norm, route: _route });
-      if (spC && spC.compare) return spC;
+      if (spC && (spC.compare || spC.emergency)) return spC;
     } catch (e) {}
   }
   if (!it) {

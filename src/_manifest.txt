@@ -47,6 +47,7 @@ src/data/shopProducts.js
 src/data/marketReference.js
 src/data/shopCompare.js
 src/data/commerceOntology.js
+src/data/longtermCareKB.js
 src/data/insuranceKB.js
 src/data/kbHealthData.js
 src/data/kbDomainData.js
@@ -81,6 +82,8 @@ src/data/agents/insuranceGuard.js
 src/data/agents/insuranceAgent.js
 src/data/agents/shoppingGuard.js
 src/data/agents/shoppingAgent.js
+src/data/agents/homecareGuard.js
+src/data/agents/homecareAgent.js
 src/utils/ontologyConsult.js
 src/utils/insuranceRecommendationUtils.js
 src/utils/healthWalletUtils.js

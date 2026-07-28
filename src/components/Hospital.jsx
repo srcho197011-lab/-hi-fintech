@@ -414,3 +414,4 @@ function HospitalBookingModal({ data, h, onClose }) {
 
 /* ====================== 재가/돌봄서비스 (노인장기요양 재가급여) ====================== */
 let _homecarePromise = null;
+let _homecareData = null;   // [Phase D] 동기 캐시 — A4 에이전트의 기관 조회용(로드 완료 후에만 채워진다)
