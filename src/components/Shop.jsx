@@ -946,7 +946,7 @@ function CosmaxBanner() {
     <div className="cmxban">
       <div className="cmxvis">
         {!imgErr
-          ? <img className="cmxphoto" src="./data/img/skin/cosmax.png" alt="코스맥스 — 브랜드 완성품과 생산 라인" onError={() => setImgErr(true)} />
+          ? <img className="cmxphoto" src="./data/img/skin/cosmax.webp" alt="코스맥스 — 브랜드 완성품과 생산 라인" onError={() => setImgErr(true)} />
           : <div className="cmxnoimg"><Sparkles size={22} /><b>코스맥스</b><span>이미지 준비 중</span></div>}
       </div>
       <div className="cmxinfo">
