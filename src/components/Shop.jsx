@@ -36,18 +36,8 @@ const SHOP_PARTNERS = {
   /* 스킨 헬스케어 특별제휴(샘플) — 수출 주도 독립 브랜드 2곳.
      ⚠️ 실제 제휴 계약과 무관한 **예시**이며, 수치는 2026-07-29 시점 공개 보도 기준이다.
      정밀영양협회 배지는 붙이지 않는다(영양 인증이라 화장품에 부적절). */
-  skin: [{
-    name: "코스맥스", brand: "COSMAX", sub: "스킨 특별제휴(협의 중·예시)", member: false,
-    bg: "linear-gradient(125deg,#0C2A4A 0%,#1D4ED8 48%,#0891B2 100%)",
-    tagline: "세계 1위 화장품 ODM — 2025년 매출 2조 3,988억 원, 국내외 고객사 4,500곳. 브랜드를 파는 회사가 아니라 만드는 회사라, 하이핀 회원 데이터로 설계한 제품을 실제로 생산해 낼 수 있는 파트너예요.",
-    strengths: [["badge", "세계 1위 화장품 ODM", "2025년 매출 2조 3,988억 원(+10.7%) · 영업이익 1,958억 원(+11.6%) 역대 최대"],
-      ["doc", "고객사 4,500곳", "매출 1,000억 원 이상 '메가' K-인디브랜드 50여 곳을 함께 키웠어요"],
-      ["leaf", "10여 개국 생산·연구", "미국·중국·동남아·일본·유럽 + 인도 사무소, 중남미·중동 확대 중"],
-      ["capsule", "처방부터 생산까지", "성분 처방 개발·용기·인허가·양산을 한 번에(ODM)"]],
-    chips: ["ODM 세계 1위", "고객사 4,500곳", "메가 인디브랜드 50여 곳", "10여 개국 네트워크"],
-    stats: [["2조 3,988억", "2025년 매출"], ["4,500곳", "고객사"], ["10여 개국", "글로벌 네트워크"]],
-    home: "https://www.cosmax.com", q: "코스맥스 화장품 ODM",
-  }],
+  /* 스킨 특별제휴는 작은 카드로 쪼개지 않고 아래 CosmaxBanner 하나로 보여준다(중복 제거) */
+  skin: [],
   device: [{
     name: "GN바디닥터", brand: "제너럴네트", sub: "의료기기 특별제휴",
     bg: "linear-gradient(125deg,#0E7490 0%,#0891B2 48%,#6366F1 100%)",
@@ -950,57 +940,15 @@ const COSMAX_STEPS = [
   ["용기·디자인", "패키지 설계"],
   ["양산", "10여 개국 생산망"],
 ];
-function CosmaxArt() {
-  return (
-    <svg className="cmxart" viewBox="0 0 320 200" role="img" aria-label="코스맥스 ODM 공정 — 처방 개발에서 양산까지">
-      <defs>
-        <linearGradient id="cmxg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#1D4ED8" /><stop offset="55%" stopColor="#0891B2" /><stop offset="100%" stopColor="#06B6D4" />
-        </linearGradient>
-      </defs>
-      <rect x="0" y="0" width="320" height="200" rx="16" fill="url(#cmxg)" />
-      <g opacity="0.16" stroke="#fff" strokeWidth="1.2">
-        {[0, 1, 2, 3, 4, 5].map((i) => <line key={i} x1="0" y1={26 + i * 30} x2="320" y2={26 + i * 30} />)}
-      </g>
-      {/* 플라스크 — 처방 개발 */}
-      <g transform="translate(34,52)">
-        <path d="M14 0h16v22l20 44a10 10 0 0 1-9 15H3a10 10 0 0 1-9-15l20-44z" fill="#fff" opacity="0.94" />
-        <path d="M-2 50h48l6 16a10 10 0 0 1-9 15H5a10 10 0 0 1-9-15z" fill="#22D3EE" opacity="0.95" />
-        <circle cx="12" cy="62" r="3.4" fill="#fff" opacity="0.9" /><circle cx="28" cy="70" r="2.6" fill="#fff" opacity="0.8" />
-      </g>
-      {/* 화살표 — 공정 흐름 */}
-      <g stroke="#fff" strokeWidth="2.6" opacity="0.8" fill="none">
-        <path d="M104 96h34" /><path d="M132 90l7 6-7 6" />
-        <path d="M198 96h34" /><path d="M226 90l7 6-7 6" />
-      </g>
-      {/* 생산 라인 — 튜브 3개 */}
-      <g transform="translate(150,54)">
-        {[0, 1, 2].map((i) => (
-          <g key={i} transform={`translate(${i * 16},${i === 1 ? -6 : 0})`}>
-            <rect x="0" y="10" width="11" height="8" rx="2" fill="#0F172A" opacity="0.85" />
-            <path d="M-1 18h13l1.6 52a5 5 0 0 1-5 5H2.4a5 5 0 0 1-5-5z" fill="#fff" opacity="0.94" />
-          </g>
-        ))}
-      </g>
-      {/* 글로벌 네트워크 — 점과 연결선 */}
-      <g transform="translate(244,50)">
-        <circle cx="30" cy="46" r="34" fill="#fff" opacity="0.14" />
-        <g fill="#fff" opacity="0.95">
-          <circle cx="14" cy="30" r="4" /><circle cx="42" cy="22" r="3.4" /><circle cx="50" cy="54" r="4" />
-          <circle cx="18" cy="60" r="3.4" /><circle cx="32" cy="44" r="5" />
-        </g>
-        <g stroke="#fff" strokeWidth="1.4" opacity="0.6" fill="none">
-          <path d="M14 30L32 44M42 22L32 44M50 54L32 44M18 60L32 44" />
-        </g>
-      </g>
-      <text x="160" y="182" textAnchor="middle" fill="#fff" fontSize="12.5" fontWeight="800" opacity="0.95">처방 개발 → 인허가 → 용기 → 양산</text>
-    </svg>
-  );
-}
 function CosmaxBanner() {
+  const [imgErr, setImgErr] = useState(false);
   return (
     <div className="cmxban">
-      <div className="cmxvis"><CosmaxArt /></div>
+      <div className="cmxvis">
+        {!imgErr
+          ? <img className="cmxphoto" src="./data/img/skin/cosmax.png" alt="코스맥스 — 브랜드 완성품과 생산 라인" onError={() => setImgErr(true)} />
+          : <div className="cmxnoimg"><Sparkles size={22} /><b>코스맥스</b><span>이미지 준비 중</span></div>}
+      </div>
       <div className="cmxinfo">
         <div className="moatags">
           <span className="sptag"><Sparkles size={12} /> 스킨 특별제휴(협의 중·예시)</span>
@@ -1020,7 +968,7 @@ function CosmaxBanner() {
           <a className="pri" href="https://www.cosmax.com" target="_blank" rel="noreferrer noopener"><MonitorSmartphone size={15} /> 공식 홈페이지 <ExternalLink size={12} /></a>
           <a className="ghost" href={naverHref("코스맥스", "화장품 ODM")} target="_blank" rel="noreferrer noopener"><Search size={15} /> 기업·실적 검색</a>
         </div>
-        <div className="chnote" style={{ marginTop: 6 }}>※ 실적은 2026-07-29 시점 공개 보도 기준이며, <b>제휴는 협의 중인 예시</b>입니다. 그림은 ODM 공정을 설명하기 위한 <b>일러스트</b>로 실제 시설 사진이 아닙니다.</div>
+        <div className="chnote" style={{ marginTop: 6 }}>※ 실적은 2026-07-29 시점 공개 보도 기준이며, <b>제휴는 협의 중인 예시</b>입니다. 이미지는 브랜드 완성품과 생산 라인을 보여주는 <b>참고 이미지</b>입니다.</div>
       </div>
     </div>
   );

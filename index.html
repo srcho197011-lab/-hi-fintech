@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=4f902081f8" />
+<link rel="stylesheet" href="./data/app.css?v=dd15282a6e" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=4f902081f8"></script>
-<script src="./src/data/section_data.js?v=4f902081f8"></script>
-<script src="./src/data/demo_members.js?v=4f902081f8"></script>
+<script src="./src/data/dummy_data.js?v=dd15282a6e"></script>
+<script src="./src/data/section_data.js?v=dd15282a6e"></script>
+<script src="./src/data/demo_members.js?v=dd15282a6e"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -6431,18 +6431,8 @@ const SHOP_PARTNERS = {
   /* 스킨 헬스케어 특별제휴(샘플) — 수출 주도 독립 브랜드 2곳.
      ⚠️ 실제 제휴 계약과 무관한 **예시**이며, 수치는 2026-07-29 시점 공개 보도 기준이다.
      정밀영양협회 배지는 붙이지 않는다(영양 인증이라 화장품에 부적절). */
-  skin: [{
-    name: "코스맥스", brand: "COSMAX", sub: "스킨 특별제휴(협의 중·예시)", member: false,
-    bg: "linear-gradient(125deg,#0C2A4A 0%,#1D4ED8 48%,#0891B2 100%)",
-    tagline: "세계 1위 화장품 ODM — 2025년 매출 2조 3,988억 원, 국내외 고객사 4,500곳. 브랜드를 파는 회사가 아니라 만드는 회사라, 하이핀 회원 데이터로 설계한 제품을 실제로 생산해 낼 수 있는 파트너예요.",
-    strengths: [["badge", "세계 1위 화장품 ODM", "2025년 매출 2조 3,988억 원(+10.7%) · 영업이익 1,958억 원(+11.6%) 역대 최대"],
-      ["doc", "고객사 4,500곳", "매출 1,000억 원 이상 '메가' K-인디브랜드 50여 곳을 함께 키웠어요"],
-      ["leaf", "10여 개국 생산·연구", "미국·중국·동남아·일본·유럽 + 인도 사무소, 중남미·중동 확대 중"],
-      ["capsule", "처방부터 생산까지", "성분 처방 개발·용기·인허가·양산을 한 번에(ODM)"]],
-    chips: ["ODM 세계 1위", "고객사 4,500곳", "메가 인디브랜드 50여 곳", "10여 개국 네트워크"],
-    stats: [["2조 3,988억", "2025년 매출"], ["4,500곳", "고객사"], ["10여 개국", "글로벌 네트워크"]],
-    home: "https://www.cosmax.com", q: "코스맥스 화장품 ODM",
-  }],
+  /* 스킨 특별제휴는 작은 카드로 쪼개지 않고 아래 CosmaxBanner 하나로 보여준다(중복 제거) */
+  skin: [],
   device: [{
     name: "GN바디닥터", brand: "제너럴네트", sub: "의료기기 특별제휴",
     bg: "linear-gradient(125deg,#0E7490 0%,#0891B2 48%,#6366F1 100%)",
@@ -7345,57 +7335,15 @@ const COSMAX_STEPS = [
   ["용기·디자인", "패키지 설계"],
   ["양산", "10여 개국 생산망"],
 ];
-function CosmaxArt() {
-  return (
-    <svg className="cmxart" viewBox="0 0 320 200" role="img" aria-label="코스맥스 ODM 공정 — 처방 개발에서 양산까지">
-      <defs>
-        <linearGradient id="cmxg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#1D4ED8" /><stop offset="55%" stopColor="#0891B2" /><stop offset="100%" stopColor="#06B6D4" />
-        </linearGradient>
-      </defs>
-      <rect x="0" y="0" width="320" height="200" rx="16" fill="url(#cmxg)" />
-      <g opacity="0.16" stroke="#fff" strokeWidth="1.2">
-        {[0, 1, 2, 3, 4, 5].map((i) => <line key={i} x1="0" y1={26 + i * 30} x2="320" y2={26 + i * 30} />)}
-      </g>
-      {/* 플라스크 — 처방 개발 */}
-      <g transform="translate(34,52)">
-        <path d="M14 0h16v22l20 44a10 10 0 0 1-9 15H3a10 10 0 0 1-9-15l20-44z" fill="#fff" opacity="0.94" />
-        <path d="M-2 50h48l6 16a10 10 0 0 1-9 15H5a10 10 0 0 1-9-15z" fill="#22D3EE" opacity="0.95" />
-        <circle cx="12" cy="62" r="3.4" fill="#fff" opacity="0.9" /><circle cx="28" cy="70" r="2.6" fill="#fff" opacity="0.8" />
-      </g>
-      {/* 화살표 — 공정 흐름 */}
-      <g stroke="#fff" strokeWidth="2.6" opacity="0.8" fill="none">
-        <path d="M104 96h34" /><path d="M132 90l7 6-7 6" />
-        <path d="M198 96h34" /><path d="M226 90l7 6-7 6" />
-      </g>
-      {/* 생산 라인 — 튜브 3개 */}
-      <g transform="translate(150,54)">
-        {[0, 1, 2].map((i) => (
-          <g key={i} transform={`translate(${i * 16},${i === 1 ? -6 : 0})`}>
-            <rect x="0" y="10" width="11" height="8" rx="2" fill="#0F172A" opacity="0.85" />
-            <path d="M-1 18h13l1.6 52a5 5 0 0 1-5 5H2.4a5 5 0 0 1-5-5z" fill="#fff" opacity="0.94" />
-          </g>
-        ))}
-      </g>
-      {/* 글로벌 네트워크 — 점과 연결선 */}
-      <g transform="translate(244,50)">
-        <circle cx="30" cy="46" r="34" fill="#fff" opacity="0.14" />
-        <g fill="#fff" opacity="0.95">
-          <circle cx="14" cy="30" r="4" /><circle cx="42" cy="22" r="3.4" /><circle cx="50" cy="54" r="4" />
-          <circle cx="18" cy="60" r="3.4" /><circle cx="32" cy="44" r="5" />
-        </g>
-        <g stroke="#fff" strokeWidth="1.4" opacity="0.6" fill="none">
-          <path d="M14 30L32 44M42 22L32 44M50 54L32 44M18 60L32 44" />
-        </g>
-      </g>
-      <text x="160" y="182" textAnchor="middle" fill="#fff" fontSize="12.5" fontWeight="800" opacity="0.95">처방 개발 → 인허가 → 용기 → 양산</text>
-    </svg>
-  );
-}
 function CosmaxBanner() {
+  const [imgErr, setImgErr] = useState(false);
   return (
     <div className="cmxban">
-      <div className="cmxvis"><CosmaxArt /></div>
+      <div className="cmxvis">
+        {!imgErr
+          ? <img className="cmxphoto" src="./data/img/skin/cosmax.png" alt="코스맥스 — 브랜드 완성품과 생산 라인" onError={() => setImgErr(true)} />
+          : <div className="cmxnoimg"><Sparkles size={22} /><b>코스맥스</b><span>이미지 준비 중</span></div>}
+      </div>
       <div className="cmxinfo">
         <div className="moatags">
           <span className="sptag"><Sparkles size={12} /> 스킨 특별제휴(협의 중·예시)</span>
@@ -7415,7 +7363,7 @@ function CosmaxBanner() {
           <a className="pri" href="https://www.cosmax.com" target="_blank" rel="noreferrer noopener"><MonitorSmartphone size={15} /> 공식 홈페이지 <ExternalLink size={12} /></a>
           <a className="ghost" href={naverHref("코스맥스", "화장품 ODM")} target="_blank" rel="noreferrer noopener"><Search size={15} /> 기업·실적 검색</a>
         </div>
-        <div className="chnote" style={{ marginTop: 6 }}>※ 실적은 2026-07-29 시점 공개 보도 기준이며, <b>제휴는 협의 중인 예시</b>입니다. 그림은 ODM 공정을 설명하기 위한 <b>일러스트</b>로 실제 시설 사진이 아닙니다.</div>
+        <div className="chnote" style={{ marginTop: 6 }}>※ 실적은 2026-07-29 시점 공개 보도 기준이며, <b>제휴는 협의 중인 예시</b>입니다. 이미지는 브랜드 완성품과 생산 라인을 보여주는 <b>참고 이미지</b>입니다.</div>
       </div>
     </div>
   );
@@ -19046,7 +18994,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"스킨 헬스케어 제품 이미지·코스맥스 배너", src:"SKIN_MEDIA 실사진 33종(브랜드몰·다나와 확인분)+제품 유형별 SVG 목업 8종+코스맥스 ODM 공정 배너", summary:"제품 사진을 출처에서 직접 확인한 33종만 넣고 용량·이름이 어긋나는 것은 붙이지 않았으며 못 구한 15종은 형태를 알아볼 수 있는 목업으로 채우고 사진 준비 중임을 표시, 코스맥스는 제품이 아니라 처방 개발부터 양산까지의 공정을 그린 배너로 구성", refs:[], status:"반영", hash:"4f3e752", auto:true },
+  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"코스맥스 배너 단일화와 실사진 슬롯", src:"SHOP_PARTNERS.skin 비움+CosmaxArt SVG 제거+cosmax.png 이미지 슬롯·폴백", summary:"같은 회사를 작은 카드와 가로 배너로 두 번 소개하던 것을 배너 하나로 합치고 직접 그린 일러스트를 걷어낸 뒤 실제 사진 자리를 마련, 파일이 없으면 준비 중 상태로 떨어지게 함", refs:[], status:"반영", hash:"1ce07c9", auto:true },
+  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"스킨 헬스케어 제품 이미지·코스맥스 배너", src:"SKIN_MEDIA 실사진 33종(브랜드몰·다나와 확인분)+제품 유형별 SVG 목업 8종+코스맥스 ODM 공정 배너", summary:"제품 사진을 출처에서 직접 확인한 33종만 넣고 용량·이름이 어긋나는 것은 붙이지 않았으며 못 구한 15종은 형태를 알아볼 수 있는 목업으로 채우고 사진 준비 중임을 표시, 코스맥스는 제품이 아니라 처방 개발부터 양산까지의 공정을 그린 배너로 구성", refs:[], status:"반영", hash:"7609b49", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"스킨 헬스케어 제휴·카탈로그 보강", src:"코스맥스 ODM 특별제휴 카드+아누아·스킨1004 상품몰 제휴브랜드순 상단 배치+진정 장벽 선케어 10종 care 태그", summary:"특별제휴 칸을 제조 파트너 코스맥스로 바꾸고 브랜드 두 곳은 기준을 밝힌 제휴 브랜드순 정렬로 상품몰 맨 위에 세웠으며 민감 붉어짐 건조 당김 고민에 이어지는 진정 장벽 결 선케어 10종을 추가해 자외선 카테고리가 mL 축으로 정상화됨", refs:[], status:"반영", hash:"a6593ef", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"건강쇼핑 스킨 헬스케어 서브섹션 신설", src:"skinProducts 6대분류 38종+skinConcern 고민12종·즉시진료5종+skinGuard 화장품법 7조+shopCompare 용량당·1매당·대당 축+A3/A1 경계 재정렬+원격진료 진료과 연결", summary:"영양제 오른쪽에 스킨 헬스케어를 열되 건기식이 아니라 화장품법 가드를 새로 만들고 mL·g·매수를 섞지 않는 축으로 비교하며 피부 고민이 선을 넘으면 제품을 팔지 않고 피부과·여성의학과 원격진료로 연결, 라우팅 경계 100%·회귀 9종 유지", refs:[], status:"반영", hash:"abf28a1", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"A3 영양제 6종 비교 확대와 카테고리 라우팅 전수 복구", src:"홍삼·비타민C·종합비타민·마그네슘·콜라겐·아연 39종 라벨 실측+agentRegistry A3 scope 12종 보강+성분단가 자릿수·인계 조사 교정", summary:"다나와 함량 필드의 기준이 제품마다 달라 1일 섭취량이 1회분인 제품만 성분량을 넣는 규칙을 세우고 g 단위 복용 제품도 1일 단가 축에 올렸으며 별칭만 있고 라우터에 없어 답변불가로 새던 12개 카테고리를 복구, A3 하네스 전 항목 통과·회귀 9종 유지", refs:[], status:"반영", hash:"a926f8b", auto:true },
