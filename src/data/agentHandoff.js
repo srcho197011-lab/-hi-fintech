@@ -23,6 +23,13 @@ function hiHandoffState(agentId, snap) {
   return out;
 }
 
+/* 받침에 맞는 조사 — "건강쇼핑가"·"은(는)"처럼 서식 티가 나면 사람이 쓴 말로 읽히지 않는다 */
+function _josa(word, withBatchim, without) {
+  const c = String(word || "").trim().slice(-1).charCodeAt(0);
+  if (!(c >= 0xac00 && c <= 0xd7a3)) return without;          /* 한글 음절이 아니면 추측하지 않는다 */
+  return ((c - 0xac00) % 28) ? withBatchim : without;
+}
+
 /* 인계 고지 문장(①) — 회원은 항상 누가 이어받는지 안다 */
 function hiHandoffAnnounce(from, to, reason) {
   const A = (typeof hiAgent === "function") ? hiAgent(to) : { name: "담당" };
@@ -33,7 +40,7 @@ function hiHandoffAnnounce(from, to, reason) {
     "shopping": "제품·성분",
     "homecare": "돌봄 서비스",
   }[reason];
-  return why ? `${why}은(는) ${A.name}가 이어서 봐드릴게요.` : `${A.name}가 이어서 봐드릴게요.`;
+  return why ? `${why}${_josa(why, "은", "는")} ${A.name}${_josa(A.name, "이", "가")} 이어서 봐드릴게요.` : `${A.name}${_josa(A.name, "이", "가")} 이어서 봐드릴게요.`;
 }
 
 /* 핸드오프 실행 — 검증·로그·루프 차단(④). 허용되면 payload, 막히면 null */
