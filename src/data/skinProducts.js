@@ -144,4 +144,41 @@ const SKIN_INNER_LINK = { cats: ["콜라겐", "비타민C", "종합비타민"], 
 const SKIN_PARTNER_BRANDS = ["아누아", "스킨1004"];
 
 /* 이미지·상세 링크(수집분만) — 없으면 화면이 대체 썸네일을 그린다 */
-const SKIN_MEDIA = {};
+/* 제품 이미지 — **실제로 확인한 것만** 넣는다(브랜드 공식몰 / 다나와, 2026-07-29 수집).
+   못 찾은 제품에는 아무 사진이나 붙이지 않는다 — 화면이 제품 유형에 맞는 목업을 대신 그린다.
+   용량이 다르면 다른 제품이다: 40mL 제품에 100mL 사진을 붙이지 않았다. */
+const SKIN_MEDIA = {
+  "sk-1004-ampoulefoam-125": { image: "https://skin1004korea.com/web/product/big/202604/0ee40582d8c86ce28543bc770b0d5a15.png" },
+  "sk-1004-lightcleansingoil-200": { image: "https://skin1004korea.com/web/product/big/202604/bf8c7a8cceec71ab38f4b0b9b0728d29.png" },
+  "sk-1004-quickcalmingpad-70": { image: "https://skin1004korea.com/web/product/big/202603/67eeb4394f0f80b700777701d2234f6a.png" },
+  "sk-1004-ampoule-55": { image: "https://skin1004korea.com/web/product/big/202108/a9bad2a5e25d450af00dbc8a75871be3.png" },
+  "sk-1004-ampoule-100": { image: "https://skin1004korea.com/web/product/big/202108/51308db260f63caa88e3342e04452a54.png" },
+  "sk-1004-toningtoner-210": { image: "https://skin1004korea.com/web/product/big/202108/a3ace67e92a9086653e49a62ee037024.png" },
+  "sk-1004-toningtoner-400": { image: "https://skin1004korea.com/web/product/big/202108/2d509aab6859fdce79a05f656faccdc0.png" },
+  "sk-1004-soothingcream-75": { image: "https://skin1004korea.com/web/product/big/202108/f3022907c0dc1d3cad470f254aa43fa5.png" },
+  "sk-1004-cream-75": { image: "https://skin1004korea.com/web/product/big/202108/11ebca1fe83055395407045530d66af7.png" },
+  "sk-1004-airfit-plus-50": { image: "https://skin1004korea.com/web/product/big/202403/21bb4eec570512c015fd8ec1ad81a245.png" },
+  "sk-1004-airfit-light-50": { image: "https://skin1004korea.com/web/product/big/202204/5b5f588d854cd96d1a4590883830ebc7.png" },
+  "sk-1004-watergel-mask-1": { image: "https://skin1004korea.com/web/product/big/202108/ae99979a9de7a7d20a4190587ce4456f.png" },
+  "sk-1004-watergel-mask-5": { image: "https://skin1004korea.com/web/product/big/202108/bf2e6bb502a3a6026747131de8952256.png" },
+  "sk-anua-heartleaf77-toner-250": { image: "https://img.danuri.io/catalog-image/449/589/071/ce4c362dadbb40c9baf2e2cbb79cd7db.jpg" },
+  "sk-anua-heartleaf80-ampoule-30": { image: "https://img.danuri.io/catalog-image/922/578/014/92e1f920096547779be23edb2c552690.jpg" },
+  "sk-anua-quercetinol-foam-150": { image: "https://img.danuri.io/catalog-image/419/708/030/0bb75d7a21f14716b928c0d5840647e6.jpg" },
+  "sk-anua-pdrn-serum-30": { image: "https://img.danuri.io/catalog-image/432/081/068/d4669a9cf9c9470da657fa3aa40b25ac.jpg" },
+  "sk-sws-yunjo-eyeserum-20": { image: "https://img.danuri.io/catalog-image/809/622/122/2b8afa41079d420b9d472857baffd00d.png" },
+  "sk-goodal-heartleaf-sun-50": { image: "https://img.danuri.io/catalog-image/896/878/040/dd63e12bbf4e42bf901fcb5bab3a7ff5.webp" },
+  "sk-cfc-laser-100-50": { image: "https://img.danuri.io/catalog-image/066/199/011/c2d7d4f06f634e548a99ea1d0d19f441.jpg" },
+  "sk-cfc-derma-relief-50": { image: "https://img.danuri.io/catalog-image/154/198/011/16eb84782fbd4031aa259300bb11427e.jpg" },
+  "sk-missha-safeblock-cover-14": { image: "https://img.danuri.io/catalog-image/301/630/111/c3268be0f34e494cb0a9737912ebbe6e.jpg" },
+  "sk-missha-safeblock-rosy-12": { image: "https://img.danuri.io/catalog-image/286/808/054/3ede64239876412c863754d2438bfa08.jpg" },
+  "sk-avene-sun-mineral-50": { image: "https://img.danuri.io/catalog-image/193/471/119/e6c0dea9649543c29036cf058a34a202.jpg" },
+  "sk-age20s-glowfit-pact-125": { image: "https://img.danuri.io/catalog-image/053/169/020/7583f3533999482781d060655e2cce7c.jpg" },
+  "sk-age20s-calming-pact-125": { image: "https://img.danuri.io/catalog-image/154/698/041/f51ec104b49c43829c9463891bd39c1b.jpg" },
+  "sk-anua-heartleaf77-soothing-350": { image: "https://img.danuri.io/catalog-image/213/507/014/099d82b78f7c4300a66f1f621cab2379.jpg" },
+  "sk-anua-peach70-serum-30": { image: "https://img.danuri.io/catalog-image/407/325/120/405313e4f5784cb2ab447300d685d3b5.jpg" },
+  "sk-anua-heartleaf70-lotion-200": { image: "https://img.danuri.io/catalog-image/572/235/014/1e93b6f260484745aa4611d083411f59.jpg" },
+  "sk-anua-pdrn-cream-60": { image: "https://img.danuri.io/catalog-image/681/641/090/d77dd2c8acea41fe868efab25c30bb24.jpg" },
+  "sk-anua-porecontrol-oil-200": { image: "https://img.danuri.io/catalog-image/890/039/018/716f42e173ed46e797121560cb111e28.jpg" },
+  "sk-drg-redblemish-sun-50": { image: "https://img.danuri.io/catalog-image/113/644/016/06f826f4f59041859bbcec9a38fcc545.jpg" },
+  "sk-lrp-toleriane-cream-125": { image: "https://shopping-phinf.pstatic.net/main_1099911/10999112632.17.jpg?type=f300" },
+};

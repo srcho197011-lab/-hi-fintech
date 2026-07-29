@@ -628,6 +628,7 @@ function ShopCategory({ catKey, label, hideBrands }) {
         ? <div className="spsm-grid">{partners.map((p) => <ShopPartnerCardSm key={p.name} p={p} />)}</div>
         : partners.map((p) => <ShopPartnerCard key={p.name} p={p} />)}
       {catKey === "supp" && <MoaBanner />}
+      {catKey === "skin" && <CosmaxBanner />}
       {catKey === "diet" && <WaterBanner />}
       {/* 정밀영양협회 회원사 몰은 영양 인증이라 화장품에는 붙이지 않는다 */}
       {catKey !== "skin" && <MemberMall catKey={catKey} />}
@@ -941,13 +942,135 @@ function SupplementShop() {
 /* ══════════ 건강쇼핑 — 스킨 헬스케어(영양제몰과 동일 구조 · 화장품법 고지) ══════════
    영양제와 형식은 같지만 **법령이 다르다.** 건기식 고지문을 쓰지 않고 화장품 고지문을 쓴다.
    그리고 이 섹션에만 있는 것: 피부 고민 → 제품군 → (선을 넘으면) 원격진료 연결. */
+/* ── 코스맥스 가로 배너 — ODM은 '파는 회사'가 아니라 '만드는 회사'라 제품 사진이 아니라 공정을 보여준다 ──
+   외부 이미지를 끌어오면 상대 서버 사정에 화면이 흔들리므로, 배너 비주얼은 SVG로 직접 그린다. */
+const COSMAX_STEPS = [
+  ["처방 개발", "성분·제형 설계"],
+  ["안전성·인허가", "시험·표시 검토"],
+  ["용기·디자인", "패키지 설계"],
+  ["양산", "10여 개국 생산망"],
+];
+function CosmaxArt() {
+  return (
+    <svg className="cmxart" viewBox="0 0 320 200" role="img" aria-label="코스맥스 ODM 공정 — 처방 개발에서 양산까지">
+      <defs>
+        <linearGradient id="cmxg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#1D4ED8" /><stop offset="55%" stopColor="#0891B2" /><stop offset="100%" stopColor="#06B6D4" />
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="320" height="200" rx="16" fill="url(#cmxg)" />
+      <g opacity="0.16" stroke="#fff" strokeWidth="1.2">
+        {[0, 1, 2, 3, 4, 5].map((i) => <line key={i} x1="0" y1={26 + i * 30} x2="320" y2={26 + i * 30} />)}
+      </g>
+      {/* 플라스크 — 처방 개발 */}
+      <g transform="translate(34,52)">
+        <path d="M14 0h16v22l20 44a10 10 0 0 1-9 15H3a10 10 0 0 1-9-15l20-44z" fill="#fff" opacity="0.94" />
+        <path d="M-2 50h48l6 16a10 10 0 0 1-9 15H5a10 10 0 0 1-9-15z" fill="#22D3EE" opacity="0.95" />
+        <circle cx="12" cy="62" r="3.4" fill="#fff" opacity="0.9" /><circle cx="28" cy="70" r="2.6" fill="#fff" opacity="0.8" />
+      </g>
+      {/* 화살표 — 공정 흐름 */}
+      <g stroke="#fff" strokeWidth="2.6" opacity="0.8" fill="none">
+        <path d="M104 96h34" /><path d="M132 90l7 6-7 6" />
+        <path d="M198 96h34" /><path d="M226 90l7 6-7 6" />
+      </g>
+      {/* 생산 라인 — 튜브 3개 */}
+      <g transform="translate(150,54)">
+        {[0, 1, 2].map((i) => (
+          <g key={i} transform={`translate(${i * 16},${i === 1 ? -6 : 0})`}>
+            <rect x="0" y="10" width="11" height="8" rx="2" fill="#0F172A" opacity="0.85" />
+            <path d="M-1 18h13l1.6 52a5 5 0 0 1-5 5H2.4a5 5 0 0 1-5-5z" fill="#fff" opacity="0.94" />
+          </g>
+        ))}
+      </g>
+      {/* 글로벌 네트워크 — 점과 연결선 */}
+      <g transform="translate(244,50)">
+        <circle cx="30" cy="46" r="34" fill="#fff" opacity="0.14" />
+        <g fill="#fff" opacity="0.95">
+          <circle cx="14" cy="30" r="4" /><circle cx="42" cy="22" r="3.4" /><circle cx="50" cy="54" r="4" />
+          <circle cx="18" cy="60" r="3.4" /><circle cx="32" cy="44" r="5" />
+        </g>
+        <g stroke="#fff" strokeWidth="1.4" opacity="0.6" fill="none">
+          <path d="M14 30L32 44M42 22L32 44M50 54L32 44M18 60L32 44" />
+        </g>
+      </g>
+      <text x="160" y="182" textAnchor="middle" fill="#fff" fontSize="12.5" fontWeight="800" opacity="0.95">처방 개발 → 인허가 → 용기 → 양산</text>
+    </svg>
+  );
+}
+function CosmaxBanner() {
+  return (
+    <div className="cmxban">
+      <div className="cmxvis"><CosmaxArt /></div>
+      <div className="cmxinfo">
+        <div className="moatags">
+          <span className="sptag"><Sparkles size={12} /> 스킨 특별제휴(협의 중·예시)</span>
+          <span className="pncert"><BadgeCheck size={12} /> 화장품 ODM 세계 1위</span>
+        </div>
+        <div className="moaname">코스맥스 <span>· COSMAX</span></div>
+        <div className="moasub">브랜드를 <b>파는 회사가 아니라 만드는 회사</b>예요. 하이핀 회원의 검진·피부 데이터로 설계한 제품을 <b>처방 개발부터 인허가·용기·양산까지</b> 한 번에 실현할 수 있는 파트너입니다.</div>
+        <div className="cmxsteps">
+          {COSMAX_STEPS.map(([t, d], i) => <div className="cmxstep" key={t}><span className="cmxn">{i + 1}</span><div><b>{t}</b><p>{d}</p></div></div>)}
+        </div>
+        <div className="cmxstats">
+          {[["2조 3,988억", "2025년 매출 (+10.7%)"], ["1,958억", "영업이익 (+11.6%)"], ["4,500곳", "국내외 고객사"], ["50여 곳", "메가 K-인디브랜드"]].map(([v, l]) => (
+            <div className="cmxst" key={l}><b>{v}</b><span>{l}</span></div>
+          ))}
+        </div>
+        <div className="moabtns">
+          <a className="pri" href="https://www.cosmax.com" target="_blank" rel="noreferrer noopener"><MonitorSmartphone size={15} /> 공식 홈페이지 <ExternalLink size={12} /></a>
+          <a className="ghost" href={naverHref("코스맥스", "화장품 ODM")} target="_blank" rel="noreferrer noopener"><Search size={15} /> 기업·실적 검색</a>
+        </div>
+        <div className="chnote" style={{ marginTop: 6 }}>※ 실적은 2026-07-29 시점 공개 보도 기준이며, <b>제휴는 협의 중인 예시</b>입니다. 그림은 ODM 공정을 설명하기 위한 <b>일러스트</b>로 실제 시설 사진이 아닙니다.</div>
+      </div>
+    </div>
+  );
+}
+
+/* 제품 유형별 목업 — 사진을 못 구한 제품에 **아무 사진이나 붙이지 않는다.**
+   대신 그 제품이 어떤 형태인지(튜브·스포이드·자·펌프·팩트·패드·기기) 알아볼 수 있게 그린다.
+   실제 사진이 아니라는 것도 카드에 적는다 — 목업을 사진인 척하지 않는다. */
+function skinShape(p) {
+  const t = (p.name || "") + " " + (p.category || "");
+  if (p.category === "디바이스·이너뷰티") return "device";
+  if (/패드|마스크/.test(t)) return "pad";
+  if (/쿠션|팩트/.test(t)) return "pact";
+  if (/선크림|선스크린|선케어|자외선/.test(t)) return "suntube";
+  if (/오일/.test(t)) return "bottle";
+  if (/앰플|세럼|에센스/.test(t)) return "dropper";
+  if (/크림|밤/.test(t)) return "jar";
+  if (/토너|로션|미스트/.test(t)) return "tall";
+  return "tube";
+}
+function SkinMock({ p, col }) {
+  const k = skinShape(p);
+  const c = col || "#DB2777";
+  const cap = "#0F172A";
+  const body = { fill: c, opacity: 0.9 };
+  return (
+    <svg className="skmock" viewBox="0 0 120 120" role="img" aria-label={`${p.brand} ${p.name} 제품 형태 안내 그림`}>
+      <rect x="0" y="0" width="120" height="120" rx="12" fill={c} opacity="0.06" />
+      {k === "tall" && <><rect x="44" y="16" width="32" height="12" rx="3" fill={cap} /><rect x="40" y="28" width="40" height="72" rx="8" {...body} /><rect x="47" y="46" width="26" height="30" rx="3" fill="#fff" opacity="0.75" /></>}
+      {k === "dropper" && <><rect x="52" y="12" width="16" height="20" rx="3" fill={cap} /><rect x="42" y="32" width="36" height="64" rx="9" {...body} /><rect x="49" y="50" width="22" height="26" rx="3" fill="#fff" opacity="0.75" /></>}
+      {k === "jar" && <><rect x="34" y="30" width="52" height="14" rx="5" fill={cap} /><rect x="32" y="44" width="56" height="46" rx="10" {...body} /><rect x="45" y="58" width="30" height="18" rx="3" fill="#fff" opacity="0.75" /></>}
+      {k === "tube" && <><rect x="50" y="14" width="20" height="10" rx="3" fill={cap} /><path d="M44 24h32l4 70a6 6 0 0 1-6 6H46a6 6 0 0 1-6-6z" {...body} /><rect x="48" y="46" width="24" height="26" rx="3" fill="#fff" opacity="0.75" /></>}
+      {k === "suntube" && <><rect x="52" y="12" width="16" height="12" rx="3" fill="#F59E0B" /><path d="M44 24h32l3 68a6 6 0 0 1-6 6H47a6 6 0 0 1-6-6z" {...body} /><circle cx="60" cy="52" r="11" fill="#fff" opacity="0.85" /><g stroke="#fff" strokeWidth="2.4" opacity="0.85"><line x1="60" y1="34" x2="60" y2="39" /><line x1="60" y1="65" x2="60" y2="70" /><line x1="42" y1="52" x2="47" y2="52" /><line x1="73" y1="52" x2="78" y2="52" /></g></>}
+      {k === "bottle" && <><rect x="54" y="10" width="12" height="16" rx="3" fill={cap} /><rect x="50" y="26" width="20" height="10" rx="2" fill={cap} opacity="0.5" /><rect x="38" y="36" width="44" height="62" rx="9" {...body} /><rect x="46" y="54" width="28" height="26" rx="3" fill="#fff" opacity="0.75" /></>}
+      {k === "pact" && <><circle cx="60" cy="60" r="34" {...body} /><circle cx="60" cy="60" r="24" fill="#fff" opacity="0.8" /><path d="M26 60a34 34 0 0 1 68 0" fill="none" stroke={cap} strokeWidth="3" /></>}
+      {k === "pad" && <><rect x="30" y="34" width="60" height="16" rx="6" fill={cap} /><rect x="28" y="50" width="64" height="42" rx="9" {...body} /><g fill="#fff" opacity="0.8"><circle cx="48" cy="70" r="8" /><circle cx="60" cy="70" r="8" /><circle cx="72" cy="70" r="8" /></g></>}
+      {k === "device" && <><rect x="46" y="14" width="28" height="58" rx="12" {...body} /><rect x="40" y="70" width="40" height="28" rx="10" fill={cap} /><circle cx="60" cy="84" r="6" fill="#fff" opacity="0.85" /></>}
+      <text x="60" y="112" textAnchor="middle" fontSize="10" fontWeight="800" fill={c} opacity="0.85">{(p.brand || "").slice(0, 9)}</text>
+    </svg>
+  );
+}
 function SkinImage({ p }) {
   const [err, setErr] = useState(false);
   const media = (typeof SKIN_MEDIA !== "undefined" && SKIN_MEDIA[p.id]) || {};
-  if (media.image && !err) return <img className="pimgphoto" src={media.image} alt={`${p.brand} ${p.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setErr(true)} />;
   const m = (typeof SKIN_CATS !== "undefined" && SKIN_CATS[p.category]) || { col: "#DB2777" };
-  return <div className="devmock" style={{ color: m.col }}><Droplet size={38} /><span>{(p.brand || "").slice(0, 10)}</span></div>;
+  if (media.image && !err) return <img className="pimgphoto" src={media.image} alt={`${p.brand} ${p.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setErr(true)} />;
+  return <SkinMock p={p} col={m.col} />;
 }
+/* 사진이 있는 제품인지 — 카드에 "제품 사진 준비 중"을 정직하게 적기 위해 쓴다 */
+function skinHasPhoto(p) { try { return !!(SKIN_MEDIA && SKIN_MEDIA[p.id] && SKIN_MEDIA[p.id].image); } catch (e) { return false; } }
 
 /* 피부 고민 칩 — 고르면 제품군으로 내려가고, 진료가 필요한 조건이면 그 자리에서 알려준다 */
 function SkinConcernPicker({ onPick, onGo }) {
@@ -1020,7 +1143,7 @@ function SkinShop({ onGo }) {
       </div>
       <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
         <div className="mealcard suppmeal" key={p.id} onClick={() => setDetail(p)}>
-          <div className="mealthumb" style={{ background: (m.col || "#DB2777") + "0d" }}><SkinImage p={p} /><span className="mealbadge rocket">{p.category}</span></div>
+          <div className="mealthumb" style={{ background: (m.col || "#DB2777") + "0d" }}><SkinImage p={p} /><span className="mealbadge rocket">{p.category}</span>{!skinHasPhoto(p) && <span className="skmocktag">제품 사진 준비 중</span>}</div>
           <div className="mealbrand">{p.brand}{PARTNERS.indexOf(p.brand) >= 0 && <span className="skpb">제휴</span>}</div>
           <div className="mealname">{p.name}</div>
           <div className="mealrate"><span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 700 }}>{p.volume}</span>{(p.spf || p.pa) ? <span className="rev"> · {[p.spf, p.pa].filter(Boolean).join("/")}</span> : null}</div>
