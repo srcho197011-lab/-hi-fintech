@@ -33,6 +33,26 @@ const SHOP_PARTNERS = {
     stats: [["한독", "제약사 품질"], ["네이처셋", "종합 라인업"], ["GMP", "품질관리"]],
     home: "http://mall.handok.co.kr/", q: "한독 네이처셋 건강기능식품",
   }],
+  /* 스킨 헬스케어 특별제휴(샘플) — 수출 주도 독립 브랜드 2곳.
+     ⚠️ 실제 제휴 계약과 무관한 **예시**이며, 수치는 2026-07-29 시점 공개 보도 기준이다.
+     정밀영양협회 배지는 붙이지 않는다(영양 인증이라 화장품에 부적절). */
+  skin: [{
+    name: "더파운더즈", brand: "아누아(Anua)", sub: "스킨 특별제휴(협의 중·예시)", member: false,
+    bg: "linear-gradient(125deg,#134E4A 0%,#0F766E 48%,#65A30D 100%)",
+    tagline: "어성초(Heartleaf) 중심 진정 라인 — 2025년 매출 7,177억 원, 해외 매출 비중 약 85%의 수출 주도 독립 브랜드.",
+    strengths: [["leaf", "어성초 진정 라인", "어성초 77% 토너·80 앰플 등 진정 중심 설계"], ["badge", "수출 주도", "해외 매출 비중 약 85%(2025년)"], ["capsule", "북미 성과", "아마존 클렌징·토너 카테고리 상위권"], ["doc", "일본 성과", "Qoo10 메가와리 4개 분기 연속 1위"]],
+    chips: ["어성초 토너", "수분 진정 앰플", "모공 클렌징폼", "데일리 릴리프 로션"],
+    stats: [["7,177억", "2025년 매출"], ["85%", "해외 매출 비중"], ["+68%", "전년 대비"]],
+    home: "https://anua.co.kr", q: "아누아 어성초 토너",
+  }, {
+    name: "크레이버코퍼레이션", brand: "스킨1004(SKIN1004)", sub: "스킨 특별제휴(협의 중·예시)", member: false,
+    bg: "linear-gradient(125deg,#065F46 0%,#047857 46%,#0891B2 100%)",
+    tagline: "마다가스카르 센텔라(병풀) 단일 원료 집중 — 120개국 이상 수출, 센텔라 앰플 누적 출하 1,750만 병.",
+    strengths: [["leaf", "센텔라 단일 원료", "해발 700m 마다가스카르산 센텔라"], ["badge", "120개국 이상 수출", "미국·필리핀 등"], ["capsule", "센텔라 앰플", "누적 출하 1,750만 병(2026-02 기준)"], ["doc", "라인 일관성", "클렌징·토너·앰플·크림·선크림 전 단계"]],
+    chips: ["센텔라 앰플", "토닝 토너", "수딩크림", "에어핏 선크림"],
+    stats: [["120개국+", "수출"], ["1,750만 병", "앰플 누적"], ["센텔라", "단일 원료"]],
+    home: "https://skin1004korea.com", q: "스킨1004 마다가스카르 센텔라",
+  }],
   device: [{
     name: "GN바디닥터", brand: "제너럴네트", sub: "의료기기 특별제휴",
     bg: "linear-gradient(125deg,#0E7490 0%,#0891B2 48%,#6366F1 100%)",
@@ -605,7 +625,7 @@ function MoaBanner() {
 function ShopCategory({ catKey, label, hideBrands }) {
   const partners = SHOP_PARTNERS[catKey] || [];
   const brands = hideBrands ? [] : (SHOP_BRANDS[catKey] || []);
-  const compact = catKey === "diet" || catKey === "supp"; // 특별제휴 50% 축소
+  const compact = catKey === "diet" || catKey === "supp" || catKey === "skin"; // 특별제휴 50% 축소
   return (
     <>
       <div className="bklbl" style={{ margin: "2px 0 8px" }}><Sparkles size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> {label} 특별제휴사</div>
@@ -614,7 +634,8 @@ function ShopCategory({ catKey, label, hideBrands }) {
         : partners.map((p) => <ShopPartnerCard key={p.name} p={p} />)}
       {catKey === "supp" && <MoaBanner />}
       {catKey === "diet" && <WaterBanner />}
-      <MemberMall catKey={catKey} />
+      {/* 정밀영양협회 회원사 몰은 영양 인증이라 화장품에는 붙이지 않는다 */}
+      {catKey !== "skin" && <MemberMall catKey={catKey} />}
       {!hideBrands && (<>
         <div className="bklbl" style={{ margin: "6px 0 8px" }}><Star size={14} color="#F59E0B" style={{ verticalAlign: "-2px" }} /> 그 외 유력 {label} 브랜드 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 평판·인지도 기준 예시 {brands.length}곳</span></div>
         {brands.map(([n, s], i) => (
@@ -922,6 +943,127 @@ function SupplementShop() {
     </>
   );
 }
+/* ══════════ 건강쇼핑 — 스킨 헬스케어(영양제몰과 동일 구조 · 화장품법 고지) ══════════
+   영양제와 형식은 같지만 **법령이 다르다.** 건기식 고지문을 쓰지 않고 화장품 고지문을 쓴다.
+   그리고 이 섹션에만 있는 것: 피부 고민 → 제품군 → (선을 넘으면) 원격진료 연결. */
+function SkinImage({ p }) {
+  const [err, setErr] = useState(false);
+  const media = (typeof SKIN_MEDIA !== "undefined" && SKIN_MEDIA[p.id]) || {};
+  if (media.image && !err) return <img className="pimgphoto" src={media.image} alt={`${p.brand} ${p.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setErr(true)} />;
+  const m = (typeof SKIN_CATS !== "undefined" && SKIN_CATS[p.category]) || { col: "#DB2777" };
+  return <div className="devmock" style={{ color: m.col }}><Droplet size={38} /><span>{(p.brand || "").slice(0, 10)}</span></div>;
+}
+
+/* 피부 고민 칩 — 고르면 제품군으로 내려가고, 진료가 필요한 조건이면 그 자리에서 알려준다 */
+function SkinConcernPicker({ onPick, onGo }) {
+  const list = (typeof SKIN_CONCERN !== "undefined") ? SKIN_CONCERN : [];
+  const [sel, setSel] = useState(null);
+  if (!list.length) return null;
+  const c = sel ? list.find((x) => x.key === sel) : null;
+  const dept = c && c.dept ? ((typeof skinDeptLabel === "function") ? skinDeptLabel(c.dept) : "피부과") : null;
+  return (
+    <div className="skconcern">
+      <div className="skch"><Stethoscope size={14} color="#DB2777" /> 피부 고민으로 찾기 <span>· 고민 → 제품군 → 필요하면 진료까지 안내해 드려요</span></div>
+      <div className="skchips">
+        {list.map((x) => (
+          <button key={x.key} className={sel === x.key ? "on" : ""} onClick={() => { setSel(sel === x.key ? null : x.key); if (sel !== x.key && onPick) onPick(x.primary); }}>{x.label}</button>
+        ))}
+      </div>
+      {c && (
+        <div className="skpath">
+          <div className="skrow"><b>{c.label}</b> → 먼저 볼 제품군 <b>{c.primary}</b>{c.secondary ? <> · 같이 보면 좋은 것 {c.secondary}</> : null}</div>
+          {c.refer && dept && (
+            <div className="skrefer">
+              <AlertTriangle size={13} /> {c.refer} <b>{dept} 상담</b>을 받아보시는 게 좋아요 — 제품으로 붙잡고 있을 일이 아니에요.
+              <button className="sktele" onClick={() => { try { if (typeof skinTeleGo === "function") skinTeleGo(c.dept); } catch (e) {} if (onGo) onGo("tele"); }}>
+                <Video size={12} /> {dept} 원격진료 연결
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="chnote" style={{ marginTop: 6 }}>※ 화장품은 인체를 청결·미화하고 피부·모발의 건강을 유지·증진하기 위한 물품으로, <b>질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아닙니다.</b> 증상이 계속되거나 심해지면 진료로 확인해 주세요.</div>
+    </div>
+  );
+}
+
+function SkinShop({ onGo }) {
+  const PRODUCTS = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
+  const CATS = (typeof SKIN_CATS !== "undefined") ? SKIN_CATS : {};
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const [cat, setCat] = useState("전체");
+  const [sort, setSort] = useState("reward");
+  const [detail, setDetail] = useState(null);
+  const cats = ["전체", ...Object.keys(CATS)];
+  let list = PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
+  if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
+  else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
+  else if (sort === "priceHigh") list = [...list].sort((a, b) => b.price - a.price);
+  else if (sort === "unit") list = [...list].sort((a, b) => (a.vol ? a.price / a.vol : 1e9) - (b.vol ? b.price / b.vol : 1e9));
+  const add = (p) => { shopCartAdd(p.id); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${shopWon(rw(p.price).reward)}`); };
+  const icoOf = (p) => (CATS[p.category] || {});
+  /* 용량당 단가 — 표기된 것만. 없으면 만들지 않는다("0원/mL"은 사실이 아니다) */
+  const unitTxt = (p) => (p.vol ? `${Math.round(p.price / p.vol).toLocaleString()}원/${p.volUnit}`
+    : (p.sheets ? `${Math.round(p.price / p.sheets).toLocaleString()}원/매`
+      : (p.category === "디바이스·이너뷰티" ? "기기 1대" : "용량 표기 없음")));   /* 기기에 "용량 없음"은 정보가 아니라 소음이다 */
+  return (
+    <>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+
+      <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
+
+      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Droplet size={14} color="#DB2777" style={{ verticalAlign: "-2px" }} /> 스킨 헬스케어 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 수집분 {PRODUCTS.length}종 · 6대 분류</span></div>
+      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
+      <div className="sssort">
+        <span>정렬</span>
+        {[["reward", "적립높은순"], ["unit", "용량당 단가순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        <span className="sscount">{list.length}종</span>
+      </div>
+      <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
+        <div className="mealcard suppmeal" key={p.id} onClick={() => setDetail(p)}>
+          <div className="mealthumb" style={{ background: (m.col || "#DB2777") + "0d" }}><SkinImage p={p} /><span className="mealbadge rocket">{p.category}</span></div>
+          <div className="mealbrand">{p.brand}</div>
+          <div className="mealname">{p.name}</div>
+          <div className="mealrate"><span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 700 }}>{p.volume}</span>{(p.spf || p.pa) ? <span className="rev"> · {[p.spf, p.pa].filter(Boolean).join("/")}</span> : null}</div>
+          <div className="mealprices"><span className="mprice">{shopWon(p.price)}</span><span className="morig" style={{ textDecoration: "none" }}>{unitTxt(p)}</span></div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealbtns">
+            <a className="meallink" href={p.url} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 출처</a>
+            <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
+          </div>
+        </div>
+      ); })}</div>
+      <div className="chnote">※ 가격은 브랜드 공식몰·다나와 기준 <b>수집 예시(2026-07-29 시점)</b>로 변동될 수 있습니다. <b>화장품은 인체를 청결·미화하고 피부·모발의 건강을 유지·증진하기 위한 물품으로, 질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아닙니다.</b> 기능성화장품(미백·주름 개선·자외선 차단)은 식약처 심사·보고를 확인한 제품에만 표기하며, 확인하지 못한 제품은 비워 두었습니다. 피부가 예민하시면 사용 전 팔 안쪽에 소량 발라 확인해 보세요.</div>
+      <div className="chnote">※ 먹는 이너뷰티(콜라겐·비타민)는 <b>건강기능식품</b>이라 이 몰에 넣지 않았어요 — <b>영양제 탭</b>에서 1일 단가 기준으로 비교하실 수 있습니다. 홈 뷰티기기 중 <b>의료기기로 허가받은 제품</b>은 <b>홈케어의료기</b> 탭에서 다룹니다.</div>
+
+      <ShopCartBar products={PRODUCTS} />
+
+      {detail && (() => { const r = rw(detail.price), m = icoOf(detail); return (
+        <div className="pdov" onClick={() => setDetail(null)}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
+          <div className="pdh"><b>{detail.name}</b><button onClick={() => setDetail(null)}><X size={19} /></button></div>
+          <div className="pdbody">
+            <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#DB2777") + "10" }}><SkinImage p={detail} /></span>
+              <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
+            <p className="pddesc">{detail.desc}</p>
+            <div className="pdprice">{shopWon(detail.price)} <span style={{ fontSize: 13, color: "#64748B", fontWeight: 700 }}>· {unitTxt(detail)}</span></div>
+            {(detail.spf || detail.pa) && <div className="chnote" style={{ marginTop: 4 }}>자외선 차단지수 표기: <b>{[detail.spf, detail.pa].filter(Boolean).join(" / ")}</b> — 제품 표기를 그대로 옮긴 값이고 단가와 섞어 비교하지 않아요.</div>}
+            <div className="chnote" style={{ marginTop: 4 }}>기능성화장품 표기: <b>{detail.functional || "확인하지 못해 비워 뒀어요"}</b> — 기능성화장품은 미백·주름 개선·자외선 차단 세 가지로, 식약처 심사·보고를 확인한 제품에만 표기해요.</div>
+            <div className="pdreward simple">
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>판매가의 25%</small></div>
+              <b className="pdramt">{shopWon(r.reward)}</b>
+            </div>
+            <div className="pdbtns">
+              <a className="ghost" href={detail.url} target="_blank" rel="noreferrer noopener"><Search size={14} /> 출처·상세 <ExternalLink size={11} /></a>
+              <button className="pri" onClick={() => { add(detail); setDetail(null); }}><ShoppingCart size={14} /> 장바구니 담기</button>
+            </div>
+            <div className="chnote" style={{ marginTop: 6 }}>※ {detail.source === "brand_mall" ? "브랜드 공식몰" : "다나와"} 기준 수집 예시가(2026-07-29). 화장품은 질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아닙니다.</div>
+          </div>
+        </div></div>
+      ); })()}
+    </>
+  );
+}
+
 /* ===== 건강쇼핑 — 홈케어 의료기기몰(영양제몰과 동일 쿠팡 구조·건강적립금 25%) ===== */
 const deviceMedia = (id) => (typeof DEVICE_MEDIA !== "undefined" && DEVICE_MEDIA[id]) || {};
 function deviceLowestHref(p) {
@@ -1373,16 +1515,16 @@ function MealShop() {
     </div>
   );
 }
-function ShopSection() {
+function ShopSection({ onGo }) {
   // 홈케어기기 추천 → device 탭 직행(_shopGo.cat), 성분 추천 → AI 상담사(intel), 기본 → 건강식단
   const [cat, setCat] = useState(() => { try { if (typeof window !== "undefined") { if (window._shopGo && window._shopGo.cat) return window._shopGo.cat; if (window._shopIntel) return "intel"; } return "diet"; } catch (e) { return "diet"; } });
   useEffect(() => { try { if (typeof window !== "undefined") window._shopGo = null; } catch (e) {} }, []);
-  const cats = [["diet", "건강식단", Salad, "#16A34A"], ["supp", "영양제", Pill, "#7C3AED"], ["device", "홈케어의료기", Stethoscope, "#0891B2"], ["intel", "AI 상담사", Sparkles, "#EA580C"], ["sports", "스포츠건강", Activity, "#E11D48"]];
+  const cats = [["diet", "건강식단", Salad, "#16A34A"], ["supp", "영양제", Pill, "#7C3AED"], ["skin", "스킨 헬스케어", Droplet, "#DB2777"], ["device", "홈케어의료기", Stethoscope, "#0891B2"], ["intel", "AI 상담사", Sparkles, "#EA580C"], ["sports", "스포츠건강", Activity, "#E11D48"]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="shop" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강쇼핑</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 스킨 헬스케어 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
       <PrecisionNutritionSection />
       <div className="shopcats">{cats.map(([k, t, Ic, c]) => (
         <button key={k} className={`shopcat ${cat === k ? "on" : ""}`} style={{ "--cc": c }} onClick={() => setCat(k)}>
@@ -1397,6 +1539,7 @@ function ShopSection() {
         <MealShop />
       </>}
       {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
+      {cat === "skin" && <><ShopCategory catKey="skin" label="스킨 헬스케어" hideBrands /><SkinShop onGo={onGo} /></>}
       {cat === "device" && <><ShopCategory catKey="device" label="홈케어의료기" hideBrands /><DeviceShop /></>}
       {cat === "intel" && <ShopConsultant />}
       {cat === "sports" && <SportsHealth />}

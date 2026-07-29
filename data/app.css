@@ -5267,3 +5267,18 @@ body.easyread .hidock-who, body.easyread .hidock-cite, body.easyread .hidock-pen
 .opsq-b button.on { background: #0F172A; color: #fff; border-color: #0F172A; }
 .opsq-b button:disabled { opacity: .45; cursor: not-allowed; }
 .opsq-hint { font-size: 11px; color: #94A3B8; }
+
+/* ── 스킨 헬스케어 — 피부 고민 → 제품군 → 진료 연계 ── */
+.skconcern{border:1.5px solid #FBCFE8;background:linear-gradient(180deg,#FFF5F9 0%,#fff 70%);border-radius:14px;padding:13px 15px;margin:10px 0 4px;}
+.skconcern .skch{font-size:13px;font-weight:800;color:#9D174D;display:flex;align-items:center;gap:6px;margin-bottom:9px;}
+.skconcern .skch span{font-size:11.5px;font-weight:600;color:var(--muted);}
+.skchips{display:flex;gap:6px;flex-wrap:wrap;}
+.skchips button{border:1px solid #F9A8D4;background:#fff;color:#9D174D;border-radius:999px;padding:5px 11px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.skchips button.on{background:#DB2777;color:#fff;border-color:#DB2777;box-shadow:0 4px 10px -5px rgba(219,39,119,.6);}
+.skpath{margin-top:10px;}
+.skpath .skrow{font-size:12.5px;color:#1F2937;background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 12px;}
+.skpath .skrow b{color:#DB2777;}
+.skrefer{margin-top:7px;font-size:12.3px;color:#9A3412;background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:9px 12px;display:flex;align-items:flex-start;gap:6px;flex-wrap:wrap;}
+.skrefer b{color:#C2410C;}
+.sktele{margin-left:auto;border:1px solid #2563EB;background:#2563EB;color:#fff;border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit;}
+.sktele:hover{opacity:.9;}

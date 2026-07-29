@@ -1029,7 +1029,11 @@ function PharmPickCard({ onPick }) {
 function SpecialistChat() {
   const [sido, setSido] = useState("서울특별시");
   const [sigungu, setSigungu] = useState("강남구");
-  const [deptKey, setDeptKey] = useState(() => (typeof tmDeptForMember === "function" ? tmDeptForMember() : "fm"));
+  /* 다른 화면에서 진료과를 지정해 넘어올 수 있다(예: 스킨 헬스케어 → 피부과·여성의학과). Shop의 _shopGo와 같은 방식 */
+  const [deptKey, setDeptKey] = useState(() => {
+    try { if (typeof window !== "undefined" && window._teleGo && window._teleGo.dept) { const d = window._teleGo.dept; window._teleGo = null; return d; } } catch (e) {}
+    return (typeof tmDeptForMember === "function" ? tmDeptForMember() : "fm");
+  });
   const [showProc, setShowProc] = useState(false); const [showRule, setShowRule] = useState(false); const [join, setJoin] = useState(false);
   const [sel, setSel] = useState(null); const [booked, setBooked] = useState(false); const [visit, setVisit] = useState("재진");
   const [msgs, setMsgs] = useState([]);

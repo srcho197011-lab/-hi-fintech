@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=b6224eb84c" />
+<link rel="stylesheet" href="./data/app.css?v=9a9999a709" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=b6224eb84c"></script>
-<script src="./src/data/section_data.js?v=b6224eb84c"></script>
-<script src="./src/data/demo_members.js?v=b6224eb84c"></script>
+<script src="./src/data/dummy_data.js?v=9a9999a709"></script>
+<script src="./src/data/section_data.js?v=9a9999a709"></script>
+<script src="./src/data/demo_members.js?v=9a9999a709"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -372,7 +372,7 @@ import {
   Scale, Gauge, Globe, Award, PawPrint, Sprout, HandCoins,
   Truck, Boxes, Factory, Warehouse, Package, PackageCheck, Cpu, Workflow, Route, Handshake, ScrollText, Container,
   Database, Server, Blocks, KeyRound, Fingerprint, GitBranch, Building,
-  Download, Trash2, Pencil,
+  Download, Trash2, Pencil, Droplet,
 } from "lucide-react";
 const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKET, DISTRICTS, COVER_DETAIL, KDCA_NOTE, DEMO_MEMBERS } = (typeof window !== "undefined" && window.__HHDATA) || {};
 
@@ -2296,7 +2296,11 @@ function PharmPickCard({ onPick }) {
 function SpecialistChat() {
   const [sido, setSido] = useState("서울특별시");
   const [sigungu, setSigungu] = useState("강남구");
-  const [deptKey, setDeptKey] = useState(() => (typeof tmDeptForMember === "function" ? tmDeptForMember() : "fm"));
+  /* 다른 화면에서 진료과를 지정해 넘어올 수 있다(예: 스킨 헬스케어 → 피부과·여성의학과). Shop의 _shopGo와 같은 방식 */
+  const [deptKey, setDeptKey] = useState(() => {
+    try { if (typeof window !== "undefined" && window._teleGo && window._teleGo.dept) { const d = window._teleGo.dept; window._teleGo = null; return d; } } catch (e) {}
+    return (typeof tmDeptForMember === "function" ? tmDeptForMember() : "fm");
+  });
   const [showProc, setShowProc] = useState(false); const [showRule, setShowRule] = useState(false); const [join, setJoin] = useState(false);
   const [sel, setSel] = useState(null); const [booked, setBooked] = useState(false); const [visit, setVisit] = useState("재진");
   const [msgs, setMsgs] = useState([]);
@@ -6424,6 +6428,26 @@ const SHOP_PARTNERS = {
     stats: [["한독", "제약사 품질"], ["네이처셋", "종합 라인업"], ["GMP", "품질관리"]],
     home: "http://mall.handok.co.kr/", q: "한독 네이처셋 건강기능식품",
   }],
+  /* 스킨 헬스케어 특별제휴(샘플) — 수출 주도 독립 브랜드 2곳.
+     ⚠️ 실제 제휴 계약과 무관한 **예시**이며, 수치는 2026-07-29 시점 공개 보도 기준이다.
+     정밀영양협회 배지는 붙이지 않는다(영양 인증이라 화장품에 부적절). */
+  skin: [{
+    name: "더파운더즈", brand: "아누아(Anua)", sub: "스킨 특별제휴(협의 중·예시)", member: false,
+    bg: "linear-gradient(125deg,#134E4A 0%,#0F766E 48%,#65A30D 100%)",
+    tagline: "어성초(Heartleaf) 중심 진정 라인 — 2025년 매출 7,177억 원, 해외 매출 비중 약 85%의 수출 주도 독립 브랜드.",
+    strengths: [["leaf", "어성초 진정 라인", "어성초 77% 토너·80 앰플 등 진정 중심 설계"], ["badge", "수출 주도", "해외 매출 비중 약 85%(2025년)"], ["capsule", "북미 성과", "아마존 클렌징·토너 카테고리 상위권"], ["doc", "일본 성과", "Qoo10 메가와리 4개 분기 연속 1위"]],
+    chips: ["어성초 토너", "수분 진정 앰플", "모공 클렌징폼", "데일리 릴리프 로션"],
+    stats: [["7,177억", "2025년 매출"], ["85%", "해외 매출 비중"], ["+68%", "전년 대비"]],
+    home: "https://anua.co.kr", q: "아누아 어성초 토너",
+  }, {
+    name: "크레이버코퍼레이션", brand: "스킨1004(SKIN1004)", sub: "스킨 특별제휴(협의 중·예시)", member: false,
+    bg: "linear-gradient(125deg,#065F46 0%,#047857 46%,#0891B2 100%)",
+    tagline: "마다가스카르 센텔라(병풀) 단일 원료 집중 — 120개국 이상 수출, 센텔라 앰플 누적 출하 1,750만 병.",
+    strengths: [["leaf", "센텔라 단일 원료", "해발 700m 마다가스카르산 센텔라"], ["badge", "120개국 이상 수출", "미국·필리핀 등"], ["capsule", "센텔라 앰플", "누적 출하 1,750만 병(2026-02 기준)"], ["doc", "라인 일관성", "클렌징·토너·앰플·크림·선크림 전 단계"]],
+    chips: ["센텔라 앰플", "토닝 토너", "수딩크림", "에어핏 선크림"],
+    stats: [["120개국+", "수출"], ["1,750만 병", "앰플 누적"], ["센텔라", "단일 원료"]],
+    home: "https://skin1004korea.com", q: "스킨1004 마다가스카르 센텔라",
+  }],
   device: [{
     name: "GN바디닥터", brand: "제너럴네트", sub: "의료기기 특별제휴",
     bg: "linear-gradient(125deg,#0E7490 0%,#0891B2 48%,#6366F1 100%)",
@@ -6996,7 +7020,7 @@ function MoaBanner() {
 function ShopCategory({ catKey, label, hideBrands }) {
   const partners = SHOP_PARTNERS[catKey] || [];
   const brands = hideBrands ? [] : (SHOP_BRANDS[catKey] || []);
-  const compact = catKey === "diet" || catKey === "supp"; // 특별제휴 50% 축소
+  const compact = catKey === "diet" || catKey === "supp" || catKey === "skin"; // 특별제휴 50% 축소
   return (
     <>
       <div className="bklbl" style={{ margin: "2px 0 8px" }}><Sparkles size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> {label} 특별제휴사</div>
@@ -7005,7 +7029,8 @@ function ShopCategory({ catKey, label, hideBrands }) {
         : partners.map((p) => <ShopPartnerCard key={p.name} p={p} />)}
       {catKey === "supp" && <MoaBanner />}
       {catKey === "diet" && <WaterBanner />}
-      <MemberMall catKey={catKey} />
+      {/* 정밀영양협회 회원사 몰은 영양 인증이라 화장품에는 붙이지 않는다 */}
+      {catKey !== "skin" && <MemberMall catKey={catKey} />}
       {!hideBrands && (<>
         <div className="bklbl" style={{ margin: "6px 0 8px" }}><Star size={14} color="#F59E0B" style={{ verticalAlign: "-2px" }} /> 그 외 유력 {label} 브랜드 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 평판·인지도 기준 예시 {brands.length}곳</span></div>
         {brands.map(([n, s], i) => (
@@ -7313,6 +7338,127 @@ function SupplementShop() {
     </>
   );
 }
+/* ══════════ 건강쇼핑 — 스킨 헬스케어(영양제몰과 동일 구조 · 화장품법 고지) ══════════
+   영양제와 형식은 같지만 **법령이 다르다.** 건기식 고지문을 쓰지 않고 화장품 고지문을 쓴다.
+   그리고 이 섹션에만 있는 것: 피부 고민 → 제품군 → (선을 넘으면) 원격진료 연결. */
+function SkinImage({ p }) {
+  const [err, setErr] = useState(false);
+  const media = (typeof SKIN_MEDIA !== "undefined" && SKIN_MEDIA[p.id]) || {};
+  if (media.image && !err) return <img className="pimgphoto" src={media.image} alt={`${p.brand} ${p.name}`} loading="lazy" referrerPolicy="no-referrer" onError={() => setErr(true)} />;
+  const m = (typeof SKIN_CATS !== "undefined" && SKIN_CATS[p.category]) || { col: "#DB2777" };
+  return <div className="devmock" style={{ color: m.col }}><Droplet size={38} /><span>{(p.brand || "").slice(0, 10)}</span></div>;
+}
+
+/* 피부 고민 칩 — 고르면 제품군으로 내려가고, 진료가 필요한 조건이면 그 자리에서 알려준다 */
+function SkinConcernPicker({ onPick, onGo }) {
+  const list = (typeof SKIN_CONCERN !== "undefined") ? SKIN_CONCERN : [];
+  const [sel, setSel] = useState(null);
+  if (!list.length) return null;
+  const c = sel ? list.find((x) => x.key === sel) : null;
+  const dept = c && c.dept ? ((typeof skinDeptLabel === "function") ? skinDeptLabel(c.dept) : "피부과") : null;
+  return (
+    <div className="skconcern">
+      <div className="skch"><Stethoscope size={14} color="#DB2777" /> 피부 고민으로 찾기 <span>· 고민 → 제품군 → 필요하면 진료까지 안내해 드려요</span></div>
+      <div className="skchips">
+        {list.map((x) => (
+          <button key={x.key} className={sel === x.key ? "on" : ""} onClick={() => { setSel(sel === x.key ? null : x.key); if (sel !== x.key && onPick) onPick(x.primary); }}>{x.label}</button>
+        ))}
+      </div>
+      {c && (
+        <div className="skpath">
+          <div className="skrow"><b>{c.label}</b> → 먼저 볼 제품군 <b>{c.primary}</b>{c.secondary ? <> · 같이 보면 좋은 것 {c.secondary}</> : null}</div>
+          {c.refer && dept && (
+            <div className="skrefer">
+              <AlertTriangle size={13} /> {c.refer} <b>{dept} 상담</b>을 받아보시는 게 좋아요 — 제품으로 붙잡고 있을 일이 아니에요.
+              <button className="sktele" onClick={() => { try { if (typeof skinTeleGo === "function") skinTeleGo(c.dept); } catch (e) {} if (onGo) onGo("tele"); }}>
+                <Video size={12} /> {dept} 원격진료 연결
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      <div className="chnote" style={{ marginTop: 6 }}>※ 화장품은 인체를 청결·미화하고 피부·모발의 건강을 유지·증진하기 위한 물품으로, <b>질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아닙니다.</b> 증상이 계속되거나 심해지면 진료로 확인해 주세요.</div>
+    </div>
+  );
+}
+
+function SkinShop({ onGo }) {
+  const PRODUCTS = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
+  const CATS = (typeof SKIN_CATS !== "undefined") ? SKIN_CATS : {};
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const [cat, setCat] = useState("전체");
+  const [sort, setSort] = useState("reward");
+  const [detail, setDetail] = useState(null);
+  const cats = ["전체", ...Object.keys(CATS)];
+  let list = PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
+  if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
+  else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
+  else if (sort === "priceHigh") list = [...list].sort((a, b) => b.price - a.price);
+  else if (sort === "unit") list = [...list].sort((a, b) => (a.vol ? a.price / a.vol : 1e9) - (b.vol ? b.price / b.vol : 1e9));
+  const add = (p) => { shopCartAdd(p.id); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${shopWon(rw(p.price).reward)}`); };
+  const icoOf = (p) => (CATS[p.category] || {});
+  /* 용량당 단가 — 표기된 것만. 없으면 만들지 않는다("0원/mL"은 사실이 아니다) */
+  const unitTxt = (p) => (p.vol ? `${Math.round(p.price / p.vol).toLocaleString()}원/${p.volUnit}`
+    : (p.sheets ? `${Math.round(p.price / p.sheets).toLocaleString()}원/매`
+      : (p.category === "디바이스·이너뷰티" ? "기기 1대" : "용량 표기 없음")));   /* 기기에 "용량 없음"은 정보가 아니라 소음이다 */
+  return (
+    <>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+
+      <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
+
+      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Droplet size={14} color="#DB2777" style={{ verticalAlign: "-2px" }} /> 스킨 헬스케어 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 수집분 {PRODUCTS.length}종 · 6대 분류</span></div>
+      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
+      <div className="sssort">
+        <span>정렬</span>
+        {[["reward", "적립높은순"], ["unit", "용량당 단가순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        <span className="sscount">{list.length}종</span>
+      </div>
+      <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
+        <div className="mealcard suppmeal" key={p.id} onClick={() => setDetail(p)}>
+          <div className="mealthumb" style={{ background: (m.col || "#DB2777") + "0d" }}><SkinImage p={p} /><span className="mealbadge rocket">{p.category}</span></div>
+          <div className="mealbrand">{p.brand}</div>
+          <div className="mealname">{p.name}</div>
+          <div className="mealrate"><span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 700 }}>{p.volume}</span>{(p.spf || p.pa) ? <span className="rev"> · {[p.spf, p.pa].filter(Boolean).join("/")}</span> : null}</div>
+          <div className="mealprices"><span className="mprice">{shopWon(p.price)}</span><span className="morig" style={{ textDecoration: "none" }}>{unitTxt(p)}</span></div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealbtns">
+            <a className="meallink" href={p.url} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 출처</a>
+            <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
+          </div>
+        </div>
+      ); })}</div>
+      <div className="chnote">※ 가격은 브랜드 공식몰·다나와 기준 <b>수집 예시(2026-07-29 시점)</b>로 변동될 수 있습니다. <b>화장품은 인체를 청결·미화하고 피부·모발의 건강을 유지·증진하기 위한 물품으로, 질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아닙니다.</b> 기능성화장품(미백·주름 개선·자외선 차단)은 식약처 심사·보고를 확인한 제품에만 표기하며, 확인하지 못한 제품은 비워 두었습니다. 피부가 예민하시면 사용 전 팔 안쪽에 소량 발라 확인해 보세요.</div>
+      <div className="chnote">※ 먹는 이너뷰티(콜라겐·비타민)는 <b>건강기능식품</b>이라 이 몰에 넣지 않았어요 — <b>영양제 탭</b>에서 1일 단가 기준으로 비교하실 수 있습니다. 홈 뷰티기기 중 <b>의료기기로 허가받은 제품</b>은 <b>홈케어의료기</b> 탭에서 다룹니다.</div>
+
+      <ShopCartBar products={PRODUCTS} />
+
+      {detail && (() => { const r = rw(detail.price), m = icoOf(detail); return (
+        <div className="pdov" onClick={() => setDetail(null)}><div className="pdbox" onClick={(e) => e.stopPropagation()}>
+          <div className="pdh"><b>{detail.name}</b><button onClick={() => setDetail(null)}><X size={19} /></button></div>
+          <div className="pdbody">
+            <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#DB2777") + "10" }}><SkinImage p={detail} /></span>
+              <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
+            <p className="pddesc">{detail.desc}</p>
+            <div className="pdprice">{shopWon(detail.price)} <span style={{ fontSize: 13, color: "#64748B", fontWeight: 700 }}>· {unitTxt(detail)}</span></div>
+            {(detail.spf || detail.pa) && <div className="chnote" style={{ marginTop: 4 }}>자외선 차단지수 표기: <b>{[detail.spf, detail.pa].filter(Boolean).join(" / ")}</b> — 제품 표기를 그대로 옮긴 값이고 단가와 섞어 비교하지 않아요.</div>}
+            <div className="chnote" style={{ marginTop: 4 }}>기능성화장품 표기: <b>{detail.functional || "확인하지 못해 비워 뒀어요"}</b> — 기능성화장품은 미백·주름 개선·자외선 차단 세 가지로, 식약처 심사·보고를 확인한 제품에만 표기해요.</div>
+            <div className="pdreward simple">
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>판매가의 25%</small></div>
+              <b className="pdramt">{shopWon(r.reward)}</b>
+            </div>
+            <div className="pdbtns">
+              <a className="ghost" href={detail.url} target="_blank" rel="noreferrer noopener"><Search size={14} /> 출처·상세 <ExternalLink size={11} /></a>
+              <button className="pri" onClick={() => { add(detail); setDetail(null); }}><ShoppingCart size={14} /> 장바구니 담기</button>
+            </div>
+            <div className="chnote" style={{ marginTop: 6 }}>※ {detail.source === "brand_mall" ? "브랜드 공식몰" : "다나와"} 기준 수집 예시가(2026-07-29). 화장품은 질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아닙니다.</div>
+          </div>
+        </div></div>
+      ); })()}
+    </>
+  );
+}
+
 /* ===== 건강쇼핑 — 홈케어 의료기기몰(영양제몰과 동일 쿠팡 구조·건강적립금 25%) ===== */
 const deviceMedia = (id) => (typeof DEVICE_MEDIA !== "undefined" && DEVICE_MEDIA[id]) || {};
 function deviceLowestHref(p) {
@@ -7764,16 +7910,16 @@ function MealShop() {
     </div>
   );
 }
-function ShopSection() {
+function ShopSection({ onGo }) {
   // 홈케어기기 추천 → device 탭 직행(_shopGo.cat), 성분 추천 → AI 상담사(intel), 기본 → 건강식단
   const [cat, setCat] = useState(() => { try { if (typeof window !== "undefined") { if (window._shopGo && window._shopGo.cat) return window._shopGo.cat; if (window._shopIntel) return "intel"; } return "diet"; } catch (e) { return "diet"; } });
   useEffect(() => { try { if (typeof window !== "undefined") window._shopGo = null; } catch (e) {} }, []);
-  const cats = [["diet", "건강식단", Salad, "#16A34A"], ["supp", "영양제", Pill, "#7C3AED"], ["device", "홈케어의료기", Stethoscope, "#0891B2"], ["intel", "AI 상담사", Sparkles, "#EA580C"], ["sports", "스포츠건강", Activity, "#E11D48"]];
+  const cats = [["diet", "건강식단", Salad, "#16A34A"], ["supp", "영양제", Pill, "#7C3AED"], ["skin", "스킨 헬스케어", Droplet, "#DB2777"], ["device", "홈케어의료기", Stethoscope, "#0891B2"], ["intel", "AI 상담사", Sparkles, "#EA580C"], ["sports", "스포츠건강", Activity, "#E11D48"]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="shop" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강쇼핑</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 스킨 헬스케어 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
       <PrecisionNutritionSection />
       <div className="shopcats">{cats.map(([k, t, Ic, c]) => (
         <button key={k} className={`shopcat ${cat === k ? "on" : ""}`} style={{ "--cc": c }} onClick={() => setCat(k)}>
@@ -7788,6 +7934,7 @@ function ShopSection() {
         <MealShop />
       </>}
       {cat === "supp" && <><ShopCategory catKey="supp" label="영양제" hideBrands /><SupplementShop /></>}
+      {cat === "skin" && <><ShopCategory catKey="skin" label="스킨 헬스케어" hideBrands /><SkinShop onGo={onGo} /></>}
       {cat === "device" && <><ShopCategory catKey="device" label="홈케어의료기" hideBrands /><DeviceShop /></>}
       {cat === "intel" && <ShopConsultant />}
       {cat === "sports" && <SportsHealth />}
@@ -18776,7 +18923,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"A3 영양제 6종 비교 확대와 카테고리 라우팅 전수 복구", src:"홍삼·비타민C·종합비타민·마그네슘·콜라겐·아연 39종 라벨 실측+agentRegistry A3 scope 12종 보강+성분단가 자릿수·인계 조사 교정", summary:"다나와 함량 필드의 기준이 제품마다 달라 1일 섭취량이 1회분인 제품만 성분량을 넣는 규칙을 세우고 g 단위 복용 제품도 1일 단가 축에 올렸으며 별칭만 있고 라우터에 없어 답변불가로 새던 12개 카테고리를 복구, A3 하네스 전 항목 통과·회귀 9종 유지", refs:[], status:"반영", hash:"8b70b41", auto:true },
+  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"건강쇼핑 스킨 헬스케어 서브섹션 신설", src:"skinProducts 6대분류 38종+skinConcern 고민12종·즉시진료5종+skinGuard 화장품법 7조+shopCompare 용량당·1매당·대당 축+A3/A1 경계 재정렬+원격진료 진료과 연결", summary:"영양제 오른쪽에 스킨 헬스케어를 열되 건기식이 아니라 화장품법 가드를 새로 만들고 mL·g·매수를 섞지 않는 축으로 비교하며 피부 고민이 선을 넘으면 제품을 팔지 않고 피부과·여성의학과 원격진료로 연결, 라우팅 경계 100%·회귀 9종 유지", refs:[], status:"반영", hash:"34af86d", auto:true },
+  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"A3 영양제 6종 비교 확대와 카테고리 라우팅 전수 복구", src:"홍삼·비타민C·종합비타민·마그네슘·콜라겐·아연 39종 라벨 실측+agentRegistry A3 scope 12종 보강+성분단가 자릿수·인계 조사 교정", summary:"다나와 함량 필드의 기준이 제품마다 달라 1일 섭취량이 1회분인 제품만 성분량을 넣는 규칙을 세우고 g 단위 복용 제품도 1일 단가 축에 올렸으며 별칭만 있고 라우터에 없어 답변불가로 새던 12개 카테고리를 복구, A3 하네스 전 항목 통과·회귀 9종 유지", refs:[], status:"반영", hash:"a926f8b", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"A3 비교 카테고리 확대와 카테고리별 고유 축(Phase C 확장)", src:"밀크씨슬·비타민D 라벨 실측 14종+CMP_AXES 기기 소모품·식단 1식 단가+mealProducts 데이터계층 이관", summary:"영양제의 1일 단가 자로 기기와 식단을 재던 것을 카테고리마다 다른 축으로 갈라 혈당측정기는 동봉 시험지 1회당 단가로 식단은 1식 단가로 비교하게 하고 수량 미표기 제품도 가격은 보여주도록 함, A3 하네스 전 항목 통과·회귀 9종 유지", refs:[], status:"반영", hash:"a72934f", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"운영 콘솔 — 에이전트 메시 관제·검수 큐·안전한 설정(Phase G)", src:"hiOpsConfig 단일소스+잠금6종+opsMetrics 집계+OpsConsole 5패널", summary:"흩어진 임계값을 한 곳으로 모아 화면에서 조정하되 응급과 가드와 게이트 기준은 잠그고 집계가 원천과 일치하는지 하네스로 검증하며 학습 루프가 넘긴 검수 큐를 화면에서 처리하게 함, 표시 정합성 위반 0·잠금 우회 0·회귀 9종 유지", refs:[], status:"반영", hash:"ed3a97f", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"학습 루프 — 운영 신호에서 코퍼스 증분·회귀 게이트·자동 롤백(Phase F)", src:"hiTelemetry 단일스키마+scripts/learn 5단 파이프라인+golden-learned 회귀 연결", summary:"흩어진 여섯 로그를 원문 없이 한 스키마로 모아 개선 후보를 우선순위로 뽑고 라우팅 라벨만 자동 증분한 뒤 회귀 8종이 통과시켜야 승격하고 미달이면 증분 전 지점으로 되돌리게 함, 라우팅 골든셋 500→545 확대에도 정확도 100% 유지", refs:[], status:"반영", hash:"0ace631", auto:true },
@@ -20244,6 +20392,249 @@ const MEAL_PRODUCTS = [
   { id: "m-spaoeat", source: "brand_mall", brand: "잇메이트(스파오)", name: "닭가슴살 스테이크 고단백 (30팩)", category: "단백질", price: 29900, orig: 39000, rating: 4.6, reviews: 12043, badge: "로켓배송", emoji: "🍗", url: "https://www.eatmate.co.kr", desc: "닭가슴살·고단백식" },
 ];
 
+/* ══════════════ 스킨 헬스케어 카탈로그 — 6대 분류 ══════════════
+   화장품법 대상이다. 건강기능식품(shopProducts.js)과 **데이터를 섞지 않는다.**
+   · 성분 함량은 라벨에 적힌 것만 넣는다 — 전성분 순서로 함량을 추정하지 않는다.
+   · 기능성화장품(미백·주름개선·자외선차단)은 **식약처 심사·보고를 확인한 것만** functional에 적는다.
+     확인하지 못하면 null로 두고 화면에 배지를 붙이지 않는다(모르면 비운다).
+   · 가격은 2026-07-29 수집 예시가(브랜드 공식몰 / 다나와 검색 기준)로 변동될 수 있다.
+   먹는 이너뷰티(콜라겐·비타민)는 여기 넣지 않는다 — SUPP_PRODUCTS에 그대로 두고 링크로만 연결한다. */
+
+/* ── 6대 분류(고정) ── */
+const SKIN_CATS = {
+  "클렌징 케어": { icon: "leaf", col: "#0EA5E9", axis: "perVolume", desc: "세정 · 각질 · 피지" },
+  "보습·장벽 케어": { icon: "capsule", col: "#DB2777", axis: "perVolume", desc: "수분 · 진정 · 피부장벽" },
+  "자외선·환경 보호": { icon: "badge", col: "#F59E0B", axis: "perVolume", desc: "선케어 · 항산화 · 외부자극" },
+  "기능성·트러블 케어": { icon: "eye", col: "#7C3AED", axis: "perVolume", desc: "미백 · 주름 · 탄력 · 모공" },
+  "더마·전문 케어": { icon: "immune", col: "#0D9488", axis: "perVolume", desc: "민감성 · 시술 후 · 피부과 연계" },
+  "디바이스·이너뷰티": { icon: "device", col: "#64748B", axis: "perDevice", desc: "홈 뷰티기기 · 피부측정" },
+};
+
+/* 화장품 카테고리 목록 — A3·비교엔진이 "이건 화장품이다"를 판별하는 단일 소스 */
+const SKIN_CAT_LIST = Object.keys(SKIN_CATS);
+
+/* ── 제품 ──
+   vol: 용량 수치 · volUnit: "mL" | "g" · sheets: 매수(패드·마스크만)
+   spf/pa: 자외선차단 제품만 · functional: 확인된 기능성화장품 유형(없으면 null) */
+const SKIN_PRODUCTS = [
+  /* ① 클렌징 케어 */
+  { id: "sk-1004-ampoulefoam-125", name: "마다가스카르 센텔라 앰플 폼 125ml", brand: "스킨1004", category: "클렌징 케어", volume: "125mL", vol: 125, volUnit: "mL",
+    claim: "센텔라 함유 약산성 클렌징 폼", desc: "마다가스카르산 센텔라를 담은 저자극 클렌징 폼입니다.", price: 16150, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+  { id: "sk-1004-lightcleansingoil-200", name: "마다가스카르 센텔라 라이트 클렌징오일 200ml", brand: "스킨1004", category: "클렌징 케어", volume: "200mL", vol: 200, volUnit: "mL",
+    claim: "가볍게 씻기는 센텔라 클렌징 오일", desc: "메이크업·선크림 1차 세정용 오일 클렌저입니다.", price: 23750, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+  { id: "sk-anua-quercetinol-foam-150", name: "어성초 쿼세티놀 모공 딥 클렌징폼 150ml", brand: "아누아", category: "클렌징 케어", volume: "150mL", vol: 150, volUnit: "mL",
+    claim: "어성초·쿼세티놀 함유 모공 클렌징 폼", desc: "피지·잔여물 세정에 초점을 둔 아누아의 딥 클렌징 폼입니다.", price: 12510, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%95%84%EB%88%84%EC%95%84", functional: null },
+  { id: "sk-anua-porecontrol-oil-200", name: "어성초 포어 컨트롤 클렌징오일 200ml", brand: "아누아", category: "클렌징 케어", volume: "200mL", vol: 200, volUnit: "mL",
+    claim: "어성초 함유 클렌징 오일", desc: "1차 세정용 오일 클렌저입니다.", price: 13490, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%95%84%EB%88%84%EC%95%84", functional: null },
+  { id: "sk-lrp-effaclar-gel-400", name: "에빠끌라 퓨리파잉 포밍 젤 400ml", brand: "라로슈포제", category: "클렌징 케어", volume: "400mL", vol: 400, volUnit: "mL",
+    claim: "지성·트러블 피부용 세정 젤", desc: "피지가 많은 피부를 위한 세정 젤입니다.", price: 21370, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", functional: null },
+  { id: "sk-lrp-toleriane-cream-125", name: "똘러리앙 퓨리파잉 포밍 크림 125ml", brand: "라로슈포제", category: "클렌징 케어", volume: "125mL", vol: 125, volUnit: "mL",
+    claim: "민감 피부용 저자극 세정 크림", desc: "자극에 예민한 피부를 위한 크림형 클렌저입니다.", price: 22000, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", functional: null },
+  { id: "sk-1004-quickcalmingpad-70", name: "마다가스카르 센텔라 퀵 카밍 패드 70매", brand: "스킨1004", category: "클렌징 케어", volume: "70매", sheets: 70,
+    claim: "센텔라 함유 토너 패드", desc: "닦아내는 형태의 토너 패드입니다. 1매당 단가로 비교합니다.", price: 25650, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+
+  /* ② 보습·장벽 케어 */
+  { id: "sk-1004-ampoule-55", name: "마다가스카르 센텔라 앰플 55ml", brand: "스킨1004", category: "보습·장벽 케어", volume: "55mL", vol: 55, volUnit: "mL",
+    claim: "센텔라 아시아티카 추출물 함유 앰플", desc: "스킨1004의 대표 제품으로 누적 출하 1,750만 병(2026-02 기준)입니다.", price: 17100, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+  { id: "sk-1004-ampoule-100", name: "마다가스카르 센텔라 앰플 100ml", brand: "스킨1004", category: "보습·장벽 케어", volume: "100mL", vol: 100, volUnit: "mL",
+    claim: "센텔라 아시아티카 추출물 함유 앰플", desc: "대용량 구성입니다.", price: 24700, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+  { id: "sk-1004-toningtoner-210", name: "마다가스카르 센텔라 토닝 토너 210ml", brand: "스킨1004", category: "보습·장벽 케어", volume: "210mL", vol: 210, volUnit: "mL",
+    claim: "센텔라 함유 토너", desc: "세안 후 첫 단계 토너입니다.", price: 19950, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+  { id: "sk-1004-toningtoner-400", name: "마다가스카르 센텔라 토닝 토너 400ml", brand: "스킨1004", category: "보습·장벽 케어", volume: "400mL", vol: 400, volUnit: "mL",
+    claim: "센텔라 함유 토너", desc: "대용량 구성입니다.", price: 28500, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+  { id: "sk-1004-soothingcream-75", name: "마다가스카르 센텔라 수딩크림 75ml", brand: "스킨1004", category: "보습·장벽 케어", volume: "75mL", vol: 75, volUnit: "mL",
+    claim: "센텔라 함유 수딩 크림", desc: "가벼운 제형의 진정 보습 크림입니다.", price: 21850, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+  { id: "sk-1004-cream-75", name: "마다가스카르 센텔라 크림 75ml", brand: "스킨1004", category: "보습·장벽 케어", volume: "75mL", vol: 75, volUnit: "mL",
+    claim: "센텔라 함유 보습 크림", desc: "건조한 피부를 위한 보습 크림입니다.", price: 24700, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+  { id: "sk-anua-heartleaf77-toner-250", name: "어성초 77% 진정 토너 250ml", brand: "아누아", category: "보습·장벽 케어", volume: "250mL", vol: 250, volUnit: "mL",
+    claim: "어성초 추출물 77% 함유 토너", desc: "아누아의 대표 제품으로 미국 아마존 토너 카테고리 상위권 제품입니다.", price: 10530, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%95%84%EB%88%84%EC%95%84", functional: null },
+  { id: "sk-anua-heartleaf77-soothing-350", name: "어성초 77 수딩 토너 350ml", brand: "아누아", category: "보습·장벽 케어", volume: "350mL", vol: 350, volUnit: "mL",
+    claim: "어성초 추출물 함유 수딩 토너", desc: "대용량 구성입니다.", price: 15300, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%95%84%EB%88%84%EC%95%84", functional: null },
+  { id: "sk-anua-heartleaf80-ampoule-30", name: "어성초 80 수분 진정 앰플 30ml", brand: "아누아", category: "보습·장벽 케어", volume: "30mL", vol: 30, volUnit: "mL",
+    claim: "어성초 추출물 80% 함유 앰플", desc: "수분·진정 목적의 고농축 앰플입니다.", price: 8790, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%95%84%EB%88%84%EC%95%84", functional: null },
+  { id: "sk-anua-heartleaf70-lotion-200", name: "어성초 70 데일리 릴리프 로션 200ml", brand: "아누아", category: "보습·장벽 케어", volume: "200mL", vol: 200, volUnit: "mL",
+    claim: "어성초 추출물 함유 데일리 로션", desc: "가벼운 마무리의 데일리 보습 로션입니다.", price: 13400, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%95%84%EB%88%84%EC%95%84", functional: null },
+  { id: "sk-anua-pdrn-cream-60", name: "PDRN 히알루론산 100 수분 크림 60ml", brand: "아누아", category: "보습·장벽 케어", volume: "60mL", vol: 60, volUnit: "mL",
+    claim: "히알루론산 함유 수분 크림", desc: "수분 보유에 초점을 둔 크림입니다.", price: 15570, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%95%84%EB%88%84%EC%95%84", functional: null },
+  { id: "sk-sws-yunjo-essence-60", name: "윤조에센스 6세대 60ml", brand: "설화수", category: "보습·장벽 케어", volume: "60mL", vol: 60, volUnit: "mL",
+    claim: "한방 성분 함유 에센스", desc: "세안 후 첫 단계에 사용하는 에센스입니다.", price: 85790, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A4%ED%99%94%EC%88%98%20%EC%9C%A4%EC%A1%B0%EC%97%90%EC%84%BC%EC%8A%A4", functional: null },
+  { id: "sk-sws-yunjo-essence-30", name: "윤조에센스 6세대 30ml", brand: "설화수", category: "보습·장벽 케어", volume: "30mL", vol: 30, volUnit: "mL",
+    claim: "한방 성분 함유 에센스", desc: "소용량 구성입니다.", price: 37000, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A4%ED%99%94%EC%88%98%20%EC%9C%A4%EC%A1%B0%EC%97%90%EC%84%BC%EC%8A%A4", functional: null },
+
+  /* ③ 자외선·환경 보호 */
+  { id: "sk-1004-airfit-plus-50", name: "마다가스카르 센텔라 에어핏 선크림 플러스 50ml", brand: "스킨1004", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 기능성화장품", desc: "센텔라를 담은 데일리 선크림입니다.", price: 19000, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null },
+  { id: "sk-1004-airfit-light-50", name: "마다가스카르 센텔라 에어핏 선크림 라이트 50ml", brand: "스킨1004", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 기능성화장품", desc: "가벼운 사용감의 데일리 선크림입니다.", price: 18050, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null },
+  { id: "sk-lrp-anthelios-uv-50", name: "안뗄리오스 UV 무스 50ml", brand: "라로슈포제", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "민감 피부를 고려한 자외선 차단 제품입니다.", price: 21470, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", spf: null, pa: null, functional: null },
+  { id: "sk-missha-safeblock-cover-14", name: "세이프블록 RX 커버 톤업 선쿠션 14g", brand: "미샤", category: "자외선·환경 보호", volume: "14g", vol: 14, volUnit: "g",
+    claim: "자외선 차단 쿠션", desc: "덧바르기 편한 쿠션 타입입니다.", price: 8600, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
+  { id: "sk-missha-safeblock-rosy-12", name: "세이프블록 RX 로지 톤업 선쿠션 12g", brand: "미샤", category: "자외선·환경 보호", volume: "12g", vol: 12, volUnit: "g",
+    claim: "자외선 차단 쿠션", desc: "톤업 타입 선쿠션입니다.", price: 14570, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
+  { id: "sk-sws-sunaway-cc-15", name: "선어웨이 쿨링 선 CC EX 15g", brand: "설화수", category: "자외선·환경 보호", volume: "15g", vol: 15, volUnit: "g",
+    claim: "자외선 차단 CC 제품", desc: "쿨링 사용감의 CC 타입입니다.", price: 10840, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA+++", functional: null },
+  { id: "sk-age20s-calming-pact-125", name: "카밍 롱 프로텍션 선팩트 12.5g", brand: "에이지투웨니스", category: "자외선·환경 보호", volume: "12.5g", vol: 12.5, volUnit: "g",
+    claim: "자외선 차단 팩트", desc: "휴대·수정용 팩트 타입입니다.", price: 17900, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
+  { id: "sk-age20s-glowfit-pact-125", name: "글로우 핏 톤업 선팩트 12.5g", brand: "에이지투웨니스", category: "자외선·환경 보호", volume: "12.5g", vol: 12.5, volUnit: "g",
+    claim: "자외선 차단 팩트", desc: "톤업 타입 선팩트입니다.", price: 22900, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
+
+  /* ④ 기능성·트러블 케어 */
+  { id: "sk-anua-peach70-serum-30", name: "복숭아 70 나이아신 세럼 30ml", brand: "아누아", category: "기능성·트러블 케어", volume: "30mL", vol: 30, volUnit: "mL",
+    claim: "나이아신아마이드 함유 세럼", desc: "결·톤 관리를 목적으로 하는 세럼입니다.", price: 15520, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%95%84%EB%88%84%EC%95%84", functional: null },
+  { id: "sk-anua-pdrn-serum-30", name: "PDRN 히알루론산 캡슐 100 세럼 30ml", brand: "아누아", category: "기능성·트러블 케어", volume: "30mL", vol: 30, volUnit: "mL",
+    claim: "히알루론산 캡슐 함유 세럼", desc: "수분·결 관리 세럼입니다.", price: 17510, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%95%84%EB%88%84%EC%95%84", functional: null },
+  { id: "sk-lrp-hyalub5-serum-30", name: "이알루 B5 세럼 30ml", brand: "라로슈포제", category: "기능성·트러블 케어", volume: "30mL", vol: 30, volUnit: "mL",
+    claim: "히알루론산·판테놀 함유 세럼", desc: "수분·결 관리를 목적으로 하는 세럼입니다.", price: 41400, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", functional: null },
+  { id: "sk-sws-yunjo-eyeserum-20", name: "윤조 아이세럼 20ml", brand: "설화수", category: "기능성·트러블 케어", volume: "20mL", vol: 20, volUnit: "mL",
+    claim: "눈가 전용 세럼", desc: "눈가에 사용하는 소용량 세럼입니다.", price: 59390, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A4%ED%99%94%EC%88%98%20%EC%9C%A4%EC%A1%B0%EC%97%90%EC%84%BC%EC%8A%A4", functional: null },
+
+  /* ⑤ 더마·전문 케어 */
+  { id: "sk-lrp-cicaplast-b5-40", name: "시카플라스트 밤 B5 40ml", brand: "라로슈포제", category: "더마·전문 케어", volume: "40mL", vol: 40, volUnit: "mL",
+    claim: "판테놀(B5) 함유 진정 밤", desc: "자극받은 피부의 보습·진정을 목적으로 하는 더마코스메틱입니다.", price: 14570, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", functional: null },
+  { id: "sk-lrp-cicaplast-multi-100", name: "시카플라스트 멀티 리페어 크림 100ml", brand: "라로슈포제", category: "더마·전문 케어", volume: "100mL", vol: 100, volUnit: "mL",
+    claim: "판테놀 함유 보습 크림", desc: "건조하고 예민해진 피부를 위한 크림입니다.", price: 39080, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", functional: null },
+  { id: "sk-1004-watergel-mask-1", name: "마다가스카르 센텔라 워터겔 시트 앰플 마스크 1매", brand: "스킨1004", category: "더마·전문 케어", volume: "1매(25mL)", sheets: 1,
+    claim: "센텔라 함유 시트 마스크", desc: "낱장 구성입니다. 1매당 단가로 비교합니다.", price: 3800, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+  { id: "sk-1004-watergel-mask-5", name: "마다가스카르 센텔라 워터겔 시트 앰플 마스크 5매", brand: "스킨1004", category: "더마·전문 케어", volume: "5매", sheets: 5,
+    claim: "센텔라 함유 시트 마스크", desc: "5매 구성입니다.", price: 17100, source: "brand_mall", url: "https://skin1004korea.com", functional: null },
+
+  /* ⑥ 디바이스·이너뷰티 — 의료기기 허가 기기는 홈케어의료기 소관이라 여기 넣지 않는다 */
+  { id: "sk-medicube-boosterpro", name: "에이지알 부스터 프로", brand: "메디큐브", category: "디바이스·이너뷰티", volume: "1대",
+    claim: "홈 뷰티 디바이스", desc: "가정에서 사용하는 뷰티 디바이스입니다. 효과는 제조사 표기를 확인하세요.", price: 210000, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%A9%94%EB%94%94%ED%81%90%EB%B8%8C%20%EC%97%90%EC%9D%B4%EC%A7%80%EC%95%8C", functional: null },
+  { id: "sk-medicube-ultratune", name: "에이지알 울트라 튠 40.68", brand: "메디큐브", category: "디바이스·이너뷰티", volume: "1대",
+    claim: "홈 뷰티 디바이스", desc: "가정에서 사용하는 뷰티 디바이스입니다. 효과는 제조사 표기를 확인하세요.", price: 183000, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%A9%94%EB%94%94%ED%81%90%EB%B8%8C%20%EC%97%90%EC%9D%B4%EC%A7%80%EC%95%8C", functional: null },
+];
+
+/* 이너뷰티는 데이터를 옮기지 않는다 — 영양제(건기식)로 남기고 링크로만 안내한다 */
+const SKIN_INNER_LINK = { cats: ["콜라겐", "비타민C", "종합비타민"], note: "먹는 이너뷰티(콜라겐·비타민)는 건강기능식품이라 영양제 탭에서 1일 단가 기준으로 비교하실 수 있어요." };
+
+/* 이미지·상세 링크(수집분만) — 없으면 화면이 대체 썸네일을 그린다 */
+const SKIN_MEDIA = {};
+
+/* ══════════════ 피부 고민 → 제품군 → 진료 연계 온톨로지 ══════════════
+   피부 고민 → 적합한 제품군 → 추천 제품 → 필요 시 피부과·여성의학과 상담
+
+   설계 원칙(A4 재가돌봄 트리아지와 같은 사상)
+   ① **제품으로 해결되지 않는 것은 제품으로 팔지 않는다.** 진료 신호가 잡히면 추천을 멈춘다.
+   ② 진료 안내는 **답변 맨 앞에 삽입**한다 — 뒤에 덧붙이는 건 교정이 아니다.
+   ③ **오발동도 실패다.** "여드름 화장품 추천해줘"에 응급 안내가 붙으면 회원은 쇼핑을 못 한다.
+      그래서 신호 패턴은 증상 서술에서만 걸리도록 좁게 쓴다.
+   ④ A3는 **진단하지 않는다.** 병명을 말하지 않고 "진료에서 확인하시는 게 좋아요"까지만 간다.
+   진료과 키는 telemed.js의 DEPT_CATS를 그대로 쓴다(derma=피부과 · obgy=산부인과/여성의학과). */
+
+/* ── 즉시 진료 — 상담보다 위에 있는 규칙 ── */
+const SKIN_URGENT = [
+  { key: "anaphylaxis", level: "critical", dept: null,
+    re: /(입술|눈).{0,6}(붓|부어|부었|부종)|숨.{0,4}(쉬기힘|막히|차|가쁘)|호흡곤란|목이.{0,3}붓/,
+    line: "지금 하시는 말씀은 급성 알레르기 반응일 수 있어요. **사용 중인 제품을 바로 멈추시고 119 또는 응급실로 연락해 주세요.** 제품 안내는 그다음에 도와드릴게요." },
+  { key: "fever-rash", level: "urgent", dept: "derma",
+    re: /(열|발열|미열).{0,12}(발진|두드러기|뾰루지|붉은반점)|(발진|두드러기).{0,12}(열이|발열)|(하루|이틀|갑자기).{0,6}(번지|퍼지|확산)/,
+    line: "열이 함께 있거나 빠르게 번지는 발진은 오늘 중 진료로 확인하셔야 해요. 피부과 진료가 어려우면 응급실도 방법이에요." },
+  { key: "mole-change", level: "urgent", dept: "derma",
+    re: /(점|검은반점|모반).{0,10}(커지|커졌|색이변|색깔이변|모양이변|번지|피가|출혈)|비대칭.{0,6}점/,
+    line: "점의 크기·색·모양이 달라지는 건 **제품으로 관리할 사안이 아니에요.** 피부과에서 바로 확인받으시는 게 좋아요." },
+  { key: "pus", level: "urgent", dept: "derma",
+    re: /(고름|화농|진물|곪|짓무)|(심하게|많이).{0,4}아프|통증이.{0,4}(심|커)/,
+    line: "고름·진물이나 심한 통증은 감염이 있을 수 있어요. 짜거나 바르기 전에 진료로 확인해 주세요." },
+  { key: "steroid", level: "urgent", dept: "derma",
+    re: /(스테로이드|스테로이드연고|호르몬연고).{0,14}(오래|장기|계속|끊|중단|끊었|악화|심해)/,
+    line: "스테로이드 연고는 임의로 끊는 것도, 계속 쓰는 것도 위험할 수 있어요. 피부과에서 조절을 상의해 주세요." },
+];
+
+/* ── 고민 12종 ── */
+const SKIN_CONCERN = [
+  { key: "sensitive", label: "민감·붉어짐", kw: ["민감성", "민감한피부", "예민한피부", "따갑", "쓰라", "자극받"],
+    primary: "보습·장벽 케어", secondary: "더마·전문 케어",
+    refer: "2주 넘게 계속되거나 화끈거림·부종이 같이 오면", dept: "derma" },
+  { key: "dry", label: "건조·당김", kw: ["건조", "당김", "당겨", "각질", "푸석"],
+    primary: "보습·장벽 케어", secondary: "클렌징 케어",
+    refer: "각질이 갈라지거나 피가 비치고 온몸이 가려우면", dept: "derma" },
+  { key: "acne", label: "여드름·트러블", kw: ["여드름", "트러블", "뾰루지", "좁쌀"],
+    primary: "기능성·트러블 케어", secondary: "클렌징 케어",
+    refer: "곪거나 아프고 흉이 남기 시작하면", dept: "derma" },
+  { key: "acne-hormonal", label: "성인 여성 턱선 여드름", kw: ["턱여드름", "턱선여드름", "생리전여드름", "생리때여드름", "호르몬여드름"],
+    primary: "기능성·트러블 케어", secondary: "더마·전문 케어",
+    refer: "생리주기마다 반복되고 생리불순·다모가 같이 오면", dept: "obgy" },
+  { key: "pigment", label: "색소·기미·잡티", kw: ["기미", "잡티", "색소", "미백", "톤업", "칙칙"],
+    primary: "기능성·트러블 케어", secondary: "자외선·환경 보호",
+    refer: "점이나 반점의 모양·색·크기가 달라지면", dept: "derma" },
+  { key: "wrinkle", label: "주름·탄력", kw: ["주름", "탄력", "처짐", "리프팅", "안티에이징", "노화"],
+    primary: "기능성·트러블 케어", secondary: "디바이스·이너뷰티", refer: null, dept: null },
+  { key: "pore", label: "모공·피지", kw: ["모공", "피지", "번들", "블랙헤드", "지성"],
+    primary: "클렌징 케어", secondary: "기능성·트러블 케어", refer: null, dept: null },
+  { key: "redness", label: "홍조", kw: ["홍조", "얼굴이빨", "붉은기", "안면홍조"],
+    primary: "더마·전문 케어", secondary: "보습·장벽 케어",
+    refer: "붉은기가 가라앉지 않고 실핏줄이 도드라지면", dept: "derma" },
+  { key: "scalp", label: "두피·모발", kw: ["두피", "머리카락", "비듬", "탈모"],
+    primary: "더마·전문 케어", secondary: "디바이스·이너뷰티",
+    refer: "머리카락이 갑자기 많이 빠지거나 동그랗게 비면", dept: "derma" },
+  { key: "post-procedure", label: "시술 후 관리", kw: ["시술후", "레이저후", "필링후", "박피후", "리쥬란", "재생관리"],
+    primary: "더마·전문 케어", secondary: "보습·장벽 케어",
+    refer: "진물·열감·통증이 심해지면 **시술받으신 병원에 먼저**", dept: "derma" },
+  { key: "pregnancy", label: "임신·수유 중", kw: ["임신", "임산부", "수유중", "모유수유"],
+    primary: "보습·장벽 케어", secondary: "자외선·환경 보호",
+    refer: "성분을 써도 되는지 궁금하시면", dept: "obgy" },
+  { key: "menopause", label: "갱년기 건조·가려움", kw: ["갱년기", "폐경", "완경"],
+    primary: "보습·장벽 케어", secondary: "디바이스·이너뷰티",
+    refer: "온몸이 가렵고 잠을 설칠 정도면", dept: "obgy" },
+];
+
+/* 진료과 라벨 — telemed.js DEPT_CATS를 단일 소스로 쓰고, 없으면 최소 표기로 떨어진다 */
+function skinDeptLabel(key) {
+  try {
+    if (typeof DEPT_CATS !== "undefined") {
+      const d = DEPT_CATS.find(function (c) { return c.key === key; });
+      if (d) return d.clinic || d.label;
+    }
+  } catch (e) {}
+  return key === "obgy" ? "여성의학과" : "피부과";
+}
+
+/* ── 즉시 진료 신호 판정 — 잡히면 제품 추천을 하지 않는다 ── */
+function skinUrgent(question) {
+  const t = String(question || "");
+  for (const u of SKIN_URGENT) if (u.re.test(t)) return u;
+  return null;
+}
+
+/* ── 고민 판정 — 가장 긴 키워드가 이긴다(턱여드름이 여드름을 이겨야 한다) ── */
+function skinConcernOf(question) {
+  const t = String(question || "").toLowerCase().replace(/\s+/g, "");
+  let best = null;
+  for (const c of SKIN_CONCERN) {
+    for (const w of c.kw) {
+      if (t.indexOf(w) >= 0 && (!best || w.length > best.len)) best = { c: c, len: w.length };
+    }
+  }
+  return best ? best.c : null;
+}
+
+/* ── 고민 상담 문장 — 제품군까지만 말하고, 선을 넘으면 진료로 넘긴다 ── */
+function skinConcernLines(concern, picks) {
+  if (!concern) return null;
+  const lines = [];
+  lines.push(`${concern.label} 고민이시군요. 이런 순서로 보시면 편해요.`);
+  lines.push(`· 먼저 볼 제품군 → **${concern.primary}**`);
+  if (concern.secondary) lines.push(`· 같이 보면 좋은 것 → ${concern.secondary}`);
+  if (picks && picks.length) {
+    lines.push("· 이 분류에서 지금 비교 가능한 제품이에요");
+    picks.forEach(function (p) { lines.push(`   - ${p.name}(${p.brand}) · ${p.volume}`); });
+  }
+  if (concern.refer && concern.dept) {
+    lines.push(`※ ${concern.refer} **${skinDeptLabel(concern.dept)} 상담**을 받아보시는 게 좋아요 — 제품으로 붙잡고 있을 일이 아니에요.`);
+  }
+  lines.push("※ 화장품은 인체를 청결·미화하고 피부·모발의 건강을 유지·증진하기 위한 물품으로, 질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아니에요.");
+  return lines;
+}
+
+/* ── 원격진료 연결 — 새 화면을 만들지 않고 기존 비대면 원격진료 탭을 연다 ──
+   window._teleGo.dept를 심어 두면 원격주치의 화면이 그 진료과로 열린다(Shop의 _shopGo와 같은 방식). */
+function skinTeleGo(deptKey) {
+  try { if (typeof window !== "undefined") window._teleGo = { dept: deptKey || "derma" }; } catch (e) {}
+  return { label: "🩺 " + skinDeptLabel(deptKey) + " 원격진료 연결", to: "tele" };
+}
+
 /* ══════════════ 시장 레퍼런스 — 플랫폼 밖 대중 제품 비교용 확장 지점(Phase C) ══════════════
    목적: 회원이 하이핀 안의 제품만 보고 고르지 않도록, **시장에서 널리 쓰이는 대안**을 같은 표에 올린다.
 
@@ -20311,6 +20702,14 @@ const CMP_AXES = {
   "질환케어": { kind: "meal", servingLabel: "1식" },
   "균형영양식": { kind: "meal", servingLabel: "1회" },
   "단백질": { kind: "meal", servingLabel: "1회" },
+  /* 스킨 헬스케어 — 화장품에는 **1일 섭취량이 없다.** 용량당 단가로 재고, 매수로 파는 것만 1매당으로 내린다.
+     기기(디바이스)는 나눌 단위가 없으므로 단가를 만들지 않는다 — 없는 축을 지어내지 않는다. */
+  "클렌징 케어": { kind: "skin" },
+  "보습·장벽 케어": { kind: "skin" },
+  "자외선·환경 보호": { kind: "skin", spf: true },
+  "기능성·트러블 케어": { kind: "skin" },
+  "더마·전문 케어": { kind: "skin" },
+  "디바이스·이너뷰티": { kind: "skin", device: true },
 };
 function cmpAxis(category) { return CMP_AXES[category] || { kind: "supp" }; }
 
@@ -20319,6 +20718,9 @@ function cmpCostText(r, basis, ax) {
   if (basis === "perDay") return `${r.perDayCost}원/일(1일 ${r.perDay}${r.unit} 기준)`;
   if (basis === "perUse") return `${r.perUse}원/회(동봉 ${ax.bundleLabel || "소모품"} ${r.bundle.count}${r.bundle.count >= 1 ? "매" : ""} 기준)`;
   if (basis === "perServing") return `${r.perServing}원/${(ax.servingLabel || "1회").replace(/^1/, "")}(${r.servings.count}${r.servings.unit} 기준)`;
+  if (basis === "perVolume") return `${r.perVolume}원/${r.volUnit}(${r.vol}${r.volUnit} 기준)`;
+  if (basis === "perSheet") return `${r.perSheet}원/매(${r.sheets}매 기준)`;
+  if (basis === "perDevice") return `${r.price.toLocaleString()}원(1대)`;
   return `${r.perUnit}원/${r.unit}`;
 }
 
@@ -20383,9 +20785,17 @@ function cmpRow(p, opts) {
   const total2 = total || (servings && servings.count) || null;
   const unit2 = (total ? unit : (servings && servings.unit)) || unit;
   if (perUnit == null && total2) perUnit = Math.round(price / total2);
+  /* 스킨 — 용량당 단가(mL·g)와 1매당 단가. 표기된 값만 쓰고, 없으면 null로 둔다(추정 없음) */
+  const skVol = (typeof p.vol === "number" && p.vol > 0) ? p.vol : null;
+  const volUnit = p.volUnit || null;
+  const perVolume = (skVol && price) ? Math.round(price / skVol) : null;
+  const sheets = (typeof p.sheets === "number" && p.sheets > 0) ? p.sheets : null;
+  const perSheet = (sheets && price) ? Math.round(price / sheets) : null;
   return {
     id: p.id, name: p.name, brand: p.brand, category: p.category, price: price,
     kind: ax.kind, bundle: bundle, perUse: perUse, servings: servings, perServing: perServing,
+    vol: skVol, volUnit: volUnit, perVolume: perVolume, sheets: sheets, perSheet: perSheet,
+    spf: p.spf || null, pa: p.pa || null, functional: p.functional || null,
     total: total2, unit: unit2, perDay: perDay, perDaySrc: (p.serving && p.serving.perDaySrc) || null,
     days: days, perUnit: perUnit, perDayCost: perDayCost,
     reward: reward, netPerDay: netPerDay,
@@ -20405,8 +20815,9 @@ function compareProducts(category, opts) {
     const supp = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
     const dev = (typeof DEVICE_PRODUCTS !== "undefined") ? DEVICE_PRODUCTS : [];
     const meal = (typeof MEAL_PRODUCTS !== "undefined") ? MEAL_PRODUCTS : [];
+    const skin = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
     const mkt = (typeof MARKET_REFERENCE !== "undefined") ? MARKET_REFERENCE : [];
-    pool = supp.concat(dev).concat(meal).concat(mkt).filter(function (p) { return p && p.category === category; });
+    pool = supp.concat(dev).concat(meal).concat(skin).concat(mkt).filter(function (p) { return p && p.category === category; });
   } catch (e) { pool = []; }
   if (!pool.length) return null;
 
@@ -20427,6 +20838,34 @@ function compareProducts(category, opts) {
     dayRows = rows.filter(function (r) { return r.perUse; }).sort(function (a, b) { return a.perUse - b.perUse; });
     unitRows = rows.filter(function (r) { return !r.perUse; }).sort(function (a, b) { return (a.perUnit || 0) - (b.perUnit || 0); });
     basis = dayRows.length >= 2 ? "perUse" : "perUnit";
+  } else if (ax.kind === "skin") {
+    /* 화장품 — 용량당 단가가 기본. 매수로 파는 것(패드·시트마스크)은 1매당으로 내린다.
+       디바이스는 나눌 단위가 없으므로 단가를 만들지 않고 가격만 세운다. */
+    if (ax.device) {
+      /* 기기는 나눌 단위가 없다 — 단가를 지어내지 않고 가격만 낮은 순으로 세운다 */
+      dayRows = rows.slice().sort(function (a, b) { return a.price - b.price; });
+      unitRows = [];
+      basis = "perDevice";
+    } else {
+      /* ⚠️ 여기서 두 번 미끄러졌다.
+         ① 매수로 파는 것(패드·시트마스크)과 용량으로 파는 것을 한 축에 세우면 안 된다.
+         ② **mL과 g도 다른 단위다.** 361원/mL과 614원/g을 한 줄에 정렬하면 최저가 배지가 거짓이 된다.
+         그래서 "재는 자"가 같은 것끼리만 줄 세우고, 나머지는 각자 자기 단가를 달고 따로 보여준다. */
+      const measureOf = function (r) { return r.perVolume ? ("vol:" + (r.volUnit || "mL")) : (r.perSheet ? "sheet" : null); };
+      const count = {};
+      rows.forEach(function (r) { const k = measureOf(r); if (k) count[k] = (count[k] || 0) + 1; });
+      let main = null;
+      Object.keys(count).forEach(function (k) { if (!main || count[k] > count[main] || (count[k] === count[main] && k !== "sheet")) main = k; });
+      if (main) {
+        const inMain = rows.filter(function (r) { return measureOf(r) === main; });
+        basis = main === "sheet" ? "perSheet" : "perVolume";
+        dayRows = inMain.sort(function (a, b) { return (basis === "perSheet" ? a.perSheet - b.perSheet : a.perVolume - b.perVolume); });
+        unitRows = rows.filter(function (r) { return measureOf(r) !== main; }).sort(function (a, b) { return (a.price || 0) - (b.price || 0); });
+      } else {
+        dayRows = []; unitRows = rows.slice().sort(function (a, b) { return (a.price || 0) - (b.price || 0); });
+        basis = "perUnit";
+      }
+    }
   } else if (ax.kind === "meal") {
     /* 식단 — 1식(1회) 단가. 수량이 확인 안 된 제품은 줄 세우지 않는다 */
     dayRows = rows.filter(function (r) { return r.perServing; }).sort(function (a, b) { return a.perServing - b.perServing; });
@@ -20437,7 +20876,7 @@ function compareProducts(category, opts) {
     unitRows = rows.filter(function (r) { return !r.perDayCost; }).sort(function (a, b) { return (a.perUnit || 0) - (b.perUnit || 0); });
     basis = dayRows.length >= 2 ? "perDay" : "perUnit";
   }
-  const cost = function (r) { return basis === "perDay" ? r.perDayCost : basis === "perUse" ? r.perUse : basis === "perServing" ? r.perServing : r.perUnit; };
+  const cost = function (r) { return basis === "perDay" ? r.perDayCost : basis === "perUse" ? r.perUse : basis === "perServing" ? r.perServing : basis === "perVolume" ? r.perVolume : basis === "perSheet" ? r.perSheet : basis === "perDevice" ? r.price : (r.perUnit != null ? r.perUnit : r.price); };
   /* 단가를 낼 수 없는 제품은 **줄에 세우지 않는다** — "null원/개"가 새어 나가면 비교표가 스스로를 부정한다 */
   const priceable = rows.filter(function (r) { return r.perUnit != null; }).sort(function (a, b) { return a.perUnit - b.perUnit; });
   const primary = (basis !== "perUnit") ? dayRows : priceable;
@@ -20479,8 +20918,13 @@ function compareProducts(category, opts) {
     perUse: "동봉 " + (ax.bundleLabel || "소모품") + " 1회당 단가(원/회)",
     perServing: (ax.servingLabel || "1회") + " 단가(원/" + (ax.servingLabel || "1회").replace(/^1/, "") + ")",
     perUnit: "단위당 단가(원/" + (picked[0].unit || "개") + ")",
+    perVolume: "용량당 단가(원/" + (picked[0].volUnit || "mL") + ")",
+    perSheet: "1매당 단가(원/매)",
+    perDevice: "제품 가격(원/대)",
   };
-  const axis = [AXIS_LABEL[basis], nutKey ? nutKey + " 1일 함량" : null].filter(Boolean).join(" · ");
+  let axis = [AXIS_LABEL[basis], nutKey ? nutKey + " 1일 함량" : null].filter(Boolean).join(" · ");
+  if (ax.device) axis = "제품 가격(원) — 기기는 나눌 단위가 없어 단가를 만들지 않아요";
+  else if (ax.spf) axis = axis + " · SPF·PA 표기";
 
   /* 데이터 커버리지 — 무엇이 비어 있는지 정직하게 드러낸다 */
   const coverage = {
@@ -20523,6 +20967,13 @@ function compareProducts(category, opts) {
   ]);
   if (ax.kind === "supp" && coverage.withNutrient < coverage.total) notices.push("성분 함량이 등록되지 않은 제품은 성분 비교에서 제외했어요 — 제품 라벨에서 확인하실 수 있어요.");
   if (ax.kind === "supp" && coverage.withPerDay < coverage.total) notices.push("1일 섭취량이 확인된 제품만 '1일 단가'로 계산했고, 나머지는 단위당 단가로 비교했어요.");
+  if (ax.kind === "skin") {
+    /* 화장품법 대상이라 건기식 고지문을 쓰지 않는다 — 붙이는 순간 그 자체가 잘못된 표시다 */
+    notices.push("화장품은 인체를 청결·미화하고 피부·모발의 건강을 유지·증진하기 위한 물품으로, 질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아니에요.");
+    if (ax.spf) notices.push("SPF·PA는 제품 표기를 그대로 옮긴 것이고, 단가와 섞어 줄 세우지 않았어요.");
+    if (ax.device) notices.push("기기는 나눌 단위가 없어 단가를 만들지 않았어요 — 가격만 낮은 순으로 보여드려요.");
+    if (picked.some(function (r) { return !r.functional; })) notices.push("기능성화장품(미백·주름 개선·자외선 차단)은 식약처 심사·보고를 확인한 제품에만 표기해요 — 확인하지 못한 제품은 비워 뒀어요.");
+  }
   if (ax.note) notices.push(ax.note);
   if (basis === "perUse") notices.push("동봉된 " + (ax.bundleLabel || "소모품") + "를 다 쓴 뒤의 재구매 가격은 따로 확인하셔야 해요 — 여기 계산에는 들어 있지 않아요.");
 
@@ -20542,14 +20993,18 @@ function compareToLines(cmp) {
     const badge = [];
     if (cmp.highlights.mostNutrient && cmp.highlights.mostNutrient.id === r.id) badge.push("🏅성분 최다");
     if (cmp.highlights.cheapest && cmp.highlights.cheapest.id === r.id) badge.push(
-      cmp.basis === "perDay" ? "💰1일 단가 최저" : cmp.basis === "perUse" ? "💰1회당 최저" : cmp.basis === "perServing" ? "💰1식 단가 최저" : "💰단위당 최저");
+      cmp.basis === "perDay" ? "💰1일 단가 최저" : cmp.basis === "perUse" ? "💰1회당 최저" : cmp.basis === "perServing" ? "💰1식 단가 최저"
+        : cmp.basis === "perVolume" ? "💰용량당 최저" : cmp.basis === "perSheet" ? "💰1매당 최저" : cmp.basis === "perDevice" ? "💰가격 최저" : "💰단위당 최저");
     const price = cmpCostText(r, cmp.basis, cmpAxis(cmp.category));
     /* 성분 칸은 영양제에서만 — 혈압계에 "성분 정보 없음"을 붙이면 정보가 아니라 소음이다 */
     const anyNut = cmp.rows.some(function (x) { return x.nutrient; });
     const nut = r.nutrient ? `${r.nutrient.key} ${r.nutrient.amount}${r.nutrient.unit}` : (anyNut ? "성분 정보 없음" : null);
     /* 형태(rTG·캡슐 등)는 비교에 의미가 있을 때만 — 아무도 값이 없으면 줄마다 "정보 없음"을 반복하지 않는다 */
     const form = anyForm ? (r.form || "형태 정보 없음") : null;
-    const seg = [`· ${r.name}(${r.brand})` + (nut ? ` — ${nut}` : ""), price].concat(form ? [form] : []).concat([`${r.market ? "시장 유통가" : "브랜드몰"} 기준${badge.length ? " " + badge.join(" ") : ""}`]);
+    /* SPF·PA는 표기를 그대로 옮기는 별도 칼럼 — 단가와 한 축으로 섞지 않는다 */
+    const anySpf = cmp.rows.some(function (x) { return x.spf || x.pa; });
+    const uv = anySpf ? ([r.spf, r.pa].filter(Boolean).join("/") || "차단지수 표기 없음") : null;
+    const seg = [`· ${r.name}(${r.brand})` + (nut ? ` — ${nut}` : ""), price].concat(uv ? [uv] : []).concat(form ? [form] : []).concat([`${r.market ? "시장 유통가" : "브랜드몰"} 기준${badge.length ? " " + badge.join(" ") : ""}`]);
     L.push(seg.join(" · "));
   });
   if (cmp.pending && cmp.pending.length) {
@@ -20557,13 +21012,25 @@ function compareToLines(cmp) {
     const kind = (cmp.rows[0] && cmp.rows[0].kind) || "supp";
     const why = cmp.basis === "perUse" ? "동봉 소모품 구성이 달라"
       : cmp.basis === "perServing" ? "수량 표기가 없어"
+      : kind === "skin" ? "재는 단위가 달라"
       : kind === "supp" ? "1일 섭취량이 확인되지 않아" : "수량 표기가 없어";
     const tag = cmp.basis === "perUse" ? "시험지 별매 — 재구매 비용 확인 필요"
+      : kind === "skin" ? "용량 확인 필요"
       : kind === "supp" ? "1일 섭취량 확인 필요" : "수량 확인 필요";
-    L.push(`아래 제품은 ${why} 같은 기준으로 줄 세우지 않았어요(단위당 단가만 안내).`);
+    L.push(kind === "skin"
+      ? `아래 제품은 ${why} 같은 기준으로 줄 세우지 않았어요 — 각자의 단가로 따로 안내해 드릴게요.`
+      : `아래 제품은 ${why} 같은 기준으로 줄 세우지 않았어요(단위당 단가만 안내).`);
     cmp.pending.forEach(function (r) {
+      if (kind === "skin") {
+        /* 재는 자가 달라 줄에서 뺀 것뿐이다 — 그 제품의 진짜 단가를 그대로 달아 준다 */
+        const own = r.perVolume ? `${r.perVolume.toLocaleString()}원/${r.volUnit}` : (r.perSheet ? `${r.perSheet.toLocaleString()}원/매` : null);
+        const why2 = r.perVolume ? `${r.volUnit} 단위 제품이라 이 표의 기준과 달라요` : (r.perSheet ? "매수로 파는 제품이라 이 표의 기준과 달라요" : "용량 표기가 없어 단가를 낼 수 없어요");
+        L.push(`· ${r.name}(${r.brand}) — ${Number(r.price).toLocaleString()}원${own ? " · " + own : ""} · ${why2}`);
+        return;
+      }
       const p = r.perUnit ? `${r.perUnit}원/${r.unit}` : `${Number(r.price).toLocaleString()}원`;
-      L.push(`· ${r.name}(${r.brand}) — ${p} · ${r.perUnit ? tag : "수량 표기가 없어 단가를 낼 수 없어요"}`);
+      const noUnit = "수량 표기가 없어 단가를 낼 수 없어요";
+      L.push(`· ${r.name}(${r.brand}) — ${p} · ${r.perUnit ? tag : noUnit}`);
     });
   }
   if (cmp.highlights.bestAfterReward) L.push(`하이핀에서 구매하면 적립이 붙어요 — ${cmp.highlights.bestAfterReward.name} 기준 적립 반영 실부담 ${cmp.highlights.bestAfterReward.netPerDay}원/${cmp.highlights.bestAfterReward.perDayCost ? "일" : cmp.highlights.bestAfterReward.unit}.`);
@@ -27481,8 +27948,14 @@ const HI_AGENTS = [
         "내시경", "위내시경", "대장내시경", "초음파", "결절", "갑상선", "빈혈", "골다공증", "관절염", "위염", "궤양", "역류성",
         "당뇨", "고혈압", "고지혈", "지방간", "간염", "신장", "폐렴", "천식", "치매", "뇌졸중", "심근경색", "협심증", "부정맥",
         "갱년기", "수면무호흡", "코골이", "우울", "불면", "비만", "대사증후군", "요단백", "요산", "통풍", "전립선", "자궁", "유방",
-        "진단기준", "전조", "합병증", "예방접종", "백신", "정상수치", "기준치"],
-      deny: ["보험", "보장", "실손", "청구", "보험료", "휴면보험금", "예약", "영양제", "구매", "간병", "돌봄", "상품", "제품", "주문", "가격", "밀키트", "기능식품"],
+        "진단기준", "전조", "합병증", "예방접종", "백신", "정상수치", "기준치",
+      /* 피부 증상은 쇼핑이 아니라 진료 영역이다 — A3 scope에는 넣지 않고 여기에 둔다.
+         (스킨 헬스케어를 열면서 "여드름이 심해졌어요"가 갈 곳이 없어 A0로 새던 것을 A1으로 돌린다) */
+      "여드름", "아토피", "탈모", "홍조", "피부염", "지루성", "건선", "두드러기", "발진", "가려움", "습진", "피부",
+      "화끈거", "따가워", "붉어져", "머리가 빠", "머리카락이 빠", "각질이 일어"],
+      deny: ["보험", "보장", "실손", "청구", "보험료", "휴면보험금", "예약", "영양제", "구매", "간병", "돌봄", "상품", "제품", "주문", "가격", "밀키트", "기능식품",
+        /* 제품 맥락이면 쇼핑이 받는다 — "여드름 화장품 추천해줘"가 증상 상담으로 새면 회원은 제품을 못 본다 */
+        "화장품", "스킨케어", "클렌징", "토너", "세럼", "앰플", "선크림", "썬크림", "크림 추천", "더마코스메틱"],
     },
     outOfScope: ["검진 예약 실행", "보험 상품·보장", "제품 판매", "돌봄 계약"],
     handler: "aiDoctorAgent",
@@ -27517,7 +27990,13 @@ const HI_AGENTS = [
         "건강기능식품", "기능식품", "저염", "건강식단", "식품",
         /* [확장] 카탈로그에 있는데 여기 없어서 A0로 새던 것들 — 별칭(A3_CAT_ALIAS)과 어긋나면 비교표가 열리지 않는다 */
         "홍삼", "아연", "보청기", "네블라이저", "흡입기", "안마기", "마사지기", "저주파", "요실금", "케겔", "체온계",
-        "도시락", "질환케어", "환자식", "연화식", "균형영양식", "영양음료", "식사대용", "간편식", "반찬", "건강차", "맞춤식"],
+        "도시락", "질환케어", "환자식", "연화식", "균형영양식", "영양음료", "식사대용", "간편식", "반찬", "건강차", "맞춤식",
+        /* [스킨 헬스케어] 별칭(A3_CAT_ALIAS)과 **반드시 짝을 이룬다** — 한쪽만 넣으면 답변불가로 샌다.
+           "여드름·아토피·탈모·홍조" 단독 단어는 넣지 않는다: 그건 증상이고 A1이 받아야 한다. */
+        "화장품", "스킨케어", "클렌징", "세안제", "각질", "필링", "토너", "에센스", "세럼", "앰플", "수분크림",
+        "진정크림", "보습", "피부장벽", "선크림", "썬크림", "자외선차단", "선케어", "선쿠션", "선팩트",
+        "미백화장품", "주름개선", "아이크림", "더마", "더마코스메틱", "시카", "마스크팩", "시트마스크",
+        "뷰티디바이스", "홈뷰티", "피부측정"],
       deny: ["보험", "청구", "간병", "돌봄"],
     },
     outOfScope: ["치료 효과 단정", "진단", "보험"],
@@ -28262,6 +28741,114 @@ function shopGuardLog(q, v) {
 
 try { if (typeof window !== "undefined") { window.__hifinShopGuard = { check: shoppingGuard, rules: SHOP_GUARD_RULES, text: SHOP_GUARD_TEXT }; } } catch (e) {}
 
+/* ══════════════ 스킨 헬스케어 가드 — 화장품법·표시광고 ══════════════
+   ⚠️ shoppingGuard(건강기능식품)를 확장하지 않고 **따로 둔다.** 법령이 다르면 가드도 달라야 한다.
+      건기식 고지문("건강기능식품은 의약품이 아닙니다")을 화장품에 붙이면 그 자체가 잘못된 표시다.
+
+   헌법 7조
+     ①의약품 오인 금지(치료·완화·재생)  ②효능 단정 금지  ③기능성화장품 범위 준수(미백·주름개선·자외선차단)
+     ④안전성 단정 금지  ⑤진단 금지(→A1)  ⑥원가·마진 노출 금지  ⑦공정 비교 의무
+
+   처리 원칙은 A2~A4와 같다 — **단정 표현은 치환한다.** 뒤에 고지를 덧붙이는 것은 교정이 아니다. */
+
+const SKIN_GUARD_TEXT = {
+  notDrug: "※ 화장품은 인체를 청결·미화하고 피부·모발의 건강을 유지·증진하기 위한 물품으로, 질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아니에요.",
+  seeDoctor: "※ 증상이 계속되거나 심해지면 피부과 진료로 확인해 주세요.",
+  patch: "※ 피부가 예민하시면 사용 전 팔 안쪽에 소량 발라 확인(패치테스트)해 보시는 걸 권해요.",
+  basis: "※ 비교는 표시된 기준(용량당 단가)으로만 했고, 어떤 제품이 더 낫다고 단정하지 않아요.",
+  functional: "※ 기능성화장품은 미백·주름 개선·자외선 차단 세 가지로, 식약처 심사·보고를 확인한 제품에만 표기해요.",
+  safe: "이 부분은 제가 단정해서 말씀드리면 안 되는 영역이에요 — 확인된 제품 정보와 비교 기준까지만 안내해 드릴게요.",
+};
+
+const SKIN_GUARD_RULES = [
+  /* ① 의약품 오인 — 아토피·여드름·탈모 '치료'는 화장품이 말할 수 없다 */
+  { id: "drugClaim", law: "①의약품 오인 금지", mode: "fix+append",
+    detect: /(아토피|여드름|탈모|건선|주사|infl)?.{0,6}(치료(해요|합니다|돼요|됩니다|가\s*돼)|완치|낫게\s*해|낫습니다|없애\s*드려요|제거해\s*드려요|재생(시켜|해\s*드려요|됩니다))/,
+    fix: (s) => s
+      .replace(/아토피(를)?\s*(치료|완화)(해요|합니다|돼요|됩니다)/g, "보습에 도움을 줄 수 있어요 — 아토피는 피부과 진료가 먼저예요")
+      .replace(/여드름(을)?\s*(치료|제거)(해요|합니다|돼요|됩니다)/g, "인체세정용·관리 제품이에요 — 염증성 여드름은 진료 대상이에요")
+      .replace(/탈모(를)?\s*(치료|개선)(해요|합니다|돼요|됩니다)|발모(돼요|됩니다)/g, "두피·모발 관리 제품이에요 — 탈모는 진료로 확인하셔야 해요")
+      .replace(/(상처|흉터)(를)?\s*재생(시켜\s*드려요|해\s*드려요|됩니다|해요)/g, "보습·진정 관리 제품이에요")
+      .replace(/완치(됩니다|돼요)?/g, "관리에 도움을 줄 수 있어요")
+      .replace(/낫게\s*해\s*(드려요|줍니다)|낫습니다/g, "도움을 줄 수 있어요")
+      .replace(/치료(해요|합니다|돼요|됩니다)/g, "관리에 도움을 줄 수 있어요"),
+    need: SKIN_GUARD_TEXT.notDrug },
+
+  /* ② 효능 단정 — "하얘진다"·"주름이 없어진다"는 기능성 표현이 아니다 */
+  { id: "efficacy", law: "②효능 단정 금지", mode: "fix+append",
+    detect: /(하얘(져요|집니다|진다)|미백(돼요|됩니다)|주름이\s*(없어|사라|펴)|모공이\s*(없어|사라)|확실히\s*좋아(져요|집니다)|즉시\s*효과)/,
+    fix: (s) => s
+      .replace(/하얘(져요|집니다|진다)|미백(돼요|됩니다)/g, "미백에 도움을 줄 수 있어요")
+      .replace(/주름이\s*(없어져요|사라져요|펴져요|없어집니다)/g, "주름 개선에 도움을 줄 수 있어요")
+      .replace(/모공이\s*(없어져요|사라져요)/g, "결 관리에 도움을 줄 수 있어요")
+      .replace(/확실히\s*좋아(져요|집니다)|즉시\s*효과(가\s*있어요|예요)?/g, "사용감·효과는 사람마다 달라요"),
+    need: SKIN_GUARD_TEXT.notDrug },
+
+  /* ③ 기능성화장품 범위 — 심사·보고를 확인하지 못한 것에 기능성을 붙이지 않는다 */
+  { id: "functionalScope", law: "③기능성화장품 범위 준수", mode: "fix+append",
+    detect: /(리프팅\s*기능성|탄력\s*기능성|모공\s*기능성|기능성\s*화장품이라\s*(탄력|리프팅|모공))/,
+    fix: (s) => s
+      .replace(/(리프팅|탄력|모공)\s*기능성\s*(화장품)?/g, "제조사 표기 기준의 일반 화장품")
+      .replace(/기능성\s*화장품이라\s*(탄력|리프팅|모공)(에)?\s*좋아요/g, "기능성화장품은 미백·주름 개선·자외선 차단 세 가지예요"),
+    need: SKIN_GUARD_TEXT.functional },
+
+  /* ④ 안전성 단정 — "부작용 없다"·"아기에게 안전"은 말할 수 없다 */
+  { id: "safety", law: "④안전성 단정 금지", mode: "fix+append",
+    detect: /(부작용(이)?\s*없(어요|습니다|는)|무해(해요|합니다)|누구나\s*안전|(아기|임산부)(에게도|에게|한테도|한테|도)?\s*안전|100%\s*안전)/,
+    fix: (s) => s
+      .replace(/부작용(이)?\s*없(어요|습니다)|무해(해요|합니다)|100%\s*안전(해요|합니다)?/g, "성분은 그대로 알려드릴게요 — 피부에 따라 반응이 다를 수 있어요")
+      .replace(/누구나\s*안전(해요|합니다)?/g, "피부 타입에 따라 다를 수 있어요")
+      .replace(/(아기|임산부)(에게도|에게|한테도|한테|도)?\s*안전(해요|합니다)?/g, "사용 전 성분을 확인하시고 걱정되시면 전문가와 상의하세요"),
+    need: SKIN_GUARD_TEXT.patch },
+
+  /* ⑤ 진단 금지 — 병명을 말하지 않는다(A1로 넘긴다) */
+  { id: "diagnose", law: "⑤진단 금지", mode: "block", handback: "A1",
+    detect: /(지루성\s*피부염이에요|아토피예요|아토피입니다|건선이에요|주사(피부염)?예요|이건\s*\w*염이에요|피부암이에요)/ },
+
+  /* ⑥ 원가·마진 노출 금지 */
+  { id: "cost", law: "⑥원가·마진율 노출 금지", mode: "strip",
+    detect: /(원가율|공급\s*단가|매입가|수수료율|마진율)/ },
+
+  /* ⑦ 공정 비교 — 단정·비방·자사 우대 금지 */
+  { id: "superlative", law: "⑦공정 비교 — 단정 금지", mode: "fix+append",
+    detect: /(제일\s*좋(은|아요|습니다)|최고(예요|입니다)|1위(예요|입니다)|무조건\s*이거|가장\s*좋은\s*제품)/,
+    fix: (s) => s
+      .replace(/제일\s*좋은\s*제품(이에요|입니다)?|가장\s*좋은\s*제품(이에요|입니다)?/g, "이 기준에서 유리한 제품")
+      .replace(/제일\s*좋(아요|습니다)|최고(예요|입니다)/g, "이 기준에서는 유리해요")
+      .replace(/1위(예요|입니다)?/g, "이 비교에서 상위")
+      .replace(/무조건\s*이거(예요|로\s*하세요)?/g, "기준에 따라 달라져요"),
+    need: SKIN_GUARD_TEXT.basis },
+  { id: "disparage", law: "⑦공정 비교 — 비방 금지", mode: "fix",
+    detect: /(타사\s*제품은\s*별로|싸구려|품질이\s*나빠|저질|형편없)/,
+    fix: (s) => s.replace(/(타사\s*제품은\s*별로예요|싸구려예요|품질이\s*나빠요|저질이에요|형편없어요)/g, "제품마다 기준이 달라 수치로만 비교해 드릴게요") },
+];
+
+/* 효능성 어휘가 있는데 '의약품 아님' 고지가 없으면 부착 */
+const SKIN_EFFICACY_MENTION = /(도움|개선|진정|보습|미백|주름|자외선\s*차단|기능성)/;
+
+function skinGuard(lines, ctx) {
+  const out = { lines: (lines || []).slice(), violations: [], blocked: false, handback: null };
+  try {
+    let joined = out.lines.join("\n");
+    for (const r of SKIN_GUARD_RULES) {
+      if (!r.detect.test(joined)) continue;
+      out.violations.push({ id: r.id, law: r.law, mode: r.mode });
+      if (r.mode === "block") { out.blocked = true; out.handback = r.handback || null; break; }
+      if (r.mode === "strip") { out.lines = out.lines.filter((l) => !r.detect.test(l)); joined = out.lines.join("\n"); }
+      if (r.fix) { out.lines = out.lines.map(r.fix); joined = out.lines.join("\n"); }
+      if (r.need && joined.indexOf(r.need) < 0) { out.lines.push(r.need); joined = out.lines.join("\n"); }
+    }
+    if (out.blocked) { out.lines = [SKIN_GUARD_TEXT.safe]; return out; }
+    if (SKIN_EFFICACY_MENTION.test(joined) && joined.indexOf("의약품이 아니") < 0) {
+      out.lines.push(SKIN_GUARD_TEXT.notDrug);
+      out.violations.push({ id: "notDrug-warn", law: "① 의약품 아님 고지 보강", mode: "append" });
+    }
+  } catch (e) {}
+  return out;
+}
+
+try { if (typeof window !== "undefined") { window.__hifinSkinGuard = { check: skinGuard, rules: SKIN_GUARD_RULES, text: SKIN_GUARD_TEXT }; } } catch (e) {}
+
 /* ══════════════ A3 · 건강쇼핑 에이전트 (Phase C) ══════════════
    최고의 임무: **비교해서 회원이 스스로 고르게 한다.**
      ① 필요 도출 — 회원 건강상태(위험 질환)에서 관리 영역을 먼저 정한다(수치 해석은 하지 않는다 → A1)
@@ -28313,6 +28900,13 @@ const A3_CAT_ALIAS = {
   "균형영양식": ["균형영양식", "영양음료", "식사대용"],
   "단백질": ["단백질", "프로틴", "닭가슴살"],
   "밀키트": ["밀키트"],
+  /* [스킨] 6대 분류 — agentRegistry의 A3 scope 단어와 **반드시 함께** 넣는다(별칭만 넣으면 답변불가가 된다) */
+  "클렌징 케어": ["클렌징", "클렌징폼", "클렌징오일", "세안제", "각질", "필링", "토너패드", "클렌저"],
+  "보습·장벽 케어": ["보습", "수분크림", "진정크림", "토너", "스킨로션", "에센스", "세럼", "앰플", "피부장벽", "미스트"],
+  "자외선·환경 보호": ["선크림", "썬크림", "자외선차단", "선케어", "선스틱", "선쿠션", "선팩트", "spf"],
+  "기능성·트러블 케어": ["기능성화장품", "미백화장품", "주름개선", "트러블케어", "모공관리", "아이크림", "아이세럼"],
+  "더마·전문 케어": ["더마", "더마코스메틱", "시카", "저자극화장품", "민감성화장품", "시술후관리", "시트마스크", "마스크팩"],
+  "디바이스·이너뷰티": ["뷰티디바이스", "홈뷰티", "피부측정", "갈바닉", "led마스크"],
   "간편식": ["간편식", "반찬"],
   "건강차": ["건강차", "약선차"],
   "AI맞춤식": ["ai맞춤식", "맞춤식단"],
@@ -28348,6 +28942,17 @@ function _a3Need(ctx) {
 
 /* ── 진입점 ──
    반환: { agent:"A3", lines, buttons, cite, nav, catalog, compare } | { handback } | null */
+/* ── 이 카테고리가 화장품인가 ── 화장품이면 건기식 가드가 아니라 화장품 가드를 태운다 */
+function _a3IsSkin(cat) {
+  try { if (typeof SKIN_CAT_LIST !== "undefined") return SKIN_CAT_LIST.indexOf(cat) >= 0; } catch (e) {}
+  return false;
+}
+/* 법령이 다르면 가드도 다르다 — 건기식 고지문을 화장품에 붙이면 그 자체가 잘못된 표시다 */
+function _a3Guard(cat, lines) {
+  if (_a3IsSkin(cat) && typeof skinGuard === "function") return skinGuard(lines, {});
+  return shoppingGuard(lines, {});
+}
+
 function shoppingAgent(question, ctx) {
   const q = String(question || "");
   ctx = ctx || {};
@@ -28360,16 +28965,40 @@ function shoppingAgent(question, ctx) {
   let cat = _a3Category(q);
   const need = _a3Need(ctx);
   let lines = [], buttons = [], cite = [], catalog = { products: [], values: [] }, cmp = null;
-  const nav = { key: "shop", label: "건강쇼핑" };
+  let nav = { key: "shop", label: "건강쇼핑" };
+
+  /* ⓪ 피부 즉시 진료 신호 — **상담보다 위에 있다.** 제품 추천을 하지 않고 진료 안내만 낸다.
+     (A4 응급 트리아지와 같은 사상: 덧붙이는 게 아니라 앞에 세운다) */
+  let urgent = null;
+  try { urgent = (typeof skinUrgent === "function") ? skinUrgent(q) : null; } catch (e) {}
+  if (urgent) {
+    const uLines = [urgent.line];
+    if (urgent.level !== "critical") uLines.push("피부 증상 자체는 AI 주치의가 이어서 봐드릴게요 — 제품 안내는 그다음에 도와드릴게요.");
+    let uNav = { key: "shop", label: "건강쇼핑" };
+    let uBtn = ["119 안내"];
+    if (urgent.dept) {
+      try { const g = (typeof skinTeleGo === "function") ? skinTeleGo(urgent.dept) : null; if (g) { uNav = { key: g.to, label: "비대면 원격진료" }; uBtn = [g.label, "병원 찾기"]; } } catch (e) {}
+    }
+    return { agent: "A3", lines: uLines, cards: [], buttons: uBtn, cite: [{ source: "안전 안내", title: "피부 즉시 진료 신호" }],
+      nav: uNav, catalog: { products: [], values: [] }, compare: null, emergency: true, guard: [] };
+  }
+
+  /* ⓪-b 피부 고민 상담 — 고민 → 제품군 → (선을 넘으면) 진료 */
+  let concern = null;
+  try { concern = (typeof skinConcernOf === "function") ? skinConcernOf(q) : null; } catch (e) {}
+  if (concern && !cat) cat = concern.primary;
 
   /* ① 카테고리를 못 잡았는데 비교를 원하면 — 건강상태에서 필요를 먼저 도출 */
   if (!cat && need && need.category) cat = need.category;
 
   /* ② 비교 실행 */
-  if (cat && (wantsCompare || _a3Category(q) || need)) {
+  if (cat && (wantsCompare || _a3Category(q) || need || concern)) {
     try { cmp = (typeof compareProducts === "function") ? compareProducts(cat, {}) : null; } catch (e) { cmp = null; }
   }
   if (cmp) {
+    if (concern) {
+      try { const cl = (typeof skinConcernLines === "function") ? skinConcernLines(concern, null) : null; if (cl) lines = lines.concat(cl.slice(0, 3)); } catch (e) {}
+    }
     if (need && need.category === cat) lines.push(`${need.disease} 관리가 필요하신 상태라 ${need.area} 관리 영역부터 보여드릴게요.`);
     try { lines = lines.concat(compareToLines(cmp)); } catch (e) {}
     try { catalog = compareFacts(cmp); } catch (e) {}
@@ -28380,6 +29009,14 @@ function shoppingAgent(question, ctx) {
     /* 온톨로지 근거는 **건강상태가 이 카테고리를 고른 경우에만** — 회원이 직접 지목한 성분에 붙이면 근거가 어긋난다 */
     if (need && need.category === cat) cite.push({ source: "커머스 온톨로지", title: need.disease + " → " + need.area + " 관리 영역" });
     buttons = ["건강쇼핑 가기", "다른 성분도 비교해줘"];
+    /* 고민에 진료 연계 조건이 붙어 있으면 문장으로 알리고 원격진료로 연결한다(새 화면을 만들지 않는다) */
+    if (concern && concern.refer && concern.dept) {
+      let deptLabel = "피부과";
+      try { deptLabel = (typeof skinDeptLabel === "function") ? skinDeptLabel(concern.dept) : deptLabel; } catch (e) {}
+      lines.push(`※ ${concern.refer} ${deptLabel} 상담을 받아보시는 게 좋아요 — 제품으로 붙잡고 있을 일이 아니에요.`);
+      try { const g = (typeof skinTeleGo === "function") ? skinTeleGo(concern.dept) : null; if (g) buttons = [g.label].concat(buttons); } catch (e) {}
+      cite.push({ source: "피부 고민 온톨로지", title: concern.label + " → " + concern.primary });
+    }
   }
 
   /* ②-b 효능 질문 — 인정된 기능성 표시 범위 안에서만 설명한다(치료 단정 금지) */
@@ -28408,7 +29045,7 @@ function shoppingAgent(question, ctx) {
       const cards = cc.bubbles.filter(function (b) { return b.kind === "card" && b.card; }).map(function (b) { return b.card; });
       buttons = (cc.quicks || []).slice(0, 3);
       if (lines.length) {
-        const g1 = shoppingGuard(lines, {});
+        const g1 = _a3Guard(cat, lines);
         try { shopGuardLog(q, g1.violations); } catch (e) {}
         if (g1.blocked) return { handback: { to: g1.handback || "A1", reason: "diagnosis-guard" } };
         return { agent: "A3", lines: g1.lines, cards: cards, buttons: buttons, cite: cite, nav: nav, catalog: catalog, compare: null, guard: g1.violations };
@@ -28417,7 +29054,7 @@ function shoppingAgent(question, ctx) {
   }
   if (!lines.length) return null;
 
-  const g = shoppingGuard(lines, {});
+  const g = _a3Guard(cat, lines);
   try { shopGuardLog(q, g.violations); } catch (e) {}
   if (g.blocked) return { handback: { to: g.handback || "A1", reason: "diagnosis-guard" } };
   return { agent: "A3", lines: g.lines, cards: [], buttons: buttons.slice(0, 3), cite: cite.slice(0, 3), nav: nav, catalog: catalog, compare: cmp, guard: g.violations };

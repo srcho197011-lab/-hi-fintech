@@ -49,6 +49,13 @@ const A3_CAT_ALIAS = {
   "균형영양식": ["균형영양식", "영양음료", "식사대용"],
   "단백질": ["단백질", "프로틴", "닭가슴살"],
   "밀키트": ["밀키트"],
+  /* [스킨] 6대 분류 — agentRegistry의 A3 scope 단어와 **반드시 함께** 넣는다(별칭만 넣으면 답변불가가 된다) */
+  "클렌징 케어": ["클렌징", "클렌징폼", "클렌징오일", "세안제", "각질", "필링", "토너패드", "클렌저"],
+  "보습·장벽 케어": ["보습", "수분크림", "진정크림", "토너", "스킨로션", "에센스", "세럼", "앰플", "피부장벽", "미스트"],
+  "자외선·환경 보호": ["선크림", "썬크림", "자외선차단", "선케어", "선스틱", "선쿠션", "선팩트", "spf"],
+  "기능성·트러블 케어": ["기능성화장품", "미백화장품", "주름개선", "트러블케어", "모공관리", "아이크림", "아이세럼"],
+  "더마·전문 케어": ["더마", "더마코스메틱", "시카", "저자극화장품", "민감성화장품", "시술후관리", "시트마스크", "마스크팩"],
+  "디바이스·이너뷰티": ["뷰티디바이스", "홈뷰티", "피부측정", "갈바닉", "led마스크"],
   "간편식": ["간편식", "반찬"],
   "건강차": ["건강차", "약선차"],
   "AI맞춤식": ["ai맞춤식", "맞춤식단"],
@@ -84,6 +91,17 @@ function _a3Need(ctx) {
 
 /* ── 진입점 ──
    반환: { agent:"A3", lines, buttons, cite, nav, catalog, compare } | { handback } | null */
+/* ── 이 카테고리가 화장품인가 ── 화장품이면 건기식 가드가 아니라 화장품 가드를 태운다 */
+function _a3IsSkin(cat) {
+  try { if (typeof SKIN_CAT_LIST !== "undefined") return SKIN_CAT_LIST.indexOf(cat) >= 0; } catch (e) {}
+  return false;
+}
+/* 법령이 다르면 가드도 다르다 — 건기식 고지문을 화장품에 붙이면 그 자체가 잘못된 표시다 */
+function _a3Guard(cat, lines) {
+  if (_a3IsSkin(cat) && typeof skinGuard === "function") return skinGuard(lines, {});
+  return shoppingGuard(lines, {});
+}
+
 function shoppingAgent(question, ctx) {
   const q = String(question || "");
   ctx = ctx || {};
@@ -96,16 +114,40 @@ function shoppingAgent(question, ctx) {
   let cat = _a3Category(q);
   const need = _a3Need(ctx);
   let lines = [], buttons = [], cite = [], catalog = { products: [], values: [] }, cmp = null;
-  const nav = { key: "shop", label: "건강쇼핑" };
+  let nav = { key: "shop", label: "건강쇼핑" };
+
+  /* ⓪ 피부 즉시 진료 신호 — **상담보다 위에 있다.** 제품 추천을 하지 않고 진료 안내만 낸다.
+     (A4 응급 트리아지와 같은 사상: 덧붙이는 게 아니라 앞에 세운다) */
+  let urgent = null;
+  try { urgent = (typeof skinUrgent === "function") ? skinUrgent(q) : null; } catch (e) {}
+  if (urgent) {
+    const uLines = [urgent.line];
+    if (urgent.level !== "critical") uLines.push("피부 증상 자체는 AI 주치의가 이어서 봐드릴게요 — 제품 안내는 그다음에 도와드릴게요.");
+    let uNav = { key: "shop", label: "건강쇼핑" };
+    let uBtn = ["119 안내"];
+    if (urgent.dept) {
+      try { const g = (typeof skinTeleGo === "function") ? skinTeleGo(urgent.dept) : null; if (g) { uNav = { key: g.to, label: "비대면 원격진료" }; uBtn = [g.label, "병원 찾기"]; } } catch (e) {}
+    }
+    return { agent: "A3", lines: uLines, cards: [], buttons: uBtn, cite: [{ source: "안전 안내", title: "피부 즉시 진료 신호" }],
+      nav: uNav, catalog: { products: [], values: [] }, compare: null, emergency: true, guard: [] };
+  }
+
+  /* ⓪-b 피부 고민 상담 — 고민 → 제품군 → (선을 넘으면) 진료 */
+  let concern = null;
+  try { concern = (typeof skinConcernOf === "function") ? skinConcernOf(q) : null; } catch (e) {}
+  if (concern && !cat) cat = concern.primary;
 
   /* ① 카테고리를 못 잡았는데 비교를 원하면 — 건강상태에서 필요를 먼저 도출 */
   if (!cat && need && need.category) cat = need.category;
 
   /* ② 비교 실행 */
-  if (cat && (wantsCompare || _a3Category(q) || need)) {
+  if (cat && (wantsCompare || _a3Category(q) || need || concern)) {
     try { cmp = (typeof compareProducts === "function") ? compareProducts(cat, {}) : null; } catch (e) { cmp = null; }
   }
   if (cmp) {
+    if (concern) {
+      try { const cl = (typeof skinConcernLines === "function") ? skinConcernLines(concern, null) : null; if (cl) lines = lines.concat(cl.slice(0, 3)); } catch (e) {}
+    }
     if (need && need.category === cat) lines.push(`${need.disease} 관리가 필요하신 상태라 ${need.area} 관리 영역부터 보여드릴게요.`);
     try { lines = lines.concat(compareToLines(cmp)); } catch (e) {}
     try { catalog = compareFacts(cmp); } catch (e) {}
@@ -116,6 +158,14 @@ function shoppingAgent(question, ctx) {
     /* 온톨로지 근거는 **건강상태가 이 카테고리를 고른 경우에만** — 회원이 직접 지목한 성분에 붙이면 근거가 어긋난다 */
     if (need && need.category === cat) cite.push({ source: "커머스 온톨로지", title: need.disease + " → " + need.area + " 관리 영역" });
     buttons = ["건강쇼핑 가기", "다른 성분도 비교해줘"];
+    /* 고민에 진료 연계 조건이 붙어 있으면 문장으로 알리고 원격진료로 연결한다(새 화면을 만들지 않는다) */
+    if (concern && concern.refer && concern.dept) {
+      let deptLabel = "피부과";
+      try { deptLabel = (typeof skinDeptLabel === "function") ? skinDeptLabel(concern.dept) : deptLabel; } catch (e) {}
+      lines.push(`※ ${concern.refer} ${deptLabel} 상담을 받아보시는 게 좋아요 — 제품으로 붙잡고 있을 일이 아니에요.`);
+      try { const g = (typeof skinTeleGo === "function") ? skinTeleGo(concern.dept) : null; if (g) buttons = [g.label].concat(buttons); } catch (e) {}
+      cite.push({ source: "피부 고민 온톨로지", title: concern.label + " → " + concern.primary });
+    }
   }
 
   /* ②-b 효능 질문 — 인정된 기능성 표시 범위 안에서만 설명한다(치료 단정 금지) */
@@ -144,7 +194,7 @@ function shoppingAgent(question, ctx) {
       const cards = cc.bubbles.filter(function (b) { return b.kind === "card" && b.card; }).map(function (b) { return b.card; });
       buttons = (cc.quicks || []).slice(0, 3);
       if (lines.length) {
-        const g1 = shoppingGuard(lines, {});
+        const g1 = _a3Guard(cat, lines);
         try { shopGuardLog(q, g1.violations); } catch (e) {}
         if (g1.blocked) return { handback: { to: g1.handback || "A1", reason: "diagnosis-guard" } };
         return { agent: "A3", lines: g1.lines, cards: cards, buttons: buttons, cite: cite, nav: nav, catalog: catalog, compare: null, guard: g1.violations };
@@ -153,7 +203,7 @@ function shoppingAgent(question, ctx) {
   }
   if (!lines.length) return null;
 
-  const g = shoppingGuard(lines, {});
+  const g = _a3Guard(cat, lines);
   try { shopGuardLog(q, g.violations); } catch (e) {}
   if (g.blocked) return { handback: { to: g.handback || "A1", reason: "diagnosis-guard" } };
   return { agent: "A3", lines: g.lines, cards: [], buttons: buttons.slice(0, 3), cite: cite.slice(0, 3), nav: nav, catalog: catalog, compare: cmp, guard: g.violations };

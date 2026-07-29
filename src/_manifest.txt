@@ -49,6 +49,8 @@ src/data/whitepaper.js
 src/data/checkupCenters.js
 src/data/shopProducts.js
 src/data/mealProducts.js
+src/data/skinProducts.js
+src/data/skinConcern.js
 src/data/marketReference.js
 src/data/shopCompare.js
 src/data/commerceOntology.js
@@ -87,6 +89,7 @@ src/data/agents/aiDoctorAgent.js
 src/data/agents/insuranceGuard.js
 src/data/agents/insuranceAgent.js
 src/data/agents/shoppingGuard.js
+src/data/agents/skinGuard.js
 src/data/agents/shoppingAgent.js
 src/data/agents/homecareGuard.js
 src/data/agents/homecareAgent.js

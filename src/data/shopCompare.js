@@ -29,6 +29,14 @@ const CMP_AXES = {
   "질환케어": { kind: "meal", servingLabel: "1식" },
   "균형영양식": { kind: "meal", servingLabel: "1회" },
   "단백질": { kind: "meal", servingLabel: "1회" },
+  /* 스킨 헬스케어 — 화장품에는 **1일 섭취량이 없다.** 용량당 단가로 재고, 매수로 파는 것만 1매당으로 내린다.
+     기기(디바이스)는 나눌 단위가 없으므로 단가를 만들지 않는다 — 없는 축을 지어내지 않는다. */
+  "클렌징 케어": { kind: "skin" },
+  "보습·장벽 케어": { kind: "skin" },
+  "자외선·환경 보호": { kind: "skin", spf: true },
+  "기능성·트러블 케어": { kind: "skin" },
+  "더마·전문 케어": { kind: "skin" },
+  "디바이스·이너뷰티": { kind: "skin", device: true },
 };
 function cmpAxis(category) { return CMP_AXES[category] || { kind: "supp" }; }
 
@@ -37,6 +45,9 @@ function cmpCostText(r, basis, ax) {
   if (basis === "perDay") return `${r.perDayCost}원/일(1일 ${r.perDay}${r.unit} 기준)`;
   if (basis === "perUse") return `${r.perUse}원/회(동봉 ${ax.bundleLabel || "소모품"} ${r.bundle.count}${r.bundle.count >= 1 ? "매" : ""} 기준)`;
   if (basis === "perServing") return `${r.perServing}원/${(ax.servingLabel || "1회").replace(/^1/, "")}(${r.servings.count}${r.servings.unit} 기준)`;
+  if (basis === "perVolume") return `${r.perVolume}원/${r.volUnit}(${r.vol}${r.volUnit} 기준)`;
+  if (basis === "perSheet") return `${r.perSheet}원/매(${r.sheets}매 기준)`;
+  if (basis === "perDevice") return `${r.price.toLocaleString()}원(1대)`;
   return `${r.perUnit}원/${r.unit}`;
 }
 
@@ -101,9 +112,17 @@ function cmpRow(p, opts) {
   const total2 = total || (servings && servings.count) || null;
   const unit2 = (total ? unit : (servings && servings.unit)) || unit;
   if (perUnit == null && total2) perUnit = Math.round(price / total2);
+  /* 스킨 — 용량당 단가(mL·g)와 1매당 단가. 표기된 값만 쓰고, 없으면 null로 둔다(추정 없음) */
+  const skVol = (typeof p.vol === "number" && p.vol > 0) ? p.vol : null;
+  const volUnit = p.volUnit || null;
+  const perVolume = (skVol && price) ? Math.round(price / skVol) : null;
+  const sheets = (typeof p.sheets === "number" && p.sheets > 0) ? p.sheets : null;
+  const perSheet = (sheets && price) ? Math.round(price / sheets) : null;
   return {
     id: p.id, name: p.name, brand: p.brand, category: p.category, price: price,
     kind: ax.kind, bundle: bundle, perUse: perUse, servings: servings, perServing: perServing,
+    vol: skVol, volUnit: volUnit, perVolume: perVolume, sheets: sheets, perSheet: perSheet,
+    spf: p.spf || null, pa: p.pa || null, functional: p.functional || null,
     total: total2, unit: unit2, perDay: perDay, perDaySrc: (p.serving && p.serving.perDaySrc) || null,
     days: days, perUnit: perUnit, perDayCost: perDayCost,
     reward: reward, netPerDay: netPerDay,
@@ -123,8 +142,9 @@ function compareProducts(category, opts) {
     const supp = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
     const dev = (typeof DEVICE_PRODUCTS !== "undefined") ? DEVICE_PRODUCTS : [];
     const meal = (typeof MEAL_PRODUCTS !== "undefined") ? MEAL_PRODUCTS : [];
+    const skin = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
     const mkt = (typeof MARKET_REFERENCE !== "undefined") ? MARKET_REFERENCE : [];
-    pool = supp.concat(dev).concat(meal).concat(mkt).filter(function (p) { return p && p.category === category; });
+    pool = supp.concat(dev).concat(meal).concat(skin).concat(mkt).filter(function (p) { return p && p.category === category; });
   } catch (e) { pool = []; }
   if (!pool.length) return null;
 
@@ -145,6 +165,34 @@ function compareProducts(category, opts) {
     dayRows = rows.filter(function (r) { return r.perUse; }).sort(function (a, b) { return a.perUse - b.perUse; });
     unitRows = rows.filter(function (r) { return !r.perUse; }).sort(function (a, b) { return (a.perUnit || 0) - (b.perUnit || 0); });
     basis = dayRows.length >= 2 ? "perUse" : "perUnit";
+  } else if (ax.kind === "skin") {
+    /* 화장품 — 용량당 단가가 기본. 매수로 파는 것(패드·시트마스크)은 1매당으로 내린다.
+       디바이스는 나눌 단위가 없으므로 단가를 만들지 않고 가격만 세운다. */
+    if (ax.device) {
+      /* 기기는 나눌 단위가 없다 — 단가를 지어내지 않고 가격만 낮은 순으로 세운다 */
+      dayRows = rows.slice().sort(function (a, b) { return a.price - b.price; });
+      unitRows = [];
+      basis = "perDevice";
+    } else {
+      /* ⚠️ 여기서 두 번 미끄러졌다.
+         ① 매수로 파는 것(패드·시트마스크)과 용량으로 파는 것을 한 축에 세우면 안 된다.
+         ② **mL과 g도 다른 단위다.** 361원/mL과 614원/g을 한 줄에 정렬하면 최저가 배지가 거짓이 된다.
+         그래서 "재는 자"가 같은 것끼리만 줄 세우고, 나머지는 각자 자기 단가를 달고 따로 보여준다. */
+      const measureOf = function (r) { return r.perVolume ? ("vol:" + (r.volUnit || "mL")) : (r.perSheet ? "sheet" : null); };
+      const count = {};
+      rows.forEach(function (r) { const k = measureOf(r); if (k) count[k] = (count[k] || 0) + 1; });
+      let main = null;
+      Object.keys(count).forEach(function (k) { if (!main || count[k] > count[main] || (count[k] === count[main] && k !== "sheet")) main = k; });
+      if (main) {
+        const inMain = rows.filter(function (r) { return measureOf(r) === main; });
+        basis = main === "sheet" ? "perSheet" : "perVolume";
+        dayRows = inMain.sort(function (a, b) { return (basis === "perSheet" ? a.perSheet - b.perSheet : a.perVolume - b.perVolume); });
+        unitRows = rows.filter(function (r) { return measureOf(r) !== main; }).sort(function (a, b) { return (a.price || 0) - (b.price || 0); });
+      } else {
+        dayRows = []; unitRows = rows.slice().sort(function (a, b) { return (a.price || 0) - (b.price || 0); });
+        basis = "perUnit";
+      }
+    }
   } else if (ax.kind === "meal") {
     /* 식단 — 1식(1회) 단가. 수량이 확인 안 된 제품은 줄 세우지 않는다 */
     dayRows = rows.filter(function (r) { return r.perServing; }).sort(function (a, b) { return a.perServing - b.perServing; });
@@ -155,7 +203,7 @@ function compareProducts(category, opts) {
     unitRows = rows.filter(function (r) { return !r.perDayCost; }).sort(function (a, b) { return (a.perUnit || 0) - (b.perUnit || 0); });
     basis = dayRows.length >= 2 ? "perDay" : "perUnit";
   }
-  const cost = function (r) { return basis === "perDay" ? r.perDayCost : basis === "perUse" ? r.perUse : basis === "perServing" ? r.perServing : r.perUnit; };
+  const cost = function (r) { return basis === "perDay" ? r.perDayCost : basis === "perUse" ? r.perUse : basis === "perServing" ? r.perServing : basis === "perVolume" ? r.perVolume : basis === "perSheet" ? r.perSheet : basis === "perDevice" ? r.price : (r.perUnit != null ? r.perUnit : r.price); };
   /* 단가를 낼 수 없는 제품은 **줄에 세우지 않는다** — "null원/개"가 새어 나가면 비교표가 스스로를 부정한다 */
   const priceable = rows.filter(function (r) { return r.perUnit != null; }).sort(function (a, b) { return a.perUnit - b.perUnit; });
   const primary = (basis !== "perUnit") ? dayRows : priceable;
@@ -197,8 +245,13 @@ function compareProducts(category, opts) {
     perUse: "동봉 " + (ax.bundleLabel || "소모품") + " 1회당 단가(원/회)",
     perServing: (ax.servingLabel || "1회") + " 단가(원/" + (ax.servingLabel || "1회").replace(/^1/, "") + ")",
     perUnit: "단위당 단가(원/" + (picked[0].unit || "개") + ")",
+    perVolume: "용량당 단가(원/" + (picked[0].volUnit || "mL") + ")",
+    perSheet: "1매당 단가(원/매)",
+    perDevice: "제품 가격(원/대)",
   };
-  const axis = [AXIS_LABEL[basis], nutKey ? nutKey + " 1일 함량" : null].filter(Boolean).join(" · ");
+  let axis = [AXIS_LABEL[basis], nutKey ? nutKey + " 1일 함량" : null].filter(Boolean).join(" · ");
+  if (ax.device) axis = "제품 가격(원) — 기기는 나눌 단위가 없어 단가를 만들지 않아요";
+  else if (ax.spf) axis = axis + " · SPF·PA 표기";
 
   /* 데이터 커버리지 — 무엇이 비어 있는지 정직하게 드러낸다 */
   const coverage = {
@@ -241,6 +294,13 @@ function compareProducts(category, opts) {
   ]);
   if (ax.kind === "supp" && coverage.withNutrient < coverage.total) notices.push("성분 함량이 등록되지 않은 제품은 성분 비교에서 제외했어요 — 제품 라벨에서 확인하실 수 있어요.");
   if (ax.kind === "supp" && coverage.withPerDay < coverage.total) notices.push("1일 섭취량이 확인된 제품만 '1일 단가'로 계산했고, 나머지는 단위당 단가로 비교했어요.");
+  if (ax.kind === "skin") {
+    /* 화장품법 대상이라 건기식 고지문을 쓰지 않는다 — 붙이는 순간 그 자체가 잘못된 표시다 */
+    notices.push("화장품은 인체를 청결·미화하고 피부·모발의 건강을 유지·증진하기 위한 물품으로, 질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아니에요.");
+    if (ax.spf) notices.push("SPF·PA는 제품 표기를 그대로 옮긴 것이고, 단가와 섞어 줄 세우지 않았어요.");
+    if (ax.device) notices.push("기기는 나눌 단위가 없어 단가를 만들지 않았어요 — 가격만 낮은 순으로 보여드려요.");
+    if (picked.some(function (r) { return !r.functional; })) notices.push("기능성화장품(미백·주름 개선·자외선 차단)은 식약처 심사·보고를 확인한 제품에만 표기해요 — 확인하지 못한 제품은 비워 뒀어요.");
+  }
   if (ax.note) notices.push(ax.note);
   if (basis === "perUse") notices.push("동봉된 " + (ax.bundleLabel || "소모품") + "를 다 쓴 뒤의 재구매 가격은 따로 확인하셔야 해요 — 여기 계산에는 들어 있지 않아요.");
 
@@ -260,14 +320,18 @@ function compareToLines(cmp) {
     const badge = [];
     if (cmp.highlights.mostNutrient && cmp.highlights.mostNutrient.id === r.id) badge.push("🏅성분 최다");
     if (cmp.highlights.cheapest && cmp.highlights.cheapest.id === r.id) badge.push(
-      cmp.basis === "perDay" ? "💰1일 단가 최저" : cmp.basis === "perUse" ? "💰1회당 최저" : cmp.basis === "perServing" ? "💰1식 단가 최저" : "💰단위당 최저");
+      cmp.basis === "perDay" ? "💰1일 단가 최저" : cmp.basis === "perUse" ? "💰1회당 최저" : cmp.basis === "perServing" ? "💰1식 단가 최저"
+        : cmp.basis === "perVolume" ? "💰용량당 최저" : cmp.basis === "perSheet" ? "💰1매당 최저" : cmp.basis === "perDevice" ? "💰가격 최저" : "💰단위당 최저");
     const price = cmpCostText(r, cmp.basis, cmpAxis(cmp.category));
     /* 성분 칸은 영양제에서만 — 혈압계에 "성분 정보 없음"을 붙이면 정보가 아니라 소음이다 */
     const anyNut = cmp.rows.some(function (x) { return x.nutrient; });
     const nut = r.nutrient ? `${r.nutrient.key} ${r.nutrient.amount}${r.nutrient.unit}` : (anyNut ? "성분 정보 없음" : null);
     /* 형태(rTG·캡슐 등)는 비교에 의미가 있을 때만 — 아무도 값이 없으면 줄마다 "정보 없음"을 반복하지 않는다 */
     const form = anyForm ? (r.form || "형태 정보 없음") : null;
-    const seg = [`· ${r.name}(${r.brand})` + (nut ? ` — ${nut}` : ""), price].concat(form ? [form] : []).concat([`${r.market ? "시장 유통가" : "브랜드몰"} 기준${badge.length ? " " + badge.join(" ") : ""}`]);
+    /* SPF·PA는 표기를 그대로 옮기는 별도 칼럼 — 단가와 한 축으로 섞지 않는다 */
+    const anySpf = cmp.rows.some(function (x) { return x.spf || x.pa; });
+    const uv = anySpf ? ([r.spf, r.pa].filter(Boolean).join("/") || "차단지수 표기 없음") : null;
+    const seg = [`· ${r.name}(${r.brand})` + (nut ? ` — ${nut}` : ""), price].concat(uv ? [uv] : []).concat(form ? [form] : []).concat([`${r.market ? "시장 유통가" : "브랜드몰"} 기준${badge.length ? " " + badge.join(" ") : ""}`]);
     L.push(seg.join(" · "));
   });
   if (cmp.pending && cmp.pending.length) {
@@ -275,13 +339,25 @@ function compareToLines(cmp) {
     const kind = (cmp.rows[0] && cmp.rows[0].kind) || "supp";
     const why = cmp.basis === "perUse" ? "동봉 소모품 구성이 달라"
       : cmp.basis === "perServing" ? "수량 표기가 없어"
+      : kind === "skin" ? "재는 단위가 달라"
       : kind === "supp" ? "1일 섭취량이 확인되지 않아" : "수량 표기가 없어";
     const tag = cmp.basis === "perUse" ? "시험지 별매 — 재구매 비용 확인 필요"
+      : kind === "skin" ? "용량 확인 필요"
       : kind === "supp" ? "1일 섭취량 확인 필요" : "수량 확인 필요";
-    L.push(`아래 제품은 ${why} 같은 기준으로 줄 세우지 않았어요(단위당 단가만 안내).`);
+    L.push(kind === "skin"
+      ? `아래 제품은 ${why} 같은 기준으로 줄 세우지 않았어요 — 각자의 단가로 따로 안내해 드릴게요.`
+      : `아래 제품은 ${why} 같은 기준으로 줄 세우지 않았어요(단위당 단가만 안내).`);
     cmp.pending.forEach(function (r) {
+      if (kind === "skin") {
+        /* 재는 자가 달라 줄에서 뺀 것뿐이다 — 그 제품의 진짜 단가를 그대로 달아 준다 */
+        const own = r.perVolume ? `${r.perVolume.toLocaleString()}원/${r.volUnit}` : (r.perSheet ? `${r.perSheet.toLocaleString()}원/매` : null);
+        const why2 = r.perVolume ? `${r.volUnit} 단위 제품이라 이 표의 기준과 달라요` : (r.perSheet ? "매수로 파는 제품이라 이 표의 기준과 달라요" : "용량 표기가 없어 단가를 낼 수 없어요");
+        L.push(`· ${r.name}(${r.brand}) — ${Number(r.price).toLocaleString()}원${own ? " · " + own : ""} · ${why2}`);
+        return;
+      }
       const p = r.perUnit ? `${r.perUnit}원/${r.unit}` : `${Number(r.price).toLocaleString()}원`;
-      L.push(`· ${r.name}(${r.brand}) — ${p} · ${r.perUnit ? tag : "수량 표기가 없어 단가를 낼 수 없어요"}`);
+      const noUnit = "수량 표기가 없어 단가를 낼 수 없어요";
+      L.push(`· ${r.name}(${r.brand}) — ${p} · ${r.perUnit ? tag : noUnit}`);
     });
   }
   if (cmp.highlights.bestAfterReward) L.push(`하이핀에서 구매하면 적립이 붙어요 — ${cmp.highlights.bestAfterReward.name} 기준 적립 반영 실부담 ${cmp.highlights.bestAfterReward.netPerDay}원/${cmp.highlights.bestAfterReward.perDayCost ? "일" : cmp.highlights.bestAfterReward.unit}.`);
