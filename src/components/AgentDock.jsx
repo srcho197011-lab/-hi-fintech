@@ -11,6 +11,8 @@ function AgentDock({ onGo }) {
   const [listening, setListening] = useState(false);
   const [easy, setEasy] = useState(() => { try { return !!localStorage.getItem("hifin_easyread"); } catch (e) { return false; } });
   const endRef = useRef(null);
+  const bodyRef = useRef(null);          // 대화 스크롤 영역
+  const prevLenRef = useRef(0);          // 직전 메시지 수 — '새로 붙은 답변'을 찾는 기준
   const dockRef = useRef(null);
   const recogRef = useRef(null);
   const lastQRef = useRef("");
@@ -47,7 +49,28 @@ function AgentDock({ onGo }) {
       if (alerts && alerts.length) setAlerts([]);   // 열어봤으면 배지 해제
     } catch (e) {}
   }, [open]);
-  useEffect(() => { if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
+  /* 스크롤 위치 — **답변의 처음**에 맞춘다.
+     끝으로 보내면 긴 답변은 결론만 보이고 회원이 다시 위로 올려 처음을 찾아야 한다.
+     그래서 이번에 새로 붙은 하이 답변의 **첫 줄**이 화면 위에 오도록 세운다.
+     내가 보낸 말·타이핑 표시는 그대로 끝으로(방금 한 말이 보여야 하니까). */
+  useEffect(() => {
+    const body = bodyRef.current;
+    const prev = prevLenRef.current;
+    prevLenRef.current = msgs.length;
+    if (body && msgs.length > prev) {
+      let idx = -1;
+      for (let i = prev; i < msgs.length; i++) { if (msgs[i] && msgs[i].who === "hi") { idx = i; break; } }
+      if (idx >= 0) {
+        const el = body.querySelector('[data-mi="' + idx + '"]');
+        if (el) {
+          const top = el.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - 8;
+          try { body.scrollTo({ top: Math.max(0, top), behavior: "smooth" }); } catch (e) { body.scrollTop = Math.max(0, top); }
+          return;
+        }
+      }
+    }
+    if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" });
+  }, [msgs, typing]);
   // 홈 브리핑 등 외부에서 질문 주입(agentask 이벤트) — 이중 동선의 대화 진입점
   useEffect(() => {
     const h = (e) => { const q = e && e.detail; setOpen(true); if (q) setTimeout(() => send(q), 350); };
@@ -166,9 +189,9 @@ function AgentDock({ onGo }) {
             <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>
             <button className="hidock-ib" onClick={() => setOpen(false)} aria-label="닫기"><X size={16} /></button>
           </div>
-          <div className="hidock-body">
+          <div className="hidock-body" ref={bodyRef}>
             {msgs.map((m, i) => (
-              <div key={i} className={"hidock-row " + m.who}>
+              <div key={i} data-mi={i} className={"hidock-row " + m.who}>
                 {m.who === "hi" && (() => {
                   const A = (typeof hiAgent === "function") ? hiAgent(m.agent || "A0") : null;
                   return <span className={"hidock-mini" + (m.agent && m.agent !== "A0" ? " spec" : "")} title={A ? A.label : "하이"}>
