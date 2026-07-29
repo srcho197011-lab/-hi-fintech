@@ -37,21 +37,16 @@ const SHOP_PARTNERS = {
      ⚠️ 실제 제휴 계약과 무관한 **예시**이며, 수치는 2026-07-29 시점 공개 보도 기준이다.
      정밀영양협회 배지는 붙이지 않는다(영양 인증이라 화장품에 부적절). */
   skin: [{
-    name: "더파운더즈", brand: "아누아(Anua)", sub: "스킨 특별제휴(협의 중·예시)", member: false,
-    bg: "linear-gradient(125deg,#134E4A 0%,#0F766E 48%,#65A30D 100%)",
-    tagline: "어성초(Heartleaf) 중심 진정 라인 — 2025년 매출 7,177억 원, 해외 매출 비중 약 85%의 수출 주도 독립 브랜드.",
-    strengths: [["leaf", "어성초 진정 라인", "어성초 77% 토너·80 앰플 등 진정 중심 설계"], ["badge", "수출 주도", "해외 매출 비중 약 85%(2025년)"], ["capsule", "북미 성과", "아마존 클렌징·토너 카테고리 상위권"], ["doc", "일본 성과", "Qoo10 메가와리 4개 분기 연속 1위"]],
-    chips: ["어성초 토너", "수분 진정 앰플", "모공 클렌징폼", "데일리 릴리프 로션"],
-    stats: [["7,177억", "2025년 매출"], ["85%", "해외 매출 비중"], ["+68%", "전년 대비"]],
-    home: "https://anua.co.kr", q: "아누아 어성초 토너",
-  }, {
-    name: "크레이버코퍼레이션", brand: "스킨1004(SKIN1004)", sub: "스킨 특별제휴(협의 중·예시)", member: false,
-    bg: "linear-gradient(125deg,#065F46 0%,#047857 46%,#0891B2 100%)",
-    tagline: "마다가스카르 센텔라(병풀) 단일 원료 집중 — 120개국 이상 수출, 센텔라 앰플 누적 출하 1,750만 병.",
-    strengths: [["leaf", "센텔라 단일 원료", "해발 700m 마다가스카르산 센텔라"], ["badge", "120개국 이상 수출", "미국·필리핀 등"], ["capsule", "센텔라 앰플", "누적 출하 1,750만 병(2026-02 기준)"], ["doc", "라인 일관성", "클렌징·토너·앰플·크림·선크림 전 단계"]],
-    chips: ["센텔라 앰플", "토닝 토너", "수딩크림", "에어핏 선크림"],
-    stats: [["120개국+", "수출"], ["1,750만 병", "앰플 누적"], ["센텔라", "단일 원료"]],
-    home: "https://skin1004korea.com", q: "스킨1004 마다가스카르 센텔라",
+    name: "코스맥스", brand: "COSMAX", sub: "스킨 특별제휴(협의 중·예시)", member: false,
+    bg: "linear-gradient(125deg,#0C2A4A 0%,#1D4ED8 48%,#0891B2 100%)",
+    tagline: "세계 1위 화장품 ODM — 2025년 매출 2조 3,988억 원, 국내외 고객사 4,500곳. 브랜드를 파는 회사가 아니라 만드는 회사라, 하이핀 회원 데이터로 설계한 제품을 실제로 생산해 낼 수 있는 파트너예요.",
+    strengths: [["badge", "세계 1위 화장품 ODM", "2025년 매출 2조 3,988억 원(+10.7%) · 영업이익 1,958억 원(+11.6%) 역대 최대"],
+      ["doc", "고객사 4,500곳", "매출 1,000억 원 이상 '메가' K-인디브랜드 50여 곳을 함께 키웠어요"],
+      ["leaf", "10여 개국 생산·연구", "미국·중국·동남아·일본·유럽 + 인도 사무소, 중남미·중동 확대 중"],
+      ["capsule", "처방부터 생산까지", "성분 처방 개발·용기·인허가·양산을 한 번에(ODM)"]],
+    chips: ["ODM 세계 1위", "고객사 4,500곳", "메가 인디브랜드 50여 곳", "10여 개국 네트워크"],
+    stats: [["2조 3,988억", "2025년 매출"], ["4,500곳", "고객사"], ["10여 개국", "글로벌 네트워크"]],
+    home: "https://www.cosmax.com", q: "코스맥스 화장품 ODM",
   }],
   device: [{
     name: "GN바디닥터", brand: "제너럴네트", sub: "의료기기 특별제휴",
@@ -991,12 +986,16 @@ function SkinShop({ onGo }) {
   const PRODUCTS = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
   const CATS = (typeof SKIN_CATS !== "undefined") ? SKIN_CATS : {};
   const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const PARTNERS = (typeof SKIN_PARTNER_BRANDS !== "undefined") ? SKIN_PARTNER_BRANDS : [];
   const [cat, setCat] = useState("전체");
-  const [sort, setSort] = useState("reward");
+  const [sort, setSort] = useState("partner");
   const [detail, setDetail] = useState(null);
   const cats = ["전체", ...Object.keys(CATS)];
   let list = PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
-  if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
+  /* 제휴 브랜드를 위에 세울 때는 **그게 기준이라고 이름표에 적는다** — 몰래 올리면 비교표가 스스로를 부정한다 */
+  const pRank = (p) => { const i = PARTNERS.indexOf(p.brand); return i < 0 ? 99 : i; };
+  if (sort === "partner") list = [...list].sort((a, b) => (pRank(a) - pRank(b)) || (rw(b.price).reward - rw(a.price).reward));
+  else if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
   else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
   else if (sort === "priceHigh") list = [...list].sort((a, b) => b.price - a.price);
   else if (sort === "unit") list = [...list].sort((a, b) => (a.vol ? a.price / a.vol : 1e9) - (b.vol ? b.price / b.vol : 1e9));
@@ -1012,19 +1011,20 @@ function SkinShop({ onGo }) {
 
       <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
 
-      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Droplet size={14} color="#DB2777" style={{ verticalAlign: "-2px" }} /> 스킨 헬스케어 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 수집분 {PRODUCTS.length}종 · 6대 분류</span></div>
+      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Droplet size={14} color="#DB2777" style={{ verticalAlign: "-2px" }} /> 스킨 헬스케어 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 수집분 {PRODUCTS.length}종 · 6대 분류 · 기본 정렬은 <b>제휴 브랜드순</b>(정렬을 바꾸면 순수 기준으로 다시 세워요)</span></div>
       <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
       <div className="sssort">
         <span>정렬</span>
-        {[["reward", "적립높은순"], ["unit", "용량당 단가순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        {[["partner", "제휴 브랜드순"], ["reward", "적립높은순"], ["unit", "용량당 단가순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
         <span className="sscount">{list.length}종</span>
       </div>
       <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
         <div className="mealcard suppmeal" key={p.id} onClick={() => setDetail(p)}>
           <div className="mealthumb" style={{ background: (m.col || "#DB2777") + "0d" }}><SkinImage p={p} /><span className="mealbadge rocket">{p.category}</span></div>
-          <div className="mealbrand">{p.brand}</div>
+          <div className="mealbrand">{p.brand}{PARTNERS.indexOf(p.brand) >= 0 && <span className="skpb">제휴</span>}</div>
           <div className="mealname">{p.name}</div>
           <div className="mealrate"><span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 700 }}>{p.volume}</span>{(p.spf || p.pa) ? <span className="rev"> · {[p.spf, p.pa].filter(Boolean).join("/")}</span> : null}</div>
+          {p.care && p.care.length ? <div className="skcare">{p.care.map((c) => <span key={c}>{c}</span>)}</div> : null}
           <div className="mealprices"><span className="mprice">{shopWon(p.price)}</span><span className="morig" style={{ textDecoration: "none" }}>{unitTxt(p)}</span></div>
           <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
           <div className="mealbtns">

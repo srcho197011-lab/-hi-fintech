@@ -69,11 +69,11 @@ const SKIN_PRODUCTS = [
 
   /* ③ 자외선·환경 보호 */
   { id: "sk-1004-airfit-plus-50", name: "마다가스카르 센텔라 에어핏 선크림 플러스 50ml", brand: "스킨1004", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
-    claim: "자외선 차단 기능성화장품", desc: "센텔라를 담은 데일리 선크림입니다.", price: 19000, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null },
+    claim: "자외선 차단 기능성화장품", desc: "센텔라를 담은 데일리 선크림입니다.", price: 19000, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null, care: ["진정"] },
   { id: "sk-1004-airfit-light-50", name: "마다가스카르 센텔라 에어핏 선크림 라이트 50ml", brand: "스킨1004", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
-    claim: "자외선 차단 기능성화장품", desc: "가벼운 사용감의 데일리 선크림입니다.", price: 18050, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null },
+    claim: "자외선 차단 기능성화장품", desc: "가벼운 사용감의 데일리 선크림입니다.", price: 18050, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null, care: ["진정"] },
   { id: "sk-lrp-anthelios-uv-50", name: "안뗄리오스 UV 무스 50ml", brand: "라로슈포제", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
-    claim: "자외선 차단 제품", desc: "민감 피부를 고려한 자외선 차단 제품입니다.", price: 21470, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", spf: null, pa: null, functional: null },
+    claim: "자외선 차단 제품", desc: "민감 피부를 고려한 자외선 차단 제품입니다.", price: 21470, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", spf: null, pa: null, functional: null, care: ["더마", "저자극"] },
   { id: "sk-missha-safeblock-cover-14", name: "세이프블록 RX 커버 톤업 선쿠션 14g", brand: "미샤", category: "자외선·환경 보호", volume: "14g", vol: 14, volUnit: "g",
     claim: "자외선 차단 쿠션", desc: "덧바르기 편한 쿠션 타입입니다.", price: 8600, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
   { id: "sk-missha-safeblock-rosy-12", name: "세이프블록 RX 로지 톤업 선쿠션 12g", brand: "미샤", category: "자외선·환경 보호", volume: "12g", vol: 12, volUnit: "g",
@@ -84,6 +84,30 @@ const SKIN_PRODUCTS = [
     claim: "자외선 차단 팩트", desc: "휴대·수정용 팩트 타입입니다.", price: 17900, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
   { id: "sk-age20s-glowfit-pact-125", name: "글로우 핏 톤업 선팩트 12.5g", brand: "에이지투웨니스", category: "자외선·환경 보호", volume: "12.5g", vol: 12.5, volUnit: "g",
     claim: "자외선 차단 팩트", desc: "톤업 타입 선팩트입니다.", price: 22900, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
+
+  /* ③-b 진정·장벽 계열 선케어 — 민감·붉어짐, 건조·당김 고민에서 함께 보는 제품군.
+     ⚠️ care는 **제조사가 내세운 결(진정·장벽·저자극)** 을 옮긴 분류 태그일 뿐이다.
+        "붉어짐을 예방한다"처럼 효과를 단정하지 않는다 — 그건 화장품이 말할 수 없는 문장이다. */
+  { id: "sk-drg-redblemish-sun-50", name: "레드 블레미쉬 수딩 업 선 50ml", brand: "닥터지", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "붉은기가 신경 쓰이는 피부를 겨냥한 닥터지의 진정 결 선케어입니다.", price: 6950, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%8B%A5%ED%84%B0%EC%A7%80%20%EC%84%A0%ED%81%AC%EB%A6%BC", spf: "SPF50+", pa: "PA++++", functional: null, care: ["진정", "저자극"] },
+  { id: "sk-drg-mediuv-mild-50", name: "메디 UV 마일드 선 50ml", brand: "닥터지", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "자극을 낮춘 결의 데일리 선케어입니다.", price: 8820, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%8B%A5%ED%84%B0%EC%A7%80%20%EC%84%A0%ED%81%AC%EB%A6%BC", spf: "SPF50+", pa: "PA++++", functional: null, care: ["저자극"] },
+  { id: "sk-drg-brightening-moisture-50", name: "브라이트닝 업 모이스처 선 50ml", brand: "닥터지", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "보습 결을 더한 데일리 선케어입니다.", price: 15750, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%8B%A5%ED%84%B0%EC%A7%80%20%EC%84%A0%ED%81%AC%EB%A6%BC", spf: "SPF50+", pa: "PA++++", functional: null, care: ["보습"] },
+  { id: "sk-goodal-heartleaf-sun-50", name: "맑은 어성초 진정 수분 선크림 50ml", brand: "구달", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "어성초를 담은 진정·수분 결의 선크림입니다.", price: 8640, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA++++", functional: null, care: ["진정", "보습"] },
+  { id: "sk-cfc-derma-relief-50", name: "더마 릴리프 선스크린 50ml", brand: "셀퓨전씨", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "더마 라인의 진정 결 선스크린입니다.", price: 15000, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA++++", functional: null, care: ["진정", "더마"] },
+  { id: "sk-cfc-laser-100-50", name: "레이저 선스크린 100 50ml", brand: "셀퓨전씨", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "시술 후 관리 맥락에서 많이 찾는 더마 선스크린입니다.", price: 16990, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA+++", functional: null, care: ["더마", "저자극"] },
+  { id: "sk-roundlab-barrier-sun-50", name: "베리어 인핸싱 선크림 50ml", brand: "로우퀘스트", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "피부장벽 결에 초점을 둔 선크림입니다.", price: 14990, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA++++", functional: null, care: ["장벽", "보습"] },
+  { id: "sk-makeprem-calming-sun-50", name: "UV 디펜스 미 카밍 선크림 50ml", brand: "메이크프렘", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "카밍 결의 저자극 선크림입니다.", price: 15290, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA++++", functional: null, care: ["진정", "저자극"] },
+  { id: "sk-lrp-anthelios-ultra-50", name: "안뗄리오스 울트라 선크림 50ml", brand: "라로슈포제", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "민감 피부를 고려한 더마 브랜드의 선크림입니다.", price: 20500, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: null, functional: null, care: ["더마", "저자극"] },
+  { id: "sk-avene-sun-mineral-50", name: "선 미네랄 크림 50ml", brand: "아벤느", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "무기 자외선차단 성분 중심의 민감 피부용 제품입니다.", price: 39580, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50", pa: "PA++++", functional: null, care: ["더마", "저자극"] },
 
   /* ④ 기능성·트러블 케어 */
   { id: "sk-anua-peach70-serum-30", name: "복숭아 70 나이아신 세럼 30ml", brand: "아누아", category: "기능성·트러블 케어", volume: "30mL", vol: 30, volUnit: "mL",
@@ -114,6 +138,10 @@ const SKIN_PRODUCTS = [
 
 /* 이너뷰티는 데이터를 옮기지 않는다 — 영양제(건기식)로 남기고 링크로만 안내한다 */
 const SKIN_INNER_LINK = { cats: ["콜라겐", "비타민C", "종합비타민"], note: "먹는 이너뷰티(콜라겐·비타민)는 건강기능식품이라 영양제 탭에서 1일 단가 기준으로 비교하실 수 있어요." };
+
+/* 이미지·상세 링크(수집분만) — 없으면 화면이 대체 썸네일을 그린다 */
+/* 상품몰 최상단에 세우는 제휴 브랜드 — 기준을 밝히고 세운다(정렬 라벨에 그대로 적는다) */
+const SKIN_PARTNER_BRANDS = ["아누아", "스킨1004"];
 
 /* 이미지·상세 링크(수집분만) — 없으면 화면이 대체 썸네일을 그린다 */
 const SKIN_MEDIA = {};

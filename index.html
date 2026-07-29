@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=9a9999a709" />
+<link rel="stylesheet" href="./data/app.css?v=d2a9f99301" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=9a9999a709"></script>
-<script src="./src/data/section_data.js?v=9a9999a709"></script>
-<script src="./src/data/demo_members.js?v=9a9999a709"></script>
+<script src="./src/data/dummy_data.js?v=d2a9f99301"></script>
+<script src="./src/data/section_data.js?v=d2a9f99301"></script>
+<script src="./src/data/demo_members.js?v=d2a9f99301"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -6432,21 +6432,16 @@ const SHOP_PARTNERS = {
      ⚠️ 실제 제휴 계약과 무관한 **예시**이며, 수치는 2026-07-29 시점 공개 보도 기준이다.
      정밀영양협회 배지는 붙이지 않는다(영양 인증이라 화장품에 부적절). */
   skin: [{
-    name: "더파운더즈", brand: "아누아(Anua)", sub: "스킨 특별제휴(협의 중·예시)", member: false,
-    bg: "linear-gradient(125deg,#134E4A 0%,#0F766E 48%,#65A30D 100%)",
-    tagline: "어성초(Heartleaf) 중심 진정 라인 — 2025년 매출 7,177억 원, 해외 매출 비중 약 85%의 수출 주도 독립 브랜드.",
-    strengths: [["leaf", "어성초 진정 라인", "어성초 77% 토너·80 앰플 등 진정 중심 설계"], ["badge", "수출 주도", "해외 매출 비중 약 85%(2025년)"], ["capsule", "북미 성과", "아마존 클렌징·토너 카테고리 상위권"], ["doc", "일본 성과", "Qoo10 메가와리 4개 분기 연속 1위"]],
-    chips: ["어성초 토너", "수분 진정 앰플", "모공 클렌징폼", "데일리 릴리프 로션"],
-    stats: [["7,177억", "2025년 매출"], ["85%", "해외 매출 비중"], ["+68%", "전년 대비"]],
-    home: "https://anua.co.kr", q: "아누아 어성초 토너",
-  }, {
-    name: "크레이버코퍼레이션", brand: "스킨1004(SKIN1004)", sub: "스킨 특별제휴(협의 중·예시)", member: false,
-    bg: "linear-gradient(125deg,#065F46 0%,#047857 46%,#0891B2 100%)",
-    tagline: "마다가스카르 센텔라(병풀) 단일 원료 집중 — 120개국 이상 수출, 센텔라 앰플 누적 출하 1,750만 병.",
-    strengths: [["leaf", "센텔라 단일 원료", "해발 700m 마다가스카르산 센텔라"], ["badge", "120개국 이상 수출", "미국·필리핀 등"], ["capsule", "센텔라 앰플", "누적 출하 1,750만 병(2026-02 기준)"], ["doc", "라인 일관성", "클렌징·토너·앰플·크림·선크림 전 단계"]],
-    chips: ["센텔라 앰플", "토닝 토너", "수딩크림", "에어핏 선크림"],
-    stats: [["120개국+", "수출"], ["1,750만 병", "앰플 누적"], ["센텔라", "단일 원료"]],
-    home: "https://skin1004korea.com", q: "스킨1004 마다가스카르 센텔라",
+    name: "코스맥스", brand: "COSMAX", sub: "스킨 특별제휴(협의 중·예시)", member: false,
+    bg: "linear-gradient(125deg,#0C2A4A 0%,#1D4ED8 48%,#0891B2 100%)",
+    tagline: "세계 1위 화장품 ODM — 2025년 매출 2조 3,988억 원, 국내외 고객사 4,500곳. 브랜드를 파는 회사가 아니라 만드는 회사라, 하이핀 회원 데이터로 설계한 제품을 실제로 생산해 낼 수 있는 파트너예요.",
+    strengths: [["badge", "세계 1위 화장품 ODM", "2025년 매출 2조 3,988억 원(+10.7%) · 영업이익 1,958억 원(+11.6%) 역대 최대"],
+      ["doc", "고객사 4,500곳", "매출 1,000억 원 이상 '메가' K-인디브랜드 50여 곳을 함께 키웠어요"],
+      ["leaf", "10여 개국 생산·연구", "미국·중국·동남아·일본·유럽 + 인도 사무소, 중남미·중동 확대 중"],
+      ["capsule", "처방부터 생산까지", "성분 처방 개발·용기·인허가·양산을 한 번에(ODM)"]],
+    chips: ["ODM 세계 1위", "고객사 4,500곳", "메가 인디브랜드 50여 곳", "10여 개국 네트워크"],
+    stats: [["2조 3,988억", "2025년 매출"], ["4,500곳", "고객사"], ["10여 개국", "글로벌 네트워크"]],
+    home: "https://www.cosmax.com", q: "코스맥스 화장품 ODM",
   }],
   device: [{
     name: "GN바디닥터", brand: "제너럴네트", sub: "의료기기 특별제휴",
@@ -7386,12 +7381,16 @@ function SkinShop({ onGo }) {
   const PRODUCTS = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
   const CATS = (typeof SKIN_CATS !== "undefined") ? SKIN_CATS : {};
   const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const PARTNERS = (typeof SKIN_PARTNER_BRANDS !== "undefined") ? SKIN_PARTNER_BRANDS : [];
   const [cat, setCat] = useState("전체");
-  const [sort, setSort] = useState("reward");
+  const [sort, setSort] = useState("partner");
   const [detail, setDetail] = useState(null);
   const cats = ["전체", ...Object.keys(CATS)];
   let list = PRODUCTS.filter((p) => cat === "전체" || p.category === cat);
-  if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
+  /* 제휴 브랜드를 위에 세울 때는 **그게 기준이라고 이름표에 적는다** — 몰래 올리면 비교표가 스스로를 부정한다 */
+  const pRank = (p) => { const i = PARTNERS.indexOf(p.brand); return i < 0 ? 99 : i; };
+  if (sort === "partner") list = [...list].sort((a, b) => (pRank(a) - pRank(b)) || (rw(b.price).reward - rw(a.price).reward));
+  else if (sort === "reward") list = [...list].sort((a, b) => rw(b.price).reward - rw(a.price).reward);
   else if (sort === "priceLow") list = [...list].sort((a, b) => a.price - b.price);
   else if (sort === "priceHigh") list = [...list].sort((a, b) => b.price - a.price);
   else if (sort === "unit") list = [...list].sort((a, b) => (a.vol ? a.price / a.vol : 1e9) - (b.vol ? b.price / b.vol : 1e9));
@@ -7407,19 +7406,20 @@ function SkinShop({ onGo }) {
 
       <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
 
-      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Droplet size={14} color="#DB2777" style={{ verticalAlign: "-2px" }} /> 스킨 헬스케어 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 수집분 {PRODUCTS.length}종 · 6대 분류</span></div>
+      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Droplet size={14} color="#DB2777" style={{ verticalAlign: "-2px" }} /> 스킨 헬스케어 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 수집분 {PRODUCTS.length}종 · 6대 분류 · 기본 정렬은 <b>제휴 브랜드순</b>(정렬을 바꾸면 순수 기준으로 다시 세워요)</span></div>
       <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
       <div className="sssort">
         <span>정렬</span>
-        {[["reward", "적립높은순"], ["unit", "용량당 단가순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        {[["partner", "제휴 브랜드순"], ["reward", "적립높은순"], ["unit", "용량당 단가순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
         <span className="sscount">{list.length}종</span>
       </div>
       <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
         <div className="mealcard suppmeal" key={p.id} onClick={() => setDetail(p)}>
           <div className="mealthumb" style={{ background: (m.col || "#DB2777") + "0d" }}><SkinImage p={p} /><span className="mealbadge rocket">{p.category}</span></div>
-          <div className="mealbrand">{p.brand}</div>
+          <div className="mealbrand">{p.brand}{PARTNERS.indexOf(p.brand) >= 0 && <span className="skpb">제휴</span>}</div>
           <div className="mealname">{p.name}</div>
           <div className="mealrate"><span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 700 }}>{p.volume}</span>{(p.spf || p.pa) ? <span className="rev"> · {[p.spf, p.pa].filter(Boolean).join("/")}</span> : null}</div>
+          {p.care && p.care.length ? <div className="skcare">{p.care.map((c) => <span key={c}>{c}</span>)}</div> : null}
           <div className="mealprices"><span className="mprice">{shopWon(p.price)}</span><span className="morig" style={{ textDecoration: "none" }}>{unitTxt(p)}</span></div>
           <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
           <div className="mealbtns">
@@ -18923,7 +18923,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"건강쇼핑 스킨 헬스케어 서브섹션 신설", src:"skinProducts 6대분류 38종+skinConcern 고민12종·즉시진료5종+skinGuard 화장품법 7조+shopCompare 용량당·1매당·대당 축+A3/A1 경계 재정렬+원격진료 진료과 연결", summary:"영양제 오른쪽에 스킨 헬스케어를 열되 건기식이 아니라 화장품법 가드를 새로 만들고 mL·g·매수를 섞지 않는 축으로 비교하며 피부 고민이 선을 넘으면 제품을 팔지 않고 피부과·여성의학과 원격진료로 연결, 라우팅 경계 100%·회귀 9종 유지", refs:[], status:"반영", hash:"34af86d", auto:true },
+  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"스킨 헬스케어 제휴·카탈로그 보강", src:"코스맥스 ODM 특별제휴 카드+아누아·스킨1004 상품몰 제휴브랜드순 상단 배치+진정 장벽 선케어 10종 care 태그", summary:"특별제휴 칸을 제조 파트너 코스맥스로 바꾸고 브랜드 두 곳은 기준을 밝힌 제휴 브랜드순 정렬로 상품몰 맨 위에 세웠으며 민감 붉어짐 건조 당김 고민에 이어지는 진정 장벽 결 선케어 10종을 추가해 자외선 카테고리가 mL 축으로 정상화됨", refs:[], status:"반영", hash:"ee22cf3", auto:true },
+  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"건강쇼핑 스킨 헬스케어 서브섹션 신설", src:"skinProducts 6대분류 38종+skinConcern 고민12종·즉시진료5종+skinGuard 화장품법 7조+shopCompare 용량당·1매당·대당 축+A3/A1 경계 재정렬+원격진료 진료과 연결", summary:"영양제 오른쪽에 스킨 헬스케어를 열되 건기식이 아니라 화장품법 가드를 새로 만들고 mL·g·매수를 섞지 않는 축으로 비교하며 피부 고민이 선을 넘으면 제품을 팔지 않고 피부과·여성의학과 원격진료로 연결, 라우팅 경계 100%·회귀 9종 유지", refs:[], status:"반영", hash:"abf28a1", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"A3 영양제 6종 비교 확대와 카테고리 라우팅 전수 복구", src:"홍삼·비타민C·종합비타민·마그네슘·콜라겐·아연 39종 라벨 실측+agentRegistry A3 scope 12종 보강+성분단가 자릿수·인계 조사 교정", summary:"다나와 함량 필드의 기준이 제품마다 달라 1일 섭취량이 1회분인 제품만 성분량을 넣는 규칙을 세우고 g 단위 복용 제품도 1일 단가 축에 올렸으며 별칭만 있고 라우터에 없어 답변불가로 새던 12개 카테고리를 복구, A3 하네스 전 항목 통과·회귀 9종 유지", refs:[], status:"반영", hash:"a926f8b", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"A3 비교 카테고리 확대와 카테고리별 고유 축(Phase C 확장)", src:"밀크씨슬·비타민D 라벨 실측 14종+CMP_AXES 기기 소모품·식단 1식 단가+mealProducts 데이터계층 이관", summary:"영양제의 1일 단가 자로 기기와 식단을 재던 것을 카테고리마다 다른 축으로 갈라 혈당측정기는 동봉 시험지 1회당 단가로 식단은 1식 단가로 비교하게 하고 수량 미표기 제품도 가격은 보여주도록 함, A3 하네스 전 항목 통과·회귀 9종 유지", refs:[], status:"반영", hash:"a72934f", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"운영 콘솔 — 에이전트 메시 관제·검수 큐·안전한 설정(Phase G)", src:"hiOpsConfig 단일소스+잠금6종+opsMetrics 집계+OpsConsole 5패널", summary:"흩어진 임계값을 한 곳으로 모아 화면에서 조정하되 응급과 가드와 게이트 기준은 잠그고 집계가 원천과 일치하는지 하네스로 검증하며 학습 루프가 넘긴 검수 큐를 화면에서 처리하게 함, 표시 정합성 위반 0·잠금 우회 0·회귀 9종 유지", refs:[], status:"반영", hash:"ed3a97f", auto:true },
@@ -20463,11 +20464,11 @@ const SKIN_PRODUCTS = [
 
   /* ③ 자외선·환경 보호 */
   { id: "sk-1004-airfit-plus-50", name: "마다가스카르 센텔라 에어핏 선크림 플러스 50ml", brand: "스킨1004", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
-    claim: "자외선 차단 기능성화장품", desc: "센텔라를 담은 데일리 선크림입니다.", price: 19000, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null },
+    claim: "자외선 차단 기능성화장품", desc: "센텔라를 담은 데일리 선크림입니다.", price: 19000, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null, care: ["진정"] },
   { id: "sk-1004-airfit-light-50", name: "마다가스카르 센텔라 에어핏 선크림 라이트 50ml", brand: "스킨1004", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
-    claim: "자외선 차단 기능성화장품", desc: "가벼운 사용감의 데일리 선크림입니다.", price: 18050, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null },
+    claim: "자외선 차단 기능성화장품", desc: "가벼운 사용감의 데일리 선크림입니다.", price: 18050, source: "brand_mall", url: "https://skin1004korea.com", spf: null, pa: null, functional: null, care: ["진정"] },
   { id: "sk-lrp-anthelios-uv-50", name: "안뗄리오스 UV 무스 50ml", brand: "라로슈포제", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
-    claim: "자외선 차단 제품", desc: "민감 피부를 고려한 자외선 차단 제품입니다.", price: 21470, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", spf: null, pa: null, functional: null },
+    claim: "자외선 차단 제품", desc: "민감 피부를 고려한 자외선 차단 제품입니다.", price: 21470, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%9D%BC%EB%A1%9C%EC%8A%88%ED%8F%AC%EC%A0%9C", spf: null, pa: null, functional: null, care: ["더마", "저자극"] },
   { id: "sk-missha-safeblock-cover-14", name: "세이프블록 RX 커버 톤업 선쿠션 14g", brand: "미샤", category: "자외선·환경 보호", volume: "14g", vol: 14, volUnit: "g",
     claim: "자외선 차단 쿠션", desc: "덧바르기 편한 쿠션 타입입니다.", price: 8600, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
   { id: "sk-missha-safeblock-rosy-12", name: "세이프블록 RX 로지 톤업 선쿠션 12g", brand: "미샤", category: "자외선·환경 보호", volume: "12g", vol: 12, volUnit: "g",
@@ -20478,6 +20479,30 @@ const SKIN_PRODUCTS = [
     claim: "자외선 차단 팩트", desc: "휴대·수정용 팩트 타입입니다.", price: 17900, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
   { id: "sk-age20s-glowfit-pact-125", name: "글로우 핏 톤업 선팩트 12.5g", brand: "에이지투웨니스", category: "자외선·환경 보호", volume: "12.5g", vol: 12.5, volUnit: "g",
     claim: "자외선 차단 팩트", desc: "톤업 타입 선팩트입니다.", price: 22900, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%EC%BF%A0%EC%85%98", spf: "SPF50+", pa: "PA++++", functional: null },
+
+  /* ③-b 진정·장벽 계열 선케어 — 민감·붉어짐, 건조·당김 고민에서 함께 보는 제품군.
+     ⚠️ care는 **제조사가 내세운 결(진정·장벽·저자극)** 을 옮긴 분류 태그일 뿐이다.
+        "붉어짐을 예방한다"처럼 효과를 단정하지 않는다 — 그건 화장품이 말할 수 없는 문장이다. */
+  { id: "sk-drg-redblemish-sun-50", name: "레드 블레미쉬 수딩 업 선 50ml", brand: "닥터지", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "붉은기가 신경 쓰이는 피부를 겨냥한 닥터지의 진정 결 선케어입니다.", price: 6950, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%8B%A5%ED%84%B0%EC%A7%80%20%EC%84%A0%ED%81%AC%EB%A6%BC", spf: "SPF50+", pa: "PA++++", functional: null, care: ["진정", "저자극"] },
+  { id: "sk-drg-mediuv-mild-50", name: "메디 UV 마일드 선 50ml", brand: "닥터지", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "자극을 낮춘 결의 데일리 선케어입니다.", price: 8820, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%8B%A5%ED%84%B0%EC%A7%80%20%EC%84%A0%ED%81%AC%EB%A6%BC", spf: "SPF50+", pa: "PA++++", functional: null, care: ["저자극"] },
+  { id: "sk-drg-brightening-moisture-50", name: "브라이트닝 업 모이스처 선 50ml", brand: "닥터지", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "보습 결을 더한 데일리 선케어입니다.", price: 15750, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EB%8B%A5%ED%84%B0%EC%A7%80%20%EC%84%A0%ED%81%AC%EB%A6%BC", spf: "SPF50+", pa: "PA++++", functional: null, care: ["보습"] },
+  { id: "sk-goodal-heartleaf-sun-50", name: "맑은 어성초 진정 수분 선크림 50ml", brand: "구달", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "어성초를 담은 진정·수분 결의 선크림입니다.", price: 8640, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA++++", functional: null, care: ["진정", "보습"] },
+  { id: "sk-cfc-derma-relief-50", name: "더마 릴리프 선스크린 50ml", brand: "셀퓨전씨", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "더마 라인의 진정 결 선스크린입니다.", price: 15000, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA++++", functional: null, care: ["진정", "더마"] },
+  { id: "sk-cfc-laser-100-50", name: "레이저 선스크린 100 50ml", brand: "셀퓨전씨", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "시술 후 관리 맥락에서 많이 찾는 더마 선스크린입니다.", price: 16990, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA+++", functional: null, care: ["더마", "저자극"] },
+  { id: "sk-roundlab-barrier-sun-50", name: "베리어 인핸싱 선크림 50ml", brand: "로우퀘스트", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "피부장벽 결에 초점을 둔 선크림입니다.", price: 14990, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA++++", functional: null, care: ["장벽", "보습"] },
+  { id: "sk-makeprem-calming-sun-50", name: "UV 디펜스 미 카밍 선크림 50ml", brand: "메이크프렘", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "카밍 결의 저자극 선크림입니다.", price: 15290, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: "PA++++", functional: null, care: ["진정", "저자극"] },
+  { id: "sk-lrp-anthelios-ultra-50", name: "안뗄리오스 울트라 선크림 50ml", brand: "라로슈포제", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "민감 피부를 고려한 더마 브랜드의 선크림입니다.", price: 20500, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50+", pa: null, functional: null, care: ["더마", "저자극"] },
+  { id: "sk-avene-sun-mineral-50", name: "선 미네랄 크림 50ml", brand: "아벤느", category: "자외선·환경 보호", volume: "50mL", vol: 50, volUnit: "mL",
+    claim: "자외선 차단 제품", desc: "무기 자외선차단 성분 중심의 민감 피부용 제품입니다.", price: 39580, source: "danawa", url: "https://search.danawa.com/dsearch.php?query=%EC%84%A0%ED%81%AC%EB%A6%BC%2050ml%20%EB%AF%BC%EA%B0%90%EC%84%B1", spf: "SPF50", pa: "PA++++", functional: null, care: ["더마", "저자극"] },
 
   /* ④ 기능성·트러블 케어 */
   { id: "sk-anua-peach70-serum-30", name: "복숭아 70 나이아신 세럼 30ml", brand: "아누아", category: "기능성·트러블 케어", volume: "30mL", vol: 30, volUnit: "mL",
@@ -20508,6 +20533,10 @@ const SKIN_PRODUCTS = [
 
 /* 이너뷰티는 데이터를 옮기지 않는다 — 영양제(건기식)로 남기고 링크로만 안내한다 */
 const SKIN_INNER_LINK = { cats: ["콜라겐", "비타민C", "종합비타민"], note: "먹는 이너뷰티(콜라겐·비타민)는 건강기능식품이라 영양제 탭에서 1일 단가 기준으로 비교하실 수 있어요." };
+
+/* 이미지·상세 링크(수집분만) — 없으면 화면이 대체 썸네일을 그린다 */
+/* 상품몰 최상단에 세우는 제휴 브랜드 — 기준을 밝히고 세운다(정렬 라벨에 그대로 적는다) */
+const SKIN_PARTNER_BRANDS = ["아누아", "스킨1004"];
 
 /* 이미지·상세 링크(수집분만) — 없으면 화면이 대체 썸네일을 그린다 */
 const SKIN_MEDIA = {};
@@ -20545,10 +20574,10 @@ const SKIN_URGENT = [
 /* ── 고민 12종 ── */
 const SKIN_CONCERN = [
   { key: "sensitive", label: "민감·붉어짐", kw: ["민감성", "민감한피부", "예민한피부", "따갑", "쓰라", "자극받"],
-    primary: "보습·장벽 케어", secondary: "더마·전문 케어",
+    primary: "보습·장벽 케어", secondary: "더마·전문 케어", sunCare: ["진정", "저자극"],
     refer: "2주 넘게 계속되거나 화끈거림·부종이 같이 오면", dept: "derma" },
   { key: "dry", label: "건조·당김", kw: ["건조", "당김", "당겨", "각질", "푸석"],
-    primary: "보습·장벽 케어", secondary: "클렌징 케어",
+    primary: "보습·장벽 케어", secondary: "클렌징 케어", sunCare: ["보습", "장벽"],
     refer: "각질이 갈라지거나 피가 비치고 온몸이 가려우면", dept: "derma" },
   { key: "acne", label: "여드름·트러블", kw: ["여드름", "트러블", "뾰루지", "좁쌀"],
     primary: "기능성·트러블 케어", secondary: "클렌징 케어",
@@ -20564,16 +20593,16 @@ const SKIN_CONCERN = [
   { key: "pore", label: "모공·피지", kw: ["모공", "피지", "번들", "블랙헤드", "지성"],
     primary: "클렌징 케어", secondary: "기능성·트러블 케어", refer: null, dept: null },
   { key: "redness", label: "홍조", kw: ["홍조", "얼굴이빨", "붉은기", "안면홍조"],
-    primary: "더마·전문 케어", secondary: "보습·장벽 케어",
+    primary: "더마·전문 케어", secondary: "보습·장벽 케어", sunCare: ["진정", "저자극"],
     refer: "붉은기가 가라앉지 않고 실핏줄이 도드라지면", dept: "derma" },
   { key: "scalp", label: "두피·모발", kw: ["두피", "머리카락", "비듬", "탈모"],
     primary: "더마·전문 케어", secondary: "디바이스·이너뷰티",
     refer: "머리카락이 갑자기 많이 빠지거나 동그랗게 비면", dept: "derma" },
   { key: "post-procedure", label: "시술 후 관리", kw: ["시술후", "레이저후", "필링후", "박피후", "리쥬란", "재생관리"],
-    primary: "더마·전문 케어", secondary: "보습·장벽 케어",
+    primary: "더마·전문 케어", secondary: "보습·장벽 케어", sunCare: ["더마", "저자극"],
     refer: "진물·열감·통증이 심해지면 **시술받으신 병원에 먼저**", dept: "derma" },
   { key: "pregnancy", label: "임신·수유 중", kw: ["임신", "임산부", "수유중", "모유수유"],
-    primary: "보습·장벽 케어", secondary: "자외선·환경 보호",
+    primary: "보습·장벽 케어", secondary: "자외선·환경 보호", sunCare: ["저자극", "더마"],
     refer: "성분을 써도 되는지 궁금하시면", dept: "obgy" },
   { key: "menopause", label: "갱년기 건조·가려움", kw: ["갱년기", "폐경", "완경"],
     primary: "보습·장벽 케어", secondary: "디바이스·이너뷰티",
