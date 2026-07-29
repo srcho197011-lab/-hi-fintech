@@ -29,6 +29,11 @@ function _hiScopeScore(agent, t) {
 
 /* ── 진입점 ──
    반환: { agent, reason, confidence, byIntent } */
+/* 후속 질문 신호 — 지시어·생략·되묻기. 이게 있을 때만 직전 담당이 이어받는다 */
+const HI_FOLLOWUP = /(그럼|그러면|그래서|그건|그거|이거|저거|거기서|아까|방금|더|다른|또|나머지|왜|어떻게|얼마|몇|언제|어디|비교|추천|자세히|계속)/;
+/* 인사·감사·수긍 — 담당이 없는 말. 이어받으면 엉뚱한 전문가가 답한다 */
+const HI_SMALLTALK = /^(고마워|고맙|감사|안녕|잘가|알겠|알았|넵|네|응|웅|ok|오케이|괜찮|수고)/;
+
 function agentRoute(rawText, norm, snap, ctx) {
   const t = String(norm || rawText || "").toLowerCase();
   const raw = String(rawText || "");
@@ -83,9 +88,15 @@ function agentRoute(rawText, norm, snap, ctx) {
   if (best && best.s >= 2 && best.s > a0Score) return { agent: best.id, reason: "scope", confidence: 0.75, byIntent };   // 동점이면 기본 담당(A0)
   if (intentAgent === "A0") return { agent: "A0", reason: "intent", confidence: 0.9, byIntent };
 
-  /* ⑤ 직전 소유자 승계 — "그래서 어떻게 해?" 같은 도메인 중립 후속 질문은 대화 중이던 전문가가 이어받는다 */
+  /* ⑤ 직전 소유자 승계 — "그래서 어떻게 해?" 같은 도메인 중립 **후속 질문**만 이어받는다.
+     ⚠️ 조건이 "A0 단어도 없고 인텐트도 없으면"이던 때, 직전 담당이 건강쇼핑이면
+        "하이핀 소개해줘"·"고마워"까지 쇼핑이 받아 혈당 비교표가 나갔다.
+        회원을 직전 상담에 가둬 놓으면 안 된다 — 후속 질문의 **신호가 있을 때만** 승계한다.
+     승계에 실패해도 A0(하이)가 받아 일반 안내를 하므로 안전한 쪽으로 틀린다. */
   if (ctx && ctx.lastOwner && ctx.lastOwner !== "A0" && !a0Score && !byIntent) {
-    return { agent: ctx.lastOwner, reason: "owner-continuity", confidence: 0.6 };
+    if (!HI_SMALLTALK.test(t) && HI_FOLLOWUP.test(t)) {
+      return { agent: ctx.lastOwner, reason: "owner-continuity", confidence: 0.6 };
+    }
   }
 
   /* ⑥ 기본값 */
