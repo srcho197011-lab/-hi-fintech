@@ -61,6 +61,14 @@ function CareSection({ initial, onGo }) {
   const map = { care: "ai", ai: "ai", manage: "manage", tele: "tele", hospital: "tele", homecare: "homecare", shop: "shop" };
   const [tab, setTab] = useState(map[initial] || "ai");
   useEffect(() => { setTab(map[initial] || "ai"); }, [initial]);
+  /* 같은 섹션 안에서 다시 부를 때 — initial 값이 그대로면 위 useEffect가 안 돈다.
+     (건강쇼핑 → 원격진료를 두 번째 누르면 탭이 안 바뀌던 원인)
+     진료과 지정 신호를 받으면 탭도 함께 원격진료로 돌린다. */
+  useEffect(() => {
+    const h = () => setTab("tele");
+    window.addEventListener("hifin:tele", h);
+    return () => window.removeEventListener("hifin:tele", h);
+  }, []);
   const tabs = [["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "AI 주치의", Bot, "#7C3AED"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
   return (
     <div style={{ marginTop: 4 }}>

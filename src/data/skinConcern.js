@@ -117,6 +117,12 @@ function skinConcernLines(concern, picks) {
 /* ── 원격진료 연결 — 새 화면을 만들지 않고 기존 비대면 원격진료 탭을 연다 ──
    window._teleGo.dept를 심어 두면 원격주치의 화면이 그 진료과로 열린다(Shop의 _shopGo와 같은 방식). */
 function skinTeleGo(deptKey) {
-  try { if (typeof window !== "undefined") window._teleGo = { dept: deptKey || "derma" }; } catch (e) {}
-  return { label: "🩺 " + skinDeptLabel(deptKey) + " 원격진료 연결", to: "tele" };
+  const d = deptKey || "derma";
+  try {
+    if (typeof window !== "undefined") {
+      window._teleGo = { dept: d };                                        /* 아직 안 떠 있으면 첫 마운트가 읽는다 */
+      window.dispatchEvent(new CustomEvent("hifin:tele", { detail: { dept: d } }));  /* 이미 떠 있으면 이벤트로 바꾼다 */
+    }
+  } catch (e) {}
+  return { label: "🩺 " + skinDeptLabel(d) + " 원격진료 연결", to: "tele" };
 }

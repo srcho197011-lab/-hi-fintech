@@ -1027,13 +1027,25 @@ function PharmPickCard({ onPick }) {
   );
 }
 function SpecialistChat() {
-  const [sido, setSido] = useState("서울특별시");
-  const [sigungu, setSigungu] = useState("강남구");
+  /* '내 주변'이 기본이다 — 강남구를 박아 두면 은평구 사는 회원에게 남의 동네 의사를 보여준다 */
+  const _mreg = (typeof memberRegion === "function") ? memberRegion() : null;
+  const [sido, setSido] = useState((_mreg && _mreg.sidoFull) || "서울특별시");
+  const [sigungu, setSigungu] = useState((_mreg && _mreg.sgg) || "은평구");
   /* 다른 화면에서 진료과를 지정해 넘어올 수 있다(예: 스킨 헬스케어 → 피부과·여성의학과). Shop의 _shopGo와 같은 방식 */
   const [deptKey, setDeptKey] = useState(() => {
     try { if (typeof window !== "undefined" && window._teleGo && window._teleGo.dept) { const d = window._teleGo.dept; window._teleGo = null; return d; } } catch (e) {}
     return (typeof tmDeptForMember === "function" ? tmDeptForMember() : "fm");
   });
+  /* ⚠️ useState 초기화는 **첫 마운트에서만** 돈다.
+     이 화면이 이미 떠 있는 상태에서 다른 화면이 진료과를 지정하면 초기화 함수는 다시 실행되지 않아
+     이전 진료과가 그대로 남는다(피부과를 눌렀는데 산부인과가 잡히던 원인).
+     그래서 지정 신호를 **이벤트로도** 받는다. */
+  useEffect(() => {
+    const h = (e) => { const d = e && e.detail && e.detail.dept; if (d) { setDeptKey(d); setSel(null); } };
+    window.addEventListener("hifin:tele", h);
+    try { if (window._teleGo && window._teleGo.dept) { setDeptKey(window._teleGo.dept); window._teleGo = null; } } catch (er) {}
+    return () => window.removeEventListener("hifin:tele", h);
+  }, []);
   const [showProc, setShowProc] = useState(false); const [showRule, setShowRule] = useState(false); const [join, setJoin] = useState(false);
   const [sel, setSel] = useState(null); const [booked, setBooked] = useState(false); const [visit, setVisit] = useState("재진");
   const [msgs, setMsgs] = useState([]);
