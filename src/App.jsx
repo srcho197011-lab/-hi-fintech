@@ -1,4 +1,5 @@
 export default function App() {
+  const _lang = useHiLang();   /* 언어가 바뀌면 화면 전체를 다시 그린다(전체 리로드 없이) */
   const [sec, setSecRaw] = useState("home");
   const [hist, setHist] = useState([]); // 뒤로 스택(이전 화면)
   const [fut, setFut] = useState([]); // 앞으로 스택(다음 화면)
@@ -100,7 +101,7 @@ export default function App() {
         </div>
         <div className="navbtns"><button className="navbtn" onClick={goBack} disabled={!hist.length} aria-label="이전 화면으로" title="이전 화면으로"><ArrowLeft size={20} strokeWidth={2.6} /></button><button className="navbtn" onClick={goForward} disabled={!fut.length} aria-label="다음 화면으로" title="다음 화면으로"><ArrowRight size={20} strokeWidth={2.6} /></button><button className="navbtn navrefresh" onClick={() => { try { window.location.reload(); } catch (e) {} }} aria-label="새로고침" title="새로고침 — 최신 내용 다시 불러오기"><RefreshCw size={18} strokeWidth={2.6} /></button></div>
         <div className="search">
-          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && results.length) goResult(results[0][3]); if (e.key === "Escape") setQ(""); }} placeholder="통합 검색 (병원, 질환, 검진, 제품 등)" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && results.length) goResult(results[0][3]); if (e.key === "Escape") setQ(""); }} placeholder={t("top.search")} />
           {q ? <button className="sclear" onClick={() => setQ("")} aria-label="검색어 지우기"><X size={16} /></button> : <Search size={18} className="si" />}
           {q.trim() && (<>
             <div className="searchov" onClick={() => setQ("")} />
@@ -124,6 +125,7 @@ export default function App() {
         </div>
         <div className="tr">
           {typeof TrustBadge === "function" && <TrustBadge onGo={goSec} />}
+          <LangToggle />
           <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">{((typeof notifAll === "function" ? notifAll().length : 0) + HDR_NOTI.length)}</span></button>
           <button className={`ibtn ${hdr === "msg" ? "on" : ""}`} onClick={() => setHdr((h) => h === "msg" ? null : "msg")} aria-label="메시지"><MessageSquare size={21} /></button>
           <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "체험 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
@@ -162,20 +164,20 @@ export default function App() {
           <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
             {SECTIONS.filter((x) => role === "ADMIN" || x.k !== "ontology").map((x) => (
               <React.Fragment key={x.k}>
-                <div className={`snav ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}><span className="sico"><SecIcon k={x.k} /></span> {x.t}</div>
+                <div className={`snav ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}><span className="sico"><SecIcon k={x.k} /></span> {t("nav." + x.k, x.t)}</div>
                 {/* 검진 후 케어 서브메뉴 — 항상 펼침(메인에서 바로 선택). 현재 케어 하위 화면이면 강조 */}
                 {x.k === "care" && (
                   <div className={`subnav ${secParent(sec) === "care" ? "active" : ""}`}>
-                    {[["manage", "나의 건강현황", HeartPulse, "#F87171"], ["tele", "비대면 원격진료", Building2, "#60A5FA"], ["ai", "AI 주치의", Bot, "#A78BFA"], ["homecare", "재가·돌봄", HeartHandshake, "#F472B6"], ["shop", "건강쇼핑", ShoppingCart, "#34D399"]].map(([k, t, Ic, c]) => (
-                      <div key={k} className={`subnav-i ${sec === k ? "on" : ""}`} onClick={() => setSec(k)}><Ic size={15} color={c} /> {t}</div>
+                    {[["manage", "나의 건강현황", HeartPulse, "#F87171"], ["tele", "비대면 원격진료", Building2, "#60A5FA"], ["ai", "하이-나의 주치의", Bot, "#A78BFA"], ["homecare", "재가·돌봄", HeartHandshake, "#F472B6"], ["shop", "건강쇼핑", ShoppingCart, "#34D399"]].map(([k, lbl, Ic, c]) => (
+                      <div key={k} className={`subnav-i ${sec === k ? "on" : ""}`} onClick={() => setSec(k)}><Ic size={15} color={c} /> {t("care." + k, lbl)}</div>
                     ))}
                   </div>
                 )}
               </React.Fragment>
             ))}
-            <div className={`snav ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr("noti")}><span className="sico"><SecIcon k="alert" /></span> 알림센터<span className="sb">3</span></div>
+            <div className={`snav ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr("noti")}><span className="sico"><SecIcon k="alert" /></span> {t("nav.alertcenter")}<span className="sb">3</span></div>
           </div>
-          <div className="agent"><div className="at">하이 · AI 매니저</div><div className="as">{greetName}님 전담 · 처음부터 끝까지 함께</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => { if (sec === "agent") return; try { window.dispatchEvent(new CustomEvent("agentask")); } catch (e) {} }}>하이와 대화하기</button></div>
+          <div className="agent"><div className="at">하이 · AI 매니저</div><div className="as">{greetName}님 전담 · 처음부터 끝까지 함께</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => { if (sec === "agent") return; try { window.dispatchEvent(new CustomEvent("agentask")); } catch (e) {} }}>{t("hi.open")}</button></div>
           {role === "ADMIN" && <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>}
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
@@ -183,7 +185,7 @@ export default function App() {
           {(() => { const p = secParent(sec); if (p === "partner" || p === "ontology") return null; const cb = SECTIONS.find((x) => x.k === p); if (!cb) return null; return (
             <div className="secbanner">
               <span className="sb-ic"><SecIcon k={cb.k} /></span>
-              <div className="sb-b"><b>{cb.t}</b><p>{SEC_BANNER[cb.k] || cb.s}</p></div>
+              <div className="sb-b"><b>{t("nav." + cb.k, cb.t)}</b><p>{t("nav." + cb.k + ".s", SEC_BANNER[cb.k] || cb.s)}</p></div>
             </div>
           ); })()}
           {!onbo.done && secParent(sec) === "home" && sec !== "onboarding" && (

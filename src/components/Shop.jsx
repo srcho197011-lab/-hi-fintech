@@ -1029,7 +1029,7 @@ function SkinConcernPicker({ onPick, onGo }) {
   const dept = c && c.dept ? ((typeof skinDeptLabel === "function") ? skinDeptLabel(c.dept) : "피부과") : null;
   return (
     <div className="skconcern">
-      <div className="skch"><Stethoscope size={14} color="#DB2777" /> 피부 고민으로 찾기 <span>· 고민 → 제품군 → 필요하면 진료까지 안내해 드려요</span></div>
+      <div className="skch"><Stethoscope size={14} color="#DB2777" /> {t("skin.concern", "피부 고민으로 찾기")} <span>· {t("skin.concern.s", "고민 → 제품군 → 필요하면 진료까지 안내해 드려요")}</span></div>
       <div className="skchips">
         {list.map((x) => (
           <button key={x.key} className={sel === x.key ? "on" : ""} onClick={() => { setSel(sel === x.key ? null : x.key); if (sel !== x.key && onPick) onPick(x.primary); }}>{x.label}</button>
@@ -1053,7 +1053,12 @@ function SkinConcernPicker({ onPick, onGo }) {
   );
 }
 
+/* 스킨 6대 분류 라벨 — 데이터(한국어 키)는 그대로 두고 **표시만** 번역한다.
+   카테고리 키를 영문으로 바꾸면 비교엔진·에이전트 별칭이 전부 어긋난다. */
+const SKIN_CAT_I18N = { "전체": "shop.all", "클렌징 케어": "skin.cleansing", "보습·장벽 케어": "skin.barrier", "자외선·환경 보호": "skin.uv", "기능성·트러블 케어": "skin.functional", "더마·전문 케어": "skin.derma", "디바이스·이너뷰티": "skin.device" };
+function skinCatLabel(c) { const k = SKIN_CAT_I18N[c]; return k ? t(k, c) : c; }
 function SkinShop({ onGo }) {
+  useHiLang();
   const PRODUCTS = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
   const CATS = (typeof SKIN_CATS !== "undefined") ? SKIN_CATS : {};
   const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
@@ -1083,10 +1088,10 @@ function SkinShop({ onGo }) {
       <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
 
       <div className="bklbl" style={{ margin: "12px 0 8px" }}><Droplet size={14} color="#DB2777" style={{ verticalAlign: "-2px" }} /> 스킨 헬스케어 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 수집분 {PRODUCTS.length}종 · 6대 분류 · 기본 정렬은 <b>제휴 브랜드순</b>(정렬을 바꾸면 순수 기준으로 다시 세워요)</span></div>
-      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
+      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{skinCatLabel(c)}</button>)}</div>
       <div className="sssort">
-        <span>정렬</span>
-        {[["partner", "제휴 브랜드순"], ["reward", "적립높은순"], ["unit", "용량당 단가순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        <span>{t("shop.sort", "정렬")}</span>
+        {[["partner", t("shop.sort.partner", "제휴 브랜드순")], ["reward", t("shop.sort.reward", "적립높은순")], ["unit", t("shop.sort.unit", "용량당 단가순")], ["priceLow", t("shop.sort.low", "가격낮은순")], ["priceHigh", t("shop.sort.high", "가격높은순")]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
         <span className="sscount">{list.length}종</span>
       </div>
       <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
@@ -1590,11 +1595,12 @@ function ShopSection({ onGo }) {
   // 홈케어기기 추천 → device 탭 직행(_shopGo.cat), 성분 추천 → AI 상담사(intel), 기본 → 건강식단
   const [cat, setCat] = useState(() => { try { if (typeof window !== "undefined") { if (window._shopGo && window._shopGo.cat) return window._shopGo.cat; if (window._shopIntel) return "intel"; } return "diet"; } catch (e) { return "diet"; } });
   useEffect(() => { try { if (typeof window !== "undefined") window._shopGo = null; } catch (e) {} }, []);
-  const cats = [["diet", "건강식단", Salad, "#16A34A"], ["supp", "영양제", Pill, "#7C3AED"], ["skin", "스킨 헬스케어", Droplet, "#DB2777"], ["device", "홈케어의료기", Stethoscope, "#0891B2"], ["intel", "AI 상담사", Sparkles, "#EA580C"], ["sports", "스포츠건강", Activity, "#E11D48"]];
+  useHiLang();   /* 언어 전환 구독 — 탭·분류 라벨이 즉시 바뀐다 */
+  const cats = [["diet", t("shop.diet", "건강식단"), Salad, "#16A34A"], ["supp", t("shop.supp", "영양제"), Pill, "#7C3AED"], ["skin", t("shop.skin", "스킨 헬스케어"), Droplet, "#DB2777"], ["device", t("shop.device", "홈케어의료기"), Stethoscope, "#0891B2"], ["intel", t("shop.intel", "AI 상담사"), Sparkles, "#EA580C"], ["sports", t("shop.sports", "스포츠건강"), Activity, "#E11D48"]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="shop" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강쇼핑</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>{t("shop.title", "건강쇼핑")}</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 스킨 헬스케어 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
       <PrecisionNutritionSection />
       <div className="shopcats">{cats.map(([k, t, Ic, c]) => (

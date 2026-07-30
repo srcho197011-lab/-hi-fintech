@@ -483,3 +483,26 @@ function ConsultModal({ interest, onClose }) {
   );
 }
 
+/* ── 언어 구독 훅 — 전체 리로드 없이 화면만 다시 그린다 ──
+   상담·장바구니가 살아 있어야 하므로 location.reload()로 언어를 바꾸지 않는다. */
+function useHiLang() {
+  const [lang, setLang] = useState(() => (typeof hiLang === "function" ? hiLang() : "ko"));
+  useEffect(() => {
+    const h = (e) => setLang((e && e.detail && e.detail.lang) || (typeof hiLang === "function" ? hiLang() : "ko"));
+    window.addEventListener("hifin:lang", h);
+    return () => window.removeEventListener("hifin:lang", h);
+  }, []);
+  return lang;
+}
+/* 언어 토글 — 상단바 우측. 해외 방문자가 첫 화면에서 바로 찾는 자리 */
+function LangToggle() {
+  const lang = useHiLang();
+  return (
+    <div className="langtg" role="group" aria-label={typeof t === "function" ? t("top.lang") : "언어"}>
+      {["ko", "en"].map((l) => (
+        <button key={l} className={lang === l ? "on" : ""} aria-current={lang === l ? "true" : undefined}
+          onClick={() => { if (typeof hiSetLang === "function") hiSetLang(l); }}>{l.toUpperCase()}</button>
+      ))}
+    </div>
+  );
+}

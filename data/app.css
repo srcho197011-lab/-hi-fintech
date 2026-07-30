@@ -5335,3 +5335,21 @@ body.easyread .hidock-who, body.easyread .hidock-cite, body.easyread .hidock-pen
 /* 검진결과·건강분석 → 전담 에이전트 연결 버튼(하이 독) */
 .hidock-doc{margin-top:7px;width:100%;border:1px solid #FDBA74;background:linear-gradient(120deg,#F97316,#FB923C);color:#fff;border-radius:10px;padding:9px 12px;font-size:12.3px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-family:inherit;}
 .hidock-doc:hover{opacity:.92;}
+
+/* ── 언어 토글(KO ⇄ EN) — 상단바 우측 ── */
+.langtg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;background:#fff;margin-right:6px;flex-shrink:0;}
+.langtg button{border:none;background:transparent;color:#64748B;font-size:11.5px;font-weight:800;letter-spacing:.3px;padding:6px 11px;cursor:pointer;font-family:inherit;line-height:1;}
+.langtg button.on{background:#1E3A5F;color:#fff;}
+.langtg button:hover:not(.on){background:#F1F5F9;}
+/* 영문 모드 하이 독 안내 카드 */
+.hidock-en{background:#fff;border:1px solid var(--border);border-radius:13px;padding:12px 14px;font-size:12.6px;line-height:1.65;color:#26324A;}
+.hidock-en b{display:block;font-size:13.4px;color:#1E3A5F;margin-bottom:4px;}
+.hidock-en .only{display:inline-block;background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;border-radius:7px;padding:3px 8px;font-size:11.5px;font-weight:700;margin:5px 0;}
+.hidock-en .does{color:#475569;font-size:12px;margin:5px 0;}
+.hidock-en .enbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.hidock-en .enbtns button{border:1px solid #FDBA74;background:#F97316;color:#fff;border-radius:9px;padding:7px 11px;font-size:11.8px;font-weight:800;cursor:pointer;font-family:inherit;}
+.hidock-en .enbtns button.ghost{background:#fff;color:#9A3412;}
+/* 번역이 없어 한국어 원문을 보여줄 때 다는 표시 */
+.kobadge{display:inline-block;background:#F1F5F9;color:#475569;border:1px solid var(--border);border-radius:5px;padding:0 5px;font-size:9.5px;font-weight:800;margin-left:4px;vertical-align:1px;}
+/* 규제 고지 병기 — 원문 우선 표기 */
+.prevail{display:block;margin-top:3px;font-size:10.5px;color:#94A3B8;font-style:italic;}

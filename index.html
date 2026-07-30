@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=30779d3996" />
+<link rel="stylesheet" href="./data/app.css?v=910d583a0f" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,12 +41,210 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=30779d3996"></script>
-<script src="./src/data/section_data.js?v=30779d3996"></script>
-<script src="./src/data/demo_members.js?v=30779d3996"></script>
+<script src="./src/data/dummy_data.js?v=910d583a0f"></script>
+<script src="./src/data/section_data.js?v=910d583a0f"></script>
+<script src="./src/data/demo_members.js?v=910d583a0f"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
+/* ══════════════ 언어 전환(KO ⇄ EN) — 번역 단일 소스 ══════════════
+   해외 투자자·파트너·바이어가 이 화면을 영문으로 읽을 수 있게 한다.
+
+   원칙 — 프롬프트(PROMPT_영문전환_언어토글)에서 정한 것을 그대로 지킨다.
+   ① **없는 번역을 지어내지 않는다.** 키가 비면 한국어 원문을 그대로 보여주고 KO 배지를 단다.
+      빈 문자열이나 키 이름(`nav.shop`)이 화면에 새어 나오면 실패다.
+   ② **규제 문구는 번역이 아니라 병기다.** 건기식·화장품·보험 고지문은 한국어 원문이 법적 기준이라
+      영문은 참고 번역으로 붙이고 "The Korean original prevails"를 함께 적는다.
+   ③ **응급은 언어를 가리지 않는다.** 119·즉시 진료 안내는 EN에서 반드시 영문으로 나온다.
+      못 읽는 언어로 된 응급 안내는 안내가 아니다.
+   ④ **고유명사는 번역하지 않는다.** 제품명·브랜드·병원명·지역명은 그대로 둔다
+      ("정관장 → Korea Ginseng Corp"으로 바꾸면 검색과 구매가 끊긴다).
+   ⑤ 이번 범위는 P1(화면 뼈대)이다. 스토리·백서(P2)와 하이 답변·코퍼스(P3)는 대상이 아니다. */
+
+const I18N_LANGS = ["ko", "en"];
+const I18N_KEY = "hifin_lang";
+
+const I18N = {
+  /* ── 상단바 ── */
+  "top.tagline":      { ko: "AI 헬스케어 · 핀테크", en: "AI Healthcare · Fintech" },
+  "top.impact":       { ko: "임팩트기업", en: "Impact Company" },
+  "top.search":       { ko: "통합 검색 (병원, 질환, 검진, 제품 등)", en: "Search hospitals, conditions, checkups, products" },
+  "top.back":         { ko: "이전 화면으로", en: "Back" },
+  "top.forward":      { ko: "다음 화면으로", en: "Forward" },
+  "top.reload":       { ko: "새로고침", en: "Reload" },
+  "top.alerts":       { ko: "알림", en: "Alerts" },
+  "top.messages":     { ko: "메시지", en: "Messages" },
+  "top.searchResult": { ko: "검색 결과", en: "Results" },
+  "top.lang":         { ko: "언어", en: "Language" },
+  "top.welcome":      { ko: "환영합니다!", en: "Welcome" },
+
+  /* ── 사이드 내비(대분류) ── */
+  "nav.home":         { ko: "HI-Fin Tech란", en: "About HI-Fin Tech" },
+  "nav.home.s":       { ko: "회사 소개·비전·사회환원·커뮤니티", en: "Company · Vision · Social impact · Community" },
+  "nav.checkup":      { ko: "건강검진 예약", en: "Health Checkup Booking" },
+  "nav.checkup.s":    { ko: "예약·결과조회·검진보험", en: "Booking · Results · Checkup insurance" },
+  "nav.care":         { ko: "검진 후 케어", en: "Post-Checkup Care" },
+  "nav.care.s":       { ko: "주치의·건강현황·병원진료·재가돌봄·건강쇼핑", en: "Doctor · Status · Hospital · Home care · Shopping" },
+  "nav.insurance":    { ko: "보험·치료비", en: "Insurance · Medical Costs" },
+  "nav.insurance.s":  { ko: "조회·가입·청구·치료비", en: "Review · Enroll · Claim · Costs" },
+  "nav.mywallet":     { ko: "나의 건강지갑", en: "My Health Wallet" },
+  "nav.mywallet.s":   { ko: "금융지갑·Health NFT·우리가족건강관리", en: "Wallet · Health NFT · Family care" },
+  "nav.partner":      { ko: "제휴·투자 신청", en: "Partnership · Investment" },
+  "nav.partner.s":    { ko: "제휴 네트워크·회원/법인 투자", en: "Partner network · Individual & corporate investment" },
+  "nav.ontology":     { ko: "온톨로지 · 하네스", en: "Ontology · Harness" },
+  "nav.ontology.s":   { ko: "Ontology · Harness (운영)", en: "Ontology · Harness (Ops)" },
+  "nav.alertcenter":  { ko: "알림센터", en: "Alert Center" },
+
+  /* ── 검진 후 케어 탭 ── */
+  "care.manage":      { ko: "나의 건강현황", en: "My Health Status" },
+  "care.tele":        { ko: "비대면 원격진료", en: "Telemedicine" },
+  "care.ai":          { ko: "하이-나의 주치의", en: "Hi · My Doctor" },
+  "care.homecare":    { ko: "재가·돌봄", en: "Home Care" },
+  "care.shop":        { ko: "건강쇼핑", en: "Health Shopping" },
+
+  /* ── 건강쇼핑 ── */
+  "shop.title":       { ko: "건강쇼핑", en: "Health Shopping" },
+  "shop.diet":        { ko: "건강식단", en: "Health Meals" },
+  "shop.supp":        { ko: "영양제", en: "Supplements" },
+  "shop.skin":        { ko: "스킨 헬스케어", en: "Skin Healthcare" },
+  "shop.device":      { ko: "홈케어의료기", en: "Home Medical Devices" },
+  "shop.intel":       { ko: "AI 상담사", en: "AI Advisor" },
+  "shop.sports":      { ko: "스포츠건강", en: "Sports & Fitness" },
+  "shop.partners":    { ko: "특별제휴사", en: "Featured Partners" },
+  "shop.sort":        { ko: "정렬", en: "Sort" },
+  "shop.sort.reward": { ko: "적립높은순", en: "Highest reward" },
+  "shop.sort.unit":   { ko: "용량당 단가순", en: "Price per volume" },
+  "shop.sort.low":    { ko: "가격낮은순", en: "Price: low to high" },
+  "shop.sort.high":   { ko: "가격높은순", en: "Price: high to low" },
+  "shop.sort.partner":{ ko: "제휴 브랜드순", en: "Partner brands first" },
+  "shop.all":         { ko: "전체", en: "All" },
+  "shop.cart":        { ko: "담기", en: "Add" },
+  "shop.source":      { ko: "출처", en: "Source" },
+  "shop.lowest":      { ko: "최저가", en: "Lowest price" },
+
+  /* 스킨 6대 분류 — 화면 필터와 같은 문자열을 쓴다 */
+  "skin.cleansing":   { ko: "클렌징 케어", en: "Cleansing" },
+  "skin.barrier":     { ko: "보습·장벽 케어", en: "Moisture & Barrier" },
+  "skin.uv":          { ko: "자외선·환경 보호", en: "Sun & Environmental" },
+  "skin.functional":  { ko: "기능성·트러블 케어", en: "Functional & Blemish" },
+  "skin.derma":       { ko: "더마·전문 케어", en: "Derma & Professional" },
+  "skin.device":      { ko: "디바이스·이너뷰티", en: "Devices & Inner Beauty" },
+  "skin.concern":     { ko: "피부 고민으로 찾기", en: "Find by skin concern" },
+  "skin.concern.s":   { ko: "고민 → 제품군 → 필요하면 진료까지 안내해 드려요", en: "Concern → product group → medical consultation when needed" },
+
+  /* ── 공통 UI ── */
+  "ui.close":         { ko: "닫기", en: "Close" },
+  "ui.open":          { ko: "열기", en: "Open" },
+  "ui.more":          { ko: "더보기", en: "More" },
+  "ui.loading":       { ko: "불러오는 중…", en: "Loading…" },
+  "ui.empty":         { ko: "표시할 내용이 없어요", en: "Nothing to show" },
+  "ui.search":        { ko: "검색", en: "Search" },
+  "ui.send":          { ko: "보내기", en: "Send" },
+  "ui.confirm":       { ko: "확인", en: "Confirm" },
+  "ui.cancel":        { ko: "취소", en: "Cancel" },
+
+  /* ── 하이 독(영문 모드 안내) ── */
+  "hi.name":          { ko: "하이", en: "Hi" },
+  "hi.role":          { ko: "AI 매니저 · 항상 함께해요", en: "AI health manager · always with you" },
+  "hi.open":          { ko: "하이와 대화하기", en: "Talk to Hi" },
+  "hi.en.title":      { ko: "", en: "Hi is our AI health manager." },
+  "hi.en.only":       { ko: "", en: "Consultation is currently available in Korean only." },
+  "hi.en.does":       { ko: "", en: "What Hi does: checkup booking · result interpretation · coverage gap analysis · product comparison · home-care triage." },
+  "hi.en.contact":    { ko: "", en: "For English inquiries, please use Partnership · Investment." },
+  "hi.en.switch":     { ko: "", en: "Switch to Korean to start a consultation." },
+  "hi.en.btn.ko":     { ko: "", en: "한국어로 상담하기 (Switch to Korean)" },
+  "hi.en.btn.partner":{ ko: "", en: "Partnership · Investment" },
+};
+
+/* ── 규제 고지 — **병기**한다. 영문으로 갈아치우지 않는다(한국어 원문이 법적 기준) ── */
+const I18N_NOTICE = {
+  supplement: {
+    ko: "건강기능식품은 질병의 예방·치료를 위한 의약품이 아니에요.",
+    en: "Health functional foods are not medicines intended to prevent or treat disease.",
+  },
+  cosmetic: {
+    ko: "화장품은 인체를 청결·미화하고 피부·모발의 건강을 유지·증진하기 위한 물품으로, 질병의 진단·치료·경감·처치·예방을 목적으로 하는 의약품이 아니에요.",
+    en: "Cosmetics are products for cleansing and beautifying the body and maintaining or improving the health of skin and hair. They are not medicines intended to diagnose, treat, alleviate, manage or prevent disease.",
+  },
+  insurance: {
+    ko: "보장·청구 결과는 약관과 심사에 따라 달라질 수 있어요 — 단정해 드리지 않아요.",
+    en: "Coverage and claim outcomes depend on policy terms and review. We do not state them as certain.",
+  },
+  medical: {
+    ko: "참고용 안내이며 진단·처방을 대체하지 않아요.",
+    en: "For reference only. This does not replace diagnosis or prescription.",
+  },
+};
+const I18N_NOTICE_PREVAIL = { ko: "", en: "Reference translation. The Korean original prevails." };
+
+/* ── 응급 — EN에서 **반드시 영문**으로 나온다 ── */
+const I18N_EMERGENCY = {
+  "119": { ko: "119에 연락해 주세요.", en: "Call 119 (emergency) immediately." },
+  now:   { ko: "오늘 중 진료로 확인하셔야 해요.", en: "Please see a doctor today." },
+  stop:  { ko: "사용 중인 제품을 바로 멈춰 주세요.", en: "Stop using the product immediately." },
+  er:    { ko: "가까운 응급실로 가 주세요.", en: "Go to the nearest emergency room." },
+  derma: { ko: "피부과에서 바로 확인받으시는 게 좋아요.", en: "Please have this checked by a dermatologist right away." },
+};
+
+/* ── 런타임 ── */
+function hiLang() {
+  try {
+    const v = localStorage.getItem(I18N_KEY);
+    if (v && I18N_LANGS.indexOf(v) >= 0) return v;
+  } catch (e) {}
+  return "ko";                    /* 기본은 한국어 — 브라우저 언어로 임의 전환하지 않는다 */
+}
+function hiSetLang(l) {
+  const lang = (I18N_LANGS.indexOf(l) >= 0) ? l : "ko";
+  try { localStorage.setItem(I18N_KEY, lang); } catch (e) {}
+  try {
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("lang", lang);   /* 스크린리더·번역기·검색엔진이 읽는다 */
+      document.body.dataset.lang = lang;
+    }
+    /* 전체 리로드로 바꾸지 않는다 — 상담·장바구니가 날아간다 */
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("hifin:lang", { detail: { lang: lang } }));
+  } catch (e) {}
+  return lang;
+}
+/* 번역 조회 — 없으면 한국어를 그대로 돌려준다(키 문자열은 절대 노출하지 않는다) */
+function t(key, fallbackKo) {
+  const e = I18N[key];
+  const ko = (e && e.ko) || "";
+  const en = (e && e.en) || "";
+  const want = (hiLang() === "en") ? (en || fallbackKo || ko) : (ko || fallbackKo || en);
+  /* ⚠️ 어떤 경우에도 **키 문자열을 화면에 내보내지 않는다.**
+     영문 전용 문구(hi.en.*)는 ko가 비어 있으므로, 비면 반대 언어 값으로 떨어진다.
+     그래도 비면 빈 문자열 — 키 이름이 노출되는 것보다 낫다. */
+  return want || fallbackKo || en || ko || "";
+}
+/* 이 키에 영문이 있는지 — 화면이 KO 배지를 달지 판단한다 */
+function tHasEn(key) { const e = I18N[key]; return !!(e && e.en); }
+/* 규제 고지 — EN이면 영문 + 한국어 원문 + 우선 표기를 함께 돌려준다 */
+function tNotice(kind) {
+  const n = I18N_NOTICE[kind];
+  if (!n) return null;
+  if (hiLang() !== "en") return { lines: [n.ko], prevail: null };
+  return { lines: [n.en, n.ko], prevail: I18N_NOTICE_PREVAIL.en };
+}
+/* 응급 — EN이면 영문, KO면 한국어. 어느 쪽이든 반드시 값이 있다 */
+function tEmergency(kind) {
+  const e = I18N_EMERGENCY[kind];
+  if (!e) return null;
+  return hiLang() === "en" ? e.en : e.ko;
+}
+
+/* 첫 로드에 저장된 언어를 문서에 반영(새로고침해도 유지) */
+try {
+  if (typeof document !== "undefined") {
+    const l0 = hiLang();
+    document.documentElement.setAttribute("lang", l0);
+    if (document.body) document.body.dataset.lang = l0;
+  }
+} catch (e) {}
+
+try { if (typeof window !== "undefined") { window.__hifinI18n = { t: t, lang: hiLang, set: hiSetLang, map: I18N, notice: tNotice, emergency: tEmergency }; } } catch (e) {}
+
 /* ══════════════ 운영 설정 단일 소스 — 조정 가능한 것만 조정한다 (Phase G) ══════════════
    임계값이 코드 6곳에 흩어져 있었다(agentEnsemble·rpmAlert·harvest·promote·gate).
    여기로 모아 화면에서 조정할 수 있게 하되, **조정하면 안 되는 값은 잠근다.**
@@ -843,8 +1041,32 @@ function ConsultModal({ interest, onClose }) {
   );
 }
 
+/* ── 언어 구독 훅 — 전체 리로드 없이 화면만 다시 그린다 ──
+   상담·장바구니가 살아 있어야 하므로 location.reload()로 언어를 바꾸지 않는다. */
+function useHiLang() {
+  const [lang, setLang] = useState(() => (typeof hiLang === "function" ? hiLang() : "ko"));
+  useEffect(() => {
+    const h = (e) => setLang((e && e.detail && e.detail.lang) || (typeof hiLang === "function" ? hiLang() : "ko"));
+    window.addEventListener("hifin:lang", h);
+    return () => window.removeEventListener("hifin:lang", h);
+  }, []);
+  return lang;
+}
+/* 언어 토글 — 상단바 우측. 해외 방문자가 첫 화면에서 바로 찾는 자리 */
+function LangToggle() {
+  const lang = useHiLang();
+  return (
+    <div className="langtg" role="group" aria-label={typeof t === "function" ? t("top.lang") : "언어"}>
+      {["ko", "en"].map((l) => (
+        <button key={l} className={lang === l ? "on" : ""} aria-current={lang === l ? "true" : undefined}
+          onClick={() => { if (typeof hiSetLang === "function") hiSetLang(l); }}>{l.toUpperCase()}</button>
+      ))}
+    </div>
+  );
+}
 
 export default function App() {
+  const _lang = useHiLang();   /* 언어가 바뀌면 화면 전체를 다시 그린다(전체 리로드 없이) */
   const [sec, setSecRaw] = useState("home");
   const [hist, setHist] = useState([]); // 뒤로 스택(이전 화면)
   const [fut, setFut] = useState([]); // 앞으로 스택(다음 화면)
@@ -946,7 +1168,7 @@ export default function App() {
         </div>
         <div className="navbtns"><button className="navbtn" onClick={goBack} disabled={!hist.length} aria-label="이전 화면으로" title="이전 화면으로"><ArrowLeft size={20} strokeWidth={2.6} /></button><button className="navbtn" onClick={goForward} disabled={!fut.length} aria-label="다음 화면으로" title="다음 화면으로"><ArrowRight size={20} strokeWidth={2.6} /></button><button className="navbtn navrefresh" onClick={() => { try { window.location.reload(); } catch (e) {} }} aria-label="새로고침" title="새로고침 — 최신 내용 다시 불러오기"><RefreshCw size={18} strokeWidth={2.6} /></button></div>
         <div className="search">
-          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && results.length) goResult(results[0][3]); if (e.key === "Escape") setQ(""); }} placeholder="통합 검색 (병원, 질환, 검진, 제품 등)" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && results.length) goResult(results[0][3]); if (e.key === "Escape") setQ(""); }} placeholder={t("top.search")} />
           {q ? <button className="sclear" onClick={() => setQ("")} aria-label="검색어 지우기"><X size={16} /></button> : <Search size={18} className="si" />}
           {q.trim() && (<>
             <div className="searchov" onClick={() => setQ("")} />
@@ -970,6 +1192,7 @@ export default function App() {
         </div>
         <div className="tr">
           {typeof TrustBadge === "function" && <TrustBadge onGo={goSec} />}
+          <LangToggle />
           <button className={`ibtn ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr((h) => h === "noti" ? null : "noti")} aria-label="알림"><Bell size={21} /><span className="bdg">{((typeof notifAll === "function" ? notifAll().length : 0) + HDR_NOTI.length)}</span></button>
           <button className={`ibtn ${hdr === "msg" ? "on" : ""}`} onClick={() => setHdr((h) => h === "msg" ? null : "msg")} aria-label="메시지"><MessageSquare size={21} /></button>
           <div className={`user ${hdr === "user" ? "on" : ""}`} onClick={() => setHdr((h) => h === "user" ? null : "user")}><span className="av">{greetName[0]}</span><div><div className="un">{greetName}님</div><div className="uh">{demoU ? (demoU.isDemoUser ? "체험 로그인" : "로그인 중") : "환영합니다!"}</div></div><ChevronDown size={17} color="#8A97AE" style={{ transform: hdr === "user" ? "rotate(180deg)" : "none", transition: "transform .2s" }} /></div>
@@ -1008,20 +1231,20 @@ export default function App() {
           <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
             {SECTIONS.filter((x) => role === "ADMIN" || x.k !== "ontology").map((x) => (
               <React.Fragment key={x.k}>
-                <div className={`snav ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}><span className="sico"><SecIcon k={x.k} /></span> {x.t}</div>
+                <div className={`snav ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}><span className="sico"><SecIcon k={x.k} /></span> {t("nav." + x.k, x.t)}</div>
                 {/* 검진 후 케어 서브메뉴 — 항상 펼침(메인에서 바로 선택). 현재 케어 하위 화면이면 강조 */}
                 {x.k === "care" && (
                   <div className={`subnav ${secParent(sec) === "care" ? "active" : ""}`}>
-                    {[["manage", "나의 건강현황", HeartPulse, "#F87171"], ["tele", "비대면 원격진료", Building2, "#60A5FA"], ["ai", "AI 주치의", Bot, "#A78BFA"], ["homecare", "재가·돌봄", HeartHandshake, "#F472B6"], ["shop", "건강쇼핑", ShoppingCart, "#34D399"]].map(([k, t, Ic, c]) => (
-                      <div key={k} className={`subnav-i ${sec === k ? "on" : ""}`} onClick={() => setSec(k)}><Ic size={15} color={c} /> {t}</div>
+                    {[["manage", "나의 건강현황", HeartPulse, "#F87171"], ["tele", "비대면 원격진료", Building2, "#60A5FA"], ["ai", "하이-나의 주치의", Bot, "#A78BFA"], ["homecare", "재가·돌봄", HeartHandshake, "#F472B6"], ["shop", "건강쇼핑", ShoppingCart, "#34D399"]].map(([k, lbl, Ic, c]) => (
+                      <div key={k} className={`subnav-i ${sec === k ? "on" : ""}`} onClick={() => setSec(k)}><Ic size={15} color={c} /> {t("care." + k, lbl)}</div>
                     ))}
                   </div>
                 )}
               </React.Fragment>
             ))}
-            <div className={`snav ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr("noti")}><span className="sico"><SecIcon k="alert" /></span> 알림센터<span className="sb">3</span></div>
+            <div className={`snav ${hdr === "noti" ? "on" : ""}`} onClick={() => setHdr("noti")}><span className="sico"><SecIcon k="alert" /></span> {t("nav.alertcenter")}<span className="sb">3</span></div>
           </div>
-          <div className="agent"><div className="at">하이 · AI 매니저</div><div className="as">{greetName}님 전담 · 처음부터 끝까지 함께</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => { if (sec === "agent") return; try { window.dispatchEvent(new CustomEvent("agentask")); } catch (e) {} }}>하이와 대화하기</button></div>
+          <div className="agent"><div className="at">하이 · AI 매니저</div><div className="as">{greetName}님 전담 · 처음부터 끝까지 함께</div><div className="bot"><SecIcon k="ai" /></div><button className="abtn" onClick={() => { if (sec === "agent") return; try { window.dispatchEvent(new CustomEvent("agentask")); } catch (e) {} }}>{t("hi.open")}</button></div>
           {role === "ADMIN" && <div className={`snav ${sec === "demo" ? "on" : ""}`} onClick={() => setSec("demo")} style={{ marginTop: 4 }}><span className="sico"><SecIcon k="people" /></span> 파일럿검증회원</div>}
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
@@ -1029,7 +1252,7 @@ export default function App() {
           {(() => { const p = secParent(sec); if (p === "partner" || p === "ontology") return null; const cb = SECTIONS.find((x) => x.k === p); if (!cb) return null; return (
             <div className="secbanner">
               <span className="sb-ic"><SecIcon k={cb.k} /></span>
-              <div className="sb-b"><b>{cb.t}</b><p>{SEC_BANNER[cb.k] || cb.s}</p></div>
+              <div className="sb-b"><b>{t("nav." + cb.k, cb.t)}</b><p>{t("nav." + cb.k + ".s", SEC_BANNER[cb.k] || cb.s)}</p></div>
             </div>
           ); })()}
           {!onbo.done && secParent(sec) === "home" && sec !== "onboarding" && (
@@ -7436,7 +7659,7 @@ function SkinConcernPicker({ onPick, onGo }) {
   const dept = c && c.dept ? ((typeof skinDeptLabel === "function") ? skinDeptLabel(c.dept) : "피부과") : null;
   return (
     <div className="skconcern">
-      <div className="skch"><Stethoscope size={14} color="#DB2777" /> 피부 고민으로 찾기 <span>· 고민 → 제품군 → 필요하면 진료까지 안내해 드려요</span></div>
+      <div className="skch"><Stethoscope size={14} color="#DB2777" /> {t("skin.concern", "피부 고민으로 찾기")} <span>· {t("skin.concern.s", "고민 → 제품군 → 필요하면 진료까지 안내해 드려요")}</span></div>
       <div className="skchips">
         {list.map((x) => (
           <button key={x.key} className={sel === x.key ? "on" : ""} onClick={() => { setSel(sel === x.key ? null : x.key); if (sel !== x.key && onPick) onPick(x.primary); }}>{x.label}</button>
@@ -7460,7 +7683,12 @@ function SkinConcernPicker({ onPick, onGo }) {
   );
 }
 
+/* 스킨 6대 분류 라벨 — 데이터(한국어 키)는 그대로 두고 **표시만** 번역한다.
+   카테고리 키를 영문으로 바꾸면 비교엔진·에이전트 별칭이 전부 어긋난다. */
+const SKIN_CAT_I18N = { "전체": "shop.all", "클렌징 케어": "skin.cleansing", "보습·장벽 케어": "skin.barrier", "자외선·환경 보호": "skin.uv", "기능성·트러블 케어": "skin.functional", "더마·전문 케어": "skin.derma", "디바이스·이너뷰티": "skin.device" };
+function skinCatLabel(c) { const k = SKIN_CAT_I18N[c]; return k ? t(k, c) : c; }
 function SkinShop({ onGo }) {
+  useHiLang();
   const PRODUCTS = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
   const CATS = (typeof SKIN_CATS !== "undefined") ? SKIN_CATS : {};
   const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
@@ -7490,10 +7718,10 @@ function SkinShop({ onGo }) {
       <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
 
       <div className="bklbl" style={{ margin: "12px 0 8px" }}><Droplet size={14} color="#DB2777" style={{ verticalAlign: "-2px" }} /> 스킨 헬스케어 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 수집분 {PRODUCTS.length}종 · 6대 분류 · 기본 정렬은 <b>제휴 브랜드순</b>(정렬을 바꾸면 순수 기준으로 다시 세워요)</span></div>
-      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
+      <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{skinCatLabel(c)}</button>)}</div>
       <div className="sssort">
-        <span>정렬</span>
-        {[["partner", "제휴 브랜드순"], ["reward", "적립높은순"], ["unit", "용량당 단가순"], ["priceLow", "가격낮은순"], ["priceHigh", "가격높은순"]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
+        <span>{t("shop.sort", "정렬")}</span>
+        {[["partner", t("shop.sort.partner", "제휴 브랜드순")], ["reward", t("shop.sort.reward", "적립높은순")], ["unit", t("shop.sort.unit", "용량당 단가순")], ["priceLow", t("shop.sort.low", "가격낮은순")], ["priceHigh", t("shop.sort.high", "가격높은순")]].map(([k, t]) => <button key={k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>{t}</button>)}
         <span className="sscount">{list.length}종</span>
       </div>
       <div className="mealgrid">{list.map((p) => { const r = rw(p.price), m = icoOf(p); return (
@@ -7997,11 +8225,12 @@ function ShopSection({ onGo }) {
   // 홈케어기기 추천 → device 탭 직행(_shopGo.cat), 성분 추천 → AI 상담사(intel), 기본 → 건강식단
   const [cat, setCat] = useState(() => { try { if (typeof window !== "undefined") { if (window._shopGo && window._shopGo.cat) return window._shopGo.cat; if (window._shopIntel) return "intel"; } return "diet"; } catch (e) { return "diet"; } });
   useEffect(() => { try { if (typeof window !== "undefined") window._shopGo = null; } catch (e) {} }, []);
-  const cats = [["diet", "건강식단", Salad, "#16A34A"], ["supp", "영양제", Pill, "#7C3AED"], ["skin", "스킨 헬스케어", Droplet, "#DB2777"], ["device", "홈케어의료기", Stethoscope, "#0891B2"], ["intel", "AI 상담사", Sparkles, "#EA580C"], ["sports", "스포츠건강", Activity, "#E11D48"]];
+  useHiLang();   /* 언어 전환 구독 — 탭·분류 라벨이 즉시 바뀐다 */
+  const cats = [["diet", t("shop.diet", "건강식단"), Salad, "#16A34A"], ["supp", t("shop.supp", "영양제"), Pill, "#7C3AED"], ["skin", t("shop.skin", "스킨 헬스케어"), Droplet, "#DB2777"], ["device", t("shop.device", "홈케어의료기"), Stethoscope, "#0891B2"], ["intel", t("shop.intel", "AI 상담사"), Sparkles, "#EA580C"], ["sports", t("shop.sports", "스포츠건강"), Activity, "#E11D48"]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="shop" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강쇼핑</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>{t("shop.title", "건강쇼핑")}</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강식단 · 영양제 · 스킨 헬스케어 · 의료기기 · 스포츠건강 — 특별제휴사와 유력 브랜드, 내 건강상태 맞춤 AI 추천</div></div></div>
       <PrecisionNutritionSection />
       <div className="shopcats">{cats.map(([k, t, Ic, c]) => (
@@ -19014,7 +19243,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-30", ver:"v1.2", ch:[8], feat:"하이-나의 주치의 개명·디자인 통일·검진결과 전담 연결", src:"agentRegistry A1 명칭+kt-hi 하이 스킨 CSS+aiNative doctor 플래그+AgentDock 연결 버튼·seed 전달", summary:"주치의를 하이 가족 이름과 같은 디자인으로 통일하고 검진결과·건강분석 질문은 하이가 짧게 안내한 뒤 질문을 그대로 넘겨 전담 에이전트가 이어받게 함", refs:[], status:"반영", hash:"874d0e0", auto:true },
+  { date:"2026-07-31", ver:"v1.2", ch:[8], feat:"영문 전환 언어 토글(P1)", src:"i18n.js 단일 소스 76키+useHiLang 훅·상단바 KO|EN 토글+규제 고지 병기·응급 영문+하이 독 영문 안내 카드+test-i18n 하네스", summary:"해외 방문자가 화면 뼈대를 영문으로 읽게 하되 규제 고지는 한국어 원문을 병기하고 응급은 반드시 영문으로 내보내며 하이는 못 하는 걸 하는 척하지 않고 영문 안내로 대체", refs:[], status:"반영", hash:"615670e", auto:true },
+  { date:"2026-07-30", ver:"v1.2", ch:[8], feat:"하이-나의 주치의 개명·디자인 통일·검진결과 전담 연결", src:"agentRegistry A1 명칭+kt-hi 하이 스킨 CSS+aiNative doctor 플래그+AgentDock 연결 버튼·seed 전달", summary:"주치의를 하이 가족 이름과 같은 디자인으로 통일하고 검진결과·건강분석 질문은 하이가 짧게 안내한 뒤 질문을 그대로 넘겨 전담 에이전트가 이어받게 함", refs:[], status:"반영", hash:"0324ed8", auto:true },
   { date:"2026-07-30", ver:"v1.2", ch:[8], feat:"원격진료 진료과·지역 연결 교정", src:"hifin:tele 이벤트로 진료과·탭 전환+SpecialistChat 지역 기본값 memberRegion 적용", summary:"화면이 이미 떠 있으면 진료과 지정이 무시돼 이전 과가 남고 지역이 강남구로 고정돼 있던 것을 이벤트 기반 갱신과 회원 거주지 기본값으로 바로잡음", refs:[], status:"반영", hash:"4ac0784", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"직전 담당 승계 범위 교정", src:"agentRegistry A0 scope 소개·서비스 어휘 보강+agentRouter 승계 조건에 후속질문 신호·스몰토크 제외 추가", summary:"직전 담당이 도메인 무관 질문까지 이어받아 서비스 소개에 쇼핑 비교표가 나가던 것을 A0 고유 영역을 채우고 승계를 후속 질문일 때로 좁혀 해결", refs:[], status:"반영", hash:"97456b8", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"하이 독 답변 시작 위치 스크롤", src:"AgentDock 스크롤 로직 교체(새 답변 첫 줄 정렬)+data-mi 인덱스+bodyRef", summary:"긴 답변에서 대화 끝으로 스크롤되어 처음을 놓치던 것을 새로 붙은 하이 답변의 첫 줄이 대화창 맨 위에 오도록 바꾸고 내 말과 타이핑은 기존대로 끝으로 유지", refs:[], status:"반영", hash:"d40e374", auto:true },
@@ -32554,8 +32784,28 @@ function TrustCenterSection({ onGo }) {
    원칙: 쉬움(3문장+버튼≤3+화면카드), 동일 에이전트(하이), 화면 이동에도 대화 유지, 음성 입력·쉬운말 모드. */
 /* 자주 묻는 질문 칩 — 타이핑 없이 탭 한 번으로 상담 시작(인사말 버튼과 동일한 검증된 의도만 사용) */
 const HIDOCK_QUICKS = ["검진예약 질문 도우미", "내 건강 봐줘", "보장 공백 분석", "검진결과 올리기", "쉬운 말 모드 켜기"];
+/* 영문 모드 안내 — 하이 답변은 한국어 코퍼스(12,762문항) 기반이라 정적 번역 대상이 아니다.
+   못 하는 것을 하는 척하지 않고, 하이가 무엇을 하는 에이전트인지 영문으로 정확히 알린 뒤
+   한국어로 전환하거나 문의로 갈 길을 준다(프롬프트 3장 ①). */
+function HiEnCard({ onGo, onClose }) {
+  return (
+    <div className="hidock-en">
+      <b>{t("hi.en.title")}</b>
+      <span className="only">{t("hi.en.only")}</span>
+      <div className="does">{t("hi.en.does")}</div>
+      <div>{t("hi.en.contact")}</div>
+      <div className="does">{t("hi.en.switch")}</div>
+      <div className="enbtns">
+        <button onClick={() => { if (typeof hiSetLang === "function") hiSetLang("ko"); }}>{t("hi.en.btn.ko")}</button>
+        <button className="ghost" onClick={() => { if (onClose) onClose(); if (onGo) onGo("partner"); }}>{t("hi.en.btn.partner")}</button>
+      </div>
+    </div>
+  );
+}
+
 function AgentDock({ onGo }) {
   const go = onGo || (() => {});
+  const lang = useHiLang();
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState([]);          // {who:'hi'|'me', lines:[], buttons:[], nav}
   const [input, setInput] = useState("");
@@ -32736,12 +32986,14 @@ function AgentDock({ onGo }) {
         <div className="hidock" ref={dockRef}>
           <div className="hidock-hd">
             <span className="hidock-av"><Bot size={16} /></span>
-            <div className="hidock-t"><b>{typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"}</b><span>AI 매니저 · 항상 함께해요</span></div>
+            <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{t("hi.role")}</span></div>
             <button className={"hidock-ib" + (easy ? " on" : "")} title="쉬운 말 모드(큰 글씨)" onClick={() => setEasy((v) => !v)}>가나</button>
             <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>
             <button className="hidock-ib" onClick={() => setOpen(false)} aria-label="닫기"><X size={16} /></button>
           </div>
           <div className="hidock-body" ref={bodyRef}>
+            {lang === "en" && <HiEnCard onGo={go} onClose={() => setOpen(false)} />}
+            {lang !== "en" && <>
             {msgs.map((m, i) => (
               <div key={i} data-mi={i} className={"hidock-row " + m.who}>
                 {m.who === "hi" && (() => {
@@ -32785,11 +33037,12 @@ function AgentDock({ onGo }) {
               </div>
             ))}
             {typing && <div className="hidock-row hi"><span className="hidock-mini"><Bot size={13} /></span><div className="hidock-bub hi hidock-typing"><span /><span /><span /></div></div>}
+            </>}
             <div ref={endRef} />
           </div>
-          <div className="hidock-quick" role="group" aria-label="자주 묻는 질문 바로가기">
+          {lang !== "en" && <div className="hidock-quick" role="group" aria-label="자주 묻는 질문 바로가기">
             {HIDOCK_QUICKS.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}
-          </div>
+          </div>}
           <div className="hidock-input">
             {sttOK && <button className={"hidock-mic" + (listening ? " on" : "")} onClick={startStt} title="음성으로 말하기"><Mic size={16} /></button>}
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} enterKeyHint="send"

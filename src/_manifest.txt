@@ -1,3 +1,4 @@
+src/data/i18n.js
 src/data/hiOpsConfig.js
 src/data/opsMetrics.js
 src/data/hiTelemetry.js

@@ -2,8 +2,28 @@
    원칙: 쉬움(3문장+버튼≤3+화면카드), 동일 에이전트(하이), 화면 이동에도 대화 유지, 음성 입력·쉬운말 모드. */
 /* 자주 묻는 질문 칩 — 타이핑 없이 탭 한 번으로 상담 시작(인사말 버튼과 동일한 검증된 의도만 사용) */
 const HIDOCK_QUICKS = ["검진예약 질문 도우미", "내 건강 봐줘", "보장 공백 분석", "검진결과 올리기", "쉬운 말 모드 켜기"];
+/* 영문 모드 안내 — 하이 답변은 한국어 코퍼스(12,762문항) 기반이라 정적 번역 대상이 아니다.
+   못 하는 것을 하는 척하지 않고, 하이가 무엇을 하는 에이전트인지 영문으로 정확히 알린 뒤
+   한국어로 전환하거나 문의로 갈 길을 준다(프롬프트 3장 ①). */
+function HiEnCard({ onGo, onClose }) {
+  return (
+    <div className="hidock-en">
+      <b>{t("hi.en.title")}</b>
+      <span className="only">{t("hi.en.only")}</span>
+      <div className="does">{t("hi.en.does")}</div>
+      <div>{t("hi.en.contact")}</div>
+      <div className="does">{t("hi.en.switch")}</div>
+      <div className="enbtns">
+        <button onClick={() => { if (typeof hiSetLang === "function") hiSetLang("ko"); }}>{t("hi.en.btn.ko")}</button>
+        <button className="ghost" onClick={() => { if (onClose) onClose(); if (onGo) onGo("partner"); }}>{t("hi.en.btn.partner")}</button>
+      </div>
+    </div>
+  );
+}
+
 function AgentDock({ onGo }) {
   const go = onGo || (() => {});
+  const lang = useHiLang();
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState([]);          // {who:'hi'|'me', lines:[], buttons:[], nav}
   const [input, setInput] = useState("");
@@ -184,12 +204,14 @@ function AgentDock({ onGo }) {
         <div className="hidock" ref={dockRef}>
           <div className="hidock-hd">
             <span className="hidock-av"><Bot size={16} /></span>
-            <div className="hidock-t"><b>{typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"}</b><span>AI 매니저 · 항상 함께해요</span></div>
+            <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{t("hi.role")}</span></div>
             <button className={"hidock-ib" + (easy ? " on" : "")} title="쉬운 말 모드(큰 글씨)" onClick={() => setEasy((v) => !v)}>가나</button>
             <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>
             <button className="hidock-ib" onClick={() => setOpen(false)} aria-label="닫기"><X size={16} /></button>
           </div>
           <div className="hidock-body" ref={bodyRef}>
+            {lang === "en" && <HiEnCard onGo={go} onClose={() => setOpen(false)} />}
+            {lang !== "en" && <>
             {msgs.map((m, i) => (
               <div key={i} data-mi={i} className={"hidock-row " + m.who}>
                 {m.who === "hi" && (() => {
@@ -233,11 +255,12 @@ function AgentDock({ onGo }) {
               </div>
             ))}
             {typing && <div className="hidock-row hi"><span className="hidock-mini"><Bot size={13} /></span><div className="hidock-bub hi hidock-typing"><span /><span /><span /></div></div>}
+            </>}
             <div ref={endRef} />
           </div>
-          <div className="hidock-quick" role="group" aria-label="자주 묻는 질문 바로가기">
+          {lang !== "en" && <div className="hidock-quick" role="group" aria-label="자주 묻는 질문 바로가기">
             {HIDOCK_QUICKS.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}
-          </div>
+          </div>}
           <div className="hidock-input">
             {sttOK && <button className={"hidock-mic" + (listening ? " on" : "")} onClick={startStt} title="음성으로 말하기"><Mic size={16} /></button>}
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} enterKeyHint="send"
