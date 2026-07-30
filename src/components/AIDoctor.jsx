@@ -414,7 +414,7 @@ function VoiceDoctor() {
             return (
               <div className="msg ai" key={i}>
                 <span className="av-ai">{showAv ? <SecIcon k="ai" /> : null}</span>
-                <div className="col">{showAv && <div className="who">AI 주치의</div>}
+                <div className="col">{showAv && <div className="who">하이-나의 주치의</div>}
                   <div className="bubble-row">
                     <div className="bubble ai" style={{ cursor: "pointer" }} onClick={() => speak(m.text)} title="다시 듣기"><Sents text={m.text} lead={<Volume2 size={13} style={{ verticalAlign: -2, marginRight: 5, color: "var(--blue)" }} />} /></div>
                     <div className="meta"><span onClick={() => speak(m.text)} style={{ cursor: "pointer", fontSize: 11, color: "var(--blue)", fontWeight: 700, whiteSpace: "nowrap" }}>다시듣기</span></div>
@@ -1370,7 +1370,7 @@ function AIDoctor({ mode }) {
         <div className="aihead"><span className="aiico"><SecIcon k="ai" /></span>
           <div><div className="scaffold stitle" style={{ fontSize: 22, fontWeight: 800 }}>AI 주치의 · 24시간</div>
             <div className="ssub" style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> 24시간 AI 건강상담 · 텍스트·음성 · 검진 리포트 기반 안내 · 진단이 아닌 참고용</div></div></div>
-        <Chat />
+        <Chat acceptsSeed />
       </div>
     );
   }
@@ -1383,7 +1383,7 @@ function AIDoctor({ mode }) {
         <div className={`aitab ${thread === "ai" ? "on" : ""}`} onClick={() => setThread("ai")}><Bot size={15} /> AI 주치의 · 24시간</div>
         <div className={`aitab ${thread === "specialist" ? "on" : ""}`} onClick={() => setThread("specialist")}><Stethoscope size={15} /> 전문의 상담</div>
       </div>
-      {thread === "specialist" ? <SpecialistChat /> : <Chat />}
+      {thread === "specialist" ? <SpecialistChat /> : <Chat acceptsSeed />}
     </div>
   );
 }
@@ -2658,10 +2658,10 @@ function Chat({ superAgent, acceptsSeed }) {
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); aiAck(isImg ? "사진" : "파일"); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
   const shareDevice = (summary) => { setDevOpen(false); if (!summary) return; const meId = ++UID; setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text: `🩺 기기 측정값 공유 — ${summary}`, time: now() }]); setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `연동된 측정값을 확인했어요(${summary}). 수치 추이를 바탕으로 생활관리·검진을 안내해 드릴게요. 이상 수치가 지속되면 진료를 권합니다. (참고용)`, time: now(), first: true }]); }, 1300); };
   return (
-    <div className="kt">
-      {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
+    <div className="kt kt-hi">
+      {video && <VideoCallModal title="하이-나의 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
-        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이" : "하이 · 건강 상담"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
+        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이" : "하이-나의 주치의"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "검진결과·건강분석 전담 · 24시간"}</div></div>
         {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
         <button className="ktib" onClick={() => setDevOpen((v) => !v)} title="기기 연결"><HeartPulse size={17} /></button>
         <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={17} /></button></div>
@@ -2679,7 +2679,7 @@ function Chat({ superAgent, acceptsSeed }) {
         {msgs.map((m) => (
           <div className={`msg ${m.who}`} key={m.id}>
             {m.who === "ai" && <span className="av-ai">{m.first ? <SecIcon k="ai" /> : null}</span>}
-            <div className="col">{m.who === "ai" && m.first && <div className="who">AI 주치의</div>}
+            <div className="col">{m.who === "ai" && m.first && <div className="who">하이-나의 주치의</div>}
               <div className="bubble-row">{m.kind === "card" ? <KCard card={m.card} onBtn={(b) => send(b)} /> : m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부 이미지" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
                 <div className="meta">{m.who === "me" && m.unread && <span className="unread">1</span>}<span>{m.time}</span></div></div></div></div>
         ))}

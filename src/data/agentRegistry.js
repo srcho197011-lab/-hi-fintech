@@ -33,7 +33,7 @@ const HI_AGENTS = [
     ready: true,
   },
   {
-    id: "A1", name: "AI 주치의", label: "AI 주치의", avatar: "🩺", badge: "AI 주치의",
+    id: "A1", name: "하이-나의 주치의", label: "하이-나의 주치의", avatar: "🩺", badge: "하이-나의 주치의",
     persona: "차분하고 정확한 설명, 근거를 먼저 밝히고 단정하지 않는다",
     role: "specialist",
     scope: {

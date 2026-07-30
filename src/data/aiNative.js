@@ -468,6 +468,10 @@ function agentPostProcess(res, agentId, question) {
 }
 
 /* 응답 장식 — 담당 표기·인계 고지·근거를 붙인다(내용은 바꾸지 않는다) */
+/* 검진결과·건강분석 질문 — 하이가 짧게 안내하고 **전담 에이전트로 넘긴다.**
+   수치 해석은 하이가 지나가며 답할 일이 아니라 주치의가 이어서 볼 일이다. */
+let _hiLastQ = "";                  /* 이번 턴 질문 원문 — 전담 연결 판정에만 쓴다 */
+const HI_DOCTOR_Q = /(검진\s*결과|결과지|결과\s*분석|건강\s*분석|정밀\s*분석|리포트|생체\s*나이|장기\s*나이|암\s*위험|수치.{0,4}(의미|해석|무슨|어떻)|재검|추적\s*검사)/;
 function _hiDecorate(res) {
   try {
     if (!res) return res;
@@ -487,12 +491,15 @@ function _hiDecorate(res) {
       if (Array.isArray(res.agents) && res.agents.length > 1) res.parts = null;
     }
     _hiLastOwner = owner;
+    /* 하이가 답했고 검진결과·건강분석 질문이면 전담 연결 버튼을 띄운다(주치의가 이미 답한 건이면 필요 없다) */
+    if (owner === "A0" && HI_DOCTOR_Q.test(String(_hiLastQ || ""))) res.doctor = true;
     return res;
   } catch (e) { return res; }
 }
 function agentOwnerReset() { _hiLastOwner = "A0"; }
 
 function agentAnswer(text) {
+  _hiLastQ = String(text || "");
   try { if (typeof hiHandoffReset === "function") hiHandoffReset(); } catch (e) {}
   return _hiDecorate(agentAnswerCore(text));
 }

@@ -136,7 +136,7 @@ function AgentDock({ onGo }) {
       if (res.reset) { setMsgs([{ who: "hi", lines: res.lines, buttons: [], nav: null }]); return; }
       lastQRef.current = text;
       /* [Phase A] 한 턴에 여러 에이전트가 말하면(인계 고지 → 전문 응답) 파트별 말풍선으로 나눠 렌더 */
-      const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel };
+      const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel, doctor: !!res.doctor, q: text };
       if (res.parts && res.parts.length) {
         setMsgs((m) => [...m, ...res.parts.map((p, i) => Object.assign(
           { who: "hi", agent: p.agent, agents: res.agents || null, lines: p.lines, cite: p.cite || [], cards: p.cards || [], announce: !!p.announce },
@@ -226,6 +226,8 @@ function AgentDock({ onGo }) {
                     </div>
                   )}
                   {m.nav && !m.preview && <button className="hidock-nav" onClick={() => { setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
+                  {/* 검진결과·건강분석은 전담 에이전트가 이어서 본다 — 질문을 그대로 넘겨 다시 묻지 않게 한다 */}
+                  {m.doctor && <button className="hidock-doc" onClick={() => { try { if (typeof _doctorSeed !== "undefined") _doctorSeed = m.q || lastQRef.current || null; } catch (e) {} setOpen(false); go("ai"); }}>🩺 하이-나의 주치의 연결 <ChevronRight size={12} /></button>}
                   {m.buttons && m.buttons.length > 0 && <div className="hidock-btns">{m.buttons.map((b) => <button key={b} onClick={() => chipClick(m, b)}>{b}</button>)}</div>}
                 </div>
               </div>

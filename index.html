@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=5bb7274116" />
+<link rel="stylesheet" href="./data/app.css?v=30779d3996" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=5bb7274116"></script>
-<script src="./src/data/section_data.js?v=5bb7274116"></script>
-<script src="./src/data/demo_members.js?v=5bb7274116"></script>
+<script src="./src/data/dummy_data.js?v=30779d3996"></script>
+<script src="./src/data/section_data.js?v=30779d3996"></script>
+<script src="./src/data/demo_members.js?v=30779d3996"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -1681,7 +1681,7 @@ function VoiceDoctor() {
             return (
               <div className="msg ai" key={i}>
                 <span className="av-ai">{showAv ? <SecIcon k="ai" /> : null}</span>
-                <div className="col">{showAv && <div className="who">AI 주치의</div>}
+                <div className="col">{showAv && <div className="who">하이-나의 주치의</div>}
                   <div className="bubble-row">
                     <div className="bubble ai" style={{ cursor: "pointer" }} onClick={() => speak(m.text)} title="다시 듣기"><Sents text={m.text} lead={<Volume2 size={13} style={{ verticalAlign: -2, marginRight: 5, color: "var(--blue)" }} />} /></div>
                     <div className="meta"><span onClick={() => speak(m.text)} style={{ cursor: "pointer", fontSize: 11, color: "var(--blue)", fontWeight: 700, whiteSpace: "nowrap" }}>다시듣기</span></div>
@@ -2637,7 +2637,7 @@ function AIDoctor({ mode }) {
         <div className="aihead"><span className="aiico"><SecIcon k="ai" /></span>
           <div><div className="scaffold stitle" style={{ fontSize: 22, fontWeight: 800 }}>AI 주치의 · 24시간</div>
             <div className="ssub" style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}><Info size={13} /> 24시간 AI 건강상담 · 텍스트·음성 · 검진 리포트 기반 안내 · 진단이 아닌 참고용</div></div></div>
-        <Chat />
+        <Chat acceptsSeed />
       </div>
     );
   }
@@ -2650,7 +2650,7 @@ function AIDoctor({ mode }) {
         <div className={`aitab ${thread === "ai" ? "on" : ""}`} onClick={() => setThread("ai")}><Bot size={15} /> AI 주치의 · 24시간</div>
         <div className={`aitab ${thread === "specialist" ? "on" : ""}`} onClick={() => setThread("specialist")}><Stethoscope size={15} /> 전문의 상담</div>
       </div>
-      {thread === "specialist" ? <SpecialistChat /> : <Chat />}
+      {thread === "specialist" ? <SpecialistChat /> : <Chat acceptsSeed />}
     </div>
   );
 }
@@ -3925,10 +3925,10 @@ function Chat({ superAgent, acceptsSeed }) {
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); aiAck(isImg ? "사진" : "파일"); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
   const shareDevice = (summary) => { setDevOpen(false); if (!summary) return; const meId = ++UID; setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text: `🩺 기기 측정값 공유 — ${summary}`, time: now() }]); setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `연동된 측정값을 확인했어요(${summary}). 수치 추이를 바탕으로 생활관리·검진을 안내해 드릴게요. 이상 수치가 지속되면 진료를 권합니다. (참고용)`, time: now(), first: true }]); }, 1300); };
   return (
-    <div className="kt">
-      {video && <VideoCallModal title="AI 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
+    <div className="kt kt-hi">
+      {video && <VideoCallModal title="하이-나의 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
-        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이" : "하이 · 건강 상담"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "온라인 · 24시간 상담"}</div></div>
+        <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이" : "하이-나의 주치의"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "검진결과·건강분석 전담 · 24시간"}</div></div>
         {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
         <button className="ktib" onClick={() => setDevOpen((v) => !v)} title="기기 연결"><HeartPulse size={17} /></button>
         <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={17} /></button></div>
@@ -3946,7 +3946,7 @@ function Chat({ superAgent, acceptsSeed }) {
         {msgs.map((m) => (
           <div className={`msg ${m.who}`} key={m.id}>
             {m.who === "ai" && <span className="av-ai">{m.first ? <SecIcon k="ai" /> : null}</span>}
-            <div className="col">{m.who === "ai" && m.first && <div className="who">AI 주치의</div>}
+            <div className="col">{m.who === "ai" && m.first && <div className="who">하이-나의 주치의</div>}
               <div className="bubble-row">{m.kind === "card" ? <KCard card={m.card} onBtn={(b) => send(b)} /> : m.kind === "image" ? <img className="chatimg" src={m.src} alt="첨부 이미지" /> : m.kind === "file" ? <div className="chatfile"><Paperclip size={14} /> {m.text}</div> : <div className={`bubble ${m.who}`}>{m.who === "ai" ? <Sents text={m.text} /> : m.text}</div>}
                 <div className="meta">{m.who === "me" && m.unread && <span className="unread">1</span>}<span>{m.time}</span></div></div></div></div>
         ))}
@@ -12221,7 +12221,7 @@ function CareSection({ initial, onGo }) {
     window.addEventListener("hifin:tele", h);
     return () => window.removeEventListener("hifin:tele", h);
   }, []);
-  const tabs = [["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "AI 주치의", Bot, "#7C3AED"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
+  const tabs = [["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "하이-나의 주치의", Bot, "#F97316"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
   return (
     <div style={{ marginTop: 4 }}>
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
@@ -19014,7 +19014,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-07-30", ver:"v1.2", ch:[8], feat:"원격진료 진료과·지역 연결 교정", src:"hifin:tele 이벤트로 진료과·탭 전환+SpecialistChat 지역 기본값 memberRegion 적용", summary:"화면이 이미 떠 있으면 진료과 지정이 무시돼 이전 과가 남고 지역이 강남구로 고정돼 있던 것을 이벤트 기반 갱신과 회원 거주지 기본값으로 바로잡음", refs:[], status:"반영", hash:"7c1f616", auto:true },
+  { date:"2026-07-30", ver:"v1.2", ch:[8], feat:"하이-나의 주치의 개명·디자인 통일·검진결과 전담 연결", src:"agentRegistry A1 명칭+kt-hi 하이 스킨 CSS+aiNative doctor 플래그+AgentDock 연결 버튼·seed 전달", summary:"주치의를 하이 가족 이름과 같은 디자인으로 통일하고 검진결과·건강분석 질문은 하이가 짧게 안내한 뒤 질문을 그대로 넘겨 전담 에이전트가 이어받게 함", refs:[], status:"반영", hash:"874d0e0", auto:true },
+  { date:"2026-07-30", ver:"v1.2", ch:[8], feat:"원격진료 진료과·지역 연결 교정", src:"hifin:tele 이벤트로 진료과·탭 전환+SpecialistChat 지역 기본값 memberRegion 적용", summary:"화면이 이미 떠 있으면 진료과 지정이 무시돼 이전 과가 남고 지역이 강남구로 고정돼 있던 것을 이벤트 기반 갱신과 회원 거주지 기본값으로 바로잡음", refs:[], status:"반영", hash:"4ac0784", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"직전 담당 승계 범위 교정", src:"agentRegistry A0 scope 소개·서비스 어휘 보강+agentRouter 승계 조건에 후속질문 신호·스몰토크 제외 추가", summary:"직전 담당이 도메인 무관 질문까지 이어받아 서비스 소개에 쇼핑 비교표가 나가던 것을 A0 고유 영역을 채우고 승계를 후속 질문일 때로 좁혀 해결", refs:[], status:"반영", hash:"97456b8", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"하이 독 답변 시작 위치 스크롤", src:"AgentDock 스크롤 로직 교체(새 답변 첫 줄 정렬)+data-mi 인덱스+bodyRef", summary:"긴 답변에서 대화 끝으로 스크롤되어 처음을 놓치던 것을 새로 붙은 하이 답변의 첫 줄이 대화창 맨 위에 오도록 바꾸고 내 말과 타이핑은 기존대로 끝으로 유지", refs:[], status:"반영", hash:"d40e374", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"코스맥스 배너 실사진", src:"코스맥스.webp 프로젝트 반영+배너 상단 전체 폭 레이아웃+원본 비율 유지", summary:"좌우 2분할 이미지라 세로 크롭을 걷어내고 원본 비율 그대로 배너 맨 위에 배치해 완성품과 생산 라인이 한 장에 보이게 함", refs:[], status:"반영", hash:"80cbf95", auto:true },
@@ -25538,6 +25539,10 @@ function agentPostProcess(res, agentId, question) {
 }
 
 /* 응답 장식 — 담당 표기·인계 고지·근거를 붙인다(내용은 바꾸지 않는다) */
+/* 검진결과·건강분석 질문 — 하이가 짧게 안내하고 **전담 에이전트로 넘긴다.**
+   수치 해석은 하이가 지나가며 답할 일이 아니라 주치의가 이어서 볼 일이다. */
+let _hiLastQ = "";                  /* 이번 턴 질문 원문 — 전담 연결 판정에만 쓴다 */
+const HI_DOCTOR_Q = /(검진\s*결과|결과지|결과\s*분석|건강\s*분석|정밀\s*분석|리포트|생체\s*나이|장기\s*나이|암\s*위험|수치.{0,4}(의미|해석|무슨|어떻)|재검|추적\s*검사)/;
 function _hiDecorate(res) {
   try {
     if (!res) return res;
@@ -25557,12 +25562,15 @@ function _hiDecorate(res) {
       if (Array.isArray(res.agents) && res.agents.length > 1) res.parts = null;
     }
     _hiLastOwner = owner;
+    /* 하이가 답했고 검진결과·건강분석 질문이면 전담 연결 버튼을 띄운다(주치의가 이미 답한 건이면 필요 없다) */
+    if (owner === "A0" && HI_DOCTOR_Q.test(String(_hiLastQ || ""))) res.doctor = true;
     return res;
   } catch (e) { return res; }
 }
 function agentOwnerReset() { _hiLastOwner = "A0"; }
 
 function agentAnswer(text) {
+  _hiLastQ = String(text || "");
   try { if (typeof hiHandoffReset === "function") hiHandoffReset(); } catch (e) {}
   return _hiDecorate(agentAnswerCore(text));
 }
@@ -28109,7 +28117,7 @@ const HI_AGENTS = [
     ready: true,
   },
   {
-    id: "A1", name: "AI 주치의", label: "AI 주치의", avatar: "🩺", badge: "AI 주치의",
+    id: "A1", name: "하이-나의 주치의", label: "하이-나의 주치의", avatar: "🩺", badge: "하이-나의 주치의",
     persona: "차분하고 정확한 설명, 근거를 먼저 밝히고 단정하지 않는다",
     role: "specialist",
     scope: {
@@ -32680,7 +32688,7 @@ function AgentDock({ onGo }) {
       if (res.reset) { setMsgs([{ who: "hi", lines: res.lines, buttons: [], nav: null }]); return; }
       lastQRef.current = text;
       /* [Phase A] 한 턴에 여러 에이전트가 말하면(인계 고지 → 전문 응답) 파트별 말풍선으로 나눠 렌더 */
-      const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel };
+      const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel, doctor: !!res.doctor, q: text };
       if (res.parts && res.parts.length) {
         setMsgs((m) => [...m, ...res.parts.map((p, i) => Object.assign(
           { who: "hi", agent: p.agent, agents: res.agents || null, lines: p.lines, cite: p.cite || [], cards: p.cards || [], announce: !!p.announce },
@@ -32770,6 +32778,8 @@ function AgentDock({ onGo }) {
                     </div>
                   )}
                   {m.nav && !m.preview && <button className="hidock-nav" onClick={() => { setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
+                  {/* 검진결과·건강분석은 전담 에이전트가 이어서 본다 — 질문을 그대로 넘겨 다시 묻지 않게 한다 */}
+                  {m.doctor && <button className="hidock-doc" onClick={() => { try { if (typeof _doctorSeed !== "undefined") _doctorSeed = m.q || lastQRef.current || null; } catch (e) {} setOpen(false); go("ai"); }}>🩺 하이-나의 주치의 연결 <ChevronRight size={12} /></button>}
                   {m.buttons && m.buttons.length > 0 && <div className="hidock-btns">{m.buttons.map((b) => <button key={b} onClick={() => chipClick(m, b)}>{b}</button>)}</div>}
                 </div>
               </div>

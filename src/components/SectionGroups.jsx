@@ -69,7 +69,7 @@ function CareSection({ initial, onGo }) {
     window.addEventListener("hifin:tele", h);
     return () => window.removeEventListener("hifin:tele", h);
   }, []);
-  const tabs = [["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "AI 주치의", Bot, "#7C3AED"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
+  const tabs = [["manage", "나의 건강현황", HeartPulse, "#E11D48"], ["tele", "비대면 원격진료", Building2, "#2563EB"], ["ai", "하이-나의 주치의", Bot, "#F97316"], ["homecare", "재가·돌봄", HeartHandshake, "#DB2777"], ["shop", "건강쇼핑", ShoppingCart, "#16A34A"]];
   return (
     <div style={{ marginTop: 4 }}>
       <GroupTabs tabs={tabs} tab={tab} setTab={setTab} />
