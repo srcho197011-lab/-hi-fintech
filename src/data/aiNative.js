@@ -325,6 +325,18 @@ const TOOL_RUN = {
     try { window.dispatchEvent(new CustomEvent("rpmrefresh")); } catch (e) {}
     return { lines: ["경보를 해제했어요 — 같은 추세가 이어지거나 새 이상 신호가 감지되면 다시 알려드릴게요."] };
   } catch (e) { return null; } },
+  // 프리미엄(장기)보험 상담 — 사전 동의 게이트를 안내하며 상담 신청 창 오픈(게이트는 ConsultModal이 강제)
+  premiumconsult(m) { try {
+    let st = {};
+    try { const v = (m && typeof vaultLoad === "function") ? vaultLoad(anonToken(m)) : null; st = (v && v.consents && v.consents.state) || {}; } catch (e) {}
+    const ok = !!(st.health && st.insurance);
+    try { if (typeof openConsult === "function") openConsult("내 몸 맞춤 프리미엄보험 (장기)"); } catch (e) {}
+    return { lines: [
+      "프리미엄보험은 1년 단기 간편보험과 달리 장기보험이에요 — 검진·건강데이터로 설계하기 때문에 건강데이터 활용·보험 연계 동의가 먼저 필요해요.",
+      ok ? "동의는 이미 확인됐어요 ✓ 상담 신청 창을 열었으니 연락처만 남겨주시면 라이선스 상담사가 연락드려요." : "아직 동의 전이라 상담 창에서 동의 확인부터 진행돼요 — 필수 두 항목 체크면 끝나고, 언제든 철회할 수 있어요.",
+      "운영: 금융위 등록 보험대리점 글로벌예방금융(주) · 등록번호 제2025060038호",
+    ] };
+  } catch (e) { return null; } },
   // 비대면 가능행위 공시 — 의료법·고시 기준 표를 대화로
   telecan() { try {
     const A = (typeof TELE_ACTS !== "undefined") ? TELE_ACTS : [];

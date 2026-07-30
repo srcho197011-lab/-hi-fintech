@@ -1,3 +1,52 @@
+/* ══ 과업B(2026-07-31) — 운영 주체 자격 표시: 금융위 등록 보험대리점 공식 배지·상세 카드·고지 라인 ══
+   문구 확정본(임의 수정 금지): 글로벌예방금융(주) · 보험대리점 등록번호 제2025060038호
+   근거: 보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항 */
+const AGENCY_INFO = {
+  corp: "글로벌예방금융(주)", regNo: "제2025060038호",
+  basis: "보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항",
+  full: "본 보험·치료비 서비스는 보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항에 근거하여 등록된 보험대리점 글로벌예방금융(주)가 운영합니다.",
+};
+function InsAgencyBadge({ onGo }) {
+  const [open, setOpen] = useState(false);
+  return (<>
+    <button onClick={() => setOpen(true)} title="보험대리점 등록 정보 보기" aria-label="보험대리점 등록 정보"
+      style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, background: "linear-gradient(125deg,#0B1F4B,#14337A)", border: "1px solid #C9A84C", borderRadius: 11, padding: "8px 13px", cursor: "pointer", flexShrink: 0, boxShadow: "0 10px 22px -14px rgba(11,31,75,.85)" }}>
+      <ShieldCheck size={17} color="#F5D98A" />
+      <span style={{ textAlign: "left", lineHeight: 1.35 }}>
+        <b style={{ display: "block", fontSize: 11.5, color: "#fff", letterSpacing: .2 }}>금융위 등록 보험대리점</b>
+        <span style={{ fontSize: 10.5, color: "#F5D98A", fontWeight: 700 }}>{AGENCY_INFO.corp} · {AGENCY_INFO.regNo}</span>
+      </span>
+    </button>
+    {open && (
+      <div className="bkov" onClick={() => setOpen(false)}>
+        <div className="bk" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+          <div className="bkh"><div className="bt">보험대리점 등록 정보</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={() => setOpen(false)}><X size={20} color="#8A97AE" /></button></div>
+          <div className="bkb">
+            <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(125deg,#0B1F4B,#14337A)", borderRadius: 13, padding: "16px 17px", boxShadow: "0 14px 28px -18px rgba(11,31,75,.9)" }}>
+              <span style={{ width: 46, height: 46, borderRadius: 12, background: "rgba(245,217,138,.16)", border: "1px solid #C9A84C", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={25} color="#F5D98A" /></span>
+              <div style={{ lineHeight: 1.5 }}>
+                <b style={{ display: "block", fontSize: 16.5, color: "#fff" }}>{AGENCY_INFO.corp}</b>
+                <span style={{ fontSize: 12.5, color: "#F5D98A", fontWeight: 800 }}>보험대리점 등록번호 {AGENCY_INFO.regNo}</span>
+              </div>
+            </div>
+            <p style={{ fontSize: 13, color: "#334155", lineHeight: 1.75, margin: "4px 2px" }}>{AGENCY_INFO.full}</p>
+            <div style={{ fontSize: 12.3, color: "#475569", background: "#F8FAFC", border: "1px solid var(--border)", borderRadius: 11, padding: "11px 13px", lineHeight: 1.8 }}>
+              · 등록 근거: <b>{AGENCY_INFO.basis}</b><br />
+              · 인수사: 현대해상(전속 제휴)<br />
+              · 상담·모집은 <b>라이선스 상담사</b>가 수행합니다.
+            </div>
+            {onGo && <button className="cbtn" style={{ margin: 0 }} onClick={() => { setOpen(false); onGo("trust"); }}><ShieldCheck size={15} /> 신뢰 센터 보기</button>}
+          </div>
+        </div>
+      </div>
+    )}
+  </>);
+}
+/* 섹션 하단 고지부 공용 1줄 — 기존 안내문 앞에 배치 */
+function InsAgencyLine() {
+  return <div className="ipscompliance" style={{ borderColor: "#C7D8FA", background: "#F8FAFF" }}><b>판매 주체</b> · {AGENCY_INFO.full} (등록번호 {AGENCY_INFO.regNo} · {AGENCY_INFO.basis})</div>;
+}
+
 const INS_PRODUCTS = [
   ["immune", "(무)건강한미래 암보험", "췌장암·간암 등 특정암 진단비 강화 · 표적항암·수술·입원비", "월 38,400원", "췌장암 경고 · 암 주의 다수"],
   ["heart", "간·소화기 질환 보장보험", "간질환·췌장염·복부 정밀검사·입원 치료비 보장", "월 22,100원", "간 54.4세 · 췌장 56.2세"],
@@ -483,7 +532,7 @@ function AIPlannerChat({ onSimple, initialAsk }) {
   const send = (textArg) => {
     const text = (textArg == null ? input : textArg).trim(); if (!text) return;
     if (text === "맞춤 헬스케어 보험 상담") { if (onSimple) onSimple(); return; }   // 맞춤 헬스케어 보험(내 몸 맞춤 간편보험 종합 상담) 섹션으로 연결
-    if (text === "보험상담 신청" || text === "간편 가입 상담") { if (typeof openConsult === "function") openConsult(PROD.name + " — 맞춤 헬스케어 보험 상담"); return; }
+    if (text === "보험상담 신청" || text === "간편 가입 상담") { if (typeof openConsult === "function") openConsult("간편보험 — " + PROD.name + " 상담"); return; }   // 간편(단기) 분야로 접수(이원화)
     setInput(""); setQuicks([]);
     setMsgs((m) => [...m, { who: "me", bubbles: [{ kind: "text", text }] }]);
     setTyping(true);
@@ -726,7 +775,8 @@ function SimpleBodyInsurance({ initialPlanKey } = {}) {
         <button className="cbtn pri" style={{ margin: 0 }} onClick={() => openConsult("간편 내몸맞춤 간편보험 — 종합 설계")}><MessageSquare size={15} /> 내 몸 맞춤 간편보험 종합 상담</button>
         <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("manage")}><FileText size={15} /> 내 건강리포트로 위험 확인</button>
       </div>
-      <div className="sbins-note">※ 보장금액·보험료는 <b>예시(안)</b>이며, 실제 가입가능 담보·한도·보험료·심사기준은 제휴 보험사 상품약관과 관련 법령(보험업법 등)에 따라 확정됩니다. 1년 만기 갱신형(자동갱신) 구조를 기본으로 합니다.</div>
+      <div className="sbins-note"><b>1년 단기 일반손해보험 · 간편심사 · 자동갱신</b> — 장기보험이 아닌 단기 상품입니다. ※ 보장금액·보험료는 <b>예시(안)</b>이며, 실제 가입가능 담보·한도·보험료·심사기준은 제휴 보험사 상품약관과 관련 법령(보험업법 등)에 따라 확정됩니다.</div>
+      <InsAgencyLine />
     </div>
   );
 }
@@ -778,6 +828,7 @@ function PremiumPolicySection({ initialPlanKey } = {}) {
           <button className="cbtn pri" style={{ margin: 0 }} onClick={() => openConsult("내 몸 맞춤 프리미엄보험")}><MessageSquare size={15} /> 내게 맞는 프리미엄보험 상담받기</button>
           <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={15} /> 건강지갑 보기</button>
         </div>
+        <InsAgencyLine />
         <div className="ipscompliance"><b>안내</b> · 본 내용은 Health-InsurFin Tech의 <b>맞춤 헬스케어 보험 정책(안) 개요</b>로 참고용이며, 보험사 파트너·상품 구성·보장·보험료·인수기준 및 사회공헌 재원 연계는 관련 법령(보험업법 등)·금융당국 인가·참여기관 협약 및 법적 검토 결과에 따라 확정·변경될 수 있습니다.</div>
       </div>
     );
@@ -789,6 +840,7 @@ function PremiumPolicySection({ initialPlanKey } = {}) {
         <div>
           <div className="ht">프리미엄 헬스케어 보험</div>
           <h2>내 몸 맞춤 프리미엄보험</h2>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.8, fontWeight: 800, color: "#14337A", background: "rgba(255,255,255,.85)", border: "1px solid #C7D8FA", borderRadius: 999, padding: "4px 12px", margin: "8px 0 2px" }}><ShieldCheck size={13} /> 장기보험 · 건강데이터 기반 종합 설계</div>
           <div className="hd">Health-InsurFin Tech 기반으로 개인 건강데이터를 분석하여 꼭 필요한 보장을 합리적인 비용으로 제공하고, 건강활동으로 적립한 건강자산으로 보험료 부담을 줄이는 새로운 건강금융 생태계를 만들어 갑니다.</div>
         </div>
         <div className="mhpartners">
@@ -825,6 +877,7 @@ function PremiumPolicySection({ initialPlanKey } = {}) {
         <button className="cbtn pri" style={{ margin: 0 }} onClick={() => openConsult("내 몸 맞춤 프리미엄보험")}><MessageSquare size={15} /> 내게 맞는 프리미엄보험 상담받기</button>
         <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={15} /> 건강지갑 보기</button>
       </div>
+      <InsAgencyLine />
       <div className="ipscompliance"><b>안내</b> · 본 내용은 Health-InsurFin Tech의 <b>맞춤 헬스케어 보험 정책(안) 개요</b>로 참고용이며, 보험사 파트너·상품 구성·보장·보험료·인수기준 및 사회공헌 재원 연계는 관련 법령(보험업법 등)·금융당국 인가·참여기관 협약 및 법적 검토 결과에 따라 확정·변경될 수 있습니다.</div>
       {stageInfo && STAGE_META[stageInfo] && (
         <div className="bkov" onClick={() => setStageInfo(null)}>

@@ -426,11 +426,42 @@ const CAT_META = {
 function CatIcon({ c }) { const m = CAT_META[c] || [Search, "#64748B"]; const Ic = m[0]; return <Ic size={14} color={m[1]} />; }
 
 /* 상담 신청 폼 — 이름·연락처·관심분야 */
+/* 상담 이원화(2026-07-31) — 간편보험(1년 단기·일반손해) vs 프리미엄보험(장기)을 관심분야부터 분리.
+   판매 주체: 금융위 등록 보험대리점 글로벌예방금융(주) 제2025060038호(보험업법 §87①·감독규정 §4-4③). */
+const INT_SIMPLE = "내 몸 맞춤 간편보험 (1년 단기·일반손해)";
+const INT_PREMIUM = "내 몸 맞춤 프리미엄보험 (장기)";
 function ConsultModal({ interest, onClose }) {
-  const INTERESTS = ["내 몸 맞춤 프리미엄보험", "건강검진 대비보험", "실손보험", "건강검진 예약", "재가·돌봄 서비스", "기업검진 도입", "건강·보험 종합 상담"];
-  const [f, setF] = useState({ name: "", phone: "", interest: INTERESTS.includes(interest) ? interest : INTERESTS[0] });
+  const INTERESTS = [INT_PREMIUM, INT_SIMPLE, "건강검진 대비보험", "실손보험", "건강검진 예약", "재가·돌봄 서비스", "기업검진 도입", "건강·보험 종합 상담"];
+  /* 키워드 매핑 — 호출 맥락이 곧 관심분야(무조건 [0] 폴백 폐기: 간편 상담이 프리미엄으로 접수되던 결함 수정) */
+  const mapInterest = (s) => { const t = String(s || ""); if (/간편|단기/.test(t)) return INT_SIMPLE; if (/프리미엄|장기/.test(t)) return INT_PREMIUM; if (INTERESTS.includes(t)) return t; return "건강·보험 종합 상담"; };
+  const [f, setF] = useState({ name: "", phone: "", interest: mapInterest(interest) });
   const [done, setDone] = useState(false);
+  /* 모달이 언마운트 없이 연속 오픈되는 경우(빠른 재클릭·배칭)에도 호출 맥락의 분야로 재초기화 */
+  useEffect(() => { setF((p) => ({ ...p, interest: mapInterest(interest) })); setDone(false); }, [interest]);
   const ok = f.name.trim() && f.phone.trim().length >= 9;
+  /* ── 프리미엄(장기) 사전 동의 게이트 — 데이터 금고 동의 체계(health·insurance·mkt) 재사용 ── */
+  const gm = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null)
+    || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const [ctick, setCtick] = useState(0);
+  const consentInfo = React.useMemo(() => {
+    try {
+      if (!gm || typeof vaultLoad !== "function" || typeof anonToken !== "function") return null;
+      const v = vaultLoad(anonToken(gm));
+      return { st: (v && v.consents && v.consents.state) || {}, ts: v && v.consents && v.consents.ts };
+    } catch (e) { return null; }
+  }, [gm && gm.email, ctick]);
+  const consentOK = !!(consentInfo && consentInfo.st.health && consentInfo.st.insurance);
+  const needGate = f.interest === INT_PREMIUM && !!gm && !!consentInfo && !consentOK;   // 이미 동의한 회원은 추가 클릭 0회
+  const [cAgree, setCAgree] = useState(() => ({ health: false, insurance: false, mkt: false }));
+  const gateReady = (cAgree.health || (consentInfo && consentInfo.st.health)) && (cAgree.insurance || (consentInfo && consentInfo.st.insurance));
+  const doConsent = () => {
+    try { if (typeof vaultSaveConsents === "function") vaultSaveConsents(gm, { health: true, insurance: true, mkt: !!cAgree.mkt || !!(consentInfo && consentInfo.st.mkt), step: "premium-consult" }); } catch (e) {}
+    try { if (typeof vaultAccessLog === "function" && typeof anonToken === "function") vaultAccessLog(anonToken(gm), "member", "프리미엄(장기)보험 상담 — 사전 동의 확인·기록"); } catch (e) {}
+    setCtick((t) => t + 1);
+  };
+  const catLine = f.interest === INT_SIMPLE ? "1년 단기 일반손해보험 상담입니다 · 간편심사 · 자동갱신"
+    : f.interest === INT_PREMIUM ? "장기보험 종합 설계 상담입니다 · 건강데이터 기반 인수심사" : null;
+  const consentDate = (() => { try { return consentInfo && consentInfo.ts ? new Date(consentInfo.ts).toLocaleDateString("ko-KR") : null; } catch (e) { return null; } })();
   /* 상담 신청 안 지도(Phase 4) — 상담 대상 기관이 있으면 그 위치, 없으면 내 주변 제휴 검진센터 */
   const hiraCs = (typeof useHira === "function") ? useHira() : { data: null };
   const csGeo = React.useMemo(() => {
@@ -459,15 +490,38 @@ function ConsultModal({ interest, onClose }) {
           {!done ? (<>
             <div style={{ display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(120deg,#2563EB,#1E40C8)", color: "#fff", borderRadius: 12, padding: "12px 14px", boxShadow: "0 12px 24px -16px rgba(37,99,235,.7)" }}>
               <span style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><MessageSquare size={20} color="#fff" /></span>
-              <div style={{ fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>라이선스 상담사가 <b style={{ color: "#FDE68A" }}>입력하신 연락처</b>로 1:1 맞춤 상담을 도와드립니다.</div>
+              <div style={{ fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>라이선스 상담사가 <b style={{ color: "#FDE68A" }}>입력하신 연락처</b>로 1:1 맞춤 상담을 도와드립니다.
+                <div style={{ fontSize: 10.8, fontWeight: 600, opacity: .85, marginTop: 3 }}>글로벌예방금융(주) · 금융위 등록 보험대리점 제2025060038호</div></div>
             </div>
-            <div className="cfield"><label>이름</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="성명을 입력하세요" /></div>
-            <div className="cfield"><label>연락처</label><input value={f.phone} inputMode="numeric" onChange={(e) => setF({ ...f, phone: e.target.value.replace(/[^0-9-]/g, "").slice(0, 13) })} placeholder="휴대전화 번호 (예: 010-1234-5678)" /></div>
-            <div className="cfield"><label>관심 분야</label><select value={f.interest} onChange={(e) => setF({ ...f, interest: e.target.value })}>{INTERESTS.map((i) => <option key={i} value={i}>{i}</option>)}</select></div>
-            {csGeo.pts.length > 0 && typeof MapView === "function" && (
-              <div><div className="bklbl" style={{ margin: "2px 0 6px" }}>{csGeo.label}</div><MapView points={csGeo.pts} height={175} accent="#2563EB" /></div>
+            {catLine && <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 700, color: f.interest === INT_PREMIUM ? "#14337A" : "#92400E", background: f.interest === INT_PREMIUM ? "#EEF3FF" : "#FFF7E8", border: `1px solid ${f.interest === INT_PREMIUM ? "#C7D8FA" : "#F3DFB6"}`, borderRadius: 10, padding: "8px 12px" }}><ShieldCheck size={14} /> {catLine}</div>}
+            {f.interest === INT_PREMIUM && gm && consentOK && (
+              <div style={{ fontSize: 11.8, fontWeight: 600, color: "#166534", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "8px 12px", lineHeight: 1.55 }}>
+                ✓ 건강데이터 활용·보험 연계 동의가 확인되었습니다{consentDate ? ` (동의일 ${consentDate})` : ""} — 변경·철회는 동의관리에서 언제든 가능해요.
+              </div>
             )}
-            <button className="cbtn pri" style={{ opacity: ok ? 1 : .5 }} disabled={!ok} onClick={() => { setDone(true); if (typeof isGuestRole === "function" && isGuestRole() && typeof toast === "function") toast("👀 둘러보기 모드 — 실제 신청은 접수되지 않습니다"); }}><MessageSquare size={15} /> {!f.name.trim() ? "이름을 입력하세요" : f.phone.trim().length < 9 ? "연락처를 입력하세요" : "상담 신청하기"}</button>
+            {needGate ? (<>
+              {/* 사전 동의 게이트 — 필수(health·insurance) 동의 후에만 장기보험 상담 진행 */}
+              <div style={{ border: "1.5px solid #C7D8FA", background: "#F8FAFF", borderRadius: 13, padding: "13px 14px" }}>
+                <div style={{ fontWeight: 800, fontSize: 13.5, color: "#14337A" }}>장기보험 상담 전, 동의를 확인해 주세요</div>
+                <div style={{ fontSize: 12, color: "#475569", margin: "5px 0 10px", lineHeight: 1.6 }}>프리미엄(장기)보험은 검진·건강데이터로 설계하고 제휴 보험사 인수심사에 연계돼요. 아래 필수 동의가 있어야 상담을 진행할 수 있어요.</div>
+                {[["health", "[필수] 건강데이터 활용 동의", "장기 설계의 근거 데이터로 사용해요"], ["insurance", "[필수] 보험 연계 동의", "제휴 보험사 설계·인수 목적으로만 제공돼요"], ["mkt", "[선택] 마케팅 알림 수신", "상담 외 상품 안내를 받아볼 수 있어요"]].map(([k, t, d]) => (
+                  <label key={k} style={{ display: "flex", gap: 9, alignItems: "flex-start", padding: "7px 2px", cursor: "pointer" }}>
+                    <input type="checkbox" style={{ marginTop: 2 }} checked={!!cAgree[k] || !!(consentInfo && consentInfo.st[k])} disabled={!!(consentInfo && consentInfo.st[k])} onChange={(e) => setCAgree({ ...cAgree, [k]: e.target.checked })} />
+                    <span style={{ fontSize: 12.3, lineHeight: 1.5 }}><b style={{ color: k === "mkt" ? "#64748B" : "#14337A" }}>{t}</b>{consentInfo && consentInfo.st[k] ? <b style={{ color: "#16A34A" }}> · 동의됨 ✓</b> : null}<br /><span style={{ color: "#64748B", fontSize: 11.5 }}>{d}</span></span>
+                  </label>
+                ))}
+                <button className="cbtn pri" style={{ marginTop: 8, opacity: gateReady ? 1 : .5 }} disabled={!gateReady} onClick={doConsent}><ShieldCheck size={15} /> {gateReady ? "동의하고 상담 진행" : "필수 동의에 체크해 주세요"}</button>
+                <div className="chnote" style={{ marginTop: 8 }}>동의 이력은 블록체인에 기록되며, 마이페이지 › 동의관리에서 <b>언제든 철회</b>할 수 있어요(철회해도 불이익이 없어요).</div>
+              </div>
+            </>) : (<>
+              <div className="cfield"><label>이름</label><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="성명을 입력하세요" /></div>
+              <div className="cfield"><label>연락처</label><input value={f.phone} inputMode="numeric" onChange={(e) => setF({ ...f, phone: e.target.value.replace(/[^0-9-]/g, "").slice(0, 13) })} placeholder="휴대전화 번호 (예: 010-1234-5678)" /></div>
+              <div className="cfield"><label>관심 분야</label><select value={f.interest} onChange={(e) => setF({ ...f, interest: e.target.value })}>{INTERESTS.map((i) => <option key={i} value={i}>{i}</option>)}</select></div>
+              {csGeo.pts.length > 0 && typeof MapView === "function" && (
+                <div><div className="bklbl" style={{ margin: "2px 0 6px" }}>{csGeo.label}</div><MapView points={csGeo.pts} height={175} accent="#2563EB" /></div>
+              )}
+              <button className="cbtn pri" style={{ opacity: ok ? 1 : .5 }} disabled={!ok} onClick={() => { setDone(true); if (typeof isGuestRole === "function" && isGuestRole() && typeof toast === "function") toast("👀 둘러보기 모드 — 실제 신청은 접수되지 않습니다"); }}><MessageSquare size={15} /> {!f.name.trim() ? "이름을 입력하세요" : f.phone.trim().length < 9 ? "연락처를 입력하세요" : "상담 신청하기"}</button>
+            </>)}
             <div className="chnote" style={{ marginTop: 8 }}>※ 입력 정보는 예시용이며 실제 전송·저장되지 않습니다.</div>
           </>) : (
             <div className="bkconfirm">

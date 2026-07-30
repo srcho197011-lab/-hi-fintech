@@ -186,6 +186,7 @@ export default function App() {
             <div className="secbanner">
               <span className="sb-ic"><SecIcon k={cb.k} /></span>
               <div className="sb-b"><b>{t("nav." + cb.k, cb.t)}</b><p>{t("nav." + cb.k + ".s", SEC_BANNER[cb.k] || cb.s)}</p></div>
+              {cb.k === "insurance" && typeof InsAgencyBadge === "function" && <InsAgencyBadge onGo={setSec} />}
             </div>
           ); })()}
           {!onbo.done && secParent(sec) === "home" && sec !== "onboarding" && (
