@@ -835,8 +835,7 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
           style={{ width: "100%", borderRadius: 16, display: "block", border: "1px solid var(--border)", boxShadow: "0 14px 32px -24px rgba(20,40,90,.5)", cursor: "pointer" }}
           onError={() => (imgExt + 1 < IMG_EXTS.length ? setImgExt(imgExt + 1) : setUseImg(false))} />
         <div className="mhcta">
-          <button className="cbtn pri" style={{ margin: 0 }} onClick={goRegion}><MapPin size={15} /> 내게 맞는 프리미엄보험 상담받기 — 내 지역 상담사 연결</button>
-          <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={15} /> 건강지갑 보기</button>
+          <button className="cbtn pri" style={{ margin: 0, background: "linear-gradient(120deg,#F58220,#E4610F)", borderColor: "#E4610F", boxShadow: "0 12px 26px -16px rgba(228,97,15,.85)" }} onClick={goRegion}><MapPin size={15} /> 가까운 전문 상담사와 내 보장 점검하기</button>
         </div>
         {regionTeaser && <div className="chnote" style={{ margin: "6px 0 2px" }}>{regionTeaser}</div>}
         <InsAgencyLine />
@@ -881,8 +880,7 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
       {/* 형 지시(2026-07-31): 핵심 가치 6카드 박스 삭제 — 상담 동선을 내 지역 상담으로 일원화 */}
       <div className="mhend"><ShieldCheck size={16} /> HI-Fin Tech는 보험·헬스케어·금융·AI 기술이 융합된 차세대 국민 건강보장체계 구축을 지향합니다.</div>
       <div className="mhcta">
-        <button className="cbtn pri" style={{ margin: 0 }} onClick={goRegion}><MapPin size={15} /> 내게 맞는 프리미엄보험 상담받기 — 내 지역 상담사 연결</button>
-        <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={15} /> 건강지갑 보기</button>
+        <button className="cbtn pri" style={{ margin: 0, background: "linear-gradient(120deg,#F58220,#E4610F)", borderColor: "#E4610F", boxShadow: "0 12px 26px -16px rgba(228,97,15,.85)" }} onClick={goRegion}><MapPin size={15} /> 가까운 전문 상담사와 내 보장 점검하기</button>
       </div>
       {regionTeaser && <div className="chnote" style={{ margin: "6px 0 2px" }}>{regionTeaser}</div>}
       <InsAgencyLine />
