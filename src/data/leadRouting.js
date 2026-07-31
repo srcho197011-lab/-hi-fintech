@@ -202,6 +202,7 @@ function lrCreateLead(m, opt) {
     ageBand: (() => { const a = (m.regAge || m.age || 45); return Math.floor(a / 10) * 10 + "대"; })(),
     sex: m.sex || "-",   // 브리핑용 가명 최소 정보(연령대·성별) — 이름·연락처 원문은 리드에 싣지 않음(콜백 토큰 원칙)
     family: !!opt.forFamily,   // 원격지(가족을 위한) 상담 표시 — 콘솔 브리핑에 노출
+    branch: opt.branch || null, branchAddr: opt.branchAddr || null,   // 회원이 직접 고른 지점(있으면 그 지점으로 안내)
     status: "ASSIGNED", slaH: sc.sla, retry: 0, history: [{ at: Date.now(), ev: `배정(${sc.tier} · A${sc.A}+F${sc.F}) — SLA ${sc.sla}h 시작` }],
   };
   const l = lrLeads(m); l.push(lead); _lrSave(m, l);

@@ -72,7 +72,7 @@ function LeadOpsConsole() {
             <div key={x.id} style={{ border: `1.5px solid ${over ? "#FECACA" : "var(--border)"}`, background: over ? "#FEF2F2" : "#fff", borderRadius: 12, padding: "11px 13px", marginBottom: 9 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ fontSize: 12.8 }}>
-                  <b style={{ color: x.tier === "T1" ? "#DC2626" : "#1D4ED8" }}>[{x.tier}{x.score ? ` A${x.score.A}·F${x.score.F}` : ""}]</b> <b>{x.id}</b> · {TYPE_L[x.type] || x.type} · {x.dan}{x.sgg ? ` (${x.sgg})` : ""} · {x.ageBand} {x.sex}{x.family ? <b style={{ color: "#B45309" }}> · 👪 가족 상담</b> : null}
+                  <b style={{ color: x.tier === "T1" ? "#DC2626" : "#1D4ED8" }}>[{x.tier}{x.score ? ` A${x.score.A}·F${x.score.F}` : ""}]</b> <b>{x.id}</b> · {TYPE_L[x.type] || x.type} · {x.dan}{x.branch ? ` › ${x.branch}` : x.sgg ? ` (${x.sgg})` : ""} · {x.ageBand} {x.sex}{x.family ? <b style={{ color: "#B45309" }}> · 👪 가족 상담</b> : null}
                   <span style={{ color: "var(--muted)" }}> · 희망 {x.channel}{x.slot ? ` · ${x.slot}` : ""}</span>
                 </div>
                 <div style={{ fontSize: 11.5, fontWeight: 800, color: over ? "#DC2626" : "#16A34A" }}>
@@ -201,6 +201,7 @@ function RegionConsultSection({ onTab }) {
   const [pickSido, setPickSido] = useState(null);
   const [pickDan, setPickDan] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
+  const [pickBranch, setPickBranch] = useState(null);   // 선택 지점(지도 핀·연결 대상)
   const home = useMemo(() => lrRegionOf(m), [m && m.email]);
   const R = pickSido ? lrRegionBy(pickSido, pickDan) : home;
   const leads = m ? lrLeads(m) : [];
@@ -222,7 +223,7 @@ function RegionConsultSection({ onTab }) {
   const gapCode = (() => { try { const g = (typeof analyzeCoverageGap === "function" && m) ? analyzeCoverageGap(m) : null; return g && g.gaps && g.gaps.length ? "GAP-" + g.gaps.length + "건" : "GAP-없음"; } catch (e) { return "GAP-SUMMARY"; } })();
 
   const submit = () => {
-    const r = lrCreateLead(m, { channel, slot, agentId, briefing, gapCode, region: pickSido ? R : null, forFamily: !!pickSido });   // 지역 선택 시 그 관할로 배정(가족 상담)
+    const r = lrCreateLead(m, { channel, slot, agentId, briefing, gapCode, region: pickSido ? R : null, forFamily: !!pickSido, branch: pickBranch ? pickBranch.name : null, branchAddr: pickBranch ? pickBranch.addr : null });   // 지역·지점 선택 반영
     if (!r.ok && r.reason === "consent") { setShowConsent(true); return; }
     if (!r.ok) { if (typeof toast === "function") toast(r.reason); return; }
     if (typeof toast === "function") toast(`✅ ${r.lead.dan} ${r.lead.agent}님께 배정됐어요 — ${channel} 상담`);
@@ -235,7 +236,12 @@ function RegionConsultSection({ onTab }) {
   };
   void tick;
 
-  const pts = [{ name: R.dan, addr: R.info.addr, tel: R.info.tel, tag: "담당 지역단", lat: R.info.lat, lng: R.info.lng }];
+  /* 지도 포인트 — 지점 선택 시 그 지점 핀(+지역단 거점 동시 표시) */
+  const bg = pickBranch && typeof lrBranchGeo === "function" ? lrBranchGeo(pickBranch.addr, { lat: R.info.lat, lng: R.info.lng }) : null;
+  const pts = pickBranch
+    ? [{ name: pickBranch.name, addr: pickBranch.addr, tel: "", tag: "선택 지점", lat: bg.lat, lng: bg.lng },
+       { name: R.dan, addr: R.info.addr, tel: R.info.tel, tag: "관할 지역단", lat: R.info.lat, lng: R.info.lng }]
+    : [{ name: R.dan, addr: R.info.addr, tel: R.info.tel, tag: "담당 지역단", lat: R.info.lat, lng: R.info.lng }];
 
   return (
     <div>
@@ -258,7 +264,7 @@ function RegionConsultSection({ onTab }) {
             <div style={{ fontSize: 11.3, opacity: .8, marginBottom: 7 }}>전국 어디든 선택할 수 있어요 — 숫자는 상담 가능 지점 수(실사 기준), ⚠️는 인접 관할 안내 지역이에요.</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {LR_COVERAGE.map((c) => (
-                <button key={c.sido} onClick={() => { setPickSido(c.sido); setPickDan(null); }} style={{ fontSize: 11.3, fontWeight: 700, background: pickSido === c.sido ? "#F5D98A" : "rgba(255,255,255,.12)", color: pickSido === c.sido ? "#0B1F4B" : "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 999, padding: "5px 11px", cursor: "pointer" }}>{c.sido} {c.br}{c.gap ? " ⚠️" : ""}</button>
+                <button key={c.sido} onClick={() => { setPickSido(c.sido); setPickDan(null); setPickBranch(null); }} style={{ fontSize: 11.3, fontWeight: 700, background: pickSido === c.sido ? "#F5D98A" : "rgba(255,255,255,.12)", color: pickSido === c.sido ? "#0B1F4B" : "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 999, padding: "5px 11px", cursor: "pointer" }}>{c.sido} {c.br}{c.gap ? " ⚠️" : ""}</button>
               ))}
             </div>
             {pickSido && (LR_DAN[pickSido] || {}).dans && LR_DAN[pickSido].dans.length > 1 && (
@@ -268,6 +274,18 @@ function RegionConsultSection({ onTab }) {
                 ))}
               </div>
             )}
+            {/* 지역 아래 지점 전체 — 선택하면 지도에 핀이 찍히고 그 지점으로 상담 연결 */}
+            {(() => { const sd = pickSido || R.sido; const brs = (typeof lrBranchesOf === "function") ? lrBranchesOf(sd) : []; if (!brs.length) return null; return (
+              <div style={{ marginTop: 10, borderTop: "1px solid rgba(255,255,255,.18)", paddingTop: 9 }}>
+                <div style={{ fontSize: 11.3, opacity: .85, marginBottom: 6 }}><b>{sd} 지점 {brs.length}곳</b> — 지점을 누르면 지도에 표시되고 그 지점으로 상담이 연결돼요.</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", maxHeight: 168, overflowY: "auto" }}>
+                  {brs.map((b) => (
+                    <button key={b.name + b.short} title={b.addr} onClick={() => { if (pickSido == null) { setPickSido(sd); } setPickBranch(b); }}
+                      style={{ fontSize: 11, fontWeight: 700, background: pickBranch && pickBranch.name === b.name ? "#fff" : "rgba(255,255,255,.1)", color: pickBranch && pickBranch.name === b.name ? "#0B1F4B" : "#fff", border: "1px solid rgba(255,255,255,.22)", borderRadius: 8, padding: "5px 10px", cursor: "pointer" }}>{b.name}</button>
+                  ))}
+                </div>
+                {pickBranch && <div style={{ fontSize: 11.3, marginTop: 7, color: "#FDE9B8" }}>📍 선택: <b>{pickBranch.name}</b> · {pickBranch.addr}</div>}
+              </div> ); })()}
           </div>
         )}
         <div style={{ fontSize: 10.8, opacity: .75, marginTop: 8 }}>글로벌예방금융(주) · 금융위 등록 보험대리점 제2025060038호 · 인수사 현대해상(전속 제휴)</div>
@@ -278,7 +296,7 @@ function RegionConsultSection({ onTab }) {
         <div className="card" style={{ border: "1.5px solid #BBF7D0", background: "#F0FDF4", marginBottom: 12 }}>
           <div style={{ fontWeight: 800, fontSize: 13.5, color: "#166534" }}>진행 중인 상담이 있어요</div>
           <div style={{ fontSize: 12.5, marginTop: 5, lineHeight: 1.7 }}>
-            {activeLead.dan} · <b>{activeLead.agent}</b> · {activeLead.channel} 상담{activeLead.slot ? ` · ${activeLead.slot}` : ""}<br />
+            {activeLead.dan}{activeLead.branch ? ` · ${activeLead.branch}` : ""} · <b>{activeLead.agent}</b> · {activeLead.channel} 상담{activeLead.slot ? ` · ${activeLead.slot}` : ""}<br />
             상태: <b>{activeLead.status === "ASSIGNED" ? "배정 완료 — 4시간 내 첫 연락 원칙" : "일정 확정 — 상담 예정"}</b>
             {activeLead.briefing && <> · 가명 요약 사전 전달 ✓</>}
           </div>
@@ -293,9 +311,12 @@ function RegionConsultSection({ onTab }) {
 
       {/* ② 지도 */}
       {typeof MapView === "function" && <div className="card" style={{ marginBottom: 12 }}>
-        <div className="rct" style={{ marginBottom: 8 }}><MapPin size={16} color="#2563EB" /> 담당 조직 위치</div>
+        <div className="rct" style={{ marginBottom: 8 }}><MapPin size={16} color="#2563EB" /> {pickBranch ? `${pickBranch.name} 위치` : "담당 조직 위치"}</div>
         <MapView points={pts} height={190} accent="#1D4ED8" />
-        <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>{R.dan} · {R.info.addr}{R.info.tel ? ` · ${R.info.tel}` : ""}{R.info.branches.length ? ` · 관내 지점 ${R.info.branches.map((b) => b.n).join("·")}` : ""}</div>
+        <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>
+          {pickBranch ? <><b style={{ color: "#1D4ED8" }}>{pickBranch.name}</b> · {pickBranch.addr} · 관할 {R.dan} <button onClick={() => setPickBranch(null)} style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, background: "#F1F5F9", border: "1px solid var(--border)", borderRadius: 7, padding: "3px 8px", cursor: "pointer" }}>지점 선택 해제</button></>
+            : <>{R.dan} · {R.info.addr}{R.info.tel ? ` · ${R.info.tel}` : ""}{R.info.branches.length ? ` · 관내 지점 ${R.info.branches.map((b) => b.n).join("·")}` : ""}</>}
+        </div>
       </div>}
 
       {/* Phase 2 — 리드 유형·우선순위 투명 공개(XAI): 왜 이 우선순위인지 근거를 회원에게 보여준다 */}
@@ -347,7 +368,7 @@ function RegionConsultSection({ onTab }) {
           </label>
 
           {cd.blocked && <div className="chnote" style={{ margin: "8px 0", color: "#B45309" }}>최근 상담을 사양하셔서 30일간 다시 권하지 않아요 — 원하시면 아래 버튼으로 직접 연결은 언제든 가능해요.</div>}
-          <button className="cbtn pri" style={{ marginTop: 10 }} onClick={submit}><MapPin size={15} /> {m ? `${R.dan} 상담 연결하기` : "로그인 후 이용할 수 있어요"}</button>
+          <button className="cbtn pri" style={{ marginTop: 10 }} onClick={submit}><MapPin size={15} /> {m ? `${pickBranch ? pickBranch.name : R.dan} 상담 연결하기` : "로그인 후 이용할 수 있어요"}</button>
           <div className="chnote" style={{ marginTop: 8 }}>연결 전 개인정보 제3자 제공·건강 분석요약 제공 동의를 확인해요 · 월 최대 2건 연결(회원 보호) · 언제든 철회 가능</div>
         </div>
       )}
