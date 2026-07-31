@@ -781,7 +781,17 @@ function SimpleBodyInsurance({ initialPlanKey } = {}) {
   );
 }
 /* ── 맞춤 헬스케어 보험 — 플랫폼 구조도 인포그래픽 ── */
-function PremiumPolicySection({ initialPlanKey } = {}) {
+function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
+  /* 형 지시(2026-07-31): 프리미엄 상담 CTA = 내 지역 상담으로 통합 — 담당 지역단·상담사 연결 화면으로 직행 */
+  const goRegion = () => { if (onTab) { onTab("region"); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) {} } else { try { window.__hifinInsRoute = { tab: "region" }; } catch (e) {} nav("insurance"); } };
+  const regionTeaser = (() => {
+    try {
+      const m = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null) || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? selfMember() : null);
+      if (!m || typeof lrRegionOf !== "function") return null;
+      const R = lrRegionOf(m);
+      return `📍 ${R.sido}${R.sgg ? " " + R.sgg : ""}는 ${R.dan}이 함께해요 — 방문·전화·화상·채팅 중 편한 방식으로 연결돼요 · 상담·모집은 라이선스 상담사 수행`;
+    } catch (e) { return null; }
+  })();
   const IMG_EXTS = ["png", "jpg", "jpeg", "svg", "webp"];
   const [imgExt, setImgExt] = useState(0);
   const [useImg, setUseImg] = useState(false); // 인터랙티브 HTML 버전을 기본으로
@@ -825,9 +835,10 @@ function PremiumPolicySection({ initialPlanKey } = {}) {
           style={{ width: "100%", borderRadius: 16, display: "block", border: "1px solid var(--border)", boxShadow: "0 14px 32px -24px rgba(20,40,90,.5)", cursor: "pointer" }}
           onError={() => (imgExt + 1 < IMG_EXTS.length ? setImgExt(imgExt + 1) : setUseImg(false))} />
         <div className="mhcta">
-          <button className="cbtn pri" style={{ margin: 0 }} onClick={() => openConsult("내 몸 맞춤 프리미엄보험")}><MessageSquare size={15} /> 내게 맞는 프리미엄보험 상담받기</button>
+          <button className="cbtn pri" style={{ margin: 0 }} onClick={goRegion}><MapPin size={15} /> 내게 맞는 프리미엄보험 상담받기 — 내 지역 상담사 연결</button>
           <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={15} /> 건강지갑 보기</button>
         </div>
+        {regionTeaser && <div className="chnote" style={{ margin: "6px 0 2px" }}>{regionTeaser}</div>}
         <InsAgencyLine />
         <div className="ipscompliance"><b>안내</b> · 본 내용은 Health-InsurFin Tech의 <b>맞춤 헬스케어 보험 정책(안) 개요</b>로 참고용이며, 보험사 파트너·상품 구성·보장·보험료·인수기준 및 사회공헌 재원 연계는 관련 법령(보험업법 등)·금융당국 인가·참여기관 협약 및 법적 검토 결과에 따라 확정·변경될 수 있습니다.</div>
       </div>
@@ -867,16 +878,13 @@ function PremiumPolicySection({ initialPlanKey } = {}) {
         <div className="platfb"><span className="ln" /><RefreshCw size={14} /> 건강관리 피드백 &amp; 리워드 제공 <span className="ln r" /></div>
       </div>}
 
-      <div className="mhbox">
-        <div className="bt">HI-Fin Tech의 핵심 가치</div>
-        <div className="corevals" style={{ marginTop: 14 }}>{VALUES.map(([Ic, t, d, c, bg]) => <div className="v" key={t}><span className="ic" style={{ background: bg, color: c }}><Ic size={22} /></span><b>{t}</b><p>{d}</p></div>)}</div>
-      </div>
-
+      {/* 형 지시(2026-07-31): 핵심 가치 6카드 박스 삭제 — 상담 동선을 내 지역 상담으로 일원화 */}
       <div className="mhend"><ShieldCheck size={16} /> HI-Fin Tech는 보험·헬스케어·금융·AI 기술이 융합된 차세대 국민 건강보장체계 구축을 지향합니다.</div>
       <div className="mhcta">
-        <button className="cbtn pri" style={{ margin: 0 }} onClick={() => openConsult("내 몸 맞춤 프리미엄보험")}><MessageSquare size={15} /> 내게 맞는 프리미엄보험 상담받기</button>
+        <button className="cbtn pri" style={{ margin: 0 }} onClick={goRegion}><MapPin size={15} /> 내게 맞는 프리미엄보험 상담받기 — 내 지역 상담사 연결</button>
         <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("wallet")}><Wallet size={15} /> 건강지갑 보기</button>
       </div>
+      {regionTeaser && <div className="chnote" style={{ margin: "6px 0 2px" }}>{regionTeaser}</div>}
       <InsAgencyLine />
       <div className="ipscompliance"><b>안내</b> · 본 내용은 Health-InsurFin Tech의 <b>맞춤 헬스케어 보험 정책(안) 개요</b>로 참고용이며, 보험사 파트너·상품 구성·보장·보험료·인수기준 및 사회공헌 재원 연계는 관련 법령(보험업법 등)·금융당국 인가·참여기관 협약 및 법적 검토 결과에 따라 확정·변경될 수 있습니다.</div>
       {stageInfo && STAGE_META[stageInfo] && (
@@ -1717,7 +1725,7 @@ function InsuranceSection({ onGo }) {
           <div className="rct" style={{ margin: "10px 0 6px" }}><Sparkles size={17} color="#7C3AED" /> ④ 내몸맞춤 프리미엄보험</div>
           {typeof InsLifeCostCard === "function" && <InsLifeCostCard onTab={setTab} />}
           <InsRiskCard />
-          <PremiumPolicySection initialPlanKey={simplePlan} />
+          <PremiumPolicySection initialPlanKey={simplePlan} onTab={setTab} />
         </div>
         <div style={{ display: "flex", gap: 8, margin: "4px 0 10px" }}>
           <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => setTab("sports")}><Trophy size={13} /> 스포츠 임베디드 보험</button>
