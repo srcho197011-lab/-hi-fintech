@@ -166,7 +166,13 @@ const TOOL_RUN = {
     const on = /(켜|동의할|허용|받을)/.test(t) && !/(꺼|철회|거부|취소|해제)/.test(t);
     const st = {}; st[hit[1]] = on;
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(m, st);
-    return { lines: [`${hit[2]} 동의를 ${on ? "켰어요" : "철회했어요"} — 변경 이력이 블록체인에 기록됐고, 언제든 다시 바꿀 수 있어요.`] };
+    /* Phase5 §5.3 — 상담 연결의 근거 동의(health·insurance) 철회 시 배정 리드 즉시 회수·파기 절차 개시 */
+    let wd = 0;
+    if (!on && (hit[1] === "insurance" || hit[1] === "health")) { try { wd = (typeof lrWithdrawAll === "function") ? lrWithdrawAll(m) : 0; } catch (e) {} }
+    return { lines: [
+      `${hit[2]} 동의를 ${on ? "켰어요" : "철회했어요"} — 변경 이력이 블록체인에 기록됐고, 언제든 다시 바꿀 수 있어요.`,
+      wd ? `배정돼 있던 지역 상담 ${wd}건도 즉시 회수했어요 — 상담 조직의 접촉이 중지되고, 전달 정보 파기 확인(72시간 내)까지 제가 알려드릴게요.` : null,
+    ].filter(Boolean) };
   } catch (e) { return null; } },
   // 무료 검진대비보험 가입 — 건너뛰었던 회원의 재가입을 한마디로(Phase1 deferred 마감)
   insjoin(m) { try {
@@ -689,6 +695,8 @@ function agentProactive() {
     const ts = (c && c.date && c.date !== "-" && typeof _hiParseDate === "function") ? _hiParseDate(c.date, Date.now()) : null;
     if (c && ts && ts >= Date.now() - 43200000) out.push({ text: `${c.date} ${c.center} 검진이 다가와요 — 전날 준비사항(금식 등)을 제가 챙겨드릴게요.`, buttons: ["검진 준비사항 알려줘"] });
   } catch (e) {}
+  /* Phase4 업셀 트리거(리드 라우팅 §4.3) — 보험금(치료비) 수령 경험 후: "치료 중 생활비" 공백 제안(1회만·정보 제공형) */
+  try { const cl = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); if (cl.length && !localStorage.getItem("hifin_upsell_seen")) { out.push({ text: "💠 치료비는 검진대비보험이 지켜드렸어요. 그런데 치료 '중' 생활비(일 못 하는 동안의 소득 공백)는 아직 비어 있어요 — 장기 플랜으로 채우는 방법을 보여드릴까요?", buttons: ["프리미엄 보험 상담받고 싶어", "우리 동네 상담사 연결해줘"] }); localStorage.setItem("hifin_upsell_seen", "1"); } } catch (e) {}
   /* Phase 5 선제 알림 — 배당 지급·요율 재산정 자격(묻기 전에 먼저) */
   try { if (!localStorage.getItem("hifin_divi_seen")) { const ds = (typeof dataDividends === "function") ? dataDividends(m) : []; if (ds.length) { out.push({ text: `데이터 활용 배당 +${ds[0].htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 데이터가 「${ds[0].study.split("(")[0]}」에 활용됐어요.`, buttons: ["배당 내역 보여줘"] }); localStorage.setItem("hifin_divi_seen", "1"); } } } catch (e) {}
   try { const st = (typeof rerateState === "function") ? rerateState() : { status: "done" }; if (st.status !== "done" && typeof rerateEligible === "function" && rerateEligible(m)) out.push({ text: "개선된 건강상태로 보험료 재산정을 신청할 수 있어요 — 인하 전용이라 손해 볼 일은 없어요.", buttons: ["요율 재산정 신청해줘"] }); } catch (e) {}

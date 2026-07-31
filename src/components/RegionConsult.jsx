@@ -1,3 +1,37 @@
+/* ══════════════ Phase 4 — 치료비+생활비 이원 담보 구조(보고서 §4.1) : 프리미엄 장기보험 개념 카드 ══════════════ */
+function InsLifeCostCard({ onTab }) {
+  const AX = [
+    { t: "치료비 축 — 직접 의료비", c: "#1D4ED8", bg: "#EEF3FF", rows: [
+      ["진단비", "암·뇌혈관·허혈성심장 3대 + 예측 위험 기반 특정질환"],
+      ["수술·입원·통원", "기관·부위별 수술비 · 상급병실 차액"],
+      ["비급여·고액치료", "표적항암·로봇수술 등 고액 치료 대비"]] },
+    { t: "생활비 축 — 치료 중 소득 공백", c: "#B45309", bg: "#FFF7E8", rows: [
+      ["입원일당(체증형)", "장기 입원 구간일수록 두터워지는 일당"],
+      ["회복기 생활자금", "진단 후 N개월 분할 지급 — 월급처럼"],
+      ["요양·간병", "간병인 일당 · 재가돌봄 서비스 연계"],
+      ["소득보상 특약", "취업불능 보전 — 상품화는 인수사 검토 전제 [검토]"]] },
+  ];
+  return (
+    <div className="card" style={{ marginBottom: 12 }}>
+      <div className="rct" style={{ marginBottom: 4 }}><HeartHandshake size={16} color="#B45309" /> 치료비 + 생활비, 두 축을 함께</div>
+      <div style={{ fontSize: 12.3, color: "var(--muted)", marginBottom: 10, lineHeight: 1.6 }}>큰 병의 부담은 병원비만이 아니에요 — <b>치료받는 동안 끊기는 소득</b>까지가 진짜 치료비예요. 프리미엄 장기보험은 두 축을 함께 설계해요.</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 10 }}>
+        {AX.map((a) => (
+          <div key={a.t} style={{ border: "1.5px solid var(--border)", borderRadius: 13, overflow: "hidden" }}>
+            <div style={{ background: a.bg, color: a.c, fontWeight: 800, fontSize: 12.8, padding: "9px 13px" }}>{a.t}</div>
+            <div style={{ padding: "4px 13px 9px" }}>{a.rows.map(([k, d]) => <div key={k} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 12 }}><b>{k}</b><span style={{ color: "var(--muted)" }}> — {d}</span></div>)}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 11, flexWrap: "wrap" }}>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => onTab && onTab("rerate")}><ShieldCheck size={13} /> 건강 관리로 보험료 인하(인하 전용 재산정)</button>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => onTab && onTab("region")}><MapPin size={13} /> 가족 세대 설계 — 내 지역 상담</button>
+      </div>
+      <div className="chnote" style={{ marginTop: 9 }}>※ 담보 구성은 설계 방향(안)이며 실제 상품화·보장·보험료는 인수사(현대해상) 상품 정책과 관련 법령·심사에 따라 확정됩니다. 건강 성과 데이터는 <b>인하 전용</b>으로만 작동해요(인수 거절·할증 근거 사용 금지).</div>
+    </div>
+  );
+}
+
 /* ══════════════ 리드 라우팅 B2B 콘솔(보고서 §3.2) — 조직·상담사가 쓰는 화면: 배정 큐·브리핑·결과·대시보드 ══════════════
    원칙: ①동의 범위를 화면에 명시(볼 수 없는 것을 못 보게+명시) ②브리핑은 가명 요약만 ③결과 코드 없이 종결 불가 ④열람·처리 전건 감사 로그 */
 function LeadOpsConsole() {
@@ -23,6 +57,8 @@ function LeadOpsConsole() {
       <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12, background: view === "queue" ? "#1D4ED8" : undefined, color: view === "queue" ? "#fff" : undefined }} onClick={() => setView("queue")}>배정 큐</button>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12, background: view === "cover" ? "#1D4ED8" : undefined, color: view === "cover" ? "#fff" : undefined }} onClick={() => setView("cover")}>조직 커버리지</button>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12, background: view === "pilot" ? "#1D4ED8" : undefined, color: view === "pilot" ? "#fff" : undefined }} onClick={() => setView("pilot")}>파일럿 KPI</button>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12, background: view === "comp" ? "#1D4ED8" : undefined, color: view === "comp" ? "#fff" : undefined }} onClick={() => setView("comp")}>컴플라이언스</button>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12, background: view === "audit" ? "#1D4ED8" : undefined, color: view === "audit" ? "#fff" : undefined }} onClick={() => setView("audit")}>감사 로그</button>
         {!rows.some((r) => r.key.includes("demo@lead.sim")) && <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12 }} onClick={() => { lrSeedDemo(); setTick((t) => t + 1); }}>+ 시연 리드 3건 생성</button>}
       </div>
@@ -72,6 +108,50 @@ function LeadOpsConsole() {
             ))}
           </div>
           <div className="chnote" style={{ marginTop: 10 }}>지역단은 영업파트+조직파트로 구성(2025-12-01 지역단 단일체계 개편) · 수도권 집중(전체의 44%) — 파일럿은 서울 강남지역단 권고. 상세 근거: docs/lead_routing 설계보고서 Phase 1.</div>
+        </div>
+      )}
+
+      {view === "pilot" && (() => { const K = lrKpi(); const goal = { respRate: 80, consultRate: 40, convRate: 8 }; return (
+        <div className="card" style={{ margin: 0 }}>
+          <div className="rct" style={{ marginBottom: 4 }}><Trophy size={15} color="#B45309" /> 파일럿 대시보드 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>· {LR_PILOT.region} · {LR_PILOT.weeks}주 · 목표 리드 {LR_PILOT.target}건 (보고서 §6.4)</span></div>
+          <div style={{ margin: "10px 0 4px", fontSize: 12, fontWeight: 700 }}>파일럿 진행률 — 리드 {K.n}/{LR_PILOT.target}건</div>
+          <div style={{ height: 10, background: "#EEF1F6", borderRadius: 999, overflow: "hidden" }}><div style={{ width: K.progress + "%", minWidth: 6, height: "100%", background: "linear-gradient(90deg,#1D4ED8,#7C3AED)" }} /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 9, marginTop: 12 }}>
+            {[["리드 응답률", K.respRate + "%", "≥80%", K.respRate >= goal.respRate],
+              ["최초 접촉 중앙값", K.ttfc != null ? K.ttfc + "h" : "실측 전", "≤4h", K.ttfc != null && +K.ttfc <= 4],
+              ["상담 실시율", K.consultRate + "%", "≥40%", K.consultRate >= goal.consultRate],
+              ["청약 전환율", K.convRate + "%", "≥8%", K.convRate >= goal.convRate],
+              ["민원·거절율", K.complaintRate + "%", "≤1.5%", +K.complaintRate <= 1.5],
+              ["회원 만족도", K.stars ? "★" + K.stars : "실측 전", "≥4.2", K.stars && +K.stars >= 4.2],
+              ["13회차 유지율", "실측 전", "≥85% [추정]", null],
+              ["조직별 편차", Object.keys(K.byDan).length + "개 조직 집계", "상하위 2배 이내", null]].map(([t, v, g, ok]) => (
+              <div key={t} className="card" style={{ padding: "10px 12px", margin: 0, border: `1.5px solid ${ok === null ? "var(--border)" : ok ? "#BBF7D0" : "#FECACA"}` }}>
+                <div style={{ fontSize: 10.8, color: "var(--muted)", fontWeight: 700 }}>{t} <span style={{ color: "#94A3B8" }}>({g})</span></div>
+                <b style={{ fontSize: 15, color: ok === null ? "#334155" : ok ? "#16A34A" : "#DC2626" }}>{v}</b>
+              </div>))}
+          </div>
+          <div style={{ margin: "14px 0 6px", fontSize: 12, fontWeight: 700 }}>실행 로드맵</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {LR_PILOT.roadmap.map(([t, d, st]) => (
+              <div key={t} style={{ flex: "1 1 160px", border: `1.5px solid ${st === "now" ? "#1D4ED8" : "var(--border)"}`, background: st === "done" ? "#F0FDF4" : st === "now" ? "#EEF3FF" : "#fff", borderRadius: 11, padding: "9px 12px" }}>
+                <b style={{ fontSize: 12, color: st === "now" ? "#1D4ED8" : st === "done" ? "#16A34A" : "#64748B" }}>{st === "done" ? "✓ " : st === "now" ? "▶ " : ""}{t}</b>
+                <div style={{ fontSize: 10.8, color: "var(--muted)", marginTop: 3 }}>{d}</div>
+              </div>))}
+          </div>
+          <div className="chnote" style={{ marginTop: 10 }}>정산(협의 전 예시): 유효 리드 기본료 + 청약 체결 성과 가산의 하이브리드 — 대가 성격은 광고·플랫폼 이용료로 구조화[법률 자문 전제] · 월 정산·리드 원장 상호 대사.</div>
+        </div> ); })()}
+
+      {view === "comp" && (
+        <div className="card" style={{ margin: 0 }}>
+          <div className="rct" style={{ marginBottom: 8 }}><ShieldCheck size={15} color="#0B1F4B" /> 컴플라이언스 체크리스트 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>· 보고서 §5.1 C-1~C-10 · 최종 법률 자문 전제</span></div>
+          {LR_COMPLIANCE.map((r) => (
+            <div key={r.c} style={{ display: "flex", gap: 10, padding: "8px 2px", borderBottom: "1px solid var(--border)", fontSize: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <b style={{ minWidth: 40, color: "#0B1F4B" }}>{r.c}</b>
+              <div style={{ flex: "1 1 300px" }}><b>{r.t}</b> <span style={{ color: "#64748B" }}>({r.basis})</span><div style={{ color: "var(--muted)", fontSize: 11.3, marginTop: 2 }}>{r.ctrl}</div></div>
+              <span style={{ fontSize: 10.5, fontWeight: 800, borderRadius: 999, padding: "3px 10px", background: r.enforced ? "#F0FDF4" : "#FFF7E8", color: r.enforced ? "#16A34A" : "#B45309" }}>{r.enforced ? "시스템 강제" : "협약·자문"}</span>
+            </div>
+          ))}
+          <div className="chnote" style={{ marginTop: 10 }}>Go 기준: C-1·C-2 법률 검토 통과 + C-4 3자 구조 적법 의견 + 관할 매핑(R1) 확보 + 파일럿 KPI 달성 / 민감정보 전달 불가 의견·민원 기준 초과 시 No-Go (보고서 §5.4).</div>
         </div>
       )}
 
@@ -259,8 +339,15 @@ function RegionConsultSection({ onTab }) {
                   <span style={{ fontSize: 12.3, lineHeight: 1.5 }}><b style={{ color: "#14337A" }}>{t}</b><br /><span style={{ color: "#64748B", fontSize: 11.5 }}>{d}</span></span>
                 </label>
               ))}
+              <details style={{ margin: "4px 2px" }}><summary style={{ cursor: "pointer", fontSize: 11.5, color: "#1D4ED8", fontWeight: 700 }}>동의 문구 전문 보기 (제공받는 자·항목·목적·보유기간)</summary>
+                <div style={{ fontSize: 11.3, color: "#475569", lineHeight: 1.75, background: "#F8FAFC", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", marginTop: 6 }}>
+                  <b>① 개인정보 제3자 제공(필수)</b> — 상담 연결을 위해 아래 정보를 현대해상화재보험㈜·글로벌예방금융㈜에 제공합니다. 항목: 연락 토큰, 연령대·성별, 거주 행정동, 상담 유형·희망 채널 / 목적: 보험 상담 배정·연락 / 보유: 상담 종료 후 6개월. 동의를 거부할 수 있으며, 거부 시 지역 상담 연결이 제한됩니다.<br />
+                  <b>② 민감정보(건강 분석 요약) 제공(필수·별도)</b> — 보장공백 <b>분석 요약 코드</b>(원본 검진 수치 아님)를 상담 준비 목적으로 제공하는 데 별도로 동의합니다. 이 정보는 보험 인수 심사나 보험료 산정에 사용되지 않습니다.<br />
+                  <span style={{ color: "#94A3B8" }}>※ 문구는 최종 법률 자문으로 확정 전의 초안입니다.</span>
+                </div>
+              </details>
               <button className="cbtn pri" disabled={!(cAgree.health && cAgree.insurance)} style={{ opacity: (cAgree.health && cAgree.insurance) ? 1 : .5 }} onClick={doConsent}><ShieldCheck size={15} /> 동의하고 상담 연결</button>
-              <div className="chnote" style={{ marginTop: 8 }}>동의 이력은 블록체인에 기록되고, 동의관리에서 <b>언제든 철회</b>할 수 있어요(철회 시 배정 즉시 회수·전달분 파기 확인).</div>
+              <div className="chnote" style={{ marginTop: 8 }}>동의 이력은 블록체인에 기록되고, 동의관리에서 <b>언제든 철회</b>할 수 있어요 — 철회 시 배정 리드 <b>즉시 회수</b>·접촉 중지·전달분 파기 확인(72시간 내)이 자동 진행돼요.</div>
             </div>
           </div>
         </div>

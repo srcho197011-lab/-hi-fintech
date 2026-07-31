@@ -1696,10 +1696,26 @@ function InsuranceSection({ onGo }) {
             <span key={id} style={{ cursor: "pointer" }} onClick={() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}><Sparkles size={14} /> {t}</span>))}
         </div>
         <InsCheckupInsSection onEnroll={() => setEnroll(true)} />
+        {/* Phase4 업셀 배너 — 치료비(보험금) 수령 경험 회원에게만: 다음 공백은 '치료 중 생활비' */}
+        {(() => { try { const cl = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); if (!cl.length) return null; } catch (e) { return null; } return (
+          <div className="card" style={{ border: "1.5px solid #F3DFB6", background: "linear-gradient(120deg,#FFFBEB,#FFF7E8)", margin: "10px 0 12px" }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 26 }}>💠</span>
+              <div style={{ flex: "1 1 280px" }}>
+                <b style={{ fontSize: 14.5, color: "#92400E" }}>치료비는 지켜졌어요 — 다음은 치료 '중' 생활비예요</b>
+                <div style={{ fontSize: 12.3, color: "#78550F", marginTop: 4, lineHeight: 1.6 }}>보험금 수령을 경험하셨죠. 큰 병의 진짜 부담은 치료받는 동안 <b>일을 쉬며 끊기는 소득</b>이에요 — 장기 플랜은 그 공백까지 월급처럼 채워줘요.</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button className="cbtn pri" style={{ margin: 0, width: "auto", padding: "9px 15px", fontSize: 12 }} onClick={() => { const el = document.getElementById("cins-premium"); if (el) el.scrollIntoView({ behavior: "smooth" }); }}>치료비+생활비 설계 보기</button>
+                <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 15px", fontSize: 12 }} onClick={() => setTab("region")}><MapPin size={13} /> 내 지역 상담</button>
+              </div>
+            </div>
+          </div> ); })()}
         <InsSilStatusSection onTab={setTab} />
         <InsMyPoliciesSection onTab={setTab} />
         <div id="cins-premium">
           <div className="rct" style={{ margin: "10px 0 6px" }}><Sparkles size={17} color="#7C3AED" /> ④ 내몸맞춤 프리미엄보험</div>
+          {typeof InsLifeCostCard === "function" && <InsLifeCostCard onTab={setTab} />}
           <InsRiskCard />
           <PremiumPolicySection initialPlanKey={simplePlan} />
         </div>

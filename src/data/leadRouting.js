@@ -277,6 +277,67 @@ function lrConsoleStats() {
   return { n, active: active.length, overdue, contacted, consulted, applied,
     respRate: n ? Math.round(contacted / n * 100) : 0, convRate: consulted ? Math.round(applied / consulted * 100) : 0, slaOK };
 }
+/* ══ Phase 5 — 동의 철회 시 배정 리드 즉시 회수(보고서 §5.3: T+0 회수 → 24h 접촉중지 → 72h 파기확인) ══ */
+function lrWithdrawAll(m) {
+  if (!m) return 0;
+  const l = lrLeads(m); let k = 0;
+  l.forEach((x) => {
+    if (["ASSIGNED", "CONTACTED"].includes(x.status)) {
+      x.status = "WITHDRAWN"; k++;
+      (x.history = x.history || []).push({ at: Date.now(), ev: "동의 철회 — 즉시 회수·접촉 중지, 전달분 파기 확인 절차 개시(T+72h)" });
+      lrAudit(x.id, "동의 철회 회수(WITHDRAWN)");
+    }
+  });
+  if (k) {
+    _lrSave(m, l);
+    try { chainAppend({ type: "consent", token: anonToken(m), note: `동의 철회 — 지역 상담 배정 ${k}건 즉시 회수·파기 절차 개시` }); } catch (e) {}
+    try { if (typeof notifPush === "function") notifPush(m, { t: "상담 연결 중단", d: `동의 철회로 배정 ${k}건이 회수됐어요 — 전달 정보 파기 확인까지 알려드릴게요`, k: "ins" }); } catch (e) {}
+  }
+  return k;
+}
+
+/* ══ Phase 5 — 컴플라이언스 체크리스트(보고서 §5.1 C-1~C-10 요약) · 시스템 강제 항목은 enforced 표기 ══ */
+const LR_COMPLIANCE = [
+  { c: "C-1", t: "개인정보 제3자 제공 동의", basis: "개인정보보호법 §17①2", ctrl: "리드 생성 전 동의 게이트 — 미동의 시 생성 불가", enforced: true },
+  { c: "C-2", t: "민감정보(건강) 별도 동의·코드화", basis: "개인정보보호법 §23①", ctrl: "원본 수치 미전달 — 분석 요약 코드만, 요약 전달은 별도 토글 동의", enforced: true },
+  { c: "C-3", t: "가명처리로 동의 대체 불가", basis: "개인정보보호법 §28-2", ctrl: "적법 근거는 항상 동의 — 가명화는 최소화 수단으로만", enforced: true },
+  { c: "C-4", t: "모집 자격·역할 경계", basis: "보험업법 §2·§83~87", ctrl: "하이핀=연결·광고 / 모집=글로벌예방금융(제2025060038호)·현대해상 — 화면 문구 준수 [법률 자문 전제]", enforced: false },
+  { c: "C-5", t: "특별이익 제공 금지", basis: "보험업법 §98", ctrl: "혜택은 플랫폼 활동 대가로만 — 계약 체결과 비연동", enforced: false },
+  { c: "C-6", t: "부당 권유(승환) 금지", basis: "보험업법 §97", ctrl: "1~2세대 실손 해지 경고 하드코딩(하이 가드) · 기존계약 비교 고지", enforced: true },
+  { c: "C-7", t: "취약 회원 보호(L-CARE)", basis: "금소법 §17~19 취지", ctrl: "치료비 지원 신청자 60일 상품 제안 금지 — 시스템 플래그", enforced: true },
+  { c: "C-8", t: "개인신용정보 동의", basis: "신용정보법 §32·§33", ctrl: "계약 보유 형태는 동의 항목에 별도 명시", enforced: false },
+  { c: "C-9", t: "광고성 정보 사전 동의·수신거부", basis: "정보통신망법 §50", ctrl: "mkt 미동의 시 알림 불가 · DNC 즉시 회수 · 쿨다운 30일·월 2회 상한", enforced: true },
+  { c: "C-10", t: "건강정보 차별 금지(인하 전용)", basis: "감독규정·협약 명문화", ctrl: "재산정 API 인하값만 수용 — 인수·할증 사용 계약상 금지", enforced: true },
+];
+
+/* ══ Phase 6 — 파일럿 설정·KPI 실측(보고서 §6.1·§6.4) ══ */
+const LR_PILOT = {
+  region: "서울 강남지역단", weeks: 8, target: 300,
+  criteria: [["리드 응답률", "≥ 80%"], ["최초 접촉(T1)", "≤ 4영업시간"], ["상담 실시율", "≥ 40%"], ["청약 전환율", "≥ 8%"], ["민원·수신거부율", "≤ 1.5%"], ["회원 만족도", "≥ 4.2/5"]],
+  roadmap: [["P0 준비", "법률 자문·협약·R1~R3 수령·동의 UX", "done"], ["P1 파일럿", "강남지역단 8주 · 리드 300건", "now"], ["P2 권역 확대", "수도권 7개 지역단", "wait"], ["P3 전국 확산", "16개 지역단+공백 5개 시도 보강", "wait"]],
+};
+function lrKpi() {
+  const all = lrAllLeads().map((x) => x.lead);
+  const n = all.length;
+  const contacted = all.filter((x) => ["CONTACTED", "CONSULTED", "APPLIED"].includes(x.status));
+  const ttfcArr = contacted.map((x) => { const h = (x.history || []).find((y) => /연결됨|접촉/.test(y.ev)); return h ? (h.at - x.ts) / 3600000 : null; }).filter((v) => v != null && v >= 0).sort((a, b) => a - b);
+  const ttfc = ttfcArr.length ? ttfcArr[Math.floor(ttfcArr.length / 2)] : null;
+  const consulted = all.filter((x) => ["CONSULTED", "APPLIED"].includes(x.status)).length;
+  const applied = all.filter((x) => x.status === "APPLIED").length;
+  const declined = all.filter((x) => x.status === "DECLINED").length;
+  const stars = all.filter((x) => x.stars).map((x) => x.stars);
+  const byDan = {}; all.forEach((x) => { const d = byDan[x.dan] = byDan[x.dan] || { n: 0, ap: 0 }; d.n++; if (x.status === "APPLIED") d.ap++; });
+  return {
+    n, respRate: n ? Math.round(contacted.length / n * 100) : 0,
+    ttfc: ttfc != null ? ttfc.toFixed(1) : null,
+    consultRate: contacted.length ? Math.round(consulted / contacted.length * 100) : 0,
+    convRate: consulted ? Math.round(applied / consulted * 100) : 0,
+    complaintRate: n ? (declined / n * 100).toFixed(1) : "0.0",
+    stars: stars.length ? (stars.reduce((p, q) => p + q, 0) / stars.length).toFixed(1) : null,
+    byDan, progress: Math.min(100, Math.round(n / LR_PILOT.target * 100)),
+  };
+}
+
 /* 시연 리드 시드 — 파일럿 큐 시연용(가상 회원 3건 · 1건은 SLA 초과 상태) */
 function lrSeedDemo() {
   const k = "hifin_leads_demo@lead.sim";
