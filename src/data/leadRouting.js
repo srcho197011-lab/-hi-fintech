@@ -101,7 +101,9 @@ function lrCreateLead(m, opt) {
     channel: opt.channel || "화상", slot: opt.slot || "",
     briefing: !!opt.briefing,   // 가명 보장공백 요약 사전 전달 동의(토글)
     gapCode: opt.briefing ? (opt.gapCode || "GAP-SUMMARY") : null,   // 원본 수치 미전달 — 코드만
-    status: "ASSIGNED", slaH: 4, history: [{ at: Date.now(), ev: "배정 — SLA 4h 시작" }],
+    ageBand: (() => { const a = (m.regAge || m.age || 45); return Math.floor(a / 10) * 10 + "대"; })(),
+    sex: m.sex || "-",   // 브리핑용 가명 최소 정보(연령대·성별) — 이름·연락처 원문은 리드에 싣지 않음(콜백 토큰 원칙)
+    status: "ASSIGNED", slaH: 4, retry: 0, history: [{ at: Date.now(), ev: "배정 — SLA 4h 시작" }],
   };
   const l = lrLeads(m); l.push(lead); _lrSave(m, l);
   try { vaultAccessLog(anonToken(m), "member", `지역 상담 리드 생성(${R.dan} · ${agent.name} · ${lead.channel})${lead.briefing ? " — 가명 요약 전달 동의" : ""}`); } catch (e) {}
@@ -132,4 +134,89 @@ function lrOpsStats(m) {
   const active = l.filter((x) => x.status === "ASSIGNED");
   const overdue = active.filter((x) => Date.now() - x.ts > x.slaH * 3600000);
   return { total: l.length, by, active: active.length, overdue: overdue.length };
+}
+
+/* ══ B2B 콘솔(보고서 §3.2) — 조직·상담사 화면용 엔진: 전 회원 리드 집계·결과 코드·SLA 회수·감사 로그 ══ */
+const LR_RESULT_CODES = [["CONTACTED", "연결됨"], ["NOANSWER", "부재(재시도)"], ["DECLINED", "거절"], ["CONSULTED", "상담확정"], ["APPLIED", "청약연결"]];
+/* 전 회원 리드 집계 — localStorage의 hifin_leads_* 전 키 스캔(콘솔은 가명 뷰만 소비) */
+function lrAllLeads() {
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith("hifin_leads_")) continue;
+      let arr = []; try { arr = JSON.parse(localStorage.getItem(k) || "[]"); } catch (e) {}
+      arr.forEach((x) => out.push({ key: k, lead: x }));
+    }
+  } catch (e) {}
+  return out.sort((a, b) => b.lead.ts - a.lead.ts);
+}
+function lrUpdateByKey(key, id, patch, ev) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(key) || "[]");
+    const x = arr.find((y) => y.id === id); if (!x) return null;
+    Object.assign(x, patch); (x.history = x.history || []).push({ at: Date.now(), ev });
+    localStorage.setItem(key, JSON.stringify(arr)); return x;
+  } catch (e) { return null; }
+}
+/* 결과 코드 입력(결과 없이 종결 불가 원칙 — UI가 강제) */
+function lrSetResult(key, id, code) {
+  const label = (LR_RESULT_CODES.find((c) => c[0] === code) || [code, code])[1];
+  const patch = { status: code };
+  if (code === "NOANSWER") { patch.status = "ASSIGNED"; }   // 부재는 배정 유지·재시도 카운트
+  const x = lrUpdateByKey(key, id, patch, `결과 코드: ${label}`);
+  if (x && code === "NOANSWER") lrUpdateByKey(key, id, { retry: (x.retry || 0) + 1 }, "재시도 예약");
+  lrAudit(id, "결과 입력 — " + label);
+  return x;
+}
+/* SLA 초과 회수 → 차순위 재배정(보고서 §2.3: 24h 회수·1회 재배정) */
+function lrRecall(key, id) {
+  const arr = (() => { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; } })();
+  const x = arr.find((y) => y.id === id); if (!x) return null;
+  const pool = (LR_AGENTS[x.dan] || LR_AGENTS._default);
+  const other = pool.find((a) => a.id !== x.agentId) || pool[0];
+  lrAudit(id, "SLA 초과 회수 → 재배정(" + other.name + ")");
+  return lrUpdateByKey(key, id, { agent: other.name, agentId: other.id, ts: Date.now(), status: "ASSIGNED" }, `SLA 초과 회수 — ${other.name} 재배정(타이머 재시작)`);
+}
+/* 감사 로그 — 콘솔에서 누가·언제·어떤 리드를 열람/처리했는지(보고서 §3.3 요건의 데모 구현) */
+function lrAudit(leadId, action) {
+  try {
+    const k = "hifin_lead_audit";
+    const l = JSON.parse(localStorage.getItem(k) || "[]");
+    l.push({ at: Date.now(), by: "콘솔(파트너 시연 계정)", leadId, action });
+    localStorage.setItem(k, JSON.stringify(l.slice(-200)));
+  } catch (e) {}
+}
+function lrAuditList() { try { return JSON.parse(localStorage.getItem("hifin_lead_audit") || "[]"); } catch (e) { return []; } }
+/* 콘솔 KPI(§6.1 축약): 응답률·SLA 준수율·전환율 */
+function lrConsoleStats() {
+  const all = lrAllLeads().map((x) => x.lead);
+  const n = all.length;
+  const contacted = all.filter((x) => ["CONTACTED", "CONSULTED", "APPLIED"].includes(x.status)).length;
+  const applied = all.filter((x) => x.status === "APPLIED").length;
+  const consulted = all.filter((x) => ["CONSULTED", "APPLIED"].includes(x.status)).length;
+  const active = all.filter((x) => x.status === "ASSIGNED");
+  const overdue = active.filter((x) => Date.now() - x.ts > x.slaH * 3600000).length;
+  const slaOK = n ? Math.round(((n - overdue) / n) * 100) : 100;
+  return { n, active: active.length, overdue, contacted, consulted, applied,
+    respRate: n ? Math.round(contacted / n * 100) : 0, convRate: consulted ? Math.round(applied / consulted * 100) : 0, slaOK };
+}
+/* 시연 리드 시드 — 파일럿 큐 시연용(가상 회원 3건 · 1건은 SLA 초과 상태) */
+function lrSeedDemo() {
+  const k = "hifin_leads_demo@lead.sim";
+  try { if (JSON.parse(localStorage.getItem(k) || "[]").length) return false; } catch (e) {}
+  const now = Date.now();
+  const mk = (i, over, st, tier, type, dan, sgg, age, sex, ch) => ({
+    id: "LD-DEMO" + i, ts: now - (over ? 6.5 : 1 + i) * 3600000, type, tier, dan, sido: "서울", sgg,
+    agent: (LR_AGENTS[dan] || LR_AGENTS._default)[0].name, agentId: (LR_AGENTS[dan] || LR_AGENTS._default)[0].id,
+    channel: ch, slot: "", briefing: true, gapCode: "GAP-" + (i + 1) + "건", ageBand: age, sex, status: st, slaH: 4, retry: 0,
+    history: [{ at: now - 3600000, ev: "배정(시연 리드)" }],
+  });
+  const demo = [
+    mk(1, true, "ASSIGNED", "T1", "L-CKUP", "강북지역단", "성북구", "50대", "남", "방문"),
+    mk(2, false, "ASSIGNED", "T2", "L-GAP", "강남지역단", "송파구", "40대", "여", "화상"),
+    mk(3, false, "CONTACTED", "T1", "L-FAM", "강서지역단", "양천구", "60대", "여", "전화"),
+  ];
+  try { localStorage.setItem(k, JSON.stringify(demo)); } catch (e) {}
+  return true;
 }

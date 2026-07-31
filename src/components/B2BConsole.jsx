@@ -362,11 +362,12 @@ function PharmacyVerify() {
 /* ── 메인: B2B 콘솔 묶음 ── */
 function B2BConsoleSection({ onGo }) {
   const [t, setT] = useState("subs");
-  const tabs = [["subs", "기관 구독 콘솔", Building2], ["doctor", "의사 콘솔", Stethoscope], ["pharm", "약국 검수", FileText], ["nodes", "검증기관 노드", ShieldCheck], ["gov", "거버넌스", Landmark]];
+  const tabs = [["subs", "기관 구독 콘솔", Building2], ["doctor", "의사 콘솔", Stethoscope], ["leads", "리드 라우팅", MapPin], ["pharm", "약국 검수", FileText], ["nodes", "검증기관 노드", ShieldCheck], ["gov", "거버넌스", Landmark]];
   return (
     <div className="b2b-wrap">
-      <div className="b2b-head"><b>B2B 콘솔</b><span>기관 구독 · 의사 업무 · 약국 검수 · 검증 노드 · 거버넌스 — 파트너가 쓰는 화면</span></div>
+      <div className="b2b-head"><b>B2B 콘솔</b><span>기관 구독 · 의사 업무 · 리드 라우팅 · 약국 검수 · 검증 노드 · 거버넌스 — 파트너가 쓰는 화면</span></div>
       <div className="b2b-tabs">{tabs.map(([k, l, Ic]) => <button key={k} className={t === k ? "on" : ""} onClick={() => setT(k)}><Ic size={14} /> {l}</button>)}</div>
+      {t === "leads" && typeof LeadOpsConsole === "function" && <LeadOpsConsole />}
       {t === "subs" && <B2BSubsConsole />}
       {t === "doctor" && <DoctorConsole />}
       {t === "pharm" && <PharmacyVerify />}
