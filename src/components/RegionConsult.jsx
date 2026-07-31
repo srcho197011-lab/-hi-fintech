@@ -72,7 +72,7 @@ function LeadOpsConsole() {
             <div key={x.id} style={{ border: `1.5px solid ${over ? "#FECACA" : "var(--border)"}`, background: over ? "#FEF2F2" : "#fff", borderRadius: 12, padding: "11px 13px", marginBottom: 9 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ fontSize: 12.8 }}>
-                  <b style={{ color: x.tier === "T1" ? "#DC2626" : "#1D4ED8" }}>[{x.tier}{x.score ? ` A${x.score.A}·F${x.score.F}` : ""}]</b> <b>{x.id}</b> · {TYPE_L[x.type] || x.type} · {x.dan}{x.sgg ? ` (${x.sgg})` : ""} · {x.ageBand} {x.sex}
+                  <b style={{ color: x.tier === "T1" ? "#DC2626" : "#1D4ED8" }}>[{x.tier}{x.score ? ` A${x.score.A}·F${x.score.F}` : ""}]</b> <b>{x.id}</b> · {TYPE_L[x.type] || x.type} · {x.dan}{x.sgg ? ` (${x.sgg})` : ""} · {x.ageBand} {x.sex}{x.family ? <b style={{ color: "#B45309" }}> · 👪 가족 상담</b> : null}
                   <span style={{ color: "var(--muted)" }}> · 희망 {x.channel}{x.slot ? ` · ${x.slot}` : ""}</span>
                 </div>
                 <div style={{ fontSize: 11.5, fontWeight: 800, color: over ? "#DC2626" : "#16A34A" }}>
@@ -176,7 +176,7 @@ function LeadOpsConsole() {
             <div className="bkb">
               <div style={{ background: "#F8FAFF", border: "1.5px solid #C7D8FA", borderRadius: 12, padding: "13px 14px", fontSize: 13, lineHeight: 1.9 }}>
                 · 회원: <b>{brief.lead.ageBand} {brief.lead.sex === "남" ? "남성" : brief.lead.sex === "여" ? "여성" : "-"}</b> · {brief.lead.sido} {brief.lead.sgg}<br />
-                · 유형: <b>{brief.lead.type}</b> ({brief.lead.tier}) · 희망 채널 <b>{brief.lead.channel}</b><br />
+                · 유형: <b>{brief.lead.type}</b> ({brief.lead.tier}){brief.lead.family ? <b style={{ color: "#B45309" }}> · 👪 가족을 위한 원격지 상담 — 피보험 대상 가족 본인 동의 확인 후 진행</b> : null} · 희망 채널 <b>{brief.lead.channel}</b><br />
                 · 보장공백 요약: <b>{brief.lead.gapCode || "요약 전달 미동의 — 기본 정보만"}</b><br />
                 · 연락: <b>콜백 토큰</b>으로 최초 연결(번호 원문 미제공 · 회원 수락 시 공개)
               </div>
@@ -197,7 +197,12 @@ function RegionConsultSection({ onTab }) {
   const m = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null)
     || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const [tick, setTick] = useState(0);
-  const R = useMemo(() => lrRegionOf(m), [m && m.email]);
+  /* 자율 지역 선택(형 지시) — 병원 안내처럼 전국 관할을 직접 고를 수 있다(멀리 계신 가족을 위한 상담) */
+  const [pickSido, setPickSido] = useState(null);
+  const [pickDan, setPickDan] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const home = useMemo(() => lrRegionOf(m), [m && m.email]);
+  const R = pickSido ? lrRegionBy(pickSido, pickDan) : home;
   const leads = m ? lrLeads(m) : [];
   const activeLead = [...leads].reverse().find((x) => ["ASSIGNED", "CONTACTED"].includes(x.status));
   const doneLead = [...leads].reverse().find((x) => x.status === "CONTACTED");
@@ -217,7 +222,7 @@ function RegionConsultSection({ onTab }) {
   const gapCode = (() => { try { const g = (typeof analyzeCoverageGap === "function" && m) ? analyzeCoverageGap(m) : null; return g && g.gaps && g.gaps.length ? "GAP-" + g.gaps.length + "건" : "GAP-없음"; } catch (e) { return "GAP-SUMMARY"; } })();
 
   const submit = () => {
-    const r = lrCreateLead(m, { channel, slot, agentId, briefing, gapCode });   // 유형은 문맥 자동 감지(lrDetectType) — 스코어 카드와 일치
+    const r = lrCreateLead(m, { channel, slot, agentId, briefing, gapCode, region: pickSido ? R : null, forFamily: !!pickSido });   // 지역 선택 시 그 관할로 배정(가족 상담)
     if (!r.ok && r.reason === "consent") { setShowConsent(true); return; }
     if (!r.ok) { if (typeof toast === "function") toast(r.reason); return; }
     if (typeof toast === "function") toast(`✅ ${r.lead.dan} ${r.lead.agent}님께 배정됐어요 — ${channel} 상담`);
@@ -238,12 +243,33 @@ function RegionConsultSection({ onTab }) {
       <div style={{ background: "linear-gradient(125deg,#0B1F4B,#1D4ED8)", borderRadius: 16, padding: "18px 18px 15px", color: "#fff", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <MapPin size={18} color="#F5D98A" />
-          <b style={{ fontSize: 17.5 }}>{m ? `${R.sido} ${R.sgg}는 ${R.dan}이 함께해요` : "내 지역 담당 상담 안내"}</b>
+          <b style={{ fontSize: 17.5 }}>{(() => { const eun = (w) => { const c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0) ? "은" : "는"; }; if (pickSido) return `가족을 위한 상담 — ${R.sido}${eun(R.sido)} ${R.dan}이 함께해요`; if (m) { const p = `${R.sido} ${R.sgg}`.trim(); return `${p}${eun(p)} ${R.dan}이 함께해요`; } return "내 지역 담당 상담 안내"; })()}</b>
         </div>
         <div style={{ fontSize: 12.3, opacity: .85, marginTop: 6, lineHeight: 1.6 }}>
-          병원 진료를 안내받듯, 우리 동네 담당 조직과 상담사를 연결해 드려요. 상담·모집은 라이선스 상담사가 수행해요.
+          {pickSido ? "멀리 계신 가족·지인을 위해 그 지역 담당 조직으로 상담을 연결해 드려요 — 가족분 동의 확인 후 진행돼요." : "병원 진료를 안내받듯, 우리 동네 담당 조직과 상담사를 연결해 드려요. 상담·모집은 라이선스 상담사가 수행해요."}
         </div>
         {R.note && <div style={{ fontSize: 11.8, marginTop: 7, background: "rgba(245,217,138,.15)", border: "1px solid rgba(245,217,138,.4)", borderRadius: 9, padding: "7px 10px", color: "#FDE9B8" }}>ℹ️ {R.note}</div>}
+        <div style={{ display: "flex", gap: 8, marginTop: 9, flexWrap: "wrap" }}>
+          <button onClick={() => setShowPicker((v) => !v)} style={{ fontSize: 11.5, fontWeight: 800, background: "rgba(255,255,255,.14)", color: "#fff", border: "1px solid rgba(255,255,255,.35)", borderRadius: 999, padding: "6px 13px", cursor: "pointer" }}>🗺️ 다른 지역 선택 — 멀리 계신 가족을 위해</button>
+          {pickSido && <button onClick={() => { setPickSido(null); setPickDan(null); setShowPicker(false); }} style={{ fontSize: 11.5, fontWeight: 800, background: "#F5D98A", color: "#0B1F4B", border: "none", borderRadius: 999, padding: "6px 13px", cursor: "pointer" }}>↩ 내 지역으로 돌아가기</button>}
+        </div>
+        {showPicker && (
+          <div style={{ marginTop: 10, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.2)", borderRadius: 12, padding: "10px 12px" }}>
+            <div style={{ fontSize: 11.3, opacity: .8, marginBottom: 7 }}>전국 어디든 선택할 수 있어요 — 숫자는 상담 가능 지점 수(실사 기준), ⚠️는 인접 관할 안내 지역이에요.</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {LR_COVERAGE.map((c) => (
+                <button key={c.sido} onClick={() => { setPickSido(c.sido); setPickDan(null); }} style={{ fontSize: 11.3, fontWeight: 700, background: pickSido === c.sido ? "#F5D98A" : "rgba(255,255,255,.12)", color: pickSido === c.sido ? "#0B1F4B" : "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 999, padding: "5px 11px", cursor: "pointer" }}>{c.sido} {c.br}{c.gap ? " ⚠️" : ""}</button>
+              ))}
+            </div>
+            {pickSido && (LR_DAN[pickSido] || {}).dans && LR_DAN[pickSido].dans.length > 1 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                {LR_DAN[pickSido].dans.map((d) => (
+                  <button key={d} onClick={() => setPickDan(d)} style={{ fontSize: 11.3, fontWeight: 700, background: (pickDan || LR_DAN[pickSido].dans[0]) === d ? "#fff" : "rgba(255,255,255,.12)", color: (pickDan || LR_DAN[pickSido].dans[0]) === d ? "#0B1F4B" : "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 999, padding: "5px 11px", cursor: "pointer" }}>{d}</button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div style={{ fontSize: 10.8, opacity: .75, marginTop: 8 }}>글로벌예방금융(주) · 금융위 등록 보험대리점 제2025060038호 · 인수사 현대해상(전속 제휴)</div>
       </div>
 
@@ -273,7 +299,7 @@ function RegionConsultSection({ onTab }) {
       </div>}
 
       {/* Phase 2 — 리드 유형·우선순위 투명 공개(XAI): 왜 이 우선순위인지 근거를 회원에게 보여준다 */}
-      {!activeLead && m && (() => { const dtype = lrDetectType(m); const sc = lrScore(m, dtype); const TL = (LR_TYPES[dtype] || {}).label || dtype; return (
+      {!activeLead && m && (() => { const dtype = pickSido ? "L-FAM" : lrDetectType(m); const sc = lrScore(m, dtype); const TL = pickSido ? "가족 단위 상담(원격지)" : ((LR_TYPES[dtype] || {}).label || dtype); return (
         <div className="card" style={{ marginBottom: 12, border: "1.5px solid #DDD6FE", background: "#FBFAFF" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <div className="rct" style={{ margin: 0 }}><Sparkles size={15} color="#7C3AED" /> 내 상담 우선순위</div>

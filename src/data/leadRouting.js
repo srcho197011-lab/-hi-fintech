@@ -31,11 +31,24 @@ const LR_SEOUL_GU = {
   "강남지역단": ["강남구", "서초구", "송파구", "강동구"],
   "강서지역단": ["영등포구", "구로구", "금천구", "동작구", "관악구", "양천구", "강서구"],
 };
-/* 지역단 거점(실사 주소[사실]) + 대표 지점(실사 확인분) */
+/* 지역단 거점 — 서울 3곳은 실사 주소[사실], 그 외는 거점 도시 좌표[추정 — 주소는 제휴 협의(R1·R2) 후 확정] */
 const LR_DAN_INFO = {
   "강북지역단": { addr: "서울 중구 명동2길20 14층", tel: "02-6744-1204", lat: 37.5637, lng: 126.9838, branches: [{ n: "세종로지점", a: "서울 중구 명동2길20 12층" }, { n: "광화문지점", a: "서울 중구 명동2길20 4층" }] },
   "강남지역단": { addr: "서울 송파구 송파대로570 6층", tel: "02-368-9912", lat: 37.5145, lng: 127.1066, branches: [{ n: "강남권 지점", a: "서울 송파구 송파대로570" }] },
   "강서지역단": { addr: "서울 영등포구 당산로141 12층", tel: "02-2628-4104", lat: 37.5340, lng: 126.9026, branches: [{ n: "강서권 지점", a: "서울 영등포구 당산로141" }] },
+  "경기지역단": { addr: "경기 수원 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 37.2636, lng: 127.0286, branches: [] },
+  "성남지역단": { addr: "경기 성남 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 37.4449, lng: 127.1389, branches: [] },
+  "북부지역단": { addr: "경기 의정부 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 37.7381, lng: 127.0337, branches: [] },
+  "경인지역단": { addr: "인천 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 37.4563, lng: 126.7052, branches: [] },
+  "강원지역단": { addr: "강원 춘천 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 37.8813, lng: 127.7298, branches: [] },
+  "충청지역단": { addr: "대전 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 36.3504, lng: 127.3845, branches: [] },
+  "중부지역단": { addr: "충남 천안 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 36.8151, lng: 127.1139, branches: [] },
+  "호남지역단": { addr: "광주 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 35.1595, lng: 126.8526, branches: [] },
+  "전북지역단": { addr: "전북 전주 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 35.8242, lng: 127.1480, branches: [] },
+  "대경지역단": { addr: "대구 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 35.8714, lng: 128.6014, branches: [] },
+  "부산지역단": { addr: "부산 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 35.1796, lng: 129.0756, branches: [] },
+  "영남지역단": { addr: "울산 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 35.5384, lng: 129.3114, branches: [] },
+  "경남지역단": { addr: "경남 창원 거점(주소는 제휴 확정 후 표기)", tel: "", lat: 35.2281, lng: 128.6811, branches: [] },
 };
 /* 상담사 프로필(시연용 예시 — 실명부는 R3 명부 수령 후 교체) */
 const LR_AGENTS = {
@@ -139,6 +152,15 @@ function lrRegionOf(m) {
   return { sido, sgg, dan, info, agents, note: map.note, gap: !!map.note };
 }
 
+/* 자율 지역 선택(형 지시 2026-07-31) — 병원 안내처럼 전국 어느 지역이든 직접 선택: 멀리 계신 가족을 위한 상담 연결 */
+function lrRegionBy(sido, danName) {
+  const map = LR_DAN[sido] || LR_DAN["서울"];
+  const dan = (danName && map.dans.includes(danName)) ? danName : map.dans[0];
+  const info = LR_DAN_INFO[dan] || { addr: dan + " 거점", tel: "", lat: 37.5665, lng: 126.978, branches: [] };
+  const agents = LR_AGENTS[dan] || LR_AGENTS._default;
+  return { sido, sgg: "", dan, info, agents, note: map.note, gap: !!map.note, picked: true };
+}
+
 /* ── 리드 저장(회원별)·라이프사이클 — CREATED→CONSENT_OK→ASSIGNED→CONTACTED→CONSULTED / RECALLED ── */
 function _lrKey(m) { return "hifin_leads_" + ((m && m.email) || "self"); }
 function lrLeads(m) { try { return JSON.parse(localStorage.getItem(_lrKey(m)) || "[]"); } catch (e) { return []; } }
@@ -163,9 +185,9 @@ function lrCreateLead(m, opt) {
   if (!lrConsentOK(m)) return { ok: false, reason: "consent" };
   const cd = lrCooldown(m);
   if (cd.capped) return { ok: false, reason: "이번 달 상담 연결이 이미 2건 있어요 — 회원 보호를 위해 다음 달에 다시 연결해 드릴게요." };
-  const R = lrRegionOf(m);
+  const R = opt.region || lrRegionOf(m);   // 자율 지역 선택 시 그 관할로 배정(가족 상담 등)
   /* Phase 2: 유형 자동 감지 → 스코어링 → 가중 배분 */
-  const type = opt.type || lrDetectType(m);
+  const type = opt.type || (opt.forFamily ? "L-FAM" : null) || lrDetectType(m);
   const sc = lrScore(m, type);
   if (sc.tier === "T4") return { ok: false, reason: "지금은 상담보다 하이 안내가 더 맞는 단계예요 — 보장 분석을 먼저 보고 언제든 다시 연결해 드릴게요." };
   const agent = (opt.agentId && R.agents.find((a) => a.id === opt.agentId)) || lrPickAgent(m, R);
@@ -179,6 +201,7 @@ function lrCreateLead(m, opt) {
     gapCode: opt.briefing ? (opt.gapCode || "GAP-SUMMARY") : null,   // 원본 수치 미전달 — 코드만
     ageBand: (() => { const a = (m.regAge || m.age || 45); return Math.floor(a / 10) * 10 + "대"; })(),
     sex: m.sex || "-",   // 브리핑용 가명 최소 정보(연령대·성별) — 이름·연락처 원문은 리드에 싣지 않음(콜백 토큰 원칙)
+    family: !!opt.forFamily,   // 원격지(가족을 위한) 상담 표시 — 콘솔 브리핑에 노출
     status: "ASSIGNED", slaH: sc.sla, retry: 0, history: [{ at: Date.now(), ev: `배정(${sc.tier} · A${sc.A}+F${sc.F}) — SLA ${sc.sla}h 시작` }],
   };
   const l = lrLeads(m); l.push(lead); _lrSave(m, l);
