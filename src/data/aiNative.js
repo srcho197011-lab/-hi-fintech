@@ -325,6 +325,20 @@ const TOOL_RUN = {
     try { window.dispatchEvent(new CustomEvent("rpmrefresh")); } catch (e) {}
     return { lines: ["경보를 해제했어요 — 같은 추세가 이어지거나 새 이상 신호가 감지되면 다시 알려드릴게요."] };
   } catch (e) { return null; } },
+  // 내 지역 상담(Phase3) — "병원 안내받듯" 관할 지역단·상담사 소개 + 화면 딥링크(첫 안내 시나리오)
+  regionconsult(m) { try {
+    if (typeof lrRegionOf !== "function") return null;
+    const R = lrRegionOf(m);
+    try { window.__hifinInsRoute = { tab: "region" }; } catch (e) {}
+    const who = m && m.name ? m.name : "회원";
+    const ags = R.agents.slice(0, 2).map((a) => `${a.name}(경력 ${a.career}년 · ${a.tags[0]})`).join(", ");
+    return { lines: [
+      `${who}님 지역(${R.sido}${R.sgg ? " " + R.sgg : ""})은 ${R.dan}이 함께해요 — 병원 안내받듯 담당 상담사를 소개해 드릴게요.`,
+      `지금 예약 가능한 상담사: ${ags}. 방문·전화·화상·채팅 중 편한 방식을 화면에서 고르시면 돼요.`,
+      R.note ? "ℹ️ " + R.note : "연결 전 동의를 확인하고, 원본 검진 수치는 전달되지 않아요(분석 요약만).",
+      "운영: 금융위 등록 보험대리점 글로벌예방금융(주) 제2025060038호 · 인수사 현대해상",
+    ].filter(Boolean), buttons: ["다음에요"] };
+  } catch (e) { return null; } },
   // 프리미엄(장기)보험 상담 — 사전 동의 게이트를 안내하며 상담 신청 창 오픈(게이트는 ConsultModal이 강제)
   premiumconsult(m) { try {
     let st = {};

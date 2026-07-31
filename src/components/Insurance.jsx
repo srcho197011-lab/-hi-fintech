@@ -1671,7 +1671,7 @@ function InsuranceSection({ onGo }) {
     if (a) { setTabX(a.tab || "ai"); setAskSeed(a.q || null); try { window.__hifinInsAsk = null; } catch (e) {} }
   }, []);
   /* 과업3 6탭 — 각 탭 = 내 지갑 자산의 다른 뷰(보장 자산·토큰 사용·순환의 몫). 과업A: 맞춤보험 최좌측(기본 랜딩) */
-  const tabs = [["custom", "맞춤보험", Sparkles], ["analysis", "보장분석", Search], ["billing", "보험료 납부", Coins], ["claimpay", "청구·지급", FileText], ["rerate", "요율 재산정", ShieldCheck], ["share", "치료비·나눔", HeartHandshake]];
+  const tabs = [["custom", "맞춤보험", Sparkles], ["analysis", "보장분석", Search], ["billing", "보험료 납부", Coins], ["claimpay", "청구·지급", FileText], ["rerate", "요율 재산정", ShieldCheck], ["share", "치료비·나눔", HeartHandshake], ["region", "내 지역 상담", MapPin]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="insurance" /></span>
@@ -1687,6 +1687,7 @@ function InsuranceSection({ onGo }) {
       {tab === "claimpay" && <InsClaimPayTab onModal={setModal} />}
       {tab === "rerate" && <InsRerateTab />}
       {tab === "share" && <InsShareTab />}
+      {tab === "region" && <RegionConsultSection onTab={setTab} />}
       {tab === "sports" && <SportsInsuranceSection onGo={go} />}
       {tab === "custom" && (<>
         {/* 과업B 미니 내비 — 4개 서브섹션 앵커 칩(3클릭 원칙) */}
