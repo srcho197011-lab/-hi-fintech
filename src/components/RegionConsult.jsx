@@ -22,6 +22,7 @@ function LeadOpsConsole() {
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12, background: view === "queue" ? "#1D4ED8" : undefined, color: view === "queue" ? "#fff" : undefined }} onClick={() => setView("queue")}>배정 큐</button>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12, background: view === "cover" ? "#1D4ED8" : undefined, color: view === "cover" ? "#fff" : undefined }} onClick={() => setView("cover")}>조직 커버리지</button>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12, background: view === "audit" ? "#1D4ED8" : undefined, color: view === "audit" ? "#fff" : undefined }} onClick={() => setView("audit")}>감사 로그</button>
         {!rows.some((r) => r.key.includes("demo@lead.sim")) && <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 14px", fontSize: 12 }} onClick={() => { lrSeedDemo(); setTick((t) => t + 1); }}>+ 시연 리드 3건 생성</button>}
       </div>
@@ -35,7 +36,7 @@ function LeadOpsConsole() {
             <div key={x.id} style={{ border: `1.5px solid ${over ? "#FECACA" : "var(--border)"}`, background: over ? "#FEF2F2" : "#fff", borderRadius: 12, padding: "11px 13px", marginBottom: 9 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ fontSize: 12.8 }}>
-                  <b style={{ color: x.tier === "T1" ? "#DC2626" : "#1D4ED8" }}>[{x.tier}]</b> <b>{x.id}</b> · {TYPE_L[x.type] || x.type} · {x.dan}{x.sgg ? ` (${x.sgg})` : ""} · {x.ageBand} {x.sex}
+                  <b style={{ color: x.tier === "T1" ? "#DC2626" : "#1D4ED8" }}>[{x.tier}{x.score ? ` A${x.score.A}·F${x.score.F}` : ""}]</b> <b>{x.id}</b> · {TYPE_L[x.type] || x.type} · {x.dan}{x.sgg ? ` (${x.sgg})` : ""} · {x.ageBand} {x.sex}
                   <span style={{ color: "var(--muted)" }}> · 희망 {x.channel}{x.slot ? ` · ${x.slot}` : ""}</span>
                 </div>
                 <div style={{ fontSize: 11.5, fontWeight: 800, color: over ? "#DC2626" : "#16A34A" }}>
@@ -51,6 +52,26 @@ function LeadOpsConsole() {
               </div>
               <div style={{ fontSize: 10.8, color: "var(--muted)", marginTop: 6 }}>담당 {x.agent}{x.retry ? ` · 재시도 ${x.retry}회` : ""} · 결과 코드 입력 없이는 종결되지 않아요</div>
             </div> ); })}
+        </div>
+      )}
+
+      {view === "cover" && (
+        <div className="card" style={{ margin: 0 }}>
+          <div className="rct" style={{ marginBottom: 4 }}><MapPin size={15} color="#0B1F4B" /> 전국 조직 커버리지 <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>· 현대해상 지점찾기 실사 2026-07-31 · 상담·가입 가능 지점 기준</span></div>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", margin: "8px 0 12px", fontSize: 12.5 }}>
+            <span>지역단 <b style={{ color: "#1D4ED8" }}>16개</b></span>
+            <span>상담가능 지점 <b style={{ color: "#1D4ED8" }}>{LR_COVERAGE.reduce((s, x) => s + x.br, 0)}개</b></span>
+            <span>커버리지 공백 시도 <b style={{ color: "#B45309" }}>{LR_COVERAGE.filter((x) => x.gap).length}개</b> <span style={{ color: "var(--muted)" }}>(인접 관할+비대면 보강)</span></span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 8 }}>
+            {LR_COVERAGE.map((c) => (
+              <div key={c.sido} style={{ border: `1.5px solid ${c.gap ? "#F3DFB6" : "var(--border)"}`, background: c.gap ? "#FFFBEB" : "#fff", borderRadius: 11, padding: "10px 12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><b style={{ fontSize: 13 }}>{c.sido}</b><b style={{ fontSize: 15, color: "#1D4ED8" }}>{c.br}</b></div>
+                <div style={{ fontSize: 10.8, color: c.gap ? "#B45309" : "var(--muted)", marginTop: 4 }}>{c.dans.length ? c.dans.map((d) => d + "지역단").join(" · ") : "⚠️ 자체 지역단 없음 — 인접 관할"}</div>
+              </div>
+            ))}
+          </div>
+          <div className="chnote" style={{ marginTop: 10 }}>지역단은 영업파트+조직파트로 구성(2025-12-01 지역단 단일체계 개편) · 수도권 집중(전체의 44%) — 파일럿은 서울 강남지역단 권고. 상세 근거: docs/lead_routing 설계보고서 Phase 1.</div>
         </div>
       )}
 
@@ -116,7 +137,7 @@ function RegionConsultSection({ onTab }) {
   const gapCode = (() => { try { const g = (typeof analyzeCoverageGap === "function" && m) ? analyzeCoverageGap(m) : null; return g && g.gaps && g.gaps.length ? "GAP-" + g.gaps.length + "건" : "GAP-없음"; } catch (e) { return "GAP-SUMMARY"; } })();
 
   const submit = () => {
-    const r = lrCreateLead(m, { type: "L-ASK", channel, slot, agentId, briefing, gapCode });
+    const r = lrCreateLead(m, { channel, slot, agentId, briefing, gapCode });   // 유형은 문맥 자동 감지(lrDetectType) — 스코어 카드와 일치
     if (!r.ok && r.reason === "consent") { setShowConsent(true); return; }
     if (!r.ok) { if (typeof toast === "function") toast(r.reason); return; }
     if (typeof toast === "function") toast(`✅ ${r.lead.dan} ${r.lead.agent}님께 배정됐어요 — ${channel} 상담`);
@@ -171,10 +192,27 @@ function RegionConsultSection({ onTab }) {
         <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>{R.dan} · {R.info.addr}{R.info.tel ? ` · ${R.info.tel}` : ""}{R.info.branches.length ? ` · 관내 지점 ${R.info.branches.map((b) => b.n).join("·")}` : ""}</div>
       </div>}
 
+      {/* Phase 2 — 리드 유형·우선순위 투명 공개(XAI): 왜 이 우선순위인지 근거를 회원에게 보여준다 */}
+      {!activeLead && m && (() => { const dtype = lrDetectType(m); const sc = lrScore(m, dtype); const TL = (LR_TYPES[dtype] || {}).label || dtype; return (
+        <div className="card" style={{ marginBottom: 12, border: "1.5px solid #DDD6FE", background: "#FBFAFF" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div className="rct" style={{ margin: 0 }}><Sparkles size={15} color="#7C3AED" /> 내 상담 우선순위</div>
+            <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+              <span style={{ fontSize: 11, fontWeight: 800, background: "#EDE9FE", color: "#6D28D9", borderRadius: 999, padding: "4px 11px" }}>{TL}</span>
+              <b style={{ fontSize: 16, color: sc.tier === "T1" ? "#DC2626" : "#1D4ED8" }}>{sc.tier}</b>
+              <span style={{ fontSize: 11.5, color: "var(--muted)" }}>수용성 {sc.A} + 적합도 {sc.F} · 첫 연락 {sc.sla}시간 내</span>
+            </div>
+          </div>
+          <details style={{ marginTop: 7 }}><summary style={{ cursor: "pointer", fontSize: 11.8, color: "#6D28D9", fontWeight: 700 }}>왜 이 우선순위인가요? (산정 근거 보기)</summary>
+            <div style={{ marginTop: 6 }}>{sc.why.map(([w, p], i) => <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.8, padding: "3px 2px", color: "#475569" }}><span>· {w}</span><b style={{ color: p.startsWith("−") ? "#B91C1C" : "#6D28D9" }}>{p}</b></div>)}
+              <div className="chnote" style={{ marginTop: 6 }}>건강 관련 항목은 <b>등급·유무만</b> 산정에 쓰이고(원수치 미사용), 상담 우선순위 목적으로만 사용돼요 — 인수 심사·보험료 산정과 무관해요.</div></div>
+          </details>
+        </div> ); })()}
+
       {/* ③ 상담사 카드 + ④ 채널 + ⑤ 슬롯 + ⑥ 요약 토글 */}
       {!activeLead && (
         <div className="card" style={{ marginBottom: 12 }}>
-          <div className="rct" style={{ marginBottom: 10 }}><Bot size={16} color="#7C3AED" /> 상담사 선택</div>
+          <div className="rct" style={{ marginBottom: 10 }}><Bot size={16} color="#7C3AED" /> 상담사 선택 <span style={{ fontSize: 10.8, color: "var(--muted)", fontWeight: 600 }}>· 미선택 시 배정잔량·성과·SLA 실적 가중으로 자동 배분</span></div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 10 }}>
             {R.agents.map((a) => (
               <div key={a.id} onClick={() => setAgentId(a.id)} style={{ border: `2px solid ${agentId === a.id ? "#1D4ED8" : "var(--border)"}`, borderRadius: 13, padding: "12px 13px", cursor: "pointer", background: agentId === a.id ? "#EEF3FF" : "#fff" }}>

@@ -55,6 +55,78 @@ const LR_AGENTS = {
   ],
 };
 
+/* ══ Phase 1 — 전국 커버리지 매트릭스(2026-07-31 현대해상 지점찾기 실사값[사실]) ══
+   br: '보험상담·가입 가능' 지점 수 · dans: 자체 지역단 · gap: 자체 지역단 공백(인접 관할[추정]) */
+const LR_COVERAGE = [
+  { sido: "서울", dans: ["강북", "강남", "강서"], br: 41, gap: false }, { sido: "경기", dans: ["경기", "성남", "북부"], br: 64, gap: false },
+  { sido: "인천", dans: ["경인"], br: 14, gap: false }, { sido: "강원", dans: ["강원"], br: 9, gap: false },
+  { sido: "대전", dans: ["충청"], br: 8, gap: false }, { sido: "세종", dans: [], br: 2, gap: true },
+  { sido: "충남", dans: ["중부"], br: 15, gap: false }, { sido: "충북", dans: [], br: 8, gap: true },
+  { sido: "광주", dans: ["호남"], br: 11, gap: false }, { sido: "전남", dans: [], br: 9, gap: true },
+  { sido: "전북", dans: ["전북"], br: 18, gap: false }, { sido: "대구", dans: ["대경"], br: 10, gap: false },
+  { sido: "경북", dans: [], br: 14, gap: true }, { sido: "부산", dans: ["부산"], br: 13, gap: false },
+  { sido: "울산", dans: ["영남"], br: 14, gap: false }, { sido: "경남", dans: ["경남"], br: 16, gap: false },
+  { sido: "제주", dans: [], br: 6, gap: true },
+];
+
+/* ══ Phase 2 — 리드 유형 정의(§2.1)·스코어링(§2.2)·가중 배분(§2.3) ══ */
+const LR_TYPES = {
+  "L-ASK": { label: "명시적 상담 신청", urg: 4, fit: 0, sla: 4 },
+  "L-GAP": { label: "보장공백 발견", urg: 2, fit: 3, sla: 4 },
+  "L-CKUP": { label: "검진 이상 후 보장 문의", urg: 3, fit: 3, sla: 4 },
+  "L-CLAIM": { label: "보험금 청구 발생", urg: 3, fit: 2, sla: 4 },
+  "L-RERATE": { label: "요율 재산정 신청", urg: 2, fit: 3, sla: 8 },
+  "L-FAM": { label: "가족 단위 상담", urg: 2, fit: 3, sla: 8 },
+  "L-QUIT": { label: "간편가입 이탈", urg: 2, fit: 2, sla: 8 },
+  "L-CARE": { label: "치료비 지원(보호 — 제안 금지)", urg: 3, fit: 0, sla: 4 },
+};
+/* 문맥 기반 리드 유형 자동 감지 — 회원의 최근 이벤트에서 제안(회원이 바꿀 수 있음) */
+function lrDetectType(m) {
+  try { const cl = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); if (cl.length && Date.now() - cl[cl.length - 1].at < 14 * 86400000) return "L-CLAIM"; } catch (e) {}
+  try { const st = (typeof rerateState === "function") ? rerateState() : null; if (st && st.status === "done") return "L-RERATE"; } catch (e) {}
+  try { const fam = (typeof familyLoad === "function" && m) ? (familyLoad(m.email, (m.name || "가")[0]) || []) : []; if (fam.length >= 2) return "L-FAM"; } catch (e) {}
+  try { const R = (typeof demoReport === "function" && m) ? demoReport(m) : null; if (R && R.hr && R.hr.length) return "L-CKUP"; } catch (e) {}
+  try { const g = (typeof analyzeCoverageGap === "function" && m) ? analyzeCoverageGap(m) : null; if (g && g.gaps && g.gaps.length) return "L-GAP"; } catch (e) {}
+  return "L-ASK";
+}
+/* 스코어링(§2.2 의사코드의 실구현) — A 수용성(0~50) + F 적합도(0~50) → 티어.
+   ⚠️ 법적 경계: 건강 변수는 등급/플래그만 산입하며 상담 우선순위 산정에만 사용(인수·요율 사용 금지). */
+function lrScore(m, type) {
+  const T = LR_TYPES[type] || LR_TYPES["L-ASK"];
+  const why = [];
+  let A = 0;
+  if (type === "L-ASK") { A += 20; why.push(["직접 상담을 요청하셨어요", "+20"]); }
+  else { A += T.urg * 4; why.push([T.label + " 이벤트 직후예요", "+" + T.urg * 4]); }
+  A += 10; why.push(["최근 플랫폼 활동이 있어요", "+10"]);   // 데모: 접속 중=활동
+  try { const done = lrLeads(m).filter((x) => x.status === "CONSULTED" && (x.stars || 0) >= 4); if (done.length) { A += 6; why.push(["지난 상담 만족(★4+)", "+6"]); } } catch (e) {}
+  const cd = lrCooldown(m); if (cd.monthlyN >= 1) { A -= 15; why.push(["이번 달 접촉 이력(과다 접촉 방지)", "−15"]); }
+  let F = 0;
+  try { const g = (typeof analyzeCoverageGap === "function" && m) ? analyzeCoverageGap(m) : null; const n = g && g.gaps ? Math.min(3, g.gaps.length) : 0; if (n) { F += n * 5; why.push(["보장공백 " + n + "건(등급 산입)", "+" + n * 5]); } } catch (e) {}
+  try { const R = (typeof demoReport === "function" && m) ? demoReport(m) : null; if (R && R.hr && R.hr.length) { F += 10; why.push(["검진 관리 필요 항목 있음(플래그만)", "+10"]); } } catch (e) {}
+  try { const fam = (typeof familyLoad === "function" && m) ? (familyLoad(m.email, (m.name || "가")[0]) || []) : []; if (fam.length) { F += 8; why.push(["가족 " + fam.length + "명 등록", "+8"]); } } catch (e) {}
+  try { const ins = (typeof memberInsurance === "function" && m) ? memberInsurance(m) : null; if (ins && (!ins.silson.enrolled || !(ins.riders || []).length)) { F += 7; why.push(["보장 형태상 공백 소지(실손/진단비)", "+7"]); } } catch (e) {}
+  const age = (m && (m.regAge || m.age)) || 45; if (age >= 30 && age <= 55) { F += 5; why.push(["장기보험 적합 연령대", "+5"]); }
+  try { const R2 = lrRegionOf(m); if (!R2.gap) { F += 5; why.push(["거주 지역 직접 커버리지", "+5"]); } } catch (e) {}
+  A = Math.max(0, Math.min(50, A)); F = Math.max(0, Math.min(50, F));
+  const s = A + F;
+  const tier = s >= 70 ? "T1" : s >= 50 ? "T2" : s >= 30 ? "T3" : "T4";
+  const sla = tier === "T1" ? (T.sla || 4) : tier === "T2" ? 8 : 48;
+  return { A, F, sum: s, tier, sla, why };
+}
+/* 가중 배분(§2.3 [2]~[3]) — 배정잔량(역가중)·성과(평가)·SLA 준수 실적으로 상담사 선택 */
+function lrPickAgent(m, R) {
+  const all = lrLeads(m);
+  const scored = R.agents.map((a) => {
+    const mine = all.filter((x) => x.agentId === a.id);
+    const active = mine.filter((x) => x.status === "ASSIGNED").length;
+    const overdue = mine.filter((x) => x.status === "ASSIGNED" && Date.now() - x.ts > x.slaH * 3600000).length;
+    const stars = mine.filter((x) => x.stars).map((x) => x.stars);
+    const perf = stars.length ? stars.reduce((p, q) => p + q, 0) / stars.length / 5 : 0.7;
+    const w = 0.35 * (1 / (1 + active)) + 0.25 * (overdue ? 0 : 1) + 0.20 * Math.min(1, perf) + 0.20;   // 상수항=가용 가정
+    return { a, w };
+  }).sort((x, y) => y.w - x.w);
+  return scored[0].a;
+}
 /* ── 회원 → 관할 매핑 ── */
 function lrRegionOf(m) {
   let sido = "서울", sgg = "";
@@ -92,10 +164,14 @@ function lrCreateLead(m, opt) {
   const cd = lrCooldown(m);
   if (cd.capped) return { ok: false, reason: "이번 달 상담 연결이 이미 2건 있어요 — 회원 보호를 위해 다음 달에 다시 연결해 드릴게요." };
   const R = lrRegionOf(m);
-  const agent = (opt.agentId && R.agents.find((a) => a.id === opt.agentId)) || R.agents[0];
+  /* Phase 2: 유형 자동 감지 → 스코어링 → 가중 배분 */
+  const type = opt.type || lrDetectType(m);
+  const sc = lrScore(m, type);
+  if (sc.tier === "T4") return { ok: false, reason: "지금은 상담보다 하이 안내가 더 맞는 단계예요 — 보장 분석을 먼저 보고 언제든 다시 연결해 드릴게요." };
+  const agent = (opt.agentId && R.agents.find((a) => a.id === opt.agentId)) || lrPickAgent(m, R);
   const lead = {
     id: "LD-" + Date.now().toString(36).toUpperCase(),
-    ts: Date.now(), type: opt.type || "L-ASK", tier: opt.tier || "T1",
+    ts: Date.now(), type, tier: sc.tier, score: { A: sc.A, F: sc.F },
     dan: R.dan, sido: R.sido, sgg: R.sgg,
     agent: agent.name, agentId: agent.id,
     channel: opt.channel || "화상", slot: opt.slot || "",
@@ -103,7 +179,7 @@ function lrCreateLead(m, opt) {
     gapCode: opt.briefing ? (opt.gapCode || "GAP-SUMMARY") : null,   // 원본 수치 미전달 — 코드만
     ageBand: (() => { const a = (m.regAge || m.age || 45); return Math.floor(a / 10) * 10 + "대"; })(),
     sex: m.sex || "-",   // 브리핑용 가명 최소 정보(연령대·성별) — 이름·연락처 원문은 리드에 싣지 않음(콜백 토큰 원칙)
-    status: "ASSIGNED", slaH: 4, retry: 0, history: [{ at: Date.now(), ev: "배정 — SLA 4h 시작" }],
+    status: "ASSIGNED", slaH: sc.sla, retry: 0, history: [{ at: Date.now(), ev: `배정(${sc.tier} · A${sc.A}+F${sc.F}) — SLA ${sc.sla}h 시작` }],
   };
   const l = lrLeads(m); l.push(lead); _lrSave(m, l);
   try { vaultAccessLog(anonToken(m), "member", `지역 상담 리드 생성(${R.dan} · ${agent.name} · ${lead.channel})${lead.briefing ? " — 가명 요약 전달 동의" : ""}`); } catch (e) {}
