@@ -331,6 +331,27 @@ const TOOL_RUN = {
     try { window.dispatchEvent(new CustomEvent("rpmrefresh")); } catch (e) {}
     return { lines: ["경보를 해제했어요 — 같은 추세가 이어지거나 새 이상 신호가 감지되면 다시 알려드릴게요."] };
   } catch (e) { return null; } },
+  // 정기배송(재구매 설계) — 소진 예측·구독 현황을 대화로: "언제 떨어져?"에 날짜로 답한다
+  subs(m) { try {
+    if (typeof subSummary !== "function") return null;
+    const S = subSummary(m);
+    const nm = m && m.name ? m.name : "회원";
+    if (!S.count && !S.due.length) return { lines: [
+      `${nm}님은 아직 정기배송이 없어요 — 영양제는 끊기는 순간 그동안의 관리가 리셋돼요.`,
+      "자주 드시는 제품을 정기배송으로 두면 떨어지기 전에 도착하고, 유지하실 때마다 적립이 10% 더 붙어요. 건너뛰기·해지는 언제든 가능해요(위약금 없음).",
+    ], buttons: ["건강쇼핑 가기"] };
+    const lines = [];
+    if (S.count) {
+      const nx = S.next ? `다음 배송은 ${new Date(S.next.nextShipAt).getMonth() + 1}월 ${new Date(S.next.nextShipAt).getDate()}일 ${S.next.name}이에요.` : "";
+      lines.push(`지금 정기배송 ${S.count}건이 돌아가고 있어요(월 예상 ${S.monthly.toLocaleString()}원). ${nx}`);
+    }
+    if (S.due.length) {
+      const d = S.due[0];
+      lines.push(`⏳ ${d.name}은 ${d.days === 0 ? "오늘이면" : d.days + "일 뒤면"} 다 떨어져요 — ${d.kind === "sub" ? "'지금 받기'로 앞당기거나 그대로 두셔도 돼요." : "정기배송으로 등록하면 떨어지기 전에 알아서 도착해요."}`);
+    }
+    lines.push("건너뛰기·주기 변경(30·60·90일)·해지는 건강쇼핑의 '내 정기배송'에서 언제든 하실 수 있어요.");
+    return { lines, buttons: ["건강쇼핑 가기"] };
+  } catch (e) { return null; } },
   // 내 지역 상담(Phase3) — "병원 안내받듯" 관할 지역단·상담사 소개 + 화면 딥링크(첫 안내 시나리오)
   regionconsult(m) { try {
     if (typeof lrRegionOf !== "function") return null;
@@ -694,6 +715,18 @@ function agentProactive() {
     const certs = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); const c = certs[certs.length - 1];
     const ts = (c && c.date && c.date !== "-" && typeof _hiParseDate === "function") ? _hiParseDate(c.date, Date.now()) : null;
     if (c && ts && ts >= Date.now() - 43200000) out.push({ text: `${c.date} ${c.center} 검진이 다가와요 — 전날 준비사항(금식 등)을 제가 챙겨드릴게요.`, buttons: ["검진 준비사항 알려줘"] });
+  } catch (e) {}
+  /* 재구매 설계 — 소진 임박 선제 안내(하루 1회): 떨어지기 전에 먼저 말한다 */
+  try {
+    if (typeof subDue === "function") {
+      const due = subDue(m, 7);
+      const k = "hifin_sub_due_seen_" + new Date().toDateString();
+      if (due.length && !sessionStorage.getItem(k)) {
+        const d = due[0];
+        out.push({ text: `⏳ ${d.name}이 ${d.days === 0 ? "오늘" : d.days + "일 뒤"} 다 떨어져요 — ${d.kind === "sub" ? "다음 배송을 앞당길까요?" : "정기배송으로 등록하면 알아서 도착해요."}`, buttons: ["정기배송 관리", "건강쇼핑 가기"] });
+        sessionStorage.setItem(k, "1");
+      }
+    }
   } catch (e) {}
   /* Phase4 업셀 트리거(리드 라우팅 §4.3) — 보험금(치료비) 수령 경험 후: "치료 중 생활비" 공백 제안(1회만·정보 제공형) */
   try { const cl = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); if (cl.length && !localStorage.getItem("hifin_upsell_seen")) { out.push({ text: "💠 치료비는 검진대비보험이 지켜드렸어요. 그런데 치료 '중' 생활비(일 못 하는 동안의 소득 공백)는 아직 비어 있어요 — 장기 플랜으로 채우는 방법을 보여드릴까요?", buttons: ["프리미엄 보험 상담받고 싶어", "우리 동네 상담사 연결해줘"] }); localStorage.setItem("hifin_upsell_seen", "1"); } } catch (e) {}

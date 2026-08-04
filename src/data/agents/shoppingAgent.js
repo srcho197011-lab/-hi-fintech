@@ -109,6 +109,16 @@ function shoppingAgent(question, ctx) {
   const ob = (ctx && ctx.ensemble) ? null : _a3Outbound(q);
   if (ob) return { handback: ob };
 
+  /* ⓪-1 정기배송(재구매) 질의 — 커머스 담당 에이전트가 소진 예측·구독 현황을 직접 답한다 */
+  if (/(정기\s*배송|정기\s*구독|구독\s*(현황|관리)|재구매|자동\s*배송|떨어질\s*때|떨어지면|다\s*먹었|언제\s*떨어져|얼마나\s*남았)/.test(q)) {
+    let m = null;
+    try { m = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null) || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? selfMember() : null); } catch (e) {}
+    let r = null;
+    try { r = (m && typeof TOOL_RUN !== "undefined" && TOOL_RUN.subs) ? TOOL_RUN.subs(m) : null; } catch (e) {}
+    if (r && r.lines) return { agent: "A3", lines: r.lines, cards: [], buttons: (r.buttons || ["건강쇼핑 가기"]).slice(0, 3),
+      cite: [{ source: "하이핀 정기배송", title: "소진 예측·구독 원장" }], nav: { key: "shop", label: "건강쇼핑" },
+      catalog: { products: [], values: [] }, compare: null, guard: [] };
+  }
   const wantsCompare = /(비교|추천|뭐가\s*(나|좋)|뭐\s*먹|먹으면\s*좋|어떤\s*(게|걸)|골라|고르|가성비|싼|저렴|차이|사고\s*싶|살까)/.test(q);
   const asksEfficacy = /(먹으면.{0,8}(낫|나아|좋아|효과)|효과\s*있|정말\s*(되|좋)|도움\s*되|치료(가\s*)?되)/.test(q);
   let cat = _a3Category(q);

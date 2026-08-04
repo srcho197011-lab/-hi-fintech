@@ -792,7 +792,9 @@ function ShopCartBar({ products }) {
   const [ordered, setOrdered] = useState(false);
   const [walletBal, setWalletBal] = useState(0);
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
-  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  /* 회원 식별 통일 — 운영자(조성래) 세션은 demoCurrentUser가 null이므로 selfMember 폴백(지갑 적립·주문 이력 키 일치) */
+  const dm = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null)
+    || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const dmEmail = dm ? dm.email : "default";
   const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
   const icoOf = (p) => (CATS[p.category] || {});
@@ -817,6 +819,8 @@ function ShopCartBar({ products }) {
             {ordered ? (
               <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · {shopWon(totalPrice)}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 <b>건강금융지갑에 적립되었습니다.</b></p>
                 <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "9px 12px", margin: "4px 0 12px", fontSize: 12.5, color: "#166534" }}><Wallet size={13} style={{ verticalAlign: -2 }} /> 건강금융지갑 누적 쇼핑 적립: <b>{shopWon(walletBal)}</b></div>
+                {/* 재구매 설계: 주문 직후가 정기배송 전환율이 가장 높은 순간 */}
+                {typeof SubOfferAfterOrder === "function" && <SubOfferAfterOrder items={cartItems} />}
                 <button className="cbtn pri" onClick={() => { shopCartClear(); setCartOpen(false); setOrdered(false); }}>확인</button></div>
             ) : (<>
               {cartItems.map(({ p, qty }) => { const r = rw(p.price); return (
@@ -827,7 +831,7 @@ function ShopCartBar({ products }) {
                 </div>
               ); })}
               <div className="csum"><div><span>합계 금액</span><b>{shopWon(totalPrice)}</b></div><div className="rew"><span><Coins size={12} /> 건강적립금</span><b>{shopWon(totalReward)}</b></div></div>
-              <button className="cbtn pri" onClick={() => { const nb = (typeof shopHtkAdd === "function") ? shopHtkAdd(dmEmail, totalReward) : totalReward; setWalletBal(nb); if (typeof toast === "function") toast(`💰 건강금융지갑 +${shopWon(totalReward)} 적립!`); setOrdered(true); }}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
+              <button className="cbtn pri" onClick={() => { const nb = (typeof shopHtkAdd === "function") ? shopHtkAdd(dmEmail, totalReward) : totalReward; setWalletBal(nb); try { if (typeof subLogOrder === "function") subLogOrder(dm || { email: dmEmail }, cartItems); } catch (e) {} if (typeof toast === "function") toast(`💰 건강금융지갑 +${shopWon(totalReward)} 적립!`); setOrdered(true); }}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
               <div className="chnote" style={{ marginTop: 4 }}>※ 결제는 목업이며 실결제·재고 연동은 별도입니다. 건강적립금은 주문 시 건강금융지갑에 실제 반영됩니다.</div>
             </>)}
           </div>
@@ -853,6 +857,9 @@ function SupplementShop() {
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("reward");
   const [detail, setDetail] = useState(null);
+  /* 재구매 설계: 정기배송 패널 토글 + 진행 중 구독 수 */
+  const [subOpen, setSubOpen] = useState(false);
+  const subN = (() => { try { const mm = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null) || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? selfMember() : null); return (mm && typeof subSummary === "function") ? subSummary(mm).count : 0; } catch (e) { return 0; } })();
   const [live, setLive] = useState(null);
   const [liveLoading, setLiveLoading] = useState(false);
   useEffect(() => {
@@ -870,8 +877,14 @@ function SupplementShop() {
   const icoOf = (p) => (CATS[p.category] || {});
   return (
     <>
+      {/* 재구매 설계 ①: 소진 임박 배너 — 끊기기 전에 먼저 알린다 */}
+      {typeof SubDueBanner === "function" && <SubDueBanner onGoManage={() => setSubOpen(true)} />}
       <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
-      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></div>
+      <div className="bklbl" style={{ margin: "12px 0 8px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></span>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "6px 12px", fontSize: 11.5, marginLeft: "auto" }} onClick={() => setSubOpen((v) => !v)}><RefreshCw size={12} /> 내 정기배송{subN ? ` (${subN})` : ""}</button>
+      </div>
+      {subOpen && typeof SubscriptionPanel === "function" && <div style={{ marginBottom: 14 }}><SubscriptionPanel /></div>}
       {PRICE_FEED_CFG.mode !== "off" && <div className="pricefeed" title="상품을 누르면 실시간 최저가를 조회합니다"><RefreshCw size={12} /> {priceFeedLabel()} · 상품 클릭 시 조회</div>}
       <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
       <div className="sssort">

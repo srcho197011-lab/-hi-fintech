@@ -7477,7 +7477,9 @@ function ShopCartBar({ products }) {
   const [ordered, setOrdered] = useState(false);
   const [walletBal, setWalletBal] = useState(0);
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
-  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  /* 회원 식별 통일 — 운영자(조성래) 세션은 demoCurrentUser가 null이므로 selfMember 폴백(지갑 적립·주문 이력 키 일치) */
+  const dm = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null)
+    || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const dmEmail = dm ? dm.email : "default";
   const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
   const icoOf = (p) => (CATS[p.category] || {});
@@ -7502,6 +7504,8 @@ function ShopCartBar({ products }) {
             {ordered ? (
               <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · {shopWon(totalPrice)}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 <b>건강금융지갑에 적립되었습니다.</b></p>
                 <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "9px 12px", margin: "4px 0 12px", fontSize: 12.5, color: "#166534" }}><Wallet size={13} style={{ verticalAlign: -2 }} /> 건강금융지갑 누적 쇼핑 적립: <b>{shopWon(walletBal)}</b></div>
+                {/* 재구매 설계: 주문 직후가 정기배송 전환율이 가장 높은 순간 */}
+                {typeof SubOfferAfterOrder === "function" && <SubOfferAfterOrder items={cartItems} />}
                 <button className="cbtn pri" onClick={() => { shopCartClear(); setCartOpen(false); setOrdered(false); }}>확인</button></div>
             ) : (<>
               {cartItems.map(({ p, qty }) => { const r = rw(p.price); return (
@@ -7512,7 +7516,7 @@ function ShopCartBar({ products }) {
                 </div>
               ); })}
               <div className="csum"><div><span>합계 금액</span><b>{shopWon(totalPrice)}</b></div><div className="rew"><span><Coins size={12} /> 건강적립금</span><b>{shopWon(totalReward)}</b></div></div>
-              <button className="cbtn pri" onClick={() => { const nb = (typeof shopHtkAdd === "function") ? shopHtkAdd(dmEmail, totalReward) : totalReward; setWalletBal(nb); if (typeof toast === "function") toast(`💰 건강금융지갑 +${shopWon(totalReward)} 적립!`); setOrdered(true); }}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
+              <button className="cbtn pri" onClick={() => { const nb = (typeof shopHtkAdd === "function") ? shopHtkAdd(dmEmail, totalReward) : totalReward; setWalletBal(nb); try { if (typeof subLogOrder === "function") subLogOrder(dm || { email: dmEmail }, cartItems); } catch (e) {} if (typeof toast === "function") toast(`💰 건강금융지갑 +${shopWon(totalReward)} 적립!`); setOrdered(true); }}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
               <div className="chnote" style={{ marginTop: 4 }}>※ 결제는 목업이며 실결제·재고 연동은 별도입니다. 건강적립금은 주문 시 건강금융지갑에 실제 반영됩니다.</div>
             </>)}
           </div>
@@ -7538,6 +7542,9 @@ function SupplementShop() {
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("reward");
   const [detail, setDetail] = useState(null);
+  /* 재구매 설계: 정기배송 패널 토글 + 진행 중 구독 수 */
+  const [subOpen, setSubOpen] = useState(false);
+  const subN = (() => { try { const mm = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null) || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? selfMember() : null); return (mm && typeof subSummary === "function") ? subSummary(mm).count : 0; } catch (e) { return 0; } })();
   const [live, setLive] = useState(null);
   const [liveLoading, setLiveLoading] = useState(false);
   useEffect(() => {
@@ -7555,8 +7562,14 @@ function SupplementShop() {
   const icoOf = (p) => (CATS[p.category] || {});
   return (
     <>
+      {/* 재구매 설계 ①: 소진 임박 배너 — 끊기기 전에 먼저 알린다 */}
+      {typeof SubDueBanner === "function" && <SubDueBanner onGoManage={() => setSubOpen(true)} />}
       <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
-      <div className="bklbl" style={{ margin: "12px 0 8px" }}><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></div>
+      <div className="bklbl" style={{ margin: "12px 0 8px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></span>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "6px 12px", fontSize: 11.5, marginLeft: "auto" }} onClick={() => setSubOpen((v) => !v)}><RefreshCw size={12} /> 내 정기배송{subN ? ` (${subN})` : ""}</button>
+      </div>
+      {subOpen && typeof SubscriptionPanel === "function" && <div style={{ marginBottom: 14 }}><SubscriptionPanel /></div>}
       {PRICE_FEED_CFG.mode !== "off" && <div className="pricefeed" title="상품을 누르면 실시간 최저가를 조회합니다"><RefreshCw size={12} /> {priceFeedLabel()} · 상품 클릭 시 조회</div>}
       <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
       <div className="sssort">
@@ -20833,6 +20846,141 @@ const DEVICE_MEMBERS = [
   { tag: "전문 자문", company: "제이앤아이드바이저그룹", product: "헬스케어 자문", desc: "정밀영양·헬스케어 전문 자문", type: "전문 자문", url: "", col: "#475569", q: "제이앤아이 어드바이저그룹" },
 ];
 
+/* ══════════════ 정기배송(구독) 엔진 — 소진 예측·자동 재배송·순응 리마인드 ══════════════
+   설계 배경: 영양제·건강식품 매출은 신규 획득이 아니라 '끊기지 않게 하는 것'에서 나온다.
+   ① 구매 시 복용 주기로 소진일 자동 계산 → ② 소진 D-7 선제 안내 → ③ 정기배송 전환 → ④ 스킵·일시정지로 이탈 방지.
+   원칙: 회원 화면에 원가·마진 비노출(적립금만 표기) · 자동 결제는 회원 확인 2단계 · 언제든 해지 가능(위약 없음). */
+
+/* ── 회분(총 섭취 횟수) 파싱: "50포"·"60캡슐"·"600정"·"100g"(serving.total 기준) ── */
+function subServings(p) {
+  try {
+    if (p && p.serving && p.serving.total) return Math.max(1, Math.round(p.serving.total));
+    const v = String((p && p.volume) || "");
+    const m = v.match(/(\d[\d,]*)\s*(포|캡슐|정|스틱|병|개|매|팩)/);
+    if (m) return Math.max(1, parseInt(m[1].replace(/,/g, ""), 10));
+    const g = v.match(/(\d[\d,]*)\s*(g|ml|mL)/);
+    if (g) return Math.max(1, parseInt(g[1].replace(/,/g, ""), 10));
+  } catch (e) {}
+  return 30;
+}
+/* 1일 섭취량 — 라벨(serving.perDay) 우선, 없으면 카테고리 기본값 */
+const SUB_PERDAY_DEFAULT = { "프로바이오틱스": 1, "홍삼": 1, "비타민C": 1, "종합비타민": 1, "오메가3": 1, "루테인": 1, "밀크씨슬": 1, "마그네슘": 1, "비타민D": 1, "콜라겐": 1, "아연": 1 };
+function subPerDay(p) {
+  try { if (p && p.serving && p.serving.perDay) return Math.max(0.5, p.serving.perDay); } catch (e) {}
+  return (p && SUB_PERDAY_DEFAULT[p.category]) || 1;
+}
+/* 소진 예상 일수 — 총 회분 ÷ 1일 섭취량 (상한 180일: 대용량 제품의 비현실적 주기 방지) */
+function subDays(p, qty) {
+  const n = subServings(p) * Math.max(1, qty || 1);
+  const d = Math.round(n / subPerDay(p));
+  return Math.max(7, Math.min(180, d));
+}
+/* 권장 배송 주기(일) — 소진일에 맞춘 30·60·90일 중 선택지 */
+function subCycleOptions(p, qty) {
+  const d = subDays(p, qty);
+  const base = d <= 35 ? 30 : d <= 70 ? 60 : 90;
+  return { recommend: base, options: [30, 60, 90], estDays: d };
+}
+
+/* ── 구독 원장(회원별) ── */
+function _subKey(m) { return "hifin_subs_" + ((m && m.email) || "self"); }
+function subList(m) { try { return JSON.parse(localStorage.getItem(_subKey(m)) || "[]"); } catch (e) { return []; } }
+function _subSave(m, l) { try { localStorage.setItem(_subKey(m), JSON.stringify(l.slice(-40))); } catch (e) {} }
+const DAY = 86400000;
+function _fmtD(ts) { try { const d = new Date(ts); return `${d.getMonth() + 1}월 ${d.getDate()}일`; } catch (e) { return ""; } }
+
+/* 구독 생성 — 상품·수량·주기(일). 첫 배송은 즉시(주문분), 다음 배송은 주기 후 */
+function subCreate(m, p, qty, cycle) {
+  if (!m || !p) return null;
+  const q = Math.max(1, qty || 1);
+  const cyc = cycle || subCycleOptions(p, q).recommend;
+  const l = subList(m);
+  const exist = l.find((s) => s.pid === p.id && s.status !== "canceled");
+  if (exist) { exist.qty = q; exist.cycle = cyc; exist.status = "active"; _subSave(m, l); return exist; }
+  const now = Date.now();
+  const s = {
+    id: "SUB-" + now.toString(36).toUpperCase(), pid: p.id, name: p.name, brand: p.brand, category: p.category,
+    price: p.price, qty: q, cycle: cyc, estDays: subDays(p, q),
+    startAt: now, lastShipAt: now, nextShipAt: now + cyc * DAY, runOutAt: now + subDays(p, q) * DAY,
+    shipped: 1, skipped: 0, status: "active",
+    history: [{ at: now, ev: `정기배송 시작 — ${cyc}일마다 · 1회차 발송` }],
+  };
+  l.push(s); _subSave(m, l);
+  try { vaultAccessLog(anonToken(m), "member", `정기배송 등록(${p.name} · ${cyc}일 주기)`); } catch (e) {}
+  try { if (typeof notifPush === "function") notifPush(m, { t: "정기배송이 시작됐어요", d: `${p.name} · ${cyc}일마다 배송 · 다음 ${_fmtD(s.nextShipAt)} · 언제든 건너뛰기·해지 가능`, k: "shop" }); } catch (e) {}
+  return s;
+}
+function _subFind(m, id) { const l = subList(m); return { l, s: l.find((x) => x.id === id) }; }
+function subUpdate(m, id, patch, ev) {
+  const { l, s } = _subFind(m, id); if (!s) return null;
+  Object.assign(s, patch); (s.history = s.history || []).push({ at: Date.now(), ev });
+  _subSave(m, l); return s;
+}
+/* 이번 회차 건너뛰기 — 이탈 대신 '쉬어가기'(해지 방어의 핵심 장치) */
+function subSkip(m, id) {
+  const { s } = _subFind(m, id); if (!s) return null;
+  return subUpdate(m, id, { nextShipAt: s.nextShipAt + s.cycle * DAY, skipped: (s.skipped || 0) + 1 }, `이번 회차 건너뛰기 — 다음 ${_fmtD(s.nextShipAt + s.cycle * DAY)}`);
+}
+function subPause(m, id) { return subUpdate(m, id, { status: "paused" }, "일시정지 — 재개 전까지 발송 없음"); }
+function subResume(m, id) {
+  const { s } = _subFind(m, id); if (!s) return null;
+  const next = Math.max(Date.now() + 3 * DAY, s.nextShipAt);
+  return subUpdate(m, id, { status: "active", nextShipAt: next }, `재개 — 다음 ${_fmtD(next)}`);
+}
+function subCancel(m, id) { return subUpdate(m, id, { status: "canceled" }, "해지 — 위약금 없음"); }
+function subChangeCycle(m, id, cycle) {
+  const { s } = _subFind(m, id); if (!s) return null;
+  return subUpdate(m, id, { cycle, nextShipAt: s.lastShipAt + cycle * DAY }, `배송 주기 변경 — ${cycle}일마다`);
+}
+/* 지금 받기(앞당김) — 소진 임박 시 회원 확인 후 즉시 발송 */
+function subShipNow(m, id) {
+  const { s } = _subFind(m, id); if (!s) return null;
+  const now = Date.now();
+  const r = (typeof healthReward === "function") ? healthReward(s.price * s.qty) : { reward: Math.floor(s.price * s.qty * 0.25) };
+  const bonus = Math.floor(r.reward * 0.1);   // 정기배송 유지 보너스 10%(적립 규칙은 마진 내에서 운영)
+  try { if (typeof shopHtkAdd === "function") shopHtkAdd(m.email, r.reward + bonus); } catch (e) {}
+  return subUpdate(m, id, {
+    lastShipAt: now, nextShipAt: now + s.cycle * DAY, runOutAt: now + s.estDays * DAY, shipped: (s.shipped || 0) + 1,
+  }, `${(s.shipped || 0) + 1}회차 발송 — 적립 ${(r.reward + bonus).toLocaleString()}원(정기 보너스 포함)`);
+}
+
+/* ── 소진 예측 — D-7 이내 항목(정기배송 미등록 주문분 포함) ── */
+function _ordKey(m) { return "hifin_shop_orders_" + ((m && m.email) || "self"); }
+function subOrders(m) { try { return JSON.parse(localStorage.getItem(_ordKey(m)) || "[]"); } catch (e) { return []; } }
+/* 주문 기록 — 구독 전환 제안의 근거(주문 이력이 없으면 재구매 시점을 알 수 없다) */
+function subLogOrder(m, items) {
+  if (!m || !items || !items.length) return null;
+  const l = subOrders(m); const now = Date.now();
+  items.forEach(({ p, qty }) => {
+    if (!p) return;
+    l.push({ pid: p.id, name: p.name, category: p.category, price: p.price, qty: qty || 1, at: now, estDays: subDays(p, qty || 1), runOutAt: now + subDays(p, qty || 1) * DAY });
+  });
+  try { localStorage.setItem(_ordKey(m), JSON.stringify(l.slice(-60))); } catch (e) {}
+  return l.length;
+}
+/* 소진 임박(기본 7일 이내) — 구독분은 다음 배송일, 단품 주문분은 소진 예정일 기준 */
+function subDue(m, withinDays) {
+  const w = (withinDays || 7) * DAY, now = Date.now(), out = [];
+  subList(m).filter((s) => s.status === "active").forEach((s) => {
+    if (s.runOutAt - now <= w) out.push({ kind: "sub", id: s.id, name: s.name, days: Math.max(0, Math.round((s.runOutAt - now) / DAY)), nextShipAt: s.nextShipAt, sub: s });
+  });
+  const subs = new Set(subList(m).filter((s) => s.status !== "canceled").map((s) => s.pid));
+  const seen = new Set();
+  [...subOrders(m)].reverse().forEach((o) => {
+    if (subs.has(o.pid) || seen.has(o.pid)) return; seen.add(o.pid);
+    if (o.runOutAt - now <= w) out.push({ kind: "order", pid: o.pid, name: o.name, days: Math.max(0, Math.round((o.runOutAt - now) / DAY)), order: o });
+  });
+  return out.sort((a, b) => a.days - b.days);
+}
+/* 구독 요약(지갑·하이 카드용) */
+function subSummary(m) {
+  const l = subList(m).filter((s) => s.status !== "canceled");
+  const active = l.filter((s) => s.status === "active");
+  const monthly = active.reduce((s, x) => s + Math.round(x.price * x.qty * (30 / x.cycle)), 0);
+  const next = active.slice().sort((a, b) => a.nextShipAt - b.nextShipAt)[0] || null;
+  return { count: active.length, paused: l.length - active.length, monthly, next, due: subDue(m, 7) };
+}
+
 /* ══════════════ 건강식단 카탈로그 (Phase C 확장) ══════════════
    화면(Shop.jsx) 안에 있던 배열을 **데이터 계층으로 이관**했다 —
    A3 비교 엔진은 데이터 계층만 읽으므로, 컴포넌트에 있으면 식단은 영영 비교되지 않는다.
@@ -25799,6 +25947,8 @@ const AGENT_QNA = [
   { c: "shop", k: "device_reco", p: ["혈압계추천", "혈당계추천", "측정기추천", "홈케어기기", "의료기기추천", "안마"], a: "가정용 혈압계·연속혈당측정기·체성분계 같은 홈케어 기기를 검진 결과에 맞춰 추천해 드려요. 측정값을 상담에 공유하면 관리가 이어져요.", b: ["홈케어 기기 보기"], nav: "care", nx: [], lv: 1 },
   { c: "shop", k: "diet", p: ["식단구독", "건강식단", "밥배달", "케어푸드", "저당식단", "당뇨식단"], a: "당뇨·혈압·체중 관리식단(풀무원 디자인밀, 그리팅 등)을 구독으로 받아볼 수 있어요. 검진 이상 지표에 맞는 식단을 골라드릴게요.", b: ["맞춤 식단 보기"], nav: "care", nx: [], lv: 1 },
   { c: "shop", k: "price", p: ["최저가", "싸게", "가격비교", "제일싼", "할인"], a: "하이핀은 건강쇼핑을 국내 최저가 수준으로 제공하고, 여기에 마진의 50%를 HTK로 돌려드려요 — 실질 체감가는 더 낮아져요.", b: ["건강쇼핑 가기"], nav: "care", nx: [], lv: 1 },
+  /* 재구매 설계(2026-08-03) — 정기배송: 소진 예측·구독 현황·주기 변경 안내 */
+  { c: "shop", k: "subscription", p: ["정기배송", "정기구독", "구독현황", "영양제떨어", "떨어질때알려", "떨어지면알려", "다먹었", "재구매", "자동배송", "정기배송관리", "구독관리", "언제떨어져", "얼마나남았"], a: "", tool: "subs", b: [], nav: "shop", nx: [], lv: 1 },
   { c: "shop", k: "reward_use", p: ["적립금으로살수", "포인트로결제", "htk로결제", "적립금쓰"], a: "네, 쌓인 HTK로 쇼핑 결제가 돼요. 보험·치료비 전용 적립분(30%)은 보험료·의료비 결제에 우선 사용돼요.", b: ["내 적립금 보기"], nav: "mywallet", tool: "wallet", nx: [], lv: 1 },
   { c: "shop", k: "supp_safe", p: ["부작용", "같이먹어도", "약이랑영양제", "복용주의"], a: "복용 중인 약이 있으면 성분 상호작용을 꼭 확인해야 해요 — 제가 일반 정보를 드리지만, 최종 판단은 의사·약사와 상의하세요.", b: ["건강 상담 시작"], nav: "care", nx: [], lv: 2, guard: "med" },
   { c: "shop", k: "order_how", p: ["주문어떻게", "결제방법", "카드돼", "구매방법"], a: "상품을 고르고 카드·계좌·HTK 적립금으로 결제하면 돼요. 대화로 '이거 주문해줘'라고 하셔도 제가 주문 화면까지 안내해 드려요.", b: ["건강쇼핑 가기"], nav: "care", nx: [], lv: 1 },
@@ -26249,6 +26399,27 @@ const TOOL_RUN = {
     try { window.dispatchEvent(new CustomEvent("rpmrefresh")); } catch (e) {}
     return { lines: ["경보를 해제했어요 — 같은 추세가 이어지거나 새 이상 신호가 감지되면 다시 알려드릴게요."] };
   } catch (e) { return null; } },
+  // 정기배송(재구매 설계) — 소진 예측·구독 현황을 대화로: "언제 떨어져?"에 날짜로 답한다
+  subs(m) { try {
+    if (typeof subSummary !== "function") return null;
+    const S = subSummary(m);
+    const nm = m && m.name ? m.name : "회원";
+    if (!S.count && !S.due.length) return { lines: [
+      `${nm}님은 아직 정기배송이 없어요 — 영양제는 끊기는 순간 그동안의 관리가 리셋돼요.`,
+      "자주 드시는 제품을 정기배송으로 두면 떨어지기 전에 도착하고, 유지하실 때마다 적립이 10% 더 붙어요. 건너뛰기·해지는 언제든 가능해요(위약금 없음).",
+    ], buttons: ["건강쇼핑 가기"] };
+    const lines = [];
+    if (S.count) {
+      const nx = S.next ? `다음 배송은 ${new Date(S.next.nextShipAt).getMonth() + 1}월 ${new Date(S.next.nextShipAt).getDate()}일 ${S.next.name}이에요.` : "";
+      lines.push(`지금 정기배송 ${S.count}건이 돌아가고 있어요(월 예상 ${S.monthly.toLocaleString()}원). ${nx}`);
+    }
+    if (S.due.length) {
+      const d = S.due[0];
+      lines.push(`⏳ ${d.name}은 ${d.days === 0 ? "오늘이면" : d.days + "일 뒤면"} 다 떨어져요 — ${d.kind === "sub" ? "'지금 받기'로 앞당기거나 그대로 두셔도 돼요." : "정기배송으로 등록하면 떨어지기 전에 알아서 도착해요."}`);
+    }
+    lines.push("건너뛰기·주기 변경(30·60·90일)·해지는 건강쇼핑의 '내 정기배송'에서 언제든 하실 수 있어요.");
+    return { lines, buttons: ["건강쇼핑 가기"] };
+  } catch (e) { return null; } },
   // 내 지역 상담(Phase3) — "병원 안내받듯" 관할 지역단·상담사 소개 + 화면 딥링크(첫 안내 시나리오)
   regionconsult(m) { try {
     if (typeof lrRegionOf !== "function") return null;
@@ -26612,6 +26783,18 @@ function agentProactive() {
     const certs = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); const c = certs[certs.length - 1];
     const ts = (c && c.date && c.date !== "-" && typeof _hiParseDate === "function") ? _hiParseDate(c.date, Date.now()) : null;
     if (c && ts && ts >= Date.now() - 43200000) out.push({ text: `${c.date} ${c.center} 검진이 다가와요 — 전날 준비사항(금식 등)을 제가 챙겨드릴게요.`, buttons: ["검진 준비사항 알려줘"] });
+  } catch (e) {}
+  /* 재구매 설계 — 소진 임박 선제 안내(하루 1회): 떨어지기 전에 먼저 말한다 */
+  try {
+    if (typeof subDue === "function") {
+      const due = subDue(m, 7);
+      const k = "hifin_sub_due_seen_" + new Date().toDateString();
+      if (due.length && !sessionStorage.getItem(k)) {
+        const d = due[0];
+        out.push({ text: `⏳ ${d.name}이 ${d.days === 0 ? "오늘" : d.days + "일 뒤"} 다 떨어져요 — ${d.kind === "sub" ? "다음 배송을 앞당길까요?" : "정기배송으로 등록하면 알아서 도착해요."}`, buttons: ["정기배송 관리", "건강쇼핑 가기"] });
+        sessionStorage.setItem(k, "1");
+      }
+    }
   } catch (e) {}
   /* Phase4 업셀 트리거(리드 라우팅 §4.3) — 보험금(치료비) 수령 경험 후: "치료 중 생활비" 공백 제안(1회만·정보 제공형) */
   try { const cl = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); if (cl.length && !localStorage.getItem("hifin_upsell_seen")) { out.push({ text: "💠 치료비는 검진대비보험이 지켜드렸어요. 그런데 치료 '중' 생활비(일 못 하는 동안의 소득 공백)는 아직 비어 있어요 — 장기 플랜으로 채우는 방법을 보여드릴까요?", buttons: ["프리미엄 보험 상담받고 싶어", "우리 동네 상담사 연결해줘"] }); localStorage.setItem("hifin_upsell_seen", "1"); } } catch (e) {}
@@ -30032,6 +30215,16 @@ function shoppingAgent(question, ctx) {
   const ob = (ctx && ctx.ensemble) ? null : _a3Outbound(q);
   if (ob) return { handback: ob };
 
+  /* ⓪-1 정기배송(재구매) 질의 — 커머스 담당 에이전트가 소진 예측·구독 현황을 직접 답한다 */
+  if (/(정기\s*배송|정기\s*구독|구독\s*(현황|관리)|재구매|자동\s*배송|떨어질\s*때|떨어지면|다\s*먹었|언제\s*떨어져|얼마나\s*남았)/.test(q)) {
+    let m = null;
+    try { m = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null) || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? selfMember() : null); } catch (e) {}
+    let r = null;
+    try { r = (m && typeof TOOL_RUN !== "undefined" && TOOL_RUN.subs) ? TOOL_RUN.subs(m) : null; } catch (e) {}
+    if (r && r.lines) return { agent: "A3", lines: r.lines, cards: [], buttons: (r.buttons || ["건강쇼핑 가기"]).slice(0, 3),
+      cite: [{ source: "하이핀 정기배송", title: "소진 예측·구독 원장" }], nav: { key: "shop", label: "건강쇼핑" },
+      catalog: { products: [], values: [] }, compare: null, guard: [] };
+  }
   const wantsCompare = /(비교|추천|뭐가\s*(나|좋)|뭐\s*먹|먹으면\s*좋|어떤\s*(게|걸)|골라|고르|가성비|싼|저렴|차이|사고\s*싶|살까)/.test(q);
   const asksEfficacy = /(먹으면.{0,8}(낫|나아|좋아|효과)|효과\s*있|정말\s*(되|좋)|도움\s*되|치료(가\s*)?되)/.test(q);
   let cat = _a3Category(q);
@@ -33741,6 +33934,156 @@ function RegionConsultSection({ onTab }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ══════════════ 정기배송(구독) 화면 — 소진 임박 알림 · 내 정기배송 관리 ══════════════
+   설계: 매출은 '재구매'에서 나온다. 떨어질 때쯤 먼저 알려주고, 건너뛰기로 이탈 대신 쉬어가게 한다.
+   원칙: 자동 결제는 회원 확인 2단계 · 언제든 해지(위약금 없음) · 원가·마진 비노출(적립금만 표기). */
+
+function _subMember() {
+  try {
+    return ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null)
+      || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? selfMember() : null);
+  } catch (e) { return null; }
+}
+function _subWon(n) { return (Math.round(n) || 0).toLocaleString() + "원"; }
+function _subDate(ts) { try { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()}`; } catch (e) { return "-"; } }
+
+/* ── 소진 임박 배너 — 영양제몰 상단(끊김 방지의 첫 접점) ── */
+function SubDueBanner({ onGoManage }) {
+  const m = _subMember();
+  const [tick, setTick] = useState(0); void tick;
+  if (!m || typeof subDue !== "function") return null;
+  const due = subDue(m, 7);
+  if (!due.length) return null;
+  const d = due[0];
+  const products = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
+  const p = products.find((x) => x.id === (d.pid || (d.sub && d.sub.pid)));
+  return (
+    <div className="card" style={{ border: "1.5px solid #FED7AA", background: "linear-gradient(120deg,#FFF7ED,#FFFBEB)", margin: "0 0 12px" }}>
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ fontSize: 24 }}>⏳</span>
+        <div style={{ flex: "1 1 260px" }}>
+          <b style={{ fontSize: 14, color: "#9A3412" }}>{d.days === 0 ? `${d.name}, 오늘이면 다 떨어져요` : `${d.name}, ${d.days}일 뒤면 다 떨어져요`}</b>
+          <div style={{ fontSize: 12.3, color: "#7C2D12", marginTop: 4, lineHeight: 1.6 }}>
+            {d.kind === "sub"
+              ? <>다음 정기배송은 <b>{_subDate(d.nextShipAt)}</b> 예정이에요. 더 빨리 필요하면 지금 받기로 앞당길 수 있어요.</>
+              : <>끊기면 그동안의 관리가 리셋돼요 — 정기배송으로 등록하면 떨어지기 전에 알아서 도착해요.</>}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+          {d.kind === "sub"
+            ? <button className="cbtn pri" style={{ margin: 0, width: "auto", padding: "9px 15px", fontSize: 12 }} onClick={() => { subShipNow(m, d.id); setTick((t) => t + 1); if (typeof toast === "function") toast("지금 발송으로 앞당겼어요 — 적립도 함께 반영됐어요"); }}>지금 받기</button>
+            : p && <button className="cbtn pri" style={{ margin: 0, width: "auto", padding: "9px 15px", fontSize: 12 }} onClick={() => { const c = subCycleOptions(p, d.order.qty); subCreate(m, p, d.order.qty, c.recommend); setTick((t) => t + 1); if (typeof toast === "function") toast(`정기배송 등록 완료 — ${c.recommend}일마다 배송`); }}>정기배송 등록</button>}
+          <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 15px", fontSize: 12 }} onClick={() => onGoManage && onGoManage()}>내 정기배송</button>
+        </div>
+      </div>
+      {due.length > 1 && <div className="chnote" style={{ marginTop: 8 }}>이 외에 {due.length - 1}건이 곧 소진 예정이에요 — 내 정기배송에서 한 번에 확인할 수 있어요.</div>}
+    </div>
+  );
+}
+
+/* ── 주문 완료 직후 구독 전환 제안 — 전환율이 가장 높은 순간 ── */
+function SubOfferAfterOrder({ items, onDone }) {
+  const m = _subMember();
+  const [done, setDone] = useState(false);
+  if (!m || !items || !items.length || typeof subCycleOptions !== "function") return null;
+  const main = items.slice().sort((a, b) => (b.p.price * b.qty) - (a.p.price * a.qty))[0];
+  if (!main || !main.p) return null;
+  const c = subCycleOptions(main.p, main.qty);
+  if (done) return <div className="chnote" style={{ marginTop: 8, color: "#166534" }}>✅ 정기배송이 등록됐어요 — 다음 배송 전에 미리 알려드릴게요(건너뛰기·해지 언제든 가능).</div>;
+  return (
+    <div style={{ border: "1.5px solid #C7D8FA", background: "#F8FAFF", borderRadius: 12, padding: "12px 14px", margin: "10px 0 4px", textAlign: "left" }}>
+      <b style={{ fontSize: 13, color: "#14337A" }}>이 제품, {c.estDays}일이면 다 드세요</b>
+      <div style={{ fontSize: 12.2, color: "#475569", margin: "5px 0 9px", lineHeight: 1.6 }}>
+        {main.p.name} 기준 하루 {subPerDay(main.p)}회 섭취 시 약 <b>{c.estDays}일분</b>이에요. 떨어지기 전에 도착하도록 <b>{c.recommend}일 주기 정기배송</b>으로 등록할까요? 유지하시면 <b>적립 10% 추가</b>돼요.
+      </div>
+      <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+        {c.options.map((cy) => (
+          <button key={cy} className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 13px", fontSize: 11.8, background: cy === c.recommend ? "#1D4ED8" : undefined, color: cy === c.recommend ? "#fff" : undefined }}
+            onClick={() => { subCreate(m, main.p, main.qty, cy); setDone(true); if (typeof toast === "function") toast(`정기배송 등록 — ${cy}일마다 배송`); if (onDone) onDone(); }}>
+            {cy}일마다{cy === c.recommend ? " (추천)" : ""}
+          </button>
+        ))}
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 13px", fontSize: 11.8, color: "#64748B" }} onClick={() => setDone(true)}>지금은 괜찮아요</button>
+      </div>
+      <div className="chnote" style={{ marginTop: 7 }}>※ 자동 발송 전 항상 미리 알려드리고, 건너뛰기·주기 변경·해지가 언제든 가능해요(위약금 없음).</div>
+    </div>
+  );
+}
+
+/* ── 내 정기배송 관리 ── */
+function SubscriptionPanel() {
+  const m = _subMember();
+  const [tick, setTick] = useState(0); void tick;
+  if (!m) return <div className="card" style={{ margin: 0 }}><div className="chnote">로그인하면 내 정기배송을 관리할 수 있어요.</div></div>;
+  const subs = subList(m).filter((s) => s.status !== "canceled");
+  const S = subSummary(m);
+  const canceled = subList(m).filter((s) => s.status === "canceled").length;
+
+  return (
+    <div>
+      <div className="card" style={{ margin: "0 0 12px", background: "linear-gradient(125deg,#0B1F4B,#1D4ED8)", color: "#fff" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+          <div><div style={{ fontSize: 11.5, opacity: .8 }}>진행 중 정기배송</div><b style={{ fontSize: 22 }}>{S.count}건</b></div>
+          <div><div style={{ fontSize: 11.5, opacity: .8 }}>월 예상 금액</div><b style={{ fontSize: 22 }}>{_subWon(S.monthly)}</b></div>
+          {S.next && <div><div style={{ fontSize: 11.5, opacity: .8 }}>다음 배송</div><b style={{ fontSize: 18 }}>{_subDate(S.next.nextShipAt)} · {S.next.name}</b></div>}
+        </div>
+        <div style={{ fontSize: 11.3, opacity: .82, marginTop: 9, lineHeight: 1.6 }}>정기배송은 떨어지기 전에 도착하게 하는 장치예요 — 건너뛰기·주기 변경·해지가 언제든 가능하고 위약금이 없어요.</div>
+      </div>
+
+      {!subs.length && (
+        <div className="card" style={{ margin: 0 }}>
+          <div className="rct" style={{ marginBottom: 6 }}><RefreshCw size={15} color="#1D4ED8" /> 아직 정기배송이 없어요</div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.7 }}>
+            영양제는 <b>끊기는 순간 관리가 리셋</b>돼요. 자주 드시는 제품을 정기배송으로 두면 떨어지기 전에 도착하고, 유지하실 때마다 <b>적립이 10% 추가</b>돼요.
+            {canceled > 0 && <> (해지한 정기배송 {canceled}건은 언제든 다시 시작할 수 있어요.)</>}
+          </div>
+        </div>
+      )}
+
+      {subs.map((s) => {
+        const dLeft = Math.max(0, Math.round((s.runOutAt - Date.now()) / 86400000));
+        const pct = Math.max(0, Math.min(100, Math.round((dLeft / Math.max(1, s.estDays)) * 100)));
+        const paused = s.status === "paused";
+        return (
+          <div key={s.id} className="card" style={{ margin: "0 0 10px", border: paused ? "1.5px dashed var(--border)" : "1.5px solid var(--border)", opacity: paused ? .75 : 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <div>
+                <b style={{ fontSize: 14 }}>{s.name}</b> <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{s.brand} · {s.qty}개 · {s.cycle}일마다</span>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
+                  {paused ? "일시정지 중" : <>다음 배송 <b style={{ color: "#1D4ED8" }}>{_subDate(s.nextShipAt)}</b> · {s.shipped}회차 발송 완료{s.skipped ? ` · ${s.skipped}회 건너뜀` : ""}</>}
+                </div>
+              </div>
+              <b style={{ fontSize: 15, color: dLeft <= 7 ? "#DC2626" : "#334155" }}>{dLeft}일치 남음</b>
+            </div>
+            <div style={{ height: 8, background: "#EEF1F6", borderRadius: 999, overflow: "hidden", margin: "9px 0 10px" }}>
+              <div style={{ width: pct + "%", height: "100%", background: dLeft <= 7 ? "linear-gradient(90deg,#F97316,#DC2626)" : "linear-gradient(90deg,#1D4ED8,#0EA5E9)" }} />
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {!paused && <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { subShipNow(m, s.id); setTick((t) => t + 1); if (typeof toast === "function") toast("지금 발송했어요 — 적립도 반영됐어요"); }}>지금 받기</button>}
+              {!paused && <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { subSkip(m, s.id); setTick((t) => t + 1); if (typeof toast === "function") toast("이번 회차를 건너뛰었어요"); }}>이번엔 건너뛰기</button>}
+              {[30, 60, 90].filter((c) => c !== s.cycle).map((c) => (
+                <button key={c} className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { subChangeCycle(m, s.id, c); setTick((t) => t + 1); if (typeof toast === "function") toast(`배송 주기를 ${c}일로 변경했어요`); }}>{c}일 주기로</button>
+              ))}
+              {paused
+                ? <button className="cbtn pri" style={{ margin: 0, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { subResume(m, s.id); setTick((t) => t + 1); if (typeof toast === "function") toast("정기배송을 재개했어요"); }}>재개하기</button>
+                : <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { subPause(m, s.id); setTick((t) => t + 1); if (typeof toast === "function") toast("일시정지했어요 — 언제든 재개할 수 있어요"); }}>일시정지</button>}
+              <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 12px", fontSize: 11.5, color: "#B91C1C" }} onClick={() => { subCancel(m, s.id); setTick((t) => t + 1); if (typeof toast === "function") toast("해지했어요 — 위약금은 없어요"); }}>해지</button>
+            </div>
+            {s.history && s.history.length > 0 && (
+              <details style={{ marginTop: 8 }}><summary style={{ cursor: "pointer", fontSize: 11.3, color: "var(--muted)", fontWeight: 700 }}>배송·변경 이력 {s.history.length}건</summary>
+                <div style={{ marginTop: 5 }}>{[...s.history].reverse().slice(0, 6).map((h, i) => (
+                  <div key={i} style={{ fontSize: 11.3, color: "#475569", padding: "3px 2px" }}>{_subDate(h.at)} · {h.ev}</div>
+                ))}</div>
+              </details>
+            )}
+          </div>
+        );
+      })}
+      <div className="chnote">※ 시연 환경에서는 결제·배송이 목업으로 동작하며, 적립은 건강금융지갑에 실제 반영됩니다. 자동 발송 전에는 항상 사전 안내가 나가고, 회원이 건너뛰기·해지를 선택할 수 있습니다.</div>
     </div>
   );
 }
