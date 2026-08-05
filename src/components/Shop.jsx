@@ -877,6 +877,8 @@ function SupplementShop() {
   const icoOf = (p) => (CATS[p.category] || {});
   return (
     <>
+      {/* 전환 설계: 내 검진 수치 근거 처방전(원클릭 담기) — 광고가 아니라 내 숫자로 설명한다 */}
+      {typeof NutriRxCard === "function" && <NutriRxCard />}
       {/* 재구매 설계 ①: 소진 임박 배너 — 끊기기 전에 먼저 알린다 */}
       {typeof SubDueBanner === "function" && <SubDueBanner onGoManage={() => setSubOpen(true)} />}
       <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>

@@ -109,6 +109,24 @@ function shoppingAgent(question, ctx) {
   const ob = (ctx && ctx.ensemble) ? null : _a3Outbound(q);
   if (ob) return { handback: ob };
 
+  /* ⓪-0 결핍 처방전 질의 — "내 검진에 맞는 영양제"는 내 수치를 근거로 답한다(광고형 추천과 구분) */
+  if (/(내\s*검진|검진\s*결과.{0,6}(맞|기준)|내\s*수치.{0,6}(맞|기준)|결핍|부족한\s*(영양|성분)|처방전|나한테\s*(맞|필요)|나에게\s*(맞|필요))/.test(q)) {
+    let m2 = null;
+    try { m2 = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null) || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? selfMember() : null); } catch (e) {}
+    let R = null; try { R = (m2 && typeof nutriRx === "function") ? nutriRx(m2) : null; } catch (e) {}
+    if (R) {
+      const ls = [];
+      if (R.medical.length) ls.push(`먼저 알려드릴 게 있어요 — ${R.medical[0].name} 수치 때문에 제품보다 ${R.medical[0].dept} 진료가 먼저예요. ${R.medical[0].note}`);
+      if (R.rx.length) {
+        ls.push(`${(m2.name || "회원")}님 ${R.asOf || "최근"}년 검진 기준으로 우선순위를 뽑았어요 — ${R.rx.map((x, i) => `${i + 1}) ${x.ing}(${x.name} ${x.value}${x.unit})`).join(" · ")}.`);
+        ls.push(R.rx[0].why);
+        if (R.dup.length) ls.push(`다만 ${R.dup.join("·")}는 이미 드시고 있어서 중복이 될 수 있어요 — 기존 제품부터 확인해 주세요.`);
+      } else if (R.general.length) ls.push(R.general[0]);
+      ls.push("건강기능식품은 치료제가 아니고 이 안내는 진단이 아니에요 — 복용 중인 약이 있으면 의사·약사와 상의하세요.");
+      return { agent: "A3", lines: ls, cards: [], buttons: ["건강쇼핑 가기"], cite: [{ source: "내 검진 데이터", title: "결핍 처방전(수치 근거)" }],
+        nav: { key: "shop", label: "건강쇼핑" }, catalog: { products: [], values: [] }, compare: null, guard: [] };
+    }
+  }
   /* ⓪-1 정기배송(재구매) 질의 — 커머스 담당 에이전트가 소진 예측·구독 현황을 직접 답한다 */
   if (/(정기\s*배송|정기\s*구독|구독\s*(현황|관리)|재구매|자동\s*배송|떨어질\s*때|떨어지면|다\s*먹었|언제\s*떨어져|얼마나\s*남았)/.test(q)) {
     let m = null;

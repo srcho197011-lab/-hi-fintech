@@ -50,6 +50,7 @@ src/data/whitepaper.js
 src/data/checkupCenters.js
 src/data/shopProducts.js
 src/data/subscription.js
+src/data/nutriRx.js
 src/data/mealProducts.js
 src/data/skinProducts.js
 src/data/skinConcern.js
@@ -123,5 +124,6 @@ src/components/BlockchainVault.jsx
 src/components/HtkTopup.jsx
 src/components/RegionConsult.jsx
 src/components/Subscription.jsx
+src/components/NutriRx.jsx
 src/components/TrustCenter.jsx
 src/components/AgentDock.jsx
