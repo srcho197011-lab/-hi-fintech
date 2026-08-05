@@ -127,6 +127,23 @@ function shoppingAgent(question, ctx) {
         nav: { key: "shop", label: "건강쇼핑" }, catalog: { products: [], values: [] }, compare: null, guard: [] };
     }
   }
+  /* ⓪-0b 복용 순응·효과 질의 — 기록된 순응률과 '함께 기록된 변화'로 답한다(효과 단정 금지) */
+  if (/(복용\s*(체크|기록|했|현황)|먹었|얼마나\s*먹|효과\s*(있|없|어때|봤)|순응|잘\s*듣|성과\s*(리포트|확인))/.test(q)) {
+    let m3 = null;
+    try { m3 = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null) || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? selfMember() : null); } catch (e) {}
+    let O = null; try { O = (m3 && typeof adhOutcome === "function") ? adhOutcome(m3) : null; } catch (e) {}
+    if (O && O.summary.items.length) {
+      const S = O.summary; const ls = [];
+      ls.push(`복용 기록 기준으로 총 ${S.totalDays}일, 평균 순응률 ${S.avgRate}%예요(오늘 ${S.checkedToday}/${S.items.length} 체크).`);
+      if (O.rows.length) {
+        const r = O.rows[0];
+        ls.push(`${r.ing} ${r.days}일 복용 기간과 함께 ${r.name}이 ${r.from}${r.unit} → ${r.to}${r.unit}로 ${r.better ? "개선 방향" : "관리 필요 방향"}으로 기록됐어요.`);
+        ls.push("다만 생활습관·치료 등 다른 요인이 함께 작용하기 때문에 제품의 효과로 단정하지는 않아요 — 개선분은 원하시면 4세대 성과 자산으로 기록해 드려요.");
+      } else ls.push("다음 검진이 연계되면 복용 기간과 함께 기록된 변화를 보여드릴게요 — 지금은 꾸준히 체크하는 게 가장 중요해요.");
+      return { agent: "A3", lines: ls, cards: [], buttons: ["건강쇼핑 가기"], cite: [{ source: "복용 기록·검진 데이터", title: "순응률·성과 리포트" }],
+        nav: { key: "shop", label: "건강쇼핑" }, catalog: { products: [], values: [] }, compare: null, guard: [] };
+    }
+  }
   /* ⓪-1 정기배송(재구매) 질의 — 커머스 담당 에이전트가 소진 예측·구독 현황을 직접 답한다 */
   if (/(정기\s*배송|정기\s*구독|구독\s*(현황|관리)|재구매|자동\s*배송|떨어질\s*때|떨어지면|다\s*먹었|언제\s*떨어져|얼마나\s*남았)/.test(q)) {
     let m = null;
