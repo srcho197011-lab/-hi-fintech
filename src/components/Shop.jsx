@@ -801,14 +801,24 @@ function ShopCartBar({ products }) {
   const cartItems = Object.keys(cart).map((id) => ({ p: (products || []).find((x) => x.id === id), qty: cart[id] })).filter((x) => x.p);
   const totalCnt = cartItems.reduce((s, x) => s + x.qty, 0);
   const totalPrice = cartItems.reduce((s, x) => s + x.p.price * x.qty, 0);
-  const totalReward = cartItems.reduce((s, x) => s + rw(x.p.price).reward * x.qty, 0);
+  /* ── 전환 설계 ③: 적립금 즉시 차감 — '적립'은 미래고 '할인'은 현재다 ──
+     보험·치료비 전용 우선적립분(30%)은 결제에 쓰지 않고, 일반 적립분(70%)만 쇼핑 결제에 사용한다(사업계획서 적립 규칙 유지). */
+  const HTK_RATE = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
+  const balHtk = (() => { try { const b = (dm && typeof tlSync === "function") ? tlSync(dm) : null; if (b != null) return b; return (typeof shopHtkPts === "function") ? shopHtkPts(dmEmail) : 0; } catch (e) { return 0; } })();
+  const usableWon = Math.max(0, Math.floor(balHtk * 0.7) * HTK_RATE);          // 쇼핑 사용 가능액(원)
+  const maxUseWon = Math.min(usableWon, totalPrice);
+  const [useWon, setUseWon] = useState(0);
+  const appliedWon = Math.min(useWon, maxUseWon);
+  const payWon = Math.max(0, totalPrice - appliedWon);                          // 최종 결제액(현금 결제분)
+  /* 적립은 현금 결제분 기준 — 적립금으로 결제한 금액에는 다시 적립하지 않는다(이중 적립 방지) */
+  const totalReward = rw(payWon).reward;
   if (totalCnt === 0 && !cartOpen) return null;
   return (
     <>
       {totalCnt > 0 && (
         <div className="cartbar" onClick={() => setCartOpen(true)}>
           <span className="cbico"><ShoppingCart size={17} /><i>{totalCnt}</i></span>
-          <div className="cbinfo"><b>합계 {shopWon(totalPrice)}</b><span><Coins size={11} color="#FDE68A" /> 건강적립금 {shopWon(totalReward)}</span></div>
+          <div className="cbinfo"><b>합계 {shopWon(totalPrice)}</b><span><Coins size={11} color="#FDE68A" /> {usableWon > 0 ? `적립금 ${shopWon(Math.min(usableWon, totalPrice))}까지 즉시 할인 가능` : `건강적립금 ${shopWon(totalReward)}`}</span></div>
           <button className="cbgo">주문하기 ›</button>
         </div>
       )}
@@ -817,7 +827,7 @@ function ShopCartBar({ products }) {
           <div className="pdh"><b>{ordered ? "주문 접수" : "장바구니"}</b><button onClick={() => { setCartOpen(false); setOrdered(false); }}><X size={19} /></button></div>
           <div className="pdbody">
             {ordered ? (
-              <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · {shopWon(totalPrice)}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 <b>건강금융지갑에 적립되었습니다.</b></p>
+              <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · 상품 {shopWon(totalPrice)}{appliedWon > 0 ? <> · 적립금 <b style={{ color: "#B45309" }}>−{shopWon(appliedWon)}</b> 사용 → 결제 <b>{shopWon(payWon)}</b></> : null}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 <b>건강금융지갑에 적립되었습니다.</b></p>
                 <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "9px 12px", margin: "4px 0 12px", fontSize: 12.5, color: "#166534" }}><Wallet size={13} style={{ verticalAlign: -2 }} /> 건강금융지갑 누적 쇼핑 적립: <b>{shopWon(walletBal)}</b></div>
                 {/* 재구매 설계: 주문 직후가 정기배송 전환율이 가장 높은 순간 */}
                 {typeof SubOfferAfterOrder === "function" && <SubOfferAfterOrder items={cartItems} />}
@@ -830,8 +840,38 @@ function ShopCartBar({ products }) {
                   <div className="cqty"><button onClick={() => shopCartSetQty(p.id, qty - 1)}>−</button><b>{qty}</b><button onClick={() => shopCartSetQty(p.id, qty + 1)}>+</button></div>
                 </div>
               ); })}
-              <div className="csum"><div><span>합계 금액</span><b>{shopWon(totalPrice)}</b></div><div className="rew"><span><Coins size={12} /> 건강적립금</span><b>{shopWon(totalReward)}</b></div></div>
-              <button className="cbtn pri" onClick={() => { const nb = (typeof shopHtkAdd === "function") ? shopHtkAdd(dmEmail, totalReward) : totalReward; setWalletBal(nb); try { if (typeof subLogOrder === "function") subLogOrder(dm || { email: dmEmail }, cartItems); } catch (e) {} if (typeof toast === "function") toast(`💰 건강금융지갑 +${shopWon(totalReward)} 적립!`); setOrdered(true); }}><ShoppingCart size={15} /> {shopWon(totalPrice)} 주문하기</button>
+              {/* 적립금 즉시 차감 — 결제 직전에 '지금 깎이는 돈'을 보여준다 */}
+              {dm && usableWon > 0 && (
+                <div style={{ border: "1.5px solid #FDE68A", background: "#FFFBEB", borderRadius: 12, padding: "11px 13px", margin: "8px 0 4px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                    <Coins size={15} color="#B45309" />
+                    <b style={{ fontSize: 12.8, color: "#92400E" }}>건강적립금으로 지금 바로 할인</b>
+                    <span style={{ fontSize: 11.3, color: "#A16207", marginLeft: "auto" }}>보유 {balHtk.toLocaleString()} HTK · 쇼핑 사용 가능 {shopWon(usableWon)}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 9 }}>
+                    <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 13px", fontSize: 11.5, background: appliedWon === 0 ? "#64748B" : undefined, color: appliedWon === 0 ? "#fff" : undefined }} onClick={() => setUseWon(0)}>사용 안 함</button>
+                    {[10000, 30000].filter((v) => v < maxUseWon).map((v) => (
+                      <button key={v} className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 13px", fontSize: 11.5, background: appliedWon === v ? "#B45309" : undefined, color: appliedWon === v ? "#fff" : undefined }} onClick={() => setUseWon(v)}>{shopWon(v)}</button>
+                    ))}
+                    <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 13px", fontSize: 11.5, background: appliedWon === maxUseWon && maxUseWon > 0 ? "#B45309" : undefined, color: appliedWon === maxUseWon && maxUseWon > 0 ? "#fff" : undefined }} onClick={() => setUseWon(maxUseWon)}>전액 {shopWon(maxUseWon)}</button>
+                  </div>
+                  <div className="chnote" style={{ marginTop: 7 }}>보험·치료비 전용 우선적립분(30%)은 결제에 사용되지 않고 그대로 보존돼요 · 적립금으로 결제한 금액에는 중복 적립되지 않아요.</div>
+                </div>
+              )}
+              <div className="csum">
+                <div><span>상품 금액</span><b>{shopWon(totalPrice)}</b></div>
+                {appliedWon > 0 && <div><span style={{ color: "#B45309" }}><Coins size={12} /> 건강적립금 사용</span><b style={{ color: "#B45309" }}>− {shopWon(appliedWon)}</b></div>}
+                <div><span style={{ fontWeight: 800 }}>최종 결제액</span><b style={{ fontSize: 16, color: "#1D4ED8" }}>{shopWon(payWon)}</b></div>
+                <div className="rew"><span><Coins size={12} /> 건강적립금 적립</span><b>{shopWon(totalReward)}</b></div>
+              </div>
+              <button className="cbtn pri" onClick={() => {
+                /* 사용분은 단일 원장에서 차감(HTK) → 적립은 현금 결제분 기준으로 가산 */
+                try { if (appliedWon > 0 && dm && typeof tlSpend === "function") tlSpend(dm, Math.round(appliedWon / HTK_RATE), `건강쇼핑 결제 사용 — ${shopWon(appliedWon)} 차감`); } catch (e) {}
+                const nb = (typeof shopHtkAdd === "function") ? shopHtkAdd(dmEmail, totalReward) : totalReward; setWalletBal(nb);
+                try { if (typeof subLogOrder === "function") subLogOrder(dm || { email: dmEmail }, cartItems); } catch (e) {}
+                if (typeof toast === "function") toast(appliedWon > 0 ? `💰 적립금 ${shopWon(appliedWon)} 사용 · +${shopWon(totalReward)} 적립!` : `💰 건강금융지갑 +${shopWon(totalReward)} 적립!`);
+                setOrdered(true);
+              }}><ShoppingCart size={15} /> {shopWon(payWon)} 주문하기{appliedWon > 0 ? ` (${shopWon(appliedWon)} 할인)` : ""}</button>
               <div className="chnote" style={{ marginTop: 4 }}>※ 결제는 목업이며 실결제·재고 연동은 별도입니다. 건강적립금은 주문 시 건강금융지갑에 실제 반영됩니다.</div>
             </>)}
           </div>
