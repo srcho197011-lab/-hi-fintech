@@ -127,6 +127,21 @@ function shoppingAgent(question, ctx) {
         nav: { key: "shop", label: "건강쇼핑" }, catalog: { products: [], values: [] }, compare: null, guard: [] };
     }
   }
+  /* ⓪-0c 가족 세트 질의 — 가족 건강정보는 쓰지 않고 연령·성별 일반 권장으로 구성한다 */
+  if (/(가족\s*(세트|영양제|건강\s*세트|꺼|것)|부모님\s*영양제|아이\s*영양제|온\s*가족|우리\s*가족.{0,6}(영양|챙))/.test(q)) {
+    let m4 = null;
+    try { m4 = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null) || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? selfMember() : null); } catch (e) {}
+    let S = null; try { S = (m4 && typeof famSetBuild === "function") ? famSetBuild(m4) : null; } catch (e) {}
+    if (S && S.count >= 2) {
+      const ls = [
+        `가족 ${S.count}명 기준으로 세트를 구성해봤어요 — ${S.members.map((x) => `${x.name}(${x.items.map((i) => i.ing).join("·")})`).join(" / ")}.`,
+        `합계 ${S.total.toLocaleString()}원 · 적립 ${S.reward.toLocaleString()}원(가족 묶음 보너스 ${Math.round(S.bonusRate * 100)}% 포함)이에요.`,
+        "가족 구성원 추천은 나이·성별에 따른 일반 권장이에요 — 가족의 건강검진 정보는 본인 동의 없이 쓰지 않아요. 건강기능식품은 치료제가 아니고, 이미 드시는 성분과 겹치지 않는지 확인해 주세요.",
+      ];
+      return { agent: "A3", lines: ls, cards: [], buttons: ["건강쇼핑 가기"], cite: [{ source: "가족 구성·생애주기", title: "가족 건강 세트" }],
+        nav: { key: "shop", label: "건강쇼핑" }, catalog: { products: [], values: [] }, compare: null, guard: [] };
+    }
+  }
   /* ⓪-0b 복용 순응·효과 질의 — 기록된 순응률과 '함께 기록된 변화'로 답한다(효과 단정 금지) */
   if (/(복용\s*(체크|기록|했|현황)|먹었|얼마나\s*먹|효과\s*(있|없|어때|봤)|순응|잘\s*듣|성과\s*(리포트|확인))/.test(q)) {
     let m3 = null;
