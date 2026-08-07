@@ -562,7 +562,7 @@ function AIPlannerChat({ onSimple, initialAsk }) {
   return (
     <div className="aipwrap">
       <div className="aiphd"><span className="aipav"><Bot size={18} /></span><div className="aiphi"><b>하이 · 보험·보장 상담</b><span>건강데이터 × 실손·중대질환 융합 분석</span></div><span className="aipbadge">{member ? nm + "님 데이터 연동" : "약관 학습완료"}</span></div>
-      {onSimple && <button className="aipsimple" onClick={onSimple}><span className="aipsimple-l"><Zap size={17} /> 간편단기특화보험</span><span className="aipsimple-r">위험질병별 1년 단기 밀도가입 <ChevronRight size={16} /></span></button>}
+      {onSimple && <button className="aipsimple" onClick={onSimple}><span className="aipsimple-l"><Zap size={17} /> 간편단기특화보험</span><span className="aipsimple-r">위험질병별 갱신형 밀도가입 <ChevronRight size={16} /></span></button>}
       <div className="aipbody">
         {msgs.map((m, i) => (
           <div key={i} className={`aiprow ${m.who}`}>
@@ -717,7 +717,7 @@ function SimpleEnrollWizard({ plan, member, onClose, onConsult }) {
   );
 }
 
-/* ── 간편 · 내 몸 맞춤 간편보험 — 발병 위험 질병별 1년 단기 밀도 가입 코너 ── */
+/* ── 갱신형 · 내 몸 맞춤 간편보험 — 발병 위험 질병별 갱신형 밀도 가입 코너 ── */
 function SimpleBodyInsurance({ initialPlanKey } = {}) {
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const _self = !dm && typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null;
@@ -755,8 +755,8 @@ function SimpleBodyInsurance({ initialPlanKey } = {}) {
   useEffect(() => { if (initialPlanKey) { const row = PLANS.find((p) => p[0] === initialPlanKey); if (row) setWiz(planObj(row)); } }, [initialPlanKey]);
   return (
     <div className="mhbox sbins">
-      <div className="bt"><Sparkles size={16} style={{ verticalAlign: "-2px", color: "#F97316" }} /> 간편 · 내 몸 맞춤 간편보험</div>
-      <div className="bs">발병 위험이 높은 질병만 골라 <b>1년 단위 단기보험</b>으로 밀도 있게 — 지금 내 몸(건강리포트)에 <b>꼭 필요한 보장만</b> 간편하게 가입하세요.</div>
+      <div className="bt"><Sparkles size={16} style={{ verticalAlign: "-2px", color: "#F97316" }} /> 갱신형 · 내 몸 맞춤 간편보험</div>
+      <div className="bs">발병 위험이 높은 질병만 골라 <b>갱신형 간편보험</b>으로 밀도 있게 — 지금 내 몸(건강리포트)에 <b>꼭 필요한 보장만</b> 간편하게 가입하세요.</div>
       {nm && recoNames.length > 0 && (
         <div className="sbins-reco"><Sparkles size={13} /> AI가 <b>{nm}</b>님 건강리포트 기준으로 <b>{recoNames.slice(0, 3).join(" · ")}</b> 우선 가입을 추천했어요.</div>
       )}
@@ -767,7 +767,7 @@ function SimpleBodyInsurance({ initialPlanKey } = {}) {
             <div className="sbins-hd"><span className="sbins-ic"><Ic size={18} /></span><b>{name}</b></div>
             <div className="sbins-desc">{desc}</div>
             <div className="sbins-cover"><ShieldCheck size={12} /> {cover}</div>
-            <div className="sbins-foot"><span className="sbins-prem">{prem}<small>1년 단기·간편심사</small></span><button className="sbins-btn" onClick={() => openWiz(row)}>간편 가입</button></div>
+            <div className="sbins-foot"><span className="sbins-prem">{prem}<small>갱신형·간편심사</small></span><button className="sbins-btn" onClick={() => openWiz(row)}>간편 가입</button></div>
           </div>); })}
       </div>
       {wiz && <SimpleEnrollWizard plan={wiz} member={member} onClose={() => setWiz(null)} onConsult={() => openConsult("간편 내몸맞춤 간편보험 — " + wiz.name + " 설계사 확인")} />}
@@ -775,7 +775,7 @@ function SimpleBodyInsurance({ initialPlanKey } = {}) {
         <button className="cbtn pri" style={{ margin: 0 }} onClick={() => openConsult("간편 내몸맞춤 간편보험 — 종합 설계")}><MessageSquare size={15} /> 내 몸 맞춤 간편보험 종합 상담</button>
         <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("manage")}><FileText size={15} /> 내 건강리포트로 위험 확인</button>
       </div>
-      <div className="sbins-note"><b>1년 단기 일반손해보험 · 간편심사 · 자동갱신</b> — 장기보험이 아닌 단기 상품입니다. ※ 보장금액·보험료는 <b>예시(안)</b>이며, 실제 가입가능 담보·한도·보험료·심사기준은 제휴 보험사 상품약관과 관련 법령(보험업법 등)에 따라 확정됩니다.</div>
+      <div className="sbins-note"><b>갱신형 일반손해보험 · 간편심사 · 자동갱신</b> — 장기보험이 아닌 갱신형 상품입니다. ※ 보장금액·보험료는 <b>예시(안)</b>이며, 실제 가입가능 담보·한도·보험료·심사기준은 제휴 보험사 상품약관과 관련 법령(보험업법 등)에 따라 확정됩니다.</div>
       <InsAgencyLine />
     </div>
   );
