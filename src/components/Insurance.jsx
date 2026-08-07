@@ -775,7 +775,7 @@ function SimpleBodyInsurance({ initialPlanKey } = {}) {
         <button className="cbtn pri" style={{ margin: 0 }} onClick={() => openConsult("간편 내몸맞춤 간편보험 — 종합 설계")}><MessageSquare size={15} /> 내 몸 맞춤 간편보험 종합 상담</button>
         <button className="cbtn" style={{ margin: 0 }} onClick={() => nav("manage")}><FileText size={15} /> 내 건강리포트로 위험 확인</button>
       </div>
-      <div className="sbins-note"><b>갱신형 일반손해보험 · 간편심사 · 자동갱신</b> — 장기보험이 아닌 갱신형 상품입니다. ※ 보장금액·보험료는 <b>예시(안)</b>이며, 실제 가입가능 담보·한도·보험료·심사기준은 제휴 보험사 상품약관과 관련 법령(보험업법 등)에 따라 확정됩니다.</div>
+      <div className="sbins-note"><b>갱신형 간편보험 · 간편심사 · 자동갱신</b> — 장기보험이 아닌 갱신형 상품입니다. ※ 보장금액·보험료는 <b>예시(안)</b>이며, 실제 가입가능 담보·한도·보험료·심사기준은 제휴 보험사 상품약관과 관련 법령(보험업법 등)에 따라 확정됩니다.</div>
       <InsAgencyLine />
     </div>
   );

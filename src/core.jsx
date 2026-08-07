@@ -426,9 +426,9 @@ const CAT_META = {
 function CatIcon({ c }) { const m = CAT_META[c] || [Search, "#64748B"]; const Ic = m[0]; return <Ic size={14} color={m[1]} />; }
 
 /* 상담 신청 폼 — 이름·연락처·관심분야 */
-/* 상담 이원화(2026-07-31) — 간편보험(갱신형·일반손해) vs 프리미엄보험(장기)을 관심분야부터 분리.
+/* 상담 이원화(2026-07-31) — 간편보험(갱신형) vs 프리미엄보험(장기)을 관심분야부터 분리.
    판매 주체: 금융위 등록 보험대리점 글로벌예방금융(주) 제2025060038호(보험업법 §87①·감독규정 §4-4③). */
-const INT_SIMPLE = "내 몸 맞춤 간편보험 (갱신형·일반손해)";
+const INT_SIMPLE = "내 몸 맞춤 간편보험 (갱신형)";
 const INT_PREMIUM = "내 몸 맞춤 프리미엄보험 (장기)";
 function ConsultModal({ interest, onClose }) {
   const INTERESTS = [INT_PREMIUM, INT_SIMPLE, "건강검진 대비보험", "실손보험", "건강검진 예약", "재가·돌봄 서비스", "기업검진 도입", "건강·보험 종합 상담"];
@@ -459,7 +459,7 @@ function ConsultModal({ interest, onClose }) {
     try { if (typeof vaultAccessLog === "function" && typeof anonToken === "function") vaultAccessLog(anonToken(gm), "member", "프리미엄(장기)보험 상담 — 사전 동의 확인·기록"); } catch (e) {}
     setCtick((t) => t + 1);
   };
-  const catLine = f.interest === INT_SIMPLE ? "갱신형 일반손해보험 상담입니다 · 간편심사 · 자동갱신"
+  const catLine = f.interest === INT_SIMPLE ? "갱신형 간편보험 상담입니다 · 간편심사 · 자동갱신"
     : f.interest === INT_PREMIUM ? "장기보험 종합 설계 상담입니다 · 건강데이터 기반 인수심사" : null;
   const consentDate = (() => { try { return consentInfo && consentInfo.ts ? new Date(consentInfo.ts).toLocaleDateString("ko-KR") : null; } catch (e) { return null; } })();
   /* 상담 신청 안 지도(Phase 4) — 상담 대상 기관이 있으면 그 위치, 없으면 내 주변 제휴 검진센터 */
