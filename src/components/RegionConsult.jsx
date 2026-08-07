@@ -24,10 +24,10 @@ function InsLifeCostCard({ onTab }) {
         ))}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 11, flexWrap: "wrap" }}>
-        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => onTab && onTab("rerate")}><ShieldCheck size={13} /> 건강 관리로 보험료 인하(인하 전용 재산정)</button>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => onTab && onTab("rerate")}><ShieldCheck size={13} /> 건강 관리로 보험료 인하(인하·가입확대 전용)</button>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => onTab && onTab("region")}><MapPin size={13} /> 가족 세대 설계 — 내 지역 상담</button>
       </div>
-      <div className="chnote" style={{ marginTop: 9 }}>※ 담보 구성은 설계 방향(안)이며 실제 상품화·보장·보험료는 인수사(현대해상) 상품 정책과 관련 법령·심사에 따라 확정됩니다. 건강 성과 데이터는 <b>인하 전용</b>으로만 작동해요(인수 거절·할증 근거 사용 금지).</div>
+      <div className="chnote" style={{ marginTop: 9 }}>※ 담보 구성은 설계 방향(안)이며 실제 상품화·보장·보험료는 인수사(현대해상) 상품 정책과 관련 법령·심사에 따라 확정됩니다. 건강 성과 데이터는 <b>인하 및 가입확대형 전용</b>으로만 작동해요(인수 거절·할증 근거 사용 금지).</div>
     </div>
   );
 }

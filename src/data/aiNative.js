@@ -212,12 +212,12 @@ const TOOL_RUN = {
     const d = ds[0];
     return { lines: [`${d.date}에 데이터 활용 배당 +${d.htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 ${d.gens.map((g) => g + "세대").join("·")} 자산이 「${d.study}」에 활용됐어요(${d.org} · 가명 요약만 제공).`, "내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가가 약속대로 돌아온 거예요. 동의·계보·접근 기록은 데이터 금고에서 전부 확인돼요."], buttons: ["내 자산 계보 보여줘"] };
   } catch (e) { return null; } },
-  // 요율 재산정 — 인하 전용 실행(과업4: insService 실지표 계산으로 재배선 — 고정값 경로 폐기)
+  // 요율 재산정 — 인하 및 가입확대형 전용 실행(과업4: insService 실지표 계산으로 재배선 — 고정값 경로 폐기)
   reratedo(m) { try {
     const st = (typeof rerateState === "function") ? rerateState() : { status: "none" };
     if (st.status === "done") return { lines: [`이미 재산정이 완료됐어요 — 월 ${st.before.toLocaleString()}원 → ${st.after.toLocaleString()}원(-${st.rate}%), 연 ${(st.saving * 12).toLocaleString()}원 절감이에요.`] };
     const r = (typeof insService !== "undefined") ? insService.rerateApply(m) : null; if (!r) return null;
-    if (!r.ok) return { lines: [r.reason + " — 인하 전용이라 손해 볼 일은 없어요."], buttons: ["검진결과 올리기"] };
+    if (!r.ok) return { lines: [r.reason + " — 인하 및 가입확대형 전용이라 손해 볼 일은 없어요."], buttons: ["검진결과 올리기"] };
     const s = r.state;
     return { lines: [`재산정 신청을 제출했어요 — 실측 개선 지표(${(s.improved || []).join("·")})가 보험사에 요약으로만 전달됐고, 즉시 반영됐어요: 월 보험료 ${s.before.toLocaleString()}원 → ${s.after.toLocaleString()}원 (-${s.rate}% · 연 ${(s.saving * 12).toLocaleString()}원 절감).`, "보험료가 나이가 아니라 관리를 따라간 순간이에요. 기록은 블록체인·접근 이력에 남았어요."] };
   } catch (e) { return null; } },
@@ -732,7 +732,7 @@ function agentProactive() {
   try { const cl = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); if (cl.length && !localStorage.getItem("hifin_upsell_seen")) { out.push({ text: "💠 치료비는 검진대비보험이 지켜드렸어요. 그런데 치료 '중' 생활비(일 못 하는 동안의 소득 공백)는 아직 비어 있어요 — 장기 플랜으로 채우는 방법을 보여드릴까요?", buttons: ["프리미엄 보험 상담받고 싶어", "우리 동네 상담사 연결해줘"] }); localStorage.setItem("hifin_upsell_seen", "1"); } } catch (e) {}
   /* Phase 5 선제 알림 — 배당 지급·요율 재산정 자격(묻기 전에 먼저) */
   try { if (!localStorage.getItem("hifin_divi_seen")) { const ds = (typeof dataDividends === "function") ? dataDividends(m) : []; if (ds.length) { out.push({ text: `데이터 활용 배당 +${ds[0].htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 데이터가 「${ds[0].study.split("(")[0]}」에 활용됐어요.`, buttons: ["배당 내역 보여줘"] }); localStorage.setItem("hifin_divi_seen", "1"); } } } catch (e) {}
-  try { const st = (typeof rerateState === "function") ? rerateState() : { status: "done" }; if (st.status !== "done" && typeof rerateEligible === "function" && rerateEligible(m)) out.push({ text: "개선된 건강상태로 보험료 재산정을 신청할 수 있어요 — 인하 전용이라 손해 볼 일은 없어요.", buttons: ["요율 재산정 신청해줘"] }); } catch (e) {}
+  try { const st = (typeof rerateState === "function") ? rerateState() : { status: "done" }; if (st.status !== "done" && typeof rerateEligible === "function" && rerateEligible(m)) out.push({ text: "개선된 건강상태로 보험료 재산정을 신청할 수 있어요 — 인하 및 가입확대형 전용이라 손해 볼 일은 없어요.", buttons: ["요율 재산정 신청해줘"] }); } catch (e) {}
   return out.slice(0, 3);
 }
 

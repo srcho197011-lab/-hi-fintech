@@ -445,9 +445,9 @@ function _insServiceRoute(text, member) {
     const R = insService.rerate(member);
     if (R.state && R.state.status === "done") return { bubbles: [{ kind: "text", text: `이미 적용돼 있어요 — 월 ${won(R.state.before)} → ${won(R.state.after)} (−${R.state.rate}%).` }], quicks: [] };
     const C = R.compute;
-    if (!C.eligible) return { bubbles: [{ kind: "text", text: C.reason + " 인하 전용이라 손해 볼 일은 없어요." }], quicks: ["검진결과 올리기"] };
-    if (C.pct <= 0) return { bubbles: [{ kind: "text", text: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하 전용·불이익 없음). 다음 검진에서 다시 계산해 드릴게요." }], quicks: [] };
-    return { bubbles: [{ kind: "card", card: { title: "📉 재산정 계산 결과", items: [`개선 지표 ${C.improvedN}건: ${C.improved.map((x) => x.ko).join("·")}`, `월 ${won(C.before)} → ${won(C.after)} (−${C.pct}%)`, "인하 전용 — 악화 지표로 오르는 일은 없어요"], buttons: ["✅ 인하 적용 확정"] } }], quicks: [] };
+    if (!C.eligible) return { bubbles: [{ kind: "text", text: C.reason + " 인하 및 가입확대형 전용이라 손해 볼 일은 없어요." }], quicks: ["검진결과 올리기"] };
+    if (C.pct <= 0) return { bubbles: [{ kind: "text", text: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하·가입확대 전용·불이익 없음). 다음 검진에서 다시 계산해 드릴게요." }], quicks: [] };
+    return { bubbles: [{ kind: "card", card: { title: "📉 재산정 계산 결과", items: [`개선 지표 ${C.improvedN}건: ${C.improved.map((x) => x.ko).join("·")}`, `월 ${won(C.before)} → ${won(C.after)} (−${C.pct}%)`, "인하 및 가입확대형 전용 — 악화 지표로 오르는 일은 없어요"], buttons: ["✅ 인하 적용 확정"] } }], quicks: [] };
   }
   // 과업B — 실손 현황·검진보험(상담사)
   if (/내\s*실손\s*(보여|현황|알려|상태)|실손\s*현황/.test(text)) {
@@ -1199,7 +1199,7 @@ function ClaimSupportFlow({ onModal }) {
   );
 }
 
-/* ══ Phase 5 — 보험요율 재산정(Dynamic Re-rating, D3) — 인하 전용 옵트인 ══ */
+/* ══ Phase 5 — 보험요율 재산정(Dynamic Re-rating, D3) — 인하 및 가입확대형 전용 옵트인 ══ */
 function ReRatingCard() {
   const m = (typeof _member === "function") ? _member() : null;
   const [tick, setTick] = useState(0); void tick;
@@ -1209,12 +1209,12 @@ function ReRatingCard() {
   const apply = () => { try { const r = rerateApply(m); if (r && typeof toast === "function") toast(`요율 재산정 완료 — 월 ${r.before.toLocaleString()}원 → ${r.after.toLocaleString()}원 (-${r.rate}%)`); } catch (e) {} setTick((t) => t + 1); };
   return (
     <div className="rrcard">
-      <div className="rr-hd"><TrendingUp size={16} /> 보험요율 재산정 <span className="rr-tag">Dynamic Re-rating · 인하 전용</span></div>
+      <div className="rr-hd"><TrendingUp size={16} /> 보험요율 재산정 <span className="rr-tag">Dynamic Re-rating · 인하·가입확대 전용</span></div>
       <p className="rr-sub">보험료는 나이가 아니라 <b>내 관리</b>를 따라갑니다 — 4세대 성과 자산(지표 개선 증명)으로 재산정을 신청하면 <b>내려가거나 그대로</b>예요. 미신청·지표 악화가 인상으로 이어지지 않아요(소비자 보호 원칙). 보험사는 원본이 아닌 <b>요약 증명(성과 SBT)만</b> 열람해요.</p>
       {st.status === "done" ? (
         <div className="rr-done"><Check size={15} /> 재산정 완료 — 월 보험료 <s>{st.before.toLocaleString()}원</s> → <b>{st.after.toLocaleString()}원</b> (연 {(st.saving * 12).toLocaleString()}원 절감 · -{st.rate}%) · 체인 기록 ✓</div>
       ) : eligible ? (
-        <div className="rr-act"><span className="rr-eli">✅ 신청 자격 충족 — 2개년 검진의 혈당·중성지방 개선이 성과 자산으로 증명돼요</span><button onClick={apply}><TrendingUp size={14} /> 재산정 신청 (인하 전용)</button></div>
+        <div className="rr-act"><span className="rr-eli">✅ 신청 자격 충족 — 2개년 검진의 혈당·중성지방 개선이 성과 자산으로 증명돼요</span><button onClick={apply}><TrendingUp size={14} /> 재산정 신청 (인하·가입확대 전용)</button></div>
       ) : (
         <div className="rr-act"><span className="rr-eli dim">재검진 데이터가 쌓이면 신청할 수 있어요 — 검진결과를 연결해 주세요</span></div>
       )}
@@ -1559,7 +1559,7 @@ function InsClaimPayTab({ onModal }) {
   </>);
 }
 
-/* ⑤ 요율 재산정 — 실지표 개선도 계산(고정값 폐기)·인하 전용 */
+/* ⑤ 요율 재산정 — 실지표 개선도 계산(고정값 폐기)·인하 및 가입확대형 전용 */
 function InsRerateTab() {
   const [tick, setTick] = useState(0); void tick;
   const m = insService.member();
@@ -1569,7 +1569,7 @@ function InsRerateTab() {
   const C = R.compute, done = R.state && R.state.status === "done";
   return (<>
     <div className="card" style={{ border: "1.5px solid #BBF7D0" }}>
-      <div className="rct"><ShieldCheck size={17} color="#16A34A" /> 보험료 다시 계산받기 <span className="cbadge" style={{ marginLeft: 8, color: "#15803D", background: "#E7F8EE" }}>인하 전용 — 올라가지 않아요</span></div>
+      <div className="rct"><ShieldCheck size={17} color="#16A34A" /> 보험료 다시 계산받기 <span className="cbadge" style={{ marginLeft: 8, color: "#15803D", background: "#E7F8EE" }}>인하·가입확대 전용 — 올라가지 않아요</span></div>
       {done ? (
         <div style={{ padding: "6px 0" }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: "var(--green)" }}>적용 완료 ✓ 월 {won(R.state.before)} → {won(R.state.after)} (−{R.state.rate}%)</div>

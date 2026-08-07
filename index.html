@@ -8818,9 +8818,9 @@ function _insServiceRoute(text, member) {
     const R = insService.rerate(member);
     if (R.state && R.state.status === "done") return { bubbles: [{ kind: "text", text: `이미 적용돼 있어요 — 월 ${won(R.state.before)} → ${won(R.state.after)} (−${R.state.rate}%).` }], quicks: [] };
     const C = R.compute;
-    if (!C.eligible) return { bubbles: [{ kind: "text", text: C.reason + " 인하 전용이라 손해 볼 일은 없어요." }], quicks: ["검진결과 올리기"] };
-    if (C.pct <= 0) return { bubbles: [{ kind: "text", text: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하 전용·불이익 없음). 다음 검진에서 다시 계산해 드릴게요." }], quicks: [] };
-    return { bubbles: [{ kind: "card", card: { title: "📉 재산정 계산 결과", items: [`개선 지표 ${C.improvedN}건: ${C.improved.map((x) => x.ko).join("·")}`, `월 ${won(C.before)} → ${won(C.after)} (−${C.pct}%)`, "인하 전용 — 악화 지표로 오르는 일은 없어요"], buttons: ["✅ 인하 적용 확정"] } }], quicks: [] };
+    if (!C.eligible) return { bubbles: [{ kind: "text", text: C.reason + " 인하 및 가입확대형 전용이라 손해 볼 일은 없어요." }], quicks: ["검진결과 올리기"] };
+    if (C.pct <= 0) return { bubbles: [{ kind: "text", text: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하·가입확대 전용·불이익 없음). 다음 검진에서 다시 계산해 드릴게요." }], quicks: [] };
+    return { bubbles: [{ kind: "card", card: { title: "📉 재산정 계산 결과", items: [`개선 지표 ${C.improvedN}건: ${C.improved.map((x) => x.ko).join("·")}`, `월 ${won(C.before)} → ${won(C.after)} (−${C.pct}%)`, "인하 및 가입확대형 전용 — 악화 지표로 오르는 일은 없어요"], buttons: ["✅ 인하 적용 확정"] } }], quicks: [] };
   }
   // 과업B — 실손 현황·검진보험(상담사)
   if (/내\s*실손\s*(보여|현황|알려|상태)|실손\s*현황/.test(text)) {
@@ -9572,7 +9572,7 @@ function ClaimSupportFlow({ onModal }) {
   );
 }
 
-/* ══ Phase 5 — 보험요율 재산정(Dynamic Re-rating, D3) — 인하 전용 옵트인 ══ */
+/* ══ Phase 5 — 보험요율 재산정(Dynamic Re-rating, D3) — 인하 및 가입확대형 전용 옵트인 ══ */
 function ReRatingCard() {
   const m = (typeof _member === "function") ? _member() : null;
   const [tick, setTick] = useState(0); void tick;
@@ -9582,12 +9582,12 @@ function ReRatingCard() {
   const apply = () => { try { const r = rerateApply(m); if (r && typeof toast === "function") toast(`요율 재산정 완료 — 월 ${r.before.toLocaleString()}원 → ${r.after.toLocaleString()}원 (-${r.rate}%)`); } catch (e) {} setTick((t) => t + 1); };
   return (
     <div className="rrcard">
-      <div className="rr-hd"><TrendingUp size={16} /> 보험요율 재산정 <span className="rr-tag">Dynamic Re-rating · 인하 전용</span></div>
+      <div className="rr-hd"><TrendingUp size={16} /> 보험요율 재산정 <span className="rr-tag">Dynamic Re-rating · 인하·가입확대 전용</span></div>
       <p className="rr-sub">보험료는 나이가 아니라 <b>내 관리</b>를 따라갑니다 — 4세대 성과 자산(지표 개선 증명)으로 재산정을 신청하면 <b>내려가거나 그대로</b>예요. 미신청·지표 악화가 인상으로 이어지지 않아요(소비자 보호 원칙). 보험사는 원본이 아닌 <b>요약 증명(성과 SBT)만</b> 열람해요.</p>
       {st.status === "done" ? (
         <div className="rr-done"><Check size={15} /> 재산정 완료 — 월 보험료 <s>{st.before.toLocaleString()}원</s> → <b>{st.after.toLocaleString()}원</b> (연 {(st.saving * 12).toLocaleString()}원 절감 · -{st.rate}%) · 체인 기록 ✓</div>
       ) : eligible ? (
-        <div className="rr-act"><span className="rr-eli">✅ 신청 자격 충족 — 2개년 검진의 혈당·중성지방 개선이 성과 자산으로 증명돼요</span><button onClick={apply}><TrendingUp size={14} /> 재산정 신청 (인하 전용)</button></div>
+        <div className="rr-act"><span className="rr-eli">✅ 신청 자격 충족 — 2개년 검진의 혈당·중성지방 개선이 성과 자산으로 증명돼요</span><button onClick={apply}><TrendingUp size={14} /> 재산정 신청 (인하·가입확대 전용)</button></div>
       ) : (
         <div className="rr-act"><span className="rr-eli dim">재검진 데이터가 쌓이면 신청할 수 있어요 — 검진결과를 연결해 주세요</span></div>
       )}
@@ -9932,7 +9932,7 @@ function InsClaimPayTab({ onModal }) {
   </>);
 }
 
-/* ⑤ 요율 재산정 — 실지표 개선도 계산(고정값 폐기)·인하 전용 */
+/* ⑤ 요율 재산정 — 실지표 개선도 계산(고정값 폐기)·인하 및 가입확대형 전용 */
 function InsRerateTab() {
   const [tick, setTick] = useState(0); void tick;
   const m = insService.member();
@@ -9942,7 +9942,7 @@ function InsRerateTab() {
   const C = R.compute, done = R.state && R.state.status === "done";
   return (<>
     <div className="card" style={{ border: "1.5px solid #BBF7D0" }}>
-      <div className="rct"><ShieldCheck size={17} color="#16A34A" /> 보험료 다시 계산받기 <span className="cbadge" style={{ marginLeft: 8, color: "#15803D", background: "#E7F8EE" }}>인하 전용 — 올라가지 않아요</span></div>
+      <div className="rct"><ShieldCheck size={17} color="#16A34A" /> 보험료 다시 계산받기 <span className="cbadge" style={{ marginLeft: 8, color: "#15803D", background: "#E7F8EE" }}>인하·가입확대 전용 — 올라가지 않아요</span></div>
       {done ? (
         <div style={{ padding: "6px 0" }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: "var(--green)" }}>적용 완료 ✓ 월 {won(R.state.before)} → {won(R.state.after)} (−{R.state.rate}%)</div>
@@ -11634,7 +11634,7 @@ const STORY_SCENES = [
     text: ["연말, 지갑에 낯선 알림이 떴습니다. \"데이터 활용 배당 — 귀하의 가명화 검진데이터(1세대)와 분석 리포트(2세대)가 췌장질환 조기발견 연구에 활용되었습니다.\"", "금액은 크지 않았습니다. 그러나 조 씨는 연구 제목을 오래 바라보았습니다. 췌장질환 조기발견 — 민석을 데려간 그 병. 내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가는 약속된 분배율대로 지갑에 돌아옵니다.", "지갑에는 또 하나의 숫자가 있었습니다. 늘 먹던 비타민과 혈행개선 영양제를 하이핀 건강쇼핑에서 샀을 뿐인데, 이번 달 적립 토큰이 5만 2천 원. 검진 결과에 맞춰 추천된 것을 최저가로 사고, 그 마진의 절반이 다시 내 지갑으로 돌아온 것입니다 — 소비가 지출이 아니라 적립이 되는 셈이었습니다.", "데이터 주권이 소득이 되고, 소득이 의미가 되는 순간이었습니다. 그의 소비 마진 30%가 치료비 사각지대의 누군가에게 흘러가고 있다는 것도, 그는 이제 알고 있었습니다."],
     links: [["건강금융지갑 — 배당·적립 내역", "wallet"], ["사회적기업 — 치료비 나눔 구조", "social"]] },
   { era: "이듬해 3월", title: "젊어진 숫자, 다시 매겨진 보험료", c: "#F59E0B",
-    text: ["1년간의 적립금이 다음 해 보험료에 자동 충당됐습니다 — 쓸수록 보험료가 내려갑니다. 재검진 리포트의 췌장 관리 지표는 '개선'. 신호일 때 움직인 결과였습니다.", "개선이 성과 자산(4세대)으로 편입되자 '하이'가 물었습니다. \"개선된 건강상태로 보험료 재산정을 신청할까요? 인하 전용이라 손해 볼 일은 없어요.\" 2주 뒤 갱신 안내서의 숫자가 작년보다 작아져 있었습니다.", "보험료란 나이를 따라 오르기만 하는 줄 알았던 조 씨는 그날 처음 알았습니다 — 이 플랫폼에서 보험료는 내 나이가 아니라, 내 관리를 따라갑니다. 여유 적립금은 헬스 세이빙과 하이핀 주식청약(참여증 NFT)으로 — 건강을 관리했을 뿐인데, 자산 포트폴리오가 생겼습니다."],
+    text: ["1년간의 적립금이 다음 해 보험료에 자동 충당됐습니다 — 쓸수록 보험료가 내려갑니다. 재검진 리포트의 췌장 관리 지표는 '개선'. 신호일 때 움직인 결과였습니다.", "개선이 성과 자산(4세대)으로 편입되자 '하이'가 물었습니다. \"개선된 건강상태로 보험료 재산정을 신청할까요? 인하 및 가입확대형 전용이라 손해 볼 일은 없어요.\" 2주 뒤 갱신 안내서의 숫자가 작년보다 작아져 있었습니다.", "보험료란 나이를 따라 오르기만 하는 줄 알았던 조 씨는 그날 처음 알았습니다 — 이 플랫폼에서 보험료는 내 나이가 아니라, 내 관리를 따라갑니다. 여유 적립금은 헬스 세이빙과 하이핀 주식청약(참여증 NFT)으로 — 건강을 관리했을 뿐인데, 자산 포트폴리오가 생겼습니다."],
     links: [["보험·치료비 — 재산정·자동충당", "insurance"], ["Health NFT — 참여증·인증서", "nft"]] },
   { era: "5년 후", title: "약국 문에 붙은 스티커", c: "#0891B2",
     text: ["단골 약국 문에 낯선 스티커가 붙었습니다. \"하이핀 검증기관 — 이 약국은 대한민국 건강데이터의 무결성을 검증합니다.\"", "김 약사가 웃으며 말했습니다. \"요즘 처방 배송 손님 절반이 하이핀으로 와요. 검증 노드 하고 나서 단골이 늘었죠.\" 그 검증 참여의 진짜 담보는 코인이 아니라 — 조 씨 같은 손님의 발길이었습니다(송객 동맹).", "회원의 여정과 기관의 여정이, 같은 생태계에서 맞물려 돌고 있었습니다."],
@@ -11963,7 +11963,7 @@ function ValidatorNodes({ onGo }) {
 /* ── ④ 거버넌스 ── */
 const GOV_PRINCIPLES = [
   ["데이터 주권", "회원 데이터의 활용 수익은 회원 50% · 참여기관 30% · 플랫폼 20%로 분배 — 회원 몫이 항상 우선입니다."],
-  ["인하 전용 재산정", "건강 개선 데이터는 보험료 인하에만 쓰입니다. 인상 근거로는 쓰지 않아요."],
+  ["인하·가입확대 전용 재산정", "건강 개선 데이터는 보험료 인하와 가입 확대에만 쓰입니다. 인상·인수 거절 근거로는 쓰지 않아요."],
   ["1단계 리퍼럴", "추천 보상은 직접 추천 1단계만 인정 — 다단계 구조를 금지합니다."],
   ["증명 가능한 신뢰", "모든 증서·동의·접근기록은 블록체인 해시로 남고, 회원이 직접 검증할 수 있습니다."],
 ];
@@ -24017,7 +24017,7 @@ function dataDividends(m) {
     return [{ id: "DIV-2607", study: "췌장질환 조기발견 연구(가명결합 · 기관 IRB 승인)", org: "K-대학병원 연구소", gens: [1, 2], htk: 1200, date: "2026-07-15" }];
   } catch (e) { return []; }
 }
-/* 보험요율 재산정(Dynamic Re-rating) — 인하 전용 옵트인. 보험사는 원본이 아닌 요약 증명만 열람 */
+/* 보험요율 재산정(Dynamic Re-rating) — 인하 및 가입확대형 전용 옵트인. 보험사는 원본이 아닌 요약 증명만 열람 */
 function rerateState() { try { return JSON.parse(localStorage.getItem("hifin_rerate") || "null") || { status: "none" }; } catch (e) { return { status: "none" }; } }
 function rerateEligible(m) { try { const v = vaultLoad(anonToken(m)); return !!(v && (v.checkups || []).length >= 2); } catch (e) { return false; } }
 function rerateApply(m) {
@@ -24632,7 +24632,7 @@ const INS_CONFIG = {
   SHARE_RATE: 0.30,            // 순환 마진의 나눔 적립 비율(사업계획서 원칙4 · WALLET_SPLIT.give와 단일 정의)
   TELE_VISIT_FEE: 15900,       // 비대면 진찰료 수가 근사(2026 의원급 초진 기준 근사치) — 청구 지급 산정의 기본 진료비
   RERATE_PER_IMPROVE: 1.5,     // 개선 지표 1개당 요율 인하 %(계리 검증 전 시연 가정 — 제휴 보험사 협의 대상)
-  RERATE_MAX_PCT: 15,          // 인하 상한 %(인하 전용 단방향 게이트)
+  RERATE_MAX_PCT: 15,          // 인하 상한 %(인하 및 가입확대형 전용 단방향 게이트)
 };
 
 function _isMember() { try { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (dm) return dm; if (typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") return selfMember(); } catch (e) {} return null; }
@@ -24779,14 +24779,14 @@ function rerateCompute(m) {
     if (!monthly) monthly = 12400;   // config 폴백: 실손 미연결 회원의 시연 기준 보험료(연결 시 실값 대체) — 사유: 빈 화면 방지
     const pct = Math.min(INS_CONFIG.RERATE_MAX_PCT, improved.length * INS_CONFIG.RERATE_PER_IMPROVE);
     const after = Math.round(monthly * (1 - pct / 100) / 100) * 100;
-    // 인하 전용 단방향 게이트: 개선 없으면 "유지"(인상·거절 경로 없음 — 악화 지표는 표시만)
+    // 인하 및 가입확대형 전용 단방향 게이트: 개선 없으면 "유지"(인상·거절 경로 없음 — 악화 지표는 표시만)
     return { eligible: true, improvedN: improved.length, improved, worsenedN: worsened.length, pct, before: monthly, after: pct > 0 ? after : monthly, saving: pct > 0 ? monthly - after : 0, downOnly: true };
   } catch (e) { return { eligible: false, reason: "재산정 계산 오류" }; }
 }
 function rerateApplyReal(m) {
   const c = rerateCompute(m);
   if (!c.eligible) return { ok: false, reason: c.reason };
-  if (c.pct <= 0) return { ok: false, reason: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하 전용·불이익 없음)" };
+  if (c.pct <= 0) return { ok: false, reason: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하·가입확대 전용·불이익 없음)" };
   try {
     const s = { status: "done", before: c.before, after: c.after, saving: c.saving, rate: c.pct, improved: c.improved.map((x) => x.ko), at: Date.now() };
     localStorage.setItem("hifin_rerate", JSON.stringify(s));
@@ -25345,7 +25345,7 @@ const LR_COMPLIANCE = [
   { c: "C-7", t: "취약 회원 보호(L-CARE)", basis: "금소법 §17~19 취지", ctrl: "치료비 지원 신청자 60일 상품 제안 금지 — 시스템 플래그", enforced: true },
   { c: "C-8", t: "개인신용정보 동의", basis: "신용정보법 §32·§33", ctrl: "계약 보유 형태는 동의 항목에 별도 명시", enforced: false },
   { c: "C-9", t: "광고성 정보 사전 동의·수신거부", basis: "정보통신망법 §50", ctrl: "mkt 미동의 시 알림 불가 · DNC 즉시 회수 · 쿨다운 30일·월 2회 상한", enforced: true },
-  { c: "C-10", t: "건강정보 차별 금지(인하 전용)", basis: "감독규정·협약 명문화", ctrl: "재산정 API 인하값만 수용 — 인수·할증 사용 계약상 금지", enforced: true },
+  { c: "C-10", t: "건강정보 차별 금지(인하·가입확대 전용)", basis: "감독규정·협약 명문화", ctrl: "재산정 API 인하·가입확대값만 수용 — 인상·인수 거절·할증 사용 계약상 금지", enforced: true },
 ];
 
 /* ══ Phase 6 — 파일럿 설정·KPI 실측(보고서 §6.1·§6.4) ══ */
@@ -26648,12 +26648,12 @@ const TOOL_RUN = {
     const d = ds[0];
     return { lines: [`${d.date}에 데이터 활용 배당 +${d.htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 ${d.gens.map((g) => g + "세대").join("·")} 자산이 「${d.study}」에 활용됐어요(${d.org} · 가명 요약만 제공).`, "내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가가 약속대로 돌아온 거예요. 동의·계보·접근 기록은 데이터 금고에서 전부 확인돼요."], buttons: ["내 자산 계보 보여줘"] };
   } catch (e) { return null; } },
-  // 요율 재산정 — 인하 전용 실행(과업4: insService 실지표 계산으로 재배선 — 고정값 경로 폐기)
+  // 요율 재산정 — 인하 및 가입확대형 전용 실행(과업4: insService 실지표 계산으로 재배선 — 고정값 경로 폐기)
   reratedo(m) { try {
     const st = (typeof rerateState === "function") ? rerateState() : { status: "none" };
     if (st.status === "done") return { lines: [`이미 재산정이 완료됐어요 — 월 ${st.before.toLocaleString()}원 → ${st.after.toLocaleString()}원(-${st.rate}%), 연 ${(st.saving * 12).toLocaleString()}원 절감이에요.`] };
     const r = (typeof insService !== "undefined") ? insService.rerateApply(m) : null; if (!r) return null;
-    if (!r.ok) return { lines: [r.reason + " — 인하 전용이라 손해 볼 일은 없어요."], buttons: ["검진결과 올리기"] };
+    if (!r.ok) return { lines: [r.reason + " — 인하 및 가입확대형 전용이라 손해 볼 일은 없어요."], buttons: ["검진결과 올리기"] };
     const s = r.state;
     return { lines: [`재산정 신청을 제출했어요 — 실측 개선 지표(${(s.improved || []).join("·")})가 보험사에 요약으로만 전달됐고, 즉시 반영됐어요: 월 보험료 ${s.before.toLocaleString()}원 → ${s.after.toLocaleString()}원 (-${s.rate}% · 연 ${(s.saving * 12).toLocaleString()}원 절감).`, "보험료가 나이가 아니라 관리를 따라간 순간이에요. 기록은 블록체인·접근 이력에 남았어요."] };
   } catch (e) { return null; } },
@@ -27168,7 +27168,7 @@ function agentProactive() {
   try { const cl = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); if (cl.length && !localStorage.getItem("hifin_upsell_seen")) { out.push({ text: "💠 치료비는 검진대비보험이 지켜드렸어요. 그런데 치료 '중' 생활비(일 못 하는 동안의 소득 공백)는 아직 비어 있어요 — 장기 플랜으로 채우는 방법을 보여드릴까요?", buttons: ["프리미엄 보험 상담받고 싶어", "우리 동네 상담사 연결해줘"] }); localStorage.setItem("hifin_upsell_seen", "1"); } } catch (e) {}
   /* Phase 5 선제 알림 — 배당 지급·요율 재산정 자격(묻기 전에 먼저) */
   try { if (!localStorage.getItem("hifin_divi_seen")) { const ds = (typeof dataDividends === "function") ? dataDividends(m) : []; if (ds.length) { out.push({ text: `데이터 활용 배당 +${ds[0].htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 데이터가 「${ds[0].study.split("(")[0]}」에 활용됐어요.`, buttons: ["배당 내역 보여줘"] }); localStorage.setItem("hifin_divi_seen", "1"); } } } catch (e) {}
-  try { const st = (typeof rerateState === "function") ? rerateState() : { status: "done" }; if (st.status !== "done" && typeof rerateEligible === "function" && rerateEligible(m)) out.push({ text: "개선된 건강상태로 보험료 재산정을 신청할 수 있어요 — 인하 전용이라 손해 볼 일은 없어요.", buttons: ["요율 재산정 신청해줘"] }); } catch (e) {}
+  try { const st = (typeof rerateState === "function") ? rerateState() : { status: "done" }; if (st.status !== "done" && typeof rerateEligible === "function" && rerateEligible(m)) out.push({ text: "개선된 건강상태로 보험료 재산정을 신청할 수 있어요 — 인하 및 가입확대형 전용이라 손해 볼 일은 없어요.", buttons: ["요율 재산정 신청해줘"] }); } catch (e) {}
   return out.slice(0, 3);
 }
 
@@ -28431,7 +28431,7 @@ const HI_SEGMENTS = [
       return {
         situation: "좋은 소식이에요 — " + _d(s.s2.trendYears) + "개년 데이터가 쌓여 있어서 연도별 추이 비교가 가능해요.",
         assess: "추이는 한 번의 수치보다 훨씬 정확한 신호예요 — 좋아지는 항목과 관리가 필요한 항목이 한눈에 보여요.",
-        route: "추이 비교 화면에서 연도별 수치를 나란히 볼 수 있고, 개선된 지표가 있으면 보험료 재산정(인하 전용) 신청까지 이어져요.",
+        route: "추이 비교 화면에서 연도별 수치를 나란히 볼 수 있고, 개선된 지표가 있으면 보험료 재산정(인하·가입확대 전용) 신청까지 이어져요.",
         guide: "추이 비교 화면을 지금 미리 보여드릴게요.",
       };
     },
@@ -33952,10 +33952,10 @@ function InsLifeCostCard({ onTab }) {
         ))}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 11, flexWrap: "wrap" }}>
-        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => onTab && onTab("rerate")}><ShieldCheck size={13} /> 건강 관리로 보험료 인하(인하 전용 재산정)</button>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => onTab && onTab("rerate")}><ShieldCheck size={13} /> 건강 관리로 보험료 인하(인하·가입확대 전용)</button>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "9px 14px", fontSize: 12 }} onClick={() => onTab && onTab("region")}><MapPin size={13} /> 가족 세대 설계 — 내 지역 상담</button>
       </div>
-      <div className="chnote" style={{ marginTop: 9 }}>※ 담보 구성은 설계 방향(안)이며 실제 상품화·보장·보험료는 인수사(현대해상) 상품 정책과 관련 법령·심사에 따라 확정됩니다. 건강 성과 데이터는 <b>인하 전용</b>으로만 작동해요(인수 거절·할증 근거 사용 금지).</div>
+      <div className="chnote" style={{ marginTop: 9 }}>※ 담보 구성은 설계 방향(안)이며 실제 상품화·보장·보험료는 인수사(현대해상) 상품 정책과 관련 법령·심사에 따라 확정됩니다. 건강 성과 데이터는 <b>인하 및 가입확대형 전용</b>으로만 작동해요(인수 거절·할증 근거 사용 금지).</div>
     </div>
   );
 }

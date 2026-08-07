@@ -15,7 +15,7 @@ const INS_CONFIG = {
   SHARE_RATE: 0.30,            // 순환 마진의 나눔 적립 비율(사업계획서 원칙4 · WALLET_SPLIT.give와 단일 정의)
   TELE_VISIT_FEE: 15900,       // 비대면 진찰료 수가 근사(2026 의원급 초진 기준 근사치) — 청구 지급 산정의 기본 진료비
   RERATE_PER_IMPROVE: 1.5,     // 개선 지표 1개당 요율 인하 %(계리 검증 전 시연 가정 — 제휴 보험사 협의 대상)
-  RERATE_MAX_PCT: 15,          // 인하 상한 %(인하 전용 단방향 게이트)
+  RERATE_MAX_PCT: 15,          // 인하 상한 %(인하 및 가입확대형 전용 단방향 게이트)
 };
 
 function _isMember() { try { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (dm) return dm; if (typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") return selfMember(); } catch (e) {} return null; }
@@ -162,14 +162,14 @@ function rerateCompute(m) {
     if (!monthly) monthly = 12400;   // config 폴백: 실손 미연결 회원의 시연 기준 보험료(연결 시 실값 대체) — 사유: 빈 화면 방지
     const pct = Math.min(INS_CONFIG.RERATE_MAX_PCT, improved.length * INS_CONFIG.RERATE_PER_IMPROVE);
     const after = Math.round(monthly * (1 - pct / 100) / 100) * 100;
-    // 인하 전용 단방향 게이트: 개선 없으면 "유지"(인상·거절 경로 없음 — 악화 지표는 표시만)
+    // 인하 및 가입확대형 전용 단방향 게이트: 개선 없으면 "유지"(인상·거절 경로 없음 — 악화 지표는 표시만)
     return { eligible: true, improvedN: improved.length, improved, worsenedN: worsened.length, pct, before: monthly, after: pct > 0 ? after : monthly, saving: pct > 0 ? monthly - after : 0, downOnly: true };
   } catch (e) { return { eligible: false, reason: "재산정 계산 오류" }; }
 }
 function rerateApplyReal(m) {
   const c = rerateCompute(m);
   if (!c.eligible) return { ok: false, reason: c.reason };
-  if (c.pct <= 0) return { ok: false, reason: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하 전용·불이익 없음)" };
+  if (c.pct <= 0) return { ok: false, reason: "이번에는 개선 지표가 확인되지 않았어요 — 보험료는 그대로 유지돼요(인하·가입확대 전용·불이익 없음)" };
   try {
     const s = { status: "done", before: c.before, after: c.after, saving: c.saving, rate: c.pct, improved: c.improved.map((x) => x.ko), at: Date.now() };
     localStorage.setItem("hifin_rerate", JSON.stringify(s));

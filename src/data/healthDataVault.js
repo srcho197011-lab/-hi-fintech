@@ -436,7 +436,7 @@ function dataDividends(m) {
     return [{ id: "DIV-2607", study: "췌장질환 조기발견 연구(가명결합 · 기관 IRB 승인)", org: "K-대학병원 연구소", gens: [1, 2], htk: 1200, date: "2026-07-15" }];
   } catch (e) { return []; }
 }
-/* 보험요율 재산정(Dynamic Re-rating) — 인하 전용 옵트인. 보험사는 원본이 아닌 요약 증명만 열람 */
+/* 보험요율 재산정(Dynamic Re-rating) — 인하 및 가입확대형 전용 옵트인. 보험사는 원본이 아닌 요약 증명만 열람 */
 function rerateState() { try { return JSON.parse(localStorage.getItem("hifin_rerate") || "null") || { status: "none" }; } catch (e) { return { status: "none" }; } }
 function rerateEligible(m) { try { const v = vaultLoad(anonToken(m)); return !!(v && (v.checkups || []).length >= 2); } catch (e) { return false; } }
 function rerateApply(m) {
