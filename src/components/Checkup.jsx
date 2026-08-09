@@ -97,7 +97,7 @@ const CHECKUP_CATS = {
 };
 const CHECKUP_CAT_META = {
   nat: { label: "국가검진", color: "#16A34A", intro: "국민건강보험공단 지정기관에서 생애주기별 국가건강검진(일반·암검진)을 본인부담 0원으로 받을 수 있는 기관입니다." },
-  personal: { label: "개인검진", color: "#2563EB", intro: "개인 맞춤 종합검진·정밀검진(암·심뇌혈관 등)을 제공하는 검진센터·병원입니다." },
+  personal: { label: "개인종합검진", color: "#2563EB", intro: "개인 맞춤 종합검진·정밀검진(암·심뇌혈관 등)을 제공하는 전문검진센터·종합병원입니다. 세부 프로그램·가격은 기관별로 다릅니다." },
   biz: { label: "기업검진", color: "#7C3AED", intro: "기업 임직원 단체검진·복지검진을 제공하는 기관입니다(B2B)." },
   special: { label: "특수검진", color: "#EA580C", intro: "산업안전보건법상 유해인자 노출 근로자의 특수건강진단을 수행하는 지정기관입니다." },
 };
@@ -196,18 +196,18 @@ function EmergencyGuide() {
 function CheckupSection() {
   const [cat, setCat] = useState(_checkupTab || "nat");
   useEffect(() => { _checkupTab = null; }, []);
-  const cats = [["nat", "국가검진", ShieldCheck], ["personal", "개인검진", BadgeCheck], ["biz", "기업검진", Users], ["special", "특수검진", AlertTriangle], ["public", "공공검진지원", HeartHandshake], ["rec", "AI 맞춤추천", Sparkles], ["doctor", "🩺 AI 주치의", Bot], ["emergency", "🚨 응급신호", AlertTriangle]];
+  const cats = [["nat", "국가검진", ShieldCheck], ["personal", "개인종합검진", BadgeCheck], ["biz", "기업검진", Users], ["special", "특수검진", AlertTriangle], ["public", "공공검진지원", HeartHandshake], ["rec", "AI 맞춤추천", Sparkles], ["doctor", "🩺 AI 주치의", Bot], ["emergency", "🚨 응급신호", AlertTriangle]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="checkup" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강검진</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>국가검진 · 개인검진 · 기업검진 · 특수검진 · 공공검진지원 — 검진기관 성격별 분류·비교·예약</div></div></div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강검진</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>국가검진 · 개인종합검진 · 기업검진 · 특수검진 · 공공검진지원 — 검진기관 성격별 분류·비교·예약</div></div></div>
       <AiLinkBanner target="checkup" />
       <div className="chtabs">
         {cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}
         <div className={`reslink ${cat === "result" ? "on" : ""}`} onClick={() => setCat("result")}><FileText size={14} /> 검진결과·사후관리</div>
       </div>
       {cat === "nat" && <><BrandDirectory catFilter="nat" /><NationalOrgDirectory /></>}
-      {cat === "personal" && <BrandDirectory catFilter="personal" />}
+      {cat === "personal" && <><BrandDirectory catFilter="personal" /><NationalOrgDirectory personalOnly /></>}
       {cat === "biz" && <><BrandDirectory catFilter="biz" /><div style={{ marginTop: 14 }}><BizCheckup /></div></>}
       {cat === "special" && <SpecialCheckup />}
       {cat === "public" && <><PublicSupport /><NationalOrgDirectory onlyType="보건기관" /></>}
@@ -341,7 +341,7 @@ function BrandDirectory({ only, catFilter }) {
 /* ── 전국 전체 지정기관 층(2층 구조의 아래층) — 공단 공개 데이터 전량 · 유형/시도/시군구/검색 · 20곳 페이지네이션 ──
    정직성 원칙: 이 층은 '국가검진(지정)' 근거만 있으므로 개인·기업·특수 태그를 부여하지 않는다. */
 const ORG_TYPE_COLOR = { "전문검진센터": "#0B5FB0", "종합병원 검진": "#1D4ED8", "병원 검진": "#0EA5E9", "의원 검진": "#16A34A", "치과": "#7C3AED", "한방": "#B45309", "보건기관": "#DB2777" };
-function NationalOrgDirectory({ onlyType }) {
+function NationalOrgDirectory({ onlyType, personalOnly }) {
   const orgs = useCheckupOrgs();
   const [otype, setOtype] = useState(onlyType || "전체");
   const [sido, setSido] = useState("전체");
@@ -355,6 +355,7 @@ function NationalOrgDirectory({ onlyType }) {
   const list = React.useMemo(() => {
     if (!d) return [];
     let L = d.orgs;
+    if (personalOnly) L = L.filter((o) => o[9] === 1);
     if (onlyType) L = L.filter((o) => d.types[o[3]] === onlyType);
     else if (otype !== "전체") L = L.filter((o) => d.types[o[3]] === otype);
     if (sido !== "전체") L = L.filter((o) => o[1] === sido);
@@ -362,12 +363,13 @@ function NationalOrgDirectory({ onlyType }) {
     const qq = q.trim();
     if (qq) L = L.filter((o) => (o[0] + o[1] + o[2] + o[4]).indexOf(qq) >= 0);
     return L;
-  }, [d, otype, sido, sgg, q, onlyType]);
+  }, [d, otype, sido, sgg, q, onlyType, personalOnly]);
   if (orgs.error) return <div className="chnote">⚠️ 전국 검진기관 데이터를 불러오지 못했습니다 — 위 브랜드 큐레이션은 정상 이용 가능합니다.</div>;
   if (!d) return <div className="chnote">전국 지정기관 데이터를 불러오는 중…</div>;
   const SHORT_RANK = { 서울: 1, 부산: 2, 인천: 3, 대구: 4, 대전: 5, 광주: 6, 울산: 7, 세종: 8, 경기: 9, 경남: 10, 충남: 11, 충북: 12, 경북: 13, 전북: 14, 전남: 15, 강원: 16, 제주: 17 };
-  const sidos = ["전체", ...Array.from(new Set(d.orgs.map((o) => o[1]))).filter(Boolean).sort((a, b) => ((SHORT_RANK[a] || 99) - (SHORT_RANK[b] || 99)) || a.localeCompare(b, "ko"))];
-  const sggs = sido === "전체" ? [] : ["전체", ...Array.from(new Set(d.orgs.filter((o) => o[1] === sido).map((o) => o[2]))).filter(Boolean).sort((a, b) => a.localeCompare(b, "ko"))];
+  const pool = personalOnly ? d.orgs.filter((o) => o[9] === 1) : (onlyType ? d.orgs.filter((o) => d.types[o[3]] === onlyType) : d.orgs);
+  const sidos = ["전체", ...Array.from(new Set(pool.map((o) => o[1]))).filter(Boolean).sort((a, b) => ((SHORT_RANK[a] || 99) - (SHORT_RANK[b] || 99)) || a.localeCompare(b, "ko"))];
+  const sggs = sido === "전체" ? [] : ["전체", ...Array.from(new Set(pool.filter((o) => o[1] === sido).map((o) => o[2]))).filter(Boolean).sort((a, b) => a.localeCompare(b, "ko"))];
   const typeChips = ["전체", ...d.types.filter((t) => d.meta.counts[t])];
   const view = list.slice(0, shown);
   const geoPts = list.filter((o) => o[6] && o[7]).slice(0, 200).map((o) => ({
@@ -380,14 +382,22 @@ function NationalOrgDirectory({ onlyType }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#F0F6FF", border: "1px solid #BFDBFE", borderRadius: 14, padding: "12px 15px", marginBottom: 10 }}>
         <span style={{ width: 38, height: 38, borderRadius: 10, background: "#DBEAFE", display: "grid", placeItems: "center", flexShrink: 0 }}><Building2 size={19} color="#1D4ED8" /></span>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 900, color: "#12203F" }}>전국 전체 지정기관 <b style={{ color: "var(--blue)" }}>{d.meta.total.toLocaleString()}</b>곳 — 공단 공개 데이터 기준</div>
-          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>전문검진센터 {(d.meta.counts["전문검진센터"] || 0)} · 종합병원 {(d.meta.counts["종합병원 검진"] || 0)} · 병원 {(d.meta.counts["병원 검진"] || 0)} · 의원 {(d.meta.counts["의원 검진"] || 0).toLocaleString()} · 치과(구강검진) {(d.meta.counts["치과"] || 0).toLocaleString()} · 보건기관 {(d.meta.counts["보건기관"] || 0)}</div>
+          {personalOnly ? (<>
+            <div style={{ fontSize: 15, fontWeight: 900, color: "#12203F" }}>전국 개인종합검진 가능 기관 <b style={{ color: "var(--blue)" }}>{(d.meta.personal || 0).toLocaleString()}</b>곳 — 공단 공개 데이터 기준</div>
+            <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>전문검진센터 {(d.meta.counts["전문검진센터"] || 0)} · 종합병원 검진 {(d.meta.counts["종합병원 검진"] || 0)} — 명칭·종별 근거 판정이며 세부 종합검진 프로그램·가격은 기관 확인이 필요합니다</div>
+          </>) : (<>
+            <div style={{ fontSize: 15, fontWeight: 900, color: "#12203F" }}>전국 전체 지정기관 <b style={{ color: "var(--blue)" }}>{d.meta.total.toLocaleString()}</b>곳 — 공단 공개 데이터 기준</div>
+            <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>전문검진센터 {(d.meta.counts["전문검진센터"] || 0)} · 종합병원 {(d.meta.counts["종합병원 검진"] || 0)} · 병원 {(d.meta.counts["병원 검진"] || 0)} · 의원 {(d.meta.counts["의원 검진"] || 0).toLocaleString()} · 치과(구강검진) {(d.meta.counts["치과"] || 0).toLocaleString()} · 보건기관 {(d.meta.counts["보건기관"] || 0)}</div>
+          </>)}
         </div>
       </div>
-      {!onlyType && (<>
+      {!onlyType && !personalOnly && (<>
         <div className="bklbl" style={{ margin: "0 0 8px" }}>기관 유형</div>
         <div className="regions">{typeChips.map((t) => <div key={t} className={`fsel ${otype === t ? "on" : ""}`} onClick={() => { setOtype(t); reset(); }}>{t}{t !== "전체" && <span style={{ opacity: .65, marginLeft: 4, fontSize: 11 }}>{(d.meta.counts[t] || 0).toLocaleString()}</span>}</div>)}</div>
       </>)}
+      {personalOnly && (
+        <div className="regions">{["전체", "전문검진센터", "종합병원 검진"].map((t) => <div key={t} className={`fsel ${otype === t ? "on" : ""}`} onClick={() => { setOtype(t); reset(); }}>{t}</div>)}</div>
+      )}
       <div className="bklbl" style={{ margin: "10px 0 8px" }}>지역(시·도)</div>
       <div className="regions">{sidos.map((s) => <div key={s} className={`fsel ${sido === s ? "on" : ""}`} onClick={() => { setSido(s); setSgg("전체"); reset(); }}>{s}</div>)}</div>
       {sido !== "전체" && sggs.length > 1 && (<>

@@ -9,7 +9,8 @@
 출력(JSON):
   { meta: {asOf, sources, counts, geo: {hira, fallback, none}, matchRate},
     types: [...], geoSrc: ["hira","sgg","none"],
-    orgs: [[n, sd, sg, tIdx, ad, p, lat|0, lng|0, gIdx], ...] }
+    orgs: [[n, sd, sg, tIdx, ad, p, lat|0, lng|0, gIdx, personal], ...] }
+  personal(개인종합검진 가능) 판정: 전문검진센터·종합병원 검진 — 명칭·종별 근거(세부 프로그램은 기관 확인 권장)
 """
 import csv, io, json, os, re, sys, unicodedata
 
@@ -135,7 +136,8 @@ def main():
             if alt:
                 lat, lng, g = round(alt[0], 6), round(alt[1], 6), 1
         stat[GEOSRC[g]] += 1
-        orgs.append([name, sd, sg, classify(name, t_hira), ad, phone, lat, lng, g])
+        ti = classify(name, t_hira)
+        orgs.append([name, sd, sg, ti, ad, phone, lat, lng, g, 1 if ti in (0, 1) else 0])
 
     n_nhis = len(orgs)
 
@@ -166,7 +168,7 @@ def main():
                 if alt:
                     lat, lng, g = round(alt[0], 6), round(alt[1], 6), 1
             stat[GEOSRC[g]] += 1
-            orgs.append([name, sd, sg, 6, ad, phone, lat, lng, g])
+            orgs.append([name, sd, sg, 6, ad, phone, lat, lng, g, 0])
             n_health += 1
 
     counts = {}
@@ -184,6 +186,7 @@ def main():
             ],
             "total": len(orgs), "nhis": n_nhis, "health": n_health,
             "counts": counts, "geo": stat,
+            "personal": sum(1 for o in orgs if o[9]),
             "matchRate": round(stat["hira"] * 100.0 / max(1, len(orgs)), 1),
         },
         "types": TYPES, "geoSrc": GEOSRC,
