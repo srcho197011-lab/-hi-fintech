@@ -4940,11 +4940,11 @@ function CheckupSection() {
         {cats.map(([k, t, Ic]) => <div key={k} className={`chtab ${cat === k ? "on" : ""}`} onClick={() => setCat(k)}><Ic size={15} /> {t}</div>)}
         <div className={`reslink ${cat === "result" ? "on" : ""}`} onClick={() => setCat("result")}><FileText size={14} /> 검진결과·사후관리</div>
       </div>
-      {cat === "nat" && <BrandDirectory catFilter="nat" />}
+      {cat === "nat" && <><BrandDirectory catFilter="nat" /><NationalOrgDirectory /></>}
       {cat === "personal" && <BrandDirectory catFilter="personal" />}
       {cat === "biz" && <><BrandDirectory catFilter="biz" /><div style={{ marginTop: 14 }}><BizCheckup /></div></>}
       {cat === "special" && <SpecialCheckup />}
-      {cat === "public" && <PublicSupport />}
+      {cat === "public" && <><PublicSupport /><NationalOrgDirectory onlyType="보건기관" /></>}
       {cat === "rec" && <AICheckupRec onGoCenters={() => setCat("personal")} />}
       {cat === "doctor" && <div style={{ marginTop: 8 }}><div className="chnote" style={{ margin: "0 0 10px" }}>검진 관련이나 건강 궁금증을 AI 주치의에게 물어보세요. AI Super Agent에서 넘어온 상담도 여기서 이어집니다.</div><Chat acceptsSeed /></div>}
       {cat === "emergency" && <EmergencyGuide />}
@@ -4965,6 +4965,7 @@ function BrandDirectory({ only, catFilter }) {
   const [sel, setSel] = useState(null);
   const ALL = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
   const META = (typeof CHECKUP_BRAND_META !== "undefined") ? CHECKUP_BRAND_META : {};
+  const natOrgs = useCheckupOrgs();   // 전국 지정기관 총수(배너 표기용 — 하드코딩 금지)
   const ssido = (s) => (typeof tmSidoShort === "function" ? tmSidoShort(s) : s);
   // 큐레이션 검진기관 → 예약 모달용 센터 객체(무가격). 한건협=기본형(공공), 그 외=고급형(프리미엄)
   const toCenter = (c) => ({ name: c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n, r: ssido(c.sd), area: c.sg, ad: c.ad, tags: [c.t, META[c.b]?.tier || "검진기관"], _noPrice: true, _plan: c.b === "한국건강관리협회" ? "basic" : "premium" });
@@ -5025,7 +5026,9 @@ function BrandDirectory({ only, catFilter }) {
       {catFilter && CHECKUP_CAT_META[catFilter] && (
         <div style={{ display: "flex", alignItems: "center", gap: 12, background: CHECKUP_CAT_META[catFilter].color + "12", border: "1px solid " + CHECKUP_CAT_META[catFilter].color + "33", borderRadius: 14, padding: "13px 16px", marginBottom: 12 }}>
           <span style={{ width: 40, height: 40, borderRadius: 11, background: CHECKUP_CAT_META[catFilter].color + "22", display: "grid", placeItems: "center", flexShrink: 0, fontSize: 18, fontWeight: 900, color: CHECKUP_CAT_META[catFilter].color }}>{CHECKUP_CAT_META[catFilter].label[0]}</span>
-          <div><div style={{ fontSize: 15, fontWeight: 900, color: "#12203F" }}>{CHECKUP_CAT_META[catFilter].label} · 전국 {base.length}개 기관</div><div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>{CHECKUP_CAT_META[catFilter].intro}</div></div>
+          <div><div style={{ fontSize: 15, fontWeight: 900, color: "#12203F" }}>{catFilter === "nat" && natOrgs.data
+            ? <>국가검진 · 전국 지정기관 <b style={{ color: "var(--blue)" }}>{natOrgs.data.meta.total.toLocaleString()}</b>곳 <span style={{ fontWeight: 700, color: "var(--muted)", fontSize: 12.5 }}>(공단 공개 데이터 기준 · 브랜드 큐레이션 {base.length}곳)</span></>
+            : <>{CHECKUP_CAT_META[catFilter].label} · 브랜드 검진기관 {base.length}곳</>}</div><div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>{CHECKUP_CAT_META[catFilter].intro}</div></div>
         </div>
       )}
       {isKahp && (
@@ -5066,6 +5069,90 @@ function BrandDirectory({ only, catFilter }) {
       <div className="chnote">※ 출처: 국민건강보험공단 병의원·검진기관 찾기 / 기관 공식 사이트(수집일 2026-06-27). "공식 사이트 확인" 항목은 정확한 주소를 기관 홈페이지에서 최종 확인 권장. 본 비교 정보는 이용자의 합리적 선택을 돕기 위한 것으로 의료법(의료광고 심의·환자 유인·알선 금지)을 준수합니다.</div>
       {sel && <BookingModal center={toCenter(sel)} mode="comp" onClose={() => setSel(null)} />}
     </>
+  );
+}
+
+/* ── 전국 전체 지정기관 층(2층 구조의 아래층) — 공단 공개 데이터 전량 · 유형/시도/시군구/검색 · 20곳 페이지네이션 ──
+   정직성 원칙: 이 층은 '국가검진(지정)' 근거만 있으므로 개인·기업·특수 태그를 부여하지 않는다. */
+const ORG_TYPE_COLOR = { "전문검진센터": "#0B5FB0", "종합병원 검진": "#1D4ED8", "병원 검진": "#0EA5E9", "의원 검진": "#16A34A", "치과": "#7C3AED", "한방": "#B45309", "보건기관": "#DB2777" };
+function NationalOrgDirectory({ onlyType }) {
+  const orgs = useCheckupOrgs();
+  const [otype, setOtype] = useState(onlyType || "전체");
+  const [sido, setSido] = useState("전체");
+  const [sgg, setSgg] = useState("전체");
+  const [q, setQ] = useState("");
+  const [shown, setShown] = useState(20);
+  const [sel, setSel] = useState(null);
+  const [mapOpen, setMapOpen] = useState(false);
+  const d = orgs.data;
+  const reset = () => setShown(20);
+  const list = React.useMemo(() => {
+    if (!d) return [];
+    let L = d.orgs;
+    if (onlyType) L = L.filter((o) => d.types[o[3]] === onlyType);
+    else if (otype !== "전체") L = L.filter((o) => d.types[o[3]] === otype);
+    if (sido !== "전체") L = L.filter((o) => o[1] === sido);
+    if (sgg !== "전체") L = L.filter((o) => o[2] === sgg);
+    const qq = q.trim();
+    if (qq) L = L.filter((o) => (o[0] + o[1] + o[2] + o[4]).indexOf(qq) >= 0);
+    return L;
+  }, [d, otype, sido, sgg, q, onlyType]);
+  if (orgs.error) return <div className="chnote">⚠️ 전국 검진기관 데이터를 불러오지 못했습니다 — 위 브랜드 큐레이션은 정상 이용 가능합니다.</div>;
+  if (!d) return <div className="chnote">전국 지정기관 데이터를 불러오는 중…</div>;
+  const SHORT_RANK = { 서울: 1, 부산: 2, 인천: 3, 대구: 4, 대전: 5, 광주: 6, 울산: 7, 세종: 8, 경기: 9, 경남: 10, 충남: 11, 충북: 12, 경북: 13, 전북: 14, 전남: 15, 강원: 16, 제주: 17 };
+  const sidos = ["전체", ...Array.from(new Set(d.orgs.map((o) => o[1]))).filter(Boolean).sort((a, b) => ((SHORT_RANK[a] || 99) - (SHORT_RANK[b] || 99)) || a.localeCompare(b, "ko"))];
+  const sggs = sido === "전체" ? [] : ["전체", ...Array.from(new Set(d.orgs.filter((o) => o[1] === sido).map((o) => o[2]))).filter(Boolean).sort((a, b) => a.localeCompare(b, "ko"))];
+  const typeChips = ["전체", ...d.types.filter((t) => d.meta.counts[t])];
+  const view = list.slice(0, shown);
+  const geoPts = list.filter((o) => o[6] && o[7]).slice(0, 200).map((o) => ({
+    name: o[0], addr: o[4], tel: o[5] || "", tag: d.types[o[3]] + (o[8] === 1 ? " · 대표위치" : ""), lat: o[6], lng: o[7],
+    _bk: { kind: "org", org: o },
+  }));
+  const toCenter = (o) => ({ name: o[0], r: o[1], area: o[2], ad: o[4], tags: [d.types[o[3]], "공단 지정기관"], _noPrice: true, _plan: "basic" });
+  return (
+    <div style={{ marginTop: 18 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#F0F6FF", border: "1px solid #BFDBFE", borderRadius: 14, padding: "12px 15px", marginBottom: 10 }}>
+        <span style={{ width: 38, height: 38, borderRadius: 10, background: "#DBEAFE", display: "grid", placeItems: "center", flexShrink: 0 }}><Building2 size={19} color="#1D4ED8" /></span>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 900, color: "#12203F" }}>전국 전체 지정기관 <b style={{ color: "var(--blue)" }}>{d.meta.total.toLocaleString()}</b>곳 — 공단 공개 데이터 기준</div>
+          <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>전문검진센터 {(d.meta.counts["전문검진센터"] || 0)} · 종합병원 {(d.meta.counts["종합병원 검진"] || 0)} · 병원 {(d.meta.counts["병원 검진"] || 0)} · 의원 {(d.meta.counts["의원 검진"] || 0).toLocaleString()} · 치과(구강검진) {(d.meta.counts["치과"] || 0).toLocaleString()} · 보건기관 {(d.meta.counts["보건기관"] || 0)}</div>
+        </div>
+      </div>
+      {!onlyType && (<>
+        <div className="bklbl" style={{ margin: "0 0 8px" }}>기관 유형</div>
+        <div className="regions">{typeChips.map((t) => <div key={t} className={`fsel ${otype === t ? "on" : ""}`} onClick={() => { setOtype(t); reset(); }}>{t}{t !== "전체" && <span style={{ opacity: .65, marginLeft: 4, fontSize: 11 }}>{(d.meta.counts[t] || 0).toLocaleString()}</span>}</div>)}</div>
+      </>)}
+      <div className="bklbl" style={{ margin: "10px 0 8px" }}>지역(시·도)</div>
+      <div className="regions">{sidos.map((s) => <div key={s} className={`fsel ${sido === s ? "on" : ""}`} onClick={() => { setSido(s); setSgg("전체"); reset(); }}>{s}</div>)}</div>
+      {sido !== "전체" && sggs.length > 1 && (<>
+        <div className="bklbl" style={{ margin: "10px 0 8px" }}>시·군·구</div>
+        <div className="regions">{sggs.map((s) => <div key={s} className={`fsel ${sgg === s ? "on" : ""}`} onClick={() => { setSgg(s); reset(); }}>{s}</div>)}</div>
+      </>)}
+      <div className="filterbar"><div className="fsearch"><Search size={15} /><input value={q} onChange={(e) => { setQ(e.target.value); reset(); }} placeholder="전국 지정기관 검색 — 기관명·지역·주소" /></div></div>
+      <MapCard open={mapOpen} onToggle={() => setMapOpen((v) => !v)} title={`지정기관 위치 지도 (필터 결과 ${Math.min(list.length, 200).toLocaleString()}곳 표시 · 좌표 심평원 매칭 ${d.meta.matchRate}%)`} accent="#1D4ED8" points={geoPts} />
+      <div className="chcount">검색 결과 <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳 {list.length > shown && <span style={{ color: "var(--soft)", fontWeight: 600 }}>· {shown}곳 표시 중</span>}</div>
+      {view.map((o, i) => {
+        const tcol = ORG_TYPE_COLOR[d.types[o[3]]] || "#2563EB";
+        return (
+          <div className="center" key={i}>
+            <div className="cimg" style={{ background: tcol + "12" }}><Building2 size={34} color={tcol} /></div>
+            <div className="cmain">
+              <div className="cname">{o[0]} <span className="cbadge" style={{ color: tcol, background: tcol + "1A" }}>{d.types[o[3]]}</span></div>
+              <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{o[1]}</span>{o[2] && <> · <MapPin size={12} />{o[2]}</>}{o[5] && <> · <Phone size={12} />{o[5]}</>}</div>
+              <div className="ctags"><span>국가검진(지정)</span>{o[8] === 1 && <span style={{ color: "#B45309", background: "#FEF3C7" }}>지도 대표위치</span>}</div>
+              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, lineHeight: 1.45 }}>{o[4]}</div>
+            </div>
+            <div className="cright">
+              <span className="cbadge"><ShieldCheck size={10} /> 무료 검진보험</span>
+              <div className="obtns"><button onClick={() => openConsult("건강검진 상담 — " + o[0])}>상담</button><button className="book" onClick={() => setSel(o)}>예약</button></div>
+            </div>
+          </div>
+        );
+      })}
+      {shown < list.length && <button className="cbtn" onClick={() => setShown((x) => x + 20)}>더 보기 ({(list.length - shown).toLocaleString()}곳 더)</button>}
+      <div className="chnote">※ 출처: 국민건강보험공단 검진기관기본({d.meta.asOf} · 공개 파일 전체 {d.meta.nhis.toLocaleString()}행) · 건강보험심사평가원 병원정보(좌표 매칭 {d.meta.matchRate}%) · 전국보건기관표준데이터. 지정 현황은 변동될 수 있어 예약 전 기관 확인을 권장합니다. 본 목록은 국가검진 지정 근거만 표시하며(개인·기업검진 여부는 기관 확인), 의료법(의료광고 심의·환자 유인·알선 금지)을 준수합니다.</div>
+      {sel && <BookingModal center={toCenter(sel)} mode="comp" onClose={() => setSel(null)} />}
+    </div>
   );
 }
 
@@ -5811,6 +5898,29 @@ function useHira() {
   useEffect(() => {
     let on = true;
     loadHira().then((d) => on && setState({ loading: false, error: null, data: d }))
+      .catch((e) => on && setState({ loading: false, error: e.message, data: null }));
+    return () => { on = false; };
+  }, []);
+  return state;
+}
+
+/* ── 전국 검진기관 데이터셋(data/checkup_orgs.json — 공단 검진기관기본 × 심평원 좌표 조인) ──
+   빌드: scripts/build_checkup_orgs.py · 번들 밖 fetch(hira 패턴) · 실패 시 큐레이션만으로 동작(폴백) */
+let _orgsPromise = null;
+function loadCheckupOrgs() {
+  if (!_orgsPromise) {
+    _orgsPromise = fetch("./data/checkup_orgs.json").then((r) => {
+      if (!r.ok) throw new Error("전국 검진기관 데이터 로드 실패 (" + r.status + ")");
+      return r.json();
+    });
+  }
+  return _orgsPromise;
+}
+function useCheckupOrgs() {
+  const [state, setState] = useState({ loading: true, error: null, data: null });
+  useEffect(() => {
+    let on = true;
+    loadCheckupOrgs().then((d) => on && setState({ loading: false, error: null, data: d }))
       .catch((e) => on && setState({ loading: false, error: e.message, data: null }));
     return () => { on = false; };
   }, []);
@@ -19434,7 +19544,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-08-06", ver:"v1.1", ch:[9], feat:"가족 건강 세트", src:"건강쇼핑 매출 견인 전략 5순위", summary:"한 번의 상담을 가족 단위 관리로 확장해 객단가를 높이되 가족 건강정보는 동의 없이 쓰지 않는다", refs:[], status:"반영", hash:"caed243", auto:true },
+  { date:"2026-08-09", ver:"v1.1", ch:[7], feat:"검진기관 전국 확대(공단 5,176곳)", src:"공공데이터 공단·심평원·보건표준", summary:"브랜드 큐레이션 위에 전국 지정기관 층을 신설하고 유형·지역 필터와 심평원 좌표 지도를 데이터 파생 수치로 연결해 검진 예약의 전국 커버리지를 실데이터로 증명", refs:[], status:"반영", hash:"c0d4c13", auto:true },
+  { date:"2026-08-06", ver:"v1.1", ch:[9], feat:"가족 건강 세트", src:"건강쇼핑 매출 견인 전략 5순위", summary:"한 번의 상담을 가족 단위 관리로 확장해 객단가를 높이되 가족 건강정보는 동의 없이 쓰지 않는다", refs:[], status:"반영", hash:"5b545df", auto:true },
   { date:"2026-08-05", ver:"v1.1", ch:[9], feat:"복용 순응·성과 증명", src:"건강쇼핑 매출 견인 전략 4순위", summary:"복용 기록으로 재구매 명분을 만들고 개선 성과를 4세대 자산으로 편입해 실증 데이터 축을 연다", refs:[], status:"반영", hash:"d98cf6b", auto:true },
   { date:"2026-08-05", ver:"v1.1", ch:[9], feat:"적립금 즉시 차감 결제", src:"건강쇼핑 매출 견인 전략 3순위", summary:"적립을 현재의 할인으로 체감시켜 결제 전환율을 높이고 원장·적립 규칙 정합을 유지", refs:[], status:"반영", hash:"09c68a1", auto:true },
   { date:"2026-08-05", ver:"v1.1", ch:[9], feat:"검진 근거 결핍 처방전", src:"건강쇼핑 매출 견인 전략 2순위", summary:"광고형 추천 대신 회원 수치를 근거로 제안하고 위험 항목은 진료를 앞세워 신뢰 기반 전환을 만든다", refs:[], status:"반영", hash:"85ca400", auto:true },
