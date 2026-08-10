@@ -683,15 +683,20 @@ function BookingModal({ center, mode, onClose }) {
   /* 무료 검진대비보험 — 하이 안내형 최소 탭 가입 절차(중요사항 확인 게이트 + 동의 4종) + 건너뛰기 허용(강매 금지).
      insAgree는 절차 완료(st==="done")에서만 true — 무동의 자동가입 금지(J2-3) 원칙 유지 */
   const [insAgree, setInsAgree] = useState(false);
-  const [enroll, setEnroll] = useState({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false });
+  const [enroll, setEnroll] = useState(() => ({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false, name: (typeof demoCurrentUser === "function" && demoCurrentUser() && demoCurrentUser().name) || (typeof authCurrent === "function" && authCurrent() && authCurrent().name) || "", rrn1: "", rrn2: "" }));
+  /* 계약자 확인 — 주민번호는 형식 검증 후 해시만 보관(평문 미저장·화면 마스킹). 부담 완화: 동의 완료 후에만 노출 */
+  const rrnOk = /^\d{6}$/.test(enroll.rrn1) && /^\d{7}$/.test(enroll.rrn2);
+  const idOk = (enroll.name || "").trim().length >= 2 && rrnOk;
   const enrollConfirm = () => {
-    if (!(enroll.termsOk && enroll.req)) return;
+    if (!(enroll.termsOk && enroll.req && idOk)) return;
     try {
       const m = dmU || (typeof selfMember === "function" ? selfMember() : null);
+      const rrnMasked = enroll.rrn1 + "-" + enroll.rrn2.slice(0, 1) + "••••••";
+      const rrnHash = (typeof vaultHash === "function") ? vaultHash("rrn|" + enroll.name.trim() + "|" + enroll.rrn1 + enroll.rrn2) : null;
       if (m && typeof vaultSaveConsents === "function") {
-        vaultSaveConsents(m, { ins_terms: true, ins_enroll: true, ins_third: true, mkt: !!enroll.mkt, step: "checkup-booking", ver: "검진대비보험 동의문 v1.0" });
+        vaultSaveConsents(m, { ins_terms: true, ins_enroll: true, ins_third: true, mkt: !!enroll.mkt, step: "checkup-booking", ver: "검진대비보험 동의문 v1.0", insuredName: enroll.name.trim(), rrnMasked, rrnHash });
       }
-      setInsAgree(true); setEnroll((s) => ({ ...s, st: "done" }));
+      setInsAgree(true); setEnroll((s) => ({ ...s, st: "done", rrn1: "", rrn2: "" }));   // 평문은 확정 즉시 메모리에서도 폐기
       if (typeof toast === "function") toast("가입 준비 완료 — 예약 확정 시 증서가 발급돼요 (보험료 0원)");
     } catch (e) { /* 실패 시 상태 미전이(전체 롤백) */ }
   };
@@ -861,9 +866,25 @@ function BookingModal({ center, mode, onClose }) {
                   <span className="ba-box">{enroll.mkt ? "✓" : ""}</span>
                   <span className="ba-t">③ [선택] 보험·건강 상품 안내 수신(마케팅)에 동의합니다 <i>— 동의하지 않아도 가입에 불이익이 없어요</i></span>
                 </label>
-                <div style={{ display: "flex", gap: 8, marginTop: 9 }}>
-                  <button className="cbtn pri" style={{ flex: 1, margin: 0, opacity: enroll.termsOk && enroll.req ? 1 : .5 }} disabled={!(enroll.termsOk && enroll.req)} onClick={enrollConfirm}><ShieldCheck size={14} /> 가입 확정 · 보험료 0원</button>
-                  <button className="cbtn" style={{ flex: "0 0 auto", margin: 0, padding: "0 14px" }} onClick={() => { setInsAgree(false); setEnroll((s) => ({ ...s, st: "skip" })); }}>가입 없이 예약만</button>
+                {/* ④ 계약자 확인 — 동의 완료 후에만 노출(부담 완화). 주민번호: 뒤 7자리 마스킹 입력·평문 미저장(해시만 금고 보관) */}
+                {enroll.termsOk && enroll.req && (
+                  <div style={{ marginTop: 8, border: "1px solid var(--border)", borderRadius: 10, background: "#fff", padding: "10px 12px" }}>
+                    <div style={{ fontSize: 12.3, fontWeight: 800, marginBottom: 3 }}>④ 계약자(피보험자) 확인</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.55, marginBottom: 8 }}>보험 계약 성립에는 법령상 성명·주민등록번호 확인이 필요해요. <b style={{ color: "#16A34A" }}>주민등록번호는 저장하지 않아요</b> — 형식 확인 후 검증용 해시만 남기고 즉시 폐기하며, 화면·기록에는 마스킹(앞 1자리만)으로 표시돼요. 계약 성립 목적 외에는 쓰이지 않아요.</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr 1.3fr", gap: 7 }}>
+                      <input value={enroll.name} onChange={(e) => setEnroll((s) => ({ ...s, name: e.target.value }))} placeholder="성명"
+                        style={{ border: "1.5px solid var(--border)", borderRadius: 9, padding: "9px 11px", fontSize: 13, minWidth: 0 }} />
+                      <input value={enroll.rrn1} inputMode="numeric" maxLength={6} onChange={(e) => setEnroll((s) => ({ ...s, rrn1: e.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="주민번호 앞 6자리"
+                        style={{ border: "1.5px solid " + (enroll.rrn1 && !/^\d{6}$/.test(enroll.rrn1) ? "#F59E0B" : "var(--border)"), borderRadius: 9, padding: "9px 11px", fontSize: 13, minWidth: 0, letterSpacing: 1 }} />
+                      <input value={enroll.rrn2} type="password" inputMode="numeric" maxLength={7} autoComplete="off" onChange={(e) => setEnroll((s) => ({ ...s, rrn2: e.target.value.replace(/\D/g, "").slice(0, 7) }))} placeholder="뒤 7자리 (●●●●●●●)"
+                        style={{ border: "1.5px solid " + (enroll.rrn2 && !/^\d{7}$/.test(enroll.rrn2) ? "#F59E0B" : "var(--border)"), borderRadius: 9, padding: "9px 11px", fontSize: 13, minWidth: 0, letterSpacing: 2 }} />
+                    </div>
+                    {idOk && <div style={{ fontSize: 11, color: "#16A34A", fontWeight: 700, marginTop: 6 }}>✓ 확인 완료 — {enroll.name.trim()} · {enroll.rrn1}-{enroll.rrn2.slice(0, 1)}•••••• (이렇게만 기록돼요)</div>}
+                  </div>
+                )}
+                <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 8, marginTop: 9 }}>
+                  <button className="cbtn pri" style={{ margin: 0, minWidth: 0, opacity: enroll.termsOk && enroll.req && idOk ? 1 : .5 }} disabled={!(enroll.termsOk && enroll.req && idOk)} onClick={enrollConfirm}><ShieldCheck size={14} /> {enroll.termsOk && enroll.req && !idOk ? "계약자 확인 후 가입돼요" : "가입 확정 · 보험료 0원"}</button>
+                  <button className="cbtn" style={{ margin: 0, minWidth: 0 }} onClick={() => { setInsAgree(false); setEnroll((s) => ({ ...s, st: "skip" })); }}>가입 없이 예약만</button>
                 </div>
               </>)}
             </div>
