@@ -680,8 +680,21 @@ function BookingModal({ center, mode, onClose }) {
   const [done, setDone] = useState(false);
   const [insOpen, setInsOpen] = useState(false);
   const [bookRes, setBookRes] = useState(null);
-  /* 무료 검진대비보험 — 동의 1탭(명시적 옵트인) + 건너뛰기 허용(강매 금지). Phase1 J2-3·J2-6 */
-  const [insAgree, setInsAgree] = useState(true);
+  /* 무료 검진대비보험 — 하이 안내형 최소 탭 가입 절차(중요사항 확인 게이트 + 동의 4종) + 건너뛰기 허용(강매 금지).
+     insAgree는 절차 완료(st==="done")에서만 true — 무동의 자동가입 금지(J2-3) 원칙 유지 */
+  const [insAgree, setInsAgree] = useState(false);
+  const [enroll, setEnroll] = useState({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false });
+  const enrollConfirm = () => {
+    if (!(enroll.termsOk && enroll.req)) return;
+    try {
+      const m = dmU || (typeof selfMember === "function" ? selfMember() : null);
+      if (m && typeof vaultSaveConsents === "function") {
+        vaultSaveConsents(m, { ins_terms: true, ins_enroll: true, ins_third: true, mkt: !!enroll.mkt, step: "checkup-booking", ver: "검진대비보험 동의문 v1.0" });
+      }
+      setInsAgree(true); setEnroll((s) => ({ ...s, st: "done" }));
+      if (typeof toast === "function") toast("가입 준비 완료 — 예약 확정 시 증서가 발급돼요 (보험료 0원)");
+    } catch (e) { /* 실패 시 상태 미전이(전체 롤백) */ }
+  };
   const [insCert, setInsCert] = useState(null);
   /* 무료 건강검진분석 리포트(3무 오퍼 ②) — 상세 접이 + 실물 샘플(신청자 이름 개인화) */
   const [repOpen, setRepOpen] = useState(false);
@@ -769,7 +782,7 @@ function BookingModal({ center, mode, onClose }) {
               <div className="bkins3">
                 <div className="bkins3row"><b>무엇을?</b><span>검진에서 큰 병이 발견되면 치료 준비금을 드리는 보험이에요.</span></div>
                 <div className="bkins3row"><b>왜 무료?</b><span>하이핀 회원 혜택이라 보험료는 0원 — 추가 입력도 없어요.</span></div>
-                <div className="bkins3row"><b>언제 얼마?</b><span>{myAge}세 {mySex}성 기준, 암·뇌졸중·급성심근경색 진단 확정 시 최대 1,000만 원이에요.</span></div>
+                <div className="bkins3row"><b>언제 얼마?</b><span>{myAge}세 {mySex}성 기준, 일반암·뇌졸중·급성심근경색 진단 확정 시 최대 1,000만 원이에요(상피내암·갑상선암 등 기타암 제외).</span></div>
                 <div className="bkins3co">인수: 현대해상 전속대리점 글로벌예방금융㈜ · 실제 보장·인수는 보험사 심사에 따릅니다 · <button onClick={(e) => { e.stopPropagation(); try { window.dispatchEvent(new CustomEvent("agentask", { detail: "검진대비보험은 어떤 병까지 보장돼요?" })); } catch (err) {} }}>🤖 하이에게 물어보기</button></div>
               </div>
               <div className="bkins">
@@ -801,12 +814,59 @@ function BookingModal({ center, mode, onClose }) {
                 </div>
               </div>
             )}
-            {/* 동의 1탭 — 무동의 자동가입 금지(J2-3) · 원치 않으면 해제 = 보험 없이 예약(J2-6) */}
-            <label className={"bkinsagree" + (insAgree ? " on" : "")}>
-              <input type="checkbox" checked={insAgree} onChange={(e) => setInsAgree(e.target.checked)} />
-              <span className="ba-box">{insAgree ? "✓" : ""}</span>
-              <span className="ba-t">{insAgree ? <>무료 검진대비보험을 함께 가입할게요 <i>(계약 전 알릴 사항 확인 — 가입 내역은 블록체인에 기록)</i></> : <>보험 없이 예약만 할게요 <i>(나중에 하이에게 "검진보험 가입해줘"라고 하면 언제든 가입돼요)</i></>}</span>
-            </label>
+            {/* 가입 절차(하이 안내형 4탭) — 중요사항 확인 게이트 → 필수 동의 → 확정. 마케팅은 선택·미가입도 예약 가능(강매 금지 J2-3·J2-6) */}
+            <div style={{ border: "1.5px solid " + (enroll.st === "done" ? "#16A34A" : enroll.st === "skip" ? "var(--border)" : "#F59E0B"), borderRadius: 13, padding: "12px 13px", background: enroll.st === "done" ? "#F0FDF4" : "#FFFDF7", marginTop: 10 }}>
+              {enroll.st === "done" ? (
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                  <span style={{ width: 30, height: 30, borderRadius: "50%", background: "#16A34A", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}><Check size={16} /></span>
+                  <div style={{ fontSize: 12.3, lineHeight: 1.55 }}>
+                    <b>무료 검진대비보험 가입 준비 완료</b> — 예약 확정 시 증서가 발급돼요 (보험료 0원 · 보장은 다음날 0시부터)
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>일반암 진단금 기준(상피내암·갑상선암·기타피부암·경계성종양 제외) · 동의 내역은 데이터 금고에 기록{enroll.mkt ? " · 마케팅 동의 포함" : ""} <button style={{ border: "none", background: "none", color: "#B45309", fontWeight: 700, cursor: "pointer", fontSize: 11, padding: 0, marginLeft: 4 }} onClick={() => { setInsAgree(false); setEnroll({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false }); }}>변경</button></div>
+                  </div>
+                </div>
+              ) : enroll.st === "skip" ? (
+                <div style={{ fontSize: 12.3, color: "var(--muted)", display: "flex", alignItems: "center", gap: 8 }}>
+                  보험 없이 예약만 진행해요 — 나중에 하이에게 "검진보험 가입해줘"라고 하면 언제든 가입돼요.
+                  <button style={{ border: "1px solid #F59E0B", background: "#fff", color: "#B45309", fontWeight: 800, borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 11.5 }} onClick={() => setEnroll((s) => ({ ...s, st: "idle" }))}>다시 볼래요</button>
+                </div>
+              ) : (<>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                  <span style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#F97316,#EA580C)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0, fontSize: 15 }}>🤖</span>
+                  <div style={{ fontSize: 12.4, lineHeight: 1.55 }}><b>하이가 도와드릴게요</b> — 두 가지만 확인하면 <b>보험료 0원</b>으로 가입돼요. 암 진단금은 <b>일반암 기준</b>이에요(상피내암·갑상선암 등 기타암은 보장하지 않아요).</div>
+                </div>
+                {/* ① 중요사항 확인 게이트 — 펼쳐 봐야 확인 버튼 활성(설명·확인 취지) */}
+                <div style={{ marginTop: 9, border: "1px solid var(--border)", borderRadius: 10, background: "#fff" }}>
+                  <div style={{ padding: "9px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontSize: 12.3, fontWeight: 800 }} onClick={() => setEnroll((s) => ({ ...s, termsOpen: !s.termsOpen }))}>
+                    <span>① 약관 중요사항 {enroll.termsOk ? <b style={{ color: "#16A34A" }}>확인 완료 ✓</b> : "확인하기"}</span><ChevronDown size={15} style={{ transform: enroll.termsOpen ? "rotate(180deg)" : "none", transition: ".15s" }} />
+                  </div>
+                  {enroll.termsOpen && (
+                    <div style={{ padding: "0 12px 10px", fontSize: 11.6, lineHeight: 1.62, color: "#334155" }}>
+                      <b style={{ color: "#B42318" }}>1. 보장하지 않는 암</b> — 암 진단금은 <b>일반암만</b> 보장합니다. 상피내암(제자리암)·갑상선암·기타피부암·경계성종양은 <b>보장하지 않습니다</b>.<br />
+                      <b>2. 보장 개시</b> — 가입 다음날 0시부터(개시 전 진단 확정은 보장 제외).<br />
+                      <b>3. 보장 기간</b> — 발급일로부터 90일(검진 주기 연동) · 기간 만료 시 자동 소멸.<br />
+                      <b>4. 면책</b> — 고의 사고, 개시 전 진단, 검진과 무관한 일반 진료비(실손 영역).<br />
+                      <b>5. 철회·해지</b> — 무상 계약으로 언제든 해지 가능(데이터 금고 › 동의 관리 또는 하이에게 요청).<br />
+                      {!enroll.termsOk && <button className="cbtn" style={{ marginTop: 7, padding: "7px 12px", fontSize: 12 }} onClick={() => setEnroll((s) => ({ ...s, termsOk: true }))}><Check size={13} /> 중요사항을 확인했습니다 (필수)</button>}
+                    </div>
+                  )}
+                </div>
+                {/* ② 필수 동의(가입·제3자) — 개별 항목 표시·한 번에 동의, ③ 마케팅은 선택 */}
+                <label className={"bkinsagree" + (enroll.req ? " on" : "")} style={{ marginTop: 7, opacity: enroll.termsOk ? 1 : .55 }}>
+                  <input type="checkbox" disabled={!enroll.termsOk} checked={enroll.req} onChange={(e) => setEnroll((s) => ({ ...s, req: e.target.checked }))} />
+                  <span className="ba-box">{enroll.req ? "✓" : ""}</span>
+                  <span className="ba-t">② [필수] 가입(청약)에 동의하고, 인수사(현대해상)·검진기관에 성명·생년·예약 정보를 <i>가입·보장·청구 목적에 한해</i> 제공하는 것에 동의합니다 <i>(원본 검진 수치는 제공하지 않아요 · 동의 일시는 블록체인에 기록)</i></span>
+                </label>
+                <label className={"bkinsagree" + (enroll.mkt ? " on" : "")} style={{ marginTop: 5 }}>
+                  <input type="checkbox" checked={enroll.mkt} onChange={(e) => setEnroll((s) => ({ ...s, mkt: e.target.checked }))} />
+                  <span className="ba-box">{enroll.mkt ? "✓" : ""}</span>
+                  <span className="ba-t">③ [선택] 보험·건강 상품 안내 수신(마케팅)에 동의합니다 <i>— 동의하지 않아도 가입에 불이익이 없어요</i></span>
+                </label>
+                <div style={{ display: "flex", gap: 8, marginTop: 9 }}>
+                  <button className="cbtn pri" style={{ flex: 1, margin: 0, opacity: enroll.termsOk && enroll.req ? 1 : .5 }} disabled={!(enroll.termsOk && enroll.req)} onClick={enrollConfirm}><ShieldCheck size={14} /> 가입 확정 · 보험료 0원</button>
+                  <button className="cbtn" style={{ flex: "0 0 auto", margin: 0, padding: "0 14px" }} onClick={() => { setInsAgree(false); setEnroll((s) => ({ ...s, st: "skip" })); }}>가입 없이 예약만</button>
+                </div>
+              </>)}
+            </div>
             {typeof TrustLine === "function" && <TrustLine ctx="booking" />}
             <div className="bklbl">날짜 선택</div>
             <div className="cal">{days.map((d, i) => { const k = `${d.getMonth() + 1}/${d.getDate()}`; return (<div key={i} className={`calc ${date === k ? "on" : ""}`} onClick={() => setDate(k)}><div className="d">{d.getDate()}</div><div className="w">{W[d.getDay()]}</div></div>); })}</div>

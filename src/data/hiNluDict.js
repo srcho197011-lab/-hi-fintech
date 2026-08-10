@@ -184,7 +184,7 @@ const HI_INTENTS = [
   { id: "S3-SILGEN-01", l1: "보험", l2: "실손 세대 확인", a: ["silson"], b: ["view", "explain", "compare"], hub: true, pre: ["login", "insLink"], route: "app://insurance", nav: null, tool: "sil",
     ans: "연결된 보험 기준으로 내 실손 세대와 자기부담을 봐드릴게요.", easy: "내 실손보험이 몇 세대인지, 병원비 낼 때 얼마나 돌려받는지 알려드려요.", chips: ["보장 공백 분석", "세대 전환 유불리"] },
   { id: "S3-FREE-01", l1: "보험", l2: "검진대비보험 안내", a: ["freeins"], b: ["explain", "view", "doit", "method"], hub: true, pre: [], route: "app://insurance", nav: "insurance",
-    ans: "검진만 예약하면 보험료 0원으로 자동 가입되는 검진대비보험이에요 — 암·뇌졸중·급성심근경색 진단 시 최대 1,000만 원까지 보장돼요.", easy: "검진 예약만 하면 공짜로 생기는 보험이에요. 큰 병 진단을 받으면 돈이 나와요.", chips: ["검진 예약해줘", "보장 내용 자세히"] },
+    ans: "검진만 예약하면 보험료 0원으로 자동 가입되는 검진대비보험이에요 — 일반암·뇌졸중·급성심근경색 진단 시 최대 1,000만 원까지 보장돼요(상피내암·갑상선암 등 기타암 제외).", easy: "검진 예약만 하면 공짜로 생기는 보험이에요. 큰 병 진단을 받으면 돈이 나와요.", chips: ["검진 예약해줘", "보장 내용 자세히"] },
   { id: "S3-PREMIUM-01", l1: "보험", l2: "보험료 확인·부담 완화", a: ["premium"], b: ["view", "calc", "explain", "compare"], hub: true, pre: ["login", "insLink"], route: "app://insurance", nav: "insurance",
     ans: "내 월 보험료 합계를 보여드리고, 부담이 크면 세대 전환·중복 정리·HTK 결제 세 가지를 같이 봐드릴게요.", easy: "매달 내는 보험료를 보여드리고, 줄이는 방법도 알려드려요.", chips: ["세대 전환 유불리", "적립금 얼마 쌓였어?"] },
   /* ───── S4 건강금융지갑 ───── */

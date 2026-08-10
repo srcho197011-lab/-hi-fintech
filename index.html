@@ -5414,8 +5414,21 @@ function BookingModal({ center, mode, onClose }) {
   const [done, setDone] = useState(false);
   const [insOpen, setInsOpen] = useState(false);
   const [bookRes, setBookRes] = useState(null);
-  /* 무료 검진대비보험 — 동의 1탭(명시적 옵트인) + 건너뛰기 허용(강매 금지). Phase1 J2-3·J2-6 */
-  const [insAgree, setInsAgree] = useState(true);
+  /* 무료 검진대비보험 — 하이 안내형 최소 탭 가입 절차(중요사항 확인 게이트 + 동의 4종) + 건너뛰기 허용(강매 금지).
+     insAgree는 절차 완료(st==="done")에서만 true — 무동의 자동가입 금지(J2-3) 원칙 유지 */
+  const [insAgree, setInsAgree] = useState(false);
+  const [enroll, setEnroll] = useState({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false });
+  const enrollConfirm = () => {
+    if (!(enroll.termsOk && enroll.req)) return;
+    try {
+      const m = dmU || (typeof selfMember === "function" ? selfMember() : null);
+      if (m && typeof vaultSaveConsents === "function") {
+        vaultSaveConsents(m, { ins_terms: true, ins_enroll: true, ins_third: true, mkt: !!enroll.mkt, step: "checkup-booking", ver: "검진대비보험 동의문 v1.0" });
+      }
+      setInsAgree(true); setEnroll((s) => ({ ...s, st: "done" }));
+      if (typeof toast === "function") toast("가입 준비 완료 — 예약 확정 시 증서가 발급돼요 (보험료 0원)");
+    } catch (e) { /* 실패 시 상태 미전이(전체 롤백) */ }
+  };
   const [insCert, setInsCert] = useState(null);
   /* 무료 건강검진분석 리포트(3무 오퍼 ②) — 상세 접이 + 실물 샘플(신청자 이름 개인화) */
   const [repOpen, setRepOpen] = useState(false);
@@ -5503,7 +5516,7 @@ function BookingModal({ center, mode, onClose }) {
               <div className="bkins3">
                 <div className="bkins3row"><b>무엇을?</b><span>검진에서 큰 병이 발견되면 치료 준비금을 드리는 보험이에요.</span></div>
                 <div className="bkins3row"><b>왜 무료?</b><span>하이핀 회원 혜택이라 보험료는 0원 — 추가 입력도 없어요.</span></div>
-                <div className="bkins3row"><b>언제 얼마?</b><span>{myAge}세 {mySex}성 기준, 암·뇌졸중·급성심근경색 진단 확정 시 최대 1,000만 원이에요.</span></div>
+                <div className="bkins3row"><b>언제 얼마?</b><span>{myAge}세 {mySex}성 기준, 일반암·뇌졸중·급성심근경색 진단 확정 시 최대 1,000만 원이에요(상피내암·갑상선암 등 기타암 제외).</span></div>
                 <div className="bkins3co">인수: 현대해상 전속대리점 글로벌예방금융㈜ · 실제 보장·인수는 보험사 심사에 따릅니다 · <button onClick={(e) => { e.stopPropagation(); try { window.dispatchEvent(new CustomEvent("agentask", { detail: "검진대비보험은 어떤 병까지 보장돼요?" })); } catch (err) {} }}>🤖 하이에게 물어보기</button></div>
               </div>
               <div className="bkins">
@@ -5535,12 +5548,59 @@ function BookingModal({ center, mode, onClose }) {
                 </div>
               </div>
             )}
-            {/* 동의 1탭 — 무동의 자동가입 금지(J2-3) · 원치 않으면 해제 = 보험 없이 예약(J2-6) */}
-            <label className={"bkinsagree" + (insAgree ? " on" : "")}>
-              <input type="checkbox" checked={insAgree} onChange={(e) => setInsAgree(e.target.checked)} />
-              <span className="ba-box">{insAgree ? "✓" : ""}</span>
-              <span className="ba-t">{insAgree ? <>무료 검진대비보험을 함께 가입할게요 <i>(계약 전 알릴 사항 확인 — 가입 내역은 블록체인에 기록)</i></> : <>보험 없이 예약만 할게요 <i>(나중에 하이에게 "검진보험 가입해줘"라고 하면 언제든 가입돼요)</i></>}</span>
-            </label>
+            {/* 가입 절차(하이 안내형 4탭) — 중요사항 확인 게이트 → 필수 동의 → 확정. 마케팅은 선택·미가입도 예약 가능(강매 금지 J2-3·J2-6) */}
+            <div style={{ border: "1.5px solid " + (enroll.st === "done" ? "#16A34A" : enroll.st === "skip" ? "var(--border)" : "#F59E0B"), borderRadius: 13, padding: "12px 13px", background: enroll.st === "done" ? "#F0FDF4" : "#FFFDF7", marginTop: 10 }}>
+              {enroll.st === "done" ? (
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                  <span style={{ width: 30, height: 30, borderRadius: "50%", background: "#16A34A", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}><Check size={16} /></span>
+                  <div style={{ fontSize: 12.3, lineHeight: 1.55 }}>
+                    <b>무료 검진대비보험 가입 준비 완료</b> — 예약 확정 시 증서가 발급돼요 (보험료 0원 · 보장은 다음날 0시부터)
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>일반암 진단금 기준(상피내암·갑상선암·기타피부암·경계성종양 제외) · 동의 내역은 데이터 금고에 기록{enroll.mkt ? " · 마케팅 동의 포함" : ""} <button style={{ border: "none", background: "none", color: "#B45309", fontWeight: 700, cursor: "pointer", fontSize: 11, padding: 0, marginLeft: 4 }} onClick={() => { setInsAgree(false); setEnroll({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false }); }}>변경</button></div>
+                  </div>
+                </div>
+              ) : enroll.st === "skip" ? (
+                <div style={{ fontSize: 12.3, color: "var(--muted)", display: "flex", alignItems: "center", gap: 8 }}>
+                  보험 없이 예약만 진행해요 — 나중에 하이에게 "검진보험 가입해줘"라고 하면 언제든 가입돼요.
+                  <button style={{ border: "1px solid #F59E0B", background: "#fff", color: "#B45309", fontWeight: 800, borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 11.5 }} onClick={() => setEnroll((s) => ({ ...s, st: "idle" }))}>다시 볼래요</button>
+                </div>
+              ) : (<>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                  <span style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#F97316,#EA580C)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0, fontSize: 15 }}>🤖</span>
+                  <div style={{ fontSize: 12.4, lineHeight: 1.55 }}><b>하이가 도와드릴게요</b> — 두 가지만 확인하면 <b>보험료 0원</b>으로 가입돼요. 암 진단금은 <b>일반암 기준</b>이에요(상피내암·갑상선암 등 기타암은 보장하지 않아요).</div>
+                </div>
+                {/* ① 중요사항 확인 게이트 — 펼쳐 봐야 확인 버튼 활성(설명·확인 취지) */}
+                <div style={{ marginTop: 9, border: "1px solid var(--border)", borderRadius: 10, background: "#fff" }}>
+                  <div style={{ padding: "9px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontSize: 12.3, fontWeight: 800 }} onClick={() => setEnroll((s) => ({ ...s, termsOpen: !s.termsOpen }))}>
+                    <span>① 약관 중요사항 {enroll.termsOk ? <b style={{ color: "#16A34A" }}>확인 완료 ✓</b> : "확인하기"}</span><ChevronDown size={15} style={{ transform: enroll.termsOpen ? "rotate(180deg)" : "none", transition: ".15s" }} />
+                  </div>
+                  {enroll.termsOpen && (
+                    <div style={{ padding: "0 12px 10px", fontSize: 11.6, lineHeight: 1.62, color: "#334155" }}>
+                      <b style={{ color: "#B42318" }}>1. 보장하지 않는 암</b> — 암 진단금은 <b>일반암만</b> 보장합니다. 상피내암(제자리암)·갑상선암·기타피부암·경계성종양은 <b>보장하지 않습니다</b>.<br />
+                      <b>2. 보장 개시</b> — 가입 다음날 0시부터(개시 전 진단 확정은 보장 제외).<br />
+                      <b>3. 보장 기간</b> — 발급일로부터 90일(검진 주기 연동) · 기간 만료 시 자동 소멸.<br />
+                      <b>4. 면책</b> — 고의 사고, 개시 전 진단, 검진과 무관한 일반 진료비(실손 영역).<br />
+                      <b>5. 철회·해지</b> — 무상 계약으로 언제든 해지 가능(데이터 금고 › 동의 관리 또는 하이에게 요청).<br />
+                      {!enroll.termsOk && <button className="cbtn" style={{ marginTop: 7, padding: "7px 12px", fontSize: 12 }} onClick={() => setEnroll((s) => ({ ...s, termsOk: true }))}><Check size={13} /> 중요사항을 확인했습니다 (필수)</button>}
+                    </div>
+                  )}
+                </div>
+                {/* ② 필수 동의(가입·제3자) — 개별 항목 표시·한 번에 동의, ③ 마케팅은 선택 */}
+                <label className={"bkinsagree" + (enroll.req ? " on" : "")} style={{ marginTop: 7, opacity: enroll.termsOk ? 1 : .55 }}>
+                  <input type="checkbox" disabled={!enroll.termsOk} checked={enroll.req} onChange={(e) => setEnroll((s) => ({ ...s, req: e.target.checked }))} />
+                  <span className="ba-box">{enroll.req ? "✓" : ""}</span>
+                  <span className="ba-t">② [필수] 가입(청약)에 동의하고, 인수사(현대해상)·검진기관에 성명·생년·예약 정보를 <i>가입·보장·청구 목적에 한해</i> 제공하는 것에 동의합니다 <i>(원본 검진 수치는 제공하지 않아요 · 동의 일시는 블록체인에 기록)</i></span>
+                </label>
+                <label className={"bkinsagree" + (enroll.mkt ? " on" : "")} style={{ marginTop: 5 }}>
+                  <input type="checkbox" checked={enroll.mkt} onChange={(e) => setEnroll((s) => ({ ...s, mkt: e.target.checked }))} />
+                  <span className="ba-box">{enroll.mkt ? "✓" : ""}</span>
+                  <span className="ba-t">③ [선택] 보험·건강 상품 안내 수신(마케팅)에 동의합니다 <i>— 동의하지 않아도 가입에 불이익이 없어요</i></span>
+                </label>
+                <div style={{ display: "flex", gap: 8, marginTop: 9 }}>
+                  <button className="cbtn pri" style={{ flex: 1, margin: 0, opacity: enroll.termsOk && enroll.req ? 1 : .5 }} disabled={!(enroll.termsOk && enroll.req)} onClick={enrollConfirm}><ShieldCheck size={14} /> 가입 확정 · 보험료 0원</button>
+                  <button className="cbtn" style={{ flex: "0 0 auto", margin: 0, padding: "0 14px" }} onClick={() => { setInsAgree(false); setEnroll((s) => ({ ...s, st: "skip" })); }}>가입 없이 예약만</button>
+                </div>
+              </>)}
+            </div>
             {typeof TrustLine === "function" && <TrustLine ctx="booking" />}
             <div className="bklbl">날짜 선택</div>
             <div className="cal">{days.map((d, i) => { const k = `${d.getMonth() + 1}/${d.getDate()}`; return (<div key={i} className={`calc ${date === k ? "on" : ""}`} onClick={() => setDate(k)}><div className="d">{d.getDate()}</div><div className="w">{W[d.getDay()]}</div></div>); })}</div>
@@ -8560,7 +8620,7 @@ const CHECK_PLANS = [
 ];
 // 담보: [art, 담보명, 기본형, 표준형, 고급형, (예비), 특약, 비고/정의]
 const CHECK_COVERS = [
-  ["immune", "암 진단금", "200만원", "500만원", "1,000만원", "1,000만원", "암치료비보장 특별약관(I)", "암 진단확정 시 1회 (기타암 제외 / 갑상선암·기타피부암·제자리암·경계성종양 해당없음)"],
+  ["immune", "일반암 진단금", "200만원", "500만원", "1,000만원", "1,000만원", "암치료비보장 특별약관(I)", "암 진단확정 시 1회 (기타암 제외 / 갑상선암·기타피부암·제자리암·경계성종양 해당없음)"],
   ["heartpulse", "급성심근경색", "200만원", "500만원", "1,000만원", "1,000만원", "급성심근경색증치료비보장 특별약관", "급성심근경색증 진단확정 시 가입금액 전액 1회"],
   ["brain", "뇌졸중", "200만원", "500만원", "1,000만원", "1,000만원", "뇌졸중치료비보장 특별약관", "뇌졸중 진단확정 시 가입금액 전액 1회"],
   ["device", "21대 질병 수술비", "100만원", "200만원", "300만원", "300만원", "질병수술비보장 특별약관", "13대·다발성3대·특정5대 질병 수술 1회당 지급"],
@@ -19554,7 +19614,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-08-09", ver:"v1.1", ch:[7], feat:"개인종합검진 전국 89곳 층", src:"공단 검진기관기본·심평원 종별", summary:"개인검진을 개인종합검진으로 명확화하고 전문검진센터·종합병원 종별 근거로 전국 가능 기관 89곳을 별도 층으로 제공해 브랜드 큐레이션 편중을 해소", refs:[], status:"반영", hash:"1c49a40", auto:true },
+  { date:"2026-08-10", ver:"v1.1", ch:[15], feat:"검진대비보험 청약 절차(동의 4종·일반암 한정)", src:"예약 모달·insService·하이", summary:"단일 체크박스 가입을 중요사항 확인 게이트와 필수·선택 동의 분리형 4탭 청약으로 교체하고 일반암 한정 고지를 화면 전반에 정합시켜 무상 임베디드 보험의 준법 성립 절차를 완성", refs:[], status:"반영", hash:"9960060", auto:true },
+  { date:"2026-08-09", ver:"v1.1", ch:[7], feat:"개인종합검진 전국 89곳 층", src:"공단 검진기관기본·심평원 종별", summary:"개인검진을 개인종합검진으로 명확화하고 전문검진센터·종합병원 종별 근거로 전국 가능 기관 89곳을 별도 층으로 제공해 브랜드 큐레이션 편중을 해소", refs:[], status:"반영", hash:"3c550c0", auto:true },
   { date:"2026-08-09", ver:"v1.1", ch:[7], feat:"검진기관 전국 확대(공단 5,176곳)", src:"공공데이터 공단·심평원·보건표준", summary:"브랜드 큐레이션 위에 전국 지정기관 층을 신설하고 유형·지역 필터와 심평원 좌표 지도를 데이터 파생 수치로 연결해 검진 예약의 전국 커버리지를 실데이터로 증명", refs:[], status:"반영", hash:"8ed86fb", auto:true },
   { date:"2026-08-06", ver:"v1.1", ch:[9], feat:"가족 건강 세트", src:"건강쇼핑 매출 견인 전략 5순위", summary:"한 번의 상담을 가족 단위 관리로 확장해 객단가를 높이되 가족 건강정보는 동의 없이 쓰지 않는다", refs:[], status:"반영", hash:"5b545df", auto:true },
   { date:"2026-08-05", ver:"v1.1", ch:[9], feat:"복용 순응·성과 증명", src:"건강쇼핑 매출 견인 전략 4순위", summary:"복용 기록으로 재구매 명분을 만들고 개선 성과를 4세대 자산으로 편입해 실증 데이터 축을 연다", refs:[], status:"반영", hash:"d98cf6b", auto:true },
@@ -24974,7 +25035,7 @@ const insService = {
     const claims = _claims().filter((c) => /검진/.test(c.kind || ""));
     return { hasCheckup, checkupDate, policy: pol || null, timeline, claims,
       coverage: [
-        ["검진에서 암이 발견됐어요", "암 진단금", 10000000, "확정 진단과 동시에 — 치료 시작 비용부터 해결"],
+        ["검진에서 암이 발견됐어요", "일반암 진단금", 10000000, "확정 진단과 동시에 — 치료 시작 비용부터 해결 (기타암 제외)"],
         ["뇌졸중·심근경색 진단을 받았어요", "2대 질환 진단금", 10000000, "골든타임 치료에 바로 보태세요"],
         ["수술이 필요하대요", "질병 수술비", 3000000, "암·뇌·심장뿐 아니라 대부분 질병의 수술 시"],
         ["정밀검사를 더 받아보래요", "정밀검사 지원", 100000, "복부초음파·조직검사 등 추가 검사비"],
@@ -26749,7 +26810,7 @@ const TOOL_RUN = {
       "건강검진을 예약만 하면 보험료 0원으로 자동 가입되는 '검진대비보험'이에요 — 하이핀 회원 혜택이라 추가 입력도 없어요.",
       "플랜은 검진에 따라 자동 적용돼요 — 기본형(국가검진) · 표준형(종합검진 50만 원 미만) · 고급형(50만 원 이상).",
       "보장 내용 전체예요:\n" + table,
-      `${age}세 ${sex}성 기준 고급형이면, 암·뇌졸중·급성심근경색 진단 확정 시 각 최대 1,000만 원까지 받아요. 인수는 현대해상 전속대리점 글로벌예방금융㈜ · 가입 내역은 블록체인에 기록돼요.`,
+      `${age}세 ${sex}성 기준 고급형이면, 일반암·뇌졸중·급성심근경색 진단 확정 시 각 최대 1,000만 원까지 받아요(상피내암·갑상선암 등 기타암 제외). 인수는 현대해상 전속대리점 글로벌예방금융㈜ · 가입 내역은 블록체인에 기록돼요.`,
       "아래 버튼으로 검진 예약 화면에서 바로 확인·예약할 수 있고, 저한테 \"검진 예약해줘\"라고 하시면 제가 예약과 가입까지 한 번에 끝내드려요.",
     ], buttons: ["검진 예약해줘", "보장 내용 자세히"] };
   } catch (e) { return null; } },
@@ -27483,7 +27544,7 @@ const HI_INTENTS = [
   { id: "S3-SILGEN-01", l1: "보험", l2: "실손 세대 확인", a: ["silson"], b: ["view", "explain", "compare"], hub: true, pre: ["login", "insLink"], route: "app://insurance", nav: null, tool: "sil",
     ans: "연결된 보험 기준으로 내 실손 세대와 자기부담을 봐드릴게요.", easy: "내 실손보험이 몇 세대인지, 병원비 낼 때 얼마나 돌려받는지 알려드려요.", chips: ["보장 공백 분석", "세대 전환 유불리"] },
   { id: "S3-FREE-01", l1: "보험", l2: "검진대비보험 안내", a: ["freeins"], b: ["explain", "view", "doit", "method"], hub: true, pre: [], route: "app://insurance", nav: "insurance",
-    ans: "검진만 예약하면 보험료 0원으로 자동 가입되는 검진대비보험이에요 — 암·뇌졸중·급성심근경색 진단 시 최대 1,000만 원까지 보장돼요.", easy: "검진 예약만 하면 공짜로 생기는 보험이에요. 큰 병 진단을 받으면 돈이 나와요.", chips: ["검진 예약해줘", "보장 내용 자세히"] },
+    ans: "검진만 예약하면 보험료 0원으로 자동 가입되는 검진대비보험이에요 — 일반암·뇌졸중·급성심근경색 진단 시 최대 1,000만 원까지 보장돼요(상피내암·갑상선암 등 기타암 제외).", easy: "검진 예약만 하면 공짜로 생기는 보험이에요. 큰 병 진단을 받으면 돈이 나와요.", chips: ["검진 예약해줘", "보장 내용 자세히"] },
   { id: "S3-PREMIUM-01", l1: "보험", l2: "보험료 확인·부담 완화", a: ["premium"], b: ["view", "calc", "explain", "compare"], hub: true, pre: ["login", "insLink"], route: "app://insurance", nav: "insurance",
     ans: "내 월 보험료 합계를 보여드리고, 부담이 크면 세대 전환·중복 정리·HTK 결제 세 가지를 같이 봐드릴게요.", easy: "매달 내는 보험료를 보여드리고, 줄이는 방법도 알려드려요.", chips: ["세대 전환 유불리", "적립금 얼마 쌓였어?"] },
   /* ───── S4 건강금융지갑 ───── */
