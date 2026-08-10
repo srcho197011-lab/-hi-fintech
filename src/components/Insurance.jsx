@@ -1284,7 +1284,8 @@ function InsLadderCard({ onTab }) {
 /* ① 건강검진대비보험 — 가입부터 청구까지 한 흐름 */
 function InsCheckupInsSection({ onEnroll }) {
   const [tick, setTick] = useState(0); void tick;
-  const [confirm, setConfirm] = useState(null);   // "issue" | {claim}
+  const [confirm, setConfirm] = useState(null);
+  const [_certView, setCertView] = useState(false);   // "issue" | {claim}
   const m = insService.member();
   const S = m ? insService.checkupIns(m) : null;
   const won = (n) => Number(n || 0).toLocaleString();
@@ -1340,6 +1341,10 @@ function InsCheckupInsSection({ onEnroll }) {
         </div>
         {S.claims.length > 0 && S.claims.map((c) => <div className="costrow" key={c.id}><span className="cl">청구 {c.id}</span><span className="cv">{/지급완료/.test(c.status) ? `지급 ${won(c.payout)}원 — 지갑에 들어왔어요` : c.status}</span><span className="ca" style={{ color: /지급완료/.test(c.status) ? "var(--green)" : "#B45309" }}>{/지급완료/.test(c.status) ? "완료 ✓" : "진행 중"}</span></div>)}
         {active && <button className="cbtn pri" style={{ marginTop: 4, fontSize: 14.5, padding: "13px" }} onClick={() => { const r = insService.claimSubmit(m, { kind: "검진 연계 정밀검사", fee: 100000 }); if (r.ok) { const rv = insService.claimReview(m, r.claim.id); if (rv.ok) setConfirm({ claim: rv }); else if (typeof toast === "function") toast("🔒 " + rv.reason); } else if (typeof toast === "function") toast("🔒 " + r.reason); }}><Coins size={15} /> 치료비 청구하기 — 서류 없이 바로</button>}
+        {(() => { try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) return null; const c = l[l.length - 1]; return (<>
+          {typeof InsCertModal === "function" && _certView && <InsCertModal cert={c} onClose={() => setCertView(false)} />}
+          <button className="cbtn" style={{ marginTop: 8 }} onClick={() => setCertView(true)}><FileText size={14} /> 내 가입증서 보기 — {c.id} ({l.length}건)</button>
+        </>); } catch (e) { return null; } })()}
         <details style={{ fontSize: 12, margin: "10px 0 0" }}><summary style={{ cursor: "pointer", fontWeight: 700, color: "var(--soft)" }}>미리 알려드려요 — 이런 경우는 보장이 어려워요</summary><ul style={{ margin: "6px 0 0", paddingLeft: 18, color: "var(--muted)", lineHeight: 1.7 }}>{S.exclusions.map((x) => <li key={x}>{x}</li>)}</ul></details>
       </>)}
       <div className="chnote" style={{ marginTop: 10 }}>※ 검진 연계 무상 보장은 보험업법 특별이익 제공 금지 규정 정합 검토 전제 · 가입은 GA 라이선스 채널 경유 — 발급·청구·지급 전 건이 온체인에 기록돼요.</div>

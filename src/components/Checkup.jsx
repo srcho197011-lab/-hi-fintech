@@ -701,6 +701,7 @@ function BookingModal({ center, mode, onClose }) {
     } catch (e) { /* 실패 시 상태 미전이(전체 롤백) */ }
   };
   const [insCert, setInsCert] = useState(null);
+  const [certOpen, setCertOpen] = useState(false);
   /* 무료 건강검진분석 리포트(3무 오퍼 ②) — 상세 접이 + 실물 샘플(신청자 이름 개인화) */
   const [repOpen, setRepOpen] = useState(false);
   const [showSample, setShowSample] = useState(false);
@@ -725,7 +726,12 @@ function BookingModal({ center, mode, onClose }) {
           block = chainAppend({ type: "ins-cert", token: tk, note: `무상 검진대비보험 증서 발급(${center.name})` });
           try { vaultAccessLog(tk, "member", "검진대비보험 증서 발급"); } catch (e) {}
         }
-        const rec = { id: certId, center: center.name, date, time, at: Date.now(), hash: block ? block.hash : null };
+        /* 증서 화면용 스냅샷 — 발급 시점의 플랜·보장·계약자(마스킹) 고정 기록 */
+        let insured = null;
+        try { const v = m && typeof vaultLoad === "function" ? vaultLoad(anonToken(m)) : null; const st = v && v.consents && v.consents.state; if (st && st.insuredName) insured = { name: st.insuredName, rrn: st.rrnMasked || "" }; } catch (e) {}
+        const coverSnap = COVERS.map((r) => ({ t: r[1], amt: r[colIdx] })).filter((c) => c.amt && c.amt !== "-");
+        const rec = { id: certId, center: center.name, date, time, at: Date.now(), hash: block ? block.hash : null,
+          plan: (typeof planName !== "undefined" ? planName : ""), covers: coverSnap, insured, mkt: !!enroll.mkt };
         try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push(rec); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } catch (e) {}
         setInsCert(rec);
       } catch (e) {}
@@ -898,6 +904,7 @@ function BookingModal({ center, mode, onClose }) {
             <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={onConfirm}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
           </>) : (
             <div className="bkconfirm">
+              {certOpen && <InsCertModal cert={insCert} onClose={() => setCertOpen(false)} />}
               <div className="ic"><Check size={30} color="#16A34A" /></div>
               <div style={{ fontWeight: 800, fontSize: 17 }}>{doneTitle}</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{center.name}<br />{date} {time}</div>
@@ -912,7 +919,7 @@ function BookingModal({ center, mode, onClose }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
                 {insAgree ? (<>
                   <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>보장이 시작되었습니다 — 무상 검진대비보험 {planName}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>추가 보험료 없이 검진 대비 보장(마음케어진단 포함)이 적용됩니다.</div></div></div>
-                  <div className="resitem" style={{ margin: 0 }}><span className="ic"><BadgeCheck size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>증서 발급 완료{insCert ? ` — ${insCert.id}` : ""}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{insCert && insCert.hash ? <>블록체인 기록 <b style={{ color: "#16A34A" }}>위변조 없음 ✓</b> · 해시 {String(insCert.hash).slice(0, 10)}… · 데이터 금고에서 확인</> : "지갑에 SBT 증서가 발행되고 알림톡이 발송됩니다."}</div></div></div>
+                  <div className="resitem" style={{ margin: 0 }}><span className="ic"><BadgeCheck size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>증서 발급 완료{insCert ? ` — ${insCert.id}` : ""}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{insCert && insCert.hash ? <>블록체인 기록 <b style={{ color: "#16A34A" }}>위변조 없음 ✓</b> · 해시 {String(insCert.hash).slice(0, 10)}… · 데이터 금고에서 확인</> : "지갑에 SBT 증서가 발행되고 알림톡이 발송됩니다."}</div>{insCert && <button className="cbtn" style={{ marginTop: 7, padding: "7px 13px", fontSize: 12 }} onClick={() => setCertOpen(true)}><FileText size={13} /> 가입증서 보기</button>}</div></div>
                   <div className="resitem" style={{ margin: 0, background: "#FFF7ED", borderRadius: 10, padding: "8px 10px" }}><span className="ic" style={{ background: "#FFEDD5" }}><Bot size={18} color="#EA580C" /></span><div><b style={{ fontSize: 13 }}>하이의 한 줄 브리핑</b><div style={{ fontSize: 11.5, color: "#7C5230" }}>"{date} {time} 검진 예약과 보험 준비까지 끝났어요 — 검진 전날 제가 준비사항을 알려드릴게요."</div></div></div>
                 </>) : (
                   <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#EEF1F8" }}><ShieldCheck size={18} color="#64748B" /></span><div><b style={{ fontSize: 13 }}>보험 없이 예약되었습니다</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>검진일 전에 하이가 한 번만 다시 안내드릴게요 — 언제든 "검진보험 가입해줘"라고 말씀하세요.</div></div></div>
@@ -1259,6 +1266,65 @@ function useHira() {
     return () => { on = false; };
   }, []);
   return state;
+}
+
+/* ── 검진대비보험 가입증서 화면 — 발급 스냅샷(hifin_ins_certs) 렌더. 예약 완료·맞춤보험 양쪽에서 사용 ── */
+function InsCertModal({ cert, onClose }) {
+  if (!cert) return null;
+  const d0 = new Date(cert.at); const start = new Date(d0); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(end.getDate() + 90);
+  const fmt = (d) => `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+  const covers = cert.covers && cert.covers.length ? cert.covers : [];
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,.55)", zIndex: 1200, display: "grid", placeItems: "center", padding: 16 }} onClick={onClose}>
+      <div style={{ width: "min(560px, 96vw)", maxHeight: "92vh", overflowY: "auto", background: "#fff", borderRadius: 18, boxShadow: "0 30px 70px -30px rgba(0,0,0,.5)" }} onClick={(e) => e.stopPropagation()}>
+        {/* 증서 헤더 — 인장 느낌 */}
+        <div style={{ background: "linear-gradient(135deg,#12314E,#1D4ED8)", color: "#fff", borderRadius: "18px 18px 0 0", padding: "20px 22px", position: "relative" }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, opacity: .8, fontWeight: 700 }}>HI-FIN TECH · CERTIFICATE OF INSURANCE</div>
+          <div style={{ fontSize: 20, fontWeight: 900, marginTop: 5 }}>건강검진대비보험 가입증서</div>
+          <div style={{ fontSize: 12, opacity: .85, marginTop: 3 }}>증서번호 {cert.id} · 보험료 0원(하이핀 회원 혜택)</div>
+          <div style={{ position: "absolute", right: 84, top: 16, width: 62, height: 62, borderRadius: "50%", border: "2px solid rgba(255,255,255,.55)", display: "grid", placeItems: "center", fontSize: 10.5, fontWeight: 900, textAlign: "center", lineHeight: 1.25, transform: "rotate(-12deg)" }}>보장<br />개시<br />{cert.hash ? "✓" : "대기"}</div>
+          <button onClick={onClose} style={{ position: "absolute", right: 14, top: 12, border: "none", background: "rgba(255,255,255,.16)", color: "#fff", borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 12 }}>닫기 ✕</button>
+        </div>
+        <div style={{ padding: "16px 22px 20px" }}>
+          {/* 계약 정보 */}
+          <table style={{ width: "100%", fontSize: 12.5, borderCollapse: "collapse" }}>
+            <tbody>
+              {[["계약자·피보험자", cert.insured ? `${cert.insured.name}${cert.insured.rrn ? " · " + cert.insured.rrn : ""}` : "회원 본인"],
+                ["가입 플랜", (cert.plan || "기본형") + " · 무상(보험료 0원)"],
+                ["보험기간", `${fmt(start)} 0시 ~ ${fmt(end)} (90일 · 검진 주기 연동)`],
+                ["연계 검진", `${cert.center}${cert.date ? ` · ${cert.date} ${cert.time || ""}` : ""}`],
+                ["인수사 · 판매", "현대해상(전속 제휴) · 글로벌예방금융(주) 금융위 등록 보험대리점 제2025060038호"]].map(([k, v], i) => (
+                <tr key={i} style={{ borderBottom: "1px solid #EEF2F7" }}>
+                  <td style={{ padding: "8px 0", color: "#64748B", fontWeight: 700, width: 108, verticalAlign: "top" }}>{k}</td>
+                  <td style={{ padding: "8px 0", fontWeight: 600, lineHeight: 1.5 }}>{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {/* 보장 내역 */}
+          <div style={{ fontSize: 12.5, fontWeight: 900, margin: "13px 0 6px", color: "#12314E" }}>보장 내역 <span style={{ fontWeight: 700, color: "#B42318", fontSize: 11 }}>· 암 진단금은 일반암만(상피내암·갑상선암·기타피부암·경계성종양 제외)</span></div>
+          <div style={{ border: "1px solid #E2E8F0", borderRadius: 11, overflow: "hidden" }}>
+            {covers.map((c, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 13px", fontSize: 12.5, background: i % 2 ? "#F8FAFC" : "#fff" }}>
+                <span style={{ fontWeight: 700 }}>{c.t}</span><b style={{ color: "#1D4ED8" }}>{c.amt}</b>
+              </div>
+            ))}
+            {!covers.length && <div style={{ padding: "10px 13px", fontSize: 12, color: "#64748B" }}>보장 내역은 맞춤보험 › 검진대비보험에서 확인하세요.</div>}
+          </div>
+          {/* 블록체인 검증 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "9px 12px", marginTop: 11, fontSize: 12 }}>
+            <ShieldCheck size={16} color="#16A34A" />
+            <div><b style={{ color: "#15803D" }}>블록체인 기록 · 위변조 없음 ✓</b>{cert.hash && <span style={{ color: "#64748B" }}> — 해시 {String(cert.hash).slice(0, 14)}… · 데이터 금고에서 검증 가능</span>}</div>
+          </div>
+          {/* 유의사항 */}
+          <div style={{ fontSize: 10.8, color: "#94A3B8", lineHeight: 1.6, marginTop: 10 }}>
+            ※ 보장은 가입 다음날 0시부터 시작되며, 개시 전 진단 확정·고의 사고·검진과 무관한 일반 진료비는 보장하지 않습니다. 실제 보장·인수·지급은 보험사 심사에 따르며, 청약철회·해지는 데이터 금고 › 동의 관리 또는 하이에게 요청으로 언제든 가능합니다. 본 증서는 데모 환경의 시연용 증서입니다.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ── 전국 검진기관 데이터셋(data/checkup_orgs.json — 공단 검진기관기본 × 심평원 좌표 조인) ──
