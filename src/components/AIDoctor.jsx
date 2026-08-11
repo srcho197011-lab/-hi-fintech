@@ -1026,7 +1026,7 @@ function PharmPickCard({ onPick }) {
     </div>
   );
 }
-function SpecialistChat() {
+function SpecialistChat({ checkupMode }) {
   /* '내 주변'이 기본이다 — 강남구를 박아 두면 은평구 사는 회원에게 남의 동네 의사를 보여준다 */
   const _mreg = (typeof memberRegion === "function") ? memberRegion() : null;
   const [sido, setSido] = useState((_mreg && _mreg.sidoFull) || "서울특별시");
@@ -1070,7 +1070,10 @@ function SpecialistChat() {
     vv.addEventListener("resize", f); return () => vv.removeEventListener("resize", f);
   }, []);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
-  const list = (typeof genSpecialists === "function") ? genSpecialists(sido, sigungu, deptKey) : [];
+  const _myChk = (() => { try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); return l.length ? l[l.length - 1].center : null; } catch (e) { return null; } })();
+  const list = checkupMode
+    ? ((typeof genCheckupDoctors === "function") ? genCheckupDoctors(sido, _myChk) : [])
+    : ((typeof genSpecialists === "function") ? genSpecialists(sido, sigungu, deptKey) : []);
   const sigus = (typeof REGION_KB !== "undefined" && REGION_KB[sido]) || [];
   const onSido = (s) => { setSido(s); const arr = REGION_KB[s] || []; setSigungu(arr[0] || ""); };
   /* Phase 6 — AI 예진 요약(I2-1): 하이가 검진·리포트·RPM을 정리해 의사에게 먼저 전달(7분 진료를 30분 밀도로) */
@@ -1200,23 +1203,26 @@ function SpecialistChat() {
     const cat = DEPT_CATS.find((c) => c.key === deptKey) || DEPT_CATS[0];
     return (
       <div className="spwrap">
-        <div className="splbl"><Stethoscope size={15} color="#2563EB" /> 원격주치의 — 전국 비대면 전문의 상담 <span>· 지역·진료과로 우리 동네 전문의를 찾으세요</span>
+        <div className="splbl"><Stethoscope size={15} color="#2563EB" /> {checkupMode ? <>검진기관 원격 상담 — 검진병원 결과 상담 <span>· 검진받은(받을) 검진기관의 검진의와 결과·재검을 상담하세요</span></> : <>원격주치의 — 전국 비대면 전문의 상담 <span>· 지역·진료과로 우리 동네 전문의를 찾으세요</span></>}
           <button className="tmproc" onClick={() => { setShowProc((v) => !v); setShowRule(false); }}><Info size={12} /> 제도 안내</button>
           <button className="tmproc rule" onClick={() => { setShowRule((v) => !v); setShowProc(false); }}><ShieldCheck size={12} /> 비대면 가능 조건</button></div>
         {showProc && <TeleProcess />}
         {showRule && <TeleCompliance />}
         <div className="tmfilter">
           <div className="tmf"><label>지역 (시·도)</label><select value={sido} onChange={(e) => onSido(e.target.value)}>{(typeof REGION_KB !== "undefined" ? Object.keys(REGION_KB) : []).map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
-          <div className="tmf"><label>시·군·구</label><select value={sigungu} onChange={(e) => setSigungu(e.target.value)}>{sigus.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
+          {!checkupMode && <div className="tmf"><label>시·군·구</label><select value={sigungu} onChange={(e) => setSigungu(e.target.value)}>{sigus.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>}
         </div>
-        <div className="tmcats">{DEPT_CATS.map((c) => <button key={c.key} className={deptKey === c.key ? "on" : ""} onClick={() => setDeptKey(c.key)}>{c.label}</button>)}</div>
-        <div className="tmcount"><b>{tmSidoShort(sido)} {sigungu}</b> · {cat.label} · 원격주치의 {list.length}명 <span style={{ color: "#16A34A", fontWeight: 800 }}>· 지금 연결 가능 {list.filter((s) => (parseInt(String(s.id).replace(/\D/g, "") || "0", 10) % 3) !== 0).length}명 · 평균 대기 2분</span></div>
+        {!checkupMode && <div className="tmcats">{DEPT_CATS.map((c) => <button key={c.key} className={deptKey === c.key ? "on" : ""} onClick={() => setDeptKey(c.key)}>{c.label}</button>)}</div>}
+        {checkupMode && <div className="tmcats"><button className="on">결과 상담</button><button className="on">재검·추가검사 안내</button><button className="on">검진 판독</button><button className="on">수검 전 문진</button></div>}
+        <div className="tmcount">{checkupMode
+          ? <><b>{tmSidoShort(sido)}</b> · 검진기관 {new Set(list.map((s) => s.hosp)).size}곳 · 검진의 {list.length}명 <span style={{ color: "#16A34A", fontWeight: 800 }}>· 결과 상담·재검 안내 전용{_myChk ? ` · 내 검진기관: ${_myChk}` : ""}</span></>
+          : <><b>{tmSidoShort(sido)} {sigungu}</b> · {cat.label} · 원격주치의 {list.length}명 <span style={{ color: "#16A34A", fontWeight: 800 }}>· 지금 연결 가능 {list.filter((s) => (parseInt(String(s.id).replace(/\D/g, "") || "0", 10) % 3) !== 0).length}명 · 평균 대기 2분</span></>}</div>
         <div className="splist">{list.map((s) => (
           <div className="dspcard" key={s.id} onClick={() => pick(s)}>
             <span className="spav"><Stethoscope size={20} color="#2563EB" /></span>
             <div className="spinfo"><b>{s.name} <small>{s.dept}</small></b><span>{s.hosp} · {tmSidoShort(s.sido)} {s.sigungu} · 경력 {s.exp}</span>
               <div className="sptags">{s.tags.map((t) => <em key={t}>{t}</em>)}<em className={tmHospTier(s.hosp) === "병원급" ? "tmtier hosp" : "tmtier"}>{tmHospTier(s.hosp)}</em><em className="tmtele">비대면 가능</em>{s.sameDay && <em className="tmday">당일</em>}{(parseInt(String(s.id).replace(/\D/g, "") || "0", 10) % 3) !== 0 && <em className="tmnow">● 지금 연결 가능</em>}</div></div>
-            <div className="spmeta"><span className="sprate"><Star size={11} /> {s.rating} <small>({s.reviews})</small></span><span className="tmfee">상담 {(s.fee / 10000).toLocaleString()}만원</span><button className="spgo">상담</button></div>
+            <div className="spmeta"><span className="sprate"><Star size={11} /> {s.rating} <small>({s.reviews})</small></span><span className="tmfee">{s._checkup ? (s._mine ? "내 검진기관 · 무료" : "결과 상담 무료") : `상담 ${(s.fee / 10000).toLocaleString()}만원`}</span><button className="spgo">상담</button></div>
           </div>
         ))}</div>
         <button className="tmjoin" onClick={() => setJoin(true)}><Building2 size={15} /> 우리 병원도 원격주치의로 참여하기</button>
@@ -1359,7 +1365,7 @@ function SpecialistChat() {
 }
 
 /* mode: "ai"=AI 주치의(24시간)만 · "specialist"=전문의 원격상담만 · 미지정=이중 탭(레거시 호환) */
-function AIDoctor({ mode }) {
+function AIDoctor({ mode, checkupMode }) {
   const [thread, setThread] = useState(() => { try { if (typeof window !== "undefined" && window._teleGoSpecialist) { window._teleGoSpecialist = false; return "specialist"; } } catch (e) {} return "ai"; });
   useEffect(() => { const f = () => setThread("specialist"); const g = () => setThread("ai"); window.addEventListener("telego", f); window.addEventListener("teleai", g); return () => { window.removeEventListener("telego", f); window.removeEventListener("teleai", g); }; }, []);
   const tabsRef = useRef(null);
@@ -1375,7 +1381,7 @@ function AIDoctor({ mode }) {
     );
   }
   /* 전문의 원격상담 전용 */
-  if (mode === "specialist") return <SpecialistChat />;
+  if (mode === "specialist") return <SpecialistChat checkupMode={checkupMode} />;
   /* 레거시: 이중 탭 */
   return (
     <div style={{ marginTop: 16 }}>

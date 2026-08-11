@@ -231,8 +231,10 @@ function CheckupSection() {
       {cat === "public" && <><PublicSupport /><NationalOrgDirectory onlyType="보건기관" /></>}
       {cat === "rec" && <AICheckupRec onGoCenters={() => { setCat("health"); setHealthMode("personal"); }} />}
       {cat === "tele" && (<div style={{ marginTop: 8 }}>
-        <div className="chnote" style={{ margin: "0 0 10px" }}>검진 이후 건강상담 — 검진 후 케어의 비대면 원격진료와 <b>같은 시스템</b>이에요. 결과지를 들고 어디 갈지 고민하지 말고, 우리 동네 전문의에게 바로 상담하세요.</div>
-        {typeof TeleCareSection === "function" ? <TeleCareSection onGo={(s) => { if (typeof nav === "function") nav(s); }} /> : <div className="chnote">원격진료 모듈을 불러오지 못했습니다 — 검진 후 케어 › 비대면 원격진료를 이용해 주세요.</div>}
+        <div className="chnote" style={{ margin: "0 0 10px" }}>검진 이후 건강상담 — <b>검진병원(검진기관)의 검진의</b>와 결과·재검·판독을 상담하는 창구예요. 일반 진료 상담은 검진 후 케어 › 비대면 원격진료에서 이용하세요.</div>
+        {typeof AIDoctor === "function" ? <AIDoctor mode="specialist" checkupMode /> : <div className="chnote">상담 모듈을 불러오지 못했습니다.</div>}
+        <div style={{ marginTop: 14 }}>{typeof HospitalSection === "function" && (
+          <details><summary style={{ cursor: "pointer", fontWeight: 800, fontSize: 13, color: "#1D4ED8" }}>🏥 재검·정밀검사 병원 찾기 (펼치기)</summary><div style={{ marginTop: 8 }}><HospitalSection onGo={(s) => { if (typeof nav === "function") nav(s); }} /></div></details>)}</div>
       </div>)}
       {cat === "doctor" && <div style={{ marginTop: 8 }}><div className="chnote" style={{ margin: "0 0 10px" }}>검진 관련이나 건강 궁금증을 AI 주치의에게 물어보세요. AI Super Agent에서 넘어온 상담도 여기서 이어집니다.</div><Chat acceptsSeed /></div>}
       {cat === "emergency" && <EmergencyGuide />}

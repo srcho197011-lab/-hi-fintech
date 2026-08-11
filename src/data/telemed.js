@@ -113,6 +113,28 @@ function genSpecialists(sido, sigungu, deptKey, n) {
   }
   return out;
 }
+/* ── 검진기관 원격 상담(검진 예약 섹션 전용) — 큐레이션 검진기관의 검진의 목록 생성.
+   일반 동네 의원이 아니라 "검진을 수행한/수행할 검진병원"의 결과 상담·판독 상담 창구다. */
+const CHK_TITLES = ["검진센터장", "판독전문의", "검진과장", "가정의학과 전문의"];
+const CHK_TAGS = ["결과 상담", "재검·추가검사 안내", "검진 판독"];
+function genCheckupDoctors(sidoFull, myCenterName) {
+  const ALL = (typeof CHECKUP_INST !== "undefined") ? CHECKUP_INST : [];
+  const list = ALL.filter((c) => !sidoFull || sidoFull === "전체" || c.sd === sidoFull);
+  const out = list.map((c, i) => {
+    const disp = c.b === "KMI한국의학연구소" ? `KMI ${c.n}` : c.n;
+    const rnd = tmRand(tmHash("chk|" + disp));
+    const nm = TM_SUR[Math.floor(rnd() * TM_SUR.length)] + TM_GIV[Math.floor(rnd() * TM_GIV.length)];
+    return {
+      id: `chk-${i}-${disp}`, name: `${nm} ${CHK_TITLES[Math.floor(rnd() * CHK_TITLES.length)]}`,
+      dept: "검진의·결과 상담", deptKey: "chk", hosp: disp, sido: c.sd, sigungu: c.sg,
+      tags: CHK_TAGS, rating: +(4.4 + rnd() * 0.5).toFixed(1), exp: (10 + Math.floor(rnd() * 20)) + "년",
+      fee: 0, reviews: 30 + Math.floor(rnd() * 400), tele: true, sameDay: rnd() > 0.35,
+      _checkup: true, _brand: c.b, _mine: !!(myCenterName && (disp === myCenterName || c.n === myCenterName)),
+    };
+  });
+  out.sort((a, b) => (b._mine ? 1 : 0) - (a._mine ? 1 : 0));
+  return out;
+}
 function tmDeptForMember() {
   const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   if (!m) return "fm";
