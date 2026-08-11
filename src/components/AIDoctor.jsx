@@ -1203,9 +1203,25 @@ function SpecialistChat({ checkupMode }) {
     const cat = DEPT_CATS.find((c) => c.key === deptKey) || DEPT_CATS[0];
     return (
       <div className="spwrap">
-        <div className="splbl"><Stethoscope size={15} color="#2563EB" /> {checkupMode ? <>검진기관 원격 상담 — 검진병원 결과 상담 <span>· 검진받은(받을) 검진기관의 검진의와 결과·재검을 상담하세요</span></> : <>원격주치의 — 전국 비대면 전문의 상담 <span>· 지역·진료과로 우리 동네 전문의를 찾으세요</span></>}
+        {checkupMode ? (
+          <div style={{ background: "linear-gradient(120deg,#0B4A8F,#1D4ED8 55%,#0EA5E9)", borderRadius: 16, padding: "18px 20px", color: "#fff", marginBottom: 12, position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", right: -30, top: -30, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,.08)" }} />
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 2, opacity: .85 }}>CHECKUP TELE-CONSULT</div>
+            <div style={{ fontSize: 19, fontWeight: 900, marginTop: 4 }}>🩺 검진기관 원격 상담 — 결과를 아는 의사와</div>
+            <div style={{ fontSize: 12.5, opacity: .92, marginTop: 5, lineHeight: 1.55 }}>검진받은(받을) <b>검진병원의 검진의</b>가 결과지·판독을 그대로 보고 상담해요 — 재검·추가검사도 그 자리에서 안내받으세요.</div>
+            <div style={{ display: "flex", gap: 7, marginTop: 11, flexWrap: "wrap" }}>
+              <span style={{ background: "rgba(255,255,255,.16)", borderRadius: 20, padding: "5px 12px", fontSize: 11.5, fontWeight: 800 }}>결과 상담 무료</span>
+              <span style={{ background: "rgba(255,255,255,.16)", borderRadius: 20, padding: "5px 12px", fontSize: 11.5, fontWeight: 800 }}>검진기관 {new Set(list.map((x) => x.hosp)).size}곳 · 검진의 {list.length}명</span>
+              {_myChk && <span style={{ background: "#F59E0B", color: "#3B2A00", borderRadius: 20, padding: "5px 12px", fontSize: 11.5, fontWeight: 900 }}>⭐ 내 검진기관 {_myChk}</span>}
+              <button className="tmproc" style={{ marginLeft: "auto" }} onClick={() => { setShowProc((v) => !v); setShowRule(false); }}><Info size={12} /> 제도 안내</button>
+              <button className="tmproc rule" onClick={() => { setShowRule((v) => !v); setShowProc(false); }}><ShieldCheck size={12} /> 비대면 가능 조건</button>
+            </div>
+          </div>
+        ) : (
+        <div className="splbl"><Stethoscope size={15} color="#2563EB" /> <>원격주치의 — 전국 비대면 전문의 상담 <span>· 지역·진료과로 우리 동네 전문의를 찾으세요</span></>
           <button className="tmproc" onClick={() => { setShowProc((v) => !v); setShowRule(false); }}><Info size={12} /> 제도 안내</button>
           <button className="tmproc rule" onClick={() => { setShowRule((v) => !v); setShowProc(false); }}><ShieldCheck size={12} /> 비대면 가능 조건</button></div>
+        )}
         {showProc && <TeleProcess />}
         {showRule && <TeleCompliance />}
         <div className="tmfilter">
@@ -1213,16 +1229,21 @@ function SpecialistChat({ checkupMode }) {
           {!checkupMode && <div className="tmf"><label>시·군·구</label><select value={sigungu} onChange={(e) => setSigungu(e.target.value)}>{sigus.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>}
         </div>
         {!checkupMode && <div className="tmcats">{DEPT_CATS.map((c) => <button key={c.key} className={deptKey === c.key ? "on" : ""} onClick={() => setDeptKey(c.key)}>{c.label}</button>)}</div>}
-        {checkupMode && <div className="tmcats"><button className="on">결과 상담</button><button className="on">재검·추가검사 안내</button><button className="on">검진 판독</button><button className="on">수검 전 문진</button></div>}
+        {checkupMode && <div style={{ display: "flex", gap: 7, flexWrap: "wrap", margin: "2px 0 4px" }}>{[["📋 결과 상담", "#1D4ED8", "#EFF6FF"], ["🔁 재검·추가검사 안내", "#B45309", "#FEF3C7"], ["🔬 검진 판독", "#7C3AED", "#F3E8FF"], ["📝 수검 전 문진", "#15803D", "#DCFCE7"]].map(([t, c, bg]) => <span key={t} style={{ background: bg, color: c, fontWeight: 800, fontSize: 11.5, borderRadius: 20, padding: "6px 13px" }}>{t}</span>)}</div>}
         <div className="tmcount">{checkupMode
           ? <><b>{tmSidoShort(sido)}</b> · 검진기관 {new Set(list.map((s) => s.hosp)).size}곳 · 검진의 {list.length}명 <span style={{ color: "#16A34A", fontWeight: 800 }}>· 결과 상담·재검 안내 전용{_myChk ? ` · 내 검진기관: ${_myChk}` : ""}</span></>
           : <><b>{tmSidoShort(sido)} {sigungu}</b> · {cat.label} · 원격주치의 {list.length}명 <span style={{ color: "#16A34A", fontWeight: 800 }}>· 지금 연결 가능 {list.filter((s) => (parseInt(String(s.id).replace(/\D/g, "") || "0", 10) % 3) !== 0).length}명 · 평균 대기 2분</span></>}</div>
         <div className="splist">{list.map((s) => (
-          <div className="dspcard" key={s.id} onClick={() => pick(s)}>
-            <span className="spav"><Stethoscope size={20} color="#2563EB" /></span>
-            <div className="spinfo"><b>{s.name} <small>{s.dept}</small></b><span>{s.hosp} · {tmSidoShort(s.sido)} {s.sigungu} · 경력 {s.exp}</span>
-              <div className="sptags">{s.tags.map((t) => <em key={t}>{t}</em>)}<em className={tmHospTier(s.hosp) === "병원급" ? "tmtier hosp" : "tmtier"}>{tmHospTier(s.hosp)}</em><em className="tmtele">비대면 가능</em>{s.sameDay && <em className="tmday">당일</em>}{(parseInt(String(s.id).replace(/\D/g, "") || "0", 10) % 3) !== 0 && <em className="tmnow">● 지금 연결 가능</em>}</div></div>
-            <div className="spmeta"><span className="sprate"><Star size={11} /> {s.rating} <small>({s.reviews})</small></span><span className="tmfee">{s._checkup ? (s._mine ? "내 검진기관 · 무료" : "결과 상담 무료") : `상담 ${(s.fee / 10000).toLocaleString()}만원`}</span><button className="spgo">상담</button></div>
+          <div className="dspcard" key={s.id} onClick={() => pick(s)} style={s._checkup ? { border: s._mine ? "2px solid #F59E0B" : "1px solid #DBE4F0", background: s._mine ? "#FFFBEB" : "#fff", borderRadius: 14, position: "relative" } : undefined}>
+            {s._mine && <span style={{ position: "absolute", top: -9, left: 14, background: "#F59E0B", color: "#3B2A00", fontSize: 10.5, fontWeight: 900, borderRadius: 6, padding: "2px 9px" }}>⭐ 내 검진기관</span>}
+            {s._checkup
+              ? <span className="spav" style={{ background: "linear-gradient(135deg,#1D4ED8,#0EA5E9)", color: "#fff", fontWeight: 900, fontSize: 15, display: "grid", placeItems: "center" }}>{String(s.hosp || "검").replace(/^KMI\s*/, "").slice(0, 1)}</span>
+              : <span className="spav"><Stethoscope size={20} color="#2563EB" /></span>}
+            <div className="spinfo">{s._checkup
+              ? <><b style={{ fontSize: 14.5 }}>{s.hosp} <small style={{ color: "#1D4ED8" }}>{s._brand === "KMI한국의학연구소" ? "KMI" : ""}</small></b><span style={{ fontWeight: 700 }}>{s.name} · {s.dept} · {tmSidoShort(s.sido)} {s.sigungu} · 경력 {s.exp}</span></>
+              : <><b>{s.name} <small>{s.dept}</small></b><span>{s.hosp} · {tmSidoShort(s.sido)} {s.sigungu} · 경력 {s.exp}</span></>}
+              <div className="sptags">{s.tags.map((t) => <em key={t}>{t}</em>)}{!s._checkup && <em className={tmHospTier(s.hosp) === "병원급" ? "tmtier hosp" : "tmtier"}>{tmHospTier(s.hosp)}</em>}<em className="tmtele">비대면 가능</em>{s.sameDay && <em className="tmday">당일</em>}{(parseInt(String(s.id).replace(/\D/g, "") || "0", 10) % 3) !== 0 && <em className="tmnow">● 지금 연결 가능</em>}</div></div>
+            <div className="spmeta"><span className="sprate"><Star size={11} /> {s.rating} <small>({s.reviews})</small></span>{s._checkup ? <span style={{ background: "#DCFCE7", color: "#15803D", fontWeight: 900, fontSize: 11.5, borderRadius: 8, padding: "4px 10px" }}>{s._mine ? "내 검진기관 · 무료" : "결과 상담 무료"}</span> : <span className="tmfee">{`상담 ${(s.fee / 10000).toLocaleString()}만원`}</span>}<button className="spgo" style={s._checkup ? { background: "linear-gradient(120deg,#1D4ED8,#0EA5E9)", fontWeight: 900 } : undefined}>{s._checkup ? "결과 상담" : "상담"}</button></div>
           </div>
         ))}</div>
         <button className="tmjoin" onClick={() => setJoin(true)}><Building2 size={15} /> 우리 병원도 원격주치의로 참여하기</button>
