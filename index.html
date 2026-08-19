@@ -5498,6 +5498,45 @@ function ReportPdfViewer({ onClose }) {
   );
 }
 
+/* 보험계약 가입 서명란 — 계약자 자필서명(캔버스, 마우스·터치 공용).
+   서명 이미지는 계약 성립의 증빙이므로 회원 금고·증서 스냅샷에만 남기고, 체인에는 해시만 기록한다. */
+function SignPad({ value, onChange }) {
+  const cv = React.useRef(null);
+  const drawing = React.useRef(false);
+  const last = React.useRef(null);
+  const posOf = (e) => {
+    const c = cv.current, r = c.getBoundingClientRect();
+    const t = (e.touches && e.touches[0]) || e;
+    return { x: (t.clientX - r.left) * (c.width / r.width), y: (t.clientY - r.top) * (c.height / r.height) };
+  };
+  const start = (e) => { drawing.current = true; last.current = posOf(e); };
+  const move = (e) => {
+    if (!drawing.current) return;
+    if (e.cancelable) e.preventDefault();
+    const c = cv.current, g = c.getContext("2d"), pt = posOf(e);
+    g.strokeStyle = "#0F172A"; g.lineWidth = 2.4; g.lineCap = "round"; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(last.current.x, last.current.y); g.lineTo(pt.x, pt.y); g.stroke();
+    last.current = pt;
+  };
+  const end = () => { if (!drawing.current) return; drawing.current = false; try { onChange(cv.current.toDataURL("image/png")); } catch (err) {} };
+  const clear = () => { const c = cv.current; if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height); onChange(""); };
+  return (
+    <div>
+      <div style={{ position: "relative", border: "1.5px dashed #94A3B8", borderRadius: 10, background: "#FCFDFF", overflow: "hidden" }}>
+        <canvas ref={cv} width={620} height={140} className="signpad"
+          onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
+          onTouchStart={start} onTouchMove={move} onTouchEnd={end}
+          style={{ width: "100%", height: 118, display: "block", cursor: "crosshair", touchAction: "none" }} />
+        {!value && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", pointerEvents: "none", color: "#94A3B8", fontSize: 12.5, fontWeight: 600, textAlign: "center", lineHeight: 1.6 }}>이 칸에 계약자 본인이 자필로 서명해 주세요<br /><span style={{ fontSize: 11, fontWeight: 500 }}>마우스로 그리거나 휴대폰에서는 손가락으로 서명하면 돼요</span></div>}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: value ? "#16A34A" : "var(--muted)" }}>{value ? "✓ 서명이 입력됐어요 — 가입증서에 그대로 표시돼요" : "서명해야 보험계약이 성립돼요"}</span>
+        <button type="button" onClick={clear} style={{ border: "1px solid var(--border)", background: "#fff", borderRadius: 8, padding: "4px 11px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", color: "var(--muted)" }}>지우고 다시</button>
+      </div>
+    </div>
+  );
+}
+
 function BookingModal({ center, mode, onClose }) {
   const [date, setDate] = useState(null);
   const [time, setTime] = useState(null);
@@ -5507,26 +5546,28 @@ function BookingModal({ center, mode, onClose }) {
   /* 무료 검진대비보험 — 하이 안내형 최소 탭 가입 절차(중요사항 확인 게이트 + 동의 4종) + 건너뛰기 허용(강매 금지).
      insAgree는 절차 완료(st==="done")에서만 true — 무동의 자동가입 금지(J2-3) 원칙 유지 */
   const [insAgree, setInsAgree] = useState(false);
-  const [enroll, setEnroll] = useState(() => ({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false, name: (typeof demoCurrentUser === "function" && demoCurrentUser() && demoCurrentUser().name) || (typeof authCurrent === "function" && authCurrent() && authCurrent().name) || "", rrn1: "", rrn2: "", ci: {}, ciOpen: false, ciDetail: {}, ciFull: false }));
+  const [enroll, setEnroll] = useState(() => ({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false, name: (typeof demoCurrentUser === "function" && demoCurrentUser() && demoCurrentUser().name) || (typeof authCurrent === "function" && authCurrent() && authCurrent().name) || "", rrn1: "", rrn2: "", sign: "", ci: {}, ciOpen: false, ciDetail: {}, ciFull: false }));
   /* 계약자 확인 — 주민번호는 형식 검증 후 해시만 보관(평문 미저장·화면 마스킹). 부담 완화: 동의 완료 후에만 노출 */
   const ciOk = CI_REQ.every((k) => !!enroll.ci[k]);   // 필수 8건(선택 1건 제외) 모두 동의 시 통과
   const ciCount = CI_ALL.filter((i) => !!enroll.ci[i.k]).length;
   const rrnOk = /^\d{6}$/.test(enroll.rrn1) && /^\d{7}$/.test(enroll.rrn2);
   const idOk = (enroll.name || "").trim().length >= 2 && rrnOk;
+  const signOk = !!(enroll.sign && enroll.sign.length > 120);   // 자필서명 입력 여부(빈 캔버스 dataURL 배제)
   const enrollConfirm = () => {
-    if (!(enroll.termsOk && enroll.req && ciOk && enroll.mkt && idOk)) return;
+    if (!(enroll.termsOk && enroll.req && ciOk && enroll.mkt && idOk && signOk)) return;
     try {
       const m = dmU || (typeof selfMember === "function" ? selfMember() : null);
       const rrnMasked = enroll.rrn1 + "-" + enroll.rrn2.slice(0, 1) + "••••••";
       const rrnHash = (typeof vaultHash === "function") ? vaultHash("rrn|" + enroll.name.trim() + "|" + enroll.rrn1 + enroll.rrn2) : null;
+      const signHash = (typeof vaultHash === "function") ? vaultHash("sign|" + enroll.name.trim() + "|" + enroll.sign.slice(-160)) : null;
       if (m && typeof vaultSaveConsents === "function") {
         const ciState = {};
         CI_ALL.forEach((i) => { ciState[i.k] = !!enroll.ci[i.k]; });   // 9건 개별 저장(병합 금지 — 구분 동의 원칙)
         vaultSaveConsents(m, Object.assign({ ins_terms: true, ins_enroll: true, ins_third: true, mkt: !!enroll.mkt,
           step: "checkup-booking", ver: "검진대비보험 동의문 v1.0", ciVer: CI_CONSENT.ver, ciMethod: enroll.ciFull ? "each" : "bulk",
-          insuredName: enroll.name.trim(), rrnMasked, rrnHash }, ciState));
+          insuredName: enroll.name.trim(), rrnMasked, rrnHash, signImg: enroll.sign, signHash, signedAt: Date.now() }, ciState));
       }
-      setInsAgree(true); setEnroll((s) => ({ ...s, st: "done", rrn1: "", rrn2: "" }));   // 평문은 확정 즉시 메모리에서도 폐기
+      setInsAgree(true); setEnroll((s) => ({ ...s, st: "done", rrn1: "", rrn2: "" }));   // 주민번호 평문은 확정 즉시 메모리에서도 폐기(서명은 증서 표시용 유지)
       if (typeof toast === "function") toast("가입 준비 완료 — 예약 확정 시 증서가 발급돼요 (보험료 0원)");
     } catch (e) { /* 실패 시 상태 미전이(전체 롤백) */ }
   };
@@ -5558,7 +5599,7 @@ function BookingModal({ center, mode, onClose }) {
         }
         /* 증서 화면용 스냅샷 — 발급 시점의 플랜·보장·계약자(마스킹) 고정 기록 */
         let insured = null;
-        try { const v = m && typeof vaultLoad === "function" ? vaultLoad(anonToken(m)) : null; const st = v && v.consents && v.consents.state; if (st && st.insuredName) insured = { name: st.insuredName, rrn: st.rrnMasked || "" }; } catch (e) {}
+        try { const v = m && typeof vaultLoad === "function" ? vaultLoad(anonToken(m)) : null; const st = v && v.consents && v.consents.state; if (st && st.insuredName) insured = { name: st.insuredName, rrn: st.rrnMasked || "", sign: st.signImg || "", signedAt: st.signedAt || 0 }; } catch (e) {}
         const coverSnap = COVERS.map((r) => ({ t: r[1], amt: r[colIdx] })).filter((c) => c.amt && c.amt !== "-");
         const rec = { id: certId, center: center.name, date, time, at: Date.now(), hash: block ? block.hash : null,
           plan: (typeof planName !== "undefined" ? planName : ""), covers: coverSnap, insured, mkt: !!enroll.mkt };
@@ -5774,10 +5815,15 @@ function BookingModal({ center, mode, onClose }) {
                     </span>
                     <i>— 보험업법에 따른 계약 관리·중요사항 비교설명과 보장 만기 안내를 위해 필요해요</i></span>
                 </label>
-                {/* ④ 계약자 확인 — 동의 완료 후에만 노출(부담 완화). 주민번호: 뒤 7자리 마스킹 입력·평문 미저장(해시만 금고 보관) */}
+                {/* ④ 보험계약 가입란 — 동의 완료 후에만 노출(부담 완화). 계약자명·주민번호 + 자필서명으로 청약 완결.
+                    주민번호: 뒤 7자리 마스킹 입력·평문 미저장(해시만 금고 보관) / 서명: 금고·증서에만 보관 */}
                 {enroll.termsOk && enroll.req && ciOk && enroll.mkt && (
                   <div style={{ marginTop: 8, border: "1px solid var(--border)", borderRadius: 10, background: "#fff", padding: "10px 12px" }}>
-                    <div style={{ fontSize: 12.3, fontWeight: 800, marginBottom: 3 }}>④ 계약자(피보험자) 확인</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                      <ScrollText size={14} color="#1D4ED8" />
+                      <div style={{ fontSize: 12.8, fontWeight: 900 }}>④ 보험계약 가입</div>
+                      <span style={{ fontSize: 10.5, fontWeight: 800, color: "#1D4ED8", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 999, padding: "1px 7px" }}>청약서</span>
+                    </div>
                     <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.55, marginBottom: 8 }}>보험 계약 성립에는 법령상 성명·주민등록번호 확인이 필요해요. <b style={{ color: "#16A34A" }}>하이핀은 주민등록번호를 보관하지 않아요</b> — 형식 확인 후 검증용 해시만 남기고 평문은 즉시 폐기하며, 화면·기록에는 마스킹(앞 1자리만)으로 표시돼요. 다만 <b>보험업법에 따라 인수사(현대해상)에는 계약 체결을 위해 전달</b>되며, 이는 위 ②-2 동의 항목에 포함돼요.</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr 1.3fr", gap: 7 }}>
                       <input value={enroll.name} onChange={(e) => setEnroll((s) => ({ ...s, name: e.target.value }))} placeholder="성명"
@@ -5788,10 +5834,26 @@ function BookingModal({ center, mode, onClose }) {
                         style={{ border: "1.5px solid " + (enroll.rrn2 && !/^\d{7}$/.test(enroll.rrn2) ? "#F59E0B" : "var(--border)"), borderRadius: 9, padding: "9px 11px", fontSize: 13, minWidth: 0, letterSpacing: 2 }} />
                     </div>
                     {idOk && <div style={{ fontSize: 11, color: "#16A34A", fontWeight: 700, marginTop: 6 }}>✓ 확인 완료 — {enroll.name.trim()} · {enroll.rrn1}-{enroll.rrn2.slice(0, 1)}•••••• (이렇게만 기록돼요)</div>}
+                    {/* 보험계약 가입 서명란 — 자필서명으로 청약 의사표시 완결 */}
+                    <div style={{ marginTop: 11, paddingTop: 10, borderTop: "1px dashed var(--border)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+                        <div style={{ fontSize: 12.3, fontWeight: 900 }}>보험계약 가입 서명란</div>
+                        <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B42318" }}>필수</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.55, marginBottom: 7 }}>
+                        위 <b>약관 중요사항 · 가입(청약) · 개인(신용)정보 · 상담·안내</b> 내용을 모두 확인했으며, 계약자 본인이 검진대비보험 가입을 신청합니다. 아래에 자필로 서명해 주세요.
+                      </div>
+                      <SignPad value={enroll.sign} onChange={(v) => setEnroll((s) => ({ ...s, sign: v }))} />
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 7, fontSize: 11.5, color: "var(--muted)" }}>
+                        <span>계약자(피보험자) <b style={{ color: "var(--ink)" }}>{enroll.name.trim() || "—"}</b> (인)</span>
+                        <span>신청일 {(() => { const d = new Date(); return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`; })()}</span>
+                      </div>
+                      <div style={{ fontSize: 10.5, color: "var(--muted)", lineHeight: 1.55, marginTop: 6 }}>※ 서명 이미지는 계약 성립의 증빙으로 <b>내 데이터 금고와 가입증서에만</b> 보관되고, 블록체인에는 위변조 확인용 해시만 기록돼요.</div>
+                    </div>
                   </div>
                 )}
                 <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 8, marginTop: 9 }}>
-                  <button className="cbtn pri" style={{ margin: 0, minWidth: 0, opacity: enroll.termsOk && enroll.req && ciOk && enroll.mkt && idOk ? 1 : .5 }} disabled={!(enroll.termsOk && enroll.req && ciOk && enroll.mkt && idOk)} onClick={enrollConfirm}><ShieldCheck size={14} /> {!ciOk ? "개인(신용)정보 동의가 필요해요" : (!enroll.mkt ? "상담·안내 동의가 필요해요" : (!idOk ? "계약자 확인 후 가입돼요" : "가입 확정 · 보험료 0원"))}</button>
+                  <button className="cbtn pri" style={{ margin: 0, minWidth: 0, opacity: enroll.termsOk && enroll.req && ciOk && enroll.mkt && idOk && signOk ? 1 : .5 }} disabled={!(enroll.termsOk && enroll.req && ciOk && enroll.mkt && idOk && signOk)} onClick={enrollConfirm}><ShieldCheck size={14} /> {!ciOk ? "개인(신용)정보 동의가 필요해요" : (!enroll.mkt ? "상담·안내 동의가 필요해요" : (!idOk ? "계약자명·주민번호를 입력하세요" : (!signOk ? "서명란에 자필서명이 필요해요" : "가입 확정 · 보험료 0원")))}</button>
                   <button className="cbtn" style={{ margin: 0, minWidth: 0 }} onClick={() => { setInsAgree(false); setEnroll((s) => ({ ...s, st: "skip" })); }}>가입 없이 예약만</button>
                 </div>
               </>)}
@@ -6215,6 +6277,17 @@ function InsCertModal({ cert, onClose }) {
             ))}
             {!covers.length && <div style={{ padding: "10px 13px", fontSize: 12, color: "#64748B" }}>보장 내역은 맞춤보험 › 검진대비보험에서 확인하세요.</div>}
           </div>
+          {/* 계약자 자필서명 — 청약 시점 서명 이미지 그대로 */}
+          {cert.insured && cert.insured.sign && (
+            <div style={{ marginTop: 12, border: "1px solid #E2E8F0", borderRadius: 11, padding: "9px 13px 7px", background: "#FCFDFF" }}>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748B" }}>계약자 자필서명</div>
+              <img src={cert.insured.sign} alt="계약자 자필서명" style={{ display: "block", width: "100%", maxWidth: 300, height: "auto", margin: "2px 0 0" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748B", borderTop: "1px solid #EEF2F7", paddingTop: 5, marginTop: 2 }}>
+                <span>{cert.insured.name} (인)</span>
+                <span>{cert.insured.signedAt ? (() => { const d = new Date(cert.insured.signedAt); return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}. 서명`; })() : ""}</span>
+              </div>
+            </div>
+          )}
           {/* 블록체인 검증 */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "9px 12px", marginTop: 11, fontSize: 12 }}>
             <ShieldCheck size={16} color="#16A34A" />
