@@ -504,7 +504,7 @@ function ConsultModal({ interest, onClose }) {
               <div style={{ border: "1.5px solid #C7D8FA", background: "#F8FAFF", borderRadius: 13, padding: "13px 14px" }}>
                 <div style={{ fontWeight: 800, fontSize: 13.5, color: "#14337A" }}>장기보험 상담 전, 동의를 확인해 주세요</div>
                 <div style={{ fontSize: 12, color: "#475569", margin: "5px 0 10px", lineHeight: 1.6 }}>프리미엄(장기)보험은 검진·건강데이터로 설계하고 제휴 보험사 인수심사에 연계돼요. 아래 필수 동의가 있어야 상담을 진행할 수 있어요.</div>
-                {[["health", "[필수] 건강데이터 활용 동의", "장기 설계의 근거 데이터로 사용해요"], ["insurance", "[필수] 보험 연계 동의", "제휴 보험사 설계·인수 목적으로만 제공돼요"], ["mkt", "[선택] 마케팅 알림 수신", "상담 외 상품 안내를 받아볼 수 있어요"]].map(([k, t, d]) => (
+                {[["health", "[필수] 건강데이터 활용 동의", "장기 설계의 근거 데이터로 사용해요"], ["insurance", "[필수] 보험 연계 동의", "제휴 보험사 설계·인수 목적으로만 제공돼요"], ["mkt", "[선택] 보험계약 상담·안내 수신", "계약 상담·보험금 심사 안내·건강등급 결과·기존 계약 비교설명·상품 안내를 받아볼 수 있어요"]].map(([k, t, d]) => (
                   <label key={k} style={{ display: "flex", gap: 9, alignItems: "flex-start", padding: "7px 2px", cursor: "pointer" }}>
                     <input type="checkbox" style={{ marginTop: 2 }} checked={!!cAgree[k] || !!(consentInfo && consentInfo.st[k])} disabled={!!(consentInfo && consentInfo.st[k])} onChange={(e) => setCAgree({ ...cAgree, [k]: e.target.checked })} />
                     <span style={{ fontSize: 12.3, lineHeight: 1.5 }}><b style={{ color: k === "mkt" ? "#64748B" : "#14337A" }}>{t}</b>{consentInfo && consentInfo.st[k] ? <b style={{ color: "#16A34A" }}> · 동의됨 ✓</b> : null}<br /><span style={{ color: "#64748B", fontSize: 11.5 }}>{d}</span></span>

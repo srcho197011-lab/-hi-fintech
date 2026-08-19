@@ -314,7 +314,7 @@ function seedSelfVault(member) {
   const token = anonToken(member); const v = vaultLoad(token);
   if (v && ((v.checkups || []).length || (v.insurance || []).length)) { _migrateSelfCheckupSeed(member, token, v); return false; }   // 이미 데이터 있음
   try {
-    // ① 동의 5종 — 목적별 개별 동의(마케팅은 미동의: 일괄동의 없음의 증거)
+    // ① 동의 5종 — 목적별 개별 동의(상담·안내는 미동의: 일괄동의 없음의 증거)
     vaultSaveConsents(member, { health: true, ai: true, mkt: false, step: "checkup" });
     // ② 검진 연차 시드 — SELF_CHECKUP_SEED 기준(기본: 2025년 1건 · 2026년 미수검 = 분기응답 대상)
     _seedSelfCheckups(member);
@@ -407,7 +407,7 @@ function guestVaultDemo(member) {
     let contracts = []; try { contracts = insAggregateFetch(member).contracts; } catch (e) {}
     const B = [];
     const push = (type, note) => { B.push({ idx: B.length, type, token, note, hash: vaultHash(type + "|" + token + "|" + B.length), ts: now }); };
-    push("consent", "동의 이력 기록(건강·AI — 마케팅 미동의)");
+    push("consent", "동의 이력 기록(건강·AI — 상담·안내 미동의)");
     push("checkup", "검진결과 저장(photo·partial) " + itemsPrev.length + "항목");
     push("checkup", "검진결과 저장(upload·full) " + items.length + "항목");
     push("consent", "동의 이력 기록(보험·연계)");
@@ -500,6 +500,6 @@ const VAULT_CONSENTS = [
   { key: "insurance", req: true, title: "보험정보 수집·이용 동의", law: "개인정보보호법", items: "보험 가입내역·보장·담보 정보", purpose: "보장 분석·보험 솔루션 제공", keep: "회원 탈퇴 시 또는 목적 달성 후 파기", deny: "미동의 시 보험 보장 분석이 제한됩니다." },
   { key: "link", req: false, title: "제3자 정보제공·전송요구 동의(공단/통합조회)", law: "개인정보보호법·신용정보법", items: "국민건강보험공단 검진이력 / 신용정보원 보험가입내역", purpose: "본인 데이터 전송요구를 통한 조회·수신", keep: "수신 후 즉시 표준화 저장, 원문은 암호화 보관", deny: "해당 채널(공단/통합조회) 이용 시에만 필요합니다.", channelOnly: true },
   { key: "ai", req: true, title: "AI 분석 활용 동의", law: "개인정보보호법", items: "가명처리된 건강·보험 데이터", purpose: "AI 위험분석·의료비 예측·맞춤 상담", keep: "가명정보로 분석, 재식별 금지", deny: "미동의 시 AI 분석·상담 제공이 제한됩니다." },
-  { key: "mkt", req: false, title: "마케팅 활용 동의(선택)", law: "정보통신망법", items: "연락처·관심분야", purpose: "상품·이벤트 안내", keep: "동의 철회 시까지", deny: "미동의해도 서비스 이용에 제한이 없습니다." },
+  { key: "mkt", req: false, title: "보험계약 상담·안내 동의(선택)", law: "정보통신망법", items: "연락처·관심분야", purpose: "가입한 보험계약 상담, 보험금 지급·심사 관련 안내, 건강등급 산정 결과 안내, 새 계약 시 기존 계약과의 중요사항 비교설명, 서비스 만족도 조사, 건강·보험 상품 안내", keep: "동의 철회 시까지", deny: "미동의해도 서비스 이용에 제한이 없습니다." },
 ];
 const VAULT_LEGAL_NOTICE = "※ 본 동의문은 초안이며, 시행 전 법무 검토가 필요합니다. 14세 미만(어린이 검진·어린이실손)은 법정대리인 동의 절차가 별도 적용됩니다.";

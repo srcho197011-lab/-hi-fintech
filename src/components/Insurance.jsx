@@ -287,7 +287,7 @@ function InsJoin({ onGo }) {
 
     <Agree k="collect" required title="개인정보·건강정보 수집·이용 동의" summary="회원가입·본인확인, 건강검진·건강관리, AI 건강위험도 분석, 건강금융지갑, 보험계약·지급심사 등을 위해 개인정보·민감(건강)정보를 수집·이용합니다." full={FULL_COLLECT} />
     <Agree k="third" required title="개인정보·민감정보 제3자 제공 동의" summary="건강관리·보험서비스 제공을 위해 아래 수탁·제휴사에 개인정보를 제공합니다." prov full={FULL_THIRD} />
-    <Agree k="market" title="마케팅 정보 활용 동의 (선택)" summary="건강관리·보험·검진·병원·건강식품·의료서비스 및 제휴서비스 안내를 위해 개인정보를 활용합니다. 미동의 시에도 기본 서비스 이용에 제한이 없습니다." full={FULL_MARKET} />
+    <Agree k="market" title="보험계약 상담·안내 동의 (선택)" summary="가입한 보험계약 상담, 보험금 지급·심사 관련 안내, 건강등급 산정 결과 안내, 새 계약 시 기존 계약과의 중요사항 비교설명, 서비스 만족도 조사, 건강·보험 상품 안내를 위해 개인정보를 활용합니다. 미동의 시에도 기본 서비스 이용에 제한이 없습니다." full={FULL_MARKET} />
     <Agree k="esign" required title="전자문서 및 전자서명 동의" summary="「전자문서 및 전자거래 기본법」·「전자서명법」에 따라 전자문서·전자서명으로 회원가입·서비스 신청·보험가입 및 각종 계약을 체결하는 것에 동의합니다." />
     <Confirm k="insExplain" title="보험가입 및 설명 확인" summary="보험서비스 신청 시 보험상품의 주요내용·보장내용·면책사항·보험금 지급제한 사항 등에 대해 충분한 설명을 제공받았음을 확인합니다." />
 
@@ -602,7 +602,7 @@ const ENROLL_CONSENTS = [
   ["disclosure", true, "계약 전 알릴 의무(고지의무)의 중요성과 위반 시 불이익을 안내받고 사실대로 알렸습니다."],
   ["fit", true, "적합성 원칙에 따른 상품 설명을 받았으며 본 상품이 본인에게 적합함을 확인합니다."],
   ["esign", true, "전자적 청약·전자서명 및 전자문서 수령에 동의합니다."],
-  ["mkt", false, "(선택) 마케팅·상품 안내 목적의 정보 활용에 동의합니다."],
+  ["mkt", false, "(선택) 보험계약 상담·안내 목적(계약 상담·지급 심사 안내·건강등급 결과 안내·기존 계약 비교설명·만족도 조사·상품 안내)의 정보 활용에 동의합니다."],
 ];
 function SimpleEnrollWizard({ plan, member, onClose, onConsult }) {
   const [step, setStep] = useState(0);

@@ -160,9 +160,9 @@ const TOOL_RUN = {
   // 동의 변경 — 목적별 동의를 대화 한마디로(변경 이력은 체인 기록)
   consentdo(m, text) { try {
     const t = String(text || "");
-    const KEY = [["마케팅|광고|수신", "mkt", "마케팅 알림"], ["보험", "insurance", "보험 연계"], ["연계|제3자|제휴", "link", "기관 연계"], ["ai|분석", "ai", "AI 분석"], ["건강|검진", "health", "건강데이터 활용"]];
+    const KEY = [["마케팅|광고|수신|안내|상담알림", "mkt", "보험계약 상담·안내"], ["보험", "insurance", "보험 연계"], ["연계|제3자|제휴", "link", "기관 연계"], ["ai|분석", "ai", "AI 분석"], ["건강|검진", "health", "건강데이터 활용"]];
     const hit = KEY.find((k) => new RegExp(k[0], "i").test(t));
-    if (!hit) return { lines: ["어떤 동의를 바꿀까요? 목적별로 하나씩, 말 한마디면 돼요."], buttons: ["마케팅 동의 꺼줘", "마케팅 동의 켜줘"] };
+    if (!hit) return { lines: ["어떤 동의를 바꿀까요? 목적별로 하나씩, 말 한마디면 돼요."], buttons: ["상담·안내 동의 꺼줘", "상담·안내 동의 켜줘"] };
     const on = /(켜|동의할|허용|받을)/.test(t) && !/(꺼|철회|거부|취소|해제)/.test(t);
     const st = {}; st[hit[1]] = on;
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(m, st);

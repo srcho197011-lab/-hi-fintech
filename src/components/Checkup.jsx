@@ -894,14 +894,14 @@ function BookingModal({ center, mode, onClose }) {
                 </div>
               </div>
             )}
-            {/* 가입 절차(하이 안내형 4탭) — 중요사항 확인 게이트 → 필수 동의 → 확정. 마케팅은 선택·미가입도 예약 가능(강매 금지 J2-3·J2-6) */}
+            {/* 가입 절차(하이 안내형 4탭) — 중요사항 확인 게이트 → 필수 동의 → 확정. 상담·안내는 선택·미가입도 예약 가능(강매 금지 J2-3·J2-6) */}
             <div style={{ border: "1.5px solid " + (enroll.st === "done" ? "#16A34A" : enroll.st === "skip" ? "var(--border)" : "#F59E0B"), borderRadius: 13, padding: "12px 13px", background: enroll.st === "done" ? "#F0FDF4" : "#FFFDF7", marginTop: 10 }}>
               {enroll.st === "done" ? (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                   <span style={{ width: 30, height: 30, borderRadius: "50%", background: "#16A34A", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}><Check size={16} /></span>
                   <div style={{ fontSize: 12.3, lineHeight: 1.55 }}>
                     <b>무료 검진대비보험 가입 준비 완료</b> — 예약 확정 시 증서가 발급돼요 (보험료 0원 · 보장은 다음날 0시부터)
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>일반암 진단금 기준(상피내암·갑상선암·기타피부암·경계성종양 제외) · 동의 내역은 데이터 금고에 기록{enroll.mkt ? " · 마케팅 동의 포함" : ""} <button style={{ border: "none", background: "none", color: "#B45309", fontWeight: 700, cursor: "pointer", fontSize: 11, padding: 0, marginLeft: 4 }} onClick={() => { setInsAgree(false); setEnroll({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false }); }}>변경</button></div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>일반암 진단금 기준(상피내암·갑상선암·기타피부암·경계성종양 제외) · 동의 내역은 데이터 금고에 기록{enroll.mkt ? " · 상담·안내 동의 포함" : ""} <button style={{ border: "none", background: "none", color: "#B45309", fontWeight: 700, cursor: "pointer", fontSize: 11, padding: 0, marginLeft: 4 }} onClick={() => { setInsAgree(false); setEnroll({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false }); }}>변경</button></div>
                   </div>
                 </div>
               ) : enroll.st === "skip" ? (
@@ -930,7 +930,7 @@ function BookingModal({ center, mode, onClose }) {
                     </div>
                   )}
                 </div>
-                {/* ② 필수 동의(가입·제3자) — 개별 항목 표시·한 번에 동의, ③ 마케팅은 선택 */}
+                {/* ② 필수 동의(가입·제3자) — 개별 항목 표시·한 번에 동의, ③ 상담·안내는 선택 */}
                 <label className={"bkinsagree" + (enroll.req ? " on" : "")} style={{ marginTop: 7, opacity: enroll.termsOk ? 1 : .55 }}>
                   <input type="checkbox" disabled={!enroll.termsOk} checked={enroll.req} onChange={(e) => setEnroll((s) => ({ ...s, req: e.target.checked }))} />
                   <span className="ba-box">{enroll.req ? "✓" : ""}</span>
@@ -1002,10 +1002,16 @@ function BookingModal({ center, mode, onClose }) {
                     </details>
                   )}
                 </div>
-                <label className={"bkinsagree" + (enroll.mkt ? " on" : "")} style={{ marginTop: 5 }}>
+                <label className={"bkinsagree" + (enroll.mkt ? " on" : "")} style={{ marginTop: 5, alignItems: "flex-start" }}>
                   <input type="checkbox" checked={enroll.mkt} onChange={(e) => setEnroll((s) => ({ ...s, mkt: e.target.checked }))} />
                   <span className="ba-box">{enroll.mkt ? "✓" : ""}</span>
-                  <span className="ba-t">③ [선택] 보험·건강 상품 안내 수신(마케팅)에 동의합니다 <i>— 동의하지 않아도 가입에 불이익이 없어요</i></span>
+                  <span className="ba-t">③ [선택] 보험계약 상담·안내를 받을게요
+                    <span style={{ display: "block", color: "var(--muted)", fontStyle: "normal", fontSize: 11, lineHeight: 1.6, marginTop: 3 }}>
+                      · 가입한 보험계약 상담 · 보험금 지급·심사 관련 안내<br />
+                      · 건강등급 산정 결과 안내 · 새 계약 시 기존 계약과의 중요사항 비교설명<br />
+                      · 서비스 만족도 조사 · 내게 맞는 보험·건강 상품 안내
+                    </span>
+                    <i>— 동의하지 않아도 가입에 불이익이 없어요</i></span>
                 </label>
                 {/* ④ 계약자 확인 — 동의 완료 후에만 노출(부담 완화). 주민번호: 뒤 7자리 마스킹 입력·평문 미저장(해시만 금고 보관) */}
                 {enroll.termsOk && enroll.req && ciOk && (

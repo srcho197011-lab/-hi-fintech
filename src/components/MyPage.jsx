@@ -392,7 +392,7 @@ function MyPageSection({ onGo }) {
             <Toggle on={noti[i]} onClick={() => setNoti((p) => p.map((v, j) => j === i ? !v : v))} />
           </div>
         ))}
-        <div className="chnote">※ 알림 채널(카카오톡·푸시·문자)은 동의 및 정책에 따라 발송됩니다. 마케팅 알림은 미동의 시 발송되지 않습니다.</div>
+        <div className="chnote">※ 알림 채널(카카오톡·푸시·문자)은 동의 및 정책에 따라 발송됩니다. 상담·안내 알림은 미동의 시 발송되지 않습니다.</div>
       </>)}
     </div>
   );

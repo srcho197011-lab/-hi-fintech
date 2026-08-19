@@ -1062,7 +1062,7 @@ function ConsultModal({ interest, onClose }) {
               <div style={{ border: "1.5px solid #C7D8FA", background: "#F8FAFF", borderRadius: 13, padding: "13px 14px" }}>
                 <div style={{ fontWeight: 800, fontSize: 13.5, color: "#14337A" }}>장기보험 상담 전, 동의를 확인해 주세요</div>
                 <div style={{ fontSize: 12, color: "#475569", margin: "5px 0 10px", lineHeight: 1.6 }}>프리미엄(장기)보험은 검진·건강데이터로 설계하고 제휴 보험사 인수심사에 연계돼요. 아래 필수 동의가 있어야 상담을 진행할 수 있어요.</div>
-                {[["health", "[필수] 건강데이터 활용 동의", "장기 설계의 근거 데이터로 사용해요"], ["insurance", "[필수] 보험 연계 동의", "제휴 보험사 설계·인수 목적으로만 제공돼요"], ["mkt", "[선택] 마케팅 알림 수신", "상담 외 상품 안내를 받아볼 수 있어요"]].map(([k, t, d]) => (
+                {[["health", "[필수] 건강데이터 활용 동의", "장기 설계의 근거 데이터로 사용해요"], ["insurance", "[필수] 보험 연계 동의", "제휴 보험사 설계·인수 목적으로만 제공돼요"], ["mkt", "[선택] 보험계약 상담·안내 수신", "계약 상담·보험금 심사 안내·건강등급 결과·기존 계약 비교설명·상품 안내를 받아볼 수 있어요"]].map(([k, t, d]) => (
                   <label key={k} style={{ display: "flex", gap: 9, alignItems: "flex-start", padding: "7px 2px", cursor: "pointer" }}>
                     <input type="checkbox" style={{ marginTop: 2 }} checked={!!cAgree[k] || !!(consentInfo && consentInfo.st[k])} disabled={!!(consentInfo && consentInfo.st[k])} onChange={(e) => setCAgree({ ...cAgree, [k]: e.target.checked })} />
                     <span style={{ fontSize: 12.3, lineHeight: 1.5 }}><b style={{ color: k === "mkt" ? "#64748B" : "#14337A" }}>{t}</b>{consentInfo && consentInfo.st[k] ? <b style={{ color: "#16A34A" }}> · 동의됨 ✓</b> : null}<br /><span style={{ color: "#64748B", fontSize: 11.5 }}>{d}</span></span>
@@ -5655,14 +5655,14 @@ function BookingModal({ center, mode, onClose }) {
                 </div>
               </div>
             )}
-            {/* 가입 절차(하이 안내형 4탭) — 중요사항 확인 게이트 → 필수 동의 → 확정. 마케팅은 선택·미가입도 예약 가능(강매 금지 J2-3·J2-6) */}
+            {/* 가입 절차(하이 안내형 4탭) — 중요사항 확인 게이트 → 필수 동의 → 확정. 상담·안내는 선택·미가입도 예약 가능(강매 금지 J2-3·J2-6) */}
             <div style={{ border: "1.5px solid " + (enroll.st === "done" ? "#16A34A" : enroll.st === "skip" ? "var(--border)" : "#F59E0B"), borderRadius: 13, padding: "12px 13px", background: enroll.st === "done" ? "#F0FDF4" : "#FFFDF7", marginTop: 10 }}>
               {enroll.st === "done" ? (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                   <span style={{ width: 30, height: 30, borderRadius: "50%", background: "#16A34A", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}><Check size={16} /></span>
                   <div style={{ fontSize: 12.3, lineHeight: 1.55 }}>
                     <b>무료 검진대비보험 가입 준비 완료</b> — 예약 확정 시 증서가 발급돼요 (보험료 0원 · 보장은 다음날 0시부터)
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>일반암 진단금 기준(상피내암·갑상선암·기타피부암·경계성종양 제외) · 동의 내역은 데이터 금고에 기록{enroll.mkt ? " · 마케팅 동의 포함" : ""} <button style={{ border: "none", background: "none", color: "#B45309", fontWeight: 700, cursor: "pointer", fontSize: 11, padding: 0, marginLeft: 4 }} onClick={() => { setInsAgree(false); setEnroll({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false }); }}>변경</button></div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>일반암 진단금 기준(상피내암·갑상선암·기타피부암·경계성종양 제외) · 동의 내역은 데이터 금고에 기록{enroll.mkt ? " · 상담·안내 동의 포함" : ""} <button style={{ border: "none", background: "none", color: "#B45309", fontWeight: 700, cursor: "pointer", fontSize: 11, padding: 0, marginLeft: 4 }} onClick={() => { setInsAgree(false); setEnroll({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false }); }}>변경</button></div>
                   </div>
                 </div>
               ) : enroll.st === "skip" ? (
@@ -5691,7 +5691,7 @@ function BookingModal({ center, mode, onClose }) {
                     </div>
                   )}
                 </div>
-                {/* ② 필수 동의(가입·제3자) — 개별 항목 표시·한 번에 동의, ③ 마케팅은 선택 */}
+                {/* ② 필수 동의(가입·제3자) — 개별 항목 표시·한 번에 동의, ③ 상담·안내는 선택 */}
                 <label className={"bkinsagree" + (enroll.req ? " on" : "")} style={{ marginTop: 7, opacity: enroll.termsOk ? 1 : .55 }}>
                   <input type="checkbox" disabled={!enroll.termsOk} checked={enroll.req} onChange={(e) => setEnroll((s) => ({ ...s, req: e.target.checked }))} />
                   <span className="ba-box">{enroll.req ? "✓" : ""}</span>
@@ -5763,10 +5763,16 @@ function BookingModal({ center, mode, onClose }) {
                     </details>
                   )}
                 </div>
-                <label className={"bkinsagree" + (enroll.mkt ? " on" : "")} style={{ marginTop: 5 }}>
+                <label className={"bkinsagree" + (enroll.mkt ? " on" : "")} style={{ marginTop: 5, alignItems: "flex-start" }}>
                   <input type="checkbox" checked={enroll.mkt} onChange={(e) => setEnroll((s) => ({ ...s, mkt: e.target.checked }))} />
                   <span className="ba-box">{enroll.mkt ? "✓" : ""}</span>
-                  <span className="ba-t">③ [선택] 보험·건강 상품 안내 수신(마케팅)에 동의합니다 <i>— 동의하지 않아도 가입에 불이익이 없어요</i></span>
+                  <span className="ba-t">③ [선택] 보험계약 상담·안내를 받을게요
+                    <span style={{ display: "block", color: "var(--muted)", fontStyle: "normal", fontSize: 11, lineHeight: 1.6, marginTop: 3 }}>
+                      · 가입한 보험계약 상담 · 보험금 지급·심사 관련 안내<br />
+                      · 건강등급 산정 결과 안내 · 새 계약 시 기존 계약과의 중요사항 비교설명<br />
+                      · 서비스 만족도 조사 · 내게 맞는 보험·건강 상품 안내
+                    </span>
+                    <i>— 동의하지 않아도 가입에 불이익이 없어요</i></span>
                 </label>
                 {/* ④ 계약자 확인 — 동의 완료 후에만 노출(부담 완화). 주민번호: 뒤 7자리 마스킹 입력·평문 미저장(해시만 금고 보관) */}
                 {enroll.termsOk && enroll.req && ciOk && (
@@ -9090,7 +9096,7 @@ function InsJoin({ onGo }) {
 
     <Agree k="collect" required title="개인정보·건강정보 수집·이용 동의" summary="회원가입·본인확인, 건강검진·건강관리, AI 건강위험도 분석, 건강금융지갑, 보험계약·지급심사 등을 위해 개인정보·민감(건강)정보를 수집·이용합니다." full={FULL_COLLECT} />
     <Agree k="third" required title="개인정보·민감정보 제3자 제공 동의" summary="건강관리·보험서비스 제공을 위해 아래 수탁·제휴사에 개인정보를 제공합니다." prov full={FULL_THIRD} />
-    <Agree k="market" title="마케팅 정보 활용 동의 (선택)" summary="건강관리·보험·검진·병원·건강식품·의료서비스 및 제휴서비스 안내를 위해 개인정보를 활용합니다. 미동의 시에도 기본 서비스 이용에 제한이 없습니다." full={FULL_MARKET} />
+    <Agree k="market" title="보험계약 상담·안내 동의 (선택)" summary="가입한 보험계약 상담, 보험금 지급·심사 관련 안내, 건강등급 산정 결과 안내, 새 계약 시 기존 계약과의 중요사항 비교설명, 서비스 만족도 조사, 건강·보험 상품 안내를 위해 개인정보를 활용합니다. 미동의 시에도 기본 서비스 이용에 제한이 없습니다." full={FULL_MARKET} />
     <Agree k="esign" required title="전자문서 및 전자서명 동의" summary="「전자문서 및 전자거래 기본법」·「전자서명법」에 따라 전자문서·전자서명으로 회원가입·서비스 신청·보험가입 및 각종 계약을 체결하는 것에 동의합니다." />
     <Confirm k="insExplain" title="보험가입 및 설명 확인" summary="보험서비스 신청 시 보험상품의 주요내용·보장내용·면책사항·보험금 지급제한 사항 등에 대해 충분한 설명을 제공받았음을 확인합니다." />
 
@@ -9405,7 +9411,7 @@ const ENROLL_CONSENTS = [
   ["disclosure", true, "계약 전 알릴 의무(고지의무)의 중요성과 위반 시 불이익을 안내받고 사실대로 알렸습니다."],
   ["fit", true, "적합성 원칙에 따른 상품 설명을 받았으며 본 상품이 본인에게 적합함을 확인합니다."],
   ["esign", true, "전자적 청약·전자서명 및 전자문서 수령에 동의합니다."],
-  ["mkt", false, "(선택) 마케팅·상품 안내 목적의 정보 활용에 동의합니다."],
+  ["mkt", false, "(선택) 보험계약 상담·안내 목적(계약 상담·지급 심사 안내·건강등급 결과 안내·기존 계약 비교설명·만족도 조사·상품 안내)의 정보 활용에 동의합니다."],
 ];
 function SimpleEnrollWizard({ plan, member, onClose, onConsult }) {
   const [step, setStep] = useState(0);
@@ -11271,7 +11277,7 @@ function MyPageSection({ onGo }) {
             <Toggle on={noti[i]} onClick={() => setNoti((p) => p.map((v, j) => j === i ? !v : v))} />
           </div>
         ))}
-        <div className="chnote">※ 알림 채널(카카오톡·푸시·문자)은 동의 및 정책에 따라 발송됩니다. 마케팅 알림은 미동의 시 발송되지 않습니다.</div>
+        <div className="chnote">※ 알림 채널(카카오톡·푸시·문자)은 동의 및 정책에 따라 발송됩니다. 상담·안내 알림은 미동의 시 발송되지 않습니다.</div>
       </>)}
     </div>
   );
@@ -19891,7 +19897,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-08-19", ver:"v1.1", ch:[15], feat:"개인(신용)정보 동의 3층 압축", src:"청약 화면·금고 동의 스키마", summary:"신용정보동의서 체크 9건을 요약카드·그룹·전문 3층으로 압축해 회원 부담을 낮추면서 법정 구분 동의와 개별 저장을 그대로 유지", refs:[], status:"반영", hash:"ee4bd86", auto:true },
+  { date:"2026-08-19", ver:"v1.1", ch:[15], feat:"선택 동의 상담·안내 재정의", src:"청약·보험·마이페이지·하이·금고 동의문", summary:"동의서 원문 수집·이용 목적 4가지를 선택 동의에 결합하고 마케팅 용어를 화면에서 제거해 회원 심리 부담을 낮춤", refs:[], status:"반영", hash:"c25ecfe", auto:true },
+  { date:"2026-08-19", ver:"v1.1", ch:[15], feat:"개인(신용)정보 동의 3층 압축", src:"청약 화면·금고 동의 스키마", summary:"신용정보동의서 체크 9건을 요약카드·그룹·전문 3층으로 압축해 회원 부담을 낮추면서 법정 구분 동의와 개별 저장을 그대로 유지", refs:[], status:"반영", hash:"edb79b3", auto:true },
   { date:"2026-08-11", ver:"v1.1", ch:[7], feat:"검진기관 상담 리디자인", src:"SpecialistChat checkupMode UI", summary:"검진기관 상담 목록을 히어로 배너와 기관 우선 카드·무료 배지 체계로 재디자인해 검진 이후 상담 창구의 시인성을 높임", refs:[], status:"반영", hash:"e8ae29e", auto:true },
   { date:"2026-08-11", ver:"v1.1", ch:[7], feat:"검진기관 원격 상담 전용화", src:"telemed·SpecialistChat prop 분기", summary:"검진 섹션의 원격상담을 일반 의원이 아닌 검진기관 검진의 체계로 교체하고 내 검진기관 우선 배치와 결과 상담 무료 표기로 검진 이후 상담 동선을 완성", refs:[], status:"반영", hash:"3177232", auto:true },
   { date:"2026-08-11", ver:"v1.1", ch:[7], feat:"개인건강검진 통합·검진 후 원격상담 도입", src:"검진 예약·TeleCareSection 재사용", summary:"검진 탭을 개인건강검진으로 통합하고 비대면 원격진료를 동일 컴포넌트로 이식해 검진에서 결과 상담까지 한 섹션에서 이어지는 검진 이후 건강상담 시스템을 완성", refs:[], status:"반영", hash:"8f6a657", auto:true },
@@ -24361,7 +24368,7 @@ function seedSelfVault(member) {
   const token = anonToken(member); const v = vaultLoad(token);
   if (v && ((v.checkups || []).length || (v.insurance || []).length)) { _migrateSelfCheckupSeed(member, token, v); return false; }   // 이미 데이터 있음
   try {
-    // ① 동의 5종 — 목적별 개별 동의(마케팅은 미동의: 일괄동의 없음의 증거)
+    // ① 동의 5종 — 목적별 개별 동의(상담·안내는 미동의: 일괄동의 없음의 증거)
     vaultSaveConsents(member, { health: true, ai: true, mkt: false, step: "checkup" });
     // ② 검진 연차 시드 — SELF_CHECKUP_SEED 기준(기본: 2025년 1건 · 2026년 미수검 = 분기응답 대상)
     _seedSelfCheckups(member);
@@ -24454,7 +24461,7 @@ function guestVaultDemo(member) {
     let contracts = []; try { contracts = insAggregateFetch(member).contracts; } catch (e) {}
     const B = [];
     const push = (type, note) => { B.push({ idx: B.length, type, token, note, hash: vaultHash(type + "|" + token + "|" + B.length), ts: now }); };
-    push("consent", "동의 이력 기록(건강·AI — 마케팅 미동의)");
+    push("consent", "동의 이력 기록(건강·AI — 상담·안내 미동의)");
     push("checkup", "검진결과 저장(photo·partial) " + itemsPrev.length + "항목");
     push("checkup", "검진결과 저장(upload·full) " + items.length + "항목");
     push("consent", "동의 이력 기록(보험·연계)");
@@ -24547,7 +24554,7 @@ const VAULT_CONSENTS = [
   { key: "insurance", req: true, title: "보험정보 수집·이용 동의", law: "개인정보보호법", items: "보험 가입내역·보장·담보 정보", purpose: "보장 분석·보험 솔루션 제공", keep: "회원 탈퇴 시 또는 목적 달성 후 파기", deny: "미동의 시 보험 보장 분석이 제한됩니다." },
   { key: "link", req: false, title: "제3자 정보제공·전송요구 동의(공단/통합조회)", law: "개인정보보호법·신용정보법", items: "국민건강보험공단 검진이력 / 신용정보원 보험가입내역", purpose: "본인 데이터 전송요구를 통한 조회·수신", keep: "수신 후 즉시 표준화 저장, 원문은 암호화 보관", deny: "해당 채널(공단/통합조회) 이용 시에만 필요합니다.", channelOnly: true },
   { key: "ai", req: true, title: "AI 분석 활용 동의", law: "개인정보보호법", items: "가명처리된 건강·보험 데이터", purpose: "AI 위험분석·의료비 예측·맞춤 상담", keep: "가명정보로 분석, 재식별 금지", deny: "미동의 시 AI 분석·상담 제공이 제한됩니다." },
-  { key: "mkt", req: false, title: "마케팅 활용 동의(선택)", law: "정보통신망법", items: "연락처·관심분야", purpose: "상품·이벤트 안내", keep: "동의 철회 시까지", deny: "미동의해도 서비스 이용에 제한이 없습니다." },
+  { key: "mkt", req: false, title: "보험계약 상담·안내 동의(선택)", law: "정보통신망법", items: "연락처·관심분야", purpose: "가입한 보험계약 상담, 보험금 지급·심사 관련 안내, 건강등급 산정 결과 안내, 새 계약 시 기존 계약과의 중요사항 비교설명, 서비스 만족도 조사, 건강·보험 상품 안내", keep: "동의 철회 시까지", deny: "미동의해도 서비스 이용에 제한이 없습니다." },
 ];
 const VAULT_LEGAL_NOTICE = "※ 본 동의문은 초안이며, 시행 전 법무 검토가 필요합니다. 14세 미만(어린이 검진·어린이실손)은 법정대리인 동의 절차가 별도 적용됩니다.";
 
@@ -27062,9 +27069,9 @@ const TOOL_RUN = {
   // 동의 변경 — 목적별 동의를 대화 한마디로(변경 이력은 체인 기록)
   consentdo(m, text) { try {
     const t = String(text || "");
-    const KEY = [["마케팅|광고|수신", "mkt", "마케팅 알림"], ["보험", "insurance", "보험 연계"], ["연계|제3자|제휴", "link", "기관 연계"], ["ai|분석", "ai", "AI 분석"], ["건강|검진", "health", "건강데이터 활용"]];
+    const KEY = [["마케팅|광고|수신|안내|상담알림", "mkt", "보험계약 상담·안내"], ["보험", "insurance", "보험 연계"], ["연계|제3자|제휴", "link", "기관 연계"], ["ai|분석", "ai", "AI 분석"], ["건강|검진", "health", "건강데이터 활용"]];
     const hit = KEY.find((k) => new RegExp(k[0], "i").test(t));
-    if (!hit) return { lines: ["어떤 동의를 바꿀까요? 목적별로 하나씩, 말 한마디면 돼요."], buttons: ["마케팅 동의 꺼줘", "마케팅 동의 켜줘"] };
+    if (!hit) return { lines: ["어떤 동의를 바꿀까요? 목적별로 하나씩, 말 한마디면 돼요."], buttons: ["상담·안내 동의 꺼줘", "상담·안내 동의 켜줘"] };
     const on = /(켜|동의할|허용|받을)/.test(t) && !/(꺼|철회|거부|취소|해제)/.test(t);
     const st = {}; st[hit[1]] = on;
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(m, st);
