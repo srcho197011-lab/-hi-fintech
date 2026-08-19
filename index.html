@@ -4863,6 +4863,38 @@ const CHECKUP_CAT_META = {
   special: { label: "특수검진", color: "#EA580C", intro: "산업안전보건법상 유해인자 노출 근로자의 특수건강진단을 수행하는 지정기관입니다." },
 };
 function checkupCats(c) { return CHECKUP_CATS[c.b] || ["personal"]; }
+/* ── 개인(신용)정보 동의서 — 원문(신용정보동의서.docx) 체크 9건을 3그룹으로 압축 표기.
+   압축은 문구·시각 층위일 뿐이며 동의 단위는 병합하지 않는다(개보법 §22② 구분 동의·§23 민감·§24 고유식별·§17 제3자, 신용정보법 §32 조회).
+   고유식별정보(주민등록번호 등) 제공은 보험업법상 별도 요구 사항으로 원문 그대로 유지한다. */
+const CI_CONSENT = {
+  ver: "개인(신용)정보 동의서 v1.0",
+  to: "현대해상(인수사) · 한국신용정보원 · 보험협회 · 보험료 산출 기관 · 재보험사(국외 포함) · 금융결제원 등 법령상 기관",
+  keep: "계약이 끝난 뒤 5년까지(법에서 정한 기간)",
+  groups: [
+    { g: "use", t: "① 가입 심사를 위해 확인합니다", why: "보험에 가입할 수 있는지, 어디까지 보장되는지 정하기 위해 필요해요.",
+      note: "아래 인적·보험계약 정보는 계약에 꼭 필요해 별도 선택 없이 포함돼요 — 성명·주소·생년월일·이메일·전화·성별·국적·직업·운전여부, 보험계약·보험금·금융거래 정보, 가입 전 알릴 사항, 건강검진 결과정보.",
+      items: [
+        { k: "ci_use_uid", req: true, t: "주민등록번호 등 나를 특정하는 번호", why: "보험업법에 따라 계약자·피보험자가 본인인지 확인해요.", d: "주민등록번호·외국인등록번호·여권번호·운전면허번호" },
+        { k: "ci_use_sens", req: true, t: "질병·상해 등 건강에 관한 정보", why: "보장 대상인지 판단하기 위해 확인해요.", d: "상병명·진료기록·기왕증 등 피보험자의 질병·상해 정보, 한국신용정보원이 보유한 보험사고·질병 정보" },
+      ] },
+    { g: "give", t: "② 심사·지급에 필요한 곳에 전달합니다", why: "중복 확인·재보험·의료 심사처럼 법이 정한 업무에 쓰여요.",
+      items: [
+        { k: "ci_give_uid", req: true, t: "주민등록번호 등 나를 특정하는 번호", why: "받는 기관에서도 동일인 확인이 필요해요.", d: "주민등록번호·외국인등록번호·여권번호·운전면허번호" },
+        { k: "ci_give_sens", req: true, t: "질병·상해 등 건강에 관한 정보", why: "보험금 심사와 중복보험 확인에 쓰여요.", d: "피보험자의 질병·상해에 관한 정보(상병명·진료기록·기왕증 등)" },
+        { k: "ci_give_pi", req: true, t: "인적·금융·보험계약 정보", why: "계약 관리와 보험금 지급 업무에 쓰여요.", d: "성명·주소·생년월일·연령·이메일·전화·성별·국적·직업·운전여부 / 납입 계좌 등 금융거래 정보 / 보험계약·보험금 정보 / 가입 전 알릴 사항 / 소득 및 재산 정보" },
+        { k: "ci_give_extra", req: false, t: "[선택] 성별·연령·보험계약 종류 추가 제공", why: "상품 개발·통계에 쓰여요. 동의하지 않아도 가입에 불이익이 없어요.", d: "성별, 연령, 보험계약정보(상품종류·기간)" },
+      ] },
+    { g: "inq", t: "③ 이미 든 보험을 확인합니다", why: "겹치는 보험이 있는지 확인해 불필요한 가입을 막아드려요.",
+      items: [
+        { k: "ci_inq_uid", req: true, t: "주민등록번호 등 나를 특정하는 번호", why: "조회 기관에서 본인 계약을 찾기 위해 필요해요.", d: "주민등록번호·외국인등록번호·여권번호·운전면허번호" },
+        { k: "ci_inq_sens", req: true, t: "질병·상해 등 건강에 관한 정보", why: "보험금 심사·보험사고 조사에 쓰여요.", d: "피보험자의 질병·상해에 관한 정보(상병명·진료기록 등)" },
+        { k: "ci_inq_pi", req: true, t: "보험계약·보험금 정보", why: "실손보험 중복 여부와 가입 한도를 확인해요.", d: "성명·국내거소신고번호, 세금우대저축 관련 정보, 보험계약정보(상품종류·기간·보험료·가입금액), 보험금 정보" },
+      ] },
+  ],
+};
+const CI_ALL = CI_CONSENT.groups.reduce((a, g) => a.concat(g.items), []);
+const CI_REQ = CI_ALL.filter((i) => i.req).map((i) => i.k);
+
 /* 다른 섹션(AI 주치의 등)에서 특정 검진 탭으로 진입하기 위한 인텐트 */
 let _checkupTab = null;
 let _checkupGo = null;   // 모달 등 외부에서 탭 전환(원격상담 동선) — CheckupSection 마운트 시 연결
@@ -5475,18 +5507,24 @@ function BookingModal({ center, mode, onClose }) {
   /* 무료 검진대비보험 — 하이 안내형 최소 탭 가입 절차(중요사항 확인 게이트 + 동의 4종) + 건너뛰기 허용(강매 금지).
      insAgree는 절차 완료(st==="done")에서만 true — 무동의 자동가입 금지(J2-3) 원칙 유지 */
   const [insAgree, setInsAgree] = useState(false);
-  const [enroll, setEnroll] = useState(() => ({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false, name: (typeof demoCurrentUser === "function" && demoCurrentUser() && demoCurrentUser().name) || (typeof authCurrent === "function" && authCurrent() && authCurrent().name) || "", rrn1: "", rrn2: "" }));
+  const [enroll, setEnroll] = useState(() => ({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false, name: (typeof demoCurrentUser === "function" && demoCurrentUser() && demoCurrentUser().name) || (typeof authCurrent === "function" && authCurrent() && authCurrent().name) || "", rrn1: "", rrn2: "", ci: {}, ciOpen: false, ciDetail: {}, ciFull: false }));
   /* 계약자 확인 — 주민번호는 형식 검증 후 해시만 보관(평문 미저장·화면 마스킹). 부담 완화: 동의 완료 후에만 노출 */
+  const ciOk = CI_REQ.every((k) => !!enroll.ci[k]);   // 필수 8건(선택 1건 제외) 모두 동의 시 통과
+  const ciCount = CI_ALL.filter((i) => !!enroll.ci[i.k]).length;
   const rrnOk = /^\d{6}$/.test(enroll.rrn1) && /^\d{7}$/.test(enroll.rrn2);
   const idOk = (enroll.name || "").trim().length >= 2 && rrnOk;
   const enrollConfirm = () => {
-    if (!(enroll.termsOk && enroll.req && idOk)) return;
+    if (!(enroll.termsOk && enroll.req && ciOk && idOk)) return;
     try {
       const m = dmU || (typeof selfMember === "function" ? selfMember() : null);
       const rrnMasked = enroll.rrn1 + "-" + enroll.rrn2.slice(0, 1) + "••••••";
       const rrnHash = (typeof vaultHash === "function") ? vaultHash("rrn|" + enroll.name.trim() + "|" + enroll.rrn1 + enroll.rrn2) : null;
       if (m && typeof vaultSaveConsents === "function") {
-        vaultSaveConsents(m, { ins_terms: true, ins_enroll: true, ins_third: true, mkt: !!enroll.mkt, step: "checkup-booking", ver: "검진대비보험 동의문 v1.0", insuredName: enroll.name.trim(), rrnMasked, rrnHash });
+        const ciState = {};
+        CI_ALL.forEach((i) => { ciState[i.k] = !!enroll.ci[i.k]; });   // 9건 개별 저장(병합 금지 — 구분 동의 원칙)
+        vaultSaveConsents(m, Object.assign({ ins_terms: true, ins_enroll: true, ins_third: true, mkt: !!enroll.mkt,
+          step: "checkup-booking", ver: "검진대비보험 동의문 v1.0", ciVer: CI_CONSENT.ver, ciMethod: enroll.ciFull ? "each" : "bulk",
+          insuredName: enroll.name.trim(), rrnMasked, rrnHash }, ciState));
       }
       setInsAgree(true); setEnroll((s) => ({ ...s, st: "done", rrn1: "", rrn2: "" }));   // 평문은 확정 즉시 메모리에서도 폐기
       if (typeof toast === "function") toast("가입 준비 완료 — 예약 확정 시 증서가 발급돼요 (보험료 0원)");
@@ -5659,16 +5697,82 @@ function BookingModal({ center, mode, onClose }) {
                   <span className="ba-box">{enroll.req ? "✓" : ""}</span>
                   <span className="ba-t">② [필수] 가입(청약)에 동의하고, 인수사(현대해상)·검진기관에 성명·생년·예약 정보를 <i>가입·보장·청구 목적에 한해</i> 제공하는 것에 동의합니다 <i>(원본 검진 수치는 제공하지 않아요 · 동의 일시는 블록체인에 기록)</i></span>
                 </label>
+                {/* ②-2 개인(신용)정보 동의 — 요약 카드 1층 → 그룹·개별 체크 2층 → 전문 3층.
+                    화면은 압축하되 저장은 9건 개별(구분 동의). 고유식별정보 제공은 보험업법상 별도 요구로 원문 유지. */}
+                <div style={{ marginTop: 7, border: "1.5px solid " + (ciOk ? "#BBF7D0" : "#E2E8F0"), borderRadius: 11, background: ciOk ? "#F0FDF4" : "#fff", padding: "11px 12px", opacity: enroll.termsOk ? 1 : .55, pointerEvents: enroll.termsOk ? "auto" : "none" }}>
+                  <div style={{ fontSize: 12.4, fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
+                    ②-2 [필수] 개인(신용)정보 동의 {ciOk && <b style={{ color: "#16A34A" }}>동의 완료 ✓</b>}
+                    <span style={{ marginLeft: "auto", fontSize: 10.5, color: "var(--soft)", fontWeight: 700 }}>{ciCount}/{CI_ALL.length}건</span>
+                  </div>
+                  {/* 1층 — 요약 카드: 누가·무엇을·언제까지·되돌릴 수 있나 */}
+                  <div style={{ fontSize: 11.3, color: "#334155", lineHeight: 1.62, marginTop: 6 }}>
+                    · <b>누가 보나요</b> — {CI_CONSENT.to}<br />
+                    · <b>무엇을</b> — 성명·연락처 등 인적사항 / 보험계약·보험금 정보 / 건강에 관한 정보<br />
+                    · <b>언제까지</b> — {CI_CONSENT.keep}<br />
+                    · <b>되돌릴 수 있나요</b> — 네, <b style={{ color: "#16A34A" }}>언제든 철회</b>하실 수 있어요(데이터 금고 또는 하이에게 말씀만 주세요)
+                  </div>
+                  {!ciOk && !enroll.ciOpen && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 7, marginTop: 9 }}>
+                      <button className="cbtn pri" style={{ margin: 0, minWidth: 0, padding: "9px 10px", fontSize: 12 }}
+                        onClick={() => { const c = {}; CI_REQ.forEach((k) => { c[k] = true; }); setEnroll((st) => ({ ...st, ci: Object.assign({}, st.ci, c), ciFull: false })); }}>
+                        <Check size={13} /> 필수 항목 한 번에 동의
+                      </button>
+                      <button className="cbtn" style={{ margin: 0, minWidth: 0, padding: "9px 10px", fontSize: 12 }}
+                        onClick={() => setEnroll((st) => ({ ...st, ciOpen: true, ciFull: true }))}>항목별로 확인</button>
+                    </div>
+                  )}
+                  {(ciOk || enroll.ciOpen) && (
+                    <button className="cbtn" style={{ margin: "8px 0 0", padding: "6px 11px", fontSize: 11.5 }}
+                      onClick={() => setEnroll((st) => ({ ...st, ciOpen: !st.ciOpen }))}>{enroll.ciOpen ? "항목 접기" : "동의한 항목 보기 · 변경"}</button>
+                  )}
+                  {/* 2층 — 3그룹 × 개별 체크(원문 9건) */}
+                  {enroll.ciOpen && CI_CONSENT.groups.map((g) => (
+                    <div key={g.g} style={{ marginTop: 9, border: "1px solid var(--border)", borderRadius: 9, background: "#fff", padding: "9px 11px" }}>
+                      <div style={{ fontSize: 12.2, fontWeight: 800, color: "#12203F" }}>{g.t}</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>{g.why}</div>
+                      {g.items.map((it) => (
+                        <div key={it.k} style={{ marginTop: 7, borderTop: "1px dashed #EEF2F7", paddingTop: 7 }}>
+                          <label style={{ display: "flex", gap: 7, alignItems: "flex-start", cursor: "pointer" }}>
+                            <input type="checkbox" style={{ marginTop: 2, width: 17, height: 17, flexShrink: 0 }} checked={!!enroll.ci[it.k]}
+                              onChange={(e) => setEnroll((st) => ({ ...st, ci: Object.assign({}, st.ci, { [it.k]: e.target.checked }) }))} />
+                            <span style={{ fontSize: 11.8, lineHeight: 1.5 }}>
+                              <b>{it.req ? "[필수] " : ""}{it.t}</b>
+                              <span style={{ display: "block", color: "var(--muted)", fontSize: 11 }}>{it.why}</span>
+                              <button style={{ border: "none", background: "none", color: "#1D4ED8", fontWeight: 700, fontSize: 10.8, padding: 0, marginTop: 2, cursor: "pointer" }}
+                                onClick={(e) => { e.preventDefault(); setEnroll((st) => ({ ...st, ciDetail: Object.assign({}, st.ciDetail, { [it.k]: !st.ciDetail[it.k] }) })); }}>
+                                {enroll.ciDetail[it.k] ? "내용 접기 ▲" : "내용 보기 ▼"}
+                              </button>
+                              {enroll.ciDetail[it.k] && <span style={{ display: "block", fontSize: 10.8, color: "#475569", background: "#F8FAFC", borderRadius: 6, padding: "6px 8px", marginTop: 4, lineHeight: 1.55 }}>{it.d}</span>}
+                            </span>
+                          </label>
+                        </div>
+                      ))}
+                      {g.note && <div style={{ fontSize: 10.6, color: "var(--soft)", marginTop: 7, lineHeight: 1.5, borderTop: "1px dashed #EEF2F7", paddingTop: 6 }}>※ {g.note}</div>}
+                    </div>
+                  ))}
+                  {/* 3층 — 정식 전문 */}
+                  {enroll.ciOpen && (
+                    <details style={{ marginTop: 8, fontSize: 11 }}>
+                      <summary style={{ cursor: "pointer", fontWeight: 700, color: "var(--soft)" }}>정식 동의서 전문 보기 — 아래가 법적 기준이며, 위 요약은 이해를 돕기 위한 것입니다</summary>
+                      <div style={{ color: "#475569", lineHeight: 1.62, marginTop: 6 }}>
+                        <b>1. 수집·이용</b> — 목적: 보험계약의 인수심사·체결·이행·유지·관리, 보험료 산출·검증, 민원처리 및 분쟁 대응, 금융거래 업무, 보험모집질서 유지, 가입한 보험계약 상담, 만족도 조사, 보험금 지급·심사, 모집인 수당 확인, 건강등급 산정, 기존 계약과의 중요사항 비교설명. 보유·이용기간: 동의일부터 거래 종료 후 5년(거래 종료일 = 만기·해지·취소·철회·소멸일, 보험금 청구권 소멸시효 완성일, 채권·채무 소멸일 중 가장 나중에 도래한 날).<br /><br />
+                        <b>2. 제공</b> — 제공받는 자: 금융위원회·금융감독원·국세청·보험요율산출기관 등 법정 업무수행기관, 한국신용정보원, 생명·손해보험회사 및 국내 재보험사·공제사업자·체신관서, 계좌개설 금융기관·금융결제원·은행연합회, 생명·손해보험협회, 국외 재보험사. 제공 목적: 법령상 업무 수행, 신용정보 집중관리·활용, 중복보험 확인 및 비례보상, 재보험 가입, 보험계약 공동인수, 의료심사·자문, 사고처리·민원접수 등. 보유기간: 제공받는 자의 이용목적 달성 시까지(관련 법령상 보존기간에 따름). ※ 외국 재보험사의 국내지점이 재보험 가입판단·공동인수 지원업무를 위탁하기 위한 경우 별도 동의 없이 외국 소재 본점에 정보가 이전될 수 있습니다. ※ 업무위탁 목적으로 처리하는 경우 별도 동의 없이 수탁자에게 제공될 수 있습니다.<br /><br />
+                        <b>3. 조회</b> — 조회 대상: 한국신용정보원, 생명·손해보험협회, 보험요율산출기관 등. 조회 목적: 보험계약의 인수심사·체결·이행·유지·관리(부활 및 갱신 포함), 가입한도 조회, 실손형 보험 중복 확인, 기존 계약과의 중요사항 비교설명, 세금우대저축사항 확인, 보험금 지급·심사, 보험사고 조사. 조회 결과 보험거래가 개시되면 거래 종료 후 5년까지 동의 효력이 지속되며, 거래가 거절된 경우 그 시점부터 효력이 소멸합니다.<br /><br />
+                        <b>공통</b> — 동의를 거부하실 수 있으며, 신용도 평가 목적 외의 제공 동의는 철회할 수 있습니다. 다만 본 동의는 보험계약 인수심사·체결·이행·유지·관리에 필수적이므로 거부 시 해당 업무 수행이 불가능합니다. 본 동의문은 초안이며 시행 전 법무 검토가 필요합니다.
+                      </div>
+                    </details>
+                  )}
+                </div>
                 <label className={"bkinsagree" + (enroll.mkt ? " on" : "")} style={{ marginTop: 5 }}>
                   <input type="checkbox" checked={enroll.mkt} onChange={(e) => setEnroll((s) => ({ ...s, mkt: e.target.checked }))} />
                   <span className="ba-box">{enroll.mkt ? "✓" : ""}</span>
                   <span className="ba-t">③ [선택] 보험·건강 상품 안내 수신(마케팅)에 동의합니다 <i>— 동의하지 않아도 가입에 불이익이 없어요</i></span>
                 </label>
                 {/* ④ 계약자 확인 — 동의 완료 후에만 노출(부담 완화). 주민번호: 뒤 7자리 마스킹 입력·평문 미저장(해시만 금고 보관) */}
-                {enroll.termsOk && enroll.req && (
+                {enroll.termsOk && enroll.req && ciOk && (
                   <div style={{ marginTop: 8, border: "1px solid var(--border)", borderRadius: 10, background: "#fff", padding: "10px 12px" }}>
                     <div style={{ fontSize: 12.3, fontWeight: 800, marginBottom: 3 }}>④ 계약자(피보험자) 확인</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.55, marginBottom: 8 }}>보험 계약 성립에는 법령상 성명·주민등록번호 확인이 필요해요. <b style={{ color: "#16A34A" }}>주민등록번호는 저장하지 않아요</b> — 형식 확인 후 검증용 해시만 남기고 즉시 폐기하며, 화면·기록에는 마스킹(앞 1자리만)으로 표시돼요. 계약 성립 목적 외에는 쓰이지 않아요.</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.55, marginBottom: 8 }}>보험 계약 성립에는 법령상 성명·주민등록번호 확인이 필요해요. <b style={{ color: "#16A34A" }}>하이핀은 주민등록번호를 보관하지 않아요</b> — 형식 확인 후 검증용 해시만 남기고 평문은 즉시 폐기하며, 화면·기록에는 마스킹(앞 1자리만)으로 표시돼요. 다만 <b>보험업법에 따라 인수사(현대해상)에는 계약 체결을 위해 전달</b>되며, 이는 위 ②-2 동의 항목에 포함돼요.</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr 1.3fr", gap: 7 }}>
                       <input value={enroll.name} onChange={(e) => setEnroll((s) => ({ ...s, name: e.target.value }))} placeholder="성명"
                         style={{ border: "1.5px solid var(--border)", borderRadius: 9, padding: "9px 11px", fontSize: 13, minWidth: 0 }} />
@@ -5681,7 +5785,7 @@ function BookingModal({ center, mode, onClose }) {
                   </div>
                 )}
                 <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 8, marginTop: 9 }}>
-                  <button className="cbtn pri" style={{ margin: 0, minWidth: 0, opacity: enroll.termsOk && enroll.req && idOk ? 1 : .5 }} disabled={!(enroll.termsOk && enroll.req && idOk)} onClick={enrollConfirm}><ShieldCheck size={14} /> {enroll.termsOk && enroll.req && !idOk ? "계약자 확인 후 가입돼요" : "가입 확정 · 보험료 0원"}</button>
+                  <button className="cbtn pri" style={{ margin: 0, minWidth: 0, opacity: enroll.termsOk && enroll.req && ciOk && idOk ? 1 : .5 }} disabled={!(enroll.termsOk && enroll.req && ciOk && idOk)} onClick={enrollConfirm}><ShieldCheck size={14} /> {!ciOk ? "개인(신용)정보 동의가 필요해요" : (!idOk ? "계약자 확인 후 가입돼요" : "가입 확정 · 보험료 0원")}</button>
                   <button className="cbtn" style={{ margin: 0, minWidth: 0 }} onClick={() => { setInsAgree(false); setEnroll((s) => ({ ...s, st: "skip" })); }}>가입 없이 예약만</button>
                 </div>
               </>)}
@@ -19787,7 +19891,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-08-11", ver:"v1.1", ch:[7], feat:"검진기관 상담 리디자인", src:"SpecialistChat checkupMode UI", summary:"검진기관 상담 목록을 히어로 배너와 기관 우선 카드·무료 배지 체계로 재디자인해 검진 이후 상담 창구의 시인성을 높임", refs:[], status:"반영", hash:"0f199af", auto:true },
+  { date:"2026-08-19", ver:"v1.1", ch:[15], feat:"개인(신용)정보 동의 3층 압축", src:"청약 화면·금고 동의 스키마", summary:"신용정보동의서 체크 9건을 요약카드·그룹·전문 3층으로 압축해 회원 부담을 낮추면서 법정 구분 동의와 개별 저장을 그대로 유지", refs:[], status:"반영", hash:"ee4bd86", auto:true },
+  { date:"2026-08-11", ver:"v1.1", ch:[7], feat:"검진기관 상담 리디자인", src:"SpecialistChat checkupMode UI", summary:"검진기관 상담 목록을 히어로 배너와 기관 우선 카드·무료 배지 체계로 재디자인해 검진 이후 상담 창구의 시인성을 높임", refs:[], status:"반영", hash:"e8ae29e", auto:true },
   { date:"2026-08-11", ver:"v1.1", ch:[7], feat:"검진기관 원격 상담 전용화", src:"telemed·SpecialistChat prop 분기", summary:"검진 섹션의 원격상담을 일반 의원이 아닌 검진기관 검진의 체계로 교체하고 내 검진기관 우선 배치와 결과 상담 무료 표기로 검진 이후 상담 동선을 완성", refs:[], status:"반영", hash:"3177232", auto:true },
   { date:"2026-08-11", ver:"v1.1", ch:[7], feat:"개인건강검진 통합·검진 후 원격상담 도입", src:"검진 예약·TeleCareSection 재사용", summary:"검진 탭을 개인건강검진으로 통합하고 비대면 원격진료를 동일 컴포넌트로 이식해 검진에서 결과 상담까지 한 섹션에서 이어지는 검진 이후 건강상담 시스템을 완성", refs:[], status:"반영", hash:"8f6a657", auto:true },
   { date:"2026-08-10", ver:"v1.1", ch:[15], feat:"검진대비보험 가입증서 화면", src:"예약 모달·맞춤보험 탭", summary:"발급 시점 스냅샷을 고정 기록하는 증서 모달을 신설하고 예약 완료와 맞춤보험 두 진입점에서 계약자 마스킹·보장 내역·체인 검증을 한 화면으로 제공", refs:[], status:"반영", hash:"eeaf945", auto:true },
