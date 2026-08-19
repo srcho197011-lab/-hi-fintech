@@ -257,3 +257,60 @@ function hmcProView(code) {
   });
   return v;
 }
+
+/* ── 프로 실적 데모(결정론) — 실적 = 단계 전진 기여(금액·수수료·순위 없음) ──
+   담당 규모·단계 분포에서 파생 + 프로 시드(등급·경력)로 성과율 변주. 화면에 "시연 분포" 고지. */
+const _HMC_CMT = [
+  [5, "검진 결과를 어려운 말 없이 설명해 주셔서 좋았어요. 다음 검진도 부탁드려요."],
+  [5, "보험 얘기를 먼저 꺼내지 않으시고 제 건강 얘기부터 들어주셔서 신뢰가 갔습니다."],
+  [4, "만기 전에 미리 알려주셔서 놓치지 않고 재가입했어요."],
+  [4, "부모님 돌봄 절차를 차근차근 알려주셨어요. 공단 판정은 기다리는 중이에요."],
+  [4, "리포트 보는 법을 배우고 나니 제 검진표가 읽히기 시작했어요."],
+  [3, "설명은 좋았는데 통화 시간이 조금 길었어요."],
+  [5, "검진 전엔 연락이 없다가 결과 나온 날 바로 전화 주신 게 인상적이었어요."],
+  [3, "안내는 정확했지만 다음 일정 안내가 조금 늦었어요."],
+];
+function hmcProStats(code) {
+  const p = hmProsGen().find((x) => x.code === code);
+  if (!p) return null;
+  const v = hmcProView(code);
+  const rng = _hmcRng("stat|" + code);
+  /* 성과율 — 등급 서사(경험 많을수록 완료율↑) + 프로별 지터 */
+  const base = { HM1: 0.72, HM2: 0.78, HM3: 0.85, HM4: 0.88 }[p.grade] || 0.78;
+  const perf = Math.min(0.97, Math.max(0.6, base + (rng() - 0.5) * 0.12));
+  /* 월별 단계 전진(최근 6개월) — 담당 규모 × 월 전진율(4~7%) × 성과율 */
+  const now = new Date(2026, 7);   // 시연 기준월 고정(2026-08) — 재현 가능
+  const adv6 = [];
+  let advTotal = 0;
+  for (let k = 5; k >= 0; k--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - k);
+    const n = Math.round(v.n * (0.04 + rng() * 0.03) * perf * (0.7 + (5 - k) * 0.08));   // 위촉 초기→성장 곡선
+    adv6.push({ ym: (d.getMonth() + 1) + "월", n });
+    advTotal += n;
+  }
+  const stallFixed = Math.round(v.stall.length * perf * 0.6);
+  const firstRate = Math.round(perf * 100);
+  const expireRate = Math.min(100, Math.round((perf + 0.06) * 100));
+  const slaRate = Math.min(100, Math.round((perf + 0.08) * 100));
+  const touches = Math.round(advTotal * 2.4);
+  /* 접촉 결과 분포 — LR_RESULT_CODES 의미 재사용 */
+  const dist = [
+    ["연결됨", Math.round(touches * 0.46)], ["상담확정", Math.round(touches * 0.18)],
+    ["예약전환", Math.round(touches * 0.12)], ["부재(재시도)", Math.round(touches * 0.16)],
+    ["거절", Math.round(touches * 0.08)],
+  ];
+  /* 회원 평가 — 평균★ + 코멘트(성과율과 톤 매칭·시드 선택) */
+  const stars = Math.round((3.9 + perf * 1.0) * 10) / 10;
+  const starsN = Math.max(3, Math.round(advTotal * 0.35));
+  const cIdx = [];
+  while (cIdx.length < 3) { const j = Math.floor(rng() * _HMC_CMT.length); if (cIdx.indexOf(j) < 0 && (perf > 0.8 ? _HMC_CMT[j][0] >= 4 : true)) cIdx.push(j); }
+  const comments = cIdx.map((j) => ({ star: _HMC_CMT[j][0], text: _HMC_CMT[j][1] }));
+  return { p, n: v.n, perf, adv6, advTotal, stallFixed, stallN: v.stall.length, firstRate, expireRate, slaRate, touches, dist, stars, starsN, comments };
+}
+/* HM4 지역리드 — 지역단 집계(개인 상세 불가 원칙: 합계·평균만) */
+function hmcDanAgg(dan) {
+  const pros = hmProsGen().filter((x) => x.dan === dan && x.status === "활성");
+  let adv = 0, first = 0, n = 0;
+  pros.slice(0, 40).forEach((x) => { const st = hmcProStats(x.code); if (st) { adv += st.advTotal; first += st.firstRate; n++; } });
+  return { dan, pros: pros.length, advSum: adv, avgFirst: n ? Math.round(first / n) : 0, sampled: Math.min(40, pros.length) };
+}

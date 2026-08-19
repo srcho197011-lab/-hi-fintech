@@ -18389,7 +18389,7 @@ function HmGate({ onPass }) {
       </div>
       <div className="hmcard" style={{ maxWidth: 520 }}>
         <div style={{ fontWeight: 900, fontSize: 13.5, marginBottom: 4 }}>프로 코드 인증</div>
-        <div style={{ fontSize: 11.5, color: HM_C.mut, marginBottom: 9 }}>코드는 자격·권한·실적의 단일 키예요. 세션에만 보관되고 새로고침 시 재입력해요.</div>
+        <div style={{ fontSize: 11.5, color: HM_C.mut, marginBottom: 9 }}>코드는 자격·권한·실적의 단일 키예요. 이 탭 세션에만 보관되고, 탭을 닫거나 [코드 잠금]을 누르면 즉시 잠겨요.</div>
         <div style={{ display: "flex", gap: 7 }}>
           <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="HM-SN-26-014" style={{ flex: 1, border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "9px 12px", fontSize: 13, letterSpacing: 1 }} onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
           <button className="hmbtn" onClick={() => submit()}>인증</button>
@@ -18799,19 +18799,74 @@ function HmTabBoard({ code, pro, onContact, cview }) {
       {cview && <HmCohortList title="⑨ 담당 코호트 고객" code={code}
         ids={(stFilter === "_stall" ? cview.stall : stFilter ? (cview.byStage[stFilter] || []) : cview.ids).slice().sort((a, b) => { const A = cohortStageOf(a), B = cohortStageOf(b); return (B.stalled ? B.stalledDays : -1) - (A.stalled ? A.stalledDays : -1); })} />}
     </div>)}
-    {view === "stat" && (<div>
+    {view === "stat" && (() => {
+      const cs = (typeof hmcProStats === "function") ? hmcProStats(pro.code) : null;
+      const maxAdv = cs ? Math.max(1, ...cs.adv6.map((x) => x.n)) : 1;
+      const distMax = cs ? Math.max(1, ...cs.dist.map((x) => x[1])) : 1;
+      const agg = (cs && (pro.grade === "HM4" || ((typeof authRole === "function") && authRole() === "ADMIN")) && typeof hmcDanAgg === "function") ? hmcDanAgg(pro.dan) : null;
+      return (<div>
       <div className="hmcard" style={{ marginTop: 0, background: HM_C.bg }}>
         <b style={{ fontSize: 12.5 }}>실적의 정의 — 판매액이 아니라 「단계 전진 기여」</b>
-        <div style={{ fontSize: 11.4, color: HM_C.mut, marginTop: 3 }}>금액이나 등수 매기기는 없어요. ② 순번 배분은 평가와 무관해요(공정성 고지).</div>
+        <div style={{ fontSize: 11.4, color: HM_C.mut, marginTop: 3 }}>금액이나 등수 매기기는 없어요. ② 순번 배분은 평가와 무관해요(공정성 고지). 코호트 실적은 담당 규모·단계 분포에서 파생한 <b style={{ color: HM_C.dark }}>시연 분포</b>예요.</div>
       </div>
       <div className="hmgrid2" style={{ marginTop: 10 }}>
-        {[["담당 고객", stats.assigned + "명"], ["검진보험 순번 배정", stats.insAssigned + "건"], ["단계 전진(이번 주기)", stats.adv + "명"], ["건강 터치 누적", stats.touches + "회"], ["최근 7일 접촉 커버", stats.done7 + "명"], ["정체 회원(관리 대상)", stats.stalledN + "명"], ["첫 연결 완료율(락 해제 후)", stats.firstRate + "%"], ["접촉 락 준수", stats.lockOk ? "100% ✓" : `위반 시도 ${stats.viol}건`]].map(([k, v], i) => (
+        {[["담당 고객", (stats.assigned + (cs ? cs.n : 0)).toLocaleString() + "명"], ["단계 전진 누적(6개월)", ((cs ? cs.advTotal : 0) + stats.adv).toLocaleString() + "명"], ["정체 해소", (cs ? cs.stallFixed : 0) + "명"], ["건강 터치 누적", ((cs ? cs.touches : 0) + stats.touches).toLocaleString() + "회"], ["첫 연결 완료율(락 해제 후)", (cs ? cs.firstRate : stats.firstRate) + "%"], ["만기 터치 완료율", (cs ? cs.expireRate : 100) + "%"], ["SLA 준수율", (cs ? cs.slaRate : 100) + "%"], ["접촉 락 준수", stats.lockOk ? "100% ✓" : `위반 시도 ${stats.viol}건`]].map(([k, v], i) => (
           <div key={i} style={{ border: "1px solid #F1F5F9", borderRadius: 11, padding: "10px 13px" }}>
             <div style={{ fontSize: 11, color: HM_C.mut, fontWeight: 700 }}>{k}</div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: k.indexOf("정체") >= 0 && stats.stalledN ? HM_C.stall : HM_C.dark }}>{v}</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: HM_C.dark }}>{v}</div>
           </div>
         ))}
       </div>
+      {cs && (<div className="hmgrid2" style={{ marginTop: 8 }}>
+        <div className="hmcard" style={{ marginTop: 0 }}>
+          <b style={{ fontSize: 12.3 }}>월별 단계 전진 추이 <span style={{ fontWeight: 700, color: HM_C.mut, fontSize: 10.5 }}>· 최근 6개월(시연 분포)</span></b>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 92, marginTop: 10 }}>
+            {cs.adv6.map((x, j) => (
+              <div key={j} style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: HM_C.dark }}>{x.n}</div>
+                <div style={{ height: Math.max(4, Math.round(x.n / maxAdv * 60)), background: j === 5 ? HM_C.pri : "#FFD9B0", borderRadius: "5px 5px 0 0", margin: "2px 4px 0" }} />
+                <div style={{ fontSize: 10, color: HM_C.mut, marginTop: 3 }}>{x.ym}</div>
+              </div>
+            ))}
+          </div>
+          <div className="hmfoot">전진 1건 = 담당 회원의 단계가 오른 것(D1→D2 …) — 데이터가 판정하고 프로는 기여로 집계돼요.</div>
+        </div>
+        <div className="hmcard" style={{ marginTop: 0 }}>
+          <b style={{ fontSize: 12.3 }}>접촉 결과 분포 <span style={{ fontWeight: 700, color: HM_C.mut, fontSize: 10.5 }}>· 누적 {cs.touches.toLocaleString()}회</span></b>
+          <div style={{ marginTop: 9 }}>
+            {cs.dist.map(([k, n], j) => (
+              <div key={j} style={{ display: "flex", alignItems: "center", gap: 8, margin: "5px 0" }}>
+                <span style={{ width: 74, fontSize: 11, fontWeight: 700, color: HM_C.mut }}>{k}</span>
+                <div style={{ flex: 1, background: "#F1F5F9", borderRadius: 6, height: 12 }}>
+                  <div style={{ width: Math.round(n / distMax * 100) + "%", height: 12, borderRadius: 6, background: k === "거절" ? "#FCA5A5" : k.indexOf("부재") >= 0 ? "#FDE68A" : HM_C.pri, opacity: k === "연결됨" ? 1 : .8 }} />
+                </div>
+                <span style={{ width: 46, textAlign: "right", fontSize: 11, fontWeight: 800 }}>{n.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+          <div className="hmfoot">거절·부재도 실적 화면에 그대로 남아요 — 숨기지 않는 것이 관리의 시작이에요.</div>
+        </div>
+      </div>)}
+      {cs && (<div className="hmcard">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 6 }}>
+          <b style={{ fontSize: 12.3 }}>회원 평가 <span style={{ color: HM_C.pri, fontSize: 15 }}>★ {cs.stars}</span> <span style={{ fontWeight: 700, color: HM_C.mut, fontSize: 10.5 }}>· {cs.starsN}건(시연)</span></b>
+          <span style={{ fontSize: 10.5, color: HM_C.mut }}>평가가 낮으면 가중 배분이 줄어요 — 단, ② 순번 배분은 평가와 무관</span>
+        </div>
+        {cs.comments.map((c, j) => (
+          <div key={j} style={{ borderTop: j ? "1px dashed #F1F5F9" : "none", padding: "7px 0", fontSize: 11.8, display: "flex", gap: 8 }}>
+            <span style={{ color: HM_C.pri, fontWeight: 800, flexShrink: 0 }}>{"★".repeat(c.star)}</span>
+            <span style={{ color: HM_C.ink, lineHeight: 1.55 }}>{c.text}</span>
+          </div>
+        ))}
+      </div>)}
+      {agg && (<div className="hmcard" style={{ background: "#FFFDF9" }}>
+        <b style={{ fontSize: 12.3 }}>{agg.dan} 집계 <span style={{ fontWeight: 700, color: HM_C.mut, fontSize: 10.5 }}>· 지역리드(HM4) 관측 — 합계·평균만, 개인 상세 없음</span></b>
+        <div style={{ display: "flex", gap: 18, marginTop: 8, flexWrap: "wrap", fontSize: 12 }}>
+          <span>활성 프로 <b style={{ fontSize: 15, color: HM_C.dark }}>{agg.pros}명</b></span>
+          <span>단계 전진 합계(표본 {agg.sampled}명·6개월) <b style={{ fontSize: 15, color: HM_C.dark }}>{agg.advSum.toLocaleString()}명</b></span>
+          <span>평균 첫 연결 완료율 <b style={{ fontSize: 15, color: HM_C.dark }}>{agg.avgFirst}%</b></span>
+        </div>
+      </div>)}
       <div className="hmcard">
         <b style={{ fontSize: 12.3 }}>컴플라이언스 자가점검</b>
         <div style={{ fontSize: 11.8, color: HM_C.mut, marginTop: 5, lineHeight: 1.8 }}>
@@ -18819,7 +18874,7 @@ function HmTabBoard({ code, pro, onContact, cview }) {
           {stats.lockOk ? "✓" : "✗"} 접촉 락 위반 시도 {stats.viol}건 · ✓ 금칙어 발송 0건(발송 전 검사) · 내 조회 기록은 회원 금고 접근 로그에 전부 남아요
         </div>
       </div>
-    </div>)}
+    </div>); })()}
   </div>);
 }
 
@@ -20653,7 +20708,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-08-20", ver:"v1.2", ch:[8], feat:"헬스메이트 데모 데이터 스케일업 — 프로 696명×회원 10만 시군구 매칭", src:"헬스메이트 센터 데이터 층(healthMateCohort)", summary:"현대해상 실사 지점 272개 위에 프로 696명을 결정론 배속하고 회원 10만 명에게 지점 밀도 가중으로 시군구를 부여해 같은 시군구끼리만 매칭(표본 3천 명 위반 0). 단계 퍼널을 재무모델 파라미터(checkupRate 등)에서 유도해 9개 워크벤치에 분배하고, 체험 상호작용층과 코호트 관측층을 분리(관측층 접촉은 세션 기록만). 게이트 검색·전국 뷰·페이지네이션 포함", refs:[], status:"반영", hash:"436fc3d", auto:true },
+  { date:"2026-08-20", ver:"v1.2", ch:[8], feat:"프로 실적 데모 — 단계 전진 추이·접촉 분포·회원 평가", src:"헬스메이트 센터 ⑨ 내 실적", summary:"프로별 실적을 담당 규모와 단계 분포에서 결정론 파생해 월별 단계 전진 추이(6개월)·접촉 결과 5코드 분포(거절·부재 미은폐)·회원 평가 별점과 코멘트로 시각화. 실적 정의는 판매액이 아니라 단계 전진 기여로 유지(금액·순위 없음)하고 HM4 지역리드에게는 지역단 합계·평균만 제공(개인 상세 없음)", refs:[], status:"반영", hash:"3250415", auto:true },
+  { date:"2026-08-20", ver:"v1.2", ch:[8], feat:"헬스메이트 데모 데이터 스케일업 — 프로 696명×회원 10만 시군구 매칭", src:"헬스메이트 센터 데이터 층(healthMateCohort)", summary:"현대해상 실사 지점 272개 위에 프로 696명을 결정론 배속하고 회원 10만 명에게 지점 밀도 가중으로 시군구를 부여해 같은 시군구끼리만 매칭(표본 3천 명 위반 0). 단계 퍼널을 재무모델 파라미터(checkupRate 등)에서 유도해 9개 워크벤치에 분배하고, 체험 상호작용층과 코호트 관측층을 분리(관측층 접촉은 세션 기록만). 게이트 검색·전국 뷰·페이지네이션 포함", refs:[], status:"반영", hash:"f38af37", auto:true },
   { date:"2026-08-19", ver:"v1.2", ch:[8], feat:"헬스메이트(프로) 센터 — DB 8단계 고객관리 콘솔", src:"헬스메이트 센터(신규 섹션)", summary:"코드 부여 전문헬스메이트(프로) 전용 운영 콘솔을 신설 — 하이가 신호·근거·문안·타이밍을 만들고 프로는 확인·접촉·기록만 하며, 고객 단계는 DB 4단계(확보·검진·분석·통합)+이후 4단계(케어·확장·자산화·평생)로 실데이터만 근거로 자동 판정. 검진결과 수령 전 접촉 락(시스템만 해제), 검진대비보험 지역단 순번 배분, 결과+보장 결합 첫 연결, 가능성 3구간 인수조건 대화, 프로 제안함, 건강현황×관리상태 2축 현황판(실적=단계 전진)을 현대해상 오렌지 디자인으로 구현", refs:[], status:"반영", hash:"c2b4b06", auto:true },
   { date:"2026-08-19", ver:"v1.1", ch:[15], feat:"동의 항목 축소·보유 3년", src:"청약 개인신용정보 동의", summary:"소득재산·직업운전국적·음성정보·국외 재보험사 이전을 삭제하고 보유기간을 3년으로 줄여 무상 상품에 맞는 최소 수집 범위로 조정", refs:[], status:"반영", hash:"c71ef08", auto:true },
   { date:"2026-08-19", ver:"v1.1", ch:[15], feat:"선택 동의 상담·안내 재정의", src:"청약·보험·마이페이지·하이·금고 동의문", summary:"동의서 원문 수집·이용 목적 4가지를 선택 동의에 결합하고 마케팅 용어를 화면에서 제거해 회원 심리 부담을 낮춤", refs:[], status:"반영", hash:"03e5272", auto:true },
@@ -27319,6 +27375,63 @@ function hmcProView(code) {
     if ((["D4", "L5"].indexOf(st.cur) >= 0 && _hmHash("shp|" + i) % 100 < 60) || (st.cur === "D3" && _hmHash("shp|" + i) % 100 < 12)) v.shop.push(i);
   });
   return v;
+}
+
+/* ── 프로 실적 데모(결정론) — 실적 = 단계 전진 기여(금액·수수료·순위 없음) ──
+   담당 규모·단계 분포에서 파생 + 프로 시드(등급·경력)로 성과율 변주. 화면에 "시연 분포" 고지. */
+const _HMC_CMT = [
+  [5, "검진 결과를 어려운 말 없이 설명해 주셔서 좋았어요. 다음 검진도 부탁드려요."],
+  [5, "보험 얘기를 먼저 꺼내지 않으시고 제 건강 얘기부터 들어주셔서 신뢰가 갔습니다."],
+  [4, "만기 전에 미리 알려주셔서 놓치지 않고 재가입했어요."],
+  [4, "부모님 돌봄 절차를 차근차근 알려주셨어요. 공단 판정은 기다리는 중이에요."],
+  [4, "리포트 보는 법을 배우고 나니 제 검진표가 읽히기 시작했어요."],
+  [3, "설명은 좋았는데 통화 시간이 조금 길었어요."],
+  [5, "검진 전엔 연락이 없다가 결과 나온 날 바로 전화 주신 게 인상적이었어요."],
+  [3, "안내는 정확했지만 다음 일정 안내가 조금 늦었어요."],
+];
+function hmcProStats(code) {
+  const p = hmProsGen().find((x) => x.code === code);
+  if (!p) return null;
+  const v = hmcProView(code);
+  const rng = _hmcRng("stat|" + code);
+  /* 성과율 — 등급 서사(경험 많을수록 완료율↑) + 프로별 지터 */
+  const base = { HM1: 0.72, HM2: 0.78, HM3: 0.85, HM4: 0.88 }[p.grade] || 0.78;
+  const perf = Math.min(0.97, Math.max(0.6, base + (rng() - 0.5) * 0.12));
+  /* 월별 단계 전진(최근 6개월) — 담당 규모 × 월 전진율(4~7%) × 성과율 */
+  const now = new Date(2026, 7);   // 시연 기준월 고정(2026-08) — 재현 가능
+  const adv6 = [];
+  let advTotal = 0;
+  for (let k = 5; k >= 0; k--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - k);
+    const n = Math.round(v.n * (0.04 + rng() * 0.03) * perf * (0.7 + (5 - k) * 0.08));   // 위촉 초기→성장 곡선
+    adv6.push({ ym: (d.getMonth() + 1) + "월", n });
+    advTotal += n;
+  }
+  const stallFixed = Math.round(v.stall.length * perf * 0.6);
+  const firstRate = Math.round(perf * 100);
+  const expireRate = Math.min(100, Math.round((perf + 0.06) * 100));
+  const slaRate = Math.min(100, Math.round((perf + 0.08) * 100));
+  const touches = Math.round(advTotal * 2.4);
+  /* 접촉 결과 분포 — LR_RESULT_CODES 의미 재사용 */
+  const dist = [
+    ["연결됨", Math.round(touches * 0.46)], ["상담확정", Math.round(touches * 0.18)],
+    ["예약전환", Math.round(touches * 0.12)], ["부재(재시도)", Math.round(touches * 0.16)],
+    ["거절", Math.round(touches * 0.08)],
+  ];
+  /* 회원 평가 — 평균★ + 코멘트(성과율과 톤 매칭·시드 선택) */
+  const stars = Math.round((3.9 + perf * 1.0) * 10) / 10;
+  const starsN = Math.max(3, Math.round(advTotal * 0.35));
+  const cIdx = [];
+  while (cIdx.length < 3) { const j = Math.floor(rng() * _HMC_CMT.length); if (cIdx.indexOf(j) < 0 && (perf > 0.8 ? _HMC_CMT[j][0] >= 4 : true)) cIdx.push(j); }
+  const comments = cIdx.map((j) => ({ star: _HMC_CMT[j][0], text: _HMC_CMT[j][1] }));
+  return { p, n: v.n, perf, adv6, advTotal, stallFixed, stallN: v.stall.length, firstRate, expireRate, slaRate, touches, dist, stars, starsN, comments };
+}
+/* HM4 지역리드 — 지역단 집계(개인 상세 불가 원칙: 합계·평균만) */
+function hmcDanAgg(dan) {
+  const pros = hmProsGen().filter((x) => x.dan === dan && x.status === "활성");
+  let adv = 0, first = 0, n = 0;
+  pros.slice(0, 40).forEach((x) => { const st = hmcProStats(x.code); if (st) { adv += st.advTotal; first += st.firstRate; n++; } });
+  return { dan, pros: pros.length, advSum: adv, avgFirst: n ? Math.round(first / n) : 0, sampled: Math.min(40, pros.length) };
 }
 
 /* ══════════════ S2/S3 — 나눔 지원 엔진 (NeedFinder · GrantEngine · DirectSettle · ImpactLedger) ══════════════

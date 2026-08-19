@@ -168,7 +168,7 @@ function HmGate({ onPass }) {
       </div>
       <div className="hmcard" style={{ maxWidth: 520 }}>
         <div style={{ fontWeight: 900, fontSize: 13.5, marginBottom: 4 }}>프로 코드 인증</div>
-        <div style={{ fontSize: 11.5, color: HM_C.mut, marginBottom: 9 }}>코드는 자격·권한·실적의 단일 키예요. 세션에만 보관되고 새로고침 시 재입력해요.</div>
+        <div style={{ fontSize: 11.5, color: HM_C.mut, marginBottom: 9 }}>코드는 자격·권한·실적의 단일 키예요. 이 탭 세션에만 보관되고, 탭을 닫거나 [코드 잠금]을 누르면 즉시 잠겨요.</div>
         <div style={{ display: "flex", gap: 7 }}>
           <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="HM-SN-26-014" style={{ flex: 1, border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "9px 12px", fontSize: 13, letterSpacing: 1 }} onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
           <button className="hmbtn" onClick={() => submit()}>인증</button>
@@ -578,19 +578,74 @@ function HmTabBoard({ code, pro, onContact, cview }) {
       {cview && <HmCohortList title="⑨ 담당 코호트 고객" code={code}
         ids={(stFilter === "_stall" ? cview.stall : stFilter ? (cview.byStage[stFilter] || []) : cview.ids).slice().sort((a, b) => { const A = cohortStageOf(a), B = cohortStageOf(b); return (B.stalled ? B.stalledDays : -1) - (A.stalled ? A.stalledDays : -1); })} />}
     </div>)}
-    {view === "stat" && (<div>
+    {view === "stat" && (() => {
+      const cs = (typeof hmcProStats === "function") ? hmcProStats(pro.code) : null;
+      const maxAdv = cs ? Math.max(1, ...cs.adv6.map((x) => x.n)) : 1;
+      const distMax = cs ? Math.max(1, ...cs.dist.map((x) => x[1])) : 1;
+      const agg = (cs && (pro.grade === "HM4" || ((typeof authRole === "function") && authRole() === "ADMIN")) && typeof hmcDanAgg === "function") ? hmcDanAgg(pro.dan) : null;
+      return (<div>
       <div className="hmcard" style={{ marginTop: 0, background: HM_C.bg }}>
         <b style={{ fontSize: 12.5 }}>실적의 정의 — 판매액이 아니라 「단계 전진 기여」</b>
-        <div style={{ fontSize: 11.4, color: HM_C.mut, marginTop: 3 }}>금액이나 등수 매기기는 없어요. ② 순번 배분은 평가와 무관해요(공정성 고지).</div>
+        <div style={{ fontSize: 11.4, color: HM_C.mut, marginTop: 3 }}>금액이나 등수 매기기는 없어요. ② 순번 배분은 평가와 무관해요(공정성 고지). 코호트 실적은 담당 규모·단계 분포에서 파생한 <b style={{ color: HM_C.dark }}>시연 분포</b>예요.</div>
       </div>
       <div className="hmgrid2" style={{ marginTop: 10 }}>
-        {[["담당 고객", stats.assigned + "명"], ["검진보험 순번 배정", stats.insAssigned + "건"], ["단계 전진(이번 주기)", stats.adv + "명"], ["건강 터치 누적", stats.touches + "회"], ["최근 7일 접촉 커버", stats.done7 + "명"], ["정체 회원(관리 대상)", stats.stalledN + "명"], ["첫 연결 완료율(락 해제 후)", stats.firstRate + "%"], ["접촉 락 준수", stats.lockOk ? "100% ✓" : `위반 시도 ${stats.viol}건`]].map(([k, v], i) => (
+        {[["담당 고객", (stats.assigned + (cs ? cs.n : 0)).toLocaleString() + "명"], ["단계 전진 누적(6개월)", ((cs ? cs.advTotal : 0) + stats.adv).toLocaleString() + "명"], ["정체 해소", (cs ? cs.stallFixed : 0) + "명"], ["건강 터치 누적", ((cs ? cs.touches : 0) + stats.touches).toLocaleString() + "회"], ["첫 연결 완료율(락 해제 후)", (cs ? cs.firstRate : stats.firstRate) + "%"], ["만기 터치 완료율", (cs ? cs.expireRate : 100) + "%"], ["SLA 준수율", (cs ? cs.slaRate : 100) + "%"], ["접촉 락 준수", stats.lockOk ? "100% ✓" : `위반 시도 ${stats.viol}건`]].map(([k, v], i) => (
           <div key={i} style={{ border: "1px solid #F1F5F9", borderRadius: 11, padding: "10px 13px" }}>
             <div style={{ fontSize: 11, color: HM_C.mut, fontWeight: 700 }}>{k}</div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: k.indexOf("정체") >= 0 && stats.stalledN ? HM_C.stall : HM_C.dark }}>{v}</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: HM_C.dark }}>{v}</div>
           </div>
         ))}
       </div>
+      {cs && (<div className="hmgrid2" style={{ marginTop: 8 }}>
+        <div className="hmcard" style={{ marginTop: 0 }}>
+          <b style={{ fontSize: 12.3 }}>월별 단계 전진 추이 <span style={{ fontWeight: 700, color: HM_C.mut, fontSize: 10.5 }}>· 최근 6개월(시연 분포)</span></b>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 92, marginTop: 10 }}>
+            {cs.adv6.map((x, j) => (
+              <div key={j} style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: HM_C.dark }}>{x.n}</div>
+                <div style={{ height: Math.max(4, Math.round(x.n / maxAdv * 60)), background: j === 5 ? HM_C.pri : "#FFD9B0", borderRadius: "5px 5px 0 0", margin: "2px 4px 0" }} />
+                <div style={{ fontSize: 10, color: HM_C.mut, marginTop: 3 }}>{x.ym}</div>
+              </div>
+            ))}
+          </div>
+          <div className="hmfoot">전진 1건 = 담당 회원의 단계가 오른 것(D1→D2 …) — 데이터가 판정하고 프로는 기여로 집계돼요.</div>
+        </div>
+        <div className="hmcard" style={{ marginTop: 0 }}>
+          <b style={{ fontSize: 12.3 }}>접촉 결과 분포 <span style={{ fontWeight: 700, color: HM_C.mut, fontSize: 10.5 }}>· 누적 {cs.touches.toLocaleString()}회</span></b>
+          <div style={{ marginTop: 9 }}>
+            {cs.dist.map(([k, n], j) => (
+              <div key={j} style={{ display: "flex", alignItems: "center", gap: 8, margin: "5px 0" }}>
+                <span style={{ width: 74, fontSize: 11, fontWeight: 700, color: HM_C.mut }}>{k}</span>
+                <div style={{ flex: 1, background: "#F1F5F9", borderRadius: 6, height: 12 }}>
+                  <div style={{ width: Math.round(n / distMax * 100) + "%", height: 12, borderRadius: 6, background: k === "거절" ? "#FCA5A5" : k.indexOf("부재") >= 0 ? "#FDE68A" : HM_C.pri, opacity: k === "연결됨" ? 1 : .8 }} />
+                </div>
+                <span style={{ width: 46, textAlign: "right", fontSize: 11, fontWeight: 800 }}>{n.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+          <div className="hmfoot">거절·부재도 실적 화면에 그대로 남아요 — 숨기지 않는 것이 관리의 시작이에요.</div>
+        </div>
+      </div>)}
+      {cs && (<div className="hmcard">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 6 }}>
+          <b style={{ fontSize: 12.3 }}>회원 평가 <span style={{ color: HM_C.pri, fontSize: 15 }}>★ {cs.stars}</span> <span style={{ fontWeight: 700, color: HM_C.mut, fontSize: 10.5 }}>· {cs.starsN}건(시연)</span></b>
+          <span style={{ fontSize: 10.5, color: HM_C.mut }}>평가가 낮으면 가중 배분이 줄어요 — 단, ② 순번 배분은 평가와 무관</span>
+        </div>
+        {cs.comments.map((c, j) => (
+          <div key={j} style={{ borderTop: j ? "1px dashed #F1F5F9" : "none", padding: "7px 0", fontSize: 11.8, display: "flex", gap: 8 }}>
+            <span style={{ color: HM_C.pri, fontWeight: 800, flexShrink: 0 }}>{"★".repeat(c.star)}</span>
+            <span style={{ color: HM_C.ink, lineHeight: 1.55 }}>{c.text}</span>
+          </div>
+        ))}
+      </div>)}
+      {agg && (<div className="hmcard" style={{ background: "#FFFDF9" }}>
+        <b style={{ fontSize: 12.3 }}>{agg.dan} 집계 <span style={{ fontWeight: 700, color: HM_C.mut, fontSize: 10.5 }}>· 지역리드(HM4) 관측 — 합계·평균만, 개인 상세 없음</span></b>
+        <div style={{ display: "flex", gap: 18, marginTop: 8, flexWrap: "wrap", fontSize: 12 }}>
+          <span>활성 프로 <b style={{ fontSize: 15, color: HM_C.dark }}>{agg.pros}명</b></span>
+          <span>단계 전진 합계(표본 {agg.sampled}명·6개월) <b style={{ fontSize: 15, color: HM_C.dark }}>{agg.advSum.toLocaleString()}명</b></span>
+          <span>평균 첫 연결 완료율 <b style={{ fontSize: 15, color: HM_C.dark }}>{agg.avgFirst}%</b></span>
+        </div>
+      </div>)}
       <div className="hmcard">
         <b style={{ fontSize: 12.3 }}>컴플라이언스 자가점검</b>
         <div style={{ fontSize: 11.8, color: HM_C.mut, marginTop: 5, lineHeight: 1.8 }}>
@@ -598,7 +653,7 @@ function HmTabBoard({ code, pro, onContact, cview }) {
           {stats.lockOk ? "✓" : "✗"} 접촉 락 위반 시도 {stats.viol}건 · ✓ 금칙어 발송 0건(발송 전 검사) · 내 조회 기록은 회원 금고 접근 로그에 전부 남아요
         </div>
       </div>
-    </div>)}
+    </div>); })()}
   </div>);
 }
 
