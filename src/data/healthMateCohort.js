@@ -1,0 +1,259 @@
+/* ══════════════ 헬스메이트 데모 데이터 스케일업 — 프로 700 × 회원 10만 시군구 매칭 ══════════════
+   설계서: docs/hi_healthmate/헬스메이트_데모데이터_스케일업_프롬프트_v1.0.md (형 확정 2026-08-20:
+   ①퍼널=finModel 정합 ②프로=현대해상 설계사 하이핀 위촉 ③시군구=지점 밀도 가중)
+   원칙: 지역 일치 제1원칙 · 결정론 on-demand(저장 0바이트) · 기존 10만 코호트 불변(별도 시드) ·
+        체험 16명=상호작용층 / 코호트=관측층(행동은 세션 메모리만) */
+
+/* ── 시드 유틸(별도 네임스페이스 — pilotCohort의 rng 소비 순서 불가침) ── */
+function _hmcRng(s) { return _mul32(_hmHash(String(s))); }
+const _HMC = { pros: null, sggIdx: null, sggW: null, session: {} };   // 메모리 캐시(저장 금지)
+
+/* ── 지역단 약호(코드 생성용) ── */
+const HMC_DAN_ABBR = { "강북지역단": "NB", "강남지역단": "SN", "강서지역단": "WS", "경기지역단": "GG", "성남지역단": "SNM", "북부지역단": "GBB", "경인지역단": "IC", "강원지역단": "GW", "충청지역단": "CC", "중부지역단": "JB", "호남지역단": "HN", "전북지역단": "JBK", "대경지역단": "DG", "부산지역단": "BS", "영남지역단": "YN", "경남지역단": "GN", "광역(전국)": "WD" };
+const _HMC_GG_NORTH = ["의정부", "남양주", "파주", "구리", "양주"];   // 경기 북부지역단 관할(데모 축약)
+
+/* 주소 → DISTRICTS 시군구 매칭(긴 명칭 우선 — "광주시" vs "광주" 오매칭 방지) */
+function _hmcSggOfAddr(sido, addr) {
+  const list = ((typeof DISTRICTS !== "undefined" && DISTRICTS[sido]) || []).slice().sort((a, b) => b.length - a.length);
+  for (const d of list) if (addr.indexOf(d) === 0 || addr.indexOf(d.replace(/시$/, "")) === 0) return d;
+  return list.length ? [...list].sort()[0] : "";
+}
+function _hmcDanOf(sido, sgg) {
+  if (sido === "서울" && typeof LR_SEOUL_GU !== "undefined") { for (const d in LR_SEOUL_GU) if (LR_SEOUL_GU[d].indexOf(sgg) >= 0) return d; return "강북지역단"; }
+  if (sido === "경기") { if (sgg.indexOf("성남") === 0) return "성남지역단"; if (_HMC_GG_NORTH.some((g) => sgg.indexOf(g) === 0)) return "북부지역단"; return "경기지역단"; }
+  const map = (typeof LR_DAN !== "undefined" && LR_DAN[sido]) || null;
+  return map ? map.dans[0] : "광역(전국)";
+}
+
+/* ── 프로 ~700명 생성 — 실사 지점 272개(LR_BRANCHES) 위에 배속 ── */
+function hmProsGen() {
+  if (_HMC.pros) return _HMC.pros;
+  const out = [];
+  const seq = {};   // 지역단별 일련(100부터 — 기존 HM_CODES 10명과 충돌 방지)
+  const nm = (rng) => { const sex = rng() < 0.55 ? "여" : "남"; const g = sex === "남" ? _GIVN_M : _GIVN_F; return _pick(rng, _SURN) + _pick(rng, g); };
+  /* 1) 기존 명부 10명 보존(코드·이름 그대로) — 대표 시군구·지점 부여 */
+  const LEGACY_SGG = { "강남지역단": ["강남구", "서초구", "송파구"], "강북지역단": ["노원구", "마포구"], "강서지역단": ["양천구"], "경기지역단": ["수원", "용인"], "광역(전국)": [""] };
+  HM_CODES.forEach((p, i) => {
+    const pool = LEGACY_SGG[p.dan] || [""];
+    const sgg = pool[i % pool.length];
+    out.push(Object.assign({}, p, { sido: p.dan === "경기지역단" ? "경기" : p.dan === "광역(전국)" ? "" : "서울", sgg, branch: sgg ? sgg + " 거점" : "본사(광역)", branchAddr: "", coverage: sgg ? [sgg] : [], legacy: true, hyundai: true }));
+  });
+  /* 2) 실사 지점 272 × 2~3명 */
+  const BR = (typeof LR_BRANCHES !== "undefined") ? LR_BRANCHES : {};
+  const sggHasPro = {};
+  Object.keys(BR).forEach((sido) => {
+    BR[sido].forEach(([bname, addr], bi) => {
+      const rng = _hmcRng("pro|" + sido + "|" + bname + "|" + bi);
+      const sgg = _hmcSggOfAddr(sido, addr);
+      const dan = _hmcDanOf(sido, sgg);
+      const n = 2 + (rng() < 0.5 ? 0 : 1);   // 지점당 2~3명
+      for (let k = 0; k < n; k++) {
+        const ab = HMC_DAN_ABBR[dan] || "WD";
+        seq[ab] = (seq[ab] || 99) + 1;
+        const g = rng();
+        out.push({
+          code: `HM-${ab}-26-${String(seq[ab]).padStart(3, "0")}`,
+          name: nm(rng) + "", branch: bname + "지점", branchAddr: sido + " " + addr,
+          sido, sgg, dan, coverage: [sgg],
+          grade: g < 0.30 ? "HM1" : g < 0.70 ? "HM2" : g < 0.95 ? "HM3" : "HM4",
+          gradeKo: g < 0.30 ? "안내" : g < 0.70 ? "상담" : g < 0.95 ? "설계·가족" : "지역리드",
+          lic: rng() < 0.85, status: rng() < 0.92 ? "활성" : (rng() < 0.62 ? "교육중" : "정지"),
+          since: "2026-0" + (1 + Math.floor(rng() * 7)),
+          hyundai: true,   // 현대해상 소속 설계사 → 하이핀 프로 위촉(형 확정 ②)
+        });
+        sggHasPro[sido + "|" + sgg] = true;
+      }
+    });
+  });
+  /* 3) 지점 없는 시군구 → 같은 시도 프로가 겸임 관할(coverage 추가, gap 표기) — 커버 공백 0 */
+  if (typeof DISTRICTS !== "undefined") Object.keys(DISTRICTS).forEach((sido) => {
+    DISTRICTS[sido].forEach((sgg) => {
+      if (sggHasPro[sido + "|" + sgg]) return;
+      const pool = out.filter((p) => p.sido === sido && p.status === "활성" && !p.legacy);
+      const base = pool.length ? pool : out.filter((p) => p.dan === "광역(전국)");
+      const rng = _hmcRng("gap|" + sido + "|" + sgg);
+      const take = Math.max(1, Math.min(2, Math.floor(base.length / 8)));
+      for (let k = 0; k < take; k++) {
+        const p = base[Math.floor(rng() * base.length)];
+        if (p.coverage.indexOf(sgg) < 0) p.coverage.push(sgg);
+        p.gap = true;
+      }
+    });
+  });
+  _HMC.pros = out;
+  return out;
+}
+function hmProsAll() { return hmProsGen(); }
+function hmProsBySgg(sido, sgg) {
+  const act = hmProsGen().filter((p) => p.status === "활성");
+  const main = act.filter((p) => p.sido === sido && p.sgg === sgg);
+  if (main.length) return { pool: main, gap: false };
+  const cov = act.filter((p) => p.sido === sido && p.coverage.indexOf(sgg) >= 0);
+  if (cov.length) return { pool: cov, gap: true };
+  const any = act.filter((p) => p.sido === sido);
+  return { pool: any.length ? any : act.filter((p) => p.dan === "광역(전국)"), gap: true };
+}
+
+/* ── 회원 시군구 — 지점 밀도 가중(형 확정 ③) · 별도 시드(기존 코호트 불변) ── */
+function _hmcSggWeights(sido) {
+  if (!_HMC.sggW) _HMC.sggW = {};
+  if (_HMC.sggW[sido]) return _HMC.sggW[sido];
+  const list = (typeof DISTRICTS !== "undefined" && DISTRICTS[sido]) || [];
+  const cnt = {};
+  ((typeof LR_BRANCHES !== "undefined" && LR_BRANCHES[sido]) || []).forEach(([b, addr]) => { const g = _hmcSggOfAddr(sido, addr); cnt[g] = (cnt[g] || 0) + 1; });
+  const w = list.map((sgg) => [sgg, 1 + (cnt[sgg] || 0) * 2]);   // 라플라스 1 + 지점수×2 가중
+  _HMC.sggW[sido] = w;
+  return w;
+}
+function cohortRegion(i) {
+  const m = (typeof cohortMemberAt === "function") ? cohortMemberAt(i) : null;
+  if (!m) return null;
+  const rng = _hmcRng("sgg|" + i);
+  const sgg = _wpick(rng, _hmcSggWeights(m.sido));
+  return { sido: m.sido, sgg };
+}
+/* 회원 → 프로 매칭(결정론) + 배정 근거 — 지역 일치 제1원칙 */
+function cohortProOf(i) {
+  const r = cohortRegion(i);
+  if (!r) return null;
+  const { pool, gap } = hmProsBySgg(r.sido, r.sgg);
+  if (!pool.length) return null;
+  const p = pool[_hmHash("asg|" + i) % pool.length];
+  const why = gap ? `${r.sido} ${r.sgg} 거주 → ${p.branch} ${p.name} 프로 겸임(인접 관할 · 비대면 우선)` : `${r.sido} ${r.sgg} 거주 → ${p.branch} ${p.name} 프로(주 관할)`;
+  return { pro: p, gap, why, region: r };
+}
+/* 프로 → 담당 회원 인덱스(시군구 인덱스 캐시 — 10만 1회 순회 후 메모리 보관) */
+function _hmcSggIndex() {
+  if (_HMC.sggIdx) return _HMC.sggIdx;
+  const idx = {};
+  const c = (typeof pilotCohort === "function") ? pilotCohort() : [];
+  for (let i = 1; i <= c.length; i++) { const r = cohortRegion(i); if (!r) continue; const k = r.sido + "|" + r.sgg; (idx[k] || (idx[k] = [])).push(i); }
+  _HMC.sggIdx = idx;
+  return idx;
+}
+function hmMembersOfPro(code) {
+  const p = hmProsGen().find((x) => x.code === code);
+  if (!p) return [];
+  const idx = _hmcSggIndex();
+  const sggs = [p.sgg].concat(p.coverage.filter((s) => s !== p.sgg));
+  const out = [];
+  sggs.forEach((sgg) => {
+    const arr = idx[p.sido + "|" + sgg] || [];
+    arr.forEach((i) => { const a = cohortProOf(i); if (a && a.pro.code === code) out.push(i); });
+  });
+  return out;
+}
+
+/* ── 단계 퍼널 — finModel 정합(형 확정 ①) · 결정론 부여 + 가구 가중(L6+ 정합) ── */
+const HM_FUNNEL = [
+  /* [단계, 비율, finModel 근거] — 합 1.000 */
+  ["D1", 0.550, "1 − checkupRate(0.45): 아직 검진 데이터가 없는 회원"],
+  ["D2", 0.070, "checkupRate(0.45) × (1 − 리포트 발급 0.85)"],
+  ["D3", 0.230, "checkupRate × 0.85 × (1 − productBuyerRate 0.38)"],
+  ["D4", 0.060, "행동 결합 진입 — checkupRate × 0.85 × productBuyerRate 중 잔류 40%"],
+  ["L5", 0.045, "× activeRate(0.45) 주기 지속"],
+  ["L6", 0.029, "× serviceRate(0.30) 가구·돌봄 관여"],
+  ["L7", 0.012, "× aiAgentRate 상한(0.08) — 데이터 주권·프리미엄 행사"],
+  ["L8", 0.004, "다년(2개년+) 추이 도달 — 재산정 가능"],
+];
+function cohortStageOf(i) {
+  const m = (typeof cohortMemberAt === "function") ? cohortMemberAt(i) : null;
+  if (!m) return null;
+  const r = _hmcRng("stage|" + i)();
+  /* 가구 정보는 카드 표기·L6 문안에 사용(분포 가중은 상단 왜곡을 만들어 제거 — 퍼널 정확도 우선) */
+  let famN = 1; try { famN = (typeof pilotFamily === "function") ? (pilotFamily(m.hid) || []).length : 1; } catch (e) {}
+  let acc = 0, cur = "D1";
+  for (const [k, p] of HM_FUNNEL) { acc += p; if (r < acc) { cur = k; break; } cur = k; }
+  const order = HM_FUNNEL.map((x) => x[0]);
+  const reached = order.slice(0, order.indexOf(cur) + 1);
+  /* 정체 — D3 22%(최대 정체 구간)·기타 15%, 일수 30~90 시드 */
+  const r2 = _hmcRng("stall|" + i)();
+  const stallP = cur === "D3" ? 0.22 : 0.15;
+  const stalled = cur !== "D1" && r2 < stallP;
+  const stalledDays = stalled ? 30 + Math.floor(_hmcRng("sd|" + i)() * 60) : Math.floor(_hmcRng("sd|" + i)() * 25);
+  /* 락 — D1 중 60%는 검진대비보험 가입(검진 전 접촉 금지) */
+  const enrolled = cur === "D1" && _hmHash("enr|" + i) % 100 < 60;
+  return { cur, reached, stalled, stalledDays, enrolled, famN };
+}
+function cohortStatusOf(i, st) {
+  st = st || cohortStageOf(i);
+  if (!st) return null;
+  if (st.enrolled) return Object.assign({ k: "HELD" }, HM_MSTATUS.HELD, { why: "검진결과 수령 전 — 접촉 금지(하이가 자동 해제)" });
+  if (cohortSignalOf(i)) return Object.assign({ k: "NEED" }, HM_MSTATUS.NEED, { why: "하이 신호 도래 — 접촉 시점" });
+  if (st.stalled) return Object.assign({ k: "STALL" }, HM_MSTATUS.STALL, { why: `${st.cur} 단계에서 ${st.stalledDays}일 정체` });
+  const r = _hmHash("ms|" + i) % 100;
+  if (r < 55) return Object.assign({ k: "PROG" }, HM_MSTATUS.PROG, { why: "관리 진행 중" });
+  if (r < 85) return Object.assign({ k: "DONE" }, HM_MSTATUS.DONE, { why: "최근 터치 완료" });
+  return Object.assign({ k: "CLOSED" }, HM_MSTATUS.CLOSED, { why: "이번 사이클 종결" });
+}
+/* ① 신호 — D2~D4의 6%(그중 1/6은 직접 요청) */
+const _HMC_SIG = [["L-CKUP", "검진 이벤트", 30], ["L-GAP", "보장공백", 28], ["L-CLAIM", "청구 직후", 12], ["L-RERATE", "재산정 완료", 10], ["L-FAM", "가족 단위 상담", 20]];
+function cohortSignalOf(i) {
+  const st = cohortStageOf(i);
+  if (!st || ["D2", "D3", "D4"].indexOf(st.cur) < 0) return null;
+  const h = _hmHash("sig|" + i) % 100;
+  if (h >= 10) return null;
+  if (h === 0) return { type: "L-ASK", typeKo: "직접 요청", direct: true, tier: "T1", sla: 4 };
+  const rng = _hmcRng("sigt|" + i);
+  const t = _wpick(rng, _HMC_SIG.map((x) => [[x[0], x[1]], x[2]]));
+  const tier = rng() < 0.4 ? "T2" : "T3";
+  return { type: t[0], typeKo: t[1], direct: false, tier, sla: tier === "T2" ? 8 : 48 };
+}
+/* 건강현황 브리프 — 원본 수치 없이 등급·플래그·밴드만(risk 1~5 → 라벨) */
+const _HMC_GRADE = ["", "정상", "경계", "이상", "고위험", "긴급"];
+function cohortHealthBrief(i) {
+  const m = cohortMemberAt(i);
+  if (!m) return null;
+  const grade = _HMC_GRADE[Math.max(1, Math.min(5, m.risk || 2))];
+  const band = (m.cancer || (m.risk || 0) >= 4) ? "상" : (m.risk || 0) >= 3 ? "중" : "하";
+  return { grade, sevN: (m.diseases || []).length, band, year: "2026년", seen: _hmHash("seen|" + i) % 100 < 70 };
+}
+/* ⑨ 카드 조립 — 체험 카드와 동일 2축 + 하이 한 줄(규칙 조립) */
+function cohortCardOf(i) {
+  const m = cohortMemberAt(i);
+  if (!m) return null;
+  const stage = cohortStageOf(i);
+  const status = cohortStatusOf(i, stage);
+  const hb = cohortHealthBrief(i);
+  const asg = cohortProOf(i);
+  const nextStage = HM_STAGES[HM_STAGES.findIndex((s) => s.k === stage.cur) + 1];
+  let hi;
+  if (status.k === "HELD") hi = "검진결과 수령 전이에요. 지금은 프로필 사전 학습만 — 결과가 오면 제가 바로 알려드릴게요.";
+  else if (status.k === "NEED") hi = "하이 신호가 도래했어요 — 오늘 연결하는 게 좋겠어요.";
+  else if (stage.stalled) hi = `${stage.stalledDays}일째 ${stage.cur}에 멈춰 있어요.` + (nextStage ? ` ${nextStage.k}(${nextStage.name})로 가려면 ${nextStage.desc.split("—")[0].trim()}이 필요해요.` : "");
+  else hi = "예정 터치까지는 지켜봐도 좋아요 — 단계 근거를 보고 다음 행동을 골라 주세요.";
+  return { i, cohort: true, m, stage: { cur: stage.cur, reached: stage.reached, stalled: stage.stalled, stalledDays: stage.stalledDays }, status, hb, hi,
+    mask: _hmMask(m.name), band: (Math.floor((m.age || 45) / 10) * 10) + "대", sex: m.sex, region: asg ? asg.region : null, why: asg ? asg.why : "", famN: stage.famN };
+}
+/* 전국 분포 — 루프 없이 수식(HM_FUNNEL × N) */
+function hmNationStats() {
+  const N = (typeof PILOT_N !== "undefined") ? PILOT_N : 100000;
+  return HM_FUNNEL.map(([k, p, why]) => ({ k, n: Math.round(N * p), pct: Math.round(p * 1000) / 10, why }));
+}
+/* 관측층 접촉 — 세션 메모리만(localStorage 오염 금지 · 새로고침 시 초기화) */
+function hmcTouch(code, i, label) {
+  const st = cohortStageOf(i);
+  if (st && st.enrolled) { hmLockViolation(code, { email: "cohort-" + i }); return { ok: false, reason: "접촉 금지 상태예요 — 검진결과 수령 후 하이가 자동으로 열어 드려요." }; }
+  (_HMC.session[code] || (_HMC.session[code] = [])).push({ at: Date.now(), i, label });
+  return { ok: true, session: true };
+}
+function hmcTouches(code) { return _HMC.session[code] || []; }
+/* 프로 1명 시점 요약(탭 배분) — 담당 회원 인덱스에서 파생 */
+function hmcProView(code) {
+  const ids = hmMembersOfPro(code);
+  const v = { ids, n: ids.length, held: [], ready: [], signals: [], stall: [], byStage: {}, riskHi: [], family: [], shop: [] };
+  HM_STAGES.forEach((s) => { v.byStage[s.k] = []; });
+  ids.forEach((i) => {
+    const st = cohortStageOf(i);
+    v.byStage[st.cur].push(i);
+    if (st.enrolled) v.held.push(i);
+    else if (st.cur === "D2" && _hmHash("rdy|" + i) % 100 < 18) v.ready.push(i);
+    if (cohortSignalOf(i)) v.signals.push(i);
+    if (st.stalled) v.stall.push(i);
+    const m = cohortMemberAt(i);
+    if (m && (m.cancer || (m.risk || 0) >= 3) && ["D3", "D4", "L5"].indexOf(st.cur) >= 0) v.riskHi.push(i);
+    if (["L6"].indexOf(st.cur) >= 0 || (st.famN >= 3 && ["D4", "L5"].indexOf(st.cur) >= 0)) v.family.push(i);
+    if ((["D4", "L5"].indexOf(st.cur) >= 0 && _hmHash("shp|" + i) % 100 < 60) || (st.cur === "D3" && _hmHash("shp|" + i) % 100 < 12)) v.shop.push(i);
+  });
+  return v;
+}

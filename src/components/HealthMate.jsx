@@ -71,6 +71,81 @@ function HmStatusChip({ st }) {
   return <span className="hmpill" style={{ background: st.bg, color: st.c, border: `1px solid ${st.c}33` }}>{st.k === "HELD" && <Lock size={9} style={{ verticalAlign: -1 }} />} {st.ko}</span>;
 }
 
+/* 페이지네이션(코호트 목록 공용 — 페이지당 20) */
+function HmPager({ total, page, setPage, per = 20 }) {
+  const last = Math.max(1, Math.ceil(total / per));
+  if (last <= 1) return null;
+  return (
+    <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "center", margin: "8px 0 2px", fontSize: 11.5 }}>
+      <button className="hmbtn gh" style={{ padding: "3px 10px" }} disabled={page <= 1} onClick={() => setPage(page - 1)}>이전</button>
+      <span style={{ color: HM_C.mut, fontWeight: 700 }}>{page} / {last} 페이지 · 총 {total.toLocaleString()}명</span>
+      <button className="hmbtn gh" style={{ padding: "3px 10px" }} disabled={page >= last} onClick={() => setPage(page + 1)}>다음</button>
+    </div>
+  );
+}
+/* 코호트 관측층 카드 — 체험 카드와 같은 2축, 행동 결과는 세션에만 */
+function HmCohortCard({ card, code, onDone, compact }) {
+  const c = card;
+  const locked = c.status.k === "HELD";
+  return (
+    <div className={"hmrow" + (locked ? " lock" : "")}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+        <div style={{ fontWeight: 900 }}>
+          {locked && <Lock size={12} color={HM_C.hold} style={{ verticalAlign: -2, marginRight: 3 }} />}
+          {c.mask} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.sex} · {c.region ? c.region.sido + " " + c.region.sgg : "-"}</span>
+          <span className="hmpill" style={{ marginLeft: 6, background: "#F1F5F9", color: HM_C.mut }}>코호트</span>
+          <span className="hmpill" style={{ marginLeft: 4, background: HM_C.bg, color: HM_C.dark }}>{c.stage.cur} {HM_STAGES.find((s) => s.k === c.stage.cur).name}</span>
+          {c.stage.stalled && <span className="hmpill" style={{ marginLeft: 4, background: "#FFF7ED", color: HM_C.stall }}>🟠 정체 {c.stage.stalledDays}일</span>}
+        </div>
+        <div><HmStageDots reached={c.stage.reached} /> <HmStatusChip st={c.status} /></div>
+      </div>
+      {!compact && (<div className="hmgrid2" style={{ marginTop: 7 }}>
+        <div style={{ background: "#F8FAFC", borderRadius: 9, padding: "6px 10px", fontSize: 11.4, lineHeight: 1.65 }}>
+          <b style={{ color: HM_C.deep, fontSize: 10.5 }}>건강현황</b><br />
+          종합 등급 <b>{c.hb.grade}</b> · 관리 필요 <b>{c.hb.sevN}항목</b> · 위험 밴드 <b>{c.hb.band}</b>
+        </div>
+        <div style={{ background: "#F8FAFC", borderRadius: 9, padding: "6px 10px", fontSize: 11.4, lineHeight: 1.65 }}>
+          <b style={{ color: HM_C.deep, fontSize: 10.5 }}>관리상태</b><br />
+          {c.status.ko}{c.famN >= 2 ? ` · 가구 ${c.famN}명` : ""} · <span style={{ color: HM_C.mut }}>{c.why.split("→")[1] || ""}</span>
+        </div>
+      </div>)}
+      {!compact && <div className="hmhi" style={{ marginTop: 7 }}><Bot size={12} style={{ verticalAlign: -2 }} /> {c.hi}</div>}
+      <div style={{ display: "flex", gap: 6, marginTop: 7, alignItems: "center" }}>
+        <button className="hmbtn" style={{ padding: "5px 11px", fontSize: 11 }} disabled={locked} onClick={() => { const r = hmcTouch(code, c.i, "코호트 접촉"); if (onDone) onDone(r); }}><Phone size={11} /> 연결하기</button>
+        <span style={{ fontSize: 10.3, color: HM_C.mut }}>{locked ? "결과 수령 대기 — 시스템이 자동 해제" : "시연 기록(세션) — 새로고침 시 초기화"}</span>
+      </div>
+    </div>
+  );
+}
+/* 코호트 목록 래퍼 — 인덱스 배열을 페이지 단위로 카드 생성(on-demand) */
+function HmCohortList({ ids, code, onDone, title, compact }) {
+  const [page, setPage] = React.useState(1);
+  if (!ids || !ids.length) return null;
+  const slice = ids.slice((page - 1) * 20, page * 20);
+  return (<div style={{ marginTop: 10 }}>
+    <div style={{ fontWeight: 900, fontSize: 12.5, margin: "2px 0 7px", color: HM_C.deep }}>{title} <span style={{ color: HM_C.mut, fontWeight: 700 }}>· 코호트 관측층 {ids.length.toLocaleString()}명(시연 분포)</span></div>
+    {slice.map((i) => { const card = cohortCardOf(i); return card ? <HmCohortCard key={i} card={card} code={code} onDone={onDone} compact={compact} /> : null; })}
+    <HmPager total={ids.length} page={page} setPage={setPage} />
+  </div>);
+}
+
+/* 프로 검색(700명) — 코드/이름/지점/시군구, 최대 8건 */
+function HmProSearch({ onPick }) {
+  const [q, setQ] = React.useState("");
+  const all = (typeof hmProsGen === "function") ? hmProsGen() : HM_CODES;
+  const hits = q.trim().length >= 2 ? all.filter((p) => [p.code, p.name, p.branch, p.sgg, p.dan].join("|").indexOf(q.trim()) >= 0).slice(0, 8) : [];
+  return (<div style={{ marginTop: 6 }}>
+    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="예: 강남구 · 성남 · 김지원 · HM-SN" style={{ width: "100%", boxSizing: "border-box", border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "8px 12px", fontSize: 12.5 }} />
+    {hits.map((p) => (
+      <div key={p.code} onClick={() => onPick(p.code)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid #F1F5F9", borderRadius: 9, padding: "7px 11px", marginTop: 5, cursor: "pointer", fontSize: 12 }}>
+        <span><b>{p.name} 프로</b> <span style={{ color: HM_C.mut }}>· {p.code} · {p.branch}{p.sgg ? " · " + p.sgg : ""}</span></span>
+        <span className="hmpill" style={{ background: p.status === "활성" ? "#F0FDF4" : "#FFF7ED", color: p.status === "활성" ? HM_C.ok : HM_C.warn }}>{p.status} · {p.grade}{p.lic ? " · 모집" : ""}</span>
+      </div>
+    ))}
+    {q.trim().length >= 2 && !hits.length && <div style={{ fontSize: 11.3, color: HM_C.mut, marginTop: 5 }}>일치하는 프로가 없어요.</div>}
+  </div>);
+}
+
 /* 코드 게이트 — 코드 입력 + 상태·자격 검증(세션 한정) */
 function HmGate({ onPass }) {
   const [code, setCode] = React.useState("");
@@ -89,6 +164,7 @@ function HmGate({ onPass }) {
         <div className="k">HEALTHMATE PRO CONSOLE</div>
         <h2>헬스메이트(프로) 센터</h2>
         <div style={{ fontSize: 12.5, opacity: .92 }}>코드가 부여된 전문헬스메이트 전용 콘솔 — 하이가 분석하고, 프로가 마무리합니다.</div>
+        <div style={{ marginTop: 6, fontSize: 11.5, opacity: .85 }}>현대해상 설계사 <b>{(typeof hmProsGen === "function" ? hmProsGen().length : 10).toLocaleString()}명</b>을 하이핀 프로로 위촉 · 전국 시군구 배속(실사 지점 272개 기준) · 회원 10만 명 지역 매칭</div>
       </div>
       <div className="hmcard" style={{ maxWidth: 520 }}>
         <div style={{ fontWeight: 900, fontSize: 13.5, marginBottom: 4 }}>프로 코드 인증</div>
@@ -98,7 +174,9 @@ function HmGate({ onPass }) {
           <button className="hmbtn" onClick={() => submit()}>인증</button>
         </div>
         {err && <div style={{ color: HM_C.red, fontSize: 11.5, fontWeight: 700, marginTop: 7 }}>{err}</div>}
-        <div style={{ marginTop: 11, fontSize: 11, color: HM_C.mut }}>시연 코드 바로 입장(담당 고객 수 순):</div>
+        <div style={{ marginTop: 12, fontSize: 11.5, fontWeight: 800, color: HM_C.deep }}>프로 검색 — 코드·이름·지점·시군구</div>
+        <HmProSearch onPick={(c) => submit(c)} />
+        <div style={{ marginTop: 11, fontSize: 11, color: HM_C.mut }}>체험 회원 상호작용 시연(담당 체험 회원 보유 프로):</div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 5 }}>
           {HM_CODES.filter((p) => p.status === "활성").map((p) => ({ p, n: hmScope(p.code).length })).sort((a, b) => b.n - a.n).slice(0, 5).map(({ p, n }) => (
             <button key={p.code} className="hmbtn gh" style={{ fontSize: 11 }} onClick={() => submit(p.code)}>{p.name} 프로 · {p.dan.replace("지역단", "")} <b style={{ color: HM_C.pri }}>{n}명</b></button>
@@ -111,12 +189,13 @@ function HmGate({ onPass }) {
 }
 
 /* ① 신호 카드 */
-function HmTabSignals({ code, onContact }) {
+function HmTabSignals({ code, onContact, cview }) {
   const cards = hmSignals(code);
   const [openId, setOpenId] = React.useState(null);
   return (<div>
     <HmDbNote k="t1" />
     {!cards.length && <div className="hmrow" style={{ color: HM_C.mut }}>지금 접촉 근거가 있는 회원이 없어요 — 하이가 신호를 감지하면 여기에 카드가 생겨요(근거 없는 대상은 존재하지 않아요).</div>}
+    {cview && <HmCohortList title="① 신호 도래 회원" ids={cview.signals} code={code} compact />}
     {cards.map((c, i) => (
       <div key={i} className="hmrow">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
@@ -144,7 +223,7 @@ function HmTabSignals({ code, onContact }) {
 }
 
 /* ② 보험 배정·대기(순번 배분 + 접촉 락) */
-function HmTabIns({ code, pro, onContact, refresh }) {
+function HmTabIns({ code, pro, onContact, refresh, cview }) {
   const q = hmInsQueue();
   const members = (typeof demoMembers !== "undefined" ? demoMembers : []);
   const mine = q.filter((x) => x.code === code);
@@ -185,13 +264,15 @@ function HmTabIns({ code, pro, onContact, refresh }) {
     </div>
     <div style={{ fontWeight: 900, fontSize: 13, margin: "12px 0 7px" }}>내 배정 {mine.length}건</div>
     {mine.length ? mine.map((x) => row(x, true)) : <div className="hmrow" style={{ color: HM_C.mut }}>이번 순번 배정이 없어요 — 다음 회차에 자동 배정돼요.</div>}
+    {cview && <HmCohortList title="② 검진 전 대기(락) — 배정 완료·접촉 금지" ids={cview.held} code={code} compact />}
+    {cview && <HmCohortList title="② 결과 수령 — 첫 연결 대기(READY)" ids={cview.ready} code={code} compact />}
     <div style={{ fontWeight: 900, fontSize: 13, margin: "12px 0 7px", color: HM_C.mut }}>지역단 전체 배정 현황(참고) {others.length}건</div>
     {others.map((x) => row(x, false))}
   </div>);
 }
 
 /* ③ 검진 후 건강 터치 */
-function HmTabTouch({ code, onContact }) {
+function HmTabTouch({ code, onContact, cview }) {
   const members = hmScope(code);
   const rows = members.map((m) => ({ m, plan: hmTouchPlan(m) })).filter((x) => x.plan.items.length);
   return (<div>
@@ -200,7 +281,8 @@ function HmTabTouch({ code, onContact }) {
       <b style={{ fontSize: 12.5 }}>결합 원칙</b>
       <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 3 }}>첫 연결은 <b style={{ color: HM_C.dark }}>결과분석 + 검진대비보험 안내를 한 번의 연락으로</b> — 두 번째 전화는 영업으로 읽혀요. 이후 터치는 조건 충족 회원에게만 생겨요.</div>
     </div>
-    {!rows.length && <div className="hmrow" style={{ marginTop: 10, color: HM_C.mut }}>터치 예정 회원이 없어요 — 검진결과 수령(②탭) 후 자동으로 큐가 생겨요.</div>}
+    {cview && <HmCohortList title="③ 결합 패키지 대기 — 결과분석+보장 안내(1회 통합)" ids={cview.ready} code={code} />}
+    {!rows.length && !(cview && cview.ready.length) && <div className="hmrow" style={{ marginTop: 10, color: HM_C.mut }}>터치 예정 회원이 없어요 — 검진결과 수령(②탭) 후 자동으로 큐가 생겨요.</div>}
     {rows.map(({ m, plan }, i) => (
       <div key={i} className="hmrow" style={{ marginTop: i === 0 ? 10 : 0 }}>
         <div style={{ fontWeight: 900 }}>{_hmMask(m.name)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span> {plan.endSrc && <span className="hmpill" style={{ marginLeft: 6, background: "#F8FAFC", color: HM_C.mut }}>만기 계산: {plan.endSrc}</span>}</div>
@@ -225,7 +307,7 @@ function HmTabTouch({ code, onContact }) {
 }
 
 /* ④ 질병 예측 */
-function HmTabRisk({ code }) {
+function HmTabRisk({ code, cview }) {
   const members = hmScope(code).filter((m) => !hmLockState(m).locked);
   return (<div>
     <HmDbNote k="t4" />
@@ -233,6 +315,7 @@ function HmTabRisk({ code }) {
       <b style={{ fontSize: 12, color: HM_C.red }}>가드레일</b>
       <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 2 }}>예측을 보험 인수·요율·거절 사유로 쓰는 것은 금지돼요. 확률은 밴드(상·중·하)로만, 진단 단정 표현은 어디에도 없어요.</div>
     </div>
+    {cview && <HmCohortList title="④ 위험 밴드 상·중(분석 단계)" ids={cview.riskHi} code={code} compact />}
     {members.map((m, i) => {
       const rc = hmRiskCards(m);
       return (<div key={i} className="hmrow" style={{ marginTop: i === 0 ? 10 : 0 }}>
@@ -256,7 +339,7 @@ function HmTabRisk({ code }) {
 }
 
 /* ⑤ 건강 행동 · ⑥ 가족 돌봄 (조립 요약) */
-function HmTabLife({ code, kind }) {
+function HmTabLife({ code, kind, cview }) {
   const members = hmScope(code).filter((m) => !hmLockState(m).locked);
   return (<div>
     <HmDbNote k={kind === "shop" ? "t5" : "t6"} />
@@ -266,6 +349,7 @@ function HmTabLife({ code, kind }) {
         <div style={{ fontSize: 11.6, color: HM_C.mut, marginTop: 2, lineHeight: 1.6 }}>응급 징후 신호가 있으면 그 카드는 모든 카드보다 위에 고정되고, 문안은 상담이 아니라 <b style={{ color: HM_C.red }}>119·응급 안내가 먼저</b> 나가요.</div>
       </div>
     )}
+    {cview && <HmCohortList title={kind === "shop" ? "⑤ 행동·재구매 시점 회원" : "⑥ 가구·돌봄 신호 회원"} ids={kind === "shop" ? cview.shop : cview.family} code={code} compact />}
     {members.map((m, i) => {
       const adh = _hmLs("hifin_adh_" + m.email, {});
       const famRaw = localStorage.getItem("hifin_family_" + m.email);
@@ -289,8 +373,11 @@ function HmTabLife({ code, kind }) {
 }
 
 /* ⑦ 보장분석 · 인수조건 대화 */
-function HmTabUw({ code }) {
-  const members = hmScope(code).filter((m) => !hmLockState(m).locked);
+function HmTabUw({ code, cview }) {
+  const demoM = hmScope(code).filter((m) => !hmLockState(m).locked);
+  /* 코호트 후보 15명(관측층) — 어댑터: 질환·연령·성별만 전달(계산은 동일 엔진) */
+  const cohortM = (cview ? cview.ids.slice(0, 15) : []).map((i) => { const m = cohortMemberAt(i); return m ? { name: m.name, email: "cohort-" + i, sex: m.sex, regAge: m.age, highRiskDiseases: m.diseases || [], isDemoUser: false, _cohort: true } : null; }).filter(Boolean);
+  const members = demoM.concat(cohortM);
   const [sel, setSel] = React.useState(members.length ? members[0].email : null);
   const [log, setLog] = React.useState([]);
   const [q, setQ] = React.useState("");
@@ -312,7 +399,7 @@ function HmTabUw({ code }) {
       <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 4 }}>하이핀은 <b style={{ color: HM_C.dark }}>보장공백 유형 코드 + 연령대·성별 + 건강 등급(플래그 수)만</b> 정리해 넘기고, 결과를 받아 해설해요. 원본 수치·인수 판정은 넘기지 않아요.</div>
       {m && <div style={{ marginTop: 8, fontSize: 12 }}>
         <select value={sel || ""} onChange={(e) => { setSel(e.target.value); setLog([]); }} style={{ border: `1.5px solid ${HM_C.line}`, borderRadius: 8, padding: "6px 9px", fontSize: 12 }}>
-          {members.map((x) => <option key={x.email} value={x.email}>{_hmMask(x.name)} · {_hmBand(x)} {x.sex}</option>)}
+          {members.map((x) => <option key={x.email} value={x.email}>{_hmMask(x.name)} · {_hmBand(x)} {x.sex}{x._cohort ? " · 코호트" : " · 체험"}</option>)}
         </select>
         {gaps && gaps.gaps && <span style={{ marginLeft: 8, color: HM_C.mut, fontSize: 11.5 }}>보장공백 신호 {gaps.gaps.length}건 감지</span>}
       </div>}
@@ -397,14 +484,18 @@ function HmTabIdeas({ code }) {
 }
 
 /* ⑨ 내 고객 · 실적 현황판 */
-function HmTabBoard({ code, pro, onContact }) {
+function HmTabBoard({ code, pro, onContact, cview }) {
   const [view, setView] = React.useState("cust");
   const [stFilter, setStFilter] = React.useState(null);
   const [detail, setDetail] = React.useState(null);
+  const [nation, setNation] = React.useState(false);
   const members = hmScope(code);
   const cards = members.map((m) => hmCustomerCard(m));
   const byStage = {}; HM_STAGES.forEach((s) => { byStage[s.k] = { n: 0, stall: 0 }; });
   cards.forEach((c) => { byStage[c.stage.cur].n++; if (c.stage.stalled) byStage[c.stage.cur].stall++; });
+  /* 코호트 관측층 합산 — 담당 실분포 */
+  if (cview) HM_STAGES.forEach((st) => { const ids = cview.byStage[st.k] || []; byStage[st.k].n += ids.length; byStage[st.k].stall += ids.filter((i) => cohortStageOf(i).stalled).length; });
+  const isHm4 = pro.grade === "HM4" || ((typeof authRole === "function") && authRole() === "ADMIN");
   let list = cards.slice();
   if (stFilter === "_stall") list = list.filter((c) => c.stage.stalled);
   else if (stFilter) list = list.filter((c) => c.stage.cur === stFilter);
@@ -425,11 +516,31 @@ function HmTabBoard({ code, pro, onContact }) {
           </div>
         ))}
       </div>
-      <div style={{ fontSize: 10.8, color: HM_C.mut, margin: "6px 2px 10px" }}>D1~D4 데이터 생성 구간 │ L5~L8 가치 전환 구간 · 기본 정렬 = 정체 기간(방치된 사람 먼저) {stFilter && <button className="hmbtn gh" style={{ marginLeft: 6, padding: "2px 8px", fontSize: 10.5 }} onClick={() => setStFilter(null)}>필터 해제</button>}</div>
+      <div style={{ fontSize: 10.8, color: HM_C.mut, margin: "6px 2px 10px", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+        <span>D1~D4 데이터 생성 구간 │ L5~L8 가치 전환 구간 · 기본 정렬 = 정체 기간(방치된 사람 먼저) {stFilter && <button className="hmbtn gh" style={{ marginLeft: 6, padding: "2px 8px", fontSize: 10.5 }} onClick={() => setStFilter(null)}>필터 해제</button>}</span>
+        {isHm4 && <button className="hmbtn gh" style={{ padding: "2px 10px", fontSize: 10.5 }} onClick={() => setNation(!nation)}>{nation ? "담당 뷰로" : "전국 뷰(10만 분포)"}</button>}
+      </div>
+      {nation && isHm4 && typeof hmNationStats === "function" && (
+        <div className="hmcard" style={{ marginTop: 0, marginBottom: 10 }}>
+          <b style={{ fontSize: 12.5 }}>전국 회원 10만 명 — 단계 분포(finModel 정합 · 수식 집계)</b>
+          <table style={{ width: "100%", fontSize: 11.6, borderCollapse: "collapse", marginTop: 7 }}><tbody>
+            {hmNationStats().map((r) => (
+              <tr key={r.k} style={{ borderTop: "1px solid #F1F5F9" }}>
+                <td style={{ padding: "5px 4px", fontWeight: 900, color: HM_C.dark, width: 88 }}>{r.k} {HM_STAGES.find((x) => x.k === r.k).name}</td>
+                <td style={{ padding: "5px 4px", width: 90, textAlign: "right", fontWeight: 800 }}>{r.n.toLocaleString()}명</td>
+                <td style={{ padding: "5px 4px", width: 54, textAlign: "right", color: HM_C.mut }}>{r.pct}%</td>
+                <td style={{ padding: "5px 4px", color: HM_C.mut, fontSize: 10.8 }}>{r.why}</td>
+              </tr>
+            ))}
+          </tbody></table>
+          <div className="hmfoot">비율 근거: 재무모델(finModel) 파라미터 — checkupRate 0.45 · productBuyerRate 0.38 · activeRate 0.45 · serviceRate 0.30 · aiAgentRate 0.08</div>
+        </div>
+      )}
       {list.map((c, i) => (
         <div key={i} className={"hmrow" + (c.status.k === "HELD" ? " lock" : "")}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
             <div style={{ fontWeight: 900 }}>{c.mask} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.m.sex} · {c.dan.replace("지역단", "")}</span>
+              <span className="hmpill" style={{ marginLeft: 6, background: "#EFF6FF", color: HM_C.blue }}>체험</span>
               <span className="hmpill" style={{ marginLeft: 7, background: HM_C.bg, color: HM_C.dark }}>{c.stage.cur} {HM_STAGES.find((s) => s.k === c.stage.cur).name}</span>
               {c.stage.stalled && <span className="hmpill" style={{ marginLeft: 4, background: "#FFF7ED", color: HM_C.stall }}>🟠 정체 {c.stage.stalledDays}일</span>}
             </div>
@@ -463,7 +574,9 @@ function HmTabBoard({ code, pro, onContact }) {
           </div>)}
         </div>
       ))}
-      {!list.length && <div className="hmrow" style={{ color: HM_C.mut }}>이 필터에 해당하는 고객이 없어요.</div>}
+      {!list.length && <div className="hmrow" style={{ color: HM_C.mut }}>이 필터에 해당하는 체험 고객이 없어요.</div>}
+      {cview && <HmCohortList title="⑨ 담당 코호트 고객" code={code}
+        ids={(stFilter === "_stall" ? cview.stall : stFilter ? (cview.byStage[stFilter] || []) : cview.ids).slice().sort((a, b) => { const A = cohortStageOf(a), B = cohortStageOf(b); return (B.stalled ? B.stalledDays : -1) - (A.stalled ? A.stalledDays : -1); })} />}
     </div>)}
     {view === "stat" && (<div>
       <div className="hmcard" style={{ marginTop: 0, background: HM_C.bg }}>
@@ -496,6 +609,7 @@ function HealthMateSection({ onGo }) {
   const [tick, setTick] = React.useState(0);
   const [toastM, setToastM] = React.useState("");
   const refresh = () => setTick((t) => t + 1);
+  const cview = React.useMemo(() => (code && typeof hmcProView === "function") ? hmcProView(code) : null, [code]);
   if (!code) return <HmGate onPass={(c) => setCode(c)} />;
   const pro = hmProOf(code);
   if (!pro || pro.status !== "활성") { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} return <HmGate onPass={(c) => setCode(c)} />; }
@@ -506,14 +620,15 @@ function HealthMateSection({ onGo }) {
     refresh();
     return r;
   };
-  /* Today 집계 */
+  /* Today 집계 — 체험(상호작용층) + 코호트(관측층) 합산 */
   const members = hmScope(code);
   const cards = members.map((m) => hmCustomerCard(m));
-  const needN = cards.filter((c) => c.status.k === "NEED").length;
-  const heldN = hmInsQueue().filter((x) => x.code === code && hmLockState({ email: x.email }).locked).length;
-  const stallN = cards.filter((c) => c.stage.stalled).length;
-  const expN = cards.filter((c) => c.plan.items.some((x) => x.key.indexOf("m") === 0 && x.due && !x.done)).length;
-  const slaN = hmSignals(code).filter((s) => s.sla <= 4).length;
+  const needN = cards.filter((c) => c.status.k === "NEED").length + (cview ? cview.signals.length : 0);
+  const heldN = hmInsQueue().filter((x) => x.code === code && hmLockState({ email: x.email }).locked).length + (cview ? cview.held.length : 0);
+  const stallN = cards.filter((c) => c.stage.stalled).length + (cview ? cview.stall.length : 0);
+  const expN = cards.filter((c) => c.plan.items.some((x) => x.key.indexOf("m") === 0 && x.due && !x.done)).length + (cview ? cview.ready.length : 0);
+  const slaN = hmSignals(code).filter((s) => s.sla <= 4).length + (cview ? cview.ids.filter((i) => { const g = cohortSignalOf(i); return g && g.sla <= 4; }).length : 0);
+  const totalN = members.length + (cview ? cview.n : 0);
   const TABS = [
     [1, "① 회원 신호", Users], [2, "② 보험 배정·대기", ShieldCheck], [3, "③ 검진 후 터치", HeartPulse],
     [4, "④ 질병 예측", Activity], [5, "⑤ 건강 행동", ShoppingCart], [6, "⑥ 가족·재가", HeartHandshake],
@@ -525,7 +640,8 @@ function HealthMateSection({ onGo }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
           <div>
             <div className="k">HEALTHMATE PRO CONSOLE</div>
-            <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>· {pro.code} · {pro.dan} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격 보유" : " · 안내 전용"}</span></h2>
+            <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>· {pro.code} · {pro.branch || pro.dan}{pro.sgg ? " · " + pro.sgg : ""} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격" : " · 안내 전용"}{pro.hyundai ? " · 현대해상 위촉" : ""}</span></h2>
+            <div style={{ fontSize: 12.3, fontWeight: 800, marginTop: 2 }}>담당 회원 {totalN.toLocaleString()}명 <span style={{ fontWeight: 600, opacity: .85 }}>(체험 {members.length} · 코호트 {(cview ? cview.n : 0).toLocaleString()}) — 관할: {(pro.coverage || []).slice(0, 5).join("·") || pro.dan}{(pro.coverage || []).length > 5 ? " 외 " + ((pro.coverage || []).length - 5) + "곳" : ""}{pro.gap ? " (겸임 포함)" : ""}</span></div>
             <div style={{ fontSize: 12, opacity: .92 }}>하이가 분석·선별·문안·타이밍을 만들고, 프로는 확인·접촉·기록합니다 — 동의의 범위가 곧 활동의 범위.</div>
           </div>
           <button className="hmbtn gh" style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }} onClick={() => { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} setCode(null); }}>코드 잠금</button>
@@ -543,15 +659,15 @@ function HealthMateSection({ onGo }) {
         {TABS.map(([n, label, Ic]) => <button key={n} className={"hmtab" + (tab === n ? " on" : "")} onClick={() => setTab(n)}><Ic size={13} /> {label}</button>)}
       </div>
       <div style={{ marginTop: 12 }}>
-        {tab === 1 && <HmTabSignals code={code} onContact={onContact} />}
-        {tab === 2 && <HmTabIns code={code} pro={pro} onContact={onContact} refresh={refresh} />}
-        {tab === 3 && <HmTabTouch code={code} onContact={onContact} />}
-        {tab === 4 && <HmTabRisk code={code} />}
-        {tab === 5 && <HmTabLife code={code} kind="shop" />}
-        {tab === 6 && <HmTabLife code={code} kind="care" />}
-        {tab === 7 && <HmTabUw code={code} />}
+        {tab === 1 && <HmTabSignals code={code} onContact={onContact} cview={cview} />}
+        {tab === 2 && <HmTabIns code={code} pro={pro} onContact={onContact} refresh={refresh} cview={cview} />}
+        {tab === 3 && <HmTabTouch code={code} onContact={onContact} cview={cview} />}
+        {tab === 4 && <HmTabRisk code={code} cview={cview} />}
+        {tab === 5 && <HmTabLife code={code} kind="shop" cview={cview} />}
+        {tab === 6 && <HmTabLife code={code} kind="care" cview={cview} />}
+        {tab === 7 && <HmTabUw code={code} cview={cview} />}
         {tab === 8 && <HmTabIdeas code={code} />}
-        {tab === 9 && <HmTabBoard code={code} pro={pro} onContact={onContact} />}
+        {tab === 9 && <HmTabBoard code={code} pro={pro} onContact={onContact} cview={cview} />}
       </div>
       <div className="hmfoot" style={{ textAlign: "center" }}>
         개인정보보호법 §17·§22②·§23·§24 · 신용정보법 §32 · 보험업법(설명의무·부당 권유 금지) · 정보통신망법 §50 —

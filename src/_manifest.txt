@@ -77,6 +77,7 @@ src/data/insService.js
 src/data/leadBranches.js
 src/data/leadRouting.js
 src/data/healthMate.js
+src/data/healthMateCohort.js
 src/data/sharingEngine.js
 src/data/riskEngine.js
 src/data/consentNft.js

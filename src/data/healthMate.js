@@ -21,7 +21,7 @@ const HM_CODES = [
   { code: "HM-WD-26-001", name: "오현석", dan: "광역(전국)", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-01" },
   { code: "HM-WD-26-002", name: "임다혜", dan: "광역(전국)", grade: "HM2", gradeKo: "상담", lic: true, status: "정지", since: "2026-02" },
 ];
-function hmProOf(code) { for (const p of HM_CODES) if (p.code === code) return p; return null; }
+function hmProOf(code) { const l = (typeof hmProsGen === "function") ? hmProsGen() : HM_CODES; for (const p of l) if (p.code === code) return p; return null; }
 function hmActivePros(dan) { const l = HM_CODES.filter((p) => p.status === "활성" && (p.dan === dan)); return l.length ? l : HM_CODES.filter((p) => p.status === "활성" && p.dan === "광역(전국)"); }
 
 /* ── 8단계 정의(단일 소스) — DB 4단계 + 이후 4단계. 판정은 hmStageOf가 "데이터만" 근거로 수행 ── */
@@ -78,8 +78,19 @@ function hmDanOf(m) {
   if (s === "서울" && typeof LR_SEOUL_GU !== "undefined") { const g = m.sigungu || ""; for (const d in LR_SEOUL_GU) if (LR_SEOUL_GU[d].indexOf(g) >= 0) { dan = d; break; } }
   return dan;
 }
-/* 회원 → 담당 프로(결정론) — 지역단 활성 프로 중 해시 배정. 순번 배분(②탭)은 hmAssignInsRR가 별도 수행 */
+/* 회원 → 담당 프로(결정론) — 지역 일치 제1원칙: 회원 시군구의 프로(주 관할·겸임)에게만 배정.
+   700명 명부(hmProsBySgg)가 로드되면 시군구 매칭, 아니면 기존 지역단 해시(폴백). */
 function hmProForMember(m) {
+  if (typeof hmProsBySgg === "function" && typeof DISTRICTS !== "undefined") {
+    let sd = String(m.sido || "서울").slice(0, 2);
+    const FIX2 = { "경상": (m.sido || "").indexOf("북") >= 0 ? "경북" : "경남", "전라": (m.sido || "").indexOf("북") >= 0 ? "전북" : "전남", "충청": (m.sido || "").indexOf("북") >= 0 ? "충북" : "충남" };
+    if (FIX2[sd]) sd = FIX2[sd];
+    const list = DISTRICTS[sd] || [];
+    const raw = m.sigungu || "";
+    const sgg = list.find((d) => raw === d) || list.slice().sort((a, b) => b.length - a.length).find((d) => raw.indexOf(d.replace(/시$/, "")) === 0) || (list[0] || "");
+    const r = hmProsBySgg(sd, sgg);
+    if (r && r.pool.length) return r.pool[_hmHash(m.id || m.email) % r.pool.length];
+  }
   const pros = hmActivePros(hmDanOf(m));
   return pros[_hmHash(m.id || m.email) % pros.length];
 }
