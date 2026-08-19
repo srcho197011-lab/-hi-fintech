@@ -236,6 +236,7 @@ function SecIcon({ k }) {
       <path d="M20.5 31.5a3.6 3.6 0 0 0 7 0z" fill="#E0890A" />
       <ellipse cx="20" cy="17" rx="2.4" ry="3.2" fill="#fff" opacity=".35" transform="rotate(-20 20 17)" />
       <circle cx="32.5" cy="13.5" r="4.6" fill="#EF4444" /></svg>);
+    case "healthmate": return (<svg {...S}><defs><linearGradient id="i-hm-o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFB25C" /><stop offset="1" stopColor="#F5821F" /></linearGradient></defs><Sh /><circle cx="21" cy="16" r="7.6" fill="url(#i-hm-o)" /><path d="M8 40c0-7.6 5.9-13 13-13s13 5.4 13 13v1.6H8z" fill="url(#i-hm-o)" /><path d="M37.4 13.6c-2.4-2.5-6.3-1.2-6.3 2.2 0 2.8 3 4.8 6.3 7.6 3.3-2.8 6.3-4.8 6.3-7.6 0-3.4-3.9-4.7-6.3-2.2z" fill="#EF4444" stroke="#fff" strokeWidth="1.6" /></svg>);
     case "ontology": return (<svg {...S}><defs>
       <linearGradient id="i-ont-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#38E0F5" /><stop offset="1" stopColor="#4F46E5" /></linearGradient></defs>
       <Sh rx={11} />
@@ -323,6 +324,7 @@ const SECTIONS = [
   { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" },
   { k: "mywallet", ic: Wallet, t: "나의 건강지갑", s: "금융지갑·Health NFT·우리가족건강관리" },
   { k: "partner", ic: Handshake, t: "제휴·투자 신청", s: "제휴 네트워크·회원/법인 투자" },
+  { k: "healthmate", ic: HeartHandshake, t: "헬스메이트 센터", s: "전문헬스메이트(프로) 회원 관리 (운영)" },
   { k: "ontology", ic: Network, t: "온톨로지 · 하네스", s: "Ontology · Harness (운영)" },
 ];
 /* 옛 섹션 키 → 새 부모 섹션 매핑 (딥링크·onGo·헤더·검색 호환) */
@@ -333,7 +335,7 @@ const SEC_PARENT = {
   care: "care", ai: "care", manage: "care", tele: "care", hospital: "care", homecare: "care", shop: "care",
   insurance: "insurance",
   mywallet: "mywallet", wallet: "mywallet", nft: "mywallet", mypage: "mywallet", trust: "mywallet", vault: "mywallet",
-  ontology: "ontology", demo: "demo",
+  ontology: "ontology", demo: "demo", healthmate: "healthmate",
 };
 function secParent(k) { return SEC_PARENT[k] || k; }
 const SCAFFOLDS = {

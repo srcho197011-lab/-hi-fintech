@@ -35,6 +35,7 @@ src/components/FinanceOps.jsx
 src/components/Marketing.jsx
 src/components/Social.jsx
 src/components/ConsultIntel.jsx
+src/components/HealthMate.jsx
 src/data/demoMembers.js
 src/data/healthOntology.js
 src/data/healthKnowledge.js
@@ -75,6 +76,7 @@ src/data/premiumBilling.js
 src/data/insService.js
 src/data/leadBranches.js
 src/data/leadRouting.js
+src/data/healthMate.js
 src/data/sharingEngine.js
 src/data/riskEngine.js
 src/data/consentNft.js

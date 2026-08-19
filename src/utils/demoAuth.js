@@ -189,7 +189,7 @@ function scopeMembers(list) { return isAdminRole() ? (list || []) : (list || [])
 function isRestrictedSection(secKey) {
   if (isAdminRole()) return false;
   const parent = (typeof secParent === "function") ? secParent(secKey) : secKey;
-  return parent === "ontology" || secKey === "demo";
+  return parent === "ontology" || parent === "healthmate" || secKey === "demo";
 }
 
 /* 테스트 시나리오 자가검증(11항목) — 실제 로직/데이터에 대해 단언 */

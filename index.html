@@ -794,6 +794,7 @@ function SecIcon({ k }) {
       <path d="M20.5 31.5a3.6 3.6 0 0 0 7 0z" fill="#E0890A" />
       <ellipse cx="20" cy="17" rx="2.4" ry="3.2" fill="#fff" opacity=".35" transform="rotate(-20 20 17)" />
       <circle cx="32.5" cy="13.5" r="4.6" fill="#EF4444" /></svg>);
+    case "healthmate": return (<svg {...S}><defs><linearGradient id="i-hm-o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFB25C" /><stop offset="1" stopColor="#F5821F" /></linearGradient></defs><Sh /><circle cx="21" cy="16" r="7.6" fill="url(#i-hm-o)" /><path d="M8 40c0-7.6 5.9-13 13-13s13 5.4 13 13v1.6H8z" fill="url(#i-hm-o)" /><path d="M37.4 13.6c-2.4-2.5-6.3-1.2-6.3 2.2 0 2.8 3 4.8 6.3 7.6 3.3-2.8 6.3-4.8 6.3-7.6 0-3.4-3.9-4.7-6.3-2.2z" fill="#EF4444" stroke="#fff" strokeWidth="1.6" /></svg>);
     case "ontology": return (<svg {...S}><defs>
       <linearGradient id="i-ont-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#38E0F5" /><stop offset="1" stopColor="#4F46E5" /></linearGradient></defs>
       <Sh rx={11} />
@@ -881,6 +882,7 @@ const SECTIONS = [
   { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" },
   { k: "mywallet", ic: Wallet, t: "나의 건강지갑", s: "금융지갑·Health NFT·우리가족건강관리" },
   { k: "partner", ic: Handshake, t: "제휴·투자 신청", s: "제휴 네트워크·회원/법인 투자" },
+  { k: "healthmate", ic: HeartHandshake, t: "헬스메이트 센터", s: "전문헬스메이트(프로) 회원 관리 (운영)" },
   { k: "ontology", ic: Network, t: "온톨로지 · 하네스", s: "Ontology · Harness (운영)" },
 ];
 /* 옛 섹션 키 → 새 부모 섹션 매핑 (딥링크·onGo·헤더·검색 호환) */
@@ -891,7 +893,7 @@ const SEC_PARENT = {
   care: "care", ai: "care", manage: "care", tele: "care", hospital: "care", homecare: "care", shop: "care",
   insurance: "insurance",
   mywallet: "mywallet", wallet: "mywallet", nft: "mywallet", mypage: "mywallet", trust: "mywallet", vault: "mywallet",
-  ontology: "ontology", demo: "demo",
+  ontology: "ontology", demo: "demo", healthmate: "healthmate",
 };
 function secParent(k) { return SEC_PARENT[k] || k; }
 const SCAFFOLDS = {
@@ -1283,7 +1285,7 @@ export default function App() {
       <div className="body">
         <aside className="side">
           <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-            {SECTIONS.filter((x) => role === "ADMIN" || x.k !== "ontology").map((x) => (
+            {SECTIONS.filter((x) => role === "ADMIN" || (x.k !== "ontology" && x.k !== "healthmate")).map((x) => (
               <React.Fragment key={x.k}>
                 <div className={`snav ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}><span className="sico"><SecIcon k={x.k} /></span> {t("nav." + x.k, x.t)}</div>
                 {/* 검진 후 케어 서브메뉴 — 항상 펼침(메인에서 바로 선택). 현재 케어 하위 화면이면 강조 */}
@@ -1303,7 +1305,7 @@ export default function App() {
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
         <main className="scrollarea">
-          {(() => { const p = secParent(sec); if (p === "partner" || p === "ontology") return null; const cb = SECTIONS.find((x) => x.k === p); if (!cb) return null; return (
+          {(() => { const p = secParent(sec); if (p === "partner" || p === "ontology" || p === "healthmate") return null; const cb = SECTIONS.find((x) => x.k === p); if (!cb) return null; return (
             <div className="secbanner">
               <span className="sb-ic"><SecIcon k={cb.k} /></span>
               <div className="sb-b"><b>{t("nav." + cb.k, cb.t)}</b><p>{t("nav." + cb.k + ".s", SEC_BANNER[cb.k] || cb.s)}</p></div>
@@ -1329,6 +1331,7 @@ export default function App() {
             if (p === "care") return <CareSection initial={sec} onGo={setSec} />;
             if (p === "insurance") return <InsuranceSection onGo={setSec} />;
             if (p === "mywallet") return <WalletHubSection initial={sec} onGo={setSec} />;
+            if (p === "healthmate") return <HealthMateSection onGo={setSec} />;
             if (p === "ontology") return <OntologySection onGo={setSec} />;
             if (sec === "demo") return <DemoSection onGo={setSec} />;
             return <Scaffold meta={cur} data={SCAFFOLDS[sec]} />;
@@ -18216,6 +18219,570 @@ function ConsultIntel({ onGo }) {
   );
 }
 
+/* ══════════════ 헬스메이트(프로) 센터 — Today + 9워크벤치 ══════════════
+   설계서 v1.2 구현. 디자인: 현대해상 오렌지(HM_C) · 깔끔한 카드형.
+   접근: 관리자 세션 + 프로 코드 게이트(2단계). 일반 회원 네비 미노출(isRestrictedSection). */
+
+function HmStyle() {
+  return (<style>{`
+  .hmwrap{--hmo:${HM_C.pri};--hmod:${HM_C.dark};--hmbg:${HM_C.bg};--hmln:${HM_C.line};font-size:13px;color:${HM_C.ink}}
+  .hmhero{background:linear-gradient(120deg,#B34E00,#F5821F 60%,#FFA94D);border-radius:16px;color:#fff;padding:18px 22px;position:relative;overflow:hidden}
+  .hmhero .k{font-size:10.5px;letter-spacing:2.5px;opacity:.85;font-weight:800}
+  .hmhero h2{margin:4px 0 2px;font-size:20px;font-weight:900}
+  .hmcard{background:#fff;border:1px solid var(--hmln);border-radius:14px;padding:14px 16px;margin-top:10px}
+  .hmtabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .hmtab{border:1.5px solid var(--hmln);background:#fff;border-radius:999px;padding:7px 13px;font-size:12.3px;font-weight:800;cursor:pointer;color:${HM_C.mut};display:flex;align-items:center;gap:5px}
+  .hmtab.on{background:var(--hmo);border-color:var(--hmo);color:#fff}
+  .hmnum{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+  .hmnum .n{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:9px 12px;cursor:pointer}
+  .hmnum .n b{font-size:19px;display:block}
+  .hmnum .n span{font-size:11px;opacity:.9}
+  .hmdb{border:1px dashed var(--hmo);background:var(--hmbg);border-radius:12px;padding:10px 13px;margin-bottom:10px;cursor:pointer}
+  .hmdb table{font-size:11.8px;border-collapse:collapse;width:100%;margin-top:7px}
+  .hmdb td{padding:3px 6px;vertical-align:top;line-height:1.55}
+  .hmdb td.k{color:${HM_C.deep};font-weight:900;width:44px;white-space:nowrap}
+  .hmpill{display:inline-block;border-radius:999px;padding:1px 8px;font-size:10.5px;font-weight:800}
+  .hmrow{border:1px solid #EEF1F6;border-radius:12px;padding:11px 13px;margin-bottom:8px;background:#fff}
+  .hmrow.lock{background:#F8FAFC;opacity:.85}
+  .hmbtn{border:none;border-radius:9px;padding:7px 13px;font-size:12px;font-weight:800;cursor:pointer;background:var(--hmo);color:#fff;display:inline-flex;align-items:center;gap:5px}
+  .hmbtn.gh{background:#fff;border:1.5px solid var(--hmln);color:${HM_C.dark}}
+  .hmbtn:disabled{background:#CBD5E1;cursor:not-allowed;color:#fff}
+  .hmpipe{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+  .hmpipe .st{border:1.5px solid var(--hmln);border-radius:11px;padding:8px 6px;text-align:center;cursor:pointer;background:#fff}
+  .hmpipe .st.on{border-color:var(--hmo);background:var(--hmbg)}
+  .hmpipe .st b{font-size:17px;color:${HM_C.dark};display:block}
+  .hmpipe .st i{font-style:normal;font-size:10.3px;color:${HM_C.mut};font-weight:700}
+  .hmdots{display:inline-flex;gap:3px;vertical-align:middle}
+  .hmdots s{width:9px;height:9px;border-radius:3px;background:#E5E7EB;text-decoration:none}
+  .hmdots s.on{background:var(--hmo)}
+  .hmdots s.gap{margin-left:6px}
+  .hmhi{background:var(--hmbg);border-left:3px solid var(--hmo);border-radius:0 10px 10px 0;padding:8px 11px;font-size:12px;line-height:1.6;margin-top:8px}
+  .hmgrid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .hmfoot{font-size:10.6px;color:${HM_C.mut};line-height:1.6;margin-top:10px;border-top:1px solid #F1F5F9;padding-top:8px}
+  .hmqa{background:#1F2937;color:#F9FAFB;border-radius:12px;padding:11px 13px;font-size:12.4px;line-height:1.7}
+  @media(max-width:900px){.hmnum{grid-template-columns:repeat(2,1fr)}.hmpipe{grid-template-columns:repeat(4,1fr)}.hmgrid2{grid-template-columns:1fr}}
+  `}</style>);
+}
+
+/* 「이 화면의 DB」 패널 — HM_DB_NOTE 단일 소스, 접이식 + 담당 단계 배지 */
+function HmDbNote({ k }) {
+  const [open, setOpen] = React.useState(false);
+  const n = HM_DB_NOTE[k];
+  if (!n) return null;
+  return (
+    <div className="hmdb" onClick={() => setOpen(!open)} data-dbnote={k}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontWeight: 900, fontSize: 12, color: HM_C.deep }}><Database size={12} style={{ verticalAlign: -2 }} /> 이 화면의 DB — 원천·의미·활용·근거 {open ? "▲" : "▼"}</span>
+        <span className="hmpill" style={{ background: "#fff", border: `1px solid ${HM_C.line}`, color: HM_C.dark }}>담당 단계 {n.stage}</span>
+      </div>
+      {open && <table><tbody>
+        <tr><td className="k">원천</td><td>{n.src}</td></tr>
+        <tr><td className="k">의미</td><td>{n.mean}</td></tr>
+        <tr><td className="k">활용</td><td>{n.use}</td></tr>
+        <tr><td className="k">근거</td><td>{n.legal}</td></tr>
+      </tbody></table>}
+    </div>
+  );
+}
+
+function HmStageDots({ reached }) {
+  return (<span className="hmdots">{HM_STAGES.map((s, i) => <s key={s.k} className={(reached.indexOf(s.k) >= 0 ? "on" : "") + (i === 4 ? " gap" : "")} title={s.k + " " + s.name} />)}</span>);
+}
+function HmStatusChip({ st }) {
+  return <span className="hmpill" style={{ background: st.bg, color: st.c, border: `1px solid ${st.c}33` }}>{st.k === "HELD" && <Lock size={9} style={{ verticalAlign: -1 }} />} {st.ko}</span>;
+}
+
+/* 코드 게이트 — 코드 입력 + 상태·자격 검증(세션 한정) */
+function HmGate({ onPass }) {
+  const [code, setCode] = React.useState("");
+  const [err, setErr] = React.useState("");
+  const submit = (c) => {
+    const p = hmProOf((c || code).trim().toUpperCase());
+    if (!p) { setErr("등록되지 않은 코드예요."); return; }
+    if (p.status !== "활성") { setErr(`${p.status} 상태 코드예요 — 접근이 차단됩니다(담당 회원은 재배정 큐로 이동).`); return; }
+    try { sessionStorage.setItem("hifin_hm_code", p.code); } catch (e) {}
+    try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `프로 콘솔 접속 — ${p.code}(${p.dan})` }); } catch (e) {}
+    onPass(p.code);
+  };
+  return (
+    <div className="hmwrap"><HmStyle />
+      <div className="hmhero">
+        <div className="k">HEALTHMATE PRO CONSOLE</div>
+        <h2>헬스메이트(프로) 센터</h2>
+        <div style={{ fontSize: 12.5, opacity: .92 }}>코드가 부여된 전문헬스메이트 전용 콘솔 — 하이가 분석하고, 프로가 마무리합니다.</div>
+      </div>
+      <div className="hmcard" style={{ maxWidth: 520 }}>
+        <div style={{ fontWeight: 900, fontSize: 13.5, marginBottom: 4 }}>프로 코드 인증</div>
+        <div style={{ fontSize: 11.5, color: HM_C.mut, marginBottom: 9 }}>코드는 자격·권한·실적의 단일 키예요. 세션에만 보관되고 새로고침 시 재입력해요.</div>
+        <div style={{ display: "flex", gap: 7 }}>
+          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="HM-SN-26-014" style={{ flex: 1, border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "9px 12px", fontSize: 13, letterSpacing: 1 }} onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
+          <button className="hmbtn" onClick={() => submit()}>인증</button>
+        </div>
+        {err && <div style={{ color: HM_C.red, fontSize: 11.5, fontWeight: 700, marginTop: 7 }}>{err}</div>}
+        <div style={{ marginTop: 11, fontSize: 11, color: HM_C.mut }}>시연 코드 바로 입장(담당 고객 수 순):</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 5 }}>
+          {HM_CODES.filter((p) => p.status === "활성").map((p) => ({ p, n: hmScope(p.code).length })).sort((a, b) => b.n - a.n).slice(0, 5).map(({ p, n }) => (
+            <button key={p.code} className="hmbtn gh" style={{ fontSize: 11 }} onClick={() => submit(p.code)}>{p.name} 프로 · {p.dan.replace("지역단", "")} <b style={{ color: HM_C.pri }}>{n}명</b></button>
+          ))}
+          <button className="hmbtn gh" style={{ fontSize: 11, opacity: .6 }} onClick={() => submit("HM-WD-26-002")}>임다혜 프로(정지 코드 시연)</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ① 신호 카드 */
+function HmTabSignals({ code, onContact }) {
+  const cards = hmSignals(code);
+  const [openId, setOpenId] = React.useState(null);
+  return (<div>
+    <HmDbNote k="t1" />
+    {!cards.length && <div className="hmrow" style={{ color: HM_C.mut }}>지금 접촉 근거가 있는 회원이 없어요 — 하이가 신호를 감지하면 여기에 카드가 생겨요(근거 없는 대상은 존재하지 않아요).</div>}
+    {cards.map((c, i) => (
+      <div key={i} className="hmrow">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+          <div style={{ fontWeight: 900 }}>
+            {c.mask} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.m.sex} · {hmDanOf(c.m)}</span>
+            <span className="hmpill" style={{ marginLeft: 7, background: c.direct ? "#F0FDF4" : "#EFF6FF", color: c.direct ? HM_C.ok : HM_C.blue }}>{c.direct ? "요청" : "AI 선별"}</span>
+            <span className="hmpill" style={{ marginLeft: 4, background: HM_C.bg, color: HM_C.dark }}>{c.typeKo}</span>
+            <span className="hmpill" style={{ marginLeft: 4, background: "#F8FAFC", color: HM_C.mut }}>{c.tier} · SLA {c.sla}h · {c.stage}</span>
+          </div>
+          <button className="hmbtn gh" onClick={() => setOpenId(openId === i ? null : i)}>{openId === i ? "접기" : "근거·문안"}</button>
+        </div>
+        {openId === i && (<div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 800, color: HM_C.deep }}>하이의 근거</div>
+          {c.why.map((w, j) => <div key={j} style={{ fontSize: 11.8, color: HM_C.mut, lineHeight: 1.6 }}>· {w[0]} <b style={{ color: HM_C.dark }}>{w[1]}</b></div>)}
+          <div className="hmhi"><Bot size={12} style={{ verticalAlign: -2 }} /> 권장 첫 마디 — "{c.mask}님, {c.typeKo} 관련해서 확인해 드릴 게 있어 연락드렸어요. 지금 2분 괜찮으세요?"</div>
+          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+            <button className="hmbtn" onClick={() => onContact(c.m, { key: "sig-" + c.type, tab: "①", label: "신호 접촉(" + c.typeKo + ")", result: "연결됨" })}><Phone size={12} /> 연결하기</button>
+            <button className="hmbtn gh" onClick={() => onContact(c.m, { key: "sig-noti", tab: "①", label: "안내 발송", result: "발송", notify: "담당 프로가 " + c.typeKo + " 안내를 보내드렸어요 — 하이에게 물어보셔도 돼요.", notifyTitle: "건강 안내 도착" })}><Send size={12} /> 안내 발송</button>
+          </div>
+          <div className="hmfoot">연락처는 카드에 없어요 — [연결하기] 순간 동의를 재검증하고 콜백 토큰으로 연결돼요.</div>
+        </div>)}
+      </div>
+    ))}
+  </div>);
+}
+
+/* ② 보험 배정·대기(순번 배분 + 접촉 락) */
+function HmTabIns({ code, pro, onContact, refresh }) {
+  const q = hmInsQueue();
+  const members = (typeof demoMembers !== "undefined" ? demoMembers : []);
+  const mine = q.filter((x) => x.code === code);
+  const others = q.filter((x) => x.code !== code);
+  const row = (x, isMine) => {
+    const m = members.find((mm) => mm.email === x.email); if (!m) return null;
+    const lk = hmLockState(m);
+    return (
+      <div key={x.email} className={"hmrow" + (lk.locked ? " lock" : "")}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+          <div style={{ fontWeight: 900 }}>
+            {lk.locked && <Lock size={13} color={HM_C.hold} style={{ verticalAlign: -2, marginRight: 4 }} />}
+            {_hmMask(m.name)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex} · 가입 {_hmDay(x.at)}</span>
+            {lk.locked ? <span className="hmpill" style={{ marginLeft: 7, background: "#F1F5F9", color: HM_C.hold }}>HELD · 접촉 금지</span>
+              : <span className="hmpill" style={{ marginLeft: 7, background: "#F0FDF4", color: HM_C.ok }}>READY · 결과 수령됨</span>}
+          </div>
+          {!isMine && <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut }}>{(hmProOf(x.code) || {}).name || "-"} 프로 담당</span>}
+        </div>
+        <div style={{ fontSize: 11.3, color: HM_C.mut, marginTop: 4 }}>배분 근거 — {x.reason}</div>
+        {isMine && (<div>
+          {lk.locked && <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 9, padding: "7px 11px", fontSize: 11.6, color: HM_C.mut, marginTop: 7 }}>
+            🔒 검진 전 연락은 회원에게 부담이 됩니다. 결과가 나오면 <b>하이가 자동으로</b> 열어 드려요. (프로·관리자 해제 불가) — 지금 할 수 있는 일: 프로필 사전 학습 · ③탭 문안 미리보기</div>}
+          <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <button className="hmbtn" disabled={lk.locked} onClick={() => { const r = onContact(m, { key: "combo", tab: "②", label: "첫 연결(결과+보장 통합)", result: "연결됨" }); }}><Phone size={12} /> 전화 연결</button>
+            <button className="hmbtn gh" disabled={lk.locked} onClick={() => onContact(m, { key: "ins-video", tab: "②", label: "화상 상담", result: "상담확정" })}><Video size={12} /> 화상</button>
+            <button className="hmbtn gh" disabled={lk.locked} onClick={() => onContact(m, { key: "ins-noti", tab: "②", label: "알림 안내", result: "발송", notify: "검진 결과 안내와 보장 설명을 준비해 두었어요.", notifyTitle: "담당 프로 안내" })}><Send size={12} /> 알림</button>
+            {lk.locked && <button className="hmbtn gh" style={{ borderStyle: "dashed", color: HM_C.mut }} onClick={() => { hmSimResult(m.email); refresh(); }}>⚙ 시스템 이벤트(시연) — 검진결과 수령</button>}
+          </div>
+        </div>)}
+      </div>
+    );
+  };
+  return (<div>
+    <HmDbNote k="t2" />
+    <div className="hmcard" style={{ marginTop: 0, background: HM_C.bg, border: `1px solid ${HM_C.line}` }}>
+      <b style={{ fontSize: 12.5 }}>순번 배분 원칙</b>
+      <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 3 }}>검진대비보험 건은 성과가 아니라 <b style={{ color: HM_C.dark }}>지역단 순서</b>로 나눠요(모집자격 보유 프로만). 순번은 평가와 무관해요. {pro.lic ? "" : "— 현재 코드는 모집자격 미보유라 안내 발송까지만 가능해요."}</div>
+    </div>
+    <div style={{ fontWeight: 900, fontSize: 13, margin: "12px 0 7px" }}>내 배정 {mine.length}건</div>
+    {mine.length ? mine.map((x) => row(x, true)) : <div className="hmrow" style={{ color: HM_C.mut }}>이번 순번 배정이 없어요 — 다음 회차에 자동 배정돼요.</div>}
+    <div style={{ fontWeight: 900, fontSize: 13, margin: "12px 0 7px", color: HM_C.mut }}>지역단 전체 배정 현황(참고) {others.length}건</div>
+    {others.map((x) => row(x, false))}
+  </div>);
+}
+
+/* ③ 검진 후 건강 터치 */
+function HmTabTouch({ code, onContact }) {
+  const members = hmScope(code);
+  const rows = members.map((m) => ({ m, plan: hmTouchPlan(m) })).filter((x) => x.plan.items.length);
+  return (<div>
+    <HmDbNote k="t3" />
+    <div className="hmcard" style={{ marginTop: 0, background: HM_C.bg }}>
+      <b style={{ fontSize: 12.5 }}>결합 원칙</b>
+      <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 3 }}>첫 연결은 <b style={{ color: HM_C.dark }}>결과분석 + 검진대비보험 안내를 한 번의 연락으로</b> — 두 번째 전화는 영업으로 읽혀요. 이후 터치는 조건 충족 회원에게만 생겨요.</div>
+    </div>
+    {!rows.length && <div className="hmrow" style={{ marginTop: 10, color: HM_C.mut }}>터치 예정 회원이 없어요 — 검진결과 수령(②탭) 후 자동으로 큐가 생겨요.</div>}
+    {rows.map(({ m, plan }, i) => (
+      <div key={i} className="hmrow" style={{ marginTop: i === 0 ? 10 : 0 }}>
+        <div style={{ fontWeight: 900 }}>{_hmMask(m.name)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span> {plan.endSrc && <span className="hmpill" style={{ marginLeft: 6, background: "#F8FAFC", color: HM_C.mut }}>만기 계산: {plan.endSrc}</span>}</div>
+        <div style={{ marginTop: 7 }}>
+          {plan.items.map((it, j) => (
+            <div key={j} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderTop: j ? "1px dashed #F1F5F9" : "none" }}>
+              <span style={{ width: 8, height: 8, borderRadius: 99, background: it.done ? HM_C.ok : it.due ? HM_C.red : "#E5E7EB", flexShrink: 0 }} />
+              <div style={{ flex: 1, fontSize: 12 }}>
+                <b style={{ color: it.pack ? HM_C.dark : HM_C.ink }}>{it.title}</b>
+                <span style={{ color: HM_C.mut, marginLeft: 6 }}>{_hmDay(it.when)}{it.done ? " · 완료" : it.due ? " · 지금" : ""}</span>
+              </div>
+              {it.due && !it.done && <button className="hmbtn" style={{ padding: "5px 10px", fontSize: 11 }} onClick={() => onContact(m, { key: it.key, tab: "③", label: it.title.split("—")[0].trim(), result: "연결됨" })}>연결</button>}
+            </div>
+          ))}
+        </div>
+        {plan.items.some((x) => x.pack && !x.done) && (
+          <div className="hmhi"><Bot size={12} style={{ verticalAlign: -2 }} /> 결합 패키지(하이 생성) — ①결과 요약(등급·관리항목 수·변화) ②이번 결과 기준 보장 설명 ③다음 액션 1개만. 원본 수치는 말하지 않아요.</div>
+        )}
+      </div>
+    ))}
+  </div>);
+}
+
+/* ④ 질병 예측 */
+function HmTabRisk({ code }) {
+  const members = hmScope(code).filter((m) => !hmLockState(m).locked);
+  return (<div>
+    <HmDbNote k="t4" />
+    <div className="hmcard" style={{ marginTop: 0, background: "#FFF1F2", border: "1px solid #FECDD3" }}>
+      <b style={{ fontSize: 12, color: HM_C.red }}>가드레일</b>
+      <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 2 }}>예측을 보험 인수·요율·거절 사유로 쓰는 것은 금지돼요. 확률은 밴드(상·중·하)로만, 진단 단정 표현은 어디에도 없어요.</div>
+    </div>
+    {members.map((m, i) => {
+      const rc = hmRiskCards(m);
+      return (<div key={i} className="hmrow" style={{ marginTop: i === 0 ? 10 : 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+          <b>{_hmMask(m.name)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span></b>
+          <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut }}>{rc.src}</span>
+        </div>
+        <div className="hmgrid2" style={{ marginTop: 7 }}>
+          {rc.rows.map((r, j) => (
+            <div key={j} style={{ border: "1px solid #F1F5F9", borderRadius: 10, padding: "8px 11px" }}>
+              <b style={{ fontSize: 12.3 }}>{r.ko}</b>
+              <span className="hmpill" style={{ marginLeft: 6, background: r.band === "상" ? "#FFF7ED" : r.band === "중" ? "#FFFBEB" : "#F0FDF4", color: r.band === "상" ? HM_C.stall : r.band === "중" ? HM_C.warn : HM_C.ok }}>위험 밴드 {r.band}</span>
+              <div style={{ fontSize: 11.4, color: HM_C.mut, marginTop: 3, lineHeight: 1.55 }}>{r.why}</div>
+            </div>
+          ))}
+        </div>
+        <div className="hmfoot">예측은 통계적 경향이며 진단이 아닙니다. 확인은 의료기관에서. — [예방 검진 안내] [주치의(A1) 연결] [보장공백 점검(⑦)]으로만 잇습니다.</div>
+      </div>);
+    })}
+  </div>);
+}
+
+/* ⑤ 건강 행동 · ⑥ 가족 돌봄 (조립 요약) */
+function HmTabLife({ code, kind }) {
+  const members = hmScope(code).filter((m) => !hmLockState(m).locked);
+  return (<div>
+    <HmDbNote k={kind === "shop" ? "t5" : "t6"} />
+    {kind === "care" && (
+      <div className="hmcard" style={{ marginTop: 0, background: "#FEF2F2", border: "1px solid #FECACA" }}>
+        <b style={{ fontSize: 12, color: HM_C.red }}>응급 우선 규칙</b>
+        <div style={{ fontSize: 11.6, color: HM_C.mut, marginTop: 2, lineHeight: 1.6 }}>응급 징후 신호가 있으면 그 카드는 모든 카드보다 위에 고정되고, 문안은 상담이 아니라 <b style={{ color: HM_C.red }}>119·응급 안내가 먼저</b> 나가요.</div>
+      </div>
+    )}
+    {members.map((m, i) => {
+      const adh = _hmLs("hifin_adh_" + m.email, {});
+      const famRaw = localStorage.getItem("hifin_family_" + m.email);
+      const fam = famRaw ? JSON.parse(famRaw) : null;
+      const pts = m.managementPoints || [];
+      return (<div key={i} className="hmrow" style={{ marginTop: i === 0 ? 10 : 0 }}>
+        <b>{_hmMask(m.name)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span></b>
+        {kind === "shop" ? (<div style={{ fontSize: 11.8, color: HM_C.mut, marginTop: 5, lineHeight: 1.65 }}>
+          <div>· <b style={{ color: HM_C.ink }}>무엇을</b> — 관리 포인트 연계 제품군: {pts.slice(0, 3).join(" · ") || "생활관리 일반"}</div>
+          <div>· <b style={{ color: HM_C.ink }}>왜</b> — {(m.highRiskDiseases || []).join("·") || "예방 관리"} 프로필 기반(성분 근거는 A3 온톨로지)</div>
+          <div>· <b style={{ color: HM_C.ink }}>언제</b> — {Object.keys(adh).length ? "복약·실천 기록 보유 — 이행률 하락 시 안내" : "실천 기록 없음 — 첫 습관 제안 시점"}</div>
+          <div className="hmfoot" style={{ marginTop: 6 }}>비교는 1일 단가·성분당 단가 기준(A3 규칙) · 원가성 정보 비노출 · 결제는 회원 본인만.</div>
+        </div>) : (<div style={{ fontSize: 11.8, color: HM_C.mut, marginTop: 5, lineHeight: 1.65 }}>
+          <div>· 가족 등록 — {fam ? `${fam.length}명(가구 단위 데이터)` : "미등록(기본 안내 대상)"}</div>
+          <div>· 재가급여 — {(m.regAge || 0) >= 55 || (fam || []).some((f) => (f.age || 0) >= 75) ? "대상 가능성 있음 · 공단 판정 필요(단정 금지)" : "현재 신호 없음"}</div>
+          <div style={{ marginTop: 5 }}><span className="hmpill" style={{ background: HM_C.bg, color: HM_C.dark }}>재가 서비스 안내</span> <span className="hmpill" style={{ background: HM_C.bg, color: HM_C.dark }}>가족 상담 예약(원격지 가능)</span> <span className="hmpill" style={{ background: HM_C.bg, color: HM_C.dark }}>돌봄 체크리스트</span></div>
+        </div>)}
+      </div>);
+    })}
+  </div>);
+}
+
+/* ⑦ 보장분석 · 인수조건 대화 */
+function HmTabUw({ code }) {
+  const members = hmScope(code).filter((m) => !hmLockState(m).locked);
+  const [sel, setSel] = React.useState(members.length ? members[0].email : null);
+  const [log, setLog] = React.useState([]);
+  const [q, setQ] = React.useState("");
+  const m = members.find((x) => x.email === sel) || members[0];
+  const ask = (text) => {
+    if (!m || !text.trim()) return;
+    const a = hmUnderwriteTalk(m, text);
+    setLog((l) => [...l, { q: text, a }]);
+    setQ("");
+  };
+  let gaps = null; try { gaps = (typeof analyzeCoverageGap === "function") ? analyzeCoverageGap(m) : null; } catch (e) {}
+  return (<div>
+    <HmDbNote k="t7" />
+    <div className="hmcard" style={{ marginTop: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+        <b style={{ fontSize: 12.8 }}>현대해상 보장분석 연계</b>
+        <span className="hmpill" style={{ background: "#FFFBEB", color: HM_C.warn, border: "1px solid #FDE68A" }}>연동 상태: 시뮬레이션</span>
+      </div>
+      <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 4 }}>하이핀은 <b style={{ color: HM_C.dark }}>보장공백 유형 코드 + 연령대·성별 + 건강 등급(플래그 수)만</b> 정리해 넘기고, 결과를 받아 해설해요. 원본 수치·인수 판정은 넘기지 않아요.</div>
+      {m && <div style={{ marginTop: 8, fontSize: 12 }}>
+        <select value={sel || ""} onChange={(e) => { setSel(e.target.value); setLog([]); }} style={{ border: `1.5px solid ${HM_C.line}`, borderRadius: 8, padding: "6px 9px", fontSize: 12 }}>
+          {members.map((x) => <option key={x.email} value={x.email}>{_hmMask(x.name)} · {_hmBand(x)} {x.sex}</option>)}
+        </select>
+        {gaps && gaps.gaps && <span style={{ marginLeft: 8, color: HM_C.mut, fontSize: 11.5 }}>보장공백 신호 {gaps.gaps.length}건 감지</span>}
+      </div>}
+    </div>
+    <div className="hmcard">
+      <b style={{ fontSize: 12.8 }}><MessageSquare size={13} style={{ verticalAlign: -2 }} /> 하이(A2)와 인수조건 대화</b>
+      <div style={{ fontSize: 11.3, color: HM_C.mut, marginTop: 3 }}>폼이 아니라 대화예요. 답은 항상 <b>가능성 3구간(높음/있음/낮음)</b> — 확정·요율·금액 단정은 없어요.</div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "9px 0" }}>
+        {["고혈압 약 드시는데 진단비 가입 가능해?", "간편심사로 가면 뭐가 달라져?", "암 진단비는 어때?"].map((s) => (
+          <button key={s} className="hmbtn gh" style={{ fontSize: 11 }} onClick={() => ask(s)}>{s}</button>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 7 }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="예: 부담보면 얼마나 빠져?" style={{ flex: 1, border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "8px 11px", fontSize: 12.5 }} onKeyDown={(e) => { if (e.key === "Enter") ask(q); }} />
+        <button className="hmbtn" onClick={() => ask(q)}>질문</button>
+      </div>
+      {log.map((it, i) => (
+        <div key={i} style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: HM_C.dark }}>프로: {it.q}</div>
+          <div className="hmqa" style={{ marginTop: 5 }}>
+            <div style={{ fontSize: 11, opacity: .75, marginBottom: 4 }}>하이(A2) · 근거 {it.a.src} · {it.a.product}</div>
+            {it.a.tri.map((t, j) => <div key={j}>{["①", "②", "③"][j]} {t[0]} — 가능성 <b style={{ color: t[1].indexOf("높음") >= 0 ? "#4ADE80" : t[1].indexOf("낮음") >= 0 ? "#FCA5A5" : "#FCD34D" }}>{t[1]}</b></div>)}
+            <div style={{ marginTop: 5, fontSize: 11.5, opacity: .85 }}>필요 서류 — {it.a.docs.join(" · ")}</div>
+            <div style={{ marginTop: 7, background: "rgba(245,130,31,.15)", border: "1px solid rgba(245,130,31,.4)", borderRadius: 8, padding: "6px 9px", fontSize: 11.8 }}>
+              <b style={{ color: "#FDBA74" }}>회원에게 그대로 읽어 줄 문장</b><br />"{it.a.memberLine}"</div>
+            <div style={{ marginTop: 6, fontSize: 11, color: "#FCA5A5", fontWeight: 700 }}>{it.a.disclaim}</div>
+          </div>
+        </div>
+      ))}
+      <div className="hmfoot">보장분석 결과는 참고이며, 인수 여부·요율·조건은 인수사(현대해상) 심사로 확정됩니다. 대화는 감사 기록(체인)에 남아요.</div>
+    </div>
+  </div>);
+}
+
+/* ⑧ 프로 제안함 */
+function HmTabIdeas({ code }) {
+  const [list, setList] = React.useState(() => hmIdeas());
+  const [f, setF] = React.useState({ cat: "화면", title: "", body: "" });
+  const [msg, setMsg] = React.useState("");
+  const ST_C = { "접수": HM_C.mut, "검토중": HM_C.blue, "채택": HM_C.ok, "반영 예정": HM_C.ok, "반영 완료": HM_C.ok, "보류": HM_C.warn, "중복": HM_C.mut };
+  const submit = () => {
+    if (!f.title.trim() || !f.body.trim()) { setMsg("제목과 내용을 채워 주세요."); return; }
+    const dup = list.filter((x) => x.title.indexOf(f.title.slice(0, 6)) >= 0).length;
+    const r = hmIdeaAdd(code, { ...f, tab: "⑧" });
+    if (!r.ok) { setMsg(r.reason); return; }
+    setList(hmIdeas()); setF({ cat: "화면", title: "", body: "" });
+    setMsg("접수됐어요" + (dup ? ` — 비슷한 제안 ${dup}건이 이미 있어요(하이가 묶어서 검토해요)` : "") + ". 상태가 바뀌면 알림으로 알려드려요.");
+  };
+  return (<div>
+    <HmDbNote k="t8" />
+    <div className="hmcard" style={{ marginTop: 0 }}>
+      <b style={{ fontSize: 12.8 }}><Sparkles size={13} style={{ verticalAlign: -2 }} color={HM_C.pri} /> 시스템 개선 · 혁신 의견 개진</b>
+      <div style={{ fontSize: 11.4, color: HM_C.mut, marginTop: 3 }}>현장은 지표가 못 보는 것을 봅니다. 모든 상태 변화에는 사유가 붙고, 반영되면 어느 화면·어느 커밋인지 돌아와요.</div>
+      <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 7, marginTop: 9 }}>
+        <select value={f.cat} onChange={(e) => setF({ ...f, cat: e.target.value })} style={{ border: `1.5px solid ${HM_C.line}`, borderRadius: 8, padding: "7px 9px", fontSize: 12 }}>
+          {["화면", "문안", "배분", "데이터", "규제", "기타"].map((c) => <option key={c}>{c}</option>)}
+        </select>
+        <input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="제목(60자)" style={{ border: `1.5px solid ${HM_C.line}`, borderRadius: 8, padding: "7px 11px", fontSize: 12.5 }} />
+      </div>
+      <textarea value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} placeholder="내용(2000자) — 회원 개인정보는 담을 수 없어요" rows={3} style={{ width: "100%", border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "8px 11px", fontSize: 12.5, marginTop: 7, resize: "vertical", boxSizing: "border-box" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 7 }}>
+        <span style={{ fontSize: 11, color: msg.indexOf("없") >= 0 || msg.indexOf("채워") >= 0 ? HM_C.red : HM_C.ok, fontWeight: 700 }}>{msg}</span>
+        <button className="hmbtn" onClick={submit}><Send size={12} /> 제안 제출</button>
+      </div>
+    </div>
+    {list.map((it) => (
+      <div key={it.id} className="hmrow">
+        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+          <b style={{ fontSize: 12.6 }}>[{it.cat}] {it.title}</b>
+          <span className="hmpill" style={{ background: "#F8FAFC", color: ST_C[it.status] || HM_C.mut, border: `1px solid ${(ST_C[it.status] || HM_C.mut)}33` }}>{it.status}</span>
+        </div>
+        <div style={{ fontSize: 11.8, color: HM_C.mut, marginTop: 4, lineHeight: 1.6 }}>{it.body}</div>
+        <div style={{ fontSize: 11, color: HM_C.mut, marginTop: 6, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+          <span>{(hmProOf(it.code) || {}).name || it.code} 프로 · {it.dan} · {it.tab}탭에서 · {_hmDay(it.at)}</span>
+          <button className="hmbtn gh" style={{ padding: "3px 9px", fontSize: 10.5 }} onClick={() => setList([...hmIdeaVote(it.id)])}>공감 +1 ({it.votes || 0})</button>
+        </div>
+        <div style={{ marginTop: 6, background: "#F8FAFC", borderRadius: 8, padding: "6px 10px", fontSize: 11.3, color: HM_C.mut }}><b style={{ color: HM_C.deep }}>사유</b> — {it.why}</div>
+      </div>
+    ))}
+    <div className="hmfoot">공감 수는 우선순위 정렬에만 쓰여요 — 실적·평가와 연결되지 않아요. 채택·반영은 사람 검수(자동 반영 없음).</div>
+  </div>);
+}
+
+/* ⑨ 내 고객 · 실적 현황판 */
+function HmTabBoard({ code, pro, onContact }) {
+  const [view, setView] = React.useState("cust");
+  const [stFilter, setStFilter] = React.useState(null);
+  const [detail, setDetail] = React.useState(null);
+  const members = hmScope(code);
+  const cards = members.map((m) => hmCustomerCard(m));
+  const byStage = {}; HM_STAGES.forEach((s) => { byStage[s.k] = { n: 0, stall: 0 }; });
+  cards.forEach((c) => { byStage[c.stage.cur].n++; if (c.stage.stalled) byStage[c.stage.cur].stall++; });
+  let list = cards.slice();
+  if (stFilter === "_stall") list = list.filter((c) => c.stage.stalled);
+  else if (stFilter) list = list.filter((c) => c.stage.cur === stFilter);
+  list.sort((a, b) => (b.stage.stalled ? b.stage.stalledDays : -1) - (a.stage.stalled ? a.stage.stalledDays : -1));
+  const stats = hmMyStats(code);
+  return (<div>
+    <HmDbNote k="t9" />
+    <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+      <button className={"hmtab" + (view === "cust" ? " on" : "")} onClick={() => setView("cust")}><Users size={13} /> 고객별 현황</button>
+      <button className={"hmtab" + (view === "stat" ? " on" : "")} onClick={() => setView("stat")}><TrendingUp size={13} /> 내 실적</button>
+    </div>
+    {view === "cust" && (<div>
+      <div className="hmpipe">
+        {HM_STAGES.map((s) => (
+          <div key={s.k} className={"st" + (stFilter === s.k ? " on" : "")} onClick={() => setStFilter(stFilter === s.k ? null : s.k)}>
+            <i>{s.k} {s.name}</i><b>{byStage[s.k].n}</b>
+            {byStage[s.k].stall > 0 && <span className="hmpill" style={{ background: "#FFF7ED", color: HM_C.stall, cursor: "pointer" }} onClick={(e) => { e.stopPropagation(); setStFilter("_stall"); }}>정체 {byStage[s.k].stall}</span>}
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: 10.8, color: HM_C.mut, margin: "6px 2px 10px" }}>D1~D4 데이터 생성 구간 │ L5~L8 가치 전환 구간 · 기본 정렬 = 정체 기간(방치된 사람 먼저) {stFilter && <button className="hmbtn gh" style={{ marginLeft: 6, padding: "2px 8px", fontSize: 10.5 }} onClick={() => setStFilter(null)}>필터 해제</button>}</div>
+      {list.map((c, i) => (
+        <div key={i} className={"hmrow" + (c.status.k === "HELD" ? " lock" : "")}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+            <div style={{ fontWeight: 900 }}>{c.mask} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.m.sex} · {c.dan.replace("지역단", "")}</span>
+              <span className="hmpill" style={{ marginLeft: 7, background: HM_C.bg, color: HM_C.dark }}>{c.stage.cur} {HM_STAGES.find((s) => s.k === c.stage.cur).name}</span>
+              {c.stage.stalled && <span className="hmpill" style={{ marginLeft: 4, background: "#FFF7ED", color: HM_C.stall }}>🟠 정체 {c.stage.stalledDays}일</span>}
+            </div>
+            <div><HmStageDots reached={c.stage.reached} /> <HmStatusChip st={c.status} /></div>
+          </div>
+          <div className="hmgrid2" style={{ marginTop: 8 }}>
+            <div style={{ background: "#F8FAFC", borderRadius: 9, padding: "7px 11px", fontSize: 11.6, lineHeight: 1.7 }}>
+              <b style={{ color: HM_C.deep, fontSize: 11 }}>건강현황</b><br />
+              종합 등급 <b>{c.hb.grade}</b> · 관리 필요 <b>{c.hb.sevN}항목</b> · 위험 밴드 <b>{c.hb.band}</b><br />
+              최근 검진 {c.hb.year} · 리포트 {c.hb.seen ? "열람 ✓" : "미열람"}
+            </div>
+            <div style={{ background: "#F8FAFC", borderRadius: 9, padding: "7px 11px", fontSize: 11.6, lineHeight: 1.7 }}>
+              <b style={{ color: HM_C.deep, fontSize: 11 }}>관리상태</b><br />
+              {c.status.ko} · 마지막 접촉 {c.last ? _hmDay(c.last.at) : "없음"}<br />
+              다음 터치 {c.next ? _hmDay(c.next.when) : c.dueNow ? "지금" : "예정 없음"}{c.plan.endSrc ? " · 만기 관리 중" : ""}
+            </div>
+          </div>
+          <div className="hmhi"><Bot size={12} style={{ verticalAlign: -2 }} /> {c.hi}</div>
+          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+            <button className="hmbtn gh" onClick={() => setDetail(detail === c.m.email ? null : c.m.email)}>{detail === c.m.email ? "상세 접기" : "상세"}</button>
+            <button className="hmbtn" disabled={c.status.k === "HELD"} onClick={() => onContact(c.m, { key: c.dueNow ? c.dueNow.key : "manual", tab: "⑨", label: c.dueNow ? c.dueNow.title.split("—")[0].trim() : "정기 확인 연락", result: "연결됨" })}><Phone size={12} /> 연결하기</button>
+          </div>
+          {detail === c.m.email && (<div style={{ marginTop: 9, borderTop: "1px dashed #E5E7EB", paddingTop: 8, fontSize: 11.7, lineHeight: 1.7 }}>
+            <b style={{ color: HM_C.deep, fontSize: 11 }}>단계 근거(데이터가 정한다 — 수기 변경 불가)</b>
+            {c.stage.evidence.map((e, j) => (
+              <div key={j} style={{ color: e.ok ? HM_C.ink : "#9CA3AF" }}>{e.ok ? "✓" : "○"} <b>{e.k}</b> {HM_STAGES.find((s) => s.k === e.k).name} — {e.why}</div>
+            ))}
+            <b style={{ color: HM_C.deep, fontSize: 11, display: "block", marginTop: 7 }}>동의 상태(무엇까지 말할 수 있는가)</b>
+            <div>상담·안내 ✓ ({hmConsentOK(c.m).why}) · 검진결과 활용 ✓ · 가족 돌봄 {localStorage.getItem("hifin_family_" + c.m.email) ? "✓" : "✗(가족 본인 동의 필요)"}</div>
+            {c.last && <div style={{ marginTop: 5 }}><b style={{ color: HM_C.deep, fontSize: 11 }}>접촉 이력</b> — {_hmLs("hifin_hm_touch_" + c.m.email, []).slice(-3).map((t) => `${_hmDay(t.at)} ${t.act}(${t.result})`).join(" · ")}</div>}
+          </div>)}
+        </div>
+      ))}
+      {!list.length && <div className="hmrow" style={{ color: HM_C.mut }}>이 필터에 해당하는 고객이 없어요.</div>}
+    </div>)}
+    {view === "stat" && (<div>
+      <div className="hmcard" style={{ marginTop: 0, background: HM_C.bg }}>
+        <b style={{ fontSize: 12.5 }}>실적의 정의 — 판매액이 아니라 「단계 전진 기여」</b>
+        <div style={{ fontSize: 11.4, color: HM_C.mut, marginTop: 3 }}>금액이나 등수 매기기는 없어요. ② 순번 배분은 평가와 무관해요(공정성 고지).</div>
+      </div>
+      <div className="hmgrid2" style={{ marginTop: 10 }}>
+        {[["담당 고객", stats.assigned + "명"], ["검진보험 순번 배정", stats.insAssigned + "건"], ["단계 전진(이번 주기)", stats.adv + "명"], ["건강 터치 누적", stats.touches + "회"], ["최근 7일 접촉 커버", stats.done7 + "명"], ["정체 회원(관리 대상)", stats.stalledN + "명"], ["첫 연결 완료율(락 해제 후)", stats.firstRate + "%"], ["접촉 락 준수", stats.lockOk ? "100% ✓" : `위반 시도 ${stats.viol}건`]].map(([k, v], i) => (
+          <div key={i} style={{ border: "1px solid #F1F5F9", borderRadius: 11, padding: "10px 13px" }}>
+            <div style={{ fontSize: 11, color: HM_C.mut, fontWeight: 700 }}>{k}</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: k.indexOf("정체") >= 0 && stats.stalledN ? HM_C.stall : HM_C.dark }}>{v}</div>
+          </div>
+        ))}
+      </div>
+      <div className="hmcard">
+        <b style={{ fontSize: 12.3 }}>컴플라이언스 자가점검</b>
+        <div style={{ fontSize: 11.8, color: HM_C.mut, marginTop: 5, lineHeight: 1.8 }}>
+          ✓ 무동의 접촉 0건(생성 시점 배제 — leadDbAudit 원칙) · ✓ 월 접촉 한도 초과 0건(leadRouting 쿨다운 계승)<br />
+          {stats.lockOk ? "✓" : "✗"} 접촉 락 위반 시도 {stats.viol}건 · ✓ 금칙어 발송 0건(발송 전 검사) · 내 조회 기록은 회원 금고 접근 로그에 전부 남아요
+        </div>
+      </div>
+    </div>)}
+  </div>);
+}
+
+/* ══ 메인 섹션 ══ */
+function HealthMateSection({ onGo }) {
+  const [code, setCode] = React.useState(() => { try { return sessionStorage.getItem("hifin_hm_code") || null; } catch (e) { return null; } });
+  const [tab, setTab] = React.useState(9);
+  const [tick, setTick] = React.useState(0);
+  const [toastM, setToastM] = React.useState("");
+  const refresh = () => setTick((t) => t + 1);
+  if (!code) return <HmGate onPass={(c) => setCode(c)} />;
+  const pro = hmProOf(code);
+  if (!pro || pro.status !== "활성") { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} return <HmGate onPass={(c) => setCode(c)} />; }
+  const onContact = (m, act) => {
+    const r = hmAct(code, m, act);
+    setToastM(r.ok ? `기록됐어요 — ${act.label}(${act.result || "연결됨"}) · 체인·금고 로그 저장` : r.reason);
+    setTimeout(() => setToastM(""), 3500);
+    refresh();
+    return r;
+  };
+  /* Today 집계 */
+  const members = hmScope(code);
+  const cards = members.map((m) => hmCustomerCard(m));
+  const needN = cards.filter((c) => c.status.k === "NEED").length;
+  const heldN = hmInsQueue().filter((x) => x.code === code && hmLockState({ email: x.email }).locked).length;
+  const stallN = cards.filter((c) => c.stage.stalled).length;
+  const expN = cards.filter((c) => c.plan.items.some((x) => x.key.indexOf("m") === 0 && x.due && !x.done)).length;
+  const slaN = hmSignals(code).filter((s) => s.sla <= 4).length;
+  const TABS = [
+    [1, "① 회원 신호", Users], [2, "② 보험 배정·대기", ShieldCheck], [3, "③ 검진 후 터치", HeartPulse],
+    [4, "④ 질병 예측", Activity], [5, "⑤ 건강 행동", ShoppingCart], [6, "⑥ 가족·재가", HeartHandshake],
+    [7, "⑦ 보장분석 대화", MessageSquare], [8, "⑧ 프로 제안함", Sparkles], [9, "⑨ 내 고객·실적", TrendingUp],
+  ];
+  return (
+    <div className="hmwrap" key={tick}><HmStyle />
+      <div className="hmhero">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+          <div>
+            <div className="k">HEALTHMATE PRO CONSOLE</div>
+            <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>· {pro.code} · {pro.dan} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격 보유" : " · 안내 전용"}</span></h2>
+            <div style={{ fontSize: 12, opacity: .92 }}>하이가 분석·선별·문안·타이밍을 만들고, 프로는 확인·접촉·기록합니다 — 동의의 범위가 곧 활동의 범위.</div>
+          </div>
+          <button className="hmbtn gh" style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }} onClick={() => { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} setCode(null); }}>코드 잠금</button>
+        </div>
+        <div className="hmnum">
+          {[["오늘 접촉할 회원", needN + slaN, 9], ["SLA 임박(4h)", slaN, 1], ["검진결과 대기(락)", heldN, 2], ["만기 예정 터치", expN, 3], ["정체 회원", stallN, 9]].map(([k, v, t], i) => (
+            <div key={i} className="n" style={i === 2 ? { opacity: .75 } : null} onClick={() => setTab(t)}><b>{v}</b><span>{k}{i === 2 ? " 🔒" : ""}</span></div>
+          ))}
+        </div>
+        <div style={{ marginTop: 10, background: "rgba(255,255,255,.13)", borderRadius: 10, padding: "8px 12px", fontSize: 12, lineHeight: 1.6 }}>
+          <b>🤖 하이 브리핑</b> — {heldN ? `검진결과 대기 ${heldN}건은 지금 하면 안 되는 일이에요(자동 해제 예정). ` : ""}{stallN ? `정체 ${stallN}명이 오늘의 우선순위예요 — ⑨ 현황판에서 멈춘 단계를 확인하세요. ` : ""}{needN ? `터치 시점이 온 회원 ${needN}명이 있어요.` : "예정 터치가 없어요 — 고객 현황을 둘러보세요."}
+        </div>
+      </div>
+      <div className="hmtabs">
+        {TABS.map(([n, label, Ic]) => <button key={n} className={"hmtab" + (tab === n ? " on" : "")} onClick={() => setTab(n)}><Ic size={13} /> {label}</button>)}
+      </div>
+      <div style={{ marginTop: 12 }}>
+        {tab === 1 && <HmTabSignals code={code} onContact={onContact} />}
+        {tab === 2 && <HmTabIns code={code} pro={pro} onContact={onContact} refresh={refresh} />}
+        {tab === 3 && <HmTabTouch code={code} onContact={onContact} />}
+        {tab === 4 && <HmTabRisk code={code} />}
+        {tab === 5 && <HmTabLife code={code} kind="shop" />}
+        {tab === 6 && <HmTabLife code={code} kind="care" />}
+        {tab === 7 && <HmTabUw code={code} />}
+        {tab === 8 && <HmTabIdeas code={code} />}
+        {tab === 9 && <HmTabBoard code={code} pro={pro} onContact={onContact} />}
+      </div>
+      <div className="hmfoot" style={{ textAlign: "center" }}>
+        개인정보보호법 §17·§22②·§23·§24 · 신용정보법 §32 · 보험업법(설명의무·부당 권유 금지) · 정보통신망법 §50 —
+        원본 건강수치·원가성 정보 비노출 · 진단·인수·등급 단정 금지 · 시연 환경(체험 회원 시드) 고지
+      </div>
+      {toastM && <div style={{ position: "fixed", bottom: 26, left: "50%", transform: "translateX(-50%)", background: HM_C.ink, color: "#fff", borderRadius: 10, padding: "9px 16px", fontSize: 12.5, zIndex: 1300, boxShadow: "0 10px 30px rgba(0,0,0,.3)" }}>{toastM}</div>}
+    </div>
+  );
+}
+
 /* 체험 회원 데이터 별칭 — 실제 배열은 src/data/demo_members.js(plain script) → window.__HHDATA.DEMO_MEMBERS.
    ⚠️ 시연·테스트용 가상 데이터. 모든 회원 isDemoUser:true. */
 const demoMembers = (typeof DEMO_MEMBERS !== "undefined" && DEMO_MEMBERS) || [];
@@ -19970,6 +20537,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-08-19", ver:"v1.2", ch:[8], feat:"헬스메이트(프로) 센터 — DB 8단계 고객관리 콘솔", src:"헬스메이트 센터(신규 섹션)", summary:"코드 부여 전문헬스메이트(프로) 전용 운영 콘솔을 신설 — 하이가 신호·근거·문안·타이밍을 만들고 프로는 확인·접촉·기록만 하며, 고객 단계는 DB 4단계(확보·검진·분석·통합)+이후 4단계(케어·확장·자산화·평생)로 실데이터만 근거로 자동 판정. 검진결과 수령 전 접촉 락(시스템만 해제), 검진대비보험 지역단 순번 배분, 결과+보장 결합 첫 연결, 가능성 3구간 인수조건 대화, 프로 제안함, 건강현황×관리상태 2축 현황판(실적=단계 전진)을 현대해상 오렌지 디자인으로 구현", refs:[], status:"반영", hash:"b36fe10", auto:true },
   { date:"2026-08-19", ver:"v1.1", ch:[15], feat:"동의 항목 축소·보유 3년", src:"청약 개인신용정보 동의", summary:"소득재산·직업운전국적·음성정보·국외 재보험사 이전을 삭제하고 보유기간을 3년으로 줄여 무상 상품에 맞는 최소 수집 범위로 조정", refs:[], status:"반영", hash:"c71ef08", auto:true },
   { date:"2026-08-19", ver:"v1.1", ch:[15], feat:"선택 동의 상담·안내 재정의", src:"청약·보험·마이페이지·하이·금고 동의문", summary:"동의서 원문 수집·이용 목적 4가지를 선택 동의에 결합하고 마케팅 용어를 화면에서 제거해 회원 심리 부담을 낮춤", refs:[], status:"반영", hash:"03e5272", auto:true },
   { date:"2026-08-19", ver:"v1.1", ch:[15], feat:"개인(신용)정보 동의 3층 압축", src:"청약 화면·금고 동의 스키마", summary:"신용정보동의서 체크 9건을 요약카드·그룹·전문 3층으로 압축해 회원 부담을 낮추면서 법정 구분 동의와 개별 저장을 그대로 유지", refs:[], status:"반영", hash:"edb79b3", auto:true },
@@ -20012,7 +20580,7 @@ const WP_AUTO_LOG = [
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"협주(Ensemble) — 여러 에이전트가 한 답을 함께(Phase E)", src:"agentEnsemble 5단 파이프라인+ensembleGuard 헌법6조+다중 담당 배지", summary:"담당 여럿에 걸친 질문을 담당별 조각으로 나눠 각자 가드를 통과한 답만 받아 하나로 엮되 합성 중 새 문장을 만들지 않도록 원문과 사전 검수 이음말로만 조립하고 응급이면 협주하지 않게 함, 판정 300건 정확도 100%·가드 우회 0·실사용 발동률 0.6%", refs:[], status:"반영", hash:"c11a2ca", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"RPM 감시 지표 확대 — 혈당·산소포화도·낙상(Phase D)", src:"rpmAlert RPM_METRICS 레지스트리+지표별 evaluate+FamilyCare 다지표 카드", summary:"혈압만 보던 원격 모니터링을 지표 레지스트리로 일반화해 혈당 저혈당 반복과 산소포화도 하락과 낙상 응답없음까지 같은 트리아지로 잡고 여러 지표가 울리면 심한 것부터 보여주며 조용한 지표도 함께 알려 보호자가 무엇을 지켜보는지 알게 함, 지표별 임계값 재계산 18건 실패 0", refs:[], status:"반영", hash:"ead6d2f", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"RPM 경보 ↔ A4 트리아지 연결(Phase D)", src:"rpmAlert 단일소스+hcTriage 데이터경로+FamilyCare 경보카드", summary:"원격 모니터링이 잡은 이상 수치를 화면과 하이가 같은 판정으로 공유해 보호자가 위험을 모르고 물어도 응급 안내가 먼저 나가게 함, 근거 수치를 함께 제시하고 배경 경보가 담당 라우팅을 삼키지 않도록 분리, RPM 연계 10건 실패 0", refs:[], status:"반영", hash:"193e2eb", auto:true },
-  { date:"2026-07-29", ver:"v1.2", ch:[], feat:"A4 재가돌봄 에이전트 응급 트리아지(Phase D)", src:"longtermCareKB+homecareAgent+homecareGuard 헌법6조", summary:"보호자 상담에서 위험 신호를 먼저 걸러 119·진료 안내를 응답 맨 앞에 두고 등급 판정과 금액은 단정하지 않으면서 제도 절차와 본인부담 계산으로 다음 한 걸음을 안내함, 응급 누락 0·가드 600건 누출 0", refs:[], status:"반영", hash:"924bf80", auto:true },
+  { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"A4 재가돌봄 에이전트 응급 트리아지(Phase D)", src:"longtermCareKB+homecareAgent+homecareGuard 헌법6조", summary:"보호자 상담에서 위험 신호를 먼저 걸러 119·진료 안내를 응답 맨 앞에 두고 등급 판정과 금액은 단정하지 않으면서 제도 절차와 본인부담 계산으로 다음 한 걸음을 안내함, 응급 누락 0·가드 600건 누출 0", refs:[], status:"반영", hash:"924bf80", auto:true },
   { date:"2026-07-29", ver:"v1.2", ch:[8], feat:"A3 건강쇼핑 비교 추천 엔진(Phase C)", src:"shopCompare+shoppingAgent+shoppingGuard 헌법6조", summary:"용량·1일 섭취량·성분 함량이 제각각인 제품을 1일 단가와 성분당 단가로 정규화해 플랫폼 안팎을 같은 표에 올려 회원이 성능·가격으로 직접 고르게 함, 라벨 미확인 제품은 기준을 섞지 않고 분리, 가드 600건 누출 0·계산 불일치 0", refs:[], status:"반영", hash:"ffac7fb", auto:true },
   { date:"2026-07-28", ver:"v1.1", ch:[7], feat:"A2 보험·치료비 전문 에이전트(Phase B)", src:"insuranceGuard 헌법5조+insuranceAgent 툴·RAG+agentPostProcess", summary:"보험 상담을 계산 툴 인용과 규제 가드로 통제해 권유·지급확정·해지유도 없이 숫자 근거만으로 답하게 함, 규제·환각 위반 0", refs:[], status:"반영", hash:"b3730e8", auto:true },
   { date:"2026-07-28", ver:"v1.1", ch:[7], feat:"멀티 에이전트 라우터·핸드오프(Phase A)", src:"agentRegistry+agentRouter+agentHandoff+A1 파일럿", summary:"하이를 오케스트레이터로 두고 도메인 질문을 전문 에이전트에게 인계하는 구조를 세워 분야별 학습·RAG·평가가 가능해짐, 라우팅 500문항 100%", refs:[], status:"반영", hash:"ead57e1", auto:true },
@@ -25941,6 +26509,428 @@ function lrSeedDemo() {
   ];
   try { localStorage.setItem(k, JSON.stringify(demo)); } catch (e) {}
   return true;
+}
+
+/* ══════════════ 헬스메이트(프로) 센터 — 단일 소스(healthMate.js) ══════════════
+   설계서: docs/hi_healthmate/헬스메이트섹션_설계프롬프트_v1.2.md
+   원칙: ①하이 퍼스트(프로는 확인·접촉·기록만) ②무동의 0명(생성 시점 배제) ③원본 수치 미노출
+        ④원가·수수료 비노출 ⑤월권 금지 ⑥접촉 락(검진결과 전 접촉 금지 — 시스템만 해제)
+        ⑦단계는 데이터가 정한다(수기 승급 UI 없음) — 계산하지 않고 기존 엔진을 "조립"만 한다.
+   ⚠️ 시연 환경: 체험 회원(isDemoUser)의 동의·검진값은 시연 시드이며 화면에 그 사실을 고지한다. */
+
+/* ── 현대해상 오렌지 팔레트(디자인 단일 소스) ── */
+const HM_C = { pri: "#F5821F", dark: "#D96A00", deep: "#B34E00", bg: "#FFF6EE", line: "#FFDDBE", ink: "#1F2937", mut: "#6B7280", ok: "#16A34A", warn: "#F59E0B", stall: "#EA580C", hold: "#94A3B8", red: "#DC2626", blue: "#2563EB" };
+
+/* ── 프로 코드 명부(시연) — 코드=자격·권한·실적의 단일 키 ── */
+const HM_CODES = [
+  { code: "HM-SN-26-014", name: "김지원", dan: "강남지역단", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-02" },
+  { code: "HM-SN-26-021", name: "정태윤", dan: "강남지역단", grade: "HM2", gradeKo: "상담", lic: true, status: "활성", since: "2026-04" },
+  { code: "HM-SN-26-030", name: "이수민", dan: "강남지역단", grade: "HM4", gradeKo: "지역리드", lic: true, status: "활성", since: "2026-01" },
+  { code: "HM-NB-26-007", name: "박성호", dan: "강북지역단", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-02" },
+  { code: "HM-NB-26-012", name: "한서연", dan: "강북지역단", grade: "HM1", gradeKo: "안내", lic: false, status: "활성", since: "2026-06" },
+  { code: "HM-WS-26-005", name: "최민준", dan: "강서지역단", grade: "HM2", gradeKo: "상담", lic: true, status: "활성", since: "2026-03" },
+  { code: "HM-GG-26-009", name: "서지우", dan: "경기지역단", grade: "HM2", gradeKo: "상담", lic: true, status: "활성", since: "2026-03" },
+  { code: "HM-GG-26-018", name: "문가영", dan: "경기지역단", grade: "HM1", gradeKo: "안내", lic: false, status: "교육중", since: "2026-07" },
+  { code: "HM-WD-26-001", name: "오현석", dan: "광역(전국)", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-01" },
+  { code: "HM-WD-26-002", name: "임다혜", dan: "광역(전국)", grade: "HM2", gradeKo: "상담", lic: true, status: "정지", since: "2026-02" },
+];
+function hmProOf(code) { for (const p of HM_CODES) if (p.code === code) return p; return null; }
+function hmActivePros(dan) { const l = HM_CODES.filter((p) => p.status === "활성" && (p.dan === dan)); return l.length ? l : HM_CODES.filter((p) => p.status === "활성" && p.dan === "광역(전국)"); }
+
+/* ── 8단계 정의(단일 소스) — DB 4단계 + 이후 4단계. 판정은 hmStageOf가 "데이터만" 근거로 수행 ── */
+const HM_STAGES = [
+  { k: "D1", part: "DB", name: "확보", desc: "동의 + 기본 세그먼트", mission: "연락하지 않는다 — 락 상태에서 준비만", tab: 2 },
+  { k: "D2", part: "DB", name: "검진 데이터", desc: "1세대 자산 — 실측 검진값(금고)", mission: "첫 연결 — 결과+보장 결합 안내", tab: 3 },
+  { k: "D3", part: "DB", name: "분석 데이터", desc: "2세대 자산 — 등급·위험도·리포트", mission: "예측 해설 · 보장분석 대화", tab: 4 },
+  { k: "D4", part: "DB", name: "통합 데이터", desc: "3세대 자산 — 보험·행동·가족 결합", mission: "생활 밀착 관리 · 공백 채우기", tab: 5 },
+  { k: "L5", part: "LIFE", name: "정기 케어", desc: "단발 → 주기(반복 터치·시계열)", mission: "주기 관리 · 만기 터치 · 재검진", tab: 3 },
+  { k: "L6", part: "LIFE", name: "관계 확장", desc: "개인 → 가구(가족 데이터)", mission: "가족 상담 · 돌봄 설계", tab: 6 },
+  { k: "L7", part: "LIFE", name: "데이터 자산화", desc: "동의 증서 · 데이터 이용 대가", mission: "설명 지원 · 동의 관리 도움(권유 아님)", tab: 9 },
+  { k: "L8", part: "LIFE", name: "평생주기", desc: "다년 추이 → 재산정·재설계", mission: "재산정 안내 · 차기 생애설계", tab: 7 },
+];
+/* 관리상태 8종 — 단계(데이터)와 다른 축(관계) */
+const HM_MSTATUS = {
+  HELD: { ko: "대기(접촉 금지)", c: HM_C.hold, bg: "#F1F5F9" },
+  NEED: { ko: "접촉 필요", c: HM_C.red, bg: "#FEF2F2" },
+  DONE: { ko: "접촉 완료", c: HM_C.blue, bg: "#EFF6FF" },
+  PROG: { ko: "진행 중", c: HM_C.ok, bg: "#F0FDF4" },
+  HOLDREQ: { ko: "보류(회원 요청)", c: HM_C.warn, bg: "#FFFBEB" },
+  STALL: { ko: "정체", c: HM_C.stall, bg: "#FFF7ED" },
+  CLOSED: { ko: "종결", c: HM_C.mut, bg: "#F8FAFC" },
+};
+
+/* ── 「이 화면의 DB」 패널 — 원천·의미·활용·근거 + 담당 단계(전 탭 의무) ── */
+const HM_DB_NOTE = {
+  t1: { stage: "D1 → D2", src: "회원 행동 로그 + 리드 신호 감지(lrDetectType·lrScore — 검진·보장공백·청구·재산정·가족·직접요청 6종)", mean: "지금 이 회원에게 무슨 일이 일어났는가. 신호가 곧 접촉의 이유다.", use: "접촉 우선순위와 첫 마디를 정한다 — 근거 없는 접촉은 이 화면에 존재하지 않는다.", legal: "상담·안내 동의(필수) + 동의 증서 유효(철회 즉시 소멸) · 개인정보보호법 §22②" },
+  t2: { stage: "D1", src: "검진 예약 DB + 검진대비보험 청약 상태 + 가입증서 스냅샷(hifin_ins_certs)", mean: "무상 보장을 받고 검진을 앞둔 회원 — 아직 데이터가 만들어지기 전 단계.", use: "지금은 연락하지 않는다. 결과가 나오면 첫 연결을 맡는다(순번 배분).", legal: "청약 시 상담·안내 동의(필수) + 보험업법상 계약 관리 · 검진 전 접촉 금지는 자율규제" },
+  t3: { stage: "D2 → D3", src: "검진 결과 분석 엔진(checkupEngine — 등급·관리필요 항목) + 증서 만기 + 정밀검사 권고", mean: "결과가 나온 지금이 회원이 가장 도움을 원하는 시점이다.", use: "결과 해설과 보장 안내를 한 번의 연락으로 전달한다(두 번 걸면 영업으로 읽힌다).", legal: "검진결과 활용 동의 + 상담·안내 동의 · 원본 수치는 화면 미노출(등급·플래그만)" },
+  t4: { stage: "D3", src: "질병 위험 예측(riskPredict — 검진 지표+연령·성별 코호트) · 미연동 시 회원 건강 프로필(시연 시드)", mean: "확정된 미래가 아니라 관리하면 바뀌는 통계적 경향이다.", use: "예방 검진·주치의 연결의 근거로만 쓴다 — 인수·요율 사용 금지.", legal: "검진결과 활용 동의 · 예측은 진단이 아님(고정 면책) · 밴드 표기만(소수점 금지)" },
+  t5: { stage: "D4 · L5", src: "커머스 온톨로지(질환-성분-제품) + 복약·실천 이행률(adherence) + 정기구매 주기", mean: "회원이 실제로 무엇을 하고 있는가 — 선언이 아니라 행동.", use: "재구매 시점·성분 공백을 근거와 함께 안내한다(1일 단가 기준 비교, 압박 없음).", legal: "쇼핑·건강관리 이용 동의 · 원가성 정보 비노출" },
+  t6: { stage: "D4 → L6", src: "가족 등록(familySet) + 장기요양 지식(longtermCareKB) + 입원·청구 플래그", mean: "회원의 부담은 본인이 아니라 가족에게서 온다.", use: "재가급여 가능성 안내와 가족 상담 연결 — 응급 신호가 있으면 상담보다 119가 먼저.", legal: "가족 돌봄 서비스 이용 동의(가족 본인 동의 별도) · 등급·금액 단정 금지" },
+  t7: { stage: "D3 · L8", src: "보유계약 + 보장공백 분석(analyzeCoverageGap) + 인수 시뮬(underwrite·coverageMatch·ladderPlan) + 건강 등급", mean: "이 회원에게 비어 있는 보장과, 지금 건강상태에서 가능한 조건.", use: "현대해상 보장분석과 이어 붙여 상담을 준비한다 — 가능성 3구간으로만 말한다.", legal: "보험 상담·안내 동의 + 보장분석 이용 동의 · 인수 확정은 인수사 심사(면책 100%)" },
+  t8: { stage: "운영(전 단계)", src: "프로가 직접 작성한 현장 의견 + 채택·반영 이력(회원 데이터 아님)", mean: "현장은 지표가 못 보는 것을 본다.", use: "제품 개선 백로그의 1차 입력 — 채택·반영은 사람 검수(자동 반영 없음).", legal: "프로 본인 작성물 · 회원 개인정보 기재 금지(금칙어 검사)" },
+  t9: { stage: "전 단계(D1~L8) 관측", src: "내 코드 배정 회원의 단계 판정(hmStageOf) + 건강 등급(checkupEngine) + 접촉 이력", mean: "내가 맡은 사람들이 지금 어디에 있고, 어디서 멈춰 있는가.", use: "오늘 누구를 어느 방향으로 밀어야 하는지 정한다 — 기본 정렬은 정체 기간.", legal: "상담·안내 동의 + 프로 본인 활동 기록 · 실적은 단계 전진으로 정의(금액·순위 없음)" },
+};
+
+/* ── 유틸 ── */
+function _hmLs(k, fb) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; } }
+function _hmSave(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function _hmHash(s) { let h = 5381; s = String(s || "x"); for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h >>> 0; }
+function _hmMask(name) { const n = String(name || "회원"); return n[0] + "○" + (n.length > 2 ? "○" : ""); }
+function _hmBand(m) { const a = m.regAge || m.age || 45; return Math.floor(a / 10) * 10 + "대"; }
+function _hmDay(ts) { const d = new Date(ts); return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`; }
+const _HM_DAY = 86400000;
+
+/* 시도 정규화 → 지역단(leadRouting LR_DAN 재사용) */
+function hmDanOf(m) {
+  let s = String(m.sido || "서울").slice(0, 2);
+  const FIX = { "경상": (m.sido || "").indexOf("북") >= 0 ? "경북" : "경남", "전라": (m.sido || "").indexOf("북") >= 0 ? "전북" : "전남", "충청": (m.sido || "").indexOf("북") >= 0 ? "충북" : "충남" };
+  if (FIX[s]) s = FIX[s];
+  const map = (typeof LR_DAN !== "undefined" && LR_DAN[s]) || (typeof LR_DAN !== "undefined" && LR_DAN["서울"]) || { dans: ["강북지역단"] };
+  let dan = map.dans[0];
+  if (s === "서울" && typeof LR_SEOUL_GU !== "undefined") { const g = m.sigungu || ""; for (const d in LR_SEOUL_GU) if (LR_SEOUL_GU[d].indexOf(g) >= 0) { dan = d; break; } }
+  return dan;
+}
+/* 회원 → 담당 프로(결정론) — 지역단 활성 프로 중 해시 배정. 순번 배분(②탭)은 hmAssignInsRR가 별도 수행 */
+function hmProForMember(m) {
+  const pros = hmActivePros(hmDanOf(m));
+  return pros[_hmHash(m.id || m.email) % pros.length];
+}
+
+/* ── 동의 게이트 — 무동의 0명(생성 시점 배제). 철회(mkt:false 명시) 즉시 소멸 ── */
+function hmConsentOK(m) {
+  try {
+    const tk = (typeof anonToken === "function") ? anonToken(m) : null;
+    const v = tk && typeof vaultLoad === "function" ? vaultLoad(tk) : null;
+    const st = v && v.consents && v.consents.state;
+    if (st && st.mkt === false) return { ok: false, why: "상담·안내 동의 철회 — 목록 제외" };
+    if (st && st.mkt === true) return { ok: true, why: "상담·안내 동의(금고 기록 " + (v.consents.ver || "") + ")" };
+  } catch (e) {}
+  if (m.isDemoUser) return { ok: true, why: "상담·안내 동의(체험 회원 시연 시드)" };
+  return { ok: false, why: "동의 기록 없음 — 목록 제외" };
+}
+
+/* ── 내 고객 스코프 — 생성 시점에 동의·배정 필터(조회 필터가 아님) ── */
+function hmScope(code) {
+  const all = (typeof demoMembers !== "undefined" ? demoMembers : []).filter((m) => m && m.isDemoUser);
+  return all.filter((m) => hmConsentOK(m).ok && hmProForMember(m).code === code);
+}
+function hmScopeAll(code) { /* HM4 지역리드: 지역단 전체 관측(집계용 — 개인 상세는 스코프와 동일 규칙) */
+  const p = hmProOf(code);
+  if (!p || p.grade !== "HM4") return hmScope(code);
+  const all = (typeof demoMembers !== "undefined" ? demoMembers : []).filter((m) => m && m.isDemoUser && hmConsentOK(m).ok);
+  return all.filter((m) => hmDanOf(m) === p.dan);
+}
+
+/* ── ② 검진대비보험 순번 배분(라운드로빈) — 성과가 아니라 순서로 나눈다 ── */
+function hmAssignInsRR(m) {
+  const dan = hmDanOf(m);
+  const pros = hmActivePros(dan).filter((p) => p.lic);   // 모집자격 보유만
+  if (!pros.length) return null;
+  const key = "hifin_hm_rr_" + dan;
+  const last = Number(localStorage.getItem(key) || "-1");
+  const idx = (last + 1) % pros.length;
+  try { localStorage.setItem(key, String(idx)); } catch (e) {}
+  const prev = pros[(idx - 1 + pros.length) % pros.length];
+  return { pro: pros[idx], reason: `${dan} 순번 배분 (직전 ${prev.code.slice(-3)} → 이번 ${pros[idx].code.slice(-3)})` };
+}
+/* ② 배정 큐 — 시연: 검진대비보험 가입 회원(결정론 선별)을 최초 1회 순번 배분해 영속 저장 */
+function hmInsQueue() {
+  let q = _hmLs("hifin_hm_insq", null);
+  if (q) return q;
+  const all = (typeof demoMembers !== "undefined" ? demoMembers : []).filter((m) => m && m.isDemoUser && hmConsentOK(m).ok);
+  const picked = all.filter((m) => _hmHash("insq" + (m.id || m.email)) % 3 === 0).slice(0, 5);   // 시연: 가입 회원 5명
+  q = picked.map((m) => { const a = hmAssignInsRR(m); return { email: m.email, name: m.name, at: Date.now() - (_hmHash(m.email) % 6 + 1) * _HM_DAY, code: a ? a.pro.code : null, reason: a ? a.reason : "" }; });
+  _hmSave("hifin_hm_insq", q);
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `검진대비보험 배정 큐 생성(시연) — ${q.length}건 순번 배분(무동의 0명)` }); } catch (e) {}
+  return q;
+}
+
+/* ── 접촉 락 — 검진결과 수령 전 접촉 금지. 해제는 시스템 이벤트만(프로·관리자 해제 버튼 없음) ── */
+function hmLockState(m) {
+  const inQ = hmInsQueue().some((x) => x.email === m.email);
+  if (!inQ) return { locked: false, reason: null };
+  const seen = _hmLs("hifin_hm_resultseen_" + m.email, null);
+  if (seen) return { locked: false, reason: null, seenAt: seen.at };
+  return { locked: true, reason: "검진결과 수령 전 — 접촉 금지(하이가 결과 수령 시 자동 해제)" };
+}
+/* 시스템 이벤트 시뮬 — 검진결과 수령(시연 트리거 · 프로의 임의 해제가 아님) */
+function hmSimResult(email) {
+  if (_hmLs("hifin_hm_resultseen_" + email, null)) return { ok: false, reason: "이미 수령됨" };
+  _hmSave("hifin_hm_resultseen_" + email, { at: Date.now() });
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `검진결과 수령 이벤트(시연) — 접촉 락 자동 해제(${_hmMask(email)})` }); } catch (e) {}
+  return { ok: true };
+}
+function hmLockViolation(code, m) {   // 잠금 위반 시도 — 감사 기록
+  const l = _hmLs("hifin_hm_lockviol", []); l.push({ at: Date.now(), code, email: m.email });
+  _hmSave("hifin_hm_lockviol", l);
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `LOCK_VIOLATION_ATTEMPT — ${code} · 검진결과 전 접촉 시도 차단` }); } catch (e) {}
+}
+
+/* ── 단계 판정 — 데이터만 근거(수기 승급 없음). 전이는 캐시 비교 후 체인 기록 ── */
+function hmStageOf(m) {
+  const ev = [];
+  const push = (k, ok, why) => ev.push({ k, ok: !!ok, why });
+  const consent = hmConsentOK(m);
+  push("D1", consent.ok, consent.why);
+  /* D2 — 1세대: 금고 실측 우선, 없으면 체험 회원 시연 실측 시드 */
+  let d2 = false, d2w = "검진 데이터 없음";
+  try {
+    const vk = (typeof vaultCheckupMap === "function") ? vaultCheckupMap(m) : null;
+    if (vk) { d2 = true; d2w = `금고 실측 ${vk.n}항목 · ${vk.date}(1세대 자산)`; }
+    else if (m.isDemoUser && typeof genMemberCheckup === "function") { const c = genMemberCheckup(m); if (c) { d2 = true; d2w = `검진 실측 ${Object.keys(c.items).length}항목(시연 실측 시드)`; } }
+  } catch (e) {}
+  push("D2", d2, d2w);
+  /* D3 — 2세대: AI 분석 등급 산출 */
+  let d3 = false, d3w = "분석 미생성";
+  try { const g = (typeof memberHealthGrade === "function") ? memberHealthGrade(m) : null; if (d2 && g) { d3 = true; d3w = `AI 분석 등급 「${g.grade}」 산출(2세대 자산)`; } } catch (e) {}
+  push("D3", d3, d3w);
+  /* D4 — 3세대: 결합 2종 이상(보험·행동·가족·상담이력) */
+  const parts = [];
+  try { const certs = _hmLs("hifin_ins_certs", []); if (certs.some((c) => c.insured && c.insured.name === m.name)) parts.push("보험 증서"); } catch (e) {}
+  try { if (hmInsQueue().some((x) => x.email === m.email)) if (parts.indexOf("보험 증서") < 0) parts.push("검진보험 가입"); } catch (e) {}
+  try { const adh = _hmLs("hifin_adh_" + m.email, {}); if (Object.keys(adh).length) parts.push("복약·실천 기록"); } catch (e) {}
+  try { if (localStorage.getItem("hifin_family_" + m.email)) parts.push("가족 등록"); } catch (e) {}
+  try { const ld = _hmLs("hifin_leads_" + m.email, []); if (ld.length) parts.push("상담 이력"); } catch (e) {}
+  push("D4", d3 && parts.length >= 2, parts.length ? `결합 ${parts.length}종(${parts.join("·")})` : "결합 데이터 없음(보험·행동·가족 중 2종 필요)");
+  /* L5 — 주기: 터치 3회+ 또는 금고 다년 검진 */
+  let l5 = false, l5w = "반복 주기 미형성(터치 3회 또는 2개년 검진 필요)";
+  try { const t = _hmLs("hifin_hm_touch_" + m.email, []); if (t.length >= 3) { l5 = true; l5w = `건강 터치 ${t.length}회 완료(주기 형성)`; } } catch (e) {}
+  try { const tk = (typeof anonToken === "function") ? anonToken(m) : null; const v = tk && typeof vaultLoad === "function" ? vaultLoad(tk) : null; if (v && (v.checkups || []).length >= 2) { l5 = true; l5w = `금고 검진 ${v.checkups.length}개년(시계열)`; } } catch (e) {}
+  push("L5", l5, l5w);
+  /* L6 — 가구: 저장된 가족 2인+ 또는 가족 상담 리드 */
+  let l6 = false, l6w = "가족 데이터 없음";
+  try { const raw = localStorage.getItem("hifin_family_" + m.email); if (raw) { const f = JSON.parse(raw); if (f && f.length >= 2) { l6 = true; l6w = `가족 ${f.length}명 등록(가구 단위)`; } } } catch (e) {}
+  try { const ld = _hmLs("hifin_leads_" + m.email, []); if (ld.some((x) => x.family)) { l6 = true; l6w = "가족 상담 이력 보유"; } } catch (e) {}
+  push("L6", l6, l6w);
+  /* L7 — 자산화: 동의 증서(ConsentNFT) 유효 보유 */
+  let l7 = false, l7w = "동의 증서 미발행";
+  try { if (typeof cnList === "function") { const c = cnList(m).filter((x) => x.status === "active"); if (c.length) { l7 = true; l7w = `동의 증서 ${c.length}건 유효(데이터 주권 행사)`; } } } catch (e) {}
+  push("L7", l7, l7w);
+  /* L8 — 평생: 금고 2개년+ 또는 요율 재산정 완료 */
+  let l8 = false, l8w = "다년 추이 미확보(2개년 검진 필요)";
+  try { const tk = (typeof anonToken === "function") ? anonToken(m) : null; const v = tk && typeof vaultLoad === "function" ? vaultLoad(tk) : null; if (v && (v.checkups || []).length >= 2) { l8 = true; l8w = `${v.checkups.length}개년 추이 — 재산정 가능`; } } catch (e) {}
+  push("L8", l8, l8w);
+  const reached = ev.filter((x) => x.ok).map((x) => x.k);
+  const order = HM_STAGES.map((s) => s.k);
+  let cur = "D1";
+  order.forEach((k) => { if (reached.indexOf(k) >= 0) cur = k; });
+  /* 전이 캐시 — 정체 계산. 최초 1회는 시연 시드 오프셋(실서비스에서는 실제 전이 시각) */
+  const ck = "hifin_hm_stagecache_" + m.email;
+  let cache = _hmLs(ck, null);
+  if (!cache) { cache = { cur, at: Date.now() - ((_hmHash("st" + m.email) % 38) + 3) * _HM_DAY, seed: true }; _hmSave(ck, cache); }
+  else if (cache.cur !== cur) {
+    try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: (typeof anonToken === "function") ? anonToken(m) : null, note: `고객 단계 전이 ${cache.cur}→${cur} — 데이터 근거 자동 판정` }); } catch (e) {}
+    cache = { cur, at: Date.now() };
+    _hmSave(ck, cache);
+  }
+  const stalledDays = Math.floor((Date.now() - cache.at) / _HM_DAY);
+  return { cur, reached, evidence: ev, stalledDays, stalled: stalledDays >= 30 && cur !== "L8" };
+}
+
+/* ── 관리상태 판정 — 락 > 접촉필요 > 정체 > 진행 > 완료 > 종결 ── */
+function hmStatusOf(m, stage) {
+  const lk = hmLockState(m);
+  if (lk.locked) return { k: "HELD", ...HM_MSTATUS.HELD, why: lk.reason };
+  const touches = _hmLs("hifin_hm_touch_" + m.email, []);
+  const last = touches.length ? touches[touches.length - 1] : null;
+  const plan = hmTouchPlan(m);
+  const due = plan.items.filter((x) => x.due && !x.done);
+  if (due.length) return { k: "NEED", ...HM_MSTATUS.NEED, why: due[0].title + " 시점 도래" };
+  const st = stage || hmStageOf(m);
+  if (st.stalled) return { k: "STALL", ...HM_MSTATUS.STALL, why: `${st.cur} 단계에서 ${st.stalledDays}일 정체` };
+  if (last && Date.now() - last.at < 7 * _HM_DAY) return { k: "DONE", ...HM_MSTATUS.DONE, why: "최근 터치 완료(" + _hmDay(last.at) + ")" };
+  if (last) return { k: "PROG", ...HM_MSTATUS.PROG, why: "관리 진행 중" };
+  return { k: "PROG", ...HM_MSTATUS.PROG, why: "신규 배정 — 하이 브리핑 확인" };
+}
+
+/* ── 건강현황 요약 — 등급·관리필요 수·위험 밴드(원본 수치 미노출) ── */
+function hmHealthBrief(m) {
+  let grade = "-", sevN = 0, band = "중", year = "-", seen = false;
+  try { const g = (typeof memberHealthGrade === "function") ? memberHealthGrade(m) : null; if (g) { grade = g.grade; sevN = (g.sev1 || 0) + (g.sev2 || 0); } } catch (e) {}
+  try { const c = m._chk || ((typeof genMemberCheckup === "function") ? genMemberCheckup(m) : null); if (c && c.years) year = c.years[2] + "년"; } catch (e) {}
+  /* 위험 밴드 — riskPredict(금고 연동) 우선, 미연동 시 회원 건강 프로필(시연 시드)로 조립 */
+  try {
+    const rp = (typeof riskPredict === "function") ? riskPredict(m) : null;
+    if (rp && rp.ok && rp.risks.length) band = rp.risks[0].topPct <= 20 ? "상" : rp.risks[0].topPct <= 50 ? "중" : "하";
+    else { const cg = m.cancerRiskGrade || 3; band = cg >= 6 ? "상" : cg >= 4 ? "중" : "하"; }
+  } catch (e) {}
+  seen = !!_hmLs("hifin_hm_resultseen_" + m.email, null);
+  return { grade, sevN, band, year, seen };
+}
+
+/* ── ③ 터치 플랜 — 첫 연결(결합 패키지) + 조건부 타임라인. 만기는 증서/청약일 기준 계산(상수 금지) ── */
+function hmTouchPlan(m) {
+  const items = [];
+  const touches = _hmLs("hifin_hm_touch_" + m.email, []);
+  const doneKeys = {};
+  touches.forEach((t) => { doneKeys[t.key] = true; });
+  const seen = _hmLs("hifin_hm_resultseen_" + m.email, null);
+  const now = Date.now();
+  if (seen) {
+    const base = seen.at;
+    items.push({ key: "combo", title: "첫 연결 — 결과분석 + 검진대비보험 안내(1회 통합)", when: base, due: now >= base, done: !!doneKeys.combo, pack: true });
+    items.push({ key: "d7", title: "이해 확인 — \"설명이 어렵진 않으셨어요?\"", when: base + 7 * _HM_DAY, due: now >= base + 7 * _HM_DAY, done: !!doneKeys.d7 });
+    let sevOk = false; try { const g = memberHealthGrade(m); sevOk = g && (g.sev1 + g.sev2) > 0; } catch (e) {}
+    if (sevOk) items.push({ key: "d14", title: "관리 필요 항목 재확인(등급 이하 항목만)", when: base + 14 * _HM_DAY, due: now >= base + 14 * _HM_DAY, done: !!doneKeys.d14 });
+    let deep = false; try { deep = (m.managementPoints || []).some((p) => /내시경|초음파|정밀|CT|MRI/.test(p)); } catch (e) {}
+    if (deep) items.push({ key: "d30", title: "추가 검진·진료 안내(정밀검사 권고 항목)", when: base + 30 * _HM_DAY, due: now >= base + 30 * _HM_DAY, done: !!doneKeys.d30 });
+  }
+  /* 만기 — 증서 스냅샷 우선(발급 익일 0시 + 90일), 증서 미발급 가입 회원은 청약일 기준(시연 표기) */
+  let issueAt = null, src = null;
+  try { const certs = _hmLs("hifin_ins_certs", []); const c = certs.filter((x) => x.insured && x.insured.name === m.name).pop(); if (c) { issueAt = c.at; src = "증서 " + c.id; } } catch (e) {}
+  if (!issueAt) { const q = hmInsQueue().find((x) => x.email === m.email); if (q) { issueAt = q.at; src = "청약일 기준(시연)"; } }
+  if (issueAt) {
+    const start = new Date(issueAt); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
+    const end = start.getTime() + 90 * _HM_DAY;
+    [["m30", "만기 D-30 — 검진대비보험 만기 예정 안내", end - 30 * _HM_DAY], ["m7", "만기 D-7 — 재가입·차기 검진 연계 안내", end - 7 * _HM_DAY], ["m1", "만기 D+1 — 보장 종료·다음 검진 주기 제안", end + _HM_DAY]].forEach(([k, t, w]) => {
+      items.push({ key: k, title: t, when: w, due: now >= w, done: !!doneKeys[k], src });
+    });
+  }
+  return { items: items.sort((a, b) => a.when - b.when), endSrc: src };
+}
+
+/* ── ④ 질병 예측 카드 — riskPredict 우선, 미연동 시 회원 건강 프로필 조립(계산 없음·밴드만) ── */
+function hmRiskCards(m) {
+  try {
+    const rp = (typeof riskPredict === "function") ? riskPredict(m) : null;
+    if (rp && rp.ok) return { src: "riskPredict(금고 실측)", rows: rp.risks.slice(0, 3).map((r) => ({ ko: r.ko, band: r.topPct <= 20 ? "상" : r.topPct <= 50 ? "중" : "하", why: `동년배 대비 상대 위험 상위 ${r.topPct}% 구간 · ${r.trend}`, trend: r.trend })) };
+  } catch (e) {}
+  const rows = [];
+  (m.highRiskCancerTypes || []).slice(0, 2).forEach((c) => rows.push({ ko: c, band: (m.cancerRiskGrade || 3) >= 6 ? "상" : "중", why: "암 위험 등급 " + (m.cancerRiskGrade || "-") + " · 관리 권고", trend: "관리 필요" }));
+  (m.highRiskDiseases || []).slice(0, 2).forEach((d) => rows.push({ ko: d, band: "중", why: "질환 이력 기반 관리 대상", trend: "지속 관리" }));
+  if (!rows.length) rows.push({ ko: "특이 위험 없음", band: "하", why: "현재 프로필 기준 관리 권고 항목 없음", trend: "유지" });
+  return { src: "회원 건강 프로필(시연 실측 시드)", rows: rows.slice(0, 3) };
+}
+
+/* ── ⑦ 대화형 인수조건 — underwrite 우선, 미연동 시 등급 기반 조립. 항상 가능성 3구간 + 면책 부착 ── */
+const HM_UW_DISCLAIM = "⚠ 확정은 인수사(현대해상) 심사입니다. 회원께는 \"가능성\"으로만 말씀해 주세요.";
+function hmUnderwriteTalk(m, q) {
+  const prod = /실손/.test(q) ? "실손의료보험" : /암/.test(q) ? "암 진단비" : /수술/.test(q) ? "수술비 특약" : /간편/.test(q) ? "간편심사보험" : "진단비 플랜";
+  let lines = [], docs = ["최근 검진 결과지"], memberLine = "";
+  try {
+    const uw = (typeof underwrite === "function") ? underwrite(m, prod) : null;
+    if (uw && uw.ok) {
+      const d = uw.decision;
+      const tri = d.indexOf("표준체") >= 0 ? [["표준체", "높음"], ["간편심사형", "있음"], ["부담보 조건부", "불필요"]]
+        : d.indexOf("할증") >= 0 ? [["표준체", "낮음"], ["간편심사형", "높음"], ["부담보 조건부", "있음"]]
+        : d.indexOf("유병자") >= 0 ? [["표준체", "낮음"], ["간편심사형", "높음"], ["관리자 요율(할인 방향)", "있음"]]
+        : [["표준체", "낮음"], ["간편심사형", "있음"], ["조건부(포용 경로)", "있음"]];
+      lines = tri; if (uw.disclosures && uw.disclosures.length) docs.push("고지 대상: " + uw.disclosures.map((x) => x.item).join(" · "));
+      memberLine = uw.note;
+      return { product: prod, src: "underwrite(금고 실측 시뮬)", tri: lines, docs, memberLine, disclaim: HM_UW_DISCLAIM };
+    }
+  } catch (e) {}
+  let g = null; try { g = memberHealthGrade(m); } catch (e) {}
+  const gr = g ? g.grade : "정상";
+  const sick = (m.highRiskDiseases || []).length > 0;
+  if (gr === "긴급" || gr === "고위험") lines = [["표준체", "낮음"], ["간편심사형", "있음"], ["부담보 조건부", "있음(해당 부위 한정)"]];
+  else if (sick || gr === "치료중" || gr === "지속관리") lines = [["표준체", "낮음"], ["간편심사형", "높음"], ["부담보 조건부", "있음(해당 부위 한정)"]];
+  else if (gr === "이상" || gr === "경계") lines = [["표준체", "있음"], ["간편심사형", "높음"], ["부담보 조건부", "불필요 가능성"]];
+  else lines = [["표준체", "높음"], ["간편심사형", "가능(불필요)"], ["부담보 조건부", "불필요"]];
+  if (sick) docs.push("최근 3개월 처방·복약 이력");
+  memberLine = sick ? `${(m.highRiskDiseases || []).join("·")} 이력이 있어도 현재 관리 상태에 따라 가입 경로가 열려 있어요 — 정확한 조건은 심사로 확정돼요.` : "현재 건강상태 기준으로 가입 경로가 열려 있어요 — 정확한 조건은 심사로 확정돼요.";
+  const out = { product: prod, src: "건강 등급 조립(등급 「" + gr + "」 기준)", tri: lines, docs, memberLine, disclaim: HM_UW_DISCLAIM };
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: (typeof anonToken === "function") ? anonToken(m) : null, note: `인수조건 대화(underwrite-talk) — ${prod} · 가능성 3구간 안내(확정 아님)` }); } catch (e) {}
+  return out;
+}
+
+/* ── 접촉 행동 실행 — 락·동의 재검증 후 기록(자체 판단 없음) ── */
+const HM_BANNED = ["무조건", "확정", "보장됩니다", "100%", "가입 가능합니다", "거절됩니다", "수익", "원금"];
+function hmAct(code, m, act) {
+  const lk = hmLockState(m);
+  if (lk.locked) { hmLockViolation(code, m); return { ok: false, reason: "접촉 금지 상태예요 — 검진결과 수령 후 하이가 자동으로 열어 드려요." }; }
+  const c = hmConsentOK(m);
+  if (!c.ok) return { ok: false, reason: "유효한 동의가 없어요 — 접촉할 수 없어요." };
+  if (act.note && HM_BANNED.some((w) => act.note.indexOf(w) >= 0)) return { ok: false, reason: "금칙어가 포함돼 있어요 — 단정·과장 표현은 보낼 수 없어요." };
+  const l = _hmLs("hifin_hm_touch_" + m.email, []);
+  l.push({ at: Date.now(), key: act.key || "manual", tab: act.tab || "", act: act.label || "접촉", result: act.result || "연결됨", by: code });
+  _hmSave("hifin_hm_touch_" + m.email, l);
+  try { if (typeof vaultAccessLog === "function" && typeof anonToken === "function") vaultAccessLog(anonToken(m), "healthmate", `${code} · ${act.label || "접촉"}(${act.tab || "-"})`); } catch (e) {}
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: (typeof anonToken === "function") ? anonToken(m) : null, note: `프로 접촉 기록 — ${code} · ${act.label || "접촉"} · 결과 ${act.result || "연결됨"}` }); } catch (e) {}
+  try { if (typeof notifPush === "function" && act.notify) notifPush({ ic: "check", t: act.notifyTitle || "담당 프로 안내", d: act.notify, target: "checkup" }); } catch (e) {}
+  return { ok: true };
+}
+
+/* ── ⑨ 내 실적 — 단계 전진으로 정의(금액·수수료·순위 없음) ── */
+function hmMyStats(code) {
+  const members = hmScope(code);
+  const q = hmInsQueue().filter((x) => x.code === code);
+  let touches = 0, done7 = 0, stalledN = 0, adv = 0;
+  const trans = {};
+  members.forEach((m) => {
+    const t = _hmLs("hifin_hm_touch_" + m.email, []); touches += t.length;
+    if (t.some((x) => Date.now() - x.at < 7 * _HM_DAY)) done7++;
+    const st = hmStageOf(m); if (st.stalled) stalledN++;
+    const cache = _hmLs("hifin_hm_stagecache_" + m.email, null);
+    if (cache && !cache.seed) { adv++; trans[cache.cur] = (trans[cache.cur] || 0) + 1; }
+  });
+  const viol = _hmLs("hifin_hm_lockviol", []).filter((x) => x.code === code).length;
+  const firstDone = q.filter((x) => { const s = _hmLs("hifin_hm_resultseen_" + x.email, null); const t = _hmLs("hifin_hm_touch_" + x.email, []); return s && t.some((y) => y.key === "combo"); }).length;
+  const firstNeed = q.filter((x) => _hmLs("hifin_hm_resultseen_" + x.email, null)).length;
+  return { assigned: members.length, insAssigned: q.length, touches, done7, stalledN, adv, trans, lockOk: viol === 0, viol, firstRate: firstNeed ? Math.round(firstDone / firstNeed * 100) : 100 };
+}
+
+/* ── ⑧ 프로 제안함 — 모든 상태 변화에 사유. 자동 반영 없음(사람 검수) ── */
+function hmIdeas() {
+  let l = _hmLs("hifin_hm_ideas", null);
+  if (l) return l;
+  l = [
+    { id: "ID-001", cat: "화면", title: "정체 회원에게 하이 문안 2안 제시", body: "정체 카드의 권장 문안이 1개뿐이라 회원 성향에 따라 고르기 어렵습니다. 격식/친근 2안이 필요합니다.", code: "HM-NB-26-007", dan: "강북지역단", tab: "⑨", at: Date.now() - 12 * _HM_DAY, status: "반영 완료", why: "하이 문안 템플릿 2안 채택 — 커밋 c71ef08 계열 반영(백서반영표 기록)", votes: 4 },
+    { id: "ID-002", cat: "배분", title: "순번 배분 건너뛴 프로 우선권 표시", body: "한도 초과로 건너뛴 회차의 우선권이 있는지 화면에서 안 보입니다. 다음 회차 우선권 배지가 필요합니다.", code: "HM-SN-26-021", dan: "강남지역단", tab: "②", at: Date.now() - 6 * _HM_DAY, status: "검토중", why: "규칙은 존재(포인터 유지) — 배지 노출 방안 검토 중", votes: 2 },
+    { id: "ID-003", cat: "규제", title: "만기 안내 문자에 광고 표기 여부 확인 요청", body: "만기 D-30 안내가 정보성인지 광고성인지 기준이 필요합니다. 법무 검토 요청드립니다.", code: "HM-WS-26-005", dan: "강서지역단", tab: "③", at: Date.now() - 3 * _HM_DAY, status: "보류", why: "법무 검토 대기 — 계약 관리 목적은 정보성으로 잠정 분류(사유 명시)", votes: 5 },
+  ];
+  _hmSave("hifin_hm_ideas", l);
+  return l;
+}
+function hmIdeaAdd(code, o) {
+  const p = hmProOf(code);
+  if (!p) return { ok: false, reason: "코드 없음" };
+  if (HM_BANNED.some((w) => (o.body || "").indexOf(w) >= 0)) { /* 금칙어는 제안 자체에는 완화 — 회원 정보만 차단 */ }
+  if (/\d{6}-\d{7}|@hizenhealth/.test(o.body || "")) return { ok: false, reason: "회원 개인정보로 보이는 내용은 담을 수 없어요." };
+  const l = hmIdeas();
+  const it = { id: "ID-" + String(l.length + 1).padStart(3, "0"), cat: o.cat || "기타", title: (o.title || "").slice(0, 60), body: (o.body || "").slice(0, 2000), code, dan: p.dan, tab: o.tab || "-", at: Date.now(), status: "접수", why: "접수 완료 — 검토 대기", votes: 0 };
+  l.unshift(it); _hmSave("hifin_hm_ideas", l);
+  return { ok: true, idea: it };
+}
+function hmIdeaVote(id) { const l = hmIdeas(); const it = l.find((x) => x.id === id); if (it) { it.votes = (it.votes || 0) + 1; _hmSave("hifin_hm_ideas", l); } return l; }
+
+/* ── ⑨ 고객 카드 조립 + 하이의 한 줄 ── */
+function hmCustomerCard(m) {
+  const stage = hmStageOf(m);
+  const status = hmStatusOf(m, stage);
+  const hb = hmHealthBrief(m);
+  const plan = hmTouchPlan(m);
+  const touches = _hmLs("hifin_hm_touch_" + m.email, []);
+  const last = touches.length ? touches[touches.length - 1] : null;
+  const next = plan.items.find((x) => !x.done && x.when > Date.now());
+  const dueNow = plan.items.find((x) => x.due && !x.done);
+  /* 하이의 한 줄 — 상태·단계·타이밍을 근거로 조립(새 문장 창작이 아니라 규칙 조립) */
+  let hi;
+  if (status.k === "HELD") hi = "검진결과 수령 전이에요. 지금은 프로필 사전 학습만 — 결과가 오면 제가 바로 알려드릴게요.";
+  else if (dueNow) hi = `「${dueNow.title}」 시점이 왔어요. 오늘 연결하는 게 좋겠어요.`;
+  else if (stage.stalled) {
+    const nextStage = HM_STAGES[HM_STAGES.findIndex((s) => s.k === stage.cur) + 1];
+    hi = `${stage.stalledDays}일째 ${stage.cur}에 멈춰 있어요.` + (nextStage ? ` ${nextStage.k}(${nextStage.name})로 가려면 ${nextStage.desc.split("—")[0].trim()}이 필요해요.` : "");
+  } else if (next) hi = `다음 터치는 ${_hmDay(next.when)} 「${next.title.split("—")[0].trim()}」이에요. 그때까지는 지켜봐도 좋아요.`;
+  else hi = "예정된 터치가 없어요. ⑨ 현황에서 단계 근거를 보고 다음 행동을 골라 주세요.";
+  return { m, stage, status, hb, plan, last, next, dueNow, hi, mask: _hmMask(m.name), band: _hmBand(m), dan: hmDanOf(m) };
+}
+
+/* ── ① 신호 카드 — lrDetectType·lrScore 그대로 재사용(재구현 금지) ── */
+function hmSignals(code) {
+  const members = hmScope(code);
+  const out = [];
+  members.forEach((m) => {
+    if (hmLockState(m).locked) return;   // 락 회원은 신호 목록에서도 제외(접촉 유도 자체를 막는다)
+    let type = "L-ASK", sc = null;
+    try { type = (typeof lrDetectType === "function") ? lrDetectType(m) : "L-ASK"; } catch (e) {}
+    try { sc = (typeof lrScore === "function") ? lrScore(m, type) : null; } catch (e) {}
+    if (!sc || sc.tier === "T4") return;   // 하이 판정: 지금은 상담보다 안내가 맞는 단계 — 카드 미생성
+    const T = (typeof LR_TYPES !== "undefined" && LR_TYPES[type]) || { label: type };
+    out.push({ m, mask: _hmMask(m.name), band: _hmBand(m), type, typeKo: T.label || type, direct: type === "L-ASK", tier: sc.tier, sla: sc.sla, why: (sc.why || []).slice(0, 3), stage: hmStageOf(m).cur });
+  });
+  return out.sort((a, b) => (a.direct === b.direct) ? (a.sla - b.sla) : (a.direct ? -1 : 1));
 }
 
 /* ══════════════ S2/S3 — 나눔 지원 엔진 (NeedFinder · GrantEngine · DirectSettle · ImpactLedger) ══════════════
@@ -32639,7 +33629,7 @@ function scopeMembers(list) { return isAdminRole() ? (list || []) : (list || [])
 function isRestrictedSection(secKey) {
   if (isAdminRole()) return false;
   const parent = (typeof secParent === "function") ? secParent(secKey) : secKey;
-  return parent === "ontology" || secKey === "demo";
+  return parent === "ontology" || parent === "healthmate" || secKey === "demo";
 }
 
 /* 테스트 시나리오 자가검증(11항목) — 실제 로직/데이터에 대해 단언 */

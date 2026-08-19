@@ -162,7 +162,7 @@ export default function App() {
       <div className="body">
         <aside className="side">
           <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-            {SECTIONS.filter((x) => role === "ADMIN" || x.k !== "ontology").map((x) => (
+            {SECTIONS.filter((x) => role === "ADMIN" || (x.k !== "ontology" && x.k !== "healthmate")).map((x) => (
               <React.Fragment key={x.k}>
                 <div className={`snav ${secParent(sec) === x.k ? "on" : ""}`} onClick={() => setSec(x.k)}><span className="sico"><SecIcon k={x.k} /></span> {t("nav." + x.k, x.t)}</div>
                 {/* 검진 후 케어 서브메뉴 — 항상 펼침(메인에서 바로 선택). 현재 케어 하위 화면이면 강조 */}
@@ -182,7 +182,7 @@ export default function App() {
           <div className="sos"><div className="l">긴급상황 시</div><div className="p"><Phone size={17} /> 119 연동</div></div>
         </aside>
         <main className="scrollarea">
-          {(() => { const p = secParent(sec); if (p === "partner" || p === "ontology") return null; const cb = SECTIONS.find((x) => x.k === p); if (!cb) return null; return (
+          {(() => { const p = secParent(sec); if (p === "partner" || p === "ontology" || p === "healthmate") return null; const cb = SECTIONS.find((x) => x.k === p); if (!cb) return null; return (
             <div className="secbanner">
               <span className="sb-ic"><SecIcon k={cb.k} /></span>
               <div className="sb-b"><b>{t("nav." + cb.k, cb.t)}</b><p>{t("nav." + cb.k + ".s", SEC_BANNER[cb.k] || cb.s)}</p></div>
@@ -208,6 +208,7 @@ export default function App() {
             if (p === "care") return <CareSection initial={sec} onGo={setSec} />;
             if (p === "insurance") return <InsuranceSection onGo={setSec} />;
             if (p === "mywallet") return <WalletHubSection initial={sec} onGo={setSec} />;
+            if (p === "healthmate") return <HealthMateSection onGo={setSec} />;
             if (p === "ontology") return <OntologySection onGo={setSec} />;
             if (sec === "demo") return <DemoSection onGo={setSec} />;
             return <Scaffold meta={cur} data={SCAFFOLDS[sec]} />;
