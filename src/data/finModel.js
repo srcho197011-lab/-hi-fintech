@@ -34,10 +34,14 @@ const FIN_P_DEFAULT = {
     { key: "device", label: "홈케어 의료기기", arpu: 45000, cost: 0.40 },
     { key: "sports", label: "스포츠용품·활동", arpu: 80000, cost: 0.60 },
   ],
-  checkupRate: 0.45, checkupFee: 22500, checkupCostRate: 0.50,
+  checkupRate: 0.45,
+  /* 검진 연계(형 확정 2026-08-20): 건당 매출 25,000원 · 3종 서비스 원가(검진대비보험 부보료+AI 리포트+상담) 건당 20,000원 */
+  checkupFee: 25000, checkupCost3: 20000,
   serviceRate: 0.30, serviceCommission: 15000, serviceCostRate: 0.05,
   resvPerActive: [0.4, 0.7, 1.0, 1.3, 1.6], resvFee: 10000,
-  arpuInsurance: [3000, 5000, 8000, 12000, 15000], adPerActive: [0, 300, 800, 1500, 2500],
+  /* 보험 중개(형 확정 2026-08-20): 마케팅(퍼미션) 동의 회원의 60%가 중개로 이어지고 건당 수수료 70,000원 */
+  insConvRate: 0.60, insFeePerCase: 70000,
+  adPerActive: [0, 300, 800, 1500, 2500],
   // 신설 스트림 — AI Agent 프리미엄·API/Data/Analytics(B2B) — 2차연도부터
   aiAgentRate: [0, 0.03, 0.05, 0.07, 0.08], aiAgentFeeYear: 24000, // 프리미엄 구독(회원, 연 2.4만)
   apiClients: [0, 5, 20, 60, 120], apiFeeYear: 60000000, // 데이터·분석·API 계약(기관·기업, 연 6천만)
@@ -45,8 +49,10 @@ const FIN_P_DEFAULT = {
   // 비용 — 인건비·R&D·클라우드·GPU·영업·관리(전부 파라미터)
   // 인건비 70% 수준 현실화 근거: 단일 AI 에이전트 '하이'가 CS·상담·안내를 흡수(AI 네이티브 전환 실구현) +
   // AI 출수납·자동 분개·자동 정산으로 재무/운영 인력 대체 → 동일 회원 규모 대비 30% 추가 절감
-  payroll: [700000000, 1890000000, 3500000000, 9310000000, 18690000000],
-  rndRate: 0.05, cloudPerActive: 3000, gpuPerActive: 1200, salesRate: 0.02, adminRate: 0.04, brandMktRate: 0.015,
+  /* 인건비(형 확정 2026-08-20 상향): 회원 33만→1,000만 규모 연동 — 1차 70억(개발·운영·프로 지원 ~70명)
+     → 5차 2,200억(전사 ~2,000명 · 매출 대비 ~11%) */
+  payroll: [7000000000, 25000000000, 60000000000, 130000000000, 220000000000],
+  rndRate: 0.05, cloudPerActive: 3000, gpuPerActive: 1200, salesRate: 0.02, adminRate: 0.04, brandMktRate: 0.08,   // 브랜드·퍼포먼스 마케팅 매출 8%(형 확정 상향 — CAC와 별도)
   // 기타 운영비(R&D·클라우드·GPU·영업·관리) 30% 수준 스케일 — 근거: AI 네이티브 운영으로 고정 운영조직 최소화
   // (하이 에이전트가 CS·영업지원 흡수, AI 출수납·자동정산으로 관리업무 자동화, 클라우드는 사용량 기반 최적화·자체 경량모델 병행)
   opexScale: 0.30,
@@ -77,7 +83,7 @@ function finParams() {
   const P = JSON.parse(JSON.stringify(d));
   // 스칼라 오버라이드(회원 목표 members1~5 / cac / activeRate / …)
   for (let i = 0; i < 5; i++) if (o["members" + (i + 1)] != null) P.membersEnd[i] = o["members" + (i + 1)];
-  ["cac", "activeRate", "productBuyerRate", "productCapture", "checkupRate", "serviceRate", "subFeeBase", "subFeeStep", "subFeeCap", "subPaidRate", "tenYearGrowth", "churn", "wacc", "evRevMultiple", "rndRate", "cloudPerActive", "gpuPerActive", "opexScale", "deprY1Rate"].forEach((k) => { if (o[k] != null) P[k] = o[k]; });
+  ["cac", "activeRate", "productBuyerRate", "productCapture", "checkupRate", "checkupFee", "checkupCost3", "insConvRate", "insFeePerCase", "brandMktRate", "serviceRate", "subFeeBase", "subFeeStep", "subFeeCap", "subPaidRate", "tenYearGrowth", "churn", "wacc", "evRevMultiple", "rndRate", "cloudPerActive", "gpuPerActive", "opexScale", "deprY1Rate"].forEach((k) => { if (o[k] != null) P[k] = o[k]; });
   if (o.instMultPct != null) { const m = o.instMultPct / 100; ["checkupCenters", "hospitals", "pharmacies"].forEach((k) => { P[k] = P[k].map((v) => Math.round(v * m)); }); }
   if (o.payrollPct != null) P.payroll = P.payroll.map((v) => Math.round(v * o.payrollPct / 100));
   if (o.cogsPct != null) P.productCats = P.productCats.map((c) => ({ ...c, cost: Math.min(0.95, c.cost * o.cogsPct / 100) }));
@@ -121,13 +127,15 @@ function finYears(nYears) {
     const checkupUsers = active, revCheckup = L("검진 연계 수수료", `하이핀 경유 검진 예약 ${checkupUsers.toLocaleString()}건(연) × 건당 ${finW(P.checkupFee)}원`, checkupUsers * P.checkupFee);
     const serviceUsers = Math.round(membersEnd * P.serviceRate), revService = L("헬스케어 서비스 수수료", `이용 ${serviceUsers.toLocaleString()}명 × ${finW(P.serviceCommission)}원`, serviceUsers * P.serviceCommission);
     const reservations = Math.round(active * _finAt(P, P.resvPerActive, y, 0.05)), revReservation = reservations * P.resvFee;
-    const revInsurance = L("보험 중개 수수료", `마케팅(보험상품 안내) 동의 ${mktConsent.toLocaleString()}명 × ARPU ${finW(_finAt(P, P.arpuInsurance, y, 0.05))}원`, mktConsent * _finAt(P, P.arpuInsurance, y, 0.05));
+    const insCases = Math.round(mktConsent * P.insConvRate);
+    const revInsurance = L("보험 중개 수수료", `마케팅(퍼미션) 동의 ${mktConsent.toLocaleString()}명 × 전환 ${(P.insConvRate * 100).toFixed(0)}% = ${insCases.toLocaleString()}건 × 건당 ${finW(P.insFeePerCase)}원`, insCases * P.insFeePerCase);
     const revAd = active * _finAt(P, P.adPerActive, y, 0.05);
     const agentUsers = Math.round(membersEnd * _finAt(P, P.aiAgentRate, y, 0.02)), revAgent = L("AI Agent 프리미엄", `구독회원 ${agentUsers.toLocaleString()}명 × 연 ${finW(P.aiAgentFeeYear)}원`, agentUsers * P.aiAgentFeeYear);
     const apiN = _finAt(P, P.apiClients, y, 0.15), revApi = L("API·데이터·분석 서비스(B2B)", `계약 ${apiN.toLocaleString()}건 × 연 ${finW(P.apiFeeYear)}원`, apiN * P.apiFeeYear);
     const revenue = L("매출액(합계)", "제품+검진+서비스+예약+구독+보험+광고+Agent+API", revProduct + revCheckup + revService + revReservation + revSub + revInsurance + revAd + revAgent + revApi);
     // 원가
-    const cogs = cogsProduct + Math.round(revCheckup * P.checkupCostRate) + Math.round(revService * P.serviceCostRate) + Math.round(revSub * P.subCostRate) + Math.round(revProduct * P.paymentRate);
+    const checkupCogs = L("3종 서비스 원가(검진보험·리포트·상담)", `검진 ${checkupUsers.toLocaleString()}건 × 건당 ${finW(P.checkupCost3)}원`, checkupUsers * P.checkupCost3);
+    const cogs = cogsProduct + checkupCogs + Math.round(revService * P.serviceCostRate) + Math.round(revSub * P.subCostRate) + Math.round(revProduct * P.paymentRate);
     const gross = L("매출총이익", `매출 ${finW(revenue)} − 원가 ${finW(cogs)}`, revenue - cogs);
     // ② CAC 기간 인식 + 판관비(전 항목 파라미터)
     const cacCost = L("회원확보비(CAC)", `신규 ${newMembers.toLocaleString()}명 × ${P.cac.toLocaleString()}원 — 증가 속도 따라 기간 인식`, newMembers * P.cac);
