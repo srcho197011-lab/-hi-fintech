@@ -309,7 +309,7 @@ function FinanceLive() {
         <div className="ontpanel">
           <div className="ontph"><PieChart size={15} color="#22D3EE" /> 연간 예상 매출 구성 <span>· 총 {finWon(an.revenue)}원</span></div>
           {[["제품판매(GMV·건강쇼핑)", an.revProduct, "#34D399"], ["AI 플랫폼 구독(원격진료·UPI·EMR 사용료 등 — 검진·병원·약국)", an.revSub, "#6366F1"], ["검진 연계 수수료", an.revCheckup, "#22D3EE"], ["헬스케어 서비스 수수료", an.revService, "#2DD4BF"], ["예약 서비스 수수료(골프 등)", an.revReservation, "#F97316"], ["보험 중개 수수료", an.revInsurance, "#A78BFA"], ["AI Agent 프리미엄", an.revAgent, "#F472B6"], ["API·데이터·분석(B2B)", an.revApi, "#38BDF8"], ["광고·제휴", an.revAd, "#FBBF24"]].map(([l, v, c]) => <OntBar key={l} label={l} value={v} max={Math.max(an.revProduct, an.revSub)} color={c} sub="원" />)}
-          <div className="finpl-note" style={{ marginTop: 8 }}>{A.y === 0 ? "1차연도 구독매출 0원 — 회원 10만 달성 후(2차연도) AI Healthcare Platform Subscription 과금 시작." : `구독 구성: 병원 ${finWon(an.subSplit.hospital)} · 약국 ${finWon(an.subSplit.pharmacy)} · 검진기관 ${finWon(an.subSplit.checkup)} — AI 건강분석·상담·예측·CRM·원격진료 연계·보험청구 자동화·API를 포함한 통합 구독(단순 EMR 연결비 아님).`}</div>
+          <div className="finpl-note" style={{ marginTop: 8 }}>{A.y === 0 ? "1차연도 구독매출 0원 — 1차연도 회원 33만 기반 선점 후(2차연도) AI Healthcare Platform Subscription 과금 시작." : `구독 구성: 병원 ${finWon(an.subSplit.hospital)} · 약국 ${finWon(an.subSplit.pharmacy)} · 검진기관 ${finWon(an.subSplit.checkup)} — AI 건강분석·상담·예측·CRM·원격진료 연계·보험청구 자동화·API를 포함한 통합 구독(단순 EMR 연결비 아님).`}</div>
         </div>
       </div>
       <div className="ontgrid2">
@@ -357,14 +357,15 @@ function FinanceLive() {
     </>); })()}
 
     {tab === "my" && (() => { const my = finMultiYear(); const revMax = Math.max(...my.map((r) => r.revenue)); const M = (l, f, cls) => <tr className={cls || ""}><td className="mono0">{l}</td>{my.map((r, i) => <td key={i} className="mono">{f(r)}</td>)}</tr>; return (<>
-      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> <b>5개년 중장기 추정(현실화 개편)</b> — 회원 <b>10만→1,000만</b>, CAC <b>5,000원/인(기간 인식)</b>. <b>AI Healthcare Platform Subscription</b>: 1차연도 <b>무료(0원 · 시장 선점)</b> → 2차 기관당 <b>월 50만</b> → 매년 +50만(<b>한도 300만</b>) — 검진·병원·약국 전 기관 동일, AI 건강분석·상담·예측·CRM·원격진료·보험청구 자동화 포함(단순 EMR 연결비 아님). 제품 GMV는 1인당 연 건강지출 × <b>지갑 점유율 70%</b>(기존 구매채널 병행 보수화), 인건비는 <b>AI 자동화(하이·AI 출수납) 반영 70% 수준</b>. 적립50%·나눔30% <b>비율 약속은 유지</b> — 모수(제품마진)가 70%로 현실화되며 금액도 자동으로 70% 수준.</div>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><TrendingUp size={13} color="#34D399" /> <b>5개년 중장기 추정(현실화 개편)</b> — 회원 <b>33만→1,000만</b>(마케팅 동의 20만→630만 · 검진 예약 연 25만→600만), CAC <b>5,000원/인(기간 인식)</b>. <b>AI Healthcare Platform Subscription</b>: 1차연도 <b>무료(0원 · 시장 선점)</b> → 2차 기관당 <b>월 50만</b> → 매년 +50만(<b>한도 300만</b>) — 검진·병원·약국 전 기관 동일, AI 건강분석·상담·예측·CRM·원격진료·보험청구 자동화 포함(단순 EMR 연결비 아님). 제품 GMV는 1인당 연 건강지출 × <b>지갑 점유율 70%</b>(기존 구매채널 병행 보수화), 인건비는 <b>AI 자동화(하이·AI 출수납) 반영 70% 수준</b>. 적립50%·나눔30% <b>비율 약속은 유지</b> — 모수(제품마진)가 70%로 현실화되며 금액도 자동으로 70% 수준.</div>
       <div className="ontpanel">
         <div className="ontph"><TrendingUp size={15} color="#34D399" /> 중장기 손익 추정 (5개년) <span>· 단위 원</span></div>
         <div className="onttbl-wrap"><table className="onttbl mytbl">
           <thead><tr><th>항목</th>{my.map((r, i) => <th key={i}>{r.label}</th>)}</tr></thead>
           <tbody>
-            {M("누적 회원", (r) => r.membersEnd.toLocaleString() + "명", "myhead")}
-            {M("활성 회원", (r) => r.active.toLocaleString() + "명")}
+            {M("누적 회원(플랫폼)", (r) => r.membersEnd.toLocaleString() + "명", "myhead")}
+            {M("마케팅 동의 회원(보험중개·누적)", (r) => (r.mktConsent || 0).toLocaleString() + "명")}
+            {M("활성 회원 — 하이핀 경유 검진 예약(연)", (r) => r.active.toLocaleString() + "명")}
             {M("제휴 기관(검진·병원·약국)", (r) => r.insts.toLocaleString() + "곳")}
             {M("AI 플랫폼 구독료(월/기관)", (r) => r.subFee ? finWon(r.subFee) + "원" : "무료(선점)")}
             {M("매출액", (r) => finWon(r.revenue), "myrev")}
@@ -447,7 +448,7 @@ function FinanceLive() {
     </>); })()}
 
     {tab === "plan" && (() => { const mp = finMonthlyY1(); const P = finParams(); return (<>
-      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><Receipt size={13} color="#34D399" /> <b>1차연도 월별·분기별 사업계획</b> — 회원 {mp.total.toLocaleString()}명 램프, CAC {P.cac.toLocaleString()}원/인 <b>기간 인식</b>(일시 비용화 금지 · 총 {finWon(mp.cacTotal)}원). 회원 10만 달성 → 2차연도부터 기관 구독 과금 시작.</div>
+      <div className="finlink" style={{ background: "#0C2A20", borderColor: "#1F5137" }}><Receipt size={13} color="#34D399" /> <b>1차연도 월별·분기별 사업계획</b> — 회원 {mp.total.toLocaleString()}명 램프, CAC {P.cac.toLocaleString()}원/인 <b>기간 인식</b>(일시 비용화 금지 · 총 {finWon(mp.cacTotal)}원). 1차연도 회원 33만 선점 → 2차연도부터 기관 구독 과금 시작.</div>
       <div className="ontpanel">
         <div className="ontph"><Receipt size={15} color="#34D399" /> 월별 계획 <span>· 회원·CAC·매출·영업이익</span></div>
         <div className="onttbl-wrap"><table className="onttbl mytbl">
@@ -459,7 +460,7 @@ function FinanceLive() {
           <thead><tr><th>분기</th><th>신규 회원</th><th>누적</th><th>CAC 비용</th><th>매출</th><th>영업이익</th></tr></thead>
           <tbody>{mp.q.map((r) => <tr key={r.q}><td className="mono0">{r.q}분기</td><td className="mono">+{r.add.toLocaleString()}</td><td className="mono">{r.cum.toLocaleString()}</td><td className="mono">-{finWon(r.cacCost)}</td><td className="mono">{finWon(r.rev)}</td><td className="mono" style={{ color: r.op >= 0 ? "#6EE7B7" : "#F9A8D4" }}>{finWon(r.op)}</td></tr>)}</tbody>
         </table></div>
-        <div className="finpl-note">회원 수를 바꾸면(파라미터 탭) 월별 CAC 인식·매출·전 재무제표가 자동 재계산됩니다 — 예) 1만 명=5천만 원, 5만 명=2.5억, 10만 명=5억.</div>
+        <div className="finpl-note">회원 수를 바꾸면(파라미터 탭) 월별 CAC 인식·매출·전 재무제표가 자동 재계산됩니다 — 예) 10만 명=5억, 33만 명=16.5억, 100만 명=50억.</div>
       </div>
     </>); })()}
 
@@ -547,7 +548,7 @@ function FinParamsPanel({ onApply }) {
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <button className="book" onClick={() => { finResetParams(); force((x) => x + 1); onApply && onApply(); if (typeof toast === "function") toast("재무 파라미터를 기본값으로 초기화했어요"); }}>기본값으로 초기화</button>
       </div>
-      <div className="finpl-note">구독정책: 1차연도 EMR·UPI·플랫폼 사용료 0원(시장 선점) → 회원 10만 달성 후 AI Healthcare Platform Subscription(기관당 월 50만→연 50만 인상, 한도 300만 — 침투 우선 요금). 감가상각은 초년도만 50%(상각 기반 적음). CAC는 회원 증가 속도에 따라 기간 인식.</div>
+      <div className="finpl-note">구독정책: 1차연도 EMR·UPI·플랫폼 사용료 0원(시장 선점 · 회원 33만 확보) → 2차연도부터 AI Healthcare Platform Subscription(기관당 월 50만→연 50만 인상, 한도 300만 — 침투 우선 요금). 감가상각은 초년도만 50%(상각 기반 적음). CAC는 회원 증가 속도에 따라 기간 인식.</div>
     </div>
   </>);
 }

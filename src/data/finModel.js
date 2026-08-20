@@ -1,6 +1,6 @@
 /* ══════════ 통합 재무모델 엔진(finModel) — 단일 데이터 모델 · 파라미터 기반 · 자동 재계산 ══════════
    원칙(2026.7.16 개편):
-   ① EMR·UPI·플랫폼 사용료 = 1차연도 0원(시장 선점 전략적 투자) → 회원 10만 달성 후
+   ① EMR·UPI·플랫폼 사용료 = 1차연도 0원(시장 선점 전략적 투자 · 회원 33만 확보) → 2차연도부터
       "AI Healthcare Platform Subscription" 침투 요금제 — 월 50만(2차)부터 연 +50만씩, 한도 월 300만(subFeeBase·subFeeStep·subFeeCap).
    ② 회원 확보비(CAC) 5,000원/인 — 회원 증가 속도에 따라 기간 인식(일시 비용화 금지).
    ③ 모든 수치는 파라미터(finParams) — 하나가 바뀌면 P/L·B/S·C/F·SaaS·KPI·EV 전체 자동 재계산.
@@ -10,8 +10,12 @@
 const FIN_P_DEFAULT = {
   years: ["1차연도", "2차연도", "3차연도", "4차연도", "5차연도", "6차연도", "7차연도", "8차연도", "9차연도", "10차연도"],
   // 회원(누적 목표) — 1~5차 계획 + 6~10차 성장률 외삽
-  membersEnd: [100000, 500000, 1000000, 5000000, 10000000],
-  tenYearGrowth: 0.18, activeRate: 0.45,
+  membersEnd: [330000, 1300000, 3200000, 6000000, 10000000],
+  /* 활성 회원 = 하이핀 경유 검진 예약(연) — 연도별 절대값 계획(형 확정 2026-08-20) */
+  activeAbs: [250000, 900000, 2100000, 3800000, 6000000],
+  /* 마케팅(보험상품 안내) 동의 회원(누적) — 보험 중개 수수료의 모수(형 확정 2026-08-20) */
+  mktConsentEnd: [200000, 800000, 2000000, 3800000, 6300000],
+  tenYearGrowth: 0.18, activeRate: 0.45,   // activeRate는 activeAbs 미정의 연차 폴백
   // ② 회원 확보비 — CAC 5,000원(온라인·SNS·검색·콘텐츠·제휴·이벤트·리워드·퍼미션DB 포함), 증가 속도 따라 인식
   cac: 5000,
   // ① AI Healthcare Platform Subscription — 전 기관 동일, 1차 0원 → 2차 월50만 → 매년 +50만(한도 300만)
@@ -53,7 +57,7 @@ const FIN_P_DEFAULT = {
   wacc: 0.15, termGrowth: 0.03, evRevMultiple: 4.0, evEbitdaMultiple: 15,
   capital: 300000000, surplus: 500000000, leaseLiab: 120000000, longDebt: 2000000000,
   investedCapital: 10000000000, // ROIC 분모(투하자본 근사)
-  // 1차연도 월별 회원 램프(비중 %) — 합 100 → 10만 명
+  // 1차연도 월별 회원 램프(비중 %) — 합 100 → 1차연도 목표(33만 명)
   m1Ramp: [2, 3, 4, 6, 8, 10, 10, 12, 12, 11, 11, 11],
 };
 // 시나리오(보수·기준·공격) — 배율 파라미터
@@ -79,6 +83,8 @@ function finParams() {
   if (o.cogsPct != null) P.productCats = P.productCats.map((c) => ({ ...c, cost: Math.min(0.95, c.cost * o.cogsPct / 100) }));
   // 시나리오 배율
   P.membersEnd = P.membersEnd.map((v) => Math.round(v * s.memberMult));
+  P.activeAbs = (P.activeAbs || []).map((v) => Math.round(v * s.memberMult * s.rateMult));
+  P.mktConsentEnd = (P.mktConsentEnd || []).map((v) => Math.round(v * s.memberMult * s.rateMult));
   ["checkupCenters", "hospitals", "pharmacies"].forEach((k) => { P[k] = P[k].map((v) => Math.round(v * s.instMult)); });
   P.activeRate = Math.min(0.9, P.activeRate * s.rateMult); P.productBuyerRate = Math.min(0.9, P.productBuyerRate * s.rateMult); P.checkupRate = Math.min(0.9, P.checkupRate * s.rateMult);
   P.cac = Math.round(P.cac * s.cacMult); P.subFeeBase = Math.round(P.subFeeBase * s.feeMult);
@@ -97,7 +103,10 @@ function finYears(nYears) {
     const lin = [];
     const L = (label, formula, value) => { lin.push({ label, formula, value }); return value; };
     const membersEnd = _finAt(P, P.membersEnd, y), membersPrev = y === 0 ? 0 : _finAt(P, P.membersEnd, y - 1);
-    const newMembers = Math.max(0, membersEnd - membersPrev), active = Math.round(membersEnd * P.activeRate);
+    const newMembers = Math.max(0, membersEnd - membersPrev);
+    /* 활성 회원 = 하이핀 경유 검진 예약(연) — 계획 절대값, 6차 이후 외삽(비율 폴백) */
+    const active = (P.activeAbs && y < P.activeAbs.length) ? P.activeAbs[y] : Math.round(membersEnd * ((P.activeAbs && P.activeAbs.length) ? P.activeAbs[P.activeAbs.length - 1] / P.membersEnd[P.membersEnd.length - 1] : P.activeRate));
+    const mktConsent = (P.mktConsentEnd && y < P.mktConsentEnd.length) ? P.mktConsentEnd[y] : Math.round(membersEnd * ((P.mktConsentEnd && P.mktConsentEnd.length) ? P.mktConsentEnd[P.mktConsentEnd.length - 1] / P.membersEnd[P.membersEnd.length - 1] : 0.6));
     const checkupCenters = _finAt(P, P.checkupCenters, y, P.instGrowthAfter5), hospitals = _finAt(P, P.hospitals, y, P.instGrowthAfter5), pharmacies = _finAt(P, P.pharmacies, y, P.instGrowthAfter5);
     const insts = checkupCenters + hospitals + pharmacies;
     // ① AI Platform Subscription(원격진료·UPI·EMR 사용료 등 통합) — 1차 0원 전략
@@ -109,10 +118,10 @@ function finYears(nYears) {
     let revProduct = 0, cogsProduct = 0; const catRev = {};
     for (const c of P.productCats) { const rv = Math.round(buyers * c.arpu * P.productCapture); catRev[c.key] = rv; revProduct += rv; cogsProduct += Math.round(rv * c.cost); }
     L("제품판매(GMV·건강쇼핑)", `구매회원 ${buyers.toLocaleString()}명 × 카테고리 ARPU 합 ${finW(P.productCats.reduce((s, c) => s + c.arpu, 0))}원 × 지갑 점유율 ${(P.productCapture * 100).toFixed(0)}%(기존 채널 병행 보수화)`, revProduct);
-    const checkupUsers = Math.round(membersEnd * P.checkupRate), revCheckup = L("검진 연계 수수료", `검진회원 ${checkupUsers.toLocaleString()}명 × 건당 ${finW(P.checkupFee)}원`, checkupUsers * P.checkupFee);
+    const checkupUsers = active, revCheckup = L("검진 연계 수수료", `하이핀 경유 검진 예약 ${checkupUsers.toLocaleString()}건(연) × 건당 ${finW(P.checkupFee)}원`, checkupUsers * P.checkupFee);
     const serviceUsers = Math.round(membersEnd * P.serviceRate), revService = L("헬스케어 서비스 수수료", `이용 ${serviceUsers.toLocaleString()}명 × ${finW(P.serviceCommission)}원`, serviceUsers * P.serviceCommission);
     const reservations = Math.round(active * _finAt(P, P.resvPerActive, y, 0.05)), revReservation = reservations * P.resvFee;
-    const revInsurance = L("보험 중개 수수료", `활성 ${active.toLocaleString()}명 × ARPU ${finW(_finAt(P, P.arpuInsurance, y, 0.05))}원`, active * _finAt(P, P.arpuInsurance, y, 0.05));
+    const revInsurance = L("보험 중개 수수료", `마케팅(보험상품 안내) 동의 ${mktConsent.toLocaleString()}명 × ARPU ${finW(_finAt(P, P.arpuInsurance, y, 0.05))}원`, mktConsent * _finAt(P, P.arpuInsurance, y, 0.05));
     const revAd = active * _finAt(P, P.adPerActive, y, 0.05);
     const agentUsers = Math.round(membersEnd * _finAt(P, P.aiAgentRate, y, 0.02)), revAgent = L("AI Agent 프리미엄", `구독회원 ${agentUsers.toLocaleString()}명 × 연 ${finW(P.aiAgentFeeYear)}원`, agentUsers * P.aiAgentFeeYear);
     const apiN = _finAt(P, P.apiClients, y, 0.15), revApi = L("API·데이터·분석 서비스(B2B)", `계약 ${apiN.toLocaleString()}건 × 연 ${finW(P.apiFeeYear)}원`, apiN * P.apiFeeYear);
@@ -138,7 +147,7 @@ function finYears(nYears) {
     const ebitda = ebit + depr, pbt = ebit - P.interestYear, tax = Math.max(0, pbt) * P.taxRate, net = pbt - tax;
     const capex = y < 2 ? 2000000000 : 5000000000, dwc = Math.round(revenue * 0.02), fcf = ebit * (1 - P.taxRate) + depr - capex - dwc;
     const mrrEnd = paidInsts * subFee + Math.round(agentUsers * P.aiAgentFeeYear / 12); // 월 반복매출(구독)
-    rows.push({ y, label: P.years[y], membersEnd, membersPrev, newMembers, active, buyers, checkupUsers, serviceUsers, reservations,
+    rows.push({ y, label: P.years[y], membersEnd, membersPrev, newMembers, active, mktConsent, buyers, checkupUsers, serviceUsers, reservations,
       hospitals, checkupCenters, pharmacies, insts, subFee, paidInsts, cac: P.cac, marketing, cacCost, brandMkt,
       revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr: revSub, revSub, subSplit, revAd, revAgent, revApi,
       revenue, cogs, gross, reward, donation, payroll, rnd, cloud, gpu, salesCost, adminCost, otherOpex, sga,
@@ -242,7 +251,7 @@ function finAsk(text) {
   if (/시나리오|보수|공격/.test(t)) { lines.push(`현재 시나리오는 '${scn}'이에요. 보수·기준·공격 3종을 온톨로지 › 재무회계 › 파라미터에서 바꾸면 전 재무제표가 즉시 재계산돼요.`); }
   else if (/구독|사용료|EMR|플랫폼요금|emr/.test(t)) { lines.push(`AI 플랫폼 구독료(원격진료·UPI·EMR 사용료 등) 정책: 1차연도 0원(시장 선점) → 2차 월 ${finW(finSubFee(P, 1))}원 → 5차 월 ${finW(finSubFee(P, 4))}원(매년 +${finW(P.subFeeStep)}원).`, `${r.label} 구독매출 ${finW(r.revSub)}원 = 기관 ${r.paidInsts.toLocaleString()}곳 × 월 ${finW(r.subFee)}원 × 12.`); }
   else if (/LTV|엘티비|ltv/.test(t)) { lines.push(`LTV는 ${finW(K.ltv)}원, LTV/CAC는 ${K.ltvCac.toFixed(1)}배예요 (ARPU × 매출총이익률 ÷ 이탈률 ${Math.round(K.churn * 100)}%).`, `CAC 회수기간(Payback)은 약 ${K.payback ? K.payback.toFixed(1) : "-"}개월이에요.`); }
-  else if (/CAC|획득비|모집비|확보비|cac/.test(t)) { lines.push(`회원 1인 확보비(CAC)는 ${P.cac.toLocaleString()}원 — 10만 명 목표 시 총 ${finW(P.cac * P.membersEnd[0])}원이 회원 증가 속도에 따라 기간 인식돼요.`, `${r.label} CAC 비용은 신규 ${r.newMembers.toLocaleString()}명 × ${P.cac.toLocaleString()}원 = ${finW(r.cacCost)}원이에요.`); }
+  else if (/CAC|획득비|모집비|확보비|cac/.test(t)) { lines.push(`회원 1인 확보비(CAC)는 ${P.cac.toLocaleString()}원 — 1차연도 목표 시 총 ${finW(P.cac * P.membersEnd[0])}원이 회원 증가 속도에 따라 기간 인식돼요.`, `${r.label} CAC 비용은 신규 ${r.newMembers.toLocaleString()}명 × ${P.cac.toLocaleString()}원 = ${finW(r.cacCost)}원이에요.`); }
   else if (/기업가치|밸류|EV|ev/.test(t)) { lines.push(`기업가치(EV)는 DCF ${finW(V.evDCF)}원, EV/Revenue(${V.evRevMultiple}x) ${finW(V.evRev)}원 범위예요 (WACC ${Math.round(V.wacc * 100)}%).`); }
   else if (/런웨이|현금소진|번레이트|runway/.test(t)) { lines.push(`1차연도 번(Burn)은 ${finW(K.burn1)}원, 런웨이는 약 ${isFinite(K.runway) ? K.runway.toFixed(1) + "개월" : "충분(흑자)"}이에요.`); }
   else if (/영업이익|이익|손익|적자|흑자/.test(t)) { lines.push(`${r.label}(${scn}) 영업이익은 ${finW(r.ebit)}원(이익률 ${(r.opMargin * 100).toFixed(1)}%), 당기순이익 ${finW(r.net)}원이에요.`, `근거: ${r.lin[r.lin.length - 1].formula}.`); }
