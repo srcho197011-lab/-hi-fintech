@@ -9,17 +9,17 @@ const finRr = (a, b) => a + Math.random() * (b - a);
 // 매출 유형(수익 계정) — IFRS 15 수익
 const FIN_REVTYPES = [
   { k: "product", label: "제품판매 매출", src: "건강쇼핑(GMV)", c: "#34D399", w: 38, min: 15000, max: 320000 },
-  { k: "checkup", label: "검진 연계 수수료", src: "건강검진센터", c: "#22D3EE", w: 20, min: 15000, max: 30000 },
+  { k: "checkup", label: "검진 연계 수수료", src: "건강검진센터(건당 2.5만 — 재무모델 정합)", c: "#22D3EE", w: 20, min: 25000, max: 25000 },
   { k: "service", label: "헬스케어 서비스 수수료", src: "상담·홈케어·재활·PT", c: "#2DD4BF", w: 12, min: 8000, max: 40000 },
   { k: "reservation", label: "예약 서비스 수수료", src: "골프·시설 예약(건당 1만)", c: "#F97316", w: 10, min: 10000, max: 10000 },
   { k: "emr", label: "EMR·UIP 사용료", src: "병원·검진센터·약국(월정액·전액)", c: "#6366F1", w: 7, min: 200000, max: 3500000 },
-  { k: "insurance", label: "보험 중개 수수료", src: "보험·치료비", c: "#A78BFA", w: 12, min: 30000, max: 320000 },
+  { k: "insurance", label: "보험 중개 수수료", src: "마케팅(퍼미션) 동의 건(건당 7만 — 재무모델 정합)", c: "#A78BFA", w: 12, min: 70000, max: 70000 },
   { k: "ad", label: "광고·제휴 매출", src: "제휴·마케팅", c: "#FBBF24", w: 5, min: 40000, max: 260000 },
 ];
 const FIN_COGS_META = [["product", "제품 원가", "#F472B6"], ["infra", "검진·인프라 원가", "#38BDF8"], ["payment", "결제 대행 수수료", "#94A3B8"]];
 const FIN_SGA_META = [["payroll", "인건비", "#F59E0B"], ["marketing", "마케팅비", "#EC4899"], ["rnd", "연구개발비", "#8B5CF6"], ["rent", "임차료·관리비", "#64748B"], ["depr", "감가상각비", "#0EA5E9"], ["reward", "포인트(토큰적립) 비용", "#22D3EE"], ["donation", "기부금(치료비 나눔)", "#E11D48"]];
 const FIN_LIAB_META = [["token", "토큰적립금 (계약부채)", "#22D3EE"], ["donation", "기부금 준비금 (미지급기부금)", "#E11D48"], ["payable", "매입채무·미지급금", "#94A3B8"]];
-const FIN_FIX = { payroll: [107000, 143000], marketing: [140000, 240000], rnd: [80000, 150000], rent: [50000, 85000], depr: [34000, 58000] };
+const FIN_FIX = { payroll: [150000, 210000], marketing: [210000, 340000], rnd: [80000, 150000], rent: [50000, 85000], depr: [34000, 58000] };   // 인건비·마케팅 상향(2026-08-20 재무모델 정합 — 시뮬 스케일)
 const _finZero = () => ({ rev: { product: 0, checkup: 0, service: 0, reservation: 0, emr: 0, insurance: 0, ad: 0 }, cogs: { product: 0, infra: 0, payment: 0 }, sga: { payroll: 0, marketing: 0, rnd: 0, rent: 0, depr: 0, reward: 0, donation: 0 }, other: { income: 0, finIncome: 0, finCost: 0 }, liab: { token: 0, donation: 0, payable: 0 } });
 const _finSum = (o) => Object.values(o).reduce((s, v) => s + v, 0);
 function finPL(a) {
@@ -112,7 +112,7 @@ function FinanceLive() {
           a.sga.reward += reward; a.liab.token += reward; a.sga.donation += don; a.liab.donation += don;
           push(t.c, `${who} · ${t.label} (건강쇼핑)`, p, "제품매출");
         } else {
-          if (t.k === "checkup") a.cogs.infra += Math.round(p * 0.5);
+          if (t.k === "checkup") a.cogs.infra += 20000;   // 3종 서비스 원가(검진보험·리포트·상담) 건당 2만 — 재무모델 정합
           else if (t.k === "emr") a.cogs.infra += Math.round(p * 0.1);
           else if (t.k === "service") a.cogs.infra += Math.round(p * 0.05);
           push(t.c, `${who} · ${t.label}`, p, t.k === "checkup" ? "검진수수료수익" : t.k === "emr" ? "EMR연계수익" : t.k === "service" ? "서비스수수료수익" : t.k === "reservation" ? "예약수수료수익" : t.k === "insurance" ? "중개수수료" : "광고수익");
