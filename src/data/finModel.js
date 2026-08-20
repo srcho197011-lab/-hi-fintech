@@ -10,6 +10,9 @@
 const FIN_P_DEFAULT = {
   years: ["1차연도", "2차연도", "3차연도", "4차연도", "5차연도", "6차연도", "7차연도", "8차연도", "9차연도", "10차연도"],
   // 회원(누적 목표) — 1~5차 계획 + 6~10차 성장률 외삽
+  /* N2(적정성 검증 반영 2026-08-20): 아래 회원 목표는 "이탈(churn) 차감 후 순증 기준" —
+     총가입 필요량은 rows.grossNew(신규 순증 + 전년 회원×이탈률 보전)로 파생 제공(5년 합계 ≈ 1,300만+).
+     CAC는 순증 기준으로 인식하며, 이탈 보전·재활성 획득비는 브랜드·퍼포먼스 마케팅(매출 8%)에 포함. */
   membersEnd: [330000, 1300000, 3200000, 6000000, 10000000],
   /* 활성 회원 = 하이핀 경유 검진 예약(연) — 연도별 절대값 계획(형 확정 2026-08-20) */
   activeAbs: [250000, 900000, 2100000, 3800000, 6000000],
@@ -22,7 +25,9 @@ const FIN_P_DEFAULT = {
   //    침투 우선 요금: 2차 50만은 기관의 기존 EMR 유지비 수준으로 진입장벽 최소화 → 기능 확장과 함께 단계 인상
   subFeeBase: 500000, subFeeStep: 500000, subFeeCap: 3000000, subPaidRate: 1.0,
   // 제휴 기관 수(연말) — 검진기관·병원·약국
-  checkupCenters: [50, 150, 300, 500, 700], hospitals: [200, 800, 1500, 2500, 3000], pharmacies: [500, 2000, 5000, 12000, 20000],
+  checkupCenters: [50, 150, 300, 500, 700], hospitals: [200, 800, 1500, 2500, 3000],
+  // 약국(N1 적정성 검증 반영 2026-08-20): 5차 12,000곳 = 전국 약국 25,047곳(2024 심평원)의 48% — 침투율 방어선
+  pharmacies: [500, 2000, 4000, 8000, 12000],
   instGrowthAfter5: 0.10, subCostRate: 0.12, // 구독 원가(클라우드·연동 운영)
   // 제품 GMV(건강쇼핑·총액) — 1인당 연 지출 근거 카테고리 × 지갑 점유율(Share of Wallet) 70% 보수화
   // 근거: 회원의 연간 건강지출 전액이 아니라, 기존 구매채널(오픈마켓·약국·마트) 병행을 감안한 플랫폼 포착률 70%만 매출로 인식
@@ -110,6 +115,7 @@ function finYears(nYears) {
     const L = (label, formula, value) => { lin.push({ label, formula, value }); return value; };
     const membersEnd = _finAt(P, P.membersEnd, y), membersPrev = y === 0 ? 0 : _finAt(P, P.membersEnd, y - 1);
     const newMembers = Math.max(0, membersEnd - membersPrev);
+    const grossNew = newMembers + Math.round(membersPrev * P.churn);   // N2: 총가입 필요량(이탈 보전 포함)
     /* 활성 회원 = 하이핀 경유 검진 예약(연) — 계획 절대값, 6차 이후 외삽(비율 폴백) */
     const active = (P.activeAbs && y < P.activeAbs.length) ? P.activeAbs[y] : Math.round(membersEnd * ((P.activeAbs && P.activeAbs.length) ? P.activeAbs[P.activeAbs.length - 1] / P.membersEnd[P.membersEnd.length - 1] : P.activeRate));
     const mktConsent = (P.mktConsentEnd && y < P.mktConsentEnd.length) ? P.mktConsentEnd[y] : Math.round(membersEnd * ((P.mktConsentEnd && P.mktConsentEnd.length) ? P.mktConsentEnd[P.mktConsentEnd.length - 1] / P.membersEnd[P.membersEnd.length - 1] : 0.6));
@@ -155,7 +161,7 @@ function finYears(nYears) {
     const ebitda = ebit + depr, pbt = ebit - P.interestYear, tax = Math.max(0, pbt) * P.taxRate, net = pbt - tax;
     const capex = y < 2 ? 2000000000 : 5000000000, dwc = Math.round(revenue * 0.02), fcf = ebit * (1 - P.taxRate) + depr - capex - dwc;
     const mrrEnd = paidInsts * subFee + Math.round(agentUsers * P.aiAgentFeeYear / 12); // 월 반복매출(구독)
-    rows.push({ y, label: P.years[y], membersEnd, membersPrev, newMembers, active, mktConsent, buyers, checkupUsers, serviceUsers, reservations,
+    rows.push({ y, label: P.years[y], membersEnd, membersPrev, newMembers, grossNew, active, mktConsent, buyers, checkupUsers, serviceUsers, reservations,
       hospitals, checkupCenters, pharmacies, insts, subFee, paidInsts, cac: P.cac, marketing, cacCost, brandMkt,
       revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr: revSub, revSub, subSplit, revAd, revAgent, revApi,
       revenue, cogs, gross, reward, donation, payroll, rnd, cloud, gpu, salesCost, adminCost, otherOpex, sga,

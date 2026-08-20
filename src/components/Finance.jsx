@@ -363,7 +363,8 @@ function FinanceLive() {
         <div className="onttbl-wrap"><table className="onttbl mytbl">
           <thead><tr><th>항목</th>{my.map((r, i) => <th key={i}>{r.label}</th>)}</tr></thead>
           <tbody>
-            {M("누적 회원(플랫폼)", (r) => r.membersEnd.toLocaleString() + "명", "myhead")}
+            {M("누적 회원(플랫폼) — 이탈 차감 후 순증", (r) => r.membersEnd.toLocaleString() + "명", "myhead")}
+            {M("　총가입 필요량(이탈 18% 보전 포함)", (r) => (r.grossNew || r.newMembers).toLocaleString() + "명")}
             {M("마케팅 동의 회원(보험중개·누적)", (r) => (r.mktConsent || 0).toLocaleString() + "명")}
             {M("활성 회원 — 하이핀 경유 검진 예약(연)", (r) => r.active.toLocaleString() + "명")}
             {M("제휴 기관(검진·병원·약국)", (r) => r.insts.toLocaleString() + "곳")}
