@@ -780,6 +780,10 @@ function BookingModal({ center, mode, onClose }) {
   const [date, setDate] = useState(null);
   const [time, setTime] = useState(null);
   const [done, setDone] = useState(false);
+  /* 선수납·공제정산(escrowPay) — 유료 검진은 하이핀에서 선결제 후 에스크로 예치, 수검 확인 시 공제 정산.
+     회원 화면에는 결제 금액·보호 안내만 노출(수수료·정산 내역은 관리자 콘솔 전용 — 원가 비노출 원칙) */
+  const [payMethod, setPayMethod] = useState("card");
+  const [payOrder, setPayOrder] = useState(null);
   const [insOpen, setInsOpen] = useState(false);
   const [bookRes, setBookRes] = useState(null);
   /* 무료 검진대비보험 — 하이 안내형 최소 탭 가입 절차(중요사항 확인 게이트 + 동의 4종) + 건너뛰기 허용(강매 금지).
@@ -823,7 +827,14 @@ function BookingModal({ center, mode, onClose }) {
   /* 예약 모달 안 위치 지도 — 선택한 센터의 실좌표 핀(카카오맵 길안내 포함) */
   const hiraBk = useHira();
   const bkGeo = React.useMemo(() => (typeof hiraMatchCoords === "function") ? hiraMatchCoords(hiraBk.data, center.name, center.ad || `${center.r || ""} ${center.area || ""}`) : null, [hiraBk.data, center.name, center.ad]);
-  const onConfirm = () => {
+  /* 유료 검진 판정 — 국가검진(basic)은 본인부담 0원, 그 외는 기관 실가격 또는 플랜 표준가로 선결제 */
+  const _planK = center._plan ? center._plan : (mode === "nat" ? "basic" : ((center.price || 0) < 500000 ? "standard" : "premium"));
+  const _stdPrice = (typeof ESC_PLAN_PRICE !== "undefined" ? ESC_PLAN_PRICE[_planK] : 0) || 0;
+  const payAmount = (mode === "nat" || _planK === "basic") ? 0 : (center.price || _stdPrice);
+  const payIsStd = !center.price && payAmount > 0;   // 기관 실가격이 아닌 플랜 표준가로 결제하는 경우
+  const needPay = payAmount > 0 && typeof escPay === "function";
+  const onConfirm = (paid) => {
+    if (needPay && !paid) return;
     const r = submitCheckupBooking(center, { center: center.name, brand: center.b, date, time, plan: (typeof planName !== "undefined" ? planName : ""), items: center.tags, freeIns: insAgree });
     /* 동의 시 실제 증서 발급 — 카피가 아니라 체인 기록·금고 감사로그·증서 저장(J2-5) */
     if (insAgree) {
@@ -851,6 +862,15 @@ function BookingModal({ center, mode, onClose }) {
     /* 리퍼럴 행동 보상 — 초대로 가입한 회원의 첫 검진 예약 시 추천인에게 +300 HTK(1회) */
     try { if (typeof refActionComplete === "function" && dmU && dmU.email) { const ra = refActionComplete(dmU.email); if (ra && typeof toast === "function") toast(`추천인 ${ra.owner.name}님께 검진 완료 보상 +${ra.reward} HTK가 적립됐어요.`); } } catch (e) {}
     setBookRes(r); setDone(true);
+  };
+  /* 선결제 실행 — PG 승인(시뮬) → 에스크로 예치 → 예약 확정 */
+  const onPayAndConfirm = () => {
+    if (!date || !time) return;
+    const m = dmU || (typeof selfMember === "function" ? selfMember() : null);
+    const r = escPay(m, { amount: payAmount, method: payMethod, center: center.name, brand: center.b, date, time, plan: (typeof planName !== "undefined" ? planName : "") });
+    if (!r.ok) { if (typeof toast === "function") toast(r.reason); return; }
+    setPayOrder(typeof escMemberView === "function" ? escMemberView(r.order) : r.order);
+    onConfirm(true);
   };
   const rm = bookRes ? bookRes.mode : "demo";
   const doneTitle = rm === "pending" ? "예약 요청이 접수되었습니다" : rm === "live-url" ? "한신메디피아 예약 페이지로 이동" : rm === "live-api" ? "예약이 전송되었습니다" : "예약이 확정되었습니다";
@@ -1104,13 +1124,50 @@ function BookingModal({ center, mode, onClose }) {
             <div className="slots">{slots.map((s) => <div key={s} className={`slot ${time === s ? "on" : ""}`} onClick={() => setTime(s)}>{s}</div>)}</div>
             <div className="bklbl">검진 항목</div>
             <div className="ctags">{center.tags.map((t) => <span key={t}>{t}</span>)}</div>
-            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={onConfirm}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
+            {needPay && (<>
+              <div className="bklbl">검진비 결제 <span style={{ fontWeight: 600, color: "var(--muted)" }}>· 하이핀에서 먼저 결제하고, 수검 완료까지 안전하게 보관돼요</span></div>
+              <div style={{ border: "1.5px solid #DBEAFE", borderRadius: 12, background: "#F8FBFF", padding: "11px 13px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, color: "#1D4ED8" }}>결제 금액{payIsStd && <span style={{ fontWeight: 600, color: "var(--muted)", fontSize: 11 }}> · 표준 검진비</span>}</span>
+                  <span style={{ fontSize: 17, fontWeight: 900, color: "#1D4ED8" }}>{won(payAmount)}</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                  {(typeof ESC_METHODS !== "undefined" ? ESC_METHODS : []).map((x) => (
+                    <div key={x.k} onClick={() => setPayMethod(x.k)} style={{ cursor: "pointer", border: "1.5px solid " + (payMethod === x.k ? "#1D4ED8" : "var(--border)"), background: payMethod === x.k ? "#EFF6FF" : "#fff", borderRadius: 9, padding: "7px 6px", textAlign: "center" }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: payMethod === x.k ? "#1D4ED8" : "var(--ink)" }}>{x.ko}</div>
+                      <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{x.sub}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 7, alignItems: "flex-start", marginTop: 9, background: "#fff", border: "1px solid #E0EAFB", borderRadius: 9, padding: "8px 10px" }}>
+                  <Lock size={13} color="#1D4ED8" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <div style={{ fontSize: 11.3, color: "var(--muted)", lineHeight: 1.6 }}>
+                    결제 대금은 <b style={{ color: "var(--ink)" }}>수검을 마칠 때까지 결제대금예치(에스크로)로 분리 보관</b>되고, 검진을 받으신 뒤 검진기관에 전달돼요. 예약을 취소하시면 <b style={{ color: "var(--ink)" }}>전액 환불</b>됩니다.
+                  </div>
+                </div>
+                {payIsStd && <div style={{ fontSize: 10.6, color: "var(--muted)", marginTop: 6, lineHeight: 1.6 }}>※ 선택하신 검진 플랜의 <b>표준 검진비</b>로 먼저 결제해요. 기관·검진 항목에 따라 최종 금액이 달라지면 <b>정산 시 차액이 조정</b>되고, 남는 금액은 환불해 드려요.</div>}
+                <div style={{ fontSize: 10.3, color: "var(--muted)", marginTop: 6 }}>※ 시연 환경입니다 — 실제 결제·승인은 이루어지지 않으며 승인번호는 예시 값이에요.</div>
+              </div>
+            </>)}
+            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => (needPay ? onPayAndConfirm() : onConfirm(true))}><CalendarCheck size={15} /> {!date || !time ? "날짜·시간을 선택하세요" : (needPay ? `${won(payAmount)} 결제하고 예약 확정` : `${date} ${time} 예약 확정`)}</button>
           </>) : (
             <div className="bkconfirm">
               {certOpen && <InsCertModal cert={insCert} onClose={() => setCertOpen(false)} />}
               <div className="ic"><Check size={30} color="#16A34A" /></div>
               <div style={{ fontWeight: 800, fontSize: 17 }}>{doneTitle}</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{center.name}<br />{date} {time}</div>
+              {payOrder && (
+                <div style={{ marginTop: 12, background: "#F8FBFF", border: "1px solid #DBEAFE", borderRadius: 11, padding: "10px 12px", textAlign: "left" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12.3, fontWeight: 900, color: "#1D4ED8" }}><Lock size={12} style={{ verticalAlign: -1 }} /> 검진비 결제 완료 · 예치중</span>
+                    <b style={{ fontSize: 14, color: "#1D4ED8" }}>{won(payOrder.amount)}</b>
+                  </div>
+                  <div style={{ fontSize: 11.3, color: "var(--muted)", marginTop: 5, lineHeight: 1.65 }}>
+                    {payOrder.methodKo} · 승인번호 {payOrder.pgAuth} · 예치번호 {payOrder.escrowId}<br />
+                    검진을 마치시면 검진기관에 정산되고, 취소 시 전액 환불돼요. 영수증은 <b style={{ color: "var(--ink)" }}>나의 건강지갑</b>에서 확인하실 수 있어요.
+                  </div>
+                </div>
+              )}
               {partnerCfg && rm === "pending" && (
                 <div style={{ marginTop: 12, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 12px", textAlign: "left" }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: "#B45309", display: "flex", alignItems: "center", gap: 6 }}><Network size={13} /> {partnerCfg.partner} UIP 연동 준비중</div>

@@ -93,6 +93,8 @@ function FinanceLive() {
   const [anYear, setAnYear] = useState(0); // 연간 예상 — 연차 선택(0=1차)
   const [pTick, setPTick] = useState(0);   // 파라미터·시나리오 변경 → 전체 재계산 트리거
   const [months, setMonths] = useState([]);
+  const [escTick, setEscTick] = useState(0);   // 선수납 정산 처리 후 리렌더
+  useEffect(() => { try { if (typeof escSeedDemo === "function") escSeedDemo(); } catch (e) {} }, []);
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const ref = useRef(_finZero());
   const idRef = useRef(0); const tkRef = useRef(0); const snapRef = useRef({ rev: 0, op: 0, net: 0 }); const moRef = useRef([]);
@@ -171,7 +173,7 @@ function FinanceLive() {
     </div>
 
     <div className="finlink"><Network size={13} color="#22D3EE" /> 온톨로지 파일럿 <b>{cohort.length.toLocaleString()}명</b>의 건강케어 소비가 <b>실시간 매출</b>로 인식됩니다 (제품판매·보험중개는 회원, 입점수수료·EMR은 제휴 기관).</div>
-    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["cash", "AI 출수납", Landmark], ["invest", "AI 투자", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote], ["plan", "사업계획(월·분기)", Receipt], ["my", "중장기(5개년)", TrendingUp], ["ten", "10개년", TrendingUp], ["saas", "SaaS·투자 KPI", Percent], ["params", "파라미터·시나리오", Zap], ["gtm", "회원·GTM", Users], ["val", "밸류에이션", PieChart], ["graph", "재무 온톨로지·AI", Network]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
+    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["cash", "AI 출수납", Landmark], ["escrow", "선수납·정산", Lock], ["invest", "AI 투자", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote], ["plan", "사업계획(월·분기)", Receipt], ["my", "중장기(5개년)", TrendingUp], ["ten", "10개년", TrendingUp], ["saas", "SaaS·투자 KPI", Percent], ["params", "파라미터·시나리오", Zap], ["gtm", "회원·GTM", Users], ["val", "밸류에이션", PieChart], ["graph", "재무 온톨로지·AI", Network]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
     {["annual", "plan", "my", "ten", "saas", "val", "gtm", "graph"].includes(tab) && (
       <div className="finscn" key={"scn" + pTick}>
         <span className="finscn-l">시나리오</span>
@@ -273,6 +275,51 @@ function FinanceLive() {
         <div className="finbalance"><Check size={14} color="#34D399" /> 현금흐름표 기말현금 = 재무상태표 현금 <b>{finWon(bs.cash)}원</b> 일치</div>
       </div>
     )}
+
+    {tab === "escrow" && (() => {
+      const st = (typeof escStats === "function") ? escStats() : null;
+      const orders = (typeof escAll === "function") ? escAll().slice().sort((a, b) => b.at - a.at) : [];
+      const SS = (typeof ESC_STATUS !== "undefined") ? ESC_STATUS : {};
+      const d = (ts) => { if (!ts) return "—"; const x = new Date(ts); return `${x.getMonth() + 1}.${x.getDate()}`; };
+      const BTN_A = { border: "none", background: "#1D4ED8", color: "#fff", borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" };
+      const BTN_B = { border: "1px solid #475569", background: "transparent", color: "#94A3B8", borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" };
+      const act = (fn, id) => { const r = fn(id); if (typeof toast === "function") toast(r.ok ? "처리됐어요 — 체인에 기록됩니다" : r.reason); setEscTick((t) => t + 1); };
+      return (<>
+      <div className="finlink" style={{ background: "#0C1E3A", borderColor: "#1E3A6B" }}><Lock size={13} color="#60A5FA" /> <b>선수납 · 공제 정산</b> — 고객이 하이핀에서 <b>검진비를 먼저 결제</b>하면 수검 완료까지 <b>결제대금예치(에스크로)</b>로 분리 보관되고, 수검이 확인되면 <b>송객수수료를 공제한 잔액</b>이 검진기관에 정산됩니다(D+3 기준·협의). 결제 매입(PG)·예치·정산 대행은 제휴 결제사(KIS정보통신 등) 라이선스로 수행하며, 아래는 시연 원장입니다.</div>
+      <div className="ontkpis" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
+        {[["에스크로 예치 잔액", finWon(st ? st.escrowBalance : 0), "#60A5FA", `미정산 ${st ? st.paid + st.visited : 0}건 · 계약부채`],
+          ["정산 수수료(매출 인식)", finWon(st ? st.feeRevenue : 0), "#34D399", `정산 완료 ${st ? st.settled : 0}건`],
+          ["검진기관 지급 누계", finWon(st ? st.payoutTotal : 0), "#E2E8F0", "공제 후 지급액"],
+          ["취급고(TPV) 누계", finWon(st ? st.gmv : 0), "#FBBF24", `전 ${st ? st.n : 0}건 · 환불 ${st ? st.refunded : 0}`]].map(([k, v, c, sub], i) => (
+          <div className="ontkpi" key={i}><div className="ontkpi-v" style={{ color: c }}>{v}</div><div className="ontkpi-k">{k}<br /><span style={{ opacity: .7, fontSize: 10 }}>{sub}</span></div></div>
+        ))}
+      </div>
+      <div className="ontpanel">
+        <div className="ontph"><Lock size={15} color="#60A5FA" /> 선수납 원장 <span>· 결제 → 예치 → 수검 확인 → 공제 정산</span></div>
+        <div className="onttbl-wrap"><table className="onttbl mytbl">
+          <thead><tr><th>주문</th><th>검진기관</th><th>결제일</th><th>결제금액</th><th>수수료(공제)</th><th>기관 지급액</th><th>상태</th><th>처리</th></tr></thead>
+          <tbody>
+            {orders.map((o) => { const m = SS[o.status] || { ko: o.status, c: "#94A3B8" }; return (
+              <tr key={o.id}>
+                <td className="mono0" style={{ fontSize: 11 }}>{o.id}</td>
+                <td className="mono0">{o.center}</td>
+                <td className="mono">{d(o.at)}</td>
+                <td className="mono">{finWon(o.amount)}</td>
+                <td className="mono" style={{ color: "#34D399" }}>{o.status === "REFUNDED" ? "—" : "-" + finWon(o.fee)}</td>
+                <td className="mono">{o.status === "REFUNDED" ? "환불" : finWon(o.payout)}</td>
+                <td className="mono0"><span style={{ color: m.c, fontWeight: 800, fontSize: 11.5 }}>{m.ko}</span></td>
+                <td className="mono0">
+                  {o.status === "PAID" && <><button style={BTN_A} onClick={() => act(escConfirmVisit, o.id)}>수검확인</button> <button style={BTN_B} onClick={() => act(escRefund, o.id)}>환불</button></>}
+                  {o.status === "VISITED" && <button style={BTN_A} onClick={() => act(escSettle, o.id)}>공제 정산</button>}
+                  {(o.status === "SETTLED" || o.status === "REFUNDED") && <span style={{ color: "#64748B", fontSize: 11 }}>완료 {d(o.settledAt || o.refundedAt)}</span>}
+                </td>
+              </tr>); })}
+            {!orders.length && <tr><td colSpan={8} className="mono0" style={{ color: "#64748B" }}>선수납 주문이 없습니다 — 건강검진 예약에서 유료 검진을 결제하면 이 원장에 기록됩니다.</td></tr>}
+          </tbody>
+        </table></div>
+        <div className="finpl-note">회계 처리 — ①결제 시 <b>예수금(계약부채)</b>로 인식(매출 아님) ②수검 확인 후 정산 시 <b>송객수수료만 매출</b>, 잔액은 기관 지급으로 부채 소멸 ③환불 시 부채 전액 소멸·수수료 미발생. 회원 화면에는 결제 금액과 예치 보호 안내만 표시되며 <b>수수료·지급액은 본 관리자 콘솔에서만</b> 조회됩니다.</div>
+      </div>
+      </>); })()}
 
     {tab === "trend" && (
       <div className="ontpanel">

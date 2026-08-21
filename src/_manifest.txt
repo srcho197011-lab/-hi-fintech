@@ -83,6 +83,7 @@ src/data/riskEngine.js
 src/data/consentNft.js
 src/data/ocrEngine.js
 src/data/finModel.js
+src/data/escrowPay.js
 src/data/referral.js
 src/data/aiQnaBank.js
 src/data/aiNative.js

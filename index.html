@@ -5544,6 +5544,10 @@ function BookingModal({ center, mode, onClose }) {
   const [date, setDate] = useState(null);
   const [time, setTime] = useState(null);
   const [done, setDone] = useState(false);
+  /* 선수납·공제정산(escrowPay) — 유료 검진은 하이핀에서 선결제 후 에스크로 예치, 수검 확인 시 공제 정산.
+     회원 화면에는 결제 금액·보호 안내만 노출(수수료·정산 내역은 관리자 콘솔 전용 — 원가 비노출 원칙) */
+  const [payMethod, setPayMethod] = useState("card");
+  const [payOrder, setPayOrder] = useState(null);
   const [insOpen, setInsOpen] = useState(false);
   const [bookRes, setBookRes] = useState(null);
   /* 무료 검진대비보험 — 하이 안내형 최소 탭 가입 절차(중요사항 확인 게이트 + 동의 4종) + 건너뛰기 허용(강매 금지).
@@ -5587,7 +5591,14 @@ function BookingModal({ center, mode, onClose }) {
   /* 예약 모달 안 위치 지도 — 선택한 센터의 실좌표 핀(카카오맵 길안내 포함) */
   const hiraBk = useHira();
   const bkGeo = React.useMemo(() => (typeof hiraMatchCoords === "function") ? hiraMatchCoords(hiraBk.data, center.name, center.ad || `${center.r || ""} ${center.area || ""}`) : null, [hiraBk.data, center.name, center.ad]);
-  const onConfirm = () => {
+  /* 유료 검진 판정 — 국가검진(basic)은 본인부담 0원, 그 외는 기관 실가격 또는 플랜 표준가로 선결제 */
+  const _planK = center._plan ? center._plan : (mode === "nat" ? "basic" : ((center.price || 0) < 500000 ? "standard" : "premium"));
+  const _stdPrice = (typeof ESC_PLAN_PRICE !== "undefined" ? ESC_PLAN_PRICE[_planK] : 0) || 0;
+  const payAmount = (mode === "nat" || _planK === "basic") ? 0 : (center.price || _stdPrice);
+  const payIsStd = !center.price && payAmount > 0;   // 기관 실가격이 아닌 플랜 표준가로 결제하는 경우
+  const needPay = payAmount > 0 && typeof escPay === "function";
+  const onConfirm = (paid) => {
+    if (needPay && !paid) return;
     const r = submitCheckupBooking(center, { center: center.name, brand: center.b, date, time, plan: (typeof planName !== "undefined" ? planName : ""), items: center.tags, freeIns: insAgree });
     /* 동의 시 실제 증서 발급 — 카피가 아니라 체인 기록·금고 감사로그·증서 저장(J2-5) */
     if (insAgree) {
@@ -5615,6 +5626,15 @@ function BookingModal({ center, mode, onClose }) {
     /* 리퍼럴 행동 보상 — 초대로 가입한 회원의 첫 검진 예약 시 추천인에게 +300 HTK(1회) */
     try { if (typeof refActionComplete === "function" && dmU && dmU.email) { const ra = refActionComplete(dmU.email); if (ra && typeof toast === "function") toast(`추천인 ${ra.owner.name}님께 검진 완료 보상 +${ra.reward} HTK가 적립됐어요.`); } } catch (e) {}
     setBookRes(r); setDone(true);
+  };
+  /* 선결제 실행 — PG 승인(시뮬) → 에스크로 예치 → 예약 확정 */
+  const onPayAndConfirm = () => {
+    if (!date || !time) return;
+    const m = dmU || (typeof selfMember === "function" ? selfMember() : null);
+    const r = escPay(m, { amount: payAmount, method: payMethod, center: center.name, brand: center.b, date, time, plan: (typeof planName !== "undefined" ? planName : "") });
+    if (!r.ok) { if (typeof toast === "function") toast(r.reason); return; }
+    setPayOrder(typeof escMemberView === "function" ? escMemberView(r.order) : r.order);
+    onConfirm(true);
   };
   const rm = bookRes ? bookRes.mode : "demo";
   const doneTitle = rm === "pending" ? "예약 요청이 접수되었습니다" : rm === "live-url" ? "한신메디피아 예약 페이지로 이동" : rm === "live-api" ? "예약이 전송되었습니다" : "예약이 확정되었습니다";
@@ -5868,13 +5888,50 @@ function BookingModal({ center, mode, onClose }) {
             <div className="slots">{slots.map((s) => <div key={s} className={`slot ${time === s ? "on" : ""}`} onClick={() => setTime(s)}>{s}</div>)}</div>
             <div className="bklbl">검진 항목</div>
             <div className="ctags">{center.tags.map((t) => <span key={t}>{t}</span>)}</div>
-            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={onConfirm}><CalendarCheck size={15} /> {date && time ? `${date} ${time} 예약 확정` : "날짜·시간을 선택하세요"}</button>
+            {needPay && (<>
+              <div className="bklbl">검진비 결제 <span style={{ fontWeight: 600, color: "var(--muted)" }}>· 하이핀에서 먼저 결제하고, 수검 완료까지 안전하게 보관돼요</span></div>
+              <div style={{ border: "1.5px solid #DBEAFE", borderRadius: 12, background: "#F8FBFF", padding: "11px 13px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, color: "#1D4ED8" }}>결제 금액{payIsStd && <span style={{ fontWeight: 600, color: "var(--muted)", fontSize: 11 }}> · 표준 검진비</span>}</span>
+                  <span style={{ fontSize: 17, fontWeight: 900, color: "#1D4ED8" }}>{won(payAmount)}</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                  {(typeof ESC_METHODS !== "undefined" ? ESC_METHODS : []).map((x) => (
+                    <div key={x.k} onClick={() => setPayMethod(x.k)} style={{ cursor: "pointer", border: "1.5px solid " + (payMethod === x.k ? "#1D4ED8" : "var(--border)"), background: payMethod === x.k ? "#EFF6FF" : "#fff", borderRadius: 9, padding: "7px 6px", textAlign: "center" }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: payMethod === x.k ? "#1D4ED8" : "var(--ink)" }}>{x.ko}</div>
+                      <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{x.sub}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 7, alignItems: "flex-start", marginTop: 9, background: "#fff", border: "1px solid #E0EAFB", borderRadius: 9, padding: "8px 10px" }}>
+                  <Lock size={13} color="#1D4ED8" style={{ flexShrink: 0, marginTop: 1 }} />
+                  <div style={{ fontSize: 11.3, color: "var(--muted)", lineHeight: 1.6 }}>
+                    결제 대금은 <b style={{ color: "var(--ink)" }}>수검을 마칠 때까지 결제대금예치(에스크로)로 분리 보관</b>되고, 검진을 받으신 뒤 검진기관에 전달돼요. 예약을 취소하시면 <b style={{ color: "var(--ink)" }}>전액 환불</b>됩니다.
+                  </div>
+                </div>
+                {payIsStd && <div style={{ fontSize: 10.6, color: "var(--muted)", marginTop: 6, lineHeight: 1.6 }}>※ 선택하신 검진 플랜의 <b>표준 검진비</b>로 먼저 결제해요. 기관·검진 항목에 따라 최종 금액이 달라지면 <b>정산 시 차액이 조정</b>되고, 남는 금액은 환불해 드려요.</div>}
+                <div style={{ fontSize: 10.3, color: "var(--muted)", marginTop: 6 }}>※ 시연 환경입니다 — 실제 결제·승인은 이루어지지 않으며 승인번호는 예시 값이에요.</div>
+              </div>
+            </>)}
+            <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => (needPay ? onPayAndConfirm() : onConfirm(true))}><CalendarCheck size={15} /> {!date || !time ? "날짜·시간을 선택하세요" : (needPay ? `${won(payAmount)} 결제하고 예약 확정` : `${date} ${time} 예약 확정`)}</button>
           </>) : (
             <div className="bkconfirm">
               {certOpen && <InsCertModal cert={insCert} onClose={() => setCertOpen(false)} />}
               <div className="ic"><Check size={30} color="#16A34A" /></div>
               <div style={{ fontWeight: 800, fontSize: 17 }}>{doneTitle}</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{center.name}<br />{date} {time}</div>
+              {payOrder && (
+                <div style={{ marginTop: 12, background: "#F8FBFF", border: "1px solid #DBEAFE", borderRadius: 11, padding: "10px 12px", textAlign: "left" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12.3, fontWeight: 900, color: "#1D4ED8" }}><Lock size={12} style={{ verticalAlign: -1 }} /> 검진비 결제 완료 · 예치중</span>
+                    <b style={{ fontSize: 14, color: "#1D4ED8" }}>{won(payOrder.amount)}</b>
+                  </div>
+                  <div style={{ fontSize: 11.3, color: "var(--muted)", marginTop: 5, lineHeight: 1.65 }}>
+                    {payOrder.methodKo} · 승인번호 {payOrder.pgAuth} · 예치번호 {payOrder.escrowId}<br />
+                    검진을 마치시면 검진기관에 정산되고, 취소 시 전액 환불돼요. 영수증은 <b style={{ color: "var(--ink)" }}>나의 건강지갑</b>에서 확인하실 수 있어요.
+                  </div>
+                </div>
+              )}
               {partnerCfg && rm === "pending" && (
                 <div style={{ marginTop: 12, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 12px", textAlign: "left" }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: "#B45309", display: "flex", alignItems: "center", gap: 6 }}><Network size={13} /> {partnerCfg.partner} UIP 연동 준비중</div>
@@ -16545,6 +16602,8 @@ function FinanceLive() {
   const [anYear, setAnYear] = useState(0); // 연간 예상 — 연차 선택(0=1차)
   const [pTick, setPTick] = useState(0);   // 파라미터·시나리오 변경 → 전체 재계산 트리거
   const [months, setMonths] = useState([]);
+  const [escTick, setEscTick] = useState(0);   // 선수납 정산 처리 후 리렌더
+  useEffect(() => { try { if (typeof escSeedDemo === "function") escSeedDemo(); } catch (e) {} }, []);
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const ref = useRef(_finZero());
   const idRef = useRef(0); const tkRef = useRef(0); const snapRef = useRef({ rev: 0, op: 0, net: 0 }); const moRef = useRef([]);
@@ -16623,7 +16682,7 @@ function FinanceLive() {
     </div>
 
     <div className="finlink"><Network size={13} color="#22D3EE" /> 온톨로지 파일럿 <b>{cohort.length.toLocaleString()}명</b>의 건강케어 소비가 <b>실시간 매출</b>로 인식됩니다 (제품판매·보험중개는 회원, 입점수수료·EMR은 제휴 기관).</div>
-    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["cash", "AI 출수납", Landmark], ["invest", "AI 투자", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote], ["plan", "사업계획(월·분기)", Receipt], ["my", "중장기(5개년)", TrendingUp], ["ten", "10개년", TrendingUp], ["saas", "SaaS·투자 KPI", Percent], ["params", "파라미터·시나리오", Zap], ["gtm", "회원·GTM", Users], ["val", "밸류에이션", PieChart], ["graph", "재무 온톨로지·AI", Network]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
+    <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["cash", "AI 출수납", Landmark], ["escrow", "선수납·정산", Lock], ["invest", "AI 투자", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote], ["plan", "사업계획(월·분기)", Receipt], ["my", "중장기(5개년)", TrendingUp], ["ten", "10개년", TrendingUp], ["saas", "SaaS·투자 KPI", Percent], ["params", "파라미터·시나리오", Zap], ["gtm", "회원·GTM", Users], ["val", "밸류에이션", PieChart], ["graph", "재무 온톨로지·AI", Network]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
     {["annual", "plan", "my", "ten", "saas", "val", "gtm", "graph"].includes(tab) && (
       <div className="finscn" key={"scn" + pTick}>
         <span className="finscn-l">시나리오</span>
@@ -16725,6 +16784,51 @@ function FinanceLive() {
         <div className="finbalance"><Check size={14} color="#34D399" /> 현금흐름표 기말현금 = 재무상태표 현금 <b>{finWon(bs.cash)}원</b> 일치</div>
       </div>
     )}
+
+    {tab === "escrow" && (() => {
+      const st = (typeof escStats === "function") ? escStats() : null;
+      const orders = (typeof escAll === "function") ? escAll().slice().sort((a, b) => b.at - a.at) : [];
+      const SS = (typeof ESC_STATUS !== "undefined") ? ESC_STATUS : {};
+      const d = (ts) => { if (!ts) return "—"; const x = new Date(ts); return `${x.getMonth() + 1}.${x.getDate()}`; };
+      const BTN_A = { border: "none", background: "#1D4ED8", color: "#fff", borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" };
+      const BTN_B = { border: "1px solid #475569", background: "transparent", color: "#94A3B8", borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" };
+      const act = (fn, id) => { const r = fn(id); if (typeof toast === "function") toast(r.ok ? "처리됐어요 — 체인에 기록됩니다" : r.reason); setEscTick((t) => t + 1); };
+      return (<>
+      <div className="finlink" style={{ background: "#0C1E3A", borderColor: "#1E3A6B" }}><Lock size={13} color="#60A5FA" /> <b>선수납 · 공제 정산</b> — 고객이 하이핀에서 <b>검진비를 먼저 결제</b>하면 수검 완료까지 <b>결제대금예치(에스크로)</b>로 분리 보관되고, 수검이 확인되면 <b>송객수수료를 공제한 잔액</b>이 검진기관에 정산됩니다(D+3 기준·협의). 결제 매입(PG)·예치·정산 대행은 제휴 결제사(KIS정보통신 등) 라이선스로 수행하며, 아래는 시연 원장입니다.</div>
+      <div className="ontkpis" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
+        {[["에스크로 예치 잔액", finWon(st ? st.escrowBalance : 0), "#60A5FA", `미정산 ${st ? st.paid + st.visited : 0}건 · 계약부채`],
+          ["정산 수수료(매출 인식)", finWon(st ? st.feeRevenue : 0), "#34D399", `정산 완료 ${st ? st.settled : 0}건`],
+          ["검진기관 지급 누계", finWon(st ? st.payoutTotal : 0), "#E2E8F0", "공제 후 지급액"],
+          ["취급고(TPV) 누계", finWon(st ? st.gmv : 0), "#FBBF24", `전 ${st ? st.n : 0}건 · 환불 ${st ? st.refunded : 0}`]].map(([k, v, c, sub], i) => (
+          <div className="ontkpi" key={i}><div className="ontkpi-v" style={{ color: c }}>{v}</div><div className="ontkpi-k">{k}<br /><span style={{ opacity: .7, fontSize: 10 }}>{sub}</span></div></div>
+        ))}
+      </div>
+      <div className="ontpanel">
+        <div className="ontph"><Lock size={15} color="#60A5FA" /> 선수납 원장 <span>· 결제 → 예치 → 수검 확인 → 공제 정산</span></div>
+        <div className="onttbl-wrap"><table className="onttbl mytbl">
+          <thead><tr><th>주문</th><th>검진기관</th><th>결제일</th><th>결제금액</th><th>수수료(공제)</th><th>기관 지급액</th><th>상태</th><th>처리</th></tr></thead>
+          <tbody>
+            {orders.map((o) => { const m = SS[o.status] || { ko: o.status, c: "#94A3B8" }; return (
+              <tr key={o.id}>
+                <td className="mono0" style={{ fontSize: 11 }}>{o.id}</td>
+                <td className="mono0">{o.center}</td>
+                <td className="mono">{d(o.at)}</td>
+                <td className="mono">{finWon(o.amount)}</td>
+                <td className="mono" style={{ color: "#34D399" }}>{o.status === "REFUNDED" ? "—" : "-" + finWon(o.fee)}</td>
+                <td className="mono">{o.status === "REFUNDED" ? "환불" : finWon(o.payout)}</td>
+                <td className="mono0"><span style={{ color: m.c, fontWeight: 800, fontSize: 11.5 }}>{m.ko}</span></td>
+                <td className="mono0">
+                  {o.status === "PAID" && <><button style={BTN_A} onClick={() => act(escConfirmVisit, o.id)}>수검확인</button> <button style={BTN_B} onClick={() => act(escRefund, o.id)}>환불</button></>}
+                  {o.status === "VISITED" && <button style={BTN_A} onClick={() => act(escSettle, o.id)}>공제 정산</button>}
+                  {(o.status === "SETTLED" || o.status === "REFUNDED") && <span style={{ color: "#64748B", fontSize: 11 }}>완료 {d(o.settledAt || o.refundedAt)}</span>}
+                </td>
+              </tr>); })}
+            {!orders.length && <tr><td colSpan={8} className="mono0" style={{ color: "#64748B" }}>선수납 주문이 없습니다 — 건강검진 예약에서 유료 검진을 결제하면 이 원장에 기록됩니다.</td></tr>}
+          </tbody>
+        </table></div>
+        <div className="finpl-note">회계 처리 — ①결제 시 <b>예수금(계약부채)</b>로 인식(매출 아님) ②수검 확인 후 정산 시 <b>송객수수료만 매출</b>, 잔액은 기관 지급으로 부채 소멸 ③환불 시 부채 전액 소멸·수수료 미발생. 회원 화면에는 결제 금액과 예치 보호 안내만 표시되며 <b>수수료·지급액은 본 관리자 콘솔에서만</b> 조회됩니다.</div>
+      </div>
+      </>); })()}
 
     {tab === "trend" && (
       <div className="ontpanel">
@@ -20710,7 +20814,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-08-20", ver:"v1.2", ch:[9], feat:"재무모델 적정성 검증 반영 — 약국 침투 48% 하향·회원 순증 정의", src:"온톨로지 › 재무회계(finModel·중장기 표)", summary:"투자 심의 방어를 위한 자체 적정성 검증(22항목)에서 수정 권고된 2건을 반영 — 약국 구독을 전국 약국의 48% 침투(12,000곳)로 하향해 5차 매출 1조 7,984억·영업이익률 23.9%로 보수화하고, 회원 목표를 이탈 차감 후 순증 기준으로 정의하며 총가입 필요량(5년 합 약 1,195만) 파생 행을 중장기 표에 신설", refs:[], status:"반영", hash:"2b9cf83", auto:true },
+  { date:"2026-08-21", ver:"v1.2", ch:[9], feat:"검진 선수납·공제정산 결제(에스크로) 신설", src:"건강검진 예약 결제 · 온톨로지 › 재무회계 › 선수납·정산", summary:"검진센터 송객 결제를 고객이 하이핀에서 먼저 결제하고 수검 완료까지 결제대금예치(에스크로)로 보관한 뒤 송객수수료를 공제한 잔액을 검진기관에 정산하는 구조로 구현. 회원 화면에는 결제 금액과 예치 보호 안내만 노출하고 수수료·지급액은 관리자 정산 콘솔에서만 조회되며, 결제·예치·수검확인·정산·환불의 모든 상태 전이가 블록체인에 기록됨", refs:[], status:"반영", hash:"c8b9891", auto:true },
+  { date:"2026-08-20", ver:"v1.2", ch:[9], feat:"재무모델 적정성 검증 반영 — 약국 침투 48% 하향·회원 순증 정의", src:"온톨로지 › 재무회계(finModel·중장기 표)", summary:"투자 심의 방어를 위한 자체 적정성 검증(22항목)에서 수정 권고된 2건을 반영 — 약국 구독을 전국 약국의 48% 침투(12,000곳)로 하향해 5차 매출 1조 7,984억·영업이익률 23.9%로 보수화하고, 회원 목표를 이탈 차감 후 순증 기준으로 정의하며 총가입 필요량(5년 합 약 1,195만) 파생 행을 중장기 표에 신설", refs:[], status:"반영", hash:"5230cc8", auto:true },
   { date:"2026-08-20", ver:"v1.2", ch:[9], feat:"실시간 분개 시뮬 단가 정합(검진 2.5만·보험 7만)", src:"온톨로지 › 재무회계 › 결산 추이·10개년", summary:"실시간 분개 시뮬레이션의 검진·보험 거래 단가와 검진 원가를 재책정된 재무모델(건당 2.5만·7만·3종 원가 2만)과 일치시키고, 결산 추이와 10개년 추정(6차 이후 연 18% 외삽·10차 매출 4조6천억)이 새 파라미터에서 자동 파생됨을 검증", refs:[], status:"반영", hash:"3dc7861", auto:true },
   { date:"2026-08-20", ver:"v1.2", ch:[9], feat:"재무모델 수익·비용 재책정 — 검진 건당 2.5만·3종 서비스 원가 2만·보험중개 동의 60%×7만·인건비 마케팅 상향", src:"온톨로지 › 재무회계(finModel)", summary:"검진 연계 수수료를 건당 25,000원과 3종 서비스 원가(검진보험·리포트·상담) 건당 20,000원 절대값 구조로, 보험 중개를 마케팅 동의 회원의 60% 전환에 건당 70,000원 산식으로 재책정하고 인건비를 5개년 70억에서 2,200억으로, 브랜드 마케팅을 매출 8%로 상향. 1차연도 영업이익 5.1억(손익분기 근접)에서 5차연도 5,764억(이익률 29%)으로 현실화된 손익 구조로 전 재무제표 자동 재계산", refs:[], status:"반영", hash:"53c7d69", auto:true },
   { date:"2026-08-20", ver:"v1.2", ch:[9], feat:"중장기 손익 추정 개편 — 회원 33만 출발·마케팅 동의·검진 예약 지표 신설", src:"온톨로지 › 재무회계 › 중장기(5개년)", summary:"5개년 회원 계획을 33만→1,000만으로 상향하고 보험 중개의 모수를 마케팅 동의 회원(20만→630만), 검진 연계 수수료의 모수를 하이핀 경유 검진 예약 연간 건수(25만→600만)로 재정의. finModel 파라미터 단일 소스라 손익·재무제표·SaaS·밸류에이션 전 화면이 자동 재계산되며 시나리오 배율과 6차연도 이후 외삽도 신규 지표에 연동", refs:[], status:"반영", hash:"fe18604", auto:true },
@@ -28210,6 +28315,162 @@ function finAsk(text) {
   function y0note(rr) { return rr.y === 0 ? "1차연도는 EMR·UPI·플랫폼 사용료를 받지 않는(0원) 시장 선점 전략이라 구독매출이 없어요." : null; }
 }
 try { if (typeof window !== "undefined") window.__hifinFin = finAsk; } catch (e) {}
+
+/* ══════════════ 선수납 · 공제정산 결제 엔진(escrowPay.js) ══════════════
+   설계: 고객이 하이핀에서 검진비를 먼저 결제(PG) → 수검 완료까지 대금 예치(Escrow)
+        → 수검 확인 → 송객수수료 공제 후 검진기관 정산(D+n) → 자동 분개.
+   제휴 대응: KIS정보통신 PG(매입)·Escrow(예치)·정산 대행 — 제안서 v1.1 §03 구조도의 실구현.
+   ⚠️ 원칙:
+     ① 회원 화면에는 결제 금액과 보호 안내만 — 송객수수료·정산 내역은 관리자 콘솔에서만(원가 비노출).
+     ② 수수료 단가는 재무모델(finModel checkupFee) 단일 소스 참조 — 하드코딩 금지.
+     ③ 결제·예치·정산의 모든 상태 전이는 체인 기록(chainAppend) — 사후 검증 가능.
+     ④ 시연 환경: 실제 결제·정산은 일어나지 않으며 승인번호는 시뮬 값(화면에 고지). */
+
+const ESC_STATUS = {
+  PAID:     { ko: "결제완료 · 예치중", c: "#1D4ED8", bg: "#EFF6FF", desc: "고객 선결제 후 수검 완료까지 에스크로 예치" },
+  VISITED:  { ko: "수검확인", c: "#B45309", bg: "#FFFBEB", desc: "검진기관 수검 완료 확인 — 정산 대기" },
+  SETTLED:  { ko: "정산완료", c: "#15803D", bg: "#F0FDF4", desc: "송객수수료 공제 후 검진기관 지급 완료" },
+  REFUNDED: { ko: "환불", c: "#B91C1C", bg: "#FEF2F2", desc: "미수검·취소 — 에스크로에서 고객 환불" },
+};
+const ESC_METHODS = [
+  { k: "card", ko: "신용·체크카드", sub: "KIS VAN·PG 매입", ic: "card" },
+  { k: "easy", ko: "간편결제", sub: "카카오·네이버·페이코", ic: "easy" },
+  { k: "bank", ko: "계좌이체", sub: "실시간 계좌 승인", ic: "bank" },
+];
+/* 플랜별 표준 검진비 — 기관별 실가격이 없는 경우의 선결제 기준가(협의·기관 계약으로 확정).
+   basic(국가검진)은 본인부담 0원이므로 결제 없음. 최종 금액은 항목·기관에 따라 정산 시 조정. */
+const ESC_PLAN_PRICE = { basic: 0, standard: 350000, premium: 650000 };
+const ESC_CFG = {
+  settleDays: 3,          // 수검 확인 후 정산일(D+3) — 협의 확정 전 기본값
+  pg: "KIS PG",           // 결제 대행(전자지급결제대행)
+  escrow: "KIS Escrow",   // 결제대금예치
+};
+/* 송객수수료 — 재무모델 단일 소스(checkupFee). 미로드 시 보수 폴백 */
+function escFee() {
+  try { const P = (typeof finParams === "function") ? finParams() : null; if (P && P.checkupFee) return P.checkupFee; } catch (e) {}
+  return 25000;
+}
+function _escKey() { return "hifin_escrow_orders"; }
+function escAll() { try { return JSON.parse(localStorage.getItem(_escKey()) || "[]"); } catch (e) { return []; } }
+function _escSave(l) { try { localStorage.setItem(_escKey(), JSON.stringify(l.slice(-300))); } catch (e) {} }
+function escOrders(m) { const em = (m && m.email) || null; return escAll().filter((o) => !em || o.email === em); }
+function escFind(id) { return escAll().find((o) => o.id === id) || null; }
+function _escAuth(seed) {   // PG 승인번호·에스크로 예치번호(시뮬) — 결정론
+  let h = 2166136261; const s = String(seed);
+  for (let i = 0; i < s.length; i++) { h = (h ^ s.charCodeAt(i)) >>> 0; h = (h * 16777619) >>> 0; }
+  return String(h % 100000000).padStart(8, "0");
+}
+function escWon(n) { return (Math.round(n) || 0).toLocaleString() + "원"; }
+
+/* ── ① 선결제 — 고객이 하이핀에서 검진비 전액 결제 → 에스크로 예치 ── */
+function escPay(m, o) {
+  o = o || {};
+  const amount = Math.max(0, Math.round(o.amount || 0));
+  if (!amount) return { ok: false, reason: "결제 금액이 없어요." };
+  const method = ESC_METHODS.find((x) => x.k === (o.method || "card")) || ESC_METHODS[0];
+  const at = Date.now();
+  const id = "ESC-" + at.toString(36).toUpperCase();
+  const fee = escFee();
+  const order = {
+    id, at, email: (m && m.email) || "self", name: (m && m.name) || "회원",
+    center: o.center || "검진기관", brand: o.brand || "", date: o.date || "", time: o.time || "",
+    plan: o.plan || "", amount, method: method.k, methodKo: method.ko,
+    pgAuth: _escAuth("pg" + id), escrowId: "ESW-" + _escAuth("esw" + id),
+    fee, payout: Math.max(0, amount - fee),   // 공제 후 검진기관 지급액(관리자 화면 전용)
+    status: "PAID", visitedAt: 0, settledAt: 0, refundedAt: 0, refundReason: "",
+    sim: true,   // 시연 결제(실 승인 아님)
+  };
+  const l = escAll(); l.push(order); _escSave(l);
+  try {
+    const tk = (typeof anonToken === "function" && m) ? anonToken(m) : null;
+    if (typeof chainAppend === "function") chainAppend({ type: "record", token: tk, note: `검진비 선결제 ${escWon(amount)} — ${order.center} · ${ESC_CFG.pg} 승인 ${order.pgAuth} · ${ESC_CFG.escrow} 예치(수검 완료 시 정산)` });
+    if (typeof vaultAccessLog === "function" && tk) vaultAccessLog(tk, "member", `검진비 선결제(${order.center})`);
+  } catch (e) {}
+  try { if (typeof notifPush === "function") notifPush({ ic: "check", t: "검진비 결제 완료", d: `${order.center} ${order.date} ${order.time} · ${escWon(amount)} — 수검 완료까지 안전하게 예치돼요.`, target: "checkup" }); } catch (e) {}
+  return { ok: true, order };
+}
+/* ── ② 수검 확인 — 검진기관 수검 완료(시스템 이벤트) ── */
+function escConfirmVisit(id) {
+  const l = escAll(); const o = l.find((x) => x.id === id);
+  if (!o) return { ok: false, reason: "주문을 찾을 수 없어요." };
+  if (o.status !== "PAID") return { ok: false, reason: "예치중 상태에서만 수검 확인이 가능해요." };
+  o.status = "VISITED"; o.visitedAt = Date.now();
+  _escSave(l);
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `수검 확인 — ${o.id} · ${o.center} (정산 예정 D+${ESC_CFG.settleDays})` }); } catch (e) {}
+  return { ok: true, order: o };
+}
+/* ── ③ 공제 정산 — 검진비에서 송객수수료를 공제하고 검진기관에 지급 ── */
+function escSettle(id) {
+  const l = escAll(); const o = l.find((x) => x.id === id);
+  if (!o) return { ok: false, reason: "주문을 찾을 수 없어요." };
+  if (o.status !== "VISITED") return { ok: false, reason: "수검 확인 후에만 정산할 수 있어요." };
+  o.status = "SETTLED"; o.settledAt = Date.now();
+  _escSave(l);
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `공제 정산 — ${o.id} · 결제 ${escWon(o.amount)} − 수수료 ${escWon(o.fee)} = ${o.center} 지급 ${escWon(o.payout)}` }); } catch (e) {}
+  return { ok: true, order: o };
+}
+/* ── ④ 환불 — 미수검·취소 시 에스크로에서 고객 환불(수수료 미발생) ── */
+function escRefund(id, reason) {
+  const l = escAll(); const o = l.find((x) => x.id === id);
+  if (!o) return { ok: false, reason: "주문을 찾을 수 없어요." };
+  if (o.status === "SETTLED") return { ok: false, reason: "정산 완료 건은 환불 처리할 수 없어요(기관 협의 필요)." };
+  if (o.status === "REFUNDED") return { ok: false, reason: "이미 환불된 건이에요." };
+  o.status = "REFUNDED"; o.refundedAt = Date.now(); o.refundReason = reason || "고객 취소";
+  _escSave(l);
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `에스크로 환불 — ${o.id} · ${escWon(o.amount)} 전액 반환(${o.refundReason}) · 수수료 미발생` }); } catch (e) {}
+  return { ok: true, order: o };
+}
+/* ── 집계 — 관리자 정산 콘솔·재무 연동(예수금=계약부채) ── */
+function escStats() {
+  const l = escAll();
+  const s = { n: l.length, paid: 0, visited: 0, settled: 0, refunded: 0,
+    escrowBalance: 0, feeRevenue: 0, payoutTotal: 0, gmv: 0 };
+  l.forEach((o) => {
+    s.gmv += o.amount;
+    if (o.status === "PAID") { s.paid++; s.escrowBalance += o.amount; }
+    else if (o.status === "VISITED") { s.visited++; s.escrowBalance += o.amount; }
+    else if (o.status === "SETTLED") { s.settled++; s.feeRevenue += o.fee; s.payoutTotal += o.payout; }
+    else if (o.status === "REFUNDED") s.refunded++;
+  });
+  return s;
+}
+/* 회원 화면용 요약 — 수수료·지급액 제외(원가 비노출 원칙) */
+function escMemberView(o) {
+  if (!o) return null;
+  return { id: o.id, at: o.at, center: o.center, date: o.date, time: o.time, amount: o.amount,
+    methodKo: o.methodKo, pgAuth: o.pgAuth, escrowId: o.escrowId, status: o.status, statusKo: ESC_STATUS[o.status].ko, sim: o.sim };
+}
+/* 시연 시드 — 관리자 콘솔이 비어 보이지 않도록 최초 1회 생성(결정론) */
+function escSeedDemo() {
+  if (escAll().length) return false;
+  const base = Date.now();
+  const seed = [
+    ["KMI한국의학연구소", 480000, "card", "SETTLED", 12],
+    ["한신메디피아검진센터", 350000, "easy", "SETTLED", 9],
+    ["세브란스체크업", 620000, "card", "VISITED", 4],
+    ["차움검진센터", 890000, "card", "PAID", 2],
+    ["하나로의료재단", 290000, "bank", "PAID", 1],
+    ["서울아산건강증진센터", 410000, "card", "REFUNDED", 6],
+  ];
+  const l = [];
+  seed.forEach(([center, amount, method, status, daysAgo], i) => {
+    const at = base - daysAgo * 86400000;
+    const id = "ESC-D" + String(i + 1).padStart(3, "0");
+    const fee = escFee();
+    const d = new Date(at);
+    l.push({ id, at, email: "demo@cohort.sim", name: "코호트 회원",
+      center, brand: "", date: `${d.getMonth() + 1}/${d.getDate()}`, time: "09:00", plan: "",
+      amount, method, methodKo: (ESC_METHODS.find((x) => x.k === method) || ESC_METHODS[0]).ko,
+      pgAuth: _escAuth("pg" + id), escrowId: "ESW-" + _escAuth("esw" + id),
+      fee, payout: Math.max(0, amount - fee), status,
+      visitedAt: (status === "VISITED" || status === "SETTLED") ? at + 86400000 : 0,
+      settledAt: status === "SETTLED" ? at + 4 * 86400000 : 0,
+      refundedAt: status === "REFUNDED" ? at + 2 * 86400000 : 0,
+      refundReason: status === "REFUNDED" ? "고객 일정 취소(미수검)" : "", sim: true, demo: true });
+  });
+  _escSave(l);
+  return true;
+}
 
 /* ══════════ 회원 추천(리퍼럴) — 6대 획득 채널 ⑥ (Phase 3 · 정책 v2) ══════════
    정책 v2 (2026-07-19 재설계 — 보상 적정성·법규 검토 반영):
