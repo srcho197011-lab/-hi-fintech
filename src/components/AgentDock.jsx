@@ -135,8 +135,9 @@ function AgentDock({ onGo }) {
     const body = bodyRef.current;
     const prev = prevLenRef.current;
     prevLenRef.current = msgs.length;
-    /* 웰컴이 떠 있으면 항상 맨 위 — 인사하는 하이의 얼굴이 먼저 보여야 한다 */
-    if (welcome) { if (body) body.scrollTop = 0; return; }
+    /* 아직 대화 전이면 맨 위 — 인사하는 하이의 얼굴이 먼저 보여야 한다.
+       대화가 시작된 뒤에는 카드를 남겨둔 채 새 답변을 따라간다(카드는 위로 스크롤하면 그대로 있다). */
+    if (welcome && !msgs.length) { if (body) body.scrollTop = 0; return; }
     if (body && msgs.length > prev) {
       let idx = -1;
       for (let i = prev; i < msgs.length; i++) { if (msgs[i] && msgs[i].who === "hi") { idx = i; break; } }
@@ -171,7 +172,7 @@ function AgentDock({ onGo }) {
       if (window.innerWidth <= 640 && vv && kb > 120) { el.style.height = Math.round(vv.height) + "px"; window.scrollTo(0, 0); }
       else el.style.height = "";
       /* 웰컴이 떠 있으면 끝으로 보내지 않는다 — 인사하는 얼굴이 화면 밖으로 밀린다(모바일 전체화면에서 특히) */
-      try { if (el && el.querySelector(".hiwel")) { const bd = bodyRef.current; if (bd) bd.scrollTop = 0; return; } } catch (e) {}
+      try { if (el && el.querySelector(".hiwel") && !el.querySelector(".hidock-row")) { const bd = bodyRef.current; if (bd) bd.scrollTop = 0; return; } } catch (e) {}
       try { if (endRef.current) endRef.current.scrollIntoView({ block: "end" }); } catch (e) {}
     };
     fit();
@@ -238,8 +239,7 @@ function AgentDock({ onGo }) {
   const answerWant = (k, echo) => {
     let m = null; try { m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
     let a = null; try { a = (typeof hiWantAnswer === "function") ? hiWantAnswer(k, m) : null; } catch (e) {}
-    setWelcome(null);
-    setInput("");
+    setInput("");   // 웰컴 카드는 지우지 않는다 — 위로 스크롤하면 언제든 다시 고를 수 있어야 한다
     const mine = echo || k;
     setMsgs((v) => [...v, { who: "me", lines: [mine], buttons: [], nav: null }]);
     if (!a) { setMsgs((v) => [...v, { who: "hi", lines: ["그 화면을 지금 열어드릴게요."], buttons: [], nav: null }]); return; }
@@ -283,7 +283,7 @@ function AgentDock({ onGo }) {
         </button>
       )}
       {open && (
-        <div className={"hidock" + (welcome ? " wel" : "")} ref={dockRef}>
+        <div className={"hidock" + (welcome && !msgs.length ? " wel" : "")} ref={dockRef}>
           <div className="hidock-hd">
             <span className="hidock-av"><HiAvatar size={26} plain /></span>
             <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{t("hi.role")}</span></div>
@@ -310,7 +310,7 @@ function AgentDock({ onGo }) {
                     </button>
                   ))}
                 </div>
-                <button className="hiwel-skip" onClick={() => setWelcome(null)}>다른 걸 물어볼래요 — 직접 입력하기</button>
+                <button className="hiwel-skip" onClick={() => { try { const el = dockRef.current && dockRef.current.querySelector(".hidock-input input"); if (el) el.focus(); } catch (e) {} }}>여기 없는 걸 물어볼래요 — 직접 입력하기</button>
               </div>
             )}
             {lang !== "en" && <>
@@ -360,7 +360,7 @@ function AgentDock({ onGo }) {
             </>}
             <div ref={endRef} />
           </div>
-          {lang !== "en" && !welcome && <div className="hidock-quick" role="group" aria-label="하고 싶은 건강활동 바로가기">
+          {lang !== "en" && (!welcome || msgs.length > 0) && <div className="hidock-quick" role="group" aria-label="하고 싶은 건강활동 바로가기">
             {(() => { let mm = null; try { mm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
               return hidockQuicks(mm).map((q) => <button key={q} onClick={() => send(q)}>{q}</button>); })()}
           </div>}

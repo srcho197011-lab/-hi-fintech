@@ -18,7 +18,24 @@ const HI_WANT = [
   { k: "shop",     ic: "💊", want: "뭘 먹어야 좋을지 알려줘",      hint: "내 검진 수치가 지목한 영양·식단",       sec: "shop",       nav: "shop" },
   { k: "homecare", ic: "👪", want: "부모님 돌봄이 걱정돼요",       hint: "방문간호·요양·간병 매칭",              sec: "homecare",   nav: "homecare" },
   { k: "wallet",   ic: "💰", want: "내 적립금·혜택 보여줘",        hint: "HTK 적립 원장 · 치료비 전용 30%",       sec: "wallet",     nav: "wallet" },
+  { k: "intro",    ic: "🏠", want: "하이핀이 뭐예요?",             hint: "무엇을 해주는 곳인지 3분 안에",         sec: "intro",      nav: "intro" },
 ];
+/* 자리가 고정된 둘 — 처음은 항상 '검진 예약'(모든 여정의 입구), 끝은 항상 '하이핀이 뭐예요?'(처음 온 분의 질문).
+   그 사이 순서만 회원 상태가 정한다. */
+const HI_WANT_FIRST = "checkup";
+const HI_WANT_LAST = "intro";
+/* 검진 예약 안내 — 회원이 가장 먼저 만나는 문장.
+   국가검진 대상 여부를 앞세우지 않는다. 하이핀에서 예약해야 무료 3종이 붙는다는 것이 핵심이기 때문이다. */
+const HI_WANT_CHECKUP_GUIDE = "건강검진 예약을 도와드릴게요. 전국 제휴 검진센터를 지역·항목·가격으로 비교해서 원하는 날짜에 예약하실 수 있어요. 국가검진 대상이시면 본인부담 0원으로, 종합검진은 추가 항목까지 함께 잡아드려요.";
+const HI_WANT_CHECKUP_FREE3 = "그리고 하이핀을 통해 예약하고 검진을 받으시면 무료 3종 서비스가 함께 제공돼요 — ① 검진대비보험(보험료 0원 · 암 진단금 최대 1,000만원) ② AI 정밀리포트(생체나이·질병 위험 분석) ③ 전문가 상담. 세 가지 모두 회원 부담 0원이에요.";
+const HI_WANT_CHECKUP_BTNS = ["내 주변 검진센터 찾아줘", "무료 3종이 뭐예요?", "어떤 검진 받아야 해?"];
+
+/* '하이핀이 뭐예요?' — 섹션 가이드는 화면 안내문이라 처음 온 분의 질문에는 답이 되지 않는다.
+   무엇을 해주는 곳인지, 돈이 드는지, 무엇부터 하면 되는지 세 가지를 먼저 말한다. */
+const HI_WANT_INTRO_GUIDE = "하이핀은 건강검진을 중심으로 건강관리·진료·보험·건강쇼핑을 하나로 잇는 AI 건강금융 플랫폼이에요. 검진 결과를 올리시면 제가 분석해서 지금 무엇을 하면 좋을지 알려드리고, 필요한 진료·보장·영양까지 이어드려요.";
+const HI_WANT_INTRO_FREE = "이용료는 없어요. 하이핀을 통해 검진을 예약하고 받으시면 무료 3종 서비스(검진대비보험 0원 · AI 정밀리포트 · 전문가 상담)를 함께 드리고, 건강쇼핑에서는 마진의 50%를 적립금으로 돌려드려요.";
+const HI_WANT_INTRO_BTNS = ["무료 3종이 뭐예요?", "검진결과 올리는 법", "적립금은 어떻게 쌓여요?"];
+
 /* 원격진료는 섹션 가이드에 별도 항목이 없다 — 여기서 단일 문구로 관리(설명 이원화를 피하려 예외를 명시) */
 const HI_WANT_TELE_GUIDE = "비대면 원격진료를 열어드릴게요. 시·도 → 시·군·구 → 진료과로 좁혀 우리 동네 전문의를 찾고, 예진부터 처방·약국 수령까지 한 흐름으로 이어져요. 제 검진 데이터를 같이 보고 상담해요.";
 const HI_WANT_TELE_BTNS = ["증상으로 진료과 찾기", "지금 연결 가능한 의사"];
@@ -67,21 +84,23 @@ function hiWantList(m, n) {
   if (ob && !ob.step1)       order = ["upload", "checkup", "tele", "insurance", "shop", "homecare", "report", "wallet"];
   else if (ob && !ob.step2)  order = ["report", "insurance", "checkup", "tele", "shop", "homecare", "wallet", "upload"];
   else                       order = ["report", "checkup", "tele", "insurance", "shop", "homecare", "wallet", "upload"];
-  /* 검진 예약이 잡혀 있으면 '검진 받고 싶어요'를 앞으로 당기지 않는다 — 이미 한 일을 또 권하지 않기 */
-  try {
-    const certs = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]");
-    if (certs.length) order = order.filter((k) => k !== "checkup").concat(["checkup"]);
-  } catch (e) {}
-  const out = order.map((k) => byK[k]).filter(Boolean);
-  return n ? out.slice(0, n) : out;
+  /* 앞뒤 고정 자리를 비우고 가운데만 상태 순서로 채운 뒤 다시 끼운다 */
+  const mid = order.filter((k) => k !== HI_WANT_FIRST && k !== HI_WANT_LAST);
+  const total = n || (mid.length + 2);
+  const out = [byK[HI_WANT_FIRST]]
+    .concat(mid.slice(0, Math.max(0, total - 2)).map((k) => byK[k]))
+    .concat([byK[HI_WANT_LAST]]);
+  return out.filter(Boolean);
 }
 
 /* ── 활동 선택 응답 — 섹션 가이드를 재사용하고 반드시 화면으로 착지시킨다 ── */
 function hiWantAnswer(k, m) {
   const w = HI_WANT.find((x) => x.k === k);
   if (!w) return null;
-  let guide = null, btns = [];
-  if (w.k === "tele") { guide = HI_WANT_TELE_GUIDE; btns = HI_WANT_TELE_BTNS.slice(); }
+  let guide = null, btns = [], lines2 = null;
+  if (w.k === "checkup") { guide = HI_WANT_CHECKUP_GUIDE; lines2 = HI_WANT_CHECKUP_FREE3; btns = HI_WANT_CHECKUP_BTNS.slice(); }
+  else if (w.k === "intro") { guide = HI_WANT_INTRO_GUIDE; lines2 = HI_WANT_INTRO_FREE; btns = HI_WANT_INTRO_BTNS.slice(); }
+  else if (w.k === "tele") { guide = HI_WANT_TELE_GUIDE; btns = HI_WANT_TELE_BTNS.slice(); }
   else {
     try {
       const g = (typeof AGENT_SEC_GUIDES !== "undefined") ? AGENT_SEC_GUIDES.find((x) => x.k === w.sec) : null;
@@ -93,7 +112,7 @@ function hiWantAnswer(k, m) {
     : (w.k === "tele" ? "비대면 원격진료" : w.want);
   /* 회원 상태를 한 줄 덧붙인다 — 같은 안내라도 내 상황에 맞게 들리도록 */
   const extra = _hiWantContext(w.k, m);
-  const lines = [guide]; if (extra) lines.push(extra);
+  const lines = [guide]; if (lines2) lines.push(lines2); if (extra) lines.push(extra);
   return { lines, buttons: btns, nav: { key: w.nav, label } };
 }
 /* 활동별 내 상황 한 줄(데이터가 있을 때만 — 없으면 침묵) */
@@ -124,7 +143,7 @@ function _hiWantContext(k, m) {
 
 /* ── 하단 빠른 칩 — 섹션 안내형(회원 언어). 독 하단에 상시 노출 ── */
 function hiQuickChips(m) {
-  return hiWantList(m, 4).map((w) => w.want);
+  return hiWantList(m, 4).map((w) => w.want);   // 앞=검진 예약, 뒤=하이핀 소개가 고정으로 포함된다
 }
 /* 칩 문구 → 활동 키(칩을 눌렀을 때 로컬 응답으로 처리하기 위한 역인덱스) */
 function hiWantKeyOf(text) {
