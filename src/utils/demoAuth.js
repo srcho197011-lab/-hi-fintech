@@ -38,18 +38,11 @@ function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if 
    ⚠️ 백엔드 없는 데모: 서버 토큰/API 403을 프론트 등가(세션 role + 라우트 가드 + 데이터 스코프 필터)로 구현.
    정식 서버 도입 시 이 role/scope 계층을 그대로 백엔드 미들웨어로 이관. */
 /* 승인된 관리자(전체보기) 계정 — 데모용 임시. ⚠️ 정식 론칭 전 폐기 목록 등록. 설정으로 분리(코드 하드코딩 지양). */
-const AUTH_ADMIN = { id: "hifin", pw: "hifin002" };   // 콘텐츠 보호(2026-07-24): 비밀번호 교체, 이 계정만 로그인 허용. TODO(론칭전 폐기): 환경변수/설정으로 이관
-/* ⚠️ 개발 기간 한정 계정 — 개발 편의용(2026-08-27). 화면에는 표기하지 않는다.
-   **배포 전 이 배열을 빈 배열로 비우면 즉시 사라진다**(다른 코드는 손댈 필요 없음).
-   한글 IME를 켜지 않아도 되도록 영문 자판 그대로 친 값(gkdl/gkdl1)도 같은 계정으로 받는다. */
-const AUTH_DEV = [
-  { id: "하이", pw: "하이1" },
-  { id: "gkdl", pw: "gkdl1" },   // 위 계정을 영문 자판으로 친 것 — 같은 계정
-];
-function _authDevMatch(id, pw) {
-  const i = String(id || "").trim(), p = String(pw || "").trim();
-  return AUTH_DEV.some((a) => a.id === i && a.pw === p);
-}
+/* 승인된 관리자(전체보기) 계정 — 이 계정만 로그인 허용. TODO(론칭전 폐기): 환경변수/설정으로 이관.
+   ⚠️ 개발 기간 한정 교체(2026-08-27, 형 지시): hifin/hifin002 → 하이/하이1.
+      **배포 전 아래 한 줄을 { id: "hifin", pw: "hifin002" } 로 되돌릴 것.**
+      기존 계정은 더 이상 통하지 않는다(교체이므로). 화면 안내문에는 표기하지 않는다. */
+const AUTH_ADMIN = { id: "하이", pw: "하이1" };
 function authRole() { const a = authCurrent(); if (!a) return null; return a.role || "ADMIN"; }  // 레거시 세션(role 없음)=관리자
 function isAdminRole() { return authRole() === "ADMIN"; }
 function isGuestRole() { return authRole() === "GUEST"; }
@@ -64,8 +57,8 @@ function loginClearFail() { try { localStorage.removeItem(LOCK_KEY); } catch (e)
 
 /* 관리자/회원 로그인 — 성공 시 게이트 세션에 role 부여 */
 function adminLogin(id, pw) {
-  const ok = (id === AUTH_ADMIN.id && pw === AUTH_ADMIN.pw) || _authDevMatch(id, pw);
-  if (!ok) return false;
+  /* 앞뒤 공백은 무시한다 — 한글 입력 후 스페이스가 섞여 들어오는 경우가 잦다 */
+  if (String(id || "").trim() !== AUTH_ADMIN.id || String(pw || "").trim() !== AUTH_ADMIN.pw) return false;
   try { demoLogout(); } catch (e) {}
   authSet({ name: "조성래", role: "ADMIN" }); loginClearFail(); return true;
 }
