@@ -39,6 +39,17 @@ function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if 
    정식 서버 도입 시 이 role/scope 계층을 그대로 백엔드 미들웨어로 이관. */
 /* 승인된 관리자(전체보기) 계정 — 데모용 임시. ⚠️ 정식 론칭 전 폐기 목록 등록. 설정으로 분리(코드 하드코딩 지양). */
 const AUTH_ADMIN = { id: "hifin", pw: "hifin002" };   // 콘텐츠 보호(2026-07-24): 비밀번호 교체, 이 계정만 로그인 허용. TODO(론칭전 폐기): 환경변수/설정으로 이관
+/* ⚠️ 개발 기간 한정 계정 — 개발 편의용(2026-08-27). 화면에는 표기하지 않는다.
+   **배포 전 이 배열을 빈 배열로 비우면 즉시 사라진다**(다른 코드는 손댈 필요 없음).
+   한글 IME를 켜지 않아도 되도록 영문 자판 그대로 친 값(gkdl/gkdl1)도 같은 계정으로 받는다. */
+const AUTH_DEV = [
+  { id: "하이", pw: "하이1" },
+  { id: "gkdl", pw: "gkdl1" },   // 위 계정을 영문 자판으로 친 것 — 같은 계정
+];
+function _authDevMatch(id, pw) {
+  const i = String(id || "").trim(), p = String(pw || "").trim();
+  return AUTH_DEV.some((a) => a.id === i && a.pw === p);
+}
 function authRole() { const a = authCurrent(); if (!a) return null; return a.role || "ADMIN"; }  // 레거시 세션(role 없음)=관리자
 function isAdminRole() { return authRole() === "ADMIN"; }
 function isGuestRole() { return authRole() === "GUEST"; }
@@ -52,7 +63,12 @@ function loginRemainFails() { const s = loginLockState(); return 5 - ((s && s.fa
 function loginClearFail() { try { localStorage.removeItem(LOCK_KEY); } catch (e) {} }
 
 /* 관리자/회원 로그인 — 성공 시 게이트 세션에 role 부여 */
-function adminLogin(id, pw) { if (id === AUTH_ADMIN.id && pw === AUTH_ADMIN.pw) { try { demoLogout(); } catch (e) {} authSet({ name: "조성래", role: "ADMIN" }); loginClearFail(); return true; } return false; }
+function adminLogin(id, pw) {
+  const ok = (id === AUTH_ADMIN.id && pw === AUTH_ADMIN.pw) || _authDevMatch(id, pw);
+  if (!ok) return false;
+  try { demoLogout(); } catch (e) {}
+  authSet({ name: "조성래", role: "ADMIN" }); loginClearFail(); return true;
+}
 
 /* ══ Phase1 §2-4 — 코호트 데모 계정 체계: 아이디 000001~100000(6자리) + 공용 비밀번호 hifin002 ══
    어떤 아이디로 로그인해도 그 인덱스의 결정론 데이터(나이·성별·질병·보험·실손 세대·HTK)가 전 섹션에 일관 반영.
