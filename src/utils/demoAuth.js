@@ -43,6 +43,30 @@ function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if 
       **배포 전 아래 한 줄을 { id: "hifin", pw: "hifin002" } 로 되돌릴 것.**
       기존 계정은 더 이상 통하지 않는다(교체이므로). 화면 안내문에는 표기하지 않는다. */
 const AUTH_ADMIN = { id: "하이", pw: "하이1" };
+
+/* ── 한글 계정의 '영문 자판 표기'를 파생한다(두벌식) ──
+   비밀번호는 마스킹되어 보이므로, 한글 입력기가 꺼진 줄 모르고 치면 원인을 알 수 없다.
+   같은 키를 눌렀다면 같은 계정으로 본다 — 계정이 늘어나는 것이 아니라 표기만 둘이다.
+   예) "하이1" → ㅎㅏㅇㅣ1 → "gkdl1" */
+const _QW_CHO = ["r", "R", "s", "e", "E", "f", "a", "q", "Q", "t", "T", "d", "w", "W", "c", "z", "x", "v", "g"];
+const _QW_JUNG = ["k", "o", "i", "O", "j", "p", "u", "P", "h", "hk", "ho", "hl", "y", "n", "nj", "np", "nl", "b", "m", "ml", "l"];
+const _QW_JONG = ["", "r", "R", "rt", "s", "sw", "sg", "e", "f", "fr", "fa", "fq", "ft", "fx", "fv", "fg", "a", "q", "qt", "t", "T", "d", "w", "c", "z", "x", "v", "g"];
+function hangulToQwerty(str) {
+  let out = "";
+  for (const ch of String(str || "")) {
+    const c = ch.codePointAt(0);
+    if (c >= 0xac00 && c <= 0xd7a3) {          // 완성형 한글만 분해
+      const i = c - 0xac00;
+      out += _QW_CHO[Math.floor(i / 588)] + _QW_JUNG[Math.floor((i % 588) / 28)] + _QW_JONG[i % 28];
+    } else out += ch;
+  }
+  return out;
+}
+/* 입력이 계정과 같은가 — 한글 그대로 쳤든, 입력기가 꺼진 채 같은 키를 눌렀든 통과 */
+function _authSame(input, expected) {
+  const v = String(input || "").trim();
+  return v === expected || v === hangulToQwerty(expected);
+}
 function authRole() { const a = authCurrent(); if (!a) return null; return a.role || "ADMIN"; }  // 레거시 세션(role 없음)=관리자
 function isAdminRole() { return authRole() === "ADMIN"; }
 function isGuestRole() { return authRole() === "GUEST"; }
@@ -57,8 +81,8 @@ function loginClearFail() { try { localStorage.removeItem(LOCK_KEY); } catch (e)
 
 /* 관리자/회원 로그인 — 성공 시 게이트 세션에 role 부여 */
 function adminLogin(id, pw) {
-  /* 앞뒤 공백은 무시한다 — 한글 입력 후 스페이스가 섞여 들어오는 경우가 잦다 */
-  if (String(id || "").trim() !== AUTH_ADMIN.id || String(pw || "").trim() !== AUTH_ADMIN.pw) return false;
+  /* 앞뒤 공백은 무시하고, 한글 입력기가 꺼진 채 같은 키를 눌렀어도 같은 계정으로 본다 */
+  if (!_authSame(id, AUTH_ADMIN.id) || !_authSame(pw, AUTH_ADMIN.pw)) return false;
   try { demoLogout(); } catch (e) {}
   authSet({ name: "조성래", role: "ADMIN" }); loginClearFail(); return true;
 }

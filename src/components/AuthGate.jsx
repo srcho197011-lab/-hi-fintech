@@ -20,6 +20,7 @@ function AuthBrand() {
 function AuthLogin() {
   const [uid, setUid] = useState("");
   const [pw, setPw] = useState("");
+  const [pwShow, setPwShow] = useState(false);   // 비밀번호 보기(한글 계정·입력기 확인용)
   const [err, setErr] = useState("");
   const [lockMs, setLockMs] = useState(() => (typeof loginLockedMs === "function" ? loginLockedMs() : 0));
   // 브라우저 저장 아이디/비번 자동완성·자동입력 차단: 로드 시 readOnly로 두고 사용자가 포커스하면 해제
@@ -50,7 +51,12 @@ function AuthLogin() {
       <label className="authfield"><span className="authlabel">아이디</span>
         <input className="authinput" type="text" value={uid} onChange={(e) => setUid(e.target.value)} placeholder="아이디 또는 이메일" name="hifin-login-id" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} readOnly={ro} onFocus={unlock} disabled={locked} /></label>
       <label className="authfield"><span className="authlabel">비밀번호</span>
-        <input className="authinput" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" name="hifin-login-pw" autoComplete="new-password" readOnly={ro} onFocus={unlock} disabled={locked} /></label>
+        <span className="authpwwrap">
+          <input className="authinput" type={pwShow ? "text" : "password"} value={pw} onChange={(e) => setPw(e.target.value)} placeholder="비밀번호" name="hifin-login-pw" autoComplete="new-password" readOnly={ro} onFocus={unlock} disabled={locked} />
+          {/* 무엇을 쳤는지 확인 — 한글 계정인데 입력기가 꺼져 있으면 마스킹 뒤에서만 어긋난다 */}
+          <button type="button" className="authpweye" onClick={() => setPwShow((v) => !v)} disabled={locked}
+            aria-label={pwShow ? "비밀번호 숨기기" : "비밀번호 보기"} title={pwShow ? "숨기기" : "입력한 비밀번호 보기"}>{pwShow ? "숨기기" : "보기"}</button>
+        </span></label>
       {err && <div className="autherr">{err}</div>}
       <button className="authbtn authprimary" type="submit" disabled={locked}>{locked ? `잠금 — ${Math.ceil(lockMs / 60000)}분 후 재시도` : "로그인"}</button>
       <div className="guestnote" style={{ marginTop: 10 }}>👥 <b>체험 계정</b>: 아이디 <b>000001</b>~<b>100000</b>(합성 코호트 10만 명 중 한 명의 건강지갑) · 데모 공용 비밀번호 <b>hifin002</b> — 어떤 번호로 들어와도 그 회원의 실데이터 기준으로 전 화면이 동작합니다.</div>
