@@ -4389,6 +4389,39 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 @media (max-width: 640px) { .secbanner { padding: 14px 15px; gap: 11px; } .secbanner .sb-ic { width: 44px; height: 44px; } .secbanner .sb-b b { font-size: 17px; } }
 
 /* ══════ 하이 독(상주 에이전트) ══════ */
+/* ── 하이 캐릭터 · 웰컴(로그인 첫 인사) ────────────────────────────────
+   하이의 첫 임무는 회원이 하고 싶은 건강활동을 찾아 실제로 하게 만드는 것.
+   그래서 웰컴은 '기능 소개'가 아니라 '무엇을 하고 싶으세요?' 한 문장과 선택지로 구성한다. */
+.hiav { display: block; overflow: visible; }
+.hiav .hi-ant { transform-origin: 32px 15px; animation: hiantb 2.8s ease-in-out infinite; }
+@keyframes hiantb { 0%, 88%, 100% { transform: rotate(0deg); } 92% { transform: rotate(-8deg); } 96% { transform: rotate(6deg); } }
+.hiav .hi-hand { transform-origin: 49px 30px; }
+.hiav.wave .hi-hand { animation: hiwave 1.8s ease-in-out infinite; }
+@keyframes hiwave { 0%, 55%, 100% { transform: rotate(0deg); } 65% { transform: rotate(-22deg); } 75% { transform: rotate(14deg); } 85% { transform: rotate(-12deg); } }
+@media (prefers-reduced-motion: reduce) { .hiav .hi-ant, .hiav.wave .hi-hand { animation: none; } }
+
+.hiwel { display: flex; flex-direction: column; gap: 9px; animation: hiwelin .42s ease-out; }
+@keyframes hiwelin { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.hidock.wel { height: 640px; }
+.hiwel-hero { background: linear-gradient(140deg, #FFF3E6 0%, #FFE7CE 60%, #FFDCBB 100%); border: 1px solid #FFD3A6; border-radius: 16px; padding: 13px 13px 12px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.hiwel-hero .hiav { filter: drop-shadow(0 6px 14px rgba(234, 88, 12, .28)); }
+.hiwel-t { font-size: 14.4px; font-weight: 900; color: #7C3A00; line-height: 1.45; }
+.hiwel-t b { color: #D96A00; }
+.hiwel-s { font-size: 12.2px; color: #92552A; line-height: 1.6; }
+.hiwel-s b { color: #B34E00; font-weight: 800; }
+body.easyread .hiwel-t { font-size: 16.5px; } body.easyread .hiwel-s { font-size: 14px; }
+.hiwel-q { font-size: 13px; font-weight: 900; color: #26324A; padding-left: 2px; }
+.hiwel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hiwel-card { text-align: left; border: 1px solid #E3E8F3; background: #fff; border-radius: 13px; padding: 9px 10px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; transition: border-color .14s, transform .14s, box-shadow .14s; }
+.hiwel-card:hover { border-color: #F97316; transform: translateY(-2px); box-shadow: 0 10px 20px -12px rgba(234, 88, 12, .55); }
+.hiwel-card .ic { font-size: 17px; line-height: 1; }
+.hiwel-card b { font-size: 12.4px; font-weight: 800; color: #26324A; line-height: 1.4; }
+.hiwel-card .hint { font-size: 10.6px; color: #7B879C; line-height: 1.42; }
+body.easyread .hiwel-card b { font-size: 14px; } body.easyread .hiwel-card .hint { font-size: 12px; }
+.hiwel-skip { border: none; background: none; color: #8A94A8; font-size: 11.5px; font-weight: 700; cursor: pointer; padding: 3px 0 1px; text-decoration: underline; text-underline-offset: 3px; }
+.hiwel-skip:hover { color: #C2410C; }
+@media (max-width: 640px) { .hiwel-grid { grid-template-columns: 1fr; } .hiwel-hero { padding: 14px 12px 12px; } }
+
 .hidock-fab { position: fixed; right: 34px; bottom: 24px; z-index: 900; display: flex; flex-direction: column; align-items: center; gap: 3px; border: none; background: linear-gradient(135deg, #F97316, #FB923C); color: #fff; border-radius: 50%; width: 64px; height: 64px; cursor: pointer; box-shadow: 0 14px 30px -10px rgba(234, 88, 12, .6); transition: transform .15s; }
 .hidock-fab:hover { transform: translateY(-3px) scale(1.04); }
 .hidock-fabbdg { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; border-radius: 999px; background: #EF4444; color: #fff; font-size: 11px; font-weight: 900; display: grid; place-items: center; padding: 0 5px; border: 2px solid #fff; box-shadow: 0 4px 10px -4px rgba(239,68,68,.7); }

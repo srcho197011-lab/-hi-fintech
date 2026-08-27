@@ -87,6 +87,7 @@ src/data/escrowPay.js
 src/data/referral.js
 src/data/aiQnaBank.js
 src/data/aiNative.js
+src/data/hiWelcome.js
 src/data/hiNluDict.js
 src/data/hiNluCore.js
 src/data/hiStateModel.js

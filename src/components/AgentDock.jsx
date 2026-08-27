@@ -1,7 +1,44 @@
 /* ══════════ 하이 독(AgentDock) — 전 화면 상주 단일 AI 에이전트 미니챗 ══════════
    원칙: 쉬움(3문장+버튼≤3+화면카드), 동일 에이전트(하이), 화면 이동에도 대화 유지, 음성 입력·쉬운말 모드. */
-/* 자주 묻는 질문 칩 — 타이핑 없이 탭 한 번으로 상담 시작(인사말 버튼과 동일한 검증된 의도만 사용) */
-const HIDOCK_QUICKS = ["검진예약 질문 도우미", "내 건강 봐줘", "보장 공백 분석", "검진결과 올리기", "쉬운 말 모드 켜기"];
+/* 질문 도우미 칩 — 기능 이름이 아니라 **회원이 하고 싶은 건강활동**으로 묻는다(hiWelcome.js 단일 소스).
+   눌러도 질의를 전송하지 않고 로컬 안내 응답을 만든다 → 미답변 로그를 오염시키지 않는다. */
+function hidockQuicks(m) {
+  try { if (typeof hiQuickChips === "function") return hiQuickChips(m).concat(["쉬운 말 모드 켜기"]); } catch (e) {}
+  return ["내 건강 봐줘", "보장 공백 분석", "쉬운 말 모드 켜기"];
+}
+
+/* ── 하이 캐릭터 — 밝게 인사하는 얼굴(인라인 SVG · 외부 이미지 없음) ──
+   wave=true면 손을 흔든다(웰컴 순간 1회성 연출). 크기만 바꿔 헤더·FAB·웰컴에서 같은 얼굴을 쓴다. */
+function HiAvatar({ size, wave, plain }) {
+  const s = size || 40;
+  return (
+    <svg className={"hiav" + (wave ? " wave" : "")} width={s} height={s} viewBox="0 0 64 64" role="img" aria-label="하이">
+      <defs>
+        <linearGradient id="hiavBody" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#FFB35C" /><stop offset="1" stopColor="#F5821F" />
+        </linearGradient>
+      </defs>
+      {!plain && <circle cx="32" cy="33" r="30" fill="#fff" opacity=".18" />}
+      {/* 안테나 — 생각이 켜져 있다는 표시 */}
+      <g className="hi-ant"><rect x="30.8" y="7" width="2.4" height="8" rx="1.2" fill="#FFD8A8" /><circle cx="32" cy="6" r="3.4" fill="#FFE3B8" /></g>
+      {/* 머리·몸통 */}
+      <rect x="9" y="14" width="46" height="39" rx="15" fill="url(#hiavBody)" />
+      <rect x="9" y="14" width="46" height="39" rx="15" fill="none" stroke="#fff" strokeOpacity=".35" strokeWidth="1.2" />
+      {/* 얼굴판 */}
+      <rect x="16" y="22" width="32" height="22" rx="11" fill="#FFF8F1" />
+      {/* 눈웃음 — 반달 두 개 */}
+      <path d="M23 33.4c1.1-2.6 3.7-2.6 4.8 0" stroke="#E86A00" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+      <path d="M36.2 33.4c1.1-2.6 3.7-2.6 4.8 0" stroke="#E86A00" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+      {/* 볼 홍조 */}
+      <ellipse cx="21.2" cy="37.4" rx="2.4" ry="1.7" fill="#FFC2A0" opacity=".85" />
+      <ellipse cx="42.8" cy="37.4" rx="2.4" ry="1.7" fill="#FFC2A0" opacity=".85" />
+      {/* 미소 */}
+      <path d="M28.4 38.4c2.2 2.4 5 2.4 7.2 0" stroke="#E86A00" strokeWidth="2.1" strokeLinecap="round" fill="none" />
+      {/* 손 — 인사 */}
+      <g className="hi-hand"><rect x="48" y="27.4" width="8" height="5.2" rx="2.6" fill="#F79A3C" /><circle cx="56.5" cy="30" r="6.2" fill="#FFB35C" /><circle cx="56.5" cy="30" r="6.2" fill="none" stroke="#fff" strokeOpacity=".5" strokeWidth="1.1" /><path d="M54.4 27.6v-2.2M56.6 27.2v-2.6M58.8 27.7v-2" stroke="#fff" strokeOpacity=".55" strokeWidth="1.3" strokeLinecap="round" /></g>
+    </svg>
+  );
+}
 /* 영문 모드 안내 — 하이 답변은 한국어 코퍼스(12,762문항) 기반이라 정적 번역 대상이 아니다.
    못 하는 것을 하는 척하지 않고, 하이가 무엇을 하는 에이전트인지 영문으로 정확히 알린 뒤
    한국어로 전환하거나 문의로 갈 길을 준다(프롬프트 3장 ①). */
@@ -25,6 +62,7 @@ function AgentDock({ onGo }) {
   const go = onGo || (() => {});
   const lang = useHiLang();
   const [open, setOpen] = useState(false);
+  const [welcome, setWelcome] = useState(null);  // 로그인 직후 1회 — 웰컴 히어로 + 하고 싶은 활동 고르기
   const [msgs, setMsgs] = useState([]);          // {who:'hi'|'me', lines:[], buttons:[], nav}
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -54,12 +92,32 @@ function AgentDock({ onGo }) {
     } catch (e) {}
   }, [open]);
 
+  /* 로그인하면 하이가 **먼저** 열려 인사한다 — 회원이 찾아오지 않아도 된다(하이 퍼스트).
+     세션당 1회만. 화면이 그려질 시간을 조금 준 뒤 연다(첫 렌더 끊김 방지). */
+  useEffect(() => {
+    let m = null; try { m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
+    if (!m) { try { if (typeof authRole === "function" && authRole() === "GUEST") return; } catch (e) { return; } }
+    try { if (typeof hiWelcomeSeen === "function" && hiWelcomeSeen()) return; } catch (e) {}
+    try { if (sessionStorage.getItem("hifin_force_onboard")) return; } catch (e) {}   // 가입 직후 온보딩 강제 진입 중이면 방해하지 않는다
+    const tm = setTimeout(() => {
+      try {
+        const g = (typeof hiWelcomeGreeting === "function") ? hiWelcomeGreeting(m) : null;
+        const wants = (typeof hiWantList === "function") ? hiWantList(m, 6) : [];
+        if (!g || !wants.length) return;
+        setWelcome({ g, wants });
+        setOpen(true);
+        if (typeof hiWelcomeMark === "function") hiWelcomeMark();
+      } catch (e) {}
+    }, 900);
+    return () => clearTimeout(tm);
+  }, []);
+
   // 선제 알림(Proactive) — 묻기 전에 하이가 먼저 챙긴다: FAB 배지 + 첫 오픈 시 우선 표시
   const [alerts, setAlerts] = useState([]);
   useEffect(() => { try { setAlerts((typeof agentProactive === "function") ? agentProactive() : []); } catch (e) {} }, []);
   // 첫 오픈 시 재접속 인사(기억 연속성) + 선제 알림을 이어서 표시
   useEffect(() => {
-    if (!open || msgs.length) return;
+    if (!open || msgs.length || welcome) return;   // 웰컴 화면이 떠 있으면 재접속 인사를 겹치지 않는다
     try {
       const g = (typeof agentGreeting === "function") ? agentGreeting() : null;
       const first = [];
@@ -77,6 +135,8 @@ function AgentDock({ onGo }) {
     const body = bodyRef.current;
     const prev = prevLenRef.current;
     prevLenRef.current = msgs.length;
+    /* 웰컴이 떠 있으면 항상 맨 위 — 인사하는 하이의 얼굴이 먼저 보여야 한다 */
+    if (welcome) { if (body) body.scrollTop = 0; return; }
     if (body && msgs.length > prev) {
       let idx = -1;
       for (let i = prev; i < msgs.length; i++) { if (msgs[i] && msgs[i].who === "hi") { idx = i; break; } }
@@ -90,7 +150,7 @@ function AgentDock({ onGo }) {
       }
     }
     if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [msgs, typing]);
+  }, [msgs, typing, welcome]);
   // 홈 브리핑 등 외부에서 질문 주입(agentask 이벤트) — 이중 동선의 대화 진입점
   useEffect(() => {
     const h = (e) => { const q = e && e.detail; setOpen(true); if (q) setTimeout(() => send(q), 350); };
@@ -110,6 +170,8 @@ function AgentDock({ onGo }) {
       const kb = vv ? Math.max(0, window.innerHeight - vv.height) : 0;
       if (window.innerWidth <= 640 && vv && kb > 120) { el.style.height = Math.round(vv.height) + "px"; window.scrollTo(0, 0); }
       else el.style.height = "";
+      /* 웰컴이 떠 있으면 끝으로 보내지 않는다 — 인사하는 얼굴이 화면 밖으로 밀린다(모바일 전체화면에서 특히) */
+      try { if (el && el.querySelector(".hiwel")) { const bd = bodyRef.current; if (bd) bd.scrollTop = 0; return; } } catch (e) {}
       try { if (endRef.current) endRef.current.scrollIntoView({ block: "end" }); } catch (e) {}
     };
     fit();
@@ -125,6 +187,11 @@ function AgentDock({ onGo }) {
 
   const send = (textArg) => {
     const text = (textArg == null ? input : textArg).trim(); if (!text) return;
+    /* 하고 싶은 활동(섹션 안내형 칩) — 질의 전송 대신 섹션 가이드로 즉답하고 화면까지 데려간다 */
+    try {
+      const wk = (typeof hiWantKeyOf === "function") ? hiWantKeyOf(text) : null;
+      if (wk) { answerWant(wk, text); return; }
+    } catch (e) {}
     if (text === "쉬운 말 모드 켜기") { setEasy(true); setMsgs((m) => [...m, { who: "hi", lines: ["쉬운 말 모드를 켰어요 — 글씨를 키우고 더 쉽게 설명할게요."], buttons: [], nav: null }]); return; }
     // AI 주치의식 액션 버튼(핸드오프·바로가기) — Chat과 동일하게 화면 이동으로 처리
     try {
@@ -166,6 +233,21 @@ function AgentDock({ onGo }) {
       }
     }, 480);
   };
+  /* 하고 싶은 활동 안내 — 웰컴 카드·하단 칩 공용.
+     회원의 말을 먼저 남기고(내가 고른 것이 대화에 남아야 한다) 섹션 설명 + 화면 이동 버튼을 붙인다. */
+  const answerWant = (k, echo) => {
+    let m = null; try { m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
+    let a = null; try { a = (typeof hiWantAnswer === "function") ? hiWantAnswer(k, m) : null; } catch (e) {}
+    setWelcome(null);
+    setInput("");
+    const mine = echo || k;
+    setMsgs((v) => [...v, { who: "me", lines: [mine], buttons: [], nav: null }]);
+    if (!a) { setMsgs((v) => [...v, { who: "hi", lines: ["그 화면을 지금 열어드릴게요."], buttons: [], nav: null }]); return; }
+    lastQRef.current = mine;
+    setTyping(true);
+    setTimeout(() => { setTyping(false); setMsgs((v) => [...v, { who: "hi", lines: a.lines, buttons: (a.buttons || []).slice(0, 3), nav: a.nav || null }]); }, 380);
+  };
+
   /* [2단계] SARG 응답 칩 처리 — 알림 예약(followup 저장)·미리보기 열기는 대화 재질의 없이 즉시 실행 */
   const chipClick = (msg, b) => {
     if (msg.followup && (b === "알림 받기" || b === "알림 예약")) {
@@ -195,15 +277,15 @@ function AgentDock({ onGo }) {
     <>
       {!open && (
         <button className="hidock-fab" onClick={() => setOpen(true)} aria-label="하이에게 물어보기" title="하이 — 무엇이든 물어보세요">
-          <span className="hidock-face"><Bot size={22} /></span>
+          <span className="hidock-face"><HiAvatar size={34} plain /></span>
           <span className="hidock-lbl">하이</span>
           {alerts.length > 0 && <span className="hidock-fabbdg">{alerts.length}</span>}
         </button>
       )}
       {open && (
-        <div className="hidock" ref={dockRef}>
+        <div className={"hidock" + (welcome ? " wel" : "")} ref={dockRef}>
           <div className="hidock-hd">
-            <span className="hidock-av"><Bot size={16} /></span>
+            <span className="hidock-av"><HiAvatar size={26} plain /></span>
             <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{t("hi.role")}</span></div>
             <button className={"hidock-ib" + (easy ? " on" : "")} title="쉬운 말 모드(큰 글씨)" onClick={() => setEasy((v) => !v)}>가나</button>
             <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>
@@ -211,6 +293,26 @@ function AgentDock({ onGo }) {
           </div>
           <div className="hidock-body" ref={bodyRef}>
             {lang === "en" && <HiEnCard onGo={go} onClose={() => setOpen(false)} />}
+            {lang !== "en" && welcome && (
+              <div className="hiwel">
+                <div className="hiwel-hero">
+                  <HiAvatar size={62} wave />
+                  <div className="hiwel-t" dangerouslySetInnerHTML={{ __html: welcome.g.line }} />
+                  <div className="hiwel-s" dangerouslySetInnerHTML={{ __html: welcome.g.sub }} />
+                </div>
+                <div className="hiwel-q">오늘, 무엇을 하고 싶으세요?</div>
+                <div className="hiwel-grid">
+                  {welcome.wants.map((w) => (
+                    <button key={w.k} className="hiwel-card" onClick={() => answerWant(w.k, w.want)}>
+                      <span className="ic">{w.ic}</span>
+                      <b>{w.want}</b>
+                      <span className="hint">{w.hint}</span>
+                    </button>
+                  ))}
+                </div>
+                <button className="hiwel-skip" onClick={() => setWelcome(null)}>다른 걸 물어볼래요 — 직접 입력하기</button>
+              </div>
+            )}
             {lang !== "en" && <>
             {msgs.map((m, i) => (
               <div key={i} data-mi={i} className={"hidock-row " + m.who}>
@@ -258,8 +360,9 @@ function AgentDock({ onGo }) {
             </>}
             <div ref={endRef} />
           </div>
-          {lang !== "en" && <div className="hidock-quick" role="group" aria-label="자주 묻는 질문 바로가기">
-            {HIDOCK_QUICKS.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}
+          {lang !== "en" && !welcome && <div className="hidock-quick" role="group" aria-label="하고 싶은 건강활동 바로가기">
+            {(() => { let mm = null; try { mm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
+              return hidockQuicks(mm).map((q) => <button key={q} onClick={() => send(q)}>{q}</button>); })()}
           </div>}
           <div className="hidock-input">
             {sttOK && <button className={"hidock-mic" + (listening ? " on" : "")} onClick={startStt} title="음성으로 말하기"><Mic size={16} /></button>}
