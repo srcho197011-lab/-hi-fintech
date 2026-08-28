@@ -63,6 +63,7 @@ function escPay(m, o) {
     sim: true,   // 시연 결제(실 승인 아님)
   };
   const l = escAll(); l.push(order); _escSave(l);
+  try { if (typeof hiEvent === "function") hiEvent("esc_paid", { kind: order.method }); } catch (e) {}
   try {
     const tk = (typeof anonToken === "function" && m) ? anonToken(m) : null;
     if (typeof chainAppend === "function") chainAppend({ type: "record", token: tk, note: `검진비 선결제 ${escWon(amount)} — ${order.center} · ${ESC_CFG.pg} 승인 ${order.pgAuth} · ${ESC_CFG.escrow} 예치(수검 완료 시 정산)` });
@@ -78,6 +79,7 @@ function escConfirmVisit(id) {
   if (o.status !== "PAID") return { ok: false, reason: "예치중 상태에서만 수검 확인이 가능해요." };
   o.status = "VISITED"; o.visitedAt = Date.now();
   _escSave(l);
+  try { if (typeof hiEvent === "function") hiEvent("esc_visited", { key: o.id }); } catch (e) {}
   try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `수검 확인 — ${o.id} · ${o.center} (정산 예정 D+${ESC_CFG.settleDays})` }); } catch (e) {}
   return { ok: true, order: o };
 }
@@ -88,6 +90,7 @@ function escSettle(id) {
   if (o.status !== "VISITED") return { ok: false, reason: "수검 확인 후에만 정산할 수 있어요." };
   o.status = "SETTLED"; o.settledAt = Date.now();
   _escSave(l);
+  try { if (typeof hiEvent === "function") hiEvent("esc_settled", { key: o.id }); } catch (e) {}
   try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `공제 정산 — ${o.id} · 결제 ${escWon(o.amount)} − 수수료 ${escWon(o.fee)} = ${o.center} 지급 ${escWon(o.payout)}` }); } catch (e) {}
   return { ok: true, order: o };
 }

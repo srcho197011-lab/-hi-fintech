@@ -22,6 +22,7 @@ function cnIssue(m, o) {
     purpose: o.purpose || "보장 공백 기반 맞춤 안내", status: "active", issuedAt: Date.now() };
   nft.hash = (typeof vaultHash === "function") ? vaultHash(JSON.stringify(nft)) : null;
   l.push(nft); _cnSave(m, l);
+  try { if (typeof hiEvent === "function") hiEvent("consent_updated", { kind: "issue" }); } catch (e0) {}
   if (typeof chainAppend === "function") chainAppend({ type: "consent-nft", token: (typeof anonToken === "function") ? anonToken(m) : null, fhirHash: nft.hash, note: `조건부 동의 증서 발행 — ${nft.id} · [${nft.scopeKo.join("·")}] → ${nft.to} · ~${nft.until} (철회 가능)` });
   try { if (scope.indexOf("mkt") >= 0 && typeof vaultSaveConsents === "function") vaultSaveConsents(m, { mkt: true, step: "consent-nft" }); } catch (e) {}
   return { ok: true, nft };

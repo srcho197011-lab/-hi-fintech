@@ -48,7 +48,7 @@ function subCreate(m, p, qty, cycle) {
   const cyc = cycle || subCycleOptions(p, q).recommend;
   const l = subList(m);
   const exist = l.find((s) => s.pid === p.id && s.status !== "canceled");
-  if (exist) { exist.qty = q; exist.cycle = cyc; exist.status = "active"; _subSave(m, l); return exist; }
+  if (exist) { exist.qty = q; exist.cycle = cyc; exist.status = "active"; _subSave(m, l); try { if (typeof hiEvent === "function") hiEvent("sub_registered", { kind: "renew" }); } catch (e) {} return exist; }
   const now = Date.now();
   const s = {
     id: "SUB-" + now.toString(36).toUpperCase(), pid: p.id, name: p.name, brand: p.brand, category: p.category,
@@ -58,6 +58,7 @@ function subCreate(m, p, qty, cycle) {
     history: [{ at: now, ev: `정기배송 시작 — ${cyc}일마다 · 1회차 발송` }],
   };
   l.push(s); _subSave(m, l);
+  try { if (typeof hiEvent === "function") hiEvent("sub_registered", { kind: "new" }); } catch (e) {}
   try { vaultAccessLog(anonToken(m), "member", `정기배송 등록(${p.name} · ${cyc}일 주기)`); } catch (e) {}
   try { if (typeof notifPush === "function") notifPush(m, { t: "정기배송이 시작됐어요", d: `${p.name} · ${cyc}일마다 배송 · 다음 ${_fmtD(s.nextShipAt)} · 언제든 건너뛰기·해지 가능`, k: "shop" }); } catch (e) {}
   return s;

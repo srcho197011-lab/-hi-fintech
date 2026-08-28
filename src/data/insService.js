@@ -116,6 +116,7 @@ function claimSubmit(m, o) {
   const fp = _claimFp(c);
   if (l.some((x) => /지급/.test(x.status || "") && _claimFp(x) === fp)) return { ok: false, code: "DUP", reason: CLAIM_DENY.DUP.easy };
   l.push(c); _claimsSave(l);
+  try { if (typeof hiEvent === "function") hiEvent("claim_submitted", { kind: c.kind }); } catch (e0) {}
   if (typeof chainAppend === "function") chainAppend({ type: "record", token: (typeof anonToken === "function" && m) ? anonToken(m) : null, note: `보험금 청구 접수 — ${c.id} · ${c.kind} ${fee.toLocaleString()}원` });
   return { ok: true, claim: c };
 }
@@ -178,6 +179,7 @@ function rerateApplyReal(m) {
     try { const k = "hifin_g4_" + tk; const l = JSON.parse(localStorage.getItem(k) || "[]"); l.push({ kind: "rerate", saving: s.saving, improved: s.improved, at: s.at }); localStorage.setItem(k, JSON.stringify(l)); } catch (e2) {}
     if (typeof vaultAccessLog === "function") vaultAccessLog(tk, "보험사(요약 증명만)", "성과 요약 열람 — 요율 재산정 심사(원본 미제공)");
     notifPush({ ic: "check", t: "요율 재산정 적용", d: `월 ${c.before.toLocaleString()}→${c.after.toLocaleString()}원 (−${c.pct}%) — 관리 성과가 보험료가 됐어요`, target: "insurance" });
+    try { if (typeof hiEvent === "function") hiEvent("rerate_applied", { n: c.pct }); } catch (e3) {}
     return { ok: true, state: s, compute: c };
   } catch (e) { return { ok: false, reason: "적용 저장 실패" }; }
 }

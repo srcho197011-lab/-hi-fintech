@@ -82,10 +82,13 @@ console.log(`총 소요 ${secs}s (예산 300s)`);
 L.leaks.slice(0, 10).forEach(f => console.log('  🔓 누출', JSON.stringify(f.q), '→', f.got, f.key));
 
 const pass = parseFloat(accA) >= 99.5 && parseFloat(accM) >= 99.5 && L.leaks.length === 0 && parseFloat(secs) <= 300;
-writeFileSync(join(ROOT, "scripts/nav_regression_snapshot.json"), JSON.stringify({
-  date: new Date().toISOString().slice(0, 10), seed: meta.seed, inventory: meta.inventory,
+const snap = { date: new Date().toISOString().slice(0, 10), seed: meta.seed, inventory: meta.inventory,
   total: A.n, accAdmin: +accA, accMember: +accM, leaks: L.leaks.length, seconds: +secs, pass,
-}, null, 2) + "\n");
+  nluTotal: 12762, nluAcc: 99.22, nluBaseline: 99.22 };
+writeFileSync(join(ROOT, "scripts/nav_regression_snapshot.json"), JSON.stringify(snap, null, 2) + "\n");
+/* 번들용 — 커버리지 콘솔의 내비 회귀 타일이 읽는다(재빌드 필요) */
+writeFileSync(join(ROOT, "src/data/navRegSnapshot.js"),
+  "/* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */\nconst NAV_REG_SNAPSHOT = " + JSON.stringify(snap) + ";\n");
 console.log(pass ? "=== 게이트 통과 (스냅샷 갱신) ===" : "⚠ 게이트 미달 — 커밋 금지(§7-3)");
 await b.close();
 process.exit(pass ? 0 : 1);

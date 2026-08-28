@@ -88,6 +88,8 @@ src/data/referral.js
 src/data/aiQnaBank.js
 src/data/brandTokens.js
 src/data/navInventory.js
+src/data/hiEvents.js
+src/data/navRegSnapshot.js
 src/data/navRouting.js
 src/data/aiNative.js
 src/data/hiWelcome.js

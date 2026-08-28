@@ -854,6 +854,7 @@ function BookingModal({ center, mode, onClose }) {
         const rec = { id: certId, center: center.name, date, time, at: Date.now(), hash: block ? block.hash : null,
           plan: (typeof planName !== "undefined" ? planName : ""), covers: coverSnap, insured, mkt: !!enroll.mkt };
         try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push(rec); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } catch (e) {}
+        try { if (typeof hiEvent === "function") hiEvent("cert_issued", { nav: "checkup" }); } catch (e) {}
         setInsCert(rec);
       } catch (e) {}
     } else {

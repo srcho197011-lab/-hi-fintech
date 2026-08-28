@@ -349,7 +349,7 @@ function AgentDock({ onGo }) {
                       <div className="hidock-btns"><button onClick={(e) => { e.stopPropagation(); const k = m.preview.nav || (m.nav && m.nav.key); if (k) { setOpen(false); go(k); } }}>화면 미리보기 열기</button></div>
                     </div>
                   )}
-                  {m.nav && !m.preview && <button className="hidock-nav" onClick={() => { setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
+                  {m.nav && !m.preview && <button className="hidock-nav" onClick={() => { try { if (typeof hiEvent === "function") hiEvent("nav_opened", { nav: m.nav.key }); } catch (e) {} setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
                   {/* 검진결과·건강분석은 전담 에이전트가 이어서 본다 — 질문을 그대로 넘겨 다시 묻지 않게 한다 */}
                   {m.doctor && <button className="hidock-doc" onClick={() => { try { if (typeof _doctorSeed !== "undefined") _doctorSeed = m.q || lastQRef.current || null; } catch (e) {} setOpen(false); go("ai"); }}>🩺 하이-나의 주치의 연결 <ChevronRight size={12} /></button>}
                   {m.buttons && m.buttons.length > 0 && <div className="hidock-btns">{m.buttons.map((b) => <button key={b} onClick={() => chipClick(m, b)}>{b}</button>)}</div>}
@@ -434,6 +434,31 @@ function AgentOpsConsole() {
           <div className="hiops-row" key={i}><span className="hiops-t">×{p.freq}</span><span className="hiops-q">{p.draft}</span></div>
         ))}</div>
       </>)}
+      {(() => { /* [P5] 내비 회귀 타일 + 완결 퍼널(시연 분포) + 인벤토리 밖 화면 지칭 후보 */
+        const snap = (typeof NAV_REG_SNAPSHOT !== "undefined") ? NAV_REG_SNAPSHOT : null;
+        const ev = (typeof hiEventStats === "function") ? hiEventStats() : { total: 0, stage: {}, names: [] };
+        const navMiss = misses.slice(-40).filter((x) => { try { const n = lexNormalize(x.q); return NAV_VERB.move.test(n) && !navResolve(n, "ADMIN"); } catch (e) { return false; } }).slice(-5);
+        return (<>
+          <div className="hiops-sec" style={{ display: "block" }}>내비게이션 회귀 <span>(전수 러너 스냅샷)</span>
+            {snap ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              <span className="cbadge" style={{ background: "#F0FDF4", color: "#15803D" }}>관리자 {snap.accAdmin}% · 회원 {snap.accMember}%</span>
+              <span className="cbadge" style={{ background: "#F0FDF4", color: "#15803D" }}>코퍼스 {snap.total.toLocaleString()}문항 · {snap.seconds}s</span>
+              <span className="cbadge" style={{ background: snap.leaks ? "#FEF2F2" : "#F0FDF4", color: snap.leaks ? "#B91C1C" : "#15803D" }}>관리자 누출 {snap.leaks}건</span>
+              <span className="cbadge" style={{ background: "#EFF6FF", color: "#1D4ED8" }}>기존 NLU {snap.nluAcc}% (기준선 유지)</span>
+            </div> : <div style={{ marginTop: 6, fontSize: 12, color: "#94A3B8" }}>스냅샷 없음 — node scripts/run_nav_regression.mjs 실행</div>}
+          </div>
+          <div className="hiops-sec" style={{ display: "block" }}>완결 퍼널 <span>(시연 분포 — 실회원 리포트는 론칭 게이트)</span>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              <span className="cbadge" style={{ background: "#FFF3E6", color: "#B45309" }}>①안내 {ev.stage[1] || 0}</span>
+              <span className="cbadge" style={{ background: "#FFF3E6", color: "#B45309" }}>②열기 {ev.stage[2] || 0}</span>
+              <span className="cbadge" style={{ background: "#FFF3E6", color: "#B45309" }}>③완결 {ev.stage[3] || 0}</span>
+              {ev.names.filter((x) => (HI_EVENT_DEFS[x.k] || {}).stage === 3).slice(0, 5).map((x) => <span key={x.k} className="cbadge" style={{ background: "#F8FAFC", color: "#475569" }}>{x.ko} {x.n}</span>)}
+            </div>
+          </div>
+          {navMiss.length > 0 && <div className="hiops-sec" style={{ display: "block" }}>인벤토리 밖 화면 지칭 후보 <span>(미답변 중 이동 의도 — 주간 증분 검토 대상)</span>
+            <div style={{ marginTop: 6 }}>{navMiss.map((x, i) => <div key={i} className="hiops-row"><span className="hiops-q">"{x.q}"</span></div>)}</div>
+          </div>}
+        </>); })()}
       <div className="chnote" style={{ marginTop: 12 }}>※ <b>배포 표준 절차</b> — 새 기능·용어는 ①AGENT_QNA(의도·표준답변·툴) ②HIFIN_LEXICON(동의어) ③TOOL_RUN/AGENT_SEC_GUIDES(기능·가이드) 3층 등록 없이는 배포 불가. 미답변 상위 질문은 주간 배치로 신규 Q&A 생성·검수·반영합니다.</div>
     </div>
   );

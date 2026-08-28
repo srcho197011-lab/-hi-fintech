@@ -35,7 +35,7 @@ function familyLoad(email, surname) {
     { id: "f4", name: s + "판석", relation: "부모", age: 82, sex: "남" },
   ];
 }
-function familySave(email, list) { lsSave("hifin_family_" + (email || "default"), list); }
+function familySave(email, list) { lsSave("hifin_family_" + (email || "default"), list); try { if (typeof hiEvent === "function") hiEvent("family_linked", { n: (list || []).length }); } catch (e) {} }
 function famDemoList() { return (typeof demoMembers !== "undefined" && Array.isArray(demoMembers)) ? demoMembers : []; }
 /* 보험 융합 분석용 가족 구성원(insuranceStats.getFamilyCoverageSummary가 참조) — 연동 건강데이터 병합 */
 function familyMembers(m) {

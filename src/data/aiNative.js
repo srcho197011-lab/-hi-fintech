@@ -109,6 +109,7 @@ const TOOL_RUN = {
     try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `무상 검진대비보험 증서 발급(${p.center.name} · 하이 예약)` }); hash = b && b.hash; vaultAccessLog(tk, "member", "하이 대화 예약 — 검진대비보험 증서 발급"); } catch (e) {}
     const cert = { id: "CERT-" + Date.now().toString(36).toUpperCase(), center: p.center.name, date: p.date, time: p.time, at: Date.now(), hash };
     try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push(cert); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); localStorage.removeItem("hifin_ins_deferred"); window._hiBookPending = null; } catch (e) {}
+    try { if (typeof hiEvent === "function") hiEvent("cert_issued", { nav: "hi-dialog" }); } catch (e) {}
     try { if (typeof refActionComplete === "function" && m && m.email) refActionComplete(m.email); } catch (e) {}
     return { lines: [`끝났어요! ${p.center.name} ${p.date} ${p.time} 예약을 확정하고, 무료 검진대비보험 증서(${cert.id})까지 발급했어요 — 블록체인에 기록됐고 데이터 금고에서 확인할 수 있어요.`, "검진 전날, 준비사항을 제가 먼저 알려드릴게요."] };
   } catch (e) { return null; } },
@@ -181,6 +182,7 @@ const TOOL_RUN = {
     try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: "무상 검진대비보험 증서 발급(하이 대화 가입)" }); hash = b && b.hash; vaultAccessLog(tk, "member", "검진대비보험 가입(하이)"); } catch (e) {}
     const cert = { id: "CERT-" + Date.now().toString(36).toUpperCase(), center: "검진 예약 연동", date: "-", time: "", at: Date.now(), hash };
     try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push(cert); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); localStorage.removeItem("hifin_ins_deferred"); } catch (e) {}
+    try { if (typeof hiEvent === "function") hiEvent("cert_issued", { nav: "hi-dialog" }); } catch (e) {}
     return { lines: [`무료 검진대비보험 가입을 완료했어요 — 증서 ${cert.id}가 데이터 금고에 기록됐어요(보험료 0원).`, "보장은 검진 예약과 연동돼요. ※ 실제 보장·인수는 보험사 심사에 따라요."] };
   } catch (e) { return null; } },
   // 무상 검진대비보험 상세 브리핑 — 예약 화면 수준의 플랜·담보·금액을 대화로 + 예약 화면 연결
@@ -573,6 +575,7 @@ function agentAnswerCore(text) {
     const navHit = agentNavExplicit(norm);
     if (navHit) {
       agentStats(true); agentMemSave({ lastIntent: navHit.matched, lastCat: "nav", lastQ: String(text).slice(0, 60) });
+      try { if (typeof hiEvent === "function") hiEvent("nav_suggested", { key: navHit.matched }); } catch (e) {}
       _hiTurn = { route: { agent: "A0", reason: "nav-explicit" }, reason: "nav-explicit" };
       return { agent: "A0", lines: navHit.lines, buttons: navHit.buttons, nav: navHit.nav, matched: navHit.matched };
     }
@@ -728,7 +731,7 @@ function agentProactive() {
   /* RPM 경보 — 최우선(새벽 2:17 장면): 세션당 1회 선제 안내 */
   try { const a = rpmAlert(m); if (a && !sessionStorage.getItem("hifin_rpm_seen")) { out.push({ text: `🔴 오늘 새벽 2:17, ${a.rel} ${a.name}님 혈압이 152/94까지 올랐어요(3일 연속 상승 · 가정 혈압계 RPM 자동 감지). 지금 연결 가능한 의사에게 먼저 보여드릴까요?`, buttons: ["원격진료 연결해줘", "가족 혈압 경보 보여줘"] }); sessionStorage.setItem("hifin_rpm_seen", "1"); } } catch (e) {}
   /* 방문수령증(V4) — 수령 완료 시 복약 리마인드 시작 안내(1회), 조제 완료 시 QR 준비 안내(세션 1회) */
-  try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu || x.dl); if (r && ((r.pu && r.puUsed) || (r.dl && (r.dlStep || 0) >= 3)) && !localStorage.getItem("hifin_pu_done_" + (r.pu || r.dl))) { out.push({ text: `💊 ${r.pharm || "약국"} ${r.dl && !r.pu ? "배송 " : ""}수령 완료 확인! 오늘부터 복약 리마인드를 시작할게요 — ${(r.med || "").split("—")[0].trim()}`, buttons: [] }); localStorage.setItem("hifin_pu_done_" + (r.pu || r.dl), "1"); } else if (r && r.pu && !r.puUsed && /조제 완료/.test(r.status || "") && !sessionStorage.getItem("hifin_pu_ready")) { out.push({ text: "🎫 조제가 끝났어요 — 약국 방문 시 수령증 QR을 준비하세요. '수령증 보여줘'라고 하시면 바로 확인돼요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_pu_ready", "1"); } else if (r && r.dl && !r.pu && (r.dlStep || 0) === 2 && !sessionStorage.getItem("hifin_dl_ready")) { out.push({ text: "🚚 약이 배송 중이에요 — 기사님 도착 시 배송추적 QR을 보여주시면 수령이 확인돼요. '배송 어디쯤이야?'로 언제든 확인하세요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_dl_ready", "1"); } } catch (e) {}
+  try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu || x.dl); if (r && ((r.pu && r.puUsed) || (r.dl && (r.dlStep || 0) >= 3)) && !localStorage.getItem("hifin_pu_done_" + (r.pu || r.dl))) { out.push({ text: `💊 ${r.pharm || "약국"} ${r.dl && !r.pu ? "배송 " : ""}수령 완료 확인! 오늘부터 복약 리마인드를 시작할게요 — ${(r.med || "").split("—")[0].trim()}`, buttons: [] }); localStorage.setItem("hifin_pu_done_" + (r.pu || r.dl), "1"); try { if (typeof hiEvent === "function") hiEvent("rx_received", { kind: r.dl && !r.pu ? "배송" : "방문" }); } catch (e9) {} } else if (r && r.pu && !r.puUsed && /조제 완료/.test(r.status || "") && !sessionStorage.getItem("hifin_pu_ready")) { out.push({ text: "🎫 조제가 끝났어요 — 약국 방문 시 수령증 QR을 준비하세요. '수령증 보여줘'라고 하시면 바로 확인돼요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_pu_ready", "1"); } else if (r && r.dl && !r.pu && (r.dlStep || 0) === 2 && !sessionStorage.getItem("hifin_dl_ready")) { out.push({ text: "🚚 약이 배송 중이에요 — 기사님 도착 시 배송추적 QR을 보여주시면 수령이 확인돼요. '배송 어디쯤이야?'로 언제든 확인하세요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_dl_ready", "1"); } } catch (e) {}
   try { const d = JSON.parse(localStorage.getItem("hifin_ins_deferred") || "null"); if (d) out.push({ text: `지난번 ${d.center || "검진"} 예약은 보험 없이 하셨죠 — 무료 검진대비보험, 지금 1분 안에 준비해드릴까요? (이 안내는 한 번만 드려요)`, buttons: ["검진보험 가입해줘", "괜찮아요"] }); } catch (e) {}
   try {
     const ob = (typeof onboardStatus === "function") ? onboardStatus(m) : null;
