@@ -410,7 +410,9 @@ function AgentOpsConsole() {
   const fmtT = (ts) => { try { const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; } catch (e) { return ""; } };
   return (
     <div className="hiops">
-      <div className="hiops-hero"><Bot size={16} /> <b>하이 커버리지 콘솔</b><span>질문 이해율·미답변·학습 루프 운영</span></div>
+      <div className="hiops-hero"><Bot size={16} /> <b>하이 커버리지 콘솔</b><span>질문 이해율·미답변·학습 루프 운영</span>
+        {typeof NAV_INV_META !== "undefined" && NAV_INV_META.bypass && <span className="cbadge" style={{ background: "#FEF2F2", color: "#B91C1C", marginLeft: 8 }}>⚠ 인벤토리 드리프트 — 우회 빌드(재생성 필요)</span>}
+        {typeof NAV_INV_META !== "undefined" && !NAV_INV_META.bypass && <span className="cbadge" style={{ background: "#F0FDF4", color: "#15803D", marginLeft: 8 }}>인벤토리 v{NAV_INV_META.version} · {NAV_INV_META.generatedAt} · 정합</span>}</div>
       <div className="hiops-stats">
         <div className="hiops-stat"><b>{rate}%</b><span>답변 성공률 ({cov.hit.toLocaleString()}/{cov.total.toLocaleString()})</span></div>
         <div className="hiops-stat"><b>{qnaN}</b><span>등록 의도(Q&A)</span></div>

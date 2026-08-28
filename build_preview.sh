@@ -3,6 +3,15 @@
 # 미리보기 HTML(index.html, preview.html)을 생성한다. (Node 미설치 환경용)
 set -e
 cd "$(dirname "$0")"
+
+# ── 내비 인벤토리 신선도 게이트(설계 프롬프트 v2.1 §10-1) ──
+# 감시 파일이 바뀌었는데 navInventory.js가 구버전이면 빌드 실패(재생성 안내).
+# 비상 우회(1회용): HIFIN_NAV_BYPASS=1 — 콘솔에 드리프트 배지가 켜지고, 다음 커밋에서 해소해야 한다.
+if [ "${HIFIN_NAV_BYPASS:-0}" = "1" ]; then
+  python scripts/gen_nav_inventory.py --mark-bypass || true
+else
+  python scripts/gen_nav_inventory.py --check
+fi
 # 소스의 진실 = src/ 폴더(_manifest.txt 순서). 데이터=data/dummy_data.js(plain), CSS=data/app.css.
 # 참고: 백서반영표 자동 로그(src/data/wpAutoLog.js)는 여기서 갱신하지 않는다.
 #       커밋 시 post-commit 훅(scripts/githooks/post-commit)만 갱신 → 일반 빌드/커밋 속도 유지.
