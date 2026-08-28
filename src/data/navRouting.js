@@ -108,11 +108,12 @@ function navResolve(normText) {
   _navBuild();
   const t = String(normText || "");
   if (!t || NAV_VERB.value.test(t) || NAV_VERB.how.test(t)) return null;
+  const tm = t.replace(/[\s·]/g, "");                    // 매칭 전용 평탄본 — 중점·공백 표기가 달라도 같은 화면
   const admin = (typeof isAdminRole === "function") ? isAdminRole() : false;
   let best = null, bestPat = "", bestAmbig = null;
   for (const r of _navIdx) {
     if (r.pat.length <= bestPat.length) break;           // 길이 내림차순 — 더 짧으면 중단
-    if (t.indexOf(r.pat) < 0) continue;
+    if (tm.indexOf(r.pat) < 0) continue;
     if (r.e.admin && !admin) continue;
     best = r.e; bestPat = r.pat; bestAmbig = r.ambig || null;
   }
@@ -124,7 +125,7 @@ function navResolve(normText) {
     if (rz.mode === "auto") { best = rz.e; bestAmbig = null; }
     else if (rz.mode === "clarify") {
       /* 진짜 되묻기 — 이동 의도가 확인될 때만(스치듯 언급에 되묻지 않는다), 2회 연속 금지 */
-      if (!hasMove && (bestPat.length < 4 || t.length > bestPat.length + 4)) return null;
+      if (!hasMove && (bestPat.length < 4 || tm.length > bestPat.length + 4)) return null;
       if (_navClarifyPat !== bestAmbig) {
         _navClarifyPat = bestAmbig;
         return { clarify: true, matched: "nav-ambig:" + bestAmbig,
@@ -137,7 +138,7 @@ function navResolve(normText) {
   if (best.owner === "sarg" && !NAV_VERB.sargMove.test(t)) return null;   // §4-2 — 분기 상담 보호
   if (best.owner === "qna" && !hasMove) return null;                      // 어휘만 언급 — Q&A가 답
   /* 동사 없는 명사 단독 호출 — 패턴이 4자 이상이고 문장이 짧을 때만 이동 의도로 본다 */
-  if (!hasMove && !(best.owner === "sarg") && (bestPat.length < 4 || t.length > bestPat.length + 4)) return null;
+  if (!hasMove && !(best.owner === "sarg") && (bestPat.length < 4 || tm.length > bestPat.length + 4)) return null;
   _navClarifyPat = null;
   return _navAnswer(best);
 }

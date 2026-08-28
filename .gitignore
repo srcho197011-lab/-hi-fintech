@@ -32,3 +32,6 @@ pet/data/pet_population.csv
 !/tools
 
 # (data 폴더 안 임시/불필요 파일이 생기면 여기에 추가로 제외)
+
+# 내비 코퍼스 — 결정론 재생성물(시드·생성기가 원본, v2.1 §6 저장 정책)
+docs/hi_nav10k/nav_corpus_v1.jsonl
