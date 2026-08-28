@@ -440,48 +440,11 @@ const AGENT_SEC_GUIDES = [
   { k: "social", label: "사회적기업", words: ["사회공헌", "사회환원", "기부활동", "나눔활동"], guide: "사회적기업 화면에서 치료비 사각지대 나눔 등 하이핀의 사회환원 활동을 볼 수 있어요. 회원 소비의 30% 마진이 나눔 재원이 돼요.", btns: ["나눔은 어떻게 이뤄져요?"] },
   { k: "community", label: "커뮤니티", words: ["커뮤니티", "게시판", "후기보", "회원들이야기"], guide: "커뮤니티에서 회원들의 건강 이야기와 전문가 답변을 볼 수 있어요.", btns: [] },
 ];
-/* ══ [P0 즉치 — 라우팅 헌법 P1] 명시적 섹션·기능 지목 판정기 ══
-   회원이 화면을 명사로 지목하면(예: "내건강지갑 확인해줘") 상황인지(SARG)·분기 대화보다
-   **먼저** 그 화면으로 안내한다. 「내건강지갑 확인해줘」→검진 답변 오답(2026-08-28)의 구조적 수정.
-   ⚠️ 범위 원칙(P0 한정):
-     · 명백한 화면 명사만 — 검진·건강현황·주치의 계열은 제외(SARG 분기 상담 소유, 회귀 보호)
-     · 값 질문(얼마/몇/잔액 조회 등)은 제외 — 기존 툴(실수치 응답)이 정답이므로 가로채지 않음
-     · 매칭은 최장 일치 — "내건강지갑"에서 "건강지갑"(엔티티)이 "내건강"(NLU 조각)보다 먼저 문다
-   전면 확장(코드 자동 추출 인벤토리·전 서브섹션)은 설계 프롬프트 P1~P2 단계에서. */
-const HI_NAV_P1 = [
-  { pats: ["건강지갑", "금융지갑", "내지갑", "지갑화면"], sec: "wallet" },
-  { pats: ["데이터금고", "내금고"], sec: "mywallet" },
-  { pats: ["건강쇼핑", "쇼핑몰"], sec: "shop" },
-  { pats: ["재가돌봄", "돌봄서비스", "방문간호"], sec: "homecare" },
-  { pats: ["원격진료", "비대면진료", "화상진료"], sec: "tele" },
-  { pats: ["보험치료비", "보험섹션", "보험화면", "맞춤보험", "보장분석화면"], sec: "insurance" },
-  { pats: ["제휴투자", "제휴신청", "파트너신청"], sec: "partner" },
-  { pats: ["신뢰센터", "데이터보호센터"], sec: "trust" },
-  { pats: ["커뮤니티", "게시판"], sec: "community" },
-  { pats: ["우리가족건강", "가족관리화면", "마이페이지"], sec: "mypage" },
-  { pats: ["헬스메이트"], sec: "healthmate", admin: true },
-  { pats: ["온톨로지", "하네스화면"], sec: "ontology", admin: true },
-];
-/* 이동·열람 의도 동사(P0 보수 버전) — '알려/어떻게'는 제외: 설명형 질문은 기존 Q&A가 더 좋은 답을 갖고 있다 */
-const HI_NAV_P1_VERBS = /(확인해|보여|열어|열래|가줘|가자|가고싶|이동|들어가|접속|찾아줘|어디(야|에|있|서)|볼래|볼게|보러|띄워)/;
-/* 값·수치 질문 가드 — 화면 안내가 아니라 실수치 툴이 답해야 하는 질문 */
-const HI_NAV_P1_VALUE = /(얼마|몇\s?[개명원건번%]|몇이|잔액|쌓였|적립됐|언제(야|까지|부터)|왜)/;
+/* [라우팅 헌법 P1] 명시적 섹션·기능 지목 — 본 구현은 navRouting.js(navResolve · 인벤토리 단일 소스).
+   P0의 수기 12군 표는 P2에서 인벤토리 기반으로 대체됐다(설계 프롬프트 v2.1 §4). */
 function agentNavExplicit(normText) {
-  const t = String(normText || "");
-  if (!t || HI_NAV_P1_VALUE.test(t)) return null;
-  /* 최장 일치 — 긴 엔티티가 먼저 문다(부분문자열 오식 차단) */
-  let best = null, bestLen = 0;
-  for (const e of HI_NAV_P1) {
-    if (e.admin && !(typeof isAdminRole === "function" && isAdminRole())) continue;
-    for (const p of e.pats) { if (t.indexOf(p) >= 0 && p.length > bestLen) { best = e; bestLen = p.length; } }
-  }
-  if (!best) return null;
-  /* 동사 없이 명사만 던져도("건강지갑") 짧으면 이동 의도로 본다 — 길면 다른 의미일 확률이 높아 통과시키지 않는다 */
-  if (!HI_NAV_P1_VERBS.test(t) && t.length > bestLen + 4) return null;
-  const g = (typeof AGENT_SEC_GUIDES !== "undefined") ? AGENT_SEC_GUIDES.find((x) => x.k === best.sec) : null;
-  const label = AGENT_NAV_LABEL[best.sec] || (g && g.label) || "바로가기";
-  const guide = (g && g.guide) || (label + " 화면을 열어드릴게요.");
-  return { lines: [guide], buttons: ((g && g.btns) || []).slice(0, 3), nav: { key: best.sec, label }, matched: "nav-p1:" + best.sec };
+  try { if (typeof navResolve === "function") return navResolve(normText); } catch (e) {}
+  return null;
 }
 
 const AGENT_NAV_VERBS = /(도와|보여|열어|가줘|가고|가자|이동|안내|알려|사용법|쓰는법|어떻게|이용|하고싶|하려면|해줘|해봐|부탁|시작|들어가|접속|메뉴|화면)/;
@@ -754,6 +717,10 @@ function rpmAlert(m) { try {
 } catch (e) { return null; } }
 
 function agentProactive() {
+  /* §5-1 권유 개시 경계(v2.1 · P2 전수 재분류 완료): 여기서 하이가 먼저 말할 수 있는 것은
+     ①무료 서비스(검진대비보험·리포트·상담) ②인하·가입확대 전용 재산정 ③진행 중인 일의 후속
+     (약 수령·복약·소진 임박·검진 준비) ④회원이 요청한 알림 ⑤안전 경보 ⑥회원 이익 통지(배당)뿐이다.
+     유료 신규 상품의 가입 권유는 금지 — 애매하면 금지로 본다. 새 알림을 추가하려면 이 분류부터 달 것. */
   const m = _member(); const out = [];
   if (!m) return out;
   /* [2단계] 예약된 알림(followup) 도래분 — "결과 나올 때쯤 알려드릴게요"의 실제 발화 지점 */
@@ -787,7 +754,9 @@ function agentProactive() {
     }
   } catch (e) {}
   /* Phase4 업셀 트리거(리드 라우팅 §4.3) — 보험금(치료비) 수령 경험 후: "치료 중 생활비" 공백 제안(1회만·정보 제공형) */
-  try { const cl = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); if (cl.length && !localStorage.getItem("hifin_upsell_seen")) { out.push({ text: "💠 치료비는 검진대비보험이 지켜드렸어요. 그런데 치료 '중' 생활비(일 못 하는 동안의 소득 공백)는 아직 비어 있어요 — 장기 플랜으로 채우는 방법을 보여드릴까요?", buttons: ["프리미엄 보험 상담받고 싶어", "우리 동네 상담사 연결해줘"] }); localStorage.setItem("hifin_upsell_seen", "1"); } } catch (e) {}
+  /* [§5-1 권유 개시 금지 — P2 재분류에서 제거] 청구 이력 기반 '프리미엄 장기 플랜' 업셀 발화가 여기 있었다.
+     유료 신규 상품의 가입 권유를 하이가 먼저 꺼내는 것은 금지 — 이 신호는 프로 제안함·터치 후보 경로로만 흐른다(P5 배선).
+     회원이 먼저 물으면(기존 Q&A 의도) 지금도 답한다 — 발화의 '개시'만 금지다. */
   /* Phase 5 선제 알림 — 배당 지급·요율 재산정 자격(묻기 전에 먼저) */
   try { if (!localStorage.getItem("hifin_divi_seen")) { const ds = (typeof dataDividends === "function") ? dataDividends(m) : []; if (ds.length) { out.push({ text: `데이터 활용 배당 +${ds[0].htk.toLocaleString()} HTK가 지급됐어요 — ${m.name}님의 데이터가 「${ds[0].study.split("(")[0]}」에 활용됐어요.`, buttons: ["배당 내역 보여줘"] }); localStorage.setItem("hifin_divi_seen", "1"); } } } catch (e) {}
   try { const st = (typeof rerateState === "function") ? rerateState() : { status: "done" }; if (st.status !== "done" && typeof rerateEligible === "function" && rerateEligible(m)) out.push({ text: "개선된 건강상태로 보험료 재산정을 신청할 수 있어요 — 인하 및 가입확대형 전용이라 손해 볼 일은 없어요.", buttons: ["요율 재산정 신청해줘"] }); } catch (e) {}
