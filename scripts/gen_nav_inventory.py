@@ -239,6 +239,25 @@ def main():
         print("        재생성: python scripts/gen_nav_inventory.py")
         print("        비상 우회(1회용): HIFIN_NAV_BYPASS=1 bash build_preview.sh  ← 콘솔에 드리프트 배지가 켜집니다")
         return 1
+    if mode == "--list-watch":                     # 커밋 게이트가 읽는 감시 목록(단일 소스)
+        try: sys.stdout.reconfigure(newline=chr(10))   # Windows CRLF 변환 차단 - 게이트 grep가 기계 소비
+        except Exception: pass
+        for w in WATCH: print(w)
+        return 0
+    if mode == "--bypass-guard":                   # 배지 점등 상태면 재우회 불가(§10-1)
+        if st and st.get("bypass"):
+            print("[GATE] 드리프트 배지가 켜져 있습니다 - 재우회 불가. 먼저 재생성·회귀로 해소하세요.")
+            return 1
+        return 0
+    if mode == "--clear-bypass":                   # 게이트 통과 후 배지 해소
+        if st and st.get("bypass"):
+            txt = io.open(OUT, encoding="utf-8").read()
+            st["bypass"] = False
+            txt = re.sub(r"const NAV_INV_META = \{.*?\};",
+                         "const NAV_INV_META = " + json.dumps(st, ensure_ascii=False) + ";", txt, 1)
+            io.open(OUT, "w", encoding="utf-8", newline="\n").write(txt)
+            print("드리프트 배지 해소")
+        return 0
     if mode == "--mark-bypass":
         if st:
             txt = io.open(OUT, encoding="utf-8").read()

@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# ══ 내비 커밋 게이트(설계 프롬프트 v2.1 §10-1 · P6) ══
+# 감시 파일이 스테이지에 있으면: 인벤토리 신선도 → 코퍼스 재생성 → 전수 회귀(5분 예산)
+# → 기존 NLU 회귀(기준선 저하 0) → 스냅샷 자동 스테이지. 미달이면 커밋 차단.
+# 비상 우회: HIFIN_NAV_BYPASS=1 git commit …  (1회용 — 콘솔 드리프트 배지 점등,
+# 배지가 켜진 상태에서는 재우회가 거부된다. 다음 커밋에서 게이트를 통과해야 꺼진다.)
+set -e
+cd "$(git rev-parse --show-toplevel)"
+CHANGED=$(git diff --cached --name-only)
+[ -z "$CHANGED" ] && exit 0
+NEED=0
+WATCH=$(python scripts/gen_nav_inventory.py --list-watch 2>/dev/null)
+for f in $WATCH src/data/navRouting.js src/data/navInventory.js scripts/gen_nav_corpus.py scripts/run_nav_regression.mjs; do
+  if echo "$CHANGED" | grep -qxF "$f"; then NEED=1; fi
+done
+[ $NEED -eq 0 ] && exit 0
+
+if [ "${HIFIN_NAV_BYPASS:-0}" = "1" ]; then
+  python scripts/gen_nav_inventory.py --bypass-guard
+  python scripts/gen_nav_inventory.py --mark-bypass
+  git add src/data/navInventory.js
+  echo "[GATE] 비상 우회 1회 허용 — 콘솔 드리프트 배지 점등. 다음 커밋에서 해소 필수."
+  exit 0
+fi
+
+echo "[GATE] 내비 감시 파일 변경 감지 — 커밋 게이트 실행(재생성+전수 회귀)"
+python scripts/gen_nav_inventory.py --check
+python scripts/gen_nav_corpus.py >/dev/null
+if ! curl -s -o /dev/null --max-time 2 http://127.0.0.1:5601/preview.html; then
+  echo "[GATE] 5601 서버가 없어 임시 기동합니다"
+  (python -m http.server 5601 --bind 127.0.0.1 >/dev/null 2>&1 &)
+  sleep 2
+fi
+node scripts/run_nav_regression.mjs
+NLU=$(cd docs/hi_nlu && node test-accuracy.mjs | grep -o "acc=[0-9.]*" | cut -d= -f2)
+echo "[GATE] 기존 NLU 회귀: $NLU% (기준선 99.22)"
+python -c "import sys; sys.exit(0 if float('$NLU') >= 99.22 else 1)" || { echo "[GATE] 기존 NLU 저하 — 커밋 차단"; exit 1; }
+python scripts/gen_nav_inventory.py --clear-bypass
+git add scripts/nav_regression_snapshot.json src/data/navRegSnapshot.js src/data/navInventory.js 2>/dev/null || true
+echo "[GATE] 통과 — 회귀 스냅샷 자동 스테이지 완료"

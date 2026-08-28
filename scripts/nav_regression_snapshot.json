@@ -3,7 +3,7 @@
   "seed": 20260828,
   "inventory": {
     "version": 1,
-    "sourceHash": "cbac2d04490a6048",
+    "sourceHash": "9efc31d2f10d11d4",
     "generatedAt": "2026-08-28",
     "bypass": false
   },
@@ -11,7 +11,7 @@
   "accAdmin": 100,
   "accMember": 100,
   "leaks": 0,
-  "seconds": 1.54,
+  "seconds": 1.85,
   "pass": true,
   "nluTotal": 12762,
   "nluAcc": 99.22,
