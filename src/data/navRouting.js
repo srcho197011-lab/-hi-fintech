@@ -104,12 +104,13 @@ function _navAmbigResolve(pat, admin) {
 let _navClarifyPat = null;
 
 /* ── 본 판정기 ── */
-function navResolve(normText) {
+function navResolve(normText, roleOpt) {
   _navBuild();
   const t = String(normText || "");
   if (!t || NAV_VERB.value.test(t) || NAV_VERB.how.test(t)) return null;
   const tm = t.replace(/[\s·]/g, "");                    // 매칭 전용 평탄본 — 중점·공백 표기가 달라도 같은 화면
-  const admin = (typeof isAdminRole === "function") ? isAdminRole() : false;
+  /* roleOpt — 채점 전용 역할 시뮬레이션("MEMBER"|"ADMIN"). 제품 경로는 항상 미지정(세션 역할) */
+  const admin = roleOpt === "MEMBER" ? false : roleOpt === "ADMIN" ? true : ((typeof isAdminRole === "function") ? isAdminRole() : false);
   let best = null, bestPat = "", bestAmbig = null;
   for (const r of _navIdx) {
     if (r.pat.length <= bestPat.length) break;           // 길이 내림차순 — 더 짧으면 중단
@@ -158,7 +159,7 @@ function _navAnswer(e) {
   } catch (err) {}
   return { lines, buttons: ((g && g.btns) || []).slice(0, 3),
     nav: { key: e.nav, label: secLabel + (e.surface === "tab" && !sameName ? " › " + e.label.replace(/^[①-⑨]\s?/, "") : "") },
-    matched: "nav-p1:" + e.key, tab: e.tab || null };
+    matched: "nav-p1:" + e.key, tab: e.tab || null, owner: e.owner, adminOnly: !!e.admin };
 }
 
 /* ── 함정 세트(§7) — 인덱스와 같은 단일 소스에서 생성: 교차 부분문자열 + 다의어 ── */
@@ -192,12 +193,14 @@ function navTrapSet() {
 /* ── 테스트 훅(§7) — 관리자 세션에서만 동작. 전수 채점은 UI 경유 금지 원칙의 실행 수단 ── */
 try {
   if (typeof window !== "undefined") {
-    window.__hifinNavTest = function (q, debug) {
+    window.__hifinNavTest = function (q, opt) {
       try {
         if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        const debug = opt === true;
+        const role = (opt === "MEMBER" || opt === "ADMIN") ? opt : null;
         const norm = (typeof lexNormalize === "function") ? lexNormalize(q) : String(q || "");
-        const r = navResolve(norm);
-        const out = r ? { matched: r.matched, nav: r.nav ? r.nav.key : null, tab: r.tab || null, clarify: !!r.clarify, buttons: r.buttons || [] } : null;
+        const r = navResolve(norm, role);
+        const out = r ? { matched: r.matched, nav: r.nav ? r.nav.key : null, tab: r.tab || null, clarify: !!r.clarify, owner: r.owner || null, adminOnly: !!r.adminOnly, buttons: r.buttons || [] } : null;
         if (!debug) return out;
         _navBuild();
         const hits = [];

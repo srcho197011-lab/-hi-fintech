@@ -35,3 +35,6 @@ pet/data/pet_population.csv
 
 # 내비 코퍼스 — 결정론 재생성물(시드·생성기가 원본, v2.1 §6 저장 정책)
 docs/hi_nav10k/nav_corpus_v1.jsonl
+
+# 루트 node_modules — 러너 의존성 정션(레포 미포함)
+node_modules/
