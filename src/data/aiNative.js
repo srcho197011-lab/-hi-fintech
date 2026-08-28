@@ -440,6 +440,50 @@ const AGENT_SEC_GUIDES = [
   { k: "social", label: "사회적기업", words: ["사회공헌", "사회환원", "기부활동", "나눔활동"], guide: "사회적기업 화면에서 치료비 사각지대 나눔 등 하이핀의 사회환원 활동을 볼 수 있어요. 회원 소비의 30% 마진이 나눔 재원이 돼요.", btns: ["나눔은 어떻게 이뤄져요?"] },
   { k: "community", label: "커뮤니티", words: ["커뮤니티", "게시판", "후기보", "회원들이야기"], guide: "커뮤니티에서 회원들의 건강 이야기와 전문가 답변을 볼 수 있어요.", btns: [] },
 ];
+/* ══ [P0 즉치 — 라우팅 헌법 P1] 명시적 섹션·기능 지목 판정기 ══
+   회원이 화면을 명사로 지목하면(예: "내건강지갑 확인해줘") 상황인지(SARG)·분기 대화보다
+   **먼저** 그 화면으로 안내한다. 「내건강지갑 확인해줘」→검진 답변 오답(2026-08-28)의 구조적 수정.
+   ⚠️ 범위 원칙(P0 한정):
+     · 명백한 화면 명사만 — 검진·건강현황·주치의 계열은 제외(SARG 분기 상담 소유, 회귀 보호)
+     · 값 질문(얼마/몇/잔액 조회 등)은 제외 — 기존 툴(실수치 응답)이 정답이므로 가로채지 않음
+     · 매칭은 최장 일치 — "내건강지갑"에서 "건강지갑"(엔티티)이 "내건강"(NLU 조각)보다 먼저 문다
+   전면 확장(코드 자동 추출 인벤토리·전 서브섹션)은 설계 프롬프트 P1~P2 단계에서. */
+const HI_NAV_P1 = [
+  { pats: ["건강지갑", "금융지갑", "내지갑", "지갑화면"], sec: "wallet" },
+  { pats: ["데이터금고", "내금고"], sec: "mywallet" },
+  { pats: ["건강쇼핑", "쇼핑몰"], sec: "shop" },
+  { pats: ["재가돌봄", "돌봄서비스", "방문간호"], sec: "homecare" },
+  { pats: ["원격진료", "비대면진료", "화상진료"], sec: "tele" },
+  { pats: ["보험치료비", "보험섹션", "보험화면", "맞춤보험", "보장분석화면"], sec: "insurance" },
+  { pats: ["제휴투자", "제휴신청", "파트너신청"], sec: "partner" },
+  { pats: ["신뢰센터", "데이터보호센터"], sec: "trust" },
+  { pats: ["커뮤니티", "게시판"], sec: "community" },
+  { pats: ["우리가족건강", "가족관리화면", "마이페이지"], sec: "mypage" },
+  { pats: ["헬스메이트"], sec: "healthmate", admin: true },
+  { pats: ["온톨로지", "하네스화면"], sec: "ontology", admin: true },
+];
+/* 이동·열람 의도 동사(P0 보수 버전) — '알려/어떻게'는 제외: 설명형 질문은 기존 Q&A가 더 좋은 답을 갖고 있다 */
+const HI_NAV_P1_VERBS = /(확인해|보여|열어|열래|가줘|가자|가고싶|이동|들어가|접속|찾아줘|어디(야|에|있|서)|볼래|볼게|보러|띄워)/;
+/* 값·수치 질문 가드 — 화면 안내가 아니라 실수치 툴이 답해야 하는 질문 */
+const HI_NAV_P1_VALUE = /(얼마|몇\s?[개명원건번%]|몇이|잔액|쌓였|적립됐|언제(야|까지|부터)|왜)/;
+function agentNavExplicit(normText) {
+  const t = String(normText || "");
+  if (!t || HI_NAV_P1_VALUE.test(t)) return null;
+  /* 최장 일치 — 긴 엔티티가 먼저 문다(부분문자열 오식 차단) */
+  let best = null, bestLen = 0;
+  for (const e of HI_NAV_P1) {
+    if (e.admin && !(typeof isAdminRole === "function" && isAdminRole())) continue;
+    for (const p of e.pats) { if (t.indexOf(p) >= 0 && p.length > bestLen) { best = e; bestLen = p.length; } }
+  }
+  if (!best) return null;
+  /* 동사 없이 명사만 던져도("건강지갑") 짧으면 이동 의도로 본다 — 길면 다른 의미일 확률이 높아 통과시키지 않는다 */
+  if (!HI_NAV_P1_VERBS.test(t) && t.length > bestLen + 4) return null;
+  const g = (typeof AGENT_SEC_GUIDES !== "undefined") ? AGENT_SEC_GUIDES.find((x) => x.k === best.sec) : null;
+  const label = AGENT_NAV_LABEL[best.sec] || (g && g.label) || "바로가기";
+  const guide = (g && g.guide) || (label + " 화면을 열어드릴게요.");
+  return { lines: [guide], buttons: ((g && g.btns) || []).slice(0, 3), nav: { key: best.sec, label }, matched: "nav-p1:" + best.sec };
+}
+
 const AGENT_NAV_VERBS = /(도와|보여|열어|가줘|가고|가자|이동|안내|알려|사용법|쓰는법|어떻게|이용|하고싶|하려면|해줘|해봐|부탁|시작|들어가|접속|메뉴|화면)/;
 function agentNavIntent(rawText, normText) {
   for (const g of AGENT_SEC_GUIDES) {
@@ -451,7 +495,7 @@ function agentNavIntent(rawText, normText) {
 
 /* ── 메인: agentAnswer(text) — 단일 에이전트 '하이'의 응답 ──
    반환: { lines:[문장들], buttons:[≤3], nav:{key,label}|null, reset?:bool, matched:intentKey|null } */
-const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", home: "회사 소개", trust: "신뢰 센터", checkup: "건강검진 예약", care: "검진 후 케어", insurance: "보험·치료비", mywallet: "나의 건강지갑", partner: "제휴·투자", onboarding: "데이터 연결", ontology: "온톨로지", shop: "건강쇼핑", ai: "AI 주치의 상담", manage: "내 건강현황", hospital: "병원진료 안내", homecare: "재가돌봄", wallet: "건강금융지갑", nft: "Health NFT", mypage: "우리가족건강관리", social: "사회적기업", community: "커뮤니티" };
+const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", home: "회사 소개", trust: "신뢰 센터", checkup: "건강검진 예약", care: "검진 후 케어", insurance: "보험·치료비", mywallet: "나의 건강지갑", partner: "제휴·투자", onboarding: "데이터 연결", ontology: "온톨로지", shop: "건강쇼핑", ai: "AI 주치의 상담", manage: "내 건강현황", hospital: "병원진료 안내", homecare: "재가돌봄", wallet: "건강금융지갑", nft: "Health NFT", mypage: "우리가족건강관리", social: "사회적기업", community: "커뮤니티", healthmate: "헬스메이트 센터" };
 
 /* ══════════ [Phase A] 에이전트 메시 — 호출 어댑터·소유권·응답 장식 ══════════ */
 let _hiTurn = { route: null, reason: null };     // 이번 턴의 라우팅 결과
@@ -561,6 +605,15 @@ function agentAnswer(text) {
 function agentAnswerCore(text) {
   const m = _member();
   const norm = lexNormalize(text);
+  /* [라우팅 헌법 P1] 명시적 섹션 지목 — 상황인지·분기 대화가 화면 지목을 가로채지 못한다 */
+  try {
+    const navHit = agentNavExplicit(norm);
+    if (navHit) {
+      agentStats(true); agentMemSave({ lastIntent: navHit.matched, lastCat: "nav", lastQ: String(text).slice(0, 60) });
+      _hiTurn = { route: { agent: "A0", reason: "nav-explicit" }, reason: "nav-explicit" };
+      return { agent: "A0", lines: navHit.lines, buttons: navHit.buttons, nav: navHit.nav, matched: navHit.matched };
+    }
+  } catch (e) {}
   /* [Phase A] 라우팅 — 담당을 먼저 정한다. 진행 중 대화가 있어도 명백한 타 도메인 질문이면
      'dialog-interrupt'로 담당 전문가에게 넘긴다(회원을 대화에 가두지 않는다). */
   let _route = { agent: "A0", reason: "default" };
