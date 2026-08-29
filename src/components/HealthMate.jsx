@@ -589,7 +589,7 @@ function HmTabBoard({ code, pro, onContact, cview }) {
         <div style={{ fontSize: 11.4, color: HM_C.mut, marginTop: 3 }}>금액이나 등수 매기기는 없어요. ② 순번 배분은 평가와 무관해요(공정성 고지). 코호트 실적은 담당 규모·단계 분포에서 파생한 <b style={{ color: HM_C.dark }}>시연 분포</b>예요.</div>
       </div>
       <div className="hmgrid2" style={{ marginTop: 10 }}>
-        {[["담당 고객", (stats.assigned + (cs ? cs.n : 0)).toLocaleString() + "명"], ["단계 전진 누적(6개월)", ((cs ? cs.advTotal : 0) + stats.adv).toLocaleString() + "명"], ["정체 해소", (cs ? cs.stallFixed : 0) + "명"], ["건강 터치 누적", ((cs ? cs.touches : 0) + stats.touches).toLocaleString() + "회"], ["첫 연결 완료율(락 해제 후)", (cs ? cs.firstRate : stats.firstRate) + "%"], ["만기 터치 완료율", (cs ? cs.expireRate : 100) + "%"], ["SLA 준수율", (cs ? cs.slaRate : 100) + "%"], ["접촉 락 준수", stats.lockOk ? "100% ✓" : `위반 시도 ${stats.viol}건`]].map(([k, v], i) => (
+        {[["담당 고객", (stats.assigned + (cs ? cs.n : 0)).toLocaleString() + "명"], ["단계 전진 누적(6개월)", ((cs ? cs.advTotal : 0) + stats.adv).toLocaleString() + "명"], ["정체 해소", (cs ? cs.stallFixed : 0) + "명"], ["건강 터치 누적", ((cs ? cs.touches : 0) + stats.touches).toLocaleString() + "회"], ["첫 연결 완료율(락 해제 후)", (cs ? cs.firstRate : stats.firstRate) + "%"], ["만기 터치 완료율", (cs ? cs.expireRate : 100) + "%"], ["응답 시한 준수율", (cs ? cs.slaRate : 100) + "%"], ["접촉 락 준수", stats.lockOk ? "100% ✓" : `위반 시도 ${stats.viol}건`]].map(([k, v], i) => (
           <div key={i} style={{ border: "1px solid #F1F5F9", borderRadius: 11, padding: "10px 13px" }}>
             <div style={{ fontSize: 11, color: HM_C.mut, fontWeight: 700 }}>{k}</div>
             <div style={{ fontSize: 18, fontWeight: 900, color: HM_C.dark }}>{v}</div>
@@ -792,7 +792,7 @@ function HmTabOps() {
             <span style={{ width: 74, fontSize: 11, color: "#475569", textAlign: "right" }}>{n.toLocaleString()} ({(n / S.cards * 100).toFixed(1)}%)</span></div>); })}
         <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>대상아님(관리 리듬 양호) {(S.byGrade["-"] || 0).toLocaleString()}명 · E(응급)는 트리아지 소유(카드 밖)</div>
       </div>
-      <div style={box}><div style={bt}>③ SLA 관제 — 등급 → 티어(leadRouting 재사용)</div>
+      <div style={box}><div style={bt}>③ 응답 시한(SLA) 관제 — 등급 → 티어(leadRouting 재사용)</div>
         {[["H", "T2 · 48h", "#EA580C"], ["M", "T3 · 7일", "#D97706"], ["L", "T4 · 14일", "#0891B2"]].map(([k, t, cc]) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px dashed #EEF2F6", fontSize: 12 }}>
             <span><b style={{ color: cc }}>{k}</b> — {t}</span><span style={{ color: "#475569" }}>{(S.byGrade[k] || 0).toLocaleString()}건 · 재큐 D+7</span></div>))}
@@ -881,7 +881,7 @@ function HealthMateSection({ onGo }) {
           <button className="hmbtn gh" style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }} onClick={() => { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} setCode(null); }}>코드 잠금</button>
         </div>
         <div className="hmnum">
-          {[["오늘 접촉할 회원", needN + slaN, 9], ["SLA 임박(4h)", slaN, 1], ["검진결과 대기(락)", heldN, 2], ["만기 예정 터치", expN, 3], ["정체 회원", stallN, 9]].map(([k, v, t], i) => (
+          {[["오늘 접촉할 회원", needN + slaN, 9], ["응답 시한 임박(4h)", slaN, 1], ["검진결과 대기(락)", heldN, 2], ["만기 예정 터치", expN, 3], ["정체 회원", stallN, 9]].map(([k, v, t], i) => (
             <div key={i} className="n" style={i === 2 ? { opacity: .75 } : null} onClick={() => setTab(t)}><b>{v}</b><span>{k}{i === 2 ? " 🔒" : ""}</span></div>
           ))}
         </div>
