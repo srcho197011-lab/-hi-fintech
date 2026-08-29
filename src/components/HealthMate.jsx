@@ -731,7 +731,61 @@ function HmHandoffCard({ ent, code, onToast }) {
     </div>
   </div>);
 }
-function HmTabToday({ code, onToast }) {
+/* ══ D1~L8 단계 가이드 — 클릭하면 상세설명 + 관할 실사례(P6+, 형 지시 2026-08-30) ══ */
+function HmStageGuide({ code, cview }) {
+  const [sel, setSel] = React.useState(null);
+  const byStage = (cview && cview.byStage) || {};
+  const st = sel ? HM_STAGES.find((s) => s.k === sel) : null;
+  const gd = sel ? HM_STAGE_GUIDE[sel] : null;
+  /* 관할 실사례 — 그 단계 회원 최대 2명(가명·상태·하이 코멘트) */
+  const live = React.useMemo(() => {
+    if (!sel) return [];
+    return ((byStage[sel] || []).slice(0, 2)).map((i) => { try { return cohortCardOf(i); } catch (e) { return null; } }).filter(Boolean);
+  }, [sel, code]);
+  return (<div className="hmcard" style={{ marginTop: 10, padding: "11px 13px" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+      <div style={{ fontSize: 12.6, fontWeight: 900, color: HM_C.ink }}>🧭 회원 여정 D1~L8 <span style={{ fontSize: 11, color: HM_C.mut, fontWeight: 600 }}>— 단계를 누르면 설명과 내 관할 실사례가 보여요</span></div>
+      {sel && <button className="hmbtn gh" style={{ padding: "3px 10px", fontSize: 11 }} onClick={() => setSel(null)}>닫기 ✕</button>}
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 6, marginTop: 9 }}>
+      {HM_STAGES.map((s) => { const n = (byStage[s.k] || []).length; const on = sel === s.k; const life = s.part === "LIFE";
+        return (<button key={s.k} onClick={() => setSel(on ? null : s.k)} style={{
+          border: on ? `2px solid ${life ? HM_C.brand : HM_C.ink}` : "1px solid #E2E8F0", cursor: "pointer",
+          background: on ? (life ? "#FFF4E8" : "#EEF4FA") : "#fff", borderRadius: 10, padding: "7px 4px", textAlign: "center" }}>
+          <div style={{ fontSize: 12.5, fontWeight: 900, color: life ? HM_C.brand : HM_C.ink }}>{s.k}</div>
+          <div style={{ fontSize: 10.2, fontWeight: 700, color: "#475569" }}>{s.name}</div>
+          <div style={{ fontSize: 9.6, color: HM_C.mut }}>{n}명</div>
+        </button>); })}
+    </div>
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9.8, color: HM_C.mut, marginTop: 4 }}>
+      <span>◀ 데이터 자산 4단(D — 확보→통합)</span><span>생애 확장 4단(L — 정기→평생주기) ▶</span>
+    </div>
+    {st && gd && (<div style={{ marginTop: 10, border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden" }}>
+      <div style={{ background: st.part === "LIFE" ? "linear-gradient(135deg,#F5821F,#E56B0F)" : "linear-gradient(135deg,#0B2239,#1B3E5F)", color: "#fff", padding: "9px 13px" }}>
+        <b style={{ fontSize: 13.5 }}>{st.k} {st.name}</b> <span style={{ fontSize: 11.4, opacity: .9 }}>— {st.desc} · 내 관할 {((byStage[st.k] || []).length)}명</span>
+      </div>
+      <div style={{ padding: "10px 13px", fontSize: 12.2, lineHeight: 1.75 }}>
+        {[["들어오는 조건", gd.entry], ["프로가 하는 일", gd.doKo], ["다음 단계로", gd.next]].map(([k, v]) => (
+          <div key={k} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: "#F1F5F9", color: "#334155", marginRight: 7 }}>{k}</span>{v}</div>))}
+        <div style={{ marginTop: 8, background: "#FFFBF5", border: "1px dashed #FED7AA", borderRadius: 9, padding: "7px 10px" }}>
+          <b style={{ fontSize: 11.4, color: "#C2410C" }}>📖 사례 [예시·시연]</b>
+          <div style={{ fontSize: 11.8, color: "#374151" }}>{gd.ex}</div>
+        </div>
+        {live.length > 0 && (<div style={{ marginTop: 7 }}>
+          <b style={{ fontSize: 11.4, color: HM_C.ink }}>👥 내 관할 실사례</b>
+          {live.map((c) => (<div key={c.i} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", background: "#F8FAFC", borderRadius: 8, padding: "6px 9px", marginTop: 4, fontSize: 11.6 }}>
+            <b>{_hmMask(c.m.name)}</b><span style={{ color: HM_C.mut }}>{_hmBand(c.m)} {c.m.sex}</span>
+            <span className="hmpill" style={{ background: c.status.bg, color: c.status.c }}>{c.status.ko}</span>
+            {c.stage.stalled && <span className="hmpill" style={{ background: "#FDECEC", color: "#B91C1C" }}>정체 {c.stage.stalledDays}일</span>}
+            <span style={{ color: "#475569", flex: 1, minWidth: 180 }}>🤖 {c.hi}</span>
+          </div>))}
+        </div>)}
+      </div>
+    </div>)}
+  </div>);
+}
+
+function HmTabToday({ code, onToast, cview }) {
   const today = new Date().toISOString().slice(0, 10);
   const roster = React.useMemo(() => (typeof hmDailyRoster === "function") ? hmDailyRoster(code, today) : null, [code, today]);
   /* 퍼널 1단 — 지시서 발행(실노출). 프로·일 1회만 기록(중복 노출은 발행이 아니다) */
@@ -750,8 +804,9 @@ function HmTabToday({ code, onToast }) {
         <div style={{ fontWeight: 900, fontSize: 14.5, color: "#C2410C" }}>☀️ 오늘의 지시서 · {roster.list.length}건 <span style={{ fontSize: 11.4, color: HM_C.mut, fontWeight: 600 }}>· {today} · 시드=날짜+프로코드(같은 날 같은 카드) · [예시·시연 데이터]</span></div>
         <div style={{ fontSize: 11.6, color: "#475569" }}>{["H", "M", "L"].filter((k) => gr[k]).map((k) => `${k} ${gr[k]}건`).join(" · ") || "대상 없음"} · 관할 {roster.counts.managed}명(락 {roster.counts.locked} · 후보 {roster.counts.candidates})</div>
       </div>
-      <div style={{ marginTop: 6, fontSize: 11.6, color: HM_C.mut }}>하이가 등급·SLA·정체를 계산해 우선순위로 선별했어요 — 프로는 카드 순서대로 확인·접촉·기록만. 대본 없는 통화는 없어요(대본 보기 ▼).</div>
+      <div style={{ marginTop: 6, fontSize: 11.6, color: HM_C.mut }}>하이가 등급·응답 시한·정체를 계산해 우선순위로 선별했어요 — 프로는 카드 순서대로 확인·접촉·기록만. 대본 없는 통화는 없어요(대본 보기 ▼).</div>
     </div>
+    <HmStageGuide code={code} cview={cview} />
     {roster.list.map((ent) => <HmHandoffCard key={ent.i} ent={ent} code={code} onToast={onToast} />)}
     {!roster.list.length && <div className="hmcard" style={{ marginTop: 10 }}>오늘 발행 대상이 없어요 — 관할 회원이 모두 락(검진 대기)이거나 관리 리듬 양호예요.</div>}
   </div>);
@@ -893,7 +948,7 @@ function HealthMateSection({ onGo }) {
         {TABS.map(([n, label, Ic]) => <button key={n} className={"hmtab" + (tab === n ? " on" : "")} onClick={() => setTab(n)}><Ic size={13} /> {label}</button>)}
       </div>
       <div style={{ marginTop: 12 }}>
-        {tab === 0 && <HmTabToday code={code} onToast={(m2) => { setToastM(m2); setTimeout(() => setToastM(""), 3500); }} />}
+        {tab === 0 && <HmTabToday code={code} cview={cview} onToast={(m2) => { setToastM(m2); setTimeout(() => setToastM(""), 3500); }} />}
         {tab === 10 && <HmTabOps />}
         {tab === 1 && <HmTabSignals code={code} onContact={onContact} cview={cview} />}
         {tab === 2 && <HmTabIns code={code} pro={pro} onContact={onContact} refresh={refresh} cview={cview} />}
