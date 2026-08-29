@@ -101,9 +101,24 @@ function cohortLoginProfile(i) {
     biologicalAge: m.bioAge || m.age, obesityAge: m.age + 2, heartAge: m.age + 1, liverAge: m.age + 1, pancreasAge: m.age + 2, kidneyAge: m.age,
     cancerRiskGrade: Math.max(2, Math.min(8, (m.risk || 2) + 2)), highRiskCancerTypes: cancers, highRiskDiseases: dz,
     diseases: dz, estimatedMedicalCost: m.estCost || 900000, income: m.income, sido: m.sido,
-    managementPoints: ["주 150분 유산소 운동", "나트륨·당류 줄이기", "연 1회 검진 수검", "복약·측정 꾸준히"],
+    managementPoints: _cohortMgmtPoints(i, m),
     htkBase: ins ? ins.htkBase : undefined, isDemoUser: false, isCohort: true, realVerified: true };
   return prof;
+}
+/* 관리포인트 — 인덱스 결정론 다양화(전원 동일 4종이던 것을 국건영 유병률 근사로 배분).
+   checkupEngine 생활습관 문진(life)이 이 문구를 읽어 절주·금연·신체활동 플래그를 세운다 — 문구가 원천. */
+function _cohortMgmtPoints(i, m) {
+  const r = ((i * 2654435761 + 97) >>> 0) % 1000;          // 시드 곱셈 해시 — Math.random 금지(결정론)
+  const male = m.sex === "남", age = m.age || 40;
+  const pts = [];
+  const drinkP = male ? (age >= 30 && age < 65 ? 300 : 160) : 90;   // 고위험 음주율 근사(남 30~64세 30%)
+  const smokeP = male ? 260 : 60;
+  if (r % 1000 < drinkP) pts.push("절주·음주량 줄이기");
+  if ((r * 7 + 3) % 1000 < smokeP) pts.push("금연 실천");
+  if ((r * 13 + 5) % 1000 < 520) pts.push("주 150분 유산소 운동");
+  pts.push((r % 2) ? "나트륨·당류 줄이기" : "균형 식단·체중 관리");
+  pts.push((r % 3) ? "연 1회 검진 수검" : "복약·측정 꾸준히");
+  return pts.slice(0, 4);
 }
 function cohortSeedVault(prof, i) {
   try {

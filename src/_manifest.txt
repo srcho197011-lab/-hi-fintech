@@ -70,6 +70,7 @@ src/data/clinicalBands.js
 src/data/riskGrade.js
 src/data/interventionMap.js
 src/data/hmScriptBlocks.js
+src/data/handoffCard.js
 src/data/checkupEngine.js
 src/data/healthDataVault.js
 src/data/lineageBridge.js

@@ -16,6 +16,8 @@
 !/src
 # 백서반영표 자동 로그 파이프라인(gen_wp_log.sh · githooks/post-commit)
 !/scripts
+# 골든셋 픽스처(지시서 P3~) — 회귀가 읽는 확정 스펙이라 커밋 대상
+!/fixtures
 
 # 펫 사이트(HI-PET) — Vercel 루트 디렉터리로 배포
 !/pet
