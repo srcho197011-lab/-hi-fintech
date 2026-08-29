@@ -1,0 +1,2 @@
+/* 자동 생성 — gen_handoff_weekly.mjs (P6). 관제탑 ⑥ 주간 학습 타일 — 손대지 말 것. 개선 반영은 형 검수 경유만 */
+const HM_WEEKLY_SNAPSHOT = {"week":"2026-08-30","blockKinds":26,"blockTotal":37,"monotony":[],"unused":["op-again","op-unlock","co-body","ak-diet","ak-supp","ak-move","ak-family","br-yes2","br-hold","br-q-cost","cl-promise"],"candidates":[{"kind":"미사용","id":"op-again"},{"kind":"미사용","id":"op-unlock"},{"kind":"미사용","id":"co-body"},{"kind":"미사용","id":"ak-diet"},{"kind":"미사용","id":"ak-supp"},{"kind":"미사용","id":"ak-move"},{"kind":"미사용","id":"ak-family"},{"kind":"미사용","id":"br-yes2"}]};

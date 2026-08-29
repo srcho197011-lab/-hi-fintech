@@ -71,6 +71,7 @@ src/data/riskGrade.js
 src/data/interventionMap.js
 src/data/hmHarnessSnapshot.js
 src/data/hmOpsSnapshot.js
+src/data/hmWeeklySnapshot.js
 src/data/hmScriptBlocks.js
 src/data/hmScriptGuard.js
 src/data/handoffCard.js

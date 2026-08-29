@@ -665,10 +665,17 @@ const HM_GRADE_UI = {
 function HmHandoffCard({ ent, code, onToast }) {
   const c = ent.card; const g = HM_GRADE_UI[c.grade] || HM_GRADE_UI.L;
   const [done, setDone] = React.useState(false);
+  const [coach, setCoach] = React.useState(null);   /* A5 코치 답변(부분 활성 — 카드 해설 한정) */
   const act = (a) => {
     const r = (typeof hmcTouch === "function") ? hmcTouch(code, c.member.cohortIndex, "지시서·" + a.ko) : { ok: true };
-    if (r.ok) { setDone(true); try { hiEvent("nav_opened", { nav: a.nav, src: "handoff" }); } catch (e) {} }
+    if (r.ok) {
+      setDone(true);
+      try { hiEvent("handoff_contacted", { grade: c.grade, key: a.key, src: "today" }); hiEvent("nav_opened", { nav: a.nav, src: "handoff" }); } catch (e) {}
+    }
     onToast(r.ok ? `기록됐어요 — ${a.ko} 알림 발송(완결 대기: ${a.evNote.split("—")[0].trim()})` : r.reason);
+  };
+  const askCoach = (q) => {
+    try { const ans = coachAnswer(c, q); setCoach(ans ? { q: q, ans: ans } : { q: q, ans: null }); } catch (e) { setCoach(null); }
   };
   return (<div style={{ display: "flex", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 6px 14px -10px rgba(15,42,68,.35)", marginTop: 10, opacity: done ? .62 : 1 }}>
     <div style={{ width: 5, background: g.c, flex: "none" }} />
@@ -711,12 +718,30 @@ function HmHandoffCard({ ent, code, onToast }) {
           <div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}><b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}</div>
         </div>
       </details>
+      <div style={{ marginTop: 7, display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: 10.8, fontWeight: 800, color: "#7C3AED" }}>🧭 A5 코치</span>
+        {["왜 이 지시예요?", "거절하면요?", "심각하냐고 물으면요?", "문자로는 뭐라고 보내요?"].map((q) => (
+          <button key={q} className="hmpill" style={{ border: "1px solid #DDD6FE", background: "#F5F3FF", color: "#6D28D9", cursor: "pointer" }} onClick={() => askCoach(q)}>{q}</button>))}
+      </div>
+      {coach && <div style={{ marginTop: 6, background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 9, padding: "7px 10px", fontSize: 12, lineHeight: 1.65 }}>
+        {coach.ans
+          ? <span><b style={{ color: "#6D28D9" }}>코치</b> — {coach.ans.text} <i style={{ fontStyle: "normal", fontSize: 10.4, color: "#94A3B8" }}>· 원천 {coach.ans.source === "block" ? "대본 블록 " + coach.ans.id : "카드 필드 " + coach.ans.id}(사전 밖 문장 없음)</i></span>
+          : <span style={{ color: HM_C.mut }}>이 질문은 아직 코치의 소유가 아니에요 — 하이에게 물어봐 주세요.</span>}
+      </div>}
     </div>
   </div>);
 }
 function HmTabToday({ code, onToast }) {
   const today = new Date().toISOString().slice(0, 10);
   const roster = React.useMemo(() => (typeof hmDailyRoster === "function") ? hmDailyRoster(code, today) : null, [code, today]);
+  /* 퍼널 1단 — 지시서 발행(실노출). 프로·일 1회만 기록(중복 노출은 발행이 아니다) */
+  React.useEffect(() => {
+    if (!roster || !roster.list.length) return;
+    try {
+      const k = "hifin_handoff_issued_" + code + "_" + today;
+      if (!localStorage.getItem(k)) { hiEvent("handoff_issued", { n: roster.list.length, src: "today" }); localStorage.setItem(k, "1"); }
+    } catch (e) {}
+  }, [code, today]);
   if (!roster) return <div className="hmcard">지시서 조립기를 불러오지 못했어요.</div>;
   const gr = roster.counts.byGrade;
   return (<div>
@@ -773,10 +798,16 @@ function HmTabOps() {
             <span><b style={{ color: cc }}>{k}</b> — {t}</span><span style={{ color: "#475569" }}>{(S.byGrade[k] || 0).toLocaleString()}건 · 재큐 D+7</span></div>))}
         <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>일일 로스터 등급 합계: {Object.entries(S.byRosterGrade || {}).map(([k, v]) => k + " " + v).join(" · ")}</div>
       </div>
-      <div style={box}><div style={bt}>④ 완결 퍼널 — hiEvent 버스 <span className="hmpill" style={{ background: "#FEF3E2", color: "#B45309" }}>시연 분포</span></div>
-        {ev && ev.total ? Object.entries(ev.byType || {}).slice(0, 6).map(([k, v]) => (
-          <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.6, padding: "3px 0", color: "#475569" }}><span>{k}</span><b>{v}</b></div>))
-          : <div style={{ fontSize: 11.6, color: HM_C.mut }}>이번 세션 기록된 완결 이벤트가 아직 없어요 — 지시서 원탭·검진 예약 등 실제 행동 시 집계돼요.</div>}
+      <div style={box}><div style={bt}>④ 완결 퍼널 — 지시 → 접촉 → 완결 <span className="hmpill" style={{ background: "#FEF3E2", color: "#B45309" }}>시연 분포</span></div>
+        {ev && ev.total ? (<div>
+          {[["지시서 발행", (ev.by || {}).handoff_issued || 0, "#0891B2"], ["접촉(원탭)", (ev.by || {}).handoff_contacted || 0, "#D97706"], ["완결 트랜잭션", ev.stage ? ev.stage[3] : 0, "#15803D"]].map(([k, v, cc], i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+              <span style={{ width: 74, fontSize: 11, fontWeight: 700, color: "#475569" }}>{k}</span>
+              <div style={{ flex: 1, height: 9, background: "#F1F5F9", borderRadius: 5 }}><div style={{ width: Math.min(100, v * 12) + "%", height: 9, background: cc, borderRadius: 5 }} /></div>
+              <b style={{ width: 26, textAlign: "right", fontSize: 12 }}>{v}</b></div>))}
+          <div style={{ fontSize: 10.6, color: HM_C.mut, marginTop: 4 }}>상세: {(ev.names || []).slice(0, 4).map((x) => x.ko + " " + x.n).join(" · ")}</div>
+        </div>)
+          : <div style={{ fontSize: 11.6, color: HM_C.mut }}>이번 세션 기록된 이벤트가 아직 없어요 — ⓪ 지시서 노출·원탭, 검진 예약 등 실제 행동 시 집계돼요(등재 이벤트만 · 가공 금지).</div>}
       </div>
       <div style={box}><div style={bt}>⑤ 프로 활동 — 부하·품질(판매액·수수료 지표 없음)</div>
         <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.9 }}>
@@ -793,6 +824,11 @@ function HmTabOps() {
           {H && <span className="hmpill" style={{ background: "#F1F5F9", color: "#475569" }}>금지어 {H.forbiddenHits}건 · 골든셋 드리프트 {H.goldenDrift}건</span>}
         </div>
         <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 6 }}>하나라도 실패하면 그 날 지시서 미발행 + 적색 배지(§7). 집계 원천 = 배치 스냅샷 단일(운영 정합 §7-⑥).</div>
+        {(typeof HM_WEEKLY_SNAPSHOT !== "undefined" && HM_WEEKLY_SNAPSHOT.week) && (
+          <div style={{ marginTop: 7, borderTop: "1px dashed #E2E8F0", paddingTop: 6, fontSize: 11.4, color: "#475569", lineHeight: 1.7 }}>
+            <b style={{ color: HM_C.ink }}>📚 주간 학습 루프({HM_WEEKLY_SNAPSHOT.week})</b> — 과다 사용 {HM_WEEKLY_SNAPSHOT.monotony.length}블록 · 미사용 승인 {HM_WEEKLY_SNAPSHOT.unused.length}블록 · 개선 후보 {HM_WEEKLY_SNAPSHOT.candidates.length}건
+            <div style={{ fontSize: 10.4, color: HM_C.mut }}>문안 개선은 형 검수 후 hmScriptBlocks에만 반영 — 자동 반영 금지(학습 루프 규약)</div>
+          </div>)}
       </div>
     </div>
   </div>);

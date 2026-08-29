@@ -18993,10 +18993,17 @@ const HM_GRADE_UI = {
 function HmHandoffCard({ ent, code, onToast }) {
   const c = ent.card; const g = HM_GRADE_UI[c.grade] || HM_GRADE_UI.L;
   const [done, setDone] = React.useState(false);
+  const [coach, setCoach] = React.useState(null);   /* A5 코치 답변(부분 활성 — 카드 해설 한정) */
   const act = (a) => {
     const r = (typeof hmcTouch === "function") ? hmcTouch(code, c.member.cohortIndex, "지시서·" + a.ko) : { ok: true };
-    if (r.ok) { setDone(true); try { hiEvent("nav_opened", { nav: a.nav, src: "handoff" }); } catch (e) {} }
+    if (r.ok) {
+      setDone(true);
+      try { hiEvent("handoff_contacted", { grade: c.grade, key: a.key, src: "today" }); hiEvent("nav_opened", { nav: a.nav, src: "handoff" }); } catch (e) {}
+    }
     onToast(r.ok ? `기록됐어요 — ${a.ko} 알림 발송(완결 대기: ${a.evNote.split("—")[0].trim()})` : r.reason);
+  };
+  const askCoach = (q) => {
+    try { const ans = coachAnswer(c, q); setCoach(ans ? { q: q, ans: ans } : { q: q, ans: null }); } catch (e) { setCoach(null); }
   };
   return (<div style={{ display: "flex", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 6px 14px -10px rgba(15,42,68,.35)", marginTop: 10, opacity: done ? .62 : 1 }}>
     <div style={{ width: 5, background: g.c, flex: "none" }} />
@@ -19039,12 +19046,30 @@ function HmHandoffCard({ ent, code, onToast }) {
           <div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}><b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}</div>
         </div>
       </details>
+      <div style={{ marginTop: 7, display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: 10.8, fontWeight: 800, color: "#7C3AED" }}>🧭 A5 코치</span>
+        {["왜 이 지시예요?", "거절하면요?", "심각하냐고 물으면요?", "문자로는 뭐라고 보내요?"].map((q) => (
+          <button key={q} className="hmpill" style={{ border: "1px solid #DDD6FE", background: "#F5F3FF", color: "#6D28D9", cursor: "pointer" }} onClick={() => askCoach(q)}>{q}</button>))}
+      </div>
+      {coach && <div style={{ marginTop: 6, background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 9, padding: "7px 10px", fontSize: 12, lineHeight: 1.65 }}>
+        {coach.ans
+          ? <span><b style={{ color: "#6D28D9" }}>코치</b> — {coach.ans.text} <i style={{ fontStyle: "normal", fontSize: 10.4, color: "#94A3B8" }}>· 원천 {coach.ans.source === "block" ? "대본 블록 " + coach.ans.id : "카드 필드 " + coach.ans.id}(사전 밖 문장 없음)</i></span>
+          : <span style={{ color: HM_C.mut }}>이 질문은 아직 코치의 소유가 아니에요 — 하이에게 물어봐 주세요.</span>}
+      </div>}
     </div>
   </div>);
 }
 function HmTabToday({ code, onToast }) {
   const today = new Date().toISOString().slice(0, 10);
   const roster = React.useMemo(() => (typeof hmDailyRoster === "function") ? hmDailyRoster(code, today) : null, [code, today]);
+  /* 퍼널 1단 — 지시서 발행(실노출). 프로·일 1회만 기록(중복 노출은 발행이 아니다) */
+  React.useEffect(() => {
+    if (!roster || !roster.list.length) return;
+    try {
+      const k = "hifin_handoff_issued_" + code + "_" + today;
+      if (!localStorage.getItem(k)) { hiEvent("handoff_issued", { n: roster.list.length, src: "today" }); localStorage.setItem(k, "1"); }
+    } catch (e) {}
+  }, [code, today]);
   if (!roster) return <div className="hmcard">지시서 조립기를 불러오지 못했어요.</div>;
   const gr = roster.counts.byGrade;
   return (<div>
@@ -19101,10 +19126,16 @@ function HmTabOps() {
             <span><b style={{ color: cc }}>{k}</b> — {t}</span><span style={{ color: "#475569" }}>{(S.byGrade[k] || 0).toLocaleString()}건 · 재큐 D+7</span></div>))}
         <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>일일 로스터 등급 합계: {Object.entries(S.byRosterGrade || {}).map(([k, v]) => k + " " + v).join(" · ")}</div>
       </div>
-      <div style={box}><div style={bt}>④ 완결 퍼널 — hiEvent 버스 <span className="hmpill" style={{ background: "#FEF3E2", color: "#B45309" }}>시연 분포</span></div>
-        {ev && ev.total ? Object.entries(ev.byType || {}).slice(0, 6).map(([k, v]) => (
-          <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.6, padding: "3px 0", color: "#475569" }}><span>{k}</span><b>{v}</b></div>))
-          : <div style={{ fontSize: 11.6, color: HM_C.mut }}>이번 세션 기록된 완결 이벤트가 아직 없어요 — 지시서 원탭·검진 예약 등 실제 행동 시 집계돼요.</div>}
+      <div style={box}><div style={bt}>④ 완결 퍼널 — 지시 → 접촉 → 완결 <span className="hmpill" style={{ background: "#FEF3E2", color: "#B45309" }}>시연 분포</span></div>
+        {ev && ev.total ? (<div>
+          {[["지시서 발행", (ev.by || {}).handoff_issued || 0, "#0891B2"], ["접촉(원탭)", (ev.by || {}).handoff_contacted || 0, "#D97706"], ["완결 트랜잭션", ev.stage ? ev.stage[3] : 0, "#15803D"]].map(([k, v, cc], i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+              <span style={{ width: 74, fontSize: 11, fontWeight: 700, color: "#475569" }}>{k}</span>
+              <div style={{ flex: 1, height: 9, background: "#F1F5F9", borderRadius: 5 }}><div style={{ width: Math.min(100, v * 12) + "%", height: 9, background: cc, borderRadius: 5 }} /></div>
+              <b style={{ width: 26, textAlign: "right", fontSize: 12 }}>{v}</b></div>))}
+          <div style={{ fontSize: 10.6, color: HM_C.mut, marginTop: 4 }}>상세: {(ev.names || []).slice(0, 4).map((x) => x.ko + " " + x.n).join(" · ")}</div>
+        </div>)
+          : <div style={{ fontSize: 11.6, color: HM_C.mut }}>이번 세션 기록된 이벤트가 아직 없어요 — ⓪ 지시서 노출·원탭, 검진 예약 등 실제 행동 시 집계돼요(등재 이벤트만 · 가공 금지).</div>}
       </div>
       <div style={box}><div style={bt}>⑤ 프로 활동 — 부하·품질(판매액·수수료 지표 없음)</div>
         <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.9 }}>
@@ -19121,6 +19152,11 @@ function HmTabOps() {
           {H && <span className="hmpill" style={{ background: "#F1F5F9", color: "#475569" }}>금지어 {H.forbiddenHits}건 · 골든셋 드리프트 {H.goldenDrift}건</span>}
         </div>
         <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 6 }}>하나라도 실패하면 그 날 지시서 미발행 + 적색 배지(§7). 집계 원천 = 배치 스냅샷 단일(운영 정합 §7-⑥).</div>
+        {(typeof HM_WEEKLY_SNAPSHOT !== "undefined" && HM_WEEKLY_SNAPSHOT.week) && (
+          <div style={{ marginTop: 7, borderTop: "1px dashed #E2E8F0", paddingTop: 6, fontSize: 11.4, color: "#475569", lineHeight: 1.7 }}>
+            <b style={{ color: HM_C.ink }}>📚 주간 학습 루프({HM_WEEKLY_SNAPSHOT.week})</b> — 과다 사용 {HM_WEEKLY_SNAPSHOT.monotony.length}블록 · 미사용 승인 {HM_WEEKLY_SNAPSHOT.unused.length}블록 · 개선 후보 {HM_WEEKLY_SNAPSHOT.candidates.length}건
+            <div style={{ fontSize: 10.4, color: HM_C.mut }}>문안 개선은 형 검수 후 hmScriptBlocks에만 반영 — 자동 반영 금지(학습 루프 규약)</div>
+          </div>)}
       </div>
     </div>
   </div>);
@@ -20962,7 +20998,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-08-29", ver:"v1.3", ch:[8], feat:"지시서 P5 배치·Today·관제탑", src:"scripts/run_handoff_batch.mjs,src/data/dailyRoster.js,src/components/HealthMate.jsx", summary:"10만 전건 정의 실증(36초·발행 100%)과 639프로 전원 조립 검증 — 지시서가 프로 콘솔 첫 화면이 됨", refs:[], status:"반영", hash:"3bebeb8", auto:true },
+  { date:"2026-08-29", ver:"v1.3", ch:[8], feat:"지시서 P6 퍼널·학습·A5", src:"src/data/hiEvents.js,scripts/gen_handoff_weekly.mjs,src/components/HealthMate.jsx", summary:"지시서 엔진 P1~P6 완주 — 퍼널 실계측·주간 학습 신호·A5 카드 해설 부분 활성", refs:[], status:"반영", hash:"0e26a89", auto:true },
+  { date:"2026-08-29", ver:"v1.3", ch:[8], feat:"지시서 P5 배치·Today·관제탑", src:"scripts/run_handoff_batch.mjs,src/data/dailyRoster.js,src/components/HealthMate.jsx", summary:"10만 전건 정의 실증(36초·발행 100%)과 639프로 전원 조립 검증 — 지시서가 프로 콘솔 첫 화면이 됨", refs:[], status:"반영", hash:"d9e41a8", auto:true },
   { date:"2026-08-29", ver:"v1.3", ch:[8], feat:"지시서 P4 하네스", src:"src/data/hmScriptGuard.js,src/data/coachAgent.js,scripts/run_handoff_harness.mjs", summary:"금지어·규격·A5 회귀 전축 통과 — 하네스가 판정 버그 2건을 적발·수선, 발행을 막는 구조 가동", refs:[], status:"반영", hash:"618bd28", auto:true },
   { date:"2026-08-29", ver:"v1.3", ch:[8], feat:"지시서 P3 골든셋", src:"src/data/handoffCard.js,scripts/run_handoff_golden.mjs,fixtures/handoff_cards_sample_v1.json", summary:"인계 카드 조립기와 골든셋 5인 확정 — 대본은 승인 블록 조립만, 발행 게이트 3종", refs:[], status:"반영", hash:"707f6f5", auto:true },
   { date:"2026-08-29", ver:"v1.2", ch:[8], feat:"위험 등급 집계·개입 매핑·스크립트 블록 초판·A5 섀도(지시서 P2)", src:"riskGrade.js·interventionMap.js·hmScriptBlocks.js 신설+agentRegistry A5 등재", summary:"기존 판정 위에 고중저 등급 집계 규칙과 등급별 개입 매핑을 명문화하고 회원 통화 스크립트 블록 39개 초판을 검수 대기 상태로 등재했으며 헬스메이트 보조 에이전트 코치를 섀도로 등록하고 디자인 목업 3안을 형 검수용으로 산출", refs:[], status:"반영", hash:"c907cb1", auto:true },
@@ -24943,6 +24980,9 @@ const HM_HARNESS_SNAPSHOT = {"date":"2026-08-29","sample":3000,"cards":1713,"pub
 /* 자동 생성 — run_handoff_batch.mjs (P5). ⑩관제탑이 읽는 배치 스냅샷 — 손대지 말 것(운영 정합 §7-⑥: 관제탑 집계 = 이 스냅샷 = 배치 리포트). */
 const HM_OPS_SNAPSHOT = {"date":"2026-08-30","total":100000,"cards":56945,"publishable":56945,"locked":32855,"byGrade":{"H":6300,"-":43055,"L":46292,"M":4353},"bySido":{"충북":1746,"경북":2987,"서울":10880,"부산":4146,"전북":1691,"경기":13271,"대전":1763,"충남":2515,"울산":1237,"전남":1920,"강원":1792,"인천":3716,"광주":1648,"대구":2882,"경남":2941,"제주":1152,"세종":658},"pros":639,"rosterChecked":639,"rosterViol":0,"avgRoster":5.99,"maxRoster":7,"byRosterGrade":{"H":3365,"M":238,"L":223},"seconds":36,"pass":true};
 
+/* 자동 생성 — gen_handoff_weekly.mjs (P6). 관제탑 ⑥ 주간 학습 타일 — 손대지 말 것. 개선 반영은 형 검수 경유만 */
+const HM_WEEKLY_SNAPSHOT = {"week":"2026-08-30","blockKinds":26,"blockTotal":37,"monotony":[],"unused":["op-again","op-unlock","co-body","ak-diet","ak-supp","ak-move","ak-family","br-yes2","br-hold","br-q-cost","cl-promise"],"candidates":[{"kind":"미사용","id":"op-again"},{"kind":"미사용","id":"op-unlock"},{"kind":"미사용","id":"co-body"},{"kind":"미사용","id":"ak-diet"},{"kind":"미사용","id":"ak-supp"},{"kind":"미사용","id":"ak-move"},{"kind":"미사용","id":"ak-family"},{"kind":"미사용","id":"br-yes2"}]};
+
 /* ══════════════ 회원 스크립트 블록(hmScriptBlocks.js) — 지시서 프롬프트 v1.3 §3-S (P2 초판) ══════════════
    "대본 없는 통화는 없다" — 프로가 회원에게 말하는 모든 문장의 단일 소스.
    ⚠️ 원칙:
@@ -25033,17 +25073,17 @@ const HM_SCRIPT_BLOCKS = [
     t: "네, 알겠어요. 필요하실 때 언제든 전화 주세요." },
   { id: "cl-done-easy", part: "closing", easy: true, ko: "클로징 · 쉬운말", approved: true,
     t: "예약되면 문자 가요. 궁금하면 저한테 전화 주세요. 건강하세요." },
-  /* ── ⑦ 보험치료비 관리 사무(5) — §S-4 별도 블록군(P5 초안 · 형 검수 대기 approved:false).
+  /* ── ⑦ 보험치료비 관리 사무(5) — §S-4 별도 블록군(P5 초안 → 2026-08-30 형 검수 승인 approved:true).
         기성 계약의 관리 사무만 — 신규 권유 문장 부재를 금지어 스캔이 보증. 승인 전엔 조립 미사용 ── */
-  { id: "ad-claim-delay", part: "admin", ko: "청구 지연 안내", approved: false,
+  { id: "ad-claim-delay", part: "admin", ko: "청구 지연 안내", approved: true,
     t: "{가명}님, 지난번 청구하신 건 진행 상황을 확인해 봤어요. 심사가 조금 길어지고 있는데, 제가 계속 지켜보고 진행되는 대로 바로 알려드릴게요." },
-  { id: "ad-expire-d30", part: "admin", ko: "만기 D-30 고지", approved: false,
+  { id: "ad-expire-d30", part: "admin", ko: "만기 D-30 고지", approved: true,
     t: "{가명}님, 이용 중이신 서비스가 한 달 뒤 만기예요. 어떻게 하실지 지금 정하실 필요는 없고, 만기 전에 제가 한 번 더 정리해서 안내드릴게요." },
-  { id: "ad-expire-d7", part: "admin", ko: "만기 D-7 확인", approved: false,
+  { id: "ad-expire-d7", part: "admin", ko: "만기 D-7 확인", approved: true,
     t: "{가명}님, 만기가 일주일 앞이에요. 궁금하신 점 있으면 편하게 물어봐 주세요 — 결정은 {가명}님이 하시는 거고, 저는 정리만 도와드려요." },
-  { id: "ad-rerate", part: "admin", ko: "재산정(인하 전용) 통지", approved: false,
+  { id: "ad-rerate", part: "admin", ko: "재산정(인하 전용) 통지", approved: true,
     t: "{가명}님, 좋은 소식이에요. 건강 관리 기록이 반영돼서 부담이 줄어드는 재산정 대상이 되셨어요. 자세한 내용은 앱에서 확인하실 수 있게 넣어드렸어요." },
-  { id: "ad-claim-done", part: "admin", ko: "청구 완결 확인", approved: false,
+  { id: "ad-claim-done", part: "admin", ko: "청구 완결 확인", approved: true,
     t: "{가명}님, 청구하신 건 처리가 끝났어요. 지급 내역은 앱 알림으로 보내드렸고, 이상 있으면 저한테 바로 말씀해 주세요." },
   /* ── ⑥ 채널 변형 규칙(2) — 문장 창작이 아니라 축약 규칙 ── */
   { id: "ch-notif", part: "channel", ko: "앱알림(2문장)", approved: true,
@@ -29691,7 +29731,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "ea0c1556c50eb35d", "generatedAt": "2026-08-29", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "b957c0cd07c21ce2", "generatedAt": "2026-08-29", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -29827,6 +29867,9 @@ const HI_EVENT_DEFS = {
   family_linked:   { ko: "가족 연결",          stage: 3 },
   rx_received:     { ko: "처방 수령",          stage: 3 },
   mission_checked: { ko: "실천 미션 체크(복약·습관)", stage: 3 },   // P1 실사: adhCheck 실재(hifin_adh_*) — 등재
+  /* 지시서 퍼널(P6) — 실재 UI 행동만: 발행=Today 보드 실노출(프로·일 1회), 접촉=원탭 기록. 완결은 위 트랜잭션 재사용 */
+  handoff_issued:    { ko: "지시서 발행(Today 노출)", stage: 1 },
+  handoff_contacted: { ko: "지시서 접촉(원탭 기록)",  stage: 2 },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };
@@ -29836,7 +29879,7 @@ function hiEvent(name, payload) {
     if (!HI_EVENT_DEFS[name]) return false;              // 가공 이벤트 금지 — 조용히 늘리지 못한다
     const l = JSON.parse(localStorage.getItem(_hiEvKey()) || "[]");
     const p = {};
-    if (payload) for (const k of ["key", "nav", "tab", "kind", "n"]) if (payload[k] != null) p[k] = String(payload[k]).slice(0, 40);
+    if (payload) for (const k of ["key", "nav", "tab", "kind", "n", "grade", "src"]) if (payload[k] != null) p[k] = String(payload[k]).slice(0, 40);
     l.push({ ts: Date.now(), name: name, p: p, sim: true });
     localStorage.setItem(_hiEvKey(), JSON.stringify(l.slice(-500)));
     return true;
@@ -29853,7 +29896,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-08-29","seed":20260828,"inventory":{"version":1,"sourceHash":"ea0c1556c50eb35d","generatedAt":"2026-08-29","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.07,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-08-29","seed":20260828,"inventory":{"version":1,"sourceHash":"b957c0cd07c21ce2","generatedAt":"2026-08-29","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.14,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
@@ -33452,12 +33495,12 @@ const HI_AGENTS = [
     ready: true,
   },
   {
-    /* [P2 섀도 등재 — 지시서 프롬프트 v1.3 §6] 헬스메이트센터 담당 보조 에이전트.
-       성숙 파이프라인: 등록(지금) → 섀도(관측) → 부분 활성(카드 해설부터) → 전담.
-       ready:false인 동안 라우터는 위임하지 않는다 — 승격은 A5 코퍼스 전수 회귀 통과 후(P4)만. */
+    /* [P6 부분 활성 승격 — 지시서 프롬프트 v1.3 §6] 헬스메이트센터 담당 보조 에이전트.
+       성숙 파이프라인: 등록 → 섀도 → 부분 활성(지금 — Today 카드 해설 칩, coachAnswer 한정) → 전담.
+       승격 근거: P4 코퍼스 전수 회귀 100%(544문항·원천 검증). ready:false 유지 — 라우터 전담 위임은 다음 단계. */
     id: "A5", name: "코치", label: "헬스메이트 코치", avatar: "🧭", badge: "코치",
     persona: "프로의 보좌관 — 카드의 근거를 두괄식으로, 다음 행동을 한 문장으로",
-    role: "assistant", stage: "shadow",
+    role: "assistant", stage: "partial",
     scope: {
       words: ["지시서", "인계카드", "오늘의카드", "왜이회원", "등급근거", "뭐라고말", "첫마디", "대본",
         "거절하면", "보류하면", "다음은뭐", "개입방법", "코칭방법", "미션추천"],

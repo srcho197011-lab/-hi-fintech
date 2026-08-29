@@ -23,6 +23,9 @@ const HI_EVENT_DEFS = {
   family_linked:   { ko: "가족 연결",          stage: 3 },
   rx_received:     { ko: "처방 수령",          stage: 3 },
   mission_checked: { ko: "실천 미션 체크(복약·습관)", stage: 3 },   // P1 실사: adhCheck 실재(hifin_adh_*) — 등재
+  /* 지시서 퍼널(P6) — 실재 UI 행동만: 발행=Today 보드 실노출(프로·일 1회), 접촉=원탭 기록. 완결은 위 트랜잭션 재사용 */
+  handoff_issued:    { ko: "지시서 발행(Today 노출)", stage: 1 },
+  handoff_contacted: { ko: "지시서 접촉(원탭 기록)",  stage: 2 },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };
@@ -32,7 +35,7 @@ function hiEvent(name, payload) {
     if (!HI_EVENT_DEFS[name]) return false;              // 가공 이벤트 금지 — 조용히 늘리지 못한다
     const l = JSON.parse(localStorage.getItem(_hiEvKey()) || "[]");
     const p = {};
-    if (payload) for (const k of ["key", "nav", "tab", "kind", "n"]) if (payload[k] != null) p[k] = String(payload[k]).slice(0, 40);
+    if (payload) for (const k of ["key", "nav", "tab", "kind", "n", "grade", "src"]) if (payload[k] != null) p[k] = String(payload[k]).slice(0, 40);
     l.push({ ts: Date.now(), name: name, p: p, sim: true });
     localStorage.setItem(_hiEvKey(), JSON.stringify(l.slice(-500)));
     return true;
