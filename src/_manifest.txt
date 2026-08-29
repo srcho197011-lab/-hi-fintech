@@ -67,6 +67,9 @@ src/data/kbHealthData.js
 src/data/kbDomainData.js
 src/data/checkupCatalog.js
 src/data/clinicalBands.js
+src/data/riskGrade.js
+src/data/interventionMap.js
+src/data/hmScriptBlocks.js
 src/data/checkupEngine.js
 src/data/healthDataVault.js
 src/data/lineageBridge.js

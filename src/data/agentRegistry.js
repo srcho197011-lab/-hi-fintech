@@ -115,6 +115,23 @@ const HI_AGENTS = [
     knowledge: ["longtermCareKB(급여7·등급6·FAQ7·응급징후)", "homecare.json(기관 1,705)", "telemed"],
     ready: true,
   },
+  {
+    /* [P2 섀도 등재 — 지시서 프롬프트 v1.3 §6] 헬스메이트센터 담당 보조 에이전트.
+       성숙 파이프라인: 등록(지금) → 섀도(관측) → 부분 활성(카드 해설부터) → 전담.
+       ready:false인 동안 라우터는 위임하지 않는다 — 승격은 A5 코퍼스 전수 회귀 통과 후(P4)만. */
+    id: "A5", name: "코치", label: "헬스메이트 코치", avatar: "🧭", badge: "코치",
+    persona: "프로의 보좌관 — 카드의 근거를 두괄식으로, 다음 행동을 한 문장으로",
+    role: "assistant", stage: "shadow",
+    scope: {
+      words: ["지시서", "인계카드", "오늘의카드", "왜이회원", "등급근거", "뭐라고말", "첫마디", "대본",
+        "거절하면", "보류하면", "다음은뭐", "개입방법", "코칭방법", "미션추천"],
+    },
+    outOfScope: ["보험·보장 대화(A2 소유 — ⑦탭)", "의학 판정(의료 경계)", "상품 제안(⑧제안함 경로)",
+      "근거 소스 4종(clinicalBands·interventionMap·질환-성분 그래프·hmScriptBlocks) 밖 의학 발화"],
+    handler: null,
+    knowledge: ["clinicalBands", "interventionMap", "riskGrade", "hmScriptBlocks", "healthMateCohort"],
+    ready: false,
+  },
 ];
 
 /* ── 조회 헬퍼 ── */
