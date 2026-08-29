@@ -657,10 +657,151 @@ function HmTabBoard({ code, pro, onContact, cview }) {
   </div>);
 }
 
+/* ══ ⓪ 오늘의 지시서 — 인계 카드 Today 보드(지시서 v1.3 §5-F · P5 승격, 확정 디자인 B안+C여정축) ══ */
+const HM_GRADE_UI = {
+  H: { ko: "H 고위험", c: "#EA580C", bg: "#FFF1E2" }, M: { ko: "M 중위험", c: "#D97706", bg: "#FEF7E0" },
+  L: { ko: "L 관심", c: "#0891B2", bg: "#E0F5FA" },
+};
+function HmHandoffCard({ ent, code, onToast }) {
+  const c = ent.card; const g = HM_GRADE_UI[c.grade] || HM_GRADE_UI.L;
+  const [done, setDone] = React.useState(false);
+  const act = (a) => {
+    const r = (typeof hmcTouch === "function") ? hmcTouch(code, c.member.cohortIndex, "지시서·" + a.ko) : { ok: true };
+    if (r.ok) { setDone(true); try { hiEvent("nav_opened", { nav: a.nav, src: "handoff" }); } catch (e) {} }
+    onToast(r.ok ? `기록됐어요 — ${a.ko} 알림 발송(완결 대기: ${a.evNote.split("—")[0].trim()})` : r.reason);
+  };
+  return (<div style={{ display: "flex", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden", boxShadow: "0 6px 14px -10px rgba(15,42,68,.35)", marginTop: 10, opacity: done ? .62 : 1 }}>
+    <div style={{ width: 5, background: g.c, flex: "none" }} />
+    <div style={{ flex: 1, padding: "11px 13px", minWidth: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+        <div style={{ fontWeight: 900, fontSize: 14.5 }}>
+          {c.member.mask} <span style={{ color: HM_C.mut, fontWeight: 600, fontSize: 12 }}>· {c.member.ageBand} {c.member.sex} · {c.member.region}</span>
+          <span className="hmpill" style={{ marginLeft: 6, background: g.bg, color: g.c }}>{g.ko}</span>
+          <span className="hmpill" style={{ marginLeft: 4, background: "#F1F5F9", color: "#475569" }}>{c.member.stage} 단계</span>
+          {c.member.stalledDays >= 14 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDECEC", color: "#B91C1C" }}>정체 {c.member.stalledDays}일</span>}
+        </div>
+        <HmStageDots reached={(typeof cohortStageOf === "function" && cohortStageOf(c.member.cohortIndex) || { reached: [c.member.stage] }).reached} />
+      </div>
+      <div style={{ marginTop: 6, fontSize: 12.6, fontWeight: 800, color: "#C2410C" }}>⚡ {c.trigger}</div>
+      <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {c.evidence.map((e, i) => <span key={i} className="hmpill" style={{ border: `1px solid ${g.c}55`, color: g.c, background: "#fff" }}>{e}</span>)}
+        <span className="hmpill" style={{ border: "1px solid #CBD5E1", color: HM_C.mut, background: "#fff" }}>동의 ✓ · 원본 수치 미포함 ✓</span>
+      </div>
+      <div style={{ marginTop: 9, display: "flex", gap: 7, flexWrap: "wrap" }}>
+        {c.actions.map((a, i) => i === 0
+          ? <button key={a.key} className="hmbtn" style={{ background: g.c }} onClick={() => act(a)}>{a.ko} — 원탭 알림</button>
+          : <button key={a.key} className="hmbtn gh" onClick={() => act(a)}>{a.ko}</button>)}
+      </div>
+      <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11.4, color: "#475569", alignItems: "center" }}>
+        <b style={{ color: g.c }}>SLA {c.timing.sla}</b>
+        <span>완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
+        <span style={{ color: "#15803D", fontWeight: 700 }}>🛡 경계 3종 통과</span>
+        <span>{c.timing.requeue}</span>
+      </div>
+      <details style={{ marginTop: 8, border: "1px dashed #CBD5E1", borderRadius: 9, padding: "7px 10px" }}>
+        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>🗒 대본 보기 — {c.script.variant} 변형 · 읽기 약 {c.script.readSec}초</summary>
+        <div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
+          {[["오프닝", c.script.opening], ...c.script.core.map((b) => ["본론", b]), ["제안", c.script.ask]].map(([t, b], i) => b &&
+            <div key={i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
+          <div style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 4 }}>회원 반응별 응대(수락 / 보류 / 거절 / 질문 2)</div>
+            {c.script.branches.map((b, i) => <div key={b.id} style={{ marginBottom: 4 }}><b style={{ color: "#C2410C", fontSize: 11 }}>응대 {i + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko}</i><div>“{b.text}”</div></div>)}
+          </div>
+          {c.script.closing && <div><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>클로징</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{c.script.closing.ko}</i><div>“{c.script.closing.text}”</div></div>}
+          <div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}><b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}</div>
+        </div>
+      </details>
+    </div>
+  </div>);
+}
+function HmTabToday({ code, onToast }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const roster = React.useMemo(() => (typeof hmDailyRoster === "function") ? hmDailyRoster(code, today) : null, [code, today]);
+  if (!roster) return <div className="hmcard">지시서 조립기를 불러오지 못했어요.</div>;
+  const gr = roster.counts.byGrade;
+  return (<div>
+    <div className="hmcard" style={{ background: "#FFFBF5", border: "1px solid #FED7AA" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+        <div style={{ fontWeight: 900, fontSize: 14.5, color: "#C2410C" }}>☀️ 오늘의 지시서 · {roster.list.length}건 <span style={{ fontSize: 11.4, color: HM_C.mut, fontWeight: 600 }}>· {today} · 시드=날짜+프로코드(같은 날 같은 카드) · [예시·시연 데이터]</span></div>
+        <div style={{ fontSize: 11.6, color: "#475569" }}>{["H", "M", "L"].filter((k) => gr[k]).map((k) => `${k} ${gr[k]}건`).join(" · ") || "대상 없음"} · 관할 {roster.counts.managed}명(락 {roster.counts.locked} · 후보 {roster.counts.candidates})</div>
+      </div>
+      <div style={{ marginTop: 6, fontSize: 11.6, color: HM_C.mut }}>하이가 등급·SLA·정체를 계산해 우선순위로 선별했어요 — 프로는 카드 순서대로 확인·접촉·기록만. 대본 없는 통화는 없어요(대본 보기 ▼).</div>
+    </div>
+    {roster.list.map((ent) => <HmHandoffCard key={ent.i} ent={ent} code={code} onToast={onToast} />)}
+    {!roster.list.length && <div className="hmcard" style={{ marginTop: 10 }}>오늘 발행 대상이 없어요 — 관할 회원이 모두 락(검진 대기)이거나 관리 리듬 양호예요.</div>}
+  </div>);
+}
+
+/* ══ ⑩ 통합 운영 — 헬스메이트센터 관제탑(지시서 v1.3 §5-O · P5 신설, 관리자 전용 · 관측이지 조작이 아님) ══ */
+function HmTabOps() {
+  const admin = (typeof isAdminRole === "function") && isAdminRole();
+  if (!admin) return <div className="hmcard">⑩ 통합 운영 관제탑은 운영 본부(관리자) 전용이에요 — 프로는 ⑨ 내 고객·실적에서 관할 현황을 봐요.</div>;
+  const S = (typeof HM_OPS_SNAPSHOT !== "undefined") ? HM_OPS_SNAPSHOT : null;
+  const H = (typeof HM_HARNESS_SNAPSHOT !== "undefined") ? HM_HARNESS_SNAPSHOT : null;
+  if (!S || !S.total) return <div className="hmcard">배치 스냅샷이 아직 없어요 — scripts/run_handoff_batch.mjs 실행 후 표시돼요.</div>;
+  const ev = (typeof hiEventStats === "function") ? hiEventStats() : null;
+  const sidos = Object.entries(S.bySido || {}).sort((a, b) => b[1] - a[1]);
+  const maxSido = sidos.length ? sidos[0][1] : 1;
+  const box = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" };
+  const bt = { fontSize: 12.6, fontWeight: 900, color: HM_C.ink, marginBottom: 8 };
+  return (<div>
+    <div className="hmcard" style={{ background: "linear-gradient(135deg,#0B2239,#132F4C)", color: "#DCE7F2" }}>
+      <div style={{ fontWeight: 900, fontSize: 14.5, color: "#FFB25E" }}>⑩ 통합 운영 관제탑 <span style={{ fontSize: 11.2, color: "#8FA9C0", fontWeight: 600 }}>· 배치 {S.date} · 러너 {S.seconds}s · 관측 전용(수기 재배분·등급 조정 없음) · [예시·시연 데이터]</span></div>
+      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 8, fontSize: 12.4 }}>
+        {[["코호트", S.total.toLocaleString() + "명"], ["카드 정의", S.cards.toLocaleString() + "건"], ["발행 가능", (S.publishable === S.cards ? "100%" : S.publishable.toLocaleString())], ["접촉 락", S.locked.toLocaleString() + "명"], ["활성 프로", S.pros + "명"], ["전원 조립 위반", S.rosterViol + "건"], ["일일 평균", S.avgRoster + "건(최대 " + S.maxRoster + ")"]].map(([k, v], i) => (
+          <div key={i}><b style={{ fontSize: 15, color: "#fff" }}>{v}</b><div style={{ fontSize: 10.6, color: "#8FA9C0" }}>{k}</div></div>))}
+      </div>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 10, marginTop: 10 }}>
+      <div style={box}><div style={bt}>① 배분 관제 — 시도 17 커버리지(공백 0)</div>
+        {sidos.map(([s, n]) => (<div key={s} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
+          <span style={{ width: 34, fontSize: 11, color: "#475569", fontWeight: 700 }}>{s}</span>
+          <div style={{ flex: 1, height: 8, background: "#F1F5F9", borderRadius: 4 }}><div style={{ width: (n / maxSido * 100) + "%", height: 8, background: HM_C.brand, borderRadius: 4 }} /></div>
+          <span style={{ width: 52, fontSize: 10.8, color: HM_C.mut, textAlign: "right" }}>{n.toLocaleString()}</span></div>))}
+      </div>
+      <div style={box}><div style={bt}>② 위험 분포 — 카드 대상 {S.cards.toLocaleString()}건</div>
+        {["H", "M", "L"].map((k) => { const n = S.byGrade[k] || 0; const g = HM_GRADE_UI[k]; return (
+          <div key={k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+            <span className="hmpill" style={{ background: g.bg, color: g.c, width: 66, textAlign: "center" }}>{g.ko}</span>
+            <div style={{ flex: 1, height: 10, background: "#F1F5F9", borderRadius: 5 }}><div style={{ width: (n / S.cards * 100) + "%", height: 10, background: g.c, borderRadius: 5 }} /></div>
+            <span style={{ width: 74, fontSize: 11, color: "#475569", textAlign: "right" }}>{n.toLocaleString()} ({(n / S.cards * 100).toFixed(1)}%)</span></div>); })}
+        <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>대상아님(관리 리듬 양호) {(S.byGrade["-"] || 0).toLocaleString()}명 · E(응급)는 트리아지 소유(카드 밖)</div>
+      </div>
+      <div style={box}><div style={bt}>③ SLA 관제 — 등급 → 티어(leadRouting 재사용)</div>
+        {[["H", "T2 · 48h", "#EA580C"], ["M", "T3 · 7일", "#D97706"], ["L", "T4 · 14일", "#0891B2"]].map(([k, t, cc]) => (
+          <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px dashed #EEF2F6", fontSize: 12 }}>
+            <span><b style={{ color: cc }}>{k}</b> — {t}</span><span style={{ color: "#475569" }}>{(S.byGrade[k] || 0).toLocaleString()}건 · 재큐 D+7</span></div>))}
+        <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>일일 로스터 등급 합계: {Object.entries(S.byRosterGrade || {}).map(([k, v]) => k + " " + v).join(" · ")}</div>
+      </div>
+      <div style={box}><div style={bt}>④ 완결 퍼널 — hiEvent 버스 <span className="hmpill" style={{ background: "#FEF3E2", color: "#B45309" }}>시연 분포</span></div>
+        {ev && ev.total ? Object.entries(ev.byType || {}).slice(0, 6).map(([k, v]) => (
+          <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11.6, padding: "3px 0", color: "#475569" }}><span>{k}</span><b>{v}</b></div>))
+          : <div style={{ fontSize: 11.6, color: HM_C.mut }}>이번 세션 기록된 완결 이벤트가 아직 없어요 — 지시서 원탭·검진 예약 등 실제 행동 시 집계돼요.</div>}
+      </div>
+      <div style={box}><div style={bt}>⑤ 프로 활동 — 부하·품질(판매액·수수료 지표 없음)</div>
+        <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.9 }}>
+          전원 조립 검사 {S.rosterChecked}명 — 위반 {S.rosterViol}건 · 건수 상한 7 준수<br />
+          일일 지시서 평균 {S.avgRoster}건 · 최대 {S.maxRoster}건 · 배분 원천 = 시군구 실사 배속(hmProsBySgg)<br />
+          <span style={{ color: HM_C.mut, fontSize: 11 }}>개인 실적 상세는 각 프로의 ⑨ 현황판 — 관제탑은 구조 신호만 봅니다.</span>
+        </div>
+      </div>
+      <div style={box}><div style={bt}>⑥ 하네스 상태 — 발행을 막는 구조</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span className="hmpill" style={{ background: S.pass ? "#E7F8EE" : "#FDECEC", color: S.pass ? "#15803D" : "#B91C1C" }}>배치 {S.pass ? "통과 ✓" : "차단 ✗"}</span>
+          {H && <span className="hmpill" style={{ background: H.pass ? "#E7F8EE" : "#FDECEC", color: H.pass ? "#15803D" : "#B91C1C" }}>스크립트 하네스 {H.pass ? "통과 ✓" : "실패 ✗"}</span>}
+          {H && <span className="hmpill" style={{ background: "#F1F5F9", color: "#475569" }}>A5 회귀 {H.coachAcc}%</span>}
+          {H && <span className="hmpill" style={{ background: "#F1F5F9", color: "#475569" }}>금지어 {H.forbiddenHits}건 · 골든셋 드리프트 {H.goldenDrift}건</span>}
+        </div>
+        <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 6 }}>하나라도 실패하면 그 날 지시서 미발행 + 적색 배지(§7). 집계 원천 = 배치 스냅샷 단일(운영 정합 §7-⑥).</div>
+      </div>
+    </div>
+  </div>);
+}
+
 /* ══ 메인 섹션 ══ */
 function HealthMateSection({ onGo }) {
   const [code, setCode] = React.useState(() => { try { return sessionStorage.getItem("hifin_hm_code") || null; } catch (e) { return null; } });
-  const [tab, setTab] = React.useState(9);
+  const [tab, setTab] = React.useState(0);   /* P5: 프로의 아침은 오늘의 지시서에서 시작 */
   const [tick, setTick] = React.useState(0);
   const [toastM, setToastM] = React.useState("");
   const refresh = () => setTick((t) => t + 1);
@@ -685,10 +826,12 @@ function HealthMateSection({ onGo }) {
   const slaN = hmSignals(code).filter((s) => s.sla <= 4).length + (cview ? cview.ids.filter((i) => { const g = cohortSignalOf(i); return g && g.sla <= 4; }).length : 0);
   const totalN = members.length + (cview ? cview.n : 0);
   const TABS = [
+    [0, "⓪ 오늘의 지시서", Sparkles],
     [1, "① 회원 신호", Users], [2, "② 보험 배정·대기", ShieldCheck], [3, "③ 검진 후 터치", HeartPulse],
     [4, "④ 질병 예측", Activity], [5, "⑤ 건강 행동", ShoppingCart], [6, "⑥ 가족·재가", HeartHandshake],
     [7, "⑦ 보장분석 대화", MessageSquare], [8, "⑧ 프로 제안함", Sparkles], [9, "⑨ 내 고객·실적", TrendingUp],
-  ];
+    [10, "⑩ 통합 운영", Activity],
+  ].filter(([n]) => n !== 10 || (typeof isAdminRole === "function" && isAdminRole()));   /* ⑩은 운영 본부 전용(§5-O) */
   return (
     <div className="hmwrap" key={tick}><HmStyle />
       <div className="hmhero">
@@ -714,6 +857,8 @@ function HealthMateSection({ onGo }) {
         {TABS.map(([n, label, Ic]) => <button key={n} className={"hmtab" + (tab === n ? " on" : "")} onClick={() => setTab(n)}><Ic size={13} /> {label}</button>)}
       </div>
       <div style={{ marginTop: 12 }}>
+        {tab === 0 && <HmTabToday code={code} onToast={(m2) => { setToastM(m2); setTimeout(() => setToastM(""), 3500); }} />}
+        {tab === 10 && <HmTabOps />}
         {tab === 1 && <HmTabSignals code={code} onContact={onContact} cview={cview} />}
         {tab === 2 && <HmTabIns code={code} pro={pro} onContact={onContact} refresh={refresh} cview={cview} />}
         {tab === 3 && <HmTabTouch code={code} onContact={onContact} cview={cview} />}

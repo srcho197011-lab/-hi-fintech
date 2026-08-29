@@ -22,7 +22,8 @@ function buildHandoffCard(i) {
   const out = { i: i, missing: [], unapproved: [] };
   const m = (typeof cohortLoginProfile === "function") ? cohortLoginProfile(i) : null;
   if (!m) return null;
-  const card = (typeof cohortCardOf === "function") ? cohortCardOf(i) : null;
+  /* stage는 cohortStageOf 원본을 직접 읽는다 — cohortCardOf의 stage 사본은 enrolled(락)를 누락(P5 실측) */
+  const stage0 = (typeof cohortStageOf === "function") ? cohortStageOf(i) : null;
   const region = (typeof cohortRegion === "function") ? cohortRegion(i) : null;
   const proRes = (typeof cohortProOf === "function") ? cohortProOf(i) : null;
   const pro = proRes && proRes.pro;   /* cohortProOf는 {pro, gap, why, region} 래퍼를 반환 */
@@ -32,7 +33,7 @@ function buildHandoffCard(i) {
   /* L 판정 인자는 행동 위험 플래그(절주·금연)만 — "신체활동 필요"는 일반 리듬 신호라 등급 인자에서 제외(§2) */
   const flags = lifeAll.filter((f) => /절주|금연/.test(f));
   const g = (typeof riskGradeOf === "function") ? riskGradeOf(chk.items, chk.trend, flags) : { grade: "-", keys: [] };
-  const stage = card && card.stage;
+  const stage = stage0;
 
   /* 주도 지표군 — sev2 우선, 없으면 sev1 첫 항목 */
   let leadKey = null, leadSev = 0;
@@ -111,7 +112,9 @@ function buildHandoffCard(i) {
     trigger: trigger, evidence: evidence,
     actions: acts.map((a, ix) => ({ order: ix + 1, key: a.key, ko: a.ko, nav: a.nav, tab: a.tab || null, ev: a.ev, evNote: a.evNote })),
     script: script,
-    timing: { sla: meta ? "T" + meta.tier.replace("T", "") + " · " + meta.slaH + "h" : "-", lock: false, cooldown: "통과(시연)", requeue: "미완결 시 D+7 재큐" },
+    timing: { sla: meta ? "T" + meta.tier.replace("T", "") + " · " + meta.slaH + "h" : "-",
+      lock: !!(stage && stage.enrolled),   /* 검진대비보험 가입·결과 수령 전 = 접촉 금지(하이가 자동 해제) — 로스터가 제외 */
+      cooldown: "통과(시연)", requeue: "미완결 시 D+7 재큐" },
     compliance: { medical: scan.forbidden.filter((h) => h.key === "diagnosis" || h.key === "verdict" || h.key === "fear").length === 0,
       solicitation: scan.forbidden.filter((h) => h.key === "solicit" || h.key === "premium" || h.key === "reask").length === 0,
       dataBoundary: !numLeak && scan.forbidden.filter((h) => h.key === "cost").length === 0,
@@ -140,6 +143,7 @@ try {
             const chk = genMemberCheckup(m);
             const c = buildHandoffCard(j); if (!c) continue;
             rows.push({ i: j, grade: c.grade, group: c.group, age: c.member.ageBand, sex: c.member.sex,
+              sido: m.sido || "", sgg: c.member.region, lock: c.timing.lock,
               stall: c.member.stalledDays, flags: (chk.nat && chk.nat.life) || [], pub: c.compliance.publishable });
           } catch (e) {}
         }

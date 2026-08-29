@@ -1,6 +1,6 @@
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "9efc31d2f10d11d4", "generatedAt": "2026-08-28", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "ea0c1556c50eb35d", "generatedAt": "2026-08-29", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -72,6 +72,7 @@ const NAV_INVENTORY = [
   {"key": "tab.checkup.tele", "label": "원격진료·건강상담", "path": "checkup › 원격진료·건강상담", "surface": "tab", "nav": "checkup", "tab": "tele", "owner": "sarg", "admin": false, "desc": "", "aliases": ["dnjsrurwlsfyrjsrkdtkdeka", "원격진료건강상담"]},
   {"key": "tab.checkup.doctor", "label": "AI 주치의", "path": "checkup › 🩺 AI 주치의", "surface": "tab", "nav": "checkup", "tab": "doctor", "owner": "sarg", "admin": false, "desc": "", "aliases": ["AI 주치의", "AIwncldml", "AI주치의"]},
   {"key": "tab.checkup.emergency", "label": "응급신호", "path": "checkup › 🚨 응급신호", "surface": "tab", "nav": "checkup", "tab": "emergency", "owner": "sarg", "admin": false, "desc": "", "aliases": ["dmdrmqtlsgh", "응급신호"]},
+  {"key": "tab.healthmate.0", "label": "⓪ 오늘의 지시서", "path": "healthmate › ⓪ 오늘의 지시서", "surface": "tab", "nav": "healthmate", "tab": "0", "owner": "nav", "admin": true, "desc": "", "aliases": ["⓪dhsmfdmlwltltj", "⓪오늘의지시서"]},
   {"key": "tab.healthmate.1", "label": "① 회원 신호", "path": "healthmate › ① 회원 신호", "surface": "tab", "nav": "healthmate", "tab": "1", "owner": "nav", "admin": true, "desc": "", "aliases": ["ghldnjstlsgh", "회원 신호", "회원신호"]},
   {"key": "tab.healthmate.2", "label": "② 보험 배정·대기", "path": "healthmate › ② 보험 배정·대기", "surface": "tab", "nav": "healthmate", "tab": "2", "owner": "nav", "admin": true, "desc": "", "aliases": ["qhgjaqowjdeorl", "보험 배정·대기", "보험배정대기"]},
   {"key": "tab.healthmate.3", "label": "③ 검진 후 터치", "path": "healthmate › ③ 검진 후 터치", "surface": "tab", "nav": "healthmate", "tab": "3", "owner": "nav", "admin": true, "desc": "", "aliases": ["rjawlsgnxjcl", "검진 후 터치", "검진후터치"]},
@@ -81,6 +82,7 @@ const NAV_INVENTORY = [
   {"key": "tab.healthmate.7", "label": "⑦ 보장분석 대화", "path": "healthmate › ⑦ 보장분석 대화", "surface": "tab", "nav": "healthmate", "tab": "7", "owner": "nav", "admin": true, "desc": "", "aliases": ["qhwkdqnstjreoghk", "보장분석 대화", "보장분석대화"]},
   {"key": "tab.healthmate.8", "label": "⑧ 프로 제안함", "path": "healthmate › ⑧ 프로 제안함", "surface": "tab", "nav": "healthmate", "tab": "8", "owner": "nav", "admin": true, "desc": "", "aliases": ["vmfhwpdksgka", "프로 제안함", "프로제안함"]},
   {"key": "tab.healthmate.9", "label": "⑨ 내 고객·실적", "path": "healthmate › ⑨ 내 고객·실적", "surface": "tab", "nav": "healthmate", "tab": "9", "owner": "nav", "admin": true, "desc": "", "aliases": ["sorhrortlfwjr", "내 고객·실적", "내고객실적"]},
+  {"key": "tab.healthmate.10", "label": "⑩ 통합 운영", "path": "healthmate › ⑩ 통합 운영", "surface": "tab", "nav": "healthmate", "tab": "10", "owner": "nav", "admin": true, "desc": "", "aliases": ["⑩xhdgkqdnsdud", "⑩통합운영"]},
   {"key": "act.checkup.book", "label": "검진 예약하기", "path": "checkup › 검진 예약하기", "surface": "action", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "Checkup.jsx 예약 버튼", "aliases": ["rjawlsdPdirgkrl", "검진예약하기"]},
   {"key": "act.checkup.upload", "label": "검진결과 올리기", "path": "onboarding › 검진결과 올리기", "surface": "action", "nav": "onboarding", "owner": "nav", "admin": false, "desc": "DataOnboarding 진입", "aliases": ["rjawlsrufrhkdhfflrl", "검진결과올리기"]},
   {"key": "act.ins.claim", "label": "보험금 간편청구", "path": "insurance › 보험금 간편청구", "surface": "action", "nav": "insurance", "tab": "claimpay", "owner": "nav", "admin": false, "desc": "insService claimSubmit", "aliases": ["qhgjarmarksvuscjdrn", "보험금간편청구"]},

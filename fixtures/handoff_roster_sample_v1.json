@@ -1,0 +1,2236 @@
+{
+  "meta": {
+    "v": "1.0",
+    "spec": "지시서 v1.3 §5-F",
+    "date": "2026-08-30",
+    "note": "형 검수용 프로 3인분 — 시드=날짜+프로코드 결정론 재현"
+  },
+  "rosters": [
+    {
+      "code": "HM-SN-26-014",
+      "date": "2026-08-30",
+      "counts": {
+        "managed": 128,
+        "candidates": 50,
+        "locked": 41,
+        "offCycle": 37,
+        "unpublishable": 0,
+        "byGrade": {
+          "H": 4,
+          "M": 1
+        }
+      },
+      "cards": [
+        {
+          "member": {
+            "mask": "서○○",
+            "ageBand": "30대",
+            "sex": "남",
+            "region": "강남구",
+            "stage": "D2",
+            "stalledDays": 24,
+            "pro": "김지원 프로",
+            "cohortIndex": 11522,
+            "callbackToken": "cb-11522"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 2항목",
+          "group": "sugar",
+          "groupKo": "혈당",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 2항목",
+          "evidence": [
+            "공복혈당 위험 구간",
+            "당화혈색소 위험 구간"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            },
+            {
+              "order": 3,
+              "key": "diet",
+              "ko": "식단 조정",
+              "nav": "shop",
+              "tab": null,
+              "ev": "sub_registered",
+              "evNote": "식단 상품 정기 등록 [실재] — 플랜 활성 이벤트는 등재 대기"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "서○○님, 안녕하세요. 하이핀 담당 김지원입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 공복혈당 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-sugar",
+                "ko": "지표 보충 · 혈당",
+                "text": "혈당은 식사·체중과 같이 움직여서, 검사 확인과 식단을 같이 보시는 게 좋아요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 공복혈당 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 서○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "황○○",
+            "ageBand": "30대",
+            "sex": "여",
+            "region": "강남구",
+            "stage": "D1",
+            "stalledDays": 11,
+            "pro": "김지원 프로",
+            "cohortIndex": 47202,
+            "callbackToken": "cb-47202"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 2항목",
+          "group": "sugar",
+          "groupKo": "혈당",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 2항목",
+          "evidence": [
+            "공복혈당 위험 구간",
+            "당화혈색소 위험 구간"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            },
+            {
+              "order": 3,
+              "key": "diet",
+              "ko": "식단 조정",
+              "nav": "shop",
+              "tab": null,
+              "ev": "sub_registered",
+              "evNote": "식단 상품 정기 등록 [실재] — 플랜 활성 이벤트는 등재 대기"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "황○○님, 안녕하세요. 하이핀 담당 김지원입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 공복혈당 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-sugar",
+                "ko": "지표 보충 · 혈당",
+                "text": "혈당은 식사·체중과 같이 움직여서, 검사 확인과 식단을 같이 보시는 게 좋아요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 공복혈당 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 황○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "송○○",
+            "ageBand": "70대",
+            "sex": "여",
+            "region": "강남구",
+            "stage": "D1",
+            "stalledDays": 10,
+            "pro": "김지원 프로",
+            "cohortIndex": 37412,
+            "callbackToken": "cb-37412"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 3항목",
+          "group": "liver",
+          "groupKo": "간",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 3항목",
+          "evidence": [
+            "AST 위험 구간",
+            "ALT 위험 구간"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "habit",
+              "ko": "습관 미션",
+              "nav": "care",
+              "tab": null,
+              "ev": "mission_checked",
+              "evNote": "절주·금연·복약 체크 [P1 등재]"
+            },
+            {
+              "order": 3,
+              "key": "supp",
+              "ko": "영양 보충",
+              "nav": "shop",
+              "tab": null,
+              "ev": "sub_registered",
+              "evNote": "영양제 정기 등록 [실재] · 상호작용 확인 문구 필수"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "쉬운말",
+            "opening": {
+              "id": "op-first-easy",
+              "ko": "첫 연결 · 쉬운말",
+              "text": "송○○님, 안녕하세요. 건강 챙겨드리는 김지원이에요. 잠깐 통화 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h-easy",
+                "ko": "본론 H · 쉬운말",
+                "text": "이번 검사에서 한 가지가 높게 나왔어요. 병원에서 한 번 봐주시는 게 좋아요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic-easy",
+              "ko": "진료 연결 · 쉬운말",
+              "text": "제가 의사 선생님 연결해 드릴게요. 문자 보내드리면 파란 버튼만 눌러주세요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no-easy",
+                "ko": "거절 · 쉬운말",
+                "text": "네, 알겠어요. 필요하실 때 언제든 전화 주세요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done-easy",
+              "ko": "클로징 · 쉬운말",
+              "text": "예약되면 문자 가요. 궁금하면 저한테 전화 주세요. 건강하세요."
+            },
+            "notif": "이번 검사에서 한 가지가 높게 나왔어요. 병원에서 한 번 봐주시는 게 좋아요. 제가 의사 선생님 연결해 드릴게요.",
+            "sms": "[하이핀] 송○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 73
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "구○○",
+            "ageBand": "50대",
+            "sex": "여",
+            "region": "강남구",
+            "stage": "L6",
+            "stalledDays": 9,
+            "pro": "김지원 프로",
+            "cohortIndex": 18232,
+            "callbackToken": "cb-18232"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 3항목",
+          "group": "liver",
+          "groupKo": "간",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 3항목",
+          "evidence": [
+            "AST 위험 구간",
+            "ALT 위험 구간"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "habit",
+              "ko": "습관 미션",
+              "nav": "care",
+              "tab": null,
+              "ev": "mission_checked",
+              "evNote": "절주·금연·복약 체크 [P1 등재]"
+            },
+            {
+              "order": 3,
+              "key": "supp",
+              "ko": "영양 보충",
+              "nav": "shop",
+              "tab": null,
+              "ev": "sub_registered",
+              "evNote": "영양제 정기 등록 [실재] · 상호작용 확인 문구 필수"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "구○○님, 안녕하세요. 하이핀 담당 김지원입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 AST 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-liver",
+                "ko": "지표 보충 · 간",
+                "text": "간 수치는 최근 음주나 드시는 약·영양제의 영향도 받아요. 그 부분도 같이 봐드릴게요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 AST 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 구○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "양○○",
+            "ageBand": "40대",
+            "sex": "남",
+            "region": "강남구",
+            "stage": "D1",
+            "stalledDays": 14,
+            "pro": "김지원 프로",
+            "cohortIndex": 82492,
+            "callbackToken": "cb-82492"
+          },
+          "grade": "M",
+          "gradeWhy": "주의 구간 1항목",
+          "group": "organ",
+          "groupKo": "신장·혈액·기타",
+          "trigger": "신규 검진 결과 수신 — 주의 구간 1항목",
+          "evidence": [
+            "PSA 주의 구간"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            },
+            {
+              "order": 2,
+              "key": "habit",
+              "ko": "습관 미션",
+              "nav": "care",
+              "tab": null,
+              "ev": "mission_checked",
+              "evNote": "절주·금연·복약 체크 [P1 등재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "양○○님, 안녕하세요. 하이핀 담당 김지원입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-m",
+                "ko": "본론 도입 · M",
+                "text": "이번 결과에서 PSA 주의 구간으로 나왔어요. 당장 큰일이라는 게 아니라, 지금부터 관리하면 좋아질 수 있는 구간이에요."
+              },
+              {
+                "id": "co-organ",
+                "ko": "지표 보충 · 신장·혈액 등",
+                "text": "이 항목은 다른 수치와 같이 봐야 정확해서, 확인 검사를 한 번 권해드리는 거예요."
+              }
+            ],
+            "ask": {
+              "id": "ak-recheck",
+              "ko": "제안 · 재검진",
+              "text": "가까운 제휴 검진센터에서 확인 검사를 한 번 받아보시면 좋겠어요. 원하시는 날짜로 제가 예약을 도와드릴게요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 PSA 주의 구간으로 나왔어요. 당장 큰일이라는 게 아니라, 지금부터 관리하면 좋아질 수 있는 구간이에요. 가까운 제휴 검진센터에서 확인 검사를 한 번 받아보시면 좋겠어요.",
+            "sms": "[하이핀] 양○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T3 · 168h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        }
+      ],
+      "pro": {
+        "code": "HM-SN-26-014",
+        "name": "김지원",
+        "sido": "서울",
+        "sgg": "강남구"
+      }
+    },
+    {
+      "code": "HM-GG-26-009",
+      "date": "2026-08-30",
+      "counts": {
+        "managed": 106,
+        "candidates": 35,
+        "locked": 38,
+        "offCycle": 33,
+        "unpublishable": 0,
+        "byGrade": {
+          "H": 5
+        }
+      },
+      "cards": [
+        {
+          "member": {
+            "mask": "김○○",
+            "ageBand": "40대",
+            "sex": "여",
+            "region": "수원",
+            "stage": "D3",
+            "stalledDays": 15,
+            "pro": "서지우 프로",
+            "cohortIndex": 16716,
+            "callbackToken": "cb-16716"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 3항목",
+          "group": "liver",
+          "groupKo": "간",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 3항목",
+          "evidence": [
+            "AST 위험 구간",
+            "ALT 위험 구간",
+            "최근 3년 추세 악화"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "habit",
+              "ko": "습관 미션",
+              "nav": "care",
+              "tab": null,
+              "ev": "mission_checked",
+              "evNote": "절주·금연·복약 체크 [P1 등재]"
+            },
+            {
+              "order": 3,
+              "key": "supp",
+              "ko": "영양 보충",
+              "nav": "shop",
+              "tab": null,
+              "ev": "sub_registered",
+              "evNote": "영양제 정기 등록 [실재] · 상호작용 확인 문구 필수"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "김○○님, 안녕하세요. 하이핀 담당 서지우입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 AST 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-liver",
+                "ko": "지표 보충 · 간",
+                "text": "간 수치는 최근 음주나 드시는 약·영양제의 영향도 받아요. 그 부분도 같이 봐드릴게요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 AST 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 김○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "강○○",
+            "ageBand": "20대",
+            "sex": "남",
+            "region": "수원",
+            "stage": "D4",
+            "stalledDays": 11,
+            "pro": "서지우 프로",
+            "cohortIndex": 84220,
+            "callbackToken": "cb-84220"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 1항목",
+          "group": "organ",
+          "groupKo": "신장·혈액·기타",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 1항목",
+          "evidence": [
+            "혈색소 위험 구간",
+            "생활 플래그: 금연 필요"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "강○○님, 안녕하세요. 하이핀 담당 서지우입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 혈색소 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-organ",
+                "ko": "지표 보충 · 신장·혈액 등",
+                "text": "이 항목은 다른 수치와 같이 봐야 정확해서, 확인 검사를 한 번 권해드리는 거예요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 혈색소 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 강○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "조○○",
+            "ageBand": "40대",
+            "sex": "남",
+            "region": "수원",
+            "stage": "D3",
+            "stalledDays": 3,
+            "pro": "서지우 프로",
+            "cohortIndex": 90900,
+            "callbackToken": "cb-90900"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 2항목",
+          "group": "sugar",
+          "groupKo": "혈당",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 2항목",
+          "evidence": [
+            "공복혈당 위험 구간",
+            "당화혈색소 위험 구간",
+            "최근 3년 추세 악화"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            },
+            {
+              "order": 3,
+              "key": "diet",
+              "ko": "식단 조정",
+              "nav": "shop",
+              "tab": null,
+              "ev": "sub_registered",
+              "evNote": "식단 상품 정기 등록 [실재] — 플랜 활성 이벤트는 등재 대기"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "조○○님, 안녕하세요. 하이핀 담당 서지우입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 공복혈당 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-sugar",
+                "ko": "지표 보충 · 혈당",
+                "text": "혈당은 식사·체중과 같이 움직여서, 검사 확인과 식단을 같이 보시는 게 좋아요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 공복혈당 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 조○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "손○○",
+            "ageBand": "20대",
+            "sex": "남",
+            "region": "수원",
+            "stage": "D1",
+            "stalledDays": 4,
+            "pro": "서지우 프로",
+            "cohortIndex": 74459,
+            "callbackToken": "cb-74459"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 1항목",
+          "group": "organ",
+          "groupKo": "신장·혈액·기타",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 1항목",
+          "evidence": [
+            "혈색소 위험 구간",
+            "생활 플래그: 절주 필요"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "손○○님, 안녕하세요. 하이핀 담당 서지우입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 혈색소 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-organ",
+                "ko": "지표 보충 · 신장·혈액 등",
+                "text": "이 항목은 다른 수치와 같이 봐야 정확해서, 확인 검사를 한 번 권해드리는 거예요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 혈색소 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 손○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "오○○",
+            "ageBand": "50대",
+            "sex": "남",
+            "region": "수원",
+            "stage": "D3",
+            "stalledDays": 4,
+            "pro": "서지우 프로",
+            "cohortIndex": 15960,
+            "callbackToken": "cb-15960"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 2항목",
+          "group": "organ",
+          "groupKo": "신장·혈액·기타",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 2항목",
+          "evidence": [
+            "혈청크레아티닌 위험 구간",
+            "eGFR 위험 구간",
+            "생활 플래그: 절주 필요"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "오○○님, 안녕하세요. 하이핀 담당 서지우입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 혈청크레아티닌 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-organ",
+                "ko": "지표 보충 · 신장·혈액 등",
+                "text": "이 항목은 다른 수치와 같이 봐야 정확해서, 확인 검사를 한 번 권해드리는 거예요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 혈청크레아티닌 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 오○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 107
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        }
+      ],
+      "pro": {
+        "code": "HM-GG-26-009",
+        "name": "서지우",
+        "sido": "경기",
+        "sgg": "수원"
+      }
+    },
+    {
+      "code": "HM-IC-26-100",
+      "date": "2026-08-30",
+      "counts": {
+        "managed": 163,
+        "candidates": 61,
+        "locked": 55,
+        "offCycle": 47,
+        "unpublishable": 0,
+        "byGrade": {
+          "H": 7
+        }
+      },
+      "cards": [
+        {
+          "member": {
+            "mask": "오○○",
+            "ageBand": "50대",
+            "sex": "남",
+            "region": "남동구",
+            "stage": "D3",
+            "stalledDays": 15,
+            "pro": "백채아 프로",
+            "cohortIndex": 45520,
+            "callbackToken": "cb-45520"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 3항목",
+          "group": "lipid",
+          "groupKo": "지질",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 3항목",
+          "evidence": [
+            "총콜레스테롤 위험 구간",
+            "중성지방 위험 구간",
+            "생활 플래그: 금연 필요"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "diet",
+              "ko": "식단 조정",
+              "nav": "shop",
+              "tab": null,
+              "ev": "sub_registered",
+              "evNote": "식단 상품 정기 등록 [실재] — 플랜 활성 이벤트는 등재 대기"
+            },
+            {
+              "order": 3,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "오○○님, 안녕하세요. 하이핀 담당 백채아입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 총콜레스테롤 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-lipid",
+                "ko": "지표 보충 · 지질",
+                "text": "콜레스테롤은 증상이 없어서 수치로만 관리가 돼요 — 그래서 확인 시점을 놓치지 않는 게 중요해요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 총콜레스테롤 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 오○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 108
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "홍○○",
+            "ageBand": "40대",
+            "sex": "남",
+            "region": "남동구",
+            "stage": "D3",
+            "stalledDays": 24,
+            "pro": "백채아 프로",
+            "cohortIndex": 59778,
+            "callbackToken": "cb-59778"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 1항목",
+          "group": "organ",
+          "groupKo": "신장·혈액·기타",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 1항목",
+          "evidence": [
+            "요산 위험 구간",
+            "최근 3년 추세 악화",
+            "생활 플래그: 금연 필요"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "홍○○님, 안녕하세요. 하이핀 담당 백채아입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 요산 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-organ",
+                "ko": "지표 보충 · 신장·혈액 등",
+                "text": "이 항목은 다른 수치와 같이 봐야 정확해서, 확인 검사를 한 번 권해드리는 거예요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 요산 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 홍○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "차○○",
+            "ageBand": "70대",
+            "sex": "여",
+            "region": "남동구",
+            "stage": "L5",
+            "stalledDays": 31,
+            "pro": "백채아 프로",
+            "cohortIndex": 95037,
+            "callbackToken": "cb-95037"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 2항목",
+          "group": "sugar",
+          "groupKo": "혈당",
+          "trigger": "정체 31일 — 관리 재개",
+          "evidence": [
+            "공복혈당 위험 구간",
+            "당화혈색소 위험 구간"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            },
+            {
+              "order": 3,
+              "key": "diet",
+              "ko": "식단 조정",
+              "nav": "shop",
+              "tab": null,
+              "ev": "sub_registered",
+              "evNote": "식단 상품 정기 등록 [실재] — 플랜 활성 이벤트는 등재 대기"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "정체 재개·쉬운말",
+            "opening": {
+              "id": "op-restart",
+              "ko": "정체 재개",
+              "text": "차○○님, 하이핀 백채아입니다. 한동안 챙겨드리지 못해서요 — 요즘 건강 관리는 어떠셨어요?"
+            },
+            "core": [
+              {
+                "id": "co-h-easy",
+                "ko": "본론 H · 쉬운말",
+                "text": "이번 검사에서 한 가지가 높게 나왔어요. 병원에서 한 번 봐주시는 게 좋아요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic-easy",
+              "ko": "진료 연결 · 쉬운말",
+              "text": "제가 의사 선생님 연결해 드릴게요. 문자 보내드리면 파란 버튼만 눌러주세요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no-easy",
+                "ko": "거절 · 쉬운말",
+                "text": "네, 알겠어요. 필요하실 때 언제든 전화 주세요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-open",
+              "ko": "미완결형(재큐 고지)",
+              "text": "오늘은 여기까지만 할게요. 일주일 뒤에 진행 상황 한 번 봐드릴게요 — 편하게 계세요."
+            },
+            "notif": "이번 검사에서 한 가지가 높게 나왔어요. 병원에서 한 번 봐주시는 게 좋아요. 제가 의사 선생님 연결해 드릴게요.",
+            "sms": "[하이핀] 차○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 77
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "김○○",
+            "ageBand": "10대",
+            "sex": "여",
+            "region": "남동구",
+            "stage": "D3",
+            "stalledDays": 19,
+            "pro": "백채아 프로",
+            "cohortIndex": 84484,
+            "callbackToken": "cb-84484"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 1항목",
+          "group": "organ",
+          "groupKo": "신장·혈액·기타",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 1항목",
+          "evidence": [
+            "혈색소 위험 구간"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "김○○님, 안녕하세요. 하이핀 담당 백채아입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 혈색소 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-organ",
+                "ko": "지표 보충 · 신장·혈액 등",
+                "text": "이 항목은 다른 수치와 같이 봐야 정확해서, 확인 검사를 한 번 권해드리는 거예요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 혈색소 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 김○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "최○○",
+            "ageBand": "40대",
+            "sex": "남",
+            "region": "남동구",
+            "stage": "D3",
+            "stalledDays": 59,
+            "pro": "백채아 프로",
+            "cohortIndex": 78571,
+            "callbackToken": "cb-78571"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 3항목",
+          "group": "lipid",
+          "groupKo": "지질",
+          "trigger": "정체 59일 — 관리 재개",
+          "evidence": [
+            "총콜레스테롤 위험 구간",
+            "중성지방 위험 구간",
+            "최근 3년 추세 악화"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "diet",
+              "ko": "식단 조정",
+              "nav": "shop",
+              "tab": null,
+              "ev": "sub_registered",
+              "evNote": "식단 상품 정기 등록 [실재] — 플랜 활성 이벤트는 등재 대기"
+            },
+            {
+              "order": 3,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "정체 재개",
+            "opening": {
+              "id": "op-restart",
+              "ko": "정체 재개",
+              "text": "최○○님, 하이핀 백채아입니다. 한동안 챙겨드리지 못해서요 — 요즘 건강 관리는 어떠셨어요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 총콜레스테롤 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-lipid",
+                "ko": "지표 보충 · 지질",
+                "text": "콜레스테롤은 증상이 없어서 수치로만 관리가 돼요 — 그래서 확인 시점을 놓치지 않는 게 중요해요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-open",
+              "ko": "미완결형(재큐 고지)",
+              "text": "오늘은 여기까지만 할게요. 일주일 뒤에 진행 상황 한 번 봐드릴게요 — 편하게 계세요."
+            },
+            "notif": "이번 결과에서 총콜레스테롤 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 최○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 103
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "송○○",
+            "ageBand": "50대",
+            "sex": "남",
+            "region": "남동구",
+            "stage": "D3",
+            "stalledDays": 12,
+            "pro": "백채아 프로",
+            "cohortIndex": 48310,
+            "callbackToken": "cb-48310"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 2항목",
+          "group": "organ",
+          "groupKo": "신장·혈액·기타",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 2항목",
+          "evidence": [
+            "혈청크레아티닌 위험 구간",
+            "eGFR 위험 구간",
+            "최근 3년 추세 악화"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "송○○님, 안녕하세요. 하이핀 담당 백채아입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 혈청크레아티닌 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-organ",
+                "ko": "지표 보충 · 신장·혈액 등",
+                "text": "이 항목은 다른 수치와 같이 봐야 정확해서, 확인 검사를 한 번 권해드리는 거예요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 혈청크레아티닌 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 송○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 107
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        },
+        {
+          "member": {
+            "mask": "하○○",
+            "ageBand": "40대",
+            "sex": "여",
+            "region": "남동구",
+            "stage": "D2",
+            "stalledDays": 1,
+            "pro": "백채아 프로",
+            "cohortIndex": 46648,
+            "callbackToken": "cb-46648"
+          },
+          "grade": "H",
+          "gradeWhy": "위험 구간 2항목",
+          "group": "bp",
+          "groupKo": "혈압",
+          "trigger": "신규 검진 결과 수신 — 위험 구간 2항목",
+          "evidence": [
+            "수축기혈압 위험 구간",
+            "이완기혈압 위험 구간"
+          ],
+          "actions": [
+            {
+              "order": 1,
+              "key": "clinic",
+              "ko": "진료 연결",
+              "nav": "tele",
+              "tab": null,
+              "ev": "consult_logged",
+              "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            },
+            {
+              "order": 2,
+              "key": "recheck",
+              "ko": "재검진 예약",
+              "nav": "checkup",
+              "tab": null,
+              "ev": "cert_issued",
+              "evNote": "검진 예약·증서 발행 [실재]"
+            },
+            {
+              "order": 3,
+              "key": "habit",
+              "ko": "습관 미션",
+              "nav": "care",
+              "tab": null,
+              "ev": "mission_checked",
+              "evNote": "절주·금연·복약 체크 [P1 등재]"
+            }
+          ],
+          "script": {
+            "channel": "전화",
+            "variant": "기본",
+            "opening": {
+              "id": "op-first",
+              "ko": "첫 연결",
+              "text": "하○○님, 안녕하세요. 하이핀 담당 백채아입니다. 검진 관련해서 확인드릴 게 있어 연락드렸어요 — 지금 2분 정도 괜찮으세요?"
+            },
+            "core": [
+              {
+                "id": "co-h",
+                "ko": "본론 도입 · H",
+                "text": "이번 결과에서 수축기혈압 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요."
+              },
+              {
+                "id": "co-bp",
+                "ko": "지표 보충 · 혈압",
+                "text": "혈압은 하루에도 오르내려서, 병원 한 번 수치보다 꾸준한 기록이 더 정확해요."
+              }
+            ],
+            "ask": {
+              "id": "ak-clinic",
+              "ko": "제안 · 진료 연결",
+              "text": "지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요. 제가 보내드리는 알림의 버튼 하나면 예약까지 돼요."
+            },
+            "branches": [
+              {
+                "id": "br-yes",
+                "ko": "수락",
+                "text": "잘 생각하셨어요. 지금 바로 알림 보내드릴게요 — 버튼만 눌러주시면 끝나요."
+              },
+              {
+                "id": "br-hold2",
+                "ko": "보류 · 다음 약속",
+                "text": "그럼 다음 주쯤 제가 한 번만 다시 여쭤볼게요. 부담은 안 드릴게요."
+              },
+              {
+                "id": "br-no",
+                "ko": "거절(괜찮아요) — 재권유 1회 한도",
+                "text": "네, 알겠습니다. 부담 드리려는 건 아니에요. 필요하실 때 하이에게 말씀하시면 언제든 이어서 도와드려요."
+              },
+              {
+                "id": "br-q-serious",
+                "ko": "질문(심각한 거예요?) — 한 문장 원칙",
+                "text": "그건 의사 선생님이 봐주셔야 정확해요 — 그래서 연결을 도와드리려는 거예요."
+              },
+              {
+                "id": "br-q-ins",
+                "ko": "질문(보험 관련) — A2 인계 전용",
+                "text": "보장 쪽은 제가 화면 보면서 같이 확인해 드릴게요 — 잠깐 보장분석 화면으로 넘어가서 볼까요?"
+              }
+            ],
+            "closing": {
+              "id": "cl-done",
+              "ko": "완결 확인형",
+              "text": "예약 확인되면 앱으로 알림 가요. 궁금한 건 하이에게 물어보셔도 되고, 저한테 바로 연락 주셔도 돼요."
+            },
+            "notif": "이번 결과에서 수축기혈압 위험 구간으로 확인됐어요. 진단이 아니라 '의사 선생님 확인이 필요한 구간'이라는 뜻이에요. 지금 연결 가능한 의사 선생님께 먼저 보여드리는 걸 권해요.",
+            "sms": "[하이핀] 하○○님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}",
+            "readSec": 106
+          },
+          "timing": {
+            "sla": "T2 · 48h",
+            "lock": false,
+            "cooldown": "통과(시연)",
+            "requeue": "미완결 시 D+7 재큐"
+          },
+          "compliance": {
+            "medical": true,
+            "solicitation": true,
+            "dataBoundary": true,
+            "slotsFilled": true,
+            "specOk": true,
+            "specWhy": [],
+            "forbiddenHits": [],
+            "unapprovedBlocks": 0,
+            "missingBlocks": 0,
+            "publishable": true
+          },
+          "label": "[예시·시연 데이터]"
+        }
+      ],
+      "pro": {
+        "code": "HM-IC-26-100",
+        "name": "백채아",
+        "sido": "인천",
+        "sgg": "남동구"
+      }
+    }
+  ]
+}

@@ -83,14 +83,18 @@ try {
     window.__hifinScriptScan = function () {
       try {
         if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
-        const out = [];
+        const out = []; const pendingAdmin = [];
         for (const bl of HM_SCRIPT_BLOCKS) {
           if (bl.part === "channel") continue;             // 규칙 서술문(회원 발화 아님)
           const hits = hmForbiddenScan(bl.t);
           if (hits.length) out.push({ id: bl.id, hits: hits });
-          if (!bl.approved) out.push({ id: bl.id, hits: [{ key: "unapproved", ko: "미승인 블록" }] });
+          if (!bl.approved) {
+            /* admin(관리 사무)은 조립 미사용 초안 — 검수 대기 목록으로 분리(실패 아님). 조립 파트 미승인만 실패 */
+            if (bl.part === "admin") pendingAdmin.push(bl.id);
+            else out.push({ id: bl.id, hits: [{ key: "unapproved", ko: "미승인 블록" }] });
+          }
         }
-        return { n: HM_SCRIPT_BLOCKS.length, bad: out };
+        return { n: HM_SCRIPT_BLOCKS.length, bad: out, pendingAdmin: pendingAdmin };
       } catch (e) { return { error: String(e).slice(0, 160) }; }
     };
   }

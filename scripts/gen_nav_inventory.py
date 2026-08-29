@@ -138,7 +138,8 @@ def extract_l2():
                     "owner": "sarg", "admin": False, "desc": "", "aliases": aliases_of(label)})
     # HealthMate 워크벤치(숫자 키 — 관리자·프로 전용)
     src = read("src/components/HealthMate.jsx")
-    m = re.search(r"const TABS = \[(.*?)\];", src, re.S)
+    # 리터럴이 ];로 끝나거나 ].filter(...)(P5 ⑩ 관리자 필터) 체인으로 이어져도 읽는다
+    m = re.search(r"const TABS = \[(.*?)\]\s*(?:;|\.filter)", src, re.S)
     assert m, "HealthMate TABS 파싱 실패"
     hm = re.findall(r'\[\s*(\d+)\s*,\s*"([^"]+)"', m.group(1))
     assert len(hm) >= 9, "HealthMate 워크벤치 %d개 — 하한(9) 미달" % len(hm)
