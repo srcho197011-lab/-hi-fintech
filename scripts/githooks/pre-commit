@@ -13,7 +13,8 @@ WATCH=$(python scripts/gen_nav_inventory.py --list-watch 2>/dev/null)
 for f in $WATCH src/data/navRouting.js src/data/navInventory.js scripts/gen_nav_corpus.py scripts/run_nav_regression.mjs; do
   if echo "$CHANGED" | grep -qxF "$f"; then NEED=1; fi
 done
-[ $NEED -eq 0 ] && exit 0
+# 내비 게이트는 조기 종료하지 않는다 — 아래 지시서 하네스 게이트(P4 편입)가 독립 판단한다
+if [ $NEED -eq 1 ]; then
 
 if [ "${HIFIN_NAV_BYPASS:-0}" = "1" ]; then
   python scripts/gen_nav_inventory.py --bypass-guard
@@ -38,3 +39,25 @@ python -c "import sys; sys.exit(0 if float('$NLU') >= 99.22 else 1)" || { echo "
 python scripts/gen_nav_inventory.py --clear-bypass
 git add scripts/nav_regression_snapshot.json src/data/navRegSnapshot.js src/data/navInventory.js 2>/dev/null || true
 echo "[GATE] 통과 — 회귀 스냅샷 자동 스테이지 완료"
+
+fi  # NEED(내비 게이트) 끝
+
+# ══ 지시서 스크립트 하네스 게이트(지시서 프롬프트 v1.3 §7·§S-5 · P4) — 기존 게이트에 편입(새 게이트 발명 금지) ══
+# 카드 판정·대본 감시 파일이 스테이지에 있으면: 조립 전건·금지어·규격·골든셋·A5 회귀. 실패 = 커밋 차단.
+HM_NEED=0
+for f in src/data/hmScriptBlocks.js src/data/hmScriptGuard.js src/data/handoffCard.js src/data/coachAgent.js \
+         src/data/riskGrade.js src/data/interventionMap.js src/data/clinicalBands.js src/data/checkupEngine.js \
+         src/data/pilotCohort.js src/data/healthMateCohort.js src/utils/demoAuth.js \
+         scripts/run_handoff_harness.mjs fixtures/handoff_cards_sample_v1.json; do
+  if echo "$CHANGED" | grep -qxF "$f"; then HM_NEED=1; fi
+done
+if [ $HM_NEED -eq 1 ]; then
+  echo "[GATE] 지시서 감시 파일 변경 감지 — 스크립트 하네스 실행(§S-5·§S-6)"
+  if ! curl -s -o /dev/null --max-time 2 http://127.0.0.1:5601/preview.html; then
+    (python -m http.server 5601 --bind 127.0.0.1 >/dev/null 2>&1 &)
+    sleep 2
+  fi
+  node scripts/run_handoff_harness.mjs || { echo "[GATE] 스크립트 하네스 실패 — 커밋 차단(그 날 지시서 미발행 규약)"; exit 1; }
+  git add scripts/handoff_harness_snapshot.json src/data/hmHarnessSnapshot.js 2>/dev/null || true
+  echo "[GATE] 지시서 하네스 통과 — 스냅샷 자동 스테이지 완료"
+fi

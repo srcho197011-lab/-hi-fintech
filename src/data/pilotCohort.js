@@ -128,7 +128,9 @@ function _genMember(idx, f) {
   const diseases = [];
   if (pool.length && rng() < pBase) {
     const n = 1 + (rng() < (age > 60 ? 0.6 : 0.28) ? 1 : 0) + (rng() < (age > 70 ? 0.34 : 0.08) ? 1 : 0);
-    const sh = [...pool].sort(() => rng() - 0.5);
+    /* Fisher-Yates — sort(() => rng()-0.5)는 엔진 내부 상태에 따라 결과가 흔들리는 반결정론(P4 실측: 세션 간 질병 표류) */
+    const sh = [...pool];
+    for (let k = sh.length - 1; k > 0; k--) { const r = Math.floor(rng() * (k + 1)); const tmp = sh[k]; sh[k] = sh[r]; sh[r] = tmp; }
     for (let j = 0; j < Math.min(n, sh.length); j++) diseases.push(sh[j]);
   }
   const isChild = age < 19;

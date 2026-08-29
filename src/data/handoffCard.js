@@ -82,6 +82,7 @@ function buildHandoffCard(i) {
     core: [_hcBlock(easy ? (g.grade === "H" ? "co-h-easy" : "co-m-easy") : gradeCo, slots, out),
            !easy ? _hcBlock("co-" + group, slots, out) : null].filter(Boolean),
     ask: _hcBlock(easy && acts[0] && acts[0].key === "clinic" ? "ak-clinic-easy" : "ak-" + (acts[0] ? acts[0].key : "recheck"), slots, out),
+    /* 화면 표기는 「회원 반응별 응대」(형 확정 2026-08-29) — 내부 필드명은 branches 유지 */
     branches: [
       _hcBlock("br-yes", slots, out), _hcBlock("br-hold2", slots, out),
       _hcBlock(easy ? "br-no-easy" : "br-no", slots, out),
@@ -100,6 +101,9 @@ function buildHandoffCard(i) {
   const slotLeak = /\{[가-힣A-Za-z]+\}/.test(joined);                            // 미치환 슬롯 잔존({링크}는 sms 전용 — joined 밖)
 
   const meta = (typeof RISK_GRADE_META !== "undefined") ? RISK_GRADE_META[g.grade] : null;
+  const preCard = { script: script };   /* 가드 스캔용 최소 형태(§S-5 ⑨⑩ — 사전은 hmScriptGuard 단일 소스) */
+  const scan = (typeof hmScriptScan === "function") ? hmScriptScan(preCard) : { ok: true, forbidden: [], spec: { ok: true, readSec: 0, sentences: 0 } };
+  script.readSec = scan.spec ? scan.spec.readSec : 0;
   return {
     member: { mask: _hcMask(m.name), ageBand: Math.floor(m.age / 10) * 10 + "대", sex: m.sex, region: region ? region.sgg : "",
       stage: stage ? stage.cur : "D1", stalledDays: stage ? stage.stalledDays : 0, pro: pro ? pro.name + " 프로" : "", cohortIndex: i, callbackToken: "cb-" + i },
@@ -108,8 +112,12 @@ function buildHandoffCard(i) {
     actions: acts.map((a, ix) => ({ order: ix + 1, key: a.key, ko: a.ko, nav: a.nav, tab: a.tab || null, ev: a.ev, evNote: a.evNote })),
     script: script,
     timing: { sla: meta ? "T" + meta.tier.replace("T", "") + " · " + meta.slaH + "h" : "-", lock: false, cooldown: "통과(시연)", requeue: "미완결 시 D+7 재큐" },
-    compliance: { medical: true, solicitation: true, dataBoundary: !numLeak, slotsFilled: !slotLeak, unapprovedBlocks: out.unapproved.length, missingBlocks: out.missing.length,
-      publishable: out.missing.length === 0 && out.unapproved.length === 0 && !numLeak && !slotLeak },
+    compliance: { medical: scan.forbidden.filter((h) => h.key === "diagnosis" || h.key === "verdict" || h.key === "fear").length === 0,
+      solicitation: scan.forbidden.filter((h) => h.key === "solicit" || h.key === "premium" || h.key === "reask").length === 0,
+      dataBoundary: !numLeak && scan.forbidden.filter((h) => h.key === "cost").length === 0,
+      slotsFilled: !slotLeak, specOk: scan.spec ? scan.spec.ok : true, specWhy: (scan.spec && scan.spec.why) || [], forbiddenHits: scan.forbidden,
+      unapprovedBlocks: out.unapproved.length, missingBlocks: out.missing.length,
+      publishable: out.missing.length === 0 && out.unapproved.length === 0 && !numLeak && !slotLeak && scan.ok },
     label: "[예시·시연 데이터]",
   };
 }

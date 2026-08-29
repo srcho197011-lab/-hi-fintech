@@ -51,7 +51,8 @@ function _chkSev(key, m) {
     case "fbs": case "hba1c": return _hrdHas(m, "당뇨") ? 2 : olderOrgan(m.pancreasAge);
     case "tc": case "tg": case "ldl": return (_hrdHas(m, "고지혈") || _hrdHas(m, "이상지질")) ? 2 : (_hrdHas(m, "지방간") ? 1 : olderOrgan(m.heartAge) ? 1 : 0);
     case "hdl": return (_hrdHas(m, "고지혈") || _hrdHas(m, "이상지질")) ? 1 : 0;
-    case "ast": case "alt": case "ggtp": return _hrdHas(m, "지방간") ? 2 : (_hrdHas(m, "간") ? 1 : olderOrgan(m.liverAge));
+    /* "간" 한 글자 부분 매칭은 "추간판탈출증"을 간 질환으로 오판(P4 실측) — 간 질환 어휘를 명시한다 */
+    case "ast": case "alt": case "ggtp": return _hrdHas(m, "지방간") ? 2 : ((m.highRiskDiseases || []).some((d) => /간경변|간염|간질환|알코올성?간|간부전/.test(d)) ? 1 : olderOrgan(m.liverAge));
     case "cr": case "egfr": return (_hrdHas(m, "콩팥") || _hrdHas(m, "신부전") || _hrdHas(m, "신장")) ? 2 : olderOrgan(m.kidneyAge) === 2 ? 1 : 0;
     case "hb": return _hrdHas(m, "빈혈") ? 2 : 0;
     case "ua": return _hrdHas(m, "통풍") ? 2 : 0;

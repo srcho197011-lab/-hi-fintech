@@ -128,8 +128,8 @@ const HI_AGENTS = [
     },
     outOfScope: ["보험·보장 대화(A2 소유 — ⑦탭)", "의학 판정(의료 경계)", "상품 제안(⑧제안함 경로)",
       "근거 소스 4종(clinicalBands·interventionMap·질환-성분 그래프·hmScriptBlocks) 밖 의학 발화"],
-    handler: null,
-    knowledge: ["clinicalBands", "interventionMap", "riskGrade", "hmScriptBlocks", "healthMateCohort"],
+    handler: null,   /* P4: 응답기는 coachAgent.coachAnswer — 라우터 배선은 부분 활성 승격(P6) 때 */
+    knowledge: ["clinicalBands", "interventionMap", "riskGrade", "hmScriptBlocks", "healthMateCohort", "handoffCard", "coachAgent", "hmScriptGuard"],
     ready: false,
   },
 ];
