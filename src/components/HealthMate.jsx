@@ -700,7 +700,7 @@ function HmHandoffCard({ ent, code, onToast }) {
           : <button key={a.key} className="hmbtn gh" onClick={() => act(a)}>{a.ko}</button>)}
       </div>
       <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11.4, color: "#475569", alignItems: "center" }}>
-        <b style={{ color: g.c }}>SLA {c.timing.sla}</b>
+        <b style={{ color: g.c }}>⏱ {c.timing.sla}</b>
         <span>완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
         <span style={{ color: "#15803D", fontWeight: 700 }}>🛡 경계 3종 통과</span>
         <span>{c.timing.requeue}</span>
@@ -793,7 +793,7 @@ function HmTabOps() {
         <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>대상아님(관리 리듬 양호) {(S.byGrade["-"] || 0).toLocaleString()}명 · E(응급)는 트리아지 소유(카드 밖)</div>
       </div>
       <div style={box}><div style={bt}>③ 응답 시한(SLA) 관제 — 등급 → 티어(leadRouting 재사용)</div>
-        {[["H", "T2 · 48h", "#EA580C"], ["M", "T3 · 7일", "#D97706"], ["L", "T4 · 14일", "#0891B2"]].map(([k, t, cc]) => (
+        {[["H", "48시간 안 응답(T2)", "#EA580C"], ["M", "7일 안 응답(T3)", "#D97706"], ["L", "14일 안 응답(T4)", "#0891B2"]].map(([k, t, cc]) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px dashed #EEF2F6", fontSize: 12 }}>
             <span><b style={{ color: cc }}>{k}</b> — {t}</span><span style={{ color: "#475569" }}>{(S.byGrade[k] || 0).toLocaleString()}건 · 재큐 D+7</span></div>))}
         <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>일일 로스터 등급 합계: {Object.entries(S.byRosterGrade || {}).map(([k, v]) => k + " " + v).join(" · ")}</div>

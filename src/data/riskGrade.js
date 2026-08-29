@@ -38,8 +38,9 @@ function riskGradeOf(items, trend, flags) {
 
 /* 등급 → SLA 티어(leadRouting T1~T4 재사용 — 별도 타이머 구현 금지) + 표기 */
 const RISK_GRADE_META = {
-  H: { ko: "고위험", tier: "T2", slaH: 48,  color: "var(--hm-grade-h, #EA580C)", dir: "연결" },
-  M: { ko: "중위험", tier: "T3", slaH: 168, color: "var(--hm-grade-m, #D97706)", dir: "재검+코칭" },
-  L: { ko: "관심",   tier: "T4", slaH: 336, color: "var(--hm-grade-l, #0891B2)", dir: "코칭" },
-  E: { ko: "응급",   tier: "T1", slaH: 0,   color: "var(--hm-grade-e, #DC2626)", dir: "즉시(트리아지 소유)" },
+  /* slaKo — 프로 화면 표기는 사람 말로(형 확정 2026-08-30): 시간·일 단위 풀어쓰기. tier는 내부 규약 코드 */
+  H: { ko: "고위험", tier: "T2", slaH: 48,  slaKo: "48시간 안 응답", color: "var(--hm-grade-h, #EA580C)", dir: "연결" },
+  M: { ko: "중위험", tier: "T3", slaH: 168, slaKo: "7일 안 응답",   color: "var(--hm-grade-m, #D97706)", dir: "재검+코칭" },
+  L: { ko: "관심",   tier: "T4", slaH: 336, slaKo: "14일 안 응답",  color: "var(--hm-grade-l, #0891B2)", dir: "코칭" },
+  E: { ko: "응급",   tier: "T1", slaH: 0,   slaKo: "즉시(트리아지 소유)", color: "var(--hm-grade-e, #DC2626)", dir: "즉시(트리아지 소유)" },
 };

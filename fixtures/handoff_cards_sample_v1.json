@@ -125,7 +125,8 @@
           "readSec": 106
         },
         "timing": {
-          "sla": "T2 · 48h",
+          "sla": "48시간 안 응답",
+          "slaTier": "T2",
           "lock": false,
           "cooldown": "통과(시연)",
           "requeue": "미완결 시 D+7 재큐"
@@ -251,8 +252,9 @@
           "readSec": 106
         },
         "timing": {
-          "sla": "T3 · 168h",
-          "lock": false,
+          "sla": "7일 안 응답",
+          "slaTier": "T3",
+          "lock": true,
           "cooldown": "통과(시연)",
           "requeue": "미완결 시 D+7 재큐"
         },
@@ -388,7 +390,8 @@
           "readSec": 103
         },
         "timing": {
-          "sla": "T3 · 168h",
+          "sla": "7일 안 응답",
+          "slaTier": "T3",
           "lock": false,
           "cooldown": "통과(시연)",
           "requeue": "미완결 시 D+7 재큐"
@@ -519,8 +522,9 @@
           "readSec": 73
         },
         "timing": {
-          "sla": "T2 · 48h",
-          "lock": false,
+          "sla": "48시간 안 응답",
+          "slaTier": "T2",
+          "lock": true,
           "cooldown": "통과(시연)",
           "requeue": "미완결 시 D+7 재큐"
         },
@@ -640,7 +644,8 @@
           "readSec": 79
         },
         "timing": {
-          "sla": "T3 · 168h",
+          "sla": "7일 안 응답",
+          "slaTier": "T3",
           "lock": false,
           "cooldown": "통과(시연)",
           "requeue": "미완결 시 D+7 재큐"

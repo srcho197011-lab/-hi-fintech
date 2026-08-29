@@ -112,7 +112,7 @@ function buildHandoffCard(i) {
     trigger: trigger, evidence: evidence,
     actions: acts.map((a, ix) => ({ order: ix + 1, key: a.key, ko: a.ko, nav: a.nav, tab: a.tab || null, ev: a.ev, evNote: a.evNote })),
     script: script,
-    timing: { sla: meta ? "T" + meta.tier.replace("T", "") + " · " + meta.slaH + "h" : "-",
+    timing: { sla: meta ? meta.slaKo : "-", slaTier: meta ? meta.tier : "-",   /* 표기는 사람 말, 코드는 별도 필드 */
       lock: !!(stage && stage.enrolled),   /* 검진대비보험 가입·결과 수령 전 = 접촉 금지(하이가 자동 해제) — 로스터가 제외 */
       cooldown: "통과(시연)", requeue: "미완결 시 D+7 재큐" },
     compliance: { medical: scan.forbidden.filter((h) => h.key === "diagnosis" || h.key === "verdict" || h.key === "fear").length === 0,
