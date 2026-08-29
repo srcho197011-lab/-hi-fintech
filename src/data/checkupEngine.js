@@ -82,19 +82,9 @@ const _CHK_CUR_YEAR = 2026;                                   // 최근(현재) 
 const TREND_LABEL = { improve: "나아짐", worsen: "악화", stable: "유지" };
 const TREND_EMOJI = { improve: "📉✅", worsen: "📈⚠️", stable: "➡️" };
 
-/* 값→판정 임계치(t1: 정상상한/경계, t2: 위험, dir 'hi'=높을수록나쁨 'lo'=낮을수록나쁨) */
-const _TH = {
-  bmi: { dir: "hi", t1: 25, t2: 28 }, waist: { dir: "hi", t1: { m: 90, f: 85 }, t2: { m: 100, f: 95 } },
-  sbp: { dir: "hi", t1: 120, t2: 140 }, dbp: { dir: "hi", t1: 80, t2: 90 },
-  fbs: { dir: "hi", t1: 100, t2: 126 }, hba1c: { dir: "hi", t1: 5.7, t2: 6.5 },
-  tc: { dir: "hi", t1: 200, t2: 240 }, tg: { dir: "hi", t1: 150, t2: 200 },
-  hdl: { dir: "lo", t1: { m: 40, f: 50 }, t2: { m: 34, f: 40 } }, ldl: { dir: "hi", t1: 130, t2: 160 },
-  ast: { dir: "hi", t1: 40, t2: 70 }, alt: { dir: "hi", t1: 35, t2: 66 }, ggtp: { dir: "hi", t1: { m: 63, f: 35 }, t2: { m: 130, f: 80 } },
-  cr: { dir: "hi", t1: 1.3, t2: 1.6 }, egfr: { dir: "lo", t1: 60, t2: 45 },
-  hb: { dir: "lo", t1: { m: 13, f: 12 }, t2: { m: 12, f: 11 } }, plt: { dir: "lo", t1: 150, t2: 130 },
-  ua: { dir: "hi", t1: 7.0, t2: 7.5 }, tsh: { dir: "hi", t1: 5.5, t2: 7.0 },
-  psa: { dir: "hi", t1: 3.0, t2: 5.0 }, cea: { dir: "hi", t1: 4.1, t2: 7.0 }, afp: { dir: "hi", t1: 10.9, t2: 22 }, ca199: { dir: "hi", t1: 34, t2: 60 },
-};
+/* 값→판정 임계치 — 단일 소스는 clinicalBands.js(출처 동반). 여기서는 역참조만 한다(진실 1곳 · v1.3 §1-2).
+   임계 변경은 clinicalBands에서 형 검수 표를 거쳐서만 — 값 변경은 코호트 전체 판정에 파급된다. */
+const _TH = (typeof clinicalTH === "function") ? clinicalTH() : {};
 function _thOf(key, sex) { const th = _TH[key]; if (!th) return null; const g = (x) => (x && typeof x === "object") ? (x[sex] || x.m) : x; return { dir: th.dir, t1: g(th.t1), t2: g(th.t2) }; }
 function _judgeVal(key, v, sex) { const th = _thOf(key, sex); if (!th || v == null) return 0; if (th.dir === "lo") { if (v > th.t1) return 0; if (v > th.t2) return 1; return 2; } if (v < th.t1) return 0; if (v < th.t2) return 1; return 2; }
 

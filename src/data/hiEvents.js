@@ -22,6 +22,9 @@ const HI_EVENT_DEFS = {
   consent_updated: { ko: "동의 변경",          stage: 3 },
   family_linked:   { ko: "가족 연결",          stage: 3 },
   rx_received:     { ko: "처방 수령",          stage: 3 },
+  mission_checked: { ko: "실천 미션 체크(복약·습관)", stage: 3 },   // P1 실사: adhCheck 실재(hifin_adh_*) — 등재
+  /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
+     diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };
 function _hiEvKey() { return "hifin_events"; }
 function hiEvent(name, payload) {

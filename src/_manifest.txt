@@ -66,6 +66,7 @@ src/data/insuranceKB.js
 src/data/kbHealthData.js
 src/data/kbDomainData.js
 src/data/checkupCatalog.js
+src/data/clinicalBands.js
 src/data/checkupEngine.js
 src/data/healthDataVault.js
 src/data/lineageBridge.js

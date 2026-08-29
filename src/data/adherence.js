@@ -35,6 +35,8 @@ function adhCheck(m, pid) {
   const rec = log[pid] || {};
   if (rec[today]) delete rec[today]; else rec[today] = Date.now();
   log[pid] = rec; _adhSave(m, log);
+  /* 완결 퍼널(P1 등재) — 체크 '완료' 시에만 기록(해제 토글은 미기록) */
+  try { if (rec[today] && typeof hiEvent === "function") hiEvent("mission_checked", { key: pid }); } catch (e) {}
   return !!rec[today];
 }
 /* 제품별 순응 통계 — 복용일수·연속일수·순응률(시작일 대비) */
