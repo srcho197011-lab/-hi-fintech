@@ -27,6 +27,64 @@ function doScanStorage() {
   return { rows: Object.values(rows).sort((a, b) => b.bytes - a.bytes), totalB: totalB, unknown: unknown, sessN: sessN };
 }
 
+/* ⑥ 백업·복원 — L3(회원 행동층) 유실 방어 브리지(형 지시 2026-08-30: 오리진 분리·삭제·PC 교체 = 전량 유실) */
+function DoBackupBlock({ scan, onRefresh }) {
+  const [msg, setMsg] = React.useState(null);
+  const [showSnip, setShowSnip] = React.useState(false);
+  const fileRef = React.useRef(null);
+  const last = (typeof hifinBackupLast === "function") ? hifinBackupLast() : null;
+  const staleDays = last ? Math.floor((Date.now() - new Date(last.at).getTime()) / 86400000) : null;
+  const needBackup = !last || staleDays >= 7;
+  const doBackup = () => {
+    try { const r = hifinBackupDownload(); setMsg({ ok: true, t: `백업 파일 저장됨 — ${r.name} (${r.keys}개 키 · ${r.kb}KB). USB·클라우드 등 이 PC 밖에 보관하세요.` }); onRefresh(); }
+    catch (e) { setMsg({ ok: false, t: "백업 실패: " + e }); }
+  };
+  const doRestore = (f) => {
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        const r = hifinRestoreApply(JSON.parse(rd.result));
+        setMsg(r.ok
+          ? { ok: true, t: `복원 완료 — ${r.restored}개 키(덮어쓰기 ${r.overwritten}${r.skippedUnknown.length ? " · 카탈로그 미등재 건너뜀 " + r.skippedUnknown.length : ""}). 새로고침하면 화면에 반영돼요.` }
+          : { ok: false, t: "복원 거부 — " + r.why });
+        if (r.ok) onRefresh();
+      } catch (e) { setMsg({ ok: false, t: "복원 실패: " + e }); }
+    };
+    rd.readAsText(f);
+  };
+  const copySnip = (s, label) => { try { navigator.clipboard.writeText(s); setMsg({ ok: true, t: label + " 코드를 복사했어요 — 대상 브라우저에서 F12 → Console에 붙여넣고 Enter." }); } catch (e) { setMsg({ ok: false, t: "복사 실패 — 아래 코드를 직접 드래그해 주세요." }); } };
+  const snipBox = { background: "#0B2239", color: "#9FE8C8", borderRadius: 8, padding: "8px 10px", fontSize: 10, fontFamily: "Consolas,monospace", whiteSpace: "pre-wrap", wordBreak: "break-all", maxHeight: 120, overflow: "auto", marginTop: 5 };
+  return (<div style={{ background: "#fff", border: `1px solid ${needBackup ? "#FECACA" : DO_C.line}`, borderRadius: 12, padding: "12px 14px", marginTop: 10 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+      <div style={{ fontSize: 12.6, fontWeight: 900, color: DO_C.ink }}>⑥ 백업·복원 — 회원 행동층(L3) 유실 방어
+        {needBackup
+          ? <span style={{ marginLeft: 8, background: "#FDECEC", color: DO_C.bad, borderRadius: 8, padding: "2px 9px", fontSize: 11, fontWeight: 800 }}>{last ? `마지막 백업 ${staleDays}일 전 — 백업 권장` : "백업 이력 없음 — 지금 백업하세요"}</span>
+          : <span style={{ marginLeft: 8, background: "#E7F8EE", color: DO_C.ok, borderRadius: 8, padding: "2px 9px", fontSize: 11, fontWeight: 800 }}>마지막 백업 {staleDays === 0 ? "오늘" : staleDays + "일 전"} · {last.keys}키</span>}
+      </div>
+    </div>
+    <div style={{ fontSize: 11.4, color: "#475569", lineHeight: 1.7, marginTop: 5 }}>
+      이 기기의 회원 상태({scan.rows.reduce((s, r) => s + r.n, 0)}키 · {(scan.totalB / 1024).toFixed(0)}KB)는 브라우저 내부(leveldb 이진 파일)에만 있어요 —
+      <b> 기록 삭제·PC 교체 한 번이면 경고 없이 전량 유실</b>되고, 주소(오리진)마다 분리되어 localhost↔배포 사이트 간에도 서로 안 보여요.
+      서버 이관(D-2) 전까지는 아래 백업이 유일한 안전망이에요.
+    </div>
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 9 }}>
+      <button onClick={doBackup} style={{ background: DO_C.brand, border: "none", color: "#fff", borderRadius: 9, padding: "8px 16px", fontSize: 12.4, fontWeight: 900, cursor: "pointer" }}>⬇ 지금 백업(JSON 다운로드)</button>
+      <button onClick={() => fileRef.current && fileRef.current.click()} style={{ background: "#fff", border: `1.5px solid ${DO_C.ink}`, color: DO_C.ink, borderRadius: 9, padding: "8px 16px", fontSize: 12.4, fontWeight: 900, cursor: "pointer" }}>⬆ 백업 파일 복원</button>
+      <button onClick={() => setShowSnip(!showSnip)} style={{ background: "#F5F3FF", border: "1px solid #DDD6FE", color: "#6D28D9", borderRadius: 9, padding: "8px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>{showSnip ? "코드 접기 ▲" : "콘솔 붙여넣기 코드(F12) ▼"}</button>
+      <input ref={fileRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { if (e.target.files[0]) doRestore(e.target.files[0]); e.target.value = ""; }} />
+    </div>
+    {msg && <div style={{ marginTop: 8, background: msg.ok ? "#E7F8EE" : "#FDECEC", color: msg.ok ? DO_C.ok : DO_C.bad, borderRadius: 8, padding: "7px 10px", fontSize: 11.6, fontWeight: 700 }}>{msg.t}</div>}
+    {showSnip && (<div style={{ marginTop: 8 }}>
+      <div style={{ fontSize: 11.2, color: "#475569", lineHeight: 1.65 }}>화면이 안 열리는 상황이나 <b>다른 주소(오리진)의 브라우저</b>에서도 쓰는 자족 코드예요 — 앱 없이 F12 콘솔에 붙여넣기만 하면 돼요. 이사 절차: ①옛 주소에서 백업 코드 실행(JSON 저장) ②새 주소에서 복원 코드 실행(파일 선택).</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}><b style={{ fontSize: 11.4 }}>① 백업 코드</b><button onClick={() => copySnip(HIFIN_SNIPPET_BACKUP, "백업")} style={{ fontSize: 10.6, border: "1px solid #CBD5E1", background: "#fff", borderRadius: 6, padding: "2px 9px", cursor: "pointer" }}>복사</button></div>
+      <div style={snipBox}>{HIFIN_SNIPPET_BACKUP}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}><b style={{ fontSize: 11.4 }}>② 복원 코드</b><button onClick={() => copySnip(HIFIN_SNIPPET_RESTORE, "복원")} style={{ fontSize: 10.6, border: "1px solid #CBD5E1", background: "#fff", borderRadius: 6, padding: "2px 9px", cursor: "pointer" }}>복사</button></div>
+      <div style={snipBox}>{HIFIN_SNIPPET_RESTORE}</div>
+    </div>)}
+    <div style={{ fontSize: 10.4, color: DO_C.mut, marginTop: 7 }}>⚠ 백업 파일에는 가명 금고 원본이 담겨요 — <b>본인 보관 전용, 외부 전송·공유 금지</b>. 복원은 하이핀 백업만 받아요(버전·체크섬 검증, 카탈로그 미등재 키는 건너뛰고 보고). 복원 직전 상태는 이 세션에 자동 보관돼 실수를 되돌릴 수 있어요.</div>
+  </div>);
+}
+
 function DataOpsConsole() {
   const [tick, setTick] = React.useState(0);
   const sum = (typeof hifinCatalogSummary === "function") ? hifinCatalogSummary() : null;
@@ -122,5 +180,7 @@ function DataOpsConsole() {
         <div style={{ fontSize: 10.6, color: DO_C.mut, marginTop: 6 }}>거버넌스: 단일 소스 · 가공 금지 · 원가 비노출 · 원본은 회원에게(체인에는 해시만) · 문안·정책 변경은 형 검수 경유. 상세 보고서: docs/hi_dataops/…v1.1(md·pdf)</div>
       </div>
     </div>
+
+    <DoBackupBlock scan={scan} onRefresh={() => setTick((t) => t + 1)} />
   </div>);
 }
