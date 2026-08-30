@@ -119,9 +119,9 @@ const HI_AGENTS = [
     /* [P6 부분 활성 승격 — 지시서 프롬프트 v1.3 §6] 헬스메이트센터 담당 보조 에이전트.
        성숙 파이프라인: 등록 → 섀도 → 부분 활성(지금 — Today 카드 해설 칩, coachAnswer 한정) → 전담.
        승격 근거: P4 코퍼스 전수 회귀 100%(544문항·원천 검증). ready:false 유지 — 라우터 전담 위임은 다음 단계. */
-    id: "A5", name: "코치", label: "헬스메이트 코치", avatar: "🧭", badge: "코치",
+    id: "A5", name: "하이프로", label: "하이프로(프로 전용 코치)", avatar: "🧭", badge: "하이프로",
     persona: "프로의 보좌관 — 카드의 근거를 두괄식으로, 다음 행동을 한 문장으로",
-    role: "assistant", stage: "partial",
+    role: "assistant", stage: "active",   /* P6 승격(2026-08-30) — 프로 콘솔 전담(독+카드 칩), 1만 회귀 100% */
     scope: {
       words: ["지시서", "인계카드", "오늘의카드", "왜이회원", "등급근거", "뭐라고말", "첫마디", "대본",
         "거절하면", "보류하면", "다음은뭐", "개입방법", "코칭방법", "미션추천"],
@@ -129,7 +129,7 @@ const HI_AGENTS = [
     outOfScope: ["보험·보장 대화(A2 소유 — ⑦탭)", "의학 판정(의료 경계)", "상품 제안(⑧제안함 경로)",
       "근거 소스 4종(clinicalBands·interventionMap·질환-성분 그래프·hmScriptBlocks) 밖 의학 발화"],
     handler: null,   /* P4: 응답기는 coachAgent.coachAnswer — 라우터 배선은 부분 활성 승격(P6) 때 */
-    knowledge: ["clinicalBands", "interventionMap", "riskGrade", "hmScriptBlocks", "healthMateCohort", "handoffCard", "coachAgent", "hmScriptGuard"],
+    knowledge: ["clinicalBands", "interventionMap", "riskGrade", "hmScriptBlocks", "healthMateCohort", "handoffCard", "coachAgent", "hiProAgent", "hmScriptGuard", "HM_STAGE_GUIDE", "MA_MAP"],
     ready: false,
   },
 ];

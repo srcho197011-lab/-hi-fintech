@@ -1028,6 +1028,46 @@ function HmTabOps() {
   </div>);
 }
 
+/* ══ 하이프로 대화 독(2단계 P6) — 프로 전용 · 보라 톤(회원 하이와 구분) · 답변은 원천 조립만(출처 칩 동반) ══ */
+function HiProDock() {
+  const [open, setOpen] = React.useState(false);
+  const [msgs, setMsgs] = React.useState([{ me: false, text: "하이프로예요 — 프로님 전용 도우미. 단계·대본·기준·화면, 뭐든 물어보세요. 회원 카드 관련은 카드의 「하이프로」 칩이 빨라요.", refs: [] }]);
+  const [inp, setInp] = React.useState("");
+  const boxRef = React.useRef(null);
+  const QUICK = ["D3가 뭐예요?", "거절 응대 대본 찾아줘", "혈압 주의 기준이 뭐예요?", "회원이 치료비 얼마냐고 물으면?", "결과 기록 어디서 해요?", "첫 상담에서 뭘 제안해요?"];
+  const ask = (q) => {
+    if (!q.trim()) return;
+    let a = null; try { a = hiproAnswer(q); } catch (e) {}
+    setMsgs((m) => [...m, { me: true, text: q }, { me: false, text: a ? a.text : "잠시 후 다시 물어봐 주세요.", refs: a ? a.refs : [] }]);
+    setInp("");
+    setTimeout(() => { try { boxRef.current.scrollTop = boxRef.current.scrollHeight; } catch (e) {} }, 60);
+  };
+  return (<>
+    <button onClick={() => setOpen(!open)} style={{ position: "fixed", left: 18, bottom: 18, zIndex: 1350, background: "linear-gradient(135deg,#7C3AED,#6D28D9)", color: "#fff", border: "none", borderRadius: 26, padding: "12px 18px", fontSize: 13.5, fontWeight: 900, cursor: "pointer", boxShadow: "0 8px 24px rgba(109,40,217,.4)" }}>🧭 하이프로</button>
+    {open && (<div style={{ position: "fixed", left: 18, bottom: 72, zIndex: 1350, width: "min(360px,92vw)", background: "#fff", borderRadius: 16, boxShadow: "0 16px 48px rgba(0,0,0,.28)", overflow: "hidden", display: "flex", flexDirection: "column", maxHeight: "62vh" }}>
+      <div style={{ background: "linear-gradient(135deg,#7C3AED,#6D28D9)", color: "#fff", padding: "11px 15px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <b style={{ fontSize: 13.5 }}>🧭 하이프로 <span style={{ fontSize: 10, opacity: .85, fontWeight: 600 }}>· 프로 전용 · 원천 있는 답만</span></b>
+        <button onClick={() => setOpen(false)} style={{ background: "transparent", border: "none", color: "#fff", fontSize: 15, cursor: "pointer", fontWeight: 900 }}>✕</button>
+      </div>
+      <div ref={boxRef} style={{ flex: 1, overflowY: "auto", padding: "10px 12px", background: "#FAF9FF" }}>
+        {msgs.map((m, i) => (<div key={i} style={{ display: "flex", justifyContent: m.me ? "flex-end" : "flex-start", marginBottom: 7 }}>
+          <div style={{ maxWidth: "86%", background: m.me ? "#6D28D9" : "#fff", color: m.me ? "#fff" : "#1F2937", border: m.me ? "none" : "1px solid #E9E5F8", borderRadius: m.me ? "12px 12px 3px 12px" : "12px 12px 12px 3px", padding: "8px 11px", fontSize: 12.4, lineHeight: 1.65 }}>
+            {m.text}
+            {!m.me && m.refs && m.refs.length > 0 && <div style={{ marginTop: 5 }}>{m.refs.map((r2) => <span key={r2} style={{ display: "inline-block", background: "#F3F0FC", color: "#6D28D9", borderRadius: 6, padding: "1px 7px", fontSize: 9.6, fontWeight: 700, marginRight: 4 }}>📎 {r2}</span>)}</div>}
+          </div></div>))}
+      </div>
+      <div style={{ padding: "7px 10px", display: "flex", gap: 4, flexWrap: "wrap", borderTop: "1px solid #EEE9FB" }}>
+        {QUICK.map((q) => <span key={q} onClick={() => ask(q)} style={{ cursor: "pointer", border: "1px solid #DDD6FE", background: "#F5F3FF", color: "#6D28D9", borderRadius: 10, padding: "3px 9px", fontSize: 10.6, fontWeight: 700 }}>{q}</span>)}
+      </div>
+      <div style={{ display: "flex", gap: 6, padding: "8px 10px", borderTop: "1px solid #EEE9FB" }}>
+        <input value={inp} onChange={(e) => setInp(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") ask(inp); }} placeholder="무엇이든 물어보세요"
+          style={{ flex: 1, border: "1px solid #DDD6FE", borderRadius: 10, padding: "8px 11px", fontSize: 12.4 }} />
+        <button onClick={() => ask(inp)} style={{ background: "#6D28D9", border: "none", color: "#fff", borderRadius: 10, padding: "8px 14px", fontSize: 12.4, fontWeight: 900, cursor: "pointer" }}>보내기</button>
+      </div>
+    </div>)}
+  </>);
+}
+
 /* ══ 메인 섹션 ══ */
 function HealthMateSection({ onGo }) {
   const [code, setCode] = React.useState(() => { try { return sessionStorage.getItem("hifin_hm_code") || null; } catch (e) { return null; } });
@@ -1103,6 +1143,7 @@ function HealthMateSection({ onGo }) {
         개인정보보호법 §17·§22②·§23·§24 · 신용정보법 §32 · 보험업법(설명의무·부당 권유 금지) · 정보통신망법 §50 —
         원본 건강수치·원가성 정보 비노출 · 진단·인수·등급 단정 금지 · 시연 환경(체험 회원 시드) 고지
       </div>
+      <HiProDock />
       {toastM && <div style={{ position: "fixed", bottom: 26, left: "50%", transform: "translateX(-50%)", background: HM_C.ink, color: "#fff", borderRadius: 10, padding: "9px 16px", fontSize: 12.5, zIndex: 1300, boxShadow: "0 10px 30px rgba(0,0,0,.3)" }}>{toastM}</div>}
     </div>
   );

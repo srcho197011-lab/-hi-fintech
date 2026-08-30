@@ -66,3 +66,10 @@ if [ $HM_NEED -eq 1 ]; then
   git add scripts/handoff_harness_snapshot.json src/data/hmHarnessSnapshot.js 2>/dev/null || true
   echo "[GATE] 지시서 하네스 통과 — 스냅샷 자동 스테이지 완료"
 fi
+
+# ══ 하이프로 회귀 게이트(2단계 P6) — 응답 엔진·코치 변경 시 1만 전수 ══
+if echo "$CHANGED" | grep -qE "^src/data/(hiProAgent|coachAgent)\.js$"; then
+  echo "[GATE] 하이프로 감시 파일 변경 — 1만 회귀 실행"
+  node scripts/run_hipro_regression.mjs || { echo "[GATE] 하이프로 회귀 실패 — 커밋 차단"; exit 1; }
+  git add scripts/hipro_regression_snapshot.json 2>/dev/null || true
+fi
