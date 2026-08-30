@@ -25,6 +25,7 @@ src/components/DataConnector.jsx
 src/components/Compliance.jsx
 src/components/BizOps.jsx
 src/components/OpsConsole.jsx
+src/components/DataOpsConsole.jsx
 src/components/Ontology.jsx
 src/components/SupplyOntology.jsx
 src/components/FoundationOntology.jsx

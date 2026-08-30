@@ -729,7 +729,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTop("health"); setSub("explorer"); };
-  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["supply", "공급망 온톨로지", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["whitepaper", "백서", BookOpen, "#6366F1"]];
+  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["supply", "공급망 온톨로지", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"]];
   const healthTabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["chain", "블록체인 금고", Blocks], ["hiops", "하이 커버리지", Bot], ["kb", "AI KB 라운지", Database], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
   if (!agg) return null;
   return (
@@ -779,6 +779,8 @@ function OntologySection({ onGo }) {
       {top === "foundation" && <FoundationOntology onGo={onGo} />}
       {/* [Phase G] 운영 콘솔 — 에이전트 메시 관제(관리자 전용 섹션 안이라 권한을 그대로 상속한다) */}
       {top === "ops" && typeof OpsConsoleSection === "function" && <OpsConsoleSection />}
+      {/* 데이터 운영 관제(운영계획 v1.1의 시스템화) — 원천=dataCatalog.js, 관측 전용 */}
+      {top === "dataops" && typeof DataOpsConsole === "function" && <DataOpsConsole />}
 
       {top === "whitepaper" && <WhitepaperSection onGo={onGo} />}
     </div>
