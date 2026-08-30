@@ -15,7 +15,7 @@ const HM_SCRIPT_V2 = true;   /* 2026-08-30 형 승인 — 대본 v2 정식 전�
 
 function _hcMask(name) { return (String(name || "회")[0]) + "○○"; }
 function _drOr(i, mod) { return ((Number(i) * 2654435761) >>> 0) % mod === 0; }   // 결정론 이지선다
-function _hcFill(t, slots) { return String(t || "").replace(/\{([가-힣A-Za-z]+)\}/g, (_, k) => (slots[k] != null ? slots[k] : "{" + k + "}")); }
+function _hcFill(t, slots) { return String(t || "").replace(/\{([가-힣A-Za-z0-9]+)\}/g, (_, k) => (slots[k] != null ? slots[k] : "{" + k + "}")); }
 function _hcBlock(id, slots, out) {
   const b = (typeof hmBlock === "function") ? hmBlock(id) : null;
   if (!b) { out.missing.push(id); return null; }

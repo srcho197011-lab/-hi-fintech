@@ -18,8 +18,27 @@ const HIPRO_CATS = [
   { cat: "system", ko: "시스템 사용법", pats: [/(결과|기록).*(어디|어떻게)\s*(남|해|기록)/, /어디서\s*(봐|해|확인)/, /(관제탑|통합\s*운영|백업|카탈로그|지시서).*(어디|어떻게|뭐)/, /화면.*(어디|찾)/] },
   { cat: "role",   ko: "역할·케어 플랜", pats: [/([DL][1-8]|첫\s*통화|첫\s*상담).*(역할|뭘\s*해|뭘\s*제안|어떻게\s*해)/, /케어\s*플랜.*(뭐|어떻게|조합)/, /(도구|영양제|식단|기기).*(언제|어떤\s*회원)/] },
 ];
+/* 지표 별칭(프로 현장 표현 포함) — clinical·care 공용 */
+const HIPRO_LAB = { "혈압": "sbp", "수축기": "sbp", "이완기": "dbp", "공복혈당": "fbs", "혈당": "fbs", "당화혈색소": "hba1c",
+  "콜레스테롤": "tc", "LDL": "ldl", "HDL": "hdl", "중성지방": "tg", "간수치": "ast", "AST": "ast", "GOT": "ast",
+  "ALT": "alt", "GPT": "alt", "감마지피티": "ggtp", "감마GTP": "ggtp", "GGT": "ggtp", "감마": "ggtp",
+  "크레아티닌": "cr", "eGFR": "egfr", "사구체": "egfr", "혈색소": "hb", "빈혈수치": "hb", "BMI": "bmi", "체질량": "bmi",
+  "허리둘레": "waist", "요산": "ua", "TSH": "tsh", "갑상선수치": "tsh" };
+function _hiproDzKey(t) {   /* 질환명 최장 일치(disease_care 197키) */
+  try {
+    if (typeof _DZCARE === "undefined" || !_DZCARE) return null;
+    const hit = Object.keys(_DZCARE).filter((k) => k.length >= 2 && t.indexOf(k) >= 0).sort((a, b2) => b2.length - a.length)[0];
+    return hit || null;
+  } catch (e) { return null; }
+}
 function hiproClassify(q) {
   const t = String(q || "").trim();
+  /* ⑨ 질병·건강관리 상담(형 지시 2026-08-30) — 질환명 or 지표+상담 의도. 임상 '기준' 질문보다 앞서 판정 */
+  const careIntent = /(관리|방법|식단|운동|영양제|보충제|생활|습관|주의|조심|좋은|나쁜|피해야|뭐라고|어떻게\s*말|말해|설명해|알려)/.test(t);
+  if (careIntent) {
+    if (_hiproDzKey(t)) return "care";
+    for (const ko in HIPRO_LAB) if (t.toUpperCase().indexOf(ko.toUpperCase()) >= 0 && !/(기준|구간|수치가\s*뭐)/.test(t)) return "care";
+  }
   for (const c of HIPRO_CATS) for (const p of c.pats) if (p.test(t)) return c.cat;
   /* 카드 문맥 질문은 코치 사전(COACH_QTYPES)을 재사용 — 사전 이원화 금지 */
   try { if (typeof coachQType === "function" && coachQType(t)) return "card"; } catch (e) {}
@@ -38,6 +57,68 @@ function hiproAnswer(q, ctx) {
         if (a) return R(a.source + ":" + a.id, a.text, ["카드 " + ctx.card.member.mask]);
       }
       return R("card:noctx", "그건 회원 카드를 보면서 답해드릴 수 있어요 — ⓪ 오늘의 지시서에서 카드를 연 상태로 물어봐 주세요.", ["coachAnswer"]);
+    }
+    /* ⑨ 질병·건강관리 상담 — 원천: disease_care.json(197질환·출처 동반) + MA_MAP + co-* 블록.
+       응답 2부: 프로 브리핑(요점) + 회원용 스크립트(cs-* 승인 템플릿에 원천 값 치환) */
+    if (cat === "care") {
+      const dz = _hiproDzKey(t);
+      /* 치환 유틸 — ①슬롯 뒤 조사는 값의 받침에 맞춰 교정(새 문장 아님·조사 선택만) ②원칙은 명사구까지만 */
+      const _batchim = (v) => { const s3 = String(v).replace(/[^가-힣]+$/, ""); const c = s3.charCodeAt(s3.length - 1); return c >= 0xAC00 && c <= 0xD7A3 ? { ok: true, has: (c - 0xAC00) % 28 > 0 } : { ok: false }; };
+      const _JOSA = { 이에요: ["이에요", "예요"], 예요: ["이에요", "예요"], 은: ["은", "는"], 는: ["은", "는"], 이: ["이", "가"], 가: ["이", "가"], 을: ["을", "를"], 를: ["을", "를"] };
+      const fill = (id, slots) => {
+        const b2 = hmBlock(id); if (!b2) return "";
+        return String(b2.t).replace(/\{([가-힣A-Za-z0-9]+)\}(이에요|예요|은|는|이|가|을|를)?/g, (m, k, j) => {
+          if (slots[k] == null) return m;
+          const v = String(slots[k]);
+          if (!j) return v;
+          const bt = _batchim(v);
+          return v + (bt.ok ? _JOSA[j][bt.has ? 0 : 1] : j);
+        });
+      };
+      const cutNoun = (p) => { const s3 = String(p).replace(/\(.*?\)/g, "").trim(); const m2 = s3.match(/^(.{2,24}?)(이|가|은|는|을|를)\s/); return m2 ? m2[1] : s3.split(/[-.,·]/)[0].trim().slice(0, 24); };
+      if (dz && typeof _DZCARE !== "undefined" && _DZCARE[dz]) {
+        const e = _DZCARE[dz];
+        const life = (e.lifestyle || []).map((l) => l.tip).filter(Boolean);
+        const rec = (e.supplements_recommended || []).map((x) => x.name).slice(0, 3);
+        const avo = (e.supplements_avoid || []).map((x) => x.name).slice(0, 2);
+        const dev = (e.devices || []).map((x) => x.name).slice(0, 2);
+        const dietR = (e.diet && e.diet.recommend || []).slice(0, 3), dietA = (e.diet && e.diet.avoid || []).slice(0, 2);
+        const principle = (e.diet && e.diet.principle) || (life[0] || "생활 관리");
+        const slots = { 질환명: dz, 원칙: cutNoun(principle),
+          권장식: dietR.join("·") || "균형 잡힌 식사", 회피식: dietA.join("·") || "짠 음식·과식",
+          수칙1: (life[0] || "가벼운 걷기부터 시작하기").replace(/\(.*?\)/g, "").trim().replace(/[.\s]+$/, ""),
+          수칙2: (life[1] || "꾸준한 기록").replace(/\(.*?\)/g, "").trim().replace(/[.\s]+$/, ""),
+          기기: dev[0] || "건강 기록 앱" };
+        /* 질문 초점별 응답 */
+        if (/식단|먹|음식/.test(t)) {
+          return R("care:" + dz + ":diet", "[" + dz + " · 식단] " + (e.diet && e.diet.principle || "") + " 권장: " + dietR.join(", ") + (dietA.length ? " / 줄이기: " + dietA.join(", ") : "") +
+            "\n👄 회원에게는: “" + fill("cs-diet", slots) + "”", ["disease_care." + dz, "cs-diet"]);
+        }
+        if (/영양제|보충제/.test(t)) {
+          return R("care:" + dz + ":supp", "[" + dz + " · 영양] 도움: " + (rec.join(", ") || "-") + (avo.length ? " / ⚠️ 주의: " + avo.join(", ") : "") + " — 드시는 약과 상호작용 확인이 먼저예요." +
+            "\n👄 회원에게는: “" + fill("cs-check", { 기기: "복용 중인 약 목록" }).replace("로 집에서 기록해 주시면 병원 한 번 수치보다 정확해요", "부터 같이 확인하고 맞는 성분을 담아드릴게요") + "”", ["disease_care." + dz, "ak-supp"]);
+        }
+        if (/운동|생활|습관/.test(t)) {
+          return R("care:" + dz + ":life", "[" + dz + " · 생활] " + life.slice(0, 3).join(" ") +
+            "\n👄 회원에게는: “" + fill("cs-life", slots) + "”", ["disease_care." + dz, "cs-life"]);
+        }
+        if (/뭐라고|말해|말\s*할|설명해/.test(t)) {
+          return R("care:" + dz + ":talk", "👄 회원에게 이렇게 말해요 — “" + fill("cs-start", slots) + " " + fill("cs-life", slots) + "”" +
+            "\n(근거: " + dz + " 관리 원칙 — " + String(principle).slice(0, 60) + ")", ["cs-start", "cs-life", "disease_care." + dz]);
+        }
+        return R("care:" + dz, "[" + dz + " 관리 요점] " + String(principle) + " 생활: " + life.slice(0, 2).join(" ") + (dev.length ? " 기기: " + dev.join(", ") + "." : "") +
+          "\n👄 회원에게는: “" + fill("cs-start", slots) + "”", ["disease_care." + dz, "cs-start"]);
+      }
+      /* 지표 상담("감마지피티 높은 사람에게 뭐라고") — 지표군 블록 + MA_MAP 조합 */
+      for (const ko in HIPRO_LAB) {
+        if (t.toUpperCase().indexOf(ko.toUpperCase()) >= 0) {
+          const k = HIPRO_LAB[ko], grp = riskGroupOf(k);
+          const map = MA_MAP[grp] || MA_MAP.organ;
+          const co = hmBlock("co-" + grp);
+          return R("care:lab:" + k, "[" + ko + " · " + (HM_RISK_GROUPS[grp] || {}).ko + "] 관리 조합: " + map.visitKo + "(" + map.dept + ") · " + map.meal + " · " + map.supp.join("/") + " · " + map.device + "." +
+            "\n👄 회원에게는: “" + (co ? co.t : "") + " " + hmBlock("sd-" + grp).t + "”", ["MA_MAP." + grp, "co-" + grp, "sd-" + grp]);
+        }
+      }
     }
     if (cat === "stage") {
       const m = t.match(/([DL][1-8])/i);
@@ -107,6 +188,14 @@ function hiproAnswer(q, ctx) {
 /* 러너 훅(관리자) — 채점: 분류 일치 + 원천(src) 존재 + none 아님 */
 try {
   if (typeof window !== "undefined") {
+    /* 질환 원천(_DZCARE)은 온톨로지 화면의 지연 로드 — 하이프로는 첫 질문 전에 미리 킥오프 */
+    try { if (typeof loadDzCare === "function") loadDzCare(); } catch (e2) {}
+    window.__hifinDzKeys = function () {
+      try {
+        if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        return (typeof _DZCARE !== "undefined" && _DZCARE) ? Object.keys(_DZCARE) : [];
+      } catch (e3) { return []; }
+    };
     window.__hifinHiPro = function (q, cardIdx) {
       try {
         if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };

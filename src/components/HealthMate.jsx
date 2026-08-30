@@ -1034,7 +1034,7 @@ function HiProDock() {
   const [msgs, setMsgs] = React.useState([{ me: false, text: "하이프로예요 — 프로님 전용 도우미. 단계·대본·기준·화면, 뭐든 물어보세요. 회원 카드 관련은 카드의 「하이프로」 칩이 빨라요.", refs: [] }]);
   const [inp, setInp] = React.useState("");
   const boxRef = React.useRef(null);
-  const QUICK = ["D3가 뭐예요?", "거절 응대 대본 찾아줘", "혈압 주의 기준이 뭐예요?", "회원이 치료비 얼마냐고 물으면?", "결과 기록 어디서 해요?", "첫 상담에서 뭘 제안해요?"];
+  const QUICK = ["고혈압 건강관리 방법 알려줘", "감마지피티 높은 회원에게 뭐라고 해요?", "당뇨병 식단 뭐가 좋아요?", "D3가 뭐예요?", "거절 응대 대본 찾아줘", "회원이 치료비 얼마냐고 물으면?"];
   const ask = (q) => {
     if (!q.trim()) return;
     let a = null; try { a = hiproAnswer(q); } catch (e) {}
