@@ -667,13 +667,17 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
   const [result, setResult] = React.useState(null);
   const [branch, setBranch] = React.useState(null);
   const [follow, setFollow] = React.useState(null);
+  const [memo, setMemo] = React.useState("");
   const today = new Date();
   const day = (n) => new Date(today.getTime() + n * 86400000).toISOString().slice(0, 10);
   const FOLLOWS = [["내일", day(1)], ["다음 주", day(7)], ["2주 뒤", day(14)], ["필요 없어요", null]];
+  /* 응대 칩 부연 제목 — 이 카드 대본의 실제 응대 이름(형 지시 2026-08-30: 번호만으론 알 수 없다) */
+  const branches = (card.script && card.script.branches) || [];
+  const brKo = (b2) => String(b2.ko || "").split("(")[0].split("—")[0].split("·")[0].trim() || "응대";
   const save = () => {
     if (!result) return;
     const r = hmrRecord(code, { i: card.member.cohortIndex, result: result, branch: branch, grade: card.grade,
-      followUp: follow, date: today.toISOString().slice(0, 10) });
+      followUp: follow, memo: memo.trim(), date: today.toISOString().slice(0, 10) });
     onSaved(r);
   };
   return (<div style={{ position: "fixed", inset: 0, zIndex: 1400, background: "rgba(11,34,57,.45)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
@@ -691,13 +695,20 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
             <span style={{ flex: 1 }}><b style={{ fontSize: 12.6, color: HM_C.ink }}>{rc.ko}</b><span style={{ display: "block", fontSize: 10, color: "#94A3B8" }}>{rc.desc}</span></span>
           </button>))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-        <b style={{ fontSize: 11.6, color: "#475569", width: 118 }}>어떤 말이 통했어요?</b>
-        {[1, 2, 3, 4, 5, 6].map((n) => <span key={n} onClick={() => setBranch(branch === n ? null : n)} className="hmpill" style={{ cursor: "pointer", border: branch === n ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: branch === n ? "#FFF4E8" : "#fff", color: branch === n ? "#C2410C" : "#334155" }}>응대 {n}</span>)}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+        <b style={{ fontSize: 11.6, color: "#475569", width: 118, paddingTop: 3 }}>어떤 말이 통했어요?</b>
+        <div style={{ flex: 1, display: "flex", gap: 5, flexWrap: "wrap" }}>
+          {branches.map((b2, n) => <span key={b2.id} onClick={() => setBranch(branch === n + 1 ? null : n + 1)} className="hmpill" style={{ cursor: "pointer", border: branch === n + 1 ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: branch === n + 1 ? "#FFF4E8" : "#fff", color: branch === n + 1 ? "#C2410C" : "#334155" }}>응대 {n + 1} · {brKo(b2)}</span>)}
+        </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
         <b style={{ fontSize: 11.6, color: "#475569", width: 118 }}>다시 연락할 날</b>
         {FOLLOWS.map(([ko, d]) => <span key={ko} onClick={() => setFollow(d)} className="hmpill" style={{ cursor: "pointer", border: follow === d ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: follow === d ? "#FFF4E8" : "#fff", color: d == null && follow === null ? "#94A3B8" : (follow === d ? "#C2410C" : "#334155") }}>{ko}</span>)}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
+        <b style={{ fontSize: 11.6, color: "#475569", width: 118, flex: "none" }}>간단 메모</b>
+        <input value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={120} placeholder="필요할 때만 한 줄 — 예: 다음엔 오후에 통화 원하심"
+          style={{ flex: 1, border: "1px solid #CBD5E1", borderRadius: 9, padding: "8px 11px", fontSize: 12.2, color: "#334155" }} />
       </div>
       <button onClick={save} disabled={!result} style={{ width: "100%", marginTop: 12, background: result ? HM_C.brand : "#E2E8F0", border: "none", color: "#fff", borderRadius: 11, padding: "12px", fontSize: 14.5, fontWeight: 900, cursor: result ? "pointer" : "default" }}>저장하기</button>
       <div style={{ fontSize: 10.4, color: HM_C.mut, textAlign: "center", marginTop: 7 }}>저장하면 카드가 접혀요 · 완결·거절은 내일 명단에서 자동으로 빠지고, 후속일이 온 회원은 맨 위로 와요</div>
