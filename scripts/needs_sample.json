@@ -1,0 +1,64 @@
+{
+ "sum": {
+  "v": 1,
+  "i": 1,
+  "grade": "H",
+  "groupKo": "혈당",
+  "cost": {
+   "grade": "H",
+   "group": "sugar",
+   "steps": [
+    {
+     "step": "exam",
+     "ko": "정밀검사",
+     "band": "21~56만원",
+     "oopBand": "5~12만원",
+     "note": "2세대 급여 자기부담 10% · 통원 회당 한도 30만원 적용"
+    },
+    {
+     "step": "care",
+     "ko": "통원 관리(연)",
+     "band": "56~140만원",
+     "oopBand": "39~97만원",
+     "note": "2세대 급여 자기부담 10% · 통원 회당 한도 30만원 적용"
+    },
+    {
+     "step": "hosp",
+     "ko": "입원 치료 · 합병증 입원 시",
+     "band": "420~1120만원",
+     "oopBand": "42~112만원",
+     "note": "2세대 급여 자기부담 10%(입원)"
+    }
+   ],
+   "diagBenefitManwon": 0
+  },
+  "income": {
+   "applicable": true,
+   "durKo": "12개월 기준",
+   "durSrc": "보건복지부·중앙암등록본부 국가암등록통계(2022 발표) 기반 관례",
+   "durStatus": "검수 대기",
+   "needBand": "2436~3828만원",
+   "diagManwon": 2000,
+   "gapBand": "436~1828만원",
+   "gapNote": "가진 진단금을 뺀 나머지 구간이에요",
+   "livingSrc": "통계청 가계동향조사(2024) 소비지출 근사 밴드",
+   "livingStatus": "검수 대기"
+  },
+  "fund": {
+   "htk": 18850,
+   "monthly": 33500,
+   "monthsKo": "월 보험료의 약 56%만큼(2세대 실손 기준)",
+   "months": 0,
+   "pct": 56,
+   "buildKo": "검진·재검진·복약 체크·걷기 미션·건강쇼핑 적립으로 쌓여요"
+  },
+  "refresh": "검진 결과 · 등급 변화 · 미션 완결 · 계약 변경 시 자동 갱신",
+  "boundary": "구간 표시만 · 판단은 회원이 · 원본 수치 미포함",
+  "label": "[예시·시연 데이터]"
+ },
+ "guard": {
+  "ok": true,
+  "evalWord": false,
+  "nakedCount": 0
+ }
+}
