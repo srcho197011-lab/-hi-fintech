@@ -56,7 +56,12 @@ const CARE_FORMS = [dz => dz + " 건강관리 방법", dz => dz + " 식단 뭐�
   dz => dz + " 운동이나 생활습관", dz => dz + " 회원에게 뭐라고 말해요", dz => dz + "에 피해야 할 것", dz => dz + "에 좋은 영양소는"];
 const careCorpus = [];
 for (const dz of dzKeys) for (const f of CARE_FORMS) for (const v of variants(f(dz), 9)) careCorpus.push({ cat: "care", q: v });
-console.log(`care 코퍼스: 질환 ${dzKeys.length} × ${CARE_FORMS.length}형 → ${careCorpus.length.toLocaleString()}문항(+후속 맥락 시나리오)`);
+/* 용어 질문 — 사전 키는 페이지 원천(HIPRO_TERMS)에서 동적 수신 + 원천 문장 검색형 대표 */
+const termKeys = await p.evaluate(() => (window.__hifinTerms ? window.__hifinTerms() : []));
+if (!Array.isArray(termKeys) || !termKeys.length) { console.error("용어 사전 수신 실패"); await b.close(); process.exit(1); }
+const TERM_FORMS = [k => k + "가 뭐야", k => k + "이 뭐예요", k => k + " 무슨 뜻이야"];
+for (const k of termKeys) for (const f of TERM_FORMS) for (const v of variants(f(k), 6)) careCorpus.push({ cat: "care", q: v });
+console.log(`care 코퍼스: 질환 ${dzKeys.length} × ${CARE_FORMS.length}형 + 용어 ${termKeys.length} × ${TERM_FORMS.length}형 → ${careCorpus.length.toLocaleString()}문항(+후속 맥락 시나리오)`);
 
 let n = 0, ok = 0; const fails = [];
 const plain = corpus.filter(c => !c.needCard).concat(careCorpus);

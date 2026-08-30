@@ -26137,6 +26137,54 @@ function _hiproDzKey(t) {   /* 질환명 최장 일치(disease_care 197키) */
 /* 직전 care 질환 — "관련 영양소는?" 같은 후속 질문의 맥락(같은 대화 안에서만) */
 let _hiproLastDz = null;
 const _HIPRO_FOLLOW = /(영양소|영양성분|영양제|보충제|식단|음식|먹|운동|기기|피해야|주의할|생활\s*습관)/;
+/* 용어 정의 사전 — 답변 안에 등장하는 전문 용어("DASH가 뭐야?"). 정의도 원천 표기 필수(형 검수 대상) */
+const HIPRO_TERMS = [
+  { k: "DASH", ko: "대시 식단", def: "Dietary Approaches to Stop Hypertension — '고혈압을 멈추는 식사법'이에요. 소금(나트륨)을 줄이고 채소·과일·통곡물·저지방 유제품처럼 칼륨·마그네슘·식이섬유가 풍부한 음식 위주로 먹는 식단이에요.", src: "미국 NIH/NHLBI" },
+  { k: "저염식", ko: "저염식", def: "소금을 하루 5g(나트륨 2g) 미만으로 줄인 식사예요 — WHO 권고 기준.", src: "WHO" },
+  { k: "CBT-I", ko: "불면증 인지행동치료", def: "약 없이 수면 습관과 잠에 대한 생각을 바꿔 만성 불면을 치료하는 방법 — 만성 불면증의 1차 권장 치료예요.", src: "AASM/대한수면학회" },
+  { k: "유산소 운동", ko: "유산소 운동", def: "걷기·자전거·수영처럼 숨이 약간 찰 정도로 계속하는 운동이에요. 주 150분 이상이 표준 권고예요.", src: "WHO 신체활동 지침" },
+  { k: "근력운동", ko: "근력운동", def: "밴드·스쿼트·아령처럼 근육에 힘을 주는 운동이에요. 주 2회 이상이 권고예요.", src: "WHO 신체활동 지침" },
+  { k: "혈당지수", ko: "혈당지수(GI)", def: "먹은 뒤 혈당을 얼마나 빨리 올리는지 나타내는 지수예요 — 낮을수록 혈당 관리에 유리해요.", src: "미국당뇨병학회(ADA)" },
+  { k: "지중해식", ko: "지중해식 식단", def: "채소·과일·통곡물·올리브유·생선 위주로 먹고 붉은 고기·가공식품을 줄이는 식사법이에요 — 심혈관·간 건강 연구 근거가 많아요.", src: "AHA/EASL" },
+  /* 관리 조합(MA_MAP)에 등장하는 영양 항목 — 답변 속 단어는 전부 물어볼 수 있어야 한다 */
+  { k: "밀크시슬", ko: "밀크시슬", def: "엉겅퀴 씨앗(실리마린) 추출 영양제 — 간 건강 보조로 널리 쓰여요. 치료 효과의 근거는 제한적이라 '보조'로만 보세요.", src: "미국 NCCIH" },
+  { k: "오메가3", ko: "오메가-3", def: "생선기름의 EPA·DHA 지방산이에요 — 중성지방을 낮추는 근거가 있어요.", src: "NIH ODS" },
+  { k: "코엔자임", ko: "코엔자임Q10", def: "세포가 에너지를 만들 때 쓰는 물질을 담은 영양제 — 심혈관 보조로 연구되고 있어요(근거는 혼재).", src: "NIH ODS" },
+];
+/* 용어 질문("X가 뭐야/무슨 뜻") 추출 — 다른 카테고리 사전이 전부 우선하고, 마지막에만 판정 */
+function _hiproTermOf(t) {
+  const m = String(t).match(/^(.{1,24}?)(이|가|은|는|이란|란)?\s*(뭐야|뭐예요|뭐에요|뭔가요|뭐지|무슨\s*뜻|뜻이\s*뭐)/);
+  if (!m) return null;
+  const phrase = m[1].trim();
+  if (!phrase) return null;
+  /* 질환명 자체를 물으면 용어가 아니라 질환 요점 응답으로(기존 경로) */
+  if (_hiproDzKey(phrase)) return { hit: "disease", dz: _hiproDzKey(phrase) };
+  const up = phrase.toUpperCase();
+  for (const d of HIPRO_TERMS) if (up.indexOf(d.k.toUpperCase()) >= 0) return { hit: "dict", term: d, phrase: phrase };
+  /* 정의문 안에 등장하는 단어(예: 실리마린)도 그 정의로 답한다 — 답변 속 단어는 전부 물어볼 수 있어야 */
+  const lastTok = phrase.split(/[\s,—-]+/).pop();
+  for (const d of HIPRO_TERMS) if (lastTok.length >= 3 && d.def.toUpperCase().indexOf(lastTok.toUpperCase()) >= 0) return { hit: "dict", term: d, phrase: phrase };
+  /* 사전에 없으면 197질환 원천에서 용어가 등장하는 문장을 찾는다(맥락 질환 우선) — 지어내지 않음 */
+  try {
+    if (typeof _DZCARE !== "undefined" && _DZCARE) {
+      const scan = (dz) => {
+        const e = _DZCARE[dz]; if (!e) return null;
+        const cand = [];
+        if (e.diet && e.diet.principle) cand.push({ s: e.diet.principle, f: "식단 원칙" });
+        for (const l of e.lifestyle || []) if (l.tip) cand.push({ s: l.tip, f: "생활수칙", ref: l.source });
+        for (const x of (e.supplements_recommended || []).concat(e.supplements_avoid || [])) if (x.name) cand.push({ s: x.name + " — " + (x.reason || ""), f: "영양", ref: x.source });
+        for (const x of e.devices || []) if (x.name) cand.push({ s: x.name + " — " + (x.use || ""), f: "기기" });
+        /* 접두 변형("저기 DASH가 뭐야")을 견디도록 전체구·마지막 어절 둘 다 시도 */
+        const cands2 = [up]; const lastTok = up.split(/[\s,—-]+/).pop(); if (lastTok && lastTok !== up) cands2.push(lastTok);
+        for (const c of cand) for (const u of cands2) if (u.length >= 2 && c.s.toUpperCase().indexOf(u) >= 0) return { dz: dz, field: c.f, sent: c.s, ref: c.ref };
+        return null;
+      };
+      const order = _hiproLastDz ? [_hiproLastDz].concat(Object.keys(_DZCARE).filter((k) => k !== _hiproLastDz)) : Object.keys(_DZCARE);
+      for (const dz of order) { const hit = scan(dz); if (hit) return { hit: "source", found: hit, phrase: phrase }; }
+    }
+  } catch (e) {}
+  return null;
+}
 function hiproClassify(q) {
   const t = String(q || "").trim();
   /* ⑨ 질병·건강관리 상담(형 지시 2026-08-30) — 질환명 or 지표+상담 의도. 임상 '기준' 질문보다 앞서 판정 */
@@ -26148,6 +26196,8 @@ function hiproClassify(q) {
   for (const c of HIPRO_CATS) for (const p of c.pats) if (p.test(t)) return c.cat;
   /* 카드 문맥 질문은 코치 사전(COACH_QTYPES)을 재사용 — 사전 이원화 금지 */
   try { if (typeof coachQType === "function" && coachQType(t)) return "card"; } catch (e) {}
+  /* 용어 질문 — 답변에 나온 단어("DASH가 뭐야")를 정의 사전·원천 문장으로 되찾기(타 카테고리보다 뒤) */
+  if (_hiproTermOf(t)) return "care";
   /* 후속 맥락 폴백 — 어떤 사전에도 안 걸리고, 직전에 질환 상담이 있었고, 이어 묻는 어휘일 때만(다른 카테고리보다 뒤) */
   if (_hiproLastDz && _HIPRO_FOLLOW.test(t)) return "care";
   return null;
@@ -26169,6 +26219,16 @@ function hiproAnswer(q, ctx) {
     /* ⑨ 질병·건강관리 상담 — 원천: disease_care.json(197질환·출처 동반) + MA_MAP + co-* 블록.
        응답 2부: 프로 브리핑(요점) + 회원용 스크립트(cs-* 승인 템플릿에 원천 값 치환) */
     if (cat === "care") {
+      /* 용어 되찾기 우선 — "DASH가 뭐야"는 식단 상담이 아니라 단어 뜻 질문 */
+      const term = _hiproTermOf(t);
+      if (term && term.hit === "dict") {
+        const d = term.term;
+        return R("care:term:" + d.k, "[" + d.ko + "] " + d.def + " (출처: " + d.src + ")", ["용어사전." + d.k, d.src]);
+      }
+      if (term && term.hit === "source") {
+        const f = term.found;
+        return R("care:term:" + f.dz, "원천에는 이렇게 나와요 — " + f.dz + " " + f.field + ": " + String(f.sent).slice(0, 220) + (f.ref ? " (출처: " + f.ref + ")" : ""), ["disease_care." + f.dz]);
+      }
       let dz = _hiproDzKey(t);
       /* 지표 어휘가 없고 질환명도 없으면 직전 질환의 후속 질문으로 본다(맥락) */
       let labKo = null; for (const ko in HIPRO_LAB) if (t.toUpperCase().indexOf(ko.toUpperCase()) >= 0) { labKo = ko; break; }
@@ -26307,6 +26367,12 @@ try {
   if (typeof window !== "undefined") {
     /* 질환 원천(_DZCARE)은 온톨로지 화면의 지연 로드 — 하이프로는 첫 질문 전에 미리 킥오프 */
     try { if (typeof loadDzCare === "function") loadDzCare(); } catch (e2) {}
+    window.__hifinTerms = function () {
+      try {
+        if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        return HIPRO_TERMS.map((d) => d.k);
+      } catch (e3) { return []; }
+    };
     window.__hifinDzKeys = function () {
       try {
         if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
