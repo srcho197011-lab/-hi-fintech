@@ -19,8 +19,18 @@ const HM_FORBIDDEN = [
   /* ③ 원가·수수료(전사 규칙 — 회원 접점 노출 금지) */
   { key: "cost", ko: "원가·수수료 노출", re: /(원가|송객\s*수수료|수수료율|CAC|마진)/ },
   /* ④ 공포 소구·단정 예후(응대 톤 경계) */
-  { key: "fear", ko: "공포 소구", re: /(큰일\s*납니다|위험합니다\s*지금\s*당장|생명이\s*위독|손\s*쓸\s*수\s*없)/ },
+  { key: "fear", ko: "공포 소구", re: /(큰일\s*납니다|위험합니다\s*지금\s*당장|생명이\s*위독|손\s*쓸\s*수\s*없|늦기\s*전에|지금\s*아니면|마지막\s*기회|서두르지\s*않으면)/ },
 ];
+
+/* §0-P 보험 선행 감지(v2) — 상품 어휘가 치료비 어휘보다 먼저 나오는 블록(보험은 수면 아래) */
+function hmInsFirstScan(text) {
+  const t = String(text || "");
+  const ins = t.search(/보험|보장|특약|상품/);
+  const treat = t.search(/치료비|의료비|치료|건강/);
+  return ins >= 0 && (treat < 0 || ins < treat);
+}
+/* §0-P 선발화 감지(v2) — 조립 대본에 니즈 수치 표현이 회원 질문 응답(branch) 밖에서 등장하면 차단 */
+const HM_NEEDS_UTTER = /(만원\s*구간|HTK|개월분|생활비\s*공백|대비\s*현황)/;
 
 /* 예외(허용) 문맥 — 금지 패턴보다 먼저 소거. 자기소개·부정 문맥·화면 명칭 */
 const HM_FORBIDDEN_ALLOW = [
@@ -43,10 +53,21 @@ function _hmSentences(text) {
 }
 function hmSpecCheck(card) {
   const s = card && card.script; if (!s) return { ok: false, why: ["script 없음"] };
-  const blocks = [s.opening, ...(s.core || []), s.ask, ...(s.branches || []), s.closing].filter(Boolean);
+  const blocks = [s.opening, ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.branches || []), s.closing].filter(Boolean);
   const why = [];
+  const maxSent = s.v2 ? 24 : 20;                                        /* 본대본(응대 제외) 한도 — 응대는 상황별 선택지라 전부 읽지 않는다(v2 규격 정밀화·형 확정 대상) */
+  const flowBlocks = [s.opening, ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), s.closing].filter(Boolean);                            /* v2: 생활 대화·씨앗 포함 전화 3~5분(§4-S3) */
+  if (s.v2) {
+    const qN = (s.talk || []).reduce((a, b2) => a + (String(b2.text).match(/\?/g) || []).length, 0);
+    if (qN < 2) why.push("유도 질문 부족(" + qN + "<2)");
+    if ((s.seed || []).length > 2) why.push("씨앗 과다(" + s.seed.length + ">2)");
+    /* §0-P 선발화 — 니즈 수치 표현이 응대(질문 응답) 밖에서 등장하면 차단 */
+    const nonBranch = [s.opening, ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), s.closing].filter(Boolean);
+    for (const b2 of nonBranch) if (HM_NEEDS_UTTER.test(b2.text)) why.push("선발화 감지 [" + b2.id + "]");
+  }
+  if (s.v2 && (s.branches || []).length > 12) why.push("응대 과다(" + s.branches.length + ">12)");
   let nSent = 0;
-  for (const b of blocks) {
+  for (const b of (s.v2 ? flowBlocks : blocks)) {
     /* 45자 한도는 쉬운말 '블록'의 규격 — 혼합 대본(쉬운말 변형에 공용 분기 동석)에 소급하지 않는다(§S-5 ⑩ 해석) */
     const lim = /-easy$/.test(b.id) ? 45 : 60;
     for (const sent of _hmSentences(b.text)) {
@@ -54,7 +75,7 @@ function hmSpecCheck(card) {
       if (sent.length > lim) why.push(`문장 초과(${sent.length}>${lim}자) [${b.id}] ${sent.slice(0, 24)}…`);
     }
   }
-  if (nSent > 20) why.push(`본대본 문장 수 초과(${nSent}>20)`);
+  if (nSent > maxSent) why.push(`본대본 문장 수 초과(${nSent}>${maxSent})`);
   const smsLen = String(s.sms || "").replace("{링크}", "bit.ly/xxxxxxx").length;
   if (smsLen > 80) why.push(`문자 길이 초과(${smsLen}>80자)`);
   /* 읽기 시간 추정 — 분당 300자(전화 응대 표준 말속도 근사) */
@@ -65,7 +86,7 @@ function hmSpecCheck(card) {
 /* ── 대본 종합 스캔 — 조립 카드 1장에 대한 §S-5 ⑨⑩ 판정(러너·조립기 공용) ── */
 function hmScriptScan(card) {
   const s = card && card.script; if (!s) return { ok: false, forbidden: [{ key: "none", ko: "script 없음" }], spec: null };
-  const blocks = [s.opening, ...(s.core || []), s.ask, ...(s.branches || []), s.closing].filter(Boolean);
+  const blocks = [s.opening, ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.branches || []), s.closing].filter(Boolean);
   const forbidden = [];
   for (const b of blocks) for (const h of hmForbiddenScan(b.text)) forbidden.push(Object.assign({ block: b.id }, h));
   for (const h of hmForbiddenScan(s.notif)) forbidden.push(Object.assign({ block: "notif" }, h));
@@ -90,7 +111,7 @@ try {
           if (hits.length) out.push({ id: bl.id, hits: hits });
           if (!bl.approved) {
             /* admin(관리 사무)·lifejourney(L5~L8 초안)는 조립 미사용 — 검수 대기 목록으로 분리(실패 아님). 조립 파트 미승인만 실패 */
-            if (bl.part === "admin" || bl.part === "lifejourney") pendingAdmin.push(bl.id);
+            if (["admin", "lifejourney", "talk", "seed", "careplan", "branch2", "cost"].indexOf(bl.part) >= 0) pendingAdmin.push(bl.id);
             else out.push({ id: bl.id, hits: [{ key: "unapproved", ko: "미승인 블록" }] });
           }
         }

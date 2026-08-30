@@ -9,7 +9,12 @@
 
 const HANDOFF_SLOTS_SAFE = { 예약처: "가까운 제휴 검진센터", 다음약속: "다음 주" };   // 자유 텍스트 금지 — 고정 안전값
 
+/* 대본 v2 스위치(2단계 P5) — 형이 신규 블록 전건(talk·seed·careplan·branch2·cost) 승인 시 true 전환.
+   false인 동안 조립은 기존 v1 그대로(하네스·발행 불변) — 초안이 발행 경로에 스며들 수 없다. */
+const HM_SCRIPT_V2 = false;
+
 function _hcMask(name) { return (String(name || "회")[0]) + "○○"; }
+function _drOr(i, mod) { return ((Number(i) * 2654435761) >>> 0) % mod === 0; }   // 결정론 이지선다
 function _hcFill(t, slots) { return String(t || "").replace(/\{([가-힣A-Za-z]+)\}/g, (_, k) => (slots[k] != null ? slots[k] : "{" + k + "}")); }
 function _hcBlock(id, slots, out) {
   const b = (typeof hmBlock === "function") ? hmBlock(id) : null;
@@ -18,7 +23,8 @@ function _hcBlock(id, slots, out) {
   return { id: id, ko: b.ko, text: _hcFill(b.t, slots) };
 }
 
-function buildHandoffCard(i) {
+function buildHandoffCard(i, opts) {
+  const v2on = HM_SCRIPT_V2 || !!(opts && opts.v2);   /* 검수판 미리보기 — 규칙 이원화 없이 같은 조립기 */
   const out = { i: i, missing: [], unapproved: [] };
   const m = (typeof cohortLoginProfile === "function") ? cohortLoginProfile(i) : null;
   if (!m) return null;
@@ -91,6 +97,20 @@ function buildHandoffCard(i) {
     ].filter(Boolean),
     closing: _hcBlock(stalled ? "cl-open" : (easy ? "cl-done-easy" : "cl-done"), slots, out),
   };
+  /* ── 대본 v2(P5 · HM_SCRIPT_V2 시) — 7파트: 생활 대화 2 · 씨앗 ≤1 · 케어 플랜(핵심1+보조2) · 응대 10 ── */
+  if (v2on) {
+    script.talk = [_hcBlock("tk-" + group, slots, out), _hcBlock(_drOr(i, 2) ? "tk-sleep" : "tk-fam", slots, out)].filter(Boolean);
+    if (g.grade === "H" || g.grade === "M") script.seed = [_hcBlock("sd-" + group, slots, out)].filter(Boolean);
+    else script.seed = [];
+    const ckMap = { clinic: "ck-clinic", tele: "ck-clinic", recheck: "ck-recheck", diet: "ck-meal", supp: "ck-supp", move: "ck-care", habit: "ck-care", family: "ck-care" };
+    script.careplan = acts.slice(0, 3).map((a) => _hcBlock(ckMap[a.key] || "ck-care", slots, out)).filter(Boolean)
+      .filter((b2, ix, arr) => arr.findIndex((x) => x.id === b2.id) === ix);
+    script.branches = script.branches.concat([
+      _hcBlock("br2-treatcost", slots, out), _hcBlock("br2-fam", slots, out),
+      _hcBlock("br2-oldins", slots, out), _hcBlock("br2-busy", slots, out), _hcBlock("br2-fear", slots, out),
+    ].filter(Boolean));
+    script.v2 = true;
+  }
   /* 채널 변형 — 규칙 적용(창작 아님): 알림=core[0]+ask 축약 · 문자=고정 형식(수치·등급 미포함) */
   script.notif = (script.core[0] ? script.core[0].text + " " : "") + (script.ask ? script.ask.text.split(".")[0] + "." : "");
   script.sms = "[하이핀] " + slots.가명 + "님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}";
@@ -128,6 +148,10 @@ function buildHandoffCard(i) {
 /* 테스트·러너 훅 — 관리자 전용(§7 훅 규약) */
 try {
   if (typeof window !== "undefined") {
+    window.__hifinCardV2 = function (i) {
+      try { if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" }; return buildHandoffCard(Number(i), { v2: true }); }
+      catch (e) { return { error: String(e).slice(0, 160) }; }
+    };
     window.__hifinCard = function (i) {
       try { if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" }; return buildHandoffCard(Number(i)); }
       catch (e) { return { error: String(e).slice(0, 160) }; }
