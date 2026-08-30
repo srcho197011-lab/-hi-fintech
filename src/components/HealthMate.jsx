@@ -1068,6 +1068,38 @@ function HiProDock() {
   </>);
 }
 
+/* ══ 5분 데모 가이드(2단계 P7) — 운영 본부 전용 발표 스텝퍼 · 원천: demoScript.js(단일 소스) ══ */
+function HmDemoGuide({ onTab }) {
+  const [open, setOpen] = React.useState(false);
+  const [idx, setIdx] = React.useState(0);
+  if (typeof isAdminRole !== "function" || !isAdminRole()) return null;
+  if (typeof DEMO_STEPS === "undefined") return null;
+  const s = DEMO_STEPS[idx];
+  return (<>
+    <button onClick={() => setOpen(!open)} style={{ position: "fixed", left: 18, bottom: 66, zIndex: 1349, background: "#0F2A43", color: "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 22, padding: "9px 15px", fontSize: 12, fontWeight: 900, cursor: "pointer", boxShadow: "0 6px 18px rgba(15,42,67,.4)" }}>🎬 5분 데모</button>
+    {open && (<div style={{ position: "fixed", left: 18, bottom: 112, zIndex: 1349, width: "min(390px,92vw)", background: "#fff", borderRadius: 16, boxShadow: "0 16px 48px rgba(0,0,0,.28)", overflow: "hidden" }}>
+      <div style={{ background: "#0F2A43", color: "#fff", padding: "11px 15px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <b style={{ fontSize: 13 }}>🎬 현대해상 5분 데모 동선 <span style={{ fontSize: 10, opacity: .8, fontWeight: 600 }}>· 운영 전용</span></b>
+        <button onClick={() => setOpen(false)} style={{ background: "transparent", border: "none", color: "#fff", fontSize: 15, cursor: "pointer", fontWeight: 900 }}>✕</button>
+      </div>
+      <div style={{ display: "flex", gap: 4, padding: "9px 12px 0", flexWrap: "wrap" }}>
+        {DEMO_STEPS.map((d, i) => (<span key={d.n} onClick={() => setIdx(i)} style={{ cursor: "pointer", borderRadius: 8, padding: "3px 8px", fontSize: 10.5, fontWeight: 800, background: i === idx ? "#0F2A43" : "#EEF3F8", color: i === idx ? "#fff" : "#48607A" }}>{d.min} {d.n}</span>))}
+      </div>
+      <div style={{ padding: "10px 14px 13px" }}>
+        <div style={{ fontSize: 13.2, fontWeight: 900, color: "#0F2A43" }}>{s.n}. {s.t}</div>
+        <div style={{ fontSize: 10.8, color: "#64748B", marginTop: 2 }}>📍 {s.where} · {s.frame}</div>
+        <div style={{ fontSize: 11.8, color: "#334155", lineHeight: 1.65, marginTop: 7, background: "#F5F8FB", borderRadius: 10, padding: "8px 11px" }}><b>무엇을</b> — {s.act}</div>
+        <div style={{ fontSize: 11.8, color: "#334155", lineHeight: 1.65, marginTop: 6, background: "#FFF9F0", borderRadius: 10, padding: "8px 11px" }}><b>🎤 멘트</b> — {s.say}</div>
+        <div style={{ display: "flex", gap: 6, marginTop: 9 }}>
+          <button disabled={idx === 0} onClick={() => setIdx(idx - 1)} className="hmbtn gh" style={{ flex: 1, opacity: idx === 0 ? .4 : 1 }}>← 이전</button>
+          {s.tab != null && <button className="hmbtn" style={{ flex: 1.2, background: "#0F2A43" }} onClick={() => { try { onTab(s.tab); } catch (e) {} }}>이 화면 열기</button>}
+          <button disabled={idx === DEMO_STEPS.length - 1} onClick={() => setIdx(idx + 1)} className="hmbtn gh" style={{ flex: 1, opacity: idx === DEMO_STEPS.length - 1 ? .4 : 1 }}>다음 →</button>
+        </div>
+      </div>
+    </div>)}
+  </>);
+}
+
 /* ══ 메인 섹션 ══ */
 function HealthMateSection({ onGo }) {
   const [code, setCode] = React.useState(() => { try { return sessionStorage.getItem("hifin_hm_code") || null; } catch (e) { return null; } });
@@ -1144,6 +1176,7 @@ function HealthMateSection({ onGo }) {
         원본 건강수치·원가성 정보 비노출 · 진단·인수·등급 단정 금지 · 시연 환경(체험 회원 시드) 고지
       </div>
       <HiProDock />
+      <HmDemoGuide onTab={setTab} />
       {toastM && <div style={{ position: "fixed", bottom: 26, left: "50%", transform: "translateX(-50%)", background: HM_C.ink, color: "#fff", borderRadius: 10, padding: "9px 16px", fontSize: 12.5, zIndex: 1300, boxShadow: "0 10px 30px rgba(0,0,0,.3)" }}>{toastM}</div>}
     </div>
   );

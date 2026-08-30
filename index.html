@@ -19673,6 +19673,38 @@ function HiProDock() {
   </>);
 }
 
+/* ══ 5분 데모 가이드(2단계 P7) — 운영 본부 전용 발표 스텝퍼 · 원천: demoScript.js(단일 소스) ══ */
+function HmDemoGuide({ onTab }) {
+  const [open, setOpen] = React.useState(false);
+  const [idx, setIdx] = React.useState(0);
+  if (typeof isAdminRole !== "function" || !isAdminRole()) return null;
+  if (typeof DEMO_STEPS === "undefined") return null;
+  const s = DEMO_STEPS[idx];
+  return (<>
+    <button onClick={() => setOpen(!open)} style={{ position: "fixed", left: 18, bottom: 66, zIndex: 1349, background: "#0F2A43", color: "#fff", border: "1px solid rgba(255,255,255,.25)", borderRadius: 22, padding: "9px 15px", fontSize: 12, fontWeight: 900, cursor: "pointer", boxShadow: "0 6px 18px rgba(15,42,67,.4)" }}>🎬 5분 데모</button>
+    {open && (<div style={{ position: "fixed", left: 18, bottom: 112, zIndex: 1349, width: "min(390px,92vw)", background: "#fff", borderRadius: 16, boxShadow: "0 16px 48px rgba(0,0,0,.28)", overflow: "hidden" }}>
+      <div style={{ background: "#0F2A43", color: "#fff", padding: "11px 15px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <b style={{ fontSize: 13 }}>🎬 현대해상 5분 데모 동선 <span style={{ fontSize: 10, opacity: .8, fontWeight: 600 }}>· 운영 전용</span></b>
+        <button onClick={() => setOpen(false)} style={{ background: "transparent", border: "none", color: "#fff", fontSize: 15, cursor: "pointer", fontWeight: 900 }}>✕</button>
+      </div>
+      <div style={{ display: "flex", gap: 4, padding: "9px 12px 0", flexWrap: "wrap" }}>
+        {DEMO_STEPS.map((d, i) => (<span key={d.n} onClick={() => setIdx(i)} style={{ cursor: "pointer", borderRadius: 8, padding: "3px 8px", fontSize: 10.5, fontWeight: 800, background: i === idx ? "#0F2A43" : "#EEF3F8", color: i === idx ? "#fff" : "#48607A" }}>{d.min} {d.n}</span>))}
+      </div>
+      <div style={{ padding: "10px 14px 13px" }}>
+        <div style={{ fontSize: 13.2, fontWeight: 900, color: "#0F2A43" }}>{s.n}. {s.t}</div>
+        <div style={{ fontSize: 10.8, color: "#64748B", marginTop: 2 }}>📍 {s.where} · {s.frame}</div>
+        <div style={{ fontSize: 11.8, color: "#334155", lineHeight: 1.65, marginTop: 7, background: "#F5F8FB", borderRadius: 10, padding: "8px 11px" }}><b>무엇을</b> — {s.act}</div>
+        <div style={{ fontSize: 11.8, color: "#334155", lineHeight: 1.65, marginTop: 6, background: "#FFF9F0", borderRadius: 10, padding: "8px 11px" }}><b>🎤 멘트</b> — {s.say}</div>
+        <div style={{ display: "flex", gap: 6, marginTop: 9 }}>
+          <button disabled={idx === 0} onClick={() => setIdx(idx - 1)} className="hmbtn gh" style={{ flex: 1, opacity: idx === 0 ? .4 : 1 }}>← 이전</button>
+          {s.tab != null && <button className="hmbtn" style={{ flex: 1.2, background: "#0F2A43" }} onClick={() => { try { onTab(s.tab); } catch (e) {} }}>이 화면 열기</button>}
+          <button disabled={idx === DEMO_STEPS.length - 1} onClick={() => setIdx(idx + 1)} className="hmbtn gh" style={{ flex: 1, opacity: idx === DEMO_STEPS.length - 1 ? .4 : 1 }}>다음 →</button>
+        </div>
+      </div>
+    </div>)}
+  </>);
+}
+
 /* ══ 메인 섹션 ══ */
 function HealthMateSection({ onGo }) {
   const [code, setCode] = React.useState(() => { try { return sessionStorage.getItem("hifin_hm_code") || null; } catch (e) { return null; } });
@@ -19749,6 +19781,7 @@ function HealthMateSection({ onGo }) {
         원본 건강수치·원가성 정보 비노출 · 진단·인수·등급 단정 금지 · 시연 환경(체험 회원 시드) 고지
       </div>
       <HiProDock />
+      <HmDemoGuide onTab={setTab} />
       {toastM && <div style={{ position: "fixed", bottom: 26, left: "50%", transform: "translateX(-50%)", background: HM_C.ink, color: "#fff", borderRadius: 10, padding: "9px 16px", fontSize: 12.5, zIndex: 1300, boxShadow: "0 10px 30px rgba(0,0,0,.3)" }}>{toastM}</div>}
     </div>
   );
@@ -26719,6 +26752,63 @@ try {
 const HIFIN_SNIPPET_BACKUP = `(function(){var d={};for(var j=0;j<localStorage.length;j++){var k=localStorage.key(j);if(/^(hifin_|pi_)/.test(k))d[k]=localStorage.getItem(k);}var s=JSON.stringify(d),h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;var bk={ver:1,app:"hifin",origin:location.origin,at:new Date().toISOString(),keys:Object.keys(d).length,sum:h.toString(16),data:d};var b=new Blob([JSON.stringify(bk,null,1)],{type:"application/json"});var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="hifin_backup_"+bk.at.slice(0,10)+".json";document.body.appendChild(a);a.click();a.remove();console.log("백업 완료 — "+bk.keys+"개 키");})();`;
 const HIFIN_SNIPPET_RESTORE = `(function(){var i=document.createElement("input");i.type="file";i.accept=".json";i.onchange=function(){var f=i.files[0],r=new FileReader();r.onload=function(){try{var bk=JSON.parse(r.result);if(bk.app!=="hifin"||!bk.data){alert("하이핀 백업 파일이 아니에요");return;}var n=0;for(var k in bk.data){if(/^(hifin_|pi_)/.test(k)){localStorage.setItem(k,bk.data[k]);n++;}}alert("복원 완료 — "+n+"개 키. 새로고침하면 반영돼요.");}catch(e){alert("복원 실패: "+e);}};r.readAsText(f);};i.click();})();`;
 
+/* ══════════════ 현대해상 5분 데모 동선(demoScript.js) — 2단계 v1.4 P7 ══════════════
+   투자 데모의 단일 소스 — 화면 가이드(HmDemoGuide)와 시나리오 문서가 같은 스텝을 읽는다.
+   동선(v1.4 §I 확정): 내 대비 현황 → 회원이 하이에게 질문 → ⓪지시서 → 결과 기록 → ⑩관제탑 → L8 재산정 → 하이프로.
+   ⚠️ 멘트는 실측 사실만(§0-A) — 숫자·수치는 화면이 말하게 하고, 발표자는 구조를 말한다. */
+
+const DEMO_STEPS = [
+  { n: 1, min: "0:00", t: "내 대비 현황 — 세 숫자가 상시 떠 있다", where: "회원 화면(보험·건강 대시보드)", tab: null,
+    act: "회원 화면의 「내 대비 현황」 카드를 보여준다 — 예상 치료비·생활비 공백·모아둔 준비금, 전부 구간 표시.",
+    say: "회원 화면에는 세 숫자가 항상 떠 있습니다. 권유 문구가 아니라 구간으로 된 사실 표시입니다 — 판단은 회원이 합니다.",
+    frame: "① 권유 없는 신계약" },
+  { n: 2, min: "0:40", t: "회원이 먼저 묻는다 — 교차의 계측", where: "회원 화면 · 하이(주황 독)", tab: null,
+    act: "카드의 「생활비 공백」을 눌러 해설을 연다 — 누르는 순간 needs_asked 이벤트가 기록된다(⑩에서 집계 확인 예고).",
+    say: "회원이 먼저 물었습니다. 이 순간이 needs_asked라는 데이터로 남고, 관제탑 퍼널에 실시간 집계됩니다 — 니즈 곡선과 부담 곡선이 만나는 지점을 회사가 처음으로 계측합니다.",
+    frame: "①·⑤ 평생 고객화 지표" },
+  { n: 3, min: "1:30", t: "⓪ 오늘의 지시서 — 선발화 없는 대본", where: "프로 콘솔 · ⓪ 오늘의 지시서", tab: 0,
+    act: "오늘의 카드 한 장을 열고 「대본 보기」 — 7파트 대본에 니즈 선발화 갈래가 없음을 보여준다(회원 질문 응대만 존재).",
+    say: "프로의 대본에는 보험을 먼저 꺼내는 갈래 자체가 없습니다. 문장은 전부 사람이 검수한 블록이고, 금지어는 발행 게이트가 자동 차단합니다.",
+    frame: "② 전속 채널의 승격" },
+  { n: 4, min: "2:20", t: "결과 남기기 — 기록은 선택지다", where: "프로 콘솔 · 카드의 「결과 남기기」", tab: 0,
+    act: "결과 시트를 열어 7코드 중 하나를 누른다 — 거절은 30일 제외, 후속 약속은 그 날짜에 맨 위로.",
+    say: "통화 결과는 자유 서술이 아니라 클릭 7코드입니다. 오늘의 기록이 내일의 명단을 바꿉니다 — 영업이 아니라 운영입니다.",
+    frame: "④ 관리 가능한 영업조직" },
+  { n: 5, min: "3:00", t: "⑩ 통합 운영 — 본사가 보는 화면", where: "프로 콘솔 · ⑩ 통합 운영(운영 본부 전용)", tab: 10,
+    act: "완결 퍼널·활동 결과 분포·10만 배분 현황·지점 드릴다운을 차례로 짚는다.",
+    say: "지시 발행부터 완결까지 전건이 집계됩니다. 무엇이 통하는 접근인지 — 본사가 처음으로 데이터로 압니다. 뒤에서는 10만 명 전건 배분이 결정론으로 돌아갑니다.",
+    frame: "④·③ 양질의 DB 자동 생성" },
+  { n: 6, min: "3:50", t: "L8 재산정 — 보험료가 관리를 따라간다", where: "회원 화면 · 하이에게 「요율 재산정 신청해줘」", tab: null,
+    act: "관리 지표가 개선된 데모 회원으로 재산정을 신청한다 — 월 보험료 인하가 즉시 반영되고 기록이 남는다.",
+    say: "보험료가 나이가 아니라 관리를 따라간 순간입니다. 검진 한 번이 평생 관계가 되는 L8 재설계까지, 여정이 화면에서 실제로 돌아갑니다.",
+    frame: "⑤ 평생 고객화" },
+  { n: 7, min: "4:30", t: "하이프로 — 프로 뒤의 전수 검증 코치", where: "프로 콘솔 · 좌하단 🧭 하이프로", tab: 0,
+    act: "「고혈압 건강관리 방법 알려줘」를 눌러 답과 출처 칩을 보여준다 — 원천 없는 답은 정직하게 거절함도 시연.",
+    say: "프로 한 사람 뒤에 전수 회귀로 검증된 코치가 붙습니다. 답은 전부 출처가 달려 있고, 원천에 없으면 지어내지 않습니다 — 신뢰가 구조입니다.",
+    frame: "② 전속 채널의 승격" },
+];
+
+/* 데모 시작 전 준비(발표 체크리스트) — 시나리오 문서와 공유 */
+const DEMO_PREP = [
+  "로컬 서버 기동(포트 5601) 또는 라이브(hi-fintech.com) 접속 확인",
+  "회원 계정(하이/하이1) 로그인 → 세 숫자 카드가 보이는지 확인",
+  "프로 콘솔 접속 코드 준비(코드 잠금 해제 시 재입력)",
+  "⑩ 통합 운영은 운영 계정에서만 보임 — 데모는 운영 계정으로",
+  "재산정 데모 회원은 관리 지표 개선분이 있는 계정으로(신청 이력 초기화 확인)",
+  "하이프로 독 첫 질문은 빠른 질문 칩 사용(오타 방지)",
+];
+
+try {
+  if (typeof window !== "undefined") {
+    window.__hifinDemo = function () {
+      try {
+        if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        return { steps: DEMO_STEPS.map((s) => ({ n: s.n, min: s.min, t: s.t, tab: s.tab })), prep: DEMO_PREP.length };
+      } catch (e) { return { error: String(e).slice(0, 120) }; }
+    };
+  }
+} catch (e) {}
+
 /* ══════════════ 회원 컨텍스트(memberContext.js) — 데이터 운영계획 v1.1 §5 D-1 (2026-08-30 형 승인) ══════════════
    에이전트(하이 A0~A5)가 회원 상담에 필요한 전부를 **한 번에** 받는 360뷰 — 개별 배선 제거의 단일 진입점.
    ⚠️ 원칙:
@@ -31357,7 +31447,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "307a556854b3c897", "generatedAt": "2026-08-30", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "5a894dc010175800", "generatedAt": "2026-08-31", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -31525,7 +31615,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-08-30","seed":20260828,"inventory":{"version":1,"sourceHash":"307a556854b3c897","generatedAt":"2026-08-30","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.26,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-08-30","seed":20260828,"inventory":{"version":1,"sourceHash":"5a894dc010175800","generatedAt":"2026-08-31","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.03,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
