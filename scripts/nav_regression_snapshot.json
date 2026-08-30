@@ -1,9 +1,9 @@
 {
-  "date": "2026-08-29",
+  "date": "2026-08-30",
   "seed": 20260828,
   "inventory": {
     "version": 1,
-    "sourceHash": "1813645013b4a8ab",
+    "sourceHash": "dff9b240e58a1e83",
     "generatedAt": "2026-08-30",
     "bypass": false
   },
@@ -11,7 +11,7 @@
   "accAdmin": 100,
   "accMember": 100,
   "leaks": 0,
-  "seconds": 1.2,
+  "seconds": 0.99,
   "pass": true,
   "nluTotal": 12762,
   "nluAcc": 99.22,

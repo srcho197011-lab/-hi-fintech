@@ -108,20 +108,35 @@ function neFundBuilt(m) {
     buildKo: "검진·재검진·복약 체크·걷기 미션·건강쇼핑 적립으로 쌓여요" };
 }
 
-/* ── 종합: 「내 대비 현황」 3값(전부 구간·평가어 없음) ── */
-function needsSummary(i) {
-  const m = (typeof cohortLoginProfile === "function") ? cohortLoginProfile(Number(i)) : null;
+/* ── 종합: 「내 대비 현황」 3값(전부 구간·평가어 없음) — 회원 객체 직접(코호트·데모·본인 공용) ── */
+function needsSummaryOf(m) {
   if (!m) return null;
-  const card = (typeof buildHandoffCard === "function") ? buildHandoffCard(Number(i)) : null;
-  const grade = card ? card.grade : "-", group = card ? card.group : "organ";
+  let grade = "-", group = "organ", groupKo = "-";
+  try {
+    const chk = genMemberCheckup(m);
+    const lifeAll = (chk.nat && chk.nat.life) || [];
+    const g = riskGradeOf(chk.items, chk.trend, lifeAll.filter((f) => /절주|금연/.test(f)));
+    grade = g.grade;
+    let leadKey = null, leadSev = 0;
+    for (const k in chk.items) { const sv = chk.items[k].sev || 0; if (sv > leadSev) { leadSev = sv; leadKey = k; } }
+    group = leadKey ? riskGroupOf(leadKey) : "organ";
+    groupKo = (HM_RISK_GROUPS[group] || {}).ko || group;
+  } catch (e) {}
   const cancerHint = (m.highRiskCancerTypes || []).length > 0 || (m.cancerRiskGrade || 0) >= 6;
   const cost = neCostExposure(m, grade, group);
   const income = neIncomeGap(m, grade, group, cancerHint);
   const fund = neFundBuilt(m);
-  return { v: 1, i: Number(i), grade: grade, groupKo: card ? card.groupKo : "-",
+  return { v: 1, grade: grade, groupKo: groupKo,
     cost: cost, income: income, fund: fund,
     refresh: "검진 결과 · 등급 변화 · 미션 완결 · 계약 변경 시 자동 갱신",
     boundary: "구간 표시만 · 판단은 회원이 · 원본 수치 미포함", label: "[예시·시연 데이터]" };
+}
+function needsSummary(i) {
+  const m = (typeof cohortLoginProfile === "function") ? cohortLoginProfile(Number(i)) : null;
+  if (!m) return null;
+  const s2 = needsSummaryOf(m);
+  if (s2) s2.i = Number(i);
+  return s2;
 }
 
 /* ── 가드(§0-A) — 단정값·평가어 유입 검사(러너·하네스 공용) ── */

@@ -885,6 +885,31 @@ function HmTabOps() {
             <div style={{ fontSize: 10.4, color: HM_C.mut }}>문안 개선은 형 검수 후 hmScriptBlocks에만 반영 — 자동 반영 금지(학습 루프 규약)</div>
           </div>)}
       </div>
+      {/* ⑦ 활동 결과 관제(2단계 P2) — 지시가 어떻게 끝났는지 · 기록이 다음 지시를 바꾼다 */}
+      {(() => {
+        const rs = (typeof hmrStats === "function") ? hmrStats(null) : null;
+        const asked = ev && ev.by ? (ev.by.needs_asked || 0) : 0;
+        const resulted = ev && ev.by ? (ev.by.handoff_resulted || 0) : 0;
+        const contacted = ev && ev.by ? (ev.by.handoff_contacted || 0) : 0;
+        const maxN = rs && rs.n ? Math.max.apply(null, rs.codes.map((c) => c.n).concat([1])) : 1;
+        let topBranch = null;
+        if (rs && Object.keys(rs.byBranch).length) { const bb = Object.entries(rs.byBranch).sort((a, b2) => b2[1] - a[1])[0]; topBranch = { no: bb[0], n: bb[1] }; }
+        return (<div style={box}>
+          <div style={bt}>⑦ 활동 결과 관제 — 지시가 어떻게 끝났나 <span className="hmpill" style={{ background: "#FEF3E2", color: "#B45309" }}>시연 분포</span></div>
+          {rs && rs.n ? (<div>
+            {rs.codes.map((c) => (<div key={c.k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+              <span style={{ width: 92, fontSize: 11, fontWeight: 700, color: "#475569" }}>{c.icon} {c.ko}</span>
+              <div style={{ flex: 1, height: 8, background: "#F1F5F9", borderRadius: 4 }}><div style={{ width: (c.n / maxN * 100) + "%", height: 8, background: HM_C.brand, borderRadius: 4 }} /></div>
+              <b style={{ width: 24, textAlign: "right", fontSize: 11.5 }}>{c.n}</b></div>))}
+            <div style={{ fontSize: 11.6, color: "#475569", lineHeight: 1.8, marginTop: 6 }}>
+              기록 {rs.n}건 · 수락률 {rs.acceptRate != null ? rs.acceptRate + "%" : "-"} · 후속 약속 {rs.followUps}건<br />
+              접촉 {contacted} → 결과 {resulted} → <b style={{ color: "#6D28D9" }}>회원이 먼저 물음 {asked}건</b>(두 곡선 교차)
+              {topBranch && <span><br />가장 많이 쓴 말: <b>응대 {topBranch.no}</b>({topBranch.n}회)</span>}
+            </div>
+            <div style={{ fontSize: 10.4, color: HM_C.mut, marginTop: 4 }}>완결·거절(30일)·연락처 오류는 내일 명단에서 자동 제외 · 후속일이 온 회원은 맨 위로.</div>
+          </div>) : (<div style={{ fontSize: 11.6, color: HM_C.mut }}>아직 기록된 결과가 없어요 — ⓪ 오늘의 지시서에서 통화 후 「결과 남기기」를 누르면 여기 쌓여요. 기록이 내일의 명단을 바꿉니다.</div>)}
+        </div>);
+      })()}
     </div>
   </div>);
 }

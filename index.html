@@ -8941,6 +8941,92 @@ function ShopSection({ onGo }) {
 /* ====================== HOME ====================== */
 /* ====================== 보험·치료비 ====================== */
 
+/* ══════════════ 내 대비 현황(NeedsCard.jsx) — 2단계 v1.4 축⓪ P1 실장(형 확정: 섹션=A안·위젯=B안 병용) ══════════════
+   두 곡선이 만나는 화면. §0-A 구간만·평가어 없음 / §0-P 회원이 눌러 물을 때만 해설(3단: 사실→판단 유보→절차) —
+   누르는 순간 needs_asked가 기록된다(두 곡선 교차의 계측). 불안 색(적색) 미사용 — 네이비/브랜드 중립(§D). */
+
+function _ncMember() {
+  try { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (dm) return dm; } catch (e) {}
+  try { if (typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") return selfMember(); } catch (e) {}
+  return null;
+}
+
+function NeedsCard({ variant }) {
+  const m = _ncMember();
+  const [open, setOpen] = React.useState(null);   // "cost" | "income" | "fund"
+  const sum = React.useMemo(() => { try { return m ? needsSummaryOf(m) : null; } catch (e) { return null; } }, [m && (m.id || m.email)]);
+  if (!m || !sum) return null;
+  const ask = (k) => {
+    const next = open === k ? null : k;
+    setOpen(next);
+    if (next) { try { hiEvent("needs_asked", { key: k, src: variant || "card" }); } catch (e) {} }
+  };
+  const hospital = sum.cost.steps[2], exam = sum.cost.steps[0];
+  const NAVY = "#0B2239", BRAND = "#C2410C", MUT = "#64748B";
+  /* 3단 해설(§0-P 고정 구조) — 사실 → 판단 유보 → 절차. 문장은 이 컴포넌트가 아니라 데이터의 조립 */
+  const EXPLAIN = {
+    cost: [["사실", `지금 관리 단계 기준으로, 정밀검사는 ${exam.oopBand}, 입원까지 가면 ${hospital.oopBand}이 내가 내는 돈 구간이에요(${hospital.note}).`],
+      ["판단", "지금 무엇을 준비할지는 정해진 답이 없어요 — 판단은 스스로 하시는 거예요."],
+      ["절차", "치료비 보장 점검(보장분석 탭)에서 지금 가진 것부터 확인할 수 있어요. 궁금한 건 하이에게 물어보세요."]],
+    income: sum.income.applicable
+      ? [["사실", `치료에 전념하는 기간(${sum.income.durKo})의 생활비로 ${sum.income.needBand}이 필요하고, 가진 진단금 ${sum.income.diagManwon}만원을 빼면 ${sum.income.gapBand}이 남아요.`],
+        ["판단", "이 구간을 어떻게 볼지는 가정마다 달라요 — 숫자만 보여드려요."],
+        ["절차", "근거 통계의 출처는 카드 하단에 있어요. 자세한 건 하이 또는 담당 헬스케어 전문가에게 물어보세요."]]
+      : [["사실", "지금은 예방 관리 구간이라 생활비 공백 계산 단계가 아니에요."],
+        ["판단", "관리를 이어가면 이 칸은 계속 이 상태를 지키는 게 목표예요."],
+        ["절차", "검진·미션을 이어가면 준비됨 칸이 대신 차올라요."]],
+    fund: [["사실", `검진·미션·건강쇼핑으로 ${sum.fund.htk.toLocaleString()} HTK가 쌓였고, ${sum.fund.monthsKo}이에요.`],
+      ["판단", "쓸지 모을지는 언제든 바꿀 수 있어요 — 지갑의 주인은 나예요."],
+      ["절차", "건강지갑에서 적립 내역과 사용처를 볼 수 있어요."]],
+  };
+  const rows = [
+    { k: "cost", lbl: "치료비", d1: "이 관리 단계에서 예상되는 내가 내는 돈", d2: `입원 기준 · 정밀검사는 ${exam.oopBand}`, v: hospital.oopBand + " 구간", c: NAVY },
+    { k: "income", lbl: "생활비", d1: "치료 기간 소득 공백으로 필요한 돈",
+      d2: sum.income.applicable ? `가진 진단금 ${sum.income.diagManwon}만원을 뺀 나머지예요` : "지금은 예방 관리 구간이에요",
+      v: sum.income.applicable ? sum.income.gapBand + " 구간" : "해당 없음", c: NAVY },
+    { k: "fund", lbl: "준비됨", d1: "건강활동으로 쌓인 준비금", d2: sum.fund.monthsKo, v: sum.fund.htk.toLocaleString() + " HTK", c: BRAND },
+  ];
+  if (variant === "widget") {   /* B안 — 3칼럼 콤팩트(홈·지갑 요약) */
+    return (<div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg,#0B2239,#16405F)", color: "#fff", padding: "9px 14px" }}>
+        <b style={{ fontSize: 13.5 }}>🧾 내 대비 현황</b><span style={{ fontSize: 10.5, color: "#9FB7CC" }}>구간으로만 · 판단은 내가 · [예시·시연]</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
+        {rows.map((r) => (<div key={r.k} onClick={() => ask(r.k)} style={{ padding: "12px 8px", textAlign: "center", cursor: "pointer", borderRight: "1px solid #EEF2F6", background: r.k === "fund" ? "#FFFBF5" : "#fff" }}>
+          <div style={{ fontSize: 11.5, fontWeight: 900, color: MUT }}>{r.lbl}</div>
+          <div style={{ fontSize: 15.5, fontWeight: 900, color: r.c, margin: "4px 0 2px" }}>{r.v}</div>
+          <div style={{ fontSize: 10, color: "#94A3B8", lineHeight: 1.45 }}>{r.d2}</div>
+        </div>))}
+      </div>
+      {open && <div style={{ padding: "9px 14px", background: "#F8FAFC", borderTop: "1px solid #EEF2F6", fontSize: 12, lineHeight: 1.7 }}>
+        {EXPLAIN[open].map(([t, x]) => <div key={t}><b style={{ color: BRAND, marginRight: 6 }}>{t}</b>{x}</div>)}</div>}
+    </div>);
+  }
+  /* A안 — 3줄 리스트형(보험·치료비 섹션 상단, 형 확정 2026-08-30) */
+  return (<div className="card" style={{ padding: 0, overflow: "hidden", margin: "12px 0" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg,#0B2239,#16405F)", color: "#fff", padding: "11px 16px" }}>
+      <b style={{ fontSize: 15 }}>🧾 내 대비 현황</b>
+      <span style={{ fontSize: 11, color: "#9FB7CC" }}>지금 단계 기준 · 구간으로만 보여드려요 · [예시·시연]</span>
+    </div>
+    {rows.map((r) => (<div key={r.k} onClick={() => ask(r.k)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 16px", borderBottom: "1px solid #EEF2F6", cursor: "pointer", background: open === r.k ? "#F8FAFC" : "#fff" }}>
+      <div style={{ width: 62, fontSize: 14.5, fontWeight: 900, color: NAVY }}>{r.lbl}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12.6, color: "#374151" }}>{r.d1}</div>
+        <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{r.d2}</div>
+      </div>
+      <div style={{ fontSize: 17, fontWeight: 900, color: r.c, whiteSpace: "nowrap" }}>{r.v}</div>
+      <span style={{ color: "#CBD5E1", fontSize: 12 }}>{open === r.k ? "▲" : "▼"}</span>
+    </div>))}
+    {open && <div style={{ padding: "11px 16px", background: "#F8FAFC", borderBottom: "1px solid #EEF2F6", fontSize: 12.6, lineHeight: 1.75 }}>
+      {EXPLAIN[open].map(([t, x]) => <div key={t} style={{ marginBottom: 3 }}><b style={{ color: BRAND, marginRight: 7 }}>{t}</b>{x}</div>)}
+      {open === "income" && sum.income.applicable && <div style={{ fontSize: 10.4, color: MUT, marginTop: 5 }}>근거: {sum.income.durSrc} · {sum.income.livingSrc} (일부 검수 대기 — 공식 확정 전 보수적 근사)</div>}
+    </div>}
+    <div style={{ padding: "9px 16px", fontSize: 11.6, color: MUT, background: "#FFFBF5" }}>
+      검진 결과·미션 완결·계약이 바뀌면 자동으로 다시 계산돼요 · <b style={{ color: BRAND }}>궁금한 줄을 눌러보세요</b>
+    </div>
+  </div>);
+}
+
 /* ══ 과업B(2026-07-31) — 운영 주체 자격 표시: 금융위 등록 보험대리점 공식 배지·상세 카드·고지 라인 ══
    문구 확정본(임의 수정 금지): 글로벌예방금융(주) · 보험대리점 등록번호 제2025060038호
    근거: 보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항 */
@@ -10631,6 +10717,8 @@ function InsuranceSection({ onGo }) {
       <div className="aihead"><span className="aiico"><SecIcon k="insurance" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>보험·치료비</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강검진대비보험 · 가입 · 보장조회 · 청구 · AI상담 — 치료비 걱정 없는 임베디드 보험</div></div></div>
+      {/* 2단계 P1(형 확정 A안) — 두 곡선의 상시 화면: 회원이 눌러 물을 때만 해설·계측(§0-P) */}
+      {typeof NeedsCard === "function" && <NeedsCard />}
       <div className="chtabs">{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
       {tab === "analysis" && (<>
@@ -19402,6 +19490,31 @@ function HmTabOps() {
             <div style={{ fontSize: 10.4, color: HM_C.mut }}>문안 개선은 형 검수 후 hmScriptBlocks에만 반영 — 자동 반영 금지(학습 루프 규약)</div>
           </div>)}
       </div>
+      {/* ⑦ 활동 결과 관제(2단계 P2) — 지시가 어떻게 끝났는지 · 기록이 다음 지시를 바꾼다 */}
+      {(() => {
+        const rs = (typeof hmrStats === "function") ? hmrStats(null) : null;
+        const asked = ev && ev.by ? (ev.by.needs_asked || 0) : 0;
+        const resulted = ev && ev.by ? (ev.by.handoff_resulted || 0) : 0;
+        const contacted = ev && ev.by ? (ev.by.handoff_contacted || 0) : 0;
+        const maxN = rs && rs.n ? Math.max.apply(null, rs.codes.map((c) => c.n).concat([1])) : 1;
+        let topBranch = null;
+        if (rs && Object.keys(rs.byBranch).length) { const bb = Object.entries(rs.byBranch).sort((a, b2) => b2[1] - a[1])[0]; topBranch = { no: bb[0], n: bb[1] }; }
+        return (<div style={box}>
+          <div style={bt}>⑦ 활동 결과 관제 — 지시가 어떻게 끝났나 <span className="hmpill" style={{ background: "#FEF3E2", color: "#B45309" }}>시연 분포</span></div>
+          {rs && rs.n ? (<div>
+            {rs.codes.map((c) => (<div key={c.k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+              <span style={{ width: 92, fontSize: 11, fontWeight: 700, color: "#475569" }}>{c.icon} {c.ko}</span>
+              <div style={{ flex: 1, height: 8, background: "#F1F5F9", borderRadius: 4 }}><div style={{ width: (c.n / maxN * 100) + "%", height: 8, background: HM_C.brand, borderRadius: 4 }} /></div>
+              <b style={{ width: 24, textAlign: "right", fontSize: 11.5 }}>{c.n}</b></div>))}
+            <div style={{ fontSize: 11.6, color: "#475569", lineHeight: 1.8, marginTop: 6 }}>
+              기록 {rs.n}건 · 수락률 {rs.acceptRate != null ? rs.acceptRate + "%" : "-"} · 후속 약속 {rs.followUps}건<br />
+              접촉 {contacted} → 결과 {resulted} → <b style={{ color: "#6D28D9" }}>회원이 먼저 물음 {asked}건</b>(두 곡선 교차)
+              {topBranch && <span><br />가장 많이 쓴 말: <b>응대 {topBranch.no}</b>({topBranch.n}회)</span>}
+            </div>
+            <div style={{ fontSize: 10.4, color: HM_C.mut, marginTop: 4 }}>완결·거절(30일)·연락처 오류는 내일 명단에서 자동 제외 · 후속일이 온 회원은 맨 위로.</div>
+          </div>) : (<div style={{ fontSize: 11.6, color: HM_C.mut }}>아직 기록된 결과가 없어요 — ⓪ 오늘의 지시서에서 통화 후 「결과 남기기」를 누르면 여기 쌓여요. 기록이 내일의 명단을 바꿉니다.</div>)}
+        </div>);
+      })()}
     </div>
   </div>);
 }
@@ -21242,7 +21355,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.sh — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-08-30", ver:"v1.4", ch:[10], feat:"2단계 P1 니즈·재원 엔진", src:"src/data/needsEngine.js", summary:"권유 없는 니즈 — 치료비·생활비·준비됨 3값이 구간으로만 산출, 회원이 먼저 묻는 순간이 계측된다", refs:[], status:"반영", hash:"ebadc02", auto:true },
+  { date:"2026-08-30", ver:"v1.4", ch:[10], feat:"2단계 P1 실장·P2 결과 기록", src:"src/components/NeedsCard.jsx,src/data/handoffResult.js", summary:"두 곡선이 회원 화면에 상시 떠 있고, 프로의 통화 결과가 데이터가 되어 내일의 명단을 바꾼다", refs:[], status:"반영", hash:"3eb80e5", auto:true },
+  { date:"2026-08-30", ver:"v1.4", ch:[10], feat:"2단계 P1 니즈·재원 엔진", src:"src/data/needsEngine.js", summary:"권유 없는 니즈 — 치료비·생활비·준비됨 3값이 구간으로만 산출, 회원이 먼저 묻는 순간이 계측된다", refs:[], status:"반영", hash:"b8c0f07", auto:true },
   { date:"2026-08-30", ver:"v1.1", ch:[9], feat:"L3 백업 시스템", src:"src/data/backupRestore.js,src/components/DataOpsConsole.jsx", summary:"브라우저에 갇힌 회원 행동층의 유일 안전망 — 원클릭 백업/복원과 오리진 이사 스니펫, D-2 이관 전 브리지", refs:[], status:"반영", hash:"74cfe6f", auto:true },
   { date:"2026-08-30", ver:"v1.1", ch:[9], feat:"데이터 운영 콘솔", src:"src/components/DataOpsConsole.jsx", summary:"데이터 인벤토리가 죽은 문서가 아니라 원천을 읽는 관제 화면이 됨 — 저장소 실측·미등재 검출·외부 소스 현황 실시간", refs:[], status:"반영", hash:"7179c02", auto:true },
   { date:"2026-08-30", ver:"v1.1", ch:[9], feat:"데이터 운영 D-1", src:"src/data/dataCatalog.js,src/data/memberContext.js,scripts/check_data_catalog.py", summary:"데이터가 어디 있는지의 단일 소스와 에이전트 1콜 360뷰 — 미등재 저장 키는 커밋이 막힌다", refs:[], status:"반영", hash:"906b553", auto:true },
@@ -25227,7 +25341,7 @@ function interventionsFor(grade, groupKey) {
 }
 
 /* 자동 생성 — run_handoff_harness.mjs (P4). 콘솔 하네스 타일이 읽는 최근 통과 스냅샷 — 손대지 말 것 */
-const HM_HARNESS_SNAPSHOT = {"date":"2026-08-29","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
+const HM_HARNESS_SNAPSHOT = {"date":"2026-08-30","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
 
 /* 자동 생성 — run_handoff_batch.mjs (P5). ⑩관제탑이 읽는 배치 스냅샷 — 손대지 말 것(운영 정합 §7-⑥: 관제탑 집계 = 이 스냅샷 = 배치 리포트). */
 const HM_OPS_SNAPSHOT = {"date":"2026-08-30","total":100000,"cards":56945,"publishable":56945,"locked":32855,"byGrade":{"H":6300,"-":43055,"L":46292,"M":4353},"bySido":{"충북":1746,"경북":2987,"서울":10880,"부산":4146,"전북":1691,"경기":13271,"대전":1763,"충남":2515,"울산":1237,"전남":1920,"강원":1792,"인천":3716,"광주":1648,"대구":2882,"경남":2941,"제주":1152,"세종":658},"pros":639,"rosterChecked":639,"rosterViol":0,"avgRoster":5.99,"maxRoster":7,"byRosterGrade":{"H":3365,"M":238,"L":223},"seconds":55.4,"pass":true};
@@ -25685,6 +25799,95 @@ try {
   }
 } catch (e) {}
 
+/* ══════════════ 활동결과 기록(handoffResult.js) — 2단계 v1.4 축① P2 (형 승인 2026-08-30) ══════════════
+   지시 발행→접촉 다음의 빈칸: "그래서 어떻게 됐나"의 영속 기록. 프로 활동이 처음으로 데이터가 된다.
+   ⚠️ 헌법:
+     · §0-B 기록은 선택지다 — 결과는 7코드 클릭, 자유 텍스트는 보조 메모 1칸(금지어 스캔 통과분만 저장).
+     · 7코드 밖 값은 저장 거부(기록 무결 — 하네스 §7-①).
+     · 저장: hifin_handoff_result_{프로코드} (dataCatalog 등재) · 이벤트: handoff_resulted(등재).
+     · 기록이 다음 지시를 바꾼다 — 완결·거절은 로스터 제외(거절 30일 쿨다운), 부재·보류는 후속일 도래 시 우선 가산. */
+
+const HM_RESULT_CODES = [
+  { k: "R1", ko: "연결·수락", desc: "개입 알림 발송함", icon: "✅", next: "완결 이벤트 대기" },
+  { k: "R2", ko: "연결·보류", desc: "생각해 보시기로", icon: "⏸", next: "후속일에 다시" },
+  { k: "R3", ko: "연결·거절", desc: "괜찮다고 하심",   icon: "🙅", next: "30일 쉬어가기" },
+  { k: "R4", ko: "부재",     desc: "전화 안 받으심",   icon: "📵", next: "다음 기회에 재시도" },
+  { k: "R5", ko: "번호 오류", desc: "연락처가 달라요",  icon: "⚠️", next: "정보 확인 필요" },
+  { k: "R6", ko: "락 확인",   desc: "검진 전 — 중단",   icon: "🔒", next: "결과 오면 자동 해제" },
+  { k: "R7", ko: "완결 확인", desc: "행동까지 끝남",    icon: "🏁", next: "다음 주기 관리로" },
+];
+function hmrCode(k) { return HM_RESULT_CODES.find((c) => c.k === k) || null; }
+
+function _hmrKey(code) { return "hifin_handoff_result_" + code; }
+function _hmrAll(code) { try { return JSON.parse(localStorage.getItem(_hmrKey(code)) || "[]"); } catch (e) { return []; } }
+
+/* 기록 — 7코드 밖 거부·메모는 금지어 스캔 경유(§0-B) */
+function hmrRecord(code, entry) {
+  const c = hmrCode(entry && entry.result);
+  if (!c) return { ok: false, why: "결과는 7코드 중에서만 고를 수 있어요" };
+  if (entry.memo) {
+    try { const hits = hmForbiddenScan(entry.memo); if (hits.length) return { ok: false, why: "메모에 쓸 수 없는 표현이 있어요: " + hits[0].ko }; } catch (e) {}
+    entry.memo = String(entry.memo).slice(0, 120);
+  }
+  const row = { i: Number(entry.i), date: String(entry.date || new Date().toISOString().slice(0, 10)),
+    result: c.k, branch: entry.branch != null ? Number(entry.branch) : null,
+    followUp: entry.followUp || null, memo: entry.memo || "", at: Date.now() };
+  const l = _hmrAll(code); l.push(row);
+  try { localStorage.setItem(_hmrKey(code), JSON.stringify(l.slice(-800))); } catch (e) { return { ok: false, why: "저장 공간이 부족해요 — 백업 후 정리해 주세요" }; }
+  try { hiEvent("handoff_resulted", { key: c.k, grade: entry.grade || "", n: entry.branch || 0, src: "sheet" }); } catch (e) {}
+  return { ok: true, row: row, ko: c.ko };
+}
+
+/* 회원별 최근 결과 — 로스터 반영용(같은 프로 기록 안에서) */
+function hmrLastOf(code, i) {
+  const l = _hmrAll(code);
+  for (let j = l.length - 1; j >= 0; j--) if (l[j].i === Number(i)) return l[j];
+  return null;
+}
+/* 로스터 조정 판정 — dailyRoster가 호출: skip(제외) / boost(가산) / 0 */
+function hmrRosterAdjust(code, i, dateStr) {
+  const r = hmrLastOf(code, i);
+  if (!r) return { skip: false, boost: 0 };
+  const days = Math.floor((new Date(dateStr) - new Date(r.date)) / 86400000);
+  if (r.result === "R7") return { skip: true, why: "완결" };
+  if (r.result === "R3" && days < 30) return { skip: true, why: "거절 쉬어가기(" + (30 - days) + "일 남음)" };
+  if (r.result === "R5") return { skip: true, why: "연락처 확인 필요" };
+  if ((r.result === "R2" || r.result === "R4") && r.followUp && dateStr >= r.followUp) return { skip: false, boost: 180, why: "후속일 도래" };
+  if (r.result === "R1" && days < 7) return { skip: true, why: "완결 대기(D+7 재큐)" };
+  return { skip: false, boost: 0 };
+}
+
+/* 프로별·전체 통계 — ⑩블록⑦(활동 결과 관제)의 원천 */
+function hmrStats(code) {
+  const l = code ? _hmrAll(code) : (function () {
+    let all = [];
+    try { for (let j = 0; j < localStorage.length; j++) { const k = localStorage.key(j); if (k && k.indexOf("hifin_handoff_result_") === 0) all = all.concat(JSON.parse(localStorage.getItem(k) || "[]")); } } catch (e) {}
+    return all;
+  })();
+  const by = {}; const byBranch = {}; let followUps = 0;
+  HM_RESULT_CODES.forEach((c) => by[c.k] = 0);
+  l.forEach((r) => { by[r.result] = (by[r.result] || 0) + 1; if (r.branch) byBranch[r.branch] = (byBranch[r.branch] || 0) + 1; if (r.followUp) followUps++; });
+  const accepted = by.R1 + by.R7, connected = accepted + by.R2 + by.R3;
+  return { n: l.length, by: by, byBranch: byBranch, followUps: followUps,
+    acceptRate: connected ? Math.round(accepted / connected * 100) : null,
+    codes: HM_RESULT_CODES.map((c) => ({ k: c.k, ko: c.ko, icon: c.icon, n: by[c.k] || 0 })) };
+}
+
+/* 러너·검증 훅(관리자) */
+try {
+  if (typeof window !== "undefined") {
+    window.__hifinResult = function (cmd, code, arg) {
+      try {
+        if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        if (cmd === "record") return hmrRecord(code, arg);
+        if (cmd === "stats") return hmrStats(code || null);
+        if (cmd === "adjust") return hmrRosterAdjust(code, arg && arg.i, arg && arg.date);
+        return { error: "record | stats | adjust" };
+      } catch (e) { return { error: String(e).slice(0, 160) }; }
+    };
+  }
+} catch (e) {}
+
 /* ══════════════ 일일 지시서 로스터(dailyRoster.js) — 지시서 프롬프트 v1.3 §5-F (P5) ══════════════
    프로 1인의 「오늘의 지시서」 선별기. 시드 = 날짜 + 프로코드 — 같은 날 같은 프로는 언제나 같은 로스터.
    대량 저장이 아니라 온디맨드 결정론 조립(A6): 열람 시점에 관할 회원을 조립해 우선순위로 5±2건.
@@ -25706,7 +25909,7 @@ function _drScore(card, sig, dateStr, code) {
 
 function hmDailyRoster(code, dateStr) {
   const ids = (typeof hmMembersOfPro === "function") ? hmMembersOfPro(code) : [];
-  const cand = []; let lockedN = 0, offN = 0, unpubN = 0;
+  const cand = []; let lockedN = 0, offN = 0, unpubN = 0, resultSkipN = 0, followUpN = 0;
   for (const i of ids) {
     let card = null;
     try { card = buildHandoffCard(i); } catch (e) {}
@@ -25714,8 +25917,14 @@ function hmDailyRoster(code, dateStr) {
     if (card.timing.lock) { lockedN++; continue; }
     if (card.grade === "-") { offN++; continue; }
     if (!card.compliance.publishable) { unpubN++; continue; }
+    /* P2: 어제까지의 결과 기록이 오늘의 명단을 바꾼다 — 완결·거절 쿨다운 제외, 후속일 도래 가산(§0-B 순환) */
+    let adj = { skip: false, boost: 0 };
+    try { if (typeof hmrRosterAdjust === "function") adj = hmrRosterAdjust(code, i, dateStr); } catch (e) {}
+    if (adj.skip) { resultSkipN++; continue; }
+    if (adj.boost) followUpN++;
     const sig = (typeof cohortSignalOf === "function") ? cohortSignalOf(i) : null;
-    cand.push({ i: i, card: card, sig: sig, score: _drScore(card, sig, dateStr, code) });
+    cand.push({ i: i, card: card, sig: sig, followUp: !!adj.boost,
+      score: _drScore(card, sig, dateStr, code) + (adj.boost || 0) * 1000 });
   }
   cand.sort((a, b) => b.score - a.score);
   /* 건수 — H는 상한 내 전부, 나머지로 목표(5) 채움, 상한 7 */
@@ -25724,7 +25933,8 @@ function hmDailyRoster(code, dateStr) {
   const list = hs.concat(rest).slice(0, Math.max(hs.length, Math.min(HM_ROSTER_TARGET, cand.length))).slice(0, HM_ROSTER_MAX);
   const byGrade = {}; list.forEach((c) => byGrade[c.card.grade] = (byGrade[c.card.grade] || 0) + 1);
   return { code: code, date: dateStr, list: list,
-    counts: { managed: ids.length, candidates: cand.length, locked: lockedN, offCycle: offN, unpublishable: unpubN, byGrade: byGrade } };
+    counts: { managed: ids.length, candidates: cand.length, locked: lockedN, offCycle: offN, unpublishable: unpubN,
+      resultSkipped: resultSkipN, followUpBoost: followUpN, byGrade: byGrade } };
 }
 
 /* 러너·콘솔 훅 — 관리자 전용 프로필에서도 프로 콘솔(코드 게이트 뒤)에서도 쓰도록 카드 요약+검사 필드 동반 */
@@ -25779,7 +25989,7 @@ const HIFIN_DATA_LAYERS = [
 const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent_miss", "hifin_agent_pending", "hifin_agent_route", "hifin_agent_stats", "hifin_chain_snapshots", "hifin_claims", "hifin_connectors_custom", "hifin_divi_seen", "hifin_dl_ready", "hifin_easyread", "hifin_fin_params", "hifin_fin_scn", "hifin_force_onboard", "hifin_gov_votes", "hifin_hash_v2", "hifin_hashchain", "hifin_hashchain_legacy", "hifin_hi_sarg_log", "hifin_hi_unanswered", "hifin_hi_welcome", "hifin_hm_code", "hifin_ins_certs", "hifin_ins_deferred", "hifin_ins_guard", "hifin_lead_audit", "hifin_medrem", "hifin_mydata_req", "hifin_nodes", "hifin_notifs", "hifin_ocr_key", "hifin_pu_ready", "hifin_reggate", "hifin_rerate", "hifin_rpm_seen", "hifin_rx", "hifin_self_ins_v3", "hifin_self_ins_v4", "hifin_share_apply", "hifin_sharing_pool", "hifin_sid", "hifin_telem_raw", "hifin_telemetry", "hifin_wp_log", "pi_allocated",
   /* 변수 간접 키(상수·함수로 참조 — 스캔 밖) */ "hifin_events", "hifin_login_lock", "hifin_guard_cfg", "hifin_access_log",
   /* 백업 시스템(backupRestore.js) */ "hifin_backup_last", "hifin_restore_undo"];
-const HIFIN_KEYS_PREFIX = ["hifin_access_log_", "hifin_adh_", "hifin_agent_mem_", "hifin_bills_", "hifin_careguard_", "hifin_careloop_", "hifin_careplan_", "hifin_chk_editlog_", "hifin_chk_edits_", "hifin_claim_used_", "hifin_consent_nft_", "hifin_famauto_", "hifin_famconsent_", "hifin_family_", "hifin_famlink_", "hifin_famspend_", "hifin_famtask_", "hifin_g2_", "hifin_g4_", "hifin_handoff_issued_", "hifin_hi_esc_", "hifin_hi_followups_", "hifin_hi_state_", "hifin_hi_welcomed_", "hifin_hm_resultseen_", "hifin_hm_rr_", "hifin_hm_stagecache_", "hifin_hm_touch_", "hifin_htk_tl_", "hifin_htkbal_", "hifin_leads_", "hifin_policies_", "hifin_price_", "hifin_pu_done_", "hifin_ref_", "hifin_ref_by_", "hifin_ref_done_", "hifin_reports_", "hifin_rpm_ack_", "hifin_shop_htk_", "hifin_shop_orders_", "hifin_soap_", "hifin_sub_due_seen_", "hifin_subs_", "hifin_topup_orders_", "hifin_vault_", "hifin_vault_v2_", "hifin_vaultlog_", "pi_seq_", "hifin_backup_"];
+const HIFIN_KEYS_PREFIX = ["hifin_access_log_", "hifin_adh_", "hifin_agent_mem_", "hifin_bills_", "hifin_careguard_", "hifin_careloop_", "hifin_careplan_", "hifin_chk_editlog_", "hifin_chk_edits_", "hifin_claim_used_", "hifin_consent_nft_", "hifin_famauto_", "hifin_famconsent_", "hifin_family_", "hifin_famlink_", "hifin_famspend_", "hifin_famtask_", "hifin_g2_", "hifin_g4_", "hifin_handoff_issued_", "hifin_hi_esc_", "hifin_hi_followups_", "hifin_hi_state_", "hifin_hi_welcomed_", "hifin_hm_resultseen_", "hifin_hm_rr_", "hifin_hm_stagecache_", "hifin_hm_touch_", "hifin_htk_tl_", "hifin_htkbal_", "hifin_leads_", "hifin_policies_", "hifin_price_", "hifin_pu_done_", "hifin_ref_", "hifin_ref_by_", "hifin_ref_done_", "hifin_reports_", "hifin_rpm_ack_", "hifin_shop_htk_", "hifin_shop_orders_", "hifin_soap_", "hifin_sub_due_seen_", "hifin_subs_", "hifin_topup_orders_", "hifin_vault_", "hifin_vault_v2_", "hifin_vaultlog_", "pi_seq_", "hifin_backup_", "hifin_handoff_result_"];
 
 /* 키 그룹 규약(네임스페이스) — 새 키는 이 그룹 접두 중 하나를 따라야 한다(D-1 규약) */
 const HIFIN_KEY_GROUPS = [
@@ -26076,20 +26286,35 @@ function neFundBuilt(m) {
     buildKo: "검진·재검진·복약 체크·걷기 미션·건강쇼핑 적립으로 쌓여요" };
 }
 
-/* ── 종합: 「내 대비 현황」 3값(전부 구간·평가어 없음) ── */
-function needsSummary(i) {
-  const m = (typeof cohortLoginProfile === "function") ? cohortLoginProfile(Number(i)) : null;
+/* ── 종합: 「내 대비 현황」 3값(전부 구간·평가어 없음) — 회원 객체 직접(코호트·데모·본인 공용) ── */
+function needsSummaryOf(m) {
   if (!m) return null;
-  const card = (typeof buildHandoffCard === "function") ? buildHandoffCard(Number(i)) : null;
-  const grade = card ? card.grade : "-", group = card ? card.group : "organ";
+  let grade = "-", group = "organ", groupKo = "-";
+  try {
+    const chk = genMemberCheckup(m);
+    const lifeAll = (chk.nat && chk.nat.life) || [];
+    const g = riskGradeOf(chk.items, chk.trend, lifeAll.filter((f) => /절주|금연/.test(f)));
+    grade = g.grade;
+    let leadKey = null, leadSev = 0;
+    for (const k in chk.items) { const sv = chk.items[k].sev || 0; if (sv > leadSev) { leadSev = sv; leadKey = k; } }
+    group = leadKey ? riskGroupOf(leadKey) : "organ";
+    groupKo = (HM_RISK_GROUPS[group] || {}).ko || group;
+  } catch (e) {}
   const cancerHint = (m.highRiskCancerTypes || []).length > 0 || (m.cancerRiskGrade || 0) >= 6;
   const cost = neCostExposure(m, grade, group);
   const income = neIncomeGap(m, grade, group, cancerHint);
   const fund = neFundBuilt(m);
-  return { v: 1, i: Number(i), grade: grade, groupKo: card ? card.groupKo : "-",
+  return { v: 1, grade: grade, groupKo: groupKo,
     cost: cost, income: income, fund: fund,
     refresh: "검진 결과 · 등급 변화 · 미션 완결 · 계약 변경 시 자동 갱신",
     boundary: "구간 표시만 · 판단은 회원이 · 원본 수치 미포함", label: "[예시·시연 데이터]" };
+}
+function needsSummary(i) {
+  const m = (typeof cohortLoginProfile === "function") ? cohortLoginProfile(Number(i)) : null;
+  if (!m) return null;
+  const s2 = needsSummaryOf(m);
+  if (s2) s2.i = Number(i);
+  return s2;
 }
 
 /* ── 가드(§0-A) — 단정값·평가어 유입 검사(러너·하네스 공용) ── */
@@ -30372,7 +30597,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "1813645013b4a8ab", "generatedAt": "2026-08-30", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "dff9b240e58a1e83", "generatedAt": "2026-08-30", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -30513,6 +30738,7 @@ const HI_EVENT_DEFS = {
   handoff_contacted: { ko: "지시서 접촉(원탭 기록)",  stage: 2 },
   /* 두 곡선 교차(2단계 v1.4 P1) — 회원이 「내 대비 현황」을 누르거나 비용을 먼저 물은 순간(선발화 아님 — 회원 발의만 기록) */
   needs_asked:       { ko: "회원이 먼저 물음(대비 현황)", stage: 2 },
+  handoff_resulted:  { ko: "지시서 결과 기록(7코드)",  stage: 2 },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };
@@ -30539,7 +30765,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-08-29","seed":20260828,"inventory":{"version":1,"sourceHash":"1813645013b4a8ab","generatedAt":"2026-08-30","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.2,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-08-30","seed":20260828,"inventory":{"version":1,"sourceHash":"dff9b240e58a1e83","generatedAt":"2026-08-30","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":0.99,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
@@ -36908,6 +37134,8 @@ function MemberHealthDashboard({ member, onGo, onLogout }) {
       <BiologicalAgeCard member={member} />
       <CancerRiskCard member={member} />
       <MedicalCostCard member={member} />
+      {/* 2단계 P1(형 확정 B안 위젯) — 건강현황 요약 자리의 콤팩트 대비 현황 */}
+      {typeof NeedsCard === "function" && <NeedsCard variant="widget" />}
       <div className="card">
         <div className="rct"><Sparkles size={18} color="#F59E0B" /> 핵심 관리 포인트</div>
         <div className="demopts">{(member.managementPoints || []).map((p) => <span className="dpt" key={p}><Check size={12} /> {p}</span>)}</div>

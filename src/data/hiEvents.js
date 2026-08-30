@@ -28,6 +28,7 @@ const HI_EVENT_DEFS = {
   handoff_contacted: { ko: "지시서 접촉(원탭 기록)",  stage: 2 },
   /* 두 곡선 교차(2단계 v1.4 P1) — 회원이 「내 대비 현황」을 누르거나 비용을 먼저 물은 순간(선발화 아님 — 회원 발의만 기록) */
   needs_asked:       { ko: "회원이 먼저 물음(대비 현황)", stage: 2 },
+  handoff_resulted:  { ko: "지시서 결과 기록(7코드)",  stage: 2 },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };

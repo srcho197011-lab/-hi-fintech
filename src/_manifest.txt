@@ -11,6 +11,7 @@ src/components/Checkup.jsx
 src/components/Hospital.jsx
 src/components/Homecare.jsx
 src/components/Shop.jsx
+src/components/NeedsCard.jsx
 src/components/Insurance.jsx
 src/components/Wallet.jsx
 src/components/Nft.jsx
@@ -77,6 +78,7 @@ src/data/hmScriptBlocks.js
 src/data/hmScriptGuard.js
 src/data/handoffCard.js
 src/data/coachAgent.js
+src/data/handoffResult.js
 src/data/dailyRoster.js
 src/data/dataCatalog.js
 src/data/backupRestore.js

@@ -1,5 +1,5 @@
 {
-  "date": "2026-08-29",
+  "date": "2026-08-30",
   "sample": 3000,
   "cards": 1713,
   "publishable": 1713,
@@ -44,6 +44,6 @@
   "coachOk": 544,
   "coachAcc": 100,
   "readSecMax": 108,
-  "seconds": 18.9,
+  "seconds": 13.8,
   "pass": true
 }

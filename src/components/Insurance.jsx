@@ -1688,6 +1688,8 @@ function InsuranceSection({ onGo }) {
       <div className="aihead"><span className="aiico"><SecIcon k="insurance" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>보험·치료비</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강검진대비보험 · 가입 · 보장조회 · 청구 · AI상담 — 치료비 걱정 없는 임베디드 보험</div></div></div>
+      {/* 2단계 P1(형 확정 A안) — 두 곡선의 상시 화면: 회원이 눌러 물을 때만 해설·계측(§0-P) */}
+      {typeof NeedsCard === "function" && <NeedsCard />}
       <div className="chtabs">{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 
       {tab === "analysis" && (<>

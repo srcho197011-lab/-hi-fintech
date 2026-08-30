@@ -51,7 +51,7 @@ fi  # NEED(내비 게이트) 끝
 # 카드 판정·대본 감시 파일이 스테이지에 있으면: 조립 전건·금지어·규격·골든셋·A5 회귀. 실패 = 커밋 차단.
 HM_NEED=0
 for f in src/data/hmScriptBlocks.js src/data/hmScriptGuard.js src/data/handoffCard.js src/data/coachAgent.js \
-         src/data/riskGrade.js src/data/interventionMap.js src/data/clinicalBands.js src/data/checkupEngine.js \
+         src/data/riskGrade.js src/data/interventionMap.js src/data/clinicalBands.js src/data/checkupEngine.js \n         src/data/handoffResult.js src/data/needsEngine.js \
          src/data/pilotCohort.js src/data/healthMateCohort.js src/utils/demoAuth.js \
          scripts/run_handoff_harness.mjs fixtures/handoff_cards_sample_v1.json; do
   if echo "$CHANGED" | grep -qxF "$f"; then HM_NEED=1; fi

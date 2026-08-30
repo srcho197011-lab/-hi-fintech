@@ -19,7 +19,7 @@ function _drScore(card, sig, dateStr, code) {
 
 function hmDailyRoster(code, dateStr) {
   const ids = (typeof hmMembersOfPro === "function") ? hmMembersOfPro(code) : [];
-  const cand = []; let lockedN = 0, offN = 0, unpubN = 0;
+  const cand = []; let lockedN = 0, offN = 0, unpubN = 0, resultSkipN = 0, followUpN = 0;
   for (const i of ids) {
     let card = null;
     try { card = buildHandoffCard(i); } catch (e) {}
@@ -27,8 +27,14 @@ function hmDailyRoster(code, dateStr) {
     if (card.timing.lock) { lockedN++; continue; }
     if (card.grade === "-") { offN++; continue; }
     if (!card.compliance.publishable) { unpubN++; continue; }
+    /* P2: 어제까지의 결과 기록이 오늘의 명단을 바꾼다 — 완결·거절 쿨다운 제외, 후속일 도래 가산(§0-B 순환) */
+    let adj = { skip: false, boost: 0 };
+    try { if (typeof hmrRosterAdjust === "function") adj = hmrRosterAdjust(code, i, dateStr); } catch (e) {}
+    if (adj.skip) { resultSkipN++; continue; }
+    if (adj.boost) followUpN++;
     const sig = (typeof cohortSignalOf === "function") ? cohortSignalOf(i) : null;
-    cand.push({ i: i, card: card, sig: sig, score: _drScore(card, sig, dateStr, code) });
+    cand.push({ i: i, card: card, sig: sig, followUp: !!adj.boost,
+      score: _drScore(card, sig, dateStr, code) + (adj.boost || 0) * 1000 });
   }
   cand.sort((a, b) => b.score - a.score);
   /* 건수 — H는 상한 내 전부, 나머지로 목표(5) 채움, 상한 7 */
@@ -37,7 +43,8 @@ function hmDailyRoster(code, dateStr) {
   const list = hs.concat(rest).slice(0, Math.max(hs.length, Math.min(HM_ROSTER_TARGET, cand.length))).slice(0, HM_ROSTER_MAX);
   const byGrade = {}; list.forEach((c) => byGrade[c.card.grade] = (byGrade[c.card.grade] || 0) + 1);
   return { code: code, date: dateStr, list: list,
-    counts: { managed: ids.length, candidates: cand.length, locked: lockedN, offCycle: offN, unpublishable: unpubN, byGrade: byGrade } };
+    counts: { managed: ids.length, candidates: cand.length, locked: lockedN, offCycle: offN, unpublishable: unpubN,
+      resultSkipped: resultSkipN, followUpBoost: followUpN, byGrade: byGrade } };
 }
 
 /* 러너·콘솔 훅 — 관리자 전용 프로필에서도 프로 콘솔(코드 게이트 뒤)에서도 쓰도록 카드 요약+검사 필드 동반 */
