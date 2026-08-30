@@ -1,5 +1,5 @@
 {
-  "date": "2026-08-30",
+  "date": "2026-08-31",
   "total": 100000,
   "cards": 56945,
   "publishable": 56945,
@@ -36,16 +36,125 @@
     "lipid": 608,
     "bp": 663
   },
-  "pros": 639,
+  "pros": 648,
+  "prosAll": 702,
+  "sabunOk": true,
   "rosterViol": 0,
-  "avgRoster": 5.99,
+  "avgRoster": 6.05,
   "maxRoster": 7,
   "zeroRosterPros": 1,
   "byRosterGrade": {
-    "H": 3365,
-    "M": 238,
-    "L": 223
+    "H": 3558,
+    "M": 228,
+    "L": 134
   },
-  "seconds": 55.4,
+  "loadAvg": 154.3,
+  "loadRatioMax": 1.29,
+  "loadRatioMin": 0.91,
+  "loadBySido": [
+    {
+      "sido": "강원",
+      "pros": 16,
+      "perPro": 199.5,
+      "ratio": 1.29
+    },
+    {
+      "sido": "세종",
+      "pros": 6,
+      "perPro": 190.7,
+      "ratio": 1.24
+    },
+    {
+      "sido": "충북",
+      "pros": 17,
+      "perPro": 184.9,
+      "ratio": 1.2
+    },
+    {
+      "sido": "울산",
+      "pros": 13,
+      "perPro": 165.8,
+      "ratio": 1.07
+    },
+    {
+      "sido": "인천",
+      "pros": 41,
+      "perPro": 161,
+      "ratio": 1.04
+    },
+    {
+      "sido": "부산",
+      "pros": 46,
+      "perPro": 160.8,
+      "ratio": 1.04
+    },
+    {
+      "sido": "전남",
+      "pros": 21,
+      "perPro": 159.5,
+      "ratio": 1.03
+    },
+    {
+      "sido": "충남",
+      "pros": 28,
+      "perPro": 155.8,
+      "ratio": 1.01
+    },
+    {
+      "sido": "경기",
+      "pros": 149,
+      "perPro": 155.5,
+      "ratio": 1.01
+    },
+    {
+      "sido": "대전",
+      "pros": 20,
+      "perPro": 155.1,
+      "ratio": 1
+    },
+    {
+      "sido": "경북",
+      "pros": 34,
+      "perPro": 153.3,
+      "ratio": 0.99
+    },
+    {
+      "sido": "광주",
+      "pros": 19,
+      "perPro": 153.2,
+      "ratio": 0.99
+    },
+    {
+      "sido": "경남",
+      "pros": 34,
+      "perPro": 152.7,
+      "ratio": 0.99
+    },
+    {
+      "sido": "제주",
+      "pros": 14,
+      "perPro": 144.3,
+      "ratio": 0.93
+    },
+    {
+      "sido": "서울",
+      "pros": 133,
+      "perPro": 143.4,
+      "ratio": 0.93
+    },
+    {
+      "sido": "대구",
+      "pros": 35,
+      "perPro": 143.3,
+      "ratio": 0.93
+    },
+    {
+      "sido": "전북",
+      "pros": 21,
+      "perPro": 140.9,
+      "ratio": 0.91
+    }
+  ],
+  "seconds": 41.6,
   "pass": true
 }

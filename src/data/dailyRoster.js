@@ -50,11 +50,12 @@ function hmDailyRoster(code, dateStr) {
 /* 러너·콘솔 훅 — 관리자 전용 프로필에서도 프로 콘솔(코드 게이트 뒤)에서도 쓰도록 카드 요약+검사 필드 동반 */
 try {
   if (typeof window !== "undefined") {
-    /* 프로 목록(러너용 — 활성만) */
-    window.__hifinPros = function () {
+    /* 프로 목록(러너용) — 기본 활성만, "all"이면 전원(사번·배치 전수 검증용) */
+    window.__hifinPros = function (mode) {
       try {
         if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
-        return hmProsGen().filter((x) => x.status === "활성").map((x) => ({ code: x.code, name: x.name, sido: x.sido, sgg: x.sgg }));
+        const l = mode === "all" ? hmProsGen() : hmProsGen().filter((x) => x.status === "활성");
+        return l.map((x) => ({ code: x.code, sabun: x.sabun, name: x.name, sido: x.sido, sgg: x.sgg, branch: x.branch, status: x.status, legacy: !!x.legacy }));
       } catch (e) { return { error: String(e).slice(0, 160) }; }
     };
     /* 전체 카드 동반 로스터(형 검수 표본·실렌더용) */

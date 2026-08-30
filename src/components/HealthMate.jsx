@@ -870,6 +870,38 @@ function HmTabToday({ code, onToast, cview }) {
   </div>);
 }
 
+/* ① 배분 관제 + 지점 272 드릴다운(2단계 P3 · 형 승인) — 시도 클릭→지점 리스트→프로(사번·관할·오늘). 새 화면 이동 없이 아래 펼침(§D) */
+function HmOpsAllocBlock({ S, sidos, maxSido, box, bt }) {
+  const [sel, setSel] = React.useState(null);
+  const [q, setQ] = React.useState("");
+  const [br, setBr] = React.useState(null);
+  const BRS = (typeof HM_OPS_BRANCHES !== "undefined") ? HM_OPS_BRANCHES : [];
+  const list = sel ? BRS.filter((b2) => b2.sido === sel && (!q || (b2.branch || "").indexOf(q) >= 0)) : [];
+  return (<div style={box}><div style={bt}>① 배분 관제 — 시도를 누르면 지점이 펼쳐져요(실사 지점 기준)</div>
+    {sidos.map(([s, n]) => (<div key={s} onClick={() => { setSel(sel === s ? null : s); setBr(null); setQ(""); }} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3, cursor: "pointer", background: sel === s ? "#FFF4E8" : "transparent", borderRadius: 6, padding: "1px 4px" }}>
+      <span style={{ width: 34, fontSize: 11, color: sel === s ? "#C2410C" : "#475569", fontWeight: 700 }}>{s}</span>
+      <div style={{ flex: 1, height: 8, background: "#F1F5F9", borderRadius: 4 }}><div style={{ width: (n / maxSido * 100) + "%", height: 8, background: HM_C.brand, borderRadius: 4 }} /></div>
+      <span style={{ width: 66, fontSize: 10.8, color: HM_C.mut, textAlign: "right" }}>{n.toLocaleString()}명 {sel === s ? "▲" : "▼"}</span></div>))}
+    {sel && (<div style={{ marginTop: 8, borderTop: "1px dashed #E2E8F0", paddingTop: 8 }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
+        <b style={{ fontSize: 11.6, color: HM_C.ink }}>{sel} 지점 {list.length}곳</b>
+        <input value={q} onChange={(e) => { setQ(e.target.value); setBr(null); }} placeholder="지점 이름 찾기" style={{ flex: 1, border: "1px solid #CBD5E1", borderRadius: 7, padding: "4px 9px", fontSize: 11 }} />
+      </div>
+      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", maxHeight: 96, overflowY: "auto" }}>
+        {list.map((b2) => <span key={b2.branch} onClick={() => setBr(br === b2.branch ? null : b2.branch)} className="hmpill" style={{ cursor: "pointer", border: br === b2.branch ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: br === b2.branch ? "#FFF4E8" : "#fff", color: br === b2.branch ? "#C2410C" : "#334155" }}>{b2.branch} <span style={{ color: "#94A3B8" }}>{b2.pros.length}</span></span>)}
+      </div>
+      {br && (() => { const b2 = list.find((x) => x.branch === br); if (!b2) return null; return (
+        <div style={{ marginTop: 7, background: "#F8FAFC", borderRadius: 9, padding: "7px 10px" }}>
+          {b2.pros.map((pr) => (<div key={pr.sabun} style={{ display: "flex", gap: 10, fontSize: 11.6, padding: "3px 0", borderBottom: "1px dashed #EEF2F6", alignItems: "center" }}>
+            <b style={{ color: "#C2410C", width: 52 }}>{pr.sabun}</b><span style={{ width: 58, fontWeight: 700 }}>{pr.name} 프로</span>
+            <span style={{ color: HM_C.mut }}>담당 {pr.managed}명 · 오늘 지시서 {pr.today}건</span>
+            <span style={{ marginLeft: "auto", fontSize: 10, color: "#94A3B8" }}>{pr.code}</span></div>))}
+        </div>); })()}
+      <div style={{ fontSize: 10.2, color: HM_C.mut, marginTop: 5 }}>배분 원천 = 시군구 실사 배속(수기 재배분 없음) · 수치는 배치 스냅샷({S.date})과 동일</div>
+    </div>)}
+  </div>);
+}
+
 /* ══ ⑩ 통합 운영 — 헬스메이트센터 관제탑(지시서 v1.3 §5-O · P5 신설, 관리자 전용 · 관측이지 조작이 아님) ══ */
 function HmTabOps() {
   const admin = (typeof isAdminRole === "function") && isAdminRole();
@@ -891,12 +923,7 @@ function HmTabOps() {
       </div>
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 10, marginTop: 10 }}>
-      <div style={box}><div style={bt}>① 배분 관제 — 시도 17 커버리지(공백 0)</div>
-        {sidos.map(([s, n]) => (<div key={s} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
-          <span style={{ width: 34, fontSize: 11, color: "#475569", fontWeight: 700 }}>{s}</span>
-          <div style={{ flex: 1, height: 8, background: "#F1F5F9", borderRadius: 4 }}><div style={{ width: (n / maxSido * 100) + "%", height: 8, background: HM_C.brand, borderRadius: 4 }} /></div>
-          <span style={{ width: 52, fontSize: 10.8, color: HM_C.mut, textAlign: "right" }}>{n.toLocaleString()}</span></div>))}
-      </div>
+      <HmOpsAllocBlock S={S} sidos={sidos} maxSido={maxSido} box={box} bt={bt} />
       <div style={box}><div style={bt}>② 위험 분포 — 카드 대상 {S.cards.toLocaleString()}건</div>
         {["H", "M", "L"].map((k) => { const n = S.byGrade[k] || 0; const g = HM_GRADE_UI[k]; return (
           <div key={k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
@@ -1012,7 +1039,7 @@ function HealthMateSection({ onGo }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
           <div>
             <div className="k">HEALTHMATE PRO CONSOLE</div>
-            <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>· {pro.code} · {pro.branch || pro.dan}{pro.sgg ? " · " + pro.sgg : ""} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격" : " · 안내 전용"}{pro.hyundai ? " · 현대해상 위촉" : ""}</span></h2>
+            <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>· 사번 {pro.sabun || "-"} · {pro.code} · {pro.branch || pro.dan}{pro.sgg ? " · " + pro.sgg : ""} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격" : " · 안내 전용"}{pro.hyundai ? " · 현대해상 위촉" : ""}</span></h2>
             <div style={{ fontSize: 12.3, fontWeight: 800, marginTop: 2 }}>담당 회원 {totalN.toLocaleString()}명 <span style={{ fontWeight: 600, opacity: .85 }}>(체험 {members.length} · 코호트 {(cview ? cview.n : 0).toLocaleString()}) — 관할: {(pro.coverage || []).slice(0, 5).join("·") || pro.dan}{(pro.coverage || []).length > 5 ? " 외 " + ((pro.coverage || []).length - 5) + "곳" : ""}{pro.gap ? " (겸임 포함)" : ""}</span></div>
             <div style={{ fontSize: 12, opacity: .92 }}>하이가 분석·선별·문안·타이밍을 만들고, 프로는 확인·접촉·기록합니다 — 동의의 범위가 곧 활동의 범위.</div>
           </div>

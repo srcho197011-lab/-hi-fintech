@@ -38,15 +38,26 @@ function hmProsGen() {
     const sgg = pool[i % pool.length];
     out.push(Object.assign({}, p, { sido: p.dan === "경기지역단" ? "경기" : p.dan === "광역(전국)" ? "" : "서울", sgg, branch: sgg ? sgg + " 거점" : "본사(광역)", branchAddr: "", coverage: sgg ? [sgg] : [], legacy: true, hyundai: true }));
   });
-  /* 2) 실사 지점 272 × 2~3명 */
+  /* 2) 실사 지점 272 × 인구 가중 배치(2단계 P3 · 형 승인 2026-08-30)
+     — 수도권은 많이, 도서·저밀도는 적게: 시도별 코호트 인구 가중(_SIDO — pilotCohort와 동일 원천)에
+       비례해 지점당 인원(1~5명)을 결정론 배분. 목표: 시도별 프로당 담당 편차 축소(±20%). */
   const BR = (typeof LR_BRANCHES !== "undefined") ? LR_BRANCHES : {};
   const sggHasPro = {};
+  const _sidoW = {}; let _wSum = 0;
+  try { (_SIDO || []).forEach(([s2, w]) => { _sidoW[s2] = w; _wSum += w; }); } catch (e) {}
+  const PRO_TARGET = 686;                                    // 비(非)기존 명부 목표(기존 10명 별도 — 총 ~696)
   Object.keys(BR).forEach((sido) => {
     BR[sido].forEach(([bname, addr], bi) => {
       const rng = _hmcRng("pro|" + sido + "|" + bname + "|" + bi);
       const sgg = _hmcSggOfAddr(sido, addr);
       const dan = _hmcDanOf(sido, sgg);
-      const n = 2 + (rng() < 0.5 ? 0 : 1);   // 지점당 2~3명
+      /* 지점당 인원 = 시도 인구 몫 ÷ 시도 지점 수 → 1~5명(소수부는 지점 시드로 확률 반올림) */
+      let n = 2 + (rng() < 0.5 ? 0 : 1);                     // 가중 원천 부재 시 기존 규칙 유지
+      if (_wSum && _sidoW[sido] && BR[sido].length) {
+        const ideal = PRO_TARGET * (_sidoW[sido] / _wSum) / BR[sido].length;
+        n = Math.floor(ideal) + (rng() < (ideal - Math.floor(ideal)) ? 1 : 0);
+        n = Math.max(1, Math.min(5, n));
+      }
       for (let k = 0; k < n; k++) {
         const ab = HMC_DAN_ABBR[dan] || "WD";
         seq[ab] = (seq[ab] || 99) + 1;
@@ -80,6 +91,8 @@ function hmProsGen() {
       }
     });
   });
+  /* 4) 사번 부여(2단계 P3 · 형 승인) — 8H0001부터 전원(기존 명부 포함), 생성 순서 결정론 */
+  out.forEach((p, i) => { p.sabun = "8H" + String(i + 1).padStart(4, "0"); });
   _HMC.pros = out;
   return out;
 }
