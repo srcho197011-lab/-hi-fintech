@@ -781,17 +781,31 @@ function HmHandoffCard({ ent, code, onToast }) {
         })()}
       </details>
       <details style={{ marginTop: 8, border: "1px dashed #CBD5E1", borderRadius: 9, padding: "7px 10px" }}>
-        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>🗒 대본 보기 — {c.script.variant} 변형 · 읽기 약 {c.script.readSec}초</summary>
-        <div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
-          {[["오프닝", c.script.opening], ...c.script.core.map((b) => ["본론", b]), ["제안", c.script.ask]].map(([t, b], i) => b &&
+        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>🗒 대본 보기 — {c.script.variant} 변형 · 읽기 약 {c.script.readSec}초 <span style={{ color: "#6D28D9", fontSize: 10.5 }}>+ v2 초안 미리보기</span></summary>
+        {(() => {
+          /* 대본 v2 미리보기(P5 검수 중) — 발행·알림은 v1 그대로, 화면에서만 [초안] 라벨로 병기 */
+          let v2 = null; try { v2 = buildHandoffCard(c.member.cohortIndex, { v2: true }); } catch (e) {}
+          const s2 = v2 && v2.script && v2.script.v2 ? v2.script : null;
+          const draft = (t, b) => b && <div key={b.id + t} style={{ marginBottom: 5, background: "#F8F7FF", borderRadius: 7, padding: "4px 8px" }}><span className="hmpill" style={{ background: "#6D28D9", color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko} · 초안</i><div>“{b.text}”</div></div>;
+          return (<div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
+          {s2 && <div style={{ fontSize: 10.6, fontWeight: 800, color: "#6D28D9", marginBottom: 5 }}>🧪 보라색 = 대본 v2 초안(형 검수 중 · 발행 미적용) — 승인되면 정식 대본이 돼요</div>}
+          {[["오프닝", c.script.opening]].map(([t, b], i) => b &&
             <div key={i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
+          {s2 && (s2.talk || []).map((b) => draft("💬 생활 대화", b))}
+          {c.script.core.map((b, i) =>
+            <div key={"c" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>본론</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
+          {s2 && (s2.seed || []).map((b) => draft("🌱 여정 씨앗", b))}
+          {[["제안", c.script.ask]].map(([t, b], i) => b &&
+            <div key={"a" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
+          {s2 && (s2.careplan || []).map((b) => draft("🧰 케어 플랜", b))}
           <div style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 4 }}>회원 반응별 응대(수락 / 보류 / 거절 / 질문 2)</div>
-            {c.script.branches.map((b, i) => <div key={b.id} style={{ marginBottom: 4 }}><b style={{ color: "#C2410C", fontSize: 11 }}>응대 {i + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko}</i><div>“{b.text}”</div></div>)}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 4 }}>회원 반응별 응대{s2 ? " — 1~5 정식 · 6~10 v2 초안(보라)" : "(수락 / 보류 / 거절 / 질문 2)"}</div>
+            {(s2 ? s2.branches : c.script.branches).map((b, i) => <div key={b.id} style={{ marginBottom: 4, background: i >= c.script.branches.length ? "#F8F7FF" : "transparent", borderRadius: 6, padding: i >= c.script.branches.length ? "3px 6px" : 0 }}><b style={{ color: i >= c.script.branches.length ? "#6D28D9" : "#C2410C", fontSize: 11 }}>응대 {i + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("(")[0].split("—")[0].trim()}{i >= c.script.branches.length ? " · 초안" : ""}</i><div>“{b.text}”</div></div>)}
           </div>
           {c.script.closing && <div><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>클로징</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{c.script.closing.ko}</i><div>“{c.script.closing.text}”</div></div>}
           <div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}><b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}</div>
-        </div>
+        </div>);
+        })()}
       </details>
       <div style={{ marginTop: 7, display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: 10.8, fontWeight: 800, color: "#7C3AED" }}>🧭 A5 코치</span>
