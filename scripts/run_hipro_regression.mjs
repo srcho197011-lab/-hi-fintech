@@ -53,10 +53,10 @@ await sleep(4200);
 const dzKeys = await p.evaluate(() => (window.__hifinDzKeys ? window.__hifinDzKeys() : []));
 if (!Array.isArray(dzKeys) || dzKeys.length < 100) { console.error("질환 원천 수신 실패:", dzKeys && dzKeys.length); await b.close(); process.exit(1); }
 const CARE_FORMS = [dz => dz + " 건강관리 방법", dz => dz + " 식단 뭐가 좋아요", dz => dz + "에 좋은 영양제 있어요",
-  dz => dz + " 운동이나 생활습관", dz => dz + " 회원에게 뭐라고 말해요", dz => dz + "에 피해야 할 것"];
+  dz => dz + " 운동이나 생활습관", dz => dz + " 회원에게 뭐라고 말해요", dz => dz + "에 피해야 할 것", dz => dz + "에 좋은 영양소는"];
 const careCorpus = [];
 for (const dz of dzKeys) for (const f of CARE_FORMS) for (const v of variants(f(dz), 9)) careCorpus.push({ cat: "care", q: v });
-console.log(`care 코퍼스: 질환 ${dzKeys.length} × 6형 → ${careCorpus.length.toLocaleString()}문항`);
+console.log(`care 코퍼스: 질환 ${dzKeys.length} × ${CARE_FORMS.length}형 → ${careCorpus.length.toLocaleString()}문항(+후속 맥락 시나리오)`);
 
 let n = 0, ok = 0; const fails = [];
 const plain = corpus.filter(c => !c.needCard).concat(careCorpus);
@@ -69,6 +69,16 @@ for (let i = 0; i < plain.length; i += CH) {
 for (const ci of CARD_IDX) {
   const part = await p.evaluate((qs, idx) => qs.map(x => { const r = window.__hifinHiPro(x.q, idx); return { cat: x.cat, q: x.q, got: r.cat, src: r.src, none: !!r.none }; }), cardQ, ci);
   for (const r of part) { n++; if (r.got === r.cat && r.src && !r.none) ok++; else if (fails.length < 12) fails.push({ ...r, ci }); }
+}
+/* 후속 맥락 시나리오 — 질환 질문 뒤 "관련 영양소는?"류가 직전 질환으로 이어지는지(결정론: 매 5번째 질환) */
+const FOLLOW_QS = ["관련 영양소는?", "식단은 어떻게 해요", "피해야 할 음식은?", "관련 기기 있어요?"];
+const ctxDz = dzKeys.filter((_, i) => i % 5 === 0);
+for (const dz of ctxDz) {
+  const part = await p.evaluate((d, fqs) => {
+    window.__hifinHiPro(d + " 건강관리 방법 알려줘");   // 맥락 심기
+    return fqs.map(fq => { const r = window.__hifinHiPro(fq); return { q: d + " → " + fq, got: r.cat, src: r.src, none: !!r.none, hitDz: (r.src || "").indexOf(d) >= 0 }; });
+  }, dz, FOLLOW_QS);
+  for (const r of part) { n++; if (r.got === "care" && r.src && !r.none && r.hitDz) ok++; else if (fails.length < 12) fails.push(r); }
 }
 await b.close();
 

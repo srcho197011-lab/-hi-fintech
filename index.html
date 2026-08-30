@@ -25706,6 +25706,8 @@ const HM_SCRIPT_BLOCKS = [
     t: "{수칙1} 그리고 {수칙2} — 이번 주는 이 두 가지만 목표로 해봐요. 제가 흐름을 같이 봐드릴게요." },
   { id: "cs-check", part: "counsel", ko: "상담 · 자가 기록·확인", approved: true,
     t: "{기기}로 집에서 기록해 주시면 병원 한 번 수치보다 정확해요. 궁금한 건 언제든 저나 하이에게 물어보세요." },
+  { id: "cs-nutri", part: "counsel", ko: "상담 · 영양소 안내", approved: true,
+    t: "{질환명} 관리에는 {영양소} 같은 영양소가 도움돼요. 먼저 {권장식} 같은 음식으로 챙기고, 부족한 부분은 저와 같이 보충 방법을 정해봐요." },
   /* ── ⑥ 채널 변형 규칙(2) — 문장 창작이 아니라 축약 규칙 ── */
   { id: "ch-notif", part: "channel", ko: "앱알림(2문장)", approved: true,
     t: "[규칙] core 도입 1문장 + ask 1문장으로 축약. 링크 버튼 1개(개입 원탭). 존대 유지·이모지 1개 이하." },
@@ -26132,10 +26134,13 @@ function _hiproDzKey(t) {   /* 질환명 최장 일치(disease_care 197키) */
     return hit || null;
   } catch (e) { return null; }
 }
+/* 직전 care 질환 — "관련 영양소는?" 같은 후속 질문의 맥락(같은 대화 안에서만) */
+let _hiproLastDz = null;
+const _HIPRO_FOLLOW = /(영양소|영양성분|영양제|보충제|식단|음식|먹|운동|기기|피해야|주의할|생활\s*습관)/;
 function hiproClassify(q) {
   const t = String(q || "").trim();
   /* ⑨ 질병·건강관리 상담(형 지시 2026-08-30) — 질환명 or 지표+상담 의도. 임상 '기준' 질문보다 앞서 판정 */
-  const careIntent = /(관리|방법|식단|운동|영양제|보충제|생활|습관|주의|조심|좋은|나쁜|피해야|뭐라고|어떻게\s*말|말해|설명해|알려)/.test(t);
+  const careIntent = /(관리|방법|식단|운동|영양소|영양성분|영양제|보충제|생활|습관|주의|조심|좋은|나쁜|피해야|뭐라고|어떻게\s*말|말해|설명해|알려)/.test(t);
   if (careIntent) {
     if (_hiproDzKey(t)) return "care";
     for (const ko in HIPRO_LAB) if (t.toUpperCase().indexOf(ko.toUpperCase()) >= 0 && !/(기준|구간|수치가\s*뭐)/.test(t)) return "care";
@@ -26143,6 +26148,8 @@ function hiproClassify(q) {
   for (const c of HIPRO_CATS) for (const p of c.pats) if (p.test(t)) return c.cat;
   /* 카드 문맥 질문은 코치 사전(COACH_QTYPES)을 재사용 — 사전 이원화 금지 */
   try { if (typeof coachQType === "function" && coachQType(t)) return "card"; } catch (e) {}
+  /* 후속 맥락 폴백 — 어떤 사전에도 안 걸리고, 직전에 질환 상담이 있었고, 이어 묻는 어휘일 때만(다른 카테고리보다 뒤) */
+  if (_hiproLastDz && _HIPRO_FOLLOW.test(t)) return "care";
   return null;
 }
 
@@ -26162,7 +26169,11 @@ function hiproAnswer(q, ctx) {
     /* ⑨ 질병·건강관리 상담 — 원천: disease_care.json(197질환·출처 동반) + MA_MAP + co-* 블록.
        응답 2부: 프로 브리핑(요점) + 회원용 스크립트(cs-* 승인 템플릿에 원천 값 치환) */
     if (cat === "care") {
-      const dz = _hiproDzKey(t);
+      let dz = _hiproDzKey(t);
+      /* 지표 어휘가 없고 질환명도 없으면 직전 질환의 후속 질문으로 본다(맥락) */
+      let labKo = null; for (const ko in HIPRO_LAB) if (t.toUpperCase().indexOf(ko.toUpperCase()) >= 0) { labKo = ko; break; }
+      if (!dz && !labKo && _hiproLastDz) dz = _hiproLastDz;
+      if (dz) _hiproLastDz = dz;
       /* 치환 유틸 — ①슬롯 뒤 조사는 값의 받침에 맞춰 교정(새 문장 아님·조사 선택만) ②원칙은 명사구까지만 */
       const _batchim = (v) => { const s3 = String(v).replace(/[^가-힣]+$/, ""); const c = s3.charCodeAt(s3.length - 1); return c >= 0xAC00 && c <= 0xD7A3 ? { ok: true, has: (c - 0xAC00) % 28 > 0 } : { ok: false }; };
       const _JOSA = { 이에요: ["이에요", "예요"], 예요: ["이에요", "예요"], 은: ["은", "는"], 는: ["은", "는"], 이: ["이", "가"], 가: ["이", "가"], 을: ["을", "를"], 를: ["을", "를"] };
@@ -26194,6 +26205,11 @@ function hiproAnswer(q, ctx) {
         if (/식단|먹|음식/.test(t)) {
           return R("care:" + dz + ":diet", "[" + dz + " · 식단] " + (e.diet && e.diet.principle || "") + " 권장: " + dietR.join(", ") + (dietA.length ? " / 줄이기: " + dietA.join(", ") : "") +
             "\n👄 회원에게는: “" + fill("cs-diet", slots) + "”", ["disease_care." + dz, "cs-diet"]);
+        }
+        if (/영양소|영양성분/.test(t)) {
+          const nutriWhy = (e.supplements_recommended || []).slice(0, 3).map((x) => x.name + (x.reason ? "(" + String(x.reason).split(/[,.(]/)[0].trim().slice(0, 26) + ")" : "")).join(", ");
+          return R("care:" + dz + ":nutri", "[" + dz + " · 영양소] 도움: " + (nutriWhy || "-") + " — 음식 우선: " + (dietR.join(", ") || "균형 잡힌 식사") + "." + (avo.length ? " ⚠️ 주의: " + avo.join(", ") + "." : "") +
+            "\n👄 회원에게는: “" + fill("cs-nutri", { 질환명: dz, 영양소: rec.slice(0, 2).join("·") || "기본 영양", 권장식: dietR.slice(0, 2).join("·") || "균형 잡힌 식사" }) + "”", ["disease_care." + dz, "cs-nutri"]);
         }
         if (/영양제|보충제/.test(t)) {
           return R("care:" + dz + ":supp", "[" + dz + " · 영양] 도움: " + (rec.join(", ") || "-") + (avo.length ? " / ⚠️ 주의: " + avo.join(", ") : "") + " — 드시는 약과 상호작용 확인이 먼저예요." +
