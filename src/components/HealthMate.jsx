@@ -662,9 +662,53 @@ const HM_GRADE_UI = {
   H: { ko: "H 고위험", c: "#EA580C", bg: "#FFF1E2" }, M: { ko: "M 중위험", c: "#D97706", bg: "#FEF7E0" },
   L: { ko: "L 관심", c: "#0891B2", bg: "#E0F5FA" },
 };
+/* 결과 기록 시트(2단계 P2 — A안 한 판 그리드, 형 실물 확인용 실장 2026-08-30) — §0-B 기록은 선택지다 */
+function HmResultSheet({ card, code, onClose, onSaved }) {
+  const [result, setResult] = React.useState(null);
+  const [branch, setBranch] = React.useState(null);
+  const [follow, setFollow] = React.useState(null);
+  const today = new Date();
+  const day = (n) => new Date(today.getTime() + n * 86400000).toISOString().slice(0, 10);
+  const FOLLOWS = [["내일", day(1)], ["다음 주", day(7)], ["2주 뒤", day(14)], ["필요 없어요", null]];
+  const save = () => {
+    if (!result) return;
+    const r = hmrRecord(code, { i: card.member.cohortIndex, result: result, branch: branch, grade: card.grade,
+      followUp: follow, date: today.toISOString().slice(0, 10) });
+    onSaved(r);
+  };
+  return (<div style={{ position: "fixed", inset: 0, zIndex: 1400, background: "rgba(11,34,57,.45)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
+    <div onClick={(e) => e.stopPropagation()} style={{ width: "min(560px,96vw)", background: "#fff", borderRadius: "18px 18px 0 0", padding: "10px 18px 18px", boxShadow: "0 -10px 40px rgba(0,0,0,.25)" }}>
+      <div style={{ width: 46, height: 5, background: "#CBD5E1", borderRadius: 3, margin: "0 auto 10px" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+        <b style={{ fontSize: 15.5, color: HM_C.ink }}>{card.member.mask}님 통화, 어떻게 됐어요?</b>
+        <span style={{ fontSize: 10.5, color: HM_C.mut }}>탭 한 번이면 끝나요 · [예시·시연]</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+        {HM_RESULT_CODES.map((rc) => (
+          <button key={rc.k} onClick={() => setResult(rc.k)} style={{ display: "flex", alignItems: "center", gap: 7, textAlign: "left", cursor: "pointer",
+            border: result === rc.k ? "2px solid " + HM_C.brand : "1px solid #E2E8F0", background: result === rc.k ? "#FFF4E8" : "#fff", borderRadius: 10, padding: "9px 10px" }}>
+            <span style={{ fontSize: 16 }}>{rc.icon}</span>
+            <span style={{ flex: 1 }}><b style={{ fontSize: 12.6, color: HM_C.ink }}>{rc.ko}</b><span style={{ display: "block", fontSize: 10, color: "#94A3B8" }}>{rc.desc}</span></span>
+          </button>))}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+        <b style={{ fontSize: 11.6, color: "#475569", width: 118 }}>어떤 말이 통했어요?</b>
+        {[1, 2, 3, 4, 5, 6].map((n) => <span key={n} onClick={() => setBranch(branch === n ? null : n)} className="hmpill" style={{ cursor: "pointer", border: branch === n ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: branch === n ? "#FFF4E8" : "#fff", color: branch === n ? "#C2410C" : "#334155" }}>응대 {n}</span>)}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+        <b style={{ fontSize: 11.6, color: "#475569", width: 118 }}>다시 연락할 날</b>
+        {FOLLOWS.map(([ko, d]) => <span key={ko} onClick={() => setFollow(d)} className="hmpill" style={{ cursor: "pointer", border: follow === d ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: follow === d ? "#FFF4E8" : "#fff", color: d == null && follow === null ? "#94A3B8" : (follow === d ? "#C2410C" : "#334155") }}>{ko}</span>)}
+      </div>
+      <button onClick={save} disabled={!result} style={{ width: "100%", marginTop: 12, background: result ? HM_C.brand : "#E2E8F0", border: "none", color: "#fff", borderRadius: 11, padding: "12px", fontSize: 14.5, fontWeight: 900, cursor: result ? "pointer" : "default" }}>저장하기</button>
+      <div style={{ fontSize: 10.4, color: HM_C.mut, textAlign: "center", marginTop: 7 }}>저장하면 카드가 접혀요 · 완결·거절은 내일 명단에서 자동으로 빠지고, 후속일이 온 회원은 맨 위로 와요</div>
+    </div>
+  </div>);
+}
+
 function HmHandoffCard({ ent, code, onToast }) {
   const c = ent.card; const g = HM_GRADE_UI[c.grade] || HM_GRADE_UI.L;
   const [done, setDone] = React.useState(false);
+  const [sheet, setSheet] = React.useState(false);   /* 결과 기록 시트(P2) */
   const [coach, setCoach] = React.useState(null);   /* A5 코치 답변(부분 활성 — 카드 해설 한정) */
   const act = (a) => {
     const r = (typeof hmcTouch === "function") ? hmcTouch(code, c.member.cohortIndex, "지시서·" + a.ko) : { ok: true };
@@ -704,7 +748,10 @@ function HmHandoffCard({ ent, code, onToast }) {
         <span>완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
         <span style={{ color: "#15803D", fontWeight: 700 }}>🛡 경계 3종 통과</span>
         <span>{c.timing.requeue}</span>
+        <button className="hmbtn gh" style={{ marginLeft: "auto", padding: "5px 12px", fontSize: 11.6, borderColor: g.c, color: g.c }} onClick={() => setSheet(true)}>📝 결과 남기기</button>
       </div>
+      {sheet && <HmResultSheet card={c} code={code} onClose={() => setSheet(false)}
+        onSaved={(r) => { setSheet(false); if (r.ok) { setDone(true); onToast(`결과 저장됐어요 — ${r.ko}. 내일 명단에 반영돼요.`); } else onToast(r.why); }} />}
       <details style={{ marginTop: 8, border: "1px dashed #CBD5E1", borderRadius: 9, padding: "7px 10px" }}>
         <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>🗒 대본 보기 — {c.script.variant} 변형 · 읽기 약 {c.script.readSec}초</summary>
         <div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
