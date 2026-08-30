@@ -11,7 +11,7 @@ const HANDOFF_SLOTS_SAFE = { 예약처: "가까운 제휴 검진센터", 다음�
 
 /* 대본 v2 스위치(2단계 P5) — 형이 신규 블록 전건(talk·seed·careplan·branch2·cost) 승인 시 true 전환.
    false인 동안 조립은 기존 v1 그대로(하네스·발행 불변) — 초안이 발행 경로에 스며들 수 없다. */
-const HM_SCRIPT_V2 = false;
+const HM_SCRIPT_V2 = true;   /* 2026-08-30 형 승인 — 대본 v2 정식 전환 */
 
 function _hcMask(name) { return (String(name || "회")[0]) + "○○"; }
 function _drOr(i, mod) { return ((Number(i) * 2654435761) >>> 0) % mod === 0; }   // 결정론 이지선다

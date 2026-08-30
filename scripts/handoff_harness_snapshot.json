@@ -9,7 +9,7 @@
     "L": 1401,
     "M": 131
   },
-  "blockKinds": 26,
+  "blockKinds": 31,
   "blocksUsed": {
     "op-first": 1338,
     "co-h": 134,
@@ -20,6 +20,11 @@
     "br-no": 1463,
     "br-q-serious": 1713,
     "br-q-ins": 1713,
+    "br2-treatcost": 1713,
+    "br2-fam": 1713,
+    "br2-oldins": 1713,
+    "br2-busy": 1713,
+    "br2-fear": 1713,
     "cl-done": 1338,
     "co-l": 1234,
     "co-organ": 1350,
@@ -43,7 +48,7 @@
   "coachN": 544,
   "coachOk": 544,
   "coachAcc": 100,
-  "readSecMax": 108,
-  "seconds": 15.8,
+  "readSecMax": 245,
+  "seconds": 17.1,
   "pass": true
 }
