@@ -77,6 +77,8 @@ src/data/hmScriptGuard.js
 src/data/handoffCard.js
 src/data/coachAgent.js
 src/data/dailyRoster.js
+src/data/dataCatalog.js
+src/data/memberContext.js
 src/data/checkupEngine.js
 src/data/healthDataVault.js
 src/data/lineageBridge.js

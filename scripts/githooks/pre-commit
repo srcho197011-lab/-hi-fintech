@@ -8,6 +8,11 @@ set -e
 cd "$(git rev-parse --show-toplevel)"
 CHANGED=$(git diff --cached --name-only)
 [ -z "$CHANGED" ] && exit 0
+
+# ══ 데이터 카탈로그 게이트(운영계획 v1.1 D-1) — src 변경 시 저장 키 전수 대조(미등재=차단) ══
+if echo "$CHANGED" | grep -q "^src/"; then
+  python scripts/check_data_catalog.py || { echo "[GATE] 미등재 저장 키 — dataCatalog.js 등재 후 커밋"; exit 1; }
+fi
 NEED=0
 WATCH=$(python scripts/gen_nav_inventory.py --list-watch 2>/dev/null)
 for f in $WATCH src/data/navRouting.js src/data/navInventory.js scripts/gen_nav_corpus.py scripts/run_nav_regression.mjs; do
