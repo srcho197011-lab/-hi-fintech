@@ -683,9 +683,10 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
   return (<div style={{ position: "fixed", inset: 0, zIndex: 1400, background: "rgba(11,34,57,.45)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
     <div onClick={(e) => e.stopPropagation()} style={{ width: "min(560px,96vw)", background: "#fff", borderRadius: "18px 18px 0 0", padding: "10px 18px 18px", boxShadow: "0 -10px 40px rgba(0,0,0,.25)" }}>
       <div style={{ width: 46, height: 5, background: "#CBD5E1", borderRadius: 3, margin: "0 auto 10px" }} />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 8 }}>
         <b style={{ fontSize: 15.5, color: HM_C.ink }}>{card.member.mask}님 통화, 어떻게 됐어요?</b>
-        <span style={{ fontSize: 10.5, color: HM_C.mut }}>탭 한 번이면 끝나요 · [예시·시연]</span>
+        <span style={{ fontSize: 10.5, color: HM_C.mut, marginLeft: "auto" }}>탭 한 번이면 끝나요 · [예시·시연]</span>
+        <button onClick={onClose} aria-label="닫기" style={{ flex: "none", width: 30, height: 30, borderRadius: 15, border: "1px solid #CBD5E1", background: "#fff", color: "#475569", fontSize: 14, fontWeight: 900, cursor: "pointer", lineHeight: 1 }}>✕</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
         {HM_RESULT_CODES.map((rc) => (
