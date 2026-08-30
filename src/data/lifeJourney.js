@@ -27,18 +27,17 @@ function journeyBrief(i) {
     try { const chk = genMemberCheckup(m); trendKo = chk.trendLabel || ""; } catch (e) {}
     push("검진 " + (reachedIdx >= 4 ? "여러 해" : "결과") + " 연결" + (trendKo ? " · 최근 흐름 「" + trendKo + "」" : ""));
   }
-  /* D3~ 진료 이력 — 코호트 진료과 실측(deptKey) 파생, 동의 태그 */
-  if (reachedIdx >= 2) {
-    let dept = "";
-    try { const raw = cohortMemberAt(Number(i)); dept = raw && raw.deptLabel ? raw.deptLabel : ""; } catch (e) {}
-    if (dept) { if (consentRx) push(dept + " 진료 이력 " + (1 + Math.floor(rng() * 2)) + "건"); else push("진료 이력 — 동의 받으면 보여요", false); }
+  /* 진료·커머스 — memberActivity(검진 결과 개연성 매핑 · 형 지시 2026-08-30): 활동은 원인(검진)의 그림자 */
+  let act = null;
+  try { act = (typeof memberActivity === "function") ? memberActivity(Number(i)) : null; } catch (e) {}
+  if (act) {
+    for (const v of act.visits) {
+      if (consentRx) push(v.dept + " · " + v.ko + " " + v.n + "회 (" + v.basis + ")");
+      else push("진료 이력 — 동의 받으면 보여요", false);
+    }
+    for (const cm of act.commerce) push(cm.ko + " " + cm.since + "개월째 (" + cm.basis + ")");
   }
-  /* D4~ 건강 행동 — 정기배송·미션(시드 파생) */
-  if (reachedIdx >= 3) {
-    const months = 2 + Math.floor(rng() * 8);
-    push(rng() < 0.5 ? "영양제 정기배송 " + months + "개월째" : "건강 식단 구독 " + months + "개월째");
-    push("실천 미션 체크 " + (5 + Math.floor(rng() * 40)) + "회");
-  }
+  if (reachedIdx >= 3) push("실천 미션 체크 " + (5 + Math.floor(rng() * 40)) + "회");
   /* L5 — 주기 리듬 */
   if (reachedIdx >= 4) {
     push("재검진 " + (1 + Math.floor(rng() * 2)) + "회 완료 · 관리 리듬 " + (6 + Math.floor(rng() * 12)) + "개월째");
