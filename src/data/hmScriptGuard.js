@@ -89,8 +89,8 @@ try {
           const hits = hmForbiddenScan(bl.t);
           if (hits.length) out.push({ id: bl.id, hits: hits });
           if (!bl.approved) {
-            /* admin(관리 사무)은 조립 미사용 초안 — 검수 대기 목록으로 분리(실패 아님). 조립 파트 미승인만 실패 */
-            if (bl.part === "admin") pendingAdmin.push(bl.id);
+            /* admin(관리 사무)·lifejourney(L5~L8 초안)는 조립 미사용 — 검수 대기 목록으로 분리(실패 아님). 조립 파트 미승인만 실패 */
+            if (bl.part === "admin" || bl.part === "lifejourney") pendingAdmin.push(bl.id);
             else out.push({ id: bl.id, hits: [{ key: "unapproved", ko: "미승인 블록" }] });
           }
         }

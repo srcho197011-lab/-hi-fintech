@@ -763,6 +763,22 @@ function HmHandoffCard({ ent, code, onToast }) {
       </div>
       {sheet && <HmResultSheet card={c} code={code} onClose={() => setSheet(false)}
         onSaved={(r) => { setSheet(false); if (r.ok) { setDone(true); onToast(`결과 저장됐어요 — ${r.ko}. 내일 명단에 반영돼요.`); } else onToast(r.why); }} />}
+      {/* 회원의 걸어온 길(2단계 P4) — 여정 브리프 + 대비 현황(프로 조회용 — 먼저 꺼내지 않는다 §0-P) */}
+      <details style={{ marginTop: 8, border: "1px dashed #CBD5E1", borderRadius: 9, padding: "7px 10px" }}>
+        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>👣 회원의 걸어온 길 — {c.member.stage} 단계까지</summary>
+        {(() => {
+          let jb = null, ns = null;
+          try { jb = journeyBrief(c.member.cohortIndex); } catch (e) {}
+          try { ns = needsSummary(c.member.cohortIndex); } catch (e) {}
+          return (<div style={{ marginTop: 7, fontSize: 12, lineHeight: 1.7 }}>
+            {jb && jb.items.map((it, n) => (<div key={n} style={{ display: "flex", gap: 6, alignItems: "baseline", color: it.on ? "#374151" : "#94A3B8" }}>
+              <span>{it.on ? "·" : "🔒"}</span><span>{it.ko}</span></div>))}
+            {ns && <div style={{ marginTop: 6, background: "#F8FAFC", borderRadius: 8, padding: "6px 9px", fontSize: 11.4, color: "#475569" }}>
+              <b style={{ color: HM_C.ink }}>🧾 대비 현황(조회용)</b> — 치료비 {ns.cost.steps[2].oopBand} · 생활비 {ns.income.applicable ? ns.income.gapBand : "해당 없음"} · 준비됨 {ns.fund.htk.toLocaleString()} HTK
+              <div style={{ fontSize: 10, color: "#B45309", marginTop: 2 }}>⚠ 이 숫자는 먼저 꺼내지 않아요 — 회원이 물을 때만(응대 6) 답해요</div></div>}
+          </div>);
+        })()}
+      </details>
       <details style={{ marginTop: 8, border: "1px dashed #CBD5E1", borderRadius: 9, padding: "7px 10px" }}>
         <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>🗒 대본 보기 — {c.script.variant} 변형 · 읽기 약 {c.script.readSec}초</summary>
         <div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
