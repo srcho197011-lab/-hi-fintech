@@ -616,7 +616,7 @@ function AICheckupRec({ onGoCenters }) {
       <div className="card ckgapcard">
         <div className="rct"><ShieldCheck size={18} color="#B91C1C" /> 진단비 없는 질환 — 조기발견이 최선의 대비</div>
         <p style={{ fontSize: 12.5, color: "#7A2E2E", lineHeight: 1.6, margin: "2px 0 10px" }}>
-          <b>{prof.gapDiseases.join(" · ")}</b>은(는) 아직 <b>중대질환 진단비가 없어</b> 발병 시 치료비 부담이 큽니다. 위 정밀검진으로 <b>조기에 발견</b>하고, 보험·치료비에서 <b>진단비 보완</b>을 함께 검토하세요.</p>
+          <b>{prof.gapDiseases.join(" · ")}</b>은(는) 아직 <b>중대질환 진단비가 없어</b> 발병 시 치료비 부담이 큽니다. 위 정밀검진으로 <b>조기에 발견</b>하고, 치료비 케어에서 <b>진단비 보완</b>을 함께 검토하세요.</p>
         <div className="ckgapbtns">
           <button className="cbtn pri" style={{ margin: 0 }} onClick={onGoCenters}><ClipboardList size={15} /> 추천 센터에서 예약</button>
           <button className="cbtn" style={{ margin: 0 }} onClick={() => { const cat = gapRows[0] && gapRows[0].gaps[0]; const CAT2PLAN = { "암": "general", "뇌": "brain", "심장": "heart", "신장": "liver", "간": "liver", "폐": "major" }; try { window.__hifinInsRoute = { tab: "premium", planKey: CAT2PLAN[cat] || "general" }; } catch (e) {} nav("insurance"); }}><ShieldCheck size={15} /> 진단비 보장 설계 · 간편가입</button>
@@ -1530,7 +1530,7 @@ function useHira() {
   return state;
 }
 
-/* ── 검진대비보험 가입증서 화면 — 발급 스냅샷(hifin_ins_certs) 렌더. 예약 완료·맞춤보험 양쪽에서 사용 ── */
+/* ── 검진대비보험 가입증서 화면 — 발급 스냅샷(hifin_ins_certs) 렌더. 예약 완료·치료비 준비 진단 양쪽에서 사용 ── */
 function InsCertModal({ cert, onClose }) {
   if (!cert) return null;
   const d0 = new Date(cert.at); const start = new Date(d0); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
@@ -1572,7 +1572,7 @@ function InsCertModal({ cert, onClose }) {
                 <span style={{ fontWeight: 700 }}>{c.t}</span><b style={{ color: "#1D4ED8" }}>{c.amt}</b>
               </div>
             ))}
-            {!covers.length && <div style={{ padding: "10px 13px", fontSize: 12, color: "#64748B" }}>보장 내역은 맞춤보험 › 검진대비보험에서 확인하세요.</div>}
+            {!covers.length && <div style={{ padding: "10px 13px", fontSize: 12, color: "#64748B" }}>보장 내역은 치료비 준비 진단 › 검진대비보험에서 확인하세요.</div>}
           </div>
           {/* 계약자 자필서명 — 청약 시점 서명 이미지 그대로 */}
           {cert.insured && cert.insured.sign && (

@@ -207,7 +207,7 @@ const HI_INTENTS = [
   { id: "S4-REFUND-01", l1: "건강금융지갑", l2: "충전 환불", a: ["refundw"], b: ["method", "doit", "explain", "view"], hub: true, pre: ["login"], route: "app://wallet/topup", nav: "wallet", tab: "topup",
     ans: "충전한 HTK는 보너스를 제외한 미사용분을 환불받을 수 있어요 — 충전 탭의 주문 내역에서 바로 신청돼요.", easy: "충전한 포인트 중 안 쓴 만큼 돌려받을 수 있어요. 보너스는 빼고요.", chips: ["충전하러 가기"] },
   { id: "S4-SWAP-01", l1: "건강금융지갑", l2: "전송·스왑", a: ["swap"], b: ["method", "doit", "explain"], hub: true, pre: ["login"], route: "app://wallet/history", nav: "wallet", tab: "chain",
-    ans: "온체인 원장 탭에서 HTK를 보험·치료비 크레딧으로 스왑할 수 있어요 — 모든 이동이 블록체인에 기록돼요(시연).", easy: "포인트를 보험료 전용으로 바꿔둘 수 있어요.", chips: ["온체인 지갑 보기"] },
+    ans: "온체인 원장 탭에서 HTK를 치료비 케어 크레딧으로 스왑할 수 있어요 — 모든 이동이 블록체인에 기록돼요(시연).", easy: "포인트를 보험료 전용으로 바꿔둘 수 있어요.", chips: ["온체인 지갑 보기"] },
   /* ───── S5 데이터 연결·금고 ───── */
   { id: "S5-HUB-01", l1: "데이터 연결·금고", l2: "데이터 허브", a: ["datak"], b: [], hub: true, pre: [], route: "app://data/link", nav: "onboarding",
     ans: "검진결과(사진·PDF·공단)와 보험(통합조회)을 연결하면 모든 분석이 내 실제 데이터 기준으로 바뀌어요 — 각 1분이면 돼요.", easy: "내 검진과 보험을 연결하면 진짜 내 분석을 받아요. 1분이면 돼요.", chips: ["데이터 연결 화면 열기", "사진으로 올려도 돼요?", "공단 조회는 뭐예요?"] },

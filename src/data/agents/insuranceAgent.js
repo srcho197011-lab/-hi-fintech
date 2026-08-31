@@ -1,4 +1,4 @@
-/* ══════════════ A2 · 보험·치료비 에이전트 (Phase B) ══════════════
+/* ══════════════ A2 · 치료비 케어 에이전트 (Phase B) ══════════════
    원칙: **계산은 툴이 하고, 설명은 근거로 하며, 결정은 회원이 한다.**
      ① 계산 결과 — TOOL_RUN·insuranceStats 반환값만 인용(모든 금액·비율은 calc에 기록 → 하네스가 대조)
      ② 지식 근거 — INS_KB(약관)·SILSON_SPEC(세대)·CLAIM_DENY(부지급)·코호트에서 검색해 cite로 표기
@@ -104,7 +104,7 @@ function insuranceAgent(question, ctx) {
   const s3 = snap && (snap.s3 || {});
   const m = ctx.m || null;
   const calc = { tool: null, values: [], state: [] };
-  let lines = [], buttons = [], nav = { key: "insurance", label: "보험·치료비" };
+  let lines = [], buttons = [], nav = { key: "insurance", label: "치료비 케어" };
 
   /* ② 상태 선행 — 연결 전이면 분석 자체가 불가(SEG-S3-01 방향) */
   if (s3 && s3.insLinked === false) {
@@ -139,7 +139,7 @@ function insuranceAgent(question, ctx) {
       lines = [`조회 결과 안 찾아가신 휴면보험금이 약 ${s3.dormantAmt.toLocaleString()}원 확인돼요.`,
         "휴면보험금은 만기·해지 후 찾아가지 않은 돈이라, 신청하면 본인 계좌로 받을 수 있어요 — 신청 절차는 제가 단계별로 함께 진행해 드릴게요."];
       buttons = ["휴면보험금 화면 열기"];
-      nav = { key: "insurance", label: "보험·치료비" };
+      nav = { key: "insurance", label: "치료비 케어" };
     } else if (s3) {
       lines = ["조회 기준으로는 지금 확인되는 휴면보험금이 없어요.",
         "보험 목록이 오래됐다면 통합조회를 한 번 더 갱신해 보시면 새로 잡히는 계약이 있을 수 있어요."];

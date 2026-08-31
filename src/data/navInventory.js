@@ -1,11 +1,11 @@
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "59ff684f531e8564", "generatedAt": "2026-08-31", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "5f1bc3ec2ca42615", "generatedAt": "2026-08-31", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
   {"key": "sec.care", "label": "검진 후 케어", "path": "검진 후 케어", "surface": "section", "nav": "care", "owner": "nav", "admin": false, "desc": "주치의·건강현황·병원진료·재가돌봄·건강쇼핑", "aliases": ["rjawlsgnzpdj", "검진후케어"]},
-  {"key": "sec.insurance", "label": "보험·치료비", "path": "보험·치료비", "surface": "section", "nav": "insurance", "owner": "nav", "admin": false, "desc": "조회·가입·청구·치료비", "aliases": ["qhgjaclfyql", "보험치료비"]},
+  {"key": "sec.insurance", "label": "치료비 케어", "path": "치료비 케어", "surface": "section", "nav": "insurance", "owner": "nav", "admin": false, "desc": "조회·가입·청구·치료비", "aliases": ["clfyqlzpdj", "보험 치료비", "보험·치료비", "보험치료비", "치료비케어"]},
   {"key": "sec.mywallet", "label": "나의 건강지갑", "path": "나의 건강지갑", "surface": "section", "nav": "mywallet", "owner": "nav", "admin": false, "desc": "금융지갑·Health NFT·우리가족건강관리", "aliases": ["skdmlrjsrkdwlrkq", "나의건강지갑"]},
   {"key": "sec.partner", "label": "제휴·투자 신청", "path": "제휴·투자 신청", "surface": "section", "nav": "partner", "owner": "nav", "admin": false, "desc": "제휴 네트워크·회원/법인 투자", "aliases": ["wpgbxnwktlscjd", "제휴투자신청"]},
   {"key": "sec.healthmate", "label": "헬스메이트 센터", "path": "헬스메이트 센터", "surface": "section", "nav": "healthmate", "owner": "nav", "admin": true, "desc": "전문헬스메이트(프로) 회원 관리 (운영)", "aliases": ["gpftmapdlxmtpsxj", "헬스메이트센터"]},
@@ -24,7 +24,7 @@ const NAV_INVENTORY = [
   {"key": "tab.mywallet.nft", "label": "Health NFT", "path": "mywallet › Health NFT", "surface": "tab", "nav": "nft", "tab": "nft", "owner": "nav", "admin": false, "desc": "", "aliases": ["HealthNFT"]},
   {"key": "tab.mywallet.vault", "label": "데이터 금고", "path": "mywallet › 데이터 금고", "surface": "tab", "nav": "vault", "tab": "vault", "owner": "nav", "admin": false, "desc": "", "aliases": ["epdlxjrmarh", "데이터금고"]},
   {"key": "tab.mywallet.trust", "label": "신뢰 센터", "path": "mywallet › 신뢰 센터", "surface": "tab", "nav": "trust", "tab": "trust", "owner": "nav", "admin": false, "desc": "", "aliases": ["tlsfhltpsxj", "신뢰센터"]},
-  {"key": "tab.insurance.custom", "label": "맞춤보험", "path": "insurance › 맞춤보험", "surface": "tab", "nav": "insurance", "tab": "custom", "owner": "nav", "admin": false, "desc": "", "aliases": ["akwcnaqhgja"]},
+  {"key": "tab.insurance.custom", "label": "치료비 준비 진단", "path": "insurance › 치료비 준비 진단", "surface": "tab", "nav": "insurance", "tab": "custom", "owner": "nav", "admin": false, "desc": "", "aliases": ["clfyqlwnsqlwlseks", "맞춤 보험", "맞춤보험", "치료비준비진단"]},
   {"key": "tab.insurance.analysis", "label": "보장분석", "path": "insurance › 보장분석", "surface": "tab", "nav": "insurance", "tab": "analysis", "owner": "nav", "admin": false, "desc": "", "aliases": ["qhwkdqnstjr"]},
   {"key": "tab.insurance.billing", "label": "보험료 납부", "path": "insurance › 보험료 납부", "surface": "tab", "nav": "insurance", "tab": "billing", "owner": "nav", "admin": false, "desc": "", "aliases": ["qhgjafyskqqn", "보험료납부"]},
   {"key": "tab.insurance.claimpay", "label": "청구·지급", "path": "insurance › 청구·지급", "surface": "tab", "nav": "insurance", "tab": "claimpay", "owner": "nav", "admin": false, "desc": "", "aliases": ["cjdrnwlrmq", "청구지급"]},
@@ -79,7 +79,7 @@ const NAV_INVENTORY = [
   {"key": "tab.healthmate.4", "label": "④ 질병 예측", "path": "healthmate › ④ 질병 예측", "surface": "tab", "nav": "healthmate", "tab": "4", "owner": "nav", "admin": true, "desc": "", "aliases": ["wlfquddPcmr", "질병 예측", "질병예측"]},
   {"key": "tab.healthmate.5", "label": "⑤ 건강 행동", "path": "healthmate › ⑤ 건강 행동", "surface": "tab", "nav": "healthmate", "tab": "5", "owner": "nav", "admin": true, "desc": "", "aliases": ["rjsrkdgodehd", "건강 행동", "건강행동"]},
   {"key": "tab.healthmate.6", "label": "⑥ 가족·재가", "path": "healthmate › ⑥ 가족·재가", "surface": "tab", "nav": "healthmate", "tab": "6", "owner": "nav", "admin": true, "desc": "", "aliases": ["rkwhrwork", "가족·재가", "가족재가"]},
-  {"key": "tab.healthmate.7", "label": "⑦ 보장분석 대화", "path": "healthmate › ⑦ 보장분석 대화", "surface": "tab", "nav": "healthmate", "tab": "7", "owner": "nav", "admin": true, "desc": "", "aliases": ["qhwkdqnstjreoghk", "보장분석 대화", "보장분석대화"]},
+  {"key": "tab.healthmate.7", "label": "⑦ 치료비 보장 점검", "path": "healthmate › ⑦ 치료비 보장 점검", "surface": "tab", "nav": "healthmate", "tab": "7", "owner": "nav", "admin": true, "desc": "", "aliases": ["clfyqlqhwkdwjarja", "보장분석 대화", "보장분석대화", "치료비 보장 점검", "치료비보장점검"]},
   {"key": "tab.healthmate.8", "label": "⑧ 프로 제안함", "path": "healthmate › ⑧ 프로 제안함", "surface": "tab", "nav": "healthmate", "tab": "8", "owner": "nav", "admin": true, "desc": "", "aliases": ["vmfhwpdksgka", "프로 제안함", "프로제안함"]},
   {"key": "tab.healthmate.9", "label": "⑨ 내 고객·실적", "path": "healthmate › ⑨ 내 고객·실적", "surface": "tab", "nav": "healthmate", "tab": "9", "owner": "nav", "admin": true, "desc": "", "aliases": ["sorhrortlfwjr", "내 고객·실적", "내고객실적"]},
   {"key": "tab.healthmate.10", "label": "⑩ 통합 운영", "path": "healthmate › ⑩ 통합 운영", "surface": "tab", "nav": "healthmate", "tab": "10", "owner": "nav", "admin": true, "desc": "", "aliases": ["⑩xhdgkqdnsdud", "⑩통합운영"]},

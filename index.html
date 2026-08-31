@@ -85,7 +85,7 @@ const I18N = {
   "nav.checkup.s":    { ko: "예약·결과조회·검진보험", en: "Booking · Results · Checkup insurance" },
   "nav.care":         { ko: "검진 후 케어", en: "Post-Checkup Care" },
   "nav.care.s":       { ko: "주치의·건강현황·병원진료·재가돌봄·건강쇼핑", en: "Doctor · Status · Hospital · Home care · Shopping" },
-  "nav.insurance":    { ko: "보험·치료비", en: "Insurance · Medical Costs" },
+  "nav.insurance":    { ko: "치료비 케어", en: "Insurance · Medical Costs" },
   "nav.insurance.s":  { ko: "조회·가입·청구·치료비", en: "Review · Enroll · Claim · Costs" },
   "nav.mywallet":     { ko: "나의 건강지갑", en: "My Health Wallet" },
   "nav.mywallet.s":   { ko: "금융지갑·Health NFT·우리가족건강관리", en: "Wallet · Health NFT · Family care" },
@@ -879,7 +879,7 @@ const SECTIONS = [
   { k: "home", ic: Home, t: "HI-Fin Tech란", s: "회사 소개·비전·사회환원·커뮤니티" },
   { k: "checkup", ic: ClipboardList, t: "건강검진 예약", s: "예약·결과조회·검진보험" },
   { k: "care", ic: HeartHandshake, t: "검진 후 케어", s: "주치의·건강현황·병원진료·재가돌봄·건강쇼핑" },
-  { k: "insurance", ic: ShieldCheck, t: "보험·치료비", s: "조회·가입·청구·치료비" },
+  { k: "insurance", ic: ShieldCheck, t: "치료비 케어", s: "조회·가입·청구·치료비" },
   { k: "mywallet", ic: Wallet, t: "나의 건강지갑", s: "금융지갑·Health NFT·우리가족건강관리" },
   { k: "partner", ic: Handshake, t: "제휴·투자 신청", s: "제휴 네트워크·회원/법인 투자" },
   { k: "healthmate", ic: HeartHandshake, t: "헬스메이트 센터", s: "전문헬스메이트(프로) 회원 관리 (운영)" },
@@ -1354,7 +1354,7 @@ export default function App() {
 
 /* ── 건강금융지갑(Wallet) ── */
 const WALLET = { total: 12480, rate: 10, monthEarn: 1840, monthUse: 920, grade: "골드" };
-/* 보험·치료비 적립금 — 적립되는 Health Token의 30%를 '보험·치료비 적립금'으로 우선 적립(보험료·의료비 결제 전용). 전 섹션 공통 적용 */
+/* 치료비 케어 적립금 — 적립되는 Health Token의 30%를 '치료비 케어 적립금'으로 우선 적립(보험료·의료비 결제 전용). 전 섹션 공통 적용 */
 const HTK_INS_RATE = 0.30;
 function htkInsReserve(htk) { return Math.floor((Number(htk) || 0) * HTK_INS_RATE); }
 // 적립: [art, 항목, 적립토큰, 설명, 색]
@@ -1442,11 +1442,11 @@ const NFT_ISSUE = [
   ["coin", "HTK 트랜잭션 영수", "HTK 전송·스왑 온체인 거래 영수를 자동 발행하고 실시간 무결성과 연동합니다."],
 ];
 const NFT_USE = [
-  { n: 1, t: "보험금 청구 자동 증빙", d: "보험금 청구 시 검진·진료 NFT가 자동 증빙으로 제출되어 서류 없이 간편 청구됩니다.", to: "insurance", chip: "보험·치료비" },
+  { n: 1, t: "보험금 청구 자동 증빙", d: "보험금 청구 시 검진·진료 NFT가 자동 증빙으로 제출되어 서류 없이 간편 청구됩니다.", to: "insurance", chip: "치료비 케어" },
   { n: 2, t: "병원 진료 시 인증서 제출", d: "건강인증서 SBT로 본인 건강상태를 안전하게 증명하고 진료에 활용합니다.", to: "hospital", chip: "병원/약국예약" },
   { n: 3, t: "데이터 제공 → 토큰 보상", d: "데이터 제공 동의 증명이 발행되고 건강금융지갑에 Health Token이 적립됩니다.", to: "wallet", chip: "건강금융지갑" },
   { n: 4, t: "가족·기관 선택 공개", d: "필요한 항목만 골라(영지식증명 지향) 가족·기관에 안전하게 공유합니다.", to: "mypage", chip: "마이페이지" },
-  { n: 5, t: "치료비 결제 즉시 증빙", d: "진료비 결제 영수 NFT가 보험금 청구·연말정산 의료비 증빙으로 바로 쓰입니다.", to: "insurance", chip: "보험·치료비" },
+  { n: 5, t: "치료비 결제 즉시 증빙", d: "진료비 결제 영수 NFT가 보험금 청구·연말정산 의료비 증빙으로 바로 쓰입니다.", to: "insurance", chip: "치료비 케어" },
   { n: 6, t: "청약·채권 권리 증명", d: "주식청약 참여증·채권 증서 NFT로 배정·이자지급 권리를 투명하게 증명합니다.", to: "partner", chip: "제휴·투자" },
   { n: 7, t: "은행·정산 감사추적", d: "출수납·정산 원장 해시로 회계 감사와 파트너 정산의 신뢰를 확보합니다.", to: "wallet", chip: "건강금융지갑" },
 ];
@@ -2992,11 +2992,11 @@ const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진�
 /* Super Agent → 검진 화면 AI 주치의 핸드오프 씨앗(건강 질문을 넘겨받아 이어서 상담) */
 let _doctorSeed = null;
 const DOCTOR_HANDOFF = "🩺 검진 화면에서 이어 상담";
-/* 보험·보장 문의는 약관 학습 보험 AI 상담사(보험·치료비 › AI보험상담)로 연결 */
+/* 보험·보장 문의는 약관 학습 보험 AI 상담사(치료비 케어 › AI보험상담)로 연결 */
 const INS_HANDOFF = "🛡️ 보험 화면에서 이어서 봐드릴게요";
 function insHandoff() {
   return { bubbles: [
-    { kind: "text", text: "**제가 보험 내용도 이어서 봐드릴게요.** 보험·치료비 화면에서 지금 질문 그대로, 성래님 데이터 기준으로 자세히 분석해 드려요." },
+    { kind: "text", text: "**제가 보험 내용도 이어서 봐드릴게요.** 치료비 케어 화면에서 지금 질문 그대로, 성래님 데이터 기준으로 자세히 분석해 드려요." },
     { kind: "card", card: { title: "🛡️ 하이의 보험 분석", items: ["질환·검진 위험과 연계한 보장 공백·본인부담·세대 전환 분석", "실손 세대·중대질환 진단비 안내(정보 제공)", "청약·가입은 정식 라이선스 채널(GA)로 안내"], buttons: [INS_HANDOFF] } },
   ], quicks: [INS_HANDOFF, "내 리포트 요약"] };
 }
@@ -5380,7 +5380,7 @@ function AICheckupRec({ onGoCenters }) {
       <div className="card ckgapcard">
         <div className="rct"><ShieldCheck size={18} color="#B91C1C" /> 진단비 없는 질환 — 조기발견이 최선의 대비</div>
         <p style={{ fontSize: 12.5, color: "#7A2E2E", lineHeight: 1.6, margin: "2px 0 10px" }}>
-          <b>{prof.gapDiseases.join(" · ")}</b>은(는) 아직 <b>중대질환 진단비가 없어</b> 발병 시 치료비 부담이 큽니다. 위 정밀검진으로 <b>조기에 발견</b>하고, 보험·치료비에서 <b>진단비 보완</b>을 함께 검토하세요.</p>
+          <b>{prof.gapDiseases.join(" · ")}</b>은(는) 아직 <b>중대질환 진단비가 없어</b> 발병 시 치료비 부담이 큽니다. 위 정밀검진으로 <b>조기에 발견</b>하고, 치료비 케어에서 <b>진단비 보완</b>을 함께 검토하세요.</p>
         <div className="ckgapbtns">
           <button className="cbtn pri" style={{ margin: 0 }} onClick={onGoCenters}><ClipboardList size={15} /> 추천 센터에서 예약</button>
           <button className="cbtn" style={{ margin: 0 }} onClick={() => { const cat = gapRows[0] && gapRows[0].gaps[0]; const CAT2PLAN = { "암": "general", "뇌": "brain", "심장": "heart", "신장": "liver", "간": "liver", "폐": "major" }; try { window.__hifinInsRoute = { tab: "premium", planKey: CAT2PLAN[cat] || "general" }; } catch (e) {} nav("insurance"); }}><ShieldCheck size={15} /> 진단비 보장 설계 · 간편가입</button>
@@ -6294,7 +6294,7 @@ function useHira() {
   return state;
 }
 
-/* ── 검진대비보험 가입증서 화면 — 발급 스냅샷(hifin_ins_certs) 렌더. 예약 완료·맞춤보험 양쪽에서 사용 ── */
+/* ── 검진대비보험 가입증서 화면 — 발급 스냅샷(hifin_ins_certs) 렌더. 예약 완료·치료비 준비 진단 양쪽에서 사용 ── */
 function InsCertModal({ cert, onClose }) {
   if (!cert) return null;
   const d0 = new Date(cert.at); const start = new Date(d0); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
@@ -6336,7 +6336,7 @@ function InsCertModal({ cert, onClose }) {
                 <span style={{ fontWeight: 700 }}>{c.t}</span><b style={{ color: "#1D4ED8" }}>{c.amt}</b>
               </div>
             ))}
-            {!covers.length && <div style={{ padding: "10px 13px", fontSize: 12, color: "#64748B" }}>보장 내역은 맞춤보험 › 검진대비보험에서 확인하세요.</div>}
+            {!covers.length && <div style={{ padding: "10px 13px", fontSize: 12, color: "#64748B" }}>보장 내역은 치료비 준비 진단 › 검진대비보험에서 확인하세요.</div>}
           </div>
           {/* 계약자 자필서명 — 청약 시점 서명 이미지 그대로 */}
           {cert.insured && cert.insured.sign && (
@@ -8057,7 +8057,7 @@ function ShopCartBar({ products }) {
   const totalCnt = cartItems.reduce((s, x) => s + x.qty, 0);
   const totalPrice = cartItems.reduce((s, x) => s + x.p.price * x.qty, 0);
   /* ── 전환 설계 ③: 적립금 즉시 차감 — '적립'은 미래고 '할인'은 현재다 ──
-     보험·치료비 전용 우선적립분(30%)은 결제에 쓰지 않고, 일반 적립분(70%)만 쇼핑 결제에 사용한다(사업계획서 적립 규칙 유지). */
+     치료비 케어 전용 우선적립분(30%)은 결제에 쓰지 않고, 일반 적립분(70%)만 쇼핑 결제에 사용한다(사업계획서 적립 규칙 유지). */
   const HTK_RATE = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
   const balHtk = (() => { try { const b = (dm && typeof tlSync === "function") ? tlSync(dm) : null; if (b != null) return b; return (typeof shopHtkPts === "function") ? shopHtkPts(dmEmail) : 0; } catch (e) { return 0; } })();
   const usableWon = Math.max(0, Math.floor(balHtk * 0.7) * HTK_RATE);          // 쇼핑 사용 가능액(원)
@@ -8110,7 +8110,7 @@ function ShopCartBar({ products }) {
                     ))}
                     <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 13px", fontSize: 11.5, background: appliedWon === maxUseWon && maxUseWon > 0 ? "#B45309" : undefined, color: appliedWon === maxUseWon && maxUseWon > 0 ? "#fff" : undefined }} onClick={() => setUseWon(maxUseWon)}>전액 {shopWon(maxUseWon)}</button>
                   </div>
-                  <div className="chnote" style={{ marginTop: 7 }}>보험·치료비 전용 우선적립분(30%)은 결제에 사용되지 않고 그대로 보존돼요 · 적립금으로 결제한 금액에는 중복 적립되지 않아요.</div>
+                  <div className="chnote" style={{ marginTop: 7 }}>치료비 케어 전용 우선적립분(30%)은 결제에 사용되지 않고 그대로 보존돼요 · 적립금으로 결제한 금액에는 중복 적립되지 않아요.</div>
                 </div>
               )}
               <div className="csum">
@@ -8939,7 +8939,7 @@ function ShopSection({ onGo }) {
 }
 
 /* ====================== HOME ====================== */
-/* ====================== 보험·치료비 ====================== */
+/* ====================== 치료비 케어 ====================== */
 
 /* ══════════════ 내 대비 현황(NeedsCard.jsx) — 2단계 v1.4 축⓪ P1 실장(형 확정: 섹션=A안·위젯=B안 병용) ══════════════
    두 곡선이 만나는 화면. §0-A 구간만·평가어 없음 / §0-P 회원이 눌러 물을 때만 해설(3단: 사실→판단 유보→절차) —
@@ -9002,7 +9002,7 @@ function NeedsCard({ variant }) {
         {EXPLAIN[open].map(([t, x]) => <div key={t}><b style={{ color: BRAND, marginRight: 6 }}>{t}</b>{x}</div>)}</div>}
     </div>);
   }
-  /* A안 — 3줄 리스트형(보험·치료비 섹션 상단, 형 확정 2026-08-30) */
+  /* A안 — 3줄 리스트형(치료비 케어 섹션 상단, 형 확정 2026-08-30) */
   return (<div className="card" style={{ padding: 0, overflow: "hidden", margin: "12px 0" }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg,#0B2239,#16405F)", color: "#fff", padding: "11px 16px" }}>
       <b style={{ fontSize: 15 }}>🧾 내 대비 현황</b>
@@ -9033,7 +9033,7 @@ function NeedsCard({ variant }) {
 const AGENCY_INFO = {
   corp: "글로벌예방금융(주)", regNo: "제2025060038호",
   basis: "보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항",
-  full: "본 보험·치료비 서비스는 보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항에 근거하여 등록된 보험대리점 글로벌예방금융(주)가 운영합니다.",
+  full: "본 치료비 케어 서비스는 보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항에 근거하여 등록된 보험대리점 글로벌예방금융(주)가 운영합니다.",
 };
 function InsAgencyBadge({ onGo }) {
   const [open, setOpen] = useState(false);
@@ -9414,7 +9414,7 @@ function _insFusionRoute(text, Mx, nm) {
   }
   return null;
 }
-/* ══════════ 전용 「AI 보험·치료비 상담사」 업무 실행 층 (Phase1 §4 본체) ══════════
+/* ══════════ 전용 「AI 치료비 케어 상담사」 업무 실행 층 (Phase1 §4 본체) ══════════
    insService(단일 출처)를 소비해 상담 중 실제 업무(납부·심사지급·재산정)를 실행한다.
    실수 방지: 금액이 움직이는 행동은 [진행 → 확인 카드 → ✅ 확정] 2단계 — 버튼 라벨에 대상 ID를 인코딩(무상태 확인 흐름).
    정책(INS_AI_POLICY) 상속: 가입·모집 요청은 실행하지 않고 GA 채널 안내로 응답. */
@@ -9424,7 +9424,7 @@ function _insServiceRoute(text, member) {
   const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
   // ⓐ 정책 가드 — 청약·모집 실행 요청은 정보 제공+GA 안내로 한정
   if (/가입\s*시켜|청약\s*해\s*줘|계약\s*해\s*줘|들어\s*줘.*보험/.test(text))
-    return { bubbles: [{ kind: "text", text: "가입·청약은 제가 직접 실행할 수 없어요 — 보험업법상 모집은 **라이선스 채널(GA 보험중개)**을 통해서만 가능해요. 대신 **맞춤보험 탭의 간편가입(시연)**으로 절차를 체험하시거나, 보장 공백 분석으로 무엇이 필요한지 먼저 확인해 드릴게요." }], quicks: ["보장 공백 분석", "보장 사다리 확인", "맞춤 헬스케어 보험 상담"] };
+    return { bubbles: [{ kind: "text", text: "가입·청약은 제가 직접 실행할 수 없어요 — 보험업법상 모집은 **라이선스 채널(GA 보험중개)**을 통해서만 가능해요. 대신 **치료비 준비 진단 탭의 간편가입(시연)**으로 절차를 체험하시거나, 보장 공백 분석으로 무엇이 필요한지 먼저 확인해 드릴게요." }], quicks: ["보장 공백 분석", "보장 사다리 확인", "맞춤 헬스케어 보험 상담"] };
   // ⓑ 납부 확정(2단계) — "✅ 납부 확정 · BILL-…"
   let mm = text.match(/^✅ 납부 확정 · (\S+)/);
   if (mm) { const r = insService.pay(member, mm[1]);
@@ -9437,7 +9437,7 @@ function _insServiceRoute(text, member) {
   // 납부 조회 — "이번 달 보험료", "납부해 줘"
   if (/납부|보험료\s*(내|납|얼마|청구)|낼\s*(돈|보험료)|청구서/.test(text)) {
     const S = insService.bills(member);
-    if (!S || !S.policies.length) return { bubbles: [{ kind: "text", text: "아직 납부할 계약이 없어요 — **맞춤보험 탭에서 간편가입(시연)**을 완료하면 매달 청구서가 생기고, 여기서 바로 납부까지 도와드려요." }], quicks: ["보장 사다리 확인", "보장 공백 분석"] };
+    if (!S || !S.policies.length) return { bubbles: [{ kind: "text", text: "아직 납부할 계약이 없어요 — **치료비 준비 진단 탭에서 간편가입(시연)**을 완료하면 매달 청구서가 생기고, 여기서 바로 납부까지 도와드려요." }], quicks: ["보장 사다리 확인", "보장 공백 분석"] };
     if (!S.unpaid.length) return { bubbles: [{ kind: "text", text: `이번 달 낼 보험료가 없어요 — 전부 납부 완료! (누적 수납 ${S.paidCount}건 · ${won(S.paidTotal)}) 잔액은 ${S.balance != null ? S.balance.toLocaleString() : "-"} HTK예요.` }], quicks: ["내 잔액 알려줘", "나눔 현황 보여줘"] };
     return { bubbles: [{ kind: "card", card: { title: `🧾 납부할 청구서 ${S.unpaid.length}건`, items: S.unpaid.slice(0, 4).map((b) => `${b.ym} ${b.product} · ${won(b.amount)} · ${b.status}`), buttons: S.unpaid.slice(0, 3).map((b) => `납부 진행 · ${b.id}`) } }, { kind: "text", text: `잔액 ${S.balance != null ? S.balance.toLocaleString() : "-"} HTK — 납부하면 원장에서 차감되고 온체인에 기록돼요.` }], quicks: [] };
   }
@@ -9488,7 +9488,7 @@ function _insServiceRoute(text, member) {
   if (/검진\s*보험\s*(청구|현황|보여)|검진대비/.test(text)) {
     const S = insService.checkupIns(member);
     if (!S) return null;
-    if (!S.policy) return { bubbles: [{ kind: "text", text: S.hasCheckup ? "검진 기록이 연결돼 있어요 — 맞춤보험 탭 ①에서 무상 발급을 받으실 수 있어요(확인 한 번이면 돼요)." : "검진 기록을 연결하면 무상 검진대비보험을 발급해 드려요." }], quicks: ["맞춤보험 열어줘"] };
+    if (!S.policy) return { bubbles: [{ kind: "text", text: S.hasCheckup ? "검진 기록이 연결돼 있어요 — 치료비 준비 진단 탭 ①에서 무상 발급을 받으실 수 있어요(확인 한 번이면 돼요)." : "검진 기록을 연결하면 무상 검진대비보험을 발급해 드려요." }], quicks: ["치료비 준비 진단 열어줘"] };
     if (/청구/.test(text) && S.timeline.phase === "보장 중") {
       const r = insService.claimSubmit(member, { kind: "검진 연계 정밀검사", fee: 100000 });
       if (r.ok) return { bubbles: [{ kind: "text", text: `접수 완료 ✓ — ${r.claim.id} (검진 연계 정밀검사 지원). 바로 심사할까요?` }], quicks: [`심사 진행 · ${r.claim.id}`] };
@@ -9503,7 +9503,7 @@ function _insServiceRoute(text, member) {
     return { bubbles: [{ kind: "card", card: { title: `🔮 질병별 위험 — 같은 ${R.band} ${R.sex}성 대비`, items: R.risks.slice(0, 3).map((r) => `${r.ko}: 상위 ${r.topPct}% · ${r.trend} (근거: ${r.basis.map((b) => b.ko).join("·") || "정상"})`), buttons: ["가입 심사 미리보기"] } }, { kind: "text", text: R.honesty }], quicks: ["가입 심사 미리보기", "보장 공백 분석"] };
   }
   if (/가입\s*심사\s*미리보기|인수\s*(시뮬|예측|심사)/.test(text)) {
-    const U = insService.underwrite(member, "맞춤보험");
+    const U = insService.underwrite(member, "치료비 준비 진단");
     if (!U || !U.ok) return { bubbles: [{ kind: "text", text: (U && U.reason) || "검진 연결이 필요해요." }] };
     return { bubbles: [{ kind: "text", text: `예상 결과: **${U.decision}**\n${U.note}${U.disclosures.length ? `\n고지 자동 구성: ${U.disclosures.map((d) => d.item).join(" · ")} (다시 입력 안 하셔도 돼요)` : ""}\n${U.ga}` }], quicks: ["보장 사다리 확인", "맞춤 헬스케어 보험 상담"] };
   }
@@ -9524,7 +9524,7 @@ function _insServiceRoute(text, member) {
   if (/잔액|얼마\s*있|토큰\s*(얼마|몇)/.test(text)) { const bal = (typeof tlBalance === "function") ? tlBalance(member) : null;
     if (bal == null) return null;
     const res = (typeof htkInsReserve === "function") ? htkInsReserve(bal) : Math.floor(bal * 0.3);
-    return { bubbles: [{ kind: "text", text: `지금 ${bal.toLocaleString()} HTK(≈${won(bal * rate)})가 있어요 — 그중 보험·치료비 전용 ${res.toLocaleString()} HTK, 일반 ${(bal - res).toLocaleString()} HTK. 트랜잭션 원장 합산 기준이라 온체인 원장 탭에서 전건 검증할 수 있어요.` }], quicks: ["납부할 보험료 있어?", "나눔 현황 보여줘"] }; }
+    return { bubbles: [{ kind: "text", text: `지금 ${bal.toLocaleString()} HTK(≈${won(bal * rate)})가 있어요 — 그중 치료비 케어 전용 ${res.toLocaleString()} HTK, 일반 ${(bal - res).toLocaleString()} HTK. 트랜잭션 원장 합산 기준이라 온체인 원장 탭에서 전건 검증할 수 있어요.` }], quicks: ["납부할 보험료 있어?", "나눔 현황 보여줘"] }; }
   return null;
 }
 
@@ -9548,7 +9548,7 @@ function AIPlannerChat({ onSimple, initialAsk }) {
   const insCtx = useMemo(() => { let c = null; try { c = window.__hifinInsCtx; window.__hifinInsCtx = null; } catch (e) {} if (!c && typeof insService !== "undefined") { try { c = insService.ctx(null, member); } catch (e) {} } return c; }, []);
   const ctxLine = insCtx && insCtx.pending && (insCtx.pending.bills > 0 || insCtx.pending.claims > 0)
     ? `\n\n📌 지금 진행 중인 건이 있어요 — ${[insCtx.pending.bills > 0 ? `납부 대기 청구서 ${insCtx.pending.bills}건` : null, insCtx.pending.claims > 0 ? `심사 대기 청구 ${insCtx.pending.claims}건` : null].filter(Boolean).join(" · ")}. 제가 바로 처리 도와드릴까요?` : "";
-  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 보험·치료비 전용 상담사예요. 🤖\n보장 분석부터 **납부·청구 지급·요율 재산정 실행**까지 — 확인만 해주시면 제가 처리해요.`
+  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 치료비 케어 전용 상담사예요. 🤖\n보장 분석부터 **납부·청구 지급·요율 재산정 실행**까지 — 확인만 해주시면 제가 처리해요.`
     + (topGap ? `\n\n${nm ? nm + "님, " : ""}지금 가장 먼저 챙길 지점은 **${topGap.t}**이에요.` : "") + ctxLine;
   const greet = { who: "ai", bubbles: [{ kind: "text", text: greetText }] };
   const FUSION_QUICKS = ["납부할 보험료 있어?", "청구 현황 보여줘", "보장 공백 분석", "재산정 해줘", "내 잔액 알려줘", "나눔 현황 보여줘"];
@@ -10283,7 +10283,7 @@ function InsAnalysisTab({ onGo, onTab }) {
       <div className="card" style={{ border: "1.5px dashed #FBCFB6" }}>
         <div className="rct"><Sparkles size={16} color="#F59E0B" /> 빠진 보장(보장 공백) {g.solution.findings.length}건</div>
         {g.solution.findings.slice(0, 4).map((f, i) => <div className="costrow" key={i}><span className="cl">{f.t || f.title || f.cat || String(f.k || "보장 항목")}</span><span className="cv" style={{ color: "#B45309" }}>{f.d || f.desc || f.why || "보완 검토"}</span><span className="ca">{f.sev != null ? "중요도 " + f.sev : "공백"}</span></div>)}
-        <button className="cbtn" style={{ marginTop: 8 }} onClick={() => onTab && onTab("custom")}><Sparkles size={14} /> 맞춤보험에서 보완하기</button>
+        <button className="cbtn" style={{ marginTop: 8 }} onClick={() => onTab && onTab("custom")}><Sparkles size={14} /> 치료비 준비 진단에서 보완하기</button>
       </div>)}
   </>);
 }
@@ -10299,7 +10299,7 @@ function InsLadderCard({ onTab }) {
     <div className="card" style={{ border: first ? "1.5px solid #FDBA74" : "1.5px solid #BBF7D0", background: first ? "#FFFBF5" : "#F7FEF9" }}>
       <div className="rct"><HeartHandshake size={17} color={first ? "#EA580C" : "#16A34A"} /> 보장 사다리 — {first ? "1단계: 실손부터" : "다음 단계: 맞춤 보장"}</div>
       <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.65 }}>{L.note}</p>
-      <div className="costrow"><span className="cl">내 보험·치료비 적립금 (토큰의 30% 우선 적립)</span><span className="cv" style={{ color: "var(--blue)" }}>{L.reserve.toLocaleString()} HTK</span><span className="ca">{first ? "실손 우선 충당" : "맞춤보험 활용"}</span></div>
+      <div className="costrow"><span className="cl">내 치료비 케어 적립금 (토큰의 30% 우선 적립)</span><span className="cv" style={{ color: "var(--blue)" }}>{L.reserve.toLocaleString()} HTK</span><span className="ca">{first ? "실손 우선 충당" : "치료비 준비 진단 활용"}</span></div>
       {first && P && (<>
         <div style={{ margin: "8px 0 4px", fontSize: 12, fontWeight: 700 }}>자동 적립 플랜 — 목표 {P.goalWon.toLocaleString()}원(첫 3개월 보험료) · 진행 {P.progress}%</div>
         <div style={{ height: 10, background: "#FDE8D8", borderRadius: 99, overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: P.progress + "%", background: "linear-gradient(90deg,#F97316,#FB923C)" }} /></div>
@@ -10309,7 +10309,7 @@ function InsLadderCard({ onTab }) {
     </div>);
 }
 
-/* ══════════ 맞춤보험 4서브섹션(과업B) — 내 지갑 자산의 다른 뷰 ══════════ */
+/* ══════════ 치료비 준비 진단 4서브섹션(과업B) — 내 지갑 자산의 다른 뷰 ══════════ */
 /* ① 건강검진대비보험 — 가입부터 청구까지 한 흐름 */
 function InsCheckupInsSection({ onEnroll }) {
   const [tick, setTick] = useState(0); void tick;
@@ -10467,7 +10467,7 @@ function InsRiskCard() {
         </div>))}
       {CM && CM.ok && CM.rows.filter((r) => r.gap > 0).slice(0, 2).map((r) => (
         <div className="costrow" key={r.code}><span className="cl">🧩 {r.ko} 보장 갭</span><span className="cv" style={{ color: "#B45309" }}>{r.gap.toLocaleString()}원 부족</span><span className="ca">보완 권장</span></div>))}
-      <button className="cbtn" style={{ marginTop: 6 }} onClick={() => setUw(insService.underwrite(m, "맞춤보험"))}><ShieldCheck size={14} /> 가입 심사 미리보기 (인수 시뮬레이션)</button>
+      <button className="cbtn" style={{ marginTop: 6 }} onClick={() => setUw(insService.underwrite(m, "치료비 준비 진단"))}><ShieldCheck size={14} /> 가입 심사 미리보기 (인수 시뮬레이션)</button>
       {uw && uw.ok && (
         <div style={{ background: "#F8FAFF", border: "1px solid #DBEAFE", borderRadius: 10, padding: "9px 12px", marginTop: 8, fontSize: 12.2, lineHeight: 1.65 }}>
           <b style={{ color: "#1D4ED8" }}>예상 결과: {uw.decision}</b><br />{uw.note}
@@ -10492,7 +10492,7 @@ function InsBillingTab() {
     <div className="card" style={{ textAlign: "center", padding: "30px 18px" }}>
       <Coins size={30} color="#94A3B8" style={{ marginBottom: 8 }} />
       <div style={{ fontSize: 15.5, fontWeight: 800 }}>납부할 계약이 아직 없어요</div>
-      <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 14px" }}>맞춤보험에서 간편가입(시연)을 완료하면 계약이 <b>내 지갑 원장</b>에 기록되고, 매달 청구서가 여기 생겨요 — 납부하면 토큰이 실제로 차감됩니다.</p>
+      <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 14px" }}>치료비 준비 진단에서 간편가입(시연)을 완료하면 계약이 <b>내 지갑 원장</b>에 기록되고, 매달 청구서가 여기 생겨요 — 납부하면 토큰이 실제로 차감됩니다.</p>
     </div>);
   const due = S.unpaid[0];
   return (<>
@@ -10690,7 +10690,7 @@ function InsShareTab() {
 }
 
 function InsuranceSection({ onGo }) {
-  const [tab, setTab] = useState("custom");   // 과업A: 맞춤보험이 기본 랜딩 탭
+  const [tab, setTab] = useState("custom");   // 과업A: 치료비 준비 진단이 기본 랜딩 탭
   const [modal, setModal] = useState(null);
   const [enroll, setEnroll] = useState(false);
   const [cover, setCover] = useState(null);
@@ -10710,12 +10710,12 @@ function InsuranceSection({ onGo }) {
     let a = null; try { a = window.__hifinInsAsk; } catch (e) {}
     if (a) { setTabX(a.tab || "ai"); setAskSeed(a.q || null); try { window.__hifinInsAsk = null; } catch (e) {} }
   }, []);
-  /* 과업3 6탭 — 각 탭 = 내 지갑 자산의 다른 뷰(보장 자산·토큰 사용·순환의 몫). 과업A: 맞춤보험 최좌측(기본 랜딩) */
-  const tabs = [["custom", "맞춤보험", Sparkles], ["analysis", "보장분석", Search], ["billing", "보험료 납부", Coins], ["claimpay", "청구·지급", FileText], ["rerate", "요율 재산정", ShieldCheck], ["share", "치료비·나눔", HeartHandshake], ["region", "내 지역 상담", MapPin]];
+  /* 과업3 6탭 — 각 탭 = 내 지갑 자산의 다른 뷰(보장 자산·토큰 사용·순환의 몫). 과업A: 치료비 준비 진단 최좌측(기본 랜딩) */
+  const tabs = [["custom", "치료비 준비 진단", Sparkles], ["analysis", "보장분석", Search], ["billing", "보험료 납부", Coins], ["claimpay", "청구·지급", FileText], ["rerate", "요율 재산정", ShieldCheck], ["share", "치료비·나눔", HeartHandshake], ["region", "내 지역 상담", MapPin]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="insurance" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>보험·치료비</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>치료비 케어</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강검진대비보험 · 가입 · 보장조회 · 청구 · AI상담 — 치료비 걱정 없는 임베디드 보험</div></div></div>
       {/* 2단계 P1(형 확정 A안) — 두 곡선의 상시 화면: 회원이 눌러 물을 때만 해설·계측(§0-P) */}
       {typeof NeedsCard === "function" && <NeedsCard />}
@@ -10828,7 +10828,7 @@ function InsuranceSection({ onGo }) {
         <AIPlannerChat initialAsk={askSeed} onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
       </>)}
 
-      {/* 과업3 §4: 전용 「AI 보험·치료비 상담사」 슬롯 — 현 Phase는 보험 특화 대화(AIPlannerChat)로 연결, 차기 Phase에서 insService.ctx(tab) 컨텍스트를 받는 전용 상담사 본체 장착(정책: insService.policy) */}
+      {/* 과업3 §4: 전용 「AI 치료비 케어 상담사」 슬롯 — 현 Phase는 보험 특화 대화(AIPlannerChat)로 연결, 차기 Phase에서 insService.ctx(tab) 컨텍스트를 받는 전용 상담사 본체 장착(정책: insService.policy) */}
       {tab !== "ai" && (
         <button className="cbtn pri" style={{ position: "fixed", right: 20, bottom: 96, width: "auto", margin: 0, zIndex: 40, borderRadius: 99, padding: "12px 18px", boxShadow: "0 14px 32px -12px rgba(37,99,235,.7)" }}
           onClick={() => { try { window.__hifinInsCtx = insService.ctx(tab); } catch (e) {} setTab("ai"); }}>
@@ -10886,9 +10886,9 @@ function WalletSection({ onGo }) {
       </div>
 
       <div className="wins">
-        <div className="wins-h"><span className="wins-ic"><ShieldCheck size={17} /></span><div><b>보험·치료비 적립금 <span className="wins-tag">우선 적립 {insPct}%</span></b><p>적립되는 Health Token의 <b>{insPct}%</b>를 <b>보험료·의료비 결제 전용</b> 적립금으로 <b>우선 적립</b>합니다.</p></div></div>
+        <div className="wins-h"><span className="wins-ic"><ShieldCheck size={17} /></span><div><b>치료비 케어 적립금 <span className="wins-tag">우선 적립 {insPct}%</span></b><p>적립되는 Health Token의 <b>{insPct}%</b>를 <b>보험료·의료비 결제 전용</b> 적립금으로 <b>우선 적립</b>합니다.</p></div></div>
         <div className="wins-grid">
-          <div className="wins-box pri"><span className="wl"><ShieldCheck size={12} /> 보험·치료비 적립금 <em>{insPct}% 우선</em></span><b>{insRes.toLocaleString()} <small>HTK</small></b><span className="ww">≈ {(insRes * WALLET.rate).toLocaleString()}원 · 보험료·치료비 결제</span></div>
+          <div className="wins-box pri"><span className="wl"><ShieldCheck size={12} /> 치료비 케어 적립금 <em>{insPct}% 우선</em></span><b>{insRes.toLocaleString()} <small>HTK</small></b><span className="ww">≈ {(insRes * WALLET.rate).toLocaleString()}원 · 보험료·치료비 결제</span></div>
           <div className="wins-box"><span className="wl"><Coins size={12} /> 일반 적립금 <em>{100 - insPct}%</em></span><b>{genRes.toLocaleString()} <small>HTK</small></b><span className="ww">≈ {(genRes * WALLET.rate).toLocaleString()}원 · 쇼핑·건강활동 사용</span></div>
         </div>
         <div className="wins-bar"><span className="pri" style={{ width: insPct + "%" }}>{insPct}%</span><span className="gen" style={{ width: (100 - insPct) + "%" }}>{100 - insPct}%</span></div>
@@ -11340,7 +11340,7 @@ function MyPageSection({ onGo }) {
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
         <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${((typeof lineageMember === "function") ? lineageMember(dm) : dm).biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
         <div className="pstats">
-          {[["12,480", "Health Token", "wallet"], ["3,744", "보험·치료비 적립금", "wallet"], ["6", "Health NFT", "nft"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
+          {[["12,480", "Health Token", "wallet"], ["3,744", "치료비 케어 적립금", "wallet"], ["6", "Health NFT", "nft"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
         </div>
       </div>
 
@@ -11352,7 +11352,7 @@ function MyPageSection({ onGo }) {
         const gaps = sol.findings.filter((f) => f.sev !== "good");
         const col = sol.grade === "충실" ? "#15803D" : sol.grade === "보통" ? "#B45309" : "#B91C1C";
         return (
-          <div className="myins" onClick={() => go("insurance")} title="보험·치료비에서 보장 설계">
+          <div className="myins" onClick={() => go("insurance")} title="치료비 케어에서 보장 설계">
             <div className="myins-l"><ShieldCheck size={16} color="#2563EB" /><div><b>내 보험 보장 현황</b><span>실손 {sol.ins.silson.gen} · 진단비 {sol.ins.riders.length ? sol.ins.riders.map((r) => r.cat).join("·") : "미보유"}</span></div></div>
             <div className="myins-r"><span className="myins-grade" style={{ color: col }}>충실도 {sol.grade} {sol.score}점</span><span className="myins-gap">{gaps.length ? "공백 " + gaps.length + "건" : "공백 없음"}</span><ChevronRight size={15} color="#8A97AE" /></div>
           </div>
@@ -11793,7 +11793,7 @@ function FamilyCareSection({ member, onGo }) {
               <div className="fitbl">{fam.rows.map((r, i) => (
                 <div className="firow" key={i}><span className="firn">{r.name}<small>{r.rel}</small></span><span className="firg">{r.gen}</span><span className={"firgr " + (r.grade === "충실" ? "g1" : r.grade === "보통" ? "g2" : "g3")}>{r.grade}</span><span className="firgap">{r.topGap}</span></div>
               ))}</div>
-              <div className="finote">{gaps.length ? `가족 ${gaps.length}명에게 보장 공백이 있어요. 보험·치료비에서 함께 설계할 수 있어요.` : "가족 보장이 대체로 충실합니다."} <button className="filink" onClick={() => go("insurance")}>보험·치료비 <ChevronRight size={12} /></button></div>
+              <div className="finote">{gaps.length ? `가족 ${gaps.length}명에게 보장 공백이 있어요. 치료비 케어에서 함께 설계할 수 있어요.` : "가족 보장이 대체로 충실합니다."} <button className="filink" onClick={() => go("insurance")}>치료비 케어 <ChevronRight size={12} /></button></div>
             </>) : (<div className="finone">{fam.note} <button className="filink" onClick={() => go("insurance")}>내 보험 분석 <ChevronRight size={12} /></button></div>)}
             <div className="fiwarn">※ 예시 기준 융합 분석 · 실제 보장·가입은 약관·인수심사에 따르며 가족 데이터는 동의 범위에서만 사용됩니다.</div>
           </div>
@@ -12283,7 +12283,7 @@ const STORY_SCENES = [
     links: [["데이터 연결 — 사진 한 장, 1분", "onboarding"], ["데이터 금고 — 내 자산 확인", "mywallet"]] },
   { era: "5월", title: "민석의 숫자", c: "#16A34A",
     text: ["정밀리포트의 생체나이 52.5세 — 나쁘지 않았습니다. 그런데 한 줄이 숨을 멎게 했습니다. '췌장 관리 필요 · 당뇨 위험 주의.' 민석의 병이 시작된 곳이었습니다.", "다음 날 아침 '하이'는 담담했습니다. \"지금은 '위험'이 아니라 '신호'예요. 신호일 때 움직이면, 결과가 달라져요.\" 리포트는 두 번째 자산이 됐고(2세대·분석 자산), 하이가 짚어준 진단비 공백은 월 1.2만 원대 간편보험 가입 3분으로 메웠습니다.", "혈당 영양제는 광고가 아니라 성적표로 골랐습니다 — \"품질 인증: 이 제품 복용 회원군 지표 개선폭 상위 3%.\" 소비 마진의 50%는 HTK로 적립되고, 그중 30%는 보험료·치료비 전용 지갑에 잠깁니다. 소비할 때마다, 미래의 치료비가 쌓입니다."],
-    links: [["나의 건강현황 — 생체나이·위험 리포트", "manage"], ["보험·치료비 — 보장 공백 3분 점검", "insurance"], ["건강쇼핑 — 성적표로 고르는 소비", "shop"]] },
+    links: [["나의 건강현황 — 생체나이·위험 리포트", "manage"], ["치료비 케어 — 보장 공백 3분 점검", "insurance"], ["건강쇼핑 — 성적표로 고르는 소비", "shop"]] },
   { era: "7월", title: "세 사람의 지갑", c: "#EA580C",
     text: ["아내(51)의 검진을 예약하고, 우리가족건강관리에 82세 노모를 등록했습니다.", "노모의 지갑에는 NFC 응급태그 — 구조사가 태그를 대면 혈액형·복용약·보호자만 제한 열람되고, 열람 기록은 체인에 남습니다. 노모의 혈압계는 매일 아침 수치를 플랫폼으로 보내기 시작했습니다.", "세 사람의 건강자본이 한 지갑 체계 안에서 함께 자라기 시작했습니다."],
     links: [["우리가족건강관리 — 가족 등록", "mypage"]] },
@@ -12298,13 +12298,13 @@ const STORY_SCENES = [
     links: [["건강금융지갑 — 배당·적립 내역", "wallet"], ["사회적기업 — 치료비 나눔 구조", "social"]] },
   { era: "이듬해 3월", title: "젊어진 숫자, 다시 매겨진 보험료", c: "#F59E0B",
     text: ["1년간의 적립금이 다음 해 보험료에 자동 충당됐습니다 — 쓸수록 보험료가 내려갑니다. 재검진 리포트의 췌장 관리 지표는 '개선'. 신호일 때 움직인 결과였습니다.", "개선이 성과 자산(4세대)으로 편입되자 '하이'가 물었습니다. \"개선된 건강상태로 보험료 재산정을 신청할까요? 인하 및 가입확대형 전용이라 손해 볼 일은 없어요.\" 2주 뒤 갱신 안내서의 숫자가 작년보다 작아져 있었습니다.", "보험료란 나이를 따라 오르기만 하는 줄 알았던 조 씨는 그날 처음 알았습니다 — 이 플랫폼에서 보험료는 내 나이가 아니라, 내 관리를 따라갑니다. 여유 적립금은 헬스 세이빙과 하이핀 주식청약(참여증 NFT)으로 — 건강을 관리했을 뿐인데, 자산 포트폴리오가 생겼습니다."],
-    links: [["보험·치료비 — 재산정·자동충당", "insurance"], ["Health NFT — 참여증·인증서", "nft"]] },
+    links: [["치료비 케어 — 재산정·자동충당", "insurance"], ["Health NFT — 참여증·인증서", "nft"]] },
   { era: "5년 후", title: "약국 문에 붙은 스티커", c: "#0891B2",
     text: ["단골 약국 문에 낯선 스티커가 붙었습니다. \"하이핀 검증기관 — 이 약국은 대한민국 건강데이터의 무결성을 검증합니다.\"", "김 약사가 웃으며 말했습니다. \"요즘 처방 배송 손님 절반이 하이핀으로 와요. 검증 노드 하고 나서 단골이 늘었죠.\" 그 검증 참여의 진짜 담보는 코인이 아니라 — 조 씨 같은 손님의 발길이었습니다(송객 동맹).", "회원의 여정과 기관의 여정이, 같은 생태계에서 맞물려 돌고 있었습니다."],
     links: [["제휴·투자 신청 — 검증기관·송객 동맹", "partner"]] },
   { era: "10년 후", title: "수술 동의서 앞에서", c: "#EF4444",
-    text: ["64세. 정기검진이 심장 혈관의 협착을 찾아냈습니다. 시술이 필요했습니다. 수술 동의서 앞에 앉은 조 씨는 문득 깨달았습니다 — 비용 항목을 한 번도 걱정하지 않았다는 것을.", "진단비 보험금이 나왔고, 10년간 잠겨 있던 보험·치료비 적립금이 본인부담을 덮었습니다. 청구서를 낼 일도 없었습니다 — 병원 진료 데이터가 블록체인을 통해 보험사에 안전하게 전송되자 보험금이 자동으로 심사·지급되어 치료비까지 실시간으로 정산됐고, 매달 보험료마저 그가 적립해 둔 디지털 화폐로 알아서 결제되고 있었습니다. 민석의 가족이 아파트를 줄이며 치렀던 그 비용을, 그는 서명 한 번으로 지나갔습니다. 시술은 성공했습니다 — 조기 발견이었으니까.", "지갑에는 1~4세대 데이터 자산 수십 개가 계보로 쌓여 매년 배당을 낳고, 당뇨는 10년째 '전단계'에서 멈춰 있고, 보험료는 성과 증명마다 내려갔습니다. 건강관리가 지출이 아니라 재산증식이었습니다. 노모는 원격 모니터링과 재가돌봄 속에서 존엄하게 아흔을 넘겼습니다."],
-    links: [["보험·치료비 — 치료비 걱정 ZERO 구조", "insurance"]] },
+    text: ["64세. 정기검진이 심장 혈관의 협착을 찾아냈습니다. 시술이 필요했습니다. 수술 동의서 앞에 앉은 조 씨는 문득 깨달았습니다 — 비용 항목을 한 번도 걱정하지 않았다는 것을.", "진단비 보험금이 나왔고, 10년간 잠겨 있던 치료비 케어 적립금이 본인부담을 덮었습니다. 청구서를 낼 일도 없었습니다 — 병원 진료 데이터가 블록체인을 통해 보험사에 안전하게 전송되자 보험금이 자동으로 심사·지급되어 치료비까지 실시간으로 정산됐고, 매달 보험료마저 그가 적립해 둔 디지털 화폐로 알아서 결제되고 있었습니다. 민석의 가족이 아파트를 줄이며 치렀던 그 비용을, 그는 서명 한 번으로 지나갔습니다. 시술은 성공했습니다 — 조기 발견이었으니까.", "지갑에는 1~4세대 데이터 자산 수십 개가 계보로 쌓여 매년 배당을 낳고, 당뇨는 10년째 '전단계'에서 멈춰 있고, 보험료는 성과 증명마다 내려갔습니다. 건강관리가 지출이 아니라 재산증식이었습니다. 노모는 원격 모니터링과 재가돌봄 속에서 존엄하게 아흔을 넘겼습니다."],
+    links: [["치료비 케어 — 치료비 걱정 ZERO 구조", "insurance"]] },
   { era: "에필로그", title: "아들의 질문", c: "#2563EB",
     text: ["서른넷이 된 아들이 첫 직장 검진을 앞두고 물었습니다. \"아버지, 검진 그거 꼭 해야 해요?\"", "조 씨는 서랍을 열었습니다. 이제 그곳에 뜯지 않은 봉투는 없습니다 — 종이 자체가 없으니까. 그는 아들의 폰에 하이핀을 깔아주며 말했습니다.", "\"해야지. 그건 검사가 아니라 — 적금이야.\" 가족의 건강자본이, 다음 세대로 이어졌습니다."],
     links: [["나도 10초로 시작하기 — 건강검진 예약", "checkup"]] },
@@ -14611,7 +14611,7 @@ function OntMemberModal({ m, onClose, onGo }) {
             <div className="ontmsec"><div className="ontmsh"><ShieldCheck size={13} color="#A78BFA" /> 실손·중대질환 보장 <span className={"ontins-b " + (ins.silson.enrolled ? "on" : "off")}>{ins.silson.gen === "미가입" ? "실손 미가입" : "실손 " + ins.silson.gen}</span>{sol && <span className="ontins-score" style={{ color: sol.grade === "충실" ? "#16A34A" : sol.grade === "보통" ? "#F59E0B" : "#EF4444" }}>보장 {sol.grade} {sol.score}점</span>}</div>
               {ins.silson.enrolled && <div className="ontins-grid"><div><span>급여/비급여 자부담</span><b>{ins.silson.coGen} / {ins.silson.coNon}</b></div><div><span>통원/입원 한도</span><b>{ontWon(ins.silson.outLimit)} / {ontWon(ins.silson.inLimit)}</b></div><div><span>월 보험료(추정)</span><b>{ontWon(ins.silson.monthly)}</b></div><div><span>중대질환 진단비 특약</span><b>{ins.riders.length ? ontWon(ins.riderTotal) + " (" + ins.riders.length + "종)" : "없음"}</b></div></div>}
               {ins.dx.length > 0 && <div className="ontins-dx">중대질환 진단 이력: {ins.dx.map((d) => <span key={d.cat + d.sub}>{d.cat}·{d.sub} <b>{ontWon(d.benefit)}</b></span>)}</div>}
-              {sol && sol.findings.length > 0 && <div className="ontins-sol"><div className="ontins-solh"><Sparkles size={11} color="#22D3EE" /> AI 보험 솔루션 (건강×보험 융합)</div>{sol.findings.slice(0, 4).map((f, i) => <div className="ontins-f" key={i} style={{ borderLeftColor: SC[f.sev] }}><b style={{ color: SC[f.sev] }}>{f.t}</b><p>{f.d}</p><em>→ {f.a}</em></div>)}<button className="ontins-go" onClick={() => onGo && onGo("insurance")}>보험·치료비에서 보장 설계 <ChevronRight size={13} /></button></div>}
+              {sol && sol.findings.length > 0 && <div className="ontins-sol"><div className="ontins-solh"><Sparkles size={11} color="#22D3EE" /> AI 보험 솔루션 (건강×보험 융합)</div>{sol.findings.slice(0, 4).map((f, i) => <div className="ontins-f" key={i} style={{ borderLeftColor: SC[f.sev] }}><b style={{ color: SC[f.sev] }}>{f.t}</b><p>{f.d}</p><em>→ {f.a}</em></div>)}<button className="ontins-go" onClick={() => onGo && onGo("insurance")}>치료비 케어에서 보장 설계 <ChevronRight size={13} /></button></div>}
             </div>
           ); })()}
 
@@ -16183,7 +16183,7 @@ const KB_DOMAINS = [
   { id: "checkup", name: "건강검진", ic: "Stethoscope", c: "#0EA5E9", count: 2140, subs: ["국가·암·특수검진", "항목별 정상범위", "수치별 위험구간", "재검·진료연계 기준"] },
   { id: "disease", name: "질환", ic: "HeartPulse", c: "#E11D48", count: 4760, subs: ["원인·위험요인·증상", "진단·검사 기준", "예방·생활·식이관리", "합병증·응급 기준"] },
   { id: "behavior", name: "건강행동", ic: "Activity", c: "#16A34A", count: 1980, subs: ["운동·식습관·수면", "금연·절주·체중", "복약·정기검진", "행동변화·리워드 효과"] },
-  { id: "insurance", name: "보험·치료비", ic: "ShieldCheck", c: "#2563EB", count: 1520, subs: ["질병/상해/실손·임베디드", "지급조건·면책·한도", "청구절차·자기부담", "치료비 지원제도"] },
+  { id: "insurance", name: "치료비 케어", ic: "ShieldCheck", c: "#2563EB", count: 1520, subs: ["질병/상해/실손·임베디드", "지급조건·면책·한도", "청구절차·자기부담", "치료비 지원제도"] },
   { id: "commerce", name: "건강소비·자산", ic: "Coins", c: "#F59E0B", count: 1180, subs: ["영양제·식단·웰니스", "적립률·환급률·리워드", "건강자산 사용처", "보험료·기부 연계"] },
   { id: "legal", name: "법률·제도", ic: "Scale", c: "#A78BFA", count: 1260, subs: ["의료법·보험업법", "개인정보·신용정보법", "전자금융·가상자산", "마이데이터·규제샌드박스"] },
 ];
@@ -16191,7 +16191,7 @@ const KB_ENTRIES = [
   ["공복혈당 100~125mg/dL — 당뇨 전단계 관리 기준", "건강검진", "대한당뇨병학회", "2025-11", "A", "최신", "승인"],
   ["고혈압 진단 및 생활요법(DASH) 가이드", "질환", "대한고혈압학회", "2025-09", "A", "최신", "승인"],
   ["국가암검진 6대 암 대상·주기(2026)", "건강검진", "국립암센터", "2026-01", "A", "최신", "승인"],
-  ["상해보험 후유장해 지급률·판정(180일) 해설", "보험·치료비", "보험 약관(학습)", "2026-01", "B", "최신", "검토중"],
+  ["상해보험 후유장해 지급률·판정(180일) 해설", "치료비 케어", "보험 약관(학습)", "2026-01", "B", "최신", "검토중"],
   ["오메가3 EPA·DHA 혈중 중성지방 기능성", "건강소비·자산", "식약처 기능성 인정", "2025-07", "B", "검토요", "승인"],
   ["개인정보보호법 민감정보(건강정보) 처리 요건", "법률·제도", "국가법령정보센터", "2025-10", "A", "최신", "승인"],
   ["대사증후군 5대 진단기준·관리", "질환", "질병관리청", "2025-06", "A", "검토요", "대기"],
@@ -16277,7 +16277,7 @@ function AIKBLounge({ onGo }) {
   const INS = (typeof KB_INSURANCE !== "undefined") ? KB_INSURANCE : [];
   const LAW = (typeof KB_LEGAL !== "undefined") ? KB_LEGAL : [];
   const CHK_META = (typeof KB_CHECKUP_META !== "undefined") ? KB_CHECKUP_META : { count: CHK.length };
-  const DOMS = [["checkup", "건강검진", CHK, "국가건강검진·5개 학회 기준 · 검토완료"], ["disease", "질환", DIS, "질병관리청·전문학회 진료지침 · 검토완료"], ["insurance", "보험·치료비", INS, "상해보험 약관·금융위 · 학습·검토"], ["legal", "법률·제도", LAW, "국가법령정보센터 · 규제 검토용"]];
+  const DOMS = [["checkup", "건강검진", CHK, "국가건강검진·5개 학회 기준 · 검토완료"], ["disease", "질환", DIS, "질병관리청·전문학회 진료지침 · 검토완료"], ["insurance", "치료비 케어", INS, "상해보험 약관·금융위 · 학습·검토"], ["legal", "법률·제도", LAW, "국가법령정보센터 · 규제 검토용"]];
   const activeDom = DOMS.find((d) => d[0] === dom) || DOMS[0];
   const _txt = (r) => Object.values(r).map((v) => Array.isArray(v) ? v.join(" ") : v).join(" ").toLowerCase();
   const domRows = q.trim() ? activeDom[2].filter((r) => _txt(r).includes(q.trim().toLowerCase())) : activeDom[2];
@@ -16312,7 +16312,7 @@ function AIKBLounge({ onGo }) {
         ); })}</div>
         <div className="kbchain">
           <div className="kbct" style={{ marginBottom: 8 }}><Network size={13} /> 지식 연결(온톨로지) — 검진 이상수치 → 질환 → 행동 → 보험·자산 → 사후관리</div>
-          <div className="kbchain-flow">{["공복혈당 상승", "당뇨 전단계", "비만·운동부족·식습관", "식단·운동 권고", "3개월 후 재검사", "필요시 내과 진료", "건강미션 생성", "건강행동 이행", "건강자산 적립", "보험·치료비 지원 확인"].map((s, i, a) => <React.Fragment key={i}><span className="kbchain-n">{s}</span>{i < a.length - 1 && <ChevronRight size={14} className="kbchain-a" />}</React.Fragment>)}</div>
+          <div className="kbchain-flow">{["공복혈당 상승", "당뇨 전단계", "비만·운동부족·식습관", "식단·운동 권고", "3개월 후 재검사", "필요시 내과 진료", "건강미션 생성", "건강행동 이행", "건강자산 적립", "치료비 케어 지원 확인"].map((s, i, a) => <React.Fragment key={i}><span className="kbchain-n">{s}</span>{i < a.length - 1 && <ChevronRight size={14} className="kbchain-a" />}</React.Fragment>)}</div>
         </div>
       </>}
 
@@ -16673,7 +16673,7 @@ function WpChangeLog({ onGoChapter, onGoRefs }) {
             <input value={f.feat} onChange={(e) => setF({ ...f, feat: e.target.value })} placeholder="플랫폼 기능 (예: 청구지원 워크플로)" style={inS} />
             <input value={f.ch} onChange={(e) => setF({ ...f, ch: e.target.value })} placeholder="챕터 (예: 15)" style={inS} />
           </div>
-          <input value={f.src} onChange={(e) => setF({ ...f, src: e.target.value })} placeholder="위치 (예: 보험·치료비 › 보험금청구)" style={inS} />
+          <input value={f.src} onChange={(e) => setF({ ...f, src: e.target.value })} placeholder="위치 (예: 치료비 케어 › 보험금청구)" style={inS} />
           <input value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} placeholder="반영 내용 요약" style={inS} />
           <div style={{ display: "flex", justifyContent: "flex-end" }}><button onClick={addEntry} style={{ ...btnS(true), padding: "8px 16px" }}>기록</button></div>
         </div>}
@@ -17016,7 +17016,7 @@ function FinanceLive() {
             <div className="finpl-r sub"><span>Ⅰ. 유동부채</span><b>{finWon(bs.curLiab)}원</b></div>
             <div className="finpl-r"><span>　계약부채(토큰적립금)</span><b>{finWon(bs.contractLiab)}원</b></div>
             {(() => { const r = (typeof HTK_INS_RATE !== "undefined") ? HTK_INS_RATE : 0.30; const ins = Math.round(bs.contractLiab * r); return (<>
-              <div className="finpl-r"><span style={{ color: "#2563EB", paddingLeft: 12 }}>└ 보험·치료비 적립금(30% 우선)</span><b style={{ color: "#2563EB" }}>{finWon(ins)}원</b></div>
+              <div className="finpl-r"><span style={{ color: "#2563EB", paddingLeft: 12 }}>└ 치료비 케어 적립금(30% 우선)</span><b style={{ color: "#2563EB" }}>{finWon(ins)}원</b></div>
               <div className="finpl-r"><span style={{ color: "#94A3B8", paddingLeft: 12 }}>└ 일반 토큰적립금(70%)</span><b style={{ color: "#94A3B8" }}>{finWon(bs.contractLiab - ins)}원</b></div>
             </>); })()}
             <div className="finpl-r"><span>　미지급기부금(나눔)</span><b>{finWon(bs.donationPay)}원</b></div>
@@ -17170,7 +17170,7 @@ function FinanceLive() {
             <div className="finpl-r sub"><span>Ⅰ. 유동부채</span><b>{finWon(an.curLiab)}원</b></div>
             <div className="finpl-r"><span>　계약부채(토큰적립금)</span><b>{finWon(an.contractLiab)}원</b></div>
             {(() => { const rt = (typeof HTK_INS_RATE !== "undefined") ? HTK_INS_RATE : 0.30; const ins = Math.round(an.contractLiab * rt); return (<>
-              <div className="finpl-r subitem tok"><span>└ 보험·치료비 적립금({(rt * 100).toFixed(0)}% 우선)</span><b>{finWon(ins)}원</b></div>
+              <div className="finpl-r subitem tok"><span>└ 치료비 케어 적립금({(rt * 100).toFixed(0)}% 우선)</span><b>{finWon(ins)}원</b></div>
               <div className="finpl-r subitem tok"><span>└ 일반 토큰적립금({(100 - rt * 100).toFixed(0)}%)</span><b>{finWon(an.contractLiab - ins)}원</b></div>
             </>); })()}
             <div className="finpl-r subitem don"><span>　미지급기부금(치료비 나눔)</span><b>{finWon(an.donationPay)}원</b></div>
@@ -17524,7 +17524,7 @@ const CASH_TX = [
   { d: "07-12", t: "EMR·UIP 사용료(제휴병원)", amt: 8400000, acct: "수납일반", dr: "보통예금(수납)", cr: "용역매출", pl: "매출액" },
   { d: "07-11", t: "거래처 제품대금 지급", amt: -6100000, acct: "출납일반", dr: "매입채무", cr: "보통예금(출납)", pl: "" },
   { d: "07-11", t: "마케팅 광고비 집행", amt: -3200000, acct: "사업비", dr: "광고선전비", cr: "보통예금(사업비)", pl: "판매관리비" },
-  { d: "07-10", t: "보험·치료비 적립금 환급", amt: -1500000, acct: "출납일반", dr: "적립금부채", cr: "보통예금(출납)", pl: "" },
+  { d: "07-10", t: "치료비 케어 적립금 환급", amt: -1500000, acct: "출납일반", dr: "적립금부채", cr: "보통예금(출납)", pl: "" },
   { d: "07-10", t: "투자용 계좌 자금 이체", amt: 30000000, acct: "투자용", dr: "보통예금(투자)", cr: "보통예금(모계좌)", pl: "" },
 ];
 
@@ -18309,7 +18309,7 @@ function SocLiveCounter({ base }) {
         </div>
       ))}
     </div>
-    <div className="chnote" style={{ marginTop: 8 }}>위 카운터는 <b>재무 모델 추정(시연 연출)</b>이에요. 내 행동으로 실제 쌓인 <b>나눔 재원 실적립 원장</b>은 {sp && sp.count ? <b style={{ color: "#E11D48" }}>{sp.balance.toLocaleString()}원 · {sp.count}건</b> : "아직 0건"} — 보험·치료비 › 치료비·나눔 탭에서 건별로 확인·검증할 수 있어요.</div>
+    <div className="chnote" style={{ marginTop: 8 }}>위 카운터는 <b>재무 모델 추정(시연 연출)</b>이에요. 내 행동으로 실제 쌓인 <b>나눔 재원 실적립 원장</b>은 {sp && sp.count ? <b style={{ color: "#E11D48" }}>{sp.balance.toLocaleString()}원 · {sp.count}건</b> : "아직 0건"} — 치료비 케어 › 치료비·나눔 탭에서 건별로 확인·검증할 수 있어요.</div>
   </>);
 }
 
@@ -19777,7 +19777,7 @@ function HealthMateSection({ onGo }) {
     [0, "⓪ 오늘의 지시서", Sparkles],
     [1, "① 회원 신호", Users], [2, "② 보험 배정·대기", ShieldCheck], [3, "③ 검진 후 터치", HeartPulse],
     [4, "④ 질병 예측", Activity], [5, "⑤ 건강 행동", ShoppingCart], [6, "⑥ 가족·재가", HeartHandshake],
-    [7, "⑦ 보장분석 대화", MessageSquare], [8, "⑧ 프로 제안함", Sparkles], [9, "⑨ 내 고객·실적", TrendingUp],
+    [7, "⑦ 치료비 보장 점검", MessageSquare], [8, "⑧ 프로 제안함", Sparkles], [9, "⑨ 내 고객·실적", TrendingUp],
     [10, "⑩ 통합 운영", Activity],
   ].filter(([n]) => n !== 10 || (typeof isAdminRole === "function" && isAdminRole()));   /* ⑩은 운영 본부 전용(§5-O) */
   return (
@@ -19785,7 +19785,7 @@ function HealthMateSection({ onGo }) {
       <div className="hmhero">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
           <div>
-            <div className="k">HEALTHMATE PRO CONSOLE</div>
+            <div className="k">HEALTHMATE PRO CONSOLE · 헬스케어 전문가(하이핀 프로)</div>
             <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>· 사번 {pro.sabun || "-"} · {pro.code} · {pro.branch || pro.dan}{pro.sgg ? " · " + pro.sgg : ""} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격" : " · 안내 전용"}{pro.hyundai ? " · 현대해상 위촉" : ""}</span></h2>
             <div style={{ fontSize: 12.3, fontWeight: 800, marginTop: 2 }}>담당 회원 {totalN.toLocaleString()}명 <span style={{ fontWeight: 600, opacity: .85 }}>(체험 {members.length} · 코호트 {(cview ? cview.n : 0).toLocaleString()}) — 관할: {(pro.coverage || []).slice(0, 5).join("·") || pro.dan}{(pro.coverage || []).length > 5 ? " 외 " + ((pro.coverage || []).length - 5) + "곳" : ""}{pro.gap ? " (겸임 포함)" : ""}</span></div>
             <div style={{ fontSize: 12, opacity: .92 }}>하이가 분석·선별·문안·타이밍을 만들고, 프로는 확인·접촉·기록합니다 — 동의의 범위가 곧 활동의 범위.</div>
@@ -20422,7 +20422,7 @@ function insuranceSolution(m) {
   return { ins, findings: F, score, grade, critNeed, silsonMonthly: ins.silson.monthly };
 }
 
-/* ═══════════ 융합 분석 API — 보험·치료비 AI 솔루션 & AIPlannerChat Tool Calling ═══════════
+/* ═══════════ 융합 분석 API — 치료비 케어 AI 솔루션 & AIPlannerChat Tool Calling ═══════════
    5단계(보험 솔루션) 로직을 함수화하여 데이터하우스·보험 AI분석·채팅 상담이 공용 호출.
    ⚠️ 모든 수치는 시연용 예시 기준 — 실제 조건은 약관 확인. */
 
@@ -22626,7 +22626,7 @@ const WP_CHANGELOG = [
   { date: "2026-07-12", ver: "v1.1", ch: [7], feat: "의료마이데이터 커넥터", src: "데이터하우스 › 데이터 커넥터", summary: "전송요구권(2025.3.13)·MCP/REST/FHIR/MyData·9종 분리동의·전송요구 마법사·품질검증 11항목", refs: ["의료마이데이터 전송요구권", "MCP"], status: "반영" },
   { date: "2026-07-12", ver: "v1.1", ch: [10], feat: "데이터 거버넌스", src: "데이터하우스 › 규제·거버넌스", summary: "4-DB 분리(식별·건강·동의권한·상담기억)·외부 생성형 AI 전송통제·ISMS-P", refs: [], status: "반영" },
   { date: "2026-07-12", ver: "v1.1", ch: [11], feat: "규제·거버넌스 통제", src: "데이터하우스 › 규제·거버넌스", summary: "전송요구권·전문기관 지정·분석결과 5구분·의료행위 경계·SaMD·사업자평가·Go/No-Go", refs: [], status: "반영" },
-  { date: "2026-07-12", ver: "v1.1", ch: [15], feat: "보험금 청구지원 워크플로", src: "보험·치료비 › 보험금청구", summary: "보장 7항목 참고분석·AI 지급 미확정 명시", refs: [], status: "반영" },
+  { date: "2026-07-12", ver: "v1.1", ch: [15], feat: "보험금 청구지원 워크플로", src: "치료비 케어 › 보험금청구", summary: "보장 7항목 참고분석·AI 지급 미확정 명시", refs: [], status: "반영" },
   { date: "2026-07-12", ver: "v1.1", ch: [16], feat: "통합 케어루프", src: "건강현황 · 진료 연계", summary: "건강상태 8등급·통합 임상 프로필·진료결과 폐루프", refs: [], status: "반영" },
   { date: "2026-07-12", ver: "v1.1", ch: [23], feat: "사업 운영 콘솔", src: "온톨로지 › 사업 운영", summary: "5단계 추진 게이트·수익모델(구독/B2B 가드레일)·KPI 5범주·리스크 6종", refs: [], status: "반영" },
   { date: "2026-07-12", ver: "v1.1", ch: [8], feat: "AI 출수납 시스템", src: "온톨로지 › 재무회계 › AI 출수납", summary: "우리은행 데모 5계좌(모·수납·출납·사업비·투자)·AI 자금 스윕(집금/보충/배분)·K-IFRS 자동분개·계좌별 현금흐름 그래프·손익계산서(P&L) 자동연계(수납→매출·사업비→판관비·이체→손익無)", refs: [], status: "반영" },
@@ -22649,7 +22649,7 @@ function wpChapterSources() { return WHITEPAPER.filter((c) => c.sources && c.sou
    sec = core.jsx SECTIONS 키(클릭 시 실제 화면으로 이동). */
 const WP_NEXUS = {
   1:  { ex: "플랫폼 전 영역을 아우르는 상위 비전 — 펫·안전 등 신규 도메인도 같은 비전·가치순환 아래 편입된다.", sec: ["home", "social", "wallet"], impl: "홈 통합 대시보드·사회적기업 지수·건강금융지갑에 비전이 실제 구현되어 있다." },
-  2:  { ex: "인구·의료비·보험 지표는 매년 갱신되는 '살아있는 근거' — 대시보드에 실시간 반영 가능.", sec: ["insurance", "manage", "homecare"], impl: "보험·치료비, 건강관리, 재가·돌봄 섹션이 사각지대 대응을 실제 실행한다." },
+  2:  { ex: "인구·의료비·보험 지표는 매년 갱신되는 '살아있는 근거' — 대시보드에 실시간 반영 가능.", sec: ["insurance", "manage", "homecare"], impl: "치료비 케어, 건강관리, 재가·돌봄 섹션이 사각지대 대응을 실제 실행한다." },
   3:  { ex: "검진·보험·금융·나눔의 결합 논리는 신규 서비스에도 동일하게 적용되는 재사용 가능한 원리다.", sec: ["checkup", "insurance", "shop", "wallet", "social"], impl: "5개 섹션이 온톨로지 관계 탭에서 하나의 지식그래프로 연결된다." },
   4:  { ex: "객체·관계·액션 스키마에 신규 객체(반려동물·안전설비)를 추가만 하면 도메인이 확장된다.", sec: ["ontology", "manage", "hospital"], impl: "온톨로지 운영 콘솔의 코호트·관계·액션 탭, DEPT_CATS·DISEASE_INSURANCE 스키마." },
   5:  { ex: "Multi-LLM·모듈 교체로 무한 확장 — 신규 실행모듈은 커넥터 하나 추가로 붙는다.", sec: ["ai", "ontology"], impl: "상담 인텔리전스 탭 — consultStore(세션)·analyzeConsults(오케스트레이터) 닫힌 루프." },
@@ -22662,7 +22662,7 @@ const WP_NEXUS = {
   12: { ex: "국가별 규제를 UIP 커넥터로 추가해 해외 진출 시 재사용한다.", sec: ["ontology", "insurance"], impl: "글로벌 진출 시 규제 커넥터로 확장(설계 단계)." },
   13: { ex: "커넥터 추가만으로 신규 병원 EMR을 개조 없이 연동한다.", sec: ["hospital", "checkup"], impl: "병원/약국예약·건강검진 결과 연동의 기술 기반." },
   14: { ex: "자매 플랫폼(펫·안전)도 같은 UIP를 재사용 — 새 사업 비용이 '커넥터 하나'로 수렴.", sec: ["ontology", "hospital", "insurance"], impl: "병원·보험·결제·정부를 잇는 통합 연동 계층." },
-  15: { ex: "동적 언더라이팅을 신규 보험상품·도메인(펫보험 등)으로 확장한다.", sec: ["insurance", "manage"], impl: "보험·치료비 섹션 — 위험프로필·언더라이팅·청구 실제 구현." },
+  15: { ex: "동적 언더라이팅을 신규 보험상품·도메인(펫보험 등)으로 확장한다.", sec: ["insurance", "manage"], impl: "치료비 케어 섹션 — 위험프로필·언더라이팅·청구 실제 구현." },
   16: { ex: "192질병 데이터하우스에 질병·코칭 규칙을 추가하며 지속 확장된다.", sec: ["ai", "manage", "shop", "checkup"], impl: "나의 주치의 5대 실행·건강관리 점수·건강쇼핑 맞춤영양." },
   17: { ex: "나눔 대상·지자체 협력을 신규 지역·취약계층으로 확장한다.", sec: ["social", "homecare", "wallet"], impl: "사회적기업 지수·재가돌봄·건강금융지갑 나눔 흐름." },
   18: { ex: "리워드형 → (제도화 시)지분성 참여로 단계 확장 — 규제 진척에 연동.", sec: ["wallet", "social"], impl: "건강금융지갑 토큰·사회적기업 가치환원." },
@@ -25016,7 +25016,7 @@ const KB_STAGES = ["수집", "자동검증", "관리자 검토", "전문가 검�
 const KB_QUEUE = [
   { id: "Q1", title: "2026 고혈압 목표혈압 개정안 반영", domain: "질환", org: "대한고혈압학회", date: "2026-06", grade: "A", risk: "보통", flags: ["최신성"], stage: 2 },
   { id: "Q2", title: "당화혈색소 6.0% 관리 권고 문구", domain: "건강검진", org: "대한당뇨병학회", date: "2026-05", grade: "A", risk: "낮음", flags: [], stage: 2 },
-  { id: "Q3", title: "실손보험 4세대 자기부담 변경 요약", domain: "보험·치료비", org: "금융위원회", date: "2026-06", grade: "B", risk: "높음", flags: ["법률변경", "전문가필요"], stage: 2 },
+  { id: "Q3", title: "실손보험 4세대 자기부담 변경 요약", domain: "치료비 케어", org: "금융위원회", date: "2026-06", grade: "B", risk: "높음", flags: ["법률변경", "전문가필요"], stage: 2 },
   { id: "Q4", title: "가상자산이용자보호법 — 포인트/토큰 구분", domain: "법률·제도", org: "금융위원회", date: "2026-04", grade: "B", risk: "높음", flags: ["법률변경", "전문가필요"], stage: 3 },
   { id: "Q5", title: "오메가3 기능성 표시 — 상충 자료 검토", domain: "건강소비·자산", org: "식약처/상업자료", date: "2026-03", grade: "C", risk: "보통", flags: ["상충", "중복"], stage: 1 },
   { id: "Q6", title: "대사증후군 진단기준 요약", domain: "질환", org: "질병관리청", date: "2026-06", grade: "A", risk: "낮음", flags: [], stage: 2 },
@@ -25086,7 +25086,7 @@ function kbCheckupCounsel(text) {
   };
 }
 
-/* ====================== AI KB 라운지 — 실측 적재 지식: 질환 · 보험·치료비 · 법률·제도 ======================
+/* ====================== AI KB 라운지 — 실측 적재 지식: 질환 · 치료비 케어 · 법률·제도 ======================
    출처: 질병관리청·국가건강정보포털·관련 전문학회(고혈압·당뇨병·심장·뇌졸중·간·신장·지질) / 보험 약관·금융위 / 국가법령정보센터.
    ⚠️ 참고용 요약. 진단·치료는 의료진, 보험 보장은 증권·약관, 법률 적용은 관계기관·전문가 검토를 따릅니다.
    ※ 토큰·보험료 지원·환급·기본소득 등은 확정 제도가 아닌 '규제 검토가 필요한 사업모델'로 표기. */
@@ -25103,7 +25103,7 @@ const KB_DISEASE = [
   { id: "dz-ckd", name: "만성콩팥병(CKD)", summary: "eGFR 60 미만 또는 단백뇨가 3개월 이상 지속되는 상태.", risk: "당뇨·고혈압·고령·신독성 약물·가족력", manage: "혈압·혈당 조절·염분/단백 조절·신독성 약물 주의", care: "부종·소변량 감소·심한 피로 시 신장내과 진료", related: ["당뇨병", "고혈압"], org: "대한신장학회", src: "KDIGO/진료지침 참고", date: "2023-01", grade: "A" },
 ];
 
-/* 보험·치료비 — 상해보험 약관 학습 요약(참고용) */
+/* 치료비 케어 — 상해보험 약관 학습 요약(참고용) */
 const KB_INSURANCE = [
   { id: "ins-injury", item: "상해의 정의", summary: "보험기간 중 발생한 ‘급격하고 우연한 외래의 사고’. 질병은 상해에 미포함.", related: ["상해보험"], org: "상해보험 약관", src: "현대단체상해 약관(학습)", date: "2026-01", grade: "B" },
   { id: "ins-pay", item: "사망·후유장해 보험금", summary: "상해 직접결과 사망 시 사망보험금(가입금액), 후유장해 시 장해지급률×가입금액.", related: ["상해보험"], org: "상해보험 약관", src: "현대단체상해 약관(학습)", date: "2026-01", grade: "B" },
@@ -26996,18 +26996,18 @@ try {
    ⚠️ 헌법:
      · §0-A 전 값은 **구간(band)**으로만 — 단정값·"부족" 등 평가어 금지(neGuard가 검사). 판단은 회원이 한다.
      · §0-P 이 값들은 회원 화면에 상시 존재할 뿐 — 프로 대본 어디에도 선발화 갈래가 없다.
-     · §0-C 통계는 출처·연도 필수(NE_SRC) — status: 정합(공식 통계 직결) / 관례(업계 관용 근사) / 검수 대기(형·자문 확인 필요).
+     · §0-C 통계는 출처·연도 필수(NE_SRC) — status: 정합(공식 통계 직결) / 관례(업계 관용 근사·형 확정 2026-08-31 승인 — 론칭 후 공식 통계 연결 시 정합 승격).
      · 발명 금지 — 본인부담(calcOutOfPocket)·보유 진단금(memberInsurance)·월 보험료(_silsonMonthly)·HTK(tlBalance) 전부 기존 실재 함수.
      · 조립이지 저장이 아니다 — 호출 시점 결정론, 새 저장 키 없음. */
 
 /* ── 통계 원천표(§0-C 출처·연도 필수) — 값 변경은 형 검수 경유 ── */
 const NE_SRC = {
-  cancerDur:  { v: 12, unit: "개월", ko: "암 주 치료·요양 기간", src: "보건복지부·중앙암등록본부 국가암등록통계(2022 발표) 기반 관례", status: "검수 대기" },
-  cancerQuit: { v: 0.47, unit: "", ko: "암 경험자 직업 중단율", src: "국립암센터 암경험자 직장복귀 연구(2013) — 46.5% 관용 인용", status: "검수 대기" },
+  cancerDur:  { v: 12, unit: "개월", ko: "암 주 치료·요양 기간", src: "보건복지부·중앙암등록본부 국가암등록통계(2022 발표) 기반 관례", status: "관례" },
+  cancerQuit: { v: 0.47, unit: "", ko: "암 경험자 직업 중단율", src: "국립암센터 암경험자 직장복귀 연구(2013) — 46.5% 관용 인용", status: "관례" },
   brainDur:   { v: 6, unit: "개월", ko: "뇌혈관질환 치료·재활 기간", src: "심평원 진료 통계 기반 관례", status: "관례" },
   heartDur:   { v: 3, unit: "개월", ko: "심장질환 치료·회복 기간", src: "심평원 진료 통계 기반 관례", status: "관례" },
   chronicDur: { v: 1, unit: "개월", ko: "만성질환 집중 관리기(통원)", src: "통원 중심 — 소득 공백 최소 관례", status: "관례" },
-  living:     { v: { "저": 180, "중": 290, "고": 430 }, unit: "만원/월", ko: "가구 월 생활비(소득 밴드별)", src: "통계청 가계동향조사(2024) 소비지출 근사 밴드", status: "검수 대기" },
+  living:     { v: { "저": 180, "중": 290, "고": 430 }, unit: "만원/월", ko: "가구 월 생활비(소득 밴드별)", src: "통계청 가계동향조사(2024) 소비지출 근사 밴드", status: "관례" },
 };
 
 /* 질환군별 치료 여정 단계 비용 구간(만원) — 심평원 공개 진료비 통계 기반 관례 근사.
@@ -28048,7 +28048,7 @@ function seedSelfVault(member) {
     // ⑤ 거래 앵커 — 쇼핑 적립·HTK 크레딧 전환
     if (typeof txAnchor === "function") {
       txAnchor({ ttype: "tx", token, kind: "건강쇼핑 적립", amount: 1200, unit: "원", memo: "밀크씨슬 구매 리워드" });
-      txAnchor({ ttype: "swap", token, kind: "HTK 스왑", amount: 300, memo: "HTK → 보험·치료비 크레딧" });
+      txAnchor({ ttype: "swap", token, kind: "HTK 스왑", amount: 300, memo: "HTK → 치료비 케어 크레딧" });
     }
     // ⑥ 접근 이력 — "내 데이터를 누가 봤는가"를 회원이 전부 보는 화면의 시연 데이터
     vaultAccessLog(token, "AI 분석엔진", "정밀리포트 생성 조회(가명 토큰만 사용)");
@@ -28436,7 +28436,7 @@ function htkTransfer(member, to, amount, memo) { amount = Math.max(0, Math.floor
   const rcpt = (typeof htkResolveRecipient === "function") ? htkResolveRecipient(to) : null;
   if (rcpt && rcpt !== (member && member.email) && typeof tlEarn === "function") tlEarn(rcpt, amount, "수신 — " + ((member && member.name) || "회원") + "님 전송" + (memo ? " · " + memo : ""));
   _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 전송", amount, memo: "→ " + (to || "0x…") + (rcpt ? " (내부 수신 크레딧 완료)" : " (외부 주소 — 시연 기록만)") + (memo ? " · " + memo : "") }); }
-function htkSwap(member, from, to, amount) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, (from || "HTK") + " → " + (to || "보험·치료비 크레딧"), "swap"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 스왑", amount, memo: (from || "HTK") + " → " + (to || "보험·치료비 크레딧") }); }
+function htkSwap(member, from, to, amount) { amount = Math.max(0, Math.floor(amount || 0)); if (!amount) return null; if (typeof regGateCashGuard === "function") { const g = regGateCashGuard(String(to || "")); if (!g.ok) { if (typeof toast === "function") toast("🔒 " + g.reason); return null; } } if (typeof tlSpend === "function") { const r = tlSpend(member, amount, (from || "HTK") + " → " + (to || "치료비 케어 크레딧"), "swap"); if (r && !r.ok) { if (typeof toast === "function") toast("🔒 " + r.reason); return null; } } _htkAdjust(member, -amount); return txAnchor({ ttype: "swap", token: (typeof anonToken === "function" && member) ? anonToken(member) : null, kind: "HTK 스왑", amount, memo: (from || "HTK") + " → " + (to || "치료비 케어 크레딧") }); }
 function htkLedger(member) { const t = (typeof anonToken === "function" && member) ? anonToken(member) : "wallet"; return (typeof chainForToken === "function") ? chainForToken(t).filter((b) => b.type === "swap") : []; }
 
 /* 위변조 시뮬: 회원 값이 바뀌면 leaf가 달라져 같은 proof·root로 검증 실패 */
@@ -28658,7 +28658,7 @@ function pbPolicyCreate(m, o) {
   const pols = pbPolicies(m);
   const dup = pols.find((p) => p.product === o.product && p.status === "active");
   if (dup) return { ok: true, policy: dup, existed: true };
-  const pol = { id: o.policyNo || ("POL-" + Date.now().toString(36).toUpperCase()), product: o.product || "맞춤보험",
+  const pol = { id: o.policyNo || ("POL-" + Date.now().toString(36).toUpperCase()), product: o.product || "치료비 준비 진단",
     monthly: Math.max(0, Math.floor(o.monthly || 0)), cover: o.cover || null, term: o.term || "1년(자동갱신)", pay: o.pay || "wallet",
     start: _pbYm(), status: "active", createdAt: Date.now() };
   pols.push(pol); _pbSavePolicies(m, pols);
@@ -28753,9 +28753,9 @@ function pbSummary(m) {
     paidTotal: paid.reduce((s, b) => s + b.amount, 0), balance: (typeof tlBalance === "function") ? tlBalance(m) : null };
 }
 
-/* ══════════════ 과업3 — insService: 보험·치료비 서비스 API층 (화면 = AI 상담사 단일 출처) ══════════════
+/* ══════════════ 과업3 — insService: 치료비 케어 서비스 API층 (화면 = AI 상담사 단일 출처) ══════════════
    Phase 1 실행 지시서 §4. 모든 탭 기능을 화면 전용 함수가 아니라 서비스 함수로 구현 —
-   화면(6탭)과 향후 「AI 보험·치료비 전용 상담사」가 같은 함수를 소비한다.
+   화면(6탭)과 향후 「AI 치료비 케어 전용 상담사」가 같은 함수를 소비한다.
    역할 분담: 전역 '하이' = 얕은 안내·네비 / 전용 상담사(차기 Phase) = 본 서비스로 깊은 업무 수행.
    규제 가드레일(상담사 상속용 정책 상수): INS_AI_POLICY — 정보 제공까지만·청약 권유/지급 확정/의료 진단 금지·모집은 GA 경유. */
 
@@ -28809,7 +28809,7 @@ const CLAIM_DENY = {
   NO_CONTRACT: { ko: "실손 계약 미확인", easy: "지급이 안 된 이유: 실손 보험 연결이 확인되지 않았어요", fix: "보장분석 탭에서 내 보험을 연결하면 다시 심사할 수 있어요" },
   DUP: { ko: "중복 청구", easy: "지급이 안 된 이유: 같은 진료 건으로 이미 지급받으셨어요", fix: "다른 진료 건이라면 이의신청으로 알려주세요" },
   LIMIT: { ko: "연간 한도 소진", easy: "지급이 안 된 이유: 올해 보장 한도를 모두 사용했어요", fix: "내년 갱신 후 한도가 초기화돼요 — 잔여 한도는 계산 내역에서 확인" },
-  NO_RIDER: { ko: "특약 미가입", easy: "지급이 안 된 이유: 이 항목(3대 비급여)은 별도 특약 가입이 필요해요", fix: "맞춤보험 탭에서 특약 보완을 검토해 보세요" },
+  NO_RIDER: { ko: "특약 미가입", easy: "지급이 안 된 이유: 이 항목(3대 비급여)은 별도 특약 가입이 필요해요", fix: "치료비 준비 진단 탭에서 특약 보완을 검토해 보세요" },
 };
 /* 연간 사용 한도 원장 — 급여/비급여 누적(청구 지급 시 차감) */
 function _limitUsed(m) { try { const y = new Date().getFullYear(); const o = JSON.parse(localStorage.getItem("hifin_claim_used_" + ((m && m.email) || "d")) || "{}"); return (o.year === y) ? o : { year: y, pay: 0, non: 0 }; } catch (e) { return { year: new Date().getFullYear(), pay: 0, non: 0 }; } }
@@ -28825,7 +28825,7 @@ function claimReview(m, claimId) {
   // ① 검진대비보험 정액 트랙(과업B) — 실손이 아닌 검진 연동 무상 보장(진단지원 정액·한도 미차감)
   if (/검진/.test(c.kind || "")) {
     const pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product));
-    if (!pol) return { ok: false, code: "NO_CONTRACT", deny: { ko: "검진대비보험 미발급", easy: "지급이 안 된 이유: 검진대비보험이 아직 발급되지 않았어요", fix: "맞춤보험 탭 ①에서 검진 연동 무상 발급을 먼저 받아 주세요" }, reason: "검진대비보험이 발급되어 있지 않아요" };
+    if (!pol) return { ok: false, code: "NO_CONTRACT", deny: { ko: "검진대비보험 미발급", easy: "지급이 안 된 이유: 검진대비보험이 아직 발급되지 않았어요", fix: "치료비 준비 진단 탭 ①에서 검진 연동 무상 발급을 먼저 받아 주세요" }, reason: "검진대비보험이 발급되어 있지 않아요" };
     if (Date.now() < pol.createdAt + 86400000) return { ok: false, code: "NO_CONTRACT", deny: { ko: "보장 개시 전", easy: "보장은 발급 다음날 0시부터 시작돼요", fix: "내일 다시 청구해 주세요" }, reason: "보장 개시 전이에요(익일 0시 개시)" };
     const fp0 = _claimFp(c);
     if (l.some((x) => x.id !== c.id && /지급/.test(x.status || "") && _claimFp(x) === fp0)) return { ok: false, code: "DUP", deny: CLAIM_DENY.DUP, reason: CLAIM_DENY.DUP.easy };
@@ -28959,8 +28959,8 @@ const insService = {
     const g = this.gap(m);
     const bal = (typeof tlSync === "function") ? (tlSync(m) != null ? tlSync(m) : 0) : ((typeof tlBalance === "function") ? tlBalance(m) : 0);   // 과업C: 제네시스 미생성 계정도 원장 동기화 후 잔액(빈 0 HTK 표시 버그 수정)
     const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(bal) : Math.floor(bal * 0.3);
-    if (g && g.silson) return { stage: "custom", silson: g.silson, reserve: insRes, note: "실손 보장이 확인됐어요 — 추가 적립 토큰은 예측 위험 기반 맞춤보험에 쓸 수 있어요." };
-    return { stage: "silson-first", reserve: insRes, note: "실손(기초 보장)이 아직 없어요 — 보험·치료비 적립금(" + insRes.toLocaleString() + " HTK)을 실손 가입·보험료에 우선 충당하는 것을 권해요.",
+    if (g && g.silson) return { stage: "custom", silson: g.silson, reserve: insRes, note: "실손 보장이 확인됐어요 — 추가 적립 토큰은 예측 위험 기반 치료비 준비 진단에 쓸 수 있어요." };
+    return { stage: "silson-first", reserve: insRes, note: "실손(기초 보장)이 아직 없어요 — 치료비 케어 적립금(" + insRes.toLocaleString() + " HTK)을 실손 가입·보험료에 우선 충당하는 것을 권해요.",
       legal: "※ 토큰의 보험료 충당은 보험업법 특별이익 제공 금지 규정 정합 검토 전제 · 가입은 GA 라이선스 채널 경유" };
   },
   /* ③ 납부 */
@@ -28976,7 +28976,7 @@ const insService = {
   claimSubmit(m, o) { return claimSubmit(m || _isMember(), o); },
   claimAppeal(m, id, reason) { return claimAppeal(m || _isMember(), id, reason); },
   claimLimits(m) { m = m || _isMember(); return _limitUsed(m); },
-  /* ═ 맞춤보험 4서브섹션(과업B) — 화면·상담사 공용 ═ */
+  /* ═ 치료비 준비 진단 4서브섹션(과업B) — 화면·상담사 공용 ═ */
   /* ①-1 검진대비보험 현황 — 검진 연동 발급·타임라인·청구 연결 */
   checkupIns(m) {
     m = m || _isMember(); if (!m) return null;
@@ -29566,7 +29566,7 @@ function hmActivePros(dan) { const l = HM_CODES.filter((p) => p.status === "활�
 const HM_STAGES = [
   { k: "D1", part: "DB", name: "확보", desc: "동의 + 기본 세그먼트", mission: "연락하지 않는다 — 락 상태에서 준비만", tab: 2 },
   { k: "D2", part: "DB", name: "검진 데이터", desc: "1세대 자산 — 실측 검진값(금고)", mission: "첫 연결 — 결과+보장 결합 안내", tab: 3 },
-  { k: "D3", part: "DB", name: "분석 데이터", desc: "2세대 자산 — 등급·위험도·리포트", mission: "예측 해설 · 보장분석 대화", tab: 4 },
+  { k: "D3", part: "DB", name: "분석 데이터", desc: "2세대 자산 — 등급·위험도·리포트", mission: "예측 해설 · 치료비 보장 점검", tab: 4 },
   { k: "D4", part: "DB", name: "통합 데이터", desc: "3세대 자산 — 보험·행동·가족 결합", mission: "생활 밀착 관리 · 공백 채우기", tab: 5 },
   { k: "L5", part: "LIFE", name: "정기 케어", desc: "단발 → 주기(반복 터치·시계열)", mission: "주기 관리 · 만기 터치 · 재검진", tab: 3 },
   { k: "L6", part: "LIFE", name: "관계 확장", desc: "개인 → 가구(가족 데이터)", mission: "가족 상담 · 돌봄 설계", tab: 6 },
@@ -29584,7 +29584,7 @@ const HM_STAGE_GUIDE = {
     next: "AI 분석 리포트(등급·위험도)가 발급되면 D3로.",
     ex: "어제 검진 결과가 도착한 50대 회원 — '결과 보셨어요?'로 시작해 위험 구간 1개와 재검진 예약까지 한 번에 정리한 사례가 표준이에요." },
   D3: { entry: "등급·위험도·예측 리포트 생성(2세대 자산)",
-    doKo: "예측 해설과 보장분석 대화 — 숫자가 아니라 '무엇을 하면 되는지'로 번역해 주는 게 프로의 일이에요.",
+    doKo: "예측 해설과 치료비 보장 점검 — 숫자가 아니라 '무엇을 하면 되는지'로 번역해 주는 게 프로의 일이에요.",
     next: "행동(재검진·미션·구매)이나 보험 결합이 생기면 D4로. 여기가 최대 정체 구간 — 정체 배지가 뜨면 재개 대본을 쓰세요.",
     ex: "리포트만 받고 3주째 조용한 30대 회원 — '한동안 챙겨드리지 못해서요'로 재개해 습관 미션 하나를 걸어 D4로 넘어간 사례." },
   D4: { entry: "보험·행동·가족 데이터 결합(3세대 자산)",
@@ -30575,7 +30575,7 @@ function underwrite(m, productKo) {
     note = "유병 이력이 있어도 현재 지표가 관리되고 있어요 — 일괄 할증 대신 관리자 요율(할인 방향)로 산출돼요. ※ 실제 적용은 제휴 보험사 계리 검증 전제.";
   } else if (top && top.prob >= 40) { decision = "할증 예상"; note = "일부 지표 이상으로 표준체 대비 할증이 예상돼요 — 지표가 개선되면 재산정으로 내릴 수 있어요."; }
   else { decision = "표준체 예상"; note = "현재 건강상태 기준 표준체 인수가 예상돼요."; }
-  return { ok: true, product: productKo || "맞춤보험", decision, note, conditions, disclosures: disclosures.slice(0, 5),
+  return { ok: true, product: productKo || "치료비 준비 진단", decision, note, conditions, disclosures: disclosures.slice(0, 5),
     ga: "실제 청약·인수는 GA 라이선스 채널(글로벌예방금융㈜·GA코리아)과 보험사 심사로 확정돼요 — 여기서는 시뮬레이션이에요." };
 }
 /* ── 보장 사다리 자동 플랜(M3 고도화) — 월 적립 목표·진행률·달성 예상일 ── */
@@ -30594,7 +30594,7 @@ function ladderPlan(m) {
   const remainHtk = Math.max(0, goalHtk - reserve);
   const etaMonths = monthlyEarn > 0 ? Math.ceil(remainHtk / monthlyEarn) : null;
   return { monthly, goalWon, goalHtk, reserve, progress, monthlyEarn, etaMonths,
-    note: progress >= 100 ? "목표 적립 달성 — 실손 가입(GA 채널)을 진행하고, 다음 사다리(맞춤보험 적립)로 넘어가요!" : `실손 첫 3개월 보험료(${goalWon.toLocaleString()}원)를 목표로 적립 중 — ${etaMonths != null ? `이 속도면 약 ${etaMonths}개월 후 달성 예상` : "적립 활동을 시작하면 달성 예상일을 보여드려요"}.` };
+    note: progress >= 100 ? "목표 적립 달성 — 실손 가입(GA 채널)을 진행하고, 다음 사다리(치료비 준비 진단 적립)로 넘어가요!" : `실손 첫 3개월 보험료(${goalWon.toLocaleString()}원)를 목표로 적립 중 — ${etaMonths != null ? `이 속도면 약 ${etaMonths}개월 후 달성 예상` : "적립 활동을 시작하면 달성 예상일을 보여드려요"}.` };
 }
 
 /* ══════════════ D2 — ConsentNFT · LeadDBFactory · RevenueShareLedger (전부 RegGate 뒤) ══════════════
@@ -31406,7 +31406,7 @@ const AGENT_QNA = [
   { c: "intro", k: "report_free", p: ["분석리포트", "리포트가뭐", "정밀분석", "3만원리포트", "리포트무료", "건강리포트뭐"], a: "검진결과를 올리면 생체나이·5대 장기나이·암위험 등급·10년 후 의료비 예측까지 담긴 정밀분석 리포트를 무료로 드려요. 시중에서는 3만원 상당의 분석이에요.", b: ["검진결과 올리기", "내 리포트 보기"], nav: "care", tool: "rep", nx: ["생체나이가 뭐예요?"], lv: 1 },
   { c: "intro", k: "how_start", p: ["어떻게시작", "뭐부터", "처음인데", "첫이용", "시작하려면", "뭘하면돼", "어디서부터", "첨인데", "첨왔"], a: "딱 두 가지만 하면 돼요 — ① 검진결과 올리기(사진 찍어 올려도 돼요) ② 보험 가입내역 연결하기. 그러면 제가 분석부터 맞춤 안내까지 전부 해드려요. 지금 시작할까요?", b: ["네, 검진결과 올릴게요", "나중에 할게요"], nav: "onboarding", nx: ["사진으로 올려도 돼요?"], lv: 1 },
   { c: "intro", k: "who_are_you", p: ["너누구", "누구세요", "너뭐야", "네가누구", "이름이뭐", "너는누", "봇이야", "사람이야", "ai야", "에이아이"], a: "저는 하이핀 AI 매니저 '하이'예요. 가입부터 검진 분석, 쇼핑, 보험, 투자까지 성래님 곁에서 처음부터 끝까지 함께해요. 편하게 말 걸어 주세요!", b: ["하이핀 소개해줘", "내 건강 봐줘"], nav: null, nx: [], lv: 1 },
-  { c: "intro", k: "sections", p: ["메뉴가뭐", "어떤메뉴", "섹션이뭐", "무슨기능", "뭐뭐있", "기능소개", "메뉴소개", "화면소개", "뭐가있어"], a: "크게 6개예요 — 검진 예약, 검진 후 케어(AI 분석·병원·쇼핑), 보험·치료비, 건강지갑(적립·가족·데이터금고), 제휴·투자, 그리고 회사 소개. 말만 하시면 제가 바로 데려다드려요.", b: ["검진 후 케어가 뭐예요?", "건강지갑 보여줘"], nav: null, nx: [], lv: 1 },
+  { c: "intro", k: "sections", p: ["메뉴가뭐", "어떤메뉴", "섹션이뭐", "무슨기능", "뭐뭐있", "기능소개", "메뉴소개", "화면소개", "뭐가있어"], a: "크게 6개예요 — 검진 예약, 검진 후 케어(AI 분석·병원·쇼핑), 치료비 케어, 건강지갑(적립·가족·데이터금고), 제휴·투자, 그리고 회사 소개. 말만 하시면 제가 바로 데려다드려요.", b: ["검진 후 케어가 뭐예요?", "건강지갑 보여줘"], nav: null, nx: [], lv: 1 },
   { c: "intro", k: "company", p: ["회사소개", "어느회사", "누가만든", "하이젠", "운영사", "믿을만한회사", "회사가어디"], a: "하이핀은 하이젠케어㈜가 운영하는 AI 헬스케어·핀테크 플랫폼이에요. 검진 후 관리 공백을 없애고 치료비 걱정을 줄이는 게 목표예요. 회사 소개 화면에서 비전과 사회환원 활동을 보실 수 있어요.", b: ["회사 소개 보기"], nav: "intro", nx: [], lv: 1 },
   { c: "intro", k: "reward_intro", p: ["적립금어떻게쌓", "적립이뭐", "적립금이뭐", "리워드가뭐", "htk가뭐", "헬스토큰", "포인트가뭐", "적립금이란"], a: "하이핀에서 건강활동을 하거나 쇼핑하면 판매마진의 50%가 HTK(헬스토큰)로 적립돼요. 그중 30%는 보험료·치료비 결제 전용으로 우선 쌓여요. 적립금으로 주식 청약도 할 수 있어요.", b: ["내 적립금 보기", "주식 청약이 뭐예요?"], nav: "mywallet", tool: "wallet", nx: ["어디에 쓸 수 있어요?"], lv: 1 },
   { c: "intro", k: "hours", p: ["상담시간", "몇시까지", "24시간", "밤에도", "주말에도", "언제까지해"], a: "저는 24시간 365일 언제든 대화할 수 있어요. 사람 상담원 연결이 필요하면 평일 9~18시에 이어드릴게요.", b: ["사람 상담 연결"], nav: null, nx: [], lv: 1 },
@@ -31471,7 +31471,7 @@ const AGENT_QNA = [
   { c: "shop", k: "price", p: ["최저가", "싸게", "가격비교", "제일싼", "할인"], a: "하이핀은 건강쇼핑을 국내 최저가 수준으로 제공하고, 여기에 마진의 50%를 HTK로 돌려드려요 — 실질 체감가는 더 낮아져요.", b: ["건강쇼핑 가기"], nav: "care", nx: [], lv: 1 },
   /* 재구매 설계(2026-08-03) — 정기배송: 소진 예측·구독 현황·주기 변경 안내 */
   { c: "shop", k: "subscription", p: ["정기배송", "정기구독", "구독현황", "영양제떨어", "떨어질때알려", "떨어지면알려", "다먹었", "재구매", "자동배송", "정기배송관리", "구독관리", "언제떨어져", "얼마나남았"], a: "", tool: "subs", b: [], nav: "shop", nx: [], lv: 1 },
-  { c: "shop", k: "reward_use", p: ["적립금으로살수", "포인트로결제", "htk로결제", "적립금쓰"], a: "네, 쌓인 HTK로 쇼핑 결제가 돼요. 보험·치료비 전용 적립분(30%)은 보험료·의료비 결제에 우선 사용돼요.", b: ["내 적립금 보기"], nav: "mywallet", tool: "wallet", nx: [], lv: 1 },
+  { c: "shop", k: "reward_use", p: ["적립금으로살수", "포인트로결제", "htk로결제", "적립금쓰"], a: "네, 쌓인 HTK로 쇼핑 결제가 돼요. 치료비 케어 전용 적립분(30%)은 보험료·의료비 결제에 우선 사용돼요.", b: ["내 적립금 보기"], nav: "mywallet", tool: "wallet", nx: [], lv: 1 },
   { c: "shop", k: "supp_safe", p: ["부작용", "같이먹어도", "약이랑영양제", "복용주의"], a: "복용 중인 약이 있으면 성분 상호작용을 꼭 확인해야 해요 — 제가 일반 정보를 드리지만, 최종 판단은 의사·약사와 상의하세요.", b: ["건강 상담 시작"], nav: "care", nx: [], lv: 2, guard: "med" },
   { c: "shop", k: "order_how", p: ["주문어떻게", "결제방법", "카드돼", "구매방법"], a: "상품을 고르고 카드·계좌·HTK 적립금으로 결제하면 돼요. 대화로 '이거 주문해줘'라고 하셔도 제가 주문 화면까지 안내해 드려요.", b: ["건강쇼핑 가기"], nav: "care", nx: [], lv: 1 },
   { c: "shop", k: "joint", p: ["관절영양제", "무릎에좋은", "관절에좋은", "글루코사민"], a: "관절엔 글루코사민·MSM·보스웰리아 성분이 도움이 될 수 있어요. 통증이 계속되면 관절재활 기기와 진료 안내도 함께 드릴게요.", b: ["관절 상품 보기", "관절 관리 상담"], nav: "care", nx: [], lv: 1, guard: "med" },
@@ -31483,7 +31483,7 @@ const AGENT_QNA = [
   { c: "book", k: "what_checkup", p: ["무슨검진받아야", "어떤검진", "추천검진", "정밀검진뭐", "검사뭐받"], a: "검진 이상 지표와 위험 질환에 맞춰 꼭 필요한 정밀검진을 골라드려요 — 예: 당뇨 위험이면 당화혈색소·신장기능, 간수치 이상이면 복부초음파.", b: ["AI 맞춤 검사 추천"], nav: "checkup", tool: "ci", nx: [], lv: 2, guard: "med" },
   { c: "book", k: "hospital", p: ["병원추천", "병원찾아", "어느병원", "진료과어디", "내과어디"], a: "증상·질환에 맞는 진료과와 내 주변 병원을 안내해 드려요. 진료 후 결과를 알려주시면 케어플랜도 갱신돼요.", b: ["병원 찾기"], nav: "care", nx: [], lv: 1 },
   { c: "book", k: "pharmacy", p: ["약국", "약사", "약타러"], a: "주변 제휴 약국을 찾아드려요. 복용약 관리도 케어플랜에서 함께 도와드릴 수 있어요.", b: ["주변 약국 찾기"], nav: "care", nx: [], lv: 1 },
-  { c: "book", k: "golf", p: ["골프", "스포츠예약", "운동예약"], a: "스포츠 활동엔 스포츠 임베디드 보험(운동 중 상해 보장)을 함께 안내해 드려요. 보험·치료비 화면에서 보실 수 있어요.", b: ["스포츠 보험 보기"], nav: "insurance", nx: [], lv: 2 },
+  { c: "book", k: "golf", p: ["골프", "스포츠예약", "운동예약"], a: "스포츠 활동엔 스포츠 임베디드 보험(운동 중 상해 보장)을 함께 안내해 드려요. 치료비 케어 화면에서 보실 수 있어요.", b: ["스포츠 보험 보기"], nav: "insurance", nx: [], lv: 2 },
   { c: "book", k: "national_free", p: ["국가검진무료", "국가검진대상", "올해검진대상", "공짜검진"], a: "국가 일반검진은 출생연도 홀짝에 따라 격년 대상이고 본인부담 0원이에요. 대상 여부 확인과 예약까지 도와드릴게요.", b: ["검진 예약 가기"], nav: "checkup", nx: [], lv: 1 },
   { c: "book", k: "company_checkup", p: ["회사검진", "직장검진", "기업검진", "단체검진"], a: "기업검진은 단체 예약·결과 통합관리를 지원해요. 회사 담당자시라면 제휴 문의로 이어드릴게요.", b: ["기업검진 안내"], nav: "checkup", nx: [], lv: 2 },
 
@@ -31505,7 +31505,7 @@ const AGENT_QNA = [
   { c: "ins", k: "brain_heart", p: ["뇌졸중보장", "심근경색보장", "뇌심장", "심장보험", "뇌보험"], a: "혈압·혈당 위험이 있으면 뇌·심장 진단비가 특히 중요해요. 보유 여부와 공백을 바로 확인해 드릴게요.", b: [], nav: null, tool: "riskbh", nx: [], lv: 2, guard: "ins" },
   { c: "ins", k: "free_claim", p: ["검진보험청구", "무료보험받", "검진보험보험금"], a: "검진대비보험은 검진 후 보장 사유(진단 등) 발생 시 검진 기록 연동으로 간편 청구돼요. 청구 화면에서 원클릭 청구를 확인해 보세요.", b: ["청구 화면 가기"], nav: "insurance", nx: [], lv: 2, guard: "ins" },
   /* 과업B(2026-07-31) — 판매 주체 자격: 금융위 등록 보험대리점 안내 */
-  { c: "ins", k: "agency_info", p: ["보험누가운영", "보험운영회사", "대리점", "등록번호", "모집자격", "판매자격", "글로벌예방금융", "어느대리점", "보험판매누가", "보험자격있", "정식대리점"], a: "하이핀의 보험·치료비 서비스는 금융위 등록 보험대리점 글로벌예방금융(주)(등록번호 제2025060038호)가 운영해요 — 보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항에 근거해요. 상담·모집은 라이선스 상담사가 수행하고, 인수는 현대해상 전속 제휴예요.", b: ["보험 상담사 열기"], nav: "insurance", nx: [], lv: 2 },
+  { c: "ins", k: "agency_info", p: ["보험누가운영", "보험운영회사", "대리점", "등록번호", "모집자격", "판매자격", "글로벌예방금융", "어느대리점", "보험판매누가", "보험자격있", "정식대리점"], a: "하이핀의 치료비 케어 서비스는 금융위 등록 보험대리점 글로벌예방금융(주)(등록번호 제2025060038호)가 운영해요 — 보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항에 근거해요. 상담·모집은 라이선스 상담사가 수행하고, 인수는 현대해상 전속 제휴예요.", b: ["보험 상담사 열기"], nav: "insurance", nx: [], lv: 2 },
   /* Phase3(2026-07-31) — 내 지역 상담 안내: 병원 안내받듯 담당 지역단·상담사 연결 */
   { c: "ins", k: "region_consult", p: ["내지역상담", "지역상담", "동네상담사", "우리동네상담", "담당상담사", "지역상담사", "근처상담사", "가까운상담사", "상담사연결", "대면상담받고싶", "만나서상담", "방문상담받고싶", "우리지역담당"], a: "", tool: "regionconsult", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
   /* 과업C(2026-07-31) — 프리미엄(장기) 상담: 사전 동의 게이트 경유 안내 */
@@ -31515,7 +31515,7 @@ const AGENT_QNA = [
   { c: "invest", k: "stock_how", p: ["적립금으로주식", "주식어떻게사", "주식청약", "청약하는법", "자사주", "주식사고싶"], a: "쌓인 HTK 적립금으로 하이핀 주식을 청약할 수 있어요. 제휴·투자 화면에서 수량을 정하고 약관 동의하면 접수돼요 — 비상장주식이라 원금 손실 위험은 꼭 확인하세요.", b: ["주식 청약 가기", "1인 한도는?"], nav: "partner", nx: ["한도가 얼마예요?"], lv: 2, guard: "inv" },
   { c: "invest", k: "limit", p: ["1인한도", "한도얼마", "얼마까지살", "청약한도", "몇주까지"], a: "연간 전체 배정은 발행주식의 10%, 1인 한도는 1%예요. 내 적립금 기준 가능 수량은 청약 화면에서 자동 계산돼요.", b: ["주식 청약 가기"], nav: "partner", nx: [], lv: 2, guard: "inv" },
   { c: "invest", k: "htk_balance", p: ["내적립금", "적립금얼마", "포인트얼마", "htk얼마", "잔액", "적립금조회", "얼마쌓였"], a: "지갑을 확인해 드릴게요.", b: ["적립 내역 보기", "온체인 지갑 보기"], nav: "mywallet", tool: "wallet", nx: [], lv: 1 },
-  { c: "invest", k: "htk_transfer", p: ["토큰전송", "htk보내", "송금", "토큰옮기"], a: "건강금융지갑의 '온체인 원장' 탭에서 HTK를 전송하거나 보험·치료비 크레딧으로 스왑할 수 있어요. 모든 거래는 블록체인에 기록돼요(시연).", b: ["온체인 지갑 가기"], nav: "mywallet", nx: [], lv: 2, guard: "inv" },
+  { c: "invest", k: "htk_transfer", p: ["토큰전송", "htk보내", "송금", "토큰옮기"], a: "건강금융지갑의 '온체인 원장' 탭에서 HTK를 전송하거나 치료비 케어 크레딧으로 스왑할 수 있어요. 모든 거래는 블록체인에 기록돼요(시연).", b: ["온체인 지갑 가기"], nav: "mywallet", nx: [], lv: 2, guard: "inv" },
   { c: "invest", k: "corp_invest", p: ["법인투자", "회사가투자", "si투자", "기업투자", "투자하고싶"], a: "SI(전략)·FI(재무) 법인 투자 신청을 받고 있어요. 제휴·투자 화면에서 법인 정보를 넣으면 IR 자료와 함께 안내해 드려요.", b: ["법인 투자 신청"], nav: "partner", nx: [], lv: 3, guard: "inv" },
   { c: "invest", k: "risk", p: ["원금손실", "손해볼수", "위험하지않", "투자위험", "안전한투자"], a: "비상장주식 청약은 원금 손실 위험이 있고 환금성이 낮을 수 있어요. 가격은 회사 재무 추정 기준이라 실제와 다를 수 있어요 — 여유 자금 범위에서만 권해요.", b: [], nav: null, nx: [], lv: 2, guard: "inv" },
   { c: "invest", k: "partner_apply", p: ["제휴하고싶", "제휴신청", "입점", "파트너", "가맹"], a: "검진센터·병원·약국·돌봄·건강쇼핑 6개 유형의 제휴를 받아요. 제휴·투자 화면에서 기관 정보를 넣으면 5단계 진행 상태로 안내해 드려요.", b: ["제휴 신청 가기"], nav: "partner", nx: [], lv: 2 },
@@ -31613,12 +31613,12 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "59ff684f531e8564", "generatedAt": "2026-08-31", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "5f1bc3ec2ca42615", "generatedAt": "2026-08-31", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
   {"key": "sec.care", "label": "검진 후 케어", "path": "검진 후 케어", "surface": "section", "nav": "care", "owner": "nav", "admin": false, "desc": "주치의·건강현황·병원진료·재가돌봄·건강쇼핑", "aliases": ["rjawlsgnzpdj", "검진후케어"]},
-  {"key": "sec.insurance", "label": "보험·치료비", "path": "보험·치료비", "surface": "section", "nav": "insurance", "owner": "nav", "admin": false, "desc": "조회·가입·청구·치료비", "aliases": ["qhgjaclfyql", "보험치료비"]},
+  {"key": "sec.insurance", "label": "치료비 케어", "path": "치료비 케어", "surface": "section", "nav": "insurance", "owner": "nav", "admin": false, "desc": "조회·가입·청구·치료비", "aliases": ["clfyqlzpdj", "보험 치료비", "보험·치료비", "보험치료비", "치료비케어"]},
   {"key": "sec.mywallet", "label": "나의 건강지갑", "path": "나의 건강지갑", "surface": "section", "nav": "mywallet", "owner": "nav", "admin": false, "desc": "금융지갑·Health NFT·우리가족건강관리", "aliases": ["skdmlrjsrkdwlrkq", "나의건강지갑"]},
   {"key": "sec.partner", "label": "제휴·투자 신청", "path": "제휴·투자 신청", "surface": "section", "nav": "partner", "owner": "nav", "admin": false, "desc": "제휴 네트워크·회원/법인 투자", "aliases": ["wpgbxnwktlscjd", "제휴투자신청"]},
   {"key": "sec.healthmate", "label": "헬스메이트 센터", "path": "헬스메이트 센터", "surface": "section", "nav": "healthmate", "owner": "nav", "admin": true, "desc": "전문헬스메이트(프로) 회원 관리 (운영)", "aliases": ["gpftmapdlxmtpsxj", "헬스메이트센터"]},
@@ -31637,7 +31637,7 @@ const NAV_INVENTORY = [
   {"key": "tab.mywallet.nft", "label": "Health NFT", "path": "mywallet › Health NFT", "surface": "tab", "nav": "nft", "tab": "nft", "owner": "nav", "admin": false, "desc": "", "aliases": ["HealthNFT"]},
   {"key": "tab.mywallet.vault", "label": "데이터 금고", "path": "mywallet › 데이터 금고", "surface": "tab", "nav": "vault", "tab": "vault", "owner": "nav", "admin": false, "desc": "", "aliases": ["epdlxjrmarh", "데이터금고"]},
   {"key": "tab.mywallet.trust", "label": "신뢰 센터", "path": "mywallet › 신뢰 센터", "surface": "tab", "nav": "trust", "tab": "trust", "owner": "nav", "admin": false, "desc": "", "aliases": ["tlsfhltpsxj", "신뢰센터"]},
-  {"key": "tab.insurance.custom", "label": "맞춤보험", "path": "insurance › 맞춤보험", "surface": "tab", "nav": "insurance", "tab": "custom", "owner": "nav", "admin": false, "desc": "", "aliases": ["akwcnaqhgja"]},
+  {"key": "tab.insurance.custom", "label": "치료비 준비 진단", "path": "insurance › 치료비 준비 진단", "surface": "tab", "nav": "insurance", "tab": "custom", "owner": "nav", "admin": false, "desc": "", "aliases": ["clfyqlwnsqlwlseks", "맞춤 보험", "맞춤보험", "치료비준비진단"]},
   {"key": "tab.insurance.analysis", "label": "보장분석", "path": "insurance › 보장분석", "surface": "tab", "nav": "insurance", "tab": "analysis", "owner": "nav", "admin": false, "desc": "", "aliases": ["qhwkdqnstjr"]},
   {"key": "tab.insurance.billing", "label": "보험료 납부", "path": "insurance › 보험료 납부", "surface": "tab", "nav": "insurance", "tab": "billing", "owner": "nav", "admin": false, "desc": "", "aliases": ["qhgjafyskqqn", "보험료납부"]},
   {"key": "tab.insurance.claimpay", "label": "청구·지급", "path": "insurance › 청구·지급", "surface": "tab", "nav": "insurance", "tab": "claimpay", "owner": "nav", "admin": false, "desc": "", "aliases": ["cjdrnwlrmq", "청구지급"]},
@@ -31692,7 +31692,7 @@ const NAV_INVENTORY = [
   {"key": "tab.healthmate.4", "label": "④ 질병 예측", "path": "healthmate › ④ 질병 예측", "surface": "tab", "nav": "healthmate", "tab": "4", "owner": "nav", "admin": true, "desc": "", "aliases": ["wlfquddPcmr", "질병 예측", "질병예측"]},
   {"key": "tab.healthmate.5", "label": "⑤ 건강 행동", "path": "healthmate › ⑤ 건강 행동", "surface": "tab", "nav": "healthmate", "tab": "5", "owner": "nav", "admin": true, "desc": "", "aliases": ["rjsrkdgodehd", "건강 행동", "건강행동"]},
   {"key": "tab.healthmate.6", "label": "⑥ 가족·재가", "path": "healthmate › ⑥ 가족·재가", "surface": "tab", "nav": "healthmate", "tab": "6", "owner": "nav", "admin": true, "desc": "", "aliases": ["rkwhrwork", "가족·재가", "가족재가"]},
-  {"key": "tab.healthmate.7", "label": "⑦ 보장분석 대화", "path": "healthmate › ⑦ 보장분석 대화", "surface": "tab", "nav": "healthmate", "tab": "7", "owner": "nav", "admin": true, "desc": "", "aliases": ["qhwkdqnstjreoghk", "보장분석 대화", "보장분석대화"]},
+  {"key": "tab.healthmate.7", "label": "⑦ 치료비 보장 점검", "path": "healthmate › ⑦ 치료비 보장 점검", "surface": "tab", "nav": "healthmate", "tab": "7", "owner": "nav", "admin": true, "desc": "", "aliases": ["clfyqlqhwkdwjarja", "보장분석 대화", "보장분석대화", "치료비 보장 점검", "치료비보장점검"]},
   {"key": "tab.healthmate.8", "label": "⑧ 프로 제안함", "path": "healthmate › ⑧ 프로 제안함", "surface": "tab", "nav": "healthmate", "tab": "8", "owner": "nav", "admin": true, "desc": "", "aliases": ["vmfhwpdksgka", "프로 제안함", "프로제안함"]},
   {"key": "tab.healthmate.9", "label": "⑨ 내 고객·실적", "path": "healthmate › ⑨ 내 고객·실적", "surface": "tab", "nav": "healthmate", "tab": "9", "owner": "nav", "admin": true, "desc": "", "aliases": ["sorhrortlfwjr", "내 고객·실적", "내고객실적"]},
   {"key": "tab.healthmate.10", "label": "⑩ 통합 운영", "path": "healthmate › ⑩ 통합 운영", "surface": "tab", "nav": "healthmate", "tab": "10", "owner": "nav", "admin": true, "desc": "", "aliases": ["⑩xhdgkqdnsdud", "⑩통합운영"]},
@@ -31786,7 +31786,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-08-31","seed":20260828,"inventory":{"version":1,"sourceHash":"59ff684f531e8564","generatedAt":"2026-08-31","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.02,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-08-31","seed":20260828,"inventory":{"version":1,"sourceHash":"5f1bc3ec2ca42615","generatedAt":"2026-08-31","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.27,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
@@ -32082,7 +32082,7 @@ const TOOL_RUN = {
   gen(m) { try { const r = (typeof simulateGenerationSwitch === "function") ? simulateGenerationSwitch(m) : null; if (!r) return null; const opts = r.options.map((o) => `${o.gen} 전환 시 월 ${_won(o.monthly)}(${o.saveMonthly > 0 ? "-" : "+"}${_won(Math.abs(o.saveMonthly))})`).join(", "); return { lines: [`현재 ${r.current.gen} 월 ${_won(r.current.monthly)} → ${opts}.`, r.recommend, r.warning].filter(Boolean) }; } catch (e) { return null; } },
   riskcancer(m) { try { const r = (typeof getDiseaseRiskCoverage === "function") ? getDiseaseRiskCoverage(m, "암") : null; if (!r) return null; const c = r.mapped[0]; return { lines: [c && c.covered ? `암 진단비는 ${_won(c.benefit)} 보유 중이에요 — 검진 위험도와 함께 보면 적정성이 보여요.` : "암 진단비가 아직 없어요 — 검진상 위험도가 있다면 우선 보완을 권해요."] }; } catch (e) { return null; } },
   riskbh(m) { try { const r = (typeof getDiseaseRiskCoverage === "function") ? getDiseaseRiskCoverage(m, "혈압") : null; if (!r) return null; return { lines: ["뇌·심장 보장을 확인했어요 — " + r.mapped.map((x) => `${x.cat} 진단비 ${x.covered ? _won(x.benefit) + " 보유" : "미보유 ⚠️"}`).join(" · ")] }; } catch (e) { return null; } },
-  wallet(m) { try { const lb = (m && typeof tlSync === "function") ? (() => { try { return tlSync(m); } catch (e2) { return null; } })() : null; const base = (typeof WALLET !== "undefined" ? WALLET.total : 12480); const cp = (m && typeof careplanEarned === "function") ? careplanEarned(m.email) : 0; const sp = (typeof shopHtkPts === "function") ? shopHtkPts(m ? m.email : "default") : 0; const d = (typeof htkDelta === "function") ? htkDelta(m) : 0; const tot = (lb != null) ? lb : Math.max(0, base + cp + sp + d); const ins = Math.floor(tot * 0.3); return { lines: [`지금 총 ${tot.toLocaleString()} HTK(≈${_won(tot * 10)})가 있어요${lb != null ? " — 트랜잭션 원장 합산 기준이에요" : ""}.`, `그중 보험·치료비 전용 ${ins.toLocaleString()} HTK, 일반 ${ (tot - ins).toLocaleString()} HTK — 쇼핑·청약에 쓸 수 있어요.`] }; } catch (e) { return null; } },
+  wallet(m) { try { const lb = (m && typeof tlSync === "function") ? (() => { try { return tlSync(m); } catch (e2) { return null; } })() : null; const base = (typeof WALLET !== "undefined" ? WALLET.total : 12480); const cp = (m && typeof careplanEarned === "function") ? careplanEarned(m.email) : 0; const sp = (typeof shopHtkPts === "function") ? shopHtkPts(m ? m.email : "default") : 0; const d = (typeof htkDelta === "function") ? htkDelta(m) : 0; const tot = (lb != null) ? lb : Math.max(0, base + cp + sp + d); const ins = Math.floor(tot * 0.3); return { lines: [`지금 총 ${tot.toLocaleString()} HTK(≈${_won(tot * 10)})가 있어요${lb != null ? " — 트랜잭션 원장 합산 기준이에요" : ""}.`, `그중 치료비 케어 전용 ${ins.toLocaleString()} HTK, 일반 ${ (tot - ins).toLocaleString()} HTK — 쇼핑·청약에 쓸 수 있어요.`] }; } catch (e) { return null; } },
   vault(m) { try { const token = (typeof anonToken === "function") ? anonToken(m) : ""; const v = (typeof vaultLoad === "function") ? vaultLoad(token) : null; const ok = (typeof chainVerify === "function") ? chainVerify() : { ok: true, blocks: 0 }; const integ = (typeof verifyVaultIntegrity === "function") ? verifyVaultIntegrity(m) : { ok: true }; const ck = v && v.checkups ? v.checkups.length : 0; const insN = v && v.insurance ? v.insurance.length : 0; return { lines: [`데이터 금고에 검진 ${ck}건·보험 ${insN}건이 보관 중이에요 — 블록체인 무결성 ${ok.ok ? "정상" : "이상"} · 해시 대조 ${integ.ok ? "위변조 없음 ✓" : "불일치"}.`] }; } catch (e) { return null; } },
   fam(m) { try { const f = (typeof getFamilyCoverageSummary === "function") ? getFamilyCoverageSummary(m) : null; if (!f) return null; if (!f.available) return { lines: [f.note] }; return { lines: ["가족 보장 요약이에요 — " + f.rows.slice(0, 3).map((r) => `${r.name}(${r.gen}·${r.grade})`).join(", ") + "."] }; } catch (e) { return null; } },
   ci(m) { try { const p = (typeof ciRiskProfile === "function") ? ciRiskProfile(m) : null; if (!p || !p.hasRisk) return { lines: ["지금 검진 기준으로는 표준 권장검사(국가검진·내시경·경동맥초음파)를 안내드려요."] }; return { lines: ["위험 질환 기준 권장 정밀검진이에요 — " + p.rows.slice(0, 2).map((r) => `${r.disease}: ${r.checkups.slice(0, 2).join("·")}`).join(" / ") + "."] }; } catch (e) { return null; } },
@@ -32232,7 +32232,7 @@ const TOOL_RUN = {
   // 보장 사다리(과업4 신설) — 실손 확인 선행 → 미가입자 토큰 우선 충당 안내
   ladder(m) { try {
     const L = (typeof insService !== "undefined") ? insService.ladderCheck(m) : null; if (!L) return null;
-    return { lines: [L.note, L.stage === "silson-first" ? "보험·치료비 섹션 › 맞춤보험 탭에서 사다리 1단계(실손)부터 밟아보세요." : "맞춤보험 탭에서 예측 위험 기반 보장을 추천받을 수 있어요."], buttons: ["맞춤보험 열어줘"], nav: "insurance" };
+    return { lines: [L.note, L.stage === "silson-first" ? "치료비 케어 섹션 › 치료비 준비 진단 탭에서 사다리 1단계(실손)부터 밟아보세요." : "치료비 준비 진단 탭에서 예측 위험 기반 보장을 추천받을 수 있어요."], buttons: ["치료비 준비 진단 열어줘"], nav: "insurance" };
   } catch (e) { return null; } },
   // 나눔 현황(과업4 신설) — SharingPool 실적립 원장
   donate() { try {
@@ -32434,8 +32434,8 @@ const AGENT_SEC_GUIDES = [
   { k: "hospital", label: "병원진료 안내", words: ["병원진료", "병원안내", "병원찾", "진료과", "병원가야", "어느병원", "병원추천", "병원어디", "어디병원", "병원좀", "병원알려"], guide: "병원진료 안내를 열어드릴게요. 증상·질환에 맞는 진료과와 내 주변 병원을 찾아 예약 안내까지 도와드려요. 진료 결과를 알려주시면 케어플랜도 갱신돼요.", btns: ["증상으로 진료과 찾기"] },
   { k: "homecare", label: "재가돌봄", words: ["재가돌봄", "돌봄서비스", "방문간호", "간병", "요양", "퇴원후", "부모님돌봄"], guide: "재가돌봄 화면에서 방문간호·재활·간병 서비스를 신청할 수 있어요. 퇴원 후 회복 관리나 부모님 돌봄이 필요할 때 조건에 맞는 서비스를 매칭해 드려요.", btns: ["돌봄 서비스 상담"] },
   { k: "shop", label: "건강쇼핑", words: ["건강쇼핑", "쇼핑", "뭘먹어야", "뭐먹어야", "먹어야좋", "영양제사", "영양제보", "식단사", "기기사", "홈케어기기", "쇼핑몰", "상품보", "몰열어"], guide: "건강쇼핑을 열어드릴게요. 건강식단·영양제·홈케어 의료기기를 국내 최저가로 제공하고, 검진 결과에 맞춘 맞춤 추천도 있어요. 구매하면 마진의 50%가 HTK로 적립돼요.", btns: ["내 맞춤 추천 보여줘", "혈압에 좋은 영양제", "적립은 얼마나 돼?"] },
-  { k: "insurance", label: "보험·치료비", words: ["보험섹션", "보험화면", "보험보", "보험부족", "보장부족", "보험열어", "보장조회", "보험가입", "치료비화면", "보험쪽", "보험메뉴"], guide: "보험·치료비 화면을 안내해 드릴게요. 보장조회 → AI 보험솔루션(보장공백·본인부담) → 간편가입 → 보험금 청구까지 한 곳에서 돼요. 제 데이터 기준 분석은 말만 하시면 바로 해드려요.", btns: ["보장 공백 분석", "내 실손 몇 세대야?", "보험금 청구 어떻게 해?"] },
-  { k: "wallet", label: "건강금융지갑", words: ["건강지갑", "금융지갑", "지갑보", "적립금보", "혜택보여", "지갑열", "적립현황", "적립내역", "온체인", "토큰지갑"], guide: "건강금융지갑을 열어드릴게요. HTK 적립 현황과 보험·치료비 전용 적립(30% 우선), 나눔·기부, 온체인 원장(전송·스왑)까지 볼 수 있어요.", btns: ["적립금 얼마 쌓였어?", "토큰 전송하는 법"] },
+  { k: "insurance", label: "치료비 케어", words: ["보험섹션", "보험화면", "보험보", "보험부족", "보장부족", "보험열어", "보장조회", "보험가입", "치료비화면", "보험쪽", "보험메뉴"], guide: "치료비 케어 화면을 안내해 드릴게요. 보장조회 → AI 보험솔루션(보장공백·본인부담) → 간편가입 → 보험금 청구까지 한 곳에서 돼요. 제 데이터 기준 분석은 말만 하시면 바로 해드려요.", btns: ["보장 공백 분석", "내 실손 몇 세대야?", "보험금 청구 어떻게 해?"] },
+  { k: "wallet", label: "건강금융지갑", words: ["건강지갑", "금융지갑", "지갑보", "적립금보", "혜택보여", "지갑열", "적립현황", "적립내역", "온체인", "토큰지갑"], guide: "건강금융지갑을 열어드릴게요. HTK 적립 현황과 치료비 케어 전용 적립(30% 우선), 나눔·기부, 온체인 원장(전송·스왑)까지 볼 수 있어요.", btns: ["적립금 얼마 쌓였어?", "토큰 전송하는 법"] },
   { k: "nft", label: "Health NFT", words: ["nft", "엔에프티", "보험증서nft", "건강nft"], guide: "Health NFT 화면에서 검진보험 증서·건강 기록의 NFT(SBT)를 확인할 수 있어요. 위변조가 안 되는 내 건강 자산 증명이에요.", btns: ["NFT가 뭐예요?"] },
   { k: "mypage", label: "우리가족건강관리", words: ["가족관리", "우리가족", "가족건강", "마이페이지", "가족등록", "동의관리", "내정보수정"], guide: "우리가족건강관리를 열어드릴게요. 가족을 등록해 건강·보장 현황을 함께 보고, 보호자 체크리스트·응급 SOS·동의관리(DID)까지 한 화면에서 돼요.", btns: ["가족 보장 요약", "동의 철회하고 싶어"] },
   { k: "partner", label: "제휴·투자", words: ["제휴신청", "제휴하고", "투자신청", "투자하고", "주식청약", "청약화면", "파트너신청", "입점신청"], guide: "제휴·투자 화면을 안내해 드릴게요. 검진센터·병원·약국 제휴 신청과 회원 적립금 주식청약, 법인 투자까지 여기서 진행돼요.", btns: ["적립금으로 주식 어떻게 사?", "제휴 조건이 뭐예요?"] },
@@ -32465,7 +32465,7 @@ function agentNavIntent(rawText, normText) {
 
 /* ── 메인: agentAnswer(text) — 단일 에이전트 '하이'의 응답 ──
    반환: { lines:[문장들], buttons:[≤3], nav:{key,label}|null, reset?:bool, matched:intentKey|null } */
-const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", home: "회사 소개", trust: "신뢰 센터", checkup: "건강검진 예약", care: "검진 후 케어", insurance: "보험·치료비", mywallet: "나의 건강지갑", partner: "제휴·투자", onboarding: "데이터 연결", ontology: "온톨로지", shop: "건강쇼핑", ai: "AI 주치의 상담", manage: "내 건강현황", hospital: "병원진료 안내", homecare: "재가돌봄", wallet: "건강금융지갑", nft: "Health NFT", mypage: "우리가족건강관리", social: "사회적기업", community: "커뮤니티", healthmate: "헬스메이트 센터" };
+const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", home: "회사 소개", trust: "신뢰 센터", checkup: "건강검진 예약", care: "검진 후 케어", insurance: "치료비 케어", mywallet: "나의 건강지갑", partner: "제휴·투자", onboarding: "데이터 연결", ontology: "온톨로지", shop: "건강쇼핑", ai: "AI 주치의 상담", manage: "내 건강현황", hospital: "병원진료 안내", homecare: "재가돌봄", wallet: "건강금융지갑", nft: "Health NFT", mypage: "우리가족건강관리", social: "사회적기업", community: "커뮤니티", healthmate: "헬스메이트 센터" };
 
 /* ══════════ [Phase A] 에이전트 메시 — 호출 어댑터·소유권·응답 장식 ══════════ */
 let _hiTurn = { route: null, reason: null };     // 이번 턴의 라우팅 결과
@@ -33137,7 +33137,7 @@ const HI_INTENTS = [
   { id: "S4-REFUND-01", l1: "건강금융지갑", l2: "충전 환불", a: ["refundw"], b: ["method", "doit", "explain", "view"], hub: true, pre: ["login"], route: "app://wallet/topup", nav: "wallet", tab: "topup",
     ans: "충전한 HTK는 보너스를 제외한 미사용분을 환불받을 수 있어요 — 충전 탭의 주문 내역에서 바로 신청돼요.", easy: "충전한 포인트 중 안 쓴 만큼 돌려받을 수 있어요. 보너스는 빼고요.", chips: ["충전하러 가기"] },
   { id: "S4-SWAP-01", l1: "건강금융지갑", l2: "전송·스왑", a: ["swap"], b: ["method", "doit", "explain"], hub: true, pre: ["login"], route: "app://wallet/history", nav: "wallet", tab: "chain",
-    ans: "온체인 원장 탭에서 HTK를 보험·치료비 크레딧으로 스왑할 수 있어요 — 모든 이동이 블록체인에 기록돼요(시연).", easy: "포인트를 보험료 전용으로 바꿔둘 수 있어요.", chips: ["온체인 지갑 보기"] },
+    ans: "온체인 원장 탭에서 HTK를 치료비 케어 크레딧으로 스왑할 수 있어요 — 모든 이동이 블록체인에 기록돼요(시연).", easy: "포인트를 보험료 전용으로 바꿔둘 수 있어요.", chips: ["온체인 지갑 보기"] },
   /* ───── S5 데이터 연결·금고 ───── */
   { id: "S5-HUB-01", l1: "데이터 연결·금고", l2: "데이터 허브", a: ["datak"], b: [], hub: true, pre: [], route: "app://data/link", nav: "onboarding",
     ans: "검진결과(사진·PDF·공단)와 보험(통합조회)을 연결하면 모든 분석이 내 실제 데이터 기준으로 바뀌어요 — 각 1분이면 돼요.", easy: "내 검진과 보험을 연결하면 진짜 내 분석을 받아요. 1분이면 돼요.", chips: ["데이터 연결 화면 열기", "사진으로 올려도 돼요?", "공단 조회는 뭐예요?"] },
@@ -34271,13 +34271,13 @@ const HI_SEGMENTS = [
       return {
         situation: "확인해 보니 연결된 " + _d(s.s3.contractCount) + "건 중 실손의료보험이 없어요.",
         assess: "실손은 병원비의 기본 안전망이라, 없으면 치료비 전액이 본인 부담이 돼요. 지금은 4·5세대로만 신규 가입이 가능해요.",
-        route: "① 보장 공백 분석으로 실손 외 보장도 함께 점검하고 ② 가입을 원하시면 맞춤보험 화면에서 상담으로 이어드려요 — 가입 여부 결정은 충분히 비교하신 뒤에 하세요.",
+        route: "① 보장 공백 분석으로 실손 외 보장도 함께 점검하고 ② 가입을 원하시면 치료비 준비 진단 화면에서 상담으로 이어드려요 — 가입 여부 결정은 충분히 비교하신 뒤에 하세요.",
         guide: "보장 공백 분석 화면을 미리 보여드릴게요. ※ 실제 가입·인수는 보험사 심사에 따라요.",
       };
     },
     preview: { route: "app://insurance/gap", nav: "insurance", title: "보장 공백 분석", desc: "실손 부재 영향과 우선 보완 순서 확인" },
     followup: null,
-    chips: ["보장 공백 분석", "맞춤보험 열어줘"],
+    chips: ["보장 공백 분석", "치료비 준비 진단 열어줘"],
   },
   {
     id: "SEG-S3-06", sec: "S3", label: "1·2세대 실손 보유", def: "구세대 실손 보유 — 전환 유불리 비교 대상",
@@ -35328,7 +35328,7 @@ const HI_AGENTS = [
     ready: true,
   },
   {
-    id: "A2", name: "보험·치료비", label: "보험·치료비 상담", avatar: "🛡️", badge: "보험·치료비",
+    id: "A2", name: "치료비 케어", label: "치료비 케어 상담", avatar: "🛡️", badge: "치료비 케어",
     persona: "숫자로 비교해 주되 가입·해지를 대신 결정하지 않는다",
     role: "specialist",
     scope: {
@@ -35851,7 +35851,7 @@ function insGuardReport(days) {
 
 try { if (typeof window !== "undefined") { window.__hifinInsGuard = { check: insuranceGuard, report: insGuardReport, rules: INS_GUARD_RULES, text: INS_GUARD_TEXT }; } } catch (e) {}
 
-/* ══════════════ A2 · 보험·치료비 에이전트 (Phase B) ══════════════
+/* ══════════════ A2 · 치료비 케어 에이전트 (Phase B) ══════════════
    원칙: **계산은 툴이 하고, 설명은 근거로 하며, 결정은 회원이 한다.**
      ① 계산 결과 — TOOL_RUN·insuranceStats 반환값만 인용(모든 금액·비율은 calc에 기록 → 하네스가 대조)
      ② 지식 근거 — INS_KB(약관)·SILSON_SPEC(세대)·CLAIM_DENY(부지급)·코호트에서 검색해 cite로 표기
@@ -35957,7 +35957,7 @@ function insuranceAgent(question, ctx) {
   const s3 = snap && (snap.s3 || {});
   const m = ctx.m || null;
   const calc = { tool: null, values: [], state: [] };
-  let lines = [], buttons = [], nav = { key: "insurance", label: "보험·치료비" };
+  let lines = [], buttons = [], nav = { key: "insurance", label: "치료비 케어" };
 
   /* ② 상태 선행 — 연결 전이면 분석 자체가 불가(SEG-S3-01 방향) */
   if (s3 && s3.insLinked === false) {
@@ -35992,7 +35992,7 @@ function insuranceAgent(question, ctx) {
       lines = [`조회 결과 안 찾아가신 휴면보험금이 약 ${s3.dormantAmt.toLocaleString()}원 확인돼요.`,
         "휴면보험금은 만기·해지 후 찾아가지 않은 돈이라, 신청하면 본인 계좌로 받을 수 있어요 — 신청 절차는 제가 단계별로 함께 진행해 드릴게요."];
       buttons = ["휴면보험금 화면 열기"];
-      nav = { key: "insurance", label: "보험·치료비" };
+      nav = { key: "insurance", label: "치료비 케어" };
     } else if (s3) {
       lines = ["조회 기준으로는 지금 확인되는 휴면보험금이 없어요.",
         "보험 목록이 오래됐다면 통합조회를 한 번 더 갱신해 보시면 새로 잡히는 계약이 있을 수 있어요."];
@@ -39407,7 +39407,7 @@ function HtkTokenLedger({ member, base }) {
   const H = (h, n) => (h || "").slice(0, n || 12) + "…";
   const doVerify = () => { const r = (typeof tlVerify === "function") ? tlVerify(member) : null; setVres(r); if (typeof toast === "function" && r) toast(r.ok ? `원장 검증 완료 — ${r.n}건 전건 무결 ✓` : `⚠️ 위변조 감지: ${r.reason}`); };
   const doTransfer = () => { const a = parseInt(tAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("전송할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkTransfer === "function") htkTransfer(member, to || "0x수신주소", a); setTAmt(""); setTo(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`온체인 전송 완료 · ${a.toLocaleString()} HTK`); };
-  const doSwap = () => { const a = parseInt(sAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("스왑할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkSwap === "function") htkSwap(member, "HTK", "보험·치료비 크레딧", a); setSAmt(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`스왑 완료 · ${a.toLocaleString()} HTK → 보험·치료비 크레딧`); };
+  const doSwap = () => { const a = parseInt(sAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("스왑할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkSwap === "function") htkSwap(member, "HTK", "치료비 케어 크레딧", a); setSAmt(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`스왑 완료 · ${a.toLocaleString()} HTK → 치료비 케어 크레딧`); };
   return (
     <div className="htk">
       <div className="htk-card">
@@ -39422,7 +39422,7 @@ function HtkTokenLedger({ member, base }) {
           <div className="htk-row"><input className="htk-in" value={tAmt} onChange={(e) => setTAmt(e.target.value.replace(/[^0-9]/g, ""))} placeholder="수량(HTK)" inputMode="numeric" /><button className="htk-btn" onClick={doTransfer}>전송</button></div>
         </div>
         <div className="htk-act">
-          <div className="htk-at"><RefreshCw size={14} color="#0891B2" /> 스왑 (HTK → 보험·치료비 크레딧)</div>
+          <div className="htk-at"><RefreshCw size={14} color="#0891B2" /> 스왑 (HTK → 치료비 케어 크레딧)</div>
           <div className="htk-row"><input className="htk-in" value={sAmt} onChange={(e) => setSAmt(e.target.value.replace(/[^0-9]/g, ""))} placeholder="수량(HTK)" inputMode="numeric" /><button className="htk-btn cyan" onClick={doSwap}>스왑</button></div>
           <div className="htk-hint">1 HTK → 1 크레딧 (보험료·의료비 결제 전용)</div>
         </div>

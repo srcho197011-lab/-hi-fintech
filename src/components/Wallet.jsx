@@ -41,9 +41,9 @@ function WalletSection({ onGo }) {
       </div>
 
       <div className="wins">
-        <div className="wins-h"><span className="wins-ic"><ShieldCheck size={17} /></span><div><b>보험·치료비 적립금 <span className="wins-tag">우선 적립 {insPct}%</span></b><p>적립되는 Health Token의 <b>{insPct}%</b>를 <b>보험료·의료비 결제 전용</b> 적립금으로 <b>우선 적립</b>합니다.</p></div></div>
+        <div className="wins-h"><span className="wins-ic"><ShieldCheck size={17} /></span><div><b>치료비 케어 적립금 <span className="wins-tag">우선 적립 {insPct}%</span></b><p>적립되는 Health Token의 <b>{insPct}%</b>를 <b>보험료·의료비 결제 전용</b> 적립금으로 <b>우선 적립</b>합니다.</p></div></div>
         <div className="wins-grid">
-          <div className="wins-box pri"><span className="wl"><ShieldCheck size={12} /> 보험·치료비 적립금 <em>{insPct}% 우선</em></span><b>{insRes.toLocaleString()} <small>HTK</small></b><span className="ww">≈ {(insRes * WALLET.rate).toLocaleString()}원 · 보험료·치료비 결제</span></div>
+          <div className="wins-box pri"><span className="wl"><ShieldCheck size={12} /> 치료비 케어 적립금 <em>{insPct}% 우선</em></span><b>{insRes.toLocaleString()} <small>HTK</small></b><span className="ww">≈ {(insRes * WALLET.rate).toLocaleString()}원 · 보험료·치료비 결제</span></div>
           <div className="wins-box"><span className="wl"><Coins size={12} /> 일반 적립금 <em>{100 - insPct}%</em></span><b>{genRes.toLocaleString()} <small>HTK</small></b><span className="ww">≈ {(genRes * WALLET.rate).toLocaleString()}원 · 쇼핑·건강활동 사용</span></div>
         </div>
         <div className="wins-bar"><span className="pri" style={{ width: insPct + "%" }}>{insPct}%</span><span className="gen" style={{ width: (100 - insPct) + "%" }}>{100 - insPct}%</span></div>

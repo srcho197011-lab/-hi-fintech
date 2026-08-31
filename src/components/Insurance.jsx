@@ -4,7 +4,7 @@
 const AGENCY_INFO = {
   corp: "글로벌예방금융(주)", regNo: "제2025060038호",
   basis: "보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항",
-  full: "본 보험·치료비 서비스는 보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항에 근거하여 등록된 보험대리점 글로벌예방금융(주)가 운영합니다.",
+  full: "본 치료비 케어 서비스는 보험업법 제87조 제1항 및 보험업감독규정 제4-4조 제3항에 근거하여 등록된 보험대리점 글로벌예방금융(주)가 운영합니다.",
 };
 function InsAgencyBadge({ onGo }) {
   const [open, setOpen] = useState(false);
@@ -385,7 +385,7 @@ function _insFusionRoute(text, Mx, nm) {
   }
   return null;
 }
-/* ══════════ 전용 「AI 보험·치료비 상담사」 업무 실행 층 (Phase1 §4 본체) ══════════
+/* ══════════ 전용 「AI 치료비 케어 상담사」 업무 실행 층 (Phase1 §4 본체) ══════════
    insService(단일 출처)를 소비해 상담 중 실제 업무(납부·심사지급·재산정)를 실행한다.
    실수 방지: 금액이 움직이는 행동은 [진행 → 확인 카드 → ✅ 확정] 2단계 — 버튼 라벨에 대상 ID를 인코딩(무상태 확인 흐름).
    정책(INS_AI_POLICY) 상속: 가입·모집 요청은 실행하지 않고 GA 채널 안내로 응답. */
@@ -395,7 +395,7 @@ function _insServiceRoute(text, member) {
   const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
   // ⓐ 정책 가드 — 청약·모집 실행 요청은 정보 제공+GA 안내로 한정
   if (/가입\s*시켜|청약\s*해\s*줘|계약\s*해\s*줘|들어\s*줘.*보험/.test(text))
-    return { bubbles: [{ kind: "text", text: "가입·청약은 제가 직접 실행할 수 없어요 — 보험업법상 모집은 **라이선스 채널(GA 보험중개)**을 통해서만 가능해요. 대신 **맞춤보험 탭의 간편가입(시연)**으로 절차를 체험하시거나, 보장 공백 분석으로 무엇이 필요한지 먼저 확인해 드릴게요." }], quicks: ["보장 공백 분석", "보장 사다리 확인", "맞춤 헬스케어 보험 상담"] };
+    return { bubbles: [{ kind: "text", text: "가입·청약은 제가 직접 실행할 수 없어요 — 보험업법상 모집은 **라이선스 채널(GA 보험중개)**을 통해서만 가능해요. 대신 **치료비 준비 진단 탭의 간편가입(시연)**으로 절차를 체험하시거나, 보장 공백 분석으로 무엇이 필요한지 먼저 확인해 드릴게요." }], quicks: ["보장 공백 분석", "보장 사다리 확인", "맞춤 헬스케어 보험 상담"] };
   // ⓑ 납부 확정(2단계) — "✅ 납부 확정 · BILL-…"
   let mm = text.match(/^✅ 납부 확정 · (\S+)/);
   if (mm) { const r = insService.pay(member, mm[1]);
@@ -408,7 +408,7 @@ function _insServiceRoute(text, member) {
   // 납부 조회 — "이번 달 보험료", "납부해 줘"
   if (/납부|보험료\s*(내|납|얼마|청구)|낼\s*(돈|보험료)|청구서/.test(text)) {
     const S = insService.bills(member);
-    if (!S || !S.policies.length) return { bubbles: [{ kind: "text", text: "아직 납부할 계약이 없어요 — **맞춤보험 탭에서 간편가입(시연)**을 완료하면 매달 청구서가 생기고, 여기서 바로 납부까지 도와드려요." }], quicks: ["보장 사다리 확인", "보장 공백 분석"] };
+    if (!S || !S.policies.length) return { bubbles: [{ kind: "text", text: "아직 납부할 계약이 없어요 — **치료비 준비 진단 탭에서 간편가입(시연)**을 완료하면 매달 청구서가 생기고, 여기서 바로 납부까지 도와드려요." }], quicks: ["보장 사다리 확인", "보장 공백 분석"] };
     if (!S.unpaid.length) return { bubbles: [{ kind: "text", text: `이번 달 낼 보험료가 없어요 — 전부 납부 완료! (누적 수납 ${S.paidCount}건 · ${won(S.paidTotal)}) 잔액은 ${S.balance != null ? S.balance.toLocaleString() : "-"} HTK예요.` }], quicks: ["내 잔액 알려줘", "나눔 현황 보여줘"] };
     return { bubbles: [{ kind: "card", card: { title: `🧾 납부할 청구서 ${S.unpaid.length}건`, items: S.unpaid.slice(0, 4).map((b) => `${b.ym} ${b.product} · ${won(b.amount)} · ${b.status}`), buttons: S.unpaid.slice(0, 3).map((b) => `납부 진행 · ${b.id}`) } }, { kind: "text", text: `잔액 ${S.balance != null ? S.balance.toLocaleString() : "-"} HTK — 납부하면 원장에서 차감되고 온체인에 기록돼요.` }], quicks: [] };
   }
@@ -459,7 +459,7 @@ function _insServiceRoute(text, member) {
   if (/검진\s*보험\s*(청구|현황|보여)|검진대비/.test(text)) {
     const S = insService.checkupIns(member);
     if (!S) return null;
-    if (!S.policy) return { bubbles: [{ kind: "text", text: S.hasCheckup ? "검진 기록이 연결돼 있어요 — 맞춤보험 탭 ①에서 무상 발급을 받으실 수 있어요(확인 한 번이면 돼요)." : "검진 기록을 연결하면 무상 검진대비보험을 발급해 드려요." }], quicks: ["맞춤보험 열어줘"] };
+    if (!S.policy) return { bubbles: [{ kind: "text", text: S.hasCheckup ? "검진 기록이 연결돼 있어요 — 치료비 준비 진단 탭 ①에서 무상 발급을 받으실 수 있어요(확인 한 번이면 돼요)." : "검진 기록을 연결하면 무상 검진대비보험을 발급해 드려요." }], quicks: ["치료비 준비 진단 열어줘"] };
     if (/청구/.test(text) && S.timeline.phase === "보장 중") {
       const r = insService.claimSubmit(member, { kind: "검진 연계 정밀검사", fee: 100000 });
       if (r.ok) return { bubbles: [{ kind: "text", text: `접수 완료 ✓ — ${r.claim.id} (검진 연계 정밀검사 지원). 바로 심사할까요?` }], quicks: [`심사 진행 · ${r.claim.id}`] };
@@ -474,7 +474,7 @@ function _insServiceRoute(text, member) {
     return { bubbles: [{ kind: "card", card: { title: `🔮 질병별 위험 — 같은 ${R.band} ${R.sex}성 대비`, items: R.risks.slice(0, 3).map((r) => `${r.ko}: 상위 ${r.topPct}% · ${r.trend} (근거: ${r.basis.map((b) => b.ko).join("·") || "정상"})`), buttons: ["가입 심사 미리보기"] } }, { kind: "text", text: R.honesty }], quicks: ["가입 심사 미리보기", "보장 공백 분석"] };
   }
   if (/가입\s*심사\s*미리보기|인수\s*(시뮬|예측|심사)/.test(text)) {
-    const U = insService.underwrite(member, "맞춤보험");
+    const U = insService.underwrite(member, "치료비 준비 진단");
     if (!U || !U.ok) return { bubbles: [{ kind: "text", text: (U && U.reason) || "검진 연결이 필요해요." }] };
     return { bubbles: [{ kind: "text", text: `예상 결과: **${U.decision}**\n${U.note}${U.disclosures.length ? `\n고지 자동 구성: ${U.disclosures.map((d) => d.item).join(" · ")} (다시 입력 안 하셔도 돼요)` : ""}\n${U.ga}` }], quicks: ["보장 사다리 확인", "맞춤 헬스케어 보험 상담"] };
   }
@@ -495,7 +495,7 @@ function _insServiceRoute(text, member) {
   if (/잔액|얼마\s*있|토큰\s*(얼마|몇)/.test(text)) { const bal = (typeof tlBalance === "function") ? tlBalance(member) : null;
     if (bal == null) return null;
     const res = (typeof htkInsReserve === "function") ? htkInsReserve(bal) : Math.floor(bal * 0.3);
-    return { bubbles: [{ kind: "text", text: `지금 ${bal.toLocaleString()} HTK(≈${won(bal * rate)})가 있어요 — 그중 보험·치료비 전용 ${res.toLocaleString()} HTK, 일반 ${(bal - res).toLocaleString()} HTK. 트랜잭션 원장 합산 기준이라 온체인 원장 탭에서 전건 검증할 수 있어요.` }], quicks: ["납부할 보험료 있어?", "나눔 현황 보여줘"] }; }
+    return { bubbles: [{ kind: "text", text: `지금 ${bal.toLocaleString()} HTK(≈${won(bal * rate)})가 있어요 — 그중 치료비 케어 전용 ${res.toLocaleString()} HTK, 일반 ${(bal - res).toLocaleString()} HTK. 트랜잭션 원장 합산 기준이라 온체인 원장 탭에서 전건 검증할 수 있어요.` }], quicks: ["납부할 보험료 있어?", "나눔 현황 보여줘"] }; }
   return null;
 }
 
@@ -519,7 +519,7 @@ function AIPlannerChat({ onSimple, initialAsk }) {
   const insCtx = useMemo(() => { let c = null; try { c = window.__hifinInsCtx; window.__hifinInsCtx = null; } catch (e) {} if (!c && typeof insService !== "undefined") { try { c = insService.ctx(null, member); } catch (e) {} } return c; }, []);
   const ctxLine = insCtx && insCtx.pending && (insCtx.pending.bills > 0 || insCtx.pending.claims > 0)
     ? `\n\n📌 지금 진행 중인 건이 있어요 — ${[insCtx.pending.bills > 0 ? `납부 대기 청구서 ${insCtx.pending.bills}건` : null, insCtx.pending.claims > 0 ? `심사 대기 청구 ${insCtx.pending.claims}건` : null].filter(Boolean).join(" · ")}. 제가 바로 처리 도와드릴까요?` : "";
-  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 보험·치료비 전용 상담사예요. 🤖\n보장 분석부터 **납부·청구 지급·요율 재산정 실행**까지 — 확인만 해주시면 제가 처리해요.`
+  const greetText = `안녕하세요${nm ? " " + nm + "님" : ""}! 치료비 케어 전용 상담사예요. 🤖\n보장 분석부터 **납부·청구 지급·요율 재산정 실행**까지 — 확인만 해주시면 제가 처리해요.`
     + (topGap ? `\n\n${nm ? nm + "님, " : ""}지금 가장 먼저 챙길 지점은 **${topGap.t}**이에요.` : "") + ctxLine;
   const greet = { who: "ai", bubbles: [{ kind: "text", text: greetText }] };
   const FUSION_QUICKS = ["납부할 보험료 있어?", "청구 현황 보여줘", "보장 공백 분석", "재산정 해줘", "내 잔액 알려줘", "나눔 현황 보여줘"];
@@ -1254,7 +1254,7 @@ function InsAnalysisTab({ onGo, onTab }) {
       <div className="card" style={{ border: "1.5px dashed #FBCFB6" }}>
         <div className="rct"><Sparkles size={16} color="#F59E0B" /> 빠진 보장(보장 공백) {g.solution.findings.length}건</div>
         {g.solution.findings.slice(0, 4).map((f, i) => <div className="costrow" key={i}><span className="cl">{f.t || f.title || f.cat || String(f.k || "보장 항목")}</span><span className="cv" style={{ color: "#B45309" }}>{f.d || f.desc || f.why || "보완 검토"}</span><span className="ca">{f.sev != null ? "중요도 " + f.sev : "공백"}</span></div>)}
-        <button className="cbtn" style={{ marginTop: 8 }} onClick={() => onTab && onTab("custom")}><Sparkles size={14} /> 맞춤보험에서 보완하기</button>
+        <button className="cbtn" style={{ marginTop: 8 }} onClick={() => onTab && onTab("custom")}><Sparkles size={14} /> 치료비 준비 진단에서 보완하기</button>
       </div>)}
   </>);
 }
@@ -1270,7 +1270,7 @@ function InsLadderCard({ onTab }) {
     <div className="card" style={{ border: first ? "1.5px solid #FDBA74" : "1.5px solid #BBF7D0", background: first ? "#FFFBF5" : "#F7FEF9" }}>
       <div className="rct"><HeartHandshake size={17} color={first ? "#EA580C" : "#16A34A"} /> 보장 사다리 — {first ? "1단계: 실손부터" : "다음 단계: 맞춤 보장"}</div>
       <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.65 }}>{L.note}</p>
-      <div className="costrow"><span className="cl">내 보험·치료비 적립금 (토큰의 30% 우선 적립)</span><span className="cv" style={{ color: "var(--blue)" }}>{L.reserve.toLocaleString()} HTK</span><span className="ca">{first ? "실손 우선 충당" : "맞춤보험 활용"}</span></div>
+      <div className="costrow"><span className="cl">내 치료비 케어 적립금 (토큰의 30% 우선 적립)</span><span className="cv" style={{ color: "var(--blue)" }}>{L.reserve.toLocaleString()} HTK</span><span className="ca">{first ? "실손 우선 충당" : "치료비 준비 진단 활용"}</span></div>
       {first && P && (<>
         <div style={{ margin: "8px 0 4px", fontSize: 12, fontWeight: 700 }}>자동 적립 플랜 — 목표 {P.goalWon.toLocaleString()}원(첫 3개월 보험료) · 진행 {P.progress}%</div>
         <div style={{ height: 10, background: "#FDE8D8", borderRadius: 99, overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: P.progress + "%", background: "linear-gradient(90deg,#F97316,#FB923C)" }} /></div>
@@ -1280,7 +1280,7 @@ function InsLadderCard({ onTab }) {
     </div>);
 }
 
-/* ══════════ 맞춤보험 4서브섹션(과업B) — 내 지갑 자산의 다른 뷰 ══════════ */
+/* ══════════ 치료비 준비 진단 4서브섹션(과업B) — 내 지갑 자산의 다른 뷰 ══════════ */
 /* ① 건강검진대비보험 — 가입부터 청구까지 한 흐름 */
 function InsCheckupInsSection({ onEnroll }) {
   const [tick, setTick] = useState(0); void tick;
@@ -1438,7 +1438,7 @@ function InsRiskCard() {
         </div>))}
       {CM && CM.ok && CM.rows.filter((r) => r.gap > 0).slice(0, 2).map((r) => (
         <div className="costrow" key={r.code}><span className="cl">🧩 {r.ko} 보장 갭</span><span className="cv" style={{ color: "#B45309" }}>{r.gap.toLocaleString()}원 부족</span><span className="ca">보완 권장</span></div>))}
-      <button className="cbtn" style={{ marginTop: 6 }} onClick={() => setUw(insService.underwrite(m, "맞춤보험"))}><ShieldCheck size={14} /> 가입 심사 미리보기 (인수 시뮬레이션)</button>
+      <button className="cbtn" style={{ marginTop: 6 }} onClick={() => setUw(insService.underwrite(m, "치료비 준비 진단"))}><ShieldCheck size={14} /> 가입 심사 미리보기 (인수 시뮬레이션)</button>
       {uw && uw.ok && (
         <div style={{ background: "#F8FAFF", border: "1px solid #DBEAFE", borderRadius: 10, padding: "9px 12px", marginTop: 8, fontSize: 12.2, lineHeight: 1.65 }}>
           <b style={{ color: "#1D4ED8" }}>예상 결과: {uw.decision}</b><br />{uw.note}
@@ -1463,7 +1463,7 @@ function InsBillingTab() {
     <div className="card" style={{ textAlign: "center", padding: "30px 18px" }}>
       <Coins size={30} color="#94A3B8" style={{ marginBottom: 8 }} />
       <div style={{ fontSize: 15.5, fontWeight: 800 }}>납부할 계약이 아직 없어요</div>
-      <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 14px" }}>맞춤보험에서 간편가입(시연)을 완료하면 계약이 <b>내 지갑 원장</b>에 기록되고, 매달 청구서가 여기 생겨요 — 납부하면 토큰이 실제로 차감됩니다.</p>
+      <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "8px 0 14px" }}>치료비 준비 진단에서 간편가입(시연)을 완료하면 계약이 <b>내 지갑 원장</b>에 기록되고, 매달 청구서가 여기 생겨요 — 납부하면 토큰이 실제로 차감됩니다.</p>
     </div>);
   const due = S.unpaid[0];
   return (<>
@@ -1661,7 +1661,7 @@ function InsShareTab() {
 }
 
 function InsuranceSection({ onGo }) {
-  const [tab, setTab] = useState("custom");   // 과업A: 맞춤보험이 기본 랜딩 탭
+  const [tab, setTab] = useState("custom");   // 과업A: 치료비 준비 진단이 기본 랜딩 탭
   const [modal, setModal] = useState(null);
   const [enroll, setEnroll] = useState(false);
   const [cover, setCover] = useState(null);
@@ -1681,12 +1681,12 @@ function InsuranceSection({ onGo }) {
     let a = null; try { a = window.__hifinInsAsk; } catch (e) {}
     if (a) { setTabX(a.tab || "ai"); setAskSeed(a.q || null); try { window.__hifinInsAsk = null; } catch (e) {} }
   }, []);
-  /* 과업3 6탭 — 각 탭 = 내 지갑 자산의 다른 뷰(보장 자산·토큰 사용·순환의 몫). 과업A: 맞춤보험 최좌측(기본 랜딩) */
-  const tabs = [["custom", "맞춤보험", Sparkles], ["analysis", "보장분석", Search], ["billing", "보험료 납부", Coins], ["claimpay", "청구·지급", FileText], ["rerate", "요율 재산정", ShieldCheck], ["share", "치료비·나눔", HeartHandshake], ["region", "내 지역 상담", MapPin]];
+  /* 과업3 6탭 — 각 탭 = 내 지갑 자산의 다른 뷰(보장 자산·토큰 사용·순환의 몫). 과업A: 치료비 준비 진단 최좌측(기본 랜딩) */
+  const tabs = [["custom", "치료비 준비 진단", Sparkles], ["analysis", "보장분석", Search], ["billing", "보험료 납부", Coins], ["claimpay", "청구·지급", FileText], ["rerate", "요율 재산정", ShieldCheck], ["share", "치료비·나눔", HeartHandshake], ["region", "내 지역 상담", MapPin]];
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="insurance" /></span>
-        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>보험·치료비</div>
+        <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>치료비 케어</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강검진대비보험 · 가입 · 보장조회 · 청구 · AI상담 — 치료비 걱정 없는 임베디드 보험</div></div></div>
       {/* 2단계 P1(형 확정 A안) — 두 곡선의 상시 화면: 회원이 눌러 물을 때만 해설·계측(§0-P) */}
       {typeof NeedsCard === "function" && <NeedsCard />}
@@ -1799,7 +1799,7 @@ function InsuranceSection({ onGo }) {
         <AIPlannerChat initialAsk={askSeed} onSimple={() => { setTab("premium"); setTimeout(() => { const el = document.querySelector(".sbins"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 350); }} />
       </>)}
 
-      {/* 과업3 §4: 전용 「AI 보험·치료비 상담사」 슬롯 — 현 Phase는 보험 특화 대화(AIPlannerChat)로 연결, 차기 Phase에서 insService.ctx(tab) 컨텍스트를 받는 전용 상담사 본체 장착(정책: insService.policy) */}
+      {/* 과업3 §4: 전용 「AI 치료비 케어 상담사」 슬롯 — 현 Phase는 보험 특화 대화(AIPlannerChat)로 연결, 차기 Phase에서 insService.ctx(tab) 컨텍스트를 받는 전용 상담사 본체 장착(정책: insService.policy) */}
       {tab !== "ai" && (
         <button className="cbtn pri" style={{ position: "fixed", right: 20, bottom: 96, width: "auto", margin: 0, zIndex: 40, borderRadius: 99, padding: "12px 18px", boxShadow: "0 14px 32px -12px rgba(37,99,235,.7)" }}
           onClick={() => { try { window.__hifinInsCtx = insService.ctx(tab); } catch (e) {} setTab("ai"); }}>

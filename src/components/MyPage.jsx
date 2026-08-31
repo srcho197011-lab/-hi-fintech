@@ -233,7 +233,7 @@ function MyPageSection({ onGo }) {
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
         <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${((typeof lineageMember === "function") ? lineageMember(dm) : dm).biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
         <div className="pstats">
-          {[["12,480", "Health Token", "wallet"], ["3,744", "보험·치료비 적립금", "wallet"], ["6", "Health NFT", "nft"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
+          {[["12,480", "Health Token", "wallet"], ["3,744", "치료비 케어 적립금", "wallet"], ["6", "Health NFT", "nft"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
         </div>
       </div>
 
@@ -245,7 +245,7 @@ function MyPageSection({ onGo }) {
         const gaps = sol.findings.filter((f) => f.sev !== "good");
         const col = sol.grade === "충실" ? "#15803D" : sol.grade === "보통" ? "#B45309" : "#B91C1C";
         return (
-          <div className="myins" onClick={() => go("insurance")} title="보험·치료비에서 보장 설계">
+          <div className="myins" onClick={() => go("insurance")} title="치료비 케어에서 보장 설계">
             <div className="myins-l"><ShieldCheck size={16} color="#2563EB" /><div><b>내 보험 보장 현황</b><span>실손 {sol.ins.silson.gen} · 진단비 {sol.ins.riders.length ? sol.ins.riders.map((r) => r.cat).join("·") : "미보유"}</span></div></div>
             <div className="myins-r"><span className="myins-grade" style={{ color: col }}>충실도 {sol.grade} {sol.score}점</span><span className="myins-gap">{gaps.length ? "공백 " + gaps.length + "건" : "공백 없음"}</span><ChevronRight size={15} color="#8A97AE" /></div>
           </div>

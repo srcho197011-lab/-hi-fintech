@@ -229,7 +229,7 @@ function FinanceLive() {
             <div className="finpl-r sub"><span>Ⅰ. 유동부채</span><b>{finWon(bs.curLiab)}원</b></div>
             <div className="finpl-r"><span>　계약부채(토큰적립금)</span><b>{finWon(bs.contractLiab)}원</b></div>
             {(() => { const r = (typeof HTK_INS_RATE !== "undefined") ? HTK_INS_RATE : 0.30; const ins = Math.round(bs.contractLiab * r); return (<>
-              <div className="finpl-r"><span style={{ color: "#2563EB", paddingLeft: 12 }}>└ 보험·치료비 적립금(30% 우선)</span><b style={{ color: "#2563EB" }}>{finWon(ins)}원</b></div>
+              <div className="finpl-r"><span style={{ color: "#2563EB", paddingLeft: 12 }}>└ 치료비 케어 적립금(30% 우선)</span><b style={{ color: "#2563EB" }}>{finWon(ins)}원</b></div>
               <div className="finpl-r"><span style={{ color: "#94A3B8", paddingLeft: 12 }}>└ 일반 토큰적립금(70%)</span><b style={{ color: "#94A3B8" }}>{finWon(bs.contractLiab - ins)}원</b></div>
             </>); })()}
             <div className="finpl-r"><span>　미지급기부금(나눔)</span><b>{finWon(bs.donationPay)}원</b></div>
@@ -383,7 +383,7 @@ function FinanceLive() {
             <div className="finpl-r sub"><span>Ⅰ. 유동부채</span><b>{finWon(an.curLiab)}원</b></div>
             <div className="finpl-r"><span>　계약부채(토큰적립금)</span><b>{finWon(an.contractLiab)}원</b></div>
             {(() => { const rt = (typeof HTK_INS_RATE !== "undefined") ? HTK_INS_RATE : 0.30; const ins = Math.round(an.contractLiab * rt); return (<>
-              <div className="finpl-r subitem tok"><span>└ 보험·치료비 적립금({(rt * 100).toFixed(0)}% 우선)</span><b>{finWon(ins)}원</b></div>
+              <div className="finpl-r subitem tok"><span>└ 치료비 케어 적립금({(rt * 100).toFixed(0)}% 우선)</span><b>{finWon(ins)}원</b></div>
               <div className="finpl-r subitem tok"><span>└ 일반 토큰적립금({(100 - rt * 100).toFixed(0)}%)</span><b>{finWon(an.contractLiab - ins)}원</b></div>
             </>); })()}
             <div className="finpl-r subitem don"><span>　미지급기부금(치료비 나눔)</span><b>{finWon(an.donationPay)}원</b></div>

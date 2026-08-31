@@ -200,6 +200,13 @@ def extract_l4():
                         "owner": "qna", "admin": False, "desc": "Checkup.jsx exams", "aliases": aliases_of(name)})
     return out
 
+# ── 개칭 이력 별칭(§4-N 형 확정 2026-08-31) — 회원이 옛 이름으로 불러도 라우팅이 살아야 한다 ──
+LEGACY_ALIASES = {
+    "sec.insurance":          ["보험·치료비", "보험치료비", "보험 치료비"],
+    "tab.insurance.custom":   ["맞춤보험", "맞춤 보험"],
+    "tab.healthmate.7":       ["보장분석 대화", "보장분석대화"],
+}
+
 # ── 생성 ──
 def build():
     inv = extract_l1() + extract_l2() + extract_l3() + extract_l4()
@@ -207,6 +214,11 @@ def build():
     keys = [x["key"] for x in inv]
     dup = sorted({k for k in keys if keys.count(k) > 1})
     assert not dup, "key 중복: %s" % dup
+    # 개칭 이력 별칭 병합(구 명칭 인식 유지)
+    for x in inv:
+        extra = LEGACY_ALIASES.get(x["key"])
+        if extra:
+            x["aliases"] = sorted(set(x["aliases"]) | set(extra))
     # 고유명 리터럴 린트(§3-3) — 신규 산출물에 브랜드 리터럴 직접 등장 금지(라벨이 실제 화면명인 경우는 예외 대상 아님)
     return inv
 

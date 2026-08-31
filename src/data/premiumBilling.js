@@ -22,7 +22,7 @@ function pbPolicyCreate(m, o) {
   const pols = pbPolicies(m);
   const dup = pols.find((p) => p.product === o.product && p.status === "active");
   if (dup) return { ok: true, policy: dup, existed: true };
-  const pol = { id: o.policyNo || ("POL-" + Date.now().toString(36).toUpperCase()), product: o.product || "맞춤보험",
+  const pol = { id: o.policyNo || ("POL-" + Date.now().toString(36).toUpperCase()), product: o.product || "치료비 준비 진단",
     monthly: Math.max(0, Math.floor(o.monthly || 0)), cover: o.cover || null, term: o.term || "1년(자동갱신)", pay: o.pay || "wallet",
     start: _pbYm(), status: "active", createdAt: Date.now() };
   pols.push(pol); _pbSavePolicies(m, pols);

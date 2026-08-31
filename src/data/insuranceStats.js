@@ -205,7 +205,7 @@ function insuranceSolution(m) {
   return { ins, findings: F, score, grade, critNeed, silsonMonthly: ins.silson.monthly };
 }
 
-/* ═══════════ 융합 분석 API — 보험·치료비 AI 솔루션 & AIPlannerChat Tool Calling ═══════════
+/* ═══════════ 융합 분석 API — 치료비 케어 AI 솔루션 & AIPlannerChat Tool Calling ═══════════
    5단계(보험 솔루션) 로직을 함수화하여 데이터하우스·보험 AI분석·채팅 상담이 공용 호출.
    ⚠️ 모든 수치는 시연용 예시 기준 — 실제 조건은 약관 확인. */
 

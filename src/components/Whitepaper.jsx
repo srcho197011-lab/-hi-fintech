@@ -273,7 +273,7 @@ function WpChangeLog({ onGoChapter, onGoRefs }) {
             <input value={f.feat} onChange={(e) => setF({ ...f, feat: e.target.value })} placeholder="플랫폼 기능 (예: 청구지원 워크플로)" style={inS} />
             <input value={f.ch} onChange={(e) => setF({ ...f, ch: e.target.value })} placeholder="챕터 (예: 15)" style={inS} />
           </div>
-          <input value={f.src} onChange={(e) => setF({ ...f, src: e.target.value })} placeholder="위치 (예: 보험·치료비 › 보험금청구)" style={inS} />
+          <input value={f.src} onChange={(e) => setF({ ...f, src: e.target.value })} placeholder="위치 (예: 치료비 케어 › 보험금청구)" style={inS} />
           <input value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} placeholder="반영 내용 요약" style={inS} />
           <div style={{ display: "flex", justifyContent: "flex-end" }}><button onClick={addEntry} style={{ ...btnS(true), padding: "8px 16px" }}>기록</button></div>
         </div>}

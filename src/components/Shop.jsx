@@ -802,7 +802,7 @@ function ShopCartBar({ products }) {
   const totalCnt = cartItems.reduce((s, x) => s + x.qty, 0);
   const totalPrice = cartItems.reduce((s, x) => s + x.p.price * x.qty, 0);
   /* ── 전환 설계 ③: 적립금 즉시 차감 — '적립'은 미래고 '할인'은 현재다 ──
-     보험·치료비 전용 우선적립분(30%)은 결제에 쓰지 않고, 일반 적립분(70%)만 쇼핑 결제에 사용한다(사업계획서 적립 규칙 유지). */
+     치료비 케어 전용 우선적립분(30%)은 결제에 쓰지 않고, 일반 적립분(70%)만 쇼핑 결제에 사용한다(사업계획서 적립 규칙 유지). */
   const HTK_RATE = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
   const balHtk = (() => { try { const b = (dm && typeof tlSync === "function") ? tlSync(dm) : null; if (b != null) return b; return (typeof shopHtkPts === "function") ? shopHtkPts(dmEmail) : 0; } catch (e) { return 0; } })();
   const usableWon = Math.max(0, Math.floor(balHtk * 0.7) * HTK_RATE);          // 쇼핑 사용 가능액(원)
@@ -855,7 +855,7 @@ function ShopCartBar({ products }) {
                     ))}
                     <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 13px", fontSize: 11.5, background: appliedWon === maxUseWon && maxUseWon > 0 ? "#B45309" : undefined, color: appliedWon === maxUseWon && maxUseWon > 0 ? "#fff" : undefined }} onClick={() => setUseWon(maxUseWon)}>전액 {shopWon(maxUseWon)}</button>
                   </div>
-                  <div className="chnote" style={{ marginTop: 7 }}>보험·치료비 전용 우선적립분(30%)은 결제에 사용되지 않고 그대로 보존돼요 · 적립금으로 결제한 금액에는 중복 적립되지 않아요.</div>
+                  <div className="chnote" style={{ marginTop: 7 }}>치료비 케어 전용 우선적립분(30%)은 결제에 사용되지 않고 그대로 보존돼요 · 적립금으로 결제한 금액에는 중복 적립되지 않아요.</div>
                 </div>
               )}
               <div className="csum">
@@ -1684,4 +1684,4 @@ function ShopSection({ onGo }) {
 }
 
 /* ====================== HOME ====================== */
-/* ====================== 보험·치료비 ====================== */
+/* ====================== 치료비 케어 ====================== */

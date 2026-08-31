@@ -36,7 +36,7 @@ const I18N = {
   "nav.checkup.s":    { ko: "예약·결과조회·검진보험", en: "Booking · Results · Checkup insurance" },
   "nav.care":         { ko: "검진 후 케어", en: "Post-Checkup Care" },
   "nav.care.s":       { ko: "주치의·건강현황·병원진료·재가돌봄·건강쇼핑", en: "Doctor · Status · Hospital · Home care · Shopping" },
-  "nav.insurance":    { ko: "보험·치료비", en: "Insurance · Medical Costs" },
+  "nav.insurance":    { ko: "치료비 케어", en: "Insurance · Medical Costs" },
   "nav.insurance.s":  { ko: "조회·가입·청구·치료비", en: "Review · Enroll · Claim · Costs" },
   "nav.mywallet":     { ko: "나의 건강지갑", en: "My Health Wallet" },
   "nav.mywallet.s":   { ko: "금융지갑·Health NFT·우리가족건강관리", en: "Wallet · Health NFT · Family care" },

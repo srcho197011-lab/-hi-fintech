@@ -131,7 +131,7 @@ function underwrite(m, productKo) {
     note = "유병 이력이 있어도 현재 지표가 관리되고 있어요 — 일괄 할증 대신 관리자 요율(할인 방향)로 산출돼요. ※ 실제 적용은 제휴 보험사 계리 검증 전제.";
   } else if (top && top.prob >= 40) { decision = "할증 예상"; note = "일부 지표 이상으로 표준체 대비 할증이 예상돼요 — 지표가 개선되면 재산정으로 내릴 수 있어요."; }
   else { decision = "표준체 예상"; note = "현재 건강상태 기준 표준체 인수가 예상돼요."; }
-  return { ok: true, product: productKo || "맞춤보험", decision, note, conditions, disclosures: disclosures.slice(0, 5),
+  return { ok: true, product: productKo || "치료비 준비 진단", decision, note, conditions, disclosures: disclosures.slice(0, 5),
     ga: "실제 청약·인수는 GA 라이선스 채널(글로벌예방금융㈜·GA코리아)과 보험사 심사로 확정돼요 — 여기서는 시뮬레이션이에요." };
 }
 /* ── 보장 사다리 자동 플랜(M3 고도화) — 월 적립 목표·진행률·달성 예상일 ── */
@@ -150,5 +150,5 @@ function ladderPlan(m) {
   const remainHtk = Math.max(0, goalHtk - reserve);
   const etaMonths = monthlyEarn > 0 ? Math.ceil(remainHtk / monthlyEarn) : null;
   return { monthly, goalWon, goalHtk, reserve, progress, monthlyEarn, etaMonths,
-    note: progress >= 100 ? "목표 적립 달성 — 실손 가입(GA 채널)을 진행하고, 다음 사다리(맞춤보험 적립)로 넘어가요!" : `실손 첫 3개월 보험료(${goalWon.toLocaleString()}원)를 목표로 적립 중 — ${etaMonths != null ? `이 속도면 약 ${etaMonths}개월 후 달성 예상` : "적립 활동을 시작하면 달성 예상일을 보여드려요"}.` };
+    note: progress >= 100 ? "목표 적립 달성 — 실손 가입(GA 채널)을 진행하고, 다음 사다리(치료비 준비 진단 적립)로 넘어가요!" : `실손 첫 3개월 보험료(${goalWon.toLocaleString()}원)를 목표로 적립 중 — ${etaMonths != null ? `이 속도면 약 ${etaMonths}개월 후 달성 예상` : "적립 활동을 시작하면 달성 예상일을 보여드려요"}.` };
 }

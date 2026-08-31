@@ -284,7 +284,7 @@ function FamilyCareSection({ member, onGo }) {
               <div className="fitbl">{fam.rows.map((r, i) => (
                 <div className="firow" key={i}><span className="firn">{r.name}<small>{r.rel}</small></span><span className="firg">{r.gen}</span><span className={"firgr " + (r.grade === "충실" ? "g1" : r.grade === "보통" ? "g2" : "g3")}>{r.grade}</span><span className="firgap">{r.topGap}</span></div>
               ))}</div>
-              <div className="finote">{gaps.length ? `가족 ${gaps.length}명에게 보장 공백이 있어요. 보험·치료비에서 함께 설계할 수 있어요.` : "가족 보장이 대체로 충실합니다."} <button className="filink" onClick={() => go("insurance")}>보험·치료비 <ChevronRight size={12} /></button></div>
+              <div className="finote">{gaps.length ? `가족 ${gaps.length}명에게 보장 공백이 있어요. 치료비 케어에서 함께 설계할 수 있어요.` : "가족 보장이 대체로 충실합니다."} <button className="filink" onClick={() => go("insurance")}>치료비 케어 <ChevronRight size={12} /></button></div>
             </>) : (<div className="finone">{fam.note} <button className="filink" onClick={() => go("insurance")}>내 보험 분석 <ChevronRight size={12} /></button></div>)}
             <div className="fiwarn">※ 예시 기준 융합 분석 · 실제 보장·가입은 약관·인수심사에 따르며 가족 데이터는 동의 범위에서만 사용됩니다.</div>
           </div>

@@ -79,7 +79,7 @@ function SocLiveCounter({ base }) {
         </div>
       ))}
     </div>
-    <div className="chnote" style={{ marginTop: 8 }}>위 카운터는 <b>재무 모델 추정(시연 연출)</b>이에요. 내 행동으로 실제 쌓인 <b>나눔 재원 실적립 원장</b>은 {sp && sp.count ? <b style={{ color: "#E11D48" }}>{sp.balance.toLocaleString()}원 · {sp.count}건</b> : "아직 0건"} — 보험·치료비 › 치료비·나눔 탭에서 건별로 확인·검증할 수 있어요.</div>
+    <div className="chnote" style={{ marginTop: 8 }}>위 카운터는 <b>재무 모델 추정(시연 연출)</b>이에요. 내 행동으로 실제 쌓인 <b>나눔 재원 실적립 원장</b>은 {sp && sp.count ? <b style={{ color: "#E11D48" }}>{sp.balance.toLocaleString()}원 · {sp.count}건</b> : "아직 0건"} — 치료비 케어 › 치료비·나눔 탭에서 건별로 확인·검증할 수 있어요.</div>
   </>);
 }
 

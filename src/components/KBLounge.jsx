@@ -11,7 +11,7 @@ const KB_DOMAINS = [
   { id: "checkup", name: "건강검진", ic: "Stethoscope", c: "#0EA5E9", count: 2140, subs: ["국가·암·특수검진", "항목별 정상범위", "수치별 위험구간", "재검·진료연계 기준"] },
   { id: "disease", name: "질환", ic: "HeartPulse", c: "#E11D48", count: 4760, subs: ["원인·위험요인·증상", "진단·검사 기준", "예방·생활·식이관리", "합병증·응급 기준"] },
   { id: "behavior", name: "건강행동", ic: "Activity", c: "#16A34A", count: 1980, subs: ["운동·식습관·수면", "금연·절주·체중", "복약·정기검진", "행동변화·리워드 효과"] },
-  { id: "insurance", name: "보험·치료비", ic: "ShieldCheck", c: "#2563EB", count: 1520, subs: ["질병/상해/실손·임베디드", "지급조건·면책·한도", "청구절차·자기부담", "치료비 지원제도"] },
+  { id: "insurance", name: "치료비 케어", ic: "ShieldCheck", c: "#2563EB", count: 1520, subs: ["질병/상해/실손·임베디드", "지급조건·면책·한도", "청구절차·자기부담", "치료비 지원제도"] },
   { id: "commerce", name: "건강소비·자산", ic: "Coins", c: "#F59E0B", count: 1180, subs: ["영양제·식단·웰니스", "적립률·환급률·리워드", "건강자산 사용처", "보험료·기부 연계"] },
   { id: "legal", name: "법률·제도", ic: "Scale", c: "#A78BFA", count: 1260, subs: ["의료법·보험업법", "개인정보·신용정보법", "전자금융·가상자산", "마이데이터·규제샌드박스"] },
 ];
@@ -19,7 +19,7 @@ const KB_ENTRIES = [
   ["공복혈당 100~125mg/dL — 당뇨 전단계 관리 기준", "건강검진", "대한당뇨병학회", "2025-11", "A", "최신", "승인"],
   ["고혈압 진단 및 생활요법(DASH) 가이드", "질환", "대한고혈압학회", "2025-09", "A", "최신", "승인"],
   ["국가암검진 6대 암 대상·주기(2026)", "건강검진", "국립암센터", "2026-01", "A", "최신", "승인"],
-  ["상해보험 후유장해 지급률·판정(180일) 해설", "보험·치료비", "보험 약관(학습)", "2026-01", "B", "최신", "검토중"],
+  ["상해보험 후유장해 지급률·판정(180일) 해설", "치료비 케어", "보험 약관(학습)", "2026-01", "B", "최신", "검토중"],
   ["오메가3 EPA·DHA 혈중 중성지방 기능성", "건강소비·자산", "식약처 기능성 인정", "2025-07", "B", "검토요", "승인"],
   ["개인정보보호법 민감정보(건강정보) 처리 요건", "법률·제도", "국가법령정보센터", "2025-10", "A", "최신", "승인"],
   ["대사증후군 5대 진단기준·관리", "질환", "질병관리청", "2025-06", "A", "검토요", "대기"],
@@ -105,7 +105,7 @@ function AIKBLounge({ onGo }) {
   const INS = (typeof KB_INSURANCE !== "undefined") ? KB_INSURANCE : [];
   const LAW = (typeof KB_LEGAL !== "undefined") ? KB_LEGAL : [];
   const CHK_META = (typeof KB_CHECKUP_META !== "undefined") ? KB_CHECKUP_META : { count: CHK.length };
-  const DOMS = [["checkup", "건강검진", CHK, "국가건강검진·5개 학회 기준 · 검토완료"], ["disease", "질환", DIS, "질병관리청·전문학회 진료지침 · 검토완료"], ["insurance", "보험·치료비", INS, "상해보험 약관·금융위 · 학습·검토"], ["legal", "법률·제도", LAW, "국가법령정보센터 · 규제 검토용"]];
+  const DOMS = [["checkup", "건강검진", CHK, "국가건강검진·5개 학회 기준 · 검토완료"], ["disease", "질환", DIS, "질병관리청·전문학회 진료지침 · 검토완료"], ["insurance", "치료비 케어", INS, "상해보험 약관·금융위 · 학습·검토"], ["legal", "법률·제도", LAW, "국가법령정보센터 · 규제 검토용"]];
   const activeDom = DOMS.find((d) => d[0] === dom) || DOMS[0];
   const _txt = (r) => Object.values(r).map((v) => Array.isArray(v) ? v.join(" ") : v).join(" ").toLowerCase();
   const domRows = q.trim() ? activeDom[2].filter((r) => _txt(r).includes(q.trim().toLowerCase())) : activeDom[2];
@@ -140,7 +140,7 @@ function AIKBLounge({ onGo }) {
         ); })}</div>
         <div className="kbchain">
           <div className="kbct" style={{ marginBottom: 8 }}><Network size={13} /> 지식 연결(온톨로지) — 검진 이상수치 → 질환 → 행동 → 보험·자산 → 사후관리</div>
-          <div className="kbchain-flow">{["공복혈당 상승", "당뇨 전단계", "비만·운동부족·식습관", "식단·운동 권고", "3개월 후 재검사", "필요시 내과 진료", "건강미션 생성", "건강행동 이행", "건강자산 적립", "보험·치료비 지원 확인"].map((s, i, a) => <React.Fragment key={i}><span className="kbchain-n">{s}</span>{i < a.length - 1 && <ChevronRight size={14} className="kbchain-a" />}</React.Fragment>)}</div>
+          <div className="kbchain-flow">{["공복혈당 상승", "당뇨 전단계", "비만·운동부족·식습관", "식단·운동 권고", "3개월 후 재검사", "필요시 내과 진료", "건강미션 생성", "건강행동 이행", "건강자산 적립", "치료비 케어 지원 확인"].map((s, i, a) => <React.Fragment key={i}><span className="kbchain-n">{s}</span>{i < a.length - 1 && <ChevronRight size={14} className="kbchain-a" />}</React.Fragment>)}</div>
         </div>
       </>}
 

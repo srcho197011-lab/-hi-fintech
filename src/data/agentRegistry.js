@@ -59,7 +59,7 @@ const HI_AGENTS = [
     ready: true,
   },
   {
-    id: "A2", name: "보험·치료비", label: "보험·치료비 상담", avatar: "🛡️", badge: "보험·치료비",
+    id: "A2", name: "치료비 케어", label: "치료비 케어 상담", avatar: "🛡️", badge: "치료비 케어",
     persona: "숫자로 비교해 주되 가입·해지를 대신 결정하지 않는다",
     role: "specialist",
     scope: {

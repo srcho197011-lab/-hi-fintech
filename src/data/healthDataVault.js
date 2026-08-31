@@ -329,7 +329,7 @@ function seedSelfVault(member) {
     // ⑤ 거래 앵커 — 쇼핑 적립·HTK 크레딧 전환
     if (typeof txAnchor === "function") {
       txAnchor({ ttype: "tx", token, kind: "건강쇼핑 적립", amount: 1200, unit: "원", memo: "밀크씨슬 구매 리워드" });
-      txAnchor({ ttype: "swap", token, kind: "HTK 스왑", amount: 300, memo: "HTK → 보험·치료비 크레딧" });
+      txAnchor({ ttype: "swap", token, kind: "HTK 스왑", amount: 300, memo: "HTK → 치료비 케어 크레딧" });
     }
     // ⑥ 접근 이력 — "내 데이터를 누가 봤는가"를 회원이 전부 보는 화면의 시연 데이터
     vaultAccessLog(token, "AI 분석엔진", "정밀리포트 생성 조회(가명 토큰만 사용)");

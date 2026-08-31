@@ -1172,7 +1172,7 @@ function HealthMateSection({ onGo }) {
     [0, "⓪ 오늘의 지시서", Sparkles],
     [1, "① 회원 신호", Users], [2, "② 보험 배정·대기", ShieldCheck], [3, "③ 검진 후 터치", HeartPulse],
     [4, "④ 질병 예측", Activity], [5, "⑤ 건강 행동", ShoppingCart], [6, "⑥ 가족·재가", HeartHandshake],
-    [7, "⑦ 보장분석 대화", MessageSquare], [8, "⑧ 프로 제안함", Sparkles], [9, "⑨ 내 고객·실적", TrendingUp],
+    [7, "⑦ 치료비 보장 점검", MessageSquare], [8, "⑧ 프로 제안함", Sparkles], [9, "⑨ 내 고객·실적", TrendingUp],
     [10, "⑩ 통합 운영", Activity],
   ].filter(([n]) => n !== 10 || (typeof isAdminRole === "function" && isAdminRole()));   /* ⑩은 운영 본부 전용(§5-O) */
   return (
@@ -1180,7 +1180,7 @@ function HealthMateSection({ onGo }) {
       <div className="hmhero">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
           <div>
-            <div className="k">HEALTHMATE PRO CONSOLE</div>
+            <div className="k">HEALTHMATE PRO CONSOLE · 헬스케어 전문가(하이핀 프로)</div>
             <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>· 사번 {pro.sabun || "-"} · {pro.code} · {pro.branch || pro.dan}{pro.sgg ? " · " + pro.sgg : ""} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격" : " · 안내 전용"}{pro.hyundai ? " · 현대해상 위촉" : ""}</span></h2>
             <div style={{ fontSize: 12.3, fontWeight: 800, marginTop: 2 }}>담당 회원 {totalN.toLocaleString()}명 <span style={{ fontWeight: 600, opacity: .85 }}>(체험 {members.length} · 코호트 {(cview ? cview.n : 0).toLocaleString()}) — 관할: {(pro.coverage || []).slice(0, 5).join("·") || pro.dan}{(pro.coverage || []).length > 5 ? " 외 " + ((pro.coverage || []).length - 5) + "곳" : ""}{pro.gap ? " (겸임 포함)" : ""}</span></div>
             <div style={{ fontSize: 12, opacity: .92 }}>하이가 분석·선별·문안·타이밍을 만들고, 프로는 확인·접촉·기록합니다 — 동의의 범위가 곧 활동의 범위.</div>

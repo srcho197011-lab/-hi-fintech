@@ -1444,11 +1444,11 @@ const ACTION_NAV = { "🔬 추가 검진 예약": "checkup", "🏥 병원·진�
 /* Super Agent → 검진 화면 AI 주치의 핸드오프 씨앗(건강 질문을 넘겨받아 이어서 상담) */
 let _doctorSeed = null;
 const DOCTOR_HANDOFF = "🩺 검진 화면에서 이어 상담";
-/* 보험·보장 문의는 약관 학습 보험 AI 상담사(보험·치료비 › AI보험상담)로 연결 */
+/* 보험·보장 문의는 약관 학습 보험 AI 상담사(치료비 케어 › AI보험상담)로 연결 */
 const INS_HANDOFF = "🛡️ 보험 화면에서 이어서 봐드릴게요";
 function insHandoff() {
   return { bubbles: [
-    { kind: "text", text: "**제가 보험 내용도 이어서 봐드릴게요.** 보험·치료비 화면에서 지금 질문 그대로, 성래님 데이터 기준으로 자세히 분석해 드려요." },
+    { kind: "text", text: "**제가 보험 내용도 이어서 봐드릴게요.** 치료비 케어 화면에서 지금 질문 그대로, 성래님 데이터 기준으로 자세히 분석해 드려요." },
     { kind: "card", card: { title: "🛡️ 하이의 보험 분석", items: ["질환·검진 위험과 연계한 보장 공백·본인부담·세대 전환 분석", "실손 세대·중대질환 진단비 안내(정보 제공)", "청약·가입은 정식 라이선스 채널(GA)로 안내"], buttons: [INS_HANDOFF] } },
   ], quicks: [INS_HANDOFF, "내 리포트 요약"] };
 }

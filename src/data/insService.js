@@ -1,6 +1,6 @@
-/* ══════════════ 과업3 — insService: 보험·치료비 서비스 API층 (화면 = AI 상담사 단일 출처) ══════════════
+/* ══════════════ 과업3 — insService: 치료비 케어 서비스 API층 (화면 = AI 상담사 단일 출처) ══════════════
    Phase 1 실행 지시서 §4. 모든 탭 기능을 화면 전용 함수가 아니라 서비스 함수로 구현 —
-   화면(6탭)과 향후 「AI 보험·치료비 전용 상담사」가 같은 함수를 소비한다.
+   화면(6탭)과 향후 「AI 치료비 케어 전용 상담사」가 같은 함수를 소비한다.
    역할 분담: 전역 '하이' = 얕은 안내·네비 / 전용 상담사(차기 Phase) = 본 서비스로 깊은 업무 수행.
    규제 가드레일(상담사 상속용 정책 상수): INS_AI_POLICY — 정보 제공까지만·청약 권유/지급 확정/의료 진단 금지·모집은 GA 경유. */
 
@@ -54,7 +54,7 @@ const CLAIM_DENY = {
   NO_CONTRACT: { ko: "실손 계약 미확인", easy: "지급이 안 된 이유: 실손 보험 연결이 확인되지 않았어요", fix: "보장분석 탭에서 내 보험을 연결하면 다시 심사할 수 있어요" },
   DUP: { ko: "중복 청구", easy: "지급이 안 된 이유: 같은 진료 건으로 이미 지급받으셨어요", fix: "다른 진료 건이라면 이의신청으로 알려주세요" },
   LIMIT: { ko: "연간 한도 소진", easy: "지급이 안 된 이유: 올해 보장 한도를 모두 사용했어요", fix: "내년 갱신 후 한도가 초기화돼요 — 잔여 한도는 계산 내역에서 확인" },
-  NO_RIDER: { ko: "특약 미가입", easy: "지급이 안 된 이유: 이 항목(3대 비급여)은 별도 특약 가입이 필요해요", fix: "맞춤보험 탭에서 특약 보완을 검토해 보세요" },
+  NO_RIDER: { ko: "특약 미가입", easy: "지급이 안 된 이유: 이 항목(3대 비급여)은 별도 특약 가입이 필요해요", fix: "치료비 준비 진단 탭에서 특약 보완을 검토해 보세요" },
 };
 /* 연간 사용 한도 원장 — 급여/비급여 누적(청구 지급 시 차감) */
 function _limitUsed(m) { try { const y = new Date().getFullYear(); const o = JSON.parse(localStorage.getItem("hifin_claim_used_" + ((m && m.email) || "d")) || "{}"); return (o.year === y) ? o : { year: y, pay: 0, non: 0 }; } catch (e) { return { year: new Date().getFullYear(), pay: 0, non: 0 }; } }
@@ -70,7 +70,7 @@ function claimReview(m, claimId) {
   // ① 검진대비보험 정액 트랙(과업B) — 실손이 아닌 검진 연동 무상 보장(진단지원 정액·한도 미차감)
   if (/검진/.test(c.kind || "")) {
     const pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product));
-    if (!pol) return { ok: false, code: "NO_CONTRACT", deny: { ko: "검진대비보험 미발급", easy: "지급이 안 된 이유: 검진대비보험이 아직 발급되지 않았어요", fix: "맞춤보험 탭 ①에서 검진 연동 무상 발급을 먼저 받아 주세요" }, reason: "검진대비보험이 발급되어 있지 않아요" };
+    if (!pol) return { ok: false, code: "NO_CONTRACT", deny: { ko: "검진대비보험 미발급", easy: "지급이 안 된 이유: 검진대비보험이 아직 발급되지 않았어요", fix: "치료비 준비 진단 탭 ①에서 검진 연동 무상 발급을 먼저 받아 주세요" }, reason: "검진대비보험이 발급되어 있지 않아요" };
     if (Date.now() < pol.createdAt + 86400000) return { ok: false, code: "NO_CONTRACT", deny: { ko: "보장 개시 전", easy: "보장은 발급 다음날 0시부터 시작돼요", fix: "내일 다시 청구해 주세요" }, reason: "보장 개시 전이에요(익일 0시 개시)" };
     const fp0 = _claimFp(c);
     if (l.some((x) => x.id !== c.id && /지급/.test(x.status || "") && _claimFp(x) === fp0)) return { ok: false, code: "DUP", deny: CLAIM_DENY.DUP, reason: CLAIM_DENY.DUP.easy };
@@ -204,8 +204,8 @@ const insService = {
     const g = this.gap(m);
     const bal = (typeof tlSync === "function") ? (tlSync(m) != null ? tlSync(m) : 0) : ((typeof tlBalance === "function") ? tlBalance(m) : 0);   // 과업C: 제네시스 미생성 계정도 원장 동기화 후 잔액(빈 0 HTK 표시 버그 수정)
     const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(bal) : Math.floor(bal * 0.3);
-    if (g && g.silson) return { stage: "custom", silson: g.silson, reserve: insRes, note: "실손 보장이 확인됐어요 — 추가 적립 토큰은 예측 위험 기반 맞춤보험에 쓸 수 있어요." };
-    return { stage: "silson-first", reserve: insRes, note: "실손(기초 보장)이 아직 없어요 — 보험·치료비 적립금(" + insRes.toLocaleString() + " HTK)을 실손 가입·보험료에 우선 충당하는 것을 권해요.",
+    if (g && g.silson) return { stage: "custom", silson: g.silson, reserve: insRes, note: "실손 보장이 확인됐어요 — 추가 적립 토큰은 예측 위험 기반 치료비 준비 진단에 쓸 수 있어요." };
+    return { stage: "silson-first", reserve: insRes, note: "실손(기초 보장)이 아직 없어요 — 치료비 케어 적립금(" + insRes.toLocaleString() + " HTK)을 실손 가입·보험료에 우선 충당하는 것을 권해요.",
       legal: "※ 토큰의 보험료 충당은 보험업법 특별이익 제공 금지 규정 정합 검토 전제 · 가입은 GA 라이선스 채널 경유" };
   },
   /* ③ 납부 */
@@ -221,7 +221,7 @@ const insService = {
   claimSubmit(m, o) { return claimSubmit(m || _isMember(), o); },
   claimAppeal(m, id, reason) { return claimAppeal(m || _isMember(), id, reason); },
   claimLimits(m) { m = m || _isMember(); return _limitUsed(m); },
-  /* ═ 맞춤보험 4서브섹션(과업B) — 화면·상담사 공용 ═ */
+  /* ═ 치료비 준비 진단 4서브섹션(과업B) — 화면·상담사 공용 ═ */
   /* ①-1 검진대비보험 현황 — 검진 연동 발급·타임라인·청구 연결 */
   checkupIns(m) {
     m = m || _isMember(); if (!m) return null;

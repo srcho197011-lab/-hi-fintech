@@ -130,7 +130,7 @@ function HtkTokenLedger({ member, base }) {
   const H = (h, n) => (h || "").slice(0, n || 12) + "…";
   const doVerify = () => { const r = (typeof tlVerify === "function") ? tlVerify(member) : null; setVres(r); if (typeof toast === "function" && r) toast(r.ok ? `원장 검증 완료 — ${r.n}건 전건 무결 ✓` : `⚠️ 위변조 감지: ${r.reason}`); };
   const doTransfer = () => { const a = parseInt(tAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("전송할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkTransfer === "function") htkTransfer(member, to || "0x수신주소", a); setTAmt(""); setTo(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`온체인 전송 완료 · ${a.toLocaleString()} HTK`); };
-  const doSwap = () => { const a = parseInt(sAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("스왑할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkSwap === "function") htkSwap(member, "HTK", "보험·치료비 크레딧", a); setSAmt(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`스왑 완료 · ${a.toLocaleString()} HTK → 보험·치료비 크레딧`); };
+  const doSwap = () => { const a = parseInt(sAmt, 10) || 0; if (a < 1) { if (typeof toast === "function") toast("스왑할 HTK 수량을 입력하세요."); return; } if (a > bal) { if (typeof toast === "function") toast("잔액이 부족합니다."); return; } if (typeof htkSwap === "function") htkSwap(member, "HTK", "치료비 케어 크레딧", a); setSAmt(""); setTick((t) => t + 1); if (typeof toast === "function") toast(`스왑 완료 · ${a.toLocaleString()} HTK → 치료비 케어 크레딧`); };
   return (
     <div className="htk">
       <div className="htk-card">
@@ -145,7 +145,7 @@ function HtkTokenLedger({ member, base }) {
           <div className="htk-row"><input className="htk-in" value={tAmt} onChange={(e) => setTAmt(e.target.value.replace(/[^0-9]/g, ""))} placeholder="수량(HTK)" inputMode="numeric" /><button className="htk-btn" onClick={doTransfer}>전송</button></div>
         </div>
         <div className="htk-act">
-          <div className="htk-at"><RefreshCw size={14} color="#0891B2" /> 스왑 (HTK → 보험·치료비 크레딧)</div>
+          <div className="htk-at"><RefreshCw size={14} color="#0891B2" /> 스왑 (HTK → 치료비 케어 크레딧)</div>
           <div className="htk-row"><input className="htk-in" value={sAmt} onChange={(e) => setSAmt(e.target.value.replace(/[^0-9]/g, ""))} placeholder="수량(HTK)" inputMode="numeric" /><button className="htk-btn cyan" onClick={doSwap}>스왑</button></div>
           <div className="htk-hint">1 HTK → 1 크레딧 (보험료·의료비 결제 전용)</div>
         </div>
