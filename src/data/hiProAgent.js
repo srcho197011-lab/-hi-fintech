@@ -16,7 +16,7 @@ const HIPRO_CATS = [
   { cat: "cost",   ko: "치료비·보장 기초", pats: [/실손\s*([1-5]세대)?.*(자기\s*부담|보장|차이|뭐)/, /본인\s*부담.*(뭐|얼마|계산)/, /진단금.*(뭐|평균|얼마)/, /치료비.*(구조|어떻게|준비)/] },
   { cat: "script", ko: "대본 찾기", pats: [/(거절|보류|수락|가족|바쁘|두려|무서|보험\s*질문|비용\s*질문).*(대본|응대|뭐라|문안)/, /대본.*(찾|보여|알려)/, /쉬운말.*(대본|버전)/] },
   { cat: "system", ko: "시스템 사용법", pats: [/(결과|기록).*(어디|어떻게)\s*(남|해|기록)/, /어디서\s*(봐|해|확인)/, /(관제탑|통합\s*운영|백업|카탈로그|지시서).*(어디|어떻게|뭐)/, /화면.*(어디|찾)/] },
-  { cat: "role",   ko: "역할·케어 플랜", pats: [/([DL][1-8]|첫\s*통화|첫\s*상담).*(역할|뭘\s*해|뭘\s*제안|어떻게\s*해)/, /케어\s*플랜.*(뭐|어떻게|조합)/, /(도구|영양제|식단|기기).*(언제|어떤\s*회원)/] },
+  { cat: "role",   ko: "역할·케어 플랜", pats: [/([DL][1-8]|첫\s*통화|첫\s*상담).*(역할|뭘\s*해|뭘\s*제안|어떻게\s*해)/, /케어\s*플랜.*(뭐|어떻게|조합)/, /(도구|영양제|식단|기기).*(언제|어떤\s*회원)/, /골든\s*타임/, /(3종|삼종).*(뭐|안내|말|전해|설명)/, /케어\s*키트/] },
 ];
 /* 지표 별칭(프로 현장 표현 포함) — clinical·care 공용 */
 const HIPRO_LAB = { "혈압": "sbp", "수축기": "sbp", "이완기": "dbp", "공복혈당": "fbs", "혈당": "fbs", "당화혈색소": "hba1c",
@@ -251,6 +251,18 @@ function hiproAnswer(q, ctx) {
       if (key && HM_STAGE_GUIDE[key]) {
         const st = HM_STAGES.find((x) => x.k === key);
         return R("role:" + key, st.k + " 단계에서 프로의 역할 — " + HM_STAGE_GUIDE[key].doKo + (key === "D2" ? " 첫 통화의 목표는 회원이 그 주에 첫 관리 활동 1개를 시작하는 것 — 케어 플랜은 핵심 1개+보조 2개 조합으로 제안해요." : ""), ["HM_STAGE_GUIDE." + key, "P-1"]);
+      }
+      /* D2 골든타임·무료 3종·케어 키트(F4) — 원천: FREE3_DEF·HMR_GOLDEN_KEYS·HM_STAGE_GUIDE */
+      if (/골든\s*타임/.test(t)) {
+        const gk = (typeof HMR_GOLDEN_KEYS !== "undefined") ? HMR_GOLDEN_KEYS.map((g, ix) => (ix + 1) + " " + g.ko).join(" · ") : "";
+        return R("role:golden", "D2 첫 통화(골든타임)에서 전할 다섯 가지 — " + gk + ". 대본의 ⭐ 첫 연결 파트가 이 순서대로 준비돼 있고, 통화 후 「결과 남기기」의 전달 체크 5칸에 누르면 ⑩관제탑에 집계돼요.", ["HMR_GOLDEN_KEYS", "HM_STAGE_GUIDE.D2"]);
+      }
+      if (/3종|삼종/.test(t) && typeof FREE3_DEF !== "undefined") {
+        return R("role:free3", "무료 3종은 ① " + FREE3_DEF.items[0].long + " ② " + FREE3_DEF.items[1].long + " ③ " + FREE3_DEF.items[2].long + " — 셋 다 회원 부담 0원이에요. 회원에게는 대본의 fc-3svc 문장 그대로 전하면 돼요.", ["FREE3_DEF", "fc-3svc"]);
+      }
+      if (/케어\s*키트|키트/.test(t) && typeof FREE3_DEF !== "undefined") {
+        const kit = FREE3_DEF.items[2];
+        return R("role:kit", "맞춤 케어 키트 — " + (kit.parts || []).join(" · ") + ". 구성은 그 회원의 검진 결과가 정해요(혈압이면 가정용 혈압계, 혈당이면 혈당측정기 — MA_MAP 단일 소스). " + (kit.note || ""), ["FREE3_DEF.kit", "MA_MAP", "fc-kit"]);
       }
       if (/케어\s*플랜/.test(t)) return R("role:careplan", "케어 플랜은 핵심 1개+보조 2개 조합이에요 — 핵심은 등급이 정하고(고위험=진료 연결, 중위험=재검진), 보조는 식단·영양제·미션·기기 중 결과에 맞는 것. 조합은 하이가 계산해 카드에 담아드려요 — 즉석 조합은 금지예요.", ["interventionMap", "MA_MAP"]);
       if (/(영양제|식단|기기)/.test(t)) return R("role:tools", "도구는 검진 결과가 정해요 — 혈압이면 저염 식단·가정용 혈압계, 혈당이면 저당 식단·혈당측정기, 간이면 밀크시슬 같은 식으로 매핑돼 있어요(개연성 매핑 단일 소스). 카드의 「걸어온 길」에서 그 회원이 이미 하는 활동을 먼저 확인하세요.", ["MA_MAP"]);

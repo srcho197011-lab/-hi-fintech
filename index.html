@@ -19273,16 +19273,19 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
   const [branch, setBranch] = React.useState(null);
   const [follow, setFollow] = React.useState(null);
   const [memo, setMemo] = React.useState("");
+  const [golden, setGolden] = React.useState([]);   /* D2 골든타임 전달 체크(F3) — 5칸 선택지 */
   const today = new Date();
   const day = (n) => new Date(today.getTime() + n * 86400000).toISOString().slice(0, 10);
   const FOLLOWS = [["내일", day(1)], ["다음 주", day(7)], ["2주 뒤", day(14)], ["필요 없어요", null]];
   /* 응대 칩 부연 제목 — 이 카드 대본의 실제 응대 이름(형 지시 2026-08-30: 번호만으론 알 수 없다) */
   const branches = (card.script && card.script.branches) || [];
   const brKo = (b2) => String(b2.ko || "").split("(")[0].split("—")[0].split("·")[0].trim() || "응대";
+  const isD2 = card.member.stage === "D2" && card.script && (card.script.firstconnect || []).length > 0;
+  const gToggle = (k) => setGolden((g) => g.indexOf(k) >= 0 ? g.filter((x) => x !== k) : g.concat(k));
   const save = () => {
     if (!result) return;
     const r = hmrRecord(code, { i: card.member.cohortIndex, result: result, branch: branch, grade: card.grade,
-      followUp: follow, memo: memo.trim(), date: today.toISOString().slice(0, 10) });
+      followUp: follow, memo: memo.trim(), golden: isD2 ? golden : undefined, date: today.toISOString().slice(0, 10) });
     onSaved(r);
   };
   return (<div style={{ position: "fixed", inset: 0, zIndex: 1400, background: "rgba(11,34,57,.45)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
@@ -19311,6 +19314,17 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
         <b style={{ fontSize: 11.6, color: "#475569", width: 118 }}>다시 연락할 날</b>
         {FOLLOWS.map(([ko, d]) => <span key={ko} onClick={() => setFollow(d)} className="hmpill" style={{ cursor: "pointer", border: follow === d ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: follow === d ? "#FFF4E8" : "#fff", color: d == null && follow === null ? "#94A3B8" : (follow === d ? "#C2410C" : "#334155") }}>{ko}</span>)}
       </div>
+      {isD2 && (<div style={{ marginTop: 9, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "8px 11px" }}>
+        <b style={{ fontSize: 11.6, color: "#92400E" }}>⭐ 골든타임 전달 체크 — 오늘 통화에서 말한 것만 눌러주세요</b>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 6 }}>
+          {(typeof HMR_GOLDEN_KEYS !== "undefined" ? HMR_GOLDEN_KEYS : []).map((g) => (
+            <span key={g.k} onClick={() => gToggle(g.k)} className="hmpill" style={{ cursor: "pointer",
+              border: golden.indexOf(g.k) >= 0 ? "1.5px solid #D97706" : "1px solid #E2C97E",
+              background: golden.indexOf(g.k) >= 0 ? "#FDE68A" : "#fff", color: golden.indexOf(g.k) >= 0 ? "#92400E" : "#78716C" }}>
+              {golden.indexOf(g.k) >= 0 ? "✓ " : ""}{g.ko}</span>))}
+        </div>
+        <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>체크는 ⑩ 관제탑 「골든타임 전달률」에 집계돼요 — 5칸 다 전하는 게 목표예요.</div>
+      </div>)}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
         <b style={{ fontSize: 11.6, color: "#475569", width: 118, flex: "none" }}>간단 메모</b>
         <input value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={120} placeholder="필요할 때만 한 줄 — 예: 다음엔 오후에 통화 원하심"
@@ -19346,6 +19360,7 @@ function HmHandoffCard({ ent, code, onToast }) {
           {c.member.mask} <span style={{ color: HM_C.mut, fontWeight: 600, fontSize: 12 }}>· {c.member.ageBand} {c.member.sex} · {c.member.region}</span>
           <span className="hmpill" style={{ marginLeft: 6, background: g.bg, color: g.c }}>{g.ko}</span>
           <span className="hmpill" style={{ marginLeft: 4, background: "#F1F5F9", color: "#475569" }}>{c.member.stage} 단계</span>
+          {(c.script.firstconnect || []).length > 0 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDE68A", color: "#92400E", fontWeight: 900 }}>⭐ 첫 연결 골든타임</span>}
           {c.member.stalledDays >= 14 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDECEC", color: "#B91C1C" }}>정체 {c.member.stalledDays}일</span>}
         </div>
         <HmStageDots reached={(typeof cohortStageOf === "function" && cohortStageOf(c.member.cohortIndex) || { reached: [c.member.stage] }).reached} />
@@ -19629,6 +19644,30 @@ function HmTabOps() {
             </div>
             <div style={{ fontSize: 10.4, color: HM_C.mut, marginTop: 4 }}>완결·거절(30일)·연락처 오류는 내일 명단에서 자동 제외 · 후속일이 온 회원은 맨 위로.</div>
           </div>) : (<div style={{ fontSize: 11.6, color: HM_C.mut }}>아직 기록된 결과가 없어요 — ⓪ 오늘의 지시서에서 통화 후 「결과 남기기」를 누르면 여기 쌓여요. 기록이 내일의 명단을 바꿉니다.</div>)}
+          {/* ── ⭐ D2 골든타임(F3) — 전달률(실기록)·키트 교차(memberActivity 파생 — 가공 아님) ── */}
+          {(() => {
+            const gd = rs && rs.golden ? rs.golden : { rows: 0, full: 0, keys: [] };
+            let kitY = { n: 0, act: 0 }, kitN = { n: 0, act: 0 };
+            try {
+              for (let i2 = 1; i2 <= 6000; i2 += 9) {
+                const st = cohortStageOf(i2); if (!st || ["D1"].indexOf(st.cur) >= 0) continue;
+                const ma = memberActivity(i2); if (!ma) continue;
+                const hasDev = (ma.commerce || []).some((x) => x.kind === "device");
+                const acts = (ma.visits || []).length + (ma.commerce || []).length;
+                if (hasDev) { kitY.n++; kitY.act += acts; } else { kitN.n++; kitN.act += acts; }
+              }
+            } catch (e) {}
+            const avg = (o) => o.n ? (o.act / o.n).toFixed(1) : "-";
+            return (<div style={{ marginTop: 9, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 9, padding: "7px 10px" }}>
+              <div style={{ fontSize: 11.4, fontWeight: 900, color: "#92400E" }}>⭐ D2 골든타임 — 첫 통화에서 다 전했나</div>
+              <div style={{ fontSize: 11.4, color: "#78350F", lineHeight: 1.75, marginTop: 3 }}>
+                전달 체크 기록 {gd.rows}건 · 5칸 완주 {gd.full}건{gd.rows ? " (" + Math.round(gd.full / gd.rows * 100) + "%)" : ""}
+                {gd.rows > 0 && <span> · 항목별: {gd.keys.map((k) => k.ko.split("·")[0].trim() + " " + k.n).join(" / ")}</span>}
+                {gd.rows === 0 && <span> — D2 카드의 「결과 남기기」에서 ⭐ 체크 5칸을 누르면 여기 집계돼요.</span>}<br />
+                🧰 키트 효과(관측): 기기 사용 회원 평균 활동 <b>{avg(kitY)}건</b>({kitY.n.toLocaleString()}명) vs 미사용 <b>{avg(kitN)}건</b>({kitN.n.toLocaleString()}명) — 검진 결과 파생 시연 데이터, 실물 배송 런칭 시 kit_delivered·kit_engaged 실기록으로 대체.
+              </div>
+            </div>);
+          })()}
         </div>);
       })()}
     </div>
@@ -26210,7 +26249,7 @@ const HIPRO_CATS = [
   { cat: "cost",   ko: "치료비·보장 기초", pats: [/실손\s*([1-5]세대)?.*(자기\s*부담|보장|차이|뭐)/, /본인\s*부담.*(뭐|얼마|계산)/, /진단금.*(뭐|평균|얼마)/, /치료비.*(구조|어떻게|준비)/] },
   { cat: "script", ko: "대본 찾기", pats: [/(거절|보류|수락|가족|바쁘|두려|무서|보험\s*질문|비용\s*질문).*(대본|응대|뭐라|문안)/, /대본.*(찾|보여|알려)/, /쉬운말.*(대본|버전)/] },
   { cat: "system", ko: "시스템 사용법", pats: [/(결과|기록).*(어디|어떻게)\s*(남|해|기록)/, /어디서\s*(봐|해|확인)/, /(관제탑|통합\s*운영|백업|카탈로그|지시서).*(어디|어떻게|뭐)/, /화면.*(어디|찾)/] },
-  { cat: "role",   ko: "역할·케어 플랜", pats: [/([DL][1-8]|첫\s*통화|첫\s*상담).*(역할|뭘\s*해|뭘\s*제안|어떻게\s*해)/, /케어\s*플랜.*(뭐|어떻게|조합)/, /(도구|영양제|식단|기기).*(언제|어떤\s*회원)/] },
+  { cat: "role",   ko: "역할·케어 플랜", pats: [/([DL][1-8]|첫\s*통화|첫\s*상담).*(역할|뭘\s*해|뭘\s*제안|어떻게\s*해)/, /케어\s*플랜.*(뭐|어떻게|조합)/, /(도구|영양제|식단|기기).*(언제|어떤\s*회원)/, /골든\s*타임/, /(3종|삼종).*(뭐|안내|말|전해|설명)/, /케어\s*키트/] },
 ];
 /* 지표 별칭(프로 현장 표현 포함) — clinical·care 공용 */
 const HIPRO_LAB = { "혈압": "sbp", "수축기": "sbp", "이완기": "dbp", "공복혈당": "fbs", "혈당": "fbs", "당화혈색소": "hba1c",
@@ -26446,6 +26485,18 @@ function hiproAnswer(q, ctx) {
         const st = HM_STAGES.find((x) => x.k === key);
         return R("role:" + key, st.k + " 단계에서 프로의 역할 — " + HM_STAGE_GUIDE[key].doKo + (key === "D2" ? " 첫 통화의 목표는 회원이 그 주에 첫 관리 활동 1개를 시작하는 것 — 케어 플랜은 핵심 1개+보조 2개 조합으로 제안해요." : ""), ["HM_STAGE_GUIDE." + key, "P-1"]);
       }
+      /* D2 골든타임·무료 3종·케어 키트(F4) — 원천: FREE3_DEF·HMR_GOLDEN_KEYS·HM_STAGE_GUIDE */
+      if (/골든\s*타임/.test(t)) {
+        const gk = (typeof HMR_GOLDEN_KEYS !== "undefined") ? HMR_GOLDEN_KEYS.map((g, ix) => (ix + 1) + " " + g.ko).join(" · ") : "";
+        return R("role:golden", "D2 첫 통화(골든타임)에서 전할 다섯 가지 — " + gk + ". 대본의 ⭐ 첫 연결 파트가 이 순서대로 준비돼 있고, 통화 후 「결과 남기기」의 전달 체크 5칸에 누르면 ⑩관제탑에 집계돼요.", ["HMR_GOLDEN_KEYS", "HM_STAGE_GUIDE.D2"]);
+      }
+      if (/3종|삼종/.test(t) && typeof FREE3_DEF !== "undefined") {
+        return R("role:free3", "무료 3종은 ① " + FREE3_DEF.items[0].long + " ② " + FREE3_DEF.items[1].long + " ③ " + FREE3_DEF.items[2].long + " — 셋 다 회원 부담 0원이에요. 회원에게는 대본의 fc-3svc 문장 그대로 전하면 돼요.", ["FREE3_DEF", "fc-3svc"]);
+      }
+      if (/케어\s*키트|키트/.test(t) && typeof FREE3_DEF !== "undefined") {
+        const kit = FREE3_DEF.items[2];
+        return R("role:kit", "맞춤 케어 키트 — " + (kit.parts || []).join(" · ") + ". 구성은 그 회원의 검진 결과가 정해요(혈압이면 가정용 혈압계, 혈당이면 혈당측정기 — MA_MAP 단일 소스). " + (kit.note || ""), ["FREE3_DEF.kit", "MA_MAP", "fc-kit"]);
+      }
       if (/케어\s*플랜/.test(t)) return R("role:careplan", "케어 플랜은 핵심 1개+보조 2개 조합이에요 — 핵심은 등급이 정하고(고위험=진료 연결, 중위험=재검진), 보조는 식단·영양제·미션·기기 중 결과에 맞는 것. 조합은 하이가 계산해 카드에 담아드려요 — 즉석 조합은 금지예요.", ["interventionMap", "MA_MAP"]);
       if (/(영양제|식단|기기)/.test(t)) return R("role:tools", "도구는 검진 결과가 정해요 — 혈압이면 저염 식단·가정용 혈압계, 혈당이면 저당 식단·혈당측정기, 간이면 밀크시슬 같은 식으로 매핑돼 있어요(개연성 매핑 단일 소스). 카드의 「걸어온 길」에서 그 회원이 이미 하는 활동을 먼저 확인하세요.", ["MA_MAP"]);
     }
@@ -26503,6 +26554,14 @@ function _hmrKey(code) { return "hifin_handoff_result_" + code; }
 function _hmrAll(code) { try { return JSON.parse(localStorage.getItem(_hmrKey(code)) || "[]"); } catch (e) { return []; } }
 
 /* 기록 — 7코드 밖 거부·메모는 금지어 스캔 경유(§0-B) */
+/* D2 골든타임 전달 체크 5칸(F3 — 프롬프트 v1.1 §5.3) — 시트·집계·⑩관제가 같은 사전을 읽는다 */
+const HMR_GOLDEN_KEYS = [
+  { k: "svc3",    ko: "무료 3종 안내" },
+  { k: "ins",     ko: "보험 혜택·적용법" },
+  { k: "report",  ko: "리포트 예고" },
+  { k: "kit",     ko: "케어 키트 안내" },
+  { k: "support", ko: "향후 지원 약속" },
+];
 function hmrRecord(code, entry) {
   const c = hmrCode(entry && entry.result);
   if (!c) return { ok: false, why: "결과는 7코드 중에서만 고를 수 있어요" };
@@ -26513,9 +26572,21 @@ function hmrRecord(code, entry) {
   const row = { i: Number(entry.i), date: String(entry.date || new Date().toISOString().slice(0, 10)),
     result: c.k, branch: entry.branch != null ? Number(entry.branch) : null,
     followUp: entry.followUp || null, memo: entry.memo || "", at: Date.now() };
+  /* D2 골든타임 전달 체크(F3) — 5칸 선택지 코드만(§0-B: 자유 텍스트 아님·코드 밖 거부) */
+  if (entry.golden && entry.golden.length) {
+    const gv = entry.golden.filter((k) => HMR_GOLDEN_KEYS.some((g) => g.k === k));
+    if (gv.length !== entry.golden.length) return { ok: false, why: "전달 체크는 정해진 5칸에서만 고를 수 있어요" };
+    row.golden = gv;
+  }
   const l = _hmrAll(code); l.push(row);
   try { localStorage.setItem(_hmrKey(code), JSON.stringify(l.slice(-800))); } catch (e) { return { ok: false, why: "저장 공간이 부족해요 — 백업 후 정리해 주세요" }; }
   try { hiEvent("handoff_resulted", { key: c.k, grade: entry.grade || "", n: entry.branch || 0, src: "sheet" }); } catch (e) {}
+  try {
+    if (row.golden && row.golden.length) {
+      hiEvent("golden_delivered", { n: row.golden.length, keys: row.golden.join(",") });
+      if (row.golden.indexOf("kit") >= 0) hiEvent("kit_offered", { i: row.i });
+    }
+  } catch (e) {}
   return { ok: true, row: row, ko: c.ko };
 }
 
@@ -26546,12 +26617,17 @@ function hmrStats(code) {
     return all;
   })();
   const by = {}; const byBranch = {}; let followUps = 0;
+  const gBy = {}; let gRows = 0; HMR_GOLDEN_KEYS.forEach((g) => gBy[g.k] = 0);
   HM_RESULT_CODES.forEach((c) => by[c.k] = 0);
-  l.forEach((r) => { by[r.result] = (by[r.result] || 0) + 1; if (r.branch) byBranch[r.branch] = (byBranch[r.branch] || 0) + 1; if (r.followUp) followUps++; });
+  l.forEach((r) => { by[r.result] = (by[r.result] || 0) + 1; if (r.branch) byBranch[r.branch] = (byBranch[r.branch] || 0) + 1; if (r.followUp) followUps++;
+    if (r.golden && r.golden.length) { gRows++; r.golden.forEach((k) => { if (gBy[k] != null) gBy[k]++; }); } });
   const accepted = by.R1 + by.R7, connected = accepted + by.R2 + by.R3;
   return { n: l.length, by: by, byBranch: byBranch, followUps: followUps,
     acceptRate: connected ? Math.round(accepted / connected * 100) : null,
-    codes: HM_RESULT_CODES.map((c) => ({ k: c.k, ko: c.ko, icon: c.icon, n: by[c.k] || 0 })) };
+    codes: HM_RESULT_CODES.map((c) => ({ k: c.k, ko: c.ko, icon: c.icon, n: by[c.k] || 0 })),
+    /* D2 골든타임(F3) — 전달률 = 체크 5칸 완주 비율·항목별 분포(체크 기록 안에서만 — 가공 아님) */
+    golden: { rows: gRows, by: gBy, full: l.filter((r) => r.golden && r.golden.length === HMR_GOLDEN_KEYS.length).length,
+      keys: HMR_GOLDEN_KEYS.map((g) => ({ k: g.k, ko: g.ko, n: gBy[g.k] || 0 })) } };
 }
 
 /* 러너·검증 훅(관리자) */
@@ -29504,7 +29580,7 @@ const HM_STAGE_GUIDE = {
     next: "검진을 받고 결과가 금고에 들어오면 D2로 — 락은 하이가 자동 해제하고 알려드려요.",
     ex: "회사 단체 가입으로 들어온 40대 회원 — 검진 예약만 잡혀 있고 결과가 아직 없어요. 지금 전화하면 락 위반입니다. 결과 도착 알림이 오면 그때가 첫 연결이에요." },
   D2: { entry: "실측 검진값이 데이터 금고에 저장(1세대 자산)",
-    doKo: "첫 연결의 골든타임 — 결과 요약과 무료 3종 서비스, 보장 연결을 한 통화로 안내해요(대본: 락 해제 결합).",
+    doKo: "첫 연결의 골든타임 — 한 통화에 다섯 가지를 전해요: ①무료 3종 안내 ②보험 혜택·적용법(0원 기가입) ③리포트 예고 ④맞춤 케어 키트 안내(결과 기반 영양소·기기 무료) ⑤향후 지원 약속. 전달 체크 5칸이 ⑩관제탑에 집계돼요(대본: ⭐ 첫 연결 파트).",
     next: "AI 분석 리포트(등급·위험도)가 발급되면 D3로.",
     ex: "어제 검진 결과가 도착한 50대 회원 — '결과 보셨어요?'로 시작해 위험 구간 1개와 재검진 예약까지 한 번에 정리한 사례가 표준이에요." },
   D3: { entry: "등급·위험도·예측 리포트 생성(2세대 자산)",
@@ -31537,7 +31613,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "818861adb474f4e2", "generatedAt": "2026-08-31", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "59ff684f531e8564", "generatedAt": "2026-08-31", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -31679,6 +31755,11 @@ const HI_EVENT_DEFS = {
   /* 두 곡선 교차(2단계 v1.4 P1) — 회원이 「내 대비 현황」을 누르거나 비용을 먼저 물은 순간(선발화 아님 — 회원 발의만 기록) */
   needs_asked:       { ko: "회원이 먼저 물음(대비 현황)", stage: 2 },
   handoff_resulted:  { ko: "지시서 결과 기록(7코드)",  stage: 2 },
+  /* D2 첫 연결 골든타임(F3 — 프롬프트 v1.1 §5) — 전달 체크는 결과 시트의 선택지(§0-B), 키트 배송·사용은 실물 런칭 시 실기록 */
+  golden_delivered:  { ko: "골든타임 전달 체크(D2 첫 연결)", stage: 2 },
+  kit_offered:       { ko: "케어 키트 안내(D2 통화)",        stage: 2 },
+  kit_delivered:     { ko: "케어 키트 배송 완료",            stage: 3 },
+  kit_engaged:       { ko: "케어 키트 첫 사용(기기 기록·영양 확인)", stage: 3 },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };
@@ -31705,7 +31786,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-08-31","seed":20260828,"inventory":{"version":1,"sourceHash":"818861adb474f4e2","generatedAt":"2026-08-31","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.26,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-08-31","seed":20260828,"inventory":{"version":1,"sourceHash":"59ff684f531e8564","generatedAt":"2026-08-31","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.02,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

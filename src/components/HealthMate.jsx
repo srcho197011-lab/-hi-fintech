@@ -668,16 +668,19 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
   const [branch, setBranch] = React.useState(null);
   const [follow, setFollow] = React.useState(null);
   const [memo, setMemo] = React.useState("");
+  const [golden, setGolden] = React.useState([]);   /* D2 골든타임 전달 체크(F3) — 5칸 선택지 */
   const today = new Date();
   const day = (n) => new Date(today.getTime() + n * 86400000).toISOString().slice(0, 10);
   const FOLLOWS = [["내일", day(1)], ["다음 주", day(7)], ["2주 뒤", day(14)], ["필요 없어요", null]];
   /* 응대 칩 부연 제목 — 이 카드 대본의 실제 응대 이름(형 지시 2026-08-30: 번호만으론 알 수 없다) */
   const branches = (card.script && card.script.branches) || [];
   const brKo = (b2) => String(b2.ko || "").split("(")[0].split("—")[0].split("·")[0].trim() || "응대";
+  const isD2 = card.member.stage === "D2" && card.script && (card.script.firstconnect || []).length > 0;
+  const gToggle = (k) => setGolden((g) => g.indexOf(k) >= 0 ? g.filter((x) => x !== k) : g.concat(k));
   const save = () => {
     if (!result) return;
     const r = hmrRecord(code, { i: card.member.cohortIndex, result: result, branch: branch, grade: card.grade,
-      followUp: follow, memo: memo.trim(), date: today.toISOString().slice(0, 10) });
+      followUp: follow, memo: memo.trim(), golden: isD2 ? golden : undefined, date: today.toISOString().slice(0, 10) });
     onSaved(r);
   };
   return (<div style={{ position: "fixed", inset: 0, zIndex: 1400, background: "rgba(11,34,57,.45)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={onClose}>
@@ -706,6 +709,17 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
         <b style={{ fontSize: 11.6, color: "#475569", width: 118 }}>다시 연락할 날</b>
         {FOLLOWS.map(([ko, d]) => <span key={ko} onClick={() => setFollow(d)} className="hmpill" style={{ cursor: "pointer", border: follow === d ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: follow === d ? "#FFF4E8" : "#fff", color: d == null && follow === null ? "#94A3B8" : (follow === d ? "#C2410C" : "#334155") }}>{ko}</span>)}
       </div>
+      {isD2 && (<div style={{ marginTop: 9, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "8px 11px" }}>
+        <b style={{ fontSize: 11.6, color: "#92400E" }}>⭐ 골든타임 전달 체크 — 오늘 통화에서 말한 것만 눌러주세요</b>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 6 }}>
+          {(typeof HMR_GOLDEN_KEYS !== "undefined" ? HMR_GOLDEN_KEYS : []).map((g) => (
+            <span key={g.k} onClick={() => gToggle(g.k)} className="hmpill" style={{ cursor: "pointer",
+              border: golden.indexOf(g.k) >= 0 ? "1.5px solid #D97706" : "1px solid #E2C97E",
+              background: golden.indexOf(g.k) >= 0 ? "#FDE68A" : "#fff", color: golden.indexOf(g.k) >= 0 ? "#92400E" : "#78716C" }}>
+              {golden.indexOf(g.k) >= 0 ? "✓ " : ""}{g.ko}</span>))}
+        </div>
+        <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>체크는 ⑩ 관제탑 「골든타임 전달률」에 집계돼요 — 5칸 다 전하는 게 목표예요.</div>
+      </div>)}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
         <b style={{ fontSize: 11.6, color: "#475569", width: 118, flex: "none" }}>간단 메모</b>
         <input value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={120} placeholder="필요할 때만 한 줄 — 예: 다음엔 오후에 통화 원하심"
@@ -741,6 +755,7 @@ function HmHandoffCard({ ent, code, onToast }) {
           {c.member.mask} <span style={{ color: HM_C.mut, fontWeight: 600, fontSize: 12 }}>· {c.member.ageBand} {c.member.sex} · {c.member.region}</span>
           <span className="hmpill" style={{ marginLeft: 6, background: g.bg, color: g.c }}>{g.ko}</span>
           <span className="hmpill" style={{ marginLeft: 4, background: "#F1F5F9", color: "#475569" }}>{c.member.stage} 단계</span>
+          {(c.script.firstconnect || []).length > 0 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDE68A", color: "#92400E", fontWeight: 900 }}>⭐ 첫 연결 골든타임</span>}
           {c.member.stalledDays >= 14 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDECEC", color: "#B91C1C" }}>정체 {c.member.stalledDays}일</span>}
         </div>
         <HmStageDots reached={(typeof cohortStageOf === "function" && cohortStageOf(c.member.cohortIndex) || { reached: [c.member.stage] }).reached} />
@@ -1024,6 +1039,30 @@ function HmTabOps() {
             </div>
             <div style={{ fontSize: 10.4, color: HM_C.mut, marginTop: 4 }}>완결·거절(30일)·연락처 오류는 내일 명단에서 자동 제외 · 후속일이 온 회원은 맨 위로.</div>
           </div>) : (<div style={{ fontSize: 11.6, color: HM_C.mut }}>아직 기록된 결과가 없어요 — ⓪ 오늘의 지시서에서 통화 후 「결과 남기기」를 누르면 여기 쌓여요. 기록이 내일의 명단을 바꿉니다.</div>)}
+          {/* ── ⭐ D2 골든타임(F3) — 전달률(실기록)·키트 교차(memberActivity 파생 — 가공 아님) ── */}
+          {(() => {
+            const gd = rs && rs.golden ? rs.golden : { rows: 0, full: 0, keys: [] };
+            let kitY = { n: 0, act: 0 }, kitN = { n: 0, act: 0 };
+            try {
+              for (let i2 = 1; i2 <= 6000; i2 += 9) {
+                const st = cohortStageOf(i2); if (!st || ["D1"].indexOf(st.cur) >= 0) continue;
+                const ma = memberActivity(i2); if (!ma) continue;
+                const hasDev = (ma.commerce || []).some((x) => x.kind === "device");
+                const acts = (ma.visits || []).length + (ma.commerce || []).length;
+                if (hasDev) { kitY.n++; kitY.act += acts; } else { kitN.n++; kitN.act += acts; }
+              }
+            } catch (e) {}
+            const avg = (o) => o.n ? (o.act / o.n).toFixed(1) : "-";
+            return (<div style={{ marginTop: 9, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 9, padding: "7px 10px" }}>
+              <div style={{ fontSize: 11.4, fontWeight: 900, color: "#92400E" }}>⭐ D2 골든타임 — 첫 통화에서 다 전했나</div>
+              <div style={{ fontSize: 11.4, color: "#78350F", lineHeight: 1.75, marginTop: 3 }}>
+                전달 체크 기록 {gd.rows}건 · 5칸 완주 {gd.full}건{gd.rows ? " (" + Math.round(gd.full / gd.rows * 100) + "%)" : ""}
+                {gd.rows > 0 && <span> · 항목별: {gd.keys.map((k) => k.ko.split("·")[0].trim() + " " + k.n).join(" / ")}</span>}
+                {gd.rows === 0 && <span> — D2 카드의 「결과 남기기」에서 ⭐ 체크 5칸을 누르면 여기 집계돼요.</span>}<br />
+                🧰 키트 효과(관측): 기기 사용 회원 평균 활동 <b>{avg(kitY)}건</b>({kitY.n.toLocaleString()}명) vs 미사용 <b>{avg(kitN)}건</b>({kitN.n.toLocaleString()}명) — 검진 결과 파생 시연 데이터, 실물 배송 런칭 시 kit_delivered·kit_engaged 실기록으로 대체.
+              </div>
+            </div>);
+          })()}
         </div>);
       })()}
     </div>

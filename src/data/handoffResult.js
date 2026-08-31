@@ -21,6 +21,14 @@ function _hmrKey(code) { return "hifin_handoff_result_" + code; }
 function _hmrAll(code) { try { return JSON.parse(localStorage.getItem(_hmrKey(code)) || "[]"); } catch (e) { return []; } }
 
 /* 기록 — 7코드 밖 거부·메모는 금지어 스캔 경유(§0-B) */
+/* D2 골든타임 전달 체크 5칸(F3 — 프롬프트 v1.1 §5.3) — 시트·집계·⑩관제가 같은 사전을 읽는다 */
+const HMR_GOLDEN_KEYS = [
+  { k: "svc3",    ko: "무료 3종 안내" },
+  { k: "ins",     ko: "보험 혜택·적용법" },
+  { k: "report",  ko: "리포트 예고" },
+  { k: "kit",     ko: "케어 키트 안내" },
+  { k: "support", ko: "향후 지원 약속" },
+];
 function hmrRecord(code, entry) {
   const c = hmrCode(entry && entry.result);
   if (!c) return { ok: false, why: "결과는 7코드 중에서만 고를 수 있어요" };
@@ -31,9 +39,21 @@ function hmrRecord(code, entry) {
   const row = { i: Number(entry.i), date: String(entry.date || new Date().toISOString().slice(0, 10)),
     result: c.k, branch: entry.branch != null ? Number(entry.branch) : null,
     followUp: entry.followUp || null, memo: entry.memo || "", at: Date.now() };
+  /* D2 골든타임 전달 체크(F3) — 5칸 선택지 코드만(§0-B: 자유 텍스트 아님·코드 밖 거부) */
+  if (entry.golden && entry.golden.length) {
+    const gv = entry.golden.filter((k) => HMR_GOLDEN_KEYS.some((g) => g.k === k));
+    if (gv.length !== entry.golden.length) return { ok: false, why: "전달 체크는 정해진 5칸에서만 고를 수 있어요" };
+    row.golden = gv;
+  }
   const l = _hmrAll(code); l.push(row);
   try { localStorage.setItem(_hmrKey(code), JSON.stringify(l.slice(-800))); } catch (e) { return { ok: false, why: "저장 공간이 부족해요 — 백업 후 정리해 주세요" }; }
   try { hiEvent("handoff_resulted", { key: c.k, grade: entry.grade || "", n: entry.branch || 0, src: "sheet" }); } catch (e) {}
+  try {
+    if (row.golden && row.golden.length) {
+      hiEvent("golden_delivered", { n: row.golden.length, keys: row.golden.join(",") });
+      if (row.golden.indexOf("kit") >= 0) hiEvent("kit_offered", { i: row.i });
+    }
+  } catch (e) {}
   return { ok: true, row: row, ko: c.ko };
 }
 
@@ -64,12 +84,17 @@ function hmrStats(code) {
     return all;
   })();
   const by = {}; const byBranch = {}; let followUps = 0;
+  const gBy = {}; let gRows = 0; HMR_GOLDEN_KEYS.forEach((g) => gBy[g.k] = 0);
   HM_RESULT_CODES.forEach((c) => by[c.k] = 0);
-  l.forEach((r) => { by[r.result] = (by[r.result] || 0) + 1; if (r.branch) byBranch[r.branch] = (byBranch[r.branch] || 0) + 1; if (r.followUp) followUps++; });
+  l.forEach((r) => { by[r.result] = (by[r.result] || 0) + 1; if (r.branch) byBranch[r.branch] = (byBranch[r.branch] || 0) + 1; if (r.followUp) followUps++;
+    if (r.golden && r.golden.length) { gRows++; r.golden.forEach((k) => { if (gBy[k] != null) gBy[k]++; }); } });
   const accepted = by.R1 + by.R7, connected = accepted + by.R2 + by.R3;
   return { n: l.length, by: by, byBranch: byBranch, followUps: followUps,
     acceptRate: connected ? Math.round(accepted / connected * 100) : null,
-    codes: HM_RESULT_CODES.map((c) => ({ k: c.k, ko: c.ko, icon: c.icon, n: by[c.k] || 0 })) };
+    codes: HM_RESULT_CODES.map((c) => ({ k: c.k, ko: c.ko, icon: c.icon, n: by[c.k] || 0 })),
+    /* D2 골든타임(F3) — 전달률 = 체크 5칸 완주 비율·항목별 분포(체크 기록 안에서만 — 가공 아님) */
+    golden: { rows: gRows, by: gBy, full: l.filter((r) => r.golden && r.golden.length === HMR_GOLDEN_KEYS.length).length,
+      keys: HMR_GOLDEN_KEYS.map((g) => ({ k: g.k, ko: g.ko, n: gBy[g.k] || 0 })) } };
 }
 
 /* 러너·검증 훅(관리자) */

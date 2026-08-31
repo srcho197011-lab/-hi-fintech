@@ -34,6 +34,8 @@ for (const s2 of ["거절", "보류", "수락", "가족", "바쁘다는 회원",
 seeds.push({ cat: "system", q: "결과 기록 어디서 해요" }, { cat: "system", q: "통화 결과 어떻게 남겨요" }, { cat: "system", q: "백업 어떻게 해요" }, { cat: "system", q: "관제탑이 뭐예요" }, { cat: "system", q: "통합 운영 어디 있어요" });
 seeds.push({ cat: "curves", q: "회원이 치료비 얼마냐고 물으면 어떻게 해요" }, { cat: "curves", q: "회원이 비용 질문하면" }, { cat: "curves", q: "대비 현황 물으면 어떻게 답해요" }, { cat: "curves", q: "회원이 생활비 걱정을 물으면" });
 seeds.push({ cat: "role", q: "케어 플랜은 어떻게 조합해요" }, { cat: "role", q: "첫 상담에서 뭘 제안해요" }, { cat: "role", q: "영양제는 어떤 회원한테 어울려요" }, { cat: "role", q: "식단은 언제 제안해요" }, { cat: "role", q: "기기는 어떤 회원에게 필요해요" });
+/* D2 골든타임·3종·케어 키트(F4) */
+seeds.push({ cat: "role", q: "골든타임에 뭘 말해요" }, { cat: "role", q: "골든타임이 뭐예요" }, { cat: "role", q: "무료 3종 뭐라고 안내해요" }, { cat: "role", q: "3종 서비스가 뭐예요" }, { cat: "role", q: "케어 키트가 뭐예요" }, { cat: "role", q: "케어 키트 구성은 어떻게 정해져요" });
 
 /* 변형 확장 → 1만+ */
 const corpus = [];
