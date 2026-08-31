@@ -114,7 +114,7 @@ function FinanceLive() {
           a.sga.reward += reward; a.liab.token += reward; a.sga.donation += don; a.liab.donation += don;
           push(t.c, `${who} · ${t.label} (건강쇼핑)`, p, "제품매출");
         } else {
-          if (t.k === "checkup") a.cogs.infra += 20000;   // 3종 서비스 원가(검진보험·리포트·상담) 건당 2만 — 재무모델 정합
+          if (t.k === "checkup") a.cogs.infra += 20000;   // 3종 서비스 원가(검진보험·리포트·케어 키트) 건당 2만 이내 유지 — 재무모델 정합(형 확정 2026-08-31)
           else if (t.k === "emr") a.cogs.infra += Math.round(p * 0.1);
           else if (t.k === "service") a.cogs.infra += Math.round(p * 0.05);
           push(t.c, `${who} · ${t.label}`, p, t.k === "checkup" ? "검진수수료수익" : t.k === "emr" ? "EMR연계수익" : t.k === "service" ? "서비스수수료수익" : t.k === "reservation" ? "예약수수료수익" : t.k === "insurance" ? "중개수수료" : "광고수익");

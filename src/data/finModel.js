@@ -40,7 +40,7 @@ const FIN_P_DEFAULT = {
     { key: "sports", label: "스포츠용품·활동", arpu: 80000, cost: 0.60 },
   ],
   checkupRate: 0.45,
-  /* 검진 연계(형 확정 2026-08-20): 건당 매출 25,000원 · 3종 서비스 원가(검진대비보험 부보료+AI 리포트+상담) 건당 20,000원 */
+  /* 검진 연계(형 확정 2026-08-20 · 구성 개정 2026-08-31): 건당 매출 25,000원 · 3종 서비스 원가(검진대비보험 부보료+AI 리포트+맞춤 케어 키트) 건당 20,000원 이내 유지(형 확정) */
   checkupFee: 25000, checkupCost3: 20000,
   serviceRate: 0.30, serviceCommission: 15000, serviceCostRate: 0.05,
   resvPerActive: [0.4, 0.7, 1.0, 1.3, 1.6], resvFee: 10000,
@@ -140,7 +140,7 @@ function finYears(nYears) {
     const apiN = _finAt(P, P.apiClients, y, 0.15), revApi = L("API·데이터·분석 서비스(B2B)", `계약 ${apiN.toLocaleString()}건 × 연 ${finW(P.apiFeeYear)}원`, apiN * P.apiFeeYear);
     const revenue = L("매출액(합계)", "제품+검진+서비스+예약+구독+보험+광고+Agent+API", revProduct + revCheckup + revService + revReservation + revSub + revInsurance + revAd + revAgent + revApi);
     // 원가
-    const checkupCogs = L("3종 서비스 원가(검진보험·리포트·상담)", `검진 ${checkupUsers.toLocaleString()}건 × 건당 ${finW(P.checkupCost3)}원`, checkupUsers * P.checkupCost3);
+    const checkupCogs = L("3종 서비스 원가(검진보험·리포트·케어 키트)", `검진 ${checkupUsers.toLocaleString()}건 × 건당 ${finW(P.checkupCost3)}원`, checkupUsers * P.checkupCost3);
     const cogs = cogsProduct + checkupCogs + Math.round(revService * P.serviceCostRate) + Math.round(revSub * P.subCostRate) + Math.round(revProduct * P.paymentRate);
     const gross = L("매출총이익", `매출 ${finW(revenue)} − 원가 ${finW(cogs)}`, revenue - cogs);
     // ② CAC 기간 인식 + 판관비(전 항목 파라미터)

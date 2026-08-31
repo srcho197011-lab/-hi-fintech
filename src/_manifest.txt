@@ -107,6 +107,7 @@ src/data/ocrEngine.js
 src/data/finModel.js
 src/data/escrowPay.js
 src/data/referral.js
+src/data/free3Def.js
 src/data/aiQnaBank.js
 src/data/brandTokens.js
 src/data/navInventory.js

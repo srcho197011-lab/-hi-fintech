@@ -111,7 +111,7 @@ try {
           if (hits.length) out.push({ id: bl.id, hits: hits });
           if (!bl.approved) {
             /* admin(관리 사무)·lifejourney(L5~L8 초안)는 조립 미사용 — 검수 대기 목록으로 분리(실패 아님). 조립 파트 미승인만 실패 */
-            if (["admin", "lifejourney", "talk", "seed", "careplan", "branch2", "cost"].indexOf(bl.part) >= 0) pendingAdmin.push(bl.id);
+            if (["admin", "lifejourney", "talk", "seed", "careplan", "branch2", "cost", "firstconnect"].indexOf(bl.part) >= 0) pendingAdmin.push(bl.id);
             else out.push({ id: bl.id, hits: [{ key: "unapproved", ko: "미승인 블록" }] });
           }
         }
