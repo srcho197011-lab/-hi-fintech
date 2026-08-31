@@ -19394,6 +19394,7 @@ function HmHandoffCard({ ent, code, onToast }) {
           return (<div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
           {[["오프닝", c.script.opening]].map(([t, b], i) => b &&
             <div key={i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
+          {s2 && (s2.firstconnect || []).map((b) => draft("⭐ 첫 연결", b))}
           {s2 && (s2.talk || []).map((b) => draft("💬 생활 대화", b))}
           {c.script.core.map((b, i) =>
             <div key={"c" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>본론</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
@@ -19401,6 +19402,7 @@ function HmHandoffCard({ ent, code, onToast }) {
           {[["제안", c.script.ask]].map(([t, b], i) => b &&
             <div key={"a" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
           {s2 && (s2.careplan || []).map((b) => draft("🧰 케어 플랜", b))}
+          {s2 && (s2.fcTail || []).map((b) => draft("⭐ 첫 연결", b))}
           <div style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 4 }}>회원 반응별 응대 10종(수락·보류·거절·질문·치료비·가족·기존보험·바쁨·두려움)</div>
             {(s2 ? s2.branches : c.script.branches).map((b, i) => <div key={b.id} style={{ marginBottom: 4 }}><b style={{ color: "#C2410C", fontSize: 11 }}>응대 {i + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("(")[0].split("—")[0].trim()}</i><div>“{b.text}”</div></div>)}
@@ -25741,31 +25743,31 @@ const HM_SCRIPT_BLOCKS = [
     t: "{기기}로 집에서 기록해 주시면 병원 한 번 수치보다 정확해요. 궁금한 건 언제든 저나 하이에게 물어보세요." },
   { id: "cs-nutri", part: "counsel", ko: "상담 · 영양소 안내", approved: true,
     t: "{질환명} 관리에는 {영양소} 같은 영양소가 도움돼요. 먼저 {권장식} 같은 음식으로 챙기고, 부족한 부분은 저와 같이 보충 방법을 정해봐요." },
-  /* ── D2 첫 연결 골든타임 fc-*(12) — 프롬프트 v1.1 §4(형 승인 2026-08-31) · 초안: 형 검수 후 approved 전환 ──
+  /* ── D2 첫 연결 골든타임 fc-*(12) — 프롬프트 v1.1 §4(형 승인 2026-08-31) · 형 검수 통과 2026-08-31 — 전건 승인 ──
      경계: 니즈 수치 슬롯 금지(§0-P) · 유료 전환·타 상품 발화 금지 · 기기=측정·기록용 표현만 · 원가 비노출 */
-  { id: "fc-open", part: "firstconnect", ko: "골든타임 오프닝", approved: false,
+  { id: "fc-open", part: "firstconnect", ko: "골든타임 오프닝", approved: true,
     t: "오늘 통화가 중요한 이유를 먼저 말씀드리면 — 검진은 받는 것보다 받은 다음이 진짜거든요. 오늘부터 {가명}님 검진 이후를 제가 같이 챙겨드리게 됐어요." },
-  { id: "fc-3svc", part: "firstconnect", ko: "3종 소개", approved: false,
-    t: "이번 검진에 무료 3종이 같이 준비돼 있어요 — ① 검진대비보험(0원 자동 가입) ② AI 정밀리포트 ③ 그리고 {가명}님 결과에 맞춘 케어 키트요. 셋 다 회원 부담 0원이에요." },
-  { id: "fc-ins", part: "firstconnect", ko: "보험 혜택(기가입)", approved: false,
+  { id: "fc-3svc", part: "firstconnect", ko: "3종 소개", approved: true,
+    t: "이번 검진에 무료 3종이 같이 준비돼 있어요. ① 검진대비보험(0원 자동 가입), ② AI 정밀리포트, ③ {가명}님 결과에 맞춘 케어 키트예요. 셋 다 회원 부담 0원이에요." },
+  { id: "fc-ins", part: "firstconnect", ko: "보험 혜택(기가입)", approved: true,
     t: "검진대비보험은 예약하실 때 0원으로 이미 가입되어 있어요 — 암 진단 시 최대 1,000만원까지예요. 증서는 데이터 금고에 발급되어 있어요. ※ 실제 보장·인수는 보험사 심사에 따라요." },
-  { id: "fc-ins-how", part: "firstconnect", ko: "적용·치료 연결", approved: false,
-    t: "만에 하나 검진에서 큰 병이 확인되면, 진단금 청구는 제가 서류부터 절차까지 같이 챙겨드려요 — 혼자 알아보실 일이 없게요. 치료가 시작되면 진료 예약·비대면 진료 연결도 하이핀에서 이어져요." },
-  { id: "fc-report", part: "firstconnect", ko: "리포트 이점", approved: false,
+  { id: "fc-ins-how", part: "firstconnect", ko: "적용·치료 연결", approved: true,
+    t: "만에 하나 큰 병이 확인되면, 진단금 청구는 제가 서류부터 절차까지 같이 챙겨드려요. 혼자 알아보실 일이 없게요. 치료가 시작되면 진료 예약·비대면 진료 연결도 하이핀에서 이어져요." },
+  { id: "fc-report", part: "firstconnect", ko: "리포트 이점", approved: true,
     t: "AI 정밀리포트가 곧 발행돼요 — 생체나이, 질병 위험, 앞으로의 의료비 예측까지 담겨요. 병원 결과지가 '숫자'라면, 리포트는 '그래서 뭘 하면 되는지'까지 알려드려요." },
-  { id: "fc-kit", part: "firstconnect", ko: "맞춤 케어 키트", approved: false,
-    t: "결과에서 {지표군} 쪽이 보여서, {가명}님 키트에는 {영양소}와 {기기}를 담았어요 — 며칠 안에 집으로 가요, 무료예요. 필요하면 {진료과} 진료 안내와 추가검진까지 제가 이어드려요." },
-  { id: "fc-kit-use", part: "firstconnect", ko: "키트 사용 유도", approved: false,
+  { id: "fc-kit", part: "firstconnect", ko: "맞춤 케어 키트", approved: true,
+    t: "결과에서 {지표군} 쪽이 보여서, 키트에는 {영양소}와 {기기}를 담았어요. 며칠 안에 집으로 가요 — 무료예요. 필요하면 {진료과} 진료 안내와 추가검진까지 제가 이어드려요." },
+  { id: "fc-kit-use", part: "firstconnect", ko: "키트 사용 유도", approved: true,
     t: "{기기} 도착하면 일주일만 기록해 봐요 — 병원 한 번 수치보다 집에서 잰 일주일이 더 정확해요. 기록은 리포트에 자동으로 이어지고, 제가 흐름을 같이 봐드려요." },
-  { id: "fc-insight", part: "firstconnect", ko: "인사이트 경험 유도", approved: false,
+  { id: "fc-insight", part: "firstconnect", ko: "인사이트 경험 유도", approved: true,
     t: "리포트 나오면 제일 눈에 띄는 것 하나만 같이 봐요 — 5분이면 돼요. 그 한 번이면 이 시스템이 {가명}님한테 뭘 해줄 수 있는지 감이 오실 거예요." },
-  { id: "fc-support", part: "firstconnect", ko: "향후 지원", approved: false,
-    t: "이후로도 진료 안내, 비대면 진료, 식단, 필요한 기기까지 — 검진 결과에 맞는 것만 골라서 제가 순서대로 안내드려요. 필요할 때만, 부담 없이요." },
-  { id: "fc-lifetime", part: "firstconnect", ko: "평생 약속(클로징 보강)", approved: false,
+  { id: "fc-support", part: "firstconnect", ko: "향후 지원", approved: true,
+    t: "이후로도 진료 안내, 비대면 진료, 식단, 기기까지 준비돼 있어요. 검진 결과에 맞는 것만 골라 제가 순서대로 안내드려요. 필요할 때만, 부담 없이요." },
+  { id: "fc-lifetime", part: "firstconnect", ko: "평생 약속(클로징 보강)", approved: true,
     t: "검진은 1년에 한 번이지만 관리는 매일이잖아요. 그 사이를 제가 지켜보고 있다가, 챙길 게 생기면 먼저 연락드릴게요 — 그게 제 일이에요." },
-  { id: "fc-q-free", part: "firstconnect", ko: "응대 · 진짜 공짜예요?", approved: false,
+  { id: "fc-q-free", part: "firstconnect", ko: "응대 · 진짜 공짜예요?", approved: true,
     t: "네, 셋 다 0원이에요. 하이핀이 검진을 도와드리면서 함께 드리는 회원 혜택이라 조건이나 숨은 비용이 없어요. 더 필요하신 게 생기면 그때 여쭤보고 진행해요." },
-  { id: "fc-q-sell", part: "firstconnect", ko: "응대 · 보험 팔려는 건 아니죠?", approved: false,
+  { id: "fc-q-sell", part: "firstconnect", ko: "응대 · 보험 팔려는 건 아니죠?", approved: true,
     t: "아니에요 — 이미 가입되어 있는 0원 보험을 쓰는 법을 알려드리는 거예요. 저는 파는 사람이 아니라 {가명}님 검진 이후를 관리해 드리는 사람이에요. 다른 상품 얘기는 {가명}님이 먼저 물으실 때만 해요." },
   /* ── ⑥ 채널 변형 규칙(2) — 문장 창작이 아니라 축약 규칙 ── */
   { id: "ch-notif", part: "channel", ko: "앱알림(2문장)", approved: true,
@@ -25835,16 +25837,17 @@ function _hmSentences(text) {
 }
 function hmSpecCheck(card) {
   const s = card && card.script; if (!s) return { ok: false, why: ["script 없음"] };
-  const blocks = [s.opening, ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.branches || []), s.closing].filter(Boolean);
+  const blocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.fcTail || []), ...(s.branches || []), s.closing].filter(Boolean);
   const why = [];
-  const maxSent = s.v2 ? 24 : 20;                                        /* 본대본(응대 제외) 한도 — 응대는 상황별 선택지라 전부 읽지 않는다(v2 규격 정밀화·형 확정 대상) */
-  const flowBlocks = [s.opening, ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), s.closing].filter(Boolean);                            /* v2: 생활 대화·씨앗 포함 전화 3~5분(§4-S3) */
+  /* D2 첫 연결(firstconnect 동반)은 골든타임 1회 한정 확장 — D2 전수 실측 최대 47문장(변형 조합 포함) 기반 ≤48(F2 재정의·검수판 보고) */
+  const maxSent = (s.firstconnect && s.firstconnect.length) ? 48 : (s.v2 ? 24 : 20);   /* 본대본(응대 제외) 한도 — 응대는 상황별 선택지라 전부 읽지 않는다 */
+  const flowBlocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.fcTail || []), s.closing].filter(Boolean);                            /* v2: 생활 대화·씨앗 포함 전화 3~5분(§4-S3) */
   if (s.v2) {
     const qN = (s.talk || []).reduce((a, b2) => a + (String(b2.text).match(/\?/g) || []).length, 0);
     if (qN < 2) why.push("유도 질문 부족(" + qN + "<2)");
     if ((s.seed || []).length > 2) why.push("씨앗 과다(" + s.seed.length + ">2)");
     /* §0-P 선발화 — 니즈 수치 표현이 응대(질문 응답) 밖에서 등장하면 차단 */
-    const nonBranch = [s.opening, ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), s.closing].filter(Boolean);
+    const nonBranch = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.fcTail || []), s.closing].filter(Boolean);
     for (const b2 of nonBranch) if (HM_NEEDS_UTTER.test(b2.text)) why.push("선발화 감지 [" + b2.id + "]");
   }
   if (s.v2 && (s.branches || []).length > 12) why.push("응대 과다(" + s.branches.length + ">12)");
@@ -26016,14 +26019,43 @@ function buildHandoffCard(i, opts) {
     ].filter(Boolean));
     script.v2 = true;
   }
+  /* ── D2 첫 연결 골든타임(F2 · 프롬프트 v1.1 §5 — 형 승인 2026-08-31) — D2 카드에만 fc 파트 삽입.
+        재접촉·타 단계에 3종 반복 금지(스팸화 방지) · 키트 슬롯은 MA_MAP(검진 결과 기반)만 ── */
+  const d2first = v2on && stage && stage.cur === "D2" && !stalled;
+  if (d2first) {
+    const ma = (typeof MA_MAP !== "undefined" && MA_MAP[group]) ? MA_MAP[group] : (typeof MA_MAP !== "undefined" ? MA_MAP.organ : null);
+    const kitSlots = Object.assign({}, slots, ma ? {
+      지표군: (HM_RISK_GROUPS[group] || {}).ko || group,
+      영양소: (ma.supp || []).slice(0, 2).join("·") || "기본 영양",
+      기기: ma.device || "건강 기록 앱", 진료과: ma.dept || "가까운 병원",
+    } : { 지표군: group, 영양소: "기본 영양", 기기: "건강 기록 앱", 진료과: "가까운 병원" });
+    /* fc 전용 치환 — 슬롯 뒤 조사를 값의 받침에 맞춰 교정(조사 선택만·새 문장 아님. 기존 대본 표기는 불변) */
+    const _fcJ = { 이에요: ["이에요", "예요"], 예요: ["이에요", "예요"], 은: ["은", "는"], 는: ["은", "는"], 이: ["이", "가"], 가: ["이", "가"], 을: ["을", "를"], 를: ["을", "를"], 와: ["과", "와"], 과: ["과", "와"] };
+    const fcFill = (t) => String(t).replace(/\{([가-힣A-Za-z0-9]+)\}(이에요|예요|은|는|이|가|을|를|와|과)?/g, (m, k, j) => {
+      if (kitSlots[k] == null) return m;
+      const v = String(kitSlots[k]);
+      if (!j) return v;
+      const s3 = v.replace(/[^가-힣]+$/, ""); const cc = s3.charCodeAt(s3.length - 1);
+      if (!(cc >= 0xAC00 && cc <= 0xD7A3)) return v + j;
+      return v + _fcJ[j][(cc - 0xAC00) % 28 > 0 ? 0 : 1];
+    });
+    const fcBlock = (id) => { const b2 = _hcBlock(id, kitSlots, out); return b2 ? Object.assign({}, b2, { text: fcFill((hmBlock(id) || {}).t || b2.text) }) : null; };
+    /* 골든타임 오프닝은 결과 도착 결합(op-unlock) — 프롬프트 v1.1 §5 순서(op-unlock → fc-open …) */
+    if (!easy) script.opening = _hcBlock("op-unlock", slots, out) || script.opening;
+    script.firstconnect = ["fc-open", "fc-3svc", "fc-ins", "fc-ins-how", "fc-report", "fc-kit", "fc-kit-use", "fc-insight"]
+      .map(fcBlock).filter(Boolean);
+    script.fcTail = [fcBlock("fc-support"), fcBlock("fc-lifetime")].filter(Boolean);
+    script.branches = script.branches.concat([fcBlock("fc-q-free"), fcBlock("fc-q-sell")].filter(Boolean));
+  }
   /* 채널 변형 — 규칙 적용(창작 아님): 알림=core[0]+ask 축약 · 문자=고정 형식(수치·등급 미포함) */
   script.notif = (script.core[0] ? script.core[0].text + " " : "") + (script.ask ? script.ask.text.split(".")[0] + "." : "");
   script.sms = "[하이핀] " + slots.가명 + "님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}";
 
   /* 데이터 경계 검사 — evidence·대본에 숫자(수치) 유입 여부 */
-  const joined = evidence.join(" ") + " " + [script.opening, ...script.core, script.ask, ...script.branches, script.closing]
+  const joined = evidence.join(" ") + " " + [script.opening, ...script.core, script.ask, ...script.branches, script.closing,
+    ...(script.firstconnect || []), ...(script.fcTail || [])]
     .filter(Boolean).map((b) => b.text).join(" ");
-  const numLeak = /\d{2,}/.test(joined.replace(/2년|3년|1회|2분|150분/g, ""));   // 관용 표현 예외 후 2자리 이상 숫자 검출
+  const numLeak = /\d{2,}/.test(joined.replace(/2년|3년|1회|2분|150분|1,000만원|코엔자임Q10/g, ""));   // 관용 표현 예외 후 2자리 이상 숫자 검출(1,000만원=보장 사실 고지·§0-C 동반 / Q10=성분명·수치 아님)
   const slotLeak = /\{[가-힣A-Za-z]+\}/.test(joined);                            // 미치환 슬롯 잔존({링크}는 sms 전용 — joined 밖)
 
   const meta = (typeof RISK_GRADE_META !== "undefined") ? RISK_GRADE_META[g.grade] : null;
@@ -31505,7 +31537,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "5a894dc010175800", "generatedAt": "2026-08-31", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "818861adb474f4e2", "generatedAt": "2026-08-31", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -31673,7 +31705,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-08-30","seed":20260828,"inventory":{"version":1,"sourceHash":"5a894dc010175800","generatedAt":"2026-08-31","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.03,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-08-31","seed":20260828,"inventory":{"version":1,"sourceHash":"818861adb474f4e2","generatedAt":"2026-08-31","bypass":false},"total":10399,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.26,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

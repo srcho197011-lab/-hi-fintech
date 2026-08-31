@@ -789,6 +789,7 @@ function HmHandoffCard({ ent, code, onToast }) {
           return (<div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
           {[["오프닝", c.script.opening]].map(([t, b], i) => b &&
             <div key={i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
+          {s2 && (s2.firstconnect || []).map((b) => draft("⭐ 첫 연결", b))}
           {s2 && (s2.talk || []).map((b) => draft("💬 생활 대화", b))}
           {c.script.core.map((b, i) =>
             <div key={"c" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>본론</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
@@ -796,6 +797,7 @@ function HmHandoffCard({ ent, code, onToast }) {
           {[["제안", c.script.ask]].map(([t, b], i) => b &&
             <div key={"a" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
           {s2 && (s2.careplan || []).map((b) => draft("🧰 케어 플랜", b))}
+          {s2 && (s2.fcTail || []).map((b) => draft("⭐ 첫 연결", b))}
           <div style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 4 }}>회원 반응별 응대 10종(수락·보류·거절·질문·치료비·가족·기존보험·바쁨·두려움)</div>
             {(s2 ? s2.branches : c.script.branches).map((b, i) => <div key={b.id} style={{ marginBottom: 4 }}><b style={{ color: "#C2410C", fontSize: 11 }}>응대 {i + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("(")[0].split("—")[0].trim()}</i><div>“{b.text}”</div></div>)}

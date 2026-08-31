@@ -111,14 +111,43 @@ function buildHandoffCard(i, opts) {
     ].filter(Boolean));
     script.v2 = true;
   }
+  /* ── D2 첫 연결 골든타임(F2 · 프롬프트 v1.1 §5 — 형 승인 2026-08-31) — D2 카드에만 fc 파트 삽입.
+        재접촉·타 단계에 3종 반복 금지(스팸화 방지) · 키트 슬롯은 MA_MAP(검진 결과 기반)만 ── */
+  const d2first = v2on && stage && stage.cur === "D2" && !stalled;
+  if (d2first) {
+    const ma = (typeof MA_MAP !== "undefined" && MA_MAP[group]) ? MA_MAP[group] : (typeof MA_MAP !== "undefined" ? MA_MAP.organ : null);
+    const kitSlots = Object.assign({}, slots, ma ? {
+      지표군: (HM_RISK_GROUPS[group] || {}).ko || group,
+      영양소: (ma.supp || []).slice(0, 2).join("·") || "기본 영양",
+      기기: ma.device || "건강 기록 앱", 진료과: ma.dept || "가까운 병원",
+    } : { 지표군: group, 영양소: "기본 영양", 기기: "건강 기록 앱", 진료과: "가까운 병원" });
+    /* fc 전용 치환 — 슬롯 뒤 조사를 값의 받침에 맞춰 교정(조사 선택만·새 문장 아님. 기존 대본 표기는 불변) */
+    const _fcJ = { 이에요: ["이에요", "예요"], 예요: ["이에요", "예요"], 은: ["은", "는"], 는: ["은", "는"], 이: ["이", "가"], 가: ["이", "가"], 을: ["을", "를"], 를: ["을", "를"], 와: ["과", "와"], 과: ["과", "와"] };
+    const fcFill = (t) => String(t).replace(/\{([가-힣A-Za-z0-9]+)\}(이에요|예요|은|는|이|가|을|를|와|과)?/g, (m, k, j) => {
+      if (kitSlots[k] == null) return m;
+      const v = String(kitSlots[k]);
+      if (!j) return v;
+      const s3 = v.replace(/[^가-힣]+$/, ""); const cc = s3.charCodeAt(s3.length - 1);
+      if (!(cc >= 0xAC00 && cc <= 0xD7A3)) return v + j;
+      return v + _fcJ[j][(cc - 0xAC00) % 28 > 0 ? 0 : 1];
+    });
+    const fcBlock = (id) => { const b2 = _hcBlock(id, kitSlots, out); return b2 ? Object.assign({}, b2, { text: fcFill((hmBlock(id) || {}).t || b2.text) }) : null; };
+    /* 골든타임 오프닝은 결과 도착 결합(op-unlock) — 프롬프트 v1.1 §5 순서(op-unlock → fc-open …) */
+    if (!easy) script.opening = _hcBlock("op-unlock", slots, out) || script.opening;
+    script.firstconnect = ["fc-open", "fc-3svc", "fc-ins", "fc-ins-how", "fc-report", "fc-kit", "fc-kit-use", "fc-insight"]
+      .map(fcBlock).filter(Boolean);
+    script.fcTail = [fcBlock("fc-support"), fcBlock("fc-lifetime")].filter(Boolean);
+    script.branches = script.branches.concat([fcBlock("fc-q-free"), fcBlock("fc-q-sell")].filter(Boolean));
+  }
   /* 채널 변형 — 규칙 적용(창작 아님): 알림=core[0]+ask 축약 · 문자=고정 형식(수치·등급 미포함) */
   script.notif = (script.core[0] ? script.core[0].text + " " : "") + (script.ask ? script.ask.text.split(".")[0] + "." : "");
   script.sms = "[하이핀] " + slots.가명 + "님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}";
 
   /* 데이터 경계 검사 — evidence·대본에 숫자(수치) 유입 여부 */
-  const joined = evidence.join(" ") + " " + [script.opening, ...script.core, script.ask, ...script.branches, script.closing]
+  const joined = evidence.join(" ") + " " + [script.opening, ...script.core, script.ask, ...script.branches, script.closing,
+    ...(script.firstconnect || []), ...(script.fcTail || [])]
     .filter(Boolean).map((b) => b.text).join(" ");
-  const numLeak = /\d{2,}/.test(joined.replace(/2년|3년|1회|2분|150분/g, ""));   // 관용 표현 예외 후 2자리 이상 숫자 검출
+  const numLeak = /\d{2,}/.test(joined.replace(/2년|3년|1회|2분|150분|1,000만원|코엔자임Q10/g, ""));   // 관용 표현 예외 후 2자리 이상 숫자 검출(1,000만원=보장 사실 고지·§0-C 동반 / Q10=성분명·수치 아님)
   const slotLeak = /\{[가-힣A-Za-z]+\}/.test(joined);                            // 미치환 슬롯 잔존({링크}는 sms 전용 — joined 밖)
 
   const meta = (typeof RISK_GRADE_META !== "undefined") ? RISK_GRADE_META[g.grade] : null;

@@ -9,9 +9,9 @@
     "L": 1401,
     "M": 131
   },
-  "blockKinds": 31,
+  "blockKinds": 34,
   "blocksUsed": {
-    "op-first": 1338,
+    "op-first": 1253,
     "co-h": 134,
     "co-sugar": 46,
     "ak-clinic": 130,
@@ -38,6 +38,9 @@
     "cl-done-easy": 234,
     "co-h-easy": 47,
     "ak-clinic-easy": 45,
+    "op-unlock": 85,
+    "fc-q-free": 96,
+    "fc-q-sell": 96,
     "co-m": 95,
     "co-liver": 35,
     "co-lipid": 12,
@@ -48,7 +51,7 @@
   "coachN": 544,
   "coachOk": 544,
   "coachAcc": 100,
-  "readSecMax": 245,
-  "seconds": 15.7,
+  "readSecMax": 468,
+  "seconds": 15.3,
   "pass": true
 }
