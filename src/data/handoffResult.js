@@ -25,7 +25,7 @@ function _hmrAll(code) { try { return JSON.parse(localStorage.getItem(_hmrKey(co
 const HMR_GOLDEN_KEYS = [
   { k: "svc3",    ko: "무료 3종 안내" },
   { k: "ins",     ko: "보험 혜택·적용법" },
-  { k: "report",  ko: "리포트 예고" },
+  { k: "report",  ko: "리포트 발행·안내" },
   { k: "kit",     ko: "케어 키트 안내" },
   { k: "support", ko: "향후 지원 약속" },
 ];
