@@ -55,7 +55,7 @@ function hmSpecCheck(card) {
   const s = card && card.script; if (!s) return { ok: false, why: ["script 없음"] };
   const blocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.fcTail || []), ...(s.branches || []), s.closing].filter(Boolean);
   const why = [];
-  /* D2 첫 연결(firstconnect 동반)은 골든타임 1회 한정 확장 — D2 전수 실측 최대 47문장(변형 조합 포함) 기반 ≤48(F2 재정의·검수판 보고) */
+  /* D2 첫 연결(firstconnect 동반)은 골든타임 1회 한정 확장 — D2 전수 실측 최대 47문장 기반 ≤48. 읽기 7분대는 형 확정(2026-08-31: 그대로 유지) */
   const maxSent = (s.firstconnect && s.firstconnect.length) ? 48 : (s.v2 ? 24 : 20);   /* 본대본(응대 제외) 한도 — 응대는 상황별 선택지라 전부 읽지 않는다 */
   const flowBlocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.fcTail || []), s.closing].filter(Boolean);                            /* v2: 생활 대화·씨앗 포함 전화 3~5분(§4-S3) */
   if (s.v2) {
