@@ -770,11 +770,12 @@ function HmHandoffCard({ ent, code, onToast }) {
           ? <button key={a.key} className="hmbtn" style={{ background: g.c }} onClick={() => act(a)}>{a.ko} — 원탭 알림</button>
           : <button key={a.key} className="hmbtn gh" onClick={() => act(a)}>{a.ko}</button>)}
       </div>
+      {/* 발밑 표시 4종 — 호버 툴팁(형 지시 2026-09-01 · 설명서 부록과 같은 문안) */}
       <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11.4, color: "#475569", alignItems: "center" }}>
-        <b style={{ color: g.c }}>⏱ {c.timing.sla}</b>
-        <span>완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
-        <span style={{ color: "#15803D", fontWeight: 700 }}>🛡 경계 3종 통과</span>
-        <span>{c.timing.requeue}</span>
+        <b style={{ color: g.c, cursor: "help" }} title="카드 발행 후 이 시간 안에 첫 접촉이 이뤄져야 해요 — 회원의 위험 등급이 시한을 정해요. 넘기면 「응답 시한 임박」 칸과 ⑩관제탑 준수율 집계에 잡혀요.">⏱ {c.timing.sla}</b>
+        <span style={{ cursor: "help" }} title="통화만 하면 '접촉'이에요 — 1순위 개입이 실제 행동(예약·등록 등 데이터)으로 이어져야 '완결'로 집계돼요. (등재 대기)는 그 행동을 자동으로 잡을 데이터가 아직 공식 등재 전이라 접촉 기록으로 임시 대체 중이라는 정직한 표시예요.">완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
+        <span style={{ color: "#15803D", fontWeight: 700, cursor: "help" }} title="이 카드의 대본이 발행 전 자동 검사 3종을 통과했어요: ①원본 검진 수치 누출 0(구간 표현만) ②빈칸(미치환 슬롯) 0 ③금지어(진단 단정·공포 조장·권유·금액 흥정) 0 — 하나라도 걸리면 카드가 발행되지 않아요.">🛡 경계 3종 통과</span>
+        <span style={{ cursor: "help" }} title="시한 안에 접촉했지만 완결까지 못 갔으면 7일 뒤 명단에 다시 올라와요. 거절한 회원은 30일 쉬고, 완결된 회원은 다시 오지 않아요.">{c.timing.requeue}</span>
         <button className="hmbtn gh" style={{ marginLeft: "auto", padding: "5px 12px", fontSize: 11.6, borderColor: g.c, color: g.c }} onClick={() => setSheet(true)}>📝 결과 남기기</button>
       </div>
       {sheet && <HmResultSheet card={c} code={code} onClose={() => setSheet(false)}
@@ -1181,15 +1182,20 @@ function HealthMateSection({ onGo }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
           <div>
             <div className="k">HEALTHMATE PRO CONSOLE · 헬스케어 전문가(하이핀 프로)</div>
-            <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9 }}>· 사번 {pro.sabun || "-"} · {pro.code} · {pro.branch || pro.dan}{pro.sgg ? " · " + pro.sgg : ""} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격" : " · 안내 전용"}{pro.hyundai ? " · 현대해상 위촉" : ""}</span></h2>
+            <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9, cursor: "help" }} title="프로 등급 4단계 — HM1 안내(기본 안내만) · HM2 상담(결과 해설·보장 상담) · HM3 설계·가족(심화 상담+가족 단위 확장) · HM4 지역리드(지역단 집계 관측 — 개인 상세는 못 봐요). 코드는 자격·권한·실적의 단일 키, '모집자격'은 보험 모집 라이선스 보유 표시예요.">· 사번 {pro.sabun || "-"} · {pro.code} · {pro.branch || pro.dan}{pro.sgg ? " · " + pro.sgg : ""} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격" : " · 안내 전용"}{pro.hyundai ? " · 현대해상 위촉" : ""}</span></h2>
             <div style={{ fontSize: 12.3, fontWeight: 800, marginTop: 2 }}>담당 회원 {totalN.toLocaleString()}명 <span style={{ fontWeight: 600, opacity: .85 }}>(체험 {members.length} · 코호트 {(cview ? cview.n : 0).toLocaleString()}) — 관할: {(pro.coverage || []).slice(0, 5).join("·") || pro.dan}{(pro.coverage || []).length > 5 ? " 외 " + ((pro.coverage || []).length - 5) + "곳" : ""}{pro.gap ? " (겸임 포함)" : ""}</span></div>
             <div style={{ fontSize: 12, opacity: .92 }}>하이가 분석·선별·문안·타이밍을 만들고, 프로는 확인·접촉·기록합니다 — 동의의 범위가 곧 활동의 범위.</div>
           </div>
           <button className="hmbtn gh" style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }} onClick={() => { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} setCode(null); }}>코드 잠금</button>
         </div>
+        {/* 오늘의 숫자 5칸 — 호버 툴팁: 담당 전체를 나눈 분류가 아니라 '오늘 볼 것'만 걸러낸 렌즈(겹침 있음) */}
         <div className="hmnum">
-          {[["오늘 접촉할 회원", needN + slaN, 9], ["응답 시한 임박(4h)", slaN, 1], ["검진결과 대기(락)", heldN, 2], ["만기 예정 터치", expN, 3], ["정체 회원", stallN, 9]].map(([k, v, t], i) => (
-            <div key={i} className="n" style={i === 2 ? { opacity: .75 } : null} onClick={() => setTab(t)}><b>{v}</b><span>{k}{i === 2 ? " 🔒" : ""}</span></div>
+          {[["오늘 접촉할 회원", needN + slaN, 9, "터치 시점이 온 회원 + 응답 시한 임박 회원 — 오늘 통화할 명단이에요. 담당 전체를 나눈 칸이 아니라 오늘 기준 렌즈라, 아래 칸들과 겹칠 수 있고 나머지 회원은 '오늘 조치 없음'이 정상이에요."],
+            ["응답 시한 임박(4h)", slaN, 1, "응답 시한이 4시간 안으로 남은 카드예요 — 위 「오늘 접촉할 회원」에 이미 포함된 부분 표시예요."],
+            ["검진결과 대기(락)", heldN, 2, "검진 결과 수령 전이라 접촉이 금지된 회원이에요 — 지금은 연락하지 않는 것이 일이에요. 결과가 도착하면 하이가 자동으로 해제하고 알려드려요."],
+            ["만기 예정 터치", expN, 3, "보장·서비스 만기가 다가와 안내가 필요한 회원이에요 — 만기 D-30·D-7 순서로 정리해 드려요."],
+            ["정체 회원", stallN, 9, "14일 이상 다음 행동이 멈춘 회원이에요 — 오늘의 우선순위로 올라오고, 재개 대본('한동안 챙겨드리지 못해서요')으로 다시 잇습니다."]].map(([k, v, t, tip], i) => (
+            <div key={i} className="n" title={tip} style={i === 2 ? { opacity: .75, cursor: "help" } : { cursor: "help" }} onClick={() => setTab(t)}><b>{v}</b><span>{k}{i === 2 ? " 🔒" : ""}</span></div>
           ))}
         </div>
         <div style={{ marginTop: 10, background: "rgba(255,255,255,.13)", borderRadius: 10, padding: "8px 12px", fontSize: 12, lineHeight: 1.6 }}>
