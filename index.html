@@ -4893,6 +4893,14 @@ const CI_CONSENT = {
         { k: "ci_inq_sens", req: true, t: "질병·상해 등 건강에 관한 정보", why: "보험금 심사·보험사고 조사에 쓰여요.", d: "피보험자의 질병·상해에 관한 정보(상병명·진료기록 등)" },
         { k: "ci_inq_pi", req: true, t: "보험계약·보험금 정보", why: "실손보험 중복 여부와 가입 한도를 확인해요.", d: "성명·국내거소신고번호, 세금우대저축 관련 정보, 보험계약정보(상품종류·기간·보험료·가입금액), 보험금 정보" },
       ] },
+    /* ④ S4 건강관리 서비스(선택) — 목적 문언은 부수업무 신고 범위와 동일 표현(형 붙임 정렬 원칙).
+       ⚠️ S2(인수·지급 심사)와 목적이 다른 별개의 처리 — 저장·이용 경로 분리(Part IV 핵심) */
+    { g: "care", t: "④ [선택] 건강 유지·증진 및 질병의 사전예방·악화 방지를 위한 건강관리 서비스에 씁니다",
+      why: "담당 프로(헬스케어 전문가)가 검진 결과 해설·건강 코칭·추적 관리를 해드리기 위한 동의예요. 동의하지 않으셔도 검진 예약·보험 가입에는 아무 불이익이 없어요.",
+      note: "근거: 신용정보법 제33조 제2항·같은 법 시행령 제28조의2, 보험업법 제11조의2(부수업무). 이 동의로 쓰는 정보는 가입 심사·보험금 지급 목적과 분리되어 별도로 관리돼요 — 심사에 쓰이지 않아요.",
+      items: [
+        { k: "ci_care_svc", req: false, t: "[선택] 건강관리 서비스 제공(결과 해설·코칭·추적 관리)", why: "이 동의가 없으면 담당 프로의 결과 해설·코칭·추적 관리를 받으실 수 없어요 — 동의는 언제든 철회할 수 있어요.", d: "건강검진 결과의 등급·관리필요 항목(원본 수치 아님), 건강관리 활동 기록(진료 안내·미션·기기 기록), 연락 가능 시간대" },
+      ] },
   ],
 };
 const CI_ALL = CI_CONSENT.groups.reduce((a, g) => a.concat(g.items), []);
@@ -31619,7 +31627,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "a4a378643fd57161", "generatedAt": "2026-09-01", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "0567dd87b05a8dbb", "generatedAt": "2026-09-01", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -31792,7 +31800,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-08-31","seed":20260828,"inventory":{"version":1,"sourceHash":"a4a378643fd57161","generatedAt":"2026-09-01","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.08,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-01","seed":20260828,"inventory":{"version":1,"sourceHash":"0567dd87b05a8dbb","generatedAt":"2026-09-01","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.3,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
