@@ -48,9 +48,11 @@ function hmDailyRoster(code, dateStr) {
       score: _drScore(card, sig, dateStr, code) + (adj.boost || 0) * 1000 + cycBoost });
   }
   cand.sort((a, b) => b.score - a.score);
-  /* 건수 — H는 상한 내 전부, 나머지로 목표(5) 채움, 상한 7 */
-  const hs = cand.filter((c) => c.card.grade === "H").slice(0, HM_ROSTER_MAX);
-  const rest = cand.filter((c) => c.card.grade !== "H");
+  /* 건수 — H와 만기 국면(T4~T6·무보장 회복 창)은 등급 무관 선두 그룹(R3 수정: H 우선 규칙이 만기 카드를 밀어내던 결함),
+     나머지로 목표(5) 채움, 상한 7 */
+  const isMat = (c) => c.cycle && ["T4", "T5", "T6"].indexOf(c.cycle) >= 0;
+  const hs = cand.filter((c) => c.card.grade === "H" || isMat(c)).slice(0, HM_ROSTER_MAX);
+  const rest = cand.filter((c) => !(c.card.grade === "H" || isMat(c)));
   const list = hs.concat(rest).slice(0, Math.max(hs.length, Math.min(HM_ROSTER_TARGET, cand.length))).slice(0, HM_ROSTER_MAX);
   const byGrade = {}; list.forEach((c) => byGrade[c.card.grade] = (byGrade[c.card.grade] || 0) + 1);
   return { code: code, date: dateStr, list: list,
