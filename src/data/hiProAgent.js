@@ -16,6 +16,7 @@ const HIPRO_CATS = [
   { cat: "cost",   ko: "치료비·보장 기초", pats: [/실손\s*([1-5]세대)?.*(자기\s*부담|보장|차이|뭐)/, /본인\s*부담.*(뭐|얼마|계산)/, /진단금.*(뭐|평균|얼마)/, /치료비.*(구조|어떻게|준비)/] },
   { cat: "script", ko: "대본 찾기", pats: [/(거절|보류|수락|가족|바쁘|두려|무서|보험\s*질문|비용\s*질문).*(대본|응대|뭐라|문안)/, /대본.*(찾|보여|알려)/, /쉬운말.*(대본|버전)/] },
   { cat: "system", ko: "시스템 사용법", pats: [/(결과|기록).*(어디|어떻게)\s*(남|해|기록)/, /어디서\s*(봐|해|확인)/, /(관제탑|통합\s*운영|백업|카탈로그|지시서).*(어디|어떻게|뭐)/, /화면.*(어디|찾)/] },
+  { cat: "cycle",  ko: "60일 사이클·만기", pats: [/T[0-8]\s*(가|이|는|란|시점)?\s*(뭐|무엇|설명|알려|언제)/i, /(사이클|60일).*(뭐|무엇|설명|알려)/, /(만기|D-\s*\d+).*(뭐|언제|어떻게|하면|되면)/, /(보장맵|보장\s*맵).*(뭐|어떻게|누가|만들)/, /무인\s*(분석|보장분석)/, /승환.*(뭐|창|기간)/, /(세그먼트|G(?:1[0-4]|[1-9])[ab]?)\s*(가|이|는|이란)?\s*(뭐|무엇|설명)/i, /(제공\s*DB|제공\s*필드|현대해상.*(주는|제공))/, /2차\s*골든/] },
   { cat: "role",   ko: "역할·케어 플랜", pats: [/([DL][1-8]|첫\s*통화|첫\s*상담).*(역할|뭘\s*해|뭘\s*제안|어떻게\s*해)/, /케어\s*플랜.*(뭐|어떻게|조합)/, /(도구|영양제|식단|기기).*(언제|어떤\s*회원)/, /골든\s*타임/, /(3종|삼종).*(뭐|안내|말|전해|설명)/, /케어\s*키트/] },
 ];
 /* 지표 별칭(프로 현장 표현 포함) — clinical·care 공용 */
@@ -244,6 +245,43 @@ function hiproAnswer(q, ctx) {
     }
     if (cat === "curves") {
       return R("curves:3step", "3단으로만 답해요 — ①사실: “구간이 궁금하시죠, 앱의 「내 대비 현황」에서 회원님 기준으로 보실 수 있어요” ②판단 유보: “판단은 회원님이 하시는 거예요” ③절차: “보시다가 궁금한 건 하이나 저한테 물어보세요”. 프로가 먼저 숫자를 꺼내는 건 금지예요(가드가 차단).", ["§0-P", "br2-treatcost"]);
+    }
+    /* ⑩ 60일 사이클·만기·보장맵·세그먼트·제공 DB(R6) — 원천: CYCLE_SPEC·CYCLE_STAGES·COV_FILTER_RULES·G_SEGMENTS·HY_FIELDS */
+    if (cat === "cycle") {
+      const tm = t.toUpperCase().match(/T([0-8])/);
+      if (tm && typeof CYCLE_STAGES !== "undefined") {
+        const k = "T" + tm[1], st2 = CYCLE_STAGES[k];
+        if (st2) return R("cycle:" + k, k + " " + st2.ko + " — " + st2.act, ["CYCLE_STAGES." + k]);
+      }
+      if (/(사이클|60일)/.test(t) && typeof CYCLE_SPEC !== "undefined") {
+        const C = CYCLE_SPEC;
+        return R("cycle:spec", "검진일(D0)에 보장이 시작되고 " + C.expiryDay + "일 뒤 만기예요. 결과는 D+14~21에 도착하고(시연 " + C.resultDay + "일), 그때부터 " + C.goldenHours + "시간이 골든타임이에요. 만기 D-" + C.noticeDays + "에 보장분석, D-" + C.mapDays + "에 보장맵 안내, 만기 뒤 " + C.secondGoldenDays + "일이 2차 골든타임이고요. 프로가 만기를 말할 수 있는 시점의 잔여는 최대 " + C.maxRemainAtContact + "일이에요.", ["CYCLE_SPEC"]);
+      }
+      if (/2차\s*골든/.test(t) && typeof CYCLE_SPEC !== "undefined") {
+        return R("cycle:second", "만기 뒤 " + CYCLE_SPEC.secondGoldenDays + "일이 2차 골든타임이에요 — 무보장 상태가 길어지면 조용히 이탈하시니까, 이 창 안에서 관계를 회복해요. 보험 이야기가 아니라 안부와 코칭이 먼저예요(mt-t7-keep).", ["CYCLE_SPEC", "mt-t7-keep"]);
+      }
+      if (/보장맵|무인\s*(분석|보장분석)/.test(t) && typeof COV_FILTER_RULES !== "undefined") {
+        const f = COV_FILTER_RULES.map((x) => x.ko).join(" · ");
+        return R("cycle:covmap", "만기 D-" + CYCLE_SPEC.noticeDays + "에 서버가 스스로 만드는 보장 지도예요 — 사람이 조회하는 화면 자체가 없어요. 계약 정보만으로 공백·중복·만기 캘린더를 산출하고, 여과 규칙(" + f + ")은 코드로 고정돼 있어 보장맵에 들어가지 않아요. 건강 데이터는 입력되지 않아요.", ["COV_FILTER_RULES", "covAnalysis"]);
+      }
+      if (/승환/.test(t)) {
+        return R("cycle:switch", "최근 1개월·6개월 안에 계약 정리 이력이 있으면 승환 창이 켜져요. 그때는 비교안내 화면(월 보험료·보장 범위·기간·면책 재시작·환급금·인수 조건 6항)을 확인해야 다음으로 갈 수 있어요 — 시스템이 강제해요.", ["보험업법 §97③", "covAnalysis.switchWindow"]);
+      }
+      const gm = t.toUpperCase().match(/G(1[0-4]|[1-9])(A|B)?/);
+      if (gm && typeof G_SEGMENTS !== "undefined") {
+        const key = "G" + gm[1] + (gm[2] ? gm[2].toLowerCase() : "");
+        const g = G_SEGMENTS.find((x) => x.g === key) || G_SEGMENTS.find((x) => x.g === "G" + gm[1]);
+        if (g) return R("cycle:" + g.g, g.g + " " + g.ko + " — " + g.why, ["G_SEGMENTS." + g.g]);
+      }
+      if (/세그먼트/.test(t) && typeof G_SEGMENTS !== "undefined") {
+        return R("cycle:segs", "행동과 시점으로 나눈 " + G_SEGMENTS.length + "종이에요 — 질환 이름은 하나도 없어요. 시간 세그먼트(골든타임·만기 D-20·D-7·보장 공백·다음 검진)는 달력이 자동으로 켜고, 접촉 보류(G8)가 가장 먼저 차단해요.", ["G_SEGMENTS"]);
+      }
+      if (/(제공\s*DB|제공\s*필드|현대해상)/.test(t) && typeof HY_FIELDS !== "undefined") {
+        return R("cycle:feed", "현대해상에 나가는 건 " + HY_FIELDS.length + "개 필드예요 — 동의 상태·타이밍(사이클·만기·결과 경과)·세그먼트·보장맵 산출값·연락 토큰. 건강 상태를 알 수 있는 값은 하나도 없고, 등급도 제공하지 않아요. 사전 밖 필드가 생기면 커밋이 차단돼요.", ["HY_FIELDS", "§0-V3"]);
+      }
+      if (/만기/.test(t)) {
+        return R("cycle:maturity", "만기 D-" + CYCLE_SPEC.noticeDays + "에 보장 종료를 미리 알려드리고(사실 고지), D-" + CYCLE_SPEC.mapDays + "에 보장맵을 보여드리면서 안내 동의를 여쭤요. 만기 당일엔 무보장 사실을 알려드리고요 — 동의를 안 하셔도 건강관리는 그대로 계속돼요.", ["CYCLE_SPEC", "mt-t4-notice", "mt-t5-ask"]);
+      }
     }
     if (cat === "role") {
       const m = t.match(/([DL][1-8])/i);

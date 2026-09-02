@@ -1,5 +1,5 @@
 {
-  "date": "2026-08-31",
+  "date": "2026-09-02",
   "total": 100000,
   "cards": 56945,
   "publishable": 56945,
@@ -40,13 +40,13 @@
   "prosAll": 702,
   "sabunOk": true,
   "rosterViol": 0,
-  "avgRoster": 6.05,
+  "avgRoster": 6.97,
   "maxRoster": 7,
   "zeroRosterPros": 1,
   "byRosterGrade": {
-    "H": 3558,
-    "M": 228,
-    "L": 134
+    "H": 3209,
+    "L": 930,
+    "M": 377
   },
   "loadAvg": 154.3,
   "loadRatioMax": 1.29,
@@ -155,6 +155,6 @@
       "ratio": 0.91
     }
   ],
-  "seconds": 44.4,
+  "seconds": 68.9,
   "pass": true
 }
