@@ -20,6 +20,11 @@ const HM_FORBIDDEN = [
   { key: "cost", ko: "원가·수수료 노출", re: /(원가|송객\s*수수료|수수료율|CAC|마진)/ },
   /* ④ 공포 소구·단정 예후(응대 톤 경계) */
   { key: "fear", ko: "공포 소구", re: /(큰일\s*납니다|위험합니다\s*지금\s*당장|생명이\s*위독|손\s*쓸\s*수\s*없|늦기\s*전에|지금\s*아니면|마지막\s*기회|서두르지\s*않으면)/ },
+  /* ⑤ §0-V1(리뉴얼 R4) — 건강→보장 연결 발화: "…수치가 안 좋으시니 …보장을 늘리시죠" 류.
+     제안의 근거는 언제나 보장맵(만기·공백·중복)뿐 — 건강 상태를 보험 이야기의 근거로 삼는 문장은 차단.
+     회원 자발 대화(vd)·만기 대본(mt)에도 동일 적용 */
+  { key: "h2i", ko: "건강→보장 연결(§0-V1)",
+    re: /(수치|결과|검진|기능|간수치|혈압|혈당|콜레스테롤|위험\s*구간|등급|건강\s*상태)[^.!?]{0,16}(높|낮|안\s*좋|좋지\s*않|나쁘|나빠|걱정|위험)[^.!?]{0,24}(보험|보장|특약|진단비|가입|준비하|늘리|들어\s*두)/ },
 ];
 
 /* §0-P 보험 선행 감지(v2) — 상품 어휘가 치료비 어휘보다 먼저 나오는 블록(보험은 수면 아래) */
@@ -102,9 +107,10 @@ function hmScriptScan(card) {
 /* 러너 훅 — 관리자 전용: 블록 사전 원문 전건 스캔(§S-5 ⑨ 원천 검사) */
 try {
   if (typeof window !== "undefined") {
-    window.__hifinScriptScan = function () {
+    window.__hifinScriptScan = function (mode, text) {
       try {
         if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        if (mode === "text") return { hits: hmForbiddenScan(String(text || "")) };   /* 임의 문안 스캔(가드 검증·R4+ 스튜디오 선검사) */
         const out = []; const pendingAdmin = [];
         for (const bl of HM_SCRIPT_BLOCKS) {
           if (bl.part === "channel") continue;             // 규칙 서술문(회원 발화 아님)
@@ -112,7 +118,7 @@ try {
           if (hits.length) out.push({ id: bl.id, hits: hits });
           if (!bl.approved) {
             /* admin(관리 사무)·lifejourney(L5~L8 초안)는 조립 미사용 — 검수 대기 목록으로 분리(실패 아님). 조립 파트 미승인만 실패 */
-            if (["admin", "lifejourney", "talk", "seed", "careplan", "branch2", "cost", "firstconnect"].indexOf(bl.part) >= 0) pendingAdmin.push(bl.id);
+            if (["admin", "lifejourney", "talk", "seed", "careplan", "branch2", "cost", "firstconnect", "maturity", "voluntary"].indexOf(bl.part) >= 0) pendingAdmin.push(bl.id);
             else out.push({ id: bl.id, hits: [{ key: "unapproved", ko: "미승인 블록" }] });
           }
         }
