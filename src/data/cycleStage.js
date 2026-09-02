@@ -51,10 +51,10 @@ function _cycleExamOffset(i, st) {
   return R.expiryDay + R.secondGoldenDays + Math.floor(rng() * (R.nextExamDays - R.expiryDay - R.secondGoldenDays - R.reExamNoticeDays));
 }
 
-/* 플랜 파생(검진 유형 연동 — 기본형 국가검진 60% · 표준형 30% · 고급형 10%) */
+/* 플랜 — 시연은 고급형 단일 통일(형 확정 2026-09-02: 판정·대본·설명이 최고 보장 기준으로 일관).
+   실 런칭 시 검진 유형 연동 복원: 기본형(국가검진)·표준형(종합 50만 미만)·고급형(50만 이상) 자동 적용 */
 function cyclePlanOf(i) {
-  const h = _hmHash("plan|" + i) % 100;
-  return h < 60 ? "기본형" : h < 90 ? "표준형" : "고급형";
+  return "고급형";
 }
 
 /* ── 사이클 판정 — {t, ko, act, examDaysAgo, s3, s14, s19, s20, s21, resultAt, expiryAt, plan} ── */
