@@ -67,6 +67,20 @@ if [ $HM_NEED -eq 1 ]; then
   echo "[GATE] 지시서 하네스 통과 — 스냅샷 자동 스테이지 완료"
 fi
 
+# ══ 제공 DB 무결성 게이트(리뉴얼 R5 · §0-V3) — 사전 밖 필드·건강 상태 값·등급 유입 차단 ══
+if echo "$CHANGED" | grep -qE "^src/data/(hyundaiFeed|cycleStage|gSegment|covAnalysis)\.js$"; then
+  echo "[GATE] 제공 DB 감시 파일 변경 — 비민감 스캔 실행"
+  node scripts/run_hyfeed_scan.mjs || { echo "[GATE] 제공 DB 무결성 실패 — 커밋 차단(건강 상태 값이 제공 레코드에 유입)"; exit 1; }
+  git add scripts/hyfeed_scan_snapshot.json 2>/dev/null || true
+fi
+
+# ══ 60일 사이클 회귀 게이트(리뉴얼 R0) — 사이클·세그먼트 판정 변경 시 전수 ══
+if echo "$CHANGED" | grep -qE "^src/data/(cycleStage|gSegment)\.js$"; then
+  echo "[GATE] 사이클 감시 파일 변경 — 사이클 회귀 실행"
+  node scripts/run_cycle_regression.mjs || { echo "[GATE] 사이클 회귀 실패 — 커밋 차단"; exit 1; }
+  git add scripts/cycle_regression_snapshot.json 2>/dev/null || true
+fi
+
 # ══ 하이프로 회귀 게이트(2단계 P6) — 응답 엔진·코치 변경 시 1만 전수 ══
 if echo "$CHANGED" | grep -qE "^src/data/(hiProAgent|coachAgent)\.js$"; then
   echo "[GATE] 하이프로 감시 파일 변경 — 1만 회귀 실행"

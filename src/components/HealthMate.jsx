@@ -1190,6 +1190,39 @@ function HmTabOps() {
               </div>
             </div>);
           })()}
+          {/* ── ⑧ 60일 사이클 관제(R5) — 사이클 분포·T5 동의율 성적표·세그먼트·제공 DB 무결성 ── */}
+          {(() => {
+            const dist = {}, seg = {}; let n2Yes = 0, t5plus = 0, recov = 0, uncov = 0;
+            try {
+              for (let i = 1; i <= 12000; i += 3) {
+                const cy = cycleOf(i); if (!cy || !cy.t) continue;
+                dist[cy.t] = (dist[cy.t] || 0) + 1;
+                if (["T5", "T6", "T7", "T8"].indexOf(cy.t) >= 0) { t5plus++; if (consentHas("n2", i)) n2Yes++; }
+                if (cy.secondGolden) { uncov++; if (consentHas("n2", i)) recov++; }
+                const g = gSegOf(i); if (g && g.top) seg[g.top] = (seg[g.top] || 0) + 1;
+              }
+            } catch (e) {}
+            let feed = null; try { feed = hyFeedScan(300); } catch (e) {}
+            const T = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"];
+            const maxT = Math.max(1, ...T.map((t) => dist[t] || 0));
+            const segTop = Object.keys(seg).sort((a, b2) => seg[b2] - seg[a]).slice(0, 6);
+            return (<div style={{ marginTop: 9, background: "#F8FBFF", border: "1px solid #BFDBFE", borderRadius: 9, padding: "8px 11px" }}>
+              <div style={{ fontSize: 11.4, fontWeight: 900, color: "#1D4ED8" }}>⏱ 60일 사이클 관제 <span style={{ fontWeight: 600, color: "#64748B", fontSize: 10.4 }}>· 표본 {Object.values(dist).reduce((a, b2) => a + b2, 0).toLocaleString()}명 · [예시·시연]</span></div>
+              <div style={{ display: "flex", gap: 3, marginTop: 6, alignItems: "flex-end", height: 46 }}>
+                {T.map((t) => (<div key={t} style={{ flex: 1, textAlign: "center" }}>
+                  <div style={{ height: Math.round((dist[t] || 0) / maxT * 32) + 2, background: ["T2", "T5", "T6"].indexOf(t) >= 0 ? "#F5821F" : "#93C5FD", borderRadius: 3 }} />
+                  <div style={{ fontSize: 9.4, color: "#475569", marginTop: 2 }}>{t}</div>
+                  <div style={{ fontSize: 9, color: "#94A3B8" }}>{(dist[t] || 0).toLocaleString()}</div>
+                </div>))}
+              </div>
+              <div style={{ fontSize: 11.4, color: "#334155", lineHeight: 1.75, marginTop: 5 }}>
+                📋 <b>T5 동의율(60일마다 나오는 성적표)</b> — 만기 도달 {t5plus.toLocaleString()}명 중 안내 동의 <b style={{ color: "#1D4ED8" }}>{n2Yes.toLocaleString()}명({t5plus ? Math.round(n2Yes / t5plus * 100) : 0}%)</b> · 앞선 40일의 건강관리가 진짜였는지가 이 숫자로 나와요<br />
+                🕐 <b>2차 골든타임 회복</b> — 무보장 {uncov.toLocaleString()}명 중 동의 보유 {recov.toLocaleString()}명({uncov ? Math.round(recov / uncov * 100) : 0}%)<br />
+                🎯 <b>세그먼트 상위</b> — {segTop.map((g) => g + " " + seg[g].toLocaleString()).join(" · ") || "-"}<br />
+                🔐 <b>현대해상 제공 DB</b> — 필드 {feed ? feed.fields : "-"}종 · 표본 {feed ? feed.n.toLocaleString() : "-"}건 검사 · 건강 상태 값 유입 <b style={{ color: feed && feed.ok ? "#15803D" : "#B91C1C" }}>{feed ? feed.bad.length : "?"}건</b>{feed && feed.ok ? " — 사전 밖 필드·등급·질환명 0(§0-V3 통과)" : ""}
+              </div>
+            </div>);
+          })()}
         </div>);
       })()}
     </div>
