@@ -19377,6 +19377,8 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
 /* ══ 보장맵(R2 — 무인 보장분석 산출) — T4~T6 카드 전용. 조회 원본은 여기 없다(A6 원칙) ══ */
 function HmCovMap({ i }) {
   const [cmpOpen, setCmpOpen] = React.useState(false);
+  const [n2Open, setN2Open] = React.useState(false);   /* R3 — T5 동의 요청(회원 자기 화면 시뮬) */
+  const [n2Done, setN2Done] = React.useState(null);    /* "yes" | "no" */
   const cov = React.useMemo(() => { try { return covAnalysisOf(Number(i)); } catch (e) { return null; } }, [i]);
   if (!cov) return null;
   if (!cov.map) {
@@ -19399,11 +19401,35 @@ function HmCovMap({ i }) {
       <div style={{ marginTop: 6, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
         {sw !== "NONE" && <span className="hmpill" style={{ background: "#FEF3C7", color: "#92400E", fontWeight: 800 }}>⚠️ 승환 창 {sw === "WITHIN_1M" ? "1개월" : "6개월"} — 비교안내 필수</span>}
         {sw !== "NONE" && <button className="hmbtn gh" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setCmpOpen(true)}>비교안내 보기</button>}
-        {n2ok
+        {n2ok || n2Done === "yes"
           ? <span className="hmpill" style={{ background: "#F0FDF4", color: "#15803D" }}>안내·권유 동의(N2) 보유 — 제안 화면 열림</span>
-          : <span className="hmpill" style={{ background: "#F1F5F9", color: "#64748B" }}>🔒 제안 화면 없음 — 회원이 T5에서 동의해야 열려요(§0-V2)</span>}
+          : n2Done === "no"
+            ? <span className="hmpill" style={{ background: "#FFF7ED", color: "#C2410C" }}>회원이 이번엔 사양 — 건강관리는 그대로 계속돼요(재요청 없음)</span>
+            : <>
+                <span className="hmpill" style={{ background: "#F1F5F9", color: "#64748B" }}>🔒 제안 화면 없음 — 회원이 T5에서 동의해야 열려요(§0-V2)</span>
+                <button className="hmbtn" style={{ padding: "4px 11px", fontSize: 11, background: "#0F2A43" }} onClick={() => setN2Open(true)}>📱 회원 화면으로 동의 요청</button>
+              </>}
       </div>
     </div>
+    {/* T5 — 가장 중요한 30초: 동의는 프로가 대신 누르지 않는다. 회원이 자기 화면에서 직접(시뮬) */}
+    {n2Open && (<div style={{ position: "fixed", inset: 0, zIndex: 1460, background: "rgba(11,34,57,.55)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setN2Open(false)}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "min(360px,92vw)", background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,.35)" }}>
+        <div style={{ background: "linear-gradient(135deg,#F97316,#EA580C)", color: "#fff", padding: "12px 16px", fontSize: 12.5, fontWeight: 800 }}>📱 회원님 화면 <span style={{ fontWeight: 600, opacity: .85 }}>· [예시·시연] 회원 본인이 직접 선택해요</span></div>
+        <div style={{ padding: "16px 18px" }}>
+          <div style={{ fontSize: 14.5, fontWeight: 900, color: "#0F2A43", lineHeight: 1.5 }}>보장 종료 후에도 필요한 안내를 받으시겠습니까?</div>
+          <div style={{ fontSize: 11.6, color: "#475569", lineHeight: 1.7, marginTop: 7 }}>
+            무료 검진대비보험이 7일 뒤 끝나요. 동의하시면 보장이 끝난 뒤에도 비어 있는 보장에 대한 <b>안내</b>를 받으실 수 있어요.<br />
+            <span style={{ color: "#15803D" }}>✅ 동의해도</span> 건강정보는 안내에 쓰이지 않아요(계약 정보만).<br />
+            <span style={{ color: "#C2410C" }}>⚠️ 동의하지 않아도</span> 건강관리·코칭은 지금처럼 계속돼요.
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 13 }}>
+            <button className="hmbtn" style={{ background: "#EA580C" }} onClick={() => { try { consentSet("n2", true); } catch (e) {} setN2Done("yes"); setN2Open(false); }}>네, 받을게요</button>
+            <button className="hmbtn gh" onClick={() => { setN2Done("no"); setN2Open(false); }}>이번엔 괜찮아요</button>
+          </div>
+          <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 8, textAlign: "center" }}>어느 쪽을 고르셔도 다시 묻지 않아요 — 마음이 바뀌면 언제든 설정에서 바꿀 수 있어요.</div>
+        </div>
+      </div>
+    </div>)}
     {cmpOpen && (<div style={{ position: "fixed", inset: 0, zIndex: 1450, background: "rgba(11,34,57,.5)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setCmpOpen(false)}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: "min(520px,94vw)", background: "#fff", borderRadius: 14, padding: "16px 18px", maxHeight: "80vh", overflowY: "auto" }}>
         <b style={{ fontSize: 13.5, color: "#0F2A43" }}>⚖️ 신·구 계약 비교안내 — 승환 창에서는 이 화면을 확인해야 다음으로 갈 수 있어요</b>
@@ -19452,6 +19478,16 @@ function HmHandoffCard({ ent, code, onToast }) {
           <span className="hmpill" style={{ marginLeft: 6, background: g.bg, color: g.c }}>{g.ko}</span>
           <span className="hmpill" style={{ marginLeft: 4, background: "#F1F5F9", color: "#475569" }}>{c.member.stage} 단계</span>
           {(c.script.firstconnect || []).length > 0 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDE68A", color: "#92400E", fontWeight: 900 }}>⭐ 첫 연결 골든타임</span>}
+          {/* R3 — 60일 사이클 배지(만기 국면): 보험 시계가 카드에 보인다 */}
+          {(() => { try {
+            const cy = cycleOf(c.member.cohortIndex);
+            if (!cy || !cy.t) return null;
+            if (cy.t === "T4") return <span className="hmpill" style={{ marginLeft: 4, background: "#DBEAFE", color: "#1D4ED8", fontWeight: 800 }} title="무료 보장 종료 20일 전 — 보장 종료 예고(사실 고지)와 무인 보장분석이 실행되는 시점이에요.">⏳ 만기 D-{cy.s14}</span>;
+            if (cy.t === "T5") return <span className="hmpill" style={{ marginLeft: 4, background: "#FEF3C7", color: "#92400E", fontWeight: 900 }} title="만기 7일 전 — 보장맵을 안내하고, 원하시면 상품 안내 동의(N2)를 회원 화면에서 받는 가장 중요한 30초예요.">🔔 만기 D-{cy.s14} · 보장맵 안내</span>;
+            if (cy.t === "T6") return <span className="hmpill" style={{ marginLeft: 4, background: "#FDECEC", color: "#B91C1C", fontWeight: 900 }} title="오늘 무료 보장이 끝나요 — 사실 통지 + 동의 보유 회원에 한해 대안 제안. 2차 골든타임이 시작돼요.">⚠️ 만기 — 2차 골든타임</span>;
+            if (cy.secondGolden) return <span className="hmpill" style={{ marginLeft: 4, background: "#FFF7ED", color: "#C2410C", fontWeight: 800 }} title="만기 후 무보장 상태 — 30일 안에 회복하지 못하면 조용한 이탈로 이어져요.">🕐 무보장 {cy.s20}일째</span>;
+            return null;
+          } catch (e) { return null; } })()}
           {c.member.stalledDays >= 14 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDECEC", color: "#B91C1C" }}>정체 {c.member.stalledDays}일</span>}
         </div>
         <HmStageDots reached={(typeof cohortStageOf === "function" && cohortStageOf(c.member.cohortIndex) || { reached: [c.member.stage] }).reached} />
@@ -19610,6 +19646,35 @@ function HmTabToday({ code, onToast, cview }) {
       <div style={{ marginTop: 6, fontSize: 11.6, color: HM_C.mut }}>하이가 등급·응답 시한·정체를 계산해 우선순위로 선별했어요 — 프로는 카드 순서대로 확인·접촉·기록만. 대본 없는 통화는 없어요(대본 보기 ▼).</div>
     </div>
     <HmStageGuide code={code} cview={cview} />
+    {/* R3 — 60일 터치 플랜: 검진일 기준 9시점이 자동 계산되어 뜬다. 프로가 「누구에게 언제」를 고민할 일이 없다 */}
+    {(() => {
+      const dist = {};
+      try { if (cview) for (const i of cview.ids) { const cy = cycleOf(i); const k = cy && cy.t ? cy.t : "PRE"; dist[k] = (dist[k] || 0) + 1; } } catch (e) {}
+      const ROWS = [
+        ["T0", "검진 전", "예약 완료 — 접촉 금지, 프로필·관할 사전 학습만"],
+        ["T1", "검진~결과", "접촉 금지(락) 유지 — 결과 없이 거는 전화는 회원에게 불편"],
+        ["T2", "결과 도착", "골든타임 — 48시간 안 첫 통화(해설·무료 3종·케어 키트)"],
+        ["T3", "코칭", "리포트 해설·케어 키트·습관 미션 — 보험 이야기는 하지 않는 구간"],
+        ["T4", "만기 D-20", "보장 종료 예고(사실 고지) · 무인 보장분석 실행"],
+        ["T5", "만기 D-7", "보장맵 안내 + 상품 안내 동의 요청 — 가장 중요한 30초"],
+        ["T6", "만기", "무보장 사실 통지 — 2차 골든타임 개시"],
+        ["T7", "관리 지속", "코칭·재검진 안내 계속 — 보험과 무관하게, 관계를 잇는 구간"],
+        ["T8", "다음 검진", "1년 — 올해 검진 준비 안내, 사이클 재시작"],
+      ];
+      return (<details className="hmcard" style={{ marginTop: 10, padding: "10px 14px" }}>
+        <summary style={{ cursor: "pointer", fontSize: 12.6, fontWeight: 900, color: HM_C.ink }}>⏱ 60일 터치 플랜 <span style={{ fontSize: 11, color: HM_C.mut, fontWeight: 600 }}>— 검진일 기준 9시점이 자동 계산돼요 · 내 관할 분포 포함</span></summary>
+        <div style={{ marginTop: 8, display: "grid", gap: 4 }}>
+          {ROWS.map(([t, when, act]) => (
+            <div key={t} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 11.6, lineHeight: 1.6, borderBottom: "1px dashed #F1F5F9", paddingBottom: 3 }}>
+              <b style={{ flex: "none", width: 30, color: ["T2", "T5", "T6"].indexOf(t) >= 0 ? "#C2410C" : "#1D4ED8" }}>{t}</b>
+              <span style={{ flex: "none", width: 72, fontWeight: 700, color: "#475569" }}>{when}</span>
+              <span style={{ flex: 1, color: "#334155" }}>{act}</span>
+              <span className="hmpill" style={{ flex: "none", background: "#F1F5F9", color: "#475569" }}>{(dist[t] || 0).toLocaleString()}명</span>
+            </div>))}
+        </div>
+        <div style={{ fontSize: 10.6, color: HM_C.mut, marginTop: 6 }}>보험 시계는 60일이지만 건강관리 시계는 1년 — 만기(T6)는 관계의 끝이 아니라 문턱이에요. 사이클 전(예약 전) {((dist.PRE || 0)).toLocaleString()}명은 배정 대상이 아니에요.</div>
+      </details>);
+    })()}
     {roster.list.map((ent) => <HmHandoffCard key={ent.i} ent={ent} code={code} onToast={onToast} />)}
     {!roster.list.length && <div className="hmcard" style={{ marginTop: 10 }}>오늘 발행 대상이 없어요 — 관할 회원이 모두 락(검진 대기)이거나 관리 리듬 양호예요.</div>}
   </div>);
@@ -19866,6 +19931,8 @@ function HealthMateSection({ onGo }) {
   const stallN = cards.filter((c) => c.stage.stalled).length + (cview ? cview.stall.length : 0);
   const expN = cards.filter((c) => c.plan.items.some((x) => x.key.indexOf("m") === 0 && x.due && !x.done)).length + (cview ? cview.ready.length : 0);
   const slaN = hmSignals(code).filter((s) => s.sla <= 4).length + (cview ? cview.ids.filter((i) => { const g = cohortSignalOf(i); return g && g.sla <= 4; }).length : 0);
+  /* R3 — 만기 임박(T4·T5): 검진대비보험 만기 D-20 이내 회원(달력 값이 정하는 오늘의 일) */
+  const matN = cview ? cview.ids.filter((i) => { try { const cy = cycleOf(i); return cy && (cy.t === "T4" || cy.t === "T5" || cy.t === "T6"); } catch (e) { return false; } }).length : 0;
   const totalN = members.length + (cview ? cview.n : 0);
   const TABS = [
     [0, "⓪ 오늘의 지시서", Sparkles],
@@ -19892,6 +19959,7 @@ function HealthMateSection({ onGo }) {
             ["응답 시한 임박(4h)", slaN, 1, "응답 시한이 4시간 안으로 남은 카드예요 — 위 「오늘 접촉할 회원」에 이미 포함된 부분 표시예요."],
             ["검진결과 대기(락)", heldN, 2, "검진 결과 수령 전이라 접촉이 금지된 회원이에요 — 지금은 연락하지 않는 것이 일이에요. 결과가 도착하면 하이가 자동으로 해제하고 알려드려요."],
             ["만기 예정 터치", expN, 3, "보장·서비스 만기가 다가와 안내가 필요한 회원이에요 — 만기 D-30·D-7 순서로 정리해 드려요."],
+            ["만기 임박(D-20)", matN, 0, "검진대비보험 만기가 20일 안으로 온 회원이에요 — D-20 보장 종료 예고, D-7 보장맵 안내(가장 중요한 30초), 만기 당일 2차 골든타임까지 달력이 오늘의 일을 정해요."],
             ["정체 회원", stallN, 9, "14일 이상 다음 행동이 멈춘 회원이에요 — 오늘의 우선순위로 올라오고, 재개 대본('한동안 챙겨드리지 못해서요')으로 다시 잇습니다."]].map(([k, v, t, tip], i) => (
             <div key={i} className="n" title={tip} style={i === 2 ? { opacity: .75, cursor: "help" } : { cursor: "help" }} onClick={() => setTab(t)}><b>{v}</b><span>{k}{i === 2 ? " 🔒" : ""}</span></div>
           ))}
@@ -26779,8 +26847,19 @@ function hmDailyRoster(code, dateStr) {
     if (adj.skip) { resultSkipN++; continue; }
     if (adj.boost) followUpN++;
     const sig = (typeof cohortSignalOf === "function") ? cohortSignalOf(i) : null;
-    cand.push({ i: i, card: card, sig: sig, followUp: !!adj.boost,
-      score: _drScore(card, sig, dateStr, code) + (adj.boost || 0) * 1000 });
+    /* R3 — 60일 사이클 부스트: 만기 국면이 달력 값으로 로스터에 올라온다(후속 약속 1000보다는 아래) */
+    let cyc = null, cycBoost = 0;
+    try {
+      cyc = (typeof cycleOf === "function") ? cycleOf(i) : null;
+      if (cyc) {
+        if (cyc.t === "T5") cycBoost = 800;                 /* 만기 D-7 — 보장맵 안내+동의 요청, 가장 중요한 30초 */
+        else if (cyc.t === "T6") cycBoost = 700;            /* 만기 당일 — 2차 골든타임 개시 */
+        else if (cyc.t === "T4") cycBoost = 500;            /* D-20 — 보장 종료 예고 */
+        else if (cyc.secondGolden) cycBoost = 400;          /* T7 무보장 회복 창 */
+      }
+    } catch (e) {}
+    cand.push({ i: i, card: card, sig: sig, followUp: !!adj.boost, cycle: cyc ? cyc.t : null,
+      score: _drScore(card, sig, dateStr, code) + (adj.boost || 0) * 1000 + cycBoost });
   }
   cand.sort((a, b) => b.score - a.score);
   /* 건수 — H는 상한 내 전부, 나머지로 목표(5) 채움, 상한 7 */
@@ -32112,7 +32191,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "5be76c3369922a78", "generatedAt": "2026-09-02", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "36a33c14ef2c7386", "generatedAt": "2026-09-02", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -32288,7 +32367,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-02","seed":20260828,"inventory":{"version":1,"sourceHash":"5be76c3369922a78","generatedAt":"2026-09-02","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":5.13,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-02","seed":20260828,"inventory":{"version":1,"sourceHash":"36a33c14ef2c7386","generatedAt":"2026-09-02","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.7,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

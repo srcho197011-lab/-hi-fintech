@@ -33,8 +33,19 @@ function hmDailyRoster(code, dateStr) {
     if (adj.skip) { resultSkipN++; continue; }
     if (adj.boost) followUpN++;
     const sig = (typeof cohortSignalOf === "function") ? cohortSignalOf(i) : null;
-    cand.push({ i: i, card: card, sig: sig, followUp: !!adj.boost,
-      score: _drScore(card, sig, dateStr, code) + (adj.boost || 0) * 1000 });
+    /* R3 — 60일 사이클 부스트: 만기 국면이 달력 값으로 로스터에 올라온다(후속 약속 1000보다는 아래) */
+    let cyc = null, cycBoost = 0;
+    try {
+      cyc = (typeof cycleOf === "function") ? cycleOf(i) : null;
+      if (cyc) {
+        if (cyc.t === "T5") cycBoost = 800;                 /* 만기 D-7 — 보장맵 안내+동의 요청, 가장 중요한 30초 */
+        else if (cyc.t === "T6") cycBoost = 700;            /* 만기 당일 — 2차 골든타임 개시 */
+        else if (cyc.t === "T4") cycBoost = 500;            /* D-20 — 보장 종료 예고 */
+        else if (cyc.secondGolden) cycBoost = 400;          /* T7 무보장 회복 창 */
+      }
+    } catch (e) {}
+    cand.push({ i: i, card: card, sig: sig, followUp: !!adj.boost, cycle: cyc ? cyc.t : null,
+      score: _drScore(card, sig, dateStr, code) + (adj.boost || 0) * 1000 + cycBoost });
   }
   cand.sort((a, b) => b.score - a.score);
   /* 건수 — H는 상한 내 전부, 나머지로 목표(5) 채움, 상한 7 */
