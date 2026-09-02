@@ -1572,7 +1572,7 @@ function useHira() {
 function InsCertModal({ cert, onClose }) {
   if (!cert) return null;
   const d0 = new Date(cert.at); const start = new Date(d0); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
-  const end = new Date(start); end.setDate(end.getDate() + 90);
+  const end = new Date(start); end.setDate(end.getDate() + 60);   /* 보험기간 60일 — CYCLE_SPEC.expiryDay와 정합(형 확정 2026-09-03) */
   const fmt = (d) => `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
   const covers = cert.covers && cert.covers.length ? cert.covers : [];
   return (

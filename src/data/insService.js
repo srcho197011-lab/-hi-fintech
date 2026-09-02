@@ -230,7 +230,7 @@ const insService = {
     const pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product));
     let phase = null, timeline = null;
     if (pol) {
-      const start = pol.createdAt + 86400000, end = pol.createdAt + 90 * 86400000;   // 보장 개시 익일·기간 3개월(카탈로그 규정)
+      const start = pol.createdAt + 86400000, end = pol.createdAt + 60 * 86400000;   // 보장 개시 익일·기간 60일(검진 주기 연동 — CYCLE_SPEC.expiryDay 정합, 형 확정 2026-09-03)
       phase = Date.now() > end ? "만료" : Date.now() >= start ? "보장 중" : "보장 개시 대기";
       timeline = { issuedAt: pol.createdAt, start, end, phase };
     }

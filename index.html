@@ -6336,7 +6336,7 @@ function useHira() {
 function InsCertModal({ cert, onClose }) {
   if (!cert) return null;
   const d0 = new Date(cert.at); const start = new Date(d0); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
-  const end = new Date(start); end.setDate(end.getDate() + 90);
+  const end = new Date(start); end.setDate(end.getDate() + 60);   /* 보험기간 60일 — CYCLE_SPEC.expiryDay와 정합(형 확정 2026-09-03) */
   const fmt = (d) => `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
   const covers = cert.covers && cert.covers.length ? cert.covers : [];
   return (
@@ -29609,7 +29609,7 @@ const insService = {
     const pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product));
     let phase = null, timeline = null;
     if (pol) {
-      const start = pol.createdAt + 86400000, end = pol.createdAt + 90 * 86400000;   // 보장 개시 익일·기간 3개월(카탈로그 규정)
+      const start = pol.createdAt + 86400000, end = pol.createdAt + 60 * 86400000;   // 보장 개시 익일·기간 60일(검진 주기 연동 — CYCLE_SPEC.expiryDay 정합, 형 확정 2026-09-03)
       phase = Date.now() > end ? "만료" : Date.now() >= start ? "보장 중" : "보장 개시 대기";
       timeline = { issuedAt: pol.createdAt, start, end, phase };
     }
@@ -32237,7 +32237,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "471a952c67939010", "generatedAt": "2026-09-03", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "4ad5d231d54ae3f3", "generatedAt": "2026-09-03", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -32413,7 +32413,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-02","seed":20260828,"inventory":{"version":1,"sourceHash":"471a952c67939010","generatedAt":"2026-09-03","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.2,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-02","seed":20260828,"inventory":{"version":1,"sourceHash":"4ad5d231d54ae3f3","generatedAt":"2026-09-03","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.59,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
