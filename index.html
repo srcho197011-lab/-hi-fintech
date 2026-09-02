@@ -19374,6 +19374,59 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
   </div>);
 }
 
+/* ══ 보장맵(R2 — 무인 보장분석 산출) — T4~T6 카드 전용. 조회 원본은 여기 없다(A6 원칙) ══ */
+function HmCovMap({ i }) {
+  const [cmpOpen, setCmpOpen] = React.useState(false);
+  const cov = React.useMemo(() => { try { return covAnalysisOf(Number(i)); } catch (e) { return null; } }, [i]);
+  if (!cov) return null;
+  if (!cov.map) {
+    return (<div style={{ marginTop: 8, background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 9, padding: "7px 11px", fontSize: 11.2, color: "#64748B" }}>
+      🗺 무인 보장분석 — <b>{cov.blockedAt}</b>에서 제외됨: {(cov.steps.find((s) => !s.ok) || {}).note || ""} <span style={{ color: "#94A3B8" }}>(제외도 로그로 남아요)</span>
+    </div>);
+  }
+  const m = cov.map;
+  const sw = m.switchWindow;
+  const n2ok = (typeof consentGate === "function") ? consentGate("n2", Number(i), "covCard").ok : false;
+  return (<details style={{ marginTop: 8, border: "1px solid #BFDBFE", borderRadius: 9, padding: "7px 10px", background: "#F8FBFF" }}>
+    <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#1D4ED8" }}>🗺 보장맵 — 무인 분석 결과 <span style={{ fontWeight: 600, color: "#64748B", fontSize: 10.5 }}>· 계약 정보만으로 산출(건강 데이터 미입력) · {m.at}</span></summary>
+    <div style={{ marginTop: 7, fontSize: 11.4, lineHeight: 1.7 }}>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        {m.cats.map((c) => <span key={c.k} className="hmpill" style={{ background: c.has ? "#EFF6FF" : "#FEF2F2", color: c.has ? "#1D4ED8" : "#B91C1C", border: "1px solid " + (c.has ? "#BFDBFE" : "#FECACA") }}>{c.has ? "✓" : "✕"} {c.ko}{c.has && c.limit ? " " + Math.round(c.limit / 10000000) / 1 * 1 + (c.k === "silson" ? "" : "천만") : ""}</span>)}
+      </div>
+      {m.gaps.length > 0 && <div style={{ marginTop: 5, color: "#B91C1C" }}><b>공백 {m.gaps.length}곳</b> — {m.gaps.map((g) => g.ko).join(" · ")}</div>}
+      {m.overlaps.length > 0 && <div style={{ marginTop: 3, color: "#B45309" }}><b>중복 {m.overlaps.length}건</b> — {m.overlaps.map((o) => o.ko).join(" · ")} → 정리하면 <b>연 {Math.round(m.annualSaveTotal / 10000).toLocaleString()}만원</b>이 줄어요</div>}
+      <div style={{ marginTop: 3, color: "#475569" }}>📅 {m.calendar.slice(0, 3).map((c) => c.ko + (c.done ? "(지남)" : " D-" + c.inDays)).join(" · ")}</div>
+      <div style={{ marginTop: 6, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        {sw !== "NONE" && <span className="hmpill" style={{ background: "#FEF3C7", color: "#92400E", fontWeight: 800 }}>⚠️ 승환 창 {sw === "WITHIN_1M" ? "1개월" : "6개월"} — 비교안내 필수</span>}
+        {sw !== "NONE" && <button className="hmbtn gh" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setCmpOpen(true)}>비교안내 보기</button>}
+        {n2ok
+          ? <span className="hmpill" style={{ background: "#F0FDF4", color: "#15803D" }}>안내·권유 동의(N2) 보유 — 제안 화면 열림</span>
+          : <span className="hmpill" style={{ background: "#F1F5F9", color: "#64748B" }}>🔒 제안 화면 없음 — 회원이 T5에서 동의해야 열려요(§0-V2)</span>}
+      </div>
+    </div>
+    {cmpOpen && (<div style={{ position: "fixed", inset: 0, zIndex: 1450, background: "rgba(11,34,57,.5)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setCmpOpen(false)}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "min(520px,94vw)", background: "#fff", borderRadius: 14, padding: "16px 18px", maxHeight: "80vh", overflowY: "auto" }}>
+        <b style={{ fontSize: 13.5, color: "#0F2A43" }}>⚖️ 신·구 계약 비교안내 — 승환 창에서는 이 화면을 확인해야 다음으로 갈 수 있어요</b>
+        <div style={{ fontSize: 10.6, color: "#64748B", margin: "3px 0 8px" }}>보험업법 §97③·시행령 §44의 비교 항목 — 표준 화면(시스템 강제 통과)</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.2 }}>
+          <thead><tr>{["비교 항목", "기존 계약", "새 제안"].map((h) => <th key={h} style={{ background: "#0F2A43", color: "#fff", padding: "5px 8px", textAlign: "left" }}>{h}</th>)}</tr></thead>
+          <tbody>
+            {[["월 보험료", "월 " + Math.round(m.monthlyTotal / 1000).toLocaleString() + "천원(전 계약 합계)", "제안 확정 시 표시"],
+              ["보장 범위", m.cats.filter((c) => c.has).map((c) => c.ko).join("·") || "-", "제안 확정 시 표시"],
+              ["보험기간·갱신", "갱신형 " + m.calendar.filter((c) => c.ko.indexOf("갱신") >= 0).length + "건 보유", "제안 확정 시 표시"],
+              ["면책·감액 기간", "기존 계약은 면책 경과", "새 계약은 면책이 다시 시작돼요"],
+              ["해지환급금", "해지 시 환급금 손실 가능", "제안 확정 시 표시"],
+              ["인수 조건", "기존 계약 유지 시 재심사 없음", "새 계약은 심사를 다시 받아요"]].map((r, ix) => (
+              <tr key={ix}>{r.map((c, j) => <td key={j} style={{ border: "1px solid #E2E8F0", padding: "5px 8px" }}>{j === 0 ? <b>{c}</b> : c}</td>)}</tr>))}
+          </tbody>
+        </table>
+        <div style={{ fontSize: 10.6, color: "#B45309", marginTop: 7 }}>⚠️ 기존 계약 해지 후 새로 가입하면 보장 공백·면책 재시작·환급금 손실이 생길 수 있어요 — 확인 없이 청약이 진행되지 않아요.</div>
+        <button className="hmbtn" style={{ width: "100%", marginTop: 10 }} onClick={() => setCmpOpen(false)}>비교안내를 확인했어요</button>
+      </div>
+    </div>)}
+  </details>);
+}
+
 function HmHandoffCard({ ent, code, onToast }) {
   const c = ent.card; const g = HM_GRADE_UI[c.grade] || HM_GRADE_UI.L;
   const [done, setDone] = React.useState(false);
@@ -19404,6 +19457,8 @@ function HmHandoffCard({ ent, code, onToast }) {
         <HmStageDots reached={(typeof cohortStageOf === "function" && cohortStageOf(c.member.cohortIndex) || { reached: [c.member.stage] }).reached} />
       </div>
       <div style={{ marginTop: 6, fontSize: 12.6, fontWeight: 800, color: "#C2410C" }}>⚡ {c.trigger}</div>
+      {/* R2 — 만기 국면(T4~T6) 카드에만 보장맵(무인 분석 산출) 노출 */}
+      {(() => { try { const cy = cycleOf(c.member.cohortIndex); return cy && ["T4", "T5", "T6"].indexOf(cy.t) >= 0 ? <HmCovMap i={c.member.cohortIndex} /> : null; } catch (e) { return null; } })()}
       <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
         {c.evidence.map((e, i) => <span key={i} className="hmpill" style={{ border: `1px solid ${g.c}55`, color: g.c, background: "#fff" }}>{e}</span>)}
         <span className="hmpill" style={{ border: "1px solid #CBD5E1", color: HM_C.mut, background: "#fff" }}>동의 ✓ · 원본 수치 미포함 ✓</span>
@@ -27174,6 +27229,118 @@ try {
   }
 } catch (e) {}
 
+/* ══════════════ 무인 보장분석·보장맵(covAnalysis.js) — 리뉴얼 v1.1 R2 (형 승인 2026-09-02) ══════════════
+   원천 사상: 설명서 v2 「만기 보장분석 — 사람의 손을 거치지 않는 여섯 단계」.
+   ⚠️ 원칙:
+     · 프로의 관여는 A6(보장맵 열람) 이후에만 — 조회(A4) 화면 자체가 존재하지 않는다.
+     · 여과 규칙은 코드로 고정(운영자가 끌 수 없음) — 부담보·인수거절·청구 사유·유병자 상품 표시·고지 내용은
+       보장맵에 절대 들어가지 않는다. 여과 건수만 로그로 남는다.
+     · 보장맵은 계약 정보만으로 산출(§0-V1의 물리적 기반) — 건강 데이터 입력이 없다.
+     · 원천: 계약=cohortInsurance[실구현] · 공백=cohortGapProfile[실구현] · 만기=cycleOf[실구현] · 동의=consentGate[실구현].
+     · 중복 절감액 근사 규칙: 같은 보장이 겹치는 계약 중 월납이 가장 작은 쪽 연납액(×12)을 "정리 시 절감"으로 본다. */
+
+/* 표준 분류(보장맵 매트릭스 축) — 상품 분류이며 건강 상태가 아니다 */
+const COV_CATS = [
+  { k: "cancer", ko: "암 진단" }, { k: "brain", ko: "뇌혈관 진단" }, { k: "heart", ko: "심장 진단" },
+  { k: "life", ko: "사망·정기" }, { k: "injury", ko: "상해" }, { k: "driver", ko: "운전자" }, { k: "silson", ko: "실손의료" },
+];
+
+/* A5 여과 규칙(코드 고정) — 제거 대상과 사유. 시연 원본의 민감 파생 필드를 세고 산출물에서 배제 */
+const COV_FILTER_RULES = [
+  { k: "load",    ko: "유병 할증·인수 조건 이력", why: "부위·질환을 직접 지시" },
+  { k: "disease", ko: "기왕증·질환명 참조",       why: "건강 상태 추론 유발" },
+  { k: "claim",   ko: "보험금 청구·지급 사유",     why: "치료 이력을 지시" },
+  { k: "senior",  ko: "유병자·간편심사 상품 표시", why: "상품 성격이 건강을 추론시킴" },
+];
+
+/* 승환 창 판정(시드 — 실 런칭 시 신계약·해지 실데이터) — NONE 82% / 6개월 내 13% / 1개월 내 5% */
+function _covSwitchWindow(i) {
+  const h = _hmHash("cov|sw|" + i) % 100;
+  return h < 82 ? "NONE" : h < 95 ? "WITHIN_6M" : "WITHIN_1M";
+}
+
+/* ── 6단계 무인 파이프라인 — 반환에 조회 원본은 포함되지 않는다(A6 원칙) ── */
+function covAnalysisOf(i) {
+  const n = Number(i);
+  const steps = [];
+  const S = (k, ok, note) => steps.push({ k: k, ok: !!ok, note: note });
+  /* A1 트리거 — 만기 D-20 이후만(T4~) */
+  const cyc = (typeof cycleOf === "function") ? cycleOf(n) : null;
+  const due = cyc && cyc.t && ["T4", "T5", "T6", "T7", "T8"].indexOf(cyc.t) >= 0;
+  S("A1 트리거", due, due ? "만기 D-" + (cyc.s14 != null ? cyc.s14 : 0) + " — 대상 큐 편입" : "만기 D-20 전 — 대상 아님");
+  if (!due) return { steps: steps, map: null, blockedAt: "A1" };
+  /* A2 동의 검증 — N1 실시간 */
+  const gate = (typeof consentGate === "function") ? consentGate("n1", n, "covA2") : { ok: false };
+  S("A2 동의 검증", gate.ok, gate.ok ? "보장분석 동의(N1) 보유 확인" : "N1 미보유·철회 — 이후 단계 미실행(제외 로그)");
+  if (!gate.ok) return { steps: steps, map: null, blockedAt: "A2" };
+  /* A3 재확인 통지 — 거부 3%(시드) */
+  const refused = _hmHash("cov|a3|" + n) % 100 < 3;
+  S("A3 재확인 통지", !refused, refused ? "회원이 분석을 거부 — 즉시 제외" : "「분석을 진행합니다 / 거부하실 수 있습니다」 통지 완료");
+  if (refused) return { steps: steps, map: null, blockedAt: "A3" };
+  /* A4 조회 — 자사 계약 정보(시연: 합성 코호트). 화면 없음·식별값 미기록 */
+  const ins = (typeof cohortInsurance === "function") ? cohortInsurance(n) : null;
+  S("A4 조회", !!ins, ins ? "계약 " + ins.contracts.length + "건 + 실손 " + (ins.hasSilson ? "1" : "0") + "건 — 메모리에서만 사용" : "조회 실패");
+  if (!ins) return { steps: steps, map: null, blockedAt: "A4" };
+  /* A5 여과·산출 — 민감 파생 필드 제거(건수 로그) 후 보장맵 생성 */
+  let filtered = 0;
+  const fLog = [];
+  const dzN = (ins._m.diseases || []).length;
+  if (dzN > 0) { filtered += dzN; fLog.push("disease×" + dzN); }
+  const loadN = ins.contracts.filter((c) => c.monthly > 0 && dzN >= 1).length;
+  if (loadN) { filtered += loadN; fLog.push("load×" + loadN); }
+  const claimN = _hmHash("cov|cl|" + n) % 3;                       /* 청구 이력(시드) — 산출물 미포함 */
+  if (claimN) { filtered += claimN; fLog.push("claim×" + claimN); }
+  const cats = COV_CATS.map((c) => {
+    if (c.k === "silson") return { k: c.k, ko: c.ko, has: !!ins.hasSilson, limit: ins.silson ? ins.silson.limitPay : 0, gen: ins.silson ? ins.silson.gen : null };
+    const hit = ins.contracts.filter((x) => x.type === c.k);
+    return { k: c.k, ko: c.ko, has: hit.length > 0, limit: hit.reduce((s, x) => s + x.benefit, 0), n: hit.length };
+  });
+  /* 공백 — cohortGapProfile 재사용 + 실손 미가입 */
+  const gp = (typeof cohortGapProfile === "function") ? cohortGapProfile(n) : null;
+  const gaps = [];
+  if (gp) for (const g of gp.gaps) { const cat = COV_CATS.find((c) => c.k === g.cat); if (cat) gaps.push({ k: g.cat, ko: cat.ko, why: g.why }); }
+  if (!ins.hasSilson) gaps.push({ k: "silson", ko: "실손의료", why: ins.uninsured ? ins.uninsured.reasonKo : "실손 미가입" });
+  /* 중복 — 입원일당이 2계약 이상에 겹치면 정리 후보(근사 규칙: 최소 월납 연납액) */
+  const daily = ins.contracts.filter((c) => c.detail && c.detail.daily > 0);
+  const overlaps = [];
+  if (daily.length >= 2) {
+    const minC = daily.reduce((a, b2) => a.monthly < b2.monthly ? a : b2);
+    overlaps.push({ ko: "입원일당 중복(" + daily.length + "계약)", annualSave: minC.monthly * 12 });
+  }
+  const silRiders = ins.silson && ins.silson.riders3;
+  if (silRiders && ins.contracts.some((c) => c.type === "injury") && silRiders.dosu) {
+    overlaps.push({ ko: "상해 통원·도수 특약 겹침", annualSave: Math.round(ins.silson.monthly * 0.25) * 12 });
+  }
+  /* 만기·갱신 캘린더 — 검진대비보험 만기 + 갱신형 계약 */
+  const calendar = [{ ko: "검진대비보험 만기", inDays: cyc.s14 != null ? cyc.s14 : 0, done: cyc.s14 == null }];
+  ins.contracts.filter((c) => c.renewable).slice(0, 3).forEach((c, ix) => {
+    calendar.push({ ko: c.name + " 갱신", inDays: 30 + ((_hmHash("cov|cal|" + n + "|" + ix) % 300)) });
+  });
+  S("A5 여과·산출", true, "여과 " + filtered + "건(" + (fLog.join("·") || "없음") + ") 제거 → 보장맵 생성");
+  /* A6 배포 — 보장맵만. 조회 원본(ins)은 반환에 미포함 */
+  const map = {
+    cats: cats, gaps: gaps, overlaps: overlaps,
+    annualSaveTotal: overlaps.reduce((s, o) => s + o.annualSave, 0),
+    monthlyTotal: ins.monthlyTotal, carrierCount: ins.contracts.length + (ins.hasSilson ? 1 : 0),
+    calendar: calendar, switchWindow: _covSwitchWindow(n),
+    basis: "계약 정보만으로 산출 — 건강 데이터 미입력", at: new Date().toISOString().slice(0, 10),
+  };
+  S("A6 배포", true, "보장맵만 프로 콘솔 적재 — 조회 원본 파기·접근 경로 없음");
+  return { steps: steps, map: map, blockedAt: null };
+}
+
+/* 러너 훅(관리자) */
+try {
+  if (typeof window !== "undefined") {
+    window.__hifinCov = function (i) {
+      try {
+        if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        return covAnalysisOf(Number(i));
+      } catch (e) { return { error: String(e).slice(0, 160) }; }
+    };
+  }
+} catch (e) {}
+
 /* ══════════════ 행동·의사 세그먼트 G1~G14(gSegment.js) — 리뉴얼 v1.1 R0 (형 승인 2026-09-02) ══════════════
    원천 사상: 설명서 v2 제0부 4항 — 질환이 아니라 행동과 시점으로 세그먼트를 만든다.
    ⚠️ 원칙:
@@ -27214,8 +27381,7 @@ function _gSignals(i, cyc, st) {
     s7: act ? (act.visits || []).some((v) => (v.ko || "").indexOf("재검") >= 0) || _hmHash("s7|" + n) % 100 < 18 : false,
     s8: _hmHash("s8|" + n) % 5,                                         /* 보유계약 수 [R2] */
     s11: _hmHash("s11|" + n) % 100 < 6,                                 /* 접촉 과다·무응답 반복 6% */
-    s15: _hmHash("s15|" + n) % 100 < 28,                                /* 보장 공백 큼 [R2 보장맵 대체] */
-    s16: _hmHash("s16|" + n) % 100 < 15,                                /* 중복 보장 [R2 보장맵 대체] */
+    s15: false, s16: false,                                             /* 아래에서 보장맵 실산출로 채움(R2) */
   };
 }
 
@@ -27226,6 +27392,13 @@ function gSegOf(i) {
   if (!cyc || cyc.t === null) return { blocked: false, noContact: true, why: "사이클 전(예약 전) — 배정 대상 아님", segs: [] };
   if (cyc.t === "T0" || cyc.t === "T1") return { blocked: true, noContact: true, why: "접촉 금지(락) — 결과 없이 거는 전화는 회원에게 불편", segs: [] };
   const s = _gSignals(i, cyc, st);
+  /* R2 — 보장 공백·중복은 무인 보장분석의 실산출(보장맵)에서만: 동의(N1) 없으면 보장맵이 없고 G11·G12도 켜지지 않는다(정합) */
+  try {
+    if (typeof covAnalysisOf === "function" && ["T4", "T5", "T6", "T7", "T8"].indexOf(cyc.t) >= 0) {
+      const cov = covAnalysisOf(Number(i));
+      if (cov && cov.map) { s.s15 = cov.map.gaps.length >= 1; s.s16 = cov.map.overlaps.length >= 1; }
+    }
+  } catch (e) {}
   const hit = [];
   if (s.s11) hit.push("G8");
   if (cyc.t === "T2") hit.push("G2");
@@ -31939,7 +32112,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "a71611be9e3bc270", "generatedAt": "2026-09-02", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "5be76c3369922a78", "generatedAt": "2026-09-02", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -32115,7 +32288,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-02","seed":20260828,"inventory":{"version":1,"sourceHash":"a71611be9e3bc270","generatedAt":"2026-09-02","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.9,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-02","seed":20260828,"inventory":{"version":1,"sourceHash":"5be76c3369922a78","generatedAt":"2026-09-02","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":5.13,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

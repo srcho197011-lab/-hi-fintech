@@ -38,8 +38,7 @@ function _gSignals(i, cyc, st) {
     s7: act ? (act.visits || []).some((v) => (v.ko || "").indexOf("재검") >= 0) || _hmHash("s7|" + n) % 100 < 18 : false,
     s8: _hmHash("s8|" + n) % 5,                                         /* 보유계약 수 [R2] */
     s11: _hmHash("s11|" + n) % 100 < 6,                                 /* 접촉 과다·무응답 반복 6% */
-    s15: _hmHash("s15|" + n) % 100 < 28,                                /* 보장 공백 큼 [R2 보장맵 대체] */
-    s16: _hmHash("s16|" + n) % 100 < 15,                                /* 중복 보장 [R2 보장맵 대체] */
+    s15: false, s16: false,                                             /* 아래에서 보장맵 실산출로 채움(R2) */
   };
 }
 
@@ -50,6 +49,13 @@ function gSegOf(i) {
   if (!cyc || cyc.t === null) return { blocked: false, noContact: true, why: "사이클 전(예약 전) — 배정 대상 아님", segs: [] };
   if (cyc.t === "T0" || cyc.t === "T1") return { blocked: true, noContact: true, why: "접촉 금지(락) — 결과 없이 거는 전화는 회원에게 불편", segs: [] };
   const s = _gSignals(i, cyc, st);
+  /* R2 — 보장 공백·중복은 무인 보장분석의 실산출(보장맵)에서만: 동의(N1) 없으면 보장맵이 없고 G11·G12도 켜지지 않는다(정합) */
+  try {
+    if (typeof covAnalysisOf === "function" && ["T4", "T5", "T6", "T7", "T8"].indexOf(cyc.t) >= 0) {
+      const cov = covAnalysisOf(Number(i));
+      if (cov && cov.map) { s.s15 = cov.map.gaps.length >= 1; s.s16 = cov.map.overlaps.length >= 1; }
+    }
+  } catch (e) {}
   const hit = [];
   if (s.s11) hit.push("G8");
   if (cyc.t === "T2") hit.push("G2");

@@ -86,6 +86,7 @@ src/data/backupRestore.js
 src/data/demoScript.js
 src/data/cycleStage.js
 src/data/consentGate.js
+src/data/covAnalysis.js
 src/data/gSegment.js
 src/data/memberContext.js
 src/data/needsEngine.js

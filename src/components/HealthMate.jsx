@@ -731,6 +731,59 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
   </div>);
 }
 
+/* ══ 보장맵(R2 — 무인 보장분석 산출) — T4~T6 카드 전용. 조회 원본은 여기 없다(A6 원칙) ══ */
+function HmCovMap({ i }) {
+  const [cmpOpen, setCmpOpen] = React.useState(false);
+  const cov = React.useMemo(() => { try { return covAnalysisOf(Number(i)); } catch (e) { return null; } }, [i]);
+  if (!cov) return null;
+  if (!cov.map) {
+    return (<div style={{ marginTop: 8, background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 9, padding: "7px 11px", fontSize: 11.2, color: "#64748B" }}>
+      🗺 무인 보장분석 — <b>{cov.blockedAt}</b>에서 제외됨: {(cov.steps.find((s) => !s.ok) || {}).note || ""} <span style={{ color: "#94A3B8" }}>(제외도 로그로 남아요)</span>
+    </div>);
+  }
+  const m = cov.map;
+  const sw = m.switchWindow;
+  const n2ok = (typeof consentGate === "function") ? consentGate("n2", Number(i), "covCard").ok : false;
+  return (<details style={{ marginTop: 8, border: "1px solid #BFDBFE", borderRadius: 9, padding: "7px 10px", background: "#F8FBFF" }}>
+    <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#1D4ED8" }}>🗺 보장맵 — 무인 분석 결과 <span style={{ fontWeight: 600, color: "#64748B", fontSize: 10.5 }}>· 계약 정보만으로 산출(건강 데이터 미입력) · {m.at}</span></summary>
+    <div style={{ marginTop: 7, fontSize: 11.4, lineHeight: 1.7 }}>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        {m.cats.map((c) => <span key={c.k} className="hmpill" style={{ background: c.has ? "#EFF6FF" : "#FEF2F2", color: c.has ? "#1D4ED8" : "#B91C1C", border: "1px solid " + (c.has ? "#BFDBFE" : "#FECACA") }}>{c.has ? "✓" : "✕"} {c.ko}{c.has && c.limit ? " " + Math.round(c.limit / 10000000) / 1 * 1 + (c.k === "silson" ? "" : "천만") : ""}</span>)}
+      </div>
+      {m.gaps.length > 0 && <div style={{ marginTop: 5, color: "#B91C1C" }}><b>공백 {m.gaps.length}곳</b> — {m.gaps.map((g) => g.ko).join(" · ")}</div>}
+      {m.overlaps.length > 0 && <div style={{ marginTop: 3, color: "#B45309" }}><b>중복 {m.overlaps.length}건</b> — {m.overlaps.map((o) => o.ko).join(" · ")} → 정리하면 <b>연 {Math.round(m.annualSaveTotal / 10000).toLocaleString()}만원</b>이 줄어요</div>}
+      <div style={{ marginTop: 3, color: "#475569" }}>📅 {m.calendar.slice(0, 3).map((c) => c.ko + (c.done ? "(지남)" : " D-" + c.inDays)).join(" · ")}</div>
+      <div style={{ marginTop: 6, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        {sw !== "NONE" && <span className="hmpill" style={{ background: "#FEF3C7", color: "#92400E", fontWeight: 800 }}>⚠️ 승환 창 {sw === "WITHIN_1M" ? "1개월" : "6개월"} — 비교안내 필수</span>}
+        {sw !== "NONE" && <button className="hmbtn gh" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => setCmpOpen(true)}>비교안내 보기</button>}
+        {n2ok
+          ? <span className="hmpill" style={{ background: "#F0FDF4", color: "#15803D" }}>안내·권유 동의(N2) 보유 — 제안 화면 열림</span>
+          : <span className="hmpill" style={{ background: "#F1F5F9", color: "#64748B" }}>🔒 제안 화면 없음 — 회원이 T5에서 동의해야 열려요(§0-V2)</span>}
+      </div>
+    </div>
+    {cmpOpen && (<div style={{ position: "fixed", inset: 0, zIndex: 1450, background: "rgba(11,34,57,.5)", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={() => setCmpOpen(false)}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "min(520px,94vw)", background: "#fff", borderRadius: 14, padding: "16px 18px", maxHeight: "80vh", overflowY: "auto" }}>
+        <b style={{ fontSize: 13.5, color: "#0F2A43" }}>⚖️ 신·구 계약 비교안내 — 승환 창에서는 이 화면을 확인해야 다음으로 갈 수 있어요</b>
+        <div style={{ fontSize: 10.6, color: "#64748B", margin: "3px 0 8px" }}>보험업법 §97③·시행령 §44의 비교 항목 — 표준 화면(시스템 강제 통과)</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.2 }}>
+          <thead><tr>{["비교 항목", "기존 계약", "새 제안"].map((h) => <th key={h} style={{ background: "#0F2A43", color: "#fff", padding: "5px 8px", textAlign: "left" }}>{h}</th>)}</tr></thead>
+          <tbody>
+            {[["월 보험료", "월 " + Math.round(m.monthlyTotal / 1000).toLocaleString() + "천원(전 계약 합계)", "제안 확정 시 표시"],
+              ["보장 범위", m.cats.filter((c) => c.has).map((c) => c.ko).join("·") || "-", "제안 확정 시 표시"],
+              ["보험기간·갱신", "갱신형 " + m.calendar.filter((c) => c.ko.indexOf("갱신") >= 0).length + "건 보유", "제안 확정 시 표시"],
+              ["면책·감액 기간", "기존 계약은 면책 경과", "새 계약은 면책이 다시 시작돼요"],
+              ["해지환급금", "해지 시 환급금 손실 가능", "제안 확정 시 표시"],
+              ["인수 조건", "기존 계약 유지 시 재심사 없음", "새 계약은 심사를 다시 받아요"]].map((r, ix) => (
+              <tr key={ix}>{r.map((c, j) => <td key={j} style={{ border: "1px solid #E2E8F0", padding: "5px 8px" }}>{j === 0 ? <b>{c}</b> : c}</td>)}</tr>))}
+          </tbody>
+        </table>
+        <div style={{ fontSize: 10.6, color: "#B45309", marginTop: 7 }}>⚠️ 기존 계약 해지 후 새로 가입하면 보장 공백·면책 재시작·환급금 손실이 생길 수 있어요 — 확인 없이 청약이 진행되지 않아요.</div>
+        <button className="hmbtn" style={{ width: "100%", marginTop: 10 }} onClick={() => setCmpOpen(false)}>비교안내를 확인했어요</button>
+      </div>
+    </div>)}
+  </details>);
+}
+
 function HmHandoffCard({ ent, code, onToast }) {
   const c = ent.card; const g = HM_GRADE_UI[c.grade] || HM_GRADE_UI.L;
   const [done, setDone] = React.useState(false);
@@ -761,6 +814,8 @@ function HmHandoffCard({ ent, code, onToast }) {
         <HmStageDots reached={(typeof cohortStageOf === "function" && cohortStageOf(c.member.cohortIndex) || { reached: [c.member.stage] }).reached} />
       </div>
       <div style={{ marginTop: 6, fontSize: 12.6, fontWeight: 800, color: "#C2410C" }}>⚡ {c.trigger}</div>
+      {/* R2 — 만기 국면(T4~T6) 카드에만 보장맵(무인 분석 산출) 노출 */}
+      {(() => { try { const cy = cycleOf(c.member.cohortIndex); return cy && ["T4", "T5", "T6"].indexOf(cy.t) >= 0 ? <HmCovMap i={c.member.cohortIndex} /> : null; } catch (e) { return null; } })()}
       <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
         {c.evidence.map((e, i) => <span key={i} className="hmpill" style={{ border: `1px solid ${g.c}55`, color: g.c, background: "#fff" }}>{e}</span>)}
         <span className="hmpill" style={{ border: "1px solid #CBD5E1", color: HM_C.mut, background: "#fff" }}>동의 ✓ · 원본 수치 미포함 ✓</span>
