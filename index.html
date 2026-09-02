@@ -4885,7 +4885,7 @@ const CI_CONSENT = {
         { k: "ci_give_uid", req: true, t: "주민등록번호 등 나를 특정하는 번호", why: "받는 기관에서도 동일인 확인이 필요해요.", d: "주민등록번호·외국인등록번호·여권번호·운전면허번호" },
         { k: "ci_give_sens", req: true, t: "질병·상해 등 건강에 관한 정보", why: "보험금 심사와 중복보험 확인에 쓰여요.", d: "피보험자의 질병·상해에 관한 정보(상병명·진료기록·기왕증 등)" },
         { k: "ci_give_pi", req: true, t: "인적·금융·보험계약 정보", why: "계약 관리와 보험금 지급 업무에 쓰여요.", d: "성명·주소·생년월일·연령·이메일·전화·성별 / 납입 계좌 등 금융거래 정보 / 보험계약·보험금 정보 / 가입 전 알릴 사항" },
-        { k: "ci_give_extra", req: false, t: "[선택] 성별·연령·보험계약 종류 추가 제공", why: "상품 개발·통계에 쓰여요. 동의하지 않아도 가입에 불이익이 없어요.", d: "성별, 연령, 보험계약정보(상품종류·기간)" },
+        { k: "ci_give_extra", req: false, t: "[선택] 성별·연령·보험계약 종류 추가 제공", why: "상품 개발·통계에 쓰여요.", gain: "통계 개선으로 더 맞는 안내를 받아요.", loss: "맞춤 정확도가 조금 낮아져요 (가입·보장은 그대로예요).", d: "성별, 연령, 보험계약정보(상품종류·기간)" },
       ] },
     { g: "inq", t: "③ 이미 든 보험을 확인합니다", why: "겹치는 보험이 있는지 확인해 불필요한 가입을 막아드려요.",
       items: [
@@ -4899,7 +4899,7 @@ const CI_CONSENT = {
       why: "담당 프로(헬스케어 전문가)가 검진 결과 해설·건강 코칭·추적 관리를 해드리기 위한 동의예요. 동의하지 않으셔도 검진 예약·보험 가입에는 아무 불이익이 없어요.",
       note: "근거: 신용정보법 제33조 제2항·같은 법 시행령 제28조의2, 보험업법 제11조의2(부수업무). 이 동의로 쓰는 정보는 가입 심사·보험금 지급 목적과 분리되어 별도로 관리돼요 — 심사에 쓰이지 않아요.",
       items: [
-        { k: "ci_care_svc", req: false, t: "[선택] 건강관리 서비스 제공(결과 해설·코칭·추적 관리)", why: "이 동의가 없으면 담당 프로의 결과 해설·코칭·추적 관리를 받으실 수 없어요 — 동의는 언제든 철회할 수 있어요.", d: "건강검진 결과의 등급·관리필요 항목(원본 수치 아님), 건강관리 활동 기록(진료 안내·미션·기기 기록), 연락 가능 시간대" },
+        { k: "ci_care_svc", req: false, t: "[선택] 건강관리 서비스 제공(결과 해설·코칭·추적 관리)", why: "동의는 언제든 철회할 수 있어요.", gain: "담당 헬스케어 전문가가 결과 해설·코칭·추적 관리를 평생 무료로 해드려요.", loss: "담당 전문가가 배정되지 않아요 — 결과 해설 전화·맞춤 케어 키트·코칭을 받을 수 없어요. (검진·가입에는 영향 없어요)", d: "건강검진 결과의 등급·관리필요 항목(원본 수치 아님), 건강관리 활동 기록(진료 안내·미션·기기 기록), 연락 가능 시간대" },
       ] },
     /* ⑤ N1 만기 보장분석(선택 — 리뉴얼 v1.1 R1, 형 승인 2026-09-02) — v2 §4-3 신설 동의.
        무인 분석(사람 관여 없음)·보장맵만 산출·건강정보 미사용 — 효력은 보장 만기 후 3개월(권고안·형 확정란) */
@@ -4907,17 +4907,17 @@ const CI_CONSENT = {
       why: "무료 보장이 끝나기 20일 전에, 시스템이 자동으로 지금 갖고 계신 보장을 분석해서 「어디가 비어 있고 어디가 겹치는지」 보장맵을 만들어 드려요. 사람이 들여다보는 게 아니라 서버가 계산하고, 건강정보는 쓰이지 않아요 — 계약 정보만으로 계산돼요.",
       note: "분석 전에 한 번 더 알려드리고, 원하지 않으시면 그때 거부하실 수 있어요. 이 동의의 효력은 보장 만기 후 3개월까지예요. 동의하지 않으셔도 검진·보장 이용에는 아무 불이익이 없어요.",
       items: [
-        { k: "ci_matan_run", req: false, t: "[선택] 만기 시 보장분석 및 안내", why: "만기 20일 전 자동 분석 → 보장맵 안내. 분석에는 이미 가입된 계약 정보만 쓰여요.", d: "보유 보험계약 정보(상품종류·보장항목·한도·기간), 검진대비보험 만기일 — 건강정보 미포함" },
-        { k: "ci_matan_id", req: false, t: "[선택] 분석을 위한 개인식별번호 이용", why: "내 계약을 정확히 찾기 위해서만 쓰이고, 값은 암호화 저장소에서 꺼내 메모리에서만 사용돼요 — 화면에 표시되지 않아요.", d: "주민등록번호 등 개인식별번호(조회 목적 한정·실행 기록에 식별값 미기록)" },
+        { k: "ci_matan_run", req: false, t: "[선택] 만기 시 보장분석 및 안내", why: "만기 20일 전 자동 분석 → 보장맵 안내. 분석에는 이미 가입된 계약 정보만 쓰여요.", gain: "보장이 끝나기 전에 「어디가 비고 어디가 겹치는지」 보장맵을 무료로 받아요.", loss: "보장이 끝나는 걸 모른 채 무보장 상태가 될 수 있어요 — 공백·중복 분석도 없어요. (검진·가입에는 영향 없어요)", d: "보유 보험계약 정보(상품종류·보장항목·한도·기간), 검진대비보험 만기일 — 건강정보 미포함" },
+        { k: "ci_matan_id", req: false, t: "[선택] 분석을 위한 개인식별번호 이용", why: "내 계약을 정확히 찾기 위해서만 쓰이고, 값은 암호화 저장소에서 꺼내 메모리에서만 사용돼요 — 화면에 표시되지 않아요.", gain: "내 계약을 정확히 찾아 분석이 완전해져요.", loss: "계약을 못 찾아 보장분석 자체가 실행되지 않아요.", d: "주민등록번호 등 개인식별번호(조회 목적 한정·실행 기록에 식별값 미기록)" },
       ] },
     /* ⑥ N3 광고성 정보 전송(선택·채널별 구분 — 야간 전송은 별도 동의 없이는 발송되지 않음) */
     { g: "ads", t: "⑥ [선택] 유용한 소식을 보내드려도 될까요 — 받고 싶은 방법만 골라 주세요",
       why: "건강 소식·혜택 안내 같은 광고성 정보예요. 채널별로 따로 선택하실 수 있고, 언제든 한 번에 끌 수 있어요.",
       note: "밤 9시~아침 8시에는 보내지 않아요(야간 전송은 별도 동의가 있어야 해요). 동의하지 않으셔도 예약 확인·결과 도착 같은 꼭 필요한 알림은 정상적으로 와요.",
       items: [
-        { k: "ci_ads_push", req: false, t: "[선택] 앱 알림으로 받기", why: "가장 빠르고 조용한 방법이에요.", d: "광고성 앱 푸시 알림" },
-        { k: "ci_ads_sms", req: false, t: "[선택] 문자로 받기", why: "앱을 자주 안 여시면 문자가 편해요.", d: "광고성 문자(SMS·알림톡)" },
-        { k: "ci_ads_email", req: false, t: "[선택] 이메일로 받기", why: "자세한 소식은 이메일이 좋아요.", d: "광고성 이메일" },
+        { k: "ci_ads_push", req: false, t: "[선택] 앱 알림으로 받기", why: "가장 빠르고 조용한 방법이에요.", gain: "결과·혜택 소식을 가장 빠르게 받아요.", loss: "유용한 소식을 놓칠 수 있어요 (예약·결과 등 필수 알림은 그대로 와요).", d: "광고성 앱 푸시 알림" },
+        { k: "ci_ads_sms", req: false, t: "[선택] 문자로 받기", why: "앱을 자주 안 여시면 문자가 편해요.", gain: "앱을 안 열어도 중요한 혜택을 문자로 받아요.", loss: "앱 미접속 시 혜택 소식을 놓쳐요.", d: "광고성 문자(SMS·알림톡)" },
+        { k: "ci_ads_email", req: false, t: "[선택] 이메일로 받기", why: "자세한 소식은 이메일이 좋아요.", gain: "자세한 건강 리포트 소식을 이메일로 받아요.", loss: "상세 안내 자료를 받지 못해요.", d: "광고성 이메일" },
       ] },
   ],
 };
@@ -5802,22 +5802,32 @@ function BookingModal({ center, mode, onClose }) {
                     · <b>언제까지</b> — {CI_CONSENT.keep}<br />
                     · <b>되돌릴 수 있나요</b> — 네, <b style={{ color: "#16A34A" }}>언제든 철회</b>하실 수 있어요(데이터 금고 또는 하이에게 말씀만 주세요)
                   </div>
-                  {!ciOk && !enroll.ciOpen && (
-                    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 7, marginTop: 9 }}>
-                      <button className="cbtn pri" style={{ margin: 0, minWidth: 0, padding: "9px 10px", fontSize: 12 }}
-                        onClick={() => { const c = {}; CI_REQ.forEach((k) => { c[k] = true; }); setEnroll((st) => ({ ...st, ci: Object.assign({}, st.ci, c), ciFull: false })); }}>
-                        <Check size={13} /> 필수 항목 한 번에 동의
-                      </button>
-                      <button className="cbtn" style={{ margin: 0, minWidth: 0, padding: "9px 10px", fontSize: 12 }}
-                        onClick={() => setEnroll((st) => ({ ...st, ciOpen: true, ciFull: true }))}>항목별로 확인</button>
-                    </div>
-                  )}
-                  {(ciOk || enroll.ciOpen) && (
+                  {/* ── 동의 UX 개편(형 승인 2026-09-02 U2): 전 항목 상시 펼침 · 최상단 전체 토글(재클릭 해제) · 손실 고지 · 재유도 팝업 없음(2024 제재 사안 방어) ── */}
+                  {(() => {
+                    const onCnt = CI_ALL.filter((it) => !!enroll.ci[it.k]).length;
+                    const allOn = onCnt === CI_ALL.length, someOn = onCnt > 0 && !allOn;
+                    const optN = CI_ALL.length - CI_REQ.length;
+                    return (
+                      <div style={{ marginTop: 9 }}>
+                        <button className={"cbtn" + (allOn ? " pri" : "")} style={{ margin: 0, width: "100%", padding: "11px 12px", fontSize: 12.6, fontWeight: 800, display: "flex", alignItems: "center", gap: 8, justifyContent: "center", border: someOn ? "1.5px solid #1D4ED8" : undefined }}
+                          onClick={() => { const c = {}; CI_ALL.forEach((it) => { c[it.k] = !allOn; }); setEnroll((st) => ({ ...st, ci: c, ciFull: true })); }}>
+                          <span style={{ width: 19, height: 19, borderRadius: 5, border: "2px solid " + (allOn ? "#fff" : "#1D4ED8"), background: allOn ? "transparent" : (someOn ? "#DBEAFE" : "#fff"), display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: allOn ? "#fff" : "#1D4ED8", flexShrink: 0 }}>{allOn ? "✓" : someOn ? "－" : ""}</span>
+                          모든 항목 한 번에 동의 <span style={{ fontWeight: 600, opacity: .85 }}>(필수 {CI_REQ.length} + 선택 {optN})</span>
+                        </button>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
+                          <button style={{ border: "none", background: "none", color: "#64748B", fontSize: 10.8, fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                            onClick={() => { const c = {}; CI_ALL.forEach((it) => { c[it.k] = !!it.req; }); setEnroll((st) => ({ ...st, ci: c, ciFull: true })); }}>필수만 동의</button>
+                          <span style={{ fontSize: 10.4, color: "var(--soft)" }}>다시 누르면 풀려요 · 항목별로도 켜고 끌 수 있어요</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {ciOk && (
                     <button className="cbtn" style={{ margin: "8px 0 0", padding: "6px 11px", fontSize: 11.5 }}
-                      onClick={() => setEnroll((st) => ({ ...st, ciOpen: !st.ciOpen }))}>{enroll.ciOpen ? "항목 접기" : "동의한 항목 보기 · 변경"}</button>
+                      onClick={() => setEnroll((st) => ({ ...st, ciOpen: !st.ciOpen }))}>{(!ciOk || enroll.ciOpen) ? "항목 접기" : "동의한 항목 보기 · 변경"}</button>
                   )}
-                  {/* 2층 — 3그룹 × 개별 체크(원문 9건) */}
-                  {enroll.ciOpen && CI_CONSENT.groups.map((g) => (
+                  {/* 2층 — 전 그룹 상시 펼침(동의 완료 후에만 접기) · 선택 항목은 손실 고지 2줄 */}
+                  {(!ciOk || enroll.ciOpen) && CI_CONSENT.groups.map((g) => (
                     <div key={g.g} style={{ marginTop: 9, border: "1px solid var(--border)", borderRadius: 9, background: "#fff", padding: "9px 11px" }}>
                       <div style={{ fontSize: 12.2, fontWeight: 800, color: "#12203F" }}>{g.t}</div>
                       <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>{g.why}</div>
@@ -5829,6 +5839,8 @@ function BookingModal({ center, mode, onClose }) {
                             <span style={{ fontSize: 11.8, lineHeight: 1.5 }}>
                               <b>{it.req ? "[필수] " : ""}{it.t}</b>
                               <span style={{ display: "block", color: "var(--muted)", fontSize: 11 }}>{it.why}</span>
+                              {it.gain && <span style={{ display: "block", fontSize: 10.8, color: "#15803D", marginTop: 3, lineHeight: 1.5 }}>✅ <b>동의하면</b> — {it.gain}</span>}
+                              {it.loss && <span style={{ display: "block", fontSize: 10.8, color: "#B45309", marginTop: 1, lineHeight: 1.5 }}>⚠️ <b>동의하지 않으면</b> — {it.loss}</span>}
                               <button style={{ border: "none", background: "none", color: "#1D4ED8", fontWeight: 700, fontSize: 10.8, padding: 0, marginTop: 2, cursor: "pointer" }}
                                 onClick={(e) => { e.preventDefault(); setEnroll((st) => ({ ...st, ciDetail: Object.assign({}, st.ciDetail, { [it.k]: !st.ciDetail[it.k] }) })); }}>
                                 {enroll.ciDetail[it.k] ? "내용 접기 ▲" : "내용 보기 ▼"}
@@ -5842,7 +5854,7 @@ function BookingModal({ center, mode, onClose }) {
                     </div>
                   ))}
                   {/* 3층 — 정식 전문 */}
-                  {enroll.ciOpen && (
+                  {(!ciOk || enroll.ciOpen) && (
                     <details style={{ marginTop: 8, fontSize: 11 }}>
                       <summary style={{ cursor: "pointer", fontWeight: 700, color: "var(--soft)" }}>정식 동의서 전문 보기 — 아래가 법적 기준이며, 위 요약은 이해를 돕기 위한 것입니다</summary>
                       <div style={{ color: "#475569", lineHeight: 1.62, marginTop: 6 }}>
@@ -31927,7 +31939,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "d5ac2e6fff55784a", "generatedAt": "2026-09-02", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "a71611be9e3bc270", "generatedAt": "2026-09-02", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -32103,7 +32115,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-02","seed":20260828,"inventory":{"version":1,"sourceHash":"d5ac2e6fff55784a","generatedAt":"2026-09-02","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.29,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-02","seed":20260828,"inventory":{"version":1,"sourceHash":"a71611be9e3bc270","generatedAt":"2026-09-02","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.9,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
