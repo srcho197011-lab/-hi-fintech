@@ -32,7 +32,7 @@ function _gSignals(i, cyc, st) {
   const last = null;   /* 프로별 접촉 기록은 로스터가 관할 — 여기서는 시드 근사 */
   return {
     s1: _hmHash("s1|" + n) % 100 < 4,                                   /* 상담 요청 4% [R1 실기록 대체] */
-    s2: _hmHash("s2|" + n) % 100 < (cyc && (cyc.t === "T6" || cyc.t === "T7" || cyc.t === "T8") ? 55 : 30),  /* 마케팅 동의(N2) [R1] */
+    s2: (typeof consentHas === "function") ? consentHas("n2", n) : false,   /* 마케팅 동의(N2) — consentGate 실원천(R1 교체: T5 취득이라 T5 이전은 항상 미보유) */
     s4: acts >= 2,                                                      /* 프로그램 완결 근사 [실구현 파생] */
     s5: _hmHash("s5|" + n) % 100 < 35,                                  /* 최근 활동성 */
     s7: act ? (act.visits || []).some((v) => (v.ko || "").indexOf("재검") >= 0) || _hmHash("s7|" + n) % 100 < 18 : false,

@@ -4901,6 +4901,24 @@ const CI_CONSENT = {
       items: [
         { k: "ci_care_svc", req: false, t: "[선택] 건강관리 서비스 제공(결과 해설·코칭·추적 관리)", why: "이 동의가 없으면 담당 프로의 결과 해설·코칭·추적 관리를 받으실 수 없어요 — 동의는 언제든 철회할 수 있어요.", d: "건강검진 결과의 등급·관리필요 항목(원본 수치 아님), 건강관리 활동 기록(진료 안내·미션·기기 기록), 연락 가능 시간대" },
       ] },
+    /* ⑤ N1 만기 보장분석(선택 — 리뉴얼 v1.1 R1, 형 승인 2026-09-02) — v2 §4-3 신설 동의.
+       무인 분석(사람 관여 없음)·보장맵만 산출·건강정보 미사용 — 효력은 보장 만기 후 3개월(권고안·형 확정란) */
+    { g: "matan", t: "⑤ [선택] 보장이 끝나기 전에 내 보장 상태를 분석해 드립니다",
+      why: "무료 보장이 끝나기 20일 전에, 시스템이 자동으로 지금 갖고 계신 보장을 분석해서 「어디가 비어 있고 어디가 겹치는지」 보장맵을 만들어 드려요. 사람이 들여다보는 게 아니라 서버가 계산하고, 건강정보는 쓰이지 않아요 — 계약 정보만으로 계산돼요.",
+      note: "분석 전에 한 번 더 알려드리고, 원하지 않으시면 그때 거부하실 수 있어요. 이 동의의 효력은 보장 만기 후 3개월까지예요. 동의하지 않으셔도 검진·보장 이용에는 아무 불이익이 없어요.",
+      items: [
+        { k: "ci_matan_run", req: false, t: "[선택] 만기 시 보장분석 및 안내", why: "만기 20일 전 자동 분석 → 보장맵 안내. 분석에는 이미 가입된 계약 정보만 쓰여요.", d: "보유 보험계약 정보(상품종류·보장항목·한도·기간), 검진대비보험 만기일 — 건강정보 미포함" },
+        { k: "ci_matan_id", req: false, t: "[선택] 분석을 위한 개인식별번호 이용", why: "내 계약을 정확히 찾기 위해서만 쓰이고, 값은 암호화 저장소에서 꺼내 메모리에서만 사용돼요 — 화면에 표시되지 않아요.", d: "주민등록번호 등 개인식별번호(조회 목적 한정·실행 기록에 식별값 미기록)" },
+      ] },
+    /* ⑥ N3 광고성 정보 전송(선택·채널별 구분 — 야간 전송은 별도 동의 없이는 발송되지 않음) */
+    { g: "ads", t: "⑥ [선택] 유용한 소식을 보내드려도 될까요 — 받고 싶은 방법만 골라 주세요",
+      why: "건강 소식·혜택 안내 같은 광고성 정보예요. 채널별로 따로 선택하실 수 있고, 언제든 한 번에 끌 수 있어요.",
+      note: "밤 9시~아침 8시에는 보내지 않아요(야간 전송은 별도 동의가 있어야 해요). 동의하지 않으셔도 예약 확인·결과 도착 같은 꼭 필요한 알림은 정상적으로 와요.",
+      items: [
+        { k: "ci_ads_push", req: false, t: "[선택] 앱 알림으로 받기", why: "가장 빠르고 조용한 방법이에요.", d: "광고성 앱 푸시 알림" },
+        { k: "ci_ads_sms", req: false, t: "[선택] 문자로 받기", why: "앱을 자주 안 여시면 문자가 편해요.", d: "광고성 문자(SMS·알림톡)" },
+        { k: "ci_ads_email", req: false, t: "[선택] 이메일로 받기", why: "자세한 소식은 이메일이 좋아요.", d: "광고성 이메일" },
+      ] },
   ],
 };
 const CI_ALL = CI_CONSENT.groups.reduce((a, g) => a.concat(g.items), []);
@@ -26760,7 +26778,8 @@ const HIFIN_DATA_LAYERS = [
 /* ── 브라우저 저장 키 전수 등재(게이트 대상) — 자동 스캔(--emit) + 변수 간접 키 수동 보강 ── */
 const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent_miss", "hifin_agent_pending", "hifin_agent_route", "hifin_agent_stats", "hifin_chain_snapshots", "hifin_claims", "hifin_connectors_custom", "hifin_divi_seen", "hifin_dl_ready", "hifin_easyread", "hifin_fin_params", "hifin_fin_scn", "hifin_force_onboard", "hifin_gov_votes", "hifin_hash_v2", "hifin_hashchain", "hifin_hashchain_legacy", "hifin_hi_sarg_log", "hifin_hi_unanswered", "hifin_hi_welcome", "hifin_hm_code", "hifin_ins_certs", "hifin_ins_deferred", "hifin_ins_guard", "hifin_lead_audit", "hifin_medrem", "hifin_mydata_req", "hifin_nodes", "hifin_notifs", "hifin_ocr_key", "hifin_pu_ready", "hifin_reggate", "hifin_rerate", "hifin_rpm_seen", "hifin_rx", "hifin_self_ins_v3", "hifin_self_ins_v4", "hifin_share_apply", "hifin_sharing_pool", "hifin_sid", "hifin_telem_raw", "hifin_telemetry", "hifin_wp_log", "pi_allocated",
   /* 변수 간접 키(상수·함수로 참조 — 스캔 밖) */ "hifin_events", "hifin_login_lock", "hifin_guard_cfg", "hifin_access_log",
-  /* 백업 시스템(backupRestore.js) */ "hifin_backup_last", "hifin_restore_undo"];
+  /* 백업 시스템(backupRestore.js) */ "hifin_backup_last", "hifin_restore_undo",
+  /* 동의 게이트(consentGate.js — 리뉴얼 R1): 체험 회원 동의 상태(종류별 on·취득일) */ "hifin_consent2"];
 const HIFIN_KEYS_PREFIX = ["hifin_access_log_", "hifin_adh_", "hifin_agent_mem_", "hifin_bills_", "hifin_careguard_", "hifin_careloop_", "hifin_careplan_", "hifin_chk_editlog_", "hifin_chk_edits_", "hifin_claim_used_", "hifin_consent_nft_", "hifin_famauto_", "hifin_famconsent_", "hifin_family_", "hifin_famlink_", "hifin_famspend_", "hifin_famtask_", "hifin_g2_", "hifin_g4_", "hifin_handoff_issued_", "hifin_hi_esc_", "hifin_hi_followups_", "hifin_hi_state_", "hifin_hi_welcomed_", "hifin_hm_resultseen_", "hifin_hm_rr_", "hifin_hm_stagecache_", "hifin_hm_touch_", "hifin_htk_tl_", "hifin_htkbal_", "hifin_leads_", "hifin_policies_", "hifin_price_", "hifin_pu_done_", "hifin_ref_", "hifin_ref_by_", "hifin_ref_done_", "hifin_reports_", "hifin_rpm_ack_", "hifin_shop_htk_", "hifin_shop_orders_", "hifin_soap_", "hifin_sub_due_seen_", "hifin_subs_", "hifin_topup_orders_", "hifin_vault_", "hifin_vault_v2_", "hifin_vaultlog_", "pi_seq_", "hifin_backup_", "hifin_handoff_result_"];
 
 /* 키 그룹 규약(네임스페이스) — 새 키는 이 그룹 접두 중 하나를 따라야 한다(D-1 규약) */
@@ -26772,7 +26791,7 @@ const HIFIN_KEY_GROUPS = [
   { g: "family", ko: "가족·돌봄", pats: ["hifin_fam", "hifin_care", "hifin_rpm_"], sensitive: "높음(제3자)" },
   { g: "agent", ko: "에이전트 상태", pats: ["hifin_hi_", "hifin_agent_"], sensitive: "중간(대화 맥락)" },
   { g: "consent", ko: "동의·보안", pats: ["hifin_consent_", "hifin_access_log", "hifin_guard", "hifin_login_lock", "hifin_reggate", "hifin_mydata"], sensitive: "높음(감사 대상)" },
-  { g: "ops", ko: "계측·운영", pats: ["hifin_events", "hifin_telem", "hifin_wp_log", "hifin_lead", "hifin_handoff_", "hifin_hm_", "hifin_nodes", "hifin_ocr", "hifin_backup"], sensitive: "낮음(경량 식별자만)" },
+  { g: "ops", ko: "계측·운영", pats: ["hifin_events", "hifin_consent2", "hifin_telem", "hifin_wp_log", "hifin_lead", "hifin_handoff_", "hifin_hm_", "hifin_nodes", "hifin_ocr", "hifin_backup"], sensitive: "낮음(경량 식별자만)" },
   { g: "growth", ko: "추천·거버넌스·기타", pats: ["hifin_ref_", "hifin_gov_", "hifin_sharing", "hifin_share", "hifin_divi", "hifin_g2_", "hifin_g4_", "hifin_pu_", "pi_", "hifin_easyread", "hifin_connectors"], sensitive: "낮음" },
   { g: "session", ko: "세션(휘발)", pats: ["hifin_sid", "hifin_hm_code", "hifin_hi_welcome", "hifin_dl_ready", "hifin_force_onboard"], sensitive: "낮음" },
 ];
@@ -27059,6 +27078,90 @@ try {
   }
 } catch (e) {}
 
+/* ══════════════ 동의 게이트(consentGate.js) — 리뉴얼 v1.1 R1 (형 승인 2026-09-02) ══════════════
+   원천 사상: 설명서 v2 제4부 — 4겹 방어의 2겹(직접 동의)·4겹(동의 게이트: 실시간 검증+차단 로그).
+   ⚠️ 원칙:
+     · 동의 종류·효력·부재 사유는 이 파일이 단일 소스 — 화면·게이트·관제가 같은 사전을 읽는다.
+     · N2 미보유면 제안 화면이 렌더링되지 않는다(§0-V2) — 문구 숨김이 아니라 화면 부재.
+     · N4(민감정보의 마케팅 활용)는 받지 않는다 — 부재 자체가 설계의 우위(taken:false 명문).
+     · 차단은 로그로 증명(consent_blocked 이벤트) — 통제가 작동함을 숫자로 보인다.
+     · 체험 회원은 실저장(hifin_consent2), 코호트 10만은 시드 파생(같은 해시 — 회귀 결정론 유지). */
+
+const CONSENT_DEFS = {
+  s4: { ko: "건강관리 서비스 제공", who: "현대해상 직접", opt: true,
+        opens: "프로의 결과 해설·코칭·추적 관리", ui: "검진 예약 동의 ④(ci_care_svc)" },
+  n1: { ko: "만기 시 보장분석 및 안내", who: "현대해상 직접", opt: true, validKo: "보장 만기 후 3개월",
+        opens: "만기 D-20 무인 보장분석·보장맵 산출(계약 정보만·건강정보 미사용)", ui: "검진 예약 동의 ⑤(ci_matan_run·ci_matan_id)" },
+  n2: { ko: "보험상품 안내·권유", who: "현대해상 직접", opt: true, when: "T5(만기 D-7) — 청약 시점에 묶지 않는다(시간 분리)",
+        opens: "제안 화면의 렌더링 — 권유의 개시", ui: "T5 통화 중 회원 자기 화면(R3 실장)" },
+  n3_push:  { ko: "광고성 앱 알림", who: "현대해상 직접", opt: true, opens: "광고성 푸시 발송", ui: "검진 예약 동의 ⑥" },
+  n3_sms:   { ko: "광고성 문자", who: "현대해상 직접", opt: true, opens: "광고성 SMS·알림톡 발송", ui: "검진 예약 동의 ⑥" },
+  n3_email: { ko: "광고성 이메일", who: "현대해상 직접", opt: true, opens: "광고성 이메일 발송", ui: "검진 예약 동의 ⑥" },
+  /* 받지 않는 동의 — 이 항목의 부재가 설계의 결정적 우위(v2 §4-3) */
+  n4: { ko: "민감정보의 마케팅 활용", taken: false,
+        why: "받지 않는다 — 보장맵이 계약 정보만으로 산출되는 비민감 정보이므로 건강정보 없이 제안이 성립한다. 동의 항목이 하나 줄어 동의율이 오르고, 「보험사가 내 건강정보로 영업한다」는 가장 위험한 민원 유형이 소멸한다." },
+};
+
+const _CG_KEY = "hifin_consent2";   /* 체험 회원 실저장(카탈로그 등재) — {kind: {on, at}} */
+
+function _cgStore() { try { return JSON.parse(localStorage.getItem(_CG_KEY) || "{}"); } catch (e) { return {}; } }
+
+/* 체험 회원 동의 설정(회원 화면·T5 요청 UI가 호출) */
+function consentSet(kind, on) {
+  if (!CONSENT_DEFS[kind] || kind === "n4") return { ok: false, why: "등록된 동의 종류가 아니에요" };
+  const st = _cgStore();
+  st[kind] = { on: !!on, at: new Date().toISOString().slice(0, 10) };
+  try { localStorage.setItem(_CG_KEY, JSON.stringify(st)); } catch (e) {}
+  try { hiEvent("consent_granted", { kind: kind, on: on ? 1 : 0 }); } catch (e) {}
+  return { ok: true };
+}
+
+/* 동의 보유 조회 — i(코호트 인덱스)면 시드 파생, null이면 체험 회원 실저장.
+   시드 분포: 검진 예약 동선에서 받는 s4·n1·n3는 높게, n2는 T5 이후 국면에서만(시간 분리 반영) */
+function consentHas(kind, i) {
+  if (kind === "n4") return false;                       /* 정의상 항상 없음 — 받지 않는 동의 */
+  if (i == null) { const st = _cgStore(); return !!(st[kind] && st[kind].on); }
+  const n = Number(i);
+  if (kind === "s4") return _hmHash("cg|s4|" + n) % 100 < 78;
+  if (kind === "n1") return _hmHash("cg|n1|" + n) % 100 < 70;
+  if (kind === "n2") {                                    /* T5에서 취득 — 사이클 T5 이후만 보유 가능 */
+    try {
+      const c = (typeof cycleOf === "function") ? cycleOf(n) : null;
+      if (!c || ["T5", "T6", "T7", "T8"].indexOf(c.t) < 0) return false;
+      return _hmHash("s2|" + n) % 100 < 55;               /* 기존 gSegment 시드와 동일 해시 — 결정론 연속 */
+    } catch (e) { return false; }
+  }
+  if (kind.indexOf("n3") === 0) return _hmHash("cg|" + kind + "|" + n) % 100 < 45;
+  return false;
+}
+
+/* 게이트 — 미보유 시 차단 + 로그(§0-V2·4겹). 소비: R2 보장분석 A2 단계 · T5 제안 화면 · 광고 발송 */
+function consentGate(kind, i, ctx) {
+  const def = CONSENT_DEFS[kind];
+  if (!def) return { ok: false, why: "등록된 동의 종류가 아니에요" };
+  if (kind === "n4") return { ok: false, why: "받지 않는 동의예요 — 이 설계에서는 존재하지 않아요" };
+  if (consentHas(kind, i)) return { ok: true };
+  try { hiEvent("consent_blocked", { kind: kind, ctx: String(ctx || "").slice(0, 24) }); } catch (e) {}
+  return { ok: false, why: "「" + def.ko + "」 동의가 없어요 — " + def.opens + "이(가) 열리지 않아요. 동의는 " + def.ui + "에서 받아요." };
+}
+
+/* 러너·관제 훅(관리자) */
+try {
+  if (typeof window !== "undefined") {
+    window.__hifinConsent = function (cmd, a, b2) {
+      try {
+        if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        if (cmd === "defs") return Object.keys(CONSENT_DEFS).map((k) => ({ k: k, ko: CONSENT_DEFS[k].ko, taken: CONSENT_DEFS[k].taken !== false, valid: CONSENT_DEFS[k].validKo || null }));
+        if (cmd === "n4") return CONSENT_DEFS.n4;
+        if (cmd === "has") return { kind: a, i: b2, has: consentHas(a, b2) };
+        if (cmd === "gate") return consentGate(a, b2, "runner");
+        if (cmd === "set") return consentSet(a, b2);
+        return { error: "defs | n4 | has | gate | set" };
+      } catch (e) { return { error: String(e).slice(0, 160) }; }
+    };
+  }
+} catch (e) {}
+
 /* ══════════════ 행동·의사 세그먼트 G1~G14(gSegment.js) — 리뉴얼 v1.1 R0 (형 승인 2026-09-02) ══════════════
    원천 사상: 설명서 v2 제0부 4항 — 질환이 아니라 행동과 시점으로 세그먼트를 만든다.
    ⚠️ 원칙:
@@ -27093,7 +27196,7 @@ function _gSignals(i, cyc, st) {
   const last = null;   /* 프로별 접촉 기록은 로스터가 관할 — 여기서는 시드 근사 */
   return {
     s1: _hmHash("s1|" + n) % 100 < 4,                                   /* 상담 요청 4% [R1 실기록 대체] */
-    s2: _hmHash("s2|" + n) % 100 < (cyc && (cyc.t === "T6" || cyc.t === "T7" || cyc.t === "T8") ? 55 : 30),  /* 마케팅 동의(N2) [R1] */
+    s2: (typeof consentHas === "function") ? consentHas("n2", n) : false,   /* 마케팅 동의(N2) — consentGate 실원천(R1 교체: T5 취득이라 T5 이전은 항상 미보유) */
     s4: acts >= 2,                                                      /* 프로그램 완결 근사 [실구현 파생] */
     s5: _hmHash("s5|" + n) % 100 < 35,                                  /* 최근 활동성 */
     s7: act ? (act.visits || []).some((v) => (v.ko || "").indexOf("재검") >= 0) || _hmHash("s7|" + n) % 100 < 18 : false,
@@ -31824,7 +31927,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "0567dd87b05a8dbb", "generatedAt": "2026-09-01", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "d5ac2e6fff55784a", "generatedAt": "2026-09-02", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -31971,6 +32074,9 @@ const HI_EVENT_DEFS = {
   kit_offered:       { ko: "케어 키트 안내(D2 통화)",        stage: 2 },
   kit_delivered:     { ko: "케어 키트 배송 완료",            stage: 3 },
   kit_engaged:       { ko: "케어 키트 첫 사용(기기 기록·영양 확인)", stage: 3 },
+  /* 동의 게이트(리뉴얼 R1 — v2 4겹) — 차단도 기록해 통제 작동을 숫자로 증명 */
+  consent_granted:   { ko: "동의 취득·변경(종류별)", stage: 2 },
+  consent_blocked:   { ko: "동의 게이트 차단(미보유 접근)", stage: 2 },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };
@@ -31997,7 +32103,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-01","seed":20260828,"inventory":{"version":1,"sourceHash":"0567dd87b05a8dbb","generatedAt":"2026-09-01","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.3,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-02","seed":20260828,"inventory":{"version":1,"sourceHash":"d5ac2e6fff55784a","generatedAt":"2026-09-02","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.29,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

@@ -34,6 +34,9 @@ const HI_EVENT_DEFS = {
   kit_offered:       { ko: "케어 키트 안내(D2 통화)",        stage: 2 },
   kit_delivered:     { ko: "케어 키트 배송 완료",            stage: 3 },
   kit_engaged:       { ko: "케어 키트 첫 사용(기기 기록·영양 확인)", stage: 3 },
+  /* 동의 게이트(리뉴얼 R1 — v2 4겹) — 차단도 기록해 통제 작동을 숫자로 증명 */
+  consent_granted:   { ko: "동의 취득·변경(종류별)", stage: 2 },
+  consent_blocked:   { ko: "동의 게이트 차단(미보유 접근)", stage: 2 },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };
