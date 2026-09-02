@@ -9,7 +9,11 @@
 /* ── 사이클 규격(단일 소스) — v2 각주: 실제 일수는 약관·검진기관 실적 따라 협의 확정(시연 기준값) ── */
 const CYCLE_SPEC = {
   resultDay: 18,        /* 검진(D0) → 결과 도착 D+14~21의 시연 중앙값 */
-  expiryDay: 60,        /* 검진대비보험 만기 = D+60(약 2개월) */
+  expiryDay: 60,        /* 검진대비보험 만기 = D+60(약 2개월) — 보장 개시는 검진일(D0), 개시 전에는 잔여일을 세지 않는다 */
+  resultDayMin: 14,     /* 결과 도착 최단 — 접촉 가능 시점의 만기 잔여 상한을 결정 */
+  maxRemainAtContact: 45,  /* 프로가 만기를 말할 수 있는 시점(락 해제=결과 도착)의 잔여 상한.
+                              60 - 14 = 46이 이론 최대이나 실무 상한 45로 고정(형 확정 2026-09-03).
+                              「만기 90일」류 표현은 이 상품에 존재할 수 없다 — 러너가 상한 초과를 차단한다 */
   goldenHours: 48,      /* T2 골든타임 — 결과 도착 후 첫 통화 시한 */
   noticeDays: 20,       /* T4 = 만기 D-20 · 무인 보장분석 트리거 */
   mapDays: 7,           /* T5 = 만기 D-7 · 보장맵 안내 + 마케팅 동의(N2) 요청 */
@@ -20,7 +24,7 @@ const CYCLE_SPEC = {
 
 /* T 시점 정의(표기·역할 — v2 60일 터치 플랜 §) */
 const CYCLE_STAGES = {
-  T0: { ko: "예약 완료", act: "접촉 금지 — 프로필·관할 사전 학습만" },
+  T0: { ko: "예약 완료", act: "접촉 금지 — 프로필·관할 사전 학습만(보장은 검진일부터 개시)" },
   T1: { ko: "검진·결과 대기", act: "접촉 금지(락) 유지 — 결과 없이 거는 전화는 회원에게 불편" },
   T2: { ko: "골든타임", act: "결과 도착 — 48시간 안 첫 통화(해설·무료 3종·케어 키트 예고)" },
   T3: { ko: "코칭 구간", act: "리포트 해설·케어 키트·습관 미션 — 보험 이야기는 하지 않는 구간" },
@@ -65,7 +69,9 @@ function cycleOf(i, st) {
   const R = CYCLE_SPEC;
   const d = off;                                   /* 검진일로부터 경과일(음수 = 검진 전) */
   const s3 = d >= R.resultDay ? d - R.resultDay : null;                /* 결과 수령 후 경과일 */
-  const s14 = d <= R.expiryDay ? R.expiryDay - d : null;               /* 만기까지 남은 일수 */
+  /* 만기까지 남은 일수 — 보장 개시(검진일 D0) 이후에만 센다.
+     ⚠️ 예약~검진 전(d<0)에 잔여를 세면 60일 상품에 66일이 표시되는 모순이 생긴다(형 적발 2026-09-03) */
+  const s14 = (d >= 0 && d <= R.expiryDay) ? R.expiryDay - d : null;
   const s20 = d > R.expiryDay ? d - R.expiryDay : null;                /* 무보장 경과일 */
   const s21 = R.nextExamDays - d;                                      /* 다음 검진까지 남은 일수 */
   let t;
@@ -80,6 +86,7 @@ function cycleOf(i, st) {
   const meta = CYCLE_STAGES[t];
   return { t: t, ko: meta.ko, act: meta.act, examDaysAgo: d,
     s3: s3, s14: s14, s19: t, s20: s20, s21: Math.max(0, s21),
+    coverStarted: d >= 0,                                              /* 보장 개시 여부 — 개시 전에는 만기 표기 금지 */
     goldenLeftH: t === "T2" ? Math.max(0, R.goldenHours - s3 * 24) : null,
     secondGolden: t === "T7" && s20 != null && s20 <= R.secondGoldenDays,
     plan: cyclePlanOf(Number(i)) };

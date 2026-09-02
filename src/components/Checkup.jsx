@@ -1011,7 +1011,7 @@ function BookingModal({ center, mode, onClose }) {
                     <div style={{ padding: "0 12px 10px", fontSize: 11.6, lineHeight: 1.62, color: "#334155" }}>
                       <b style={{ color: "#B42318" }}>1. 보장하지 않는 암</b> — 암 진단금은 <b>일반암만</b> 보장합니다. 상피내암(제자리암)·갑상선암·기타피부암·경계성종양은 <b>보장하지 않습니다</b>.<br />
                       <b>2. 보장 개시</b> — 가입 다음날 0시부터(개시 전 진단 확정은 보장 제외).<br />
-                      <b>3. 보장 기간</b> — 발급일로부터 90일(검진 주기 연동) · 기간 만료 시 자동 소멸.<br />
+                      <b>3. 보장 기간</b> — 검진일부터 60일(검진 주기 연동) · 기간 만료 시 자동 소멸.<br />
                       <b>4. 면책</b> — 고의 사고, 개시 전 진단, 검진과 무관한 일반 진료비(실손 영역).<br />
                       <b>5. 철회·해지</b> — 무상 계약으로 언제든 해지 가능(데이터 금고 › 동의 관리 또는 하이에게 요청).<br />
                       {!enroll.termsOk && <button className="cbtn" style={{ marginTop: 7, padding: "7px 12px", fontSize: 12 }} onClick={() => setEnroll((s) => ({ ...s, termsOk: true }))}><Check size={13} /> 중요사항을 확인했습니다 (필수)</button>}
@@ -1592,7 +1592,7 @@ function InsCertModal({ cert, onClose }) {
             <tbody>
               {[["계약자·피보험자", cert.insured ? `${cert.insured.name}${cert.insured.rrn ? " · " + cert.insured.rrn : ""}` : "회원 본인"],
                 ["가입 플랜", (cert.plan || "기본형") + " · 무상(보험료 0원)"],
-                ["보험기간", `${fmt(start)} 0시 ~ ${fmt(end)} (90일 · 검진 주기 연동)`],
+                ["보험기간", `${fmt(start)} 0시 ~ ${fmt(end)} (60일 · 검진 주기 연동)`],
                 ["연계 검진", `${cert.center}${cert.date ? ` · ${cert.date} ${cert.time || ""}` : ""}`],
                 ["인수사 · 판매", "현대해상(전속 제휴) · 글로벌예방금융(주) 금융위 등록 보험대리점 제2025060038호"]].map(([k, v], i) => (
                 <tr key={i} style={{ borderBottom: "1px solid #EEF2F7" }}>

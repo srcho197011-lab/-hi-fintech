@@ -309,13 +309,13 @@ function hmTouchPlan(m) {
     let deep = false; try { deep = (m.managementPoints || []).some((p) => /내시경|초음파|정밀|CT|MRI/.test(p)); } catch (e) {}
     if (deep) items.push({ key: "d30", title: "추가 검진·진료 안내(정밀검사 권고 항목)", when: base + 30 * _HM_DAY, due: now >= base + 30 * _HM_DAY, done: !!doneKeys.d30 });
   }
-  /* 만기 — 증서 스냅샷 우선(발급 익일 0시 + 90일), 증서 미발급 가입 회원은 청약일 기준(시연 표기) */
+  /* 만기 — 증서 스냅샷 우선(발급 익일 0시 + 60일 — CYCLE_SPEC.expiryDay와 정합), 증서 미발급 가입 회원은 청약일 기준(시연 표기) */
   let issueAt = null, src = null;
   try { const certs = _hmLs("hifin_ins_certs", []); const c = certs.filter((x) => x.insured && x.insured.name === m.name).pop(); if (c) { issueAt = c.at; src = "증서 " + c.id; } } catch (e) {}
   if (!issueAt) { const q = hmInsQueue().find((x) => x.email === m.email); if (q) { issueAt = q.at; src = "청약일 기준(시연)"; } }
   if (issueAt) {
     const start = new Date(issueAt); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
-    const end = start.getTime() + 90 * _HM_DAY;
+    const end = start.getTime() + 60 * _HM_DAY;
     [["m30", "만기 D-30 — 검진대비보험 만기 예정 안내", end - 30 * _HM_DAY], ["m7", "만기 D-7 — 재가입·차기 검진 연계 안내", end - 7 * _HM_DAY], ["m1", "만기 D+1 — 보장 종료·다음 검진 주기 제안", end + _HM_DAY]].forEach(([k, t, w]) => {
       items.push({ key: k, title: t, when: w, due: now >= w, done: !!doneKeys[k], src });
     });

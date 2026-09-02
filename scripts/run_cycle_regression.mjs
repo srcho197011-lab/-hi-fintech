@@ -63,6 +63,9 @@ for (const r of A) {
   if (r.t === "T5" && !(r.s14 != null && r.s14 <= 7 && r.s14 > 0)) { F("T5 경계", r); good = false; }
   if (r.t === "T4" && !(r.s14 != null && r.s14 <= 20 && r.s14 > 7)) { F("T4 경계", r); good = false; }
   if (r.t === "T6" && r.s14 !== 0) { F("T6인데 s14≠0", r); good = false; }
+  /* 60일 상품 규격(형 확정 2026-09-03) — 개시 전 잔여 표기 금지 · 접촉 시점 잔여 ≤45 */
+  if (r.t === "T0" && r.s14 != null) { F("보장 개시 전인데 만기 잔여 표기", r); good = false; }
+  if (["T2", "T3", "T4", "T5", "T6"].indexOf(r.t) >= 0 && r.s14 != null && r.s14 > 45) { F("접촉 시점 만기 잔여 45일 초과(60일 상품 모순)", r); good = false; }
   if (r.s20 != null && r.s20 > 0 && r.s14 != null) { F("s14·s20 동시 존재", r); good = false; }
   /* G-사이클 일관 */
   if ((r.t === "T0" || r.t === "T1") && !r.noContact) { F("락인데 접촉 허용", r); good = false; }
