@@ -26957,6 +26957,203 @@ try {
   }
 } catch (e) {}
 
+/* ══════════════ 60일 사이클 엔진(cycleStage.js) — 리뉴얼 v1.1 R0 (형 승인 2026-09-02) ══════════════
+   원천 사상: 형 개정 「헬스메이트센터_설명서_v2」 제0부 — 보험 시계 60일(T0~T8) + 건강관리 시계 1년.
+   ⚠️ 원칙:
+     · 일수 하드코딩 분산 금지 — CYCLE_SPEC이 단일 소스(상품 약관 확정 시 여기 한 곳만 수정).
+     · 결정론 — 회원 인덱스 시드(_hmcRng 재사용). 같은 날 호출은 항상 같은 값.
+     · 검진일은 회원의 여정 단계(cohortStageOf)와 개연성 있게 파생 — 단계와 사이클이 모순되지 않는다.
+     · 시간 신호 4종(S3·S14·S20·S21)은 "달력의 값" — 감이 아니라 날짜가 연락 시점을 지정한다. */
+
+/* ── 사이클 규격(단일 소스) — v2 각주: 실제 일수는 약관·검진기관 실적 따라 협의 확정(시연 기준값) ── */
+const CYCLE_SPEC = {
+  resultDay: 18,        /* 검진(D0) → 결과 도착 D+14~21의 시연 중앙값 */
+  expiryDay: 60,        /* 검진대비보험 만기 = D+60(약 2개월) */
+  goldenHours: 48,      /* T2 골든타임 — 결과 도착 후 첫 통화 시한 */
+  noticeDays: 20,       /* T4 = 만기 D-20 · 무인 보장분석 트리거 */
+  mapDays: 7,           /* T5 = 만기 D-7 · 보장맵 안내 + 마케팅 동의(N2) 요청 */
+  secondGoldenDays: 30, /* T6 이후 30일 = 2차 골든타임(무보장 회복 창) */
+  nextExamDays: 365,    /* 건강관리 시계 — 다음 검진 주기 */
+  reExamNoticeDays: 30, /* T8 = 다음 검진 D-30부터 안내 */
+};
+
+/* T 시점 정의(표기·역할 — v2 60일 터치 플랜 §) */
+const CYCLE_STAGES = {
+  T0: { ko: "예약 완료", act: "접촉 금지 — 프로필·관할 사전 학습만" },
+  T1: { ko: "검진·결과 대기", act: "접촉 금지(락) 유지 — 결과 없이 거는 전화는 회원에게 불편" },
+  T2: { ko: "골든타임", act: "결과 도착 — 48시간 안 첫 통화(해설·무료 3종·케어 키트 예고)" },
+  T3: { ko: "코칭 구간", act: "리포트 해설·케어 키트·습관 미션 — 보험 이야기는 하지 않는 구간" },
+  T4: { ko: "만기 D-20", act: "보장 종료 예고(사실 고지) · 무인 보장분석 실행" },
+  T5: { ko: "만기 D-7", act: "보장맵 안내 + 마케팅 동의 요청 — 이 설계에서 가장 중요한 30초" },
+  T6: { ko: "만기 — 2차 골든타임", act: "무보장 사실 통지 + 동의 보유자에 한해 대안 제안" },
+  T7: { ko: "관리 지속", act: "코칭·재검진 안내 계속 — 보험과 무관하게, 관계를 잇는 구간" },
+  T8: { ko: "다음 검진", act: "1년 — 올해 검진 준비 안내, 사이클 재시작" },
+};
+
+/* ── 검진일 파생 — 여정 단계와 정합(결정론) ──
+   D1 미가입: 사이클 전(null) · D1 가입(락): T0~T1 · D2: T2~T3 초입 · D3·D4: T3~T5 · L5+: T6~T8(사이클 후반·재시작 대기) */
+function _cycleExamOffset(i, st) {
+  const rng = _hmcRng("cyc|" + i);
+  const R = CYCLE_SPEC;
+  if (!st) return null;
+  if (st.cur === "D1") {
+    if (!st.enrolled) return null;                                     /* 예약 전 — 사이클 미시작 */
+    return Math.floor(rng() * (R.resultDay + 6)) - 6;                  /* -6(예약)~결과 전 */
+  }
+  if (st.cur === "D2") return R.resultDay + Math.floor(rng() * 5);     /* 결과 도착 0~4일 */
+  if (st.cur === "D3") return R.resultDay + 3 + Math.floor(rng() * (R.expiryDay - R.resultDay - 3));  /* 코칭~만기 전 */
+  if (st.cur === "D4") return R.expiryDay - R.noticeDays + Math.floor(rng() * (R.noticeDays + 10));   /* 만기 전후 */
+  /* L5~L8 — 만기 후: 2차 골든타임·휴지·재시작 대기가 섞인 분포 */
+  const r = rng();
+  if (r < 0.30) return R.expiryDay + Math.floor(rng() * R.secondGoldenDays);            /* T7 초입 */
+  if (r < 0.55) return R.nextExamDays - R.reExamNoticeDays + Math.floor(rng() * R.reExamNoticeDays);  /* T8 */
+  return R.expiryDay + R.secondGoldenDays + Math.floor(rng() * (R.nextExamDays - R.expiryDay - R.secondGoldenDays - R.reExamNoticeDays));
+}
+
+/* 플랜 파생(검진 유형 연동 — 기본형 국가검진 60% · 표준형 30% · 고급형 10%) */
+function cyclePlanOf(i) {
+  const h = _hmHash("plan|" + i) % 100;
+  return h < 60 ? "기본형" : h < 90 ? "표준형" : "고급형";
+}
+
+/* ── 사이클 판정 — {t, ko, act, examDaysAgo, s3, s14, s19, s20, s21, resultAt, expiryAt, plan} ── */
+function cycleOf(i, st) {
+  st = st || ((typeof cohortStageOf === "function") ? cohortStageOf(Number(i)) : null);
+  const off = _cycleExamOffset(Number(i), st);
+  if (off == null) return { t: null, ko: "사이클 전", act: "검진 예약이 잡히면 60일 사이클이 시작돼요.", s19: null };
+  const R = CYCLE_SPEC;
+  const d = off;                                   /* 검진일로부터 경과일(음수 = 검진 전) */
+  const s3 = d >= R.resultDay ? d - R.resultDay : null;                /* 결과 수령 후 경과일 */
+  const s14 = d <= R.expiryDay ? R.expiryDay - d : null;               /* 만기까지 남은 일수 */
+  const s20 = d > R.expiryDay ? d - R.expiryDay : null;                /* 무보장 경과일 */
+  const s21 = R.nextExamDays - d;                                      /* 다음 검진까지 남은 일수 */
+  let t;
+  if (d < 0) t = "T0";
+  else if (d < R.resultDay) t = "T1";
+  else if (s3 <= 2) t = "T2";
+  else if (s14 != null && s14 > R.noticeDays) t = "T3";
+  else if (s14 != null && s14 > R.mapDays) t = "T4";
+  else if (s14 != null && s14 >= 0) t = s14 === 0 ? "T6" : "T5";   /* ⚠️ null>=0은 JS에서 true — s14 null 가드 필수(러너 적발 수선) */
+  else if (s21 <= R.reExamNoticeDays) t = "T8";
+  else t = "T7";
+  const meta = CYCLE_STAGES[t];
+  return { t: t, ko: meta.ko, act: meta.act, examDaysAgo: d,
+    s3: s3, s14: s14, s19: t, s20: s20, s21: Math.max(0, s21),
+    goldenLeftH: t === "T2" ? Math.max(0, R.goldenHours - s3 * 24) : null,
+    secondGolden: t === "T7" && s20 != null && s20 <= R.secondGoldenDays,
+    plan: cyclePlanOf(Number(i)) };
+}
+
+/* 러너 훅(관리자) — 판정·결정론 검증용 */
+try {
+  if (typeof window !== "undefined") {
+    window.__hifinCycle = function (i) {
+      try {
+        if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        const st = (typeof cohortStageOf === "function") ? cohortStageOf(Number(i)) : null;
+        const c = cycleOf(Number(i), st);
+        c.stage = st ? st.cur : null; c.enrolled = st ? !!st.enrolled : false;   /* 러너 정합 검사용 동봉 */
+        return c;
+      } catch (e) { return { error: String(e).slice(0, 160) }; }
+    };
+  }
+} catch (e) {}
+
+/* ══════════════ 행동·의사 세그먼트 G1~G14(gSegment.js) — 리뉴얼 v1.1 R0 (형 승인 2026-09-02) ══════════════
+   원천 사상: 설명서 v2 제0부 4항 — 질환이 아니라 행동과 시점으로 세그먼트를 만든다.
+   ⚠️ 원칙:
+     · 세그먼트 명칭·정의 어디에도 질환·건강 상태 단어가 등장하지 않는다(§0-V3 — 러너가 명칭 린트).
+     · 시간 세그먼트 6종(G2·G10a·G10b·G13·G14·접촉 금지)은 cycleOf의 달력 값이 자동으로 켠다.
+     · G8(접촉 보류)이 최우선 차단 — 좋은 DB는 「연락하면 안 되는 사람」도 알려 준다.
+     · 원천: 시간 신호=cycleStage[실구현] · 활동=memberActivity[실구현] · 접촉=hmrLastOf[실구현] ·
+       동의·상담요청·계약수=시드 자리(R1 실동의·R2 보장맵 산출로 대체 — 표기 [R1]/[R2]). */
+
+const G_SEGMENTS = [
+  { g: "G8",   ko: "접촉 보류",     pri: 0, why: "최근 접촉 과다·무응답 반복 — 민원 예방(발동 시 다른 세그먼트보다 우선 차단)" },
+  { g: "G2",   ko: "골든타임",      pri: 1, why: "검진 결과가 막 도착(S3 0~2일) — 48시간 응답 시한, 이 창을 놓치면 회복 기회가 거의 없음" },
+  { g: "G10b", ko: "만기 D-7",     pri: 1, why: "보장맵 안내 + 마케팅 동의 요청의 최적 시점(S14≤7)" },
+  { g: "G13",  ko: "보장 공백",     pri: 1, why: "만기 후 무보장 1~30일 — 2차 골든타임, 이 창 안에서 회복" },
+  { g: "G1",   ko: "능동 문의",     pri: 1, why: "최근 상담을 요청했고 동의 보유 — 즉시 배정·당일 응대 [R1]" },
+  { g: "G10a", ko: "만기 D-20",    pri: 2, why: "보장 종료 예고 시점(S14≤20) — 무인 보장분석 실행" },
+  { g: "G14",  ko: "다음 검진",     pri: 2, why: "1년 주기의 다음 검진이 30일 안(S21≤30) — 사이클 재시작" },
+  { g: "G3",   ko: "완결 경험",     pri: 2, why: "프로그램을 완결하고 동의 보유 — 신뢰 기반" },
+  { g: "G11",  ko: "보장 미비",     pri: 2, why: "권고 수준 대비 공백이 큰 보장 영역 보유 [R2 보장맵]" },
+  { g: "G12",  ko: "중복 정리",     pri: 2, why: "겹치는 보장·절감 여지 — 저항이 가장 낮은 진입(승환 게이트 필수) [R2 보장맵]" },
+  { g: "G4",   ko: "고활동",       pri: 3, why: "최근 접속 빈번·알림 반응 양호 — 연결률 높은 모집단" },
+  { g: "G5",   ko: "능동 관리 성향", pri: 3, why: "재검진을 스스로 예약·이행 — 수용도 높음" },
+  { g: "G6",   ko: "보장 점검 대상", pri: 4, why: "보유계약 0건 또는 다수 [R2]" },
+  { g: "G7",   ko: "휴면 재활성",   pri: 5, why: "동의는 있으나 활동 없음 — 저강도 재접촉" },
+];
+
+/* ── 신호 파생(원천 재사용 — 시드 자리는 [R1]/[R2]에서 실원천으로 대체) ── */
+function _gSignals(i, cyc, st) {
+  const n = Number(i);
+  const act = (typeof memberActivity === "function") ? memberActivity(n) : null;   /* [실구현] */
+  const acts = act ? (act.visits || []).length + (act.commerce || []).length : 0;
+  const last = null;   /* 프로별 접촉 기록은 로스터가 관할 — 여기서는 시드 근사 */
+  return {
+    s1: _hmHash("s1|" + n) % 100 < 4,                                   /* 상담 요청 4% [R1 실기록 대체] */
+    s2: _hmHash("s2|" + n) % 100 < (cyc && (cyc.t === "T6" || cyc.t === "T7" || cyc.t === "T8") ? 55 : 30),  /* 마케팅 동의(N2) [R1] */
+    s4: acts >= 2,                                                      /* 프로그램 완결 근사 [실구현 파생] */
+    s5: _hmHash("s5|" + n) % 100 < 35,                                  /* 최근 활동성 */
+    s7: act ? (act.visits || []).some((v) => (v.ko || "").indexOf("재검") >= 0) || _hmHash("s7|" + n) % 100 < 18 : false,
+    s8: _hmHash("s8|" + n) % 5,                                         /* 보유계약 수 [R2] */
+    s11: _hmHash("s11|" + n) % 100 < 6,                                 /* 접촉 과다·무응답 반복 6% */
+    s15: _hmHash("s15|" + n) % 100 < 28,                                /* 보장 공백 큼 [R2 보장맵 대체] */
+    s16: _hmHash("s16|" + n) % 100 < 15,                                /* 중복 보장 [R2 보장맵 대체] */
+  };
+}
+
+/* ── 판정 — 회원의 세그먼트 목록(우선순위 정렬·G8 발동 시 차단 플래그) ── */
+function gSegOf(i) {
+  const st = (typeof cohortStageOf === "function") ? cohortStageOf(Number(i)) : null;
+  const cyc = (typeof cycleOf === "function") ? cycleOf(Number(i), st) : null;
+  if (!cyc || cyc.t === null) return { blocked: false, noContact: true, why: "사이클 전(예약 전) — 배정 대상 아님", segs: [] };
+  if (cyc.t === "T0" || cyc.t === "T1") return { blocked: true, noContact: true, why: "접촉 금지(락) — 결과 없이 거는 전화는 회원에게 불편", segs: [] };
+  const s = _gSignals(i, cyc, st);
+  const hit = [];
+  if (s.s11) hit.push("G8");
+  if (cyc.t === "T2") hit.push("G2");
+  if (cyc.s14 != null && cyc.s14 <= 7 && cyc.s14 > 0) hit.push("G10b");
+  else if (cyc.s14 != null && cyc.s14 <= 20 && cyc.s14 > 7) hit.push("G10a");
+  if (cyc.t === "T6" || (cyc.s20 != null && cyc.s20 >= 0 && cyc.s20 <= 30)) hit.push("G13");   /* 만기 당일(T6)부터 2차 골든타임 개시(표본 검수 적발 수선) */
+  if (cyc.s21 <= 30) hit.push("G14");
+  if (s.s1 && s.s2) hit.push("G1");
+  if (s.s4 && s.s2) hit.push("G3");
+  if (s.s15) hit.push("G11");
+  if (s.s16) hit.push("G12");
+  if (s.s5) hit.push("G4");
+  if (s.s7) hit.push("G5");
+  if (s.s8 === 0 || s.s8 >= 3) hit.push("G6");
+  if (!s.s5 && s.s2 && hit.length === 0) hit.push("G7");
+  const order = {}; G_SEGMENTS.forEach((g, ix) => order[g.g] = g.pri * 100 + ix);
+  hit.sort((a, b2) => order[a] - order[b2]);
+  const blocked = hit[0] === "G8";
+  return { blocked: blocked, noContact: blocked, why: blocked ? G_SEGMENTS[0].why : "", segs: hit,
+    top: blocked ? "G8" : (hit[0] || null), cycle: cyc.t };
+}
+
+/* 명칭 린트(§0-V3) — 세그먼트 명칭·정의에 질환·건강 상태 단어 금지(러너·게이트 공용) */
+const G_NAME_FORBIDDEN = /(암|당뇨|혈압|혈당|간질환|간수치|지방간|간염|신장|콜레스테롤|비만|질환|질병|위험군|고위험|중위험|유병|증후군|우울|불면)/;   /* "시간·기간"의 간 오탐 방지 — 간은 복합어로만(러너 적발 수선) */
+function gNameLint() {
+  const bad = [];
+  for (const g of G_SEGMENTS) if (G_NAME_FORBIDDEN.test(g.ko) || G_NAME_FORBIDDEN.test(g.why.replace(/\[R[12].*?\]/g, ""))) bad.push(g.g);
+  return bad;
+}
+
+/* 러너 훅(관리자) */
+try {
+  if (typeof window !== "undefined") {
+    window.__hifinGSeg = function (i) {
+      try {
+        if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        if (i === "lint") return { bad: gNameLint(), n: G_SEGMENTS.length };
+        return gSegOf(Number(i));
+      } catch (e) { return { error: String(e).slice(0, 160) }; }
+    };
+  }
+} catch (e) {}
+
 /* ══════════════ 회원 컨텍스트(memberContext.js) — 데이터 운영계획 v1.1 §5 D-1 (2026-08-30 형 승인) ══════════════
    에이전트(하이 A0~A5)가 회원 상담에 필요한 전부를 **한 번에** 받는 360뷰 — 개별 배선 제거의 단일 진입점.
    ⚠️ 원칙:

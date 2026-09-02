@@ -84,6 +84,8 @@ src/data/dailyRoster.js
 src/data/dataCatalog.js
 src/data/backupRestore.js
 src/data/demoScript.js
+src/data/cycleStage.js
+src/data/gSegment.js
 src/data/memberContext.js
 src/data/needsEngine.js
 src/data/memberActivity.js
