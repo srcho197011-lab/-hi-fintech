@@ -139,15 +139,42 @@ function buildHandoffCard(i, opts) {
     script.fcTail = [fcBlock("fc-support"), fcBlock("fc-lifetime")].filter(Boolean);
     script.branches = script.branches.concat([fcBlock("fc-q-free"), fcBlock("fc-q-sell")].filter(Boolean));
   }
+  /* ── 만기 국면 대본(R4 결선 · 형 승인 2026-09-03) — T4~T7 카드에만. 값은 covAnalysis 보장맵 실산출만 ──
+        보장맵이 없으면(N1 미동의) 보장맵 화법(mt-t5-map)은 조립되지 않는다 — 동의가 곧 대본의 문 */
+  if (v2on) {
+    let cyc = null; try { cyc = (typeof cycleOf === "function") ? cycleOf(i) : null; } catch (e) {}
+    const inMat = cyc && ["T4", "T5", "T6"].indexOf(cyc.t) >= 0;
+    const inKeep = cyc && cyc.t === "T7" && cyc.secondGolden;
+    if (inMat || inKeep) {
+      let cov = null; try { cov = (typeof covAnalysisOf === "function") ? covAnalysisOf(i) : null; } catch (e) {}
+      const map = cov && cov.map ? cov.map : null;
+      const mSlots = Object.assign({}, slots, {
+        잔여일: cyc.s14 != null ? String(cyc.s14) : "곧",
+        공백영역: map && map.gaps.length ? map.gaps.map((g) => g.ko).slice(0, 2).join("·") : "비어 있는 부분",
+        중복영역: map && map.overlaps.length ? map.overlaps[0].ko.split("(")[0].trim() : "겹치는 부분",
+        절감액: map && map.annualSaveTotal ? Math.round(map.annualSaveTotal / 10000).toLocaleString() + "만원" : "-",
+      });
+      const ids = [];
+      if (cyc.t === "T4") ids.push("mt-t4-notice");
+      else if (cyc.t === "T5") { if (map && (map.gaps.length || map.overlaps.length)) ids.push("mt-t5-map"); ids.push("mt-t5-ask"); }
+      else if (cyc.t === "T6") ids.push("mt-t6-notice");
+      else ids.push("mt-t7-keep");
+      script.maturity = ids.map((id) => _hcBlock(id, mSlots, out)).filter(Boolean);
+      script.branches = script.branches.concat([_hcBlock("mt-q-why", mSlots, out), _hcBlock("mt-q-cost", mSlots, out)].filter(Boolean));
+    }
+    /* 회원 자발 건강 대화(§0-V5) — 회원이 먼저 꺼냈을 때만 쓰는 갈래. 본대본·응대 규격에 포함되지 않는 선택 갈래 */
+    script.voluntary = ["vd-listen", "vd-confirm", "vd-offer", "vd-consent", "vd-boundary", "vd-record"]
+      .map((id) => _hcBlock(id, slots, out)).filter(Boolean);
+  }
   /* 채널 변형 — 규칙 적용(창작 아님): 알림=core[0]+ask 축약 · 문자=고정 형식(수치·등급 미포함) */
   script.notif = (script.core[0] ? script.core[0].text + " " : "") + (script.ask ? script.ask.text.split(".")[0] + "." : "");
   script.sms = "[하이핀] " + slots.가명 + "님, 검진 관련 안내드릴 내용이 있어요. 확인: {링크}";
 
   /* 데이터 경계 검사 — evidence·대본에 숫자(수치) 유입 여부 */
   const joined = evidence.join(" ") + " " + [script.opening, ...script.core, script.ask, ...script.branches, script.closing,
-    ...(script.firstconnect || []), ...(script.fcTail || [])]
+    ...(script.firstconnect || []), ...(script.fcTail || []), ...(script.maturity || [])]
     .filter(Boolean).map((b) => b.text).join(" ");
-  const numLeak = /\d{2,}/.test(joined.replace(/2년|3년|1회|2분|150분|1,000만원|코엔자임Q10/g, ""));   // 관용 표현 예외 후 2자리 이상 숫자 검출(1,000만원=보장 사실 고지·§0-C 동반 / Q10=성분명·수치 아님)
+  const numLeak = /\d{2,}/.test(joined.replace(/2년|3년|1회|2분|150분|1,000만원|코엔자임Q10|\d+일\s*뒤|연\s*[\d,]+만원|D-\d+/g, ""));   // 관용 표현 예외 후 2자리 이상 숫자 검출(1,000만원=보장 사실 고지·§0-C 동반 / Q10=성분명·수치 아님)
   const slotLeak = /\{[가-힣A-Za-z]+\}/.test(joined);                            // 미치환 슬롯 잔존({링크}는 sms 전용 — joined 밖)
 
   const meta = (typeof RISK_GRADE_META !== "undefined") ? RISK_GRADE_META[g.grade] : null;

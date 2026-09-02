@@ -58,20 +58,21 @@ function _hmSentences(text) {
 }
 function hmSpecCheck(card) {
   const s = card && card.script; if (!s) return { ok: false, why: ["script 없음"] };
-  const blocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.fcTail || []), ...(s.branches || []), s.closing].filter(Boolean);
+  const blocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.maturity || []), ...(s.fcTail || []), ...(s.branches || []), s.closing].filter(Boolean);
   const why = [];
   /* D2 첫 연결(firstconnect 동반)은 골든타임 1회 한정 확장 — D2 전수 실측 최대 47문장 기반 ≤48. 읽기 7분대는 형 확정(2026-08-31: 그대로 유지) */
-  const maxSent = (s.firstconnect && s.firstconnect.length) ? 48 : (s.v2 ? 24 : 20);   /* 본대본(응대 제외) 한도 — 응대는 상황별 선택지라 전부 읽지 않는다 */
-  const flowBlocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.fcTail || []), s.closing].filter(Boolean);                            /* v2: 생활 대화·씨앗 포함 전화 3~5분(§4-S3) */
+  const maxSent = (s.firstconnect && s.firstconnect.length) ? 48 : (s.v2 ? (24 + ((s.maturity && s.maturity.length) ? 8 : 0)) : 20);   /* 만기 파트 가산 — R4 결선 */   /* 본대본(응대 제외) 한도 — 응대는 상황별 선택지라 전부 읽지 않는다 */
+  const flowBlocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.maturity || []), ...(s.fcTail || []), s.closing].filter(Boolean);                            /* v2: 생활 대화·씨앗 포함 전화 3~5분(§4-S3) */
   if (s.v2) {
     const qN = (s.talk || []).reduce((a, b2) => a + (String(b2.text).match(/\?/g) || []).length, 0);
     if (qN < 2) why.push("유도 질문 부족(" + qN + "<2)");
     if ((s.seed || []).length > 2) why.push("씨앗 과다(" + s.seed.length + ">2)");
     /* §0-P 선발화 — 니즈 수치 표현이 응대(질문 응답) 밖에서 등장하면 차단 */
-    const nonBranch = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.fcTail || []), s.closing].filter(Boolean);
+    const nonBranch = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.maturity || []), ...(s.fcTail || []), s.closing].filter(Boolean);
     for (const b2 of nonBranch) if (HM_NEEDS_UTTER.test(b2.text)) why.push("선발화 감지 [" + b2.id + "]");
   }
-  if (s.v2 && (s.branches || []).length > 12) why.push("응대 과다(" + s.branches.length + ">12)");
+  const brMax = 12 + ((s.maturity && s.maturity.length) ? 2 : 0);   /* 만기 국면 응대 2종(mt-q) 가산 — R4 결선 */
+  if (s.v2 && (s.branches || []).length > brMax) why.push("응대 과다(" + s.branches.length + ">" + brMax + ")");
   let nSent = 0;
   for (const b of (s.v2 ? flowBlocks : blocks)) {
     /* 45자 한도는 쉬운말 '블록'의 규격 — 혼합 대본(쉬운말 변형에 공용 분기 동석)에 소급하지 않는다(§S-5 ⑩ 해석) */

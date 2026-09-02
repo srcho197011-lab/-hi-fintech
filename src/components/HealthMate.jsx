@@ -904,11 +904,17 @@ function HmHandoffCard({ ent, code, onToast }) {
           {[["제안", c.script.ask]].map(([t, b], i) => b &&
             <div key={"a" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
           {s2 && (s2.careplan || []).map((b) => draft("🧰 케어 플랜", b))}
+          {s2 && (s2.maturity || []).map((b) => draft("⏳ 만기 국면", b))}
           {s2 && (s2.fcTail || []).map((b) => draft("⭐ 첫 연결", b))}
           <div style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 4 }}>회원 반응별 응대 10종(수락·보류·거절·질문·치료비·가족·기존보험·바쁨·두려움)</div>
             {(s2 ? s2.branches : c.script.branches).map((b, i) => <div key={b.id} style={{ marginBottom: 4 }}><b style={{ color: "#C2410C", fontSize: 11 }}>응대 {i + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("(")[0].split("—")[0].trim()}</i><div>“{b.text}”</div></div>)}
           </div>
+          {s2 && (s2.voluntary || []).length > 0 && (
+            <details style={{ border: "1px dashed #A7F3D0", background: "#F0FDF4", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
+              <summary style={{ cursor: "pointer", fontSize: 11.4, fontWeight: 800, color: "#15803D" }}>💬 회원이 먼저 건강 이야기를 꺼내면 — 자발 대화 6갈래 <span style={{ fontWeight: 600, color: "#64748B" }}>(먼저 꺼내지 않아요 · 회원이 열었을 때만)</span></summary>
+              {(s2.voluntary || []).map((b, i2) => <div key={b.id} style={{ marginTop: 4 }}><b style={{ color: "#15803D", fontSize: 11 }}>{i2 + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("·")[1] ? b.ko.split("·")[1].trim() : b.ko}</i><div>“{b.text}”</div></div>)}
+            </details>)}
           {c.script.closing && <div><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>클로징</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{c.script.closing.ko}</i><div>“{c.script.closing.text}”</div></div>}
           <div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}><b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}</div>
         </div>);

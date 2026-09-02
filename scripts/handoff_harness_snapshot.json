@@ -9,7 +9,7 @@
     "L": 1401,
     "M": 131
   },
-  "blockKinds": 34,
+  "blockKinds": 36,
   "blocksUsed": {
     "op-first": 1253,
     "co-h": 134,
@@ -33,6 +33,8 @@
     "co-m-easy": 203,
     "ak-recheck": 123,
     "br-no-easy": 250,
+    "mt-q-why": 362,
+    "mt-q-cost": 362,
     "cl-open": 141,
     "op-first-easy": 234,
     "cl-done-easy": 234,
@@ -52,6 +54,6 @@
   "coachOk": 544,
   "coachAcc": 100,
   "readSecMax": 476,
-  "seconds": 27.2,
+  "seconds": 17.1,
   "pass": true
 }
