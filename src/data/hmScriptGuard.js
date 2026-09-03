@@ -93,7 +93,11 @@ function hmSpecCheck(card) {
 /* ── 대본 종합 스캔 — 조립 카드 1장에 대한 §S-5 ⑨⑩ 판정(러너·조립기 공용) ── */
 function hmScriptScan(card) {
   const s = card && card.script; if (!s) return { ok: false, forbidden: [{ key: "none", ko: "script 없음" }], spec: null };
-  const blocks = [s.opening, ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.branches || []), s.closing].filter(Boolean);
+  /* 조립 카드에 실리는 전 파트를 검사한다 — 첫 연결(fc)·만기(mt)·자발(vd)이 빠져 있으면
+     그 파트의 슬롯 치환 문장이 금지어 검사를 통과하지 않은 채 발행된다(R6 적발) */
+  const blocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []),
+    s.ask, ...(s.careplan || []), ...(s.maturity || []), ...(s.fcTail || []),
+    ...(s.branches || []), ...(s.voluntary || []), s.closing].filter(Boolean);
   const forbidden = [];
   for (const b of blocks) for (const h of hmForbiddenScan(b.text)) forbidden.push(Object.assign({ block: b.id }, h));
   for (const h of hmForbiddenScan(s.notif)) forbidden.push(Object.assign({ block: "notif" }, h));

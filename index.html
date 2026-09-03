@@ -25786,7 +25786,7 @@ function interventionsFor(grade, groupKey) {
 }
 
 /* 자동 생성 — run_handoff_harness.mjs (P4). 콘솔 하네스 타일이 읽는 최근 통과 스냅샷 — 손대지 말 것 */
-const HM_HARNESS_SNAPSHOT = {"date":"2026-09-02","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
+const HM_HARNESS_SNAPSHOT = {"date":"2026-09-03","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
 
 /* 자동 생성 — run_handoff_batch.mjs (P5). ⑩관제탑이 읽는 배치 스냅샷 — 손대지 말 것(운영 정합 §7-⑥: 관제탑 집계 = 이 스냅샷 = 배치 리포트). */
 const HM_OPS_SNAPSHOT = {"date":"2026-09-02","total":100000,"cards":56945,"publishable":56945,"locked":32855,"byGrade":{"H":6300,"-":43055,"L":46292,"M":4353},"bySido":{"충북":1746,"경북":2987,"서울":10880,"부산":4146,"전북":1691,"경기":13271,"대전":1763,"충남":2515,"울산":1237,"전남":1920,"강원":1792,"인천":3716,"광주":1648,"대구":2882,"경남":2941,"제주":1152,"세종":658},"pros":648,"prosAll":702,"sabunOk":true,"rosterChecked":648,"rosterViol":0,"avgRoster":6.97,"maxRoster":7,"byRosterGrade":{"H":3209,"L":930,"M":377},"loadAvg":154.3,"loadRatioMax":1.29,"loadRatioMin":0.91,"loadBySido":[{"sido":"강원","pros":16,"perPro":199.5,"ratio":1.29},{"sido":"세종","pros":6,"perPro":190.7,"ratio":1.24},{"sido":"충북","pros":17,"perPro":184.9,"ratio":1.2},{"sido":"울산","pros":13,"perPro":165.8,"ratio":1.07},{"sido":"인천","pros":41,"perPro":161,"ratio":1.04},{"sido":"부산","pros":46,"perPro":160.8,"ratio":1.04},{"sido":"전남","pros":21,"perPro":159.5,"ratio":1.03},{"sido":"충남","pros":28,"perPro":155.8,"ratio":1.01},{"sido":"경기","pros":149,"perPro":155.5,"ratio":1.01},{"sido":"대전","pros":20,"perPro":155.1,"ratio":1},{"sido":"경북","pros":34,"perPro":153.3,"ratio":0.99},{"sido":"광주","pros":19,"perPro":153.2,"ratio":0.99},{"sido":"경남","pros":34,"perPro":152.7,"ratio":0.99},{"sido":"제주","pros":14,"perPro":144.3,"ratio":0.93},{"sido":"서울","pros":133,"perPro":143.4,"ratio":0.93},{"sido":"대구","pros":35,"perPro":143.3,"ratio":0.93},{"sido":"전북","pros":21,"perPro":140.9,"ratio":0.91}],"seconds":68.9,"pass":true};
@@ -26153,7 +26153,11 @@ function hmSpecCheck(card) {
 /* ── 대본 종합 스캔 — 조립 카드 1장에 대한 §S-5 ⑨⑩ 판정(러너·조립기 공용) ── */
 function hmScriptScan(card) {
   const s = card && card.script; if (!s) return { ok: false, forbidden: [{ key: "none", ko: "script 없음" }], spec: null };
-  const blocks = [s.opening, ...(s.talk || []), ...(s.core || []), ...(s.seed || []), s.ask, ...(s.careplan || []), ...(s.branches || []), s.closing].filter(Boolean);
+  /* 조립 카드에 실리는 전 파트를 검사한다 — 첫 연결(fc)·만기(mt)·자발(vd)이 빠져 있으면
+     그 파트의 슬롯 치환 문장이 금지어 검사를 통과하지 않은 채 발행된다(R6 적발) */
+  const blocks = [s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []),
+    s.ask, ...(s.careplan || []), ...(s.maturity || []), ...(s.fcTail || []),
+    ...(s.branches || []), ...(s.voluntary || []), s.closing].filter(Boolean);
   const forbidden = [];
   for (const b of blocks) for (const h of hmForbiddenScan(b.text)) forbidden.push(Object.assign({ block: b.id }, h));
   for (const h of hmForbiddenScan(s.notif)) forbidden.push(Object.assign({ block: "notif" }, h));
