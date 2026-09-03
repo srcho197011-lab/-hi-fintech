@@ -81,6 +81,13 @@ if echo "$CHANGED" | grep -qE "^src/data/(cycleStage|gSegment)\.js$"; then
   git add scripts/cycle_regression_snapshot.json 2>/dev/null || true
 fi
 
+# ══ 영상 세션 회귀 게이트(영상 V0) — 세션 엔진·동의 사전 변경 시 전수 ══
+if echo "$CHANGED" | grep -qE "^src/data/(videoSession|consentGate)\.js$"; then
+  echo "[GATE] 영상 감시 파일 변경 — 영상 세션 회귀 실행"
+  node scripts/run_video_regression.mjs || { echo "[GATE] 영상 세션 회귀 실패 — 커밋 차단(락·동의·미디어 경계)"; exit 1; }
+  git add scripts/video_regression_snapshot.json 2>/dev/null || true
+fi
+
 # ══ 하이프로 회귀 게이트(2단계 P6) — 응답 엔진·코치 변경 시 1만 전수 ══
 if echo "$CHANGED" | grep -qE "^src/data/(hiProAgent|coachAgent)\.js$"; then
   echo "[GATE] 하이프로 감시 파일 변경 — 1만 회귀 실행"

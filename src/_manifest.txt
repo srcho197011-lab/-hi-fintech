@@ -89,6 +89,7 @@ src/data/consentGate.js
 src/data/covAnalysis.js
 src/data/gSegment.js
 src/data/hyundaiFeed.js
+src/data/videoSession.js
 src/data/memberContext.js
 src/data/needsEngine.js
 src/data/memberActivity.js

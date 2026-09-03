@@ -17,6 +17,9 @@ const CONSENT_DEFS = {
   n3_push:  { ko: "광고성 앱 알림", who: "현대해상 직접", opt: true, opens: "광고성 푸시 발송", ui: "검진 예약 동의 ⑥" },
   n3_sms:   { ko: "광고성 문자", who: "현대해상 직접", opt: true, opens: "광고성 SMS·알림톡 발송", ui: "검진 예약 동의 ⑥" },
   n3_email: { ko: "광고성 이메일", who: "현대해상 직접", opt: true, opens: "광고성 이메일 발송", ui: "검진 예약 동의 ⑥" },
+  v1: { ko: "영상 상담 이용", who: "현대해상 직접", opt: true,
+        opens: "담당 전문가와의 영상 상담 — 결과 리포트를 화면으로 함께 봄(영상·음성 미저장, 요약만 기록)",
+        ui: "검진 예약 동의 ⑦(ci_video)" },
   /* 받지 않는 동의 — 이 항목의 부재가 설계의 결정적 우위(v2 §4-3) */
   n4: { ko: "민감정보의 마케팅 활용", taken: false,
         why: "받지 않는다 — 보장맵이 계약 정보만으로 산출되는 비민감 정보이므로 건강정보 없이 제안이 성립한다. 동의 항목이 하나 줄어 동의율이 오르고, 「보험사가 내 건강정보로 영업한다」는 가장 위험한 민원 유형이 소멸한다." },
@@ -50,6 +53,10 @@ function consentHas(kind, i) {
       if (!c || ["T5", "T6", "T7", "T8"].indexOf(c.t) < 0) return false;
       return _hmHash("s2|" + n) % 100 < 55;               /* 기존 gSegment 시드와 동일 해시 — 결정론 연속 */
     } catch (e) { return false; }
+  }
+  if (kind === "v1") {                                    /* 영상 상담 — 건강관리 동의 보유자 중 일부만 */
+    if (!consentHas("s4", n)) return false;
+    return _hmHash("cg|v1|" + n) % 100 < 52;
   }
   if (kind.indexOf("n3") === 0) return _hmHash("cg|" + kind + "|" + n) % 100 < 45;
   return false;

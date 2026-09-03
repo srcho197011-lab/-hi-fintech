@@ -1,0 +1,24 @@
+{
+  "date": "2026-09-03",
+  "sample": 572,
+  "open": 109,
+  "byCode": {
+    "lock": 188,
+    "consent": 258,
+    "open": 109,
+    "hold": 17
+  },
+  "steps": {
+    "blocked:lock": 188,
+    "blocked:consent": 258,
+    "requested→connected→ended→summarized": 70,
+    "blocked:hold": 17,
+    "requested→expired": 14,
+    "requested→declined": 25
+  },
+  "bad": 0,
+  "ruleBad": 0,
+  "drift": 0,
+  "seconds": 63.4,
+  "pass": true
+}
