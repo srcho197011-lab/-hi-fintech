@@ -114,6 +114,40 @@ if (!share.t5cov) shareBad.push("만기 국면에서도 보장맵 공유 0건(�
 if (share.cases.length < 3) shareBad.push("대조 표본 부족");
 for (const c of share.cases) if (!(c.t5 && !c.t3)) shareBad.push("국면 대조 실패 i=" + c.i);
 
+/* ⑦ 요약 규격(§0-B·영상 V4) — 초안 전건이 통과하고, 위반 문안은 전건 차단되는가(양방향) */
+const summ = await p.evaluate(() => {
+  const out = { drafts: 0, draftBad: [], caseBad: [] };
+  /* 초안 — 공유 조합을 바꿔가며 전건이 규격을 통과해야 한다 */
+  const combos = [[], ["report"], ["report", "kit"], ["report", "kit", "plan"], ["covmap"], ["report", "covmap"]];
+  for (let i = 1; i <= 3000; i += 137) {
+    for (const c of combos) {
+      const d = window.__hifinVideo("sumdraft", i, { shared: c });
+      out.drafts++;
+      const chk = window.__hifinVideo("sumcheck", d.draft);
+      if (!chk.ok) out.draftBad.push({ i, c: c.join("+"), why: chk.why, t: d.draft.slice(0, 40) });
+    }
+  }
+  /* 대조 — 막아야 할 것과 통과해야 할 것 */
+  const CASES = [
+    ["결과 해설과 다음 절차를 안내드렸어요.", true],
+    ["함께 본 화면 — AI 정밀리포트. 다음 할 일로 진료 연결을 안내드렸어요.", true],
+    ["짧음", false],
+    ["", false],
+    ["당뇨병이 확실합니다 — 바로 치료가 필요해요.", false],
+    ["수축기 152 mmHg 로 나왔다고 설명드렸어요.", false],
+    ["보험 하나 더 가입하시라고 권해드렸어요.", false],
+    ["무조건 좋아진다고 말씀드렸어요.", false],
+  ];
+  for (const [t, want] of CASES) {
+    const r = window.__hifinVideo("sumcheck", t);
+    if (!!r.ok !== want) out.caseBad.push({ t: t.slice(0, 26), got: !!r.ok, want });
+  }
+  return out;
+});
+const summBad = [];
+if (summ.draftBad.length) summBad.push("초안 규격 미달 " + summ.draftBad.length + "건: " + JSON.stringify(summ.draftBad[0]));
+if (summ.caseBad.length) summBad.push("대조 실패 " + summ.caseBad.length + "건: " + JSON.stringify(summ.caseBad));
+
 /* ② 전이 규격 — 허용 간선 밖 전이는 거부되어야 한다 / ③ §0-V7 — 프로는 모드를 올릴 수 없다 */
 const rules = await p.evaluate(() => {
   const out = [];
@@ -147,17 +181,18 @@ for (const k of Object.keys(cross)) if (cross[k] !== res.sims[k]) drift++;
 await b.close();
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
-const pass = res.bad.length === 0 && ruleBad.length === 0 && drift === 0 && shareBad.length === 0;
+const pass = res.bad.length === 0 && ruleBad.length === 0 && drift === 0 && shareBad.length === 0 && summBad.length === 0;
 console.log(`[게이트] 표본 ${res.n} · 요청 가능 ${res.open} (${(res.open / res.n * 100).toFixed(1)}%) · 차단 ${JSON.stringify(res.byCode)}`);
 console.log(`[전이  ] ${Object.entries(res.steps).map(([k, v]) => k + " " + v).join(" · ")}`);
 console.log(`[규격  ] 상태·간선 위반 ${ruleBad.length}건 · 미디어 필드 0 검사 포함`);
 console.log(`[공유  ] 등재 ${share.docs}종 · 금지 화면 ${share.forbidden.length} · 등재 밖 통과 ${share.unlisted} · T3 보장맵 ${share.t3cov}건(0이어야) · 만기 국면 허용 ${share.t5cov}건 · 국면 대조 ${share.cases.length}건`);
+console.log(`[요약  ] 초안 ${summ.drafts}건 전건 규격 통과 ${summ.drafts - summ.draftBad.length} · 대조 8건 실패 ${summ.caseBad.length}`);
 console.log(`[결정론] 교차 300건 드리프트 ${drift}건`);
 console.log(`총 소요 ${secs}s → ${pass ? "PASS" : "FAIL"}`);
-if (!pass) { for (const x of res.bad.slice(0, 10)) console.error(" ×", JSON.stringify(x)); for (const x of ruleBad.slice(0, 6)) console.error(" × 규격", JSON.stringify(x)); for (const x of shareBad.slice(0, 6)) console.error(" × 공유", x); }
+if (!pass) { for (const x of res.bad.slice(0, 10)) console.error(" ×", JSON.stringify(x)); for (const x of ruleBad.slice(0, 6)) console.error(" × 규격", JSON.stringify(x)); for (const x of shareBad.slice(0, 6)) console.error(" × 공유", x); for (const x of summBad.slice(0, 4)) console.error(" × 요약", x); }
 
 writeFileSync(join(ROOT, "scripts/video_regression_snapshot.json"), JSON.stringify({
   date: new Date().toISOString().slice(0, 10), sample: res.n, open: res.open,
-  byCode: res.byCode, steps: res.steps, bad: res.bad.length, ruleBad: ruleBad.length, shareBad: shareBad.length, shareDocs: share.docs, t3cov: share.t3cov, drift, seconds: Number(secs), pass
+  byCode: res.byCode, steps: res.steps, bad: res.bad.length, ruleBad: ruleBad.length, shareBad: shareBad.length, summBad: summBad.length, drafts: summ.drafts, shareDocs: share.docs, t3cov: share.t3cov, drift, seconds: Number(secs), pass
 }, null, 2) + "\n", "utf8");
 process.exit(pass ? 0 : 1);

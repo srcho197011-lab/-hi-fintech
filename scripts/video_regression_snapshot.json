@@ -19,9 +19,11 @@
   "bad": 0,
   "ruleBad": 0,
   "shareBad": 0,
+  "summBad": 0,
+  "drafts": 132,
   "shareDocs": 4,
   "t3cov": 0,
   "drift": 0,
-  "seconds": 33.7,
+  "seconds": 30.8,
   "pass": true
 }

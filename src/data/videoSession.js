@@ -141,16 +141,50 @@ function vsDegrade(sess) {
   return { ok: true, mode: sess.mode };
 }
 
-/* 종료·요약 — 요약 없이 닫히지 않는다. 남는 것은 요약뿐이다(§0-V8) */
+/* ── 종료·요약(영상 V4) — 요약 없이 닫히지 않는다. 남는 것은 요약뿐이다(§0-V8) ──
+   요약도 기록이므로 활동결과 메모와 같은 사전을 받는다(§0-B — 금지어 스캔 통과분만 저장).
+   그래서 여기서 새 규칙을 만들지 않고, 대본·메모가 쓰는 검사를 그대로 불러 쓴다. */
+const VS_SUMMARY_SPEC = {
+  minLen: 8, maxLen: 200,
+  numeric: /\d+\s*(mmHg|mg\/dL|mmol|IU|%|점)/,   /* 원본 수치는 요약에도 남기지 않는다(화면 규격과 동일) */
+};
+/* 요약 초안 부품 — 창작하지 않고 조립한다(§0-V6 AI는 초안까지·발행은 사람 검수 뒤).
+   프로가 그대로 쓸 수도, 고쳐 쓸 수도 있다. 어느 쪽이든 저장 전에 같은 검사를 받는다. */
+const VS_SUMMARY_PARTS = {
+  head: "검진 결과에서 확인이 필요한 부분을 설명드렸어요.",
+  share: "함께 본 화면 — ",
+  act: "다음 할 일로 {개입}을 안내드렸어요.",
+  tail: "궁금하신 점은 언제든 말씀해 주시기로 했어요.",
+};
+function vsSummaryCheck(text) {
+  const t = String(text || "").trim();
+  if (t.length < VS_SUMMARY_SPEC.minLen) return { ok: false, why: t ? "요약이 너무 짧아요(" + VS_SUMMARY_SPEC.minLen + "자 이상)" : "요약 없이 기록을 닫을 수 없어요" };
+  if (t.length > VS_SUMMARY_SPEC.maxLen) return { ok: false, why: "요약이 너무 길어요(" + VS_SUMMARY_SPEC.maxLen + "자 이내) — 무엇을 하기로 했는지만 남겨요." };
+  if (typeof HM_BANNED !== "undefined" && HM_BANNED.some((w) => t.indexOf(w) >= 0))
+    return { ok: false, why: "금칙어가 포함돼 있어요 — 단정·과장 표현은 요약에 남길 수 없어요." };
+  try { const hits = hmForbiddenScan(t); if (hits.length) return { ok: false, why: "요약에 쓸 수 없는 표현이 있어요: " + hits[0].ko }; } catch (e) {}
+  if (VS_SUMMARY_SPEC.numeric.test(t)) return { ok: false, why: "원본 수치는 요약에 남기지 않아요 — 구간·등급 표현으로 적어 주세요." };
+  return { ok: true };
+}
+/* 초안 — 이번 통화에서 실제로 일어난 것만으로 만든다(띄운 화면·발행한 개입) */
+function vsSummaryDraft(sess, card) {
+  const parts = [VS_SUMMARY_PARTS.head];
+  const sh = (sess && sess.shared) || [];
+  if (sh.length) parts.push(VS_SUMMARY_PARTS.share + sh.map((k) => (VS_SHARE_DOCS[k] || {}).ko || k).join(" · ") + ".");
+  const act = card && card.actions && card.actions[0];
+  if (act && act.ko) parts.push(VS_SUMMARY_PARTS.act.replace("{개입}", act.ko));
+  parts.push(VS_SUMMARY_PARTS.tail);
+  let t = parts.join(" ");
+  if (t.length > VS_SUMMARY_SPEC.maxLen) t = parts.slice(0, 3).join(" ");
+  return t;
+}
 function vsEnd(sess) { return vsMove(sess, "ended", { by: "either" }); }
 function vsSummarize(sess, text, confirmedByMember) {
   if (!sess || sess.state !== "ended") return { ok: false, why: "종료 후에만 요약할 수 있어요" };
-  const t = String(text || "").trim();
-  if (!t) return { ok: false, why: "요약 없이 기록을 닫을 수 없어요" };
-  if (typeof HM_BANNED !== "undefined" && HM_BANNED.some((w) => t.indexOf(w) >= 0))
-    return { ok: false, why: "금칙어가 포함돼 있어요 — 단정·과장 표현은 요약에 남길 수 없어요." };
+  const chk = vsSummaryCheck(text);
+  if (!chk.ok) return chk;
   if (!confirmedByMember) return { ok: false, why: "회원 확인 전이에요 — 확인해야 기록이 확정돼요." };
-  sess.summary = { text: t, confirmed: true };
+  sess.summary = { text: String(text).trim(), confirmed: true, shared: ((sess.shared || []).slice()) };
   return vsMove(sess, "summarized", { by: "member" });
 }
 
@@ -232,6 +266,10 @@ try {
         if (cmd === "gate")   return vsGateOf(a, b2 || {});
         if (cmd === "docs")   return { docs: VS_SHARE_DOCS, forbidden: String(VS_SHARE_FORBIDDEN) };
         if (cmd === "share")  return vsShareGate(a, (b2 && b2.i), b2 || {});
+        if (cmd === "sumspec") return { spec: VS_SUMMARY_SPEC, parts: VS_SUMMARY_PARTS };
+        if (cmd === "sumcheck") return vsSummaryCheck(a);
+        if (cmd === "sumdraft") { let card = null; try { card = buildHandoffCard(Number(a), { v2: true }); } catch (e) {}
+          return { draft: vsSummaryDraft({ shared: (b2 && b2.shared) || [] }, card) }; }
         if (cmd === "sim") {   /* 결정론 시뮬 — 코호트 i의 한 세션을 규격대로 굴린다 */
           const steps = [];
           const r = vsRequest(a, b2 || {});

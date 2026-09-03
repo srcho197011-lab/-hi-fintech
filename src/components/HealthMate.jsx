@@ -347,14 +347,25 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
       <div style={{ padding: "16px 18px" }}>
         <div style={{ fontSize: 11.8, color: "#475569", lineHeight: 1.7 }}>영상·음성은 저장되지 않았어요. 무엇을 이야기했고 무엇을 하기로 했는지만 적고, <b>회원이 확인해야</b> 기록이 닫혀요.
           {shared.length > 0 && <><br /><span style={{ color: "#334155" }}>함께 본 화면 — {shared.map((k) => VS_SHARE_DOCS[k].ko).join(" · ")}</span></>}</div>
+        <div style={{ display: "flex", gap: 6, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <button className="hmbtn gh" style={{ fontSize: 10.6, padding: "4px 10px" }}
+            onClick={() => { try { setNote(vsSummaryDraft(sess, card)); setErr(""); } catch (e) {} }}>✍ 초안 만들기</button>
+          <span style={{ fontSize: 10.2, color: "#94A3B8" }}>이번 통화에서 실제로 일어난 것만으로 만들어요 — 고쳐 쓰셔도 돼요(§0-V6)</span>
+        </div>
         <textarea value={note} onChange={(e) => { setNote(e.target.value); setErr(""); }} rows={4} placeholder="예) 결과에서 확인이 필요한 구간을 설명드렸고, 진료 연결을 안내했어요."
-          style={{ width: "100%", marginTop: 10, borderRadius: 10, border: "1px solid #CBD5E1", padding: "9px 11px", fontSize: 12.2, lineHeight: 1.7, fontFamily: "inherit", resize: "vertical" }} />
-        {err && <div style={{ fontSize: 11, color: "#B91C1C", marginTop: 6 }}>{err}</div>}
-        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+          style={{ width: "100%", marginTop: 7, borderRadius: 10, border: "1px solid " + (err ? "#FCA5A5" : "#CBD5E1"), padding: "9px 11px", fontSize: 12.2, lineHeight: 1.7, fontFamily: "inherit", resize: "vertical" }} />
+        {(() => {
+          const n = note.trim().length;
+          let live = null; try { live = note.trim() ? vsSummaryCheck(note) : null; } catch (e) {}
+          return (<div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 5, fontSize: 10.4, flexWrap: "wrap" }}>
+            <span style={{ color: live && !live.ok ? "#B91C1C" : "#94A3B8" }}>{err || (live && !live.ok ? live.why : "저장 전에 대본과 같은 검사를 받아요 — 진단·단정·권유·원본 수치는 남길 수 없어요.")}</span>
+            <span style={{ color: n > VS_SUMMARY_SPEC.maxLen ? "#B91C1C" : "#94A3B8" }}>{n} / {VS_SUMMARY_SPEC.maxLen}자</span>
+          </div>);
+        })()}
+        <div style={{ display: "flex", gap: 8, marginTop: 11, flexWrap: "wrap" }}>
           <button className="hmbtn" onClick={confirm}>회원 확인 완료 — 기록 저장</button>
           <button className="hmbtn gh" onClick={onClose}>닫기(미저장)</button>
         </div>
-        <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 8 }}>요약이 비어 있거나 단정·과장 표현이 있으면 저장되지 않아요.</div>
       </div></>)}
 
     {stage === "done" && (<div style={{ padding: "26px 20px", textAlign: "center", fontSize: 13, fontWeight: 800, color: "#15803D" }}>✅ 상담 요약이 저장됐어요</div>)}
