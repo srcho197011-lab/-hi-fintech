@@ -49,11 +49,13 @@
     "co-bp": 20
   },
   "forbiddenHits": 0,
+  "insFirstBlocked": 0,
+  "insFirstCases": 7,
   "goldenDrift": 0,
   "coachN": 544,
   "coachOk": 544,
   "coachAcc": 100,
   "readSecMax": 476,
-  "seconds": 18.2,
+  "seconds": 17.6,
   "pass": true
 }

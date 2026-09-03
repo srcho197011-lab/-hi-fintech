@@ -2,6 +2,7 @@
    nav10k 러너 패턴 복제(직접 호출 훅 · UI 경유 금지). 검증 5축:
      ① 조립 — 표본 전건 buildHandoffCard 성공(카드 대상은 발행 가능 100% · 부족 블록 0 · 슬롯 잔존 0)
      ② 금지어(§S-5 ⑨) — 39블록 원문 + 조립 대본 전문·분기·채널 스캔 0건
+     ③ §0-P 보험 선행 — 사전 전건 차단 대상 0건 + 실효 대조 7건(양성 차단·음성 통과)
      ③ 규격(§S-5 ⑩) — 본대본 ≤20문장 · 문장당 ≤60자(쉬운말 45) · 문자 ≤80자
      ④ 골든셋 회귀 — fixtures/handoff_cards_sample_v1.json과 현 엔진 출력 일치(결정론)
      ⑤ A5 회귀(§S-6) — 카드×질문 코퍼스(결정론 생성) 전수: 유형 분류·정답 원천·블록 사전 밖 문장 0
@@ -60,6 +61,26 @@ const blockScanRes = await p.evaluate(() => window.__hifinScriptScan());
 const blockScan = (blockScanRes && blockScanRes.bad) || [{ id: "hook", hits: [{ key: "err", ko: String(blockScanRes && blockScanRes.error) }] }];
 fails.forbidden.push(...blockScan);
 
+/* ── ③ §0-P 보험 선행 가드 — 사전 전건 + 실효 대조(양성이 잡히고 음성이 통과하는가) ──
+   가드는 「걸리지 않는다」만으로는 증명되지 않는다. 규칙을 끈 것과 구분되지 않기 때문이다.
+   그래서 잡아야 할 문장과 통과해야 할 문장을 함께 넣어 양방향으로 확인한다. */
+const insFirst = await p.evaluate(() => window.__hifinScriptScan("insfirst"));
+const insBlocked = (insFirst && insFirst.blocked) || ["hook-error"];
+const INS_CASES = [
+  ["보장부터 정리해 드리고, 건강 관리는 그다음에 볼게요.", "co-x", "core", true],
+  ["좋은 상품이 하나 있는데 먼저 말씀드릴게요.", "ak-x", "ask", true],
+  ["특약을 하나 늘리시는 게 좋겠어요. 치료비가 걱정되실 테니까요.", "ck-x", "careplan", true],
+  ["이번 결과에서 수축기혈압 위험 구간으로 확인됐어요.", "co-x", "core", false],
+  ["치료비가 걱정되시면, 지금 보장을 같이 볼 수 있어요.", "co-x", "core", false],
+  ["무료 검진대비보험이 18일 뒤에 끝나요. 오늘 결정하실 건 아무것도 없어요.", "mt-x", "maturity", false],
+  ["보장 이야기는 원하실 때, 별도 동의를 받고 나서 해요.", "vd-x", "voluntary", false],
+];
+const insCaseFail = [];
+for (const [t, id, part, want] of INS_CASES) {
+  const g = await p.evaluate((a) => window.__hifinScriptScan("insfirst-text", { id: a[1], part: a[2], text: a[0] }), [t, id, part]);
+  if (!g || g.blocked !== want) insCaseFail.push(`${want ? "미차단" : "오차단"}: ${t.slice(0, 24)}`);
+}
+
 /* ── ④ 골든셋 회귀 — fixture와 현 엔진 출력 일치(카드 핵심 필드 + 대본 전문) ── */
 const golden = JSON.parse(readFileSync(join(ROOT, "fixtures/handoff_cards_sample_v1.json"), "utf8"));
 for (const cs of golden.cases) {
@@ -111,20 +132,25 @@ await b.close();
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 const coachAcc = coachN ? (coachOk / coachN * 100).toFixed(2) : "0";
 const pass = fails.assemble.length === 0 && fails.forbidden.length === 0 && fails.spec.length === 0
-  && fails.golden.length === 0 && fails.coach.length === 0 && agg.pub === agg.cards;
+  && fails.golden.length === 0 && fails.coach.length === 0 && agg.pub === agg.cards
+  && insBlocked.length === 0 && insCaseFail.length === 0;
 console.log(`[조립  ] 표본 ${agg.n} · 카드 대상 ${agg.cards} · 발행 가능 ${agg.pub} (${agg.cards === agg.pub ? "100%" : "미달"}) · 등급 ${JSON.stringify(agg.byGrade)}`);
 console.log(`[금지어] 블록 원문 위반 ${blockScan.length}건 · 조립 대본 위반은 발행 게이트에 포함(위 미달 수치)`);
+console.log(`[§0-P  ] 사전 전건 차단 대상 ${insBlocked.length}건 · 실효 대조 ${INS_CASES.length - insCaseFail.length}/${INS_CASES.length}(양성 차단·음성 통과)`);
 console.log(`[골든셋] ${golden.cases.length}케이스 드리프트 ${fails.golden.length}건`);
 console.log(`[A5    ] 코퍼스 ${coachN}문항 · 정답 ${coachOk} · 정확도 ${coachAcc}% (원천 검증 포함)`);
 console.log(`[규격  ] 최장 읽기 ${agg.readSecMax}s · 블록 사용 ${Object.keys(agg.blocksUsed).length}종`);
 console.log(`총 소요 ${secs}s (예산 300s) → ${pass ? "PASS" : "FAIL"}`);
 if (!pass) {
   for (const k of Object.keys(fails)) for (const f of fails[k].slice(0, 5)) console.error(` × [${k}]`, JSON.stringify(f).slice(0, 220));
+  for (const f of insBlocked.slice(0, 5)) console.error(" × [insfirst] 예외 밖 보험 선행:", f);
+  for (const f of insCaseFail.slice(0, 5)) console.error(" × [insfirst-대조]", f);
 }
 
 const snap = { date: new Date().toISOString().slice(0, 10), sample: SAMPLE, cards: agg.cards, publishable: agg.pub,
   byGrade: agg.byGrade, blockKinds: Object.keys(agg.blocksUsed).length, blocksUsed: agg.blocksUsed,
-  forbiddenHits: blockScan.length, goldenDrift: fails.golden.length, coachN, coachOk, coachAcc: Number(coachAcc),
+  forbiddenHits: blockScan.length, insFirstBlocked: insBlocked.length, insFirstCases: INS_CASES.length - insCaseFail.length,
+  goldenDrift: fails.golden.length, coachN, coachOk, coachAcc: Number(coachAcc),
   readSecMax: agg.readSecMax, seconds: Number(secs), pass };
 writeFileSync(join(ROOT, "scripts/handoff_harness_snapshot.json"), JSON.stringify(snap, null, 2) + "\n", "utf8");
 writeFileSync(join(ROOT, "src/data/hmHarnessSnapshot.js"),

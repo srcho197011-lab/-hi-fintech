@@ -34,6 +34,38 @@ function hmInsFirstScan(text) {
   const treat = t.search(/치료비|의료비|치료|건강/);
   return ins >= 0 && (treat < 0 || ins < treat);
 }
+/* §0-P 적용 예외(형 확정 2026-09-03) — 「보험을 먼저 꺼내지 않는다」는 건강관리 흐름에 거는
+   규칙이다. 보험이 대화의 주제로 이미 정해진 자리에까지 걸면 승인 대본이 통째로 발행 불가가 된다.
+   예외는 셋뿐이고, 셋 다 「프로가 먼저 꺼낸 것이 아니다」라는 같은 근거를 가진다.
+     ① 파트  maturity — 만기 고지가 주제. 근거는 계약이지 건강이 아니다.
+              branch/branch2·voluntary — 회원이 먼저 물었거나 스스로 연 문(§0-V5).
+              cost/counsel/admin/lifejourney/channel — 조립 대본 밖(관리 사무·참고·초안).
+     ② 응대  id에 "-q-" — 회원 질문에 답하는 자리. 파트와 무관하며, 새 응대 블록도 자동 적용된다.
+     ③ 명시  fc-3svc·fc-ins — 검진과 함께 이미 붙은 0원 보장의 사실 안내(권유가 아니다).
+   firstconnect를 파트째 빼지는 않는다 — 건강 블록(fc-open·fc-report·fc-kit)이 함께 들어 있어
+   구멍이 생긴다. 실측(2026-09-03) 결과 이 파트에서 실제로 걸린 것은 위 셋뿐이었고,
+   건강관리 흐름(opening·talk·core·seed·ask·careplan·closing)은 히트 0이었다. */
+const HM_INSFIRST_EXEMPT_PARTS = ["maturity", "branch", "branch2", "voluntary", "cost", "counsel", "admin", "lifejourney", "channel"];
+const HM_INSFIRST_EXEMPT_IDS = ["fc-3svc", "fc-ins"];
+function hmInsFirstExempt(block) {
+  if (!block) return true;
+  const id = String(block.id || "");
+  if (HM_INSFIRST_EXEMPT_IDS.indexOf(id) >= 0) return true;
+  if (id.indexOf("-q-") >= 0) return true;                 /* 회원 질문 응대 */
+  return HM_INSFIRST_EXEMPT_PARTS.indexOf(block.part || _hmPartOfId(id)) >= 0;
+}
+/* 조립 카드의 블록에는 part가 실려 오지 않을 수 있다 — id 접두로 되짚는다(사전과 같은 규약) */
+function _hmPartOfId(id) {
+  const s = String(id || "");
+  if (/^mt-/.test(s)) return "maturity";
+  if (/^vd-/.test(s)) return "voluntary";
+  if (/^br/.test(s)) return "branch";
+  if (/^lj-/.test(s)) return "lifejourney";
+  if (/^ad-/.test(s)) return "admin";
+  if (/^ch-/.test(s)) return "channel";
+  if (/^fc-/.test(s)) return "firstconnect";
+  return "";
+}
 /* §0-P 선발화 감지(v2) — 조립 대본에 니즈 수치 표현이 회원 질문 응답(branch) 밖에서 등장하면 차단 */
 const HM_NEEDS_UTTER = /(만원\s*구간|HTK|개월분|생활비\s*공백|대비\s*현황)/;
 
@@ -99,7 +131,14 @@ function hmScriptScan(card) {
     s.ask, ...(s.careplan || []), ...(s.maturity || []), ...(s.fcTail || []),
     ...(s.branches || []), ...(s.voluntary || []), s.closing].filter(Boolean);
   const forbidden = [];
-  for (const b of blocks) for (const h of hmForbiddenScan(b.text)) forbidden.push(Object.assign({ block: b.id }, h));
+  for (const b of blocks) {
+    for (const h of hmForbiddenScan(b.text)) forbidden.push(Object.assign({ block: b.id }, h));
+    /* §0-P 보험 선행 — 건강관리 흐름에서 프로가 먼저 보험을 꺼내면 차단(예외는 위 규약) */
+    if (!hmInsFirstExempt(b) && hmInsFirstScan(b.text)) {
+      const m = String(b.text || "").match(/보험|보장|특약|상품/);
+      forbidden.push({ block: b.id, key: "insfirst", ko: "보험 선행(§0-P)", at: m ? m[0] : "" });
+    }
+  }
   for (const h of hmForbiddenScan(s.notif)) forbidden.push(Object.assign({ block: "notif" }, h));
   for (const h of hmForbiddenScan(s.sms)) forbidden.push(Object.assign({ block: "sms" }, h));
   /* 재권유 카운트 — 제안(ak-*) 문장이 한 대본에 2회 이상이면 차단(§3-S 금지) */
@@ -116,6 +155,22 @@ try {
       try {
         if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
         if (mode === "text") return { hits: hmForbiddenScan(String(text || "")) };   /* 임의 문안 스캔(가드 검증·R4+ 스튜디오 선검사) */
+        if (mode === "insfirst") {   /* §0-P 실측 — 파트별 보험 선행 히트와 차단 대상(예외 규약 검증) */
+          const by = {}; const blocked = [];
+          for (const bl of HM_SCRIPT_BLOCKS) {
+            if (bl.part === "channel") continue;
+            const hit = hmInsFirstScan(bl.t), ex = hmInsFirstExempt(bl);
+            by[bl.part] = by[bl.part] || { n: 0, hit: 0, ids: [] };
+            by[bl.part].n++;
+            if (hit) { by[bl.part].hit++; by[bl.part].ids.push(bl.id + (ex ? "(예외)" : "")); if (!ex) blocked.push(bl.id); }
+          }
+          return { by: by, blocked: blocked, exempt: HM_INSFIRST_EXEMPT_PARTS.slice(), exemptIds: HM_INSFIRST_EXEMPT_IDS.slice() };
+        }
+        if (mode === "insfirst-text") {   /* 임의 문안 — 가드 실효 대조(양성/음성) */
+          const b2 = (text && typeof text === "object") ? text : { id: "test", part: "core", text: String(text || "") };
+          return { hit: hmInsFirstScan(b2.text), exempt: hmInsFirstExempt(b2),
+                   blocked: !hmInsFirstExempt(b2) && hmInsFirstScan(b2.text) };
+        }
         const out = []; const pendingAdmin = [];
         for (const bl of HM_SCRIPT_BLOCKS) {
           if (bl.part === "channel") continue;             // 규칙 서술문(회원 발화 아님)
