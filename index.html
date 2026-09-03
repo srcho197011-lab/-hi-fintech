@@ -18892,6 +18892,7 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   const [note, setNote] = React.useState("");
   const [err, setErr] = React.useState("");
   const [degraded, setDegraded] = React.useState(false);
+  const [shared, setShared] = React.useState([]);        /* 영상 V3 — 띄운 화면 */
 
   React.useEffect(() => {
     try { const r = vsRequest(subject, { hour: new Date().getHours() });
@@ -18902,11 +18903,16 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   const decline = () => { try { vsDecline(sess); } catch (e) {} onDone({ result: "사양", state: "declined" }); onClose(); };
   const setM = (k) => { const r = vsSetMode(sess, k, "member"); if (r.ok) { setMode(r.mode); setDegraded(false); } else setErr(r.why); };
   const degrade = () => { const r = vsDegrade(sess); if (r.ok) { setMode(r.mode); setDegraded(true); } };
+  const share = (k) => {
+    const r = vsShareDoc(sess, k, subject, { hour: new Date().getHours() });
+    if (!r.ok) { setErr(r.why); return; }
+    setErr(""); setShared((a2) => a2.concat(k));
+  };
   const end = () => { try { vsEnd(sess); setStage("sum"); } catch (e) {} };
   const confirm = () => {
     const r = vsSummarize(sess, note, true);
     if (!r.ok) { setErr(r.why); return; }
-    onDone({ result: "상담완료", state: "summarized", summary: note, mode: mode });
+    onDone({ result: "상담완료", state: "summarized", summary: note, mode: mode, shared: shared.slice() });
     setStage("done"); setTimeout(onClose, 900);
   };
 
@@ -18949,8 +18955,24 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
           {lines.length ? lines.map((b, i) => (<div key={i} style={{ marginBottom: 7, fontSize: 12, lineHeight: 1.7, color: "#1F2937" }}>
             <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.5 }}>{b.ko}</i><div>“{b.text}”</div></div>))
             : <div style={{ fontSize: 11.5, color: "#94A3B8" }}>이 회원의 지시서 카드가 없어요 — 대본 없이는 통화하지 않아요.</div>}
+          <div style={{ marginTop: 11, borderTop: "1px dashed #E2E8F0", paddingTop: 9 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 6 }}>🖥 함께 볼 화면 <span style={{ fontWeight: 600, color: "#94A3B8" }}>· 띄우는 것도 발화예요(§0-V9)</span></div>
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {Object.keys(VS_SHARE_DOCS).map((k) => {
+                const d = VS_SHARE_DOCS[k];
+                let g = { ok: false, why: "" };
+                try { g = vsShareGate(k, subject, { hour: new Date().getHours() }); } catch (e) {}
+                const on = shared.indexOf(k) >= 0;
+                return g.ok
+                  ? <button key={k} className={"hmbtn" + (on ? "" : " gh")} style={{ fontSize: 10.5, padding: "4px 10px" }} title={d.what} onClick={() => share(k)}>{on ? "✓ " : ""}{d.ko}</button>
+                  : <span key={k} className="hmpill" style={{ background: "#F8FAFC", color: "#94A3B8", fontSize: 10.2 }} title={g.why}>🔒 {d.ko}</span>;
+              })}
+            </div>
+            {shared.length > 0 && <div style={{ fontSize: 10.3, color: "#15803D", marginTop: 6 }}>띄운 화면 {shared.length}개 — 요약에 함께 기록돼요</div>}
+          </div>
           <div style={{ marginTop: 10, background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, padding: "7px 10px", fontSize: 10.8, color: "#9A3412", lineHeight: 1.65 }}>
-            이 화면에서 진료·검진·구매가 일어나지 않아요 — 필요한 활동은 <b>개입으로 발행</b>하고 회원이 자기 앱에서 해요.</div>
+            이 화면에서 진료·검진·구매가 일어나지 않아요 — 필요한 활동은 <b>개입으로 발행</b>하고 회원이 자기 앱에서 해요.<br />
+            원본 수치 화면과 제안 화면은 <b>공유 목록에 없어요</b> — 숨긴 게 아니라 만들지 않았어요.</div>
         </div>
         <div style={{ padding: "14px 16px", background: "#F8FAFC" }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 7 }}>회원님 화면</div>
@@ -18974,7 +18996,8 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
     {stage === "sum" && (<>
       <div style={{ background: "#0F2A43", color: "#fff", padding: "12px 16px", fontSize: 12.5, fontWeight: 800 }}>🧾 상담 요약 — 남는 것은 이것뿐이에요</div>
       <div style={{ padding: "16px 18px" }}>
-        <div style={{ fontSize: 11.8, color: "#475569", lineHeight: 1.7 }}>영상·음성은 저장되지 않았어요. 무엇을 이야기했고 무엇을 하기로 했는지만 적고, <b>회원이 확인해야</b> 기록이 닫혀요.</div>
+        <div style={{ fontSize: 11.8, color: "#475569", lineHeight: 1.7 }}>영상·음성은 저장되지 않았어요. 무엇을 이야기했고 무엇을 하기로 했는지만 적고, <b>회원이 확인해야</b> 기록이 닫혀요.
+          {shared.length > 0 && <><br /><span style={{ color: "#334155" }}>함께 본 화면 — {shared.map((k) => VS_SHARE_DOCS[k].ko).join(" · ")}</span></>}</div>
         <textarea value={note} onChange={(e) => { setNote(e.target.value); setErr(""); }} rows={4} placeholder="예) 결과에서 확인이 필요한 구간을 설명드렸고, 진료 연결을 안내했어요."
           style={{ width: "100%", marginTop: 10, borderRadius: 10, border: "1px solid #CBD5E1", padding: "9px 11px", fontSize: 12.2, lineHeight: 1.7, fontFamily: "inherit", resize: "vertical" }} />
         {err && <div style={{ fontSize: 11, color: "#B91C1C", marginTop: 6 }}>{err}</div>}
@@ -28193,6 +28216,58 @@ function vsSummarize(sess, text, confirmedByMember) {
   return vsMove(sess, "summarized", { by: "member" });
 }
 
+/* ── 화면 공유(영상 V3) — §0-V9 「화면에 띄우는 것도 발화다」 ──
+   공유는 말과 같은 규격을 받는다. 등재된 화면만 존재하고, 등재 밖 화면은 버튼 자체가 없다.
+   ⚠️ 목록에 없는 것이 목록의 내용이다:
+     · 원본 수치 화면 — 프로 콘솔에도 없는 화면이라 공유할 대상 자체가 없다(등급·구간 라벨만).
+     · 제안 화면 — 영상 안에서 제안이 일어나지 않는다(§0-V10). 공유가 아니라 부재가 규격이다. */
+const VS_SHARE_DOCS = {
+  report: { ko: "AI 정밀리포트", need: "s4", stages: null,
+            what: "등급·관리 필요 항목·구간 라벨 — 원본 수치는 이 화면에 없다" },
+  kit:    { ko: "케어 키트 구성", need: "s4", stages: null,
+            what: "지표군에 맞춘 영양·기기·식단·진료과" },
+  plan:   { ko: "60일 터치 플랜", need: "s4", stages: null,
+            what: "언제 무엇을 하는지 — 회원이 자기 일정으로 본다" },
+  covmap: { ko: "보장맵", need: "n1", stages: ["T4", "T5", "T6"],
+            what: "공백·중복·절감 — 계약 정보로만 만들어진 산출물",
+            why: "건강관리 구간(T3)에서 띄우면 건강 이야기가 보장 이야기로 번진다(§0-P·§0-V9)" },
+};
+/* 등재 목록에 들어와서는 안 되는 것 — 러너가 이 사전으로 검사한다 */
+const VS_SHARE_FORBIDDEN = /원본|수치|주민|식별번호|제안|청약|가입\s*설계|보험료/;
+
+function vsShareGate(key, ref, opt) {
+  const d = VS_SHARE_DOCS[key];
+  if (!d) return { ok: false, code: "unlisted", why: "등재되지 않은 화면이에요 — 공유할 수 없어요." };
+  const i = (typeof ref === "number") ? ref : null;
+  /* ① 국면 — 보장맵은 만기 국면에서만 */
+  if (d.stages) {
+    let t = (opt && opt.stage) || null;
+    if (!t && i != null) { try { const c = cycleOf(i); t = c && c.t; } catch (e) {} }
+    if (!t || d.stages.indexOf(t) < 0)
+      return { ok: false, code: "stage", why: "「" + d.ko + "」은 만기 국면(" + d.stages.join("·") + ")에서만 띄울 수 있어요 — 지금은 " + (t || "판정 불가") + "예요." };
+  }
+  /* ② 동의 — 없으면 화면이 열리지 않는다 */
+  let has = false;
+  try { has = consentHas(d.need, i); } catch (e) {}
+  if (!has) return { ok: false, code: "consent", why: "「" + d.ko + "」을 띄우려면 해당 동의가 필요해요." };
+  /* ③ 산출물 — 보장맵은 분석이 끝나야 존재한다 */
+  if (key === "covmap" && i != null) {
+    let map = null;
+    try { const c = covAnalysisOf(i); map = c && c.map; } catch (e) {}
+    if (!map) return { ok: false, code: "absent", why: "아직 보장맵이 만들어지지 않았어요." };
+  }
+  return { ok: true, code: "open", why: "공유 가능" };
+}
+/* 공유 실행 — 연결 중에만, 게이트를 통과한 화면만. 무엇을 띄웠는지가 기록에 남는다 */
+function vsShareDoc(sess, key, ref, opt) {
+  if (!sess || sess.state !== "connected") return { ok: false, why: "연결 중에만 화면을 띄울 수 있어요" };
+  const g = vsShareGate(key, ref, opt);
+  if (!g.ok) { try { hiEvent("video_share_blocked", { doc: key, code: g.code }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
+  sess.shared.push(key);
+  try { hiEvent("video_share", { doc: key }); } catch (e) {} 
+  return { ok: true, doc: key, ko: VS_SHARE_DOCS[key].ko };
+}
+
 /* 세션에 미디어가 남아 있지 않은가 — §0-V8의 기계 검사(러너·게이트가 호출) */
 const VS_MEDIA_KEYS = ["media", "recording", "record", "blob", "stream", "audio", "video", "frames", "url"];
 function vsNoMediaScan(sess) {
@@ -28217,6 +28292,8 @@ try {
         if (cmd === "spec")   return VIDEO_SPEC;
         if (cmd === "states") return { states: VS_STATES, edges: VS_EDGES };
         if (cmd === "gate")   return vsGateOf(a, b2 || {});
+        if (cmd === "docs")   return { docs: VS_SHARE_DOCS, forbidden: String(VS_SHARE_FORBIDDEN) };
+        if (cmd === "share")  return vsShareGate(a, (b2 && b2.i), b2 || {});
         if (cmd === "sim") {   /* 결정론 시뮬 — 코호트 i의 한 세션을 규격대로 굴린다 */
           const steps = [];
           const r = vsRequest(a, b2 || {});
@@ -32909,7 +32986,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "6f826aedfdb7fddc", "generatedAt": "2026-09-03", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "25d4566a1e3bc19c", "generatedAt": "2026-09-03", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -33085,7 +33162,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-03","seed":20260828,"inventory":{"version":1,"sourceHash":"6f826aedfdb7fddc","generatedAt":"2026-09-03","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.66,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-03","seed":20260828,"inventory":{"version":1,"sourceHash":"25d4566a1e3bc19c","generatedAt":"2026-09-03","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":3.39,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

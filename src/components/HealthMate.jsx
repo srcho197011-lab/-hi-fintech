@@ -241,6 +241,7 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   const [note, setNote] = React.useState("");
   const [err, setErr] = React.useState("");
   const [degraded, setDegraded] = React.useState(false);
+  const [shared, setShared] = React.useState([]);        /* 영상 V3 — 띄운 화면 */
 
   React.useEffect(() => {
     try { const r = vsRequest(subject, { hour: new Date().getHours() });
@@ -251,11 +252,16 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   const decline = () => { try { vsDecline(sess); } catch (e) {} onDone({ result: "사양", state: "declined" }); onClose(); };
   const setM = (k) => { const r = vsSetMode(sess, k, "member"); if (r.ok) { setMode(r.mode); setDegraded(false); } else setErr(r.why); };
   const degrade = () => { const r = vsDegrade(sess); if (r.ok) { setMode(r.mode); setDegraded(true); } };
+  const share = (k) => {
+    const r = vsShareDoc(sess, k, subject, { hour: new Date().getHours() });
+    if (!r.ok) { setErr(r.why); return; }
+    setErr(""); setShared((a2) => a2.concat(k));
+  };
   const end = () => { try { vsEnd(sess); setStage("sum"); } catch (e) {} };
   const confirm = () => {
     const r = vsSummarize(sess, note, true);
     if (!r.ok) { setErr(r.why); return; }
-    onDone({ result: "상담완료", state: "summarized", summary: note, mode: mode });
+    onDone({ result: "상담완료", state: "summarized", summary: note, mode: mode, shared: shared.slice() });
     setStage("done"); setTimeout(onClose, 900);
   };
 
@@ -298,8 +304,24 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
           {lines.length ? lines.map((b, i) => (<div key={i} style={{ marginBottom: 7, fontSize: 12, lineHeight: 1.7, color: "#1F2937" }}>
             <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.5 }}>{b.ko}</i><div>“{b.text}”</div></div>))
             : <div style={{ fontSize: 11.5, color: "#94A3B8" }}>이 회원의 지시서 카드가 없어요 — 대본 없이는 통화하지 않아요.</div>}
+          <div style={{ marginTop: 11, borderTop: "1px dashed #E2E8F0", paddingTop: 9 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 6 }}>🖥 함께 볼 화면 <span style={{ fontWeight: 600, color: "#94A3B8" }}>· 띄우는 것도 발화예요(§0-V9)</span></div>
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {Object.keys(VS_SHARE_DOCS).map((k) => {
+                const d = VS_SHARE_DOCS[k];
+                let g = { ok: false, why: "" };
+                try { g = vsShareGate(k, subject, { hour: new Date().getHours() }); } catch (e) {}
+                const on = shared.indexOf(k) >= 0;
+                return g.ok
+                  ? <button key={k} className={"hmbtn" + (on ? "" : " gh")} style={{ fontSize: 10.5, padding: "4px 10px" }} title={d.what} onClick={() => share(k)}>{on ? "✓ " : ""}{d.ko}</button>
+                  : <span key={k} className="hmpill" style={{ background: "#F8FAFC", color: "#94A3B8", fontSize: 10.2 }} title={g.why}>🔒 {d.ko}</span>;
+              })}
+            </div>
+            {shared.length > 0 && <div style={{ fontSize: 10.3, color: "#15803D", marginTop: 6 }}>띄운 화면 {shared.length}개 — 요약에 함께 기록돼요</div>}
+          </div>
           <div style={{ marginTop: 10, background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, padding: "7px 10px", fontSize: 10.8, color: "#9A3412", lineHeight: 1.65 }}>
-            이 화면에서 진료·검진·구매가 일어나지 않아요 — 필요한 활동은 <b>개입으로 발행</b>하고 회원이 자기 앱에서 해요.</div>
+            이 화면에서 진료·검진·구매가 일어나지 않아요 — 필요한 활동은 <b>개입으로 발행</b>하고 회원이 자기 앱에서 해요.<br />
+            원본 수치 화면과 제안 화면은 <b>공유 목록에 없어요</b> — 숨긴 게 아니라 만들지 않았어요.</div>
         </div>
         <div style={{ padding: "14px 16px", background: "#F8FAFC" }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 7 }}>회원님 화면</div>
@@ -323,7 +345,8 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
     {stage === "sum" && (<>
       <div style={{ background: "#0F2A43", color: "#fff", padding: "12px 16px", fontSize: 12.5, fontWeight: 800 }}>🧾 상담 요약 — 남는 것은 이것뿐이에요</div>
       <div style={{ padding: "16px 18px" }}>
-        <div style={{ fontSize: 11.8, color: "#475569", lineHeight: 1.7 }}>영상·음성은 저장되지 않았어요. 무엇을 이야기했고 무엇을 하기로 했는지만 적고, <b>회원이 확인해야</b> 기록이 닫혀요.</div>
+        <div style={{ fontSize: 11.8, color: "#475569", lineHeight: 1.7 }}>영상·음성은 저장되지 않았어요. 무엇을 이야기했고 무엇을 하기로 했는지만 적고, <b>회원이 확인해야</b> 기록이 닫혀요.
+          {shared.length > 0 && <><br /><span style={{ color: "#334155" }}>함께 본 화면 — {shared.map((k) => VS_SHARE_DOCS[k].ko).join(" · ")}</span></>}</div>
         <textarea value={note} onChange={(e) => { setNote(e.target.value); setErr(""); }} rows={4} placeholder="예) 결과에서 확인이 필요한 구간을 설명드렸고, 진료 연결을 안내했어요."
           style={{ width: "100%", marginTop: 10, borderRadius: 10, border: "1px solid #CBD5E1", padding: "9px 11px", fontSize: 12.2, lineHeight: 1.7, fontFamily: "inherit", resize: "vertical" }} />
         {err && <div style={{ fontSize: 11, color: "#B91C1C", marginTop: 6 }}>{err}</div>}

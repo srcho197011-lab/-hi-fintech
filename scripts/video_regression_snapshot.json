@@ -18,7 +18,10 @@
   },
   "bad": 0,
   "ruleBad": 0,
+  "shareBad": 0,
+  "shareDocs": 4,
+  "t3cov": 0,
   "drift": 0,
-  "seconds": 34.9,
+  "seconds": 33.7,
   "pass": true
 }

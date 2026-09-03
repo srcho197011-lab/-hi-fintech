@@ -154,6 +154,58 @@ function vsSummarize(sess, text, confirmedByMember) {
   return vsMove(sess, "summarized", { by: "member" });
 }
 
+/* ── 화면 공유(영상 V3) — §0-V9 「화면에 띄우는 것도 발화다」 ──
+   공유는 말과 같은 규격을 받는다. 등재된 화면만 존재하고, 등재 밖 화면은 버튼 자체가 없다.
+   ⚠️ 목록에 없는 것이 목록의 내용이다:
+     · 원본 수치 화면 — 프로 콘솔에도 없는 화면이라 공유할 대상 자체가 없다(등급·구간 라벨만).
+     · 제안 화면 — 영상 안에서 제안이 일어나지 않는다(§0-V10). 공유가 아니라 부재가 규격이다. */
+const VS_SHARE_DOCS = {
+  report: { ko: "AI 정밀리포트", need: "s4", stages: null,
+            what: "등급·관리 필요 항목·구간 라벨 — 원본 수치는 이 화면에 없다" },
+  kit:    { ko: "케어 키트 구성", need: "s4", stages: null,
+            what: "지표군에 맞춘 영양·기기·식단·진료과" },
+  plan:   { ko: "60일 터치 플랜", need: "s4", stages: null,
+            what: "언제 무엇을 하는지 — 회원이 자기 일정으로 본다" },
+  covmap: { ko: "보장맵", need: "n1", stages: ["T4", "T5", "T6"],
+            what: "공백·중복·절감 — 계약 정보로만 만들어진 산출물",
+            why: "건강관리 구간(T3)에서 띄우면 건강 이야기가 보장 이야기로 번진다(§0-P·§0-V9)" },
+};
+/* 등재 목록에 들어와서는 안 되는 것 — 러너가 이 사전으로 검사한다 */
+const VS_SHARE_FORBIDDEN = /원본|수치|주민|식별번호|제안|청약|가입\s*설계|보험료/;
+
+function vsShareGate(key, ref, opt) {
+  const d = VS_SHARE_DOCS[key];
+  if (!d) return { ok: false, code: "unlisted", why: "등재되지 않은 화면이에요 — 공유할 수 없어요." };
+  const i = (typeof ref === "number") ? ref : null;
+  /* ① 국면 — 보장맵은 만기 국면에서만 */
+  if (d.stages) {
+    let t = (opt && opt.stage) || null;
+    if (!t && i != null) { try { const c = cycleOf(i); t = c && c.t; } catch (e) {} }
+    if (!t || d.stages.indexOf(t) < 0)
+      return { ok: false, code: "stage", why: "「" + d.ko + "」은 만기 국면(" + d.stages.join("·") + ")에서만 띄울 수 있어요 — 지금은 " + (t || "판정 불가") + "예요." };
+  }
+  /* ② 동의 — 없으면 화면이 열리지 않는다 */
+  let has = false;
+  try { has = consentHas(d.need, i); } catch (e) {}
+  if (!has) return { ok: false, code: "consent", why: "「" + d.ko + "」을 띄우려면 해당 동의가 필요해요." };
+  /* ③ 산출물 — 보장맵은 분석이 끝나야 존재한다 */
+  if (key === "covmap" && i != null) {
+    let map = null;
+    try { const c = covAnalysisOf(i); map = c && c.map; } catch (e) {}
+    if (!map) return { ok: false, code: "absent", why: "아직 보장맵이 만들어지지 않았어요." };
+  }
+  return { ok: true, code: "open", why: "공유 가능" };
+}
+/* 공유 실행 — 연결 중에만, 게이트를 통과한 화면만. 무엇을 띄웠는지가 기록에 남는다 */
+function vsShareDoc(sess, key, ref, opt) {
+  if (!sess || sess.state !== "connected") return { ok: false, why: "연결 중에만 화면을 띄울 수 있어요" };
+  const g = vsShareGate(key, ref, opt);
+  if (!g.ok) { try { hiEvent("video_share_blocked", { doc: key, code: g.code }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
+  sess.shared.push(key);
+  try { hiEvent("video_share", { doc: key }); } catch (e) {} 
+  return { ok: true, doc: key, ko: VS_SHARE_DOCS[key].ko };
+}
+
 /* 세션에 미디어가 남아 있지 않은가 — §0-V8의 기계 검사(러너·게이트가 호출) */
 const VS_MEDIA_KEYS = ["media", "recording", "record", "blob", "stream", "audio", "video", "frames", "url"];
 function vsNoMediaScan(sess) {
@@ -178,6 +230,8 @@ try {
         if (cmd === "spec")   return VIDEO_SPEC;
         if (cmd === "states") return { states: VS_STATES, edges: VS_EDGES };
         if (cmd === "gate")   return vsGateOf(a, b2 || {});
+        if (cmd === "docs")   return { docs: VS_SHARE_DOCS, forbidden: String(VS_SHARE_FORBIDDEN) };
+        if (cmd === "share")  return vsShareGate(a, (b2 && b2.i), b2 || {});
         if (cmd === "sim") {   /* 결정론 시뮬 — 코호트 i의 한 세션을 규격대로 굴린다 */
           const steps = [];
           const r = vsRequest(a, b2 || {});

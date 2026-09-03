@@ -74,6 +74,46 @@ const res = await p.evaluate((cfg) => {
   return out;
 }, [SAMPLE, STEP]);
 
+/* ⑥ 화면 공유(§0-V9) — 등재 목록·국면 게이트·금지 화면 부재 + 양방향 대조 */
+const share = await p.evaluate(() => {
+  const out = { docs: 0, forbidden: [], t3cov: 0, t5cov: 0, unlisted: 0, cases: [] };
+  const d = window.__hifinVideo("docs");
+  out.docs = Object.keys(d.docs).length;
+  /* 등재 목록에 금지 어휘(원본 수치·제안·보험료 등)가 섞이지 않았는가 */
+  const re = /원본|수치|주민|식별번호|제안|청약|보험료/;
+  for (const k of Object.keys(d.docs)) {
+    const v = d.docs[k];
+    const txt = [k, v.ko, v.what || ""].join(" ");
+    /* "원본 수치는 이 화면에 없다" 같은 부정 서술은 허용 — 화면 이름·키에만 적용 */
+    if (re.test(k) || re.test(v.ko)) out.forbidden.push(k);
+  }
+  /* 등재 밖 키는 거부되어야 한다 */
+  const un = window.__hifinVideo("share", "proposal", { i: 3 });
+  if (un.ok) out.unlisted++;
+  /* 국면별 보장맵 — T3에서 차단, T4~T6에서 허용(동의 보유자 기준) */
+  for (let i = 1; i <= 9000; i += 11) {
+    const cyc = window.__hifinCycle(i); if (!cyc) continue;
+    const g = window.__hifinVideo("share", "covmap", { i: i, stage: cyc.t });
+    if (cyc.t === "T3" && g.ok) out.t3cov++;
+    if (["T4","T5","T6"].indexOf(cyc.t) >= 0 && g.ok) out.t5cov++;
+  }
+  /* 대조 — 같은 회원·같은 동의에서 국면만 바꾸면 결과가 뒤집혀야 한다(게이트가 살아 있는가) */
+  for (let i = 1; i <= 9000 && out.cases.length < 3; i += 7) {
+    const a1 = window.__hifinVideo("share", "covmap", { i: i, stage: "T5" });
+    if (!a1.ok) continue;
+    const a2 = window.__hifinVideo("share", "covmap", { i: i, stage: "T3" });
+    out.cases.push({ i: i, t5: a1.ok, t3: a2.ok, code: a2.code });
+  }
+  return out;
+});
+const shareBad = [];
+if (share.forbidden.length) shareBad.push("등재 목록에 금지 화면: " + share.forbidden.join(","));
+if (share.unlisted) shareBad.push("등재 밖 키가 통과");
+if (share.t3cov) shareBad.push("T3에서 보장맵 공유 가능 " + share.t3cov + "건");
+if (!share.t5cov) shareBad.push("만기 국면에서도 보장맵 공유 0건(게이트가 항상 막는 상태)");
+if (share.cases.length < 3) shareBad.push("대조 표본 부족");
+for (const c of share.cases) if (!(c.t5 && !c.t3)) shareBad.push("국면 대조 실패 i=" + c.i);
+
 /* ② 전이 규격 — 허용 간선 밖 전이는 거부되어야 한다 / ③ §0-V7 — 프로는 모드를 올릴 수 없다 */
 const rules = await p.evaluate(() => {
   const out = [];
@@ -107,16 +147,17 @@ for (const k of Object.keys(cross)) if (cross[k] !== res.sims[k]) drift++;
 await b.close();
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
-const pass = res.bad.length === 0 && ruleBad.length === 0 && drift === 0;
+const pass = res.bad.length === 0 && ruleBad.length === 0 && drift === 0 && shareBad.length === 0;
 console.log(`[게이트] 표본 ${res.n} · 요청 가능 ${res.open} (${(res.open / res.n * 100).toFixed(1)}%) · 차단 ${JSON.stringify(res.byCode)}`);
 console.log(`[전이  ] ${Object.entries(res.steps).map(([k, v]) => k + " " + v).join(" · ")}`);
 console.log(`[규격  ] 상태·간선 위반 ${ruleBad.length}건 · 미디어 필드 0 검사 포함`);
+console.log(`[공유  ] 등재 ${share.docs}종 · 금지 화면 ${share.forbidden.length} · 등재 밖 통과 ${share.unlisted} · T3 보장맵 ${share.t3cov}건(0이어야) · 만기 국면 허용 ${share.t5cov}건 · 국면 대조 ${share.cases.length}건`);
 console.log(`[결정론] 교차 300건 드리프트 ${drift}건`);
 console.log(`총 소요 ${secs}s → ${pass ? "PASS" : "FAIL"}`);
-if (!pass) { for (const x of res.bad.slice(0, 10)) console.error(" ×", JSON.stringify(x)); for (const x of ruleBad.slice(0, 6)) console.error(" × 규격", JSON.stringify(x)); }
+if (!pass) { for (const x of res.bad.slice(0, 10)) console.error(" ×", JSON.stringify(x)); for (const x of ruleBad.slice(0, 6)) console.error(" × 규격", JSON.stringify(x)); for (const x of shareBad.slice(0, 6)) console.error(" × 공유", x); }
 
 writeFileSync(join(ROOT, "scripts/video_regression_snapshot.json"), JSON.stringify({
   date: new Date().toISOString().slice(0, 10), sample: res.n, open: res.open,
-  byCode: res.byCode, steps: res.steps, bad: res.bad.length, ruleBad: ruleBad.length, drift, seconds: Number(secs), pass
+  byCode: res.byCode, steps: res.steps, bad: res.bad.length, ruleBad: ruleBad.length, shareBad: shareBad.length, shareDocs: share.docs, t3cov: share.t3cov, drift, seconds: Number(secs), pass
 }, null, 2) + "\n", "utf8");
 process.exit(pass ? 0 : 1);
