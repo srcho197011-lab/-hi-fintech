@@ -25,6 +25,26 @@ const CONSENT_DEFS = {
         why: "받지 않는다 — 보장맵이 계약 정보만으로 산출되는 비민감 정보이므로 건강정보 없이 제안이 성립한다. 동의 항목이 하나 줄어 동의율이 오르고, 「보험사가 내 건강정보로 영업한다」는 가장 위험한 민원 유형이 소멸한다." },
 };
 
+/* 화면 동의 키(검진 예약 동의서 ci_*) ↔ 게이트 종류 — 단일 소스.
+   R1까지는 화면 동의가 vaultSaveConsents로만 저장돼 게이트(consentHas)와 이어지지 않았다.
+   그래서 체험 회원이 ④를 눌러도 게이트는 미보유로 봤다(V1 적발). 아래 매핑으로 잇는다. */
+const CI_TO_CONSENT = {
+  ci_care_svc: "s4", ci_matan_run: "n1",
+  ci_ads_push: "n3_push", ci_ads_sms: "n3_sms", ci_ads_email: "n3_email",
+  ci_video: "v1",
+};
+/* 화면에서 확정한 동의 상태를 게이트에 일괄 반영(누락 없이 — 끄는 것도 반영) */
+function consentApplyCI(ciState) {
+  const out = [];
+  for (const k of Object.keys(CI_TO_CONSENT)) {
+    const kind = CI_TO_CONSENT[k];
+    const on = !!(ciState && ciState[k]);
+    consentSet(kind, on);
+    out.push(kind + "=" + (on ? "1" : "0"));
+  }
+  return { ok: true, applied: out };
+}
+
 const _CG_KEY = "hifin_consent2";   /* 체험 회원 실저장(카탈로그 등재) — {kind: {on, at}} */
 
 function _cgStore() { try { return JSON.parse(localStorage.getItem(_CG_KEY) || "{}"); } catch (e) { return {}; } }
@@ -83,6 +103,8 @@ try {
         if (cmd === "has") return { kind: a, i: b2, has: consentHas(a, b2) };
         if (cmd === "gate") return consentGate(a, b2, "runner");
         if (cmd === "set") return consentSet(a, b2);
+        if (cmd === "map") return CI_TO_CONSENT;
+        if (cmd === "applyCI") return consentApplyCI(a);
         return { error: "defs | n4 | has | gate | set" };
       } catch (e) { return { error: String(e).slice(0, 160) }; }
     };

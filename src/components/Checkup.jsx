@@ -146,6 +146,13 @@ const CI_CONSENT = {
         { k: "ci_matan_run", req: false, t: "[선택] 만기 시 보장분석 및 안내", why: "만기 20일 전 자동 분석 → 보장맵 안내. 분석에는 이미 가입된 계약 정보만 쓰여요.", gain: "보장이 끝나기 전에 「어디가 비고 어디가 겹치는지」 보장맵을 무료로 받아요.", loss: "보장이 끝나는 걸 모른 채 무보장 상태가 될 수 있어요 — 공백·중복 분석도 없어요. (검진·가입에는 영향 없어요)", d: "보유 보험계약 정보(상품종류·보장항목·한도·기간), 검진대비보험 만기일 — 건강정보 미포함" },
         { k: "ci_matan_id", req: false, t: "[선택] 분석을 위한 개인식별번호 이용", why: "내 계약을 정확히 찾기 위해서만 쓰이고, 값은 암호화 저장소에서 꺼내 메모리에서만 사용돼요 — 화면에 표시되지 않아요.", gain: "내 계약을 정확히 찾아 분석이 완전해져요.", loss: "계약을 못 찾아 보장분석 자체가 실행되지 않아요.", d: "주민등록번호 등 개인식별번호(조회 목적 한정·실행 기록에 식별값 미기록)" },
       ] },
+    /* ⑦ V1 영상 상담(선택 — 영상 V1, 형 승인 2026-09-03) — §0-V7 회원이 켠다 · §0-V8 미저장 */
+    { g: "video", t: "⑦ [선택] 담당 전문가와 영상으로 상담하시겠어요?",
+      why: "검진 결과 리포트를 화면에 함께 띄워놓고 설명드릴 수 있어요. 그래프와 지난 추이를 같이 보면서 「이 부분이요」 하고 짚어드릴 수 있습니다.",
+      note: "카메라는 회원님이 켜고 끄시고, 통화 중 언제든 음성이나 문자로 바꾸실 수 있어요. 영상과 음성은 저장하지 않아요 — 통화가 끝나면 상담 요약만 남고, 그 요약도 회원님이 확인하신 뒤에 저장돼요. 동의하지 않으셔도 전화·문자로 똑같이 안내드려요.",
+      items: [
+        { k: "ci_video", req: false, t: "[선택] 영상 상담 이용", why: "담당 전문가가 영상 상담을 요청할 수 있게 돼요. 요청이 와도 받으실지는 그때 정하시면 돼요.", gain: "결과 리포트를 화면으로 함께 보며 설명받고, 궁금한 곳을 바로 짚어 물어보실 수 있어요.", loss: "전화로만 설명을 들으셔야 해서, 그래프나 표는 말로만 듣게 돼요. (검진·가입에는 영향 없어요)", d: "영상·음성 통화 연결(저장하지 않음) · 상담 요약(회원 확인 후 저장)" },
+      ] },
     /* ⑥ N3 광고성 정보 전송(선택·채널별 구분 — 야간 전송은 별도 동의 없이는 발송되지 않음) */
     { g: "ads", t: "⑥ [선택] 유용한 소식을 보내드려도 될까요 — 받고 싶은 방법만 골라 주세요",
       why: "건강 소식·혜택 안내 같은 광고성 정보예요. 채널별로 따로 선택하실 수 있고, 언제든 한 번에 끌 수 있어요.",
@@ -831,7 +838,8 @@ function BookingModal({ center, mode, onClose }) {
       const signHash = (typeof vaultHash === "function") ? vaultHash("sign|" + enroll.name.trim() + "|" + enroll.sign.slice(-160)) : null;
       if (m && typeof vaultSaveConsents === "function") {
         const ciState = {};
-        CI_ALL.forEach((i) => { ciState[i.k] = !!enroll.ci[i.k]; });   // 9건 개별 저장(병합 금지 — 구분 동의 원칙)
+        CI_ALL.forEach((i) => { ciState[i.k] = !!enroll.ci[i.k]; });   // 개별 저장(병합 금지 — 구분 동의 원칙)
+        try { if (typeof consentApplyCI === "function") consentApplyCI(ciState); } catch (e) {}   // 화면 동의 → 게이트 반영(V1 — 끊겨 있던 고리)
         vaultSaveConsents(m, Object.assign({ ins_terms: true, ins_enroll: true, ins_third: true, mkt: !!enroll.mkt,
           step: "checkup-booking", ver: "검진대비보험 동의문 v1.0", ciVer: CI_CONSENT.ver, ciMethod: enroll.ciFull ? "each" : "bulk",
           insuredName: enroll.name.trim(), rrnMasked, rrnHash, signImg: enroll.sign, signHash, signedAt: Date.now() }, ciState));
