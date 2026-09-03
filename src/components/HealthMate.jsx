@@ -87,6 +87,9 @@ function HmPager({ total, page, setPage, per = 20 }) {
 function HmCohortCard({ card, code, onDone, compact }) {
   const c = card;
   const locked = c.status.k === "HELD";
+  const [vidOpen, setVidOpen] = React.useState(false);   /* 영상 V2 */
+  let vg = { ok: false, code: "" };
+  try { vg = vsGateOf(c.i, { hour: new Date().getHours() }); } catch (e) {}
   return (
     <div className={"hmrow" + (locked ? " lock" : "")}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
@@ -112,8 +115,14 @@ function HmCohortCard({ card, code, onDone, compact }) {
       {!compact && <div className="hmhi" style={{ marginTop: 7 }}><Bot size={12} style={{ verticalAlign: -2 }} /> {c.hi}</div>}
       <div style={{ display: "flex", gap: 6, marginTop: 7, alignItems: "center" }}>
         <button className="hmbtn" style={{ padding: "5px 11px", fontSize: 11 }} disabled={locked} onClick={() => { const r = hmcTouch(code, c.i, "코호트 접촉"); if (onDone) onDone(r); }}><Phone size={11} /> 연결하기</button>
+        {vg.ok
+          ? <button className="hmbtn gh" style={{ padding: "5px 11px", fontSize: 11 }} onClick={() => setVidOpen(true)}><Video size={11} /> 영상 상담 요청</button>
+          : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.2 }} title={vg.why || ""}>📹 {vg.code === "consent" ? "영상 동의 없음" : vg.code === "lock" ? "접촉 락" : vg.code === "hour" ? "시간대 밖" : vg.code === "hold" ? "접촉 보류" : "요청 불가"}</span>}
         <span style={{ fontSize: 10.3, color: HM_C.mut }}>{locked ? "결과 수령 대기 — 시스템이 자동 해제" : "시연 기록(세션) — 새로고침 시 초기화"}</span>
       </div>
+      {vidOpen && <HmVideoModal subject={c.i} name={c.mask} card={(() => { try { return buildHandoffCard(c.i, { v2: true }); } catch (e) { return null; } })()}
+        onClose={() => setVidOpen(false)}
+        onDone={(r) => { const t = hmcTouch(code, c.i, "영상 상담" + (r.mode ? "(" + (r.mode === "video" ? "영상" : r.mode === "voice" ? "음성" : "문자") + ")" : "")); if (onDone) onDone(t); }} />}
     </div>
   );
 }
@@ -222,8 +231,116 @@ function HmTabSignals({ code, onContact, cview }) {
   </div>);
 }
 
+/* 영상 상담(영상 V2) — 요청 → 회원 수락 → 통화(대본 동반) → 요약 → 회원 확인.
+   §0-V7 프로는 요청만 한다(수락 버튼은 「회원님 화면」 안에만 있다) · §0-V8 녹화 없음(요약만 남는다)
+   §0-V10 이 화면 안에서 진료·검진·구매가 일어나지 않는다 — 활동은 개입으로 가리킬 뿐 */
+function HmVideoModal({ subject, name, card, onDone, onClose }) {
+  const [stage, setStage] = React.useState("ask");     /* ask → call → sum → done */
+  const [sess, setSess] = React.useState(null);
+  const [mode, setMode] = React.useState("voice");
+  const [note, setNote] = React.useState("");
+  const [err, setErr] = React.useState("");
+  const [degraded, setDegraded] = React.useState(false);
+
+  React.useEffect(() => {
+    try { const r = vsRequest(subject, { hour: new Date().getHours() });
+      if (!r.ok) { setErr(r.why); setStage("blocked"); } else setSess(r.sess); } catch (e) { setErr(String(e)); setStage("blocked"); }
+  }, []);
+
+  const accept = () => { try { vsAccept(sess); setMode(sess.mode || "voice"); setStage("call"); } catch (e) {} };
+  const decline = () => { try { vsDecline(sess); } catch (e) {} onDone({ result: "사양", state: "declined" }); onClose(); };
+  const setM = (k) => { const r = vsSetMode(sess, k, "member"); if (r.ok) { setMode(r.mode); setDegraded(false); } else setErr(r.why); };
+  const degrade = () => { const r = vsDegrade(sess); if (r.ok) { setMode(r.mode); setDegraded(true); } };
+  const end = () => { try { vsEnd(sess); setStage("sum"); } catch (e) {} };
+  const confirm = () => {
+    const r = vsSummarize(sess, note, true);
+    if (!r.ok) { setErr(r.why); return; }
+    onDone({ result: "상담완료", state: "summarized", summary: note, mode: mode });
+    setStage("done"); setTimeout(onClose, 900);
+  };
+
+  const sc = card && card.script;
+  const lines = sc ? [sc.opening, ...(sc.core || []), sc.ask].filter(Boolean).slice(0, 4) : [];
+  const wrap = { position: "fixed", inset: 0, zIndex: 1480, background: "rgba(11,34,57,.58)", display: "flex", alignItems: "center", justifyContent: "center" };
+  const box = { width: "min(760px,94vw)", maxHeight: "92vh", overflow: "auto", background: "#fff", borderRadius: 18, boxShadow: "0 20px 60px rgba(0,0,0,.35)" };
+
+  if (stage === "blocked") return (<div style={wrap} onClick={onClose}><div onClick={(e) => e.stopPropagation()} style={{ ...box, width: "min(420px,92vw)" }}>
+    <div style={{ background: "#475569", color: "#fff", padding: "12px 16px", fontSize: 12.5, fontWeight: 800 }}>📹 영상 상담 — 요청할 수 없어요</div>
+    <div style={{ padding: "16px 18px", fontSize: 12.4, color: "#334155", lineHeight: 1.75 }}>{err}
+      <div style={{ marginTop: 12 }}><button className="hmbtn gh" onClick={onClose}>닫기</button></div></div></div></div>);
+
+  return (<div style={wrap} onClick={onClose}><div onClick={(e) => e.stopPropagation()} style={box}>
+    {stage === "ask" && (<>
+      <div style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)", color: "#fff", padding: "12px 16px", fontSize: 12.5, fontWeight: 800 }}>
+        📱 회원님 화면 <span style={{ fontWeight: 600, opacity: .85 }}>· [예시·시연] 수락은 회원 본인이 자기 화면에서</span></div>
+      <div style={{ padding: "18px 20px" }}>
+        <div style={{ fontSize: 15, fontWeight: 900, color: "#0F2A43", lineHeight: 1.5 }}>담당 {(typeof hmProOf === "function" && card ? "" : "")}전문가가 영상 상담을 요청했어요</div>
+        <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.75, marginTop: 8 }}>
+          검진 결과 리포트를 화면에 함께 띄워놓고 설명드릴 수 있어요.<br />
+          <span style={{ color: "#15803D" }}>✅ 카메라는 켜지 않고 음성으로만</span> 시작할 수 있고, 통화 중 언제든 바꾸실 수 있어요.<br />
+          <span style={{ color: "#C2410C" }}>⚠️ 영상·음성은 저장하지 않아요</span> — 끝나면 상담 요약만 남고, 그 요약도 확인하신 뒤에 저장돼요.
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+          <button className="hmbtn" style={{ background: "#1D4ED8" }} onClick={accept}>네, 지금 받을게요</button>
+          <button className="hmbtn gh" onClick={decline}>이번엔 괜찮아요</button>
+        </div>
+        <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 9, textAlign: "center" }}>사양하셔도 상담 내용과 다음 절차는 그대로예요 — 전화로 안내드려요.</div>
+      </div></>)}
+
+    {stage === "call" && (<>
+      <div style={{ background: "#0F2A43", color: "#fff", padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 800 }}>📹 상담 중 — {name}님
+          <span style={{ marginLeft: 8, fontWeight: 600, opacity: .8, fontSize: 11 }}>{mode === "video" ? "영상" : mode === "voice" ? "음성" : "문자"} · 녹화 없음</span></div>
+        <div style={{ fontSize: 10.4, color: "#94A3B8" }}>모드 전환은 회원 화면에서 —<span style={{ color: "#CBD5E1" }}> 프로는 바꿀 수 없어요(§0-V7)</span></div></div>
+      <div style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 0 }}>
+        <div style={{ padding: "14px 16px", borderRight: "1px solid #E2E8F0" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 7 }}>🗒 대본 — 화면에 띄운 채로 읽어요</div>
+          {lines.length ? lines.map((b, i) => (<div key={i} style={{ marginBottom: 7, fontSize: 12, lineHeight: 1.7, color: "#1F2937" }}>
+            <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.5 }}>{b.ko}</i><div>“{b.text}”</div></div>))
+            : <div style={{ fontSize: 11.5, color: "#94A3B8" }}>이 회원의 지시서 카드가 없어요 — 대본 없이는 통화하지 않아요.</div>}
+          <div style={{ marginTop: 10, background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, padding: "7px 10px", fontSize: 10.8, color: "#9A3412", lineHeight: 1.65 }}>
+            이 화면에서 진료·검진·구매가 일어나지 않아요 — 필요한 활동은 <b>개입으로 발행</b>하고 회원이 자기 앱에서 해요.</div>
+        </div>
+        <div style={{ padding: "14px 16px", background: "#F8FAFC" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 7 }}>회원님 화면</div>
+          <div style={{ borderRadius: 12, overflow: "hidden", background: "#0B1622", height: 168, display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8", fontSize: 11.5, textAlign: "center", lineHeight: 1.7 }}>
+            {mode === "video" ? <span style={{ color: "#E2E8F0" }}>📹 영상 연결됨<br /><span style={{ fontSize: 10.5, opacity: .8 }}>[시연] 실제 통신은 론칭 시점</span></span>
+              : mode === "voice" ? <span>🔊 음성 상담 중<br /><span style={{ fontSize: 10.5 }}>카메라 꺼짐 — 회원이 원할 때 켜요</span></span>
+              : <span>💬 문자 상담 중</span>}</div>
+          <div style={{ display: "flex", gap: 5, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10.2, color: "#64748B", fontWeight: 700 }}>회원이 직접 —</span>
+            {VIDEO_SPEC.modes.map((k) => (<button key={k} className={"hmbtn" + (k === mode ? "" : " gh")} style={{ fontSize: 10.5, padding: "4px 10px", background: k === mode ? "#2563EB" : "#fff" }}
+              onClick={() => setM(k)}>{k === "video" ? "📹 영상" : k === "voice" ? "🔊 음성" : "💬 문자"}</button>))}
+          </div>
+          {degraded && <div style={{ fontSize: 10.6, color: "#B45309", marginTop: 6 }}>⚠ 연결이 불안정해 한 단계 낮췄어요 — 올리는 것은 회원만 할 수 있어요.</div>}
+          {err && <div style={{ fontSize: 10.6, color: "#B91C1C", marginTop: 6 }}>{err}</div>}
+          <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+            <button className="hmbtn gh" style={{ fontSize: 10.5 }} onClick={degrade}>연결 불안정(시연)</button>
+            <button className="hmbtn" style={{ background: "#B91C1C", fontSize: 10.5 }} onClick={end}>상담 종료</button>
+          </div>
+        </div></div></>)}
+
+    {stage === "sum" && (<>
+      <div style={{ background: "#0F2A43", color: "#fff", padding: "12px 16px", fontSize: 12.5, fontWeight: 800 }}>🧾 상담 요약 — 남는 것은 이것뿐이에요</div>
+      <div style={{ padding: "16px 18px" }}>
+        <div style={{ fontSize: 11.8, color: "#475569", lineHeight: 1.7 }}>영상·음성은 저장되지 않았어요. 무엇을 이야기했고 무엇을 하기로 했는지만 적고, <b>회원이 확인해야</b> 기록이 닫혀요.</div>
+        <textarea value={note} onChange={(e) => { setNote(e.target.value); setErr(""); }} rows={4} placeholder="예) 결과에서 확인이 필요한 구간을 설명드렸고, 진료 연결을 안내했어요."
+          style={{ width: "100%", marginTop: 10, borderRadius: 10, border: "1px solid #CBD5E1", padding: "9px 11px", fontSize: 12.2, lineHeight: 1.7, fontFamily: "inherit", resize: "vertical" }} />
+        {err && <div style={{ fontSize: 11, color: "#B91C1C", marginTop: 6 }}>{err}</div>}
+        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+          <button className="hmbtn" onClick={confirm}>회원 확인 완료 — 기록 저장</button>
+          <button className="hmbtn gh" onClick={onClose}>닫기(미저장)</button>
+        </div>
+        <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 8 }}>요약이 비어 있거나 단정·과장 표현이 있으면 저장되지 않아요.</div>
+      </div></>)}
+
+    {stage === "done" && (<div style={{ padding: "26px 20px", textAlign: "center", fontSize: 13, fontWeight: 800, color: "#15803D" }}>✅ 상담 요약이 저장됐어요</div>)}
+  </div></div>);
+}
+
 /* ② 보험 배정·대기(순번 배분 + 접촉 락) */
 function HmTabIns({ code, pro, onContact, refresh, cview }) {
+  const [vidFor, setVidFor] = React.useState(null);   /* 영상 V2 — 요청 대상 회원 */
   const q = hmInsQueue();
   const members = (typeof demoMembers !== "undefined" ? demoMembers : []);
   const mine = q.filter((x) => x.code === code);
@@ -248,7 +365,12 @@ function HmTabIns({ code, pro, onContact, refresh, cview }) {
             🔒 검진 전 연락은 회원에게 부담이 됩니다. 결과가 나오면 <b>하이가 자동으로</b> 열어 드려요. (프로·관리자 해제 불가) — 지금 할 수 있는 일: 프로필 사전 학습 · ③탭 문안 미리보기</div>}
           <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
             <button className="hmbtn" disabled={lk.locked} onClick={() => { const r = onContact(m, { key: "combo", tab: "②", label: "첫 연결(결과+보장 통합)", result: "연결됨" }); }}><Phone size={12} /> 전화 연결</button>
-            <button className="hmbtn gh" disabled={lk.locked} onClick={() => onContact(m, { key: "ins-video", tab: "②", label: "화상 상담", result: "상담확정" })}><Video size={12} /> 화상</button>
+            {(() => {   /* 영상 V2 — 게이트를 통과하지 못하면 버튼이 없다(문구 숨김이 아니라 부재) */
+              let g = { ok: false, why: "" };
+              try { g = vsGateOf(m, { hour: new Date().getHours() }); } catch (e) {}
+              if (!g.ok) return <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.4 }} title={g.why}>📹 영상 상담 불가 · {g.code === "consent" ? "동의 없음" : g.code === "lock" ? "접촉 락" : g.code === "hour" ? "시간대" : g.code === "hold" ? "접촉 보류" : g.code}</span>;
+              return <button className="hmbtn gh" onClick={() => setVidFor(m)}><Video size={12} /> 영상 상담 요청</button>;
+            })()}
             <button className="hmbtn gh" disabled={lk.locked} onClick={() => onContact(m, { key: "ins-noti", tab: "②", label: "알림 안내", result: "발송", notify: "검진 결과 안내와 보장 설명을 준비해 두었어요.", notifyTitle: "담당 프로 안내" })}><Send size={12} /> 알림</button>
             {lk.locked && <button className="hmbtn gh" style={{ borderStyle: "dashed", color: HM_C.mut }} onClick={() => { hmSimResult(m.email); refresh(); }}>⚙ 시스템 이벤트(시연) — 검진결과 수령</button>}
           </div>
@@ -268,6 +390,9 @@ function HmTabIns({ code, pro, onContact, refresh, cview }) {
     {cview && <HmCohortList title="② 결과 수령 — 첫 연결 대기(READY)" ids={cview.ready} code={code} compact />}
     <div style={{ fontWeight: 900, fontSize: 13, margin: "12px 0 7px", color: HM_C.mut }}>지역단 전체 배정 현황(참고) {others.length}건</div>
     {others.map((x) => row(x, false))}
+    {vidFor && <HmVideoModal subject={vidFor} name={_hmMask(vidFor.name)} card={(() => { try { return hmCustomerCard(vidFor); } catch (e) { return null; } })()}
+      onClose={() => setVidFor(null)}
+      onDone={(r) => { onContact(vidFor, { key: "ins-video", tab: "②", label: "영상 상담" + (r.mode ? "(" + (r.mode === "video" ? "영상" : r.mode === "voice" ? "음성" : "문자") + ")" : ""), result: r.result, note: r.summary || "" }); }} />}
   </div>);
 }
 
