@@ -41,6 +41,15 @@ seeds.push({ cat: "cycle", q: "60일 사이클이 뭐예요" }, { cat: "cycle", 
   { cat: "cycle", q: "G2가 뭐예요" }, { cat: "cycle", q: "G10b 설명해줘" }, { cat: "cycle", q: "G8이 뭐예요" },
   { cat: "cycle", q: "제공 DB 뭐가 나가요" }, { cat: "cycle", q: "2차 골든타임이 뭐예요" });
 
+/* 영상 상담(V6) — 원천: VIDEO_SPEC·VS_SHARE_DOCS·VS_SEG_FIT·INTERVENTIONS */
+seeds.push({ cat: "video", q: "영상 상담이 뭐예요" }, { cat: "video", q: "영상 통화 어떻게 해요" },
+  { cat: "video", q: "녹화되나요" }, { cat: "video", q: "녹화 남아요?" },
+  { cat: "video", q: "화면 공유 뭐가 돼요" }, { cat: "video", q: "같이 보기 어떤 게 있어요" },
+  { cat: "video", q: "영상 요청이 왜 안 돼요" }, { cat: "video", q: "화상 연결이 불가한 이유는" },
+  { cat: "video", q: "개입 발행이 뭐예요" }, { cat: "video", q: "진료 완결은 언제 잡혀요" },
+  { cat: "video", q: "원격진료 완결 어떻게 확인해요" }, { cat: "video", q: "영상 권장은 무슨 뜻이에요" },
+  { cat: "video", q: "카메라 켜야 하나요" });
+
 /* D2 골든타임·3종·케어 키트(F4) */
 seeds.push({ cat: "role", q: "골든타임에 뭘 말해요" }, { cat: "role", q: "골든타임이 뭐예요" }, { cat: "role", q: "무료 3종 뭐라고 안내해요" }, { cat: "role", q: "3종 서비스가 뭐예요" }, { cat: "role", q: "케어 키트가 뭐예요" }, { cat: "role", q: "케어 키트 구성은 어떻게 정해져요" });
 
