@@ -1,5 +1,7 @@
 /* ══════════ 영상 상담 세션 회귀 — 영상 V0 ══════════
-   검사 ① 게이트 — 락 구간 요청 0건 · 접촉 보류(G8) 요청 0건 · 미동의 요청 0건 · 시간대 밖 요청 0건
+   검사 ① 게이트 — 락 구간 요청 0건 · 접촉 보류(G8) 요청 0건 · 미동의 요청 0건
+        ①-b 시간대 무관(형 지시 2026-09-04) — 0·3·7·12·21·23시 판정이 전부 동일 · 차단 코드 hour 0건 ·
+            사양 이력이 없는데 막히는 건 0건 · VIDEO_SPEC에 시간대 상수 부재
         ② 전이 — 허용 간선 밖 전이 0건 · 종료 후 요약 없이 닫히는 세션 0건
         ③ §0-V7 — 프로가 모드를 올리는 호출 0건(거부되어야 함)
         ④ §0-V8 — 세션 레코드에 미디어 필드 0건
@@ -31,12 +33,12 @@ await login(p);
 
 const res = await p.evaluate((cfg) => {
   const [SAMPLE, STEP] = cfg;
-  const out = { n: 0, open: 0, byCode: {}, steps: {}, bad: [], sims: {} };
+  const out = { n: 0, open: 0, byCode: {}, steps: {}, bad: [], sims: {}, hourProbe: 0, hourNight: 0, declProbed: null };
   const push = (k, v) => { out[k][v] = (out[k][v] || 0) + 1; };
 
   for (let i = 1; i <= SAMPLE; i += STEP) {
     out.n++;
-    const g = window.__hifinVideo("gate", i, { hour: 14 });
+    const g = window.__hifinVideo("gate", i);
     push("byCode", g.code);
     if (g.ok) out.open++;
 
@@ -50,18 +52,35 @@ const res = await p.evaluate((cfg) => {
     if (!hasV1 && g.ok) out.bad.push({ i, why: "미동의인데 요청 가능" });
     if (g.ok && !(cyc && !locked && !held && hasV1)) out.bad.push({ i, why: "게이트 통과 조건 불일치" });
 
-    /* ④ 시간대 — 야간에는 열리지 않는다 */
-    const night = window.__hifinVideo("gate", i, { hour: 23 });
-    if (night.ok) out.bad.push({ i, why: "야간에 요청 가능" });
+    /* ④ 시간대 — 이제 아무것도 막지 않는다. 「야간에 열리는가」만 보면 락·동의로 막혀도 통과하는
+       공허한 참이 되므로, 여섯 시각의 판정이 기준과 ok·code까지 같은지를 본다(시각이 무의미하다는 증명) */
+    for (const h of [0, 3, 7, 12, 21, 23]) {
+      const gh = window.__hifinVideo("gate", i, { hour: h });
+      out.hourProbe++; if (h < 9 || h >= 20) out.hourNight++;
+      if (gh.ok !== g.ok || gh.code !== g.code) out.bad.push({ i, why: "시각에 따라 판정이 달라짐", h, got: gh.code, want: g.code });
+      if (gh.code === "hour") out.bad.push({ i, why: "시간대 차단 코드가 아직 살아 있음", h });
+    }
+    /* 역방향 — 막을 이유가 없으면 반드시 열려야 한다(시간대가 되살아나면 벽시계 실행 시 여기서 잡힌다) */
+    if (cyc && !locked && !held && hasV1 && !g.ok) out.bad.push({ i, why: "차단 사유가 없는데 막힘", code: g.code });
 
-    /* ⑤ 재요청 한도 — 1회 사양 후 차단 */
+    /* ⑤ 재요청 한도 — 이제 실기록으로 작동한다. 인자·실기록 두 경로 모두 확인 */
     if (g.ok) {
-      const again = window.__hifinVideo("gate", i, { hour: 14, declinedCount: 1 });
-      if (again.ok) out.bad.push({ i, why: "재요청 한도 초과인데 가능" });
+      const again = window.__hifinVideo("gate", i, { declinedCount: 1 });
+      if (again.ok) out.bad.push({ i, why: "재요청 한도 초과인데 가능(인자 경로)" });
+      if (!out.declProbed) {   /* 실기록 경로는 표본 1건으로 충분(부작용을 남기지 않도록 즉시 청소) */
+        window.__hifinVideo("declclear", i);
+        const b0 = window.__hifinVideo("gate", i);
+        window.__hifinVideo("declrec", i);
+        const b1 = window.__hifinVideo("gate", i);
+        window.__hifinVideo("declclear", i);
+        const b2 = window.__hifinVideo("gate", i);
+        out.declProbed = { before: b0.ok, afterDecline: b1.ok, code: b1.code, afterClear: b2.ok };
+        if (!(b0.ok && !b1.ok && b1.code === "reask" && b2.ok)) out.bad.push({ i, why: "거절 실기록이 게이트에 반영되지 않음", probe: out.declProbed });
+      }
     }
 
     /* 세션 시뮬 — 전이·요약·미디어 */
-    const sim = window.__hifinVideo("sim", i, { hour: 14 });
+    const sim = window.__hifinVideo("sim", i);
     if (sim.blocked) { push("steps", "blocked:" + sim.code); continue; }
     const key = sim.steps.join("→");
     push("steps", key);
@@ -73,6 +92,19 @@ const res = await p.evaluate((cfg) => {
   }
   return out;
 }, [SAMPLE, STEP]);
+
+/* ④-b 규격 — 막지 않는 것으로 끝이 아니다. 상수가 남으면 배지·하이 답변이 없어진 규칙을 계속 말한다 */
+const spec = await p.evaluate(() => window.__hifinVideo("spec"));
+const hourBad = [];
+if (!spec || spec.error) hourBad.push("VIDEO_SPEC 수신 실패");
+else {
+  if ("hourFrom" in spec || "hourTo" in spec) hourBad.push("VIDEO_SPEC에 시간대 상수 잔존");
+  if (JSON.stringify(spec).indexOf("시~") >= 0) hourBad.push("VIDEO_SPEC 문안에 시간대 표기 잔존");
+}
+if (res.byCode.hour) hourBad.push("차단 코드 hour 잔존 " + res.byCode.hour + "건");
+if (res.hourProbe < res.n * 6) hourBad.push("시각 무관 검사 표본 부족 " + res.hourProbe);
+if (!res.hourNight) hourBad.push("야간 시각을 한 번도 밟지 않음");
+if (!res.declProbed) hourBad.push("거절 실기록 경로를 한 번도 검사하지 않음");
 
 /* ⑥ 화면 공유(§0-V9) — 등재 목록·국면 게이트·금지 화면 부재 + 양방향 대조 */
 const share = await p.evaluate(() => {
@@ -191,7 +223,7 @@ const rules = await p.evaluate(() => {
   const st = window.__hifinVideo("states");
   /* 요청 가능한 회원 하나를 찾아 정상 진행을 확인(아무 인덱스나 쓰면 차단 대상일 수 있다) */
   let probe = null;
-  for (let i = 1; i <= 3000 && !probe; i++) { const s2 = window.__hifinVideo("sim", i, { hour: 14 }); if (s2 && !s2.blocked) probe = s2; }
+  for (let i = 1; i <= 3000 && !probe; i++) { const s2 = window.__hifinVideo("sim", i); if (s2 && !s2.blocked) probe = s2; }
   out.push({ k: "sim-ok", v: !!probe && probe.steps.length >= 2 });
   /* 상태·간선 정의가 서로 맞는가 */
   const keys = Object.keys(st.states);
@@ -210,7 +242,7 @@ const p2 = await b.newPage();
 await login(p2);
 const cross = await p2.evaluate((keys) => {
   const o = {};
-  for (const i of keys) { const s = window.__hifinVideo("sim", Number(i), { hour: 14 }); o[i] = s.blocked ? ("blocked:" + s.code) : (s.steps.join("→") + "|" + (s.mode || "-")); }
+  for (const i of keys) { const s = window.__hifinVideo("sim", Number(i)); o[i] = s.blocked ? ("blocked:" + s.code) : (s.steps.join("→") + "|" + (s.mode || "-")); }
   return o;
 }, Object.keys(res.sims).slice(0, 300));
 let drift = 0;
@@ -218,8 +250,9 @@ for (const k of Object.keys(cross)) if (cross[k] !== res.sims[k]) drift++;
 await b.close();
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
-const pass = res.bad.length === 0 && ruleBad.length === 0 && drift === 0 && shareBad.length === 0 && summBad.length === 0 && segBad.length === 0;
+const pass = res.bad.length === 0 && ruleBad.length === 0 && drift === 0 && shareBad.length === 0 && summBad.length === 0 && segBad.length === 0 && hourBad.length === 0;
 console.log(`[게이트] 표본 ${res.n} · 요청 가능 ${res.open} (${(res.open / res.n * 100).toFixed(1)}%) · 차단 ${JSON.stringify(res.byCode)}`);
+console.log(`[시간대] 시각 무관 ${res.hourProbe}건(야간 ${res.hourNight}) · 차단 코드 hour ${res.byCode.hour || 0}건(0이어야) · 거절 실기록 ${res.declProbed ? JSON.stringify(res.declProbed) : "미검사"} · 규격 위반 ${hourBad.length}`);
 console.log(`[전이  ] ${Object.entries(res.steps).map(([k, v]) => k + " " + v).join(" · ")}`);
 console.log(`[규격  ] 상태·간선 위반 ${ruleBad.length}건 · 미디어 필드 0 검사 포함`);
 console.log(`[공유  ] 등재 ${share.docs}종 · 금지 화면 ${share.forbidden.length} · 등재 밖 통과 ${share.unlisted} · T3 보장맵 ${share.t3cov}건(0이어야) · 만기 국면 허용 ${share.t5cov}건 · 국면 대조 ${share.cases.length}건`);
@@ -227,10 +260,10 @@ console.log(`[요약  ] 초안 ${summ.drafts}건 전건 규격 통과 ${summ.dra
 console.log(`[연결  ] 적합도 ${JSON.stringify(seg.fit)} · G8 위반 ${seg.g8bad} · 미등재 이벤트 ${seg.evUnreg.length} · 개입(정상/중복/등재밖/미연결) ${[seg.issue.first,seg.issue.dup,seg.issue.unlisted,seg.issue.notConnected].join("/")} · 완결 회수 ${seg.tele.before}→${seg.tele.after} · 누출 ${seg.leak.length}`);
 console.log(`[결정론] 교차 300건 드리프트 ${drift}건`);
 console.log(`총 소요 ${secs}s → ${pass ? "PASS" : "FAIL"}`);
-if (!pass) { for (const x of res.bad.slice(0, 10)) console.error(" ×", JSON.stringify(x)); for (const x of ruleBad.slice(0, 6)) console.error(" × 규격", JSON.stringify(x)); for (const x of shareBad.slice(0, 6)) console.error(" × 공유", x); for (const x of summBad.slice(0, 4)) console.error(" × 요약", x); for (const x of segBad.slice(0, 6)) console.error(" × 연결", x); }
+if (!pass) { for (const x of res.bad.slice(0, 10)) console.error(" ×", JSON.stringify(x)); for (const x of ruleBad.slice(0, 6)) console.error(" × 규격", JSON.stringify(x)); for (const x of hourBad.slice(0, 6)) console.error(" × 시간대", x); for (const x of shareBad.slice(0, 6)) console.error(" × 공유", x); for (const x of summBad.slice(0, 4)) console.error(" × 요약", x); for (const x of segBad.slice(0, 6)) console.error(" × 연결", x); }
 
 writeFileSync(join(ROOT, "scripts/video_regression_snapshot.json"), JSON.stringify({
   date: new Date().toISOString().slice(0, 10), sample: res.n, open: res.open,
-  byCode: res.byCode, steps: res.steps, bad: res.bad.length, ruleBad: ruleBad.length, shareBad: shareBad.length, summBad: summBad.length, segBad: segBad.length, drafts: summ.drafts, shareDocs: share.docs, t3cov: share.t3cov, drift, seconds: Number(secs), pass
+  byCode: res.byCode, steps: res.steps, bad: res.bad.length, ruleBad: ruleBad.length, shareBad: shareBad.length, summBad: summBad.length, segBad: segBad.length, hourBad: hourBad.length, hourProbe: res.hourProbe, hourNight: res.hourNight, drafts: summ.drafts, shareDocs: share.docs, t3cov: share.t3cov, drift, seconds: Number(secs), pass
 }, null, 2) + "\n", "utf8");
 process.exit(pass ? 0 : 1);

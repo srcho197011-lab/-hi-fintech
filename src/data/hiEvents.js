@@ -46,7 +46,7 @@ const HI_EVENT_DEFS = {
   video_requested:    { ko: "영상 상담 요청(프로)", stage: 1 },
   video_connected:    { ko: "영상 상담 연결(회원 수락)", stage: 2 },
   video_declined:     { ko: "영상 상담 사양(회원)", stage: 2 },
-  video_blocked:      { ko: "영상 요청 차단(락·동의·보류·시간대)", stage: 2 },
+  video_blocked:      { ko: "영상 요청 차단(락·동의·보류·재요청)", stage: 2 },
   video_shared:       { ko: "상담 중 화면 공유", stage: 2 },
   video_summarized:   { ko: "영상 상담 요약 확정(회원 확인)", stage: 2 },
   video_action_issued: { ko: "상담 중 개입 발행", stage: 2 },

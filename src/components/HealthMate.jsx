@@ -89,7 +89,7 @@ function HmCohortCard({ card, code, onDone, compact }) {
   const locked = c.status.k === "HELD";
   const [vidOpen, setVidOpen] = React.useState(false);   /* 영상 V2 */
   let vg = { ok: false, code: "" };
-  try { vg = vsGateOf(c.i, { hour: new Date().getHours() }); } catch (e) {}
+  try { vg = vsGateOf(c.i); } catch (e) {}
   let vfit = null; try { vfit = vsSegFit(c.i); } catch (e) {}   /* 영상 V5 — 채널 적합도 */
   return (
     <div className={"hmrow" + (locked ? " lock" : "")}>
@@ -119,7 +119,7 @@ function HmCohortCard({ card, code, onDone, compact }) {
         {vg.ok
           ? <><button className="hmbtn gh" style={{ padding: "5px 11px", fontSize: 11 }} onClick={() => setVidOpen(true)}><Video size={11} /> 영상 상담 요청</button>
               {vfit && vfit.fit === "high" && <span className="hmpill" style={{ background: "#EFF6FF", color: "#1D4ED8", fontSize: 10.2 }} title={vfit.why}>📹 영상 권장 · {vfit.seg}</span>}</>
-          : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.2 }} title={vg.why || ""}>📹 {vg.code === "consent" ? "영상 동의 없음" : vg.code === "lock" ? "접촉 락" : vg.code === "hour" ? "시간대 밖" : vg.code === "hold" ? "접촉 보류" : "요청 불가"}</span>}
+          : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.2 }} title={vg.why || ""}>📹 {vg.code === "consent" ? "영상 동의 없음" : vg.code === "lock" ? "접촉 락" : vg.code === "hold" ? "접촉 보류" : "요청 불가"}</span>}
         <span style={{ fontSize: 10.3, color: HM_C.mut }}>{locked ? "결과 수령 대기 — 시스템이 자동 해제" : "시연 기록(세션) — 새로고침 시 초기화"}</span>
       </div>
       {vidOpen && <HmVideoModal subject={c.i} name={c.mask} card={(() => { try { return buildHandoffCard(c.i, { v2: true }); } catch (e) { return null; } })()}
@@ -246,12 +246,12 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   const [shared, setShared] = React.useState([]);        /* 영상 V3 — 띄운 화면 */
 
   React.useEffect(() => {
-    try { const r = vsRequest(subject, { hour: new Date().getHours() });
+    try { const r = vsRequest(subject);
       if (!r.ok) { setErr(r.why); setStage("blocked"); } else setSess(r.sess); } catch (e) { setErr(String(e)); setStage("blocked"); }
   }, []);
 
   const accept = () => { try { vsAccept(sess); setMode(sess.mode || "voice"); setStage("call"); } catch (e) {} };
-  const decline = () => { try { vsDecline(sess); } catch (e) {} onDone({ result: "사양", state: "declined" }); onClose(); };
+  const decline = () => { try { vsDecline(sess, subject); } catch (e) {} onDone({ result: "사양", state: "declined" }); onClose(); };
   const setM = (k) => { const r = vsSetMode(sess, k, "member"); if (r.ok) { setMode(r.mode); setDegraded(false); } else setErr(r.why); };
   const degrade = () => { const r = vsDegrade(sess); if (r.ok) { setMode(r.mode); setDegraded(true); } };
   const [issued, setIssued] = React.useState([]);        /* 영상 V5 — 발행한 개입 */
@@ -261,7 +261,7 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
     setErr(""); setIssued((a2) => a2.concat({ k: k, ko: r.ko, nav: r.nav }));
   };
   const share = (k) => {
-    const r = vsShareDoc(sess, k, subject, { hour: new Date().getHours() });
+    const r = vsShareDoc(sess, k, subject);
     if (!r.ok) { setErr(r.why); return; }
     setErr(""); setShared((a2) => a2.concat(k));
   };
@@ -298,7 +298,7 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
           <button className="hmbtn" style={{ background: "#1D4ED8" }} onClick={accept}>네, 지금 받을게요</button>
           <button className="hmbtn gh" onClick={decline}>이번엔 괜찮아요</button>
         </div>
-        <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 9, textAlign: "center" }}>사양하셔도 상담 내용과 다음 절차는 그대로예요 — 전화로 안내드려요.</div>
+        <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 9, textAlign: "center", lineHeight: 1.6 }}>지금이 편하지 않으시면 사양하셔도 돼요 — 상담 내용과 다음 절차는 그대로예요.<br />편하신 때를 말씀해 주시면 그때 다시 해요.</div>
       </div></>)}
 
     {stage === "call" && (<>
@@ -318,7 +318,7 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
               {Object.keys(VS_SHARE_DOCS).map((k) => {
                 const d = VS_SHARE_DOCS[k];
                 let g = { ok: false, why: "" };
-                try { g = vsShareGate(k, subject, { hour: new Date().getHours() }); } catch (e) {}
+                try { g = vsShareGate(k, subject); } catch (e) {}
                 const on = shared.indexOf(k) >= 0;
                 return g.ok
                   ? <button key={k} className={"hmbtn" + (on ? "" : " gh")} style={{ fontSize: 10.5, padding: "4px 10px" }} title={d.what} onClick={() => share(k)}>{on ? "✓ " : ""}{d.ko}</button>
@@ -422,8 +422,8 @@ function HmTabIns({ code, pro, onContact, refresh, cview }) {
             <button className="hmbtn" disabled={lk.locked} onClick={() => { const r = onContact(m, { key: "combo", tab: "②", label: "첫 연결(결과+보장 통합)", result: "연결됨" }); }}><Phone size={12} /> 전화 연결</button>
             {(() => {   /* 영상 V2 — 게이트를 통과하지 못하면 버튼이 없다(문구 숨김이 아니라 부재) */
               let g = { ok: false, why: "" };
-              try { g = vsGateOf(m, { hour: new Date().getHours() }); } catch (e) {}
-              if (!g.ok) return <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.4 }} title={g.why}>📹 영상 상담 불가 · {g.code === "consent" ? "동의 없음" : g.code === "lock" ? "접촉 락" : g.code === "hour" ? "시간대" : g.code === "hold" ? "접촉 보류" : g.code}</span>;
+              try { g = vsGateOf(m); } catch (e) {}
+              if (!g.ok) return <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.4 }} title={g.why}>📹 영상 상담 불가 · {g.code === "consent" ? "동의 없음" : g.code === "lock" ? "접촉 락" : g.code === "hold" ? "접촉 보류" : g.code}</span>;
               return <button className="hmbtn gh" onClick={() => setVidFor(m)}><Video size={12} /> 영상 상담 요청</button>;
             })()}
             <button className="hmbtn gh" disabled={lk.locked} onClick={() => onContact(m, { key: "ins-noti", tab: "②", label: "알림 안내", result: "발송", notify: "검진 결과 안내와 보장 설명을 준비해 두었어요.", notifyTitle: "담당 프로 안내" })}><Send size={12} /> 알림</button>

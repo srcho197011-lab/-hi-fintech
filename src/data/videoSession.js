@@ -5,7 +5,9 @@
      · 영상은 회원이 켠다(§0-V7) — 프로는 요청만 하고, 수락은 회원 화면에서만 일어난다.
        이 파일에 「프로가 연결한다」에 해당하는 함수는 존재하지 않는다.
      · 녹화하지 않는다(§0-V8) — 세션 레코드에 미디어 필드가 없다. 저장 경로 자체를 만들지 않는다.
-     · 요청도 접촉이다 — 락·동의·접촉 보류·시간대를 통과하지 못하면 요청이 생성되지 않는다.
+     · 요청도 접촉이다 — 락·동의·접촉 보류·재요청 한도를 통과하지 못하면 요청이 생성되지 않는다.
+     · 때를 정하는 쪽은 회원이다(형 지시 2026-09-04) — 시간대 제약은 없다. 다만 「없다」가
+       「아무 때나 걸어도 된다」는 뜻은 아니다. 먼저 여쭙고 회원이 좋다고 한 때가 상담 시간이다.
      · 규격 상수는 VIDEO_SPEC 단일 소스 — 화면·러너·관제가 같은 값을 읽는다(일수·횟수 하드코딩 분산 금지). */
 
 const VIDEO_SPEC = {
@@ -13,7 +15,9 @@ const VIDEO_SPEC = {
   startMode: "voice",                 /* 권고: 음성으로 시작해 영상으로 승격(첫 연결의 부담 완화) */
   reRequestMax: 1,                    /* 재요청 1회 한도 — 거절 후 같은 통화에서 다시 묻지 않는다 */
   ringSec: 45,                        /* 호출 대기 — 지나면 무응답 만료(거절과 다르게 집계) */
-  hourFrom: 9, hourTo: 20,            /* 가능 시간대(형 확정 대기 · 권고 09~20시) */
+  /* 시간대 상수 없음 — 회원이 원하는 때가 시간이다(형 확정 2026-09-04).
+     광고성 알림의 야간 미발송(21~08시)은 별개 규칙이고 그대로 살아 있다 — 그건 광고고 이건 상담이다.
+     상수를 남겨두지 않는 이유: 죽은 상수는 화면·하이 답변을 통해 없어진 규칙을 계속 말하게 된다. */
   summaryRequired: true,              /* 종료 시 요약 필수 — 요약 없이 세션이 닫히지 않는다 */
   recording: false,                   /* 녹화하지 않는다 — 이 값은 스위치가 아니라 명문이다 */
   consentKind: "v1",                  /* 영상 상담 이용 동의(V1에서 화면·문안 확정) */
@@ -49,7 +53,7 @@ const VS_EDGES = {
   declined:  [], expired: [], summarized: [],
 };
 
-/* ── 게이트 — 요청이 생성될 수 있는가(락·동의·접촉 보류·시간대·재요청 한도) ──
+/* ── 게이트 — 요청이 생성될 수 있는가(락·동의·접촉 보류·재요청 한도) ──
    반환의 ok가 false면 화면에 버튼이 없어야 한다(문구 숨김이 아니라 부재 — §0-V2와 같은 방식). */
 function vsGateOf(ref, opt) {
   const o = opt || {};
@@ -80,16 +84,12 @@ function vsGateOf(ref, opt) {
   try { has = (typeof consentHas === "function") ? consentHas(VIDEO_SPEC.consentKind, i) : false; } catch (e) {}
   if (!has) { out.code = "consent"; out.why = "「영상 상담 이용」 동의가 없어요 — 전화·문자로 안내드려요."; return out; }
 
-  /* ④ 시간대 — 야간 미발송 규칙과 정합 */
-  const h = (o.hour != null) ? Number(o.hour) : new Date().getHours();
-  if (h < VIDEO_SPEC.hourFrom || h >= VIDEO_SPEC.hourTo) {
-    out.code = "hour"; out.why = "영상 상담은 " + VIDEO_SPEC.hourFrom + "시~" + VIDEO_SPEC.hourTo + "시에만 요청할 수 있어요."; return out;
-  }
-
-  /* ⑤ 재요청 한도 — 거절 뒤 다시 묻지 않는다(무응답은 한도를 쓰지 않는다) */
-  const tried = Number(o.declinedCount || 0);
-  if (tried > VIDEO_SPEC.reRequestMax - 1 + 0) {
-    if (tried >= VIDEO_SPEC.reRequestMax) { out.code = "reask"; out.why = "이미 사양하셨어요 — 재요청은 " + VIDEO_SPEC.reRequestMax + "회까지예요."; return out; }
+  /* ④ 재요청 한도 — 거절 뒤 다시 묻지 않는다(무응답은 한도를 쓰지 않는다).
+     시간대 게이트를 걷어낸 뒤 이 한도가 접촉 총량의 유일한 제동이 되므로 실기록으로 배선한다
+     — 인자로만 받으면 호출부가 넘기지 않는 한 영영 발동하지 않는 유령 규칙이 된다(V6+ 적발). */
+  const tried = (o.declinedCount != null) ? Number(o.declinedCount) : vsDeclinedCount(ref);
+  if (tried >= VIDEO_SPEC.reRequestMax) {
+    out.code = "reask"; out.why = "이미 사양하셨어요 — 재요청은 " + VIDEO_SPEC.reRequestMax + "회까지예요."; return out;
   }
   out.ok = true; out.code = "open"; out.why = "요청 가능";
   return out;
@@ -120,8 +120,31 @@ function vsRequest(ref, opt) {
 }
 /* 수락·거절 — 회원만 호출한다. 프로 화면에는 이 두 함수를 부르는 버튼이 없다 */
 function vsAccept(sess) { return vsMove(sess, "connected", { by: "member" }); }
-function vsDecline(sess) { const r = vsMove(sess, "declined", { by: "member" }); if (r.ok) sess.declinedCount++; return r; }
+function vsDecline(sess, ref) { const r = vsMove(sess, "declined", { by: "member" }); if (r.ok) { sess.declinedCount++; vsDeclineRecord(ref); } return r; }
 function vsExpire(sess)  { return vsMove(sess, "expired", { by: "system" }); }
+
+/* 거절 이력 — 세션 객체는 화면을 닫으면 사라지므로, 한도가 실제로 작동하려면 남아야 한다.
+   기록하는 것은 「사양하셨다」는 사실과 날짜뿐 — 이유도 내용도 남기지 않는다. */
+const _VS_DECL_KEY = "hifin_video_decl_";
+function _vsRefKey(ref) {
+  if (ref == null) return null;
+  if (typeof ref === "number") return "i" + ref;
+  return ref.email ? String(ref.email) : null;
+}
+function vsDeclineRecord(ref) {
+  const k = _vsRefKey(ref); if (!k) return { ok: false };
+  try {
+    const key = _VS_DECL_KEY + k;
+    const l = JSON.parse(localStorage.getItem(key) || "[]");
+    l.push({ at: Date.now() });
+    localStorage.setItem(key, JSON.stringify(l));
+  } catch (e) {}
+  return { ok: true };
+}
+function vsDeclinedCount(ref) {
+  const k = _vsRefKey(ref); if (!k) return 0;
+  try { return (JSON.parse(localStorage.getItem(_VS_DECL_KEY + k) || "[]")).length; } catch (e) { return 0; }
+}
 
 /* 모드 — 낮추는 것은 언제나 허용, 올리는 것은 회원 조작으로만(§0-V7) */
 function vsSetMode(sess, mode, by) {
@@ -329,6 +352,9 @@ try {
         if (cmd === "spec")   return VIDEO_SPEC;
         if (cmd === "states") return { states: VS_STATES, edges: VS_EDGES };
         if (cmd === "gate")   return vsGateOf(a, b2 || {});
+        if (cmd === "declrec") return vsDeclineRecord(a);
+        if (cmd === "declcnt") return { n: vsDeclinedCount(a) };
+        if (cmd === "declclear") { try { localStorage.removeItem(_VS_DECL_KEY + _vsRefKey(a)); } catch (e) {} return { ok: true }; }
         if (cmd === "docs")   return { docs: VS_SHARE_DOCS, forbidden: String(VS_SHARE_FORBIDDEN) };
         if (cmd === "share")  return vsShareGate(a, (b2 && b2.i), b2 || {});
         if (cmd === "sumspec") return { spec: VS_SUMMARY_SPEC, parts: VS_SUMMARY_PARTS };

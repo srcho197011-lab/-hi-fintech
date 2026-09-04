@@ -21,10 +21,13 @@
   "shareBad": 0,
   "summBad": 0,
   "segBad": 0,
+  "hourBad": 0,
+  "hourProbe": 3432,
+  "hourNight": 2860,
   "drafts": 132,
   "shareDocs": 4,
   "t3cov": 0,
   "drift": 0,
-  "seconds": 29.9,
+  "seconds": 27.4,
   "pass": true
 }

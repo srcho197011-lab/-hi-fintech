@@ -48,7 +48,11 @@ seeds.push({ cat: "video", q: "영상 상담이 뭐예요" }, { cat: "video", q:
   { cat: "video", q: "영상 요청이 왜 안 돼요" }, { cat: "video", q: "화상 연결이 불가한 이유는" },
   { cat: "video", q: "개입 발행이 뭐예요" }, { cat: "video", q: "진료 완결은 언제 잡혀요" },
   { cat: "video", q: "원격진료 완결 어떻게 확인해요" }, { cat: "video", q: "영상 권장은 무슨 뜻이에요" },
-  { cat: "video", q: "카메라 켜야 하나요" });
+  { cat: "video", q: "카메라 켜야 하나요" },
+  /* 시간대 — 게이트에서 뺐으니 문항으로 지킨다(형 지시 2026-09-04) */
+  { cat: "video", q: "밤에도 영상 요청 돼요" }, { cat: "video", q: "야간에 영상 상담 가능해요" },
+  { cat: "video", q: "새벽에 영상 통화 되나요" }, { cat: "video", q: "영상 상담 시간 제한 있어요" },
+  { cat: "video", q: "몇 시까지 영상 요청할 수 있어요" }, { cat: "video", q: "영상 상담 시간대가 어떻게 돼요" });
 
 /* D2 골든타임·3종·케어 키트(F4) */
 seeds.push({ cat: "role", q: "골든타임에 뭘 말해요" }, { cat: "role", q: "골든타임이 뭐예요" }, { cat: "role", q: "무료 3종 뭐라고 안내해요" }, { cat: "role", q: "3종 서비스가 뭐예요" }, { cat: "role", q: "케어 키트가 뭐예요" }, { cat: "role", q: "케어 키트 구성은 어떻게 정해져요" });
@@ -103,12 +107,37 @@ for (const dz of ctxDz) {
   }, dz, FOLLOW_QS);
   for (const r of part) { n++; if (r.got === "care" && r.src && !r.none && r.hitDz) ok++; else if (fails.length < 12) fails.push(r); }
 }
+/* 시간대 문구 검사(형 지시 2026-09-04) — 분류가 맞아도 문장이 옛 규칙을 말하면 소용없다.
+   판정 기준은 내가 쓴 실제 문안에서 역으로 뽑는다(문안과 검사가 어긋나면 검사가 헛돈다). */
+const HOURQ = ["밤에도 영상 요청 돼요", "야간에 영상 상담 가능해요", "새벽에 영상 통화 되나요",
+  "영상 상담 시간 제한 있어요", "몇 시까지 영상 요청할 수 있어요", "영상 상담 시간대가 어떻게 돼요",
+  "영상 요청이 왜 안 돼요", "영상 상담이 뭐예요"];
+const hourChk = await p.evaluate((qs) => qs.map(q => { const r = window.__hifinHiPro(q) || {}; return { q, cat: r.cat || null, src: r.src || "", none: !!r.none, text: r.text || "" }; }), HOURQ);
+const hourBad = [];
+const OLD = /(9\s*시\s*~\s*20\s*시|20\s*시\s*(밖|까지|에만)|시간대\s*밖|시간대에만|막히는\s*이유는\s*다섯|undefined시)/;
+for (const r of hourChk) {
+  if (r.cat !== "video") hourBad.push("분류 이탈: " + r.q + " → " + r.cat);
+  if (!r.src || r.none) hourBad.push("원천 없음: " + r.q);
+  if (OLD.test(r.text)) hourBad.push("옛 시간대 문구 잔존: " + r.q + " → " + r.text.slice(0, 40));
+  /* 부재만으로는 부족 — 관련 답변 전건이 「정해진 시간대는 없다」를 실제로 말해야 한다 */
+  if (!/정해진\s*시간대는\s*없/.test(r.text)) hourBad.push("시간 무제한 미명시: " + r.q);
+}
+/* 형 원칙의 두 반쪽 — ①때를 정하는 쪽이 회원 ②그렇다고 약속 없는 심야 발신 허용은 아니다 */
+const hoursAns = hourChk.find(r => r.q === "영상 상담 시간 제한 있어요") || {};
+if (!/(때를\s*정하는\s*쪽이\s*회원|여쭤보시고|원하시는\s*때)/.test(hoursAns.text || "")) hourBad.push("「때를 정하는 쪽이 회원」이 답변에 없음");
+if (!/약속\s*없이\s*심야에\s*먼저\s*거는\s*건\s*원칙이\s*아니/.test(hoursAns.text || "")) hourBad.push("심야 콜드콜 경계가 답변에 없음");
+if (!/광고[\s\S]{0,40}(야간|밤\s*9)/.test(hoursAns.text || "")) hourBad.push("광고성 야간 미발송 규칙과의 구분이 없음");
+const gateAns = hourChk.find(r => r.q === "영상 요청이 왜 안 돼요") || {};
+if (!/막히는\s*이유는\s*넷/.test(gateAns.text || "")) hourBad.push("차단 사유가 넷으로 정리되지 않음");
+
 await b.close();
 
 const acc = (ok / n * 100).toFixed(2);
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
-const pass = Number(acc) >= 99;
+const pass = Number(acc) >= 99 && hourBad.length === 0;
 console.log(`[하이프로] ${n.toLocaleString()}문항 · 정답 ${ok.toLocaleString()} · 정확도 ${acc}% · ${secs}s → ${pass ? "PASS" : "FAIL"}`);
+console.log(`[시간대  ] 영상 문구 ${hourChk.length}건 검사 · 위반 ${hourBad.length}`);
 if (fails.length) for (const f of fails) console.error(" ×", JSON.stringify(f).slice(0, 180));
-writeFileSync(join(ROOT, "scripts/hipro_regression_snapshot.json"), JSON.stringify({ date: new Date().toISOString().slice(0, 10), n, ok, acc: Number(acc), seconds: Number(secs), pass }, null, 2) + "\n", "utf8");
+if (hourBad.length) for (const h of hourBad) console.error(" × 시간대", h);
+writeFileSync(join(ROOT, "scripts/hipro_regression_snapshot.json"), JSON.stringify({ date: new Date().toISOString().slice(0, 10), n, ok, acc: Number(acc), hourChecks: hourChk.length, hourBad: hourBad.length, seconds: Number(secs), pass }, null, 2) + "\n", "utf8");
 process.exit(pass ? 0 : 1);
