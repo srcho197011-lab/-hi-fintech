@@ -23,6 +23,10 @@ const HI_EVENT_DEFS = {
   family_linked:   { ko: "가족 연결",          stage: 3 },
   rx_received:     { ko: "처방 수령",          stage: 3 },
   mission_checked: { ko: "실천 미션 체크(복약·습관)", stage: 3 },   // P1 실사: adhCheck 실재(hifin_adh_*) — 등재
+  /* 영상 V5 — 「진료 연결」의 완결 정의 확정(2026-09-04). 법 시행 전 실재하는 회원 행동은
+     원격진료 「상담 접수」이며, 이것이 개입 clinic의 완결점이다(법 시행 후에는 rx_received가 더해진다).
+     회수는 「연결됨」 사실만 — 병원·의사·진료 내용은 프로에게 돌아가지 않는다(§0-V10·데이터 경계). */
+  tele_booked:     { ko: "원격진료 상담 접수", stage: 3 },
   /* 지시서 퍼널(P6) — 실재 UI 행동만: 발행=Today 보드 실노출(프로·일 1회), 접촉=원탭 기록. 완결은 위 트랜잭션 재사용 */
   handoff_issued:    { ko: "지시서 발행(Today 노출)", stage: 1 },
   handoff_contacted: { ko: "지시서 접촉(원탭 기록)",  stage: 2 },
@@ -37,6 +41,15 @@ const HI_EVENT_DEFS = {
   /* 동의 게이트(리뉴얼 R1 — v2 4겹) — 차단도 기록해 통제 작동을 숫자로 증명 */
   consent_granted:   { ko: "동의 취득·변경(종류별)", stage: 2 },
   consent_blocked:   { ko: "동의 게이트 차단(미보유 접근)", stage: 2 },
+  /* 영상 상담(영상 V5) — P1 실사 당시 「연결 저장 부재」로 등재 불가였던 항목이 세션 엔진·요약 기록으로 실재하게 되어 등재.
+     차단도 기록한다 — 통제가 작동함을 숫자로 보이기 위해(동의 게이트와 같은 방식). */
+  video_requested:    { ko: "영상 상담 요청(프로)", stage: 1 },
+  video_connected:    { ko: "영상 상담 연결(회원 수락)", stage: 2 },
+  video_declined:     { ko: "영상 상담 사양(회원)", stage: 2 },
+  video_blocked:      { ko: "영상 요청 차단(락·동의·보류·시간대)", stage: 2 },
+  video_shared:       { ko: "상담 중 화면 공유", stage: 2 },
+  video_summarized:   { ko: "영상 상담 요약 확정(회원 확인)", stage: 2 },
+  video_action_issued: { ko: "상담 중 개입 발행", stage: 2 },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };

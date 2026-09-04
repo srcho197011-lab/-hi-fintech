@@ -90,6 +90,7 @@ function HmCohortCard({ card, code, onDone, compact }) {
   const [vidOpen, setVidOpen] = React.useState(false);   /* 영상 V2 */
   let vg = { ok: false, code: "" };
   try { vg = vsGateOf(c.i, { hour: new Date().getHours() }); } catch (e) {}
+  let vfit = null; try { vfit = vsSegFit(c.i); } catch (e) {}   /* 영상 V5 — 채널 적합도 */
   return (
     <div className={"hmrow" + (locked ? " lock" : "")}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
@@ -116,7 +117,8 @@ function HmCohortCard({ card, code, onDone, compact }) {
       <div style={{ display: "flex", gap: 6, marginTop: 7, alignItems: "center" }}>
         <button className="hmbtn" style={{ padding: "5px 11px", fontSize: 11 }} disabled={locked} onClick={() => { const r = hmcTouch(code, c.i, "코호트 접촉"); if (onDone) onDone(r); }}><Phone size={11} /> 연결하기</button>
         {vg.ok
-          ? <button className="hmbtn gh" style={{ padding: "5px 11px", fontSize: 11 }} onClick={() => setVidOpen(true)}><Video size={11} /> 영상 상담 요청</button>
+          ? <><button className="hmbtn gh" style={{ padding: "5px 11px", fontSize: 11 }} onClick={() => setVidOpen(true)}><Video size={11} /> 영상 상담 요청</button>
+              {vfit && vfit.fit === "high" && <span className="hmpill" style={{ background: "#EFF6FF", color: "#1D4ED8", fontSize: 10.2 }} title={vfit.why}>📹 영상 권장 · {vfit.seg}</span>}</>
           : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.2 }} title={vg.why || ""}>📹 {vg.code === "consent" ? "영상 동의 없음" : vg.code === "lock" ? "접촉 락" : vg.code === "hour" ? "시간대 밖" : vg.code === "hold" ? "접촉 보류" : "요청 불가"}</span>}
         <span style={{ fontSize: 10.3, color: HM_C.mut }}>{locked ? "결과 수령 대기 — 시스템이 자동 해제" : "시연 기록(세션) — 새로고침 시 초기화"}</span>
       </div>
@@ -252,6 +254,12 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   const decline = () => { try { vsDecline(sess); } catch (e) {} onDone({ result: "사양", state: "declined" }); onClose(); };
   const setM = (k) => { const r = vsSetMode(sess, k, "member"); if (r.ok) { setMode(r.mode); setDegraded(false); } else setErr(r.why); };
   const degrade = () => { const r = vsDegrade(sess); if (r.ok) { setMode(r.mode); setDegraded(true); } };
+  const [issued, setIssued] = React.useState([]);        /* 영상 V5 — 발행한 개입 */
+  const issue = (k) => {
+    const r = vsIssueAction(sess, k, subject);
+    if (!r.ok) { setErr(r.why); return; }
+    setErr(""); setIssued((a2) => a2.concat({ k: k, ko: r.ko, nav: r.nav }));
+  };
   const share = (k) => {
     const r = vsShareDoc(sess, k, subject, { hour: new Date().getHours() });
     if (!r.ok) { setErr(r.why); return; }
@@ -261,7 +269,7 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   const confirm = () => {
     const r = vsSummarize(sess, note, true);
     if (!r.ok) { setErr(r.why); return; }
-    onDone({ result: "상담완료", state: "summarized", summary: note, mode: mode, shared: shared.slice() });
+    onDone({ result: "상담완료", state: "summarized", summary: note, mode: mode, shared: shared.slice(), issued: issued.map((x) => x.k) });
     setStage("done"); setTimeout(onClose, 900);
   };
 
@@ -318,6 +326,19 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
               })}
             </div>
             {shared.length > 0 && <div style={{ fontSize: 10.3, color: "#15803D", marginTop: 6 }}>띄운 화면 {shared.length}개 — 요약에 함께 기록돼요</div>}
+          </div>
+          <div style={{ marginTop: 11, borderTop: "1px dashed #E2E8F0", paddingTop: 9 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 6 }}>🧭 다음 할 일 발행 <span style={{ fontWeight: 600, color: "#94A3B8" }}>· 가리킬 뿐 대신 하지 않아요(§0-V10)</span></div>
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {((card && card.actions) || []).slice(0, 3).map((a3) => {
+                const on = issued.some((x) => x.k === a3.key);
+                return <button key={a3.key} className={"hmbtn" + (on ? "" : " gh")} style={{ fontSize: 10.5, padding: "4px 10px" }}
+                  title={a3.evNote || ""} onClick={() => issue(a3.key)}>{on ? "✓ " : ""}{a3.ko}</button>;
+              })}
+              {!(card && card.actions && card.actions.length) && <span style={{ fontSize: 10.6, color: "#94A3B8" }}>이 회원의 권장 개입이 없어요</span>}
+            </div>
+            {issued.length > 0 && <div style={{ fontSize: 10.4, color: "#15803D", marginTop: 6 }}>
+              발행 {issued.length}건 — 회원 앱의 「{issued.map((x) => x.ko).join(" · ")}」 화면으로 가는 길이 열렸어요. 실행은 회원이 해요.</div>}
           </div>
           <div style={{ marginTop: 10, background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, padding: "7px 10px", fontSize: 10.8, color: "#9A3412", lineHeight: 1.65 }}>
             이 화면에서 진료·검진·구매가 일어나지 않아요 — 필요한 활동은 <b>개입으로 발행</b>하고 회원이 자기 앱에서 해요.<br />
@@ -1023,7 +1044,16 @@ function HmHandoffCard({ ent, code, onToast }) {
       {/* 발밑 표시 4종 — 호버 툴팁(형 지시 2026-09-01 · 설명서 부록과 같은 문안) */}
       <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11.4, color: "#475569", alignItems: "center" }}>
         <b style={{ color: g.c, cursor: "help" }} title="카드 발행 후 이 시간 안에 첫 접촉이 이뤄져야 해요 — 회원의 위험 등급이 시한을 정해요. 넘기면 「응답 시한 임박」 칸과 ⑩관제탑 준수율 집계에 잡혀요.">⏱ {c.timing.sla}</b>
-        <span style={{ cursor: "help" }} title="통화만 하면 '접촉'이에요 — 1순위 개입이 실제 행동(예약·등록 등 데이터)으로 이어져야 '완결'로 집계돼요. (등재 대기)는 그 행동을 자동으로 잡을 데이터가 아직 공식 등재 전이라 접촉 기록으로 임시 대체 중이라는 정직한 표시예요.">완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
+        <span style={{ cursor: "help" }} title="통화만 하면 '접촉'이에요 — 1순위 개입이 실제 행동(예약·등록 등 데이터)으로 이어져야 '완결'로 집계돼요.">완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
+        {/* 영상 V5 — 진료 연결 완결 회수. 「연결됨」 사실만 돌아온다(병원·진료과·내용은 오지 않음) */}
+        {(() => {
+          if (!c.actions[0] || c.actions[0].key !== "clinic") return null;
+          let td = { done: false };
+          try { td = teleDoneOf(c.member && c.member.email ? c.member : { email: (c.member || {}).email }); } catch (e) {}
+          return td.done
+            ? <span className="hmpill" style={{ background: "#F0FDF4", color: "#15803D" }} title="회원이 원격진료 상담을 접수했다는 사실만 돌아와요 — 어느 병원에서 무엇을 진료했는지는 프로에게 오지 않아요(§0-V10·데이터 경계).">🏁 진료 연결 완결 · {td.at}</span>
+            : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut }} title="회원이 원격진료 상담을 접수하면 여기에 「연결됨」이 표시돼요. 진료 내용은 표시되지 않아요.">완결 대기 — 회원 행동</span>;
+        })()}
         <span style={{ color: "#15803D", fontWeight: 700, cursor: "help" }} title="이 카드의 대본이 발행 전 자동 검사 3종을 통과했어요: ①원본 검진 수치 누출 0(구간 표현만) ②빈칸(미치환 슬롯) 0 ③금지어(진단 단정·공포 조장·권유·금액 흥정) 0 — 하나라도 걸리면 카드가 발행되지 않아요.">🛡 경계 3종 통과</span>
         <span style={{ cursor: "help" }} title="시한 안에 접촉했지만 완결까지 못 갔으면 7일 뒤 명단에 다시 올라와요. 거절한 회원은 30일 쉬고, 완결된 회원은 다시 오지 않아요.">{c.timing.requeue}</span>
         <button className="hmbtn gh" style={{ marginLeft: "auto", padding: "5px 12px", fontSize: 11.6, borderColor: g.c, color: g.c }} onClick={() => setSheet(true)}>📝 결과 남기기</button>

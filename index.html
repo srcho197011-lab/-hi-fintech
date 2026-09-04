@@ -2645,7 +2645,10 @@ function SpecialistChat({ checkupMode }) {
   const reply = () => { if (!sel) return; const canned = `말씀 주신 내용 잘 확인했습니다. ${sel.dept} 관점에서는 ${sel.tags[0]} 관련 정기적 관찰과 생활관리가 우선이며, 필요 시 정밀검사를 권합니다. 정확한 진단·처방은 화상상담 또는 ${sel.hosp} 내원 진료로 도와드리겠습니다.`; setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: canned, first: true, time: now() }]); }, 1300); };
   const send = (textArg) => { const text = (textArg ?? input).trim(); if (!text || !sel) return; setInput(""); setPlus(false); setMsgs((m) => [...m, { id: ++UID, who: "me", kind: "text", text, time: now() }]); reply(); };
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); reply(); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
-  const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 원격진료 상담이 접수되었습니다.\n현재는 내원 예약 목적의 상담만 가능해요 — 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다.\n비대면진료 제도화 법령이 시행되면 같은 접수 그대로 진료·처방까지 원격으로 진행되고, ${(typeof _member === "function" && _member()) ? _member().name : "회원"}님은 우선 연결 대상으로 등록돼요. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 ${sel.hosp} 원격진료 상담 접수(내원 연계) · 상담내역 전달`); };
+  const book = () => { if (booked || !sel) return; setBooked(true); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `✅ ${sel.hosp}(${sel.sigungu}) 원격진료 상담이 접수되었습니다.\n현재는 내원 예약 목적의 상담만 가능해요 — 상담 내역과 첨부 자료가 ${sel.name}께 전달되며, 방문일에 정밀검사·진료로 연계됩니다.\n비대면진료 제도화 법령이 시행되면 같은 접수 그대로 진료·처방까지 원격으로 진행되고, ${(typeof _member === "function" && _member()) ? _member().name : "회원"}님은 우선 연결 대상으로 등록돼요. 방문·진료 시 건강지갑 적립도 함께 제공됩니다.`, first: true, time: now() }]); if (typeof toast === "function") toast(`🏥 ${sel.hosp} 원격진료 상담 접수(내원 연계) · 상담내역 전달`);
+    /* 영상 V5 — 완결 기록. 프로 카드가 「연결됨」을 회수하는 유일한 근거(teleDoneOf가 사실만 꺼낸다) */
+    try { const mm = (typeof _member === "function") ? _member() : null;
+      if (mm && typeof teleBookRecord === "function") teleBookRecord(mm, { hosp: sel.hosp, dept: sel.dept }); } catch (e) {} };
   /* U1·U4 — 원격상담 시작: 접수는 별도 화면 없이 스트림 카드로, 화상은 선택(나중에 '화상 켜기'로 승격) */
   const startConsult = (withVideo) => {
     if (!sel) return;
@@ -18741,6 +18744,7 @@ function HmCohortCard({ card, code, onDone, compact }) {
   const [vidOpen, setVidOpen] = React.useState(false);   /* 영상 V2 */
   let vg = { ok: false, code: "" };
   try { vg = vsGateOf(c.i, { hour: new Date().getHours() }); } catch (e) {}
+  let vfit = null; try { vfit = vsSegFit(c.i); } catch (e) {}   /* 영상 V5 — 채널 적합도 */
   return (
     <div className={"hmrow" + (locked ? " lock" : "")}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
@@ -18767,7 +18771,8 @@ function HmCohortCard({ card, code, onDone, compact }) {
       <div style={{ display: "flex", gap: 6, marginTop: 7, alignItems: "center" }}>
         <button className="hmbtn" style={{ padding: "5px 11px", fontSize: 11 }} disabled={locked} onClick={() => { const r = hmcTouch(code, c.i, "코호트 접촉"); if (onDone) onDone(r); }}><Phone size={11} /> 연결하기</button>
         {vg.ok
-          ? <button className="hmbtn gh" style={{ padding: "5px 11px", fontSize: 11 }} onClick={() => setVidOpen(true)}><Video size={11} /> 영상 상담 요청</button>
+          ? <><button className="hmbtn gh" style={{ padding: "5px 11px", fontSize: 11 }} onClick={() => setVidOpen(true)}><Video size={11} /> 영상 상담 요청</button>
+              {vfit && vfit.fit === "high" && <span className="hmpill" style={{ background: "#EFF6FF", color: "#1D4ED8", fontSize: 10.2 }} title={vfit.why}>📹 영상 권장 · {vfit.seg}</span>}</>
           : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.2 }} title={vg.why || ""}>📹 {vg.code === "consent" ? "영상 동의 없음" : vg.code === "lock" ? "접촉 락" : vg.code === "hour" ? "시간대 밖" : vg.code === "hold" ? "접촉 보류" : "요청 불가"}</span>}
         <span style={{ fontSize: 10.3, color: HM_C.mut }}>{locked ? "결과 수령 대기 — 시스템이 자동 해제" : "시연 기록(세션) — 새로고침 시 초기화"}</span>
       </div>
@@ -18903,6 +18908,12 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   const decline = () => { try { vsDecline(sess); } catch (e) {} onDone({ result: "사양", state: "declined" }); onClose(); };
   const setM = (k) => { const r = vsSetMode(sess, k, "member"); if (r.ok) { setMode(r.mode); setDegraded(false); } else setErr(r.why); };
   const degrade = () => { const r = vsDegrade(sess); if (r.ok) { setMode(r.mode); setDegraded(true); } };
+  const [issued, setIssued] = React.useState([]);        /* 영상 V5 — 발행한 개입 */
+  const issue = (k) => {
+    const r = vsIssueAction(sess, k, subject);
+    if (!r.ok) { setErr(r.why); return; }
+    setErr(""); setIssued((a2) => a2.concat({ k: k, ko: r.ko, nav: r.nav }));
+  };
   const share = (k) => {
     const r = vsShareDoc(sess, k, subject, { hour: new Date().getHours() });
     if (!r.ok) { setErr(r.why); return; }
@@ -18912,7 +18923,7 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   const confirm = () => {
     const r = vsSummarize(sess, note, true);
     if (!r.ok) { setErr(r.why); return; }
-    onDone({ result: "상담완료", state: "summarized", summary: note, mode: mode, shared: shared.slice() });
+    onDone({ result: "상담완료", state: "summarized", summary: note, mode: mode, shared: shared.slice(), issued: issued.map((x) => x.k) });
     setStage("done"); setTimeout(onClose, 900);
   };
 
@@ -18969,6 +18980,19 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
               })}
             </div>
             {shared.length > 0 && <div style={{ fontSize: 10.3, color: "#15803D", marginTop: 6 }}>띄운 화면 {shared.length}개 — 요약에 함께 기록돼요</div>}
+          </div>
+          <div style={{ marginTop: 11, borderTop: "1px dashed #E2E8F0", paddingTop: 9 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 6 }}>🧭 다음 할 일 발행 <span style={{ fontWeight: 600, color: "#94A3B8" }}>· 가리킬 뿐 대신 하지 않아요(§0-V10)</span></div>
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {((card && card.actions) || []).slice(0, 3).map((a3) => {
+                const on = issued.some((x) => x.k === a3.key);
+                return <button key={a3.key} className={"hmbtn" + (on ? "" : " gh")} style={{ fontSize: 10.5, padding: "4px 10px" }}
+                  title={a3.evNote || ""} onClick={() => issue(a3.key)}>{on ? "✓ " : ""}{a3.ko}</button>;
+              })}
+              {!(card && card.actions && card.actions.length) && <span style={{ fontSize: 10.6, color: "#94A3B8" }}>이 회원의 권장 개입이 없어요</span>}
+            </div>
+            {issued.length > 0 && <div style={{ fontSize: 10.4, color: "#15803D", marginTop: 6 }}>
+              발행 {issued.length}건 — 회원 앱의 「{issued.map((x) => x.ko).join(" · ")}」 화면으로 가는 길이 열렸어요. 실행은 회원이 해요.</div>}
           </div>
           <div style={{ marginTop: 10, background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 8, padding: "7px 10px", fontSize: 10.8, color: "#9A3412", lineHeight: 1.65 }}>
             이 화면에서 진료·검진·구매가 일어나지 않아요 — 필요한 활동은 <b>개입으로 발행</b>하고 회원이 자기 앱에서 해요.<br />
@@ -19674,7 +19698,16 @@ function HmHandoffCard({ ent, code, onToast }) {
       {/* 발밑 표시 4종 — 호버 툴팁(형 지시 2026-09-01 · 설명서 부록과 같은 문안) */}
       <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11.4, color: "#475569", alignItems: "center" }}>
         <b style={{ color: g.c, cursor: "help" }} title="카드 발행 후 이 시간 안에 첫 접촉이 이뤄져야 해요 — 회원의 위험 등급이 시한을 정해요. 넘기면 「응답 시한 임박」 칸과 ⑩관제탑 준수율 집계에 잡혀요.">⏱ {c.timing.sla}</b>
-        <span style={{ cursor: "help" }} title="통화만 하면 '접촉'이에요 — 1순위 개입이 실제 행동(예약·등록 등 데이터)으로 이어져야 '완결'로 집계돼요. (등재 대기)는 그 행동을 자동으로 잡을 데이터가 아직 공식 등재 전이라 접촉 기록으로 임시 대체 중이라는 정직한 표시예요.">완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
+        <span style={{ cursor: "help" }} title="통화만 하면 '접촉'이에요 — 1순위 개입이 실제 행동(예약·등록 등 데이터)으로 이어져야 '완결'로 집계돼요.">완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
+        {/* 영상 V5 — 진료 연결 완결 회수. 「연결됨」 사실만 돌아온다(병원·진료과·내용은 오지 않음) */}
+        {(() => {
+          if (!c.actions[0] || c.actions[0].key !== "clinic") return null;
+          let td = { done: false };
+          try { td = teleDoneOf(c.member && c.member.email ? c.member : { email: (c.member || {}).email }); } catch (e) {}
+          return td.done
+            ? <span className="hmpill" style={{ background: "#F0FDF4", color: "#15803D" }} title="회원이 원격진료 상담을 접수했다는 사실만 돌아와요 — 어느 병원에서 무엇을 진료했는지는 프로에게 오지 않아요(§0-V10·데이터 경계).">🏁 진료 연결 완결 · {td.at}</span>
+            : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut }} title="회원이 원격진료 상담을 접수하면 여기에 「연결됨」이 표시돼요. 진료 내용은 표시되지 않아요.">완결 대기 — 회원 행동</span>;
+        })()}
         <span style={{ color: "#15803D", fontWeight: 700, cursor: "help" }} title="이 카드의 대본이 발행 전 자동 검사 3종을 통과했어요: ①원본 검진 수치 누출 0(구간 표현만) ②빈칸(미치환 슬롯) 0 ③금지어(진단 단정·공포 조장·권유·금액 흥정) 0 — 하나라도 걸리면 카드가 발행되지 않아요.">🛡 경계 3종 통과</span>
         <span style={{ cursor: "help" }} title="시한 안에 접촉했지만 완결까지 못 갔으면 7일 뒤 명단에 다시 올라와요. 거절한 회원은 30일 쉬고, 완결된 회원은 다시 오지 않아요.">{c.timing.requeue}</span>
         <button className="hmbtn gh" style={{ marginLeft: "auto", padding: "5px 12px", fontSize: 11.6, borderColor: g.c, color: g.c }} onClick={() => setSheet(true)}>📝 결과 남기기</button>
@@ -25901,7 +25934,7 @@ const RISK_GRADE_META = {
 
 /* 개입 사전 — 유형 7종(v1.3 §3 actions.유형) */
 const INTERVENTIONS = {
-  clinic:  { ko: "진료 연결",   nav: "tele",     ev: "consult_logged", evNote: "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록", type: "연결형" },
+  clinic:  { ko: "진료 연결",   nav: "tele",     ev: "tele_booked",    evNote: "원격진료 상담 접수 [실재·V5 확정] — 회수는 「연결됨」 사실만", type: "연결형" },
   recheck: { ko: "재검진 예약", nav: "checkup",  ev: "cert_issued",    evNote: "검진 예약·증서 발행 [실재]", type: "실행형" },
   diet:    { ko: "식단 조정",   nav: "shop",     ev: "sub_registered", evNote: "식단 상품 정기 등록 [실재] — 플랜 활성 이벤트는 등재 대기", type: "실행형" },
   supp:    { ko: "영양 보충",   nav: "shop",     ev: "sub_registered", evNote: "영양제 정기 등록 [실재] · 상호작용 확인 문구 필수", type: "실행형" },
@@ -25953,7 +25986,7 @@ function interventionsFor(grade, groupKey) {
 }
 
 /* 자동 생성 — run_handoff_harness.mjs (P4). 콘솔 하네스 타일이 읽는 최근 통과 스냅샷 — 손대지 말 것 */
-const HM_HARNESS_SNAPSHOT = {"date":"2026-09-03","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
+const HM_HARNESS_SNAPSHOT = {"date":"2026-09-04","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
 
 /* 자동 생성 — run_handoff_batch.mjs (P5). ⑩관제탑이 읽는 배치 스냅샷 — 손대지 말 것(운영 정합 §7-⑥: 관제탑 집계 = 이 스냅샷 = 배치 리포트). */
 const HM_OPS_SNAPSHOT = {"date":"2026-09-02","total":100000,"cards":56945,"publishable":56945,"locked":32855,"byGrade":{"H":6300,"-":43055,"L":46292,"M":4353},"bySido":{"충북":1746,"경북":2987,"서울":10880,"부산":4146,"전북":1691,"경기":13271,"대전":1763,"충남":2515,"울산":1237,"전남":1920,"강원":1792,"인천":3716,"광주":1648,"대구":2882,"경남":2941,"제주":1152,"세종":658},"pros":648,"prosAll":702,"sabunOk":true,"rosterChecked":648,"rosterViol":0,"avgRoster":6.97,"maxRoster":7,"byRosterGrade":{"H":3209,"L":930,"M":377},"loadAvg":154.3,"loadRatioMax":1.29,"loadRatioMin":0.91,"loadBySido":[{"sido":"강원","pros":16,"perPro":199.5,"ratio":1.29},{"sido":"세종","pros":6,"perPro":190.7,"ratio":1.24},{"sido":"충북","pros":17,"perPro":184.9,"ratio":1.2},{"sido":"울산","pros":13,"perPro":165.8,"ratio":1.07},{"sido":"인천","pros":41,"perPro":161,"ratio":1.04},{"sido":"부산","pros":46,"perPro":160.8,"ratio":1.04},{"sido":"전남","pros":21,"perPro":159.5,"ratio":1.03},{"sido":"충남","pros":28,"perPro":155.8,"ratio":1.01},{"sido":"경기","pros":149,"perPro":155.5,"ratio":1.01},{"sido":"대전","pros":20,"perPro":155.1,"ratio":1},{"sido":"경북","pros":34,"perPro":153.3,"ratio":0.99},{"sido":"광주","pros":19,"perPro":153.2,"ratio":0.99},{"sido":"경남","pros":34,"perPro":152.7,"ratio":0.99},{"sido":"제주","pros":14,"perPro":144.3,"ratio":0.93},{"sido":"서울","pros":133,"perPro":143.4,"ratio":0.93},{"sido":"대구","pros":35,"perPro":143.3,"ratio":0.93},{"sido":"전북","pros":21,"perPro":140.9,"ratio":0.91}],"seconds":68.9,"pass":true};
@@ -27303,7 +27336,7 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
-const HIFIN_KEYS_PREFIX = ["hifin_access_log_", "hifin_adh_", "hifin_agent_mem_", "hifin_bills_", "hifin_careguard_", "hifin_careloop_", "hifin_careplan_", "hifin_chk_editlog_", "hifin_chk_edits_", "hifin_claim_used_", "hifin_consent_nft_", "hifin_famauto_", "hifin_famconsent_", "hifin_family_", "hifin_famlink_", "hifin_famspend_", "hifin_famtask_", "hifin_g2_", "hifin_g4_", "hifin_handoff_issued_", "hifin_hi_esc_", "hifin_hi_followups_", "hifin_hi_state_", "hifin_hi_welcomed_", "hifin_hm_resultseen_", "hifin_hm_rr_", "hifin_hm_stagecache_", "hifin_hm_touch_", "hifin_htk_tl_", "hifin_htkbal_", "hifin_leads_", "hifin_policies_", "hifin_price_", "hifin_pu_done_", "hifin_ref_", "hifin_ref_by_", "hifin_ref_done_", "hifin_reports_", "hifin_rpm_ack_", "hifin_shop_htk_", "hifin_shop_orders_", "hifin_soap_", "hifin_sub_due_seen_", "hifin_subs_", "hifin_topup_orders_", "hifin_vault_", "hifin_vault_v2_", "hifin_vaultlog_", "pi_seq_", "hifin_backup_", "hifin_handoff_result_"];
+const HIFIN_KEYS_PREFIX = ["hifin_access_log_", "hifin_adh_", "hifin_agent_mem_", "hifin_bills_", "hifin_careguard_", "hifin_careloop_", "hifin_careplan_", "hifin_chk_editlog_", "hifin_chk_edits_", "hifin_claim_used_", "hifin_consent_nft_", "hifin_famauto_", "hifin_famconsent_", "hifin_family_", "hifin_famlink_", "hifin_famspend_", "hifin_famtask_", "hifin_g2_", "hifin_g4_", "hifin_handoff_issued_", "hifin_hi_esc_", "hifin_hi_followups_", "hifin_hi_state_", "hifin_hi_welcomed_", "hifin_hm_resultseen_", "hifin_hm_rr_", "hifin_hm_stagecache_", "hifin_hm_touch_", "hifin_htk_tl_", "hifin_htkbal_", "hifin_leads_", "hifin_policies_", "hifin_price_", "hifin_pu_done_", "hifin_ref_", "hifin_ref_by_", "hifin_ref_done_", "hifin_reports_", "hifin_rpm_ack_", "hifin_shop_htk_", "hifin_shop_orders_", "hifin_soap_", "hifin_sub_due_seen_", "hifin_subs_", "hifin_topup_orders_", "hifin_vault_", "hifin_vault_v2_", "hifin_vaultlog_", "pi_seq_", "hifin_backup_", "hifin_handoff_result_", "hifin_tele_booked_"];
 
 /* 키 그룹 규약(네임스페이스) — 새 키는 이 그룹 접두 중 하나를 따라야 한다(D-1 규약) */
 const HIFIN_KEY_GROUPS = [
@@ -28180,14 +28213,16 @@ function vsMove(sess, to, meta) {
   sess.state = to;
   sess.trail.push({ to: to, at: (meta && meta.at) || null, by: (meta && meta.by) || "" });
   if (to === "connected") sess.mode = sess.mode || VIDEO_SPEC.startMode;
-  try { hiEvent("video_state", { to: to }); } catch (e) {}
+  /* 등재된 이름·화이트리스트 키(kind)만 쓴다 — 그 밖의 이름은 hiEvent가 조용히 버린다(§9) */
+  try { const EV = { requested: "video_requested", connected: "video_connected", declined: "video_declined", summarized: "video_summarized" };
+    if (EV[to]) hiEvent(EV[to], { kind: to }); } catch (e) {}
   return { ok: true, state: to };
 }
 
 /* 요청 — 프로가 할 수 있는 유일한 시작 행위(§0-V7). 게이트를 통과하지 못하면 세션이 생기지 않는다 */
 function vsRequest(ref, opt) {
   const g = vsGateOf(ref, opt);
-  if (!g.ok) { try { hiEvent("video_blocked", { code: g.code }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
+  if (!g.ok) { try { hiEvent("video_blocked", { kind: g.code }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
   const sess = { state: "idle", mode: null, trail: [], shared: [], summary: null,
                  declinedCount: Number((opt && opt.declinedCount) || 0) };
   vsMove(sess, "requested", { by: "pro" });
@@ -28205,7 +28240,7 @@ function vsSetMode(sess, mode, by) {
   if (nx < 0) return { ok: false, why: "알 수 없는 모드예요" };
   if (nx > cur && by !== "member") return { ok: false, why: "영상은 회원이 켜요 — 프로는 요청만 할 수 있어요." };
   sess.mode = mode;
-  try { hiEvent("video_mode", { mode: mode, by: by || "" }); } catch (e) {}
+  try { hiEvent("video_connected", { kind: "mode-" + mode }); } catch (e) {}
   return { ok: true, mode: mode };
 }
 /* 품질 저하 폴백 — 시스템이 자동으로 낮춘다(올리지는 않는다) */
@@ -28214,7 +28249,7 @@ function vsDegrade(sess) {
   const cur = VIDEO_SPEC.modes.indexOf(sess.mode);
   if (cur <= 0) return { ok: false, why: "더 낮출 수 없어요" };
   sess.mode = VIDEO_SPEC.modes[cur - 1];
-  try { hiEvent("video_degrade", { mode: sess.mode }); } catch (e) {}
+  try { hiEvent("video_connected", { kind: "degrade-" + sess.mode }); } catch (e) {}
   return { ok: true, mode: sess.mode };
 }
 
@@ -28248,8 +28283,12 @@ function vsSummaryDraft(sess, card) {
   const parts = [VS_SUMMARY_PARTS.head];
   const sh = (sess && sess.shared) || [];
   if (sh.length) parts.push(VS_SUMMARY_PARTS.share + sh.map((k) => (VS_SHARE_DOCS[k] || {}).ko || k).join(" · ") + ".");
-  const act = card && card.actions && card.actions[0];
-  if (act && act.ko) parts.push(VS_SUMMARY_PARTS.act.replace("{개입}", act.ko));
+  /* 발행한 개입이 있으면 그것을, 없으면 권장 1순위를 적는다 — 어느 쪽이든 실제로 있었던 것만 */
+  const iss = (sess && sess.issued) || [];
+  const names = iss.length
+    ? iss.map((k) => ((typeof INTERVENTIONS !== "undefined" && INTERVENTIONS[k]) || {}).ko || k)
+    : (card && card.actions && card.actions[0] ? [card.actions[0].ko] : []);
+  if (names.length) parts.push(VS_SUMMARY_PARTS.act.replace("{개입}", names.join(" · ")));
   parts.push(VS_SUMMARY_PARTS.tail);
   let t = parts.join(" ");
   if (t.length > VS_SUMMARY_SPEC.maxLen) t = parts.slice(0, 3).join(" ");
@@ -28311,9 +28350,9 @@ function vsShareGate(key, ref, opt) {
 function vsShareDoc(sess, key, ref, opt) {
   if (!sess || sess.state !== "connected") return { ok: false, why: "연결 중에만 화면을 띄울 수 있어요" };
   const g = vsShareGate(key, ref, opt);
-  if (!g.ok) { try { hiEvent("video_share_blocked", { doc: key, code: g.code }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
+  if (!g.ok) { try { hiEvent("video_blocked", { kind: "share-" + g.code, key: key }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
   sess.shared.push(key);
-  try { hiEvent("video_share", { doc: key }); } catch (e) {} 
+  try { hiEvent("video_shared", { key: key }); } catch (e) {} 
   return { ok: true, doc: key, ko: VS_SHARE_DOCS[key].ko };
 }
 
@@ -28332,6 +28371,65 @@ function vsNoMediaScan(sess) {
   return { ok: bad.length === 0, bad: bad };
 }
 
+/* ══ 세그먼트 연결(영상 V5) ══════════════════════════════════════════════
+   영상은 채널일 뿐이고, 활동은 개입이 잇는다(§0-V10). 이 절이 하는 일은 셋이다.
+     ① 어떤 자리에서 영상이 값진가 — 새 세그먼트를 만들지 않고 기존 G에 적합도만 얹는다.
+     ② 통화 중 개입 발행 — 발행이지 실행이 아니다. 회원이 자기 앱에서 한다.
+     ③ 완결 회수 — 「연결됨」 사실만 돌아온다. 무엇을 진료했는지는 돌아오지 않는다. */
+
+/* ① 채널 적합도 — 함께 볼 것이 있는 자리에서 영상의 값이 생긴다 */
+const VS_SEG_FIT = {
+  G2:  { fit: "high", why: "결과 리포트를 함께 본다 — 이 채널의 최대 가치" },
+  G12: { fit: "high", why: "겹치는 계약 표는 말로 설명하기 가장 어렵다" },
+  G3:  { fit: "high", why: "보장맵을 함께 본다(공유는 §0-V9 게이트를 통과해야 한다)" },
+  G14: { fit: "mid",  why: "오래 끊긴 관계의 재연결에는 목소리보다 얼굴" },
+  G8:  { fit: "none", why: "접촉 보류 — 채널이 늘었다고 접촉 총량이 늘지 않는다" },
+};
+function vsSegFit(i) {
+  let segs = [];
+  try { const g = gSegOf(i); segs = (g && g.segs) || []; } catch (e) {}
+  if (segs.indexOf("G8") >= 0) return { fit: "none", seg: "G8", why: VS_SEG_FIT.G8.why };
+  for (const k of ["G2", "G12", "G3", "G14"]) if (segs.indexOf(k) >= 0) return Object.assign({ seg: k }, VS_SEG_FIT[k]);
+  return { fit: "low", seg: segs[0] || null, why: "전화로 충분한 자리 — 영상은 부담이 될 수 있다" };
+}
+
+/* ② 개입 발행 — 통화 중에 「가리키는」 행위. 여기서 활동이 실행되지 않는다 */
+function vsIssueAction(sess, key, ref) {
+  if (!sess || sess.state !== "connected") return { ok: false, why: "연결 중에만 발행할 수 있어요" };
+  const iv = (typeof INTERVENTIONS !== "undefined") ? INTERVENTIONS[key] : null;
+  if (!iv) return { ok: false, why: "등재되지 않은 개입이에요" };
+  sess.issued = sess.issued || [];
+  if (sess.issued.indexOf(key) >= 0) return { ok: false, why: "이미 발행했어요" };
+  sess.issued.push(key);
+  try { hiEvent("video_action_issued", { key: key, nav: iv.nav }); } catch (e) {}
+  return { ok: true, key: key, ko: iv.ko, nav: iv.nav, tab: iv.tab || null, ev: iv.ev,
+           note: "회원 앱의 「" + iv.ko + "」 화면으로 가는 길이 열렸어요 — 실행은 회원이 해요." };
+}
+
+/* ③ 완결 회수 — 저장은 회원의 것이고, 프로가 꺼내는 것은 사실뿐이다 */
+const _VS_TELE_KEY = "hifin_tele_booked_";
+function teleBookRecord(m, meta) {
+  if (!m || !m.email) return { ok: false };
+  try {
+    const k = _VS_TELE_KEY + m.email;
+    const l = JSON.parse(localStorage.getItem(k) || "[]");
+    l.push({ at: Date.now(), hosp: (meta && meta.hosp) || "", dept: (meta && meta.dept) || "" });
+    localStorage.setItem(k, JSON.stringify(l));
+  } catch (e) {}
+  try { hiEvent("tele_booked", { via: (meta && meta.via) || "member" }); } catch (e) {}
+  return { ok: true };
+}
+/* 프로가 읽는 회수 — 병원·진료과·내용은 반환하지 않는다(§0-V10·데이터 경계) */
+function teleDoneOf(m) {
+  if (!m || !m.email) return { done: false };
+  try {
+    const l = JSON.parse(localStorage.getItem(_VS_TELE_KEY + m.email) || "[]");
+    if (!l.length) return { done: false };
+    const last = l[l.length - 1];
+    return { done: true, n: l.length, at: new Date(last.at).toISOString().slice(0, 10) };
+  } catch (e) { return { done: false }; }
+}
+
 /* ── 러너·관제 훅(관리자) ── */
 try {
   if (typeof window !== "undefined") {
@@ -28345,6 +28443,17 @@ try {
         if (cmd === "share")  return vsShareGate(a, (b2 && b2.i), b2 || {});
         if (cmd === "sumspec") return { spec: VS_SUMMARY_SPEC, parts: VS_SUMMARY_PARTS };
         if (cmd === "sumcheck") return vsSummaryCheck(a);
+        if (cmd === "segfit")  return vsSegFit(Number(a));
+        if (cmd === "evdefs") { const need = ["video_requested","video_connected","video_declined","video_blocked","video_shared","video_summarized","video_action_issued","tele_booked"];
+          const defs = (typeof HI_EVENT_DEFS !== "undefined") ? HI_EVENT_DEFS : {};
+          return { missing: need.filter((n) => !defs[n]), n: need.length }; }
+        if (cmd === "issueprobe") {   /* 개입 발행 규격 — 정상·중복·등재 밖·미연결 */
+          const s1 = { state: "connected", shared: [], issued: [] };
+          const r1 = vsIssueAction(s1, "clinic", 7), r2 = vsIssueAction(s1, "clinic", 7), r3 = vsIssueAction(s1, "not_registered", 7);
+          const r4 = vsIssueAction({ state: "ended", shared: [], issued: [] }, "clinic", 7);
+          return { first: r1.ok, dup: r2.ok, unlisted: r3.ok, notConnected: r4.ok, nav: r1.nav || null, ev: r1.ev || null }; }
+        if (cmd === "teledone") { const dm = (typeof demoMembers !== "undefined" ? demoMembers : []); const mm = dm.find((d) => d.email === a); return teleDoneOf(mm || { email: a }); }
+        if (cmd === "telebook") { const dm = (typeof demoMembers !== "undefined" ? demoMembers : []); const mm = dm.find((d) => d.email === a); return teleBookRecord(mm || { email: a }, { hosp: "테스트병원", dept: "내과", via: "runner" }); }
         if (cmd === "sumdraft") { let card = null; try { card = buildHandoffCard(Number(a), { v2: true }); } catch (e) {}
           return { draft: vsSummaryDraft({ shared: (b2 && b2.shared) || [] }, card) }; }
         if (cmd === "sim") {   /* 결정론 시뮬 — 코호트 i의 한 세션을 규격대로 굴린다 */
@@ -33039,7 +33148,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "eee2b13fff06780c", "generatedAt": "2026-09-03", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "1c16beaed2a71ab1", "generatedAt": "2026-09-04", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -33175,6 +33284,10 @@ const HI_EVENT_DEFS = {
   family_linked:   { ko: "가족 연결",          stage: 3 },
   rx_received:     { ko: "처방 수령",          stage: 3 },
   mission_checked: { ko: "실천 미션 체크(복약·습관)", stage: 3 },   // P1 실사: adhCheck 실재(hifin_adh_*) — 등재
+  /* 영상 V5 — 「진료 연결」의 완결 정의 확정(2026-09-04). 법 시행 전 실재하는 회원 행동은
+     원격진료 「상담 접수」이며, 이것이 개입 clinic의 완결점이다(법 시행 후에는 rx_received가 더해진다).
+     회수는 「연결됨」 사실만 — 병원·의사·진료 내용은 프로에게 돌아가지 않는다(§0-V10·데이터 경계). */
+  tele_booked:     { ko: "원격진료 상담 접수", stage: 3 },
   /* 지시서 퍼널(P6) — 실재 UI 행동만: 발행=Today 보드 실노출(프로·일 1회), 접촉=원탭 기록. 완결은 위 트랜잭션 재사용 */
   handoff_issued:    { ko: "지시서 발행(Today 노출)", stage: 1 },
   handoff_contacted: { ko: "지시서 접촉(원탭 기록)",  stage: 2 },
@@ -33189,6 +33302,15 @@ const HI_EVENT_DEFS = {
   /* 동의 게이트(리뉴얼 R1 — v2 4겹) — 차단도 기록해 통제 작동을 숫자로 증명 */
   consent_granted:   { ko: "동의 취득·변경(종류별)", stage: 2 },
   consent_blocked:   { ko: "동의 게이트 차단(미보유 접근)", stage: 2 },
+  /* 영상 상담(영상 V5) — P1 실사 당시 「연결 저장 부재」로 등재 불가였던 항목이 세션 엔진·요약 기록으로 실재하게 되어 등재.
+     차단도 기록한다 — 통제가 작동함을 숫자로 보이기 위해(동의 게이트와 같은 방식). */
+  video_requested:    { ko: "영상 상담 요청(프로)", stage: 1 },
+  video_connected:    { ko: "영상 상담 연결(회원 수락)", stage: 2 },
+  video_declined:     { ko: "영상 상담 사양(회원)", stage: 2 },
+  video_blocked:      { ko: "영상 요청 차단(락·동의·보류·시간대)", stage: 2 },
+  video_shared:       { ko: "상담 중 화면 공유", stage: 2 },
+  video_summarized:   { ko: "영상 상담 요약 확정(회원 확인)", stage: 2 },
+  video_action_issued: { ko: "상담 중 개입 발행", stage: 2 },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };
@@ -33215,7 +33337,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-03","seed":20260828,"inventory":{"version":1,"sourceHash":"eee2b13fff06780c","generatedAt":"2026-09-03","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.03,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-04","seed":20260828,"inventory":{"version":1,"sourceHash":"1c16beaed2a71ab1","generatedAt":"2026-09-04","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.98,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

@@ -148,6 +148,43 @@ const summBad = [];
 if (summ.draftBad.length) summBad.push("초안 규격 미달 " + summ.draftBad.length + "건: " + JSON.stringify(summ.draftBad[0]));
 if (summ.caseBad.length) summBad.push("대조 실패 " + summ.caseBad.length + "건: " + JSON.stringify(summ.caseBad));
 
+/* ⑧ 세그먼트 연결(영상 V5) — 적합도·개입 발행·완결 회수 + 이벤트 등재 정합 */
+const seg = await p.evaluate(() => {
+  const out = { fit: {}, g8bad: 0, evUnreg: [], issue: null, tele: null, leak: [] };
+  /* 적합도 — G8은 반드시 none, 분포는 편중되지 않아야 한다 */
+  for (let i = 1; i <= 6000; i += 13) {
+    const f = window.__hifinVideo("segfit", i);
+    out.fit[f.fit] = (out.fit[f.fit] || 0) + 1;
+    const g = window.__hifinGSeg(i);
+    if (g && (g.segs || []).indexOf("G8") >= 0 && f.fit !== "none") out.g8bad++;
+  }
+  /* 이벤트 등재 — 영상이 쓰는 이름이 사전에 있는가(미등재면 조용히 버려진다) */
+  out.evUnreg = window.__hifinVideo("evdefs").missing;
+  /* 개입 발행 — 연결 중에만·등재 개입만·중복 불가 */
+  out.issue = window.__hifinVideo("issueprobe");
+  /* 완결 회수 — 기록 전/후, 그리고 반환에 병원·진료과가 섞이지 않는가 */
+  const EM = "vs-runner@test.local";
+  try { localStorage.removeItem("hifin_tele_booked_" + EM); } catch (e) {}
+  const before = window.__hifinVideo("teledone", EM);
+  window.__hifinVideo("telebook", EM);
+  const after = window.__hifinVideo("teledone", EM);
+  out.tele = { before: before.done, after: after.done, at: after.at || null, keys: Object.keys(after) };
+  for (const k of Object.keys(after)) if (["hosp","dept","name","doctor","note"].indexOf(k) >= 0) out.leak.push(k);
+  try { localStorage.removeItem("hifin_tele_booked_" + EM); } catch (e) {}
+  return out;
+});
+const segBad = [];
+if (seg.g8bad) segBad.push("G8인데 적합도 none이 아님 " + seg.g8bad + "건");
+if (seg.evUnreg.length) segBad.push("미등재 이벤트: " + seg.evUnreg.join(","));
+if (!seg.issue.first) segBad.push("정상 개입 발행 실패");
+if (seg.issue.dup) segBad.push("중복 발행이 통과");
+if (seg.issue.unlisted) segBad.push("등재 밖 개입이 통과");
+if (seg.issue.notConnected) segBad.push("연결 중이 아닌데 발행 통과");
+if (seg.issue.ev !== "tele_booked") segBad.push("clinic 완결 이벤트가 tele_booked가 아님: " + seg.issue.ev);
+if (seg.tele.before) segBad.push("기록 전인데 완결");
+if (!seg.tele.after) segBad.push("기록 후인데 미완결");
+if (seg.leak.length) segBad.push("회수 반환에 진료 정보 누출: " + seg.leak.join(","));
+
 /* ② 전이 규격 — 허용 간선 밖 전이는 거부되어야 한다 / ③ §0-V7 — 프로는 모드를 올릴 수 없다 */
 const rules = await p.evaluate(() => {
   const out = [];
@@ -181,18 +218,19 @@ for (const k of Object.keys(cross)) if (cross[k] !== res.sims[k]) drift++;
 await b.close();
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
-const pass = res.bad.length === 0 && ruleBad.length === 0 && drift === 0 && shareBad.length === 0 && summBad.length === 0;
+const pass = res.bad.length === 0 && ruleBad.length === 0 && drift === 0 && shareBad.length === 0 && summBad.length === 0 && segBad.length === 0;
 console.log(`[게이트] 표본 ${res.n} · 요청 가능 ${res.open} (${(res.open / res.n * 100).toFixed(1)}%) · 차단 ${JSON.stringify(res.byCode)}`);
 console.log(`[전이  ] ${Object.entries(res.steps).map(([k, v]) => k + " " + v).join(" · ")}`);
 console.log(`[규격  ] 상태·간선 위반 ${ruleBad.length}건 · 미디어 필드 0 검사 포함`);
 console.log(`[공유  ] 등재 ${share.docs}종 · 금지 화면 ${share.forbidden.length} · 등재 밖 통과 ${share.unlisted} · T3 보장맵 ${share.t3cov}건(0이어야) · 만기 국면 허용 ${share.t5cov}건 · 국면 대조 ${share.cases.length}건`);
 console.log(`[요약  ] 초안 ${summ.drafts}건 전건 규격 통과 ${summ.drafts - summ.draftBad.length} · 대조 8건 실패 ${summ.caseBad.length}`);
+console.log(`[연결  ] 적합도 ${JSON.stringify(seg.fit)} · G8 위반 ${seg.g8bad} · 미등재 이벤트 ${seg.evUnreg.length} · 개입(정상/중복/등재밖/미연결) ${[seg.issue.first,seg.issue.dup,seg.issue.unlisted,seg.issue.notConnected].join("/")} · 완결 회수 ${seg.tele.before}→${seg.tele.after} · 누출 ${seg.leak.length}`);
 console.log(`[결정론] 교차 300건 드리프트 ${drift}건`);
 console.log(`총 소요 ${secs}s → ${pass ? "PASS" : "FAIL"}`);
-if (!pass) { for (const x of res.bad.slice(0, 10)) console.error(" ×", JSON.stringify(x)); for (const x of ruleBad.slice(0, 6)) console.error(" × 규격", JSON.stringify(x)); for (const x of shareBad.slice(0, 6)) console.error(" × 공유", x); for (const x of summBad.slice(0, 4)) console.error(" × 요약", x); }
+if (!pass) { for (const x of res.bad.slice(0, 10)) console.error(" ×", JSON.stringify(x)); for (const x of ruleBad.slice(0, 6)) console.error(" × 규격", JSON.stringify(x)); for (const x of shareBad.slice(0, 6)) console.error(" × 공유", x); for (const x of summBad.slice(0, 4)) console.error(" × 요약", x); for (const x of segBad.slice(0, 6)) console.error(" × 연결", x); }
 
 writeFileSync(join(ROOT, "scripts/video_regression_snapshot.json"), JSON.stringify({
   date: new Date().toISOString().slice(0, 10), sample: res.n, open: res.open,
-  byCode: res.byCode, steps: res.steps, bad: res.bad.length, ruleBad: ruleBad.length, shareBad: shareBad.length, summBad: summBad.length, drafts: summ.drafts, shareDocs: share.docs, t3cov: share.t3cov, drift, seconds: Number(secs), pass
+  byCode: res.byCode, steps: res.steps, bad: res.bad.length, ruleBad: ruleBad.length, shareBad: shareBad.length, summBad: summBad.length, segBad: segBad.length, drafts: summ.drafts, shareDocs: share.docs, t3cov: share.t3cov, drift, seconds: Number(secs), pass
 }, null, 2) + "\n", "utf8");
 process.exit(pass ? 0 : 1);

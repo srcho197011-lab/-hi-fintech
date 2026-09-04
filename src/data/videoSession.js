@@ -103,14 +103,16 @@ function vsMove(sess, to, meta) {
   sess.state = to;
   sess.trail.push({ to: to, at: (meta && meta.at) || null, by: (meta && meta.by) || "" });
   if (to === "connected") sess.mode = sess.mode || VIDEO_SPEC.startMode;
-  try { hiEvent("video_state", { to: to }); } catch (e) {}
+  /* 등재된 이름·화이트리스트 키(kind)만 쓴다 — 그 밖의 이름은 hiEvent가 조용히 버린다(§9) */
+  try { const EV = { requested: "video_requested", connected: "video_connected", declined: "video_declined", summarized: "video_summarized" };
+    if (EV[to]) hiEvent(EV[to], { kind: to }); } catch (e) {}
   return { ok: true, state: to };
 }
 
 /* 요청 — 프로가 할 수 있는 유일한 시작 행위(§0-V7). 게이트를 통과하지 못하면 세션이 생기지 않는다 */
 function vsRequest(ref, opt) {
   const g = vsGateOf(ref, opt);
-  if (!g.ok) { try { hiEvent("video_blocked", { code: g.code }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
+  if (!g.ok) { try { hiEvent("video_blocked", { kind: g.code }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
   const sess = { state: "idle", mode: null, trail: [], shared: [], summary: null,
                  declinedCount: Number((opt && opt.declinedCount) || 0) };
   vsMove(sess, "requested", { by: "pro" });
@@ -128,7 +130,7 @@ function vsSetMode(sess, mode, by) {
   if (nx < 0) return { ok: false, why: "알 수 없는 모드예요" };
   if (nx > cur && by !== "member") return { ok: false, why: "영상은 회원이 켜요 — 프로는 요청만 할 수 있어요." };
   sess.mode = mode;
-  try { hiEvent("video_mode", { mode: mode, by: by || "" }); } catch (e) {}
+  try { hiEvent("video_connected", { kind: "mode-" + mode }); } catch (e) {}
   return { ok: true, mode: mode };
 }
 /* 품질 저하 폴백 — 시스템이 자동으로 낮춘다(올리지는 않는다) */
@@ -137,7 +139,7 @@ function vsDegrade(sess) {
   const cur = VIDEO_SPEC.modes.indexOf(sess.mode);
   if (cur <= 0) return { ok: false, why: "더 낮출 수 없어요" };
   sess.mode = VIDEO_SPEC.modes[cur - 1];
-  try { hiEvent("video_degrade", { mode: sess.mode }); } catch (e) {}
+  try { hiEvent("video_connected", { kind: "degrade-" + sess.mode }); } catch (e) {}
   return { ok: true, mode: sess.mode };
 }
 
@@ -171,8 +173,12 @@ function vsSummaryDraft(sess, card) {
   const parts = [VS_SUMMARY_PARTS.head];
   const sh = (sess && sess.shared) || [];
   if (sh.length) parts.push(VS_SUMMARY_PARTS.share + sh.map((k) => (VS_SHARE_DOCS[k] || {}).ko || k).join(" · ") + ".");
-  const act = card && card.actions && card.actions[0];
-  if (act && act.ko) parts.push(VS_SUMMARY_PARTS.act.replace("{개입}", act.ko));
+  /* 발행한 개입이 있으면 그것을, 없으면 권장 1순위를 적는다 — 어느 쪽이든 실제로 있었던 것만 */
+  const iss = (sess && sess.issued) || [];
+  const names = iss.length
+    ? iss.map((k) => ((typeof INTERVENTIONS !== "undefined" && INTERVENTIONS[k]) || {}).ko || k)
+    : (card && card.actions && card.actions[0] ? [card.actions[0].ko] : []);
+  if (names.length) parts.push(VS_SUMMARY_PARTS.act.replace("{개입}", names.join(" · ")));
   parts.push(VS_SUMMARY_PARTS.tail);
   let t = parts.join(" ");
   if (t.length > VS_SUMMARY_SPEC.maxLen) t = parts.slice(0, 3).join(" ");
@@ -234,9 +240,9 @@ function vsShareGate(key, ref, opt) {
 function vsShareDoc(sess, key, ref, opt) {
   if (!sess || sess.state !== "connected") return { ok: false, why: "연결 중에만 화면을 띄울 수 있어요" };
   const g = vsShareGate(key, ref, opt);
-  if (!g.ok) { try { hiEvent("video_share_blocked", { doc: key, code: g.code }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
+  if (!g.ok) { try { hiEvent("video_blocked", { kind: "share-" + g.code, key: key }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
   sess.shared.push(key);
-  try { hiEvent("video_share", { doc: key }); } catch (e) {} 
+  try { hiEvent("video_shared", { key: key }); } catch (e) {} 
   return { ok: true, doc: key, ko: VS_SHARE_DOCS[key].ko };
 }
 
@@ -255,6 +261,65 @@ function vsNoMediaScan(sess) {
   return { ok: bad.length === 0, bad: bad };
 }
 
+/* ══ 세그먼트 연결(영상 V5) ══════════════════════════════════════════════
+   영상은 채널일 뿐이고, 활동은 개입이 잇는다(§0-V10). 이 절이 하는 일은 셋이다.
+     ① 어떤 자리에서 영상이 값진가 — 새 세그먼트를 만들지 않고 기존 G에 적합도만 얹는다.
+     ② 통화 중 개입 발행 — 발행이지 실행이 아니다. 회원이 자기 앱에서 한다.
+     ③ 완결 회수 — 「연결됨」 사실만 돌아온다. 무엇을 진료했는지는 돌아오지 않는다. */
+
+/* ① 채널 적합도 — 함께 볼 것이 있는 자리에서 영상의 값이 생긴다 */
+const VS_SEG_FIT = {
+  G2:  { fit: "high", why: "결과 리포트를 함께 본다 — 이 채널의 최대 가치" },
+  G12: { fit: "high", why: "겹치는 계약 표는 말로 설명하기 가장 어렵다" },
+  G3:  { fit: "high", why: "보장맵을 함께 본다(공유는 §0-V9 게이트를 통과해야 한다)" },
+  G14: { fit: "mid",  why: "오래 끊긴 관계의 재연결에는 목소리보다 얼굴" },
+  G8:  { fit: "none", why: "접촉 보류 — 채널이 늘었다고 접촉 총량이 늘지 않는다" },
+};
+function vsSegFit(i) {
+  let segs = [];
+  try { const g = gSegOf(i); segs = (g && g.segs) || []; } catch (e) {}
+  if (segs.indexOf("G8") >= 0) return { fit: "none", seg: "G8", why: VS_SEG_FIT.G8.why };
+  for (const k of ["G2", "G12", "G3", "G14"]) if (segs.indexOf(k) >= 0) return Object.assign({ seg: k }, VS_SEG_FIT[k]);
+  return { fit: "low", seg: segs[0] || null, why: "전화로 충분한 자리 — 영상은 부담이 될 수 있다" };
+}
+
+/* ② 개입 발행 — 통화 중에 「가리키는」 행위. 여기서 활동이 실행되지 않는다 */
+function vsIssueAction(sess, key, ref) {
+  if (!sess || sess.state !== "connected") return { ok: false, why: "연결 중에만 발행할 수 있어요" };
+  const iv = (typeof INTERVENTIONS !== "undefined") ? INTERVENTIONS[key] : null;
+  if (!iv) return { ok: false, why: "등재되지 않은 개입이에요" };
+  sess.issued = sess.issued || [];
+  if (sess.issued.indexOf(key) >= 0) return { ok: false, why: "이미 발행했어요" };
+  sess.issued.push(key);
+  try { hiEvent("video_action_issued", { key: key, nav: iv.nav }); } catch (e) {}
+  return { ok: true, key: key, ko: iv.ko, nav: iv.nav, tab: iv.tab || null, ev: iv.ev,
+           note: "회원 앱의 「" + iv.ko + "」 화면으로 가는 길이 열렸어요 — 실행은 회원이 해요." };
+}
+
+/* ③ 완결 회수 — 저장은 회원의 것이고, 프로가 꺼내는 것은 사실뿐이다 */
+const _VS_TELE_KEY = "hifin_tele_booked_";
+function teleBookRecord(m, meta) {
+  if (!m || !m.email) return { ok: false };
+  try {
+    const k = _VS_TELE_KEY + m.email;
+    const l = JSON.parse(localStorage.getItem(k) || "[]");
+    l.push({ at: Date.now(), hosp: (meta && meta.hosp) || "", dept: (meta && meta.dept) || "" });
+    localStorage.setItem(k, JSON.stringify(l));
+  } catch (e) {}
+  try { hiEvent("tele_booked", { via: (meta && meta.via) || "member" }); } catch (e) {}
+  return { ok: true };
+}
+/* 프로가 읽는 회수 — 병원·진료과·내용은 반환하지 않는다(§0-V10·데이터 경계) */
+function teleDoneOf(m) {
+  if (!m || !m.email) return { done: false };
+  try {
+    const l = JSON.parse(localStorage.getItem(_VS_TELE_KEY + m.email) || "[]");
+    if (!l.length) return { done: false };
+    const last = l[l.length - 1];
+    return { done: true, n: l.length, at: new Date(last.at).toISOString().slice(0, 10) };
+  } catch (e) { return { done: false }; }
+}
+
 /* ── 러너·관제 훅(관리자) ── */
 try {
   if (typeof window !== "undefined") {
@@ -268,6 +333,17 @@ try {
         if (cmd === "share")  return vsShareGate(a, (b2 && b2.i), b2 || {});
         if (cmd === "sumspec") return { spec: VS_SUMMARY_SPEC, parts: VS_SUMMARY_PARTS };
         if (cmd === "sumcheck") return vsSummaryCheck(a);
+        if (cmd === "segfit")  return vsSegFit(Number(a));
+        if (cmd === "evdefs") { const need = ["video_requested","video_connected","video_declined","video_blocked","video_shared","video_summarized","video_action_issued","tele_booked"];
+          const defs = (typeof HI_EVENT_DEFS !== "undefined") ? HI_EVENT_DEFS : {};
+          return { missing: need.filter((n) => !defs[n]), n: need.length }; }
+        if (cmd === "issueprobe") {   /* 개입 발행 규격 — 정상·중복·등재 밖·미연결 */
+          const s1 = { state: "connected", shared: [], issued: [] };
+          const r1 = vsIssueAction(s1, "clinic", 7), r2 = vsIssueAction(s1, "clinic", 7), r3 = vsIssueAction(s1, "not_registered", 7);
+          const r4 = vsIssueAction({ state: "ended", shared: [], issued: [] }, "clinic", 7);
+          return { first: r1.ok, dup: r2.ok, unlisted: r3.ok, notConnected: r4.ok, nav: r1.nav || null, ev: r1.ev || null }; }
+        if (cmd === "teledone") { const dm = (typeof demoMembers !== "undefined" ? demoMembers : []); const mm = dm.find((d) => d.email === a); return teleDoneOf(mm || { email: a }); }
+        if (cmd === "telebook") { const dm = (typeof demoMembers !== "undefined" ? demoMembers : []); const mm = dm.find((d) => d.email === a); return teleBookRecord(mm || { email: a }, { hosp: "테스트병원", dept: "내과", via: "runner" }); }
         if (cmd === "sumdraft") { let card = null; try { card = buildHandoffCard(Number(a), { v2: true }); } catch (e) {}
           return { draft: vsSummaryDraft({ shared: (b2 && b2.shared) || [] }, card) }; }
         if (cmd === "sim") {   /* 결정론 시뮬 — 코호트 i의 한 세션을 규격대로 굴린다 */

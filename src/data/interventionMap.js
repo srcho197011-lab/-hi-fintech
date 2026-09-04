@@ -6,7 +6,7 @@
 
 /* 개입 사전 — 유형 7종(v1.3 §3 actions.유형) */
 const INTERVENTIONS = {
-  clinic:  { ko: "진료 연결",   nav: "tele",     ev: "consult_logged", evNote: "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록", type: "연결형" },
+  clinic:  { ko: "진료 연결",   nav: "tele",     ev: "tele_booked",    evNote: "원격진료 상담 접수 [실재·V5 확정] — 회수는 「연결됨」 사실만", type: "연결형" },
   recheck: { ko: "재검진 예약", nav: "checkup",  ev: "cert_issued",    evNote: "검진 예약·증서 발행 [실재]", type: "실행형" },
   diet:    { ko: "식단 조정",   nav: "shop",     ev: "sub_registered", evNote: "식단 상품 정기 등록 [실재] — 플랜 활성 이벤트는 등재 대기", type: "실행형" },
   supp:    { ko: "영양 보충",   nav: "shop",     ev: "sub_registered", evNote: "영양제 정기 등록 [실재] · 상호작용 확인 문구 필수", type: "실행형" },

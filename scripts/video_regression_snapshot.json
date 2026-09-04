@@ -1,5 +1,5 @@
 {
-  "date": "2026-09-03",
+  "date": "2026-09-04",
   "sample": 572,
   "open": 109,
   "byCode": {
@@ -20,10 +20,11 @@
   "ruleBad": 0,
   "shareBad": 0,
   "summBad": 0,
+  "segBad": 0,
   "drafts": 132,
   "shareDocs": 4,
   "t3cov": 0,
   "drift": 0,
-  "seconds": 30.8,
+  "seconds": 29.9,
   "pass": true
 }
