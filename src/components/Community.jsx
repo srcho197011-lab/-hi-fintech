@@ -2,6 +2,20 @@
 const cav = (i) => CAV_COLORS[i % CAV_COLORS.length];
 
 function CommunitySection({ onGo }) {
+  /* [H-2 W4] 이름·연속일수·추천 근거를 회원 것으로 — 전에는 회원이 누구든
+     「조성래님 현재 6일째」와 「당뇨 위험·간 54.4세·췌장암 경고 기반」이 자기 것처럼 표시됐다. */
+  const _cm = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _cnm = (_cm && _cm.name) || "회원";
+  /* 걷기 챌린지 연속일수는 **원천이 없다** — 걸음 수를 실제로 기록하는 곳이 아직 없다.
+     (adherence.js의 streak은 복약 순응이라 다른 것이다.) 없는 수치를 지어내지 않고 참여 권유로 둔다.
+     걸음 기록이 배선되면 여기서 읽으면 된다. */
+  const _streak = null;
+  /* 추천 근거는 그 회원의 확정 진단·고위험 암에서 뽑는다 */
+  const _basis = (() => {
+    const dz = (_cm && _cm.highRiskDiseases) || [], hc = (_cm && _cm.highRiskCancerTypes) || [];
+    const all = dz.concat(hc).slice(0, 3);
+    return all.length ? all.join("·") + " 관련" : "";
+  })();
   const [tab, setTab] = useState("feed");
   const go = onGo || (() => {});
   const tabs = [["feed", "인기 피드", TrendingUp], ["groups", "질환별 모임", Users], ["qna", "전문가 Q&A", MessageSquare], ["review", "건강 후기", Star]];
@@ -13,7 +27,7 @@ function CommunitySection({ onGo }) {
 
       <div className="chalbar">
         <span style={{ width: 42, height: 42, borderRadius: 11, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><Footprints size={22} color="#fff" /></span>
-        <div style={{ flex: 1 }}><div style={{ fontWeight: 800, fontSize: 14 }}>이번 주 챌린지 · 하루 8,000보 걷기</div><div style={{ fontSize: 12, opacity: .92, marginTop: 2 }}>참여 3,210명 · 달성 시 <b>+200 HTK</b> · 조성래님 현재 6일째 🔥</div></div>
+        <div style={{ flex: 1 }}><div style={{ fontWeight: 800, fontSize: 14 }}>이번 주 챌린지 · 하루 8,000보 걷기</div><div style={{ fontSize: 12, opacity: .92, marginTop: 2 }}>참여 3,210명 · 달성 시 <b>+200 HTK</b>{_streak ? <> · {_cnm}님 현재 {_streak}일째 🔥</> : <> · 지금 참여하실 수 있어요</>}</div></div>
         <button className="book" style={{ background: "#fff", color: "#F97316", border: "none", padding: "9px 14px", flexShrink: 0 }} onClick={() => go("wallet")}>리워드</button>
       </div>
 
@@ -34,13 +48,13 @@ function CommunitySection({ onGo }) {
       </>)}
 
       {tab === "groups" && (<>
-        <div className="bklbl" style={{ margin: "2px 0 8px" }}><Sparkles size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 조성래님 맞춤 추천 모임 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 당뇨·간/췌장·암 위험 기반</span></div>
+        <div className="bklbl" style={{ margin: "2px 0 8px" }}><Sparkles size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> {_cnm}님 맞춤 추천 모임 {_basis ? <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· {_basis}</span> : null}</div>
         <div className="wgrid">{COMM_GROUPS.map(([a, name, mem, d, rec, c], i) => (
           <div className="wcard" key={i}><span className="wi" style={{ background: c + "1A" }}><Art name={a} size={22} /></span>
             <div style={{ flex: 1 }}><div className="wn">{name}{rec && <span className="cbadge" style={{ color: "#7C3AED", background: "#F1ECFE", marginLeft: 5 }}><Sparkles size={10} /> 추천</span>}</div><div className="wd">{d}</div><div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 3, fontWeight: 700 }}><Users size={11} style={{ verticalAlign: "-2px" }} /> {mem}</div></div>
             <button className="book" style={{ alignSelf: "center", padding: "7px 12px" }} onClick={() => toast(`'${name}' 모임에 가입했습니다. Health Token이 적립됩니다.`)}>가입</button></div>
         ))}</div>
-        <div className="chnote">※ 추천 모임은 조성래님 리포트(당뇨 위험·간 54.4세·췌장암 경고) 기반 예시입니다.</div>
+        <div className="chnote">{_basis ? `※ 추천 모임은 ${_cnm}님 검진·건강 기록(${_basis})을 참고한 예시입니다.` : "※ 검진 결과가 연결되면 건강 상태에 맞는 모임을 추천해 드려요."}</div>
       </>)}
 
       {tab === "qna" && (<>

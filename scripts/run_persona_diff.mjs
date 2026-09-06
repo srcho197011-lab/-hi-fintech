@@ -32,10 +32,17 @@ const LEAKS = [
   { key: "리포트등록번호", re: /KRH01778214095470R2083/ },
 ];
 
-/* 홈의 사례 스토리 — 3인칭 소개라 결함이 아니다(따로 센다) */
+/* 홈의 사례 스토리 — 3인칭 소개라 결함이 아니다(따로 센다).
+   판정은 두 가지다: ①인물 서술 표지가 있거나 ②홈 섹션의 긴 산문(과거형 서술)이다.
+   ②를 넣은 이유 — 「이 데이터는 이제 조성래 님의 디지털 자산입니다」처럼 띄어쓰기 때문에
+   ①을 빠져나가는 문장이 있었다. 화면 라벨은 짧고 산문은 길다는 차이로 가른다. */
 const NARRATIVE = /조성래\(\d+\)\s*씨|조\s*씨(는|의|가|에게)|씨의 서랍|민석/;
+const isNarrative = (sec, line) => NARRATIVE.test(line) || (sec === "home" && line.length > 55 && /(습니다|했습니다|였습니다)/.test(line));
 
 const SECTIONS = [
+  /* 홈 섹션에는 커뮤니티·사회적기업 탭이 들어 있다 — 여기를 안 돌아서 커뮤니티의 누출을
+     한 판 놓쳤다(W4에서 발견). 스토리 탭은 3인칭 사례라 NARRATIVE로 걸러진다. */
+  { key: "home", label: "HI-Fin Tech란" },
   { key: "checkup", label: "건강검진 예약" },
   { key: "care", label: "검진 후 케어" },
   { key: "insurance", label: "치료비 케어" },
@@ -102,7 +109,7 @@ for (const per of PERSONAS) {
         /* 어느 줄에서 걸렸는지 남긴다 */
         const bad = txt.split("\n").map(s => s.trim()).filter(s => L.re.test(s));
         for (const line of bad.slice(0, 3)) {
-          const isStory = NARRATIVE.test(line);
+          const isStory = isNarrative(sec.key, line);
           const rec = { who: me, sec: sec.key, tab: tb || "(기본)", leak: L.key, line: line.slice(0, 130) };
           (isStory ? narrative : hits).push(rec);
         }

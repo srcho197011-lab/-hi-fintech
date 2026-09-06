@@ -4,6 +4,7 @@
     "007777=주경희"
   ],
   "visited": [
+    "home(탭4)",
     "checkup(탭9)",
     "care(탭5)",
     "insurance(탭7)",
@@ -11,6 +12,7 @@
     "partner(탭4)",
     "healthmate:이동실패",
     "chat(6문항)",
+    "home(탭4)",
     "checkup(탭9)",
     "care(탭5)",
     "insurance(탭7)",
@@ -20,8 +22,8 @@
     "chat(6문항)"
   ],
   "leaks": 0,
-  "narrativeExcluded": 0,
+  "narrativeExcluded": 12,
   "bySection": {},
   "items": [],
-  "secs": 157.8
+  "secs": 176.5
 }

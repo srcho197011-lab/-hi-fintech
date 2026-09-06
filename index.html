@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=4f09943b15" />
+<link rel="stylesheet" href="./data/app.css?v=2d737f31f5" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=4f09943b15"></script>
-<script src="./src/data/section_data.js?v=4f09943b15"></script>
-<script src="./src/data/demo_members.js?v=4f09943b15"></script>
+<script src="./src/data/dummy_data.js?v=2d737f31f5"></script>
+<script src="./src/data/section_data.js?v=2d737f31f5"></script>
+<script src="./src/data/demo_members.js?v=2d737f31f5"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -1907,6 +1907,31 @@ function Sents({ text, lead }) {
     );
   });
 }
+/* [H-2 W4] 질환 설명 앞에 붙일 개인 맥락 — 그 회원의 확정 진단·고위험 암·검진 이상항목에서만 만든다.
+   근거가 없으면 빈 문자열을 돌려준다(없는 위험을 만들어 붙이지 않는다).
+   진단·단정은 하지 않는다 — 「나타났어요/관리가 필요해요」 수준의 안내에 머문다. */
+function kdcaNote(disease) {
+  try {
+    const d = String(disease || "");
+    if (!d) return "";
+    const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null);
+    if (!m) return "";
+    const nm = m.name || "회원";
+    /* 확정 진단으로 갖고 있는 질환이면 그것부터 */
+    const dz = m.highRiskDiseases || [];
+    if (dz.some((x) => d.indexOf(x) >= 0 || x.indexOf(d) >= 0)) return `${nm}님은 ${d} 관리 대상으로 기록돼 있어요. `;
+    /* 고위험 암 */
+    const hc = m.highRiskCancerTypes || [];
+    if (/암$/.test(d) && hc.some((x) => d.indexOf(x.replace("암", "")) >= 0)) return `${nm}님 검진에서 ${d} 위험이 높게 나타났어요. `;
+    /* 검진 이상항목이 그 질환과 연관되면 */
+    let chk = null; try { chk = (typeof genMemberCheckup === "function") ? genMemberCheckup(Object.assign({}, m)) : null; } catch (e) {}
+    const abn = (chk && chk.comp && chk.comp.abnormals) || [];
+    const LINK = { "당뇨병": /공복혈당|당화혈색소|HbA1c/i, "비알코올 지방간": /AST|ALT|GTP|간/, "고혈압": /수축기|이완기|혈압/, "이상지질혈증": /콜레스테롤|중성지방|LDL|HDL/, "빈혈": /혈색소|Hb/ };
+    const re = LINK[d];
+    if (re) { const hit = abn.filter((x) => re.test(x)); if (hit.length) return `${nm}님 검진에서 「${hit[0]}」 항목이 확인돼 관련해서 알려드려요. `; }
+    return "";
+  } catch (e) { return ""; }
+}
 function aiWho() { try { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return (m && m.name) ? m.name : "조성래"; } catch (e) { return "조성래"; } }
 function consult(q, corpus, report, QA) {
   const raw = (q || "").trim();
@@ -1933,7 +1958,7 @@ function consult(q, corpus, report, QA) {
   const want = intent === "검사" ? "검사" : intent === "치료" ? "치료" : intent === "생활" ? "생활" : intent === "증상" ? "증상" : "개요";
   // 더 구체적인(긴) 매칭을 우선, 동률이면 큐레이션 KB. 단 의도가 맞는 전문 진료지침(src)은 큐레이션보다 우선
   if (kb && kbLen >= cpLen && !(cp && cp.src && cp.t === want)) {
-    const note = KDCA_NOTE[kb.d] || "";
+    const note = kdcaNote(kb.d);
     if (intent === "검사") return `${note}${kb.d}의 검사 방법이에요. ${kb.검사}`;
     if (intent === "치료") return `${note}${kb.d}의 치료 방법이에요. ${kb.치료}`;
     if (intent === "생활") return `${note}${kb.d}의 생활습관 관리예요. ${kb.생활}`;
@@ -4346,6 +4371,9 @@ try {
     window.__hifinDoc = {
       ask: (q) => loadReport().then((R) => { try { return aiRespond(String(q || ""), null, R, null); } catch (e) { return { err: String(e) }; } }),
       report: () => loadReport(),
+      /* consult 경로 직접 검사 — 질환 설명 앞의 개인 접두문(kdcaNote)이 그 회원 것인지 본다 */
+      consult: (q) => loadReport().then((R) => { try { return consult(String(q || ""), null, R, null); } catch (e) { return "ERR " + e; } }),
+      note: (d) => { try { return kdcaNote(String(d || "")); } catch (e) { return "ERR " + e; } },
     };
   }
 } catch (e) {}
@@ -12109,6 +12137,20 @@ function FamilyCareSection({ member, onGo }) {
 const cav = (i) => CAV_COLORS[i % CAV_COLORS.length];
 
 function CommunitySection({ onGo }) {
+  /* [H-2 W4] 이름·연속일수·추천 근거를 회원 것으로 — 전에는 회원이 누구든
+     「조성래님 현재 6일째」와 「당뇨 위험·간 54.4세·췌장암 경고 기반」이 자기 것처럼 표시됐다. */
+  const _cm = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _cnm = (_cm && _cm.name) || "회원";
+  /* 걷기 챌린지 연속일수는 **원천이 없다** — 걸음 수를 실제로 기록하는 곳이 아직 없다.
+     (adherence.js의 streak은 복약 순응이라 다른 것이다.) 없는 수치를 지어내지 않고 참여 권유로 둔다.
+     걸음 기록이 배선되면 여기서 읽으면 된다. */
+  const _streak = null;
+  /* 추천 근거는 그 회원의 확정 진단·고위험 암에서 뽑는다 */
+  const _basis = (() => {
+    const dz = (_cm && _cm.highRiskDiseases) || [], hc = (_cm && _cm.highRiskCancerTypes) || [];
+    const all = dz.concat(hc).slice(0, 3);
+    return all.length ? all.join("·") + " 관련" : "";
+  })();
   const [tab, setTab] = useState("feed");
   const go = onGo || (() => {});
   const tabs = [["feed", "인기 피드", TrendingUp], ["groups", "질환별 모임", Users], ["qna", "전문가 Q&A", MessageSquare], ["review", "건강 후기", Star]];
@@ -12120,7 +12162,7 @@ function CommunitySection({ onGo }) {
 
       <div className="chalbar">
         <span style={{ width: 42, height: 42, borderRadius: 11, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><Footprints size={22} color="#fff" /></span>
-        <div style={{ flex: 1 }}><div style={{ fontWeight: 800, fontSize: 14 }}>이번 주 챌린지 · 하루 8,000보 걷기</div><div style={{ fontSize: 12, opacity: .92, marginTop: 2 }}>참여 3,210명 · 달성 시 <b>+200 HTK</b> · 조성래님 현재 6일째 🔥</div></div>
+        <div style={{ flex: 1 }}><div style={{ fontWeight: 800, fontSize: 14 }}>이번 주 챌린지 · 하루 8,000보 걷기</div><div style={{ fontSize: 12, opacity: .92, marginTop: 2 }}>참여 3,210명 · 달성 시 <b>+200 HTK</b>{_streak ? <> · {_cnm}님 현재 {_streak}일째 🔥</> : <> · 지금 참여하실 수 있어요</>}</div></div>
         <button className="book" style={{ background: "#fff", color: "#F97316", border: "none", padding: "9px 14px", flexShrink: 0 }} onClick={() => go("wallet")}>리워드</button>
       </div>
 
@@ -12141,13 +12183,13 @@ function CommunitySection({ onGo }) {
       </>)}
 
       {tab === "groups" && (<>
-        <div className="bklbl" style={{ margin: "2px 0 8px" }}><Sparkles size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 조성래님 맞춤 추천 모임 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 당뇨·간/췌장·암 위험 기반</span></div>
+        <div className="bklbl" style={{ margin: "2px 0 8px" }}><Sparkles size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> {_cnm}님 맞춤 추천 모임 {_basis ? <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· {_basis}</span> : null}</div>
         <div className="wgrid">{COMM_GROUPS.map(([a, name, mem, d, rec, c], i) => (
           <div className="wcard" key={i}><span className="wi" style={{ background: c + "1A" }}><Art name={a} size={22} /></span>
             <div style={{ flex: 1 }}><div className="wn">{name}{rec && <span className="cbadge" style={{ color: "#7C3AED", background: "#F1ECFE", marginLeft: 5 }}><Sparkles size={10} /> 추천</span>}</div><div className="wd">{d}</div><div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 3, fontWeight: 700 }}><Users size={11} style={{ verticalAlign: "-2px" }} /> {mem}</div></div>
             <button className="book" style={{ alignSelf: "center", padding: "7px 12px" }} onClick={() => toast(`'${name}' 모임에 가입했습니다. Health Token이 적립됩니다.`)}>가입</button></div>
         ))}</div>
-        <div className="chnote">※ 추천 모임은 조성래님 리포트(당뇨 위험·간 54.4세·췌장암 경고) 기반 예시입니다.</div>
+        <div className="chnote">{_basis ? `※ 추천 모임은 ${_cnm}님 검진·건강 기록(${_basis})을 참고한 예시입니다.` : "※ 검진 결과가 연결되면 건강 상태에 맞는 모임을 추천해 드려요."}</div>
       </>)}
 
       {tab === "qna" && (<>
@@ -33438,7 +33480,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "e0f86ebf5de8d825", "generatedAt": "2026-09-07", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "9d1d139bc9589647", "generatedAt": "2026-09-07", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -33627,7 +33669,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-06","seed":20260828,"inventory":{"version":1,"sourceHash":"e0f86ebf5de8d825","generatedAt":"2026-09-07","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.58,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-06","seed":20260828,"inventory":{"version":1,"sourceHash":"9d1d139bc9589647","generatedAt":"2026-09-07","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.49,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

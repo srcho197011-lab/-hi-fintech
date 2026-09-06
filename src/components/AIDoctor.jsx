@@ -356,6 +356,31 @@ function Sents({ text, lead }) {
     );
   });
 }
+/* [H-2 W4] 질환 설명 앞에 붙일 개인 맥락 — 그 회원의 확정 진단·고위험 암·검진 이상항목에서만 만든다.
+   근거가 없으면 빈 문자열을 돌려준다(없는 위험을 만들어 붙이지 않는다).
+   진단·단정은 하지 않는다 — 「나타났어요/관리가 필요해요」 수준의 안내에 머문다. */
+function kdcaNote(disease) {
+  try {
+    const d = String(disease || "");
+    if (!d) return "";
+    const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null);
+    if (!m) return "";
+    const nm = m.name || "회원";
+    /* 확정 진단으로 갖고 있는 질환이면 그것부터 */
+    const dz = m.highRiskDiseases || [];
+    if (dz.some((x) => d.indexOf(x) >= 0 || x.indexOf(d) >= 0)) return `${nm}님은 ${d} 관리 대상으로 기록돼 있어요. `;
+    /* 고위험 암 */
+    const hc = m.highRiskCancerTypes || [];
+    if (/암$/.test(d) && hc.some((x) => d.indexOf(x.replace("암", "")) >= 0)) return `${nm}님 검진에서 ${d} 위험이 높게 나타났어요. `;
+    /* 검진 이상항목이 그 질환과 연관되면 */
+    let chk = null; try { chk = (typeof genMemberCheckup === "function") ? genMemberCheckup(Object.assign({}, m)) : null; } catch (e) {}
+    const abn = (chk && chk.comp && chk.comp.abnormals) || [];
+    const LINK = { "당뇨병": /공복혈당|당화혈색소|HbA1c/i, "비알코올 지방간": /AST|ALT|GTP|간/, "고혈압": /수축기|이완기|혈압/, "이상지질혈증": /콜레스테롤|중성지방|LDL|HDL/, "빈혈": /혈색소|Hb/ };
+    const re = LINK[d];
+    if (re) { const hit = abn.filter((x) => re.test(x)); if (hit.length) return `${nm}님 검진에서 「${hit[0]}」 항목이 확인돼 관련해서 알려드려요. `; }
+    return "";
+  } catch (e) { return ""; }
+}
 function aiWho() { try { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return (m && m.name) ? m.name : "조성래"; } catch (e) { return "조성래"; } }
 function consult(q, corpus, report, QA) {
   const raw = (q || "").trim();
@@ -382,7 +407,7 @@ function consult(q, corpus, report, QA) {
   const want = intent === "검사" ? "검사" : intent === "치료" ? "치료" : intent === "생활" ? "생활" : intent === "증상" ? "증상" : "개요";
   // 더 구체적인(긴) 매칭을 우선, 동률이면 큐레이션 KB. 단 의도가 맞는 전문 진료지침(src)은 큐레이션보다 우선
   if (kb && kbLen >= cpLen && !(cp && cp.src && cp.t === want)) {
-    const note = KDCA_NOTE[kb.d] || "";
+    const note = kdcaNote(kb.d);
     if (intent === "검사") return `${note}${kb.d}의 검사 방법이에요. ${kb.검사}`;
     if (intent === "치료") return `${note}${kb.d}의 치료 방법이에요. ${kb.치료}`;
     if (intent === "생활") return `${note}${kb.d}의 생활습관 관리예요. ${kb.생활}`;
@@ -2795,6 +2820,9 @@ try {
     window.__hifinDoc = {
       ask: (q) => loadReport().then((R) => { try { return aiRespond(String(q || ""), null, R, null); } catch (e) { return { err: String(e) }; } }),
       report: () => loadReport(),
+      /* consult 경로 직접 검사 — 질환 설명 앞의 개인 접두문(kdcaNote)이 그 회원 것인지 본다 */
+      consult: (q) => loadReport().then((R) => { try { return consult(String(q || ""), null, R, null); } catch (e) { return "ERR " + e; } }),
+      note: (d) => { try { return kdcaNote(String(d || "")); } catch (e) { return "ERR " + e; } },
     };
   }
 } catch (e) {}
