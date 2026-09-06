@@ -103,11 +103,31 @@ if echo "$CHANGED" | grep -qE "^src/(data/(hiNluDict|aiQnaBank|hiStateModel|aiNa
   git add scripts/truth_guard_snapshot.json 2>/dev/null || true
 fi
 
+# ══ 게이트 범위 계산 — 바뀐 파일이 닿는 섹션만 돈다 ══
+# 화면 파일 하나 고쳤는데 6섹션 전수(3분)를 도는 건 낭비다. 다만 좁히는 만큼 못 보는 것이 생기므로
+# ① 공유 파일(core·sectionData 등)이 바뀌면 전수로 되돌리고 ② 부분 실행은 하네스가 결과에 표시한다.
+hifin_scope() {
+  SEC=""
+  add() { case ",$SEC," in *",$1,"*) ;; *) SEC="${SEC:+$SEC,}$1";; esac; }
+  # 공유 원천이 바뀌면 어디에 영향이 갈지 특정할 수 없다 → 전수
+  if echo "$CHANGED" | grep -qE "^src/(core\.jsx|data/(sectionData|section_data|memberState|hiStateModel|tokenLedger|insService|healthDataVault|checkupEngine)\.js|utils/(demoAuth|healthAnalysisUtils)\.js)$"; then
+    SEC=""; CHAT="1"; return
+  fi
+  echo "$CHANGED" | grep -qE "^src/components/(Home|Community)\.jsx$"                        && add home
+  echo "$CHANGED" | grep -qE "^src/components/Checkup\.jsx$"                                  && add checkup
+  echo "$CHANGED" | grep -qE "^src/components/(HealthManage|Hospital|Homecare|Shop|AIDoctor)\.jsx$" && add care
+  echo "$CHANGED" | grep -qE "^src/components/Insurance\.jsx$"                                && add insurance
+  echo "$CHANGED" | grep -qE "^src/components/(Wallet|MyPage|Nft|FamilyCare|BlockchainVault)\.jsx$"  && add mywallet
+  # 채팅 경로는 응답 엔진이 바뀔 때만
+  if echo "$CHANGED" | grep -qE "^src/components/AIDoctor\.jsx$"; then CHAT="1"; else CHAT="0"; fi
+}
+hifin_scope
+
 # ══ 인물 누출 게이트(H-2 W3) — 「남의 이름·수치가 내 화면에」가 되살아나면 차단 ══
 # 회원 화면 컴포넌트가 바뀌면 조성래가 아닌 회원으로 실제 로그인해 화면 문자열을 대조한다.
 if echo "$CHANGED" | grep -qE "^src/(components/(HealthManage|Hospital|Homecare|Insurance|MyPage|Nft|Wallet|Shop|Home|AIDoctor)\.jsx|core\.jsx|data/sectionData\.js)$"; then
-  echo "[GATE] 회원 화면 변경 — 인물 누출 대조 실행(로그인 실측)"
-  node scripts/run_persona_diff.mjs || { echo "[GATE] 인물 누출 — 커밋 차단(남의 이름·수치가 회원 화면에 보인다)"; exit 1; }
+  echo "[GATE] 회원 화면 변경 — 인물 누출 대조 실행(섹션: ${SEC:-전수} · 채팅: ${CHAT:-1})"
+  HIFIN_SECTIONS="$SEC" HIFIN_CHAT="${CHAT:-1}" node scripts/run_persona_diff.mjs || { echo "[GATE] 인물 누출 — 커밋 차단(남의 이름·수치가 회원 화면에 보인다)"; exit 1; }
   git add scripts/persona_diff_snapshot.json 2>/dev/null || true
 fi
 
@@ -122,7 +142,11 @@ fi
 # ══ 금전 대조 게이트(H-2 W5) — 지갑·보험 금액이 다시 상수로 돌아가면 차단 ══
 # 인물 누출 검사는 「남의 이름」을 찾는다. 금액은 이름이 아니라 전 회원 동일한 상수라 거기 안 걸린다.
 if echo "$CHANGED" | grep -qE "^src/(components/(Wallet|MyPage|Insurance|FamilyCare)\.jsx|data/(sectionData|tokenLedger|insService)\.js)$"; then
-  echo "[GATE] 지갑·보험 파일 변경 — 금전 대조 실행(회원 3명 격리 로그인)"
-  node scripts/run_money_check.mjs || { echo "[GATE] 금전 대조 실패 — 커밋 차단(옛 상수가 여러 회원에게 같이 보인다)"; exit 1; }
+  # 금전 대조는 지갑·보험 두 섹션뿐이라, 둘 중 닿는 것만 돈다
+  MSEC=""
+  case ",$SEC," in *",mywallet,"*) MSEC="mywallet";; esac
+  case ",$SEC," in *",insurance,"*) MSEC="${MSEC:+$MSEC,}insurance";; esac
+  echo "[GATE] 지갑·보험 파일 변경 — 금전 대조 실행(섹션: ${MSEC:-전수})"
+  HIFIN_SECTIONS="$MSEC" node scripts/run_money_check.mjs || { echo "[GATE] 금전 대조 실패 — 커밋 차단(옛 상수가 여러 회원에게 같이 보인다)"; exit 1; }
   git add scripts/money_check_snapshot.json 2>/dev/null || true
 fi

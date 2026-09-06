@@ -1,23 +1,46 @@
 {
+  "scoped": false,
+  "sections": [
+    "home",
+    "checkup",
+    "care",
+    "insurance",
+    "mywallet",
+    "partner",
+    "healthmate"
+  ],
+  "chat": true,
   "personas": [
     "000042=유아린",
     "007777=주경희"
   ],
   "visited": [
     "home(탭4)",
+    "home:탭4",
     "checkup(탭9)",
+    "checkup:탭9",
     "care(탭5)",
+    "care:탭8",
     "insurance(탭7)",
+    "insurance:탭7",
     "mywallet(탭12)",
+    "mywallet:탭12",
     "partner(탭4)",
+    "partner:탭4",
     "healthmate:이동실패",
     "chat(6문항)",
     "home(탭4)",
+    "home:탭4",
     "checkup(탭9)",
+    "checkup:탭9",
     "care(탭5)",
+    "care:탭8",
     "insurance(탭7)",
+    "insurance:탭7",
     "mywallet(탭12)",
+    "mywallet:탭12",
     "partner(탭4)",
+    "partner:탭4",
     "healthmate:이동실패",
     "chat(6문항)"
   ],
@@ -25,5 +48,5 @@
   "narrativeExcluded": 12,
   "bySection": {},
   "items": [],
-  "secs": 175.3
+  "secs": 171.9
 }

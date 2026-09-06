@@ -34,6 +34,11 @@ const SECTIONS = [
   { key: "insurance", label: "치료비 케어" },
 ];
 
+/* [게이트 범위] HIFIN_SECTIONS로 좁힐 수 있다 — 없으면 전수. 부분 실행은 결과에 표시한다. */
+const _pick = (process.env.HIFIN_SECTIONS || "").split(",").map(x => x.trim()).filter(Boolean);
+const SECTIONS_RUN = _pick.length ? SECTIONS.filter(x => _pick.indexOf(x.key) >= 0) : SECTIONS;
+const SCOPED = _pick.length > 0;
+
 const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--no-sandbox', '--disable-gpu'], defaultViewport: { width: 430, height: 1400 } });
 
 const seen = [];   // [{who, sec, tab, numbers:[], text}]
@@ -51,7 +56,7 @@ for (const per of PERSONAS) {
   await sleep(4500);
   const me = await p.evaluate(() => { const m = (document.body.innerText || '').match(/([가-힣]{2,4})님/); return m ? m[1] : "?"; });
 
-  for (const sec of SECTIONS) {
+  for (const sec of SECTIONS_RUN) {
     const moved = await p.evaluate((lab) => {
       const rx = new RegExp(lab.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
       const t = [...document.querySelectorAll('button,div,span,a,li')]
@@ -98,6 +103,7 @@ for (const k in byScreen) {
   if (new Set(vals).size === 1 && vals[0].length > 6) uniform.push({ screen: k, value: vals[0].slice(0, 90) });
 }
 
+if (SCOPED) console.log(`[범위  ] ⚠ 부분 실행 — 섹션 ${SECTIONS_RUN.map(x => x.key).join(",") || "(없음)"} (전수 아님)`);
 console.log(`[대조  ] 회원 ${PERSONAS.length}명 · 화면 ${Object.keys(byScreen).length}개`);
 Object.keys(byScreen).slice(0, 8).forEach(k => {
   const v = byScreen[k]; const who = Object.keys(v);
@@ -110,7 +116,7 @@ console.log(`[옛상수] 잔존 ${fails.filter(f => f.chk === "②상수").lengt
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 writeFileSync(join(ROOT, "scripts/money_check_snapshot.json"),
-  JSON.stringify({ personas: PERSONAS.map(p => p.id), screens: Object.keys(byScreen).length, byScreen, uniform, fails: fails.length, secs: Number(secs) }, null, 2) + "\n", "utf8");
+  JSON.stringify({ scoped: SCOPED, sections: SECTIONS_RUN.map(x => x.key), personas: PERSONAS.map(p => p.id), screens: Object.keys(byScreen).length, byScreen, uniform, fails: fails.length, secs: Number(secs) }, null, 2) + "\n", "utf8");
 
 if (fails.length) {
   console.log(`\n총 ${fails.length}건 위반 → FAIL`);
