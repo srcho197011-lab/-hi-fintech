@@ -140,9 +140,49 @@ function loadReport() {
   }
   return _reportPromise;
 }
+/* ══ [H-2 W2] 리포트는 「지금 로그인한 회원」의 것이어야 한다 ══
+   report.json은 조성래 본인의 **실명 실측 리포트**(기관 등록번호 포함)다.
+   전에는 회원 구분 없이 이 파일을 aiRespond에 넘겨, 코호트 회원이 「내 리포트 요약」을 물으면
+   조성래의 이름·생체나이·검진일·기관 출처가 자기 리포트인 것처럼 카드로 출력됐다.
+   여기서 한 번만 갈아끼우면 reportAnswer·reportAnalysisCards 등 소비자 전부가 회원 값으로 바뀐다. */
+function memberReportShape(m) {
+  if (!m || typeof demoReport !== "function") return null;
+  let R = null; try { R = demoReport(m); } catch (e) { return null; }
+  if (!R) return null;
+  const G = (typeof demoCancerGrade === "function") ? (() => { try { return demoCancerGrade(m.cancerRiskGrade); } catch (e) { return null; } })() : null;
+  /* 암 상세 안내문(do/avoid/remember)은 회원과 무관한 공통 의학 정보다 — 등급만 회원 값으로 바꿔 붙인다 */
+  const detail = (typeof CANCER_DETAIL !== "undefined") ? CANCER_DETAIL : [];
+  const cancer = (R.cancers || []).map(([nm, grade]) => {
+    const d = detail.find((x) => x.n === nm) || {};
+    return { n: nm, grade, risk: d.risk ? Number(String(d.risk).replace("%", "")) : 0,
+      level: grade === "경고" ? "높음" : grade === "주의" ? "보통" : "낮음",
+      do: d.do || [], avoid: d.avoid || [], remember: d.remember || [] };
+  });
+  const disease = (R.diseases || []).map(([nm, rel, rate]) => ({ n: nm, rel, rate: Number(String(rate).replace("%", "")) || 0, guide: [], warn: "" }));
+  return {
+    meta: { name: m.name || "회원", sex: m.sex || "", regAge: R.reg, bioAge: R.bio, diff: R.diff,
+      speed: R.agingSpeed, rank: R.agingRank, overall: R.evalLabel,
+      date: (R._lineage && R._lineage.date) ? String(R._lineage.date).replace(/-/g, ".") : "",
+      reg: "",                                   /* 기관 등록번호는 회원에게 없다 — 비운다 */
+      source: (R._lineage && R._lineage.source === "vault") ? "하이핀 정밀분석 · 연결된 검진 수치 기준" : "하이핀 정밀분석" },
+    organs: (R.organs || []).map((o) => [o[0], o[1], o[2]]),
+    disease, cancer,
+    cancerTotal: { grade: R.cancerTotal, of: 10, label: (G && G[0]) || R.evalLabel || "" },
+    cost: { ty: R.costThis, tyAvg: R.costThis, y10: R.cost10, y10Avg: R.cost10, out: 0, inp: 0 },
+    _member: true,
+  };
+}
 function useReport() {
   const [rp, setRp] = useState(null);
-  useEffect(() => { let on = true; loadReport().then((d) => on && setRp(d)); return () => { on = false; }; }, []);
+  const _dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  const _key = _dm ? (_dm.email || _dm.id || _dm.name) : "__self__";
+  useEffect(() => {
+    let on = true;
+    /* 체험·코호트 회원 → 그 회원의 리포트로 합성. 본인(게이트 로그인) → 실제 report.json */
+    if (_dm) { const r = memberReportShape(_dm); if (on) setRp(r); return () => { on = false; }; }
+    loadReport().then((d) => on && setRp(d));
+    return () => { on = false; };
+  }, [_key]);
   return rp;
 }
 // 개인 리포트 기반 답변(개인화 질문일 때만). 일반 질환정보는 null → KDCA로 위임
@@ -2742,3 +2782,18 @@ function KCard({ card, onBtn }) {
 }
 
 /* ====================== Report (실데이터) ====================== */
+
+/* 회귀용 훅 — 채팅 응답이 「누구의 리포트」로 답하는지 하네스가 직접 두드린다(H-2 W2).
+   UI를 클릭해 들어가지 않고도 Chat이 실제로 타는 경로(aiRespond + useReport의 결과)를 검사한다. */
+try {
+  if (typeof window !== "undefined") {
+    window.__hifinDoc = {
+      ask: (q) => {
+        const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+        const use = dm ? Promise.resolve(memberReportShape(dm)) : loadReport();
+        return use.then((R) => { try { return aiRespond(String(q || ""), null, R, null); } catch (e) { return { err: String(e) }; } });
+      },
+      report: () => { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return dm ? Promise.resolve(memberReportShape(dm)) : loadReport(); },
+    };
+  }
+} catch (e) {}

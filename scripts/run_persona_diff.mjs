@@ -44,6 +44,9 @@ const SECTIONS = [
   { key: "healthmate", label: "헬스메이트 센터" },
 ];
 
+/* 채팅에서 「내 리포트」를 물었을 때 남의 리포트가 나오는지 — W2가 되돌아가면 여기서 잡힌다 */
+const CHAT_QS = ["내 리포트 요약", "건강분석 해줘", "종합 분석", "내 생체나이 알려줘", "내 의료비 얼마나 나올까", "전체 분석 보여줘"];
+
 const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--no-sandbox', '--disable-gpu'], defaultViewport: { width: 430, height: 1400 } });
 
 const hits = [];         // 누출
@@ -106,6 +109,22 @@ for (const per of PERSONAS) {
       }
     }
   }
+  /* ── 채팅 경로(H-2 W2) — UI 클릭으로는 도달이 불안정해 훅으로 실제 응답 경로를 두드린다.
+     「내 리포트 요약」류는 report.json(조성래 실명 실측 리포트)을 그대로 뿌리던 자리다. ── */
+  const chat = await p.evaluate(async (QS) => {
+    const D = window.__hifinDoc; if (!D) return { err: "훅 없음" };
+    const flat = (r) => { if (!r) return ""; const ps = []; (r.bubbles || []).forEach(bb => { ps.push(bb.text || ""); if (bb.card) ps.push(JSON.stringify(bb.card)); }); return ps.join(" "); };
+    const out = []; for (const q of QS) { const r = await D.ask(q); out.push({ q, said: flat(r).slice(0, 800) }); }
+    return { out };
+  }, CHAT_QS);
+  if (chat.err) { visited.push("chat:" + chat.err); }
+  else for (const r of chat.out) {
+    for (const L of LEAKS) {
+      if (L.re.test(r.said)) hits.push({ who: me, sec: "chat", tab: r.q, leak: L.key, line: r.said.replace(/\s+/g, " ").slice(0, 130) });
+    }
+  }
+  visited.push(`chat(${CHAT_QS.length}문항)`);
+
   await p.close();
 }
 await b.close();
