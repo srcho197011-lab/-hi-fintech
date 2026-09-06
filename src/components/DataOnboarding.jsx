@@ -41,6 +41,9 @@ function DataConsentList({ keys, state, onToggle }) {
 
 /* ── STEP 1. 건강검진결과 데이터 제공 ── */
 function CheckupCollect({ member, onDone, onLater }) {
+  /* 검진일은 결과지에서 온다 — 앱이 지어내지 않고 회원이 확인해 입력한다(H-2 W6) */
+  const _today = new Date().toISOString().slice(0, 10);
+  const [ckDate, setCkDate] = useState("");
   const [phase, setPhase] = useState("intro");        // intro | channel | capture | review | done
   const [consent, setConsent] = useState({ health: false, ai: false, mkt: false, link: false });
   const [channel, setChannel] = useState(null);       // upload | photo | nhis
@@ -85,8 +88,10 @@ function CheckupCollect({ member, onDone, onLater }) {
     } finally { setOcrBusy(false); }
   };
   const confirmSave = () => {
+    if (!ckDate) { if (typeof toast === "function") toast("결과지의 검진일을 확인해 입력해 주세요."); return; }
     const items = rows.map((r) => ({ key: r.key, value: r.value, source: r.source, confidence: r.confidence }));
-    const meta = { source: channel === "nhis" ? "nhis" : channel === "photo" ? "ocr" : "upload", channel: channel || "upload", completeness: ocr.completeness || "full", fileName: (ocr && ocr.fileName) || null, date: "2025-11-01" };
+    /* [H-2 W6] 검진일은 상수("2025-11-01")로 저장하지 않는다 — 회원이 결과지를 보고 확인한 날짜를 쓴다. */
+    const meta = { source: channel === "nhis" ? "nhis" : channel === "photo" ? "ocr" : "upload", channel: channel || "upload", completeness: ocr.completeness || "full", fileName: (ocr && ocr.fileName) || null, date: ckDate };
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(member, Object.assign({ step: "checkup" }, consent));
     const res = (typeof vaultSaveCheckup === "function") ? vaultSaveCheckup(member, items, meta) : null;
     /* 저장이 거부되면 완료 화면으로 넘기지 않는다 — 금고가 안 받았는데 「완료」를 보여주면 그 자체가 거짓말이다(H-1) */
@@ -179,6 +184,12 @@ function CheckupCollect({ member, onDone, onLater }) {
     return (
       <div className="obstep">
         <div className="obclbl">추출 결과 확인 <span>(값을 확인·수정 후 확정)</span></div>
+        <div className="obhint" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span>📅 <b>검진일</b> — 결과지에 적힌 날짜를 확인해 주세요</span>
+          <input type="date" value={ckDate} max={_today} onChange={(e) => setCkDate(e.target.value)}
+            style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "5px 9px", fontSize: 12.5, fontFamily: "inherit" }} />
+          {!ckDate && <span style={{ color: "#B45309", fontWeight: 700, fontSize: 11.5 }}>입력해야 저장돼요</span>}
+        </div>
         {ocr && ocr.completeness === "partial" && <div className="obbanner"><AlertTriangle size={14} /> 공단 제공 항목({rows.length}개) 기준의 <b>부분 데이터</b>입니다. 결과지를 업로드하면 전체 정밀 분석이 가능해요.</div>}
         {ocr && ocr.scenario && /real/.test(ocr.scenario) && ocr.warn && <div className="obhint" style={{ color: "#2563EB" }}>🔎 {ocr.warn}</div>}
         {lowN > 0 && <div className="obhint">🟡 인식 안 됨/신뢰도 낮은 {lowN}개 항목은 노란색이에요. 값을 확인·입력해 주세요.</div>}

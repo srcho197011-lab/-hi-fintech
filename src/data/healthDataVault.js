@@ -131,7 +131,7 @@ function toFHIR(member, items, meta) {
     const o = { resourceType: "Observation", id: "obs-" + i, status: "final",
       category: [{ coding: [{ system: "http://terminology.hl7.org/CodeSystem/observation-category", code: "laboratory" }] }],
       code: { coding: [{ system: "http://loinc.org", code: spec.loinc, display: spec.ko }], text: spec.ko },
-      subject: { reference: "Patient/" + token }, effectiveDateTime: meta.date || "2025-11-01",
+      subject: { reference: "Patient/" + token }, effectiveDateTime: meta.date || "",
       _source: it.source || "upload", _confidence: it.confidence };
     if (spec.qual) o.valueString = String(it.value);
     else o.valueQuantity = { value: Number(it.value), unit: spec.unit, system: "http://unitsofmeasure.org" };
@@ -140,7 +140,7 @@ function toFHIR(member, items, meta) {
   });
   const report = { resourceType: "DiagnosticReport", id: "dr-1", status: "final",
     code: { coding: [{ system: "http://loinc.org", code: "55399-0", display: "국가건강검진 결과" }] },
-    subject: { reference: "Patient/" + token }, effectiveDateTime: meta.date || "2025-11-01",
+    subject: { reference: "Patient/" + token }, effectiveDateTime: meta.date || "",
     result: observations.map((o) => ({ reference: "Observation/" + o.id })) };
   return { report, observations, token };
 }
@@ -215,7 +215,10 @@ function vaultSaveCheckup(member, items, meta) {
   /* ⚠️ source는 기본값을 주지 않는다(H-1 수선) — 누락 시 「실제 업로드」로 둔갑하던 fail-open이었다.
      시연 시드가 source를 빠뜨리면 실데이터로 기록되므로, 없으면 저장을 거부한다(fail-closed). */
   if (!meta || !meta.source) return { ok: false, reason: "source가 없어 저장하지 않았어요 — 데이터 출처는 생략할 수 없어요." };
-  const rec = { token, kind: "checkup", date: meta.date || "2025-11-01", source: meta.source, completeness: meta.completeness || "full", channel: meta.channel || "upload", fileName: meta.fileName || null, items, fhir, fileHash, fhirHash, savedAt: Date.now() };
+  /* [H-2 W6] 검진일도 폴백을 두지 않는다 — 없으면 「2025-11-01」로 저장돼 남의 날짜가 내 검진일이 됐다.
+     source와 같은 방식(fail-closed): 날짜를 모르면 저장하지 않고 되묻게 한다. */
+  if (!meta.date) return { ok: false, reason: "검진일이 없어 저장하지 않았어요 — 결과지의 검진일을 확인해 주세요." };
+  const rec = { token, kind: "checkup", date: meta.date, source: meta.source, completeness: meta.completeness || "full", channel: meta.channel || "upload", fileName: meta.fileName || null, items, fhir, fileHash, fhirHash, savedAt: Date.now() };
   const cur = vaultLoad(token) || { token, checkups: [], insurance: [], consents: null };
   cur.checkups = (cur.checkups || []).filter((c) => c.date !== rec.date).concat(rec);
   try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur)); } catch (e) {}

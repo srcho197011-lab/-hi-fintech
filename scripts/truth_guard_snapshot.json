@@ -7,9 +7,10 @@
     "noMeta": false,
     "nullMeta": false,
     "noMetaIns": false,
+    "noDate": false,
     "withSrc": true
   },
   "natlViolations": 0,
   "fails": 0,
-  "secs": 13.4
+  "secs": 17.7
 }

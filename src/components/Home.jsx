@@ -203,12 +203,26 @@ function MyCheckupHero({ onGo, onReport }) {
   const authU = (typeof authCurrent === "function") ? authCurrent() : null;
   const R = dm ? demoReport(dm) : null;
   const nm = dm ? dm.name : (authU && authU.name ? authU.name : "조성래");
+  /* [H-2 W6] 다음 검진 예약을 실제 예약에서 읽는다 — 전에는 「2025.06.15 (토) 09:00 · 서울 KMI」가
+     상수라 모든 회원에게 같은(그리고 이미 지나간) 일정이 보였다. 예약이 없으면 없다고 말한다. */
+  const _bk = (() => {
+    try {
+      const me = dm || ((typeof selfMember === "function") ? selfMember() : null);
+      if (!me || typeof memberStateSnapshot !== "function") return null;
+      const st = memberStateSnapshot(me);
+      const s1 = st && st.s1;
+      if (!s1 || !s1.hasBooking || !s1.bookingDate) return null;
+      return { date: String(s1.bookingDate).replace(/-/g, "."), inDays: s1.bookingInDays, place: s1.bookingPlace || null };
+    } catch (e) { return null; }
+  })();
   return (
     <>
       <div className="banner">
         <div><span className="pchip"><Sparkles size={13} /> {nm}님 맞춤 초개인화 대시보드</span><div className="head">AI가 {nm}님의 건강을 지키고 있습니다.</div><div className="sub">{R ? `${nm}님 시연용 예시 리포트와 생활데이터를 분석해 안내합니다.` : "프롬에이지 Premium 리포트와 생활데이터를 분석해 안내합니다."}</div></div>
         <div className="art"><ShieldArt /></div>
-        <div className="bnext"><div className="l">다음 건강검진 예약</div><div className="d">2025.06.15 (토) 09:00</div><div className="c">서울 KMI 건강검진센터</div><button onClick={() => go("checkup")}>예약 상세보기</button></div>
+        {_bk && _bk.date
+          ? <div className="bnext"><div className="l">다음 건강검진 예약</div><div className="d">{_bk.date}{_bk.inDays != null ? ` (${_bk.inDays}일 뒤)` : ""}</div><div className="c">{_bk.place || "예약한 검진기관"}</div><button onClick={() => go("checkup")}>예약 상세보기</button></div>
+          : <div className="bnext"><div className="l">건강검진 예약</div><div className="d">예약된 일정이 없어요</div><div className="c">내 주변 검진센터를 찾아 드릴게요</div><button onClick={() => go("checkup")}>예약하러 가기</button></div>}
       </div>
       <div className="reportcta">
         <div className="rcl">
@@ -436,10 +450,14 @@ function TodayAIRecs({ onGo }) {
       <div className="prods">{PRODUCTS.map(([Ic, t, d, link, col, bg, target]) => (<div className="prod" key={t} onClick={() => go(target)} style={{ cursor: "pointer" }}><div className="img" style={{ background: bg }}><Ic size={36} color={col} /></div><div className="pb"><div className="pt">{t}</div><div className="pd">{d}</div><span className="pl" role="button" onClick={(e) => { e.stopPropagation(); go(target); }}>{link} <ChevronRight size={12} style={{ verticalAlign: -2 }} /></span></div></div>))}</div></div>
   );
 }
+/* [H-2 W6] 걸음·운동·수면·칼로리는 **측정 원천이 아직 없다**(웨어러블·건강앱 연동 전).
+   전에는 45,231걸음·210분·7시간 30분·1,850kcal이 상수라 모든 회원이 같은 수치를 자기 활동으로 봤다.
+   기기가 연결되면 여기서 읽으면 된다 — 그전까지는 무엇을 보여줄지만 알린다. */
 function ActivitySummaryCard() {
-  const ACTS = [[Footprints, "걸음 수", "45,231", "걸음", 90], [Activity, "운동 시간", "210", "분", 70], [Moon, "수면 시간", "7시간 30분", "", 75], [Flame, "칼로리 소모", "1,850", "kcal", 80]];
+  const ACTS = [[Footprints, "걸음 수"], [Activity, "운동 시간"], [Moon, "수면 시간"], [Flame, "칼로리 소모"]];
   return (
-    <div className="card" style={{ marginTop: 14 }}><div className="ch"><div className="ct">건강 활동 요약</div><span className="link" style={{ border: "1px solid var(--border)", padding: "5px 10px", borderRadius: 8 }}>이번 주 <ChevronDown size={13} /></span></div>
-      <div className="act"><div className="metrics">{ACTS.map(([Ic, nm, v, u, pct]) => (<div className="arow" key={nm}><Ic size={18} className="ic" /><span className="nm">{nm}</span><span className="bar"><i style={{ width: pct + "%" }} /></span><span className="vl">{v} <small style={{ display: "inline", color: "var(--muted)" }}>{u}</small><small>{pct}%</small></span></div>))}</div><ActivityGauge value={85} /></div></div>
+    <div className="card" style={{ marginTop: 14 }}><div className="ch"><div className="ct">건강 활동 요약</div><span className="link" style={{ border: "1px solid var(--border)", padding: "5px 10px", borderRadius: 8, color: "var(--muted)" }}>기기 연동 전</span></div>
+      <div className="chnote" style={{ margin: "2px 0 10px" }}>스마트워치·건강앱을 연결하시면 아래 항목을 매주 정리해 드려요. 아직 연결된 기기가 없어요.</div>
+      <div className="act"><div className="metrics">{ACTS.map(([Ic, nm]) => (<div className="arow" key={nm}><Ic size={18} className="ic" /><span className="nm">{nm}</span><span className="bar"><i style={{ width: "0%" }} /></span><span className="vl" style={{ color: "var(--muted)" }}>—</span></div>))}</div></div></div>
   );
 }

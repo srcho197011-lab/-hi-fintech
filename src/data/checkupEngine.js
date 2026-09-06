@@ -79,7 +79,9 @@ function _refStr(item, sex) {
 }
 
 /* ═══ 최근 3년 추이(진행형태: 나아짐/악화/유지) ═══ */
-const _CHK_CUR_YEAR = 2026;                                   // 최근(현재) 검진 연도
+/* [H-2 W6] 최근 검진 연도 — 상수로 두면 해가 바뀌는 순간 전 회원에게 틀린 연도가 나간다.
+   지금 시계에서 잡는다(오늘이 2026년이라 값은 그대로다 — 미래에 자동으로 따라간다). */
+const _CHK_CUR_YEAR = (() => { try { return new Date().getFullYear(); } catch (e) { return 2026; } })();
 const TREND_LABEL = { improve: "나아짐", worsen: "악화", stable: "유지" };
 const TREND_EMOJI = { improve: "📉✅", worsen: "📈⚠️", stable: "➡️" };
 

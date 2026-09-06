@@ -93,10 +93,13 @@ const res = await p.evaluate(() => {
   out.vault.noMeta = V ? (V.saveCheckup(mem, items, {}) || {}).ok : "훅없음";
   out.vault.nullMeta = V ? (V.saveCheckup(mem, items, null) || {}).ok : "훅없음";
   out.vault.noMetaIns = V ? (V.saveInsurance(mem, [], {}) || {}).ok : "훅없음";
-  out.vault.withSrc = V ? (V.saveCheckup(mem, items, { source: "upload", channel: "upload" }) || {}).ok : "훅없음";
+  /* [W6] 검진일도 fail-closed — 없으면 상수 날짜로 둔갑하던 자리다 */
+  out.vault.noDate = V ? (V.saveCheckup(mem, items, { source: "upload", channel: "upload" }) || {}).ok : "훅없음";
+  out.vault.withSrc = V ? (V.saveCheckup(mem, items, { source: "upload", channel: "upload", date: "2026-03-04" }) || {}).ok : "훅없음";
   if (out.vault.noMeta !== false) out.bad.push({ chk: "④금고", why: "source 없는 검진 저장이 통과" });
   if (out.vault.nullMeta !== false) out.bad.push({ chk: "④금고", why: "meta=null 검진 저장이 통과" });
   if (out.vault.noMetaIns !== false) out.bad.push({ chk: "④금고", why: "source 없는 보험 저장이 통과" });
+  if (out.vault.noDate !== false) out.bad.push({ chk: "④금고", why: "검진일 없는 저장이 통과" });
   if (out.vault.withSrc !== true) out.bad.push({ chk: "④금고", why: "정상 저장이 막힘(과차단)" });
 
   return out;
@@ -113,7 +116,7 @@ natlBad.forEach(w => fails.push({ chk: "⑤국가검진", why: w }));
 fails.push(...res.bad);
 console.log(`[예약  ] ${res.booking.n}문항 · 확인 경로 제시 ${res.booking.ok} · 단정 잔존 ${res.bad.filter(x => x.chk === "②예약" && /단정/.test(x.why)).length}건`);
 console.log(`[A3인계] ${res.a3.n}문항 · A1 인계 ${res.a3.handback}${res.a3.leaked.length ? " · 누출: " + res.a3.leaked.join(" / ") : ""}`);
-console.log(`[금고  ] meta없음 ${res.vault.noMeta} · meta=null ${res.vault.nullMeta} · 보험 ${res.vault.noMetaIns} · 정상 ${res.vault.withSrc} (앞 셋 false·끝 true여야)`);
+console.log(`[금고  ] meta없음 ${res.vault.noMeta} · meta=null ${res.vault.nullMeta} · 보험 ${res.vault.noMetaIns} · 검진일없음 ${res.vault.noDate} · 정상 ${res.vault.withSrc} (앞 넷 false·끝 true여야)`);
 console.log(`[국가검진] 번들 스캔 · 위반 ${natlBad.length}건`);
 if (res.booking.sample) console.log(`  예약 응답 표본: ${res.booking.sample.replace(/\s+/g, " ").slice(0, 150)}`);
 
