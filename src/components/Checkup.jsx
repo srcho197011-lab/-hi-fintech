@@ -1475,25 +1475,88 @@ function PublicSupport() {
   );
 }
 
+/* 금고 기록의 출처 표기 — 어디서 온 값인지 회원이 알 수 있어야 한다(§0-H6) */
+const CKUP_SRC_LABEL = { nhis: "공단 연계", upload: "결과지 업로드", ocr: "사진 인식", photo: "사진 인식",
+  cohort: "국가검진 연계", "self-real": "실측 결과지", "self-seed": "실측 결과지", aggregate: "기관 연계" };
+
 function CheckupResults() {
   const [kakao, setKakao] = useState(true);
-  /* ⚠️ 아래 결과 목록은 아직 금고와 배선되지 않은 예시 카드다(H-2 빈틈 지도 등록 대상).
-     배선 전까지 **개인 판정문은 쓰지 않는다** — 근거 없이 회원마다 다른 결론을 단정하게 된다(§0-H6). */
-  const _me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof authCurrent === "function" && authCurrent()) || null;
+  /* [H-2 금고 배선] 여기는 **회원 본인의 검진 결과**를 보여주는 자리다.
+     배선 전에는 특정 1인의 검진일(2024.12.26)·생체나이(52.5세)·판정(정상 B)이 상수로 박혀 있어
+     누가 로그인하든 남의 결과를 자기 것처럼 봤다. 이제 금고에 **실제로 저장된 기록만** 보여주고,
+     없으면 없다고 말한다 — 화면을 채우려고 지어내지 않는다. */
+  /* 신원은 selfMember()로 푼다 — 다른 화면(보험·마이페이지)이 쓰는 정식 해석기다.
+     ⚠️ adminLogin(demoAuth.js)은 email 없이 세션을 만들어서 authCurrent()를 그대로 쓰면
+     anonToken이 이름 문자열로 잡히고, selfMember()가 쓰는 토큰과 **갈라진다**.
+     그러면 시드는 이쪽에 쓰이고 화면은 저쪽을 읽어 「기록 없음」이 된다(H-1 신원 통합에서 근본 수선 예정). */
+  const _sess = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof authCurrent === "function" && authCurrent()) || null;
+  const _me = _sess ? ((typeof selfMember === "function") ? selfMember() : _sess) : null;
   const _nm = (_me && _me.name) ? _me.name + "님" : "회원님";
+  const _mkey = _me ? (_me.email || _me.id || _me.name || "") : "";
+
+  /* 본인(코호트 아님) 금고는 보험 화면 진입에서만 시드됐다 — 검진 화면부터 들어오면
+     실측 기록이 있는데도 「없음」으로 보였다. 여기서도 같은 멱등 시드를 태운다(H-2). */
+  const [_seeded, _bumpSeed] = useState(0);
+  useEffect(() => {
+    try {
+      const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+      if (!dm && _sess && typeof selfMember === "function" && typeof seedSelfVault === "function") {
+        seedSelfVault(selfMember()); _bumpSeed((x) => x + 1);
+      }
+    } catch (e) {}
+  }, []);
+
+  const _recs = React.useMemo(() => {
+    if (!_me || typeof vaultLoad !== "function" || typeof anonToken !== "function") return [];
+    let v = null; try { v = vaultLoad(anonToken(_me)); } catch (e) { return []; }
+    return ((v && v.checkups) || []).slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+  }, [_mkey, _seeded]);
+
+  /* 판정은 그 기록에 담긴 값에서 직접 뽑는다 — 다른 생성기의 등급을 갖다 붙이면 화면과 근거가 어긋난다 */
+  const _judge = (rec) => {
+    const its = (rec && rec.items) || [];
+    if (!its.length) return { label: "항목 없음", tone: "#64748B", n: 0 };
+    const abn = (typeof ckupFlag === "function") ? its.filter((it) => ckupFlag(it.key, it.value)) : [];
+    if (!abn.length) return { label: "이상 항목 없음", tone: "#16A34A", n: 0 };
+    return { label: `확인 필요 ${abn.length}항목`, tone: abn.length >= 4 ? "#DC2626" : "#B45309", n: abn.length };
+  };
+  const _fmtDate = (d) => String(d || "").replace(/^(\d{4})-(\d{2}).*$/, "$1.$2").replace(/^(\d{4})(\d{2}).*$/, "$1.$2") || "날짜 미상";
+
+  /* 정밀분석(생체나이)은 검진 기록이 있을 때만 — 근거 없이 나이를 말하지 않는다 */
+  const _rep = React.useMemo(() => {
+    if (!_me || !_recs.length || typeof demoReport !== "function") return null;
+    try { const R = demoReport(_me); return (R && typeof R.bio === "number") ? R : null; } catch (e) { return null; }
+  }, [_mkey, _recs.length, _seeded]);
+
   return (<>
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="rct"><FileText size={18} color="#7C3AED" /> 내 검진 결과</div>
-      <div className="resitem"><span className="ic"><Activity size={18} color="#7C3AED" /></span>
-        <div style={{ flex: 1 }}><b style={{ fontSize: 13.5 }}>프롬에이지 Premium 건강분석</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>메디에이지 · 검진일 2024.12.26 · 생체나이 52.5세</div></div>
-        <button className="cbtn" style={{ width: "auto", margin: 0, padding: "8px 14px" }} onClick={() => toast("검진 결과가 연동되면 여기에서 확인할 수 있습니다.")}>결과 보기</button></div>
-      <div className="resitem"><span className="ic" style={{ background: "#E8F1FE" }}><ClipboardList size={18} color="#2563EB" /></span>
-        <div style={{ flex: 1 }}><b style={{ fontSize: 13.5 }}>일반건강검진 결과</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>국가검진 · 2023.11 · 정상 B</div></div>
-        <button className="cbtn" style={{ width: "auto", margin: 0, padding: "8px 14px" }} onClick={() => toast("검진 결과가 연동되면 여기에서 확인할 수 있습니다.")}>결과 보기</button></div>
+      {!_recs.length && (
+        <div className="chnote" style={{ margin: "2px 0 10px" }}>
+          아직 연결된 검진 결과가 없어요. 결과지를 올리거나 공단 연계로 가져오시면 {_nm}의 수치를 기준으로 분석해 드릴게요.
+        </div>)}
+      {_rep && (
+        <div className="resitem"><span className="ic"><Activity size={18} color="#7C3AED" /></span>
+          <div style={{ flex: 1 }}><b style={{ fontSize: 13.5 }}>하이핀 정밀분석 리포트</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>연결된 검진 수치 기준 · 생체나이 {_rep.bio}세{typeof _rep.diff === "number" ? ` (실제보다 ${_rep.diff > 0 ? "+" : ""}${_rep.diff}세)` : ""}</div></div>
+          <button className="cbtn" style={{ width: "auto", margin: 0, padding: "8px 14px" }} onClick={() => nav("care")}>결과 보기</button></div>)}
+      {_recs.map((r, i) => {
+        const j = _judge(r);
+        const src = CKUP_SRC_LABEL[r.source] || r.source || "연계";
+        return (
+          <div className="resitem" key={(r.date || "") + "-" + i}><span className="ic" style={{ background: "#E8F1FE" }}><ClipboardList size={18} color="#2563EB" /></span>
+            <div style={{ flex: 1 }}><b style={{ fontSize: 13.5 }}>{r.fileName ? String(r.fileName).replace(/\.[a-z]+$/i, "") : "건강검진 결과"}</b>
+              <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{src} · {_fmtDate(r.date)} · <span style={{ color: j.tone, fontWeight: 700 }}>{j.label}</span>{r.completeness === "partial" ? " · 일부 항목" : ""}</div></div>
+            <button className="cbtn" style={{ width: "auto", margin: 0, padding: "8px 14px" }} onClick={() => nav("care")}>결과 보기</button></div>);
+      })}
+      {!_recs.length && (
+        <button className="cbtn pri" onClick={() => nav("mypage")}><FileText size={15} /> 검진 결과 연결하기</button>)}
     </div>
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="rct"><Stethoscope size={18} color="#16A34A" /> 사후관리 · 추적관찰</div>
-      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>추적관찰 병원은 이전 검진 결과를 이미 알고 있어, 필요한 재검·정밀검사를 이어서 관리해 드려요. {_nm}께 필요한 추적 항목은 <b>검진 결과가 연동되면</b> 수치를 근거로 정리해 드릴게요.</p>
+      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>추적관찰 병원은 이전 검진 결과를 이미 알고 있어, 필요한 재검·정밀검사를 이어서 관리해 드려요.{" "}
+        {_recs.length && _judge(_recs[0]).n
+          ? <>가장 최근 검진에서 <b style={{ color: "#B45309" }}>확인이 필요한 항목 {_judge(_recs[0]).n}개</b>가 있어요 — 어떤 검사를 이어갈지는 진료에서 정해요.</>
+          : <>{_nm}께 필요한 추적 항목은 <b>검진 결과가 연결되면</b> 수치를 근거로 정리해 드릴게요.</>}</p>
       <button className="cbtn pri" onClick={() => nav("hospital")}><Building2 size={15} /> 추적관찰 병원 연결</button>
     </div>
     <div className="card">
