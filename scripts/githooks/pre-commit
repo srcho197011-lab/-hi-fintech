@@ -102,3 +102,11 @@ if echo "$CHANGED" | grep -qE "^src/(data/(hiNluDict|aiQnaBank|hiStateModel|aiNa
   node scripts/run_truth_guard.mjs || { echo "[GATE] 진실성 가드 실패 — 커밋 차단(도구 없는 단정·오라우팅·금고 fail-open)"; exit 1; }
   git add scripts/truth_guard_snapshot.json 2>/dev/null || true
 fi
+
+# ══ 인물 누출 게이트(H-2 W3) — 「남의 이름·수치가 내 화면에」가 되살아나면 차단 ══
+# 회원 화면 컴포넌트가 바뀌면 조성래가 아닌 회원으로 실제 로그인해 화면 문자열을 대조한다.
+if echo "$CHANGED" | grep -qE "^src/(components/(HealthManage|Hospital|Homecare|Insurance|MyPage|Nft|Wallet|Shop|Home|AIDoctor)\.jsx|core\.jsx|data/sectionData\.js)$"; then
+  echo "[GATE] 회원 화면 변경 — 인물 누출 대조 실행(로그인 실측)"
+  node scripts/run_persona_diff.mjs || { echo "[GATE] 인물 누출 — 커밋 차단(남의 이름·수치가 회원 화면에 보인다)"; exit 1; }
+  git add scripts/persona_diff_snapshot.json 2>/dev/null || true
+fi

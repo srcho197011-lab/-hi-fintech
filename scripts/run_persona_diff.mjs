@@ -25,7 +25,9 @@ const LEAKS = [
   { key: "췌장56.2", re: /56\.2/ },
   { key: "실제나이54.1", re: /54\.1\s*세/ },
   { key: "의료비238만", re: /2,381,477|238만/ },
-  { key: "거주지은평", re: /은평구|불광동/ },
+  /* 은평구는 실제 검진기관·병원이 있는 지역이라 그 자체로는 누출이 아니다 —
+     「내 거주지」라고 주장하는 문맥일 때만 누출로 센다(하네스 오탐 수정). */
+  { key: "거주지은평", re: /(거주지|내\s*동네|내\s*주변|우리\s*동네|회원정보)[^\n]{0,24}(은평|불광)/ },
   { key: "검진일2024.12.26", re: /2024\.12\.26/ },
   { key: "리포트등록번호", re: /KRH01778214095470R2083/ },
 ];
@@ -125,3 +127,5 @@ const secs = ((Date.now() - t0) / 1000).toFixed(1);
 writeFileSync(join(ROOT, "scripts/persona_diff_snapshot.json"),
   JSON.stringify({ personas: names, visited, leaks: uniq.length, narrativeExcluded: narrative.length, bySection: bySec, items: uniq, secs: Number(secs) }, null, 2) + "\n", "utf8");
 console.log(`총 소요 ${secs}s`);
+if (uniq.length) { console.log("→ FAIL — 남의 데이터가 회원 화면에 보인다"); process.exit(1); }
+console.log("→ PASS");

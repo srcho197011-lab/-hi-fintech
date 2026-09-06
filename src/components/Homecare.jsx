@@ -16,7 +16,8 @@ const svcMeta = (s) => SVC_META[s] || { art: "nurse", col: "#64748B", bg: "#F1F5
 
 function SpecialPartner({ data }) {
   const [apply, setApply] = useState(false);
-  const sidoIdx = Math.max(0, data.sido.indexOf(PT.sido));
+  const _rg0 = (typeof memberRegion === "function") ? memberRegion() : null;
+  const sidoIdx = Math.max(0, data.sido.indexOf((_rg0 && _rg0.sidoShort) || "서울"));
   const svcIdx = ["방문요양", "방문목욕", "방문간호", "주야간보호"].map((s) => data.svc.indexOf(s)).filter((i) => i >= 0);
   const prov = [`${GENIEL.name} 의료·간병 인력서비스`, sidoIdx, "전국", "전국 의료·간병 인력 파견·매칭 (제니엘메디컬)", "", svcIdx, 0, 0, GENIEL.home];
   return (
@@ -109,8 +110,11 @@ function HomecareSection() {
 }
 
 function HomecareDirectory({ data }) {
-  const [sido, setSido] = useState(PT.sido);
-  const [sgg, setSgg] = useState(PT.sigungu);
+  /* [H-2 W3] 기본 지역을 회원 거주지에서 잡는다 — 전에는 전 회원이 은평구로 시작해
+     재가기관 추천이 남의 동네 기준으로 나왔다(표시가 아니라 기능 오염이었다). */
+  const _rg = (typeof memberRegion === "function") ? memberRegion() : { sidoShort: "서울", sgg: "", addr: "" };
+  const [sido, setSido] = useState(_rg.sidoShort || "서울");
+  const [sgg, setSgg] = useState(_rg.sgg || "전체");
   const [svc, setSvc] = useState("전체");
   const [q, setQ] = useState("");
   const [shown, setShown] = useState(20);
@@ -158,8 +162,8 @@ function HomecareDirectory({ data }) {
         <span><Art name="chat" size={16} /> 상담 신청</span>
       </div>
       <MapCard anchorRef={mapAnchor} open={mapOpen} onToggle={() => setMapOpen((v) => !v)} focus={focus} title={`재가기관 위치 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳)`} accent="#E11D8F" points={list.map((p) => ({ name: p[0], addr: p[3], tel: p[4], tag: "재가", lat: p[7], lng: p[6] }))} />
-      <div className="bklbl" style={{ margin: "0 0 8px" }}><CircleUserRound size={13} style={{ verticalAlign: "-2px" }} /> 회원 거주지 <b style={{ color: "#2563EB" }}>{PT.addr}</b> 기준 · 지역 선택</div>
-      <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); reset(); }}>{r === PT.sido && <Home size={11} style={{ verticalAlign: "-1px", marginRight: 3 }} />}{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
+      <div className="bklbl" style={{ margin: "0 0 8px" }}><CircleUserRound size={13} style={{ verticalAlign: "-2px" }} /> 회원 거주지 <b style={{ color: "#2563EB" }}>{_rg.addr || "미등록"}</b> 기준 · 지역 선택</div>
+      <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); reset(); }}>{r === (_rg.sidoShort || "서울") && <Home size={11} style={{ verticalAlign: "-1px", marginRight: 3 }} />}{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
       <div className="bklbl" style={{ margin: "2px 0 8px" }}>급여종류</div>
       <div className="regions">
         <div className={`fsel ${svc === "전체" ? "on" : ""}`} onClick={() => { setSvc("전체"); reset(); }}>전체</div>
@@ -229,6 +233,10 @@ function HomecareDetailModal({ data, p, onApply, onClose }) {
 }
 
 function HomecareBookingModal({ data, p, onClose }) {
+  /* 신청자는 로그인한 회원이다(H-2 W3) — 나이는 알 수 있을 때만 붙인다 */
+  const _bkMe = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _bkNm = (_bkMe && _bkMe.name) || "회원";
+  const _bkAge = (() => { try { if (!_bkMe) return ""; const a = (typeof demoRegAge === "function") ? demoRegAge(_bkMe) : _bkMe.regAge; return a ? `${_bkMe.sex || ""} / ${a}세`.trim() : ""; } catch (e) { return ""; } })();
   const svcs = (p[5] || []).map((si) => data.svc[si]);
   const [pick, setPick] = useState(svcs[0] || "방문요양");
   const [done, setDone] = useState(false);
@@ -244,7 +252,7 @@ function HomecareBookingModal({ data, p, onClose }) {
             <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
               <div style={{ fontWeight: 800, fontSize: 14 }}>{p[0]} <span className="cbadge" style={{ color: "#9D174D", background: "#FCE7F3" }}>재가</span></div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {data.sido[p[1]]} {p[2]} · {p[3]}</div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>신청자: <b style={{ color: "var(--text)" }}>{PT.name}</b> · {PT.sexAge}</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>신청자: <b style={{ color: "var(--text)" }}>{_bkNm}</b>{_bkAge ? ` · ${_bkAge}` : ""}</div>
             </div>
             <div className="bklbl">희망 급여종류</div>
             <div className="ctags">{svcs.map((s) => <span key={s} onClick={() => setPick(s)} style={{ cursor: "pointer", background: pick === s ? "#EAF0FE" : undefined, borderColor: pick === s ? "#BFD0FF" : undefined, color: pick === s ? "#2563EB" : undefined, fontWeight: pick === s ? 800 : 600 }}>{s}</span>)}</div>

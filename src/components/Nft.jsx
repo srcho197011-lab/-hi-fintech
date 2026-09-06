@@ -1,6 +1,17 @@
 /* NFT 데이터(NFT_MINE·NFT_ISSUE·NFT_USE·NFT_SEC) → src/data/sectionData.js 로 이관 */
 
 function NFTSection({ onGo }) {
+  /* [H-2 W3] 이름과 리포트 NFT 메타를 회원 값으로 — 전에는 조성래의 검진일·생체나이가
+     모든 회원의 「내 NFT」로 표시됐다. 근거가 없으면 수치를 비운다. */
+  const _nftMe = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _nftNm = (_nftMe && _nftMe.name) || "회원";
+  const _nftR = (_nftMe && typeof demoReport === "function") ? (() => { try { return demoReport(_nftMe); } catch (e) { return null; } })() : null;
+  const _nftCk = (() => { try { if (!_nftMe || typeof vaultLoad !== "function") return ""; const v = vaultLoad(anonToken(_nftMe)); const cs = ((v && v.checkups) || []).slice().sort((x, y) => String(y.date || "").localeCompare(String(x.date || ""))); return cs.length ? String(cs[0].date || "").replace(/-/g, ".") : ""; } catch (e) { return ""; } })();
+  const _nftMine = (typeof NFT_MINE !== "undefined" ? NFT_MINE : []).map((n) => {
+    if (n.type === "리포트 NFT") return Object.assign({}, n, { name: "하이핀 정밀분석 리포트", meta: [_nftCk && `검진일 ${_nftCk}`, _nftR && `생체나이 ${_nftR.bio}세`, _nftR && _nftR.evalLabel && `종합 ${_nftR.evalLabel}`].filter(Boolean).join(" · ") || "검진 결과 연결 후 발행" });
+    if (n.type === "건강인증서 SBT") return Object.assign({}, n, { meta: [_nftR && _nftR.evalLabel && `종합 ${_nftR.evalLabel}`, _nftR && _nftR.agingRank != null && `노화등수 ${_nftR.agingRank}등`, _nftR && _nftR.agingSpeed != null && `노화속도 ${_nftR.agingSpeed}배`].filter(Boolean).join(" · ") || "검진 결과 연결 후 발행" });
+    return n;
+  });
   const [tab, setTab] = useState("mine");
   const go = onGo || (() => {});
   const tabs = [["mine", "내 Health NFT", BadgeCheck], ["issue", "발급 종류", FileText], ["use", "활용·연계", Sparkles], ["sec", "무결성·보안", ShieldCheck]];
@@ -15,13 +26,13 @@ function NFTSection({ onGo }) {
 
       {tab === "mine" && (<>
         <div className="benefit">
-          <span><Art name="badge" size={16} /> 보유 {NFT_MINE.length + NFT_MINE_FIN.length}개</span>
+          <span><Art name="badge" size={16} /> 보유 {_nftMine.length + NFT_MINE_FIN.length}개</span>
           <span><Art name="lock" size={16} /> SBT 양도불가</span>
           <span><Art name="hash" size={16} /> 위·변조 방지</span>
           <span><Art name="coin" size={16} /> 데이터 제공 보상 연계</span>
         </div>
-        <div className="bklbl" style={{ margin: "2px 0 8px" }}><BadgeCheck size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 조성래님 건강지갑 NFT/SBT</div>
-        <div className="nftgrid">{NFT_MINE.map((n, i) => (
+        <div className="bklbl" style={{ margin: "2px 0 8px" }}><BadgeCheck size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> {_nftNm}님 건강지갑 NFT/SBT</div>
+        <div className="nftgrid">{_nftMine.map((n, i) => (
           <div className="nftc" key={i}>
             <div className="nh"><span className="ni" style={{ background: n.col + "1A" }}><Art name={n.art} size={24} /></span>
               <div style={{ flex: 1 }}><span className="cbadge" style={{ color: n.col, background: n.col + "14" }}>{n.type}</span><span className="sbtbadge" style={{ marginLeft: 5 }}>SBT</span><div className="nname" style={{ marginTop: 5 }}>{n.name}</div><div className="nmeta">{n.meta}</div></div></div>

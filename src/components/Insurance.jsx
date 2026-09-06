@@ -205,7 +205,14 @@ function InsJoin({ onGo }) {
   const [ag, setAg] = useState({});
   const [open, setOpen] = useState({});
   const [svc, setSvc] = useState({ s0: true, s1: true, s2: true, s3: true, s4: true });
-  const [info, setInfo] = useState({ name: PT.name, birth: "1970.11.20", sex: "남", phone: "", addr: PT.addr });
+  /* [H-2 W3] 보험 가입 신청 폼에 조성래의 이름·생년월일·주소가 미리 채워져 있었다.
+     남의 신원으로 청약이 시작되는 셈이라, 세션에서 채우고 모르는 값은 비워 둔다. */
+  const [info, setInfo] = useState(() => {
+    const me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+    const rg = (typeof memberRegion === "function") ? (() => { try { return memberRegion(); } catch (e) { return null; } })() : null;
+    const isSelf = me && me.isSelf;
+    return { name: (me && me.name) || "", birth: isSelf ? "1970.11.20" : "", sex: (me && me.sex) || "", phone: "", addr: (rg && rg.addr) || "" };
+  });
   // 가드레일 ⓟ(진단 #46): 주민등록번호 평문 수집 폼 제거 — 실번호 입력 대신 PASS 본인인증(시연) 완료 플래그로 대체
   const [rrnVerified, setRrnVerified] = useState(false);
   const rrnOk = rrnVerified;
@@ -902,18 +909,23 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
 
 /* ── 실손보험 정책 — 건강자산 기반 보험지원 모델 ── */
 function HealthAssetWallet() {
+  const _wNm = (() => { try { const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); return (m && m.name) || "회원"; } catch (e) { return "회원"; } })();
   const W = [["누적 건강자산", "12,480", "HTK"], ["이번 달 적립 건강자산", "+1,240", "HTK"], ["실손보험 지원 가능", "약 32,000", "원/월"]];
   const ST = [["건강검진대비보험", "적용 중", true], ["실손보험 추천", "5세대 실손", true], ["노후/유병력자 실손", "해당 시 안내", false], ["사회공헌 지원 대상", "현재 비대상", false]];
   return (
     <div className="ipswallet">
-      <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Art name="wallet" size={20} /> <b style={{ fontSize: 14.5, fontWeight: 800 }}>조성래님 건강금융지갑 · 실손 지원 현황</b></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Art name="wallet" size={20} /> <b style={{ fontSize: 14.5, fontWeight: 800 }}>{_wNm}님 건강금융지갑 · 실손 지원 현황</b></div>
       <div className="wg">{W.map(([k, v, u]) => <div className="wi" key={k}><div className="k">{k}</div><div className="v">{v} <small>{u}</small></div></div>)}</div>
       <div className="wst">{ST.map(([k, v, on]) => <span className="chip" key={k}>{on ? <Check size={12} /> : <Info size={12} />} {k}: <b>{v}</b></span>)}</div>
     </div>
   );
 }
 function InsuranceRecommendationCard({ report }) {
-  const age = (report && report.meta && report.meta.regAge) || 54.1;
+  /* [H-2 W3] 나이·이름을 세션에서 — 전에는 report.json(조성래) 나이로 추천을 계산했다 */
+  const _rMe = (() => { try { return (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); } catch (e) { return null; } })();
+  const _rNm = (_rMe && _rMe.name) || "회원";
+  const _rAge = (() => { try { return (_rMe && typeof demoRegAge === "function") ? demoRegAge(_rMe) : null; } catch (e) { return null; } })();
+  const age = _rAge || (report && report.meta && report.meta.regAge) || 54.1;
   const chronic = false; // 안내: 위험도는 높으나 진단 보유는 아님
   const rec = age >= 60 ? "노후실손보험" : chronic ? "유병력자 실손보험" : "5세대 실손보험";
   const TYPES = [
@@ -925,7 +937,7 @@ function InsuranceRecommendationCard({ report }) {
     <div className="ipsrec">
       {TYPES.map(([seg, name, desc]) => (
         <div className={`rc ${name === rec ? "on" : ""}`} key={name}>
-          {name === rec && <span className="rfit"><Check size={10} /> 조성래님 추천</span>}
+          {name === rec && <span className="rfit"><Check size={10} /> {_rNm}님 추천</span>}
           <div className="rtag">{seg}</div>
           <div className="rt">{name}</div>
           <div className="rd">{desc}</div>
@@ -986,7 +998,7 @@ function InsurancePlanCompare() {
     </>
   );
 }
-/* ── 실손보험·중대질환 통계 패널 (10만+조성래 = 100,001명, 실통계 기반) ── */
+/* ── 실손보험·중대질환 통계 패널 (코호트 10만 + 본인 = 100,001명, 실통계 기반) ── */
 function SilsonStatsPanel() {
   const _w = (n) => { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000).toFixed(n % 100000000 ? 1 : 0) + "억" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; };
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -1003,7 +1015,7 @@ function SilsonStatsPanel() {
   const n = agg ? agg.n : 100001;
   return (
     <div className="silwrap">
-      <div className="bklbl2"><ShieldCheck size={16} color="#2563EB" /> 실손보험·중대질환 데이터 <span className="siln">회원 {n.toLocaleString()}명(10만 + 조성래) · 실통계 기반</span></div>
+      <div className="bklbl2"><ShieldCheck size={16} color="#2563EB" /> 실손보험·중대질환 데이터 <span className="siln">회원 {n.toLocaleString()}명(코호트 10만 + 본인) · 실통계 기반</span></div>
 
       {myIns && (<div className="silme">
         <div className="silme-h"><b>{myName}</b>님 보장 현황 <span className={"silbadge " + (myIns.silson.enrolled ? "on" : "off")}>{myIns.silson.gen === "미가입" ? "실손 미가입" : "실손 " + myIns.silson.gen}</span></div>

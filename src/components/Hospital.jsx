@@ -245,15 +245,27 @@ function HospRow({ data, m, recoSet, onDetail, onBook }) {
 }
 
 function HospitalRec({ data, onGo }) {
-  const [region, setRegion] = useState(PT.sido);
+  /* [H-2 W3] 거주지·이름·소견을 PT(조성래 실데이터) 상수에서 세션으로 옮긴다.
+     그전에는 회원이 어디 살든 은평구 기준으로 병원을 추천했고, 진료과 사유도 조성래의
+     췌장암 경고·간 54.4세에서 뽑혀 24세 회원에게 본인 소견처럼 표시됐다.
+     같은 파일 43·154행의 findNear()가 이미 memberRegion()을 정상 사용한다 — 그 방식을 따른다. */
+  const _rg = (typeof memberRegion === "function") ? memberRegion() : { sidoShort: "서울", sgg: "", addr: "", name: "" };
+  const _me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _nm = (_me && _me.name) || _rg.name || "회원";
+  const _home = _rg.sidoShort || "서울";
+  const [region, setRegion] = useState(_home);
   const [detail, setDetail] = useState(null);
   const [sel, setSel] = useState(null);
-  const atHome = region === PT.sido;
+  const atHome = region === _home;
 
+  /* 진료과 사유는 이 회원의 검진 이상항목에서 뽑는다 — 근거가 없으면 사유를 비운다(지어내지 않는다) */
+  const _chk = (_me && typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, _me)); } catch (e) { return null; } })() : null;
+  const _abn = (_chk && _chk.comp && _chk.comp.abnormals) ? _chk.comp.abnormals.slice(0, 3).join(" · ") : "";
+  const _dz = (_me && (_me.highRiskDiseases || []).length) ? _me.highRiskDiseases.slice(0, 2).join("·") + " 관리" : "";
   const RECO = [
-    { dept: "내과", ic: Stethoscope, col: "#7C3AED", bg: "#F1ECFE", why: "췌장암 경고 · 간 54.4세 · 당뇨 위험 ↑ — 복부초음파·위/대장 내시경·혈당 관리" },
-    { dept: "영상의학과", ic: Activity, col: "#2563EB", bg: "#E8F1FE", why: "췌장·간 정밀영상 — 복부 초음파·CT 추적관찰" },
-    { dept: "가정의학과", ic: HeartPulse, col: "#F59E0B", bg: "#FEF3E2", why: "만성질환·생활습관 통합관리 — 금연·절주·체중·대사" },
+    { dept: "내과", ic: Stethoscope, col: "#7C3AED", bg: "#F1ECFE", why: _abn ? `검진 확인 필요 — ${_abn}` : "만성질환·검진 이상항목 상담" },
+    { dept: "영상의학과", ic: Activity, col: "#2563EB", bg: "#E8F1FE", why: "정밀영상 검사 — 초음파·CT 추적관찰" },
+    { dept: "가정의학과", ic: HeartPulse, col: "#F59E0B", bg: "#FEF3E2", why: _dz || "생활습관 통합관리 — 금연·절주·체중·대사" },
   ];
   const recoIdx = React.useMemo(() => RECO.map((r) => data.dept.indexOf(r.dept)).filter((i) => i >= 0), [data]);
   const recoSet = React.useMemo(() => new Set(recoIdx), [recoIdx]);
@@ -274,9 +286,9 @@ function HospitalRec({ data, onGo }) {
     const general = matched.filter((m) => !m.partner);
     const guMap = {};
     for (const m of general) (guMap[m.h[3]] || (guMap[m.h[3]] = [])).push(m);
-    let byGu = Object.keys(guMap).map((gu) => ({ gu, items: guMap[gu], home: region === PT.sido && gu === PT.sigungu })).sort((a, b) => b.items.length - a.items.length);
+    let byGu = Object.keys(guMap).map((gu) => ({ gu, items: guMap[gu], home: region === _home && gu === _rg.sgg })).sort((a, b) => b.items.length - a.items.length);
     // 회원 거주 동네(은평구)를 맨 앞으로
-    if (region === PT.sido) {
+    if (region === _home) {
       const hi = byGu.findIndex((g) => g.home);
       if (hi > 0) { const home = byGu.splice(hi, 1)[0]; byGu.unshift(home); }
     }
@@ -289,8 +301,8 @@ function HospitalRec({ data, onGo }) {
 
   return (<>
     <div className="airec">
-      <div className="at"><Sparkles size={16} color="#7C3AED" /> 조성래님 맞춤 병원 추천</div>
-      <div className="ap">프롬에이지 Premium 리포트(생체나이 52.5세 · <b>췌장암 경고</b> · 간 54.4세 · 당뇨 위험 ↑)를 분석해, 진료가 필요한 과목을 모두 갖춘 병원을 거주 지역에서 찾아드려요.</div>
+      <div className="at"><Sparkles size={16} color="#7C3AED" /> {_nm}님 맞춤 병원 추천</div>
+      <div className="ap">{_abn ? <>검진 결과에서 <b>확인이 필요한 항목</b>({_abn})을 보고, 그 진료과를 갖춘 병원을 거주 지역에서 찾아드려요.</> : <>검진 결과가 연결되면 필요한 진료과를 짚어 드려요. 지금은 거주 지역 기준으로 보여드릴게요.</>}</div>
     </div>
     <div className="card">
       <div className="rct"><Stethoscope size={18} color="#7C3AED" /> 건강상태 기반 권장 진료과</div>
@@ -299,15 +311,15 @@ function HospitalRec({ data, onGo }) {
           <div style={{ flex: 1 }}><b>{r.dept}</b><p>{r.why}</p></div>
           <button onClick={() => onGo({ sido: region, dept: r.dept })} style={{ alignSelf: "center", border: "1px solid var(--border)", background: "#fff", color: "var(--blue)", borderRadius: 9, padding: "7px 11px", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>{r.dept} ›</button></div>
       ))}
-      <div className="chnote" style={{ marginTop: 4 }}>※ 권장 진료과는 조성래님 리포트의 장기 생체나이·질병위험·암 등급을 바탕으로 자동 산출됩니다. 아래 병원은 위 진료과를 <b>실제로 운영하는</b> 심평원 등록 병원입니다.</div>
+      <div className="chnote" style={{ marginTop: 4 }}>※ 권장 진료과는 {_nm}님 검진 결과의 장기 생체나이·질병위험·암 등급을 바탕으로 자동 산출됩니다. 아래 병원은 위 진료과를 <b>실제로 운영하는</b> 심평원 등록 병원입니다.</div>
     </div>
 
     <div className="bklbl" style={{ margin: "2px 0 8px", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-      <span><CircleUserRound size={13} style={{ verticalAlign: "-2px" }} /> 회원정보 거주지 <b style={{ color: "#2563EB" }}>{PT.addr}</b></span>
-      {!atHome && <button className="fsel" style={{ padding: "3px 9px" }} onClick={() => setRegion(PT.sido)}>내 거주지로</button>}
+      <span><CircleUserRound size={13} style={{ verticalAlign: "-2px" }} /> 회원정보 거주지 <b style={{ color: "#2563EB" }}>{_rg.addr || "미등록"}</b></span>
+      {!atHome && <button className="fsel" style={{ padding: "3px 9px" }} onClick={() => setRegion(_home)}>내 거주지로</button>}
       <span style={{ marginLeft: "auto", color: "var(--muted)" }}>맞춤 병원 <b style={{ color: "var(--blue)" }}>{regionCount.toLocaleString()}</b>곳</span>
     </div>
-    <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${region === r ? "on" : ""}`} onClick={() => setRegion(r)}>{r === PT.sido && <Home size={11} style={{ verticalAlign: "-1px", marginRight: 3 }} />}{r}{distribution[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{distribution[r].toLocaleString()}</span> : ""}</div>)}</div>
+    <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${region === r ? "on" : ""}`} onClick={() => setRegion(r)}>{r === _home && <Home size={11} style={{ verticalAlign: "-1px", marginRight: 3 }} />}{r}{distribution[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{distribution[r].toLocaleString()}</span> : ""}</div>)}</div>
 
     {partners.length > 0 && (
       <div className="card" style={{ border: "1.5px solid #BFD0FF", background: "linear-gradient(180deg,#F7F9FF,#fff)" }}>
@@ -317,7 +329,7 @@ function HospitalRec({ data, onGo }) {
       </div>
     )}
 
-    <div className="bklbl" style={{ margin: "2px 0 8px" }}><MapPin size={14} color="#2F5BEA" style={{ verticalAlign: "-2px" }} /> {region} 지역별 추천 병원 {atHome && <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 내 동네({PT.sigungu}) 우선</span>}</div>
+    <div className="bklbl" style={{ margin: "2px 0 8px" }}><MapPin size={14} color="#2F5BEA" style={{ verticalAlign: "-2px" }} /> {region} 지역별 추천 병원 {atHome && <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 내 동네({_rg.sgg}) 우선</span>}</div>
     {byGu.length === 0 && partners.length === 0 && <div className="hload">{region}에서 조건에 맞는 병원을 찾지 못했습니다. 다른 지역을 선택해 보세요.</div>}
     {byGu.slice(0, 6).map(({ gu, items, home }) => (
       <div className="card" key={gu} style={home ? { paddingBottom: 10, border: "1.5px solid #BFD0FF", background: "linear-gradient(180deg,#F7F9FF,#fff)" } : { paddingBottom: 10 }}>
@@ -400,7 +412,7 @@ function HospitalBookingModal({ data, h, onClose }) {
               <div style={{ fontWeight: 800, fontSize: 17 }}>예약이 확정되었습니다</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{h[0]}<br />{date} {time}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
-                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>건강지갑에 예약 기록</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>진료·검사 이력이 조성래님 건강지갑에 자동 기록됩니다.</div></div></div>
+                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>건강지갑에 예약 기록</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>진료·검사 이력이 {_nm}님 건강지갑에 자동 기록됩니다.</div></div></div>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic"><BadgeCheck size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>NFT 예약증 발행</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>지갑에 SBT 예약증이 발행되고 알림톡이 발송됩니다.</div></div></div>
               </div>
               <button className="cbtn pri" style={{ marginTop: 16 }} onClick={onClose}>확인</button>

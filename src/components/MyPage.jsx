@@ -188,6 +188,20 @@ function MyDataWizard({ onClose }) {
 }
 
 function MyPageSection({ onGo }) {
+  /* [H-2 W3] 내 정보는 로그인한 회원의 것이다 — 전에는 조성래의 성명·생년월일·휴대전화·이메일·주소가
+     모든 회원의 「내 정보」로 표시됐다. 모르는 값은 지어내지 않고 「미등록」으로 둔다. */
+  const _myMe = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _myRg = (typeof memberRegion === "function") ? (() => { try { return memberRegion(); } catch (e) { return null; } })() : null;
+  const _mySelf = !(typeof demoCurrentUser === "function" && demoCurrentUser());
+  const _mask = (e) => { const t = String(e || ""); const at = t.indexOf("@"); return at > 0 ? t.slice(0, at) + "@***" + t.slice(t.lastIndexOf(".")) : "미등록"; };
+  const _myInfo = [
+    ["성명", (_myMe && _myMe.name) || "미등록"],
+    ["생년월일", _mySelf ? "1970.11.20" : "미등록"],
+    ["성별", (_myMe && _myMe.sex) || "미등록"],
+    ["휴대전화", _mySelf ? "010-****-1234" : "미등록"],
+    ["이메일(ID)", _mask(_myMe && _myMe.email)],
+    ["주소", (_myRg && _myRg.addr) || "미등록"],
+  ];
   const [tab, setTab] = useState("family");
   const [mdOpen, setMdOpen] = useState(false);
   const go = onGo || (() => {});
@@ -303,7 +317,7 @@ function MyPageSection({ onGo }) {
       {tab === "profile" && (<>
         <div className="card">
           <div className="rct"><CircleUserRound size={18} color="#2563EB" /> 개인정보 <button className="cbtn2" style={{ marginLeft: "auto" }} onClick={() => toast("개인정보 수정 화면은 준비 중입니다.")}><RefreshCw size={13} /> 수정</button></div>
-          {[["성명", PT.name], ["생년월일", "1970.11.20"], ["성별", "남"], ["휴대전화", "010-****-1234"], ["이메일(ID)", "srcho197011@***.com"], ["주소", PT.addr]].map(([l, v]) => (
+          {_myInfo.map(([l, v]) => (
             <div className="costrow" key={l}><span className="cl">{l}</span><span className="cv" style={{ color: "var(--text)" }}>{v}</span><span className="ca" /></div>
           ))}
           <div className="chnote" style={{ marginTop: 8 }}>※ 휴대전화·이메일은 일부 마스킹되어 표시됩니다. 주민등록번호 등 민감정보는 본인인증(PASS) 후 암호화 처리됩니다.</div>

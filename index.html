@@ -4299,10 +4299,13 @@ function HealthManageSection({ onGo }) {
   const cats = [["summary", "한눈에 보기", LayoutDashboard], ["checkup", "검진 항목현황", ClipboardList], ["careloop", "진료 연계", Building2], ["bio", "생체나이", Activity], ["disease", "질병 위험", HeartPulse], ["cancer", "암 위험", ShieldCheck], ["warn", "경고신호", AlertTriangle], ["care", "관리·권고", Sparkles], ["report", "검진 리포트", FileText]];
   const go = onGo || (() => {});
   const Go = ({ to, ic: Ic, pri, children }) => <button className={`gobtn ${pri ? "pri" : ""}`} onClick={() => go(to)}><Ic size={14} /> {children}</button>;
-  // 체험 회원 로그인 시 리포트 데이터를 회원 기준으로 치환
+  /* [H-2 W3] 리포트는 「지금 로그인한 회원」 기준으로 계산한다.
+     전에는 체험회원(dm)일 때만 계산하고 아니면 null로 두어, 아래 모든 값이 PT(조성래 실데이터)
+     상수로 떨어졌다 — 그래서 회원이 누구든 생체나이 52.5세·췌장암 경고·간 54.4세가 자기 것처럼 보였다.
+     demoReport는 금고에 실검진이 있으면 그걸 쓰므로(계보 연동) 본인 계정도 정상 동작한다. */
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-  const R = dm ? demoReport(dm) : null;
   const selfM = dm || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const R = (selfM && typeof demoReport === "function") ? (() => { try { return demoReport(selfM); } catch (e) { return null; } })() : null;
   const chk = (selfM && typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, selfM)); } catch (e) { return null; } })() : null;
   const hg = (selfM && typeof memberHealthGrade === "function") ? (() => { try { return memberHealthGrade(selfM); } catch (e) { return null; } })() : null;
   const ckFlags = chk ? [
@@ -4310,24 +4313,42 @@ function HealthManageSection({ onGo }) {
     { t: `검진 이상항목 ${chk.comp.abnormals.length}건`, c: chk.comp.abnormals.length ? "#B91C1C" : "#15803D", bg: chk.comp.abnormals.length ? "#FDECEC" : "#E7F8EE", ic: chk.comp.abnormals.length ? "warn" : "check" },
     { t: `진행형태 ${chk.trendLabel}`, c: chk.trend === "improve" ? "#15803D" : chk.trend === "worsen" ? "#B45309" : "#475569", bg: chk.trend === "improve" ? "#E7F8EE" : chk.trend === "worsen" ? "#FEF3E2" : "#EEF1F8", ic: chk.trend === "improve" ? "check" : chk.trend === "worsen" ? "up" : null },
   ] : [];
+  /* [H-2 W3] 리포트 출처 표기 — 기관 등록번호는 「그 회원의 실제 리포트가 있을 때」만 나간다.
+     PT.reg(KRH01778…)는 조성래 본인의 기관 등록번호라, 다른 회원 화면에 뜨면 남의 식별자 노출이다.
+     코호트 회원에게는 기관 리포트가 없으므로 하이핀 분석으로 표기하고 등록번호는 비운다. */
+  const _prov = (() => {
+    const isSelf = !dm && (typeof PT !== "undefined");
+    let ckDate = "";
+    try {
+      if (selfM && typeof vaultLoad === "function" && typeof anonToken === "function") {
+        const v = vaultLoad(anonToken(selfM));
+        const cs = ((v && v.checkups) || []).slice().sort((a2, b2) => String(b2.date || "").localeCompare(String(a2.date || "")));
+        if (cs.length) ckDate = String(cs[0].date || "").replace(/-/g, ".").slice(0, 10);
+      }
+    } catch (e) {}
+    const _rgn = (() => { try { const r = (typeof memberRegion === "function") ? memberRegion() : null; return r ? (r.sgg || r.sidoShort || "") : ""; } catch (e) { return ""; } })();
+    if (isSelf) return { region: _rgn, hasReport: true, brand: "프롬에이지 Premium · 메디에이지연구소 (gene.imhealth.co.kr)", reg: PT.reg, checkup: ckDate || PT.checkup, analyzed: PT.analyzed };
+    return { region: _rgn, hasReport: false, brand: "하이핀 정밀분석 · 연결된 검진 수치 기준", reg: "", checkup: ckDate, analyzed: "" };
+  })();
+  const _meNm = (selfM && selfM.name) || "회원";
   const won = (n) => Number(n).toLocaleString("ko-KR") + "원";
-  const bioAge = R ? R.bio : PT.bioAge;
-  const regAge = R ? R.reg : PT.regAge;
-  const diffN = R ? R.diff : -1.6;
+  const bioAge = R ? R.bio : null;
+  const regAge = R ? R.reg : null;
+  const diffN = R ? R.diff : 0;
   const diffLabel = (diffN <= 0 ? "" : "+") + diffN + "세";
   const diffGood = diffN <= 0;
-  const agingRank = R ? R.agingRank : PT.agingRank;
-  const agingSpeed = R ? R.agingSpeed : PT.agingSpeed;
-  const organs = R ? R.organs : ORGANS;
-  const diseases = R ? R.diseases : DISEASES;
-  const cancers = R ? R.cancers : CANCERS;
-  const cancerTotal = R ? R.cancerTotal : 4;
-  const costThis = R ? R.costThis : 2381477;
-  const cost10v = R ? R.cost10 : 3089692;
-  const worstStr = R ? R.worstNames.join("·") : "간·췌장";
-  const evalLabel = R ? R.evalLabel : "좋음";
+  const agingRank = R ? R.agingRank : null;
+  const agingSpeed = R ? R.agingSpeed : null;
+  const organs = R ? R.organs : [];
+  const diseases = R ? R.diseases : [];
+  const cancers = R ? R.cancers : [];
+  const cancerTotal = R ? R.cancerTotal : null;
+  const costThis = R ? R.costThis : null;
+  const cost10v = R ? R.cost10 : null;
+  const worstStr = R ? R.worstNames.join("·") : "";
+  const evalLabel = R ? R.evalLabel : "";
   const careRecs = R ? R.recs : null;
-  const sumFlags = R ? R.flags : [{ t: "당뇨병 위험 +6.2%", c: "#B45309", bg: "#FEF3E2", ic: "up" }, { t: "췌장암 경고", c: "#fff", bg: "#EF4444", ic: "warn" }, { t: "간 54.4세 · 췌장 56.2세", c: "#B91C1C", bg: "#FDECEC" }, { t: "심장·신장·전체암 양호", c: "#15803D", bg: "#E7F8EE", ic: "check" }];
+  const sumFlags = R ? R.flags : [];   // 근거가 없으면 소견을 만들지 않는다
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="manage" /></span>
@@ -4337,11 +4358,14 @@ function HealthManageSection({ onGo }) {
       {typeof MyCheckupHero === "function" && <MyCheckupHero onGo={go} onReport={() => setCat("report")} />}
 
       <div className="src"><ExternalLink size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-        <div>데이터 출처: <b>프롬에이지 Premium · 메디에이지연구소</b> (gene.imhealth.co.kr) · 등록번호 {PT.reg} · 검진일 {PT.checkup} · 분석일 {PT.analyzed}. 의학적 진단을 대신할 수 없으며, 동일 성·연령군 대비 상대 위험도입니다.</div></div>
+        <div>{_prov.hasReport
+          ? <>데이터 출처: <b>{_prov.brand}</b> · 등록번호 {_prov.reg} · 검진일 {_prov.checkup} · 분석일 {_prov.analyzed}. </>
+          : <>데이터 출처: <b>{_prov.brand}</b>{_prov.checkup ? ` · 검진일 ${_prov.checkup}` : ""}. </>}
+          의학적 진단을 대신할 수 없으며, 동일 성·연령군 대비 상대 위험도입니다.</div></div>
 
       <div className="conn">
         <span className="cdot" style={{ background: synced ? "#16A34A" : "#F59E0B", boxShadow: synced ? "0 0 0 4px rgba(22,163,74,.15)" : "0 0 0 4px rgba(245,158,11,.15)" }} />
-        <div className="ctxt"><b>{R ? "체험 회원 리포트 표시 중" : `메디에이지 연동 ${synced ? "완료" : "필요"}`}</b><div style={{ color: "var(--muted)", marginTop: 2 }}>{R ? `${dm.name}님 시연용 예시 건강 리포트가 표시되고 있습니다.` : (synced ? "조성래님 프롬에이지 Premium 리포트가 표시되고 있습니다." : "계정 인증 후 실데이터를 불러옵니다.")}</div></div>
+        <div className="ctxt"><b>{dm ? "체험 회원 리포트 표시 중" : `메디에이지 연동 ${synced ? "완료" : "필요"}`}</b><div style={{ color: "var(--muted)", marginTop: 2 }}>{dm ? `${dm.name}님 시연용 예시 건강 리포트가 표시되고 있습니다.` : (synced ? `${_meNm}님 프롬에이지 Premium 리포트가 표시되고 있습니다.` : "계정 인증 후 실데이터를 불러옵니다.")}</div></div>
         <button className="cbtn2" onClick={() => setSynced(true)}><RefreshCw size={14} /> 새로고침</button>
       </div>
 
@@ -4383,7 +4407,7 @@ function HealthManageSection({ onGo }) {
           <div className="rct"><Sparkles size={18} color="#7C3AED" /> 지금 할 일 · 맞춤 가이드</div>
           <div className="adv"><span className="ic" style={{ background: "#F1ECFE" }}><Stethoscope size={18} color="#7C3AED" /></span><div style={{ flex: 1 }}><b>{R ? `${worstStr} 정밀검사` : "간·췌장 정밀검사"}</b><p>{R ? `${worstStr} 노화 빠름${R.hr.length ? ` · 고위험 암 ${R.hr.join("·")}` : ""} — 복부 초음파/내시경 권장` : "간 54.4세·췌장 56.2세·췌장암 경고 — 복부 초음파/내시경 권장"}</p></div><Go to="checkup" ic={CalendarCheck} pri>검진 예약</Go></div>
           <div className="adv"><span className="ic" style={{ background: "#FEF3E2" }}><Activity size={18} color="#F59E0B" /></span><div style={{ flex: 1 }}><b>당뇨 예방 관리</b><p>당뇨병 위험 동년배 +6.2% — 저당 식단·혈당 모니터링</p></div><Go to="shop" ic={ShoppingCart}>건강쇼핑</Go></div>
-          <div className="adv"><span className="ic" style={{ background: "#E8F1FE" }}><Building2 size={18} color="#2563EB" /></span><div style={{ flex: 1 }}><b>전문병원 연결</b><p>거주지(은평구) 기준 내과·영상의학과 맞춤 병원</p></div><Go to="hospital" ic={Building2}>병원 찾기</Go></div>
+          <div className="adv"><span className="ic" style={{ background: "#E8F1FE" }}><Building2 size={18} color="#2563EB" /></span><div style={{ flex: 1 }}><b>전문병원 연결</b><p>{_prov.region ? `거주지(${_prov.region}) 기준` : "거주지 기준"} 검진 결과에 맞는 진료과 병원</p></div><Go to="hospital" ic={Building2}>병원 찾기</Go></div>
           <div className="adv"><span className="ic" style={{ background: "#FCE7F3" }}><HeartHandshake size={18} color="#DB2777" /></span><div style={{ flex: 1 }}><b>돌봄·간병 상담</b><p>방문간호·재활 등 재가/돌봄 연계 필요 시</p></div><Go to="homecare" ic={HeartHandshake}>재가·돌봄</Go></div>
           <div className="gorow"><Go to="ai" ic={MessageSquare}>AI 상담</Go><Go to="insurance" ic={ShieldCheck}>보험 보기</Go><button className="gobtn" onClick={() => setViewer(true)}><ExternalLink size={14} /> 원본 리포트</button></div>
         </div>
@@ -4406,7 +4430,7 @@ function HealthManageSection({ onGo }) {
         </div>
         {R ? (
           <div className="card"><div className="rct"><TrendingUp size={18} color="#2563EB" /> 생체나이 vs 주민등록나이</div>
-            <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{dm.name}님 생체나이 <b style={{ color: "var(--blue)" }}>{bioAge}세</b>는 주민등록나이 {regAge}세보다 {diffGood ? `${Math.abs(diffN)}세 낮아(노화 느림)` : `${diffN}세 높아(노화 빠름)`}, 노화속도 {agingSpeed}배입니다. <span style={{ color: "var(--soft)" }}>※ 시연용 예시 데이터 · 연도별 추이는 실연동 시 제공됩니다.</span></p>
+            <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{_meNm}님 생체나이 <b style={{ color: "var(--blue)" }}>{bioAge}세</b>는 주민등록나이 {regAge}세보다 {diffGood ? `${Math.abs(diffN)}세 낮아(노화 느림)` : `${diffN}세 높아(노화 빠름)`}, 노화속도 {agingSpeed}배입니다. <span style={{ color: "var(--soft)" }}>※ 시연용 예시 데이터 · 연도별 추이는 실연동 시 제공됩니다.</span></p>
           </div>
         ) : (
           <div className="card">
@@ -4474,7 +4498,7 @@ function HealthManageSection({ onGo }) {
         </div>
         {typeof TodayAIRecs === "function" && <TodayAIRecs onGo={go} />}
       </>)}
-      {viewer && <OriginalReport onClose={() => setViewer(false)} />}
+      {viewer && <OriginalReport onClose={() => setViewer(false)} name={(selfM && selfM.name) || ""} prov={_prov} R={R} />}
     </div>
   );
 }
@@ -4664,10 +4688,18 @@ function WarnSigns() {
   );
 }
 
-/* ====================== 원본 리포트 뷰어 — name 전달 시 신청자 이름으로 개인화(샘플 모드) ====================== */
-function OriginalReport({ onClose, name, sample }) {
-  const NM = name || PT.name;
-  const PGH = (<div className="pghead"><div className="brand">메디에이지연구소 · 프롬에이지 Premium</div><div className="pinfo">이름 {NM} · {PT.sexAge}<br />등록번호 {PT.reg}<br />검진일 {PT.checkup}</div></div>);
+/* ====================== 원본 리포트 뷰어 ======================
+   [H-2 W3] 기관 원본은 「그 회원의 리포트가 실제로 있을 때」만 원본으로 표기한다.
+   전에는 머리글에 PT(조성래)의 이름·성별나이·기관 등록번호·검진일이 박혀, 다른 회원이 열어도
+   남의 리포트 식별자가 자기 것처럼 보였다. 원본이 없는 회원에게는 분석본임을 명시한다. */
+function OriginalReport({ onClose, name, sample, prov, R }) {
+  const _p = prov || { hasReport: false, brand: "하이핀 정밀분석", reg: "", checkup: "", analyzed: "" };
+  const NM = name || (_p.hasReport && typeof PT !== "undefined" ? PT.name : "회원");
+  const _sexAge = (_p.hasReport && typeof PT !== "undefined") ? PT.sexAge : (R && R.reg ? `${R.sex || ""} / ${R.reg}세`.trim() : "");
+  const _bio = R ? R.bio : null, _reg = R ? R.reg : null;
+  const _dif = (R && typeof R.diff === "number") ? R.diff : 0;
+  const _rank = R ? R.agingRank : null, _spd = R ? R.agingSpeed : null;
+  const PGH = (<div className="pghead"><div className="brand">{_p.hasReport ? "메디에이지연구소 · 프롬에이지 Premium" : "하이핀 정밀분석 · 연결된 검진 수치 기준"}</div><div className="pinfo">이름 {NM}{_sexAge ? ` · ${_sexAge}` : ""}{_p.reg ? <><br />등록번호 {_p.reg}</> : null}{_p.checkup ? <><br />검진일 {_p.checkup}</> : null}</div></div>);
   return (
     <div className="voverlay" onClick={onClose}>
       <div className="viewer" onClick={(e) => e.stopPropagation()}>
@@ -4683,7 +4715,7 @@ function OriginalReport({ onClose, name, sample }) {
           <div className="page coverbox">
             <div className="ct1">PROM-AGE PREMIUM · 메디에이지연구소</div>
             <div className="ct2">생체나이 건강지표 기반<br />질병 · 암 발생 위험도 및 의료비 예측 분석</div>
-            <div style={{ margin: "18px 0", fontSize: 14, fontWeight: 700 }}>성명 {NM} · {PT.sexAge} · 분석일 {PT.analyzed}</div>
+            <div style={{ margin: "18px 0", fontSize: 14, fontWeight: 700 }}>성명 {NM}{_sexAge ? ` · ${_sexAge}` : ""}{_p.analyzed ? ` · 분석일 ${_p.analyzed}` : ""}</div>
             <div className="disclaim">본 분석은 의학적으로 검증된 지표로 질병과 암 발생 위험도 및 지출 의료비를 예측합니다. 실제 위험도는 각 개인의 유전적 요인·생활습관·환경적 요인 등에 의해 달라질 수 있습니다. 본 검사의 결과는 의학적 진단을 대신할 수 없으며, 진단 및 치료 결정을 위해서는 반드시 주치의와 상의하세요.</div>
           </div>
 
@@ -4692,9 +4724,9 @@ function OriginalReport({ onClose, name, sample }) {
             <div className="pgidx">종합분석 · Overall Analysis</div>
             <div className="pgtitle">분석 요약</div>
             <div className="organs" style={{ marginTop: 16 }}>
-              <div className="organ"><div className="ok">생체나이</div><div className="ov">{PT.bioAge}세</div><div className="ob" style={{ color: "#16A34A", background: "#E7F8EE" }}>-1.6세</div></div>
-              <div className="organ"><div className="ok">노화등수</div><div className="ov">{PT.agingRank}등</div><div className="ob" style={{ color: "#2563EB", background: "#E8F1FE" }}>/100</div></div>
-              <div className="organ"><div className="ok">노화속도</div><div className="ov">{PT.agingSpeed}배</div><div className="ob" style={{ color: "#16A34A", background: "#E7F8EE" }}>느림</div></div>
+              <div className="organ"><div className="ok">생체나이</div><div className="ov">{_bio != null ? _bio + "세" : "—"}</div><div className="ob" style={{ color: _dif <= 0 ? "#16A34A" : "#B45309", background: _dif <= 0 ? "#E7F8EE" : "#FEF3E2" }}>{_dif != null ? (_dif > 0 ? "+" : "") + _dif + "세" : "—"}</div></div>
+              <div className="organ"><div className="ok">노화등수</div><div className="ov">{_rank != null ? _rank + "등" : "—"}</div><div className="ob" style={{ color: "#2563EB", background: "#E8F1FE" }}>/100</div></div>
+              <div className="organ"><div className="ok">노화속도</div><div className="ov">{_spd != null ? _spd + "배" : "—"}</div><div className="ob" style={{ color: _spd != null && _spd <= 1 ? "#16A34A" : "#B45309", background: _spd != null && _spd <= 1 ? "#E7F8EE" : "#FEF3E2" }}>{_spd == null ? "—" : _spd <= 1 ? "느림" : "빠름"}</div></div>
               <div className="organ"><div className="ok">종합평가</div><div className="ov" style={{ fontSize: 15 }}>좋음</div><div className="ob" style={{ color: "#16A34A", background: "#E7F8EE" }}>양호</div></div>
             </div>
             <div className="rct" style={{ fontSize: 14, marginTop: 18 }}>의료비 예측</div>
@@ -4705,7 +4737,7 @@ function OriginalReport({ onClose, name, sample }) {
           {/* INDEX 1 생체나이 */}
           <div className="page">{PGH}
             <div className="pgidx" style={{ background: "#2563EB" }}>INDEX 1 · 생체나이 분석</div>
-            <div className="pgtitle">생체나이 {PT.bioAge}세 <span style={{ fontSize: 13, color: "#16A34A", fontWeight: 700 }}>(주민등록 {PT.regAge}세 대비 -1.6세)</span></div>
+            <div className="pgtitle">생체나이 {_bio != null ? _bio + "세" : "—"} <span style={{ fontSize: 13, color: _dif <= 0 ? "#16A34A" : "#B45309", fontWeight: 700 }}>{_bio != null && _reg != null ? `(주민등록 ${_reg}세 대비 ${_dif > 0 ? "+" : ""}${_dif}세)` : ""}</span></div>
             <div className="pgsub">생체나이가 적다는 것은 동년배보다 전반적 건강 상태가 좋고 노화가 느리게 진행 중임을 의미합니다.</div>
             <div className="organs" style={{ marginTop: 16 }}>{ORGANS.map(([nm, age, st, good]) => (
               <div className="organ" key={nm}><div className="ok">{nm}나이</div><div className="ov">{age}세</div><div className="ob" style={{ color: good ? "#16A34A" : "#EF4444", background: good ? "#E7F8EE" : "#FDECEC" }}>{st}</div></div>))}</div>
@@ -6929,15 +6961,27 @@ function HospRow({ data, m, recoSet, onDetail, onBook }) {
 }
 
 function HospitalRec({ data, onGo }) {
-  const [region, setRegion] = useState(PT.sido);
+  /* [H-2 W3] 거주지·이름·소견을 PT(조성래 실데이터) 상수에서 세션으로 옮긴다.
+     그전에는 회원이 어디 살든 은평구 기준으로 병원을 추천했고, 진료과 사유도 조성래의
+     췌장암 경고·간 54.4세에서 뽑혀 24세 회원에게 본인 소견처럼 표시됐다.
+     같은 파일 43·154행의 findNear()가 이미 memberRegion()을 정상 사용한다 — 그 방식을 따른다. */
+  const _rg = (typeof memberRegion === "function") ? memberRegion() : { sidoShort: "서울", sgg: "", addr: "", name: "" };
+  const _me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _nm = (_me && _me.name) || _rg.name || "회원";
+  const _home = _rg.sidoShort || "서울";
+  const [region, setRegion] = useState(_home);
   const [detail, setDetail] = useState(null);
   const [sel, setSel] = useState(null);
-  const atHome = region === PT.sido;
+  const atHome = region === _home;
 
+  /* 진료과 사유는 이 회원의 검진 이상항목에서 뽑는다 — 근거가 없으면 사유를 비운다(지어내지 않는다) */
+  const _chk = (_me && typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, _me)); } catch (e) { return null; } })() : null;
+  const _abn = (_chk && _chk.comp && _chk.comp.abnormals) ? _chk.comp.abnormals.slice(0, 3).join(" · ") : "";
+  const _dz = (_me && (_me.highRiskDiseases || []).length) ? _me.highRiskDiseases.slice(0, 2).join("·") + " 관리" : "";
   const RECO = [
-    { dept: "내과", ic: Stethoscope, col: "#7C3AED", bg: "#F1ECFE", why: "췌장암 경고 · 간 54.4세 · 당뇨 위험 ↑ — 복부초음파·위/대장 내시경·혈당 관리" },
-    { dept: "영상의학과", ic: Activity, col: "#2563EB", bg: "#E8F1FE", why: "췌장·간 정밀영상 — 복부 초음파·CT 추적관찰" },
-    { dept: "가정의학과", ic: HeartPulse, col: "#F59E0B", bg: "#FEF3E2", why: "만성질환·생활습관 통합관리 — 금연·절주·체중·대사" },
+    { dept: "내과", ic: Stethoscope, col: "#7C3AED", bg: "#F1ECFE", why: _abn ? `검진 확인 필요 — ${_abn}` : "만성질환·검진 이상항목 상담" },
+    { dept: "영상의학과", ic: Activity, col: "#2563EB", bg: "#E8F1FE", why: "정밀영상 검사 — 초음파·CT 추적관찰" },
+    { dept: "가정의학과", ic: HeartPulse, col: "#F59E0B", bg: "#FEF3E2", why: _dz || "생활습관 통합관리 — 금연·절주·체중·대사" },
   ];
   const recoIdx = React.useMemo(() => RECO.map((r) => data.dept.indexOf(r.dept)).filter((i) => i >= 0), [data]);
   const recoSet = React.useMemo(() => new Set(recoIdx), [recoIdx]);
@@ -6958,9 +7002,9 @@ function HospitalRec({ data, onGo }) {
     const general = matched.filter((m) => !m.partner);
     const guMap = {};
     for (const m of general) (guMap[m.h[3]] || (guMap[m.h[3]] = [])).push(m);
-    let byGu = Object.keys(guMap).map((gu) => ({ gu, items: guMap[gu], home: region === PT.sido && gu === PT.sigungu })).sort((a, b) => b.items.length - a.items.length);
+    let byGu = Object.keys(guMap).map((gu) => ({ gu, items: guMap[gu], home: region === _home && gu === _rg.sgg })).sort((a, b) => b.items.length - a.items.length);
     // 회원 거주 동네(은평구)를 맨 앞으로
-    if (region === PT.sido) {
+    if (region === _home) {
       const hi = byGu.findIndex((g) => g.home);
       if (hi > 0) { const home = byGu.splice(hi, 1)[0]; byGu.unshift(home); }
     }
@@ -6973,8 +7017,8 @@ function HospitalRec({ data, onGo }) {
 
   return (<>
     <div className="airec">
-      <div className="at"><Sparkles size={16} color="#7C3AED" /> 조성래님 맞춤 병원 추천</div>
-      <div className="ap">프롬에이지 Premium 리포트(생체나이 52.5세 · <b>췌장암 경고</b> · 간 54.4세 · 당뇨 위험 ↑)를 분석해, 진료가 필요한 과목을 모두 갖춘 병원을 거주 지역에서 찾아드려요.</div>
+      <div className="at"><Sparkles size={16} color="#7C3AED" /> {_nm}님 맞춤 병원 추천</div>
+      <div className="ap">{_abn ? <>검진 결과에서 <b>확인이 필요한 항목</b>({_abn})을 보고, 그 진료과를 갖춘 병원을 거주 지역에서 찾아드려요.</> : <>검진 결과가 연결되면 필요한 진료과를 짚어 드려요. 지금은 거주 지역 기준으로 보여드릴게요.</>}</div>
     </div>
     <div className="card">
       <div className="rct"><Stethoscope size={18} color="#7C3AED" /> 건강상태 기반 권장 진료과</div>
@@ -6983,15 +7027,15 @@ function HospitalRec({ data, onGo }) {
           <div style={{ flex: 1 }}><b>{r.dept}</b><p>{r.why}</p></div>
           <button onClick={() => onGo({ sido: region, dept: r.dept })} style={{ alignSelf: "center", border: "1px solid var(--border)", background: "#fff", color: "var(--blue)", borderRadius: 9, padding: "7px 11px", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>{r.dept} ›</button></div>
       ))}
-      <div className="chnote" style={{ marginTop: 4 }}>※ 권장 진료과는 조성래님 리포트의 장기 생체나이·질병위험·암 등급을 바탕으로 자동 산출됩니다. 아래 병원은 위 진료과를 <b>실제로 운영하는</b> 심평원 등록 병원입니다.</div>
+      <div className="chnote" style={{ marginTop: 4 }}>※ 권장 진료과는 {_nm}님 검진 결과의 장기 생체나이·질병위험·암 등급을 바탕으로 자동 산출됩니다. 아래 병원은 위 진료과를 <b>실제로 운영하는</b> 심평원 등록 병원입니다.</div>
     </div>
 
     <div className="bklbl" style={{ margin: "2px 0 8px", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-      <span><CircleUserRound size={13} style={{ verticalAlign: "-2px" }} /> 회원정보 거주지 <b style={{ color: "#2563EB" }}>{PT.addr}</b></span>
-      {!atHome && <button className="fsel" style={{ padding: "3px 9px" }} onClick={() => setRegion(PT.sido)}>내 거주지로</button>}
+      <span><CircleUserRound size={13} style={{ verticalAlign: "-2px" }} /> 회원정보 거주지 <b style={{ color: "#2563EB" }}>{_rg.addr || "미등록"}</b></span>
+      {!atHome && <button className="fsel" style={{ padding: "3px 9px" }} onClick={() => setRegion(_home)}>내 거주지로</button>}
       <span style={{ marginLeft: "auto", color: "var(--muted)" }}>맞춤 병원 <b style={{ color: "var(--blue)" }}>{regionCount.toLocaleString()}</b>곳</span>
     </div>
-    <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${region === r ? "on" : ""}`} onClick={() => setRegion(r)}>{r === PT.sido && <Home size={11} style={{ verticalAlign: "-1px", marginRight: 3 }} />}{r}{distribution[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{distribution[r].toLocaleString()}</span> : ""}</div>)}</div>
+    <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${region === r ? "on" : ""}`} onClick={() => setRegion(r)}>{r === _home && <Home size={11} style={{ verticalAlign: "-1px", marginRight: 3 }} />}{r}{distribution[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{distribution[r].toLocaleString()}</span> : ""}</div>)}</div>
 
     {partners.length > 0 && (
       <div className="card" style={{ border: "1.5px solid #BFD0FF", background: "linear-gradient(180deg,#F7F9FF,#fff)" }}>
@@ -7001,7 +7045,7 @@ function HospitalRec({ data, onGo }) {
       </div>
     )}
 
-    <div className="bklbl" style={{ margin: "2px 0 8px" }}><MapPin size={14} color="#2F5BEA" style={{ verticalAlign: "-2px" }} /> {region} 지역별 추천 병원 {atHome && <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 내 동네({PT.sigungu}) 우선</span>}</div>
+    <div className="bklbl" style={{ margin: "2px 0 8px" }}><MapPin size={14} color="#2F5BEA" style={{ verticalAlign: "-2px" }} /> {region} 지역별 추천 병원 {atHome && <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 내 동네({_rg.sgg}) 우선</span>}</div>
     {byGu.length === 0 && partners.length === 0 && <div className="hload">{region}에서 조건에 맞는 병원을 찾지 못했습니다. 다른 지역을 선택해 보세요.</div>}
     {byGu.slice(0, 6).map(({ gu, items, home }) => (
       <div className="card" key={gu} style={home ? { paddingBottom: 10, border: "1.5px solid #BFD0FF", background: "linear-gradient(180deg,#F7F9FF,#fff)" } : { paddingBottom: 10 }}>
@@ -7084,7 +7128,7 @@ function HospitalBookingModal({ data, h, onClose }) {
               <div style={{ fontWeight: 800, fontSize: 17 }}>예약이 확정되었습니다</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{h[0]}<br />{date} {time}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
-                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>건강지갑에 예약 기록</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>진료·검사 이력이 조성래님 건강지갑에 자동 기록됩니다.</div></div></div>
+                <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>건강지갑에 예약 기록</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>진료·검사 이력이 {_nm}님 건강지갑에 자동 기록됩니다.</div></div></div>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic"><BadgeCheck size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>NFT 예약증 발행</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>지갑에 SBT 예약증이 발행되고 알림톡이 발송됩니다.</div></div></div>
               </div>
               <button className="cbtn pri" style={{ marginTop: 16 }} onClick={onClose}>확인</button>
@@ -7118,7 +7162,8 @@ const svcMeta = (s) => SVC_META[s] || { art: "nurse", col: "#64748B", bg: "#F1F5
 
 function SpecialPartner({ data }) {
   const [apply, setApply] = useState(false);
-  const sidoIdx = Math.max(0, data.sido.indexOf(PT.sido));
+  const _rg0 = (typeof memberRegion === "function") ? memberRegion() : null;
+  const sidoIdx = Math.max(0, data.sido.indexOf((_rg0 && _rg0.sidoShort) || "서울"));
   const svcIdx = ["방문요양", "방문목욕", "방문간호", "주야간보호"].map((s) => data.svc.indexOf(s)).filter((i) => i >= 0);
   const prov = [`${GENIEL.name} 의료·간병 인력서비스`, sidoIdx, "전국", "전국 의료·간병 인력 파견·매칭 (제니엘메디컬)", "", svcIdx, 0, 0, GENIEL.home];
   return (
@@ -7211,8 +7256,11 @@ function HomecareSection() {
 }
 
 function HomecareDirectory({ data }) {
-  const [sido, setSido] = useState(PT.sido);
-  const [sgg, setSgg] = useState(PT.sigungu);
+  /* [H-2 W3] 기본 지역을 회원 거주지에서 잡는다 — 전에는 전 회원이 은평구로 시작해
+     재가기관 추천이 남의 동네 기준으로 나왔다(표시가 아니라 기능 오염이었다). */
+  const _rg = (typeof memberRegion === "function") ? memberRegion() : { sidoShort: "서울", sgg: "", addr: "" };
+  const [sido, setSido] = useState(_rg.sidoShort || "서울");
+  const [sgg, setSgg] = useState(_rg.sgg || "전체");
   const [svc, setSvc] = useState("전체");
   const [q, setQ] = useState("");
   const [shown, setShown] = useState(20);
@@ -7260,8 +7308,8 @@ function HomecareDirectory({ data }) {
         <span><Art name="chat" size={16} /> 상담 신청</span>
       </div>
       <MapCard anchorRef={mapAnchor} open={mapOpen} onToggle={() => setMapOpen((v) => !v)} focus={focus} title={`재가기관 위치 지도 (${(sido === "전체" ? "전국" : sido) + (sgg !== "전체" ? " " + sgg : "")} ${list.length.toLocaleString()}곳)`} accent="#E11D8F" points={list.map((p) => ({ name: p[0], addr: p[3], tel: p[4], tag: "재가", lat: p[7], lng: p[6] }))} />
-      <div className="bklbl" style={{ margin: "0 0 8px" }}><CircleUserRound size={13} style={{ verticalAlign: "-2px" }} /> 회원 거주지 <b style={{ color: "#2563EB" }}>{PT.addr}</b> 기준 · 지역 선택</div>
-      <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); reset(); }}>{r === PT.sido && <Home size={11} style={{ verticalAlign: "-1px", marginRight: 3 }} />}{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
+      <div className="bklbl" style={{ margin: "0 0 8px" }}><CircleUserRound size={13} style={{ verticalAlign: "-2px" }} /> 회원 거주지 <b style={{ color: "#2563EB" }}>{_rg.addr || "미등록"}</b> 기준 · 지역 선택</div>
+      <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${sido === r ? "on" : ""}`} onClick={() => { setSido(r); setSgg("전체"); reset(); }}>{r === (_rg.sidoShort || "서울") && <Home size={11} style={{ verticalAlign: "-1px", marginRight: 3 }} />}{r}{r !== "전체" && countBySido[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{countBySido[r].toLocaleString()}</span> : ""}</div>)}</div>
       <div className="bklbl" style={{ margin: "2px 0 8px" }}>급여종류</div>
       <div className="regions">
         <div className={`fsel ${svc === "전체" ? "on" : ""}`} onClick={() => { setSvc("전체"); reset(); }}>전체</div>
@@ -7331,6 +7379,10 @@ function HomecareDetailModal({ data, p, onApply, onClose }) {
 }
 
 function HomecareBookingModal({ data, p, onClose }) {
+  /* 신청자는 로그인한 회원이다(H-2 W3) — 나이는 알 수 있을 때만 붙인다 */
+  const _bkMe = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _bkNm = (_bkMe && _bkMe.name) || "회원";
+  const _bkAge = (() => { try { if (!_bkMe) return ""; const a = (typeof demoRegAge === "function") ? demoRegAge(_bkMe) : _bkMe.regAge; return a ? `${_bkMe.sex || ""} / ${a}세`.trim() : ""; } catch (e) { return ""; } })();
   const svcs = (p[5] || []).map((si) => data.svc[si]);
   const [pick, setPick] = useState(svcs[0] || "방문요양");
   const [done, setDone] = useState(false);
@@ -7346,7 +7398,7 @@ function HomecareBookingModal({ data, p, onClose }) {
             <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
               <div style={{ fontWeight: 800, fontSize: 14 }}>{p[0]} <span className="cbadge" style={{ color: "#9D174D", background: "#FCE7F3" }}>재가</span></div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {data.sido[p[1]]} {p[2]} · {p[3]}</div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>신청자: <b style={{ color: "var(--text)" }}>{PT.name}</b> · {PT.sexAge}</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>신청자: <b style={{ color: "var(--text)" }}>{_bkNm}</b>{_bkAge ? ` · ${_bkAge}` : ""}</div>
             </div>
             <div className="bklbl">희망 급여종류</div>
             <div className="ctags">{svcs.map((s) => <span key={s} onClick={() => setPick(s)} style={{ cursor: "pointer", background: pick === s ? "#EAF0FE" : undefined, borderColor: pick === s ? "#BFD0FF" : undefined, color: pick === s ? "#2563EB" : undefined, fontWeight: pick === s ? 800 : 600 }}>{s}</span>)}</div>
@@ -9354,7 +9406,14 @@ function InsJoin({ onGo }) {
   const [ag, setAg] = useState({});
   const [open, setOpen] = useState({});
   const [svc, setSvc] = useState({ s0: true, s1: true, s2: true, s3: true, s4: true });
-  const [info, setInfo] = useState({ name: PT.name, birth: "1970.11.20", sex: "남", phone: "", addr: PT.addr });
+  /* [H-2 W3] 보험 가입 신청 폼에 조성래의 이름·생년월일·주소가 미리 채워져 있었다.
+     남의 신원으로 청약이 시작되는 셈이라, 세션에서 채우고 모르는 값은 비워 둔다. */
+  const [info, setInfo] = useState(() => {
+    const me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+    const rg = (typeof memberRegion === "function") ? (() => { try { return memberRegion(); } catch (e) { return null; } })() : null;
+    const isSelf = me && me.isSelf;
+    return { name: (me && me.name) || "", birth: isSelf ? "1970.11.20" : "", sex: (me && me.sex) || "", phone: "", addr: (rg && rg.addr) || "" };
+  });
   // 가드레일 ⓟ(진단 #46): 주민등록번호 평문 수집 폼 제거 — 실번호 입력 대신 PASS 본인인증(시연) 완료 플래그로 대체
   const [rrnVerified, setRrnVerified] = useState(false);
   const rrnOk = rrnVerified;
@@ -10051,18 +10110,23 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
 
 /* ── 실손보험 정책 — 건강자산 기반 보험지원 모델 ── */
 function HealthAssetWallet() {
+  const _wNm = (() => { try { const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); return (m && m.name) || "회원"; } catch (e) { return "회원"; } })();
   const W = [["누적 건강자산", "12,480", "HTK"], ["이번 달 적립 건강자산", "+1,240", "HTK"], ["실손보험 지원 가능", "약 32,000", "원/월"]];
   const ST = [["건강검진대비보험", "적용 중", true], ["실손보험 추천", "5세대 실손", true], ["노후/유병력자 실손", "해당 시 안내", false], ["사회공헌 지원 대상", "현재 비대상", false]];
   return (
     <div className="ipswallet">
-      <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Art name="wallet" size={20} /> <b style={{ fontSize: 14.5, fontWeight: 800 }}>조성래님 건강금융지갑 · 실손 지원 현황</b></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 9 }}><Art name="wallet" size={20} /> <b style={{ fontSize: 14.5, fontWeight: 800 }}>{_wNm}님 건강금융지갑 · 실손 지원 현황</b></div>
       <div className="wg">{W.map(([k, v, u]) => <div className="wi" key={k}><div className="k">{k}</div><div className="v">{v} <small>{u}</small></div></div>)}</div>
       <div className="wst">{ST.map(([k, v, on]) => <span className="chip" key={k}>{on ? <Check size={12} /> : <Info size={12} />} {k}: <b>{v}</b></span>)}</div>
     </div>
   );
 }
 function InsuranceRecommendationCard({ report }) {
-  const age = (report && report.meta && report.meta.regAge) || 54.1;
+  /* [H-2 W3] 나이·이름을 세션에서 — 전에는 report.json(조성래) 나이로 추천을 계산했다 */
+  const _rMe = (() => { try { return (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); } catch (e) { return null; } })();
+  const _rNm = (_rMe && _rMe.name) || "회원";
+  const _rAge = (() => { try { return (_rMe && typeof demoRegAge === "function") ? demoRegAge(_rMe) : null; } catch (e) { return null; } })();
+  const age = _rAge || (report && report.meta && report.meta.regAge) || 54.1;
   const chronic = false; // 안내: 위험도는 높으나 진단 보유는 아님
   const rec = age >= 60 ? "노후실손보험" : chronic ? "유병력자 실손보험" : "5세대 실손보험";
   const TYPES = [
@@ -10074,7 +10138,7 @@ function InsuranceRecommendationCard({ report }) {
     <div className="ipsrec">
       {TYPES.map(([seg, name, desc]) => (
         <div className={`rc ${name === rec ? "on" : ""}`} key={name}>
-          {name === rec && <span className="rfit"><Check size={10} /> 조성래님 추천</span>}
+          {name === rec && <span className="rfit"><Check size={10} /> {_rNm}님 추천</span>}
           <div className="rtag">{seg}</div>
           <div className="rt">{name}</div>
           <div className="rd">{desc}</div>
@@ -10135,7 +10199,7 @@ function InsurancePlanCompare() {
     </>
   );
 }
-/* ── 실손보험·중대질환 통계 패널 (10만+조성래 = 100,001명, 실통계 기반) ── */
+/* ── 실손보험·중대질환 통계 패널 (코호트 10만 + 본인 = 100,001명, 실통계 기반) ── */
 function SilsonStatsPanel() {
   const _w = (n) => { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000).toFixed(n % 100000000 ? 1 : 0) + "억" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; };
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
@@ -10152,7 +10216,7 @@ function SilsonStatsPanel() {
   const n = agg ? agg.n : 100001;
   return (
     <div className="silwrap">
-      <div className="bklbl2"><ShieldCheck size={16} color="#2563EB" /> 실손보험·중대질환 데이터 <span className="siln">회원 {n.toLocaleString()}명(10만 + 조성래) · 실통계 기반</span></div>
+      <div className="bklbl2"><ShieldCheck size={16} color="#2563EB" /> 실손보험·중대질환 데이터 <span className="siln">회원 {n.toLocaleString()}명(코호트 10만 + 본인) · 실통계 기반</span></div>
 
       {myIns && (<div className="silme">
         <div className="silme-h"><b>{myName}</b>님 보장 현황 <span className={"silbadge " + (myIns.silson.enrolled ? "on" : "off")}>{myIns.silson.gen === "미가입" ? "실손 미가입" : "실손 " + myIns.silson.gen}</span></div>
@@ -11147,6 +11211,17 @@ function WalletSection({ onGo }) {
 /* NFT 데이터(NFT_MINE·NFT_ISSUE·NFT_USE·NFT_SEC) → src/data/sectionData.js 로 이관 */
 
 function NFTSection({ onGo }) {
+  /* [H-2 W3] 이름과 리포트 NFT 메타를 회원 값으로 — 전에는 조성래의 검진일·생체나이가
+     모든 회원의 「내 NFT」로 표시됐다. 근거가 없으면 수치를 비운다. */
+  const _nftMe = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _nftNm = (_nftMe && _nftMe.name) || "회원";
+  const _nftR = (_nftMe && typeof demoReport === "function") ? (() => { try { return demoReport(_nftMe); } catch (e) { return null; } })() : null;
+  const _nftCk = (() => { try { if (!_nftMe || typeof vaultLoad !== "function") return ""; const v = vaultLoad(anonToken(_nftMe)); const cs = ((v && v.checkups) || []).slice().sort((x, y) => String(y.date || "").localeCompare(String(x.date || ""))); return cs.length ? String(cs[0].date || "").replace(/-/g, ".") : ""; } catch (e) { return ""; } })();
+  const _nftMine = (typeof NFT_MINE !== "undefined" ? NFT_MINE : []).map((n) => {
+    if (n.type === "리포트 NFT") return Object.assign({}, n, { name: "하이핀 정밀분석 리포트", meta: [_nftCk && `검진일 ${_nftCk}`, _nftR && `생체나이 ${_nftR.bio}세`, _nftR && _nftR.evalLabel && `종합 ${_nftR.evalLabel}`].filter(Boolean).join(" · ") || "검진 결과 연결 후 발행" });
+    if (n.type === "건강인증서 SBT") return Object.assign({}, n, { meta: [_nftR && _nftR.evalLabel && `종합 ${_nftR.evalLabel}`, _nftR && _nftR.agingRank != null && `노화등수 ${_nftR.agingRank}등`, _nftR && _nftR.agingSpeed != null && `노화속도 ${_nftR.agingSpeed}배`].filter(Boolean).join(" · ") || "검진 결과 연결 후 발행" });
+    return n;
+  });
   const [tab, setTab] = useState("mine");
   const go = onGo || (() => {});
   const tabs = [["mine", "내 Health NFT", BadgeCheck], ["issue", "발급 종류", FileText], ["use", "활용·연계", Sparkles], ["sec", "무결성·보안", ShieldCheck]];
@@ -11161,13 +11236,13 @@ function NFTSection({ onGo }) {
 
       {tab === "mine" && (<>
         <div className="benefit">
-          <span><Art name="badge" size={16} /> 보유 {NFT_MINE.length + NFT_MINE_FIN.length}개</span>
+          <span><Art name="badge" size={16} /> 보유 {_nftMine.length + NFT_MINE_FIN.length}개</span>
           <span><Art name="lock" size={16} /> SBT 양도불가</span>
           <span><Art name="hash" size={16} /> 위·변조 방지</span>
           <span><Art name="coin" size={16} /> 데이터 제공 보상 연계</span>
         </div>
-        <div className="bklbl" style={{ margin: "2px 0 8px" }}><BadgeCheck size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 조성래님 건강지갑 NFT/SBT</div>
-        <div className="nftgrid">{NFT_MINE.map((n, i) => (
+        <div className="bklbl" style={{ margin: "2px 0 8px" }}><BadgeCheck size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> {_nftNm}님 건강지갑 NFT/SBT</div>
+        <div className="nftgrid">{_nftMine.map((n, i) => (
           <div className="nftc" key={i}>
             <div className="nh"><span className="ni" style={{ background: n.col + "1A" }}><Art name={n.art} size={24} /></span>
               <div style={{ flex: 1 }}><span className="cbadge" style={{ color: n.col, background: n.col + "14" }}>{n.type}</span><span className="sbtbadge" style={{ marginLeft: 5 }}>SBT</span><div className="nname" style={{ marginTop: 5 }}>{n.name}</div><div className="nmeta">{n.meta}</div></div></div>
@@ -11415,6 +11490,20 @@ function MyDataWizard({ onClose }) {
 }
 
 function MyPageSection({ onGo }) {
+  /* [H-2 W3] 내 정보는 로그인한 회원의 것이다 — 전에는 조성래의 성명·생년월일·휴대전화·이메일·주소가
+     모든 회원의 「내 정보」로 표시됐다. 모르는 값은 지어내지 않고 「미등록」으로 둔다. */
+  const _myMe = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _myRg = (typeof memberRegion === "function") ? (() => { try { return memberRegion(); } catch (e) { return null; } })() : null;
+  const _mySelf = !(typeof demoCurrentUser === "function" && demoCurrentUser());
+  const _mask = (e) => { const t = String(e || ""); const at = t.indexOf("@"); return at > 0 ? t.slice(0, at) + "@***" + t.slice(t.lastIndexOf(".")) : "미등록"; };
+  const _myInfo = [
+    ["성명", (_myMe && _myMe.name) || "미등록"],
+    ["생년월일", _mySelf ? "1970.11.20" : "미등록"],
+    ["성별", (_myMe && _myMe.sex) || "미등록"],
+    ["휴대전화", _mySelf ? "010-****-1234" : "미등록"],
+    ["이메일(ID)", _mask(_myMe && _myMe.email)],
+    ["주소", (_myRg && _myRg.addr) || "미등록"],
+  ];
   const [tab, setTab] = useState("family");
   const [mdOpen, setMdOpen] = useState(false);
   const go = onGo || (() => {});
@@ -11530,7 +11619,7 @@ function MyPageSection({ onGo }) {
       {tab === "profile" && (<>
         <div className="card">
           <div className="rct"><CircleUserRound size={18} color="#2563EB" /> 개인정보 <button className="cbtn2" style={{ marginLeft: "auto" }} onClick={() => toast("개인정보 수정 화면은 준비 중입니다.")}><RefreshCw size={13} /> 수정</button></div>
-          {[["성명", PT.name], ["생년월일", "1970.11.20"], ["성별", "남"], ["휴대전화", "010-****-1234"], ["이메일(ID)", "srcho197011@***.com"], ["주소", PT.addr]].map(([l, v]) => (
+          {_myInfo.map(([l, v]) => (
             <div className="costrow" key={l}><span className="cl">{l}</span><span className="cv" style={{ color: "var(--text)" }}>{v}</span><span className="ca" /></div>
           ))}
           <div className="chnote" style={{ marginTop: 8 }}>※ 휴대전화·이메일은 일부 마스킹되어 표시됩니다. 주민등록번호 등 민감정보는 본인인증(PASS) 후 암호화 처리됩니다.</div>
@@ -33285,7 +33374,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "c4c95e91312670ce", "generatedAt": "2026-09-06", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "1e4ba1a56aabed6d", "generatedAt": "2026-09-06", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -33474,7 +33563,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-06","seed":20260828,"inventory":{"version":1,"sourceHash":"c4c95e91312670ce","generatedAt":"2026-09-06","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.58,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-06","seed":20260828,"inventory":{"version":1,"sourceHash":"1e4ba1a56aabed6d","generatedAt":"2026-09-06","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.56,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
