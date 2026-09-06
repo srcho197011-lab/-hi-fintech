@@ -118,3 +118,11 @@ if echo "$CHANGED" | grep -qE "^src/(utils/demoAuth\.js|data/healthDataVault\.js
   node scripts/run_identity_check.mjs || { echo "[GATE] 신원 통합 실패 — 커밋 차단(저장소가 갈리거나 회원끼리 섞였다)"; exit 1; }
   git add scripts/identity_check_snapshot.json 2>/dev/null || true
 fi
+
+# ══ 금전 대조 게이트(H-2 W5) — 지갑·보험 금액이 다시 상수로 돌아가면 차단 ══
+# 인물 누출 검사는 「남의 이름」을 찾는다. 금액은 이름이 아니라 전 회원 동일한 상수라 거기 안 걸린다.
+if echo "$CHANGED" | grep -qE "^src/(components/(Wallet|MyPage|Insurance|FamilyCare)\.jsx|data/(sectionData|tokenLedger|insService)\.js)$"; then
+  echo "[GATE] 지갑·보험 파일 변경 — 금전 대조 실행(회원 3명 격리 로그인)"
+  node scripts/run_money_check.mjs || { echo "[GATE] 금전 대조 실패 — 커밋 차단(옛 상수가 여러 회원에게 같이 보인다)"; exit 1; }
+  git add scripts/money_check_snapshot.json 2>/dev/null || true
+fi

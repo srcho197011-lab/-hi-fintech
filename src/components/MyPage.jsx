@@ -193,6 +193,15 @@ function MyPageSection({ onGo }) {
   const _myMe = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const _myRg = (typeof memberRegion === "function") ? (() => { try { return memberRegion(); } catch (e) { return null; } })() : null;
   const _mySelf = !(typeof demoCurrentUser === "function" && demoCurrentUser());
+  /* [H-2 W5] 지표 카드·사회공헌 점수를 회원 원장에서 — 전에는 12,480 HTK · 적립금 3,744 ·
+     NFT 6 · 보험 1이 상수라 모든 회원이 같았다. 근거가 없으면 0으로 두고 지어내지 않는다. */
+  const _myBal = (() => { try { return (_myMe && typeof tlSync === "function") ? (tlSync(_myMe) || 0) : 0; } catch (e) { return 0; } })();
+  const _myRes = (() => { try { return (typeof htkInsReserve === "function") ? htkInsReserve(_myBal) : 0; } catch (e) { return 0; } })();
+  const _myPol = (() => { try { const v = (_myMe && typeof vaultLoad === "function") ? vaultLoad(anonToken(_myMe)) : null; return ((v && v.insurance) || []).length; } catch (e) { return 0; } })();
+  const _myNft = (() => { try { return (typeof NFT_MINE !== "undefined" ? NFT_MINE.length : 0) + (typeof NFT_MINE_FIN !== "undefined" ? NFT_MINE_FIN.length : 0); } catch (e) { return 0; } })();
+  const _myGive = (() => { try { const w = (_myMe && typeof shopHtkWon === "function") ? shopHtkWon(_myMe.email) : 0; const g = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give) || 30; return w ? Math.round(w * g / 100) : 0; } catch (e) { return 0; } })();
+  const _myActs = (() => { try { return (_myMe && typeof tlAll === "function") ? (tlAll(_myMe) || []).length : 0; } catch (e) { return 0; } })();
+  const _myStats = [[_myBal.toLocaleString(), "Health Token", "wallet"], [_myRes.toLocaleString(), "치료비 케어 적립금", "wallet"], [String(_myNft), "Health NFT", "nft"], [String(_myPol), "보유 보험", "insurance"]];
   const _mask = (e) => { const t = String(e || ""); const at = t.indexOf("@"); return at > 0 ? t.slice(0, at) + "@***" + t.slice(t.lastIndexOf(".")) : "미등록"; };
   const _myInfo = [
     ["성명", (_myMe && _myMe.name) || "미등록"],
@@ -247,7 +256,7 @@ function MyPageSection({ onGo }) {
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
         <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${((typeof lineageMember === "function") ? lineageMember(dm) : dm).biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b></>}</div></div>
         <div className="pstats">
-          {[["12,480", "Health Token", "wallet"], ["3,744", "치료비 케어 적립금", "wallet"], ["6", "Health NFT", "nft"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
+          {_myStats.map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
         </div>
       </div>
 
@@ -324,11 +333,11 @@ function MyPageSection({ onGo }) {
         </div>
         <div className="card">
           <div className="rct"><Sparkles size={18} color="#7C3AED" /> 내 활동 요약</div>
-          <div className="benefit" style={{ marginBottom: 0 }}><span><Art name="coin" size={15} /> 토큰 12,480</span><span><Art name="badge" size={15} /> NFT 6</span><span><Art name="calendar" size={15} /> 예약 1</span><span><Art name="people" size={15} /> 모임 3</span><span><Art name="star" size={15} /> 후기 4</span></div>
+          <div className="benefit" style={{ marginBottom: 0 }}><span><Art name="coin" size={15} /> 토큰 {_myBal.toLocaleString()}</span><span><Art name="badge" size={15} /> NFT {_myNft}</span><span><Art name="calendar" size={15} /> 보유 보험 {_myPol}</span><span><Art name="people" size={15} /> 활동 {_myActs}건</span></div>
           <div className="gorow" style={{ marginTop: 12 }}><button className="gobtn pri" onClick={() => go("manage")}><Activity size={14} /> 건강관리</button><button className="gobtn" onClick={() => go("wallet")}><Coins size={14} /> 건강금융지갑</button><button className="gobtn" onClick={() => go("nft")}><BadgeCheck size={14} /> Health NFT</button></div>
         </div>
         {(() => {
-          const myGive = WALLET_GIVE.my, myEarn = WALLET.total * WALLET.rate, acts = 14;
+          const myGive = _myGive || 0, myEarn = _myBal * ((typeof WALLET !== "undefined" && WALLET.rate) || 10), acts = _myActs;
           const score = Math.min(100, Math.round(myGive / 3000 + myEarn / 9000 + acts * 2));
           const grade = score >= 85 ? "나눔 천사" : score >= 70 ? "건강 나눔러" : score >= 50 ? "참여 시민" : "새싹 기여자";
           const topPct = score >= 85 ? 3 : score >= 70 ? 12 : score >= 50 ? 30 : 60;

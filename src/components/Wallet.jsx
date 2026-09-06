@@ -15,6 +15,30 @@ function WalletSection({ onGo }) {
   // C1-1 TokenLedger: 잔액 = Σ트랜잭션(단일 원장). 원장 미영속 환경(쓰기가드)만 레거시 합산 폴백.
   const ledgerBal = (dm && typeof tlSync === "function") ? (() => { try { return tlSync(dm); } catch (e) { return null; } })() : null;
   const total = (ledgerBal != null) ? ledgerBal : WALLET.total + cpPts + shopPts;
+  /* [H-2 W5] 등급·이번 달 적립/사용·전월 대비를 회원 원장에서 계산한다.
+     전에는 WALLET 상수(골드 · +1,840 · −920 · 총액-8200)라 모든 회원이 같은 숫자를 봤다.
+     원장이 없으면(쓰기 차단 등) 숫자를 지어내지 않고 비운다. */
+  const _tx = (dm && typeof tlAll === "function") ? (() => { try { return tlAll(dm) || []; } catch (e) { return []; } })() : [];
+  const _dir = (t) => ({ genesis: 1, earn: 1, topup: 1, dataFee: 1, spend: -1, transfer: -1, swap: -1 })[t] || 0;
+  const _now = new Date(), _thisY = _now.getFullYear(), _thisM = _now.getMonth();
+  const _inMonth = (ts, back) => { const d = new Date(ts); const t = new Date(_thisY, _thisM - (back || 0), 1); return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth(); };
+  const _sum = (arr, sign) => arr.filter((t) => _dir(t.type) === sign).reduce((s, t) => s + (t.amount || 0), 0);
+  const _mTx = _tx.filter((t) => t.ts && _inMonth(t.ts, 0));
+  const monthEarn = _tx.length ? _sum(_mTx, 1) : null;
+  const monthUse = _tx.length ? _sum(_mTx, -1) : null;
+  /* 전월 대비 = 이번 달 순증감 */
+  const monthNet = (monthEarn == null || monthUse == null) ? null : monthEarn - monthUse;
+  /* 멤버십 등급 — 회원 상태 모델(s4.tier)에서 */
+  const tier = (() => { try { const st = (dm && typeof memberStateSnapshot === "function") ? memberStateSnapshot(dm) : null; return (st && st.s4 && st.s4.tier) || null; } catch (e) { return null; } })();
+  const walNm = (dm && dm.name) || "회원";
+  /* 내 소비가 만든 나눔 — 쇼핑 적립 실적에서 계산한다(마진의 give% 규칙). 실적이 없으면 안내로 바꾼다. */
+  const myGive = (() => {
+    try { const won0 = (typeof shopHtkWon === "function") ? shopHtkWon(dm ? dm.email : null) : 0;
+      if (!won0) return null;
+      const give = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give) ? WALLET_SPLIT.give : 30;
+      return Math.round(won0 * give / 100);
+    } catch (e) { return null; }
+  })();
   const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(total) : Math.floor(total * 0.30);
   const genRes = total - insRes;
   const insPct = (typeof HTK_INS_RATE !== "undefined") ? Math.round(HTK_INS_RATE * 100) : 30;
@@ -31,11 +55,11 @@ function WalletSection({ onGo }) {
         <span className="wglow" />
         <div className="wlbl"><Coins size={14} /> 총 적립 Health Token</div>
         <div className="wtot">{total.toLocaleString()} <small>HTK</small></div>
-        <div className="wsub">≈ {(total * WALLET.rate).toLocaleString()}원 상당 · 멤버십 등급 <b>{WALLET.grade}</b>{cpPts > 0 && <span style={{ marginLeft: 8, color: "#A7F3D0", fontWeight: 700 }}>· AI 케어플랜 실천 +{cpPts.toLocaleString()} 포함</span>}</div>
+        <div className="wsub">≈ {(total * WALLET.rate).toLocaleString()}원 상당 · {tier ? <>멤버십 등급 <b>{tier}</b></> : null}{cpPts > 0 && <span style={{ marginLeft: 8, color: "#A7F3D0", fontWeight: 700 }}>· AI 케어플랜 실천 +{cpPts.toLocaleString()} 포함</span>}</div>
         <div className="wrow">
-          <div><b style={{ color: "#A7F3D0" }}>+{WALLET.monthEarn.toLocaleString()}</b><span>이번 달 적립</span></div>
-          <div><b style={{ color: "#FECACA" }}>−{WALLET.monthUse.toLocaleString()}</b><span>이번 달 사용</span></div>
-          <div><b>{(WALLET.total - 8200).toLocaleString()}</b><span>전월 대비 ▲</span></div>
+          <div><b style={{ color: "#A7F3D0" }}>{monthEarn == null ? "—" : "+" + monthEarn.toLocaleString()}</b><span>이번 달 적립</span></div>
+          <div><b style={{ color: "#FECACA" }}>{monthUse == null ? "—" : "−" + monthUse.toLocaleString()}</b><span>이번 달 사용</span></div>
+          <div><b>{monthNet == null ? "—" : (monthNet >= 0 ? "+" : "") + monthNet.toLocaleString()}</b><span>이번 달 순증감</span></div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, opacity: .95 }}><ShieldCheck size={14} /> AI·블록체인 보안 설계</div>
         </div>
       </div>
@@ -113,7 +137,9 @@ function WalletSection({ onGo }) {
           ))}
         </div>
 
-        <div className="wgive-my"><span className="ic"><Heart size={18} color="#E11D48" /></span><div>지금까지 <b>조성래님의 소비로 만들어진 나눔</b> <b style={{ color: "#E11D48" }}>{won(WALLET_GIVE.my)}</b> <small>— 내 건강 관리가 이웃의 치료비가 되었습니다.</small></div></div>
+        <div className="wgive-my"><span className="ic"><Heart size={18} color="#E11D48" /></span><div>{myGive != null
+          ? <>지금까지 <b>{walNm}님의 소비로 만들어진 나눔</b> <b style={{ color: "#E11D48" }}>{won(myGive)}</b> <small>— 내 건강 관리가 이웃의 치료비가 되었습니다.</small></>
+          : <>건강쇼핑에서 구매하시면 <b>판매마진의 {WALLET_SPLIT.give}%</b>가 치료비 나눔으로 적립돼요 <small>— 회원 추가 부담은 없습니다.</small></>}</div></div>
         <div className="chnote">※ 기부 비율(판매마진의 {WALLET_SPLIT.give}%)·수치는 <b>설계 목표·예시</b>입니다. 실제 기부는 제휴 공익재단·의료기관을 통해 심사 후 집행되며, 사용내역은 투명하게 공개하도록 설계합니다. ‘치료비 사각지대’는 재난적 의료비·실손 보장 사각지대·희귀중증질환 본인부담·취약계층 긴급 치료비 등을 포함합니다.</div>
       </>)}
 

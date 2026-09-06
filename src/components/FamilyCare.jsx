@@ -148,7 +148,15 @@ function FamilyCareSection({ member, onGo }) {
   const addMember = () => { if (!fName.trim() || !fAge) { if (typeof toast === "function") toast("이름과 나이를 입력해 주세요."); return; } const next = [...family, { id: "f" + Date.now(), name: fName.trim(), relation: fRel, age: Number(fAge) }]; setFamily(next); familySave(email, next); setAddOpen(false); setFName(""); setFAge(""); try { if (typeof refFamilyAdd === "function") refFamilyAdd(email, fName.trim()); } catch (e) {} if (typeof toast === "function") toast(`✅ ${fName.trim()}님을 온가족 케어에 추가했어요 — 가족 등록 보상 +100 HTK!`); };
   const removeMember = (id) => { const next = family.filter((x) => x.id !== id); setFamily(next); familySave(email, next); };
 
-  const base = (typeof WALLET !== "undefined") ? WALLET.total : 12480;
+  /* [H-2 W5] 기준 잔액은 그 회원의 원장에서 — 전에는 WALLET.total(12,480) 상수라
+     모든 회원의 가족 지갑이 같은 숫자에서 출발했다. 원장이 없으면 0에서 시작한다. */
+  const base = (() => {
+    try { const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null);
+      if (m && typeof tlSync === "function") { const b0 = tlSync(m); if (b0 != null) return b0; }
+      if (m && typeof tlBalance === "function") return tlBalance(m) || 0;
+    } catch (e) {}
+    return 0;
+  })();
   const myEarn = (typeof careplanEarned === "function") ? careplanEarned(email) : 0;
   const famEarnSum = family.reduce((s, x) => s + famEarn(famGroupOf(x.age, x.relation)), 0);
   const taskEarnSum = family.reduce((s, x) => s + Object.values(taskMap[x.id] || {}).filter(Boolean).length * FAM_TASK_EARN, 0);

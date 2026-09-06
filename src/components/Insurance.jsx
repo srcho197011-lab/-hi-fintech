@@ -910,7 +910,19 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
 /* ── 실손보험 정책 — 건강자산 기반 보험지원 모델 ── */
 function HealthAssetWallet() {
   const _wNm = (() => { try { const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); return (m && m.name) || "회원"; } catch (e) { return "회원"; } })();
-  const W = [["누적 건강자산", "12,480", "HTK"], ["이번 달 적립 건강자산", "+1,240", "HTK"], ["실손보험 지원 가능", "약 32,000", "원/월"]];
+  /* [H-2 W5] 누적·이번 달 적립·실손 지원 가능액을 회원 원장에서 계산한다.
+     전에는 12,480 / +1,240 / 약 32,000원 상수라 모든 회원이 같은 자산을 봤다. */
+  const _wMe = (() => { try { return (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); } catch (e) { return null; } })();
+  const _wBal = (() => { try { return (_wMe && typeof tlSync === "function") ? (tlSync(_wMe) || 0) : 0; } catch (e) { return 0; } })();
+  const _wTx = (() => { try { return (_wMe && typeof tlAll === "function") ? (tlAll(_wMe) || []) : []; } catch (e) { return []; } })();
+  const _wNow = new Date();
+  const _wMonth = _wTx.filter((t) => { if (!t.ts) return false; const d = new Date(t.ts); return d.getFullYear() === _wNow.getFullYear() && d.getMonth() === _wNow.getMonth(); });
+  const _wDir = (t) => ({ genesis: 1, earn: 1, topup: 1, dataFee: 1, spend: -1, transfer: -1, swap: -1 })[t] || 0;
+  const _wEarn = _wMonth.filter((t) => _wDir(t.type) > 0).reduce((x, t) => x + (t.amount || 0), 0);
+  const _wRate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
+  /* 실손 지원 가능액 = 치료비 케어 적립분(월 환산은 하지 않는다 — 없는 주기를 만들지 않는다) */
+  const _wRes = (() => { try { return (typeof htkInsReserve === "function") ? htkInsReserve(_wBal) : Math.floor(_wBal * 0.3); } catch (e) { return 0; } })();
+  const W = [["누적 건강자산", _wBal.toLocaleString(), "HTK"], ["이번 달 적립 건강자산", (_wEarn > 0 ? "+" : "") + _wEarn.toLocaleString(), "HTK"], ["치료비 케어 전용", (_wRes * _wRate).toLocaleString(), "원"]];
   const ST = [["건강검진대비보험", "적용 중", true], ["실손보험 추천", "5세대 실손", true], ["노후/유병력자 실손", "해당 시 안내", false], ["사회공헌 지원 대상", "현재 비대상", false]];
   return (
     <div className="ipswallet">
@@ -1167,6 +1179,11 @@ function ClaimSupportFlow({ onModal }) {
   const M = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const [step, setStep] = React.useState(0);
   if (!M) return null;
+  /* [H-2 W5] 예상 보험금 350,000원·자기부담 20,000원은 상수였다 — 진료비를 모르는 시점에
+     모든 회원에게 같은 금액을 말했다. 계약(실손 세대·본인부담률)만 사실대로 알리고
+     금액은 진료비가 확정된 뒤로 미룬다. 보유 계약도 금고의 실계약에서 읽는다. */
+  const _sil = (() => { try { return (typeof insService !== "undefined") ? insService.silStatus(M) : null; } catch (e) { return null; } })();
+  const _myPols = (() => { try { const v = (typeof vaultLoad === "function") ? vaultLoad(anonToken(M)) : null; return (v && v.insurance) || []; } catch (e) { return []; } })();
   const cp = (typeof memberClinicalProfile === "function") ? (() => { try { return memberClinicalProfile(M); } catch (e) { return null; } })() : null;
   const chk = (typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, M)); } catch (e) { return null; } })() : null;
   const dz = cp && cp.diagnoses.length ? cp.diagnoses[0].name : (chk && chk.comp.abnormals[0] ? chk.comp.abnormals[0].split(" ")[0] : "건강검진 이상소견");
@@ -1174,8 +1191,8 @@ function ClaimSupportFlow({ onModal }) {
   const SEVEN = [
     ["관련 보장항목", `${dz} 질병 통원·진단비 / 검진 진단지원금`],
     ["보장기간", "계약 만기까지(예: 2045년)"],
-    ["예상 보험금", "약 350,000원 (통원·진단 합산 · 심사 후 확정)"],
-    ["예상 자기부담금", "약 20,000원 (통원 공제)"],
+    ["예상 보험금", _sil && _sil.has ? `진료비가 확정되면 계약 기준으로 계산해 드려요 (${_sil.contract && _sil.contract.gen ? _sil.contract.gen : _sil.gen + "세대"} 실손 · 심사 후 확정)` : "가입 계약이 확인되면 계산해 드려요 (심사 후 확정)"],
+    ["예상 자기부담금", _sil && _sil.has && _sil.contract ? `급여 ${_sil.contract.coGen || "-"} · 비급여 ${_sil.contract.coNon || "-"} 본인부담 (진료비 확정 후 산정)` : "계약 확인 후 산정"],
     ["면책 가능성", "가입 전 진단 이력(기왕증)·고지의무 위반 시 부지급 가능"],
     ["추가심사 가능성", "진단 경위·인과관계 확인 시 추가 심사 가능"],
     ["필요 청구서류", "진단서 · 진료비 세부내역서 · 영수증 · 신분증 (검진자료는 자동 연동)"],
@@ -1192,7 +1209,9 @@ function ClaimSupportFlow({ onModal }) {
       </div>}
       {step === 1 && <div>
         <div className="clm-lead">보유 계약을 확인했습니다.</div>
-        <div className="clm-pol"><div><b>실손의료보험(4세대)</b><span>통원·입원 의료비 · 유지 중</span></div><div><b>건강검진 대비보험</b><span>진단지원금 · 유지 중</span></div></div>
+        <div className="clm-pol">{_myPols.length
+          ? _myPols.slice(0, 3).map((c, i) => <div key={i}><b>{c.product || c.kind}</b><span>{c.insurer || "보험사"} · 유지 중</span></div>)
+          : <div><b>연결된 계약이 없어요</b><span>보험 조회를 연결하면 여기에 보여드려요</span></div>}</div>
         <button className="clm-btn pri" onClick={() => setStep(2)}>청구 가능성·보장 분석 ›</button>
       </div>}
       {step === 2 && <div>
@@ -1203,7 +1222,7 @@ function ClaimSupportFlow({ onModal }) {
       {step === 3 && <div>
         <div className="clm-lead">필요 서류를 안내하고 청구를 지원합니다.</div>
         <div className="clm-docs">{["진단서", "진료비 세부내역서", "영수증", "신분증"].map((d) => <span key={d} className="clm-doc">{d}</span>)}<span className="clm-doc auto">검진자료 자동 연동</span></div>
-        <button className="clm-btn pri" onClick={() => onModal && onModal({ title: "보험금 청구 접수", sub: "청구가 접수되었습니다 · 보험사 심사 후 지급 확정", items: [["coin", "예상 보험금", "약 350,000원 (심사 후 확정)"], ["doc", "청구 서류", "진단서·세부내역서·영수증 (검진자료 자동 연동)"], ["shield", "안내", "지급 여부·금액은 보험사 심사로 결정됩니다"]] })}><Coins size={14} /> 청구 접수하기</button>
+        <button className="clm-btn pri" onClick={() => onModal && onModal({ title: "보험금 청구 접수", sub: "청구가 접수되었습니다 · 보험사 심사 후 지급 확정", items: [["coin", "예상 보험금", "진료비·계약 기준으로 심사 후 확정됩니다"], ["doc", "청구 서류", "진단서·세부내역서·영수증 (검진자료 자동 연동)"], ["shield", "안내", "지급 여부·금액은 보험사 심사로 결정됩니다"]] })}><Coins size={14} /> 청구 접수하기</button>
         <button className="clm-btn" onClick={() => setStep(0)}>처음부터</button>
       </div>}
       <div className="chnote" style={{ marginTop: 10 }}>※ 보험금은 <b>보험회사 심사</b>를 거쳐 결정되며 AI는 지급을 확정하지 않습니다. 청약·심사·지급은 보험사·정식 모집자격 보유자가 수행합니다(§4.6).</div>
@@ -1400,7 +1419,7 @@ function InsSilStatusSection({ onTab }) {
         <div className="card" style={{ border: "1.5px solid #BBF7D0" }}>
           <div className="rct"><HeartHandshake size={17} color="#16A34A" /> ② 실손보험현황 <span className="cbadge" style={{ marginLeft: 8, color: "#15803D", background: "#E7F8EE" }}>{S.contract.gen || S.gen + "세대"} 가입 중</span></div>
           <div className="costrow"><span className="cl">{S.contract.product} ({S.contract.insurer || "보험사"}) · 가입 {S.contract.join || "-"}</span><span className="cv">월 {won(S.contract.monthly)}</span><span className="ca">정상</span></div>
-          <div className="costrow"><span className="cl">내가 내는 돈(자기부담) — 급여 {S.contract.coGen || "-"} · 비급여 {S.contract.coNon || "-"}</span><span className="cv">통원 회당 25만 · 입원 5천만</span><span className="ca">한도</span></div>
+          <div className="costrow"><span className="cl">내가 내는 돈(자기부담) — 급여 {S.contract.coGen || "-"} · 비급여 {S.contract.coNon || "-"}</span><span className="cv">{S.limits ? `급여 한도 ${(S.limits.pay.limit / 10000).toLocaleString()}만 · 비급여 한도 ${(S.limits.non.limit / 10000).toLocaleString()}만` : "계약 기준"}</span><span className="ca">한도</span></div>
           <div className="costrow"><span className="cl">올해 남은 한도 — 급여</span><span className="cv" style={{ color: "var(--blue)" }}>{won(S.limits.pay.remain)} / {won(S.limits.pay.limit)}</span><span className="ca">사용 {won(S.limits.pay.used)}</span></div>
           <div className="costrow"><span className="cl">올해 남은 한도 — 비급여</span><span className="cv" style={{ color: "var(--blue)" }}>{won(S.limits.non.remain)} / {won(S.limits.non.limit)}</span><span className="ca">사용 {won(S.limits.non.used)}</span></div>
           <div className="chnote" style={{ marginTop: 8 }}>🔁 <b>내 세대 vs 최신 세대</b>: {S.latestNote}{S.peer ? ` · 같은 연령·성별 가입율 ${S.peer.rate}%` : ""}</div>

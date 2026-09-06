@@ -10195,7 +10195,19 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
 /* ── 실손보험 정책 — 건강자산 기반 보험지원 모델 ── */
 function HealthAssetWallet() {
   const _wNm = (() => { try { const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); return (m && m.name) || "회원"; } catch (e) { return "회원"; } })();
-  const W = [["누적 건강자산", "12,480", "HTK"], ["이번 달 적립 건강자산", "+1,240", "HTK"], ["실손보험 지원 가능", "약 32,000", "원/월"]];
+  /* [H-2 W5] 누적·이번 달 적립·실손 지원 가능액을 회원 원장에서 계산한다.
+     전에는 12,480 / +1,240 / 약 32,000원 상수라 모든 회원이 같은 자산을 봤다. */
+  const _wMe = (() => { try { return (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); } catch (e) { return null; } })();
+  const _wBal = (() => { try { return (_wMe && typeof tlSync === "function") ? (tlSync(_wMe) || 0) : 0; } catch (e) { return 0; } })();
+  const _wTx = (() => { try { return (_wMe && typeof tlAll === "function") ? (tlAll(_wMe) || []) : []; } catch (e) { return []; } })();
+  const _wNow = new Date();
+  const _wMonth = _wTx.filter((t) => { if (!t.ts) return false; const d = new Date(t.ts); return d.getFullYear() === _wNow.getFullYear() && d.getMonth() === _wNow.getMonth(); });
+  const _wDir = (t) => ({ genesis: 1, earn: 1, topup: 1, dataFee: 1, spend: -1, transfer: -1, swap: -1 })[t] || 0;
+  const _wEarn = _wMonth.filter((t) => _wDir(t.type) > 0).reduce((x, t) => x + (t.amount || 0), 0);
+  const _wRate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10;
+  /* 실손 지원 가능액 = 치료비 케어 적립분(월 환산은 하지 않는다 — 없는 주기를 만들지 않는다) */
+  const _wRes = (() => { try { return (typeof htkInsReserve === "function") ? htkInsReserve(_wBal) : Math.floor(_wBal * 0.3); } catch (e) { return 0; } })();
+  const W = [["누적 건강자산", _wBal.toLocaleString(), "HTK"], ["이번 달 적립 건강자산", (_wEarn > 0 ? "+" : "") + _wEarn.toLocaleString(), "HTK"], ["치료비 케어 전용", (_wRes * _wRate).toLocaleString(), "원"]];
   const ST = [["건강검진대비보험", "적용 중", true], ["실손보험 추천", "5세대 실손", true], ["노후/유병력자 실손", "해당 시 안내", false], ["사회공헌 지원 대상", "현재 비대상", false]];
   return (
     <div className="ipswallet">
@@ -10452,6 +10464,11 @@ function ClaimSupportFlow({ onModal }) {
   const M = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const [step, setStep] = React.useState(0);
   if (!M) return null;
+  /* [H-2 W5] 예상 보험금 350,000원·자기부담 20,000원은 상수였다 — 진료비를 모르는 시점에
+     모든 회원에게 같은 금액을 말했다. 계약(실손 세대·본인부담률)만 사실대로 알리고
+     금액은 진료비가 확정된 뒤로 미룬다. 보유 계약도 금고의 실계약에서 읽는다. */
+  const _sil = (() => { try { return (typeof insService !== "undefined") ? insService.silStatus(M) : null; } catch (e) { return null; } })();
+  const _myPols = (() => { try { const v = (typeof vaultLoad === "function") ? vaultLoad(anonToken(M)) : null; return (v && v.insurance) || []; } catch (e) { return []; } })();
   const cp = (typeof memberClinicalProfile === "function") ? (() => { try { return memberClinicalProfile(M); } catch (e) { return null; } })() : null;
   const chk = (typeof genMemberCheckup === "function") ? (() => { try { return genMemberCheckup(Object.assign({}, M)); } catch (e) { return null; } })() : null;
   const dz = cp && cp.diagnoses.length ? cp.diagnoses[0].name : (chk && chk.comp.abnormals[0] ? chk.comp.abnormals[0].split(" ")[0] : "건강검진 이상소견");
@@ -10459,8 +10476,8 @@ function ClaimSupportFlow({ onModal }) {
   const SEVEN = [
     ["관련 보장항목", `${dz} 질병 통원·진단비 / 검진 진단지원금`],
     ["보장기간", "계약 만기까지(예: 2045년)"],
-    ["예상 보험금", "약 350,000원 (통원·진단 합산 · 심사 후 확정)"],
-    ["예상 자기부담금", "약 20,000원 (통원 공제)"],
+    ["예상 보험금", _sil && _sil.has ? `진료비가 확정되면 계약 기준으로 계산해 드려요 (${_sil.contract && _sil.contract.gen ? _sil.contract.gen : _sil.gen + "세대"} 실손 · 심사 후 확정)` : "가입 계약이 확인되면 계산해 드려요 (심사 후 확정)"],
+    ["예상 자기부담금", _sil && _sil.has && _sil.contract ? `급여 ${_sil.contract.coGen || "-"} · 비급여 ${_sil.contract.coNon || "-"} 본인부담 (진료비 확정 후 산정)` : "계약 확인 후 산정"],
     ["면책 가능성", "가입 전 진단 이력(기왕증)·고지의무 위반 시 부지급 가능"],
     ["추가심사 가능성", "진단 경위·인과관계 확인 시 추가 심사 가능"],
     ["필요 청구서류", "진단서 · 진료비 세부내역서 · 영수증 · 신분증 (검진자료는 자동 연동)"],
@@ -10477,7 +10494,9 @@ function ClaimSupportFlow({ onModal }) {
       </div>}
       {step === 1 && <div>
         <div className="clm-lead">보유 계약을 확인했습니다.</div>
-        <div className="clm-pol"><div><b>실손의료보험(4세대)</b><span>통원·입원 의료비 · 유지 중</span></div><div><b>건강검진 대비보험</b><span>진단지원금 · 유지 중</span></div></div>
+        <div className="clm-pol">{_myPols.length
+          ? _myPols.slice(0, 3).map((c, i) => <div key={i}><b>{c.product || c.kind}</b><span>{c.insurer || "보험사"} · 유지 중</span></div>)
+          : <div><b>연결된 계약이 없어요</b><span>보험 조회를 연결하면 여기에 보여드려요</span></div>}</div>
         <button className="clm-btn pri" onClick={() => setStep(2)}>청구 가능성·보장 분석 ›</button>
       </div>}
       {step === 2 && <div>
@@ -10488,7 +10507,7 @@ function ClaimSupportFlow({ onModal }) {
       {step === 3 && <div>
         <div className="clm-lead">필요 서류를 안내하고 청구를 지원합니다.</div>
         <div className="clm-docs">{["진단서", "진료비 세부내역서", "영수증", "신분증"].map((d) => <span key={d} className="clm-doc">{d}</span>)}<span className="clm-doc auto">검진자료 자동 연동</span></div>
-        <button className="clm-btn pri" onClick={() => onModal && onModal({ title: "보험금 청구 접수", sub: "청구가 접수되었습니다 · 보험사 심사 후 지급 확정", items: [["coin", "예상 보험금", "약 350,000원 (심사 후 확정)"], ["doc", "청구 서류", "진단서·세부내역서·영수증 (검진자료 자동 연동)"], ["shield", "안내", "지급 여부·금액은 보험사 심사로 결정됩니다"]] })}><Coins size={14} /> 청구 접수하기</button>
+        <button className="clm-btn pri" onClick={() => onModal && onModal({ title: "보험금 청구 접수", sub: "청구가 접수되었습니다 · 보험사 심사 후 지급 확정", items: [["coin", "예상 보험금", "진료비·계약 기준으로 심사 후 확정됩니다"], ["doc", "청구 서류", "진단서·세부내역서·영수증 (검진자료 자동 연동)"], ["shield", "안내", "지급 여부·금액은 보험사 심사로 결정됩니다"]] })}><Coins size={14} /> 청구 접수하기</button>
         <button className="clm-btn" onClick={() => setStep(0)}>처음부터</button>
       </div>}
       <div className="chnote" style={{ marginTop: 10 }}>※ 보험금은 <b>보험회사 심사</b>를 거쳐 결정되며 AI는 지급을 확정하지 않습니다. 청약·심사·지급은 보험사·정식 모집자격 보유자가 수행합니다(§4.6).</div>
@@ -10685,7 +10704,7 @@ function InsSilStatusSection({ onTab }) {
         <div className="card" style={{ border: "1.5px solid #BBF7D0" }}>
           <div className="rct"><HeartHandshake size={17} color="#16A34A" /> ② 실손보험현황 <span className="cbadge" style={{ marginLeft: 8, color: "#15803D", background: "#E7F8EE" }}>{S.contract.gen || S.gen + "세대"} 가입 중</span></div>
           <div className="costrow"><span className="cl">{S.contract.product} ({S.contract.insurer || "보험사"}) · 가입 {S.contract.join || "-"}</span><span className="cv">월 {won(S.contract.monthly)}</span><span className="ca">정상</span></div>
-          <div className="costrow"><span className="cl">내가 내는 돈(자기부담) — 급여 {S.contract.coGen || "-"} · 비급여 {S.contract.coNon || "-"}</span><span className="cv">통원 회당 25만 · 입원 5천만</span><span className="ca">한도</span></div>
+          <div className="costrow"><span className="cl">내가 내는 돈(자기부담) — 급여 {S.contract.coGen || "-"} · 비급여 {S.contract.coNon || "-"}</span><span className="cv">{S.limits ? `급여 한도 ${(S.limits.pay.limit / 10000).toLocaleString()}만 · 비급여 한도 ${(S.limits.non.limit / 10000).toLocaleString()}만` : "계약 기준"}</span><span className="ca">한도</span></div>
           <div className="costrow"><span className="cl">올해 남은 한도 — 급여</span><span className="cv" style={{ color: "var(--blue)" }}>{won(S.limits.pay.remain)} / {won(S.limits.pay.limit)}</span><span className="ca">사용 {won(S.limits.pay.used)}</span></div>
           <div className="costrow"><span className="cl">올해 남은 한도 — 비급여</span><span className="cv" style={{ color: "var(--blue)" }}>{won(S.limits.non.remain)} / {won(S.limits.non.limit)}</span><span className="ca">사용 {won(S.limits.non.used)}</span></div>
           <div className="chnote" style={{ marginTop: 8 }}>🔁 <b>내 세대 vs 최신 세대</b>: {S.latestNote}{S.peer ? ` · 같은 연령·성별 가입율 ${S.peer.rate}%` : ""}</div>
@@ -11128,6 +11147,30 @@ function WalletSection({ onGo }) {
   // C1-1 TokenLedger: 잔액 = Σ트랜잭션(단일 원장). 원장 미영속 환경(쓰기가드)만 레거시 합산 폴백.
   const ledgerBal = (dm && typeof tlSync === "function") ? (() => { try { return tlSync(dm); } catch (e) { return null; } })() : null;
   const total = (ledgerBal != null) ? ledgerBal : WALLET.total + cpPts + shopPts;
+  /* [H-2 W5] 등급·이번 달 적립/사용·전월 대비를 회원 원장에서 계산한다.
+     전에는 WALLET 상수(골드 · +1,840 · −920 · 총액-8200)라 모든 회원이 같은 숫자를 봤다.
+     원장이 없으면(쓰기 차단 등) 숫자를 지어내지 않고 비운다. */
+  const _tx = (dm && typeof tlAll === "function") ? (() => { try { return tlAll(dm) || []; } catch (e) { return []; } })() : [];
+  const _dir = (t) => ({ genesis: 1, earn: 1, topup: 1, dataFee: 1, spend: -1, transfer: -1, swap: -1 })[t] || 0;
+  const _now = new Date(), _thisY = _now.getFullYear(), _thisM = _now.getMonth();
+  const _inMonth = (ts, back) => { const d = new Date(ts); const t = new Date(_thisY, _thisM - (back || 0), 1); return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth(); };
+  const _sum = (arr, sign) => arr.filter((t) => _dir(t.type) === sign).reduce((s, t) => s + (t.amount || 0), 0);
+  const _mTx = _tx.filter((t) => t.ts && _inMonth(t.ts, 0));
+  const monthEarn = _tx.length ? _sum(_mTx, 1) : null;
+  const monthUse = _tx.length ? _sum(_mTx, -1) : null;
+  /* 전월 대비 = 이번 달 순증감 */
+  const monthNet = (monthEarn == null || monthUse == null) ? null : monthEarn - monthUse;
+  /* 멤버십 등급 — 회원 상태 모델(s4.tier)에서 */
+  const tier = (() => { try { const st = (dm && typeof memberStateSnapshot === "function") ? memberStateSnapshot(dm) : null; return (st && st.s4 && st.s4.tier) || null; } catch (e) { return null; } })();
+  const walNm = (dm && dm.name) || "회원";
+  /* 내 소비가 만든 나눔 — 쇼핑 적립 실적에서 계산한다(마진의 give% 규칙). 실적이 없으면 안내로 바꾼다. */
+  const myGive = (() => {
+    try { const won0 = (typeof shopHtkWon === "function") ? shopHtkWon(dm ? dm.email : null) : 0;
+      if (!won0) return null;
+      const give = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give) ? WALLET_SPLIT.give : 30;
+      return Math.round(won0 * give / 100);
+    } catch (e) { return null; }
+  })();
   const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(total) : Math.floor(total * 0.30);
   const genRes = total - insRes;
   const insPct = (typeof HTK_INS_RATE !== "undefined") ? Math.round(HTK_INS_RATE * 100) : 30;
@@ -11144,11 +11187,11 @@ function WalletSection({ onGo }) {
         <span className="wglow" />
         <div className="wlbl"><Coins size={14} /> 총 적립 Health Token</div>
         <div className="wtot">{total.toLocaleString()} <small>HTK</small></div>
-        <div className="wsub">≈ {(total * WALLET.rate).toLocaleString()}원 상당 · 멤버십 등급 <b>{WALLET.grade}</b>{cpPts > 0 && <span style={{ marginLeft: 8, color: "#A7F3D0", fontWeight: 700 }}>· AI 케어플랜 실천 +{cpPts.toLocaleString()} 포함</span>}</div>
+        <div className="wsub">≈ {(total * WALLET.rate).toLocaleString()}원 상당 · {tier ? <>멤버십 등급 <b>{tier}</b></> : null}{cpPts > 0 && <span style={{ marginLeft: 8, color: "#A7F3D0", fontWeight: 700 }}>· AI 케어플랜 실천 +{cpPts.toLocaleString()} 포함</span>}</div>
         <div className="wrow">
-          <div><b style={{ color: "#A7F3D0" }}>+{WALLET.monthEarn.toLocaleString()}</b><span>이번 달 적립</span></div>
-          <div><b style={{ color: "#FECACA" }}>−{WALLET.monthUse.toLocaleString()}</b><span>이번 달 사용</span></div>
-          <div><b>{(WALLET.total - 8200).toLocaleString()}</b><span>전월 대비 ▲</span></div>
+          <div><b style={{ color: "#A7F3D0" }}>{monthEarn == null ? "—" : "+" + monthEarn.toLocaleString()}</b><span>이번 달 적립</span></div>
+          <div><b style={{ color: "#FECACA" }}>{monthUse == null ? "—" : "−" + monthUse.toLocaleString()}</b><span>이번 달 사용</span></div>
+          <div><b>{monthNet == null ? "—" : (monthNet >= 0 ? "+" : "") + monthNet.toLocaleString()}</b><span>이번 달 순증감</span></div>
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, opacity: .95 }}><ShieldCheck size={14} /> AI·블록체인 보안 설계</div>
         </div>
       </div>
@@ -11226,7 +11269,9 @@ function WalletSection({ onGo }) {
           ))}
         </div>
 
-        <div className="wgive-my"><span className="ic"><Heart size={18} color="#E11D48" /></span><div>지금까지 <b>조성래님의 소비로 만들어진 나눔</b> <b style={{ color: "#E11D48" }}>{won(WALLET_GIVE.my)}</b> <small>— 내 건강 관리가 이웃의 치료비가 되었습니다.</small></div></div>
+        <div className="wgive-my"><span className="ic"><Heart size={18} color="#E11D48" /></span><div>{myGive != null
+          ? <>지금까지 <b>{walNm}님의 소비로 만들어진 나눔</b> <b style={{ color: "#E11D48" }}>{won(myGive)}</b> <small>— 내 건강 관리가 이웃의 치료비가 되었습니다.</small></>
+          : <>건강쇼핑에서 구매하시면 <b>판매마진의 {WALLET_SPLIT.give}%</b>가 치료비 나눔으로 적립돼요 <small>— 회원 추가 부담은 없습니다.</small></>}</div></div>
         <div className="chnote">※ 기부 비율(판매마진의 {WALLET_SPLIT.give}%)·수치는 <b>설계 목표·예시</b>입니다. 실제 기부는 제휴 공익재단·의료기관을 통해 심사 후 집행되며, 사용내역은 투명하게 공개하도록 설계합니다. ‘치료비 사각지대’는 재난적 의료비·실손 보장 사각지대·희귀중증질환 본인부담·취약계층 긴급 치료비 등을 포함합니다.</div>
       </>)}
 
@@ -11579,6 +11624,15 @@ function MyPageSection({ onGo }) {
   const _myMe = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const _myRg = (typeof memberRegion === "function") ? (() => { try { return memberRegion(); } catch (e) { return null; } })() : null;
   const _mySelf = !(typeof demoCurrentUser === "function" && demoCurrentUser());
+  /* [H-2 W5] 지표 카드·사회공헌 점수를 회원 원장에서 — 전에는 12,480 HTK · 적립금 3,744 ·
+     NFT 6 · 보험 1이 상수라 모든 회원이 같았다. 근거가 없으면 0으로 두고 지어내지 않는다. */
+  const _myBal = (() => { try { return (_myMe && typeof tlSync === "function") ? (tlSync(_myMe) || 0) : 0; } catch (e) { return 0; } })();
+  const _myRes = (() => { try { return (typeof htkInsReserve === "function") ? htkInsReserve(_myBal) : 0; } catch (e) { return 0; } })();
+  const _myPol = (() => { try { const v = (_myMe && typeof vaultLoad === "function") ? vaultLoad(anonToken(_myMe)) : null; return ((v && v.insurance) || []).length; } catch (e) { return 0; } })();
+  const _myNft = (() => { try { return (typeof NFT_MINE !== "undefined" ? NFT_MINE.length : 0) + (typeof NFT_MINE_FIN !== "undefined" ? NFT_MINE_FIN.length : 0); } catch (e) { return 0; } })();
+  const _myGive = (() => { try { const w = (_myMe && typeof shopHtkWon === "function") ? shopHtkWon(_myMe.email) : 0; const g = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give) || 30; return w ? Math.round(w * g / 100) : 0; } catch (e) { return 0; } })();
+  const _myActs = (() => { try { return (_myMe && typeof tlAll === "function") ? (tlAll(_myMe) || []).length : 0; } catch (e) { return 0; } })();
+  const _myStats = [[_myBal.toLocaleString(), "Health Token", "wallet"], [_myRes.toLocaleString(), "치료비 케어 적립금", "wallet"], [String(_myNft), "Health NFT", "nft"], [String(_myPol), "보유 보험", "insurance"]];
   const _mask = (e) => { const t = String(e || ""); const at = t.indexOf("@"); return at > 0 ? t.slice(0, at) + "@***" + t.slice(t.lastIndexOf(".")) : "미등록"; };
   const _myInfo = [
     ["성명", (_myMe && _myMe.name) || "미등록"],
@@ -11633,7 +11687,7 @@ function MyPageSection({ onGo }) {
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
         <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${((typeof lineageMember === "function") ? lineageMember(dm) : dm).biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b></>}</div></div>
         <div className="pstats">
-          {[["12,480", "Health Token", "wallet"], ["3,744", "치료비 케어 적립금", "wallet"], ["6", "Health NFT", "nft"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
+          {_myStats.map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
         </div>
       </div>
 
@@ -11710,11 +11764,11 @@ function MyPageSection({ onGo }) {
         </div>
         <div className="card">
           <div className="rct"><Sparkles size={18} color="#7C3AED" /> 내 활동 요약</div>
-          <div className="benefit" style={{ marginBottom: 0 }}><span><Art name="coin" size={15} /> 토큰 12,480</span><span><Art name="badge" size={15} /> NFT 6</span><span><Art name="calendar" size={15} /> 예약 1</span><span><Art name="people" size={15} /> 모임 3</span><span><Art name="star" size={15} /> 후기 4</span></div>
+          <div className="benefit" style={{ marginBottom: 0 }}><span><Art name="coin" size={15} /> 토큰 {_myBal.toLocaleString()}</span><span><Art name="badge" size={15} /> NFT {_myNft}</span><span><Art name="calendar" size={15} /> 보유 보험 {_myPol}</span><span><Art name="people" size={15} /> 활동 {_myActs}건</span></div>
           <div className="gorow" style={{ marginTop: 12 }}><button className="gobtn pri" onClick={() => go("manage")}><Activity size={14} /> 건강관리</button><button className="gobtn" onClick={() => go("wallet")}><Coins size={14} /> 건강금융지갑</button><button className="gobtn" onClick={() => go("nft")}><BadgeCheck size={14} /> Health NFT</button></div>
         </div>
         {(() => {
-          const myGive = WALLET_GIVE.my, myEarn = WALLET.total * WALLET.rate, acts = 14;
+          const myGive = _myGive || 0, myEarn = _myBal * ((typeof WALLET !== "undefined" && WALLET.rate) || 10), acts = _myActs;
           const score = Math.min(100, Math.round(myGive / 3000 + myEarn / 9000 + acts * 2));
           const grade = score >= 85 ? "나눔 천사" : score >= 70 ? "건강 나눔러" : score >= 50 ? "참여 시민" : "새싹 기여자";
           const topPct = score >= 85 ? 3 : score >= 70 ? 12 : score >= 50 ? 30 : 60;
@@ -11950,7 +12004,15 @@ function FamilyCareSection({ member, onGo }) {
   const addMember = () => { if (!fName.trim() || !fAge) { if (typeof toast === "function") toast("이름과 나이를 입력해 주세요."); return; } const next = [...family, { id: "f" + Date.now(), name: fName.trim(), relation: fRel, age: Number(fAge) }]; setFamily(next); familySave(email, next); setAddOpen(false); setFName(""); setFAge(""); try { if (typeof refFamilyAdd === "function") refFamilyAdd(email, fName.trim()); } catch (e) {} if (typeof toast === "function") toast(`✅ ${fName.trim()}님을 온가족 케어에 추가했어요 — 가족 등록 보상 +100 HTK!`); };
   const removeMember = (id) => { const next = family.filter((x) => x.id !== id); setFamily(next); familySave(email, next); };
 
-  const base = (typeof WALLET !== "undefined") ? WALLET.total : 12480;
+  /* [H-2 W5] 기준 잔액은 그 회원의 원장에서 — 전에는 WALLET.total(12,480) 상수라
+     모든 회원의 가족 지갑이 같은 숫자에서 출발했다. 원장이 없으면 0에서 시작한다. */
+  const base = (() => {
+    try { const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null);
+      if (m && typeof tlSync === "function") { const b0 = tlSync(m); if (b0 != null) return b0; }
+      if (m && typeof tlBalance === "function") return tlBalance(m) || 0;
+    } catch (e) {}
+    return 0;
+  })();
   const myEarn = (typeof careplanEarned === "function") ? careplanEarned(email) : 0;
   const famEarnSum = family.reduce((s, x) => s + famEarn(famGroupOf(x.age, x.relation)), 0);
   const taskEarnSum = family.reduce((s, x) => s + Object.values(taskMap[x.id] || {}).filter(Boolean).length * FAM_TASK_EARN, 0);
@@ -33480,7 +33542,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "9d1d139bc9589647", "generatedAt": "2026-09-07", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "ce27edfa37abbeb0", "generatedAt": "2026-09-07", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
