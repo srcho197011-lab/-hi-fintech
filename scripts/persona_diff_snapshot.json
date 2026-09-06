@@ -1,0 +1,143 @@
+{
+  "personas": [
+    "000042=유아린",
+    "007777=주경희"
+  ],
+  "visited": [
+    "checkup(탭9)",
+    "care(탭5)",
+    "insurance(탭7)",
+    "mywallet(탭12)",
+    "partner(탭4)",
+    "healthmate:이동실패",
+    "checkup(탭9)",
+    "care(탭5)",
+    "insurance(탭7)",
+    "mywallet(탭12)",
+    "partner(탭4)",
+    "healthmate:이동실패"
+  ],
+  "leaks": 16,
+  "narrativeExcluded": 0,
+  "bySection": {
+    "checkup": 4,
+    "care": 6,
+    "insurance": 3,
+    "mywallet": 3
+  },
+  "items": [
+    {
+      "who": "유아린",
+      "sec": "checkup",
+      "tab": "(기본)",
+      "leak": "거주지은평",
+      "line": "은평구 ·"
+    },
+    {
+      "who": "유아린",
+      "sec": "checkup",
+      "tab": "(기본)",
+      "leak": "거주지은평",
+      "line": "서울특별시은평구통일로738(불광동)"
+    },
+    {
+      "who": "유아린",
+      "sec": "checkup",
+      "tab": "개인건강검진",
+      "leak": "거주지은평",
+      "line": "은평구 ·"
+    },
+    {
+      "who": "유아린",
+      "sec": "checkup",
+      "tab": "개인건강검진",
+      "leak": "거주지은평",
+      "line": "서울특별시은평구통일로738(불광동)"
+    },
+    {
+      "who": "유아린",
+      "sec": "care",
+      "tab": "나의 건강현황",
+      "leak": "거주지은평",
+      "line": "거주지(은평구) 기준 내과·영상의학과 맞춤 병원"
+    },
+    {
+      "who": "유아린",
+      "sec": "care",
+      "tab": "나의 건강현황",
+      "leak": "검진일2024.12.26",
+      "line": "데이터 출처: 프롬에이지 Premium · 메디에이지연구소 (gene.imhealth.co.kr) · 등록번호 KRH01778214095470R2083 · 검진일 2024.12.26 · 분석일 2026.05.08. 의학적 진단을 대신"
+    },
+    {
+      "who": "유아린",
+      "sec": "care",
+      "tab": "나의 건강현황",
+      "leak": "리포트등록번호",
+      "line": "데이터 출처: 프롬에이지 Premium · 메디에이지연구소 (gene.imhealth.co.kr) · 등록번호 KRH01778214095470R2083 · 검진일 2024.12.26 · 분석일 2026.05.08. 의학적 진단을 대신"
+    },
+    {
+      "who": "유아린",
+      "sec": "care",
+      "tab": "재가·돌봄",
+      "leak": "거주지은평",
+      "line": "재가기관 위치 지도 (서울 은평구 6곳)"
+    },
+    {
+      "who": "유아린",
+      "sec": "care",
+      "tab": "재가·돌봄",
+      "leak": "거주지은평",
+      "line": "회원 거주지 서울특별시 은평구 불광동 기준 · 지역 선택"
+    },
+    {
+      "who": "유아린",
+      "sec": "care",
+      "tab": "재가·돌봄",
+      "leak": "거주지은평",
+      "line": "은평구"
+    },
+    {
+      "who": "유아린",
+      "sec": "insurance",
+      "tab": "보장분석",
+      "leak": "이름",
+      "line": "회원 100,001명(10만 + 조성래) · 실통계 기반"
+    },
+    {
+      "who": "유아린",
+      "sec": "insurance",
+      "tab": "보장분석",
+      "leak": "이름",
+      "line": "조성래님 건강금융지갑 · 실손 지원 현황"
+    },
+    {
+      "who": "유아린",
+      "sec": "insurance",
+      "tab": "보장분석",
+      "leak": "이름",
+      "line": "조성래님 추천"
+    },
+    {
+      "who": "유아린",
+      "sec": "mywallet",
+      "tab": "Health NFT",
+      "leak": "이름",
+      "line": "조성래님 건강지갑 NFT/SBT"
+    },
+    {
+      "who": "유아린",
+      "sec": "mywallet",
+      "tab": "Health NFT",
+      "leak": "생체나이52.5",
+      "line": "검진일 2024.12.26 · 생체나이 52.5세 · 종합 좋음"
+    },
+    {
+      "who": "유아린",
+      "sec": "mywallet",
+      "tab": "Health NFT",
+      "leak": "검진일2024.12.26",
+      "line": "검진일 2024.12.26 · 생체나이 52.5세 · 종합 좋음"
+    }
+  ],
+  "secs": 158.7
+}
