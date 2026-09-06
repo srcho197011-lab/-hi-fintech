@@ -20,11 +20,10 @@ function HealthManageSection({ onGo }) {
     { t: `검진 이상항목 ${chk.comp.abnormals.length}건`, c: chk.comp.abnormals.length ? "#B91C1C" : "#15803D", bg: chk.comp.abnormals.length ? "#FDECEC" : "#E7F8EE", ic: chk.comp.abnormals.length ? "warn" : "check" },
     { t: `진행형태 ${chk.trendLabel}`, c: chk.trend === "improve" ? "#15803D" : chk.trend === "worsen" ? "#B45309" : "#475569", bg: chk.trend === "improve" ? "#E7F8EE" : chk.trend === "worsen" ? "#FEF3E2" : "#EEF1F8", ic: chk.trend === "improve" ? "check" : chk.trend === "worsen" ? "up" : null },
   ] : [];
-  /* [H-2 W3] 리포트 출처 표기 — 기관 등록번호는 「그 회원의 실제 리포트가 있을 때」만 나간다.
-     PT.reg(KRH01778…)는 조성래 본인의 기관 등록번호라, 다른 회원 화면에 뜨면 남의 식별자 노출이다.
-     코호트 회원에게는 기관 리포트가 없으므로 하이핀 분석으로 표기하고 등록번호는 비운다. */
+  /* [H-2 비식별화] 출처는 전 회원 동일하게 「하이핀 정밀분석 · 연결된 검진 수치 기준」이다.
+     기관 등록번호·벤더 표기는 제거했다 — 공개 소스에 실제 기관 식별자를 둘 이유가 없다.
+     검진일은 그 회원 금고 기록에서 읽고, 기록이 없으면 비운다(지어내지 않는다). */
   const _prov = (() => {
-    const isSelf = !dm && (typeof PT !== "undefined");
     let ckDate = "";
     try {
       if (selfM && typeof vaultLoad === "function" && typeof anonToken === "function") {
@@ -34,7 +33,6 @@ function HealthManageSection({ onGo }) {
       }
     } catch (e) {}
     const _rgn = (() => { try { const r = (typeof memberRegion === "function") ? memberRegion() : null; return r ? (r.sgg || r.sidoShort || "") : ""; } catch (e) { return ""; } })();
-    if (isSelf) return { region: _rgn, hasReport: true, brand: "프롬에이지 Premium · 메디에이지연구소 (gene.imhealth.co.kr)", reg: PT.reg, checkup: ckDate || PT.checkup, analyzed: PT.analyzed };
     return { region: _rgn, hasReport: false, brand: "하이핀 정밀분석 · 연결된 검진 수치 기준", reg: "", checkup: ckDate, analyzed: "" };
   })();
   const _meNm = (selfM && selfM.name) || "회원";

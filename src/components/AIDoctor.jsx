@@ -132,13 +132,20 @@ function identifyDz(t, QA) {
   for (const k of KDCA_KB) for (const a of k.al) if (t.includes(a)) return k.d;
   return null;
 }
-/* ── 조성래님 개인 건강분석 리포트(프롬에이지 Premium) — src/data/report.json 1회 로드 ── */
-let _reportPromise = null;
+/* ── 개인 건강분석 리포트 ──
+   [H-2 W2·비식별화] 예전에는 src/data/report.json(실명·기관 등록번호가 담긴 실측 리포트)을
+   fetch했다. 그 파일은 로그인 없이 URL로도 열려서 삭제했고, 이제 리포트는 **회원의 금고 수치에서
+   합성**한다(memberReportShape). 본인 계정도 같은 경로를 쓴다 — 실측 값은 금고에서 오므로
+   내용은 그대로이고, 파일로 떠 있던 식별자만 사라진다.
+   loadReport는 남은 호출부(에이전트 KB)를 위해 같은 결과를 Promise로 감싸 준다. */
 function loadReport() {
-  if (!_reportPromise) {
-    _reportPromise = fetch("./src/data/report.json").then((r) => r.ok ? r.json() : null).catch(() => null);
-  }
-  return _reportPromise;
+  const m = _reportMember();
+  return Promise.resolve(m ? memberReportShape(m) : null);
+}
+function _reportMember() {
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  if (dm) return dm;
+  try { return (typeof selfMember === "function") ? selfMember() : null; } catch (e) { return null; }
 }
 /* ══ [H-2 W2] 리포트는 「지금 로그인한 회원」의 것이어야 한다 ══
    report.json은 조성래 본인의 **실명 실측 리포트**(기관 등록번호 포함)다.
@@ -177,11 +184,9 @@ function useReport() {
   const _dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const _key = _dm ? (_dm.email || _dm.id || _dm.name) : "__self__";
   useEffect(() => {
-    let on = true;
-    /* 체험·코호트 회원 → 그 회원의 리포트로 합성. 본인(게이트 로그인) → 실제 report.json */
-    if (_dm) { const r = memberReportShape(_dm); if (on) setRp(r); return () => { on = false; }; }
-    loadReport().then((d) => on && setRp(d));
-    return () => { on = false; };
+    /* 회원이 누구든 그 회원의 금고 수치로 합성한다 — 파일에서 읽지 않는다 */
+    const m = _reportMember();
+    setRp(m ? memberReportShape(m) : null);
   }, [_key]);
   return rp;
 }
@@ -223,7 +228,7 @@ function reportAnswer(q, R) {
   }
   return null;
 }
-/* ── 건강분석 리포트 상세 분석(다중 카드) — 원본 리포트(report.json)의 전 항목을 풍부하게 구조화 ── */
+/* ── 건강분석 리포트 상세 분석(다중 카드) — 회원 리포트의 전 항목을 구조화 ── */
 function reportAnalysisCards(R) {
   if (!R || !R.meta) return null;
   const M = R.meta;
@@ -2788,12 +2793,8 @@ function KCard({ card, onBtn }) {
 try {
   if (typeof window !== "undefined") {
     window.__hifinDoc = {
-      ask: (q) => {
-        const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-        const use = dm ? Promise.resolve(memberReportShape(dm)) : loadReport();
-        return use.then((R) => { try { return aiRespond(String(q || ""), null, R, null); } catch (e) { return { err: String(e) }; } });
-      },
-      report: () => { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return dm ? Promise.resolve(memberReportShape(dm)) : loadReport(); },
+      ask: (q) => loadReport().then((R) => { try { return aiRespond(String(q || ""), null, R, null); } catch (e) { return { err: String(e) }; } }),
+      report: () => loadReport(),
     };
   }
 } catch (e) {}

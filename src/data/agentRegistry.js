@@ -55,7 +55,7 @@ const HI_AGENTS = [
     },
     outOfScope: ["검진 예약 실행", "보험 상품·보장", "제품 판매", "돌봄 계약"],
     handler: "aiDoctorAgent",
-    knowledge: ["kdca.json", "kdca_qa.json", "guidelines.json", "report.json", "healthOntology"],
+    knowledge: ["kdca.json", "kdca_qa.json", "guidelines.json", "회원 리포트(금고 합성)", "healthOntology"],
     ready: true,
   },
   {

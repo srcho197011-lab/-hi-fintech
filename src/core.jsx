@@ -18,8 +18,11 @@ const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKE
 
 /* ====================== tokens ====================== */
 
-/* ====================== real data (조성래 · 프롬에이지 Premium) ====================== */
-const PT = { name: "조성래", sexAge: "남 / 54.1세", checkup: "2024.12.26", analyzed: "2026.05.08", reg: "KRH01778214095470R2083", regAge: 54.1, bioAge: 52.5, agingRank: 37, agingSpeed: 0.97, sido: "서울", sigungu: "은평구", dong: "불광동", addr: "서울특별시 은평구 불광동" };
+/* ====================== 본인(게이트 로그인) 기본 프로필 ======================
+   [H-2 비식별화] 기관 등록번호(reg)와 벤더 표기는 제거했다 — 공개 소스에 남을 이유가 없는
+   실제 기관 식별자였다. 검진일·분석일도 금고 기록에서 읽으므로 상수로 두지 않는다.
+   화면에 필요한 값은 memberRegion()·demoReport()가 회원 기준으로 제공한다. */
+const PT = { name: "조성래", sexAge: "남 / 54.1세", regAge: 54.1, bioAge: 52.5, agingRank: 37, agingSpeed: 0.97, sido: "서울", sigungu: "은평구", dong: "불광동", addr: "서울특별시 은평구 불광동" };
 
 /* ── 회원 거주지역 추정 — 검진센터·병원 '내 주변' 추천용 ──
    demoCurrentUser().addr(있으면 파싱) → 없으면 이름/ID 해시로 결정론적 배정 → 게이트 사용자는 PT(은평구). */

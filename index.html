@@ -576,8 +576,11 @@ const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKE
 
 /* ====================== tokens ====================== */
 
-/* ====================== real data (조성래 · 프롬에이지 Premium) ====================== */
-const PT = { name: "조성래", sexAge: "남 / 54.1세", checkup: "2024.12.26", analyzed: "2026.05.08", reg: "KRH01778214095470R2083", regAge: 54.1, bioAge: 52.5, agingRank: 37, agingSpeed: 0.97, sido: "서울", sigungu: "은평구", dong: "불광동", addr: "서울특별시 은평구 불광동" };
+/* ====================== 본인(게이트 로그인) 기본 프로필 ======================
+   [H-2 비식별화] 기관 등록번호(reg)와 벤더 표기는 제거했다 — 공개 소스에 남을 이유가 없는
+   실제 기관 식별자였다. 검진일·분석일도 금고 기록에서 읽으므로 상수로 두지 않는다.
+   화면에 필요한 값은 memberRegion()·demoReport()가 회원 기준으로 제공한다. */
+const PT = { name: "조성래", sexAge: "남 / 54.1세", regAge: 54.1, bioAge: 52.5, agingRank: 37, agingSpeed: 0.97, sido: "서울", sigungu: "은평구", dong: "불광동", addr: "서울특별시 은평구 불광동" };
 
 /* ── 회원 거주지역 추정 — 검진센터·병원 '내 주변' 추천용 ──
    demoCurrentUser().addr(있으면 파싱) → 없으면 이름/ID 해시로 결정론적 배정 → 게이트 사용자는 PT(은평구). */
@@ -1680,13 +1683,20 @@ function identifyDz(t, QA) {
   for (const k of KDCA_KB) for (const a of k.al) if (t.includes(a)) return k.d;
   return null;
 }
-/* ── 조성래님 개인 건강분석 리포트(프롬에이지 Premium) — src/data/report.json 1회 로드 ── */
-let _reportPromise = null;
+/* ── 개인 건강분석 리포트 ──
+   [H-2 W2·비식별화] 예전에는 src/data/report.json(실명·기관 등록번호가 담긴 실측 리포트)을
+   fetch했다. 그 파일은 로그인 없이 URL로도 열려서 삭제했고, 이제 리포트는 **회원의 금고 수치에서
+   합성**한다(memberReportShape). 본인 계정도 같은 경로를 쓴다 — 실측 값은 금고에서 오므로
+   내용은 그대로이고, 파일로 떠 있던 식별자만 사라진다.
+   loadReport는 남은 호출부(에이전트 KB)를 위해 같은 결과를 Promise로 감싸 준다. */
 function loadReport() {
-  if (!_reportPromise) {
-    _reportPromise = fetch("./src/data/report.json").then((r) => r.ok ? r.json() : null).catch(() => null);
-  }
-  return _reportPromise;
+  const m = _reportMember();
+  return Promise.resolve(m ? memberReportShape(m) : null);
+}
+function _reportMember() {
+  const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+  if (dm) return dm;
+  try { return (typeof selfMember === "function") ? selfMember() : null; } catch (e) { return null; }
 }
 /* ══ [H-2 W2] 리포트는 「지금 로그인한 회원」의 것이어야 한다 ══
    report.json은 조성래 본인의 **실명 실측 리포트**(기관 등록번호 포함)다.
@@ -1725,11 +1735,9 @@ function useReport() {
   const _dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const _key = _dm ? (_dm.email || _dm.id || _dm.name) : "__self__";
   useEffect(() => {
-    let on = true;
-    /* 체험·코호트 회원 → 그 회원의 리포트로 합성. 본인(게이트 로그인) → 실제 report.json */
-    if (_dm) { const r = memberReportShape(_dm); if (on) setRp(r); return () => { on = false; }; }
-    loadReport().then((d) => on && setRp(d));
-    return () => { on = false; };
+    /* 회원이 누구든 그 회원의 금고 수치로 합성한다 — 파일에서 읽지 않는다 */
+    const m = _reportMember();
+    setRp(m ? memberReportShape(m) : null);
   }, [_key]);
   return rp;
 }
@@ -1771,7 +1779,7 @@ function reportAnswer(q, R) {
   }
   return null;
 }
-/* ── 건강분석 리포트 상세 분석(다중 카드) — 원본 리포트(report.json)의 전 항목을 풍부하게 구조화 ── */
+/* ── 건강분석 리포트 상세 분석(다중 카드) — 회원 리포트의 전 항목을 구조화 ── */
 function reportAnalysisCards(R) {
   if (!R || !R.meta) return null;
   const M = R.meta;
@@ -4336,12 +4344,8 @@ function KCard({ card, onBtn }) {
 try {
   if (typeof window !== "undefined") {
     window.__hifinDoc = {
-      ask: (q) => {
-        const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-        const use = dm ? Promise.resolve(memberReportShape(dm)) : loadReport();
-        return use.then((R) => { try { return aiRespond(String(q || ""), null, R, null); } catch (e) { return { err: String(e) }; } });
-      },
-      report: () => { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return dm ? Promise.resolve(memberReportShape(dm)) : loadReport(); },
+      ask: (q) => loadReport().then((R) => { try { return aiRespond(String(q || ""), null, R, null); } catch (e) { return { err: String(e) }; } }),
+      report: () => loadReport(),
     };
   }
 } catch (e) {}
@@ -4368,11 +4372,10 @@ function HealthManageSection({ onGo }) {
     { t: `검진 이상항목 ${chk.comp.abnormals.length}건`, c: chk.comp.abnormals.length ? "#B91C1C" : "#15803D", bg: chk.comp.abnormals.length ? "#FDECEC" : "#E7F8EE", ic: chk.comp.abnormals.length ? "warn" : "check" },
     { t: `진행형태 ${chk.trendLabel}`, c: chk.trend === "improve" ? "#15803D" : chk.trend === "worsen" ? "#B45309" : "#475569", bg: chk.trend === "improve" ? "#E7F8EE" : chk.trend === "worsen" ? "#FEF3E2" : "#EEF1F8", ic: chk.trend === "improve" ? "check" : chk.trend === "worsen" ? "up" : null },
   ] : [];
-  /* [H-2 W3] 리포트 출처 표기 — 기관 등록번호는 「그 회원의 실제 리포트가 있을 때」만 나간다.
-     PT.reg(KRH01778…)는 조성래 본인의 기관 등록번호라, 다른 회원 화면에 뜨면 남의 식별자 노출이다.
-     코호트 회원에게는 기관 리포트가 없으므로 하이핀 분석으로 표기하고 등록번호는 비운다. */
+  /* [H-2 비식별화] 출처는 전 회원 동일하게 「하이핀 정밀분석 · 연결된 검진 수치 기준」이다.
+     기관 등록번호·벤더 표기는 제거했다 — 공개 소스에 실제 기관 식별자를 둘 이유가 없다.
+     검진일은 그 회원 금고 기록에서 읽고, 기록이 없으면 비운다(지어내지 않는다). */
   const _prov = (() => {
-    const isSelf = !dm && (typeof PT !== "undefined");
     let ckDate = "";
     try {
       if (selfM && typeof vaultLoad === "function" && typeof anonToken === "function") {
@@ -4382,7 +4385,6 @@ function HealthManageSection({ onGo }) {
       }
     } catch (e) {}
     const _rgn = (() => { try { const r = (typeof memberRegion === "function") ? memberRegion() : null; return r ? (r.sgg || r.sidoShort || "") : ""; } catch (e) { return ""; } })();
-    if (isSelf) return { region: _rgn, hasReport: true, brand: "프롬에이지 Premium · 메디에이지연구소 (gene.imhealth.co.kr)", reg: PT.reg, checkup: ckDate || PT.checkup, analyzed: PT.analyzed };
     return { region: _rgn, hasReport: false, brand: "하이핀 정밀분석 · 연결된 검진 수치 기준", reg: "", checkup: ckDate, analyzed: "" };
   })();
   const _meNm = (selfM && selfM.name) || "회원";
@@ -11602,7 +11604,7 @@ function MyPageSection({ onGo }) {
       <DemoMemberBanner />
       <div className="profile">
         <span className="pa">{dm ? dm.name[0] : "조"}</span>
-        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${((typeof lineageMember === "function") ? lineageMember(dm) : dm).biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b> · 등록번호 {PT.reg}</>}</div></div>
+        <div><div className="pn">{dm ? dm.name : "조성래"} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{dm ? `생체나이 ${((typeof lineageMember === "function") ? lineageMember(dm) : dm).biologicalAge}세 · 체험회원` : "54.1세 · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${dm.email} · 멤버십 체험 · ID ${dm.id}` : <>{PT.addr} · 멤버십 <b style={{ color: "#B45309" }}>골드</b></>}</div></div>
         <div className="pstats">
           {[["12,480", "Health Token", "wallet"], ["3,744", "치료비 케어 적립금", "wallet"], ["6", "Health NFT", "nft"], ["1", "보유 보험", "insurance"]].map(([v, k, to]) => (<div className="pstat" key={k} style={{ cursor: "pointer" }} onClick={() => go(to)}><div className="v">{v}</div><div className="k">{k}</div></div>))}
         </div>
@@ -12423,7 +12425,7 @@ function MyHealthHero({ onGo }) {
     <>
       <div className="profile">
         <span className="pa">{nm[0]}</span>
-        <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 체험 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 검진일 2024.12.26 · 등록번호 ${PT.reg}`}</div></div>
+        <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 체험 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 하이핀 정밀분석 기준`}</div></div>
         <div className="pstats">
           {[[regA + "세", "주민등록"], [bioA + "세", "생체나이"], [(R ? R.agingRank : 37) + "등", "노화등수"], [(R ? R.agingSpeed : 0.97) + "배", "노화속도"]].map(([v, k]) => (<div className="pstat" key={k}><div className="v">{v}</div><div className="k">{k}</div></div>))}
           <div className="pstat"><span className="tag-w" style={{ color: R ? R.cg[1] : "#16A34A", background: R ? R.cg[2] : "#E7F8EE" }}>종합 {R ? R.evalLabel : "좋음"}</span><div className="k" style={{ marginTop: 6 }}>생체나이</div></div>
@@ -33429,7 +33431,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "1e4ba1a56aabed6d", "generatedAt": "2026-09-06", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "ad5837a9b4ec7745", "generatedAt": "2026-09-06", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -33618,7 +33620,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-06","seed":20260828,"inventory":{"version":1,"sourceHash":"1e4ba1a56aabed6d","generatedAt":"2026-09-06","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.16,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-06","seed":20260828,"inventory":{"version":1,"sourceHash":"ad5837a9b4ec7745","generatedAt":"2026-09-06","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.66,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
@@ -37173,7 +37175,7 @@ const HI_AGENTS = [
     },
     outOfScope: ["검진 예약 실행", "보험 상품·보장", "제품 판매", "돌봄 계약"],
     handler: "aiDoctorAgent",
-    knowledge: ["kdca.json", "kdca_qa.json", "guidelines.json", "report.json", "healthOntology"],
+    knowledge: ["kdca.json", "kdca_qa.json", "guidelines.json", "회원 리포트(금고 합성)", "healthOntology"],
     ready: true,
   },
   {
