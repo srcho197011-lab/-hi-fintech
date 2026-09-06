@@ -89,6 +89,11 @@ function CheckupCollect({ member, onDone, onLater }) {
     const meta = { source: channel === "nhis" ? "nhis" : channel === "photo" ? "ocr" : "upload", channel: channel || "upload", completeness: ocr.completeness || "full", fileName: (ocr && ocr.fileName) || null, date: "2025-11-01" };
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(member, Object.assign({ step: "checkup" }, consent));
     const res = (typeof vaultSaveCheckup === "function") ? vaultSaveCheckup(member, items, meta) : null;
+    /* 저장이 거부되면 완료 화면으로 넘기지 않는다 — 금고가 안 받았는데 「완료」를 보여주면 그 자체가 거짓말이다(H-1) */
+    if (!res || res.ok !== true) {
+      if (typeof toast === "function") toast((res && res.reason) || "저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
     setSaved(res); setPhase("done");
   };
   const flag = (r) => (typeof ckupFlag === "function") ? ckupFlag(r.key, r.value) : "";
@@ -230,6 +235,10 @@ function InsuranceCollect({ member, onDone, onLater }) {
   const confirmSave = () => {
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(member, Object.assign({ step: "insurance" }, consent));
     const res = (typeof vaultSaveInsurance === "function") ? vaultSaveInsurance(member, rows, { source: channel === "aggregate" ? "aggregate" : "ocr", channel }) : null;
+    if (!res || res.ok !== true) {
+      if (typeof toast === "function") toast((res && res.reason) || "저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
     setSaved(res); setPhase("done");
   };
 

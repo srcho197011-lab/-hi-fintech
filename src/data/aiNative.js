@@ -585,6 +585,23 @@ function agentAnswerCore(text) {
   let _route = { agent: "A0", reason: "default" };
   try { if (typeof agentRoute === "function") { _route = agentRoute(text, norm, null, { m: m, lastOwner: _hiLastOwner }); agentRouteLog(text, _route); } } catch (e) {}
   _hiTurn = { route: _route, reason: _route.reason };
+  /* ══ [H-1] 명시적 취소·변경은 추론을 이긴다 ══
+     회원이 "예약 취소할래"라고 말했는데 상황 추론(SARG)이 "지금 예약하시는 게 편해요"로 답하던 결함.
+     취소하려는 사람에게 예약을 권하는 것은 답이 틀린 정도가 아니라 신뢰를 깨는 응답이라,
+     분기 대화·협주·정적 매칭보다 **앞에** 세운다. 판정은 좁게 — 예약 명사 + 취소/변경 동사이고,
+     주문·배송·보험 해지 같은 다른 도메인의 취소는 각자 담당이 답하도록 배제한다. */
+  const _CXL_NOUN = /(검진|예약|진료|상담|방문|일정|날짜)/;
+  const _CXL_VERB = /(취소|해지할|변경|바꾸|바꿔|옮기|옮겨|미루|미룰|미뤄|연기|늦추|안\s*받을|안\s*갈)/;
+  const _CXL_NOT  = /(주문|배송|결제|환불|반품|교환|구독|정기배송|보험\s*(해지|해약)|계약\s*해지|회원\s*탈퇴|알림|동의)/;
+  if (_CXL_NOUN.test(norm) && _CXL_VERB.test(norm) && !_CXL_NOT.test(norm)) {
+    let cx = null;
+    try { cx = (typeof hiRespond === "function") ? hiRespond(text, norm, m) : null; } catch (e) { cx = null; }
+    if (cx && cx.res && cx.intent && cx.intent.id === "S1-BOOK-02") {
+      agentStats(true); agentMemSave({ lastIntent: cx.intent.id, lastCat: "booking-change", lastQ: String(text).slice(0, 60) });
+      return { agent: "A0", lines: cx.res.lines, buttons: (cx.res.buttons || []).slice(0, 3), nav: cx.res.nav || null, matched: cx.intent.id };
+    }
+  }
+
   /* [2단계 분기 대화] 검진 이력 순차 상담의 '선택 이후' 턴 — 분기가 무장된 동안에만 가로챈다 */
   if (_route.reason !== "dialog-interrupt") {
     try {

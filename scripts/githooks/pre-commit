@@ -94,3 +94,11 @@ if echo "$CHANGED" | grep -qE "^src/data/(hiProAgent|coachAgent)\.js$"; then
   node scripts/run_hipro_regression.mjs || { echo "[GATE] 하이프로 회귀 실패 — 커밋 차단"; exit 1; }
   git add scripts/hipro_regression_snapshot.json 2>/dev/null || true
 fi
+
+# ══ 진실성 가드(하이 초고도화 H-1) — 「실행기 없는 확언」이 되살아나면 차단 ══
+# 회원 응답 문안·라우팅·금고가 바뀌면 돌린다. 조회할 도구가 없는데 결과를 단정하던 결함의 재발 방지.
+if echo "$CHANGED" | grep -qE "^src/(data/(hiNluDict|aiQnaBank|hiStateModel|aiNative|hiNluCore|healthDataVault)\.js|data/agents/shoppingAgent\.js|components/(Checkup|DataOnboarding)\.jsx)$"; then
+  echo "[GATE] 응답 문안·라우팅·금고 변경 — 진실성 가드 실행"
+  node scripts/run_truth_guard.mjs || { echo "[GATE] 진실성 가드 실패 — 커밋 차단(도구 없는 단정·오라우팅·금고 fail-open)"; exit 1; }
+  git add scripts/truth_guard_snapshot.json 2>/dev/null || true
+fi

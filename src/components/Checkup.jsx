@@ -1242,19 +1242,23 @@ function BookingModal({ center, mode, onClose }) {
   );
 }
 
+/* ⚠️ 이 절은 공단 자격 조회 도구가 아직 없다 — 대상 여부를 단정하지 않는다(H-1 수선).
+   기준만 안내하고 판정은 공단 확인으로 넘긴다(§0-H6: 실행기 없는 확언 금지). */
 function NationalCheckup() {
+  const _me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof authCurrent === "function" && authCurrent()) || null;
+  const _nm = (_me && _me.name) ? _me.name + "님" : "회원님";
   const cancers = [[Stethoscope, "위암", "만 40세+ 2년"], [Activity, "대장암", "만 50세+ 1년"], [Brain, "간암", "고위험군 6개월"], [Heart, "유방암", "만 40세+ 2년"], [ShieldCheck, "자궁경부암", "만 20세+ 2년"], [Activity, "폐암", "고위험 흡연군"]];
   return (<>
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="rct"><ShieldCheck size={18} color="#16A34A" /> 일반건강검진 (국가검진)</div>
-      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>국가건강보험공단이 제공하는 무료 일반건강검진입니다. 대상자는 2년마다(비사무직 매년) 무료로 받을 수 있어요. 조성래님은 <b style={{ color: "var(--green)" }}>올해 검진 대상</b>입니다.</p>
+      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>국가건강보험공단이 제공하는 무료 일반건강검진입니다. 대상자는 2년마다(비사무직 매년) 무료로 받을 수 있어요. {_nm}이 올해 대상인지는 <b>공단 자료로 확인해야</b> 알 수 있어요 — 앱에서 바로 조회하는 기능은 준비하고 있어요.</p>
       <div className="benefit" style={{ marginTop: 12, marginBottom: 0 }}><span><Art name="check" size={16} /> 본인부담 0원</span><span><Art name="check" size={16} /> 공단 검진 + 추가 검사 결합 가능</span><span><Art name="badge" size={16} /> 결과 카톡 수신</span></div>
-      <button className="cbtn pri" onClick={() => toast("국가건강검진 대상자입니다. 검진센터 탭에서 예약을 진행하세요.")}><CalendarCheck size={15} /> 대상자 조회 후 예약하기</button>
+      <button className="cbtn pri" onClick={() => toast("대상 여부는 건강보험공단(1577-1000) 또는 공단 홈페이지에서 확인하실 수 있어요. 확인 후 검진센터 탭에서 예약해 주세요.")}><CalendarCheck size={15} /> 대상 확인 방법 보기</button>
     </div>
     <div className="card">
       <div className="rct"><Stethoscope size={18} color="#EF4444" /> 국가 암검진 6종</div>
       <div className="canc6">{cancers.map(([Ic, n, c]) => (<div className="cc6" key={n}><span className="ic"><Ic size={18} color="#2563EB" /></span>{n}<div style={{ fontSize: 10.5, color: "var(--muted)", fontWeight: 600, marginTop: 2 }}>{c}</div></div>))}</div>
-      <button className="cbtn" onClick={() => toast("올해 대상: 위암·대장암·간암 검진. 검진센터에서 예약 가능합니다.")}><ClipboardList size={15} /> 내 암검진 대상 항목 확인</button>
+      <button className="cbtn" onClick={() => toast("암검진은 나이·위험군 기준이 항목마다 달라요. 위 6종 기준을 보시고, 내 대상 항목은 공단(1577-1000)에서 확인해 주세요.")}><ClipboardList size={15} /> 암검진 대상 기준 보기</button>
     </div>
     <CenterDirectory mode="nat" />
   </>);
@@ -1473,6 +1477,10 @@ function PublicSupport() {
 
 function CheckupResults() {
   const [kakao, setKakao] = useState(true);
+  /* ⚠️ 아래 결과 목록은 아직 금고와 배선되지 않은 예시 카드다(H-2 빈틈 지도 등록 대상).
+     배선 전까지 **개인 판정문은 쓰지 않는다** — 근거 없이 회원마다 다른 결론을 단정하게 된다(§0-H6). */
+  const _me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof authCurrent === "function" && authCurrent()) || null;
+  const _nm = (_me && _me.name) ? _me.name + "님" : "회원님";
   return (<>
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="rct"><FileText size={18} color="#7C3AED" /> 내 검진 결과</div>
@@ -1485,7 +1493,7 @@ function CheckupResults() {
     </div>
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="rct"><Stethoscope size={18} color="#16A34A" /> 사후관리 · 추적관찰</div>
-      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>추적관찰 병원은 이전 검진 결과를 이미 알고 있어, 필요한 재검·정밀검사를 이어서 관리해 드려요. 조성래님은 <b style={{ color: "#B45309" }}>간·췌장 복부초음파 추적</b>이 권장됩니다.</p>
+      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>추적관찰 병원은 이전 검진 결과를 이미 알고 있어, 필요한 재검·정밀검사를 이어서 관리해 드려요. {_nm}께 필요한 추적 항목은 <b>검진 결과가 연동되면</b> 수치를 근거로 정리해 드릴게요.</p>
       <button className="cbtn pri" onClick={() => nav("hospital")}><Building2 size={15} /> 추적관찰 병원 연결</button>
     </div>
     <div className="card">

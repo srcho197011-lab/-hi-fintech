@@ -1,0 +1,15 @@
+{
+  "booking": 10,
+  "bookingOk": 10,
+  "a3": 10,
+  "a3Handback": 10,
+  "vault": {
+    "noMeta": false,
+    "nullMeta": false,
+    "noMetaIns": false,
+    "withSrc": true
+  },
+  "natlViolations": 0,
+  "fails": 0,
+  "secs": 12.4
+}

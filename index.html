@@ -6009,19 +6009,23 @@ function BookingModal({ center, mode, onClose }) {
   );
 }
 
+/* ⚠️ 이 절은 공단 자격 조회 도구가 아직 없다 — 대상 여부를 단정하지 않는다(H-1 수선).
+   기준만 안내하고 판정은 공단 확인으로 넘긴다(§0-H6: 실행기 없는 확언 금지). */
 function NationalCheckup() {
+  const _me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof authCurrent === "function" && authCurrent()) || null;
+  const _nm = (_me && _me.name) ? _me.name + "님" : "회원님";
   const cancers = [[Stethoscope, "위암", "만 40세+ 2년"], [Activity, "대장암", "만 50세+ 1년"], [Brain, "간암", "고위험군 6개월"], [Heart, "유방암", "만 40세+ 2년"], [ShieldCheck, "자궁경부암", "만 20세+ 2년"], [Activity, "폐암", "고위험 흡연군"]];
   return (<>
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="rct"><ShieldCheck size={18} color="#16A34A" /> 일반건강검진 (국가검진)</div>
-      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>국가건강보험공단이 제공하는 무료 일반건강검진입니다. 대상자는 2년마다(비사무직 매년) 무료로 받을 수 있어요. 조성래님은 <b style={{ color: "var(--green)" }}>올해 검진 대상</b>입니다.</p>
+      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>국가건강보험공단이 제공하는 무료 일반건강검진입니다. 대상자는 2년마다(비사무직 매년) 무료로 받을 수 있어요. {_nm}이 올해 대상인지는 <b>공단 자료로 확인해야</b> 알 수 있어요 — 앱에서 바로 조회하는 기능은 준비하고 있어요.</p>
       <div className="benefit" style={{ marginTop: 12, marginBottom: 0 }}><span><Art name="check" size={16} /> 본인부담 0원</span><span><Art name="check" size={16} /> 공단 검진 + 추가 검사 결합 가능</span><span><Art name="badge" size={16} /> 결과 카톡 수신</span></div>
-      <button className="cbtn pri" onClick={() => toast("국가건강검진 대상자입니다. 검진센터 탭에서 예약을 진행하세요.")}><CalendarCheck size={15} /> 대상자 조회 후 예약하기</button>
+      <button className="cbtn pri" onClick={() => toast("대상 여부는 건강보험공단(1577-1000) 또는 공단 홈페이지에서 확인하실 수 있어요. 확인 후 검진센터 탭에서 예약해 주세요.")}><CalendarCheck size={15} /> 대상 확인 방법 보기</button>
     </div>
     <div className="card">
       <div className="rct"><Stethoscope size={18} color="#EF4444" /> 국가 암검진 6종</div>
       <div className="canc6">{cancers.map(([Ic, n, c]) => (<div className="cc6" key={n}><span className="ic"><Ic size={18} color="#2563EB" /></span>{n}<div style={{ fontSize: 10.5, color: "var(--muted)", fontWeight: 600, marginTop: 2 }}>{c}</div></div>))}</div>
-      <button className="cbtn" onClick={() => toast("올해 대상: 위암·대장암·간암 검진. 검진센터에서 예약 가능합니다.")}><ClipboardList size={15} /> 내 암검진 대상 항목 확인</button>
+      <button className="cbtn" onClick={() => toast("암검진은 나이·위험군 기준이 항목마다 달라요. 위 6종 기준을 보시고, 내 대상 항목은 공단(1577-1000)에서 확인해 주세요.")}><ClipboardList size={15} /> 암검진 대상 기준 보기</button>
     </div>
     <CenterDirectory mode="nat" />
   </>);
@@ -6240,6 +6244,10 @@ function PublicSupport() {
 
 function CheckupResults() {
   const [kakao, setKakao] = useState(true);
+  /* ⚠️ 아래 결과 목록은 아직 금고와 배선되지 않은 예시 카드다(H-2 빈틈 지도 등록 대상).
+     배선 전까지 **개인 판정문은 쓰지 않는다** — 근거 없이 회원마다 다른 결론을 단정하게 된다(§0-H6). */
+  const _me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof authCurrent === "function" && authCurrent()) || null;
+  const _nm = (_me && _me.name) ? _me.name + "님" : "회원님";
   return (<>
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="rct"><FileText size={18} color="#7C3AED" /> 내 검진 결과</div>
@@ -6252,7 +6260,7 @@ function CheckupResults() {
     </div>
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="rct"><Stethoscope size={18} color="#16A34A" /> 사후관리 · 추적관찰</div>
-      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>추적관찰 병원은 이전 검진 결과를 이미 알고 있어, 필요한 재검·정밀검사를 이어서 관리해 드려요. 조성래님은 <b style={{ color: "#B45309" }}>간·췌장 복부초음파 추적</b>이 권장됩니다.</p>
+      <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>추적관찰 병원은 이전 검진 결과를 이미 알고 있어, 필요한 재검·정밀검사를 이어서 관리해 드려요. {_nm}께 필요한 추적 항목은 <b>검진 결과가 연동되면</b> 수치를 근거로 정리해 드릴게요.</p>
       <button className="cbtn pri" onClick={() => nav("hospital")}><Building2 size={15} /> 추적관찰 병원 연결</button>
     </div>
     <div className="card">
@@ -25986,7 +25994,7 @@ function interventionsFor(grade, groupKey) {
 }
 
 /* 자동 생성 — run_handoff_harness.mjs (P4). 콘솔 하네스 타일이 읽는 최근 통과 스냅샷 — 손대지 말 것 */
-const HM_HARNESS_SNAPSHOT = {"date":"2026-09-04","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
+const HM_HARNESS_SNAPSHOT = {"date":"2026-09-06","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
 
 /* 자동 생성 — run_handoff_batch.mjs (P5). ⑩관제탑이 읽는 배치 스냅샷 — 손대지 말 것(운영 정합 §7-⑥: 관제탑 집계 = 이 스냅샷 = 배치 리포트). */
 const HM_OPS_SNAPSHOT = {"date":"2026-09-02","total":100000,"cards":56945,"publishable":56945,"locked":32855,"byGrade":{"H":6300,"-":43055,"L":46292,"M":4353},"bySido":{"충북":1746,"경북":2987,"서울":10880,"부산":4146,"전북":1691,"경기":13271,"대전":1763,"충남":2515,"울산":1237,"전남":1920,"강원":1792,"인천":3716,"광주":1648,"대구":2882,"경남":2941,"제주":1152,"세종":658},"pros":648,"prosAll":702,"sabunOk":true,"rosterChecked":648,"rosterViol":0,"avgRoster":6.97,"maxRoster":7,"byRosterGrade":{"H":3209,"L":930,"M":377},"loadAvg":154.3,"loadRatioMax":1.29,"loadRatioMin":0.91,"loadBySido":[{"sido":"강원","pros":16,"perPro":199.5,"ratio":1.29},{"sido":"세종","pros":6,"perPro":190.7,"ratio":1.24},{"sido":"충북","pros":17,"perPro":184.9,"ratio":1.2},{"sido":"울산","pros":13,"perPro":165.8,"ratio":1.07},{"sido":"인천","pros":41,"perPro":161,"ratio":1.04},{"sido":"부산","pros":46,"perPro":160.8,"ratio":1.04},{"sido":"전남","pros":21,"perPro":159.5,"ratio":1.03},{"sido":"충남","pros":28,"perPro":155.8,"ratio":1.01},{"sido":"경기","pros":149,"perPro":155.5,"ratio":1.01},{"sido":"대전","pros":20,"perPro":155.1,"ratio":1},{"sido":"경북","pros":34,"perPro":153.3,"ratio":0.99},{"sido":"광주","pros":19,"perPro":153.2,"ratio":0.99},{"sido":"경남","pros":34,"perPro":152.7,"ratio":0.99},{"sido":"제주","pros":14,"perPro":144.3,"ratio":0.93},{"sido":"서울","pros":133,"perPro":143.4,"ratio":0.93},{"sido":"대구","pros":35,"perPro":143.3,"ratio":0.93},{"sido":"전북","pros":21,"perPro":140.9,"ratio":0.91}],"seconds":68.9,"pass":true};
@@ -29525,25 +29533,29 @@ function vaultSaveCheckup(member, items, meta) {
   const fhir = toFHIR(member, items, meta);
   const fileHash = vaultHash("rawfile|" + token + "|" + (meta.fileName || "checkup") + "|" + JSON.stringify(items.map((i) => i.value)));
   const fhirHash = vaultHash(JSON.stringify(fhir.report) + JSON.stringify(fhir.observations));
-  const rec = { token, kind: "checkup", date: meta.date || "2025-11-01", source: meta.source || "upload", completeness: meta.completeness || "full", channel: meta.channel || "upload", fileName: meta.fileName || null, items, fhir, fileHash, fhirHash, savedAt: Date.now() };
+  /* ⚠️ source는 기본값을 주지 않는다(H-1 수선) — 누락 시 「실제 업로드」로 둔갑하던 fail-open이었다.
+     시연 시드가 source를 빠뜨리면 실데이터로 기록되므로, 없으면 저장을 거부한다(fail-closed). */
+  if (!meta || !meta.source) return { ok: false, reason: "source가 없어 저장하지 않았어요 — 데이터 출처는 생략할 수 없어요." };
+  const rec = { token, kind: "checkup", date: meta.date || "2025-11-01", source: meta.source, completeness: meta.completeness || "full", channel: meta.channel || "upload", fileName: meta.fileName || null, items, fhir, fileHash, fhirHash, savedAt: Date.now() };
   const cur = vaultLoad(token) || { token, checkups: [], insurance: [], consents: null };
   cur.checkups = (cur.checkups || []).filter((c) => c.date !== rec.date).concat(rec);
   try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur)); } catch (e) {}
   const block = chainAppend({ type: "checkup", token, fileHash, fhirHash, note: `검진결과 저장(${rec.channel}·${rec.completeness}) ${items.length}항목` });
   vaultAccessLog(token, "member", "검진데이터 저장");
-  return { rec, block };
+  return { ok: true, rec, block };
 }
 /* 확정 보험데이터 저장 */
 function vaultSaveInsurance(member, contracts, meta) {
   const token = anonToken(member); meta = meta || {};
   const fileHash = vaultHash("insfile|" + token + "|" + JSON.stringify(contracts));
-  const rec = { token, kind: "insurance", source: meta.source || "aggregate", channel: meta.channel || "aggregate", contracts, fileHash, savedAt: Date.now() };
+  if (!meta || !meta.source) return { ok: false, reason: "source가 없어 저장하지 않았어요 — 데이터 출처는 생략할 수 없어요." };
+  const rec = { token, kind: "insurance", source: meta.source, channel: meta.channel || "aggregate", contracts, fileHash, savedAt: Date.now() };
   const cur = vaultLoad(token) || { token, checkups: [], insurance: [], consents: null };
   cur.insurance = contracts;
   try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur)); } catch (e) {}
   const block = chainAppend({ type: "insurance", token, fileHash, note: `보험가입내역 저장(${rec.channel}) ${contracts.length}건` });
   vaultAccessLog(token, "member", "보험데이터 저장");
-  return { rec, block };
+  return { ok: true, rec, block };
 }
 function vaultSaveConsents(member, consentState) {
   const token = anonToken(member);
@@ -29816,6 +29828,9 @@ const VAULT_CONSENTS = [
   { key: "mkt", req: false, title: "보험계약 상담·안내 동의(선택)", law: "정보통신망법", items: "연락처·관심분야", purpose: "가입한 보험계약 상담, 보험금 지급·심사 관련 안내, 건강등급 산정 결과 안내, 새 계약 시 기존 계약과의 중요사항 비교설명, 서비스 만족도 조사, 건강·보험 상품 안내", keep: "동의 철회 시까지", deny: "미동의해도 서비스 이용에 제한이 없습니다." },
 ];
 const VAULT_LEGAL_NOTICE = "※ 본 동의문은 초안이며, 시행 전 법무 검토가 필요합니다. 14세 미만(어린이 검진·어린이실손)은 법정대리인 동의 절차가 별도 적용됩니다.";
+
+/* 회귀용 훅 — 금고 저장의 fail-closed 경계를 하네스가 직접 두드린다(H-1) */
+try { if (typeof window !== "undefined") { window.__hifinVault = { saveCheckup: vaultSaveCheckup, saveInsurance: vaultSaveInsurance, load: vaultLoad }; } } catch (e) {}
 
 /* ══════════════ M1-1 계보 실연결(Lineage Bridge) — 1세대(금고 실검진값) → 2세대(AI 분석) ══════════════
    진단 보고서(HIFIN-AUDIT-INS-20260724) 축2 M1-1 구현.
@@ -33058,7 +33073,7 @@ const AGENT_QNA = [
   { c: "shop", k: "bp_supp", p: ["혈압에좋은영양제", "혈압영양제", "고혈압영양제", "혈압에뭐가좋"], a: "혈압 관리에는 오메가3·코엔자임Q10 같은 성분이 도움이 될 수 있어요(건강기능식품은 치료제가 아니에요). 건강쇼핑에서 성분·가격 비교해 보여드릴게요.", b: ["영양제 보러가기", "혈압계도 볼래요"], nav: "care", nx: ["부작용은 없어요?"], lv: 1, guard: "med" },
   { c: "shop", k: "sugar_supp", p: ["혈당영양제", "당뇨에좋은", "혈당에좋은", "당떨어지는"], a: "혈당 관리엔 바나바·여주·아연 성분이 식후 혈당 관리에 도움을 줄 수 있어요. 식단(저당·고식이섬유)과 함께 보시는 걸 권해요.", b: ["혈당 케어 상품 보기", "혈당 식단 보기"], nav: "care", nx: [], lv: 1, guard: "med" },
   { c: "shop", k: "shop_where", p: ["쇼핑어디", "건강쇼핑", "뭐팔아", "상품뭐있", "몰이있어"], a: "건강쇼핑에는 건강식단(풀무원·그리팅 등)·영양제·홈케어 의료기기가 있어요. 검진 결과에 맞춘 맞춤 추천도 해드리고, 구매하면 마진의 50%가 HTK로 적립돼요.", b: ["건강쇼핑 가기", "내 맞춤 추천"], nav: "care", nx: [], lv: 1 },
-  { c: "shop", k: "refund", p: ["환불", "반품", "교환", "취소하고싶", "주문취소"], a: "단순 변심은 수령 후 7일 이내 반품 신청이 가능해요(식품·개봉 상품은 제외될 수 있어요). 주문 내역에서 신청하거나 사람 상담으로 도와드릴게요.", b: ["사람 상담 연결"], nav: null, nx: [], lv: 2 },
+  { c: "shop", k: "refund", p: ["환불", "반품", "교환", "주문취소", "주문 취소", "상품취소", "배송취소"], a: "단순 변심은 수령 후 7일 이내 반품 신청이 가능해요(식품·개봉 상품은 제외될 수 있어요). 주문 내역에서 신청하거나 사람 상담으로 도와드릴게요.", b: ["사람 상담 연결"], nav: null, nx: [], lv: 2 },
   { c: "shop", k: "delivery", p: ["배송언제", "배송조회", "언제와", "배송기간", "택배"], a: "보통 1~3일 내 도착하고, 식단 구독은 지정 요일 새벽배송이에요. 주문 상세에서 배송 현황을 확인할 수 있어요.", b: [], nav: null, nx: [], lv: 1 },
   { c: "shop", k: "device_reco", p: ["혈압계추천", "혈당계추천", "측정기추천", "홈케어기기", "의료기기추천", "안마"], a: "가정용 혈압계·연속혈당측정기·체성분계 같은 홈케어 기기를 검진 결과에 맞춰 추천해 드려요. 측정값을 상담에 공유하면 관리가 이어져요.", b: ["홈케어 기기 보기"], nav: "care", nx: [], lv: 1 },
   { c: "shop", k: "diet", p: ["식단구독", "건강식단", "밥배달", "케어푸드", "저당식단", "당뇨식단"], a: "당뇨·혈압·체중 관리식단(풀무원 디자인밀, 그리팅 등)을 구독으로 받아볼 수 있어요. 검진 이상 지표에 맞는 식단을 골라드릴게요.", b: ["맞춤 식단 보기"], nav: "care", nx: [], lv: 1 },
@@ -33073,7 +33088,7 @@ const AGENT_QNA = [
 
   /* ───────── 6. 검진·예약 (book) ───────── */
   { c: "book", k: "book_near", p: ["집근처검진", "가까운검진센터", "근처검진", "검진예약해줘", "검진센터찾", "동네검진", "예약해줘"], a: "네, 제가 바로 예약을 준비할게요.", tool: "bookprep", b: ["내 주변 검진센터 보기"], nav: "checkup", nx: ["예약 취소는?"], lv: 1 },
-  { c: "book", k: "book_cancel", p: ["예약취소", "예약변경", "날짜바꾸", "예약미루"], a: "검진 예약 화면의 내 예약에서 취소·변경할 수 있어요. 검진 3일 전까지는 자유롭게 변경돼요.", b: ["내 예약 보기"], nav: "checkup", nx: [], lv: 1 },
+  { c: "book", k: "book_cancel", p: ["예약취소", "예약변경", "날짜바꾸", "예약미루"], a: "지금은 앱에서 바로 바꾸실 수 없어요 — 예약하신 기관에 연락하시면 변경·취소돼요. 마감 시점은 기관마다 달라서 확인이 필요해요. 앱에서 바로 하실 수 있게 준비하고 있어요.", b: ["예약한 기관 연락처"], nav: "checkup", nx: [], lv: 1 },
   { c: "book", k: "what_checkup", p: ["무슨검진받아야", "어떤검진", "추천검진", "정밀검진뭐", "검사뭐받"], a: "검진 이상 지표와 위험 질환에 맞춰 꼭 필요한 정밀검진을 골라드려요 — 예: 당뇨 위험이면 당화혈색소·신장기능, 간수치 이상이면 복부초음파.", b: ["AI 맞춤 검사 추천"], nav: "checkup", tool: "ci", nx: [], lv: 2, guard: "med" },
   { c: "book", k: "hospital", p: ["병원추천", "병원찾아", "어느병원", "진료과어디", "내과어디"], a: "증상·질환에 맞는 진료과와 내 주변 병원을 안내해 드려요. 진료 후 결과를 알려주시면 케어플랜도 갱신돼요.", b: ["병원 찾기"], nav: "care", nx: [], lv: 1 },
   { c: "book", k: "pharmacy", p: ["약국", "약사", "약타러"], a: "주변 제휴 약국을 찾아드려요. 복용약 관리도 케어플랜에서 함께 도와드릴 수 있어요.", b: ["주변 약국 찾기"], nav: "care", nx: [], lv: 1 },
@@ -33207,7 +33222,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "89f41fead3c31f54", "generatedAt": "2026-09-04", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "42d0d13a5d47c3ad", "generatedAt": "2026-09-06", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -33396,7 +33411,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-04","seed":20260828,"inventory":{"version":1,"sourceHash":"89f41fead3c31f54","generatedAt":"2026-09-04","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.13,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-06","seed":20260828,"inventory":{"version":1,"sourceHash":"42d0d13a5d47c3ad","generatedAt":"2026-09-06","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.12,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
@@ -34200,6 +34215,23 @@ function agentAnswerCore(text) {
   let _route = { agent: "A0", reason: "default" };
   try { if (typeof agentRoute === "function") { _route = agentRoute(text, norm, null, { m: m, lastOwner: _hiLastOwner }); agentRouteLog(text, _route); } } catch (e) {}
   _hiTurn = { route: _route, reason: _route.reason };
+  /* ══ [H-1] 명시적 취소·변경은 추론을 이긴다 ══
+     회원이 "예약 취소할래"라고 말했는데 상황 추론(SARG)이 "지금 예약하시는 게 편해요"로 답하던 결함.
+     취소하려는 사람에게 예약을 권하는 것은 답이 틀린 정도가 아니라 신뢰를 깨는 응답이라,
+     분기 대화·협주·정적 매칭보다 **앞에** 세운다. 판정은 좁게 — 예약 명사 + 취소/변경 동사이고,
+     주문·배송·보험 해지 같은 다른 도메인의 취소는 각자 담당이 답하도록 배제한다. */
+  const _CXL_NOUN = /(검진|예약|진료|상담|방문|일정|날짜)/;
+  const _CXL_VERB = /(취소|해지할|변경|바꾸|바꿔|옮기|옮겨|미루|미룰|미뤄|연기|늦추|안\s*받을|안\s*갈)/;
+  const _CXL_NOT  = /(주문|배송|결제|환불|반품|교환|구독|정기배송|보험\s*(해지|해약)|계약\s*해지|회원\s*탈퇴|알림|동의)/;
+  if (_CXL_NOUN.test(norm) && _CXL_VERB.test(norm) && !_CXL_NOT.test(norm)) {
+    let cx = null;
+    try { cx = (typeof hiRespond === "function") ? hiRespond(text, norm, m) : null; } catch (e) { cx = null; }
+    if (cx && cx.res && cx.intent && cx.intent.id === "S1-BOOK-02") {
+      agentStats(true); agentMemSave({ lastIntent: cx.intent.id, lastCat: "booking-change", lastQ: String(text).slice(0, 60) });
+      return { agent: "A0", lines: cx.res.lines, buttons: (cx.res.buttons || []).slice(0, 3), nav: cx.res.nav || null, matched: cx.intent.id };
+    }
+  }
+
   /* [2단계 분기 대화] 검진 이력 순차 상담의 '선택 이후' 턴 — 분기가 무장된 동안에만 가로챈다 */
   if (_route.reason !== "dialog-interrupt") {
     try {
@@ -34630,8 +34662,8 @@ const HI_SLOTS_B = {
   explain: { noun: "설명", words: ["설명", "뭐야", "뭐예요", "뭐에요", "뭔가요", "뭐죠", "무엇", "이란", "궁금", "알고싶"] },
   method:  { noun: "방법", words: ["방법", "하는법", "어떻게", "어디서", "어떻해", "우째"] },
   doit:    { noun: "신청", words: ["해줘", "해주세요", "하고싶", "할래", "신청", "시작", "해봐", "부탁"] },
-  change:  { noun: "변경", words: ["변경", "바꾸", "바꿔", "수정", "미루", "옮겨"] },
-  cancel:  { noun: "취소", words: ["취소", "안할래", "무르"] },
+  change:  { noun: "변경", words: ["변경", "바꾸", "바꿔", "수정", "미루", "미룰", "미뤄", "옮겨", "옮기", "연기", "늦추", "당기"] },
+  cancel:  { noun: "취소", words: ["취소", "안할래", "무르", "안받을", "안 받을", "그만둘", "물릴"] },
   find:    { noun: "찾기", words: ["찾아", "찾기", "찾고싶", "어디있", "찾을래"] },
   register:{ noun: "등록", words: ["등록", "추가", "넣어", "올려줘"] },
   connect: { noun: "연결", words: ["연결", "연동", "가져오", "불러오"] },
@@ -34676,7 +34708,7 @@ const HI_INTENTS = [
   { id: "S1-BOOK-01", l1: "검진", l2: "검진예약", a: ["booking", "ckup"], b: ["doit", "method", "find"], pre: ["login"], route: "app://checkup/booking", nav: "checkup",
     ans: "네, 검진 예약을 도와드릴게요 — 제게 \"검진 예약해줘\"라고 하시면 센터·날짜 추천부터 확정까지 대화로 끝나요. 예약하면 무료 검진대비보험도 자동으로 준비돼요.", easy: "검진 예약을 도와드릴게요. 아래 버튼을 누르면 바로 시작돼요.", chips: ["검진 예약해줘", "내 주변 검진센터 찾아줘"] },
   { id: "S1-BOOK-02", l1: "검진", l2: "예약 변경·취소", a: ["booking", "ckup"], b: ["change", "cancel"], bReq: true, pre: ["login"], route: "app://checkup", nav: "checkup",
-    ans: "예약 변경·취소는 검진 예약 화면의 '내 예약'에서 바로 돼요. 검진 3일 전까지는 자유롭게 바꿀 수 있어요.", easy: "예약을 바꾸거나 취소할 수 있어요. 아래 버튼으로 내 예약을 열어 보세요.", chips: ["내 예약 보기"] },
+    ans: "지금은 앱에서 바로 바꾸실 수 없어요 — 예약하신 기관에 연락하시면 변경·취소돼요(마감 시점은 기관마다 달라요). 앱에서 바로 하실 수 있게 준비하고 있어요.", easy: "지금은 검진 받을 곳에 전화로 말씀하시면 돼요. 앱에서 바로 바꾸는 기능은 준비 중이에요.", chips: ["예약한 기관 연락처"] },
   { id: "S1-RESULT-01", l1: "검진", l2: "검진결과 보기", a: ["ckresult"], b: ["view"], hub: true, pre: ["login", "dataLink"], route: "app://checkup/results", nav: "manage",
     ans: "연결된 검진결과를 보여드릴게요 — 항목별 수치와 정상 범위를 함께 볼 수 있어요.", easy: "검진 결과를 보여드릴게요. 숫자마다 정상인지 아닌지도 같이 나와요.", chips: ["검진결과 설명해줘", "작년이랑 비교해줘"] },
   { id: "S1-EXPLAIN-01", l1: "검진", l2: "결과 쉬운 설명", a: ["ckresult"], b: ["explain"], bReq: true, pre: ["login", "dataLink"], route: "app://checkup/results", nav: "manage",
@@ -35639,7 +35671,7 @@ const HI_SEGMENTS = [
       return {
         situation: "예약이 " + _d(s.s1.bookingDate) + "(D-" + _d(s.s1.bookingInDays) + ")로 다가왔어요.",
         assess: "전날 저녁 9시 이후 금식(물은 자정까지), 당일 아침은 물도 삼가는 게 좋아요. 복용 중인 약은 검진센터와 미리 상의하세요.",
-        route: "예약 변경·취소가 필요하면 검진 3일 전까지 '내 예약'에서 자유롭게 바꿀 수 있어요.",
+        route: "예약을 바꾸셔야 하면 예약하신 기관에 연락해 주세요 — 마감 시점이 기관마다 달라요. 앱에서 바로 바꾸시는 기능은 준비하고 있어요.",
         guide: "검진 화면을 미리 보여드릴게요. 전날 저녁에 준비사항 알림을 걸어드릴까요?",
       };
     },
@@ -37860,7 +37892,9 @@ try { if (typeof window !== "undefined") { window.__hifinSkinGuard = { check: sk
    담당 밖(질환·수치·복용량 A1 / 보장·청구 A2 / 예약·연결 A0 / 돌봄 A4)은 핸드백.
    모든 응답은 shoppingGuard(헌법 6조)를 통과해야 나간다. */
 
-const A3_TO_A1 = /(무슨\s*병|질환이|증상|수치\s*의미|해석해|생체나이|이\s*수치|정상\s*범위|몇\s*알\s*먹|복용량|하루\s*몇\s*(정|알|캡슐)|같이\s*먹어도|병용|약\s*(부작용|상호)|(당뇨|고혈압|고지혈|지방간|빈혈|암)\s*(맞지|맞나|인가|일까|이야|인지))/;
+/* A1(주치의) 인계 — 섭취 시기·상호작용은 비교표가 답할 문제가 아니다(H-1 수선:
+   「오메가3 언제 먹어요?」가 카테고리만 걸려 비교표로 응답되던 결함) */
+const A3_TO_A1 = /(무슨\s*병|질환이|증상|수치\s*의미|해석해|생체나이|이\s*수치|정상\s*범위|몇\s*알\s*먹|복용량|하루\s*몇\s*(정|알|캡슐)|같이\s*먹어도|병용|약\s*(부작용|상호)|언제\s*먹|공복|식후|식전|아침에\s*먹|저녁에\s*먹|자기\s*전\s*먹|먹는\s*시간|복용\s*시간|임신|수유|(당뇨|고혈압|고지혈|지방간|빈혈|암)\s*(맞지|맞나|인가|일까|이야|인지))/;
 const A3_TO_A2 = /(보험|보장|실손|청구|보험금|보험료|휴면)/;
 const A3_TO_A0 = /(검진\s*예약|예약해\s*줘|센터\s*찾|데이터\s*연결|결과지\s*올리|본인인증|로그인)/;
 const A3_TO_A4 = /(간병|돌봄|방문간호|방문요양|요양등급|장기요양|요양원)/;
@@ -40483,6 +40517,11 @@ function CheckupCollect({ member, onDone, onLater }) {
     const meta = { source: channel === "nhis" ? "nhis" : channel === "photo" ? "ocr" : "upload", channel: channel || "upload", completeness: ocr.completeness || "full", fileName: (ocr && ocr.fileName) || null, date: "2025-11-01" };
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(member, Object.assign({ step: "checkup" }, consent));
     const res = (typeof vaultSaveCheckup === "function") ? vaultSaveCheckup(member, items, meta) : null;
+    /* 저장이 거부되면 완료 화면으로 넘기지 않는다 — 금고가 안 받았는데 「완료」를 보여주면 그 자체가 거짓말이다(H-1) */
+    if (!res || res.ok !== true) {
+      if (typeof toast === "function") toast((res && res.reason) || "저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
     setSaved(res); setPhase("done");
   };
   const flag = (r) => (typeof ckupFlag === "function") ? ckupFlag(r.key, r.value) : "";
@@ -40624,6 +40663,10 @@ function InsuranceCollect({ member, onDone, onLater }) {
   const confirmSave = () => {
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(member, Object.assign({ step: "insurance" }, consent));
     const res = (typeof vaultSaveInsurance === "function") ? vaultSaveInsurance(member, rows, { source: channel === "aggregate" ? "aggregate" : "ocr", channel }) : null;
+    if (!res || res.ok !== true) {
+      if (typeof toast === "function") toast((res && res.reason) || "저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
     setSaved(res); setPhase("done");
   };
 

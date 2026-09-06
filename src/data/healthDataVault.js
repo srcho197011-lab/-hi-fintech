@@ -212,25 +212,29 @@ function vaultSaveCheckup(member, items, meta) {
   const fhir = toFHIR(member, items, meta);
   const fileHash = vaultHash("rawfile|" + token + "|" + (meta.fileName || "checkup") + "|" + JSON.stringify(items.map((i) => i.value)));
   const fhirHash = vaultHash(JSON.stringify(fhir.report) + JSON.stringify(fhir.observations));
-  const rec = { token, kind: "checkup", date: meta.date || "2025-11-01", source: meta.source || "upload", completeness: meta.completeness || "full", channel: meta.channel || "upload", fileName: meta.fileName || null, items, fhir, fileHash, fhirHash, savedAt: Date.now() };
+  /* ⚠️ source는 기본값을 주지 않는다(H-1 수선) — 누락 시 「실제 업로드」로 둔갑하던 fail-open이었다.
+     시연 시드가 source를 빠뜨리면 실데이터로 기록되므로, 없으면 저장을 거부한다(fail-closed). */
+  if (!meta || !meta.source) return { ok: false, reason: "source가 없어 저장하지 않았어요 — 데이터 출처는 생략할 수 없어요." };
+  const rec = { token, kind: "checkup", date: meta.date || "2025-11-01", source: meta.source, completeness: meta.completeness || "full", channel: meta.channel || "upload", fileName: meta.fileName || null, items, fhir, fileHash, fhirHash, savedAt: Date.now() };
   const cur = vaultLoad(token) || { token, checkups: [], insurance: [], consents: null };
   cur.checkups = (cur.checkups || []).filter((c) => c.date !== rec.date).concat(rec);
   try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur)); } catch (e) {}
   const block = chainAppend({ type: "checkup", token, fileHash, fhirHash, note: `검진결과 저장(${rec.channel}·${rec.completeness}) ${items.length}항목` });
   vaultAccessLog(token, "member", "검진데이터 저장");
-  return { rec, block };
+  return { ok: true, rec, block };
 }
 /* 확정 보험데이터 저장 */
 function vaultSaveInsurance(member, contracts, meta) {
   const token = anonToken(member); meta = meta || {};
   const fileHash = vaultHash("insfile|" + token + "|" + JSON.stringify(contracts));
-  const rec = { token, kind: "insurance", source: meta.source || "aggregate", channel: meta.channel || "aggregate", contracts, fileHash, savedAt: Date.now() };
+  if (!meta || !meta.source) return { ok: false, reason: "source가 없어 저장하지 않았어요 — 데이터 출처는 생략할 수 없어요." };
+  const rec = { token, kind: "insurance", source: meta.source, channel: meta.channel || "aggregate", contracts, fileHash, savedAt: Date.now() };
   const cur = vaultLoad(token) || { token, checkups: [], insurance: [], consents: null };
   cur.insurance = contracts;
   try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur)); } catch (e) {}
   const block = chainAppend({ type: "insurance", token, fileHash, note: `보험가입내역 저장(${rec.channel}) ${contracts.length}건` });
   vaultAccessLog(token, "member", "보험데이터 저장");
-  return { rec, block };
+  return { ok: true, rec, block };
 }
 function vaultSaveConsents(member, consentState) {
   const token = anonToken(member);
@@ -503,3 +507,6 @@ const VAULT_CONSENTS = [
   { key: "mkt", req: false, title: "보험계약 상담·안내 동의(선택)", law: "정보통신망법", items: "연락처·관심분야", purpose: "가입한 보험계약 상담, 보험금 지급·심사 관련 안내, 건강등급 산정 결과 안내, 새 계약 시 기존 계약과의 중요사항 비교설명, 서비스 만족도 조사, 건강·보험 상품 안내", keep: "동의 철회 시까지", deny: "미동의해도 서비스 이용에 제한이 없습니다." },
 ];
 const VAULT_LEGAL_NOTICE = "※ 본 동의문은 초안이며, 시행 전 법무 검토가 필요합니다. 14세 미만(어린이 검진·어린이실손)은 법정대리인 동의 절차가 별도 적용됩니다.";
+
+/* 회귀용 훅 — 금고 저장의 fail-closed 경계를 하네스가 직접 두드린다(H-1) */
+try { if (typeof window !== "undefined") { window.__hifinVault = { saveCheckup: vaultSaveCheckup, saveInsurance: vaultSaveInsurance, load: vaultLoad }; } } catch (e) {}
