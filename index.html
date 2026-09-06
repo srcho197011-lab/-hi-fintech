@@ -6342,9 +6342,8 @@ function CheckupResults() {
      누가 로그인하든 남의 결과를 자기 것처럼 봤다. 이제 금고에 **실제로 저장된 기록만** 보여주고,
      없으면 없다고 말한다 — 화면을 채우려고 지어내지 않는다. */
   /* 신원은 selfMember()로 푼다 — 다른 화면(보험·마이페이지)이 쓰는 정식 해석기다.
-     ⚠️ adminLogin(demoAuth.js)은 email 없이 세션을 만들어서 authCurrent()를 그대로 쓰면
-     anonToken이 이름 문자열로 잡히고, selfMember()가 쓰는 토큰과 **갈라진다**.
-     그러면 시드는 이쪽에 쓰이고 화면은 저쪽을 읽어 「기록 없음」이 된다(H-1 신원 통합에서 근본 수선 예정). */
+     (W1에서 adminLogin이 세션에 email을 담게 되어 authCurrent()로 풀어도 같은 토큰이 나오지만,
+      해석기를 한 곳으로 모아 두는 편이 낫다 — 신원 규칙이 한 군데에만 있게 된다.) */
   const _sess = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof authCurrent === "function" && authCurrent()) || null;
   const _me = _sess ? ((typeof selfMember === "function") ? selfMember() : _sess) : null;
   const _nm = (_me && _me.name) ? _me.name + "님" : "회원님";
@@ -30038,8 +30037,16 @@ const VAULT_CONSENTS = [
 ];
 const VAULT_LEGAL_NOTICE = "※ 본 동의문은 초안이며, 시행 전 법무 검토가 필요합니다. 14세 미만(어린이 검진·어린이실손)은 법정대리인 동의 절차가 별도 적용됩니다.";
 
+/* [H-2 W1] 이관 함수는 두지 않는다 —
+   금고에 쓰는 경로를 전수 확인한 결과 전부 demoCurrentUser() || selfMember()를 지나고,
+   authCurrent()로 직접 쓰는 곳은 없다. 즉 이름 토큰에는 애초에 아무것도 쓰인 적이 없다
+   (실측: 본인 계정의 저장 키 9개가 전부 email 기준). 옮길 것이 없는데 쓰기 권한을 가진
+   코드를 두면 위험만 남으므로 넣지 않는다. 재발은 run_identity_check.mjs가 막는다. */
+
 /* 회귀용 훅 — 금고 저장의 fail-closed 경계를 하네스가 직접 두드린다(H-1) */
-try { if (typeof window !== "undefined") { window.__hifinVault = { saveCheckup: vaultSaveCheckup, saveInsurance: vaultSaveInsurance, load: vaultLoad }; } } catch (e) {}
+try { if (typeof window !== "undefined") { window.__hifinVault = { saveCheckup: vaultSaveCheckup, saveInsurance: vaultSaveInsurance, load: vaultLoad, token: anonToken,
+      /* 지금 로그인한 회원이 실제로 쓰는 토큰 — 「키가 존재하는가」가 아니라 「누가 어느 금고를 읽는가」를 검사하려면 이게 필요하다 */
+      myToken: () => { try { const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); return m ? { token: anonToken(m), who: m.name || "", email: m.email || "", id: m.id || "" } : null; } catch (e) { return { err: String(e) }; } } }; } } catch (e) {}
 
 /* ══════════════ M1-1 계보 실연결(Lineage Bridge) — 1세대(금고 실검진값) → 2세대(AI 분석) ══════════════
    진단 보고서(HIFIN-AUDIT-INS-20260724) 축2 M1-1 구현.
@@ -33431,7 +33438,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "ad5837a9b4ec7745", "generatedAt": "2026-09-06", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "e0f86ebf5de8d825", "generatedAt": "2026-09-07", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -33620,7 +33627,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-06","seed":20260828,"inventory":{"version":1,"sourceHash":"ad5837a9b4ec7745","generatedAt":"2026-09-06","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.66,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-06","seed":20260828,"inventory":{"version":1,"sourceHash":"e0f86ebf5de8d825","generatedAt":"2026-09-07","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.58,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
@@ -39606,11 +39613,19 @@ function loginRemainFails() { const s = loginLockState(); return 5 - ((s && s.fa
 function loginClearFail() { try { localStorage.removeItem(LOCK_KEY); } catch (e) {} }
 
 /* 관리자/회원 로그인 — 성공 시 게이트 세션에 role 부여 */
+/* 본인(게이트) 계정의 신원 — 저장 키를 만드는 단일 소스.
+   [H-2 W1] 예전에는 세션에 email이 없어서 anonToken이 이름("조성래")으로 키를 잡았고,
+   selfMember()는 email로 잡아 **같은 사람인데 저장소가 둘로 갈렸다**. 시드는 한쪽에 쓰이고
+   화면은 다른 쪽을 읽는 일이 실제로 있었다(검진 기록이 「없음」으로 보이던 결함).
+   실측 결과 기존 데이터는 전부 email 쪽에 있으므로, 세션에 email을 담으면 키가 이동하는 것이
+   아니라 **이미 데이터가 있는 쪽으로 합쳐진다**. */
+const SELF_EMAIL = "srcho197011@hizenhealth.com";
 function adminLogin(id, pw) {
   /* 앞뒤 공백은 무시하고, 한글 입력기가 꺼진 채 같은 키를 눌렀어도 같은 계정으로 본다 */
   if (!_authSame(id, AUTH_ADMIN.id) || !_authSame(pw, AUTH_ADMIN.pw)) return false;
   try { demoLogout(); } catch (e) {}
-  authSet({ name: "조성래", role: "ADMIN" }); loginClearFail(); return true;
+  authSet({ name: "조성래", email: SELF_EMAIL, role: "ADMIN" });
+  loginClearFail(); return true;
 }
 
 /* ══ Phase1 §2-4 — 코호트 데모 계정 체계: 아이디 000001~100000(6자리) + 공용 비밀번호 hifin002 ══

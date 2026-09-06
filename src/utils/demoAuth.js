@@ -80,11 +80,19 @@ function loginRemainFails() { const s = loginLockState(); return 5 - ((s && s.fa
 function loginClearFail() { try { localStorage.removeItem(LOCK_KEY); } catch (e) {} }
 
 /* 관리자/회원 로그인 — 성공 시 게이트 세션에 role 부여 */
+/* 본인(게이트) 계정의 신원 — 저장 키를 만드는 단일 소스.
+   [H-2 W1] 예전에는 세션에 email이 없어서 anonToken이 이름("조성래")으로 키를 잡았고,
+   selfMember()는 email로 잡아 **같은 사람인데 저장소가 둘로 갈렸다**. 시드는 한쪽에 쓰이고
+   화면은 다른 쪽을 읽는 일이 실제로 있었다(검진 기록이 「없음」으로 보이던 결함).
+   실측 결과 기존 데이터는 전부 email 쪽에 있으므로, 세션에 email을 담으면 키가 이동하는 것이
+   아니라 **이미 데이터가 있는 쪽으로 합쳐진다**. */
+const SELF_EMAIL = "srcho197011@hizenhealth.com";
 function adminLogin(id, pw) {
   /* 앞뒤 공백은 무시하고, 한글 입력기가 꺼진 채 같은 키를 눌렀어도 같은 계정으로 본다 */
   if (!_authSame(id, AUTH_ADMIN.id) || !_authSame(pw, AUTH_ADMIN.pw)) return false;
   try { demoLogout(); } catch (e) {}
-  authSet({ name: "조성래", role: "ADMIN" }); loginClearFail(); return true;
+  authSet({ name: "조성래", email: SELF_EMAIL, role: "ADMIN" });
+  loginClearFail(); return true;
 }
 
 /* ══ Phase1 §2-4 — 코호트 데모 계정 체계: 아이디 000001~100000(6자리) + 공용 비밀번호 hifin002 ══

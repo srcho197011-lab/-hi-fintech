@@ -1,0 +1,37 @@
+{
+  "sess": {
+    "name": "조성래",
+    "email": "srcho197011@hizenhealth.com",
+    "role": "ADMIN"
+  },
+  "selfTok": {
+    "token": "pt-0427b52a1a36558f9a55",
+    "who": "조성래",
+    "email": "srcho197011@hizenhealth.com",
+    "id": "self-srcho197011"
+  },
+  "nameTok": "pt-e69eb1542d250d3490a8",
+  "emailTok": "pt-0427b52a1a36558f9a55",
+  "emailKeys": 9,
+  "nameKeys": 0,
+  "selfVault": {
+    "checkups": 2,
+    "insurance": 9
+  },
+  "cohort": [
+    {
+      "id": "000042",
+      "name": "유아린",
+      "token": "pt-11a1fe36923dc2b22ebd",
+      "email": "p000042@cohort.hifin"
+    },
+    {
+      "id": "007777",
+      "name": "주경희",
+      "token": "pt-0c9768ab403ebf9a79b1",
+      "email": "p007777@cohort.hifin"
+    }
+  ],
+  "fails": 0,
+  "secs": 60.3
+}

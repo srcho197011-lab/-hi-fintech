@@ -1486,9 +1486,8 @@ function CheckupResults() {
      누가 로그인하든 남의 결과를 자기 것처럼 봤다. 이제 금고에 **실제로 저장된 기록만** 보여주고,
      없으면 없다고 말한다 — 화면을 채우려고 지어내지 않는다. */
   /* 신원은 selfMember()로 푼다 — 다른 화면(보험·마이페이지)이 쓰는 정식 해석기다.
-     ⚠️ adminLogin(demoAuth.js)은 email 없이 세션을 만들어서 authCurrent()를 그대로 쓰면
-     anonToken이 이름 문자열로 잡히고, selfMember()가 쓰는 토큰과 **갈라진다**.
-     그러면 시드는 이쪽에 쓰이고 화면은 저쪽을 읽어 「기록 없음」이 된다(H-1 신원 통합에서 근본 수선 예정). */
+     (W1에서 adminLogin이 세션에 email을 담게 되어 authCurrent()로 풀어도 같은 토큰이 나오지만,
+      해석기를 한 곳으로 모아 두는 편이 낫다 — 신원 규칙이 한 군데에만 있게 된다.) */
   const _sess = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof authCurrent === "function" && authCurrent()) || null;
   const _me = _sess ? ((typeof selfMember === "function") ? selfMember() : _sess) : null;
   const _nm = (_me && _me.name) ? _me.name + "님" : "회원님";

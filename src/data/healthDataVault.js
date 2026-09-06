@@ -508,5 +508,13 @@ const VAULT_CONSENTS = [
 ];
 const VAULT_LEGAL_NOTICE = "※ 본 동의문은 초안이며, 시행 전 법무 검토가 필요합니다. 14세 미만(어린이 검진·어린이실손)은 법정대리인 동의 절차가 별도 적용됩니다.";
 
+/* [H-2 W1] 이관 함수는 두지 않는다 —
+   금고에 쓰는 경로를 전수 확인한 결과 전부 demoCurrentUser() || selfMember()를 지나고,
+   authCurrent()로 직접 쓰는 곳은 없다. 즉 이름 토큰에는 애초에 아무것도 쓰인 적이 없다
+   (실측: 본인 계정의 저장 키 9개가 전부 email 기준). 옮길 것이 없는데 쓰기 권한을 가진
+   코드를 두면 위험만 남으므로 넣지 않는다. 재발은 run_identity_check.mjs가 막는다. */
+
 /* 회귀용 훅 — 금고 저장의 fail-closed 경계를 하네스가 직접 두드린다(H-1) */
-try { if (typeof window !== "undefined") { window.__hifinVault = { saveCheckup: vaultSaveCheckup, saveInsurance: vaultSaveInsurance, load: vaultLoad }; } } catch (e) {}
+try { if (typeof window !== "undefined") { window.__hifinVault = { saveCheckup: vaultSaveCheckup, saveInsurance: vaultSaveInsurance, load: vaultLoad, token: anonToken,
+      /* 지금 로그인한 회원이 실제로 쓰는 토큰 — 「키가 존재하는가」가 아니라 「누가 어느 금고를 읽는가」를 검사하려면 이게 필요하다 */
+      myToken: () => { try { const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); return m ? { token: anonToken(m), who: m.name || "", email: m.email || "", id: m.id || "" } : null; } catch (e) { return { err: String(e) }; } } }; } } catch (e) {}

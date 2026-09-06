@@ -110,3 +110,11 @@ if echo "$CHANGED" | grep -qE "^src/(components/(HealthManage|Hospital|Homecare|
   node scripts/run_persona_diff.mjs || { echo "[GATE] 인물 누출 — 커밋 차단(남의 이름·수치가 회원 화면에 보인다)"; exit 1; }
   git add scripts/persona_diff_snapshot.json 2>/dev/null || true
 fi
+
+# ══ 신원 통합 게이트(H-2 W1) — 같은 사람의 저장소가 다시 갈리면 차단 ══
+# 본인 세션에 email이 없으면 anonToken이 이름으로 키를 잡아 금고가 둘로 갈린다.
+if echo "$CHANGED" | grep -qE "^src/(utils/demoAuth\.js|data/healthDataVault\.js|components/MyPage\.jsx)$"; then
+  echo "[GATE] 신원·금고 파일 변경 — 신원 통합 검사 실행(격리 로그인 실측)"
+  node scripts/run_identity_check.mjs || { echo "[GATE] 신원 통합 실패 — 커밋 차단(저장소가 갈리거나 회원끼리 섞였다)"; exit 1; }
+  git add scripts/identity_check_snapshot.json 2>/dev/null || true
+fi
