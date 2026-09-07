@@ -274,4 +274,16 @@ function finAsk(text) {
   return { lines: lines.filter(Boolean), buttons: ["5차연도 매출은?", "기업가치 얼마야?", "LTV/CAC 알려줘"], nav: { key: "ontology", label: "재무회계 온톨로지" } };
   function y0note(rr) { return rr.y === 0 ? "1차연도는 EMR·UPI·플랫폼 사용료를 받지 않는(0원) 시장 선점 전략이라 구독매출이 없어요." : null; }
 }
-try { if (typeof window !== "undefined") window.__hifinFin = finAsk; } catch (e) {}
+/* 검사·문서화 훅 — 재무 수치를 문서에 옮길 때 재구현하지 않고 **모델을 실행해** 가져온다.
+   IM·사업계획서의 손익표가 코드와 어긋나는 것을 막는 유일한 방법이다. */
+try {
+  if (typeof window !== "undefined") {
+    window.__hifinFin = finAsk;
+    window.__hifinFinModel = {
+      years: (n) => { try { return finYears(n || 5); } catch (e) { return { err: String(e) }; } },
+      params: () => { try { return finParams(); } catch (e) { return { err: String(e) }; } },
+      scenario: () => { try { return finScenario(); } catch (e) { return "base"; } },
+      kpis: () => { try { return (typeof finKPIs === "function") ? finKPIs() : null; } catch (e) { return null; } },
+    };
+  }
+} catch (e) {}

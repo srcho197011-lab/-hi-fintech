@@ -5393,3 +5393,14 @@ body.easyread .hidock-who, body.easyread .hidock-cite, body.easyread .hidock-pen
 .kobadge{display:inline-block;background:#F1F5F9;color:#475569;border:1px solid var(--border);border-radius:5px;padding:0 5px;font-size:9.5px;font-weight:800;margin-left:4px;vertical-align:1px;}
 /* 규제 고지 병기 — 원문 우선 표기 */
 .prevail{display:block;margin-top:3px;font-size:10.5px;color:#94A3B8;font-style:italic;}
+
+/* 중장기 표의 산식 주석 — 「이 숫자가 어디서 나왔나」를 라벨 아래 붙인다(H-2/IM 대응) */
+/* mono0은 nowrap이라 산식이 한 줄로 밀린다 — 산식이 있는 칸만 줄바꿈을 허용한다.
+   :has()는 셀마다 평가돼 표가 커지면 눈에 띄게 느려서 클래스로 표시한다. */
+.mytbl td.mono0.hasf{ white-space:normal; }
+.onttbl .mono0 em.finf{
+  display:block; font-style:normal; font-weight:600; font-size:10.5px; line-height:1.45;
+  color:#7f93b5; margin-top:3px; max-width:340px; letter-spacing:-.1px;
+}
+.onttbl tr.myrev .mono0 em.finf,.onttbl tr.mysub .mono0 em.finf{ color:#8fb4d8; }
+@media print{ .onttbl .mono0 em.finf{ color:#555; } }
