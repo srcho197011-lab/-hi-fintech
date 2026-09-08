@@ -33,6 +33,15 @@ const FIN_P_DEFAULT = {
   // 근거: 회원의 연간 건강지출 전액이 아니라, 기존 구매채널(오픈마켓·약국·마트) 병행을 감안한 플랫폼 포착률 70%만 매출로 인식
   productCapture: 0.70,
   productBuyerRate: 0.38,
+  /* 제품 가동률(연차별) — 1차연도는 준비·초기 광고 기간이라 연간 내내 정상 판매가 되지 않는다.
+     플랫폼 구축·입점 협의·초기 인지도 확보에 시간이 걸리므로 1/3 수준으로 계상(형 확정 2026-09-07).
+     2차연도부터 정상 가동. 원가·결제수수료·적립·기부가 모두 제품매출에 연동되므로 함께 줄어든다. */
+  productRamp: [0.333, 1, 1, 1, 1],
+  /* 초기 런칭 광고 선투입(연차별·절대액) — 준비·광고 기간에는 제품이 덜 팔리는 대신 인지도 확보를
+     위한 광고를 **먼저** 쓴다. 매출에 비례하는 브랜드 마케팅(8%)과 별개로 1차연도에만 계상한다.
+     이 항목이 없으면 제품 축소로 오히려 영업이익이 늘어난다 — 1차연도 제품판매는 적립·기부·브랜드비를
+     합치면 한계 기여가 음수이기 때문이다(형 확정 2026-09-07). */
+  launchMkt: [430000000, 0, 0, 0, 0],
   productCats: [
     { key: "supp", label: "영양제·보충제", arpu: 140000, cost: 0.35 },
     { key: "diet", label: "건강식단·식품", arpu: 45000, cost: 0.50 },
@@ -128,8 +137,9 @@ function finYears(nYears) {
     // 제품 GMV — 지갑 점유율(포착률) 70% 보수화: 매출·원가·마진이 함께 70%로, 적립(마진 50%)·기부(마진 30%)도 자동 연동
     const buyers = Math.round(membersEnd * P.productBuyerRate);
     let revProduct = 0, cogsProduct = 0; const catRev = {};
-    for (const c of P.productCats) { const rv = Math.round(buyers * c.arpu * P.productCapture); catRev[c.key] = rv; revProduct += rv; cogsProduct += Math.round(rv * c.cost); }
-    L("제품판매(GMV·건강쇼핑)", `구매회원 ${buyers.toLocaleString()}명 × 카테고리 ARPU 합 ${finW(P.productCats.reduce((s, c) => s + c.arpu, 0))}원 × 지갑 점유율 ${(P.productCapture * 100).toFixed(0)}%(기존 채널 병행 보수화)`, revProduct);
+    const pRamp = _finAt(P, P.productRamp || [1], y, 0);
+  for (const c of P.productCats) { const rv = Math.round(buyers * c.arpu * P.productCapture * pRamp); catRev[c.key] = rv; revProduct += rv; cogsProduct += Math.round(rv * c.cost); }
+    L("제품판매(GMV·건강쇼핑)", `구매회원 ${buyers.toLocaleString()}명 × 카테고리 ARPU 합 ${finW(P.productCats.reduce((s, c) => s + c.arpu, 0))}원 × 지갑 점유율 ${(P.productCapture * 100).toFixed(0)}%(기존 채널 병행 보수화)${pRamp < 1 ? ` × 가동률 ${(pRamp * 100).toFixed(0)}%(준비·초기 광고 기간)` : ""}`, revProduct);
     const checkupUsers = active, revCheckup = L("검진 연계 수수료", `하이핀 경유 검진 예약 ${checkupUsers.toLocaleString()}건(연) × 건당 ${finW(P.checkupFee)}원`, checkupUsers * P.checkupFee);
     const serviceUsers = Math.round(membersEnd * P.serviceRate), revService = L("헬스케어 서비스 수수료", `이용 ${serviceUsers.toLocaleString()}명 × ${finW(P.serviceCommission)}원`, serviceUsers * P.serviceCommission);
     const reservations = Math.round(active * _finAt(P, P.resvPerActive, y, 0.05)), revReservation = reservations * P.resvFee;
@@ -145,7 +155,8 @@ function finYears(nYears) {
     const gross = L("매출총이익", `매출 ${finW(revenue)} − 원가 ${finW(cogs)}`, revenue - cogs);
     // ② CAC 기간 인식 + 판관비(전 항목 파라미터)
     const cacCost = L("회원확보비(CAC)", `신규 ${newMembers.toLocaleString()}명 × ${P.cac.toLocaleString()}원 — 증가 속도 따라 기간 인식`, newMembers * P.cac);
-    const brandMkt = Math.round(revenue * P.brandMktRate), marketing = cacCost + brandMkt;
+    const launchMkt = _finAt(P, P.launchMkt || [0], y, 0);
+    const brandMkt = Math.round(revenue * P.brandMktRate) + launchMkt, marketing = cacCost + brandMkt;
     const prodMargin = revProduct - cogsProduct;
     const reward = Math.round(prodMargin * P.rewardRate), donation = Math.round(prodMargin * P.donationRate);
     const payroll = _finAt(P, P.payroll, y, 0.12);
@@ -163,7 +174,7 @@ function finYears(nYears) {
     const mrrEnd = paidInsts * subFee + Math.round(agentUsers * P.aiAgentFeeYear / 12); // 월 반복매출(구독)
     rows.push({ y, label: P.years[y], membersEnd, membersPrev, newMembers, grossNew, active, mktConsent, buyers, checkupUsers, serviceUsers, reservations,
       hospitals, checkupCenters, pharmacies, insts, subFee, paidInsts, cac: P.cac, marketing, cacCost, brandMkt,
-      revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr: revSub, revSub, subSplit, revAd, revAgent, revApi,
+      launchMkt, revProduct, catRev, cogsProduct, revCheckup, revService, revReservation, revInsurance, revEmr: revSub, revSub, subSplit, revAd, revAgent, revApi,
       revenue, cogs, gross, reward, donation, payroll, rnd, cloud, gpu, salesCost, adminCost, otherOpex, sga,
       ebit, ebitda, pbt, tax, net, capex, fcf, mrrEnd, arr: mrrEnd * 12,
       opMargin: revenue ? ebit / revenue : 0, netMargin: revenue ? net / revenue : 0, lin });
