@@ -68,7 +68,7 @@ const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chro
 const p = await b.newPage();
 await p.goto('http://localhost:5601/preview.html', { waitUntil: 'networkidle2', timeout: 90000 });
 await p.waitForFunction(() => (document.body.innerText || '').indexOf('아이디') >= 0, { timeout: 30000 });
-await p.evaluate(() => { const S = (el, v) => { const s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; s.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); }; S(document.querySelector('input[name="hifin-login-id"]'), '하이'); S(document.querySelector('input[name="hifin-login-pw"]'), '하이1'); [...document.querySelectorAll('button')].find(x => x.innerText.trim() === '로그인').click(); });
+await p.evaluate(() => { const S = (el, v) => { const s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; s.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); }; S(document.querySelector('input[name="hifin-login-id"]'), 'hi'); S(document.querySelector('input[name="hifin-login-pw"]'), 'hi0500'); [...document.querySelectorAll('button')].find(x => x.innerText.trim() === '로그인').click(); });
 await sleep(4200);
 
 /* care 코퍼스 — 질환 197키는 페이지 원천(_DZCARE)에서 동적 수신(사전 이원화 금지) × 질문 6형 × 변형 */

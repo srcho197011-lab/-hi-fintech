@@ -60,7 +60,7 @@ const myTok = (p) => p.evaluate(() => { try { return window.__hifinVault ? windo
 /* ── 본인 계정 ── */
 const c1 = await b.createBrowserContext();
 const p1 = await c1.newPage();
-await login(p1, '하이', '하이1');
+await login(p1, 'hi', 'hi0500');
 await walk(p1);
 const s1 = await snap(p1);
 const vaultKey = s1.keys.find(k => k.indexOf("hifin_vault_pt-") === 0);

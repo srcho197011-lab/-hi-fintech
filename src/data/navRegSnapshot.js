@@ -1,2 +1,2 @@
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-07","seed":20260828,"inventory":{"version":1,"sourceHash":"ce27edfa37abbeb0","generatedAt":"2026-09-07","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":4.49,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-09","seed":20260828,"inventory":{"version":1,"sourceHash":"ce27edfa37abbeb0","generatedAt":"2026-09-07","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.23,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};

@@ -26412,7 +26412,7 @@ function interventionsFor(grade, groupKey) {
 }
 
 /* 자동 생성 — run_handoff_harness.mjs (P4). 콘솔 하네스 타일이 읽는 최근 통과 스냅샷 — 손대지 말 것 */
-const HM_HARNESS_SNAPSHOT = {"date":"2026-09-06","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
+const HM_HARNESS_SNAPSHOT = {"date":"2026-09-09","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
 
 /* 자동 생성 — run_handoff_batch.mjs (P5). ⑩관제탑이 읽는 배치 스냅샷 — 손대지 말 것(운영 정합 §7-⑥: 관제탑 집계 = 이 스냅샷 = 배치 리포트). */
 const HM_OPS_SNAPSHOT = {"date":"2026-09-02","total":100000,"cards":56945,"publishable":56945,"locked":32855,"byGrade":{"H":6300,"-":43055,"L":46292,"M":4353},"bySido":{"충북":1746,"경북":2987,"서울":10880,"부산":4146,"전북":1691,"경기":13271,"대전":1763,"충남":2515,"울산":1237,"전남":1920,"강원":1792,"인천":3716,"광주":1648,"대구":2882,"경남":2941,"제주":1152,"세종":658},"pros":648,"prosAll":702,"sabunOk":true,"rosterChecked":648,"rosterViol":0,"avgRoster":6.97,"maxRoster":7,"byRosterGrade":{"H":3209,"L":930,"M":377},"loadAvg":154.3,"loadRatioMax":1.29,"loadRatioMin":0.91,"loadBySido":[{"sido":"강원","pros":16,"perPro":199.5,"ratio":1.29},{"sido":"세종","pros":6,"perPro":190.7,"ratio":1.24},{"sido":"충북","pros":17,"perPro":184.9,"ratio":1.2},{"sido":"울산","pros":13,"perPro":165.8,"ratio":1.07},{"sido":"인천","pros":41,"perPro":161,"ratio":1.04},{"sido":"부산","pros":46,"perPro":160.8,"ratio":1.04},{"sido":"전남","pros":21,"perPro":159.5,"ratio":1.03},{"sido":"충남","pros":28,"perPro":155.8,"ratio":1.01},{"sido":"경기","pros":149,"perPro":155.5,"ratio":1.01},{"sido":"대전","pros":20,"perPro":155.1,"ratio":1},{"sido":"경북","pros":34,"perPro":153.3,"ratio":0.99},{"sido":"광주","pros":19,"perPro":153.2,"ratio":0.99},{"sido":"경남","pros":34,"perPro":152.7,"ratio":0.99},{"sido":"제주","pros":14,"perPro":144.3,"ratio":0.93},{"sido":"서울","pros":133,"perPro":143.4,"ratio":0.93},{"sido":"대구","pros":35,"perPro":143.3,"ratio":0.93},{"sido":"전북","pros":21,"perPro":140.9,"ratio":0.91}],"seconds":68.9,"pass":true};
@@ -27973,7 +27973,7 @@ const DEMO_STEPS = [
 /* 데모 시작 전 준비(발표 체크리스트) — 시나리오 문서와 공유 */
 const DEMO_PREP = [
   "로컬 서버 기동(포트 5601) 또는 라이브(hi-fintech.com) 접속 확인",
-  "회원 계정(하이/하이1) 로그인 → 세 숫자 카드가 보이는지 확인",
+  "회원 계정(hi/hi0500) 로그인 → 세 숫자 카드가 보이는지 확인",
   "프로 콘솔 접속 코드 준비(코드 잠금 해제 시 재입력)",
   "⑩ 통합 운영은 운영 계정에서만 보임 — 데모는 운영 계정으로",
   "재산정 데모 회원은 관리 지표 개선분이 있는 계정으로(신청 이력 초기화 확인)",
@@ -33865,7 +33865,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-07","seed":20260828,"inventory":{"version":1,"sourceHash":"ce27edfa37abbeb0","generatedAt":"2026-09-07","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":4.49,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-09","seed":20260828,"inventory":{"version":1,"sourceHash":"ce27edfa37abbeb0","generatedAt":"2026-09-07","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.23,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
@@ -39810,15 +39810,17 @@ function appAuthenticate(email, pw) { const m = demoAuthenticate(email, pw); if 
    정식 서버 도입 시 이 role/scope 계층을 그대로 백엔드 미들웨어로 이관. */
 /* 승인된 관리자(전체보기) 계정 — 데모용 임시. ⚠️ 정식 론칭 전 폐기 목록 등록. 설정으로 분리(코드 하드코딩 지양). */
 /* 승인된 관리자(전체보기) 계정 — 이 계정만 로그인 허용. TODO(론칭전 폐기): 환경변수/설정으로 이관.
-   ⚠️ 개발 기간 한정 교체(2026-08-27, 형 지시): hifin/hifin002 → 하이/하이1.
+   ⚠️ 개발 기간 한정 교체: hifin/hifin002 → 하이/하이1(2026-08-27) → hi/hi0500(2026-09-10, 형 지시).
       **배포 전 아래 한 줄을 { id: "hifin", pw: "hifin002" } 로 되돌릴 것.**
-      기존 계정은 더 이상 통하지 않는다(교체이므로). 화면 안내문에는 표기하지 않는다. */
-const AUTH_ADMIN = { id: "하이", pw: "하이1" };
+      이전 계정은 더 이상 통하지 않는다(교체이므로). 화면 안내문에는 표기하지 않는다. */
+const AUTH_ADMIN = { id: "hi", pw: "hi0500" };
 
 /* ── 한글 계정의 '영문 자판 표기'를 파생한다(두벌식) ──
    비밀번호는 마스킹되어 보이므로, 한글 입력기가 꺼진 줄 모르고 치면 원인을 알 수 없다.
    같은 키를 눌렀다면 같은 계정으로 본다 — 계정이 늘어나는 것이 아니라 표기만 둘이다.
-   예) "하이1" → ㅎㅏㅇㅣ1 → "gkdl1" */
+   예) "하이1" → ㅎㅏㅇㅣ1 → "gkdl1"
+   ※ 현재 계정(hi/hi0500)은 영문이라 이 변환은 그대로 통과한다(무해한 무동작).
+      계정을 다시 한글로 바꿀 때를 위해 남겨 둔다. */
 const _QW_CHO = ["r", "R", "s", "e", "E", "f", "a", "q", "Q", "t", "T", "d", "w", "W", "c", "z", "x", "v", "g"];
 const _QW_JUNG = ["k", "o", "i", "O", "j", "p", "u", "P", "h", "hk", "ho", "hl", "y", "n", "nj", "np", "nl", "b", "m", "ml", "l"];
 const _QW_JONG = ["", "r", "R", "rt", "s", "sw", "sg", "e", "f", "fr", "fa", "fq", "ft", "fx", "fv", "fg", "a", "q", "qt", "t", "T", "d", "w", "c", "z", "x", "v", "g"];
