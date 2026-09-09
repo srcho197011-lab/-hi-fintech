@@ -44,19 +44,19 @@ body{font-size:9.0pt;line-height:1.43}
 .wrap{max-width:190mm;padding:10mm 4mm 12mm}
 h1{font-size:16.5pt;margin:0 0 3px}
 h2{font-size:11pt;margin:12px 0 4px;padding:7px 0 0 8px;border-left-width:3.5px}
-h3{font-size:9.7pt;margin:9px 0 3px}
+h3{font-size:9.7pt;margin:8px 0 3px}
 p{margin:0 0 5px}
 .sub1{font-size:10.6pt;margin:0 0 7px}
 .meta{font-size:8.2pt;padding-bottom:7px;margin-bottom:11px;border-bottom-width:2px}
-ul,ol{margin:0 0 7px;padding-left:17px} li{margin:0 0 2px}
-table{font-size:8.1pt;margin:4px 0 8px;page-break-inside:auto}
+ul,ol{margin:0 0 6px;padding-left:17px} li{margin:0 0 1px}
+table{font-size:8.1pt;margin:4px 0 7px;page-break-inside:auto}
 /* 표는 면을 넘어 이어지되 한 행이 잘리지는 않게 — 조밀 조판에서 표가 통째로 밀리면 빈 면이 생긴다 */
 tr{page-break-inside:avoid} thead{display:table-header-group}
 th{padding:3.5px 5px;font-size:7.9pt}
 td{padding:3px 5px;line-height:1.4}
 blockquote{margin:6px 0;padding:6px 11px}
 pre{padding:6px 9px;margin:5px 0 9px} pre code{font-size:8pt;line-height:1.5}
-hr{margin:10px 0}
+hr{margin:9px 0}
 /* 인쇄에서는 @page 여백만 쓴다 — .wrap 패딩이 남아 있으면 면마다 여백이 두 겹이 된다 */
 @media print{.wrap{padding:0;max-width:none}}
 """
