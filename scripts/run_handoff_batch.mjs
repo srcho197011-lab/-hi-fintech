@@ -10,6 +10,7 @@ import puppeteer from 'puppeteer-core';
 import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { devLogin } from './devcred.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -19,10 +20,7 @@ const t0 = Date.now();
 
 const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--no-sandbox', '--disable-gpu'], defaultViewport: { width: 1280, height: 900 } });
 const p = await b.newPage();
-await p.goto('http://localhost:5601/preview.html', { waitUntil: 'networkidle2', timeout: 90000 });
-await p.waitForFunction(() => (document.body.innerText || '').indexOf('아이디') >= 0, { timeout: 30000 });
-await p.evaluate(() => { const S = (el, v) => { const s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; s.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); }; S(document.querySelector('input[name="hifin-login-id"]'), 'hi'); S(document.querySelector('input[name="hifin-login-pw"]'), 'hi0500'); [...document.querySelectorAll('button')].find(x => x.innerText.trim() === '로그인').click(); });
-await sleep(4200);
+await devLogin(p);
 
 /* ── ① 전건 정의 검증 — 100,000명 스캔(집계는 페이지 안에서, 왕복은 집계만) ── */
 const agg = { n: 0, cards: 0, pub: 0, byGrade: {}, bySido: {}, byGroup: {}, locked: 0, unpubBad: [] };

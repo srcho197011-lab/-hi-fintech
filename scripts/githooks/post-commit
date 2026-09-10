@@ -20,8 +20,10 @@ fi
 bash scripts/gen_wp_log.sh >/dev/null 2>&1 || exit 0
 bash build_preview.sh    >/dev/null 2>&1 || exit 0
 
-if ! git diff --quiet -- src/data/wpAutoLog.js index.html preview.html 2>/dev/null; then
-  git add src/data/wpAutoLog.js index.html preview.html
+# preview.html 은 .gitignore 대상이라 추적되지 않는다. 목록에 두면 add 마다 무시 경고만 나와
+# 원인 추적을 흐린다(2026-09-10, 이 경고를 실패로 오독한 적이 있다). 추적 대상만 남긴다.
+if ! git diff --quiet -- src/data/wpAutoLog.js index.html 2>/dev/null; then
+  git add src/data/wpAutoLog.js index.html
   WPLOG_SKIP=1 git commit --amend --no-edit --no-verify >/dev/null 2>&1
 fi
 exit 0

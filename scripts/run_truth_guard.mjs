@@ -14,6 +14,7 @@ import puppeteer from 'puppeteer-core';
 import { writeFileSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { devLogin as login } from './devcred.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -40,14 +41,6 @@ for (const f of SRC) {
 console.log(`[정적  ] 원천 ${SRC.length}파일 · 금지 패턴 ${BANNED.length}종 · 위반 ${fails.length}건`);
 
 /* ── 번들 부팅 ── */
-const login = async (p) => {
-  await p.goto('http://localhost:5601/preview.html', { waitUntil: 'networkidle2', timeout: 90000 });
-  await p.waitForFunction(() => (document.body.innerText || '').indexOf('아이디') >= 0, { timeout: 30000 });
-  await p.evaluate(() => { const S = (el, v) => { const s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; s.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); };
-    S(document.querySelector('input[name="hifin-login-id"]'), 'hi'); S(document.querySelector('input[name="hifin-login-pw"]'), 'hi0500');
-    [...document.querySelectorAll('button')].find(x => x.innerText.trim() === '로그인').click(); });
-  await sleep(4200);
-};
 
 const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--no-sandbox', '--disable-gpu'], defaultViewport: { width: 1200, height: 800 } });
 const p = await b.newPage();

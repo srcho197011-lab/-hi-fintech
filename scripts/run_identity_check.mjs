@@ -13,6 +13,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { devLogin } from './devcred.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -24,17 +25,8 @@ const tok = (id) => "pt-" + createHash("sha256").update("hifin-pseudonym|" + id,
 const SELF_EMAIL = "srcho197011@hizenhealth.com";
 const NAME_TOK = tok("조성래"), EMAIL_TOK = tok(SELF_EMAIL);
 
-const login = async (p, id, pw) => {
-  await p.goto('http://localhost:5601/preview.html', { waitUntil: 'networkidle2', timeout: 90000 });
-  await p.waitForFunction(() => (document.body.innerText || '').indexOf('아이디') >= 0, { timeout: 30000 });
-  await p.evaluate(([id, pw]) => {
-    const S = (el, v) => { const s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; s.call(el, v); el.dispatchEvent(new Event('input', { bubbles: true })); };
-    S(document.querySelector('input[name="hifin-login-id"]'), id);
-    S(document.querySelector('input[name="hifin-login-pw"]'), pw);
-    [...document.querySelectorAll('button')].find(x => x.innerText.trim() === '로그인').click();
-  }, [id, pw]);
-  await sleep(4500);
-};
+/* 격리 컨텍스트라 번들 정착에 여유를 더 준다(기존 4500ms 유지) */
+const login = (p, id, pw) => devLogin(p, id, pw, 4500);
 const walk = async (p) => {
   const click = async (re, ml) => await p.evaluate(([s, m]) => {
     const rx = new RegExp(s);
@@ -60,7 +52,7 @@ const myTok = (p) => p.evaluate(() => { try { return window.__hifinVault ? windo
 /* ── 본인 계정 ── */
 const c1 = await b.createBrowserContext();
 const p1 = await c1.newPage();
-await login(p1, 'hi', 'hi0500');
+await login(p1);                       // 인자 생략 = 관리자 계정(devcred)
 await walk(p1);
 const s1 = await snap(p1);
 const vaultKey = s1.keys.find(k => k.indexOf("hifin_vault_pt-") === 0);

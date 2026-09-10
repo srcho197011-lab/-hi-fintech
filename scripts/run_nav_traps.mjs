@@ -4,13 +4,11 @@
      2) node scripts/run_nav_traps.mjs                        (puppeteer-core 필요 — NODE_PATH로 지정 가능)
    게이트: 실패 0건이어야 커밋한다. */
 import puppeteer from 'puppeteer-core';
+import { devLogin } from './devcred.mjs';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const b = await puppeteer.launch({ executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe', headless:'new', args:['--no-sandbox','--disable-gpu'], defaultViewport:{width:1280,height:900} });
 const p = await b.newPage(); const errs=[]; p.on('pageerror', e=>errs.push(String(e).slice(0,180)));
-await p.goto('http://localhost:5601/preview.html',{waitUntil:'networkidle2',timeout:90000});
-await p.waitForFunction(()=> (document.body.innerText||'').indexOf('아이디')>=0,{timeout:30000});
-await p.evaluate(()=>{const S=(el,v)=>{const s=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;s.call(el,v);el.dispatchEvent(new Event('input',{bubbles:true}));};S(document.querySelector('input[name="hifin-login-id"]'),'hi');S(document.querySelector('input[name="hifin-login-pw"]'),'hi0500');[...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='로그인').click();});
-await sleep(4200);
+await devLogin(p);
 const hook = await p.evaluate(()=> typeof window.__hifinNavTest);
 console.log('hook:', hook);
 const t0 = Date.now();

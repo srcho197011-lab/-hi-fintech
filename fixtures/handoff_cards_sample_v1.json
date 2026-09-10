@@ -41,8 +41,8 @@
             "ko": "진료 연결",
             "nav": "tele",
             "tab": null,
-            "ev": "consult_logged",
-            "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            "ev": "tele_booked",
+            "evNote": "원격진료 상담 접수 [실재·V5 확정] — 회수는 「연결됨」 사실만"
           },
           {
             "order": 2,
@@ -720,8 +720,8 @@
             "ko": "진료 연결",
             "nav": "tele",
             "tab": null,
-            "ev": "consult_logged",
-            "evNote": "완결=원격진료 연결(등재 대기) — 임시로 접촉 기록"
+            "ev": "tele_booked",
+            "evNote": "원격진료 상담 접수 [실재·V5 확정] — 회수는 「연결됨」 사실만"
           },
           {
             "order": 2,
