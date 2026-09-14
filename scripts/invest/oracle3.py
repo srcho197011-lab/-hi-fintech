@@ -27,6 +27,9 @@ def tier(cases, cap, price, mkt):
 
 def run(P, L):
     A = O.annual(P)
+    C2 = "cost2" in P
+    if C2:                                   # 1차 1월 인건비 = 1차 인건비÷12(연초 채용 완료) — 엑셀 인력계획 ⑥과 같다
+        L = dict(L, payStart=A[0]["pay"] / 12.0)
     for a_ in A:
         a_["pbt"] = a_["ebit"] - P["interestYear"]
         a_["tax"] = max(0, a_["pbt"]) * P["taxRate"]
@@ -57,11 +60,23 @@ def run(P, L):
             revT[t] = sum(rv[k][t] for k in rv)
             sr = revT[t] / a["rev"] if a["rev"] else w      # 매출 연동 비용은 월 매출 비중으로(사용료가 연초 우대로 가중과 다르게 흐름)
             cogsM[t] = a["cogs"] * w; custM[t] = (a["reward"] + a["don"]) * w
-            cacM[t] = adds[m] * P["cac"]; brandM[t] = (a["brand"] - a["launch"]) * sr
-            lp = L["launchPh"]; launchM[t] = a["launch"] * lp[m] / sum(lp) if sum(lp) else a["launch"] / 12.0
-            rndM[t] = a["rnd"] * sr; cloudM[t] = a["cloud"] * w; gpuM[t] = a["gpu"] * w
+            lp = L["launchPh"]
+            if C2:                           # 광고: 발송·제작·카드·QR 키트는 월 균등, 스티커·연계 수수료는 회원 가중, 매체비는 1차만 배분 가중
+                cacM[t] = (a["mk1"] + a["creative"] + a["cardAd"] + a["kit"]) / 12.0 + (a["sticker"] + a["qrfee"]) * w
+                brandM[t] = 0.0
+                launchM[t] = a["media"] * lp[m] / sum(lp) if (y == 0 and sum(lp)) else a["media"] / 12.0
+            else:
+                cacM[t] = adds[m] * P["cac"]; brandM[t] = (a["brand"] - a["launch"]) * sr
+                launchM[t] = a["launch"] * lp[m] / sum(lp) if sum(lp) else a["launch"] / 12.0
+            if C2:                           # AI·데이터: 유지보수·데이터·보안·클라우드 기본은 고정(월 균등), 회원 연동·LLM·앵커링은 회원 가중
+                rndM[t] = 0.0
+                cloudM[t] = (a["itMaint"] + a["itData"] + a["itSec"] + a["cloudBase"]) / 12.0
+                gpuM[t] = (a["cloudVar"] + a["llm"] + a["bc"]) * w
+            else:
+                rndM[t] = a["rnd"] * sr; cloudM[t] = a["cloud"] * w; gpuM[t] = a["gpu"] * w
             salesM[t] = a["sales"] * sr; adminM[t] = a["admin"] * sr
-            cp = L["capexPh"]; capexM[t] = a["capex"] * cp[m] / sum(cp) if sum(cp) else a["capex"] / 12.0
+            cxb = a["capex"] - ((a.get("medi", 0) + a.get("build1", 0)) if C2 else 0)   # 메디에이지 투자·1차 초기 구축은 지급 시점에 따로
+            cp = L["capexPh"]; capexM[t] = cxb * cp[m] / sum(cp) if sum(cp) else cxb / 12.0
             intM[t] = P["interestYear"] / 12.0
     # 인건비 연속 경로
     path = []; st = L["payStart"]
@@ -69,8 +84,12 @@ def run(P, L):
         en = A[y]["pay"] / 6.0 - st
         path += [st + (en - st) * m / 11.0 for m in range(12)]
         st = en
-    avgsal = [A[y]["pay"] / heads_total(y) for y in range(5)]
-    varRate = P["brandMktRate"] + (P["rndRate"] + P["salesRate"] + P["adminRate"]) * P["opexScale"]
+    avgsal = [A[y]["pay"] / (A[y]["headTotal"] if C2 else heads_total(y)) for y in range(5)]
+    varRate = ((P["salesRate"] + P["adminRate"]) * P["opexScale"] if C2
+               else P["brandMktRate"] + (P["rndRate"] + P["salesRate"] + P["adminRate"]) * P["opexScale"])
+    medi_at = max(L.get("mediAt", 1), (1 - int(L["pre"])) if int(L["pre"]) > 0 else 1)
+    medi_amt = A[0].get("medi", 0) if C2 else 0
+    build_amt = A[0].get("build1", 0) if C2 else 0              # 1차 초기 구축: 구축기간이 있으면 그 달들에 균등, 없으면 1차 1월
     # ── 기간 축(구축 24 + 본 60) ──
     cols = [(j - PRE_MAX + 1) for j in range(PRE_MAX)] + [t + 1 for t in range(n)]
     labels = ["구축-%d" % (PRE_MAX - j) for j in range(PRE_MAX)] + ["%d차-%02d" % (t // 12 + 1, t % 12 + 1) for t in range(n)]
@@ -94,6 +113,11 @@ def run(P, L):
         dep_out = max(0.0, req - maxreq); maxreq = max(maxreq, req)
         hire = max(0.0, heads[j] - (heads[j - 1] if j > 0 else 0.0)) * (avgsal[(idx - 1) // 12] if idx >= 1 else avgsal[0]) * L["hireRate"]
         one = L["oneOff"] if idx == c0 else 0.0
+        one += medi_amt if idx == medi_at else 0.0             # 메디에이지 500만 데이터 투자(일시 지급)
+        if pre > 0:
+            one += build_amt / pre if (idx < 1 and idx > -pre) else 0.0
+        else:
+            one += build_amt if idx == 1 else 0.0
         if idx < 1:
             active = idx > -pre
             if active:
@@ -129,14 +153,17 @@ def run(P, L):
             wc = (revT[t] - rv["Ins"][t] + insRecM[t]) * L["wc"]       # 커버리지로 공급 안 된 사용료에는 운전자본을 잡지 않음
             outflow = (o_cogs + custM[t] + cacM[t] + brandM[t] + launchM[t] + capexM[t] + path[t] + rndM[t] + cloudM[t]
                        + gpuM[t] + salesM[t] + adminM[t] + intM[t] + wc + tax - covSave + rent_out + dep_out + hire + one + repay)
-            fixedM.append(path[t] + rndM[t] + cloudM[t] + gpuM[t] + adminM[t] + intM[t])
+            fixedM.append(path[t] + rndM[t] + cloudM[t] + (0.0 if C2 else gpuM[t]) + adminM[t] + intM[t])
         cum += inflow - outflow
         series.append((labels[j], idx, inflow, outflow, cum))
     cums = [s[4] for s in series]
     low = min(0.0, min(cums)); jl = cums.index(min(cums))
     low_at = labels[jl] if min(cums) < 0 else "저점 없음"
     y1 = A[0]
-    fixed_avg = (y1["pay"] + y1["rnd"] + y1["cloud"] + y1["gpu"] + y1["admin"] + P["interestYear"]) / 12.0
+    if C2:
+        fixed_avg = (y1["pay"] + y1["itMaint"] + y1["itData"] + y1["itSec"] + y1["cloudBase"] + y1["admin"] + P["interestYear"]) / 12.0
+    else:
+        fixed_avg = (y1["pay"] + y1["rnd"] + y1["cloud"] + y1["gpu"] + y1["admin"] + P["interestYear"]) / 12.0
     buffer = L["buf"] * fixed_avg
     need = -low + buffer
     req_new = math.ceil(max(0.0, need - L["cashAvail"] - L["prepay"]) / 1e9) * 1e9
@@ -160,7 +187,7 @@ BASE = dict(pre=0, prePay=0.5, preOpex=0, lag=dict(P=0, Chk=0, Svc=0, Resv=0, Su
             launchPh=ONES, capexPh=ONES)
 LA = dict(BASE)
 LB = dict(BASE, pre=6, preOpex=100000000, lag=dict(P=0, Chk=1, Svc=1, Resv=1, Sub=1, Ins=2, Etc=0), wc=0.0,
-          insCov=ROAD, adminHasRent=0, oneOff=0, launchPh=[3, 3, 2, 2, 1, 1, 0, 0, 0, 0, 0, 0], capexPh=[1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0])
+          insCov=ROAD, adminHasRent=0, oneOff=0, launchPh=[2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1], capexPh=[1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0], mediAt=-5)
 LC = dict(LB, insCov=[0] * 12)
 
 if __name__ == "__main__":

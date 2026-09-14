@@ -31,6 +31,11 @@ pairs = [("insCases", "insC"), ("hmCap", "hmCap"), ("hmPrice", "hmPrice"), ("hmD
 for a in adj:
     a["revIns_d"] = a["hmDisc"] * a["hmPrice"]; a["revIns_f"] = a["hmFull"] * a["hmMarket"]
 pairs += [("revIns_d", "revIns_d"), ("revIns_f", "revIns_f"), ("imRev", "imRev")]
+if "cost2" in O3.P0:                               # 판관비·CAPEX 근거 모델(v2.0)
+    for a in adj:
+        a["capexMedi"] = a["medi"]; a["capexBuild1"] = a["build1"]
+    pairs += [(k, k) for k in ("headTotal", "pay", "mk1", "media", "creative", "cardAd", "kit", "sticker", "qrfee", "mktSum",
+                               "itMaint", "itData", "itSec", "cloudBase", "cloudVar", "llm", "bc", "itOpex", "capex", "capexMedi", "capexBuild1", "depr")]
 worst = max((abs(Y[f"{'DEFGH'[i]}{YR[xk]}"].value - adj[i][ok]), xk, i + 1) for xk, ok in pairs if xk in YR for i in range(5))
 cumb = 0.0; bx = 0.0
 for i in range(5):
@@ -60,6 +65,6 @@ print("요청액:", [C[f"{c}{CR['s_req']}"].value / 1e8 for c in "CDE"], "· 필
       "· 저점:", [(round(C[f"{c}{CR['s_low']}"].value / 1e8, 1), C[f"{c}{CR['s_lowAt']}"].value) for c in "CDE"],
       "· 런웨이:", [C[f"{c}{CR['s_runway']}"].value for c in "CDE"])
 print("월별 누적 현금 84개월×3 최대 차이: %.4f원" % gmax, "· 정답지 일치:", "✓" if ok else "✗")
-for i in range(5):
+for i in range(6):
     print("점검", C[f"B{CR['warnStart']+i}"].value)
 sys.exit(0 if (e == 0 and z == 0 and worst[0] == 0 and wm < 1e-3 and ok) else 1)

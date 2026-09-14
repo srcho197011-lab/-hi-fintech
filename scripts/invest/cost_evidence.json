@@ -1,0 +1,3350 @@
+{
+ "retrieved": "2026-09-14",
+ "note": "웹 조사 4명 + 출처 교차검증 4명(워크플로 wf_34efb807-577)",
+ "topics": [
+  {
+   "topic": "salary",
+   "summary": "Seoul, 2026 pay for a lean year-1 team (15 hires plus outside advisors) and 2026 employer on-costs. Salaries are annual pre-tax base pay (세전 기본연봉) in KRW with employer on-costs excluded. VAT does not apply to wages. The main source is the government wage portal 워크피디아 (고용노동부·한국고용정보원; 2024 estimates by occupation × career years × firm size, fixed pay plus bonuses). Those figures were raised ×1.06 to reach 2026 (2025 nominal wage growth +3.1% plus about +3% for 2026). They were cross-checked against 사람인 AI Lab pay-by-role-and-year data (from job postings), the 2026 사회복지시설 pay guideline, KOSA 2026 SW engineer average wages and a headhunter CTO guide. Recommended base pay: checkup 4,400만 (blend of 2), clinic 4,100만 (blend of 2), care 3,600만, insurance 4,240만 (blend: 1 lead at 6,000만 + 4 staff at 3,800만), nutrition MD 4,300만, beauty MD 4,300만, device MD/RA 4,800만, sports MD 4,000만, finance manager 6,000만, CTO 1.2억, CEO 8,400만. Advisors: 100만원 each per month, 4 advisors. Employer on-costs for 2026, as % of wage: pension 4.75, health 3.595, long-term care 0.4724, employment insurance 1.15 (firm under 150 staff), industrial accident 0.66 (전문·보건·교육·여가 서비스 6‰ + commute 0.6‰), severance 8.33. Total 18.96% of wage. Welfare benefits 25만원 per person per month. Wage growth 3.5% a year. Full JSON saved to C:/Users/user/AppData/Local/Temp/claude/C--Users-user-OneDrive----001-------02-HI-human------------/f0706602-45bb-4d6f-a3e3-b14f3d9081ab/scratchpad/research/salary.json",
+   "items": [
+    {
+     "key": "salary_checkup",
+     "item": "건강검진 사업 담당 (검진 예약·검진센터 제휴 운영·검진 코디네이터, 간호사/보건계열 우대) — 2명 블렌디드: 리드 1(간호사 7~10년) + 담당 1(간호사/보건계열 3년)",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 38000000,
+     "mid": 44000000,
+     "high": 50500000,
+     "recommended": 44000000,
+     "basis": "Blended = (리드 + 담당)/2. 리드 5,000만 (range 4,300~5,800만), 담당 3,800만 (range 3,300~4,300만). 워크피디아 (2024 estimate, fixed pay + bonuses, no overtime): 간호사, 경력 10년 이상, 5~29명 firms — median 4,112만, upper quartile 5,016만. 간호사, 경력 3~4년, 5~29명 — median 3,312만, upper quartile 3,911만. ×1.06 for 2026 gives 리드 4,360~5,317만 and 담당 3,511~4,146만. 사람인 postings: 간호사 3년차 median 3,680만 / upper 4,000만; 상담간호사 7년차 median 3,900만 / upper 4,700만. This is a daytime office job with no hospital shift allowances, so it is set below the all-nurse average (4,956만). For a funded Seoul startup it sits between the small-firm median and upper quartile. low = (4,300+3,300)/2, high = (5,800+4,300)/2.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "고용노동부·한국고용정보원 임금직업포털 워크피디아 — 맞춤형 임금정보: 직업 243 간호사 × 경력년수 × 사업체규모",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "간호사 전체 연평균 4,956만원 (하위 3,643 / 중위 4,412 / 상위 5,728). 경력 3~4년·5~29명: 하위 3,043 / 중위 3,312 / 상위 3,911. 경력 5~10년·5~29명: 중위 3,755 / 상위 4,578. 경력 10년 이상·5~29명: 하위 3,316 / 중위 4,112 / 상위 5,016만원"
+      },
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 (채용공고 기반) — 간호사(462)·상담간호사(470)·병원코디네이터(507)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "간호사 3년차: Q1 3,400 / 중위 3,680 / Q3 4,000만원. 상담간호사 7년차: Q1 3,400 / 중위 3,900 / Q3 4,700만원. 병원코디네이터 3년차: 중위 3,000 / Q3 3,360만원"
+      },
+      {
+       "title": "고용노동부 2026년 1월 사업체노동력조사 (2025년 연간 임금) — 대한민국 정책브리핑",
+       "url": "https://www.korea.kr/news/policyNewsView.do?newsId=156746284",
+       "date": "2026-02-26",
+       "figure": "2025년 명목임금 402만5천원, 전년 대비 +3.1% (2024→2026 환산 근거)"
+      }
+     ]
+    },
+    {
+     "key": "salary_clinic",
+     "item": "진료안내 (의료 코디네이터·병원 송객/진료 연계 상담, 간호사 면허 우대) — 2명 블렌디드: 리드 1(간호사/상담실장 7년+) + 담당 1(의료코디네이터 3~5년)",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 35000000,
+     "mid": 41000000,
+     "high": 47500000,
+     "recommended": 41000000,
+     "basis": "Blended = (리드 + 담당)/2. 리드 4,700만 (range 4,000~5,500만), 담당 3,500만 (range 3,000~4,000만). 사람인 postings: 상담실장 7년차 median 4,200만 / Q3 4,975만. 병원코디네이터 3년차 median 3,000만 / Q3 3,360만; 5년차 median 3,200만 / Q3 3,600만. The 고용24 2023 survey of 의료코디네이터: bottom quartile 2,638만 / median 3,550만 / top quartile 4,000만. The 담당 figure is set a little above posting medians to attract nurse-licensed hires (워크피디아 간호사 경력 3~4년·5~29명 median 3,312만 ×1.06 = 3,511만). A 송객·진료연계 coordinator is paid less than the checkup lead, so the blend is 300만 below checkup.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 — 상담실장(511)·병원코디네이터(507)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "상담실장 7년차: Q1 3,600 / 중위 4,200 / Q3 4,975만원. 병원코디네이터 3년차: Q1 2,880 / 중위 3,000 / Q3 3,360. 5년차: Q1 2,900 / 중위 3,200 / Q3 3,600. 7년차: 중위 3,400 / Q3 3,700만원"
+      },
+      {
+       "title": "대입정보포털 어디가 직업정보 (고용24/한국고용정보원 재직자 조사) — 의료코디네이터",
+       "url": "https://www.adiga.kr/jbp/jnf/jobInfoDetail.do?menuId=PCJBPJNF2000&searchCrSeClsfCd=D999&searchCrCd=K000001127",
+       "date": "2023 조사",
+       "figure": "의료코디네이터 임금: 하위(25%) 2,638만원 / 중위 3,550만원 / 상위(25%) 4,000만원"
+      },
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 243 간호사 × 경력 3~4년 × 5~29명",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "하위 3,043 / 중위 3,312 / 상위 3,911만원"
+      }
+     ]
+    },
+    {
+     "key": "salary_care",
+     "item": "돌봄·재가 (요양/돌봄 연계 코디네이터, 사회복지사) — 1명 (사회복지사 5~7년)",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 31000000,
+     "mid": 36000000,
+     "high": 42000000,
+     "recommended": 36000000,
+     "basis": "Public benchmark: the 2026 사회복지시설 guideline (base pay only; allowances and holiday bonuses excluded) sets 사회복지사 5호봉 at 2,475,400원 a month, or 2,970만 a year. 선임사회복지사 5호봉 is 2,621,900원 a month, or 3,146만 a year. 워크피디아 사회복지 관련 종사자, 경력 5~10년, 30~99명: median 3,276만 / upper 3,682만. ×1.06 gives 3,473 / 3,903만. 경력 10년 이상 upper quartile is 4,148만. 사람인 사회복지사 5년차: median 3,200만 / Q3 3,600만. This is a private-startup coordinator who links long-term-care and home-care providers, so it is set above the facility guideline, at roughly the market upper quartile.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "보건복지부 2026년 사회복지시설 종사자 인건비 가이드라인 (별표1 기본급 권고기준)",
+       "url": "https://www.mohw.go.kr/board.es?mid=a10413000000&bid=0021&act=view&list_no=1488526",
+       "date": "2026-01-06",
+       "figure": "이용시설 사회복지직 월 기본급: 사회복지사 1호봉 2,281,800 / 5호봉 2,475,400 / 10호봉 2,921,200원. 선임사회복지사 5호봉 2,621,900원. 기본급 권고기준은 2026 공무원 보수 인상률 3.5% 수준으로 인상"
+      },
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 247 사회복지 관련 종사자 × 경력년수 × 사업체규모",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "경력 5~10년·30~99명: 하위 2,928 / 중위 3,276 / 상위 3,682. 경력 10년 이상 전체: 중위 3,242 / 상위 4,148만원"
+      },
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 — 사회복지사(1936)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "5년차: Q1 3,000 / 중위 3,200 / Q3 3,600만원. 7년차: Q1 3,000 / 중위 3,300 / Q3 3,600만원"
+      }
+     ]
+    },
+    {
+     "key": "salary_ins",
+     "item": "보험·치료비 부문 (보험 admin: 보험금 청구·보상 사무·계약관리 + 헬스메이트센터: 보험사 DB 공급·설계사 지원) — 5명 블렌디드: 팀장 1 + 담당 4",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 35600000,
+     "mid": 42400000,
+     "high": 51000000,
+     "recommended": 42400000,
+     "basis": "Split: 팀장 1 (10년+ in 보험 보상/계약관리 or GA 영업지원) at 6,000만 (range 5,000~7,500만). 담당 4 (3~5년) at 3,800만 (range 3,200~4,500만). Blended = (6,000 + 4×3,800)/5 = 4,240만. low = (5,000+4×3,200)/5 = 3,560만; high = (7,500+4×4,500)/5 = 5,100만. 사람인 postings: 손해사정사 10년차 median 4,200만 / Q3 4,800만; 12년차 median 4,800만 / Q3 6,000만. 보험심사 3년차 median 3,300만; 5년차 median 3,600만 / Q3 4,000만. 손해사정사 5년차 median 3,880만 / Q3 4,100만. 워크피디아 금융 사무 종사자 (bank/securities pay pushes this up, so it is the upper bound): 경력 3~4년·5~29명 median 4,626만; 10년 이상·5~29명 median 8,693만. 경영 관련 사무원, 10년 이상, 5~29명: median 5,734만. The 팀장 is set near the 경영사무 small-firm median ×1.06.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 — 손해사정사(1693)·보험심사(1702)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "손해사정사 3년차 중위 3,500 / Q3 4,000. 5년차 중위 3,880 / Q3 4,100. 10년차 중위 4,200 / Q3 4,800. 12년차 중위 4,800 / Q3 6,000만원. 보험심사 3년차 중위 3,300 / Q3 3,600. 5년차 중위 3,600 / Q3 4,000만원"
+      },
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 320 금융 사무 종사자 / 312 경영 관련 사무원 × 경력 × 규모",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "금융사무 경력 3~4년·5~29명: 중위 4,626 / 상위 5,851. 5~10년·5~29명: 중위 5,701. 10년 이상·5~29명: 중위 8,693만원. 경영사무 10년 이상·5~29명: 하위 4,188 / 중위 5,734 / 상위 8,265만원"
+      }
+     ]
+    },
+    {
+     "key": "salary_nutri",
+     "item": "건강식단·영양제 MD (영양사 우대) — 1명 (MD 5~7년)",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 36000000,
+     "mid": 43000000,
+     "high": 52000000,
+     "recommended": 43000000,
+     "basis": "Priced as an MD (product planning) role, not a meal-service dietitian; the dietitian license is a plus. 워크피디아 상품 기획·홍보 및 조사 전문가, 경력 5~10년, 5~29명: median 4,499만 / upper 5,478만. ×1.06 gives 4,769 / 5,807만. 사람인 기획MD 5년차 median 3,900만 / Q3 4,400만; 7년차 median 4,200만 / Q3 4,800만. For comparison, 워크피디아 영양사 경력 5~10년 is median 3,332만 / upper 3,929만. The dietitian market sets the low end and the small-firm MD median sets the recommended value.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 273 상품 기획·홍보 및 조사 전문가 / 244 영양사",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "상품기획 전문가 경력 5~10년·5~29명: 하위 3,407 / 중위 4,499 / 상위 5,478만원. 영양사 경력 5~10년: 하위 2,929 / 중위 3,332 / 상위 3,929만원"
+      },
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 — 기획MD(1212)·영양사(514)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "기획MD 5년차 Q1 3,500 / 중위 3,900 / Q3 4,400. 7년차 중위 4,200 / Q3 4,800만원. 영양사(의료) 5년차 중위 3,200 / Q3 3,650만원"
+      }
+     ]
+    },
+    {
+     "key": "salary_skin",
+     "item": "피부건강·뷰티 MD — 1명 (MD 5~7년)",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 35000000,
+     "mid": 43000000,
+     "high": 52000000,
+     "recommended": 43000000,
+     "basis": "사람인 브랜드MD 5년차 median 3,800만 / Q3 4,320만; 7년차 median 4,500만 / Q3 5,200만. 뷰티매니저 5년차 median 3,400만 / Q3 4,000만, used as the lower bound. 워크피디아 상품기획 전문가, 경력 5~10년, 5~29명: median 4,499만 / upper 5,478만 (×1.06 gives 4,769 / 5,807만). The recommended value matches the nutrition MD so the MD pay grade is consistent.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 — 브랜드MD(1215)·뷰티매니저(881)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "브랜드MD 5년차 Q1 3,400 / 중위 3,800 / Q3 4,320. 7년차 Q1 4,000 / 중위 4,500 / Q3 5,200만원. 뷰티매니저 5년차 중위 3,400 / Q3 4,000만원"
+      },
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 273 상품 기획·홍보 및 조사 전문가 × 경력 5~10년 × 5~29명",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "하위 3,407 / 중위 4,499 / 상위 5,478만원"
+      }
+     ]
+    },
+    {
+     "key": "salary_device",
+     "item": "홈케어 의료기기 MD/RA (인허가 병행) — 1명 (5~7년)",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 40000000,
+     "mid": 48000000,
+     "high": 60000000,
+     "recommended": 48000000,
+     "basis": "No public pay statistic exists for medical-device RA as a separate occupation, so these are proxies. 사람인 인증심사원 5년차 median 4,000만 / Q3 4,200만; 7년차 median 4,900만 / Q3 6,048만. 임상PM 5년차 median 4,300만 / Q3 5,100만. 워크피디아 기타 공학 전문가 (certification/quality roles), 경력 5~10년: median 4,294만 / upper 5,096만. 상품기획 전문가, 경력 5~10년, all firm sizes: median 5,499만. The MD pay grade (4,300만) plus a 500만 RA premium gives 4,800만.",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 — 인증심사원(802)·임상PM(804)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "인증심사원 5년차 Q1 3,500 / 중위 4,000 / Q3 4,200. 7년차 Q1 4,000 / 중위 4,900 / Q3 6,048.5만원. 임상PM 5년차 Q1 3,700 / 중위 4,300 / Q3 5,100만원"
+      },
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 239 기타 공학 전문가 및 관련 종사자 / 273 상품기획 전문가 × 경력 5~10년",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "기타공학 5~10년: 하위 3,518 / 중위 4,294 / 상위 5,096만원. 상품기획 5~10년 전체: 하위 4,227 / 중위 5,499 / 상위 6,962만원"
+      }
+     ]
+    },
+    {
+     "key": "salary_sports",
+     "item": "스포츠·레저 활동 MD/운영 — 1명 (5~7년)",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 33000000,
+     "mid": 40000000,
+     "high": 48000000,
+     "recommended": 40000000,
+     "basis": "워크피디아 스포츠 및 레크리에이션 관련 전문가, 경력 5~10년: median 3,562만 / upper 4,496만 (×1.06 gives 3,776 / 4,766만). 사람인 스포츠에이전트 5년차 median 3,300만 / Q3 3,800만; 7년차 median 3,600만 / Q3 4,000만. 온라인MD 5년차 median 3,700만 / Q3 4,100만; 7년차 median 4,000만 / Q3 4,500만. This is a combined MD-and-operations role, so it sits between sports-specialist pay and online MD pay.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 286 스포츠 및 레크리에이션 관련 전문가 × 경력 5~10년",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "하위 3,043 / 중위 3,562 / 상위 4,496만원. 5~29명: 중위 3,438 / 상위 4,265만원"
+      },
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 — 스포츠에이전트(1293)·온라인MD(1219)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "스포츠에이전트 5년차 중위 3,300 / Q3 3,800. 7년차 중위 3,600 / Q3 4,000만원. 온라인MD 5년차 중위 3,700 / Q3 4,100. 7년차 중위 4,000 / Q3 4,500만원"
+      }
+     ]
+    },
+    {
+     "key": "salary_finance",
+     "item": "경영관리·재무회계 매니저 (7~10년) — 1명",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 50000000,
+     "mid": 60000000,
+     "high": 72000000,
+     "recommended": 60000000,
+     "basis": "워크피디아 경영 관련 사무원, 경력 10년 이상, 5~29명: median 5,734만 / upper 8,265만 (×1.06 gives 6,078만 median). 회계 및 경리 사무원, 경력 10년 이상, 정보통신업: median 5,542만. 사람인 재무 8년차 median 4,500만 / Q3 5,200만; 10년차 median 4,700만 / Q3 5,600만. CFO postings 8년차 median 5,800만 / Q3 7,500만. The role covers investor reporting, closing and budgeting, and an investment-backed company needs audit readiness, so the recommended value is set above ordinary bookkeeping pay, at the small-firm 경영사무 median.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 312 경영 관련 사무원 / 313 회계 및 경리 사무원",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "경영사무 10년 이상·5~29명: 하위 4,188 / 중위 5,734 / 상위 8,265. 경영사무 5~10년·정보통신업: 중위 5,313. 회계경리 10년 이상·정보통신업: 중위 5,542 / 상위 7,389만원"
+      },
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 — 재무(2220)·CFO(332)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "재무 7년차 중위 4,200 / Q3 4,600. 8년차 중위 4,500 / Q3 5,200. 10년차 중위 4,700 / Q3 5,600만원. CFO 8년차 중위 5,800 / Q3 7,500. 10년차 중위 7,000 / Q3 7,702만원"
+      }
+     ]
+    },
+    {
+     "key": "salary_cto",
+     "item": "AI/전산 총괄 (CTO급, 12년+) — 1명",
+     "unit": "원/인·년 (세전 기본연봉, 사용자 부담분 제외, 스톡옵션 별도, VAT 해당없음)",
+     "low": 90000000,
+     "mid": 120000000,
+     "high": 150000000,
+     "recommended": 120000000,
+     "basis": "KOSA 2026 SW engineer average wages are monthly and already include bonuses, severance accruals and employer insurance. IT 기획자 is 11,853,218원/월 and IT 아키텍트 is 11,103,230원/월. Annualizing (×12) and removing about 19% employer on-cost gives roughly 1.20억 and 1.12억. 워크피디아 전문 서비스 관리직 (includes IT managers) at 5~29명, 정보통신업: median 11,576만 / upper 15,788만. SearcHRight (headhunter, 2026-07) puts a Series A CTO at 6,000만~1.2억 and Series B~C at 9,000만~2억+. The recommended 1.2억 is the government median for small IT firms and the top of the Series A range. high 1.5억 is about the upper quartile of 워크피디아 관리직.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "한국인공지능·소프트웨어산업협회 — 2026년 적용 SW기술자 평균임금 공표 (조사년도 2025)",
+       "url": "https://www.sw.or.kr/site/sw/ex/board/View.do?cbIdx=304&bcIdx=64717&searchExt1=",
+       "date": "2025-12-19",
+       "figure": "월평균임금: IT 기획자 11,853,218원, IT 아키텍트 11,103,230원, IT 컨설턴트 10,707,960원, 응용SW 개발자 7,754,124원. 기본급·제수당·상여금·퇴직급여충당금·법인부담금 포함. 전체 일평균 414,762원 (+4.7%)"
+      },
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 13 전문 서비스 관리직 × 5~29명 × 산업 / 222 컴퓨터 시스템 및 소프트웨어 전문가",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "전문서비스관리직 5~29명 정보통신업: 하위 8,600 / 중위 11,576 / 상위 15,788만원. SW전문가 경력 10년 이상·30~99명: 중위 6,874 / 상위 8,366만원"
+      },
+      {
+       "title": "SearcHRight 블로그 — CTO 연봉은 얼마일까? 기업이 보상을 정하는 5가지 기준",
+       "url": "https://blog.searchright.net/cto-salary-guide/",
+       "date": "2026-07-27",
+       "figure": "투자 단계별 CTO 참고 연봉: Pre-Seed~Seed 4,000만~7,000만원, Series A 6,000만~1억 2,000만원, Series B~C 9,000만~2억원+ (공식 평균 아님, 채용·보상 사례 기반)"
+      }
+     ]
+    },
+    {
+     "key": "salary_ceo",
+     "item": "대표이사 보수 (초기 투자 유치 스타트업) — 1명",
+     "unit": "원/인·년 (세전 보수, 사용자 부담분 제외, VAT 해당없음)",
+     "low": 60000000,
+     "mid": 84000000,
+     "high": 120000000,
+     "recommended": 84000000,
+     "basis": "No official statistic covers startup CEO pay. Market reference: 워크피디아 전문 서비스 관리직 at 5~29명 firms has median 10,752만 and bottom quartile 6,969만. 사람인 CEO postings: 10년차 median 6,700만 / Q3 8,375만. Korean startup practice (ZUZU): pay is near minimum wage right after the first investment, and after that increases need investor consent under the investment contract. The recommended value is about 70~80% of the small-firm manager median, which gives 8,400만 (월 700만원). low 6,000만 is conservative pay just after seed. high 1.2억 is market-level pay from Series A on. Equity compensation is excluded.",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "워크피디아 맞춤형 임금정보 — 13 전문 서비스 관리직 / 12 행정·경영 지원 및 마케팅 관리직 × 5~29명",
+       "url": "https://wagework.go.kr/pt/c/a/retrieveCstmWageSrch.do?topPageId=PT07000000&pageId=PT07010000",
+       "date": "2024년 기준 추정치 (조회 2026-09-14)",
+       "figure": "전문서비스관리직 5~29명: 하위 6,969 / 중위 10,752 / 상위 16,298만원. 행정·경영지원 관리직 5~29명: 하위 9,733 / 중위 14,767 / 상위 21,647만원"
+      },
+      {
+       "title": "사람인 AI Lab 직무·연차별 연봉 통계 — CEO(1644)",
+       "url": "https://ai-lab.saramin.co.kr/salary-prototype/index",
+       "date": "undated (조회 2026-09-14)",
+       "figure": "CEO 공고 8년차 Q1 5,150 / 중위 6,000 / Q3 8,000. 10년차(n=70) Q1 6,100 / 중위 6,700 / Q3 8,375만원"
+      },
+      {
+       "title": "ZUZU 블로그 — 스타트업 대표와 임원 연봉, 어떻게 정해야 할까?",
+       "url": "https://zuzu.network/resource/blog/how-much-would-be-directors-pay/",
+       "date": "2026-04-14 (최근 수정일)",
+       "figure": "투자 전 대표 적정 연봉 0원, 초기 투자 후 최저임금 수준 이상, 이후 투자계약 동의 조항 준수 (예: 15% 이상 인상 시 투자자 동의) — 구체 금액 미제시"
+      }
+     ]
+    },
+    {
+     "key": "advisor_fee",
+     "item": "자문임원 (의료·보험·법률·계리 사외 자문) 1인당 월 자문료",
+     "unit": "원/인·월 (자문료, 원천징수 전 총액, 개인 자문 기준 VAT 해당없음 — 법인·사업자 자문사 계약 시 VAT 10% 별도)",
+     "low": 500000,
+     "mid": 1000000,
+     "high": 3000000,
+     "recommended": 1000000,
+     "basis": "Monthly retainer for an outside advisor who does not sit on the board: about 2 meetings or reviews a month. Private one-off advice runs 15만~60만원 per session, so 2 sessions a month is about 30만~120만원. high 300만원 matches the average for outside directors at listed pharma companies (연 3,630만 ÷ 12). Outside directors at the top 100 listed companies (8,543만원 a year) are far above this and not comparable. Advisors paid as individuals are taxed through 3.3% (business income) or 8.8% (other income) withholding, which is not an employer on-cost. Board-registered directors are handled separately.",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "메디파나뉴스 — 사외이사 역사 속으로… 제약사들, 연간 3630만원 지급",
+       "url": "https://www.medipana.com/news/articleView.html?idxno=408554",
+       "date": "2026-03-21",
+       "figure": "상장 제약사 87곳 사외이사 1인당 연평균 보수 약 3,630만원 (월 약 300만원)"
+      },
+      {
+       "title": "VELOR 인사이트 — 전문가 자문 구하는 법: 사외이사·고문·자문위원 차이와 비용",
+       "url": "https://velor.kr/insights/expert-advisory-how-to",
+       "date": "undated",
+       "figure": "민간 단발 자문 건당 15만~60만원 선. 공공기관(법제처 기준) 가급 시간당 50만원·서면 안건당 300만원 이내, 나급 시간당 25만원 이내, 다급 시간당 20만원 이내"
+      },
+      {
+       "title": "한국NGO신문 — 100대 상장사 사외이사 평균 연봉 8543만원 (한국ESG기준원 분석)",
+       "url": "https://www.ngonews.kr/news/articleView.html?idxno=230239",
+       "date": "2026-05-26",
+       "figure": "2025년 100대 상장사 사외이사 평균 보수 8,543만원 (최고 1억7,833만원, 최저 2,625만원) — 대기업 상한 참고용"
+      }
+     ]
+    },
+    {
+     "key": "advisor_count",
+     "item": "자문임원 인원 (의료·보험·법률·계리)",
+     "unit": "명",
+     "low": 3,
+     "mid": 4,
+     "high": 5,
+     "recommended": 4,
+     "basis": "One advisor for each of the four named areas (의료·보험·법률·계리) gives 4. 3 is possible if one person covers both law and actuarial work. 5 allows adding a data/security or tax advisor. VELOR describes the typical structure as a panel of several part-time specialists consulted by area. There is no statistical source for the number, so this is a structural assumption.",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "VELOR 인사이트 — 전문가 자문 구하는 법: 사외이사·고문·자문위원 차이와 비용",
+       "url": "https://velor.kr/insights/expert-advisory-how-to",
+       "date": "undated",
+       "figure": "자문위원·자문단은 기술·법무·재무 등 분야별로 복수 전문가를 묶어 사안별로 의견을 구하는 방식 (인원 수 통계 없음 — 구조적 가정)"
+      }
+     ]
+    },
+    {
+     "key": "burden_pension",
+     "item": "국민연금 사용자 부담 (2026)",
+     "unit": "%",
+     "low": 4.75,
+     "mid": 4.75,
+     "high": 5,
+     "recommended": 4.75,
+     "basis": "The 2025 pension reform law raised the premium rate from 9% to 9.5% on 2026-01-01, and it rises 0.5%p a year to 13% in 2033. Workplace members split it evenly, so the employer pays 4.75%. In 2027 the total is 10%, so the employer pays 5.0%; that is the high value. The contribution base (기준소득월액) is capped at 6,590,000원 a month from 2026-07 to 2027-06. For CTO/CEO-level pay above the cap, the effective rate is lower: a 1.2억 CTO earns 1,000만/월, and 659만 × 4.75% = 313,025원/월, about 3.1% of pay.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "보건복지부 보도자료 — 국민연금, 새해 재정은 보다 튼튼하게 노후는 더욱 든든하게 보장합니다",
+       "url": "https://www.mohw.go.kr/board.es?mid=a10503000000&bid=0027&list_no=1488390&act=view",
+       "date": "undated (2026년 1월 시행 안내)",
+       "figure": "보험료율 9% → 9.5% 인상, 2033년까지 13% 단계 인상. 월 소득 309만원 기준 사업장가입자 월 보험료 +7,700원"
+      },
+      {
+       "title": "국민연금공단 — 2026년 기준소득월액 상·하한액 조정 안내",
+       "url": "https://www.nps.or.kr/pnsgdnc/newgdnc/getOHAE0001M1.do?pstId=ZZ202600000000000147",
+       "date": "2026 (적용 2026-07-01~2027-06-30)",
+       "figure": "기준소득월액 하한 41만원, 상한 659만원 (종전 40만원 / 637만원)"
+      }
+     ]
+    },
+    {
+     "key": "burden_health",
+     "item": "건강보험 사용자 부담 (2026)",
+     "unit": "%",
+     "low": 3.595,
+     "mid": 3.595,
+     "high": 3.595,
+     "recommended": 3.595,
+     "basis": "The 2026 health insurance rate is 7.19% of pay, split evenly between employer and employee, so the employer pays 3.595%. On 2026-09-08 the policy committee (건정심) froze the 2027 rate at 7.19%, so the employer share stays 3.595% in 2027.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "보건복지부 보도자료 — 2026년 건강보험료율 7.19%로 결정",
+       "url": "https://www.mohw.go.kr/board.es?act=view&bid=0027&list_no=1487279&mid=a10503000000",
+       "date": "2025-08-28",
+       "figure": "2026년 건강보험료율 7.19% (2025년 대비 +0.1%p, +1.48%). 직장가입자 본인부담 월평균 160,699원"
+      },
+      {
+       "title": "일간투데이 — 2027년 건강보험료율 7.19% 동결",
+       "url": "https://www.dtoday.co.kr/news/articleView.html?idxno=790593",
+       "date": "2026-09 (건정심 9월 8일 의결)",
+       "figure": "2027년 건강보험료율 현행 7.19% 유지"
+      }
+     ]
+    },
+    {
+     "key": "burden_ltc",
+     "item": "장기요양보험 사용자 부담 (2026, 보수 대비)",
+     "unit": "%",
+     "low": 0.4724,
+     "mid": 0.4724,
+     "high": 0.4724,
+     "recommended": 0.4724,
+     "basis": "The 2026 long-term care rate is 0.9448% of pay, equal to 13.14% of the health insurance premium (7.19% × 13.14% ≈ 0.9448%). The employer pays half, 0.4724% of pay. The 2027 rate is not decided yet; the long-term care committee is expected to decide after October 2026. Before using 2027, apply the new rate or add a few percent per year as a buffer.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "보건복지부 보도자료 — 2026년도 장기요양보험료율 0.9448%",
+       "url": "https://www.mohw.go.kr/board.es?act=view&bid=0027&list_no=1487817&mid=a10503000000",
+       "date": "2025-11 (보도자료, 정확 일자 미확인)",
+       "figure": "2026년 장기요양보험료율 소득 대비 0.9448% (2025년 0.9182%), 건강보험료 대비 13.14%"
+      }
+     ]
+    },
+    {
+     "key": "burden_employment",
+     "item": "고용보험 사용자 부담 (실업급여 + 고용안정·직업능력개발, 150인 미만)",
+     "unit": "%",
+     "low": 1.15,
+     "mid": 1.15,
+     "high": 1.25,
+     "recommended": 1.15,
+     "basis": "Unemployment benefits: 1.8% total, split evenly, so the employer pays 0.9%. 고용안정·직업능력개발: 0.25% for firms under 150 staff, paid entirely by the employer. 2026 employer total is 1.15%. On 2026-09-01 the labor ministry announced that the unemployment rate will rise to 2.0% (1.0% each side) next year. Assuming that passes through the decree, the 2027 employer total is 1.25%, used as the high value. A firm of 150+ staff that qualifies as 우선지원대상 would pay 1.35% (0.45% for the second part).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "근로복지공단 — 보험료율 안내 (고용보험·산재보험)",
+       "url": "https://www.comwel.or.kr/comwel/paym/paym/tari.jsp",
+       "date": "undated (2022-07-01 이후 고용보험료율)",
+       "figure": "실업급여 근로자 9/1,000, 사업주 9/1,000. 고용안정·직업능력개발사업 150인 미만 2.5/1,000, 150인 이상 우선지원대상기업 4.5/1,000, 1,000인 이상 8.5/1,000 (사업주 부담)"
+      },
+      {
+       "title": "아시아경제 — 실업급여 월 198만→176만원 줄이고…고용보험료율 1.8%→2% 올린다",
+       "url": "https://view.asiae.co.kr/article/2026090108545127905",
+       "date": "2026-09-01",
+       "figure": "고용보험료율 노동자 0.9%·사용자 0.9% (총 1.8%)에서 각 0.1%p 인상해 총 2.0% (고용노동부 발표)"
+      }
+     ]
+    },
+    {
+     "key": "burden_accident",
+     "item": "산재보험 사용자 부담 (전문·보건·교육·여가관련 서비스업 + 출퇴근재해)",
+     "unit": "%",
+     "low": 0.56,
+     "mid": 0.66,
+     "high": 0.86,
+     "recommended": 0.66,
+     "basis": "Rates from the 2026 industry-rate notice (고용노동부고시 제2025-91호). Recommended: 전문·보건·교육·여가관련 서비스업 at 6‰ plus commute-accident rate at 0.6‰ for all industries = 0.66%. The employer pays all of it. low 0.56% applies if 근로복지공단 classifies the company as 금융 및 보험업 (5‰, e.g., mainly an insurance agency). high 0.86% applies if it is classified as 기타의 각종사업 or 도소매 (8‰). The final category is set by 근로복지공단's business-type classification, and the national average rate is 1.47%.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "국가법령정보센터 — [별지] 2026년도 사업종류별 산재보험료율 (고용노동부고시)",
+       "url": "https://www.law.go.kr/LSW/flDownload.do?flSeq=160837293&flNm=%5B%EB%B3%84%EC%A7%80%5D+2026%EB%85%84%EB%8F%84+%EC%82%AC%EC%97%85%EC%A2%85%EB%A5%98%EB%B3%84+%EC%82%B0%EC%9E%AC%EB%B3%B4%ED%97%98%EB%A3%8C%EC%9C%A8&bylClsCd=200203",
+       "date": "2025-12-31 고시 (2026년 적용)",
+       "figure": "전문·보건·교육·여가관련 서비스업 6‰. 금융 및 보험업 5‰. 기타의 각종사업 8‰. 도소매·음식·숙박업 8‰. 통신업 9‰. 출퇴근재해 요율 전 업종 0.6/1,000"
+      },
+      {
+       "title": "고용노동부 — 2026년도 사업종류별 산재보험료율 (고용노동부고시 제2025-91호)",
+       "url": "https://www.moel.go.kr/info/lawinfo/instruction/view.do?bbs_seq=20251201757",
+       "date": "2025-12-31",
+       "figure": "2026년도 적용 사업종류별 산재보험료율 및 출퇴근재해 산재보험료율 고시"
+      },
+      {
+       "title": "안전저널 — 2026년 산재보험료율 1.47%, 올해 수준으로 동결",
+       "url": "https://www.anjunj.com/news/articleView.html?idxno=41334",
+       "date": "2025-12",
+       "figure": "평균 산재보험료율 2024~2026년 1.47% 3년 연속 동결"
+      }
+     ]
+    },
+    {
+     "key": "severance",
+     "item": "퇴직급여 적립 비율 (퇴직금 / DC형 퇴직연금 최소 부담금)",
+     "unit": "%",
+     "low": 8.33,
+     "mid": 8.33,
+     "high": 8.33,
+     "recommended": 8.33,
+     "basis": "The statutory minimum is 30 days of average wage per year of service, which is 1/12 of annual pay, or 8.33%. Under a DC pension plan the employer must contribute at least 1/12 of annual total pay. Budget it on base pay plus any fixed bonuses. The labor-cost survey shows 퇴직급여 costs of 474.2천원 a month against direct labor costs of 5,085.3천원, about 9.3%, which is consistent.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "근로자퇴직급여 보장법 제8조 (퇴직금제도의 설정 등) — CaseNote",
+       "url": "https://casenote.kr/%EB%B2%95%EB%A0%B9/%EA%B7%BC%EB%A1%9C%EC%9E%90%ED%87%B4%EC%A7%81%EA%B8%89%EC%97%AC_%EB%B3%B4%EC%9E%A5%EB%B2%95/%EC%A0%9C8%EC%A1%B0",
+       "date": "현행 법령",
+       "figure": "계속근로기간 1년에 대하여 30일분 이상의 평균임금을 퇴직금으로 지급할 수 있는 제도 설정 의무"
+      },
+      {
+       "title": "근로자퇴직급여 보장법 제20조 (부담금의 부담수준 및 납입 등) — CaseNote",
+       "url": "https://casenote.kr/%EB%B2%95%EB%A0%B9/%EA%B7%BC%EB%A1%9C%EC%9E%90%ED%87%B4%EC%A7%81%EA%B8%89%EC%97%AC_%EB%B3%B4%EC%9E%A5%EB%B2%95/%EC%A0%9C20%EC%A1%B0",
+       "date": "현행 법령",
+       "figure": "확정기여형 퇴직연금 사용자는 가입자 연간 임금총액의 12분의 1 이상 부담금 납입"
+      }
+     ]
+    },
+    {
+     "key": "welfare",
+     "item": "복리후생비 (법정외 복지비: 식대·경조·건강·복지포인트 등)",
+     "unit": "원/인·월",
+     "low": 159400,
+     "mid": 250000,
+     "high": 300000,
+     "recommended": 250000,
+     "basis": "Labor ministry survey (2024 fiscal year): non-statutory welfare averages 289.7천원/월 per worker across all firms, 159.4천원 at firms under 300 staff (meals 84.4천원) and 130.1천원 at 10~29 staff. Recommended 25만원/월: a 20만원 meal allowance (the tax-free limit) plus about 5만원 for health checkups, family events and welfare points. That is 300만원 a year, about 6% of a 5,000만원 base. If the 20만원 meal allowance is already inside base pay, reduce this to 5만~10만원 to avoid double counting. high 30만원 is the all-firm average grown to 2026 (+about 6%). low is the under-300-staff average.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "고용노동부 — 2024 회계연도 기업체노동비용조사 결과 (보도자료 PDF)",
+       "url": "https://www.moel.go.kr/news/enews/report/enewsView.do?news_seq=18422",
+       "date": "2025-09-30",
+       "figure": "상용근로자 1인당 월평균 법정외 복지비용: 전 규모 289.7천원 (식사비용 91.9천원), 300인 미만 159.4천원 (식사비용 84.4천원), 10~29인 130.1천원. 노동비용 총액 6,361천원, 직접노동비용 5,085.3천원, 퇴직급여 등 474.2천원, 법정 노동비용 480.5천원"
+      },
+      {
+       "title": "대한민국 정책브리핑 — 식대 비과세 월 20만 원·신용카드 소득공제 한도 상향",
+       "url": "https://www.korea.kr/news/policyNewsView.do?newsId=148923639",
+       "date": "2023-12-11",
+       "figure": "식대 비과세 한도 월 10만원 → 20만원 (2023-01-01 이후 발생 소득분부터)"
+      }
+     ]
+    },
+    {
+     "key": "wage_growth",
+     "item": "연 임금 인상률 전망 (2026~2027)",
+     "unit": "%",
+     "low": 3,
+     "mid": 3.5,
+     "high": 4,
+     "recommended": 3.5,
+     "basis": "Evidence: 2025 nominal wages rose 3.1% (labor ministry). April 2026 regular-worker pay was +1.9% year on year (bonus timing makes single months noisy). The 2026 minimum wage rose 2.9% and 2027 rises 3.7% (10,700원). Civil-service pay rose 3.5% in 2026 and is budgeted at +3.9% for 2027, the largest in 16 years, and the government cited widening private-public pay gaps. The 2026 사회복지시설 guideline also rose 3.5%. No 경총/한국은행 numeric wage forecast for 2026~2027 was found. Recommended 3.5% a year. low 3.0% is the 2025 actual. high 4.0% reflects the 2027 public-pay and minimum-wage signals.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "대한민국 정책브리핑 — 2026년 1월 사업체노동력조사 (2025년 연간 임금)",
+       "url": "https://www.korea.kr/news/policyNewsView.do?newsId=156746284",
+       "date": "2026-02-26",
+       "figure": "2025년 명목임금 402만5천원, 2024년 대비 +3.1%. 실질임금 360만6천원, +0.9%"
+      },
+      {
+       "title": "고용노동부 — 2027년 적용 최저임금안 시간급 10,700원",
+       "url": "https://www.moel.go.kr/news/enews/report/enewsView.do?news_seq=19659",
+       "date": "2026-07-14",
+       "figure": "2027년 최저임금 시간급 10,700원 (2026년 10,320원 대비 +380원, +3.7%), 월 환산 2,236,300원"
+      },
+      {
+       "title": "뉴시스 — 내년 공무원 임금 3.9% 인상…9급 초임 300만원 진입 [2027 예산안]",
+       "url": "https://www.newsis.com/view/NISX20260901_0003770710",
+       "date": "2026-09-01",
+       "figure": "2027년 공무원 보수 3.9% 인상 (정부 검토범위 3.4~3.9% 상단)"
+      }
+     ]
+    }
+   ],
+   "caveats": [
+    "Salaries are base pay only. Employer on-costs (4대보험 + severance) add about 18.96% of pay: 4.75 + 3.595 + 0.4724 + 1.15 + 0.66 + 8.33. Welfare (25만원/인·월) and stock options come on top.",
+    "워크피디아 (고용노동부·한국고용정보원) figures are 2024 estimates built from the employment-type labor survey and the establishment labor survey. They include fixed pay plus special pay (bonuses and incentives) and exclude overtime. Only cells with a sample of 60+ workers are shown. They were multiplied by 1.06 to reach 2026 (2025 +3.1%, 2026 about +3%).",
+    "사람인 AI Lab figures come from salaries stated in job postings. They cover the whole country, lean toward small firms and have no stated survey date (accessed 2026-09-14). Senior pay tends to be understated, so they are used as a lower-bound cross-check.",
+    "Seoul premium: in April 2025, Seoul regular-worker pay was 4,765천원 against a national 4,215천원 (index 113.1; 고용노동부 시도별 임금·근로시간조사, 2025-09-30). Part of that gap reflects Seoul's concentration of high-paying industries, so the same-job Seoul premium is estimated at about 5~10% and reflected by pricing between the small-firm median and upper quartile. Source: https://www.moel.go.kr/news/enews/report/enewsView.do?news_seq=18421",
+    "The CEO pay, device MD/RA pay and advisor fee and headcount have no direct official statistics and rest on proxies and practice guides (confidence low). Investment contracts often require investor consent for CEO and executive pay, so confirm with the lead investor.",
+    "Pension contributions are capped at 6,590,000원/월 (2026-07~2027-06), so the effective rate is lower for CTO/CEO-level pay above the cap. A flat 4.75% slightly overstates the cost for those roles, which is conservative.",
+    "2027 on-cost changes: pension employer 5.0% (confirmed by law). Health insurance frozen at 7.19% (decided 2026-09-08). Employment insurance unemployment rate to 2.0%, employer 1.0%, announced 2026-09-01 and pending decree amendment. The 2027 long-term care rate is undecided (after October 2026).",
+    "The industrial accident rate follows 근로복지공단's business-type classification. If the company is classified as 금융 및 보험업 (e.g., a GA/insurance agency), the rate is 0.56%; as 기타의 각종사업 or 도소매, 0.86%.",
+    "None of these amounts are subject to VAT. If an advisory contract is with a corporation or a business-registered firm instead of an individual, add 10% VAT to the fee. Advisors paid as individuals are subject to 3.3% or 8.8% withholding (deducted from the fee, no extra cost to the company).",
+    "Welfare note: many Korean employers split base pay into 기본급 plus a 20만원 tax-free meal allowance. If the meal allowance is already inside base pay, lower the welfare line to avoid counting it twice.",
+    "Salary items with 2+ people are blended averages: checkup (lead 5,000만 + staff 3,800만)/2; clinic (lead 4,700만 + staff 3,500만)/2; insurance (team lead 6,000만 + 4 staff × 3,800만)/5. For line-by-line hiring budgets, use the individual figures in each basis."
+   ],
+   "check": {
+    "verdicts": [
+     {
+      "key": "salary_checkup",
+      "status": "confirmed",
+      "note": "I re-ran the 워크피디아 queries through the portal's JSON endpoint and every figure matches. 간호사 전체: 4,956 / 3,643 / 4,412 / 5,728. 3~4년·5~29명: 3,043 / 3,312 / 3,911. 5~10년·5~29명: median 3,755 / upper 4,578. 10년+·5~29명: 3,316 / 4,112 / 5,016. 사람인 matches too: 간호사 3년차 3,400 / 3,680 / 4,000; 상담간호사 7년차 3,400 / 3,900 / 4,700 (n=55). korea.kr confirms 2025 +3.1%. The blend and ×1.06 math is correct. One caveat: the '2024년 기준' data year is not shown on the page or in the API response, so the base year for the ×1.06 uplift is unverified."
+     },
+     {
+      "key": "salary_clinic",
+      "status": "confirmed",
+      "note": "All 사람인 figures match. 상담실장 7년차: 3,600 / 4,200 / 4,975. 병원코디네이터 3년차 2,880 / 3,000 / 3,360, 5년차 2,900 / 3,200 / 3,600, 7년차 3,000 / 3,400 / 3,700. The 워크피디아 nurse cell matches. Flag: the adiga 의료코디네이터 figures (2,638 / 3,550 / 4,000) come from a 2023 survey of about 30 self-reporting workers. That is stale and a small sample, so use it only as a secondary cross-check."
+     },
+     {
+      "key": "salary_care",
+      "status": "confirmed",
+      "note": "I parsed the MOHW 2026 guideline attachment (HWPX, 별표1, 원/월). 사회복지사: 1호봉 2,281,800, 5호봉 2,475,400, 10호봉 2,921,200. 선임사회복지사 5호봉: 2,621,900. The increase is 3.5%. The annualized figures are correct. 워크피디아 사회복지 관련 종사자 matches: 5~10년·30~99명 2,928 / 3,276 / 3,682; 10년+ median 3,242 / upper 4,148. 사람인 사회복지사 matches: 5년차 3,000 / 3,200 / 3,600; 7년차 3,000 / 3,300 / 3,600."
+     },
+     {
+      "key": "salary_ins",
+      "status": "confirmed",
+      "note": "사람인 matches. 손해사정사: 3년차 3,500 / 4,000; 5년차 3,880 / 4,100; 10년차 4,200 / 4,800; 12년차 4,800 / 6,000. 보험심사: 3년차 3,300 / 3,600; 5년차 3,600 / 4,000. 워크피디아 matches. 금융사무 5~29명: 3~4년 median 4,626 / upper 5,851; 5~10년 median 5,701; 10년+ median 8,693. 경영사무 10년+·5~29명: 4,188 / 5,734 / 8,265. The blend math (4,240 / 3,560 / 5,100) is correct."
+     },
+     {
+      "key": "salary_nutri",
+      "status": "confirmed",
+      "note": "워크피디아 matches. 상품기획 5~10년·5~29명: 3,407 / 4,499 / 5,478. 영양사 5~10년: 2,929 / 3,332 / 3,929. 사람인 matches. 기획MD 5년차 3,500 / 3,900 / 4,400; 7년차 4,200 / 4,800. 영양사 5년차 3,200 / 3,650. Note that 영양사 5년차 has only n=36."
+     },
+     {
+      "key": "salary_skin",
+      "status": "confirmed",
+      "note": "사람인 matches. 브랜드MD 5년차 3,400 / 3,800 / 4,320 (n=313); 7년차 4,000 / 4,500 / 5,200. 뷰티매니저 5년차 median 3,400 / Q3 4,000. The 워크피디아 상품기획 cell matches."
+     },
+     {
+      "key": "salary_device",
+      "status": "confirmed",
+      "note": "Confidence stays low. The cited figures match. 사람인 인증심사원 5년차 3,500 / 4,000 / 4,200. 인증심사원 7년차 4,000 / 4,900 / 6,048.5, but that cell has only n=19. 임상PM 5년차 3,700 / 4,300 / 5,100. 워크피디아 기타공학 5~10년 3,518 / 4,294 / 5,096; 상품기획 5~10년 전체 4,227 / 5,499 / 6,962. 사람인 has no RA category. Extra data point from 사람인: 의료기기영업 5년차 3,600 / 4,000 / 4,500 (n=628) and 7년차 3,600 / 4,200 / 4,600. That supports 4,000~4,800. The recommended 4,800 sits at about the Q3 of these proxies. I could not search for a better primary source because the web-search budget ran out."
+     },
+     {
+      "key": "salary_sports",
+      "status": "confirmed",
+      "note": "워크피디아 스포츠·레크리에이션 전문가 matches. 5~10년: 3,043 / 3,562 / 4,496. 5~29명: median 3,438 / upper 4,265. 사람인 matches. 스포츠에이전트: 5년차 3,300 / 3,800; 7년차 3,600 / 4,000. 온라인MD: 5년차 3,700 / 4,100; 7년차 4,000 / 4,500."
+     },
+     {
+      "key": "salary_finance",
+      "status": "confirmed",
+      "note": "워크피디아 matches. 경영사무 10년+·5~29명: 4,188 / 5,734 / 8,265. 경영사무 5~10년·정보통신업: median 5,313. 회계경리 10년+·정보통신업: median 5,542 / upper 7,389. 사람인 matches. 재무: 7년차 4,200 / 4,600; 8년차 4,500 / 5,200; 10년차 4,700 / 5,600. CFO: 8년차 5,800 / 7,500; 10년차 7,000 / 7,702."
+     },
+     {
+      "key": "salary_cto",
+      "status": "confirmed",
+      "note": "KOSA (2025-12-19) matches: IT 기획자 11,853,218원/월, IT 아키텍트 11,103,230, IT 컨설턴트 10,707,960, 응용SW 7,754,124. These include bonuses, severance accruals and employer insurance; overall change +4.7%. The conversion (×12 ÷ 1.19 = 1.195억) is correct, though only a proxy. 워크피디아 전문서비스관리직 5~29명·정보통신업 matches: 8,600 / 11,576 / 15,788. SW전문가 10년+·30~99명 matches: median 6,874 / upper 8,366. SearcHRight (2026-07-27) matches: Series A 6,000만~1.2억, Series B~C 9,000만~2억+. It carries a 'not official averages' disclaimer."
+     },
+     {
+      "key": "salary_ceo",
+      "status": "confirmed",
+      "note": "Confidence stays low. The cited proxies are verified. 워크피디아 5~29명: 전문서비스관리직 6,969 / 10,752 / 16,298; 행정·경영지원 관리직 9,733 / 14,767 / 21,647. 사람인 CEO: 8년차 5,150 / 6,000 / 8,000 (n=43); 10년차 6,100 / 6,700 / 8,375 (n=70). The ZUZU guide (updated 2026-04-14) matches: 0원 before investment, about minimum wage after, and a 15% investor-consent example, with no KRW amounts. 8,400만 is 78% of 10,752만 and within the range. I could not search for a better source."
+     },
+     {
+      "key": "advisor_fee",
+      "status": "confirmed",
+      "note": "Confidence stays low. Medipana (2026-03-21) says '월 평균 300만원 가량' and '업체당 연간 평균 3,630만원'. The '업체당' wording is ambiguous, but the per-company examples (삼성바이오 1억; 셀트리온 8,400만 with 8 directors) only make sense per director. Cite it as a per-company average of per-director pay. 한국NGO신문 (2026-05-26) figures are confirmed: 8,543만, max 1억7,833만, min 2,625만. Fix the attribution: the analyst is 한국ESG평가원, not 한국ESG기준원. The VELOR page is dated 2026-06-21, not undated. Its figures match: 건당 15만~60만원. 법제처 가급 시간당 50만 / 안건당 300만; 나급 25만 / 200만; 다급 20만. VELOR gives no monthly retainer, so 100만/월 is a derivation."
+     },
+     {
+      "key": "advisor_count",
+      "status": "unsupported",
+      "note": "This is a structural assumption, as the researcher disclosed. VELOR describes advisory panels only as '복수의 전문가', with no headcount. No statistical source exists, so label it an assumption in the workbook."
+     },
+     {
+      "key": "burden_pension",
+      "status": "confirmed",
+      "note": "The MOHW release is dated 2025-12-29, not undated. It confirms the 9% to 9.5% rise, 13% by 2033, and +7,700원 a month at 309만원 income. The NPS notice (posted 2026-02-13) confirms the 2026.7~2027.6 floor of 41만 and cap of 659만 (was 40만 / 637만). The employer rates of 4.75% (2026) and 5.0% (2027) and the cap example of 313,025원 are correct."
+     },
+     {
+      "key": "burden_health",
+      "status": "confirmed",
+      "note": "MOHW (2025-08-28) confirms the 2026 rate of 7.19% (+0.1%p, +1.48%) and the employee monthly average of 160,699원. 일간투데이 (2026-09-08) confirms that 건정심 kept the 2027 rate at 7.19%. The employer share is 3.595%."
+     },
+     {
+      "key": "burden_ltc",
+      "status": "confirmed",
+      "note": "The MOHW release is dated 2025-11-04. It confirms 0.9448% of income for 2026 (0.9182% in 2025), which is 13.14% of the health premium. The employer half of 0.4724% is correct."
+     },
+     {
+      "key": "burden_employment",
+      "status": "confirmed",
+      "note": "The 근로복지공단 page confirms: unemployment benefit 9/1,000 each side; 고용안정·직능 2.5/1,000 under 150 staff, 4.5 for 우선지원, 6.5 for 150~999, 8.5 for 1,000+. The 2026 employer rate of 1.15% is correct. Flag on the high value: 아시아경제 (2026-09-01) reports only that the 고용보험위원회 deliberated raising the rate from 1.8% to 2.0%. It gives no effective date and ties the hike to funding the 일·가정 양립 계정 due in 2028. The claim that it applies in 2027 is unsupported, so treat 1.25% as a scenario with timing to be confirmed."
+     },
+     {
+      "key": "burden_accident",
+      "status": "confirmed",
+      "note": "The law.go.kr attachment PDF (in ‰) confirms: 전문·보건·교육·여가 6, 금융보험 5, 기타 각종사업 8, 도소매·음식·숙박 8, 통신업 9, and 출퇴근재해 0.6/1,000 for all industries. The MOEL notice 제2025-91호 is dated 2025-12-31. 안전저널 (2025-12-31) confirms the 1.47% average. Minor: if the company were classified under 통신업 (9‰, 0.96% with commute), the rate would exceed the stated high of 0.86%."
+     },
+     {
+      "key": "severance",
+      "status": "confirmed",
+      "note": "근로자퇴직급여 보장법 제8조① (30 days of average wage per year) and 제20조① (DC contribution of at least 1/12 of annual pay) are confirmed on CaseNote. The MOEL labor-cost PDF shows 퇴직급여 등 474.2천원 against 직접노동비용 5,085.3천원, which is 9.3%."
+     },
+     {
+      "key": "welfare",
+      "status": "confirmed",
+      "note": "The MOEL 2024 labor-cost survey PDF (embargo 2025-09-30) confirms 법정외 복지비용: 289.7천원 all firms, 159.4 under 300 staff, 130.1 at 10~29 staff. Meal costs are 91.9천원 overall and about 84천원 under 300 staff. Total 6,361.4, direct 5,085.3, 법정 480.5. korea.kr (2023-12-11) confirms the tax-free meal limit of 20만원 from 2023-01-01. The recommended 25만 is within the range."
+     },
+     {
+      "key": "wage_growth",
+      "status": "confirmed",
+      "note": "The cited figures match. korea.kr: 2025 nominal +3.1%, real +0.9%. MOEL (2026-07-14): 2027 minimum wage 10,700원 (+380원, +3.7%). Newsis (2026-09-01): 2027 civil-service pay +3.9%, the top of a 3.4~3.9% review range, citing a widening private-public gap. The MOHW guideline confirms 3.5% for 2026. Two claims in the basis are unsupported: 'largest in 16 years' does not appear in the Newsis article, and 'April 2026 pay +1.9%' has no cited source. Remove or source both; the 3.5% recommendation is unaffected."
+     }
+    ]
+   }
+  },
+  {
+   "topic": "ads",
+   "summary": "Unit costs for four member-acquisition engines (Korea, 2024-2026 sources, retrieved 2026-09-14). All recommended values exclude VAT. USD figures converted at 1,440원/USD. Full JSON saved to C:/Users/user/AppData/Local/Temp/claude/C--Users-user-OneDrive----001-------02-HI-human------------/f0706602-45bb-4d6f-a3e3-b14f3d9081ab/scratchpad/research/ads.json.\n\nEngine 1 (18M ad messages/yr, about 1.5M/month):\n- 광고 LMS about 31원/건 at the 1M-2M monthly tier (SOLAPI tier sheet; LG U+ filed rate for 100k+ is 30.8-36.3원).\n- SMS 10원/건.\n- 브랜드 메시지 (formerly 친구톡, which ended 2025-12-31): text about 35원, image about 60원.\n- 알림톡 about 7원/건, but it cannot carry ads.\n- 080 수신거부 about 34,000원/월.\n- Annual message cost: about 5.58억원 with LMS, 6.3억원 with BMS text, 1.8억원 with SMS.\n\nEngine 2 recommended costs:\n- CPMs: YouTube 6,000원, Meta 9,000원, Kakao 비즈보드 4,000원, TikTok 8,000원, display/community 2,000원.\n- Naver 파워링크 for checkup keywords: about 5,000원 per click (Naver rank-bid estimates are 3,360-12,180원 on mobile). At 1.5% CTR that is an effective CPM of about 75,000원.\n- Influencer content: about 20,000원 per 1,000 views.\n- CRM messaging: about 15,000원 per 1,000 (카카오 채널 메시지 15-20원; own-app push via FCM is free).\n- Derived check, not sourced: with the plan's budget shares, 30M impressions a month needs about 1.8억원/월 (about 21.5억원/년), a blended CPM of about 5,980원. Most impressions come from display, YouTube and Kakao; Naver SA gives only about 0.29M.\n- Creative: 30-second video about 3,000,000원 each; card-news/banner set about 150,000원.\n- Card-company targeted LMS: about 120원/건 (신한 120원 with a 50k minimum; KB 110원 with a 30k minimum).\n\nEngine 4:\n- QR POP kit about 60,000원 per center (250 centers ≈ 1,500만원).\n- QR stickers about 25,000원 per 1,000.\n- No public figure was found for a center referral fee. A reward sign-up CPA of 1,500-3,000원 is used as a proxy, and the fee carries legal risk under 의료법 §27③.\n\nBenchmark: health/fintech app CAC about 10,000원 per registered member (range from 1,500원 reward sign-up to about 26,000원 Liftoff fintech cost per registration).",
+   "items": [
+    {
+     "key": "msg_lms",
+     "item": "광고 LMS 대량 발송 단가 (월 100만~200만 건 구간)",
+     "unit": "원/건 (VAT 별도)",
+     "low": 28,
+     "mid": 31,
+     "high": 45,
+     "recommended": 31,
+     "basis": "Plan volume is 18M/yr, about 1.5M/month. SOLAPI tier sheet (VAT excluded): LMS 31원 for 1M-1.99M/month, 28원 for 4M+, 45원 at list price. LG U+ filed LMS rate for 100,000+ messages: 30.8-36.3원. 문자조아 prices LMS at 3× SMS (10.5원), about 31.5원. Ad LMS costs the same as ordinary LMS but must carry (광고), the sender name and a free 080 opt-out line. 18M × 31원 ≈ 5.58억원/yr before VAT.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "SOLAPI 발송 구간별 할인 단가표",
+       "url": "https://solapi.com/guides/tiered-pricing/",
+       "date": "2026-07-31 (last modified)",
+       "figure": "LMS 1,000,000–1,999,999건 31원, 3M+ 29원, 4M+ 28원, 1–9,999건 45원; VAT 미포함"
+      },
+      {
+       "title": "U+ SMS 요금 신고내역 (LG유플러스)",
+       "url": "https://sms.uplus.co.kr/ver2/jsp/customer/chargeNotice.jsp",
+       "date": "2024-05-17",
+       "figure": "LMS 발신 100,000건 이상 30.8~36.3원, 10,000~99,999건 36.3원, 0~9,999건 55.0원"
+      },
+      {
+       "title": "문자조아 요금 및 결제",
+       "url": "https://www.smsjoa.com/payment.php",
+       "date": "undated",
+       "figure": "500만원 충전 시 SMS 10.5원(VAT 별도), SMS 1개×3 = LMS 1개"
+      }
+     ]
+    },
+    {
+     "key": "msg_sms",
+     "item": "광고 SMS 대량 발송 단가 (월 100만~200만 건 구간)",
+     "unit": "원/건 (VAT 별도)",
+     "low": 8.3,
+     "mid": 10,
+     "high": 13.2,
+     "recommended": 10,
+     "basis": "SOLAPI: 10원 for 1M-1.99M/month, 8.3원 for 10M+ (VAT excluded). T.A.S.: 9.9원 flat. LG U+ filed rate for 100k+: 13.2원. A 90-byte SMS must hold (광고), the sender and a free opt-out number, which leaves little room for content, so LMS is the realistic ad format.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "SOLAPI 발송 구간별 할인 단가표",
+       "url": "https://solapi.com/guides/tiered-pricing/",
+       "date": "2026-07-31 (last modified)",
+       "figure": "SMS 1M–1.99M건 10원, 10M+ 8.3원 (VAT 미포함)"
+      },
+      {
+       "title": "T.A.S.메시지 요금 안내",
+       "url": "https://mkt.tason.com/help/help_charge_info.jsp",
+       "date": "undated",
+       "figure": "SMS 9.9원/건, LMS 50원/건 (VAT 별도)"
+      },
+      {
+       "title": "U+ SMS 요금 신고내역 (LG유플러스)",
+       "url": "https://sms.uplus.co.kr/ver2/jsp/customer/chargeNotice.jsp",
+       "date": "2024-05-17",
+       "figure": "SMS 발신 100,000건 이상 13.2원"
+      }
+     ]
+    },
+    {
+     "key": "msg_friendtalk",
+     "item": "카카오 브랜드 메시지(구 친구톡) 광고형 — 기본 텍스트형",
+     "unit": "원/건 (VAT 별도)",
+     "low": 22,
+     "mid": 35,
+     "high": 53,
+     "recommended": 35,
+     "basis": "친구톡 ended 2025-12-31; 브랜드 메시지 replaced it on 2026-01-01. Kakao does not publish rates by message type, so these are dealer prices. Dealer standard is about 23-25원 to channel friends and 33-35원 to non-friends. SOLAPI BMS text: 39원 at 1M-2M/month, 35원 at 10M+, 53원 list. T.A.S.: 22-27원. Most 메디에이지 recipients are not channel friends, so the non-friend rate (35원) is used. Non-friend sending (M/N types) requires a business-verified channel, 50,000+ channel friends, 3 months of 알림톡 history, an 080 number and marketing-consent records.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "Omago — 카카오 알림톡·브랜드메시지·상담톡 단가 비교",
+       "url": "https://www.omago.ai/ko/blog/kakaotalk-message-pricing-logic",
+       "date": "2026-06-12",
+       "figure": "브랜드메시지 친구 약 23~25원, 비친구 약 33~35원 (딜러 표준가, VAT 별도)"
+      },
+      {
+       "title": "SOLAPI 발송 구간별 할인 단가표",
+       "url": "https://solapi.com/guides/tiered-pricing/",
+       "date": "2026-07-31 (last modified)",
+       "figure": "BMS 텍스트 1M–1.99M건 39원, 10M+ 35원, 1–9,999건 53원"
+      },
+      {
+       "title": "BIZGO — 친구톡 VS 브랜드 메시지 비교",
+       "url": "https://blog.bizgo.io/inside/kakao-friendtalk-vs-brand-message-comparison-specs/",
+       "date": "2025",
+       "figure": "비친구 발송 조건: 비즈니스 인증 채널, 채널 친구수 5만 이상, 최근 3개월 알림톡 이력, 080 수신거부 번호, 마케팅 수신동의 증빙"
+      }
+     ]
+    },
+    {
+     "key": "msg_friendtalk_image",
+     "item": "카카오 브랜드 메시지(구 친구톡) 광고형 — 이미지형",
+     "unit": "원/건 (VAT 별도)",
+     "low": 29,
+     "mid": 60,
+     "high": 83,
+     "recommended": 60,
+     "basis": "SOLAPI BMS image: 65원 at 1M-2M/month, 59원 at 10M+, 83원 list (wide image 68원 at 1M-2M). The legacy 친구톡 image rate was 29원 (discontinued 2025-12-31) and is shown only as the floor. Recommended 60원 assumes a negotiated rate between the 1M-2M and 10M+ tiers.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "SOLAPI 발송 구간별 할인 단가표",
+       "url": "https://solapi.com/guides/tiered-pricing/",
+       "date": "2026-07-31 (last modified)",
+       "figure": "BMS 이미지 1M–2M건 65원, 10M+ 59원, 시작가 83원; 와이드 1M–2M 68원"
+      },
+      {
+       "title": "SOLAPI 가격 정책",
+       "url": "https://solapi.com/pricing",
+       "date": "2026",
+       "figure": "친구톡 이미지 29원(2025.12.31 종료), BMS 이미지 83원, 와이드 88원 (VAT 별도)"
+      }
+     ]
+    },
+    {
+     "key": "msg_alimtalk",
+     "item": "카카오 알림톡 (정보성 전용 — 광고 불가)",
+     "unit": "원/건 (VAT 별도)",
+     "low": 5.7,
+     "mid": 7,
+     "high": 13,
+     "recommended": 7,
+     "basis": "SOLAPI: 6.5원 at 1M-2M/month, 5.7원 at 10M+, 13원 list. T.A.S.: 6-9원. Omago cites 8원 for under 10k/month based on Kakao's customer center. Kakao allows only informational messages, and any ad content blocks sending. It can carry user-requested 결과조회 notices or 검진 도래 reminders, but not the (광고) engine 1 message, so it does not replace LMS or BMS in the ad budget.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "SOLAPI 발송 구간별 할인 단가표",
+       "url": "https://solapi.com/guides/tiered-pricing/",
+       "date": "2026-07-31 (last modified)",
+       "figure": "알림톡 1M–1.99M건 6.5원, 10M+ 5.7원, 1–9,999건 13원"
+      },
+      {
+       "title": "T.A.S.메시지 요금 안내",
+       "url": "https://mkt.tason.com/help/help_charge_info.jsp",
+       "date": "undated",
+       "figure": "카카오 알림톡 6~9원/건 (VAT 별도)"
+      },
+      {
+       "title": "kakao 고객센터 — 알림톡 발송 불가 메시지 안내",
+       "url": "https://cs.kakao.com/helps_html/1073195097?locale=ko",
+       "date": "undated",
+       "figure": "알림톡은 정보성 메시지만 가능, 영리목적 광고성 내용 발송 불가"
+      }
+     ]
+    },
+    {
+     "key": "msg_080",
+     "item": "080 무료 수신거부 번호 + 수신거부 서비스 월 이용료",
+     "unit": "원/월 (VAT 별도)",
+     "low": 20000,
+     "mid": 24000,
+     "high": 34000,
+     "recommended": 34000,
+     "basis": "SK Broadband: 080 number fee 4,400원/월 plus refusal service fee 33,000원/월 = 37,400원 VAT-included, about 34,000원 excluded. Reseller bundles: 아임웹 26,400원/월 incl. (≈24,000원 excl.), 아톡비즈 66,000원 for 3 months incl. (≈20,000원/월 excl.). At 18M ad messages/yr a carrier-grade line is recommended: 34,000원 × 12 = 408,000원/yr. A one-off 가입비 may apply. Per-call charges were not published.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "SK브로드밴드 기업 — 메시지 수신거부(080)",
+       "url": "https://biz.skbroadband.com/page.do?menu_id=P01060300",
+       "date": "undated",
+       "figure": "기본료 4,400원/월 + 080 메시지수신거부 서비스 이용료 33,000원/월, 부가세 포함"
+      },
+      {
+       "title": "아임웹 FAQ — 080 수신거부 서비스 사용하기",
+       "url": "https://imweb.me/faq?mode=view&category=28&category2=32&idx=72568",
+       "date": "undated",
+       "figure": "월 26,400원 (VAT 포함)"
+      },
+      {
+       "title": "아톡비즈 — 080 수신거부",
+       "url": "https://biz.atalk.co.kr/080/",
+       "date": "undated",
+       "figure": "3개월 66,000원 (VAT 포함)"
+      }
+     ]
+    },
+    {
+     "key": "cpm_youtube",
+     "item": "YouTube 광고 CPM (인스트림/범퍼/쇼츠 혼합, 국내)",
+     "unit": "원/1,000노출 (VAT 별도)",
+     "low": 3000,
+     "mid": 6000,
+     "high": 12000,
+     "recommended": 6000,
+     "basis": "Google Ads Academy (March 2025, via 아이엔마케팅): Korea masthead reservation CPM 2,800원, plus 420원 per targeting option. PNA Company 2025 data from 247 campaigns: bumper CPM 3,000-6,000원, out-stream vCPM 2,000-4,000원, in-stream CPV 15-80원, Shorts CPV 5-15원. Another agency guide: bumper tCPM 5,000-15,000원, Shorts CPM 3,000-10,000원. A 40+ checkup/insurance audience with targeting is assumed, so 6,000원 is recommended.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "피앤에이컴퍼니 — 유튜브 광고 종류 및 비용 2026 실전 데이터",
+       "url": "https://pnamarketing.co.kr/insights/youtube-ad-types-cost-expert-guide-2026",
+       "date": "2026-04-11",
+       "figure": "2025년 247개 캠페인: 범퍼 CPM 3,000~6,000원, 아웃스트림 vCPM 2,000~4,000원, 인스트림 CPV 15~80원"
+      },
+      {
+       "title": "아이엔마케팅 — 유튜브 광고의 종류와 비용",
+       "url": "https://inmarketing.kr/google-ads/%EC%9C%A0%ED%8A%9C%EB%B8%8C-%EA%B4%91%EA%B3%A0%EC%9D%98-%EC%A2%85%EB%A5%98%EC%99%80-%EB%B9%84%EC%9A%A9/",
+       "date": "2025-06-09",
+       "figure": "Google Ads Academy 기준 한국 2025년 마스트헤드 CPM 2,800원 (타겟팅 당 할증 420원)"
+      },
+      {
+       "title": "부자만들기 — 유튜브 광고 비용 평균 단가",
+       "url": "https://bujamake.com/%EC%9C%A0%ED%8A%9C%EB%B8%8C-%EA%B4%91%EA%B3%A0-%EB%B9%84%EC%9A%A9-%ED%95%98%EB%A3%A8-5%EB%A7%8C20%EB%A7%8C%EC%9B%90-%EC%98%88%EC%82%B0%EC%9C%BC%EB%A1%9C-%EC%84%B1%EA%B3%BC-%EB%82%B4%EB%8A%94/",
+       "date": "undated",
+       "figure": "범퍼 tCPM 5,000~15,000원, 논스킵 10,000~25,000원, 쇼츠 CPM 3,000~10,000원"
+      }
+     ]
+    },
+    {
+     "key": "cpm_meta",
+     "item": "Meta(Instagram/Facebook) 광고 CPM (국내)",
+     "unit": "원/1,000노출 (VAT 별도)",
+     "low": 8000,
+     "mid": 9000,
+     "high": 15000,
+     "recommended": 9000,
+     "basis": "No Korean won figure was found, so two foreign benchmarks were used. Lebesgue 2026: South Korea Facebook CPM $5.80, about 8,350원 at 1,440원/USD. Adamigo 2026: South Korea $10.20, about 14,690원. Recommended 9,000원 sits near the lower benchmark, weighted to Reels/Stories inventory.",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "Lebesgue — Facebook Ads CPM by Country: 2026 Ecommerce Benchmarks",
+       "url": "https://lebesgue.io/facebook-ads/facebook-cpm-by-country",
+       "date": "2026-07-27",
+       "figure": "South Korea Facebook CPM $5.80"
+      },
+      {
+       "title": "Adamigo — Meta Ads CPM & CPC Benchmarks by Country in 2026",
+       "url": "https://www.adamigo.ai/blog/meta-ads-cpm-cpc-benchmarks-by-country-2026",
+       "date": "2026-09-10",
+       "figure": "South Korea $10.20 CPM / $1.65 CPC"
+      },
+      {
+       "title": "e-나라지표 원/달러 환율",
+       "url": "https://www.index.go.kr/unity/potal/main/EachDtlPageDetail.do?idx_cd=1068",
+       "date": "2026-09-14 (updated)",
+       "figure": "2025년 말 1,439.0원/USD"
+      }
+     ]
+    },
+    {
+     "key": "cpm_kakao",
+     "item": "카카오모먼트 비즈보드 CPM",
+     "unit": "원/1,000노출 (VAT 별도)",
+     "low": 3000,
+     "mid": 4000,
+     "high": 6000,
+     "recommended": 4000,
+     "basis": "Kakao's official guide sets the 비즈보드 manual CPM bid at a 1,000원 minimum and 3,000원 default, and display CPM at a 100원 minimum and 1,000원 default, VAT excluded. An older Kakao talkboard guide (seen in search results; page did not load) gave a 4,000원 minimum and 5,000원 default. Bidding is real-time, so a clearing price above the default is assumed for 40+ targeting. CPT (fixed-slot) prices were not published.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "kakao business 비즈니스 가이드 — 카카오모먼트",
+       "url": "https://kakaobusiness.gitbook.io/main/ad/moment",
+       "date": "undated (2025–2026)",
+       "figure": "CPM: 비즈보드 최소 1,000원·기본 3,000원 / 디스플레이 최소 100원·기본 1,000원, VAT 별도"
+      },
+      {
+       "title": "마케팅 인사이드(AMPM) — 카카오 비즈보드 광고",
+       "url": "https://inside.ampm.co.kr/insight/13951",
+       "date": "2026-01-28",
+       "figure": "비즈보드는 GDN 등 대비 CPC가 다소 높게 형성될 수 있음 (수치 미제시)"
+      }
+     ]
+    },
+    {
+     "key": "cpm_tiktok",
+     "item": "TikTok 광고 CPM (국내, In-Feed)",
+     "unit": "원/1,000노출 (VAT 별도)",
+     "low": 5000,
+     "mid": 8000,
+     "high": 14000,
+     "recommended": 8000,
+     "basis": "Benly's APAC guide (2026): South Korea CPM $5-10, about 7,200-14,400원, CPV (6s) $0.02-0.04. A Korean practitioner post quotes CPM 5,000-10,000원 with a 50,000원/day minimum campaign budget. Recommended 8,000원 is near the lower end of the Korea range.",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "Benly — TikTok Ads in Asia Pacific 2026",
+       "url": "https://benly.ai/learn/tiktok-ads/tiktok-ads-asia-pacific",
+       "date": "2026",
+       "figure": "South Korea CPM $5-10, CPC $0.40-1.20"
+      },
+      {
+       "title": "Threads @matt_choi88 — 매체별 광고비용 정리",
+       "url": "https://www.threads.com/@matt_choi88/post/DI75C8zph9P/",
+       "date": "2025",
+       "figure": "틱톡 CPM 평균 5,000~10,000원, 최소 예산 50,000원/일"
+      }
+     ]
+    },
+    {
+     "key": "cpm_display",
+     "item": "디스플레이·커뮤니티 배너 CPM",
+     "unit": "원/1,000노출 (VAT 별도)",
+     "low": 1000,
+     "mid": 2000,
+     "high": 3000,
+     "recommended": 2000,
+     "basis": "Kakao Moment display CPM default bid is 1,000원 (official guide). DCinside's own ad guide lists its 리스트 상단 banner at CPM 3,000원 with a 0.33% average CTR. No reliable Korean GDN CPM was found. Recommended 2,000원 blends programmatic display and premium community inventory.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "kakao business 비즈니스 가이드 — 카카오모먼트",
+       "url": "https://kakaobusiness.gitbook.io/main/ad/moment",
+       "date": "undated",
+       "figure": "디스플레이 CPM 최소 100원, 기본 1,000원 (VAT 별도)"
+      },
+      {
+       "title": "디시인사이드 광고안내",
+       "url": "https://nstatic.dcinside.com/dc/dcad/w/ad_guide_wm1.html",
+       "date": "undated",
+       "figure": "리스트 상단 CPM 3,000원, 평균 CTR 0.33%"
+      }
+     ]
+    },
+    {
+     "key": "cpc_naver_checkup",
+     "item": "네이버 파워링크 CPC — 건강검진 관련 키워드",
+     "unit": "원/클릭 (VAT 별도)",
+     "low": 2900,
+     "mid": 5000,
+     "high": 12180,
+     "recommended": 5000,
+     "basis": "Naver rank-bid estimates were retrieved 2026-09-14 via a third-party lookup tool (zzim2.com). 건강검진 (71,400 searches/month): mobile 12,180원 at rank 1 to 7,590원 at rank 5; PC 15,210-8,690원. 건강검진예약: mobile 6,500-3,360원. 종합검진: mobile 9,580-5,870원. 종합건강검진: mobile 11,500-7,380원. The 병원·미용시술 industry average CPC is 2,900원 (Tion). Actual paid CPC is at or below the bid. Recommended 5,000원 blends core keywords at ranks 3-5 with long tail.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "찜이닷컴 — 네이버 파워링크 광고단가 키워드별 검색도구 (조회 결과)",
+       "url": "https://zzim2.com/adcost/",
+       "date": "2026-09-14 (retrieved)",
+       "figure": "건강검진 모바일 1위 12,180원·5위 7,590원 / PC 1위 15,210원; 건강검진예약 모바일 1위 6,500원·5위 3,360원; 종합건강검진 모바일 1위 11,500원"
+      },
+      {
+       "title": "티온 — 파워링크 클릭당 얼마?",
+       "url": "https://sta.tion.co.kr/info/cpc-basics.php",
+       "date": "2026-05-29",
+       "figure": "병원·미용시술 평균 CPC 2,900원, 피크타임 4,100원"
+      },
+      {
+       "title": "마케팅 인사이드(AMPM) — 데이터로 보는 네이버 파워링크 광고",
+       "url": "https://inside.ampm.co.kr/insight/10257",
+       "date": "2025-04-16",
+       "figure": "최소 입찰가 70원, 평균 CPC 약 530원, 상위 3위 평균 약 850원"
+      }
+     ]
+    },
+    {
+     "key": "ctr_naver_sa",
+     "item": "네이버 파워링크 평균 클릭률(CTR)",
+     "unit": "%",
+     "low": 0.8,
+     "mid": 1.5,
+     "high": 2.4,
+     "recommended": 1.5,
+     "basis": "AMPM, citing Naver's 2024 business platform report: average powerlink CTR 0.8-2.4%. High-intent checkup keywords are assumed at mid-range, 1.5%. Effective CPM = 5,000원 × 1.5% × 1,000 ≈ 75,000원 per 1,000 impressions, about 10× social CPMs.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "마케팅 인사이드(AMPM) — 데이터로 보는 네이버 파워링크 광고",
+       "url": "https://inside.ampm.co.kr/insight/10257",
+       "date": "2025-04-16",
+       "figure": "평균 클릭률 0.8%~2.4% (2024년 네이버 비즈니스 플랫폼 리포트 기준)"
+      }
+     ]
+    },
+    {
+     "key": "cpv_influencer",
+     "item": "마이크로 인플루언서/UGC — 1,000회 조회당 비용",
+     "unit": "원/1,000조회 (VAT 별도 가정)",
+     "low": 10000,
+     "mid": 20000,
+     "high": 50000,
+     "recommended": 20000,
+     "basis": "TAGby formulas for Korea: Reels and TikTok = (average views ÷ 1,000) × 20,000원; YouTube = (average views ÷ 1,000) × 50,000원. By post, Kmong gives 50,000원 (1k-5k followers), 150,000원 average (10k-50k) and 500,000원+ (100k+). Usage rights and posts kept up longer cost extra.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "태그바이 블로그 — 인플루언서 마케팅 광고비 계산방법",
+       "url": "https://blog.tagby.io/%EC%9D%B8%ED%94%8C%EB%A3%A8%EC%96%B8%EC%84%9C_%EA%B4%91%EA%B3%A0%EB%B9%84_%EA%B3%84%EC%82%B0%EB%B0%A9%EB%B2%95/",
+       "date": "2024-02-13",
+       "figure": "릴스·틱톡 (평균조회수/1,000)×2만원, 유튜브 (평균조회수/1,000)×5만원"
+      },
+      {
+       "title": "크몽 가격 안내 — 인플루언서 섭외",
+       "url": "https://kmong.com/prices/%EC%9D%B8%ED%94%8C%EB%A3%A8%EC%96%B8%EC%84%9C-%EC%84%AD%EC%99%B8",
+       "date": "2025",
+       "figure": "최저 5만원, 평균 15만원, 최고 50만원 이상"
+      }
+     ]
+    },
+    {
+     "key": "crm_push",
+     "item": "CRM 메시지 (자사 앱푸시 / 카카오톡 채널 메시지) — 1,000건당",
+     "unit": "원/1,000건 (VAT 별도)",
+     "low": 0,
+     "mid": 7500,
+     "high": 20000,
+     "recommended": 15000,
+     "basis": "Own-app push via Firebase Cloud Messaging has no per-message cost; only CRM tooling costs money (Notifly 150,000-800,000원/월). 카카오톡 채널 메시지 is 15원 per message general and 20원 targeted, VAT excluded. In year 1 most members will not have the app yet, so the Kakao rate (15,000원 per 1,000) is recommended.",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "kakao business 비즈니스 가이드 — 카카오톡 채널 메시지",
+       "url": "https://kakaobusiness.gitbook.io/main/channel/run/message",
+       "date": "undated",
+       "figure": "일반 메시지 15원, 타겟 메시지 20원 (VAT 별도)"
+      },
+      {
+       "title": "Firebase Pricing",
+       "url": "https://firebase.google.com/pricing",
+       "date": "undated",
+       "figure": "Cloud Messaging: No-cost on Spark and Blaze"
+      },
+      {
+       "title": "Notifly 블로그 — CRM 마케팅 솔루션 Top 5 비교",
+       "url": "https://blog.notifly.tech/crm-marketing-top5/",
+       "date": "undated",
+       "figure": "Notifly Standard 월 15만원~, Pro 월 80만원"
+      }
+     ]
+    },
+    {
+     "key": "creative_video30",
+     "item": "30초 광고 영상 1편 제작비",
+     "unit": "원/편 (VAT 별도 가정)",
+     "low": 800000,
+     "mid": 3000000,
+     "high": 10000000,
+     "recommended": 3000000,
+     "basis": "Kmong transaction data: ad video 300,000-1,500,000원+ with an 800,000원 average; 30-second SNS edits 300,000-500,000원. Agency tiers (비디오랩): about 3,000,000원 for limited shoot and edit, 10,000,000원 for planning, motion graphics and variants. Investor-grade brand quality maps to the 3,000,000원 tier.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "크몽 가격 안내 — 영상광고 제작 비용",
+       "url": "https://kmong.com/prices/%EC%98%81%EC%83%81%EA%B4%91%EA%B3%A0",
+       "date": "2025-09-17",
+       "figure": "최저 30만원, 평균 80만원, 최고 150만원 이상; 30초 SNS 광고 30만~50만원"
+      },
+      {
+       "title": "비디오랩 — 기업 홍보영상 제작비 견적 차이",
+       "url": "https://vdolab.kr/magazine/corporate-video-production-cost-estimate-differences",
+       "date": "undated",
+       "figure": "300만원(제한 촬영·편집) / 1000만원(기획·촬영·모션그래픽) / 3000만원(캠페인)"
+      }
+     ]
+    },
+    {
+     "key": "creative_cardnews",
+     "item": "카드뉴스/배너 소재 1세트 (약 8장 + 리사이즈)",
+     "unit": "원/세트 (VAT 별도)",
+     "low": 50000,
+     "mid": 150000,
+     "high": 300000,
+     "recommended": 150000,
+     "basis": "Kmong display/banner guide: 30,000원 minimum, 150,000원 average, 500,000원+ maximum. Community banners average 50,000원 each. 숨고 card news runs 6,000원, 15,000원 or 35,000원 per sheet. A set of 8 sheets at about 15,000-18,000원 plus resizes ≈ 150,000원.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "크몽 가격 안내 — 디스플레이 영상·배너",
+       "url": "https://kmong.com/prices/%EB%94%94%EC%8A%A4%ED%94%8C%EB%A0%88%EC%9D%B4-%EC%98%81%EC%83%81-%EB%B0%B0%EB%84%88",
+       "date": "2025",
+       "figure": "최저 3만원, 평균 15만원, 최고 50만원 이상"
+      },
+      {
+       "title": "크몽 가격 안내 — 커뮤니티·사이트 배너",
+       "url": "https://kmong.com/prices/%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0-%EC%82%AC%EC%9D%B4%ED%8A%B8-%EB%B0%B0%EB%84%88",
+       "date": "2025-09-17",
+       "figure": "최저 1만원, 평균 약 5만원, 최고 10만원 이상"
+      },
+      {
+       "title": "숨고 마켓 — 카드뉴스, 배너, 팝업 제작",
+       "url": "https://soomgo.com/market/products/65d5a6aec3f00153035ace90",
+       "date": "undated",
+       "figure": "STANDARD 6,000원~, DELUXE 15,000원~, PREMIUM 35,000원~ (장당)"
+      }
+     ]
+    },
+    {
+     "key": "card_target_lms",
+     "item": "카드사 타겟 LMS 광고",
+     "unit": "원/건 (VAT 표기 없음 — 별도로 가정)",
+     "low": 80,
+     "mid": 110,
+     "high": 120,
+     "recommended": 120,
+     "basis": "Openads (2024-08): 신한카드 LMS 120원/건 with a 50,000 minimum; KB국민카드 110원/건 with a 30,000 minimum; 롯데 L.POINT 80원; CJ ONE 110원. The 신한 product starts at 5,000,000원 per campaign. 120원/건 equals a 120,000원 CPM. No public rates were found for 삼성카드, 현대카드 or card-app push.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "오픈애즈 — 문자 LMS 타겟팅 광고 비교, 금융사 VS 포인트앱",
+       "url": "https://www.openads.co.kr/content/contentDetail?contsId=13952",
+       "date": "2024-08-14",
+       "figure": "신한카드 LMS 120원/최소 5만건, KB국민카드 110원/3만건, 롯데 L.POINT 80원/5만건"
+      },
+      {
+       "title": "애즈순 — 신한카드 LMS 광고 상품 소개서",
+       "url": "https://www.ads-soon.com/product/details/51",
+       "date": "undated",
+       "figure": "5,000,000원~"
+      }
+     ]
+    },
+    {
+     "key": "qr_pop",
+     "item": "검진센터 현장 QR POP 키트 (X배너 1 + 테이블 스탠드 3 + A4 안내판 1)",
+     "unit": "원/센터 키트 (VAT 별도)",
+     "low": 32000,
+     "mid": 60000,
+     "high": 180000,
+     "recommended": 60000,
+     "basis": "Component prices (VAT-included): 비즈하우스 60×180cm X배너 12,900원 plus indoor stand 7,000-27,000원; 디피씨 acrylic T-stands 3,200원 (A5) and 5,500원 (A4); custom printed acrylic QR stand 75,000원. Low kit ≈ 35,000원 incl. ≈ 32,000원 excl. Mid kit with premium stand, printed inserts and shipping ≈ 60,000원 excl. High kit with 2 custom QR stands ≈ 180,000원 excl. 250 centers × 60,000원 = 15,000,000원, plus one-off design.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "비즈하우스 — 가격 안내: 배너",
+       "url": "https://wp.bizhows.com/cms/%EA%B0%80%EA%B2%A9-%EC%95%88%EB%82%B4-%EB%B0%B0%EB%84%88/",
+       "date": "undated",
+       "figure": "60×180cm 12,900원~9,900원(100개+), VAT 포함; 실내 거치대 7,000~27,000원"
+      },
+      {
+       "title": "디피씨 — 아크릴 스탠드 T자 A7~A3",
+       "url": "https://dpsee.com/product/%EC%95%84%ED%81%AC%EB%A6%B4-%EC%8A%A4%ED%83%A0%EB%93%9C-%EC%95%88%EB%82%B4%ED%8C%90-%ED%85%8C%EC%9D%B4%EB%B8%94-%EB%A9%94%EB%89%B4%ED%8C%90-%EA%B0%80%EA%B2%A9%ED%91%9C-%ED%88%AC%EB%AA%85-%EC%A2%85%EC%9D%B4%EA%BD%82%EC%9D%B4-t%EC%9E%90a7-a6-a5-a4-a3/134/display/1/",
+       "date": "undated",
+       "figure": "A5 3,200원, A4 5,500원"
+      },
+      {
+       "title": "더코랄샵 — 아크릴 인쇄형 QR 스탠드",
+       "url": "https://thecoralshop.co.kr/product/%EC%95%84%ED%81%AC%EB%A6%B4-%EC%84%B8%EB%A1%9C-%EC%9D%B8%EC%87%84%ED%98%95-%EC%84%B8%EA%B0%80%EC%A7%80-qr-%EC%8A%A4%ED%83%A0%EB%93%9C-%ED%81%90%EC%95%8C%EC%BD%94%EB%93%9C-%EC%9E%90%EB%8F%99%EC%97%B0%EA%B2%B0-%EA%B3%84%EC%A2%8C-%EC%B9%B4%EC%9A%B4%ED%84%B0-%EB%A7%A4%EC%9E%A5-%EC%BB%A4%EC%8A%A4%ED%85%80-%EC%95%88%EB%82%B4%ED%8C%90/48/",
+       "date": "undated",
+       "figure": "아크릴 인쇄형 QR 스탠드 75,000원"
+      }
+     ]
+    },
+    {
+     "key": "qr_sticker",
+     "item": "결과지 봉투용 QR 스티커 인쇄",
+     "unit": "원/1,000장 (VAT 별도)",
+     "low": 11700,
+     "mid": 20000,
+     "high": 27300,
+     "recommended": 25000,
+     "basis": "VAT-included prices converted to VAT-excluded: 50mm 1,000매 template 12,900원 → 11,700원; 킨코스 round 1,000매 22,000원 → 20,000원; custom 도무송 55-100mm 1,000장 30,000원 → 27,300원. Recommended 25,000원 assumes a custom 50-60mm sticker with a unique QR code. If each of the 250 centers needs its own QR code, per-design minimums (usually 1,000매) and extra setup/shipping apply.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "하나페이퍼몰 — 스티커 50mm 1000매",
+       "url": "https://hanapapermall.co.kr/product/%EA%B8%B0%ED%83%80-%EC%8A%A4%ED%8B%B0%EC%BB%A4-50mm-1000%EB%A7%A4/5396/",
+       "date": "undated",
+       "figure": "12,900원 (부가세 포함)"
+      },
+      {
+       "title": "킨코스코리아 — 대량 원형스티커(1000매)",
+       "url": "https://www.kinkos.co.kr/btc/shop/item.do?it_id=20220701500",
+       "date": "undated",
+       "figure": "22,000원 (30~80mm)"
+      },
+      {
+       "title": "욜로홀로 — 원형스티커 도무송 1,000장",
+       "url": "https://yolohollo.com/product/%EC%9B%90%ED%98%95%EC%8A%A4%ED%8B%B0%EC%BB%A4-%EB%8F%84%EB%AC%B4%EC%86%A1%EC%8A%A4%ED%8B%B0%EC%BB%A4-1000%EC%9E%A5-%EC%9D%B8%EC%87%84%EC%A0%9C%EC%9E%91-%EC%9B%90%ED%98%95-%EC%8A%A4%ED%8B%B0%EC%BB%A4-%EB%94%94%EC%9E%90%EC%9D%B8-%EC%9D%98%EB%A2%B0/611/",
+       "date": "undated",
+       "figure": "1,000장 30,000원 (55~100mm)"
+      }
+     ]
+    },
+    {
+     "key": "center_referral_fee",
+     "item": "검진센터/제휴처 가입 연계 수수료 (가입 1건당)",
+     "unit": "원/가입 건 (VAT 별도)",
+     "low": 1500,
+     "mid": 3000,
+     "high": 5000,
+     "recommended": 3000,
+     "basis": "No public figure was found. The proxy is NBT Adison's offerwall rate card: sign-up with personal info 1,500원, consultation request plus sign-up 3,000원. The 5,000원 high value is an unsourced premium for on-site assisted sign-up. Legal structure matters more than price: 의료법 §27③ prohibits for-profit patient referral to medical institutions, and 보건복지부 flagged a 검진센터 referral-mileage scheme in 2014. Center data sharing needs separate consent under 개인정보보호법. Prefer flat-fee co-marketing and get legal review first.",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "NBT ADS — 애디슨 오퍼월 단가",
+       "url": "https://nbtads.oopy.io/adison",
+       "date": "2026",
+       "figure": "일반업종 회원가입 1,500원, 상담신청(+회원가입) 3,000원, 앱 설치 200원"
+      },
+      {
+       "title": "대한병원협회 — 환자 유인·알선 등 의료법령 금지사항 안내 (보건복지부)",
+       "url": "https://www.kha.or.kr/kha_home/notice_list.do?mode=view&articleNo=23998&title=%ED%99%98%EC%9E%90+%EC%9C%A0%EC%9D%B8,+%EC%95%8C%EC%84%A0+%EB%93%B1+%EC%9D%98%EB%A3%8C%EB%B2%95%EB%A0%B9+%EA%B8%88%EC%A7%80%EC%82%AC%ED%95%AD+%EC%95%88%EB%82%B4",
+       "date": "2014-11-17",
+       "figure": "건강검진센터 소개 마일리지 운영을 의료법 제27조 제3항 위반 소지로 시정 요청 (금액 없음)"
+      }
+     ]
+    },
+    {
+     "key": "cac_health_app_kr",
+     "item": "국내 헬스케어/핀테크 앱 회원 1인 획득비용 벤치마크",
+     "unit": "원/가입 회원 (VAT 별도)",
+     "low": 1500,
+     "mid": 10000,
+     "high": 26000,
+     "recommended": 10000,
+     "basis": "Triangulated. (1) Reward offerwall (NBT Adison): sign-up 1,500원, 계좌 개설 15,000원, 보험 가입 30,000원. (2) APAC CPI $1.5-3.0 (Mapendo 2025), about 2,200-4,300원; at an assumed 30-50% install-to-registration rate, about 4,300-14,400원 per member. (3) Liftoff finance-apps data (2021-06 to 2022-06): fintech cost per registration $17.96, about 25,900원. Recommended 10,000원 per registered member for blended paid channels.",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "NBT ADS — 애디슨 오퍼월 단가",
+       "url": "https://nbtads.oopy.io/adison",
+       "date": "2026",
+       "figure": "회원가입 1,500원, 비대면 계좌 개설 15,000원, 보험 가입 30,000원"
+      },
+      {
+       "title": "Mapendo — 2025 Cost per Install by Country",
+       "url": "https://mapendo.co/blog/cost-per-install-by-country-2025",
+       "date": "2025",
+       "figure": "APAC CPI $1.5 to $3.00"
+      },
+      {
+       "title": "MarTech360 — Liftoff Mobile Finance Apps data",
+       "url": "https://martech360.com/news/new-liftoff-data-reveals-customers-flock-to-fintech-as-economy-tightens-offers-finance-app-marketers-guidance-on-user-acquisition/",
+       "date": "2022-09",
+       "figure": "Fintech cost per registration $17.96; CPI Android $2.09 / iOS $4.35"
+      }
+     ]
+    }
+   ],
+   "caveats": [
+    "Legal (engine 1): (광고) messages are 영리목적 광고성 정보. 정보통신망법 §50 requires explicit prior consent (§50①). The only exception is a same-type transaction relationship within the decree period, about 6 months. Sending 21:00-08:00 needs separate consent (§50③). Each message must carry sender info and a free opt-out such as 080 (§50④⑥). Consent must be re-confirmed periodically under §50⑧, commonly every 2 years; fines under §76 can reach 3,000만원. The 2-year interval and fine amount were not re-verified from primary text. Checkup-lookup contact data cannot be reused for ads without separate marketing consent, and 080 does not cure missing consent. Sources: KISA/방통위 안내서 6차 개정판 (2024-03), https://www.kisa.or.kr/401/form?postSeq=3256; law text via casenote.kr (2024-07-24 version).",
+    "Kakao: 알림톡 cannot carry ads. 브랜드 메시지 to non-friends needs Kakao approval, 50,000+ channel friends, 3 months of 알림톡 history, an 080 number and consent records. BMS sending is limited to 08:00-20:50. In year 1 the channel likely won't qualify, so budget LMS for engine 1 and treat BMS as a later cost-down path.",
+    "Message prices are dealer rates, not list prices; negotiated rates at 18M/yr could be 5-15% lower. All recommended values exclude VAT. VAT-included source prices were divided by 1.1.",
+    "Meta and TikTok Korea CPMs come from foreign aggregators with undisclosed methodology, converted at 1,440원/USD (e-나라지표 2025 year-end 1,439.0원). Confidence is low; validate with a 2-4 week test campaign before locking the budget.",
+    "Naver powerlink figures are rank-bid estimates retrieved 2026-09-14 via a third-party tool (zzim2.com), not actual paid CPCs. They move with season and competition. 의료광고 rules (의료법 §56) may apply to checkup ad copy.",
+    "Derived, not sourced: using the plan's budget shares and these CPMs, 30M impressions a month needs about 1.8억원/월 (about 21.5억원/년), a blended CPM of about 5,980원. Display (about 9.9M), YouTube (about 6.6M) and Kakao (about 6.3M) supply most impressions; Naver SA supplies only about 0.29M.",
+    "Card-company LMS rates date from 2024-08 and list no VAT basis. No public rates were found for 삼성카드, 현대카드 or card-app push.",
+    "center_referral_fee has no public benchmark; the value is a reward-CPA proxy. Per-sign-up payments involving medical institutions carry 의료법 §27③ risk (up to 3 years' imprisonment or a 3,000만원 fine). Get legal review before putting this line in an investor-facing budget.",
+    "cac_health_app_kr is triangulated from reward CPA, APAC CPI and a 2022 global Liftoff fintech report. The install-to-registration conversion rate is an assumption, and no Korean health-app CAC disclosure was found."
+   ],
+   "check": {
+    "verdicts": [
+     {
+      "key": "msg_lms",
+      "status": "confirmed",
+      "note": "SOLAPI (VAT excluded, modified 2026-07-31) matches: LMS 31원 at 1M-1.99M, 29원 at 3M-3.99M, 28원 at 4M+, 45원 at 1-9,999. smsjoa matches: 500만원 buys 476,190 SMS (about 10.5원), and LMS costs 3x SMS. FLAG: the LG U+ filed table says '부가세포함', so its figures include VAT. 30.8-36.3원 is the ceiling (최고) column by destination carrier for 100k+/month; the floor (최저) column is 25.5-27.7원. Without VAT that is 28.0-33.0원 and 23.2-25.2원. Recommended 31원 and the 28/31/45 range still stand; only the VAT basis of the LG U+ citation needs fixing."
+     },
+     {
+      "key": "msg_sms",
+      "status": "corrected",
+      "corrected_recommended": 10,
+      "note": "SOLAPI SMS 10원 (1M-1.99M) and 8.3원 (10M-14.99M), VAT excluded, and T.A.S. 9.9원 VAT excluded all match. FLAG (VAT): the high value of 13.2원 comes from the LG U+ table, which includes VAT and gives the filed ceiling for 100k+/month. Without VAT it is 12.0원 (the 7.9원 floor becomes 7.2원). Change high to 12.0; recommended 10원 stays."
+     },
+     {
+      "key": "msg_friendtalk",
+      "status": "confirmed",
+      "note": "Omago (2026-06-12) matches: dealer standard 친구 23-25원, 비친구 33-35원, VAT excluded, and Kakao publishes no official BMS rate. SOLAPI BMS text matches: 39원 at 1M-1.99M, 35원 at 10M-14.99M, 53원 list. BIZGO (dated 2025-12-12, not just 2025) confirms the non-friend requirements. Note: at 1.5M/month SOLAPI's tier price is 39원, so 35원 rests on the dealer non-friend rate. It is within range."
+     },
+     {
+      "key": "msg_friendtalk_image",
+      "status": "corrected",
+      "corrected_recommended": 65,
+      "note": "SOLAPI BMS image 65원 at 1M-1.99M, 83원 list and wide 68원 all match. FLAG 1: the 10M-14.99M tier is 61원; 59원 belongs to the 20M+ tier, so '10M+ 59원' is mislabeled. FLAG 2: low 29원 is the 친구톡 image rate, discontinued 2025-12-31 (confirmed on solapi.com/pricing), so it should not be the floor; use 59원. FLAG 3: recommended 60원 is below the 65원 price for 1.5M/month and below even the 10M tier (61원), so the cited sheet does not support it. Corrected: low 59, mid 65, high 83, recommended 65원 (VAT excluded)."
+     },
+     {
+      "key": "msg_alimtalk",
+      "status": "confirmed",
+      "note": "SOLAPI 6.5원 (1M-1.99M), 5.7원 (10M-14.99M) and 13원 list match. T.A.S. 6-9원 VAT excluded matches. Omago 8원 (under 10k/month, VAT excluded) matches. Kakao 고객센터 page confirms 알림톡 is informational only and cannot carry ads. Minor: 7원 is SOLAPI's 500k-999k price, and the 1.5M/month price is 6.5원. Still within range."
+     },
+     {
+      "key": "msg_080",
+      "status": "confirmed",
+      "note": "SK브로드밴드 matches: 4,400원/월 number fee plus 33,000원/월 service fee, VAT included. That is 37,400원 with VAT, about 34,000원 without. No sign-up or per-call fee is listed. 아톡비즈 matches: 66,000원 per 3 months with VAT, about 20,000원/월 without. The 아임웹 FAQ returned HTTP 403, so its 26,400원 could not be checked. 34,000원 x 12 = 408,000원/yr is correct."
+     },
+     {
+      "key": "cpm_youtube",
+      "status": "confirmed",
+      "note": "PNA (2026-04-11) matches: 247 campaigns in 2025; bumper CPM 3,000-6,000원, out-stream vCPM 2,000-4,000원, in-stream CPV 15-80원, Shorts CPV 5-15원. VAT basis is not stated. 아이엔마케팅 (updated 2025-06-09) matches: masthead CPM 2,800원 plus 420원 per targeting option (Google Ads Academy, March 2025). bujamake matches: bumper tCPM 5,000-15,000원, Shorts CPM 3,000-10,000원. That page is dated 2025-10-02, not undated. Caveat: in-stream and Shorts are billed per view, so the 6,000원 blended CPM is a judgment, not a sourced number."
+     },
+     {
+      "key": "cpm_meta",
+      "status": "confirmed",
+      "note": "Low confidence. Lebesgue (2026-07-27) matches: Korea Facebook CPM $5.80. Adamigo (2026-09-10) matches: $10.20 CPM (range $8.50-12.00), labeled as 2026 projections. e-나라지표 confirms the 2025 year-end rate of 1,439.0원/USD, and both won conversions are correct. A quick search found no better Korean-won primary source. A 2023 Korean practitioner post (brunch @josephfbigm, stale) says CPMs in the 10,000원 range are common for sales and app objectives, which suggests 9,000원 may be low for a 40+ lead-gen audience. Validate with a test campaign."
+     },
+     {
+      "key": "cpm_kakao",
+      "status": "confirmed",
+      "note": "The Kakao gitbook matches: 비즈보드 CPM minimum 1,000원 and default 3,000원; display CPM minimum 100원 and default 1,000원; VAT excluded, with VAT added at billing. The AMPM article gives no number, as stated. FLAG: the 4,000원 recommendation assumes clearing prices above the default bid, backed only by an older guide the researcher could not load. It is within range, but treat it as an assumption."
+     },
+     {
+      "key": "cpm_tiktok",
+      "status": "confirmed",
+      "note": "Low confidence. Benly (updated 2026-03-24) matches: Korea CPM $5-10, CPC $0.40-1.20, 6-second CPV $0.02-0.04. FLAG: the Threads @matt_choi88 post showed no TikTok figures when fetched, so '5,000-10,000원, 50,000원/day' is unverified and should be treated as unsourced. A quick search found no better Korean source: dangaro covers creator sponsorships only and businessadsguide has no numbers."
+     },
+     {
+      "key": "cpm_display",
+      "status": "confirmed",
+      "note": "Kakao display CPM minimum 100원 and default 1,000원 (VAT excluded) match. DCinside guide matches: 리스트 상단 CPM 3,000원, CTR 0.33%. That page has no date or VAT basis."
+     },
+     {
+      "key": "cpc_naver_checkup",
+      "status": "confirmed",
+      "note": "zzim2's URL shows no data by itself. I replayed its adcostAjax lookup on 2026-09-14 and every figure matched exactly: 건강검진 71,400/month, mobile 12,180원 (rank 1) to 7,590원 (rank 5), PC 15,210원 to 8,690원; 건강검진예약 mobile 6,500-3,360원; 종합검진 mobile 9,580-5,870원; 종합건강검진 mobile 11,500-7,380원. Tion (2026-05-29) matches: 2,900원 average, 4,100원 peak. AMPM (2025-04-16) matches: 70원 minimum, about 530원 average. Cite as 'zzim2 lookup result, 2026-09-14'. These are rank-bid estimates, not paid CPCs."
+     },
+     {
+      "key": "ctr_naver_sa",
+      "status": "confirmed",
+      "note": "AMPM (2025-04-16) matches: 0.8%-2.4% average CTR, citing Naver's 2024 business platform report. The same article gives mobile 2.3% vs PC 1.1%. The effective CPM of 75,000원 is calculated correctly."
+     },
+     {
+      "key": "cpv_influencer",
+      "status": "confirmed",
+      "note": "TAGby (2024-02-13) matches: Reels and TikTok (average views ÷ 1,000) x 20,000원, YouTube x 50,000원. VAT is not stated. Kmong influencer page (2025-09-17) matches: 50,000원 minimum, 150,000원 average, 500,000원+ maximum. By follower tier: 1k-5k 50,000-100,000원, 10k-50k 150,000-200,000원, 100k+ 500,000원+."
+     },
+     {
+      "key": "crm_push",
+      "status": "confirmed",
+      "note": "Kakao 채널 메시지 matches: 15원 general, 20원 targeted, VAT excluded. Firebase lists FCM as no-cost on both Spark and Blaze. Notifly matches: 150,000원/월 Standard, 800,000원/월 Pro. Note: channel messages reach only channel friends, so year-1 reach is limited by friend count."
+     },
+     {
+      "key": "creative_video30",
+      "status": "confirmed",
+      "note": "Kmong video-ad page (2025-09-17) matches: 300,000원 minimum, 800,000원 average, 1,500,000원+ maximum; short SNS ads 300,000-500,000원. 비디오랩's 3M/10M/30M원 tiers match, but that article covers corporate promo videos, not 30-second ads, and has no date or VAT basis. So 3,000,000원 is a reasonable mapping rather than a direct quote."
+     },
+     {
+      "key": "creative_cardnews",
+      "status": "confirmed",
+      "note": "Kmong display/banner page (2025-09-17) matches: 30,000원 minimum, 150,000원 average, 500,000원+ maximum. Kmong community-banner page (2025-09-17) matches: 10,000원 minimum, about 50,000원 average. FLAG: the 숨고 product page showed no prices when fetched, so 6,000/15,000/35,000원 per sheet is unverified. Recommended 150,000원 still rests on the Kmong average."
+     },
+     {
+      "key": "card_target_lms",
+      "status": "confirmed",
+      "note": "Openads (2024-08-14) matches: 신한 120원 with a 50,000 minimum, KB 110원 with a 30,000 minimum, L.POINT 80원, CJ ONE 110원. No VAT basis is given, and there are no figures for 삼성 or 현대. 애즈순 matches '5,000,000원~' but shows no unit price. The data is from 2024 and not re-confirmed for 2026."
+     },
+     {
+      "key": "qr_pop",
+      "status": "confirmed",
+      "note": "비즈하우스 matches: banner 12,900원 for 1 down to 9,900원 at 100+; indoor stands 7,000, 15,000 and 27,000원; VAT included. 디피씨 matches: A5 3,200원, A4 5,500원. 더코랄샵 matches: printed QR stand 75,000원. The low-kit sum of 35,000원 with VAT (about 31,800원 without) and 250 x 60,000원 = 1,500만원 are both correct."
+     },
+     {
+      "key": "qr_sticker",
+      "status": "confirmed",
+      "note": "하나페이퍼몰 matches: 12,900원 with VAT, so 11,700원 without is correct. 킨코스 22,000원 and 욜로홀로 30,000원 (1,000 stickers, 55-100mm) match. FLAG: the 킨코스 and 욜로홀로 pages do not state a VAT basis, so dividing by 1.1 is an assumption. If those prices already exclude VAT, high would be 30,000원. Recommended 25,000원 fits either way."
+     },
+     {
+      "key": "center_referral_fee",
+      "status": "unsupported",
+      "note": "Low confidence. The NBT 애디슨 rate card matches: sign-up with personal info 1,500원 (750원 without, in-app 1,800원), consultation plus sign-up 3,000원. It is labeled a minimum rate and has no VAT basis or date. These are reward-ad CPAs, not center referral fees, and the 5,000원 high has no source. The KHA notice matches but is dated 2014-11-20, not 11-17. A quick search found no public checkup-center fee schedule, and the 착한의사 hospital-partnership page returned 403. No source supports this line; keep it as a placeholder pending legal review."
+     },
+     {
+      "key": "cac_health_app_kr",
+      "status": "unsupported",
+      "note": "Low confidence. NBT figures (1,500원, 15,000원, 30,000원) match. Mapendo matches APAC CPI of $1.5-3.00 but gives no Korea figure. Liftoff's $17.96 cost per registration matches, but the data covers 2021-06 to 2022-06 and is global, so it is stale and should not anchor the high end. Newer source: Adjust Finance App Insights Report 2025 (Branding in Asia, 2025-11-03, https://www.brandinginasia.com/report-shows-strong-finance-app-engagement-in-apac-with-sessions-up-35-in-2025/) shows global finance-app CPI falling from $1.51 to $1.13 in H1 2025, with an APAC average of $0.51. It gives no registration cost. No Korean health-app CAC disclosure was found. The 10,000원 figure depends on an assumed install-to-registration rate."
+     }
+    ]
+   }
+  },
+  {
+   "topic": "it",
+   "summary": "AI 시스템·데이터·클라우드 단가 조사(환율 1,345.9원/USD, 2026-09-11 서울외환시장 주간종가; 권장치 VAT 별도). 전체 JSON 저장: C:/Users/user/AppData/Local/Temp/claude/C--Users-user-OneDrive----001-------02-HI-human------------/f0706602-45bb-4d6f-a3e3-b14f3d9081ab/scratchpad/research/it.json. 도메인 AI 모듈 1식 린 외주 구축 권장 1억원(시장 RAG 견적 4천만~8천만, 공공 소규모 생성형AI 연동개발 2.15억 VAT 별도, KOSA 단가 bottom-up 약 1.02억). 공통 AI 플랫폼 1회성 3억원(1.5억~6억, 가정 비중 큼). KOSA 2026 평균임금: 응용SW개발자(중급 대용) 월 7,754,124원, IT아키텍트(고급 대용) 월 11,103,230원(2019년 이후 등급별 공표 없음). ISMS-P 최초 취득 약 4,500만원(심사 간편 600만~1,100만/일반 1,000만~1,800만 + 컨설팅), 연 사후관리 약 2,500만원(low confidence). LLM 1M토큰 단가: Claude Sonnet 5 입력 2,691.8원/출력 13,459원($2/$10), GPT-5.4 3,364.8원/20,188.5원($2.50/$15), HyperCLOVA X HCX-007 1,250원/5,000원(원화 공시, NCP 공식 요금 API). 상담 1건 약 20,000토큰(입력 18k+출력 2k) 가정 시 Sonnet 5 약 75원, HCX-007 약 32.5원. 클라우드(NCP 기준, 30만 회원) 월 기본비 약 380만원(보안관제·LLM 제외), 회원당 증분 약 8원/월, 오브젝트 스토리지 28원/GB·월(AWS 서울 33.6원). 데이터 유지관리 외주 월 400만원, 보안관제(NCP Security Monitoring 기반) 월 120만원. 블록체인 앵커링 40원/건은 권장치로 유지하되 Kaia 약 0.08원·Polygon 약 2.7원·NCP BaaS 약 6.3원/건 대비 매우 보수적인 올인 예산.",
+   "items": [
+    {
+     "key": "ai_build_module",
+     "item": "도메인 AI 서비스 모듈 1식 구축(LLM RAG/에이전트: 지식베이스·프롬프트/가드레일·연동·관리자콘솔·QA) - 린 외주",
+     "unit": "원/모듈 (1회성, VAT 별도)",
+     "low": 50000000,
+     "mid": 100000000,
+     "high": 220000000,
+     "recommended": 100000000,
+     "confidence": "medium",
+     "basis": "삼각측량. (1) KOSA 2026 평균임금 bottom-up: 3개월·약 11MM = IT PM 1.5MM(월 10,086,804) + 응용SW(AI)개발자 6MM(7,754,124) + 데이터분석가 1.5MM(8,499,309) + UI/UX 기획/개발자 1MM(6,901,660) + IT테스터 1MM(4,053,137) = 직접인건비 85,358,711원, 린 외주 간접비·이윤 20% 가정 -> 약 1.02억원. (2) 시장견적: RAG 챗봇 4,000만~8,000만원, 에이전틱 6,000만~1.5억원. (3) 공공조달: 생성형 AI 및 챗봇 연동개발 사업예산 2.15억원(VAT 별도, 2026-06), 경기도 생성형 AI 챗봇 구축 기초금액 4.17억원(추정가격 3.79억원, 2025-03) - 상단 검증용. 공통 플랫폼은 ai_platform_common에 별도 계상 전제.",
+     "sources": [
+      {
+       "title": "조달청 나라장터 첨부 입찰공고 - 생성형 AI 및 챗봇/안면인식 솔루션 연동개발 (2026년도 스포츠산업 선도기업 육성 지원사업, KMAC 대행)",
+       "url": "https://www.g2b.go.kr/pn/pnp/pnpe/UntyAtchFile/downloadFile.do?bidPbancNo=R26BK01578166&bidPbancOrd=000&fileType=&fileSeq=2&prcmBsneSeCd=03",
+       "date": "2026-06",
+       "figure": "사업예산 금 215,000,000원(부가가치세 별도), 용역기간 계약체결일~2026.10.15"
+      },
+      {
+       "title": "비드프로(나라장터 공고 R25BK00751232-000) - 경기도 홈페이지 생성형 AI 챗봇 서비스 구축 사업",
+       "url": "https://www.bidpro.co.kr/n0_ipchal/konggo/svc/konggo_view.asp?num=2848596",
+       "date": "2025-03-28",
+       "figure": "기초금액·배정예산 417,000,000원 / 추정가격 379,090,909원"
+      },
+      {
+       "title": "TreeSoop - 챗봇·데이터 수집 프로그램 외주 개발 통합 가이드 2026",
+       "url": "https://treesoop.com/blog/ai-chatbot-outsourcing-development",
+       "date": "2025-09-23",
+       "figure": "LLM 기반 2,500만~5,000만원, RAG 4,000만~8,000만원(8~14주), 에이전틱 6,000만~1.5억원(12~20주)"
+      }
+     ]
+    },
+    {
+     "key": "sw_wage_2026_mid",
+     "item": "SW기술자 평균임금 2026 - 중급 개발자 대용치(응용SW개발자: 인공지능·빅데이터개발자 포함)",
+     "unit": "원/월(M/M)",
+     "low": 6943457,
+     "mid": 7754124,
+     "high": 8499309,
+     "recommended": 7754124,
+     "confidence": "high",
+     "basis": "KOSA는 2019년 이후 등급별(고급/중급/초급) 단가를 공표하지 않고 직무별 평균임금만 공표. 중급 대용치로 응용SW개발자 2026 월 7,754,124원(일 378,250원=월÷20.5일) 권장. low=2025 응용SW개발자 6,943,457원, high=2026 데이터분석가 8,499,309원. 기본급·제수당·상여금·퇴직충당금·법인부담 4대보험 포함(회사 부담 인건비), VAT 무관. 2025 사분위: 25백분위 219,087원/일(약 451만원/월), 75백분위 449,024원/일(약 925만원/월).",
+     "sources": [
+      {
+       "title": "KOSA - 2026년 적용 SW기술자 평균임금 공표 (조사년도 2025년)",
+       "url": "https://www.sw.or.kr/site/sw/ex/board/View.do?cbIdx=304&bcIdx=64717&searchExt1=",
+       "date": "2025-12-19",
+       "figure": "응용 SW 개발자 월 7,754,124원 / 일 378,250원; 데이터분석가 월 8,499,309원; 전년 대비 4.7% 증가; 일평균=월÷20.5일"
+      },
+      {
+       "title": "KOSA - 2025년 적용 SW기술자 평균임금 공표 (PDF 사본)",
+       "url": "https://files-scs.pstatic.net/2024/12/29/Yp9k9cqjwa/2025%EB%85%84_%EC%A0%81%EC%9A%A9_SW%EA%B8%B0%EC%88%A0%EC%9E%90_%ED%8F%89%EA%B7%A0%EC%9E%84%EA%B8%88_%EA%B3%B5%ED%91%9C.pdf",
+       "date": "2024-12-03",
+       "figure": "응용SW개발자 월 6,943,457원(포함직무: 빅데이터개발자, 인공지능개발자); 25/75백분위 219,087/449,024원(M/D)"
+      }
+     ]
+    },
+    {
+     "key": "sw_wage_2026_senior",
+     "item": "SW기술자 평균임금 2026 - 고급 개발자 대용치(IT아키텍트)",
+     "unit": "원/월(M/M)",
+     "low": 10086804,
+     "mid": 11103230,
+     "high": 11853218,
+     "recommended": 11103230,
+     "confidence": "medium",
+     "basis": "등급별 공표가 없어 고급 대용치로 IT아키텍트(SW·데이터·인프라·DB 아키텍트) 2026 월 11,103,230원(일 541,621원) 권장. low=IT PM 10,086,804원, high=IT기획자 11,853,218원. 대안: 응용SW개발자 2025 75백분위 449,024원/일×20.6일=약 9,249,894원/월. 대용치 선택 판단 개입.",
+     "sources": [
+      {
+       "title": "KOSA - 2026년 적용 SW기술자 평균임금 공표",
+       "url": "https://www.sw.or.kr/site/sw/ex/board/View.do?cbIdx=304&bcIdx=64717&searchExt1=",
+       "date": "2025-12-19",
+       "figure": "IT 아키텍트 월 11,103,230원/일 541,621원; IT PM 월 10,086,804원; IT 기획자 월 11,853,218원"
+      },
+      {
+       "title": "KOSA - 2025년 적용 SW기술자 평균임금 공표 (PDF 사본)",
+       "url": "https://files-scs.pstatic.net/2024/12/29/Yp9k9cqjwa/2025%EB%85%84_%EC%A0%81%EC%9A%A9_SW%EA%B8%B0%EC%88%A0%EC%9E%90_%ED%8F%89%EA%B7%A0%EC%9E%84%EA%B8%88_%EA%B3%B5%ED%91%9C.pdf",
+       "date": "2024-12-03",
+       "figure": "IT아키텍트 포함직무: SW·데이터·Infrastructure·데이터베이스아키텍트; 2025 월 10,147,745원"
+      }
+     ]
+    },
+    {
+     "key": "ai_platform_common",
+     "item": "AI 공통 플랫폼 구축(회원 앱/웹 하드닝·데이터 레이크·통합인증·MLOps/LLMOps·보안) 1식",
+     "unit": "원 (1회성, VAT 별도)",
+     "low": 150000000,
+     "mid": 300000000,
+     "high": 600000000,
+     "recommended": 300000000,
+     "confidence": "low",
+     "basis": "KOSA 2026 bottom-up. 린 6개월·30MM: IT아키텍트 4MM + 응용SW개발자 12MM + 데이터분석가/엔지니어 4MM + 정보보안전문가 2MM + 정보시스템운용자(DevOps/LLMOps) 4MM + IT PM 2MM + IT테스터 2MM = 직접인건비 263,159,354원 + 보안·인증 솔루션 라이선스 약 0.4억(가정) -> 약 3억원. full 36MM(398,792,168원)+외주 간접비 50% -> 약 6억(high). 매니지드 서비스 활용 15~18MM -> 약 1.5억(low). 공공 상단 참고: SH-AI 포털 기초금액 56.3억, 건보공단 에이전틱 AI 민원상담 약 11억(상한 검증용).",
+     "sources": [
+      {
+       "title": "KOSA - 2026년 적용 SW기술자 평균임금 공표",
+       "url": "https://www.sw.or.kr/site/sw/ex/board/View.do?cbIdx=304&bcIdx=64717&searchExt1=",
+       "date": "2025-12-19",
+       "figure": "IT 아키텍트 11,103,230 / 응용 SW 개발자 7,754,124 / 데이터분석가 8,499,309 / 정보보안전문가 10,411,680 / 정보시스템운용자 10,649,117 / IT PM 10,086,804 / IT 테스터 4,053,137 (원/월)"
+      },
+      {
+       "title": "비드프로(나라장터 공고 R26BK01385495-000) - 민원대응 챗봇 및 내부 업무지원 SH-AI 포털 구축 사업 용역",
+       "url": "https://www.bidpro.co.kr/n0_ipchal/konggo/svc/konggo_view.asp?num=3059375",
+       "date": "2026-03-11",
+       "figure": "기초금액 5,632,192,000원 / 추정가격 5,120,174,545원, 사업기간 10개월(유찰)"
+      },
+      {
+       "title": "뉴시스 - 와이즈넛, 건강보험공단 민원상담 서비스 사업 수주",
+       "url": "https://www.newsis.com/view/NISX20250908_0003319252",
+       "date": "2025-09-08",
+       "figure": "에이전틱 AI 기반 전국민 맞춤형 민원상담 서비스 총 사업비 약 11억원"
+      }
+     ]
+    },
+    {
+     "key": "isms_p_initial",
+     "item": "ISMS-P 인증 최초 취득 비용(컨설팅 + 최초심사 수수료)",
+     "unit": "원 (1회성, VAT 별도)",
+     "low": 27000000,
+     "mid": 45000000,
+     "high": 72000000,
+     "recommended": 45000000,
+     "confidence": "medium",
+     "basis": "심사수수료 간편 600만~1,100만/일반 1,000만~1,800만원. 컨설팅 = KOSA IT컨설턴트(정보보호컨설턴트 포함) 월 10,707,960원 × MM. low=간편 600만+2MM(2,142만)≈2,700만; 권장=1,100만+약 3.2MM(약 3,400만)≈4,500만; high=일반 1,800만+5MM(5,354만)≈7,200만. 보안 솔루션·내부 인력 제외. 컨설팅 MM은 가정치.",
+     "sources": [
+      {
+       "title": "이투데이 - 중소기업 ISMS·ISMS-P 인증 간편해진다…수수료·기준↓",
+       "url": "https://www.etoday.co.kr/news/view/2382959",
+       "date": "2024-07-23",
+       "figure": "ISMS-P 인증 수수료 1,000만~1,800만원 -> 간편인증 600만~1,100만원; 2024.7.24 시행"
+      },
+      {
+       "title": "KOSA - 2026년 적용 SW기술자 평균임금 공표",
+       "url": "https://www.sw.or.kr/site/sw/ex/board/View.do?cbIdx=304&bcIdx=64717&searchExt1=",
+       "date": "2025-12-19",
+       "figure": "IT 컨설턴트 월평균임금 10,707,960원"
+      },
+      {
+       "title": "컴퓨터월드 - ISMS-P 인증제도 개선, 기업부담 줄이고 심사 품질 향상",
+       "url": "http://www.comworld.co.kr/news/articleView.html?idxno=50115",
+       "date": "2021-01-31",
+       "figure": "인증 심사 소요 약 4개월, 비용 약 1,500만원; 중소기업 약 30% 수수료 할인"
+      }
+     ]
+    },
+    {
+     "key": "isms_p_annual",
+     "item": "ISMS-P 사후관리(연 1회 사후심사 수수료 + 사후 컨설팅/증적 지원)",
+     "unit": "원/년 (VAT 별도)",
+     "low": 12000000,
+     "mid": 25000000,
+     "high": 40000000,
+     "recommended": 25000000,
+     "confidence": "low",
+     "basis": "유효기간 3년 중 매년 사후심사, 3년차 갱신. 사후심사 수수료 공식 금액 미확보 -> 최초 수수료의 약 50~80%(약 400만~900만) 가정. 사후 컨설팅 1~2MM×10,707,960원. 권장 2,500만/년 = 사후심사 약 500만 + 컨설팅 약 1.9MM. 갱신 연도는 최초 수준 비용 가능.",
+     "sources": [
+      {
+       "title": "ISMS-P 누리집 - ISMS-P 인증심사 절차",
+       "url": "https://isms-p.or.kr/cert/aply/selectCertPrcdDetail.do",
+       "date": "undated",
+       "figure": "최초심사 3년 유효; 사후심사는 유효기간 중 매년 1회 이상; 갱신심사로 연장"
+      },
+      {
+       "title": "이투데이 - 중소기업 ISMS·ISMS-P 인증 간편해진다",
+       "url": "https://www.etoday.co.kr/news/view/2382959",
+       "date": "2024-07-23",
+       "figure": "ISMS-P 수수료 일반 1,000만~1,800만원 / 간편 600만~1,100만원(사후심사 금액 미기재)"
+      },
+      {
+       "title": "KOSA - 2026년 적용 SW기술자 평균임금 공표",
+       "url": "https://www.sw.or.kr/site/sw/ex/board/View.do?cbIdx=304&bcIdx=64717&searchExt1=",
+       "date": "2025-12-19",
+       "figure": "IT 컨설턴트 월 10,707,960원"
+      }
+     ]
+    },
+    {
+     "key": "llm_price_anthropic_in",
+     "item": "LLM API 입력 단가 - Anthropic Claude Sonnet 5",
+     "unit": "원/1M 입력토큰 (VAT 별도)",
+     "low": 1345.9,
+     "mid": 2691.8,
+     "high": 6729.5,
+     "recommended": 2691.8,
+     "confidence": "high",
+     "basis": "USD/MTok × 1,345.9원. Sonnet 5 $2 -> 2,691.8원(권장). low=Haiku 4.5 $1, high=Opus 5 $5. $2/$10 도입가가 표준가로 확정(9/1 인상 취소). 캐시 적중 0.1배, Batch 50% 할인, US 전용 추론 1.1배. Claude 4.7+ 토크나이저 약 30% 더 많은 토큰 생성.",
+     "sources": [
+      {
+       "title": "Anthropic - Pricing (Claude Platform Docs)",
+       "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+       "date": "조회 2026-09-14",
+       "figure": "Claude Sonnet 5 input $2/MTok(cache hits $0.20), Haiku 4.5 $1, Opus 5 $5; Sonnet 5 $2/$10 표준가 확정"
+      },
+      {
+       "title": "파이낸셜뉴스 - 원·달러 환율 6.7원 오른 1345.9원",
+       "url": "https://www.fnnews.com/news/202609111533222331",
+       "date": "2026-09-11",
+       "figure": "USD/KRW 1,345.9원(주간종가, 오후 3시30분 기준)"
+      }
+     ]
+    },
+    {
+     "key": "llm_price_anthropic_out",
+     "item": "LLM API 출력 단가 - Anthropic Claude Sonnet 5",
+     "unit": "원/1M 출력토큰 (VAT 별도)",
+     "low": 6729.5,
+     "mid": 13459,
+     "high": 33647.5,
+     "recommended": 13459,
+     "confidence": "high",
+     "basis": "Sonnet 5 출력 $10 × 1,345.9원 = 13,459원. low=Haiku 4.5 $5, high=Opus 5 $25. Batch 50% 할인.",
+     "sources": [
+      {
+       "title": "Anthropic - Pricing (Claude Platform Docs)",
+       "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+       "date": "조회 2026-09-14",
+       "figure": "Output: Sonnet 5 $10/MTok, Haiku 4.5 $5, Opus 5 $25"
+      },
+      {
+       "title": "파이낸셜뉴스 - 원·달러 환율 1345.9원",
+       "url": "https://www.fnnews.com/news/202609111533222331",
+       "date": "2026-09-11",
+       "figure": "USD/KRW 1,345.9원"
+      }
+     ]
+    },
+    {
+     "key": "llm_price_openai_in",
+     "item": "LLM API 입력 단가 - OpenAI GPT-5.4 (GPT-5.5 아래 중간급)",
+     "unit": "원/1M 입력토큰 (VAT 별도)",
+     "low": 1009.4,
+     "mid": 3364.8,
+     "high": 6729.5,
+     "recommended": 3364.8,
+     "confidence": "high",
+     "basis": "GPT-5.4 $2.50 × 1,345.9원 = 3,364.75원. low=GPT-5.4-mini $0.75, high=GPT-5.5 $5.00. 캐시 입력 0.1배. openai.com/api/pricing은 403이라 공식 개발자 문서 가격표 인용. 중간급 매칭은 판단.",
+     "sources": [
+      {
+       "title": "OpenAI - API Pricing (developers.openai.com)",
+       "url": "https://developers.openai.com/api/docs/pricing",
+       "date": "조회 2026-09-14",
+       "figure": "GPT-5.4 Input $2.50 / Cached $0.25 per 1M; GPT-5.4-mini $0.75; GPT-5.5 $5.00"
+      },
+      {
+       "title": "파이낸셜뉴스 - 원·달러 환율 1345.9원",
+       "url": "https://www.fnnews.com/news/202609111533222331",
+       "date": "2026-09-11",
+       "figure": "USD/KRW 1,345.9원"
+      }
+     ]
+    },
+    {
+     "key": "llm_price_openai_out",
+     "item": "LLM API 출력 단가 - OpenAI GPT-5.4",
+     "unit": "원/1M 출력토큰 (VAT 별도)",
+     "low": 6056.6,
+     "mid": 20188.5,
+     "high": 40377,
+     "recommended": 20188.5,
+     "confidence": "high",
+     "basis": "GPT-5.4 $15.00 × 1,345.9원 = 20,188.5원. low=GPT-5.4-mini $4.50, high=GPT-5.5 $30.00.",
+     "sources": [
+      {
+       "title": "OpenAI - API Pricing (developers.openai.com)",
+       "url": "https://developers.openai.com/api/docs/pricing",
+       "date": "조회 2026-09-14",
+       "figure": "GPT-5.4 Output $15.00 per 1M; GPT-5.4-mini $4.50; GPT-5.5 $30.00"
+      },
+      {
+       "title": "파이낸셜뉴스 - 원·달러 환율 1345.9원",
+       "url": "https://www.fnnews.com/news/202609111533222331",
+       "date": "2026-09-11",
+       "figure": "USD/KRW 1,345.9원"
+      }
+     ]
+    },
+    {
+     "key": "llm_price_clova_in",
+     "item": "LLM API 입력 단가 - NAVER HyperCLOVA X HCX-007",
+     "unit": "원/1M 입력토큰 (VAT 별도)",
+     "low": 250,
+     "mid": 1250,
+     "high": 2500,
+     "recommended": 1250,
+     "confidence": "high",
+     "basis": "원화 공시. HCX-007 입력 1.25원/1K토큰(요금 API 0.00125원/토큰, 2025-07-01~) -> 1,250원/1M. HCX-005 동일. low=HCX-DASH-002 0.25원/1K, high=HCX-005 튜닝모델 2.5원/1K. 상품 페이지 요금칸은 요금 API로 채워짐. VAT 별도 간주(문구 미확인).",
+     "sources": [
+      {
+       "title": "NAVER Cloud Platform - CLOVA Studio 상품 페이지(인퍼런스 요금표)",
+       "url": "https://www.ncloud.com/product/aiService/clovaStudio",
+       "date": "조회 2026-09-14",
+       "figure": "요금표 행: HCX-007(입력)/(출력), HCX-005, HCX-DASH-002 - 기준 1,000 토큰"
+      },
+      {
+       "title": "NAVER Cloud Platform 공식 요금 API (KRW)",
+       "url": "https://www.ncloud.com/api/fees/price/KR/KRW",
+       "date": "조회 2026-09-14",
+       "figure": "HCX-007-IN 0.00125, HCX-007-OUT 0.005, HCX-DASH-002-IN 0.00025, -OUT 0.001, 튜닝 HCX-005-IN 0.0025, -OUT 0.01 (원/토큰)"
+      },
+      {
+       "title": "시사저널e - 메타·xAI 4분의 1 가격 모델 출시···AI 가격전쟁 개막",
+       "url": "https://www.sisajournal-e.com/news/articleView.html?idxno=422366",
+       "date": "2026-07-10",
+       "figure": "HCX-007은 1000토큰 기준 입력 1.25원, 출력 5원"
+      }
+     ]
+    },
+    {
+     "key": "llm_price_clova_out",
+     "item": "LLM API 출력 단가 - NAVER HyperCLOVA X HCX-007",
+     "unit": "원/1M 출력토큰 (VAT 별도)",
+     "low": 1000,
+     "mid": 5000,
+     "high": 10000,
+     "recommended": 5000,
+     "confidence": "high",
+     "basis": "HCX-007 출력 5원/1K토큰(요금 API 0.005원/토큰) -> 5,000원/1M. low=HCX-DASH-002 1원/1K, high=HCX-005 튜닝모델 10원/1K. 환율 리스크 없음.",
+     "sources": [
+      {
+       "title": "NAVER Cloud Platform - CLOVA Studio 상품 페이지",
+       "url": "https://www.ncloud.com/product/aiService/clovaStudio",
+       "date": "조회 2026-09-14",
+       "figure": "요금표: HCX-007(출력) 기준 1,000 토큰"
+      },
+      {
+       "title": "NAVER Cloud Platform 공식 요금 API (KRW)",
+       "url": "https://www.ncloud.com/api/fees/price/KR/KRW",
+       "date": "조회 2026-09-14",
+       "figure": "HCX-007-OUT 0.005원/토큰, HCX-DASH-002-OUT 0.001, 튜닝 HCX-005-OUT 0.01"
+      },
+      {
+       "title": "시사저널e - AI 가격전쟁 개막",
+       "url": "https://www.sisajournal-e.com/news/articleView.html?idxno=422366",
+       "date": "2026-07-10",
+       "figure": "HCX-007 1000토큰 기준 출력 5원"
+      }
+     ]
+    },
+    {
+     "key": "tokens_per_consult",
+     "item": "건강 상담 1건(대화 세션)당 LLM 토큰 사용량 (입력+출력)",
+     "unit": "토큰/상담 1건",
+     "low": 4300,
+     "mid": 20000,
+     "high": 60000,
+     "recommended": 20000,
+     "confidence": "low",
+     "basis": "가정 기반. 단일 RAG 질의 = 프롬프트 800 + 검색 3,000 입력 + 500 출력 ≈ 4,300(low; Anthropic 고객지원 대화 평균 약 3,700과 유사). 검진 상담 4턴: 턴당 800+3,000+누적이력(턴마다 +1,000) -> 입력 약 18,000 + 출력 2,000 = 약 20,000(권장, 입력/출력 분리 사용). high=에이전틱 8턴+ 약 60,000. 1건 비용(캐싱 미적용): Sonnet 5 약 75원, GPT-5.4 약 101원, HCX-007 약 32.5원.",
+     "sources": [
+      {
+       "title": "Anthropic - Pricing (Claude Platform Docs) 비용 예시",
+       "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+       "date": "조회 2026-09-14",
+       "figure": "고객지원 대화당 평균 약 3,700 tokens, Haiku 4.5 기준 10,000건 약 $37"
+      },
+      {
+       "title": "How much does a RAG chatbot cost? (LLM pricing 2026-06)",
+       "url": "https://sundarshahithakuri.com.np/ai-agent-cost/rag-chatbot",
+       "date": "2026-06",
+       "figure": "질문당 약 800 프롬프트 + 약 3,000 검색 토큰 입력, 답변당 약 500 출력 토큰"
+      }
+     ]
+    },
+    {
+     "key": "cloud_base",
+     "item": "운영 클라우드 월 기본비 - 헬스케어 앱 프로덕션(약 30만 회원, NCP VPC; 보안관제·LLM 제외)",
+     "unit": "원/월 (VAT 별도)",
+     "low": 2600000,
+     "mid": 3800000,
+     "high": 6500000,
+     "recommended": 3800000,
+     "confidence": "medium",
+     "basis": "NCP 요금 API bottom-up(730h/월): API 서버 G3 4vCPU/16GB 170,240×4 + 워커 2vCPU/8GB 82,240×3 + AI 게이트웨이 8vCPU/32GB 346,240 + MySQL(VPC) HA 4vCPU/16GB 495원/h×2 = 722,700 + DB 스토리지 116,800 + DB 백업 100,000 + Object Storage 2TB 56,000 + Backup 42,000 + ALB×2 37,960 + NAT 52,880 + 아웃바운드 1TB 100,000 + 로그 100GB 80,000 + 기타 50,000(가정) = 2,632,260원(low). 스테이징 +25%, 읽기복제본 361,350, 캐시 약 15만(가정) -> 약 3,801,675원(권장). high: AWS 서울 RDS PostgreSQL db.m7g.xlarge Multi-AZ $0.9376/h(월 약 92.1만원, NCP 대비 약 1.27배) 기준 약 650만원.",
+     "sources": [
+      {
+       "title": "NAVER Cloud Platform 공식 요금 API (KRW)",
+       "url": "https://www.ncloud.com/api/fees/price/KR/KRW",
+       "date": "조회 2026-09-14",
+       "figure": "Server(VPC) Standard G3 2vCPU/8GB 월 82,240원, 4vCPU/16GB 월 170,240원, 8vCPU/32GB 월 346,240원; Cloud DB for MySQL(VPC) 4vCPU/16GB 495원/시간; DB 백업 100원/GB·월; Object Storage 28원/GB·월; ALB Small 26원/시간; NAT 56원/시간; Network OUT 100원/GB; Log Analytics 800원/GB·월"
+      },
+      {
+       "title": "AWS Price List API - Amazon RDS, Seoul (publicationDate 2026-09-11)",
+       "url": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/ap-northeast-2/index.json",
+       "date": "2026-09-11",
+       "figure": "RDS PostgreSQL db.m7g.xlarge Multi-AZ $0.9376/시간, Single-AZ $0.4688/시간"
+      },
+      {
+       "title": "파이낸셜뉴스 - 원·달러 환율 1345.9원",
+       "url": "https://www.fnnews.com/news/202609111533222331",
+       "date": "2026-09-11",
+       "figure": "USD/KRW 1,345.9원"
+      }
+     ]
+    },
+    {
+     "key": "cloud_per_member",
+     "item": "회원 1인당 증분 클라우드 비용 (LLM·문자 제외)",
+     "unit": "원/회원·월 (VAT 별도)",
+     "low": 4,
+     "mid": 8,
+     "high": 15,
+     "recommended": 8,
+     "confidence": "low",
+     "basis": "cloud_base 중 회원수 비례 항목(컴퓨트 1,273,920 + DB 939,500 + 스토리지·백업 98,000 + 네트워크 152,880 + 로그 80,000 = 약 2,544,300원) ÷ 30만 = 약 8.5원 -> 8원. 회원당 오브젝트 약 6.7MB는 약 0.2원뿐, 대부분 컴퓨트·DB 계단식 증설. low=약정 할인·증설 지연, high=AWS 단가+대용량 검진 PDF/이미지.",
+     "sources": [
+      {
+       "title": "NAVER Cloud Platform 공식 요금 API (KRW)",
+       "url": "https://www.ncloud.com/api/fees/price/KR/KRW",
+       "date": "조회 2026-09-14",
+       "figure": "Server G3 4vCPU/16GB 월 170,240원; MySQL(VPC) 4vCPU/16GB 495원/시간; Object Storage 28원/GB·월; Network OUT 100원/GB"
+      },
+      {
+       "title": "AWS Price List API - Amazon S3, Seoul (publicationDate 2026-09-11)",
+       "url": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/ap-northeast-2/index.json",
+       "date": "2026-09-11",
+       "figure": "S3 Standard $0.025 per GB - first 50 TB / month"
+      }
+     ]
+    },
+    {
+     "key": "storage_per_gb",
+     "item": "오브젝트 스토리지 저장 단가 (표준 클래스)",
+     "unit": "원/GB·월 (VAT 별도)",
+     "low": 26,
+     "mid": 28,
+     "high": 33.6,
+     "recommended": 28,
+     "confidence": "high",
+     "basis": "NCP Object Storage 28원/GB·월(1PB 이하), 1PB 초과 26원. high=AWS S3 서울 $0.025 × 1,345.9 = 33.6원. 요청·전송 별도(NCP PUT 0.0045원/건, GET 0.0004원/건). Archive Storage 5.5원/GB·월 가능.",
+     "sources": [
+      {
+       "title": "NAVER Cloud Platform 공식 요금 API (KRW)",
+       "url": "https://www.ncloud.com/api/fees/price/KR/KRW",
+       "date": "조회 2026-09-14",
+       "figure": "Object Storage Storage Size: 0~1PB 28원/GB·월, 1PB 초과 26원; Archive Storage 5.5원/GB·월"
+      },
+      {
+       "title": "AWS Price List API - Amazon S3, Seoul",
+       "url": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/ap-northeast-2/index.json",
+       "date": "2026-09-11",
+       "figure": "$0.025 per GB first 50 TB; $0.024 next 450 TB; $0.023 over 500 TB"
+      },
+      {
+       "title": "파이낸셜뉴스 - 원·달러 환율 1345.9원",
+       "url": "https://www.fnnews.com/news/202609111533222331",
+       "date": "2026-09-11",
+       "figure": "USD/KRW 1,345.9원"
+      }
+     ]
+    },
+    {
+     "key": "data_maintenance",
+     "item": "데이터 유지관리 외주(DB 운영·데이터 품질/표준화 FHIR·LOINC·백업/로그 점검)",
+     "unit": "원/월 (VAT 별도)",
+     "low": 1900000,
+     "mid": 4000000,
+     "high": 8000000,
+     "recommended": 4000000,
+     "confidence": "medium",
+     "basis": "KOSA 2026: 정보시스템운용자(DB운용자 포함) 10,649,117×0.2MM = 2,129,823 + 데이터분석가 8,499,309×0.2MM = 1,699,862 = 3,829,685원 -> 400만원. low=영천시 데이터 통합 플랫폼 유지보수 추정가격 22,618,182원(연간 가정)÷12 ≈ 188만원. high=운용자 0.4MM+데이터아키텍트 0.3MM ≈ 759만 -> 800만원. 인프라비는 cloud_base 포함.",
+     "sources": [
+      {
+       "title": "KOSA - 2026년 적용 SW기술자 평균임금 공표",
+       "url": "https://www.sw.or.kr/site/sw/ex/board/View.do?cbIdx=304&bcIdx=64717&searchExt1=",
+       "date": "2025-12-19",
+       "figure": "정보시스템운용자 월 10,649,117원; 데이터분석가 월 8,499,309원; IT 아키텍트 월 11,103,230원"
+      },
+      {
+       "title": "KOSA - 2025년 적용 SW기술자 평균임금 공표 (PDF 사본)",
+       "url": "https://files-scs.pstatic.net/2024/12/29/Yp9k9cqjwa/2025%EB%85%84_%EC%A0%81%EC%9A%A9_SW%EA%B8%B0%EC%88%A0%EC%9E%90_%ED%8F%89%EA%B7%A0%EC%9E%84%EA%B8%88_%EA%B3%B5%ED%91%9C.pdf",
+       "date": "2024-12-03",
+       "figure": "정보시스템운용자 포함직무: 데이터베이스운용자, NW엔지니어, IT시스템운용자"
+      },
+      {
+       "title": "비드프로(나라장터 공고 20241144659-00) - 2025년 영천시 데이터 통합 플랫폼 유지보수 용역",
+       "url": "https://www.bidpro.co.kr/n0_ipchal/konggo/svc/konggo_view.asp?num=2756372",
+       "date": "2024-11-29",
+       "figure": "기초금액 24,880,000원 / 추정가격 22,618,182원"
+      }
+     ]
+    },
+    {
+     "key": "security_monitoring",
+     "item": "보안관제 월 비용(클라우드 관리형 24×365: IDS·IPS·Anti-Virus·WAF, 선택 Anti-DDoS)",
+     "unit": "원/월 (VAT 별도)",
+     "low": 580000,
+     "mid": 1200000,
+     "high": 2500000,
+     "recommended": 1200000,
+     "confidence": "medium",
+     "basis": "NCP Security Monitoring 공식 단가, 서버 8대·도메인 2개: IDS 50,000 + AV 24,000×8 + IPS 36,000×8 + WAF LB 25,200×2 = 580,400(low). + Anti-DDoS 200Mbps 300,000×2(이중화) = 1,180,400 -> 120만원. high 250만원 = Single WAF 300Mbps(487,400~624,800) + 외부 MSSP 통합관제 여유(가정). 소규모 원격관제 시장 평균 월 25만원 참고. cloud_base와 중복 없음.",
+     "sources": [
+      {
+       "title": "NAVER Cloud Platform - Security Monitoring 상품 페이지",
+       "url": "https://www.ncloud.com/product/security/securityMonitoring",
+       "date": "조회 2026-09-14",
+       "figure": "과금 기준: Anti-Virus Agent(개); Anti-DDoS 200/300/500/1,000Mbps(이중화); IDS 공인통신(개); IPS Agent(개); WAF LB 도메인/인증서 개수; Single/Multi WAF 300/500/1,000Mbps"
+      },
+      {
+       "title": "NAVER Cloud Platform 공식 요금 API (KRW)",
+       "url": "https://www.ncloud.com/api/fees/price/KR/KRW",
+       "date": "조회 2026-09-14",
+       "figure": "월정액: Anti-Virus 24,000, IDS 50,000, IPS 36,000, WAF LB 25,200, WAF 487,400~1,299,800, DDoS 300,000~1,500,000원"
+      },
+      {
+       "title": "미소(miso.kr) - 보안 관제 비용 얼마일까? 가격 비교 총정리",
+       "url": "https://miso.kr/blog/%EB%B3%B4%EC%95%88-%EA%B4%80%EC%A0%9C-%EB%B9%84%EC%9A%A9",
+       "date": "2025-12-12",
+       "figure": "보안 관제 비용 평균 250,000원(시스템 수·로그량·24시간 여부에 따라 변동)"
+      }
+     ]
+    },
+    {
+     "key": "blockchain_anchor",
+     "item": "데이터 무결성 블록체인 앵커링 단가 (100만 건 기준 합리성 검토)",
+     "unit": "원/건 (VAT 별도)",
+     "low": 0.1,
+     "mid": 6.3,
+     "high": 40,
+     "recommended": 40,
+     "confidence": "medium",
+     "basis": "주어진 40원/건(100만 건=4,000만원) 유지하되 보수적 상한임을 명시. Kaia: 69,002 gas × 27.5 Gkei = 0.0019 KAIA × $0.02999(CoinGecko 2026-09-14 조회) × 1,345.9 ≈ 0.08원/건. Polygon: ERC-20 전송 $0.002 ≈ 2.7원/건. NCP Blockchain Service 120원/vCPU·h -> 3노드×2vCPU×730h = 525,600원/월, 연 630만÷100만 ≈ 6.3원/건(mid). 머클 배치 앵커링이면 체인 수수료 무시 가능. 40원은 검증 API·연동·운영·키관리·BaaS 마진 포함 올인 예산으로 방어 가능하나 원가 대비 큰 여유.",
+     "sources": [
+      {
+       "title": "Kaia Docs - How to estimate gas limits and prices on Kaia Wallet and MetaMask",
+       "url": "https://docs.kaia.io/build/cookbooks/estimate-gaslimits-prices-cookbook/",
+       "date": "undated",
+       "figure": "base fee 25 Gkei + priority 2.5 Gkei 예시; 컨트랙트 mint 69,002 gas; 일반 전송 약 21,000 gas"
+      },
+      {
+       "title": "PolygonScan - Polygon Gas Tracker",
+       "url": "https://polygonscan.com/gastracker",
+       "date": "2026-09-14",
+       "figure": "Standard 268.354 Gwei, POL $0.096, ERC-20 Transfer 추정 $0.002"
+      },
+      {
+       "title": "NAVER Cloud Platform 공식 요금 API (KRW)",
+       "url": "https://www.ncloud.com/api/fees/price/KR/KRW",
+       "date": "조회 2026-09-14",
+       "figure": "Blockchain Service ca/orderer/peer 각 120원/vCPU·시간"
+      }
+     ]
+    }
+   ],
+   "caveats": [
+    "환율: 모든 USD 단가는 1,345.9원/USD(2026-09-11 서울외환시장 주간종가, 파이낸셜뉴스)로 환산. 환율 10% 변동 시 Anthropic/OpenAI/AWS 원화 환산액도 10% 변동. CLOVA·NCP는 원화 공시가라 환율 영향 없음.",
+    "VAT: 권장치는 모두 VAT 별도. 공공조달 기초금액/배정예산은 VAT 포함, 추정가격이 VAT 제외 금액. NCP 요금 페이지의 '부가세 별도' 문구는 직접 확인하지 못했으나 원화 공시 단가를 VAT 별도로 간주.",
+    "NCP 단가는 ncloud.com 상품 페이지 요금표 칸을 채우는 공식 요금 API(https://www.ncloud.com/api/fees/price/KR/KRW, 2026-09-14 조회)에서 추출(정적 HTML에는 요금 코드만 있고 금액은 이 API로 채워짐). 동일 상품에 복수 가격이 유효로 표시된 경우(Security Monitoring WAF 등) 범위로 제시.",
+    "KOSA는 2019년부터 고급/중급/초급 등급별 단가를 공표하지 않음. sw_wage_2026 요청을 sw_wage_2026_mid(응용SW개발자)와 sw_wage_2026_senior(IT아키텍트) 두 항목으로 나눴으며, 둘 다 직무 기반 대용치임. 투자 문서에는 '직무별 평균임금 적용'으로 표기 권장. KOSA 평균임금은 회사 부담 인건비(퇴직충당금·4대보험 포함)이며 SI 견적에는 간접비·이윤이 추가될 수 있음.",
+    "ai_build_module·ai_platform_common·data_maintenance는 KOSA 단가×투입 MM bottom-up과 시장 견적·공공조달 예산의 삼각측량. 투입 MM, 외주 간접비(모듈 20%, 플랫폼 상단 50%), 보안 솔루션 라이선스 0.4억원은 조사자가 둔 가정치이며 출처 없음.",
+    "공공조달 사례(SH-AI 포털 56.3억, 건보공단 11억, 경기도 4.17억)는 감리·보안·산출물·인프라 요건이 포함된 공공 규모라 스타트업 린 구축의 상한 검증용으로만 사용. 경기도 챗봇 운영·유지관리 용역(기초금액 7.66억, 2025-11 공고, 유찰)은 사업기간을 확인하지 못해 사용하지 않음.",
+    "ISMS-P: 사후심사 수수료 공식 금액과 컨설팅 시장 단가를 1차 출처로 확보하지 못해 isms_p_annual은 confidence low. KISA 인증수수료 산정내역서(엑셀)는 접속 불가로 확인하지 못함. 간편인증 대상 요건과 민감정보 처리 규모에 따라 일반인증 대상일 수 있음. 보안 솔루션 도입비는 제외.",
+    "tokens_per_consult는 공개 벤치마크가 아닌 가정 기반 추정(confidence low). 파일럿 로그로 입력/출력 토큰을 실측해 교체 권장. 프롬프트 캐싱(Anthropic 캐시 적중 0.1배, OpenAI 캐시 입력 0.1배)을 쓰면 입력 비용이 크게 줄어듦.",
+    "cloud_base·cloud_per_member는 구성 가정(서버 8대, HA DB 1쌍+읽기 복제본, 오브젝트 2TB, 아웃바운드 1TB/월)에 민감. 캐시(약 15만원)·기타 모니터링(5만원)과 DB 스토리지 단가(SSD 블록 스토리지 단가 준용)는 가정치. LLM 토큰, 문자/알림톡, 영상상담 트래픽은 제외.",
+    "blockchain_anchor: 암호화폐 가격(KAIA, POL)과 가스비는 변동성이 커 2026-09-14 조회 시점 수치. 증거상 체인 수수료는 건당 1원 미만~수 원 수준이라 40원/건은 매우 보수적인 올인 예산임. 원가가 아니라 운영·연동 포함 상한으로 설명하는 것이 안전. Ethereum L1 수수료는 확인하지 못함(etherscan 시간 초과).",
+    "OpenAI 공식 가격 페이지(openai.com/api/pricing)는 403으로 직접 확인하지 못해 공식 개발자 문서 가격표(developers.openai.com/api/docs/pricing)를 인용. OpenAI 중간급 모델로 GPT-5.4를 고른 것은 조사자 판단임."
+   ],
+   "check": {
+    "verdicts": [
+     {
+      "key": "ai_build_module",
+      "status": "confirmed",
+      "note": "g2b PDF text: 사업예산 금 215,000,000원(부가가치세 별도), 용역기간 계약체결일~2026.10.15, KMAC (scope also includes face-recognition integration). bidpro R25BK00751232-000 (2025-03-28): 기초금액/배정예산 417,000,000, 추정가격 379,090,909. TreeSoop (2025-09-23): RAG 4,000~8,000만(8~14주), agentic 6,000만~1.5억; VAT not stated, secondary blog. KOSA 2026 wages verified; bottom-up 85,358,711 x1.2 = 102.4M correct. Caveat: the 20% overhead is a lean-outsourcing assumption; a formal SW사업 대가산정 (직접인건비 + 제경비 + 기술료) would load far more. Full verdict file: C:/Users/user/AppData/Local/Temp/claude/C--Users-user-OneDrive----001-------02-HI-human------------/f0706602-45bb-4d6f-a3e3-b14f3d9081ab/scratchpad/research/it_check.json"
+     },
+     {
+      "key": "sw_wage_2026_mid",
+      "status": "confirmed",
+      "note": "KOSA page (2025-12-19): 응용 SW 개발자 월 7,754,124 / 일 378,250, 데이터분석가 8,499,309, +4.7%, 일=월/20.5일. 2025 PDF (2024-12-03, text-extracted): 응용SW개발자 6,943,457, 포함직무 빅데이터·인공지능개발자, 25/75 백분위 219,087/449,024 (M/D), includes 퇴직급여충당금·법인부담금, 2025 divisor 20.6일. The 2025 PDF URL is a Naver-hosted mirror (files-scs.pstatic.net), not KOSA's own domain."
+     },
+     {
+      "key": "sw_wage_2026_senior",
+      "status": "confirmed",
+      "note": "KOSA 2026: IT 아키텍트 11,103,230 / 541,621, IT PM 10,086,804, IT 기획자 11,853,218. 2025 PDF: IT아키텍트 10,147,745, 포함직무 SW·데이터·Infrastructure·DB 아키텍트. 449,024 x 20.6 = 9,249,894 correct, but it is a 2025 percentile. Proxy choice is judgment."
+     },
+     {
+      "key": "ai_platform_common",
+      "status": "confirmed",
+      "note": "Cited figures verified: KOSA 7 wages match; 30MM sum 263,159,354 correct. bidpro R26BK01385495-000 (2026-03-11): 기초금액 5,632,192,000, 추정가격 5,120,174,545, 10개월, 유찰. newsis (2025-09-08): 약 11억. A quick search found no better startup-scale source. The 3억 still rests on assumed MM, a 0.4억 license and 50% high-end overhead; the 36MM composition is not shown. Keep low confidence."
+     },
+     {
+      "key": "isms_p_initial",
+      "status": "confirmed",
+      "note": "etoday (2024-07-23): ISMS-P 1,000만~1,800만 -> 간편인증 600만~1,100만, 2024-07-24 시행. Eligible: 정보통신서비스 매출 300억 미만 중소기업 etc. (금융·주요 ICT·일부 병원·대학·가상자산 제외). VAT not stated. KOSA IT 컨설턴트 10,707,960 verified. Math 27.4M/45.3M/71.5M correct. Flag: the comworld source is 2021-01-31 (pre-2024), and its 약 1,500만원 and 30% discount describe the old fee system. Do not present it as current."
+     },
+     {
+      "key": "isms_p_annual",
+      "status": "unsupported",
+      "note": "isms-p.or.kr confirms 3년 유효, 사후심사 매년 1회 이상 and 갱신심사, but gives no fee figures. A quick search found no primary 2024-2026 사후심사 fee: the KISA 산정내역서 is a 2018-era file, and cela.kr and exosp.com returned 403. The main component (사후심사 약 500만) is an assumption. 25M is inside its range but has no source."
+     },
+     {
+      "key": "llm_price_anthropic_in",
+      "status": "confirmed",
+      "note": "Anthropic pricing doc: Sonnet 5 $2/MTok (cache hit $0.20), Haiku 4.5 $1, Opus 5 $5. The doc says $2/$10 is now standard and the 2026-09-01 increase to $3/$15 will not happen. Tokenizer ~30% note and US-only 1.1x verified. fnnews 2026-09-11: 1,345.9원. 주간종가 means the daytime-session close at 15:30, not a weekly close. 2,691.8 correct."
+     },
+     {
+      "key": "llm_price_anthropic_out",
+      "status": "confirmed",
+      "note": "Output: Sonnet 5 $10, Haiku 4.5 $5, Opus 5 $25; Batch 50% verified. Conversions 13,459 / 6,729.5 / 33,647.5 correct."
+     },
+     {
+      "key": "llm_price_openai_in",
+      "status": "confirmed",
+      "note": "developers.openai.com: GPT-5.4 input $2.50 (<272K context tier), cached $0.25; GPT-5.4-mini $0.75; GPT-5.5 $5.00. Conversions 3,364.8 / 1,009.4 / 6,729.5 correct."
+     },
+     {
+      "key": "llm_price_openai_out",
+      "status": "confirmed",
+      "note": "GPT-5.4 output $15.00, mini $4.50, GPT-5.5 $30.00 verified. Conversions 20,188.5 / 6,056.6 / 40,377 correct."
+     },
+     {
+      "key": "llm_price_clova_in",
+      "status": "confirmed",
+      "note": "NCP KRW price API (parsed): PLGR_HCX7_IN 0.00125원/token (from 2025-07-01), PLGR_HCX5_IN 0.00125, PLGR_DASH2_IN 0.00025, APP_HCX5_IN (tuned) 0.0025, giving 1,250/250/2,500원 per 1M. The CLOVA Studio page HTML shows (VAT 별도), which settles the researcher's VAT caveat. sisajournal-e 2026-07-10: 입력 1.25원·출력 5원 per 1K tokens."
+     },
+     {
+      "key": "llm_price_clova_out",
+      "status": "confirmed",
+      "note": "API: PLGR_HCX7_OUT 0.005, PLGR_DASH2_OUT 0.001, APP_HCX5_OUT 0.01원/token, giving 5,000/1,000/10,000원 per 1M. VAT 별도 confirmed on the product page."
+     },
+     {
+      "key": "tokens_per_consult",
+      "status": "corrected",
+      "corrected_recommended": 23200,
+      "note": "Cited figures verified: Anthropic ~3,700 tokens per support conversation; sundarshahithakuri (individual consultant blog, 2026-06) 800 prompt + 3,000 retrieved in, 500 out. Arithmetic flag: the stated method (4 turns x (800+3,000) + history 0/1,000/2,000/3,000) gives 21,200 input + 2,000 output = 23,200, not 18,000 + 2,000. Uncached cost per consult: Sonnet 5 ~84원, GPT-5.4 ~112원, HCX-007 ~36.5원. Secondary 2026 blogs put a typical support chat at 2,000-5,000 tokens, so this is conservative. Still low confidence."
+     },
+     {
+      "key": "cloud_base",
+      "status": "confirmed",
+      "note": "All NCP unit prices verified in the KRW API: G3 2/8 82,240, 4/16 170,240, 8/32 346,240원/월; Cloud DB 4vCPU/16GB 495원/h; DB backup 100원/GB; ALB Small 26원/h; NAT 56원/h; Network OUT 100원/GB (first 20GB free); Log Analytics 800원/GB (first 1GB free). NCP product pages show VAT 별도. AWS RDS Seoul (pub 2026-09-11): db.m7g.xlarge PostgreSQL Multi-AZ $0.9376/h, Single $0.4688/h. Totals 2,632,260 and 3,801,675 recompute correctly. Minor: the NAT line 52,880 is not 56x730 = 40,880. The extra 12,000 is presumably throughput (60원/GB x 200GB) but is unstated. Server count, DB storage and cache are assumptions."
+     },
+     {
+      "key": "cloud_per_member",
+      "status": "corrected",
+      "corrected_recommended": 12,
+      "note": "2,544,300 / 300,000 = 8.48 is correct, but it is built from the LOW 2.63M configuration. Applying the same variable components to the RECOMMENDED 3.8M configuration (staging +25%, read replica 361,350, cache 150,000) gives about 3.69M / 300k = about 12.3원/member·month, consistent with cloud_base. External check: SpendArk blog (2026-03-22, vendor benchmark, not primary) gives $0.05-0.30/MAU at 100K and $0.01-0.10 at 1M MAU (about 13-400원), so 8원 sits at or below the lean end. The high of 15 may be too low if members are active. Keep low confidence."
+     },
+     {
+      "key": "storage_per_gb",
+      "status": "confirmed",
+      "note": "NCP API OSSZ tier: 28원/GB·월 up to 1PiB, 26 above; Archive 5.5; PUT 0.0045, GET 0.0004원/건. AWS S3 Seoul (pub 2026-09-11): $0.025 first 50TB, $0.024 next 450TB, $0.023 over. 0.025 x 1,345.9 = 33.65, shown as 33.6. NCP VAT 별도 confirmed."
+     },
+     {
+      "key": "data_maintenance",
+      "status": "confirmed",
+      "note": "KOSA 2026 정보시스템운용자 10,649,117, 데이터분석가 8,499,309, IT 아키텍트 11,103,230 verified; the 2025 PDF lists 데이터베이스운용자 under 정보시스템운용자. Math 3,829,685 and 7,590,616 correct. bidpro 20241144659-00 (2024-11-29): 기초금액 24,880,000, 추정가격 22,618,182 verified. The contract period is not shown, so the 12-month basis for the low (~188만/월) is unverified. Mid and high rest on assumed MM."
+     },
+     {
+      "key": "security_monitoring",
+      "status": "confirmed",
+      "note": "NCP API: AV 24,000, IDS 50,000, IPS 36,000, WAF LB (Large) 25,200 (XL 32,400), DDoS 200Mbps 300,000, WAF 300Mbps 487,400/624,800원/월. The product page shows (VAT 별도) and says prices include a 보안관제 전문기업 service. Low 580,400 correct. Flag: the Anti-DDoS x2 is not supported by the current page, which only says Anti-DDoS/Multi WAF provide redundancy by default. I found no doubled-billing text on the current NCP or gov-ncloud pages. If billed once, the total is 880,400. 120만 is still in range as a conservative figure. miso.kr 250,000원 (2025-12-12) verified but has no underlying data."
+     },
+     {
+      "key": "blockchain_anchor",
+      "status": "confirmed",
+      "note": "Kaia docs: base 25 + priority 2.5 Gkei, mint 69,002 gas. The page is dated Last updated 2025-09-30, not undated. Live kaia_gasPrice RPC = 27.5 Gkei; CoinGecko KAIA $0.02992, so ~0.077원/tx is correct. PolygonScan 2026-09-14: 267.8 Gwei, POL $0.0958, ERC-20 transfer $0.002, ~2.7원. NCP Blockchain 120원/vCPU·h verified; 525,600원/월, ~6.3원/건 at 1M/yr. Recommended 40 equals the high bound (not outside) but is ~6x mid and ~15x Polygon. Present it as an all-in budget, not unit cost. Crypto spot prices are volatile."
+     }
+    ]
+   }
+  },
+  {
+   "topic": "bench",
+   "summary": "DART 1차 공시(사업보고서·감사보고서·투자설명서·공정위 대규모기업집단현황공시)와 국민연금 기반 인원(사람인·잡코리아)으로 국내 디지털헬스·인슈어테크 15개사 + NAVER·카카오의 1인당 매출(RPE), 인원-매출 탄력성, 광고선전비율을 산출. 비교 가능 11개 피어의 RPE 중앙값은 약 1.96억원/인(IQR 1.34~2.71억), 흑자·BEP 근접 피어(레몬헬스케어 1.88억, 뱅크샐러드 1.74억, 비브로스 2.03억, 에임메드 2.87억, GC케어 1.34억, 메디에이지 1.96억)는 1.3~2.9억 구간. 대형 앵커는 별도 기준 NAVER 13.9억·카카오 6.8억. 인원 탄력성은 초기 고성장 플랫폼 0.19~0.28(뱅크샐러드·카카오헬스케어), 성숙 플랫폼 장기 0.63~0.65(NAVER·카카오 2019→2025), 해외 SaaS 규모별 횡단면 0.70~0.83 → 1년차 이후 권장 0.5(매출 2배 시 인원 약 +41%). 광고선전비/매출은 13개사 중앙값 3.3%(IQR 0.75~16%)이며 B2B·보험사 위탁형 0.03~1.2%, 앱 기반 핀테크 2.5~5%, B2C 확산기 13~18%, 공격적 유료획득 32~49%로 사업모델별 편차가 큼. Full JSON saved to C:/Users/user/AppData/Local/Temp/claude/C--Users-user-OneDrive----001-------02-HI-human------------/f0706602-45bb-4d6f-a3e3-b14f3d9081ab/scratchpad/research/bench.json",
+   "items": [
+    {
+     "key": "rpe_lemonhealthcare",
+     "item": "레몬헬스케어 (실손24·청구의신, KOSDAQ 2026 상장) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 169726617,
+     "mid": 187697671,
+     "high": 192220506,
+     "recommended": 187697671,
+     "basis": "FY2025 영업수익 15,954,302,019원(감사보고서) ÷ 직원 85명(2026.6.30 반기보고서, 등기임원 제외·미등기임원 포함) = 1.877억. High = ÷83명(투자설명서, 증권신고서 제출일 기준) = 1.922억; Low = ÷94명(언론 보도 인원) = 1.697억. Headcount is ~6개월 after FY-end, headcount was broadly flat (83→85). Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 레몬헬스케어 감사보고서 (2025.12), 삼도회계법인",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260406001256",
+       "figure": "영업수익 제9기 15,954,302,019원 / 제8기 14,877,435,860원; 영업이익(손실) (662,799,992)원",
+       "date": "2026-04-06"
+      },
+      {
+       "title": "DART 레몬헬스케어 반기보고서 (2026.06)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260814002913",
+       "figure": "직원 등 현황 기준일 2026.06.30 합계 85명",
+       "date": "2026-08-14"
+      },
+      {
+       "title": "DART 레몬헬스케어 [기재정정] 투자설명서",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260623000244",
+       "figure": "직원 등 현황(증권신고서 제출일 현재) 합계 83명",
+       "date": "2026-06-23"
+      }
+     ]
+    },
+    {
+     "key": "rpe_banksalad",
+     "item": "뱅크샐러드 (마이데이터·건강검진/유전자검사 연계 핀테크) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 109876976,
+     "mid": 174453121,
+     "high": 183699753,
+     "recommended": 174453121,
+     "basis": "FY2025 연결 수익(매출액) 25,993,515,036원 ÷ 2025.12.31 직원 149명(휴직자 포함, 등기임원 제외) = 1.745억. Low = FY2024 14,723,514,792원 ÷ 134명 = 1.099억. High = FY2025 매출 ÷ 기초·기말 평균 141.5명 = 1.837억. 1년 새 매출 +76.5%, 인원 +11.2%로 RPE 급상승. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 뱅크샐러드 사업보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260331004974",
+       "figure": "연결 포괄손익계산서 수익(매출액) 제14기 25,993,515,036원 / 제13기 14,723,514,792원; 직원 합계 149명(2025.12.31)",
+       "date": "2026-03-31"
+      },
+      {
+       "title": "DART 뱅크샐러드 사업보고서 (2024.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250331004154",
+       "figure": "직원 합계 134명(2024.12.31)",
+       "date": "2025-03-31"
+      },
+      {
+       "title": "ZDNet Korea, 뱅크샐러드 2025년 연간 매출액 260억…전년비 77%↑",
+       "url": "https://zdnet.co.kr/view/?no=20260401095412",
+       "figure": "2025 매출 260억원, 전년 147억원 대비 77% 성장",
+       "date": "2026-04-01"
+      }
+     ]
+    },
+    {
+     "key": "rpe_kakaohealthcare",
+     "item": "카카오헬스케어 (파스타·의료데이터 플랫폼; 2025년 카카오가 매각) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 26239766,
+     "mid": 53335155,
+     "high": 53335155,
+     "recommended": 53335155,
+     "basis": "FY2024 영업수익 11,947,074,750원 ÷ 종업원 224명(대규모기업집단현황공시 2025년 지정일 기준) = 0.533억. Low = FY2023 4,487백만원 ÷ 171명(2024년 지정일) = 0.262억. FY2025 매출은 23,120,133,247원(+93.5%)이나 2025말 인원 공시를 찾지 못해 산출 제외(카카오그룹 이탈로 2026 기업집단공시 없음). 대규모 적자(2025 영업손실 392억) 성장투자 단계라 RPE가 낮음. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 카카오헬스케어 감사보고서 (2025.12), 삼정회계법인",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260410001546",
+       "figure": "영업수익 제4기 23,120,133,247원 / 제3기 11,947,074,750원; 영업손실 (39,225,167,196)원",
+       "date": "2026-04-10"
+      },
+      {
+       "title": "DART 카카오헬스케어 대규모기업집단현황공시[연1회] (2025)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250530002339",
+       "figure": "종업원수 224명(금년도 지정일 기준), 결산일 2024.12.31; 매출액 11,947백만원",
+       "date": "2025-05-30"
+      },
+      {
+       "title": "DART 카카오헬스케어 [기재정정] 대규모기업집단현황공시[연1회] (2024)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20240531002949",
+       "figure": "종업원수 171명; 직전연도 매출액 4,487백만원",
+       "date": "2024-05-31"
+      }
+     ]
+    },
+    {
+     "key": "rpe_gooddoc",
+     "item": "굿닥 (병원 예약·접수 앱, 케어랩스 계열) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 22295455,
+     "mid": 32400000,
+     "high": 121837838,
+     "recommended": 22295455,
+     "basis": "FY2025 매출 981백만원 ÷ 종업원 44명(2026년 지정일) = 0.223억. Mid = FY2024 972백만원 ÷ 30명 = 0.324억; High = FY2023 4,508백만원 ÷ 37명 = 1.218억. 매출이 2023→2024에 급감하고 영업손실(2025 -52.7억)이 커 정상 상태 벤치마크로 부적합 — 참고치로만 사용. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 굿닥 대규모기업집단현황공시[연1회] (2026)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260529001166",
+       "figure": "종업원수 44명; 2025 매출액 981백만원, 영업이익 -5,267백만원",
+       "date": "2026-05-29"
+      },
+      {
+       "title": "DART 굿닥 대규모기업집단현황공시[연1회] (2025)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250530000911",
+       "figure": "종업원수 30명; 2024 매출액 972백만원, 영업이익 -5,104백만원",
+       "date": "2025-05-30"
+      },
+      {
+       "title": "DART 굿닥 대규모기업집단현황공시[연1회] (2024)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20240531000750",
+       "figure": "종업원수 37명; 2023 매출액 4,508백만원",
+       "date": "2024-05-31"
+      }
+     ]
+    },
+    {
+     "key": "rpe_tossinsurance",
+     "item": "토스인슈어런스 (보험대리점 GA·인슈어테크) 1인당 매출 — 비교 부적합 참고치",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 2543103450,
+     "mid": 2543103450,
+     "high": 2543103450,
+     "recommended": 2543103450,
+     "basis": "FY2025 영업수익 200,905,172,589원(감사보고서) ÷ 종업원 79명(2026년 지정일 대규모기업집단현황공시) = 25.4억. 영업수익은 보험 판매수수료 총액이며 위촉 설계사(2024.9 기준 2,000명+)는 종업원수에 포함되지 않아 RPE가 과대 산출됨. 하이핀 인력계획 벤치마크에서는 제외 권장(총액인식 GA 구조 참고용). Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "DART 토스인슈어런스 감사보고서 (2025.12), 삼덕회계법인",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260327000754",
+       "figure": "영업수익 제8기 200,905,172,589원 / 제7기 120,138,485,616원; 영업이익 9,164,831,658원",
+       "date": "2026-03-27"
+      },
+      {
+       "title": "DART 토스인슈어런스 대규모기업집단현황공시[연1회] (2026)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260528000298",
+       "figure": "종업원수 79명(금년도 지정일 기준), 매출액 200,905백만원",
+       "date": "2026-05-28"
+      },
+      {
+       "title": "뉴스핌, 토스인슈어런스 설계사 2000명 돌파…설립 후 첫 흑자 전환",
+       "url": "https://www.newspim.com/news/view/20240926000376",
+       "figure": "소속 설계사 2,000명 돌파 (기사 제목)",
+       "date": "2024-09-26"
+      }
+     ]
+    },
+    {
+     "key": "rpe_aimmed",
+     "item": "에임메드 (보험사 건강관리서비스 B2B·디지털치료기기) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 287471171,
+     "mid": 287471171,
+     "high": 287471171,
+     "recommended": 287471171,
+     "basis": "FY2025 매출액 28,172,174,712원(감사보고서) ÷ 국민연금 가입자 98명(사람인, 2026.8 조회) = 2.875억. 매출원가 221억(78%)에 외주·위탁 인력이 포함됐을 가능성이 있어 정규 인원 기준 RPE가 높게 나올 수 있음. 인원·매출 시점 불일치(2025 매출 vs 2026 인원). Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 에임메드 감사보고서 (2025.12), 다산회계법인",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260403001507",
+       "figure": "매출액 제27기 28,172,174,712원 / 제26기 24,988,422,114원; 영업이익 562,917,290원",
+       "date": "2026-04-03"
+      },
+      {
+       "title": "사람인 기업정보 (주)에임메드",
+       "url": "https://www.saramin.co.kr/zf_user/company-info/view/csn/eG1BWkJ4Y3JNNVRWVm05eHhFeGh2UT09/company_nm/(%EC%A3%BC)%EC%97%90%EC%9E%84%EB%A9%94%EB%93%9C",
+       "figure": "사원수 98명(출처: 국민연금)",
+       "date": "2026-07-28 (page update)"
+      }
+     ]
+    },
+    {
+     "key": "rpe_gccare",
+     "item": "GC케어 (기업 임직원 건강관리·검진 B2B) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 133561475,
+     "mid": 133561475,
+     "high": 138167043,
+     "recommended": 133561475,
+     "basis": "FY2025 별도 매출액 44,075,286,782원(감사보고서) ÷ 330명(잡코리아 2026 기업정보) = 1.336억. High = ÷319명(사람인 검색 스니펫, 미검증) = 1.382억. 2025년 영업이익 4.67억으로 흑자전환. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART GC케어 감사보고서 (2025.12), 삼정회계법인",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260327000983",
+       "figure": "매출액 제23기 44,075,286,782원 / 제22기 39,001,034,985원; 영업이익 466,988,768원",
+       "date": "2026-03-27"
+      },
+      {
+       "title": "잡코리아 ㈜GC케어 기업정보",
+       "url": "https://www.jobkorea.co.kr/company/1504650",
+       "figure": "사원수 330명 (2026)",
+       "date": "undated (2026)"
+      }
+     ]
+    },
+    {
+     "key": "rpe_mediage",
+     "item": "메디에이지 (건강검진 기반 생체나이·건강리포트) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 195909458,
+     "mid": 195909458,
+     "high": 195909458,
+     "recommended": 195909458,
+     "basis": "FY2025 영업수익 3,918,189,160원(감사보고서) ÷ 국민연금 가입자 20명(사람인) = 1.959억. 소규모(20명) 기업이라 인원 1~2명 변동에도 RPE가 크게 흔들림. 2024→2025 매출 +75%, 흑자전환(영업이익 2.4억). Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 메디에이지 감사보고서 (2025.12), 예지회계법인",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260402002479",
+       "figure": "영업수익 제15기 3,918,189,160원 / 제14기 2,239,008,544원; 영업이익 241,065,267원",
+       "date": "2026-04-02"
+      },
+      {
+       "title": "사람인 기업정보 (주)메디에이지",
+       "url": "https://www.saramin.co.kr/zf_user/company-info/view/csn/d3FrOXJPSlBiZG41NFFYdDhlTGZ4dz09/company_nm/(%EC%A3%BC)%EB%A9%94%EB%94%94%EC%97%90%EC%9D%B4%EC%A7%80",
+       "figure": "사원수 20명(출처: 국민연금)",
+       "date": "2026-07-21 (page update)"
+      }
+     ]
+    },
+    {
+     "key": "rpe_bbros",
+     "item": "비브로스 (똑닥, 병원 접수·예약 유료구독) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 203200000,
+     "mid": 225000000,
+     "high": 247804878,
+     "recommended": 203200000,
+     "basis": "FY2025 매출 101.6억원(잡코리아/NICE평가정보, 2025.12 기준) ÷ 50명(잡코리아) = 2.032억. High = ÷41명(사람인 국민연금) = 2.478억. 2024 매출 96.3억·영업이익 8.2억 → 2025 영업이익 18.3억. DART 감사보고서는 FY2021분(2022.3 제출)이 마지막으로 조회되어 매출은 NICE 집계치(1차 공시 아님). Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "잡코리아 ㈜비브로스 기업정보 (NICE평가정보 재무)",
+       "url": "https://www.jobkorea.co.kr/recruit/co_read/c/bbros6",
+       "figure": "매출액 2025 101억 6천만원, 2024 96억 2천만원; 영업이익 2025 18억 3천만원; 사원수 50명",
+       "date": "undated (2025.12 기준)"
+      },
+      {
+       "title": "사람인 기업정보 (주)비브로스",
+       "url": "https://www.saramin.co.kr/zf_user/company-info/view/csn/UlV0ZWNHTEZRdEJxQWRqbEtHQVI1QT09/company_nm/(%EC%A3%BC)%EB%B9%84%EB%B8%8C%EB%A1%9C%EC%8A%A4",
+       "figure": "사원수 41명(출처: 국민연금)",
+       "date": "2026-07-25 (page update)"
+      }
+     ]
+    },
+    {
+     "key": "rpe_caredoc",
+     "item": "케어닥 (간병·요양 매칭 플랫폼) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 43886486,
+     "mid": 51549206,
+     "high": 51549206,
+     "recommended": 51549206,
+     "basis": "FY2024 매출 32억 4,760만원(사람인/NICE) ÷ 국민연금 가입자 63명(사람인) = 0.515억. Low = ÷74명(잡코리아) = 0.439억. 매출·인원 시점 불일치(2024 매출 vs 2026 인원), DART 감사보고서 미확인, 적자(2024 영업손실 48.7억) 기업. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "사람인 (주)케어닥 재무정보",
+       "url": "https://www.saramin.co.kr/zf_user/company-info/view-inner-finance/csn/bG5BTk5vdFY2bFltZXB6ak94UFFXZz09/company_nm/(%EC%A3%BC)%EC%BC%80%EC%96%B4%EB%8B%A5",
+       "figure": "2024년 매출액 32억 4,760만원 (페이지 제목)",
+       "date": "undated"
+      },
+      {
+       "title": "사람인 (주)케어닥 기업정보",
+       "url": "https://www.saramin.co.kr/zf_user/company-info/view/csn/bG5BTk5vdFY2bFltZXB6ak94UFFXZz09/nomo/1/company_nm/(%EC%A3%BC)%EC%BC%80%EC%96%B4%EB%8B%A5",
+       "figure": "사원수 63명(출처: 국민연금)",
+       "date": "2026-07-24 (page update)"
+      },
+      {
+       "title": "잡코리아 ㈜케어닥 기업정보",
+       "url": "https://www.jobkorea.co.kr/recruit/co_read/c/caredoc0419",
+       "figure": "사원수 74명; 매출 2024 32억 4천만원, 영업이익 2024 -48억 7천만원",
+       "date": "undated (2026)"
+      }
+     ]
+    },
+    {
+     "key": "rpe_doctornow",
+     "item": "닥터나우 (비대면진료·약배달) 1인당 매출 — 수익화 전 단계 참고치",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 26829268,
+     "mid": 26829268,
+     "high": 26829268,
+     "recommended": 26829268,
+     "basis": "FY2024 매출 11억원(뉴스투데이 보도) ÷ 국민연금 가입자 41명(사람인, 2026) = 0.268억. 매출·인원 시점 불일치(인력 감축 후 인원), 영업손실 103억 수준의 수익화 전 단계라 벤치마크 제외 권장. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "low",
+     "sources": [
+      {
+       "title": "뉴스투데이, [수상한 닥터나우 (下)] 누적된 적자로 몸살",
+       "url": "https://www.news2day.co.kr/article/20251208500139",
+       "figure": "매출 2022 27억·2023 26억·2024 11억원; 영업손실 2024 103억원",
+       "date": "2025-12-08"
+      },
+      {
+       "title": "사람인 (주)닥터나우 기업정보",
+       "url": "https://www.saramin.co.kr/zf_user/company-info/view/csn/NWUyMlNZMkNObUdxazh1WDBKZytOdz09/company_nm/(%EC%A3%BC)%EB%8B%A5%ED%84%B0%EB%82%98%EC%9A%B0",
+       "figure": "사원수 41명(출처: 국민연금)",
+       "date": "2026-03-06 (page update)"
+      }
+     ]
+    },
+    {
+     "key": "rpe_healingpaper",
+     "item": "힐링페이퍼 (강남언니, 미용의료 플랫폼) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 278586988,
+     "mid": 278586988,
+     "high": 458649310,
+     "recommended": 278586988,
+     "basis": "FY2025 영업수익 75,218,486,767원(감사보고서) ÷ 국민연금 가입자 270명(사람인) = 2.786억. High = ÷164명(원티드 표기 인원) = 4.586억(인원 기준 상이, 참고). 2024→2025 매출 +41.9%. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 힐링페이퍼 감사보고서 (2025.12), 삼일회계법인",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260410001641",
+       "figure": "영업수익 제14기 75,218,486,767원 / 제13기 53,008,164,518원",
+       "date": "2026-04-10"
+      },
+      {
+       "title": "사람인 (주)힐링페이퍼 기업정보",
+       "url": "https://www.saramin.co.kr/zf_user/company-info/view/csn/NmJTdTZyMHJ4cXdRNXlSM2sxelRsZz09/company_nm/(%EC%A3%BC)%ED%9E%90%EB%A7%81%ED%8E%98%EC%9D%B4%ED%8D%BC",
+       "figure": "사원수 270명(출처: 국민연금)",
+       "date": "2026-07-09 (page update)"
+      },
+      {
+       "title": "원티드 힐링페이퍼(강남언니) 기업정보",
+       "url": "https://www.wanted.co.kr/company/1343",
+       "figure": "인원 164명 (페이지 제목 표기)",
+       "date": "undated"
+      }
+     ]
+    },
+    {
+     "key": "rpe_habitfactory",
+     "item": "해빗팩토리 (시그널플래너, 인슈어테크 GA) 1인당 매출",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 258988470,
+     "mid": 258988470,
+     "high": 258988470,
+     "recommended": 258988470,
+     "basis": "FY2025 별도 영업수익 20,201,100,673원(감사보고서) ÷ 국민연금 가입자 78명(사람인) = 2.590억. 보험중개 수수료 총액 인식 구조로 설계사 네트워크 활용 시 RPE가 높게 나올 수 있음. 2024→2025 매출 +65%. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 해빗팩토리 감사보고서 (2025.12), 삼일회계법인",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260408002499",
+       "figure": "영업수익 제10기 20,201,100,673원 / 제9기(감사받지 않은) 12,235,239,709원; 영업손실 (2,320,882,447)원",
+       "date": "2026-04-08"
+      },
+      {
+       "title": "사람인 (주)해빗팩토리 기업정보",
+       "url": "https://www.saramin.co.kr/zf_user/company-info/view/csn/T0gzS1JldThSeU1yZStYdTYyNVZjQT09/company_nm/(%EC%A3%BC)%ED%95%B4%EB%B9%97%ED%8C%A9%ED%86%A0%EB%A6%AC",
+       "figure": "사원수 78명(출처: 국민연금); 매출액 202억 110만원",
+       "date": "2026-08-13 (page update)"
+      }
+     ]
+    },
+    {
+     "key": "rpe_carelabs",
+     "item": "케어랩스 (KOSDAQ, 헬스케어 플랫폼·디지털마케팅; 굿닥·바비톡 계열) 1인당 매출(별도)",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 270525428,
+     "mid": 306228357,
+     "high": 341931286,
+     "recommended": 270525428,
+     "basis": "FY2025 별도 영업수익 33,815,678,535원 ÷ 2025.12.31 직원 125명 = 2.705억. High = FY2024 별도 41,031,754,308원 ÷ 120명 = 3.419억. 연결(81,694백만원)은 종속회사 인원이 사업보고서에 없어 별도 기준 사용. 매출에 광고대행 매출 포함. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 케어랩스 사업보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260319000459",
+       "figure": "별도 영업수익 2025 33,815,678,535원; 연결 영업수익 81,694,242,669원; 직원 합계 125명(2025.12.31)",
+       "date": "2026-03-19"
+      },
+      {
+       "title": "DART 케어랩스 사업보고서 (2024.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250319000603",
+       "figure": "별도 영업수익 2024 41,031,754,308원; 직원 합계 120명(2024.12.31)",
+       "date": "2025-03-19"
+      }
+     ]
+    },
+    {
+     "key": "rpe_gcmediai",
+     "item": "GC메디아이 (구 유비케어; EMR·의료데이터, 의약품 유통 포함) 1인당 매출(별도)",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 359358260,
+     "mid": 454221256,
+     "high": 454221256,
+     "recommended": 454221256,
+     "basis": "FY2025 별도 매출액 126,727,730,389원 ÷ 2025.12.31 직원 279명 = 4.542억. Low = FY2024 121,463,091,734원 ÷ 338명 = 3.594억. 저마진 의약품 유통사업 매출이 포함돼 순수 데이터·플랫폼 RPE보다 높게 산출됨 — 상단 참고치. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART GC메디아이 사업보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260316001124",
+       "figure": "별도 매출액 2025 126,727,730,389원; 직원 합계 279명(EMR·유통·데이터·공통, 2025.12.31)",
+       "date": "2026-03-16"
+      },
+      {
+       "title": "DART GC메디아이 사업보고서 (2024.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250317000909",
+       "figure": "별도 매출액 2024 121,463,091,734원; 직원 합계 338명(2024.12.31)",
+       "date": "2025-03-17"
+      }
+     ]
+    },
+    {
+     "key": "rpe_peer_median_kr_digital_health",
+     "item": "국내 디지털헬스·인슈어테크 피어 1인당 매출 중앙값 (요약)",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 133561475,
+     "mid": 195909458,
+     "high": 270525428,
+     "recommended": 195909458,
+     "basis": "위 rpe_* 중 비교 가능 11개사(레몬헬스케어, 뱅크샐러드, 카카오헬스케어, 에임메드, GC케어, 메디에이지, 비브로스, 케어닥, 힐링페이퍼, 해빗팩토리, 케어랩스)의 최신 RPE 중앙값 = 1.959억(메디에이지). Low = 1사분위 1.336억(GC케어), High = 3사분위 2.705억(케어랩스). 제외: 토스인슈어런스(GA 총액·설계사 미포함), GC메디아이(유통매출), 굿닥·닥터나우(매출 급감/수익화 전). 흑자 또는 BEP 근접 기업(레몬·뱅크샐러드·비브로스·에임메드·GC케어·메디에이지)은 1.3~2.9억 구간. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 메디에이지 감사보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260402002479",
+       "figure": "영업수익 3,918,189,160원 (중앙값 기업)",
+       "date": "2026-04-02"
+      },
+      {
+       "title": "DART GC케어 감사보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260327000983",
+       "figure": "매출액 44,075,286,782원 (1사분위 기업)",
+       "date": "2026-03-27"
+      },
+      {
+       "title": "DART 케어랩스 사업보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260319000459",
+       "figure": "별도 영업수익 33,815,678,535원, 직원 125명 (3사분위 기업)",
+       "date": "2026-03-19"
+      }
+     ]
+    },
+    {
+     "key": "rpe_naver",
+     "item": "NAVER 1인당 매출 (대형 플랫폼 앵커)",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 710281339,
+     "mid": 1390792550,
+     "high": 2384586289,
+     "recommended": 1390792550,
+     "basis": "Recommended = 별도 영업수익 7,019,330백만원 ÷ 별도 직원 5,047명(2025.12.31, 등기이사 제외) = 13.9억(매출·인원 동일 법인 기준). High = 요청 정의대로 연결 영업수익 12,035,007백만원 ÷ 별도 직원 5,047명 = 23.8억(종속회사 인원 미포함으로 과대). Low = 연결 영업수익 ÷ 공정위 기업집단 국내 계열사 종업원 합계 16,944명(50개사, 2026 지정일) = 7.1억(라인플러스 1,855명 등 A Holdings/LY 관계기업 계열 인원까지 포함돼 과소, 해외 종속 인원은 미포함). 참고: 2024 별도 6,180,892백만원 ÷ 4,583명 = 13.5억. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART NAVER 사업보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260313001021",
+       "figure": "연결 영업수익 2025 12,035,007백만원; 별도 영업수익 7,019,330백만원; 직원 합계 5,047명(2025.12.31)",
+       "date": "2026-03-13"
+      },
+      {
+       "title": "DART NAVER [기재정정] 대규모기업집단현황공시[연1회] (대표회사)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260601000228",
+       "figure": "국내 계열사 50개 종업원수 합계 16,944명(네이버 4,963, 네이버클라우드 1,982, 라인플러스 1,855 등; 지정일 기준)",
+       "date": "2026-06-01"
+      },
+      {
+       "title": "DART NAVER 사업보고서 (2024.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250318000645",
+       "figure": "별도 영업수익 2024 6,180,892백만원; 직원 합계 4,583명(2024.12.31)",
+       "date": "2025-03-18"
+      }
+     ]
+    },
+    {
+     "key": "rpe_kakao",
+     "item": "카카오 1인당 매출 (대형 플랫폼 앵커)",
+     "unit": "KRW/employee/year (revenue per head, 원/인/년)",
+     "low": 424505897,
+     "mid": 683544365,
+     "high": 2065055584,
+     "recommended": 683544365,
+     "basis": "Recommended = 별도 영업수익 2,680,861백만원 ÷ 별도 직원 3,922명(2025.12.31, 등기임원 제외) = 6.8억. High = 요청 정의대로 연결 영업수익 8,099,148백만원(헬스케어부문 매각 반영 계속영업 기준) ÷ 별도 직원 3,922명 = 20.7억(과대). Low = 연결 영업수익 ÷ 공정위 기업집단 국내 계열사 종업원 합계 19,079명(92개사, 2026 지정일) = 4.2억(관계기업인 카카오뱅크 1,821명 등 비연결 인원 포함으로 과소). 참고: 2024 별도 2,595,101백만원 ÷ 4,028명 = 6.4억. Revenue is financial-statement revenue (VAT not applicable/excluded).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 카카오 사업보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260318001423",
+       "figure": "연결 영업수익 2025 8,099,148백만원; 별도 영업수익 2,680,861백만원; 직원 합계 3,922명(2025.12.31); 카카오헬스케어 등 헬스케어사업부문 매각 완료",
+       "date": "2026-03-18"
+      },
+      {
+       "title": "DART 카카오 [기재정정] 대규모기업집단현황공시[연1회] (대표회사)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260610000659",
+       "figure": "국내 계열사 종업원수 합계 19,079명((주)카카오 3,905, 카카오뱅크 1,821, 카카오페이 1,311 등; 지정일 기준)",
+       "date": "2026-06-10"
+      },
+      {
+       "title": "DART 카카오 [기재정정] 사업보고서 (2024.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250324000901",
+       "figure": "별도 영업수익 2024 2,595,101백만원; 직원 합계 4,028명(2024.12.31)",
+       "date": "2025-03-24"
+      }
+     ]
+    },
+    {
+     "key": "headcount_elasticity",
+     "item": "매출 성장 대비 인원 증가 탄력성 (1년차 이후 인력계획용)",
+     "unit": "unitless (% headcount growth per 1% revenue growth; log-elasticity ln(HC1/HC0)/ln(Rev1/Rev0))",
+     "low": 0.2,
+     "mid": 0.5,
+     "high": 0.8,
+     "recommended": 0.5,
+     "basis": "관측치(DART 원자료로 산출, 로그 탄력성): (1) 뱅크샐러드 2024→2025 매출 +76.5%·인원 134→149(+11.2%) → 0.19; (2) 카카오헬스케어 2023→2024 매출 +166%·인원 171→224(+31%) → 0.28; (3) NAVER 별도 2019→2025 매출 3,900,013→7,019,330백만원(+80%, CAGR 10.3%)·인원 3,492→5,047(+44.5%, CAGR 6.3%) → 0.63, 2024→2025 단년 0.76; (4) 카카오 별도 2019→2025 매출 +77%·인원 2,701→3,922(+45%) → 0.65(분사 영향 포함), 2024→2025는 매출 +3.3%에 인원 -2.6%(음수). (5) 해외 SaaS 횡단면(Aleph×Benchmarkit 2026, FY2025 데이터): ARR/인 중앙값 <$5M $126,499 → $20–50M $278,848 → 규모 14배 확대 시 인원 약 6.4배 = 0.70; $5–20M $178,000 → $50–100M $240,000 = 0.83. 해석: 고성장·BEP 추구 초기 플랫폼은 0.2~0.3(매출 2배 → 인원 +15~21%), 성숙 플랫폼·SaaS 규모 확대는 0.6~0.8(매출 2배 → 인원 +52~74%). 하이핀 2~5년차(고성장+레버리지 구간) 권장 0.5 = 매출 2배 시 인원 약 +41%(2^0.5=1.41), 매출 +50% 시 인원 +22.5%. 단순 비율(%인원/%매출)로 쓰면 저성장 구간에선 로그 탄력성과 유사, 고성장 구간에선 더 낮게 나옴(뱅크샐러드 0.15).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 뱅크샐러드 사업보고서 (2025.12) / (2024.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260331004974",
+       "figure": "매출 14,723,514,792→25,993,515,036원; 직원 134명(2024.12.31, 사업보고서 rcpNo 20250331004154)→149명(2025.12.31)",
+       "date": "2026-03-31"
+      },
+      {
+       "title": "DART NAVER 사업보고서 (2019.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20200330004603",
+       "figure": "별도 영업수익 2019 3,900,013백만원; 직원 합계 3,492명(3,434+기간제 58, 2019.12.31) — 2025는 rcpNo 20260313001021: 7,019,330백만원, 5,047명",
+       "date": "2020-03-30"
+      },
+      {
+       "title": "The SaaS CFO, ARR per Employee Benchmarks for SaaS Companies (2026) — Aleph x Benchmarkit 2026 data (342 participants, FY2025)",
+       "url": "https://www.thesaascfo.com/arr-per-employee-benchmarks/",
+       "figure": "ARR/employee median: Under $5M $126,499; $5M–$20M $178,000; $20M–$50M $278,848; $50M–$100M $240,000",
+       "date": "2026-08-04"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_banksalad",
+     "item": "뱅크샐러드 광고선전비/매출",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 3.304,
+     "mid": 3.304,
+     "high": 4.691,
+     "recommended": 3.304,
+     "basis": "FY2025 연결 광고선전비 858,940천원 ÷ 매출 25,993,515천원 = 3.30%; FY2024 690,642 ÷ 14,723,515 = 4.69%. 광고선전비보다 지급수수료(115억, 매출 대비 44%)·주식보상비용(46억) 비중이 훨씬 큼. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 뱅크샐러드 사업보고서 (2025.12) 연결재무제표 주석 20. 영업비용",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260331004974",
+       "figure": "광고선전비 당기 858,940천원 / 전기 690,642천원; 수익 합계 25,993,515천원 / 14,723,515천원",
+       "date": "2026-03-31"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_kakaohealthcare",
+     "item": "카카오헬스케어 광고선전비/매출",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 13.404,
+     "mid": 13.404,
+     "high": 17.475,
+     "recommended": 13.404,
+     "basis": "FY2025 광고선전비 3,098,983천원 ÷ 영업수익 23,120,133천원 = 13.40%; FY2024 2,087,729 ÷ 11,947,075 = 17.47%. B2C 앱(파스타) 출시·확산기 대규모 적자 구간. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 카카오헬스케어 감사보고서 (2025.12) 주석 24 영업비용",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260410001546",
+       "figure": "광고선전비 당기 3,098,983천원 / 전기 2,087,729천원; 영업수익 23,120,133,247원 / 11,947,074,750원",
+       "date": "2026-04-10"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_lemonhealthcare",
+     "item": "레몬헬스케어 광고선전비/매출",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 0.648,
+     "mid": 0.859,
+     "high": 4.454,
+     "recommended": 0.648,
+     "basis": "FY2025 광고선전비 103,341천원 ÷ 영업수익 15,954,302천원 = 0.65%; FY2024 127,829 ÷ 14,877,436 = 0.86%; FY2023 269,626 ÷ 6,052,912 = 4.45%(미감사 비교). B2G/B2B(실손24 구축) 매출 비중이 커 광고비 비중 낮음. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 레몬헬스케어 감사보고서 (2025.12) 주석 23 영업비용",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260406001256",
+       "figure": "광고선전비 당기 103,341천원 / 전기 127,829천원",
+       "date": "2026-04-06"
+      },
+      {
+       "title": "DART 레몬헬스케어 감사보고서 (2024.12) 주석 23 영업비용",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250402000385",
+       "figure": "광고선전비 2024 127,829천원 / 2023 269,626천원; 영업수익 2023 6,052,911,720원",
+       "date": "2025-04-02"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_healingpaper",
+     "item": "힐링페이퍼(강남언니) 광고선전비/매출",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 32.232,
+     "mid": 45.571,
+     "high": 45.571,
+     "recommended": 45.571,
+     "basis": "FY2025 광고선전비 34,277,693,328원 ÷ 영업수익 75,218,486,767원 = 45.57%; FY2024 17,085,416,479 ÷ 53,008,164,518 = 32.23%. 일본 확장 등 공격적 B2C 획득 단계의 상단 사례. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 힐링페이퍼 감사보고서 (2025.12) 손익계산서",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260410001641",
+       "figure": "광고선전비 제14기 34,277,693,328원 / 제13기 17,085,416,479원; 영업수익 75,218,486,767원 / 53,008,164,518원",
+       "date": "2026-04-10"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_habitfactory",
+     "item": "해빗팩토리(시그널플래너) 광고선전비/매출",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 49.104,
+     "mid": 49.104,
+     "high": 85.755,
+     "recommended": 49.104,
+     "basis": "FY2025 별도 광고선전비 9,919,562천원 ÷ 영업수익 20,201,101천원 = 49.10%; FY2024 10,492,354 ÷ 12,235,240 = 85.76%(전기는 감사받지 않은 재무제표). 인슈어테크 GA의 디지털 리드 획득 비용 구조 상단 사례. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 해빗팩토리 감사보고서 (2025.12) 주석 27 영업비용",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260408002499",
+       "figure": "광고선전비 당기 9,919,562천원 / 전기 10,492,354천원; 영업수익 20,201,100,673원 / 12,235,239,709원",
+       "date": "2026-04-08"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_carelabs",
+     "item": "케어랩스 광고선전비/매출 (연결)",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 16.479,
+     "mid": 17.836,
+     "high": 17.836,
+     "recommended": 17.836,
+     "basis": "FY2025 연결 광고선전비 14,570,889천원 ÷ 연결 영업수익 81,694,243천원 = 17.84%; FY2024 13,708,310 ÷ 83,187,387 = 16.48%. 별도 기준은 156,030 ÷ 33,815,679 = 0.46%로, 광고비는 주로 B2C 종속회사(바비톡 등)에서 발생. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 케어랩스 사업보고서 (2025.12) 연결재무제표 주석",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260319000459",
+       "figure": "연결 광고선전비 당기 14,570,889천원 / 전기 13,708,310천원; 별도 광고선전비 156,030천원",
+       "date": "2026-03-19"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_aimmed",
+     "item": "에임메드 광고선전비/매출",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 0.021,
+     "mid": 0.035,
+     "high": 0.035,
+     "recommended": 0.035,
+     "basis": "FY2025 광고선전비 9,820,407원 ÷ 매출액 28,172,174,712원 = 0.035%; FY2024 5,223,304 ÷ 24,988,422,114 = 0.021%. 보험사 대상 B2B 위탁 모델이라 광고비가 거의 없음(영업은 접대비·지급수수료로 발생). 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 에임메드 감사보고서 (2025.12) 손익계산서",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260403001507",
+       "figure": "19. 광고선전비 제27기 9,820,407원 / 제26기 5,223,304원",
+       "date": "2026-04-03"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_mediage",
+     "item": "메디에이지 광고선전비/매출",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 0.139,
+     "mid": 0.188,
+     "high": 0.188,
+     "recommended": 0.188,
+     "basis": "FY2025 광고선전비 7,362천원 ÷ 영업수익 3,918,189천원 = 0.19%; FY2024 3,102 ÷ 2,239,009 = 0.14%. 검진기관·보험사 B2B 공급 모델. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 메디에이지 감사보고서 (2025.12) 영업비용 주석",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260402002479",
+       "figure": "광고선전비 당기 7,362천원 / 전기 3,102천원; 영업수익 3,918,189,160원 / 2,239,008,544원",
+       "date": "2026-04-02"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_huraypositive",
+     "item": "휴레이포지티브 광고선전비/매출",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 0.4,
+     "mid": 1.169,
+     "high": 1.169,
+     "recommended": 1.169,
+     "basis": "FY2024 광고선전비 36,460,450원 ÷ 영업수익 3,118,091,043원 = 1.17%; FY2023 20,397,139 ÷ 5,092,959,571 = 0.40%. 보험사·기업 대상 B2B2C 건강관리 플랫폼(2025 감사보고서는 DART에서 미확인). 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 휴레이포지티브 감사보고서 (2024.12), 대주회계법인",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250401002056",
+       "figure": "광고선전비 당기 36,460,450원 / 전기 20,397,139원; 영업수익 3,118,091,043원 / 5,092,959,571원",
+       "date": "2025-04-01"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_gcmediai",
+     "item": "GC메디아이(구 유비케어) 광고선전비/매출 (연결)",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 0.747,
+     "mid": 0.747,
+     "high": 1.216,
+     "recommended": 0.747,
+     "basis": "FY2025 연결 광고선전비 1,477,597천원 ÷ 연결 매출액 197,696,072천원 = 0.75%; FY2024 2,317,692 ÷ 190,597,484 = 1.22%. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART GC메디아이 사업보고서 (2025.12) 연결재무제표 주석",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260316001124",
+       "figure": "광고선전비 당기 1,477,597천원 / 전기 2,317,692천원; 연결 매출액 197,696,072,009원 / 190,597,484,288원",
+       "date": "2026-03-16"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_tossinsurance",
+     "item": "토스인슈어런스 판매촉진비/매출 (광고선전비 계정 없음)",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 2.462,
+     "mid": 2.462,
+     "high": 4.567,
+     "recommended": 2.462,
+     "basis": "감사보고서 영업비용 주석에 광고선전비 계정이 없고 판매촉진비만 공시: FY2025 4,945,603천원 ÷ 영업수익 200,905,173천원 = 2.46%; FY2024 5,486,229 ÷ 120,138,486 = 4.57%. 모회사(토스 앱) 트래픽 활용으로 자체 광고비가 낮은 구조. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 토스인슈어런스 감사보고서 (2025.12) 주석 25 영업비용",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260327000754",
+       "figure": "판매촉진비 당기 4,945,603천원 / 전기 5,486,229천원; 영업수익 200,905,172,589원 / 120,138,485,616원",
+       "date": "2026-03-27"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_naver",
+     "item": "NAVER 광고선전비/매출 (연결, 앵커)",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 14.895,
+     "mid": 15.956,
+     "high": 15.956,
+     "recommended": 15.956,
+     "basis": "FY2025 연결 광고선전비 1,920,299,459천원 ÷ 연결 영업수익 12,035,007백만원 = 15.96%; FY2024 1,599,360,016 ÷ 10,737,719 = 14.89%. 멤버십·포인트 등 커머스 판촉성 비용 포함 추정. 별도 기준 FY2025 1,014,819,027천원 ÷ 7,019,330백만원 = 14.46%. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART NAVER 사업보고서 (2025.12) 연결재무제표 주석 영업비용",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260313001021",
+       "figure": "연결 광고선전비 당기 1,920,299,459천원 / 전기 1,599,360,016천원; 영업비용 합계 9,826,868,830천원 / 8,758,455,826천원",
+       "date": "2026-03-13"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_kakao",
+     "item": "카카오 광고선전비/매출 (연결, 앵커)",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 4.738,
+     "mid": 4.738,
+     "high": 5.064,
+     "recommended": 4.738,
+     "basis": "FY2025 연결 광고선전비 383,736,134천원 ÷ 연결 영업수익 8,099,148백만원 = 4.74%; FY2024(재작성) 398,220,677 ÷ 7,864,033 = 5.06%. 별도 FY2025 33,238,216천원 ÷ 2,680,861백만원 = 1.24%. 광고선전비 계정만 집계(판매촉진비·포인트·제휴수수료 등 계정 분류 차이로 실제 총마케팅비보다 낮을 수 있음).",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "DART 카카오 사업보고서 (2025.12) 연결재무제표 주석 영업비용",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260318001423",
+       "figure": "연결 광고선전비 당기 383,736,134천원 / 전기 398,220,677천원; 영업비용 7,367,111,280천원 / 7,368,755,567천원",
+       "date": "2026-03-18"
+      }
+     ]
+    },
+    {
+     "key": "mkt_ratio_peer_median",
+     "item": "국내 플랫폼 광고선전비/매출 중앙값 (요약)",
+     "unit": "% of revenue (광고선전비 ÷ 매출)",
+     "low": 0.747,
+     "mid": 3.304,
+     "high": 15.956,
+     "recommended": 3.304,
+     "basis": "위 13개사 최신연도 비율(0.035·0.19·0.65·0.75·1.17·2.46·3.30·4.74·13.40·15.96·17.84·45.57·49.10%)의 중앙값 = 3.30%(뱅크샐러드), 1사분위 ≈0.75%(GC메디아이), 3사분위 ≈15.96%(NAVER). 모델별 군집: B2B/B2G·보험사 위탁형 0.03~1.2%(에임메드·메디에이지·레몬·GC메디아이·휴레이) / 앱 트래픽 보유 핀테크·대형 플랫폼 2.5~5%(토스인슈어런스·뱅크샐러드·카카오) / B2C 확산기 13~18%(카카오헬스케어·케어랩스·NAVER) / 공격적 유료획득 45~49%(힐링페이퍼·해빗팩토리; 전년 32~86%). 하이핀(검진기관·보험 B2B2C + 회원 앱)은 1년차 이후 3~5% 구간이 중심, B2C 드라이브 시 10%+ 시나리오.",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "DART 뱅크샐러드 사업보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260331004974",
+       "figure": "광고선전비 858,940천원 / 매출 25,993,515천원 = 3.30% (중앙값)",
+       "date": "2026-03-31"
+      },
+      {
+       "title": "DART GC메디아이 사업보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260316001124",
+       "figure": "연결 광고선전비 1,477,597천원 / 매출 197,696,072천원 = 0.75% (1사분위)",
+       "date": "2026-03-16"
+      },
+      {
+       "title": "DART NAVER 사업보고서 (2025.12)",
+       "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260313001021",
+       "figure": "연결 광고선전비 1,920,299,459천원 / 영업수익 12,035,007백만원 = 15.96% (3사분위)",
+       "date": "2026-03-13"
+      }
+     ]
+    }
+   ],
+   "caveats": [
+    "인원 기준 혼재: 사업보고서(기준일 직원수, 등기임원 제외) / 공정위 대규모기업집단현황공시(지정일 기준 종업원수, 결산 후 약 4~5개월) / 사람인·잡코리아(국민연금 가입자 수, 조회 시점 2026년) — 매출연도와 인원 시점이 최대 1년 이상 어긋나는 항목(에임메드·케어닥·닥터나우·힐링페이퍼·해빗팩토리 등)이 있음. 국민연금 가입자 수는 단시간·일부 계약직·해외 인원을 누락할 수 있음.",
+    "매출 인식 구조 차이: 보험대리점(토스인슈어런스·해빗팩토리)과 의약품 유통 포함 기업(GC메디아이)은 수수료·상품 총액 인식으로 RPE가 과대, 위촉 설계사는 종업원수에 미포함. 이들은 벤치마크 중앙값 산출에서 제외하거나 상단 참고치로만 사용 권장.",
+    "NAVER·카카오: 사업보고서 직원수는 별도(모회사) 기준만 공시됨. 요청 정의(연결 매출 ÷ 임직원)는 종속회사 인원이 빠져 과대(high로 제시), 공정위 계열사 종업원 합계는 관계기업(카카오뱅크, A Holdings/LY 계열 라인플러스 등) 인원이 섞여 과소(low로 제시). 권장값은 매출·인원 동일 법인인 별도 기준.",
+    "비브로스(똑닥)·케어닥·닥터나우는 2024~2025 DART 감사보고서를 찾지 못해 NICE평가정보 집계치(잡코리아·사람인) 또는 언론 보도 매출을 사용 — 1차 공시가 아니므로 low confidence. 굿닥은 2023→2024 매출 급감으로 정상 상태 벤치마크 아님.",
+    "적자 기업(카카오헬스케어·케어닥·닥터나우·굿닥 등)의 RPE는 성장 투자 인력이 선반영돼 정상 상태 생산성보다 낮음. 1년차 이후 인력계획에는 흑자/BEP 근접 피어(1.3~2.9억/인) 구간을 우선 참조 권장.",
+    "탄력성 관측치는 소수 기업·짧은 기간이라 노이즈가 큼: 턴어라운드(비용 절감) 국면은 0.2 내외 또는 음수(카카오 2024→2025), 성숙 플랫폼 장기 평균은 0.6~0.65, 해외 SaaS 규모별 횡단면은 0.7~0.83. 해외 SaaS 수치는 USD·ARR 기준이며 2025년 AI 생산성 효과로 ARR/인이 전년 대비 29% 상승한 시점 데이터임.",
+    "광고선전비는 계정 분류가 회사마다 달라(판매촉진비·지급수수료 내 마케팅·포인트·제휴수수료 등) 총마케팅비의 하한으로 봐야 함. 토스인슈어런스는 광고선전비 계정이 없어 판매촉진비로 대체.",
+    "모든 금액은 재무제표 매출 기준으로 부가가치세 해당 없음(VAT 제외). RPE는 1인당(헤드카운트) 기준이며 FTE 환산 아님.",
+    "카카오헬스케어는 2025년 중 카카오 그룹에서 매각되어(카카오 2025 사업보고서) 2026년 기업집단공시가 없고, 2025말 인원은 확인하지 못함.",
+    "Full JSON saved at C:/Users/user/AppData/Local/Temp/claude/C--Users-user-OneDrive----001-------02-HI-human------------/f0706602-45bb-4d6f-a3e3-b14f3d9081ab/scratchpad/research/bench.json (helper scripts in scratchpad/dart/, no project files touched)."
+   ],
+   "check": {
+    "verdicts": [
+     {
+      "key": "rpe_lemonhealthcare",
+      "status": "confirmed",
+      "note": "Audit 20260406001256: revenue 15,954,302,019 / 14,877,435,860, op loss (662,799,992). Half-year 20260814002913: 85 staff at 2026.06.30, includes 2 unregistered execs. Prospectus 20260623000244: 83. Math correct. The ÷94 low has no cited source. (DART blocked this IP mid-check; all rcpNos re-read via englishdart.fss.or.kr, same filings.)"
+     },
+     {
+      "key": "rpe_banksalad",
+      "status": "confirmed",
+      "note": "Annual report 20260331004974: revenue 25,993,515,036 / 14,723,514,792 (FY2024 unaudited after K-IFRS switch), 149 staff (136+13 fixed-term). 20250331004154: 134. ZDNet 260억/147억/+77% confirmed. RPE math correct."
+     },
+     {
+      "key": "rpe_kakaohealthcare",
+      "status": "confirmed",
+      "note": "Audit 20260410001546: revenue 23,120,133,247 / 11,947,074,750, op loss (39,225,167,196). Group filings: 224 staff (FY2024 revenue 11,947백만) and 171 staff (FY2023 4,487백만). Kakao FY2025 annual report confirms the healthcare unit was sold."
+     },
+     {
+      "key": "rpe_gooddoc",
+      "status": "confirmed",
+      "note": "Group filings confirmed: 44 staff / 981 / -5,267; 30 / 972 / -5,104; 37 / 4,508 (백만원). GoodDoc is a Wonik group affiliate."
+     },
+     {
+      "key": "rpe_tossinsurance",
+      "status": "confirmed",
+      "note": "Audit 20260327000754 (revenue 200,905,172,589; op profit 9,164,831,658) and group filing 20260528000298 (79 staff) confirmed. 지급수수료 167,576,041천원 = 83% of revenue (planner commissions). 2,000-planner count is stale (2024.9); 한국금융신문 2026-04-20 says close to 3,000. With ~2,800 planners RPE is about 0.70억. Keep excluded."
+     },
+     {
+      "key": "rpe_aimmed",
+      "status": "confirmed",
+      "note": "Audit 20260403001507: revenue 28,172,174,712 / 24,988,422,114, cost of sales 22,110,775,807 (78%), op profit 562,917,290. Saramin 98 staff (NPS, 2026.8.14-9.13). Related-party sales 4,904,461천원 (17%)."
+     },
+     {
+      "key": "rpe_gccare",
+      "status": "confirmed",
+      "note": "Audit 20260327000983: revenue 44,075,286,782 (goods 9,013,433천원), op profit 466,988,768. JobKorea 330 staff confirmed. The ÷319 high is unverified (no URL)."
+     },
+     {
+      "key": "rpe_mediage",
+      "status": "confirmed",
+      "note": "Audit 20260402002479: revenue 3,918,189,160 / 2,239,008,544, op profit 241,065,267. Saramin 20 staff (NPS). No related-party revenue."
+     },
+     {
+      "key": "rpe_bbros",
+      "status": "confirmed",
+      "note": "JobKorea confirmed: 2025 revenue 101억6천만 (2024 96억2천만; basis says 96.3억, minor), op profit 18.3억, 50 staff. Saramin 41 (NPS). Primary check: GC MediAI annual report 20260316001124 notes show Bbros consolidated from 2025.6.30 with H2 revenue 5,157,477천원 (~103억/yr), matching NICE. Other items use NPS counts; on that basis RPE = 2.478억."
+     },
+     {
+      "key": "rpe_caredoc",
+      "status": "corrected",
+      "corrected_recommended": 58730159,
+      "note": "Cited 2024 figures and 63/74 staff are confirmed, but revenue is a year older than headcount. 뉴스투데이 2026-04-11 (https://www.news2day.co.kr/article/20260410500245) gives 2025 revenue 37억, op loss 38억. 37억 ÷ 63 (NPS) = 0.587억 (÷74 = 0.50억). News figures are rounded; peer median unaffected."
+     },
+     {
+      "key": "rpe_doctornow",
+      "status": "confirmed",
+      "note": "뉴스투데이 2025-12-08 confirms revenue 27/26/11억 (2022-24) and 2024 op loss 103억; Saramin 41 staff (NPS). No 2025 revenue figure found. Keep excluded."
+     },
+     {
+      "key": "rpe_healingpaper",
+      "status": "confirmed",
+      "note": "Audit 20260410001641: revenue 75,218,486,767 / 53,008,164,518 confirmed. Saramin 270 (NPS) confirmed. Wanted shows 164 but also only 137 employment-insurance members, so the ÷164 high is weak. Salaries of 171억 fit ~270 staff."
+     },
+     {
+      "key": "rpe_habitfactory",
+      "status": "unsupported",
+      "note": "Figures are real (audit 20260408002499: separate revenue 20,201,100,673; Saramin 78). But note 32 shows 19,294,137천원 (95.5%) comes from its 100% subsidiary (주)시그널파이낸셜랩, so it is intra-group, not customer revenue. Consolidated 2025 revenue is 392억 (한국금융신문 2026-04-21) and the subsidiary's staff are not in the 78. Not a valid RPE benchmark; exclude."
+     },
+     {
+      "key": "rpe_carelabs",
+      "status": "confirmed",
+      "note": "Annual report 20260319000459: separate revenue 33,815,678,535, consolidated 81,694,242,669, 125 staff. 20250319000603: separate 41,031,754,308, 120 staff. Related-party revenue in separate accounts only 1,325,353천원 (~4%)."
+     },
+     {
+      "key": "rpe_gcmediai",
+      "status": "confirmed",
+      "note": "Annual report 20260316001124: separate revenue 126,727,730,389, 279 staff (EMR 143, distribution 28, data 63, common 45). 20250317000909: 121,463,091,734, 338 staff."
+     },
+     {
+      "key": "rpe_peer_median_kr_digital_health",
+      "status": "corrected",
+      "corrected_recommended": 191803565,
+      "note": "Original math is right (median 195,909,458; quartiles 133.6M/270.5M, exclusive method). Two fixes: drop Habit Factory (259.0M, intra-group revenue) and use Caredoc FY2025 (58.7M). The 10-company median becomes 191,803,565. IQR is 143.8M-253.7M (inclusive) or 114.9M-272.5M (exclusive). Kakao Healthcare still uses FY2024."
+     },
+     {
+      "key": "rpe_naver",
+      "status": "confirmed",
+      "note": "Annual report 20260313001021: consolidated revenue 12,035,007백만, separate 7,019,330백만, staff 2,897+2,150 = 5,047. 20250318000645: separate 6,180,892백만, 4,583 staff. Group filing 20260601000228: 50 companies, 16,944 total (NAVER 4,963, NAVER Cloud 1,982, LINE Plus 1,855). All three RPEs correct."
+     },
+     {
+      "key": "rpe_kakao",
+      "status": "confirmed",
+      "note": "Annual report 20260318001423: consolidated revenue 8,099,148백만 (FY2024 restated 7,864,033 for the healthcare sale), separate 2,680,861백만, staff 2,186+1,736 = 3,922. 20250324000901: separate 2,595,101백만, 4,028 staff. Group filing 20260610000659: total 19,079 (Kakao 3,905, KakaoBank 1,821, KakaoPay 1,311). Math correct."
+     },
+     {
+      "key": "headcount_elasticity",
+      "status": "confirmed",
+      "note": "SaaS CFO page (posted 2026-08-04) confirms ARR/employee medians $126,499 / $178,000 / $278,848 / $240,000 (Aleph x Benchmarkit 2026, 342 cos, FY2025). Recomputed elasticities: Banksalad 0.187, Kakao Healthcare 0.276, NAVER 0.627 (2024-25: 0.758), Kakao 0.653. Kakao 2019 inputs were uncited; checked via Kakao IR FY2019 report PDF (t1.kakaocdn.net/kakaocorp/admin/ir/business-report/4604.pdf): separate revenue 1,513,471,072,651원, 2,701 staff. NAVER 2019 (3,900,013백만, 3,492) not verified: DART blocked and englishdart rejected the doc. SaaS band midpoints are an assumption; 0.5 is a judgment call within 0.2-0.8."
+     },
+     {
+      "key": "mkt_ratio_banksalad",
+      "status": "confirmed",
+      "note": "Consolidated notes (20260331004974): ads 858,940 / 690,642천원; 지급수수료 11,545,581; stock comp 4,573,626. Ratios 3.30% / 4.69% correct."
+     },
+     {
+      "key": "mkt_ratio_kakaohealthcare",
+      "status": "confirmed",
+      "note": "Note 24: ads 3,098,983 / 2,087,729천원. 13.40% / 17.47% correct."
+     },
+     {
+      "key": "mkt_ratio_lemonhealthcare",
+      "status": "confirmed",
+      "note": "Ads 103,341 / 127,829천원 (2025 audit) and 269,626 (2024 audit, FY2023) confirmed; FY2023 revenue 6,052,911,720. The 4.45% high is an unaudited pre-2024 figure. Recommended 0.65% fine."
+     },
+     {
+      "key": "mkt_ratio_healingpaper",
+      "status": "confirmed",
+      "note": "Audit income statement: ads 34,277,693,328 / 17,085,416,479원. 45.57% / 32.23% correct."
+     },
+     {
+      "key": "mkt_ratio_habitfactory",
+      "status": "corrected",
+      "corrected_recommended": 25.3,
+      "note": "Ads 9,919,562 / 10,492,354천원 confirmed, but the denominator (separate revenue) is 95.5% subsidiary revenue. Against consolidated revenue of 392억 (한국금융신문 2026-04-21, https://www.fntimes.com/html/view.php?ud=20260416154513309efc5ce4ae_18), parent ad spend alone is 25.3%. This is a floor (subsidiary ad spend unknown). Drop the 85.8% FY2024 high (unaudited, same issue)."
+     },
+     {
+      "key": "mkt_ratio_carelabs",
+      "status": "confirmed",
+      "note": "Consolidated ads 14,570,889 / 13,708,310천원; separate 156,030 (prior 124,723). Consolidated revenue 81,694,242,669 / 83,187,386,696. Ratios correct."
+     },
+     {
+      "key": "mkt_ratio_aimmed",
+      "status": "confirmed",
+      "note": "Income statement item 19: ads 9,820,407 / 5,223,304원. 0.035% / 0.021% correct."
+     },
+     {
+      "key": "mkt_ratio_mediage",
+      "status": "confirmed",
+      "note": "Operating expense note: ads 7,362 / 3,102천원. 0.19% / 0.14% correct."
+     },
+     {
+      "key": "mkt_ratio_huraypositive",
+      "status": "confirmed",
+      "note": "Audit 20250401002056: revenue 3,118,091,043 / 5,092,959,571; ads 36,460,450 / 20,397,139. FY2024 is the latest available; op loss was 8,631,444,734 on that revenue."
+     },
+     {
+      "key": "mkt_ratio_gcmediai",
+      "status": "confirmed",
+      "note": "Consolidated notes: ads 1,477,597 / 2,317,692천원; consolidated revenue 197,696,072,009 / 190,597,484,288. FY2025 consolidated includes Bbros from 2025.6.30."
+     },
+     {
+      "key": "mkt_ratio_tossinsurance",
+      "status": "confirmed",
+      "note": "Note 25: 판매촉진비 4,945,603 / 5,486,229천원; no ad line. The dominant cost is 지급수수료 167,576,041천원."
+     },
+     {
+      "key": "mkt_ratio_naver",
+      "status": "confirmed",
+      "note": "XBRL notes in 20260313001021: consolidated Advertising 1,920,299,459 / 1,599,360,016천원; opex 9,826,868,830 / 8,758,455,826. Separate Advertising 1,014,819,027 (prior 740,669,003). 15.96% / 14.89% / 14.46% correct."
+     },
+     {
+      "key": "mkt_ratio_kakao",
+      "status": "confirmed",
+      "note": "Consolidated ads 383,736,134 / 398,220,677천원; opex 7,367,111,280 / 7,368,755,567; separate 33,238,216. The separate 'Sales-related expenses' line (2,518,713,524천원) is not counted, so 4.74% understates total marketing."
+     },
+     {
+      "key": "mkt_ratio_peer_median",
+      "status": "confirmed",
+      "note": "With Habit Factory corrected to 25.3%, the 13-company median stays 3.30% and Q1/Q3 stay 0.75%/15.96% (inclusive). The RPE summary used exclusive-method quartiles, an inconsistency that doesn't change the result."
+     }
+    ]
+   }
+  },
+  {
+   "topic": "manual",
+   "summary": "대표 지시 · 사업계획서 수치 · 조사 밖 보완 근거 · 양식 가정",
+   "items": [
+    {
+     "key": "directive_sections",
+     "item": "1차 섹션별 인원 17명(대표 포함) + 기타 자문임원",
+     "unit": "명",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 17,
+     "basis": "대표 지시 2026-09-14 — 건강검진 2 · 진료안내 2 · 돌봄재가 1 · 보험치료(보험 admin·헬스메이트센터) 5 · 건강식단/영양제 1 · 피부건강 1 · 홈케어 의료기기 1 · 스포츠활동 1 · 경영관리/회계 1 · AI/전산총괄 1 · 대표 1",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "대표 지시(대화) 2026-09-14",
+       "url": "",
+       "figure": "모델 인건비 70억 삭제, 섹션별 인원으로 산정 · 이후 매출 증대에 따라",
+       "date": ""
+      }
+     ]
+    },
+    {
+     "key": "directive_medi",
+     "item": "메디에이지 500만 데이터 투자비",
+     "unit": "원",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 2000000000,
+     "basis": "대표 지시 2026-09-14 — 20억 책정 · 1차 CAPEX(데이터 이용권·공동사업), 내용연수 5년 정액 상각 · 지급 시점은 현금 레버",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "대표 지시(대화) 2026-09-14",
+       "url": "",
+       "figure": "20억원 책정",
+       "date": ""
+      }
+     ]
+    },
+    {
+     "key": "directive_bc",
+     "item": "블록체인 데이터 앵커링",
+     "unit": "원/건 × 건",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 40,
+     "basis": "대표 지시 2026-09-14 — 100만 건 × 1건 40원 = 4,000만원(1차) · 2차부터 연말 회원에 비례",
+     "confidence": "high",
+     "sources": [
+      {
+       "title": "대표 지시(대화) 2026-09-14",
+       "url": "",
+       "figure": "100만개 데이터 앵커링 비용 1개당 40원",
+       "date": ""
+      }
+     ]
+    },
+    {
+     "key": "plan_mk1",
+     "item": "① 메디에이지 분기별 검진 도래 안내 대상 · 분기 3회",
+     "unit": "명/분기",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 1500000,
+     "basis": "사업계획서 v12.1 p4 — 결과리포트 수신 500만 중 분기별 검진 대상 약 150만(내부 추정), 1인당 월 1회·분기 3회 내외 → 연 1,800만 건",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "하이핀 회원확보 사업계획서 v12.1 p4",
+       "url": "Downloads/하이핀_회원확보_손해율_유병자보험_사업계획서_v12.1.pdf",
+       "figure": "분기별 약 150만 명 · 매월 발송 · 1인당 분기 3회",
+       "date": ""
+      }
+     ]
+    },
+    {
+     "key": "plan_mk2",
+     "item": "② 9채널 타겟 광고 노출 · 예산 비중",
+     "unit": "회/월",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 30000000,
+     "basis": "사업계획서 v12.1 p5 — 일 100만 · 월 3,000만 노출 · 유튜브 22 · 인스타/페북 18 · 카카오 14 · 네이버 12 · 틱톡 8 · CRM 8 · 인플루언서 7 · 기타 11(%) · 예산·단가는 별도 미디어 플랜 → 이 양식이 채널 CPM으로 산출",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "하이핀 회원확보 사업계획서 v12.1 p5",
+       "url": "Downloads/하이핀_회원확보_손해율_유병자보험_사업계획서_v12.1.pdf",
+       "figure": "일 100만·월 3,000만 노출 · 9채널 예산 비중",
+       "date": ""
+      }
+     ]
+    },
+    {
+     "key": "plan_qr",
+     "item": "④ 현장 QR 배치 검진센터(누적)",
+     "unit": "곳",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 250,
+     "basis": "회원확보 요약서 5개년 목표 — 제휴 검진기관 1차 250 · 3차 450 · 5차 650(2·4차 보간 350·550) · 사업계획서 p7 기존 제휴 250곳에서 출발",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "하이핀 회원확보 사업계획서 요약서(A4 3p)",
+       "url": "1. 현대해상사업제안/3.0 하이핀_회원확보_사업계획서_요약서.pdf",
+       "figure": "제휴 검진기관 250 / 450 / 650",
+       "date": ""
+      }
+     ]
+    },
+    {
+     "key": "maint_rate",
+     "item": "AI 시스템 유지보수 요율(누적 도입비 대비 연)",
+     "unit": "%",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 15,
+     "basis": "공공 SW 유지관리 요율은 10~15%, 대가산정 가이드 2019 개정안 유지관리 등급별 11~19% — 상단 15% 채택(보수적)",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "전자신문 — SW유지관리 요율 10년째 10%대",
+       "url": "https://www.etnews.com/20210720000063",
+       "figure": "공공 SW 유지관리 요율 10%대",
+       "date": "2021-07-20"
+      },
+      {
+       "title": "SPRi — 유지관리요율 부터 제대로 주고받기",
+       "url": "https://spri.kr/post/22098",
+       "figure": "유지관리 요율 현실화 논의",
+       "date": ""
+      },
+      {
+       "title": "KOSA SW사업 대가산정 가이드(2025 개정판)",
+       "url": "https://www.sw.or.kr/site/sw/ex/board/View.do?cbIdx=276&bcIdx=63607&searchExt1=",
+       "figure": "3.3.1 요율제 방식에 의한 SW 유지관리비",
+       "date": "2025-08-11"
+      }
+     ]
+    },
+    {
+     "key": "office_per_head",
+     "item": "사무 장비 — 신규 인원 1인당",
+     "unit": "원/인",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 2000000,
+     "basis": "[추정] 업무용 노트북·모니터·주변기기 — 공식 단가 근거를 찾지 못함(조달청·나라장터 단가 미확인)",
+     "confidence": "low",
+     "sources": []
+    },
+    {
+     "key": "consults_per_member",
+     "item": "AI 상담 — 평균 회원 1인당 연 상담 수",
+     "unit": "회/년",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 12,
+     "basis": "[가정] 월 1회 — 사용 데이터가 생기면 교체",
+     "confidence": "low",
+     "sources": []
+    },
+    {
+     "key": "ops_elast",
+     "item": "데이터 유지관리 증가 탄력성(연말 회원 대비)",
+     "unit": "배",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 0.5,
+     "basis": "[가정] 규모의 경제 — 회원 2배 → 약 1.4배",
+     "confidence": "low",
+     "sources": []
+    },
+    {
+     "key": "mk2_elast",
+     "item": "② 노출 탄력성(순증 회원 대비)",
+     "unit": "배",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 1.0,
+     "basis": "[가정] 순증에 비례 — 이듬해 반복 접점 편입을 반영하면 1 미만 가능(사업계획서 p5)",
+     "confidence": "low",
+     "sources": []
+    },
+    {
+     "key": "capex_later",
+     "item": "AI 시스템 고도화·확장(2차부터)",
+     "unit": "원",
+     "low": null,
+     "mid": null,
+     "high": null,
+     "recommended": 5000000000,
+     "basis": "finModel.js capex 유지 — 2차 20억 · 3~5차 50억",
+     "confidence": "medium",
+     "sources": [
+      {
+       "title": "finModel.js FIN_P_DEFAULT",
+       "url": "src/data/finModel.js",
+       "figure": "capex 1·2차 20억 · 3~5차 50억",
+       "date": ""
+      }
+     ]
+    }
+   ],
+   "caveats": [
+    "[가정]·[추정] 항목은 실측·견적이 생기면 교체한다."
+   ],
+   "check": {
+    "verdicts": []
+   }
+  }
+ ]
+}

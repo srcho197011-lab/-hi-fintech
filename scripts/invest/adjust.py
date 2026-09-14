@@ -22,6 +22,8 @@
     우대 한도 — 1차연도 10만 건, 매년 +10만 건(10→20→30→40→50만). 한도를 넘는 공급 건은 시가.
     한도는 연도마다 새로 시작하고, 연내 누적 공급 순서대로 한도까지 우대 단가를 적용한다(월별 배분·현금도 같은 순서).
   · 신규 스트림(광고·제휴 · AI Agent 프리미엄 · API·데이터·분석)은 삭제한다(대표 지시 2026-09-14 추가) — 매출 0.
+  · 판관비·CAPEX를 근거 기반으로 다시 짠다(v2.0) — 광고비(5대 엔진) · 메디에이지 데이터 투자 20억 · 섹션별 인력 ·
+    AI 시스템 도입 · 데이터·클라우드·블록체인. 계산과 기본값은 costs.py 한 곳에 있다.
 """
 import copy
 import math
@@ -41,6 +43,7 @@ ADJ = {
     "hmRate1": 0.50, "hmPriceStep": 10_000,            # 우대 단가 1차 시가×50% · 매년 +1만
     "hmCap1": 100_000, "hmCapStep": 100_000,           # 우대 한도 1차 10만 건 · 매년 +10만 건
     "dropNewStreams": True,                            # ⑥ 신규 스트림 삭제
+    "cost2": True,                                     # 판관비·CAPEX 근거 모델(v2.0 · costs.py)
 }
 HM_KEYS = ("hmInvest", "hmMarket", "hmRate1", "hmPriceStep", "hmCap1", "hmCapStep")
 
@@ -55,6 +58,9 @@ def apply(P):
         Q[k] = ADJ[k]
     if ADJ["dropNewStreams"]:
         Q["adPerActive"] = [0] * 5; Q["aiAgentRate"] = [0] * 5; Q["apiClients"] = [0] * 5
+    if ADJ["cost2"]:                                   # 판관비·CAPEX 근거 모델 — costs.py
+        import costs
+        Q["cost2"] = copy.deepcopy(costs.COST)
     return Q
 
 

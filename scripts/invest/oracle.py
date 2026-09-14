@@ -81,6 +81,16 @@ def annual(P, n=5):
                          rnd=rnd, cloud=cloud, gpu=gpu, sales=sales, admin=admin, sga=sga,
                          ebit_model=ebit_model, depr=depr, ebit=ebit_model - depr,
                          capex=2000000000 if y < 2 else 5000000000))
+        if "cost2" in P:                           # 판관비·CAPEX 근거 모델(costs.py) — CAC·브랜드·런칭·모델 인건비·R&D·클라우드·GPU·고정 상각 대체
+            import costs as _c
+            a = rows[-1]
+            _c.annual_costs(P, rows[:-1], a, y)
+            for k in ("cac", "launch", "brand", "rnd", "cloud", "gpu"):
+                a[k] = 0
+            a["mktg"] = a["mktSum"]
+            a["sga"] = a["mktSum"] + reward + don + a["pay"] + a["itOpex"] + sales + admin
+            a["ebit_model"] = gross - a["sga"]
+            a["ebit"] = a["ebit_model"] - a["depr"]
     return rows
 
 
