@@ -87,17 +87,24 @@ def run(P, L):
     avgsal = [A[y]["pay"] / (A[y]["headTotal"] if C2 else heads_total(y)) for y in range(5)]
     varRate = ((P["salesRate"] + P["adminRate"]) * P["opexScale"] if C2
                else P["brandMktRate"] + (P["rndRate"] + P["salesRate"] + P["adminRate"]) * P["opexScale"])
-    medi_at = max(L.get("mediAt", 1), (1 - int(L["pre"])) if int(L["pre"]) > 0 else 1)
+    medi_at = max(L["mediQ"] - pre, (1 - pre) if pre > 0 else 1)      # 메디에이지: 준비 시작 후 N개월째(실매출 전이면 그 달, 준비기간 없으면 실매출 첫 달)
     medi_amt = A[0].get("medi", 0) if C2 else 0
-    build_amt = A[0].get("build1", 0) if C2 else 0              # 1차 초기 구축: 구축기간이 있으면 그 달들에 균등, 없으면 1차 1월
-    # ── 기간 축(구축 24 + 본 60) ──
+    build_amt = A[0].get("build1", 0) if C2 else 0              # 1차 초기 구축: 준비기간 배분 가중치대로(가중치 합 0이면 실매출 첫 달)
+    # 준비기간 비율 — 준비 시작 후 1·2·3·4·5·6개월째 이후(6개월째 값 유지, 초기 구축은 6개월째 뒤 0)
+    wgt = lambda arr, q, hold=True: arr[q - 1] if q <= 6 else (arr[5] if hold else 0.0)
+    bsum = sum(L["wBuild"][q - 1] for q in range(1, min(pre, 6) + 1)) if pre > 0 else 0.0
+    G = L["cashStart"]; S = L["prodStart"]
+    cal_month = lambda idx: (L["startMon"] - 1 + idx + pre - 1) % 12 + 1
+    mkt_mon = A[0]["mktSum"] / 12.0 if C2 else 0.0
+    it_mon = (A[0]["itData"] + A[0]["itSec"] + A[0]["cloudBase"]) / 12.0 if C2 else 0.0
+    # ── 기간 축(준비 24 + 본 60) ──
     cols = [(j - PRE_MAX + 1) for j in range(PRE_MAX)] + [t + 1 for t in range(n)]
-    labels = ["구축-%d" % (PRE_MAX - j) for j in range(PRE_MAX)] + ["%d차-%02d" % (t // 12 + 1, t % 12 + 1) for t in range(n)]
+    labels = ["준비-%d" % (PRE_MAX - j) for j in range(PRE_MAX)] + ["%d차-%02d" % (t // 12 + 1, t % 12 + 1) for t in range(n)]
     c0 = (1 - pre) if pre > 0 else 1
     heads = []
     for idx in cols:
         if idx < 1:
-            heads.append((L["payStart"] * L["prePay"] * 12 / avgsal[0]) if idx > -pre else 0.0)
+            heads.append((L["payStart"] * wgt(L["wPay"], idx + pre) * 12 / avgsal[0]) if idx > -pre else 0.0)
         else:
             t = idx - 1
             heads.append(path[t] * 12 / avgsal[t // 12])
@@ -105,23 +112,46 @@ def run(P, L):
     cum = 0.0; series = []; maxreq = 0.0
     pre_bal = 0.0
     fixedM = []
+    pre_exp = 0.0                        # 준비기간 비용(1차 법인세 과세표준에서 뺀다)
+    prodPart = [0.0] * n                 # 제품 관련 원가(제품 원가+결제 수수료) — 제품판매 개시 전에는 없다
+    for y in range(5):
+        a = A[y]; ramp = L["ramp"][y]; rs = sum(ramp)
+        adds = [a["new"] * r / rs for r in ramp]; ends = []; c = a["mp"]
+        for x in adds:
+            c += x; ends.append(c)
+        W = sum(ends)
+        for m in range(12):
+            prodPart[y * 12 + m] = (a["cogsP"] + a["payFee"]) * ends[m] / W
+    shortfall = sum(rv["Ins"][t] - insRecM[t] for t in range(12))
+    tax1 = None
+
+    def rcash(k, q):                     # 기간 q(≥1)의 현금 기준 매출 — 제품은 개시 전 0, 사용료는 커버리지 반영
+        if k == "Ins":
+            return insRecM[q - 1]
+        if k == "P" and q < S:
+            return 0.0
+        return rv[k][q - 1]
+
     for j, idx in enumerate(cols):
         inflow = outflow = 0.0
         # 보증금 — 향후 N개월 최대 인원 × 월 임차료 × 보증금 개월, 증액분만
         look = heads[j:j + L["depLook"]]
-        req = (max(look) if look else 0.0) * L["rent"] * L["depMonths"]
+        req = 0.0 if idx <= -pre else (max(look) if look else 0.0) * L["rent"] * L["depMonths"]   # 준비 시작 전에는 보증금을 걸지 않는다
         dep_out = max(0.0, req - maxreq); maxreq = max(maxreq, req)
         hire = max(0.0, heads[j] - (heads[j - 1] if j > 0 else 0.0)) * (avgsal[(idx - 1) // 12] if idx >= 1 else avgsal[0]) * L["hireRate"]
         one = L["oneOff"] if idx == c0 else 0.0
         one += medi_amt if idx == medi_at else 0.0             # 메디에이지 500만 데이터 투자(일시 지급)
-        if pre > 0:
-            one += build_amt / pre if (idx < 1 and idx > -pre) else 0.0
+        if bsum > 0:
+            one += build_amt * wgt(L["wBuild"], idx + pre, False) / bsum if (idx < 1 and idx > -pre) else 0.0
         else:
             one += build_amt if idx == 1 else 0.0
         if idx < 1:
             active = idx > -pre
             if active:
-                outflow = L["payStart"] * L["prePay"] + L["preOpex"] + heads[j] * L["rent"]
+                q_ = idx + pre
+                outflow = (L["payStart"] * wgt(L["wPay"], q_) + L["preOpex"] + heads[j] * L["rent"]
+                           + mkt_mon * wgt(L["wMkt"], q_) + it_mon * wgt(L["wIT"], q_) + P["interestYear"] / 12.0 * L["preInt"])
+                pre_exp += outflow + hire + (L["oneOff"] if idx == c0 else 0.0)
             outflow += dep_out + hire + one
             fixedM.append(0.0)
         else:
@@ -131,11 +161,13 @@ def run(P, L):
             def insRec(p):                       # p = 기간 번호(≥1)의 커버리지 반영 사용료
                 return insRecM[p - 1]
 
-            def lagged(k, l):
-                p = idx - l
-                if p < 1:
+            def lagged(k, l):                    # 첫 입금 기간(G) 전에는 0, G에 그때까지 밀린 금액을 한꺼번에, 이후는 지연만큼
+                if idx < G:
                     return 0.0
-                return insRec(p) if k == "Ins" else rv[k][p - 1]
+                if idx == G:
+                    return sum(rcash(k, q) for q in range(1, G - l + 1))
+                p = idx - l
+                return rcash(k, p) if p >= 1 else 0.0
             insCol = lagged("Ins", lag["Ins"])
             # 선급 상계(선입선출)
             recv = L["prepay"] if idx == L["prepayAt"] else 0.0
@@ -144,14 +176,18 @@ def run(P, L):
             inflow = (lagged("P", lag["P"]) + lagged("Chk", lag["Chk"]) + lagged("Svc", lag["Svc"]) + lagged("Resv", lag["Resv"])
                       + lagged("Sub", lag["Sub"]) + (insCol - offset) + lagged("Etc", lag["Etc"]))
             pc = idx - L["cogsLag"]
-            o_cogs = cogsM[pc - 1] if pc >= 1 else 0.0
+            o_cogs = (cogsM[pc - 1] - (prodPart[pc - 1] if pc < S else 0.0)) if pc >= 1 else 0.0
             covSave = (rv["Ins"][t] - insRecM[t]) * varRate
             rent = heads[j] * L["rent"]
             rent_out = max(0.0, rent - adminM[t]) if L["adminHasRent"] == 1 else rent
             repay = L["repay"] if (L["repayFrom"] <= idx <= L["repayTo"]) else 0.0
-            tax = A[y - 1]["tax"] if (m == 2 and y >= 1) else 0.0
+            done = (idx - 1) // 12              # 끝난 연차 수 — 달력 3월에 직전 연차 법인세 납부
+            if tax1 is None and idx >= 1:
+                tax1 = max(0.0, A[0]["pbt"] - pre_exp - shortfall * (1 - varRate)) * P["taxRate"]
+            tax = (tax1 if done == 1 else A[done - 1]["tax"]) if (cal_month(idx) == 3 and done >= 1) else 0.0
             wc = (revT[t] - rv["Ins"][t] + insRecM[t]) * L["wc"]       # 커버리지로 공급 안 된 사용료에는 운전자본을 잡지 않음
-            outflow = (o_cogs + custM[t] + cacM[t] + brandM[t] + launchM[t] + capexM[t] + path[t] + rndM[t] + cloudM[t]
+            cust = custM[t] if idx >= S else 0.0
+            outflow = (o_cogs + cust + cacM[t] + brandM[t] + launchM[t] + capexM[t] + path[t] + rndM[t] + cloudM[t]
                        + gpuM[t] + salesM[t] + adminM[t] + intM[t] + wc + tax - covSave + rent_out + dep_out + hire + one + repay)
             fixedM.append(path[t] + rndM[t] + cloudM[t] + (0.0 if C2 else gpuM[t]) + adminM[t] + intM[t])
         cum += inflow - outflow
@@ -174,20 +210,24 @@ def run(P, L):
         got_pre = L["prepay"] if (L["prepay"] and idx >= L["prepayAt"]) else 0.0
         if L["cashAvail"] + req_new + got_pre + c_ < 0:
             runway = lab; break
-    return dict(low=low, low_at=low_at, fixed_avg=fixed_avg, buffer=buffer, need=need, req=req_new,
+    return dict(low=low, low_at=low_at, fixed_avg=fixed_avg, buffer=buffer, need=need, req=req_new, tax1=tax1, pre_exp=pre_exp,
                 total_round=math.ceil(need / 1e9) * 1e9, buf_months=buf_months_at_low, runway=runway, series=series, A=A, insRecM=insRecM)
 
 
 RAMP = O.RAMP
 ONES = [1] * 12
 ROAD = [0, 0, 7 / 16, 7 / 16, 7 / 16, 1, 1, 1, 1, 1, 1, 1]
-BASE = dict(pre=0, prePay=0.5, preOpex=0, lag=dict(P=0, Chk=0, Svc=0, Resv=0, Sub=0, Ins=0, Etc=0), wc=0.02, cogsLag=0,
-            insCov=ONES, rent=540000, depMonths=10, depLook=6, adminHasRent=1, hireRate=0.05, oneOff=150000000,
+# 대표 일정(2026-09-14): 준비 시작 2026-11(인건비·광고·시스템 설치) · 가오픈 2026-12-01 · 실매출 2027-02(검진부터 작게) ·
+# 입금 2027-03(모든 매출 다음 달 입금) · 헬스메이트센터 사용료 2027-03부터 서서히
+HM_RAMP = [0, 0.25, 0.5, 0.75] + [1] * 8
+BASE = dict(pre=3, preOpex=0, lag=dict(P=0, Chk=1, Svc=1, Resv=1, Sub=1, Ins=1, Etc=1), wc=0.0, cogsLag=0,
+            insCov=HM_RAMP, rent=540000, depMonths=10, depLook=6, adminHasRent=0, hireRate=0.05, oneOff=150000000,
             prepay=0, prepayAt=1, repay=0, repayFrom=1, repayTo=0, buf=6, payStart=300000000, ramp=RAMP, cashAvail=0,
-            launchPh=ONES, capexPh=ONES)
+            launchPh=ONES, capexPh=ONES, mediQ=1, cashStart=2, prodStart=2, preInt=1, startMon=11,
+            wPay=[0.6, 0.8, 1, 1, 1, 1], wMkt=[0.3, 0.6, 1, 1, 1, 1], wIT=[0, 1, 1, 1, 1, 1], wBuild=[0.3, 0.4, 0.3, 0, 0, 0])
 LA = dict(BASE)
-LB = dict(BASE, pre=6, preOpex=100000000, lag=dict(P=0, Chk=1, Svc=1, Resv=1, Sub=1, Ins=2, Etc=0), wc=0.0,
-          insCov=ROAD, adminHasRent=0, oneOff=0, launchPh=[2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1], capexPh=[1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0], mediAt=-5)
+LB = dict(BASE, pre=5, lag=dict(P=0, Chk=1, Svc=1, Resv=1, Sub=1, Ins=2, Etc=1), insCov=ROAD,
+          capexPh=[1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0])
 LC = dict(LB, insCov=[0] * 12)
 
 if __name__ == "__main__":

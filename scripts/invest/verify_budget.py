@@ -67,4 +67,17 @@ print("요청액:", [C[f"{c}{CR['s_req']}"].value / 1e8 for c in "CDE"], "· 필
 print("월별 누적 현금 84개월×3 최대 차이: %.4f원" % gmax, "· 정답지 일치:", "✓" if ok else "✗")
 for i in range(6):
     print("점검", C[f"B{CR['warnStart']+i}"].value)
+# 월별 자금필요표(기준 선택 = A) — 정답지 A 시리즈와 36개월 대조
+if "FR" in mp and "월별자금필요표" in wv.sheetnames:
+    FT = wv["월별자금필요표"]; FR = mp["FR"]; rA = res[0]; preA = O3.LA["pre"]
+    MMC = [CL(4 + k) for k in range(36)]
+    tmax = 0.0
+    for k in range(36):
+        lab, idx, inflow, outflow, cumv = rA["series"][24 - preA + k]
+        tmax = max(tmax, abs(FT[f"{MMC[k]}{FR['iTot']}"].value - inflow), abs(FT[f"{MMC[k]}{FR['oTot']}"].value - outflow),
+                   abs(FT[f"{MMC[k]}{FR['cum']}"].value - cumv), abs(FT[f"{MMC[k]}{FR['chk']}"].value or 0))
+    cal0 = FT[f"D{FR['head']}"].value
+    ok_t = FT["C4"].value == 1 and tmax <= 1 and cal0 == "2026-11"
+    ok &= ok_t
+    print("월별 자금필요표(A) 36개월 유입·유출·누적 최대 차이: %.4f원 · 첫 달 %s · 실매출 첫 달 %s · %s" % (tmax, cal0, FT[f"C{FR['minBal']+1}"].value, "✓" if ok_t else "✗"))
 sys.exit(0 if (e == 0 and z == 0 and worst[0] == 0 and wm < 1e-3 and ok) else 1)
