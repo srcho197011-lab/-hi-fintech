@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.4
+"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.5
 재현 순서(저장소 루트에서):
   1) node scripts/invest/fin_dump.mjs . scripts/invest/_fin.json          # finModel.js 기본값 덤프
-  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.4.xlsx
+  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.5.xlsx
   3) 엑셀로 열어 전체 재계산 후 저장(수식 값 캐시)
   4) python scripts/invest/oracle3.py                                     # 독립 정답지 — 엑셀 요약값과 같아야 한다
 docs/invest/ 는 .gitignore 대상(대외비)이라 산출물은 커밋되지 않고 이 생성기만 남는다."""
@@ -20,7 +20,7 @@ OUT = sys.argv[2]
 import os as _os
 sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 import adjust
-P = adjust.apply(FIN["P"])      # 대표 조정(약국 1차 200곳 · 기관별 구독료) — adjust.py 한 곳에서
+P = adjust.apply(FIN["P"])      # 대표 조정(약국 1차 200곳 · 기관별 구독료 · 검진 채널 분리 · 서비스 고객 수수료 0) — adjust.py 한 곳에서
 Y5 = FIN["years"]                 # finModel.js 원래 값(대조용 스냅샷)
 
 FONT = "맑은 고딕"
@@ -155,16 +155,20 @@ put("payRate", "결제 대행 수수료율(제품매출 대비)", "%", P["paymen
 put("rewardRate", "포인트(토큰) 적립률 — 제품마진 대비", "%", P["rewardRate"], F_PCT, "적립 50% · 제품마진에만 적용(원칙)")
 put("donationRate", "기부금(치료비 나눔) — 제품마진 대비", "%", P["donationRate"], F_PCT, "나눔 30% · 제품마진에만 적용(원칙)")
 
-gap("④ 검진 연계 · 헬스케어 서비스 · 예약")
-put("chkFee", "검진 연계 — 건당 매출", "원/건", P["checkupFee"], F_WON, "형 확정 2026-08-20")
-put("chkCost", "검진 3종 서비스 원가(검진대비보험·AI 리포트·케어 키트)", "원/건", P["checkupCost3"], F_WON, "건당 2만원 이내 유지 · 형 확정 2026-08-31")
-put("svcRate", "헬스케어 서비스 이용률(회원 대비)", "%", P["serviceRate"], F_PCT, SRC + " serviceRate")
-put("svcFee", "헬스케어 서비스 — 1인 수수료", "원/명", P["serviceCommission"], F_WON, SRC + " serviceCommission")
+gap("④ 검진 연계(자사운영 · 타사 제휴) · 헬스케어 서비스 · 예약")
+put("chkOwnFee", "검진안내 자사운영 — 건당 매출", "원/건", P["chkOwnFee"], F_WON, "대표 지시 2026-09-14 · 모델은 채널 구분 없이 2.5만", True)
+put("chkOwnCost", "검진안내 자사운영 — 3종 서비스 원가(검진대비보험·AI 리포트·케어 키트)", "원/건", P["chkOwnCost"], F_WON, "대표 지시 2026-09-14 · 건당 2만원 이내 유지")
+put("chkPtnFee", "검진안내 타사 제휴(인피니티 등) — 건당 매출", "원/건", P["chkPtnFee"], F_WON, "대표 지시 2026-09-14 · 원가(2만)보다 낮음 — 회원 확보 장치", True)
+put("chkPtnCost", "검진안내 타사 제휴 — 3종 서비스 원가", "원/건", P["chkPtnCost"], F_WON, "대표 지시 2026-09-14 · 자사와 같은 3종 제공")
+put("chkOwnY1", "자사운영 비율 — 1차연도(나머지는 타사 제휴)", "%", P["chkOwnShareY1"], F_PCT, "대표 지시 2026-09-14 · 자사 20% : 타사 80%", True)
+put("chkOwnStep", "자사운영 비율 — 연 상승폭(%p · 상한 100%)", "%", P["chkOwnShareStep"], F_PCT, "대표 지시 「매년 15%씩 상승」을 %p 가산으로 해석 — 20→35→50→65→80%")
+put("svcRate", "헬스케어 서비스 이용률(회원 대비 · 운영 지표)", "%", P["serviceRate"], F_PCT, SRC + " serviceRate")
+put("svcFee", "헬스케어 서비스 — 고객 수수료", "원/명", P["serviceCommission"], F_WON, "0 — 대표 지시 2026-09-14: 검진 후 헬스케어 서비스는 고객 매출 없음, 병원·검진센터·약국 구독료로 받는다(모델 1.5만)")
 put("svcCost", "헬스케어 서비스 원가율", "%", P["serviceCostRate"], F_PCT, SRC + " serviceCostRate")
 put("resvPer", "예약 건수(검진 예약 1건당)", "건", P["resvPerActive"], '0.0', SRC + " resvPerActive")
 put("resvFee", "예약 서비스 — 건당 수수료", "원/건", P["resvFee"], F_WON, "골프·시설 예약 건당 1만")
 
-gap("⑤ 보험 중개 — 1차연도 매출 2위(32%, 1위는 제품판매 35%)")
+gap("⑤ 보험 중개 — 1차연도 매출 2위(38%, 1위는 제품판매 41%)")
 put("insConv", "동의 DB 연간 공급 집행률(계약 전환율 아님)", "%", P["insConvRate"], F_PCT,
     "형 확정 2026-08-20 · 누적 동의 전체에 매년 적용 = 기존 동의자 재공급 전제(5년 786만 건 > 누적 동의 630만) · 하락 폭이 가장 불확실한 변수 — 같은 ±20%에서는 인건비가 더 민감 · 검증보고서 v1.1 B3 라벨 권고 반영", True)
 put("insFee", "보험 중개 — 건당 수수료", "원/건", P["insFeePerCase"], F_WON, "형 확정 2026-08-20", True)
@@ -422,6 +426,9 @@ yline("mp", "기초 회원(전년 말)", lambda i: "=0" if i == 0 else f"={YC[i-
 yline("new", "순증 회원(CAC 대상)", lambda i: f"=MAX(0,{yv('me', i)}-{yv('mp', i)})", F_CNT, "연말 − 기초")
 yline("gross_new", "총가입 필요량(이탈 보전 포함)", lambda i: f"={yv('new', i)}+ROUND({yv('mp', i)}*{ASCALAR('churn')},0)", F_CNT, "순증 + 기초×이탈률")
 yline("active", "검진 예약(활성)", lambda i: f"={AREF('activeAbs', i)}", F_CNT, "가정", font=GREEN)
+yline("chkShare", "검진안내 자사운영 비율", lambda i: f"=MIN(1,{ASCALAR('chkOwnY1')}+{ASCALAR('chkOwnStep')}*{i})", F_PCT, "1차 비율 + 상승폭×(연차−1), 상한 100%", sum5=False)
+yline("chkOwnN", "검진안내 — 자사운영 건수", lambda i: f"=ROUND({yv('active', i)}*{yv('chkShare', i)},0)", F_CNT, "검진 예약×자사 비율")
+yline("chkPtnN", "검진안내 — 타사 제휴 건수", lambda i: f"={yv('active', i)}-{yv('chkOwnN', i)}", F_CNT, "검진 예약 − 자사 건수")
 yline("mkt", "마케팅 동의 회원", lambda i: f"={AREF('mktConsent', i)}", F_CNT, "가정", font=GREEN, sum5=False)
 yline("insts", "제휴 기관 합계", lambda i: f"={AREF('centers', i)}+{AREF('hospitals', i)}+{AREF('pharmacies', i)}", F_CNT, "검진센터+병원+약국", sum5=False)
 FEE = lambda t, i: "=0" if i == 0 else f"=MIN({ASCALAR('subCap')},ROUND({ASCALAR('subBase_'+t)}*(1+{ASCALAR('subRate_'+t)})^{i-1}+{ASCALAR('subStep_'+t)}*{i-1},0))"
@@ -432,7 +439,7 @@ yline("paid_c", "유료 기관 — 검진센터", lambda i: f"=ROUND({AREF('cent
 yline("paid_h", "유료 기관 — 병원", lambda i: f"=ROUND({AREF('hospitals', i)}*{ASCALAR('subPaid')},0)", F_CNT, "", sum5=False)
 yline("paid_p", "유료 기관 — 약국", lambda i: f"=ROUND({AREF('pharmacies', i)}*{ASCALAR('subPaid')},0)", F_CNT, "", sum5=False)
 yline("buyers", "구매 회원", lambda i: f"=ROUND({yv('me', i)}*{ASCALAR('buyerRate')},0)", F_CNT, "연말 회원×구매 비율", sum5=False)
-yline("svcUsers", "헬스케어 서비스 이용자", lambda i: f"=ROUND({yv('me', i)}*{ASCALAR('svcRate')},0)", F_CNT, "연말 회원×이용률")
+yline("svcUsers", "헬스케어 서비스 이용자(고객 과금 없음)", lambda i: f"=ROUND({yv('me', i)}*{ASCALAR('svcRate')},0)", F_CNT, "연말 회원×이용률 — 대가는 기관 구독료")
 yline("resv", "예약 건수", lambda i: f"=ROUND({yv('active', i)}*{AREF('resvPer', i)},0)", F_CNT, "검진 예약×예약 배수")
 yline("insCases", "보험 DB 공급 건수", lambda i: f"=ROUND({yv('mkt', i)}*{ASCALAR('insConv')},0)", F_CNT, "누적 동의×공급 집행률(매년 재공급)")
 yline("agentUsers", "AI Agent 구독자", lambda i: f"=ROUND({yv('me', i)}*{AREF('agentRate', i)},0)", F_CNT, "연말 회원×구독률", sum5=False)
@@ -445,8 +452,10 @@ for c in cats:
           lambda i, k=k: f"=ROUND({yv('buyers', i)}*{ASCALAR('arpu_'+k)}*{ASCALAR('capture')}*{AREF('ramp', i)},0)",
           F_MIL, "구매회원×1인 지출×점유율×가동률", grp="제품")
 yline("revP", "제품판매 소계(GMV 총액)", lambda i: f"=SUM({YC[i]}{YR['rev_supp']}:{YC[i]}{YR['rev_sports']})", F_MIL, "", total=True)
-yline("revChk", "검진 연계 수수료", lambda i: f"={yv('active', i)}*{ASCALAR('chkFee')}", F_MIL, "검진 예약×건당 매출", grp="수수료")
-yline("revSvc", "헬스케어 서비스 수수료", lambda i: f"={yv('svcUsers', i)}*{ASCALAR('svcFee')}", F_MIL, "이용자×수수료")
+yline("revChk_o", "검진안내 — 자사운영", lambda i: f"={yv('chkOwnN', i)}*{ASCALAR('chkOwnFee')}", F_MIL, "자사 건수×건당 3만", grp="수수료")
+yline("revChk_t", "검진안내 — 타사 제휴(인피니티 등)", lambda i: f"={yv('chkPtnN', i)}*{ASCALAR('chkPtnFee')}", F_MIL, "타사 건수×건당 1만")
+yline("revChk", "검진 연계 소계", lambda i: f"={yv('revChk_o', i)}+{yv('revChk_t', i)}", F_MIL, "", total=True)
+yline("revSvc", "헬스케어 서비스 — 고객 수수료", lambda i: f"={yv('svcUsers', i)}*{ASCALAR('svcFee')}", F_MIL, "0 — 기관 구독료(아래 AI 플랫폼 구독)로 수취")
 yline("revResv", "예약 서비스 수수료", lambda i: f"={yv('resv', i)}*{ASCALAR('resvFee')}", F_MIL, "예약 건수×수수료")
 yline("sub_c", "AI 플랫폼 구독 — 검진센터", lambda i: f"={yv('paid_c', i)}*{yv('fee_c', i)}*12", F_MIL, "유료 검진센터×월 구독료×12", grp="구독")
 yline("sub_h", "AI 플랫폼 구독 — 병원", lambda i: f"={yv('paid_h', i)}*{yv('fee_h', i)}*12", F_MIL, "유료 병원×월 구독료×12")
@@ -463,7 +472,9 @@ for c in cats:
     k = c["key"]
     yline("cogs_" + k, f"제품 원가 — {c['label']}", lambda i, k=k: f"=ROUND({yv('rev_'+k, i)}*{ASCALAR('cost_'+k)},0)", F_MIL, "카테고리 매출×원가율", grp="제품")
 yline("cogsP", "제품 원가 소계", lambda i: f"=SUM({YC[i]}{YR['cogs_supp']}:{YC[i]}{YR['cogs_sports']})", F_MIL, "", total=True)
-yline("chkCogs", "검진 3종 서비스 원가", lambda i: f"={yv('active', i)}*{ASCALAR('chkCost')}", F_MIL, "검진 예약×건당 원가", grp="서비스")
+yline("chkCogs_o", "검진 3종 원가 — 자사운영", lambda i: f"={yv('chkOwnN', i)}*{ASCALAR('chkOwnCost')}", F_MIL, "자사 건수×건당 2만", grp="서비스")
+yline("chkCogs_t", "검진 3종 원가 — 타사 제휴", lambda i: f"={yv('chkPtnN', i)}*{ASCALAR('chkPtnCost')}", F_MIL, "타사 건수×건당 2만")
+yline("chkCogs", "검진 3종 원가 소계", lambda i: f"={yv('chkCogs_o', i)}+{yv('chkCogs_t', i)}", F_MIL, "", total=True)
 yline("svcCost", "헬스케어 서비스 원가", lambda i: f"=ROUND({yv('revSvc', i)}*{ASCALAR('svcCost')},0)", F_MIL, "서비스 매출×원가율")
 yline("subCost", "구독 운영 원가", lambda i: f"=ROUND({yv('revSub', i)}*{ASCALAR('subCost')},0)", F_MIL, "구독 매출×원가율")
 yline("payFee", "결제 대행 수수료", lambda i: f"=ROUND({yv('revP', i)}*{ASCALAR('payRate')},0)", F_MIL, "제품 매출×수수료율")
@@ -508,6 +519,9 @@ yline("netRev2", "순매출(포인트 이연 반영 · 상한)", lambda i: f"={y
 varr = f"({ASCALAR('brandRate')}+({ASCALAR('rndRate')}+{ASCALAR('salesRate')}+{ASCALAR('adminRate')})*{ASCALAR('opexScale')})"
 yline("prodContrib", "제품판매 한계 공헌", lambda i: f"={yv('revP', i)}-{yv('cogsP', i)}-{yv('payFee', i)}-{yv('reward', i)}-{yv('donation', i)}-{yv('revP', i)}*{varr}", F_MIL, "제품 − 원가·결제·적립·기부·매출연동 판관비 — 적립금 생태계 비용")
 yline("prodContribR", "제품판매 한계 공헌률", lambda i: f"=IF({yv('revP', i)}=0,0,{yv('prodContrib', i)}/{yv('revP', i)})", F_PCT, "약 −2.4%", sum5=False)
+yline("chkGP_o", "검진안내 매출총이익 — 자사운영", lambda i: f"={yv('revChk_o', i)}-{yv('chkCogs_o', i)}", F_MIL, "기본값 건당 +1만")
+yline("chkGP_t", "검진안내 매출총이익 — 타사 제휴", lambda i: f"={yv('revChk_t', i)}-{yv('chkCogs_t', i)}", F_MIL, "기본값 건당 −1만 — 자사 비율이 오를수록 줄어듦")
+yline("chkGP", "검진안내 매출총이익 합계", lambda i: f"={yv('chkGP_o', i)}+{yv('chkGP_t', i)}", F_MIL, "기본값에서는 자사 비율 50%(3차연도)가 손익분기")
 yline("insContrib", "보험 중개 공헌이익", lambda i: f"={yv('revIns', i)}*(1-{varr})", F_MIL, "원가 없음 · 매출연동 판관비만 차감")
 yline("ebitExIns", "보험 제외 시 영업이익(보정)", lambda i: f"={yv('ebit', i)}-{yv('insContrib', i)}", F_MIL, "1차연도 이익이 보험 한 줄에 달려 있는 정도")
 yline("effCac1", "실효 CAC(순증 기준)", lambda i: f"=IF({yv('new', i)}=0,0,({yv('cac', i)}+{yv('brand', i)}+{yv('launch', i)})/{yv('new', i)})", F_WON, "(CAC+브랜드+런칭)÷순증 · 모델 CAC 5천원과 병기", sum5=False)
@@ -521,7 +535,7 @@ yline("imDiff", "모델 − IM 차이(보험 매출)", lambda i: f"={yv('revIns'
 
 # ── 모델 대조 블록(finModel.js 실행값 스냅샷) ──
 yr += 2
-section(Y, yr, "finModel.js 대조 — 대표 조정(약국 1차 200곳 · 기관별 구독료)만큼 2차연도부터 매출·원가·이익에 차이가 난다. 제품판매·보험·인건비는 0이어야 한다(모델값: finYears(5) 스냅샷)", 9)
+section(Y, yr, "finModel.js 대조 — 대표 조정(약국 1차 200곳 · 기관별 구독료 · 검진 채널 분리 · 서비스 고객 수수료 0)만큼 1차연도부터 매출·원가·이익에 차이가 난다. 제품판매·보험·인건비는 0이어야 한다(모델값: finYears(5) 스냅샷)", 9)
 yr += 1
 header_row(Y, yr, ["", "계정", "", "1차연도", "2차연도", "3차연도", "4차연도", "5차연도", ""])
 yr += 1
@@ -628,8 +642,8 @@ msec("매출")
 for cc in cats:
     mline("rev_" + cc["key"], f"제품판매 — {cc['label']}", "매출 가중", by_weight("rev_" + cc["key"]), reconcile_key="rev_" + cc["key"], grp="제품")
 mline("revP", "제품판매 소계", "합계", lambda t, y, m, c: f"=SUM({c}{MR['rev_supp']}:{c}{MR['rev_sports']})", total=True, reconcile_key="revP")
-mline("revChk", "검진 연계 수수료", "매출 가중", by_weight("revChk"), reconcile_key="revChk", grp="수수료")
-mline("revSvc", "헬스케어 서비스 수수료", "매출 가중", by_weight("revSvc"), reconcile_key="revSvc")
+mline("revChk", "검진 연계 수수료(자사+타사)", "매출 가중", by_weight("revChk"), reconcile_key="revChk", grp="수수료")
+mline("revSvc", "헬스케어 서비스 — 고객 수수료(0)", "매출 가중", by_weight("revSvc"), reconcile_key="revSvc")
 mline("revResv", "예약 서비스 수수료", "매출 가중", by_weight("revResv"), reconcile_key="revResv")
 mline("revSub", "AI 플랫폼 구독(EMR·UIP)", "매출 가중", by_weight("revSub"), reconcile_key="revSub", grp="구독")
 mline("revIns", "보험 중개 수수료", "매출 가중", by_weight("revIns"), reconcile_key="revIns", grp="보험")
@@ -642,7 +656,7 @@ mline("rev", "매출액 합계", "합계",
 
 msec("매출원가")
 mline("cogsP", "제품 원가", "매출 가중", by_weight("cogsP"), reconcile_key="cogsP", grp="제품")
-mline("chkCogs", "검진 3종 서비스 원가", "매출 가중", by_weight("chkCogs"), reconcile_key="chkCogs", grp="서비스")
+mline("chkCogs", "검진 3종 원가(자사+타사)", "매출 가중", by_weight("chkCogs"), reconcile_key="chkCogs", grp="서비스")
 mline("svcCost", "헬스케어 서비스 원가", "매출 가중", by_weight("svcCost"), reconcile_key="svcCost")
 mline("subCost", "구독 운영 원가", "매출 가중", by_weight("subCost"), reconcile_key="subCost")
 mline("payFee", "결제 대행 수수료", "매출 가중", by_weight("payFee"), reconcile_key="payFee")
@@ -1051,12 +1065,12 @@ cell(S, "A1", "재무회계 온톨로지 화면 대조 — 화면은 1차연도 
 cell(S, "A2", "화면 값은 누적 중인 순간값이라 절대액이 아니라 구성비를 봐야 한다. 화면 값 출처: 2026-09-13 캡처.", SUB)
 header_row(S, 4, ["구분", "화면 항목", "화면 값(원)", "화면 구성비", "대응 계정(연간손익)", "1차연도 모델(백만원)", "모델 구성비", "차이(%p)", "산식 · 비고"])
 sr = 5
-scr_rev = [("제품판매 매출 · 건강쇼핑(GMV)", 4737000, ["revP"], "구매회원×1인 지출×점유율 70%×가동률 33% — 1차 매출 1위"),
-           ("검진 연계 수수료 · 건강검진센터", 3850000, ["revChk"], "검진 예약×건당 2.5만(원가 2만 — 회원 확보 장치)"),
-           ("헬스케어 서비스 수수료", 690000, ["revSvc"], "이용자×1.5만"),
+scr_rev = [("제품판매 매출 · 건강쇼핑(GMV)", 4737000, ["revP"], "구매회원×1인 지출×점유율 70%×가동률 33% — 1차 매출 1위(41%)"),
+           ("검진 연계 수수료 · 건강검진센터", 3850000, ["revChk"], "자사 20%×3만 + 타사 80%×1만 = 1차 건당 평균 1.4만(원가 2만) — 화면 시뮬은 채널 구분 없이 2.5만"),
+           ("헬스케어 서비스 수수료", 690000, ["revSvc"], "고객 수수료 0(대표 지시 2026-09-14) — 화면 시뮬은 이용자×1.5만 · 대가는 기관 구독료"),
            ("예약 서비스 수수료 · 골프·시설", 520000, ["revResv"], "예약 건수×1만"),
            ("EMR-UIP 사용료", 0, ["revSub"], "1차연도 무료(시장 선점)"),
-           ("보험 중개 수수료 · 퍼미션 동의", 5180000, ["revIns"], "누적 동의×공급 집행률 60%×건당 7만 — 1차 매출 2위(32%)"),
+           ("보험 중개 수수료 · 퍼미션 동의", 5180000, ["revIns"], "누적 동의×공급 집행률 60%×건당 7만 — 1차 매출 2위(38%)"),
            ("광고 · 제휴 매출", 0, ["revAd", "revAg", "revApi"], "2차연도부터(광고·Agent·API 합)")]
 section(S, sr, "매출 구성", 9); sr += 1
 r_s = sr
@@ -1078,7 +1092,7 @@ for rr in range(r_s, r_e + 1):
 sr += 2
 section(S, sr, "비용 구성 — 비율은 매출 대비", 9); sr += 1
 scr_cost = [("인건비 · 판관비", 3980359, ["pay"], "인력계획 합계"),
-            ("검진·인프라 원가 · 매출원가", 3114500, ["chkCogs", "svcCost", "subCost"], "검진 3종 원가 + 서비스·구독 원가"),
+            ("검진·인프라 원가 · 매출원가", 3114500, ["chkCogs", "svcCost", "subCost"], "검진 3종 원가(자사+타사) + 서비스·구독 원가"),
             ("마케팅비 · 판관비", 2385194, ["cac", "brand", "launch"], "CAC + 브랜드 8% + 런칭 광고"),
             ("제품 원가 · 매출원가", 2084280, ["cogsP"], "카테고리 매출×원가율"),
             ("포인트(토큰적립) 비용", 1326360, ["reward"], "제품마진×50%"),
@@ -1127,7 +1141,7 @@ S.freeze_panes = "C5"
 # ══════════════════════════════════════ 안내 ══════════════════════════════════════
 G = wb.create_sheet("안내", 0)
 cell(G, "A1", "하이젠케어 전략적 투자요청서 — 투자금 산정 · 세부 예산 양식", Font(name=FONT, size=17, bold=True, color="1A2B4A"))
-cell(G, "A2", "v1.4 · 2026-09-14 · 약국 1차 200곳 · 기관별 구독료(검진센터 월 30만 · 병원 50만 · 약국 20만, 약국 연 20% 복리 인상) · 가용 현금 차감 없음 · 기준: finModel.js + 대표 조정(adjust.py)", SUB)
+cell(G, "A2", "v1.5 · 2026-09-14 · 검진 연계 자사운영(3만)·타사 제휴(1만) 분리 — 자사 비율 20%에서 매년 +15%p · 헬스케어 서비스 고객 수수료 0 · 약국 1차 200곳 · 기관별 구독료(검진센터 월 30만 · 병원 50만 · 약국 20만, 약국 연 20% 복리) · 가용 현금 차감 없음 · 기준: finModel.js + 대표 조정(adjust.py)", SUB)
 gr = 4
 section(G, gr, "결론 — 투자금 산정 결과(가정을 바꾸면 자동 재계산)", 7); gr += 1
 header_row(G, gr, ["", "항목", "A 계획", "B 보수", "C 게이트 지연", "단위", "비고"]); gr += 1
@@ -1179,7 +1193,7 @@ for t_ in [
     "3. 모델 KPI 런웨이는 1차연도 EBIT(+5.1억)로 번을 계산해 내부값이 Infinity가 되고, 화면에는 「흑자」로 뜬다. 같은 해 순이익은 −2.9억, 모델 FCF는 −16.2억이다.",
     "4. finModel.js는 1차연도 조달을 자본금 3억·잉여금 5억·장기차입 20억·리스 1.2억으로 가정하지만 실제 잔액 근거가 없다. 이 양식은 보유 현금을 차감하지 않고 필요 총자금 전액을 요청액으로 잡는다.",
     "5. 모델 FCF 산식 ebit×(1−세율)은 손실 연도에 세금 환급처럼 작동한다. 기본값은 5개년 EBIT가 모두 +라 발동하지 않지만, 보험 공급 집행률 30%면 1차 FCF에 7.1억의 가짜 환급이 들어간다. 이 양식은 손실 시 세금 0.",
-    "6. 보험 DB 공급(20만×60%×7만 = 84억)은 1차연도 매출 2위(32%)이고 원가가 없어 이익에 그대로 반영된다. 같은 ±20% 충격으로는 인건비가 더 민감하지만, 공급 집행률은 하락 폭이 가장 불확실하다 — 두 근거를 함께 첨부할 것.",
+    "6. 보험 DB 공급(20만×60%×7만 = 84억)은 1차연도 매출 2위(38%)이고 원가가 없어 이익에 그대로 반영된다. 같은 ±20% 충격으로는 인건비가 더 민감하지만, 공급 집행률은 하락 폭이 가장 불확실하다 — 두 근거를 함께 첨부할 것.",
     "7. 화면 시뮬의 감가상각은 전 연차 매출 0.2%로 고정돼 3차연도에만 맞는다(1차 모델 1.9%). 모델 영업이익과 함께 보정해야 한다.",
     "8. 사이트 사업계획(월·분기) 탭(finMonthlyY1)은 매출 연동 판관비와 인건비를 매월 1/12로 빼서 상반기 누적 영업손익이 −50.8억으로 나온다. 이 양식은 매출 가중·연속 채용으로 배분했다 — 제출 전 사이트도 같은 기준으로 맞출 것.",
     "9. 보험 매출 모수가 문서마다 다르다. 모델은 누적 동의에 매년 60%(5차 2,646억), IM p7은 연 신규 동의×60%(5차 1,050억). 검증보고서 v1.1의 「동일 산식」은 틀렸다. 1차연도·필요 자금은 같지만 2~5차가 크게 다르다 — 대표 결정 필요.",

@@ -36,7 +36,12 @@ def annual(P, n=5):
         for c in P["productCats"]:
             rv = jround(buyers * c["arpu"] * P["productCapture"] * ramp); cst = jround(rv * c["cost"])
             cat[c["key"]] = (rv, cst); revP += rv; cogsP += cst
-        revChk = active * P["checkupFee"]
+        if "chkOwnFee" in P:                       # 검진 연계 자사/타사 채널 분리(adjust.py)
+            import adjust as _adj
+            chkOwn, chkPtn, revChk, chkCogs = _adj.checkup(P, y, active)
+        else:
+            chkOwn, chkPtn = 0, active
+            revChk = active * P["checkupFee"]; chkCogs = active * P["checkupCost3"]
         svcU = jround(me * P["serviceRate"]); revSvc = svcU * P["serviceCommission"]
         resv = jround(active * P["resvPerActive"][y]); revResv = resv * P["resvFee"]
         insC = jround(mkt * P["insConvRate"]); revIns = insC * P["insFeePerCase"]
@@ -44,7 +49,7 @@ def annual(P, n=5):
         agU = jround(me * P["aiAgentRate"][y]); revAg = agU * P["aiAgentFeeYear"]
         revApi = P["apiClients"][y] * P["apiFeeYear"]
         rev = revP + revChk + revSvc + revResv + revSub + revIns + revAd + revAg + revApi
-        chkCogs = active * P["checkupCost3"]; svcCost = jround(revSvc * P["serviceCostRate"])
+        svcCost = jround(revSvc * P["serviceCostRate"])
         subCost = jround(revSub * P["subCostRate"]); payFee = jround(revP * P["paymentRate"])
         cogs = cogsP + chkCogs + svcCost + subCost + payFee
         gross = rev - cogs
@@ -59,7 +64,7 @@ def annual(P, n=5):
         ebit_model = gross - sga
         depr = jround(P["deprYear"] * (P["deprY1Rate"] if y == 0 else 1))
         rows.append(dict(y=y, me=me, mp=mp, new=new, active=active, mkt=mkt, insts=insts, subFee=subFee, paid=paid,
-                         buyers=buyers, cat=cat, revP=revP, cogsP=cogsP, revChk=revChk, revSvc=revSvc, revResv=revResv,
+                         buyers=buyers, cat=cat, revP=revP, cogsP=cogsP, revChk=revChk, chkOwn=chkOwn, chkPtn=chkPtn, svcU=svcU, revSvc=revSvc, revResv=revResv,
                          revSub=revSub, revIns=revIns, revAd=revAd, revAg=revAg, revApi=revApi, rev=rev,
                          chkCogs=chkCogs, svcCost=svcCost, subCost=subCost, payFee=payFee, cogs=cogs, gross=gross,
                          cac=cac, launch=launch, brand=brand, mktg=mktg, reward=reward, don=don, pay=pay,
