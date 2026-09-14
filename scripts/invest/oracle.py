@@ -22,8 +22,15 @@ def annual(P, n=5):
         new = max(0, me - mp)
         active = P["activeAbs"][y]; mkt = P["mktConsentEnd"][y]
         insts = P["checkupCenters"][y] + P["hospitals"][y] + P["pharmacies"][y]
-        subFee = 0 if y == 0 else min(P["subFeeCap"], P["subFeeBase"] + P["subFeeStep"] * (y - 1))
-        paid = jround(insts * P["subPaidRate"]); revSub = paid * subFee * 12
+        if "subFeeBaseT" in P:                     # 기관 유형별 구독료(adjust.py)
+            import adjust as _adj
+            cnt = {"centers": P["checkupCenters"][y], "hospitals": P["hospitals"][y], "pharmacies": P["pharmacies"][y]}
+            subFee = {t: _adj.fee(P, t, y) for t in _adj.TYPES}
+            paid = {t: jround(cnt[t] * P["subPaidRate"]) for t in _adj.TYPES}
+            revSub = sum(paid[t] * subFee[t] * 12 for t in _adj.TYPES)
+        else:
+            subFee = 0 if y == 0 else min(P["subFeeCap"], P["subFeeBase"] + P["subFeeStep"] * (y - 1))
+            paid = jround(insts * P["subPaidRate"]); revSub = paid * subFee * 12
         buyers = jround(me * P["productBuyerRate"]); ramp = P["productRamp"][y]
         cat = {}; revP = 0; cogsP = 0
         for c in P["productCats"]:

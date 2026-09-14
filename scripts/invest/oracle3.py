@@ -4,7 +4,8 @@
 import math
 import oracle as O
 
-P0 = O.P0
+import adjust
+P0 = adjust.apply(O.P0)          # 대표 조정(약국 1차 200곳 · 기관별 구독료)
 HEADS = {"dev": [22, 70, 160, 340, 560], "ai": [12, 40, 95, 200, 330], "ops": [14, 60, 150, 335, 575],
          "sales": [8, 30, 75, 160, 270], "mkt": [6, 20, 45, 95, 160], "mgmt": [8, 25, 50, 90, 120]}
 PRE_MAX = 24
