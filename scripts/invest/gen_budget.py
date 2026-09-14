@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.6
+"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.7
 재현 순서(저장소 루트에서):
   1) node scripts/invest/fin_dump.mjs . scripts/invest/_fin.json          # finModel.js 기본값 덤프
-  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.6.xlsx
+  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.7.xlsx
   3) 엑셀로 열어 전체 재계산 후 저장(수식 값 캐시)
-  4) python scripts/invest/verify_budget.py docs/invest/하이젠케어_투자금산정_예산양식_v1.6.xlsx   # 독립 정답지(oracle·oracle3) 대조 — 종료코드 0이어야 한다
+  4) python scripts/invest/verify_budget.py docs/invest/하이젠케어_투자금산정_예산양식_v1.7.xlsx   # 독립 정답지(oracle·oracle3) 대조 — 종료코드 0이어야 한다
 docs/invest/ 는 .gitignore 대상(대외비)이라 산출물은 커밋되지 않고 이 생성기만 남는다."""
 """(v1.0 머리말) 하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기
 입력: finModel.js 덤프(fin.json) · 출력: xlsx
@@ -160,8 +160,8 @@ put("chkOwnFee", "검진안내 자사운영 — 건당 매출", "원/건", P["ch
 put("chkOwnCost", "검진안내 자사운영 — 3종 서비스 원가(검진대비보험·AI 리포트·케어 키트)", "원/건", P["chkOwnCost"], F_WON, "대표 지시 2026-09-14 · 건당 2만원 이내 유지")
 put("chkPtnFee", "검진안내 타사 제휴(인피니티 등) — 건당 매출", "원/건", P["chkPtnFee"], F_WON, "대표 지시 2026-09-14 · 원가(2만)보다 낮음 — 회원 확보 장치", True)
 put("chkPtnCost", "검진안내 타사 제휴 — 3종 서비스 원가", "원/건", P["chkPtnCost"], F_WON, "대표 지시 2026-09-14 · 자사와 같은 3종 제공")
-put("chkOwnY1", "자사운영 비율 — 1차연도(나머지는 타사 제휴)", "%", P["chkOwnShareY1"], F_PCT, "대표 지시 2026-09-14 · 자사 20% : 타사 80%", True)
-put("chkOwnStep", "자사운영 비율 — 연 상승폭(%p · 상한 100%)", "%", P["chkOwnShareStep"], F_PCT, "대표 지시 「매년 15%씩 상승」을 %p 가산으로 해석 — 20→35→50→65→80%")
+put("chkOwnY1", "자사운영 비율 — 1차연도(나머지는 타사 제휴)", "%", P["chkOwnShareY1"], F_PCT, "대표 확정 2026-09-14 · 1차 자사 20% : 타사 80%", True)
+put("chkOwnStep", "자사운영 비율 — 연 상승폭(%p · 상한 100%)", "%", P["chkOwnShareStep"], F_PCT, "대표 확정 2026-09-14 — 20%에 매년 15%p를 더해 20→35→50→65→5차 80%(복리 아님)", True)
 put("svcRate", "헬스케어 서비스 이용률(회원 대비 · 운영 지표)", "%", P["serviceRate"], F_PCT, SRC + " serviceRate")
 put("svcFee", "헬스케어 서비스 — 고객 수수료", "원/명", P["serviceCommission"], F_WON, "0 — 대표 지시 2026-09-14: 검진 후 헬스케어 서비스는 고객 매출 없음, 병원·검진센터·약국 구독료로 받는다(모델 1.5만)")
 put("svcCost", "헬스케어 서비스 원가율", "%", P["serviceCostRate"], F_PCT, SRC + " serviceCostRate")
@@ -425,7 +425,7 @@ yline("mp", "기초 회원(전년 말)", lambda i: "=0" if i == 0 else f"={YC[i-
 yline("new", "순증 회원(CAC 대상)", lambda i: f"=MAX(0,{yv('me', i)}-{yv('mp', i)})", F_CNT, "연말 − 기초")
 yline("gross_new", "총가입 필요량(이탈 보전 포함)", lambda i: f"={yv('new', i)}+ROUND({yv('mp', i)}*{ASCALAR('churn')},0)", F_CNT, "순증 + 기초×이탈률")
 yline("active", "검진 예약(활성)", lambda i: f"={AREF('activeAbs', i)}", F_CNT, "가정", font=GREEN)
-yline("chkShare", "검진안내 자사운영 비율", lambda i: f"=MIN(1,{ASCALAR('chkOwnY1')}+{ASCALAR('chkOwnStep')}*{i})", F_PCT, "1차 비율 + 상승폭×(연차−1), 상한 100%", sum5=False)
+yline("chkShare", "검진안내 자사운영 비율", lambda i: f"=MIN(1,ROUND({ASCALAR('chkOwnY1')}+{ASCALAR('chkOwnStep')}*{i},6))", F_PCT, "1차 비율 + 상승폭×(연차−1), 상한 100%", sum5=False)
 yline("chkOwnN", "검진안내 — 자사운영 건수", lambda i: f"=ROUND({yv('active', i)}*{yv('chkShare', i)},0)", F_CNT, "검진 예약×자사 비율")
 yline("chkPtnN", "검진안내 — 타사 제휴 건수", lambda i: f"={yv('active', i)}-{yv('chkOwnN', i)}", F_CNT, "검진 예약 − 자사 건수")
 yline("mkt", "마케팅 동의 회원", lambda i: f"={AREF('mktConsent', i)}", F_CNT, "가정", font=GREEN, sum5=False)
@@ -1198,7 +1198,7 @@ S.freeze_panes = "C5"
 # ══════════════════════════════════════ 안내 ══════════════════════════════════════
 G = wb.create_sheet("안내", 0)
 cell(G, "A1", "하이젠케어 전략적 투자요청서 — 투자금 산정 · 세부 예산 양식", Font(name=FONT, size=17, bold=True, color="1A2B4A"))
-cell(G, "A2", "v1.6 · 2026-09-14 · ⑥ 신규 스트림(광고·제휴 · AI Agent · API) 삭제 · 보험 중개 → 헬스메이트센터 사용료(투자금 100억 기준 우대 단가 5만·한도 10만 건에서 매년 +1만원·+10만 건, 초과분 시가 10만) · 검진 연계 자사운영(3만)·타사 제휴(1만) 분리 — 자사 비율 20%에서 매년 +15%p · 헬스케어 서비스 고객 수수료 0 · 약국 1차 200곳 · 기관별 구독료(검진센터 월 30만 · 병원 50만 · 약국 20만, 약국 연 20% 복리) · 가용 현금 차감 없음 · 기준: finModel.js + 대표 조정(adjust.py)", SUB)
+cell(G, "A2", "v1.7 · 2026-09-14 · 검진 자사 비율 확정(20%에서 매년 +15%p → 5차 80%) · 사이트(finModel.js) 미반영 — 확정 후 반영 · ⑥ 신규 스트림(광고·제휴 · AI Agent · API) 삭제 · 보험 중개 → 헬스메이트센터 사용료(투자금 100억 기준 우대 단가 5만·한도 10만 건에서 매년 +1만원·+10만 건, 초과분 시가 10만) · 검진 연계 자사운영(3만)·타사 제휴(1만) 분리 — 자사 비율 20%에서 매년 +15%p · 헬스케어 서비스 고객 수수료 0 · 약국 1차 200곳 · 기관별 구독료(검진센터 월 30만 · 병원 50만 · 약국 20만, 약국 연 20% 복리) · 가용 현금 차감 없음 · 기준: finModel.js + 대표 조정(adjust.py)", SUB)
 gr = 4
 section(G, gr, "결론 — 투자금 산정 결과(가정을 바꾸면 자동 재계산)", 7); gr += 1
 header_row(G, gr, ["", "항목", "A 계획", "B 보수", "C 게이트 지연", "단위", "비고"]); gr += 1
