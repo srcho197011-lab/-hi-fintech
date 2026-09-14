@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.3
+"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.4
 재현 순서(저장소 루트에서):
   1) node scripts/invest/fin_dump.mjs . scripts/invest/_fin.json          # finModel.js 기본값 덤프
-  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.3.xlsx
+  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.4.xlsx
   3) 엑셀로 열어 전체 재계산 후 저장(수식 값 캐시)
   4) python scripts/invest/oracle3.py                                     # 독립 정답지 — 엑셀 요약값과 같아야 한다
 docs/invest/ 는 .gitignore 대상(대외비)이라 산출물은 커밋되지 않고 이 생성기만 남는다."""
@@ -134,7 +134,10 @@ put("subBase_h", "구독료 — 병원 2차연도 월 기본", "원/월", P["sub
 put("subBase_p", "구독료 — 약국 2차연도 월 기본", "원/월", P["subFeeBaseT"]["pharmacies"], F_WON, "대표 지시 2026-09-14 · 1차연도 무료", True)
 put("subStep_c", "구독료 — 검진센터 연 인상폭", "원/월", P["subFeeStepT"]["centers"], F_WON, "모델 구조 유지(매년 +50만) · 0이면 고정 요금")
 put("subStep_h", "구독료 — 병원 연 인상폭", "원/월", P["subFeeStepT"]["hospitals"], F_WON, "모델 구조 유지(매년 +50만) · 0이면 고정 요금")
-put("subStep_p", "구독료 — 약국 연 인상폭", "원/월", P["subFeeStepT"]["pharmacies"], F_WON, "모델 구조 유지(매년 +50만) · 0이면 고정 요금")
+put("subStep_p", "구독료 — 약국 연 인상폭(정액)", "원/월", P["subFeeStepT"]["pharmacies"], F_WON, "0 — 약국은 아래 인상률(20%)로 올린다")
+put("subRate_c", "구독료 — 검진센터 연 인상률", "%", P["subFeeRateT"]["centers"], F_PCT, "0이면 정액 인상폭만 적용")
+put("subRate_h", "구독료 — 병원 연 인상률", "%", P["subFeeRateT"]["hospitals"], F_PCT, "0이면 정액 인상폭만 적용")
+put("subRate_p", "구독료 — 약국 연 인상률(복리)", "%", P["subFeeRateT"]["pharmacies"], F_PCT, "대표 지시 2026-09-14 — 매년 20% 복리 인상", True)
 put("subCap", "구독료 — 상한(공통)", "원/월", P["subFeeCap"], F_WON, "월 300만 한도")
 put("subPaid", "유료 전환 기관 비율", "%", P["subPaidRate"], F_PCT, SRC + " subPaidRate · 기관 이탈은 모델에 없음(0) — 검증보고서 v1.1 D4")
 put("subCost", "구독 운영 원가율(클라우드·연동)", "%", P["subCostRate"], F_PCT, SRC + " subCostRate")
@@ -421,8 +424,8 @@ yline("gross_new", "총가입 필요량(이탈 보전 포함)", lambda i: f"={yv
 yline("active", "검진 예약(활성)", lambda i: f"={AREF('activeAbs', i)}", F_CNT, "가정", font=GREEN)
 yline("mkt", "마케팅 동의 회원", lambda i: f"={AREF('mktConsent', i)}", F_CNT, "가정", font=GREEN, sum5=False)
 yline("insts", "제휴 기관 합계", lambda i: f"={AREF('centers', i)}+{AREF('hospitals', i)}+{AREF('pharmacies', i)}", F_CNT, "검진센터+병원+약국", sum5=False)
-FEE = lambda t, i: "=0" if i == 0 else f"=MIN({ASCALAR('subCap')},{ASCALAR('subBase_'+t)}+{ASCALAR('subStep_'+t)}*{i-1})"
-yline("fee_c", "구독료(월) — 검진센터", lambda i: FEE("c", i), F_WON, "1차 0 · 2차부터 기본+인상폭×(연차−2), 상한", sum5=False)
+FEE = lambda t, i: "=0" if i == 0 else f"=MIN({ASCALAR('subCap')},ROUND({ASCALAR('subBase_'+t)}*(1+{ASCALAR('subRate_'+t)})^{i-1}+{ASCALAR('subStep_'+t)}*{i-1},0))"
+yline("fee_c", "구독료(월) — 검진센터", lambda i: FEE("c", i), F_WON, "1차 0 · 2차부터 기본×(1+인상률)^(연차−2)+정액×(연차−2), 상한", sum5=False)
 yline("fee_h", "구독료(월) — 병원", lambda i: FEE("h", i), F_WON, "", sum5=False)
 yline("fee_p", "구독료(월) — 약국", lambda i: FEE("p", i), F_WON, "", sum5=False)
 yline("paid_c", "유료 기관 — 검진센터", lambda i: f"=ROUND({AREF('centers', i)}*{ASCALAR('subPaid')},0)", F_CNT, "기관×유료 전환율", sum5=False)
@@ -1124,7 +1127,7 @@ S.freeze_panes = "C5"
 # ══════════════════════════════════════ 안내 ══════════════════════════════════════
 G = wb.create_sheet("안내", 0)
 cell(G, "A1", "하이젠케어 전략적 투자요청서 — 투자금 산정 · 세부 예산 양식", Font(name=FONT, size=17, bold=True, color="1A2B4A"))
-cell(G, "A2", "v1.3 · 2026-09-14 · 약국 1차 200곳 · 기관별 구독료(검진센터 월 30만 · 병원 50만 · 약국 20만) · 가용 현금 차감 없음 · 기준: finModel.js + 대표 조정(adjust.py)", SUB)
+cell(G, "A2", "v1.4 · 2026-09-14 · 약국 1차 200곳 · 기관별 구독료(검진센터 월 30만 · 병원 50만 · 약국 20만, 약국 연 20% 복리 인상) · 가용 현금 차감 없음 · 기준: finModel.js + 대표 조정(adjust.py)", SUB)
 gr = 4
 section(G, gr, "결론 — 투자금 산정 결과(가정을 바꾸면 자동 재계산)", 7); gr += 1
 header_row(G, gr, ["", "항목", "A 계획", "B 보수", "C 게이트 지연", "단위", "비고"]); gr += 1
