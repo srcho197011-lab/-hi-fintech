@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.1
+"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.2
 재현 순서(저장소 루트에서):
   1) node scripts/invest/fin_dump.mjs . scripts/invest/_fin.json          # finModel.js 기본값 덤프
-  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.1.xlsx
+  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.2.xlsx
   3) 엑셀로 열어 전체 재계산 후 저장(수식 값 캐시)
   4) python scripts/invest/oracle3.py                                     # 독립 정답지 — 엑셀 요약값과 같아야 한다
 docs/invest/ 는 .gitignore 대상(대외비)이라 산출물은 커밋되지 않고 이 생성기만 남는다."""
@@ -182,13 +182,9 @@ gap("⑧ 자산 · 금융 · 세금")
 put("deprYear", "연 감가상각비(정상 연도)", "원", P["deprYear"], F_WON, SRC + " deprYear")
 put("deprY1", "초년도 감가상각 인식 비율", "%", P["deprY1Rate"], F_PCT, "자산 취득 직후라 50%")
 put("interest", "연 이자비용", "원", P["interestYear"], F_WON,
-    "⚠ 장기차입 20억 대비 연 8억 = 암묵 이자율 40%(리스 포함 37.7%) · 차입금과 연동되지 않은 고정 상수 — 모델값 확인 필요", True)
+    "⚠ finModel.js 고정 상수 — 모델의 장기차입 가정(20억) 대비 암묵 이자율 40% · 실제 차입 조건으로 확인 필요", True)
 put("tax", "법인세율", "%", P["taxRate"], F_PCT, "손실 연도에는 0(환급 없음) · 다음 해 3월 납부")
 put("wcRate", "운전자본 증가(매출 대비)", "%", 0.02, F_PCT, "finModel.js 하드코딩 0.02 — A(계획) 기준에서 사용")
-put("capital", "기존 조달 — 자본금", "원", P["capital"], F_WON, SRC + " capital")
-put("surplus", "기존 조달 — 자본잉여금", "원", P["surplus"], F_WON, SRC + " surplus")
-put("longDebt", "기존 조달 — 장기차입", "원", P["longDebt"], F_WON, SRC + " longDebt")
-put("lease", "기존 조달 — 리스부채(비현금 · 참고)", "원", P["leaseLiab"], F_WON, SRC + " leaseLiab — 사용권자산의 대가라 현금 유입이 아니다. 가용 현금에서 제외")
 
 gap("⑨ CAPEX 세부(연차별) — 합계는 finModel.js capex(1·2차 20억, 3~5차 50억)와 같게 배분한 예시")
 capex_split = [("capex_platform", "플랫폼 개발 자산화", [800, 800, 1800, 1800, 1800]),
@@ -684,7 +680,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 C = wb.create_sheet("현금·투자금")
 cell(C, "A1", "현금흐름 · 투자금 산정 — 월별 누적 현금 저점 기준(A 계획 · B 보수 · C 게이트 지연)", TITLE)
-cell(C, "A2", "필요 총자금 = 누적 현금(조달 전) 최저점 + 안전 버퍼. 투자 요청액 = 필요 총자금 − 가용 현금 − 전략적 선급(10억 올림). 모델 밖 항목(임차·보증금·채용·일회성)은 현금에만 넣는다.", SUB)
+cell(C, "A2", "필요 총자금 = 누적 현금(조달 전) 최저점 + 안전 버퍼. 투자 요청액 = 필요 총자금 − 전략적 선급(10억 올림). 모델 밖 항목(임차·보증금·채용·일회성)은 현금에만 넣는다.", SUB)
 header_row(C, 4, ["구분", "현금 레버", "A 계획", "B 보수", "C 게이트 지연", "단위", "설명"])
 CR = {}
 cr = 5
@@ -728,11 +724,10 @@ dv = DataValidation(type="whole", operator="between", formula1="0", formula2="24
 C.add_data_validation(dv); dv.add(f"C{CR['pre']}:E{CR['pre']}")
 cr += 1
 section(C, cr, "공통 입력", 7); cr += 1
-for k, lab, v, unit, note, fmt in [("cashAvail", "투자 시점 가용 현금(실잔액 · 리스부채 제외)", f"={ASCALAR('capital')}+{ASCALAR('surplus')}+{ASCALAR('longDebt')}", "원", "기본 = 자본금+잉여금+장기차입(28억). 클로징 기준일 실잔액으로 교체", F_WON),
-                                   ("closeDate", "클로징 기준일", "입력", "", "예: 2026-12-31", None),
+for k, lab, v, unit, note, fmt in [("closeDate", "클로징 기준일", "입력", "", "예: 2026-12-31", None),
                                    ("imAmt", "IM에 적힌 투자 금액", 10000000000, "원", "HI-Fin_현대해상_IM v1.1 — 요청액과 다르면 경고", F_WON)]:
     cell(C, f"B{cr}", lab)
-    cell(C, f"C{cr}", v, GREEN if (isinstance(v, str) and v.startswith("=")) else BLUE, fmt, YELLOW if k == "cashAvail" else None)
+    cell(C, f"C{cr}", v, GREEN if (isinstance(v, str) and v.startswith("=")) else BLUE, fmt, None)
     cell(C, f"F{cr}", unit, SUB); cell(C, f"G{cr}", note, SUB)
     CR[k] = cr; cr += 1
 cr += 1
@@ -774,8 +769,6 @@ S_ROWS = [("low", "누적 현금 저점(조달 전)", "백만원", "음수의 �
           ("buffer", "안전 버퍼", "백만원", "매출이 계획보다 늦을 때의 완충"),
           ("bufMonths", "버퍼 환산 — 저점 달 고정비 기준", "개월", "투자요청서에는 개월 수보다 하방 흡수력으로 표기"),
           ("need", "필요 총자금 = |저점| + 버퍼", "백만원", ""),
-          ("totalRound", "총 필요 자금(10억 올림 · 참고)", "백만원", "가용 현금을 빼기 전"),
-          ("cash", "(−) 투자 시점 가용 현금", "백만원", "공통 입력"),
           ("prepay", "(−) 전략적 선급", "백만원", "신규 자금이 아니라 매출 조기 회수"),
           ("req", "투자 요청액(신규 · 10억 올림)", "백만원", "투자요청서 기재액"),
           ("imGap", "IM 투자 금액 대비", "백만원", "+면 IM보다 더 필요"),
@@ -897,8 +890,8 @@ def block(tag, bi, r0):
     r_cum = r0
     row("cum", "누적 현금(조달 전)", lambda col: (f"={col}{R['net']}" if col == first else f"={prev(col)}{r_cum}+{col}{R['net']}"), True, KEY)
     row("fixedM", "월 고정비(버퍼 환산용)", lambda col: "=" + "+".join(SAME(k, col) for k in ["pay", "rnd", "cloud", "gpu", "adminCost", "int"]), font=SUB)
-    row("funded", "조달 후 누적 현금(가용+요청액+선급)",
-        lambda col: f"=$C${CR['cashAvail']}+{LC}${CR['s_req']}+IF(AND({lv('prepay')}>0,{I(col)}>={lv('prepayAt')}),{lv('prepay')},0)+{col}{R['cum']}", font=SUB)
+    row("funded", "조달 후 누적 현금(요청액+선급)",
+        lambda col: f"={LC}${CR['s_req']}+IF(AND({lv('prepay')}>0,{I(col)}>={lv('prepayAt')}),{lv('prepay')},0)+{col}{R['cum']}", font=SUB)
     row("flag", "소진 플래그", lambda col: f"=IF({col}{R['funded']}<0,1,0)", fmt="0", font=SUB)
     return R, r0 + 1
 
@@ -920,10 +913,8 @@ for bi, R in enumerate(RBL):
     cell(C, f"{LC}{CR['s_buffer']}", f"=${LC}${CR['buf']}*{LC}{CR['s_fixed']}", BLACK, F_MIL)
     cell(C, f"{LC}{CR['s_bufMonths']}", f"=IFERROR({LC}{CR['s_buffer']}/INDEX($C${R['fixedM']}:${GL}${R['fixedM']},1,{pos}),0)", BLACK, "0.0")
     cell(C, f"{LC}{CR['s_need']}", f"=-{LC}{CR['s_low']}+{LC}{CR['s_buffer']}", BLACK, F_MIL, KEY, bold=True)
-    cell(C, f"{LC}{CR['s_totalRound']}", f"=ROUNDUP({LC}{CR['s_need']}/1000000000,0)*1000000000", BLACK, F_MIL)
-    cell(C, f"{LC}{CR['s_cash']}", f"=$C${CR['cashAvail']}", GREEN, F_MIL)
     cell(C, f"{LC}{CR['s_prepay']}", f"=${LC}${CR['prepay']}", GREEN, F_MIL)
-    cell(C, f"{LC}{CR['s_req']}", f"=ROUNDUP(MAX(0,{LC}{CR['s_need']}-{LC}{CR['s_cash']}-{LC}{CR['s_prepay']})/1000000000,0)*1000000000", BLACK, F_MIL, YELLOW, bold=True)
+    cell(C, f"{LC}{CR['s_req']}", f"=ROUNDUP(MAX(0,{LC}{CR['s_need']}-{LC}{CR['s_prepay']})/1000000000,0)*1000000000", BLACK, F_MIL, YELLOW, bold=True)
     cell(C, f"{LC}{CR['s_imGap']}", f"={LC}{CR['s_req']}-$C${CR['imAmt']}", BLACK, F_MIL)
     cell(C, f"{LC}{CR['s_runway']}", f'=IFERROR(INDEX({lab},1,MATCH(1,$C${R["flag"]}:${GL}${R["flag"]},0)),"소진 없음")', BLACK, align=Alignment(horizontal="right"))
 
@@ -963,14 +954,14 @@ tr += 2
 SEL = lambda key: f"CHOOSE($C${TR['sel']},'현금·투자금'!$C${CR['s_'+key]},'현금·투자금'!$D${CR['s_'+key]},'현금·투자금'!$E${CR['s_'+key]})"
 section(T, tr, "① 요청액", 4); tr += 1
 for k, lab, fmt in [("req", "투자 요청액(신규)", F_MIL), ("need", "필요 총자금", F_MIL), ("low", "누적 현금 저점", F_MIL), ("lowAt", "저점 시기", None),
-                    ("buffer", "안전 버퍼", F_MIL), ("cash", "가용 현금", F_MIL), ("prepay", "전략적 선급", F_MIL), ("runway", "요청액 조달 시 소진 시기", None)]:
+                    ("buffer", "안전 버퍼", F_MIL), ("prepay", "전략적 선급", F_MIL), ("runway", "요청액 조달 시 소진 시기", None)]:
     cell(T, f"B{tr}", lab, BOLD if k == "req" else BLACK)
     cell(T, f"C{tr}", "=" + SEL(k), GREEN, fmt, YELLOW if k == "req" else None, bold=(k == "req"), align=Alignment(horizontal="right"))
     cell(T, f"D{tr}", "기간" if k in ("lowAt", "runway") else "백만원", SUB)
     TR[k] = tr; tr += 1
 tr += 1
 
-section(T, tr, "② 자금 사용처 — 저점까지 순소진을 계정별 유출 비중으로 배분 + 버퍼 − 가용 현금 − 선급", 5); tr += 1
+section(T, tr, "② 자금 사용처 — 저점까지 순소진을 계정별 유출 비중으로 배분 + 버퍼 − 선급", 5); tr += 1
 header_row(T, tr, ["", "사용처", "저점까지 총유출(참고)", "비중", "요청액 배분"], 1)
 tr += 1
 CATS = [("매출원가", ["oCogs"]), ("포인트 적립 · 기부금", ["oCust"]), ("마케팅(CAC·브랜드·런칭)", ["oMkt", "oLaunch", "oCovSave"]),
@@ -1003,10 +994,9 @@ for rr in range(TR["catStart"], TR["catEnd"] + 1):
     cell(T, f"E{rr}", f"=D{rr}*(-{SEL('low')})", BLACK, F_MIL)
 cell(T, f"B{tr}", "순소진 = |저점|", BOLD); cell(T, f"E{tr}", f"=SUM(E{TR['catStart']}:E{TR['catEnd']})", BLACK, F_MIL, TOT, bold=True); tr += 1
 cell(T, f"B{tr}", "(+) 안전 버퍼"); cell(T, f"E{tr}", f"=C{TR['buffer']}", GREEN, F_MIL); tr += 1
-cell(T, f"B{tr}", "(−) 가용 현금"); cell(T, f"E{tr}", f"=-C{TR['cash']}", GREEN, F_MIL); tr += 1
 cell(T, f"B{tr}", "(−) 전략적 선급"); cell(T, f"E{tr}", f"=-C{TR['prepay']}", GREEN, F_MIL); tr += 1
-cell(T, f"B{tr}", "(+) 10억 단위 올림 조정"); cell(T, f"E{tr}", f"=C{TR['req']}-SUM(E{tr-4}:E{tr-1})", BLACK, F_MIL); tr += 1
-cell(T, f"B{tr}", "투자 요청액(사용처 합계)", BOLD); cell(T, f"E{tr}", f"=SUM(E{tr-5}:E{tr-1})", BLACK, F_MIL, YELLOW, bold=True)
+cell(T, f"B{tr}", "(+) 10억 단위 올림 조정"); cell(T, f"E{tr}", f"=C{TR['req']}-SUM(E{tr-3}:E{tr-1})", BLACK, F_MIL); tr += 1
+cell(T, f"B{tr}", "투자 요청액(사용처 합계)", BOLD); cell(T, f"E{tr}", f"=SUM(E{tr-4}:E{tr-1})", BLACK, F_MIL, YELLOW, bold=True)
 TR["useTotal"] = tr; tr += 2
 
 section(T, tr, "③ 트랜치 — T1 클로징 · T2 마일스톤 달성 시", 5); tr += 1
@@ -1019,7 +1009,7 @@ cell(T, f"B{tr}", "T1만 받았을 때 현금 소진 시기")
 def t1_runway(R):
     lab = f"'현금·투자금'!$C${R['lab']}:${GL}${R['lab']}"
     cum = f"'현금·투자금'!$C${R['cum']}:${GL}${R['cum']}"
-    return (f'IFERROR(INDEX({lab},1,MATCH(TRUE,INDEX(\'현금·투자금\'!$C${CR["cashAvail"]}+$C${TR["t1"]}+{cum}<0,0),0)),"소진 없음")')
+    return (f'IFERROR(INDEX({lab},1,MATCH(TRUE,INDEX($C${TR["t1"]}+{cum}<0,0),0)),"소진 없음")')
 
 
 cell(T, f"C{tr}", "=CHOOSE($C$%d,%s,%s,%s)" % (TR["sel"], t1_runway(RA), t1_runway(RB), t1_runway(RC)), BLACK, align=Alignment(horizontal="right"))
@@ -1125,16 +1115,14 @@ S.freeze_panes = "C5"
 # ══════════════════════════════════════ 안내 ══════════════════════════════════════
 G = wb.create_sheet("안내", 0)
 cell(G, "A1", "하이젠케어 전략적 투자요청서 — 투자금 산정 · 세부 예산 양식", Font(name=FONT, size=17, bold=True, color="1A2B4A"))
-cell(G, "A2", "v1.1 · 2026-09-13 · 적대적 검토 19건 반영 · 기준 모델: finModel.js(재무회계 온톨로지 단일 소스) 기본 시나리오", SUB)
+cell(G, "A2", "v1.2 · 2026-09-14 · 적대적 검토 19건 반영 · 가용 현금 차감 제거(근거 없는 모델 가정) · 기준 모델: finModel.js 기본 시나리오", SUB)
 gr = 4
 section(G, gr, "결론 — 투자금 산정 결과(가정을 바꾸면 자동 재계산)", 7); gr += 1
 header_row(G, gr, ["", "항목", "A 계획", "B 보수", "C 게이트 지연", "단위", "비고"]); gr += 1
-for k, lab, note in [("req", "투자 요청액(신규 · 10억 올림)", "필요 총자금 − 가용 현금 − 선급"),
+for k, lab, note in [("req", "투자 요청액(10억 올림)", "필요 총자금 − 전략적 선급"),
                      ("need", "필요 총자금", "|저점| + 안전 버퍼"),
-                     ("totalRound", "총 필요 자금(10억 올림)", "가용 현금 차감 전 · 참고"),
                      ("low", "누적 현금 저점", "조달 전"), ("lowAt", "저점 시기", ""),
                      ("bufMonths", "버퍼 — 저점 달 고정비 기준", "1차연도 평균 6개월분을 환산"),
-                     ("cash", "가용 현금(리스 제외)", "현금·투자금 공통 입력"),
                      ("runway", "요청액 조달 시 소진 시기", "")]:
     cell(G, f"B{gr}", lab, BOLD if k == "req" else BLACK)
     for bi, LCc in enumerate(["C", "D", "E"]):
@@ -1153,7 +1141,7 @@ section(G, gr, "세 기준", 7); gr += 1
 for t_ in ["A 계획 — 모델의 연간 숫자를 월로 편 것. 매출 연동 비용은 매출 가중, 인건비는 연속 채용 경로. 사전구축 0 · 회수 지연 0 · 운전자본 매출 2% · 인원 연동 간접비 포함.",
            "B 보수 — 사전구축 6개월 · 보험 2개월/기관 수수료 1개월 회수 지연 · 보험 매출 로드맵 부분 반영(법률자문 4주·파일럿 8주) · 런칭광고·CAPEX 선집행. 공급사 신용은 의도적으로 제외.",
            "C 게이트 지연 — B에 더해 보험 DB 공급이 1차연도에 개시되지 못하는 경우(법률의견·파일럿 Go 판정 지연).",
-           "투자요청서에는 B 요청액을 권고액, A를 최소 필요액으로 적고, C를 하방 시나리오로 병기한다. 가용 현금(28억)이 실제로 없다면 「총 필요 자금」을 적는다."]:
+           "투자요청서에는 B 요청액을 권고액, A를 최소 필요액으로 적고, C를 하방 시나리오로 병기한다. 요청액은 필요 총자금 전액이다(보유 현금을 차감하지 않음)."]:
     cell(G, f"B{gr}", t_); gr += 1
 gr += 1
 section(G, gr, "시트 구성과 쓰는 순서", 7); gr += 1
@@ -1175,9 +1163,9 @@ gr += 1
 section(G, gr, "모델 점검 — 투자요청서 작성 전에 확인할 것", 7); gr += 1
 for t_ in [
     "1. finModel.js 영업이익(ebit)은 감가상각을 빼지 않은 값(실질 EBITDA)이다. 모델 「EBITDA」는 감가상각을 한 번 더 더해 연 5~10억 크고, 순이익·영업CF·FCF(연 3.9~7.8억)도 크다. 이 양식은 「모델 표기」와 「보정」을 나란히 둔다.",
-    "2. 연 이자 8억 ÷ 장기차입 20억 = 암묵 이자율 40%(리스 포함 37.7%). 차입금과 연동되지 않은 고정 상수다. 금리 5%라면 필요 자금이 약 8~9억 준다. 모델값 확인 필요.",
+    "2. 연 이자 8억은 모델의 장기차입 가정 20억 대비 암묵 이자율 40%다. 차입금과 연동되지 않은 고정 상수다. 금리 5%라면 필요 자금이 약 8~9억 준다. 모델값 확인 필요.",
     "3. 모델 KPI 런웨이는 1차연도 EBIT(+5.1억)로 번을 계산해 내부값이 Infinity가 되고, 화면에는 「흑자」로 뜬다. 같은 해 순이익은 −2.9억, 모델 FCF는 −16.2억이다.",
-    "4. 모델의 1차연도 조달 29.2억에는 비현금인 리스부채 1.2억이 섞여 있다. 현금 조달은 28억이며, 월별 저점을 감당하지 못한다.",
+    "4. finModel.js는 1차연도 조달을 자본금 3억·잉여금 5억·장기차입 20억·리스 1.2억으로 가정하지만 실제 잔액 근거가 없다. 이 양식은 보유 현금을 차감하지 않고 필요 총자금 전액을 요청액으로 잡는다.",
     "5. 모델 FCF 산식 ebit×(1−세율)은 손실 연도에 세금 환급처럼 작동한다. 기본값은 5개년 EBIT가 모두 +라 발동하지 않지만, 보험 공급 집행률 30%면 1차 FCF에 7.1억의 가짜 환급이 들어간다. 이 양식은 손실 시 세금 0.",
     "6. 보험 DB 공급(20만×60%×7만 = 84억)은 1차연도 매출 2위(32%)이고 원가가 없어 이익에 그대로 반영된다. 같은 ±20% 충격으로는 인건비가 더 민감하지만, 공급 집행률은 하락 폭이 가장 불확실하다 — 두 근거를 함께 첨부할 것.",
     "7. 화면 시뮬의 감가상각은 전 연차 매출 0.2%로 고정돼 3차연도에만 맞는다(1차 모델 1.9%). 모델 영업이익과 함께 보정해야 한다.",

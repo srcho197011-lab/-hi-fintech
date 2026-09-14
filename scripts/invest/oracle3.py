@@ -141,7 +141,7 @@ ONES = [1] * 12
 ROAD = [0, 0, 7 / 16, 7 / 16, 7 / 16, 1, 1, 1, 1, 1, 1, 1]
 BASE = dict(pre=0, prePay=0.5, preOpex=0, lag=dict(P=0, Chk=0, Svc=0, Resv=0, Sub=0, Ins=0, Etc=0), wc=0.02, cogsLag=0,
             insCov=ONES, rent=540000, depMonths=10, depLook=6, adminHasRent=1, hireRate=0.05, oneOff=150000000,
-            prepay=0, prepayAt=1, repay=0, repayFrom=1, repayTo=0, buf=6, payStart=300000000, ramp=RAMP, cashAvail=2800000000,
+            prepay=0, prepayAt=1, repay=0, repayFrom=1, repayTo=0, buf=6, payStart=300000000, ramp=RAMP, cashAvail=0,
             launchPh=ONES, capexPh=ONES)
 LA = dict(BASE)
 LB = dict(BASE, pre=6, preOpex=100000000, lag=dict(P=0, Chk=1, Svc=1, Resv=1, Sub=1, Ins=2, Etc=0), wc=0.0,
