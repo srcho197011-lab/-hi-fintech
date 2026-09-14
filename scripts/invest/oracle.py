@@ -44,7 +44,17 @@ def annual(P, n=5):
             revChk = active * P["checkupFee"]; chkCogs = active * P["checkupCost3"]
         svcU = jround(me * P["serviceRate"]); revSvc = svcU * P["serviceCommission"]
         resv = jround(active * P["resvPerActive"][y]); revResv = resv * P["resvFee"]
-        insC = jround(mkt * P["insConvRate"]); revIns = insC * P["insFeePerCase"]
+        insC = jround(mkt * P["insConvRate"])
+        if "hmMarket" in P:                        # 헬스메이트센터 사용료 — 우대 한도·단가 + 초과분 시가(adjust.py)
+            import adjust as _adj
+            hmCap, hmPrice, hmMarket = _adj.hm_terms(P, y)
+            hmDisc, hmFull, revIns, hmBenefit = _adj.hm_fee(P, y, insC)
+            imC = jround((mkt - (0 if y == 0 else P["mktConsentEnd"][y - 1])) * P["insConvRate"])
+            imRev = _adj.hm_fee(P, y, imC)[2]                # IM p7 건수(연 신규 동의×집행률)에 같은 단가 구조
+        else:
+            hmCap, hmPrice, hmMarket = insC, P["insFeePerCase"], P["insFeePerCase"]
+            hmDisc, hmFull, revIns, hmBenefit = insC, 0, insC * P["insFeePerCase"], 0
+            imC = jround((mkt - (0 if y == 0 else P["mktConsentEnd"][y - 1])) * P["insConvRate"]); imRev = imC * P["insFeePerCase"]
         revAd = active * P["adPerActive"][y]
         agU = jround(me * P["aiAgentRate"][y]); revAg = agU * P["aiAgentFeeYear"]
         revApi = P["apiClients"][y] * P["apiFeeYear"]
@@ -65,7 +75,7 @@ def annual(P, n=5):
         depr = jround(P["deprYear"] * (P["deprY1Rate"] if y == 0 else 1))
         rows.append(dict(y=y, me=me, mp=mp, new=new, active=active, mkt=mkt, insts=insts, subFee=subFee, paid=paid,
                          buyers=buyers, cat=cat, revP=revP, cogsP=cogsP, revChk=revChk, chkOwn=chkOwn, chkPtn=chkPtn, svcU=svcU, revSvc=revSvc, revResv=revResv,
-                         revSub=revSub, revIns=revIns, revAd=revAd, revAg=revAg, revApi=revApi, rev=rev,
+                         revSub=revSub, insC=insC, hmCap=hmCap, hmPrice=hmPrice, hmMarket=hmMarket, hmDisc=hmDisc, hmFull=hmFull, hmBenefit=hmBenefit, imC=imC, imRev=imRev, revIns=revIns, revAd=revAd, revAg=revAg, revApi=revApi, rev=rev,
                          chkCogs=chkCogs, svcCost=svcCost, subCost=subCost, payFee=payFee, cogs=cogs, gross=gross,
                          cac=cac, launch=launch, brand=brand, mktg=mktg, reward=reward, don=don, pay=pay,
                          rnd=rnd, cloud=cloud, gpu=gpu, sales=sales, admin=admin, sga=sga,

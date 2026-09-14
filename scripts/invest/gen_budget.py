@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.5
+"""하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기 v1.6
 재현 순서(저장소 루트에서):
   1) node scripts/invest/fin_dump.mjs . scripts/invest/_fin.json          # finModel.js 기본값 덤프
-  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.5.xlsx
+  2) python scripts/invest/gen_budget.py scripts/invest/_fin.json docs/invest/하이젠케어_투자금산정_예산양식_v1.6.xlsx
   3) 엑셀로 열어 전체 재계산 후 저장(수식 값 캐시)
-  4) python scripts/invest/oracle3.py                                     # 독립 정답지 — 엑셀 요약값과 같아야 한다
+  4) python scripts/invest/verify_budget.py docs/invest/하이젠케어_투자금산정_예산양식_v1.6.xlsx   # 독립 정답지(oracle·oracle3) 대조 — 종료코드 0이어야 한다
 docs/invest/ 는 .gitignore 대상(대외비)이라 산출물은 커밋되지 않고 이 생성기만 남는다."""
 """(v1.0 머리말) 하이젠케어 전략적 투자요청서 — 투자금 산정·세부 예산 양식 생성기
 입력: finModel.js 덤프(fin.json) · 출력: xlsx
@@ -20,7 +20,7 @@ OUT = sys.argv[2]
 import os as _os
 sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
 import adjust
-P = adjust.apply(FIN["P"])      # 대표 조정(약국 1차 200곳 · 기관별 구독료 · 검진 채널 분리 · 서비스 고객 수수료 0) — adjust.py 한 곳에서
+P = adjust.apply(FIN["P"])      # 대표 조정(약국 1차 200곳 · 기관별 구독료 · 검진 채널 분리 · 서비스 고객 수수료 0 · 헬스메이트센터 사용료) — adjust.py 한 곳에서
 Y5 = FIN["years"]                 # finModel.js 원래 값(대조용 스냅샷)
 
 FONT = "맑은 고딕"
@@ -87,7 +87,7 @@ def section(ws, r, text, ncols):
 A = wb.active
 A.title = "가정"
 cell(A, "A1", "가정 — 연차별 드라이버", TITLE)
-cell(A, "A2", "파란 글씨 = 입력값 · 노란 칸 = 투자금에 영향이 큰 핵심 가정 · 기본값은 finModel.js(FIN_P_DEFAULT) 확정값", SUB)
+cell(A, "A2", "파란 글씨 = 입력값 · 노란 칸 = 투자금에 영향이 큰 핵심 가정 · 기본값은 finModel.js(FIN_P_DEFAULT) 확정값 + 대표 조정(adjust.py · 근거 열 「대표 지시」 표기)", SUB)
 header_row(A, 4, ["구분", "항목", "단위", "1차연도", "2차연도", "3차연도", "4차연도", "5차연도", "근거 · 출처"])
 AR = {}   # key -> row
 r = 5
@@ -168,19 +168,18 @@ put("svcCost", "헬스케어 서비스 원가율", "%", P["serviceCostRate"], F_
 put("resvPer", "예약 건수(검진 예약 1건당)", "건", P["resvPerActive"], '0.0', SRC + " resvPerActive")
 put("resvFee", "예약 서비스 — 건당 수수료", "원/건", P["resvFee"], F_WON, "골프·시설 예약 건당 1만")
 
-gap("⑤ 보험 중개 — 1차연도 매출 2위(38%, 1위는 제품판매 41%)")
+gap("⑤ 헬스메이트센터 사용료 — 동의 DB 공급 대가(전략적 투자자 우대 단가 · 한도 초과분 시가)")
 put("insConv", "동의 DB 연간 공급 집행률(계약 전환율 아님)", "%", P["insConvRate"], F_PCT,
-    "형 확정 2026-08-20 · 누적 동의 전체에 매년 적용 = 기존 동의자 재공급 전제(5년 786만 건 > 누적 동의 630만) · 하락 폭이 가장 불확실한 변수 — 같은 ±20%에서는 인건비가 더 민감 · 검증보고서 v1.1 B3 라벨 권고 반영", True)
-put("insFee", "보험 중개 — 건당 수수료", "원/건", P["insFeePerCase"], F_WON, "형 확정 2026-08-20", True)
+    "형 확정 2026-08-20 · 누적 동의 전체에 매년 적용 = 기존 동의자 재공급 전제(5년 786만 건 > 누적 동의 630만) · 하락 폭이 가장 불확실한 변수 — 기본값 하방 20% 충격에서 집행률(B 요청 +120억)이 인건비 +20%(+110억)보다 민감, 상방은 인건비가 더 큼 · 검증보고서 v1.1 B3 라벨 권고 반영", True)
+put("hmInvest", "전략적 투자금(현대해상 · 우대 조건 기준)", "원", P["hmInvest"], F_WON, "대표 지시 2026-09-14 — 투자금에 맞춰 아래 우대 단가·한도를 손으로 조절(자동 연동 없음) · 투자금 대비 할인 배수 산출에 쓰임", True)
+put("hmMarket", "DB 건당 시가", "원/건", P["hmMarket"], F_WON, "대표 지시 2026-09-14 — 시가 10만원 가정 · 우대 한도를 넘는 공급 건에 적용(모델 보험 중개는 건당 7만)", True)
+put("hmRate1", "우대 단가 — 1차연도(시가 대비)", "%", P["hmRate1"], F_PCT, "대표 지시 2026-09-14 — 시가의 50% = 건당 5만원", True)
+put("hmPriceStep", "우대 단가 — 연 인상폭", "원/건", P["hmPriceStep"], F_WON, "매년 +1만원(5→6→7→8→9만) · 시가를 넘지 않음")
+put("hmCap1", "우대 한도 — 1차연도", "건", P["hmCap1"], F_CNT, "초년도 1년간 10만 건", True)
+put("hmCapStep", "우대 한도 — 연 증가", "건", P["hmCapStep"], F_CNT, "매년 +10만 건(10→20→30→40→50만) · 한도는 연도마다 새로 시작, 연내 누적 순서대로 적용")
 
-gap("⑥ 신규 스트림(2차연도부터)")
-put("adPer", "광고·제휴 — 검진 예약 1건당", "원", P["adPerActive"], F_WON, SRC + " adPerActive")
-put("agentRate", "AI Agent 프리미엄 구독률(회원 대비)", "%", P["aiAgentRate"], F_PCT, SRC + " aiAgentRate")
-put("agentFee", "AI Agent 프리미엄 — 연 요금", "원/년", P["aiAgentFeeYear"], F_WON, "연 2.4만")
-put("apiN", "API·데이터·분석 계약(B2B)", "건", P["apiClients"], F_CNT, SRC + " apiClients")
-put("apiFee", "API·데이터·분석 — 건당 연 계약액", "원/년", P["apiFeeYear"], F_WON, "연 6천만")
 
-gap("⑦ 판매관리비")
+gap("⑥ 판매관리비")
 put("cac", "회원확보비(CAC) — 순증 1인당", "원/명", P["cac"], F_WON, "형 확정 · 회원 증가 속도에 따라 기간 인식", True)
 put("brandRate", "브랜드·퍼포먼스 마케팅(매출 대비)", "%", P["brandMktRate"], F_PCT, "CAC와 별도 · 형 확정 상향")
 put("launch", "초기 런칭 광고 선투입(절대액)", "원", P["launchMkt"], F_WON, "1차연도만 · 형 확정 2026-09-07")
@@ -192,7 +191,7 @@ put("salesRate", "영업비(매출 대비 · 표준 요율)", "%", P["salesRate"
 put("adminRate", "관리비(매출 대비 · 표준 요율)", "%", P["adminRate"], F_PCT, SRC + " adminRate")
 put("opexScale", "기타 운영비 스케일(AI 네이티브 운영)", "%", P["opexScale"], F_PCT, "하이 CS 흡수·AI 출수납 자동화로 표준 요율의 30%")
 
-gap("⑧ 자산 · 금융 · 세금")
+gap("⑦ 자산 · 금융 · 세금")
 put("deprYear", "연 감가상각비(정상 연도)", "원", P["deprYear"], F_WON, SRC + " deprYear")
 put("deprY1", "초년도 감가상각 인식 비율", "%", P["deprY1Rate"], F_PCT, "자산 취득 직후라 50%")
 put("interest", "연 이자비용", "원", P["interestYear"], F_WON,
@@ -200,7 +199,7 @@ put("interest", "연 이자비용", "원", P["interestYear"], F_WON,
 put("tax", "법인세율", "%", P["taxRate"], F_PCT, "손실 연도에는 0(환급 없음) · 다음 해 3월 납부")
 put("wcRate", "운전자본 증가(매출 대비)", "%", 0.02, F_PCT, "finModel.js 하드코딩 0.02 — A(계획) 기준에서 사용")
 
-gap("⑨ CAPEX 세부(연차별) — 합계는 finModel.js capex(1·2차 20억, 3~5차 50억)와 같게 배분한 예시")
+gap("⑧ CAPEX 세부(연차별) — 합계는 finModel.js capex(1·2차 20억, 3~5차 50억)와 같게 배분한 예시")
 capex_split = [("capex_platform", "플랫폼 개발 자산화", [800, 800, 1800, 1800, 1800]),
                ("capex_ai", "AI 모델 · 데이터 자산", [500, 500, 1400, 1400, 1400]),
                ("capex_infra", "서버 · 클라우드 인프라", [300, 300, 900, 900, 900]),
@@ -216,7 +215,7 @@ cell(A, f"I{r}", "finModel.js: 1·2차 2,000,000,000 · 3~5차 5,000,000,000", S
 AR["capexTotal"] = r
 r += 1
 
-gap("⑩ 월 배분 — 회원 증가 램프(가중치, 합이 0이 아니면 됨)")
+gap("⑨ 월 배분 — 회원 증가 램프(가중치, 합이 0이 아니면 됨)")
 header_row(A, r, ["", "연차", "", "1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"], 1, SEC)
 for col in range(1, 16):
     A.cell(row=r, column=col).font = BOLD
@@ -231,7 +230,7 @@ for y in range(5):
     r += 1
 cell(A, f"B{r-5}", "1차연도", comment="finModel.js m1Ramp — 1차연도 월별 회원 증가 비중")
 
-gap("⑪ 월 배분 — 초기 런칭 광고(가중치) · 모두 0이면 12개월 균등")
+gap("⑩ 월 배분 — 초기 런칭 광고(가중치) · 모두 0이면 12개월 균등")
 AR["launchPhaseRow"] = r
 for y in range(5):
     cell(A, f"B{r}", YRS[y])
@@ -239,7 +238,7 @@ for y in range(5):
         cell(A, f"{MC[m]}{r}", 1, BLUE, "0.0")
     r += 1
 
-gap("⑫ 월 배분 — CAPEX 집행(가중치) · 모두 0이면 12개월 균등")
+gap("⑪ 월 배분 — CAPEX 집행(가중치) · 모두 0이면 12개월 균등")
 AR["capexPhaseRow"] = r
 for y in range(5):
     cell(A, f"B{r}", YRS[y])
@@ -247,7 +246,7 @@ for y in range(5):
         cell(A, f"{MC[m]}{r}", 1, BLUE, "0.0")
     r += 1
 
-gap("⑬ 인건비 월 경로")
+gap("⑫ 인건비 월 경로")
 put("payMode", "월 배분 방식 — 1: 연간÷12 균등 / 2: 연속 채용 경로", "선택", 2, "0", "연간 합계는 둘 다 같다. 균등은 해가 바뀔 때 월 인건비가 계단처럼 뛰어 가짜 저점을 만든다", True)
 put("payStart", "연속 채용 — 1차연도 1월 인건비", "원/월", 300000000, F_WON, "입력값(가정) — 약 35명 규모 착수 인력. 이후 연 합계를 지키며 직선으로 이어진다", True)
 
@@ -441,9 +440,11 @@ yline("paid_p", "유료 기관 — 약국", lambda i: f"=ROUND({AREF('pharmacies
 yline("buyers", "구매 회원", lambda i: f"=ROUND({yv('me', i)}*{ASCALAR('buyerRate')},0)", F_CNT, "연말 회원×구매 비율", sum5=False)
 yline("svcUsers", "헬스케어 서비스 이용자(고객 과금 없음)", lambda i: f"=ROUND({yv('me', i)}*{ASCALAR('svcRate')},0)", F_CNT, "연말 회원×이용률 — 대가는 기관 구독료")
 yline("resv", "예약 건수", lambda i: f"=ROUND({yv('active', i)}*{AREF('resvPer', i)},0)", F_CNT, "검진 예약×예약 배수")
-yline("insCases", "보험 DB 공급 건수", lambda i: f"=ROUND({yv('mkt', i)}*{ASCALAR('insConv')},0)", F_CNT, "누적 동의×공급 집행률(매년 재공급)")
-yline("agentUsers", "AI Agent 구독자", lambda i: f"=ROUND({yv('me', i)}*{AREF('agentRate', i)},0)", F_CNT, "연말 회원×구독률", sum5=False)
-yline("apiN", "API 계약", lambda i: f"={AREF('apiN', i)}", F_CNT, "가정", font=GREEN, sum5=False)
+yline("insCases", "헬스메이트센터 DB 공급 건수", lambda i: f"=ROUND({yv('mkt', i)}*{ASCALAR('insConv')},0)", F_CNT, "누적 동의×공급 집행률(매년 재공급)")
+yline("hmCap", "우대 한도(건)", lambda i: f"=MAX(0,{ASCALAR('hmCap1')}+{ASCALAR('hmCapStep')}*{i})", F_CNT, "1차 한도 + 연 증가×(연차−1), 0 미만 없음", sum5=False)
+yline("hmPrice", "우대 단가(원/건)", lambda i: f"=MAX(0,MIN({ASCALAR('hmMarket')},ROUND({ASCALAR('hmMarket')}*{ASCALAR('hmRate1')},0)+{ASCALAR('hmPriceStep')}*{i}))", F_WON, "시가×1차 비율 + 인상폭×(연차−1), 0~시가", sum5=False)
+yline("hmDiscN", "우대 단가 적용 건수", lambda i: f"=MIN({yv('insCases', i)},{yv('hmCap', i)})", F_CNT, "MIN(공급 건수, 한도)")
+yline("hmFullN", "시가 적용 건수(한도 초과)", lambda i: f"={yv('insCases', i)}-{yv('hmDiscN', i)}", F_CNT, "공급 건수 − 우대 건수")
 
 ysec("매출")
 for c in cats:
@@ -452,28 +453,27 @@ for c in cats:
           lambda i, k=k: f"=ROUND({yv('buyers', i)}*{ASCALAR('arpu_'+k)}*{ASCALAR('capture')}*{AREF('ramp', i)},0)",
           F_MIL, "구매회원×1인 지출×점유율×가동률", grp="제품")
 yline("revP", "제품판매 소계(GMV 총액)", lambda i: f"=SUM({YC[i]}{YR['rev_supp']}:{YC[i]}{YR['rev_sports']})", F_MIL, "", total=True)
-yline("revChk_o", "검진안내 — 자사운영", lambda i: f"={yv('chkOwnN', i)}*{ASCALAR('chkOwnFee')}", F_MIL, "자사 건수×건당 3만", grp="수수료")
-yline("revChk_t", "검진안내 — 타사 제휴(인피니티 등)", lambda i: f"={yv('chkPtnN', i)}*{ASCALAR('chkPtnFee')}", F_MIL, "타사 건수×건당 1만")
+yline("revChk_o", "검진안내 — 자사운영", lambda i: f"={yv('chkOwnN', i)}*{ASCALAR('chkOwnFee')}", F_MIL, "자사 건수×건당 매출", grp="수수료")
+yline("revChk_t", "검진안내 — 타사 제휴(인피니티 등)", lambda i: f"={yv('chkPtnN', i)}*{ASCALAR('chkPtnFee')}", F_MIL, "타사 건수×건당 매출")
 yline("revChk", "검진 연계 소계", lambda i: f"={yv('revChk_o', i)}+{yv('revChk_t', i)}", F_MIL, "", total=True)
-yline("revSvc", "헬스케어 서비스 — 고객 수수료", lambda i: f"={yv('svcUsers', i)}*{ASCALAR('svcFee')}", F_MIL, "0 — 기관 구독료(아래 AI 플랫폼 구독)로 수취")
+yline("revSvc", "헬스케어 서비스 — 고객 수수료", lambda i: f"={yv('svcUsers', i)}*{ASCALAR('svcFee')}", F_MIL, "이용자×고객 수수료(기본 0 — 기관 구독료로 수취)")
 yline("revResv", "예약 서비스 수수료", lambda i: f"={yv('resv', i)}*{ASCALAR('resvFee')}", F_MIL, "예약 건수×수수료")
 yline("sub_c", "AI 플랫폼 구독 — 검진센터", lambda i: f"={yv('paid_c', i)}*{yv('fee_c', i)}*12", F_MIL, "유료 검진센터×월 구독료×12", grp="구독")
 yline("sub_h", "AI 플랫폼 구독 — 병원", lambda i: f"={yv('paid_h', i)}*{yv('fee_h', i)}*12", F_MIL, "유료 병원×월 구독료×12")
 yline("sub_p", "AI 플랫폼 구독 — 약국", lambda i: f"={yv('paid_p', i)}*{yv('fee_p', i)}*12", F_MIL, "유료 약국×월 구독료×12")
 yline("revSub", "AI 플랫폼 구독 소계(EMR·UIP 사용료)", lambda i: f"=SUM({YC[i]}{YR['sub_c']}:{YC[i]}{YR['sub_p']})", F_MIL, "", total=True)
-yline("revIns", "보험 중개 수수료", lambda i: f"={yv('insCases', i)}*{ASCALAR('insFee')}", F_MIL, "공급 건수×건당 7만 — IM은 「시스템사용료+광고료」 정산(법률검토 전제)", grp="보험")
-yline("revAd", "광고 · 제휴", lambda i: f"={yv('active', i)}*{AREF('adPer', i)}", F_MIL, "검진 예약×건당 광고", grp="신규")
-yline("revAg", "AI Agent 프리미엄", lambda i: f"={yv('agentUsers', i)}*{ASCALAR('agentFee')}", F_MIL, "구독자×연 요금")
-yline("revApi", "API · 데이터 · 분석(B2B)", lambda i: f"={yv('apiN', i)}*{ASCALAR('apiFee')}", F_MIL, "계약×연 계약액")
-yline("rev", "매출액 합계", lambda i: f"={yv('revP', i)}+{yv('revChk', i)}+{yv('revSvc', i)}+{yv('revResv', i)}+{yv('revSub', i)}+{yv('revIns', i)}+{yv('revAd', i)}+{yv('revAg', i)}+{yv('revApi', i)}", F_MIL, "", total=True)
+yline("revIns_d", "헬스메이트센터 사용료 — 우대분", lambda i: f"={yv('hmDiscN', i)}*{yv('hmPrice', i)}", F_MIL, "우대 건수×우대 단가", grp="사용료")
+yline("revIns_f", "헬스메이트센터 사용료 — 시가분(한도 초과)", lambda i: f"={yv('hmFullN', i)}*{ASCALAR('hmMarket')}", F_MIL, "초과 건수×시가")
+yline("revIns", "헬스메이트센터 사용료 소계", lambda i: f"={yv('revIns_d', i)}+{yv('revIns_f', i)}", F_MIL, "IM은 「시스템사용료+광고료」 정산(법률검토 전제)", total=True)
+yline("rev", "매출액 합계", lambda i: f"={yv('revP', i)}+{yv('revChk', i)}+{yv('revSvc', i)}+{yv('revResv', i)}+{yv('revSub', i)}+{yv('revIns', i)}", F_MIL, "", total=True)
 
 ysec("매출원가")
 for c in cats:
     k = c["key"]
     yline("cogs_" + k, f"제품 원가 — {c['label']}", lambda i, k=k: f"=ROUND({yv('rev_'+k, i)}*{ASCALAR('cost_'+k)},0)", F_MIL, "카테고리 매출×원가율", grp="제품")
 yline("cogsP", "제품 원가 소계", lambda i: f"=SUM({YC[i]}{YR['cogs_supp']}:{YC[i]}{YR['cogs_sports']})", F_MIL, "", total=True)
-yline("chkCogs_o", "검진 3종 원가 — 자사운영", lambda i: f"={yv('chkOwnN', i)}*{ASCALAR('chkOwnCost')}", F_MIL, "자사 건수×건당 2만", grp="서비스")
-yline("chkCogs_t", "검진 3종 원가 — 타사 제휴", lambda i: f"={yv('chkPtnN', i)}*{ASCALAR('chkPtnCost')}", F_MIL, "타사 건수×건당 2만")
+yline("chkCogs_o", "검진 3종 원가 — 자사운영", lambda i: f"={yv('chkOwnN', i)}*{ASCALAR('chkOwnCost')}", F_MIL, "자사 건수×건당 원가", grp="서비스")
+yline("chkCogs_t", "검진 3종 원가 — 타사 제휴", lambda i: f"={yv('chkPtnN', i)}*{ASCALAR('chkPtnCost')}", F_MIL, "타사 건수×건당 원가")
 yline("chkCogs", "검진 3종 원가 소계", lambda i: f"={yv('chkCogs_o', i)}+{yv('chkCogs_t', i)}", F_MIL, "", total=True)
 yline("svcCost", "헬스케어 서비스 원가", lambda i: f"=ROUND({yv('revSvc', i)}*{ASCALAR('svcCost')},0)", F_MIL, "서비스 매출×원가율")
 yline("subCost", "구독 운영 원가", lambda i: f"=ROUND({yv('revSub', i)}*{ASCALAR('subCost')},0)", F_MIL, "구독 매출×원가율")
@@ -520,29 +520,31 @@ varr = f"({ASCALAR('brandRate')}+({ASCALAR('rndRate')}+{ASCALAR('salesRate')}+{A
 yline("prodContrib", "제품판매 한계 공헌", lambda i: f"={yv('revP', i)}-{yv('cogsP', i)}-{yv('payFee', i)}-{yv('reward', i)}-{yv('donation', i)}-{yv('revP', i)}*{varr}", F_MIL, "제품 − 원가·결제·적립·기부·매출연동 판관비 — 적립금 생태계 비용")
 yline("prodContribR", "제품판매 한계 공헌률", lambda i: f"=IF({yv('revP', i)}=0,0,{yv('prodContrib', i)}/{yv('revP', i)})", F_PCT, "약 −2.4%", sum5=False)
 yline("chkGP_o", "검진안내 매출총이익 — 자사운영", lambda i: f"={yv('revChk_o', i)}-{yv('chkCogs_o', i)}", F_MIL, "기본값 건당 +1만")
-yline("chkGP_t", "검진안내 매출총이익 — 타사 제휴", lambda i: f"={yv('revChk_t', i)}-{yv('chkCogs_t', i)}", F_MIL, "기본값 건당 −1만 — 자사 비율이 오를수록 줄어듦")
+yline("chkGP_t", "검진안내 매출총이익 — 타사 제휴", lambda i: f"={yv('revChk_t', i)}-{yv('chkCogs_t', i)}", F_MIL, "기본값 건당 −1만 — 손실액은 4차까지 커지고 5차에 줄어듦")
 yline("chkGP", "검진안내 매출총이익 합계", lambda i: f"={yv('chkGP_o', i)}+{yv('chkGP_t', i)}", F_MIL, "기본값에서는 자사 비율 50%(3차연도)가 손익분기")
-yline("insContrib", "보험 중개 공헌이익", lambda i: f"={yv('revIns', i)}*(1-{varr})", F_MIL, "원가 없음 · 매출연동 판관비만 차감")
-yline("ebitExIns", "보험 제외 시 영업이익(보정)", lambda i: f"={yv('ebit', i)}-{yv('insContrib', i)}", F_MIL, "1차연도 이익이 보험 한 줄에 달려 있는 정도")
+yline("insContrib", "헬스메이트센터 사용료 공헌이익", lambda i: f"={yv('revIns', i)}*(1-{varr})", F_MIL, "원가 없음 · 매출연동 판관비만 차감")
+yline("ebitExIns", "사용료 제외 시 영업이익(보정)", lambda i: f"={yv('ebit', i)}-{yv('insContrib', i)}", F_MIL, "1차연도 이익이 사용료 한 줄에 달려 있는 정도")
+yline("hmBenefit", "투자자 우대 할인액(시가 대비 · 계획 기준)", lambda i: f"={yv('hmDiscN', i)}*({ASCALAR('hmMarket')}-{yv('hmPrice', i)})", F_MIL, "우대 건수×(시가 − 우대 단가) — 1차 공급이 늦으면(C) 1차 한도는 쓰이지 않는다")
+yline("hmBenefitX", "누계 할인액 ÷ 전략적 투자금", lambda i: f"=IF({ASCALAR('hmInvest')}=0,0,SUM($D${YR['hmBenefit']}:{YC[i]}{YR['hmBenefit']})/{ASCALAR('hmInvest')})", '0.00"배"', "투자금 대비 가격 조절의 기준 지표", sum5=False)
 yline("effCac1", "실효 CAC(순증 기준)", lambda i: f"=IF({yv('new', i)}=0,0,({yv('cac', i)}+{yv('brand', i)}+{yv('launch', i)})/{yv('new', i)})", F_WON, "(CAC+브랜드+런칭)÷순증 · 모델 CAC 5천원과 병기", sum5=False)
 yline("effCac2", "실효 CAC(총가입 기준)", lambda i: f"=IF({yv('gross_new', i)}=0,0,({yv('cac', i)}+{yv('brand', i)}+{yv('launch', i)})/{yv('gross_new', i)})", F_WON, "이탈 보전분 포함", sum5=False)
 
-ysec("IM 공급표 대조 — 합계 밖(보험 매출 모수가 문서마다 다름 · 대표 결정 필요)")
+ysec("IM 공급표 대조 — 합계 밖(사용료 모수인 공급 건수가 문서마다 다름 · 대표 결정 필요)")
 yline("newConsent", "연 신규 동의", lambda i: f"={yv('mkt', i)}" if i == 0 else f"={yv('mkt', i)}-{YC[i-1]}{YR['mkt']}", F_CNT, "누적 동의의 연 증가분")
-yline("imCases", "IM p7 공급 건수(연 신규 동의×60%)", lambda i: f"=ROUND({yv('newConsent', i)}*{ASCALAR('insConv')},0)", F_CNT, "현대해상 IM 작성프롬프트 v1.2:74 · IM v1.1 p7")
-yline("imRev", "IM 기준 보험 매출", lambda i: f"={yv('imCases', i)}*{ASCALAR('insFee')}", F_MIL, "5년 누계가 모델 5차 연간값과 같아지는 착시 주의")
-yline("imDiff", "모델 − IM 차이(보험 매출)", lambda i: f"={yv('revIns', i)}-{yv('imRev', i)}", F_MIL, "1차 0 · 2~5차 +84/+336/+840/+1,596억")
+yline("imCases", "IM p7 공급 건수(연 신규 동의×집행률)", lambda i: f"=ROUND({yv('newConsent', i)}*{ASCALAR('insConv')},0)", F_CNT, "현대해상 IM 작성프롬프트 v1.2:74 · IM v1.1 p7")
+yline("imRev", "IM 건수 기준 사용료(같은 우대·시가 구조)", lambda i: f"=MIN({yv('imCases', i)},{yv('hmCap', i)})*{yv('hmPrice', i)}+MAX(0,{yv('imCases', i)}-{yv('hmCap', i)})*{ASCALAR('hmMarket')}", F_MIL, "IM 원문은 건당 7만 — 공급 건수 차이만 보려고 같은 단가 구조를 적용")
+yline("imDiff", "모델 − IM 차이(사용료)", lambda i: f"={yv('revIns', i)}-{yv('imRev', i)}", F_MIL, "1차 0 · 2차부터 누적 동의 재공급 여부만큼 차이")
 
 # ── 모델 대조 블록(finModel.js 실행값 스냅샷) ──
 yr += 2
-section(Y, yr, "finModel.js 대조 — 대표 조정(약국 1차 200곳 · 기관별 구독료 · 검진 채널 분리 · 서비스 고객 수수료 0)만큼 1차연도부터 매출·원가·이익에 차이가 난다. 제품판매·보험·인건비는 0이어야 한다(모델값: finYears(5) 스냅샷)", 9)
+section(Y, yr, "finModel.js 대조 — 대표 조정(약국 1차 200곳 · 기관별 구독료 · 검진 채널 분리 · 서비스 고객 수수료 0 · 헬스메이트센터 사용료 우대·시가 · 신규 스트림 삭제)만큼 1차연도부터 매출·원가·이익에 차이가 난다. 제품판매·인건비는 0이어야 한다(모델값: finYears(5) 스냅샷)", 9)
 yr += 1
 header_row(Y, yr, ["", "계정", "", "1차연도", "2차연도", "3차연도", "4차연도", "5차연도", ""])
 yr += 1
 YR["chkStart"] = yr
 for key, lab, mk in [("rev", "매출액 합계", "revenue"), ("cogs", "매출원가 합계", "cogs"), ("gross", "매출총이익", "gross"),
                      ("sga", "판매관리비 합계", "sga"), ("ebitModel", "영업이익(모델 표기)", "ebit"), ("revP", "제품판매", "revProduct"),
-                     ("revIns", "보험 중개", "revInsurance"), ("pay", "인건비", "payroll")]:
+                     ("revIns", "헬스메이트센터 사용료(모델: 보험 중개)", "revInsurance"), ("pay", "인건비", "payroll")]:
     cell(Y, f"B{yr}", lab + " — 모델값", SUB)
     for i in range(5):
         cell(Y, f"{YC[i]}{yr}", Y5[i][mk], BLUE, F_MIL, comment="finModel.js finYears(5)[%d].%s" % (i, mk) if i == 0 else None)
@@ -617,7 +619,7 @@ def msec(t):
 
 
 msec("배분 기준 — 회원 증가 램프가 매출 인식 가중치를 만든다")
-mline("ramp", "회원 증가 램프(가중)", "가정 ⑩", lambda t, y, m, c: f"='가정'!{MC[m]}{AR['rampRow']+y}", "0.0", font=GREEN)
+mline("ramp", "회원 증가 램프(가중)", "가정 ⑨", lambda t, y, m, c: f"='가정'!{MC[m]}{AR['rampRow']+y}", "0.0", font=GREEN)
 
 
 def yrange(key, y):
@@ -643,16 +645,33 @@ for cc in cats:
     mline("rev_" + cc["key"], f"제품판매 — {cc['label']}", "매출 가중", by_weight("rev_" + cc["key"]), reconcile_key="rev_" + cc["key"], grp="제품")
 mline("revP", "제품판매 소계", "합계", lambda t, y, m, c: f"=SUM({c}{MR['rev_supp']}:{c}{MR['rev_sports']})", total=True, reconcile_key="revP")
 mline("revChk", "검진 연계 수수료(자사+타사)", "매출 가중", by_weight("revChk"), reconcile_key="revChk", grp="수수료")
-mline("revSvc", "헬스케어 서비스 — 고객 수수료(0)", "매출 가중", by_weight("revSvc"), reconcile_key="revSvc")
+mline("revSvc", "헬스케어 서비스 — 고객 수수료", "매출 가중", by_weight("revSvc"), reconcile_key="revSvc")
 mline("revResv", "예약 서비스 수수료", "매출 가중", by_weight("revResv"), reconcile_key="revResv")
 mline("revSub", "AI 플랫폼 구독(EMR·UIP)", "매출 가중", by_weight("revSub"), reconcile_key="revSub", grp="구독")
-mline("revIns", "보험 중개 수수료", "매출 가중", by_weight("revIns"), reconcile_key="revIns", grp="보험")
-mline("revEtc", "광고 · AI Agent · API", "매출 가중",
-      lambda t, y, m, c: f"=('연간손익'!${YC[y]}${YR['revAd']}+'연간손익'!${YC[y]}${YR['revAg']}+'연간손익'!${YC[y]}${YR['revApi']})*{c}${MR['w']}",
-      reconcile_key="", grp="신규")
+mline("hmCasesM", "헬스메이트센터 DB 공급 건수(월)", "연간 공급 건수 × 매출 가중",
+      lambda t, y, m, c: f"='연간손익'!${YC[y]}${YR['insCases']}*{c}${MR['w']}", F_CNT, reconcile_key="insCases", grp="사용료")
+mline("hmCumM", "연내 누적 공급 건수", "1월부터 누적",
+      lambda t, y, m, c: f"=SUM(${ycols(y)[0]}{MR['hmCasesM']}:{c}{MR['hmCasesM']})", F_CNT)
+mline("hmDiscM", "우대 단가 적용 건수(월)", "연내 누적 중 한도 이내분",
+      lambda t, y, m, c: f"=MAX(0,MIN({c}{MR['hmCasesM']},'연간손익'!${YC[y]}${YR['hmCap']}-MIN('연간손익'!${YC[y]}${YR['hmCap']},{c}{MR['hmCumM']}-{c}{MR['hmCasesM']})))",
+      F_CNT, reconcile_key="hmDiscN")
+mline("revIns_d", "헬스메이트센터 사용료 — 우대분", "우대 건수 × 우대 단가",
+      lambda t, y, m, c: f"={c}{MR['hmDiscM']}*'연간손익'!${YC[y]}${YR['hmPrice']}", reconcile_key="revIns_d")
+mline("revIns_f", "헬스메이트센터 사용료 — 시가분", "(공급 − 우대 건수) × 시가",
+      lambda t, y, m, c: f"=({c}{MR['hmCasesM']}-{c}{MR['hmDiscM']})*{ASCALAR('hmMarket')}", reconcile_key="revIns_f")
+mline("revIns", "헬스메이트센터 사용료 소계", "연내 한도를 먼저 채우고 초과분 시가", lambda t, y, m, c: f"={c}{MR['revIns_d']}+{c}{MR['revIns_f']}",
+      total=True, reconcile_key="revIns")
 mline("rev", "매출액 합계", "합계",
-      lambda t, y, m, c: f"={c}{MR['revP']}+{c}{MR['revChk']}+{c}{MR['revSvc']}+{c}{MR['revResv']}+{c}{MR['revSub']}+{c}{MR['revIns']}+{c}{MR['revEtc']}",
+      lambda t, y, m, c: f"={c}{MR['revP']}+{c}{MR['revChk']}+{c}{MR['revSvc']}+{c}{MR['revResv']}+{c}{MR['revSub']}+{c}{MR['revIns']}",
       total=True, reconcile_key="rev")
+
+mline("wRev", "매출 연동 비용 배분 비중", "월 매출 ÷ 연간 매출(연간 0이면 회원 가중)",
+      lambda t, y, m, c: f"=IF('연간손익'!${YC[y]}${YR['rev']}=0,{c}${MR['w']},{c}{MR['rev']}/'연간손익'!${YC[y]}${YR['rev']})", '0.00%', reconcile_key="")
+
+
+def by_rev(akey):
+    return lambda t, y, m, c: f"='연간손익'!${YC[y]}${YR[akey]}*{c}${MR['wRev']}"
+
 
 msec("매출원가")
 mline("cogsP", "제품 원가", "매출 가중", by_weight("cogsP"), reconcile_key="cogsP", grp="제품")
@@ -665,20 +684,20 @@ mline("gross", "매출총이익", "매출 − 원가", lambda t, y, m, c: f"={c}
 
 msec("판매관리비")
 mline("cac", "회원확보비(CAC)", "월 신규 회원 × CAC", lambda t, y, m, c: f"={c}{MR['newM']}*{ASCALAR('cac')}", reconcile_key="cac", grp="마케팅")
-mline("brand", "브랜드 · 퍼포먼스 마케팅", "매출 가중", by_weight("brand"), reconcile_key="brand")
-mline("launch", "초기 런칭 광고", "가정 ⑪ 배분",
+mline("brand", "브랜드 · 퍼포먼스 마케팅", "월 매출 비중", by_rev("brand"), reconcile_key="brand")
+mline("launch", "초기 런칭 광고", "가정 ⑩ 배분",
       lambda t, y, m, c: f"=IF(SUM('가정'!$D${AR['launchPhaseRow']+y}:$O${AR['launchPhaseRow']+y})=0,'연간손익'!${YC[y]}${YR['launch']}/12,'연간손익'!${YC[y]}${YR['launch']}*'가정'!{MC[m]}{AR['launchPhaseRow']+y}/SUM('가정'!$D${AR['launchPhaseRow']+y}:$O${AR['launchPhaseRow']+y}))",
       reconcile_key="launch")
 mline("reward", "포인트(토큰) 적립", "매출 가중", by_weight("reward"), reconcile_key="reward", grp="고객·사회")
 mline("donation", "기부금(치료비 나눔)", "매출 가중", by_weight("donation"), reconcile_key="donation")
-mline("pay", "인건비", "가정 ⑬ 방식(균등/연속 채용)",
+mline("pay", "인건비", "가정 ⑫ 방식(균등/연속 채용)",
       lambda t, y, m, c: f"=IF({ASCALAR('payMode')}=1,'연간손익'!${YC[y]}${YR['pay']}/12,'인력계획'!${YC[y]}${HR['payS']}+('인력계획'!${YC[y]}${HR['payE']}-'인력계획'!${YC[y]}${HR['payS']})*{m}/11)",
       reconcile_key="pay", grp="인력")
-mline("rnd", "연구개발", "매출 가중", by_weight("rnd"), reconcile_key="rnd", grp="운영")
+mline("rnd", "연구개발", "월 매출 비중", by_rev("rnd"), reconcile_key="rnd", grp="운영")
 mline("cloud", "클라우드", "매출 가중", by_weight("cloud"), reconcile_key="cloud")
 mline("gpu", "GPU", "매출 가중", by_weight("gpu"), reconcile_key="gpu")
-mline("salesCost", "영업비", "매출 가중", by_weight("salesCost"), reconcile_key="salesCost")
-mline("adminCost", "관리비", "매출 가중", by_weight("adminCost"), reconcile_key="adminCost")
+mline("salesCost", "영업비", "월 매출 비중", by_rev("salesCost"), reconcile_key="salesCost")
+mline("adminCost", "관리비", "월 매출 비중", by_rev("adminCost"), reconcile_key="adminCost")
 mline("sga", "판매관리비 합계", "합계", lambda t, y, m, c: f"=SUM({c}{MR['cac']}:{c}{MR['adminCost']})", total=True, reconcile_key="sga")
 
 msec("이익 · 투자")
@@ -687,7 +706,7 @@ mline("depr", "감가상각비", "연간 ÷ 12", lambda t, y, m, c: f"='연간�
 mline("ebit", "영업이익(보정)", "모델 표기 − 감가상각", lambda t, y, m, c: f"={c}{MR['ebitModel']}-{c}{MR['depr']}", total=True, reconcile_key="ebit")
 mline("int", "이자비용", "연간 ÷ 12", lambda t, y, m, c: f"='연간손익'!${YC[y]}${YR['int']}/12", reconcile_key="int")
 mline("pbt", "법인세차감전이익", "영업이익 − 이자", lambda t, y, m, c: f"={c}{MR['ebit']}-{c}{MR['int']}", total=True, reconcile_key="pbt")
-mline("capex", "CAPEX 집행", "가정 ⑫ 배분",
+mline("capex", "CAPEX 집행", "가정 ⑪ 배분",
       lambda t, y, m, c: f"=IF(SUM('가정'!$D${AR['capexPhaseRow']+y}:$O${AR['capexPhaseRow']+y})=0,'연간손익'!${YC[y]}${YR['capex']}/12,'연간손익'!${YC[y]}${YR['capex']}*'가정'!{MC[m]}{AR['capexPhaseRow']+y}/SUM('가정'!$D${AR['capexPhaseRow']+y}:$O${AR['capexPhaseRow']+y}))",
       reconcile_key="capex")
 mline("cumOp", "누적 영업이익(보정)", "월 누적", lambda t, y, m, c: (f"={c}{MR['ebit']}" if t == 0 else f"={MCOL[t-1]}{mr}+{c}{MR['ebit']}"))
@@ -701,7 +720,7 @@ M.freeze_panes = "D7"
 
 
 
-# ══════════════════════════════════════ 현금·투자금(v1.1) ══════════════════════════════════════
+# ══════════════════════════════════════ 현금·투자금 ══════════════════════════════════════
 from openpyxl.worksheet.datavalidation import DataValidation
 
 C = wb.create_sheet("현금·투자금")
@@ -721,8 +740,7 @@ levers = [
     ("lagSvc", "회수 지연 — 헬스케어 서비스", [0, 1, 1], "개월", "제휴처 월 정산", "0", False),
     ("lagResv", "회수 지연 — 예약 서비스", [0, 1, 1], "개월", "제휴처 월 정산", "0", False),
     ("lagSub", "회수 지연 — AI 플랫폼 구독", [0, 1, 1], "개월", "기관 후불 청구", "0", False),
-    ("lagIns", "회수 지연 — 보험 DB 공급", [0, 2, 2], "개월", "공급분 보험사 월 정산 후 지급(정산 조건 협의)", "0", True),
-    ("lagEtc", "회수 지연 — 광고·Agent·API", [0, 0, 0], "개월", "", "0", False),
+    ("lagIns", "회수 지연 — 헬스메이트센터 사용료", [0, 2, 2], "개월", "공급분 월 정산 후 지급(정산 조건 협의)", "0", True),
     ("cogsLag", "매출원가 지급 지연", [0, 0, 0], "개월", "B·C는 공급사 신용을 의도적으로 뺀 보수 기준(1개월이면 필요자금 감소)", "0", False),
     ("wc", "운전자본 증가(매출 대비)", ["='가정'!$D$%d" % AR["wcRate"], 0, 0], "%", "A = 모델 2% · B·C = 회수 지연으로 명시 반영", F_PCT, False),
     ("rent", "1인당 월 임차료(관리비 포함)", [540000, 540000, 540000], "원/인·월", "[추정] 1인 3평 × 평당 월 18만 — 실제 임대 조건으로 교체", F_WON, False),
@@ -731,7 +749,7 @@ levers = [
     ("adminHasRent", "관리비에 임차료 포함(1=포함 → 초과분만)", [1, 0, 0], "선택", "A는 모델 관리비에 일부 포함으로 본다", "0", False),
     ("hireRate", "채용 수수료(1인당 총인건비 대비)", [0.05, 0.05, 0.05], "%", "[추정] 헤드헌팅 15~20% × 외부 채용 비중 약 30%", F_PCT, False),
     ("oneOff", "일회성 거래비용(실사·법무·등기)", [150000000, 0, 0], "원", "첫 집행 달 · B·C는 구축기간 운영비에 포함", F_WON, False),
-    ("prepay", "전략적 선급액(보험 DB 공급 대가)", [0, 0, 0], "원", "⚠ 선급은 보험 매출의 조기 회수이지 신규 자금이 아니다 — 회수에서 상계", F_WON, False),
+    ("prepay", "전략적 선급액(헬스메이트센터 사용료 선급)", [0, 0, 0], "원", "⚠ 선급은 사용료의 조기 회수이지 신규 자금이 아니다 — 회수에서 상계", F_WON, False),
     ("prepayAt", "선급 수령 기간 번호", [1, 1, 1], "기간", "1 = 1차 1월", "0", False),
     ("repay", "차입 원금 월 상환액", [0, 0, 0], "원/월", "기존 장기차입 만기·상환 조건으로 채울 것", F_WON, False),
     ("repayFrom", "상환 시작 기간 번호", [1, 1, 1], "기간", "", "0", False),
@@ -748,16 +766,22 @@ for k, lab, vals, unit, note, fmt, keyf in levers:
 dv = DataValidation(type="whole", operator="between", formula1="0", formula2="24", showErrorMessage=True,
                     errorTitle="사전 구축기간", error="0~24개월만 입력할 수 있습니다(구축 열이 24칸).")
 C.add_data_validation(dv); dv.add(f"C{CR['pre']}:E{CR['pre']}")
+dvr = DataValidation(type="decimal", operator="between", formula1="0", formula2="1", showErrorMessage=True, error="0~1(0%~100%)만 입력")
+A.add_data_validation(dvr); dvr.add(f"D{AR['hmRate1']}")
+dvn = DataValidation(type="decimal", operator="greaterThanOrEqual", formula1="0", showErrorMessage=True, error="0 이상만 입력")
+A.add_data_validation(dvn)
+for k_ in ("hmInvest", "hmMarket", "hmPriceStep", "hmCap1", "hmCapStep"):
+    dvn.add(f"D{AR[k_]}")
 cr += 1
 section(C, cr, "공통 입력", 7); cr += 1
 for k, lab, v, unit, note, fmt in [("closeDate", "클로징 기준일", "입력", "", "예: 2026-12-31", None),
-                                   ("imAmt", "IM에 적힌 투자 금액", 10000000000, "원", "HI-Fin_현대해상_IM v1.1 — 요청액과 다르면 경고", F_WON)]:
+                                   ("imAmt", "IM에 적힌 투자 금액", 10000000000, "원", "HI-Fin_현대해상_IM v1.1 — 요청액과 다르면 경고(전략적 투자금은 가정 ⑤ 별도)", F_WON)]:
     cell(C, f"B{cr}", lab)
     cell(C, f"C{cr}", v, GREEN if (isinstance(v, str) and v.startswith("=")) else BLUE, fmt, None)
     cell(C, f"F{cr}", unit, SUB); cell(C, f"G{cr}", note, SUB)
     CR[k] = cr; cr += 1
 cr += 1
-section(C, cr, "월 배분 · 커버리지(1~12월 가중, 매년 적용 · 보험 커버리지는 1차연도에만)", 7); cr += 1
+section(C, cr, "월 배분 · 커버리지(1~12월 가중, 매년 적용 · 사용료 커버리지는 1차연도에만)", 7); cr += 1
 PHC = [CL(9 + m) for m in range(12)]                  # I .. T
 cell(C, f"B{cr}", "월", BOLD)
 for m in range(12):
@@ -765,7 +789,7 @@ for m in range(12):
 cr += 1
 PH = {}
 for bi, tag in enumerate(["A", "B", "C"]):
-    for key, lab in [("launch", "런칭 광고 배분"), ("capex", "CAPEX 배분"), ("cov", "보험 매출 커버리지(0~1)")]:
+    for key, lab in [("launch", "런칭 광고 배분"), ("capex", "CAPEX 배분"), ("cov", "사용료 공급 커버리지(0~1)")]:
         cell(C, f"B{cr}", f"{tag} — {lab}")
         for m in range(12):
             if bi == 0 and key in ("launch", "capex"):
@@ -780,10 +804,14 @@ for bi, tag in enumerate(["A", "B", "C"]):
                     v = [1] * 12 if bi == 0 else (ROAD if bi == 1 else [0] * 12)
                     v = v[m]
                 cell(C, f"{PHC[m]}{cr}", v, BLUE, "0.00", YELLOW if key == "cov" else None)
-        note = {"launch": "A = 가정 ⑪ 연결 · B·C = 선집행", "capex": "A = 가정 ⑫ 연결 · B·C = 분기 선집행",
+        note = {"launch": "A = 가정 ⑩ 연결 · B·C = 선집행", "capex": "A = 가정 ⑪ 연결 · B·C = 분기 선집행",
                 "cov": ["A = 전액", "B = 로드맵 부분 반영(1~2월 0 · 3~5월 7/16 · 6월~ 1) — 법률자문 4주·파일럿 8주", "C = 1차연도 미개시(법률·파일럿 게이트 지연)"][bi]}[key]
         cell(C, f"U{cr}", note, SUB)
         PH[(tag, key)] = cr; cr += 1
+dvc = DataValidation(type="decimal", operator="between", formula1="0", formula2="1", showErrorMessage=True, error="커버리지는 0~1만 입력")
+C.add_data_validation(dvc)
+for tag_ in ("A", "B", "C"):
+    dvc.add(f"I{PH[(tag_, 'cov')]}:T{PH[(tag_, 'cov')]}")
 cr += 1
 
 # ── 요약 ──
@@ -857,8 +885,21 @@ def block(tag, bi, r0):
     row("heads", "월 인원(월 인건비×12 ÷ 1인당 연 인건비)",
         lambda col: f"=IF({I(col)}<1,IF({I(col)}>-{lv('pre')},{ASCALAR('payStart')}*{lv('prePay')}*12/INDEX({AVGSAL},1,1),0),{M_AT('pay', col)}*12/INDEX({AVGSAL},1,{YEAR(col)}))",
         fmt='#,##0.0', font=SUB)
-    row("insRec", "보험 매출(커버리지 반영)",
-        lambda col: f"=IF({I(col)}<1,0,{M_AT('revIns', col)}*IF({I(col)}<=12,INDEX({php('cov')},1,{I(col)}),1))", font=SUB)
+    row("hmDel", "사용료 공급 건수(커버리지 반영)",
+        lambda col: f"=IF({I(col)}<1,0,{M_AT('hmCasesM', col)}*IF({I(col)}<=12,INDEX({php('cov')},1,{I(col)}),1))", fmt=F_CNT, font=SUB)
+
+    def ystart(col):                                   # 같은 연차 1월 열(본 기간만)
+        j = GC.index(col)
+        return GC[PRE + ((j - PRE) // 12) * 12]
+
+    def hm_at(col, key):
+        return f"'연간손익'!${YC[(GC.index(col) - PRE) // 12]}${YR[key]}"
+    row("hmDelCum", "연내 누적 공급 건수(커버리지 반영)",
+        lambda col: "=0" if GC.index(col) < PRE else f"=SUM(${ystart(col)}{R['hmDel']}:{col}{R['hmDel']})", fmt=F_CNT, font=SUB)
+    row("insRec", "사용료 매출(커버리지 반영 · 실제 공급 건수로 한도 적용)",
+        lambda col: "=0" if GC.index(col) < PRE else
+        (f"={col}{R['hmDel']}*{ASCALAR('hmMarket')}-MAX(0,MIN({col}{R['hmDel']},{hm_at(col, 'hmCap')}-MIN({hm_at(col, 'hmCap')},{col}{R['hmDelCum']}-{col}{R['hmDel']})))"
+         f"*({ASCALAR('hmMarket')}-{hm_at(col, 'hmPrice')})"), font=SUB)
     hr_first = GC[0]; hr_last = GC[-1]
     row("req", "보증금 필요액(향후 인원 기준)",
         lambda col: f"=MAX({col}{R['heads']}:INDEX(${hr_first}${R['heads']}:${hr_last}${R['heads']},1,MIN({PRE+60},{I(col)}+{PRE}+{lv('depLook')}-1)))*{lv('rent')}*{lv('depMonths')}",
@@ -872,7 +913,7 @@ def block(tag, bi, r0):
     row("inSvc", "헬스케어 서비스 회수", lagged("revSvc", "lagSvc"))
     row("inResv", "예약 서비스 회수", lagged("revResv", "lagResv"))
     row("inSub", "AI 플랫폼 구독 회수", lagged("revSub", "lagSub"))
-    row("insCol", "보험 DB 공급 회수(선급 상계 전)",
+    row("insCol", "헬스메이트센터 사용료 회수(선급 상계 전)",
         lambda col: f"=IF({I(col)}-{lv('lagIns')}<1,0,INDEX(${hr_first}${R['insRec']}:${hr_last}${R['insRec']},1,{I(col)}+{PRE}-{lv('lagIns')}))")
     first = GC[0]
     prev = lambda col: GC[GC.index(col) - 1]
@@ -882,9 +923,8 @@ def block(tag, bi, r0):
     bal_prev = lambda col: ("0" if col == first else f"{prev(col)}{r_bal}")
     row("offset", "선급 상계(비현금)", lambda col: f"=IF({I(col)}<1,0,MIN({bal_prev(col)}+{recv(col)},{col}{R['insCol']}))")
     row("prepayBal", "선급 잔액(보조)", lambda col: f"={bal_prev(col)}+{recv(col)}-{col}{r_off}", font=SUB)
-    row("inIns", "보험 DB 공급 회수(현금)", lambda col: f"={col}{R['insCol']}-{col}{R['offset']}")
-    row("inEtc", "광고·Agent·API 회수", lagged("revEtc", "lagEtc"))
-    row("inTot", "유입 합계", lambda col: f"={col}{R['inP']}+{col}{R['inChk']}+{col}{R['inSvc']}+{col}{R['inResv']}+{col}{R['inSub']}+{col}{R['inIns']}+{col}{R['inEtc']}", True, TOT)
+    row("inIns", "헬스메이트센터 사용료 회수(현금)", lambda col: f"={col}{R['insCol']}-{col}{R['offset']}")
+    row("inTot", "유입 합계", lambda col: f"={col}{R['inP']}+{col}{R['inChk']}+{col}{R['inSvc']}+{col}{R['inResv']}+{col}{R['inSub']}+{col}{R['inIns']}", True, TOT)
     cell(C, f"A{r0}", "유출", BOLD)
     row("oCogs", "매출원가", lambda col: f"=IF({I(col)}-{lv('cogsLag')}<1,0,{M_AT('cogs', col, '-' + lv('cogsLag'))})")
     row("oCust", "포인트 적립 · 기부금", lambda col: f"={SAME('reward', col)}+{SAME('donation', col)}")
@@ -896,11 +936,11 @@ def block(tag, bi, r0):
     row("oPay", "인건비", lambda col: f"={SAME('pay', col)}")
     row("oOpex", "R&D · 클라우드 · GPU · 영업 · 관리", lambda col: "=" + "+".join(SAME(k, col) for k in ["rnd", "cloud", "gpu", "salesCost", "adminCost"]))
     row("oInt", "이자", lambda col: f"={SAME('int', col)}")
-    row("oWc", "운전자본 증가", lambda col: f"={SAME('rev', col)}*{lv('wc')}")
+    row("oWc", "운전자본 증가", lambda col: f"=IF({I(col)}<1,0,({M_AT('rev', col)}-{M_AT('revIns', col)}+{col}{R['insRec']})*{lv('wc')})")
     row("oTax", "법인세 납부(전년분 · 3월)",
         lambda col: f"=IF({I(col)}<1,0,IF(AND({MON(col)}=3,{YEAR(col)}>=2),INDEX('연간손익'!$D${YR['tax']}:$H${YR['tax']},1,{YEAR(col)}-1),0))")
-    row("oCovSave", "(−) 보험 미개시분 매출연동 비용 절감",
-        lambda col: f"=-IF({I(col)}<1,0,{M_AT('revIns', col)}*(1-IF({I(col)}<=12,INDEX({php('cov')},1,{I(col)}),1))*{VAR})")
+    row("oCovSave", "(−) 사용료 미공급분 매출연동 비용 절감(커버리지)",
+        lambda col: f"=-IF({I(col)}<1,0,({M_AT('revIns', col)}-{col}{R['insRec']})*{VAR})")
     row("oRent", "임차료(인원 연동 · 모델 밖)",
         lambda col: f"=IF({I(col)}<1,{col}{R['heads']}*{lv('rent')},IF({lv('adminHasRent')}=1,MAX(0,{col}{R['heads']}*{lv('rent')}-{M_AT('adminCost', col)}),{col}{R['heads']}*{lv('rent')}))")
     row("oDep", "임차보증금 예치(증액분)",
@@ -950,7 +990,7 @@ warns = [
     f'=IF(COUNTIF(\'인력계획\'!D{HR["payWarn"]}:H{HR["payWarn"]},"정상")+COUNTIF(\'인력계획\'!D{HR["payWarn"]}:H{HR["payWarn"]},"균등 모드 — 해당 없음")=5,"✓ 인건비 월 경로 정상","⚠ 인건비 월 경로 이상 — 인력계획 점검 행 확인")',
     f'=IF(ABS(D{CR["s_req"]}-$C${CR["imAmt"]})>=1000000000,"⚠ IM 투자 금액("&TEXT($C${CR["imAmt"]}/100000000,"0")&"억)과 B 요청액("&TEXT(D{CR["s_req"]}/100000000,"0")&"억)이 다릅니다 — 문서 금액 통일 필요","✓ IM 금액과 B 요청액 일치")',
     f'=IF(SUM(C{CR["prepay"]}:E{CR["prepay"]})>0,"⚠ 전략적 선급 사용 중 — 투자금 헤드라인에 선급을 더하지 말 것","✓ 선급 없음")',
-    f'=IF(\'연간손익\'!D{YR["ebitExIns"]}<0,"ⓘ 보험 제외 시 1차연도 보정 영업이익 "&TEXT(\'연간손익\'!D{YR["ebitExIns"]}/100000000,"0.0")&"억 — 1차 손익이 보험 한 줄에 달려 있음","")',
+    f'=IF(\'연간손익\'!D{YR["ebitExIns"]}<0,"ⓘ 사용료 제외 시 1차연도 보정 영업이익 "&TEXT(\'연간손익\'!D{YR["ebitExIns"]}/100000000,"0.0")&"억 — 1차 손익이 헬스메이트센터 사용료 한 줄에 달려 있음","")',
 ]
 for i_, f_ in enumerate(warns):
     cell(C, f"B{w+i_}", f_, BLACK)
@@ -990,7 +1030,7 @@ tr += 1
 section(T, tr, "② 자금 사용처 — 저점까지 순소진을 계정별 유출 비중으로 배분 + 버퍼 − 선급", 5); tr += 1
 header_row(T, tr, ["", "사용처", "저점까지 총유출(참고)", "비중", "요청액 배분"], 1)
 tr += 1
-CATS = [("매출원가", ["oCogs"]), ("포인트 적립 · 기부금", ["oCust"]), ("마케팅(CAC·브랜드·런칭)", ["oMkt", "oLaunch", "oCovSave"]),
+CATS = [("매출원가", ["oCogs"]), ("포인트 적립 · 기부금", ["oCust"]), ("마케팅(CAC·브랜드·런칭 · 사용료 미공급 절감 차감)", ["oMkt", "oLaunch", "oCovSave"]),
         ("CAPEX(플랫폼·AI·인프라·보안·사무)", ["oCapex"]), ("인건비(구축기간 포함)", ["oPay", "oPrePay"]),
         ("R&D · 인프라 · 영업 · 관리", ["oOpex", "oPreOpex"]), ("임차 · 보증금 · 채용 · 일회성", ["oRent", "oDep", "oHire", "oOne"]),
         ("이자 · 세금 · 운전자본 · 차입 상환", ["oInt", "oTax", "oWc", "oRepay"])]
@@ -1042,21 +1082,39 @@ cell(T, f"C{tr}", "=CHOOSE($C$%d,%s,%s,%s)" % (TR["sel"], t1_runway(RA), t1_runw
 cell(T, f"D{tr}", "T2는 이 달 이전에 들어와야 한다", SUB)
 TR["t1run"] = tr; tr += 1
 cell(T, f"B{tr}", "T2 마일스톤(입력)", BOLD); tr += 1
-for ms in ["보험 DB 공급 파일럿 Go 판정 — 응답 80% · 상담 40% · 청약 8%(리드라우팅 설계보고서 §5.4)",
+for ms in ["헬스메이트센터 DB 공급 파일럿 Go 판정 — 응답 80% · 상담 40% · 청약 8%(리드라우팅 설계보고서 §5.4)",
            "법률의견서 — 보험업법(모집 자격) · 신용정보법 · 개인정보보호법 §17·§23",
            "현대해상 제3자 제공 동의 수집 실적 — 목표 인원 입력",
            "AI 플랫폼 유료 전환 기관 — 목표 기관 수 입력"]:
     cell(T, f"B{tr}", ms, BLUE); tr += 1
 tr += 1
 section(T, tr, "④ 문서 금액 정합", 5); tr += 1
-cell(T, f"B{tr}", "IM에 적힌 투자 금액"); cell(T, f"C{tr}", f"='현금·투자금'!$C${CR['imAmt']}", GREEN, F_MIL); tr += 1
+cell(T, f"B{tr}", "IM에 적힌 투자 금액"); cell(T, f"C{tr}", f"='현금·투자금'!$C${CR['imAmt']}", GREEN, F_MIL); TR["im"] = tr; tr += 1
 cell(T, f"B{tr}", "요청액 − IM 금액"); cell(T, f"C{tr}", f"=C{TR['req']}-C{tr-1}", BLACK, F_MIL); tr += 1
-cell(T, f"B{tr}", "⚠ IM의 「1차연도 공급 대가(84억)로 투자 회수」 서사는 같은 84억을 투자 회수와 운영 현금에 두 번 쓴다 — IM 수정 필요", SUB)
+cell(T, f"B{tr}", "전략적 투자금(현대해상 · 가정 ⑤ 우대 조건 기준)"); cell(T, f"C{tr}", f"={ASCALAR('hmInvest')}", GREEN, F_MIL); TR["hmInv"] = tr; tr += 1
+cell(T, f"B{tr}", "추가 조달 필요액 = 요청액 − 전략적 투자금"); cell(T, f"C{tr}", f"=MAX(0,C{TR['req']}-C{tr-1})", BLACK, F_MIL); TR["gap"] = tr; tr += 1
+cell(T, f"B{tr}", "⚠ IM의 「1차연도 공급 대가로 투자 회수」 서사는 같은 사용료를 투자 회수와 운영 현금에 두 번 쓴다 — IM 수정 필요", SUB); tr += 2
+section(T, tr, "⑤ 헬스메이트센터 전략적 투자자 우대 조건 — 투자금 대비 할인 규모(조절은 가정 ⑤)", 7); tr += 1
+header_row(T, tr, ["", "항목", "1차연도", "2차연도", "3차연도", "4차연도", "5차연도"]); tr += 1
+TR["hmStart"] = tr
+for key, lab, fmt in [("hmCap", "우대 한도(건)", F_CNT), ("hmPrice", "우대 단가(원/건)", F_WON), ("insCases", "공급 건수", F_CNT),
+                      ("hmDiscN", "우대 단가 적용 건수", F_CNT), ("hmFullN", "시가 적용 건수(한도 초과)", F_CNT),
+                      ("revIns", "헬스메이트센터 사용료(백만원)", F_MIL), ("hmBenefit", "시가 대비 할인액(백만원)", F_MIL),
+                      ("hmBenefitX", "누계 할인액 ÷ 전략적 투자금", '0.00"배"')]:
+    cell(T, f"B{tr}", lab, BOLD if key in ("hmBenefit", "hmBenefitX") else BLACK)
+    for i in range(5):
+        cell(T, f"{'CDEFG'[i]}{tr}", f"='연간손익'!{YC[i]}{YR[key]}", GREEN, fmt, KEY if key == "hmBenefitX" else None)
+    TR["hm_" + key] = tr; tr += 1
+cell(T, f"B{tr}", "시가(원/건)"); cell(T, f"C{tr}", f"={ASCALAR('hmMarket')}", GREEN, F_WON); tr += 1
+cell(T, f"B{tr}", "5년 할인액 합계"); cell(T, f"C{tr}", f"=SUM('연간손익'!D{YR['hmBenefit']}:H{YR['hmBenefit']})", GREEN, F_MIL, KEY, bold=True)
+cell(T, f"D{tr}", "백만원 · 계획 기준 — C(1차 미개시)는 1차 한도를 못 써 할인이 1차분만큼 작다", SUB); TR["hmBenefitSum"] = tr
 T.column_dimensions["A"].width = 3
 T.column_dimensions["B"].width = 54
 T.column_dimensions["C"].width = 18
 T.column_dimensions["D"].width = 12
 T.column_dimensions["E"].width = 16
+T.column_dimensions["F"].width = 16
+T.column_dimensions["G"].width = 16
 
 
 # ══════════════════════════════════════ 화면대조 ══════════════════════════════════════
@@ -1065,13 +1123,12 @@ cell(S, "A1", "재무회계 온톨로지 화면 대조 — 화면은 1차연도 
 cell(S, "A2", "화면 값은 누적 중인 순간값이라 절대액이 아니라 구성비를 봐야 한다. 화면 값 출처: 2026-09-13 캡처.", SUB)
 header_row(S, 4, ["구분", "화면 항목", "화면 값(원)", "화면 구성비", "대응 계정(연간손익)", "1차연도 모델(백만원)", "모델 구성비", "차이(%p)", "산식 · 비고"])
 sr = 5
-scr_rev = [("제품판매 매출 · 건강쇼핑(GMV)", 4737000, ["revP"], "구매회원×1인 지출×점유율 70%×가동률 33% — 1차 매출 1위(41%)"),
+scr_rev = [("제품판매 매출 · 건강쇼핑(GMV)", 4737000, ["revP"], "구매회원×1인 지출×점유율 70%×가동률 33% — 1차 매출 1위"),
            ("검진 연계 수수료 · 건강검진센터", 3850000, ["revChk"], "자사 20%×3만 + 타사 80%×1만 = 1차 건당 평균 1.4만(원가 2만) — 화면 시뮬은 채널 구분 없이 2.5만"),
            ("헬스케어 서비스 수수료", 690000, ["revSvc"], "고객 수수료 0(대표 지시 2026-09-14) — 화면 시뮬은 이용자×1.5만 · 대가는 기관 구독료"),
            ("예약 서비스 수수료 · 골프·시설", 520000, ["revResv"], "예약 건수×1만"),
            ("EMR-UIP 사용료", 0, ["revSub"], "1차연도 무료(시장 선점)"),
-           ("보험 중개 수수료 · 퍼미션 동의", 5180000, ["revIns"], "누적 동의×공급 집행률 60%×건당 7만 — 1차 매출 2위(38%)"),
-           ("광고 · 제휴 매출", 0, ["revAd", "revAg", "revApi"], "2차연도부터(광고·Agent·API 합)")]
+           ("보험 중개 수수료 · 퍼미션 동의(→ 헬스메이트센터 사용료)", 5180000, ["revIns"], "공급 건수 중 우대 한도까지 우대 단가(1차 5만), 초과분 시가 10만 — 화면 시뮬은 건당 7만")]
 section(S, sr, "매출 구성", 9); sr += 1
 r_s = sr
 for lab, v, keys, note in scr_rev:
@@ -1100,7 +1157,7 @@ scr_cost = [("인건비 · 판관비", 3980359, ["pay"], "인력계획 합계"),
             ("연구개발비", 403147, ["rnd", "cloud", "gpu"], "R&D + 클라우드 + GPU(화면은 합산)"),
             ("영업·관리비", 272185, ["salesCost", "adminCost"], "매출×요율×스케일 30%"),
             ("결제 대행 수수료", 104214, ["payFee"], "제품매출×2.2%"),
-            ("감가상각비", 29840, ["depr"], "⚠ 시뮬은 전 연차 매출 0.2% 고정(3차연도에만 맞음) — 1차 모델 1.9%. 모델 영업이익과 함께 보정 필요")]
+            ("감가상각비", 29840, ["depr"], "⚠ 시뮬은 전 연차 매출 0.2% 고정(3차연도에만 맞음) — 1차 모델 2.4%(대표 조정 반영 · finModel 원값 1.9%). 모델 영업이익과 함께 보정 필요")]
 c_s = sr
 for lab, v, keys, note in scr_cost:
     cell(S, f"B{sr}", lab); cell(S, f"C{sr}", v, BLUE, F_WON)
@@ -1141,7 +1198,7 @@ S.freeze_panes = "C5"
 # ══════════════════════════════════════ 안내 ══════════════════════════════════════
 G = wb.create_sheet("안내", 0)
 cell(G, "A1", "하이젠케어 전략적 투자요청서 — 투자금 산정 · 세부 예산 양식", Font(name=FONT, size=17, bold=True, color="1A2B4A"))
-cell(G, "A2", "v1.5 · 2026-09-14 · 검진 연계 자사운영(3만)·타사 제휴(1만) 분리 — 자사 비율 20%에서 매년 +15%p · 헬스케어 서비스 고객 수수료 0 · 약국 1차 200곳 · 기관별 구독료(검진센터 월 30만 · 병원 50만 · 약국 20만, 약국 연 20% 복리) · 가용 현금 차감 없음 · 기준: finModel.js + 대표 조정(adjust.py)", SUB)
+cell(G, "A2", "v1.6 · 2026-09-14 · ⑥ 신규 스트림(광고·제휴 · AI Agent · API) 삭제 · 보험 중개 → 헬스메이트센터 사용료(투자금 100억 기준 우대 단가 5만·한도 10만 건에서 매년 +1만원·+10만 건, 초과분 시가 10만) · 검진 연계 자사운영(3만)·타사 제휴(1만) 분리 — 자사 비율 20%에서 매년 +15%p · 헬스케어 서비스 고객 수수료 0 · 약국 1차 200곳 · 기관별 구독료(검진센터 월 30만 · 병원 50만 · 약국 20만, 약국 연 20% 복리) · 가용 현금 차감 없음 · 기준: finModel.js + 대표 조정(adjust.py)", SUB)
 gr = 4
 section(G, gr, "결론 — 투자금 산정 결과(가정을 바꾸면 자동 재계산)", 7); gr += 1
 header_row(G, gr, ["", "항목", "A 계획", "B 보수", "C 게이트 지연", "단위", "비고"]); gr += 1
@@ -1164,19 +1221,19 @@ for i_ in range(5):
     cell(G, f"B{gr}", f"='현금·투자금'!B{CR['warnStart']+i_}", BLACK); gr += 1
 gr += 1
 section(G, gr, "세 기준", 7); gr += 1
-for t_ in ["A 계획 — 모델의 연간 숫자를 월로 편 것. 매출 연동 비용은 매출 가중, 인건비는 연속 채용 경로. 사전구축 0 · 회수 지연 0 · 운전자본 매출 2% · 인원 연동 간접비 포함.",
-           "B 보수 — 사전구축 6개월 · 보험 2개월/기관 수수료 1개월 회수 지연 · 보험 매출 로드맵 부분 반영(법률자문 4주·파일럿 8주) · 런칭광고·CAPEX 선집행. 공급사 신용은 의도적으로 제외.",
-           "C 게이트 지연 — B에 더해 보험 DB 공급이 1차연도에 개시되지 못하는 경우(법률의견·파일럿 Go 판정 지연).",
+for t_ in ["A 계획 — 모델의 연간 숫자를 월로 편 것. 매출은 회원 가중(사용료는 연내 한도 순서), 매출 연동 비용은 월 매출 비중, 인건비는 연속 채용 경로. 사전구축 0 · 회수 지연 0 · 운전자본 매출 2% · 인원 연동 간접비 포함.",
+           "B 보수 — 사전구축 6개월 · 사용료 2개월/기관 수수료 1개월 회수 지연 · 사용료 공급 로드맵 부분 반영(법률자문 4주·파일럿 8주, 한도는 실제 공급 건수로 적용) · 런칭광고·CAPEX 선집행. 공급사 신용은 의도적으로 제외.",
+           "C 게이트 지연 — B에 더해 헬스메이트센터 DB 공급이 1차연도에 개시되지 못하는 경우(법률의견·파일럿 Go 판정 지연).",
            "투자요청서에는 B 요청액을 권고액, A를 최소 필요액으로 적고, C를 하방 시나리오로 병기한다. 요청액은 필요 총자금 전액이다(보유 현금을 차감하지 않음)."]:
     cell(G, f"B{gr}", t_); gr += 1
 gr += 1
 section(G, gr, "시트 구성과 쓰는 순서", 7); gr += 1
 for sh, role in [("가정", "① 회원·기관·단가·요율·CAPEX·월 배분(파란 글씨)"),
                  ("인력계획", "② 직군별 인원 × 1인당 총인건비 → 인건비 · 월 경로 점검"),
-                 ("연간손익", "③ 1~5차 세부 계정 · 순매출·실효 CAC·보험 제외 이익 메모 · IM 공급표 대조 · finModel 대조(차이 0)"),
+                 ("연간손익", "③ 1~5차 세부 계정 · 순매출·실효 CAC·사용료 제외 이익·투자자 우대 할인 메모 · IM 공급표 대조 · finModel 대조(대표 조정분만 차이 — 제품판매·인건비 0)"),
                  ("월별예산", "④ 60개월 세부 계정 — 오른쪽 끝 연간 합계 대조(차이 0)"),
                  ("현금·투자금", "⑤ A·B·C 레버(구축·회수·간접비·선급·상환·버퍼) → 저점 → 필요 총자금 → 요청액"),
-                 ("투자조건", "⑥ 요청액 · 자금 사용처(순소진 배분) · 트랜치 · T1 소진 시기 · IM 금액 대조"),
+                 ("투자조건", "⑥ 요청액 · 자금 사용처(순소진 배분) · 트랜치 · T1 소진 시기 · 전략적 투자금 대조 · 헬스메이트센터 우대 조건"),
                  ("화면대조", "⑦ 재무회계 온톨로지 화면과 1차연도 모델 구성비 대조")]:
     cell(G, f"B{gr}", sh, BOLD); cell(G, f"C{gr}", role); gr += 1
 gr += 1
@@ -1189,14 +1246,14 @@ gr += 1
 section(G, gr, "모델 점검 — 투자요청서 작성 전에 확인할 것", 7); gr += 1
 for t_ in [
     "1. finModel.js 영업이익(ebit)은 감가상각을 빼지 않은 값(실질 EBITDA)이다. 모델 「EBITDA」는 감가상각을 한 번 더 더해 연 5~10억 크고, 순이익·영업CF·FCF(연 3.9~7.8억)도 크다. 이 양식은 「모델 표기」와 「보정」을 나란히 둔다.",
-    "2. 연 이자 8억은 모델의 장기차입 가정 20억 대비 암묵 이자율 40%다. 차입금과 연동되지 않은 고정 상수다. 금리 5%라면 필요 자금이 약 8~9억 준다. 모델값 확인 필요.",
+    "2. 연 이자 8억은 모델의 장기차입 가정 20억 대비 암묵 이자율 40%다. 차입금과 연동되지 않은 고정 상수다. 금리 5%(연 1억)라면 기본값에서 필요 총자금이 약 15~18억, 요청액이 A·B·C 모두 20억 준다. 모델값 확인 필요.",
     "3. 모델 KPI 런웨이는 1차연도 EBIT(+5.1억)로 번을 계산해 내부값이 Infinity가 되고, 화면에는 「흑자」로 뜬다. 같은 해 순이익은 −2.9억, 모델 FCF는 −16.2억이다.",
     "4. finModel.js는 1차연도 조달을 자본금 3억·잉여금 5억·장기차입 20억·리스 1.2억으로 가정하지만 실제 잔액 근거가 없다. 이 양식은 보유 현금을 차감하지 않고 필요 총자금 전액을 요청액으로 잡는다.",
-    "5. 모델 FCF 산식 ebit×(1−세율)은 손실 연도에 세금 환급처럼 작동한다. 기본값은 5개년 EBIT가 모두 +라 발동하지 않지만, 보험 공급 집행률 30%면 1차 FCF에 7.1억의 가짜 환급이 들어간다. 이 양식은 손실 시 세금 0.",
-    "6. 보험 DB 공급(20만×60%×7만 = 84억)은 1차연도 매출 2위(38%)이고 원가가 없어 이익에 그대로 반영된다. 같은 ±20% 충격으로는 인건비가 더 민감하지만, 공급 집행률은 하락 폭이 가장 불확실하다 — 두 근거를 함께 첨부할 것.",
-    "7. 화면 시뮬의 감가상각은 전 연차 매출 0.2%로 고정돼 3차연도에만 맞는다(1차 모델 1.9%). 모델 영업이익과 함께 보정해야 한다.",
+    "5. 모델 FCF 산식 ebit×(1−세율)은 손실 연도에 세금 환급처럼 작동한다. finModel 원 기본값은 5개년 EBIT가 모두 +라 발동하지 않지만(DB 공급 집행률 30%면 7.1억), 대표 조정을 반영한 이 양식 기본값은 1차 EBIT가 −44.1억이라 finModel 산식이면 9.7억의 가짜 환급이 생긴다. 이 양식은 손실 시 세금 0.",
+    "6. 헬스메이트센터 사용료는 원가가 없어 이익에 그대로 반영된다. 기본값 1차 12만 건 = 우대 10만×5만 + 시가 2만×10만 = 70억. 한도 초과분이 시가 10만이라 2차부터 모델(건당 7만)보다 크다 — 시가 10만의 근거를 첨부할 것. 한도는 연내 누적 순서로 채워 연초 매출이 낮다 — 연평균 단가로 균등 배분하면 요청액이 A 40억 · B 20억 · C 20억 작다(계약의 한도 적용 방식 확인 필요). 우대가 없으면(전량 시가) 요청액이 A 90억 · B 120억 · C 70억 작다. 하방 20% 충격에서 집행률이 인건비와 같거나 더 민감(B +120억 vs +110억), 상방은 인건비가 더 크다(B −70억 vs −50억).",
+    "7. 화면 시뮬의 감가상각은 전 연차 매출 0.2%로 고정돼 3차연도에만 맞는다(1차 모델 2.4% — 대표 조정 반영, finModel 원값 1.9%). 모델 영업이익과 함께 보정해야 한다.",
     "8. 사이트 사업계획(월·분기) 탭(finMonthlyY1)은 매출 연동 판관비와 인건비를 매월 1/12로 빼서 상반기 누적 영업손익이 −50.8억으로 나온다. 이 양식은 매출 가중·연속 채용으로 배분했다 — 제출 전 사이트도 같은 기준으로 맞출 것.",
-    "9. 보험 매출 모수가 문서마다 다르다. 모델은 누적 동의에 매년 60%(5차 2,646억), IM p7은 연 신규 동의×60%(5차 1,050억). 검증보고서 v1.1의 「동일 산식」은 틀렸다. 1차연도·필요 자금은 같지만 2~5차가 크게 다르다 — 대표 결정 필요.",
+    "9. 사용료 모수(공급 건수)가 문서마다 다르다. 모델은 누적 동의에 매년 60%(5차 378만 건), IM p7은 연 신규 동의×60%(5차 150만 건). 검증보고서 v1.1의 「동일 산식」은 틀렸다. 1차연도는 같지만 2~5차가 크게 다르다 — 대표 결정 필요.",
     "10. 제품판매는 총액 인식(finModel.js)인데 공급 데이터는 무재고·직배송(순액) 구조다. 적립·기부 때문에 한계 공헌이 약 −2.4%라, 제품 매출은 이익이 아니라 적립금 생태계 비용이다.",
     "11. 운전자본 가정이 모델 안에서 세 갈래다(FCF 매출 2% 유출 · 영업CF 1% 유입 · BS 회전율). 투자요청서에 BS와 월별 현금표를 함께 싣기 전에 통일할 것."]:
     cell(G, f"B{gr}", t_); gr += 1
