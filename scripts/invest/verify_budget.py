@@ -31,12 +31,24 @@ pairs = [("insCases", "insC"), ("hmCap", "hmCap"), ("hmPrice", "hmPrice"), ("hmD
 for a in adj:
     a["revIns_d"] = a["hmDisc"] * a["hmPrice"]; a["revIns_f"] = a["hmFull"] * a["hmMarket"]
 pairs += [("revIns_d", "revIns_d"), ("revIns_f", "revIns_f"), ("imRev", "imRev")]
+if "startF" in O3.P0:                              # v3.0 매출 개시 일정 · 월별 누적 · 재가·돌봄 · 연 환산
+    for a in adj:
+        a["insCasesFull"] = a["insCFull"]; a["activeAct"] = a["active"]; a["fullRev"] = a["revFull"]; a["fullP"] = a["revPFull"]
+        a["fullChk"] = a["revChkFull"]; a["fullSub"] = a["revSubFull"]; a["fullIns"] = a["revInsFull"]; a["fullCare"] = a["revCareFull"]
+        a["revP_"] = a["revP"]
+    pairs += [(k, k) for k in ("revP", "revResv", "revCare", "careCost", "resv", "careN", "careCtrFull", "activeAct", "insCasesFull",
+                               "fullRev", "fullP", "fullChk", "fullSub", "fullIns", "fullCare")]
 if "cost2" in O3.P0:                               # 판관비·CAPEX 근거 모델(v2.0)
     for a in adj:
         a["capexMedi"] = a["medi"]; a["capexBuild1"] = a["build1"]
     pairs += [(k, k) for k in ("headTotal", "pay", "mk1", "media", "creative", "cardAd", "kit", "sticker", "qrfee", "mktSum",
                                "itMaint", "itData", "itSec", "cloudBase", "cloudVar", "llm", "bc", "itOpex", "capex", "capexMedi", "capexBuild1", "depr")]
 worst = max((abs(Y[f"{'DEFGH'[i]}{YR[xk]}"].value - adj[i][ok]), xk, i + 1) for xk, ok in pairs if xk in YR for i in range(5))
+if "startF" in O3.P0:                              # 매출 반영률(엑셀 SUM vs 정답지) — 부동소수 차이만 허용
+    import adjust as _A
+    effd = max(abs(Y[f"{'DEFGH'[i]}{YR['eff_'+k]}"].value - adj[i]["eff"][k]) for k, _, _ in _A.STREAMS for i in range(5))
+    print("매출 반영률 7줄×5년 최대 차이: %.2e" % effd)
+    worst = max(worst, (1 if effd > 1e-9 else 0, "eff", 0))
 cumb = 0.0; bx = 0.0
 for i in range(5):
     cumb += adj[i]["hmBenefit"]
@@ -65,19 +77,25 @@ print("요청액:", [C[f"{c}{CR['s_req']}"].value / 1e8 for c in "CDE"], "· 필
       "· 저점:", [(round(C[f"{c}{CR['s_low']}"].value / 1e8, 1), C[f"{c}{CR['s_lowAt']}"].value) for c in "CDE"],
       "· 런웨이:", [C[f"{c}{CR['s_runway']}"].value for c in "CDE"])
 print("월별 누적 현금 84개월×3 최대 차이: %.4f원" % gmax, "· 정답지 일치:", "✓" if ok else "✗")
-for i in range(6):
+for i in range(7 if "startF" in O3.P0 else 6):
     print("점검", C[f"B{CR['warnStart']+i}"].value)
+if "taxes" in res[0]:                              # 법인세 이월결손금 — 연간손익(계획 = A) vs 정답지 A 연도별
+    tx = max(abs(Y[f"{'DEFGH'[i]}{YR['tax']}"].value - res[0]["taxes"][i]) for i in range(5))
+    txs = max(abs(C[f"{c}{CR['s_tax'+str(k+1)]}"].value - r["taxes"][k]) for c, r in zip("CDE", res) for k in range(4))
+    print("법인세(이월결손금) 연간손익 5년 최대 차이: %.4f원 · 현금 요약 A·B·C 4년 최대 차이: %.4f원" % (tx, txs))
+    ok &= tx <= 1 and txs <= 1
 # 월별 자금필요표(기준 선택 = A) — 정답지 A 시리즈와 36개월 대조
 if "FR" in mp and "월별자금필요표" in wv.sheetnames:
     FT = wv["월별자금필요표"]; FR = mp["FR"]; rA = res[0]; preA = O3.LA["pre"]
-    MMC = [CL(4 + k) for k in range(36)]
+    NM = 39 if "startF" in O3.P0 else 36
+    MMC = [CL(4 + k) for k in range(NM)]
     tmax = 0.0
-    for k in range(36):
+    for k in range(NM):
         lab, idx, inflow, outflow, cumv = rA["series"][24 - preA + k]
         tmax = max(tmax, abs(FT[f"{MMC[k]}{FR['iTot']}"].value - inflow), abs(FT[f"{MMC[k]}{FR['oTot']}"].value - outflow),
                    abs(FT[f"{MMC[k]}{FR['cum']}"].value - cumv), abs(FT[f"{MMC[k]}{FR['chk']}"].value or 0))
     cal0 = FT[f"D{FR['head']}"].value
-    ok_t = FT["C4"].value == 1 and tmax <= 1 and cal0 == "2026-11"
+    ok_t = FT["C4"].value == 1 and tmax <= 1 and cal0 == ("2026-10" if NM == 39 else "2026-11")
     ok &= ok_t
-    print("월별 자금필요표(A) 36개월 유입·유출·누적 최대 차이: %.4f원 · 첫 달 %s · 실매출 첫 달 %s · %s" % (tmax, cal0, FT[f"C{FR['minBal']+1}"].value, "✓" if ok_t else "✗"))
+    print("월별 자금필요표(A) %d개월 유입·유출·누적 최대 차이: %.4f원 · 첫 달 %s · 오픈 첫 달 %s · %s" % (NM, tmax, cal0, FT[f"C{FR['minBal']+1}"].value, "✓" if ok_t else "✗"))
 sys.exit(0 if (e == 0 and z == 0 and worst[0] == 0 and wm < 1e-3 and ok) else 1)

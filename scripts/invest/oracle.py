@@ -17,51 +17,76 @@ def jround(x):
 
 def annual(P, n=5):
     rows = []
+    TM = "startF" in P                             # v3.0 매출 개시 일정(adjust.py) — 2027년 월별 개시 계수 · 연 환산 대비 반영률
+    if TM:
+        import adjust as _adj
+    xr = (lambda v: _adj.xround(v)) if TM else jround
     for y in range(n):
         me = P["membersEnd"][y]; mp = 0 if y == 0 else P["membersEnd"][y - 1]
         new = max(0, me - mp)
-        active = P["activeAbs"][y]; mkt = P["mktConsentEnd"][y]
+        activeFull = P["activeAbs"][y]; mkt = P["mktConsentEnd"][y]
+        eff = {k: (_adj.stream_weights(P, y, k)[2] if TM else 1) for k in ("P", "Chk", "Resv", "Svc", "Care", "Sub", "Ins")}
+        active = xr(activeFull * eff["Chk"]) if TM else activeFull
         insts = P["checkupCenters"][y] + P["hospitals"][y] + P["pharmacies"][y]
         if "subFeeBaseT" in P:                     # 기관 유형별 구독료(adjust.py)
             import adjust as _adj
             cnt = {"centers": P["checkupCenters"][y], "hospitals": P["hospitals"][y], "pharmacies": P["pharmacies"][y]}
             subFee = {t: _adj.fee(P, t, y) for t in _adj.TYPES}
             paid = {t: jround(cnt[t] * P["subPaidRate"]) for t in _adj.TYPES}
-            revSub = sum(paid[t] * subFee[t] * 12 for t in _adj.TYPES)
+            subFull = {t: paid[t] * subFee[t] * 12 for t in _adj.TYPES}
+            effT = {t: (_adj.sub_type_eff(P, t, y) if TM else 1) for t in _adj.TYPES}     # 유형별 반영률(2028~ 기관 경로)
+            subT = {t: (xr(subFull[t] * effT[t]) if TM else subFull[t]) for t in _adj.TYPES}
+            revSub = sum(subT.values()); revSubFull = sum(subFull.values())
         else:
             subFee = 0 if y == 0 else min(P["subFeeCap"], P["subFeeBase"] + P["subFeeStep"] * (y - 1))
-            paid = jround(insts * P["subPaidRate"]); revSub = paid * subFee * 12
+            paid = jround(insts * P["subPaidRate"]); revSub = paid * subFee * 12; revSubFull = revSub; subT = None
         buyers = jround(me * P["productBuyerRate"]); ramp = P["productRamp"][y]
-        cat = {}; revP = 0; cogsP = 0
+        cat = {}; catFull = {}; revP = 0; cogsP = 0; revPFull = 0
         for c in P["productCats"]:
-            rv = jround(buyers * c["arpu"] * P["productCapture"] * ramp); cst = jround(rv * c["cost"])
-            cat[c["key"]] = (rv, cst); revP += rv; cogsP += cst
+            rvF = jround(buyers * c["arpu"] * P["productCapture"] * ramp)
+            rv = xr(rvF * eff["P"]) if TM else rvF
+            cst = jround(rv * c["cost"])
+            cat[c["key"]] = (rv, cst); catFull[c["key"]] = rvF; revP += rv; cogsP += cst; revPFull += rvF
         if "chkOwnFee" in P:                       # 검진 연계 자사/타사 채널 분리(adjust.py)
             import adjust as _adj
             chkOwn, chkPtn, revChk, chkCogs = _adj.checkup(P, y, active)
+            revChkFull = _adj.checkup(P, y, activeFull)[2]
         else:
             chkOwn, chkPtn = 0, active
-            revChk = active * P["checkupFee"]; chkCogs = active * P["checkupCost3"]
-        svcU = jround(me * P["serviceRate"]); revSvc = svcU * P["serviceCommission"]
-        resv = jround(active * P["resvPerActive"][y]); revResv = resv * P["resvFee"]
-        insC = jround(mkt * P["insConvRate"])
+            revChk = active * P["checkupFee"]; chkCogs = active * P["checkupCost3"]; revChkFull = revChk
+        svcU = jround(me * P["serviceRate"]); revSvcFull = svcU * P["serviceCommission"]
+        revSvc = xr(revSvcFull * eff["Svc"]) if TM else revSvcFull
+        resvFull = jround(activeFull * P["resvPerActive"][y])
+        resv = xr(resvFull * eff["Resv"]) if TM else resvFull
+        revResv = resv * P["resvFee"]; revResvFull = resvFull * P["resvFee"]
+        lpc = P.get("carePerCenter", 0)             # 재가·돌봄 — 파트너 센터(연말 · 연 환산) × 월 정액 이용료
+        careCtrFull = xr(me * P.get("careRate", 0) / 12 / lpc) if lpc > 0 else 0
+        careNFull = careCtrFull * 12                  # 센터·월(연 환산)
+        careN = xr(careNFull * eff["Care"]) if TM else careNFull
+        revCare = careN * P.get("careFee", 0); revCareFull = careNFull * P.get("careFee", 0)
+        careCost = xr(revCare * P.get("careCostRate", 0))
+        insCFull = jround(mkt * P["insConvRate"])
+        insC = xr(insCFull * eff["Ins"]) if TM else insCFull
         if "hmMarket" in P:                        # 헬스메이트센터 사용료 — 우대 한도·단가 + 초과분 시가(adjust.py)
             import adjust as _adj
             hmCap, hmPrice, hmMarket = _adj.hm_terms(P, y)
+            revInsFull = _adj.hm_fee(P, y, insCFull)[2]
             hmDisc, hmFull, revIns, hmBenefit = _adj.hm_fee(P, y, insC)
             imC = jround((mkt - (0 if y == 0 else P["mktConsentEnd"][y - 1])) * P["insConvRate"])
             imRev = _adj.hm_fee(P, y, imC)[2]                # IM p7 건수(연 신규 동의×집행률)에 같은 단가 구조
         else:
             hmCap, hmPrice, hmMarket = insC, P["insFeePerCase"], P["insFeePerCase"]
             hmDisc, hmFull, revIns, hmBenefit = insC, 0, insC * P["insFeePerCase"], 0
+            revInsFull = revIns
             imC = jround((mkt - (0 if y == 0 else P["mktConsentEnd"][y - 1])) * P["insConvRate"]); imRev = imC * P["insFeePerCase"]
         revAd = active * P["adPerActive"][y]
         agU = jround(me * P["aiAgentRate"][y]); revAg = agU * P["aiAgentFeeYear"]
         revApi = P["apiClients"][y] * P["apiFeeYear"]
-        rev = revP + revChk + revSvc + revResv + revSub + revIns + revAd + revAg + revApi
+        rev = revP + revChk + revSvc + revResv + revSub + revIns + revAd + revAg + revApi + revCare
+        revFull = revPFull + revChkFull + revSvcFull + revResvFull + revSubFull + revInsFull + revAd + revAg + revApi + revCareFull
         svcCost = jround(revSvc * P["serviceCostRate"])
         subCost = jround(revSub * P["subCostRate"]); payFee = jround(revP * P["paymentRate"])
-        cogs = cogsP + chkCogs + svcCost + subCost + payFee
+        cogs = cogsP + chkCogs + svcCost + subCost + payFee + careCost
         gross = rev - cogs
         cac = new * P["cac"]; launch = P["launchMkt"][y]
         brand = jround(rev * P["brandMktRate"]) + launch; mktg = cac + brand
@@ -73,7 +98,11 @@ def annual(P, n=5):
         sga = mktg + reward + don + pay + rnd + cloud + gpu + sales + admin
         ebit_model = gross - sga
         depr = jround(P["deprYear"] * (P["deprY1Rate"] if y == 0 else 1))
-        rows.append(dict(y=y, me=me, mp=mp, new=new, active=active, mkt=mkt, insts=insts, subFee=subFee, paid=paid,
+        rows.append(dict(y=y, me=me, mp=mp, new=new, active=active, activeFull=activeFull, eff=eff, subT=subT, catFull=catFull,
+                         revPFull=revPFull, revChkFull=revChkFull, revSvcFull=revSvcFull, revResvFull=revResvFull, revSubFull=revSubFull,
+                         revInsFull=revInsFull, revFull=revFull, insCFull=insCFull, resv=resv, resvFull=resvFull,
+                         careN=careN, careNFull=careNFull, careCtrFull=careCtrFull, revCare=revCare, revCareFull=revCareFull, careCost=careCost,
+                         mkt=mkt, insts=insts, subFee=subFee, paid=paid,
                          buyers=buyers, cat=cat, revP=revP, cogsP=cogsP, revChk=revChk, chkOwn=chkOwn, chkPtn=chkPtn, svcU=svcU, revSvc=revSvc, revResv=revResv,
                          revSub=revSub, insC=insC, hmCap=hmCap, hmPrice=hmPrice, hmMarket=hmMarket, hmDisc=hmDisc, hmFull=hmFull, hmBenefit=hmBenefit, imC=imC, imRev=imRev, revIns=revIns, revAd=revAd, revAg=revAg, revApi=revApi, rev=rev,
                          chkCogs=chkCogs, svcCost=svcCost, subCost=subCost, payFee=payFee, cogs=cogs, gross=gross,

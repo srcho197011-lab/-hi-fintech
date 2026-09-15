@@ -84,7 +84,21 @@ ADOPT = {}         # 비용근거 키 → (양식 반영값, 반영 위치 · �
 
 
 def driver_base(P, a, k):
-    """2차부터 인원 증가의 기준이 되는 1차 지표 — 1차 제품 매출은 가동률(productRamp[0])만큼 덜 잡혀 있어 연 환산한다"""
+    """2차부터 인원 증가의 기준이 되는 1차 지표 — 1차는 매출 개시 계수 적용 전 연 환산 값(v3.0) · 이전 방식은 제품 가동률로 연 환산"""
+    if "catFull" in a and "startF" in P:
+        if k == "catNutri":
+            return a["catFull"]["supp"] + a["catFull"]["diet"]
+        if k == "catDevice":
+            return a["catFull"]["device"]
+        if k == "catSports":
+            return a["catFull"]["sports"] + a["revResvFull"]
+        if k == "rev":
+            return a["revFull"]
+        if k == "active":
+            return a["activeFull"]
+        if k == "insC":
+            return a["insCFull"]
+        return driver(a, k)
     r1 = P["productRamp"][0] or 1.0
     if k == "catNutri":
         return (a["cat"]["supp"][0] + a["cat"]["diet"][0]) / r1

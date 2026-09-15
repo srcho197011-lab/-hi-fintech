@@ -1,0 +1,2701 @@
+{
+ "retrieved": "2026-09-15",
+ "note": "매출 개시·증가 속도 조사 5주제(웹 조사 + 출처 재확인 검증) + 대표 지시·양식 판단",
+ "topics": [
+  {
+   "topic": "checkup_season",
+   "summary": "I could not find a published national monthly series for 일반건강검진 수검. 건강검진통계연보, the NHIS press releases and the data.go.kr files are annual only, and the KOSIS table list would not load. So the recommended vector is my own estimate, not a published figure. It is fitted to NHIS cumulative figures: 2019 Jan-Mar was 10.1% of annual 수검, Jan-Apr 17.6% and Jan-Oct 67.5%; 2026 Jan-Jun was about 37% (provisional). Its month-by-month shape comes from the only large national monthly series I found, KNCSP gastric endoscopy 2013-16 (Dec 19.7-20.1%, Q4 41.4-42.2%). I checked it against NHIS cohort seasons (Sep-Nov 29.4%, Dec-Feb 25.3%) and monthly counts from NHIS 일산병원. Recommended Jan..Dec: .020 .035 .055 .075 .085 .080 .080 .080 .065 .100 .125 .200 (Q4 42.5%, Dec 20%). The year-end peak is structural (Dec 31 deadline, 사업장 과태료) and held steady 2013-14 vs 2015-16, so use the vector for all years 2027-2031. For 2027, multiply Apr-Dec by a launch ramp and rescale so the months add to 250k; with my example ramp, Dec is about 27% of 2027 volume. Private 종합검진 (일산병원 종합검진센터 2018-19) is much flatter: Q4 about 30%, Dec about 8%. Use that shape for paid 종합검진 bookings. Partner centers are full in December, so a booking platform's December share will likely be lower than the national one. For new-service ramp I found no monthly booking data for 착한의사, 굿닥, 똑닥 or 인피니티케어, so the ramp multipliers are assumptions.",
+   "items": [
+    {
+     "key": "checkup_month_share",
+     "label": "일반건강검진 수검 monthly share Jan..Dec — recommended national allocation vector",
+     "unit": "share of annual 수검 (sums to 1.0)",
+     "recommended": [
+      0.02,
+      0.035,
+      0.055,
+      0.075,
+      0.085,
+      0.08,
+      0.08,
+      0.08,
+      0.065,
+      0.1,
+      0.125,
+      0.2
+     ],
+     "low": [
+      0.0147,
+      0.0621,
+      0.0717,
+      0.085,
+      0.0858,
+      0.0816,
+      0.0938,
+      0.0915,
+      0.0801,
+      0.1,
+      0.111,
+      0.1227
+     ],
+     "high": [
+      0.0308,
+      0.0405,
+      0.0743,
+      0.0787,
+      0.0747,
+      0.0698,
+      0.0777,
+      0.0782,
+      0.0614,
+      0.097,
+      0.1159,
+      0.2011
+     ],
+     "derivation": "DERIVED (no published national monthly 일반검진 series). Step 1, fixed anchors from NHIS cumulative 수검률 divided by the final annual rate: 2019 Jan-Mar 7.49/74.1=10.1%; Jan-Apr (8.19+4.87)/74.1=17.6%; Jan-Oct 50/74.1=67.5%, so Nov-Dec=32.5%. 2026 H1 28.1/75.4=37.3% (provisional). Step 2, monthly shape within the anchor blocks from the KNCSP gastric-endoscopy monthly counts (2013-14 and 2015-16, national), with January lowered toward the 일산병원 pattern (검진표 is mailed in January). Step 3, cross-checks for the recommended vector: Q1 11.0% (anchor 10.1); Jan-Oct 67.5% (anchor 67.5); H1 35.0% (between the 2019-implied value and the 2026 snapshot 37.3; KNCSP 36.9); Q4 42.5% (KNCSP 41.4-42.2); Dec 20.0% (KNCSP 19.7-20.1); Sep-Nov 29.0% (NHIS cohort 29.4); Dec-Feb 25.5% (cohort 25.3); Mar-May 21.5% (cohort 22.6); Jun-Aug 24.0% (cohort 22.7). Sep is set low because of the 추석 dip seen in both KNCSP and 일산병원 data. Stability check with prior periods: KNCSP 2013-14 vs 2015-16 gave Q4 41.4% vs 42.2%, Jan-Oct 68.3% vs 67.8%, Dec 20.1% vs 19.7%. 일산병원 일반검진 2018 vs 2019 gave Q4 38.4% vs 33.4% (a single site with capacity limits, so flatter). low = flattest observed shape (일산병원 일반검진 2019, computed from the monthly counts). high = the most December-concentrated national series (KNCSP 2013-14, computed). The KNCSP 2015-16 shares were [0.0422,0.0444,0.0838,0.0752,0.0686,0.0553,0.0658,0.0765,0.0664,0.1000,0.1250,0.1969]. Use for all model years 2027-2031, measured by exam month, not booking month.",
+     "sources": [
+      {
+       "title": "Association of Intensive Endoscopic Screening Burden With Gastric Cancer Detection (Noh C-K et al.)",
+       "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7791358/",
+       "publisher": "JAMA Network Open",
+       "date": "2021-01-07",
+       "quote": "Table 1 monthly KNCSP endoscopy counts. 2013-14: Jan 305,062 ... Dec 1,989,291 (total 9,892,812). 2015-16: Jan 491,206 ... Dec 2,292,561 (total 11,642,410). Q4 41.39% / 42.19%."
+      },
+      {
+       "title": "건강검진, 확연한 감소세…코로나19 부수적 피해일까?",
+       "url": "https://www.monews.co.kr/news/articleView.html?idxno=211079",
+       "publisher": "메디칼업저버 (citing 건보공단 통계)",
+       "date": "2020-06-01",
+       "quote": "2019 March cumulative 일반검진 수검률 7.49%. 2020 April cumulative 8.19%, a gap of 4.87%p vs 2019 April."
+      },
+      {
+       "title": "연말 '건강검진' 쏠림…주의해야 할 것",
+       "url": "https://www.kukinews.com/newsView/kuk202012180321",
+       "publisher": "쿠키뉴스",
+       "date": "2020-12-18",
+       "quote": "2020 일반건강검진 수검률 through October 43.7%; same period of 2019 was 50%."
+      },
+      {
+       "title": "국민건강보험공단, 2022 건강검진 통계연보 발간 (보도자료)",
+       "url": "https://kiri.or.kr/PDF/weeklytrend/20240115/trend20240115_1.pdf",
+       "publisher": "국민건강보험공단 (hosted by 건강보험연구원 weekly trend)",
+       "date": "2023-12-29",
+       "quote": "Table '2018~2022 건강검진 종별 수검률': 2019 일반건강검진 대상 21,717천, 수검 16,098천, 수검률 74.1%."
+      },
+      {
+       "title": "건강검진 수검율 연도별 추이 (경영공시)",
+       "url": "https://www.nhis.or.kr/announce/wbhaec11407m01.do",
+       "publisher": "국민건강보험공단",
+       "date": "2026-06-30",
+       "quote": "일반검진 수검률: 2025 75.4% (provisional); 2026 2/4분기 cumulative 28.1%."
+      },
+      {
+       "title": "Sex Differences in Seasonal Variation in Metabolic Syndrome and Its Components: A 10-Year National Health Screening Study",
+       "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12429781/",
+       "publisher": "Journal of Clinical Medicine (NHIS data, NHIS-2024-02-387)",
+       "date": "2025-08-23",
+       "quote": "5,507,251 screening records, 2013-2022, age 40+: spring 22.6%, summer 22.7%, fall 29.4%, winter 25.3%."
+      },
+      {
+       "title": "국민건강보험 일산병원 연보 2019 — 건강검진 수검자수 (월별 수검자 현황)",
+       "url": "https://www.nhimc.or.kr/yearbook/2019/html/Statistics/sub0106.do",
+       "publisher": "국민건강보험 일산병원",
+       "date": "2019 (yearbook)",
+       "quote": "국가검진센터 일반검진 2019 monthly: 988, 4,182, 4,828, 5,724, 5,779, 5,499, 6,320, 6,165, 5,392, 6,734, 7,478, 8,261 (total 67,350)."
+      }
+     ]
+    },
+    {
+     "key": "checkup_q4_share",
+     "label": "Share of annual 건강검진 수검 in Oct-Dec",
+     "unit": "share of annual 수검",
+     "recommended": 0.425,
+     "low": 0.4,
+     "high": 0.44,
+     "derivation": "Sourced national-scale figures: KNCSP gastric endoscopy Q4 41.39% (2013-14) and 42.19% (2015-16). Press says about 40% of checkups fall in Q4, with December highest (no data source given). Derived for 2019 일반검진: Nov-Dec = 1 - 50/74.1 = 32.5%. Adding an October share of about 10% (KNCSP Oct 9.7-10.0%) gives about 42.5%. NHIS cohort Sep-Nov 29.4% plus most of winter's 25.3% is consistent. The 일산병원 single-site 일반검진 Q4 of 33.4-38.4% is capacity-limited and excluded from the range. Recommended 0.425 matches the checkup_month_share vector.",
+     "sources": [
+      {
+       "title": "Association of Intensive Endoscopic Screening Burden With Gastric Cancer Detection",
+       "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7791358/",
+       "publisher": "JAMA Network Open",
+       "date": "2021-01-07",
+       "quote": "Q4 participants 4,094,951 (41.39%) in 2013-14 and 4,911,629 (42.19%) in 2015-16."
+      },
+      {
+       "title": "건강검진, '여름 비수기'가 최고의 기회",
+       "url": "https://www.sisajournal.com/news/articleView.html?idxno=336888",
+       "publisher": "시사저널",
+       "date": "2025-06-19",
+       "quote": "About 40% of all examinees fall in Q4, most in December (no data source cited)."
+      },
+      {
+       "title": "연말 '건강검진' 쏠림…주의해야 할 것",
+       "url": "https://www.kukinews.com/newsView/kuk202012180321",
+       "publisher": "쿠키뉴스",
+       "date": "2020-12-18",
+       "quote": "2019 cumulative 일반검진 수검률 through October was 50%."
+      },
+      {
+       "title": "국민건강보험공단, 2022 건강검진 통계연보 발간 (보도자료)",
+       "url": "https://kiri.or.kr/PDF/weeklytrend/20240115/trend20240115_1.pdf",
+       "publisher": "국민건강보험공단",
+       "date": "2023-12-29",
+       "quote": "2019 일반건강검진 수검률 74.1%."
+      }
+     ]
+    },
+    {
+     "key": "checkup_cum_anchors_national",
+     "label": "National 일반검진 cumulative share of annual 수검: [Jan-Mar 2019, Jan-Apr 2019, Jan-Jun 2026 (prov.), Jan-Oct 2019]",
+     "unit": "share of annual 수검",
+     "recommended": [
+      0.101,
+      0.176,
+      0.373,
+      0.675
+     ],
+     "low": null,
+     "high": null,
+     "derivation": "DERIVED ratios of the sourced cumulative 수검률 to the final annual 수검률. 2019: 7.49/74.1=0.101; (8.19+4.87)/74.1=0.176; 50/74.1=0.675. 2026 H1: 28.1/75.4 (2025 prov. annual)=0.373, or 0.372 using 2024's 75.6%. It may be understated because of claim lag at the 6/30 snapshot. COVID year 2020: 43.7/67.8=0.645 through October, distorted because the 2020 검진 deadline was extended into 2021. Weak cross-check: 건강검진비 지급 2026 H1 10,749억 / 2025 full year 23,827억 = 0.451. That figure is on a payment basis and includes 암검진 and 영유아, so it is not used.",
+     "sources": [
+      {
+       "title": "건강검진, 확연한 감소세…코로나19 부수적 피해일까?",
+       "url": "https://www.monews.co.kr/news/articleView.html?idxno=211079",
+       "publisher": "메디칼업저버",
+       "date": "2020-06-01",
+       "quote": "2019 March cumulative 일반검진 7.49%; April gap 4.87%p; 2020 April 8.19%."
+      },
+      {
+       "title": "연말 '건강검진' 쏠림…주의해야 할 것",
+       "url": "https://www.kukinews.com/newsView/kuk202012180321",
+       "publisher": "쿠키뉴스",
+       "date": "2020-12-18",
+       "quote": "2020 through October 43.7% (8,982,255 of 20,562,174); 2019 same period 50%."
+      },
+      {
+       "title": "건강검진 수검율 연도별 추이 (경영공시)",
+       "url": "https://www.nhis.or.kr/announce/wbhaec11407m01.do",
+       "publisher": "국민건강보험공단",
+       "date": "2026-06-30",
+       "quote": "2026 2/4분기 일반검진 28.1%; 2025 75.4%; 2024 75.6% (2025-26 provisional)."
+      },
+      {
+       "title": "건강검진비 지급실적 (경영공시)",
+       "url": "https://www.nhis.or.kr/announce/wbhaec11408m01.do",
+       "publisher": "국민건강보험공단",
+       "date": "2026-06-30",
+       "quote": "건강검진비 (억원): 2025 23,827; 2026 cumulative Jan-Jun 10,749."
+      },
+      {
+       "title": "국민건강보험공단, 2024 건강검진 통계연보 발간 (보도자료)",
+       "url": "https://kiri.or.kr/PDF/weeklytrend/20260119/trend20260119_1.pdf",
+       "publisher": "국민건강보험공단",
+       "date": "2025-12-30",
+       "quote": "일반건강검진 수검률: 2020 67.8%, 2021 74.2%, 2022 75.4%, 2023 75.9%, 2024 75.6%."
+      }
+     ]
+    },
+    {
+     "key": "checkup_season_nhis_cohort",
+     "label": "Seasonal distribution of NHIS health-screening records, age 40+, 2013-2022 [spring Mar-May, summer Jun-Aug, fall Sep-Nov, winter Dec-Feb]",
+     "unit": "share of records",
+     "recommended": [
+      0.226,
+      0.227,
+      0.294,
+      0.253
+     ],
+     "low": null,
+     "high": null,
+     "derivation": "Sourced directly (Table 1 counts: 1,245,996 / 1,250,338 / 1,616,184 / 1,394,733 of 5,507,251). Includes COVID years with deadline extensions, which inflate winter and spring slightly. Used only as a cross-check for checkup_month_share.",
+     "sources": [
+      {
+       "title": "Sex Differences in Seasonal Variation in Metabolic Syndrome and Its Components: A 10-Year National Health Screening Study",
+       "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12429781/",
+       "publisher": "Journal of Clinical Medicine",
+       "date": "2025-08-23",
+       "quote": "Spring 22.6%, summer 22.7%, fall 29.4%, winter 25.3% of 5,507,251 records."
+      }
+     ]
+    },
+    {
+     "key": "checkup_month_share_ilsan_general",
+     "label": "Single-institution 일반검진 monthly share Jan..Dec, NHIS 일산병원 국가검진센터 (2019; low = 2018)",
+     "unit": "share of annual 수검 at the institution",
+     "recommended": [
+      0.0147,
+      0.0621,
+      0.0717,
+      0.085,
+      0.0858,
+      0.0816,
+      0.0938,
+      0.0915,
+      0.0801,
+      0.1,
+      0.111,
+      0.1227
+     ],
+     "low": [
+      0.0088,
+      0.0582,
+      0.0672,
+      0.0747,
+      0.0725,
+      0.0732,
+      0.0837,
+      0.0941,
+      0.0842,
+      0.1155,
+      0.1381,
+      0.1299
+     ],
+     "high": null,
+     "derivation": "Computed from published monthly counts (2019 total 67,350; 2018 total 58,523). 2019: Q1 14.8%, H1 40.1%, Q4 33.4%, Dec 12.3%. 2018: Q1 13.4%, H1 35.4%, Q4 38.4%, Dec 13.0%. This is the only direct monthly 일반검진 series found. It is a single capacity-limited site, flatter in Q4 than the national figures, so it is not the recommended national vector. Its main use is showing January is very low (0.9-1.5%) because 검진표 is issued then. The 2020-2024 yearbook pages show annual totals only.",
+     "sources": [
+      {
+       "title": "국민건강보험 일산병원 연보 2019 — 월별 수검자 현황",
+       "url": "https://www.nhimc.or.kr/yearbook/2019/html/Statistics/sub0106.do",
+       "publisher": "국민건강보험 일산병원",
+       "date": "2019 (yearbook)",
+       "quote": "일반검진 monthly 2019: 988 / 4,182 / 4,828 / 5,724 / 5,779 / 5,499 / 6,320 / 6,165 / 5,392 / 6,734 / 7,478 / 8,261."
+      },
+      {
+       "title": "국민건강보험 일산병원 연보 2018 — 건강증진센터",
+       "url": "https://www.nhimc.or.kr/yearbook/2018/sub3_2_2.html",
+       "publisher": "국민건강보험 일산병원",
+       "date": "2018 (yearbook)",
+       "quote": "일반검진 monthly 2018: 514 / 3,404 / 3,935 / 4,369 / 4,241 / 4,281 / 4,901 / 5,506 / 4,928 / 6,759 / 8,080 / 7,605."
+      }
+     ]
+    },
+    {
+     "key": "private_checkup_season",
+     "label": "Private-type 종합검진 monthly share Jan..Dec (NHIS 일산병원 종합검진센터, avg 2018-2019; low=2018, high=2019)",
+     "unit": "share of annual 종합검진 수검자",
+     "recommended": [
+      0.0411,
+      0.0384,
+      0.0626,
+      0.0966,
+      0.0865,
+      0.0911,
+      0.1072,
+      0.1008,
+      0.0766,
+      0.1071,
+      0.1112,
+      0.0808
+     ],
+     "low": [
+      0.0397,
+      0.0381,
+      0.0662,
+      0.0964,
+      0.082,
+      0.0936,
+      0.1049,
+      0.1021,
+      0.0739,
+      0.1086,
+      0.1161,
+      0.0785
+     ],
+     "high": [
+      0.0425,
+      0.0387,
+      0.0589,
+      0.0969,
+      0.0909,
+      0.0886,
+      0.1095,
+      0.0995,
+      0.0794,
+      0.1057,
+      0.1064,
+      0.0831
+     ],
+     "derivation": "Computed as the average of monthly shares from published counts (2018 total 8,259; 2019 total 8,556). The 2018 and 2019 shapes are nearly identical: Q4 30.3% / 29.5%, Dec 7.8% / 8.3%, H1 41.6% / 41.7%. Peaks are Apr, Jul-Aug and Oct-Nov; troughs are Jan-Feb and Sep. Paid 종합검진 is much less concentrated at year-end than national 일반검진. December likely dips because national checkups fill capacity; that reason is my inference. Qualitative sources agree December is the busiest booking month and summer is the off-season, the former tied to expiring corporate checkup benefits; those are press or company blogs without data. Use this vector for paid 종합검진 bookings, or blend it with checkup_month_share by the expected product mix. Evidence is from one public hospital and 2018-19 only.",
+     "sources": [
+      {
+       "title": "국민건강보험 일산병원 연보 2019 — 종합검진센터 수검자 현황",
+       "url": "https://www.nhimc.or.kr/yearbook/2019/html/Statistics/sub0106.do",
+       "publisher": "국민건강보험 일산병원",
+       "date": "2019 (yearbook)",
+       "quote": "종합검진 monthly 2019: 364 / 331 / 504 / 829 / 778 / 758 / 937 / 851 / 679 / 904 / 910 / 711 (total 8,556)."
+      },
+      {
+       "title": "국민건강보험 일산병원 연보 2018 — 건강증진센터",
+       "url": "https://www.nhimc.or.kr/yearbook/2018/sub3_2_2.html",
+       "publisher": "국민건강보험 일산병원",
+       "date": "2018 (yearbook)",
+       "quote": "종합검진 monthly 2018: 328 / 315 / 547 / 796 / 677 / 773 / 866 / 843 / 610 / 897 / 959 / 648 (total 8,259)."
+      },
+      {
+       "title": "건강검진, '여름 비수기'가 최고의 기회",
+       "url": "https://www.sisajournal.com/news/articleView.html?idxno=336888",
+       "publisher": "시사저널",
+       "date": "2025-06-19",
+       "quote": "Summer (rainy season, vacations) described as the checkup off-season."
+      },
+      {
+       "title": "End-of-Year Health Checkups in Korea: Fully Booked? Not with Himedi",
+       "url": "https://himedi.com/blogs/blog/end-of-year-health-checkups-in-korea-fully-booked-not-with-himedi",
+       "publisher": "Himedi Inc. (company blog)",
+       "date": "2025-10-24",
+       "quote": "December busiest booking month; employees use expiring company health benefits."
+      },
+      {
+       "title": "연말 건강검진 대란 예고…휴가철 느긋하게 받으세요",
+       "url": "https://www.khan.co.kr/article/202007242133005",
+       "publisher": "경향신문",
+       "date": "2020-07-24",
+       "quote": "Examinees usually concentrate in Oct-Dec; 2020 H1 일반검진 수검자 -22.6% YoY (한국건강관리협회 cited)."
+      }
+     ]
+    },
+    {
+     "key": "new_service_ramp",
+     "label": "Launch ramp multiplier for a new 검진 예약/중개 service, 2027 (Jan..Dec; April start) — ASSUMPTION, evidence gap",
+     "unit": "multiplier on seasonal share (1.0 = full run-rate)",
+     "recommended": [
+      0,
+      0,
+      0,
+      0.25,
+      0.45,
+      0.65,
+      0.8,
+      0.9,
+      1,
+      1,
+      1,
+      1
+     ],
+     "low": [
+      0,
+      0,
+      0,
+      0.1,
+      0.25,
+      0.4,
+      0.55,
+      0.7,
+      0.8,
+      0.9,
+      1,
+      1
+     ],
+     "high": [
+      0,
+      0,
+      0,
+      0.5,
+      0.7,
+      0.85,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+     ],
+     "derivation": "GAP: I found no public monthly booking or 수검 series for a new 검진 예약 platform (착한의사, 굿닥's 착한의사-powered 검진예약 launched 2024-08, 똑닥, 인피니티케어). The only figures found are low-frequency milestones: 착한의사 had 70만 users (2021-11), 160만 (2024-08) and 185만 (2025-07). It gained about 90 B2B clients within about 1 year of B2B entry, and B2B grew at a 165% CAGR over 3 years. 똑닥 launched 2017-04 and reached 730만 members and 2,600만 completed visits by 2022-05. These imply multi-year growth, not monthly ramps. The multipliers are my assumption: roughly 5 months to full run-rate, with the April start in the CEO directive. Replace them when partner-center slot contracts are known.",
+     "sources": [
+      {
+       "title": "착한의사, 헬스케어 플랫폼 굿닥 고객전용 건강검진 예약서비스 출시",
+       "url": "https://www.mt.co.kr/industry/2024/08/14/2024081317034010259",
+       "publisher": "머니투데이",
+       "date": "2024-08-14",
+       "quote": "착한의사: 160만 individual users; about 90 B2B clients secured in about a year."
+      },
+      {
+       "title": "기업 건강검진 서비스 '착한의사 비즈니스', AI 기반 상품서비스 다각화로 가파른 성장세 주목",
+       "url": "https://www.seoul.co.kr/news/economy/2025/07/31/20250731500119",
+       "publisher": "서울신문",
+       "date": "2025-07-31",
+       "quote": "B2B CAGR 165% over 3 years since entry; 185만 users."
+      },
+      {
+       "title": "'착한의사' 운영사 비바이노베이션, 60억원 투자 유치",
+       "url": "https://www.venturesquare.net/843147",
+       "publisher": "벤처스퀘어",
+       "date": "2021-11-22",
+       "quote": "70만 users; 130 partner hospitals; 1,000+ 검진상품."
+      },
+      {
+       "title": "똑닥, 출시 5주년 인포그래픽 '똑닥이 걸어온 길' 공개",
+       "url": "https://www.asiatime.co.kr/article/20220506500026",
+       "publisher": "아시아타임즈",
+       "date": "2022-05-06",
+       "quote": "Launched 2017-04; 730만 members; 2,600만 completed visits in 5 years; 13,000+ hospitals."
+      }
+     ]
+    },
+    {
+     "key": "checkup_2027_monthly_allocation",
+     "label": "Illustrative 2027 검진 예약 allocation of 250k by month (Jan..Dec) = seasonal vector × launch ramp, renormalized",
+     "unit": "bookings (count, by exam month)",
+     "recommended": [
+      0,
+      0,
+      0,
+      6378,
+      13010,
+      17687,
+      21769,
+      24490,
+      22109,
+      34014,
+      42517,
+      68027
+     ],
+     "low": null,
+     "high": null,
+     "derivation": "DERIVED: weight_m = checkup_month_share_m × new_service_ramp_m. Weights sum to 0.735 over Apr-Dec; each month = 250,000 × weight_m / 0.735. Resulting shares: Apr 2.55%, May 5.20%, Jun 7.07%, Jul 8.71%, Aug 9.80%, Sep 8.84%, Oct 13.61%, Nov 17.01%, Dec 27.21%. Without the ramp (seasonality only, Apr-Dec renormalized over 0.925): Apr 8.1%, Dec 21.6%. For 2028-2031 apply checkup_month_share directly (ramp = 1). If most bookings are paid 종합검진, blend in private_checkup_season, which cuts the December share sharply. Partner-center December capacity should cap the December figure.",
+     "sources": [
+      {
+       "title": "Association of Intensive Endoscopic Screening Burden With Gastric Cancer Detection",
+       "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7791358/",
+       "publisher": "JAMA Network Open",
+       "date": "2021-01-07",
+       "quote": "Table 1 monthly counts (shape basis for checkup_month_share)."
+      },
+      {
+       "title": "건강검진 수검율 연도별 추이 (경영공시)",
+       "url": "https://www.nhis.or.kr/announce/wbhaec11407m01.do",
+       "publisher": "국민건강보험공단",
+       "date": "2026-06-30",
+       "quote": "2026 2/4분기 cumulative 일반검진 28.1% (H1 anchor)."
+      }
+     ]
+    },
+    {
+     "key": "checkup_national_volume_2024",
+     "label": "National 일반건강검진 수검인원 2024 (context for 250k 예약 target)",
+     "unit": "persons",
+     "recommended": 17517365,
+     "low": null,
+     "high": null,
+     "derivation": "Sourced: 2024 일반건강검진 대상 23,181,731, 수검 17,517,365, 수검률 75.6%. DERIVED: the 2027 target of 250k is 250,000/17,517,365 = 1.43% of 2024 national 일반검진 수검. Applying the recommended vector to the national base implies about 3.5M national 수검 in December (0.20 × 17.5M), my estimate.",
+     "sources": [
+      {
+       "title": "국민건강보험공단, 2024 건강검진 통계연보 발간 (보도자료)",
+       "url": "https://kiri.or.kr/PDF/weeklytrend/20260119/trend20260119_1.pdf",
+       "publisher": "국민건강보험공단",
+       "date": "2025-12-30",
+       "quote": "Table '2024년 시도별 일반건강검진 대상 및 수검현황': 계 23,181,731 / 17,517,365 / 75.6%."
+      }
+     ]
+    }
+   ],
+   "gaps": [
+    "No official national monthly 일반건강검진 수검 series found for 2022-2025. The 건강검진통계연보 press releases (2022, 2024 editions) and data.go.kr datasets are annual or regional, and the KOSIS 건강검진통계 table list would not load. The recommended vector is therefore derived, not published.",
+    "A search snippet said about 38% of checkups fall after October, attributed to NHIS; I could not verify it in the NHIS 건강검진 안내 PDFs, so it is excluded.",
+    "The national H1 anchor (2026 2/4분기 28.1%) is provisional and may be understated by claim lag, or distorted by how 이월 checkups are counted. Past quarterly snapshots on the NHIS 경영공시 page (e.g., 2025 3/4분기) could not be retrieved (web.archive.org blocked).",
+    "The KNCSP monthly shape is from gastric endoscopy 2013-2016, not 일반검진, and predates 2023. Cancer and general checkups usually happen together, but the January-April months differ from the 2019 일반검진 anchors (KNCSP Jan-Apr 23.5% vs 일반검진 17.6%).",
+    "Private 종합검진 seasonality rests on one NHIS-run hospital (일산병원) for 2018-2019. Its 2020-2024 yearbook pages show only annual totals. I found no DART filing or large private center (KMI, 하나로, 강북삼성) disclosing monthly volumes.",
+    "New-service ramp: no monthly booking data found for 착한의사, 굿닥 검진예약, 똑닥 or 인피니티케어. The ramp multipliers are assumptions.",
+    "All vectors are by exam month. The booking-to-exam lead time (typically weeks) and partner-center December slot capacity are unsourced and should be set from partner contracts.",
+    "COVID years (2020-2022, with deadlines extended to the next June) distort monthly patterns; the NHIS cohort seasonal split (2013-2022) includes them."
+   ],
+   "check": {
+    "verdicts": [
+     {
+      "key": "checkup_month_share",
+      "status": "corrected",
+      "corrected_recommended": [
+       0.015,
+       0.031,
+       0.055,
+       0.075,
+       0.088,
+       0.083,
+       0.082,
+       0.082,
+       0.065,
+       0.099,
+       0.125,
+       0.2
+      ],
+      "note": "Source checks all passed. KNCSP Table 1 (PMC7791358) was checked through the Europe PMC full text for the same PMCID, because the PMC page returned a reCAPTCHA. Monthly counts, totals (9,892,812 / 11,642,410) and Q4 41.39% / 42.19% match. The KNCSP 2015-16 and 2013-14 share vectors, Jan-Oct 68.3/67.8, Dec 20.1/19.7 and H1 36.9 all recompute. The 일산 2019 counts match. The 2019 anchors match their sources: 메디칼업저버 (7.49%, April gap 4.87%p, 2020 April 8.19%), 쿠키뉴스 (50% through October) and the NHIS 2022 연보 (74.1%). The 2026 figure is on the NHIS 경영공시 page, 28.1% at 6/30, marked 미확정. Four problems. (1) Internal inconsistency: Step 1 calls the anchors fixed, but the recommended vector gives Q1 11.0% against the 10.1% anchor and Jan-Apr 18.5% against 17.6%. The Jan-Apr miss is not disclosed. The corrected vector meets every 2019 anchor exactly (Q1 10.1, Jan-Apr 17.6, Jan-Oct 67.5) and keeps Dec 20.0%, Q4 42.4% and H1 34.7%. The months change by less than 1pp each. (2) The cohort fall share is 29.3%, not 29.4%. (3) low and high are not bounds on each month. The low vector (일산 2019) is above recommended in Feb-Sep, the high vector (KNCSP 2013-14) is below recommended in May-Nov, and low exceeds high in 8 of 12 months. Relabel them as alternative shapes (flat vs concentrated scenarios). Also, 일산 is excluded from the Q4 range as capacity-limited but used here as low, which is inconsistent. (4) Anchor bias: dividing a cumulative rate by the final rate gives a count share only if the 대상자 denominator stays the same. The cited 쿠키뉴스 data show it does not. In 2020 the October denominator was 20,562,174 against 21,446천 final, so the count share through October was 61.8%, while 43.7/67.8 gives 64.5%. If 2019 behaved the same way, Jan-Oct would be about 64.7%, Nov-Dec about 35% and Q4 about 45%, so the vector may understate year-end concentration. Treat that as a sensitivity. The 'Dec 31 deadline / 사업장 과태료' reason has no source in the research. 뉴시스 (2023-12-01, https://www.newsis.com/view/NISX20231201_0002543384) confirms 산업안전보건법 제129조 exposure: 사업주 up to 1,000만원 and 근로자 up to 300만원. The per-person amounts differ between secondary sources."
+     },
+     {
+      "key": "checkup_q4_share",
+      "status": "confirmed",
+      "corrected_recommended": null,
+      "note": "KNCSP Q4 41.39% / 42.19% verified in the Europe PMC full text of PMC7791358. 시사저널 (2025-06-19) states '전체 건강검진자의 약 40%가 4분기에 집중되며, 특히 12월에 가장 많이'. It cites no data source ('알려져 있다'), as the research says. 쿠키뉴스: 2019 through October 50%, verified. NHIS 2022 연보 PDF: 2019 74.1%, verified. The arithmetic is right (1-50/74.1=32.5%, +10% October = 42.5%). Caveat: the denominator bias described under checkup_month_share would push the 2019-implied Q4 to about 45%. Consider raising high from 0.44 to 0.45."
+     },
+     {
+      "key": "checkup_cum_anchors_national",
+      "status": "corrected",
+      "corrected_recommended": [
+       0.097,
+       0.169,
+       0.373,
+       0.647
+      ],
+      "note": "Every input figure is verified. 메디칼업저버 2020-06-01: 2019 March 7.49%; '4월에 와서는 ... 일반검진은 4.87%P' gap; 2020 April 8.19%. 쿠키뉴스 2020-12-18: 898만2255 of 2056만2174, 43.7%; 2019 same period 50%. NHIS 경영공시: 2026 2/4분기 28.1%, 2025 75.4%, 2024 75.6%, with a note that 2025-26 are 미확정. 검진비 지급: 2025 23,827억, 2026 Jan-Jun 10,749억. NHIS 2024 연보 PDF: 2020-2024 rates 67.8/74.2/75.4/75.9/75.6. The ratio arithmetic is correct (0.101, 0.176, 0.675, 0.373, 0.372, 0.645, 0.451). Logic error: the label says share of annual 수검 (a count share), but a ratio of rates equals a count share only when the 대상자 denominator is constant. The research's own 2020 source shows it grows during the year. 20,562,174 at October against 21,446천 final is a factor of 0.959, so the true count share through October 2020 was 8,982,255/14,545천 = 61.8%, not 64.5%. The corrected values apply the same 0.959 factor to the 2019 anchors. This is my assumption: the 2019 in-year denominator growth is not published. Treat the original values as upper bounds. The 2026 H1 value is left at 0.373, because denominator growth pushes it up while claim lag pushes it down, by unknown amounts."
+     },
+     {
+      "key": "checkup_season_nhis_cohort",
+      "status": "corrected",
+      "corrected_recommended": [
+       0.226,
+       0.227,
+       0.293,
+       0.253
+      ],
+      "note": "Checked in the Europe PMC full text of PMC12429781 (J Clin Med, 2025-08-23, NHIS-2024-02-387). The paper gives seasonal counts separately for men (603,546 / 610,036 / 831,135 / 675,495; n=2,720,212) and women (642,450 / 640,302 / 785,049 / 719,238; n=2,787,039). The research's totals (1,245,996 / 1,250,338 / 1,616,184 / 1,394,733 of 5,507,251) are sums of the two, so they are a derivation, not a quoted table value. Fall = 1,616,184/5,507,251 = 0.2935, which rounds to 29.3%, not 29.4%. The data are an 8% random sample of adults aged 40+ who had at least one screening in 2013-2022, not all screenings. Seasons: Mar-May, Jun-Aug, Sep-Nov, Dec-Feb."
+     },
+     {
+      "key": "checkup_month_share_ilsan_general",
+      "status": "confirmed",
+      "corrected_recommended": null,
+      "note": "Verified from the 일산병원 yearbook pages. The 2019 page shows 일반검진 monthly counts 988 ... 8,261 (total 67,350, with the 2018 total 58,523). The 2018 page shows 514 ... 7,605 (total 58,523). Recomputed shares match: 2019 Q1 14.8%, H1 40.1%, Q4 33.4%, Dec 12.3%; 2018 Q1 13.4%, H1 35.4%, Q4 38.4%, Dec 13.0%. Notes: 'low = 2018' is another year's shape, not a bound (2018 is above 2019 in Aug-Dec). The explanation that January is low because 검진표 is issued then is an unsourced inference. I did not verify that the 2020-2024 yearbooks show annual totals only."
+     },
+     {
+      "key": "private_checkup_season",
+      "status": "confirmed",
+      "corrected_recommended": null,
+      "note": "종합검진 counts verified: 2019 364 ... 711 (total 8,556) and 2018 328 ... 648 (total 8,259). The averaged vector recomputes exactly, as do Q4 30.3/29.5, Dec 7.8/8.3 and H1 41.6/41.7. 경향신문 2020-07-24 verified: '대개 10~12월에 검진 인원이 몰리는', and 건협 reported 2020 H1 일반검진 수검자 -22.6%. 시사저널's summer off-season claim is verified. Corrections to supporting sources: the Himedi blog (2025-10-24) does not literally say December is the busiest booking month. It says demand 'skyrockets every winter' and that employees book in December to use expiring company benefits. Himedi also serves foreign or medical-tourist patients, so it is weak evidence for domestic bookings. low (2018) and high (2019) are year shapes, not bounds. Relying on one public hospital for 2018-19 is disclosed."
+     },
+     {
+      "key": "new_service_ramp",
+      "status": "confirmed",
+      "corrected_recommended": null,
+      "note": "Labeled as an assumption, which is correct. The milestone sources are verified. 머니투데이 2024-08-14: '160만명의 유저를 시작으로 1년 여 만에 90여개의 기업(B2B) 고객사를 확보', plus the 굿닥 고객전용 검진예약 launch. 서울신문 2025-07-31: B2B CAGR 165% over 3 years, 185만 users. 벤처스퀘어 2021-11-22: 70만 users, 130 hospitals, about 1,000+ 검진상품, 60억원. 아시아타임즈 2022-05-06: launched 2017-04, 730만 members, 2,600만 visits, 13,000+ hospitals. None of these give monthly ramp data, as the research states."
+     },
+     {
+      "key": "checkup_2027_monthly_allocation",
+      "status": "corrected",
+      "corrected_recommended": [
+       0,
+       0,
+       0,
+       6328,
+       13366,
+       18209,
+       22141,
+       24909,
+       21939,
+       33414,
+       42190,
+       67504
+      ],
+      "note": "With the original vector, the arithmetic is correct: weights sum to 0.735, monthly counts are 6,378 ... 68,027, and Dec is 27.21%. Arithmetic error in the side statement: seasonality-only Apr-Dec sums to 0.89, not 0.925, so Apr = 8.4% (not 8.1%) and Dec = 22.5% (not 21.6%). The corrected allocation uses the anchor-consistent checkup_month_share vector: weights sum to 0.7407 and Dec is 27.0%. LEGAL-STRUCTURE FLAG: the allocation is safe as a volume driver only. Do not turn it into revenue as a per-booking commission from 검진기관. 의료법 제27조 제3항 bans for-profit patient 소개·알선·유인. In 대법원 2018도20928 (2019-04-25, https://law.go.kr/LSW/precInfoP.do?precSeq=207141), a platform that sold hospital procedure coupons and took 15-20% commissions was held to go beyond 의료광고 into illegal 알선. The penalty (3년 이하 징역 / 3천만원 이하 벌금) came from a search summary; I did not check it against the statute text. National 일반건강검진 is paid by NHIS at no cost to examinees, so these bookings carry no fee a platform can lawfully take. Revenue lines should use employer B2B contracts, flat advertising or SaaS fees not tied to volume, or paid 종합검진 contracted with the payer. Also, a 27% December share in the launch year needs a check against partner December capacity."
+     },
+     {
+      "key": "checkup_national_volume_2024",
+      "status": "confirmed",
+      "corrected_recommended": null,
+      "note": "Verified in the NHIS 2024 건강검진 통계연보 press release PDF (배포 2025-12-30, 보도 2025-12-31). Table '2024년 시도별 일반건강검진 대상 및 수검현황' shows 계 23,181,731 / 17,517,365 / 75.6%. The derivations are correct: 250,000/17,517,365 = 1.43%, and 0.20 × 17.5M = 3.50M. Context caveat: most of the 250k 예약 target may be paid 종합검진 rather than 일반검진, so the 1.43% is not a like-for-like penetration figure."
+     }
+    ],
+    "overall": "I reopened every cited URL. Every source exists and contains the quoted figures. For two, the direct URL failed and I checked the same content another way. The PMC7791358 page returned a reCAPTCHA, so I used the Europe PMC full text of the same article. The two kiri.or.kr PDFs I read from the downloaded files. Items confirmed: checkup_q4_share, checkup_month_share_ilsan_general, private_checkup_season, new_service_ramp and checkup_national_volume_2024. Items corrected: (a) checkup_month_share: the vector misses its own 'fixed' anchors (Q1 11.0% vs 10.1%, Jan-Apr 18.5% vs 17.6%). low and high are alternative shapes, not bounds on each month. (b) checkup_season_nhis_cohort: fall is 29.3%, not 29.4%. The totals are sums of the men and women tables, taken from an 8% NHIS sample. (c) checkup_cum_anchors_national: dividing cumulative rates by the final rate ignores in-year growth in 대상자. The research's own 2020 source shows the bias, 61.8% on counts vs 64.5% on rates, so the 2019 anchors are upper bounds and year-end concentration may be understated (Q4 could be about 45%). (d) checkup_2027_monthly_allocation: the no-ramp side figures used 0.925 instead of 0.89; the correct values are Apr 8.4% and Dec 22.5%. Weaker supporting quotes: 시사저널's '40% in Q4' cites no data source. The Himedi blog does not literally say December is the busiest month, and it serves foreign patients. The 사업장 과태료 rationale had no source; 뉴시스 2023-12-01 supports it (산업안전보건법 제129조, 사업주 up to 1,000만원, 근로자 up to 300만원). Legal-structure flag: do not model 검진 예약 revenue as per-booking commissions from 검진기관. Under 의료법 제27조 제3항, 대법원 2018도20928 held that a commission-based medical coupon platform was illegal 환자 알선. National 일반검진 is NHIS-paid and free to examinees, so it yields no bookable fee. Use employer B2B contracts, flat advertising or SaaS fees, or paid 종합검진 for revenue, with national seasonality used only as a volume shape."
+   }
+  },
+  {
+   "topic": "care_fee",
+   "summary": "Demand is large and growing. 65+ share is 20.3% (KOSTAT 2025). 장기요양 인정자 numbered 1,235,045 in 2025 (+6%/yr, NHIS), equal to 11.7% of 65+ in 2024 (NABO). 재가급여 paid 10.19조 through 23,373 재가기관 (2025 연보). 사적 간병비 is about 10조/yr (MOHW, 2022). Legal structure: 노인장기요양보험법 §35⑥ bans anyone from referring or inducing 수급자 to a 기관 for profit in exchange for money or other benefits (2년/2천만원, §67). Courts treated per-patient or percentage fees as illegal 알선 under 의료법 §27③ (대법 2018도20928, 15-20% commission), but a flat ad fee not tied to patient volume was not (헌재 2017헌마327). A per-match 소개료 from 방문요양센터 or 요양병원 is therefore high-risk. Recommendation: a flat monthly 파트너 이용료 per center (listing, AI상담 routing, SaaS), not tied to referrals or matches. Base fee 30만원/월 (range 15-50만). Benchmarks: ERP costs 1.1만원/월, and a center with 30 수급자 earns about 5.2억/yr. Base drivers: care_target_rate 1.0% of members/yr, match 35%, 3 leads per center per month, 12-month ramp from a July 2027 start. Base revenue (억원): 2027 0.60, 2028 7.98, 2029 23.27, 2030 47.15, 2031 81.65. Low 0.13 to 20.4; high 1.68 to 204. All rates, fees and revenues are my derivations. There is no public benchmark for match rate or center ad fees, and 2031 base implies about 2,777 partner centers (about 12% of 재가기관). 요양병원 간병비 급여화 (500 hospitals by 2030) shrinks the private 간병 matching pool, so lead with 방문요양/주야간보호 partners.",
+   "items": [
+    {
+     "key": "care_target_rate",
+     "label": "Share of platform members generating a care-matching demand (lead) per year",
+     "unit": "share of members per year",
+     "low": 0.005,
+     "recommended": 0.01,
+     "high": 0.02,
+     "derivation": "DERIVATION (not a sourced figure). (1) Sourced base: 65+ = 20.3% of population (10.51M, KOSTAT 2025). 장기요양 인정자 = 1,235,045 in 2025, +6.0% y/y (NHIS 경영공시). That is 11.7% of 65+ in 2024 (NABO). 18.6% of elderly have functional limits and 47.2% of them receive care, 81.4% of it from family (MOHW 2023 노인실태조사). (2) Assumptions: about 2.5 adult children or relatives per elder, and about 30M adults aged 30-69. About 1.235M x 2.5 / 30M = about 10% of adults are tied to an LTC-graded elder. (3) Share of those with a care event in a given year (new grade, provider switch, hospital discharge needing 간병, facility move) = 30-40%, so about 3-4% of adults. (4) Share who route the event through the platform's AI 상담: low 15%, base 30%, high 40%. Result: low 0.5%, base 1.0%, high 2.0%. Members aged 60+ who need care themselves are inside this range.",
+     "sources": [
+      {
+       "title": "2025 고령자 통계 (보도자료)",
+       "url": "https://mods.go.kr/board.es?mid=a10301010000&bid=10820&tag=&act=view&list_no=438832&ref_bid=",
+       "publisher": "국가데이터처(통계청)",
+       "date": "2025-09-29",
+       "quote": "65세 이상 고령인구는 우리나라 전체 인구의 20.3%"
+      },
+      {
+       "title": "장기요양 등급 판정 현황 (경영공시)",
+       "url": "https://www.nhis.or.kr/announce/wbhaec11503m01.do",
+       "publisher": "국민건강보험공단",
+       "date": "2026 (2026 Q2 column shown)",
+       "quote": "Table: 인정자 소계 2024 1,165,030 / 2025 1,235,045 (90.1%) / 2026 Q2 1,275,370"
+      },
+      {
+       "title": "노인장기요양보험 지출 증가요인 및 시사점 (NABO Focus 113)",
+       "url": "https://www.nabo.go.kr/board/file/down.do?fid=33318589",
+       "publisher": "국회예산정책처",
+       "date": "2025-06-17",
+       "quote": "65세 이상 노인 인구 대비 장기요양 인정자 수의 비율 ... 2024년 11.7%"
+      },
+      {
+       "title": "2023년 노인실태조사 결과 발표",
+       "url": "https://www.mohw.go.kr/board.es?mid=a10503000000&bid=0027&list_no=1483352&act=view",
+       "publisher": "보건복지부",
+       "date": "2024-10-17",
+       "quote": "Functional limitation 18.6%; of those, 47.2% receive care; family caregivers 81.4%"
+      }
+     ]
+    },
+    {
+     "key": "care_match_rate",
+     "label": "Share of care demand (leads) converting to a matched, contracted service with a partner",
+     "unit": "share of leads",
+     "low": 0.2,
+     "recommended": 0.35,
+     "high": 0.5,
+     "derivation": "ASSUMPTION backed only by indirect evidence. No Korean platform publishes a lead-to-contract rate. Eligibility is rarely the barrier: the 판정 대비 인정률 is 90.1% (2025). Family remains the main caregiver (81.4%), and only 47.2% of functionally limited elders receive care, so many leads will end in family care or be dropped. That argues against a rate above 50%. The matching mechanics do work: 케어네이션 reports matches usually within 10 days and about 1,500 matches/month (early 2023). Base 35%, range 20-50%. Use it as a KPI, not as the billing basis (see care_fee_structure).",
+     "sources": [
+      {
+       "title": "2025 노인장기요양보험 통계연보 발간",
+       "url": "http://www.newsmp.com/news/articleView.html?idxno=255387",
+       "publisher": "의약뉴스",
+       "date": "2026-06-29",
+       "quote": "판정 대비 인정률은 전년보다 0.6%포인트 오른 90.1%"
+      },
+      {
+       "title": "2023년 노인실태조사 결과 발표",
+       "url": "https://www.mohw.go.kr/board.es?mid=a10503000000&bid=0027&list_no=1483352&act=view",
+       "publisher": "보건복지부",
+       "date": "2024-10-17",
+       "quote": "Care receipt 47.2% among limited elders; family 81.4%, LTC insurance 30.7%"
+      },
+      {
+       "title": "[인생3막 기업] 간병인 매칭 스타트업 '케어네이션'",
+       "url": "https://www.asiae.co.kr/article/2023020814295998207",
+       "publisher": "아시아경제",
+       "date": "2023-02-09",
+       "quote": "매달 약 1500건 정도의 매칭 ... 보통 10일 안에"
+      }
+     ]
+    },
+    {
+     "key": "care_fee_structure",
+     "label": "Legal fee structure when the partner care provider (not the member) pays",
+     "unit": "structure",
+     "recommended": "Flat monthly 파트너 이용료 per center (listing/ads + AI상담 routing + SaaS tools), fixed by tier (e.g., region or listing size), NOT tied to number of leads, matches, 수급자 or % of 급여비. No per-case 소개료 and no revenue share. Never waive or discount 본인부담금. For 간병 (non-LTC) supply, partner only with registered 직업소개사업자 and charge them the same flat fee.",
+     "derivation": "(1) 노인장기요양보험법 §35⑥ bans anyone from referring, brokering or inducing 수급자 to a 기관 for profit by offering money or other benefits. §35⑤ bans for-profit waiver or discount of 본인일부부담금. Violation is punishable by up to 2 years or 2천만원 under §67. The penalty was confirmed via the 2011 입법예고 report and a statute-database snippet, and should be re-verified on law.go.kr. A per-match fee paid by a 방문요양센터 to the platform is the textbook form of paying for a referral. (2) 의료법 §27③ covers 요양병원 and other medical partners. 대법원 2018도20928 upheld a conviction where a site took 15-20% of treatment fees. 헌재 2017헌마327 treated a monthly ad fee set by hospital size, not patients, as a legitimate ad cost. So: flat = defensible, variable per patient = illegal. (3) Under 직업안정법, per-placement 간병 fees are regulated 직업소개 fees: up to 30% from 구인자 and 1% from 구직자. Insurers since Q4 2024 recognize only platforms registered as 직업소개사업. Inference: the flat-fee structure is lower-risk but not a safe harbor. Get a written legal opinion or MOHW 질의회신 before launch, and avoid 'guaranteed N leads' clauses.",
+     "sources": [
+      {
+       "title": "노인장기요양보험법 제35조 조문정보 (시행 2026.11.27, 법률 제21690호)",
+       "url": "https://www.law.go.kr/LSW//lsLawLinkInfo.do?lsJoLnkSeq=1000081753&chrClsCd=010202",
+       "publisher": "국가법령정보센터(법제처)",
+       "date": "2026-05-26 (개정)",
+       "quote": "수급자를 장기요양기관에 소개, 알선 또는 유인하는 행위 ... 하여서는 아니 된다"
+      },
+      {
+       "title": "노인요양기관 불법유인·알선 땐 처벌",
+       "url": "https://www.khan.co.kr/article/201108092134355",
+       "publisher": "경향신문",
+       "date": "2011-08-09",
+       "quote": "2년 이하 징역 또는 2000만원 이하 벌금 (입법예고 단계 기사)"
+      },
+      {
+       "title": "법률칼럼 의료법 제27조 제3항 - '합법'과 '위법'의 갈래에서",
+       "url": "https://www.doctorsnews.co.kr/news/articleView.html?idxno=144078",
+       "publisher": "의협신문",
+       "date": "2022-04-14",
+       "quote": "Contrasts 2017헌마327 (flat monthly ad fee OK) with 2018도20928 (15-20% commission illegal)"
+      },
+      {
+       "title": "환자 소개·알선·유인 사주 의사 및 소개비 받은 업체 '의료법 위반'",
+       "url": "https://www.doctorsnews.co.kr/news/articleView.html?idxno=128947",
+       "publisher": "의협신문",
+       "date": "2019-04-30",
+       "quote": "Operators received 6.018억 from 43 clinics as 15-20% commission; conviction upheld"
+      },
+      {
+       "title": "(설명) 한국일보 '직업소개소 30% 중간착취' 보도 관련",
+       "url": "https://www.moel.go.kr/news/enews/explain/enewsView.do?news_seq=13772",
+       "publisher": "고용노동부",
+       "date": "2022-07-22",
+       "quote": "구직자로부터는 ... 1%를, 구인자로부터는 ... 30%(건설 일용 10%)"
+      },
+      {
+       "title": "10조 원 넘긴 간병비 부담... 모호했던 간병인보험 개선한다",
+       "url": "https://www.hankookilbo.com/news/article/A2024112810060001698",
+       "publisher": "한국일보",
+       "date": "2024-11-28",
+       "quote": "직업소개사업에 등록돼 있는 서비스 (중개플랫폼 보험금 인정 요건)"
+      }
+     ]
+    },
+    {
+     "key": "care_fee_per_center_month",
+     "label": "Monthly flat platform fee per partner center (paid by provider)",
+     "unit": "KRW per center per month (VAT excluded)",
+     "low": 150000,
+     "recommended": 300000,
+     "high": 500000,
+     "derivation": "DERIVATION. Center economics: a 30-수급자 (4등급) 방문요양 model has 연 매출 about 5.25억, 인건비 87.1%, and 센터장 월 수익 about 47만원 (요양뉴스). That is about 146만원 of revenue per 수급자 per month (5.25억/30/12). The 2025 5등급 재가 월한도액 is 1,177,000원 (NABO). Software anchor: ERP costs only 1.1만원/월 base (케어포), so a lead or visibility product must be priced on value, not as software. Base case is 3 leads per center per month x 35% match = about 1.05 new 수급자 per month. At 30만원 that is about 28.6만원 per new client, about 0.2 months of that client's revenue. That is affordable for a center whose client stays many months, but material against a thin margin. Hence 15만 (low) to 50만 (high, with SaaS bundle). No public price found for 스마일시니어 파트너 멤버십 (상담 후 산정) or 케어닥 파트너.",
+     "sources": [
+      {
+       "title": "'비용 낮게 잡아도 방문요양 센터장 월 수익 47만 원'",
+       "url": "https://www.yoyangnews.co.kr/news/articleView.html?idxno=20921",
+       "publisher": "요양뉴스",
+       "date": "2023-12-19",
+       "quote": "Model: 30 grade-4 수급자, annual revenue 5.2488억, personnel 87.1%, director 47만원/월"
+      },
+      {
+       "title": "'아직도 롱텀만 써요?' 요양시설 민간 ERP 프로그램 이제는 필수",
+       "url": "https://www.yoyangnews.co.kr/news/articleView.html?idxno=22825",
+       "publisher": "요양뉴스",
+       "date": "2025-02-27",
+       "quote": "케어포 방문요양 월 1만1000원, 수급자 10명당 5500원 추가"
+      },
+      {
+       "title": "노인장기요양보험 지출 증가요인 및 시사점",
+       "url": "https://www.nabo.go.kr/board/file/down.do?fid=33318589",
+       "publisher": "국회예산정책처",
+       "date": "2025-06-17",
+       "quote": "재가급여 월 한도액은 1,177,000원 (2025년 5등급)"
+      },
+      {
+       "title": "파트너/제휴사업 - 케어닥",
+       "url": "https://company.caredoc.kr/partnership",
+       "publisher": "케어닥",
+       "date": "accessed 2026-09-15",
+       "quote": "Fees not disclosed ('상담 시 산출'); 37+ 운영 지점, 70+ 제휴 파트너사"
+      }
+     ]
+    },
+    {
+     "key": "care_fee_per_match_equivalent",
+     "label": "Implied revenue per matched case (comparison only; NOT a billing basis)",
+     "unit": "KRW per matched case",
+     "low": 250000,
+     "recommended": 286000,
+     "high": 250000,
+     "derivation": "DERIVATION from the revenue model: annual flat-fee revenue / matches. Base 2031: 81.65억 / 28,583 matches = about 28.6만원. Low and high scenarios both land at about 25만원. Cross-checks: (a) for-profit 양로시설 (not 장기요양기관), where 케어닥 케어홈 advertises referral rewards up to 137만원 per case (search-result title only; page returned 403); (b) 간병 agency fees of about 10-15% of 간병비 (blog, low reliability), which on a 20-day episode at 11-13만원/day is about 22-39만원. Shown only to test reasonableness: charging per match to LTC or medical partners is high-risk (see care_fee_structure).",
+     "sources": [
+      {
+       "title": "[케어홈 파트너스 모집] 1건당 최대 137만 원 리워드 지급 (search result title; page 403)",
+       "url": "https://www.caredochome.co.kr/NEWSNOTICE/?idx=171045425&bmode=view",
+       "publisher": "케어닥 케어홈",
+       "date": "not shown",
+       "quote": "1건당 최대 137만 원 리워드 지급 (title)"
+      },
+      {
+       "title": "간병비 걱정 덜 수 있을까···첫 발 뗀 요양병원 간병비 급여화",
+       "url": "https://weekly.khan.co.kr/article/202510130600011",
+       "publisher": "주간경향",
+       "date": "2025-10-13",
+       "quote": "하루 11만원을 웃도는 간병비(2023년 기준)"
+      },
+      {
+       "title": "간병인 비용과 재정 관리 (blog; low reliability)",
+       "url": "https://www.seoulhr.com/%EA%B0%84%EB%B3%91%EC%9D%B8-%EB%B9%84%EC%9A%A9%EA%B3%BC-%EC%9E%AC%EC%A0%95-%EA%B4%80%EB%A6%AC/",
+       "publisher": "서울간병인협회",
+       "date": "not shown",
+       "quote": "Search snippet: professional agency fee 10-15% of total cost"
+      }
+     ]
+    },
+    {
+     "key": "care_partner_centers",
+     "label": "Active partner centers at end of year 1 (Dec 2027) and trajectory",
+     "unit": "centers (year-end)",
+     "low": 22,
+     "recommended": 54,
+     "high": 94,
+     "derivation": "DERIVATION: Centers = Members x care_target_rate / 12 / leads-per-center x ramp factor. Base Dec-2027: 330,000 x 1.0% / 12 / 3 = 92 demand-capped, x ramp factor 0.59 (month 5 of 12) = 54. Base year-ends: 2028 361, 2029 888, 2030 1,666, 2031 2,777. Low (0.5%, 3 leads, 18-month ramp): 22 / 173 / 444 / 833 / 1,388. High (2.0%, 4 leads, 9-month ramp): 94 / 541 / 1,333 / 2,500 / 4,166. Sanity vs supply: there are 23,373 재가기관 (2025), so base 2031 = about 12% of 재가기관. That is aggressive, so include 주야간보호 and registered 간병 agencies in the partner pool. Onboarding comps: 스마일시니어 grew from about 30 branches (2021 acquisition) to 200 (2025-03) and 300 (2026-04), about 100 net adds per year for a heavier franchise-like model. 하이케어 SaaS has about 1,100 client 기관 (2024). 케어닥 has 37+ 지점 and 70+ 제휴 파트너 (2026).",
+     "sources": [
+      {
+       "title": "2025 노인장기요양보험 통계연보 발간",
+       "url": "http://www.newsmp.com/news/articleView.html?idxno=255387",
+       "publisher": "의약뉴스",
+       "date": "2026-06-29",
+       "quote": "장기요양기관은 총 2만 9734개소 ... 재가기관 2만 3373개소"
+      },
+      {
+       "title": "스마일시니어, 국내 최초 재가요양 300호점 돌파하며 2분기 연속 흑자 달성",
+       "url": "https://v.daum.net/v/20260407100301465",
+       "publisher": "이데일리 (via Daum)",
+       "date": "2026-04-07",
+       "quote": "인수 당시 30여 개 ... 200호점 달성 이후 약 1년 만에 300호점"
+      },
+      {
+       "title": "스마일시니어, 국내 요양시장 최초 200호점 돌파",
+       "url": "https://www.mhns.co.kr/news/articleView.html?idxno=712258",
+       "publisher": "문화뉴스",
+       "date": "2025-03-20",
+       "quote": "first single care brand in Korea to surpass 200 locations"
+      },
+      {
+       "title": "한국시니어연구소 '복잡한 돌봄 제도 스마트하게'",
+       "url": "https://bravo.etoday.co.kr/view/atc_view/15615",
+       "publisher": "브라보마이라이프",
+       "date": "2024-08-20",
+       "quote": "하이케어 used by about 1,100 facilities, about 40,000 elders managed"
+      },
+      {
+       "title": "파트너/제휴사업 - 케어닥",
+       "url": "https://company.caredoc.kr/partnership",
+       "publisher": "케어닥",
+       "date": "accessed 2026-09-15",
+       "quote": "37개+ 운영 지점, 70개+ 제휴 파트너사"
+      }
+     ]
+    },
+    {
+     "key": "care_ramp",
+     "label": "Months from launch to steady-state lead flow / partner saturation",
+     "unit": "months",
+     "low": 18,
+     "recommended": 12,
+     "high": 9,
+     "derivation": "DERIVATION from comps, modelled as a ramp factor rising linearly from 30% at launch (Jul-2027) to 100% after N months. Evidence: (a) 케어닥's first directly run 방문요양 center opened 2022-04 and turned profitable 2023-08, about 16 months; (b) 케어파트너 (보살핌) launched 2022-07 and within 3 months had 1,500+ job applications/week, then MAU +400% in 2023; (c) 케어네이션 platform launched 2020-07 and reached about 1,500 matches/month by early 2023 (about 30 months); (d) 스마일시니어 needed about 12-13 months per +100 branches once scaled. A B2B partner line riding an existing member base should ramp faster than a standalone platform. Base 12 months, range 9-18.",
+     "sources": [
+      {
+       "title": "케어닥 방문요양돌봄센터, 매출 1000% 증가",
+       "url": "http://www.kseniornews.com/news/articleViewRedirect.html?temp_data=24042",
+       "publisher": "한국시니어신문",
+       "date": "2023-09-21",
+       "quote": "약 1년 4개월 만에 달성 ... 매출 증가율이 1000%"
+      },
+      {
+       "title": "요양보호사 매칭 플랫폼 보살핌, 프리A 투자 유치",
+       "url": "https://zdnet.co.kr/view/?no=20221228092125",
+       "publisher": "ZDNet Korea",
+       "date": "2022-12-28",
+       "quote": "매주 1천500건 이상 일자리에 지원 (출시 3개월)"
+      },
+      {
+       "title": "요양보호사 플랫폼 '케어파트너' 전년대비 MAU 400% 성장",
+       "url": "https://www.kglobaltimes.com/news/articleView.html?idxno=27067",
+       "publisher": "K글로벌타임스",
+       "date": "2024-03-21",
+       "quote": "2023년 월간 활성 사용자수(MAU)는 400% 증가"
+      },
+      {
+       "title": "간병 시장의 선순환 만드는 '케어네이션'",
+       "url": "https://bravo.etoday.co.kr/view/atc_view/16041",
+       "publisher": "브라보마이라이프",
+       "date": "2025-02-20",
+       "quote": "Platform launched 2020-07; 매칭 금액 540억 원 돌파 (2024)"
+      }
+     ]
+    },
+    {
+     "key": "care_revenue_2027_2031",
+     "label": "돌봄 partner-fee revenue 2027..2031 (July-2027 start), base scenario",
+     "unit": "억원 per calendar year (VAT excluded)",
+     "low": [
+      0.13,
+      1.68,
+      5.81,
+      11.78,
+      20.41
+     ],
+     "recommended": [
+      0.6,
+      7.98,
+      23.27,
+      47.15,
+      81.65
+     ],
+     "high": [
+      1.68,
+      20.89,
+      58.2,
+      117.89,
+      204.13
+     ],
+     "derivation": "DERIVATION (not sourced). Formula (monthly, m = Jul-2027..Dec-2031): Members_m = linear between year-ends (2026 end = 0; 330k / 1.3M / 3.2M / 6.0M / 10M). Leads_m = Members_m x care_target_rate / 12 x R_m, where R_m = min(1, 0.3 + 0.7 x k / Ramp) and k = months since Jul-2027. Centers_m = floor(Members_m x rate / 12 / LeadsPerCenter x R_m). Revenue_y = sum over months of Centers_m x Fee. Matches_m = Leads_m x care_match_rate (KPI only). Base: rate 1.0%, fee 30만, 3 leads/center, ramp 12, match 35%. Leads 605 / 7,997 / 23,291 / 47,166 / 81,666; matches 212 / 2,799 / 8,152 / 16,508 / 28,583. Low: 0.5%, 15만, 3 leads, ramp 18, match 20%. High: 2.0%, 50만, 4 leads, ramp 9, match 50%. Excludes partner churn, price escalation and 간병 agency partners. Context: LTC spending rises from 17.6조 (2025) to 31.4조 (2031) per NABO, about +10%/yr, which supports demand growth.",
+     "sources": [
+      {
+       "title": "노인장기요양보험 지출 증가요인 및 시사점 (재정전망 표)",
+       "url": "https://www.nabo.go.kr/board/file/down.do?fid=33318589",
+       "publisher": "국회예산정책처",
+       "date": "2025-06-17",
+       "quote": "지출 17.6 (2025) ... 21.4 (2027) ... 31.4 (2031) 조원"
+      },
+      {
+       "title": "장기요양급여비 지급현황 (경영공시)",
+       "url": "https://www.nhis.or.kr/announce/wbhaec11501m01.do",
+       "publisher": "국민건강보험공단",
+       "date": "2026 (2025 column)",
+       "quote": "재가 급여비 2025: 10,216,331 백만원; 13,850,546 건"
+      }
+     ]
+    },
+    {
+     "key": "ltc_recognized_and_home_care_2025",
+     "label": "Demand base: 장기요양 인정자, 재가급여비, 재가기관 (2025)",
+     "unit": "persons / KRW / centers",
+     "recommended": "인정자 1,235,045명; 재가급여 10조1,897억원 (63.0%); 재가기관 23,373개소; 요양보호사 654,034명",
+     "derivation": "Sourced facts. The 재가급여 head count (실인원) was not retrieved: the data.go.kr file preview was not readable. Rough derivation: 인정자 1.235M minus about 0.33M facility residents (31.4만 in 2024 per NABO, grown about 5%) minus non-users gives about 0.8M 재가 users. Treat this as an estimate only.",
+     "sources": [
+      {
+       "title": "2025 노인장기요양보험 통계연보 발간",
+       "url": "http://www.newsmp.com/news/articleView.html?idxno=255387",
+       "publisher": "의약뉴스",
+       "date": "2026-06-29",
+       "quote": "인정자 수는 123만 5000명 ... 재가급여가 10조 1897억 원(63.0%)"
+      },
+      {
+       "title": "노인장기요양보험 지출 증가요인 및 시사점 (그림4)",
+       "url": "https://www.nabo.go.kr/board/file/down.do?fid=33318589",
+       "publisher": "국회예산정책처",
+       "date": "2025-06-17",
+       "quote": "장기요양시설 입소자 2024: 22.7만 + 8.7만 (by grade group)"
+      }
+     ]
+    },
+    {
+     "key": "private_caregiving_market",
+     "label": "Demand base: 사적 간병비 시장 and 요양병원 간병 급여화",
+     "unit": "KRW per year / hospitals",
+     "recommended": "사적 간병비 약 10조원 (2022); 요양병원 간병 일당 11만원+ (2023), 월 200-267만원; 급여화 2026 하반기부터 2030년까지 500개 병원, 약 8만명 대상 (입원 21.5만명 중)",
+     "derivation": "Sourced facts. Implication (inference): public coverage of 요양병원 간병 cuts out-of-pocket cost to about 30%, shrinking the addressable private 간병 matching pool in that segment. Prioritize 방문요양/주야간보호 partners for the fee line.",
+     "sources": [
+      {
+       "title": "간병비 걱정 없는 나라, 국가가 중심이 되어 책임집니다!",
+       "url": "https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&tag=&act=view&list_no=1479428&cg_code=",
+       "publisher": "보건복지부",
+       "date": "2023-12-21",
+       "quote": "Private caregiving cost about 10조 (2022), up from 3.6조 (2008)"
+      },
+      {
+       "title": "간병비 걱정 덜 수 있을까···첫 발 뗀 요양병원 간병비 급여화",
+       "url": "https://weekly.khan.co.kr/article/202510130600011",
+       "publisher": "주간경향",
+       "date": "2025-10-13",
+       "quote": "1391곳 중에서 ... 2030년까지 500개 병원을 단계적으로"
+      }
+     ]
+    }
+   ],
+   "gaps": [
+    "재가급여 이용자 실인원 (2024/2025) not retrieved: the data.go.kr file preview was not readable and press articles give only 급여비. The ~0.8M figure is a derivation.",
+    "No public price found for 스마일시니어 파트너 멤버십 (price undisclosed), 케어닥 파트너 (상담 시 산출), 하이케어 or 요양기관 listing/ad products. The 30만원/월 fee is a derived value, not a market quote.",
+    "No Korean benchmark found for the lead-to-contract (match) rate or the share of 30-60s adults with a yearly care event. care_target_rate and care_match_rate are assumptions built on indirect data.",
+    "케어네이션 수수료 6% appeared only in an App Store review snippet (not verified). 간병 agency 10-15% fee is from a blog. 케어닥 케어홈 137만원 reward is from a search-result title (page 403).",
+    "노인장기요양보험법 §67 penalty (2년/2천만원) is confirmed only via the 2011 입법예고 article and a statute-database search snippet. law.go.kr full text for §67, §37 and 의료법 §27③ could not be rendered. Verify before citing in legal documents.",
+    "No MOHW 질의회신 or court ruling found that applies §35⑥ specifically to online platforms charging flat fees to 장기요양기관. The flat-fee legality is inferred from 의료법 §27③ precedents (2018도20928, 2017헌마327), so a legal opinion is recommended.",
+    "부모돌봄 인식 조사 (한국리서치 2025) gave attitudes only, not usage rates; no KOSIS table on adults with a care-dependent parent was found.",
+    "Pages returning 403 (not read): partner.smilesenior.co.kr, platum.kr, kslab.co.kr press pages."
+   ],
+   "check": {
+    "verdicts": [
+     {
+      "key": "care_target_rate",
+      "status": "corrected",
+      "corrected_recommended": "low 0.005 / recommended 0.01 (unchanged) / high 0.016 (not 0.02)",
+      "note": "I re-opened all four sources and they check out. KOSTAT (2025-09-29) says 65+ is 20.3%. The 10.51M head count is not in the fetched page, but a search summary of the same release gives 1,051만4천명. NHIS 경영공시 shows 인정자 1,165,030 (2024) and 1,235,045 (2025), which is +6.0%. NABO Focus 113 (2025-06-17) PDF text says 65+ 대비 인정자 비율 went from 7.2% (2015) to 11.7% (2024). MOHW 노인실태조사 (2024-10-17) gives 18.6% / 47.2% / 81.4% / 30.7%. These are multiple-response shares, so it is not '81.4% of care is from family'. Problem 1, arithmetic: the derivation's own steps do not support the high case. 1.235M x 2.5 / 30M = 10.3% of adults. Times 30-40% gives 3-4%, and times the 40% routing share gives 1.2-1.6%, not 2.0%. Low (3-4% x 15% = 0.45-0.6%) and base (0.9-1.2%) are consistent. Problem 2, logic: counting 2.5 relatives per elder double-counts leads when several relatives are members, since each care event yields at most one contract. That inflates leads relative to matches. The 2.5 multiplier and the 30M adult denominator are unsourced assumptions."
+     },
+     {
+      "key": "care_match_rate",
+      "status": "confirmed",
+      "note": "This is an assumption, and it is correctly labeled as one. The supporting facts verify. 의약뉴스 (2026-06-29) says '판정 대비 인정률은 전년보다 0.6%포인트 오른 90.1%', and NHIS 경영공시 matches (1,235,045 / 1,370,798). MOHW 2023 survey figures verified. 아시아경제 (published 2023-02-09, updated 2023-12-20) says '매달 약 1500건 정도의 매칭' and '매칭은 늦어도 보통 10일 안에'. None of these sources measures lead-to-contract conversion, so 20/35/50% stays unsourced. Using it as a KPI rather than a billing basis is appropriate."
+     },
+     {
+      "key": "care_fee_structure",
+      "status": "corrected",
+      "corrected_recommended": "Flat monthly 파트너 이용료 set only by objective, non-volume criteria (region, center size or listing tier), with no lead or match guarantees and no renewal pricing tied to delivered leads. Member-facing results must be member-choice based: show non-paying centers too, disclose ranking criteria, and label paid placements as 광고. No per-case 소개료, no revenue share, and no 본인부담금 waiver or discount. The platform may not do 간병인 matching itself unless it registers under 직업안정법. Sharing care or health data with a partner requires separate 민감정보 and third-party-provision consent. Get a written legal opinion or MOHW 질의회신 before launch.",
+      "note": "Verified: law.go.kr 조문정보 quotes §35⑥ verbatim: '누구든지 영리를 목적으로 금전, 물품, 노무, 향응, 그 밖의 이익을 제공하거나 제공할 것을 약속하는 방법으로 수급자를 장기요양기관에 소개, 알선 또는 유인하는 행위 및 이를 조장하는 행위를 하여서는 아니 된다' (신설 2013.8.13). The cited version is 법률 제21690호, effective 2026.11.27, which is not yet in force on 2026-09-15; check the effective text at launch. §35⑤ (본인부담금 면제·감경) was NOT in the fetched page, so it is unverified. 경향신문 2011-08-09 confirms '2년 이하 징역 또는 2000만원 이하 벌금' at the 입법예고 stage. Neither I nor the researcher could render the current §67 full text: law.go.kr, lawnb and lbox failed or returned 403. Only a search-engine summary places §35⑥ under §67② with 2년/2천만원. 의협신문 2022-04-14 confirms 헌법재판소 2019.9.26 2017헌마327 ('각 인증병원의 규모 등을 고려해 매월 산출되는 광고비용을 나눠 광고비를 고지한 점') versus 대법원 2019.4.5 2018도20928 (15∼20%). 고용노동부 2022-07-22 confirms 1% (구직자) and 30% (구인자, 건설 일용 10%). 한국일보 2024-11-28 confirms the 직업소개사업 requirement in 4분기. CORRECTION: 의협신문 2019-04-30 says '43개 병원으로부터 총 6억 805만 8850원', which is about 6.08억, not 6.018억. Legal-structure flags: (1) §35⑥ covers '누구든지' and '조장하는 행위', so both the platform and the paying center are exposed. (2) 2017헌마327 set aside a 기소유예 on specific facts (advertising priced by hospital size). It is not a safe harbor for a platform that actively routes members to paying partners via AI 상담. (3) This workbook's own model sets centers = leads ÷ 3, so the flat fee is economically about 28.6만원 per match; a prosecutor looking at substance could read it as a disguised 알선 fee. (4) 요양병원 listings may fall under 의료광고 rules (의료법 §56-57), including self-review for large internet media; not verified here. (5) AI routing of 간병 demand may itself be 직업소개 (§19 등록) or 직업정보제공 (§23 신고), whatever fee is charged to agencies. (6) Care needs are 민감정보 under PIPA §23, and sharing requires separate consent."
+     },
+     {
+      "key": "care_fee_per_center_month",
+      "status": "confirmed",
+      "note": "This is a derivation and the arithmetic is correct. Sources verified. 요양뉴스 2023-12-19: total revenue 524.88백만 (488.88 base + 36 사회복지사 가산), 인건비 87.1%, '월 소득이 47만 원에 불과'. 요양뉴스 2025-02-27: '케어포도 방문요양은 월 1만 1000원에 수급자가 10명씩 늘수록 5500원'. NABO: '재가급여 월 한도액은 1,177,000원' (2025 5등급). 케어닥 partnership page: '상담 시 산출', 37개+, 70개+. Math: 5.2488억/30/12 = 145.8만; 3 x 0.35 = 1.05; 30만/1.05 = 28.6만; 28.6/145.8 = 0.20. Caveats: (a) The 146만 is a 4등급 figure that includes a 가산, so it is not comparable to the 5등급 한도액 cited beside it. (b) Framing the fee as 'about 0.2 months of revenue' ignores the 87% wage share. On contribution (about 12.9% x 146만 = about 18.8만/월) payback is about 1.5 months. The base 30만 fee is also about 64% of the modeled director's 47만 monthly take-home. The 30만 level is a derived value, not a market quote."
+     },
+     {
+      "key": "care_fee_per_match_equivalent",
+      "status": "corrected",
+      "corrected_recommended": 286000,
+      "note": "The model arithmetic reproduces exactly: 81.65억 / 28,583 = 285,659원 in 2031. Low = 15만/(3x0.20) = 250,000 and high = 50만/(4x0.50) = 250,000. Corrections: (1) This is not a range. Low and high are both about 25만, so high sits below base; label it 'about 25-29만 across scenarios'. (2) Cross-check (b) is UNSUPPORTED. I searched the seoulhr.com page (서울간병인협회; published 2024-08-14, modified 2025-04-22) for 수수료 and percent signs and found no 10-15% agency fee, so the 22-39만원 figure has no source. The arithmetic (20 days x 11-13만 x 10-15%) would otherwise be right. The 주간경향 2025-10-13 quote '하루 11만원을 웃도는 간병비(2023년 기준)' is verified. (3) Cross-check (a): the caredochome.co.kr page still returns 403. A search result confirms the title and describes a consumer 지인추천 program open to anyone aged 19+. The reward is paid in stages: 2만원 주유권 at the visit consultation, 5만원 after the trial stay, 30만원 for a one-month stay and 100만원 for a long-term contract, totalling 137만. It is not a B2B partner-fee benchmark, and its legal status depends on whether 케어홈 is a 장기요양기관, which is not verified."
+     },
+     {
+      "key": "care_partner_centers",
+      "status": "confirmed",
+      "note": "I replicated the formula exactly. Base year-ends: 54 / 361 / 888 / 1,666 / 2,777. Low: 22 / 173 / 444 / 833 / 1,388. High: 94 / 541 / 1,333 / 2,500 / 4,166. For Dec-2027: 330,000 x 0.01 / 36 = 91.7, x 0.5917 = 54. 2,777 / 23,373 = 11.9%. Sources verified. 의약뉴스: '장기요양기관은 총 2만 9734개소', 재가 '2만 3373개소(전체의 78.6%)'. 이데일리/Daum 2026-04-07: '인수 당시 30여 개', '200호점 달성 이후 약 1년 만에' 300, acquisition 2021. 문화뉴스 2025-03-20: first single brand past 200. 브라보마이라이프 2024-08-20: '하이케어 이용 기관은 전국에 약 1100개', about 4만명. 케어닥: 37+/70+. Minor issues: 'about 100 net adds per year' holds only for 2025-03 to 2026-04. The 2021-2026 average is about 54 per year (30 to 300 over about 5 years). The 23,373 denominator counts all 재가 institution types (including 복지용구, 방문목욕 and so on), so the share of relevant 방문요양/주야간보호 centers would be higher than 12%. High 2031 is about 17.8%."
+     },
+     {
+      "key": "care_ramp",
+      "status": "confirmed",
+      "note": "The factual inputs verify. 한국시니어신문 2023-09-21: '1호 직영점(노원점)이 오픈한 2022년 4월 이후 약 1년 4개월 만에' 흑자 전환, 매출 증가율 1000%. ZDNet 2022-12-28: launched in July, and 3 months later '매주 1천500건 이상 일자리에 지원'. K글로벌타임스 2024-03-21: 2023 MAU '400% 증가'. 브라보마이라이프 2025-02-20: '2020년 7월 케어네이션을 출시', 매칭 금액 540억 원. Together with 아시아경제 2023-02 (about 1,500 matches/month) that is about 30 months. 스마일시니어 needed about 12-13 months per +100 branches. The 12-month base, 9-18 range and 30% starting ramp factor are judgment. None of the comps measures B2B partner onboarding onto an existing member base, and (a) is one center's time to profitability, not a lead-flow ramp."
+     },
+     {
+      "key": "care_revenue_2027_2031",
+      "status": "confirmed",
+      "note": "I reran the stated formula monthly from Jul-2027 to Dec-2031 and got identical figures. Base: 0.60 / 7.98 / 23.27 / 47.15 / 81.65억, leads 606 / 7,997 / 23,292 / 47,167 / 81,667, matches 212 / 2,799 / 8,152 / 16,508 / 28,583. Low: 0.13 / 1.68 / 5.81 / 11.78 / 20.41. High: 1.68 / 20.89 / 58.20 / 117.89 / 204.13. Sources verified. NABO 재정전망 table: 지출 17.6 (2025), 21.4 (2027), 31.4 (2031) 조원; CAGR (31.4/17.6)^(1/6) = 10.1%. NHIS 경영공시 재가: 10,216,331 백만원 and 13,850,546 건 (2025). Caveats: (1) Partner count is set by lead flow (centers = leads ÷ lpc), which makes the flat fee economically per-referral; see the legal flags under care_fee_structure. (2) The model has no churn, no onboarding lag and no pricing tiers. (3) NHIS 지급액 10.22조 and the 연보 figure of 10조1,897억 use different bases, and the research cites both; state which one is used."
+     },
+     {
+      "key": "ltc_recognized_and_home_care_2025",
+      "status": "confirmed",
+      "note": "Verified. 의약뉴스 2026-06-29: '123만 5000명으로 전년 대비 6.0% 증가'; '재가급여가 10조 1897억 원(63.0%)'; 재가기관 '2만 3373개소'; '요양보호사가 65만 4034명(90.0%)'. NHIS 경영공시 gives the exact 1,235,045. NABO 그림4 for 2024: 1~2등급 22.7만 and 3~5등급 8.7만 시설 입소자, total 31.4만; x 1.05 = 33.0만 is correct. The roughly 0.8M 재가 user count subtracts an unsourced non-user share, so it is correctly labeled an estimate. 재가 실인원 is still a gap."
+     },
+     {
+      "key": "private_caregiving_market",
+      "status": "confirmed",
+      "note": "Verified. MOHW 2023-12-21 release: 사적 간병비 3.6조 (2008), 8.0조 (2018), about 10조 (2022, estimate); 한국일보 2024-11-28 corroborates ('2022년 10조 원까지 늘어난 것으로 추정'). 주간경향 2025-10-13 says: '하루 11만원을 웃도는 간병비(2023년 기준)', '월평균 200만~267만원', '전국 요양병원 1391곳(2023년 기준)', 500 hospitals by 2030, '요양병원 입원 환자 21만5000명' of whom '약 8만명이 해당', 본인부담 '100%에서 30% 내외로', start '내년 하반기부터' (2026 H2), 6조5000억원 through 2030. The conclusion that the private 요양병원 간병 pool will shrink is a reasonable inference."
+     }
+    ],
+    "overall": "I re-opened every cited URL. 7 of 10 items are confirmed, 3 need corrections, and one supporting source is unsupported.\n\n**Numbers**\n- **Revenue model reproduces exactly.** I reran the monthly formula (Jul-2027 to Dec-2031) in Python. All three scenarios match: revenue, leads, matches, year-end centers, the 2031 per-match figure of 285,659원 and 2,777 centers = 11.9% of 23,373.\n- **Official figures verify.**\n  - KOSTAT: 65+ = 20.3%.\n  - NHIS: 인정자 1,235,045 (+6.0%), 인정률 90.1%, 재가 지급액 10,216,331 백만원.\n  - NABO PDF (I extracted the text myself): 11.7% (2024), 1,177,000원 한도액, 지출 17.6 / 21.4 / 31.4조, 입소자 22.7만 + 8.7만.\n  - MOHW: 18.6 / 47.2 / 81.4 / 30.7%, and 사적 간병비 about 10조 (2022).\n  - 의약뉴스 연보 figures, 주간경향 요양병원 급여화 figures, and the 요양뉴스 center model (5.2488억, 87.1%, 47만원) and ERP price (1.1만원) are also correct.\n\n**Corrections**\n1. **care_target_rate:** the high case of 2.0% does not follow from its own steps. 3-4% x 40% = 1.2-1.6%, so high should be 0.016. The 2.5-relatives multiplier also double-counts leads.\n2. **care_fee_per_match_equivalent:**\n   - The seoulhr.com page does not contain the 10-15% agency fee. I checked the page for 수수료 and percent signs and found none, so the 22-39만원 cross-check is unsupported.\n   - caredochome.co.kr still returns 403. A search result shows it is a consumer 지인추천 reward (2만 + 5만 + 30만 + 100만), not a B2B fee benchmark.\n   - Low and high are both about 25만, so they are not a range.\n3. **care_fee_structure:** the 2018도20928 amount is 6억 805만원 (about 6.08억), not 6.018억.\n\n**Legal checks**\n- **Verified:** §35⑥ verbatim, the 2011 입법예고 penalty (2년/2천만원), 2017헌마327 versus 2018도20928, the 직업소개 fee caps (1% / 30%) and the insurer 직업소개사업 requirement.\n- **Still unverified:**\n  - The current §67 text. law.go.kr, lawnb and lbox failed to render or returned 403; only a search summary places §35⑥ under §67②.\n  - §35⑤ (본인부담금 면제·감경 ban) was not in the fetched page.\n  - The cited law version takes effect 2026.11.27, after the retrieval date.\n\n**Legal-structure problems**\n- **The flat fee looks per-referral in substance.** The model sets partner centers = leads ÷ 3, so a flat fee works out to about 28.6만원 per match. With §35⑥ covering '누구든지' and '조장', this invites a disguised-알선 reading.\n- **The 헌재 case is not a safe harbor.** 2017헌마327 set aside a 기소유예 on specific facts: advertising to the public, priced by hospital size. It does not cover AI 상담 routing members to paying partners.\n- **Required safeguards:**\n  - Neutral, member-choice lists that include non-paying centers, with paid placements labeled as ads.\n  - Fee tiers on objective size or region criteria, with no lead guarantees.\n- **간병 matching** by the platform itself may need 직업안정법 registration (직업소개 §19 or 직업정보제공 §23), whatever fee is charged to agencies.\n- **요양병원 listings** may trigger 의료광고 rules (§56-57, self-review for large media); not verified.\n- **Care-need data** is 민감정보 and needs separate consent before it goes to partners.\n- **Sign-off:** get a written legal opinion or MOHW 질의회신 before launch."
+   }
+  },
+  {
+   "topic": "commerce_ramp",
+   "summary": "Seasonality: 국가데이터처 온라인쇼핑동향 has no separate 건강기능식품 series. The nearest proxy is 음·식료품 (monthly, 2023.1–2026.7, latest release 2026-09-01). I removed the trend with a centered 12-month moving average and rescaled older data to the latest revision. The seasonal swing is small, from 0.94 (Feb) to 1.08 (Sep). Peaks come in Jan (before 설) and Sep (추석), with a smaller one in May (가정의 달). Coupang Ads also reports that 건강식품 sales cluster in Mar–May and Aug–Sep. Gift-heavy 농축수산물 swings more (Jan and Sep about 1.19), so treat it as the upper bound if 홍삼/gift sets make up a big share. 스포츠·레저 is weak in Jan–Feb (about 0.76).\n\nRamp: I found no public month-by-month GMV for the first 6 months of any Korean health mall. Available data points: 캐시딜 was at about 10억 a month by month 9 and 30억 by month 14 (driven by traffic and catalog growth); 닥터다이어리 grew 13% or more per month in 2021; 필리 claimed 20–30% monthly growth. So I built the 6-month ramp from repurchase-retention curves applied to a steady inflow of first-time buyers, plus an optional slower start while members become aware of the mall. Sources: a Korean food-subscription cohort (60/42/25% at months 1–3) and Recharge supplement data (86.6/57.6/33.8% at orders 2–4). This gives 0.28 → 0.92 by month 6, and repurchases make up 62–71% of steady-state revenue.\n\nRecommendation: keep the annual totals as they are. Spread them across months with the mild index. It barely changes the H2 share (50.2% vs 50.0% if flat), but it puts Sep 2027 (추석 9/15, launch month 3) about 8% above average. Flat allocation is acceptable if simplicity matters more.",
+   "items": [
+    {
+     "key": "commerce_ramp_6m",
+     "label": "Commerce GMV ramp factors, launch month 1..6 (share of steady-state monthly GMV for the same member base)",
+     "unit": "factor (0-1), month1..month6",
+     "recommended": [
+      0.28,
+      0.51,
+      0.68,
+      0.8,
+      0.87,
+      0.92
+     ],
+     "low": [
+      0.2,
+      0.42,
+      0.6,
+      0.73,
+      0.82,
+      0.88
+     ],
+     "high": [
+      0.38,
+      0.61,
+      0.77,
+      0.86,
+      0.92,
+      0.95
+     ],
+     "derivation": "DERIVED (not sourced directly). Cohort-stacking model: GMV in month m = sum over past monthly buyer cohorts of first-purchase inflow a(j) x retention r(m-j); steady state = sum of r(k). Curve A, Recharge supplements (orders 2/3/4/7/13 = 86.6/57.6/33.8/9.8/1.4%, geometric interpolation between points), sum 3.47: ramp 0.288/0.538/0.704/0.801/0.866/0.909. Curve B, Laplace KR food-subscription cohort (months 1/2/3 = 60/42/25%, then the same decay ratio), sum 2.63: 0.380/0.607/0.767/0.862/0.918/0.952. Each curve also run with a first-buyer awareness ramp a = 0.70/0.85/0.95/1/1/1: A gives 0.202/0.420/0.602/0.735/0.824/0.881, B gives 0.266/0.482/0.666/0.798/0.879/0.929. Recommended = the average of the 4 cases, rounded. Low = A with awareness ramp. High = B without it. Month 7 is about 0.95 and month 8 onward is 1.0. Member growth must be modeled separately, not inside this factor. Cross-checks: 캐시딜 was still tripling from month 9 to month 14, which was traffic and catalog growth (captured by member growth here); 닥터다이어리 grew 13%+ a month in 2021; 필리 claimed 20-30% a month. Those rates fit a ramp that takes at least 6 months.",
+     "sources": [
+      {
+       "title": "Supplement subscription retention: a leaky first reorder",
+       "url": "https://getrecharge.com/blog/supplement-subscription-retention/",
+       "publisher": "Recharge",
+       "date": "2026-07 (updated 2026-08)",
+       "quote": "Only 86.6% of first-time buyers come back for a second order (data: ~1,800 supplement brands, Jul 2025-Jun 2026; order 3 57.6%, order 4 33.8%, order 7 9.8%, order 13 1.4%)"
+      },
+      {
+       "title": "재구매율, 우리가 착각하는 3가지 — 코호트 분석으로 밝혀진 진실",
+       "url": "https://blog.laplacetec.com/blog/repurchase-rate-myths/",
+       "publisher": "라플라스(Laplace) 블로그",
+       "date": "2025-09-02",
+       "quote": "식품 구독 브랜드 코호트: 1개월차 60%, 2개월차 42%, 3개월차 25% ('3개월차 벽')"
+      },
+      {
+       "title": "캐시딜 소개 (판매자 가이드)",
+       "url": "https://docs.channel.io/cashdeal/ko/articles/%EC%BA%90%EC%8B%9C%EB%94%9C-%EC%86%8C%EA%B0%9C-c024d21a",
+       "publisher": "넛지헬스케어 캐시딜",
+       "date": "2024-11-28 (page update)",
+       "quote": "23년 4월부터 본격 시작된 앱기반 폐쇄몰 / 연 120억 매출 수준(23년 12월 기준) / 현재 월 30억수준(24년 5월 기준)"
+      },
+      {
+       "title": "'닥터다이어리', 상반기 매출 55억원 돌파.. 전년대비 100% 달성",
+       "url": "https://www.getnews.co.kr/news/articleView.html?idxno=547406",
+       "publisher": "글로벌경제신문",
+       "date": "2021-08-27",
+       "quote": "21년 월평균 13% 이상의 성장률을 기록"
+      },
+      {
+       "title": "케어위드(필리) 기업정보",
+       "url": "https://www.nextunicorn.kr/company/efb63df007a220c9",
+       "publisher": "넥스트유니콘",
+       "date": "undated profile",
+       "quote": "2018년 10월에 런칭하여 ... 매월 20~30%의 빠른 성장을 이루고 있습니다"
+      }
+     ]
+    },
+    {
+     "key": "health_food_month_index",
+     "label": "Monthly seasonality index Jan..Dec, proxy = KOSTAT online 음·식료품 거래액, detrended",
+     "unit": "index (mean 1.0), Jan..Dec",
+     "recommended": [
+      1.067,
+      0.94,
+      1.009,
+      0.991,
+      1.013,
+      0.956,
+      1,
+      1.028,
+      1.078,
+      0.959,
+      0.983,
+      0.976
+     ],
+     "low": null,
+     "high": null,
+     "derivation": "DERIVED from sourced monthly data. Series = 음·식료품 online 거래액 (억원), 2023.1-2026.7. 2024.7-2026.7 values come from the 2026-07 release (e.g. 2025: 32,388/28,401/31,002/30,676/31,157/30,381/32,396/32,262/36,364/30,537/32,218/32,630; 2025 total 380,411). 2024.1-6 come from the 2025-11 release and 2023 from the 2024-12 release, each scaled to the latest revised quarterly totals. I divided each month by a centered 2x12 moving average, averaged the ratios by calendar month (Jan-Jun: 2 or 3 years, Jul-Dec: 3 years) and normalized them to average 1.0. Per-year ratios: Jan 1.089/1.067/1.045 (2024/25/26); Sep 1.066/1.041/1.124 (2023/24/25); Feb 0.951/0.928. Feb is partly low because it has fewer days. Caveat: 음·식료품 covers all processed food and beverages, not only 건강기능식품 (KOSTAT publishes no separate 건기식 series).",
+     "sources": [
+      {
+       "title": "2026년 7월 온라인쇼핑동향 (보도자료 PDF), 통계표 1-1 상품군별 온라인쇼핑 거래액 p.13",
+       "url": "https://mods.go.kr/boardDownload.es?bid=241&list_no=446725&seq=1",
+       "publisher": "국가데이터처(구 통계청)",
+       "date": "2026-09-01",
+       "quote": "Table 1-1 (단위: 억원) 음·식료품 2025 = 380,411; 2025.9 = 36,364; 2025.1 = 32,388"
+      },
+      {
+       "title": "2025년 11월 온라인쇼핑동향 (보도자료 PDF), 통계표 1-1 p.13",
+       "url": "https://mods.go.kr/boardDownload.es?bid=241&list_no=442890&seq=1",
+       "publisher": "국가데이터처",
+       "date": "2026-01-02",
+       "quote": "Table 1-1: 음·식료품 2024.1-6 = 29,547/26,107/28,139/27,971/29,218/27,185; 2023 quarters 71,984/73,487/79,538/77,261"
+      },
+      {
+       "title": "2024년 12월 온라인쇼핑동향 (보도자료 PDF), 통계표 1-1 p.26",
+       "url": "https://mods.go.kr/boardDownload.es?bid=241&list_no=434934&seq=1",
+       "publisher": "통계청",
+       "date": "2025-02-04",
+       "quote": "Table 1-1: 음·식료품 2023.1-12 = 25,665/21,336/24,502/23,502/24,975/24,070/24,751/26,257/27,382/24,654/25,821/25,501"
+      },
+      {
+       "title": "건강식품 카테고리 가정의 달 운영 전략",
+       "url": "https://ads.coupang.com/trends/07",
+       "publisher": "Coupang Ads (쿠팡광고)",
+       "date": "2024-04-09",
+       "quote": "환절기, 가정의달 시즌인 3월~5월 사이 ... 매출이 집중 상승; 추석이 껴있는 8월~9월"
+      }
+     ]
+    },
+    {
+     "key": "health_food_month_index_2027_calendar",
+     "label": "Alternative index matched to the 2027 holiday calendar (설 2/7, 추석 9/15), based on 2024 (설 2/10, 추석 9/17)",
+     "unit": "index (mean 1.0), Jan..Dec",
+     "recommended": [
+      1.083,
+      0.946,
+      1.009,
+      0.993,
+      1.025,
+      0.944,
+      0.985,
+      1.036,
+      1.035,
+      0.983,
+      0.982,
+      0.98
+     ],
+     "derivation": "DERIVED. Detrended 2024 음·식료품 ratios (same method and data as health_food_month_index), normalized to average 1.0. In 2024, 설 fell in early-to-mid Feb and 추석 in mid-Sep, close to 2027, so pre-holiday buying falls in Jan and splits across Aug/Sep. The 2024 holiday dates are general calendar knowledge and were not separately sourced. The 2027 dates are sourced.",
+     "sources": [
+      {
+       "title": "2027년 공휴일 72일·주5일제 휴일 119일…3일 이상 연휴 10번",
+       "url": "https://v.daum.net/v/20260629092431271",
+       "publisher": "아시아경제 (via Daum)",
+       "date": "2026-06-29",
+       "quote": "설날 2월 7일 (연휴 2월 6일부터 9일까지), 추석 9월 15일 (9월 14~16일)"
+      },
+      {
+       "title": "2026년 7월 온라인쇼핑동향 (보도자료 PDF)",
+       "url": "https://mods.go.kr/boardDownload.es?bid=241&list_no=446725&seq=1",
+       "publisher": "국가데이터처",
+       "date": "2026-09-01",
+       "quote": "Table 1-1 음·식료품 2024.7-12 = 28,813/30,538/30,730/29,370/29,521/29,641"
+      }
+     ]
+    },
+    {
+     "key": "gift_heavy_month_index_agri",
+     "label": "Upper-bound holiday sensitivity: KOSTAT online 농축수산물 index, detrended (gift-set driven)",
+     "unit": "index (mean 1.0), Jan..Dec",
+     "recommended": [
+      1.195,
+      0.997,
+      0.999,
+      0.956,
+      0.979,
+      0.918,
+      0.93,
+      0.977,
+      1.191,
+      0.919,
+      0.94,
+      1
+     ],
+     "derivation": "DERIVED with the same method as health_food_month_index, applied to the 농축수산물 series (e.g. 2025.1 = 14,938; 2025.9 = 15,258; 2025 total 146,125). Use only if the mall's mix leans heavily toward 명절 gift sets (홍삼, premium boxes).",
+     "sources": [
+      {
+       "title": "2026년 7월 온라인쇼핑동향 (보도자료 PDF), 통계표 1-1",
+       "url": "https://mods.go.kr/boardDownload.es?bid=241&list_no=446725&seq=1",
+       "publisher": "국가데이터처",
+       "date": "2026-09-01",
+       "quote": "농축수산물 2025 = 146,125; 2025.1 = 14,938; 2025.9 = 15,258"
+      }
+     ]
+    },
+    {
+     "key": "sports_leisure_month_index_2025",
+     "label": "Seasonality for 스포츠·레저용품 (for the sporting-goods part of the mix), 2025 within-year",
+     "unit": "index (mean 1.0), Jan..Dec",
+     "recommended": [
+      0.768,
+      0.755,
+      0.971,
+      1.1,
+      1.09,
+      1.011,
+      1.072,
+      0.962,
+      1.068,
+      1.103,
+      1.115,
+      0.983
+     ],
+     "derivation": "DERIVED. 2025 monthly 스포츠·레저용품 (3,593/3,535/4,542/5,149/5,099/4,731/5,018/4,503/4,999/5,162/5,219/4,599) divided by the 2025 monthly mean. The series was flat year over year (2024 57,254 vs 2025 56,148), so no detrending was needed.",
+     "sources": [
+      {
+       "title": "2026년 7월 온라인쇼핑동향 (보도자료 PDF), 통계표 1-1 p.13",
+       "url": "https://mods.go.kr/boardDownload.es?bid=241&list_no=446725&seq=1",
+       "publisher": "국가데이터처",
+       "date": "2026-09-01",
+       "quote": "스포츠·레저용품 2024 = 57,254; 2025 = 56,148 (억원)"
+      }
+     ]
+    },
+    {
+     "key": "food_bev_online_market_2025",
+     "label": "KOSTAT online 음·식료품 거래액, 2025 annual (context for category size and growth)",
+     "unit": "억원/year",
+     "recommended": 380411,
+     "derivation": "SOURCED: 2025 = 380,411억; 2024 = 348,054억 (revised). Growth +9.3% is DERIVED (380,411/348,054-1). July 2026 YoY was +8.1% (sourced).",
+     "sources": [
+      {
+       "title": "2026년 7월 온라인쇼핑동향 (보도자료 PDF)",
+       "url": "https://mods.go.kr/boardDownload.es?bid=241&list_no=446725&seq=1",
+       "publisher": "국가데이터처",
+       "date": "2026-09-01",
+       "quote": "음식서비스(8.9%), 음‧식료품(8.1%), 자동차 및 자동차용품(31.1%) 등에서 증가"
+      }
+     ]
+    },
+    {
+     "key": "repeat_buildup",
+     "label": "Repeat-purchase build-up in the first months",
+     "unit": "note (retention % by month since first purchase)",
+     "recommended": "Assume about 60% of first-time buyers reorder in month 2, about 40% in month 3 and about 25% in month 4, with roughly 10% still active at month 6. Repurchases then make up about 60-70% of steady-state GMV, and monthly GMV per member reaches about 90% of steady state by month 6. A 3-month churn wall is typical, so place CRM or subscription incentives at the month-2 reorder.",
+     "low": "US supplements (Recharge): 86.6% / 57.6% / 33.8% survive to orders 2/3/4, 9.8% to order 7; repeat share 71%",
+     "high": "Personalized subscriptions (모노랩스 IAM): 재구독률 80%+ (company claim, 2022)",
+     "derivation": "Mixed. Retention points are SOURCED (Laplace KR food-subscription cohort 60/42/25%; Recharge supplements; 모노랩스 claim). The repeat share of steady-state GMV is DERIVED as 1 - 1/sum(r): Recharge 1-1/3.47 = 71%, Laplace 1-1/2.63 = 62%. Subscription weight in mature malls is SOURCED: hy 프레딧 정기배송 = 60% of 거래액; 헥토헬스케어 정기구독 = about 40% of mall members and 80%+ of sales. These are brand self-reports and were not audited.",
+     "sources": [
+      {
+       "title": "재구매율, 우리가 착각하는 3가지",
+       "url": "https://blog.laplacetec.com/blog/repurchase-rate-myths/",
+       "publisher": "라플라스(Laplace)",
+       "date": "2025-09-02",
+       "quote": "1개월차 60%, 2개월차 42%, 3개월차 25%"
+      },
+      {
+       "title": "Supplement subscription retention: a leaky first reorder",
+       "url": "https://getrecharge.com/blog/supplement-subscription-retention/",
+       "publisher": "Recharge",
+       "date": "2026-07",
+       "quote": "Only 86.6% of first-time buyers come back for a second order"
+      },
+      {
+       "title": "디지털 헬스케어 '모노랩스', 125억원 규모 시리즈B 투자 유치",
+       "url": "https://pharm.edaily.co.kr/news/read?newsId=02486246632390256",
+       "publisher": "팜이데일리",
+       "date": "2022-07-01",
+       "quote": "80% 이상의 재구독율을 기록하며"
+      },
+      {
+       "title": "hy 프레딧, 2022년 누적 거래액 1000억 원 달성",
+       "url": "https://www.the-pr.co.kr/news/articleView.html?idxno=49586",
+       "publisher": "더피알",
+       "date": "2022-12-29",
+       "quote": "정기배송 서비스가 전체 거래액의 60%를 차지한다; 누적 거래액은 1075억 원"
+      },
+      {
+       "title": "플랫폼으로 눈돌리는 건강기능식품 업계...정기 구독·맞춤형 서비스 활발",
+       "url": "https://www.digitaltoday.co.kr/news/articleView.html?idxno=519526",
+       "publisher": "디지털투데이",
+       "date": "2024-05-30",
+       "quote": "자사몰 전체 회원 중 정기구독을 이용 중인 회원은 약 40%에 달한다"
+      }
+     ]
+    },
+    {
+     "key": "hff_online_channel_share",
+     "label": "Share of 건강기능식품 purchases made via internet malls (KHSA survey)",
+     "unit": "% of purchases",
+     "recommended": 69.8,
+     "derivation": "SOURCED from a secondary chart: KT Nasmedia 2025 건기식 업종 report, p.4 chart '건강기능식품 판매 채널별 비중', citing 한국건강기능식품협회 2024 시장현황 및 소비자 실태조사. Read from the rendered page image.",
+     "sources": [
+      {
+       "title": "TrendIssue Report 2025 주요 업종 시리즈 06 건강기능식품 (PDF) p.4",
+       "url": "https://www.nasmedia.co.kr/wp-content/uploads/2025/04/TrendIssue_Report_2025_%EC%A3%BC%EC%9A%94_%EC%97%85%EC%A2%85_%EC%8B%9C%EB%A6%AC%EC%A6%88_06%EA%B1%B4%EA%B0%95%EA%B8%B0%EB%8A%A5%EC%8B%9D%ED%92%88_F_0327.pdf",
+       "publisher": "KT 나스미디어 (data: 한국건강기능식품협회)",
+       "date": "2025-03 (file dated 0327)",
+       "quote": "건강기능식품 시장은 온라인 채널 비중이 70%로 우세 ... 인터넷몰 69.8%"
+      }
+     ]
+    },
+    {
+     "key": "seasonality_recommendation",
+     "label": "Use seasonality or flat allocation for monthly commerce revenue",
+     "unit": "decision",
+     "recommended": "Use mild seasonality to split annual totals across months (health_food_month_index; for 2027 you may use the 2027-calendar variant). Apply it after the launch ramp and renormalize so annual totals do not change. Flat allocation is acceptable: the index stays within 0.94-1.08, so the monthly error is at most about 8% and the annual error is zero.",
+     "derivation": "DERIVED. Peak-to-trough is only 1.078/0.940 = +15%, which is small next to member growth (0 to 330k in 2027) and the launch ramp (0.28 to 0.92). With the index, Jul-Dec holds 50.2% of the year versus 50.0% flat. The Sep 2027 추석 (launch month 3) and Jan 2028 설 peaks are worth capturing for inventory and working capital in the monthly 자금필요표.",
+     "sources": [
+      {
+       "title": "2026년 7월 온라인쇼핑동향 (보도자료 PDF)",
+       "url": "https://mods.go.kr/boardDownload.es?bid=241&list_no=446725&seq=1",
+       "publisher": "국가데이터처",
+       "date": "2026-09-01",
+       "quote": "Table 1-1 monthly 음·식료품 거래액 2024.7-2026.7"
+      },
+      {
+       "title": "건강식품 카테고리 가정의 달 운영 전략",
+       "url": "https://ads.coupang.com/trends/07",
+       "publisher": "Coupang Ads",
+       "date": "2024-04-09",
+       "quote": "추석이 껴있는 8월~9월 매출 상승"
+      }
+     ]
+    }
+   ],
+   "gaps": [
+    "KOSTAT 온라인쇼핑동향 publishes no separate 건강기능식품 series; 음·식료품 (all processed food and beverages) is used as a proxy. KOSIS table DT_1KE10051 could not be fetched (SSO redirect), so values were taken from the press-release PDF tables.",
+    "I found no public month-by-month GMV for the first 6-12 months of 필리, 모노랩스, 올리브영 온라인, 컬리 헬스, 카카오 선물하기 건기식 or 쿠팡 입점 cases. The 6-month ramp is therefore a cohort-model derivation built on retention benchmarks, not an observed launch curve.",
+    "Retention benchmarks come from one anonymized Korean food-subscription cohort (Laplace blog) and a US platform (Recharge). I found no Korean 건기식-specific cohort retention data from an official or audited source. 모노랩스 80%+ and hy/헥토 subscription shares are company self-reports.",
+    "The 캐시딜 figures (연 120억 at 2023-12, 월 30억 at 2024-05) come from a seller-guide page, not audited financials; its product mix (share of health products) is unknown.",
+    "The 2023 monthly values are an older vintage rescaled to revised quarterly totals, and 2026.6-7 are provisional (p). Holiday dates for 2023-2026 and 2028-2031 are not separately sourced; only the 2027 dates (설 2/7, 추석 9/15) are.",
+    "KHSA 인터넷몰 금액비중 by year (e.g. 71.0% in 2025) appeared only in a search snippet; I could not verify it on a primary page, so only the 69.8% figure (via Nasmedia chart) is included."
+   ],
+   "check": {
+    "verdicts": [
+     {
+      "key": "commerce_ramp_6m",
+      "status": "corrected",
+      "corrected_recommended": [
+       0.28,
+       0.51,
+       0.68,
+       0.8,
+       0.87,
+       0.92,
+       0.95,
+       0.97,
+       0.98,
+       0.99,
+       0.99,
+       1
+      ],
+      "note": "All sources opened again. Recharge (Jul 2026, updated Aug 2026; about 1,800 brands, Jul 2025-Jun 2026) confirms 86.6% (1st reorder), 57.6% (2nd), 33.8% (3rd), 9.8% (6th) and 1.4% (12th). These are cumulative order-sequence retention of first-time SUBSCRIBERS, so mapping them to orders 2/3/4/7/13 is correct. Laplace (2025-09-02, an anonymized 식품 구독 brand) confirms 60/42/25% at months 1-3. 캐시딜 (seller guide, 2024-11-28) confirms launch Apr 2023, 연 120억 수준 at Dec 2023 and 월 30억 at May 2024. Reading 연 120억 as about 10억 a month at month 9 is an interpretation of a run rate. 닥터다이어리 (2021-08-27) confirms 월평균 13% 이상, but the article does not say which metric. The 필리 profile is dated 2022.07.13, not undated, and its 20~30% monthly growth has no metric either. Both are pre-2023, and startup revenue growth is a weak cross-check for a per-member ramp. I recomputed the derivation: sums are 3.469 (A) and 2.638 (B). The four cases for months 1-6 match to ±0.001 (A 0.288/0.538/0.704/0.801/0.866/0.909; B 0.379/0.607/0.766/0.861/0.917/0.951; A with awareness 0.202/0.420/0.602/0.735/0.824/0.881; B with awareness 0.265/0.481/0.665/0.797/0.878/0.927). Their average rounds to 0.28/0.51/0.68/0.80/0.87/0.92, and the low/high vectors match. ERROR 1: 'month 8 onward is 1.0' is wrong. The 4-case average for months 7-12 is 0.946/0.965/0.977/0.986/0.992/0.996 (corrected vector covers months 1-12). ERROR 2 (logic): the factor is valid only for a constant member base. If the workbook multiplies members(t) x steady-state GMV per member x ramp(launch month), 2027 H2 is overstated, because members who join after launch start their own ramps. With steady member growth g, the long-run factor is sum r(k)(1+g)^-k / sum r(k): about 0.83-0.87 at g=10%/month and 0.73-0.79 at g=20%/month. The plan's path to 330k by Dec 2027 implies double-digit monthly growth. Apply the ramp by member-join cohort, or multiply by this growth discount. The awareness ramp (0.70/0.85/0.95) is an unsourced assumption. Recharge's subscriber base likely retains better than a general mall's buyers."
+     },
+     {
+      "key": "health_food_month_index",
+      "status": "confirmed",
+      "note": "I opened all three KOSTAT PDFs and read Table 1-1. The 2026-09-01 release (p.13) confirms 음·식료품 2025 monthly 32,388/28,401/31,002/30,676/31,157/30,381/32,396/32,262/36,364/30,537/32,218/32,630 (total 380,411), 2024.7-12 and 2026.1-7 (6-7p). The 2026-01-02 release (p.13) confirms 2024.1-6 = 29,547/26,107/28,139/27,971/29,218/27,185 and 2023 quarters 71,984/73,487/79,538/77,261. The 2025-02-04 release (p.26, titled '2024년 12월 및 연간 온라인쇼핑동향') confirms the 2023 monthly values exactly. I re-ran the method: scale to the latest quarterly totals, centered 2x12 MA, average by calendar month, normalize. Result [1.067,0.940,1.009,0.991,1.013,0.956,1.000,1.028,1.078,0.959,0.983,0.976], with per-year Jan 1.089/1.067/1.045, Sep 1.066/1.041/1.124 and Feb 0.951/0.928, all an exact match. Caveats: 음·식료품 is only a proxy for 건강기능식품. The Sep average is lifted by 2025, when 추석 was Oct 6 and pre-holiday buying fell in late Sep. The Coupang Ads Mar-May 건강식품 peak barely shows in this proxy (Mar-May 0.99-1.01)."
+     },
+     {
+      "key": "health_food_month_index_2027_calendar",
+      "status": "confirmed",
+      "note": "Replicated from 2024 ratios only: [1.083,0.946,1.009,0.992,1.025,0.944,0.984,1.036,1.036,0.983,0.982,0.980]. This matches the research within ±0.001 rounding (Apr, Jul, Sep). The Asia Economy/Daum article (2026-06-29) confirms 설날 2027-02-07 (연휴 2/6-9) and 추석 2027-09-15 (9/14-16). The 2024 dates (설 2/10, 추석 9/17) are correct general-calendar facts but were not sourced. This is a single-year basis, so noise is higher. Note that it puts Sep 2027 at +3.6%, not the +7.8% of the pooled index."
+     },
+     {
+      "key": "gift_heavy_month_index_agri",
+      "status": "confirmed",
+      "note": "Source values confirmed in the 2026-09-01 Table 1-1: 농축수산물 2025 = 146,125; 2025.1 = 14,938; 2025.9 = 15,258. I re-ran the same method (with 2023 and 2024H1 from the older releases, scaled) and got [1.195,0.997,0.999,0.956,0.979,0.918,0.930,0.977,1.191,0.919,0.940,1.000], an exact match. Caveat: the per-year Jan ratio swings from 1.10 to 1.30 with 설 timing (2025 설 was Jan 29). On the 2027-like 2024 calendar alone, the index is Jan 1.186, Feb 1.066, Sep 1.117. For 2027, the Sep upper bound is closer to 1.12 than 1.19."
+     },
+     {
+      "key": "sports_leisure_month_index_2025",
+      "status": "confirmed",
+      "note": "The 2026-09-01 Table 1-1 confirms 스포츠·레저용품 2025 monthly 3,593/3,535/4,542/5,149/5,099/4,731/5,018/4,503/4,999/5,162/5,219/4,599, and annual totals of 57,254 (2024) and 56,148 (2025). Dividing by the 2025 mean (4,679) gives the stated index exactly. Caveat: this is one year only, with no multi-year averaging."
+     },
+     {
+      "key": "food_bev_online_market_2025",
+      "status": "confirmed",
+      "note": "The 2026-09-01 release confirms 음·식료품 380,411억 (2025) and 348,054억 (2024, revised), in Table 1-1 p.13. Growth 380,411/348,054-1 = +9.3% is correct (derived). The +8.1% YoY for July 2026 is confirmed in the summary text '음‧식료품(8.1%)'. That is the total online figure; mobile alone was 6.8%."
+     },
+     {
+      "key": "repeat_buildup",
+      "status": "confirmed",
+      "note": "Sourced points confirmed: Laplace 60/42/25%. Recharge 86.6/57.6/33.8/9.8/1.4%. 모노랩스 '80% 이상의 재구독율' (팜이데일리 2022-07-01, IAM service). hy 프레딧 '정기배송 ... 전체 거래액의 60%' and 누적 1,075억 as of Nov 2022 (더피알 2022-12-29). 헥토헬스케어 '자사몰 전체 회원 중 정기구독 ... 약 40%' and '전체 매출 중 80% 이상이 드시모네 정기배송' (디지털투데이 2024-05-30). Derived repeat shares are correct: 1-1/3.469 = 71% and 1-1/2.638 = 62%. 'About 10% at month 6' fits Laplace extrapolated (8.9%). Recharge interpolated gives about 15%, and its 9.8% is launch-month 7. Logic flag: the low/high brackets are inverted on retention. Recharge (86.6% at order 2) is the HIGHEST retention and sits in 'low'. 모노랩스 80% sits in 'high' but is lower than Recharge. The repeat share also assumes first and repeat orders have equal value. All subscription shares are unaudited company claims, and most date from 2022."
+     },
+     {
+      "key": "hff_online_channel_share",
+      "status": "confirmed",
+      "note": "I rendered Nasmedia PDF p.4. The chart '건강기능식품 판매 채널별 비중' shows 인터넷몰 69.8%. Breakdown: 오픈마켓/소셜커머스 32.3%, 기타 인터넷몰(네이버·카카오) 30.4%, 브랜드몰 24.0%, 홈쇼핑/백화점몰 13.3%. Headline: '온라인 채널 비중이 70%로 우세'. Source note: 건강기능식품협회 '2024 건강기능식품 시장 현황 및 소비자 실태조사 보고서'. Caveats: the chart does not say whether shares are by value or purchase count, so the unit '% of purchases' is an interpretation. The 2024 report most likely reflects 2023 purchases."
+     },
+     {
+      "key": "seasonality_recommendation",
+      "status": "corrected",
+      "corrected_recommended": "Use mild seasonality and renormalize to annual totals, or allocate flat (the pooled index stays within 0.94-1.08, so monthly error is at most about 8%). For 2027, prefer the 2027-calendar (2024-analog) index. It puts Aug 2027 at +3.6% and Sep 2027 (추석 9/15, launch month 3) at +3.6%, not +8%. Jan is the main peak (+8%) and Feb the trough (-5%). Apply seasonality to the cohort- and growth-adjusted ramp (see commerce_ramp_6m), not to members x steady GMV.",
+      "note": "Confirmed: peak-to-trough 1.078/0.940 = +14.7% (about 15%), and the Jul-Dec share with the pooled index = 50.19% vs 50.0% flat. Coupang Ads (2024-04-09) confirms '3월~5월 봄, 가정의 달 ... 매출이 집중 상승' and '추석이 껴있는 8월~9월에 매출이 집중 상승'. ERROR: the '+8% in Sep 2027' figure uses the pooled index. That Sep value (1.078) is lifted by 2025, when 추석 was Oct 6 and buying piled into late Sep. The 2027-calendar variant the same research recommends gives Sep 1.036 (Aug 1.036), so the uplift is about +3.5%, split across Aug and Sep. The Jan 2028 설 peak is plausible (설 2028 is Jan 26), but that date was not sourced. Note also that the 50.2% H2 share is irrelevant for 2027, when commerce runs only Jul-Dec."
+     }
+    ],
+    "overall": "I opened every cited source again. I read the three KOSTAT PDFs (Table 1-1 on p.13/p.13/p.26), and Nasmedia p.4 as a rendered image. All sourced numbers match the sources, and I found no missing or invented URLs. I re-ran both derivations. The seasonal indices reproduce exactly. The 4-case cohort ramp reproduces to ±0.001. Two items need correction. (1) commerce_ramp_6m: months 1-6 are right, but 'month 8 onward is 1.0' is wrong. Months 7-12 run 0.95/0.97/0.98/0.99/0.99/1.00. The bigger problem is how the factor gets applied: it is valid only for a constant member base. With the planned member growth to 330k by Dec 2027 (double-digit % a month), members x steady GMV x ramp overstates H2 2027. The growth discount is about 0.83-0.87 at 10%/month and about 0.73-0.79 at 20%/month. Apply the ramp by member-join cohort. (2) seasonality_recommendation: Sep 2027 uplift is about +3.6% under the 2027-calendar index, not +8%. Minor source issues: the 필리 profile is dated 2022-07-13, not undated. The 닥터다이어리 13% and 필리 20-30% growth figures name no metric and predate 2023, so they are weak cross-checks. In repeat_buildup the low/high brackets are inverted: Recharge is the highest retention but is labelled low. Recharge covers subscribers only, which likely overstates general-mall retention. LEGAL/STRUCTURE FLAGS (from general knowledge; not verified against sources in this check): (a) The ramp and seasonality apply to GMV. Commerce revenue should be gross only for 직매입 (principal). For 통신판매중개/marketplace sales, revenue is the commission (agent, K-IFRS 15). Peer 'sales' figures such as 캐시딜 may be 거래액, not 매출. (b) Selling 건강기능식품 online needs 건강기능식품 일반판매업 신고 and 통신판매업 신고, and ads are subject to 자율심의. Tying AI 주치의 or 검진 results to product recommendations risks disease-efficacy advertising violations and 의료법 issues. (c) Using 검진 or insurance-DB health data (민감정보) for product marketing needs separate consent under 개인정보보호법 (민감정보 and marketing consents). (d) Paying hospital or pharmacy subscribers for product sales or referrals raises 의료법/약사법 rebate and patient-inducement risk. Cashback or points offered to 현대해상 insured members may raise 보험업법 특별이익 issues. (e) Subscription auto-billing is subject to the 2025 전자상거래법 amendments on recurring-payment notice and dark patterns, so reorder-retention assumptions should not rely on silent renewals."
+   }
+  },
+  {
+   "topic": "inst_saas_ramp",
+   "summary": "Core 청구SW is cheap and sticky. 의사랑 costs 가입비 100만원 plus 9만원/월, and 유팜 is 5만원/월 basic (FY2025 DART). UBcare serves about 17,800 병·의원 and 8,200 약국. 약정원's share slips only about 1pp a year.\n\nNew clinical add-ons ramp at different speeds:\n- 딥카스 (paid hospital AI): 40 billing hospitals at 13 months, 60 at 17.\n- 닥터팔레트 (cloud EMR): about 50 의원 at 18 months.\n- 니어닥 (AI chart): 400+ 병·의원 in about 2 months, over 50% paid, MRR 1,230만원 (about 3-6만원 per clinic, my estimate).\n- 실손24 (free, rolled out through EMR vendors): 6.9% to 26.2% of 의원·약국 in 5 months, then only +0.6pp a month.\n\nPromotions: 의사랑 AI is free until end-2026. Rival pharmacy software offers 2개월-2년 fee waivers.\n\nMy recommended ramp: pilots signed during the Oct-Dec 2026 prep convert in January (8% of year-end), then climb steadily to 100% in December. That averages 5.84 paid months per year-end institution (low 4.68, high 7.52).\n\nCounts: 200 의원 and 200 약국 (0.6% and 0.8% of the market) are plausible if sold through EMR-vendor integration. 200 병원급 hospitals would be aggressive.\n\nFees: 50만원/월 is 5.6x the leading EMR and 8-16x AI-chart revenue per clinic. It only holds up if bundled with patient flow (검진/보험 leads). A pure-SaaS price would be about 10-20만원. 약국 20만원 is 4x 유팜 and 1.33x 팜인사이트 (15만원), so it is at the upper edge.",
+   "items": [
+    {
+     "key": "inst_ramp_12m",
+     "label": "Monthly paid-institution ramp factors, Jan..Dec 2027 (share of Dec-2027 paid count active in month)",
+     "unit": "fraction of year-end paid institutions (Jan..Dec 2027)",
+     "recommended": [
+      0.08,
+      0.13,
+      0.19,
+      0.26,
+      0.33,
+      0.41,
+      0.5,
+      0.59,
+      0.68,
+      0.78,
+      0.89,
+      1
+     ],
+     "low": [
+      0.03,
+      0.06,
+      0.1,
+      0.15,
+      0.21,
+      0.28,
+      0.36,
+      0.45,
+      0.55,
+      0.67,
+      0.82,
+      1
+     ],
+     "high": [
+      0.15,
+      0.25,
+      0.35,
+      0.45,
+      0.54,
+      0.62,
+      0.7,
+      0.77,
+      0.84,
+      0.9,
+      0.95,
+      1
+     ],
+     "derivation": "OWN DERIVATION, not a sourced series. No Korean filing discloses monthly paid counts for a clinical add-on in its first 12 months, so the curve is built from these benchmarks: (a) Paid hospital AI SaaS (딥카스) adds institutions roughly linearly, about 3-5 per month: 40 billing hospitals at ~13 months, 60 at ~17, 83 at ~20, 95 at ~24. (b) An AI chart add-on for 의원 (니어닥, 2026) signed 400+ 병·의원 in about 2 months with >50% paid conversion, so demand for AI add-ons can be front-loaded. (c) 실손24 (free, vendor-gated) went from 6.9% before launch to 26.2% at +5 months, then slowed to +0.6pp a month; integration capacity caps later growth. (d) Onboarding is limited by installation throughput (PM+20: about 500 pharmacies a month even under a mandate). Recommended case: pilots recruited during the Oct-Dec 2026 prep convert to paid in Jan 2027 (8% of year-end), then a steady climb that speeds up slightly as sales capacity grows. Sum of factors: recommended 5.84 (average 0.487), low 4.68, high 7.52. Illustration: 200 병원 x 50만원 x 5.84 = 5.84억원; 200 약국 x 20만원 x 5.84 = 2.34억원. For the 50 검진센터 (enterprise contracts, and 검진 revenue starts in April), use the low curve or start at 0 until March.",
+     "sources": [
+      {
+       "title": "뷰노메드 '딥카스', 연내 청구 병원 수 목표 초과 달성",
+       "url": "https://www.pharmnews.com/news/articleView.html?idxno=229715",
+       "publisher": "팜뉴스",
+       "date": "2023-08-31",
+       "quote": "연내 목표였던 40곳을 8월 내 달성 ... 목표를 60곳으로 상향"
+      },
+      {
+       "title": "심정지 예측 '뷰노메드 딥카스', 내달부터 비급여 청구 가능",
+       "url": "http://www.docdocdoc.co.kr/news/articleView.html?idxno=2024368",
+       "publisher": "청년의사",
+       "date": "2022-06-24",
+       "quote": "Billing (비급여) permitted from 2022-08-01"
+      },
+      {
+       "title": "의료파업 비켜간 뷰노…심정지 예측 '딥카스' 청구 병원, 100곳 '눈앞'",
+       "url": "https://www.mt.co.kr/thebio/2024/08/01/2024080109113411361",
+       "publisher": "머니투데이",
+       "date": "2024-08-01",
+       "quote": "지난해 말 60곳 ... 3월(83곳) ... 7월 기준 ... 총 95곳"
+      },
+      {
+       "title": "모니터 대신 환자에 집중…병·의원 400곳이 택한 AI 차트 서비스",
+       "url": "https://view.nate.com/economy/view/400424/",
+       "publisher": "유니콘팩토리 (via 네이트)",
+       "date": "2026-08-05",
+       "quote": "5월 출시 이후 두 달여 만에 ... 병·의원 400곳 이상"
+      },
+      {
+       "title": "실손청구 전산화 의원·약국 연계율 6.9%…6630곳 완료",
+       "url": "https://m.dailypharm.com/user/news/1062",
+       "publisher": "데일리팜",
+       "date": "2025-10-23",
+       "quote": "2단계 (의원·약국) 6.9% ... 6630곳 완료"
+      },
+      {
+       "title": "'실손24' 안 하는 의원·약국 74% ...정부 개선책 마련",
+       "url": "https://dailypharm.com/user/news/337533?view_mode=pc",
+       "publisher": "데일리팜",
+       "date": "2026-04-15",
+       "quote": "의원·약국 ... 26.2%(2만5472개)"
+      },
+      {
+       "title": "'종이 없는 보험청구' 실손24 의료기관 참여율 30% 못 미쳐...EMR업체 협조 관건",
+       "url": "https://www.thepublic.kr/news/articleView.html?idxno=304098",
+       "publisher": "더퍼블릭",
+       "date": "2026-05-12",
+       "quote": "한 달 전보다 0.6%p 오르는 데 그쳤다"
+      }
+     ]
+    },
+    {
+     "key": "trial_months",
+     "label": "Free trial / promotional months before paid subscription",
+     "unit": "months",
+     "recommended": 2,
+     "low": 0.25,
+     "high": 5,
+     "derivation": "Sourced range, with my own pick for the recommended value. Low: 닥터팔레트 gives a 1-week (0.25-month) online trial. High: GC메디아이 (former 유비케어) made 의사랑 AI free from launch on 2026-08-06 to end-2026, about 5 months. Rival pharmacy claim software offers switchers at least 2 months and up to 2 years of fee waivers, so 2 months is the recommended floor-level promotion. Because 의사랑 AI is free through Dec 2026 and competes directly, the free period should fall inside the Oct-Dec 2026 prep, with billing from Jan 2027. Paid factors in inst_ramp_12m are already net of trials.",
+     "sources": [
+      {
+       "title": "GC메디아이, AI 진료 솔루션 '의사랑 AI' 출시",
+       "url": "https://www.kpanews.co.kr/news/articleView.html?idxno=539871",
+       "publisher": "약사공론",
+       "date": "2026-08-06",
+       "quote": "2026년 말까지 '의사랑 AI'의 모든 기능을 무료로 제공"
+      },
+      {
+       "title": "PM+20 전환 순연…PIT3000 6월 종료 사실상 무산",
+       "url": "https://www.dailypharm.com/user/news/339151",
+       "publisher": "데일리팜",
+       "date": "2026-06-05",
+       "quote": "최소 2개월에서 길게는 2년까지 사용료 면제"
+      },
+      {
+       "title": "메디블록 닥터팔레트 도입 의원 150곳 분석해보니",
+       "url": "https://m.medigatenews.com/news/714426748",
+       "publisher": "메디게이트뉴스",
+       "date": "2023-09-05",
+       "quote": "일주일동안 무료로 체험"
+      }
+     ]
+    },
+    {
+     "key": "emr_price_benchmark",
+     "label": "Core EMR / 청구SW list price: 의원 (의사랑) and 약국 (유팜)",
+     "unit": "원/월 [의원, 약국]",
+     "recommended": [
+      90000,
+      50000
+     ],
+     "low": [
+      90000,
+      40000
+     ],
+     "high": [
+      90000,
+      50000
+     ],
+     "derivation": "Sourced list prices from the market leader's FY2025 DART 사업보고서 price table. 의사랑 (병·의원 EMR): 가입비 100만원 + 월회비 9만원, unchanged 2023-2025, switching to maintenance fees after 3 years. 유팜 (약국): 4만원 in 2023-2024; 2025 basic 5만원, additional seat 4만원. Not found: fees for 비트컴퓨터, 이지스, 포인트닉스, 이팜, 온팜 and PM+20. Industry-wide averages are therefore not established.",
+     "sources": [
+      {
+       "title": "유비케어 사업보고서 (제32기, 2025)",
+       "url": "https://kind.krx.co.kr/external/2026/03/16/001734/20260316005165/11011.htm",
+       "publisher": "유비케어 / KRX KIND (DART 공시)",
+       "date": "2026-03-16",
+       "quote": "가입비 1백만원 + 월회비 9만원; 월회비 5만원(기본), 월회비 4만원(추가)"
+      }
+     ]
+    },
+    {
+     "key": "ai_addon_price_benchmark",
+     "label": "AI add-on price benchmarks: 의원 AI chart (implied) and 약국 AI CRM (list)",
+     "unit": "원/월 [의원 AI chart implied revenue per paid clinic, 약국 AI CRM list]",
+     "recommended": [
+      61500,
+      150000
+     ],
+     "low": [
+      30750,
+      150000
+     ],
+     "high": [
+      61500,
+      150000
+     ],
+     "derivation": "니어닥 facts are sourced: MRR 1,230만원, 400+ 병·의원 customers, paid conversion 50%+. Revenue per paid clinic is my derivation: 12,300,000 / (50% x 400) = about 61,500원 (upper), or 12,300,000 / 400 = about 30,750원 if all were paying (lower). 크레소티 팜인사이트 (pharmacy AI CRM, July 2026 launch) lists a 15만원 monthly subscription (sourced). 의사랑 AI post-promotion pricing is not disclosed.",
+     "sources": [
+      {
+       "title": "모니터 대신 환자에 집중…병·의원 400곳이 택한 AI 차트 서비스",
+       "url": "https://view.nate.com/economy/view/400424/",
+       "publisher": "유니콘팩토리 (via 네이트)",
+       "date": "2026-08-05",
+       "quote": "유료 전환율은 50% 이상 ... MRR은 1230만원"
+      },
+      {
+       "title": "약국으로 들어온 AI…재고관리·처방해석·복약지도 '일당백'",
+       "url": "https://www.dailypharm.com/user/news/338691",
+       "publisher": "데일리팜",
+       "date": "2026-06-02",
+       "quote": "매달 15만원의 구독료"
+      }
+     ]
+    },
+    {
+     "key": "plan_fee_ratio_vs_benchmark",
+     "label": "Plan fees vs benchmarks (병원 50만원/월, 약국 20만원/월)",
+     "unit": "x benchmark [병원 fee / 의사랑 월회비, 약국 fee / 유팜 기본]",
+     "recommended": [
+      5.6,
+      4
+     ],
+     "low": [
+      1,
+      1.33
+     ],
+     "high": [
+      16.3,
+      4
+     ],
+     "derivation": "OWN DERIVATION from sourced prices. 병원: 500,000 / 90,000 = 5.6x the leading EMR; vs 니어닥 implied revenue per clinic, 8.1x-16.3x. 강남언니 is a patient-acquisition platform, not SaaS: 2020 revenue 120억원 over 800 paid 병원 = about 125만원/월 per paid hospital (my derivation; 2021 source; revenue may include non-hospital items). So 50만원 is plausible only if bundled with measurable patient or lead flow (검진 referrals, 보험 DB), or if sold to 병원급. A pure EMR/AI add-on anchor is 5-15만원, and an incumbent gives AI free through 2026. 약국: 200,000 / 50,000 = 4.0x 유팜; 200,000 / 150,000 = 1.33x 팜인사이트. That is the upper edge, defensible only with commerce or 건기식 revenue share. Low values show the ratio if fees are cut to benchmark-like levels (병원 9만원, 약국 20만원 vs 15만원 AI CRM).",
+     "sources": [
+      {
+       "title": "유비케어 사업보고서 (제32기, 2025)",
+       "url": "https://kind.krx.co.kr/external/2026/03/16/001734/20260316005165/11011.htm",
+       "publisher": "유비케어 / KRX KIND",
+       "date": "2026-03-16",
+       "quote": "가입비 1백만원 + 월회비 9만원"
+      },
+      {
+       "title": "약국으로 들어온 AI…재고관리·처방해석·복약지도 '일당백'",
+       "url": "https://www.dailypharm.com/user/news/338691",
+       "publisher": "데일리팜",
+       "date": "2026-06-02",
+       "quote": "매달 15만원의 구독료"
+      },
+      {
+       "title": "[찐검승부] 바비톡 vs 강남언니 10조 미용성형 시장 주도권 경쟁",
+       "url": "https://www.shinailbo.co.kr/news/articleView.html?idxno=1466709",
+       "publisher": "신아일보",
+       "date": "2021-10-05",
+       "quote": "유료 입점병원 800곳 ... 지난해 매출 ... 120억원"
+      }
+     ]
+    },
+    {
+     "key": "plan_count_penetration",
+     "label": "Plan year-1 paid counts as share of national 의원 / 약국 base",
+     "unit": "% of national base [200 병·의원 / 의원 base, 200 약국 / 약국 base]",
+     "recommended": [
+      0.57,
+      0.84
+     ],
+     "derivation": "OWN DERIVATION. 200 / 34,958 의원 (Mar 2023, cited by 메디게이트) = 0.57%. 200 / 23,697 약국 (Dec 2024) = 0.84%. For comparison: 니어닥 reached about 200+ paid 병·의원 in about 2 months (derived from 400 x 50%+), 굿팜 went from 40 pilot pharmacies (Feb 2021) to about 750 (≈2022) and about 1,500 (Mar 2025), and 파마시뷰티존 reached 200 pharmacies about 2 months after its July 2026 launch. So 200 의원 plus 200 약국 in 12 months is plausible for an add-on. If '병원' means 병원급 hospitals, 200 would be aggressive: 딥카스 had 60 billing hospitals after about 17 months.",
+     "sources": [
+      {
+       "title": "의원급 EMR 인지도, 유비케어·비트컴·이지스 순...",
+       "url": "https://m.medigatenews.com/news/1036211242",
+       "publisher": "메디게이트뉴스",
+       "date": "2023-04-26",
+       "quote": "34,958 clinics nationwide as of March 2023"
+      },
+      {
+       "title": "청구SW 점유율...약정원 43.5%, 유팜 34.6%, 이팜 10.6%",
+       "url": "https://www.dailypharm.com/user/news/4466",
+       "publisher": "데일리팜",
+       "date": "2025-07-01",
+       "quote": "전체 약국 2만3697개"
+      },
+      {
+       "title": "\"약국 토탈 솔루션 굿팜, 한 번 써보면 못 바꿔요\"",
+       "url": "https://www.kpanews.co.kr/news/articleView.html?idxno=258022",
+       "publisher": "약사공론",
+       "date": "2025-03-24",
+       "quote": "750 pharmacies 3 years ago to about 1,500 now"
+      },
+      {
+       "title": "약국 중심 강조 헬스케어 솔루션 굿팜, 차별점 있나",
+       "url": "http://www.newsmp.com/news/articleView.html?idxno=212855",
+       "publisher": "의약뉴스",
+       "date": "2021-03-04",
+       "quote": "Launched Feb 2021; 40 pilot pharmacies; 2021 target 2,000"
+      },
+      {
+       "title": "바로팜 '파마시뷰티존', 도입 약국 200곳 돌파... 연내 1000곳 확대 목표",
+       "url": "https://www.pharmnews.com/news/articleView.html?idxno=306193",
+       "publisher": "팜뉴스",
+       "date": "2026-09-10",
+       "quote": "Launched July 2026; 100 in August; 200 by Sep 10"
+      },
+      {
+       "title": "뷰노 딥카스 청구 병원, 100곳 '눈앞'",
+       "url": "https://www.mt.co.kr/thebio/2024/08/01/2024080109113411361",
+       "publisher": "머니투데이",
+       "date": "2024-08-01",
+       "quote": "지난해 말 60곳"
+      }
+     ]
+    },
+    {
+     "key": "churn_benchmark",
+     "label": "Monthly logo churn for a clinical AI/platform add-on subscription",
+     "unit": "% of paid institutions per month",
+     "recommended": 1,
+     "low": 0.25,
+     "high": 3,
+     "derivation": "Mostly OWN ASSUMPTION anchored on Korean proxies; no Korean clinical SaaS discloses churn. Core-software proxy (low): 약정원 청구SW share went 45.4% -> 44.1% -> 43.5%. The relative base loss of 1.3/45.4 = 2.9% and 0.6/44.1 = 1.4% a year is net churn of roughly 1.5-3%/yr, about 0.25%/month. UBcare's network was nearly flat from FY2023 (17,700 병·의원 / 8,000 약국, as quoted in a DART filing) to FY2025 (17,800 / 8,200). Add-ons are less sticky: 니어닥 converted only 50%+ of sign-ups to paid. Recommended 1%/month is about 11%/yr. High 3%/month is a generic SMB SaaS assumption, not sourced. A Recurly page was checked but its measurement period was ambiguous, so it was not used.",
+     "sources": [
+      {
+       "title": "청구SW 점유율...약정원 43.5%, 유팜 34.6%, 이팜 10.6%",
+       "url": "https://www.dailypharm.com/user/news/4466",
+       "publisher": "데일리팜",
+       "date": "2025-07-01",
+       "quote": "2023년 45.4%, 2024년 44.1%, 2025년 43.5%로 3년 연속 감소"
+      },
+      {
+       "title": "유비케어 사업보고서 (제32기, 2025)",
+       "url": "https://kind.krx.co.kr/external/2026/03/16/001734/20260316005165/11011.htm",
+       "publisher": "유비케어 / KRX KIND",
+       "date": "2026-03-16",
+       "quote": "병ㆍ의원 17,800여 개, 약국 8,200여 개"
+      },
+      {
+       "title": "유투바이오 사업보고서 (제15기, 2023) — cites 유비케어 network",
+       "url": "https://kind.krx.co.kr/external/2024/03/20/000157/20240320000768/11011.htm",
+       "publisher": "유투바이오 / KRX KIND",
+       "date": "2024-03-20",
+       "quote": "17,700여 개의 병원ㆍ의원, 8,000여개의 약국"
+      },
+      {
+       "title": "모니터 대신 환자에 집중…병·의원 400곳이 택한 AI 차트 서비스",
+       "url": "https://view.nate.com/economy/view/400424/",
+       "publisher": "유니콘팩토리 (via 네이트)",
+       "date": "2026-08-05",
+       "quote": "유료 전환율은 50% 이상"
+      }
+     ]
+    },
+    {
+     "key": "trial_to_paid_conversion",
+     "label": "Trial or sign-up to paid conversion for an 의원 AI add-on",
+     "unit": "% of sign-ups",
+     "recommended": 50,
+     "low": 50,
+     "high": 60,
+     "derivation": "50% is sourced (니어닥 '50% 이상'). The 60% high is my assumption. Use this to size the pilot funnel: to reach about 16 paid institutions per segment in Jan 2027, recruit about 32 pilots during Oct-Dec 2026.",
+     "sources": [
+      {
+       "title": "모니터 대신 환자에 집중…병·의원 400곳이 택한 AI 차트 서비스",
+       "url": "https://view.nate.com/economy/view/400424/",
+       "publisher": "유니콘팩토리 (via 네이트)",
+       "date": "2026-08-05",
+       "quote": "유료 전환율은 50% 이상을 기록"
+      }
+     ]
+    },
+    {
+     "key": "bench_deepcars_billing_hospitals",
+     "label": "딥카스 (paid hospital AI SaaS) billing hospitals after billing start 2022-08",
+     "unit": "hospitals at [2023-08, 2023-12, 2024-01, 2024-03, 2024-07]",
+     "recommended": [
+      40,
+      60,
+      70,
+      83,
+      95
+     ],
+     "derivation": "Sourced counts, about 13, 17, 18, 20 and 24 months after the 2022-08-01 billing start. The Jan 2024 figure is '70여개' billing or contracted, and January was the record contracting month (10+ hospitals, 3,500+ beds). Derived pace: about 3-5 hospitals a month. Target segment is 상급종합/종합병원, not 의원.",
+     "sources": [
+      {
+       "title": "뷰노메드 '딥카스', 연내 청구 병원 수 목표 초과 달성",
+       "url": "https://www.pharmnews.com/news/articleView.html?idxno=229715",
+       "publisher": "팜뉴스",
+       "date": "2023-08-31",
+       "quote": "40곳을 8월 내 달성"
+      },
+      {
+       "title": "뷰노메드 딥카스, 월간 최다 신규 계약 및 병상 수 확보",
+       "url": "https://www.vuno.co/news/view/1992",
+       "publisher": "뷰노",
+       "date": "2024-01-30",
+       "quote": "10+ contracts in January; ~70 hospitals; 28,000+ billing beds"
+      },
+      {
+       "title": "뷰노 딥카스 청구 병원, 100곳 '눈앞'",
+       "url": "https://www.mt.co.kr/thebio/2024/08/01/2024080109113411361",
+       "publisher": "머니투데이",
+       "date": "2024-08-01",
+       "quote": "3월(83곳) ... 총 95곳"
+      }
+     ]
+    },
+    {
+     "key": "bench_vitalcare_hospitals",
+     "label": "에이아이트릭스 바이탈케어 hospitals about 25 months after 2023-03 비급여 entry",
+     "unit": "hospitals (Apr 2025)",
+     "recommended": 100,
+     "derivation": "Sourced: 100 hospitals and about 45,000 beds as of April 2025, after entering 비급여 in March 2023. 2024 revenue about 100억원. Derived average: about 4 hospitals a month.",
+     "sources": [
+      {
+       "title": "에이아이트릭스, '바이탈케어' 청구 병원 100곳↑",
+       "url": "https://www.biotimes.co.kr/news/articleView.html?idxno=20970",
+       "publisher": "바이오타임즈",
+       "date": "2025-04-21",
+       "quote": "2023년 3월 비급여 시장에 진입 ... 100개 병원, 약 4만 5,000개 병상"
+      }
+     ]
+    },
+    {
+     "key": "bench_cloud_emr_clinics",
+     "label": "Paid cloud EMR 의원 adoption after launch (닥터팔레트, 비트플러스)",
+     "unit": "의원 [닥터팔레트 at 18 months, at 24 months, 비트플러스 within 12 months]",
+     "recommended": [
+      50,
+      150,
+      20
+     ],
+     "derivation": "Sourced. 닥터팔레트 launched Sep 2021: about 50 의원 in Mar 2023, 150 by Sep 2023. 비트플러스: about 20 의원 contracts less than a year after launch (Apr 2021; pre-2023 source). Full EMR replacement has high switching costs, so these ramps are slower than for add-ons that plug into an existing EMR.",
+     "sources": [
+      {
+       "title": "의원급 EMR, 유비케어·비트컴·이지스 전통강자 vs 세나클·메디블록에 씨젠·더존까지 등장",
+       "url": "https://medigatenews.com/news/2877886377",
+       "publisher": "메디게이트뉴스",
+       "date": "2023-03-09",
+       "quote": "닥터팔레트는 국내 50여개의 의원에 도입"
+      },
+      {
+       "title": "메디블록 닥터팔레트 도입 의원 150곳 분석해보니",
+       "url": "https://m.medigatenews.com/news/714426748",
+       "publisher": "메디게이트뉴스",
+       "date": "2023-09-05",
+       "quote": "2021년 9월부터 ... 150곳"
+      },
+      {
+       "title": "반신반의하던 클라우드 EMR 차트…개원가 본격 침투",
+       "url": "http://www.medicaltimes.com/Users/News/NewsView.html?ID=1139812",
+       "publisher": "메디칼타임즈",
+       "date": "2021-04-05",
+       "quote": "About 20 clinic implementations within one year of launch"
+      }
+     ]
+    },
+    {
+     "key": "bench_doctornow_partners",
+     "label": "닥터나우 partner 병·의원·약국 (free partnership) after Dec 2020 launch",
+     "unit": "institutions at [early 2022, 2022-03-31, Mar 2023]",
+     "recommended": [
+      360,
+      900,
+      3000
+     ],
+     "derivation": "Sourced. About 13 months after launch there were about 360 partners, then 900 by the end of March 2022 (COVID telemedicine surge), then about 3,000 a year later. Partnership was free, so this is an upper bound on pace, not a paid benchmark.",
+     "sources": [
+      {
+       "title": "닥터나우 제휴 의료기관 수익 1995% 증가",
+       "url": "https://www.asiae.co.kr/article/2022040607540963890",
+       "publisher": "아시아경제",
+       "date": "2022-04-06",
+       "quote": "올 초 360여곳 ... 3월 말 기준 900여곳"
+      },
+      {
+       "title": "닥터나우, 제휴 병·의원·약국 3000곳 돌파",
+       "url": "https://mbiz.heraldcorp.com/view.php?ud=20230308000198",
+       "publisher": "헤럴드경제",
+       "date": "2023-03-08",
+       "quote": "about 3,000 partners; ~700 in Q1 2022"
+      }
+     ]
+    },
+    {
+     "key": "bench_pm20_conversion_pace",
+     "label": "PM+20 pharmacy claim-software conversion pace (mandated migration)",
+     "unit": "pharmacies converted [Jan 2026 month, six months to Jun 2026]",
+     "recommended": [
+      500,
+      3000
+     ],
+     "derivation": "Sourced. About 500 pharmacies converted by late Jan 2026, about 3,000 in six months, and more than 50% converted by June 2026. The deadline was extended to Dec 2026 because only a limited number of pharmacies can be converted per day. Derived: even a mandated, subsidized migration manages about 500 a month, a useful ceiling for installation-dependent onboarding.",
+     "sources": [
+      {
+       "title": "청구 프로그램 'PM+20' 갈아타기 망설이는 약국들",
+       "url": "https://dailypharm.com/user/news/335550?view_mode=pc",
+       "publisher": "데일리팜",
+       "date": "2026-02-07",
+       "quote": "약 500여곳 약국이 전환을 완료했다"
+      },
+      {
+       "title": "PM+20 전환 순연…PIT3000 6월 종료 사실상 무산",
+       "url": "https://www.dailypharm.com/user/news/339151",
+       "publisher": "데일리팜",
+       "date": "2026-06-05",
+       "quote": "반년새 3000여곳이 PM+20으로 전환"
+      },
+      {
+       "title": "PM+20 전환 12월까지 연장…무료 전환 지원업체 확대",
+       "url": "https://www.kpanews.co.kr/news/articleView.html?idxno=537214",
+       "publisher": "약사공론",
+       "date": "2026-06-23",
+       "quote": "하루에 처리할 수 있는 약국 수가 제한적"
+      }
+     ]
+    },
+    {
+     "key": "clinic_emr_market_share",
+     "label": "의원 EMR market share (current users) and channel reach",
+     "unit": "% [의사랑, 비트컴퓨터, 이지스, 포인트닉스]",
+     "recommended": [
+      46.8,
+      12.23,
+      10.78,
+      6.31
+     ],
+     "derivation": "Sourced: 메디게이트 survey of 1,030 physicians, early 2023. UBcare's FY2025 report adds that 똑닥 connects to 50%+ of 병·의원, and 똑닥 had exclusive deals with 14 EMR vendors (2022). Implication: onboarding speed depends on EMR integration, and 실손24 stalled where the major EMR vendors did not take part.",
+     "sources": [
+      {
+       "title": "의원급 EMR 인지도, 유비케어·비트컴·이지스 순...",
+       "url": "https://m.medigatenews.com/news/1036211242",
+       "publisher": "메디게이트뉴스",
+       "date": "2023-04-26",
+       "quote": "의사랑 46.80% ... 비트 12.23% ... 이지스 10.78% ... 닉스펜 6.31%"
+      },
+      {
+       "title": "유비케어 사업보고서 (제32기, 2025)",
+       "url": "https://kind.krx.co.kr/external/2026/03/16/001734/20260316005165/11011.htm",
+       "publisher": "유비케어 / KRX KIND",
+       "date": "2026-03-16",
+       "quote": "50% 이상의 병ㆍ의원 연결률"
+      },
+      {
+       "title": "[스타트업 돋보기] EMR 연동으로 헬스케어 O2O 시장 잡은 '똑닥'",
+       "url": "https://www.bloter.net/news/articleView.html?idxno=43581",
+       "publisher": "블로터",
+       "date": "2022-03-19",
+       "quote": "국내 14개 EMR 솔루션 기업들과 독점 계약"
+      }
+     ]
+    },
+    {
+     "key": "pharmacy_claim_sw_share",
+     "label": "약국 청구SW users, Dec 2024 (약정원 PIT3000/PM+20, 유팜, 이팜, 온팜)",
+     "unit": "pharmacies [약정원, 유팜, 이팜, 온팜]",
+     "recommended": [
+      10303,
+      8200,
+      2502,
+      1000
+     ],
+     "derivation": "Sourced. Shares are 43.5%, 34.6%, 10.6% and about 4% of 23,697 pharmacies.",
+     "sources": [
+      {
+       "title": "청구SW 점유율...약정원 43.5%, 유팜 34.6%, 이팜 10.6%",
+       "url": "https://www.dailypharm.com/user/news/4466",
+       "publisher": "데일리팜",
+       "date": "2025-07-01",
+       "quote": "약정원 1만303곳, 유팜 8200곳, 이팜 2502곳, 온팜 약 1000곳"
+      }
+     ]
+    }
+   ],
+   "gaps": [
+    "No DART filing or press source gives monthly or quarterly paid-institution counts for a Korean 의원/약국 add-on in its first 12 months. The inst_ramp_12m curve is my own derivation from hospital AI SaaS (딥카스, 바이탈케어), 니어닥's 2-month milestone, and free programs (실손24, 닥터나우).",
+    "Monthly fees not found for 비트컴퓨터 (비트플러스), 이지스 전자차트, 포인트닉스, 이팜, 온팜 or PM+20. Only UBcare publishes a price table in DART.",
+    "GC메디아이 (former 유비케어) has not disclosed 의사랑 AI pricing after 2026, or its adoption counts.",
+    "No Korean clinical SaaS logo-churn disclosure found. The churn figures rest on proxies (claim-software share drift, UBcare network size) plus my assumption for add-ons. A Recurly page was checked but not used because its measurement period was ambiguous.",
+    "굿닥 kiosk and tablet installed-base counts after 2021 were not found. 똑닥 did not charge hospitals (2022-2023, apart from kiosk rental), so it is not a paid benchmark.",
+    "No benchmark found for 검진센터 subscription onboarding, or the national count of 종합검진센터 (NHIS 검진기관 statistics were not retrieved).",
+    "Some supporting sources predate 2023 (비트플러스 2021, 강남언니 2021, 닥터나우 2022, 똑닥/블로터 2022, 굿팜 launch 2021) and are flagged in the items.",
+    "2025-2026 national 의원 counts were not pulled from HIRA open data. The 34,958 의원 figure (Mar 2023) comes via 메디게이트."
+   ],
+   "check": {
+    "verdicts": [
+     {
+      "key": "inst_ramp_12m",
+      "status": "confirmed",
+      "note": "Own derivation, clearly labeled, and the arithmetic checks out. The factors sum to 5.84 (recommended), 4.68 (low) and 7.52 (high). The illustrations are right: 200 x 500,000 x 5.84 = 5.84억 and 200 x 200,000 x 5.84 = 2.336억. 8% of 200 = 16 pilots converting in January. I re-opened every benchmark. 딥카스: 비급여 billing from 2022-08-01 (청년의사 2022-06-24); 40 by August 2023 (팜뉴스); 60 at end-2023, 83 in March 2024, 95 in July 2024 (머니투데이 2024-08-01). That is about 3.3 a month in year 1 and about 5 a month after, so '3-5/month' holds. August 2023 is about 12 months after billing began, not 13. 니어닥: 'launched in May, 400+ 병·의원 in about two months, paid conversion 50% or more, MRR 1,230만원' (유니콘팩토리 via 네이트, 2026-08-05). 실손24: 6.9% (6,630) as of 2025-10-21, before the 2025-10-25 phase-2 launch (데일리팜 2025-10-23); 26.2% (25,472) as of 2026-04-01 (데일리팜 2026-04-15); 의원·약국 26.8% as of 2026-05-06, and the article's 'up only 0.6%p from a month earlier' (더퍼블릭 2026-05-12). That quote refers to the overall rate (29%), but 의원·약국 also rose 26.2 -> 26.8, so '+0.6pp a month' is consistent. PM+20: about 500 by end-January 2026, about 3,000 in six months. That was a forced migration after the vendor ended PIT3000, not a legal mandate, so 'even under a mandate' overstates it. Caveats: the curve does not say whether it is net of churn (churn_benchmark suggests 1%/month), and the 딥카스/바이탈케어 benchmarks are MFDS-approved SaMD that hospitals can bill patients for (비급여). A plain SaaS subscription has no such patient billing, so hospital-segment adoption could be slower."
+     },
+     {
+      "key": "trial_months",
+      "status": "confirmed",
+      "note": "All three facts are in the sources. (1) 닥터팔레트: 'apply online for a trial account and try it free for a week' (메디게이트뉴스 2023-09-05). (2) 의사랑 AI officially launched on the 6th, with 'a launch promotion giving all 의사랑 AI features free until end-2026' (약사공론 2026-08-06). That is about 4.8 months, and no post-promotion price is disclosed. The rename 유비케어 -> GC메디아이 was confirmed separately (sources say the name change was put to the 2026-03-24 AGM). (3) 약국: rival vendors promise 'fee waivers of at least 2 months and up to 2 years' (데일리팜 2026-06-05). Recommended 2 is the researcher's own pick and is reasonable. Logic nit: the item calls this a 'sourced range' but caps the high at 5 months, while the pharmacy source's maximum is 24 months. For the 약국 segment the sourced high should be 24. Also, those waivers are for switching core claim software during the PIT3000 end-of-life, not for AI add-ons."
+     },
+     {
+      "key": "emr_price_benchmark",
+      "status": "confirmed",
+      "note": "유비케어 제32기 사업보고서 (KRX KIND, 2026-03-16), price table. 의사랑: '가입비 1백만원 + 월회비 9만원', the same for 제30-32기, switching after 3 years to maintenance fees of 월 6만원 or 8.4만원. 유팜: 제32기 '월회비 5만원(기본) 월회비 4만원(추가)'; 제30-31기 '월회비 4만원(기본/추가)'. [90000, 50000] is correct. Suggestion: the 의원 low could be 60,000 (post-3-year maintenance fee) rather than 90,000."
+     },
+     {
+      "key": "ai_addon_price_benchmark",
+      "status": "confirmed",
+      "note": "니어닥 facts are verbatim in 유니콘팩토리 (2026-08-05): 400+ 병·의원, 'paid conversion 50% or more', 'MRR 1,230만원'. The article gives no price. Derivations are correct: 12,300,000 / 200 = 61,500 and 12,300,000 / 400 = 30,750. Both 400 and 50% are lower bounds, so 61,500 is a ceiling on revenue per paid clinic, which is labeled correctly as the upper figure. 크레소티 팜인사이트 (pharmacist AI CRM) costs '15만원 a month' (데일리팜 2026-06-02). The article only said official open was scheduled for July (예정), so the July launch itself is not confirmed there."
+     },
+     {
+      "key": "plan_fee_ratio_vs_benchmark",
+      "status": "confirmed",
+      "note": "Arithmetic is correct: 500,000 / 90,000 = 5.56; 500,000 / 61,500 = 8.1; 500,000 / 30,750 = 16.3; 200,000 / 50,000 = 4.0; 200,000 / 150,000 = 1.33. 강남언니: '유료 입점병원 800곳' and 2020 revenue '120억원' (신아일보 2021-10-05), so 12,000,000,000 / 800 / 12 = 1,250,000 a month. The periods don't match (800 is the Oct-2021 count, 120억 is 2020 revenue), and 강남언니 is a 비급여 advertising platform, so it is a weak anchor. The low/high vectors mix two different methods (a fee cut for 병원 vs a different benchmark for 약국), so treat them as illustrative. LEGAL FLAG: the conclusion that 50만원 is 'plausible only if bundled with measurable patient/lead flow (검진 referrals, 보험 DB)' is risky. 의료법 제27조 제3항 bans for-profit patient introduction or referral (환자 소개·알선·유인), and fees that scale with patients or leads delivered can be treated as brokerage consideration. Keep hospital fees flat (SaaS or advertising under 의료광고 rules), not per lead or per booking. Supplying 보험 DB to hospitals also raises 개인정보보호법 third-party-provision consent issues and insurance-solicitation (보험업법 모집) limits. For 약국, 'commerce or 건기식 revenue share' must not be tied to prescriptions or dispensing (약사법 알선·담합 prohibitions), and the platform must not take part in running the pharmacy. This needs legal review before any bundle pricing goes into the workbook."
+     },
+     {
+      "key": "plan_count_penetration",
+      "status": "confirmed",
+      "note": "Arithmetic is correct: 200 / 34,958 = 0.572% and 200 / 23,697 = 0.844%. Bases verified. 메디게이트뉴스 (2023-04-26) gives 34,958 의원 nationwide as of March 2023; 데일리팜 (2025-07-01) gives 23,697 pharmacies as of Dec 2024. Both are stale for 2027 and should be refreshed from HIRA. Comparators verified: 굿팜 launched early Feb 2021 after testing in about 40 pharmacies, targeting 2,000 that year (의약뉴스 2021-03-04), and grew '750 -> 1,500여곳 over the last 3 years' (약사공론 2025-03-24). The ≈2022 date for 750 is derived. LOGIC PROBLEM: 바로팜 파마시뷰티존 is 'a beauty shelf (매대) setup business inside pharmacies', a merchandising and distribution deal, not software. The article doesn't say whether pharmacies pay. It is not a valid SaaS adoption comparator and should be dropped. Its facts are correct: 100 in August, 200+ announced on the 10th (팜뉴스 2026-09-10). 니어닥 '200+ paid' is derived from two lower bounds. The 병원급 caution (딥카스 60 at end-2023) is supported."
+     },
+     {
+      "key": "churn_benchmark",
+      "status": "confirmed",
+      "note": "Mostly assumption, and labeled as such. Proxy facts verified: 약정원 share '2023년 45.4%, 2024년 44.1%, 2025년 43.5%' (데일리팜 2025-07-01); UBcare network 17,800 병·의원 / 8,200 약국 (FY2025 사업보고서); 유투바이오 제15기 (FY2023) report citing 유비케어's '17,700여 개의 병원ㆍ의원, 8,000여개의 약국'. Arithmetic: 1.3 / 45.4 = 2.9% and 0.6 / 44.1 = 1.4%. That is roughly 1.4-2.9% a year, which works out to about 0.12-0.25% a month, not 'about 0.25%'. The low of 0.25 is the top of the proxy range. 1%/month = 11.4%/year is correct. Logic caveat: share drift and a flat installed base measure net relative change, not logo churn (the source says new pharmacies prefer private vendors, so share loss partly reflects new openings). 니어닥's conversion rate is not a churn measure. High 3% is unsourced and labeled as such."
+     },
+     {
+      "key": "trial_to_paid_conversion",
+      "status": "confirmed",
+      "note": "'유료 전환율은 50% 이상을 기록' is verbatim in 유니콘팩토리 via 네이트 (2026-08-05). Because the source says 'or more', 50 is a floor, and the high of 60 is the researcher's labeled assumption. Funnel arithmetic is correct: 16 paid / 0.5 = 32 pilots, with 16 = 8% x 200. Caveat: 니어닥 converted through self-serve sign-ups with no ads or marketing (per the article). Enterprise or pilot conversion for hospitals and 검진센터 may differ."
+     },
+     {
+      "key": "bench_deepcars_billing_hospitals",
+      "status": "confirmed",
+      "note": "All five counts are in the sources. 40: 'the year-end target of 40 was reached in August; target raised to 60' (팜뉴스, updated 2023-08-31). 60: 'end of last year 60곳 (incl. 11 상급종합병원)', 83: 'March (83곳)', 95: 'as of July, 95 in total incl. 17 상급종합병원' (머니투데이 2024-08-01). 70: 'billing and contracts completed at about 70 hospitals in total', 10+ new contracts and 3,500+ new billing beds in January 2024, and 28,000+ billing beds in total (뷰노 2024-01-30). The 70 figure mixes billing and contracted hospitals, which the item flags. Months since the 2022-08-01 billing start are about 12/16/17/19/23 (the item says 13/17/18/20/24, off by one). The 3-5 a month pace is correct."
+     },
+     {
+      "key": "bench_vitalcare_hospitals",
+      "status": "confirmed",
+      "note": "바이오타임즈 (2025-04-21): entered the 비급여 market in March 2023; billing hospitals 100+ with about 45,000 beds as of April 2025; 2024 revenue about 100억원. March 2023 to April 2025 is about 25 months, and 100 / 25 = 4 a month is correct. 100 is a floor ('100곳↑')."
+     },
+     {
+      "key": "bench_cloud_emr_clinics",
+      "status": "confirmed",
+      "note": "닥터팔레트: '도입 at about 50 의원 in Korea' (메디게이트뉴스 2023-03-09), and 'from September 2021 to now, 150 의원' (메디게이트뉴스 2023-09-05). That is about 18 and 24 months after launch. 비트플러스 launched in 2020 ('지난해') and had 'already landed at about 20 개원가 sites less than a year after launch' (메디칼타임즈 2021-04-05). All pre-2023 sourcing is flagged. The 'paid' label is supported for 닥터팔레트 (fees charged per hospital, no install or sign-up fee)."
+     },
+     {
+      "key": "bench_doctornow_partners",
+      "status": "confirmed",
+      "note": "Counts verified: 'from about 360 early this year to about 900 as of end-March' (아시아경제 2022-04-06); 'partner 병·의원 and 약국 passed 3,000' and 'about 700 partners in Q1 last year' (헤럴드경제 2023-03-08). The two sources differ for Q1 2022 (900 vs 700). UNSUPPORTED qualifiers: neither cited article gives the launch date (Dec 2020), so '13 months after launch' is unverified, and neither says partnership was free (Herald: terms not disclosed). Use these counts only as a qualitative upper bound during the COVID telemedicine surge."
+     },
+     {
+      "key": "bench_pm20_conversion_pace",
+      "status": "confirmed",
+      "note": "'About 500 pharmacies completed conversion', as of end of last month, with support starting last month, i.e. January 2026 (데일리팜 2026-02-07). 'About 3,000 converted to PM+20 within half a year', conversion rate in the 50% range, original end of June (데일리팜 2026-06-05). Deadline moved to December, 'the number of pharmacies that can be processed per day is limited', and the free conversion vendor list expanded (약사공론 2026-06-23). 3,000 / 6 = 500 a month is correct. Wording: this was a vendor end-of-life forced migration with free conversion support, not a legal mandate. It measures install throughput for one coordinated migration and is not a universal ceiling for add-ons that need no installation."
+     },
+     {
+      "key": "clinic_emr_market_share",
+      "status": "confirmed",
+      "note": "메디게이트뉴스 (2023-04-26), survey of 1,030 Medigate physician members on the EMR they currently use: '유비케어 의사랑 46.80%', '비트컴퓨터 비트U차트/비트플러스 12.23%', '이지스헬스케어 10.78%', '포인트닉스 닉스펜 6.31%'. This is a self-selected member survey, not a census. UBcare FY2025 report: 똑닥 has '12 million real-name members and 50%+ 병ㆍ의원 connection rate'. 블로터 (2022-03-19): 비브로스 'has exclusive contracts with 14 domestic EMR solution companies'. 더퍼블릭 supports the 실손24/EMR-vendor inference ('some EMR vendors are reluctant to participate')."
+     },
+     {
+      "key": "pharmacy_claim_sw_share",
+      "status": "confirmed",
+      "note": "데일리팜 (2025-07-01), Dec 2024: 약정원 10,303 (43.5%), 유팜 8,200 (34.6%), 이팜 2,502 (10.6%), 온팜 about 1,000 (about 4.2%), out of 23,697 pharmacies. Recomputed shares match: 43.48%, 34.60%, 10.56%, 4.22%. 유팜 8,200 also matches UBcare's FY2025 report."
+     }
+    ],
+    "overall": "I re-opened all 24 cited URLs; every one exists and matches its stated publisher and date. All numeric values match the source text, and every labeled derivation is arithmetically correct (ramp sums 5.84 / 4.68 / 7.52, 0.57% / 0.84% penetration, 61,500 / 30,750 revenue per clinic, 5.6x / 4.0x / 1.33x fee ratios, 1.25백만 a month for 강남언니). No item needs a corrected recommended value.\n\nProblems that don't change a recommended value but need fixing:\n1. 파마시뷰티존 is a beauty-shelf merchandising business in pharmacies, not software. Drop it as a SaaS adoption comparator in plan_count_penetration.\n2. 닥터나우: the Dec-2020 launch date and 'free partnership' are not in the cited sources.\n3. trial_months: the pharmacy source's maximum waiver is 24 months, not 5.\n4. The churn proxy of 1.4-2.9% a year is about 0.12-0.25% a month, and share drift is not logo churn.\n5. 딥카스 month offsets are off by one; PM+20 was a vendor end-of-life migration, not a legal mandate; 팜인사이트's July launch was only 'scheduled' in the source.\n6. The 의원 base (Mar 2023) and pharmacy base (Dec 2024) are stale; refresh from HIRA.\n\nLegal-structure flags:\n(a) Justifying the 병원 50만원 fee by 'measurable patient/lead flow (검진 referrals)' risks 의료법 제27조 제3항 (for-profit patient referral or inducement). Fees must be flat SaaS or advertising, never per lead or per booking.\n(b) Bundling 보험 DB into hospital subscriptions raises 개인정보보호법 third-party-provision consent issues and 보험업법 solicitation limits.\n(c) A 약국 '건기식 revenue share' must not be linked to prescriptions or dispensing (약사법 알선·담합), and the platform must not take part in running the pharmacy.\n(d) Free trials or fee waivers to clinics and pharmacies could be an economic-benefit (rebate) issue if HiZenCare or its commerce suppliers count as 의약품 or 의료기기 suppliers (의료법 제23조의5 / 약사법 제47조).\n(e) 딥카스 and 바이탈케어 are MFDS-approved SaMD that hospitals bill patients for as 비급여. If HiZenCare's hospital AI does clinical decision support it may need MFDS approval, and without patient billing the hospital-segment ramp may be slower than those benchmarks.\n\nTimeline note: this repo's last commit (v2.2) records a different CEO schedule (prep starting 2026-11, soft open 12-01, real revenue 2027-02) than the brief given here (prep 2026-10, open 2027-01-01). The orchestrator should confirm which one the workbook uses before applying the Jan-2027 8% conversion factor."
+   }
+  },
+  {
+   "topic": "ins_db_ramp",
+   "summary": "Evidence says new insurance lead channels in Korea start slowly and do most of their first-year volume late in the year. FSC 보험 비교·추천: about 6,100 contracts in month 1 (Jan-Feb 2024) against 280k over 14 months, and the weekly daily average rose from 161 to 264 in the first 4 weeks. 토스보험파트너: 5,800 consultations in beta, 700k in its first 10 months, then about 520k a month by Oct 2021. Applying P1/P2/P3 to our plan (300-lead 강남 pilot, then 7 수도권 지역단 at about 55% of volume since 수도권 is 50.8% of population, nationwide from late Aug, members growing to 330k) gives factors Apr..Dec = 0.02/0.04/0.14/0.24/0.40/0.61/0.77/0.90/1.00, adding to about 4.1 of the Dec run-rate. To reach 120,000 in 2027, Dec supply would need about 29k/month, which is 8.8% of 330k members every month. That is about 3.3x Toss's peak ratio (about 2.7%/month). So 120k is not plausible. We recommend planning about 30k (range 14k-55k). Price: 금감원 consumer alert (2026-07) says DB sold to GAs at 5만-13만원 per person. Press puts consult-consented DB at 6만-8만원 and DB with a booked consultation at 15만-20만원. Our 5만원 sits at the low end. The 10만원 tier will not apply in 2027. Before paid supply, these gates must be cleared: fees cannot be 모집 대가 unless we register as a GA (보험업법 §99①); 개인정보보호법 §17② notice items plus separate consent for health data (§23); 금소법 §22 advertising and 광고심의 risk; and 현대해상 due diligence on the DB vendor, now tighter after the 2026-09-11 PIPA change and the 금감원 inspection of 70 GAs. No 혁신금융 sandbox is needed unless we compare or recommend products.",
+   "items": [
+    {
+     "key": "ins_ramp_9m",
+     "label": "Monthly supply factors Apr..Dec 2027 (share of Dec-2027 national matured run-rate S)",
+     "unit": "factor of S (Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec)",
+     "recommended": [
+      0.02,
+      0.04,
+      0.14,
+      0.24,
+      0.4,
+      0.61,
+      0.77,
+      0.9,
+      1
+     ],
+     "low": [
+      0.01,
+      0.02,
+      0.08,
+      0.15,
+      0.28,
+      0.45,
+      0.62,
+      0.8,
+      1
+     ],
+     "high": [
+      0.03,
+      0.06,
+      0.22,
+      0.35,
+      0.52,
+      0.72,
+      0.85,
+      0.95,
+      1
+     ],
+     "derivation": "DERIVED. Timeline from our design report: P1 runs Apr 1 to May 26, with 2 weeks of prep and 6 weeks of operation in 강남, capped at 300 leads (about 50 a week, so about 115 in Apr and 185 in May). P2 runs May 27 to Aug 18 across 7 수도권 지역단. P3 goes nationwide from Aug 19. Factor = coverage x maturity x member index. Coverage: 수도권 is treated as 0.55 of volume, a little above its 50.8% population share because health-platform members skew toward 수도권. Maturity for a newly opened region: 0.5 in month 1, 0.75 in month 2, 0.9 in month 3, 1.0 after that. This follows the FSC weekly ramp, where the week-1 daily average was 53% and week 4 was 87% of the 7-month average. Member index assumes linear growth from open to 330k at year-end (m/12). Apr and May come from the P1 absolute cap at S of about 7,300, plus the first 5 days of P2 in May. The factors add up to about 4.12. Coverage-only variant, if member growth is modeled elsewhere: 0.02, 0.04, 0.28, 0.41, 0.59, 0.82, 0.93, 0.98, 1.00.",
+     "sources": [
+      {
+       "title": "[보도참고] 보험 비교·추천서비스 이용현황 및 향후 계획",
+       "url": "https://fsc.go.kr/no010101/81740",
+       "publisher": "금융위원회",
+       "date": "2024-02-20",
+       "quote": "Daily-average contracts by week: 161 → 215 → 247 → 264; about 6,100 contracts in the first month"
+      },
+      {
+       "title": "자동차보험 비교 서비스 6개월…삼성화재·KB손보 점유율만 늘어",
+       "url": "https://www.newspim.com/news/view/20240910000664",
+       "publisher": "뉴스핌",
+       "date": "2024-09-10",
+       "quote": "이용자는 약 67만명으로 실제 계약 건수는 일평균 305건에 그쳤다"
+      },
+      {
+       "title": "2024년 인구주택총조사 결과(등록센서스 방식)",
+       "url": "https://www.korea.kr/news/policyNewsView.do?newsId=156721680",
+       "publisher": "대한민국 정책브리핑(통계청)",
+       "date": "2025-07-29",
+       "quote": "2024년 총인구의 50.8%, 2,631만 명이 수도권에 살고 있으며"
+      }
+     ]
+    },
+    {
+     "key": "launch_backloading_fsc",
+     "label": "Benchmark: first-month contracts vs 14-month average, platform 보험 비교·추천",
+     "unit": "ratio",
+     "recommended": 0.29,
+     "low": 0.22,
+     "high": 0.53,
+     "derivation": "DERIVED from sourced figures. First month (Jan 19 to Feb 19, 2024) had about 6,100 contracts. Jan 2024 to Feb 2025 had about 280,000, an average of about 20,900 a month, so month 1 was about 0.29 of the average. Jan to Aug 8, 2024 ran at 305 a day, about 61,600 contracts or roughly 22% of the 14-month total, in about half the time. The 0.53 figure is the week-1 factor from the FSC weekly data. The service launched nationwide on day 1 across 7 or more big platforms, so a region-gated insurer pilot would be even more back-loaded.",
+     "sources": [
+      {
+       "title": "더 편리해진 자동차보험 비교·추천서비스 2.0",
+       "url": "https://www.korea.kr/news/policyNewsView.do?newsId=148940823",
+       "publisher": "대한민국 정책브리핑(금융위원회)",
+       "date": "2025-03-24",
+       "quote": "2024년 1월~2025년 2월 약 185만건 이용, 약 28만건 보험계약 체결"
+      },
+      {
+       "title": "[보도참고] 보험 비교·추천서비스 이용현황 및 향후 계획",
+       "url": "https://fsc.go.kr/no010101/81740",
+       "publisher": "금융위원회",
+       "date": "2024-02-20",
+       "quote": "About 120,000 users and about 6,100 contracts as of 2024-02-19"
+      }
+     ]
+    },
+    {
+     "key": "toss_partner_ramp",
+     "label": "Benchmark: 토스보험파트너 consultation-lead ramp (beta → 10 months → 14 months)",
+     "unit": "consultations (cumulative)",
+     "recommended": [
+      5800,
+      700000,
+      3200000
+     ],
+     "derivation": "SOURCED. Beta ran Jun to Aug 2020 with about 5,800 consultations and 2,300 설계사. Launch was Aug 2020. By May 2021 (10 months) cumulative consultations passed 700k. By Oct 2021 they reached 3.2M. DERIVED: about 70k a month over the first 10 months, then about 520k a month from May to Oct 2021, so run-rate rose about 7x after month 10. Relative to about 19M Toss users, that is about 0.37% of users a month early on and about 2.7% a month at the later rate, repeat requests included.",
+     "sources": [
+      {
+       "title": "토스, '보험파트너' 앱 출시…고객·설계사 매칭",
+       "url": "https://www.newstomato.com/ReadNews.aspx?epaper=0&no=990382",
+       "publisher": "뉴스토마토",
+       "date": "2020-08-14",
+       "quote": "같은 기간 앱을 통해 진행된 보험 상담도 총 5800여건"
+      },
+      {
+       "title": "토스보험파트너, 가입 설계사 5만명 돌파",
+       "url": "https://toss.im/tossfeed/article/toss_insupartner_50k",
+       "publisher": "토스(비바리퍼블리카) 토스피드",
+       "date": "2021-05-24",
+       "quote": "지난 10개월 간 ... 보험 상담 건수는 70만건을 넘어섰다"
+      },
+      {
+       "title": "토스보험파트너 가입 설계사 10만명 돌파",
+       "url": "https://www.digitaltoday.co.kr/news/articleView.html?idxno=420818",
+       "publisher": "디지털투데이",
+       "date": "2021-10-18",
+       "quote": "Cumulative consultations connected: 3.2 million as of October 2021"
+      }
+     ]
+    },
+    {
+     "key": "s_required_for_120k",
+     "label": "Dec-2027 monthly run-rate needed to deliver 120,000 cases in 2027 under the P1/P2/P3 ramp",
+     "unit": "cases/month",
+     "recommended": 29100,
+     "derivation": "DERIVED: 120,000 / 4.12 (sum of ins_ramp_9m) = about 29,100 a month. That equals 8.8% of the 330k year-end member base becoming a consented insurer lead every month. It is about 3.3x Toss Partner's later ratio (about 2.7% of users a month) and about 24x its first-10-month ratio (0.37%). Even if Dec supply were already at the full national run-rate, any ramp consistent with a 300-lead pilot followed by a 12-week regional phase leaves a factor sum at or below about 5.",
+     "sources": [
+      {
+       "title": "토스보험파트너, 가입 설계사 5만명 돌파",
+       "url": "https://toss.im/tossfeed/article/toss_insupartner_50k",
+       "publisher": "토스 토스피드",
+       "date": "2021-05-24",
+       "quote": "5만 설계사와 토스의 1900만 사용자를 투명하게 연결"
+      }
+     ]
+    },
+    {
+     "key": "ins_2027_supply_plausible",
+     "label": "Plausible 2027 DB supply to 현대해상 (vs plan 120,000)",
+     "unit": "cases/year",
+     "recommended": 30000,
+     "low": 14000,
+     "high": 55000,
+     "derivation": "DERIVED: 2027 total = 4.12 x S. Low: S = 1% of 330k per month = 3,300, giving about 13.6k. Mid: S = 2.2% = about 7,300, giving about 30k. High: Toss's later ratio of 2.7% with a 1.5x uplift for health-check intent, S = about 13,400, giving about 55k. Verdict: 120,000 in 2027 is not plausible from the member base together with the P1/P2/P3 gating; 2027 also cannot reach the 100k-case threshold where the 10만원 price tier starts. Absorption is not the constraint. 현대해상 has fewer than 13,982 전속설계사, and at Samsung TC-style allocation (30 per 설계사 per month) 30k a month would need only about 1,000 설계사.",
+     "sources": [
+      {
+       "title": "설계사 늘고 車 보험 강화하고…한화손보, 빅5에 '도전장'",
+       "url": "https://www.dt.co.kr/article/12059261",
+       "publisher": "디지털타임스",
+       "date": "2026-04-27",
+       "quote": "한화손해보험의 전속설계사는 1만3982명 (surpassed 현대해상 in ranking)"
+      },
+      {
+       "title": "토스인슈·삼쩜삼 진격에 보험사도 맞불…보험 판매시장 '고객 DB 전쟁'",
+       "url": "https://www.ajunews.com/view/20260720150937946",
+       "publisher": "아주경제",
+       "date": "2026-07-20",
+       "quote": "△1년 차 월 30건 △2년 차 20건 △3년 차 10건씩 ... 총 720건"
+      }
+     ]
+    },
+    {
+     "key": "ins_2027_revenue_implied",
+     "label": "Implied 2027 헬스메이트센터 DB revenue at plausible volume vs plan",
+     "unit": "KRW",
+     "recommended": 1500000000,
+     "low": 700000000,
+     "high": 2750000000,
+     "derivation": "DERIVED: the plan of 120k cases gives 100k x 5만 + 20k x 10만 = 70억원. At the plausible 30k x 5만 it is 15억원; low 14k x 5만 = 7억원; high 55k x 5만 = 27.5억원. The 10만원 tier does not trigger in 2027 in any case.",
+     "sources": [
+      {
+       "title": "\"돈 주고 고객DB까지 사야\"…신입 설계사들 하소연",
+       "url": "https://www.kpinews.kr/newsView/1065595624642277",
+       "publisher": "KPI뉴스",
+       "date": "2026-09-08",
+       "quote": "상담에 동의한 DB는 건당 6만∼8만 원"
+      }
+     ]
+    },
+    {
+     "key": "db_price_benchmark",
+     "label": "Korean market price for consented insurance leads (DB 단가)",
+     "unit": "KRW per case",
+     "recommended": [
+      50000,
+      80000
+     ],
+     "low": 50000,
+     "high": 130000,
+     "derivation": "SOURCED range. The 금감원 consumer alert reports DB sold to GAs at 5만-13만원 per person. Press puts consult-consented DB at 6만-8만원 and DB with a booked consultation at 15만-20만원. 보험저널 describes the range as tens of thousands to over 10만원. DERIVED view: our 5만원 per case is at the bottom of the consented band, which is defensible for a first-year partner. The 10만원 tier would need booked-consultation or verified-intent quality to be credible. Older reference points (2019-2021): 진성 DB 10만원+, 방송 DB about 13만원, 재무설계 DB 5만-6만원, not used for the range.",
+     "sources": [
+      {
+       "title": "커피쿠폰 받고 넘긴 개인정보 13만원에 팔렸다...\"보험 가입 문자 폭탄\"",
+       "url": "https://www.mt.co.kr/finance/2026/07/01/2026070111205872643",
+       "publisher": "머니투데이 (citing 금융감독원 소비자경보)",
+       "date": "2026-07-01",
+       "quote": "1인당 5만~13만원에 GA에 판매하는 사례도 있다"
+      },
+      {
+       "title": "\"돈 주고 고객DB까지 사야\"…신입 설계사들 하소연",
+       "url": "https://www.kpinews.kr/newsView/1065595624642277",
+       "publisher": "KPI뉴스",
+       "date": "2026-09-08",
+       "quote": "상담 일정까지 잡힌 DB는 15만∼20만 원 선"
+      },
+      {
+       "title": "[혼선의 GA설계사 1200%룰⑪] '자체보유 DB'도 대상… DB비용 어떻게 계산하나",
+       "url": "https://www.insjournal.co.kr/news/articleView.html?idxno=32376",
+       "publisher": "보험저널",
+       "date": "2026-07-28",
+       "quote": "수만원에서 10만원을 넘는 수준"
+      },
+      {
+       "title": "\"보험점검센터' 믿었다가 개인정보 넘어간다…금감원, GA DB영업 소비자경보",
+       "url": "https://www.fins.co.kr/news/articleView.html?idxno=108995",
+       "publisher": "보험매일",
+       "date": "2026-07-01",
+       "quote": "정보 판매 가격: 1인당 5만~13만원 수준"
+      }
+     ]
+    },
+    {
+     "key": "db_price_scheduled_tier",
+     "label": "Price for DB with a booked consultation (appointment-set lead)",
+     "unit": "KRW per case",
+     "recommended": [
+      150000,
+      200000
+     ],
+     "derivation": "SOURCED. This is the reference for justifying a 10만원 tier only if leads are appointment-set.",
+     "sources": [
+      {
+       "title": "\"돈 주고 고객DB까지 사야\"…신입 설계사들 하소연",
+       "url": "https://www.kpinews.kr/newsView/1065595624642277",
+       "publisher": "KPI뉴스",
+       "date": "2026-09-08",
+       "quote": "상담 일정까지 잡힌 DB는 15만∼20만 원 선"
+      }
+     ]
+    },
+    {
+     "key": "price_pressure_2026_2027",
+     "label": "Regulatory price pressure on insurer DB budgets (1200%룰 to GA 2026-07; 수수료 분급 2027-01)",
+     "unit": "effective date",
+     "recommended": [
+      "2026-07",
+      "2027-01"
+     ],
+     "derivation": "SOURCED. The 1200%룰 cap has covered GA 설계사 since Jul 2026, and free DB given to 설계사 counts as an economic benefit, valued at its purchase price. From Jan 2027 up-front commissions are limited to 계약체결비용, and a 7-year monthly maintenance commission is added. DERIVED: both tighten the lead budget per 설계사, which argues against pricing above 5만원 in 2027.",
+     "sources": [
+      {
+       "title": "[보도자료] 보험 판매수수료 개편 방안",
+       "url": "https://www.fsc.go.kr/no010101/84721",
+       "publisher": "금융위원회",
+       "date": "2025-06-02",
+       "quote": "1,200% 규칙 GA 확대 2026년 7월; 수수료 분급 2027년 1월"
+      },
+      {
+       "title": "[혼선의 GA설계사 1200%룰⑪] '자체보유 DB'도 대상",
+       "url": "https://www.insjournal.co.kr/news/articleView.html?idxno=32376",
+       "publisher": "보험저널",
+       "date": "2026-07-28",
+       "quote": "모집활동을 지원하는 경제적 이익으로 볼 수 있다"
+      }
+     ]
+    },
+    {
+     "key": "regulatory_gate",
+     "label": "What must be in place before paid DB supply to 현대해상 starts (Apr 2027)",
+     "unit": "checklist",
+     "recommended": "1) Fee structure: 보험업법 §99① bars insurers from paying 모집 fees to anyone who is not a licensed seller, so the fee must be a per-DB or marketing-service fee that is not tied to contracts. The alternative is registering a GA, the route taken by 토스인슈어런스, 뱅크샐러드 (GA subsidiary, Jul 2025) and 삼쩜삼 (GA registered, 2026). 2) Consent: 개인정보보호법 §17② requires naming the recipient (현대해상), purpose, items, retention, and the right to refuse. Health data is 민감정보 and needs a separate §23 consent; safest is to pass only contact details and stated interest, not checkup results. 3) Screens and ads: a recommendation of a specific product is 중개 (FSC 2021-09-07). Wording implying enrollment or financial planning can make it a 금소법 업무광고, so copy should go through 현대해상 준법감시인 and 손보협회 광고심의. 4) Vendor due diligence at 현대해상: collection-path legality, liability and damages clauses, registration in its central PI system. Scrutiny tightened after the 2026-07-01 금감원 consumer alert, the Sep-Oct 2026 inspection of 70 GAs, and the PIPA amendment effective 2026-09-11. 5) No 혁신금융 designation is needed for single-insurer lead supply. It would be needed for multi-insurer comparison or recommendation; in the 2023-24 cycle, designation (2023-07) to launch (2024-01-19) took about 6 months.",
+     "derivation": "SOURCED legal texts and regulator statements; the checklist ordering and the no-sandbox-needed judgment are my derivation, not legal advice. The claim that performance-linked 광고 fees are permitted under §99 could not be verified from a primary source.",
+     "sources": [
+      {
+       "title": "보험업법 제99조",
+       "url": "https://casenote.kr/법령/보험업법/제99조",
+       "publisher": "케이스노트 (법령 원문)",
+       "date": "2026-09-15",
+       "quote": "모집할 수 있는 자 이외의 자에게 ... 수수료, 보수, 그 밖의 대가를 지급하지 못한다"
+      },
+      {
+       "title": "개인정보 보호법 제17조",
+       "url": "https://casenote.kr/법령/개인정보_보호법/제17조",
+       "publisher": "케이스노트 (법령 원문)",
+       "date": "2026-09-15",
+       "quote": "개인정보를 제공받는 자 ... 이용 목적 ... 항목 ... 보유 및 이용 기간"
+      },
+      {
+       "title": "개인정보 보호법 제23조",
+       "url": "https://casenote.kr/법령/개인정보_보호법/제23조",
+       "publisher": "케이스노트 (법령 원문)",
+       "date": "2026-09-15",
+       "quote": "건강 ... 등에 관한 정보 ... 처리하여서는 아니 된다 (별도 동의 예외)"
+      },
+      {
+       "title": "온라인 금융플랫폼의 건전한 시장질서 확립을 위해 금융소비자보호법 적용사례를 전파",
+       "url": "https://www.fsc.go.kr/no010101/76485",
+       "publisher": "금융위원회",
+       "date": "2021-09-07",
+       "quote": "판매를 목적으로 하는 경우는 일반적으로 중개로 볼 수 있습니다"
+      },
+      {
+       "title": "보험플랫폼 앱의 광고와 금융소비자보호법 (법령해석 회신)",
+       "url": "https://better.fsc.go.kr/fsc_new/replyCase/LawreqDetail.do?stNo=11&muNo=171&muGpNo=75&lawreqIdx=3668",
+       "publisher": "금융위원회 금융규제·법령해석포털",
+       "date": "2022-06-24",
+       "quote": "계약체결 ... 중개가 이루어진다고 오인할 만한 문구 ... 업무광고로 볼 여지"
+      },
+      {
+       "title": "\"9월부터 설계사가 구매한 DB도 본사 책임\"… GA DB영업, CEO 내부통제로",
+       "url": "https://www.insjournal.co.kr/news/articleView.html?idxno=32910",
+       "publisher": "보험저널",
+       "date": "2026-09-03",
+       "quote": "Revised PIPA effective 2026-09-11; GA HQ must control external DB intake"
+      },
+      {
+       "title": "[단독] 금감원, 70개 GA '불법 DB 영업' 검사",
+       "url": "https://www.joongangenews.com/news/articleView.html?idxno=544415",
+       "publisher": "중앙이코노미뉴스",
+       "date": "2026-09-01",
+       "quote": "About 70 large GAs inspected; heavy sanctions (fines, business suspension) expected"
+      },
+      {
+       "title": "[DB 기획] ②\"몰랐다는 변명은 통하지 않는다\"",
+       "url": "https://www.insjournal.co.kr/news/articleView.html?idxno=30352",
+       "publisher": "보험저널",
+       "date": "2026-02-26",
+       "quote": "해당 정보의 수집 경로와 적법성 여부"
+      },
+      {
+       "title": "[보도자료] 「플랫폼 보험상품 비교·추천 서비스」 출시",
+       "url": "https://www.fsc.go.kr/no010101/81512",
+       "publisher": "금융위원회",
+       "date": "2024-01-18",
+       "quote": "Designated Jul 2023, agreements Nov 2023, launch 2024-01-19; 11 fintechs"
+      },
+      {
+       "title": "비대면영업 고사위기... 모든 보험상품·업무광고, 생·손보협회 심의 거쳐야",
+       "url": "https://www.insjournal.co.kr/news/articleView.html?idxno=5132",
+       "publisher": "보험저널",
+       "date": "2021-05-26",
+       "quote": "업무광고도 전건 생·손보협회 광고심의 위원회 심의를 거쳐야 한다"
+      },
+      {
+       "title": "토스인슈, 플랫폼 GA 기준됐다...뱅크샐러드·삼쩜삼·아정당도 가세",
+       "url": "https://www.insightkorea.co.kr/news/articleView.html?idxno=253316",
+       "publisher": "인사이트코리아",
+       "date": "2026-08-27",
+       "quote": "뱅크샐러드 GA subsidiary Jul 2025; 삼쩜삼 GA entry 2026"
+      }
+     ]
+    },
+    {
+     "key": "platform_fee_benchmark_comparison",
+     "label": "Benchmark: platform fee in 보험 비교·추천 sandbox (auto insurance)",
+     "unit": "% of premium",
+     "recommended": 1.5,
+     "low": 1.5,
+     "high": 4,
+     "derivation": "SOURCED but inconsistent across sources. The regulatory cap for auto insurance is around 4% of premium (2023). Bloter cites about 1.5% as the industry standard. The government said about 3% was passed on to consumers in version 1.0. This applies to per-contract comparison fees, not per-lead DB prices, so it is context only.",
+     "sources": [
+      {
+       "title": "'내게 맞는 보험 비교' 플랫폼, 이르면 연말 출시",
+       "url": "https://www.korea.kr/news/policyNewsView.do?newsId=148913573",
+       "publisher": "대한민국 정책브리핑(금융위원회)",
+       "date": "2023-04-06",
+       "quote": "자동차보험의 보험료 대비 수수료 한도는 4%대로 제한"
+      },
+      {
+       "title": "[CFO 리포트] 자동차보험 비교추천 플랫폼 진화의 명암",
+       "url": "https://www.bloter.net/news/articleView.html?idxno=635337",
+       "publisher": "블로터",
+       "date": "2025-04-22",
+       "quote": "Platform fee about 1.5%; PM channel 0.4% share; conversion 9.2%"
+      }
+     ]
+    },
+    {
+     "key": "platform_lead_scale_toss",
+     "label": "Benchmark: steady-state platform-GA lead flow (토스인슈어런스)",
+     "unit": "leads per 설계사 per day / 설계사 count",
+     "recommended": [
+      2,
+      3200
+     ],
+     "derivation": "SOURCED: about 3,200 설계사, each given 2 customer DB a day. DERIVED: about 6,400 a day, or roughly 130k a month, on a 20M+ user base after about 6 years of operation. By comparison, 120k a year for one insurer's pilot channel is about 1 month of Toss's current flow.",
+     "sources": [
+      {
+       "title": "1200%룰이 띄운 DB 영업...조병익의 '토스인슈어런스' 주목받는 이유",
+       "url": "https://www.insightkorea.co.kr/news/articleView.html?idxno=250212",
+       "publisher": "인사이트코리아",
+       "date": "2026-07-14",
+       "quote": "약 3200명의 설계사 ... 하루 2건씩 고객DB를 지원"
+      }
+     ]
+    }
+   ],
+   "gaps": [
+    "No public data found on opt-in rates for third-party-provision consent to an insurer in Korean health apps; the 1%-2.7% of members per month assumption is borrowed from Toss Partner and is my derivation.",
+    "No public price or volume found for 현대해상's own DB purchases or insurer-platform lead contracts; the benchmarks are GA/DB-vendor market prices.",
+    "No 2025-2026 exact 현대해상 전속설계사 count found; only that it is below 한화손보's 13,982 at end-2025 (older: 12,334 in Q1 2021, econovill 2021-06-21).",
+    "i-boss.co.kr CPA listings (보험 CPA 4만-6만원, GDN DB 원가 3만원 이하) returned HTTP 403, so they are excluded.",
+    "Could not verify from a primary source (law text, FSC interpretation, or court ruling) that contract-linked 광고 fees fall outside 보험업법 §99; treat as unverified.",
+    "law.go.kr pages did not render; statute quotes come from casenote.kr mirrors. 금소법 §22 text was not fetched directly and is cited via the FSC 2022-06-24 interpretation.",
+    "No public monthly ramp data found for 보맵, 굿리치, 카카오페이 or 네이버파이낸셜 lead or insurance-consultation services.",
+    "Toss Partner's jump from 700k to 3.2M consultations between May and Oct 2021 may reflect a change in counting basis (requests vs connections); the 2.7%/month ratio is indicative only.",
+    "Monthly member trajectory within 2027 is assumed linear to 330k; if the member-ramp topic produces a different curve, re-scale the member-index component of ins_ramp_9m."
+   ],
+   "check": {
+    "verdicts": [
+     {
+      "key": "ins_ramp_9m",
+      "status": "confirmed",
+      "note": "All 3 cited sources opened (2026-09-15) and match. FSC 81740: users about 12만, contracts about 6,100 as of 2024-02-19; weekly daily averages 161/215/247/264. Newspim 2024-09-10 has the 67만 users and 305/day figures, but the period is '1월부터 8월8일까지' and it covers '자동차보험과 해외여행보험 등', not auto only. 정책브리핑 2025-07-29 has the 50.8% (2,631만) figure. The P1/P2/P3 inputs match the internal report docs/lead_routing/현대해상_리드라우팅_설계보고서.md: P1 is 8주 (준비 2주 + 운영 6주) with 300 leads in 강남지역단, P2 is 12주 across 7 수도권 지역단, P3 is 16 지역단 nationwide. The derivation is labeled and recomputes within 0.01: Apr 114/7,300 = 0.016; Jun 0.55x0.5x6/12 = 0.14; Aug (0.55x0.92 + 0.45x0.21)x8/12 = 0.40; Sep 0.61; Oct 0.76; Nov 0.89; Dec 1.00. Sum 4.12. 161/305 = 0.53 and 264/305 = 0.87 are correct. Caveats: (1) Starting P1 on Apr 1 assumes P0 and the Go gate in the report are done before April. (2) Apr and May are circular: they are computed at S = 7,300. At S = 29,100 they would be about 0.004 and 0.011. (3) 0.55 for 수도권 and linear member growth are assumptions. (4) The 305/day base includes travel and pet products added in July 2024. (5) In the coverage-only variant, Oct recomputes to about 0.92, not 0.93."
+     },
+     {
+      "key": "launch_backloading_fsc",
+      "status": "corrected",
+      "corrected_recommended": 0.63,
+      "note": "The arithmetic is right: 6,100 / (280k / 13.4 months = 20.9k) = 0.29. The interpretation is flawed. 정책브리핑 2025-03-24 shows 약 185만건 used and 약 28만건 contracts for all 5 products over 2024-01 to 2025-02: 자동차 and 용종 (Jan 2024), 저축 (Jun 2024), 펫 and 여행자 (Jul 2024). Newspim's 305/day also includes 해외여행보험. So most of the later volume (about 218k in Aug 2024 to Feb 2025, about 1,070/day) comes from products added later, not a maturing launch. A like-for-like ratio is month-1 daily of about 190 (6,100 over 32 days) against the Jan-to-Aug-8 average of 305, which gives about 0.63. Low and high are also different measures: 0.22 is a share of the 14-month total, and 0.53 is week 1 against the 7-month average. A consistent range is 0.53-0.87 (weeks 1-4 against 305). Other checks: 203 days x 305 = 61.9k (correct); the FSC 2024-01-18 release confirms 7 platforms at launch. The claim that the FSC service was 'strongly back-loaded' is weaker than stated."
+     },
+     {
+      "key": "toss_partner_ramp",
+      "status": "confirmed",
+      "note": "뉴스토마토 2020-08-14 confirms the beta ran '지난 6월부터', with about 2,300 설계사 and 5,800여건 of consultations. 토스피드 2021-05-24: '지난 10개월 간 ... 보험 상담 건수는 70만건을 넘어섰다' and '토스의 1900만 사용자'. 디지털투데이 2021-10-18: '상담이 연결된 건수는 10월 현재까지 누적 320만건'. Derived figures recompute: 70k/month; 2.5M over about 4.8 months = 520k/month (7.4x); 70k/19M = 0.37%; 520k/19M = 2.7%. The two counts use different measures, 상담 건수 vs 상담이 연결된 건수 (one request can connect to several 설계사). The 7x jump and the 2.7% ratio may therefore be overstated. The gap list already notes this; treat the ratio as indicative only."
+     },
+     {
+      "key": "s_required_for_120k",
+      "status": "confirmed",
+      "note": "Arithmetic is correct: 120,000/4.12 = 29,126; 29,126/330,000 = 8.8%; 8.8/2.74 = 3.2x; 8.8/0.37 = 24x. The 1900만 users figure is in the 토스피드 source. The coverage-only variant sums to 5.07 (S about 23.7k, 7.2% of members), which fits 'at or below about 5'. Caveat: the Toss 2.7% benchmark rests on a mixed counting basis (see toss_partner_ramp), so read the 3.3x multiple as an order of magnitude."
+     },
+     {
+      "key": "ins_2027_supply_plausible",
+      "status": "confirmed",
+      "note": "The derivation is labeled and the arithmetic holds: 3,300x4.12 = 13.6k; 7,260x4.12 = 29.9k; 330k x 2.7% x 1.5 = 13,365, x4.12 = 55.1k. The 1% (low) and 2.2% (mid) rates are unsourced assumptions. Only the 2.7% high anchor comes from a source. 디지털타임스 2026-04-27 gives 한화손보 at 1만3982명 and says '지난해에는 현대해상도 제쳤다', so 현대해상 was below 13,982 in 2025; no 현대해상 count is given. The 아주경제 2026-07-20 allocation is 삼성화재 TC지점, 30 a month in year 1 only, falling to 20 and 10 (720 over 3 years). 30,000/30 = 1,000 설계사 is correct. The 100k-case threshold matches the internal plan: scripts/invest/adjust.py hmCap1 = 100,000, 우대 단가 = 시가 10만 x 50% = 5만, and cases above the cap are priced at 시가."
+     },
+     {
+      "key": "ins_2027_revenue_implied",
+      "status": "confirmed",
+      "note": "Arithmetic matches adjust.py, where 우대 단가 is 5만 up to 10만 건 and 시가 is 10만 above it. Plan: 100k x 5만 (50억) + 20k x 10만 (20억) = 70억. The other figures check: 30k -> 15억; 13.6k -> 6.8억 (about 7억); 55k -> 27.5억. The cited KPI뉴스 article has no bearing on these figures; it is pricing context only. Revenue is gross, before collection lag and any VAT treatment."
+     },
+     {
+      "key": "db_price_benchmark",
+      "status": "confirmed",
+      "note": "머니투데이 2026-07-01: 'DB업체가 개인정보를 1인당 5만~13만원에 GA에 판매하는 사례도 있다', within its 금감원 consumer-alert coverage. 보험매일 2026-07-01: '보험 가입 의사 여부 등을 확인한 개인정보를 1인당 5만~13만원 수준에 GA에 판매하는 사례도 확인'. KPI뉴스 2026-09-08: '상담에 동의한 DB는 건당 6만∼8만 원' and '상담 일정까지 잡힌 DB는 15만∼20만 원 선'. 보험저널 2026-07-28: '수만원에서 10만원을 넘는 수준'. Three corrections to the wording. (1) 5만 is below the 6만-8만 consented band; it is the floor of the 금감원 5만-13만 range, not 'the bottom of the consented band'. (2) The 5만-13만 figures describe cases from an alert about deceptively collected DB sold to GAs; they are not insurer-procurement prices. (3) The 2019-2021 reference points carry no source and should be dropped."
+     },
+     {
+      "key": "db_price_scheduled_tier",
+      "status": "confirmed",
+      "note": "KPI뉴스 2026-09-08 states verbatim '상담 일정까지 잡힌 DB는 15만∼20만 원 선'. The same article has a buyer paying 7만원 per DB for 20 leads, reaching fewer than 10 people, with zero contracts. Useful as a quality warning."
+     },
+     {
+      "key": "price_pressure_2026_2027",
+      "status": "corrected",
+      "corrected_recommended": [
+       "2026-07",
+       "2027-01 (4년 분급 2027~2028; 7년 분급은 2029-01부터)"
+      ],
+      "note": "FSC 84721 (2025-06-02) confirms '④보험대리점 소속 설계사 1,200% 규칙 적용: 26.7월' and '①설계사 판매수수료 분급: 27.1월(27~28년 4년분급, 29.1월~ 7년 분급)'. It also confirms the 선지급 cap: '계약체결비용의 100% 이내'. The derivation is wrong to say a 7-year maintenance commission is added from Jan 2027: 2027-2028 uses 4-year 분급 and 7-year runs from 2029-01. The quote in the sources field is a paraphrase, not verbatim. 보험저널 32376 confirms that DB given free counts as '모집활동을 지원하는 경제적 이익'. Externally bought DB is valued at 실제 구입가격; self-owned DB uses cost allocation (ads, platform, staff divided by valid DB). The direction of the argument (downward price pressure) still holds."
+     },
+     {
+      "key": "regulatory_gate",
+      "status": "corrected",
+      "corrected_recommended": "1) Before Apr 2027, get a written legal opinion (ideally a 금융위 법령해석 or 비조치의견서) that the 헬스메이트센터 사용료 is not a §99① 모집 대가; otherwise use the GA route. Renaming 보험 중개 수수료 to 사용료 or 시스템사용료+광고료 does not change the substance. Price must not vary with conversions or contracts. Separately review the investment-linked 우대 단가. 2) PIPA: §17② five notice items naming 현대해상; §22①7호 separate consent for 판매 권유 purposes; §22⑤ no refusal of membership services to members who decline; §23 separate consent if any health data or disease interest is passed. If insurance or coverage data (보장맵) is included, check 신용정보법 provision rules. 3) Keep screens away from recommending specific products (FSC 2021-09-07) and from wording that implies contracting or 중개 (FSC 2022-06-24). Put ad copy through 현대해상 준법감시인 and association 광고심의. 4) 현대해상 vendor due diligence: collection path and legality, consent procedure, liability and damages clauses, tighter after the 2026-07-01 금감원 alert, the Sep 2026 inspection of about 70 large GAs, and the 2026-09-11 CEO-accountability change. 5) No sandbox is needed only if the activity is not 중개. If it is, registration (GA) is required, not an exemption.",
+      "note": "Confirmed against sources: §99① text ('모집할 수 있는 자 이외의 자에게 ... 수수료, 보수, 그 밖의 대가를 지급하지 못한다'); §17② five items; §23 '별도로 동의'; FSC 2021-09-07 ('판매를 목적으로 하는 경우는 일반적으로 중개'); FSC 2022-06-24 (misleading wording -> '업무광고로 볼 여지'); 보험저널 2021-05-26 (전건 광고심의); 중앙이코노미뉴스 2026-09-01 ('소속 설계사 500명 이상 대형 GA 70여 곳', inspection from Sep, 제재심 late Sep to Oct); 보험저널 2026-09-03 ('9월 11일부터 개인정보 보호 CEO 총괄 관리책임 강화'); 보험저널 2026-02-26 ('수집 경로와 적법성', contract and damages clauses); FSC 2024-01-18 (designated 2023-07, launched 2024-01-19); 인사이트코리아 2026-08-27 (뱅크샐러드 GA subsidiary 2025-07, 삼쩜삼 GA registration 2026). Unsupported: 'registration in its central PI system' has no source. The 금소법 §22 article number was not re-fetched. Legal-structure problems: (a) The FSC 2021-09-07 guidance treats product recommendation as '잠재고객 발굴 및 가입유도', part of selling, and treats a platform paid by 판매실적 as 중개. Consented-lead supply meant for 현대해상 sales is at real risk of being judged 모집 or 중개, whatever the fee is called. Internal gen_budget.py already notes the IM settlement is '법률검토 전제'. (b) The research's 'per-DB fee not tied to contracts' route has no primary source (the research admits this). (c) PIPA §22⑤, checked on casenote, bars making marketing or third-party consent a condition of membership. That caps opt-in and supports a low ramp. (d) The 'no sandbox needed' judgment leaves out that the alternative to a sandbox is GA registration, not freedom from regulation."
+     },
+     {
+      "key": "platform_fee_benchmark_comparison",
+      "status": "corrected",
+      "corrected_recommended": 1.5,
+      "note": "정책브리핑 2023-04-06 states '자동차보험의 보험료 대비 수수료 한도는 4%대로 제한한다' (supports high = 4). 블로터 2025-04-22 has 'PM채널 수수료(약 1.5%)', '0.4%에 불과', and '구매전환율은 9.2%'. It presents 1.5% as a cost that squeezes insurer margins, not as an 'industry standard'. The claim that the government said about 3% was passed on to consumers in version 1.0 appears in neither cited source; unsupported, remove it. Keep 1.5 (low) and 4 (cap) as context only; this is a per-contract fee, not a per-lead price."
+     },
+     {
+      "key": "platform_lead_scale_toss",
+      "status": "corrected",
+      "corrected_recommended": [
+       2,
+       3200
+      ],
+      "note": "인사이트코리아 2026-07-14 confirms '현재 약 3200명의 설계사에게 하루 2건씩 고객DB를 지원'. 3,200x2 = 6,400/day is correct. Problems in the derivation: (1) About 130k/month assumes about 20 working days; on calendar days it is about 192k, so give a 128k-192k range. (2) '20M+ user base' is not in the cited source. (3) 'After about 6 years' is wrong for 토스인슈어런스. 인사이트코리아 2026-08-27 says it '2022년 2월 설계사 2명으로 대면 영업을 시작', about 4.4 years before Jul 2026. The 6 years fits only 토스보험파트너 (2020). The conclusion that 120k/year equals about 1 month of Toss flow roughly holds (0.6-0.9 months)."
+     }
+    ],
+    "overall": "I reopened all 25 cited URLs (2026-09-15) and each one loaded; the quoted figures exist. The derivation arithmetic (factor sum 4.12, S = 29.1k, 13.6k/30k/55k volumes, 70억/15억 revenue) recomputes correctly. It also matches the internal lead-routing report (P1 8주 with 300 leads, P2 12주 across 7 수도권 지역단) and adjust.py (5만 우대 단가 up to 10만 건, 시가 10만 above). Corrections: (1) launch_backloading_fsc. The 28만 contracts cover 5 products, several added mid-2024, so 0.29 mixes product expansion with launch maturation. A like-for-like month-1 ratio is about 0.63, and the low and high bounds measure different things. (2) price_pressure. 2027-01 starts 4-year 분급; 7-year 분급 only from 2029-01. (3) platform_fee. The '3% passed on to consumers' claim is not in any cited source. (4) platform_lead_scale_toss. Monthly flow is 128k-192k depending on day basis; '6 years' and '20M+ users' are not supported (Toss Insurance's own GA sales began 2022-02). (5) regulatory_gate. 'Central PI system registration' has no source. Legal-structure flags: FSC 2021-09-07 treats lead-finding and 가입유도 as part of selling, and performance-based platform fees as 중개. The plan's renaming of 보험 중개 수수료 to 헬스메이트센터 사용료 does not cure the 보험업법 §99① risk. It needs a written legal opinion or 비조치의견서, or the GA route, before paid supply in Apr 2027. PIPA §22①7호 and §22⑤ require separate marketing consent and bar making it a condition of membership, which caps opt-in. 신용정보법 may apply if insurance or coverage data is shared. The core finding that 120k in 2027 is implausible under P1/P2/P3 gating holds as a labeled derivation. The 1%/2.2% member lead rates remain unsourced assumptions, and the Toss 2.7% benchmark mixes counting bases."
+   }
+  },
+  {
+   "topic": "manual",
+   "summary": "대표 지시(2026-09-15)와 양식 판단 — 개시 월은 지시, 늘어나는 모양은 조사, 섞는 방식·보정은 양식 판단",
+   "items": [
+    {
+     "key": "directive_open",
+     "label": "2026-10 본격 준비 · 2027-01-01 실제 오픈 · 연차 = 2027~2031 달력 연도",
+     "unit": "일정",
+     "recommended": "2026-10 / 2027-01-01",
+     "derivation": "대표 지시 2026-09-15 — 전체 예산표에 적용(준비기간 3개월: 인건비·광고·시스템 설치·메디에이지)",
+     "sources": []
+    },
+    {
+     "key": "directive_starts",
+     "label": "매출 줄별 개시 — 검진 4월(서서히) · 병원·약국 진료수수료 2027 · 건강커머스 7월 · 돌봄 7월 · 보험시스템 사용료 4월(서서히)",
+     "unit": "월",
+     "recommended": "04 / 01 / 07 / 07 / 04",
+     "derivation": "대표 지시 2026-09-15. 병원·약국 「진료수수료」는 모델에 병원·약국 매출이 AI 플랫폼 구독(EMR·UIP)뿐이라 구독 개시 연차 1로 반영(환자 소개 대가는 의료법 §27③ 금지). 예약 서비스는 검진 예약 연동이라 검진과 같게.",
+     "sources": []
+    },
+    {
+     "key": "judgment_rev_mode",
+     "label": "매출 산정 방식 — 월별 누적(기본) vs 연말 기준",
+     "unit": "선택",
+     "recommended": 2,
+     "derivation": "finModel 연간 매출은 연말 회원(연말 누적 동의·연말 유료 기관) × 연간 단가라 성장 연도에 월별로 쌓은 값보다 크다(2028 연말 130만 ← 2027 33만). 2027은 개시 시점을 넣으려면 월별 누적이 필요하고, 같은 기준을 2028~2031에도 쓰는 것이 기본. 1로 바꾸면 2028~2031은 사업계획서 방식.",
+     "sources": []
+    },
+    {
+     "key": "judgment_season_blend",
+     "label": "검진 계절 지수 = 국가 일반검진(검증 보정) 50% + 민간 종합검진 50%",
+     "unit": "지수",
+     "recommended": [
+      0.0281,
+      0.0347,
+      0.0588,
+      0.0858,
+      0.0873,
+      0.0871,
+      0.0946,
+      0.0914,
+      0.0708,
+      0.1031,
+      0.1181,
+      0.1404
+     ],
+     "derivation": "하이핀 검진 예약은 국가검진 도래 안내(메디에이지)와 기업·유료 종합검진이 섞이고, 제휴 센터의 12월 수용 한계가 있어 국가 수검 분포(12월 20%)를 그대로 쓰지 않음. 4분기 36%.",
+     "sources": []
+    },
+    {
+     "key": "judgment_commerce_cohort",
+     "label": "커머스 개시 계수 — 재구매 램프에 회원 증가 코호트 보정",
+     "unit": "계수",
+     "recommended": [
+      0.28,
+      0.47,
+      0.59,
+      0.68,
+      0.74,
+      0.78
+     ],
+     "derivation": "검증자 지적: 상수 회원 기준 램프(0.28→0.92)를 늘어나는 회원에 그대로 곱하면 하반기를 과대계상. 월말 회원 경로(m1Ramp)로 월별 신규 코호트를 쌓아 두 재구매 곡선(Recharge·라플라스) × 인지 램프 유무 4가지를 평균 — 성장 할인 0.84~0.91.",
+     "sources": []
+    },
+    {
+     "key": "judgment_ins_member_index",
+     "label": "사용료 개시 계수 — 조사 계수에서 회원 증가 지수(m/12) 제거",
+     "unit": "계수",
+     "recommended": [
+      0.06,
+      0.1,
+      0.28,
+      0.41,
+      0.6,
+      0.81,
+      0.92,
+      0.98,
+      1.0
+     ],
+     "derivation": "조사 계수 0.02~1.00은 커버리지 × 권역 성숙 × 회원 지수. 양식은 월 기준에 이미 월말 회원 비율이 있어 회원 지수를 나눠 뺌 → 2027 반영 약 3.8만 건(조사 적정 1.4만~5.5만 · 중간 3만).",
+     "sources": []
+    },
+    {
+     "key": "judgment_care_structure",
+     "label": "돌봄 매출 구조 — 센터당 월 정액 파트너 이용료(건당 소개료 아님)",
+     "unit": "구조",
+     "recommended": "센터당 월 30만",
+     "derivation": "대표 지시 2026-09-14(회원 과금 없음)와 노인장기요양보험법 §35⑥(영리 목적 수급자 소개·알선·유인 금지) · 의료법 §27③ 판례(대법 2018도20928 수수료형 불법, 헌재 2017헌마327 정액 광고비)를 함께 반영. 센터 수는 수요로 추정하지만 요금은 건수와 무관 — 검증자는 실질이 건당으로 보일 수 있다고 지적(법률의견·비유료 센터 노출·광고 표기 필요).",
+     "sources": []
+    },
+    {
+     "key": "judgment_maturity_2028",
+     "label": "2028~2031 성숙 계수 — 커머스 0.84·0.88·0.91·0.93 · 돌봄 2028 0.93",
+     "unit": "연 계수",
+     "recommended": [
+      0.84,
+      0.88,
+      0.91,
+      0.93
+     ],
+     "derivation": "검증자 지적: 2027에만 코호트 보정을 넣으면 2028 커머스가 약 110억 크다. 2027과 같은 코호트 모형(월말 회원에 비례해 매달 구매 코호트 시작 · 재구매 곡선 2종 × 인지 램프 유무 평균)을 2031까지 돌려 연도별 (월말 회원 가중) 평균 계수를 넣음. 돌봄은 30%→12개월 100% 램프의 2028 잔여를 회원 가중 평균(0.935).",
+     "sources": []
+    },
+    {
+     "key": "judgment_sub_institution_path",
+     "label": "구독 2028~ — 유형별 유료 기관 직선 경로",
+     "unit": "구조",
+     "recommended": "전년 말 → 연말 직선",
+     "derivation": "검증자 지적: 월별 누적에서 구독을 회원 비율로 늘리면 2029년 1월 과금 기관이 전년 12월보다 적어지는 모순(기관 이탈 0 가정과 충돌). 검진센터·병원·약국별로 전년 말 유료 기관에서 연말까지 직선으로 늘리고 유형별 반영률(= 전년/연말 + (1 − 전년/연말) × 78/144)을 씀.",
+     "sources": []
+    },
+    {
+     "key": "judgment_tax_nol",
+     "label": "법인세 — 이월결손금 2028부터 차감",
+     "unit": "구조",
+     "recommended": "준비기간 비용 + 2027 손실",
+     "derivation": "검증자 지적: 안내에 이월결손금이라 적었지만 2028 법인세는 전액 과세였음. 시나리오별 준비기간 비용(A 11.5억 · B·C 19.9억)과 연도 손실을 쌓아 이후 세전이익에서 차감(중소기업 공제 한도 100% 가정). 임차·채용 수수료(모델 밖 현금)는 과세표준에 넣지 않음.",
+     "sources": []
+    },
+    {
+     "key": "judgment_bc_period",
+     "label": "B·C는 오픈 기준 기간 — 계절·한도 연차·C 미공급도 함께 민다",
+     "unit": "정의",
+     "recommended": "오픈 후 12개월 = 1차",
+     "derivation": "검증자 지적: B·C는 계획 월 전체를 2개월 밀어 1차 = 2027-03~2028-02. 검진 계절을 달력에 고정하면 B·C 필요 총자금 +0.7억(요청액 그대로). C의 DB 미공급은 오픈 후 첫 12개월 — 달력 2027만으로 두면 C 130억.",
+     "sources": []
+    }
+   ],
+   "gaps": [
+    "검진 예약 플랫폼·건강몰·병원 SaaS·보험 DB 모두 공개 월별 램프 데이터가 없어 개시 뒤 모양은 벤치마크 기반 가정이다 — 제휴 계약(센터 슬롯·EMR 연동·현대해상 파일럿)이 정해지면 바꾼다."
+   ],
+   "check": {
+    "verdicts": [],
+    "overall": ""
+   }
+  }
+ ]
+}

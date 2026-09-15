@@ -36,7 +36,10 @@ def run(P, L):
     pre = max(0, min(PRE_MAX, int(L["pre"])))
     # ── 월 인식(매출·비용) ──
     n = 60
-    rv = {k: [0.0] * n for k in ("P", "Chk", "Svc", "Resv", "Sub", "Ins", "Etc")}
+    rv = {k: [0.0] * n for k in ("P", "Chk", "Svc", "Care", "Resv", "Sub", "Ins", "Etc")}
+    TM = "startF" in P
+    if TM:
+        import adjust as _adj
     cogsM = [0.0] * n; custM = [0.0] * n; cacM = [0.0] * n; brandM = [0.0] * n; launchM = [0.0] * n
     rndM = [0.0] * n; cloudM = [0.0] * n; gpuM = [0.0] * n; salesM = [0.0] * n; adminM = [0.0] * n
     capexM = [0.0] * n; revT = [0.0] * n; intM = [0.0] * n
@@ -48,21 +51,25 @@ def run(P, L):
         for x in adds:
             c += x; ends.append(c)
         W = sum(ends)
-        casesM = [a["insC"] * ends[m] / W for m in range(12)]
+        # 매출 줄별 월 배분(v3.0) — 개시 계수·검진 계절·구독 균등을 반영한 비중(합 1) · 이전 방식은 회원 가중
+        al = {k: (_adj.stream_weights(P, y, k)[3] if TM else [ends[m] / W for m in range(12)]) for k in ("P", "Chk", "Resv", "Svc", "Care", "Sub", "Ins")}
+        casesM = [a["insC"] * al["Ins"][m] for m in range(12)]
         covs = [L["insCov"][m] if y == 0 else 1.0 for m in range(12)]
         planIns = tier(casesM, a["hmCap"], a["hmPrice"], a["hmMarket"])
         recIns = tier([casesM[m] * covs[m] for m in range(12)], a["hmCap"], a["hmPrice"], a["hmMarket"])
         for m in range(12):
             t = y * 12 + m; w = ends[m] / W
-            rv["P"][t] = a["revP"] * w; rv["Chk"][t] = a["revChk"] * w; rv["Svc"][t] = a["revSvc"] * w
-            rv["Resv"][t] = a["revResv"] * w; rv["Sub"][t] = a["revSub"] * w; rv["Ins"][t] = planIns[m]; insRecM[t] = recIns[m]
+            wP, wC, wR, wS, wK, wB = al["P"][m], al["Chk"][m], al["Resv"][m], al["Svc"][m], al["Care"][m], al["Sub"][m]
+            rv["P"][t] = a["revP"] * wP; rv["Chk"][t] = a["revChk"] * wC; rv["Svc"][t] = a["revSvc"] * wS; rv["Care"][t] = a.get("revCare", 0) * wK
+            rv["Resv"][t] = a["revResv"] * wR; rv["Sub"][t] = a["revSub"] * wB; rv["Ins"][t] = planIns[m]; insRecM[t] = recIns[m]
             rv["Etc"][t] = (a["revAd"] + a["revAg"] + a["revApi"]) * w
             revT[t] = sum(rv[k][t] for k in rv)
             sr = revT[t] / a["rev"] if a["rev"] else w      # 매출 연동 비용은 월 매출 비중으로(사용료가 연초 우대로 가중과 다르게 흐름)
-            cogsM[t] = a["cogs"] * w; custM[t] = (a["reward"] + a["don"]) * w
+            cogsM[t] = ((a["cogsP"] + a["payFee"]) * wP + a["chkCogs"] * wC + a["svcCost"] * wS + a.get("careCost", 0) * wK + a["subCost"] * wB)
+            custM[t] = (a["reward"] + a["don"]) * wP
             lp = L["launchPh"]
-            if C2:                           # 광고: 발송·제작·카드·QR 키트는 월 균등, 스티커·연계 수수료는 회원 가중, 매체비는 1차만 배분 가중
-                cacM[t] = (a["mk1"] + a["creative"] + a["cardAd"] + a["kit"]) / 12.0 + (a["sticker"] + a["qrfee"]) * w
+            if C2:                           # 광고: 발송·제작·카드·QR 키트는 월 균등, 스티커는 검진 배분, 연계 수수료는 회원 가중, 매체비는 1차만 배분 가중
+                cacM[t] = (a["mk1"] + a["creative"] + a["cardAd"] + a["kit"]) / 12.0 + a["sticker"] * wC + a["qrfee"] * w
                 brandM[t] = 0.0
                 launchM[t] = a["media"] * lp[m] / sum(lp) if (y == 0 and sum(lp)) else a["media"] / 12.0
             else:
@@ -95,7 +102,7 @@ def run(P, L):
     bsum = sum(L["wBuild"][q - 1] for q in range(1, min(pre, 6) + 1)) if pre > 0 else 0.0
     G = L["cashStart"]; S = L["prodStart"]
     cal_month = lambda idx: (L["startMon"] - 1 + idx + pre - 1) % 12 + 1
-    mkt_mon = A[0]["mktSum"] / 12.0 if C2 else 0.0
+    mkt_mon = (A[0]["mk1"] + A[0]["media"] + A[0]["creative"] + A[0]["cardAd"]) / 12.0 if C2 else 0.0   # 오픈 전 광고 — 발송·매체·소재·카드사(QR 키트·스티커 제외)
     it_mon = (A[0]["itData"] + A[0]["itSec"] + A[0]["cloudBase"]) / 12.0 if C2 else 0.0
     # ── 기간 축(준비 24 + 본 60) ──
     cols = [(j - PRE_MAX + 1) for j in range(PRE_MAX)] + [t + 1 for t in range(n)]
@@ -120,10 +127,11 @@ def run(P, L):
         for x in adds:
             c += x; ends.append(c)
         W = sum(ends)
+        alP = _adj.stream_weights(P, y, "P")[3] if TM else [ends[m] / W for m in range(12)]
         for m in range(12):
-            prodPart[y * 12 + m] = (a["cogsP"] + a["payFee"]) * ends[m] / W
+            prodPart[y * 12 + m] = (a["cogsP"] + a["payFee"]) * alP[m]
     shortfall = sum(rv["Ins"][t] - insRecM[t] for t in range(12))
-    tax1 = None
+    tax1 = None; taxes = [0.0] * 5
 
     def rcash(k, q):                     # 기간 q(≥1)의 현금 기준 매출 — 제품은 개시 전 0, 사용료는 커버리지 반영
         if k == "Ins":
@@ -173,7 +181,7 @@ def run(P, L):
             recv = L["prepay"] if idx == L["prepayAt"] else 0.0
             offset = min(pre_bal + recv, insCol)
             pre_bal = pre_bal + recv - offset
-            inflow = (lagged("P", lag["P"]) + lagged("Chk", lag["Chk"]) + lagged("Svc", lag["Svc"]) + lagged("Resv", lag["Resv"])
+            inflow = (lagged("P", lag["P"]) + lagged("Chk", lag["Chk"]) + lagged("Svc", lag["Svc"]) + lagged("Care", lag["Svc"]) + lagged("Resv", lag["Resv"])
                       + lagged("Sub", lag["Sub"]) + (insCol - offset) + lagged("Etc", lag["Etc"]))
             pc = idx - L["cogsLag"]
             o_cogs = (cogsM[pc - 1] - (prodPart[pc - 1] if pc < S else 0.0)) if pc >= 1 else 0.0
@@ -182,9 +190,14 @@ def run(P, L):
             rent_out = max(0.0, rent - adminM[t]) if L["adminHasRent"] == 1 else rent
             repay = L["repay"] if (L["repayFrom"] <= idx <= L["repayTo"]) else 0.0
             done = (idx - 1) // 12              # 끝난 연차 수 — 달력 3월에 직전 연차 법인세 납부
-            if tax1 is None and idx >= 1:
-                tax1 = max(0.0, A[0]["pbt"] - pre_exp - shortfall * (1 - varRate)) * P["taxRate"]
-            tax = (tax1 if done == 1 else A[done - 1]["tax"]) if (cal_month(idx) == 3 and done >= 1) else 0.0
+            if tax1 is None and idx >= 1:          # 이월결손금 — 준비기간 비용으로 시작, 연차 손익으로 쓰고 쌓음
+                base = [A[0]["pbt"] - shortfall * (1 - varRate)] + [A[k]["pbt"] for k in range(1, 5)]
+                pool = pre_exp; taxes = []
+                for bk in base:
+                    taxes.append(max(0.0, bk - pool) * P["taxRate"])
+                    pool = max(0.0, pool - bk)
+                tax1 = taxes[0]
+            tax = taxes[done - 1] if (cal_month(idx) == 3 and 1 <= done <= 5) else 0.0
             wc = (revT[t] - rv["Ins"][t] + insRecM[t]) * L["wc"]       # 커버리지로 공급 안 된 사용료에는 운전자본을 잡지 않음
             cust = custM[t] if idx >= S else 0.0
             outflow = (o_cogs + cust + cacM[t] + brandM[t] + launchM[t] + capexM[t] + path[t] + rndM[t] + cloudM[t]
@@ -210,23 +223,22 @@ def run(P, L):
         got_pre = L["prepay"] if (L["prepay"] and idx >= L["prepayAt"]) else 0.0
         if L["cashAvail"] + req_new + got_pre + c_ < 0:
             runway = lab; break
-    return dict(low=low, low_at=low_at, fixed_avg=fixed_avg, buffer=buffer, need=need, req=req_new, tax1=tax1, pre_exp=pre_exp,
+    return dict(low=low, low_at=low_at, fixed_avg=fixed_avg, buffer=buffer, need=need, req=req_new, tax1=tax1, taxes=taxes, pre_exp=pre_exp,
                 total_round=math.ceil(need / 1e9) * 1e9, buf_months=buf_months_at_low, runway=runway, series=series, A=A, insRecM=insRecM)
 
 
 RAMP = O.RAMP
 ONES = [1] * 12
 ROAD = [0, 0, 7 / 16, 7 / 16, 7 / 16, 1, 1, 1, 1, 1, 1, 1]
-# 대표 일정(2026-09-14): 준비 시작 2026-11(인건비·광고·시스템 설치) · 가오픈 2026-12-01 · 실매출 2027-02(검진부터 작게) ·
-# 입금 2027-03(모든 매출 다음 달 입금) · 헬스메이트센터 사용료 2027-03부터 서서히
-HM_RAMP = [0, 0.25, 0.5, 0.75] + [1] * 8
+# 대표 일정(2026-09-15 · v3.0): 준비 시작 2026-10(인건비·광고·시스템 설치·메디에이지) · 2027-01-01 오픈 ·
+# 매출 줄별 개시(검진·사용료 4월 · 병원·약국 구독 1월 · 커머스·돌봄 7월)는 연간·월별 계획(adjust.startF)에 들어 있다 — 현금 레버는 추가 지연만
 BASE = dict(pre=3, preOpex=0, lag=dict(P=0, Chk=1, Svc=1, Resv=1, Sub=1, Ins=1, Etc=1), wc=0.0, cogsLag=0,
-            insCov=HM_RAMP, rent=540000, depMonths=10, depLook=6, adminHasRent=0, hireRate=0.05, oneOff=150000000,
+            insCov=ONES, rent=540000, depMonths=10, depLook=6, adminHasRent=0, hireRate=0.05, oneOff=150000000,
             prepay=0, prepayAt=1, repay=0, repayFrom=1, repayTo=0, buf=6, payStart=300000000, ramp=RAMP, cashAvail=0,
-            launchPh=ONES, capexPh=ONES, mediQ=1, cashStart=2, prodStart=2, preInt=1, startMon=11,
+            launchPh=ONES, capexPh=ONES, mediQ=1, cashStart=1, prodStart=1, preInt=1, startMon=10,
             wPay=[0.6, 0.8, 1, 1, 1, 1], wMkt=[0.3, 0.6, 1, 1, 1, 1], wIT=[0, 1, 1, 1, 1, 1], wBuild=[0.3, 0.4, 0.3, 0, 0, 0])
 LA = dict(BASE)
-LB = dict(BASE, pre=5, lag=dict(P=0, Chk=1, Svc=1, Resv=1, Sub=1, Ins=2, Etc=1), insCov=ROAD,
+LB = dict(BASE, pre=5, lag=dict(P=0, Chk=1, Svc=1, Resv=1, Sub=1, Ins=2, Etc=1), insCov=ONES,
           capexPh=[1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0])
 LC = dict(LB, insCov=[0] * 12)
 
