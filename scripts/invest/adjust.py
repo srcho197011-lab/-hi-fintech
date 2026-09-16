@@ -52,6 +52,11 @@ ADJ = {
     "insFullY1": 1,
     # 대표 지시 2026-09-16 — 제품마진 배분: 포인트 적립 50→60% · 기부(치료비 나눔) 30→15%
     "rewardRate": 0.60, "donationRate": 0.15,
+    # 대표 지시 2026-09-16 — 회원 경로 조정: 5차년도(2031) 최종 700만 명. 1차 33만은 유지하고 2~5차를 다시 잡는다.
+    # 검진 예약(활성)·마케팅 동의 회원은 종전 회원 대비 비율을 그대로 두고 같이 줄인다(1만 단위 반올림).
+    "membersEnd": [330_000, 900_000, 2_200_000, 4_200_000, 7_000_000],
+    "activeAbs": [250_000, 620_000, 1_440_000, 2_660_000, 4_200_000],
+    "mktConsentEnd": [200_000, 550_000, 1_380_000, 2_660_000, 4_400_000],
     # 대표 지시 2026-09-16 — 초년도 제품판매(건강커머스)는 실제 가동 기간을 고려해 보수적으로 30% 감액(0.70배).
     # 매출에 비례하는 제품 원가·결제 수수료·적립·기부도 같이 줄고, 광고비 등 고정성 비용은 그대로 둔다.
     "prodAdjY1": 0.70,
@@ -84,6 +89,8 @@ STREAMS = [("P", "제품판매(건강커머스)", "member"), ("Chk", "검진 연
 def apply(P):
     Q = copy.deepcopy(P)
     Q["pharmacies"][0] = ADJ["pharmaciesY1"]
+    for k in ("membersEnd", "activeAbs", "mktConsentEnd"):     # 회원 경로(대표 지시 2026-09-16 · 2031 700만)
+        Q[k] = list(ADJ[k])
     Q["subFeeBaseT"] = dict(ADJ["subFeeBaseT"])
     Q["subFeeStepT"] = dict(ADJ["subFeeStepT"])
     Q["subFeeRateT"] = dict(ADJ["subFeeRateT"])

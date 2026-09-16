@@ -126,9 +126,10 @@ def gap(title):
 
 
 gap("① 회원 · 이용")
-put("membersEnd", "연말 회원(누적, 이탈 차감 후 순증 기준)", "명", P["membersEnd"], F_CNT, SRC + " membersEnd · 형 확정", True)
-put("activeAbs", "하이핀 경유 검진 예약(연 · 연말 회원 기준 연 환산)", "건", P["activeAbs"], F_CNT, SRC + " activeAbs · 형 확정 2026-08-20 · 실제 반영은 ⑤-2 개시 계수·산정 방식을 거친 연간손익 「검진 예약(반영)」")
-put("mktConsent", "마케팅(보험 안내) 동의 회원(누적)", "명", P["mktConsentEnd"], F_CNT, SRC + " mktConsentEnd · 형 확정 2026-08-20")
+put("membersEnd", "연말 회원(누적, 이탈 차감 후 순증 기준)", "명", P["membersEnd"], F_CNT,
+    "대표 지시 2026-09-16 — 5차년도 700만 명 목표로 2~5차 재설정(종전 130/320/600/1,000만) · 1차 33만은 유지", True)
+put("activeAbs", "하이핀 경유 검진 예약(연 · 연말 회원 기준 연 환산)", "건", P["activeAbs"], F_CNT, "대표 지시 2026-09-16 — 회원 경로 조정에 맞춰 종전 회원 대비 비율 그대로 축소(1만 단위) · 실제 반영은 ⑤-2 개시 계수·산정 방식을 거친연간손익 「검진 예약(반영)」")
+put("mktConsent", "마케팅(보험 안내) 동의 회원(누적)", "명", P["mktConsentEnd"], F_CNT, "대표 지시 2026-09-16 — 회원 경로 조정에 맞춰 종전 회원 대비 비율 그대로 축소(1만 단위) · 사용료 모수")
 put("churn", "연간 회원 이탈률", "%", P["churn"], F_PCT, SRC + " churn — 총가입 필요량 산출용")
 
 gap("② 제휴 기관 · AI 플랫폼 구독(EMR·UIP)")
