@@ -40,3 +40,4 @@ docs/hi_nav10k/nav_corpus_v1.jsonl
 
 # 루트 node_modules — 러너 의존성 정션(레포 미포함)
 node_modules/
+scripts/invest/__pycache__/
