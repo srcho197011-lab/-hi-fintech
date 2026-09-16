@@ -52,6 +52,9 @@ ADJ = {
     "insFullY1": 1,
     # 대표 지시 2026-09-16 — 제품마진 배분: 포인트 적립 50→60% · 기부(치료비 나눔) 30→15%
     "rewardRate": 0.60, "donationRate": 0.15,
+    # 대표 지시 2026-09-16 — 초년도 제품판매(건강커머스)는 실제 가동 기간을 고려해 보수적으로 30% 감액(0.70배).
+    # 매출에 비례하는 제품 원가·결제 수수료·적립·기부도 같이 줄고, 광고비 등 고정성 비용은 그대로 둔다.
+    "prodAdjY1": 0.70,
     "subStartYear": {"centers": 2, "hospitals": 1, "pharmacies": 1},   # 병원·약국 구독 2027부터 · 검진센터는 2028부터(1차 무료 유지)
     "productRampY1": 1.0,                              # 1차 제품 가동률 1/3을 월 개시 계수(7월부터)로 대체
     # 재가·돌봄 연계 — 제휴 돌봄기관(방문요양·주야간보호·등록 간병업체)이 내는 센터당 월 정액 파트너 이용료(건당 소개료·수익배분 없음)
@@ -71,7 +74,7 @@ ADJ = {
     },
 }
 HM_KEYS = ("hmInvest", "hmMarket", "hmRate1", "hmPriceStep", "hmCap1", "hmCapStep")
-TIMING_KEYS = ("revMode", "matureY", "subStartYear", "careRate", "carePerCenter", "careFee", "careCostRate", "chkSeason", "startF", "insFullY1")
+TIMING_KEYS = ("revMode", "matureY", "subStartYear", "careRate", "carePerCenter", "careFee", "careCostRate", "chkSeason", "startF", "insFullY1", "prodAdjY1")
 # 매출 줄(개시 계수 · 월 배분 단위) — key, 이름, 배분 기준(member = 회원 가중 · season = 회원 가중 × 검진 계절 · flat = 12개월 균등)
 STREAMS = [("P", "제품판매(건강커머스)", "member"), ("Chk", "검진 연계(자사·타사)", "season"), ("Resv", "예약 서비스(골프·시설)", "member"),
            ("Svc", "헬스케어 서비스(고객 수수료)", "member"), ("Care", "재가·돌봄 파트너 이용료", "member"),
@@ -119,7 +122,7 @@ REV_PLAN_NOTE = {
     "chk": "4월 개시 · 0.25→1(5개월) × 검진 계절(연말 쏠림) · 검진기관 건당 수수료 구조는 의료법 §27③ 검토 필요(조사 지적)",
     "resv": "골프·시설 예약 — 검진 예약 × 배수라 4월 개시 · 회원 기준(검진 계절 없음)",
     "ins": "대표 지시 2026-09-16 — 2027 공급은 실제 12만 건(연 환산 = 반영, 가정 ⑤-2 전량 반영 = 1) · 월 배분만 파일럿 일정(4~5월 파일럿 → 6~8월 수도권 → 8월 말 전국) · 우대 단가 5만 고정 · 조사상 2027 적정 1.4만~5.5만 건(중간 3만)보다 크므로 공급 계약 근거 첨부 필요 · 보험업법 §99① 법률의견 전제",
-    "commerce": "7월 개시 · 재구매 코호트 램프 × 회원 증가 보정 0.28→0.78 · 2028~2031 성숙 0.84·0.88·0.91·0.93 · 카드·PG 같은 달 입금",
+    "commerce": "7월 개시 · 재구매 코호트 램프 × 회원 증가 보정 0.28→0.78 · **2027은 대표 지시 2026-09-16로 실제 가동 기간을 고려해 보수적으로 30% 감액(반영률 ×0.70 · 가정 ⑤-2)** · 2028~2031 성숙 0.84·0.88·0.91·0.93 · 카드·PG 같은 달 입금",
     "care": "7월 개시 · 센터당 월 30만 정액 × 파트너 센터(연말 회원×1%÷12÷3) · 30%→12개월 100%(2028 성숙 0.93)",
     "svc": "고객 수수료 0(대표 지시) — 매출 없음",
 }
@@ -239,6 +242,8 @@ def stream_weights(P, y, key):
     eff = 1 if (y > 0 and mode != 2) else G
     if key == "Ins" and y == 0 and P.get("insFullY1", 0) == 1:
         eff = 1.0                                      # 2027 사용료는 연 환산 = 실제 공급(대표 지시) · 월 배분 a만 파일럿 일정을 따른다
+    if key == "P" and y == 0:
+        eff *= P.get("prodAdjY1", 1.0)                 # 2027 제품판매 기간 보정(대표 지시 — 보수적으로 30% 감액) · 월 배분 a는 그대로
     a = w if G == 0 else [v / G for v in g]
     return b, g, eff, a
 
