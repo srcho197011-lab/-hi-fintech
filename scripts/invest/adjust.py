@@ -50,6 +50,8 @@ ADJ = {
     "revMode": 2,                                      # 매출 산정 방식(2028~): 2 = 월별 누적(월말 회원 기준) · 1 = 연말 기준(사업계획서 방식)
     # 대표 지시 2026-09-16 — 2027년 현대해상 공급 DB는 「연 환산 12만」이 아니라 실제 12만 건. 반영률을 1로 두고 월 배분만 파일럿 일정을 따른다.
     "insFullY1": 1,
+    # 대표 지시 2026-09-16 — 제품마진 배분: 포인트 적립 50→60% · 기부(치료비 나눔) 30→15%
+    "rewardRate": 0.60, "donationRate": 0.15,
     "subStartYear": {"centers": 2, "hospitals": 1, "pharmacies": 1},   # 병원·약국 구독 2027부터 · 검진센터는 2028부터(1차 무료 유지)
     "productRampY1": 1.0,                              # 1차 제품 가동률 1/3을 월 개시 계수(7월부터)로 대체
     # 재가·돌봄 연계 — 제휴 돌봄기관(방문요양·주야간보호·등록 간병업체)이 내는 센터당 월 정액 파트너 이용료(건당 소개료·수익배분 없음)
@@ -82,7 +84,8 @@ def apply(P):
     Q["subFeeBaseT"] = dict(ADJ["subFeeBaseT"])
     Q["subFeeStepT"] = dict(ADJ["subFeeStepT"])
     Q["subFeeRateT"] = dict(ADJ["subFeeRateT"])
-    for k in ("chkOwnFee", "chkOwnCost", "chkPtnFee", "chkPtnCost", "chkOwnShareY1", "chkOwnShareStep", "serviceCommission", "interestYear") + HM_KEYS:
+    for k in ("chkOwnFee", "chkOwnCost", "chkPtnFee", "chkPtnCost", "chkOwnShareY1", "chkOwnShareStep", "serviceCommission",
+              "interestYear", "rewardRate", "donationRate") + HM_KEYS:
         Q[k] = ADJ[k]
     if ADJ["dropNewStreams"]:
         Q["adPerActive"] = [0] * 5; Q["aiAgentRate"] = [0] * 5; Q["apiClients"] = [0] * 5
