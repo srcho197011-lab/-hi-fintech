@@ -117,7 +117,7 @@ def annual(P, n=5):
             for k in ("cac", "launch", "brand", "rnd", "cloud", "gpu"):
                 a[k] = 0
             a["mktg"] = a["mktSum"]
-            a["sga"] = a["mktSum"] + reward + don + a["pay"] + a["itOpex"] + sales + admin
+            a["sga"] = a["mktSum"] + a["mediRep"] + reward + don + a["pay"] + a["itOpex"] + sales + admin
             a["ebit_model"] = gross - a["sga"]
             a["ebit"] = a["ebit_model"] - a["depr"]
     return rows

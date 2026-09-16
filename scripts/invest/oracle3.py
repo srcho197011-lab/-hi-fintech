@@ -42,7 +42,7 @@ def run(P, L):
         import adjust as _adj
     cogsM = [0.0] * n; custM = [0.0] * n; cacM = [0.0] * n; brandM = [0.0] * n; launchM = [0.0] * n
     rndM = [0.0] * n; cloudM = [0.0] * n; gpuM = [0.0] * n; salesM = [0.0] * n; adminM = [0.0] * n
-    capexM = [0.0] * n; revT = [0.0] * n; intM = [0.0] * n
+    capexM = [0.0] * n; revT = [0.0] * n; intM = [0.0] * n; mediM = [0.0] * n
     insRecM = [0.0] * n                  # 커버리지 반영 사용료 — 실제 공급 건수로 한도·단가 적용
     for y in range(5):
         a = A[y]; ramp = L["ramp"][y]; rs = sum(ramp)
@@ -82,6 +82,7 @@ def run(P, L):
             else:
                 rndM[t] = a["rnd"] * sr; cloudM[t] = a["cloud"] * w; gpuM[t] = a["gpu"] * w
             salesM[t] = a["sales"] * sr; adminM[t] = a["admin"] * sr
+            mediM[t] = a.get("mediRep", 0.0) * (adds[m] / sum(adds) if sum(adds) else 1 / 12.0)   # 메디에이지 리포트 구매 — 그 달 가입 비중
             cxb = a["capex"] - ((a.get("medi", 0) + a.get("build1", 0)) if C2 else 0)   # 메디에이지 투자·1차 초기 구축은 지급 시점에 따로
             cp = L["capexPh"]; capexM[t] = cxb * cp[m] / sum(cp) if sum(cp) else cxb / 12.0
             intM[t] = P["interestYear"] / 12.0
@@ -200,7 +201,7 @@ def run(P, L):
             tax = taxes[done - 1] if (cal_month(idx) == 3 and 1 <= done <= 5) else 0.0
             wc = (revT[t] - rv["Ins"][t] + insRecM[t]) * L["wc"]       # 커버리지로 공급 안 된 사용료에는 운전자본을 잡지 않음
             cust = custM[t] if idx >= S else 0.0
-            outflow = (o_cogs + cust + cacM[t] + brandM[t] + launchM[t] + capexM[t] + path[t] + rndM[t] + cloudM[t]
+            outflow = (o_cogs + cust + cacM[t] + mediM[t] + brandM[t] + launchM[t] + capexM[t] + path[t] + rndM[t] + cloudM[t]
                        + gpuM[t] + salesM[t] + adminM[t] + intM[t] + wc + tax - covSave + rent_out + dep_out + hire + one + repay)
             fixedM.append(path[t] + rndM[t] + cloudM[t] + (0.0 if C2 else gpuM[t]) + adminM[t] + intM[t])
         cum += inflow - outflow

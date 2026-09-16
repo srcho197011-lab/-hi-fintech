@@ -5,7 +5,8 @@
   1. 광고비는 「회원확보 사업계획서 v12.1」의 다섯 길목 방법대로 다시 산출한다.
      ① 메디에이지 결과조회·검진 도래 안내(분기 150만 × 분기 3회) · ② 9채널 타겟 광고(일 100만·월 3,000만 노출, 채널 예산 비중)
      · ③ 안내업체 제휴(광고비 0) · ④ 검진센터 현장 QR(제휴 검진기관 250 → 450 → 650) · ⑤ 기업 B2B(광고비 0 — 영업 인력).
-  2. 메디에이지 500만 데이터 투자비 20억 — 1차연도 CAPEX(데이터 이용권·공동사업), 내용연수 동안 상각.
+  2. 메디에이지 제휴 DB — 20억 일시 투자를 삭제(대표 지시 2026-09-16)하고, 제휴 DB 500만 건을 2027-01부터 12개월에 걸쳐 받으면서
+     그중 실제로 가입한 회원의 리포트만 건당 3,000원(통상가의 3배)에 사준다. 가입 연동 변동비 · 현금은 발생 월에 나간다.
   3. 모델 인건비(1차 70억)를 지우고 1차연도는 섹션별 인원(대표 포함 17명 + 자문임원)으로, 업계 급여 조사로 산정한다.
      2차연도부터는 섹션마다 연결된 매출 지표의 증가에 맞춰 인원을 늘린다(인원 탄력성).
   4. 초기 AI 시스템(섹션별) 도입비 · 데이터 유지관리비 · 클라우드 비용 · 블록체인 앵커링(100만 건 × 40원).
@@ -75,12 +76,31 @@ COST = {
     # CAPEX
     "aiModule": {k: 0 for k, _ in AI_MODULES}, "aiCommon": 0, "isms": 0, "officePerHead": 0,
     "capexLater": [0, 2_000_000_000, 5_000_000_000, 5_000_000_000, 5_000_000_000],
-    "mediInvest": 2_000_000_000, "life": 5,
+    "mediInvest": 0, "life": 5,
+    # 메디에이지 제휴 백그라운드 DB(대표 지시 2026-09-16) — 20억 일시 투자를 없애고, DB를 2027-01부터 12개월에 걸쳐 받으면서
+    # 그중 실제로 가입한 회원의 리포트만 건당 구매한다(통상가의 3배). 누적 구매는 총량과 그때까지 확보한 누적 DB를 넘지 못한다.
+    "mediDb": 5_000_000, "mediMonths": 12, "mediFee": 3_000, "mediPer": 1, "mediShare": 1.0,
 }
 
 
 NOTE = {}          # 가정·인력계획 근거 열 문구(키 → 출처 요약) — 비용근거 조사 반영 시 채움
 ADOPT = {}         # 비용근거 키 → (양식 반영값, 반영 위치 · 사유)
+
+
+def medi_db_cum(C, months):
+    """2027-01부터 균등 확보한다고 볼 때 그 달 말까지 누적으로 받은 제휴 DB 건수(months = 2027-01을 1로 센 개월 수)"""
+    n = C.get("mediMonths", 12) or 12
+    return xround(C.get("mediDb", 0) * min(1.0, max(0.0, months / n)))
+
+
+def medi_report(P, C, rows, a, y):
+    """메디에이지 제휴 DB에서 실제로 가입한 회원의 리포트 구매비(연차 y) — 건당 단가 × 가입 수 · 누적 한도 = 그때까지 확보한 DB"""
+    gnew = a["new"] + xround(a["mp"] * P.get("churn", 0))          # 총가입(순증 + 이탈 보전) — 연간손익 「총가입 필요량」과 같은 정의
+    a["gnew"] = gnew
+    prev = sum(r.get("mediN", 0) for r in rows)
+    cap = max(0, medi_db_cum(C, (y + 1) * 12) - prev)              # 연차 말 기준 누적 확보량에서 이미 산 건수를 뺀 나머지
+    a["mediN"] = min(xround(gnew * C.get("mediShare", 1.0) * C.get("mediPer", 1)), cap)
+    a["mediRep"] = xround(a["mediN"] * C.get("mediFee", 0))
 
 
 def driver_base(P, a, k):
@@ -194,6 +214,8 @@ def annual_costs(P, rows, a, y):
     a["sticker"] = xround(a["active"] * C["qrSticker"])
     a["qrfee"] = xround(a["new"] * C["qrShare"] * C["qrFee"])
     a["mktSum"] = a["mk1"] + a["media"] + a["creative"] + a["cardAd"] + a["kit"] + a["sticker"] + a["qrfee"]
+    # 메디에이지 제휴 DB 리포트 구매(가입 연동 · 광고 소계 밖) — 누적은 DB 총량과 그때까지 확보한 누적 DB가 한도
+    medi_report(P, C, rows, a, y)
     # AI·데이터·클라우드
     sw_prev = sum(sw_build(C, k) for k in range(y))
     a["swBuild"] = sw_build(C, y)

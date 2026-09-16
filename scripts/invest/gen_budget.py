@@ -296,7 +296,7 @@ put("opexScale", "영업·관리비 스케일(AI 네이티브 운영)", "%", P["
 gap("⑨ 자산 · 금융 · 세금")
 put("life", "내용연수(AI 시스템·장비·데이터 이용권)", "년", C2["life"], "0", "정액 상각 · 취득 연도는 반년만 상각", True)
 put("interest", "연 이자비용", "원", P["interestYear"], F_WON,
-    "⚠ finModel.js 고정 상수 — 모델의 장기차입 가정(20억) 대비 암묵 이자율 40% · 실제 차입 조건으로 확인 필요", True)
+    "대표 지시 2026-09-16 — 장기차입금 제외. finModel.js의 장기차입 20억 가정과 연 이자 8억(암묵 40%) 고정 상수를 뺐다(0). 차입을 실제로 일으키면 그 조건으로 채울 것", True)
 put("tax", "법인세율", "%", P["taxRate"], F_PCT, "손실 연도에는 0(환급 없음) · 현금은 이듬해 3월 납부(2027분은 2026 준비기간 비용을 이월결손금으로 차감)")
 put("wcRate", "운전자본 증가(매출 대비)", "%", 0.02, F_PCT, "finModel.js 하드코딩 0.02 — 연간 FCF 메모에만 사용(현금 시트는 회수 지연을 명시해 0)")
 
@@ -311,13 +311,22 @@ put("isms", "보안 인증(1차 — ISMS-P 등)", "원", C2["isms"], F_WON, CS.N
 cell(A, f"B{r}", "사무 장비(신규 인원 × 단가)"); cell(A, f"C{r}", "원", SUB)
 cell(A, f"I{r}", "인력계획 인원 증가분 × 1인당 단가", SUB)
 AR["capex_office"] = r; r += 1
-put("medi", "메디에이지 500만 데이터 투자(1차 — 데이터 이용권 · 공동사업)", "원", C2["mediInvest"], F_WON, "대표 지시 2026-09-14 — 20억 · 현금은 준비 첫 달(2026-10) 지급(현금·투자금 레버)", True)
+put("medi", "메디에이지 데이터 투자(1차 — 삭제됨)", "원", C2["mediInvest"], F_WON, "대표 지시 2026-09-16 — 20억 일시 투자 삭제. 제휴 DB를 2027-01부터 1년에 걸쳐 받고, 가입한 회원의 리포트만 건당 구매한다(⑩-2)", True)
 cell(A, f"B{r}", "CAPEX 합계", BOLD)
 for i in range(5):
     col = YC[i]
     cell(A, f"{col}{r}", f"=SUM({col}{AR['capexFirst']}:{col}{AR['medi']})", BLACK, F_WON, TOT, bold=True)
-cell(A, f"I{r}", "1차 = 섹션별 AI 도입 + 공통 플랫폼 + 보안 + 장비 + 메디에이지 · 2차부터 고도화·장비", SUB)
+cell(A, f"I{r}", "1차 = 섹션별 AI 도입 + 공통 플랫폼 + 보안 + 장비 · 2차부터 고도화·장비(메디에이지 투자는 삭제)", SUB)
 AR["capexTotal"] = r
+r += 1
+
+gap("⑩-2 메디에이지 제휴 백그라운드 DB — 2027-01부터 1년에 걸쳐 확보 · 가입한 회원의 리포트만 건당 구매(대표 지시 2026-09-16)")
+put("mediDb", "제휴 DB 총량", "건", C2["mediDb"], F_CNT, "메디에이지 백그라운드 DB 500만 건 — 누적 구매 건수의 한도", True)
+put("mediMonths", "확보 기간(2027-01부터)", "개월", C2["mediMonths"], "0", "12개월 균등 유입 가정 — 그 달까지 받은 누적 DB가 그 시점 구매 한도")
+put("mediFee", "리포트 구매 단가", "원/건", C2["mediFee"], F_WON, "대표 지시 — 통상가의 3배로 사준다(3,000원) · 가입 전환된 회원분만 지급", True)
+put("mediPer", "가입 회원당 연 리포트 수", "건/인·년", C2["mediPer"], "0", "1 = 가입 시 1회 발행")
+put("mediShare", "가입 회원 중 제휴 DB 경유 비율", "%", C2["mediShare"], F_PCT, "1차 목표 33만 명 전량을 제휴 DB 경유로 본 값 — 다른 유입 경로가 확인되면 낮출 것")
+cell(A, f"I{r}", "구매 건수 = MIN(총가입×경유 비율×회원당 리포트, 그때까지 확보한 누적 DB − 이미 산 건수) · 비용은 판관비(현금은 발생 월)", SUB)
 r += 1
 
 gap("⑪ 월 배분 — 회원 증가 램프(가중치, 합이 0이 아니면 됨)")
@@ -649,6 +658,23 @@ yline("kit", "④ 검진센터 QR 키트", lambda i: f"=ROUND({yv('qrNew', i)}*{
 yline("sticker", "④ 결과지 봉투 QR 스티커", lambda i: f"=ROUND({yv('activeAct', i)}*{ASCALAR('qrSticker')},0)", F_MIL, "검진 예약(반영)×스티커 단가")
 yline("qrfee", "④ 센터 연계 수수료", lambda i: f"=ROUND({yv('new', i)}*{ASCALAR('qrShare')}*{ASCALAR('qrFee')},0)", F_MIL, "순증×QR 비중×수수료(협의 전 0)")
 yline("mktSum", "마케팅 소계(5대 엔진 — ③·⑤는 광고비 0)", lambda i: f"=SUM({YC[i]}{YR['mk1']}:{YC[i]}{YR['qrfee']})", F_MIL, "", total=True)
+
+
+def _medi_cum(i):
+    """연차 i 말까지 받은 누적 제휴 DB 건수 — 2027-01부터 확보 개월에 걸쳐 균등 유입"""
+    return f"ROUND({ASCALAR('mediDb')}*MIN(1,{(i + 1) * 12}/{ASCALAR('mediMonths')}),0)"
+
+
+def _medi_n(i):
+    prev = "0" if i == 0 else f"SUM($D${yr}:{YC[i-1]}{yr})"      # 같은 행(작성 중)의 앞 연차 누적
+    want = f"ROUND({yv('gross_new', i)}*{ASCALAR('mediShare')}*{ASCALAR('mediPer')},0)"
+    return f"=MIN({want},MAX(0,{_medi_cum(i)}-{prev}))"
+
+
+yline("mediN", "메디에이지 리포트 구매 건수(가입 전환분)", _medi_n, F_CNT,
+      "MIN(총가입×경유 비율×회원당 리포트, 누적 확보 DB − 이미 산 건수) — 가정 ⑩-2", grp="제휴 DB")
+yline("mediRep", "메디에이지 리포트 구매비", lambda i: f"=ROUND({yv('mediN', i)}*{ASCALAR('mediFee')},0)", F_MIL,
+      "구매 건수 × 단가 — 20억 일시 투자를 대신하는 가입 연동 변동비(현금은 발생 월)")
 yline("reward", "포인트(토큰) 적립", lambda i: f"=ROUND(({yv('revP', i)}-{yv('cogsP', i)})*{ASCALAR('rewardRate')},0)", F_MIL, "제품마진×적립률", grp="고객·사회")
 yline("donation", "기부금(치료비 나눔)", lambda i: f"=ROUND(({yv('revP', i)}-{yv('cogsP', i)})*{ASCALAR('donationRate')},0)", F_MIL, "제품마진×기부율")
 yline("pay", "인건비(섹션별 인원 · 업계 급여 · 자문임원)", lambda i: f"='인력계획'!{YC[i]}{HR['payTotal']}", F_MIL, "인력계획 합계", grp="인력", font=GREEN)
@@ -663,7 +689,7 @@ yline("bc", "블록체인 데이터 앵커링", lambda i: f"=ROUND({yv('bcRec', 
 yline("itOpex", "AI·데이터·클라우드 소계", lambda i: f"=SUM({YC[i]}{YR['itMaint']}:{YC[i]}{YR['bc']})", F_MIL, "", total=True)
 yline("salesCost", "영업비", lambda i: f"=ROUND({yv('rev', i)}*{ASCALAR('salesRate')}*{ASCALAR('opexScale')},0)", F_MIL, "매출×요율×스케일", grp="운영")
 yline("adminCost", "관리비", lambda i: f"=ROUND({yv('rev', i)}*{ASCALAR('adminRate')}*{ASCALAR('opexScale')},0)", F_MIL, "매출×요율×스케일")
-yline("sga", "판매관리비 합계", lambda i: "=" + "+".join(yv(k, i) for k in ["mktSum", "reward", "donation", "pay", "itOpex", "salesCost", "adminCost"]), F_MIL, "", total=True)
+yline("sga", "판매관리비 합계", lambda i: "=" + "+".join(yv(k, i) for k in ["mktSum", "mediRep", "reward", "donation", "pay", "itOpex", "salesCost", "adminCost"]), F_MIL, "", total=True)
 
 ysec("이익 — 상각 전(EBITDA)과 상각 후")
 
@@ -687,7 +713,7 @@ yline("net", "당기순이익", lambda i: f"={yv('pbt', i)}-{yv('tax', i)}", F_M
 
 ysec("투자 · 현금")
 yline("capex", "CAPEX", lambda i: f"='가정'!{YC[i]}{AR['capexTotal']}", F_MIL, "가정 CAPEX 합계", font=GREEN)
-yline("capexMedi", "  그중 메디에이지 500만 데이터 투자", lambda i: f"='가정'!{YC[i]}{AR['medi']}", F_MIL, "현금은 지급 시점 레버로 일시 유출", font=GREEN)
+yline("capexMedi", "  그중 메디에이지 데이터 투자(삭제 — 0)", lambda i: f"='가정'!{YC[i]}{AR['medi']}", F_MIL, "대표 지시 2026-09-16로 0 · 리포트 구매비는 판관비 줄에 있음", font=GREEN)
 yline("capexBuild1", "  그중 1차 초기 구축(AI 모듈·공통 플랫폼·보안 인증)", lambda i: (f"={yv('swBuild', 0)}+'가정'!$D${AR['isms']}" if i == 0 else "=0"), F_MIL, "현금은 준비기간 지급 — 2026-10 30% · 11월 40% · 12월 30%(A·B·C 공통 · 오픈 전 완료)")
 yline("capexBase", "  그중 고도화 · 장비(월 배분)", lambda i: f"={yv('capex', i)}-{yv('capexMedi', i)}-{yv('capexBuild1', i)}", F_MIL, "월 배분(가정 ⑬) 대상")
 yline("dwc", "운전자본 증가", lambda i: f"=ROUND({yv('rev', i)}*{ASCALAR('wcRate')},0)", F_MIL, "매출×증가율")
@@ -949,6 +975,9 @@ mline("kit", "④ 검진센터 QR 키트", "연간 ÷ 12", flat12("kit"), reconc
 mline("sticker", "④ 결과지 QR 스티커", "검진 월 배분", by_weight("sticker", "a_Chk"), reconcile_key="sticker")
 mline("qrfee", "④ 센터 연계 수수료", "회원 가중", by_weight("qrfee"), reconcile_key="qrfee")
 mline("mktSum", "마케팅 소계", "합계", lambda t, y, m, c: f"=SUM({c}{MR['mk1']}:{c}{MR['qrfee']})", total=True, reconcile_key="mktSum")
+mline("mediRep", "메디에이지 리포트 구매비", "연간 × 그 달 신규 회원 비중",
+      lambda t, y, m, c: f"=IF('연간손익'!${YC[y]}${YR['new']}=0,'연간손익'!${YC[y]}${YR['mediRep']}/12,'연간손익'!${YC[y]}${YR['mediRep']}*{c}{MR['newM']}/'연간손익'!${YC[y]}${YR['new']})",
+      reconcile_key="mediRep", grp="제휴 DB")
 mline("reward", "포인트(토큰) 적립", "제품 월 배분", by_weight("reward", "a_P"), reconcile_key="reward", grp="고객·사회")
 mline("donation", "기부금(치료비 나눔)", "제품 월 배분", by_weight("donation", "a_P"), reconcile_key="donation")
 mline("pay", "인건비", "가정 ⑭ 방식(균등/연속 채용)",
@@ -964,7 +993,7 @@ mline("bc", "블록체인 앵커링", "회원 가중", by_weight("bc"), reconcil
 mline("itOpex", "AI·데이터·클라우드 소계", "합계", lambda t, y, m, c: f"=SUM({c}{MR['itMaint']}:{c}{MR['bc']})", total=True, reconcile_key="itOpex")
 mline("salesCost", "영업비", "월 매출 비중", by_rev("salesCost"), reconcile_key="salesCost", grp="운영")
 mline("adminCost", "관리비", "월 매출 비중", by_rev("adminCost"), reconcile_key="adminCost")
-mline("sga", "판매관리비 합계", "합계", lambda t, y, m, c: "=" + "+".join(f"{c}{MR[k]}" for k in ["mktSum", "reward", "donation", "pay", "itOpex", "salesCost", "adminCost"]), total=True, reconcile_key="sga")
+mline("sga", "판매관리비 합계", "합계", lambda t, y, m, c: "=" + "+".join(f"{c}{MR[k]}" for k in ["mktSum", "mediRep", "reward", "donation", "pay", "itOpex", "salesCost", "adminCost"]), total=True, reconcile_key="sga")
 
 msec("이익 · 투자")
 mline("ebitModel", "영업이익(상각 전)", "총이익 − 판관비", lambda t, y, m, c: f"={c}{MR['gross']}-{c}{MR['sga']}", reconcile_key="ebitModel")
@@ -1275,7 +1304,7 @@ def block(tag, bi, r0):
     row("oOne", "일회성 거래비용", lambda col: f"=IF({I(col)}=IF({lv('pre')}>0,1-{lv('pre')},1),{lv('oneOff')},0)")
     row("oBuild", "1차 초기 구축 — 시스템 설치(AI 모듈·공통·보안 인증)",
         lambda col: f"=IF({BSUM}>0,IF(AND({I(col)}<1,{I(col)}>-{lv('pre')}),'연간손익'!$D${YR['capexBuild1']}*({I(col)}+{lv('pre')}<=6)*{WGT('build', col)}/{BSUM},0),IF({I(col)}=1,'연간손익'!$D${YR['capexBuild1']},0))")
-    row("oMedi", "메디에이지 500만 데이터 투자(일시)", lambda col: f"=IF({I(col)}=MAX({lv('mediQ')}-{lv('pre')},IF({lv('pre')}>0,1-{lv('pre')},1)),'연간손익'!$D${YR['capexMedi']},0)")
+    row("oMedi", "메디에이지 리포트 구매(제휴 DB 가입 회원 · 발생 월)", lambda col: f"=IF({I(col)}<1,0,{SAME('mediRep', col)})")
     row("oPrePay", "준비기간 인건비", lambda col: f"=IF(AND({I(col)}<1,{I(col)}>-{lv('pre')}),{PAYS1}*{WGT('pay', col)},0)")
     row("oPreOpex", "준비기간 기타 운영비", lambda col: f"=IF(AND({I(col)}<1,{I(col)}>-{lv('pre')}),{lv('preOpex')},0)")
     row("oPreMkt", "준비기간 광고(오픈 전 사전 광고 — 발송·매체·소재·카드사)", lambda col: f"=IF(AND({I(col)}<1,{I(col)}>-{lv('pre')}),('연간손익'!$D${YR['mk1']}+'연간손익'!$D${YR['media']}+'연간손익'!$D${YR['creative']}+'연간손익'!$D${YR['cardAd']})/12*{WGT('mkt', col)},0)")
@@ -1331,7 +1360,7 @@ warns = [
     f'=IF(ABS(D{CR["s_req"]}-$C${CR["imAmt"]})>=1000000000,"⚠ IM 투자 금액("&TEXT($C${CR["imAmt"]}/100000000,"0")&"억)과 B 요청액("&TEXT(D{CR["s_req"]}/100000000,"0")&"억)이 다릅니다"&IF(C{CR["s_req"]}>$C${CR["imAmt"]}," · 최소(A) "&TEXT(C{CR["s_req"]}/100000000,"0")&"억도 IM 초과","")&" — 문서 금액 통일 필요","✓ IM 금액과 B 요청액 일치")',
     f'=IF(SUM(C{CR["prepay"]}:E{CR["prepay"]})>0,"⚠ 전략적 선급 사용 중 — 투자금 헤드라인에 선급을 더하지 말 것","✓ 선급 없음")',
     f'=IF(AND(\'연간손익\'!D{YR["ebit"]}>0,\'연간손익\'!D{YR["ebitExIns"]}<\'연간손익\'!D{YR["ebit"]}*0.2),"ⓘ 2027 보정 영업이익 중 사용료 제외 시 "&TEXT(\'연간손익\'!D{YR["ebitExIns"]}/100000000,"0.0")&"억 — 흑자가 헬스메이트센터 사용료에 달려 있음",IF(AND(\'연간손익\'!E{YR["ebit"]}>0,\'연간손익\'!E{YR["ebitExIns"]}<\'연간손익\'!E{YR["ebit"]}*0.2),"ⓘ 2028 보정 영업이익 "&TEXT(\'연간손익\'!E{YR["ebit"]}/100000000,"0.0")&"억 중 사용료 제외 시 "&TEXT(\'연간손익\'!E{YR["ebitExIns"]}/100000000,"0.0")&"억 — 2028 흑자가 헬스메이트센터 사용료에 달려 있음","✓ 사용료 제외해도 흑자 연도의 이익이 남음"))',
-    f'=IF(OR(ABS(\'가정\'!D{AR["chShareSum"]}-1)>0.0001,\'가정\'!D{AR["mk2Cpm"]}=0,ROUND(SUM($C${RA["oMedi"]}:${GL}${RA["oMedi"]})-\'연간손익\'!D{YR["capexMedi"]},0)<>0,ROUND(SUM($C${RA["oBuild"]}:${GL}${RA["oBuild"]})-\'연간손익\'!D{YR["capexBuild1"]},0)<>0),"⚠ 입력 점검 — 9채널 비중 합계≠100% · 채널 CPM 0 · 메디에이지/초기 구축 지급 누락 중 하나","✓ 입력 점검 정상(채널 비중·CPM · 메디에이지·초기 구축 지급)")',
+    f'=IF(OR(ABS(\'가정\'!D{AR["chShareSum"]}-1)>0.0001,\'가정\'!D{AR["mk2Cpm"]}=0,ROUND(SUM($C${RA["oMedi"]}:${GL}${RA["oMedi"]})-SUM(\'연간손익\'!D{YR["mediRep"]}:H{YR["mediRep"]}),0)<>0,ROUND(SUM($C${RA["oBuild"]}:${GL}${RA["oBuild"]})-\'연간손익\'!D{YR["capexBuild1"]},0)<>0),"⚠ 입력 점검 — 9채널 비중 합계≠100% · 채널 CPM 0 · 메디에이지/초기 구축 지급 누락 중 하나","✓ 입력 점검 정상(채널 비중·CPM · 메디에이지·초기 구축 지급)")',
 ]
 _FR = f"'가정'!$D${AR['F_P']}:$O${AR['F_Ins']}"; _MR = f"'가정'!$E${AR['M_P']}:$H${AR['M_Ins']}"; _RM = f"'가정'!$D${AR['revMode']}"
 warns.append(f'=IF(OR(AND({_RM}<>1,{_RM}<>2),MAX({_FR})>1,MIN({_FR})<0,MAX({_MR})>1,MIN({_MR})<0),"⚠ 매출 개시 입력 — 산정 방식은 1·2, 개시·성숙 계수는 0~1",IF(EDATE($C${CR["startMonth"]},$C${CR["pre"]})<>DATE(2027,1,1),"ⓘ A 오픈 월이 2027-01이 아님 — 연차·개시 월 표기는 A 오픈 기준으로 읽을 것","✓ 매출 개시 입력 정상 · A 오픈 2027-01(연차 = 달력 연도)"))')
@@ -1431,7 +1460,7 @@ fr += 1
 frow("oPay", "인건비(준비기간 포함)", ["oPay", "oPrePay"], grp="현금 유출")
 frow("oAd", "광고비(5대 엔진 · 오픈 전 광고 포함)", ["oMkt", "oMedia", "oPreMkt"])
 frow("oBuild", "시스템 설치(1차 초기 구축)", ["oBuild"])
-frow("oMedi", "메디에이지 500만 데이터 투자", ["oMedi"])
+frow("oMedi", "메디에이지 리포트 구매(제휴 DB)", ["oMedi"])
 frow("oIT", "AI·데이터·클라우드 · 영업 · 관리", ["oOpex", "oPreIT", "oPreOpex", "oCovSave"])
 frow("oCogs", "매출원가(검진 3종·제품·결제 등)", ["oCogs"])
 frow("oCust", "포인트 적립 · 기부금", ["oCust"])
@@ -1494,7 +1523,7 @@ section(T, tr, "② 자금 사용처 — 저점까지 순소진을 계정별 유
 header_row(T, tr, ["", "사용처", "저점까지 총유출(참고)", "비중", "요청액 배분"], 1)
 tr += 1
 CATS = [("매출원가", ["oCogs"]), ("포인트 적립 · 기부금", ["oCust"]), ("마케팅(5대 엔진 광고 · 출시 전 사전 광고)", ["oMkt", "oMedia", "oPreMkt"]),
-        ("CAPEX(1차 시스템 설치 · 고도화 · 보안 · 장비)", ["oBuild", "oCapex"]), ("메디에이지 500만 데이터 투자", ["oMedi"]), ("인건비(준비기간 포함)", ["oPay", "oPrePay"]),
+        ("CAPEX(1차 시스템 설치 · 고도화 · 보안 · 장비)", ["oBuild", "oCapex"]), ("메디에이지 리포트 구매(제휴 DB)", ["oMedi"]), ("인건비(준비기간 포함)", ["oPay", "oPrePay"]),
         ("AI·데이터·클라우드 · 영업 · 관리(준비기간 IT·기타 포함 · 사용료 미공급 절감 차감)", ["oOpex", "oPreIT", "oPreOpex", "oCovSave"]), ("임차 · 보증금 · 채용 · 일회성", ["oRent", "oDep", "oHire", "oOne"]),
         ("이자 · 세금 · 운전자본 · 차입 상환", ["oInt", "oPreInt", "oTax", "oWc", "oRepay"])]
 
@@ -1651,7 +1680,7 @@ cell(S, f"F{sr}", f"=F{tot_rev}-F{sr-1}", BLACK, F_MIL)
 cell(S, f"I{sr}", "모델 쪽은 감가상각을 차감한 보정 영업이익과 같다", SUB)
 sr += 2
 section(S, sr, "대조 범위 밖 불일치", 9); sr += 1
-for t_ in ["이자·차입 — 화면 시뮬은 장기차입 2억(Finance.jsx FIN_LONGDEBT) · 이자 매출×0.18%, 모델은 장기차입 20억 · 이자 연 8억 고정 상수",
+for t_ in ["이자·차입 — 화면 시뮬은 장기차입 2억(Finance.jsx FIN_LONGDEBT) · 이자 매출×0.18%, 이 양식은 대표 지시 2026-09-16로 장기차입과 이자를 모두 뺐다(0)",
            "KPI 런웨이 — 모델은 1차연도 EBIT(+5.1억)로 번을 계산해 내부값 Infinity, 화면에는 「흑자」로 표시(같은 해 순이익 −2.9억 · 모델 FCF −16.2억)"]:
     cell(S, f"B{sr}", t_, SUB); sr += 1
 S.column_dimensions["A"].width = 4
@@ -1895,7 +1924,7 @@ gr += 1
 section(G, gr, "세 기준", 7); gr += 1
 for t_ in ["사업 일정(대표 지시 2026-09-15) — 2026-10 본격 준비(인건비·광고·시스템 설치·메디에이지) → 2027-01-01 오픈 → 병원·약국 AI 플랫폼 구독 2027-01부터 · 건강검진 연계·헬스메이트센터 사용료 2027-04부터 서서히 · 건강커머스·재가돌봄 2027-07부터. 연차 = 달력 연도(1차 2027 ~ 5차 2031). 입금은 기관·검진·돌봄 다음 달, 커머스는 카드·PG라 같은 달.",
            "매출 산정 — 2027은 달마다 「월 기준 × 연말 기준 연간 매출 × 개시 계수」를 더한다(가정 ⑤-2 · 월별예산). 월 기준: 회원 줄(커머스·사용료·돌봄·골프 예약) = 월말 회원 ÷ 연말 회원 ÷ 12 · 검진 = 여기에 검진 계절 지수 · AI 플랫폼 구독 = 1/12(기관 균등, 개시 계수 = 그 달 과금 기관 비중). 2028~2031은 산정 방식 2(기본) = 같은 월별 누적(구독은 유형별 유료 기관의 전년 말→연말 경로) × 성숙 계수, 1 = 연말 회원 × 연간 단가(사업계획서·IM 방식). 두 방식의 차이는 매출계획 시트에 나란히 적었다.",
-           "A 계획 — 위 일정 그대로. 준비 3개월: 인건비 60→80→100% · 사전 광고 30→60→100%(2027 광고 월평균 대비) · IT 운영 11월부터 · 시스템 설치 30/40/30% · 메디에이지 20억과 일회성 1.5억은 2026-10 · 준비기간 이자 반영. 매출 연동 비용은 월 매출 비중, 인건비는 연속 채용 경로.",
+           "A 계획 — 위 일정 그대로. 준비 3개월: 인건비 60→80→100% · 사전 광고 30→60→100%(2027 광고 월평균 대비) · IT 운영 11월부터 · 시스템 설치 30/40/30% · 일회성 1.5억은 2026-10 · 메디에이지는 2027-01부터 가입 연동 리포트 구매(준비기간 지출 없음) · 이자 없음(장기차입 제외). 매출 연동 비용은 월 매출 비중, 인건비는 연속 채용 경로.",
            "B 보수 — 비용은 같은 2026-10부터 나가는데 오픈과 계획 월 전체가 2개월 늦게(2027-03 오픈) 시작 · 사용료 정산 2개월 지연 · CAPEX 분기 선집행. B·C의 기간(1차-01 = 2027-03)·검진 계절·우대 한도 연차도 오픈 기준으로 함께 민다(검진 계절을 달력에 고정해도 필요 총자금 +0.7억 · 요청액 그대로). 공급사 신용은 의도적으로 제외.",
            "C 게이트 지연 — B에 더해 오픈 후 첫 12개월(2027-03~2028-02) 헬스메이트센터 DB 공급이 없는 경우(법률의견·파일럿 Go 판정 지연). 미공급을 달력 2027로만 두면 C는 130억.",
            "투자요청서에는 B 요청액을 권고액, A를 최소 필요액으로 적고, C를 하방 시나리오로 병기한다. 요청액은 필요 총자금 전액이다(보유 현금을 차감하지 않음)."]:
@@ -1924,9 +1953,9 @@ gr += 1
 section(G, gr, "모델 점검 — 투자요청서 작성 전에 확인할 것", 7); gr += 1
 for t_ in [
     "1. finModel.js 영업이익(ebit)은 감가상각을 빼지 않은 값(실질 EBITDA)이다. 이 양식은 「상각 전」과 「보정(상각 후)」을 나란히 두고, 상각은 CAPEX를 내용연수로 정액 계산한다.",
-    "2. 연 이자 8억은 모델의 장기차입 가정 20억 대비 암묵 이자율 40%다. 차입금과 연동되지 않은 고정 상수다. 준비기간(2026-10~)에도 같은 월 이자를 넣었다. 금리 5%(연 1억)라면 v3.0 기본값에서 필요 총자금이 A 12.2억 · B 15.1억 · C 15.6억 준다(요청액 A 110→90 · B 120→110 · C 140→120억). 모델값 확인 필요.",
+    "2. 장기차입금 제외(대표 지시 2026-09-16). finModel.js의 장기차입 20억 가정과 연 이자 8억(차입금과 연동되지 않은 고정 상수 · 암묵 이자율 40%)을 뺐다. 준비기간 이자도 0이다. 차입을 실제로 일으키면 가정 ⑨ 이자와 차입 상환 레버를 그 조건으로 채울 것.",
     "3. 모델 KPI 런웨이는 1차연도 EBIT(+5.1억)로 번을 계산해 내부값이 Infinity가 되고, 화면에는 「흑자」로 뜬다. 연간 흑자여도 월별 현금은 저점을 지난다 — 이 양식은 월별 현금으로 판단한다.",
-    "4. finModel.js는 1차연도 조달을 자본금 3억·잉여금 5억·장기차입 20억·리스 1.2억으로 가정하지만 실제 잔액 근거가 없다. 이 양식은 보유 현금을 차감하지 않고 필요 총자금 전액을 요청액으로 잡는다.",
+    "4. finModel.js는 1차연도 조달을 자본금 3억·잉여금 5억·장기차입 20억·리스 1.2억으로 가정하지만 실제 잔액 근거가 없다. 이 양식은 장기차입을 빼고(대표 지시), 보유 현금도 차감하지 않고 필요 총자금 전액을 요청액으로 잡는다.",
     "5. 모델 FCF 산식 ebit×(1−세율)은 손실 연도에 세금 환급처럼 작동한다. v3.0 기본값은 2027 모델 표기 영업이익(상각 전)이 −18.1억이라 그 산식이면 세금이 약 −4.0억(가짜 환급)으로 잡힌다 — 이 양식은 손실 시 세금 0이고, 2026 준비기간 비용과 2027 손실을 이월결손금으로 2028부터 차감한다(연간손익 이월결손금 행 · 현금 요약 법인세 1~4차분).",
     "6. 헬스메이트센터 사용료는 원가가 없어 이익에 그대로 반영된다. 2027 반영 3.8만 건(연 환산 12만 건 × 반영률 31% — 4월 파일럿·수도권·8월 말 전국) = 전량 우대 5만 = 18.8억 · 조사상 2027 적정 1.4만~5.5만 건(중간 3만). 2028 31.6만 건 = 우대 20만×6만 + 시가 11.6만×10만 = 235.8억. 한도 초과분이 시가 10만이라 2028부터 모델(건당 7만)보다 크다 — 시가 10만의 근거를 첨부할 것(조사: 동의 DB 시장 5만~13만 · 상담 일정 확정 DB 15만~20만). 우대가 없으면(전량 시가) 필요 총자금이 A 7.8억 · B 10.7억 · C 0.7억 작다(요청 A 100 · B 110 · C 140억). ⚠ 명칭을 사용료로 바꿔도 보험업법 §99①(모집 대가) 위험은 그대로 — 유료 공급 전 법률의견 또는 GA 경로.",
     "7. 화면 시뮬의 감가상각은 전 연차 매출 0.2%로 고정돼 있다. 이 양식은 CAPEX 정액 상각이라 2027 3.1% → 2031 0.29%로 줄어든다(2027은 매출이 개시 일정만큼 작아 비율이 크다). 모델 영업이익과 함께 보정해야 한다.",

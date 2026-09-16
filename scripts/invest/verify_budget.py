@@ -41,8 +41,15 @@ if "startF" in O3.P0:                              # v3.0 매출 개시 일정 �
 if "cost2" in O3.P0:                               # 판관비·CAPEX 근거 모델(v2.0)
     for a in adj:
         a["capexMedi"] = a["medi"]; a["capexBuild1"] = a["build1"]
+        a["int"] = O3.P0["interestYear"]; a["pbt"] = a["ebit"] - O3.P0["interestYear"]   # 장기차입 제외(2026-09-16) — 0임을 못 박는다
     pairs += [(k, k) for k in ("headTotal", "pay", "mk1", "media", "creative", "cardAd", "kit", "sticker", "qrfee", "mktSum",
+                               "mediN", "mediRep", "gross_new", "int", "pbt",
                                "itMaint", "itData", "itSec", "cloudBase", "cloudVar", "llm", "bc", "itOpex", "capex", "capexMedi", "capexBuild1", "depr")]
+    for a in adj:
+        a["gross_new"] = a["gnew"]
+missing = [xk for xk, _ in pairs if xk not in YR]
+if missing:
+    print("⚠ 대조에서 빠진 계정(연간손익에 행이 없음):", ", ".join(missing))
 worst = max((abs(Y[f"{'DEFGH'[i]}{YR[xk]}"].value - adj[i][ok]), xk, i + 1) for xk, ok in pairs if xk in YR for i in range(5))
 if "startF" in O3.P0:                              # 매출 반영률(엑셀 SUM vs 정답지) — 부동소수 차이만 허용
     import adjust as _A

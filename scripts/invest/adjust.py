@@ -44,6 +44,8 @@ ADJ = {
     "hmCap1": 100_000, "hmCapStep": 100_000,           # 우대 한도 1차 10만 건 · 매년 +10만 건
     "dropNewStreams": True,                            # ⑥ 신규 스트림 삭제
     "cost2": True,                                     # 판관비·CAPEX 근거 모델(v2.0 · costs.py)
+    # ── v3.1 대표 지시(2026-09-16): 장기차입금 제외 — finModel.js의 장기차입 20억 가정과 연 이자 8억(암묵 40%) 고정 상수를 뺀다 ──
+    "interestYear": 0,
     # ── v3.0 대표 일정(2026-09-15): 2026-10 준비 시작 · 2027-01-01 오픈 · 연차 = 2027~2031 달력 연도 ──
     "revMode": 2,                                      # 매출 산정 방식(2028~): 2 = 월별 누적(월말 회원 기준) · 1 = 연말 기준(사업계획서 방식)
     "subStartYear": {"centers": 2, "hospitals": 1, "pharmacies": 1},   # 병원·약국 구독 2027부터 · 검진센터는 2028부터(1차 무료 유지)
@@ -78,7 +80,7 @@ def apply(P):
     Q["subFeeBaseT"] = dict(ADJ["subFeeBaseT"])
     Q["subFeeStepT"] = dict(ADJ["subFeeStepT"])
     Q["subFeeRateT"] = dict(ADJ["subFeeRateT"])
-    for k in ("chkOwnFee", "chkOwnCost", "chkPtnFee", "chkPtnCost", "chkOwnShareY1", "chkOwnShareStep", "serviceCommission") + HM_KEYS:
+    for k in ("chkOwnFee", "chkOwnCost", "chkPtnFee", "chkPtnCost", "chkOwnShareY1", "chkOwnShareStep", "serviceCommission", "interestYear") + HM_KEYS:
         Q[k] = ADJ[k]
     if ADJ["dropNewStreams"]:
         Q["adPerActive"] = [0] * 5; Q["aiAgentRate"] = [0] * 5; Q["apiClients"] = [0] * 5
