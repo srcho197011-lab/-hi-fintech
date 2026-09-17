@@ -1,9 +1,11 @@
-/* finModel.js 기본 시나리오를 JSON으로 덤프 — 사용: node scripts/invest/fin_dump.mjs <저장소 루트> <출력 json> */
+/* 예산양식 입력 스냅샷(_fin.json) 덤프 — 사용: node scripts/invest/fin_dump.mjs <저장소 루트> <출력 json>
+   사이트 finModel.js는 2026-09-17부터 예산양식 v3.8 엔진(finBudget.js) 래퍼가 됐으므로, 예산양식의 원천(v3.8 조정 전 finModel 기본값)은
+   scripts/invest/finModel_legacy.js(교체 직전 finModel.js 사본)에서 뜬다 — 사이트 엔진을 여기에 물리면 adjust.py가 이중 적용된다. */
 import { readFileSync, writeFileSync } from 'node:fs';
 import vm from 'node:vm';
 const REPO = process.argv[2];
 const ctx = vm.createContext({ console, Math, JSON, Number, String, Array, Object, localStorage: { getItem: () => null, setItem() {}, removeItem() {} } });
-vm.runInContext(readFileSync(REPO + "/src/data/finModel.js", "utf8") + "\n;globalThis.__f={finYears,finParams,finMonthlyY1,finCFYear,finKPIs,finValModel};", ctx);
+vm.runInContext(readFileSync(REPO + "/scripts/invest/finModel_legacy.js", "utf8") + "\n;globalThis.__f={finYears,finParams,finMonthlyY1,finCFYear,finKPIs,finValModel};", ctx);
 const F = ctx.__f; const P = F.finParams(); const Y = F.finYears(5); const M = F.finMonthlyY1();
 const pick = (r) => { const o = {}; for (const k of Object.keys(r)) if (k !== "lin") o[k] = r[k]; return o; };
 writeFileSync(process.argv[3], JSON.stringify({ P, years: Y.map(pick), lin: Y.map(r => r.lin), m1: M, cf: [0,1,2,3,4].map(F.finCFYear), kpi: F.finKPIs() }, null, 1));

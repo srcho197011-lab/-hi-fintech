@@ -1,10 +1,10 @@
 /* ══════════════ 선수납 · 공제정산 결제 엔진(escrowPay.js) ══════════════
    설계: 고객이 하이핀에서 검진비를 먼저 결제(PG) → 수검 완료까지 대금 예치(Escrow)
         → 수검 확인 → 송객수수료 공제 후 검진기관 정산(D+n) → 자동 분개.
-   제휴 대응: KIS정보통신 PG(매입)·Escrow(예치)·정산 대행 — 제안서 v1.1 §03 구조도의 실구현.
+   제휴 대응: 제휴 PG(매입)·결제대금예치·정산 대행(제휴사 표기는 계약 확정 후) — 제안서 v1.1 §03 구조도의 실구현.
    ⚠️ 원칙:
      ① 회원 화면에는 결제 금액과 보호 안내만 — 송객수수료·정산 내역은 관리자 콘솔에서만(원가 비노출).
-     ② 수수료 단가는 재무모델(finModel checkupFee) 단일 소스 참조 — 하드코딩 금지.
+     ② 수수료 단가는 재무모델 단일 소스 참조(채널별: 자사 운영 = finParams().chkOwnFee · 제휴사 = chkPtnFee) — 하드코딩 금지.
      ③ 결제·예치·정산의 모든 상태 전이는 체인 기록(chainAppend) — 사후 검증 가능.
      ④ 시연 환경: 실제 결제·정산은 일어나지 않으며 승인번호는 시뮬 값(화면에 고지). */
 
@@ -15,7 +15,7 @@ const ESC_STATUS = {
   REFUNDED: { ko: "환불", c: "#B91C1C", bg: "#FEF2F2", desc: "미수검·취소 — 에스크로에서 고객 환불" },
 };
 const ESC_METHODS = [
-  { k: "card", ko: "신용·체크카드", sub: "KIS VAN·PG 매입", ic: "card" },
+  { k: "card", ko: "신용·체크카드", sub: "제휴 PG 매입", ic: "card" },
   { k: "easy", ko: "간편결제", sub: "카카오·네이버·페이코", ic: "easy" },
   { k: "bank", ko: "계좌이체", sub: "실시간 계좌 승인", ic: "bank" },
 ];
@@ -24,15 +24,34 @@ const ESC_METHODS = [
 const ESC_PLAN_PRICE = { basic: 0, standard: 350000, premium: 650000 };
 const ESC_CFG = {
   settleDays: 3,          // 수검 확인 후 정산일(D+3) — 협의 확정 전 기본값
-  pg: "KIS PG",           // 결제 대행(전자지급결제대행)
-  escrow: "KIS Escrow",   // 결제대금예치
+  pg: "제휴 PG",           // 결제 대행(전자지급결제대행)
+  escrow: "결제대금예치",   // 결제대금예치
 };
-/* 송객수수료 — 재무모델 단일 소스(checkupFee). 미로드 시 보수 폴백 */
-function escFee() {
-  try { const P = (typeof finParams === "function") ? finParams() : null; if (P && P.checkupFee) return P.checkupFee; } catch (e) {}
-  return 25000;
+/* 검진 연계 채널 — 자사 운영(하이핀 직접 예약) / 제휴사(인피니티케어 등 제휴 경유) */
+const ESC_CHANNELS = {
+  own: { ko: "자사 운영", feeKey: "chkOwnFee" },
+  partner: { ko: "제휴사", feeKey: "chkPtnFee" },
+};
+function _escChannel(ch) { return ESC_CHANNELS[ch] ? ch : "own"; }
+/* 송객수수료 — 재무모델 단일 소스(채널별 chkOwnFee·chkPtnFee). 미로드 시 예산 파라미터(FB_P0), 그것도 없으면 0 */
+function escFee(channel) {
+  const key = ESC_CHANNELS[_escChannel(channel)].feeKey;
+  try { const P = (typeof finParams === "function") ? finParams() : null; if (P && typeof P[key] === "number") return P[key]; } catch (e) {}
+  try { if (typeof FB_P0 !== "undefined" && typeof FB_P0[key] === "number") return FB_P0[key]; } catch (e) {}
+  return 0;
 }
-function _escKey() { return "hifin_escrow_orders"; }
+/* 기준일(재무 엔진 FB_ASOF) — 시드·처리 시각의 기준. 실제 시계가 기준일보다 이르면 기준일 날짜 + 현재 시각 */
+function _escAsOfMs() {
+  const ds = (typeof FB_ASOF !== "undefined" && FB_ASOF && FB_ASOF.date) || "2027-09-17";
+  const [y, m, d] = ds.split("-").map(Number);
+  return new Date(y, m - 1, d).getTime();
+}
+function _escNow() {
+  const now = Date.now(); const base = _escAsOfMs();
+  if (now >= base) return now;
+  const t = new Date(now); return base + ((t.getHours() * 60 + t.getMinutes()) * 60 + t.getSeconds()) * 1000 + t.getMilliseconds();
+}
+function _escKey() { return "hifin_escrow_orders_v38"; }   // 옛 키 hifin_escrow_orders는 읽지 않음(수수료 채널 분리 전 데이터)
 function escAll() { try { return JSON.parse(localStorage.getItem(_escKey()) || "[]"); } catch (e) { return []; } }
 function _escSave(l) { try { localStorage.setItem(_escKey(), JSON.stringify(l.slice(-300))); } catch (e) {} }
 function escOrders(m) { const em = (m && m.email) || null; return escAll().filter((o) => !em || o.email === em); }
@@ -50,13 +69,15 @@ function escPay(m, o) {
   const amount = Math.max(0, Math.round(o.amount || 0));
   if (!amount) return { ok: false, reason: "결제 금액이 없어요." };
   const method = ESC_METHODS.find((x) => x.k === (o.method || "card")) || ESC_METHODS[0];
-  const at = Date.now();
+  const at = _escNow();
   const id = "ESC-" + at.toString(36).toUpperCase();
-  const fee = escFee();
+  const channel = _escChannel(o.channel);
+  const fee = escFee(channel);
   const order = {
     id, at, email: (m && m.email) || "self", name: (m && m.name) || "회원",
     center: o.center || "검진기관", brand: o.brand || "", date: o.date || "", time: o.time || "",
     plan: o.plan || "", amount, method: method.k, methodKo: method.ko,
+    channel, channelKo: ESC_CHANNELS[channel].ko,
     pgAuth: _escAuth("pg" + id), escrowId: "ESW-" + _escAuth("esw" + id),
     fee, payout: Math.max(0, amount - fee),   // 공제 후 검진기관 지급액(관리자 화면 전용)
     status: "PAID", visitedAt: 0, settledAt: 0, refundedAt: 0, refundReason: "",
@@ -66,7 +87,7 @@ function escPay(m, o) {
   try { if (typeof hiEvent === "function") hiEvent("esc_paid", { kind: order.method }); } catch (e) {}
   try {
     const tk = (typeof anonToken === "function" && m) ? anonToken(m) : null;
-    if (typeof chainAppend === "function") chainAppend({ type: "record", token: tk, note: `검진비 선결제 ${escWon(amount)} — ${order.center} · ${ESC_CFG.pg} 승인 ${order.pgAuth} · ${ESC_CFG.escrow} 예치(수검 완료 시 정산)` });
+    if (typeof chainAppend === "function") chainAppend({ type: "record", token: tk, note: `검진비 선결제 ${escWon(amount)} — ${order.center} · ${ESC_CFG.pg} 승인 ${order.pgAuth} · ${ESC_CFG.escrow}(수검 완료 시 정산)` });
     if (typeof vaultAccessLog === "function" && tk) vaultAccessLog(tk, "member", `검진비 선결제(${order.center})`);
   } catch (e) {}
   try { if (typeof notifPush === "function") notifPush({ ic: "check", t: "검진비 결제 완료", d: `${order.center} ${order.date} ${order.time} · ${escWon(amount)} — 수검 완료까지 안전하게 예치돼요.`, target: "checkup" }); } catch (e) {}
@@ -77,7 +98,7 @@ function escConfirmVisit(id) {
   const l = escAll(); const o = l.find((x) => x.id === id);
   if (!o) return { ok: false, reason: "주문을 찾을 수 없어요." };
   if (o.status !== "PAID") return { ok: false, reason: "예치중 상태에서만 수검 확인이 가능해요." };
-  o.status = "VISITED"; o.visitedAt = Date.now();
+  o.status = "VISITED"; o.visitedAt = _escNow();
   _escSave(l);
   try { if (typeof hiEvent === "function") hiEvent("esc_visited", { key: o.id }); } catch (e) {}
   try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `수검 확인 — ${o.id} · ${o.center} (정산 예정 D+${ESC_CFG.settleDays})` }); } catch (e) {}
@@ -88,7 +109,7 @@ function escSettle(id) {
   const l = escAll(); const o = l.find((x) => x.id === id);
   if (!o) return { ok: false, reason: "주문을 찾을 수 없어요." };
   if (o.status !== "VISITED") return { ok: false, reason: "수검 확인 후에만 정산할 수 있어요." };
-  o.status = "SETTLED"; o.settledAt = Date.now();
+  o.status = "SETTLED"; o.settledAt = _escNow();
   _escSave(l);
   try { if (typeof hiEvent === "function") hiEvent("esc_settled", { key: o.id }); } catch (e) {}
   try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `공제 정산 — ${o.id} · 결제 ${escWon(o.amount)} − 수수료 ${escWon(o.fee)} = ${o.center} 지급 ${escWon(o.payout)}` }); } catch (e) {}
@@ -100,7 +121,7 @@ function escRefund(id, reason) {
   if (!o) return { ok: false, reason: "주문을 찾을 수 없어요." };
   if (o.status === "SETTLED") return { ok: false, reason: "정산 완료 건은 환불 처리할 수 없어요(기관 협의 필요)." };
   if (o.status === "REFUNDED") return { ok: false, reason: "이미 환불된 건이에요." };
-  o.status = "REFUNDED"; o.refundedAt = Date.now(); o.refundReason = reason || "고객 취소";
+  o.status = "REFUNDED"; o.refundedAt = _escNow(); o.refundReason = reason || "고객 취소";
   _escSave(l);
   try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `에스크로 환불 — ${o.id} · ${escWon(o.amount)} 전액 반환(${o.refundReason}) · 수수료 미발생` }); } catch (e) {}
   return { ok: true, order: o };
@@ -109,9 +130,12 @@ function escRefund(id, reason) {
 function escStats() {
   const l = escAll();
   const s = { n: l.length, paid: 0, visited: 0, settled: 0, refunded: 0,
-    escrowBalance: 0, feeRevenue: 0, payoutTotal: 0, gmv: 0 };
+    escrowBalance: 0, feeRevenue: 0, payoutTotal: 0, gmv: 0,
+    byChannel: { own: { n: 0, settled: 0, feeRevenue: 0, fee: escFee("own") }, partner: { n: 0, settled: 0, feeRevenue: 0, fee: escFee("partner") } } };
   l.forEach((o) => {
     s.gmv += o.amount;
+    const ch = s.byChannel[_escChannel(o.channel)]; ch.n++;
+    if (o.status === "SETTLED") { ch.settled++; ch.feeRevenue += o.fee; }
     if (o.status === "PAID") { s.paid++; s.escrowBalance += o.amount; }
     else if (o.status === "VISITED") { s.visited++; s.escrowBalance += o.amount; }
     else if (o.status === "SETTLED") { s.settled++; s.feeRevenue += o.fee; s.payoutTotal += o.payout; }
@@ -128,24 +152,25 @@ function escMemberView(o) {
 /* 시연 시드 — 관리자 콘솔이 비어 보이지 않도록 최초 1회 생성(결정론) */
 function escSeedDemo() {
   if (escAll().length) return false;
-  const base = Date.now();
+  const base = _escAsOfMs() + 10 * 3600000;   // 기준일(2027-09-17) 10시 기준 1~12일 전
   const seed = [
-    ["KMI한국의학연구소", 480000, "card", "SETTLED", 12],
-    ["한신메디피아검진센터", 350000, "easy", "SETTLED", 9],
-    ["세브란스체크업", 620000, "card", "VISITED", 4],
-    ["차움검진센터", 890000, "card", "PAID", 2],
-    ["하나로의료재단", 290000, "bank", "PAID", 1],
-    ["서울아산건강증진센터", 410000, "card", "REFUNDED", 6],
+    ["KMI한국의학연구소", 480000, "card", "SETTLED", 12, "own"],
+    ["한신메디피아검진센터", 350000, "easy", "SETTLED", 9, "partner"],
+    ["세브란스체크업", 620000, "card", "VISITED", 4, "own"],
+    ["차움검진센터", 890000, "card", "PAID", 2, "own"],
+    ["하나로의료재단", 290000, "bank", "PAID", 1, "partner"],
+    ["서울아산건강증진센터", 410000, "card", "REFUNDED", 6, "own"],
   ];
   const l = [];
-  seed.forEach(([center, amount, method, status, daysAgo], i) => {
+  seed.forEach(([center, amount, method, status, daysAgo, channel], i) => {
     const at = base - daysAgo * 86400000;
     const id = "ESC-D" + String(i + 1).padStart(3, "0");
-    const fee = escFee();
+    const fee = escFee(channel);
     const d = new Date(at);
     l.push({ id, at, email: "demo@cohort.sim", name: "코호트 회원",
       center, brand: "", date: `${d.getMonth() + 1}/${d.getDate()}`, time: "09:00", plan: "",
       amount, method, methodKo: (ESC_METHODS.find((x) => x.k === method) || ESC_METHODS[0]).ko,
+      channel, channelKo: ESC_CHANNELS[channel].ko,
       pgAuth: _escAuth("pg" + id), escrowId: "ESW-" + _escAuth("esw" + id),
       fee, payout: Math.max(0, amount - fee), status,
       visitedAt: (status === "VISITED" || status === "SETTLED") ? at + 86400000 : 0,

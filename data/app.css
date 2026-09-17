@@ -3693,8 +3693,8 @@ body.guard-nocopy img,body.guard-nocopy video{-webkit-user-drag:none;user-drag:n
 .fcash-none{color:#8FA1C0;font-size:11px}
 .fpl-map{display:flex;flex-direction:column;gap:6px;margin:4px 0 6px}
 .fpl-row{display:grid;grid-template-columns:1fr auto 1.4fr;align-items:center;gap:10px;padding:9px 12px;background:#0c1730;border:1px solid #1e2c4a;border-radius:9px}
-.fpl-row span{color:var(--text);font-size:13px}
-.fpl-row b{font-family:ui-monospace,monospace;font-size:13px;text-align:right}
+.fpl-row span{color:#DCE6F5;font-size:13px}
+.fpl-row b{font-family:ui-monospace,monospace;font-size:13px;text-align:right;color:#E8EEF8}
 .fpl-row em{color:#8FA1C0;font-size:12px;font-style:normal}
 .fpl-row.total{background:#101f3d;border-color:#2b4a6b}
 .fpl-row.total span{font-weight:700}

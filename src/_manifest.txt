@@ -110,6 +110,8 @@ src/data/sharingEngine.js
 src/data/riskEngine.js
 src/data/consentNft.js
 src/data/ocrEngine.js
+src/data/finBudgetParams.js
+src/data/finBudget.js
 src/data/finModel.js
 src/data/escrowPay.js
 src/data/referral.js
