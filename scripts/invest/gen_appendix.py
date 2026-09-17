@@ -313,7 +313,7 @@ row4("creative", "", "광고 소재 제작", "영상 4편 × 300만원 + 카드�
 row4("kit", "", "검진센터 QR 안내물", "신규 배치 센터 × 6만원", yv("kit"))
 row4("sticker", "", "결과지 봉투 QR 스티커", "검진 예약 × 매당 25원", yv("sticker"))
 row4("mktSum", "", "마케팅 소계", "", formula=rngf("mk1", "sticker"), expect=yv("mktSum"), total=True)
-row4("mediRep", "제휴", "메디에이지 제휴 리포트 구매", "2027년 가입 회원 33만명 × 건당 3,000원", yv("mediRep"))
+row4("mediRep", "제휴", "메디에이지 제휴 리포트 구매", f"2027년 신규 가입 {yv('gross_new')[0] / 1e4:,.0f}만명 − 인피니티케어 연계 {a1('infVol') / 1e4:,.0f}만명 = {yv('mediN')[0] / 1e4:,.0f}만명 × 건당 {a1('mediFee'):,}원", yv("mediRep"))
 row4("reward", "고객", "회원 포인트 적립", "상품 마진 × 60%", yv("reward"))
 row4("donation", "", "기부금(치료비 나눔)", "상품 마진 × 15%", yv("donation"))
 row4("pay", "인력", "인건비", "5. 인력 계획", yv("pay"))
@@ -405,6 +405,9 @@ for lab, k, fmt, s5, rem in KP:
     put(S1, f"H{r}", rem, size=8.5, color=SUBC, indent=1)
     rule(S1, r, 8)
     r += 1
+_g27, _inf, _med = yv("gross_new")[0], a1("infVol"), yv("mediN")[0]
+r = note(S1, r, f"※ 2027년 신규 가입 {_g27 / 1e4:,.0f}만명 중 {_inf / 1e4:,.0f}만명은 (주)인피니티케어(기업 건강검진 대행, MOU 체결) 연계 모집으로 보아 메디에이지 리포트 구매는 나머지 {_med / 1e4:,.0f}만명분만 반영", 8)
+r = note(S1, r, "※ 온라인 타겟 광고(8개 채널): 광고비 전액 반영, 광고로 모집되는 회원은 회원 목표에 미포함 — 광고 성과에 따라 회원 수·매출이 목표를 웃돌 수 있음", 8)
 r += 1
 
 S1.row_breaks.append(Break(id=r - 1))
@@ -413,7 +416,7 @@ r = header(S1, r, ["사용처", "금액", "비중", "산정 방식", "", "", "",
 hmerge(S1, r - 1, 4, 8)
 USE_NOTE = {}
 LABEL = {"매출원가": "매출원가(건강검진 연계 서비스·상품·결제 수수료)", "포인트 적립 · 기부금": "회원 포인트 적립·기부금",
-         "마케팅(5대 엔진 광고 · 출시 전 사전 광고)": "마케팅(회원 확보 광고·개시 전 사전 광고)",
+         "마케팅(5대 엔진 광고 · 출시 전 사전 광고)": "마케팅(온라인 타겟 광고·개시 전 사전 광고)",
          "CAPEX(1차 시스템 설치 · 고도화 · 보안 · 장비)": "시스템 구축·고도화·보안·장비",
          "메디에이지 리포트 구매(제휴 DB)": "메디에이지 제휴 리포트 구매", "인건비(준비기간 포함)": "인건비(준비기간 포함)",
          "AI·데이터·클라우드 · 영업 · 관리(준비기간 IT·기타 포함 · 사용료 미공급 절감 차감)": "IT 운영·영업·관리비",
@@ -464,8 +467,14 @@ t1, t2 = T[f"C{TR['t1']}"].value, T[f"C{TR['t1'] + 1}"].value
 t1_until = T[f"D{TR['t1run']}"].value
 ty, tm = int(t1_until[:4]), int(t1_until[5:7])
 dy, dm = (ty, tm - 1) if tm > 1 else (ty - 1, 12)
-TR_ROWS = [("1차 투자(계약 시)", t1, f"요청액의 60%를 10억원 단위로 올린 금액 · 1차 투자금만으로는 {ty}년 {tm}월에 자금 소진"),
-           ("2차 투자(성과 확인 후)", t2, f"아래 성과 목표 확인 후 {dy}년 {dm}월까지 납입")]
+_pre = cv("pre")                                     # 준비 개월 — B·C는 A보다 개시가 늦음
+_ins_m = next(m + 1 for m in range(12) if (A[f"{get_column_letter(4 + m)}{AR['F_Ins']}"].value or 0) > 0)
+pilot_s = _ins_m + int(_pre[1] - _pre[0])
+assert 1 <= pilot_s <= 11, pilot_s
+t1_rate = T[f"C{TR['t1r']}"].value
+_t1_basis = f"요청액의 {t1_rate:.0%}" + ("" if abs(req[1] * t1_rate - t1) < 1 else "를 10억원 단위로 올린 금액")
+TR_ROWS = [("1차 투자(계약 시)", t1, f"{_t1_basis} · 1차 투자금만으로는 {ty}년 {tm}월에 자금 소진"),
+           ("2차 투자(성과 확인 후)", t2, f"아래 성과 목표 확인 후 {dy}년 {dm}월까지 납입(B 보수 계획 기준 시범 운영 {pilot_s}~{pilot_s + 1}월)")]
 for lab_, amt_, txt_ in TR_ROWS:
     put(S1, f"A{r}", lab_, indent=1)
     put(S1, f"B{r}", amt_, fmt=MFMT, h="right", exp=amt_)
@@ -517,8 +526,8 @@ def arow(grp, label, unit, vals, fmt, bid=None, once=False):
 
 def arow_basis(r_, bid):
     txt = basis(bid) if bid else ""
-    put(S2, f"I{r_}", txt, size=8.5, color=INK, wrap=True)
-    S2.row_dimensions[r_].height = 13 * max(1, math.ceil(textw(txt) / 46)) + 2    # 산정 근거 열 한 줄 약 46(한글 1자 기준)
+    put(S2, f"I{r_}", txt, size=8.5, color=INK, wrap=True, indent=1)
+    S2.row_dimensions[r_].height = 13 * max(1, math.ceil(textw(txt) / 45)) + 2    # 산정 근거 열 한 줄 약 46(한글 1자 기준)
 
 
 def arow_ratio(grp, label, num_lab, den, bid, expect):
@@ -616,7 +625,7 @@ arow("", "결과지 봉투 QR 스티커", "원/매", a1("qrSticker"), WFMT)
 r = section(S2, r, "⑦ 메디에이지 제휴 DB", 9)
 arow("제휴", "제휴 DB 확보 규모", "건", a1("mediDb"), NFMT, "medi", once=True)
 arow("", "확보 기간(2027년 1월부터)", "개월", a1("mediMonths"), NFMT, once=True)
-arow("", "리포트 구매 건수(가입 회원)", "건", yv("mediN"), NFMT)
+arow("", "리포트 구매 건수(메디에이지 경유 가입)", "건", yv("mediN"), NFMT)
 arow("", "리포트 구매 단가", "원/건", a1("mediFee"), WFMT)
 S2.row_breaks.append(Break(id=r - 1))
 r = section(S2, r, "⑧ IT 운영비", 9)

@@ -95,12 +95,14 @@ def medi_db_cum(C, months):
 
 def medi_report(P, C, rows, a, y):
     """메디에이지 제휴 DB에서 실제로 가입한 회원의 리포트 구매비(연차 y) — 건당 단가 × 가입 수
-       · 구매 연차는 mediYears까지(대표 지시 2026-09-16: 초년도 가입분 33만 건까지만) · 누적 한도 = 그때까지 확보한 DB"""
+       · 구매 연차는 mediYears까지(대표 지시 2026-09-16: 초년도 가입분까지만) · 누적 한도 = 그때까지 확보한 DB
+       · 인피니티케어 연계 가입(P infinityVolume)은 메디에이지 DB를 거치지 않으므로 뺀다(대표 지시 2026-09-17 — 33만 중 15만 → 18만 건)"""
     gnew = a["new"] + xround(a["mp"] * P.get("churn", 0))          # 총가입(순증 + 이탈 보전) — 연간손익 「총가입 필요량」과 같은 정의
     a["gnew"] = gnew
     prev = sum(r.get("mediN", 0) for r in rows)
     cap = max(0, medi_db_cum(C, (y + 1) * 12) - prev)              # 연차 말 기준 누적 확보량에서 이미 산 건수를 뺀 나머지
-    want = xround(gnew * C.get("mediShare", 1.0) * C.get("mediPer", 1)) if y < C.get("mediYears", 1) else 0
+    via = max(0, gnew - P.get("infinityVolume", 0))                 # 메디에이지 경유 후보 = 총가입 − 인피니티케어 연계
+    want = xround(via * C.get("mediShare", 1.0) * C.get("mediPer", 1)) if y < C.get("mediYears", 1) else 0
     a["mediN"] = min(want, cap)
     a["mediRep"] = xround(a["mediN"] * C.get("mediFee", 0))
 
