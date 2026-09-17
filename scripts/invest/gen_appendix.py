@@ -268,7 +268,7 @@ row4("me", "회원", "연말 회원", "연말 누적(이탈 반영)", yv("me"), 
 row4("new", "", "순증 회원", "연말 − 전년 말", yv("new"), fmt=NFMT)
 row4("gnew", "", "신규 가입 회원", "순증 + 전년 말 회원 × 이탈률 18%", yv("gross_new"), fmt=NFMT)
 row4("chk", "이용", "건강검진 예약", "월말 회원 × 예약 비율 × 계절 지수의 월별 합계", yv("activeAct"), fmt=NFMT)
-row4("paid", "", "AI 플랫폼 구독 기관(연말)", "검진센터 + 병원 + 약국 · 검진센터는 2028년부터 과금", [a + b + c for a, b, c in zip(yv("paid_c"), yv("paid_h"), yv("paid_p"))], fmt=NFMT, sum5=False)
+row4("paid", "", "AI 플랫폼 구독 기관(연말)", "검진센터 + 병원 + 약국 · 2027년 무료, 2028년부터 과금", [a + b + c for a, b, c in zip(yv("paid_c"), yv("paid_h"), yv("paid_p"))], fmt=NFMT, sum5=False)
 row4("ins", "", "헬스메이트센터 DB 공급", "월말 누적 동의 회원 × 60% ÷ 12의 월별 합계(2027년은 공급 계획 12만건)", yv("insCases"), fmt=NFMT)
 row4("buyers", "", "건강커머스 구매 회원", "연말 회원 × 38%", yv("buyers"), fmt=NFMT, sum5=False)
 row4("head", "인력", "인원(연말, 자문위원 제외)", "5. 인력 계획", yv("headTotal"), fmt=NFMT, sum5=False)
@@ -480,7 +480,7 @@ r += 1
 MILE = ["헬스메이트센터 DB 공급 시범 운영 성과 확인(응답률 80%, 상담 전환 40%, 청약 전환 8%)",
         "보험업·신용정보·개인정보 관련 법률 검토 의견서 확보",
         "현대해상 고객의 제3자 제공 동의 수집 목표 달성",
-        "AI 플랫폼 유료 구독 기관 목표 달성"]
+        "AI 플랫폼 제휴 기관(검진센터·병원·약국) 확보 목표 달성"]
 put(S1, f"A{r}", "2차 투자 성과 목표", bold=True, color=NAVY)
 r += 1
 for i_, m_ in enumerate(MILE):
@@ -562,6 +562,7 @@ arow("", "결제 대행 수수료율", "%", a1("payRate"), PFMT, "payRate")
 arow("고객", "회원 포인트 적립률(상품 마진 대비)", "%", a1("rewardRate"), PFMT, "reward")
 arow("", "기부금 비율(상품 마진 대비)", "%", a1("donationRate"), PFMT, "donation")
 arow("조정", "2027년 건강커머스 매출 적용률(30% 감액)", "%", a1("prodAdjY1"), PFMT, "prodAdj", once=True)
+S2.row_breaks.append(Break(id=r - 1))
 r = section(S2, r, "④ 건강검진 연계·예약 서비스·재가·돌봄", 9)
 arow("검진", "건강검진 연계(자사 운영) — 건당 매출", "원/건", a1("chkOwnFee"), WFMT, "chkOwn")
 arow("", "건강검진 연계(자사 운영) — 건당 원가", "원/건", a1("chkOwnCost"), WFMT)
@@ -584,7 +585,22 @@ arow_ratio("", "실제 공급 비율(연말 동의 × 60% 대비)", "DB 공급 �
 arow("단가", "DB 건당 시가", "원/건", a1("hmMarket"), WFMT, "hmMarket")
 arow("", "전략적 투자자 우대 단가", "원/건", yv("hmPrice"), WFMT, "hmPrice")
 arow("", "우대 단가 적용 한도", "건", yv("hmCap"), NFMT, "hmCap")
+S2.row_breaks.append(Break(id=r - 1))
 r = section(S2, r, "⑥ 마케팅", 9)
+arow("제휴마케팅", "(주)인피니티케어 연간 건강검진 연계 인원", "명/년", a1("infVol"), NFMT, "infinity")
+arow("", "(주)인피니티케어 제휴 건강검진센터·검진병원", "곳", a1("infCenters"), NFMT, "infinityCenters")
+_inf_row = AROW["(주)인피니티케어 연간 건강검진 연계 인원"]
+put(S2, f"A{r}", "")
+put(S2, f"B{r}", "제휴사 경유 건강검진 연계 대비 비율", indent=1)
+put(S2, f"C{r}", "%", size=8.5, color=SUBC, h="center")
+for i in range(5):
+    col = YC[i]
+    g_ = f"{col}{AROW['건강검진 예약(연간 규모)']}*(1-{col}{AROW['자사 운영 비중']})"
+    put(S2, f"{col}{r}", f"=IF({g_}=0,0,$D${_inf_row}/({g_}))", fmt=PFMT, h="right",
+        exp=a1("infVol") / (av("activeAbs")[i] * (1 - yv("chkShare")[i])))
+arow_basis(r, "infinityShare")
+rule(S2, r, 9)
+r += 1
 arow("안내", "메디에이지 검진 시기 안내 대상(분기)", "명", av("mk1Target"), NFMT, "mk1")
 arow("", "1인당 분기 발송 횟수", "회", a1("mk1Times"), NFMT)
 arow("", "안내 발송 단가(LMS)", "원/건", a1("mk1Unit"), WFMT)
@@ -602,6 +618,7 @@ arow("제휴", "제휴 DB 확보 규모", "건", a1("mediDb"), NFMT, "medi", onc
 arow("", "확보 기간(2027년 1월부터)", "개월", a1("mediMonths"), NFMT, once=True)
 arow("", "리포트 구매 건수(가입 회원)", "건", yv("mediN"), NFMT)
 arow("", "리포트 구매 단가", "원/건", a1("mediFee"), WFMT)
+S2.row_breaks.append(Break(id=r - 1))
 r = section(S2, r, "⑧ IT 운영비", 9)
 arow("시스템", "AI 시스템 유지보수(누적 구축비 대비, 연)", "%", a1("maintRate"), PFMT, "itMaint")
 arow("", "데이터 유지관리", "원/월", a1("dataMonth"), WFMT, "itData")
@@ -650,8 +667,9 @@ setup(S3, W3)
 r = title(S3, 1, "3. 매출 계획", "단위: 백만원", 15)
 r = section(S3, r, "① 매출 항목별 산정 방식", 15)
 r = header(S3, r, ["매출 항목", "매출 시작", "입금 시점", "산정 방식"], aligns=["left", "center", "center", "left"])
+hmerge(S3, r - 1, 4, 15)
 arpu_sum = sum(a1("arpu_" + k) for k, _ in CATS)
-METHOD = [("AI 플랫폼 구독", "2027년 3월", "다음 달", "월별 과금 기관 수 × 월 구독료의 월별 합계 · 병원·약국은 2027년 3월, 검진센터는 2028년부터 과금"),
+METHOD = [("AI 플랫폼 구독", "2028년 1월", "다음 달", "월별 과금 기관 수 × 월 구독료의 월별 합계 · 검진센터·병원·약국 모두 2027년 무료, 2028년부터 과금"),
           ("건강검진 연계", "2027년 4월", "다음 달", "건강검진 예약 × (자사 운영 비중 × 건당 3만원 + 제휴사 비중 × 건당 1만원) · 월 예약 = 월말 회원 × 회원당 예약 비율 × 계절 지수"),
           ("예약 서비스(골프·시설)", "2027년 4월", "다음 달", "월말 회원 × 회원당 검진 예약 비율 × 예약 서비스 배수 × 건당 1만원 ÷ 12(계절 지수 미적용, 월별 고르게 배분)"),
           ("헬스메이트센터 사용료", "2027년 4월", "다음 달", "우대 한도 내 공급 × 건당 5만원 + 한도 초과 공급 × 건당 10만원"),
@@ -747,7 +765,7 @@ r += 2
 
 r = section(S3, r, "⑤ 2027년 월별 매출 적용률 · 건강검진 계절 지수 · 2028년 이후 연간 적용률", 15)
 r = header(S3, r, ["매출 항목"] + [f"{m}월" for m in range(1, 13)], aligns=["left"] + ["center"] * 12)
-FKEYS = [("F_Sub", "AI 플랫폼 구독", "rampSub"), ("F_Chk", "건강검진 연계", "rampChk"), ("F_Resv", "예약 서비스", "rampResv"),
+FKEYS = [("F_Chk", "건강검진 연계", "rampChk"), ("F_Resv", "예약 서비스", "rampResv"),
          ("F_Ins", "헬스메이트센터 사용료(월별 배분)", "rampIns"), ("F_P", "건강커머스", "rampP"), ("F_Care", "재가·돌봄", "rampCare")]
 MC12 = [get_column_letter(4 + m) for m in range(12)]
 for fk, lab, bid in FKEYS:
