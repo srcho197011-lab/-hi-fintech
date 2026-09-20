@@ -8437,7 +8437,7 @@ function SupplementShop() {
       {typeof FamilySetCard === "function" && <FamilySetCard onGo={typeof nav === "function" ? nav : null} />}
       {/* 재구매 설계 ①: 소진 임박 배너 — 끊기기 전에 먼저 알린다 */}
       {typeof SubDueBanner === "function" && <SubDueBanner onGoManage={() => setSubOpen(true)} />}
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 30%</b><span>매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
       <div className="bklbl" style={{ margin: "12px 0 8px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></span>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "6px 12px", fontSize: 11.5, marginLeft: "auto" }} onClick={() => setSubOpen((v) => !v)}><RefreshCw size={12} /> 내 정기배송{subN ? ` (${subN})` : ""}</button>
@@ -8654,7 +8654,7 @@ function SkinShop({ onGo }) {
       : (p.category === "디바이스·이너뷰티" ? "기기 1대" : "용량 표기 없음")));   /* 기기에 "용량 없음"은 정보가 아니라 소음이다 */
   return (
     <>
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 30%</b><span>매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
 
       <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
 
@@ -8750,7 +8750,7 @@ function DeviceShop() {
   const icoOf = (p) => (CATS[p.category] || {});
   return (
     <>
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 홈케어 의료기기 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 홈케어 의료기기 건강적립금 = 판매가의 30%</b><span>매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
       <div className="bklbl" style={{ margin: "12px 0 8px" }}><Stethoscope size={14} color="#0891B2" style={{ verticalAlign: "-2px" }} /> 홈케어 의료기기몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 가정용 의료기기 상위 {PRODUCTS.length}종</span></div>
       {PRICE_FEED_CFG.mode !== "off" && <div className="pricefeed"><RefreshCw size={12} /> {priceFeedLabel()} · 상품 클릭 시 조회</div>}
       <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
@@ -16031,6 +16031,7 @@ function SupplyExplorer() {
 function SupplyCostAccounting() {
   const C = React.useMemo(() => (typeof supplyCost === "function" ? supplyCost() : null), []);
   if (!C) return null;
+  const WS = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT) ? WALLET_SPLIT : { earn: 60, give: 15, ops: 25 };
   const CATCOL = { "영양제": "#7C3AED", "홈케어의료기": "#0891B2", "건강식단": "#16A34A", "의약외품": "#0EA5E9", "기타": "#64748B" };
   return (
     <div className="ontpanel sccost" style={{ marginTop: 12 }}>
@@ -16043,7 +16044,8 @@ function SupplyCostAccounting() {
           <span className="scwf-v" style={{ color: c }}>{v < 0 ? "−" : ""}{_scW(Math.abs(v))}</span>
         </div>);
       })}</div>
-      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금 + 치료비 나눔(판매마진 배분). 영업이익률 <b style={{ color: C.op < 0 ? "#F87171" : "#34D399" }}>{(C.op / C.gmv * 100).toFixed(1)}%</b>(GMV 대비) · 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비).</div>
+      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금 + 치료비 나눔(판매마진 배분). 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비) · <b style={{ color: "#34D399" }}>{_scW(C.contribution)}</b>이 전사 고정비에 기여합니다.</div>
+      <div className="scdashnote" style={{ marginTop: 6 }}>※ 고정비(인건비·IT 운영·영업·관리비)는 건강커머스 전용이 아니라 헬스메이트센터 사용료·AI 플랫폼 구독·건강검진 연계가 함께 부담합니다. 참고로 전사 고정비를 매출 비중(<b>{(C.fixRate * 100).toFixed(1)}%</b>, 예산양식 1차연도 기준)만큼 배분하면 커머스 단독 영업이익은 <b style={{ color: C.op < 0 ? "#F87171" : "#34D399" }}>{C.op < 0 ? "−" : ""}{_scW(Math.abs(C.op))}</b>입니다{C.allOp != null ? <> — 같은 기준의 <b>전사 영업이익은 {_scW(C.allOp)}</b>(1차연도 계획)</> : null}. 건강커머스는 마진의 {WS.earn + WS.give}%를 회원 적립·치료비 나눔으로 돌려주는 <b>회원 확보·데이터 엔진</b>이고, 수익은 사용료·구독에서 나오는 구조입니다.</div>
       <div className="scjournalh" style={{ marginTop: 12 }}><PieChart size={13} /> 카테고리별 원가·마진 구조</div>
       <div className="sccat">{C.cats.map((x) => (
         <div className="sccatrow" key={x.cat}>
@@ -22461,11 +22463,17 @@ function supplyCost() {
   const give = Math.round(gross * WS.give / 100);    // 치료비 나눔(판매마진의 나눔 몫)
   const logistics = Math.round((F.ordActive + F.ordDone) * 3000); // 직배송 택배비(거래처 부담·참고)
   const variable = pay + token + give;      // 당사 변동비(무재고 → 물류·재고비 미부담)
-  const contribution = gross - variable;    // 공헌이익
-  const fixed = Math.round(gross * 0.34);   // 고정비 배분(운영·인건·서버, 시연 추정)
-  const op = contribution - fixed;          // 영업이익
+  const contribution = gross - variable;    // 공헌이익 — 커머스가 전사 고정비에 기여하는 몫
+  // 고정비는 커머스 전용이 아니라 전사(사용료·구독·검진 포함) 공통이므로, 예산양식 1차연도 고정비 비율(매출 대비)만큼만 참고로 배분한다
+  let fixRate = 0.1465, allOp = null;
+  try {
+    const a = (typeof fbModel === "function") ? fbModel().annual[0] : null;
+    if (a && a.rev) { fixRate = (a.pay + a.itOpex + a.sales + a.admin) / a.rev; allOp = a.ebit; }
+  } catch (e) { /* 재무 엔진 미로드 시 기본 비율 */ }
+  const fixed = Math.round(gmv * fixRate);  // 전사 고정비 배분(매출 비중 기준·참고)
+  const op = contribution - fixed;          // 커머스 단독 영업이익(참고)
   _scCost = {
-    gmv, supplyCost: sCost, gross, pay, token, give, logistics, variable, contribution, fixed, op, cats,
+    gmv, supplyCost: sCost, gross, pay, token, give, logistics, variable, contribution, fixed, fixRate, op, allOp, cats,
     steps: [
       ["매출 (GMV)", gmv, "#34D399", "s"],
       ["− 거래처 공급원가 (매입)", -sCost, "#F472B6", ""],
@@ -22474,8 +22482,6 @@ function supplyCost() {
       [`− 건강적립금 (토큰, 마진 ${WS.earn}%)`, -token, "#67E8F9", ""],
       [`− 치료비 나눔 (마진 ${WS.give}%)`, -give, "#F9A8D4", ""],
       ["= 공헌이익 (Contribution)", contribution, "#818CF8", "s"],
-      ["− 고정비 배분 (운영·인건·서버)", -fixed, "#F59E0B", ""],
-      ["= 영업이익 (Operating)", op, op < 0 ? "#F87171" : "#34D399", "s"],
     ],
   };
   return _scCost;
@@ -22687,7 +22693,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-09-20", ver:"v1.8", ch:[9], feat:"판매마진 배분 60·15·25 통일과 운용 정책값 확정", src:"건강금융지갑 · 사회적 가치 · 온톨로지 › 재무회계/공급망 · 백서 · 하이 지식층", summary:"상품 마진 배분을 투자금 산정 예산양식 v3.8과 같은 적립 60%·나눔 15%·운영 25%로 통일해 회원 화면·하이 답변·백서·온톨로지 금액과 문구를 WALLET_SPLIT 단일 정의에서 계산하도록 바꾸고, 토큰 우선 적립 30%·데이터 배당 분배율과는 구분했으며, AI 투자 목표 비중과 운용 원칙·기업 B2B 채널·치료비 1인 지원액을 확정 정책으로 표기하고 비율 일치 가드를 재무 회귀 검사에 추가", refs:[], status:"반영", hash:"c58af70", auto:true },
+  { date:"2026-09-20", ver:"v1.9", ch:[9], feat:"공급망 원가회계 고정비 배분 정정·회원 화면 원가율 삭제", src:"온톨로지 › 공급망 온톨로지(원가회계) · 건강쇼핑", summary:"건강커머스 단독 화면이 전사 고정비를 혼자 떠안아 적자로 보이던 워터폴을 공헌이익 기준으로 바꾸고 전사 고정비는 예산양식 매출 비중만큼만 참고 배분하도록 재무 엔진에서 계산하게 했으며, 회원이 보는 건강쇼핑 적립 배너에서 공급가율 문구를 삭제", refs:[], status:"반영", hash:"a051f0c", auto:true },
+  { date:"2026-09-20", ver:"v1.8", ch:[9], feat:"판매마진 배분 60·15·25 통일과 운용 정책값 확정", src:"건강금융지갑 · 사회적 가치 · 온톨로지 › 재무회계/공급망 · 백서 · 하이 지식층", summary:"상품 마진 배분을 투자금 산정 예산양식 v3.8과 같은 적립 60%·나눔 15%·운영 25%로 통일해 회원 화면·하이 답변·백서·온톨로지 금액과 문구를 WALLET_SPLIT 단일 정의에서 계산하도록 바꾸고, 토큰 우선 적립 30%·데이터 배당 분배율과는 구분했으며, AI 투자 목표 비중과 운용 원칙·기업 B2B 채널·치료비 1인 지원액을 확정 정책으로 표기하고 비율 일치 가드를 재무 회귀 검사에 추가", refs:[], status:"반영", hash:"2be674e", auto:true },
   { date:"2026-09-17", ver:"v1.7", ch:[9], feat:"재무회계 예산양식 v3.8 엔진 이식·기준일 실적", src:"온톨로지 › 재무회계(손익계산서~재무 온톨로지·AI 16개 서브섹션)", summary:"투자금 산정 예산양식 v3.8(인피니티케어 MOU 15만·메디에이지 18만 건·병원/약국 구독 2028년 과금·약국 절반·우대 한도 매년 10만 건·1차 60억 2027년 9월 소진·IM 80억·온라인 광고는 목표 외 상향 요인)을 사이트 재무 엔진으로 옮겨 계획 화면을 엑셀과 0원 일치시키고, 기준일 2027-09-17 회원 10만 명 가정으로 누적 실적(회원 연동 계정 환산·고정비 계획)과 계획 대비 달성률, 월별 대차 일치 재무상태표·현금흐름표·런웨이를 전 서브섹션에 반영", refs:[], status:"반영", hash:"baf2750", auto:true },
   { date:"2026-09-14", ver:"v1.6", ch:[9], feat:"투자금 양식 헬스메이트센터 사용료 우대 조건", src:"scripts/invest", summary:"보험 중개를 헬스메이트센터 사용료로 바꿔 투자금 100억 기준 우대 단가·한도와 초과분 시가를 넣고 신규 스트림을 삭제", refs:[], status:"반영", hash:"056e742", auto:true },
   { date:"2026-09-14", ver:"v1.5", ch:[9], feat:"투자금 양식 검진 연계 채널 분리", src:"scripts/invest", summary:"검진 연계를 자사운영 3만·타사 제휴 1만으로 나누고 자사 비율을 매년 15%p 올리며 헬스케어 서비스 고객 수수료를 0으로 조정", refs:[], status:"반영", hash:"dc29e69", auto:true },

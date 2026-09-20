@@ -441,6 +441,7 @@ function SupplyExplorer() {
 function SupplyCostAccounting() {
   const C = React.useMemo(() => (typeof supplyCost === "function" ? supplyCost() : null), []);
   if (!C) return null;
+  const WS = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT) ? WALLET_SPLIT : { earn: 60, give: 15, ops: 25 };
   const CATCOL = { "영양제": "#7C3AED", "홈케어의료기": "#0891B2", "건강식단": "#16A34A", "의약외품": "#0EA5E9", "기타": "#64748B" };
   return (
     <div className="ontpanel sccost" style={{ marginTop: 12 }}>
@@ -453,7 +454,8 @@ function SupplyCostAccounting() {
           <span className="scwf-v" style={{ color: c }}>{v < 0 ? "−" : ""}{_scW(Math.abs(v))}</span>
         </div>);
       })}</div>
-      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금 + 치료비 나눔(판매마진 배분). 영업이익률 <b style={{ color: C.op < 0 ? "#F87171" : "#34D399" }}>{(C.op / C.gmv * 100).toFixed(1)}%</b>(GMV 대비) · 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비).</div>
+      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금 + 치료비 나눔(판매마진 배분). 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비) · <b style={{ color: "#34D399" }}>{_scW(C.contribution)}</b>이 전사 고정비에 기여합니다.</div>
+      <div className="scdashnote" style={{ marginTop: 6 }}>※ 고정비(인건비·IT 운영·영업·관리비)는 건강커머스 전용이 아니라 헬스메이트센터 사용료·AI 플랫폼 구독·건강검진 연계가 함께 부담합니다. 참고로 전사 고정비를 매출 비중(<b>{(C.fixRate * 100).toFixed(1)}%</b>, 예산양식 1차연도 기준)만큼 배분하면 커머스 단독 영업이익은 <b style={{ color: C.op < 0 ? "#F87171" : "#34D399" }}>{C.op < 0 ? "−" : ""}{_scW(Math.abs(C.op))}</b>입니다{C.allOp != null ? <> — 같은 기준의 <b>전사 영업이익은 {_scW(C.allOp)}</b>(1차연도 계획)</> : null}. 건강커머스는 마진의 {WS.earn + WS.give}%를 회원 적립·치료비 나눔으로 돌려주는 <b>회원 확보·데이터 엔진</b>이고, 수익은 사용료·구독에서 나오는 구조입니다.</div>
       <div className="scjournalh" style={{ marginTop: 12 }}><PieChart size={13} /> 카테고리별 원가·마진 구조</div>
       <div className="sccat">{C.cats.map((x) => (
         <div className="sccatrow" key={x.cat}>

@@ -254,11 +254,17 @@ function supplyCost() {
   const give = Math.round(gross * WS.give / 100);    // 치료비 나눔(판매마진의 나눔 몫)
   const logistics = Math.round((F.ordActive + F.ordDone) * 3000); // 직배송 택배비(거래처 부담·참고)
   const variable = pay + token + give;      // 당사 변동비(무재고 → 물류·재고비 미부담)
-  const contribution = gross - variable;    // 공헌이익
-  const fixed = Math.round(gross * 0.34);   // 고정비 배분(운영·인건·서버, 시연 추정)
-  const op = contribution - fixed;          // 영업이익
+  const contribution = gross - variable;    // 공헌이익 — 커머스가 전사 고정비에 기여하는 몫
+  // 고정비는 커머스 전용이 아니라 전사(사용료·구독·검진 포함) 공통이므로, 예산양식 1차연도 고정비 비율(매출 대비)만큼만 참고로 배분한다
+  let fixRate = 0.1465, allOp = null;
+  try {
+    const a = (typeof fbModel === "function") ? fbModel().annual[0] : null;
+    if (a && a.rev) { fixRate = (a.pay + a.itOpex + a.sales + a.admin) / a.rev; allOp = a.ebit; }
+  } catch (e) { /* 재무 엔진 미로드 시 기본 비율 */ }
+  const fixed = Math.round(gmv * fixRate);  // 전사 고정비 배분(매출 비중 기준·참고)
+  const op = contribution - fixed;          // 커머스 단독 영업이익(참고)
   _scCost = {
-    gmv, supplyCost: sCost, gross, pay, token, give, logistics, variable, contribution, fixed, op, cats,
+    gmv, supplyCost: sCost, gross, pay, token, give, logistics, variable, contribution, fixed, fixRate, op, allOp, cats,
     steps: [
       ["매출 (GMV)", gmv, "#34D399", "s"],
       ["− 거래처 공급원가 (매입)", -sCost, "#F472B6", ""],
@@ -267,8 +273,6 @@ function supplyCost() {
       [`− 건강적립금 (토큰, 마진 ${WS.earn}%)`, -token, "#67E8F9", ""],
       [`− 치료비 나눔 (마진 ${WS.give}%)`, -give, "#F9A8D4", ""],
       ["= 공헌이익 (Contribution)", contribution, "#818CF8", "s"],
-      ["− 고정비 배분 (운영·인건·서버)", -fixed, "#F59E0B", ""],
-      ["= 영업이익 (Operating)", op, op < 0 ? "#F87171" : "#34D399", "s"],
     ],
   };
   return _scCost;

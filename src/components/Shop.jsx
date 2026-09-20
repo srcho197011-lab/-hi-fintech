@@ -925,7 +925,7 @@ function SupplementShop() {
       {typeof FamilySetCard === "function" && <FamilySetCard onGo={typeof nav === "function" ? nav : null} />}
       {/* 재구매 설계 ①: 소진 임박 배너 — 끊기기 전에 먼저 알린다 */}
       {typeof SubDueBanner === "function" && <SubDueBanner onGoManage={() => setSubOpen(true)} />}
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 30%</b><span>매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
       <div className="bklbl" style={{ margin: "12px 0 8px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></span>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "6px 12px", fontSize: 11.5, marginLeft: "auto" }} onClick={() => setSubOpen((v) => !v)}><RefreshCw size={12} /> 내 정기배송{subN ? ` (${subN})` : ""}</button>
@@ -1142,7 +1142,7 @@ function SkinShop({ onGo }) {
       : (p.category === "디바이스·이너뷰티" ? "기기 1대" : "용량 표기 없음")));   /* 기기에 "용량 없음"은 정보가 아니라 소음이다 */
   return (
     <>
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 30%</b><span>매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
 
       <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
 
@@ -1238,7 +1238,7 @@ function DeviceShop() {
   const icoOf = (p) => (CATS[p.category] || {});
   return (
     <>
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 홈케어 의료기기 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 홈케어 의료기기 건강적립금 = 판매가의 30%</b><span>매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
       <div className="bklbl" style={{ margin: "12px 0 8px" }}><Stethoscope size={14} color="#0891B2" style={{ verticalAlign: "-2px" }} /> 홈케어 의료기기몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 가정용 의료기기 상위 {PRODUCTS.length}종</span></div>
       {PRICE_FEED_CFG.mode !== "off" && <div className="pricefeed"><RefreshCw size={12} /> {priceFeedLabel()} · 상품 클릭 시 조회</div>}
       <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
