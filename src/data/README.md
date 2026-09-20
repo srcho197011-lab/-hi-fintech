@@ -12,7 +12,7 @@ HI-Fin Tech의 모든 데이터를 이 폴더로 일원화한다. 로딩 방식�
 | `healthOntology.js` | CHECKUP_ONTOLOGY(검진항목)·DISEASE_INSURANCE·ONTO_GOVERNANCE(의료법 준수) |
 | `telemed.js` | 원격주치의: REGION_KB(전국 시·군·구)·DEPT_CATS(진료과)·genSpecialists·TELE_RULES(비대면 제도) |
 | `checkupCenters.js` | 전국 검진기관 51곳(한건협·KMI·브랜드) + SIDO_RANK |
-| `shopProducts.js` | 건강쇼핑 영양제 20종 + 건강적립금 모듈(healthReward, 판매가 25%)·runShopRewardTests |
+| `shopProducts.js` | 건강쇼핑 영양제 20종 + 건강적립금 모듈(healthReward, 판매가 30% = 판매마진의 60%)·runShopRewardTests |
 | `demoMembers.js` | `DEMO_MEMBERS`(window.__HHDATA) 전역 별칭 |
 
 ## 2) Plain 스크립트 / JSON (Babel 미경유 — `<script>`/`fetch`로 로드)

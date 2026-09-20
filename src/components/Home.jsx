@@ -152,23 +152,23 @@ function PlatformDiagram() {
 
       {/* ⑦ Value Return */}
       <div style={{ ...wrapMax, position: "relative" }}>
-        <div style={{ textAlign: "center", marginBottom: 10 }}><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#FBBF24" }}>⑦ VALUE RETURN SYSTEM · 가치환원 순환</span><div style={{ fontSize: 11.5, fontWeight: 700, color: "#CFE3F5", marginTop: 5 }}>매출마진의 50%는 회원 리워드, 30%는 치료비 나눔으로 환원</div></div>
+        <div style={{ textAlign: "center", marginBottom: 10 }}><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#FBBF24" }}>⑦ VALUE RETURN SYSTEM · 가치환원 순환</span><div style={{ fontSize: 11.5, fontWeight: 700, color: "#CFE3F5", marginTop: 5 }}>매출마진의 {WALLET_SPLIT.earn}%는 회원 리워드, {WALLET_SPLIT.give}%는 치료비 나눔으로 환원</div></div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 12, alignItems: "center" }} className="pdg-vr">
           <div style={{ ...glass, padding: "16px 16px", textAlign: "center", background: "rgba(34,211,238,.09)", borderColor: "rgba(34,211,238,.3)" }}>
             <Wallet size={22} color={CY} style={{ marginBottom: 6 }} />
-            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>50<span style={{ fontSize: 16 }}>%</span></div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{WALLET_SPLIT.earn}<span style={{ fontSize: 16 }}>%</span></div>
             <div style={{ fontSize: 13, fontWeight: 800, color: CY, marginTop: 3 }}>회원 리워드</div>
             <div style={{ fontSize: 10.5, color: "#9FD9EC" }}>Member Rewards</div>
           </div>
           <div style={{ display: "grid", placeItems: "center" }}><RotateCcw className="pdg-spin" size={34} color="#7DD3FC" /></div>
           <div style={{ ...glass, padding: "16px 16px", textAlign: "center", background: "rgba(244,114,182,.1)", borderColor: "rgba(244,114,182,.32)" }}>
             <HeartHandshake size={22} color="#F9A8D4" style={{ marginBottom: 6 }} />
-            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>30<span style={{ fontSize: 16 }}>%</span></div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{WALLET_SPLIT.give}<span style={{ fontSize: 16 }}>%</span></div>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#F9A8D4", marginTop: 3 }}>치료비 나눔</div>
             <div style={{ fontSize: 10.5, color: "#F7C6E0" }}>치료비 사각지대 지원</div>
           </div>
         </div>
-        <div style={{ textAlign: "center", fontSize: 10.5, color: "#7FCCE4", marginTop: 8 }}>※ 매출마진의 나머지 20%는 플랫폼 운영 — 소비 가치가 개인 적립과 사회 나눔으로 순환합니다.</div>
+        <div style={{ textAlign: "center", fontSize: 10.5, color: "#7FCCE4", marginTop: 8 }}>※ 매출마진의 나머지 {WALLET_SPLIT.ops}%는 플랫폼 운영 — 소비 가치가 개인 적립과 사회 나눔으로 순환합니다.</div>
       </div>
 
       {/* Social Impact */}
@@ -377,7 +377,7 @@ const STORY_SCENES = [
     text: ["'하이'에게 \"검진 예약 도와줘\" 한마디로 검진센터 세 곳이 비교됐고, 예약과 동시에 검진대비보험 전자증권이 NFT로 지갑에 담겼습니다.", "검진을 마친 저녁, 4년 만에 처음 '뜯은' 결과지를 폰으로 찍자 OCR이 12개 항목을 읽어 표준코드(FHIR)로 바꾸고 블록체인에 기록했습니다. \"위변조 없음 ✓ — 이 데이터는 이제 조성래 님의 디지털 자산입니다.\" (1세대·원본 자산)", "버려지던 종이가 배당을 낳는 자산이 됐습니다. 조 씨는 서랍 속 봉투 세 장을 떠올렸습니다 — 저 안에도 자산이 잠들어 있었구나."],
     links: [["데이터 연결 — 사진 한 장, 1분", "onboarding"], ["데이터 금고 — 내 자산 확인", "mywallet"]] },
   { era: "5월", title: "민석의 숫자", c: "#16A34A",
-    text: ["정밀리포트의 생체나이 52.5세 — 나쁘지 않았습니다. 그런데 한 줄이 숨을 멎게 했습니다. '췌장 관리 필요 · 당뇨 위험 주의.' 민석의 병이 시작된 곳이었습니다.", "다음 날 아침 '하이'는 담담했습니다. \"지금은 '위험'이 아니라 '신호'예요. 신호일 때 움직이면, 결과가 달라져요.\" 리포트는 두 번째 자산이 됐고(2세대·분석 자산), 하이가 짚어준 진단비 공백은 월 1.2만 원대 간편보험 가입 3분으로 메웠습니다.", "혈당 영양제는 광고가 아니라 성적표로 골랐습니다 — \"품질 인증: 이 제품 복용 회원군 지표 개선폭 상위 3%.\" 소비 마진의 50%는 HTK로 적립되고, 그중 30%는 보험료·치료비 전용 지갑에 잠깁니다. 소비할 때마다, 미래의 치료비가 쌓입니다."],
+    text: ["정밀리포트의 생체나이 52.5세 — 나쁘지 않았습니다. 그런데 한 줄이 숨을 멎게 했습니다. '췌장 관리 필요 · 당뇨 위험 주의.' 민석의 병이 시작된 곳이었습니다.", "다음 날 아침 '하이'는 담담했습니다. \"지금은 '위험'이 아니라 '신호'예요. 신호일 때 움직이면, 결과가 달라져요.\" 리포트는 두 번째 자산이 됐고(2세대·분석 자산), 하이가 짚어준 진단비 공백은 월 1.2만 원대 간편보험 가입 3분으로 메웠습니다.", "혈당 영양제는 광고가 아니라 성적표로 골랐습니다 — \"품질 인증: 이 제품 복용 회원군 지표 개선폭 상위 3%.\" 소비 마진의 " + WALLET_SPLIT.earn + "%는 HTK로 적립되고, 그중 30%는 보험료·치료비 전용 지갑에 잠깁니다. 소비할 때마다, 미래의 치료비가 쌓입니다."],
     links: [["나의 건강현황 — 생체나이·위험 리포트", "manage"], ["치료비 케어 — 보장 공백 3분 점검", "insurance"], ["건강쇼핑 — 성적표로 고르는 소비", "shop"]] },
   { era: "7월", title: "세 사람의 지갑", c: "#EA580C",
     text: ["아내(51)의 검진을 예약하고, 우리가족건강관리에 82세 노모를 등록했습니다.", "노모의 지갑에는 NFC 응급태그 — 구조사가 태그를 대면 혈액형·복용약·보호자만 제한 열람되고, 열람 기록은 체인에 남습니다. 노모의 혈압계는 매일 아침 수치를 플랫폼으로 보내기 시작했습니다.", "세 사람의 건강자본이 한 지갑 체계 안에서 함께 자라기 시작했습니다."],
@@ -389,7 +389,7 @@ const STORY_SCENES = [
     text: ["폰이 울렸습니다. \"어머님 혈압 이상 추세 — 사흘 연속 상승, 새벽 급등.\" 3년 전 민석의 새벽 전화가 이렇게 시작됐었습니다. 그러나 이번엔 달랐습니다.", "앱에는 이미 '지금 연결 가능한 의사' 버튼이 떠 있었습니다. 5분 뒤 화상진료 — 의사의 화면에는 노모의 석 달치 혈압 추이(원격 모니터링·RPM)가 이미 그려져 있었습니다. \"약을 조정하겠습니다. 응급 상황은 아닙니다.\" 새벽 2시 40분, 조 씨는 다시 잠들 수 있었습니다.", "응급실 뺑뺑이가 될 뻔한 밤이 23분으로 끝났습니다. 다음 날 노모가 전화로 말했습니다. \"얘, 그 기계가 나보다 내 몸을 더 잘 아는구나.\""],
     links: [["재가·돌봄 — 원격 모니터링(RPM)", "homecare"]] },
   { era: "12월", title: "조용한 입금", c: "#059669",
-    text: ["연말, 지갑에 낯선 알림이 떴습니다. \"데이터 활용 배당 — 귀하의 가명화 검진데이터(1세대)와 분석 리포트(2세대)가 췌장질환 조기발견 연구에 활용되었습니다.\"", "금액은 크지 않았습니다. 그러나 조 씨는 연구 제목을 오래 바라보았습니다. 췌장질환 조기발견 — 민석을 데려간 그 병. 내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가는 약속된 분배율대로 지갑에 돌아옵니다.", "지갑에는 또 하나의 숫자가 있었습니다. 늘 먹던 비타민과 혈행개선 영양제를 하이핀 건강쇼핑에서 샀을 뿐인데, 이번 달 적립 토큰이 5만 2천 원. 검진 결과에 맞춰 추천된 것을 최저가로 사고, 그 마진의 절반이 다시 내 지갑으로 돌아온 것입니다 — 소비가 지출이 아니라 적립이 되는 셈이었습니다.", "데이터 주권이 소득이 되고, 소득이 의미가 되는 순간이었습니다. 그의 소비 마진 30%가 치료비 사각지대의 누군가에게 흘러가고 있다는 것도, 그는 이제 알고 있었습니다."],
+    text: ["연말, 지갑에 낯선 알림이 떴습니다. \"데이터 활용 배당 — 귀하의 가명화 검진데이터(1세대)와 분석 리포트(2세대)가 췌장질환 조기발견 연구에 활용되었습니다.\"", "금액은 크지 않았습니다. 그러나 조 씨는 연구 제목을 오래 바라보았습니다. 췌장질환 조기발견 — 민석을 데려간 그 병. 내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가는 약속된 분배율대로 지갑에 돌아옵니다.", "지갑에는 또 하나의 숫자가 있었습니다. 늘 먹던 비타민과 혈행개선 영양제를 하이핀 건강쇼핑에서 샀을 뿐인데, 이번 달 적립 토큰이 5만 2천 원. 검진 결과에 맞춰 추천된 것을 최저가로 사고, 그 마진의 " + WALLET_SPLIT.earn + "%가 다시 내 지갑으로 돌아온 것입니다 — 소비가 지출이 아니라 적립이 되는 셈이었습니다.", "데이터 주권이 소득이 되고, 소득이 의미가 되는 순간이었습니다. 그의 소비 마진 " + WALLET_SPLIT.give + "%가 치료비 사각지대의 누군가에게 흘러가고 있다는 것도, 그는 이제 알고 있었습니다."],
     links: [["건강금융지갑 — 배당·적립 내역", "wallet"], ["사회적기업 — 치료비 나눔 구조", "social"]] },
   { era: "이듬해 3월", title: "젊어진 숫자, 다시 매겨진 보험료", c: "#F59E0B",
     text: ["1년간의 적립금이 다음 해 보험료에 자동 충당됐습니다 — 쓸수록 보험료가 내려갑니다. 재검진 리포트의 췌장 관리 지표는 '개선'. 신호일 때 움직인 결과였습니다.", "개선이 성과 자산(4세대)으로 편입되자 '하이'가 물었습니다. \"개선된 건강상태로 보험료 재산정을 신청할까요? 인하 및 가입확대형 전용이라 손해 볼 일은 없어요.\" 2주 뒤 갱신 안내서의 숫자가 작년보다 작아져 있었습니다.", "보험료란 나이를 따라 오르기만 하는 줄 알았던 조 씨는 그날 처음 알았습니다 — 이 플랫폼에서 보험료는 내 나이가 아니라, 내 관리를 따라갑니다. 여유 적립금은 헬스 세이빙과 하이핀 주식청약(참여증 NFT)으로 — 건강을 관리했을 뿐인데, 자산 포트폴리오가 생겼습니다."],

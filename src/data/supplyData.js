@@ -248,23 +248,27 @@ function supplyCost() {
   const cats = Object.entries(cat).map(([k, v]) => ({ cat: k, ...v, costRate: v.rev ? v.cost / v.rev : 0, marginRate: v.rev ? v.margin / v.rev : 0 })).sort((a, b) => b.rev - a.rev);
   const gmv = F.gmv, sCost = F.supplyCost, gross = F.margin;
   const pay = Math.round(gmv * 0.022);      // 결제대행 수수료 2.2%
-  const token = Math.round(gross * 0.25);   // 건강적립금(마진의 25%)
+  // 판매마진 배분은 단일 정의 WALLET_SPLIT(sectionData.js)을 따른다 — 재무 엔진(finBudget)도 제품 마진에서 적립·기부를 함께 뺀다
+  const WS = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT && WALLET_SPLIT.earn != null) ? WALLET_SPLIT : { earn: 60, give: 15, ops: 25 };
+  const token = Math.round(gross * WS.earn / 100);   // 건강적립금(판매마진의 적립 몫)
+  const give = Math.round(gross * WS.give / 100);    // 치료비 나눔(판매마진의 나눔 몫)
   const logistics = Math.round((F.ordActive + F.ordDone) * 3000); // 직배송 택배비(거래처 부담·참고)
-  const variable = pay + token;             // 당사 변동비(무재고 → 물류·재고비 미부담)
+  const variable = pay + token + give;      // 당사 변동비(무재고 → 물류·재고비 미부담)
   const contribution = gross - variable;    // 공헌이익
   const fixed = Math.round(gross * 0.34);   // 고정비 배분(운영·인건·서버, 시연 추정)
   const op = contribution - fixed;          // 영업이익
   _scCost = {
-    gmv, supplyCost: sCost, gross, pay, token, logistics, variable, contribution, fixed, op, cats,
+    gmv, supplyCost: sCost, gross, pay, token, give, logistics, variable, contribution, fixed, op, cats,
     steps: [
       ["매출 (GMV)", gmv, "#34D399", "s"],
       ["− 거래처 공급원가 (매입)", -sCost, "#F472B6", ""],
       ["= 매출총이익 (플랫폼 마진)", gross, "#22D3EE", "s"],
       ["− 결제대행 수수료 (2.2%)", -pay, "#94A3B8", ""],
-      ["− 건강적립금 (토큰, 마진25%)", -token, "#67E8F9", ""],
+      [`− 건강적립금 (토큰, 마진 ${WS.earn}%)`, -token, "#67E8F9", ""],
+      [`− 치료비 나눔 (마진 ${WS.give}%)`, -give, "#F9A8D4", ""],
       ["= 공헌이익 (Contribution)", contribution, "#818CF8", "s"],
       ["− 고정비 배분 (운영·인건·서버)", -fixed, "#F59E0B", ""],
-      ["= 영업이익 (Operating)", op, "#34D399", "s"],
+      ["= 영업이익 (Operating)", op, op < 0 ? "#F87171" : "#34D399", "s"],
     ],
   };
   return _scCost;

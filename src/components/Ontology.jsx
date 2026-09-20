@@ -601,7 +601,7 @@ function OntActions({ agg, onSeg }) {
   const cards = [
     { k: "high", ic: AlertTriangle, c: "#EF4444", t: "고위험군 케어", n: (agg.byRisk[4] || 0) + (agg.byRisk[5] || 0), d: "위험등급 높음·매우높음 회원. 집중 검진·전문의 연계·케어플랜 배정.", act: "케어플랜 일괄 배정", go: "ai" },
     { k: "gap", ic: ShieldCheck, c: "#A78BFA", t: "보장 공백 해소", n: agg.gapN, d: "질병 위험 대비 보장이 부족한 회원. 맞춤 보장 설계 제안.", act: "보장 설계 제안", go: "insurance" },
-    { k: "needy", ic: HeartHandshake, c: "#E11D48", t: "치료비 사각지대 나눔", n: agg.needyN, d: "저소득·고의료비 부담 회원. 판매마진 30% 나눔 준비금으로 치료비 지원 매칭.", act: "나눔 매칭 실행", go: "wallet" },
+    { k: "needy", ic: HeartHandshake, c: "#E11D48", t: "치료비 사각지대 나눔", n: agg.needyN, d: `저소득·고의료비 부담 회원. 판매마진 ${WALLET_SPLIT.give}% 나눔 준비금으로 치료비 지원 매칭.`, act: "나눔 매칭 실행", go: "wallet" },
     { k: "cancer", ic: HeartPulse, c: "#DB2777", t: "암 진단 정밀관리", n: Object.entries(agg.byDisease).filter(([d]) => /암$/.test(d)).reduce((s, [, v]) => s + v, 0), d: "암 진단 회원. 정밀검사·수술비 보장·간병 연계 관리.", act: "정밀관리 연계", go: "hospital" },
   ];
   return (<>
@@ -662,7 +662,7 @@ function OntoLiveSim({ cohort, agg, onGo }) {
           const sec = _wsec();
           const price = Math.round(_rr(sec.min, sec.max) / 1000) * 1000;
           const margin = Math.round(price * sec.mrate);
-          const accr = Math.round(margin * 0.5), don = Math.round(margin * 0.3), ops = margin - accr - don;
+          const accr = Math.round(margin * WALLET_SPLIT.earn / 100), don = Math.round(margin * WALLET_SPLIT.give / 100), ops = margin - accr - don;   // 판매마진 분배 = WALLET_SPLIT 단일 정의
           s.buys++; s.spend += price; s.accr += accr; s.don += don; s.ops += ops;
           s.sec[sec.key] = (s.sec[sec.key] || 0) + price; s.secN[sec.key] = (s.secN[sec.key] || 0) + 1;
           newEvents.push({ id: ++idRef.current, type: "buy", c: sec.c, who: `${m.name} (${m.id})`, text: `${sec.label} 소비 ${ontWon(price)}`, move: `적립 ${accr.toLocaleString()} · 나눔 ${don.toLocaleString()} · 운영 ${ops.toLocaleString()}` });
@@ -689,7 +689,7 @@ function OntoLiveSim({ cohort, agg, onGo }) {
     </div>
 
     <div className="ontkpis" style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
-      {[["신규 진단", st.dx.toLocaleString() + "건", "#F472B6"], ["건강케어 소비", ontWon(st.spend), "#22D3EE"], ["적립(50%)", ontWon(st.accr), "#16A34A"], ["나눔(30%)", ontWon(st.don), "#E11D48"], ["운영(20%)", ontWon(st.ops), "#94A3B8"]].map(([k, v, c], i) => (
+      {[["신규 진단", st.dx.toLocaleString() + "건", "#F472B6"], ["건강케어 소비", ontWon(st.spend), "#22D3EE"], [`적립(${WALLET_SPLIT.earn}%)`, ontWon(st.accr), "#16A34A"], [`나눔(${WALLET_SPLIT.give}%)`, ontWon(st.don), "#E11D48"], [`운영(${WALLET_SPLIT.ops}%)`, ontWon(st.ops), "#94A3B8"]].map(([k, v, c], i) => (
         <div className="ontkpi" key={i}><div className="ontkpi-v" style={{ color: c }}>{v}</div><div className="ontkpi-k">{k}</div></div>
       ))}
     </div>
@@ -698,7 +698,7 @@ function OntoLiveSim({ cohort, agg, onGo }) {
       <div className="ontpanel">
         <div className="ontph"><Zap size={15} color="#22D3EE" /> 섹션별 건강케어 소비 <span>· 실시간 누적 · {st.buys.toLocaleString()}건</span></div>
         {SIM_SECTIONS.map((s) => <OntBar key={s.key} label={`${s.label} (${(st.secN[s.key] || 0).toLocaleString()}건)`} value={st.sec[s.key] || 0} max={secMax} color={s.c} sub="" />)}
-        <div className="ontsimsplit"><span>판매마진 분배</span><b style={{ color: "#16A34A" }}>적립 50%</b><b style={{ color: "#E11D48" }}>나눔 30%</b><b style={{ color: "#94A3B8" }}>운영 20%</b></div>
+        <div className="ontsimsplit"><span>판매마진 분배</span><b style={{ color: "#16A34A" }}>적립 {WALLET_SPLIT.earn}%</b><b style={{ color: "#E11D48" }}>나눔 {WALLET_SPLIT.give}%</b><b style={{ color: "#94A3B8" }}>운영 {WALLET_SPLIT.ops}%</b></div>
       </div>
       <div className="ontpanel">
         <div className="ontph"><TrendingUp size={15} color="#EF4444" /> 자동 세그먼트 이동 <span>· 신규 진단 반영</span></div>
@@ -718,7 +718,7 @@ function OntoLiveSim({ cohort, agg, onGo }) {
         </div>
       </div>
     </div>
-    <div className="chnote" style={{ marginTop: 12 }}>※ 실시간 시뮬레이션은 <b>파일럿 시연</b>입니다. 매 틱마다 신규 진단·건강케어 소비 이벤트가 발생하고, 진단 결과에 따라 회원이 <b>고위험군·보장공백·치료비 사각지대</b> 세그먼트로 자동 이동합니다. 소비 판매마진은 <b>적립 50%·나눔 30%·운영 20%</b>로 분배됩니다(건강금융지갑 구조 연동).</div>
+    <div className="chnote" style={{ marginTop: 12 }}>※ 실시간 시뮬레이션은 <b>파일럿 시연</b>입니다. 매 틱마다 신규 진단·건강케어 소비 이벤트가 발생하고, 진단 결과에 따라 회원이 <b>고위험군·보장공백·치료비 사각지대</b> 세그먼트로 자동 이동합니다. 소비 판매마진은 <b>적립 {WALLET_SPLIT.earn}%·나눔 {WALLET_SPLIT.give}%·운영 {WALLET_SPLIT.ops}%</b>로 분배됩니다(건강금융지갑 구조 연동).</div>
   </>);
 }
 

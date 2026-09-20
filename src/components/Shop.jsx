@@ -697,7 +697,7 @@ function SportsHealth() {
   </>);
 }
 
-/* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 25%) ===== */
+/* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 30% = 판매마진의 60%) ===== */
 const shopWon = (n) => (Number(n) || 0).toLocaleString("ko-KR") + "원";
 const suppMedia = (id) => (typeof SUPP_MEDIA !== "undefined" && SUPP_MEDIA[id]) || {};
 /* 국내 최저가 검색 링크 — 다나와(가격비교) 우선, 없으면 네이버쇼핑 낮은가격순 */
@@ -796,7 +796,7 @@ function ShopCartBar({ products }) {
   const dm = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null)
     || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const dmEmail = dm ? dm.email : "default";
-  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.30) };
   const icoOf = (p) => (CATS[p.category] || {});
   const cartItems = Object.keys(cart).map((id) => ({ p: (products || []).find((x) => x.id === id), qty: cart[id] })).filter((x) => x.p);
   const totalCnt = cartItems.reduce((s, x) => s + x.qty, 0);
@@ -893,7 +893,7 @@ function suppMeta(p) {
 function SupplementShop() {
   const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
-  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25), supply: Math.floor(p * 0.5), margin: p - Math.floor(p * 0.5) };
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.30), supply: Math.floor(p * 0.5), margin: p - Math.floor(p * 0.5) };
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("reward");
   const [detail, setDetail] = useState(null);
@@ -925,7 +925,7 @@ function SupplementShop() {
       {typeof FamilySetCard === "function" && <FamilySetCard onGo={typeof nav === "function" ? nav : null} />}
       {/* 재구매 설계 ①: 소진 임박 배너 — 끊기기 전에 먼저 알린다 */}
       {typeof SubDueBanner === "function" && <SubDueBanner onGoManage={() => setSubOpen(true)} />}
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
       <div className="bklbl" style={{ margin: "12px 0 8px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></span>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "6px 12px", fontSize: 11.5, marginLeft: "auto" }} onClick={() => setSubOpen((v) => !v)}><RefreshCw size={12} /> 내 정기배송{subN ? ` (${subN})` : ""}</button>
@@ -945,7 +945,7 @@ function SupplementShop() {
           <div className="mealname">{p.name}</div>
           <div className="mealrate"><span className="stars">★</span> {meta.rating} <span className="rev">({meta.reviews.toLocaleString()})</span></div>
           <div className="mealprices"><span className="mdisc">{meta.disc}%</span><span className="mprice">{shopWon(p.price)}</span><span className="morig">{shopWon(meta.orig)}</span></div>
-          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 30%</div>
           <div className="mealbtns">
             <a className="meallink" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 최저가</a>
             <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
@@ -974,7 +974,7 @@ function SupplementShop() {
               </div>
             )}
             <div className="pdreward simple">
-              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 25%</small></div>
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 30%</small></div>
               <b className="pdramt">{shopWon((live ? healthReward(live.price) : r).reward)}</b>
             </div>
             <div className="pdbtns">
@@ -1120,7 +1120,7 @@ function SkinShop({ onGo }) {
   useHiLang();
   const PRODUCTS = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
   const CATS = (typeof SKIN_CATS !== "undefined") ? SKIN_CATS : {};
-  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.30) };
   const PARTNERS = (typeof SKIN_PARTNER_BRANDS !== "undefined") ? SKIN_PARTNER_BRANDS : [];
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("partner");
@@ -1142,7 +1142,7 @@ function SkinShop({ onGo }) {
       : (p.category === "디바이스·이너뷰티" ? "기기 1대" : "용량 표기 없음")));   /* 기기에 "용량 없음"은 정보가 아니라 소음이다 */
   return (
     <>
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
 
       <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
 
@@ -1161,7 +1161,7 @@ function SkinShop({ onGo }) {
           <div className="mealrate"><span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 700 }}>{p.volume}</span>{(p.spf || p.pa) ? <span className="rev"> · {[p.spf, p.pa].filter(Boolean).join("/")}</span> : null}</div>
           {p.care && p.care.length ? <div className="skcare">{p.care.map((c) => <span key={c}>{c}</span>)}</div> : null}
           <div className="mealprices"><span className="mprice">{shopWon(p.price)}</span><span className="morig" style={{ textDecoration: "none" }}>{unitTxt(p)}</span></div>
-          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 30%</div>
           <div className="mealbtns">
             <a className="meallink" href={p.url} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 출처</a>
             <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
@@ -1184,7 +1184,7 @@ function SkinShop({ onGo }) {
             {(detail.spf || detail.pa) && <div className="chnote" style={{ marginTop: 4 }}>자외선 차단지수 표기: <b>{[detail.spf, detail.pa].filter(Boolean).join(" / ")}</b> — 제품 표기를 그대로 옮긴 값이고 단가와 섞어 비교하지 않아요.</div>}
             <div className="chnote" style={{ marginTop: 4 }}>기능성화장품 표기: <b>{detail.functional || "확인하지 못해 비워 뒀어요"}</b> — 기능성화장품은 미백·주름 개선·자외선 차단 세 가지로, 식약처 심사·보고를 확인한 제품에만 표기해요.</div>
             <div className="pdreward simple">
-              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>판매가의 25%</small></div>
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>판매가의 30%</small></div>
               <b className="pdramt">{shopWon(r.reward)}</b>
             </div>
             <div className="pdbtns">
@@ -1199,7 +1199,7 @@ function SkinShop({ onGo }) {
   );
 }
 
-/* ===== 건강쇼핑 — 홈케어 의료기기몰(영양제몰과 동일 쿠팡 구조·건강적립금 25%) ===== */
+/* ===== 건강쇼핑 — 홈케어 의료기기몰(영양제몰과 동일 쿠팡 구조·건강적립금 30%) ===== */
 const deviceMedia = (id) => (typeof DEVICE_MEDIA !== "undefined" && DEVICE_MEDIA[id]) || {};
 function deviceLowestHref(p) {
   const dan = deviceMedia(p.id).danawa; if (dan) return dan;
@@ -1216,7 +1216,7 @@ function DeviceImage({ p }) {
 function DeviceShop() {
   const PRODUCTS = (typeof DEVICE_PRODUCTS !== "undefined") ? DEVICE_PRODUCTS : [];
   const CATS = (typeof DEVICE_CATS !== "undefined") ? DEVICE_CATS : {};
-  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.30) };
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("reward");
   const [detail, setDetail] = useState(null);
@@ -1238,7 +1238,7 @@ function DeviceShop() {
   const icoOf = (p) => (CATS[p.category] || {});
   return (
     <>
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 홈케어 의료기기 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 홈케어 의료기기 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
       <div className="bklbl" style={{ margin: "12px 0 8px" }}><Stethoscope size={14} color="#0891B2" style={{ verticalAlign: "-2px" }} /> 홈케어 의료기기몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 가정용 의료기기 상위 {PRODUCTS.length}종</span></div>
       {PRICE_FEED_CFG.mode !== "off" && <div className="pricefeed"><RefreshCw size={12} /> {priceFeedLabel()} · 상품 클릭 시 조회</div>}
       <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
@@ -1254,7 +1254,7 @@ function DeviceShop() {
           <div className="mealname">{p.name}</div>
           <div className="mealrate"><span className="stars">★</span> {meta.rating} <span className="rev">({meta.reviews.toLocaleString()})</span></div>
           <div className="mealprices"><span className="mdisc">{meta.disc}%</span><span className="mprice">{shopWon(p.price)}</span><span className="morig">{shopWon(meta.orig)}</span></div>
-          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 30%</div>
           <div className="mealbtns">
             <a className="meallink" href={deviceLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 최저가</a>
             <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
@@ -1281,7 +1281,7 @@ function DeviceShop() {
               </div>
             )}
             <div className="pdreward simple">
-              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 25%</small></div>
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 30%</small></div>
               <b className="pdramt">{shopWon((live ? healthReward(live.price) : r).reward)}</b>
             </div>
             <div className="pdbtns">
@@ -1328,7 +1328,7 @@ const SHOP_INTEL_DEVICES = [
 function DangDangProduct({ p }) {
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
   const m = CATS[p.category] || {};
-  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.25) };
+  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.30) };
   const won = (v) => (typeof shopWon === "function") ? shopWon(v) : v + "원";
   return (
     <div className="prodcard" style={{ cursor: "default" }}>
@@ -1338,7 +1338,7 @@ function DangDangProduct({ p }) {
         <div className="pname2">{p.name}</div>
         <div className="pvol" style={{ color: "#0D9488", fontWeight: 600 }}>{p.claim}</div>
         <div className="pprice">{won(p.price)} <small style={{ color: "#EA580C", fontWeight: 700 }}>최저가</small></div>
-        <div className="preward"><Coins size={11} /> 적립 {won(r.reward)} <small>25%</small></div>
+        <div className="preward"><Coins size={11} /> 적립 {won(r.reward)} <small>30%</small></div>
         <a className="lowprice" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={11} /> 국내 최저가 검색 <ExternalLink size={9} /></a>
       </div>
       <button className="paddbtn" onClick={() => { shopCartAdd(p.id); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${won(r.reward)}`); }}><Plus size={13} /> 담기</button>
@@ -1602,7 +1602,7 @@ function MealImage({ p }) {
 }
 function MealCard({ p, onAdd }) {
   const disc = p.orig && p.orig > p.price ? Math.round((1 - p.price / p.orig) * 100) : 0;
-  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.25) };
+  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.30) };
   const tier = mealTier(p.id);
   const link = (tier === "brand") ? (typeof naverHref === "function" ? naverHref(p.brand, "건강식단") : p.url) : p.url;
   const linkTxt = (tier === "brand") ? "검색" : "공식몰";

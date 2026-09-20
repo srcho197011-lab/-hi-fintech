@@ -31,24 +31,24 @@ function WalletSection({ onGo }) {
   /* 멤버십 등급 — 회원 상태 모델(s4.tier)에서 */
   const tier = (() => { try { const st = (dm && typeof memberStateSnapshot === "function") ? memberStateSnapshot(dm) : null; return (st && st.s4 && st.s4.tier) || null; } catch (e) { return null; } })();
   const walNm = (dm && dm.name) || "회원";
-  /* 내 소비가 만든 나눔 — 쇼핑 적립 실적에서 계산한다(마진의 give% 규칙). 실적이 없으면 안내로 바꾼다. */
+  /* 내 소비가 만든 나눔 — 쇼핑 적립 실적에서 계산한다(적립 = 마진의 earn% → 마진 역산 × give% — shopHtkAdd의 SharingPool 적립식과 같은 규칙). 실적이 없으면 안내로 바꾼다. */
   const myGive = (() => {
     try { const won0 = (typeof shopHtkWon === "function") ? shopHtkWon(dm ? dm.email : null) : 0;
       if (!won0) return null;
-      const give = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give) ? WALLET_SPLIT.give : 30;
-      return Math.round(won0 * give / 100);
+      const WS = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.earn) ? WALLET_SPLIT : { earn: 60, give: 15 };
+      return Math.round(won0 / WS.earn * WS.give);
     } catch (e) { return null; }
   })();
   const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(total) : Math.floor(total * 0.30);
   const genRes = total - insRes;
   const insPct = (typeof HTK_INS_RATE !== "undefined") ? Math.round(HTK_INS_RATE * 100) : 30;
-  // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 50/30/20). 1차연도(10만 회원) 기준 연간.
-  const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 196650000, earn: 327750000, beneficiaries: 771 };
+  // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 × WALLET_SPLIT 60/15/25, 형 확정 2026-09-17). 1차연도(10만 회원) 기준 연간.
+  const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 98325000, earn: 393300000, beneficiaries: 386 };
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="wallet" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강금융지갑</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>판매마진의 <b style={{ color: "#16A34A" }}>50%는 건강적립금</b>으로, <b style={{ color: "#E11D48" }}>{WALLET_SPLIT.give}%는 치료비 사각지대 나눔</b>으로 — 적립하고 나누는 건강금융</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>판매마진의 <b style={{ color: "#16A34A" }}>{WALLET_SPLIT.earn}%는 건강적립금</b>으로, <b style={{ color: "#E11D48" }}>{WALLET_SPLIT.give}%는 치료비 사각지대 나눔</b>으로 — 적립하고 나누는 건강금융</div></div></div>
       <DemoMemberBanner />
 
       <div className="wbal">
@@ -99,7 +99,7 @@ function WalletSection({ onGo }) {
           )}
           {shopPts > 0 && (
           <div className="wcard" style={{ borderColor: "#F97316", background: "linear-gradient(180deg,#FFF7ED,#fff)" }}><span className="wi" style={{ background: "#FFEDD5" }}><Art name="capsule" size={22} /></span>
-            <div style={{ flex: 1 }}><div className="wn">건강쇼핑 구매 적립 <span className="cbadge" style={{ color: "#C2410C", background: "#FFEDD5", fontSize: 10, padding: "1px 6px" }}>실적립</span></div><div className="wd">건강쇼핑(영양제·AI 상담사) 주문 시 판매마진 25%를 실제 적립 · 누적 {won(shopWonBal)}</div></div>
+            <div style={{ flex: 1 }}><div className="wn">건강쇼핑 구매 적립 <span className="cbadge" style={{ color: "#C2410C", background: "#FFEDD5", fontSize: 10, padding: "1px 6px" }}>실적립</span></div><div className="wd">건강쇼핑(영양제·AI 상담사) 주문 시 판매마진의 {(typeof SHOP_REWARD_CFG !== "undefined" && SHOP_REWARD_CFG.marginRewardRate) ? Math.round(SHOP_REWARD_CFG.marginRewardRate * 100) : WALLET_SPLIT.earn}%를 실제 적립 · 누적 {won(shopWonBal)}</div></div>
             <span className="wamt" style={{ color: "#F97316" }}>+{shopPts.toLocaleString()}</span></div>
           )}
           {WALLET_EARN.map(([a, t, amt, d, c], i) => (
@@ -140,7 +140,7 @@ function WalletSection({ onGo }) {
         <div className="wgive-my"><span className="ic"><Heart size={18} color="#E11D48" /></span><div>{myGive != null
           ? <>지금까지 <b>{walNm}님의 소비로 만들어진 나눔</b> <b style={{ color: "#E11D48" }}>{won(myGive)}</b> <small>— 내 건강 관리가 이웃의 치료비가 되었습니다.</small></>
           : <>건강쇼핑에서 구매하시면 <b>판매마진의 {WALLET_SPLIT.give}%</b>가 치료비 나눔으로 적립돼요 <small>— 회원 추가 부담은 없습니다.</small></>}</div></div>
-        <div className="chnote">※ 기부 비율(판매마진의 {WALLET_SPLIT.give}%)·수치는 <b>설계 목표·예시</b>입니다. 실제 기부는 제휴 공익재단·의료기관을 통해 심사 후 집행되며, 사용내역은 투명하게 공개하도록 설계합니다. ‘치료비 사각지대’는 재난적 의료비·실손 보장 사각지대·희귀중증질환 본인부담·취약계층 긴급 치료비 등을 포함합니다.</div>
+        <div className="chnote">※ 기부 비율(판매마진의 {WALLET_SPLIT.give}%)은 <b>확정된 배분 원칙</b>이고, 기부액·수혜 인원은 <b>재무 모델 추정</b>입니다. 실제 기부는 제휴 공익재단·의료기관을 통해 심사 후 집행되며, 사용내역은 투명하게 공개하도록 설계합니다. ‘치료비 사각지대’는 재난적 의료비·실손 보장 사각지대·희귀중증질환 본인부담·취약계층 긴급 치료비 등을 포함합니다.</div>
       </>)}
 
       {tab === "use" && (<>

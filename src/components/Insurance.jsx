@@ -406,7 +406,7 @@ function _insServiceRoute(text, member) {
   // ⓑ 납부 확정(2단계) — "✅ 납부 확정 · BILL-…"
   let mm = text.match(/^✅ 납부 확정 · (\S+)/);
   if (mm) { const r = insService.pay(member, mm[1]);
-    return { bubbles: [{ kind: "text", text: r.ok ? `납부 완료 ✓ — ${r.bill.product} ${r.bill.ym}월분 ${won(r.bill.amount)}(${r.bill.htk.toLocaleString()} HTK)이 원장에서 차감됐어요. 잔액 ${r.balance.toLocaleString()} HTK. 순환의 30%는 나눔 재원에 적립됐고, 내역은 온체인에 기록됐어요.` : "🔒 " + r.reason }], quicks: r.ok ? ["나눔 현황 보여줘", "내 잔액 알려줘"] : ["지갑 충전은 어떻게 해?"] }; }
+    return { bubbles: [{ kind: "text", text: r.ok ? `납부 완료 ✓ — ${r.bill.product} ${r.bill.ym}월분 ${won(r.bill.amount)}(${r.bill.htk.toLocaleString()} HTK)이 원장에서 차감됐어요. 잔액 ${r.balance.toLocaleString()} HTK. 순환의 ${Math.round(insService.config.SHARE_RATE * 100)}%는 나눔 재원에 적립됐고, 내역은 온체인에 기록됐어요.` : "🔒 " + r.reason }], quicks: r.ok ? ["나눔 현황 보여줘", "내 잔액 알려줘"] : ["지갑 충전은 어떻게 해?"] }; }
   // "납부 진행 · BILL-…" → 확인 카드
   mm = text.match(/^납부 진행 · (\S+)/);
   if (mm) { const S = insService.bills(member); const b = S && S.bills.find((x) => x.id === mm[1]);
@@ -497,8 +497,11 @@ function _insServiceRoute(text, member) {
     if (my.some((a) => a.status === "심사 대기" || a.status === "선정")) return { bubbles: [{ kind: "text", text: `이미 진행 중인 신청(${my[0].id} · ${my[0].status})이 있어요 — 치료비·나눔 탭에서 상태를 확인하세요.` }], quicks: ["나눔 현황 보여줘"] };
     return { bubbles: [{ kind: "text", text: "치료비 지원 신청을 도와드릴게요. 어떤 상황인지 한 줄로 보내주세요 — 예시처럼 **\"지원 신청 — 항암 치료 중 수술비 부담\"** 형식이면 바로 접수돼요. 신청 정보는 최고 민감등급으로 보호되고, 긴급도 기준은 공개돼 있어요." }], quicks: ["지원 신청 — 수술비 부담이 커요"] };
   }
-  if (/나눔|기부|30\s*%|사각지대/.test(text)) { const S = insService.donateStatus();
-    return { bubbles: [{ kind: "text", text: S.count ? `나눔 재원에 ${won(S.balance)}(${S.count}건)이 건별 적립돼 있어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${won(v)}`).join(" · ")}. 치료비 사각지대 지원에 쓰이는 순환의 30% 몫이에요.` : "아직 나눔 적립이 없어요 — 보험료 납부·건강쇼핑이 생기면 순환의 30%가 여기 쌓여요." }], quicks: ["치료비 지원 신청은 어떻게 해?"] }; }
+  // 숫자만으로는 잡지 않는다 — 같은 화면의 재산정 인하 상한(RERATE_MAX_PCT)·자기부담·치료비 케어 전용 적립 비율과 겹친다. 나눔 몫 %는 「N%는 어디에 쓰여」처럼 쓰임을 묻는 형태만.
+  // 「기부」는 「자기부담」 안에도 들어 있어 앞 글자가 「자」면 제외한다.
+  const _givePct = Math.round(insService.config.SHARE_RATE * 100);
+  if (/나눔|(?:^|[^자])기부|사각지대/.test(text) || new RegExp("(?:^|[^\\d])" + _givePct + "\\s*%\\s*(?:는|은)?\\s*(?:어디에|어디로|뭐에|무엇에)\\s*(?:쓰|사용)").test(text)) { const S = insService.donateStatus();
+    return { bubbles: [{ kind: "text", text: S.count ? `나눔 재원에 ${won(S.balance)}(${S.count}건)이 건별 적립돼 있어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${won(v)}`).join(" · ")}. 치료비 사각지대 지원에 쓰이는 순환의 ${Math.round(insService.config.SHARE_RATE * 100)}% 몫이에요.` : `아직 나눔 적립이 없어요 — 보험료 납부·건강쇼핑이 생기면 순환의 ${Math.round(insService.config.SHARE_RATE * 100)}%가 여기 쌓여요.` }], quicks: ["치료비 지원 신청은 어떻게 해?"] }; }
   if (/잔액|얼마\s*있|토큰\s*(얼마|몇)/.test(text)) { const bal = (typeof tlBalance === "function") ? tlBalance(member) : null;
     if (bal == null) return null;
     const res = (typeof htkInsReserve === "function") ? htkInsReserve(bal) : Math.floor(bal * 0.3);
@@ -1623,7 +1626,7 @@ function InsRerateTab() {
   </>);
 }
 
-/* ⑥ 치료비·나눔 — 30% 실적립 원장·집행 공개·신청 접수 */
+/* ⑥ 치료비·나눔 — 순환의 나눔 몫(SHARE_RATE = WALLET_SPLIT.give) 실적립 원장·집행 공개·신청 접수 */
 function InsShareTab() {
   const [tick, setTick] = useState(0); void tick;
   const [applying, setApplying] = useState(false);
@@ -1680,7 +1683,7 @@ function InsShareTab() {
       <div className="card">
         <div className="rct"><ShieldCheck size={16} color="#0891B2" /> 집행 투명 공개 (ImpactLedger)</div>
         <div className="wins-grid" style={{ marginBottom: 8 }}>
-          <div className="wins-box"><span className="wl">누적 적립</span><b>{I.inTotal.toLocaleString()} <small>원</small></b><span className="ww">순환의 30% 건별</span></div>
+          <div className="wins-box"><span className="wl">누적 적립</span><b>{I.inTotal.toLocaleString()} <small>원</small></b><span className="ww">순환의 {Math.round(insService.config.SHARE_RATE * 100)}% 건별</span></div>
           <div className="wins-box pri"><span className="wl">누적 집행</span><b>{I.outTotal.toLocaleString()} <small>원</small></b><span className="ww">수혜 {I.settledN}건{I.avgDays != null ? ` · 평균 ${I.avgDays}일 내 집행` : ""}</span></div>
         </div>
         {I.rows.length ? I.rows.map((r) => (

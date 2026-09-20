@@ -10,7 +10,7 @@ function htkInsReserve(htk) { return Math.floor((Number(htk) || 0) * HTK_INS_RAT
 // 적립: [art, 항목, 적립토큰, 설명, 색]
 const WALLET_EARN = [
   ["check", "건강검진 적립", "+3,200", "검진 예약·완료·NFT 예약증 발행 시 적립", "#2563EB"],
-  ["pill", "건강쇼핑 적립", "+2,150", "영양제·식단·의료기기 판매마진의 50%(판매가 약 25%)를 건강적립금으로 적립", "#16A34A"],
+  ["pill", "건강쇼핑 적립", "+2,150", "영양제·식단·의료기기 판매마진의 60%(판매가 약 30%)를 건강적립금으로 적립", "#16A34A"],
   ["heartpulse", "일일 건강미션", "+1,680", "걸음수·운동·수면 목표 달성 시 적립", "#F59E0B"],
   ["hash", "데이터 제공 동의", "+1,900", "건강데이터 제공 동의(DID) 보상", "#0EA5E9"],
   ["badge", "보험 가입·유지", "+700", "건강검진보험 가입·유지 보상", "#2F5BEA"],
@@ -41,9 +41,10 @@ const WALLET_SEC = [
   ["hash", "위·변조 방지 감사로그", "적립·사용·환전 내역을 불변 감사로그로 기록해 위·변조를 방지하도록 설계합니다."],
   ["badge", "본인인증·접근통제", "PASS 본인인증·다중인증(MFA)·최소권한 접근통제를 적용합니다."],
 ];
-/* ── 판매마진 분배(적립 50% · 나눔 30% · 운영 20%) ── */
-const WALLET_SPLIT = { earn: 50, give: 30, ops: 20 }; // 제품마진 대비 % (재무회계·사회적기업 연동: 적립50%·나눔30%·운영20%)
-const WALLET_GIVE = { cum: 97200000, month: 14400000, people: 384, my: 138600 }; // 누적·이번달 기부·수혜 인원·내 기여(예시, 원 · 나눔 30% 반영)
+/* ── 판매마진 분배(적립 60% · 나눔 15% · 운영 25%) — 형 확정 2026-09-17 ──
+   예산양식 v3.8 FB_P0.rewardRate(0.6)·donationRate(0.15)와 같은 숫자(fin_site_check.mjs가 가드). 회원 화면·하이 답변·나눔 원장은 이 단일 정의를 쓴다. */
+const WALLET_SPLIT = { earn: 60, give: 15, ops: 25 }; // 제품마진 대비 % (재무회계·사회적기업 연동: 적립60%·나눔15%·운영25%)
+const WALLET_GIVE = { cum: 48600000, month: 7200000, people: 192, my: 69300 }; // 누적·이번달 기부·수혜 인원·내 기여(예시, 원 · 나눔 15% 반영)
 const WALLET_GIVE_TARGETS = [
   ["heart", "재난적 의료비 사각지대", "소득 대비 과도한 치료비를 감당하기 어렵지만 정부 지원 기준에는 못 미치는 가구", "#E11D48"],
   ["badge", "실손 보장 사각지대", "고령·기저질환·미가입 등으로 실손보험 보장에서 소외된 분들", "#2563EB"],
@@ -71,7 +72,7 @@ const NFT_MINE_FIN = [
   { art: "check", type: "청구지급 SBT", name: "보험금 청구·지급 확인서", meta: "외래진료비 84,000원 · 지급완료 2026.06.30 · 자동증빙", id: "0x8d15…c47b", to: "insurance", col: "#2563EB" },
   { art: "percent", type: "납입영수 SBT", name: "보험료 납입 영수 토큰", meta: "2026년 상반기 6회 납입 · 자동이체 + HTK 30% 병행", id: "0x1fa9…e832", to: "insurance", col: "#0EA5E9" },
   { art: "heartpulse", type: "진료결제 NFT", name: "진료·치료비 결제 영수증", meta: "제휴병원 외래 · HTK 2,400 + 카드 결제 · 연말정산 증빙", id: "0x6c07…59d2", to: "hospital", col: "#E11D48" },
-  { art: "gift", type: "나눔증명 SBT", name: "치료비 나눔 기여 증명", meta: "소비 마진 30% 나눔 준비금 8,120원 적립 기여", id: "0xb3e8…20fc", to: "social", col: "#DB2777" },
+  { art: "gift", type: "나눔증명 SBT", name: "치료비 나눔 기여 증명", meta: `소비 마진 ${WALLET_SPLIT.give}% 나눔 준비금 4,060원 적립 기여`, id: "0xb3e8…20fc", to: "social", col: "#DB2777" },
   { art: "trend", type: "주식청약 NFT", name: "회원 적립금 주식청약 참여증", meta: "HI-Fin 공모 · 12,000 HTK 청약 · 배정 대기", id: "0x970d…41ab", to: "partner", col: "#7C3AED" },
   { art: "finance", type: "채권증서 NFT", name: "헬스케어 회사채 보유 증서", meta: "HI-Fin 3년물 연 5.2% · 100만원 · 이자 분기지급", id: "0xe24f…8c61", to: "partner", col: "#6D28D9" },
   { art: "building", type: "은행거래 해시", name: "은행 출·수납 감사추적 해시", meta: "우리은행 5계좌 AI 출수납 · 일마감 원장 앵커링", id: "0x3a5c…d718", to: "wallet", col: "#0D9488" },

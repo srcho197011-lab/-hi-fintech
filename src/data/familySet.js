@@ -55,7 +55,7 @@ function famSetBuild(m) {
   const flat = [];
   members.forEach((mm) => mm.items.forEach((it) => flat.push(it)));
   const total = flat.reduce((s, x) => s + x.product.price, 0);
-  const baseReward = flat.reduce((s, x) => s + ((typeof healthReward === "function") ? healthReward(x.product.price).reward : Math.floor(x.product.price * 0.25)), 0);
+  const baseReward = flat.reduce((s, x) => s + ((typeof healthReward === "function") ? healthReward(x.product.price).reward : Math.floor(x.product.price * 0.30)), 0);
   const bonusRate = members.length >= 4 ? 0.15 : members.length >= 3 ? 0.10 : members.length >= 2 ? 0.05 : 0;
   const bonus = Math.floor(baseReward * bonusRate);
   return { members, count: members.length, itemCount: flat.length, total, baseReward, bonus, bonusRate, reward: baseReward + bonus };

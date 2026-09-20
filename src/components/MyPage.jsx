@@ -199,7 +199,8 @@ function MyPageSection({ onGo }) {
   const _myRes = (() => { try { return (typeof htkInsReserve === "function") ? htkInsReserve(_myBal) : 0; } catch (e) { return 0; } })();
   const _myPol = (() => { try { const v = (_myMe && typeof vaultLoad === "function") ? vaultLoad(anonToken(_myMe)) : null; return ((v && v.insurance) || []).length; } catch (e) { return 0; } })();
   const _myNft = (() => { try { return (typeof NFT_MINE !== "undefined" ? NFT_MINE.length : 0) + (typeof NFT_MINE_FIN !== "undefined" ? NFT_MINE_FIN.length : 0); } catch (e) { return 0; } })();
-  const _myGive = (() => { try { const w = (_myMe && typeof shopHtkWon === "function") ? shopHtkWon(_myMe.email) : 0; const g = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give) || 30; return w ? Math.round(w * g / 100) : 0; } catch (e) { return 0; } })();
+  /* 내 나눔 = 쇼핑 적립(원) ÷ 적립% × 나눔% — shopHtkAdd의 SharingPool 적립식(마진 역산)과 같은 규칙 */
+  const _myGive = (() => { try { const w = (_myMe && typeof shopHtkWon === "function") ? shopHtkWon(_myMe.email) : 0; const WS = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.earn) ? WALLET_SPLIT : { earn: 60, give: 15 }; return w ? Math.round(w / WS.earn * WS.give) : 0; } catch (e) { return 0; } })();
   const _myActs = (() => { try { return (_myMe && typeof tlAll === "function") ? (tlAll(_myMe) || []).length : 0; } catch (e) { return 0; } })();
   const _myStats = [[_myBal.toLocaleString(), "Health Token", "wallet"], [_myRes.toLocaleString(), "치료비 케어 적립금", "wallet"], [String(_myNft), "Health NFT", "nft"], [String(_myPol), "보유 보험", "insurance"]];
   const _mask = (e) => { const t = String(e || ""); const at = t.indexOf("@"); return at > 0 ? t.slice(0, at) + "@***" + t.slice(t.lastIndexOf(".")) : "미등록"; };

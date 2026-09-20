@@ -89,7 +89,7 @@ function subChangeCycle(m, id, cycle) {
 function subShipNow(m, id) {
   const { s } = _subFind(m, id); if (!s) return null;
   const now = Date.now();
-  const r = (typeof healthReward === "function") ? healthReward(s.price * s.qty) : { reward: Math.floor(s.price * s.qty * 0.25) };
+  const r = (typeof healthReward === "function") ? healthReward(s.price * s.qty) : { reward: Math.floor(s.price * s.qty * 0.30) };
   const bonus = Math.floor(r.reward * 0.1);   // 정기배송 유지 보너스 10%(적립 규칙은 마진 내에서 운영)
   try { if (typeof shopHtkAdd === "function") shopHtkAdd(m.email, r.reward + bonus); } catch (e) {}
   return subUpdate(m, id, {

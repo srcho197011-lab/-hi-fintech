@@ -1,7 +1,7 @@
 /* ══════════ 통합 재무모델(finModel) — 화면·하이 호환 래퍼 ══════════
    계산은 전부 finBudget.js(예산양식 v3.8 이식 엔진, fb 접두사)에 위임한다. 이 파일은 기존 함수 이름·호출 시그니처를 지키는 얇은 층이다.
    · 연차 = 달력 연도(1차 = 2027, 오픈 2027-01-01) · 기준일 2027-09-17 · 금액 단위 원
-   · FIN_P_DEFAULT는 계산에 쓰지 않는다 — scripts/invest/fin_dump.mjs가 _fin.json으로 뜨는 원천(예산양식 파이프라인 입력)이라 값을 그대로 둔다.
+   · FIN_P_DEFAULT는 계산에 쓰지 않는다 — v3.8 조정 전 기본값 기록이라 값을 그대로 둔다(예산양식 원천은 이 파일의 사본 scripts/invest/finModel_legacy.js를 fin_dump.mjs가 뜬다).
    · 새 엔진 입력은 FB_P0(finBudgetParams.js 생성물) + 시나리오(hifin_fin_scn) + 오버라이드(hifin_fin_params_v38). */
 
 const FIN_P_DEFAULT = {
@@ -67,7 +67,7 @@ const FIN_P_DEFAULT = {
   // 기타 운영비(R&D·클라우드·GPU·영업·관리) 30% 수준 스케일 — 근거: AI 네이티브 운영으로 고정 운영조직 최소화
   // (하이 에이전트가 CS·영업지원 흡수, AI 출수납·자동정산으로 관리업무 자동화, 클라우드는 사용량 기반 최적화·자체 경량모델 병행)
   opexScale: 0.30,
-  rewardRate: 0.50, donationRate: 0.30, // 제품마진 대비(기존 원칙)
+  rewardRate: 0.50, donationRate: 0.30, // 제품마진 대비(조정 전 기존 원칙 — 확정 배분 적립 60%·나눔 15%는 FB_P0·WALLET_SPLIT, 형 확정 2026-09-17)
   // 감가상각 — 초년도는 자산 취득 직후라 상각 기반이 적어 50% 수준만 인식(EBITDA 과대 방지)
   deprYear: 1000000000, deprY1Rate: 0.5, interestYear: 800000000, taxRate: 0.22,
   churn: 0.18, // 연간 회원 이탈률(SaaS 지표용)

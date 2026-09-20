@@ -2,7 +2,7 @@
    사용: node scripts/fin_site_check.mjs          (하나라도 실패하면 종료코드 1)
    · 번들과 같게 finBudgetParams.js → finBudget.js → finModel.js 를 한 컨텍스트에 이어 붙여 싣는다(가짜 window·localStorage).
    · 정답 생성기: py scripts/invest/export_site_fin.py <v3.8 xlsx> (엑셀 재계산본 · oracle.annual · oracle3.run) */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import vm from "node:vm";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -563,6 +563,94 @@ for (const nm of ["A", "B", "C"]) {
     delete store["hifin_escrow_orders"]; delete store["hifin_escrow_orders_v38"];
   } catch (e) { acc.bad.push("실행 실패 " + e.message); }
   finish("선수납·정산 — 채널별 수수료(자사 chkOwnFee · 제휴사 chkPtnFee) · 시드 = 기준일 1~12일 전 · 키 hifin_escrow_orders_v38(옛 키 무시) · 회원 뷰 수수료 비노출", acc);
+}
+
+/* ══════════ 판매마진 배분 — 회원 화면 WALLET_SPLIT = 예산양식 rewardRate·donationRate(형 확정 2026-09-17 · 60/15/25) ══════════ */
+{
+  const acc = newAcc();
+  try {
+    const sd = readFileSync(path.join(ROOT, "src/data/sectionData.js"), "utf8");
+    const mm = sd.match(/const\s+WALLET_SPLIT\s*=\s*\{\s*earn:\s*([\d.]+)\s*,\s*give:\s*([\d.]+)\s*,\s*ops:\s*([\d.]+)\s*\}/);
+    if (!mm) acc.bad.push("sectionData.js에서 WALLET_SPLIT = { earn, give, ops } 를 못 읽음");
+    else {
+      const [earn, give, ops] = mm.slice(1, 4).map(Number); const P0 = T.FB_P0;
+      cmpVal(P0.rewardRate * 100, earn, 1e-9, acc, "WALLET_SPLIT.earn = FB_P0.rewardRate×100");
+      cmpVal(P0.donationRate * 100, give, 1e-9, acc, "WALLET_SPLIT.give = FB_P0.donationRate×100");
+      cmpVal(100, earn + give + ops, 1e-9, acc, "earn + give + ops = 100");
+      // 나눔 원장 비율(insService SHARE_RATE)은 WALLET_SPLIT.give에서 파생하거나 같은 값이어야 한다
+      const is = readFileSync(path.join(ROOT, "src/data/insService.js"), "utf8").match(/SHARE_RATE:\s*([^\n]*)/);
+      if (!is) acc.bad.push("insService.js SHARE_RATE 없음");
+      else if (!/WALLET_SPLIT\.give/.test(is[1])) { const n = parseFloat(is[1]); cmpVal(give / 100, n, 1e-9, acc, "INS_CONFIG.SHARE_RATE = WALLET_SPLIT.give÷100"); }
+    }
+  } catch (e) { acc.bad.push("실행 실패 " + e.message); }
+  finish("판매마진 배분 — sectionData.js WALLET_SPLIT(적립·나눔) = FB_P0.rewardRate·donationRate × 100 · 합계 100 · 나눔 원장 SHARE_RATE 단일 정의", acc);
+}
+
+/* ══════════ 판매마진 배분 사본 스캔 — WALLET_SPLIT만 바꾸고 화면·하이 답변·백서·폴백 상수가 옛 숫자로 남는 것을 막는다 ══════════
+   src 전체(.js·.jsx)에서 배분 비율이 **판매마진 배분 문맥**으로 적힌 곳만 읽어 WALLET_SPLIT과 대조한다.
+   제외: wpAutoLog.js(백서반영표 과거 기록) · 「치료비 케어·보험료 전용 적립 30%」(토큰 중 우선 적립분 — 다른 개념)
+         · 데이터 배당 분배율(50/30/20, 「분배율·배당」 문맥) · 투자 목표 비중 · 「판매마진 N%×M%」(특별지원 산식). */
+{
+  const acc = newAcc();
+  try {
+    const sd = readFileSync(path.join(ROOT, "src/data/sectionData.js"), "utf8");
+    const mm = sd.match(/const\s+WALLET_SPLIT\s*=\s*\{\s*earn:\s*([\d.]+)\s*,\s*give:\s*([\d.]+)\s*,\s*ops:\s*([\d.]+)\s*\}/);
+    const sp = readFileSync(path.join(ROOT, "src/data/shopProducts.js"), "utf8").match(/SHOP_REWARD_CFG\s*=\s*\{\s*supplyRate:\s*([\d.]+)/);
+    if (!mm || !sp) acc.bad.push("WALLET_SPLIT 또는 SHOP_REWARD_CFG.supplyRate를 못 읽음");
+    else {
+      const [earn, give, ops] = mm.slice(1, 4).map(Number);
+      const pricePct = Math.round((1 - Number(sp[1])) * earn * 1e6) / 1e6;   // 판매가 대비 적립률 % = (1 − 공급가율) × 적립 몫
+      const files = [];
+      const walk = (d) => { for (const e of readdirSync(d, { withFileTypes: true })) { const f = path.join(d, e.name); if (e.isDirectory()) walk(f); else if (/\.(js|jsx)$/.test(e.name) && e.name !== "wpAutoLog.js") files.push(f); } };
+      walk(path.join(ROOT, "src"));
+      let hits = 0;
+      const want = (label, got, exp, where) => { hits++; if (Math.abs(Number(got) - exp) > 1e-9) acc.bad.push(`${where} ${label} ${got} ≠ ${exp}`); };
+      for (const f of files) {
+        const rel = path.relative(ROOT, f).replace(/\\/g, "/");
+        readFileSync(f, "utf8").split("\n").forEach((ln, i) => {
+          const at = `${rel}:${i + 1}`;
+          let m;
+          // ① 폴백 객체 { earn: N, give: N[, ops: N] }
+          for (m of ln.matchAll(/\{\s*earn:\s*([\d.]+)\s*,\s*give:\s*([\d.]+)(?:\s*,\s*ops:\s*([\d.]+))?/g)) {
+            want("earn", m[1], earn, at); want("give", m[2], give, at); if (m[3] != null) want("ops", m[3], ops, at);
+          }
+          // ② WALLET_SPLIT.earn/give 폴백 상수 (… ? WALLET_SPLIT.earn / 100 : 0.60 · … ? WALLET_SPLIT.give : 15)
+          for (m of ln.matchAll(/WALLET_SPLIT\.(earn|give)\s*(\/\s*100\s*)?:\s*([\d.]+)/g)) {
+            want(`WALLET_SPLIT.${m[1]} 폴백`, m[2] ? Math.round(Number(m[3]) * 100 * 1e6) / 1e6 : m[3], m[1] === "earn" ? earn : give, at);
+          }
+          // ③ healthReward 폴백 산식 reward: Math.floor(p * 0.xx) = (1 − supplyRate) × earn
+          if (ln.includes("healthReward")) for (m of ln.matchAll(/reward\s*:\s*Math\.floor\([^()]*\*\s*([\d.]+)\)/g)) want("적립 폴백(판매가 대비)", Math.round(Number(m[1]) * 100 * 1e6) / 1e6, pricePct, at);
+          // ④ 쇼핑 적립 표기 — 「판매가의 N%」(적립 문맥) · 「적립 {…reward)} · N%」「<small>N%</small>」
+          if (/적립/.test(ln)) for (m of ln.matchAll(/판매가(?:의)?\s*(?:약\s*)?(\d+)\s*%/g)) want("판매가 대비 적립", m[1], pricePct, at);
+          for (m of ln.matchAll(/적립 \{[^}]*reward\)\}\s*(?:·\s*|<small>)(\d+)%/g)) want("상품 카드 적립률", m[1], pricePct, at);
+          // ⑤ 「(판매|매출)마진(의|을) N%」 뒤 40자에서 나눔·기부가 먼저면 나눔 몫, 적립·HTK가 먼저면 적립 몫
+          for (m of ln.matchAll(/(?:판매|매출)?마진(?:을|의)?\s*(?:\*\*)?\s*(\d+)\s*%/g)) {
+            const tail = ln.slice(m.index + m[0].length, m.index + m[0].length + 40), head = ln.slice(Math.max(0, m.index - 6), m.index);
+            if (/^\s*[×x*]/.test(tail)) continue;
+            const gi = tail.search(/나눔|기부/), ei = tail.search(/적립|HTK|Health Token/);
+            if (/(?:나눔|기부)\s*\($/.test(head) || (gi >= 0 && (ei < 0 || gi < ei))) want("판매마진 나눔 몫", m[1], give, at);
+            else if (ei >= 0) want("판매마진 적립 몫", m[1], earn, at);
+          }
+          // ⑥ 「적립 N% · 나눔 N%」 짝 표기(「전용·우선 적립」 제외) · 「N% 회원적립 · N% 치료비 나눔 · N% 운영」
+          for (m of ln.matchAll(/적립\s*\(?\s*(\d+)\s*%\s*\)?\s*[·,]\s*(?:치료비\s*)?나눔\s*\(?\s*(\d+)\s*%/g)) {
+            if (/(?:전용|우선)\s*$/.test(ln.slice(Math.max(0, m.index - 4), m.index))) continue;
+            want("적립 몫", m[1], earn, at); want("나눔 몫", m[2], give, at);
+          }
+          for (m of ln.matchAll(/(\d+)\s*%\s*회원\s*적립\s*·\s*(\d+)\s*%\s*치료비\s*나눔\s*·\s*(\d+)\s*%\s*운영/g)) { want("적립 몫", m[1], earn, at); want("나눔 몫", m[2], give, at); want("운영 몫", m[3], ops, at); }
+          // ⑦ 「N/N/N」 삼분 표기 — 적립·나눔·가치환원 문맥만(분배율·배당·비중 문맥 제외)
+          for (m of ln.matchAll(/(?<![\d/])(\d{2})\/(\d{2})\/(\d{2})(?![\d/])/g)) {
+            const ctx = ln.slice(Math.max(0, m.index - 24), m.index + m[0].length + 24);
+            if (!/적립|나눔|가치환원|가치순환|WALLET_SPLIT/.test(ctx) || /분배율|배당|비중/.test(ctx)) continue;
+            hits++; if (m[0] !== `${earn}/${give}/${ops}`) acc.bad.push(`${at} 적립/나눔/운영 ${m[0]} ≠ ${earn}/${give}/${ops}`);
+          }
+        });
+      }
+      if (hits < 20) acc.bad.push(`스캔 적중 ${hits}건 — 패턴이 사본을 거의 못 잡음(정규식·문구 형식 변경 확인)`);
+      acc.max = hits;
+    }
+  } catch (e) { acc.bad.push("실행 실패 " + e.message); }
+  const ok = acc.bad.length === 0;
+  report("판매마진 배분 사본 스캔 — src 화면·하이 답변·백서·폴백 상수(earn·give 폴백 · healthReward 폴백 · 판매가 대비 적립 표기)가 WALLET_SPLIT과 일치", ok, null, ok ? `대조 ${acc.max}곳` : `${acc.bad.length}건 불일치 — ${acc.bad.slice(0, 6).join(" | ")}`);
 }
 
 const fail = results.filter((r) => !r.ok);

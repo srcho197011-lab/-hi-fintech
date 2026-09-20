@@ -1363,7 +1363,7 @@ function htkInsReserve(htk) { return Math.floor((Number(htk) || 0) * HTK_INS_RAT
 // 적립: [art, 항목, 적립토큰, 설명, 색]
 const WALLET_EARN = [
   ["check", "건강검진 적립", "+3,200", "검진 예약·완료·NFT 예약증 발행 시 적립", "#2563EB"],
-  ["pill", "건강쇼핑 적립", "+2,150", "영양제·식단·의료기기 판매마진의 50%(판매가 약 25%)를 건강적립금으로 적립", "#16A34A"],
+  ["pill", "건강쇼핑 적립", "+2,150", "영양제·식단·의료기기 판매마진의 60%(판매가 약 30%)를 건강적립금으로 적립", "#16A34A"],
   ["heartpulse", "일일 건강미션", "+1,680", "걸음수·운동·수면 목표 달성 시 적립", "#F59E0B"],
   ["hash", "데이터 제공 동의", "+1,900", "건강데이터 제공 동의(DID) 보상", "#0EA5E9"],
   ["badge", "보험 가입·유지", "+700", "건강검진보험 가입·유지 보상", "#2F5BEA"],
@@ -1394,9 +1394,10 @@ const WALLET_SEC = [
   ["hash", "위·변조 방지 감사로그", "적립·사용·환전 내역을 불변 감사로그로 기록해 위·변조를 방지하도록 설계합니다."],
   ["badge", "본인인증·접근통제", "PASS 본인인증·다중인증(MFA)·최소권한 접근통제를 적용합니다."],
 ];
-/* ── 판매마진 분배(적립 50% · 나눔 30% · 운영 20%) ── */
-const WALLET_SPLIT = { earn: 50, give: 30, ops: 20 }; // 제품마진 대비 % (재무회계·사회적기업 연동: 적립50%·나눔30%·운영20%)
-const WALLET_GIVE = { cum: 97200000, month: 14400000, people: 384, my: 138600 }; // 누적·이번달 기부·수혜 인원·내 기여(예시, 원 · 나눔 30% 반영)
+/* ── 판매마진 분배(적립 60% · 나눔 15% · 운영 25%) — 형 확정 2026-09-17 ──
+   예산양식 v3.8 FB_P0.rewardRate(0.6)·donationRate(0.15)와 같은 숫자(fin_site_check.mjs가 가드). 회원 화면·하이 답변·나눔 원장은 이 단일 정의를 쓴다. */
+const WALLET_SPLIT = { earn: 60, give: 15, ops: 25 }; // 제품마진 대비 % (재무회계·사회적기업 연동: 적립60%·나눔15%·운영25%)
+const WALLET_GIVE = { cum: 48600000, month: 7200000, people: 192, my: 69300 }; // 누적·이번달 기부·수혜 인원·내 기여(예시, 원 · 나눔 15% 반영)
 const WALLET_GIVE_TARGETS = [
   ["heart", "재난적 의료비 사각지대", "소득 대비 과도한 치료비를 감당하기 어렵지만 정부 지원 기준에는 못 미치는 가구", "#E11D48"],
   ["badge", "실손 보장 사각지대", "고령·기저질환·미가입 등으로 실손보험 보장에서 소외된 분들", "#2563EB"],
@@ -1424,7 +1425,7 @@ const NFT_MINE_FIN = [
   { art: "check", type: "청구지급 SBT", name: "보험금 청구·지급 확인서", meta: "외래진료비 84,000원 · 지급완료 2026.06.30 · 자동증빙", id: "0x8d15…c47b", to: "insurance", col: "#2563EB" },
   { art: "percent", type: "납입영수 SBT", name: "보험료 납입 영수 토큰", meta: "2026년 상반기 6회 납입 · 자동이체 + HTK 30% 병행", id: "0x1fa9…e832", to: "insurance", col: "#0EA5E9" },
   { art: "heartpulse", type: "진료결제 NFT", name: "진료·치료비 결제 영수증", meta: "제휴병원 외래 · HTK 2,400 + 카드 결제 · 연말정산 증빙", id: "0x6c07…59d2", to: "hospital", col: "#E11D48" },
-  { art: "gift", type: "나눔증명 SBT", name: "치료비 나눔 기여 증명", meta: "소비 마진 30% 나눔 준비금 8,120원 적립 기여", id: "0xb3e8…20fc", to: "social", col: "#DB2777" },
+  { art: "gift", type: "나눔증명 SBT", name: "치료비 나눔 기여 증명", meta: `소비 마진 ${WALLET_SPLIT.give}% 나눔 준비금 4,060원 적립 기여`, id: "0xb3e8…20fc", to: "social", col: "#DB2777" },
   { art: "trend", type: "주식청약 NFT", name: "회원 적립금 주식청약 참여증", meta: "HI-Fin 공모 · 12,000 HTK 청약 · 배정 대기", id: "0x970d…41ab", to: "partner", col: "#7C3AED" },
   { art: "finance", type: "채권증서 NFT", name: "헬스케어 회사채 보유 증서", meta: "HI-Fin 3년물 연 5.2% · 100만원 · 이자 분기지급", id: "0xe24f…8c61", to: "partner", col: "#6D28D9" },
   { art: "building", type: "은행거래 해시", name: "은행 출·수납 감사추적 해시", meta: "우리은행 5계좌 AI 출수납 · 일마감 원장 앵커링", id: "0x3a5c…d718", to: "wallet", col: "#0D9488" },
@@ -8208,7 +8209,7 @@ function SportsHealth() {
   </>);
 }
 
-/* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 25%) ===== */
+/* ===== 건강쇼핑 — 영양제 상품몰(건강적립금 판매가 30% = 판매마진의 60%) ===== */
 const shopWon = (n) => (Number(n) || 0).toLocaleString("ko-KR") + "원";
 const suppMedia = (id) => (typeof SUPP_MEDIA !== "undefined" && SUPP_MEDIA[id]) || {};
 /* 국내 최저가 검색 링크 — 다나와(가격비교) 우선, 없으면 네이버쇼핑 낮은가격순 */
@@ -8307,7 +8308,7 @@ function ShopCartBar({ products }) {
   const dm = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null)
     || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const dmEmail = dm ? dm.email : "default";
-  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.30) };
   const icoOf = (p) => (CATS[p.category] || {});
   const cartItems = Object.keys(cart).map((id) => ({ p: (products || []).find((x) => x.id === id), qty: cart[id] })).filter((x) => x.p);
   const totalCnt = cartItems.reduce((s, x) => s + x.qty, 0);
@@ -8404,7 +8405,7 @@ function suppMeta(p) {
 function SupplementShop() {
   const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
-  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25), supply: Math.floor(p * 0.5), margin: p - Math.floor(p * 0.5) };
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.30), supply: Math.floor(p * 0.5), margin: p - Math.floor(p * 0.5) };
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("reward");
   const [detail, setDetail] = useState(null);
@@ -8436,7 +8437,7 @@ function SupplementShop() {
       {typeof FamilySetCard === "function" && <FamilySetCard onGo={typeof nav === "function" ? nav : null} />}
       {/* 재구매 설계 ①: 소진 임박 배너 — 끊기기 전에 먼저 알린다 */}
       {typeof SubDueBanner === "function" && <SubDueBanner onGoManage={() => setSubOpen(true)} />}
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 영양제 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
       <div className="bklbl" style={{ margin: "12px 0 8px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span><Pill size={14} color="#7C3AED" style={{ verticalAlign: "-2px" }} /> 영양제 상품몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 국내 판매 상위 {PRODUCTS.length}종</span></span>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "6px 12px", fontSize: 11.5, marginLeft: "auto" }} onClick={() => setSubOpen((v) => !v)}><RefreshCw size={12} /> 내 정기배송{subN ? ` (${subN})` : ""}</button>
@@ -8456,7 +8457,7 @@ function SupplementShop() {
           <div className="mealname">{p.name}</div>
           <div className="mealrate"><span className="stars">★</span> {meta.rating} <span className="rev">({meta.reviews.toLocaleString()})</span></div>
           <div className="mealprices"><span className="mdisc">{meta.disc}%</span><span className="mprice">{shopWon(p.price)}</span><span className="morig">{shopWon(meta.orig)}</span></div>
-          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 30%</div>
           <div className="mealbtns">
             <a className="meallink" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 최저가</a>
             <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
@@ -8485,7 +8486,7 @@ function SupplementShop() {
               </div>
             )}
             <div className="pdreward simple">
-              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 25%</small></div>
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 30%</small></div>
               <b className="pdramt">{shopWon((live ? healthReward(live.price) : r).reward)}</b>
             </div>
             <div className="pdbtns">
@@ -8631,7 +8632,7 @@ function SkinShop({ onGo }) {
   useHiLang();
   const PRODUCTS = (typeof SKIN_PRODUCTS !== "undefined") ? SKIN_PRODUCTS : [];
   const CATS = (typeof SKIN_CATS !== "undefined") ? SKIN_CATS : {};
-  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.30) };
   const PARTNERS = (typeof SKIN_PARTNER_BRANDS !== "undefined") ? SKIN_PARTNER_BRANDS : [];
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("partner");
@@ -8653,7 +8654,7 @@ function SkinShop({ onGo }) {
       : (p.category === "디바이스·이너뷰티" ? "기기 1대" : "용량 표기 없음")));   /* 기기에 "용량 없음"은 정보가 아니라 소음이다 */
   return (
     <>
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 스킨 헬스케어 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
 
       <SkinConcernPicker onPick={(c) => setCat(c)} onGo={onGo} />
 
@@ -8672,7 +8673,7 @@ function SkinShop({ onGo }) {
           <div className="mealrate"><span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 700 }}>{p.volume}</span>{(p.spf || p.pa) ? <span className="rev"> · {[p.spf, p.pa].filter(Boolean).join("/")}</span> : null}</div>
           {p.care && p.care.length ? <div className="skcare">{p.care.map((c) => <span key={c}>{c}</span>)}</div> : null}
           <div className="mealprices"><span className="mprice">{shopWon(p.price)}</span><span className="morig" style={{ textDecoration: "none" }}>{unitTxt(p)}</span></div>
-          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 30%</div>
           <div className="mealbtns">
             <a className="meallink" href={p.url} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 출처</a>
             <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
@@ -8695,7 +8696,7 @@ function SkinShop({ onGo }) {
             {(detail.spf || detail.pa) && <div className="chnote" style={{ marginTop: 4 }}>자외선 차단지수 표기: <b>{[detail.spf, detail.pa].filter(Boolean).join(" / ")}</b> — 제품 표기를 그대로 옮긴 값이고 단가와 섞어 비교하지 않아요.</div>}
             <div className="chnote" style={{ marginTop: 4 }}>기능성화장품 표기: <b>{detail.functional || "확인하지 못해 비워 뒀어요"}</b> — 기능성화장품은 미백·주름 개선·자외선 차단 세 가지로, 식약처 심사·보고를 확인한 제품에만 표기해요.</div>
             <div className="pdreward simple">
-              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>판매가의 25%</small></div>
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>판매가의 30%</small></div>
               <b className="pdramt">{shopWon(r.reward)}</b>
             </div>
             <div className="pdbtns">
@@ -8710,7 +8711,7 @@ function SkinShop({ onGo }) {
   );
 }
 
-/* ===== 건강쇼핑 — 홈케어 의료기기몰(영양제몰과 동일 쿠팡 구조·건강적립금 25%) ===== */
+/* ===== 건강쇼핑 — 홈케어 의료기기몰(영양제몰과 동일 쿠팡 구조·건강적립금 30%) ===== */
 const deviceMedia = (id) => (typeof DEVICE_MEDIA !== "undefined" && DEVICE_MEDIA[id]) || {};
 function deviceLowestHref(p) {
   const dan = deviceMedia(p.id).danawa; if (dan) return dan;
@@ -8727,7 +8728,7 @@ function DeviceImage({ p }) {
 function DeviceShop() {
   const PRODUCTS = (typeof DEVICE_PRODUCTS !== "undefined") ? DEVICE_PRODUCTS : [];
   const CATS = (typeof DEVICE_CATS !== "undefined") ? DEVICE_CATS : {};
-  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.25) };
+  const rw = (p) => (typeof healthReward === "function") ? healthReward(p) : { reward: Math.floor(p * 0.30) };
   const [cat, setCat] = useState("전체");
   const [sort, setSort] = useState("reward");
   const [detail, setDetail] = useState(null);
@@ -8749,7 +8750,7 @@ function DeviceShop() {
   const icoOf = (p) => (CATS[p.category] || {});
   return (
     <>
-      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 홈케어 의료기기 건강적립금 = 판매가의 25%</b><span>구매액의 공급가 50% · 매출마진의 50%를 건강금융지갑 Health Token으로 적립</span></div></div>
+      <div className="rewardbn"><span className="ri"><Coins size={18} color="#B45309" /></span><div><b>모든 홈케어 의료기기 건강적립금 = 판매가의 30%</b><span>구매액의 공급가 50% · 매출마진의 60%를 건강금융지갑 Health Token으로 적립</span></div></div>
       <div className="bklbl" style={{ margin: "12px 0 8px" }}><Stethoscope size={14} color="#0891B2" style={{ verticalAlign: "-2px" }} /> 홈케어 의료기기몰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 가정용 의료기기 상위 {PRODUCTS.length}종</span></div>
       {PRICE_FEED_CFG.mode !== "off" && <div className="pricefeed"><RefreshCw size={12} /> {priceFeedLabel()} · 상품 클릭 시 조회</div>}
       <div className="ssfilter">{cats.map((c) => <button key={c} className={cat === c ? "on" : ""} onClick={() => setCat(c)}>{c}</button>)}</div>
@@ -8765,7 +8766,7 @@ function DeviceShop() {
           <div className="mealname">{p.name}</div>
           <div className="mealrate"><span className="stars">★</span> {meta.rating} <span className="rev">({meta.reviews.toLocaleString()})</span></div>
           <div className="mealprices"><span className="mdisc">{meta.disc}%</span><span className="mprice">{shopWon(p.price)}</span><span className="morig">{shopWon(meta.orig)}</span></div>
-          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 25%</div>
+          <div className="mealreward"><Coins size={11} /> 적립 {shopWon(r.reward)} · 30%</div>
           <div className="mealbtns">
             <a className="meallink" href={deviceLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={12} /> 최저가</a>
             <button className="mealadd" onClick={(e) => { e.stopPropagation(); add(p); }}><ShoppingCart size={13} /> 담기</button>
@@ -8792,7 +8793,7 @@ function DeviceShop() {
               </div>
             )}
             <div className="pdreward simple">
-              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 25%</small></div>
+              <div className="pdrlbl"><Coins size={16} color="#B45309" /> 건강적립금 <small>최저 판매가의 30%</small></div>
               <b className="pdramt">{shopWon((live ? healthReward(live.price) : r).reward)}</b>
             </div>
             <div className="pdbtns">
@@ -8839,7 +8840,7 @@ const SHOP_INTEL_DEVICES = [
 function DangDangProduct({ p }) {
   const CATS = (typeof SUPP_CATS !== "undefined") ? SUPP_CATS : {};
   const m = CATS[p.category] || {};
-  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.25) };
+  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.30) };
   const won = (v) => (typeof shopWon === "function") ? shopWon(v) : v + "원";
   return (
     <div className="prodcard" style={{ cursor: "default" }}>
@@ -8849,7 +8850,7 @@ function DangDangProduct({ p }) {
         <div className="pname2">{p.name}</div>
         <div className="pvol" style={{ color: "#0D9488", fontWeight: 600 }}>{p.claim}</div>
         <div className="pprice">{won(p.price)} <small style={{ color: "#EA580C", fontWeight: 700 }}>최저가</small></div>
-        <div className="preward"><Coins size={11} /> 적립 {won(r.reward)} <small>25%</small></div>
+        <div className="preward"><Coins size={11} /> 적립 {won(r.reward)} <small>30%</small></div>
         <a className="lowprice" href={shopLowestHref(p)} target="_blank" rel="noreferrer noopener" onClick={(e) => e.stopPropagation()}><Search size={11} /> 국내 최저가 검색 <ExternalLink size={9} /></a>
       </div>
       <button className="paddbtn" onClick={() => { shopCartAdd(p.id); if (typeof toast === "function") toast(`🛒 ${p.name} 담기 · 건강적립금 +${won(r.reward)}`); }}><Plus size={13} /> 담기</button>
@@ -9113,7 +9114,7 @@ function MealImage({ p }) {
 }
 function MealCard({ p, onAdd }) {
   const disc = p.orig && p.orig > p.price ? Math.round((1 - p.price / p.orig) * 100) : 0;
-  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.25) };
+  const r = (typeof healthReward === "function") ? healthReward(p.price) : { reward: Math.floor(p.price * 0.30) };
   const tier = mealTier(p.id);
   const link = (tier === "brand") ? (typeof naverHref === "function" ? naverHref(p.brand, "건강식단") : p.url) : p.url;
   const linkTxt = (tier === "brand") ? "검색" : "공식몰";
@@ -9691,7 +9692,7 @@ function _insServiceRoute(text, member) {
   // ⓑ 납부 확정(2단계) — "✅ 납부 확정 · BILL-…"
   let mm = text.match(/^✅ 납부 확정 · (\S+)/);
   if (mm) { const r = insService.pay(member, mm[1]);
-    return { bubbles: [{ kind: "text", text: r.ok ? `납부 완료 ✓ — ${r.bill.product} ${r.bill.ym}월분 ${won(r.bill.amount)}(${r.bill.htk.toLocaleString()} HTK)이 원장에서 차감됐어요. 잔액 ${r.balance.toLocaleString()} HTK. 순환의 30%는 나눔 재원에 적립됐고, 내역은 온체인에 기록됐어요.` : "🔒 " + r.reason }], quicks: r.ok ? ["나눔 현황 보여줘", "내 잔액 알려줘"] : ["지갑 충전은 어떻게 해?"] }; }
+    return { bubbles: [{ kind: "text", text: r.ok ? `납부 완료 ✓ — ${r.bill.product} ${r.bill.ym}월분 ${won(r.bill.amount)}(${r.bill.htk.toLocaleString()} HTK)이 원장에서 차감됐어요. 잔액 ${r.balance.toLocaleString()} HTK. 순환의 ${Math.round(insService.config.SHARE_RATE * 100)}%는 나눔 재원에 적립됐고, 내역은 온체인에 기록됐어요.` : "🔒 " + r.reason }], quicks: r.ok ? ["나눔 현황 보여줘", "내 잔액 알려줘"] : ["지갑 충전은 어떻게 해?"] }; }
   // "납부 진행 · BILL-…" → 확인 카드
   mm = text.match(/^납부 진행 · (\S+)/);
   if (mm) { const S = insService.bills(member); const b = S && S.bills.find((x) => x.id === mm[1]);
@@ -9782,8 +9783,11 @@ function _insServiceRoute(text, member) {
     if (my.some((a) => a.status === "심사 대기" || a.status === "선정")) return { bubbles: [{ kind: "text", text: `이미 진행 중인 신청(${my[0].id} · ${my[0].status})이 있어요 — 치료비·나눔 탭에서 상태를 확인하세요.` }], quicks: ["나눔 현황 보여줘"] };
     return { bubbles: [{ kind: "text", text: "치료비 지원 신청을 도와드릴게요. 어떤 상황인지 한 줄로 보내주세요 — 예시처럼 **\"지원 신청 — 항암 치료 중 수술비 부담\"** 형식이면 바로 접수돼요. 신청 정보는 최고 민감등급으로 보호되고, 긴급도 기준은 공개돼 있어요." }], quicks: ["지원 신청 — 수술비 부담이 커요"] };
   }
-  if (/나눔|기부|30\s*%|사각지대/.test(text)) { const S = insService.donateStatus();
-    return { bubbles: [{ kind: "text", text: S.count ? `나눔 재원에 ${won(S.balance)}(${S.count}건)이 건별 적립돼 있어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${won(v)}`).join(" · ")}. 치료비 사각지대 지원에 쓰이는 순환의 30% 몫이에요.` : "아직 나눔 적립이 없어요 — 보험료 납부·건강쇼핑이 생기면 순환의 30%가 여기 쌓여요." }], quicks: ["치료비 지원 신청은 어떻게 해?"] }; }
+  // 숫자만으로는 잡지 않는다 — 같은 화면의 재산정 인하 상한(RERATE_MAX_PCT)·자기부담·치료비 케어 전용 적립 비율과 겹친다. 나눔 몫 %는 「N%는 어디에 쓰여」처럼 쓰임을 묻는 형태만.
+  // 「기부」는 「자기부담」 안에도 들어 있어 앞 글자가 「자」면 제외한다.
+  const _givePct = Math.round(insService.config.SHARE_RATE * 100);
+  if (/나눔|(?:^|[^자])기부|사각지대/.test(text) || new RegExp("(?:^|[^\\d])" + _givePct + "\\s*%\\s*(?:는|은)?\\s*(?:어디에|어디로|뭐에|무엇에)\\s*(?:쓰|사용)").test(text)) { const S = insService.donateStatus();
+    return { bubbles: [{ kind: "text", text: S.count ? `나눔 재원에 ${won(S.balance)}(${S.count}건)이 건별 적립돼 있어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${won(v)}`).join(" · ")}. 치료비 사각지대 지원에 쓰이는 순환의 ${Math.round(insService.config.SHARE_RATE * 100)}% 몫이에요.` : `아직 나눔 적립이 없어요 — 보험료 납부·건강쇼핑이 생기면 순환의 ${Math.round(insService.config.SHARE_RATE * 100)}%가 여기 쌓여요.` }], quicks: ["치료비 지원 신청은 어떻게 해?"] }; }
   if (/잔액|얼마\s*있|토큰\s*(얼마|몇)/.test(text)) { const bal = (typeof tlBalance === "function") ? tlBalance(member) : null;
     if (bal == null) return null;
     const res = (typeof htkInsReserve === "function") ? htkInsReserve(bal) : Math.floor(bal * 0.3);
@@ -10908,7 +10912,7 @@ function InsRerateTab() {
   </>);
 }
 
-/* ⑥ 치료비·나눔 — 30% 실적립 원장·집행 공개·신청 접수 */
+/* ⑥ 치료비·나눔 — 순환의 나눔 몫(SHARE_RATE = WALLET_SPLIT.give) 실적립 원장·집행 공개·신청 접수 */
 function InsShareTab() {
   const [tick, setTick] = useState(0); void tick;
   const [applying, setApplying] = useState(false);
@@ -10965,7 +10969,7 @@ function InsShareTab() {
       <div className="card">
         <div className="rct"><ShieldCheck size={16} color="#0891B2" /> 집행 투명 공개 (ImpactLedger)</div>
         <div className="wins-grid" style={{ marginBottom: 8 }}>
-          <div className="wins-box"><span className="wl">누적 적립</span><b>{I.inTotal.toLocaleString()} <small>원</small></b><span className="ww">순환의 30% 건별</span></div>
+          <div className="wins-box"><span className="wl">누적 적립</span><b>{I.inTotal.toLocaleString()} <small>원</small></b><span className="ww">순환의 {Math.round(insService.config.SHARE_RATE * 100)}% 건별</span></div>
           <div className="wins-box pri"><span className="wl">누적 집행</span><b>{I.outTotal.toLocaleString()} <small>원</small></b><span className="ww">수혜 {I.settledN}건{I.avgDays != null ? ` · 평균 ${I.avgDays}일 내 집행` : ""}</span></div>
         </div>
         {I.rows.length ? I.rows.map((r) => (
@@ -11163,24 +11167,24 @@ function WalletSection({ onGo }) {
   /* 멤버십 등급 — 회원 상태 모델(s4.tier)에서 */
   const tier = (() => { try { const st = (dm && typeof memberStateSnapshot === "function") ? memberStateSnapshot(dm) : null; return (st && st.s4 && st.s4.tier) || null; } catch (e) { return null; } })();
   const walNm = (dm && dm.name) || "회원";
-  /* 내 소비가 만든 나눔 — 쇼핑 적립 실적에서 계산한다(마진의 give% 규칙). 실적이 없으면 안내로 바꾼다. */
+  /* 내 소비가 만든 나눔 — 쇼핑 적립 실적에서 계산한다(적립 = 마진의 earn% → 마진 역산 × give% — shopHtkAdd의 SharingPool 적립식과 같은 규칙). 실적이 없으면 안내로 바꾼다. */
   const myGive = (() => {
     try { const won0 = (typeof shopHtkWon === "function") ? shopHtkWon(dm ? dm.email : null) : 0;
       if (!won0) return null;
-      const give = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give) ? WALLET_SPLIT.give : 30;
-      return Math.round(won0 * give / 100);
+      const WS = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.earn) ? WALLET_SPLIT : { earn: 60, give: 15 };
+      return Math.round(won0 / WS.earn * WS.give);
     } catch (e) { return null; }
   })();
   const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(total) : Math.floor(total * 0.30);
   const genRes = total - insRes;
   const insPct = (typeof HTK_INS_RATE !== "undefined") ? Math.round(HTK_INS_RATE * 100) : 30;
-  // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 50/30/20). 1차연도(10만 회원) 기준 연간.
-  const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 196650000, earn: 327750000, beneficiaries: 771 };
+  // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 × WALLET_SPLIT 60/15/25, 형 확정 2026-09-17). 1차연도(10만 회원) 기준 연간.
+  const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 98325000, earn: 393300000, beneficiaries: 386 };
   return (
     <div style={{ marginTop: 16 }}>
       <div className="aihead"><span className="aiico"><SecIcon k="wallet" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>건강금융지갑</div>
-          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>판매마진의 <b style={{ color: "#16A34A" }}>50%는 건강적립금</b>으로, <b style={{ color: "#E11D48" }}>{WALLET_SPLIT.give}%는 치료비 사각지대 나눔</b>으로 — 적립하고 나누는 건강금융</div></div></div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>판매마진의 <b style={{ color: "#16A34A" }}>{WALLET_SPLIT.earn}%는 건강적립금</b>으로, <b style={{ color: "#E11D48" }}>{WALLET_SPLIT.give}%는 치료비 사각지대 나눔</b>으로 — 적립하고 나누는 건강금융</div></div></div>
       <DemoMemberBanner />
 
       <div className="wbal">
@@ -11231,7 +11235,7 @@ function WalletSection({ onGo }) {
           )}
           {shopPts > 0 && (
           <div className="wcard" style={{ borderColor: "#F97316", background: "linear-gradient(180deg,#FFF7ED,#fff)" }}><span className="wi" style={{ background: "#FFEDD5" }}><Art name="capsule" size={22} /></span>
-            <div style={{ flex: 1 }}><div className="wn">건강쇼핑 구매 적립 <span className="cbadge" style={{ color: "#C2410C", background: "#FFEDD5", fontSize: 10, padding: "1px 6px" }}>실적립</span></div><div className="wd">건강쇼핑(영양제·AI 상담사) 주문 시 판매마진 25%를 실제 적립 · 누적 {won(shopWonBal)}</div></div>
+            <div style={{ flex: 1 }}><div className="wn">건강쇼핑 구매 적립 <span className="cbadge" style={{ color: "#C2410C", background: "#FFEDD5", fontSize: 10, padding: "1px 6px" }}>실적립</span></div><div className="wd">건강쇼핑(영양제·AI 상담사) 주문 시 판매마진의 {(typeof SHOP_REWARD_CFG !== "undefined" && SHOP_REWARD_CFG.marginRewardRate) ? Math.round(SHOP_REWARD_CFG.marginRewardRate * 100) : WALLET_SPLIT.earn}%를 실제 적립 · 누적 {won(shopWonBal)}</div></div>
             <span className="wamt" style={{ color: "#F97316" }}>+{shopPts.toLocaleString()}</span></div>
           )}
           {WALLET_EARN.map(([a, t, amt, d, c], i) => (
@@ -11272,7 +11276,7 @@ function WalletSection({ onGo }) {
         <div className="wgive-my"><span className="ic"><Heart size={18} color="#E11D48" /></span><div>{myGive != null
           ? <>지금까지 <b>{walNm}님의 소비로 만들어진 나눔</b> <b style={{ color: "#E11D48" }}>{won(myGive)}</b> <small>— 내 건강 관리가 이웃의 치료비가 되었습니다.</small></>
           : <>건강쇼핑에서 구매하시면 <b>판매마진의 {WALLET_SPLIT.give}%</b>가 치료비 나눔으로 적립돼요 <small>— 회원 추가 부담은 없습니다.</small></>}</div></div>
-        <div className="chnote">※ 기부 비율(판매마진의 {WALLET_SPLIT.give}%)·수치는 <b>설계 목표·예시</b>입니다. 실제 기부는 제휴 공익재단·의료기관을 통해 심사 후 집행되며, 사용내역은 투명하게 공개하도록 설계합니다. ‘치료비 사각지대’는 재난적 의료비·실손 보장 사각지대·희귀중증질환 본인부담·취약계층 긴급 치료비 등을 포함합니다.</div>
+        <div className="chnote">※ 기부 비율(판매마진의 {WALLET_SPLIT.give}%)은 <b>확정된 배분 원칙</b>이고, 기부액·수혜 인원은 <b>재무 모델 추정</b>입니다. 실제 기부는 제휴 공익재단·의료기관을 통해 심사 후 집행되며, 사용내역은 투명하게 공개하도록 설계합니다. ‘치료비 사각지대’는 재난적 의료비·실손 보장 사각지대·희귀중증질환 본인부담·취약계층 긴급 치료비 등을 포함합니다.</div>
       </>)}
 
       {tab === "use" && (<>
@@ -11630,7 +11634,8 @@ function MyPageSection({ onGo }) {
   const _myRes = (() => { try { return (typeof htkInsReserve === "function") ? htkInsReserve(_myBal) : 0; } catch (e) { return 0; } })();
   const _myPol = (() => { try { const v = (_myMe && typeof vaultLoad === "function") ? vaultLoad(anonToken(_myMe)) : null; return ((v && v.insurance) || []).length; } catch (e) { return 0; } })();
   const _myNft = (() => { try { return (typeof NFT_MINE !== "undefined" ? NFT_MINE.length : 0) + (typeof NFT_MINE_FIN !== "undefined" ? NFT_MINE_FIN.length : 0); } catch (e) { return 0; } })();
-  const _myGive = (() => { try { const w = (_myMe && typeof shopHtkWon === "function") ? shopHtkWon(_myMe.email) : 0; const g = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give) || 30; return w ? Math.round(w * g / 100) : 0; } catch (e) { return 0; } })();
+  /* 내 나눔 = 쇼핑 적립(원) ÷ 적립% × 나눔% — shopHtkAdd의 SharingPool 적립식(마진 역산)과 같은 규칙 */
+  const _myGive = (() => { try { const w = (_myMe && typeof shopHtkWon === "function") ? shopHtkWon(_myMe.email) : 0; const WS = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.earn) ? WALLET_SPLIT : { earn: 60, give: 15 }; return w ? Math.round(w / WS.earn * WS.give) : 0; } catch (e) { return 0; } })();
   const _myActs = (() => { try { return (_myMe && typeof tlAll === "function") ? (tlAll(_myMe) || []).length : 0; } catch (e) { return 0; } })();
   const _myStats = [[_myBal.toLocaleString(), "Health Token", "wallet"], [_myRes.toLocaleString(), "치료비 케어 적립금", "wallet"], [String(_myNft), "Health NFT", "nft"], [String(_myPol), "보유 보험", "insurance"]];
   const _mask = (e) => { const t = String(e || ""); const at = t.indexOf("@"); return at > 0 ? t.slice(0, at) + "@***" + t.slice(t.lastIndexOf(".")) : "미등록"; };
@@ -12440,23 +12445,23 @@ function PlatformDiagram() {
 
       {/* ⑦ Value Return */}
       <div style={{ ...wrapMax, position: "relative" }}>
-        <div style={{ textAlign: "center", marginBottom: 10 }}><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#FBBF24" }}>⑦ VALUE RETURN SYSTEM · 가치환원 순환</span><div style={{ fontSize: 11.5, fontWeight: 700, color: "#CFE3F5", marginTop: 5 }}>매출마진의 50%는 회원 리워드, 30%는 치료비 나눔으로 환원</div></div>
+        <div style={{ textAlign: "center", marginBottom: 10 }}><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#FBBF24" }}>⑦ VALUE RETURN SYSTEM · 가치환원 순환</span><div style={{ fontSize: 11.5, fontWeight: 700, color: "#CFE3F5", marginTop: 5 }}>매출마진의 {WALLET_SPLIT.earn}%는 회원 리워드, {WALLET_SPLIT.give}%는 치료비 나눔으로 환원</div></div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 12, alignItems: "center" }} className="pdg-vr">
           <div style={{ ...glass, padding: "16px 16px", textAlign: "center", background: "rgba(34,211,238,.09)", borderColor: "rgba(34,211,238,.3)" }}>
             <Wallet size={22} color={CY} style={{ marginBottom: 6 }} />
-            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>50<span style={{ fontSize: 16 }}>%</span></div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{WALLET_SPLIT.earn}<span style={{ fontSize: 16 }}>%</span></div>
             <div style={{ fontSize: 13, fontWeight: 800, color: CY, marginTop: 3 }}>회원 리워드</div>
             <div style={{ fontSize: 10.5, color: "#9FD9EC" }}>Member Rewards</div>
           </div>
           <div style={{ display: "grid", placeItems: "center" }}><RotateCcw className="pdg-spin" size={34} color="#7DD3FC" /></div>
           <div style={{ ...glass, padding: "16px 16px", textAlign: "center", background: "rgba(244,114,182,.1)", borderColor: "rgba(244,114,182,.32)" }}>
             <HeartHandshake size={22} color="#F9A8D4" style={{ marginBottom: 6 }} />
-            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>30<span style={{ fontSize: 16 }}>%</span></div>
+            <div style={{ fontSize: 30, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{WALLET_SPLIT.give}<span style={{ fontSize: 16 }}>%</span></div>
             <div style={{ fontSize: 13, fontWeight: 800, color: "#F9A8D4", marginTop: 3 }}>치료비 나눔</div>
             <div style={{ fontSize: 10.5, color: "#F7C6E0" }}>치료비 사각지대 지원</div>
           </div>
         </div>
-        <div style={{ textAlign: "center", fontSize: 10.5, color: "#7FCCE4", marginTop: 8 }}>※ 매출마진의 나머지 20%는 플랫폼 운영 — 소비 가치가 개인 적립과 사회 나눔으로 순환합니다.</div>
+        <div style={{ textAlign: "center", fontSize: 10.5, color: "#7FCCE4", marginTop: 8 }}>※ 매출마진의 나머지 {WALLET_SPLIT.ops}%는 플랫폼 운영 — 소비 가치가 개인 적립과 사회 나눔으로 순환합니다.</div>
       </div>
 
       {/* Social Impact */}
@@ -12665,7 +12670,7 @@ const STORY_SCENES = [
     text: ["'하이'에게 \"검진 예약 도와줘\" 한마디로 검진센터 세 곳이 비교됐고, 예약과 동시에 검진대비보험 전자증권이 NFT로 지갑에 담겼습니다.", "검진을 마친 저녁, 4년 만에 처음 '뜯은' 결과지를 폰으로 찍자 OCR이 12개 항목을 읽어 표준코드(FHIR)로 바꾸고 블록체인에 기록했습니다. \"위변조 없음 ✓ — 이 데이터는 이제 조성래 님의 디지털 자산입니다.\" (1세대·원본 자산)", "버려지던 종이가 배당을 낳는 자산이 됐습니다. 조 씨는 서랍 속 봉투 세 장을 떠올렸습니다 — 저 안에도 자산이 잠들어 있었구나."],
     links: [["데이터 연결 — 사진 한 장, 1분", "onboarding"], ["데이터 금고 — 내 자산 확인", "mywallet"]] },
   { era: "5월", title: "민석의 숫자", c: "#16A34A",
-    text: ["정밀리포트의 생체나이 52.5세 — 나쁘지 않았습니다. 그런데 한 줄이 숨을 멎게 했습니다. '췌장 관리 필요 · 당뇨 위험 주의.' 민석의 병이 시작된 곳이었습니다.", "다음 날 아침 '하이'는 담담했습니다. \"지금은 '위험'이 아니라 '신호'예요. 신호일 때 움직이면, 결과가 달라져요.\" 리포트는 두 번째 자산이 됐고(2세대·분석 자산), 하이가 짚어준 진단비 공백은 월 1.2만 원대 간편보험 가입 3분으로 메웠습니다.", "혈당 영양제는 광고가 아니라 성적표로 골랐습니다 — \"품질 인증: 이 제품 복용 회원군 지표 개선폭 상위 3%.\" 소비 마진의 50%는 HTK로 적립되고, 그중 30%는 보험료·치료비 전용 지갑에 잠깁니다. 소비할 때마다, 미래의 치료비가 쌓입니다."],
+    text: ["정밀리포트의 생체나이 52.5세 — 나쁘지 않았습니다. 그런데 한 줄이 숨을 멎게 했습니다. '췌장 관리 필요 · 당뇨 위험 주의.' 민석의 병이 시작된 곳이었습니다.", "다음 날 아침 '하이'는 담담했습니다. \"지금은 '위험'이 아니라 '신호'예요. 신호일 때 움직이면, 결과가 달라져요.\" 리포트는 두 번째 자산이 됐고(2세대·분석 자산), 하이가 짚어준 진단비 공백은 월 1.2만 원대 간편보험 가입 3분으로 메웠습니다.", "혈당 영양제는 광고가 아니라 성적표로 골랐습니다 — \"품질 인증: 이 제품 복용 회원군 지표 개선폭 상위 3%.\" 소비 마진의 " + WALLET_SPLIT.earn + "%는 HTK로 적립되고, 그중 30%는 보험료·치료비 전용 지갑에 잠깁니다. 소비할 때마다, 미래의 치료비가 쌓입니다."],
     links: [["나의 건강현황 — 생체나이·위험 리포트", "manage"], ["치료비 케어 — 보장 공백 3분 점검", "insurance"], ["건강쇼핑 — 성적표로 고르는 소비", "shop"]] },
   { era: "7월", title: "세 사람의 지갑", c: "#EA580C",
     text: ["아내(51)의 검진을 예약하고, 우리가족건강관리에 82세 노모를 등록했습니다.", "노모의 지갑에는 NFC 응급태그 — 구조사가 태그를 대면 혈액형·복용약·보호자만 제한 열람되고, 열람 기록은 체인에 남습니다. 노모의 혈압계는 매일 아침 수치를 플랫폼으로 보내기 시작했습니다.", "세 사람의 건강자본이 한 지갑 체계 안에서 함께 자라기 시작했습니다."],
@@ -12677,7 +12682,7 @@ const STORY_SCENES = [
     text: ["폰이 울렸습니다. \"어머님 혈압 이상 추세 — 사흘 연속 상승, 새벽 급등.\" 3년 전 민석의 새벽 전화가 이렇게 시작됐었습니다. 그러나 이번엔 달랐습니다.", "앱에는 이미 '지금 연결 가능한 의사' 버튼이 떠 있었습니다. 5분 뒤 화상진료 — 의사의 화면에는 노모의 석 달치 혈압 추이(원격 모니터링·RPM)가 이미 그려져 있었습니다. \"약을 조정하겠습니다. 응급 상황은 아닙니다.\" 새벽 2시 40분, 조 씨는 다시 잠들 수 있었습니다.", "응급실 뺑뺑이가 될 뻔한 밤이 23분으로 끝났습니다. 다음 날 노모가 전화로 말했습니다. \"얘, 그 기계가 나보다 내 몸을 더 잘 아는구나.\""],
     links: [["재가·돌봄 — 원격 모니터링(RPM)", "homecare"]] },
   { era: "12월", title: "조용한 입금", c: "#059669",
-    text: ["연말, 지갑에 낯선 알림이 떴습니다. \"데이터 활용 배당 — 귀하의 가명화 검진데이터(1세대)와 분석 리포트(2세대)가 췌장질환 조기발견 연구에 활용되었습니다.\"", "금액은 크지 않았습니다. 그러나 조 씨는 연구 제목을 오래 바라보았습니다. 췌장질환 조기발견 — 민석을 데려간 그 병. 내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가는 약속된 분배율대로 지갑에 돌아옵니다.", "지갑에는 또 하나의 숫자가 있었습니다. 늘 먹던 비타민과 혈행개선 영양제를 하이핀 건강쇼핑에서 샀을 뿐인데, 이번 달 적립 토큰이 5만 2천 원. 검진 결과에 맞춰 추천된 것을 최저가로 사고, 그 마진의 절반이 다시 내 지갑으로 돌아온 것입니다 — 소비가 지출이 아니라 적립이 되는 셈이었습니다.", "데이터 주권이 소득이 되고, 소득이 의미가 되는 순간이었습니다. 그의 소비 마진 30%가 치료비 사각지대의 누군가에게 흘러가고 있다는 것도, 그는 이제 알고 있었습니다."],
+    text: ["연말, 지갑에 낯선 알림이 떴습니다. \"데이터 활용 배당 — 귀하의 가명화 검진데이터(1세대)와 분석 리포트(2세대)가 췌장질환 조기발견 연구에 활용되었습니다.\"", "금액은 크지 않았습니다. 그러나 조 씨는 연구 제목을 오래 바라보았습니다. 췌장질환 조기발견 — 민석을 데려간 그 병. 내 데이터가 어딘가의 민석을 조금 더 일찍 발견하는 데 쓰이고, 그 대가는 약속된 분배율대로 지갑에 돌아옵니다.", "지갑에는 또 하나의 숫자가 있었습니다. 늘 먹던 비타민과 혈행개선 영양제를 하이핀 건강쇼핑에서 샀을 뿐인데, 이번 달 적립 토큰이 5만 2천 원. 검진 결과에 맞춰 추천된 것을 최저가로 사고, 그 마진의 " + WALLET_SPLIT.earn + "%가 다시 내 지갑으로 돌아온 것입니다 — 소비가 지출이 아니라 적립이 되는 셈이었습니다.", "데이터 주권이 소득이 되고, 소득이 의미가 되는 순간이었습니다. 그의 소비 마진 " + WALLET_SPLIT.give + "%가 치료비 사각지대의 누군가에게 흘러가고 있다는 것도, 그는 이제 알고 있었습니다."],
     links: [["건강금융지갑 — 배당·적립 내역", "wallet"], ["사회적기업 — 치료비 나눔 구조", "social"]] },
   { era: "이듬해 3월", title: "젊어진 숫자, 다시 매겨진 보험료", c: "#F59E0B",
     text: ["1년간의 적립금이 다음 해 보험료에 자동 충당됐습니다 — 쓸수록 보험료가 내려갑니다. 재검진 리포트의 췌장 관리 지표는 '개선'. 신호일 때 움직인 결과였습니다.", "개선이 성과 자산(4세대)으로 편입되자 '하이'가 물었습니다. \"개선된 건강상태로 보험료 재산정을 신청할까요? 인하 및 가입확대형 전용이라 손해 볼 일은 없어요.\" 2주 뒤 갱신 안내서의 숫자가 작년보다 작아져 있었습니다.", "보험료란 나이를 따라 오르기만 하는 줄 알았던 조 씨는 그날 처음 알았습니다 — 이 플랫폼에서 보험료는 내 나이가 아니라, 내 관리를 따라갑니다. 여유 적립금은 헬스 세이빙과 하이핀 주식청약(참여증 NFT)으로 — 건강을 관리했을 뿐인데, 자산 포트폴리오가 생겼습니다."],
@@ -15397,7 +15402,7 @@ function OntActions({ agg, onSeg }) {
   const cards = [
     { k: "high", ic: AlertTriangle, c: "#EF4444", t: "고위험군 케어", n: (agg.byRisk[4] || 0) + (agg.byRisk[5] || 0), d: "위험등급 높음·매우높음 회원. 집중 검진·전문의 연계·케어플랜 배정.", act: "케어플랜 일괄 배정", go: "ai" },
     { k: "gap", ic: ShieldCheck, c: "#A78BFA", t: "보장 공백 해소", n: agg.gapN, d: "질병 위험 대비 보장이 부족한 회원. 맞춤 보장 설계 제안.", act: "보장 설계 제안", go: "insurance" },
-    { k: "needy", ic: HeartHandshake, c: "#E11D48", t: "치료비 사각지대 나눔", n: agg.needyN, d: "저소득·고의료비 부담 회원. 판매마진 30% 나눔 준비금으로 치료비 지원 매칭.", act: "나눔 매칭 실행", go: "wallet" },
+    { k: "needy", ic: HeartHandshake, c: "#E11D48", t: "치료비 사각지대 나눔", n: agg.needyN, d: `저소득·고의료비 부담 회원. 판매마진 ${WALLET_SPLIT.give}% 나눔 준비금으로 치료비 지원 매칭.`, act: "나눔 매칭 실행", go: "wallet" },
     { k: "cancer", ic: HeartPulse, c: "#DB2777", t: "암 진단 정밀관리", n: Object.entries(agg.byDisease).filter(([d]) => /암$/.test(d)).reduce((s, [, v]) => s + v, 0), d: "암 진단 회원. 정밀검사·수술비 보장·간병 연계 관리.", act: "정밀관리 연계", go: "hospital" },
   ];
   return (<>
@@ -15458,7 +15463,7 @@ function OntoLiveSim({ cohort, agg, onGo }) {
           const sec = _wsec();
           const price = Math.round(_rr(sec.min, sec.max) / 1000) * 1000;
           const margin = Math.round(price * sec.mrate);
-          const accr = Math.round(margin * 0.5), don = Math.round(margin * 0.3), ops = margin - accr - don;
+          const accr = Math.round(margin * WALLET_SPLIT.earn / 100), don = Math.round(margin * WALLET_SPLIT.give / 100), ops = margin - accr - don;   // 판매마진 분배 = WALLET_SPLIT 단일 정의
           s.buys++; s.spend += price; s.accr += accr; s.don += don; s.ops += ops;
           s.sec[sec.key] = (s.sec[sec.key] || 0) + price; s.secN[sec.key] = (s.secN[sec.key] || 0) + 1;
           newEvents.push({ id: ++idRef.current, type: "buy", c: sec.c, who: `${m.name} (${m.id})`, text: `${sec.label} 소비 ${ontWon(price)}`, move: `적립 ${accr.toLocaleString()} · 나눔 ${don.toLocaleString()} · 운영 ${ops.toLocaleString()}` });
@@ -15485,7 +15490,7 @@ function OntoLiveSim({ cohort, agg, onGo }) {
     </div>
 
     <div className="ontkpis" style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
-      {[["신규 진단", st.dx.toLocaleString() + "건", "#F472B6"], ["건강케어 소비", ontWon(st.spend), "#22D3EE"], ["적립(50%)", ontWon(st.accr), "#16A34A"], ["나눔(30%)", ontWon(st.don), "#E11D48"], ["운영(20%)", ontWon(st.ops), "#94A3B8"]].map(([k, v, c], i) => (
+      {[["신규 진단", st.dx.toLocaleString() + "건", "#F472B6"], ["건강케어 소비", ontWon(st.spend), "#22D3EE"], [`적립(${WALLET_SPLIT.earn}%)`, ontWon(st.accr), "#16A34A"], [`나눔(${WALLET_SPLIT.give}%)`, ontWon(st.don), "#E11D48"], [`운영(${WALLET_SPLIT.ops}%)`, ontWon(st.ops), "#94A3B8"]].map(([k, v, c], i) => (
         <div className="ontkpi" key={i}><div className="ontkpi-v" style={{ color: c }}>{v}</div><div className="ontkpi-k">{k}</div></div>
       ))}
     </div>
@@ -15494,7 +15499,7 @@ function OntoLiveSim({ cohort, agg, onGo }) {
       <div className="ontpanel">
         <div className="ontph"><Zap size={15} color="#22D3EE" /> 섹션별 건강케어 소비 <span>· 실시간 누적 · {st.buys.toLocaleString()}건</span></div>
         {SIM_SECTIONS.map((s) => <OntBar key={s.key} label={`${s.label} (${(st.secN[s.key] || 0).toLocaleString()}건)`} value={st.sec[s.key] || 0} max={secMax} color={s.c} sub="" />)}
-        <div className="ontsimsplit"><span>판매마진 분배</span><b style={{ color: "#16A34A" }}>적립 50%</b><b style={{ color: "#E11D48" }}>나눔 30%</b><b style={{ color: "#94A3B8" }}>운영 20%</b></div>
+        <div className="ontsimsplit"><span>판매마진 분배</span><b style={{ color: "#16A34A" }}>적립 {WALLET_SPLIT.earn}%</b><b style={{ color: "#E11D48" }}>나눔 {WALLET_SPLIT.give}%</b><b style={{ color: "#94A3B8" }}>운영 {WALLET_SPLIT.ops}%</b></div>
       </div>
       <div className="ontpanel">
         <div className="ontph"><TrendingUp size={15} color="#EF4444" /> 자동 세그먼트 이동 <span>· 신규 진단 반영</span></div>
@@ -15514,7 +15519,7 @@ function OntoLiveSim({ cohort, agg, onGo }) {
         </div>
       </div>
     </div>
-    <div className="chnote" style={{ marginTop: 12 }}>※ 실시간 시뮬레이션은 <b>파일럿 시연</b>입니다. 매 틱마다 신규 진단·건강케어 소비 이벤트가 발생하고, 진단 결과에 따라 회원이 <b>고위험군·보장공백·치료비 사각지대</b> 세그먼트로 자동 이동합니다. 소비 판매마진은 <b>적립 50%·나눔 30%·운영 20%</b>로 분배됩니다(건강금융지갑 구조 연동).</div>
+    <div className="chnote" style={{ marginTop: 12 }}>※ 실시간 시뮬레이션은 <b>파일럿 시연</b>입니다. 매 틱마다 신규 진단·건강케어 소비 이벤트가 발생하고, 진단 결과에 따라 회원이 <b>고위험군·보장공백·치료비 사각지대</b> 세그먼트로 자동 이동합니다. 소비 판매마진은 <b>적립 {WALLET_SPLIT.earn}%·나눔 {WALLET_SPLIT.give}%·운영 {WALLET_SPLIT.ops}%</b>로 분배됩니다(건강금융지갑 구조 연동).</div>
   </>);
 }
 
@@ -16038,7 +16043,7 @@ function SupplyCostAccounting() {
           <span className="scwf-v" style={{ color: c }}>{v < 0 ? "−" : ""}{_scW(Math.abs(v))}</span>
         </div>);
       })}</div>
-      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금. 영업이익률 <b style={{ color: "#34D399" }}>{(C.op / C.gmv * 100).toFixed(1)}%</b>(GMV 대비) · 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비).</div>
+      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금 + 치료비 나눔(판매마진 배분). 영업이익률 <b style={{ color: C.op < 0 ? "#F87171" : "#34D399" }}>{(C.op / C.gmv * 100).toFixed(1)}%</b>(GMV 대비) · 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비).</div>
       <div className="scjournalh" style={{ marginTop: 12 }}><PieChart size={13} /> 카테고리별 원가·마진 구조</div>
       <div className="sccat">{C.cats.map((x) => (
         <div className="sccatrow" key={x.cat}>
@@ -17239,9 +17244,9 @@ function finAnnual(yi) {
 // 5개년 추정 — 재무 엔진 위임(외부 호환)
 function finMultiYear() { return finYears(5); }
 // ── 건강금융지갑·사회적기업 공통 지표 — 제품마진 연동(Wallet·Social이 finSocial(0) 사용 — 반환 모양 유지) ──
-/* 회원 화면 배분 규칙 — 특별지원 = 판매마진 × animalShare × animalRate(Social 문구 "25%×5%"), 치료비 1인 지원액 perBeneficiary.
+/* 회원 화면 배분 규칙(형 확정 2026-09-17) — 특별지원 = 판매마진 × animalShare × animalRate(Social 문구 "25%×5%"), 치료비 1인 지원액 perBeneficiary(255,000원).
    ※ 회원 화면(Wallet·Social) 문구는 WALLET_SPLIT(적립·나눔·운영 %)을 표시하므로, 금액도 같은 비율로 계산해 화면 안에서 비율과 금액을 맞춘다.
-     재무 엔진(예산양식) 손익의 적립·기부 비용은 P.rewardRate·P.donationRate(판매마진 대비)로 따로 계산되며 두 비율이 다를 수 있다(형 확인 사항). */
+     형 확정 2026-09-17: WALLET_SPLIT 60/15/25로 재무 엔진(예산양식) 손익의 P.rewardRate·P.donationRate(판매마진 대비)와 일치 — fin_site_check.mjs가 가드. */
 const FIN_SOCIAL_RULE = { animalShare: 0.25, animalRate: 0.05, perBeneficiary: 255000 };
 function finSocial(yi) {
   const rows = finMultiYear(), r = rows[yi == null ? 0 : Math.max(0, Math.min(4, yi))];
@@ -17753,7 +17758,7 @@ function FinanceLive() {
         [`온라인 타겟 광고(${chN}개 채널)`, `월 노출 ${finNumS(a0.mk2Impr, "회")} × 가중 CPM ${finWonU(finSafe(() => fbBlendCpm(C), null))} + 소재 제작${a0.cardAd ? " + 카드사 제휴" : ""}`, a0.media + a0.creative + a0.cardAd, "목표 미포함(상향 요인)"],
         ["제휴마케팅 인피니티케어(MOU)", `연계 가입 연 ${finNumS(P.infinityVolume, "명")} · 제휴 센터 ${finNumS(P.infinityCenters, "곳")}`, null, `${finNumS(P.infinityVolume, "명")} 가입 경로`],
         ["검진센터 QR", `누적 센터 ${finNumS(C.qrCenters && C.qrCenters[0], "곳")} · 키트 ${finWonU(C.qrKit)}/곳 · 스티커 ${finWonU(C.qrSticker)} × 검진 예약`, a0.kit + a0.sticker + a0.qrfee, "검진 예약 연계"],
-        ["기업 B2B", "기업 복지·단체검진 제휴", null, "-"], // 데모 정책값 — 예산양식에 금액·산식 없음(형 확인 사항)
+        ["기업 B2B", "기업 복지·단체검진 제휴", null, "-"], // 형 확정 2026-09-17 — 예산양식에 별도 금액·산식 없는 정성 채널
       ];
       const S_ = S;
       return (<>
@@ -18084,7 +18089,8 @@ function FinanceSection({ onGo }) {
 /* ====================== 재무회계 — AI 출수납 · AI 투자 ======================
    AI 출수납: 우리은행 데모계좌 5 — 계좌 합계 = 기준일 실적 현금(fbModel().asOf), 배분 규칙·최근 6개월 입출금·거래 목록은 실적 원장에서 생성.
    AI 투자: 성장 투자 단계(여유자금 운용 없음) — 운용 개시 조건 = 계획 A 누적 현금흐름(조달 전) 흑자 전환 월(엔진 계산) 이후 잉여 현금.
-   ⚠️ 시연용 데모. 실제 뱅킹·투자는 인가·계약·규제 검토를 전제로 한다. */
+     목표 비중·자산군별 원칙은 확정 운용 정책(형 확정 2026-09-17 — INV_CLASSES).
+   ⚠️ 은행 데모계좌·이체는 시연용 데모. 실제 뱅킹·투자는 인가·계약·규제 검토를 전제로 한다. */
 
 const _fnOk = (n) => typeof n === "number" && Number.isFinite(n);
 const _fnWon = (n) => (_fnOk(n) ? Number(Math.round(n)).toLocaleString("ko-KR") + "원" : "-");
@@ -18338,8 +18344,8 @@ function AICashSystem() {
 }
 
 /* ── AI 투자시스템 — 성장 투자 단계(여유자금 운용 없음) · 운용 개시 후 적용할 자산배분 ──
-   ※ 데모 정책값: 목표 비중(40/30/10/20)과 원칙 속 수치(듀레이션 3~5년·단일종목 20% 상한·손절 -15%·코인 10% 상한)는
-     재무 엔진·예산양식에 없는 시연용 정책안이다(형 확인 사항 — 확정 시 파라미터로 이관). */
+   ※ 운용 정책(형 확정 2026-09-17) — 운용 개시 후 적용할 목표 비중(40/30/10/20)과 원칙 속 수치
+     (듀레이션 3~5년·단일종목 20% 상한·손절 -15%·코인 10% 상한). 재무 엔진·예산양식 밖의 운용 정책이라 여기서 단일 정의한다. */
 const INV_CLASSES = [
   { k: "bond", name: "채권", col: "#0EA5E9", tgt: 40, principle: "원금보전·안정 수익. 국공채·우량 회사채(신용 A↑) 중심, 듀레이션 3~5년 관리, 만기보유 원칙." },
   { k: "equity", name: "주식", col: "#16A34A", tgt: 30, principle: "성장·배당. 헬스케어·핀테크 우량주 분산(단일종목 20% 상한), 손절 -15%·익절 분할 룰." },
@@ -18434,7 +18440,7 @@ function AIInvestSystem() {
           </div>
         ))}</div>
       </div>
-      <div className="chnote" style={{ marginTop: 8 }}>※ 투자 자산·평가·리밸런싱은 시연용 예시입니다. 실제 투자 집행·평가·손익 인식은 투자일임·자본시장법 등 규제 검토와 리스크 관리 정책을 전제로 하며, 특정 상품 매수 권유가 아닙니다.</div>
+      <div className="chnote" style={{ marginTop: 8 }}>※ 목표 자산배분·자산군별 투자원칙은 <b>확정 운용 정책</b>으로, 운용 개시 조건 충족 후 잉여 현금에만 적용합니다(현재 보유 자산 없음). 실제 투자 집행·평가·손익 인식은 투자일임·자본시장법 등 규제 검토와 리스크 관리 정책을 전제로 하며, 특정 상품 매수 권유가 아닙니다.</div>
     </div>
   );
 }
@@ -18510,7 +18516,7 @@ const MKT_CREATIVE = [
     gen: {
       url: "hi-fintech.com › 간건강",
       titles: ["밀크씨슬 최저가", "간 건강 영양제 추천", "정밀영양협회 인증 밀크씨슬", "간수치 관리 시작"],
-      descs: ["실리마린 고함량, 정밀영양협회 검증 제품. 오늘 주문 시 건강적립금 25%.", "간 건강이 걱정된다면 밀크씨슬부터. 무료 건강분석 리포트 제공."],
+      descs: ["실리마린 고함량, 정밀영양협회 검증 제품. 오늘 주문 시 건강적립금 30%.", "간 건강이 걱정된다면 밀크씨슬부터. 무료 건강분석 리포트 제공."],
       sitelinks: ["간 건강 영양제", "무료 건강분석", "검진 예약", "건강적립금"],
     },
   },
@@ -18970,8 +18976,8 @@ const socNum = (n) => (n >= 10000 ? (n / 10000).toFixed(n >= 100000 ? 0 : 1).rep
 
 function socialImpact() {
   const agg = (typeof pilotAgg === "function") ? pilotAgg() : { n: 100000, needyN: 8200, gapN: 21000, households: 42000, totalCost: 0 };
-  // 재무회계 모델 연동 — 제품마진 → 적립50%·나눔30%·운영20%(+특별지원: 어르신 치료비·장애아동 재활). 1차연도(10만 회원, 파일럿 규모) 기준.
-  const fs = (typeof finSocial === "function") ? finSocial(0) : { margin: 655500000, earn: 327750000, give: 196650000, ops: 131100000, animal: 8193750, beneficiaries: 771 };
+  // 재무회계 모델 연동 — 제품마진 → WALLET_SPLIT 적립60%·나눔15%·운영25%(형 확정 2026-09-17, +특별지원: 어르신 치료비·장애아동 재활). 1차연도(10만 회원, 파일럿 규모) 기준.
+  const fs = (typeof finSocial === "function") ? finSocial(0) : { margin: 655500000, earn: 393300000, give: 98325000, ops: 163875000, animal: 8193750, beneficiaries: 386 };
   const earn = fs.earn, give = fs.give, ops = fs.ops, animal = fs.animal, marginTotal = fs.margin;
   const activeRate = 0.45;
   const activeN = Math.round(agg.n * activeRate);
@@ -19002,8 +19008,8 @@ function SocValueGraph() {
     { id: "citizen", t: "시민", x: 60, y: 70, c: "#22D3EE" },
     { id: "join", t: "참여·소비", x: 190, y: 70, c: "#38BDF8" },
     { id: "margin", t: "판매마진", x: 320, y: 70, c: "#818CF8" },
-    { id: "earn", t: "건강적립\n환원 50%", x: 250, y: 178, c: "#16A34A" },
-    { id: "give", t: "치료비나눔\n30%", x: 390, y: 178, c: "#E11D48" },
+    { id: "earn", t: `건강적립\n환원 ${WALLET_SPLIT.earn}%`, x: 250, y: 178, c: "#16A34A" },
+    { id: "give", t: `치료비나눔\n${WALLET_SPLIT.give}%`, x: 390, y: 178, c: "#E11D48" },
     { id: "animal", t: "특별지원\n어르신·아동", x: 490, y: 90, c: "#7C3AED" },
     { id: "gap", t: "의료비\n사각지대", x: 470, y: 260, c: "#A78BFA" },
     { id: "impact", t: "사회적\n임팩트", x: 300, y: 285, c: "#FB7185" },
@@ -19019,7 +19025,7 @@ function SocValueGraph() {
           {ls.map((l, i) => <text key={i} x={nd.x} y={nd.y + 4 - (ls.length - 1) * 6 + i * 12} fill="#EAF2FF" fontSize="9.5" fontWeight="800" textAnchor="middle">{l}</text>)}
         </g>); })}
       </svg>
-      <div className="ontgraph-note">시민의 <b>참여·소비</b>가 <b style={{ color: "#818CF8" }}>판매마진</b>이 되고 → <b style={{ color: "#16A34A" }}>건강적립(50%)</b>으로 회원에게 환원, <b style={{ color: "#E11D48" }}>치료비 나눔(30%)</b>·<b style={{ color: "#7C3AED" }}>특별지원(어르신·아동)</b>으로 사각지대에 전달되어 <b style={{ color: "#FB7185" }}>사회적 임팩트</b>로 순환합니다.</div>
+      <div className="ontgraph-note">시민의 <b>참여·소비</b>가 <b style={{ color: "#818CF8" }}>판매마진</b>이 되고 → <b style={{ color: "#16A34A" }}>건강적립({WALLET_SPLIT.earn}%)</b>으로 회원에게 환원, <b style={{ color: "#E11D48" }}>치료비 나눔({WALLET_SPLIT.give}%)</b>·<b style={{ color: "#7C3AED" }}>특별지원(어르신·아동)</b>으로 사각지대에 전달되어 <b style={{ color: "#FB7185" }}>사회적 임팩트</b>로 순환합니다.</div>
     </div>
   );
 }
@@ -19031,7 +19037,7 @@ function SocLiveCounter({ base }) {
   const items = [
     { ic: Users, c: "#22D3EE", label: "오늘 참여 활동", v: 1240 + t * 3, unit: "건" },
     { ic: HandCoins, c: "#16A34A", label: "오늘 건강적립 환원", v: 3120000 + t * 8400, money: true },
-    { ic: HeartHandshake, c: "#E11D48", label: "오늘 치료비 나눔", v: 1870000 + t * 5100, money: true },
+    { ic: HeartHandshake, c: "#E11D48", label: "오늘 치료비 나눔", v: Math.round((3120000 + t * 8400) * WALLET_SPLIT.give / WALLET_SPLIT.earn), money: true },   // 환원 대비 나눔 = give÷earn(WALLET_SPLIT)
     { ic: HeartHandshake, c: "#7C3AED", label: "오늘 어르신·아동 지원", v: 78000 + t * 260, money: true },
   ];
   // 과업4: 모델 추정(연출 카운터)과 SharingPool 실적립 원장을 라벨로 구분 병기 — 시뮬레이션 정직성
@@ -19051,7 +19057,7 @@ function SocLiveCounter({ base }) {
 
 const SOC_CERTS = [
   ["사회적기업 인증(예비)", "고용노동부 사회적기업 인증 요건 — 사회적 목적 실현·이해관계자 참여·이익 재투자", "#16A34A", "Award"],
-  ["이익 재투자 구조", "판매마진 80%(적립50+나눔30)를 회원·사각지대에 환원 — 이윤의 사회적 재분배", "#E11D48", "Recycle"],
+  ["이익 재투자 구조", `판매마진 ${WALLET_SPLIT.earn + WALLET_SPLIT.give}%(적립${WALLET_SPLIT.earn}+나눔${WALLET_SPLIT.give})를 회원·사각지대에 환원 — 이윤의 사회적 재분배`, "#E11D48", "Recycle"],
   ["ESG·ISO 26000 정합", "사회책임(S) 중심 운영 — 취약계층 의료접근성·동물복지·투명한 임팩트 공시", "#2563EB", "Globe"],
   ["임팩트 투명성", "나눔 집행내역을 제휴 공익재단·의료기관 심사와 함께 투명 공개하도록 설계", "#7C3AED", "Scale"],
 ];
@@ -19070,8 +19076,8 @@ function SocialSection({ onGo }) {
   const si = React.useMemo(() => socialImpact(), []);
   const pillars = [
     { key: "참여", label: "모든 시민의 참여", score: 84, Ic: Users, color: "#22D3EE", metric: socNum(si.activeN) + "명", sub: `활동 참여 ${Math.round(si.activeRate * 100)}% · 전 연령·계층 개방`, to: "community" },
-    { key: "환원", label: "수익의 환원", score: 91, Ic: HandCoins, color: "#16A34A", metric: socWon(si.earn), sub: "판매마진 50%를 건강적립금으로 회원 환원", to: "wallet" },
-    { key: "나눔", label: "기부·나눔", score: 88, Ic: HeartHandshake, color: "#E11D48", metric: socWon(si.give), sub: "판매마진 30% 치료비 사각지대 + 특별지원(어르신·장애아동)", to: "wallet" },
+    { key: "환원", label: "수익의 환원", score: 91, Ic: HandCoins, color: "#16A34A", metric: socWon(si.earn), sub: `판매마진 ${WALLET_SPLIT.earn}%를 건강적립금으로 회원 환원`, to: "wallet" },
+    { key: "나눔", label: "기부·나눔", score: 88, Ic: HeartHandshake, color: "#E11D48", metric: socWon(si.give), sub: `판매마진 ${WALLET_SPLIT.give}% 치료비 사각지대 + 특별지원(어르신·장애아동)`, to: "wallet" },
     { key: "지원", label: "의료비 사각지대 지원", score: 80, Ic: ShieldCheck, color: "#A78BFA", metric: si.beneficiaries.toLocaleString() + "명", sub: `치료비 수혜자 · 잠재대상 ${socNum(si.needyN)}명`, to: "insurance" },
   ];
   const sei = Math.round(pillars.reduce((s, p) => s + p.score, 0) / pillars.length * 10) / 10;
@@ -19197,7 +19203,7 @@ function SocialSection({ onGo }) {
             <div><b>장애아동 재활사업 지원</b><p>판매마진 일부가 <b>장애아동 재활치료·디지털 치료</b> 지원에 쓰입니다. 제휴기관: <b>잼잼테라퓨틱스 · 장애아동복지 재단 등(예정)</b> · 누적 <b style={{ color: "#DB2777" }}>{socWon(si.animal - Math.round(si.animal * 0.6))}</b> 지원.</p></div>
             <button className="book" onClick={() => go("shop")}>구매로 후원하기</button>
           </div>
-          <div className="chnote" style={{ marginTop: 10 }}>※ 기부 비율·수치·제휴기관은 설계 목표·예시(예정)입니다. 실제 기부는 제휴 공익재단·전문기관 심사를 거쳐 집행되며, 집행내역을 투명하게 공개하도록 설계합니다.</div>
+          <div className="chnote" style={{ marginTop: 10 }}>※ 기부 비율(판매마진 25%×5%)은 확정된 배분 원칙이고, 누적 수치는 재무 모델 추정·제휴기관은 예정입니다. 실제 기부는 제휴 공익재단·전문기관 심사를 거쳐 집행되며, 집행내역을 투명하게 공개하도록 설계합니다.</div>
         </div>
       </>)}
     </div>
@@ -22449,23 +22455,27 @@ function supplyCost() {
   const cats = Object.entries(cat).map(([k, v]) => ({ cat: k, ...v, costRate: v.rev ? v.cost / v.rev : 0, marginRate: v.rev ? v.margin / v.rev : 0 })).sort((a, b) => b.rev - a.rev);
   const gmv = F.gmv, sCost = F.supplyCost, gross = F.margin;
   const pay = Math.round(gmv * 0.022);      // 결제대행 수수료 2.2%
-  const token = Math.round(gross * 0.25);   // 건강적립금(마진의 25%)
+  // 판매마진 배분은 단일 정의 WALLET_SPLIT(sectionData.js)을 따른다 — 재무 엔진(finBudget)도 제품 마진에서 적립·기부를 함께 뺀다
+  const WS = (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT && WALLET_SPLIT.earn != null) ? WALLET_SPLIT : { earn: 60, give: 15, ops: 25 };
+  const token = Math.round(gross * WS.earn / 100);   // 건강적립금(판매마진의 적립 몫)
+  const give = Math.round(gross * WS.give / 100);    // 치료비 나눔(판매마진의 나눔 몫)
   const logistics = Math.round((F.ordActive + F.ordDone) * 3000); // 직배송 택배비(거래처 부담·참고)
-  const variable = pay + token;             // 당사 변동비(무재고 → 물류·재고비 미부담)
+  const variable = pay + token + give;      // 당사 변동비(무재고 → 물류·재고비 미부담)
   const contribution = gross - variable;    // 공헌이익
   const fixed = Math.round(gross * 0.34);   // 고정비 배분(운영·인건·서버, 시연 추정)
   const op = contribution - fixed;          // 영업이익
   _scCost = {
-    gmv, supplyCost: sCost, gross, pay, token, logistics, variable, contribution, fixed, op, cats,
+    gmv, supplyCost: sCost, gross, pay, token, give, logistics, variable, contribution, fixed, op, cats,
     steps: [
       ["매출 (GMV)", gmv, "#34D399", "s"],
       ["− 거래처 공급원가 (매입)", -sCost, "#F472B6", ""],
       ["= 매출총이익 (플랫폼 마진)", gross, "#22D3EE", "s"],
       ["− 결제대행 수수료 (2.2%)", -pay, "#94A3B8", ""],
-      ["− 건강적립금 (토큰, 마진25%)", -token, "#67E8F9", ""],
+      [`− 건강적립금 (토큰, 마진 ${WS.earn}%)`, -token, "#67E8F9", ""],
+      [`− 치료비 나눔 (마진 ${WS.give}%)`, -give, "#F9A8D4", ""],
       ["= 공헌이익 (Contribution)", contribution, "#818CF8", "s"],
       ["− 고정비 배분 (운영·인건·서버)", -fixed, "#F59E0B", ""],
-      ["= 영업이익 (Operating)", op, "#34D399", "s"],
+      ["= 영업이익 (Operating)", op, op < 0 ? "#F87171" : "#34D399", "s"],
     ],
   };
   return _scCost;
@@ -22677,7 +22687,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-09-17", ver:"v1.7", ch:[9], feat:"재무회계 예산양식 v3.8 엔진 이식·기준일 실적", src:"온톨로지 › 재무회계(손익계산서~재무 온톨로지·AI 16개 서브섹션)", summary:"투자금 산정 예산양식 v3.8(인피니티케어 MOU 15만·메디에이지 18만 건·병원/약국 구독 2028년 과금·약국 절반·우대 한도 매년 10만 건·1차 60억 2027년 9월 소진·IM 80억·온라인 광고는 목표 외 상향 요인)을 사이트 재무 엔진으로 옮겨 계획 화면을 엑셀과 0원 일치시키고, 기준일 2027-09-17 회원 10만 명 가정으로 누적 실적(회원 연동 계정 환산·고정비 계획)과 계획 대비 달성률, 월별 대차 일치 재무상태표·현금흐름표·런웨이를 전 서브섹션에 반영", refs:[], status:"반영", hash:"93a3c48", auto:true },
+  { date:"2026-09-20", ver:"v1.8", ch:[9], feat:"판매마진 배분 60·15·25 통일과 운용 정책값 확정", src:"건강금융지갑 · 사회적 가치 · 온톨로지 › 재무회계/공급망 · 백서 · 하이 지식층", summary:"상품 마진 배분을 투자금 산정 예산양식 v3.8과 같은 적립 60%·나눔 15%·운영 25%로 통일해 회원 화면·하이 답변·백서·온톨로지 금액과 문구를 WALLET_SPLIT 단일 정의에서 계산하도록 바꾸고, 토큰 우선 적립 30%·데이터 배당 분배율과는 구분했으며, AI 투자 목표 비중과 운용 원칙·기업 B2B 채널·치료비 1인 지원액을 확정 정책으로 표기하고 비율 일치 가드를 재무 회귀 검사에 추가", refs:[], status:"반영", hash:"c58af70", auto:true },
+  { date:"2026-09-17", ver:"v1.7", ch:[9], feat:"재무회계 예산양식 v3.8 엔진 이식·기준일 실적", src:"온톨로지 › 재무회계(손익계산서~재무 온톨로지·AI 16개 서브섹션)", summary:"투자금 산정 예산양식 v3.8(인피니티케어 MOU 15만·메디에이지 18만 건·병원/약국 구독 2028년 과금·약국 절반·우대 한도 매년 10만 건·1차 60억 2027년 9월 소진·IM 80억·온라인 광고는 목표 외 상향 요인)을 사이트 재무 엔진으로 옮겨 계획 화면을 엑셀과 0원 일치시키고, 기준일 2027-09-17 회원 10만 명 가정으로 누적 실적(회원 연동 계정 환산·고정비 계획)과 계획 대비 달성률, 월별 대차 일치 재무상태표·현금흐름표·런웨이를 전 서브섹션에 반영", refs:[], status:"반영", hash:"baf2750", auto:true },
   { date:"2026-09-14", ver:"v1.6", ch:[9], feat:"투자금 양식 헬스메이트센터 사용료 우대 조건", src:"scripts/invest", summary:"보험 중개를 헬스메이트센터 사용료로 바꿔 투자금 100억 기준 우대 단가·한도와 초과분 시가를 넣고 신규 스트림을 삭제", refs:[], status:"반영", hash:"056e742", auto:true },
   { date:"2026-09-14", ver:"v1.5", ch:[9], feat:"투자금 양식 검진 연계 채널 분리", src:"scripts/invest", summary:"검진 연계를 자사운영 3만·타사 제휴 1만으로 나누고 자사 비율을 매년 15%p 올리며 헬스케어 서비스 고객 수수료를 0으로 조정", refs:[], status:"반영", hash:"dc29e69", auto:true },
   { date:"2026-09-14", ver:"v1.4", ch:[9], feat:"투자금 양식 약국 구독료 연 20% 인상", src:"scripts/invest", summary:"약국 구독료 인상 방식을 정액 50만원에서 연 20% 복리로 바꾸고 기관별 인상률 칸을 추가", refs:[], status:"반영", hash:"60d22d1", auto:true },
@@ -23016,7 +23027,7 @@ const WHITEPAPER = [
       { t: "h", x: "1.4 예방중심 의료체계" },
       { t: "p", x: "치료 중심에서 **예방·관리 중심**으로의 전환은 개인 건강수명과 사회적 의료비 효율을 동시에 높인다. HI-Fin은 검진·생활습관·영양·기기·식단을 데이터로 연결해 예방 행동을 유도하고, 그 성과를 보험·금융 인센티브로 환류한다." },
       { t: "h", x: "1.5 사회적경제 모델" },
-      { t: "p", x: "제품 판매마진을 **50% 회원적립 · 30% 치료비 나눔 · 20% 운영**으로 배분한다. 소비가 곧 회원의 건강자본 적립과 취약계층 치료비 나눔으로 순환하는 구조로, 성장할수록 사회적 환원이 커진다." },
+      { t: "p", x: "제품 판매마진을 **60% 회원적립 · 15% 치료비 나눔 · 25% 운영**으로 배분한다. 소비가 곧 회원의 건강자본 적립과 취약계층 치료비 나눔으로 순환하는 구조로, 성장할수록 사회적 환원이 커진다." },
       { t: "h", x: "1.6 중앙정부 AI기본소득 모델 vs 민간 AI 사회적경제 가치순환 모델" },
       { t: "kv", head: ["관점", "중앙정부 AI 기본소득", "민간 AI 사회적경제 가치순환(HI-Fin)"], rows: [
         ["재원", "국가 조세·재정", "플랫폼 소비마진·참여(자립적)"],
@@ -23061,7 +23072,7 @@ const WHITEPAPER = [
         ["간병비 (파생)", "월평균 370만원(고령가구 중위소득 1.7배) · 사적 간병시장 연 10~11조원[7]", "가계 파산 위험"],
         ["소득 상실 (파생)", "암환자 53%가 진단 후 직업 중단 · 5년 내 직장복귀 30%[8]", "노동력·소득 상실"],
       ] },
-      { t: "note", x: "**핵심은 '연쇄'다.** 치료비 → 간병비 → 소득상실 → 빈곤화로 이어지는 악순환에서, 의료비 사각지대는 단일 비용이 아니라 **가계 전체를 무너뜨리는 도미노**다. '간병파산·간병살인'이라는 신조어가 이를 증언한다. HI-Fin의 **치료비 나눔(마진 30%)·건강금융지갑·동적 언더라이팅**은 이 도미노의 각 고리를 겨냥한다 — 우리가 발굴하고 지원할 바로 그 영역이다." },
+      { t: "note", x: "**핵심은 '연쇄'다.** 치료비 → 간병비 → 소득상실 → 빈곤화로 이어지는 악순환에서, 의료비 사각지대는 단일 비용이 아니라 **가계 전체를 무너뜨리는 도미노**다. '간병파산·간병살인'이라는 신조어가 이를 증언한다. HI-Fin의 **치료비 나눔(마진 15%)·건강금융지갑·동적 언더라이팅**은 이 도미노의 각 고리를 겨냥한다 — 우리가 발굴하고 지원할 바로 그 영역이다." },
       { t: "h", x: "2.4 보험의 한계 — 나이로 뭉뚱그린 위험, 사후·과잉 구조의 임계점" },
       { t: "p", x: "민영 실손의료보험은 **손해율이 2023년 118.4%, 2024년 116.2%**(4세대는 2024년 9월 147.9%)로 만성 적자다. 2024년 실손 보험손익은 **-1.62조원**, 보험료는 최근 5년간 46% 올랐다.[4] 도수치료 등 **비급여 과잉진료·의료쇼핑**이 주원인으로, 현재의 보험은 '아픈 뒤 많이 쓴 사람'에게 보상하는 사후·과잉 구조에 갇혀 있다." },
       { t: "p", x: "그러나 더 근본적인 문제는 **언더라이팅(위험 평가)이 '나이 중심의 단일 위험률'에 갇혀 있다**는 점이다. 현재 보험은 개인의 실제 건강상태·생활습관·검진결과를 반영하지 못한 채 연령·성별 표준위험률로 보험료를 매긴다. 그 결과 **건강을 성실히 관리한 사람과 방치한 사람이 나이만 같으면 똑같은 보험료**를 내고, 고령이라는 이유만으로 가입이 거절되거나 보험료가 급등한다. 위험을 '나이'라는 단일 변수로 뭉뚱그리는 순간, 예방·건강관리의 노력은 보상받을 길이 없고 보험은 사후 손해율 관리에만 매달리는 악순환에 빠진다." },
@@ -23105,13 +23116,13 @@ const WHITEPAPER = [
       { t: "h", x: "3.4 ESG — 예방·나눔이 재무가치가 되는 지점" },
       { t: "p", x: "예방은 사회적 의료비를 줄이고(Social), 취약계층 치료비 나눔은 건강 형평성을 높인다(Impact). 헬스케어와 금융이 결합될 때 이 사회적 성과는 **측정가능한 ESG·재무 지표**로 환산된다 — 예방 건수, 나눔 수혜자 수, 사회적투자수익(SROI). 분리된 구조에서는 이 성과를 애초에 포착할 수조차 없다." },
       { t: "h", x: "3.5 소비자 가치환원 — 순환의 완성" },
-      { t: "p", x: "HI-Fin은 제품 판매마진을 **50% 회원적립 · 30% 치료비 나눔 · 20% 운영**으로 배분한다. 소비가 회원의 건강자본 적립과 취약계층 나눔으로 순환하고, 그 데이터가 다시 검진·보험·금융을 정교화한다. **소비 → 적립·나눔 → 예방 → 건강데이터 → 더 나은 보험·금융**으로 이어지는 닫힌 고리다." },
+      { t: "p", x: "HI-Fin은 제품 판매마진을 **60% 회원적립 · 15% 치료비 나눔 · 25% 운영**으로 배분한다. 소비가 회원의 건강자본 적립과 취약계층 나눔으로 순환하고, 그 데이터가 다시 검진·보험·금융을 정교화한다. **소비 → 적립·나눔 → 예방 → 건강데이터 → 더 나은 보험·금융**으로 이어지는 닫힌 고리다." },
       { t: "kv", head: ["영역", "분리되어 있을 때 (현재)", "하나로 결합될 때 (HI-Fin)"], rows: [
         ["건강검진", "데이터가 병원에 갇힘", "보험·금융 위험평가의 원천이 됨"],
         ["보험", "나이 기반 사후 보상", "건강상태 기반 동적 언더라이팅"],
         ["금융", "건강과 무관", "건강행동을 적립·토큰으로 자산화"],
         ["ESG", "선언적 사회공헌", "예방·나눔이 측정가능한 성과지표"],
-        ["소비자", "일방적 지출", "소비가 적립·나눔으로 가치환원(50/30/20)"],
+        ["소비자", "일방적 지출", "소비가 적립·나눔으로 가치환원(60/15/25)"],
       ] },
       { t: "h", x: "3.6 글로벌 선례 — 융합은 이미 증명됐다" },
       { t: "p", x: "헬스케어와 금융의 결합은 이론이 아니다. 남아공 **Discovery Vitality**는 20년간 '공유가치 보험(Shared-Value Insurance)'으로 건강행동을 동적 보험료로 보상해 왔고, **고참여 회원은 사망률이 76% 낮고 평균 14년 더 오래 산다**. 이 모델은 40여 개 시장·4천만 회원으로 확산됐으며, 미국 John Hancock은 전통 생명보험 모델을 버리고 Vitality를 도입했다.[2] 건강행동을 금융 인센티브로 보상하는 구조가 실제로 수명을 늘리고 손해율을 낮춘다는 임상·재무적 증거다." },
@@ -23255,7 +23266,7 @@ const WHITEPAPER = [
       { t: "h", x: "8.2 지급결제" },
       { t: "p", x: "건강소비(영양·기기·식단·검진·예약)의 결제·정산 계층이다. **전자금융거래법**이 규율하며, 선불전자지급수단·간편결제 체계로 현행법 안에서 구현 가능하다." },
       { t: "h", x: "8.3 포인트 — 건강행동·소비 적립" },
-      { t: "p", x: "검진·운동·건강소비를 **포인트로 적립**(판매마진 50% 적립)한다. 마일리지·리워드형 포인트는 현행법상 운영 가능하며, 건강금융지갑의 기본 축이다." },
+      { t: "p", x: "검진·운동·건강소비를 **포인트로 적립**(판매마진 60% 적립)한다. 마일리지·리워드형 포인트는 현행법상 운영 가능하며, 건강금융지갑의 기본 축이다." },
       { t: "h", x: "8.4 토큰 — 소비자 참여형 가치환원" },
       { t: "p", x: "장기적으로 소비자 참여를 **토큰**으로 확장한다. 여기서 반드시 구분해야 한다 — **① 리워드형 토큰**(포인트 성격, 현행 가능)과 **② 지분성 권리 연계 토큰**(향후 주식·지분 취득 권리, 자본시장법·가상자산이용자보호법 검토 필요)은 법적 성격이 전혀 다르다. (제18장에서 심화)" },
       { t: "h", x: "8.5 재무운영 — AI 출수납·투자·손익 연계" },
@@ -23500,11 +23511,11 @@ const WHITEPAPER = [
     no: 17, part: "사회적기업·ESG", title: "사회적기업 모델", subtitle: "이윤과 사회적 가치가 순환하는 임팩트 기업",
     status: "done", version: "v1.0", updated: "2026-07-05",
     sections: ["치료비 사각지대", "취약계층", "ESG", "지역사회 돌봄"],
-    summary: "HI-Fin은 이윤과 사회적 가치가 대립하지 않고 순환하는 사회적기업이다. 2장에서 규명한 치료비 사각지대(재난적 의료비 가구 7.5%·간병비·소득상실)를 판매마진 30% 나눔으로 지원하고, 저소득·노인·만성질환자를 우선한다. 50/30/20 배분은 선언이 아니라 회계로 추적되어 사회적기업의 진정성을 데이터로 증명한다.",
+    summary: "HI-Fin은 이윤과 사회적 가치가 대립하지 않고 순환하는 사회적기업이다. 2장에서 규명한 치료비 사각지대(재난적 의료비 가구 7.5%·간병비·소득상실)를 판매마진 15% 나눔으로 지원하고, 저소득·노인·만성질환자를 우선한다. 60/15/25 배분은 선언이 아니라 회계로 추적되어 사회적기업의 진정성을 데이터로 증명한다.",
     body: [
       { t: "p", x: "HI-Fin은 이윤과 사회적 가치가 대립하지 않고 **순환**하는 사회적기업이다. 2장에서 데이터로 규명한 치료비 사각지대가 곧 지원 대상이다." },
       { t: "h", x: "17.1 치료비 사각지대 — 나눔의 대상" },
-      { t: "p", x: "재난적 의료비 가구 7.5%, 간병비 월 370만원, 암환자 53% 직업 중단(2장)의 도미노를 **판매마진 30% 치료비 나눔**으로 겨냥한다. 소비가 커질수록 나눔 재원도 함께 커지는 구조다." },
+      { t: "p", x: "재난적 의료비 가구 7.5%, 간병비 월 370만원, 암환자 53% 직업 중단(2장)의 도미노를 **판매마진 15% 치료비 나눔**으로 겨냥한다. 소비가 커질수록 나눔 재원도 함께 커지는 구조다." },
       { t: "h", x: "17.2 취약계층 — 우선 지원" },
       { t: "p", x: "저소득·노인·만성질환자 등 재난적 의료비 고위험군을 **우선 지원**한다. 회원의 사회적 기여도 지수와 나눔 수혜자 수가 온톨로지에서 추적된다." },
       { t: "h", x: "17.3 ESG — 소비가 곧 사회환원" },
@@ -23512,11 +23523,11 @@ const WHITEPAPER = [
       { t: "h", x: "17.4 지역사회 돌봄 — 지자체 협력" },
       { t: "p", x: "재가 돌봄·어르신 건강검진은 지방정부 협력이 핵심이다. 일본 등 복지선진국의 지역포괄케어 사례를 참고해, 지자체와 함께 어르신 검진 혜택·재가 돌봄 지원 프로그램을 설계한다." },
       { t: "kv", head: ["지원 대상", "규모(2장)", "HI-Fin 지원 수단"], rows: [
-        ["재난적 의료비 가구", "가구 7.5%", "판매마진 30% 치료비 나눔"],
+        ["재난적 의료비 가구", "가구 7.5%", "판매마진 15% 치료비 나눔"],
         ["간병 부담 가구", "월 370만원", "재가돌봄·지자체 협력"],
         ["소득상실 환자", "암환자 53% 직업중단", "건강금융지갑·나눔"],
       ] },
-      { t: "note", x: "**50/30/20(적립·나눔·운영)은 선언이 아니라 회계로 추적된다.** 판매마진의 사회환원이 재무제표·사회적기업 지표로 계량되므로, HI-Fin의 진정성은 수사(修辭)가 아니라 **데이터로 증명**된다. 이것이 임팩트 투자·정책 설득의 근거다." },
+      { t: "note", x: "**60/15/25(적립·나눔·운영)은 선언이 아니라 회계로 추적된다.** 판매마진의 사회환원이 재무제표·사회적기업 지표로 계량되므로, HI-Fin의 진정성은 수사(修辭)가 아니라 **데이터로 증명**된다. 이것이 임팩트 투자·정책 설득의 근거다." },
     ],
     sources: [
       { cat: "policy", title: "사회적기업 육성법·사회적경제 정책 — 사회적 가치와 영리의 결합(제도 근거)", org: "고용노동부 / 한국사회적기업진흥원", url: "https://www.socialenterprise.or.kr", note: "제도 개요(조문 확인 예정)" },
@@ -23538,7 +23549,7 @@ const WHITEPAPER = [
       { t: "p", x: "장기 구상은 소비자 참여를 **향후 당사 주식 또는 주식 취득 관련 권리**로 확장하는 것이다. 이 경우 **증권성**이 인정되면 자본시장법의 규율을 받는다. 2026년 1월 15일 **자본시장법·전자증권법 개정으로 토큰증권(STO) 발행·유통이 제도화**되어, 분산원장 기반 증권을 제도권에서 다룰 길이 열렸다.[1] 다만 증권성 여부는 금융위가 계약내용을 종합해 **개별 검토**하며, 가상자산이용자보호법(2024)[2]도 관련될 수 있다." },
       { t: "legal", now: [
         "리워드형 토큰·포인트 적립·사용·교환(소비 리워드)",
-        "건강소비 캐시백·나눔 적립(50/30/20)",
+        "건강소비 캐시백·나눔 적립(60/15/25)",
       ], reform: [
         "'주식 또는 주식 취득 권리' 연계 — 증권성 인정 시 자본시장법·토큰증권(STO, 2026 제도화) 편입, 증권신고 등 절차",
         "토큰 발행·유통에 가상자산이용자보호법·디지털자산기본법(입법예정) 적용 여부 검토",
@@ -23703,7 +23714,7 @@ const WHITEPAPER = [
         "Claude Harness (뇌·손발 분리 → 자체 실행 아키텍처)",
         "Healthcare (검진·의료데이터·예방)",
         "Insurance (동적 언더라이팅)",
-        "Social Enterprise (50/30/20 가치순환)",
+        "Social Enterprise (60/15/25 가치순환)",
         "Blockchain (DID·지갑·토큰)",
         "EMR (FHIR·UIP 연동)",
         "ESG (성장과 임팩트의 동행)",
@@ -23928,8 +23939,10 @@ const CHECKUP_INST = [
    ⚠️ 기능성 문구는 식약처 인정 기능성 '요약·재작성'(원문 복제 아님). 이미지는 재호스팅하지 않고 출처 링크 참조.
    실제 상용 판매에는 각 브랜드 제휴 또는 네이버/쿠팡 오픈마켓·제휴 API 연동이 필요함.
 
-   건강적립금 규칙:  공급가 = P×SUPPLY_RATE(0.5) · 마진 = P−공급가 · 적립금 = 마진×MARGIN_REWARD_RATE(0.5) = P×0.25 (원 단위 내림) */
-const SHOP_REWARD_CFG = { supplyRate: 0.50, marginRewardRate: 0.50 };
+   건강적립금 규칙:  공급가 = P×SUPPLY_RATE(0.5) · 마진 = P−공급가 · 적립금 = 마진×MARGIN_REWARD_RATE(0.6) = P×0.30 (원 단위 내림)
+   MARGIN_REWARD_RATE는 판매마진 배분(적립·나눔·운영 %)의 적립 몫 — sectionData.js WALLET_SPLIT.earn 단일 정의(형 확정 2026-09-17)에서 파생,
+   노드 단독 로드(scripts/measure_reserve_dist.mjs 등)처럼 WALLET_SPLIT이 없으면 같은 값 0.60으로 폴백. */
+const SHOP_REWARD_CFG = { supplyRate: 0.50, marginRewardRate: (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT && WALLET_SPLIT.earn != null) ? WALLET_SPLIT.earn / 100 : 0.60 };
 function healthReward(price, cfg) {
   const c = cfg || SHOP_REWARD_CFG;
   const p = Math.max(0, Math.floor(Number(price) || 0));
@@ -23940,7 +23953,7 @@ function healthReward(price, cfg) {
 }
 /* 단위 테스트(콘솔): runShopRewardTests() — 예시값 검증 */
 function runShopRewardTests() {
-  const cases = [[30000, 7500], [19900, 4975], [45000, 11250], [0, 0]];
+  const cases = [[30000, 9000], [19900, 5970], [45000, 13500], [0, 0]];
   const out = cases.map(([p, exp]) => { const got = healthReward(p).reward; return { price: p, expected: exp, got, ok: got === exp }; });
   const pass = out.every((x) => x.ok);
   try { console.log("[shopReward test]", pass ? "PASS" : "FAIL", out); } catch (e) {}
@@ -24356,7 +24369,7 @@ function subChangeCycle(m, id, cycle) {
 function subShipNow(m, id) {
   const { s } = _subFind(m, id); if (!s) return null;
   const now = Date.now();
-  const r = (typeof healthReward === "function") ? healthReward(s.price * s.qty) : { reward: Math.floor(s.price * s.qty * 0.25) };
+  const r = (typeof healthReward === "function") ? healthReward(s.price * s.qty) : { reward: Math.floor(s.price * s.qty * 0.30) };
   const bonus = Math.floor(r.reward * 0.1);   // 정기배송 유지 보너스 10%(적립 규칙은 마진 내에서 운영)
   try { if (typeof shopHtkAdd === "function") shopHtkAdd(m.email, r.reward + bonus); } catch (e) {}
   return subUpdate(m, id, {
@@ -24698,7 +24711,7 @@ function famSetBuild(m) {
   const flat = [];
   members.forEach((mm) => mm.items.forEach((it) => flat.push(it)));
   const total = flat.reduce((s, x) => s + x.product.price, 0);
-  const baseReward = flat.reduce((s, x) => s + ((typeof healthReward === "function") ? healthReward(x.product.price).reward : Math.floor(x.product.price * 0.25)), 0);
+  const baseReward = flat.reduce((s, x) => s + ((typeof healthReward === "function") ? healthReward(x.product.price).reward : Math.floor(x.product.price * 0.30)), 0);
   const bonusRate = members.length >= 4 ? 0.15 : members.length >= 3 ? 0.10 : members.length >= 2 ? 0.05 : 0;
   const bonus = Math.floor(baseReward * bonusRate);
   return { members, count: members.length, itemCount: flat.length, total, baseReward, bonus, bonusRate, reward: baseReward + bonus };
@@ -31094,9 +31107,9 @@ function pbPay(m, billId) {
   _pbSaveBills(m, bills);
   const block = (typeof chainAppend === "function") ? chainAppend({ type: "premium", token: _pbToken(m), fhirHash: b.txRef || null, note: `보험료 수납 — ${b.product} ${b.ym} · ${b.amount.toLocaleString()}원 (${htk.toLocaleString()} HTK)` }) : null;
   if (typeof vaultAccessLog === "function" && _pbToken(m)) vaultAccessLog(_pbToken(m), "수납 엔진", `보험료 수납 ${b.ym}`);
-  // 축5 S1-1: 수납 발생 시 순환 마진의 30%를 나눔 재원에 건별 적립(연출 아님 — SharingPool 원장 tx)
+  // 축5 S1-1: 수납 발생 시 순환 마진의 나눔 몫(INS_CONFIG.SHARE_RATE = WALLET_SPLIT.give)을 나눔 재원에 건별 적립(연출 아님 — SharingPool 원장 tx)
   if (typeof spAppend === "function" && typeof INS_CONFIG !== "undefined") spAppend({ source: "보험료 수납 마진", amount: b.amount * INS_CONFIG.PREMIUM_MARGIN_RATE * INS_CONFIG.SHARE_RATE, ref: b.id, token: _pbToken(m) });
-  if (typeof notifPush === "function") notifPush({ ic: "coin", t: "보험료 수납 완료", d: `${b.product} ${b.ym} · ${b.amount.toLocaleString()}원 — 순환의 30%가 나눔 재원에 적립됐어요`, target: "insurance" });
+  if (typeof notifPush === "function") notifPush({ ic: "coin", t: "보험료 수납 완료", d: `${b.product} ${b.ym} · ${b.amount.toLocaleString()}원 — 순환의 ${typeof INS_CONFIG !== "undefined" ? Math.round(INS_CONFIG.SHARE_RATE * 100) : WALLET_SPLIT.give}%가 나눔 재원에 적립됐어요`, target: "insurance" });
   return { ok: true, bill: b, balance: r.balance, block };
 }
 
@@ -31138,7 +31151,7 @@ const INS_AI_POLICY = {
 /* 불가피한 상수(config) — 사유 주석 필수(하드코딩 금지 원칙의 예외 등록) */
 const INS_CONFIG = {
   PREMIUM_MARGIN_RATE: 0.10,   // 보험료 중 플랫폼 중개 수수료 가정(재무엔진 보험 중개 산식과 정합) — 나눔 재원 산출 기반
-  SHARE_RATE: 0.30,            // 순환 마진의 나눔 적립 비율(사업계획서 원칙4 · WALLET_SPLIT.give와 단일 정의)
+  SHARE_RATE: ((typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give != null) ? WALLET_SPLIT.give : 15) / 100,   // 순환 마진의 나눔 적립 비율(사업계획서 원칙4 · WALLET_SPLIT.give에서 파생 — sectionData.js가 manifest 앞 순서, 형 확정 15%)
   TELE_VISIT_FEE: 15900,       // 비대면 진찰료 수가 근사(2026 의원급 초진 기준 근사치) — 청구 지급 산정의 기본 진료비
   RERATE_PER_IMPROVE: 1.5,     // 개선 지표 1개당 요율 인하 %(계리 검증 전 시연 가정 — 제휴 보험사 협의 대상)
   RERATE_MAX_PCT: 15,          // 인하 상한 %(인하 및 가입확대형 전용 단방향 게이트)
@@ -34295,7 +34308,7 @@ function fbModel(Pin) {
 /* ══════════ 통합 재무모델(finModel) — 화면·하이 호환 래퍼 ══════════
    계산은 전부 finBudget.js(예산양식 v3.8 이식 엔진, fb 접두사)에 위임한다. 이 파일은 기존 함수 이름·호출 시그니처를 지키는 얇은 층이다.
    · 연차 = 달력 연도(1차 = 2027, 오픈 2027-01-01) · 기준일 2027-09-17 · 금액 단위 원
-   · FIN_P_DEFAULT는 계산에 쓰지 않는다 — scripts/invest/fin_dump.mjs가 _fin.json으로 뜨는 원천(예산양식 파이프라인 입력)이라 값을 그대로 둔다.
+   · FIN_P_DEFAULT는 계산에 쓰지 않는다 — v3.8 조정 전 기본값 기록이라 값을 그대로 둔다(예산양식 원천은 이 파일의 사본 scripts/invest/finModel_legacy.js를 fin_dump.mjs가 뜬다).
    · 새 엔진 입력은 FB_P0(finBudgetParams.js 생성물) + 시나리오(hifin_fin_scn) + 오버라이드(hifin_fin_params_v38). */
 
 const FIN_P_DEFAULT = {
@@ -34361,7 +34374,7 @@ const FIN_P_DEFAULT = {
   // 기타 운영비(R&D·클라우드·GPU·영업·관리) 30% 수준 스케일 — 근거: AI 네이티브 운영으로 고정 운영조직 최소화
   // (하이 에이전트가 CS·영업지원 흡수, AI 출수납·자동정산으로 관리업무 자동화, 클라우드는 사용량 기반 최적화·자체 경량모델 병행)
   opexScale: 0.30,
-  rewardRate: 0.50, donationRate: 0.30, // 제품마진 대비(기존 원칙)
+  rewardRate: 0.50, donationRate: 0.30, // 제품마진 대비(조정 전 기존 원칙 — 확정 배분 적립 60%·나눔 15%는 FB_P0·WALLET_SPLIT, 형 확정 2026-09-17)
   // 감가상각 — 초년도는 자산 취득 직후라 상각 기반이 적어 50% 수준만 인식(EBITDA 과대 방지)
   deprYear: 1000000000, deprY1Rate: 0.5, interestYear: 800000000, taxRate: 0.22,
   churn: 0.18, // 연간 회원 이탈률(SaaS 지표용)
@@ -35016,7 +35029,7 @@ const AGENT_QNA = [
   { c: "intro", k: "who_are_you", p: ["너누구", "누구세요", "너뭐야", "네가누구", "이름이뭐", "너는누", "봇이야", "사람이야", "ai야", "에이아이"], a: "저는 하이핀 AI 매니저 '하이'예요. 가입부터 검진 분석, 쇼핑, 보험, 투자까지 성래님 곁에서 처음부터 끝까지 함께해요. 편하게 말 걸어 주세요!", b: ["하이핀 소개해줘", "내 건강 봐줘"], nav: null, nx: [], lv: 1 },
   { c: "intro", k: "sections", p: ["메뉴가뭐", "어떤메뉴", "섹션이뭐", "무슨기능", "뭐뭐있", "기능소개", "메뉴소개", "화면소개", "뭐가있어"], a: "크게 6개예요 — 검진 예약, 검진 후 케어(AI 분석·병원·쇼핑), 치료비 케어, 건강지갑(적립·가족·데이터금고), 제휴·투자, 그리고 회사 소개. 말만 하시면 제가 바로 데려다드려요.", b: ["검진 후 케어가 뭐예요?", "건강지갑 보여줘"], nav: null, nx: [], lv: 1 },
   { c: "intro", k: "company", p: ["회사소개", "어느회사", "누가만든", "하이젠", "운영사", "믿을만한회사", "회사가어디"], a: "하이핀은 하이젠케어㈜가 운영하는 AI 헬스케어·핀테크 플랫폼이에요. 검진 후 관리 공백을 없애고 치료비 걱정을 줄이는 게 목표예요. 회사 소개 화면에서 비전과 사회환원 활동을 보실 수 있어요.", b: ["회사 소개 보기"], nav: "intro", nx: [], lv: 1 },
-  { c: "intro", k: "reward_intro", p: ["적립금어떻게쌓", "적립이뭐", "적립금이뭐", "리워드가뭐", "htk가뭐", "헬스토큰", "포인트가뭐", "적립금이란"], a: "하이핀에서 건강활동을 하거나 쇼핑하면 판매마진의 50%가 HTK(헬스토큰)로 적립돼요. 그중 30%는 보험료·치료비 결제 전용으로 우선 쌓여요. 적립금으로 주식 청약도 할 수 있어요.", b: ["내 적립금 보기", "주식 청약이 뭐예요?"], nav: "mywallet", tool: "wallet", nx: ["어디에 쓸 수 있어요?"], lv: 1 },
+  { c: "intro", k: "reward_intro", p: ["적립금어떻게쌓", "적립이뭐", "적립금이뭐", "리워드가뭐", "htk가뭐", "헬스토큰", "포인트가뭐", "적립금이란"], a: "하이핀에서 건강활동을 하거나 쇼핑하면 판매마진의 60%가 HTK(헬스토큰)로 적립돼요. 그중 30%는 보험료·치료비 결제 전용으로 우선 쌓여요. 적립금으로 주식 청약도 할 수 있어요.", b: ["내 적립금 보기", "주식 청약이 뭐예요?"], nav: "mywallet", tool: "wallet", nx: ["어디에 쓸 수 있어요?"], lv: 1 },
   { c: "intro", k: "hours", p: ["상담시간", "몇시까지", "24시간", "밤에도", "주말에도", "언제까지해"], a: "저는 24시간 365일 언제든 대화할 수 있어요. 사람 상담원 연결이 필요하면 평일 9~18시에 이어드릴게요.", b: ["사람 상담 연결"], nav: null, nx: [], lv: 1 },
 
   /* ───────── 2. 가입·로그인·둘러보기 (join) ───────── */
@@ -35071,12 +35084,12 @@ const AGENT_QNA = [
   /* ───────── 5. 커머스 (shop) ───────── */
   { c: "shop", k: "bp_supp", p: ["혈압에좋은영양제", "혈압영양제", "고혈압영양제", "혈압에뭐가좋"], a: "혈압 관리에는 오메가3·코엔자임Q10 같은 성분이 도움이 될 수 있어요(건강기능식품은 치료제가 아니에요). 건강쇼핑에서 성분·가격 비교해 보여드릴게요.", b: ["영양제 보러가기", "혈압계도 볼래요"], nav: "care", nx: ["부작용은 없어요?"], lv: 1, guard: "med" },
   { c: "shop", k: "sugar_supp", p: ["혈당영양제", "당뇨에좋은", "혈당에좋은", "당떨어지는"], a: "혈당 관리엔 바나바·여주·아연 성분이 식후 혈당 관리에 도움을 줄 수 있어요. 식단(저당·고식이섬유)과 함께 보시는 걸 권해요.", b: ["혈당 케어 상품 보기", "혈당 식단 보기"], nav: "care", nx: [], lv: 1, guard: "med" },
-  { c: "shop", k: "shop_where", p: ["쇼핑어디", "건강쇼핑", "뭐팔아", "상품뭐있", "몰이있어"], a: "건강쇼핑에는 건강식단(풀무원·그리팅 등)·영양제·홈케어 의료기기가 있어요. 검진 결과에 맞춘 맞춤 추천도 해드리고, 구매하면 마진의 50%가 HTK로 적립돼요.", b: ["건강쇼핑 가기", "내 맞춤 추천"], nav: "care", nx: [], lv: 1 },
+  { c: "shop", k: "shop_where", p: ["쇼핑어디", "건강쇼핑", "뭐팔아", "상품뭐있", "몰이있어"], a: "건강쇼핑에는 건강식단(풀무원·그리팅 등)·영양제·홈케어 의료기기가 있어요. 검진 결과에 맞춘 맞춤 추천도 해드리고, 구매하면 마진의 60%가 HTK로 적립돼요.", b: ["건강쇼핑 가기", "내 맞춤 추천"], nav: "care", nx: [], lv: 1 },
   { c: "shop", k: "refund", p: ["환불", "반품", "교환", "주문취소", "주문 취소", "상품취소", "배송취소"], a: "단순 변심은 수령 후 7일 이내 반품 신청이 가능해요(식품·개봉 상품은 제외될 수 있어요). 주문 내역에서 신청하거나 사람 상담으로 도와드릴게요.", b: ["사람 상담 연결"], nav: null, nx: [], lv: 2 },
   { c: "shop", k: "delivery", p: ["배송언제", "배송조회", "언제와", "배송기간", "택배"], a: "보통 1~3일 내 도착하고, 식단 구독은 지정 요일 새벽배송이에요. 주문 상세에서 배송 현황을 확인할 수 있어요.", b: [], nav: null, nx: [], lv: 1 },
   { c: "shop", k: "device_reco", p: ["혈압계추천", "혈당계추천", "측정기추천", "홈케어기기", "의료기기추천", "안마"], a: "가정용 혈압계·연속혈당측정기·체성분계 같은 홈케어 기기를 검진 결과에 맞춰 추천해 드려요. 측정값을 상담에 공유하면 관리가 이어져요.", b: ["홈케어 기기 보기"], nav: "care", nx: [], lv: 1 },
   { c: "shop", k: "diet", p: ["식단구독", "건강식단", "밥배달", "케어푸드", "저당식단", "당뇨식단"], a: "당뇨·혈압·체중 관리식단(풀무원 디자인밀, 그리팅 등)을 구독으로 받아볼 수 있어요. 검진 이상 지표에 맞는 식단을 골라드릴게요.", b: ["맞춤 식단 보기"], nav: "care", nx: [], lv: 1 },
-  { c: "shop", k: "price", p: ["최저가", "싸게", "가격비교", "제일싼", "할인"], a: "하이핀은 건강쇼핑을 국내 최저가 수준으로 제공하고, 여기에 마진의 50%를 HTK로 돌려드려요 — 실질 체감가는 더 낮아져요.", b: ["건강쇼핑 가기"], nav: "care", nx: [], lv: 1 },
+  { c: "shop", k: "price", p: ["최저가", "싸게", "가격비교", "제일싼", "할인"], a: "하이핀은 건강쇼핑을 국내 최저가 수준으로 제공하고, 여기에 마진의 60%를 HTK로 돌려드려요 — 실질 체감가는 더 낮아져요.", b: ["건강쇼핑 가기"], nav: "care", nx: [], lv: 1 },
   /* 재구매 설계(2026-08-03) — 정기배송: 소진 예측·구독 현황·주기 변경 안내 */
   { c: "shop", k: "subscription", p: ["정기배송", "정기구독", "구독현황", "영양제떨어", "떨어질때알려", "떨어지면알려", "다먹었", "재구매", "자동배송", "정기배송관리", "구독관리", "언제떨어져", "얼마나남았"], a: "", tool: "subs", b: [], nav: "shop", nx: [], lv: 1 },
   { c: "shop", k: "reward_use", p: ["적립금으로살수", "포인트로결제", "htk로결제", "적립금쓰"], a: "네, 쌓인 HTK로 쇼핑 결제가 돼요. 치료비 케어 전용 적립분(30%)은 보험료·의료비 결제에 우선 사용돼요.", b: ["내 적립금 보기"], nav: "mywallet", tool: "wallet", nx: [], lv: 1 },
@@ -35128,7 +35141,7 @@ const AGENT_QNA = [
   { c: "invest", k: "risk", p: ["원금손실", "손해볼수", "위험하지않", "투자위험", "안전한투자"], a: "비상장주식 청약은 원금 손실 위험이 있고 환금성이 낮을 수 있어요. 가격은 회사 재무 추정 기준이라 실제와 다를 수 있어요 — 여유 자금 범위에서만 권해요.", b: [], nav: null, nx: [], lv: 2, guard: "inv" },
   { c: "invest", k: "partner_apply", p: ["제휴하고싶", "제휴신청", "입점", "파트너", "가맹"], a: "검진센터·병원·약국·돌봄·건강쇼핑 6개 유형의 제휴를 받아요. 제휴·투자 화면에서 기관 정보를 넣으면 5단계 진행 상태로 안내해 드려요.", b: ["제휴 신청 가기"], nav: "partner", nx: [], lv: 2 },
   { c: "invest", k: "htk_worth", p: ["htk가치", "1htk얼마", "토큰시세", "환전되"], a: "HTK는 1토큰당 10원 상당으로 플랫폼 안에서 결제·청약에 쓰는 폐쇄형 적립 포인트예요 — 현금 환전은 되지 않아요.", b: ["사용처 보기"], nav: "mywallet", nx: [], lv: 2, guard: "inv" },
-  { c: "invest", k: "give", p: ["기부", "나눔", "사회환원", "치료비나눔"], a: "판매마진의 30%는 치료비 사각지대 나눔 재원으로 쓰여요. 내 소비가 이웃의 치료비가 되는 구조예요 — 나눔 현황은 건강지갑에서 볼 수 있어요.", b: ["나눔 현황 보기"], nav: "mywallet", nx: [], lv: 1 },
+  { c: "invest", k: "give", p: ["기부", "나눔", "사회환원", "치료비나눔"], a: "판매마진의 15%는 치료비 사각지대 나눔 재원으로 쓰여요. 내 소비가 이웃의 치료비가 되는 구조예요 — 나눔 현황은 건강지갑에서 볼 수 있어요.", b: ["나눔 현황 보기"], nav: "mywallet", nx: [], lv: 1 },
   { c: "invest", k: "subscribe_cancel", p: ["청약취소", "청약환불", "청약접수취소"], a: "청약 접수 후 배정 확정 전에는 취소할 수 있어요. 접수번호로 사람 상담에 요청해 주시면 처리해 드려요.", b: ["사람 상담 연결"], nav: null, nx: [], lv: 2, guard: "inv" },
 
   /* ───────── 9. 데이터 금고·보안·동의 (vault) ───────── */
@@ -35179,7 +35192,7 @@ const AGENT_QNA = [
   { c: "action", k: "hi_rerate", p: ["요율재산정", "재산정신청", "보험료재산정", "보험료깎", "보험료내려", "요율인하"], a: "", tool: "reratedo", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
   /* ───────── Phase1 리뉴얼 — 보장 사다리·나눔 현황 (과업4 신설 툴) ───────── */
   { c: "action", k: "hi_ladder", p: ["보장사다리", "실손부터", "실손우선", "실손없는데", "뭐부터가입", "기초보장", "사다리확인"], a: "", tool: "ladder", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
-  { c: "action", k: "hi_donate", p: ["나눔현황", "나눔재원", "치료비나눔", "기부현황", "30퍼센트어디", "나눔얼마"], a: "", tool: "donate", b: [], nav: "insurance", nx: [], lv: 1 },
+  { c: "action", k: "hi_donate", p: ["나눔현황", "나눔재원", "치료비나눔", "기부현황", "나눔15퍼센트", "30퍼센트어디", "나눔15", "나눔얼마"], a: "", tool: "donate", b: [], nav: "insurance", nx: [], lv: 1 },
   /* ───────── Phase 6 비대면진료 — 원격주치의 연결·제도 공시 ───────── */
   { c: "action", k: "hi_tele", p: ["원격진료연결", "원격진료해줘", "비대면진료연결", "비대면진료받", "의사연결해줘", "지금연결가능한의사", "전문의연결", "원격진료받고싶", "전문의상담열기", "비대면상담연결", "원격상담시작", "원격상담해줘", "원격상담연결", "화상상담시작"], a: "", tool: "teleprep", b: [], nav: "ai", nx: [], lv: 1, guard: "med" },
   { c: "action", k: "hi_tele_can", p: ["비대면으로뭐가가능", "비대면진료가능한", "원격으로처방", "비대면처방되", "원격진료뭐가돼", "비대면진료범위", "원격으로검사", "비대면가능행위"], a: "", tool: "telecan", b: [], nav: null, nx: [], lv: 1, guard: "med" },
@@ -35221,7 +35234,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "ce27edfa37abbeb0", "generatedAt": "2026-09-07", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "1f5f607b8c01f176", "generatedAt": "2026-09-17", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -35410,7 +35423,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-09-10","seed":20260828,"inventory":{"version":1,"sourceHash":"ce27edfa37abbeb0","generatedAt":"2026-09-07","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.16,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-09-20","seed":20260828,"inventory":{"version":1,"sourceHash":"1f5f607b8c01f176","generatedAt":"2026-09-17","bypass":false},"total":10791,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.26,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
@@ -35861,8 +35874,9 @@ const TOOL_RUN = {
   // 나눔 현황(과업4 신설) — SharingPool 실적립 원장
   donate() { try {
     const S = (typeof insService !== "undefined") ? insService.donateStatus() : null; if (!S) return null;
-    if (!S.count) return { lines: ["아직 나눔 재원 적립 내역이 없어요 — 보험료 납부나 건강쇼핑이 생기면 순환의 30%가 건별로 쌓이고, 여기서 바로 보여드려요."] };
-    return { lines: [`지금까지 나눔 재원에 ${S.balance.toLocaleString()}원(${S.count}건)이 건별 적립됐어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${v.toLocaleString()}원`).join(" · ")}.`, "치료비 사각지대 지원에 쓰이는 순환의 30% 몫이에요 — 집행은 제휴 재단 심사 후 투명 공개돼요."] };
+    const sharePct = Math.round(((insService.config && insService.config.SHARE_RATE) || 0.15) * 100);   // 나눔 비율은 INS_CONFIG.SHARE_RATE 단일 정의(WALLET_SPLIT.give와 같은 값) — 문구에 숫자를 박지 않는다
+    if (!S.count) return { lines: [`아직 나눔 재원 적립 내역이 없어요 — 보험료 납부나 건강쇼핑이 생기면 순환의 ${sharePct}%가 건별로 쌓이고, 여기서 바로 보여드려요.`] };
+    return { lines: [`지금까지 나눔 재원에 ${S.balance.toLocaleString()}원(${S.count}건)이 건별 적립됐어요 — 출처: ${Object.entries(S.bySource).map(([k, v]) => `${k} ${v.toLocaleString()}원`).join(" · ")}.`, `치료비 사각지대 지원에 쓰이는 순환의 ${sharePct}% 몫이에요 — 집행은 제휴 재단 심사 후 투명 공개돼요.`] };
   } catch (e) { return null; } },
   // 친구 초대(리퍼럴) — "친구 초대해줘" 한마디로 링크 생성·복사·공유까지(획득 채널 ⑥)
   refer(m) { try {
@@ -36057,7 +36071,7 @@ const AGENT_SEC_GUIDES = [
   { k: "manage", label: "내 건강현황", words: ["건강현황", "건강리포트", "리포트보", "건강상태알", "내건강알", "내건강상태", "생체나이보", "건강분석보"], guide: "내 건강현황 화면에서 생체나이·장기나이·암위험·의료비 예측 리포트를 볼 수 있어요. 검진결과가 연결돼 있으면 실제 내 수치 기준이에요.", btns: ["내 리포트 요약", "검진결과 올리기"] },
   { k: "hospital", label: "병원진료 안내", words: ["병원진료", "병원안내", "병원찾", "진료과", "병원가야", "어느병원", "병원추천", "병원어디", "어디병원", "병원좀", "병원알려"], guide: "병원진료 안내를 열어드릴게요. 증상·질환에 맞는 진료과와 내 주변 병원을 찾아 예약 안내까지 도와드려요. 진료 결과를 알려주시면 케어플랜도 갱신돼요.", btns: ["증상으로 진료과 찾기"] },
   { k: "homecare", label: "재가돌봄", words: ["재가돌봄", "돌봄서비스", "방문간호", "간병", "요양", "퇴원후", "부모님돌봄"], guide: "재가돌봄 화면에서 방문간호·재활·간병 서비스를 신청할 수 있어요. 퇴원 후 회복 관리나 부모님 돌봄이 필요할 때 조건에 맞는 서비스를 매칭해 드려요.", btns: ["돌봄 서비스 상담"] },
-  { k: "shop", label: "건강쇼핑", words: ["건강쇼핑", "쇼핑", "뭘먹어야", "뭐먹어야", "먹어야좋", "영양제사", "영양제보", "식단사", "기기사", "홈케어기기", "쇼핑몰", "상품보", "몰열어"], guide: "건강쇼핑을 열어드릴게요. 건강식단·영양제·홈케어 의료기기를 국내 최저가로 제공하고, 검진 결과에 맞춘 맞춤 추천도 있어요. 구매하면 마진의 50%가 HTK로 적립돼요.", btns: ["내 맞춤 추천 보여줘", "혈압에 좋은 영양제", "적립은 얼마나 돼?"] },
+  { k: "shop", label: "건강쇼핑", words: ["건강쇼핑", "쇼핑", "뭘먹어야", "뭐먹어야", "먹어야좋", "영양제사", "영양제보", "식단사", "기기사", "홈케어기기", "쇼핑몰", "상품보", "몰열어"], guide: "건강쇼핑을 열어드릴게요. 건강식단·영양제·홈케어 의료기기를 국내 최저가로 제공하고, 검진 결과에 맞춘 맞춤 추천도 있어요. 구매하면 마진의 60%가 HTK로 적립돼요.", btns: ["내 맞춤 추천 보여줘", "혈압에 좋은 영양제", "적립은 얼마나 돼?"] },
   { k: "insurance", label: "치료비 케어", words: ["보험섹션", "보험화면", "보험보", "보험부족", "보장부족", "보험열어", "보장조회", "보험가입", "치료비화면", "보험쪽", "보험메뉴"], guide: "치료비 케어 화면을 안내해 드릴게요. 보장조회 → AI 보험솔루션(보장공백·본인부담) → 간편가입 → 보험금 청구까지 한 곳에서 돼요. 제 데이터 기준 분석은 말만 하시면 바로 해드려요.", btns: ["보장 공백 분석", "내 실손 몇 세대야?", "보험금 청구 어떻게 해?"] },
   { k: "wallet", label: "건강금융지갑", words: ["건강지갑", "금융지갑", "지갑보", "적립금보", "혜택보여", "지갑열", "적립현황", "적립내역", "온체인", "토큰지갑"], guide: "건강금융지갑을 열어드릴게요. HTK 적립 현황과 치료비 케어 전용 적립(30% 우선), 나눔·기부, 온체인 원장(전송·스왑)까지 볼 수 있어요.", btns: ["적립금 얼마 쌓였어?", "토큰 전송하는 법"] },
   { k: "nft", label: "Health NFT", words: ["nft", "엔에프티", "보험증서nft", "건강nft"], guide: "Health NFT 화면에서 검진보험 증서·건강 기록의 NFT(SBT)를 확인할 수 있어요. 위변조가 안 되는 내 건강 자산 증명이에요.", btns: ["NFT가 뭐예요?"] },
@@ -36068,7 +36082,7 @@ const AGENT_SEC_GUIDES = [
   { k: "trust", label: "신뢰 센터", words: ["신뢰센터", "데이터보호센터", "보안어떻게", "어떻게보호", "안전한지보여", "트러스트"], guide: "신뢰 센터를 열어드릴게요. 내 데이터를 누가·어떻게 지키는지 3문장으로 확인하고, 접근 이력·동의·즉시 삭제까지 버튼으로 직접 실행할 수 있어요.", btns: ["내 검진 결과 누가 볼 수 있어요?", "해킹당하면 어떡해요?"] },
   { k: "intro", label: "회사 소개", words: ["회사소개보", "소개화면", "비전보여", "하이핀이란"], guide: "HI-Fin Tech 소개 화면이에요. 회사 비전·사회적 가치환원·커뮤니티를 볼 수 있어요.", btns: ["하이핀이 뭘 해주는 곳이야?"] },
   { k: "story", label: "활용 스토리", words: ["활용스토리", "활용법", "고객여정", "스토리보여", "이야기로", "성래스토리", "어떻게쓰는지"], guide: "'결과지를 버리던 남자' — 조성래 님의 10년 이야기로 하이핀의 모든 기능을 여행처럼 보여드려요. 장면마다 실제 화면으로 바로 이동할 수 있어요.", btns: ["검진 예약 도와줘", "내 건강 봐줘"] },
-  { k: "social", label: "사회적기업", words: ["사회공헌", "사회환원", "기부활동", "나눔활동"], guide: "사회적기업 화면에서 치료비 사각지대 나눔 등 하이핀의 사회환원 활동을 볼 수 있어요. 회원 소비의 30% 마진이 나눔 재원이 돼요.", btns: ["나눔은 어떻게 이뤄져요?"] },
+  { k: "social", label: "사회적기업", words: ["사회공헌", "사회환원", "기부활동", "나눔활동"], guide: "사회적기업 화면에서 치료비 사각지대 나눔 등 하이핀의 사회환원 활동을 볼 수 있어요. 회원 소비에서 생긴 판매마진의 15%가 나눔 재원이 돼요.", btns: ["나눔은 어떻게 이뤄져요?"] },
   { k: "community", label: "커뮤니티", words: ["커뮤니티", "게시판", "후기보", "회원들이야기"], guide: "커뮤니티에서 회원들의 건강 이야기와 전문가 답변을 볼 수 있어요.", btns: [] },
 ];
 /* [라우팅 헌법 P1] 명시적 섹션·기능 지목 — 본 구현은 navRouting.js(navResolve · 인벤토리 단일 소스).
@@ -36450,7 +36464,7 @@ const HI_WANT_CHECKUP_BTNS = ["내 주변 검진센터 찾아줘", "무료 3종�
 /* '하이핀이 뭐예요?' — 섹션 가이드는 화면 안내문이라 처음 온 분의 질문에는 답이 되지 않는다.
    무엇을 해주는 곳인지, 돈이 드는지, 무엇부터 하면 되는지 세 가지를 먼저 말한다. */
 const HI_WANT_INTRO_GUIDE = "하이핀은 건강검진을 중심으로 건강관리·진료·보험·건강쇼핑을 하나로 잇는 AI 건강금융 플랫폼이에요. 검진 결과를 올리시면 제가 분석해서 지금 무엇을 하면 좋을지 알려드리고, 필요한 진료·보장·영양까지 이어드려요.";
-const HI_WANT_INTRO_FREE = "이용료는 없어요. 하이핀을 통해 검진을 예약하고 받으시면 " + free3Short() + "를 함께 드리고, 건강쇼핑에서는 마진의 50%를 적립금으로 돌려드려요.";
+const HI_WANT_INTRO_FREE = "이용료는 없어요. 하이핀을 통해 검진을 예약하고 받으시면 " + free3Short() + "를 함께 드리고, 건강쇼핑에서는 마진의 60%를 적립금으로 돌려드려요.";
 const HI_WANT_INTRO_BTNS = ["무료 3종이 뭐예요?", "검진결과 올리는 법", "적립금은 어떻게 쌓여요?"];
 
 /* 원격진료는 섹션 가이드에 별도 항목이 없다 — 여기서 단일 문구로 관리(설명 이원화를 피하려 예외를 명시) */
@@ -36764,7 +36778,7 @@ const HI_INTENTS = [
   { id: "S4-BAL-01", l1: "건강금융지갑", l2: "잔액 조회", a: ["balance", "htk"], b: ["view", "calc"], bReq: true, pre: ["login"], route: "app://wallet", nav: "wallet", tool: "wallet",
     ans: "지금 HTK 잔액을 보여드릴게요.", easy: "포인트가 얼마 있는지 보여드릴게요.", chips: ["적립 내역 보기", "충전 방법"] },
   { id: "S4-EARN-01", l1: "건강금융지갑", l2: "적립 방법", a: ["earnway"], b: ["method", "explain", "view"], hub: true, pre: [], route: "app://wallet", nav: "wallet",
-    ans: "HTK는 12개 채널로 쌓여요 — 검진 예약·완료, 건강쇼핑(마진 50% 적립), 일일 건강미션, 친구 초대, 데이터 제공 동의 등이 대표예요.", easy: "검진 받고, 걷고, 쇼핑하면 포인트가 쌓여요. 쌓는 방법을 보여드릴게요.", chips: ["친구 초대해줘", "건강쇼핑 가기"] },
+    ans: "HTK는 12개 채널로 쌓여요 — 검진 예약·완료, 건강쇼핑(마진 60% 적립), 일일 건강미션, 친구 초대, 데이터 제공 동의 등이 대표예요.", easy: "검진 받고, 걷고, 쇼핑하면 포인트가 쌓여요. 쌓는 방법을 보여드릴게요.", chips: ["친구 초대해줘", "건강쇼핑 가기"] },
   { id: "S4-CHARGE-01", l1: "건강금융지갑", l2: "충전", a: ["topup"], b: ["method", "doit", "explain", "view"], hub: true, pre: ["login"], route: "app://wallet/topup", nav: "wallet", tab: "topup",
     ans: "HTK 충전은 카드·간편결제로 1분이면 돼요 — 충전 금액을 고르면 보너스도 드려요(한도: 1회 100만·월 200만 원).", easy: "포인트를 채우는 방법이에요. 아래 버튼을 누르면 바로 할 수 있어요.", chips: ["충전하러 가기"] },
   { id: "S4-USE-01", l1: "건강금융지갑", l2: "사용처", a: ["useplace"], b: ["view", "explain", "find"], hub: true, pre: [], route: "app://wallet/use", nav: "wallet", tab: "use",
@@ -38016,7 +38030,7 @@ const HI_SEGMENTS = [
       return {
         situation: "지금 " + (s.s4.balance || 0).toLocaleString() + " HTK(약 " + _won10((s.s4.balance || 0) * 10) + " 상당)가 쌓여 있는데 아직 써보신 적이 없네요.",
         assess: "HTK는 건강쇼핑·검진 결제·보험료(전용 적립 30%)·주식 청약에 쓸 수 있어요 — 쓰면 오래된 적립분부터 차감돼서 소멸 걱정도 줄어요.",
-        route: "건강쇼핑에서 검진 결과 맞춤 상품을 사면 마진의 50%가 다시 적립되는 순환이라 가장 알뜰해요.",
+        route: "건강쇼핑에서 검진 결과 맞춤 상품을 사면 마진의 60%가 다시 적립되는 순환이라 가장 알뜰해요.",
         guide: "사용처 화면을 미리 보여드릴게요.",
       };
     },
@@ -41077,7 +41091,7 @@ function careplanEarned(email) {
 function shopHtkKey(email) { return "hifin_shop_htk_" + (email || "default"); }
 function shopHtkWon(email) { try { return Number(JSON.parse(localStorage.getItem(shopHtkKey(email)) || "0")) || 0; } catch (e) { return 0; } }
 function shopHtkAdd(email, won) { try { const add = Math.max(0, Math.floor(won || 0)); const nx = shopHtkWon(email) + add; localStorage.setItem(shopHtkKey(email), JSON.stringify(nx)); if (add > 0 && typeof txAnchor === "function") txAnchor({ kind: "건강쇼핑 적립", amount: add, unit: "원", memo: "구매 리워드" });
-  // 과업4 축5: 커머스 순환의 나눔 몫 — 적립(add)=마진의 50%(WALLET_SPLIT.earn) 정의에서 마진 역산 → 마진×30%(give)를 SharingPool에 건별 적립
+  // 과업4 축5: 커머스 순환의 나눔 몫 — 적립(add)=마진의 WALLET_SPLIT.earn%(형 확정 60%) 정의에서 마진 역산 → 마진×WALLET_SPLIT.give%(15%)를 SharingPool에 건별 적립
   if (add > 0 && typeof spAppend === "function" && typeof WALLET_SPLIT !== "undefined") spAppend({ source: "건강쇼핑 마진", amount: add / (WALLET_SPLIT.earn / 100) * (WALLET_SPLIT.give / 100), ref: "shop-" + Date.now().toString(36) });
   return nx; } catch (e) { return 0; } }
 function shopHtkPts(email) { const rate = (typeof WALLET !== "undefined" && WALLET.rate) ? WALLET.rate : 10; return Math.floor(shopHtkWon(email) / rate); }
@@ -44228,7 +44242,7 @@ function FamilySetCard({ onGo }) {
   const chosen = set.members.filter((x) => keys[x.key]);
   const chosenItems = chosen.reduce((s, x) => s + x.items.length, 0);
   const chosenTotal = chosen.reduce((s, x) => s + x.items.reduce((t, i) => t + i.product.price, 0), 0);
-  const chosenBase = chosen.reduce((s, x) => s + x.items.reduce((t, i) => t + ((typeof healthReward === "function") ? healthReward(i.product.price).reward : Math.floor(i.product.price * 0.25)), 0), 0);
+  const chosenBase = chosen.reduce((s, x) => s + x.items.reduce((t, i) => t + ((typeof healthReward === "function") ? healthReward(i.product.price).reward : Math.floor(i.product.price * 0.30)), 0), 0);
   const rate = chosen.length >= 4 ? 0.15 : chosen.length >= 3 ? 0.10 : chosen.length >= 2 ? 0.05 : 0;
   const chosenReward = chosenBase + Math.floor(chosenBase * rate);
   const toggle = (k) => setSel(Object.assign({}, keys, { [k]: !keys[k] }));

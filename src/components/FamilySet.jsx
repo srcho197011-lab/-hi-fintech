@@ -22,7 +22,7 @@ function FamilySetCard({ onGo }) {
   const chosen = set.members.filter((x) => keys[x.key]);
   const chosenItems = chosen.reduce((s, x) => s + x.items.length, 0);
   const chosenTotal = chosen.reduce((s, x) => s + x.items.reduce((t, i) => t + i.product.price, 0), 0);
-  const chosenBase = chosen.reduce((s, x) => s + x.items.reduce((t, i) => t + ((typeof healthReward === "function") ? healthReward(i.product.price).reward : Math.floor(i.product.price * 0.25)), 0), 0);
+  const chosenBase = chosen.reduce((s, x) => s + x.items.reduce((t, i) => t + ((typeof healthReward === "function") ? healthReward(i.product.price).reward : Math.floor(i.product.price * 0.30)), 0), 0);
   const rate = chosen.length >= 4 ? 0.15 : chosen.length >= 3 ? 0.10 : chosen.length >= 2 ? 0.05 : 0;
   const chosenReward = chosenBase + Math.floor(chosenBase * rate);
   const toggle = (k) => setSel(Object.assign({}, keys, { [k]: !keys[k] }));

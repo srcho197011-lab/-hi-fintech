@@ -453,7 +453,7 @@ function SupplyCostAccounting() {
           <span className="scwf-v" style={{ color: c }}>{v < 0 ? "−" : ""}{_scW(Math.abs(v))}</span>
         </div>);
       })}</div>
-      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금. 영업이익률 <b style={{ color: "#34D399" }}>{(C.op / C.gmv * 100).toFixed(1)}%</b>(GMV 대비) · 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비).</div>
+      <div className="scdashnote">무재고 모델이라 <b>재고자산·창고·직배송 택배비(거래처 부담)</b>가 당사 원가에서 제외됩니다. 당사 변동비 = 결제수수료 + 건강적립금 + 치료비 나눔(판매마진 배분). 영업이익률 <b style={{ color: C.op < 0 ? "#F87171" : "#34D399" }}>{(C.op / C.gmv * 100).toFixed(1)}%</b>(GMV 대비) · 공헌이익률 <b style={{ color: "#818CF8" }}>{(C.contribution / C.gross * 100).toFixed(1)}%</b>(마진 대비).</div>
       <div className="scjournalh" style={{ marginTop: 12 }}><PieChart size={13} /> 카테고리별 원가·마진 구조</div>
       <div className="sccat">{C.cats.map((x) => (
         <div className="sccatrow" key={x.cat}>

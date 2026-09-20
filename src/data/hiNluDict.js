@@ -193,7 +193,7 @@ const HI_INTENTS = [
   { id: "S4-BAL-01", l1: "건강금융지갑", l2: "잔액 조회", a: ["balance", "htk"], b: ["view", "calc"], bReq: true, pre: ["login"], route: "app://wallet", nav: "wallet", tool: "wallet",
     ans: "지금 HTK 잔액을 보여드릴게요.", easy: "포인트가 얼마 있는지 보여드릴게요.", chips: ["적립 내역 보기", "충전 방법"] },
   { id: "S4-EARN-01", l1: "건강금융지갑", l2: "적립 방법", a: ["earnway"], b: ["method", "explain", "view"], hub: true, pre: [], route: "app://wallet", nav: "wallet",
-    ans: "HTK는 12개 채널로 쌓여요 — 검진 예약·완료, 건강쇼핑(마진 50% 적립), 일일 건강미션, 친구 초대, 데이터 제공 동의 등이 대표예요.", easy: "검진 받고, 걷고, 쇼핑하면 포인트가 쌓여요. 쌓는 방법을 보여드릴게요.", chips: ["친구 초대해줘", "건강쇼핑 가기"] },
+    ans: "HTK는 12개 채널로 쌓여요 — 검진 예약·완료, 건강쇼핑(마진 60% 적립), 일일 건강미션, 친구 초대, 데이터 제공 동의 등이 대표예요.", easy: "검진 받고, 걷고, 쇼핑하면 포인트가 쌓여요. 쌓는 방법을 보여드릴게요.", chips: ["친구 초대해줘", "건강쇼핑 가기"] },
   { id: "S4-CHARGE-01", l1: "건강금융지갑", l2: "충전", a: ["topup"], b: ["method", "doit", "explain", "view"], hub: true, pre: ["login"], route: "app://wallet/topup", nav: "wallet", tab: "topup",
     ans: "HTK 충전은 카드·간편결제로 1분이면 돼요 — 충전 금액을 고르면 보너스도 드려요(한도: 1회 100만·월 200만 원).", easy: "포인트를 채우는 방법이에요. 아래 버튼을 누르면 바로 할 수 있어요.", chips: ["충전하러 가기"] },
   { id: "S4-USE-01", l1: "건강금융지갑", l2: "사용처", a: ["useplace"], b: ["view", "explain", "find"], hub: true, pre: [], route: "app://wallet/use", nav: "wallet", tab: "use",
