@@ -58,6 +58,11 @@ function HiEnCard({ onGo, onClose }) {
   );
 }
 
+/* 응답 대기 — 엔진 실계산은 평균 7.3ms다. 지금까지 체감 지연의 95%는 여기 박아둔 연출용 대기였다.
+   음성은 회원이 이미 인식을 기다렸으므로 글자보다 더 빨리 답한다. 타이핑 표시는 유지하고 시간만 줄인다. */
+const HIDOCK_WAIT = { voice: 90, text: 320 };
+function hidockWait(via) { return via === "voice" ? HIDOCK_WAIT.voice : HIDOCK_WAIT.text; }
+
 function AgentDock({ onGo }) {
   const go = onGo || (() => {});
   const lang = useHiLang();
@@ -67,14 +72,20 @@ function AgentDock({ onGo }) {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [listening, setListening] = useState(false);
+  const [interim, setInterim] = useState("");        // 듣는 중 중간 결과 — 듣고 있다는 신호
+  const [speaking, setSpeaking] = useState(false);   // 읽어주는 중
+  const [more, setMore] = useState("");              // 상한에서 끊긴 나머지 — '이어 듣기'
+  const [read, setRead] = useState(() => { try { return (typeof hiVoiceOn === "function") ? hiVoiceOn() : false; } catch (e) { return false; } });
   const [easy, setEasy] = useState(() => { try { return !!localStorage.getItem("hifin_easyread"); } catch (e) { return false; } });
   const endRef = useRef(null);
   const bodyRef = useRef(null);          // 대화 스크롤 영역
   const prevLenRef = useRef(0);          // 직전 메시지 수 — '새로 붙은 답변'을 찾는 기준
   const dockRef = useRef(null);
-  const recogRef = useRef(null);
   const lastQRef = useRef("");
-  const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const spokeRef = useRef(-1);           // 어디까지 읽어드렸는지 — 토글을 켰다고 지난 답을 다시 읽지 않는다
+  /* 음성 지원 판정·설정은 hiVoice.js 단일 소스(화면마다 다시 정하지 않는다) */
+  const vsup = (typeof hiVoiceSupport === "function") ? hiVoiceSupport() : { stt: false, tts: false, reason: "" };
+  const sttOK = vsup.stt;
   // AI 주치의 지식(KDCA·리포트·학습 Q&A) — 독을 처음 열 때 지연 로드(홈 초기 로딩 부담 없음)
   const kbRef = useRef({ kb: null, rp: null, qa: null });
   /* [Phase A] 지식은 A1(AI 주치의) 에이전트가 소유 — 로드되는 대로 에이전트에 주입한다 */
@@ -186,12 +197,14 @@ function AgentDock({ onGo }) {
     };
   }, [open]);
 
-  const send = (textArg) => {
+  /* viaArg = 입력 채널("voice" | "text"). 새 이벤트를 만들지 않고 **기존 payload에 라벨만** 붙인다(가공 이벤트 금지). */
+  const send = (textArg, viaArg) => {
+    const via = (typeof hiVoiceChannel === "function") ? hiVoiceChannel(viaArg) : (viaArg === "voice" ? "voice" : "text");
     const text = (textArg == null ? input : textArg).trim(); if (!text) return;
     /* 하고 싶은 활동(섹션 안내형 칩) — 질의 전송 대신 섹션 가이드로 즉답하고 화면까지 데려간다 */
     try {
       const wk = (typeof hiWantKeyOf === "function") ? hiWantKeyOf(text) : null;
-      if (wk) { answerWant(wk, text); return; }
+      if (wk) { answerWant(wk, text, via); return; }
     } catch (e) {}
     if (text === "쉬운 말 모드 켜기") { setEasy(true); setMsgs((m) => [...m, { who: "hi", lines: ["쉬운 말 모드를 켰어요 — 글씨를 키우고 더 쉽게 설명할게요."], buttons: [], nav: null }]); return; }
     // AI 주치의식 액션 버튼(핸드오프·바로가기) — Chat과 동일하게 화면 이동으로 처리
@@ -205,26 +218,35 @@ function AgentDock({ onGo }) {
     setInput("");
     setMsgs((m) => [...m, { who: "me", lines: [text], buttons: [], nav: null }]);
     setTyping(true);
+    /* 턴 대장 — 답을 화면에 붙이는 순간 한 줄. 재는 것은 '회원이 기다린 시간'이라 여기서부터 센다
+       (연출 대기 포함 — 화면마다 재는 지점이 다르면 채널 비교가 무의미해진다). */
+    const t0 = Date.now();
+    const ledger = (hit) => { try { if (typeof telemTurn === "function") telemTurn(via, Date.now() - t0, hit); } catch (e) {} };
     setTimeout(() => {
       let res = null;
-      try { res = (typeof agentAnswer === "function") ? agentAnswer(text) : null; } catch (e) { res = null; }
-      // Q&A·섹션가이드가 못 받은 질문은 A1(AI 주치의)이 이어받는다 — 근거 인용(cite)과 담당 표기가 함께 온다
-      if (!res || !res.matched || res.matched === "graph") {
+      /* 채널 라벨을 엔진까지 넘긴다 — 미답변·계측이 음성에서 왔는지 타자에서 왔는지 갈라 볼 수 있어야 한다.
+         엔진이 아직 2번째 인자를 받지 않아도 안전하다(추가 인자는 무시된다). */
+      try { res = (typeof agentAnswer === "function") ? agentAnswer(text, { channel: via }) : null; } catch (e) { res = null; }
+      /* Q&A·섹션가이드가 못 받은 질문은 A1(AI 주치의)이 이어받는다 — 근거 인용(cite)과 담당 표기가 함께 온다.
+         ⚠️ 단, 응급 판정이 실린 답은 **갈아끼우지 않는다.** A1으로 통째 교체하면 엔진이 맨 앞에 붙인
+            119·당일진료 안내가 화면에서 조용히 사라진다(발동은 했는데 아무도 못 보는 상태). */
+      if (!res || ((!res.matched || res.matched === "graph") && !res.emergency)) {
         let a1 = null;
         try { a1 = (typeof aiDoctorAgent === "function") ? aiDoctorAgent(text, {}) : null; } catch (e) { a1 = null; }
         if (a1 && !a1.handback && a1.lines && a1.lines.length) {
           lastQRef.current = text;
           setTyping(false);
-          setMsgs((m) => [...m, { who: "hi", agent: "A1", lines: a1.lines, cards: a1.cards || [], cite: a1.cite || [], buttons: (a1.buttons || []).slice(0, 4), nav: null }]);
+          setMsgs((m) => [...m, { who: "hi", agent: "A1", lines: a1.lines, cards: a1.cards || [], cite: a1.cite || [], buttons: (a1.buttons || []).slice(0, 4), nav: null, channel: via }]);
+          ledger(true);
           return;
         }
       }
       setTyping(false);
-      if (!res) { setMsgs((m) => [...m, { who: "hi", lines: ["잠시 문제가 있었어요 — 다시 한번 말씀해 주시겠어요?"], buttons: ["사람 상담 연결"], nav: null }]); return; }
+      if (!res) { setMsgs((m) => [...m, { who: "hi", lines: ["잠시 문제가 있었어요 — 다시 한번 말씀해 주시겠어요?"], buttons: ["사람 상담 연결"], nav: null }]); ledger(false); return; }
       if (res.reset) { setMsgs([{ who: "hi", lines: res.lines, buttons: [], nav: null }]); return; }
       lastQRef.current = text;
       /* [Phase A] 한 턴에 여러 에이전트가 말하면(인계 고지 → 전문 응답) 파트별 말풍선으로 나눠 렌더 */
-      const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel, doctor: !!res.doctor, q: text };
+      const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel, doctor: !!res.doctor, q: text, channel: via };
       if (res.parts && res.parts.length) {
         setMsgs((m) => [...m, ...res.parts.map((p, i) => Object.assign(
           { who: "hi", agent: p.agent, agents: res.agents || null, lines: p.lines, cite: p.cite || [], cards: p.cards || [], announce: !!p.announce },
@@ -232,11 +254,13 @@ function AgentDock({ onGo }) {
       } else {
         setMsgs((m) => [...m, Object.assign({ who: "hi", agent: res.agent || "A0", agents: res.agents || null, lines: res.lines, cite: res.cite || [] }, tail)]);
       }
-    }, 480);
+      ledger(!!res.matched);
+    }, hidockWait(via));
   };
   /* 하고 싶은 활동 안내 — 웰컴 카드·하단 칩 공용.
      회원의 말을 먼저 남기고(내가 고른 것이 대화에 남아야 한다) 섹션 설명 + 화면 이동 버튼을 붙인다. */
-  const answerWant = (k, echo) => {
+  const answerWant = (k, echo, viaArg) => {
+    const via = (typeof hiVoiceChannel === "function") ? hiVoiceChannel(viaArg) : (viaArg === "voice" ? "voice" : "text");
     let m = null; try { m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
     let a = null; try { a = (typeof hiWantAnswer === "function") ? hiWantAnswer(k, m) : null; } catch (e) {}
     setInput("");   // 웰컴 카드는 지우지 않는다 — 위로 스크롤하면 언제든 다시 고를 수 있어야 한다
@@ -245,7 +269,7 @@ function AgentDock({ onGo }) {
     if (!a) { setMsgs((v) => [...v, { who: "hi", lines: ["그 화면을 지금 열어드릴게요."], buttons: [], nav: null }]); return; }
     lastQRef.current = mine;
     setTyping(true);
-    setTimeout(() => { setTyping(false); setMsgs((v) => [...v, { who: "hi", lines: a.lines, buttons: (a.buttons || []).slice(0, 3), nav: a.nav || null }]); }, 380);
+    setTimeout(() => { setTyping(false); setMsgs((v) => [...v, { who: "hi", lines: a.lines, buttons: (a.buttons || []).slice(0, 3), nav: a.nav || null, channel: via }]); }, hidockWait(via));
   };
 
   /* [2단계] SARG 응답 칩 처리 — 알림 예약(followup 저장)·미리보기 열기는 대화 재질의 없이 즉시 실행 */
@@ -262,16 +286,53 @@ function AgentDock({ onGo }) {
     }
     send(b);
   };
+  /* 음성 안내는 말풍선으로 남긴다 — 마이크가 조용히 실패하면 회원은 자기 탓을 한다.
+     로컬 생성이라 미답변 로그를 오염시키지 않는다(도우미 칩과 같은 규약). */
+  const voiceNote = (line) => { if (line) setMsgs((m) => [...m, { who: "hi", lines: [line], buttons: [], nav: null, notice: true }]); };
+
+  /* 듣기 — 시작/중지 한 버튼. 인스턴스 관리·무음 종료·끼어들기는 hiVoice가 맡는다 */
   const startStt = () => {
-    if (!sttOK) return;
-    const R = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new R(); recogRef.current = r;
-    r.lang = "ko-KR"; r.interimResults = false; let fin = "";
-    r.onstart = () => setListening(true);
-    r.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) fin += e.results[i][0].transcript; };
-    r.onerror = () => setListening(false);
-    r.onend = () => { setListening(false); if (fin.trim()) send(fin.trim()); };
-    try { r.start(); } catch (e) { setListening(false); }
+    if (typeof hiVoiceListen !== "function") return;
+    if (listening) { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); return; }   /* 재클릭은 취소 — 들은 말을 보내지 않는다 */
+    if (!sttOK) { voiceNote(vsup.reason); return; }
+    setSpeaking(false); setMore("");                 // 하이가 말하는 중이면 먼저 입을 닫는다(에코 방지)
+    hiVoiceListen({
+      onStart: () => { setListening(true); setInterim(""); },
+      onInterim: (itm) => setInterim(itm),
+      onError: (msg) => { setListening(false); setInterim(""); voiceNote(msg); },
+      onEnd: () => { setListening(false); setInterim(""); },
+      onFinal: (said) => {
+        /* 되돌리기 어려운 행동은 소리로 실행하지 않는다 — 입력칸에 채워만 두고 마지막은 화면 버튼으로 */
+        if (typeof hiVoiceRisky === "function" && hiVoiceRisky(said)) { setInput(said); voiceNote(HI_VOICE_RISKY_MSG); return; }
+        send(said, "voice");
+      },
+    });
   };
+  const stopSpeak = () => { try { if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} setSpeaking(false); setMore(""); };
+  const sayMore = () => { try { if (typeof hiVoiceMore === "function") hiVoiceMore({ onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } }); } catch (e) {} };
+  const sayAgain = () => { try { if (typeof hiVoiceAgain === "function") hiVoiceAgain({ onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } }); } catch (e) {} };
+
+  /* 새 답변이 오면 — 읽어주기가 **켜져 있을 때만** 발화한다(기본 꺼짐).
+     새 답변·회원이 말하기 시작·화면 이동이면 이전 발화는 취소된다(hiVoiceSpeak 안에서 먼저 끊는다). */
+  useEffect(() => {
+    if (typeof hiVoiceSpeak !== "function" || !vsup.tts || lang === "en") return;
+    const last = msgs.length - 1;
+    if (last < 0 || spokeRef.current >= last) return;
+    const fresh = msgs.slice(spokeRef.current + 1).filter((x) => x && x.who === "hi");
+    spokeRef.current = last;                         // 토글을 나중에 켜도 지난 답을 거슬러 읽지 않는다
+    if (!read || !fresh.length) return;
+    const say = fresh.map((x) => hiVoiceSummarize(x)).filter(Boolean).join(" ");
+    if (!say) return;
+    hiVoiceSpeak(say, { onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } });
+  }, [msgs, read]);
+
+  /* 독을 닫거나 화면을 벗어나면 듣기·말하기를 모두 정리한다 — 닫은 뒤 결과가 배달되거나 혼자 말하지 않게 */
+  useEffect(() => {
+    if (open) return;
+    try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {}
+    setListening(false); setInterim(""); setSpeaking(false); setMore("");
+  }, [open]);
+  useEffect(() => () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} }, []);
 
   return (
     <>
@@ -288,6 +349,16 @@ function AgentDock({ onGo }) {
             <span className="hidock-av"><HiAvatar size={26} plain /></span>
             <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{t("hi.role")}</span></div>
             <button className={"hidock-ib" + (easy ? " on" : "")} title="쉬운 말 모드(큰 글씨)" onClick={() => setEasy((v) => !v)}>가나</button>
+            {/* 읽어주기 — 기본은 꺼짐, 켜면 기억한다(화면을 옮겨도 유지). 미지원 브라우저면 이유를 말한다 */}
+            {lang !== "en" && (
+              <button className={"hidock-ib" + (read ? " on" : "")} aria-pressed={read} title={read ? "읽어주기 끄기" : "읽어주기 켜기 — 답변을 소리로 들려드려요"}
+                onClick={() => {
+                  if (!vsup.tts) { voiceNote(vsup.reason || HI_VOICE_MSG.notts); return; }
+                  const v = !read; setRead(v);
+                  try { if (typeof hiVoiceSetOn === "function") hiVoiceSetOn(v); } catch (e) {}
+                  if (!v) stopSpeak();
+                }}><Volume2 size={15} /></button>
+            )}
             <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>
             <button className="hidock-ib" onClick={() => setOpen(false)} aria-label="닫기"><X size={16} /></button>
           </div>
@@ -330,7 +401,7 @@ function AgentDock({ onGo }) {
                       {Array.isArray(m.agents) && m.agents.length > 1 && <span className="hidock-ens">함께 답했어요</span>}
                     </div>
                   )}
-                  {m.lines.map((l, j) => <div className={"hidock-bub " + m.who + (m.announce ? " announce" : "")} key={j}>{l}</div>)}
+                  {m.lines.map((l, j) => <div className={"hidock-bub " + m.who + (m.announce ? " announce" : "") + (m.notice ? " notice" : "")} key={j}>{l}</div>)}
                   {m.cite && m.cite.length > 0 && (
                     <div className="hidock-cite">📚 근거 {m.cite.map((c, ci) => <span key={ci}>{c.source}{c.title ? ` · ${c.title}` : ""}</span>)}</div>
                   )}
@@ -349,7 +420,7 @@ function AgentDock({ onGo }) {
                       <div className="hidock-btns"><button onClick={(e) => { e.stopPropagation(); const k = m.preview.nav || (m.nav && m.nav.key); if (k) { setOpen(false); go(k); } }}>화면 미리보기 열기</button></div>
                     </div>
                   )}
-                  {m.nav && !m.preview && <button className="hidock-nav" onClick={() => { try { if (typeof hiEvent === "function") hiEvent("nav_opened", { nav: m.nav.key }); } catch (e) {} setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
+                  {m.nav && !m.preview && <button className="hidock-nav" onClick={() => { try { if (typeof hiEvent === "function") hiEvent("nav_opened", { nav: m.nav.key, channel: m.channel || "text" }); } catch (e) {} setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
                   {/* 검진결과·건강분석은 전담 에이전트가 이어서 본다 — 질문을 그대로 넘겨 다시 묻지 않게 한다 */}
                   {m.doctor && <button className="hidock-doc" onClick={() => { try { if (typeof _doctorSeed !== "undefined") _doctorSeed = m.q || lastQRef.current || null; } catch (e) {} setOpen(false); go("ai"); }}>🩺 하이-나의 주치의 연결 <ChevronRight size={12} /></button>}
                   {m.buttons && m.buttons.length > 0 && <div className="hidock-btns">{m.buttons.map((b) => <button key={b} onClick={() => chipClick(m, b)}>{b}</button>)}</div>}
@@ -364,11 +435,34 @@ function AgentDock({ onGo }) {
             {(() => { let mm = null; try { mm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
               return hidockQuicks(mm).map((q) => <button key={q} onClick={() => send(q)}>{q}</button>); })()}
           </div>}
+          {/* 듣는 중 — 중간 결과를 그대로 보여주고 중지 버튼을 같이 둔다(말이 어떻게 들리는지 보여야 다시 말씀하신다) */}
+          {lang !== "en" && (listening || interim) && (
+            <div className="hidock-listening">
+              <span className="hidock-ear">🎙 듣고 있어요…</span>
+              {interim && <span className="hidock-itm">“{interim}”</span>}
+              {/* 중지는 취소다 — 잘못 말한 것을 물리려고 누르는 자리이므로 지금까지 들은 말을 전송하지 않는다 */}
+              <button onClick={() => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); } catch (e) {} }}><X size={12} /> 중지</button>
+            </div>
+          )}
+          {/* 읽어주는 중 — 중지·이어 듣기·다시 듣기 */}
+          {lang !== "en" && (speaking || more) && (
+            <div className="hidock-speaking">
+              <span className="hidock-wave"><i /><i /><i /></span>
+              <span>{speaking ? "읽어드리는 중…" : "여기까지 읽어드렸어요"}</span>
+              {speaking && <button onClick={stopSpeak}><X size={12} /> 중지</button>}
+              {!speaking && more && <button onClick={sayMore}><Play size={12} /> 이어 듣기</button>}
+              {!speaking && <button onClick={sayAgain}><RotateCcw size={12} /> 다시 듣기</button>}
+            </div>
+          )}
           <div className="hidock-input">
-            {sttOK && <button className={"hidock-mic" + (listening ? " on" : "")} onClick={startStt} title="음성으로 말하기"><Mic size={16} /></button>}
+            {/* 영문 모드에서는 마이크를 내보내지 않는다 — 한국어 코퍼스뿐이라 되는 척이 더 나쁘다.
+                미지원 브라우저에서는 숨기지 않고 눌러보면 이유와 대안을 말풍선으로 알린다. */}
+            {lang !== "en" && <button className={"hidock-mic" + (listening ? " on" : "") + (sttOK ? "" : " off")} onClick={startStt}
+              aria-pressed={listening} title={sttOK ? (listening ? "그만 듣기" : "음성으로 말하기") : "이 브라우저는 음성 입력을 지원하지 않아요"}>
+              {listening ? <X size={16} /> : <Mic size={16} />}</button>}
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} enterKeyHint="send"
               onFocus={() => { try { setTimeout(() => { if (endRef.current) endRef.current.scrollIntoView({ block: "end" }); }, 250); } catch (e) {} }}
-              placeholder={listening ? "듣고 있어요…" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘"} />
+              placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘"} />
             <button className={"hidock-send" + (input.trim() ? " on" : "")} onClick={() => send()} aria-label="보내기"><Send size={15} /></button>
           </div>
         </div>
@@ -423,6 +517,36 @@ function AgentOpsConsole() {
         <div className="hiops-sec" style={{ display: "block" }}>답변불가·오프토픽 주간 리포트 <span>(최근 7일 {r.total}건)</span>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>{Object.entries(r.byType).map(([k, v]) => <span key={k} className="cbadge" style={{ background: "#FFF3E6", color: "#B45309" }}>{L[k] || k} {v}</span>)}</div>
         </div> ); })()}
+      {(() => { /* ── 음성·글자 채널(D9) — 새 이벤트 없이 **라벨만**으로 갈라 본다 ──
+        ⚠️ 여기서 숫자를 만들지 않는다. 비율은 분모가 실제로 기록된 원천(턴 대장)에만 붙이고,
+           대장이 비어 있으면 「측정 대기」라고 적는다. 그럴듯한 수를 채우는 순간 관제탑이 아니라 장식이 된다.
+           원천이 셋(턴 대장·미답변 로그·완결 이벤트)이라 세는 대상도 다르다 — 합치지 않고 나란히 적는다. */
+        const ch = (typeof telemChannelStats === "function") ? telemChannelStats() : null;
+        if (!ch) return null;
+        const T = ch.turns, V = T.voice, X = T.text;
+        const pct = (a, b) => (b ? Math.round(a / b * 1000) / 10 : null);
+        const share = pct(V.turns, T.total);
+        const sigN = (ch.signals.byVia || {}).voice || 0;
+        const ms = (n) => (n == null ? "—" : n.toLocaleString() + "ms");
+        const G = { background: "#F8FAFC", color: "#475569" }, W = { background: "#FFF3E6", color: "#B45309" }, N = { background: "#EFF6FF", color: "#1D4ED8" };
+        return (
+          <div className="hiops-sec" style={{ display: "block" }}>음성·글자 채널 <span>(입력 경로 라벨 — 퍼널 이벤트가 아닙니다)</span>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              {T.total
+                ? <><span className="cbadge" style={N}>음성 비중 {share}% ({V.turns.toLocaleString()}/{T.total.toLocaleString()}턴)</span>
+                    <span className="cbadge" style={V.missRate ? W : G}>음성 미답변 {V.missRate == null ? "—" : V.missRate + "%"} ({V.miss}/{V.turns})</span>
+                    <span className="cbadge" style={G}>글자 미답변 {X.missRate == null ? "—" : X.missRate + "%"} ({X.miss}/{X.turns})</span>
+                    <span className="cbadge" style={N}>음성 평균 응답 {ms(V.avgMs)} · p95 {ms(V.p95Ms)}</span>
+                    <span className="cbadge" style={G}>글자 평균 응답 {ms(X.avgMs)} · p95 {ms(X.p95Ms)}</span>
+                    {(V.timed < V.turns || X.timed < X.turns) && <span className="cbadge" style={G}>시간 기록 {(V.timed + X.timed).toLocaleString()}/{T.total.toLocaleString()}턴</span>}</>
+                : <span className="cbadge" style={G}>턴 대장 비어 있음 — 음성 비중·미답변율·응답시간 측정 대기(telemTurn 호출부 배선 필요)</span>}
+              <span className="cbadge" style={ch.unanswered.voice ? W : G}>미답변 로그 · 음성 {ch.unanswered.voice} / 글자 {ch.unanswered.text} (전체 {ch.unanswered.total})</span>
+              <span className="cbadge" style={G}>신호 라벨 · 음성 {sigN} (라벨 {ch.signals.labeled}/{ch.signals.total})</span>
+              <span className="cbadge" style={G}>완결 이벤트 · 음성 {ch.events.voice} / 글자 {ch.events.text} (라벨 {ch.events.labeled}/{ch.events.total})</span>
+            </div>
+            <div className="chnote" style={{ marginTop: 6 }}>※ 원천 — 턴 대장(hifin_telem_turns) · 미답변 로그(hifin_hi_unanswered) · 완결 이벤트(hifin_events). 셋은 세는 대상이 달라 합산하지 않습니다. 라벨이 없는 기록은 글자로 세지 않습니다(미배선 화면과 글자 입력은 다른 사실).</div>
+          </div>
+        ); })()}
       <div className="hiops-sec">미답변 로그 <span>({misses.length}건 · 최근순)</span>
         <button className="hiops-run" onClick={runLoop}><RefreshCw size={13} /> 주간 학습 루프 실행</button></div>
       <div className="hiops-list">{misses.slice(-10).reverse().map((m, i) => (

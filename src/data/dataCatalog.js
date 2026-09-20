@@ -19,7 +19,9 @@ const HIFIN_DATA_LAYERS = [
 const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent_miss", "hifin_agent_pending", "hifin_agent_route", "hifin_agent_stats", "hifin_chain_snapshots", "hifin_claims", "hifin_connectors_custom", "hifin_divi_seen", "hifin_dl_ready", "hifin_easyread", "hifin_fin_params", "hifin_fin_params_v38", "hifin_fin_scn", "hifin_escrow_orders_v38", "hifin_force_onboard", "hifin_gov_votes", "hifin_hash_v2", "hifin_hashchain", "hifin_hashchain_legacy", "hifin_hi_sarg_log", "hifin_hi_unanswered", "hifin_hi_welcome", "hifin_hm_code", "hifin_ins_certs", "hifin_ins_deferred", "hifin_ins_guard", "hifin_lead_audit", "hifin_medrem", "hifin_mydata_req", "hifin_nodes", "hifin_notifs", "hifin_ocr_key", "hifin_pu_ready", "hifin_reggate", "hifin_rerate", "hifin_rpm_seen", "hifin_rx", "hifin_self_ins_v3", "hifin_self_ins_v4", "hifin_share_apply", "hifin_sharing_pool", "hifin_sid", "hifin_telem_raw", "hifin_telemetry", "hifin_wp_log", "pi_allocated",
   /* 변수 간접 키(상수·함수로 참조 — 스캔 밖) */ "hifin_events", "hifin_login_lock", "hifin_guard_cfg", "hifin_access_log",
   /* 백업 시스템(backupRestore.js) */ "hifin_backup_last", "hifin_restore_undo",
-  /* 동의 게이트(consentGate.js — 리뉴얼 R1): 체험 회원 동의 상태(종류별 on·취득일) */ "hifin_consent2"];
+  /* 동의 게이트(consentGate.js — 리뉴얼 R1): 체험 회원 동의 상태(종류별 on·취득일) */ "hifin_consent2",
+  /* 음성 대화(P4-1 계측·P1-2 읽어주기): 채널 턴 대장(hiTelemetry.js — 채널·소요ms·답변여부만) ·
+     읽어주기 켜짐 기억(hiVoice.js — 기본 꺼짐, 회원이 켠 것만 "1") */ "hifin_telem_turns", "hifin_hi_read"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */

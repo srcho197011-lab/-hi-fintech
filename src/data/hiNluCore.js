@@ -3,9 +3,39 @@
    → 시스템(U6) → 신뢰도(U7) → 정상 답변. 컨텍스트 3턴 기억 + 쉬운말 모드 전파.
    진입점: hiRespond(text, norm, m) — aiNative.agentAnswer의 무매칭 분기에서 호출(기존 QNA·섹션가이드 우선). */
 
-/* ── 정규화: lexNormalize 결과에 오타 사전(HI_SLOTS_A.typo) 추가 치환 ── */
-function hiNormalize(norm) {
-  let t = String(norm || "");
+/* ── 음성 오인식 보정 — 타자 오타(typo)와 **층이 다르다**(사전은 hiNluDict.js의 HI_MISHEAR 구획) ──
+   귀가 잘못 들은 형태를 먼저 표준어로 되돌리고, 그다음에 기존 오타 사전을 태운다.
+   두 층이 이어져야 「검신결가」→「검진결가」→「검진결과」처럼 끝까지 간다.
+   반환 hits는 되묻기 문구가 "검진 말씀이신가요"라고 말할 수 있게 남기는 도메인 라벨이다. */
+function hiMishearNorm(norm) {
+  let t = String(norm || ""); const hits = [];
+  try {
+    const D = (typeof HI_MISHEAR !== "undefined") ? HI_MISHEAR : [];
+    for (const [std, vars] of D) {
+      for (const v of vars.slice().sort((a, b) => b.length - a.length)) {
+        const vn = String(v).toLowerCase();
+        if (vn.length < 2 || t.indexOf(vn) < 0) continue;     // 2글자 미만 치환 금지(합성어 파괴 방지)
+        t = t.split(vn).join(String(std).toLowerCase());
+        const d = (typeof HI_MISHEAR_DOMAIN !== "undefined" && HI_MISHEAR_DOMAIN[std]) || null;
+        if (d && hits.indexOf(d) < 0) hits.push(d);
+      }
+    }
+  } catch (e) {}
+  return { t: t, hits: hits };
+}
+let _hiMishearHits = [];          /* 직전 정규화에서 보정된 도메인 — 되묻기 판정에만 쓴다(답변 내용에는 쓰지 않는다) */
+function hiMishearHits() { return _hiMishearHits.slice(); }
+
+/* ── 정규화: 음성 오인식 보정 → lexNormalize 결과에 오타 사전(HI_SLOTS_A.typo) 추가 치환 ──
+   ⚠️ 오인식 보정은 **음성 채널 전용**이다. 발음 유사형 치환은 합성어를 깨뜨린 전력이 있고
+      (HIFIN_LEXICON 「키」→「신장」이 밀키트를 파괴한 사고 — aiNative.js:15), 타자로 친 글에는
+      애초에 '귀가 잘못 들은 형태'가 없다. 위험 면적만 넓히지 않도록 채널로 격리한다.
+      응급 판정(hcTriage)은 이 격리와 무관하게 계속 보정문을 본다 — 안전은 오탐 쪽으로 기우는 것이 맞다. */
+function hiNormalize(norm, via) {
+  const voice = (via === "voice") || (via == null && (() => { try { return (typeof agentChannel === "function") && agentChannel() === "voice"; } catch (e) { return false; } })());
+  const mh = voice ? hiMishearNorm(norm) : { t: String(norm || ""), hits: [] };
+  _hiMishearHits = mh.hits;
+  let t = mh.t;
   try {
     for (const gid in HI_SLOTS_A) {
       const g = HI_SLOTS_A[gid];
@@ -58,17 +88,41 @@ function hiClassify(rawText, norm) {
   }
   scored.sort((x, y) => y.s - x.s);
   const best = scored[0] || null;
-  const conf = best ? Math.min(1, best.s / Math.max(2, t.length * 0.55)) : 0;   // 단답(1어)도 신뢰도 확보(분모 하한 2)
-  return { t, a, b, best, conf, cand: scored.slice(0, 3).map((x) => x.it) };
+  const conf = hiConfOf(best, scored, t);
+  return { t, a, b, best, conf, mis: _hiMishearHits.slice(), s2: scored[1] ? scored[1].s : 0, cand: scored.slice(0, 3).map((x) => x.it) };
 }
 
-/* ── 미답변 로그(unanswered_log) + 주간 리포트 + 에스컬레이션 카운터 ── */
-function hiULog(q, type) {
+/* ── 신뢰도 — 분모가 '발화 길이'였다(2026-09-20 정정) ──
+   말이 길수록 정답이 게이트(0.45)에 막혔다. 실측에서 43~57자 구어 4건은 **정답 인텐트가 1등인데도**
+   conf 0.177~0.355로 전부 탈락했다. 음성은 글보다 늘 길어서 이 벌점을 구조적으로 더 받는다.
+     ① 길이 분모에 **상한**을 둬 장문 벌점을 끊는다(길다고 무한정 깎이지 않는다).
+     ② **영역 격차(margin)**를 얹는다 — 경쟁 후보가 전부 같은 영역이면 길어도 통과시킨다.
+        격차를 그냥 2등과 재면 안 된다. 「보험 여러 개 들었는데 빠진 보장 있나」는 1·2·3등이 모두 '보험'이라
+        2등과의 격차가 0이다 — 무엇을 물었는지 모르는 게 아니라 **같은 얘기를 어느 각도로 답할지**가 갈릴 뿐인데,
+        그걸로 신뢰도를 깎으면 긴 말이 통째로 막힌다(실측 51자 문장이 그렇게 탈락했다).
+   짧은 질의는 상한에 닿지 않아 값이 지금까지와 같거나 커진다(단답 회귀를 깎지 않으려는 것이다). */
+const HI_CONF_CAP = 11;          // 길이 분모 상한 — 20자(≈11/0.55)를 넘는 말에는 길이 벌점을 더 주지 않는다
+const HI_CONF_MARGIN = 0.45;     // 영역 격차 가중 — 다른 영역 후보가 없으면 최대 +45%
+function hiConfOf(best, scored, t) {
+  if (!best || !(best.s > 0)) return 0;
+  const denom = Math.max(2, Math.min(String(t || "").length * 0.55, HI_CONF_CAP));   // 단답(1어)도 신뢰도 확보(분모 하한 2)
+  let other = 0;
+  try { for (const x of (scored || [])) { if (x.it && best.it && x.it.l1 !== best.it.l1) { other = x.s; break; } } } catch (e) {}
+  const margin = Math.max(0, Math.min(1, (best.s - other) / best.s));
+  return Math.min(1, (best.s / denom) * (1 + HI_CONF_MARGIN * margin));
+}
+
+/* ── 미답변 로그(unanswered_log) + 주간 리포트 + 에스컬레이션 카운터 ──
+   meta.via — 입력 채널 라벨("voice"|"text"). **새 이벤트를 만들지 않는다**(hiEvents.js 4-5행 가공 이벤트 금지).
+   음성은 퍼널 완결점이 아니라 입력 채널이라, 기존 기록에 라벨만 붙여 갈라 본다.
+   생략하면 엔진이 알고 있는 이번 턴 채널을 쓴다 — 호출부를 한꺼번에 고치지 않아도 된다. */
+function hiULog(q, type, meta) {
   try {
+    const via = (meta && meta.via) || ((typeof agentChannel === "function") ? agentChannel() : "text");
     const k = "hifin_hi_unanswered";
     const l = JSON.parse(localStorage.getItem(k) || "[]");
-    l.push({ q: String(q).slice(0, 100), type, ts: Date.now() });
-  try { if (typeof telemPush === "function") telemPush("unanswered", q, { utype: type }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
+    l.push({ q: String(q).slice(0, 100), type, via, ts: Date.now() });
+  try { if (typeof telemPush === "function") telemPush("unanswered", q, { utype: type, via: via }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
     localStorage.setItem(k, JSON.stringify(l.slice(-500)));
   } catch (e) {}
 }
@@ -76,11 +130,11 @@ function hiUnansweredReport(days) {
   try {
     const since = Date.now() - (days || 7) * 86400000;
     const l = JSON.parse(localStorage.getItem("hifin_hi_unanswered") || "[]").filter((x) => x.ts >= since);
-    const byType = {}, byQ = {};
-    l.forEach((x) => { byType[x.type] = (byType[x.type] || 0) + 1; byQ[x.q] = (byQ[x.q] || 0) + 1; });
+    const byType = {}, byQ = {}, byVia = {};
+    l.forEach((x) => { byType[x.type] = (byType[x.type] || 0) + 1; byQ[x.q] = (byQ[x.q] || 0) + 1; byVia[x.via || "text"] = (byVia[x.via || "text"] || 0) + 1; });
     const top = Object.keys(byQ).sort((a, b) => byQ[b] - byQ[a]).slice(0, 20).map((q) => ({ q, n: byQ[q] }));
-    return { total: l.length, byType, top };
-  } catch (e) { return { total: 0, byType: {}, top: [] }; }
+    return { total: l.length, byType, byVia, top };   // byVia — 미답변이 음성에서 왔는지 타자에서 왔는지(채널 라벨)
+  } catch (e) { return { total: 0, byType: {}, byVia: {}, top: [] }; }
 }
 function hiEscBump(type) {
   try {
@@ -89,6 +143,33 @@ function hiEscBump(type) {
     sessionStorage.setItem(k, String(n));
     return n;
   } catch (e) { return 1; }
+}
+
+/* ── 조용한 오답 차단 — 오인식을 고치고도 영역이 갈리면 단정하지 말고 되묻는다 ──
+   미답변보다 위험한 것이 **틀린 줄 모르고 받아 가는 답**이다(실측: 「검신 대비 보험」→보장공백,
+   「에이치 티 케이 충전」→적립현황). 그렇다고 아무 때나 되물으면 대화가 못 굴러간다.
+   조건을 좁게 잡는다 — ① 이번 턴에 실제로 오인식 보정이 일어났고
+   ② 보정된 영역이 둘 이상이거나, 1·2등 인텐트가 **다른 영역**이면서 점수 차가 20% 이내일 때만. */
+const HI_CLARIFY_TIE = 0.2;
+function hiMishearClarify(cls) {
+  try {
+    const mis = (cls && cls.mis) || [];
+    if (!mis.length || !cls.best) return null;
+    let names = null;
+    if (mis.length >= 2) names = mis.slice(0, 2);
+    else {
+      const b = cls.best.it, c2 = cls.cand && cls.cand[1];
+      if (!c2 || !b.l1 || c2.l1 === b.l1) return null;
+      if (!(cls.best.s > 0 && (cls.best.s - (cls.s2 || 0)) / cls.best.s <= HI_CLARIFY_TIE)) return null;
+      names = [b.l1, c2.l1];
+    }
+    if (!names || names[0] === names[1]) return null;
+    const chips = (cls.cand || []).map((c) => (c.chips && c.chips[0]) || c.l2).filter(Boolean);
+    return { kind: "unanswerable", u: "U7", res: {
+      lines: [`제가 들은 말이 두 갈래로 읽혀요 — ${names[0]} 말씀이신가요, ${names[1]} 말씀이신가요?`,
+        hiEasyOn() ? "아래에서 골라 주셔도 돼요." : "아래에서 골라 주시면 그대로 이어서 도와드릴게요."],
+      buttons: [...new Set(chips)].slice(0, 3), nav: null } };
+  } catch (e) { return null; }
 }
 
 /* ── 컨텍스트: 직전 3턴 기억(슬롯필링·후속 질문) ── */
@@ -229,6 +310,10 @@ function hiRespond(rawText, norm, m) {
     /* [2단계] 상태 스냅샷 — 파이프라인 진입 시 1회 로드(추론·U1/U2 판정의 공통 근거) */
     let snap = null;
     try { snap = (m && typeof memberStateSnapshot === "function") ? memberStateSnapshot(m) : null; } catch (e) { snap = null; }
+
+    /* [1.4] 오인식 되묻기 — 단정 답변보다 앞에 세운다(고쳐 놓고 엉뚱한 쪽으로 가면 되돌릴 길이 없다) */
+    const amb = hiMishearClarify(cls);
+    if (amb) { hiULog(rawText, "U7"); hiCtxPush(rawText, null); return amb; }
 
     /* [1] 의도분류 성공 경로 */
     if (cls.best && cls.conf >= 0.45) {

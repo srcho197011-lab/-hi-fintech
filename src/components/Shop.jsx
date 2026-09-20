@@ -1457,6 +1457,34 @@ function shopConsultReply(text) {
   return [{ kind: "text", text: `‘${text}’에 딱 맞는 항목을 못 찾았어요. 😅 아래 관심영역 버튼을 누르시거나, ‘눈이 침침해요’, ‘혈당 관리’, ‘혈압계 추천’처럼 말씀해 주세요.` }];
 }
 let _shopMsgId = 0;
+/* 응답 대기 — 여기 박아둔 750ms가 체감 지연의 97.4%였다(엔진 실계산은 7ms대).
+   도크·주치의와 같은 표를 쓴다. 같은 말을 해도 화면마다 대기가 다르면 하이가 다른 사람처럼 느껴진다. */
+function shopWait(via) {
+  try { if (typeof hidockWait === "function") return hidockWait(via); } catch (e) {}
+  return via === "voice" ? 90 : 320;
+}
+/* 낭독용 카드 요약 — 지금까지 첫 말풍선만 읽어서 성분·기기·가격은 소리로 한마디도 안 나갔다.
+   화면에 이미 떠 있는 라벨·설명·최저가만 옮겨 적는다(새 문장을 짓지 않는다). 최대 2건. */
+function shopVoiceFacts(replies, areaBy, devBy) {
+  const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
+  const out = [];
+  (replies || []).forEach((r) => {
+    if (out.length >= 2 || !r) return;
+    if (r.kind === "area") {
+      const a = areaBy[r.areaKey]; if (!a) return;
+      const ps = PRODUCTS.filter((p) => (a.cats || []).includes(p.category));
+      const low = ps.length ? Math.min.apply(null, ps.map((p) => Number(p.price) || 0)) : 0;
+      /* 수치를 앞에 둔다 — 120자 상한에서 뒤쪽은 '이어 듣기'로 밀리므로, 카드의 핵심 수치가 먼저 들려야 한다 */
+      out.push(a.label + (low ? ` 관련 제품 ${ps.length}가지, 최저가 ${shopWon(low)}.` : ".") + " " + a.claim);
+    } else if (r.kind === "dev") {
+      const d = devBy[r.devKey]; if (!d) return;
+      out.push(d.label + ". " + d.note + ((d.items && d.items[0]) ? " " + d.items[0][0] + "." : ""));
+    } else if (r.kind === "rec") {
+      out.push("맞춤 추천은 영양제·건강식단·의료기기 분야별로 화면 카드에 정리해 드렸어요.");
+    }
+  });
+  return out.join(" ");
+}
 function ShopConsultant() {
   const intel = (() => { try { const x = (typeof window !== "undefined") ? window._shopIntel : null; if (typeof window !== "undefined") window._shopIntel = null; return x || null; } catch (e) { return null; } });
   const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
@@ -1478,39 +1506,66 @@ function ShopConsultant() {
   const [typing, setTyping] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
-  const [tts, setTts] = useState(false);
+  /* 읽어주기 — 기본은 꺼짐이고, 켜면 기억한다(hiVoice 단일 소스라 화면을 옮겨도 유지된다) */
+  const [tts, setTts] = useState(() => { try { return (typeof hiVoiceOn === "function") ? hiVoiceOn() : false; } catch (e) { return false; } });
+  const [speaking, setSpeaking] = useState(false);
+  const [more, setMore] = useState("");
   const endRef = useRef(null);
-  const recogRef = useRef(null);
-  const voicesRef = useRef([]);
-  const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-  const ttsOK = typeof window !== "undefined" && !!window.speechSynthesis;
+  const lang = useHiLang();
+  /* 듣기·말하기 설정은 hiVoice.js 하나뿐 — 지금까지 이 화면만 ko[0]을 골라 환경에 따라 여성으로 말했다 */
+  const vsup = (typeof hiVoiceSupport === "function") ? hiVoiceSupport() : { stt: false, tts: false, reason: "" };
+  const sttOK = vsup.stt && lang !== "en";
+  const ttsOK = vsup.tts && lang !== "en";
   useEffect(() => { if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
-  useEffect(() => { if (!ttsOK) return; const load = () => { voicesRef.current = window.speechSynthesis.getVoices().filter((v) => /ko/i.test(v.lang)); }; load(); window.speechSynthesis.onvoiceschanged = load; return () => { try { window.speechSynthesis.onvoiceschanged = null; window.speechSynthesis.cancel(); } catch (e) {} }; }, []);
-  const speak = (tx) => { if (!ttsOK || !tts || !tx) return; try { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(tx).replace(/[#*•【】]/g, "")); u.lang = "ko-KR"; u.rate = 1.03; const ko = voicesRef.current; if (ko && ko[0]) u.voice = ko[0]; window.speechSynthesis.speak(u); } catch (e) {} };
+  /* 화면을 떠나거나 영문으로 바꾸면 듣기·말하기를 모두 정리한다 */
+  const hush = () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} };
+  useEffect(() => { if (lang === "en") { hush(); setListening(false); setInterim(""); setSpeaking(false); setMore(""); } }, [lang]);
+  useEffect(() => () => hush(), []);
+  const voiceNote = (line) => { if (line) setMsgs((m) => [...m, { id: ++_shopMsgId, who: "ai", kind: "text", first: true, text: line }]); };
+  const sayOpt = () => ({ onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } });
+  const speak = (tx) => { if (!ttsOK || !tts || !tx || typeof hiVoiceSpeak !== "function") return; hiVoiceSpeak(tx, sayOpt()); };
+  const stopSpeak = () => { try { if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} setSpeaking(false); setMore(""); };
+  const sayMore = () => { try { if (typeof hiVoiceMore === "function") hiVoiceMore(sayOpt()); } catch (e) {} };
+  const sayAgain = () => { try { if (typeof hiVoiceAgain === "function") hiVoiceAgain(sayOpt()); } catch (e) {} };
+  /* 듣기 — 시작/중지 한 버튼. 인스턴스 관리·무음 종료·끼어들기(에코 방지)는 hiVoice가 맡는다 */
   const startStt = () => {
-    if (!sttOK) return;
-    const Rc = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new Rc(); recogRef.current = r;
-    r.lang = "ko-KR"; r.interimResults = true; r.continuous = false; let fin = "";
-    r.onstart = () => { setListening(true); setInterim(""); };
-    r.onresult = (e) => { let itm = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const tr = e.results[i]; if (tr.isFinal) fin += tr[0].transcript; else itm += tr[0].transcript; } setInterim(itm); };
-    r.onerror = () => setListening(false);
-    r.onend = () => { setListening(false); setInterim(""); if (fin.trim()) send(fin.trim()); };
-    try { r.start(); } catch (e) { setListening(false); }
+    if (typeof hiVoiceListen !== "function") return;
+    if (listening) { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); return; }   /* 재클릭은 취소 — 들은 말을 보내지 않는다 */
+    if (!sttOK) { voiceNote(lang === "en" ? HI_VOICE_MSG.enOnly : (vsup.reason || HI_VOICE_MSG.nostt)); return; }
+    setSpeaking(false); setMore("");
+    hiVoiceListen({
+      onStart: () => { setListening(true); setInterim(""); },
+      onInterim: (itm) => setInterim(itm),
+      onError: (msg) => { setListening(false); setInterim(""); voiceNote(msg); },
+      onEnd: () => { setListening(false); setInterim(""); },
+      /* 주문·결제처럼 되돌리기 어려운 말은 소리로 실행하지 않는다 — 입력칸에 채워만 둔다 */
+      onFinal: (said) => { if (typeof hiVoiceRisky === "function" && hiVoiceRisky(said)) { setInput(said); voiceNote(HI_VOICE_RISKY_MSG); return; } send(said, "voice"); },
+    });
   };
-  const stopStt = () => { if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } setListening(false); };
-  const send = (raw) => {
+  const stopStt = () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); } catch (e) {} setListening(false); };
+  const send = (raw, viaArg) => {
     const text = ((raw !== undefined ? raw : input) || "").trim(); if (!text) return;
+    const via = (typeof hiVoiceChannel === "function") ? hiVoiceChannel(viaArg) : (viaArg === "voice" ? "voice" : "text");
     setInput("");
-    setMsgs((m) => [...m, { id: ++_shopMsgId, who: "me", kind: "text", text }]);
+    setMsgs((m) => [...m, { id: ++_shopMsgId, who: "me", kind: "text", text, channel: via }]);
     setTyping(true);
+    /* 턴 대장 — 답을 화면에 붙이는 순간 한 줄. 재는 것은 '회원이 기다린 시간'이라 여기서부터 센다(도크와 같은 지점) */
+    const t0 = Date.now();
     setTimeout(() => {
       const replies = shopConsultReply(text);
       setTyping(false);
       setMsgs((m) => [...m, ...replies.map((r) => ({ id: ++_shopMsgId, who: "ai", ...r }))]);
-      const firstText = replies.find((r) => r.kind === "text"); if (firstText) speak(firstText.text);
+      try {
+        const miss = replies.length === 1 && replies[0].kind === "text" && /딱 맞는 항목을 못 찾았어요/.test(replies[0].text || "");
+        if (typeof telemTurn === "function") telemTurn(via, Date.now() - t0, !miss);
+      } catch (e) {}
+      /* 본문 + 카드의 핵심 수치까지 읽는다 — 공통 요약기는 텍스트 버블만 아니까 카드 몫은 여기서 조립해 넘긴다 */
+      const body = (typeof hiVoiceSummarize === "function") ? hiVoiceSummarize(replies) : ((replies.find((r) => r.kind === "text") || {}).text || "");
+      const say = [body, shopVoiceFacts(replies, AREA_BY, DEV_BY)].filter(Boolean).join(" ");
+      if (say) speak(say);
       const hasArea = replies.some((r) => r.kind === "area" || r.kind === "dev" || r.kind === "rec");
       setQuicks(hasArea ? ["🎯 내 건강상태 맞춤 추천", "관절·연골 건강", "면역·활력", "홈케어 기기 추천"] : ["🎯 내 건강상태 맞춤 추천", "눈 건강", "혈당 건강", "혈압계 추천"]);
-    }, 750);
+    }, shopWait(via));
   };
   const renderMsg = (m) => {
     if (m.kind === "area") { const a = AREA_BY[m.areaKey]; return a ? <ConsultAreaCard a={a} /> : null; }
@@ -1528,7 +1583,8 @@ function ShopConsultant() {
         <div className="kt-head">
           <span className="av-ai" style={{ width: 34, height: 34 }}><Sparkles size={19} color="#fff" /></span>
           <div style={{ flex: 1 }}><div className="nm">AI 상담사</div><div className="st"><span className="dot" /> 온라인 · 맞춤 건강제품 안내</div></div>
-          {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기" style={{ color: tts ? "#EA580C" : "#9A3412", background: "none", border: "none", cursor: "pointer", padding: 4 }}><Volume2 size={18} /></button>}
+          {/* 읽어주기 — 기본 꺼짐·켜면 기억. 미지원 브라우저면 숨기지 않고 이유를 말한다 */}
+          {lang !== "en" && <button className={`ktib ${tts ? "on" : ""}`} aria-pressed={tts} onClick={() => { if (!vsup.tts) { voiceNote(vsup.reason || HI_VOICE_MSG.notts); return; } const v = !tts; setTts(v); try { if (typeof hiVoiceSetOn === "function") hiVoiceSetOn(v); } catch (e) {} if (!v) stopSpeak(); }} title={tts ? "읽어주기 끄기" : "읽어주기 켜기 — 답변을 소리로 들려드려요"} style={{ color: tts ? "#EA580C" : "#9A3412", background: "none", border: "none", cursor: "pointer", padding: 4 }}><Volume2 size={18} /></button>}
         </div>
         <div className="kt-body">
           <div className="daypill"><Sparkles size={12} style={{ verticalAlign: -2, marginRight: 3 }} /> 정밀영양협회 검증 · 식약처 인정 기능성 기반 · 참고용</div>
@@ -1545,10 +1601,18 @@ function ShopConsultant() {
           <div ref={endRef} />
         </div>
         {(listening || interim) && <div className="kt-listening">{listening ? "🎙 듣는 중… 말씀하세요 " : ""}{interim && "“" + interim + "”"}</div>}
+        {/* 읽어주는 중 — 120자에서 끊기므로 '이어 듣기'가 없으면 뒷부분을 영영 못 듣는다 */}
+        {(speaking || more) && <div className="kt-listening" style={{ color: "#9A3412", background: "#FFF7ED", display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+          <span>{speaking ? "🔊 읽어드리는 중…" : "여기까지 읽어드렸어요"}</span>
+          {speaking && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={stopSpeak}><X size={12} /> 중지</button>}
+          {!speaking && more && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={sayMore}><Play size={12} /> 이어 듣기</button>}
+          {!speaking && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={sayAgain}><RotateCcw size={12} /> 다시 듣기</button>}
+        </div>}
         {quicks.length > 0 && !typing && <div className="quicks">{quicks.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}</div>}
         <div className="kt-input">
-          {sttOK && <button className="pl" onClick={() => listening ? stopStt() : startStt()} style={{ color: listening ? "#EF4444" : "#EA580C" }} title="음성 입력">{listening ? <X size={22} /> : <Mic size={22} />}</button>}
-          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={sttOK ? "메시지 입력 또는 🎤 음성 (예: 눈이 침침해요)" : "예: 눈이 침침해요 / 혈당 관리 / 혈압계 추천"} />
+          {/* 영문 모드에서는 마이크를 내보내지 않는다(한국어 코퍼스뿐). 미지원 브라우저면 숨기지 말고 이유를 알린다 */}
+          {lang !== "en" && <button className="pl" onClick={() => listening ? stopStt() : startStt()} style={{ color: listening ? "#EF4444" : (sttOK ? "#EA580C" : "var(--soft)") }} title={sttOK ? (listening ? "그만 듣기" : "음성 입력") : "이 브라우저는 음성 입력을 지원하지 않아요"}>{listening ? <X size={22} /> : <Mic size={22} />}</button>}
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : (sttOK ? "메시지 입력 또는 🎤 음성 (예: 눈이 침침해요)" : "예: 눈이 침침해요 / 혈당 관리 / 혈압계 추천")} />
           <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
         </div>
         <div className="kt-disc">AI 상담사는 정보 제공용 안내이며 진단·처방·의료행위가 아닙니다. 건강기능식품은 의약품이 아니고, 의료기기는 허가된 사용목적 범위에서 사용하세요.</div>

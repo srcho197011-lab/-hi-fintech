@@ -69,6 +69,26 @@ const AGENT_GUARDS = {
 /* ── ③ 기능 레지스트리(TOOL_RUN) — 회원의 말에서 의도 파악 → 기능 실행 → 대화로 보고 ── */
 function _won(n) { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000).toFixed(1) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; }
 function _member() { try { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (dm) return dm; if (typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") return selfMember(); } catch (e) {} return null; }
+
+/* ── 나이 읽기 — 숫자·고유어 수사·한자어 수사를 모두 읽는다 ──
+   음성은 숫자를 **글자로** 받아 적는다. 「어머니 여든두 살 등록해줘」가 그동안 78세로 조용히 등록됐다.
+   잘못 적힌 나이는 데이터 금고·블록체인 앵커까지 그대로 올라가 되돌리기 어렵다.
+   그래서 이 함수는 **못 읽으면 null을 돌려준다** — 기본값을 몰래 채우지 않는다(되묻는 건 호출부 몫). */
+const HI_KO_TENS = { 열: 10, 스물: 20, 스무: 20, 서른: 30, 마흔: 40, 쉰: 50, 예순: 60, 일흔: 70, 여든: 80, 아흔: 90 };
+const HI_KO_ONES = { 한: 1, 하나: 1, 두: 2, 둘: 2, 세: 3, 셋: 3, 서: 3, 네: 4, 넷: 4, 다섯: 5, 여섯: 6, 일곱: 7, 여덟: 8, 여덜: 8, 아홉: 9 };
+const HI_SINO_D = { 영: 0, 공: 0, 일: 1, 이: 2, 삼: 3, 사: 4, 오: 5, 육: 6, 칠: 7, 팔: 8, 구: 9 };
+function hiKoAge(text) {
+  const t = String(text || "").replace(/\s/g, "");
+  const ok = (n) => (isFinite(n) && n >= 1 && n <= 120 ? n : null);
+  const d = t.match(/(\d{1,3})\s*(세|살)/);                                   // ① 아라비아 숫자 — "82세"
+  if (d) return ok(parseInt(d[1], 10));
+  const k = t.match(/(열|스물|스무|서른|마흔|쉰|예순|일흔|여든|아흔)?(한|하나|두|둘|세|셋|서|네|넷|다섯|여섯|일곱|여덟|여덜|아홉)?(살|세)/);
+  if (k && (k[1] || k[2])) return ok((HI_KO_TENS[k[1]] || 0) + (HI_KO_ONES[k[2]] || 0));   // ② 고유어 — "여든두 살"
+  const s = t.match(/([일이삼사오육칠팔구])?십([일이삼사오육칠팔구])?(살|세)/);
+  if (s) return ok((s[1] ? HI_SINO_D[s[1]] : 1) * 10 + (s[2] ? HI_SINO_D[s[2]] : 0));      // ③ 한자어 — "팔십이 세"
+  return null;
+}
+
 const TOOL_RUN = {
   rep(m) { try { const R = (typeof demoReport === "function") ? demoReport(m) : null; if (!R) return null; return { lines: [`${m.name}님 리포트 요약이에요 — 생체나이 ${R.bio}세(실제보다 ${R.diff > 0 ? "+" : ""}${R.diff}세), 암위험 ${R.cancerTotal}등급(${R.evalLabel}).`, `관리가 필요한 장기: ${R.worstNames.join("·")} · 금년 예상 의료비 ${_won(R.costThis)}, 10년 후 ${_won(R.cost10)}.`] }; } catch (e) { return null; } },
   gap(m) { try { const g = (typeof analyzeCoverageGap === "function") ? analyzeCoverageGap(m) : null; if (!g) return null; const top = g.gaps.slice(0, 3).map((f) => `${f.sev === "crit" ? "🔴" : "🟠"} ${f.t}`); return { lines: [`보장 충실도 ${g.grade} · ${g.score}점이에요.`, top.length ? "우선 챙길 것: " + top.join(" / ") : "현재 보장이 충실해요."] }; } catch (e) { return null; } },
@@ -104,6 +124,8 @@ const TOOL_RUN = {
   bookdo(m) { try {
     const p = (typeof window !== "undefined") ? window._hiBookPending : null;
     if (!p) return { lines: ["먼저 \"검진 예약해줘\"라고 말씀해 주시면 센터와 날짜를 골라드릴게요."] };
+    /* [D5] 예약 확정은 음성으로 실행하지 않는다 — 증서 발급·블록체인 기록까지 한 번에 가는 행동이다 */
+    if (agentChannel() === "voice") return { lines: [`${p.center.name} ${p.date} ${p.time}으로 확정할까요? 예약 확정은 화면에서 한 번 더 확인하고 진행해요.`], buttons: ["이대로 예약 확정", "다른 센터 볼래요"] };
     try { if (typeof submitCheckupBooking === "function") submitCheckupBooking(p.center, { center: p.center.name, date: p.date, time: p.time, via: "hi", freeIns: true }); } catch (e) {}
     let hash = null;
     try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `무상 검진대비보험 증서 발급(${p.center.name} · 하이 예약)` }); hash = b && b.hash; vaultAccessLog(tk, "member", "하이 대화 예약 — 검진대비보험 증서 발급"); } catch (e) {}
@@ -119,6 +141,8 @@ const TOOL_RUN = {
     return { lines: ["청구 준비를 시작할게요 — 데이터 금고의 검진·진료 기록으로 서류를 자동 구성해요(재입력 0).", `대상: 최근 진료·검진 연계 항목${R && R.hr && R.hr.length ? ` (참고: ${R.hr[0]} 관련 정밀검사비도 보장 확인 대상이에요)` : ""}. 이대로 접수할까요?`], buttons: ["청구 접수 진행해줘", "보장 공백 분석"] };
   } catch (e) { return null; } },
   claimdo(m) { try {
+    /* [D5] 청구 접수도 같다 — 접수번호가 나가고 체인에 기록되면 되돌리기 어렵다 */
+    if (agentChannel() === "voice") return { lines: ["청구를 이대로 접수할까요? 제출은 화면에서 한 번 더 확인하고 진행해요."], buttons: ["청구 접수 진행해줘", "보장 공백 분석"] };
     const id = "CLM-" + Date.now().toString(36).toUpperCase(); let hash = null;
     try { const tk = anonToken(m); const b = chainAppend({ type: "record", token: tk, note: "보험금 청구 접수(하이 대화) — 서류 자동 구성" }); hash = b && b.hash; vaultAccessLog(tk, "member", "보험금 청구 접수(하이)"); } catch (e) {}
     try { const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id, at: Date.now(), status: "접수", hash }); localStorage.setItem("hifin_claims", JSON.stringify(l)); } catch (e) {}
@@ -131,8 +155,16 @@ const TOOL_RUN = {
     const hit = REL.find((r) => new RegExp(r[0]).test(t));
     if (!hit) return { lines: ["누구를 등록할까요? 예를 들어 \"어머니 82세 추가해줘\"처럼 말씀해 주세요."], buttons: ["어머니 82세 추가해줘", "아내 51세 추가해줘"] };
     const label = (t.match(new RegExp(hit[0])) || [hit[0].split("|")[0]])[0];
-    const ageM = t.match(/(\d{1,3})\s*세/);
-    const age = ageM ? parseInt(ageM[1], 10) : (hit[1] === "부모" ? 78 : 50);
+    /* 나이는 **읽히면 쓰고, 안 읽히면 되묻는다.** 예전에는 못 읽으면 78/50을 조용히 넣었고,
+       그 값이 그대로 가족 건강관리·응급 안내의 기준이 됐다(2026-09-20 폐기). */
+    const age = hiKoAge(t);
+    if (!age) return { lines: [`${label} 나이를 같이 말씀해 주시면 바로 등록할게요 — 예를 들어 "${label} 82세 추가해줘"처럼요.`,
+      "제가 임의로 채워 넣으면 검진 주기·응급 안내가 그 나이 기준으로 어긋나서, 여쭤보고 넣을게요."],
+      buttons: [`${label} 82세 추가해줘`, `${label} 65세 추가해줘`] };
+    /* [D5] 되돌리기 어려운 실행은 소리로 확정하지 않는다 — 음성은 채우기까지, 마지막 한 번은 화면 버튼이다.
+       버튼은 글자 채널로 되돌아오므로 그때 실제로 등록된다(확인 카드가 무한 반복되지 않는다). */
+    if (agentChannel() === "voice") return { lines: [`${label} ${age}세로 등록할까요? 소리로 들은 숫자라 한 번만 확인할게요.`],
+      buttons: [`${label} ${age}세 추가해줘`, "아니요"] };
     const list = (typeof familyLoad === "function") ? (familyLoad(m.email, (m.name || "가")[0]) || []) : [];
     list.push({ id: "f" + Date.now().toString(36), name: label, relation: hit[1], age, sex: hit[2] });
     if (typeof familySave === "function") familySave(m.email, list);
@@ -166,6 +198,11 @@ const TOOL_RUN = {
     const hit = KEY.find((k) => new RegExp(k[0], "i").test(t));
     if (!hit) return { lines: ["어떤 동의를 바꿀까요? 목적별로 하나씩, 말 한마디면 돼요."], buttons: ["상담·안내 동의 꺼줘", "상담·안내 동의 켜줘"] };
     const on = /(켜|동의할|허용|받을)/.test(t) && !/(꺼|철회|거부|취소|해제)/.test(t);
+    /* [D5] 동의 철회도 되돌리기 어려운 행동이다 — 지속 설정이고, 변경 이력이 블록체인 원장에 적히며,
+       철회 순간 배정된 상담 리드가 회수된다. 조용한 오인식의 피해는 가족 나이 오염과 같은 종류라
+       소리로 실행하지 않는다. 켜는 쪽은 회원에게 불리하지 않으므로 그대로 진행한다. */
+    if (!on && agentChannel() === "voice") return { lines: [`${hit[2]} 동의를 철회할까요? 동의 변경은 화면에서 한 번 더 확인하고 진행해요.`],
+      buttons: [`${hit[2]} 동의 꺼줘`, "아니요"] };
     const st = {}; st[hit[1]] = on;
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(m, st);
     /* Phase5 §5.3 — 상담 연결의 근거 동의(health·insurance) 철회 시 배정 리드 즉시 회수·파기 절차 개시 */
@@ -467,6 +504,13 @@ const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", hom
 let _hiTurn = { route: null, reason: null };     // 이번 턴의 라우팅 결과
 let _hiLastOwner = "A0";                          // 직전 턴에 실제로 답한 에이전트(인계 고지 판정용)
 
+/* ── 입력 채널(글자·음성) — 새 이벤트를 만들지 않고 **라벨만** 붙인다(hiEvents.js 가공 이벤트 금지) ──
+   음성은 오인식이 섞여 들어오므로, 되돌리기 어려운 도구(예약 확정·청구 접수·가족 등록) 앞에서
+   한 번 더 확인 단계를 거친다. 화면 버튼은 글자 채널로 돌아오므로 그때 실제로 실행된다. */
+let _hiChannel = "text";
+function agentSetChannel(via) { _hiChannel = (via === "voice") ? "voice" : "text"; return _hiChannel; }
+function agentChannel() { return _hiChannel; }
+
 /* 담당 에이전트 실행 — 전용 핸들러가 있는 에이전트만. 없으면 null(공용 파이프라인이 응답) */
 function agentInvoke(agentId, text, ctx) {
   try {
@@ -563,17 +607,67 @@ function _hiDecorate(res) {
 }
 function agentOwnerReset() { _hiLastOwner = "A0"; }
 
-function agentAnswer(text) {
+/* ══ [안전 최상위] 응급 트리아지 — 담당을 정하기 **전에**, 모든 섹션에서 ══
+   49개 응급 사전(longtermCareKB.LTC_EMERGENCY)은 지금까지 A4(재가돌봄) 라우팅일 때만 읽혔다.
+   그래서 「말이 어눌하고 한쪽 팔에 힘이 없어요」 같은 뇌졸중 FAST 징후가 일반 대화를 그냥 통과했다.
+   라우팅 이전 호출 선례는 이미 있다(agentEnsemble.js:121 — 협주를 끄는 판정). 같은 자리에서 **답까지** 낸다.
+     critical — 다른 레이어를 태우지 않고 단독 반환(회원에게 필요한 건 다음 행동 하나다)
+     urgent  — 상담은 이어가되 안내 한 줄을 **맨 앞**에 붙인다(뒤에 붙이면 스크롤 밖으로 밀려 못 본다)
+   과잉 안내(오탐)는 허용한다 — 오발동 불편 < 미발동 사고. 화면 토글로 만들지 않는다
+   (hiOpsConfig OPS_LOCKED: "안전을 UI 토글로 만들면 언젠가 꺼진다"). */
+function _hiEmergency(text) {
+  /* 오인식·띄어쓰기 3갈래 검사는 hcTriage가 한다(단일 지점 — 재가돌봄·협주도 같은 판정을 쓴다) */
+  try { return (typeof hcTriage === "function") ? hcTriage(text) : null; } catch (e) { return null; }
+}
+/* nav는 **일부러 비운다.** 응급 말풍선 아래에 '📍 건강검진 예약 화면 열기'가 뜨면
+   지금 해야 할 행동(119 전화)과 화면 유도(검진 예약)가 정면으로 충돌한다 — 조사 단계에서 지목된 오표적 그대로다.
+   필요한 다음 걸음은 버튼('응급신호 자가체크'·'가까운 병원')으로만 남긴다. */
+function _hiEmergencyRes(tri) {
+  const head = (typeof hcEmergencyLines === "function") ? hcEmergencyLines("critical") : [];
+  return { agent: "A4", lines: head.concat(["가까운 응급실 안내와 응급 신호 자가체크는 바로 도와드릴게요 — 전화부터 걸어 주세요."]),
+    buttons: ["응급신호 자가체크", "가까운 병원"], nav: null, matched: "emergency", emergency: "critical" };
+}
+
+function agentAnswer(text, opt) {
   _hiLastQ = String(text || "");
+  agentSetChannel(opt && opt.channel);
   try { if (typeof hiHandoffReset === "function") hiHandoffReset(); } catch (e) {}
-  return _hiDecorate(agentAnswerCore(text));
+  const tri = _hiEmergency(text);
+  if (tri && tri.level === "critical") {
+    try { agentStats(true); } catch (e) {}
+    try { if (typeof hcGuardLog === "function") hcGuardLog(text, [{ id: "emergency", law: "⓪응급 우선 안내", mode: "prepend" }]); } catch (e) {}
+    _hiTurn = { route: { agent: "A4", reason: "emergency" }, reason: "emergency" };
+    return _hiDecorate(_hiEmergencyRes(tri));
+  }
+  const res = _hiDecorate(agentAnswerCore(text));
+  /* urgent — 이미 A4 가드가 앞에 붙였으면 두 번 말하지 않는다.
+     ⚠️ res.lines에만 붙이면 **화면에서 조용히 사라진다.** 도크는 ⓐ 파트 응답이면 parts[].lines만 그리고
+        ⓑ 미매칭이면 A1 답으로 통째 교체한다. 그래서 안내를 붙일 곳은 '실제로 그려지는 줄'이어야 하고,
+        교체는 도크 쪽에서 막는다(res.emergency가 있으면 A1으로 갈아끼우지 않는다).
+        matched는 **건드리지 않는다** — 못 알아들은 질문을 '답한 것'으로 세면 미답변율·턴 대장이 거짓말을 한다. */
+  try {
+    if (tri && res && !res.emergency) {
+      const line = (typeof hcEmergencyLines === "function") ? (hcEmergencyLines("urgent")[0] || null) : null;
+      const head = (arr) => { if (Array.isArray(arr) && arr.length && arr.indexOf(line) < 0) { arr.unshift(line); return true; } return false; };
+      let put = false;
+      if (line && res.parts && res.parts.length) { put = head(res.parts[0].lines) || put; }
+      if (line && res.lines && res.lines.length) { put = head(res.lines) || put; }
+      else if (line && !res.lines) { res.lines = [line]; put = true; }
+      if (put) res.emergency = "urgent";
+    }
+  } catch (e) {}
+  return res;
 }
 function agentAnswerCore(text) {
   const m = _member();
   const norm = lexNormalize(text);
   /* [라우팅 헌법 P1] 명시적 섹션 지목 — 상황인지·분기 대화가 화면 지목을 가로채지 못한다 */
   try {
-    const navHit = agentNavExplicit(norm);
+    /* 정타 우선 — 못 맞췄을 때만 오인식 보정문으로 한 번 더 본다(「검신 결가 설명해 줘」).
+       lexNormalize 자체는 건드리지 않는다 — 내비 인덱스가 그 위에 서 있어서 같이 흔들린다.
+       hiNormalize의 발음 보정은 **음성 채널일 때만** 돈다(글자 경로까지 넓히면 합성어가 깨진다 — hiNluCore 주석). */
+    let navHit = agentNavExplicit(norm);
+    if (!navHit) { try { const nv = (typeof hiNormalize === "function") ? hiNormalize(norm) : norm; if (nv !== norm) navHit = agentNavExplicit(nv); } catch (e) {} }
     if (navHit) {
       agentStats(true); agentMemSave({ lastIntent: navHit.matched, lastCat: "nav", lastQ: String(text).slice(0, 60) });
       try { if (typeof hiEvent === "function") hiEvent("nav_suggested", { key: navHit.matched }); } catch (e) {}
@@ -628,7 +722,11 @@ function agentAnswerCore(text) {
     }
   } catch (e) {}
 
-  const it = agentMatch(norm);
+  /* 정타로 먼저 맞춰 보고, **못 맞췄을 때만** 오인식 보정문으로 한 번 더 본다.
+     lexNormalize 자체를 건드리면 내비 라우팅까지 같이 흔들린다 — 그래서 보정은 여기서 '덧대기'로만 한다
+     (지금까지 맞던 질문의 결과는 한 글자도 바뀌지 않는다). */
+  let it = agentMatch(norm);
+  if (!it) { try { const nv = (typeof hiNormalize === "function") ? hiNormalize(norm) : norm; if (nv !== norm) it = agentMatch(nv); } catch (e) {} }
   /* 감싸기 원칙(검증된 공용 응답을 대체하지 않는다)의 예외는 두 가지뿐이다.
      [Phase C] **비교표** — 성분·가격을 줄 세운 표는 일반 설명으로 대체될 수 없다.
      [Phase D] **응급 트리아지** — 안전 경로가 정적 매칭에 밀리면 안 된다. 위험 신호 앞에서는 전문가 안내가 우선한다. */
@@ -653,7 +751,9 @@ function agentAnswerCore(text) {
       if (sp) return sp;
     }
     // ① 섹션 활용 가이드(내비게이션 레이어): "검진예약 도와줘" "쇼핑 보여줘" 등 → 사용법 안내 + 화면 열기
-    const sg = agentNavIntent(text, norm);
+    /* 여기도 정타 우선 — 못 맞췄을 때만 오인식 보정문으로 한 번 더(「건강 검신 어떤 걸…」) */
+    let sg = agentNavIntent(text, norm);
+    if (!sg) { try { const nv = (typeof hiNormalize === "function") ? hiNormalize(norm) : norm; if (nv !== norm) sg = agentNavIntent(text, nv); } catch (e) {} }
     if (sg) {
       agentStats(true); agentMemSave({ lastIntent: "nav_" + sg.k, lastCat: "nav", lastQ: String(text).slice(0, 60) });
       return { lines: [sg.guide], buttons: (sg.btns || []).slice(0, 3), nav: { key: sg.k, label: sg.label }, matched: "nav_" + sg.k };
@@ -749,7 +849,10 @@ function agentProactive() {
   /* RPM 경보 — 최우선(새벽 2:17 장면): 세션당 1회 선제 안내 */
   try { const a = rpmAlert(m); if (a && !sessionStorage.getItem("hifin_rpm_seen")) { out.push({ text: `🔴 오늘 새벽 2:17, ${a.rel} ${a.name}님 혈압이 152/94까지 올랐어요(3일 연속 상승 · 가정 혈압계 RPM 자동 감지). 지금 연결 가능한 의사에게 먼저 보여드릴까요?`, buttons: ["원격진료 연결해줘", "가족 혈압 경보 보여줘"] }); sessionStorage.setItem("hifin_rpm_seen", "1"); } } catch (e) {}
   /* 방문수령증(V4) — 수령 완료 시 복약 리마인드 시작 안내(1회), 조제 완료 시 QR 준비 안내(세션 1회) */
-  try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu || x.dl); if (r && ((r.pu && r.puUsed) || (r.dl && (r.dlStep || 0) >= 3)) && !localStorage.getItem("hifin_pu_done_" + (r.pu || r.dl))) { out.push({ text: `💊 ${r.pharm || "약국"} ${r.dl && !r.pu ? "배송 " : ""}수령 완료 확인! 오늘부터 복약 리마인드를 시작할게요 — ${(r.med || "").split("—")[0].trim()}`, buttons: [] }); localStorage.setItem("hifin_pu_done_" + (r.pu || r.dl), "1"); try { if (typeof hiEvent === "function") hiEvent("rx_received", { kind: r.dl && !r.pu ? "배송" : "방문" }); } catch (e9) {} } else if (r && r.pu && !r.puUsed && /조제 완료/.test(r.status || "") && !sessionStorage.getItem("hifin_pu_ready")) { out.push({ text: "🎫 조제가 끝났어요 — 약국 방문 시 수령증 QR을 준비하세요. '수령증 보여줘'라고 하시면 바로 확인돼요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_pu_ready", "1"); } else if (r && r.dl && !r.pu && (r.dlStep || 0) === 2 && !sessionStorage.getItem("hifin_dl_ready")) { out.push({ text: "🚚 약이 배송 중이에요 — 기사님 도착 시 배송추적 QR을 보여주시면 수령이 확인돼요. '배송 어디쯤이야?'로 언제든 확인하세요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_dl_ready", "1"); } } catch (e) {}
+  try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu || x.dl); if (r && ((r.pu && r.puUsed) || (r.dl && (r.dlStep || 0) >= 3)) && !localStorage.getItem("hifin_pu_done_" + (r.pu || r.dl))) { /* 약 이름은 싣지 않는다 — 이 줄은 도크로 직행하고 도크는 이제 그것을 **소리로 읽는다.**
+   공공장소·가족 동석에서 약 이름이 나가는 순간 되돌릴 수 없다(telemed 규칙: 조제 뒤에도 비노출).
+   복용법은 회원이 수령증·처방 화면을 직접 열어 확인한다. */
+out.push({ text: `💊 ${r.pharm || "약국"} ${r.dl && !r.pu ? "배송 " : ""}수령 완료 확인! 오늘부터 복약 리마인드를 시작할게요 — 처방받으신 약과 복용법은 수령증 화면에서 확인하실 수 있어요.`, buttons: ["수령증 보여줘"] }); localStorage.setItem("hifin_pu_done_" + (r.pu || r.dl), "1"); try { if (typeof hiEvent === "function") hiEvent("rx_received", { kind: r.dl && !r.pu ? "배송" : "방문" }); } catch (e9) {} } else if (r && r.pu && !r.puUsed && /조제 완료/.test(r.status || "") && !sessionStorage.getItem("hifin_pu_ready")) { out.push({ text: "🎫 조제가 끝났어요 — 약국 방문 시 수령증 QR을 준비하세요. '수령증 보여줘'라고 하시면 바로 확인돼요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_pu_ready", "1"); } else if (r && r.dl && !r.pu && (r.dlStep || 0) === 2 && !sessionStorage.getItem("hifin_dl_ready")) { out.push({ text: "🚚 약이 배송 중이에요 — 기사님 도착 시 배송추적 QR을 보여주시면 수령이 확인돼요. '배송 어디쯤이야?'로 언제든 확인하세요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_dl_ready", "1"); } } catch (e) {}
   try { const d = JSON.parse(localStorage.getItem("hifin_ins_deferred") || "null"); if (d) out.push({ text: `지난번 ${d.center || "검진"} 예약은 보험 없이 하셨죠 — 무료 검진대비보험, 지금 1분 안에 준비해드릴까요? (이 안내는 한 번만 드려요)`, buttons: ["검진보험 가입해줘", "괜찮아요"] }); } catch (e) {}
   try {
     const ob = (typeof onboardStatus === "function") ? onboardStatus(m) : null;

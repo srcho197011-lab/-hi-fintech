@@ -126,6 +126,7 @@ src/data/aiNative.js
 src/data/hiWelcome.js
 src/data/hiNluDict.js
 src/data/hiNluCore.js
+src/data/hiVoice.js
 src/data/hiStateModel.js
 src/data/memberState.js
 src/data/hiCheckupBranch.js

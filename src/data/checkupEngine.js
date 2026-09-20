@@ -174,11 +174,16 @@ function genMemberCheckup(m) {
 /* ── 항목 매칭 ── */
 function _matchItem(text) {
   const t = String(text).toLowerCase();
+  /* 받아쓰기는 한 낱말을 끊어 놓는다 — 「당화 혈색소」가 그대로 오면 짧은 쪽(혈색소)에 걸려
+     당화혈색소를 물은 사람이 빈혈 설명을 듣는다(2026-09-20 음성 회귀에서 적발).
+     공백을 지운 형태도 함께 대되, 점수는 그대로 **별칭 길이**로 매겨 긴 별칭이 이긴다. */
+  const tf = t.replace(/\s+/g, "");
   let best = null;
   (typeof CHECKUP_ITEMS !== "undefined" ? CHECKUP_ITEMS : []).forEach((it) => {
     (it.aliases || []).forEach((a) => {
       const al = a.toLowerCase();
-      if (!t.includes(al)) return;
+      const af = al.replace(/\s+/g, "");
+      if (!t.includes(al) && !(af.length >= 2 && tf.includes(af))) return;
       const isCode = /^[a-z0-9γ-]+$/.test(al);            // ldl/hdl/psa 등 코드 별칭 우선(총콜레스테롤 오매칭 방지)
       const score = al.length + (isCode ? 100 : 0);
       if (!best || score > best.score) best = { it, a, score };

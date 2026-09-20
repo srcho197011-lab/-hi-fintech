@@ -5,7 +5,11 @@
         tele_connected·homecare_applied는 완결 정의 확정 전이라 정의 자체를 넣지 않는다.
      ② 개인정보 미기록 — payload는 화면 키·항목 키 같은 경량 식별자만. 이름·수치·토큰 금지.
      ③ 시연 분포 — 데모 환경 계측이므로 모든 집계에 '시연 분포' 라벨을 강제한다(§A1).
-        실회원 주간 리포트·문안 개선 루프는 론칭 게이트. */
+        실회원 주간 리포트·문안 개선 루프는 론칭 게이트.
+     ④ 채널(voice|text)은 **이벤트가 아니라 꼬리표**다(형 확정 D9).
+        음성은 퍼널 완결점이 아니라 회원이 말을 넣은 경로일 뿐이라, voice_asked 같은 이름을 새로
+        만들면 ①을 어기면서 퍼널만 부풀린다. 그래서 정의는 손대지 않고 payload에 channel만 받는다.
+        라벨이 없는 기록은 **글자로 간주하지 않는다** — 붙이지 않은 화면과 글자 입력은 다른 사실이다. */
 const HI_EVENT_DEFS = {
   /* 퍼널 단계 */
   nav_suggested:   { ko: "안내 응답 발화", stage: 1 },
@@ -60,6 +64,8 @@ function hiEvent(name, payload) {
     const l = JSON.parse(localStorage.getItem(_hiEvKey()) || "[]");
     const p = {};
     if (payload) for (const k of ["key", "nav", "tab", "kind", "n", "grade", "src"]) if (payload[k] != null) p[k] = String(payload[k]).slice(0, 40);
+    /* channel — 두 값만 통과시킨다. 자유 문자열을 받으면 꼬리표가 또 하나의 사전이 된다 */
+    if (payload && (payload.channel === "voice" || payload.channel === "text")) p.channel = payload.channel;
     l.push({ ts: Date.now(), name: name, p: p, sim: true });
     localStorage.setItem(_hiEvKey(), JSON.stringify(l.slice(-500)));
     return true;
@@ -70,7 +76,16 @@ function hiEventAll() { try { return JSON.parse(localStorage.getItem(_hiEvKey())
 function hiEventStats() {
   const l = hiEventAll();
   const by = {}, stage = { 1: 0, 2: 0, 3: 0 };
-  l.forEach((e) => { by[e.name] = (by[e.name] || 0) + 1; const d = HI_EVENT_DEFS[e.name]; if (d) stage[d.stage]++; });
-  return { total: l.length, by: by, stage: stage,
+  /* byChannel — 라벨이 실제로 붙은 기록만 센다. labeled가 total보다 작은 것은 결함이 아니라
+     「아직 라벨을 붙이지 않은 화면이 있다」는 사실이고, 그 사실을 가리면 집계가 원천과 어긋난다. */
+  const byChannel = { voice: 0, text: 0 };
+  let labeled = 0;
+  l.forEach((e) => {
+    by[e.name] = (by[e.name] || 0) + 1;
+    const d = HI_EVENT_DEFS[e.name]; if (d) stage[d.stage]++;
+    const c = e.p && e.p.channel;
+    if (c === "voice" || c === "text") { byChannel[c]++; labeled++; }
+  });
+  return { total: l.length, by: by, stage: stage, byChannel: byChannel, labeled: labeled,
     names: Object.keys(by).sort((a, b) => by[b] - by[a]).map((k) => ({ k: k, ko: (HI_EVENT_DEFS[k] || {}).ko || k, n: by[k] })) };
 }

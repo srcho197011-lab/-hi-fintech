@@ -88,7 +88,11 @@ const LTC_EMERGENCY = {
   /* 즉시 119 — 지체하면 되돌릴 수 없는 신호 */
   critical: ["의식이 없", "의식 없", "숨을 안 쉬", "호흡이 없", "숨을 못 쉬", "심정지", "쓰러졌", "쓰러지셨", "경련", "발작",
     "말이 어눌", "한쪽이 마비", "마비가 왔", "입이 돌아", "얼굴이 처졌", "가슴을 움켜", "가슴이 심하게", "피를 토",
-    "토혈", "각혈", "출혈이 멈추지", "머리를 부딪", "머리를 다쳤", "체온이 안", "저체온", "혼수"],
+    "토혈", "각혈", "출혈이 멈추지", "머리를 부딪", "머리를 다쳤", "체온이 안", "저체온", "혼수",
+    /* FAST 보강(2026-09-20 회귀) — 뇌졸중은 셋 중 하나만 보여도 시계가 돌기 시작한다.
+       「말이 어눌」만 있고 **팔 힘(Arm)·얼굴 처짐(Face)의 단독 표현**이 없어서
+       「한쪽 팔에 힘이 없어요」·「얼굴이 한쪽으로 처졌어요」가 그대로 지나갔다(실측 9/11). */
+    "팔에 힘이 없", "팔에 힘이 빠", "다리에 힘이 없", "한쪽으로 처졌", "한쪽이 처졌", "한쪽이 축 늘어"],
   /* 지금 진료 — 오늘 안에 봐야 하는 신호 */
   urgent: ["갑자기 심한 두통", "심한 복통", "고열", "열이 39", "열이 40", "소변이 안", "숨이 차", "호흡이 가쁘",
     "가슴이 답답", "낙상", "넘어지셨", "삼키질 못", "먹지를 못", "탈수", "의식이 흐릿", "헛소리", "섬망"],
@@ -97,6 +101,27 @@ const LTC_EMERGENCY = {
   lineUrgent: "오늘 안에 의료진이 보셔야 하는 상태로 들려요. **지금 연결 가능한 의사**로 먼저 보여드리거나, 가까운 응급실·주치의에게 바로 연락해 주세요.",
   lineWhat: "119에 전화하시면 이렇게 말씀하시면 돼요 — 어디(주소), 누가(나이·성별), 어떤 상태(의식·호흡), 앓고 계신 병과 드시는 약.",
 };
+
+/* ── 일반 경로 승격(2026-09-20) — 응급 사전의 원천은 **이 파일 하나**다 ──
+   49개(critical 32 · urgent 17)는 지금까지 A4(재가돌봄) 라우팅에 걸렸을 때만 읽혔다. 그래서
+   「말이 어눌하고 한쪽 팔에 힘이 없어요」 같은 뇌졸중 FAST 징후가 일반 대화에서 그대로 지나갔다.
+   같은 말을 aiQnaBank에 또 적으면 한쪽만 고쳐지는 날이 온다 — 그쪽은 여기를 **읽어 간다**.
+   ⚠️ 화면 토글로 만들지 않는다(hiOpsConfig OPS_LOCKED: "안전을 UI 토글로 만들면 언젠가 꺼진다"). */
+const LTC_EMERGENCY_SHORT = ["가슴이아파", "숨이차", "쓰러", "응급", "심하게아파", "마비"];   // 사전보다 짧은 구어 축약(기존 6패턴) — 그물을 좁히지 않으려고 함께 남긴다
+/* level: "critical"(기본) | "all"
+   ⚠️ 기본이 critical인 이유 — 정적 매칭(AGENT_QNA)에 걸리면 그 답이 **상담을 대체한다.**
+      critical은 대체가 맞다(다음 행동 하나만 남기는 게 맞는 상황이다).
+      urgent는 아니다 — 「가슴이 답답한 보험 없나요」가 보험 상담을 통째로 삼킨다.
+      urgent는 상담을 이어가면서 안내 한 줄을 맨 앞에 붙이는 방식(agentAnswer의 트리아지)으로 처리한다. */
+function ltcEmergencyPatterns(level) {
+  const out = [];
+  const add = (w) => { const n = String(w || "").toLowerCase().replace(/\s/g, ""); if (n.length >= 2 && out.indexOf(n) < 0) out.push(n); };
+  /* 사전 접근을 따로 감싼다 — 한 곳이 실패해도 나머지 그물은 남아야 한다(안전 목록이 통째로 비면 안 된다) */
+  try { LTC_EMERGENCY_SHORT.forEach(add); } catch (e) {}
+  try { LTC_EMERGENCY.critical.forEach(add); } catch (e) {}
+  if (level === "all") { try { LTC_EMERGENCY.urgent.forEach(add); } catch (e) {} }
+  return out;
+}
 
 /* 조회 헬퍼 */
 function ltcService(key) { for (const s of LTC_SERVICES) { if (s.key === key) return s; } return null; }
@@ -117,4 +142,4 @@ function ltcCopay(limitWon, opt) {
   };
 }
 
-try { if (typeof window !== "undefined") { window.__hifinLtc = { meta: LTC_META, svc: LTC_SERVICES, grades: LTC_GRADES, copay: ltcCopay, faq: LTC_FAQ, emg: LTC_EMERGENCY }; } } catch (e) {}
+try { if (typeof window !== "undefined") { window.__hifinLtc = { meta: LTC_META, svc: LTC_SERVICES, grades: LTC_GRADES, copay: ltcCopay, faq: LTC_FAQ, emg: LTC_EMERGENCY, emgPatterns: ltcEmergencyPatterns }; } } catch (e) {}

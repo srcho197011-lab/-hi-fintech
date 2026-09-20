@@ -69,11 +69,38 @@ const HC_GUARD_RULES = [
    "방문요양 알아봐 줘"라고만 물으면, 말만 읽는 트리아지는 그냥 지나친다. */
 function hcTriage(question, ctx) {
   const q = String(question || "");
+  /* 말은 **두 겹으로** 읽는다 — ⓐ 원문과 음성 오인식 보정문 ⓑ 공백을 지운 형태.
+     「숨이」가 「수미」로 들린 한 글자에 응급이 통째로 꺼졌고, STT는 「숨이 차」를 「숨이 차 요」로 끊는다.
+     ⚠️ 공백 지운 형태는 **원래 띄어쓰기가 있던 신호어에만** 댄다. 한 덩어리 신호어(고열·탈수 …)까지
+        붙여 놓고 찾으면 「데이터금고 열어줘」가 '고열'로 걸린다 — 실제로 걸렸다(2026-09-20).
+     응급만큼은 오탐 쪽으로 기운다(오발동 불편 < 미발동 사고 — 형 확정 D4). */
+  const raw = [q];
+  try { if (typeof hiMishearNorm === "function") { const v = hiMishearNorm(q); if (v && v.t && raw.indexOf(v.t) < 0) raw.push(v.t); } } catch (e) {}
+  const flat = raw.map(function (f) { return f.replace(/\s+/g, ""); });
   let byWord = null;
   try {
     if (typeof LTC_EMERGENCY !== "undefined") {
-      for (const w of LTC_EMERGENCY.critical) { if (q.indexOf(w) >= 0) { byWord = { level: "critical", hit: w, via: "말" }; break; } }
-      if (!byWord) for (const w of LTC_EMERGENCY.urgent) { if (q.indexOf(w) >= 0) { byWord = { level: "urgent", hit: w, via: "말" }; break; } }
+      const scan = (words, level) => {
+        for (const w of words) {
+          for (const f of raw) { if (f.indexOf(w) >= 0) return { level: level, hit: w, via: "말" }; }
+          if (/\s/.test(w)) {
+            const wn = String(w).replace(/\s+/g, "");
+            for (const f of flat) { if (f.indexOf(wn) >= 0) return { level: level, hit: w, via: "말" }; }
+          }
+        }
+        return null;
+      };
+      /* 구어 축약 6패턴(LTC_EMERGENCY_SHORT — 「가슴이아파·숨이차·쓰러·응급·심하게아파·마비」)도 여기서 본다.
+         지금까지 이 6개는 aiQnaBank의 정적 매칭에만 실려 있어서 **도크에서만** 119 안내가 나갔다.
+         전체화면 하이 상담·음성 주치의는 hcTriage를 부르므로, 판정이 여기 없으면 화면을 옮기는 순간 그물이 사라진다.
+         띄어쓰기를 지운 형태로만 대는 것은 기존 정적 매칭과 같은 방식이라 오발동 성질도 그대로다(「마비 보장」은 D4 허용). */
+      const scanFlat = (words, level) => {
+        for (const w of words) { const wn = String(w).replace(/\s+/g, ""); for (const f of flat) { if (f.indexOf(wn) >= 0) return { level: level, hit: w, via: "말" }; } }
+        return null;
+      };
+      byWord = scan(LTC_EMERGENCY.critical, "critical")
+        || ((typeof LTC_EMERGENCY_SHORT !== "undefined") ? scanFlat(LTC_EMERGENCY_SHORT, "critical") : null)
+        || scan(LTC_EMERGENCY.urgent, "urgent");
     }
   } catch (e) {}
   let byData = null;

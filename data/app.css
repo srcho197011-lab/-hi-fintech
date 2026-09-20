@@ -4469,13 +4469,30 @@ body.easyread .hidock-quick button { font-size: 14px; padding: 9px 15px; }
 .hidock-input input { flex: 1; border: 1px solid var(--border); border-radius: 999px; padding: 9px 14px; font-size: 12.8px; font-family: inherit; }
 .hidock-mic { border: 1px solid var(--border); background: #fff; color: #F97316; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
 .hidock-mic.on { background: #EF4444; color: #fff; border-color: #EF4444; animation: hipulse 1s infinite; }
+.hidock-mic.off { color: #A5AFC6; background: #F4F6FB; }   /* 미지원 — 숨기지 않고 눌러보면 이유를 말한다 */
 @keyframes hipulse { 50% { box-shadow: 0 0 0 6px rgba(239,68,68,.2); } }
+/* 듣는 중·읽어주는 중 바 — 입력줄 바로 위. 글씨·버튼을 크게 둔다(고령 회원이 가장 많이 쓰는 줄) */
+.hidock-listening, .hidock-speaking { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; padding: 8px 12px; font-size: 12.6px; font-weight: 700; border-top: 1px solid var(--border); }
+.hidock-listening { background: #FEF2F2; color: #B91C1C; }
+.hidock-speaking { background: #FFF7ED; color: #9A3412; }
+.hidock-listening .hidock-ear { flex-shrink: 0; }
+.hidock-listening .hidock-itm { flex: 1; min-width: 0; color: #7F1D1D; font-weight: 600; overflow-wrap: anywhere; }
+.hidock-listening button, .hidock-speaking button { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; border: 1px solid currentColor; background: #fff; color: inherit; border-radius: 999px; padding: 5px 11px; font-size: 11.8px; font-weight: 800; cursor: pointer; font-family: inherit; min-height: 30px; }
+.hidock-speaking button + button { margin-left: 0; }
+.hidock-wave { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; flex-shrink: 0; }
+.hidock-wave i { width: 3px; height: 4px; border-radius: 2px; background: #F97316; animation: hiwave .9s infinite ease-in-out; }
+.hidock-wave i:nth-child(2) { animation-delay: .15s; } .hidock-wave i:nth-child(3) { animation-delay: .3s; }
+@keyframes hiwave { 0%, 100% { height: 4px; } 50% { height: 12px; } }
+/* 음성 안내 말풍선(권한 거부·미지원·확인 요청) — 답변이 아니라 안내임이 보여야 한다 */
+.hidock-bub.notice { background: #FFFBEB; border-color: #FDE68A; color: #92400E; }
 .hidock-send { border: none; background: #D9DEEC; color: #fff; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
 .hidock-send.on { background: #F97316; }
 /* 쉬운 말 모드 */
 body.easyread .hidock-bub { font-size: 15.5px; line-height: 1.75; }
 body.easyread .hidock-btns button { font-size: 14px; padding: 9px 14px; }
 body.easyread .hidock-input input { font-size: 15px; }
+body.easyread .hidock-listening, body.easyread .hidock-speaking { font-size: 14.5px; padding: 10px 13px; }
+body.easyread .hidock-listening button, body.easyread .hidock-speaking button { font-size: 13.5px; padding: 8px 14px; min-height: 40px; }
 /* ══════ 신뢰 센터(Trust Center) + 전 섹션 신뢰 배지·입력 순간 안내 ══════ */
 .trustbadge { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #BBF7D0; background: #F0FDF4; color: #15803D; font-size: 11.5px; font-weight: 800; padding: 6px 11px; border-radius: 999px; cursor: pointer; margin-right: 4px; }
 .trustbadge:hover { background: #DCFCE7; }
@@ -4665,6 +4682,8 @@ body.easyread .hibrief-t { font-size: 17px; }
   .hidock-input { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); }
   .hidock-input input { font-size: 16px; padding: 11px 15px; }  /* 16px 미만이면 모바일 브라우저가 입력 시 화면을 강제 확대함 */
   .hidock-mic, .hidock-send { width: 44px; height: 44px; }
+  .hidock-listening, .hidock-speaking { font-size: 13.5px; padding: 10px 13px; }
+  .hidock-listening button, .hidock-speaking button { font-size: 13px; padding: 9px 14px; min-height: 40px; }
   .hidock-fab { right: 20px; bottom: calc(16px + env(safe-area-inset-bottom)); width: 60px; height: 60px; }
   body.hidock-open { overflow: hidden; }
 }

@@ -1,0 +1,345 @@
+{
+  "date": "2026-09-20",
+  "handles": {
+    "agent": true,
+    "voice": true,
+    "nlu": true,
+    "telemTurn": true,
+    "chStats": true
+  },
+  "safety": {
+    "fire": 11,
+    "fireOf": 11,
+    "mishear": 6,
+    "mishearOf": 6,
+    "falseFire": 0,
+    "safeOf": 40,
+    "strictOf": 37,
+    "tolerated": [
+      "마비 보장 되는 상품 있어요",
+      "경련 질환 검사 항목 알려줘",
+      "응급실 이용 보장 해줘요"
+    ],
+    "missed": [],
+    "screens": {
+      "chat": 17,
+      "voiceDoctor": 17,
+      "of": 17,
+      "handles": {
+        "ask": true,
+        "voice": true
+      },
+      "bad": []
+    },
+    "navMistarget": [],
+    "urgentOnSafe": [
+      "가슴이 답답한 보험 없나요",
+      "고열 났을 때 검사 뭐 받아요",
+      "탈수 예방 영양제 추천해줘"
+    ],
+    "urgentEngine": [
+      {
+        "q": "갑자기 심한 두통이 와요",
+        "emergency": "urgent"
+      },
+      {
+        "q": "어르신이 탈수인 것 같아요",
+        "emergency": "urgent"
+      },
+      {
+        "q": "의식이 흐릿하세요",
+        "emergency": "urgent"
+      },
+      {
+        "q": "어머니가 고열이 나세요 요양등급 알아봐줘",
+        "emergency": "urgent"
+      },
+      {
+        "q": "가슴이 답답한데 보험 알아봐줘",
+        "emergency": "urgent"
+      }
+    ],
+    "urgentShown": [
+      {
+        "q": "갑자기 심한 두통이 와요",
+        "shown": true
+      },
+      {
+        "q": "어르신이 탈수인 것 같아요",
+        "shown": true
+      },
+      {
+        "q": "의식이 흐릿하세요",
+        "shown": true
+      },
+      {
+        "q": "어머니가 고열이 나세요 요양등급 알아봐줘",
+        "shown": true
+      },
+      {
+        "q": "가슴이 답답한데 보험 알아봐줘",
+        "shown": true
+      }
+    ]
+  },
+  "mishearPairs": {
+    "pairs": 26,
+    "same": 26,
+    "diff": 0,
+    "list": []
+  },
+  "long": [
+    {
+      "len": 43,
+      "was": 0.341,
+      "conf": 0.6477272727272727,
+      "best": "S1-BOOK-01",
+      "want": "S1-BOOK-01",
+      "pass": true
+    },
+    {
+      "len": 51,
+      "was": 0.177,
+      "conf": 0.46136363636363636,
+      "best": "S3-HUB-01",
+      "want": "S3-HUB-01",
+      "pass": true
+    },
+    {
+      "len": 57,
+      "was": 0.355,
+      "conf": 0.7954545454545455,
+      "best": "S1-EXPLAIN-01",
+      "want": "S1-EXPLAIN-01",
+      "pass": true
+    },
+    {
+      "len": 57,
+      "was": 0.284,
+      "conf": 0.761818181818182,
+      "best": "S3-SILGEN-01",
+      "want": "S3-SILGEN-01",
+      "pass": true
+    }
+  ],
+  "channel": {
+    "n": 18,
+    "same": 18,
+    "diff": []
+  },
+  "sanitize": {
+    "n": 30,
+    "emoji": 0,
+    "symbol": 0,
+    "md": 0,
+    "ban": 0,
+    "over": 0,
+    "empty": 0,
+    "keep": {
+      "n": 10,
+      "ok": 10,
+      "ratio": 100,
+      "lost": []
+    },
+    "banned": {
+      "n": 4,
+      "ok": 4,
+      "leak": []
+    },
+    "med": {
+      "n": 10,
+      "ok": 10,
+      "leak": [],
+      "list": [
+        "암로디핀정",
+        "메트포르민서방정",
+        "하이드로코르티손 연고",
+        "※ 참고용 안내예요",
+        "타미플루",
+        "콘서타",
+        "자누비아",
+        "디아미크롱",
+        "록소닌정",
+        "스티렌정"
+      ]
+    }
+  },
+  "coverage": {
+    "n": 19,
+    "kept": 19,
+    "pct": 100,
+    "miss": []
+  },
+  "latency": {
+    "waits": {
+      "dock": {
+        "voice": 90,
+        "text": 320
+      },
+      "chat": {
+        "voice": 90,
+        "text": 320
+      },
+      "shop": {
+        "voice": 90,
+        "text": 320
+      }
+    },
+    "delegates": {
+      "chat": true,
+      "shop": true
+    },
+    "spread": 1,
+    "voiceAvg": 105,
+    "voiceP95": 117,
+    "textAvg": 346,
+    "textP95": 375,
+    "n": {
+      "voice": 6,
+      "text": 6
+    }
+  },
+  "ux": {
+    "bad": [],
+    "interim": "검진 예",
+    "starts": 1,
+    "stops": 1,
+    "live": 0,
+    "sentOnStop": 0,
+    "sentOnFinal": 1,
+    "errs": {
+      "not-allowed": {
+        "added": 1,
+        "text": "마이크 사용이 막혀 있어요 — 주소창 왼쪽 자물쇠를 눌러 마이크를 '허용'으로 바꿔주세요. 지금은 아래 칸에"
+      },
+      "no-speech": {
+        "added": 1,
+        "text": "소리가 들리지 않았어요 — 마이크를 한 번 더 누르고 조금만 크게 말씀해 주세요."
+      },
+      "network": {
+        "added": 1,
+        "text": "인터넷이 잠시 끊겨 음성을 알아듣지 못했어요 — 잠시 후 다시 해보시거나 글로 적어주세요."
+      },
+      "audio-capture": {
+        "added": 1,
+        "text": "마이크를 찾지 못했어요 — 이어폰·헤드셋 연결을 확인해 주세요. 글로 적어주셔도 됩니다."
+      },
+      "aborted": {
+        "added": 0,
+        "text": "마이크를 찾지 못했어요 — 이어폰·헤드셋 연결을 확인해 주세요. 글로 적어주셔도 됩니다."
+      }
+    },
+    "unsupported": {
+      "micShown": true,
+      "off": true,
+      "noticed": 1,
+      "text": "이 브라우저는 음성 입력을 지원하지 않아요 — 크롬·엣지·삼성인터넷에서 쓰실 수 있어요. 지금은 아래 칸에 글로 적어주시면 똑같이 도와드릴게요.",
+      "bad": []
+    },
+    "tts": {
+      "defaultOff": true,
+      "whenOff": 0,
+      "whenOn": 1,
+      "voice": "Microsoft InJoon - Korean (Korea)",
+      "rate": 1.03,
+      "pitch": 1.08,
+      "bargeIn": 1,
+      "said": "지갑을 확인해 드릴게요. 지금 총 12580 에이치티케이( 13만원)가 있어요 — 트랜잭션 원장 합산 기준이에요. 자세한 내용"
+    }
+  },
+  "confirm": {
+    "risky": "4/4",
+    "safe": "4/4",
+    "voiceAsk": 4,
+    "textRun": 4,
+    "of": 4,
+    "dock": {
+      "sent": 0,
+      "filled": "예약 확정해줘",
+      "notice": 1
+    }
+  },
+  "telemetry": {
+    "bad": [],
+    "static": [],
+    "evDefs": 32,
+    "evVoiceNames": [],
+    "channelWhite": true,
+    "turns": {
+      "voice": 7,
+      "text": 13,
+      "total": 20
+    },
+    "unanswered": {
+      "voice": 1,
+      "text": 6,
+      "rawVoice": 1,
+      "rawText": 6
+    },
+    "events": {
+      "voice": 0,
+      "text": 1,
+      "labeled": 1,
+      "total": 38
+    },
+    "turnCalls": [
+      "src/components/AgentDock.jsx",
+      "src/components/AIDoctor.jsx",
+      "src/components/Shop.jsx"
+    ],
+    "keys": [
+      "hifin_hi_read",
+      "hifin_rx",
+      "hifin_medrem",
+      "hifin_telemetry",
+      "hifin_telem_raw",
+      "hifin_telem_turns",
+      "hifin_hi_unanswered"
+    ],
+    "keysUnlisted": []
+  },
+  "blocks": [
+    {
+      "k": "①안전",
+      "pass": true
+    },
+    {
+      "k": "②오인식",
+      "pass": true
+    },
+    {
+      "k": "③장문",
+      "pass": true
+    },
+    {
+      "k": "④채널",
+      "pass": true
+    },
+    {
+      "k": "⑤정제",
+      "pass": true
+    },
+    {
+      "k": "⑥커버",
+      "pass": true
+    },
+    {
+      "k": "⑦지연",
+      "pass": true
+    },
+    {
+      "k": "⑧UX",
+      "pass": true
+    },
+    {
+      "k": "⑨확인",
+      "pass": true
+    },
+    {
+      "k": "⑩계측",
+      "pass": true
+    }
+  ],
+  "seconds": 59,
+  "pass": true
+}

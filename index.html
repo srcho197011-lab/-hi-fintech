@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=e1e0ab5b4d" />
+<link rel="stylesheet" href="./data/app.css?v=9fa116ba08" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=e1e0ab5b4d"></script>
-<script src="./src/data/section_data.js?v=e1e0ab5b4d"></script>
-<script src="./src/data/demo_members.js?v=e1e0ab5b4d"></script>
+<script src="./src/data/dummy_data.js?v=9fa116ba08"></script>
+<script src="./src/data/section_data.js?v=9fa116ba08"></script>
+<script src="./src/data/demo_members.js?v=9fa116ba08"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -514,6 +514,10 @@ function telemEvent(kind, q, extra) {
   if (e.utype) ev.utype = e.utype;
   if (e.laws && e.laws.length) ev.laws = e.laws;
   if (e.to) ev.to = e.to;
+  /* via — 입력 채널 꼬리표("voice"|"text"). hiULog가 이미 넘기고 있었는데 여기서 버려지고 있었다.
+     새 kind를 만들지 않는다(D9·hiEvents.js 가공 이벤트 금지) — 같은 신호를 채널로 갈라 볼 뿐이다.
+     모르는 값은 담지 않는다. 채널을 '글자'로 단정해 버리면 미배선 화면이 글자 실적으로 둔갑한다. */
+  if (e.via === "voice" || e.via === "text") ev.via = e.via;
   const seg = telemSeg(e);
   if (seg) ev.seg = seg;
   if (telemRawOn() && q) ev.raw = String(q).slice(0, 140);   /* 개발 모드에서만 */
@@ -539,7 +543,7 @@ function telemCount() { try { return JSON.parse(localStorage.getItem(TELEM_KEY) 
 
 /* 요약 — 운영 콘솔·드리프트가 읽는 집계(원문 없이도 산출된다) */
 function telemSummary() {
-  const out = { total: 0, byKind: {}, byAgent: {}, byLaw: {}, byU: {}, raw: 0 };
+  const out = { total: 0, byKind: {}, byAgent: {}, byLaw: {}, byU: {}, byVia: {}, viaLabeled: 0, raw: 0 };
   try {
     const l = JSON.parse(localStorage.getItem(TELEM_KEY) || "[]");
     out.total = l.length;
@@ -547,6 +551,7 @@ function telemSummary() {
       out.byKind[e.kind] = (out.byKind[e.kind] || 0) + 1;
       if (e.agent) out.byAgent[e.agent] = (out.byAgent[e.agent] || 0) + 1;
       if (e.utype) out.byU[e.utype] = (out.byU[e.utype] || 0) + 1;
+      if (e.via) { out.byVia[e.via] = (out.byVia[e.via] || 0) + 1; out.viaLabeled++; }
       for (const law of e.laws || []) out.byLaw[law] = (out.byLaw[law] || 0) + 1;
       if (e.raw) out.raw++;
     }
@@ -554,7 +559,78 @@ function telemSummary() {
   return out;
 }
 
-try { if (typeof window !== "undefined") { window.__hifinTelem = { push: telemPush, event: telemEvent, export: telemExport, clear: telemClear, count: telemCount, summary: telemSummary, key: TELEM_KEY, kinds: TELEM_KINDS }; } } catch (e) {}
+/* ══════════ 채널 턴 대장(臺帳) — 음성 비중·미답변율·응답시간의 **원천** ══════════
+   지금까지 채널 라벨은 「미답변이었을 때」만 남았다. 그것만으로는 음성 미답변'율'을 낼 수 없다 —
+   분모(음성으로 몇 턴 물었나)가 어디에도 없기 때문이다. 없는 분모를 짐작해 비율을 쓰면
+   그게 바로 가공 지표다(ops-console-phase-g: 집계는 원천과 일치).
+   그래서 턴 한 건을 **채널·소요시간·답변여부** 세 가지로만 적는다.
+
+   ⚠️ 담는 것 — 채널·밀리초·답변여부·시각. 그뿐이다.
+      질문 원문도, 회원 식별자도, 인텐트도 담지 않는다(개인정보 최소 원칙 계승).
+   ⚠️ ms는 **잰 값만** 적는다. 화면의 연출 대기(hidockWait)를 포함해 재든 엔진만 재든,
+      재는 지점이 화면마다 다르면 비교가 무의미해지므로 호출부가 「회원이 기다린 시간」으로 통일한다.
+   ⚠️ 호출부 — 답을 화면에 붙이는 순간 한 줄:
+        telemTurn(via, Date.now() - t0, !!(res && res.matched))
+      도크·전체화면 챗·쇼핑 상담 세 곳이 대상이며, 붙지 않은 화면은 대장에 없다(0으로 세지 않는다). */
+const TELEM_TURN_KEY = "hifin_telem_turns";
+const TELEM_TURN_CAP = 500;
+
+function telemTurn(via, ms, hit) {
+  try {
+    const v = (via === "voice") ? "voice" : (via === "text") ? "text" : null;
+    if (!v) return null;                                   /* 모르는 채널은 적지 않는다 */
+    const n = Number(ms);
+    const rec = { via: v, ms: isFinite(n) && n >= 0 ? Math.round(n) : null, hit: !!hit, ts: Date.now() };
+    const l = JSON.parse(localStorage.getItem(TELEM_TURN_KEY) || "[]");
+    l.push(rec);
+    localStorage.setItem(TELEM_TURN_KEY, JSON.stringify(l.slice(-TELEM_TURN_CAP)));
+    return rec;
+  } catch (e) { return null; }
+}
+function telemTurnAll() { try { return JSON.parse(localStorage.getItem(TELEM_TURN_KEY) || "[]"); } catch (e) { return []; } }
+function telemTurnClear() { try { localStorage.removeItem(TELEM_TURN_KEY); } catch (e) {} }
+
+/* 채널 집계 — 세 원천을 **섞지 않고 나란히** 돌려준다.
+   턴 대장(분모가 있는 곳)·미답변 로그(유형이 있는 곳)·완결 이벤트(퍼널이 있는 곳)는
+   세는 대상이 서로 다르다. 하나로 합치면 보기 좋은 숫자가 나오지만 원천과 어긋난다. */
+function telemChannelStats() {
+  const mk = () => ({ turns: 0, hit: 0, miss: 0, missRate: null, avgMs: null, p95Ms: null, timed: 0 });
+  const out = {
+    turns: { voice: mk(), text: mk(), total: 0 },
+    unanswered: { voice: 0, text: 0, total: 0 },          /* 원천: hifin_hi_unanswered(hiULog) */
+    signals: { byVia: {}, labeled: 0, total: 0 },          /* 원천: hifin_telemetry */
+    events: { voice: 0, text: 0, labeled: 0, total: 0 },   /* 원천: hifin_events(hiEvent) */
+  };
+  try {
+    const ms = { voice: [], text: [] };
+    for (const r of telemTurnAll()) {
+      const b = out.turns[r.via]; if (!b) continue;
+      b.turns++; out.turns.total++;
+      if (r.hit) b.hit++; else b.miss++;
+      if (typeof r.ms === "number") { ms[r.via].push(r.ms); b.timed++; }
+    }
+    for (const k of ["voice", "text"]) {
+      const b = out.turns[k], a = ms[k].sort((x, y) => x - y);
+      if (b.turns) b.missRate = Math.round(b.miss / b.turns * 1000) / 10;
+      if (a.length) {
+        b.avgMs = Math.round(a.reduce((s, x) => s + x, 0) / a.length);
+        b.p95Ms = a[Math.min(a.length - 1, Math.ceil(a.length * 0.95) - 1)];
+      }
+    }
+  } catch (e) {}
+  try {
+    const l = JSON.parse(localStorage.getItem("hifin_hi_unanswered") || "[]");
+    for (const x of l) { const v = x && x.via; if (v === "voice" || v === "text") out.unanswered[v]++; out.unanswered.total++; }
+  } catch (e) {}
+  try { const s = telemSummary(); out.signals = { byVia: s.byVia, labeled: s.viaLabeled, total: s.total }; } catch (e) {}
+  try {
+    const ev = (typeof hiEventStats === "function") ? hiEventStats() : null;
+    if (ev) out.events = { voice: ev.byChannel.voice, text: ev.byChannel.text, labeled: ev.labeled, total: ev.total };
+  } catch (e) {}
+  return out;
+}
+
+try { if (typeof window !== "undefined") { window.__hifinTelem = { push: telemPush, event: telemEvent, export: telemExport, clear: telemClear, count: telemCount, summary: telemSummary, turn: telemTurn, turns: telemTurnAll, turnClear: telemTurnClear, channels: telemChannelStats, key: TELEM_KEY, turnKey: TELEM_TURN_KEY, kinds: TELEM_KINDS }; } } catch (e) {}
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
@@ -1982,33 +2058,90 @@ function consult(q, corpus, report, QA) {
   return `‘${q}’에 대한 정보는 찾지 못했어요. 질병관리청 Q&A ${n ? n.toLocaleString("ko-KR") + "쌍 " : ""}학습 기반으로, 질환 이름과 함께 증상, 검사, 치료, 생활습관을 물어보시면 돼요. 예를 들어 ‘당뇨 검사 방법’, ‘갑상선염 증상’처럼요.`;
 }
 
+/* 응답 대기 — 엔진 실계산은 평균 7.3ms다. 체감 지연의 98.8%는 여기 박아둔 연출용 대기였다.
+   화면마다 다른 '생각하는 시간'을 두지 않는다 — 도크와 같은 표를 쓰고, 도크가 없을 때 폴백도 같은 숫자다.
+   음성은 회원이 이미 인식을 기다렸으므로 글자보다 빨리 답한다. 타이핑 표시는 유지하고 시간만 줄인다. */
+function aidWait(via) {
+  try { if (typeof hidockWait === "function") return hidockWait(via); } catch (e) {}
+  return via === "voice" ? 90 : 320;
+}
+/* 읽음 표시·타이핑 시작은 답보다 먼저 스쳐야 한다 — 같은 표에서 비례로 뽑아 순서가 뒤집히지 않게 */
+function aidAckWait(via) { return Math.max(30, Math.round(aidWait(via) * 0.35)); }
+
+/* 음성 주치의 답 — consult() 앞에 같은 응급 그물을 친다(화면마다 안전 판정이 달라지지 않게).
+   critical이면 상담을 태우지 않고 단독으로, urgent면 상담 앞에 한 줄 — 소리로도 이 문장이 먼저 나간다.
+   화면(handle)과 회귀가 **같은 함수**를 보게 따로 뺀다. 화면만 아는 안전은 검증되지 않는다. */
+function aidVoiceAnswer(q, kb, report, qa) {
+  let tri = null; try { tri = (typeof hcTriage === "function") ? hcTriage(q) : null; } catch (e) { tri = null; }
+  const emg = (l) => { try { return (typeof hcEmergencyLines === "function") ? hcEmergencyLines(l) : []; } catch (e) { return []; } };
+  if (tri && tri.level === "critical") return emg("critical").concat(["가까운 응급실 안내와 응급 신호 자가체크는 바로 도와드릴게요 — 전화부터 걸어 주세요."]).join(" ");
+  const a = consult(q, kb, report, qa);
+  return tri ? [emg("urgent")[0], a].filter(Boolean).join(" ") : a;
+}
+
 function VoiceDoctor() {
   const [trans, setTrans] = useState([{ who: "a", text: `안녕하세요 ${aiWho()}님, 하이예요. 질병관리청 국가건강정보포털, 대한의학회 임상 진료지침, 국립암센터 국가암검진 권고안과 국가암정보센터 자료를 학습해 음성으로 건강상담을 도와드릴게요. 마이크를 누르고 궁금한 점을 말씀해 주세요.` }]);
   const [listening, setListening] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [interim, setInterim] = useState("");
   const [text, setText] = useState("");
-  const [rate, setRate] = useState(1.03);
-  const [voices, setVoices] = useState([]);
-  const [voiceURI, setVoiceURI] = useState("");
+  const [more, setMore] = useState("");        /* 상한에서 끊긴 나머지 — '이어 듣기' */
+  const [note, setNote] = useState("");        /* 마이크 오류·미지원 안내 — 조용히 실패하면 회원은 자기 탓을 한다 */
+  const [rate, setRate] = useState(0);         /* 0 = 하이 기본 속도(쉬운 말 모드면 공통 모듈이 알아서 늦춘다) */
+  const [vname, setVname] = useState("");
+  const lang = useHiLang();
   const kb = useKdca();
   const report = useReport();
   const qa = useLearnedQA();
-  const recogRef = useRef(null);
   const endRef = useRef(null);
-  const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-  const ttsOK = typeof window !== "undefined" && !!window.speechSynthesis;
-  // 한국어 남성 음성 우선 선택(Edge의 InJoon·Hyunsu 등). 없으면 여성 제외 후 첫 음성.
-  const pickMale = (ko) => { if (!ko.length) return ""; const male = ko.find((v) => /injoon|injun|hyunsu|hyun-?su|\bmale\b|남성|남자/i.test(v.name)); const notFem = ko.find((v) => !/heami|female|여성|여자|yuna|sun-?hi|sunhi|google/i.test(v.name)); return ((male || notFem || ko[0]).voiceURI) || ""; };
-  useEffect(() => { if (!ttsOK) return; const load = () => { const ko = window.speechSynthesis.getVoices().filter((v) => /ko/i.test(v.lang)); setVoices(ko); setVoiceURI((u) => u || pickMale(ko)); }; load(); window.speechSynthesis.onvoiceschanged = load; return () => { try { window.speechSynthesis.onvoiceschanged = null; } catch (e) {} }; }, []);
-  const selVoice = voices.find((x) => x.voiceURI === voiceURI);
-  const isMale = !!(selVoice && /injoon|injun|hyunsu|hyun-?su|\bmale\b|남성|남자/i.test(selVoice.name));
-  const speak = (t) => { if (!ttsOK) return; window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "ko-KR"; u.rate = rate; u.pitch = isMale ? 1.08 : 0.82; const v = voices.find((x) => x.voiceURI === voiceURI); if (v) u.voice = v; u.onstart = () => setSpeaking(true); u.onend = () => setSpeaking(false); window.speechSynthesis.speak(u); };
-  const stopSpeak = () => { if (ttsOK) window.speechSynthesis.cancel(); setSpeaking(false); };
-  const handle = (q) => { if (!q || !q.trim()) return; const a = consult(q, kb, report, qa); setTrans((p) => [...p, { who: "u", text: q }, { who: "a", text: a }]); setText(""); setInterim(""); setTimeout(() => speak(a), 120); setTimeout(() => endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }), 250); };
-  const startStt = () => { if (!sttOK) return; stopSpeak(); const R = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new R(); recogRef.current = r; r.lang = "ko-KR"; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1; let fin = ""; r.onstart = () => { setListening(true); setInterim(""); }; r.onresult = (e) => { let itm = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const tr = e.results[i]; if (tr.isFinal) fin += tr[0].transcript; else itm += tr[0].transcript; } setInterim(itm); }; r.onerror = () => setListening(false); r.onend = () => { setListening(false); if (fin.trim()) handle(fin.trim()); }; try { r.start(); } catch (e) { setListening(false); } };
-  const stopStt = () => { if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } setListening(false); };
-  useEffect(() => () => { stopSpeak(); if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } }, []);
+  /* 지원 판정·보이스 선택·정제·취소·중지는 hiVoice.js 단일 소스 — 화면에서 다시 정하지 않는다(하이는 한 인격).
+     이번 범위는 한국어(ko-KR)뿐이라 영문 모드에서는 마이크·읽어주기를 내보내지 않는다. */
+  const vsup = (typeof hiVoiceSupport === "function") ? hiVoiceSupport() : { stt: false, tts: false, reason: "" };
+  const sttOK = vsup.stt && lang !== "en";
+  const ttsOK = vsup.tts && lang !== "en";
+  /* 어떤 목소리로 말하는지 화면에 적는다 — 고르는 규칙은 공통 모듈에 있고 화면은 결과만 보여준다.
+     onvoiceschanged 대입이 아니라 리스너로 붙인다(대입하면 다른 화면이 붙여둔 것을 덮어쓴다). */
+  useEffect(() => {
+    if (!vsup.tts) return;
+    const sync = () => { try { const v = (typeof hiVoicePick === "function") ? hiVoicePick() : null; setVname(v ? v.name : ""); } catch (e) {} };
+    sync();
+    try { window.speechSynthesis.addEventListener("voiceschanged", sync); } catch (e) {}
+    return () => { try { window.speechSynthesis.removeEventListener("voiceschanged", sync); } catch (e) {} };
+  }, [vsup.tts]);
+  const isMale = /injoon|injun|hyunsu|hyun-?su|\bmale\b|남성|남자/i.test(vname);
+  const sayOpt = () => ({ rate: rate || 0, onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } });
+  const speak = (t) => { if (typeof hiVoiceSpeak !== "function" || !ttsOK) return; hiVoiceSpeak(t, sayOpt()); };
+  const stopSpeak = () => { try { if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} setSpeaking(false); setMore(""); };
+  const sayMore = () => { try { if (typeof hiVoiceMore === "function") hiVoiceMore(sayOpt()); } catch (e) {} };
+  const sayAgain = () => { try { if (typeof hiVoiceAgain === "function") hiVoiceAgain(sayOpt()); } catch (e) {} };
+  const handle = (q, via) => {
+    if (!q || !q.trim()) return;
+    const a = aidVoiceAnswer(q, kb, report, qa);
+    setTrans((p) => [...p, { who: "u", text: q, via: via || "text" }, { who: "a", text: a }]);
+    setText(""); setInterim(""); setNote("");
+    setTimeout(() => speak(a), aidWait(via));
+    setTimeout(() => endRef.current && endRef.current.scrollIntoView({ behavior: "smooth" }), 250);
+  };
+  /* 듣기 — 시작/중지 한 버튼. 인스턴스 관리·무음 종료·끼어들기는 hiVoice가 맡는다 */
+  const startStt = () => {
+    if (typeof hiVoiceListen !== "function") return;
+    if (listening) { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); return; }   /* 재클릭은 취소 — 들은 말을 보내지 않는다 */
+    if (!sttOK) { setNote(lang === "en" ? HI_VOICE_MSG.enOnly : (vsup.reason || HI_VOICE_MSG.nostt)); return; }
+    setNote(""); setSpeaking(false); setMore("");
+    hiVoiceListen({
+      onStart: () => { setListening(true); setInterim(""); setNote(""); },
+      onInterim: (itm) => setInterim(itm),
+      onError: (msg) => { setListening(false); setInterim(""); setNote(msg); },
+      onEnd: () => { setListening(false); setInterim(""); },
+      /* 되돌리기 어려운 행동은 소리로 실행하지 않는다 — 입력칸에 채워만 두고 마지막은 화면 버튼으로 */
+      onFinal: (said) => { if (typeof hiVoiceRisky === "function" && hiVoiceRisky(said)) { setText(said); setNote(HI_VOICE_RISKY_MSG); return; } handle(said, "voice"); },
+    });
+  };
+  const stopStt = () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); } catch (e) {} setListening(false); };
+  /* 화면을 떠나거나 영문으로 바꾸면 듣기·말하기를 모두 정리한다 — 보이지 않는 곳에서 혼자 말하지 않게 */
+  const hush = () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} };
+  useEffect(() => { if (lang === "en") { hush(); setListening(false); setInterim(""); setSpeaking(false); setMore(""); } }, [lang]);
+  useEffect(() => () => hush(), []);
   const qaCount = qa && qa.meta ? qa.meta.count : 0;
   const glChips = qa && qa.qa ? qa.qa.filter((x) => x.src).filter((_, i) => i % 5 === 0).slice(0, 3).map((x) => x.q) : [];
   const qaChips = qa && qa.qa ? qa.qa.filter((x) => !x.src && (x.t === "증상" || x.t === "치료")).filter((_, i) => i % 53 === 0).slice(0, 3).map((x) => x.q) : [];
@@ -2047,23 +2180,33 @@ function VoiceDoctor() {
             <div className="msg me" key={i}>
               <div className="col"><div className="bubble-row">
                 <div className="bubble me">{m.text}</div>
-                <div className="meta"><span style={{ fontSize: 11, color: "var(--soft)", whiteSpace: "nowrap" }}><Mic size={11} style={{ verticalAlign: -1 }} /> 음성</span></div>
+                <div className="meta"><span style={{ fontSize: 11, color: "var(--soft)", whiteSpace: "nowrap" }}>{m.via === "voice" ? <><Mic size={11} style={{ verticalAlign: -1 }} /> 음성</> : "입력"}</span></div>
               </div></div></div>
           );
         })}
         {speaking && <div className="msg ai"><span className="av-ai"><SecIcon k="ai" /></span><div className="typing"><i /><i /><i /></div></div>}
         <div ref={endRef} />
       </div>
-      {(listening || interim) && <div style={{ padding: "7px 14px", fontSize: 12.8, color: "var(--blue)", fontWeight: 600, background: "#EEF3FF", borderTop: "1px solid var(--border)" }}>{listening ? "🎙 듣는 중… 말씀하세요 " : ""}{interim && "“" + interim + "”"}</div>}
+      {(listening || interim) && <div className="kt-listening">{listening ? "🎙 듣는 중… 말씀하세요 " : ""}{interim && "“" + interim + "”"}</div>}
+      {/* 읽어주는 중 — 120자에서 끊기므로 '이어 듣기'가 없으면 뒷부분을 영영 못 듣는다 */}
+      {(speaking || more) && <div className="kt-listening" style={{ color: "#9A3412", background: "#FFF7ED", display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+        <span>{speaking ? "🔊 읽어드리는 중…" : "여기까지 읽어드렸어요"}</span>
+        {speaking && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={stopSpeak}><X size={12} /> 중지</button>}
+        {!speaking && more && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={sayMore}><Play size={12} /> 이어 듣기</button>}
+        {!speaking && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={sayAgain}><RotateCcw size={12} /> 다시 듣기</button>}
+      </div>}
+      {note && <div className="kt-listening" style={{ color: "#92400E", background: "#FFFBEB", fontWeight: 600 }}>{note}</div>}
       <div className="quicks">{chips.map((c) => <button key={c} onClick={() => handle(c)}>{c}</button>)}</div>
       {ttsOK && <div style={{ display: "flex", gap: 7, alignItems: "center", padding: "8px 12px", flexWrap: "wrap", borderTop: "1px solid var(--border)", background: "var(--card)" }}>
         <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 800 }}><Volume2 size={12} style={{ verticalAlign: -2 }} /> 속도</span>
-        {[["느림", 0.85], ["보통", 1.03], ["빠름", 1.3]].map(([l, r]) => <div key={l} className={`fsel ${rate === r ? "on" : ""}`} style={{ padding: "4px 11px", fontSize: 11 }} onClick={() => setRate(r)}>{l}</div>)}
-        {voices.length > 1 && <select value={voiceURI} onChange={(e) => setVoiceURI(e.target.value)} style={{ border: "1px solid var(--border)", background: "#F7F9FC", borderRadius: 10, padding: "5px 9px", fontSize: 11, fontWeight: 700, color: "var(--text)", outline: "none", cursor: "pointer", maxWidth: 170 }}>{voices.map((v) => <option key={v.voiceURI} value={v.voiceURI}>🔊 {v.name}</option>)}</select>}
+        {[["느림", 0.85], ["보통", 0], ["빠름", 1.3]].map(([l, r]) => <div key={l} className={`fsel ${rate === r ? "on" : ""}`} style={{ padding: "4px 11px", fontSize: 11 }} onClick={() => setRate(r)}>{l}</div>)}
+        {/* 목소리는 고르는 게 아니라 하이 한 사람이다 — 어떤 음성으로 말하는지만 알려드린다 */}
+        {vname && <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 700 }}>🔊 하이 목소리 · {vname}</span>}
       </div>}
       <div className="kt-input">
-        <button className="pl" onClick={() => listening ? stopStt() : startStt()} disabled={!sttOK} style={{ color: listening ? "#EF4444" : "var(--blue)" }} title={sttOK ? "마이크" : "이 브라우저는 음성인식 미지원"}>{listening ? <X size={22} /> : <Mic size={22} />}</button>
-        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handle(text)} placeholder={sttOK ? "마이크를 누르고 말하거나 입력하세요" : "여기에 입력하세요 (음성인식 미지원)"} />
+        {/* 미지원이어도 버튼을 숨기지 않는다 — 눌러보면 이유와 대안(글 입력)을 말해준다 */}
+        <button className="pl" onClick={() => listening ? stopStt() : startStt()} style={{ color: listening ? "#EF4444" : (sttOK ? "var(--blue)" : "var(--soft)") }} title={sttOK ? (listening ? "그만 듣기" : "마이크") : "이 브라우저는 음성 입력을 지원하지 않아요"}>{listening ? <X size={22} /> : <Mic size={22} />}</button>
+        <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handle(text)} placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : (sttOK ? "마이크를 누르고 말하거나 입력하세요" : "여기에 입력하세요 (음성인식 미지원)")} />
         <button className={`send ${text.trim() ? "on" : "off"}`} onClick={() => handle(text)}><Send size={16} /></button>
       </div>
       <div className="kt-disc">출처: <b>질병관리청 국가건강정보포털</b>, <b>대한의학회 임상 진료지침</b>, <b>국립암센터 국가암검진 권고안</b>, <b>국가암정보센터</b> 자료 학습 · 참고용(진단 아님) · 응급 시 119. 음성인식(STT)은 Chrome·Edge에서 마이크 권한 허용 시 동작합니다. <b>남성 중고음 음성</b>은 브라우저에 한국어 남성 음성(예: Edge의 InJoon·Hyunsu)이 있으면 자동 적용되고, 없으면 보유 음성을 중저음으로 낮춰 남성형으로 들려드립니다.</div>
@@ -3124,7 +3267,14 @@ function superAgentRoute(text) {
   };
   // 2) 키워드 폴백 라우팅
   const t = raw.toLowerCase();
-  const hit = AGENT_NAV.find((m) => m[3].some((k) => t.includes(k.toLowerCase())));
+  /* 공백을 지운 형태도 함께 본다 — 받아쓰기가 「대장 내 시경」처럼 낱말을 끊어 놓으면
+     같은 말인데 화면 안내 대신 엉뚱한 답이 나간다(2026-09-20 음성 회귀 26쌍에서 적발).
+     2글자 미만 키워드는 붙여 놓고 찾으면 아무 데나 걸리므로 제외한다. */
+  const tf = t.replace(/\s+/g, "");
+  const hit = AGENT_NAV.find((m) => m[3].some((k) => {
+    const kl = k.toLowerCase(), kf = kl.replace(/\s+/g, "");
+    return t.includes(kl) || (kf.length >= 2 && tf.includes(kf));
+  }));
   if (!hit) return null;
   const [label, , sum] = hit;
   return {
@@ -4179,7 +4329,38 @@ function dataHouseCounsel(text) {
   if (!cards.length && !deep.length) return null;
   return { bubbles: [{ kind: "text", text: `${k} 관리 안내예요. 데이터하우스(전 세계 가이드라인 기반)에서 정리한 영양·기기·식단·생활습관입니다.` }, ...cards, ...deep], quicks: ["관련 진료과·병원 찾기", "추가 정밀검진", "내 리포트 요약"] };
 }
+/* ══ [안전 최상위] 응급은 화면을 가리지 않는다 — 도크와 **같은 규약**을 여기에도 세운다 ══
+   43개 응급 사전을 agentAnswer(도크)에만 올려두면, 회원이 헤더의 '전체 화면 상담'을 누르는 순간
+   그물이 통째로 사라진다. 전체화면 하이 상담과 '하이-나의 주치의' 챗은 이 함수로 들어오기 때문이다.
+   판정은 hcTriage 단일 지점을 그대로 재사용한다(사전을 두 번 적으면 한쪽만 고쳐지는 날이 온다).
+     critical — 다른 레이어를 태우지 않고 단독 반환
+     urgent  — 상담은 이어가되 안내 한 줄을 맨 앞에
+   ⚠️ 보험 정규식(insHandoff)보다 **앞**이어야 한다. 뒤에 두면 「가슴이 심하게 아픈데 보험 되나요」가
+      또 보험 안내로 가려진다 — 응급은 상담보다 위다(a4-triage-safety). */
+function aidEmergencyRes() {
+  const head = (typeof hcEmergencyLines === "function") ? hcEmergencyLines("critical") : [];
+  const text = head.concat(["가까운 응급실 안내와 응급 신호 자가체크는 바로 도와드릴게요 — 전화부터 걸어 주세요."]).join("\n");
+  return { bubbles: [{ kind: "text", text }], quicks: ["🚨 응급신호 자가체크", "🏥 병원·진료 안내"], emergency: "critical" };
+}
+function aidTriage(text) {
+  try { return (typeof hcTriage === "function") ? hcTriage(text) : null; } catch (e) { return null; }
+}
 function aiRespond(text, corpus, report, QA) {
+  const tri = aidTriage(text);
+  if (tri && tri.level === "critical") return aidEmergencyRes();
+  const res = aiRespondCore(text, corpus, report, QA);
+  try {
+    if (tri && res && res.bubbles && res.bubbles.length) {
+      const line = (typeof hcEmergencyLines === "function") ? (hcEmergencyLines("urgent")[0] || "") : "";
+      if (line && !res.bubbles.some((b) => (b.text || "").indexOf(line) >= 0)) {
+        res.bubbles = [{ kind: "text", text: line }].concat(res.bubbles);
+        res.emergency = "urgent";
+      }
+    }
+  } catch (e) {}
+  return res;
+}
+function aiRespondCore(text, corpus, report, QA) {
   const has = (...ks) => ks.some((k) => text.includes(k));
   // 보험·보장 의도는 질병 정보로 답하지 말고 보험 AI 상담사로 연결(예: 'OO 대비 보험')
   if (text !== INS_HANDOFF && /(대비\s*보험|보험|보장|실손|진단비|보험금|보험료|청구)/.test(text)) return insHandoff();
@@ -4263,22 +4444,38 @@ function Chat({ superAgent, acceptsSeed }) {
   ]);
   const [quicks, setQuicks] = useState(() => { const m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; return m ? memberQuestions(m).slice(0, 5) : ["혈당 수치 의미", "내 건강 후속조치", "건강분석 리포트 분석", "당뇨 예방 관리", "의료비 예측"]; });
   const [input, setInput] = useState(""); const [typing, setTyping] = useState(false); const [plus, setPlus] = useState(false);
-  const [listening, setListening] = useState(false); const [interim, setInterim] = useState(""); const [tts, setTts] = useState(false);
+  const [listening, setListening] = useState(false); const [interim, setInterim] = useState("");
+  /* 읽어주기 — 기본은 꺼짐이고, 켜면 기억한다(hiVoice 단일 소스라 화면을 옮겨도 유지된다) */
+  const [tts, setTts] = useState(() => { try { return (typeof hiVoiceOn === "function") ? hiVoiceOn() : false; } catch (e) { return false; } });
+  const [speaking, setSpeaking] = useState(false); const [more, setMore] = useState("");
   const [video, setVideo] = useState(false); const [devOpen, setDevOpen] = useState(false);
+  const lang = useHiLang();
   const kb = useKdca();
   const report = useReport();
   const qa = useLearnedQA();
-  const endRef = useRef(null); const recogRef = useRef(null); const fileRef = useRef(null); const voicesRef = useRef([]); const lastQRef = useRef("");
+  const endRef = useRef(null); const fileRef = useRef(null); const lastQRef = useRef("");
   const chatMember = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
-  const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-  const ttsOK = typeof window !== "undefined" && !!window.speechSynthesis;
+  /* 듣기·말하기 설정은 hiVoice.js 하나뿐 — 화면마다 다시 정하지 않는다(보이스·속도·정제·취소 공통) */
+  const vsup = (typeof hiVoiceSupport === "function") ? hiVoiceSupport() : { stt: false, tts: false, reason: "" };
+  const sttOK = vsup.stt && lang !== "en";
+  const ttsOK = vsup.tts && lang !== "en";
   useEffect(() => { try { if (typeof loadDzCare === "function") loadDzCare(); } catch (e) {} }, []);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing, quicks]);
-  useEffect(() => { if (!ttsOK) return; const load = () => { voicesRef.current = window.speechSynthesis.getVoices().filter((v) => /ko/i.test(v.lang)); }; load(); window.speechSynthesis.onvoiceschanged = load; return () => { try { window.speechSynthesis.onvoiceschanged = null; window.speechSynthesis.cancel(); } catch (e) {} }; }, []);
-  useEffect(() => () => { if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } }, []);
-  const speak = (t) => { if (!ttsOK || !tts || !t) return; try { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t.replace(/[#*•]/g, "")); u.lang = "ko-KR"; u.rate = 1.03; const ko = voicesRef.current; const male = ko.find((v) => /injoon|hyunsu|male|남/i.test(v.name)); if (male) u.voice = male; else if (ko[0]) u.voice = ko[0]; window.speechSynthesis.speak(u); } catch (e) {} };
-  const pushAI = (res) => { setMsgs((m) => [...m, ...res.bubbles.map((b, i) => ({ id: ++UID, who: "ai", kind: b.kind, text: b.text, card: b.card, time: now(), first: i === 0 }))]); setQuicks(res.quicks || []); const firstText = (res.bubbles.find((b) => b.kind !== "card") || {}).text; if (firstText) speak(firstText); };
-  const send = (textArg) => {
+  /* 화면을 떠나거나 영문으로 바꾸면 듣기·말하기를 모두 정리한다(닫은 뒤 결과 배달·혼자 말하기 방지) */
+  const hush = () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} };
+  useEffect(() => { if (lang === "en") { hush(); setListening(false); setInterim(""); setSpeaking(false); setMore(""); } }, [lang]);
+  useEffect(() => () => hush(), []);
+  /* 음성 안내는 말풍선으로 남긴다 — 마이크가 조용히 실패하면 회원은 자기 탓을 한다 */
+  const voiceNote = (line) => { if (line) setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: line, time: now(), first: true }]); };
+  const sayOpt = () => ({ onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } });
+  const speak = (t) => { if (!ttsOK || !tts || !t || typeof hiVoiceSpeak !== "function") return; hiVoiceSpeak(t, sayOpt()); };
+  const stopSpeak = () => { try { if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} setSpeaking(false); setMore(""); };
+  const sayMore = () => { try { if (typeof hiVoiceMore === "function") hiVoiceMore(sayOpt()); } catch (e) {} };
+  const sayAgain = () => { try { if (typeof hiVoiceAgain === "function") hiVoiceAgain(sayOpt()); } catch (e) {} };
+  /* 낭독 범위 — 첫 버블만 읽으면 카드로 간 수치가 소리로는 한마디도 안 나간다.
+     본문 + 카드의 핵심 수치 1~2문장까지 공통 요약기로 조립한다(새 문장을 짓지 않는다). */
+  const pushAI = (res) => { setMsgs((m) => [...m, ...res.bubbles.map((b, i) => ({ id: ++UID, who: "ai", kind: b.kind, text: b.text, card: b.card, time: now(), first: i === 0 }))]); setQuicks(res.quicks || []); const say = (typeof hiVoiceSummarize === "function") ? hiVoiceSummarize(res.bubbles) : (res.bubbles.find((b) => b.kind !== "card") || {}).text; if (say) speak(say); };
+  const send = (textArg, viaArg) => {
     const text = (textArg ?? input).trim(); if (!text) return;
     if (text === "🔬 특수검진 정밀검사 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "special"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
     if (text === "🚨 응급신호 자가체크" || text === "🚨 응급신호 보기") { setPlus(false); setQuicks([]); try { _checkupTab = "emergency"; } catch (e) {} if (typeof nav === "function") nav("checkup"); return; }
@@ -4291,21 +4488,43 @@ function Chat({ superAgent, acceptsSeed }) {
     { const _nk = (typeof agentNavKey === "function") ? agentNavKey(text) : null; if (_nk) { setPlus(false); setQuicks([]); if (typeof nav === "function") nav(_nk); return; } }
     setInput(""); setPlus(false); setQuicks([]);
     lastQRef.current = text;
+    const via = (typeof hiVoiceChannel === "function") ? hiVoiceChannel(viaArg) : (viaArg === "voice" ? "voice" : "text");
+    /* 턴 대장 — 답을 화면에 붙이는 순간 한 줄. 재는 것은 '회원이 기다린 시간'이라 여기서부터 센다(도크와 같은 지점) */
+    const t0 = Date.now();
     const meId = ++UID;
-    setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text, time: now(), unread: true }]);
-    setTimeout(() => { setMsgs((m) => m.map((x) => x.id === meId ? { ...x, unread: false } : x)); setTyping(true); }, 500);
+    setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text, time: now(), unread: true, channel: via }]);
+    setTimeout(() => { setMsgs((m) => m.map((x) => x.id === meId ? { ...x, unread: false } : x)); setTyping(true); }, aidAckWait(via));
     setTimeout(() => {
       const res = aiRespond(text, kb, report, qa); setTyping(false); pushAI(res);
+      try {
+        const b0 = (res.bubbles || [])[0] || {};
+        const miss = b0.kind !== "card" && /정보를 찾지 못했어요|정보는 찾지 못했어요/.test(b0.text || "");
+        if (typeof telemTurn === "function") telemTurn(via, Date.now() - t0, !miss);
+      } catch (e) {}
       // Super Agent에서 실제 건강 상담 답변이면 '검진 화면에서 이어 상담' 버튼 제공(섹션 안내 라우팅은 제외)
       if (superAgent) {
         const isRoute = (res.bubbles || []).some((b) => b.card && /하이 안내/.test(b.card.title || ""));
         if (!isRoute) setQuicks((q) => (q || []).includes(DOCTOR_HANDOFF) ? q : [...(q || []), DOCTOR_HANDOFF]);
       }
-    }, 1400);
+    }, aidWait(via));
   };
   useEffect(() => { if (!acceptsSeed) return; if (typeof _doctorSeed !== "undefined" && _doctorSeed) { const q = _doctorSeed; _doctorSeed = null; const tid = setTimeout(() => send(q), 500); return () => clearTimeout(tid); } }, []);
-  const startStt = () => { if (!sttOK) return; if (ttsOK) window.speechSynthesis.cancel(); const R = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new R(); recogRef.current = r; r.lang = "ko-KR"; r.interimResults = true; r.continuous = false; let fin = ""; r.onstart = () => { setListening(true); setInterim(""); }; r.onresult = (e) => { let itm = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const tr = e.results[i]; if (tr.isFinal) fin += tr[0].transcript; else itm += tr[0].transcript; } setInterim(itm); }; r.onerror = () => setListening(false); r.onend = () => { setListening(false); setInterim(""); if (fin.trim()) send(fin.trim()); }; try { r.start(); } catch (e) { setListening(false); } };
-  const stopStt = () => { if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } setListening(false); };
+  /* 듣기 — 시작/중지 한 버튼. 인스턴스 관리·무음 종료·끼어들기(에코 방지)는 hiVoice가 맡는다 */
+  const startStt = () => {
+    if (typeof hiVoiceListen !== "function") return;
+    if (listening) { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); return; }   /* 재클릭은 취소 — 들은 말을 보내지 않는다 */
+    if (!sttOK) { voiceNote(lang === "en" ? HI_VOICE_MSG.enOnly : (vsup.reason || HI_VOICE_MSG.nostt)); return; }
+    setSpeaking(false); setMore("");
+    hiVoiceListen({
+      onStart: () => { setListening(true); setInterim(""); },
+      onInterim: (itm) => setInterim(itm),
+      onError: (msg) => { setListening(false); setInterim(""); voiceNote(msg); },
+      onEnd: () => { setListening(false); setInterim(""); },
+      /* 되돌리기 어려운 행동은 소리로 실행하지 않는다 — 입력칸에 채워만 두고 마지막은 화면 버튼으로 */
+      onFinal: (said) => { if (typeof hiVoiceRisky === "function" && hiVoiceRisky(said)) { setInput(said); voiceNote(HI_VOICE_RISKY_MSG); return; } send(said, "voice"); },
+    });
+  };
+  const stopStt = () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); } catch (e) {} setListening(false); };
   const aiAck = (label) => { setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `${label}을(를) 잘 받았어요. 내용을 참고해 건강관리 안내를 도와드릴게요. 더 궁금한 점이 있으면 말씀해 주세요.`, time: now(), first: true }]); }, 1200); };
   const onFile = (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const isImg = /^image\//.test(f.type); const rd = new FileReader(); rd.onload = () => { setMsgs((m) => [...m, isImg ? { id: ++UID, who: "me", kind: "image", src: rd.result, time: now() } : { id: ++UID, who: "me", kind: "file", text: f.name, time: now() }]); aiAck(isImg ? "사진" : "파일"); }; rd.readAsDataURL(f); e.target.value = ""; setPlus(false); };
   const shareDevice = (summary) => { setDevOpen(false); if (!summary) return; const meId = ++UID; setMsgs((m) => [...m, { id: meId, who: "me", kind: "text", text: `🩺 기기 측정값 공유 — ${summary}`, time: now() }]); setTyping(true); setTimeout(() => { setTyping(false); setMsgs((m) => [...m, { id: ++UID, who: "ai", kind: "text", text: `연동된 측정값을 확인했어요(${summary}). 수치 추이를 바탕으로 생활관리·검진을 안내해 드릴게요. 이상 수치가 지속되면 진료를 권합니다. (참고용)`, time: now(), first: true }]); }, 1300); };
@@ -4314,7 +4533,8 @@ function Chat({ superAgent, acceptsSeed }) {
       {video && <VideoCallModal title="하이-나의 주치의 화상상담" sub="24시간 비대면 상담" onClose={() => setVideo(false)} />}
       <div className="kt-head"><ArrowLeft size={20} className="ic" /><span className="av-ai" style={{ width: 32, height: 32 }}><SecIcon k="ai" /></span>
         <div style={{ flex: 1 }}><div className="nm">{superAgent ? "하이" : "하이-나의 주치의"}</div><div className="st"><span className="dot" /> {superAgent ? "고객 전담 · 모든 서비스 연결" : "검진결과·건강분석 전담 · 24시간"}</div></div>
-        {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기"><Volume2 size={17} /></button>}
+        {/* 읽어주기 — 기본 꺼짐·켜면 기억. 미지원 브라우저면 숨기지 않고 이유를 말한다 */}
+        {lang !== "en" && <button className={`ktib ${tts ? "on" : ""}`} aria-pressed={tts} onClick={() => { if (!vsup.tts) { voiceNote(vsup.reason || HI_VOICE_MSG.notts); return; } const v = !tts; setTts(v); try { if (typeof hiVoiceSetOn === "function") hiVoiceSetOn(v); } catch (e) {} if (!v) stopSpeak(); }} title={tts ? "읽어주기 끄기" : "읽어주기 켜기 — 답변을 소리로 들려드려요"}><Volume2 size={17} /></button>}
         <button className="ktib" onClick={() => setDevOpen((v) => !v)} title="기기 연결"><HeartPulse size={17} /></button>
         <button className="ktib" onClick={() => setVideo(true)} title="화상상담"><MonitorSmartphone size={17} /></button></div>
       {chatMember && (
@@ -4339,6 +4559,13 @@ function Chat({ superAgent, acceptsSeed }) {
         <div ref={endRef} />
       </div>
       {(listening || interim) && <div className="kt-listening">{listening ? "🎙 듣는 중… 말씀하세요 " : ""}{interim && "“" + interim + "”"}</div>}
+      {/* 읽어주는 중 — 120자에서 끊기므로 '이어 듣기'가 없으면 뒷부분을 영영 못 듣는다 */}
+      {(speaking || more) && <div className="kt-listening" style={{ color: "#9A3412", background: "#FFF7ED", display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+        <span>{speaking ? "🔊 읽어드리는 중…" : "여기까지 읽어드렸어요"}</span>
+        {speaking && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={stopSpeak}><X size={12} /> 중지</button>}
+        {!speaking && more && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={sayMore}><Play size={12} /> 이어 듣기</button>}
+        {!speaking && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={sayAgain}><RotateCcw size={12} /> 다시 듣기</button>}
+      </div>}
       {quicks.length > 0 && !typing && <div className="quicks">{quicks.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}</div>}
       <div className="kt-input">
         {plus && (<div className="plus-sheet">
@@ -4349,8 +4576,10 @@ function Chat({ superAgent, acceptsSeed }) {
           <button onClick={() => { setPlus(false); setVideo(true); }}><MonitorSmartphone size={20} color="#0EA5E9" />화상상담</button></div>)}
         <input ref={fileRef} type="file" accept="image/*,.pdf" style={{ display: "none" }} onChange={onFile} />
         <button className="pl" onClick={() => setPlus((p) => !p)}>{plus ? <X size={22} /> : <Plus size={22} />}</button>
-        {sttOK && <button className="pl" onClick={() => listening ? stopStt() : startStt()} style={{ color: listening ? "#EF4444" : "var(--blue)" }} title="음성 입력">{listening ? <X size={22} /> : <Mic size={22} />}</button>}
-        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={sttOK ? "메시지 입력 또는 🎤 음성" : "메시지를 입력하세요"} />
+        {/* 영문 모드에서는 마이크를 내보내지 않는다(한국어 코퍼스뿐 — 되는 척이 더 나쁘다).
+            미지원 브라우저에서는 숨기지 않고, 눌러보면 이유와 대안을 말풍선으로 알린다. */}
+        {lang !== "en" && <button className="pl" onClick={() => listening ? stopStt() : startStt()} style={{ color: listening ? "#EF4444" : (sttOK ? "var(--blue)" : "var(--soft)") }} title={sttOK ? (listening ? "그만 듣기" : "음성 입력") : "이 브라우저는 음성 입력을 지원하지 않아요"}>{listening ? <X size={22} /> : <Mic size={22} />}</button>}
+        <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : (sttOK ? "메시지 입력 또는 🎤 음성" : "메시지를 입력하세요")} />
         <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
       </div>
       <div className="kt-disc">AI 상담은 의료진의 진단을 대체하지 않으며, 참고용 건강정보 안내입니다. 음성·화상·파일첨부·기기연동은 예시이며 응급 시 119.</div>
@@ -4374,6 +4603,8 @@ try {
       report: () => loadReport(),
       /* consult 경로 직접 검사 — 질환 설명 앞의 개인 접두문(kdcaNote)이 그 회원 것인지 본다 */
       consult: (q) => loadReport().then((R) => { try { return consult(String(q || ""), null, R, null); } catch (e) { return "ERR " + e; } }),
+      /* 음성 주치의(VoiceDoctor)가 실제로 타는 경로 — 응급 그물이 이 화면에도 쳐져 있는지 회귀가 직접 두드린다 */
+      voice: (q) => loadReport().then((R) => { try { return aidVoiceAnswer(String(q || ""), null, R, null); } catch (e) { return "ERR " + e; } }),
       note: (d) => { try { return kdcaNote(String(d || "")); } catch (e) { return "ERR " + e; } },
     };
   }
@@ -8969,6 +9200,34 @@ function shopConsultReply(text) {
   return [{ kind: "text", text: `‘${text}’에 딱 맞는 항목을 못 찾았어요. 😅 아래 관심영역 버튼을 누르시거나, ‘눈이 침침해요’, ‘혈당 관리’, ‘혈압계 추천’처럼 말씀해 주세요.` }];
 }
 let _shopMsgId = 0;
+/* 응답 대기 — 여기 박아둔 750ms가 체감 지연의 97.4%였다(엔진 실계산은 7ms대).
+   도크·주치의와 같은 표를 쓴다. 같은 말을 해도 화면마다 대기가 다르면 하이가 다른 사람처럼 느껴진다. */
+function shopWait(via) {
+  try { if (typeof hidockWait === "function") return hidockWait(via); } catch (e) {}
+  return via === "voice" ? 90 : 320;
+}
+/* 낭독용 카드 요약 — 지금까지 첫 말풍선만 읽어서 성분·기기·가격은 소리로 한마디도 안 나갔다.
+   화면에 이미 떠 있는 라벨·설명·최저가만 옮겨 적는다(새 문장을 짓지 않는다). 최대 2건. */
+function shopVoiceFacts(replies, areaBy, devBy) {
+  const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
+  const out = [];
+  (replies || []).forEach((r) => {
+    if (out.length >= 2 || !r) return;
+    if (r.kind === "area") {
+      const a = areaBy[r.areaKey]; if (!a) return;
+      const ps = PRODUCTS.filter((p) => (a.cats || []).includes(p.category));
+      const low = ps.length ? Math.min.apply(null, ps.map((p) => Number(p.price) || 0)) : 0;
+      /* 수치를 앞에 둔다 — 120자 상한에서 뒤쪽은 '이어 듣기'로 밀리므로, 카드의 핵심 수치가 먼저 들려야 한다 */
+      out.push(a.label + (low ? ` 관련 제품 ${ps.length}가지, 최저가 ${shopWon(low)}.` : ".") + " " + a.claim);
+    } else if (r.kind === "dev") {
+      const d = devBy[r.devKey]; if (!d) return;
+      out.push(d.label + ". " + d.note + ((d.items && d.items[0]) ? " " + d.items[0][0] + "." : ""));
+    } else if (r.kind === "rec") {
+      out.push("맞춤 추천은 영양제·건강식단·의료기기 분야별로 화면 카드에 정리해 드렸어요.");
+    }
+  });
+  return out.join(" ");
+}
 function ShopConsultant() {
   const intel = (() => { try { const x = (typeof window !== "undefined") ? window._shopIntel : null; if (typeof window !== "undefined") window._shopIntel = null; return x || null; } catch (e) { return null; } });
   const PRODUCTS = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
@@ -8990,39 +9249,66 @@ function ShopConsultant() {
   const [typing, setTyping] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
-  const [tts, setTts] = useState(false);
+  /* 읽어주기 — 기본은 꺼짐이고, 켜면 기억한다(hiVoice 단일 소스라 화면을 옮겨도 유지된다) */
+  const [tts, setTts] = useState(() => { try { return (typeof hiVoiceOn === "function") ? hiVoiceOn() : false; } catch (e) { return false; } });
+  const [speaking, setSpeaking] = useState(false);
+  const [more, setMore] = useState("");
   const endRef = useRef(null);
-  const recogRef = useRef(null);
-  const voicesRef = useRef([]);
-  const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-  const ttsOK = typeof window !== "undefined" && !!window.speechSynthesis;
+  const lang = useHiLang();
+  /* 듣기·말하기 설정은 hiVoice.js 하나뿐 — 지금까지 이 화면만 ko[0]을 골라 환경에 따라 여성으로 말했다 */
+  const vsup = (typeof hiVoiceSupport === "function") ? hiVoiceSupport() : { stt: false, tts: false, reason: "" };
+  const sttOK = vsup.stt && lang !== "en";
+  const ttsOK = vsup.tts && lang !== "en";
   useEffect(() => { if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" }); }, [msgs, typing]);
-  useEffect(() => { if (!ttsOK) return; const load = () => { voicesRef.current = window.speechSynthesis.getVoices().filter((v) => /ko/i.test(v.lang)); }; load(); window.speechSynthesis.onvoiceschanged = load; return () => { try { window.speechSynthesis.onvoiceschanged = null; window.speechSynthesis.cancel(); } catch (e) {} }; }, []);
-  const speak = (tx) => { if (!ttsOK || !tts || !tx) return; try { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(tx).replace(/[#*•【】]/g, "")); u.lang = "ko-KR"; u.rate = 1.03; const ko = voicesRef.current; if (ko && ko[0]) u.voice = ko[0]; window.speechSynthesis.speak(u); } catch (e) {} };
+  /* 화면을 떠나거나 영문으로 바꾸면 듣기·말하기를 모두 정리한다 */
+  const hush = () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} };
+  useEffect(() => { if (lang === "en") { hush(); setListening(false); setInterim(""); setSpeaking(false); setMore(""); } }, [lang]);
+  useEffect(() => () => hush(), []);
+  const voiceNote = (line) => { if (line) setMsgs((m) => [...m, { id: ++_shopMsgId, who: "ai", kind: "text", first: true, text: line }]); };
+  const sayOpt = () => ({ onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } });
+  const speak = (tx) => { if (!ttsOK || !tts || !tx || typeof hiVoiceSpeak !== "function") return; hiVoiceSpeak(tx, sayOpt()); };
+  const stopSpeak = () => { try { if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} setSpeaking(false); setMore(""); };
+  const sayMore = () => { try { if (typeof hiVoiceMore === "function") hiVoiceMore(sayOpt()); } catch (e) {} };
+  const sayAgain = () => { try { if (typeof hiVoiceAgain === "function") hiVoiceAgain(sayOpt()); } catch (e) {} };
+  /* 듣기 — 시작/중지 한 버튼. 인스턴스 관리·무음 종료·끼어들기(에코 방지)는 hiVoice가 맡는다 */
   const startStt = () => {
-    if (!sttOK) return;
-    const Rc = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new Rc(); recogRef.current = r;
-    r.lang = "ko-KR"; r.interimResults = true; r.continuous = false; let fin = "";
-    r.onstart = () => { setListening(true); setInterim(""); };
-    r.onresult = (e) => { let itm = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const tr = e.results[i]; if (tr.isFinal) fin += tr[0].transcript; else itm += tr[0].transcript; } setInterim(itm); };
-    r.onerror = () => setListening(false);
-    r.onend = () => { setListening(false); setInterim(""); if (fin.trim()) send(fin.trim()); };
-    try { r.start(); } catch (e) { setListening(false); }
+    if (typeof hiVoiceListen !== "function") return;
+    if (listening) { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); return; }   /* 재클릭은 취소 — 들은 말을 보내지 않는다 */
+    if (!sttOK) { voiceNote(lang === "en" ? HI_VOICE_MSG.enOnly : (vsup.reason || HI_VOICE_MSG.nostt)); return; }
+    setSpeaking(false); setMore("");
+    hiVoiceListen({
+      onStart: () => { setListening(true); setInterim(""); },
+      onInterim: (itm) => setInterim(itm),
+      onError: (msg) => { setListening(false); setInterim(""); voiceNote(msg); },
+      onEnd: () => { setListening(false); setInterim(""); },
+      /* 주문·결제처럼 되돌리기 어려운 말은 소리로 실행하지 않는다 — 입력칸에 채워만 둔다 */
+      onFinal: (said) => { if (typeof hiVoiceRisky === "function" && hiVoiceRisky(said)) { setInput(said); voiceNote(HI_VOICE_RISKY_MSG); return; } send(said, "voice"); },
+    });
   };
-  const stopStt = () => { if (recogRef.current) { try { recogRef.current.stop(); } catch (e) {} } setListening(false); };
-  const send = (raw) => {
+  const stopStt = () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); } catch (e) {} setListening(false); };
+  const send = (raw, viaArg) => {
     const text = ((raw !== undefined ? raw : input) || "").trim(); if (!text) return;
+    const via = (typeof hiVoiceChannel === "function") ? hiVoiceChannel(viaArg) : (viaArg === "voice" ? "voice" : "text");
     setInput("");
-    setMsgs((m) => [...m, { id: ++_shopMsgId, who: "me", kind: "text", text }]);
+    setMsgs((m) => [...m, { id: ++_shopMsgId, who: "me", kind: "text", text, channel: via }]);
     setTyping(true);
+    /* 턴 대장 — 답을 화면에 붙이는 순간 한 줄. 재는 것은 '회원이 기다린 시간'이라 여기서부터 센다(도크와 같은 지점) */
+    const t0 = Date.now();
     setTimeout(() => {
       const replies = shopConsultReply(text);
       setTyping(false);
       setMsgs((m) => [...m, ...replies.map((r) => ({ id: ++_shopMsgId, who: "ai", ...r }))]);
-      const firstText = replies.find((r) => r.kind === "text"); if (firstText) speak(firstText.text);
+      try {
+        const miss = replies.length === 1 && replies[0].kind === "text" && /딱 맞는 항목을 못 찾았어요/.test(replies[0].text || "");
+        if (typeof telemTurn === "function") telemTurn(via, Date.now() - t0, !miss);
+      } catch (e) {}
+      /* 본문 + 카드의 핵심 수치까지 읽는다 — 공통 요약기는 텍스트 버블만 아니까 카드 몫은 여기서 조립해 넘긴다 */
+      const body = (typeof hiVoiceSummarize === "function") ? hiVoiceSummarize(replies) : ((replies.find((r) => r.kind === "text") || {}).text || "");
+      const say = [body, shopVoiceFacts(replies, AREA_BY, DEV_BY)].filter(Boolean).join(" ");
+      if (say) speak(say);
       const hasArea = replies.some((r) => r.kind === "area" || r.kind === "dev" || r.kind === "rec");
       setQuicks(hasArea ? ["🎯 내 건강상태 맞춤 추천", "관절·연골 건강", "면역·활력", "홈케어 기기 추천"] : ["🎯 내 건강상태 맞춤 추천", "눈 건강", "혈당 건강", "혈압계 추천"]);
-    }, 750);
+    }, shopWait(via));
   };
   const renderMsg = (m) => {
     if (m.kind === "area") { const a = AREA_BY[m.areaKey]; return a ? <ConsultAreaCard a={a} /> : null; }
@@ -9040,7 +9326,8 @@ function ShopConsultant() {
         <div className="kt-head">
           <span className="av-ai" style={{ width: 34, height: 34 }}><Sparkles size={19} color="#fff" /></span>
           <div style={{ flex: 1 }}><div className="nm">AI 상담사</div><div className="st"><span className="dot" /> 온라인 · 맞춤 건강제품 안내</div></div>
-          {ttsOK && <button className={`ktib ${tts ? "on" : ""}`} onClick={() => { setTts((v) => { if (v && ttsOK) window.speechSynthesis.cancel(); return !v; }); }} title="음성 읽기" style={{ color: tts ? "#EA580C" : "#9A3412", background: "none", border: "none", cursor: "pointer", padding: 4 }}><Volume2 size={18} /></button>}
+          {/* 읽어주기 — 기본 꺼짐·켜면 기억. 미지원 브라우저면 숨기지 않고 이유를 말한다 */}
+          {lang !== "en" && <button className={`ktib ${tts ? "on" : ""}`} aria-pressed={tts} onClick={() => { if (!vsup.tts) { voiceNote(vsup.reason || HI_VOICE_MSG.notts); return; } const v = !tts; setTts(v); try { if (typeof hiVoiceSetOn === "function") hiVoiceSetOn(v); } catch (e) {} if (!v) stopSpeak(); }} title={tts ? "읽어주기 끄기" : "읽어주기 켜기 — 답변을 소리로 들려드려요"} style={{ color: tts ? "#EA580C" : "#9A3412", background: "none", border: "none", cursor: "pointer", padding: 4 }}><Volume2 size={18} /></button>}
         </div>
         <div className="kt-body">
           <div className="daypill"><Sparkles size={12} style={{ verticalAlign: -2, marginRight: 3 }} /> 정밀영양협회 검증 · 식약처 인정 기능성 기반 · 참고용</div>
@@ -9057,10 +9344,18 @@ function ShopConsultant() {
           <div ref={endRef} />
         </div>
         {(listening || interim) && <div className="kt-listening">{listening ? "🎙 듣는 중… 말씀하세요 " : ""}{interim && "“" + interim + "”"}</div>}
+        {/* 읽어주는 중 — 120자에서 끊기므로 '이어 듣기'가 없으면 뒷부분을 영영 못 듣는다 */}
+        {(speaking || more) && <div className="kt-listening" style={{ color: "#9A3412", background: "#FFF7ED", display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+          <span>{speaking ? "🔊 읽어드리는 중…" : "여기까지 읽어드렸어요"}</span>
+          {speaking && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={stopSpeak}><X size={12} /> 중지</button>}
+          {!speaking && more && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={sayMore}><Play size={12} /> 이어 듣기</button>}
+          {!speaking && <button className="cbtn2" style={{ margin: 0, padding: "4px 10px" }} onClick={sayAgain}><RotateCcw size={12} /> 다시 듣기</button>}
+        </div>}
         {quicks.length > 0 && !typing && <div className="quicks">{quicks.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}</div>}
         <div className="kt-input">
-          {sttOK && <button className="pl" onClick={() => listening ? stopStt() : startStt()} style={{ color: listening ? "#EF4444" : "#EA580C" }} title="음성 입력">{listening ? <X size={22} /> : <Mic size={22} />}</button>}
-          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={sttOK ? "메시지 입력 또는 🎤 음성 (예: 눈이 침침해요)" : "예: 눈이 침침해요 / 혈당 관리 / 혈압계 추천"} />
+          {/* 영문 모드에서는 마이크를 내보내지 않는다(한국어 코퍼스뿐). 미지원 브라우저면 숨기지 말고 이유를 알린다 */}
+          {lang !== "en" && <button className="pl" onClick={() => listening ? stopStt() : startStt()} style={{ color: listening ? "#EF4444" : (sttOK ? "#EA580C" : "var(--soft)") }} title={sttOK ? (listening ? "그만 듣기" : "음성 입력") : "이 브라우저는 음성 입력을 지원하지 않아요"}>{listening ? <X size={22} /> : <Mic size={22} />}</button>}
+          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : (sttOK ? "메시지 입력 또는 🎤 음성 (예: 눈이 침침해요)" : "예: 눈이 침침해요 / 혈당 관리 / 혈압계 추천")} />
           <button className={`send ${input.trim() ? "on" : "off"}`} onClick={() => send()}><Send size={16} /></button>
         </div>
         <div className="kt-disc">AI 상담사는 정보 제공용 안내이며 진단·처방·의료행위가 아닙니다. 건강기능식품은 의약품이 아니고, 의료기기는 허가된 사용목적 범위에서 사용하세요.</div>
@@ -22693,7 +22988,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-09-20", ver:"v1.9", ch:[9], feat:"공급망 원가회계 고정비 배분 정정·회원 화면 원가율 삭제", src:"온톨로지 › 공급망 온톨로지(원가회계) · 건강쇼핑", summary:"건강커머스 단독 화면이 전사 고정비를 혼자 떠안아 적자로 보이던 워터폴을 공헌이익 기준으로 바꾸고 전사 고정비는 예산양식 매출 비중만큼만 참고 배분하도록 재무 엔진에서 계산하게 했으며, 회원이 보는 건강쇼핑 적립 배너에서 공급가율 문구를 삭제", refs:[], status:"반영", hash:"a051f0c", auto:true },
+  { date:"2026-09-20", ver:"v1.3", ch:[7], feat:"하이 음성 대화(듣기·읽어주기)와 음성 안전·정확도", src:"하이 도크(전 화면) · 전체화면 상담 · 건강쇼핑 상담 · 하이 지식층", summary:"전 화면에 상주하는 하이 도크에 읽어주기를 신설해 음성으로 묻고 음성으로 답을 듣는 대화를 완성하고, 흩어져 있던 음성 구현을 공통 모듈 hiVoice로 모았으며, 응급 신호를 모든 화면에서 상담보다 먼저 판정하도록 승격하고 한국어 음성 오인식 사전과 구어체 장문 보정으로 인식 정확도를 끌어올렸으며, 예약·청구 같은 되돌리기 어려운 행동은 음성으로 확정하지 않고 화면 확인을 거치게 하고 낭독 문장에서 약 이름·원가·개인정보를 가리도록 했으며 음성 전용 회귀 10블록을 신설", refs:[], status:"반영", hash:"9f876f2", auto:true },
+  { date:"2026-09-20", ver:"v1.9", ch:[9], feat:"공급망 원가회계 고정비 배분 정정·회원 화면 원가율 삭제", src:"온톨로지 › 공급망 온톨로지(원가회계) · 건강쇼핑", summary:"건강커머스 단독 화면이 전사 고정비를 혼자 떠안아 적자로 보이던 워터폴을 공헌이익 기준으로 바꾸고 전사 고정비는 예산양식 매출 비중만큼만 참고 배분하도록 재무 엔진에서 계산하게 했으며, 회원이 보는 건강쇼핑 적립 배너에서 공급가율 문구를 삭제", refs:[], status:"반영", hash:"cd56325", auto:true },
   { date:"2026-09-20", ver:"v1.8", ch:[9], feat:"판매마진 배분 60·15·25 통일과 운용 정책값 확정", src:"건강금융지갑 · 사회적 가치 · 온톨로지 › 재무회계/공급망 · 백서 · 하이 지식층", summary:"상품 마진 배분을 투자금 산정 예산양식 v3.8과 같은 적립 60%·나눔 15%·운영 25%로 통일해 회원 화면·하이 답변·백서·온톨로지 금액과 문구를 WALLET_SPLIT 단일 정의에서 계산하도록 바꾸고, 토큰 우선 적립 30%·데이터 배당 분배율과는 구분했으며, AI 투자 목표 비중과 운용 원칙·기업 B2B 채널·치료비 1인 지원액을 확정 정책으로 표기하고 비율 일치 가드를 재무 회귀 검사에 추가", refs:[], status:"반영", hash:"2be674e", auto:true },
   { date:"2026-09-17", ver:"v1.7", ch:[9], feat:"재무회계 예산양식 v3.8 엔진 이식·기준일 실적", src:"온톨로지 › 재무회계(손익계산서~재무 온톨로지·AI 16개 서브섹션)", summary:"투자금 산정 예산양식 v3.8(인피니티케어 MOU 15만·메디에이지 18만 건·병원/약국 구독 2028년 과금·약국 절반·우대 한도 매년 10만 건·1차 60억 2027년 9월 소진·IM 80억·온라인 광고는 목표 외 상향 요인)을 사이트 재무 엔진으로 옮겨 계획 화면을 엑셀과 0원 일치시키고, 기준일 2027-09-17 회원 10만 명 가정으로 누적 실적(회원 연동 계정 환산·고정비 계획)과 계획 대비 달성률, 월별 대차 일치 재무상태표·현금흐름표·런웨이를 전 서브섹션에 반영", refs:[], status:"반영", hash:"baf2750", auto:true },
   { date:"2026-09-14", ver:"v1.6", ch:[9], feat:"투자금 양식 헬스메이트센터 사용료 우대 조건", src:"scripts/invest", summary:"보험 중개를 헬스메이트센터 사용료로 바꿔 투자금 100억 기준 우대 단가·한도와 초과분 시가를 넣고 신규 스트림을 삭제", refs:[], status:"반영", hash:"056e742", auto:true },
@@ -25825,7 +26121,11 @@ const LTC_EMERGENCY = {
   /* 즉시 119 — 지체하면 되돌릴 수 없는 신호 */
   critical: ["의식이 없", "의식 없", "숨을 안 쉬", "호흡이 없", "숨을 못 쉬", "심정지", "쓰러졌", "쓰러지셨", "경련", "발작",
     "말이 어눌", "한쪽이 마비", "마비가 왔", "입이 돌아", "얼굴이 처졌", "가슴을 움켜", "가슴이 심하게", "피를 토",
-    "토혈", "각혈", "출혈이 멈추지", "머리를 부딪", "머리를 다쳤", "체온이 안", "저체온", "혼수"],
+    "토혈", "각혈", "출혈이 멈추지", "머리를 부딪", "머리를 다쳤", "체온이 안", "저체온", "혼수",
+    /* FAST 보강(2026-09-20 회귀) — 뇌졸중은 셋 중 하나만 보여도 시계가 돌기 시작한다.
+       「말이 어눌」만 있고 **팔 힘(Arm)·얼굴 처짐(Face)의 단독 표현**이 없어서
+       「한쪽 팔에 힘이 없어요」·「얼굴이 한쪽으로 처졌어요」가 그대로 지나갔다(실측 9/11). */
+    "팔에 힘이 없", "팔에 힘이 빠", "다리에 힘이 없", "한쪽으로 처졌", "한쪽이 처졌", "한쪽이 축 늘어"],
   /* 지금 진료 — 오늘 안에 봐야 하는 신호 */
   urgent: ["갑자기 심한 두통", "심한 복통", "고열", "열이 39", "열이 40", "소변이 안", "숨이 차", "호흡이 가쁘",
     "가슴이 답답", "낙상", "넘어지셨", "삼키질 못", "먹지를 못", "탈수", "의식이 흐릿", "헛소리", "섬망"],
@@ -25834,6 +26134,27 @@ const LTC_EMERGENCY = {
   lineUrgent: "오늘 안에 의료진이 보셔야 하는 상태로 들려요. **지금 연결 가능한 의사**로 먼저 보여드리거나, 가까운 응급실·주치의에게 바로 연락해 주세요.",
   lineWhat: "119에 전화하시면 이렇게 말씀하시면 돼요 — 어디(주소), 누가(나이·성별), 어떤 상태(의식·호흡), 앓고 계신 병과 드시는 약.",
 };
+
+/* ── 일반 경로 승격(2026-09-20) — 응급 사전의 원천은 **이 파일 하나**다 ──
+   49개(critical 32 · urgent 17)는 지금까지 A4(재가돌봄) 라우팅에 걸렸을 때만 읽혔다. 그래서
+   「말이 어눌하고 한쪽 팔에 힘이 없어요」 같은 뇌졸중 FAST 징후가 일반 대화에서 그대로 지나갔다.
+   같은 말을 aiQnaBank에 또 적으면 한쪽만 고쳐지는 날이 온다 — 그쪽은 여기를 **읽어 간다**.
+   ⚠️ 화면 토글로 만들지 않는다(hiOpsConfig OPS_LOCKED: "안전을 UI 토글로 만들면 언젠가 꺼진다"). */
+const LTC_EMERGENCY_SHORT = ["가슴이아파", "숨이차", "쓰러", "응급", "심하게아파", "마비"];   // 사전보다 짧은 구어 축약(기존 6패턴) — 그물을 좁히지 않으려고 함께 남긴다
+/* level: "critical"(기본) | "all"
+   ⚠️ 기본이 critical인 이유 — 정적 매칭(AGENT_QNA)에 걸리면 그 답이 **상담을 대체한다.**
+      critical은 대체가 맞다(다음 행동 하나만 남기는 게 맞는 상황이다).
+      urgent는 아니다 — 「가슴이 답답한 보험 없나요」가 보험 상담을 통째로 삼킨다.
+      urgent는 상담을 이어가면서 안내 한 줄을 맨 앞에 붙이는 방식(agentAnswer의 트리아지)으로 처리한다. */
+function ltcEmergencyPatterns(level) {
+  const out = [];
+  const add = (w) => { const n = String(w || "").toLowerCase().replace(/\s/g, ""); if (n.length >= 2 && out.indexOf(n) < 0) out.push(n); };
+  /* 사전 접근을 따로 감싼다 — 한 곳이 실패해도 나머지 그물은 남아야 한다(안전 목록이 통째로 비면 안 된다) */
+  try { LTC_EMERGENCY_SHORT.forEach(add); } catch (e) {}
+  try { LTC_EMERGENCY.critical.forEach(add); } catch (e) {}
+  if (level === "all") { try { LTC_EMERGENCY.urgent.forEach(add); } catch (e) {} }
+  return out;
+}
 
 /* 조회 헬퍼 */
 function ltcService(key) { for (const s of LTC_SERVICES) { if (s.key === key) return s; } return null; }
@@ -25854,7 +26175,7 @@ function ltcCopay(limitWon, opt) {
   };
 }
 
-try { if (typeof window !== "undefined") { window.__hifinLtc = { meta: LTC_META, svc: LTC_SERVICES, grades: LTC_GRADES, copay: ltcCopay, faq: LTC_FAQ, emg: LTC_EMERGENCY }; } } catch (e) {}
+try { if (typeof window !== "undefined") { window.__hifinLtc = { meta: LTC_META, svc: LTC_SERVICES, grades: LTC_GRADES, copay: ltcCopay, faq: LTC_FAQ, emg: LTC_EMERGENCY, emgPatterns: ltcEmergencyPatterns }; } } catch (e) {}
 
 /* ══════════════ RPM 경보 단일 소스 — 원격 모니터링 이상신호 (Phase D 연계) ══════════════
    '새벽 2시 17분' 장면을 화면 하나에 가둬두지 않는다.
@@ -26763,7 +27084,7 @@ function interventionsFor(grade, groupKey) {
 }
 
 /* 자동 생성 — run_handoff_harness.mjs (P4). 콘솔 하네스 타일이 읽는 최근 통과 스냅샷 — 손대지 말 것 */
-const HM_HARNESS_SNAPSHOT = {"date":"2026-09-10","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
+const HM_HARNESS_SNAPSHOT = {"date":"2026-09-20","sample":3000,"cards":1713,"publishable":1713,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
 
 /* 자동 생성 — run_handoff_batch.mjs (P5). ⑩관제탑이 읽는 배치 스냅샷 — 손대지 말 것(운영 정합 §7-⑥: 관제탑 집계 = 이 스냅샷 = 배치 리포트). */
 const HM_OPS_SNAPSHOT = {"date":"2026-09-02","total":100000,"cards":56945,"publishable":56945,"locked":32855,"byGrade":{"H":6300,"-":43055,"L":46292,"M":4353},"bySido":{"충북":1746,"경북":2987,"서울":10880,"부산":4146,"전북":1691,"경기":13271,"대전":1763,"충남":2515,"울산":1237,"전남":1920,"강원":1792,"인천":3716,"광주":1648,"대구":2882,"경남":2941,"제주":1152,"세종":658},"pros":648,"prosAll":702,"sabunOk":true,"rosterChecked":648,"rosterViol":0,"avgRoster":6.97,"maxRoster":7,"byRosterGrade":{"H":3209,"L":930,"M":377},"loadAvg":154.3,"loadRatioMax":1.29,"loadRatioMin":0.91,"loadBySido":[{"sido":"강원","pros":16,"perPro":199.5,"ratio":1.29},{"sido":"세종","pros":6,"perPro":190.7,"ratio":1.24},{"sido":"충북","pros":17,"perPro":184.9,"ratio":1.2},{"sido":"울산","pros":13,"perPro":165.8,"ratio":1.07},{"sido":"인천","pros":41,"perPro":161,"ratio":1.04},{"sido":"부산","pros":46,"perPro":160.8,"ratio":1.04},{"sido":"전남","pros":21,"perPro":159.5,"ratio":1.03},{"sido":"충남","pros":28,"perPro":155.8,"ratio":1.01},{"sido":"경기","pros":149,"perPro":155.5,"ratio":1.01},{"sido":"대전","pros":20,"perPro":155.1,"ratio":1},{"sido":"경북","pros":34,"perPro":153.3,"ratio":0.99},{"sido":"광주","pros":19,"perPro":153.2,"ratio":0.99},{"sido":"경남","pros":34,"perPro":152.7,"ratio":0.99},{"sido":"제주","pros":14,"perPro":144.3,"ratio":0.93},{"sido":"서울","pros":133,"perPro":143.4,"ratio":0.93},{"sido":"대구","pros":35,"perPro":143.3,"ratio":0.93},{"sido":"전북","pros":21,"perPro":140.9,"ratio":0.91}],"seconds":68.9,"pass":true};
@@ -28142,7 +28463,9 @@ const HIFIN_DATA_LAYERS = [
 const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent_miss", "hifin_agent_pending", "hifin_agent_route", "hifin_agent_stats", "hifin_chain_snapshots", "hifin_claims", "hifin_connectors_custom", "hifin_divi_seen", "hifin_dl_ready", "hifin_easyread", "hifin_fin_params", "hifin_fin_params_v38", "hifin_fin_scn", "hifin_escrow_orders_v38", "hifin_force_onboard", "hifin_gov_votes", "hifin_hash_v2", "hifin_hashchain", "hifin_hashchain_legacy", "hifin_hi_sarg_log", "hifin_hi_unanswered", "hifin_hi_welcome", "hifin_hm_code", "hifin_ins_certs", "hifin_ins_deferred", "hifin_ins_guard", "hifin_lead_audit", "hifin_medrem", "hifin_mydata_req", "hifin_nodes", "hifin_notifs", "hifin_ocr_key", "hifin_pu_ready", "hifin_reggate", "hifin_rerate", "hifin_rpm_seen", "hifin_rx", "hifin_self_ins_v3", "hifin_self_ins_v4", "hifin_share_apply", "hifin_sharing_pool", "hifin_sid", "hifin_telem_raw", "hifin_telemetry", "hifin_wp_log", "pi_allocated",
   /* 변수 간접 키(상수·함수로 참조 — 스캔 밖) */ "hifin_events", "hifin_login_lock", "hifin_guard_cfg", "hifin_access_log",
   /* 백업 시스템(backupRestore.js) */ "hifin_backup_last", "hifin_restore_undo",
-  /* 동의 게이트(consentGate.js — 리뉴얼 R1): 체험 회원 동의 상태(종류별 on·취득일) */ "hifin_consent2"];
+  /* 동의 게이트(consentGate.js — 리뉴얼 R1): 체험 회원 동의 상태(종류별 on·취득일) */ "hifin_consent2",
+  /* 음성 대화(P4-1 계측·P1-2 읽어주기): 채널 턴 대장(hiTelemetry.js — 채널·소요ms·답변여부만) ·
+     읽어주기 켜짐 기억(hiVoice.js — 기본 꺼짐, 회원이 켠 것만 "1") */ "hifin_telem_turns", "hifin_hi_read"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
@@ -29855,11 +30178,16 @@ function genMemberCheckup(m) {
 /* ── 항목 매칭 ── */
 function _matchItem(text) {
   const t = String(text).toLowerCase();
+  /* 받아쓰기는 한 낱말을 끊어 놓는다 — 「당화 혈색소」가 그대로 오면 짧은 쪽(혈색소)에 걸려
+     당화혈색소를 물은 사람이 빈혈 설명을 듣는다(2026-09-20 음성 회귀에서 적발).
+     공백을 지운 형태도 함께 대되, 점수는 그대로 **별칭 길이**로 매겨 긴 별칭이 이긴다. */
+  const tf = t.replace(/\s+/g, "");
   let best = null;
   (typeof CHECKUP_ITEMS !== "undefined" ? CHECKUP_ITEMS : []).forEach((it) => {
     (it.aliases || []).forEach((a) => {
       const al = a.toLowerCase();
-      if (!t.includes(al)) return;
+      const af = al.replace(/\s+/g, "");
+      if (!t.includes(al) && !(af.length >= 2 && tf.includes(af))) return;
       const isCode = /^[a-z0-9γ-]+$/.test(al);            // ldl/hdl/psa 등 코드 별칭 우선(총콜레스테롤 오매칭 방지)
       const score = al.length + (isCode ? 100 : 0);
       if (!best || score > best.score) best = { it, a, score };
@@ -35085,7 +35413,11 @@ const AGENT_QNA = [
   { c: "health", k: "liver", p: ["간수치", "간이안좋", "지방간", "간관리", "감마지티피"], a: "간수치(AST·ALT·γGTP)가 높으면 절주·체중관리가 기본이고, 복부초음파 등 정밀검진을 권해요. 검진 기록 기준으로 봐드릴게요.", b: ["내 간수치 보기", "권장 정밀검진"], nav: null, tool: "rep", nx: [], lv: 2, guard: "med" },
   { c: "health", k: "cholesterol", p: ["콜레스테롤", "고지혈", "중성지방", "ldl", "hdl"], a: "LDL(나쁜 콜레스테롤)이 130 이상이거나 중성지방 150 이상이면 관리가 필요해요. 식이·운동과 함께 심뇌혈관 보장도 점검해 드릴게요.", b: ["내 수치 보기", "관련 보장 확인"], nav: null, tool: "rep", nx: [], lv: 2, guard: "med" },
   { c: "health", k: "sleep_etc", p: ["잠을못자", "불면", "스트레스", "피곤해", "무기력"], a: "수면·스트레스는 혈압·혈당에도 영향을 줘요. 생활 관리 팁을 드리고, 증상이 이어지면 진료 상담을 권해요.", b: ["건강 상담 시작"], nav: "care", nx: [], lv: 2, guard: "med" },
-  { c: "health", k: "emergency", p: ["가슴이아파", "숨이차", "쓰러", "응급", "심하게아파", "마비"], a: "지금 증상이 심하시면 대화보다 먼저 119에 연락하세요. 응급 신호 자가체크와 가까운 응급실 안내도 바로 드릴 수 있어요.", b: ["응급신호 자가체크", "가까운 병원"], nav: "checkup", nx: [], lv: 1, guard: "med" },
+  /* 응급 패턴은 여기서 정의하지 않는다 — longtermCareKB.js의 49개 사전(critical 32·urgent 17)을 읽어 온다.
+     구 6패턴만 들고 있던 탓에 뇌졸중 FAST 징후가 일반 경로를 그냥 통과했다(2026-09-20 승격). */
+  /* nav는 비워 둔다 — 응급 안내 아래에 '📍 건강검진 예약 화면 열기'가 뜨면
+     지금 해야 할 행동(119 전화)과 화면 유도(예약)가 정면으로 충돌한다. 다음 걸음은 버튼으로만 남긴다. */
+  { c: "health", k: "emergency", p: ltcEmergencyPatterns(), a: "지금 증상이 심하시면 대화보다 먼저 119에 연락하세요. 응급 신호 자가체크와 가까운 응급실 안내도 바로 드릴 수 있어요.", b: ["응급신호 자가체크", "가까운 병원"], nav: null, nx: [], lv: 1, guard: "med" },
   { c: "health", k: "partial_notice", p: ["부분분석이라", "부분데이터", "공단만연결했는데분석"], a: "공단 연계만 하셨으면 제공 항목 기준의 부분 분석이에요 — 없는 항목은 추정하지 않아요. 결과지를 올리면 전체 정밀분석으로 업그레이드돼요.", b: ["결과지 올리기"], nav: "onboarding", nx: [], lv: 2, guard: "med" },
 
   /* ───────── 5. 커머스 (shop) ───────── */
@@ -35183,7 +35515,7 @@ const AGENT_QNA = [
   /* ───────── 하이 퍼스트 실행 의도(action) — Phase 2: 말 한마디로 실행 완결 ───────── */
   { c: "action", k: "hi_book_do", p: ["이대로예약확정", "이대로확정", "그대로예약", "예약확정해줘"], a: "", tool: "bookdo", b: ["검진 준비사항 알려줘"], nav: "checkup", nx: [], lv: 1 },
   { c: "action", k: "hi_claim_do", p: ["청구접수진행", "접수진행해줘", "청구진행해"], a: "", tool: "claimdo", b: [], nav: "insurance", nx: [], lv: 1, guard: "ins" },
-  { c: "action", k: "hi_fam_add", p: ["가족추가", "가족등록", "가족구성원", "구성원추가", "식구추가", "가족넣어", "가족어떻게", "어머니추가", "아버지추가", "아내추가", "남편추가", "아들추가", "딸추가", "노모등록", "어머니등록", "세추가해줘"], a: "", tool: "famadd", b: [], nav: "mypage", nx: [], lv: 1 },
+  { c: "action", k: "hi_fam_add", p: ["가족추가", "가족등록", "가족구성원", "구성원추가", "식구추가", "가족넣어", "가족어떻게", "어머니추가", "아버지추가", "아내추가", "남편추가", "아들추가", "딸추가", "노모등록", "어머니등록", "세추가해줘", "살추가해", "살등록해", "세등록해"], a: "", tool: "famadd", b: [], nav: "mypage", nx: [], lv: 1 },
   { c: "action", k: "hi_fam_del", p: ["가족삭제", "구성원삭제", "구성원제외", "가족제외", "아버지삭제", "어머니삭제", "아버지없애", "어머니없애", "가족없애", "아버지빼", "어머니빼", "가족빼"], a: "", tool: "famdel", b: [], nav: "mypage", nx: [], lv: 1 },
   { c: "action", k: "hi_consent", p: ["동의꺼줘", "동의켜줘", "동의철회해", "마케팅동의", "수신거부해", "동의바꿔", "동의변경해"], a: "", tool: "consentdo", b: [], nav: null, nx: [], lv: 1 },
   { c: "action", k: "hi_insjoin", p: ["검진보험가입해", "무료보험가입해", "검진대비보험가입", "보험가입해줘", "검진보험들어줘"], a: "", tool: "insjoin", b: ["보장 내용 자세히"], nav: "insurance", nx: [], lv: 1, guard: "ins" },
@@ -35359,7 +35691,11 @@ const NAV_INVENTORY = [
         tele_connected·homecare_applied는 완결 정의 확정 전이라 정의 자체를 넣지 않는다.
      ② 개인정보 미기록 — payload는 화면 키·항목 키 같은 경량 식별자만. 이름·수치·토큰 금지.
      ③ 시연 분포 — 데모 환경 계측이므로 모든 집계에 '시연 분포' 라벨을 강제한다(§A1).
-        실회원 주간 리포트·문안 개선 루프는 론칭 게이트. */
+        실회원 주간 리포트·문안 개선 루프는 론칭 게이트.
+     ④ 채널(voice|text)은 **이벤트가 아니라 꼬리표**다(형 확정 D9).
+        음성은 퍼널 완결점이 아니라 회원이 말을 넣은 경로일 뿐이라, voice_asked 같은 이름을 새로
+        만들면 ①을 어기면서 퍼널만 부풀린다. 그래서 정의는 손대지 않고 payload에 channel만 받는다.
+        라벨이 없는 기록은 **글자로 간주하지 않는다** — 붙이지 않은 화면과 글자 입력은 다른 사실이다. */
 const HI_EVENT_DEFS = {
   /* 퍼널 단계 */
   nav_suggested:   { ko: "안내 응답 발화", stage: 1 },
@@ -35414,6 +35750,8 @@ function hiEvent(name, payload) {
     const l = JSON.parse(localStorage.getItem(_hiEvKey()) || "[]");
     const p = {};
     if (payload) for (const k of ["key", "nav", "tab", "kind", "n", "grade", "src"]) if (payload[k] != null) p[k] = String(payload[k]).slice(0, 40);
+    /* channel — 두 값만 통과시킨다. 자유 문자열을 받으면 꼬리표가 또 하나의 사전이 된다 */
+    if (payload && (payload.channel === "voice" || payload.channel === "text")) p.channel = payload.channel;
     l.push({ ts: Date.now(), name: name, p: p, sim: true });
     localStorage.setItem(_hiEvKey(), JSON.stringify(l.slice(-500)));
     return true;
@@ -35424,8 +35762,17 @@ function hiEventAll() { try { return JSON.parse(localStorage.getItem(_hiEvKey())
 function hiEventStats() {
   const l = hiEventAll();
   const by = {}, stage = { 1: 0, 2: 0, 3: 0 };
-  l.forEach((e) => { by[e.name] = (by[e.name] || 0) + 1; const d = HI_EVENT_DEFS[e.name]; if (d) stage[d.stage]++; });
-  return { total: l.length, by: by, stage: stage,
+  /* byChannel — 라벨이 실제로 붙은 기록만 센다. labeled가 total보다 작은 것은 결함이 아니라
+     「아직 라벨을 붙이지 않은 화면이 있다」는 사실이고, 그 사실을 가리면 집계가 원천과 어긋난다. */
+  const byChannel = { voice: 0, text: 0 };
+  let labeled = 0;
+  l.forEach((e) => {
+    by[e.name] = (by[e.name] || 0) + 1;
+    const d = HI_EVENT_DEFS[e.name]; if (d) stage[d.stage]++;
+    const c = e.p && e.p.channel;
+    if (c === "voice" || c === "text") { byChannel[c]++; labeled++; }
+  });
+  return { total: l.length, by: by, stage: stage, byChannel: byChannel, labeled: labeled,
     names: Object.keys(by).sort((a, b) => by[b] - by[a]).map((k) => ({ k: k, ko: (HI_EVENT_DEFS[k] || {}).ko || k, n: by[k] })) };
 }
 
@@ -35718,6 +36065,26 @@ const AGENT_GUARDS = {
 /* ── ③ 기능 레지스트리(TOOL_RUN) — 회원의 말에서 의도 파악 → 기능 실행 → 대화로 보고 ── */
 function _won(n) { n = Math.round(n || 0); return n >= 100000000 ? (n / 100000000).toFixed(1) + "억원" : n >= 10000 ? Math.round(n / 10000).toLocaleString() + "만원" : n.toLocaleString() + "원"; }
 function _member() { try { const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; if (dm) return dm; if (typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") return selfMember(); } catch (e) {} return null; }
+
+/* ── 나이 읽기 — 숫자·고유어 수사·한자어 수사를 모두 읽는다 ──
+   음성은 숫자를 **글자로** 받아 적는다. 「어머니 여든두 살 등록해줘」가 그동안 78세로 조용히 등록됐다.
+   잘못 적힌 나이는 데이터 금고·블록체인 앵커까지 그대로 올라가 되돌리기 어렵다.
+   그래서 이 함수는 **못 읽으면 null을 돌려준다** — 기본값을 몰래 채우지 않는다(되묻는 건 호출부 몫). */
+const HI_KO_TENS = { 열: 10, 스물: 20, 스무: 20, 서른: 30, 마흔: 40, 쉰: 50, 예순: 60, 일흔: 70, 여든: 80, 아흔: 90 };
+const HI_KO_ONES = { 한: 1, 하나: 1, 두: 2, 둘: 2, 세: 3, 셋: 3, 서: 3, 네: 4, 넷: 4, 다섯: 5, 여섯: 6, 일곱: 7, 여덟: 8, 여덜: 8, 아홉: 9 };
+const HI_SINO_D = { 영: 0, 공: 0, 일: 1, 이: 2, 삼: 3, 사: 4, 오: 5, 육: 6, 칠: 7, 팔: 8, 구: 9 };
+function hiKoAge(text) {
+  const t = String(text || "").replace(/\s/g, "");
+  const ok = (n) => (isFinite(n) && n >= 1 && n <= 120 ? n : null);
+  const d = t.match(/(\d{1,3})\s*(세|살)/);                                   // ① 아라비아 숫자 — "82세"
+  if (d) return ok(parseInt(d[1], 10));
+  const k = t.match(/(열|스물|스무|서른|마흔|쉰|예순|일흔|여든|아흔)?(한|하나|두|둘|세|셋|서|네|넷|다섯|여섯|일곱|여덟|여덜|아홉)?(살|세)/);
+  if (k && (k[1] || k[2])) return ok((HI_KO_TENS[k[1]] || 0) + (HI_KO_ONES[k[2]] || 0));   // ② 고유어 — "여든두 살"
+  const s = t.match(/([일이삼사오육칠팔구])?십([일이삼사오육칠팔구])?(살|세)/);
+  if (s) return ok((s[1] ? HI_SINO_D[s[1]] : 1) * 10 + (s[2] ? HI_SINO_D[s[2]] : 0));      // ③ 한자어 — "팔십이 세"
+  return null;
+}
+
 const TOOL_RUN = {
   rep(m) { try { const R = (typeof demoReport === "function") ? demoReport(m) : null; if (!R) return null; return { lines: [`${m.name}님 리포트 요약이에요 — 생체나이 ${R.bio}세(실제보다 ${R.diff > 0 ? "+" : ""}${R.diff}세), 암위험 ${R.cancerTotal}등급(${R.evalLabel}).`, `관리가 필요한 장기: ${R.worstNames.join("·")} · 금년 예상 의료비 ${_won(R.costThis)}, 10년 후 ${_won(R.cost10)}.`] }; } catch (e) { return null; } },
   gap(m) { try { const g = (typeof analyzeCoverageGap === "function") ? analyzeCoverageGap(m) : null; if (!g) return null; const top = g.gaps.slice(0, 3).map((f) => `${f.sev === "crit" ? "🔴" : "🟠"} ${f.t}`); return { lines: [`보장 충실도 ${g.grade} · ${g.score}점이에요.`, top.length ? "우선 챙길 것: " + top.join(" / ") : "현재 보장이 충실해요."] }; } catch (e) { return null; } },
@@ -35753,6 +36120,8 @@ const TOOL_RUN = {
   bookdo(m) { try {
     const p = (typeof window !== "undefined") ? window._hiBookPending : null;
     if (!p) return { lines: ["먼저 \"검진 예약해줘\"라고 말씀해 주시면 센터와 날짜를 골라드릴게요."] };
+    /* [D5] 예약 확정은 음성으로 실행하지 않는다 — 증서 발급·블록체인 기록까지 한 번에 가는 행동이다 */
+    if (agentChannel() === "voice") return { lines: [`${p.center.name} ${p.date} ${p.time}으로 확정할까요? 예약 확정은 화면에서 한 번 더 확인하고 진행해요.`], buttons: ["이대로 예약 확정", "다른 센터 볼래요"] };
     try { if (typeof submitCheckupBooking === "function") submitCheckupBooking(p.center, { center: p.center.name, date: p.date, time: p.time, via: "hi", freeIns: true }); } catch (e) {}
     let hash = null;
     try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `무상 검진대비보험 증서 발급(${p.center.name} · 하이 예약)` }); hash = b && b.hash; vaultAccessLog(tk, "member", "하이 대화 예약 — 검진대비보험 증서 발급"); } catch (e) {}
@@ -35768,6 +36137,8 @@ const TOOL_RUN = {
     return { lines: ["청구 준비를 시작할게요 — 데이터 금고의 검진·진료 기록으로 서류를 자동 구성해요(재입력 0).", `대상: 최근 진료·검진 연계 항목${R && R.hr && R.hr.length ? ` (참고: ${R.hr[0]} 관련 정밀검사비도 보장 확인 대상이에요)` : ""}. 이대로 접수할까요?`], buttons: ["청구 접수 진행해줘", "보장 공백 분석"] };
   } catch (e) { return null; } },
   claimdo(m) { try {
+    /* [D5] 청구 접수도 같다 — 접수번호가 나가고 체인에 기록되면 되돌리기 어렵다 */
+    if (agentChannel() === "voice") return { lines: ["청구를 이대로 접수할까요? 제출은 화면에서 한 번 더 확인하고 진행해요."], buttons: ["청구 접수 진행해줘", "보장 공백 분석"] };
     const id = "CLM-" + Date.now().toString(36).toUpperCase(); let hash = null;
     try { const tk = anonToken(m); const b = chainAppend({ type: "record", token: tk, note: "보험금 청구 접수(하이 대화) — 서류 자동 구성" }); hash = b && b.hash; vaultAccessLog(tk, "member", "보험금 청구 접수(하이)"); } catch (e) {}
     try { const l = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); l.push({ id, at: Date.now(), status: "접수", hash }); localStorage.setItem("hifin_claims", JSON.stringify(l)); } catch (e) {}
@@ -35780,8 +36151,16 @@ const TOOL_RUN = {
     const hit = REL.find((r) => new RegExp(r[0]).test(t));
     if (!hit) return { lines: ["누구를 등록할까요? 예를 들어 \"어머니 82세 추가해줘\"처럼 말씀해 주세요."], buttons: ["어머니 82세 추가해줘", "아내 51세 추가해줘"] };
     const label = (t.match(new RegExp(hit[0])) || [hit[0].split("|")[0]])[0];
-    const ageM = t.match(/(\d{1,3})\s*세/);
-    const age = ageM ? parseInt(ageM[1], 10) : (hit[1] === "부모" ? 78 : 50);
+    /* 나이는 **읽히면 쓰고, 안 읽히면 되묻는다.** 예전에는 못 읽으면 78/50을 조용히 넣었고,
+       그 값이 그대로 가족 건강관리·응급 안내의 기준이 됐다(2026-09-20 폐기). */
+    const age = hiKoAge(t);
+    if (!age) return { lines: [`${label} 나이를 같이 말씀해 주시면 바로 등록할게요 — 예를 들어 "${label} 82세 추가해줘"처럼요.`,
+      "제가 임의로 채워 넣으면 검진 주기·응급 안내가 그 나이 기준으로 어긋나서, 여쭤보고 넣을게요."],
+      buttons: [`${label} 82세 추가해줘`, `${label} 65세 추가해줘`] };
+    /* [D5] 되돌리기 어려운 실행은 소리로 확정하지 않는다 — 음성은 채우기까지, 마지막 한 번은 화면 버튼이다.
+       버튼은 글자 채널로 되돌아오므로 그때 실제로 등록된다(확인 카드가 무한 반복되지 않는다). */
+    if (agentChannel() === "voice") return { lines: [`${label} ${age}세로 등록할까요? 소리로 들은 숫자라 한 번만 확인할게요.`],
+      buttons: [`${label} ${age}세 추가해줘`, "아니요"] };
     const list = (typeof familyLoad === "function") ? (familyLoad(m.email, (m.name || "가")[0]) || []) : [];
     list.push({ id: "f" + Date.now().toString(36), name: label, relation: hit[1], age, sex: hit[2] });
     if (typeof familySave === "function") familySave(m.email, list);
@@ -35815,6 +36194,11 @@ const TOOL_RUN = {
     const hit = KEY.find((k) => new RegExp(k[0], "i").test(t));
     if (!hit) return { lines: ["어떤 동의를 바꿀까요? 목적별로 하나씩, 말 한마디면 돼요."], buttons: ["상담·안내 동의 꺼줘", "상담·안내 동의 켜줘"] };
     const on = /(켜|동의할|허용|받을)/.test(t) && !/(꺼|철회|거부|취소|해제)/.test(t);
+    /* [D5] 동의 철회도 되돌리기 어려운 행동이다 — 지속 설정이고, 변경 이력이 블록체인 원장에 적히며,
+       철회 순간 배정된 상담 리드가 회수된다. 조용한 오인식의 피해는 가족 나이 오염과 같은 종류라
+       소리로 실행하지 않는다. 켜는 쪽은 회원에게 불리하지 않으므로 그대로 진행한다. */
+    if (!on && agentChannel() === "voice") return { lines: [`${hit[2]} 동의를 철회할까요? 동의 변경은 화면에서 한 번 더 확인하고 진행해요.`],
+      buttons: [`${hit[2]} 동의 꺼줘`, "아니요"] };
     const st = {}; st[hit[1]] = on;
     if (typeof vaultSaveConsents === "function") vaultSaveConsents(m, st);
     /* Phase5 §5.3 — 상담 연결의 근거 동의(health·insurance) 철회 시 배정 리드 즉시 회수·파기 절차 개시 */
@@ -36116,6 +36500,13 @@ const AGENT_NAV_LABEL = { story: "활용 스토리", intro: "회사 소개", hom
 let _hiTurn = { route: null, reason: null };     // 이번 턴의 라우팅 결과
 let _hiLastOwner = "A0";                          // 직전 턴에 실제로 답한 에이전트(인계 고지 판정용)
 
+/* ── 입력 채널(글자·음성) — 새 이벤트를 만들지 않고 **라벨만** 붙인다(hiEvents.js 가공 이벤트 금지) ──
+   음성은 오인식이 섞여 들어오므로, 되돌리기 어려운 도구(예약 확정·청구 접수·가족 등록) 앞에서
+   한 번 더 확인 단계를 거친다. 화면 버튼은 글자 채널로 돌아오므로 그때 실제로 실행된다. */
+let _hiChannel = "text";
+function agentSetChannel(via) { _hiChannel = (via === "voice") ? "voice" : "text"; return _hiChannel; }
+function agentChannel() { return _hiChannel; }
+
 /* 담당 에이전트 실행 — 전용 핸들러가 있는 에이전트만. 없으면 null(공용 파이프라인이 응답) */
 function agentInvoke(agentId, text, ctx) {
   try {
@@ -36212,17 +36603,67 @@ function _hiDecorate(res) {
 }
 function agentOwnerReset() { _hiLastOwner = "A0"; }
 
-function agentAnswer(text) {
+/* ══ [안전 최상위] 응급 트리아지 — 담당을 정하기 **전에**, 모든 섹션에서 ══
+   49개 응급 사전(longtermCareKB.LTC_EMERGENCY)은 지금까지 A4(재가돌봄) 라우팅일 때만 읽혔다.
+   그래서 「말이 어눌하고 한쪽 팔에 힘이 없어요」 같은 뇌졸중 FAST 징후가 일반 대화를 그냥 통과했다.
+   라우팅 이전 호출 선례는 이미 있다(agentEnsemble.js:121 — 협주를 끄는 판정). 같은 자리에서 **답까지** 낸다.
+     critical — 다른 레이어를 태우지 않고 단독 반환(회원에게 필요한 건 다음 행동 하나다)
+     urgent  — 상담은 이어가되 안내 한 줄을 **맨 앞**에 붙인다(뒤에 붙이면 스크롤 밖으로 밀려 못 본다)
+   과잉 안내(오탐)는 허용한다 — 오발동 불편 < 미발동 사고. 화면 토글로 만들지 않는다
+   (hiOpsConfig OPS_LOCKED: "안전을 UI 토글로 만들면 언젠가 꺼진다"). */
+function _hiEmergency(text) {
+  /* 오인식·띄어쓰기 3갈래 검사는 hcTriage가 한다(단일 지점 — 재가돌봄·협주도 같은 판정을 쓴다) */
+  try { return (typeof hcTriage === "function") ? hcTriage(text) : null; } catch (e) { return null; }
+}
+/* nav는 **일부러 비운다.** 응급 말풍선 아래에 '📍 건강검진 예약 화면 열기'가 뜨면
+   지금 해야 할 행동(119 전화)과 화면 유도(검진 예약)가 정면으로 충돌한다 — 조사 단계에서 지목된 오표적 그대로다.
+   필요한 다음 걸음은 버튼('응급신호 자가체크'·'가까운 병원')으로만 남긴다. */
+function _hiEmergencyRes(tri) {
+  const head = (typeof hcEmergencyLines === "function") ? hcEmergencyLines("critical") : [];
+  return { agent: "A4", lines: head.concat(["가까운 응급실 안내와 응급 신호 자가체크는 바로 도와드릴게요 — 전화부터 걸어 주세요."]),
+    buttons: ["응급신호 자가체크", "가까운 병원"], nav: null, matched: "emergency", emergency: "critical" };
+}
+
+function agentAnswer(text, opt) {
   _hiLastQ = String(text || "");
+  agentSetChannel(opt && opt.channel);
   try { if (typeof hiHandoffReset === "function") hiHandoffReset(); } catch (e) {}
-  return _hiDecorate(agentAnswerCore(text));
+  const tri = _hiEmergency(text);
+  if (tri && tri.level === "critical") {
+    try { agentStats(true); } catch (e) {}
+    try { if (typeof hcGuardLog === "function") hcGuardLog(text, [{ id: "emergency", law: "⓪응급 우선 안내", mode: "prepend" }]); } catch (e) {}
+    _hiTurn = { route: { agent: "A4", reason: "emergency" }, reason: "emergency" };
+    return _hiDecorate(_hiEmergencyRes(tri));
+  }
+  const res = _hiDecorate(agentAnswerCore(text));
+  /* urgent — 이미 A4 가드가 앞에 붙였으면 두 번 말하지 않는다.
+     ⚠️ res.lines에만 붙이면 **화면에서 조용히 사라진다.** 도크는 ⓐ 파트 응답이면 parts[].lines만 그리고
+        ⓑ 미매칭이면 A1 답으로 통째 교체한다. 그래서 안내를 붙일 곳은 '실제로 그려지는 줄'이어야 하고,
+        교체는 도크 쪽에서 막는다(res.emergency가 있으면 A1으로 갈아끼우지 않는다).
+        matched는 **건드리지 않는다** — 못 알아들은 질문을 '답한 것'으로 세면 미답변율·턴 대장이 거짓말을 한다. */
+  try {
+    if (tri && res && !res.emergency) {
+      const line = (typeof hcEmergencyLines === "function") ? (hcEmergencyLines("urgent")[0] || null) : null;
+      const head = (arr) => { if (Array.isArray(arr) && arr.length && arr.indexOf(line) < 0) { arr.unshift(line); return true; } return false; };
+      let put = false;
+      if (line && res.parts && res.parts.length) { put = head(res.parts[0].lines) || put; }
+      if (line && res.lines && res.lines.length) { put = head(res.lines) || put; }
+      else if (line && !res.lines) { res.lines = [line]; put = true; }
+      if (put) res.emergency = "urgent";
+    }
+  } catch (e) {}
+  return res;
 }
 function agentAnswerCore(text) {
   const m = _member();
   const norm = lexNormalize(text);
   /* [라우팅 헌법 P1] 명시적 섹션 지목 — 상황인지·분기 대화가 화면 지목을 가로채지 못한다 */
   try {
-    const navHit = agentNavExplicit(norm);
+    /* 정타 우선 — 못 맞췄을 때만 오인식 보정문으로 한 번 더 본다(「검신 결가 설명해 줘」).
+       lexNormalize 자체는 건드리지 않는다 — 내비 인덱스가 그 위에 서 있어서 같이 흔들린다.
+       hiNormalize의 발음 보정은 **음성 채널일 때만** 돈다(글자 경로까지 넓히면 합성어가 깨진다 — hiNluCore 주석). */
+    let navHit = agentNavExplicit(norm);
+    if (!navHit) { try { const nv = (typeof hiNormalize === "function") ? hiNormalize(norm) : norm; if (nv !== norm) navHit = agentNavExplicit(nv); } catch (e) {} }
     if (navHit) {
       agentStats(true); agentMemSave({ lastIntent: navHit.matched, lastCat: "nav", lastQ: String(text).slice(0, 60) });
       try { if (typeof hiEvent === "function") hiEvent("nav_suggested", { key: navHit.matched }); } catch (e) {}
@@ -36277,7 +36718,11 @@ function agentAnswerCore(text) {
     }
   } catch (e) {}
 
-  const it = agentMatch(norm);
+  /* 정타로 먼저 맞춰 보고, **못 맞췄을 때만** 오인식 보정문으로 한 번 더 본다.
+     lexNormalize 자체를 건드리면 내비 라우팅까지 같이 흔들린다 — 그래서 보정은 여기서 '덧대기'로만 한다
+     (지금까지 맞던 질문의 결과는 한 글자도 바뀌지 않는다). */
+  let it = agentMatch(norm);
+  if (!it) { try { const nv = (typeof hiNormalize === "function") ? hiNormalize(norm) : norm; if (nv !== norm) it = agentMatch(nv); } catch (e) {} }
   /* 감싸기 원칙(검증된 공용 응답을 대체하지 않는다)의 예외는 두 가지뿐이다.
      [Phase C] **비교표** — 성분·가격을 줄 세운 표는 일반 설명으로 대체될 수 없다.
      [Phase D] **응급 트리아지** — 안전 경로가 정적 매칭에 밀리면 안 된다. 위험 신호 앞에서는 전문가 안내가 우선한다. */
@@ -36302,7 +36747,9 @@ function agentAnswerCore(text) {
       if (sp) return sp;
     }
     // ① 섹션 활용 가이드(내비게이션 레이어): "검진예약 도와줘" "쇼핑 보여줘" 등 → 사용법 안내 + 화면 열기
-    const sg = agentNavIntent(text, norm);
+    /* 여기도 정타 우선 — 못 맞췄을 때만 오인식 보정문으로 한 번 더(「건강 검신 어떤 걸…」) */
+    let sg = agentNavIntent(text, norm);
+    if (!sg) { try { const nv = (typeof hiNormalize === "function") ? hiNormalize(norm) : norm; if (nv !== norm) sg = agentNavIntent(text, nv); } catch (e) {} }
     if (sg) {
       agentStats(true); agentMemSave({ lastIntent: "nav_" + sg.k, lastCat: "nav", lastQ: String(text).slice(0, 60) });
       return { lines: [sg.guide], buttons: (sg.btns || []).slice(0, 3), nav: { key: sg.k, label: sg.label }, matched: "nav_" + sg.k };
@@ -36398,7 +36845,10 @@ function agentProactive() {
   /* RPM 경보 — 최우선(새벽 2:17 장면): 세션당 1회 선제 안내 */
   try { const a = rpmAlert(m); if (a && !sessionStorage.getItem("hifin_rpm_seen")) { out.push({ text: `🔴 오늘 새벽 2:17, ${a.rel} ${a.name}님 혈압이 152/94까지 올랐어요(3일 연속 상승 · 가정 혈압계 RPM 자동 감지). 지금 연결 가능한 의사에게 먼저 보여드릴까요?`, buttons: ["원격진료 연결해줘", "가족 혈압 경보 보여줘"] }); sessionStorage.setItem("hifin_rpm_seen", "1"); } } catch (e) {}
   /* 방문수령증(V4) — 수령 완료 시 복약 리마인드 시작 안내(1회), 조제 완료 시 QR 준비 안내(세션 1회) */
-  try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu || x.dl); if (r && ((r.pu && r.puUsed) || (r.dl && (r.dlStep || 0) >= 3)) && !localStorage.getItem("hifin_pu_done_" + (r.pu || r.dl))) { out.push({ text: `💊 ${r.pharm || "약국"} ${r.dl && !r.pu ? "배송 " : ""}수령 완료 확인! 오늘부터 복약 리마인드를 시작할게요 — ${(r.med || "").split("—")[0].trim()}`, buttons: [] }); localStorage.setItem("hifin_pu_done_" + (r.pu || r.dl), "1"); try { if (typeof hiEvent === "function") hiEvent("rx_received", { kind: r.dl && !r.pu ? "배송" : "방문" }); } catch (e9) {} } else if (r && r.pu && !r.puUsed && /조제 완료/.test(r.status || "") && !sessionStorage.getItem("hifin_pu_ready")) { out.push({ text: "🎫 조제가 끝났어요 — 약국 방문 시 수령증 QR을 준비하세요. '수령증 보여줘'라고 하시면 바로 확인돼요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_pu_ready", "1"); } else if (r && r.dl && !r.pu && (r.dlStep || 0) === 2 && !sessionStorage.getItem("hifin_dl_ready")) { out.push({ text: "🚚 약이 배송 중이에요 — 기사님 도착 시 배송추적 QR을 보여주시면 수령이 확인돼요. '배송 어디쯤이야?'로 언제든 확인하세요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_dl_ready", "1"); } } catch (e) {}
+  try { const rl = JSON.parse(localStorage.getItem("hifin_rx") || "[]"); const r = [...rl].reverse().find((x) => x.pu || x.dl); if (r && ((r.pu && r.puUsed) || (r.dl && (r.dlStep || 0) >= 3)) && !localStorage.getItem("hifin_pu_done_" + (r.pu || r.dl))) { /* 약 이름은 싣지 않는다 — 이 줄은 도크로 직행하고 도크는 이제 그것을 **소리로 읽는다.**
+   공공장소·가족 동석에서 약 이름이 나가는 순간 되돌릴 수 없다(telemed 규칙: 조제 뒤에도 비노출).
+   복용법은 회원이 수령증·처방 화면을 직접 열어 확인한다. */
+out.push({ text: `💊 ${r.pharm || "약국"} ${r.dl && !r.pu ? "배송 " : ""}수령 완료 확인! 오늘부터 복약 리마인드를 시작할게요 — 처방받으신 약과 복용법은 수령증 화면에서 확인하실 수 있어요.`, buttons: ["수령증 보여줘"] }); localStorage.setItem("hifin_pu_done_" + (r.pu || r.dl), "1"); try { if (typeof hiEvent === "function") hiEvent("rx_received", { kind: r.dl && !r.pu ? "배송" : "방문" }); } catch (e9) {} } else if (r && r.pu && !r.puUsed && /조제 완료/.test(r.status || "") && !sessionStorage.getItem("hifin_pu_ready")) { out.push({ text: "🎫 조제가 끝났어요 — 약국 방문 시 수령증 QR을 준비하세요. '수령증 보여줘'라고 하시면 바로 확인돼요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_pu_ready", "1"); } else if (r && r.dl && !r.pu && (r.dlStep || 0) === 2 && !sessionStorage.getItem("hifin_dl_ready")) { out.push({ text: "🚚 약이 배송 중이에요 — 기사님 도착 시 배송추적 QR을 보여주시면 수령이 확인돼요. '배송 어디쯤이야?'로 언제든 확인하세요.", buttons: ["수령증 보여줘"] }); sessionStorage.setItem("hifin_dl_ready", "1"); } } catch (e) {}
   try { const d = JSON.parse(localStorage.getItem("hifin_ins_deferred") || "null"); if (d) out.push({ text: `지난번 ${d.center || "검진"} 예약은 보험 없이 하셨죠 — 무료 검진대비보험, 지금 1분 안에 준비해드릴까요? (이 안내는 한 번만 드려요)`, buttons: ["검진보험 가입해줘", "괜찮아요"] }); } catch (e) {}
   try {
     const ob = (typeof onboardStatus === "function") ? onboardStatus(m) : null;
@@ -36674,6 +37124,59 @@ const HI_SLOTS_A = {
   terms:    { std: "이용약관", syn: ["약관", "이용 약관", "이용규정"], typo: [] },
   quit:     { std: "탈퇴", syn: ["회원탈퇴", "계정삭제", "계정 삭제"], typo: ["탈퇘"] },
   joink:    { std: "회원가입", syn: ["가입", "계정만들기", "회원 가입"], typo: ["회원가님"] },
+};
+
+/* ══ 음성 오인식 사전(별도 구획) — 위 슬롯의 `typo`와 **섞지 않는다** ══
+   `typo`는 손가락이 미끄러진 것(검짐·에약·보혐)이고, 여기 있는 것은 **귀가 잘못 들은 것**(검신·보엄·실순)이다.
+   한 통에 부으면 원인을 잃는다 — 오인식이 늘어도 "타자 오타가 늘었다"로 보인다.
+   실측(2026-09-20 음성 진단)에서 26쌍 배터리의 30.8%가 이 한 글자 차이로 답이 갈렸다.
+
+   ⚠️ 규칙 — 짧은 발음 유사형은 합성어를 깬다(「키」→「신장」이 밀키트를 파괴한 사고, aiNative.js:15)
+     ① 2글자 미만 변형 금지
+     ② 다른 말 속에 흔히 박히는 음절 조합 금지(예: 단독 "기간"·"사고")
+     ③ 표준어 쪽은 슬롯 사전의 std/syn/typo에 실제로 있는 말만 쓴다(치환하고도 안 걸리면 헛일이다) */
+const HI_MISHEAR = [
+  /* S1 검진 — 실측 최다 오인식(검신·겸진·검징) */
+  ["검진", ["검신", "겸진", "검징", "껌진", "검찐"]],
+  ["내시경", ["네시경", "내시견"]],
+  ["예약", ["얘약", "예얍"]],
+  /* S2 건강분석 */
+  ["생체나이", ["생채나이", "생체나의"]],
+  ["혈압", ["혀랍", "혈랍"]],
+  ["혈당", ["혀랑", "혈땅"]],
+  /* S3 보험 */
+  ["보험", ["보엄", "보엉"]],
+  ["실손", ["실순", "실슨", "실쏜"]],
+  ["청구", ["청그"]],
+  /* S4 지갑 — 「에이치 티 케이」는 띄어 들려 lexNormalize의 동의어 치환을 빠져나간다 */
+  ["HTK", ["에이치티케이", "에이치디케이"]],
+  ["적립금", ["정립금", "저립금"]],
+  /* S5·S6 — 흔한 말 속에 박히는 음절은 넣지 않는다(「동이」는 운동이·활동이를 깬다) */
+  ["동의관리", ["동이관리"]],
+  ["우리가족", ["우리가죽"]],
+  /* 원격진료 */
+  ["원격진료", ["원격전료", "원격진로"]],
+  /* 응급 — 한 글자가 어긋나 응급이 꺼지던 형태(「숨이」→「수미」). 안전 쪽으로 기울인다 */
+  ["숨이", ["수미", "숨미"]],
+  ["가슴이", ["가스미", "가승이"]],
+  ["어눌", ["어늘"]],
+  ["쓰러졌", ["쓰러젔", "스러졌"]],
+  ["쓰러지셨", ["스러지셨"]],
+  ["의식이", ["으식이", "의시기"]],
+  ["경련", ["경년"]],
+  /* 연음(連音) 오인식 — 받침이 뒤 음절로 넘어가 들린 형태. 한 낱말만 떼면 멀쩡한 말이라
+     **반드시 뒤 어절까지 묶어서** 등록한다: 「이비」만 바꾸면 이비인후과가 부서지고,
+     「마리」만 바꾸면 「강아지 세 마리」가 「세 말이」가 된다(HIFIN_LEXICON 「키→신장」 사고와 같은 종류). */
+  ["말이 어눌", ["마리 어눌", "마리어눌"]],
+  ["입이 돌아", ["이비 돌아", "이비돌아"]],
+];
+/* 보정 결과에 이름을 남기려고 쓰는 라벨 — 되묻기 문장이 "검진 말씀이신가요"처럼 말할 수 있게 한다 */
+const HI_MISHEAR_DOMAIN = {
+  검진: "검진", 내시경: "검진", 예약: "검진 예약",
+  생체나이: "건강분석", 혈압: "건강분석", 혈당: "건강분석",
+  보험: "보험", 실손: "보험", 청구: "보험금 청구",
+  HTK: "건강금융지갑", 적립금: "건강금융지갑",
+  동의관리: "동의 관리", 우리가족: "가족", 원격진료: "원격진료",
 };
 
 /* ── 슬롯 B: 행위어 — 클래스별 동사·요청 표현(정규화 매칭 문자열) ── */
@@ -37039,9 +37542,39 @@ const HI_OFFTOPIC_EXAMPLES = [
    → 시스템(U6) → 신뢰도(U7) → 정상 답변. 컨텍스트 3턴 기억 + 쉬운말 모드 전파.
    진입점: hiRespond(text, norm, m) — aiNative.agentAnswer의 무매칭 분기에서 호출(기존 QNA·섹션가이드 우선). */
 
-/* ── 정규화: lexNormalize 결과에 오타 사전(HI_SLOTS_A.typo) 추가 치환 ── */
-function hiNormalize(norm) {
-  let t = String(norm || "");
+/* ── 음성 오인식 보정 — 타자 오타(typo)와 **층이 다르다**(사전은 hiNluDict.js의 HI_MISHEAR 구획) ──
+   귀가 잘못 들은 형태를 먼저 표준어로 되돌리고, 그다음에 기존 오타 사전을 태운다.
+   두 층이 이어져야 「검신결가」→「검진결가」→「검진결과」처럼 끝까지 간다.
+   반환 hits는 되묻기 문구가 "검진 말씀이신가요"라고 말할 수 있게 남기는 도메인 라벨이다. */
+function hiMishearNorm(norm) {
+  let t = String(norm || ""); const hits = [];
+  try {
+    const D = (typeof HI_MISHEAR !== "undefined") ? HI_MISHEAR : [];
+    for (const [std, vars] of D) {
+      for (const v of vars.slice().sort((a, b) => b.length - a.length)) {
+        const vn = String(v).toLowerCase();
+        if (vn.length < 2 || t.indexOf(vn) < 0) continue;     // 2글자 미만 치환 금지(합성어 파괴 방지)
+        t = t.split(vn).join(String(std).toLowerCase());
+        const d = (typeof HI_MISHEAR_DOMAIN !== "undefined" && HI_MISHEAR_DOMAIN[std]) || null;
+        if (d && hits.indexOf(d) < 0) hits.push(d);
+      }
+    }
+  } catch (e) {}
+  return { t: t, hits: hits };
+}
+let _hiMishearHits = [];          /* 직전 정규화에서 보정된 도메인 — 되묻기 판정에만 쓴다(답변 내용에는 쓰지 않는다) */
+function hiMishearHits() { return _hiMishearHits.slice(); }
+
+/* ── 정규화: 음성 오인식 보정 → lexNormalize 결과에 오타 사전(HI_SLOTS_A.typo) 추가 치환 ──
+   ⚠️ 오인식 보정은 **음성 채널 전용**이다. 발음 유사형 치환은 합성어를 깨뜨린 전력이 있고
+      (HIFIN_LEXICON 「키」→「신장」이 밀키트를 파괴한 사고 — aiNative.js:15), 타자로 친 글에는
+      애초에 '귀가 잘못 들은 형태'가 없다. 위험 면적만 넓히지 않도록 채널로 격리한다.
+      응급 판정(hcTriage)은 이 격리와 무관하게 계속 보정문을 본다 — 안전은 오탐 쪽으로 기우는 것이 맞다. */
+function hiNormalize(norm, via) {
+  const voice = (via === "voice") || (via == null && (() => { try { return (typeof agentChannel === "function") && agentChannel() === "voice"; } catch (e) { return false; } })());
+  const mh = voice ? hiMishearNorm(norm) : { t: String(norm || ""), hits: [] };
+  _hiMishearHits = mh.hits;
+  let t = mh.t;
   try {
     for (const gid in HI_SLOTS_A) {
       const g = HI_SLOTS_A[gid];
@@ -37094,17 +37627,41 @@ function hiClassify(rawText, norm) {
   }
   scored.sort((x, y) => y.s - x.s);
   const best = scored[0] || null;
-  const conf = best ? Math.min(1, best.s / Math.max(2, t.length * 0.55)) : 0;   // 단답(1어)도 신뢰도 확보(분모 하한 2)
-  return { t, a, b, best, conf, cand: scored.slice(0, 3).map((x) => x.it) };
+  const conf = hiConfOf(best, scored, t);
+  return { t, a, b, best, conf, mis: _hiMishearHits.slice(), s2: scored[1] ? scored[1].s : 0, cand: scored.slice(0, 3).map((x) => x.it) };
 }
 
-/* ── 미답변 로그(unanswered_log) + 주간 리포트 + 에스컬레이션 카운터 ── */
-function hiULog(q, type) {
+/* ── 신뢰도 — 분모가 '발화 길이'였다(2026-09-20 정정) ──
+   말이 길수록 정답이 게이트(0.45)에 막혔다. 실측에서 43~57자 구어 4건은 **정답 인텐트가 1등인데도**
+   conf 0.177~0.355로 전부 탈락했다. 음성은 글보다 늘 길어서 이 벌점을 구조적으로 더 받는다.
+     ① 길이 분모에 **상한**을 둬 장문 벌점을 끊는다(길다고 무한정 깎이지 않는다).
+     ② **영역 격차(margin)**를 얹는다 — 경쟁 후보가 전부 같은 영역이면 길어도 통과시킨다.
+        격차를 그냥 2등과 재면 안 된다. 「보험 여러 개 들었는데 빠진 보장 있나」는 1·2·3등이 모두 '보험'이라
+        2등과의 격차가 0이다 — 무엇을 물었는지 모르는 게 아니라 **같은 얘기를 어느 각도로 답할지**가 갈릴 뿐인데,
+        그걸로 신뢰도를 깎으면 긴 말이 통째로 막힌다(실측 51자 문장이 그렇게 탈락했다).
+   짧은 질의는 상한에 닿지 않아 값이 지금까지와 같거나 커진다(단답 회귀를 깎지 않으려는 것이다). */
+const HI_CONF_CAP = 11;          // 길이 분모 상한 — 20자(≈11/0.55)를 넘는 말에는 길이 벌점을 더 주지 않는다
+const HI_CONF_MARGIN = 0.45;     // 영역 격차 가중 — 다른 영역 후보가 없으면 최대 +45%
+function hiConfOf(best, scored, t) {
+  if (!best || !(best.s > 0)) return 0;
+  const denom = Math.max(2, Math.min(String(t || "").length * 0.55, HI_CONF_CAP));   // 단답(1어)도 신뢰도 확보(분모 하한 2)
+  let other = 0;
+  try { for (const x of (scored || [])) { if (x.it && best.it && x.it.l1 !== best.it.l1) { other = x.s; break; } } } catch (e) {}
+  const margin = Math.max(0, Math.min(1, (best.s - other) / best.s));
+  return Math.min(1, (best.s / denom) * (1 + HI_CONF_MARGIN * margin));
+}
+
+/* ── 미답변 로그(unanswered_log) + 주간 리포트 + 에스컬레이션 카운터 ──
+   meta.via — 입력 채널 라벨("voice"|"text"). **새 이벤트를 만들지 않는다**(hiEvents.js 4-5행 가공 이벤트 금지).
+   음성은 퍼널 완결점이 아니라 입력 채널이라, 기존 기록에 라벨만 붙여 갈라 본다.
+   생략하면 엔진이 알고 있는 이번 턴 채널을 쓴다 — 호출부를 한꺼번에 고치지 않아도 된다. */
+function hiULog(q, type, meta) {
   try {
+    const via = (meta && meta.via) || ((typeof agentChannel === "function") ? agentChannel() : "text");
     const k = "hifin_hi_unanswered";
     const l = JSON.parse(localStorage.getItem(k) || "[]");
-    l.push({ q: String(q).slice(0, 100), type, ts: Date.now() });
-  try { if (typeof telemPush === "function") telemPush("unanswered", q, { utype: type }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
+    l.push({ q: String(q).slice(0, 100), type, via, ts: Date.now() });
+  try { if (typeof telemPush === "function") telemPush("unanswered", q, { utype: type, via: via }); } catch (e2) {}   /* [Phase F] 텔레메트리 미러링 */
     localStorage.setItem(k, JSON.stringify(l.slice(-500)));
   } catch (e) {}
 }
@@ -37112,11 +37669,11 @@ function hiUnansweredReport(days) {
   try {
     const since = Date.now() - (days || 7) * 86400000;
     const l = JSON.parse(localStorage.getItem("hifin_hi_unanswered") || "[]").filter((x) => x.ts >= since);
-    const byType = {}, byQ = {};
-    l.forEach((x) => { byType[x.type] = (byType[x.type] || 0) + 1; byQ[x.q] = (byQ[x.q] || 0) + 1; });
+    const byType = {}, byQ = {}, byVia = {};
+    l.forEach((x) => { byType[x.type] = (byType[x.type] || 0) + 1; byQ[x.q] = (byQ[x.q] || 0) + 1; byVia[x.via || "text"] = (byVia[x.via || "text"] || 0) + 1; });
     const top = Object.keys(byQ).sort((a, b) => byQ[b] - byQ[a]).slice(0, 20).map((q) => ({ q, n: byQ[q] }));
-    return { total: l.length, byType, top };
-  } catch (e) { return { total: 0, byType: {}, top: [] }; }
+    return { total: l.length, byType, byVia, top };   // byVia — 미답변이 음성에서 왔는지 타자에서 왔는지(채널 라벨)
+  } catch (e) { return { total: 0, byType: {}, byVia: {}, top: [] }; }
 }
 function hiEscBump(type) {
   try {
@@ -37125,6 +37682,33 @@ function hiEscBump(type) {
     sessionStorage.setItem(k, String(n));
     return n;
   } catch (e) { return 1; }
+}
+
+/* ── 조용한 오답 차단 — 오인식을 고치고도 영역이 갈리면 단정하지 말고 되묻는다 ──
+   미답변보다 위험한 것이 **틀린 줄 모르고 받아 가는 답**이다(실측: 「검신 대비 보험」→보장공백,
+   「에이치 티 케이 충전」→적립현황). 그렇다고 아무 때나 되물으면 대화가 못 굴러간다.
+   조건을 좁게 잡는다 — ① 이번 턴에 실제로 오인식 보정이 일어났고
+   ② 보정된 영역이 둘 이상이거나, 1·2등 인텐트가 **다른 영역**이면서 점수 차가 20% 이내일 때만. */
+const HI_CLARIFY_TIE = 0.2;
+function hiMishearClarify(cls) {
+  try {
+    const mis = (cls && cls.mis) || [];
+    if (!mis.length || !cls.best) return null;
+    let names = null;
+    if (mis.length >= 2) names = mis.slice(0, 2);
+    else {
+      const b = cls.best.it, c2 = cls.cand && cls.cand[1];
+      if (!c2 || !b.l1 || c2.l1 === b.l1) return null;
+      if (!(cls.best.s > 0 && (cls.best.s - (cls.s2 || 0)) / cls.best.s <= HI_CLARIFY_TIE)) return null;
+      names = [b.l1, c2.l1];
+    }
+    if (!names || names[0] === names[1]) return null;
+    const chips = (cls.cand || []).map((c) => (c.chips && c.chips[0]) || c.l2).filter(Boolean);
+    return { kind: "unanswerable", u: "U7", res: {
+      lines: [`제가 들은 말이 두 갈래로 읽혀요 — ${names[0]} 말씀이신가요, ${names[1]} 말씀이신가요?`,
+        hiEasyOn() ? "아래에서 골라 주셔도 돼요." : "아래에서 골라 주시면 그대로 이어서 도와드릴게요."],
+      buttons: [...new Set(chips)].slice(0, 3), nav: null } };
+  } catch (e) { return null; }
 }
 
 /* ── 컨텍스트: 직전 3턴 기억(슬롯필링·후속 질문) ── */
@@ -37266,6 +37850,10 @@ function hiRespond(rawText, norm, m) {
     let snap = null;
     try { snap = (m && typeof memberStateSnapshot === "function") ? memberStateSnapshot(m) : null; } catch (e) { snap = null; }
 
+    /* [1.4] 오인식 되묻기 — 단정 답변보다 앞에 세운다(고쳐 놓고 엉뚱한 쪽으로 가면 되돌릴 길이 없다) */
+    const amb = hiMishearClarify(cls);
+    if (amb) { hiULog(rawText, "U7"); hiCtxPush(rawText, null); return amb; }
+
     /* [1] 의도분류 성공 경로 */
     if (cls.best && cls.conf >= 0.45) {
       const it = cls.best.it;
@@ -37356,6 +37944,442 @@ function hiSargProbe(rawText, norm, m) {
 
 /* 관리자 콘솔용 노출 */
 try { if (typeof window !== "undefined") { window.__hifinHiNlu = { classify: hiClassify, respond: hiRespond, report: hiUnansweredReport, probe: hiSargProbe }; } } catch (e) {}
+
+/* ══════════════ 하이 목소리 — 듣기(STT)·말하기(TTS) 단일 모듈 (hiVoice.js) ══════════════
+   화면마다 흩어져 있던 음성 코드(STT 4벌·TTS 3벌)를 여기 한 곳으로 모은다.
+   한 곳을 고쳐도 나머지가 남는 구조를 끝낸다 — 설정은 이 파일에만 있다.
+   ⚠️ 원칙:
+     ① 외부 STT/TTS API를 쓰지 않는다 — 브라우저 내장 Web Speech만 쓴다(건강 발화를 밖으로 보내지 않는다).
+        미지원 브라우저는 버튼을 숨기지 말고 **이유와 대안(글 입력)**을 말한다. 되는 척도, 말없이 사라지지도 않는다.
+     ② 하이는 한 인격이다 — 화면마다 다른 목소리·속도를 고르지 않는다. 보이스 선택 규칙은 여기 하나뿐.
+     ③ 낭독은 화면보다 통제가 어렵다(공공장소·가족 동석). 약 이름·원가·송객수수료·CAC·주민번호는
+        **소리로 내보내지 않는다.** 마스킹은 hiVoiceSanitize 단일 지점에서만 한다(화면 텍스트는 건드리지 않는다).
+     ④ 읽어주기 기본값은 꺼짐이고, 회원이 켜면 기억한다 — 켠 것만 말한다.
+     ⑤ 되돌리기 어려운 행동(예약 확정·청구 제출·결제)은 소리로 실행하지 않는다 — 음성은 채우기까지다.
+     ⑥ 이번 범위는 한국어(ko-KR)뿐 — 영문 모드에서는 마이크를 내보내지 않는다.
+   번들에 import가 없으므로 전역 function/const로 노출한다. */
+
+/* ── 공통 설정 — 화면별로 다시 정하지 않는다(설정 동일성은 이 상수 하나로 보장) ── */
+const HI_VOICE_CFG = {
+  lang: "ko-KR",
+  interim: true,        /* 중간 결과를 보여준다 — 듣고 있다는 신호가 없으면 어르신은 같은 말을 두 번 하신다 */
+  continuous: true,     /* 문장 중간에 쉬어도 반토막 나지 않게. 대신 무음 타임아웃으로 닫는다 */
+  maxAlt: 3,
+  silenceMs: 1800,      /* 무음 1.8초면 말이 끝난 것으로 본다 — 마이크를 계속 열어두지 않는다 */
+  rate: 1.03,
+  rateEasy: 0.92,       /* 쉬운 말 모드(큰 글씨)면 천천히 읽는다 — 고령 회원 배려 */
+  pitchMale: 1.08,      /* 고지문이 약속한 '남성 중고음' — 지금까지 한 화면만 보정하고 있었다 */
+  pitchSoft: 0.92,
+  max: 120,             /* 낭독 상한(자) — 넘으면 끊고 '이어 듣기'로 넘긴다. 170자는 30초가 넘어 듣고 기다리기 어렵다 */
+};
+const HI_VOICE_KEY = "hifin_hi_read";            /* 읽어주기 켜짐 기억 — 기본은 꺼짐 */
+const HI_VOICE_TAIL = "자세한 내용은 화면에서 보여드릴게요.";
+const HI_VOICE_MED_MASK = "처방받으신 약";
+
+/* 안내 문구 — 못 하는 것을 하는 척하지 않고, 대신 할 수 있는 길(글 입력)을 같이 준다 */
+const HI_VOICE_MSG = {
+  nostt: "이 브라우저는 음성 입력을 지원하지 않아요 — 크롬·엣지·삼성인터넷에서 쓰실 수 있어요. 지금은 아래 칸에 글로 적어주시면 똑같이 도와드릴게요.",
+  notts: "이 브라우저는 읽어주기를 지원하지 않아요 — 크롬·엣지·삼성인터넷에서 쓰실 수 있어요. 답변은 화면으로 계속 보여드릴게요.",
+  enOnly: "Voice is Korean-only for now. Please switch to 한국어, or type your question — I will answer the same way.",
+};
+/* 마이크 오류 — 종류마다 회원이 할 일이 다르다. 한 줄짜리 '실패'로 뭉뚱그리지 않는다 */
+const HI_VOICE_ERR = {
+  "not-allowed": "마이크 사용이 막혀 있어요 — 주소창 왼쪽 자물쇠를 눌러 마이크를 '허용'으로 바꿔주세요. 지금은 아래 칸에 글로 적어주셔도 똑같이 도와드려요.",
+  "service-not-allowed": "이 브라우저에서 음성 인식이 차단돼 있어요 — 브라우저 설정에서 마이크를 허용해 주세요. 글로 적어주셔도 됩니다.",
+  "no-speech": "소리가 들리지 않았어요 — 마이크를 한 번 더 누르고 조금만 크게 말씀해 주세요.",
+  "audio-capture": "마이크를 찾지 못했어요 — 이어폰·헤드셋 연결을 확인해 주세요. 글로 적어주셔도 됩니다.",
+  network: "인터넷이 잠시 끊겨 음성을 알아듣지 못했어요 — 잠시 후 다시 해보시거나 글로 적어주세요.",
+  aborted: "",             /* 회원이 직접 멈춘 것 — 안내하지 않는다 */
+};
+const HI_VOICE_ERR_ETC = "음성 인식이 잠시 멈췄어요 — 마이크를 다시 눌러주시거나 아래 칸에 글로 적어주세요.";
+function hiVoiceErrMsg(code) {
+  const k = String(code || "");
+  return Object.prototype.hasOwnProperty.call(HI_VOICE_ERR, k) ? HI_VOICE_ERR[k] : HI_VOICE_ERR_ETC;
+}
+
+/* ── 지원 여부 판정 ── */
+function hiVoiceSupport() {
+  const w = (typeof window !== "undefined") ? window : null;
+  const stt = !!(w && (w.SpeechRecognition || w.webkitSpeechRecognition));
+  const tts = !!(w && w.speechSynthesis);
+  let reason = "";
+  if (!stt) reason = HI_VOICE_MSG.nostt;
+  else if (!tts) reason = HI_VOICE_MSG.notts;
+  return { stt: stt, tts: tts, reason: reason };
+}
+/* 한국어 모드인가 — 이번 범위는 ko-KR뿐이다(영문에서 되는 척하지 않는다) */
+function hiVoiceKoOK() {
+  try { if (typeof hiLang === "function") return hiLang() !== "en"; } catch (e) {}
+  return true;
+}
+
+/* ══════════ 낭독 텍스트 정제 — 소리로 나가기 전 마지막 관문(단일 지점) ══════════ */
+
+/* 이모지·픽토그램·원문자 — 화면에서는 안내지만 소리로는 읽을 수 없는 잡음이다 */
+const HI_VOICE_EMOJI = /[‼-㊙←-⇿⬀-⯿️⃣\uD800-\uDFFF]/g;
+/* 장식 기호 — 표·구분선·목록 기호는 읽으면 문장이 끊긴다 */
+const HI_VOICE_SYMBOL = /[※【】〔〕「」『』◆◇■□▲▼△▽●○★☆·•‧∙→←↑↓↔⇒═─━┃│┊…＊]/g;
+/* 마크다운 — 강조·제목·코드·인용·표 구분자 */
+const HI_VOICE_MD = /[*_`~#>|]/g;
+
+/* 약 이름 — telemed 규칙(조제 뒤에도 비노출)을 음성에서는 전면 적용한다.
+   화면 텍스트는 그대로 두고, 소리로 나가는 문장에서만 가린다. */
+const HI_VOICE_MED_WORDS = [
+  "암로디핀", "메트포르민", "하이드로코르티손", "로수바스타틴", "아토르바스타틴", "심바스타틴", "리피토",
+  "텔미사르탄", "발사르탄", "로사르탄", "클로피도그렐", "아스피린", "이부프로펜", "타이레놀", "아세트아미노펜",
+  "세티리진", "몬테루카스트", "판토프라졸", "에제티미브", "글리메피리드", "실로스타졸", "레바미피드",
+  "와파린", "리바록사반", "프레드니솔론", "트라마돌", "아목시실린", "독시사이클린",
+  /* 용량 표기 없이 상품명만 오는 것들 — 고정 목록은 여기까지가 한계다(아래 원천 읽기가 본진) */
+  "타미플루", "콘서타", "자누비아", "디아미크롱", "록소닌", "스티렌", "가스모틴", "알마겔", "낙센", "부루펜",
+];
+/* 이름을 모르는 약도 '○○정 5mg' 꼴은 가린다 — 숫자+단위를 반드시 요구해 '결정·과정·측정' 같은 말이 걸리지 않게 한다.
+   ⚠️ 제형만으로 거르면 선크림·수분크림·홍삼정·상처연고까지 '처방받으신 약'이 된다(저장소 실측 154종).
+      지워버린 정보는 되돌아오지 않으므로, 용량 요구는 그대로 두고 아래 두 갈래로 보완한다. */
+const HI_VOICE_MED_FORM = /[가-힣A-Za-z]{2,12}\s*(서방정|장용정|캡슐|정|시럽|연고|크림|패치)\s*\d+(\.\d+)?\s*(mg|㎎|밀리그램|g|%)/g;
+/* ⓐ 일반어에 쓰이지 않는 제형 — 용량이 없어도 약이 분명하다(서방정·장용정·설하정·좌약) */
+const HI_VOICE_MED_RX = /[가-힣A-Za-z]{2,12}\s*(서방정|장용정|설하정|좌약)/g;
+/* ⓑ 회원의 처방·복약 기록에 실제로 적힌 이름 — 목록에 없어도 가린다.
+   낭독이 새는 곳은 늘 '새로 들어온 데이터'다. 목록을 늘려 쫓아가는 대신 원천을 읽는다
+   (telemed 규칙: 약 이름은 조제 뒤에도 비노출 — 소리는 공공장소라 화면보다 엄하게). */
+function hiVoiceMedNames() {
+  const out = [];
+  const eat = (v) => {
+    const head = String(v || "").split("—")[0].split("-")[0].trim().replace(/\s*\d+(\.\d+)?\s*(mg|㎎|밀리그램|g|%)\s*$/i, "").trim();
+    if (head.length >= 2 && head.length <= 20 && out.indexOf(head) < 0) out.push(head);
+  };
+  try {
+    for (const k of ["hifin_rx", "hifin_medrem"]) {
+      const l = JSON.parse(localStorage.getItem(k) || "[]");
+      if (Array.isArray(l)) for (const r of l) { if (r && r.med) eat(r.med); if (r && r.name) eat(r.name); }
+    }
+  } catch (e) {}
+  return out;
+}
+function hiVoiceMaskMed(s) {
+  let t = String(s || "");
+  const words = HI_VOICE_MED_WORDS.concat(hiVoiceMedNames());
+  for (const w of words) {
+    if (!w || t.indexOf(w) < 0) continue;
+    try {
+      /* 뒤따르는 제형·용량만 함께 먹는다 — 조사(은/는/이/가)는 남겨 문장이 어그러지지 않게 */
+      const esc = String(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      t = t.replace(new RegExp(esc + "(서방정|장용정|캡슐|정|연고|시럽|크림|패치)?(\\s*\\d+(\\.\\d+)?\\s*(mg|㎎|밀리그램|g|%))?", "g"), HI_VOICE_MED_MASK);
+    } catch (e) {}
+  }
+  t = t.replace(HI_VOICE_MED_FORM, HI_VOICE_MED_MASK);
+  return t.replace(HI_VOICE_MED_RX, HI_VOICE_MED_MASK);
+}
+
+/* 내부 수익구조 — 회원 동선에서 금지된 말은 소리로도 나가지 않는다(문장 통째로 뺀다).
+   ⚠️ '원가'를 경계 없이 부분일치로 잡으면 **회원가입·병원가야·지원가능**이 걸려 멀쩡한 문장이 통째로 사라진다.
+      실제로 「회원가입은 1분이면 끝나요」와 「열이 나면 병원가야 해요」가 소리에서 지워졌다(2026-09-20).
+      안전 지시가 이런 식으로 사라지면 원인을 찾기 어렵다 — 그래서 한글 경계를 넣고,
+      원가 앞에 붙는 실제 회계 접두어(매출·제품·공급…)는 따로 열거한다.
+      CAC·LTV는 영문 경계(\b)를 둬 'cache' 같은 단어에 걸리지 않게 한다. */
+const HI_VOICE_BAN = /((?:^|[^가-힣]|매출|제품|공급|판매|조달|생산|도입|상품|구매|총|단위)\s*원가|송객\s*수수료|고객\s*획득\s*비용|고객획득비용|\bCAC\b|\bLTV\b|역마진)/i;
+function hiVoiceMaskBan(s) {
+  const t = String(s || "");
+  if (!HI_VOICE_BAN.test(t)) return t;
+  /* 문장 단위로 잘라 해당 문장만 버린다. 전부 걸리면 빈 문자열 — 말하지 않는 쪽이 안전하다 */
+  const parts = t.replace(/([.?!])\s+/g, "$1").split("");
+  return parts.filter((x) => !HI_VOICE_BAN.test(x)).join(" ").trim();
+}
+
+/* 주민등록번호 — 자리수 꼴이 보이면 숫자를 읽지 않는다 */
+function hiVoiceMaskRrn(s) {
+  let t = String(s || "");
+  t = t.replace(/\d{6}\s*[-–—]\s*[1-4*][\d*]{6}/g, "주민등록번호");
+  t = t.replace(/(주민(등록)?번호)\s*[:：]?\s*[\d*]{6,}[\d*\- ]*/g, "$1");
+  return t;
+}
+
+/* 숫자·단위를 읽기 쉽게 — 엔진이 쉼표를 '쉼표'로, 140/90을 '나누기'로 읽는 것을 막는다 */
+/* 단위는 **숫자 뒤에 붙었을 때만** 바꾼다 — 앞에 \b를 두면 '68kg'처럼 숫자에 붙은 단위를 놓치고,
+   빼면 'html' 같은 평범한 글자가 걸린다. mg/dL은 mg보다 먼저 와야 한다(긴 것 먼저). */
+const HI_VOICE_UNIT = [
+  [/(\d)\s*mmHg\b/gi, "$1"],                 /* 혈압은 앞의 '140에 90'이 단위를 대신한다 — 소리로는 군더더기 */
+  [/(\d)\s*mg\s*\/\s*dL\b/gi, "$1 밀리그램"],
+  [/(\d)\s*kcal\b/gi, "$1 킬로칼로리"],
+  [/(\d)\s*kg\b/gi, "$1 킬로그램"],
+  [/(\d)\s*cm\b/gi, "$1 센티미터"],
+  [/(\d)\s*mg\b/gi, "$1 밀리그램"],
+  [/(\d)\s*mL\b/gi, "$1 밀리리터"],
+  [/℃/g, "도"],
+  [/%/g, "퍼센트"],
+  [/\bHTK\b/g, "에이치티케이"],
+];
+function hiVoiceNum(s) {
+  let t = String(s || "");
+  t = t.replace(/(\d),(?=\d{3}(\D|$))/g, "$1");                       /* 1,234 → 1234 */
+  t = t.replace(/(\d{2,3})\s*\/\s*(\d{2,3})/g, "$1에 $2");            /* 혈압 140/90 → 140에 90 */
+  t = t.replace(/(\d)\s*~\s*(\d)/g, "$1에서 $2");
+  for (const u of HI_VOICE_UNIT) t = t.replace(u[0], u[1]);
+  return t;
+}
+
+/* 낭독 정제 — 이 함수를 거치지 않은 문장은 소리로 내보내지 않는다 */
+function hiVoiceSanitize(raw) {
+  let s = String(raw == null ? "" : raw);
+  if (!s) return "";
+  s = s.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1");     /* 링크는 글자만 남긴다 */
+  s = s.replace(/https?:\/\/\S+/g, "");                /* 주소는 읽지 않는다 */
+  s = hiVoiceMaskRrn(s);
+  s = hiVoiceMaskMed(s);
+  s = hiVoiceMaskBan(s);
+  s = hiVoiceNum(s);
+  s = s.replace(HI_VOICE_EMOJI, " ");
+  s = s.replace(HI_VOICE_SYMBOL, " ");
+  s = s.replace(HI_VOICE_MD, " ");
+  s = s.replace(/\s+/g, " ").trim();
+  return s;
+}
+
+/* 낭독 상한에서 자르기 — 문장 끝에서 끊는다(말이 중간에 잘리면 되묻게 된다) */
+function hiVoiceCut(text, max) {
+  const s = String(text || "").trim();
+  const lim = max || HI_VOICE_CFG.max;
+  if (s.length <= lim) return { head: s, rest: "" };
+  const win = s.slice(0, lim);
+  let at = Math.max(win.lastIndexOf("."), win.lastIndexOf("?"), win.lastIndexOf("!"));
+  if (at < lim * 0.4) at = win.lastIndexOf(" ");
+  if (at < lim * 0.4) at = lim - 1;
+  const head = s.slice(0, at + 1).trim();
+  const rest = s.slice(at + 1).trim();
+  return { head: head + " " + HI_VOICE_TAIL, rest: rest };
+}
+
+/* 낭독용 한 문단 조립 — 답변 본문 + 카드의 핵심 수치 1~2문장까지.
+   조립이지 생성이 아니다: 새 문장을 지어내지 않고 이미 화면에 있는 줄·라벨만 쓴다(협주 규약과 동일).
+   도크 메시지({lines, cards})와 챗 버블([{kind,text|card}]) 두 모양을 모두 받는다. */
+function hiVoiceSummarize(src) {
+  const body = [];
+  const facts = [];
+  const add = (v) => { const s = hiVoiceSanitize(v); if (s) body.push(s); };
+  const eatCard = (c) => {
+    if (!c) return;
+    const items = (c.items || []).map((x) => hiVoiceSanitize(x)).filter((x) => x && /\d/.test(x));
+    if (!items.length) return;
+    const title = hiVoiceSanitize(c.title || "");
+    facts.push((title ? title + " " : "") + items.slice(0, 2).join(", "));
+  };
+  const eat = (n) => {
+    if (!n) return;
+    if (Array.isArray(n)) { n.forEach(eat); return; }
+    if (typeof n === "string") { add(n); return; }
+    if (n.card) { eatCard(n.card); return; }
+    if (n.kind === "card") { eatCard(n); return; }
+    if (n.text) add(n.text);
+    if (n.lines) n.lines.forEach(add);
+    if (n.cards) n.cards.forEach(eatCard);
+  };
+  eat(src);
+  const out = body.join(" ") + (facts.length ? " " + facts.slice(0, 2).join(" ") : "");
+  return out.replace(/\s+/g, " ").trim();
+}
+
+/* ══════════ 듣기(STT) — 인스턴스는 언제나 하나 ══════════ */
+let _hiVoiceRec = null;       /* 살아 있는 인식기 — 재클릭해도 하나 더 만들지 않는다 */
+let _hiVoiceQuiet = null;     /* 무음 타임아웃 */
+let _hiVoiceDrop = false;     /* 독을 닫거나 화면을 떠난 뒤 결과가 배달되는 것을 막는다 */
+
+function hiVoiceListening() { return !!_hiVoiceRec; }
+
+/* 인식 시작. 이미 듣는 중이면 **취소**한다(재클릭 = 취소 · 인스턴스 중복 생성 금지).
+   콜백: onStart · onInterim(중간결과, 확정분) · onFinal(확정문장) · onError(안내문구, 코드) · onEnd */
+function hiVoiceListen(opts) {
+  const o = opts || {};
+  /* 재클릭은 **취소**다 — 잘못 말한 것을 물리려고 누르는 자리이므로 지금까지 들은 말을 배달하지 않는다.
+     (무음 타임아웃 같은 시스템 종료만 drop 없이 두어 정상 전송으로 남긴다) */
+  if (_hiVoiceRec) { hiVoiceStop({ drop: true }); return null; }
+  if (!hiVoiceKoOK()) { if (o.onError) o.onError(HI_VOICE_MSG.enOnly, "lang"); return null; }
+  if (!hiVoiceSupport().stt) { if (o.onError) o.onError(HI_VOICE_MSG.nostt, "unsupported"); return null; }
+  hiVoiceCancel();            /* 끼어들기 — 하이가 말하는 중이면 먼저 입을 닫는다(에코 방지) */
+  const R = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let r = null;
+  try { r = new R(); } catch (e) { if (o.onError) o.onError(HI_VOICE_ERR_ETC, "init"); return null; }
+  _hiVoiceRec = r; _hiVoiceDrop = false;
+  r.lang = o.lang || HI_VOICE_CFG.lang;
+  r.interimResults = HI_VOICE_CFG.interim;
+  r.continuous = HI_VOICE_CFG.continuous;
+  try { r.maxAlternatives = HI_VOICE_CFG.maxAlt; } catch (e) {}
+  let fin = "";
+  const hush = () => {
+    if (_hiVoiceQuiet) clearTimeout(_hiVoiceQuiet);
+    _hiVoiceQuiet = setTimeout(() => { try { r.stop(); } catch (e) {} }, HI_VOICE_CFG.silenceMs);
+  };
+  r.onstart = () => { hush(); if (o.onStart) o.onStart(); };
+  r.onresult = (e) => {
+    let itm = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const tr = e.results[i];
+      if (tr.isFinal) fin += tr[0].transcript; else itm += tr[0].transcript;
+    }
+    hush();
+    if (o.onInterim) o.onInterim(itm, fin);
+  };
+  r.onerror = (e) => {
+    const code = (e && e.error) || "";
+    const msg = hiVoiceErrMsg(code);
+    if (o.onError && msg) o.onError(msg, code);
+  };
+  r.onend = () => {
+    if (_hiVoiceQuiet) { clearTimeout(_hiVoiceQuiet); _hiVoiceQuiet = null; }
+    _hiVoiceRec = null;
+    if (o.onEnd) o.onEnd();
+    const said = fin.trim();
+    if (said && !_hiVoiceDrop && o.onFinal) o.onFinal(said);
+    _hiVoiceDrop = false;
+  };
+  try { r.start(); } catch (e) {
+    _hiVoiceRec = null;
+    if (o.onError) o.onError(HI_VOICE_ERR_ETC, "start");
+    return null;
+  }
+  return function () { hiVoiceStop({ drop: true }); };   /* 밖에서 부르는 중지도 취소다 — 말이 끝나서 닫히는 것만 전송된다 */
+}
+/* 중지. { drop: true }면 지금까지 들은 말을 배달하지 않는다.
+   ⚠️ **회원이 누른 중지는 전부 drop**이다 — X는 '지금까지 들은 말을 보내라'가 아니라 '없던 일로 하라'는 뜻이다.
+      drop 없는 중지는 무음 타임아웃처럼 말이 끝나서 닫히는 경우뿐이다. */
+function hiVoiceStop(opts) {
+  _hiVoiceDrop = !!(opts && opts.drop);
+  if (_hiVoiceQuiet) { clearTimeout(_hiVoiceQuiet); _hiVoiceQuiet = null; }
+  const r = _hiVoiceRec;
+  if (!r) return false;
+  try { if (_hiVoiceDrop && r.abort) r.abort(); else r.stop(); } catch (e) { _hiVoiceRec = null; }
+  return true;
+}
+
+/* ══════════ 말하기(TTS) — 목소리는 한 사람 ══════════ */
+let _hiVoiceList = [];
+let _hiVoiceBound = false;
+let _hiVoiceOnAir = false;
+let _hiVoiceRest = "";        /* 상한에서 끊긴 나머지 — '이어 듣기' */
+let _hiVoiceLast = "";        /* 방금 읽은 전체 문장 — '다시 듣기' */
+let _hiVoiceGen = 0;          /* 발화 세대 — cancel()이 일으키는 **이전 발화의 onend**가 새 발화를 꺼뜨리지 않게 */
+const HI_VOICE_MALE = /injoon|injun|hyunsu|hyun-?su|\bmale\b|남성|남자/i;
+const HI_VOICE_FEM = /heami|female|여성|여자|yuna|sun-?hi|sunhi|google/i;
+
+function hiVoiceLoad() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return [];
+  try {
+    _hiVoiceList = window.speechSynthesis.getVoices().filter((v) => /ko/i.test(v.lang));
+    if (!_hiVoiceBound && window.speechSynthesis.addEventListener) {
+      /* onvoiceschanged 대입은 다른 화면이 덮어쓴다 — 리스너로 붙인다 */
+      window.speechSynthesis.addEventListener("voiceschanged", () => {
+        try { _hiVoiceList = window.speechSynthesis.getVoices().filter((v) => /ko/i.test(v.lang)); } catch (e) {}
+      });
+      _hiVoiceBound = true;
+    }
+  } catch (e) { _hiVoiceList = []; }
+  return _hiVoiceList;
+}
+/* 보이스 단일 선택 규칙 — 남성 우선 → 여성으로 알려진 것 제외 → 첫 한국어.
+   화면마다 다시 고르지 않는다(지금까지 쇼핑은 환경에 따라 여성으로 말하고 있었다). */
+function hiVoicePick() {
+  const ko = _hiVoiceList.length ? _hiVoiceList : hiVoiceLoad();
+  if (!ko.length) return null;
+  return ko.find((v) => HI_VOICE_MALE.test(v.name)) || ko.find((v) => !HI_VOICE_FEM.test(v.name)) || ko[0];
+}
+/* 속도 — 쉬운 말 모드면 천천히. 이것도 화면이 아니라 여기서 정한다 */
+function hiVoiceRate() {
+  try {
+    if (typeof document !== "undefined" && document.body && document.body.classList.contains("easyread")) return HI_VOICE_CFG.rateEasy;
+  } catch (e) {}
+  return HI_VOICE_CFG.rate;
+}
+
+function hiVoiceSpeaking() { return _hiVoiceOnAir; }
+function hiVoiceRest() { return _hiVoiceRest; }
+
+/* 말하기. 정제를 거치지 않은 문장은 여기서도 통과하지 못한다.
+   콜백: onStart · onEnd(남은 분량 문자열) */
+function hiVoiceSpeak(text, opts) {
+  const o = opts || {};
+  if (!hiVoiceSupport().tts || !hiVoiceKoOK()) return false;
+  let clean = o.raw ? String(text || "") : hiVoiceSanitize(text);
+  /* 정제가 문장을 통째로 걷어낸 경우(금지어만 있던 단문) — 무음으로 끝내지 않는다.
+     아무 소리도 안 나면 회원은 기능이 고장 난 것으로 받아들인다. 읽을 수 없다는 것만 말하고 화면으로 넘긴다. */
+  if (!clean && !o.raw && String(text || "").trim()) clean = HI_VOICE_TAIL;
+  if (!clean) return false;
+  hiVoiceCancel();
+  const gen = ++_hiVoiceGen;
+  const cut = hiVoiceCut(clean, o.max);
+  _hiVoiceRest = cut.rest;
+  if (!o.more) _hiVoiceLast = clean;
+  let u = null;
+  try { u = new SpeechSynthesisUtterance(cut.head); } catch (e) { return false; }
+  u.lang = HI_VOICE_CFG.lang;
+  u.rate = o.rate || hiVoiceRate();
+  /* 목소리 지정은 실패해도 낭독 자체는 살린다 — 브라우저가 내주는 목소리 객체가 규격과 다르면 대입에서 예외가 난다(그때는 기본 목소리로 읽는다) */
+  const v = hiVoicePick();
+  try { if (v) u.voice = v; } catch (e) {}
+  try { u.pitch = (v && HI_VOICE_MALE.test(v.name)) ? HI_VOICE_CFG.pitchMale : HI_VOICE_CFG.pitchSoft; } catch (e) {}
+  u.onstart = () => { if (gen !== _hiVoiceGen) return; _hiVoiceOnAir = true; if (o.onStart) o.onStart(); };
+  const done = () => { if (gen !== _hiVoiceGen) return; _hiVoiceOnAir = false; if (o.onEnd) o.onEnd(_hiVoiceRest); };
+  u.onend = done;
+  u.onerror = done;
+  try { window.speechSynthesis.speak(u); } catch (e) { _hiVoiceOnAir = false; return false; }
+  return true;
+}
+/* 이어 듣기 — 상한에서 끊긴 나머지를 이어서 읽는다 */
+function hiVoiceMore(opts) {
+  const rest = _hiVoiceRest;
+  if (!rest) return false;
+  _hiVoiceRest = "";
+  return hiVoiceSpeak(rest, Object.assign({}, opts || {}, { raw: true, more: true }));
+}
+/* 다시 듣기 — 방금 읽은 문장을 처음부터 */
+function hiVoiceAgain(opts) {
+  if (!_hiVoiceLast) return false;
+  return hiVoiceSpeak(_hiVoiceLast, Object.assign({}, opts || {}, { raw: true }));
+}
+/* 끊기 — 새 답변·화면 이동·회원이 말하기 시작할 때 */
+function hiVoiceCancel() {
+  _hiVoiceGen++;              /* 끊긴 발화의 onend는 여기서 무효가 된다 — 화면 상태는 끊은 쪽이 직접 내린다 */
+  _hiVoiceOnAir = false;
+  _hiVoiceRest = "";
+  try { if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+}
+
+/* ── 읽어주기 켜짐 상태 — 기본 꺼짐, 켜면 기억(화면을 옮겨도 유지) ── */
+function hiVoiceOn() {
+  try { return localStorage.getItem(HI_VOICE_KEY) === "1"; } catch (e) { return false; }
+}
+function hiVoiceSetOn(v) {
+  const on = !!v;
+  try { localStorage.setItem(HI_VOICE_KEY, on ? "1" : "0"); } catch (e) {}
+  if (!on) hiVoiceCancel();
+  return on;
+}
+
+/* ── 되돌리기 어려운 행동은 소리로 실행하지 않는다 ──
+   음성은 '채우기'까지고, 마지막 한 번은 화면 버튼이다. 좁게 잡는다 —
+   넓히면 "보험 가입하고 싶어요" 같은 평범한 말까지 막혀 대화가 끊긴다. */
+const HI_VOICE_RISKY = /(예약\s*확정|확정\s*(해|할게|해줘|해주세요)|제출\s*(해|할게|해줘|해주세요)|접수\s*(해줘|해주세요)|결제\s*(해|할게|해줘|해주세요|진행)|송금|계좌\s*이체|이체\s*(해|할게|해줘)|주문\s*(할게|해줘)|구매\s*(할게|해줘)|해지\s*(할게|해줘)|승인\s*(할게|해줘)|동의\s*(꺼|철회|해지|해제|취소)|철회\s*(해|할게|해줘|해주세요))/;
+function hiVoiceRisky(text) {
+  try { return HI_VOICE_RISKY.test(String(text || "")); } catch (e) { return false; }
+}
+const HI_VOICE_RISKY_MSG = "말씀하신 대로 적어뒀어요 — 확인하시고 보내기 버튼을 눌러주세요. 예약 확정·청구 제출·결제·동의 변경은 화면에서 한 번 더 확인하고 진행해요.";
+
+/* ── 계측 채널 라벨 — 새 이벤트를 만들지 않는다(가공 이벤트 금지). 기존 payload에 라벨만 붙인다 ── */
+function hiVoiceChannel(via) { return via === "voice" ? "voice" : "text"; }
+
+/* ── 화면을 떠나면 입을 닫는다 — 보이지 않는 곳에서 계속 말하지 않게 ── */
+try {
+  if (typeof window !== "undefined") {
+    window.addEventListener("pagehide", () => { hiVoiceCancel(); hiVoiceStop({ drop: true }); });
+    window.addEventListener("hifin:lang", () => { hiVoiceCancel(); hiVoiceStop({ drop: true }); });
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => { if (document.hidden) { hiVoiceCancel(); hiVoiceStop({ drop: true }); } });
+    }
+    hiVoiceLoad();
+    window.__hifinVoice = {
+      support: hiVoiceSupport, sanitize: hiVoiceSanitize, summarize: hiVoiceSummarize,
+      cut: hiVoiceCut, speak: hiVoiceSpeak, cancel: hiVoiceCancel, pick: hiVoicePick,
+      on: hiVoiceOn, setOn: hiVoiceSetOn, risky: hiVoiceRisky, cfg: HI_VOICE_CFG,
+    };
+  }
+} catch (e) {}
 
 /* ══════════════ 하이 2단계 — 회원 상태 모델·세그먼트 단일 소스(Member State Model) ══════════════
    이 파일이 ①런타임 상태서비스(memberState.js)·추론엔진(hiReasoner.js) ②10만 데모 DB 생성기(docs/hi_phase2/seed-demo-db.mjs)
@@ -40250,11 +41274,38 @@ const HC_GUARD_RULES = [
    "방문요양 알아봐 줘"라고만 물으면, 말만 읽는 트리아지는 그냥 지나친다. */
 function hcTriage(question, ctx) {
   const q = String(question || "");
+  /* 말은 **두 겹으로** 읽는다 — ⓐ 원문과 음성 오인식 보정문 ⓑ 공백을 지운 형태.
+     「숨이」가 「수미」로 들린 한 글자에 응급이 통째로 꺼졌고, STT는 「숨이 차」를 「숨이 차 요」로 끊는다.
+     ⚠️ 공백 지운 형태는 **원래 띄어쓰기가 있던 신호어에만** 댄다. 한 덩어리 신호어(고열·탈수 …)까지
+        붙여 놓고 찾으면 「데이터금고 열어줘」가 '고열'로 걸린다 — 실제로 걸렸다(2026-09-20).
+     응급만큼은 오탐 쪽으로 기운다(오발동 불편 < 미발동 사고 — 형 확정 D4). */
+  const raw = [q];
+  try { if (typeof hiMishearNorm === "function") { const v = hiMishearNorm(q); if (v && v.t && raw.indexOf(v.t) < 0) raw.push(v.t); } } catch (e) {}
+  const flat = raw.map(function (f) { return f.replace(/\s+/g, ""); });
   let byWord = null;
   try {
     if (typeof LTC_EMERGENCY !== "undefined") {
-      for (const w of LTC_EMERGENCY.critical) { if (q.indexOf(w) >= 0) { byWord = { level: "critical", hit: w, via: "말" }; break; } }
-      if (!byWord) for (const w of LTC_EMERGENCY.urgent) { if (q.indexOf(w) >= 0) { byWord = { level: "urgent", hit: w, via: "말" }; break; } }
+      const scan = (words, level) => {
+        for (const w of words) {
+          for (const f of raw) { if (f.indexOf(w) >= 0) return { level: level, hit: w, via: "말" }; }
+          if (/\s/.test(w)) {
+            const wn = String(w).replace(/\s+/g, "");
+            for (const f of flat) { if (f.indexOf(wn) >= 0) return { level: level, hit: w, via: "말" }; }
+          }
+        }
+        return null;
+      };
+      /* 구어 축약 6패턴(LTC_EMERGENCY_SHORT — 「가슴이아파·숨이차·쓰러·응급·심하게아파·마비」)도 여기서 본다.
+         지금까지 이 6개는 aiQnaBank의 정적 매칭에만 실려 있어서 **도크에서만** 119 안내가 나갔다.
+         전체화면 하이 상담·음성 주치의는 hcTriage를 부르므로, 판정이 여기 없으면 화면을 옮기는 순간 그물이 사라진다.
+         띄어쓰기를 지운 형태로만 대는 것은 기존 정적 매칭과 같은 방식이라 오발동 성질도 그대로다(「마비 보장」은 D4 허용). */
+      const scanFlat = (words, level) => {
+        for (const w of words) { const wn = String(w).replace(/\s+/g, ""); for (const f of flat) { if (f.indexOf(wn) >= 0) return { level: level, hit: w, via: "말" }; } }
+        return null;
+      };
+      byWord = scan(LTC_EMERGENCY.critical, "critical")
+        || ((typeof LTC_EMERGENCY_SHORT !== "undefined") ? scanFlat(LTC_EMERGENCY_SHORT, "critical") : null)
+        || scan(LTC_EMERGENCY.urgent, "urgent");
     }
   } catch (e) {}
   let byData = null;
@@ -44485,6 +45536,11 @@ function HiEnCard({ onGo, onClose }) {
   );
 }
 
+/* 응답 대기 — 엔진 실계산은 평균 7.3ms다. 지금까지 체감 지연의 95%는 여기 박아둔 연출용 대기였다.
+   음성은 회원이 이미 인식을 기다렸으므로 글자보다 더 빨리 답한다. 타이핑 표시는 유지하고 시간만 줄인다. */
+const HIDOCK_WAIT = { voice: 90, text: 320 };
+function hidockWait(via) { return via === "voice" ? HIDOCK_WAIT.voice : HIDOCK_WAIT.text; }
+
 function AgentDock({ onGo }) {
   const go = onGo || (() => {});
   const lang = useHiLang();
@@ -44494,14 +45550,20 @@ function AgentDock({ onGo }) {
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [listening, setListening] = useState(false);
+  const [interim, setInterim] = useState("");        // 듣는 중 중간 결과 — 듣고 있다는 신호
+  const [speaking, setSpeaking] = useState(false);   // 읽어주는 중
+  const [more, setMore] = useState("");              // 상한에서 끊긴 나머지 — '이어 듣기'
+  const [read, setRead] = useState(() => { try { return (typeof hiVoiceOn === "function") ? hiVoiceOn() : false; } catch (e) { return false; } });
   const [easy, setEasy] = useState(() => { try { return !!localStorage.getItem("hifin_easyread"); } catch (e) { return false; } });
   const endRef = useRef(null);
   const bodyRef = useRef(null);          // 대화 스크롤 영역
   const prevLenRef = useRef(0);          // 직전 메시지 수 — '새로 붙은 답변'을 찾는 기준
   const dockRef = useRef(null);
-  const recogRef = useRef(null);
   const lastQRef = useRef("");
-  const sttOK = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const spokeRef = useRef(-1);           // 어디까지 읽어드렸는지 — 토글을 켰다고 지난 답을 다시 읽지 않는다
+  /* 음성 지원 판정·설정은 hiVoice.js 단일 소스(화면마다 다시 정하지 않는다) */
+  const vsup = (typeof hiVoiceSupport === "function") ? hiVoiceSupport() : { stt: false, tts: false, reason: "" };
+  const sttOK = vsup.stt;
   // AI 주치의 지식(KDCA·리포트·학습 Q&A) — 독을 처음 열 때 지연 로드(홈 초기 로딩 부담 없음)
   const kbRef = useRef({ kb: null, rp: null, qa: null });
   /* [Phase A] 지식은 A1(AI 주치의) 에이전트가 소유 — 로드되는 대로 에이전트에 주입한다 */
@@ -44613,12 +45675,14 @@ function AgentDock({ onGo }) {
     };
   }, [open]);
 
-  const send = (textArg) => {
+  /* viaArg = 입력 채널("voice" | "text"). 새 이벤트를 만들지 않고 **기존 payload에 라벨만** 붙인다(가공 이벤트 금지). */
+  const send = (textArg, viaArg) => {
+    const via = (typeof hiVoiceChannel === "function") ? hiVoiceChannel(viaArg) : (viaArg === "voice" ? "voice" : "text");
     const text = (textArg == null ? input : textArg).trim(); if (!text) return;
     /* 하고 싶은 활동(섹션 안내형 칩) — 질의 전송 대신 섹션 가이드로 즉답하고 화면까지 데려간다 */
     try {
       const wk = (typeof hiWantKeyOf === "function") ? hiWantKeyOf(text) : null;
-      if (wk) { answerWant(wk, text); return; }
+      if (wk) { answerWant(wk, text, via); return; }
     } catch (e) {}
     if (text === "쉬운 말 모드 켜기") { setEasy(true); setMsgs((m) => [...m, { who: "hi", lines: ["쉬운 말 모드를 켰어요 — 글씨를 키우고 더 쉽게 설명할게요."], buttons: [], nav: null }]); return; }
     // AI 주치의식 액션 버튼(핸드오프·바로가기) — Chat과 동일하게 화면 이동으로 처리
@@ -44632,26 +45696,35 @@ function AgentDock({ onGo }) {
     setInput("");
     setMsgs((m) => [...m, { who: "me", lines: [text], buttons: [], nav: null }]);
     setTyping(true);
+    /* 턴 대장 — 답을 화면에 붙이는 순간 한 줄. 재는 것은 '회원이 기다린 시간'이라 여기서부터 센다
+       (연출 대기 포함 — 화면마다 재는 지점이 다르면 채널 비교가 무의미해진다). */
+    const t0 = Date.now();
+    const ledger = (hit) => { try { if (typeof telemTurn === "function") telemTurn(via, Date.now() - t0, hit); } catch (e) {} };
     setTimeout(() => {
       let res = null;
-      try { res = (typeof agentAnswer === "function") ? agentAnswer(text) : null; } catch (e) { res = null; }
-      // Q&A·섹션가이드가 못 받은 질문은 A1(AI 주치의)이 이어받는다 — 근거 인용(cite)과 담당 표기가 함께 온다
-      if (!res || !res.matched || res.matched === "graph") {
+      /* 채널 라벨을 엔진까지 넘긴다 — 미답변·계측이 음성에서 왔는지 타자에서 왔는지 갈라 볼 수 있어야 한다.
+         엔진이 아직 2번째 인자를 받지 않아도 안전하다(추가 인자는 무시된다). */
+      try { res = (typeof agentAnswer === "function") ? agentAnswer(text, { channel: via }) : null; } catch (e) { res = null; }
+      /* Q&A·섹션가이드가 못 받은 질문은 A1(AI 주치의)이 이어받는다 — 근거 인용(cite)과 담당 표기가 함께 온다.
+         ⚠️ 단, 응급 판정이 실린 답은 **갈아끼우지 않는다.** A1으로 통째 교체하면 엔진이 맨 앞에 붙인
+            119·당일진료 안내가 화면에서 조용히 사라진다(발동은 했는데 아무도 못 보는 상태). */
+      if (!res || ((!res.matched || res.matched === "graph") && !res.emergency)) {
         let a1 = null;
         try { a1 = (typeof aiDoctorAgent === "function") ? aiDoctorAgent(text, {}) : null; } catch (e) { a1 = null; }
         if (a1 && !a1.handback && a1.lines && a1.lines.length) {
           lastQRef.current = text;
           setTyping(false);
-          setMsgs((m) => [...m, { who: "hi", agent: "A1", lines: a1.lines, cards: a1.cards || [], cite: a1.cite || [], buttons: (a1.buttons || []).slice(0, 4), nav: null }]);
+          setMsgs((m) => [...m, { who: "hi", agent: "A1", lines: a1.lines, cards: a1.cards || [], cite: a1.cite || [], buttons: (a1.buttons || []).slice(0, 4), nav: null, channel: via }]);
+          ledger(true);
           return;
         }
       }
       setTyping(false);
-      if (!res) { setMsgs((m) => [...m, { who: "hi", lines: ["잠시 문제가 있었어요 — 다시 한번 말씀해 주시겠어요?"], buttons: ["사람 상담 연결"], nav: null }]); return; }
+      if (!res) { setMsgs((m) => [...m, { who: "hi", lines: ["잠시 문제가 있었어요 — 다시 한번 말씀해 주시겠어요?"], buttons: ["사람 상담 연결"], nav: null }]); ledger(false); return; }
       if (res.reset) { setMsgs([{ who: "hi", lines: res.lines, buttons: [], nav: null }]); return; }
       lastQRef.current = text;
       /* [Phase A] 한 턴에 여러 에이전트가 말하면(인계 고지 → 전문 응답) 파트별 말풍선으로 나눠 렌더 */
-      const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel, doctor: !!res.doctor, q: text };
+      const tail = { buttons: res.buttons || [], nav: res.nav || null, preview: res.preview || null, followup: res.followup || null, routed: res.routed, pending: res.pending, routedLabel: res.routedLabel, doctor: !!res.doctor, q: text, channel: via };
       if (res.parts && res.parts.length) {
         setMsgs((m) => [...m, ...res.parts.map((p, i) => Object.assign(
           { who: "hi", agent: p.agent, agents: res.agents || null, lines: p.lines, cite: p.cite || [], cards: p.cards || [], announce: !!p.announce },
@@ -44659,11 +45732,13 @@ function AgentDock({ onGo }) {
       } else {
         setMsgs((m) => [...m, Object.assign({ who: "hi", agent: res.agent || "A0", agents: res.agents || null, lines: res.lines, cite: res.cite || [] }, tail)]);
       }
-    }, 480);
+      ledger(!!res.matched);
+    }, hidockWait(via));
   };
   /* 하고 싶은 활동 안내 — 웰컴 카드·하단 칩 공용.
      회원의 말을 먼저 남기고(내가 고른 것이 대화에 남아야 한다) 섹션 설명 + 화면 이동 버튼을 붙인다. */
-  const answerWant = (k, echo) => {
+  const answerWant = (k, echo, viaArg) => {
+    const via = (typeof hiVoiceChannel === "function") ? hiVoiceChannel(viaArg) : (viaArg === "voice" ? "voice" : "text");
     let m = null; try { m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
     let a = null; try { a = (typeof hiWantAnswer === "function") ? hiWantAnswer(k, m) : null; } catch (e) {}
     setInput("");   // 웰컴 카드는 지우지 않는다 — 위로 스크롤하면 언제든 다시 고를 수 있어야 한다
@@ -44672,7 +45747,7 @@ function AgentDock({ onGo }) {
     if (!a) { setMsgs((v) => [...v, { who: "hi", lines: ["그 화면을 지금 열어드릴게요."], buttons: [], nav: null }]); return; }
     lastQRef.current = mine;
     setTyping(true);
-    setTimeout(() => { setTyping(false); setMsgs((v) => [...v, { who: "hi", lines: a.lines, buttons: (a.buttons || []).slice(0, 3), nav: a.nav || null }]); }, 380);
+    setTimeout(() => { setTyping(false); setMsgs((v) => [...v, { who: "hi", lines: a.lines, buttons: (a.buttons || []).slice(0, 3), nav: a.nav || null, channel: via }]); }, hidockWait(via));
   };
 
   /* [2단계] SARG 응답 칩 처리 — 알림 예약(followup 저장)·미리보기 열기는 대화 재질의 없이 즉시 실행 */
@@ -44689,16 +45764,53 @@ function AgentDock({ onGo }) {
     }
     send(b);
   };
+  /* 음성 안내는 말풍선으로 남긴다 — 마이크가 조용히 실패하면 회원은 자기 탓을 한다.
+     로컬 생성이라 미답변 로그를 오염시키지 않는다(도우미 칩과 같은 규약). */
+  const voiceNote = (line) => { if (line) setMsgs((m) => [...m, { who: "hi", lines: [line], buttons: [], nav: null, notice: true }]); };
+
+  /* 듣기 — 시작/중지 한 버튼. 인스턴스 관리·무음 종료·끼어들기는 hiVoice가 맡는다 */
   const startStt = () => {
-    if (!sttOK) return;
-    const R = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new R(); recogRef.current = r;
-    r.lang = "ko-KR"; r.interimResults = false; let fin = "";
-    r.onstart = () => setListening(true);
-    r.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) fin += e.results[i][0].transcript; };
-    r.onerror = () => setListening(false);
-    r.onend = () => { setListening(false); if (fin.trim()) send(fin.trim()); };
-    try { r.start(); } catch (e) { setListening(false); }
+    if (typeof hiVoiceListen !== "function") return;
+    if (listening) { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); return; }   /* 재클릭은 취소 — 들은 말을 보내지 않는다 */
+    if (!sttOK) { voiceNote(vsup.reason); return; }
+    setSpeaking(false); setMore("");                 // 하이가 말하는 중이면 먼저 입을 닫는다(에코 방지)
+    hiVoiceListen({
+      onStart: () => { setListening(true); setInterim(""); },
+      onInterim: (itm) => setInterim(itm),
+      onError: (msg) => { setListening(false); setInterim(""); voiceNote(msg); },
+      onEnd: () => { setListening(false); setInterim(""); },
+      onFinal: (said) => {
+        /* 되돌리기 어려운 행동은 소리로 실행하지 않는다 — 입력칸에 채워만 두고 마지막은 화면 버튼으로 */
+        if (typeof hiVoiceRisky === "function" && hiVoiceRisky(said)) { setInput(said); voiceNote(HI_VOICE_RISKY_MSG); return; }
+        send(said, "voice");
+      },
+    });
   };
+  const stopSpeak = () => { try { if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} setSpeaking(false); setMore(""); };
+  const sayMore = () => { try { if (typeof hiVoiceMore === "function") hiVoiceMore({ onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } }); } catch (e) {} };
+  const sayAgain = () => { try { if (typeof hiVoiceAgain === "function") hiVoiceAgain({ onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } }); } catch (e) {} };
+
+  /* 새 답변이 오면 — 읽어주기가 **켜져 있을 때만** 발화한다(기본 꺼짐).
+     새 답변·회원이 말하기 시작·화면 이동이면 이전 발화는 취소된다(hiVoiceSpeak 안에서 먼저 끊는다). */
+  useEffect(() => {
+    if (typeof hiVoiceSpeak !== "function" || !vsup.tts || lang === "en") return;
+    const last = msgs.length - 1;
+    if (last < 0 || spokeRef.current >= last) return;
+    const fresh = msgs.slice(spokeRef.current + 1).filter((x) => x && x.who === "hi");
+    spokeRef.current = last;                         // 토글을 나중에 켜도 지난 답을 거슬러 읽지 않는다
+    if (!read || !fresh.length) return;
+    const say = fresh.map((x) => hiVoiceSummarize(x)).filter(Boolean).join(" ");
+    if (!say) return;
+    hiVoiceSpeak(say, { onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } });
+  }, [msgs, read]);
+
+  /* 독을 닫거나 화면을 벗어나면 듣기·말하기를 모두 정리한다 — 닫은 뒤 결과가 배달되거나 혼자 말하지 않게 */
+  useEffect(() => {
+    if (open) return;
+    try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {}
+    setListening(false); setInterim(""); setSpeaking(false); setMore("");
+  }, [open]);
+  useEffect(() => () => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); if (typeof hiVoiceCancel === "function") hiVoiceCancel(); } catch (e) {} }, []);
 
   return (
     <>
@@ -44715,6 +45827,16 @@ function AgentDock({ onGo }) {
             <span className="hidock-av"><HiAvatar size={26} plain /></span>
             <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{t("hi.role")}</span></div>
             <button className={"hidock-ib" + (easy ? " on" : "")} title="쉬운 말 모드(큰 글씨)" onClick={() => setEasy((v) => !v)}>가나</button>
+            {/* 읽어주기 — 기본은 꺼짐, 켜면 기억한다(화면을 옮겨도 유지). 미지원 브라우저면 이유를 말한다 */}
+            {lang !== "en" && (
+              <button className={"hidock-ib" + (read ? " on" : "")} aria-pressed={read} title={read ? "읽어주기 끄기" : "읽어주기 켜기 — 답변을 소리로 들려드려요"}
+                onClick={() => {
+                  if (!vsup.tts) { voiceNote(vsup.reason || HI_VOICE_MSG.notts); return; }
+                  const v = !read; setRead(v);
+                  try { if (typeof hiVoiceSetOn === "function") hiVoiceSetOn(v); } catch (e) {}
+                  if (!v) stopSpeak();
+                }}><Volume2 size={15} /></button>
+            )}
             <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>
             <button className="hidock-ib" onClick={() => setOpen(false)} aria-label="닫기"><X size={16} /></button>
           </div>
@@ -44757,7 +45879,7 @@ function AgentDock({ onGo }) {
                       {Array.isArray(m.agents) && m.agents.length > 1 && <span className="hidock-ens">함께 답했어요</span>}
                     </div>
                   )}
-                  {m.lines.map((l, j) => <div className={"hidock-bub " + m.who + (m.announce ? " announce" : "")} key={j}>{l}</div>)}
+                  {m.lines.map((l, j) => <div className={"hidock-bub " + m.who + (m.announce ? " announce" : "") + (m.notice ? " notice" : "")} key={j}>{l}</div>)}
                   {m.cite && m.cite.length > 0 && (
                     <div className="hidock-cite">📚 근거 {m.cite.map((c, ci) => <span key={ci}>{c.source}{c.title ? ` · ${c.title}` : ""}</span>)}</div>
                   )}
@@ -44776,7 +45898,7 @@ function AgentDock({ onGo }) {
                       <div className="hidock-btns"><button onClick={(e) => { e.stopPropagation(); const k = m.preview.nav || (m.nav && m.nav.key); if (k) { setOpen(false); go(k); } }}>화면 미리보기 열기</button></div>
                     </div>
                   )}
-                  {m.nav && !m.preview && <button className="hidock-nav" onClick={() => { try { if (typeof hiEvent === "function") hiEvent("nav_opened", { nav: m.nav.key }); } catch (e) {} setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
+                  {m.nav && !m.preview && <button className="hidock-nav" onClick={() => { try { if (typeof hiEvent === "function") hiEvent("nav_opened", { nav: m.nav.key, channel: m.channel || "text" }); } catch (e) {} setOpen(false); go(m.nav.key); }}>📍 {m.nav.label} 화면 열기 <ChevronRight size={12} /></button>}
                   {/* 검진결과·건강분석은 전담 에이전트가 이어서 본다 — 질문을 그대로 넘겨 다시 묻지 않게 한다 */}
                   {m.doctor && <button className="hidock-doc" onClick={() => { try { if (typeof _doctorSeed !== "undefined") _doctorSeed = m.q || lastQRef.current || null; } catch (e) {} setOpen(false); go("ai"); }}>🩺 하이-나의 주치의 연결 <ChevronRight size={12} /></button>}
                   {m.buttons && m.buttons.length > 0 && <div className="hidock-btns">{m.buttons.map((b) => <button key={b} onClick={() => chipClick(m, b)}>{b}</button>)}</div>}
@@ -44791,11 +45913,34 @@ function AgentDock({ onGo }) {
             {(() => { let mm = null; try { mm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
               return hidockQuicks(mm).map((q) => <button key={q} onClick={() => send(q)}>{q}</button>); })()}
           </div>}
+          {/* 듣는 중 — 중간 결과를 그대로 보여주고 중지 버튼을 같이 둔다(말이 어떻게 들리는지 보여야 다시 말씀하신다) */}
+          {lang !== "en" && (listening || interim) && (
+            <div className="hidock-listening">
+              <span className="hidock-ear">🎙 듣고 있어요…</span>
+              {interim && <span className="hidock-itm">“{interim}”</span>}
+              {/* 중지는 취소다 — 잘못 말한 것을 물리려고 누르는 자리이므로 지금까지 들은 말을 전송하지 않는다 */}
+              <button onClick={() => { try { if (typeof hiVoiceStop === "function") hiVoiceStop({ drop: true }); } catch (e) {} }}><X size={12} /> 중지</button>
+            </div>
+          )}
+          {/* 읽어주는 중 — 중지·이어 듣기·다시 듣기 */}
+          {lang !== "en" && (speaking || more) && (
+            <div className="hidock-speaking">
+              <span className="hidock-wave"><i /><i /><i /></span>
+              <span>{speaking ? "읽어드리는 중…" : "여기까지 읽어드렸어요"}</span>
+              {speaking && <button onClick={stopSpeak}><X size={12} /> 중지</button>}
+              {!speaking && more && <button onClick={sayMore}><Play size={12} /> 이어 듣기</button>}
+              {!speaking && <button onClick={sayAgain}><RotateCcw size={12} /> 다시 듣기</button>}
+            </div>
+          )}
           <div className="hidock-input">
-            {sttOK && <button className={"hidock-mic" + (listening ? " on" : "")} onClick={startStt} title="음성으로 말하기"><Mic size={16} /></button>}
+            {/* 영문 모드에서는 마이크를 내보내지 않는다 — 한국어 코퍼스뿐이라 되는 척이 더 나쁘다.
+                미지원 브라우저에서는 숨기지 않고 눌러보면 이유와 대안을 말풍선으로 알린다. */}
+            {lang !== "en" && <button className={"hidock-mic" + (listening ? " on" : "") + (sttOK ? "" : " off")} onClick={startStt}
+              aria-pressed={listening} title={sttOK ? (listening ? "그만 듣기" : "음성으로 말하기") : "이 브라우저는 음성 입력을 지원하지 않아요"}>
+              {listening ? <X size={16} /> : <Mic size={16} />}</button>}
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} enterKeyHint="send"
               onFocus={() => { try { setTimeout(() => { if (endRef.current) endRef.current.scrollIntoView({ block: "end" }); }, 250); } catch (e) {} }}
-              placeholder={listening ? "듣고 있어요…" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘"} />
+              placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘"} />
             <button className={"hidock-send" + (input.trim() ? " on" : "")} onClick={() => send()} aria-label="보내기"><Send size={15} /></button>
           </div>
         </div>
@@ -44850,6 +45995,36 @@ function AgentOpsConsole() {
         <div className="hiops-sec" style={{ display: "block" }}>답변불가·오프토픽 주간 리포트 <span>(최근 7일 {r.total}건)</span>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>{Object.entries(r.byType).map(([k, v]) => <span key={k} className="cbadge" style={{ background: "#FFF3E6", color: "#B45309" }}>{L[k] || k} {v}</span>)}</div>
         </div> ); })()}
+      {(() => { /* ── 음성·글자 채널(D9) — 새 이벤트 없이 **라벨만**으로 갈라 본다 ──
+        ⚠️ 여기서 숫자를 만들지 않는다. 비율은 분모가 실제로 기록된 원천(턴 대장)에만 붙이고,
+           대장이 비어 있으면 「측정 대기」라고 적는다. 그럴듯한 수를 채우는 순간 관제탑이 아니라 장식이 된다.
+           원천이 셋(턴 대장·미답변 로그·완결 이벤트)이라 세는 대상도 다르다 — 합치지 않고 나란히 적는다. */
+        const ch = (typeof telemChannelStats === "function") ? telemChannelStats() : null;
+        if (!ch) return null;
+        const T = ch.turns, V = T.voice, X = T.text;
+        const pct = (a, b) => (b ? Math.round(a / b * 1000) / 10 : null);
+        const share = pct(V.turns, T.total);
+        const sigN = (ch.signals.byVia || {}).voice || 0;
+        const ms = (n) => (n == null ? "—" : n.toLocaleString() + "ms");
+        const G = { background: "#F8FAFC", color: "#475569" }, W = { background: "#FFF3E6", color: "#B45309" }, N = { background: "#EFF6FF", color: "#1D4ED8" };
+        return (
+          <div className="hiops-sec" style={{ display: "block" }}>음성·글자 채널 <span>(입력 경로 라벨 — 퍼널 이벤트가 아닙니다)</span>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              {T.total
+                ? <><span className="cbadge" style={N}>음성 비중 {share}% ({V.turns.toLocaleString()}/{T.total.toLocaleString()}턴)</span>
+                    <span className="cbadge" style={V.missRate ? W : G}>음성 미답변 {V.missRate == null ? "—" : V.missRate + "%"} ({V.miss}/{V.turns})</span>
+                    <span className="cbadge" style={G}>글자 미답변 {X.missRate == null ? "—" : X.missRate + "%"} ({X.miss}/{X.turns})</span>
+                    <span className="cbadge" style={N}>음성 평균 응답 {ms(V.avgMs)} · p95 {ms(V.p95Ms)}</span>
+                    <span className="cbadge" style={G}>글자 평균 응답 {ms(X.avgMs)} · p95 {ms(X.p95Ms)}</span>
+                    {(V.timed < V.turns || X.timed < X.turns) && <span className="cbadge" style={G}>시간 기록 {(V.timed + X.timed).toLocaleString()}/{T.total.toLocaleString()}턴</span>}</>
+                : <span className="cbadge" style={G}>턴 대장 비어 있음 — 음성 비중·미답변율·응답시간 측정 대기(telemTurn 호출부 배선 필요)</span>}
+              <span className="cbadge" style={ch.unanswered.voice ? W : G}>미답변 로그 · 음성 {ch.unanswered.voice} / 글자 {ch.unanswered.text} (전체 {ch.unanswered.total})</span>
+              <span className="cbadge" style={G}>신호 라벨 · 음성 {sigN} (라벨 {ch.signals.labeled}/{ch.signals.total})</span>
+              <span className="cbadge" style={G}>완결 이벤트 · 음성 {ch.events.voice} / 글자 {ch.events.text} (라벨 {ch.events.labeled}/{ch.events.total})</span>
+            </div>
+            <div className="chnote" style={{ marginTop: 6 }}>※ 원천 — 턴 대장(hifin_telem_turns) · 미답변 로그(hifin_hi_unanswered) · 완결 이벤트(hifin_events). 셋은 세는 대상이 달라 합산하지 않습니다. 라벨이 없는 기록은 글자로 세지 않습니다(미배선 화면과 글자 입력은 다른 사실).</div>
+          </div>
+        ); })()}
       <div className="hiops-sec">미답변 로그 <span>({misses.length}건 · 최근순)</span>
         <button className="hiops-run" onClick={runLoop}><RefreshCw size={13} /> 주간 학습 루프 실행</button></div>
       <div className="hiops-list">{misses.slice(-10).reverse().map((m, i) => (
