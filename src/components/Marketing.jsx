@@ -34,7 +34,7 @@ const MKT_CREATIVE = [
     gen: {
       title: "밥 먹고 나면 유독 졸리다면 — 식후 혈당 신호일 수 있어요", thumbHead: "식후혈당\n관리 시작", thumbSub: "40대 혈당 관리", ratio: "9:16", bgm: "잔잔 → 긴장감 있는 비트 → 밝게",
       /* 실제 제작본 — 있으면 생성 모달이 시뮬레이션 플레이어 대신 이 영상을 재생한다(scripts/promo_render.mjs · PAGE=렌더_쇼츠.html) */
-      film: { src: "./data/promo/hifin_shorts_bloodsugar_30s.mp4", poster: "./data/promo/hifin_shorts_bloodsugar_poster.jpg" },
+      film: { src: "./data/promo/hifin_shorts_bloodsugar_30s.mp4?v=3", poster: "./data/promo/hifin_shorts_bloodsugar_poster.jpg" },
       scenes: [
         ["0–6초", "클로즈업 · 점심 뒤 책상에서 조는 40대", "밥 먹고 나면, 유독 졸리고 피곤하세요?", "훅"],
         ["6–13초", "식후 혈당 급상승·급하강 그래프(개념도)", "그건, 식후 혈당이 급하게 오르내린다는 신호일 수 있어요", "문제"],
@@ -171,7 +171,7 @@ const _MKT_EVENTS = [
 /* ── 기업 이미지 홍보 — 2분 기업 홍보영상(한글 자막 번인). 상품 광고가 아니라 "어떤 회사인가"를 보여주는 자리.
    영상 파일은 data/promo/ 아래 정적 자산 — 교체할 때는 같은 이름으로 덮어쓰면 된다(scripts/promo_render.mjs). ── */
 const MKT_CORP_FILM = {
-  src: "./data/promo/hizencare_promo_2m.mp4", poster: "./data/promo/poster.jpg",
+  src: "./data/promo/hizencare_promo_2m.mp4?v=2", poster: "./data/promo/poster.jpg",
   acts: [["01", "검진", "0:00"], ["02", "준비", "0:13"], ["03", "돌봄", "0:39"], ["04", "평생", "0:56"], ["05", "환원", "1:27"], ["06", "나눔", "1:42"]],
 };
 function MktCorpFilm() {
