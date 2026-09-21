@@ -30,14 +30,17 @@ const MKT_SEGMENTS = [
 // AI 크리에이티브 포맷 + 실제 생성 데모 데이터
 const MKT_CREATIVE = [
   {
-    fmt: "유튜브 15초 쇼츠", ic: "video", target: "당뇨 위험 40대", copy: "\"식후 혈당, 방치하면 안 돼요\" — 3초 훅 + 제품 + CTA", color: "#EF4444", kind: "video",
+    fmt: "유튜브 30초 쇼츠", ic: "video", target: "당뇨 위험 40대", copy: "\"밥 먹고 나면 유독 졸리세요?\" — 훅 + 검진 분석 + 맞춤 영양제 + CTA", color: "#EF4444", kind: "video",
     gen: {
-      title: "식후 혈당, 이대로 두면 큰일나요 (40대 필수)", thumbHead: "식후혈당\n관리 시작", thumbSub: "40대 당뇨 예방", ratio: "9:16", bgm: "잔잔 → 긴장감 있는 비트",
+      title: "밥 먹고 나면 유독 졸리다면 — 식후 혈당 신호일 수 있어요", thumbHead: "식후혈당\n관리 시작", thumbSub: "40대 혈당 관리", ratio: "9:16", bgm: "잔잔 → 긴장감 있는 비트 → 밝게",
+      /* 실제 제작본 — 있으면 생성 모달이 시뮬레이션 플레이어 대신 이 영상을 재생한다(scripts/promo_render.mjs · PAGE=렌더_쇼츠.html) */
+      film: { src: "./data/promo/hifin_shorts_bloodsugar_30s.mp4", poster: "./data/promo/hifin_shorts_bloodsugar_poster.jpg" },
       scenes: [
-        ["0–3초", "클로즈업 · 밥 먹고 졸려하는 40대", "밥 먹고 나면 유독 졸리고 피곤하세요?", "훅"],
-        ["3–7초", "식후 혈당 스파이크 그래프 애니메이션", "그건 '식후 혈당 급상승' 신호일 수 있어요", "문제"],
-        ["7–11초", "혈당케어(바나바·여주) + CGM 제품샷", "식후 혈당 관리, 이제 간편하게", "솔루션"],
-        ["11–15초", "HI-Fin 로고 + 버튼 클로즈업", "무료 건강분석 받기 →", "CTA"],
+        ["0–6초", "클로즈업 · 점심 뒤 책상에서 조는 40대", "밥 먹고 나면, 유독 졸리고 피곤하세요?", "훅"],
+        ["6–13초", "식후 혈당 급상승·급하강 그래프(개념도)", "그건, 식후 혈당이 급하게 오르내린다는 신호일 수 있어요", "문제"],
+        ["13–19초", "집에서 리포트 확인 · 검진 연동·AI 분석", "하이핀은 내 검진 결과로, 혈당 위험을 먼저 읽어 드립니다", "분석"],
+        ["19–25초", "맞춤 영양제(바나바·여주·계피) 제품샷", "검진 결과에 맞춘, 나만의 맞춤 영양제로", "솔루션"],
+        ["25–30초", "활기차게 걷는 모습 + 버튼", "무료 건강분석 받기 →", "CTA"],
       ],
       caption: "식후 혈당 스파이크는 당뇨의 시작일 수 있습니다. 40대라면 지금 관리하세요.",
       hashtags: ["#식후혈당", "#혈당관리", "#당뇨예방", "#혈당케어", "#40대건강"],
@@ -291,7 +294,9 @@ function CreativeGenModal({ creative, onClose }) {
         <div className="ontmbody">
           {creative.kind === "video" && (<>
             <div className="mktgen-video">
-              <AdVideoPlayer creative={creative} />
+              {g.film
+                ? <div className="mktgen-film"><video src={g.film.src} poster={g.film.poster} controls autoPlay playsInline preload="metadata" controlsList="nodownload" /><div className="mktgen-filmtag">실제 제작본 · 한글 자막</div></div>
+                : <AdVideoPlayer creative={creative} />}
               <div className="mktgen-scenes">
                 <div className="mktgen-lbl">스토리보드 · {g.ratio} · BGM {g.bgm}</div>
                 {g.scenes.map(([t, vis, sub, tag], i) => (

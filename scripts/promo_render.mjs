@@ -8,7 +8,7 @@ const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chro
 const p = await b.newPage();
 p.on('console', m => { const t = m.text(); if (/error|fail/i.test(t)) console.log('[page]', t); });
 p.on('pageerror', e => console.log('[pageerror]', e.message));
-await p.goto('http://localhost:5799/docs/hi_promo/' + encodeURIComponent('렌더.html') + (process.env.VBPS ? '?vbps=' + process.env.VBPS : ''), { waitUntil: 'load', timeout: 60000 });
+await p.goto('http://localhost:5799/docs/hi_promo/' + encodeURIComponent(process.env.PAGE || '렌더.html') + (process.env.VBPS ? '?vbps=' + process.env.VBPS : ''), { waitUntil: 'load', timeout: 60000 });
 await p.waitForFunction('window.__ready===true', { timeout: 30000 });
 const ws = createWriteStream(OUT);
 await p.exposeFunction('__chunk', (b64) => new Promise(r => ws.write(Buffer.from(b64, 'base64'), r)));

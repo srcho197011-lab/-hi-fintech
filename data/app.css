@@ -5436,3 +5436,7 @@ body.easyread .hidock-who, body.easyread .hidock-cite, body.easyread .hidock-pen
 .mktfilm-full{margin-top:auto;width:100%}
 .mktfilm-note{margin-top:10px;font-size:10.8px;line-height:1.55;color:#8FA3CC}
 @media(max-width:860px){.mktfilm-wrap{grid-template-columns:1fr}.mktfilm-acts{grid-template-columns:repeat(3,1fr)}}
+/* AI 크리에이티브 생성 모달 — 실제 제작본 영상(세로 9:16) */
+.mktgen-film{position:relative;flex:0 0 auto;width:min(230px,42vw)}
+.mktgen-film video{width:100%;aspect-ratio:9/16;background:#000;border-radius:16px;border:1px solid rgba(255,255,255,.14);display:block;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.mktgen-filmtag{margin-top:7px;text-align:center;font-size:10.8px;font-weight:700;color:#FCA5A5}
