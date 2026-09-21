@@ -8,13 +8,13 @@ const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chro
 const p = await b.newPage();
 p.on('console', m => { const t = m.text(); if (/error|fail/i.test(t)) console.log('[page]', t); });
 p.on('pageerror', e => console.log('[pageerror]', e.message));
-await p.goto('http://localhost:5799/docs/hi_promo/' + encodeURIComponent('렌더.html'), { waitUntil: 'load', timeout: 60000 });
+await p.goto('http://localhost:5799/docs/hi_promo/' + encodeURIComponent('렌더.html') + (process.env.VBPS ? '?vbps=' + process.env.VBPS : ''), { waitUntil: 'load', timeout: 60000 });
 await p.waitForFunction('window.__ready===true', { timeout: 30000 });
 const ws = createWriteStream(OUT);
 await p.exposeFunction('__chunk', (b64) => new Promise(r => ws.write(Buffer.from(b64, 'base64'), r)));
 const timer = setInterval(async () => { try { console.log(await p.$eval('#log', e => e.textContent)); } catch (e) {} }, 15000);
 const info = await p.evaluate(async () => {
-  const { blob, mime, srt } = await window.__run({});
+  const { blob, mime, srt } = await window.__run({ vbps: Number(new URLSearchParams(location.search).get('vbps')) || undefined });
   const buf = new Uint8Array(await blob.arrayBuffer()); const STEP = 3 * 1024 * 1024;
   for (let o = 0; o < buf.length; o += STEP) { let s = ''; const part = buf.subarray(o, o + STEP); for (let i = 0; i < part.length; i += 0x8000) s += String.fromCharCode.apply(null, part.subarray(i, i + 0x8000)); await window.__chunk(btoa(s)); }
   return { mime, size: buf.length, srt };

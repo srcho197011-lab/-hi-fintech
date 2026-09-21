@@ -5423,3 +5423,16 @@ body.easyread .hidock-who, body.easyread .hidock-cite, body.easyread .hidock-pen
 }
 .onttbl tr.myrev .mono0 em.finf,.onttbl tr.mysub .mono0 em.finf{ color:#8fb4d8; }
 @media print{ .onttbl .mono0 em.finf{ color:#555; } }
+
+/* ── 마케팅 온톨로지 › 기업 이미지 홍보(2분 기업 홍보영상) ── */
+.mktfilm-wrap{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:14px;align-items:stretch}
+.mktfilm-v{width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;border:1px solid rgba(255,255,255,.12);display:block}
+.mktfilm-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.mktfilm-msg{font-size:15px;font-weight:800;line-height:1.5;color:#fff;padding:12px 14px;border-radius:12px;background:linear-gradient(135deg,rgba(15,42,92,.9),rgba(29,78,216,.55));border:1px solid rgba(255,255,255,.12)}
+.mktfilm-acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mktfilm-act{display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:9px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#E2E8F0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.mktfilm-act:hover{background:rgba(245,130,31,.18);border-color:#F5821F}
+.mktfilm-act b{color:#F5821F;font-size:11px}.mktfilm-act em{margin-left:auto;font-style:normal;font-size:10.5px;color:#94A3B8;font-weight:500}
+.mktfilm-full{margin-top:auto;width:100%}
+.mktfilm-note{margin-top:10px;font-size:10.8px;line-height:1.55;color:#8FA3CC}
+@media(max-width:860px){.mktfilm-wrap{grid-template-columns:1fr}.mktfilm-acts{grid-template-columns:repeat(3,1fr)}}

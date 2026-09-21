@@ -165,6 +165,34 @@ const _MKT_EVENTS = [
   ["creative", "AI 크리에이티브 생성", (s) => `${s} 광고영상·시안 자동 제작 완료`, "#EC4899"],
   ["launch", "캠페인 집행", (s) => `${s} 채널 광고 송출 시작`, "#34D399"],
 ];
+/* ── 기업 이미지 홍보 — 2분 기업 홍보영상(한글 자막 번인). 상품 광고가 아니라 "어떤 회사인가"를 보여주는 자리.
+   영상 파일은 data/promo/ 아래 정적 자산 — 교체할 때는 같은 이름으로 덮어쓰면 된다(scripts/promo_render.mjs). ── */
+const MKT_CORP_FILM = {
+  src: "./data/promo/hizencare_promo_2m.mp4", poster: "./data/promo/poster.jpg",
+  acts: [["01", "검진", "0:00"], ["02", "준비", "0:13"], ["03", "돌봄", "0:39"], ["04", "평생", "0:56"], ["05", "환원", "1:27"], ["06", "나눔", "1:42"]],
+};
+function MktCorpFilm() {
+  const vref = useRef(null);
+  const jump = (mmss) => { const v = vref.current; if (!v) return; const [m, s] = mmss.split(":").map(Number); v.currentTime = m * 60 + s; v.play().catch(() => {}); };
+  const full = () => { const v = vref.current; if (v && v.requestFullscreen) v.requestFullscreen(); };
+  return (
+    <div className="ontpanel mktfilm">
+      <div className="ontph"><Video size={15} color="#F5821F" /> 기업 이미지 홍보 <span>· 하이젠케어 기업 홍보영상 (2분 · 한글 자막)</span></div>
+      <div className="mktfilm-wrap">
+        <video ref={vref} className="mktfilm-v" src={MKT_CORP_FILM.src} poster={MKT_CORP_FILM.poster} controls preload="metadata" playsInline controlsList="nodownload" />
+        <div className="mktfilm-side">
+          <div className="mktfilm-msg">검진에서 시작해,<br />평생을 돌보고,<br />함께 나누는 기업.</div>
+          <div className="mktfilm-acts">{MKT_CORP_FILM.acts.map(([n, t, at]) => (
+            <button key={n} className="mktfilm-act" onClick={() => jump(at)}><b>{n}</b>{t}<em>{at}</em></button>
+          ))}</div>
+          <button className="mktbtn mktfilm-full" onClick={full}>전체화면으로 보기</button>
+        </div>
+      </div>
+      <div className="mktfilm-note">※ 화면은 시연 환경입니다. 검진대비보험의 보장·인수는 보험사 심사에 따르며, 측정 기기는 검진 결과에 따라 제공됩니다. AI 분석은 건강 정보이며 진단이 아닙니다.</div>
+    </div>
+  );
+}
+
 function MktLiveAgent() {
   const [running, setRunning] = useState(true);
   const [speed, setSpeed] = useState(2);
@@ -501,6 +529,7 @@ function MarketingSection({ onGo }) {
             </div>
           ))}</div>
         </div>
+        <MktCorpFilm />
         <div className="ontpanel">
           <div className="ontph"><Video size={15} color="#F472B6" /> AI 크리에이티브 스튜디오 <span>· 광고영상·시안 자동 생성</span></div>
           <div className="mktcrea">{MKT_CREATIVE.map((c, i) => (
