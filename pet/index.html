@@ -3220,9 +3220,14 @@ function HipetLogin({onOk}){
 function App(){
   const [active,setActive]=useState("홈");
   const [open,setOpen]=useState(false);
-  const [gate,setGate]=useState(()=>SLS.get("hipet_gate",false));
+  /* 하이핀 → 하이펫 자동 로그인(SSO): 하이핀이 같은 오리진 localStorage에 남긴 1회용 토큰(2분 유효)을 첫 로드에서 소비한다.
+     토큰이 없거나 만료됐으면 평소처럼 하이펫 자체 게이트. 토큰은 읽는 즉시 지운다(재사용 차단). */
+  const sso=React.useMemo(()=>{ try{ const raw=localStorage.getItem("hifin_sso_hipet"); if(!raw) return null; localStorage.removeItem("hifin_sso_hipet");
+      const t=JSON.parse(raw); if(!t||!t.name||!t.exp||Date.now()>t.exp) return null; return t; }catch{ return null; } },[]);
+  const [gate,setGate]=useState(()=>!!sso || SLS.get("hipet_gate",false));
   useEffect(()=>{ SLS.set("hipet_gate",gate); },[gate]);
-  const [admin,setAdmin]=useState(true); // 조성래 운영자 자동 로그인
+  const [admin,setAdmin]=useState(()=>sso ? sso.role==="ADMIN" : SLS.get("hipet_admin",true)); // 하이핀 세션 역할 승계(관리자→운영자), 없으면 기존값
+  useEffect(()=>{ if(!sso) return; const t=setTimeout(()=>{ if(window.__hipetToast) window.__hipetToast(`하이핀 로그인 승계 · ${sso.name} 님 자동 로그인`); },400); return ()=>clearTimeout(t); },[]);
   useEffect(()=>{ SLS.set("hipet_admin",admin); },[admin]);
   const [toastMsg,setToastMsg]=useState(null);
   useEffect(()=>{ window.__hipetToast=(m)=>{ setToastMsg(m); clearTimeout(window.__hipetToastT); window.__hipetToastT=setTimeout(()=>setToastMsg(null),2600); }; return ()=>{ window.__hipetToast=null; }; },[]);

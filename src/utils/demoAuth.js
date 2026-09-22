@@ -26,7 +26,23 @@ const USERS_KEY = "hifin_users";       // 실명확인 후 가입한 일반 회�
 try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
 function authCurrent() { try { const a = JSON.parse(sessionStorage.getItem(AUTH_KEY) || "null"); if (a && a.role === "GUEST") { try { sessionStorage.removeItem(AUTH_KEY); } catch (e2) {} try { localStorage.removeItem(DEMO_SESSION_KEY); } catch (e2) {} return null; } return a; } catch (e) { return null; } }   // 콘텐츠 보호(2026-07-24): 기존 GUEST 세션도 발견 즉시 파기
 function authSet(u) { try { sessionStorage.setItem(AUTH_KEY, JSON.stringify(u)); } catch (e) {} demoNotify(); }
-function appLogout() { try { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); } catch (e) {} demoNotify(); }
+function appLogout() { try { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); hipetSsoRevoke(); } catch (e) {} demoNotify(); }
+
+/* ══ 하이펫 자매앱 자동 로그인(SSO 핸드오프) ══
+   두 앱은 같은 오리진(/ 과 /pet/)이라 localStorage를 공유한다. 하이핀에서 하이펫 메뉴를 누르는 순간
+   현재 로그인 사용자를 짧은 유효기간(2분)의 토큰으로 적어 두고, 하이펫이 첫 로드에서 읽어 게이트를 통과시킨다.
+   토큰은 1회용(하이펫이 읽고 즉시 삭제) — 비로그인 상태에서 하이펫을 직접 열면 평소처럼 하이펫 자체 로그인이 뜬다. */
+const HIPET_SSO_KEY = "hifin_sso_hipet";
+function hipetSsoIssue() {
+  try {
+    const u = authCurrent(); if (!u || !u.name) return false;
+    const ts = Date.now();
+    const sig = (typeof vaultHash === "function") ? vaultHash("hipet-sso|" + u.email + "|" + u.role + "|" + ts).slice(0, 16) : "";
+    localStorage.setItem(HIPET_SSO_KEY, JSON.stringify({ name: u.name, email: u.email || "", role: u.role || "MEMBER", ts, exp: ts + 120000, sig }));
+    return true;
+  } catch (e) { return false; }
+}
+function hipetSsoRevoke() { try { localStorage.removeItem(HIPET_SSO_KEY); localStorage.removeItem("hipet_gate"); localStorage.removeItem("hipet_admin"); } catch (e) {} }
 function usersAll() { try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); } catch (e) { return []; } }
 function usersSave(l) { try { localStorage.setItem(USERS_KEY, JSON.stringify(l)); } catch (e) {} }
 function userFindByEmail(email) { const e = (email || "").trim().toLowerCase(); return usersAll().find((u) => (u.email || "").toLowerCase() === e) || null; }

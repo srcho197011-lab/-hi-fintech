@@ -21,7 +21,8 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
   /* 백업 시스템(backupRestore.js) */ "hifin_backup_last", "hifin_restore_undo",
   /* 동의 게이트(consentGate.js — 리뉴얼 R1): 체험 회원 동의 상태(종류별 on·취득일) */ "hifin_consent2",
   /* 음성 대화(P4-1 계측·P1-2 읽어주기): 채널 턴 대장(hiTelemetry.js — 채널·소요ms·답변여부만) ·
-     읽어주기 켜짐 기억(hiVoice.js — 기본 꺼짐, 회원이 켠 것만 "1") */ "hifin_telem_turns", "hifin_hi_read"];
+     읽어주기 켜짐 기억(hiVoice.js — 기본 꺼짐, 회원이 켠 것만 "1") */ "hifin_telem_turns", "hifin_hi_read",
+  /* 하이펫 자매앱 SSO(demoAuth.js hipetSsoIssue/Revoke): 1회용 2분 핸드오프 토큰 + 하이펫 게이트·운영자 플래그(같은 오리진 /pet/ 이 읽음 — 로그아웃 시 함께 회수) */ "hifin_sso_hipet", "hipet_gate", "hipet_admin"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
@@ -38,7 +39,7 @@ const HIFIN_KEY_GROUPS = [
   { g: "consent", ko: "동의·보안", pats: ["hifin_consent_", "hifin_access_log", "hifin_guard", "hifin_login_lock", "hifin_reggate", "hifin_mydata"], sensitive: "높음(감사 대상)" },
   { g: "ops", ko: "계측·운영", pats: ["hifin_events", "hifin_consent2", "hifin_telem", "hifin_wp_log", "hifin_lead", "hifin_handoff_", "hifin_hm_", "hifin_nodes", "hifin_ocr", "hifin_backup"], sensitive: "낮음(경량 식별자만)" },
   { g: "growth", ko: "추천·거버넌스·기타", pats: ["hifin_ref_", "hifin_gov_", "hifin_sharing", "hifin_share", "hifin_divi", "hifin_g2_", "hifin_g4_", "hifin_pu_", "pi_", "hifin_easyread", "hifin_connectors"], sensitive: "낮음" },
-  { g: "session", ko: "세션(휘발)", pats: ["hifin_sid", "hifin_hm_code", "hifin_hi_welcome", "hifin_dl_ready", "hifin_force_onboard"], sensitive: "낮음" },
+  { g: "session", ko: "세션(휘발)", pats: ["hifin_sid", "hifin_hm_code", "hifin_hi_welcome", "hifin_dl_ready", "hifin_force_onboard", "hifin_sso_hipet", "hipet_gate", "hipet_admin"], sensitive: "낮음(1회용 토큰·게이트 플래그)" },
 ];
 function hifinKeyGroup(key) {
   for (const gr of HIFIN_KEY_GROUPS) for (const p of gr.pats) if (String(key).indexOf(p) === 0) return gr;

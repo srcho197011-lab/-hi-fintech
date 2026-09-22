@@ -175,7 +175,8 @@ export default function App() {
                 )}
                 {/* 하이펫 연계 — 치료비 케어 바로 아래. 자매앱(pet/)은 별도 번들이라 섹션이 아니라 링크로 연다(새 탭, 하이핀 세션 유지) */}
                 {x.k === "insurance" && (
-                  <a className="snav snav-link" href="./pet/" target="_blank" rel="noopener" title="하이펫 — 반려동물 건강·치료비 케어 (새 창)">
+                  <a className="snav snav-link" href="./pet/?sso=1" target="_blank" rel="noopener" title="하이펫 — 반려동물 건강·치료비 케어 (새 창)"
+                    onClick={() => { if (typeof hipetSsoIssue === "function") hipetSsoIssue(); }}>
                     <span className="sico" style={{ background: "linear-gradient(135deg,#F59E0B,#F97316)" }}><PawPrint size={18} color="#fff" /></span> {t("nav.hipet", "하이펫 · 반려동물 케어")}<span className="snav-ext">↗</span>
                   </a>
                 )}
