@@ -17,6 +17,8 @@ h1{font-size:19pt;font-weight:800;letter-spacing:-.5px;margin:0 0 4px;line-heigh
 h2{font-size:13pt;font-weight:800;margin:22px 0 7px;padding:12px 0 0 9px;border-left:4px solid var(--navy);
   border-top:1.5px solid var(--navy);letter-spacing:-.3px;page-break-after:avoid}
 h3{font-size:11pt;font-weight:800;margin:15px 0 5px;color:var(--sub);page-break-after:avoid}
+h4{font-size:10.2pt;font-weight:800;margin:12px 0 4px;color:var(--navy);page-break-after:avoid}
+h4.h5{font-size:9.6pt;color:var(--sub);font-weight:700}
 p{margin:0 0 9px}
 .sub1{font-size:12pt;color:var(--sub);font-weight:700;margin:0 0 10px;letter-spacing:-.2px}
 .meta{font-size:9pt;color:var(--mute);padding-bottom:10px;border-bottom:2.5px solid var(--navy);margin-bottom:16px}
@@ -84,13 +86,15 @@ def convert(md):
             out.append("<table><thead><tr>" + "".join(f"<th>{inline(c)}</th>" for c in hdr) + "</tr></thead><tbody>"
                        + "".join("<tr>" + "".join(f"<td>{inline(c)}</td>" for c in r) + "</tr>" for r in rows)
                        + "</tbody></table>"); continue
+        if ln.startswith("##### "): out.append(f"<h4 class=\"h5\">{inline(ln[6:])}</h4>"); i += 1; continue
+        if ln.startswith("#### "): out.append(f"<h4>{inline(ln[5:])}</h4>"); i += 1; continue
         if ln.startswith("### "): out.append(f"<h3>{inline(ln[4:])}</h3>"); i += 1; continue
         if ln.startswith("## "):  out.append(f"<h2>{inline(ln[3:])}</h2>"); i += 1; continue
         if ln.startswith("# "):   out.append(f"<h1>{inline(ln[2:])}</h1>"); i += 1; continue
-        if ln.startswith("> "):
+        if ln.startswith(">"):
             buf = []
-            while i < len(lines) and lines[i].startswith("> "):
-                buf.append(lines[i][2:]); i += 1
+            while i < len(lines) and lines[i].startswith(">"):
+                buf.append(lines[i][2:] if lines[i].startswith("> ") else lines[i][1:]); i += 1
             out.append("<blockquote><p>" + inline("\n".join(buf)).replace("\n", "<br>") + "</p></blockquote>"); continue
         if re.match(r'^\s*[-*] ', ln):
             buf = []
@@ -109,9 +113,11 @@ def convert(md):
         if ln.strip() == "---": out.append("<hr>"); i += 1; continue
         if not ln.strip(): i += 1; continue
         buf = []
-        while i < len(lines) and lines[i].strip() and not re.match(r'^(#{1,3} |[-*] |\d+\. |\||>|```|---)', lines[i]):
+        while i < len(lines) and lines[i].strip() and not re.match(r'^(#{1,6} |[-*] |\d+\. |\||>|```|---)', lines[i]):
             buf.append(lines[i]); i += 1
         if buf: out.append("<p>" + inline("\n".join(buf)).replace("\n", "<br>") + "</p>")
+        else:   # 어느 분기도 이 줄을 가져가지 못한 경우 — 본문으로 내보내고 한 줄 넘어간다(파서가 제자리에 머물지 않게)
+            out.append("<p>" + inline(ln) + "</p>"); i += 1
     return "\n".join(out)
 
 src, dst = sys.argv[1], sys.argv[2]
