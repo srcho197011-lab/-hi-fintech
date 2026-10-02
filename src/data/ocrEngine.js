@@ -89,43 +89,26 @@ function parseCheckupText(raw) {
   return out;
 }
 
-/* ── 클라우드 OCR(OCR.space) — 백엔드 없이 브라우저에서 직접 호출(CORS 허용). 한글·표 인식 우수 ──
-   ⚠️ 무료키 'helloworld'는 제한적(파일 1MB·공용 rate limit). 형 전용 무료키(ocr.space) 발급 시 아래 교체.
-   ⚠️ 개인정보: 실서비스는 국내 처리(네이버 CLOVA OCR) 또는 자체 OCR 권장 — OCR.space는 시연/테스트용. */
-/* 무료키 발급: https://ocr.space/ocrapi (개인 무료키는 파일 5MB·월 25,000건). localStorage 'hifin_ocr_key'로 교체 가능
-   ⚠️ 아래 기본키는 운영자 발급 무료키(데모용) — 프론트 노출 키이므로 정식 서비스 전 서버측(CLOVA 등)으로 이관 */
-const OCRSPACE_DEFAULT = "K82211429688957";
-let OCRSPACE_KEY = (() => { try { return localStorage.getItem("hifin_ocr_key") || OCRSPACE_DEFAULT; } catch (e) { return OCRSPACE_DEFAULT; } })();
-function setOcrKey(k) { try { localStorage.setItem("hifin_ocr_key", k); OCRSPACE_KEY = k; } catch (e) {} }
+/* ── 결과지 이미지는 기기 밖으로 나가지 않는다 (대표 지시 2026-10-02) ──
+   종전에는 클라우드 OCR(OCR.space·해외)에 원본 이미지를 올려 인식했으나, 회원 검진 결과는 민감정보라 외부 전송 경로를 없앴다.
+   지금은 브라우저 안의 Tesseract(이미지)·PDF.js(PDF)만 쓴다 — 인식 엔진·언어 데이터는 CDN에서 내려받지만 **파일은 올라가지 않는다**.
+   국내 처리(CLOVA 등) 서버 경로가 필요해지면 서버측에서만 호출하고, 프런트에서 외부로 직접 보내는 코드는 다시 두지 않는다. */
+try { if (typeof localStorage !== "undefined") localStorage.removeItem("hifin_ocr_key"); } catch (e) {}   /* 예전에 저장된 외부 OCR 키 제거 */
+
 async function _compressImage(file, maxW, q) {
   const img = await _fileToImage(file); const s = Math.min(1, (maxW || 1600) / (img.width || 1600));
   const w = Math.round((img.width || 1600) * s), h = Math.round((img.height || 2000) * s);
   const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(img, 0, 0, w, h);
   return await new Promise((res) => c.toBlob((b) => res(b || file), "image/jpeg", q || 0.72));
 }
-async function ocrSpaceImage(file, onProg) {
-  let blob = file; try { if (!file.size || file.size > 950000) blob = await _compressImage(file, 1600, 0.7); } catch (e) {}
-  if (onProg) onProg(0.25);
-  const fd = new FormData();
-  fd.append("file", blob, "checkup.jpg");
-  fd.append("language", "kor"); fd.append("OCREngine", "2"); fd.append("isTable", "true"); fd.append("scale", "true"); fd.append("detectOrientation", "true");
-  const res = await fetch("https://api.ocr.space/parse/image", { method: "POST", headers: { apikey: OCRSPACE_KEY }, body: fd });
-  const j = await res.json();
-  if (onProg) onProg(0.9);
-  if (j && j.IsErroredOnProcessing) throw new Error((j.ErrorMessage && j.ErrorMessage[0]) || "OCR.space error");
-  return (j && j.ParsedResults && j.ParsedResults[0] && j.ParsedResults[0].ParsedText) || "";
-}
 
 /* 실제 파일 → 텍스트 추출 → 항목 파싱 → 확인용 items(빈 값은 직접 입력)
-   이미지: 클라우드 OCR(OCR.space) 우선 → 실패 시 브라우저 Tesseract 폴백. PDF: PDF.js. */
+   이미지: 브라우저 Tesseract. PDF: PDF.js(스캔본은 렌더 후 Tesseract). 어느 경우에도 파일이 외부로 전송되지 않는다. */
 async function realOcrExtract(file, onProg) {
   const isPdf = /pdf/i.test(file.type || "") || /\.pdf$/i.test(file.name || "");
   let text = "", engine = "";
   if (isPdf) { text = await pdfFileToText(file, onProg); engine = "pdf.js"; }
-  else {
-    try { text = await ocrSpaceImage(file, onProg); engine = "ocr.space"; } catch (e) { text = ""; }
-    if (text.replace(/\s/g, "").length < 8) { try { text = await ocrImageFile(file, onProg); engine = "tesseract"; } catch (e) {} }
-  }
+  else { try { text = await ocrImageFile(file, onProg); engine = "tesseract"; } catch (e) { text = ""; } }
   const parsed = parseCheckupText(text);
   const ORDER = (typeof CKUP_ORDER !== "undefined") ? CKUP_ORDER : Object.keys(parsed);
   const L = (typeof CKUP_LOINC !== "undefined") ? CKUP_LOINC : {};
