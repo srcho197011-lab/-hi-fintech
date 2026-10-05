@@ -190,10 +190,10 @@
       "shop": true
     },
     "spread": 1,
-    "voiceAvg": 109,
-    "voiceP95": 126,
-    "textAvg": 345,
-    "textP95": 366,
+    "voiceAvg": 108,
+    "voiceP95": 123,
+    "textAvg": 346,
+    "textP95": 375,
     "n": {
       "voice": 6,
       "text": 6
@@ -340,6 +340,6 @@
       "pass": true
     }
   ],
-  "seconds": 59.3,
+  "seconds": 58.5,
   "pass": true
 }

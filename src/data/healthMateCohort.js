@@ -6,7 +6,7 @@
 
 /* ── 시드 유틸(별도 네임스페이스 — pilotCohort의 rng 소비 순서 불가침) ── */
 function _hmcRng(s) { return _mul32(_hmHash(String(s))); }
-const _HMC = { pros: null, sggIdx: null, sggW: null, session: {}, view: {} };   // 메모리 캐시(저장 금지)
+const _HMC = { pros: null, admins: null, sggIdx: null, sggW: null, session: {}, view: {} };   // 메모리 캐시(저장 금지)
 
 /* ── 지역단 약호 — 구 코드(HM-{약호}-26-{일련}) 재현 전용 ──
    프로 코드는 8H0001~8H9999 단일 번호대로 교체됐다(healthMate.js HM_CODES 주석). 약호는 이제
@@ -399,4 +399,129 @@ function hmcDanAgg(dan) {
   let adv = 0, first = 0, n = 0;
   pros.slice(0, 40).forEach((x) => { const st = hmcProStats(x.code); if (st) { adv += st.advTotal; first += st.firstRate; n++; } });
   return { dan, pros: pros.length, advSum: adv, avgFirst: n ? Math.round(first / n) : 0, sampled: Math.min(40, pros.length) };
+}
+
+/* ══════════════ 운영자 명부(지점장·지역단장·본사) — 운영본부 범위 모델의 단일 소스 ══════════════
+   형 지시(2026-10-05 ⑥): 「지점장은 자기 지점만 보이게 해줘.」
+   전에는 운영본부에 들어온 사람이 **누구든 전국 702명·10만 회원을 다 봤다**. 세션 역할은 3종
+   (ADMIN/MEMBER/GUEST)뿐이고 프로도 ADMIN으로 들어오므로, 「누가 보는가」를 가를 축이 사번뿐이었는데
+   그 사번은 프로(8H####)에만 있었다. 그래서 **운영자에게도 사번을 준다 — 본사 1H · 지역단장 2H · 지점장 3H**(형 확정 2026-10-05).
+
+   ⚠️ 사번대를 프로와 섞지 않는다. 1H·2H·3H와 8H는 첫 글자로 갈린다. 섞으면 hmCodeNorm·hmProOf가
+      운영자를 프로로 해석하고, hifin_handoff_result_<사번> 활동 기록의 주인이 뒤섞인다.
+
+   번호 체계(결정론 — 조직 목록에서 파생, 리터럴 금지) —
+     · 1H0001~  본사(현재 3석). 범위 = 전국.
+     · 2H0001~  지역단장. 시연에 쓰는 강북지역단이 2H0001, 나머지는 dan 정렬 순서.
+     · 3H0001~  지점장.   3H0001 = 은평지점장(시연 기본값), 나머지는 "dan|branch" 정렬 순서.
+   ⚠️ 정렬 기준을 바꾸면 전원이 재번호된다(이름 시드가 _hmcRng("adm|"+code)라서 이름까지 바뀐다).
+      지점이 늘거나 줄면 그 지점 뒤쪽이 밀린다 — 운영자 사번은 실적 키가 아니라 범위 키이므로
+      밀려도 집계가 깨지지는 않지만, 시연 중 사번을 적어 둔 자료는 다시 떠야 한다.
+   ⚠️ 「광역(전국)」·「본사(광역)」은 구 명부 보존용 합성 버킷이다(hmProsGen 주석 참고). 담당자를
+      안 만들면 그 10명이 어느 범위에도 안 들어가 미아가 되므로 규칙대로 만들되 syn 배지를 달아 둔다.
+
+   이 명부는 **시연용 합성 데이터**다 — 실제 인사 시스템 연동이 아니고, 인증도 서버 검증 없이
+   세션 안에서만 성립한다(그 사실을 운영본부 화면이 그대로 적는다). */
+/* 사번대 — 숫자가 작을수록 넓게 본다(형 확정 2026-10-05): 본사 1H · 지역단장 2H · 지점장 3H · 프로 8H */
+const HMA_PREFIX_HQ = "1H";   /* 1H0001~ 본사 */
+const HMA_PREFIX_DAN = "2H";  /* 2H0001~ 지역단장 */
+const HMA_PREFIX_BR = "3H";   /* 3H0001~ 지점장 — 3H0001은 시연 기본값인 은평지점장으로 고정 */
+const HMA_PREFIX = HMA_PREFIX_BR;            /* 안내 문구의 대표 예시 */
+const HMA_DEMO_BRANCH = "은평지점";            /* 3H0001 고정 — 현대해상 시연 기본 계정 */
+const HMA_MAX = 9999;
+const HM_ADMIN_ROLES = [
+  { k: "hq", ko: "본사", scopeKo: "전국", desc: "전국 전체 — 지역단·지점·프로 전원" },
+  { k: "dan", ko: "지역단장", scopeKo: "지역단", desc: "자기 지역단과 그 안의 지점·프로" },
+  { k: "branch", ko: "지점장", scopeKo: "지점", desc: "자기 지점 하나와 그 소속 프로" },
+];
+function hmAdminRole(k) { for (const r of HM_ADMIN_ROLES) if (r.k === k) return r; return null; }
+/* 직책명 — **합성 버킷에는 「…장」을 붙이지 않는다.**
+   ⚠️ 전에는 규칙대로 이름 + "장"을 붙여서 「광역(전국)」 → **광역장**, 「본사(광역)」 → **본사장**이 됐다.
+      실사 조직에 없는 직책인데 명부 검색에 그대로 떠서(실측: 「본사장 · 지점장 · 범위 지점」),
+      보는 사람은 그것을 실제 직책으로 읽는다. 배지(syn)는 렌더에서 빠질 수 있으니 **이름 자체**를 고친다. */
+function hmAdminTitle(role, dan, branch) {
+  if (role === "dan") return String(dan || "").indexOf("광역") === 0 ? "광역 버킷 담당(실사 지역단 아님)" : String(dan || "").replace(/\(전국\)$/, "") + "장";
+  return String(branch || "").indexOf("본사") === 0 ? "본사 버킷 담당(실사 지점 아님)" : String(branch || "").replace(/\(광역\)$/, "") + "장";
+}
+/* 본사 석 — 직책명만 고정하고 이름·입사월은 사번 시드에서 뽑는다 */
+const HMA_HQ_SEATS = ["본사 운영총괄", "본사 운영기획", "본사 데이터운영"];
+const _HMA_PAD = (pre, n) => pre + String(n).padStart(4, "0");
+
+function hmAdminsGen() {
+  if (_HMC.admins) return _HMC.admins;
+  const pros = (typeof hmProsGen === "function") ? hmProsGen() : [];
+  /* 조직 목록은 프로 명부에서 파생한다 — 지점·지역단 리터럴을 여기 두지 않는다 */
+  const dmap = {}, bmap = {};
+  pros.forEach((p) => {
+    const d = p.dan || "광역(전국)", b = p.branch || "본사(광역)";
+    dmap[d] = 1; bmap[d + "|" + b] = (bmap[d + "|" + b] || 0) + 1;
+  });
+  const dans = Object.keys(dmap).sort();            /* 기본 정렬(코드유닛) — 로케일에 흔들리지 않는다 */
+  const brs = Object.keys(bmap).sort();
+  /* 상한 단언 — 접두가 직책별로 갈려 블록 충돌은 없고, 네 자리를 넘는 경우만 막는다 */
+  if (HMA_HQ_SEATS.length > HMA_MAX) throw new Error("운영자 사번 — 본사 석이 1H9999를 넘습니다: " + HMA_HQ_SEATS.length + "석");
+  if (dans.length > HMA_MAX) throw new Error("운영자 사번 — 지역단장이 2H9999를 넘습니다: " + dans.length + "개");
+  if (brs.length > HMA_MAX) throw new Error("운영자 사번 — 지점장이 3H9999를 넘습니다: " + brs.length + "곳");
+  const nm = (rng) => { const sex = rng() < 0.5 ? "여" : "남"; const g = sex === "남" ? _GIVN_M : _GIVN_F; return { name: _pick(rng, _SURN) + _pick(rng, g), sex }; };
+  const mk = (code, role, dan, branch, title, syn) => {
+    const rng = _hmcRng("adm|" + code);
+    const who = nm(rng);
+    return { code, sabun: code, name: who.name, sex: who.sex,
+      role, roleKo: hmAdminRole(role).ko, scopeKo: hmAdminRole(role).scopeKo,
+      title, dan: dan || "", branch: branch || "", syn: !!syn, status: "활성",
+      since: "202" + (4 + Math.floor(rng() * 3)) + "-0" + (1 + Math.floor(rng() * 9)) };
+  };
+  const out = [];
+  HMA_HQ_SEATS.forEach((t, i) => out.push(mk(_HMA_PAD(HMA_PREFIX_HQ, i + 1), "hq", "", "", t, false)));
+  /* 지역단장 — 시연에서 쓰는 강북지역단을 2H0001로 올리고 나머지는 정렬 순서 그대로 */
+  const danDemo = dans.filter((d) => d.indexOf("강북") === 0);
+  const danOrder = danDemo.concat(dans.filter((d) => danDemo.indexOf(d) < 0));
+  danOrder.forEach((d, i) => out.push(mk(_HMA_PAD(HMA_PREFIX_DAN, i + 1), "dan", d, "", hmAdminTitle("dan", d, ""), d.indexOf("광역") === 0)));
+  /* 지점장 — 3H0001은 시연 기본값(은평지점)으로 고정하고, 나머지는 "지역단|지점" 정렬 순서 그대로 */
+  const brDemo = brs.filter((bk) => bk.split("|")[1] === HMA_DEMO_BRANCH);
+  const brOrder = brDemo.concat(brs.filter((bk) => brDemo.indexOf(bk) < 0));
+  brOrder.forEach((bk, i) => {
+    const d = bk.split("|")[0], b = bk.split("|")[1];
+    out.push(mk(_HMA_PAD(HMA_PREFIX_BR, i + 1), "branch", d, b, hmAdminTitle("branch", d, b), b.indexOf("본사") === 0));
+  });
+  _HMC.admins = out;
+  return out;
+}
+function hmAdminOf(code) {
+  const s = String(code || "").trim().toUpperCase();
+  if (!s) return null;
+  for (const a of hmAdminsGen()) if (a.code === s) return a;
+  return null;
+}
+/* 직책·소속으로 찾기 — 화면이 사번 리터럴을 박지 않게(시연 기본값도 이 경로로 집는다) */
+function hmAdminFind(role, dan, branch) {
+  for (const a of hmAdminsGen()) {
+    if (a.role !== role) continue;
+    if (role === "hq") return a;
+    if (role === "dan" && a.dan === dan) return a;
+    if (role === "branch" && a.branch === branch && (!dan || a.dan === dan)) return a;
+  }
+  return null;
+}
+/* 시연 기본값 — 은평지점장(형 지시의 바로 그 화면) · 강북지역단장 · 본사 담당자.
+   지점·지역단 이름은 실사 명부(LR_BRANCHES·LR_SEOUL_GU)에서 온 값이고, 8H0001 박성호의 소속과 같다. */
+const HM_DEMO_ADMIN_BRANCH = "은평지점";
+const HM_DEMO_ADMIN_DAN = "강북지역단";
+function hmAdminDemo() {
+  return {
+    branch: hmAdminFind("branch", HM_DEMO_ADMIN_DAN, HM_DEMO_ADMIN_BRANCH) || hmAdminFind("branch", "", HM_DEMO_ADMIN_BRANCH),
+    dan: hmAdminFind("dan", HM_DEMO_ADMIN_DAN, ""),
+    hq: hmAdminFind("hq", "", ""),
+  };
+}
+/* 인증 판정 — 프로 게이트(hmCodeCheck)와 같은 결. 안내 문구까지 여기서 돌려준다(화면이 짓지 않는다). */
+function hmAdminCheck(raw) {
+  const s = String(raw || "").trim().toUpperCase();
+  if (!s) return { ok: false, why: "운영자 사번을 입력해 주세요 — 본사 1H · 지역단장 2H · 지점장 3H(예: 3H0001)." };
+  if (s.indexOf("8H") === 0) return { ok: false, why: s + "는 프로 사번(8H####)이에요 — 운영본부는 운영자 사번(1H·2H·3H)으로 들어옵니다. 담당 회원 관리는 헬스메이트 센터에서 하세요." };
+  if (!/^[123]H\d{4}$/.test(s)) return { ok: false, why: "운영자 사번 형식이 아니에요 — 본사 1H · 지역단장 2H · 지점장 3H + 네 자리(예: 3H0001)." };
+  const a = hmAdminOf(s);
+  if (!a) return { ok: false, why: s + "는 등재된 운영자 사번이 아니에요 — 아래 검색으로 지점·지역단 담당자를 찾아 주세요." };
+  if (a.status !== "활성") return { ok: false, why: a.name + " " + a.title + "은 현재 " + a.status + " 상태예요." };
+  return { ok: true, code: a.code, adm: a };
 }

@@ -240,7 +240,10 @@ export default function App() {
         </main>
       </div>
       {consult !== null && <ConsultModal interest={consult} onClose={() => setConsult(null)} />}
-      {typeof AgentDock === "function" && sec !== "agent" && <AgentDock onGo={setSec} />}
+      {/* 독에 **지금 어느 화면인지**를 넘긴다 — 운영본부(hmops)에서는 회원 모드로 인사하면 안 된다.
+          실측(은평지점장 세션): 관제 화면 옆에서 독이 「조성래님, 반가워요! 전담 AI 매니저 하이예요」 +
+          회원용 선택지 6종을 띄워, 「운영자용 화면」이라는 주장과 바로 충돌했다. */}
+      {typeof AgentDock === "function" && sec !== "agent" && <AgentDock onGo={setSec} sec={sec} />}
       {toastMsg && <div className="toast"><Check size={16} /> {toastMsg}</div>}
     </div>
   );

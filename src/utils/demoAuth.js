@@ -26,7 +26,7 @@ const USERS_KEY = "hifin_users";       // 실명확인 후 가입한 일반 회�
 try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
 function authCurrent() { try { const a = JSON.parse(sessionStorage.getItem(AUTH_KEY) || "null"); if (a && a.role === "GUEST") { try { sessionStorage.removeItem(AUTH_KEY); } catch (e2) {} try { localStorage.removeItem(DEMO_SESSION_KEY); } catch (e2) {} return null; } return a; } catch (e) { return null; } }   // 콘텐츠 보호(2026-07-24): 기존 GUEST 세션도 발견 즉시 파기
 function authSet(u) { try { sessionStorage.setItem(AUTH_KEY, JSON.stringify(u)); } catch (e) {} demoNotify(); }
-function appLogout() { try { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); hipetSsoRevoke(); } catch (e) {} try { hmProSessionClear(); } catch (e) {} demoNotify(); }
+function appLogout() { try { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); hipetSsoRevoke(); } catch (e) {} try { hmProSessionClear(); } catch (e) {} try { hmoAdminSessionClear(); } catch (e) {} demoNotify(); }
 
 /* ══ 하이펫 자매앱 자동 로그인(SSO 핸드오프) ══
    두 앱은 같은 오리진(/ 과 /pet/)이라 localStorage를 공유한다. 하이핀에서 하이펫 메뉴를 누르는 순간
@@ -106,6 +106,18 @@ function hmProSessionClear() {
     del.forEach((k) => { try { sessionStorage.removeItem(k); } catch (e) {} });
   } catch (e) {}
 }
+
+/* ── 운영자(지점장·지역단장·본사) 범위 세션 축 ─────────────────────────────────
+   형 지시(2026-10-05 ⑥) 「지점장은 자기 지점만 보이게 해줘」의 집행 키.
+   ⚠️ 프로 세션 키(hifin_hm_code)와 **다른 키**를 쓴다. 같은 키에 넣으면 운영자 사번이 프로 세션으로
+      읽혀 운영본부 메뉴가 스스로 사라지고(App.jsx 라우트 가드), 프로 콘솔이 운영자를 담당 프로로
+      해석한다. 두 축은 서로 배타적이어야 하므로 키도 둘이다.
+   세션(탭) 한정 — 탭을 닫거나 「범위 잠금 해제」를 누르면 즉시 잠긴다. 로그아웃 시 함께 회수한다.
+   등재: dataCatalog.js HIFIN_KEYS_STATIC + session 그룹(hifin_hmops_admin). */
+const HMO_ADMIN_KEY = "hifin_hmops_admin";
+function hmoAdminSession() { try { return sessionStorage.getItem(HMO_ADMIN_KEY) || ""; } catch (e) { return ""; } }
+function hmoAdminSessionSet(code) { try { sessionStorage.setItem(HMO_ADMIN_KEY, String(code || "")); } catch (e) {} }
+function hmoAdminSessionClear() { try { sessionStorage.removeItem(HMO_ADMIN_KEY); } catch (e) {} }
 
 /* 로그인 실패 잠금(5회 실패 → 10분) */
 const LOCK_KEY = "hifin_login_lock";

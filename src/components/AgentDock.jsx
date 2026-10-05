@@ -58,17 +58,71 @@ function HiEnCard({ onGo, onClose }) {
   );
 }
 
+/* ══════ 운영본부(hmops) 모드 — 독이 **회원 모드로 뜨면 안 되는** 유일한 화면 ══════
+   실측(2026-10-05 · 은평지점장 8M1029 세션 · 1500×1100): 관제 화면 옆에서 독이 「조성래님, 반가워요!
+   저는 조성래님 전담 AI 매니저 하이예요」 + 회원용 선택지 6종(건강검진 받고 싶어요 / 내 건강상태 / …)을
+   띄웠다. 지점장 범위로 인증한 화면 옆에서 운영자를 회원 이름으로 부르고 회원 메뉴를 권하는 셈이다.
+   ⚠️ 숫자는 **hmoOrgIndex()(지금 인증된 범위로 잘린 색인)만** 쓴다. 회원 엔진(agentAnswer)은 아예 부르지
+      않는다 — 독에 조직 Q&A가 붙는 순간 범위 제한 밖의 답변 창구가 하나 더 생기기 때문이다.
+   ⚠️ 운영본부에서는 기본 접힘(버블)이다. 열고 싶은 사람만 연다. */
+const HIDOCK_OPS_CHIPS = ["지금 내 범위는 어디까지예요?", "이 탭에서 무엇을 볼 수 있어요?", "범위 밖은 왜 안 보여요?", "범위를 바꾸려면요?"];
+function hidockOpsAdm() { try { return (typeof hmoAdmin === "function") ? hmoAdmin() : null; } catch (e) { return null; } }
+function hidockOpsScope() {
+  const a = hidockOpsAdm(); if (!a) return null;
+  let O = null; try { O = (typeof hmoOrgIndex === "function") ? hmoOrgIndex() : null; } catch (e) { O = null; }
+  const where = a.role === "hq" ? "전국" : (a.role === "dan" ? a.dan : a.dan + " " + a.branch);
+  return { a, where, hq: O ? O.hq : null };
+}
+function hidockOpsIntro() {
+  const s = hidockOpsScope();
+  if (!s) return { lines: ["헬스메이트 운영본부예요. 아직 운영자 사번(8M####)을 인증하지 않으셨어요 — 인증 전에는 조직·회원 숫자를 하나도 집계하지 않아요.", "화면 가운데 인증 칸에 사번을 넣으면 그 직책만큼 범위가 열려요(지점장은 자기 지점, 지역단장은 자기 지역단, 본사만 전국)."], buttons: [] };
+  const n = s.hq ? s.hq.n.toLocaleString() : "-", m = s.hq ? s.hq.managed.toLocaleString() : "-";
+  return { lines: [s.a.title + " " + s.a.name + " 님, 운영본부예요. 저는 여기서 이 화면 안내만 드려요(관측 전용).",
+    "지금 범위는 " + s.where + " — 프로 " + n + "명 · 담당 회원 " + m + "명이에요. 범위 밖 프로·회원은 모든 탭·모든 표에서 집계되지 않아요."],
+    buttons: HIDOCK_OPS_CHIPS.slice(0, 3) };
+}
+function hidockOpsReply(text) {
+  const s = hidockOpsScope();
+  const q = String(text || "");
+  if (/범위|어디까지|내지점|우리지점|얼마나/.test(q.replace(/\s/g, ""))) {
+    if (!s) return { lines: ["아직 운영자 사번을 인증하지 않으셨어요 — 인증 전에는 아무 숫자도 집계하지 않아요."], buttons: [] };
+    const h = s.hq;
+    return { lines: ["지금 범위는 " + s.where + "(" + s.a.title + " " + s.a.code + ")예요.",
+      h ? "이 범위 안에서 보이는 것 — 프로 " + h.n.toLocaleString() + "명(활성 " + h.active + ") · 담당 회원 " + h.managed.toLocaleString() + "명 · 오늘 지시서 " + h.today.toLocaleString() + "건." : "범위 색인을 아직 불러오지 못했어요.",
+      "이 숫자는 화면과 같은 범위 색인 하나에서 나와요 — 제가 따로 세지 않습니다."], buttons: ["범위 밖은 왜 안 보여요?"] };
+  }
+  if (/탭|무엇을볼|뭘볼|뭐볼|기능|어떻게보/.test(q.replace(/\s/g, ""))) {
+    return { lines: ["탭 다섯 개예요 — ① 조직 드릴다운(범위 안 조직·프로) ② 단위 실적·통계 ③ D1~L8 관리 현황(담당 회원 전건 단계 판정) ④ 배치·배분 관제(60일 사이클) ⑤ 운영자 도구(보기 설정·이 화면의 경계).",
+      "전국만 쪼갤 수 없는 숫자(등급 분포·시도별 부하·제공 DB 스키마 검사)는 본사 범위에서만 적어요 — 전국 숫자에 지점 이름을 붙이지 않습니다."], buttons: ["지금 내 범위는 어디까지예요?"] };
+  }
+  if (/왜안|범위밖|안보이|가려|숨기/.test(q.replace(/\s/g, ""))) {
+    return { lines: ["가리는 게 아니라 모집단에 없어서 안 보여요. 조직 색인을 돌려주는 함수가 범위로 자른 것만 돌려주고, 조직 목록·실적·D1~L8 표·배치 관제·표 내보내기가 전부 그 하나를 통과해요.",
+      "그래서 「한 탭만 가려지고 다른 탭에서 전국이 보이는」 구멍이 없어요. 관리자 콘솔 훅도 같은 가드를 씁니다."], buttons: [] };
+  }
+  if (/바꾸|전환|다른지점|재인증|잠금/.test(q.replace(/\s/g, ""))) {
+    return { lines: ["머리띠의 [범위 전환 — 잠금 해제 후 재인증]을 누르고 운영자 사번을 다시 인증하세요. 한 번 클릭으로 범위가 바뀌는 버튼은 두지 않았어요(그 버튼이 있으면 「지점장은 자기 지점만 본다」가 같은 화면에서 반증됩니다).",
+      "보던 탭은 그대로 유지돼요 — 같은 탭에서 범위만 갈아 보실 수 있어요."], buttons: [] };
+  }
+  return { lines: ["여기서는 운영본부 안내만 드려요 — 조직·회원 숫자는 탭에서 직접 보셔야 하고, 저는 지금 인증된 범위 밖 숫자는 꺼내지 않아요.",
+    "건강·보험 상담은 다른 화면에서 물어봐 주세요(운영본부는 관측 전용이라 회원 상담 동선을 열지 않습니다)."], buttons: HIDOCK_OPS_CHIPS.slice(0, 2) };
+}
+
 /* 응답 대기 — 엔진 실계산은 평균 7.3ms다. 지금까지 체감 지연의 95%는 여기 박아둔 연출용 대기였다.
    음성은 회원이 이미 인식을 기다렸으므로 글자보다 더 빨리 답한다. 타이핑 표시는 유지하고 시간만 줄인다. */
 const HIDOCK_WAIT = { voice: 90, text: 320 };
 function hidockWait(via) { return via === "voice" ? HIDOCK_WAIT.voice : HIDOCK_WAIT.text; }
 
-function AgentDock({ onGo }) {
+function AgentDock({ onGo, sec }) {
   const go = onGo || (() => {});
   const lang = useHiLang();
+  /* 운영본부에서는 회원 모드를 끈다 — 인사·퀵카드·질의 경로가 전부 갈린다(hidockOps* 참고) */
+  const ops = sec === "hmops";
   const [open, setOpen] = useState(false);
   const [welcome, setWelcome] = useState(null);  // 로그인 직후 1회 — 웰컴 히어로 + 하고 싶은 활동 고르기
   const [msgs, setMsgs] = useState([]);          // {who:'hi'|'me', lines:[], buttons:[], nav}
+  /* 회원 대화와 운영본부 안내는 **한 목록에 섞지 않는다**(ops 플래그로 갈라 본다).
+     섞으면 회원 화면으로 나간 뒤 「은평지점장 김수빈 님, 운영본부예요」가 회원 머리말 밑에 남는다(실측).
+     대화는 양쪽 다 보존된다 — 화면을 옮겨도 대화가 유지된다는 원칙은 그대로다. */
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [listening, setListening] = useState(false);
@@ -77,6 +131,7 @@ function AgentDock({ onGo }) {
   const [more, setMore] = useState("");              // 상한에서 끊긴 나머지 — '이어 듣기'
   const [read, setRead] = useState(() => { try { return (typeof hiVoiceOn === "function") ? hiVoiceOn() : false; } catch (e) { return false; } });
   const [easy, setEasy] = useState(() => { try { return !!localStorage.getItem("hifin_easyread"); } catch (e) { return false; } });
+  const shown = React.useMemo(() => msgs.filter((m) => !!m.ops === ops), [msgs, ops]);
   const endRef = useRef(null);
   const bodyRef = useRef(null);          // 대화 스크롤 영역
   const prevLenRef = useRef(0);          // 직전 메시지 수 — '새로 붙은 답변'을 찾는 기준
@@ -106,6 +161,7 @@ function AgentDock({ onGo }) {
   /* 로그인하면 하이가 **먼저** 열려 인사한다 — 회원이 찾아오지 않아도 된다(하이 퍼스트).
      세션당 1회만. 화면이 그려질 시간을 조금 준 뒤 연다(첫 렌더 끊김 방지). */
   useEffect(() => {
+    if (ops) return;                               /* 운영본부에서는 회원 웰컴을 열지 않는다(기본 접힘) */
     let m = null; try { m = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
     if (!m) { try { if (typeof authRole === "function" && authRole() === "GUEST") return; } catch (e) { return; } }
     try { if (typeof hiWelcomeSeen === "function" && hiWelcomeSeen()) return; } catch (e) {}
@@ -126,9 +182,14 @@ function AgentDock({ onGo }) {
   // 선제 알림(Proactive) — 묻기 전에 하이가 먼저 챙긴다: FAB 배지 + 첫 오픈 시 우선 표시
   const [alerts, setAlerts] = useState([]);
   useEffect(() => { try { setAlerts((typeof agentProactive === "function") ? agentProactive() : []); } catch (e) {} }, []);
+  /* 운영본부로 들어오면 독을 접고 회원용 화면을 지운다 — 관제 화면을 덮은 채 회원 메뉴를 권하지 않는다.
+     나간 뒤에는 회원 대화가 그대로 이어진다(대화 기록은 지우지 않는다). */
+  useEffect(() => { setOpen(false); if (ops) setWelcome(null); }, [ops]);
   // 첫 오픈 시 재접속 인사(기억 연속성) + 선제 알림을 이어서 표시
   useEffect(() => {
-    if (!open || msgs.length || welcome) return;   // 웰컴 화면이 떠 있으면 재접속 인사를 겹치지 않는다
+    if (!open || shown.length || welcome) return;  // 웰컴 화면이 떠 있으면 재접속 인사를 겹치지 않는다
+    /* 운영본부에서 열면 **운영자용 인사**다 — 회원 인사(agentGreeting)·선제 알림은 쓰지 않는다 */
+    if (ops) { const i = hidockOpsIntro(); setMsgs((m) => [...m, { who: "hi", ops: true, lines: i.lines, buttons: i.buttons, nav: null }]); return; }
     try {
       const g = (typeof agentGreeting === "function") ? agentGreeting() : null;
       const first = [];
@@ -145,13 +206,13 @@ function AgentDock({ onGo }) {
   useEffect(() => {
     const body = bodyRef.current;
     const prev = prevLenRef.current;
-    prevLenRef.current = msgs.length;
+    prevLenRef.current = shown.length;
     /* 아직 대화 전이면 맨 위 — 인사하는 하이의 얼굴이 먼저 보여야 한다.
        대화가 시작된 뒤에는 카드를 남겨둔 채 새 답변을 따라간다(카드는 위로 스크롤하면 그대로 있다). */
-    if (welcome && !msgs.length) { if (body) body.scrollTop = 0; return; }
-    if (body && msgs.length > prev) {
+    if (welcome && !shown.length) { if (body) body.scrollTop = 0; return; }
+    if (body && shown.length > prev) {
       let idx = -1;
-      for (let i = prev; i < msgs.length; i++) { if (msgs[i] && msgs[i].who === "hi") { idx = i; break; } }
+      for (let i = prev; i < shown.length; i++) { if (shown[i] && shown[i].who === "hi") { idx = i; break; } }
       if (idx >= 0) {
         const el = body.querySelector('[data-mi="' + idx + '"]');
         if (el) {
@@ -162,7 +223,7 @@ function AgentDock({ onGo }) {
       }
     }
     if (endRef.current) endRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [msgs, typing, welcome]);
+  }, [shown, typing, welcome]);
   // 홈 브리핑 등 외부에서 질문 주입(agentask 이벤트) — 이중 동선의 대화 진입점
   useEffect(() => {
     const h = (e) => { const q = e && e.detail; setOpen(true); if (q) setTimeout(() => send(q), 350); };
@@ -201,6 +262,15 @@ function AgentDock({ onGo }) {
   const send = (textArg, viaArg) => {
     const via = (typeof hiVoiceChannel === "function") ? hiVoiceChannel(viaArg) : (viaArg === "voice" ? "voice" : "text");
     const text = (textArg == null ? input : textArg).trim(); if (!text) return;
+    /* 운영본부 — 회원 엔진(agentAnswer·aiDoctorAgent·섹션 가이드)을 **부르지 않는다**.
+       범위 밖 숫자를 꺼낼 수 있는 답변 창구를 하나 더 만들지 않기 위해서다(조직 수치는 범위 색인만 사용). */
+    if (ops) {
+      setInput("");
+      setMsgs((m) => [...m, { who: "me", ops: true, lines: [text], buttons: [], nav: null }]);
+      setTyping(true);
+      setTimeout(() => { const r = hidockOpsReply(text); setTyping(false); setMsgs((m) => [...m, { who: "hi", ops: true, lines: r.lines, buttons: r.buttons || [], nav: null, channel: via }]); }, hidockWait(via));
+      return;
+    }
     /* 하고 싶은 활동(섹션 안내형 칩) — 질의 전송 대신 섹션 가이드로 즉답하고 화면까지 데려간다 */
     try {
       const wk = (typeof hiWantKeyOf === "function") ? hiWantKeyOf(text) : null;
@@ -316,15 +386,15 @@ function AgentDock({ onGo }) {
      새 답변·회원이 말하기 시작·화면 이동이면 이전 발화는 취소된다(hiVoiceSpeak 안에서 먼저 끊는다). */
   useEffect(() => {
     if (typeof hiVoiceSpeak !== "function" || !vsup.tts || lang === "en") return;
-    const last = msgs.length - 1;
+    const last = shown.length - 1;
     if (last < 0 || spokeRef.current >= last) return;
-    const fresh = msgs.slice(spokeRef.current + 1).filter((x) => x && x.who === "hi");
+    const fresh = shown.slice(spokeRef.current + 1).filter((x) => x && x.who === "hi");
     spokeRef.current = last;                         // 토글을 나중에 켜도 지난 답을 거슬러 읽지 않는다
     if (!read || !fresh.length) return;
     const say = fresh.map((x) => hiVoiceSummarize(x)).filter(Boolean).join(" ");
     if (!say) return;
     hiVoiceSpeak(say, { onStart: () => setSpeaking(true), onEnd: (r) => { setSpeaking(false); setMore(r || ""); } });
-  }, [msgs, read]);
+  }, [shown, read]);
 
   /* 독을 닫거나 화면을 벗어나면 듣기·말하기를 모두 정리한다 — 닫은 뒤 결과가 배달되거나 혼자 말하지 않게 */
   useEffect(() => {
@@ -344,10 +414,10 @@ function AgentDock({ onGo }) {
         </button>
       )}
       {open && (
-        <div className={"hidock" + (welcome && !msgs.length ? " wel" : "")} ref={dockRef}>
+        <div className={"hidock" + (welcome && !shown.length ? " wel" : "")} ref={dockRef}>
           <div className="hidock-hd">
             <span className="hidock-av"><HiAvatar size={26} plain /></span>
-            <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{t("hi.role")}</span></div>
+            <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{ops ? "운영본부 안내 · 관측 전용" : t("hi.role")}</span></div>
             <button className={"hidock-ib" + (easy ? " on" : "")} title="쉬운 말 모드(큰 글씨)" onClick={() => setEasy((v) => !v)}>가나</button>
             {/* 읽어주기 — 기본은 꺼짐, 켜면 기억한다(화면을 옮겨도 유지). 미지원 브라우저면 이유를 말한다 */}
             {lang !== "en" && (
@@ -359,7 +429,8 @@ function AgentDock({ onGo }) {
                   if (!v) stopSpeak();
                 }}><Volume2 size={15} /></button>
             )}
-            <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>
+            {/* 운영본부에서는 「전체 화면 상담」(회원 상담 화면)으로 나가는 문을 열지 않는다 — 관측 전용 화면의 동선이다 */}
+            {!ops && <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>}
             <button className="hidock-ib" onClick={() => setOpen(false)} aria-label="닫기"><X size={16} /></button>
           </div>
           <div className="hidock-body" ref={bodyRef}>
@@ -385,7 +456,7 @@ function AgentDock({ onGo }) {
               </div>
             )}
             {lang !== "en" && <>
-            {msgs.map((m, i) => (
+            {shown.map((m, i) => (
               <div key={i} data-mi={i} className={"hidock-row " + m.who}>
                 {m.who === "hi" && (() => {
                   const A = (typeof hiAgent === "function") ? hiAgent(m.agent || "A0") : null;
@@ -431,8 +502,9 @@ function AgentDock({ onGo }) {
             </>}
             <div ref={endRef} />
           </div>
-          {lang !== "en" && (!welcome || msgs.length > 0) && <div className="hidock-quick" role="group" aria-label="하고 싶은 건강활동 바로가기">
-            {(() => { let mm = null; try { mm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
+          {lang !== "en" && (!welcome || shown.length > 0) && <div className="hidock-quick" role="group" aria-label={ops ? "운영본부 안내 바로가기" : "하고 싶은 건강활동 바로가기"}>
+            {(() => { if (ops) return HIDOCK_OPS_CHIPS.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>);
+              let mm = null; try { mm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
               return hidockQuicks(mm).map((q) => <button key={q} onClick={() => send(q)}>{q}</button>); })()}
           </div>}
           {/* 듣는 중 — 중간 결과를 그대로 보여주고 중지 버튼을 같이 둔다(말이 어떻게 들리는지 보여야 다시 말씀하신다) */}
@@ -462,7 +534,7 @@ function AgentDock({ onGo }) {
               {listening ? <X size={16} /> : <Mic size={16} />}</button>}
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} enterKeyHint="send"
               onFocus={() => { try { setTimeout(() => { if (endRef.current) endRef.current.scrollIntoView({ block: "end" }); }, 250); } catch (e) {} }}
-              placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘"} />
+              placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : (ops ? "운영본부 안내만 드려요 · 예) 지금 내 범위는 어디까지예요?" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘")} />
             <button className={"hidock-send" + (input.trim() ? " on" : "")} onClick={() => send()} aria-label="보내기"><Send size={15} /></button>
           </div>
         </div>
