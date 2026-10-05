@@ -1172,13 +1172,8 @@ function HmoAdminGate({ onPass, onGo }) {
     : [];
   const submit = (c) => {
     const raw = (c == null ? code : c);
-    const r = (typeof hmAdminCheck === "function") ? hmAdminCheck(raw) : null;
-    if (!r) { setErr("운영자 명부를 불러오지 못했어요 — 새로고침해 주세요."); return; }
+    const r = hmoAdminSwitch(raw);          /* 세션·감사 기록은 전환 함수 한 곳에서 */
     if (!r.ok) { setErr(r.why); return; }
-    try { if (typeof hmoAdminSessionSet === "function") hmoAdminSessionSet(r.code); } catch (e) {}
-    /* 접속 로그(contentGuard)와 해시체인에 「누구 범위로 열었는가」를 남긴다 — 범위 전환도 감사 대상이다 */
-    try { if (typeof guardLog === "function") guardLog("hmops_scope", "운영본부 범위 인증 — " + r.adm.code + " " + r.adm.title); } catch (e) {}
-    try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: "운영본부 접속 — " + r.adm.code + "(" + r.adm.title + " · 범위 " + r.adm.scopeKo + ")" }); } catch (e) {}
     onPass(r.adm);
   };
   const quick = [demo && demo.branch, demo && demo.dan, demo && demo.hq].filter(Boolean);
@@ -1237,6 +1232,19 @@ function HmoAdminGate({ onPass, onGo }) {
   </div>);
 }
 
+/* 운영자 전환 — **세션을 쓰는 유일한 함수**(게이트와 전환 칩이 같은 길을 쓴다).
+   형 지시(2026-10-05)로 띠의 전환 칩을 되살리되, 「범위를 바꾸는 버튼」이 아니라 **계정을 바꿔 다시 인증하는 버튼**으로 둔다.
+   그래서 ①쓰기 경로는 여전히 하나이고 ②전환마다 접속 로그·해시체인에 누구로 열었는지 남고 ③화면이 「계정이 범위를 정한다」를 계속 말한다.
+   시연에서 「지점장은 자기 지점만 → 본사는 전국」을 한 번 클릭으로 이어 보여 주되, 바뀐 것이 범위가 아니라 **로그인한 사람**임을 띠가 적는다. */
+function hmoAdminSwitch(raw) {
+  const r = (typeof hmAdminCheck === "function") ? hmAdminCheck(raw) : null;
+  if (!r || !r.ok) return r || { ok: false, why: "운영자 명부를 불러오지 못했어요 — 새로고침해 주세요." };
+  try { if (typeof hmoAdminSessionSet === "function") hmoAdminSessionSet(r.code); } catch (e) {}
+  try { if (typeof guardLog === "function") guardLog("hmops_scope", "운영본부 범위 인증 — " + r.adm.code + " " + r.adm.title); } catch (e) {}
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: "운영본부 접속 — " + r.adm.code + "(" + r.adm.title + " · 범위 " + r.adm.scopeKo + ")" }); } catch (e) {}
+  return r;
+}
+
 /* 지금 누구로 무엇을 보고 있는가 — hero 안의 신원·범위 띠.
    ⚠️⚠️ 여기에 「은평지점장 / 강북지역단장 / 본사(전국)」 전환 버튼을 상설로 달아 뒀었다. 재인증 없이 한 번
       클릭으로 세션 키가 바뀌었다 — 실측 ① 은평지점장(3H0001) 세션에서 「본사(전국)」을 누르자 즉시 KPI가
@@ -1246,9 +1254,15 @@ function HmoAdminGate({ onPass, onGo }) {
       시연 문장을 같은 화면의 버튼이 1초 만에 반증했다.
       → 전환 버튼을 없앴다. **세션 키를 쓰는 경로는 HmoAdminGate 하나뿐**이고, 범위를 바꾸려면 잠금을 풀고
         게이트에서 다시 인증한다(게이트에는 시연용 한 번 클릭 3종이 그대로 있어 시연 동선은 유지된다).
-      ⚠️ 범위를 바꾸는 버튼을 「관측 전용 화면」에 두는 것 자체가 조작이다 — 보이는 범위가 그 화면의 전부이므로. */
-function HmoScopeBar({ adm, onUnlock }) {
+      ⚠️ 범위를 바꾸는 버튼을 「관측 전용 화면」에 두는 것 자체가 조작이다 — 보이는 범위가 그 화면의 전부이므로.
+      → 형 지시(2026-10-05)로 **시연용 계정 전환 칩**을 되살렸다. 다만 ①세션을 쓰는 함수는 hmoAdminSwitch 하나로 유지하고
+        ②전환마다 접속 로그·해시체인에 남기며 ③띠가 「범위가 아니라 계정을 바꾼다」를 적는다. 범위 판정은 그대로
+        인증한 계정의 직책이 하고, 데이터 경로(hmoOrgIndex·hmoScopeClamp)의 집행에는 손대지 않았다. */
+function HmoScopeBar({ adm, onUnlock, onSwitch }) {
   const O = hmoOrgIndex();
+  /* 시연 전환 3인(지점장·지역단장·본사) — 명부 고정값이라 누구 세션에서든 같은 세 계정이 보인다.
+     이것이 「남의 지점으로 횡이동」처럼 보이지 않도록 버튼은 사번과 직책을 함께 적는다. */
+  const demo3 = React.useMemo(() => { try { const d = hmAdminDemo(); return [d.branch, d.dan, d.hq].filter(Boolean); } catch (e) { return []; } }, []);
   const where = adm.role === "hq" ? "전국" : (adm.role === "dan" ? adm.dan : adm.dan + " " + adm.branch);
   return (<div className="hmoscope">
     <Lock size={14} color="#FFB25E" />
@@ -1256,8 +1270,15 @@ function HmoScopeBar({ adm, onUnlock }) {
       <b>{adm.title} {adm.name} 님</b> <span className="w">({adm.code} · {adm.roleKo})</span>
       <div className="w">관리 범위: <b style={{ color: "#FFB25E" }}>{where}</b> — 프로 {O.hq.n.toLocaleString()}명(활성 {O.hq.active}) · 담당 회원 {O.hq.managed.toLocaleString()}명 · 오늘 지시서 {O.hq.today.toLocaleString()}건{adm.role === "hq" ? " · 전국 전체" : " · 이 범위 밖 데이터는 집계에 들어오지 않아요"}</div>
     </div>
-    <button className="hmosw" style={{ order: 10 }} onClick={onUnlock}>범위 전환 — 잠금 해제 후 재인증</button>
-    <span className="w" style={{ width: "100%", order: 11 }}>이 띠에는 <b>한 번 클릭으로 범위가 바뀌는 버튼을 두지 않습니다</b> — 범위를 바꾸려면 잠금을 풀고 운영자 사번을 다시 인증하세요(세션 키를 쓰는 경로는 인증 게이트 하나입니다). 보던 탭은 그대로 유지돼요.</span>
+    {(demo3 || []).map((a) => (
+      <button key={a.code} className={"hmosw" + (a.code === adm.code ? " on" : "")} style={{ order: 9 }}
+        title={a.title + " " + a.name + " · 사번 " + a.code + " · 범위 " + a.scopeKo}
+        onClick={() => { if (a.code === adm.code) return; const r = hmoAdminSwitch(a.code); if (r.ok && onSwitch) onSwitch(r.adm); }}>
+        {a.code === adm.code ? "● " : ""}{a.roleKo} <b>{a.code}</b>
+      </button>
+    ))}
+    <button className="hmosw" style={{ order: 10 }} onClick={onUnlock}>잠금 해제 — 다른 사번으로</button>
+    <span className="w" style={{ width: "100%", order: 11 }}>위 버튼은 <b>시연용 계정 전환</b>이에요 — 범위를 바꾸는 것이 아니라 <b>그 계정으로 다시 인증</b>합니다(전환할 때마다 접속 로그·해시체인에 남아요). 보이는 범위는 언제나 <b>인증한 계정의 직책</b>이 정하고, 실제 운영에서는 사내 인증(SSO)이 이 자리를 대신합니다. 보던 탭은 그대로 유지돼요.</span>
   </div>);
 }
 
@@ -1366,7 +1387,7 @@ function HmOpsCenterSection({ onGo }) {
       <h2><Landmark size={19} style={{ verticalAlign: -3, marginRight: 6 }} />헬스메이트 운영본부</h2>
       <p>지점장 · 지역단장 · 본사 운영 담당자용 관제 센터 — <b style={{ color: HMO_C.gold }}>관측 전용</b>(조작 기능 없음) · 사번을 잠근 관리자 세션에서만 열리고, 그 안에서 <b style={{ color: HMO_C.gold }}>운영자 사번의 직책만큼</b> 보입니다{S ? ` · 기준 배치 ${S.date}` : ""}<br />
         <b style={{ color: HMO_C.gold }}>시연 고지</b> — 이 화면의 운영자·회원·프로 이름은 모두 <b>시연용 합성 데이터</b>입니다(본인 계정만 실측). 회원이 보는 화면과 외부 전달물에는 마스킹 규칙이 그대로 적용됩니다.</p>
-      <HmoScopeBar adm={adm} onUnlock={unlock} />
+      <HmoScopeBar adm={adm} onUnlock={unlock} onSwitch={() => enter()} />
       <div className="hmokpi">
         {KPI.map(([k, v, e], i) => (<div className="n" key={i}><b>{v}</b><span>{k}</span><em>{e}</em></div>))}
       </div>
