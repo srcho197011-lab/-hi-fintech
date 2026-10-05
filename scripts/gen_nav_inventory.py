@@ -204,7 +204,20 @@ def extract_l4():
 LEGACY_ALIASES = {
     "sec.insurance":          ["보험·치료비", "보험치료비", "보험 치료비"],
     "tab.insurance.custom":   ["맞춤보험", "맞춤 보험"],
-    "tab.healthmate.7":       ["보장분석 대화", "보장분석대화"],
+    "tab.healthmate.7":       ["보장분석 대화", "보장분석대화", "치료비 보장 점검"],
+    # ①~⑨ 탭 개칭(형 지시 2026-10-05 ④ — 「지금 할 일」 결로 통일) · ⑩은 관리자 화면으로 이관
+    "tab.healthmate.1":       ["회원 신호", "회원신호", "회원 접촉 신호"],
+    "tab.healthmate.2":       ["보험 배정·대기", "보험배정대기", "보험 배정", "배정·대기"],
+    "tab.healthmate.3":       ["검진 후 터치", "검진후터치", "검진 후 안내"],
+    "tab.healthmate.4":       ["질병 예측", "질병예측", "질병 위험 예측"],
+    "tab.healthmate.5":       ["건강 행동", "건강행동", "건강 습관"],
+    "tab.healthmate.6":       ["가족·재가", "가족재가", "가족 재가돌봄"],
+    "tab.healthmate.8":       ["프로 제안함", "프로제안함", "제안함"],
+    "tab.healthmate.9":       ["내 고객·실적", "내고객실적", "내 고객", "내 실적"],
+    # ⑩ 통합 운영 → 헬스메이트 운영본부(관리자 전용 별도 화면)로 이관. 탭이 사라져 tab.healthmate.10 키도
+    # 사라지므로, 옛 이름·관제탑·새 이름을 부모 섹션(센터)에 붙여 둔다 — 관리자는 센터에 착지해 하위 메뉴로 들어간다
+    # (hmops는 L1 SECTIONS가 아니라 센터 하위 화면이라 독립 엔티티가 없다. admin 게이트는 sec.healthmate가 이미 갖고 있다).
+    "sec.healthmate":         ["통합 운영", "통합운영", "관제탑", "헬스메이트 운영본부", "운영본부", "운영 본부"],
 }
 
 # ── 생성 ──
@@ -214,11 +227,20 @@ def build():
     keys = [x["key"] for x in inv]
     dup = sorted({k for k in keys if keys.count(k) > 1})
     assert not dup, "key 중복: %s" % dup
-    # 개칭 이력 별칭 병합(구 명칭 인식 유지)
+    # 개칭 이력 별칭 병합(구 명칭 인식 유지) — 라벨과 같은 규칙으로 평탄본·두벌식 영타까지 파생한다.
+    # (파생하지 않으면 "rjawlsgnxjcl"(검진후터치) 같은 영타 질문이 개칭 후 어디에도 안 걸린다)
     for x in inv:
         extra = LEGACY_ALIASES.get(x["key"])
         if extra:
-            x["aliases"] = sorted(set(x["aliases"]) | set(extra))
+            grown = set(extra)
+            for a in extra:
+                flat = re.sub(r"[\s·]", "", a)
+                if not flat:
+                    continue
+                grown.add(flat)
+                if re.search(r"[가-힣]", flat):
+                    grown.add(h2q(flat))
+            x["aliases"] = sorted((set(x["aliases"]) | grown) - {x["label"]})
     # 고유명 리터럴 린트(§3-3) — 신규 산출물에 브랜드 리터럴 직접 등장 금지(라벨이 실제 화면명인 경우는 예외 대상 아님)
     return inv
 

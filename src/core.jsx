@@ -339,6 +339,10 @@ const SEC_PARENT = {
   insurance: "insurance",
   mywallet: "mywallet", wallet: "mywallet", nft: "mywallet", mypage: "mywallet", trust: "mywallet", vault: "mywallet",
   ontology: "ontology", demo: "demo", healthmate: "healthmate",
+  /* 헬스메이트 운영본부(관리자 전용 관제 센터) — 헬스메이트 센터 하위 화면으로 둔다.
+     부모가 healthmate라서 isRestrictedSection·사이드바 노출·배너 제외 규칙을 그대로 물려받는다
+     (프로 개인·회원 역할은 도달 불가). L1 SECTIONS는 건드리지 않으므로 내비 인벤토리 엔티티도 그대로. */
+  hmops: "healthmate",
 };
 function secParent(k) { return SEC_PARENT[k] || k; }
 const SCAFFOLDS = {

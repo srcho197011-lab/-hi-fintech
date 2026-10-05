@@ -104,7 +104,7 @@ function ReferralCard() {
         <span>초대 <b>{s.invited}</b></span><span>가입 <b>{s.joined}</b></span><span>가족 <b>{s.family || 0}</b></span><span>검진완료 <b>{s.checked}</b></span><span>적립 <b>{s.htk.toLocaleString()} HTK</b></span>
         <span className="ref-sims"><button onClick={() => sim(refSimulateJoin, "내 코드로 친구 1명이 가입했어요 — +100 HTK 적립!")}>시연:코드가입</button><button onClick={() => sim(refSimulateCheck, "친구가 첫 검진을 완료했어요 — +300 HTK 적립!")}>시연:검진</button></span>
       </div>
-      <div className="ref-legal">직접 추천 <b>1단계만</b> 인정(하위 추천 보상 없음 — 다단계 아님) · 실명 본인인증 <b>1인 1계정</b> · 자기 코드 가입 제외 · <b>가족 등록 포함</b>(등록 시 +100) · HTK는 <b>폐쇄형 포인트</b>(현금 아님·양도 불가·플랫폼 내 사용)이며 부정 수령 시 회수됩니다 · 보상 총액(건당 최대 500 HTK≈5천 원)은 검진센터 송객 수수료 마진 내에서 지급돼요</div>
+      <div className="ref-legal">직접 추천 <b>1단계만</b> 인정(하위 추천 보상 없음 — 다단계 아님) · 실명 본인인증 <b>1인 1계정</b> · 자기 코드 가입 제외 · <b>가족 등록 포함</b>(등록 시 +100) · HTK는 <b>폐쇄형 포인트</b>(현금 아님·양도 불가·플랫폼 내 사용)이며 부정 수령 시 회수됩니다 · 추천 보상은 <b>건당 최대 500 HTK</b>(약 5천 원)까지예요</div>
     </div>
   );
 }

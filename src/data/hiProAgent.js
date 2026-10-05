@@ -111,7 +111,7 @@ function hiproAnswer(q, ctx) {
     if (cat === "card") {
       if (ctx && ctx.card) {
         const a = coachAnswer(ctx.card, q);
-        if (a) return R(a.source + ":" + a.id, a.text, ["카드 " + ctx.card.member.mask]);
+        if (a) return R(a.source + ":" + a.id, a.text, ["카드 " + ((typeof _hmProName === "function") ? _hmProName(ctx.card.member) : ctx.card.member.mask)]);
       }
       return R("card:noctx", "그건 회원 카드를 보면서 답해드릴 수 있어요 — ⓪ 오늘의 지시서에서 카드를 연 상태로 물어봐 주세요.", ["coachAnswer"]);
     }
@@ -240,7 +240,9 @@ function hiproAnswer(q, ctx) {
     if (cat === "system") {
       if (/(결과|기록).*(남|기록|해)/.test(t)) return R("sys:result", "⓪ 오늘의 지시서에서 통화한 카드의 「📝 결과 남기기」를 눌러요 — 7가지 결과 중 하나 고르고 저장하면 끝(3탭). 완결·거절은 내일 명단에서 자동으로 빠져요.", ["HM_RESULT_CODES"]);
       if (/백업/.test(t)) return R("sys:backup", "온톨로지·하네스 → 데이터 운영 맨 아래 「백업·복원」에서 ⬇ 지금 백업을 누르면 JSON 파일로 저장돼요. USB 등 이 PC 밖에 보관하세요.", ["backupRestore"]);
-      if (/관제탑|통합\s*운영/.test(t)) return R("sys:ops", "⑩ 통합 운영 탭이 관제탑이에요 — 배분·위험·응답 시한·완결 퍼널·활동 결과·하네스가 한 화면에 있어요(관측 전용).", ["HmTabOps"]);
+      /* 경로를 가르쳐 주지 않는다 — 운영본부는 운영 담당자 화면이고, 프로 콘솔에서는 열리지 않는다(메뉴 미노출 + 라우트 가드).
+         여기서 「왼쪽 메뉴 … 아래」를 알려주면 화면이 막아 둔 것을 하이프로가 열어 주는 셈이 된다. */
+      if (/관제탑|통합\s*운영/.test(t)) return R("sys:ops", "그건 운영 담당자(지점장·지역단장·본사) 화면이라 프로 콘솔에서는 열 수 없어요 — 사번으로 들어온 세션에는 그 메뉴가 없어요. 내 담당 회원의 단계별 진행은 ⑨ 내 고객 전체·내 실적에서, 조직 단위 집계가 필요하시면 운영 담당에 요청해 주세요.", ["HmOpsCenter"]);
       const g = (typeof navResolve === "function") ? navResolve(t, "ADMIN") : null;
       if (g && !g.clarify && g.label) return R("nav:" + g.nav, "「" + g.label + "」 화면에서 하실 수 있어요 — 왼쪽 메뉴나 하이에게 말하면 바로 이동해요.", ["navInventory"]);
     }
@@ -326,7 +328,7 @@ function hiproAnswer(q, ctx) {
       /* D2 골든타임·무료 3종·케어 키트(F4) — 원천: FREE3_DEF·HMR_GOLDEN_KEYS·HM_STAGE_GUIDE */
       if (/골든\s*타임/.test(t)) {
         const gk = (typeof HMR_GOLDEN_KEYS !== "undefined") ? HMR_GOLDEN_KEYS.map((g, ix) => (ix + 1) + " " + g.ko).join(" · ") : "";
-        return R("role:golden", "D2 첫 통화(골든타임)에서 전할 다섯 가지 — " + gk + ". 대본의 ⭐ 첫 연결 파트가 이 순서대로 준비돼 있고, 통화 후 「결과 남기기」의 전달 체크 5칸에 누르면 ⑩관제탑에 집계돼요.", ["HMR_GOLDEN_KEYS", "HM_STAGE_GUIDE.D2"]);
+        return R("role:golden", "D2 첫 통화(골든타임)에서 전할 다섯 가지 — " + gk + ". 대본의 ⭐ 첫 연결 파트가 이 순서대로 준비돼 있고, 통화 후 「결과 남기기」의 전달 체크 5칸에 누르면 「헬스메이트 운영본부」(관리자 화면)에 집계돼요.", ["HMR_GOLDEN_KEYS", "HM_STAGE_GUIDE.D2"]);
       }
       if (/3종|삼종/.test(t) && typeof FREE3_DEF !== "undefined") {
         return R("role:free3", "무료 3종은 ① " + FREE3_DEF.items[0].long + " ② " + FREE3_DEF.items[1].long + " ③ " + FREE3_DEF.items[2].long + " — 셋 다 회원 부담 0원이에요. 회원에게는 대본의 fc-3svc 문장 그대로 전하면 돼요.", ["FREE3_DEF", "fc-3svc"]);
@@ -339,7 +341,7 @@ function hiproAnswer(q, ctx) {
       if (/(영양제|식단|기기)/.test(t)) return R("role:tools", "도구는 검진 결과가 정해요 — 혈압이면 저염 식단·가정용 혈압계, 혈당이면 저당 식단·혈당측정기, 간이면 밀크시슬 같은 식으로 매핑돼 있어요(개연성 매핑 단일 소스). 카드의 「걸어온 길」에서 그 회원이 이미 하는 활동을 먼저 확인하세요.", ["MA_MAP"]);
     }
   } catch (e) {}
-  return { cat: cat, src: null, text: "그건 아직 제 사전에 없어요 — 지어내지 않을게요. 화면 이동이나 회원 관련 질문은 하이에게, 제도 문의는 운영(⑩ 관제탑)에 남겨주세요.", refs: [], label: "하이프로", none: true };
+  return { cat: cat, src: null, text: "그건 아직 제 사전에 없어요 — 지어내지 않을게요. 화면 이동이나 회원 관련 질문은 하이에게, 제도 문의는 운영 담당(헬스메이트 운영본부)에 남겨주세요.", refs: [], label: "하이프로", none: true };
 }
 
 /* 러너 훅(관리자) — 채점: 분류 일치 + 원천(src) 존재 + none 아님 */

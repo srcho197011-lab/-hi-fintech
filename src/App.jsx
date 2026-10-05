@@ -38,6 +38,8 @@ export default function App() {
   // RBAC — 현재 역할 + 차단 섹션 라우트 가드(URL 직접 접근·프로그램 이동도 홈으로 리다이렉트, 존재 암시 없이)
   const role = (typeof authRole === "function") ? authRole() : (authU ? "ADMIN" : null);
   useEffect(() => { if (role && role !== "ADMIN" && typeof isRestrictedSection === "function" && isRestrictedSection(sec)) setSecRaw("home"); }, [sec, role]);
+  /* 운영본부 라우트 가드 — 프로 사번 세션은 메뉴가 없어도(딥링크·프로그램 이동) 홈으로 되돌린다 */
+  useEffect(() => { if (sec === "hmops" && typeof hmProSession === "function" && hmProSession()) setSecRaw("home"); }, [sec]);
   // 회원가입 완료 직후 데이터 연결 온보딩으로 강제 진입(미완료 시)
   useEffect(() => {
     if (role !== "MEMBER") return;
@@ -173,6 +175,17 @@ export default function App() {
                     ))}
                   </div>
                 )}
+                {/* 헬스메이트 운영본부 — 센터 바로 아래 운영 담당자(지점장·지역단장·본사) 전용 하위 화면.
+                    ⚠️ role만으로는 못 가린다 — 프로도 ADMIN 세션으로 들어오기 때문이다(역할 축이 3종뿐).
+                       그래서 **프로 사번 세션이면(hmProSession) 메뉴를 내린다**: 사번 잠금을 푼 세션은
+                       프로 개인 세션이고, 운영본부는 사번을 잠근 운영 담당자만 본다(라우트 가드도 같은 조건). */}
+                {x.k === "healthmate" && role === "ADMIN" && !(typeof hmProSession === "function" && hmProSession()) && (
+                  <div className={`subnav ${sec === "hmops" ? "active" : ""}`}>
+                    <div className={`subnav-i ${sec === "hmops" ? "on" : ""}`} onClick={() => setSec("hmops")} title="지점장·사업단장·본사 운영 담당자용 관제 센터(관측 전용)">
+                      <Landmark size={15} color="#38BDF8" /> 헬스메이트 운영본부
+                    </div>
+                  </div>
+                )}
                 {/* 하이펫 연계 — 치료비 케어 바로 아래. 자매앱(pet/)은 별도 번들이라 섹션이 아니라 링크로 연다(새 탭, 하이핀 세션 유지) */}
                 {x.k === "insurance" && (
                   <a className="snav snav-link" href="./pet/?sso=1" target="_blank" rel="noopener" title="하이펫 — 반려동물 건강·치료비 케어 (새 창)"
@@ -207,6 +220,8 @@ export default function App() {
           {(() => { const p = secParent(sec);
             // 라우트 가드(방어적 이중화): 비관리자는 차단 섹션 렌더 자체를 홈으로 대체(존재 암시 없음)
             if (role !== "ADMIN" && typeof isRestrictedSection === "function" && isRestrictedSection(sec)) return <HomeHub initial="home" onGo={setSec} />;
+            /* 운영본부 — 프로 사번 세션에서는 렌더 자체를 홈으로 대체(존재 암시 없음) */
+            if (sec === "hmops" && typeof hmProSession === "function" && hmProSession()) return <HomeHub initial="home" onGo={setSec} />;
             if (sec === "onboarding") return <DataOnboardingSection onGo={setSec} />;
             if (sec === "agent") return <SuperAgentSection onGo={setSec} />;
             if (p === "partner") return <PartnerInvestSection onGo={setSec} />;
@@ -215,6 +230,8 @@ export default function App() {
             if (p === "care") return <CareSection initial={sec} onGo={setSec} />;
             if (p === "insurance") return <InsuranceSection onGo={setSec} />;
             if (p === "mywallet") return <WalletHubSection initial={sec} onGo={setSec} />;
+            // 운영본부 — 헬스메이트 센터와 같은 부모(가드 승계)지만 별도 화면. 프로 콘솔보다 먼저 분기한다
+            if (sec === "hmops") return <HmOpsCenterSection onGo={setSec} />;
             if (p === "healthmate") return <HealthMateSection onGo={setSec} />;
             if (p === "ontology") return <OntologySection onGo={setSec} />;
             if (sec === "demo") return <DemoSection onGo={setSec} />;

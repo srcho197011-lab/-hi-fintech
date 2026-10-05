@@ -38,6 +38,7 @@ src/components/Marketing.jsx
 src/components/Social.jsx
 src/components/ConsultIntel.jsx
 src/components/HealthMate.jsx
+src/components/HmOpsCenter.jsx
 src/data/demoMembers.js
 src/data/healthOntology.js
 src/data/healthKnowledge.js

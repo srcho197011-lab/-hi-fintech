@@ -6,7 +6,7 @@
 
 /* ── 시드 유틸(별도 네임스페이스 — pilotCohort의 rng 소비 순서 불가침) ── */
 function _hmcRng(s) { return _mul32(_hmHash(String(s))); }
-const _HMC = { pros: null, sggIdx: null, sggW: null, session: {} };   // 메모리 캐시(저장 금지)
+const _HMC = { pros: null, sggIdx: null, sggW: null, session: {}, view: {} };   // 메모리 캐시(저장 금지)
 
 /* ── 지역단 약호 — 구 코드(HM-{약호}-26-{일련}) 재현 전용 ──
    프로 코드는 8H0001~8H9999 단일 번호대로 교체됐다(healthMate.js HM_CODES 주석). 약호는 이제
@@ -314,8 +314,16 @@ function hmcTouch(code, i, label) {
   return { ok: true, session: true };
 }
 function hmcTouches(code) { const k = (typeof hmCodeNorm === "function") ? hmCodeNorm(code) : code; return _HMC.session[k] || []; }
-/* 프로 1명 시점 요약(탭 배분) — 담당 회원 인덱스에서 파생 */
+/* 프로 1명 시점 요약(탭 배분) — 담당 회원 인덱스에서 파생.
+   ⚠️ 세션 캐시(_HMC.view) — 이 함수는 담당 시군구 전 회원에 cohortProOf를 돌리고 1명씩 단계 판정까지 해서
+      프로 1명당 수십 ms가 든다. 그런데 hmcProStats가 내부에서 이 함수를 **다시** 부르기 때문에
+      운영본부의 프로 1명 집계가 늘 두 번 스캔했다(실측: 702명 전체 42초). 산출은 전부 결정론
+      (cohortStageOf · cohortSignalOf · _hmHash — 저장소를 읽지 않는다)이라 같은 사번이면 항상 같은 값이고,
+      접촉 기록(_HMC.session)은 이 산출에 들어오지 않으므로 캐시해도 「집계는 원천과 일치」가 깨지지 않는다.
+      키는 정규화된 사번 — 구 코드(HM-…)로 들어와도 같은 칸을 쓴다. */
 function hmcProView(code) {
+  const ck = (typeof hmCodeNorm === "function") ? hmCodeNorm(code) : code;
+  if (ck && _HMC.view[ck]) return _HMC.view[ck];
   const ids = hmMembersOfPro(code);
   const v = { ids, n: ids.length, held: [], ready: [], signals: [], stall: [], byStage: {}, riskHi: [], family: [], shop: [] };
   HM_STAGES.forEach((s) => { v.byStage[s.k] = []; });
@@ -331,6 +339,8 @@ function hmcProView(code) {
     if (["L6"].indexOf(st.cur) >= 0 || (st.famN >= 3 && ["D4", "L5"].indexOf(st.cur) >= 0)) v.family.push(i);
     if ((["D4", "L5"].indexOf(st.cur) >= 0 && _hmHash("shp|" + i) % 100 < 60) || (st.cur === "D3" && _hmHash("shp|" + i) % 100 < 12)) v.shop.push(i);
   });
+  /* 캐시 상한 — 프로 명부가 702명이라 전원을 담아도 수 MB지만, 상한 없이 두는 습관은 남기지 않는다 */
+  if (ck) { if (Object.keys(_HMC.view).length > 900) _HMC.view = {}; _HMC.view[ck] = v; }
   return v;
 }
 

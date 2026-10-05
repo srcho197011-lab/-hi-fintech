@@ -26,7 +26,7 @@ const USERS_KEY = "hifin_users";       // 실명확인 후 가입한 일반 회�
 try { localStorage.removeItem(AUTH_KEY); } catch (e) {}
 function authCurrent() { try { const a = JSON.parse(sessionStorage.getItem(AUTH_KEY) || "null"); if (a && a.role === "GUEST") { try { sessionStorage.removeItem(AUTH_KEY); } catch (e2) {} try { localStorage.removeItem(DEMO_SESSION_KEY); } catch (e2) {} return null; } return a; } catch (e) { return null; } }   // 콘텐츠 보호(2026-07-24): 기존 GUEST 세션도 발견 즉시 파기
 function authSet(u) { try { sessionStorage.setItem(AUTH_KEY, JSON.stringify(u)); } catch (e) {} demoNotify(); }
-function appLogout() { try { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); hipetSsoRevoke(); } catch (e) {} demoNotify(); }
+function appLogout() { try { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); localStorage.removeItem(DEMO_SESSION_KEY); hipetSsoRevoke(); } catch (e) {} try { hmProSessionClear(); } catch (e) {} demoNotify(); }
 
 /* ══ 하이펫 자매앱 자동 로그인(SSO 핸드오프) ══
    두 앱은 같은 오리진(/ 과 /pet/)이라 localStorage를 공유한다. 하이핀에서 하이펫 메뉴를 누르는 순간
@@ -88,6 +88,24 @@ function _authSame(input, expected) {
 function authRole() { const a = authCurrent(); if (!a) return null; return a.role || "ADMIN"; }  // 레거시 세션(role 없음)=관리자
 function isAdminRole() { return authRole() === "ADMIN"; }
 function isGuestRole() { return authRole() === "GUEST"; }
+
+/* ── 프로 사번 세션 축 ──────────────────────────────────────────────────────────
+   세션 역할은 ADMIN/MEMBER/GUEST 3종뿐이라, 「프로 개인」과 「운영 담당자」를 역할로 가를 수 없다.
+   프로는 헬스메이트 센터에서 **사번(8H0001~)으로 잠금을 풀고** 들어오므로, 그 사번이 세션에 있으면
+   그 세션은 프로 개인 세션으로 본다 — 운영본부(지점장·지역단장·본사) 화면을 가리는 단일 기준이다.
+   (형 지시 2026-10-05 ⑤ 「프로 개인에게는 나타나지 않도록」의 실제 집행점) */
+function hmProSession() { try { return sessionStorage.getItem("hifin_hm_code") || ""; } catch (e) { return ""; } }
+/* 프로 세션 정리 — 로그아웃·「사번 잠금」 두 곳에서 같이 부른다.
+   사번과 함께 단계 선택 상태(hifin_hm_stagesel_{사번})도 지운다: 시연 노트북을 돌려 쓸 때
+   다음 사람이 앞 사람이 펼쳐 둔 단계 명단을 이어 보지 않도록. */
+function hmProSessionClear() {
+  try {
+    sessionStorage.removeItem("hifin_hm_code");
+    const del = [];
+    for (let i = 0; i < sessionStorage.length; i++) { const k = sessionStorage.key(i); if (k && k.indexOf("hifin_hm_stagesel_") === 0) del.push(k); }
+    del.forEach((k) => { try { sessionStorage.removeItem(k); } catch (e) {} });
+  } catch (e) {}
+}
 
 /* 로그인 실패 잠금(5회 실패 → 10분) */
 const LOCK_KEY = "hifin_login_lock";

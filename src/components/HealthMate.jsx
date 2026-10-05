@@ -10,6 +10,8 @@ function HmStyle() {
   .hmhero h2{margin:4px 0 2px;font-size:20px;font-weight:900}
   .hmcard{background:#fff;border:1px solid var(--hmln);border-radius:14px;padding:14px 16px;margin-top:10px}
   .hmtabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+  .hmtabsub{margin:8px 2px 0;background:#F8FAFC;border:1px solid var(--hmln);border-left:3px solid var(--hmo);border-radius:0 10px 10px 0;padding:7px 12px;font-size:11.8px;line-height:1.55;color:${HM_C.mut}}
+  .hmtabsub b{color:${HM_C.deep}}
   .hmtab{border:1.5px solid var(--hmln);background:#fff;border-radius:999px;padding:7px 13px;font-size:12.3px;font-weight:800;cursor:pointer;color:${HM_C.mut};display:flex;align-items:center;gap:5px}
   .hmtab.on{background:var(--hmo);border-color:var(--hmo);color:#fff}
   .hmnumwrap{display:grid;grid-template-columns:4fr 2fr 1.4fr;gap:10px;margin-top:12px;align-items:start}
@@ -49,6 +51,21 @@ function HmStyle() {
   @media(max-width:1100px){.hmnumwrap{grid-template-columns:1fr}}
   @media(max-width:900px){.hmnum{grid-template-columns:repeat(2,1fr)}.hmpipe{grid-template-columns:repeat(4,1fr)}.hmgrid2{grid-template-columns:1fr}}
   `}</style>);
+}
+
+/* 표시 이름 — 프로/관리자 콘솔 안에서는 가리지 않고 전체 이름을 쓴다(형 지시 2026-10-05).
+   ⚠️ 마스킹 정의(_hmMask · _hcMask)와 데이터 계층은 손대지 않는다 — 회원이 보는 화면의 마스킹 규칙,
+      인계 카드 데이터(card.member.mask)와 대본 {가명} 슬롯, 골든셋(fixtures/handoff_*_v1.json)은 그대로다.
+      해제는 "렌더 지점"에서만 일어나고, 그 유일한 통로가 이 함수다. 이 콘솔은 사번 게이트 뒤의
+      프로 전용 화면이고(회원 역할은 isRestrictedSection으로 도달 불가), 코호트 10만 명은 합성 데이터다. */
+function _hmProName(x) {
+  if (!x) return "회원";
+  if (typeof x === "string") return x;                       /* 이미 이름 문자열 */
+  if (x.name) return String(x.name);                         /* 회원 레코드(m) · 코호트 멤버 */
+  if (x.cohortIndex != null && typeof cohortMemberAt === "function") {
+    try { const m = cohortMemberAt(x.cohortIndex); if (m && m.name) return String(m.name); } catch (e) {}
+  }
+  return String(x.mask || "회원");                            /* 원천을 못 찾으면 마스크 그대로(열지 않는다) */
 }
 
 /* 「이 화면의 DB」 패널 — HM_DB_NOTE 단일 소스, 접이식 + 담당 단계 배지 */
@@ -104,7 +121,7 @@ function HmCohortCard({ card, code, onDone, compact }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
         <div style={{ fontWeight: 900 }}>
           {locked && <Lock size={12} color={HM_C.hold} style={{ verticalAlign: -2, marginRight: 3 }} />}
-          {c.mask} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.sex} · {c.region ? c.region.sido + " " + c.region.sgg : "-"}</span>
+          {_hmProName(c.m)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.sex} · {c.region ? c.region.sido + " " + c.region.sgg : "-"}</span>
           <span className="hmpill" style={{ marginLeft: 6, background: "#F1F5F9", color: HM_C.mut }}>코호트</span>
           <span className="hmpill" style={{ marginLeft: 4, background: HM_C.bg, color: HM_C.dark }}>{c.stage.cur} {HM_STAGES.find((s) => s.k === c.stage.cur).name}</span>
           {c.stage.stalled && <span className="hmpill" style={{ marginLeft: 4, background: "#FFF7ED", color: HM_C.stall }}>🟠 정체 {c.stage.stalledDays}일</span>}
@@ -130,7 +147,7 @@ function HmCohortCard({ card, code, onDone, compact }) {
           : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.2 }} title={vg.why || ""}>📹 {vg.code === "consent" ? "영상 동의 없음" : vg.code === "lock" ? "접촉 락" : vg.code === "hold" ? "접촉 보류" : "요청 불가"}</span>}
         <span style={{ fontSize: 10.3, color: HM_C.mut }}>{locked ? "결과 수령 대기 — 시스템이 자동 해제" : "시연 기록(세션) — 새로고침 시 초기화"}</span>
       </div>
-      {vidOpen && <HmVideoModal subject={c.i} name={c.mask} card={(() => { try { return buildHandoffCard(c.i, { v2: true }); } catch (e) { return null; } })()}
+      {vidOpen && <HmVideoModal subject={c.i} name={_hmProName(c.m)} card={(() => { try { return buildHandoffCard(c.i, { v2: true }); } catch (e) { return null; } })()}
         onClose={() => setVidOpen(false)}
         onDone={(r) => { const t = hmcTouch(code, c.i, "영상 상담" + (r.mode ? "(" + (r.mode === "video" ? "영상" : r.mode === "voice" ? "음성" : "문자") + ")" : "")); if (onDone) onDone(t); }} />}
     </div>
@@ -281,7 +298,7 @@ function HmTabSignals({ code, onContact, cview }) {
       <div key={i} className="hmrow">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
           <div style={{ fontWeight: 900 }}>
-            {c.mask} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.m.sex} · {hmDanOf(c.m)}</span>
+            {_hmProName(c.m)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.m.sex} · {hmDanOf(c.m)}</span>
             <span className="hmpill" style={{ marginLeft: 7, background: c.direct ? "#F0FDF4" : "#EFF6FF", color: c.direct ? HM_C.ok : HM_C.blue }}>{c.direct ? "요청" : "AI 선별"}</span>
             <span className="hmpill" style={{ marginLeft: 4, background: HM_C.bg, color: HM_C.dark }}>{c.typeKo}</span>
             <span className="hmpill" style={{ marginLeft: 4, background: "#F8FAFC", color: HM_C.mut }}>{c.tier} · SLA {c.sla}h · {c.stage}</span>
@@ -291,7 +308,7 @@ function HmTabSignals({ code, onContact, cview }) {
         {openId === i && (<div style={{ marginTop: 8 }}>
           <div style={{ fontSize: 11.5, fontWeight: 800, color: HM_C.deep }}>하이의 근거</div>
           {c.why.map((w, j) => <div key={j} style={{ fontSize: 11.8, color: HM_C.mut, lineHeight: 1.6 }}>· {w[0]} <b style={{ color: HM_C.dark }}>{w[1]}</b></div>)}
-          <div className="hmhi"><Bot size={12} style={{ verticalAlign: -2 }} /> 권장 첫 마디 — "{c.mask}님, {c.typeKo} 관련해서 확인해 드릴 게 있어 연락드렸어요. 지금 2분 괜찮으세요?"</div>
+          <div className="hmhi"><Bot size={12} style={{ verticalAlign: -2 }} /> 권장 첫 마디 — "{_hmProName(c.m)}님, {c.typeKo} 관련해서 확인해 드릴 게 있어 연락드렸어요. 지금 2분 괜찮으세요?"</div>
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <button className="hmbtn" onClick={() => onContact(c.m, { key: "sig-" + c.type, tab: "①", label: "신호 접촉(" + c.typeKo + ")", result: "연결됨" })}><Phone size={12} /> 연결하기</button>
             <button className="hmbtn gh" onClick={() => onContact(c.m, { key: "sig-noti", tab: "①", label: "안내 발송", result: "발송", notify: "담당 프로가 " + c.typeKo + " 안내를 보내드렸어요 — 하이에게 물어보셔도 돼요.", notifyTitle: "건강 안내 도착" })}><Send size={12} /> 안내 발송</button>
@@ -463,8 +480,11 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   </div></div>);
 }
 
-/* ② 보험 배정·대기(순번 배분 + 접촉 락) */
-function HmTabIns({ code, pro, onContact, refresh, cview }) {
+/* ② 보험 배정·접촉 락(순번 배분 + 락 명단) — 「첫 연결 대기(READY)」 명단은 ③ 탭이 소유한다.
+   전에는 cview.ready를 ②와 ③이 같이 그려서, 같은 5명이 「결과 수령」과 「결합 패키지 대기」라는
+   다른 이름으로 두 번 나왔다(탭 이름만 보고 무엇을 보는 화면인지 알 수 없던 원인).
+   이제 ②는 배정·락까지, ③은 첫 연결부터 — 경계를 이름과 내용이 같이 지킨다. */
+function HmTabIns({ code, pro, onContact, refresh, cview, onTab }) {
   const [vidFor, setVidFor] = React.useState(null);   /* 영상 V2 — 요청 대상 회원 */
   const q = hmInsQueue();
   const members = (typeof demoMembers !== "undefined" ? demoMembers : []);
@@ -478,7 +498,7 @@ function HmTabIns({ code, pro, onContact, refresh, cview }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
           <div style={{ fontWeight: 900 }}>
             {lk.locked && <Lock size={13} color={HM_C.hold} style={{ verticalAlign: -2, marginRight: 4 }} />}
-            {_hmMask(m.name)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex} · 가입 {_hmDay(x.at)}</span>
+            {_hmProName(m)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex} · 가입 {_hmDay(x.at)}</span>
             {lk.locked ? <span className="hmpill" style={{ marginLeft: 7, background: "#F1F5F9", color: HM_C.hold }}>HELD · 접촉 금지</span>
               : <span className="hmpill" style={{ marginLeft: 7, background: "#F0FDF4", color: HM_C.ok }}>READY · 결과 수령됨</span>}
           </div>
@@ -512,17 +532,23 @@ function HmTabIns({ code, pro, onContact, refresh, cview }) {
     <div style={{ fontWeight: 900, fontSize: 13, margin: "12px 0 7px" }}>내 배정 {mine.length}건</div>
     {mine.length ? mine.map((x) => row(x, true)) : <div className="hmrow" style={{ color: HM_C.mut }}>이번 순번 배정이 없어요 — 다음 회차에 자동 배정돼요.</div>}
     {cview && <HmCohortList title="② 검진 전 대기(락) — 배정 완료·접촉 금지" ids={cview.held} code={code} compact />}
-    {cview && <HmCohortList title="② 결과 수령 — 첫 연결 대기(READY)" ids={cview.ready} code={code} compact />}
+    {cview && cview.ready.length ? (<div className="hmcard" style={{ marginTop: 10, background: "#F0FDF4", border: "1px solid #BBF7D0", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      <span style={{ fontSize: 12.2, lineHeight: 1.6, flex: 1, minWidth: 200 }}>
+        <b style={{ color: HM_C.ok }}>락이 풀린 회원 {cview.ready.length.toLocaleString()}명</b> — 검진 결과가 도착해 연락이 가능해졌어요.
+        이 명단과 첫 연결 문안은 <b>③ 첫 연결·만기 터치</b> 탭에 있어요(한 명단을 두 탭에 겹쳐 두지 않아요).
+      </span>
+      {typeof onTab === "function" && <button className="hmbtn" onClick={() => onTab(3)}>③ 첫 연결로 가기 →</button>}
+    </div>) : null}
     <div style={{ fontWeight: 900, fontSize: 13, margin: "12px 0 7px", color: HM_C.mut }}>지역단 전체 배정 현황(참고) {others.length}건</div>
     {others.map((x) => row(x, false))}
-    {vidFor && <HmVideoModal subject={vidFor} name={_hmMask(vidFor.name)} card={(() => { try { return hmCustomerCard(vidFor); } catch (e) { return null; } })()}
+    {vidFor && <HmVideoModal subject={vidFor} name={_hmProName(vidFor)} card={(() => { try { return hmCustomerCard(vidFor); } catch (e) { return null; } })()}
       onClose={() => setVidFor(null)}
       onDone={(r) => { onContact(vidFor, { key: "ins-video", tab: "②", label: "영상 상담" + (r.mode ? "(" + (r.mode === "video" ? "영상" : r.mode === "voice" ? "음성" : "문자") + ")" : ""), result: r.result, note: r.summary || "" }); }} />}
   </div>);
 }
 
-/* ③ 검진 후 건강 터치 */
-function HmTabTouch({ code, onContact, cview }) {
+/* ③ 첫 연결 · 만기·재검진 터치 — cview.ready(첫 연결 대기) 명단을 이 탭이 소유한다(② 중복 제거) */
+function HmTabTouch({ code, onContact, cview, onTab }) {
   const members = hmScope(code);
   const rows = members.map((m) => ({ m, plan: hmTouchPlan(m) })).filter((x) => x.plan.items.length);
   return (<div>
@@ -531,11 +557,12 @@ function HmTabTouch({ code, onContact, cview }) {
       <b style={{ fontSize: 12.5 }}>결합 원칙</b>
       <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 3 }}>첫 연결은 <b style={{ color: HM_C.dark }}>결과분석 + 검진대비보험 안내를 한 번의 연락으로</b> — 두 번째 전화는 영업으로 읽혀요. 이후 터치는 조건 충족 회원에게만 생겨요.</div>
     </div>
-    {cview && <HmCohortList title="③ 결합 패키지 대기 — 결과분석+보장 안내(1회 통합)" ids={cview.ready} code={code} />}
-    {!rows.length && !(cview && cview.ready.length) && <div className="hmrow" style={{ marginTop: 10, color: HM_C.mut }}>터치 예정 회원이 없어요 — 검진결과 수령(②탭) 후 자동으로 큐가 생겨요.</div>}
+    {cview && <HmCohortList title="③ 첫 연결 대기 — 결과분석+보장 안내(1회 통합)" ids={cview.ready} code={code} />}
+    {!rows.length && !(cview && cview.ready.length) && <div className="hmrow" style={{ marginTop: 10, color: HM_C.mut }}>터치 예정 회원이 없어요 — 검진결과 수령(② 배정·접촉 락 탭) 후 자동으로 큐가 생겨요.</div>}
+    {rows.length ? (<div style={{ fontWeight: 900, fontSize: 13, margin: "14px 0 0", color: HM_C.deep }}>만기·재검진 터치 계획 {rows.length}명 <span style={{ fontWeight: 600, color: HM_C.mut, fontSize: 11.4 }}>— 첫 연결 뒤에 조건이 충족된 회원에게만 생기는 후속 터치예요(D-30 · D-7 순서)</span></div>) : null}
     {rows.map(({ m, plan }, i) => (
       <div key={i} className="hmrow" style={{ marginTop: i === 0 ? 10 : 0 }}>
-        <div style={{ fontWeight: 900 }}>{_hmMask(m.name)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span> {plan.endSrc && <span className="hmpill" style={{ marginLeft: 6, background: "#F8FAFC", color: HM_C.mut }}>만기 계산: {plan.endSrc}</span>}</div>
+        <div style={{ fontWeight: 900 }}>{_hmProName(m)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span> {plan.endSrc && <span className="hmpill" style={{ marginLeft: 6, background: "#F8FAFC", color: HM_C.mut }}>만기 계산: {plan.endSrc}</span>}</div>
         <div style={{ marginTop: 7 }}>
           {plan.items.map((it, j) => (
             <div key={j} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderTop: j ? "1px dashed #F1F5F9" : "none" }}>
@@ -570,7 +597,7 @@ function HmTabRisk({ code, cview }) {
       const rc = hmRiskCards(m);
       return (<div key={i} className="hmrow" style={{ marginTop: i === 0 ? 10 : 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
-          <b>{_hmMask(m.name)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span></b>
+          <b>{_hmProName(m)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span></b>
           <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut }}>{rc.src}</span>
         </div>
         <div className="hmgrid2" style={{ marginTop: 7 }}>
@@ -599,14 +626,14 @@ function HmTabLife({ code, kind, cview }) {
         <div style={{ fontSize: 11.6, color: HM_C.mut, marginTop: 2, lineHeight: 1.6 }}>응급 징후 신호가 있으면 그 카드는 모든 카드보다 위에 고정되고, 문안은 상담이 아니라 <b style={{ color: HM_C.red }}>119·응급 안내가 먼저</b> 나가요.</div>
       </div>
     )}
-    {cview && <HmCohortList title={kind === "shop" ? "⑤ 행동·재구매 시점 회원" : "⑥ 가구·돌봄 신호 회원"} ids={kind === "shop" ? cview.shop : cview.family} code={code} compact />}
+    {cview && <HmCohortList title={kind === "shop" ? "⑤ 제품·재구매 안내 시점 회원" : "⑥ 가구·돌봄 신호 회원"} ids={kind === "shop" ? cview.shop : cview.family} code={code} compact />}
     {members.map((m, i) => {
       const adh = _hmLs("hifin_adh_" + m.email, {});
       const famRaw = localStorage.getItem("hifin_family_" + m.email);
       const fam = famRaw ? JSON.parse(famRaw) : null;
       const pts = m.managementPoints || [];
       return (<div key={i} className="hmrow" style={{ marginTop: i === 0 ? 10 : 0 }}>
-        <b>{_hmMask(m.name)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span></b>
+        <b>{_hmProName(m)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {_hmBand(m)} {m.sex}</span></b>
         {kind === "shop" ? (<div style={{ fontSize: 11.8, color: HM_C.mut, marginTop: 5, lineHeight: 1.65 }}>
           <div>· <b style={{ color: HM_C.ink }}>무엇을</b> — 관리 포인트 연계 제품군: {pts.slice(0, 3).join(" · ") || "생활관리 일반"}</div>
           <div>· <b style={{ color: HM_C.ink }}>왜</b> — {(m.highRiskDiseases || []).join("·") || "예방 관리"} 프로필 기반(성분 근거는 A3 온톨로지)</div>
@@ -649,7 +676,7 @@ function HmTabUw({ code, cview }) {
       <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 4 }}>하이핀은 <b style={{ color: HM_C.dark }}>보장공백 유형 코드 + 연령대·성별 + 건강 등급(플래그 수)만</b> 정리해 넘기고, 결과를 받아 해설해요. 원본 수치·인수 판정은 넘기지 않아요.</div>
       {m && <div style={{ marginTop: 8, fontSize: 12 }}>
         <select value={sel || ""} onChange={(e) => { setSel(e.target.value); setLog([]); }} style={{ border: `1.5px solid ${HM_C.line}`, borderRadius: 8, padding: "6px 9px", fontSize: 12 }}>
-          {members.map((x) => <option key={x.email} value={x.email}>{_hmMask(x.name)} · {_hmBand(x)} {x.sex}{x._cohort ? " · 코호트" : (typeof hmIsSelf === "function" && hmIsSelf(x) ? " · 본인(실측)" : " · 체험")}</option>)}
+          {members.map((x) => <option key={x.email} value={x.email}>{_hmProName(x)} · {_hmBand(x)} {x.sex}{x._cohort ? " · 코호트" : (typeof hmIsSelf === "function" && hmIsSelf(x) ? " · 본인(실측)" : " · 체험")}</option>)}
         </select>
         {gaps && gaps.gaps && <span style={{ marginLeft: 8, color: HM_C.mut, fontSize: 11.5 }}>보장공백 신호 {gaps.gaps.length}건 감지</span>}
       </div>}
@@ -791,7 +818,7 @@ function HmTabBoard({ code, pro, onContact, cview }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
             {/* 핀 — 본인 계정(조성래)은 실측 데이터다. 「체험」으로 찍으면 "조성래 실데이터로 설명한다"는
                  시연 전제와 정면으로 어긋나므로 분기한다. 지역 표기는 코호트 카드와 같은 "시도 시군구". */}
-            <div style={{ fontWeight: 900 }}>{c.mask} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.m.sex} · {c.place || c.dan.replace("지역단", "")}</span>
+            <div style={{ fontWeight: 900 }}>{_hmProName(c.m)} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.m.sex} · {c.place || c.dan.replace("지역단", "")}</span>
               {c.self
                 ? <span className="hmpill" style={{ marginLeft: 6, background: "#ECFDF5", color: HM_C.ok }}>실측(본인)</span>
                 : <span className="hmpill" style={{ marginLeft: 6, background: "#EFF6FF", color: HM_C.blue }}>체험</span>}
@@ -942,14 +969,14 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
     <div onClick={(e) => e.stopPropagation()} style={{ width: "min(560px,96vw)", background: "#fff", borderRadius: "18px 18px 0 0", padding: "10px 18px 18px", boxShadow: "0 -10px 40px rgba(0,0,0,.25)" }}>
       <div style={{ width: 46, height: 5, background: "#CBD5E1", borderRadius: 3, margin: "0 auto 10px" }} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 8 }}>
-        <b style={{ fontSize: 15.5, color: HM_C.ink }}>{card.member.mask}님 통화, 어떻게 됐어요?</b>
+        <b style={{ fontSize: 15.5, color: HM_C.ink }}>{_hmProName(card.member)}님 통화, 어떻게 됐어요?</b>
         <span style={{ fontSize: 10.5, color: HM_C.mut, marginLeft: "auto" }}>탭 한 번이면 끝나요 · [예시·시연]</span>
         <button onClick={onClose} aria-label="닫기" style={{ flex: "none", width: 30, height: 30, borderRadius: 15, border: "1px solid #CBD5E1", background: "#fff", color: "#475569", fontSize: 14, fontWeight: 900, cursor: "pointer", lineHeight: 1 }}>✕</button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
         {HM_RESULT_CODES.map((rc) => (
           <button key={rc.k} onClick={() => setResult(rc.k)} style={{ display: "flex", alignItems: "center", gap: 7, textAlign: "left", cursor: "pointer",
-            border: result === rc.k ? "2px solid " + HM_C.brand : "1px solid #E2E8F0", background: result === rc.k ? "#FFF4E8" : "#fff", borderRadius: 10, padding: "9px 10px" }}>
+            border: result === rc.k ? "2px solid " + HM_C.pri : "1px solid #E2E8F0", background: result === rc.k ? "#FFF4E8" : "#fff", borderRadius: 10, padding: "9px 10px" }}>
             <span style={{ fontSize: 16 }}>{rc.icon}</span>
             <span style={{ flex: 1 }}><b style={{ fontSize: 12.6, color: HM_C.ink }}>{rc.ko}</b><span style={{ display: "block", fontSize: 10, color: "#94A3B8" }}>{rc.desc}</span></span>
           </button>))}
@@ -957,12 +984,12 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
         <b style={{ fontSize: 11.6, color: "#475569", width: 118, paddingTop: 3 }}>어떤 말이 통했어요?</b>
         <div style={{ flex: 1, display: "flex", gap: 5, flexWrap: "wrap" }}>
-          {branches.map((b2, n) => <span key={b2.id} onClick={() => setBranch(branch === n + 1 ? null : n + 1)} className="hmpill" style={{ cursor: "pointer", border: branch === n + 1 ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: branch === n + 1 ? "#FFF4E8" : "#fff", color: branch === n + 1 ? "#C2410C" : "#334155" }}>응대 {n + 1} · {brKo(b2)}</span>)}
+          {branches.map((b2, n) => <span key={b2.id} onClick={() => setBranch(branch === n + 1 ? null : n + 1)} className="hmpill" style={{ cursor: "pointer", border: branch === n + 1 ? "1.5px solid " + HM_C.pri : "1px solid #CBD5E1", background: branch === n + 1 ? "#FFF4E8" : "#fff", color: branch === n + 1 ? "#C2410C" : "#334155" }}>응대 {n + 1} · {brKo(b2)}</span>)}
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
         <b style={{ fontSize: 11.6, color: "#475569", width: 118 }}>다시 연락할 날</b>
-        {FOLLOWS.map(([ko, d]) => <span key={ko} onClick={() => setFollow(d)} className="hmpill" style={{ cursor: "pointer", border: follow === d ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: follow === d ? "#FFF4E8" : "#fff", color: d == null && follow === null ? "#94A3B8" : (follow === d ? "#C2410C" : "#334155") }}>{ko}</span>)}
+        {FOLLOWS.map(([ko, d]) => <span key={ko} onClick={() => setFollow(d)} className="hmpill" style={{ cursor: "pointer", border: follow === d ? "1.5px solid " + HM_C.pri : "1px solid #CBD5E1", background: follow === d ? "#FFF4E8" : "#fff", color: d == null && follow === null ? "#94A3B8" : (follow === d ? "#C2410C" : "#334155") }}>{ko}</span>)}
       </div>
       {isD2 && (<div style={{ marginTop: 9, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "8px 11px" }}>
         <b style={{ fontSize: 11.6, color: "#92400E" }}>⭐ 골든타임 전달 체크 — 오늘 통화에서 말한 것만 눌러주세요</b>
@@ -973,14 +1000,14 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
               background: golden.indexOf(g.k) >= 0 ? "#FDE68A" : "#fff", color: golden.indexOf(g.k) >= 0 ? "#92400E" : "#78716C" }}>
               {golden.indexOf(g.k) >= 0 ? "✓ " : ""}{g.ko}</span>))}
         </div>
-        <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>체크는 ⑩ 관제탑 「골든타임 전달률」에 집계돼요 — 5칸 다 전하는 게 목표예요.</div>
+        <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>체크는 「헬스메이트 센터 통합 운영」(관리자 화면)의 골든타임 전달률에 집계돼요 — 5칸 다 전하는 게 목표예요.</div>
       </div>)}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
         <b style={{ fontSize: 11.6, color: "#475569", width: 118, flex: "none" }}>간단 메모</b>
         <input value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={120} placeholder="필요할 때만 한 줄 — 예: 다음엔 오후에 통화 원하심"
           style={{ flex: 1, border: "1px solid #CBD5E1", borderRadius: 9, padding: "8px 11px", fontSize: 12.2, color: "#334155" }} />
       </div>
-      <button onClick={save} disabled={!result} style={{ width: "100%", marginTop: 12, background: result ? HM_C.brand : "#E2E8F0", border: "none", color: "#fff", borderRadius: 11, padding: "12px", fontSize: 14.5, fontWeight: 900, cursor: result ? "pointer" : "default" }}>저장하기</button>
+      <button onClick={save} disabled={!result} style={{ width: "100%", marginTop: 12, background: result ? HM_C.pri : "#E2E8F0", border: "none", color: "#fff", borderRadius: 11, padding: "12px", fontSize: 14.5, fontWeight: 900, cursor: result ? "pointer" : "default" }}>저장하기</button>
       <div style={{ fontSize: 10.4, color: HM_C.mut, textAlign: "center", marginTop: 7 }}>저장하면 카드가 접혀요 · 완결·거절은 내일 명단에서 자동으로 빠지고, 후속일이 온 회원은 맨 위로 와요</div>
     </div>
   </div>);
@@ -1086,7 +1113,7 @@ function HmHandoffCard({ ent, code, onToast }) {
     <div style={{ flex: 1, padding: "11px 13px", minWidth: 0 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
         <div style={{ fontWeight: 900, fontSize: 14.5 }}>
-          {c.member.mask} <span style={{ color: HM_C.mut, fontWeight: 600, fontSize: 12 }}>· {c.member.ageBand} {c.member.sex} · {c.member.region}</span>
+          {_hmProName(c.member)} <span style={{ color: HM_C.mut, fontWeight: 600, fontSize: 12 }}>· {c.member.ageBand} {c.member.sex} · {c.member.region}</span>
           <span className="hmpill" style={{ marginLeft: 6, background: g.bg, color: g.c }}>{g.ko}</span>
           <span className="hmpill" style={{ marginLeft: 4, background: "#F1F5F9", color: "#475569" }}>{c.member.stage} 단계</span>
           {(c.script.firstconnect || []).length > 0 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDE68A", color: "#92400E", fontWeight: 900 }}>⭐ 첫 연결 골든타임</span>}
@@ -1118,7 +1145,7 @@ function HmHandoffCard({ ent, code, onToast }) {
       </div>
       {/* 발밑 표시 4종 — 호버 툴팁(형 지시 2026-09-01 · 설명서 부록과 같은 문안) */}
       <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11.4, color: "#475569", alignItems: "center" }}>
-        <b style={{ color: g.c, cursor: "help" }} title="카드 발행 후 이 시간 안에 첫 접촉이 이뤄져야 해요 — 회원의 위험 등급이 시한을 정해요. 넘기면 「응답 시한 임박」 칸과 ⑩관제탑 준수율 집계에 잡혀요.">⏱ {c.timing.sla}</b>
+        <b style={{ color: g.c, cursor: "help" }} title="카드 발행 후 이 시간 안에 첫 접촉이 이뤄져야 해요 — 회원의 위험 등급이 시한을 정해요. 넘기면 「응답 시한 임박」 칸과 「헬스메이트 센터 통합 운영」(관리자 화면)의 준수율 집계에 잡혀요.">⏱ {c.timing.sla}</b>
         <span style={{ cursor: "help" }} title="통화만 하면 '접촉'이에요 — 1순위 개입이 실제 행동(예약·등록 등 데이터)으로 이어져야 '완결'로 집계돼요.">완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
         {/* 영상 V5 — 진료 연결 완결 회수. 「연결됨」 사실만 돌아온다(병원·진료과·내용은 오지 않음) */}
         {(() => {
@@ -1197,38 +1224,77 @@ function HmHandoffCard({ ent, code, onToast }) {
     </div>
   </div>);
 }
-/* ══ D1~L8 단계 가이드 — 클릭하면 상세설명 + 관할 실사례(P6+, 형 지시 2026-08-30) ══ */
-function HmStageGuide({ code, cview }) {
-  const [sel, setSel] = React.useState(null);
+/* ══ D1~L8 단계 가이드 — 단계를 누르면 설명 + 그 단계의 「인원 현황(명단)」이 열린다
+      (형 지시 2026-10-05: D1을 누르면 71명 현황이 보여야 하고, 닫고 되돌아오는 길이 확실해야 한다)
+      · 명단은 기본 20명 + [더 보기] — 수백 명이어도 한 번에 그리지 않는다(카드 조립 비용은 1인당 약 0.4ms)
+      · 선택 상태(펼친 단계·상세로 들어간 회원)는 sessionStorage에 둔다 → 다른 탭에 갔다 와도,
+        접촉 기록으로 리마운트가 일어나도 보고 있던 자리로 되돌아온다 ══ */
+function HmStageGuide({ code, cview, onToast }) {
+  const SKEY = "hifin_hm_stagesel_" + (code || "x");
+  const boot = React.useMemo(() => { try { return JSON.parse(sessionStorage.getItem(SKEY) || "null") || {}; } catch (e) { return {}; } }, [code]);
+  const [sel, setSel] = React.useState(boot.sel || null);                                  /* 펼친 단계(D1~L8) */
+  const [detail, setDetail] = React.useState(boot.detail != null ? boot.detail : null);    /* 상세로 들어간 회원 인덱스 */
+  const [show, setShow] = React.useState(20);                                              /* 명단 노출 수 — 20씩 늘린다 */
+  const [q, setQ] = React.useState("");                                                    /* 검색 — 이름·시군구 */
   const byStage = (cview && cview.byStage) || {};
   const st = sel ? HM_STAGES.find((s) => s.k === sel) : null;
   const gd = sel ? HM_STAGE_GUIDE[sel] : null;
-  /* 관할 실사례 — 그 단계 회원 최대 2명(가명·상태·하이 코멘트) */
-  const live = React.useMemo(() => {
-    if (!sel) return [];
-    return ((byStage[sel] || []).slice(0, 2)).map((i) => { try { return cohortCardOf(i); } catch (e) { return null; } }).filter(Boolean);
-  }, [sel, code]);
+  /* 되돌아오기의 근거 — 이 키는 이 블록만 쓴다(세션 한정 · 회원 데이터 아님) */
+  React.useEffect(() => { try { sessionStorage.setItem(SKEY, JSON.stringify({ sel: sel, detail: detail })); } catch (e) {} }, [sel, detail, code]);
+  const pick = (k) => { const on = sel === k; setSel(on ? null : k); setDetail(null); setShow(20); setQ(""); };
+  const close = () => { setSel(null); setDetail(null); setShow(20); setQ(""); };
+  const ids = sel ? (byStage[sel] || []) : [];
+  /* 요약 — 기존 엔진 산출만 조립한다(새 계산·새 수치 없음). 단계 인원이 수백이어도 선택할 때 1회만 돈다 */
+  const sum = React.useMemo(() => {
+    const o = { n: ids.length, stall: 0, days: 0, held: 0, sig: 0, band: { "상": 0, "중": 0, "하": 0 }, cyc: {} };
+    ids.forEach((i) => {
+      try {
+        const s2 = cohortStageOf(i);
+        if (s2 && s2.stalled) { o.stall++; o.days += s2.stalledDays; }
+        if (s2 && s2.enrolled) o.held++;
+        if (typeof cohortSignalOf === "function" && cohortSignalOf(i)) o.sig++;
+        const hb = (typeof cohortHealthBrief === "function") ? cohortHealthBrief(i) : null;
+        if (hb && o.band[hb.band] != null) o.band[hb.band]++;
+        const cy = (typeof cycleOf === "function") ? cycleOf(i) : null;
+        const t = (cy && cy.t) ? cy.t : "PRE"; o.cyc[t] = (o.cyc[t] || 0) + 1;
+      } catch (e) {}
+    });
+    o.avg = o.stall ? Math.round(o.days / o.stall) : 0;
+    return o;
+  }, [sel, ids.length]);
+  /* 검색 — 이름·시군구·시도(프로 콘솔 전용 · 합성 코호트) */
+  const hits = React.useMemo(() => {
+    const t = q.trim();
+    if (!t) return ids;
+    return ids.filter((i) => {
+      try { const m = cohortMemberAt(i); if (!m) return false;
+        return (String(m.name || "").indexOf(t) >= 0 || String(m.sgg || "").indexOf(t) >= 0 || String(m.sido || "").indexOf(t) >= 0); } catch (e) { return false; }
+    });
+  }, [sel, q, ids.length]);
+  const rows = hits.slice(0, show);
+  const topCyc = Object.keys(sum.cyc).sort((a, b) => sum.cyc[b] - sum.cyc[a]).slice(0, 3);
   return (<div className="hmcard" style={{ marginTop: 10, padding: "11px 13px" }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-      <div style={{ fontSize: 12.6, fontWeight: 900, color: HM_C.ink }}>🧭 회원 여정 D1~L8 <span style={{ fontSize: 11, color: HM_C.mut, fontWeight: 600 }}>— 단계를 누르면 설명과 내 관할 실사례가 보여요</span></div>
-      {sel && <button className="hmbtn gh" style={{ padding: "3px 10px", fontSize: 11 }} onClick={() => setSel(null)}>닫기 ✕</button>}
+      <div style={{ fontSize: 12.6, fontWeight: 900, color: HM_C.ink }}>🧭 회원 여정 D1~L8 <span style={{ fontSize: 11, color: HM_C.mut, fontWeight: 600 }}>— 단계를 누르면 설명과 그 단계 <b style={{ color: HM_C.deep }}>인원 현황(명단)</b>이 열려요</span></div>
+      {sel && <button className="hmbtn gh" style={{ padding: "3px 10px", fontSize: 11 }} onClick={close}>닫기 ✕</button>}
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)", gap: 6, marginTop: 9 }}>
       {HM_STAGES.map((s) => { const n = (byStage[s.k] || []).length; const on = sel === s.k; const life = s.part === "LIFE";
-        return (<button key={s.k} onClick={() => setSel(on ? null : s.k)} style={{
-          border: on ? `2px solid ${life ? HM_C.brand : HM_C.ink}` : "1px solid #E2E8F0", cursor: "pointer",
+        return (<button key={s.k} onClick={() => pick(s.k)} title={(on ? "다시 누르면 닫혀요 — " : "누르면 ") + s.k + " 단계 " + n + "명 현황이 열려요"} style={{
+          border: on ? `2px solid ${life ? HM_C.pri : HM_C.ink}` : "1px solid #E2E8F0", cursor: "pointer",
           background: on ? (life ? "#FFF4E8" : "#EEF4FA") : "#fff", borderRadius: 10, padding: "7px 4px", textAlign: "center" }}>
-          <div style={{ fontSize: 12.5, fontWeight: 900, color: life ? HM_C.brand : HM_C.ink }}>{s.k}</div>
+          <div style={{ fontSize: 12.5, fontWeight: 900, color: life ? HM_C.pri : HM_C.ink }}>{s.k}</div>
           <div style={{ fontSize: 10.2, fontWeight: 700, color: "#475569" }}>{s.name}</div>
-          <div style={{ fontSize: 9.6, color: HM_C.mut }}>{n}명</div>
+          <div style={{ fontSize: 9.6, color: on ? HM_C.pri : HM_C.mut, fontWeight: on ? 900 : 400 }}>{n}명</div>
         </button>); })}
     </div>
     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9.8, color: HM_C.mut, marginTop: 4 }}>
       <span>◀ 데이터 자산 4단(D — 확보→통합)</span><span>생애 확장 4단(L — 정기→평생주기) ▶</span>
     </div>
     {st && gd && (<div style={{ marginTop: 10, border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden" }}>
-      <div style={{ background: st.part === "LIFE" ? "linear-gradient(135deg,#F5821F,#E56B0F)" : "linear-gradient(135deg,#0B2239,#1B3E5F)", color: "#fff", padding: "9px 13px" }}>
-        <b style={{ fontSize: 13.5 }}>{st.k} {st.name}</b> <span style={{ fontSize: 11.4, opacity: .9 }}>— {st.desc} · 내 관할 {((byStage[st.k] || []).length)}명</span>
+      <div style={{ background: st.part === "LIFE" ? "linear-gradient(135deg,#F5821F,#E56B0F)" : "linear-gradient(135deg,#0B2239,#1B3E5F)", color: "#fff", padding: "9px 13px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+        <span><b style={{ fontSize: 13.5 }}>{st.k} {st.name}</b> <span style={{ fontSize: 11.4, opacity: .9 }}>— {st.desc} · 내 관할 <b>{sum.n.toLocaleString()}명</b></span></span>
+        <button className="hmbtn gh" style={{ padding: "3px 10px", fontSize: 10.8, background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.45)", color: "#fff" }} onClick={close}>닫기 ✕</button>
       </div>
       <div style={{ padding: "10px 13px", fontSize: 12.2, lineHeight: 1.75 }}>
         {/* 세 줄의 뜻을 눈으로 구분한다 — 들어오는 조건(이 단계에 들어오는 기준)은 D1~L8 전 단계에서 강조 상자로 보여 준다 */}
@@ -1245,20 +1311,96 @@ function HmStageGuide({ code, cview }) {
           <b style={{ fontSize: 11.4, color: "#C2410C" }}>📖 사례 [예시·시연]</b>
           <div style={{ fontSize: 11.8, color: "#374151" }}>{gd.ex}</div>
         </div>
-        {live.length > 0 && (<div style={{ marginTop: 7 }}>
-          <b style={{ fontSize: 11.4, color: HM_C.ink }}>👥 내 관할 실사례</b>
-          {live.map((c) => (<div key={c.i} style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", background: "#F8FAFC", borderRadius: 8, padding: "6px 9px", marginTop: 4, fontSize: 11.6 }}>
-            <b>{_hmMask(c.m.name)}</b><span style={{ color: HM_C.mut }}>{_hmBand(c.m)} {c.m.sex}</span>
-            <span className="hmpill" style={{ background: c.status.bg, color: c.status.c }}>{c.status.ko}</span>
-            {c.stage.stalled && <span className="hmpill" style={{ background: "#FDECEC", color: "#B91C1C" }}>정체 {c.stage.stalledDays}일</span>}
-            <span style={{ color: "#475569", flex: 1, minWidth: 180 }}>🤖 {c.hi}</span>
-          </div>))}
-        </div>)}
+
+        {/* ── 인원 현황 — 이 단계 회원 전원(요약 → 검색 → 명단 20명씩 → 상세 → 되돌아가기) ── */}
+        <div style={{ marginTop: 9, borderTop: "1px solid #F1F5F9", paddingTop: 9 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+            <b style={{ fontSize: 12.4, color: HM_C.deep }}>👥 {st.k} {st.name} 인원 현황 — 총 {sum.n.toLocaleString()}명</b>
+            <span style={{ fontSize: 10.4, color: HM_C.mut }}>내 관할만 · 단계 판정은 데이터가 한다(수기 변경 없음)</span>
+          </div>
+          {sum.n === 0
+            ? <div className="hmrow" style={{ marginTop: 7, color: HM_C.mut }}>이 단계에 있는 관할 회원이 지금은 없어요 — 위 「들어오는 조건」이 충족되면 여기에 명단이 생겨요.</div>
+            : (<div>
+              {/* 요약 — 전부 기존 엔진 산출(정체·락·신호·위험 밴드·사이클) */}
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 6 }}>
+                {[["정체", sum.stall.toLocaleString() + "명", sum.stall ? "#FFF7ED" : "#F8FAFC", sum.stall ? HM_C.stall : HM_C.mut, "30일 이상 다음 행동이 없는 회원"],
+                  ["평균 정체일", sum.avg ? sum.avg + "일" : "-", "#F8FAFC", HM_C.mut, "정체 회원들의 평균 정체 기간"],
+                  ["접촉 락", sum.held.toLocaleString() + "명", sum.held ? "#F1F5F9" : "#F8FAFC", sum.held ? HM_C.hold : HM_C.mut, "검진결과 수령 전 — 연락 금지(하이가 자동 해제)"],
+                  ["신호 도래", sum.sig.toLocaleString() + "명", sum.sig ? "#F0FDF4" : "#F8FAFC", sum.sig ? HM_C.ok : HM_C.mut, "하이가 접촉 근거를 찾은 회원"],
+                  ["위험 상", sum.band["상"].toLocaleString() + "명", "#FFF1F2", HM_C.red, "위험 밴드 상 — 진단이 아니라 통계적 경향"],
+                  ["위험 중", sum.band["중"].toLocaleString() + "명", "#FFFBEB", HM_C.warn, "위험 밴드 중"],
+                  ["위험 하", sum.band["하"].toLocaleString() + "명", "#F0FDF4", HM_C.ok, "위험 밴드 하"]].map(([k, v, bg, c2, tip]) => (
+                  <span key={k} title={tip} style={{ background: bg, border: "1px solid #E2E8F0", borderRadius: 9, padding: "5px 9px", fontSize: 11.2, cursor: "help" }}>
+                    <span style={{ color: HM_C.mut }}>{k} </span><b style={{ color: c2 }}>{v}</b>
+                  </span>))}
+              </div>
+              {topCyc.length > 0 && <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>60일 사이클 분포 — {topCyc.map((t) => (t === "PRE" ? "사이클 전" : t) + " " + sum.cyc[t].toLocaleString() + "명").join(" · ")}{Object.keys(sum.cyc).length > 3 ? " 외" : ""}</div>}
+
+              {detail == null ? (<div>
+                {/* 검색 — 이름·시군구 */}
+                <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
+                  <input value={q} onChange={(e) => { setQ(e.target.value); setShow(20); }} placeholder="이름·시군구로 찾기 (예: 은평구)"
+                    style={{ flex: 1, minWidth: 180, boxSizing: "border-box", border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "7px 11px", fontSize: 12 }} />
+                  {q.trim() && <button className="hmbtn gh" style={{ padding: "4px 10px", fontSize: 11 }} onClick={() => { setQ(""); setShow(20); }}>검색 지우기</button>}
+                  <span style={{ fontSize: 11, color: HM_C.mut }}>{q.trim() ? hits.length.toLocaleString() + "명 일치" : sum.n.toLocaleString() + "명 전체"}</span>
+                </div>
+                {!hits.length && <div className="hmrow" style={{ marginTop: 7, color: HM_C.mut }}>「{q.trim()}」로 찾은 회원이 이 단계에 없어요.</div>}
+                {/* 명단 — 한 줄에 이름·연령대/성별·시군구·상태·정체일·사이클 단계·하이 한 줄 */}
+                {rows.map((i) => {
+                  let c = null; try { c = cohortCardOf(i); } catch (e) {}
+                  if (!c) return null;
+                  let cy = null; try { cy = (typeof cycleOf === "function") ? cycleOf(i) : null; } catch (e) {}
+                  const place = c.region ? (c.region.sido + " " + c.region.sgg) : ((c.m.sido || "") + " " + (c.m.sgg || "")).trim();
+                  return (<div key={i} onClick={() => setDetail(i)} title="누르면 이 회원 상세가 열려요 — [← 명단으로 되돌아가기]로 돌아와요"
+                    style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap", background: "#fff", border: "1px solid #EEF1F6", borderRadius: 9, padding: "6px 10px", marginTop: 4, fontSize: 11.6, cursor: "pointer" }}>
+                    <b style={{ minWidth: 52 }}>{_hmProName(c.m)}</b>
+                    <span style={{ color: HM_C.mut, minWidth: 58 }}>{c.band} {c.sex}</span>
+                    <span style={{ color: HM_C.mut, minWidth: 92 }}>{place || "-"}</span>
+                    <span className="hmpill" style={{ background: c.status.bg, color: c.status.c }}>{c.status.ko}</span>
+                    {c.stage.stalled
+                      ? <span className="hmpill" style={{ background: "#FDECEC", color: "#B91C1C" }}>정체 {c.stage.stalledDays}일</span>
+                      : <span className="hmpill" style={{ background: "#F1F5F9", color: HM_C.mut }}>정체 없음</span>}
+                    {cy && <span className="hmpill" style={{ background: "#EFF6FF", color: "#1D4ED8" }} title={cy.act || ""}>{cy.t ? cy.t + " " + cy.ko : cy.ko}</span>}
+                    <span style={{ color: "#475569", flex: 1, minWidth: 170 }}>🤖 {c.hi}</span>
+                    <span style={{ color: HM_C.pri, fontWeight: 800, flex: "none" }}>상세 ›</span>
+                  </div>);
+                })}
+                {/* 더 보기 — 기본 20명, 누를 때마다 20명씩 */}
+                {hits.length > rows.length && (
+                  <button className="hmbtn gh" style={{ width: "100%", marginTop: 7, fontSize: 11.5, justifyContent: "center" }} onClick={() => setShow(show + 20)}>
+                    더 보기 — {rows.length.toLocaleString()} / {hits.length.toLocaleString()}명 표시 중 (다음 {Math.min(20, hits.length - rows.length)}명)
+                  </button>)}
+                {rows.length > 20 && (
+                  <button className="hmbtn gh" style={{ width: "100%", marginTop: 4, fontSize: 11, justifyContent: "center", borderStyle: "dashed" }} onClick={() => setShow(20)}>처음 20명만 보기 ▲</button>)}
+              </div>) : (<div>
+                {/* 상세 — 명단에서 들어온 한 명. 카드는 기존 경로(HmCohortCard)를 그대로 재사용한다 */}
+                {(() => {
+                  let c = null; try { c = cohortCardOf(detail); } catch (e) {}
+                  if (!c) return (<div className="hmrow" style={{ marginTop: 7, color: HM_C.mut }}>이 회원 정보를 불러오지 못했어요.
+                    <div style={{ marginTop: 6 }}><button className="hmbtn gh" style={{ fontSize: 11 }} onClick={() => setDetail(null)}>← 명단으로 되돌아가기</button></div></div>);
+                  let cy = null; try { cy = (typeof cycleOf === "function") ? cycleOf(detail) : null; } catch (e) {}
+                  return (<div style={{ marginTop: 8, border: `1.5px solid ${HM_C.pri}`, borderRadius: 12, background: "#FFFDF9", padding: "9px 11px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                      <b style={{ fontSize: 12.6, color: HM_C.deep }}>👤 {_hmProName(c.m)} 상세 <span style={{ fontWeight: 600, color: HM_C.mut, fontSize: 11 }}>· {st.k} {st.name} 명단에서 열었어요</span></b>
+                      <button className="hmbtn gh" style={{ padding: "4px 11px", fontSize: 11.4, fontWeight: 900 }} onClick={() => setDetail(null)}>← 명단으로 되돌아가기</button>
+                    </div>
+                    <div style={{ fontSize: 11.4, color: "#475569", margin: "5px 2px 0", lineHeight: 1.6 }}>
+                      단계 도달 — <b>{(c.stage.reached || []).join(" → ")}</b>{cy ? <span> · 60일 사이클 <b>{cy.t ? cy.t + " " + cy.ko : cy.ko}</b> — {cy.act}</span> : null}{c.why ? <span> · 배정 근거 {c.why}</span> : null}
+                    </div>
+                    <HmCohortCard card={c} code={code} onDone={(r) => { if (onToast) onToast(r && r.ok ? '기록됐어요 — 코호트 접촉(세션 기록 · 새로고침 시 초기화)' : ((r && r.reason) || '기록하지 못했어요')); }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 2 }}>
+                      <span style={{ fontSize: 10.6, color: HM_C.mut }}>원본 검진 수치는 이 화면에 없어요 — 등급·관리 필요 항목 수·위험 밴드만 보여요.</span>
+                      <button className="hmbtn gh" style={{ padding: "4px 11px", fontSize: 11.4, fontWeight: 900 }} onClick={() => setDetail(null)}>← 명단으로 되돌아가기</button>
+                    </div>
+                  </div>);
+                })()}
+              </div>)}
+            </div>)}
+        </div>
       </div>
     </div>)}
   </div>);
 }
-
 function HmTabToday({ code, onToast, cview }) {
   const today = new Date().toISOString().slice(0, 10);
   const roster = React.useMemo(() => (typeof hmDailyRoster === "function") ? hmDailyRoster(code, today) : null, [code, today]);
@@ -1280,7 +1422,7 @@ function HmTabToday({ code, onToast, cview }) {
       </div>
       <div style={{ marginTop: 6, fontSize: 11.6, color: HM_C.mut }}>하이가 등급·응답 시한·정체를 계산해 우선순위로 선별했어요 — 프로는 카드 순서대로 확인·접촉·기록만. 대본 없는 통화는 없어요(대본 보기 ▼).</div>
     </div>
-    <HmStageGuide code={code} cview={cview} />
+    <HmStageGuide code={code} cview={cview} onToast={onToast} />
     {/* R3 — 60일 터치 플랜: 검진일 기준 9시점이 자동 계산되어 뜬다. 프로가 「누구에게 언제」를 고민할 일이 없다 */}
     {(() => {
       const dist = {};
@@ -1315,193 +1457,9 @@ function HmTabToday({ code, onToast, cview }) {
   </div>);
 }
 
-/* ① 배분 관제 + 지점 272 드릴다운(2단계 P3 · 형 승인) — 시도 클릭→지점 리스트→프로(사번·관할·오늘). 새 화면 이동 없이 아래 펼침(§D) */
-function HmOpsAllocBlock({ S, sidos, maxSido, box, bt }) {
-  const [sel, setSel] = React.useState(null);
-  const [q, setQ] = React.useState("");
-  const [br, setBr] = React.useState(null);
-  const BRS = (typeof HM_OPS_BRANCHES !== "undefined") ? HM_OPS_BRANCHES : [];
-  const list = sel ? BRS.filter((b2) => b2.sido === sel && (!q || (b2.branch || "").indexOf(q) >= 0)) : [];
-  return (<div style={box}><div style={bt}>① 배분 관제 — 시도를 누르면 지점이 펼쳐져요(실사 지점 기준)</div>
-    {sidos.map(([s, n]) => (<div key={s} onClick={() => { setSel(sel === s ? null : s); setBr(null); setQ(""); }} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3, cursor: "pointer", background: sel === s ? "#FFF4E8" : "transparent", borderRadius: 6, padding: "1px 4px" }}>
-      <span style={{ width: 34, fontSize: 11, color: sel === s ? "#C2410C" : "#475569", fontWeight: 700 }}>{s}</span>
-      <div style={{ flex: 1, height: 8, background: "#F1F5F9", borderRadius: 4 }}><div style={{ width: (n / maxSido * 100) + "%", height: 8, background: HM_C.brand, borderRadius: 4 }} /></div>
-      <span style={{ width: 66, fontSize: 10.8, color: HM_C.mut, textAlign: "right" }}>{n.toLocaleString()}명 {sel === s ? "▲" : "▼"}</span></div>))}
-    {sel && (<div style={{ marginTop: 8, borderTop: "1px dashed #E2E8F0", paddingTop: 8 }}>
-      <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
-        <b style={{ fontSize: 11.6, color: HM_C.ink }}>{sel} 지점 {list.length}곳</b>
-        <input value={q} onChange={(e) => { setQ(e.target.value); setBr(null); }} placeholder="지점 이름 찾기" style={{ flex: 1, border: "1px solid #CBD5E1", borderRadius: 7, padding: "4px 9px", fontSize: 11 }} />
-      </div>
-      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", maxHeight: 96, overflowY: "auto" }}>
-        {list.map((b2) => <span key={b2.branch} onClick={() => setBr(br === b2.branch ? null : b2.branch)} className="hmpill" style={{ cursor: "pointer", border: br === b2.branch ? "1.5px solid " + HM_C.brand : "1px solid #CBD5E1", background: br === b2.branch ? "#FFF4E8" : "#fff", color: br === b2.branch ? "#C2410C" : "#334155" }}>{b2.branch} <span style={{ color: "#94A3B8" }}>{b2.pros.length}</span></span>)}
-      </div>
-      {br && (() => { const b2 = list.find((x) => x.branch === br); if (!b2) return null; return (
-        <div style={{ marginTop: 7, background: "#F8FAFC", borderRadius: 9, padding: "7px 10px" }}>
-          {b2.pros.map((pr) => (<div key={pr.sabun} style={{ display: "flex", gap: 10, fontSize: 11.6, padding: "3px 0", borderBottom: "1px dashed #EEF2F6", alignItems: "center" }}>
-            {/* 사번 단일 표기 — 스냅샷에 구 코드가 남아 있어도 신 사번으로 해석해 찍는다(병기 금지) */}
-            <b style={{ color: "#C2410C", width: 52 }}>{(typeof hmCodeNorm === "function") ? hmCodeNorm(pr.code || pr.sabun) : (pr.sabun || pr.code)}</b><span style={{ width: 58, fontWeight: 700 }}>{pr.name} 프로</span>
-            <span style={{ color: HM_C.mut }}>담당 {pr.managed}명 · 오늘 지시서 {pr.today}건</span>
-            </div>))}
-        </div>); })()}
-      <div style={{ fontSize: 10.2, color: HM_C.mut, marginTop: 5 }}>배분 원천 = 시군구 실사 배속(수기 재배분 없음) · 수치는 배치 스냅샷({S.date})과 동일</div>
-    </div>)}
-  </div>);
-}
-
-/* ══ ⑩ 통합 운영 — 헬스메이트센터 관제탑(지시서 v1.3 §5-O · P5 신설, 관리자 전용 · 관측이지 조작이 아님) ══ */
-function HmTabOps() {
-  const admin = (typeof isAdminRole === "function") && isAdminRole();
-  if (!admin) return <div className="hmcard">⑩ 통합 운영 관제탑은 운영 본부(관리자) 전용이에요 — 프로는 ⑨ 내 고객·실적에서 관할 현황을 봐요.</div>;
-  const S = (typeof HM_OPS_SNAPSHOT !== "undefined") ? HM_OPS_SNAPSHOT : null;
-  const H = (typeof HM_HARNESS_SNAPSHOT !== "undefined") ? HM_HARNESS_SNAPSHOT : null;
-  if (!S || !S.total) return <div className="hmcard">배치 스냅샷이 아직 없어요 — scripts/run_handoff_batch.mjs 실행 후 표시돼요.</div>;
-  const ev = (typeof hiEventStats === "function") ? hiEventStats() : null;
-  const sidos = Object.entries(S.bySido || {}).sort((a, b) => b[1] - a[1]);
-  const maxSido = sidos.length ? sidos[0][1] : 1;
-  const box = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 14px" };
-  const bt = { fontSize: 12.6, fontWeight: 900, color: HM_C.ink, marginBottom: 8 };
-  return (<div>
-    <div className="hmcard" style={{ background: "linear-gradient(135deg,#0B2239,#132F4C)", color: "#DCE7F2" }}>
-      <div style={{ fontWeight: 900, fontSize: 14.5, color: "#FFB25E" }}>⑩ 통합 운영 관제탑 <span style={{ fontSize: 11.2, color: "#8FA9C0", fontWeight: 600 }}>· 배치 {S.date} · 러너 {S.seconds}s · 관측 전용(수기 재배분·등급 조정 없음) · [예시·시연 데이터]</span></div>
-      <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 8, fontSize: 12.4 }}>
-        {[["코호트", S.total.toLocaleString() + "명"], ["카드 정의", S.cards.toLocaleString() + "건"], ["발행 가능", (S.publishable === S.cards ? "100%" : S.publishable.toLocaleString())], ["접촉 락", S.locked.toLocaleString() + "명"], ["활성 프로", S.pros + "명"], ["전원 조립 위반", S.rosterViol + "건"], ["일일 평균", S.avgRoster + "건(최대 " + S.maxRoster + ")"]].map(([k, v], i) => (
-          <div key={i}><b style={{ fontSize: 15, color: "#fff" }}>{v}</b><div style={{ fontSize: 10.6, color: "#8FA9C0" }}>{k}</div></div>))}
-      </div>
-    </div>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 10, marginTop: 10 }}>
-      <HmOpsAllocBlock S={S} sidos={sidos} maxSido={maxSido} box={box} bt={bt} />
-      <div style={box}><div style={bt}>② 위험 분포 — 카드 대상 {S.cards.toLocaleString()}건</div>
-        {["H", "M", "L"].map((k) => { const n = S.byGrade[k] || 0; const g = HM_GRADE_UI[k]; return (
-          <div key={k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
-            <span className="hmpill" style={{ background: g.bg, color: g.c, width: 66, textAlign: "center" }}>{g.ko}</span>
-            <div style={{ flex: 1, height: 10, background: "#F1F5F9", borderRadius: 5 }}><div style={{ width: (n / S.cards * 100) + "%", height: 10, background: g.c, borderRadius: 5 }} /></div>
-            <span style={{ width: 74, fontSize: 11, color: "#475569", textAlign: "right" }}>{n.toLocaleString()} ({(n / S.cards * 100).toFixed(1)}%)</span></div>); })}
-        <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>대상아님(관리 리듬 양호) {(S.byGrade["-"] || 0).toLocaleString()}명 · E(응급)는 트리아지 소유(카드 밖)</div>
-      </div>
-      <div style={box}><div style={bt}>③ 응답 시한(SLA) 관제 — 등급 → 티어(leadRouting 재사용)</div>
-        {[["H", "48시간 안 응답(T2)", "#EA580C"], ["M", "7일 안 응답(T3)", "#D97706"], ["L", "14일 안 응답(T4)", "#0891B2"]].map(([k, t, cc]) => (
-          <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px dashed #EEF2F6", fontSize: 12 }}>
-            <span><b style={{ color: cc }}>{k}</b> — {t}</span><span style={{ color: "#475569" }}>{(S.byGrade[k] || 0).toLocaleString()}건 · 재큐 D+7</span></div>))}
-        <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 5 }}>일일 로스터 등급 합계: {Object.entries(S.byRosterGrade || {}).map(([k, v]) => k + " " + v).join(" · ")}</div>
-      </div>
-      <div style={box}><div style={bt}>④ 완결 퍼널 — 지시 → 접촉 → 완결 <span className="hmpill" style={{ background: "#FEF3E2", color: "#B45309" }}>시연 분포</span></div>
-        {ev && ev.total ? (<div>
-          {[["지시서 발행", (ev.by || {}).handoff_issued || 0, "#0891B2"], ["접촉(원탭)", (ev.by || {}).handoff_contacted || 0, "#D97706"], ["완결 트랜잭션", ev.stage ? ev.stage[3] : 0, "#15803D"]].map(([k, v, cc], i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
-              <span style={{ width: 74, fontSize: 11, fontWeight: 700, color: "#475569" }}>{k}</span>
-              <div style={{ flex: 1, height: 9, background: "#F1F5F9", borderRadius: 5 }}><div style={{ width: Math.min(100, v * 12) + "%", height: 9, background: cc, borderRadius: 5 }} /></div>
-              <b style={{ width: 26, textAlign: "right", fontSize: 12 }}>{v}</b></div>))}
-          <div style={{ fontSize: 10.6, color: HM_C.mut, marginTop: 4 }}>상세: {(ev.names || []).slice(0, 4).map((x) => x.ko + " " + x.n).join(" · ")}</div>
-        </div>)
-          : <div style={{ fontSize: 11.6, color: HM_C.mut }}>이번 세션 기록된 이벤트가 아직 없어요 — ⓪ 지시서 노출·원탭, 검진 예약 등 실제 행동 시 집계돼요(등재 이벤트만 · 가공 금지).</div>}
-      </div>
-      <div style={box}><div style={bt}>⑤ 프로 활동 — 부하·품질(판매액·수수료 지표 없음)</div>
-        <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.9 }}>
-          전원 조립 검사 {S.rosterChecked}명 — 위반 {S.rosterViol}건 · 건수 상한 7 준수<br />
-          일일 지시서 평균 {S.avgRoster}건 · 최대 {S.maxRoster}건 · 배분 원천 = 시군구 실사 배속(hmProsBySgg)<br />
-          <span style={{ color: HM_C.mut, fontSize: 11 }}>개인 실적 상세는 각 프로의 ⑨ 현황판 — 관제탑은 구조 신호만 봅니다.</span>
-        </div>
-      </div>
-      <div style={box}><div style={bt}>⑥ 하네스 상태 — 발행을 막는 구조</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span className="hmpill" style={{ background: S.pass ? "#E7F8EE" : "#FDECEC", color: S.pass ? "#15803D" : "#B91C1C" }}>배치 {S.pass ? "통과 ✓" : "차단 ✗"}</span>
-          {H && <span className="hmpill" style={{ background: H.pass ? "#E7F8EE" : "#FDECEC", color: H.pass ? "#15803D" : "#B91C1C" }}>스크립트 하네스 {H.pass ? "통과 ✓" : "실패 ✗"}</span>}
-          {H && <span className="hmpill" style={{ background: "#F1F5F9", color: "#475569" }}>A5 회귀 {H.coachAcc}%</span>}
-          {H && <span className="hmpill" style={{ background: "#F1F5F9", color: "#475569" }}>금지어 {H.forbiddenHits}건 · 골든셋 드리프트 {H.goldenDrift}건</span>}
-        </div>
-        <div style={{ fontSize: 10.8, color: HM_C.mut, marginTop: 6 }}>하나라도 실패하면 그 날 지시서 미발행 + 적색 배지(§7). 집계 원천 = 배치 스냅샷 단일(운영 정합 §7-⑥).</div>
-        {(typeof HM_WEEKLY_SNAPSHOT !== "undefined" && HM_WEEKLY_SNAPSHOT.week) && (
-          <div style={{ marginTop: 7, borderTop: "1px dashed #E2E8F0", paddingTop: 6, fontSize: 11.4, color: "#475569", lineHeight: 1.7 }}>
-            <b style={{ color: HM_C.ink }}>📚 주간 학습 루프({HM_WEEKLY_SNAPSHOT.week})</b> — 과다 사용 {HM_WEEKLY_SNAPSHOT.monotony.length}블록 · 미사용 승인 {HM_WEEKLY_SNAPSHOT.unused.length}블록 · 개선 후보 {HM_WEEKLY_SNAPSHOT.candidates.length}건
-            <div style={{ fontSize: 10.4, color: HM_C.mut }}>문안 개선은 형 검수 후 hmScriptBlocks에만 반영 — 자동 반영 금지(학습 루프 규약)</div>
-          </div>)}
-      </div>
-      {/* ⑦ 활동 결과 관제(2단계 P2) — 지시가 어떻게 끝났는지 · 기록이 다음 지시를 바꾼다 */}
-      {(() => {
-        const rs = (typeof hmrStats === "function") ? hmrStats(null) : null;
-        const asked = ev && ev.by ? (ev.by.needs_asked || 0) : 0;
-        const resulted = ev && ev.by ? (ev.by.handoff_resulted || 0) : 0;
-        const contacted = ev && ev.by ? (ev.by.handoff_contacted || 0) : 0;
-        const maxN = rs && rs.n ? Math.max.apply(null, rs.codes.map((c) => c.n).concat([1])) : 1;
-        let topBranch = null;
-        if (rs && Object.keys(rs.byBranch).length) { const bb = Object.entries(rs.byBranch).sort((a, b2) => b2[1] - a[1])[0]; topBranch = { no: bb[0], n: bb[1] }; }
-        return (<div style={box}>
-          <div style={bt}>⑦ 활동 결과 관제 — 지시가 어떻게 끝났나 <span className="hmpill" style={{ background: "#FEF3E2", color: "#B45309" }}>시연 분포</span></div>
-          {rs && rs.n ? (<div>
-            {rs.codes.map((c) => (<div key={c.k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-              <span style={{ width: 92, fontSize: 11, fontWeight: 700, color: "#475569" }}>{c.icon} {c.ko}</span>
-              <div style={{ flex: 1, height: 8, background: "#F1F5F9", borderRadius: 4 }}><div style={{ width: (c.n / maxN * 100) + "%", height: 8, background: HM_C.brand, borderRadius: 4 }} /></div>
-              <b style={{ width: 24, textAlign: "right", fontSize: 11.5 }}>{c.n}</b></div>))}
-            <div style={{ fontSize: 11.6, color: "#475569", lineHeight: 1.8, marginTop: 6 }}>
-              기록 {rs.n}건 · 수락률 {rs.acceptRate != null ? rs.acceptRate + "%" : "-"} · 후속 약속 {rs.followUps}건<br />
-              접촉 {contacted} → 결과 {resulted} → <b style={{ color: "#6D28D9" }}>회원이 먼저 물음 {asked}건</b>(두 곡선 교차)
-              {topBranch && <span><br />가장 많이 쓴 말: <b>응대 {topBranch.no}</b>({topBranch.n}회)</span>}
-            </div>
-            <div style={{ fontSize: 10.4, color: HM_C.mut, marginTop: 4 }}>완결·거절(30일)·연락처 오류는 내일 명단에서 자동 제외 · 후속일이 온 회원은 맨 위로.</div>
-          </div>) : (<div style={{ fontSize: 11.6, color: HM_C.mut }}>아직 기록된 결과가 없어요 — ⓪ 오늘의 지시서에서 통화 후 「결과 남기기」를 누르면 여기 쌓여요. 기록이 내일의 명단을 바꿉니다.</div>)}
-          {/* ── ⭐ D2 골든타임(F3) — 전달률(실기록)·키트 교차(memberActivity 파생 — 가공 아님) ── */}
-          {(() => {
-            const gd = rs && rs.golden ? rs.golden : { rows: 0, full: 0, keys: [] };
-            let kitY = { n: 0, act: 0 }, kitN = { n: 0, act: 0 };
-            try {
-              for (let i2 = 1; i2 <= 6000; i2 += 9) {
-                const st = cohortStageOf(i2); if (!st || ["D1"].indexOf(st.cur) >= 0) continue;
-                const ma = memberActivity(i2); if (!ma) continue;
-                const hasDev = (ma.commerce || []).some((x) => x.kind === "device");
-                const acts = (ma.visits || []).length + (ma.commerce || []).length;
-                if (hasDev) { kitY.n++; kitY.act += acts; } else { kitN.n++; kitN.act += acts; }
-              }
-            } catch (e) {}
-            const avg = (o) => o.n ? (o.act / o.n).toFixed(1) : "-";
-            return (<div style={{ marginTop: 9, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 9, padding: "7px 10px" }}>
-              <div style={{ fontSize: 11.4, fontWeight: 900, color: "#92400E" }}>⭐ D2 골든타임 — 첫 통화에서 다 전했나</div>
-              <div style={{ fontSize: 11.4, color: "#78350F", lineHeight: 1.75, marginTop: 3 }}>
-                전달 체크 기록 {gd.rows}건 · 5칸 완주 {gd.full}건{gd.rows ? " (" + Math.round(gd.full / gd.rows * 100) + "%)" : ""}
-                {gd.rows > 0 && <span> · 항목별: {gd.keys.map((k) => k.ko.split("·")[0].trim() + " " + k.n).join(" / ")}</span>}
-                {gd.rows === 0 && <span> — D2 카드의 「결과 남기기」에서 ⭐ 체크 5칸을 누르면 여기 집계돼요.</span>}<br />
-                🧰 키트 효과(관측): 기기 사용 회원 평균 활동 <b>{avg(kitY)}건</b>({kitY.n.toLocaleString()}명) vs 미사용 <b>{avg(kitN)}건</b>({kitN.n.toLocaleString()}명) — 검진 결과 파생 시연 데이터, 실물 배송 런칭 시 kit_delivered·kit_engaged 실기록으로 대체.
-              </div>
-            </div>);
-          })()}
-          {/* ── ⑧ 60일 사이클 관제(R5) — 사이클 분포·T5 동의율 성적표·세그먼트·제공 DB 무결성 ── */}
-          {(() => {
-            const dist = {}, seg = {}; let n2Yes = 0, t5plus = 0, recov = 0, uncov = 0;
-            try {
-              for (let i = 1; i <= 12000; i += 3) {
-                const cy = cycleOf(i); if (!cy || !cy.t) continue;
-                dist[cy.t] = (dist[cy.t] || 0) + 1;
-                if (["T5", "T6", "T7", "T8"].indexOf(cy.t) >= 0) { t5plus++; if (consentHas("n2", i)) n2Yes++; }
-                if (cy.secondGolden) { uncov++; if (consentHas("n2", i)) recov++; }
-                const g = gSegOf(i); if (g && g.top) seg[g.top] = (seg[g.top] || 0) + 1;
-              }
-            } catch (e) {}
-            let feed = null; try { feed = hyFeedScan(300); } catch (e) {}
-            const T = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"];
-            const maxT = Math.max(1, ...T.map((t) => dist[t] || 0));
-            const segTop = Object.keys(seg).sort((a, b2) => seg[b2] - seg[a]).slice(0, 6);
-            return (<div style={{ marginTop: 9, background: "#F8FBFF", border: "1px solid #BFDBFE", borderRadius: 9, padding: "8px 11px" }}>
-              <div style={{ fontSize: 11.4, fontWeight: 900, color: "#1D4ED8" }}>⏱ 60일 사이클 관제 <span style={{ fontWeight: 600, color: "#64748B", fontSize: 10.4 }}>· 표본 {Object.values(dist).reduce((a, b2) => a + b2, 0).toLocaleString()}명 · [예시·시연]</span></div>
-              <div style={{ display: "flex", gap: 3, marginTop: 6, alignItems: "flex-end", height: 46 }}>
-                {T.map((t) => (<div key={t} style={{ flex: 1, textAlign: "center" }}>
-                  <div style={{ height: Math.round((dist[t] || 0) / maxT * 32) + 2, background: ["T2", "T5", "T6"].indexOf(t) >= 0 ? "#F5821F" : "#93C5FD", borderRadius: 3 }} />
-                  <div style={{ fontSize: 9.4, color: "#475569", marginTop: 2 }}>{t}</div>
-                  <div style={{ fontSize: 9, color: "#94A3B8" }}>{(dist[t] || 0).toLocaleString()}</div>
-                </div>))}
-              </div>
-              <div style={{ fontSize: 11.4, color: "#334155", lineHeight: 1.75, marginTop: 5 }}>
-                📋 <b>T5 동의율(60일마다 나오는 성적표)</b> — 만기 도달 {t5plus.toLocaleString()}명 중 안내 동의 <b style={{ color: "#1D4ED8" }}>{n2Yes.toLocaleString()}명({t5plus ? Math.round(n2Yes / t5plus * 100) : 0}%)</b> · 앞선 40일의 건강관리가 진짜였는지가 이 숫자로 나와요<br />
-                🕐 <b>2차 골든타임 회복</b> — 무보장 {uncov.toLocaleString()}명 중 동의 보유 {recov.toLocaleString()}명({uncov ? Math.round(recov / uncov * 100) : 0}%)<br />
-                🎯 <b>세그먼트 상위</b> — {segTop.map((g) => g + " " + seg[g].toLocaleString()).join(" · ") || "-"}<br />
-                🔐 <b>현대해상 제공 DB</b> — 필드 {feed ? feed.fields : "-"}종 · 표본 {feed ? feed.n.toLocaleString() : "-"}건 검사 · 건강 상태 값 유입 <b style={{ color: feed && feed.ok ? "#15803D" : "#B91C1C" }}>{feed ? feed.bad.length : "?"}건</b>{feed && feed.ok ? " — 사전 밖 필드·등급·질환명 0(§0-V3 통과)" : ""}
-              </div>
-            </div>);
-          })()}
-        </div>);
-      })()}
-    </div>
-  </div>);
-}
-
+/* ⑩ 통합 운영은 이 파일에서 떼어 냈다(형 지시 2026-10-05) — 지점장·사업단장·본사 직원용
+   「헬스메이트 센터 통합 운영」 관리자 전용 화면으로 분리했고, 프로 콘솔에는 탭조차 없다.
+   옛 구현(HmOpsAllocBlock · HmTabOps)은 그 화면으로 이관했으니 여기서 되살리지 말 것. */
 /* ══ 하이프로 대화 독(2단계 P6) — 프로 전용 · 보라 톤(회원 하이와 구분) · 답변은 원천 조립만(출처 칩 동반) ══ */
 function HiProDock() {
   const [open, setOpen] = React.useState(false);
@@ -1602,7 +1560,7 @@ function HealthMateSection({ onGo }) {
   const cview = React.useMemo(() => (code && typeof hmcProView === "function") ? hmcProView(code) : null, [code]);
   if (!code) return <HmGate onPass={(c) => setCode(c)} />;
   const pro = hmProOf(code);
-  if (!pro || pro.status !== "활성") { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} return <HmGate onPass={(c) => setCode(c)} />; }
+  if (!pro || pro.status !== "활성") { if (typeof hmProSessionClear === "function") hmProSessionClear(); else { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} } return <HmGate onPass={(c) => setCode(c)} />; }
   const onContact = (m, act) => {
     const r = hmAct(code, m, act);
     setToastM(r.ok ? `기록됐어요 — ${act.label}(${act.result || "연결됨"}) · 체인·금고 로그 저장` : r.reason);
@@ -1625,13 +1583,22 @@ function HealthMateSection({ onGo }) {
   const firstN = cards.filter((c) => c.stage && c.stage.k === "D2").length
     + (cview ? cview.ids.filter((i) => { try { const cy = cycleOf(i); return cy && cy.t === "T2"; } catch (e) { return false; } }).length : 0);
   const totalN = members.length + (cview ? cview.n : 0);
+  /* 탭 이름 — 「지금 할 일」 묶음과 같은 결로, 이름만 보고 무엇을 보는 화면인지 알게 한다(형 지시 2026-10-05).
+     번호 체계(⓪~⑨)는 그대로 두고, 네 번째 칸은 탭 아래에 깔리는 한 줄 설명(부제)이다.
+     ⑩ 통합 운영은 이 콘솔에서 떼어 관리자 전용 화면으로 분리했다 — 관리자가 들어와도 여기엔 없다.
+     ⓪의 숫자 카드 → 탭 점프 매핑도 이 이름과 짝이 맞게 맞췄다(아래 hmnumwrap 참조). */
   const TABS = [
-    [0, "⓪ 오늘의 지시서", Sparkles],
-    [1, "① 회원 신호", Users], [2, "② 보험 배정·대기", ShieldCheck], [3, "③ 검진 후 터치", HeartPulse],
-    [4, "④ 질병 예측", Activity], [5, "⑤ 건강 행동", ShoppingCart], [6, "⑥ 가족·재가", HeartHandshake],
-    [7, "⑦ 치료비 보장 점검", MessageSquare], [8, "⑧ 프로 제안함", Sparkles], [9, "⑨ 내 고객·실적", TrendingUp],
-    [10, "⑩ 통합 운영", Activity],
-  ].filter(([n]) => n !== 10 || (typeof isAdminRole === "function" && isAdminRole()));   /* ⑩은 운영 본부 전용(§5-O) */
+    [0, "⓪ 오늘의 지시서", Sparkles, "하이가 오늘 발행한 카드 — 순서대로 확인·접촉·기록만 하면 돼요"],
+    [1, "① 지금 연락할 회원", Users, "하이가 접촉 근거(신호)를 찾은 회원 — 응답 시한이 짧은 카드부터"],
+    [2, "② 배정·접촉 락 회원", ShieldCheck, "검진대비보험 순번 배정과 접촉 락 — 결과 수령 전은 연락 금지, 락이 풀리면 ③ 첫 연결로 넘어가요"],
+    [3, "③ 첫 연결·만기 터치 회원", HeartPulse, "락이 풀린 회원의 첫 연결(결과분석+보장 안내 1회 통합)과 그 뒤 만기·재검진 터치 계획"],
+    [4, "④ 질병 위험 살펴볼 회원", Activity, "예측 위험 밴드 상·중 회원 — 예방 검진·주치의 연결로만 이어요(진단 아님)"],
+    [5, "⑤ 제품·재구매 안내할 회원", ShoppingCart, "관리 포인트에 맞는 생활·제품 안내와 재구매 시점이 온 회원"],
+    [6, "⑥ 가족·돌봄 상담할 회원", HeartHandshake, "개인에서 가구로 — 재가돌봄 설계, 응급 안내가 상담보다 먼저예요"],
+    [7, "⑦ 치료비 보장 점검할 회원", MessageSquare, "보장공백·인수 가능성을 하이(A2)와 대화로 점검 — 확정·요율 단정 없음"],
+    [8, "⑧ 개선 의견 보내기", Sparkles, "현장에서 본 것을 제품에 반영 — 모든 상태 변화에 사유가 붙어요"],
+    [9, "⑨ 내 고객 전체·내 실적", TrendingUp, "담당 회원 D1~L8 분포와 단계 전진 실적 — 금액·순위는 없어요"],
+  ];
   return (
     <div className="hmwrap" key={tick}><HmStyle />
       <div className="hmhero">
@@ -1642,13 +1609,13 @@ function HealthMateSection({ onGo }) {
             <div style={{ fontSize: 12.3, fontWeight: 800, marginTop: 2 }}>담당 회원 {totalN.toLocaleString()}명 <span style={{ fontWeight: 600, opacity: .85 }}>({selfN ? "본인(실측) " + selfN + " · " : ""}체험 {members.length - selfN} · 코호트 {(cview ? cview.n : 0).toLocaleString()}) — 관할: {(pro.coverage || []).slice(0, 5).join("·") || pro.dan}{(pro.coverage || []).length > 5 ? " 외 " + ((pro.coverage || []).length - 5) + "곳" : ""}{pro.gap ? " (겸임 포함)" : ""}</span></div>
             <div style={{ fontSize: 12, opacity: .92 }}>하이가 분석·선별·문안·타이밍을 만들고, 프로는 확인·접촉·기록합니다 — 동의의 범위가 곧 활동의 범위.</div>
           </div>
-          <button className="hmbtn gh" style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }} onClick={() => { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} setCode(null); }}>사번 잠금</button>
+          <button className="hmbtn gh" style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }} onClick={() => { if (typeof hmProSessionClear === "function") hmProSessionClear(); else { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} } setCode(null); }}>사번 잠금</button>
         </div>
         {/* 오늘의 숫자 — 「지금 할 일 · 달력이 정한 일 · 지금 하면 안 되는 일」 세 묶음(겹칠 수 있는 렌즈이지 담당 분류가 아니다) */}
         <div className="hmnumwrap">
           {[["지금 할 일", [
-            ["오늘 첫 통화할 회원", firstN, 1, "검진 결과가 막 도착해 첫 연결의 골든타임에 들어온 회원이에요 — 무료 3종과 앞으로의 건강관리를 이 한 통화에서 전합니다.", "첫 연결(D2·결과 직후)"],
-            ["오늘 이어서 연락할 회원", needN, 9, "이미 관계가 시작된 회원 중 오늘 터치 시점이 온 분들이에요 — 하이가 문안과 타이밍을 준비해 둡니다.", "터치 시점 도래"],
+            ["오늘 첫 통화할 회원", firstN, 3, "검진 결과가 막 도착해 첫 연결의 골든타임에 들어온 회원이에요 — 무료 3종과 앞으로의 건강관리를 이 한 통화에서 전합니다.", "첫 연결(D2·결과 직후)"],
+            ["오늘 이어서 연락할 회원", needN, 1, "이미 관계가 시작된 회원 중 오늘 터치 시점이 온 분들이에요 — 하이가 문안과 타이밍을 준비해 둡니다.", "터치 시점 도래"],
             ["4시간 안에 답해야 할 카드", slaN, 1, "카드 발행 후 응답 시한이 4시간 안으로 남았어요 — 위 명단과 겹칠 수 있는 긴급 표시예요.", "응답 시한 임박"],
             ["상담이 멈춘 회원", stallN, 9, "14일 이상 다음 행동이 없는 회원이에요 — 재개 대본(「한동안 챙겨드리지 못해서요」)으로 다시 잇습니다.", "14일 이상 정체"]]],
           ["달력이 정한 일", [
@@ -1673,14 +1640,15 @@ function HealthMateSection({ onGo }) {
         </div>
       </div>
       <div className="hmtabs">
-        {TABS.map(([n, label, Ic]) => <button key={n} className={"hmtab" + (tab === n ? " on" : "")} onClick={() => setTab(n)}><Ic size={13} /> {label}</button>)}
+        {TABS.map(([n, label, Ic, sub]) => <button key={n} className={"hmtab" + (tab === n ? " on" : "")} title={sub || ""} onClick={() => setTab(n)}><Ic size={13} /> {label}</button>)}
       </div>
+      {/* 열려 있는 탭의 한 줄 설명 — 이름 옆이 아니라 아래 한 줄로(탭 줄이 길어지지 않게) */}
+      {(() => { const cur = TABS.filter(([n]) => n === tab)[0]; return cur && cur[3] ? <div className="hmtabsub"><b>{cur[1]}</b> — {cur[3]}</div> : null; })()}
       <div style={{ marginTop: 12 }}>
         {tab === 0 && <HmTabToday code={code} cview={cview} onToast={(m2) => { setToastM(m2); setTimeout(() => setToastM(""), 3500); }} />}
-        {tab === 10 && <HmTabOps />}
         {tab === 1 && <HmTabSignals code={code} onContact={onContact} cview={cview} />}
-        {tab === 2 && <HmTabIns code={code} pro={pro} onContact={onContact} refresh={refresh} cview={cview} />}
-        {tab === 3 && <HmTabTouch code={code} onContact={onContact} cview={cview} />}
+        {tab === 2 && <HmTabIns code={code} pro={pro} onContact={onContact} refresh={refresh} cview={cview} onTab={setTab} />}
+        {tab === 3 && <HmTabTouch code={code} onContact={onContact} cview={cview} onTab={setTab} />}
         {tab === 4 && <HmTabRisk code={code} cview={cview} />}
         {tab === 5 && <HmTabLife code={code} kind="shop" cview={cview} />}
         {tab === 6 && <HmTabLife code={code} kind="care" cview={cview} />}
@@ -1691,9 +1659,11 @@ function HealthMateSection({ onGo }) {
       <div className="hmfoot" style={{ textAlign: "center" }}>
         개인정보보호법 §17·§22②·§23·§24 · 신용정보법 §32 · 보험업법(설명의무·부당 권유 금지) · 정보통신망법 §50 —
         원본 건강수치·원가성 정보 비노출 · 진단·인수·등급 단정 금지 · 시연 환경 고지 — {selfN ? "본인 계정은 실측 데이터, " : ""}체험 회원 16명·코호트 10만 명은 시연 시드
+        <div style={{ marginTop: 3 }}>이 콘솔에 표시되는 회원 이름은 <b>시연용 합성 데이터</b>예요{selfN ? "(본인 계정만 실측)" : ""} — 프로 전용 화면이라 가리지 않고 전체 이름으로 보여드려요. 회원이 보는 화면과 외부 전달물에는 마스킹 규칙이 그대로 적용돼요.</div>
       </div>
       <HiProDock />
-      <HmDemoGuide onTab={setTab} />
+      {/* 데모 대본(demoScript.js)이 아직 없는 탭(⑩)을 가리킬 수 있다 — 없는 번호는 ⓪로 되돌린다 */}
+      <HmDemoGuide onTab={(t2) => setTab(TABS.filter(([n]) => n === t2).length ? t2 : 0)} />
       {toastM && <div style={{ position: "fixed", bottom: 26, left: "50%", transform: "translateX(-50%)", background: HM_C.ink, color: "#fff", borderRadius: 10, padding: "9px 16px", fontSize: 12.5, zIndex: 1300, boxShadow: "0 10px 30px rgba(0,0,0,.3)" }}>{toastM}</div>}
     </div>
   );
