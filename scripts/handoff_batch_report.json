@@ -1,5 +1,5 @@
 {
-  "date": "2026-09-02",
+  "date": "2026-10-05",
   "total": 100000,
   "cards": 56945,
   "publishable": 56945,
@@ -44,9 +44,9 @@
   "maxRoster": 7,
   "zeroRosterPros": 1,
   "byRosterGrade": {
-    "H": 3209,
-    "L": 930,
-    "M": 377
+    "H": 3204,
+    "L": 939,
+    "M": 373
   },
   "loadAvg": 154.3,
   "loadRatioMax": 1.29,
@@ -155,6 +155,6 @@
       "ratio": 0.91
     }
   ],
-  "seconds": 68.9,
+  "seconds": 49.2,
   "pass": true
 }

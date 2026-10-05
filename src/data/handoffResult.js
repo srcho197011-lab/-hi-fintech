@@ -17,8 +17,28 @@ const HM_RESULT_CODES = [
 ];
 function hmrCode(k) { return HM_RESULT_CODES.find((c) => c.k === k) || null; }
 
-function _hmrKey(code) { return "hifin_handoff_result_" + code; }
-function _hmrAll(code) { try { return JSON.parse(localStorage.getItem(_hmrKey(code)) || "[]"); } catch (e) { return []; } }
+function _hmrKey(code) { return "hifin_handoff_result_" + ((typeof hmCodeNorm === "function") ? hmCodeNorm(code) : code); }
+/* 사번 체계 교체(2026-10-05) 1회 이관 — 구 코드 키(hifin_handoff_result_HM-…)에 쌓인 활동 기록을
+   신 사번 키로 옮긴다. 하지 않으면 ⑩블록⑦ 전체 집계(prefix 스캔)에는 남는데 프로별 드릴다운은 0건이
+   되어 집계와 상세가 어긋난다. 멱등 — 플래그 1개로 1회만 돈다. */
+function _hmrMigrateCodes() {
+  try {
+    if (localStorage.getItem("hifin_hm_resultkey_mig_v2")) return;
+    const P = "hifin_handoff_result_";
+    const olds = [];
+    for (let j = 0; j < localStorage.length; j++) { const k = localStorage.key(j); if (k && k.indexOf(P) === 0 && /^HM-/.test(k.slice(P.length))) olds.push(k); }
+    olds.forEach((k) => {
+      const nk = _hmrKey(k.slice(P.length));
+      if (nk === k) return;
+      const cur = JSON.parse(localStorage.getItem(nk) || "[]");
+      const add = JSON.parse(localStorage.getItem(k) || "[]");
+      localStorage.setItem(nk, JSON.stringify(cur.concat(add)));
+      localStorage.removeItem(k);
+    });
+    localStorage.setItem("hifin_hm_resultkey_mig_v2", "1");
+  } catch (e) {}
+}
+function _hmrAll(code) { _hmrMigrateCodes(); try { return JSON.parse(localStorage.getItem(_hmrKey(code)) || "[]"); } catch (e) { return []; } }
 
 /* 기록 — 7코드 밖 거부·메모는 금지어 스캔 경유(§0-B) */
 /* D2 골든타임 전달 체크 5칸(F3 — 프롬프트 v1.1 §5.3) — 시트·집계·⑩관제가 같은 사전을 읽는다 */
@@ -80,7 +100,7 @@ function hmrRosterAdjust(code, i, dateStr) {
 function hmrStats(code) {
   const l = code ? _hmrAll(code) : (function () {
     let all = [];
-    try { for (let j = 0; j < localStorage.length; j++) { const k = localStorage.key(j); if (k && k.indexOf("hifin_handoff_result_") === 0) all = all.concat(JSON.parse(localStorage.getItem(k) || "[]")); } } catch (e) {}
+    try { for (let j = 0; j < localStorage.length; j++) { const k = localStorage.key(j); if (k && k.indexOf("hifin_handoff_result_") === 0) { const v = JSON.parse(localStorage.getItem(k) || "[]"); if (Array.isArray(v)) all = all.concat(v); } } } catch (e) {}
     return all;
   })();
   const by = {}; const byBranch = {}; let followUps = 0;

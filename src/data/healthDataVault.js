@@ -330,7 +330,10 @@ function seedSelfVault(member) {
     const contracts = (typeof insAggregateFetch === "function") ? insAggregateFetch(member).contracts : [];
     if (contracts.length) vaultSaveInsurance(member, contracts, { source: "aggregate", channel: "aggregate" });
     const certB = chainAppend({ type: "ins-cert", token, note: "무상 검진대비보험 증서 발급(강북삼성병원 종합검진)" });
-    try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) { l.push({ id: `CERT-JSR${SELF_CHECKUP_SEED.years[SELF_CHECKUP_SEED.years.length - 1]}A`, center: "강북삼성병원 종합검진센터", date: String(SELF_CHECKUP_SEED.years[SELF_CHECKUP_SEED.years.length - 1]) + SELF_CHECKUP_SEED.monthDay, time: "09:00", at: Date.now(), hash: certB && certB.hash });localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } } catch (e) {}
+    /* insured(계약자·피보험자)를 명시해 둔다 — 증서의 주인이 누구인지가 빠져 있어서
+       헬스메이트 ③터치 플랜(만기 D-30/D-7/D+1 산출)과 ⑨단계 D4(보험 결합 근거)가 이 증서를
+       본인 것으로 인식하지 못했다. 값을 만들지 않고 보유 사실만 채운다(Checkup 증서 화면은 기존대로 동작). */
+    try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) { l.push({ id: `CERT-JSR${SELF_CHECKUP_SEED.years[SELF_CHECKUP_SEED.years.length - 1]}A`, center: "강북삼성병원 종합검진센터", date: String(SELF_CHECKUP_SEED.years[SELF_CHECKUP_SEED.years.length - 1]) + SELF_CHECKUP_SEED.monthDay, time: "09:00", at: Date.now(), hash: certB && certB.hash, insured: { name: member.name } });localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } } catch (e) {}
     // ④ 분석·활용 기록 — AI 정밀리포트 생성(분석 결과의 지문도 체인에)
     chainAppend({ type: "record", token, note: "AI 정밀리포트 생성 — 분석 결과 해시 기록(가명 토큰 기준)" });
     // ⑤ 거래 앵커 — 쇼핑 적립·HTK 크레딧 전환
@@ -367,6 +370,13 @@ function selfEnsureInsSeed(member) {
     if (!member) return false;
     /* 검진 연차 시드가 바뀌었으면 먼저 이관 — 아래 v3·v4 조기 반환에 막혀 이관이 누락되지 않게 */
     try { const tk0 = anonToken(member); const v0 = vaultLoad(tk0); if (v0) _migrateSelfCheckupSeed(member, tk0, v0); } catch (e) {}
+    /* 구 시드 보강(2026-10-05) — insured(증서 주인)가 없던 검진대비보험 증서에 본인을 채운다.
+       멱등: 이미 채워져 있으면 아무 일도 하지 않는다. 없으면 ③터치 플랜과 ⑨D4가 증서를 못 본다. */
+    try {
+      const cl = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); let fix = false;
+      cl.forEach((c) => { if (c && /^CERT-JSR\d{4}A$/.test(c.id || "") && !c.insured) { c.insured = { name: member.name }; fix = true; } });
+      if (fix) localStorage.setItem("hifin_ins_certs", JSON.stringify(cl));
+    } catch (e) {}
     // v4(2026-07-26): 목업 계약을 형 실계약 9건으로 교체(검진·체인·원장은 보존)
     if (!localStorage.getItem("hifin_self_ins_v4")) {
       seedSelfVault(member);
@@ -391,6 +401,26 @@ function selfEnsureInsSeed(member) {
     if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" });
     if (typeof tlSync === "function") tlSync(member);   // 원장 제네시스 보장(12,480 이월)
     localStorage.setItem("hifin_self_ins_v3", "1");
+    return true;
+  } catch (e) { return false; }
+}
+
+/* ── 상담·안내(mkt) 시연 시드 동의 — 헬스메이트 담당 배정의 전제 ──
+   2026-10-05: 전에는 헬스메이트 콘솔이 렌더 중에 ConsentNFT(cnIssue)를 자체 발행해 이 칸을 메웠다.
+   회원이 아무 행동도 하지 않아도 증서가 생기고, 철회해도 새로고침 한 번에 되살아났다(실측 확인).
+   발행을 없애고 여기서 "시연 시드"로 1회만 기록한다 — 회원이 직접 발행한 ConsentNFT와 섞지 않는다.
+   ⓐ 플래그(hifin_self_mkt_seed)가 남으면 두 번째 호출부터 아무 일도 하지 않는다 → 철회가 복원되지 않는다.
+   ⓑ 제품 정합: 검진대비보험 가입 확정(Checkup.jsx)은 상담·안내 동의 없이는 불가하므로, 증서를 발급해 둔
+      시드가 이 동의만 비워 둔 것이 오히려 제품 플로와 어긋났다. 체인에는 검진 단계(mkt:false) →
+      이 시드(mkt:true)가 순서대로 남아 "목적별 개별 동의" 증거는 그대로 보존된다.
+   반환: 이번 호출에서 기록했는지(true면 호출자가 화면을 다시 그린다). */
+function selfEnsureMktSeed(member) {
+  try {
+    if (!member) return false;
+    /* 키는 리터럴로 쓴다 — scripts/check_data_catalog.py가 리터럴만 스캔한다(상수로 감싸면 등재 게이트를 우회한다) */
+    if (localStorage.getItem("hifin_self_mkt_seed")) return false;   /* 1회 시도 기록 — 철회 복원 금지 */
+    localStorage.setItem("hifin_self_mkt_seed", "1");
+    vaultSaveConsents(member, { mkt: true, mktSeed: "demo", step: "mkt-demo-seed" });
     return true;
   } catch (e) { return false; }
 }

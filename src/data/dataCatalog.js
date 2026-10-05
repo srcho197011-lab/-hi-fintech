@@ -16,13 +16,20 @@ const HIFIN_DATA_LAYERS = [
 ];
 
 /* ── 브라우저 저장 키 전수 등재(게이트 대상) — 자동 스캔(--emit) + 변수 간접 키 수동 보강 ── */
-const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent_miss", "hifin_agent_pending", "hifin_agent_route", "hifin_agent_stats", "hifin_chain_snapshots", "hifin_claims", "hifin_connectors_custom", "hifin_divi_seen", "hifin_dl_ready", "hifin_easyread", "hifin_fin_params", "hifin_fin_params_v38", "hifin_fin_scn", "hifin_escrow_orders_v38", "hifin_force_onboard", "hifin_gov_votes", "hifin_hash_v2", "hifin_hashchain", "hifin_hashchain_legacy", "hifin_hi_sarg_log", "hifin_hi_unanswered", "hifin_hi_welcome", "hifin_hm_code", "hifin_ins_certs", "hifin_ins_deferred", "hifin_ins_guard", "hifin_lead_audit", "hifin_medrem", "hifin_mydata_req", "hifin_nodes", "hifin_notifs", "hifin_ocr_key", "hifin_pu_ready", "hifin_reggate", "hifin_rerate", "hifin_rpm_seen", "hifin_rx", "hifin_self_ins_v3", "hifin_self_ins_v4", "hifin_share_apply", "hifin_sharing_pool", "hifin_sid", "hifin_telem_raw", "hifin_telemetry", "hifin_wp_log", "pi_allocated",
+const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent_miss", "hifin_agent_pending", "hifin_agent_route", "hifin_agent_stats", "hifin_chain_snapshots", "hifin_claims", "hifin_connectors_custom", "hifin_divi_seen", "hifin_dl_ready", "hifin_easyread", "hifin_fin_params", "hifin_fin_params_v38", "hifin_fin_scn", "hifin_escrow_orders_v38", "hifin_force_onboard", "hifin_gov_votes", "hifin_hash_v2", "hifin_hashchain", "hifin_hashchain_legacy", "hifin_hi_sarg_log", "hifin_hi_unanswered", "hifin_hi_welcome", "hifin_hm_code", "hifin_ins_certs", "hifin_ins_deferred", "hifin_ins_guard", "hifin_lead_audit", "hifin_medrem", "hifin_mydata_req", "hifin_nodes", "hifin_notifs", "hifin_ocr_key", "hifin_pu_ready", "hifin_reggate", "hifin_rerate", "hifin_rpm_seen", "hifin_rx", "hifin_self_ins_v3", "hifin_self_ins_v4", "hifin_self_mkt_seed", "hifin_share_apply", "hifin_sharing_pool", "hifin_sid", "hifin_telem_raw", "hifin_telemetry", "hifin_wp_log", "pi_allocated",
   /* 변수 간접 키(상수·함수로 참조 — 스캔 밖) */ "hifin_events", "hifin_login_lock", "hifin_guard_cfg", "hifin_access_log",
   /* 백업 시스템(backupRestore.js) */ "hifin_backup_last", "hifin_restore_undo",
   /* 동의 게이트(consentGate.js — 리뉴얼 R1): 체험 회원 동의 상태(종류별 on·취득일) */ "hifin_consent2",
   /* 음성 대화(P4-1 계측·P1-2 읽어주기): 채널 턴 대장(hiTelemetry.js — 채널·소요ms·답변여부만) ·
      읽어주기 켜짐 기억(hiVoice.js — 기본 꺼짐, 회원이 켠 것만 "1") */ "hifin_telem_turns", "hifin_hi_read",
-  /* 하이펫 자매앱 SSO(demoAuth.js hipetSsoIssue/Revoke): 1회용 2분 핸드오프 토큰 + 하이펫 게이트·운영자 플래그(같은 오리진 /pet/ 이 읽음 — 로그아웃 시 함께 회수) */ "hifin_sso_hipet", "hipet_gate", "hipet_admin"];
+  /* 하이펫 자매앱 SSO(demoAuth.js hipetSsoIssue/Revoke): 1회용 2분 핸드오프 토큰 + 하이펫 게이트·운영자 플래그(같은 오리진 /pet/ 이 읽음 — 로그아웃 시 함께 회수) */ "hifin_sso_hipet", "hipet_gate", "hipet_admin",
+  /* 헬스메이트 프로 콘솔(healthMate.js — 사번 체계 8H0001~8H9999 교체, 2026-10-05): ② 검진결과 배정 큐 · ⑧ 현장 제안함.
+     _hmLs/_hmSave 헬퍼로 읽고 쓰므로 스캔 밖이라 수동 등재한다. 구 키(접미 없음)는 구 프로 코드가 박혀 있어
+     최초 1회 removeItem으로만 참조한다 — 등재는 "지운다"는 사실까지 포함해야 추적이 끊기지 않는다. */
+  "hifin_hm_insq_v2", "hifin_hm_ideas_v2", "hifin_hm_insq", "hifin_hm_ideas",
+  /* 같은 교체의 1회용 이관 플래그(handoffResult.js _hmrMigrateCodes): 구 코드 키의 활동 기록을 신 사번 키로 합쳤는지 표시.
+     접두 hifin_handoff_result_ 를 피해 이름을 지었다 — hmrStats 전역 prefix 스캔에 섞이면 집계가 어긋난다. */
+  "hifin_hm_resultkey_mig_v2"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
@@ -36,7 +43,7 @@ const HIFIN_KEY_GROUPS = [
   { g: "commerce", ko: "커머스·구독", pats: ["hifin_shop_", "hifin_subs_", "hifin_sub_", "hifin_topup", "hifin_hi_esc_", "hifin_price_", "hifin_addrbook"], sensitive: "중간" },
   { g: "family", ko: "가족·돌봄", pats: ["hifin_fam", "hifin_care", "hifin_rpm_"], sensitive: "높음(제3자)" },
   { g: "agent", ko: "에이전트 상태", pats: ["hifin_hi_", "hifin_agent_"], sensitive: "중간(대화 맥락)" },
-  { g: "consent", ko: "동의·보안", pats: ["hifin_consent_", "hifin_access_log", "hifin_guard", "hifin_login_lock", "hifin_reggate", "hifin_mydata"], sensitive: "높음(감사 대상)" },
+  { g: "consent", ko: "동의·보안", pats: ["hifin_consent_", "hifin_self_mkt_seed", "hifin_access_log", "hifin_guard", "hifin_login_lock", "hifin_reggate", "hifin_mydata"], sensitive: "높음(감사 대상)" },
   { g: "ops", ko: "계측·운영", pats: ["hifin_events", "hifin_consent2", "hifin_telem", "hifin_wp_log", "hifin_lead", "hifin_handoff_", "hifin_hm_", "hifin_nodes", "hifin_ocr", "hifin_backup"], sensitive: "낮음(경량 식별자만)" },
   { g: "growth", ko: "추천·거버넌스·기타", pats: ["hifin_ref_", "hifin_gov_", "hifin_sharing", "hifin_share", "hifin_divi", "hifin_g2_", "hifin_g4_", "hifin_pu_", "pi_", "hifin_easyread", "hifin_connectors"], sensitive: "낮음" },
   { g: "session", ko: "세션(휘발)", pats: ["hifin_sid", "hifin_hm_code", "hifin_hi_welcome", "hifin_dl_ready", "hifin_force_onboard", "hifin_sso_hipet", "hipet_gate", "hipet_admin"], sensitive: "낮음(1회용 토큰·게이트 플래그)" },

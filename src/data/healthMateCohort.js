@@ -8,7 +8,12 @@
 function _hmcRng(s) { return _mul32(_hmHash(String(s))); }
 const _HMC = { pros: null, sggIdx: null, sggW: null, session: {} };   // 메모리 캐시(저장 금지)
 
-/* ── 지역단 약호(코드 생성용) ── */
+/* ── 지역단 약호 — 구 코드(HM-{약호}-26-{일련}) 재현 전용 ──
+   프로 코드는 8H0001~8H9999 단일 번호대로 교체됐다(healthMate.js HM_CODES 주석). 약호는 이제
+   표시·인증·배정에 쓰이지 않고, 저장소·스냅샷에 남은 옛 코드를 신 사번으로 역조회하기 위해
+   legacyCode 필드를 만드는 데만 쓴다(hmCodeNorm). 지역단은 레코드의 dan 필드가 단일 소스다. */
+/* 명부 전용 예약 번호 블록 — 8H0001~8H0010. 생성 프로는 8H0011부터 생성 순서 그대로 받는다(4단계 주석 참고). */
+const HMC_RESERVED = 10;
 const HMC_DAN_ABBR = { "강북지역단": "NB", "강남지역단": "SN", "강서지역단": "WS", "경기지역단": "GG", "성남지역단": "SNM", "북부지역단": "GBB", "경인지역단": "IC", "강원지역단": "GW", "충청지역단": "CC", "중부지역단": "JB", "호남지역단": "HN", "전북지역단": "JBK", "대경지역단": "DG", "부산지역단": "BS", "영남지역단": "YN", "경남지역단": "GN", "광역(전국)": "WD" };
 const _HMC_GG_NORTH = ["의정부", "남양주", "파주", "구리", "양주"];   // 경기 북부지역단 관할(데모 축약)
 
@@ -26,17 +31,50 @@ function _hmcDanOf(sido, sgg) {
 }
 
 /* ── 프로 ~700명 생성 — 실사 지점 272개(LR_BRANCHES) 위에 배속 ── */
+/* 명부 10명의 배속 — 사번별 명시 매핑(인덱스 산술 금지).
+   예전에는 지역단 pool을 `pool[i % pool.length]`로 돌려 배속했는데, HM_CODES 배열 순서가 바뀌면
+   전원의 시군구가 흔들렸다(사번 체계 교체로 실제로 순서가 바뀌었다). 이제 사번으로 못박는다.
+
+   ⚠️ 8H0001 박성호 — 형 지시(2026-10-05): 은평지점 배속. 지점명·주소는 실사 지점 명부
+      (leadBranches.js LR_BRANCHES["서울"]의 ["은평","은평구 통일로715"])에서 가져온 실사값이고,
+      은평구는 LR_SEOUL_GU에서 강북지역단이라 기존 지역단(강북)과 그대로 정합한다.
+   ⚠️⚠️ 이 한 줄(마포구 → 은평구)의 실측 파급 — 코호트 10만 명 중 **1,992명(1.99%)의 담당 프로가 바뀌었다**.
+      전수 비교(구 배속 vs 현 배속): 은평구 1,818명 + 마포구 174명.
+        · 은평구 — hmProsBySgg의 주 관할 pool이 16명 → 17명이 되고 박성호가 pool 앞에 들어가면서
+          `pool[hash % pool.length]`가 전원 재추첨됐다(pool 길이가 바뀌면 전원이 흔들린다).
+        · 마포구 — 주 관할 프로가 1명(박성호) → 0명이 되어 커버 공백 시군구가 됐다. 174명의 배정 근거가
+          "주 관할"에서 "겸임(인접 관할 · 비대면 우선)"으로 바뀌고 담당은 8H0044·8H0058로 갔다.
+        · 동반 변화 — ⑩ 관제탑의 지점 수 278 → 277, handoff_batch_report.byRosterGrade H 3209→3204 /
+          L 930→939 / M 377→373.
+      형 지시가 "은평지점"이므로 배속은 은평구로 유지한다. 되돌리거나 다시 옮기려면 위 숫자가 그만큼
+      다시 움직인다는 뜻이고, 어느 쪽이든 실측치를 이 주석과 커밋에 남긴다.
+   ⚠️ 나머지 9명의 시군구(관할)는 구 배속을 그대로 보존한다 — 바꾸면 위와 같은 재배정이 또 번진다.
+
+   소속 지점은 전부 LR_BRANCHES 실사값으로 바꿨다(2026-10-05). 전에는 "강남구 거점"처럼 존재하지 않는
+   조직 단위가 ⑩ 배분 목록·프로 검색에 실사 지점명과 섞여 나왔다. 관할 시군구에 실사 지점이 없는 경우
+   (서초구·노원구·양천구)에는 같은 지역단의 실사 지점에 소속시킨다 — 소속 지점과 관할 시군구가 다른 것은
+   이 모델이 coverage/gap으로 이미 표현하는 정상 상태이고, sgg를 건드리지 않으므로 재배정은 0명이다. */
+const HMC_LEGACY_PLACE = {
+  "8H0001": { sido: "서울", sgg: "은평구", branch: "은평지점", branchAddr: "서울 은평구 통일로715" },
+  "8H0002": { sido: "서울", sgg: "강남구", branch: "강남지점", branchAddr: "서울 강남구 테헤란로322" },
+  "8H0003": { sido: "서울", sgg: "서초구", branch: "강남지점", branchAddr: "서울 강남구 테헤란로322" },      /* 서초구 실사 지점 없음 → 같은 강남지역단 소속 */
+  "8H0004": { sido: "서울", sgg: "송파구", branch: "송파지점", branchAddr: "서울 송파구 송파대로570" },
+  "8H0005": { sido: "서울", sgg: "노원구", branch: "강북수유지점", branchAddr: "서울 도봉구 마들로13길61" },  /* 노원구 실사 지점 없음 → 같은 강북지역단 소속 */
+  "8H0006": { sido: "서울", sgg: "양천구", branch: "강서지점", branchAddr: "서울 영등포구 당산로141" },       /* 양천구 실사 지점 없음 → 같은 강서지역단 소속 */
+  "8H0007": { sido: "경기", sgg: "수원", branch: "수원지점", branchAddr: "경기 수원시 권선구 효원로268" },
+  "8H0008": { sido: "경기", sgg: "용인", branch: "용인지점", branchAddr: "경기 용인시 기흥구 동백3로11번길53" },
+  "8H0009": { sido: "", sgg: "", branch: "본사(광역)", branchAddr: "" },
+  "8H0010": { sido: "", sgg: "", branch: "본사(광역)", branchAddr: "" },
+};
 function hmProsGen() {
   if (_HMC.pros) return _HMC.pros;
   const out = [];
-  const seq = {};   // 지역단별 일련(100부터 — 기존 HM_CODES 10명과 충돌 방지)
+  const seq = {};   // 지역단별 일련(100부터) — 구 코드(legacyCode) 재현 전용
   const nm = (rng) => { const sex = rng() < 0.55 ? "여" : "남"; const g = sex === "남" ? _GIVN_M : _GIVN_F; return _pick(rng, _SURN) + _pick(rng, g); };
-  /* 1) 기존 명부 10명 보존(코드·이름 그대로) — 대표 시군구·지점 부여 */
-  const LEGACY_SGG = { "강남지역단": ["강남구", "서초구", "송파구"], "강북지역단": ["노원구", "마포구"], "강서지역단": ["양천구"], "경기지역단": ["수원", "용인"], "광역(전국)": [""] };
-  HM_CODES.forEach((p, i) => {
-    const pool = LEGACY_SGG[p.dan] || [""];
-    const sgg = pool[i % pool.length];
-    out.push(Object.assign({}, p, { sido: p.dan === "경기지역단" ? "경기" : p.dan === "광역(전국)" ? "" : "서울", sgg, branch: sgg ? sgg + " 거점" : "본사(광역)", branchAddr: "", coverage: sgg ? [sgg] : [], legacy: true, hyundai: true }));
+  /* 1) 기존 명부 10명 보존(사번·이름 그대로) — 시군구·지점은 HMC_LEGACY_PLACE 명시 배속 */
+  HM_CODES.forEach((p) => {
+    const pl = HMC_LEGACY_PLACE[p.code] || { sido: "", sgg: "", branch: "본사(광역)", branchAddr: "" };
+    out.push(Object.assign({}, p, { sido: pl.sido, sgg: pl.sgg, branch: pl.branch, branchAddr: pl.branchAddr, coverage: pl.sgg ? [pl.sgg] : [], legacy: true, hyundai: true }));
   });
   /* 2) 실사 지점 272 × 인구 가중 배치(2단계 P3 · 형 승인 2026-08-30)
      — 수도권은 많이, 도서·저밀도는 적게: 시도별 코호트 인구 가중(_SIDO — pilotCohort와 동일 원천)에
@@ -45,7 +83,7 @@ function hmProsGen() {
   const sggHasPro = {};
   const _sidoW = {}; let _wSum = 0;
   try { (_SIDO || []).forEach(([s2, w]) => { _sidoW[s2] = w; _wSum += w; }); } catch (e) {}
-  const PRO_TARGET = 686;                                    // 비(非)기존 명부 목표(기존 10명 별도 — 총 ~696)
+  const PRO_TARGET = 686;                                    // 가중 배분의 목표값(상한·하한 보정 때문에 실제 인원과 다르다 — 현재값은 hmProsGen().length가 단일 소스: 702명)
   Object.keys(BR).forEach((sido) => {
     BR[sido].forEach(([bname, addr], bi) => {
       const rng = _hmcRng("pro|" + sido + "|" + bname + "|" + bi);
@@ -63,7 +101,8 @@ function hmProsGen() {
         seq[ab] = (seq[ab] || 99) + 1;
         const g = rng();
         out.push({
-          code: `HM-${ab}-26-${String(seq[ab]).padStart(3, "0")}`,
+          /* code·sabun은 4)에서 8H####로 일괄 부여한다. legacyCode는 구 코드 역조회 전용(표시 금지). */
+          legacyCode: `HM-${ab}-26-${String(seq[ab]).padStart(3, "0")}`,
           name: nm(rng) + "", branch: bname + "지점", branchAddr: sido + " " + addr,
           sido, sgg, dan, coverage: [sgg],
           grade: g < 0.30 ? "HM1" : g < 0.70 ? "HM2" : g < 0.95 ? "HM3" : "HM4",
@@ -91,8 +130,30 @@ function hmProsGen() {
       }
     });
   });
-  /* 4) 사번 부여(2단계 P3 · 형 승인) — 8H0001부터 전원(기존 명부 포함), 생성 순서 결정론 */
-  out.forEach((p, i) => { p.sabun = "8H" + String(i + 1).padStart(4, "0"); });
+  /* 4) 사번 = 프로 코드 부여(형 지시 2026-10-05) — 8H0001~8H9999 단일 번호대, 생성 순서 결정론.
+        ▸ 8H0001~8H0010 = 명부(HM_CODES) 예약 블록. 명부가 번호를 직접 들고 온다(8H0001 박성호 = 시연 인증 기본값).
+        ▸ 8H0011부터 = 생성 프로. **생성 순서 그대로** 연속 부여한다(현재 8H0011~8H0702).
+        ⚠️ 전에는 "명부가 선점하지 않은 다음 빈 번호"를 찾는 방식이었다. 명부 번호가 흩어져 있을 때만
+           의미가 있고, 대신 명부에 한 줄만 끼워 넣으면 생성 프로 692명이 전원 한 칸씩 밀렸다. 밀리면
+           _hmcRng("stat|"+code)로 뽑는 프로별 실적·후기가 전부 바뀌고 hifin_handoff_result_<사번>
+           활동 기록이 주인을 잃는다. 그래서 예약 블록을 상수로 고정하고 생성분은 그 뒤에서 센다.
+        ⚠️ 명부를 10명보다 늘릴 때는 HMC_RESERVED를 먼저 키워야 한다(그러지 않으면 아래 단언에서 멈춘다).
+           예약 블록을 키우는 순간 생성 프로가 재번호되므로, 그때는 실적 시드 변경을 각오하고 회귀를 다시 떠야 한다. */
+  const used = {};
+  out.forEach((p) => { if (p.code) used[p.code] = 1; });
+  for (const c in used) {
+    const n = Number(String(c).slice(2));
+    if (!(n >= 1 && n <= HMC_RESERVED)) throw new Error("HM_CODES 사번이 예약 블록(8H0001~8H" + String(HMC_RESERVED).padStart(4, "0") + ") 밖입니다: " + c);
+  }
+  let nextN = HMC_RESERVED;
+  out.forEach((p) => {
+    if (!p.code) {
+      nextN++;
+      p.code = "8H" + String(nextN).padStart(4, "0");
+      used[p.code] = 1;
+    }
+    p.sabun = p.code;   // 사번=코드 — 두 필드가 어긋날 수 없게 파생(화면 병기 금지)
+  });
   _HMC.pros = out;
   return out;
 }
@@ -132,7 +193,8 @@ function cohortProOf(i) {
   const { pool, gap } = hmProsBySgg(r.sido, r.sgg);
   if (!pool.length) return null;
   const p = pool[_hmHash("asg|" + i) % pool.length];
-  const why = gap ? `${r.sido} ${r.sgg} 거주 → ${p.branch} ${p.name} 프로 겸임(인접 관할 · 비대면 우선)` : `${r.sido} ${r.sgg} 거주 → ${p.branch} ${p.name} 프로(주 관할)`;
+  const at = p.branch || p.dan;
+  const why = gap ? `${r.sido} ${r.sgg} 거주 → ${at} ${p.name} 프로 겸임(인접 관할 · 비대면 우선)` : `${r.sido} ${r.sgg} 거주 → ${at} ${p.name} 프로(주 관할)`;
   return { pro: p, gap, why, region: r };
 }
 /* 프로 → 담당 회원 인덱스(시군구 인덱스 캐시 — 10만 1회 순회 후 메모리 보관) */
@@ -145,14 +207,14 @@ function _hmcSggIndex() {
   return idx;
 }
 function hmMembersOfPro(code) {
-  const p = hmProsGen().find((x) => x.code === code);
+  const p = (typeof hmProOf === "function") ? hmProOf(code) : hmProsGen().find((x) => x.code === code);   // 구 코드도 수용(hmCodeNorm)
   if (!p) return [];
   const idx = _hmcSggIndex();
   const sggs = [p.sgg].concat(p.coverage.filter((s) => s !== p.sgg));
   const out = [];
   sggs.forEach((sgg) => {
     const arr = idx[p.sido + "|" + sgg] || [];
-    arr.forEach((i) => { const a = cohortProOf(i); if (a && a.pro.code === code) out.push(i); });
+    arr.forEach((i) => { const a = cohortProOf(i); if (a && a.pro.code === p.code) out.push(i); });
   });
   return out;
 }
@@ -234,9 +296,9 @@ function cohortCardOf(i) {
   if (status.k === "HELD") hi = "검진결과 수령 전이에요. 지금은 프로필 사전 학습만 — 결과가 오면 제가 바로 알려드릴게요.";
   else if (status.k === "NEED") hi = "하이 신호가 도래했어요 — 오늘 연결하는 게 좋겠어요.";
   else if (stage.stalled) hi = `${stage.stalledDays}일째 ${stage.cur}에 멈춰 있어요.` + (nextStage ? ` ${nextStage.k}(${nextStage.name})로 가려면 ${nextStage.desc.split("—")[0].trim()}이 필요해요.` : "");
-  else hi = "예정 터치까지는 지켜봐도 좋아요 — 단계 근거를 보고 다음 행동을 골라 주세요.";
+  else hi = "예정된 연락 때까지는 지켜봐도 좋아요 — 이 회원이 지금 어느 단계인지 보고, 그 단계에 맞는 행동을 고르시면 돼요.";
   return { i, cohort: true, m, stage: { cur: stage.cur, reached: stage.reached, stalled: stage.stalled, stalledDays: stage.stalledDays }, status, hb, hi,
-    mask: _hmMask(m.name), band: (Math.floor((m.age || 45) / 10) * 10) + "대", sex: m.sex, region: asg ? asg.region : null, why: asg ? asg.why : "", famN: stage.famN };
+    mask: _hmMask(m.name), band: _hmBandOf(m.age || 45), sex: m.sex, region: asg ? asg.region : null, why: asg ? asg.why : "", famN: stage.famN };
 }
 /* 전국 분포 — 루프 없이 수식(HM_FUNNEL × N) */
 function hmNationStats() {
@@ -247,10 +309,11 @@ function hmNationStats() {
 function hmcTouch(code, i, label) {
   const st = cohortStageOf(i);
   if (st && st.enrolled) { hmLockViolation(code, { email: "cohort-" + i }); return { ok: false, reason: "접촉 금지 상태예요 — 검진결과 수령 후 하이가 자동으로 열어 드려요." }; }
-  (_HMC.session[code] || (_HMC.session[code] = [])).push({ at: Date.now(), i, label });
+  const sk = (typeof hmCodeNorm === "function") ? hmCodeNorm(code) : code;
+  (_HMC.session[sk] || (_HMC.session[sk] = [])).push({ at: Date.now(), i, label });
   return { ok: true, session: true };
 }
-function hmcTouches(code) { return _HMC.session[code] || []; }
+function hmcTouches(code) { const k = (typeof hmCodeNorm === "function") ? hmCodeNorm(code) : code; return _HMC.session[k] || []; }
 /* 프로 1명 시점 요약(탭 배분) — 담당 회원 인덱스에서 파생 */
 function hmcProView(code) {
   const ids = hmMembersOfPro(code);
@@ -284,10 +347,10 @@ const _HMC_CMT = [
   [3, "안내는 정확했지만 다음 일정 안내가 조금 늦었어요."],
 ];
 function hmcProStats(code) {
-  const p = hmProsGen().find((x) => x.code === code);
+  const p = (typeof hmProOf === "function") ? hmProOf(code) : hmProsGen().find((x) => x.code === code);
   if (!p) return null;
-  const v = hmcProView(code);
-  const rng = _hmcRng("stat|" + code);
+  const v = hmcProView(p.code);
+  const rng = _hmcRng("stat|" + p.code);   // 시드는 정규화된 사번 — 구 코드로 들어와도 같은 실적이 나온다
   /* 성과율 — 등급 서사(경험 많을수록 완료율↑) + 프로별 지터 */
   const base = { HM1: 0.72, HM2: 0.78, HM3: 0.85, HM4: 0.88 }[p.grade] || 0.78;
   const perf = Math.min(0.97, Math.max(0.6, base + (rng() - 0.5) * 0.12));

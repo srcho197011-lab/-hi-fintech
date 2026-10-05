@@ -8,21 +8,68 @@
 /* ── 현대해상 오렌지 팔레트(디자인 단일 소스) ── */
 const HM_C = { pri: "#F5821F", dark: "#D96A00", deep: "#B34E00", bg: "#FFF6EE", line: "#FFDDBE", ink: "#1F2937", mut: "#6B7280", ok: "#16A34A", warn: "#F59E0B", stall: "#EA580C", hold: "#94A3B8", red: "#DC2626", blue: "#2563EB" };
 
-/* ── 프로 코드 명부(시연) — 코드=자격·권한·실적의 단일 키 ── */
+/* ── 프로 사번 명부(시연) — 사번 = 프로 코드 = 자격·권한·실적의 단일 키 ──
+   체계(형 지시 2026-10-05): 8H0001 ~ 8H9999 — 위촉 가능 1만 명 규모의 단일 번호대.
+   구 체계(HM-{지역단약호}-26-{일련})는 폐기한다. 번호에 조직 정보를 담지 않는 것이 핵심이다 —
+   지역단·지점·시군구는 레코드 필드(dan·branch·sgg·coverage)로만 유지하고, 코드 문자열에서
+   조직을 추출하는 로직은 어디에도 두지 않는다(약호 접두 추출·뒤 3자리 절단 등 전부 제거).
+   ⚠️ 8H0001은 시연 주인공 — 은평지점 박성호 프로에게 고정 배정한다. 현대해상 시연의 인증 화면
+      기본값으로 쓰이므로 번호대의 첫 번호(외우기 가장 쉬운 값)를 준다. 배열 순서 = 번호 순서. */
 const HM_CODES = [
-  { code: "HM-SN-26-014", name: "김지원", dan: "강남지역단", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-02" },
-  { code: "HM-SN-26-021", name: "정태윤", dan: "강남지역단", grade: "HM2", gradeKo: "상담", lic: true, status: "활성", since: "2026-04" },
-  { code: "HM-SN-26-030", name: "이수민", dan: "강남지역단", grade: "HM4", gradeKo: "지역리드", lic: true, status: "활성", since: "2026-01" },
-  { code: "HM-NB-26-007", name: "박성호", dan: "강북지역단", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-02" },
-  { code: "HM-NB-26-012", name: "한서연", dan: "강북지역단", grade: "HM1", gradeKo: "안내", lic: false, status: "활성", since: "2026-06" },
-  { code: "HM-WS-26-005", name: "최민준", dan: "강서지역단", grade: "HM2", gradeKo: "상담", lic: true, status: "활성", since: "2026-03" },
-  { code: "HM-GG-26-009", name: "서지우", dan: "경기지역단", grade: "HM2", gradeKo: "상담", lic: true, status: "활성", since: "2026-03" },
-  { code: "HM-GG-26-018", name: "문가영", dan: "경기지역단", grade: "HM1", gradeKo: "안내", lic: false, status: "교육중", since: "2026-07" },
-  { code: "HM-WD-26-001", name: "오현석", dan: "광역(전국)", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-01" },
-  { code: "HM-WD-26-002", name: "임다혜", dan: "광역(전국)", grade: "HM2", gradeKo: "상담", lic: true, status: "정지", since: "2026-02" },
+  { code: "8H0001", name: "박성호", dan: "강북지역단", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-02", legacyCode: "HM-NB-26-007" },
+  { code: "8H0002", name: "김지원", dan: "강남지역단", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-02", legacyCode: "HM-SN-26-014" },
+  { code: "8H0003", name: "정태윤", dan: "강남지역단", grade: "HM2", gradeKo: "상담", lic: true, status: "활성", since: "2026-04", legacyCode: "HM-SN-26-021" },
+  { code: "8H0004", name: "이수민", dan: "강남지역단", grade: "HM4", gradeKo: "지역리드", lic: true, status: "활성", since: "2026-01", legacyCode: "HM-SN-26-030" },
+  /* lic:true(2026-10-05) — 강북지역단 모집자격 보유 프로가 박성호 1명뿐이어서 ② 「순번 배분 원칙」
+     바로 아래에 순번(직전 → 이번)을 보여주는 행이 한 건도 없었다. 등급(서비스 범위)과 모집자격
+     (보험 모집 라이선스)은 별개 축이라 HM1·모집자격 조합은 모순이 아니다(화면 툴팁과 동일 정의).
+     모집자격 미보유 시연 대상은 8H0008 문가영(교육중)과 생성 프로 15%가 그대로 담당한다. */
+  { code: "8H0005", name: "한서연", dan: "강북지역단", grade: "HM1", gradeKo: "안내", lic: true, status: "활성", since: "2026-06", legacyCode: "HM-NB-26-012" },
+  { code: "8H0006", name: "최민준", dan: "강서지역단", grade: "HM2", gradeKo: "상담", lic: true, status: "활성", since: "2026-03", legacyCode: "HM-WS-26-005" },
+  { code: "8H0007", name: "서지우", dan: "경기지역단", grade: "HM2", gradeKo: "상담", lic: true, status: "활성", since: "2026-03", legacyCode: "HM-GG-26-009" },
+  { code: "8H0008", name: "문가영", dan: "경기지역단", grade: "HM1", gradeKo: "안내", lic: false, status: "교육중", since: "2026-07", legacyCode: "HM-GG-26-018" },
+  { code: "8H0009", name: "오현석", dan: "광역(전국)", grade: "HM3", gradeKo: "설계·가족", lic: true, status: "활성", since: "2026-01", legacyCode: "HM-WD-26-001" },
+  { code: "8H0010", name: "임다혜", dan: "광역(전국)", grade: "HM2", gradeKo: "상담", lic: true, status: "정지", since: "2026-02", legacyCode: "HM-WD-26-002" },
 ];
-function hmProOf(code) { const l = (typeof hmProsGen === "function") ? hmProsGen() : HM_CODES; for (const p of l) if (p.code === code) return p; return null; }
-function hmActivePros(dan) { const l = HM_CODES.filter((p) => p.status === "활성" && (p.dan === dan)); return l.length ? l : HM_CODES.filter((p) => p.status === "활성" && p.dan === "광역(전국)"); }
+HM_CODES.forEach((p) => { p.sabun = p.code; });   /* 사번은 코드에서 파생 — 두 필드가 어긋날 수 없게 한다(병기 금지) */
+const HM_CODE_RE = /^8H\d{4}$/;                   /* 신 체계 형식 — 러너(run_handoff_batch)의 게이트와 동일 */
+const HM_DEMO_SABUN = "8H0001";                   /* 시연 기본값 — 은평지점 박성호(인증 화면 자동 채움용 단일 소스) */
+const HM_SUSPENDED_DEMO = "8H0010";               /* 정지 사번 시연용(임다혜) — 화면이 사번 리터럴을 박지 않도록 */
+
+/* 구 코드 방어 — 세션·저장소·스냅샷에 남은 옛 값(HM-…)이 들어와도 화면이 비거나 깨지지 않게 신 사번으로 해석.
+   표시·발급은 전부 신 체계이고, 이 경로는 "읽기 하위호환" 전용이다. */
+function hmCodeNorm(input) {
+  const s = String(input == null ? "" : input).trim().toUpperCase();
+  if (!s || /^8H\d{4}$/.test(s)) return s;   // 리터럴 사용 — 로드 순서상 상수 초기화 전에 불려도 안전하게
+  try { const l = (typeof hmProsGen === "function") ? hmProsGen() : HM_CODES; for (const p of l) if (p.legacyCode === s) return p.code; } catch (e) {}
+  for (const p of HM_CODES) if (p.legacyCode === s) return p.code;
+  return s;
+}
+/* 인증 판정 — 신 사번·구 코드·미등록·비활성을 구분해 안내 문구까지 돌려준다(화면은 문구만 쓴다) */
+function hmCodeCheck(input) {
+  const raw = String(input == null ? "" : input).trim().toUpperCase();
+  if (!raw) return { ok: false, pro: null, code: "", legacy: false, why: "사번을 입력해 주세요 — 8H0001 형식이에요." };
+  const code = hmCodeNorm(raw);
+  const pro = hmProOf(code);
+  const legacy = !!(pro && raw !== code);
+  /* 안내 3분기 — ①신 형식인데 명부에 없음 ②구 체계(HM-…) 사용 ③형식 자체가 틀림.
+     예전에는 ①만 분기하고 ②③을 한 문구로 묶어, 시연 중 오타("8H00")에도 "체계가 바뀌었어요"가 떴다. */
+  if (!pro) {
+    if (HM_CODE_RE.test(raw)) return { ok: false, pro: null, code, legacy: false, why: "등록되지 않은 사번이에요." };
+    if (/^HM-/.test(raw)) return { ok: false, pro: null, code, legacy: false, why: "사번 체계가 8H0001~8H9999로 바뀌었어요 — 새 사번을 입력해 주세요." };
+    return { ok: false, pro: null, code, legacy: false, why: "사번 형식이 8H0001 형태여야 해요 — 숫자 4자리를 확인해 주세요." };
+  }
+  if (pro.status !== "활성") return { ok: false, pro, code: pro.code, legacy, why: `${pro.status} 상태 사번이에요 — 접근이 차단됩니다(담당 회원은 재배정 큐로 이동).` };
+  return { ok: true, pro, code: pro.code, legacy, why: legacy ? `구 코드 ${raw}는 새 사번 ${pro.code}로 전환됐어요.` : "" };
+}
+function hmProOf(code) { const key = hmCodeNorm(code); if (!key) return null; const l = (typeof hmProsGen === "function") ? hmProsGen() : HM_CODES; for (const p of l) if (p.code === key) return p; return null; }
+/* 명부 10명(순번 배분 모집단) — hmProsGen의 완전 레코드를 쓴다. HM_CODES 원본은 사번·시군구·지점이
+   채워지기 전 상태라 ②탭 배분 근거에 빈 값이 노출됐다(기존 불일치 해소 · 모집단 크기는 10명 그대로). */
+function hmActivePros(dan) {
+  const base = (typeof hmProsGen === "function") ? hmProsGen().filter((p) => p.legacy) : HM_CODES;
+  const l = base.filter((p) => p.status === "활성" && p.dan === dan);
+  return l.length ? l : base.filter((p) => p.status === "활성" && p.dan === "광역(전국)");
+}
 
 /* ── 8단계 정의(단일 소스) — DB 4단계 + 이후 4단계. 판정은 hmStageOf가 "데이터만" 근거로 수행 ── */
 const HM_STAGES = [
@@ -42,7 +89,7 @@ const HM_STAGE_GUIDE = {
     next: "검진을 받고 결과가 금고에 들어오면 D2로 — 락은 하이가 자동 해제하고 알려드려요.",
     ex: "회사 단체 가입으로 들어온 40대 회원 — 검진 예약만 잡혀 있고 결과가 아직 없어요. 지금 전화하면 락 위반입니다. 결과 도착 알림이 오면 그때가 첫 연결이에요." },
   D2: { entry: "실측 검진값이 데이터 금고에 저장(1세대 자산)",
-    doKo: "첫 연결의 골든타임 — 한 통화에 다섯 가지를 전해요: ①무료 3종 안내 ②보험 혜택·적용법(0원 기가입) ③건강분석리포트 발행·안내 ④맞춤 케어 키트 안내(결과 기반 영양소·기기 무료) ⑤향후 지원 약속. 이 통화에서 앞으로의 건강관리 동의서도 함께 받아요 — 동의의 범위가 곧 활동의 범위예요. 전달 체크 5칸이 ⑩관제탑에 집계돼요(대본: ⭐ 첫 연결 파트).",
+    doKo: "첫 연결의 골든타임 — 한 통화에 두 덩어리를 전해요. 〔무료 3종〕 ①보험 혜택 — 검진대비보험 0원 자동 가입(암·뇌졸중·급성심근경색 각 최대 1,000만원)과 적용법 ②건강분석 리포트 — 생체나이·질병 위험·의료비 예측 발행·해설 ③맞춤 케어 키트 — 검진 결과 기반(만성질환 보유 시 그에 맞춘) 영양소·홈케어 측정기기 무료 제공. 〔향후 지원 약속〕 진료 안내 · 추가검진 안내 · 맞춤 영양 · 케어 활동을 앞으로 계속 챙겨드린다는 약속. 이 통화에서 앞으로의 건강관리 동의도 함께 받아요 — 동의의 범위가 곧 활동의 범위예요.",
     next: "AI 분석 리포트(등급·위험도)가 발급되면 D3로.",
     ex: "어제 검진 결과가 도착한 50대 회원 — '결과 보셨어요?'로 시작해 위험 구간 1개와 재검진 예약까지 한 번에 정리한 사례가 표준이에요." },
   D3: { entry: "등급·위험도·예측 리포트 생성(2세대 자산)",
@@ -99,23 +146,113 @@ function _hmLs(k, fb) { try { const v = localStorage.getItem(k); return v ? JSON
 function _hmSave(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 function _hmHash(s) { let h = 5381; s = String(s || "x"); for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h >>> 0; }
 function _hmMask(name) { const n = String(name || "회원"); return n[0] + "○" + (n.length > 2 ? "○" : ""); }
-function _hmBand(m) { const a = m.regAge || m.age || 45; return Math.floor(a / 10) * 10 + "대"; }
+function _hmBand(m) { return _hmBandOf(m.regAge || m.age || 45); }
+/* 연령 밴드 — 9세 이하는 Math.floor(a/10)*10이 "0대"가 되어 화면에 그대로 찍혔다(실측 노출). */
+function _hmBandOf(a) { a = Number(a) || 0; return a < 10 ? "10세 미만" : Math.floor(a / 10) * 10 + "대"; }
 function _hmDay(ts) { const d = new Date(ts); return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`; }
 const _HM_DAY = 86400000;
+/* 증서 발급 시각 — c.date("YYYY-MM-DD" 또는 "YYYYMMDD")가 단일 근거. 날짜가 없는 옛 증서만 c.at으로 폴백한다.
+   c.at은 "그 기기가 시드를 기록한 벽시계 시각"이라 기기마다 다른 만기를 만들었다(hmTouchPlan 주석 참고). */
+function _hmCertAt(c) {
+  if (!c) return null;
+  const d = String(c.date || "").replace(/[^0-9]/g, "");
+  if (d.length >= 8) {
+    const t = new Date(Number(d.slice(0, 4)), Number(d.slice(4, 6)) - 1, Number(d.slice(6, 8))).getTime();
+    if (!isNaN(t)) return t;
+  }
+  return c.at || null;
+}
 
+/* 시도 약칭 — "경상남도"→"경남" 같은 2자 정규화(지역단 판정·화면 표기가 같은 규칙을 쓰도록 단일화) */
+function _hmSidoShort(m) {
+  let s = String((m && m.sido) || "").slice(0, 2);
+  const FIX = { "경상": ((m && m.sido) || "").indexOf("북") >= 0 ? "경북" : "경남", "전라": ((m && m.sido) || "").indexOf("북") >= 0 ? "전북" : "전남", "충청": ((m && m.sido) || "").indexOf("북") >= 0 ? "충북" : "충남" };
+  return FIX[s] || s;
+}
 /* 시도 정규화 → 지역단(leadRouting LR_DAN 재사용) */
 function hmDanOf(m) {
-  let s = String(m.sido || "서울").slice(0, 2);
-  const FIX = { "경상": (m.sido || "").indexOf("북") >= 0 ? "경북" : "경남", "전라": (m.sido || "").indexOf("북") >= 0 ? "전북" : "전남", "충청": (m.sido || "").indexOf("북") >= 0 ? "충북" : "충남" };
-  if (FIX[s]) s = FIX[s];
+  const s = _hmSidoShort(m) || "서울";
   const map = (typeof LR_DAN !== "undefined" && LR_DAN[s]) || (typeof LR_DAN !== "undefined" && LR_DAN["서울"]) || { dans: ["강북지역단"] };
   let dan = map.dans[0];
   if (s === "서울" && typeof LR_SEOUL_GU !== "undefined") { const g = m.sigungu || ""; for (const d in LR_SEOUL_GU) if (LR_SEOUL_GU[d].indexOf(g) >= 0) { dan = d; break; } }
   return dan;
 }
+/* ── 시연 주인공(대표 본인 계정 = 조성래) ──
+   형 지시(2026-10-05): 앞으로 회원 건강관리 설명은 조성래 데이터로 한다 → 은평지점 박성호 프로의
+   담당 회원으로 전 탭에 나와야 한다. 세 개의 게이트(모집단·동의·배정)를 모두 열어야 하고,
+   배정은 해시 추첨이 아니라 고정(pin)이어야 한다 — 그래야 다른 회원 배정이 1명도 흔들리지 않는다. */
+const HM_SELF_PRO = HM_DEMO_SABUN;                        /* 조성래 담당 = 8H0001 박성호(은평지점) */
+const HM_SELF_EMAIL = "srcho197011@hizenhealth.com";      /* 게이트 로그인 본인 계정(MyPage selfMember와 동일) */
+function hmIsSelf(m) { return !!(m && (m.isSelf === true || m.email === HM_SELF_EMAIL)); }
+/* 본인 회원 레코드 — MyPage.jsx selfMember()가 단일 해석기(여기서 재구현하지 않는다).
+   거주지(sido/sigungu)는 selfMember()에 없고 core.jsx PT가 유일한 선언이므로 그 값을 읽어 붙인다.
+   붙이지 않으면 hmProForMember가 DISTRICTS["서울"][0]="강남구"로 조용히 폴백한다(값 복제 금지). */
+function hmSelfMember() {
+  let s = null;
+  try { if (typeof selfMember === "function") s = selfMember(); } catch (e) {}
+  if (!s || !hmIsSelf(s)) return null;                    /* 체험회원으로 로그인 중이면 그 회원이 반환됨 → 중복 합류 금지 */
+  if (!s.sigungu) { try { if (typeof PT !== "undefined" && PT && PT.sigungu) s = Object.assign({}, s, { sido: PT.sido, sigungu: PT.sigungu, dong: PT.dong, addr: PT.addr }); } catch (e) {} }
+  return s;
+}
+/* 본인 계정 시연 전제 1회 보강 — 숫자를 만들지 않고 "전제"만 갖춘다(금고 검진 2개년·보험 통합조회).
+   ⚠️ 2026-10-05 수정 — 전에는 이 함수가 hmPopulation()에서 불렸고(= 렌더 경로), 거기서 회원 대신
+      ConsentNFT(cnIssue)를 발행했다. 실측 결과 두 가지가 잘못됐다:
+      ① 회원이 아무 것도 하지 않은 상태로 헬스메이트 게이트만 띄워도 CNFT-…(scope mkt)가 발행됐다.
+      ② 회원이 증서를 철회(revoked)하고 금고 mkt를 false로 내려도, 새로고침 한 번에 새 증서가
+         active로 재발행되고 mkt가 true로 되살아났다(체인에 발행→철회→발행이 남았다).
+      이제 ⓐ 발행은 하지 않는다 — 상담·안내 동의는 금고 시드(healthDataVault selfEnsureInsSeed의
+      보험 단계)가 "시연 시드"로 기록한다. 회원이 직접 발행한 ConsentNFT와 섞지 않는다.
+      ⓑ 호출은 렌더가 아니라 useEffect(HealthMateSection)에서 1회만 한다.
+      ⓒ 철회 이력이 1건이라도 있으면 시드 보강 자체를 하지 않는다(복원 금지).
+   반환값: 저장소가 바뀌었는지(true면 호출자가 다시 그린다). */
+let _hmSelfReady = false;
+function hmSelfEnsure(m) {
+  if (_hmSelfReady) return false;
+  m = m || hmSelfMember();
+  if (!m || !hmIsSelf(m)) return false;
+  _hmSelfReady = true;
+  if (hmSelfRevoked(m)) return false;                       /* 철회 이력 — 되살리지 않는다 */
+  let changed = false;
+  try { if (typeof selfEnsureInsSeed === "function" && selfEnsureInsSeed(m)) changed = true; } catch (e) {}
+  try { if (typeof selfEnsureMktSeed === "function" && selfEnsureMktSeed(m)) changed = true; } catch (e) {}
+  return changed;
+}
+/* 철회 이력 — 철회된 상담·안내 동의 증서가 1건이라도 있으면 true.
+   ⚠️ 금고의 mkt:false는 철회가 아니다 — 금고 시드가 검진 단계에서 "아직 미동의"로 false를 쓴다
+      (healthDataVault seedSelfVault ①: 일괄동의 없음의 증거). 이걸 철회로 읽으면 시드를 깐 기기에서
+      본인 계정이 콘솔 모집단에서 통째로 빠진다(실측: 로그인 시 selfEnsureInsSeed가 먼저 돌아
+      hifin_self_ins_v4=1 상태라 담당 회원이 조성래 없이 집계됐다).
+   철회를 되살리지 않는 보증은 발행 1회 시도 플래그(hifin_self_mkt_seed)가 맡는다 —
+   플래그가 남아 있으면 selfEnsureMktSeed가 두 번째 호출부터 아무 것도 쓰지 않으므로, 시드 이후의
+   철회(금고 mkt:false)는 그대로 유지된다. */
+function hmSelfRevoked(m) {
+  try {
+    if (typeof cnList === "function") return cnList(m).some((x) => x.status === "revoked" && (x.scope || []).indexOf("mkt") >= 0);
+  } catch (e) {}
+  return false;
+}
+/* 콘솔 모집단 — 체험 16명 + 본인 계정. demoMembers 배열 자체는 16명으로 동결한다:
+   utils/demoAuth.js runDemoTests가 "16명 전원 isDemoUser"를 단언하므로 명부에 끼워 넣으면 자가검증이 깨진다.
+   ⚠️ 읽기 전용 — 이 경로에서는 저장소에 아무것도 쓰지 않는다(위 hmSelfEnsure 주석 참고). */
+function hmPopulation() {
+  const base = (typeof demoMembers !== "undefined" ? demoMembers : []).filter((m) => m && m.isDemoUser);
+  const s = hmSelfMember();
+  return s ? base.concat([s]) : base;
+}
+
 /* 회원 → 담당 프로(결정론) — 지역 일치 제1원칙: 회원 시군구의 프로(주 관할·겸임)에게만 배정.
    700명 명부(hmProsBySgg)가 로드되면 시군구 매칭, 아니면 기존 지역단 해시(폴백). */
+/* 시연 고정 배정(체험 회원) — 지역 일치 제1원칙을 실제로 눌러 볼 상대가 필요하다.
+   8H0001 박성호는 은평지점·은평구인데, 은평구에 사는 체험 회원 박춘봉(76세)이 해시 추첨에서
+   8H0136에게 갔다(실측). 그 결과 박성호의 상호작용 가능 체험 회원이 0명이어서 접촉·기록·단계
+   전진을 눌러 볼 대상이 본인 계정 1명뿐이었다(그 1명은 L8 평생주기라 단계 전진 시연 불가).
+   추첨 이전에 빠지므로 다른 회원의 pool 길이·해시에 영향이 없다(코호트 재배정 0명 · 실측). */
+const HM_PIN_MEMBERS = { "pcb500815@hizenhealth.com": HM_DEMO_SABUN };   /* 박춘봉 · 서울 은평구 → 은평지점 */
 function hmProForMember(m) {
+  /* 본인 계정 고정 배정 — 은평구 pool 17명 해시 추첨으로는 특정 프로를 보장할 수 없다.
+     추첨 이전에 빠지므로 다른 회원의 배정 해시·pool 길이에 영향을 주지 않는다(실측 변경 0명). */
+  if (hmIsSelf(m)) { const sp = hmProOf(HM_SELF_PRO); if (sp) return sp; }
+  if (m && HM_PIN_MEMBERS[m.email]) { const pp = hmProOf(HM_PIN_MEMBERS[m.email]); if (pp) return pp; }
   if (typeof hmProsBySgg === "function" && typeof DISTRICTS !== "undefined") {
     let sd = String(m.sido || "서울").slice(0, 2);
     const FIX2 = { "경상": (m.sido || "").indexOf("북") >= 0 ? "경북" : "경남", "전라": (m.sido || "").indexOf("북") >= 0 ? "전북" : "전남", "충청": (m.sido || "").indexOf("북") >= 0 ? "충북" : "충남" };
@@ -137,7 +274,13 @@ function hmConsentOK(m) {
     const v = tk && typeof vaultLoad === "function" ? vaultLoad(tk) : null;
     const st = v && v.consents && v.consents.state;
     if (st && st.mkt === false) return { ok: false, why: "상담·안내 동의 철회 — 목록 제외" };
-    if (st && st.mkt === true) return { ok: true, why: "상담·안내 동의(금고 기록 " + (v.consents.ver || "") + ")" };
+    if (st && st.mkt === true) {
+      /* 근거 표기를 섞지 않는다 — ①회원이 발행한 조건부 동의 증서 ②시연 시드 ③그 밖의 금고 기록 */
+      let nft = false;
+      try { nft = (typeof cnList === "function") && cnList(m).some((x) => x.status === "active" && (x.scope || []).indexOf("mkt") >= 0); } catch (e2) {}
+      const tag = nft ? "조건부 동의 증서 유효" : (st.mktSeed ? "본인 계정 시연 시드 — 회원 발행 증서 아님" : "금고 기록" + (v.consents.ver ? " " + v.consents.ver : (v.consents.ts ? " " + _hmDay(v.consents.ts) : "")));
+      return { ok: true, why: "상담·안내 동의(" + tag + ")" };
+    }
   } catch (e) {}
   if (m.isDemoUser) return { ok: true, why: "상담·안내 동의(체험 회원 시연 시드)" };
   return { ok: false, why: "동의 기록 없음 — 목록 제외" };
@@ -145,14 +288,13 @@ function hmConsentOK(m) {
 
 /* ── 내 고객 스코프 — 생성 시점에 동의·배정 필터(조회 필터가 아님) ── */
 function hmScope(code) {
-  const all = (typeof demoMembers !== "undefined" ? demoMembers : []).filter((m) => m && m.isDemoUser);
-  return all.filter((m) => hmConsentOK(m).ok && hmProForMember(m).code === code);
+  const key = hmCodeNorm(code);
+  return hmPopulation().filter((m) => hmConsentOK(m).ok && (hmProForMember(m) || {}).code === key);
 }
 function hmScopeAll(code) { /* HM4 지역리드: 지역단 전체 관측(집계용 — 개인 상세는 스코프와 동일 규칙) */
   const p = hmProOf(code);
   if (!p || p.grade !== "HM4") return hmScope(code);
-  const all = (typeof demoMembers !== "undefined" ? demoMembers : []).filter((m) => m && m.isDemoUser && hmConsentOK(m).ok);
-  return all.filter((m) => hmDanOf(m) === p.dan);
+  return hmPopulation().filter((m) => hmConsentOK(m).ok && hmDanOf(m) === p.dan);
 }
 
 /* ── ② 검진대비보험 순번 배분(라운드로빈) — 성과가 아니라 순서로 나눈다 ── */
@@ -160,21 +302,66 @@ function hmAssignInsRR(m) {
   const dan = hmDanOf(m);
   const pros = hmActivePros(dan).filter((p) => p.lic);   // 모집자격 보유만
   if (!pros.length) return null;
+  /* 폴백 여부 — hmActivePros는 그 지역단에 명부 프로가 없으면 광역(전국) 프로를 돌려준다.
+     전에는 이 사실을 문구에 쓰지 않아 "충청지역단 단독 배분 (모집자격 보유 프로 8H0009 1명)"처럼
+     충청지역단에 모집자격 프로가 있다는 거짓 사실이 화면에 찍혔다(실측 — 8H0009는 광역 소속). */
+  const fb = pros.every((p) => p.dan !== dan);
   const key = "hifin_hm_rr_" + dan;
-  const last = Number(localStorage.getItem(key) || "-1");
+  let stored = null;
+  try { stored = localStorage.getItem(key); } catch (e) {}
+  const last = Number(stored == null ? "-1" : stored);
   const idx = (last + 1) % pros.length;
   try { localStorage.setItem(key, String(idx)); } catch (e) {}
   const prev = pros[(idx - 1 + pros.length) % pros.length];
-  return { pro: pros[idx], reason: `${dan} 순번 배분 (직전 ${prev.code.slice(-3)} → 이번 ${pros[idx].code.slice(-3)})` };
+  /* 근거 문구는 사번 전체를 쓴다 — 구 체계에서 뒤 3자리만 끊어 쓰던 표기는 8H####에서 충돌한다(8H0004·8H1004).
+     포인터가 아직 없는 첫 배분에서는 "직전 X"를 쓰지 않는다 — 그 X는 배열 한 바퀴 앞 원소일 뿐 실제 직전 배분이 아니다. */
+  if (fb) return { pro: pros[idx], reason: `${dan} 관할 모집자격 프로 없음 → ${pros[idx].dan} ${pros[idx].code} 배분`, fallback: true };
+  if (pros.length === 1) return { pro: pros[idx], reason: `${dan} 단독 배분 (모집자격 보유 프로 ${pros[idx].code} 1명)` };
+  if (stored == null) return { pro: pros[idx], reason: `${dan} 순번 시작 — 모집자격 프로 ${pros.length}명 중 ${idx + 1}번째(${pros[idx].code})` };
+  return { pro: pros[idx], reason: `${dan} 순번 배분 (직전 ${prev.code} → 이번 ${pros[idx].code})` };
 }
-/* ② 배정 큐 — 시연: 검진대비보험 가입 회원(결정론 선별)을 최초 1회 순번 배분해 영속 저장 */
+/* ② 배정 큐 — 시연: 검진대비보험 가입 회원(결정론 선별)을 최초 1회 순번 배분해 영속 저장.
+   키 버전 v2(2026-10-05) — 사번 체계 교체 전에 구 코드로 저장된 큐는 새 키라 자동 폐기된다. */
+const HM_INSQ_N = 5;                                /* 시연 큐 크기 — 체험 회원 중 검진대비보험 가입자 */
 function hmInsQueue() {
-  let q = _hmLs("hifin_hm_insq", null);
+  let q = _hmLs("hifin_hm_insq_v2", null);
   if (q) return q;
-  const all = (typeof demoMembers !== "undefined" ? demoMembers : []).filter((m) => m && m.isDemoUser && hmConsentOK(m).ok);
-  const picked = all.filter((m) => _hmHash("insq" + (m.id || m.email)) % 3 === 0).slice(0, 5);   // 시연: 가입 회원 5명
+  /* 저장소 세대 교체 정책(2026-10-05 · 단일 정책) — 시스템이 만든 것은 재생성하고, 사람이 쓴 것은 이관한다.
+     ② 큐와 순번 포인터(hifin_hm_rr_*)는 시스템 생성물이라 같은 세대로 묶어 함께 버린다.
+     전에는 큐만 v2로 갈고 포인터는 구 값을 그대로 이어받아, 구 빌드를 돌린 기기와 새 기기에서
+     ② 배정 결과가 달라질 수 있었다(실측: 강북 포인터 '0' 잔존). ⑧ 제안은 프로 작성물이라 hmIdeas에서 이관한다. */
+  try { localStorage.removeItem("hifin_hm_insq"); } catch (e) {}
+  try { const del = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf("hifin_hm_rr_") === 0) del.push(k); } del.forEach((k) => localStorage.removeItem(k)); } catch (e) {}
+  /* 모집단은 체험 회원만 — 본인 계정(조성래)은 검진대비보험 신규 가입 대상이 아니고,
+     큐에 넣으면 접촉 락(HELD)이 걸려 ①③④⑤⑥⑦⑨ 전 탭에서 사라진다. */
+  /* 고정 배정 회원(HM_PIN_MEMBERS)은 큐에서 제외한다 — 큐에 들어가면 접촉 락(HELD)이 걸려
+     ①③④⑤⑥⑦⑨ 전 탭에서 사라지고, 은평지점 담당 체험 회원을 눌러 볼 수 없게 된다(고정의 목적 상실). */
+  const all = (typeof demoMembers !== "undefined" ? demoMembers : []).filter((m) => m && m.isDemoUser && hmConsentOK(m).ok && !HM_PIN_MEMBERS[m.email]);
+  /* 선별 — 전에는 _hmHash%3이어서 담당 지역단을 보지 않았다. 실측 결과 큐 5건이 8H0007·8H0009·8H0006에만
+     가고 로그인 기본 사번(8H0001 박성호)은 0건이어서 ② 첫 블록이 "내 배정 0건"으로 열렸고, 5건 전부
+     모집자격 프로 1명인 지역단이라 「순번 배분 원칙」 바로 아래에 순번을 보여주는 행이 없었다.
+     이제 지역단별로 고르되 ①모집자격 프로가 많은 지역단 ②그 다음 지역단 이름 순으로 채운다 —
+     1회차에서 지역단 다양성을 확보하고, 2회차는 순번이 실제로 도는 지역단(모집자격 2명 이상)만 더 넣는다. */
+  const byDan = {};
+  all.forEach((m) => { const d = hmDanOf(m); (byDan[d] || (byDan[d] = [])).push(m); });
+  const licN = {};
+  Object.keys(byDan).forEach((d) => {
+    licN[d] = hmActivePros(d).filter((p) => p.lic && p.dan === d).length;        /* 폴백(광역) 프로는 세지 않는다 */
+    byDan[d].sort((a, b) => _hmHash("insq" + (a.id || a.email)) - _hmHash("insq" + (b.id || b.email)));
+  });
+  const byLic = (a, b) => (licN[b] - licN[a]) || (a < b ? -1 : a > b ? 1 : 0);
+  const rot = Object.keys(byDan).filter((d) => licN[d] >= 2).sort(byLic);   /* 순번이 실제로 도는 지역단 */
+  const one = Object.keys(byDan).filter((d) => licN[d] < 2).sort(byLic);
+  /* 슬롯 순서 — ①순번 지역단 1건씩 ②같은 지역단 2건째(여기서 "직전 → 이번"이 처음 보인다) ③나머지 지역단 1건씩 */
+  const slots = rot.map((d) => [d, 0]).concat(rot.map((d) => [d, 1])).concat(one.map((d) => [d, 0]));
+  const picked = [];
+  for (const [d, r] of slots) {
+    if (picked.length >= HM_INSQ_N) break;
+    const m = byDan[d][r];
+    if (m) picked.push(m);
+  }
   q = picked.map((m) => { const a = hmAssignInsRR(m); return { email: m.email, name: m.name, at: Date.now() - (_hmHash(m.email) % 6 + 1) * _HM_DAY, code: a ? a.pro.code : null, reason: a ? a.reason : "" }; });
-  _hmSave("hifin_hm_insq", q);
+  _hmSave("hifin_hm_insq_v2", q);
   try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `검진대비보험 배정 큐 생성(시연) — ${q.length}건 순번 배분(무동의 0명)` }); } catch (e) {}
   return q;
 }
@@ -281,7 +468,10 @@ function hmStatusOf(m, stage) {
 function hmHealthBrief(m) {
   let grade = "-", sevN = 0, band = "중", year = "-", seen = false;
   try { const g = (typeof memberHealthGrade === "function") ? memberHealthGrade(m) : null; if (g) { grade = g.grade; sevN = (g.sev1 || 0) + (g.sev2 || 0); } } catch (e) {}
-  try { const c = m._chk || ((typeof genMemberCheckup === "function") ? genMemberCheckup(m) : null); if (c && c.years) year = c.years[2] + "년"; } catch (e) {}
+  /* 연도는 금고 실측이 1순위 — 생성 검진(genMemberCheckup)의 가상 연차를 먼저 쓰면 금고에 실측을 가진
+     회원(본인 계정)의 화면 연도와 ⑨ 단계 근거의 검진일이 몇 해씩 어긋난다(숫자 모순 지점). */
+  try { const vk = (typeof vaultCheckupMap === "function") ? vaultCheckupMap(m) : null; if (vk && vk.date) year = String(vk.date).slice(0, 4) + "년"; } catch (e) {}
+  if (year === "-") { try { const c = m._chk || ((typeof genMemberCheckup === "function") ? genMemberCheckup(m) : null); if (c && c.years) year = c.years[2] + "년"; } catch (e) {} }
   /* 위험 밴드 — riskPredict(금고 연동) 우선, 미연동 시 회원 건강 프로필(시연 시드)로 조립 */
   try {
     const rp = (typeof riskPredict === "function") ? riskPredict(m) : null;
@@ -309,16 +499,30 @@ function hmTouchPlan(m) {
     let deep = false; try { deep = (m.managementPoints || []).some((p) => /내시경|초음파|정밀|CT|MRI/.test(p)); } catch (e) {}
     if (deep) items.push({ key: "d30", title: "추가 검진·진료 안내(정밀검사 권고 항목)", when: base + 30 * _HM_DAY, due: now >= base + 30 * _HM_DAY, done: !!doneKeys.d30 });
   }
-  /* 만기 — 증서 스냅샷 우선(발급 익일 0시 + 60일 — CYCLE_SPEC.expiryDay와 정합), 증서 미발급 가입 회원은 청약일 기준(시연 표기) */
+  /* 만기 — 증서 스냅샷 우선(발급 익일 0시 + 60일 — CYCLE_SPEC.expiryDay와 정합), 증서 미발급 가입 회원은 청약일 기준(시연 표기)
+     ⚠️ 2026-10-05 수정 — 전에는 c.at(그 기기가 금고를 처음 시드한 벽시계 시각)을 발급 시각으로 썼다.
+        근거 문구는 "증서 CERT-JSR2024A"라고 밝히면서 만기는 시드 시각 + 61일로 계산해, 2024년 증서가
+        2026년 12월에 만기되는 모순이 화면에 떴고 새 기기에서 시드하면 기기마다 다른 날짜가 나왔다(실측).
+        이제 증서 날짜(c.date — 발급 사실의 날짜)가 단일 근거다. c.at은 날짜가 없는 증서의 폴백으로만 쓴다. */
   let issueAt = null, src = null;
-  try { const certs = _hmLs("hifin_ins_certs", []); const c = certs.filter((x) => x.insured && x.insured.name === m.name).pop(); if (c) { issueAt = c.at; src = "증서 " + c.id; } } catch (e) {}
+  try {
+    const certs = _hmLs("hifin_ins_certs", []);
+    const c = certs.filter((x) => x.insured && x.insured.name === m.name).pop();
+    if (c) { issueAt = _hmCertAt(c); src = "증서 " + c.id + (c.date ? " · 발급 " + String(c.date).replace(/-/g, ".") : ""); }
+  } catch (e) {}
   if (!issueAt) { const q = hmInsQueue().find((x) => x.email === m.email); if (q) { issueAt = q.at; src = "청약일 기준(시연)"; } }
   if (issueAt) {
     const start = new Date(issueAt); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
     const end = start.getTime() + 60 * _HM_DAY;
-    [["m30", "만기 D-30 — 검진대비보험 만기 예정 안내", end - 30 * _HM_DAY], ["m7", "만기 D-7 — 재가입·차기 검진 연계 안내", end - 7 * _HM_DAY], ["m1", "만기 D+1 — 보장 종료·다음 검진 주기 제안", end + _HM_DAY]].forEach(([k, t, w]) => {
-      items.push({ key: k, title: t, when: w, due: now >= w, done: !!doneKeys[k], src });
-    });
+    if (now > end) {
+      /* 이미 만기가 지난 증서 — D-30·D-7 "예정" 행을 만들면 지난 날짜가 오늘의 할 일로 올라온다.
+         보장 종료 사실 1행으로 요약하고, 다음 검진 주기 제안으로 잇는다. */
+      items.push({ key: "mend", title: `보장 종료 — 검진대비보험 만기 경과(${_hmDay(end)}) · 다음 검진 주기 제안`, when: end + _HM_DAY, due: true, done: !!doneKeys.mend, src, ended: true });
+    } else {
+      [["m30", "만기 D-30 — 검진대비보험 만기 예정 안내", end - 30 * _HM_DAY], ["m7", "만기 D-7 — 재가입·차기 검진 연계 안내", end - 7 * _HM_DAY], ["m1", "만기 D+1 — 보장 종료·다음 검진 주기 제안", end + _HM_DAY]].forEach(([k, t, w]) => {
+        items.push({ key: k, title: t, when: w, due: now >= w, done: !!doneKeys[k], src });
+      });
+    }
   }
   return { items: items.sort((a, b) => a.when - b.when), endSrc: src };
 }
@@ -405,15 +609,26 @@ function hmMyStats(code) {
 }
 
 /* ── ⑧ 프로 제안함 — 모든 상태 변화에 사유. 자동 반영 없음(사람 검수) ── */
+const HM_IDEA_SEED_IDS = { "ID-001": 1, "ID-002": 1, "ID-003": 1 };
 function hmIdeas() {
-  let l = _hmLs("hifin_hm_ideas", null);
+  let l = _hmLs("hifin_hm_ideas_v2", null);
   if (l) return l;
+  /* v2 — 사번 체계 교체(2026-10-05). 저장소 세대 교체 정책은 ② 큐와 같다: 시스템이 만든 시드 3건은
+     신 사번 버전으로 다시 깔고, 프로가 직접 쓴 제안은 code만 hmCodeNorm으로 치환해 이관한다.
+     전에는 구 키를 removeItem으로 통째로 버려서, 주입한 구 제안(ID-009)이 아무 안내 없이 사라졌다(실측). */
+  let carried = [];
+  try {
+    carried = (_hmLs("hifin_hm_ideas", []) || []).filter((x) => x && x.id && !HM_IDEA_SEED_IDS[x.id])
+      .map((x) => Object.assign({}, x, { code: (typeof hmCodeNorm === "function") ? hmCodeNorm(x.code) : x.code, carried: true }));
+  } catch (e) {}
+  try { localStorage.removeItem("hifin_hm_ideas"); } catch (e) {}
   l = [
-    { id: "ID-001", cat: "화면", title: "정체 회원에게 하이 문안 2안 제시", body: "정체 카드의 권장 문안이 1개뿐이라 회원 성향에 따라 고르기 어렵습니다. 격식/친근 2안이 필요합니다.", code: "HM-NB-26-007", dan: "강북지역단", tab: "⑨", at: Date.now() - 12 * _HM_DAY, status: "반영 완료", why: "하이 문안 템플릿 2안 채택 — 커밋 c71ef08 계열 반영(백서반영표 기록)", votes: 4 },
-    { id: "ID-002", cat: "배분", title: "순번 배분 건너뛴 프로 우선권 표시", body: "한도 초과로 건너뛴 회차의 우선권이 있는지 화면에서 안 보입니다. 다음 회차 우선권 배지가 필요합니다.", code: "HM-SN-26-021", dan: "강남지역단", tab: "②", at: Date.now() - 6 * _HM_DAY, status: "검토중", why: "규칙은 존재(포인터 유지) — 배지 노출 방안 검토 중", votes: 2 },
-    { id: "ID-003", cat: "규제", title: "만기 안내 문자에 광고 표기 여부 확인 요청", body: "만기 D-30 안내가 정보성인지 광고성인지 기준이 필요합니다. 법무 검토 요청드립니다.", code: "HM-WS-26-005", dan: "강서지역단", tab: "③", at: Date.now() - 3 * _HM_DAY, status: "보류", why: "법무 검토 대기 — 계약 관리 목적은 정보성으로 잠정 분류(사유 명시)", votes: 5 },
+    { id: "ID-001", cat: "화면", title: "정체 회원에게 하이 문안 2안 제시", body: "정체 카드의 권장 문안이 1개뿐이라 회원 성향에 따라 고르기 어렵습니다. 격식/친근 2안이 필요합니다.", code: "8H0001", dan: "강북지역단", tab: "⑨", at: Date.now() - 12 * _HM_DAY, status: "반영 완료", why: "하이 문안 템플릿 2안 채택 — 커밋 c71ef08 계열 반영(백서반영표 기록)", votes: 4 },
+    { id: "ID-002", cat: "배분", title: "순번 배분 건너뛴 프로 우선권 표시", body: "한도 초과로 건너뛴 회차의 우선권이 있는지 화면에서 안 보입니다. 다음 회차 우선권 배지가 필요합니다.", code: "8H0003", dan: "강남지역단", tab: "②", at: Date.now() - 6 * _HM_DAY, status: "검토중", why: "규칙은 존재(포인터 유지) — 배지 노출 방안 검토 중", votes: 2 },
+    { id: "ID-003", cat: "규제", title: "만기 안내 문자에 광고 표기 여부 확인 요청", body: "만기 D-30 안내가 정보성인지 광고성인지 기준이 필요합니다. 법무 검토 요청드립니다.", code: "8H0006", dan: "강서지역단", tab: "③", at: Date.now() - 3 * _HM_DAY, status: "보류", why: "법무 검토 대기 — 계약 관리 목적은 정보성으로 잠정 분류(사유 명시)", votes: 5 },
   ];
-  _hmSave("hifin_hm_ideas", l);
+  if (carried.length) l = carried.concat(l);
+  _hmSave("hifin_hm_ideas_v2", l);
   return l;
 }
 function hmIdeaAdd(code, o) {
@@ -422,11 +637,11 @@ function hmIdeaAdd(code, o) {
   if (HM_BANNED.some((w) => (o.body || "").indexOf(w) >= 0)) { /* 금칙어는 제안 자체에는 완화 — 회원 정보만 차단 */ }
   if (/\d{6}-\d{7}|@hizenhealth/.test(o.body || "")) return { ok: false, reason: "회원 개인정보로 보이는 내용은 담을 수 없어요." };
   const l = hmIdeas();
-  const it = { id: "ID-" + String(l.length + 1).padStart(3, "0"), cat: o.cat || "기타", title: (o.title || "").slice(0, 60), body: (o.body || "").slice(0, 2000), code, dan: p.dan, tab: o.tab || "-", at: Date.now(), status: "접수", why: "접수 완료 — 검토 대기", votes: 0 };
-  l.unshift(it); _hmSave("hifin_hm_ideas", l);
+  const it = { id: "ID-" + String(l.length + 1).padStart(3, "0"), cat: o.cat || "기타", title: (o.title || "").slice(0, 60), body: (o.body || "").slice(0, 2000), code: p.code, dan: p.dan, tab: o.tab || "-", at: Date.now(), status: "접수", why: "접수 완료 — 검토 대기", votes: 0 };
+  l.unshift(it); _hmSave("hifin_hm_ideas_v2", l);
   return { ok: true, idea: it };
 }
-function hmIdeaVote(id) { const l = hmIdeas(); const it = l.find((x) => x.id === id); if (it) { it.votes = (it.votes || 0) + 1; _hmSave("hifin_hm_ideas", l); } return l; }
+function hmIdeaVote(id) { const l = hmIdeas(); const it = l.find((x) => x.id === id); if (it) { it.votes = (it.votes || 0) + 1; _hmSave("hifin_hm_ideas_v2", l); } return l; }
 
 /* ── ⑨ 고객 카드 조립 + 하이의 한 줄 ── */
 function hmCustomerCard(m) {
@@ -446,8 +661,13 @@ function hmCustomerCard(m) {
     const nextStage = HM_STAGES[HM_STAGES.findIndex((s) => s.k === stage.cur) + 1];
     hi = `${stage.stalledDays}일째 ${stage.cur}에 멈춰 있어요.` + (nextStage ? ` ${nextStage.k}(${nextStage.name})로 가려면 ${nextStage.desc.split("—")[0].trim()}이 필요해요.` : "");
   } else if (next) hi = `다음 터치는 ${_hmDay(next.when)} 「${next.title.split("—")[0].trim()}」이에요. 그때까지는 지켜봐도 좋아요.`;
-  else hi = "예정된 터치가 없어요. ⑨ 현황에서 단계 근거를 보고 다음 행동을 골라 주세요.";
-  return { m, stage, status, hb, plan, last, next, dueNow, hi, mask: _hmMask(m.name), band: _hmBand(m), dan: hmDanOf(m) };
+  else hi = "오늘 예정된 연락은 없어요. ⑨ 현황에서 이 회원이 지금 어느 단계인지 보고, 그 단계에 맞는 행동을 고르시면 돼요.";
+  /* self — 본인 계정(조성래)은 실측 데이터다. 카드 핀을 「체험」으로 찍으면 시연 전제와 정면으로 어긋난다.
+     place — 체험·본인 카드도 코호트 카드와 같은 "시도 시군구" 표기를 쓴다(없을 때만 지역단 폴백). */
+  const sgg = m.sigungu || "";
+  const sido = _hmSidoShort(m);
+  return { m, stage, status, hb, plan, last, next, dueNow, hi, mask: _hmMask(m.name), band: _hmBand(m), dan: hmDanOf(m),
+    self: hmIsSelf(m), place: sgg ? (sido ? sido + " " + sgg : sgg) : hmDanOf(m).replace("지역단", "") };
 }
 
 /* ── ① 신호 카드 — lrDetectType·lrScore 그대로 재사용(재구현 금지) ── */

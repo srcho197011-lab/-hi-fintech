@@ -1,5 +1,5 @@
 /* ══════════════ 일일 지시서 로스터(dailyRoster.js) — 지시서 프롬프트 v1.3 §5-F (P5) ══════════════
-   프로 1인의 「오늘의 지시서」 선별기. 시드 = 날짜 + 프로코드 — 같은 날 같은 프로는 언제나 같은 로스터.
+   프로 1인의 「오늘의 지시서」 선별기. 시드 = 날짜 + 프로 사번(8H####) — 같은 날 같은 프로는 언제나 같은 로스터.
    대량 저장이 아니라 온디맨드 결정론 조립(A6): 열람 시점에 관할 회원을 조립해 우선순위로 5±2건.
    ⚠️ 원칙: 락(검진 전 접촉 금지) 회원 제외 · E는 트리아지 소유(카드 없음) · 발행 불가 카드 제외 ·
    수기 편집·재배분 기능 없음 — 로스터는 데이터에서만 나온다. */
@@ -18,6 +18,8 @@ function _drScore(card, sig, dateStr, code) {
 }
 
 function hmDailyRoster(code, dateStr) {
+  /* 시드는 정규화된 사번 — 세션에 구 코드가 남아 있어도 같은 날 같은 프로는 같은 로스터 순서가 된다 */
+  code = (typeof hmCodeNorm === "function") ? hmCodeNorm(code) : code;
   const ids = (typeof hmMembersOfPro === "function") ? hmMembersOfPro(code) : [];
   const cand = []; let lockedN = 0, offN = 0, unpubN = 0, resultSkipN = 0, followUpN = 0;
   for (const i of ids) {

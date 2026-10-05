@@ -241,17 +241,45 @@ def current_stamp():
     except Exception:
         return None
 
+REG_SNAP = os.path.join(ROOT, "src", "data", "navRegSnapshot.js")
+
+def reg_stamp():
+    """navRegSnapshot.js가 '어느 인벤토리에서 측정됐는지' — inventory.sourceHash를 읽는다."""
+    try:
+        txt = io.open(REG_SNAP, encoding="utf-8").read()
+        m = re.search(r'"inventory"\s*:\s*(\{.*?\})', txt)
+        return json.loads(m.group(1)) if m else None
+    except Exception:
+        return None
+
+def reg_drift(sh):
+    """회귀 스냅샷이 현재 인벤토리보다 낡았는지. (낡음, 스냅샷해시) 반환.
+       META만 비교하던 기존 게이트는 이걸 못 잡았다 — 인벤토리를 재생성하고 회귀를 다시 돌리지 않으면
+       스냅샷의 date만 올라가 '오늘 회귀 통과'로 보이는데 측정은 재생성 이전 번들에서 한 것이 된다
+       (실측: META 3df3de89…/2026-10-05 vs 스냅샷 d04422010…/2026-09-22). AgentDock이 이 스냅샷을
+       화면에 찍으므로 '최신 통과' 표시가 실제 상태와 어긋난다."""
+    rs = reg_stamp()
+    got = (rs or {}).get("sourceHash")
+    return (got != sh, got)
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else ""
     sh = source_hash()
     st = current_stamp()
-    if mode == "--check":
-        if st and st.get("sourceHash") == sh:
-            print("nav-inventory fresh (%s)" % sh); return 0
-        print("[DRIFT] 감시 파일이 바뀌었는데 인벤토리가 구버전입니다.")
-        print("        재생성: python scripts/gen_nav_inventory.py")
-        print("        비상 우회(1회용): HIFIN_NAV_BYPASS=1 bash build_preview.sh  ← 콘솔에 드리프트 배지가 켜집니다")
-        return 1
+    if mode in ("--check", "--check-reg"):
+        hard = (mode == "--check-reg")
+        if not (st and st.get("sourceHash") == sh):
+            print("[DRIFT] 감시 파일이 바뀌었는데 인벤토리가 구버전입니다.")
+            print("        재생성: python scripts/gen_nav_inventory.py")
+            print("        비상 우회(1회용): HIFIN_NAV_BYPASS=1 bash build_preview.sh  ← 콘솔에 드리프트 배지가 켜집니다")
+            return 1
+        stale, got = reg_drift(sh)
+        if stale:
+            print("[STALE] 내비 회귀 스냅샷이 현재 인벤토리보다 낡았습니다 — 측정 %s vs 인벤토리 %s" % (got, sh))
+            print("        재측정: python scripts/gen_nav_corpus.py && node scripts/run_nav_regression.mjs")
+            print("        (AgentDock 운영 콘솔이 이 스냅샷을 '회귀 통과'로 표시하므로 그대로 두면 화면이 사실과 어긋납니다)")
+            return 1 if hard else 0
+        print("nav-inventory fresh (%s)" % sh); return 0
     if mode == "--list-watch":                     # 커밋 게이트가 읽는 감시 목록(단일 소스)
         try: sys.stdout.reconfigure(newline=chr(10))   # Windows CRLF 변환 차단 - 게이트 grep가 기계 소비
         except Exception: pass

@@ -1,6 +1,6 @@
 /* ══════════════ 헬스메이트(프로) 센터 — Today + 9워크벤치 ══════════════
    설계서 v1.2 구현. 디자인: 현대해상 오렌지(HM_C) · 깔끔한 카드형.
-   접근: 관리자 세션 + 프로 코드 게이트(2단계). 일반 회원 네비 미노출(isRestrictedSection). */
+   접근: 관리자 세션 + 프로 사번 게이트(2단계 · 사번 체계 8H0001~8H9999). 일반 회원 네비 미노출(isRestrictedSection). */
 
 function HmStyle() {
   return (<style>{`
@@ -12,10 +12,17 @@ function HmStyle() {
   .hmtabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
   .hmtab{border:1.5px solid var(--hmln);background:#fff;border-radius:999px;padding:7px 13px;font-size:12.3px;font-weight:800;cursor:pointer;color:${HM_C.mut};display:flex;align-items:center;gap:5px}
   .hmtab.on{background:var(--hmo);border-color:var(--hmo);color:#fff}
-  .hmnum{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
-  .hmnum .n{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:9px 12px;cursor:pointer}
-  .hmnum .n b{font-size:19px;display:block}
-  .hmnum .n span{font-size:11px;opacity:.9}
+  .hmnumwrap{display:grid;grid-template-columns:4fr 2fr 1.4fr;gap:10px;margin-top:12px;align-items:start}
+  .hmnumgrp{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:8px 9px 10px}
+  .hmnumgt{font-size:10.6px;font-weight:800;letter-spacing:.3px;opacity:.95;margin:1px 2px 6px}
+  .hmnum{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:7px}
+  .hmnum .n{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);border-radius:12px;padding:8px 11px 9px;cursor:pointer;transition:transform .12s ease,background .12s ease}
+  .hmnum .n:hover{background:rgba(255,255,255,.26);transform:translateY(-1px)}
+  .hmnum .n b{font-size:21px;display:block;line-height:1.15;font-variant-numeric:tabular-nums}
+  .hmnum .n span{font-size:11.2px;font-weight:700;opacity:.97;display:block;margin-top:1px;line-height:1.32}
+  .hmnum .n em{font-size:10px;font-style:normal;opacity:.78;display:block;margin-top:2px}
+  .hmnum .n.hold{background:rgba(255,255,255,.07);border-style:dashed;opacity:.82}
+  .hmnum .n.hold b{color:#FFE9D2}
   .hmdb{border:1px dashed var(--hmo);background:var(--hmbg);border-radius:12px;padding:10px 13px;margin-bottom:10px;cursor:pointer}
   .hmdb table{font-size:11.8px;border-collapse:collapse;width:100%;margin-top:7px}
   .hmdb td{padding:3px 6px;vertical-align:top;line-height:1.55}
@@ -39,6 +46,7 @@ function HmStyle() {
   .hmgrid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .hmfoot{font-size:10.6px;color:${HM_C.mut};line-height:1.6;margin-top:10px;border-top:1px solid #F1F5F9;padding-top:8px}
   .hmqa{background:#1F2937;color:#F9FAFB;border-radius:12px;padding:11px 13px;font-size:12.4px;line-height:1.7}
+  @media(max-width:1100px){.hmnumwrap{grid-template-columns:1fr}}
   @media(max-width:900px){.hmnum{grid-template-columns:repeat(2,1fr)}.hmpipe{grid-template-columns:repeat(4,1fr)}.hmgrid2{grid-template-columns:1fr}}
   `}</style>);
 }
@@ -140,16 +148,17 @@ function HmCohortList({ ids, code, onDone, title, compact }) {
   </div>);
 }
 
-/* 프로 검색(700명) — 코드/이름/지점/시군구, 최대 8건 */
+/* 프로 검색 — 사번/이름/지점/시군구, 최대 8건. 인원은 hmProsGen().length가 단일 소스다(현재 702명 — 숫자를 여기 박지 않는다). */
 function HmProSearch({ onPick }) {
   const [q, setQ] = React.useState("");
   const all = (typeof hmProsGen === "function") ? hmProsGen() : HM_CODES;
-  const hits = q.trim().length >= 2 ? all.filter((p) => [p.code, p.name, p.branch, p.sgg, p.dan].join("|").indexOf(q.trim()) >= 0).slice(0, 8) : [];
+  /* 구 코드(legacyCode)도 건초더미에 넣는다 — 옛 메모를 들고 와도 찾아지되, 표시는 신 사번만 */
+  const hits = q.trim().length >= 2 ? all.filter((p) => [p.code, p.name, p.branch, p.sgg, p.dan, p.legacyCode || ""].join("|").toUpperCase().indexOf(q.trim().toUpperCase()) >= 0).slice(0, 8) : [];
   return (<div style={{ marginTop: 6 }}>
-    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="예: 강남구 · 성남 · 김지원 · HM-SN" style={{ width: "100%", boxSizing: "border-box", border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "8px 12px", fontSize: 12.5 }} />
+    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="예: 8H0001 · 은평 · 강남구 · 박성호" style={{ width: "100%", boxSizing: "border-box", border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "8px 12px", fontSize: 12.5 }} />
     {hits.map((p) => (
       <div key={p.code} onClick={() => onPick(p.code)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid #F1F5F9", borderRadius: 9, padding: "7px 11px", marginTop: 5, cursor: "pointer", fontSize: 12 }}>
-        <span><b>{p.name} 프로</b> <span style={{ color: HM_C.mut }}>· {p.code} · {p.branch}{p.sgg ? " · " + p.sgg : ""}</span></span>
+        <span><b>{p.name} 프로</b> <span style={{ color: HM_C.mut }}>· {p.code} · {p.branch || p.dan}{p.sgg ? " · " + p.sgg : ""}</span></span>
         <span className="hmpill" style={{ background: p.status === "활성" ? "#F0FDF4" : "#FFF7ED", color: p.status === "활성" ? HM_C.ok : HM_C.warn }}>{p.status} · {p.grade}{p.lic ? " · 모집" : ""}</span>
       </div>
     ))}
@@ -157,42 +166,103 @@ function HmProSearch({ onPick }) {
   </div>);
 }
 
-/* 코드 게이트 — 코드 입력 + 상태·자격 검증(세션 한정) */
+/* 사번 게이트 — 사번(프로 코드) 입력 + 상태·자격 검증(세션 한정)
+   시연 기본값(HM_DEMO_SABUN · 단일 소스는 healthMate.js)이 입력칸에 "값"으로 채워져 있고,
+   [인증]만 누르면 그 프로의 콘솔로 들어간다. 자동 제출은 하지 않는다 — 인증은 사람이 누르는 행위로 남긴다.
+   판정·안내 문구는 전부 hmCodeCheck(구 코드 전환·미등록·정지 구분)에서 받아 쓴다. */
 function HmGate({ onPass }) {
-  const [code, setCode] = React.useState("");
+  const DEF = (typeof HM_DEMO_SABUN === "string" && HM_DEMO_SABUN) ? HM_DEMO_SABUN : "8H0001";
+  const SUSP = (typeof HM_SUSPENDED_DEMO === "string" && HM_SUSPENDED_DEMO) ? HM_SUSPENDED_DEMO : "";
+  const [code, setCode] = React.useState(DEF);        /* 자동 채움 — placeholder가 아니라 실제 값(수정 가능) */
   const [err, setErr] = React.useState("");
+  const [peek, setPeek] = React.useState(null);       /* 입력된 사번의 소유자 요약(담당 수는 비동기 집계) */
+  const pros = (typeof hmProsGen === "function") ? hmProsGen() : HM_CODES;
+  /* 소개 줄 숫자 — 리터럴을 박지 않고 데이터에서 센다(위촉 인원 · 지역단 · 실사 지점 · 코호트 회원) */
+  const stat = React.useMemo(() => {
+    const dan = {};
+    pros.forEach((p) => { if (p.dan && p.dan.indexOf("지역단") >= 0) dan[p.dan] = 1; });
+    let br = 0;
+    try { if (typeof LR_BRANCHES === "object" && LR_BRANCHES) Object.keys(LR_BRANCHES).forEach((k) => { br += (LR_BRANCHES[k] || []).length; }); } catch (e) {}
+    if (!br) { const s = {}; pros.forEach((p) => { if (p.branch) s[p.branch] = 1; }); br = Object.keys(s).length; }
+    const mem = (typeof PILOT_N === "number" && PILOT_N > 0) ? PILOT_N : 100000;
+    return { pros: pros.length, dan: Object.keys(dan).length, br: br, mem: mem };
+  }, []);
+  /* 상호작용 시연 버튼 — 명부 10명 중 담당 회원(체험+본인)이 있는 프로 상위 5명.
+     hmScope를 9번 부르므로 렌더마다 다시 세지 않게 메모한다. 지점·시군구가 채워진 완전 레코드를
+     쓰려고 HM_CODES가 아니라 hmProsGen()의 legacy 레코드를 모집단으로 삼는다. */
+  const proBtns = React.useMemo(() => {
+    const base = pros.filter((p) => p.legacy && p.status === "활성");
+    return base.map((p) => { let n = 0; try { n = hmScope(p.code).length; } catch (e) {} return { p, n }; })
+      .sort((a, b) => b.n - a.n).slice(0, 5);
+  }, []);
+  /* 입력값이 가리키는 프로(구 코드도 hmProOf가 해석) — 모르는 값이면 null */
+  const cur = React.useMemo(() => { try { return (typeof hmProOf === "function") ? hmProOf(code) : null; } catch (e) { return null; } }, [code]);
+  const curCode = cur ? cur.code : "";
+  /* 담당 회원 수는 코호트 10만 인덱스를 세워야 나온다(첫 호출 수 초) — 첫 페인트를 막지 않게 뒤로 미룬다.
+     시연 이점: 게이트가 떠 있는 동안 인덱스가 데워져 [인증] 직후 콘솔이 바로 열린다. */
+  React.useEffect(() => {
+    setPeek(null);
+    if (!curCode) return;
+    let on = true;
+    const t = setTimeout(() => {
+      let own = 0, coh = 0, self = 0;
+      try { if (typeof hmScope === "function") { const sc = hmScope(curCode); self = sc.filter((m) => typeof hmIsSelf === "function" && hmIsSelf(m)).length; own = sc.length - self; } } catch (e) {}
+      try { if (typeof hmMembersOfPro === "function") coh = hmMembersOfPro(curCode).length; } catch (e) {}
+      if (on) setPeek({ code: curCode, own: own, self: self, coh: coh, n: own + self + coh });
+    }, 350);
+    return () => { on = false; clearTimeout(t); };
+  }, [curCode]);
   const submit = (c) => {
-    const p = hmProOf((c || code).trim().toUpperCase());
-    if (!p) { setErr("등록되지 않은 코드예요."); return; }
-    if (p.status !== "활성") { setErr(`${p.status} 상태 코드예요 — 접근이 차단됩니다(담당 회원은 재배정 큐로 이동).`); return; }
-    try { sessionStorage.setItem("hifin_hm_code", p.code); } catch (e) {}
-    try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `프로 콘솔 접속 — ${p.code}(${p.dan})` }); } catch (e) {}
-    onPass(p.code);
+    const raw = (c == null ? code : c);
+    const r = (typeof hmCodeCheck === "function") ? hmCodeCheck(raw) : null;
+    if (!r) { setErr("인증 모듈을 불러오지 못했어요 — 새로고침해 주세요."); return; }
+    if (!r.ok) { setErr(r.why); return; }
+    try { sessionStorage.setItem("hifin_hm_code", r.code); } catch (e) {}
+    try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `프로 콘솔 접속 — ${r.code}(${r.pro.dan})` }); } catch (e) {}
+    onPass(r.code);
   };
   return (
     <div className="hmwrap"><HmStyle />
       <div className="hmhero">
         <div className="k">HEALTHMATE PRO CONSOLE</div>
         <h2>헬스메이트(프로) 센터</h2>
-        <div style={{ fontSize: 12.5, opacity: .92 }}>코드가 부여된 전문헬스메이트 전용 콘솔 — 하이가 분석하고, 프로가 마무리합니다.</div>
-        <div style={{ marginTop: 6, fontSize: 11.5, opacity: .85 }}>현대해상 설계사 <b>{(typeof hmProsGen === "function" ? hmProsGen().length : 10).toLocaleString()}명</b>을 하이핀 프로로 위촉 · 전국 시군구 배속(실사 지점 272개 기준) · 회원 10만 명 지역 매칭</div>
+        <div style={{ fontSize: 12.5, opacity: .92 }}>사번이 부여된 전문헬스메이트 전용 콘솔 — 하이가 분석하고, 프로가 마무리합니다.</div>
+        <div style={{ marginTop: 6, fontSize: 11.5, opacity: .85 }}>현대해상 설계사 <b>{stat.pros.toLocaleString()}명</b>을 하이핀 프로로 위촉 · 전국 <b>{stat.dan}개 지역단</b> · 실사 지점 <b>{stat.br.toLocaleString()}개</b> 기준 시군구 배속 · 회원 {stat.mem >= 10000 ? (stat.mem / 10000).toLocaleString() + "만 명" : stat.mem.toLocaleString() + "명"} 지역 매칭</div>
       </div>
-      <div className="hmcard" style={{ maxWidth: 520 }}>
-        <div style={{ fontWeight: 900, fontSize: 13.5, marginBottom: 4 }}>프로 코드 인증</div>
-        <div style={{ fontSize: 11.5, color: HM_C.mut, marginBottom: 9 }}>코드는 자격·권한·실적의 단일 키예요. 이 탭 세션에만 보관되고, 탭을 닫거나 [코드 잠금]을 누르면 즉시 잠겨요.</div>
+      <div className="hmcard" style={{ maxWidth: 560 }}>
+        <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 4 }}>사번(프로 코드) 인증</div>
+        <div style={{ fontSize: 11.8, color: HM_C.mut, marginBottom: 9, lineHeight: 1.6 }}>사번은 자격·권한·실적의 단일 키예요(체계 <b style={{ color: HM_C.deep }}>8H0001~8H9999</b>). 이 탭 세션에만 보관되고, 탭을 닫거나 [사번 잠금]을 누르면 즉시 잠겨요.</div>
         <div style={{ display: "flex", gap: 7 }}>
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="HM-SN-26-014" style={{ flex: 1, border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "9px 12px", fontSize: 13, letterSpacing: 1 }} onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
-          <button className="hmbtn" onClick={() => submit()}>인증</button>
+          <input value={code} aria-label="프로 사번" autoComplete="off" spellCheck={false}
+            onChange={(e) => { setCode(e.target.value); if (err) setErr(""); }}
+            placeholder={DEF}
+            style={{ flex: 1, border: `1.5px solid ${HM_C.line}`, borderRadius: 9, padding: "10px 12px", fontSize: 14.5, fontWeight: 800, letterSpacing: 1.5, color: HM_C.ink }}
+            onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
+          <button className="hmbtn" style={{ fontSize: 13, fontWeight: 900, padding: "10px 18px" }} onClick={() => submit()}>인증</button>
         </div>
-        {err && <div style={{ color: HM_C.red, fontSize: 11.5, fontWeight: 700, marginTop: 7 }}>{err}</div>}
-        <div style={{ marginTop: 12, fontSize: 11.5, fontWeight: 800, color: HM_C.deep }}>프로 검색 — 코드·이름·지점·시군구</div>
+        {/* 자동 채움 사번의 주인 — 시연에서 한 줄로 설명할 수 있게 사실만 */}
+        {cur && (
+          <div style={{ marginTop: 8, background: HM_C.bg, border: `1px solid ${HM_C.line}`, borderRadius: 10, padding: "8px 11px", fontSize: 12.3, lineHeight: 1.65, color: HM_C.ink }}>
+            <b style={{ color: HM_C.deep }}>{cur.sabun || cur.code}</b> — <b>{cur.name} 프로</b> · {cur.branch || cur.dan}{cur.sgg ? " · " + cur.sgg : ""} · {cur.grade}({cur.gradeKo}){cur.lic ? " · 모집자격" : " · 안내 전용"}{cur.status !== "활성" ? <b style={{ color: HM_C.red }}>{" · " + cur.status}</b> : ""}
+            <div style={{ color: HM_C.mut, marginTop: 1 }}>담당 회원 {peek && peek.code === curCode
+              ? <b style={{ color: HM_C.ink }}>{peek.n.toLocaleString()}명</b>
+              : <span>집계 중…</span>}{peek && peek.code === curCode ? ` (${peek.self ? "본인(실측) " + peek.self + " · " : ""}체험 ${peek.own.toLocaleString()} · 코호트 ${peek.coh.toLocaleString()})` : ""}</div>
+            <div style={{ fontSize: 11.3, color: HM_C.mut, marginTop: 3 }}>
+              {code.trim().toUpperCase() === DEF ? "시연 기본값이 채워져 있어요 — [인증]을 누르면 이 프로의 콘솔로 들어가요. 다른 사번을 쓰려면 지우고 입력하세요." : "입력한 사번의 프로예요 — [인증]을 누르면 이 프로의 콘솔로 들어가요."}
+              {code.trim().toUpperCase() !== DEF && <button className="hmbtn gh" style={{ fontSize: 10.8, marginLeft: 6, padding: "2px 8px" }} onClick={() => { setCode(DEF); setErr(""); }}>시연 사번({DEF}) 되돌리기</button>}
+            </div>
+          </div>
+        )}
+        {err && <div style={{ color: HM_C.red, fontSize: 12, fontWeight: 700, marginTop: 8 }}>{err}</div>}
+        <div style={{ marginTop: 12, fontSize: 11.5, fontWeight: 800, color: HM_C.deep }}>프로 검색 — 사번·이름·지점·시군구</div>
         <HmProSearch onPick={(c) => submit(c)} />
-        <div style={{ marginTop: 11, fontSize: 11, color: HM_C.mut }}>체험 회원 상호작용 시연(담당 체험 회원 보유 프로):</div>
+        <div style={{ marginTop: 11, fontSize: 11, color: HM_C.mut }}>상호작용 시연 — 담당 회원을 직접 눌러 볼 수 있는 프로(체험 회원 + 본인 계정 실측):</div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 5 }}>
-          {HM_CODES.filter((p) => p.status === "활성").map((p) => ({ p, n: hmScope(p.code).length })).sort((a, b) => b.n - a.n).slice(0, 5).map(({ p, n }) => (
-            <button key={p.code} className="hmbtn gh" style={{ fontSize: 11 }} onClick={() => submit(p.code)}>{p.name} 프로 · {p.dan.replace("지역단", "")} <b style={{ color: HM_C.pri }}>{n}명</b></button>
+          {proBtns.map(({ p, n }) => (
+            <button key={p.code} className="hmbtn gh" style={{ fontSize: 11 }} onClick={() => submit(p.code)}>{p.name} 프로 · {p.sgg || p.dan.replace("지역단", "")} <b style={{ color: HM_C.pri }}>{n}명</b></button>
           ))}
-          <button className="hmbtn gh" style={{ fontSize: 11, opacity: .6 }} onClick={() => submit("HM-WD-26-002")}>임다혜 프로(정지 코드 시연)</button>
+          {SUSP && (() => { const sp = (typeof hmProOf === "function") ? hmProOf(SUSP) : null; return (
+            <button className="hmbtn gh" style={{ fontSize: 11, opacity: .6 }} onClick={() => submit(SUSP)}>{sp ? sp.name + " 프로" : SUSP}(정지 사번 시연)</button>); })()}
         </div>
       </div>
     </div>
@@ -437,7 +507,7 @@ function HmTabIns({ code, pro, onContact, refresh, cview }) {
     <HmDbNote k="t2" />
     <div className="hmcard" style={{ marginTop: 0, background: HM_C.bg, border: `1px solid ${HM_C.line}` }}>
       <b style={{ fontSize: 12.5 }}>순번 배분 원칙</b>
-      <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 3 }}>검진대비보험 건은 성과가 아니라 <b style={{ color: HM_C.dark }}>지역단 순서</b>로 나눠요(모집자격 보유 프로만). 순번은 평가와 무관해요. {pro.lic ? "" : "— 현재 코드는 모집자격 미보유라 안내 발송까지만 가능해요."}</div>
+      <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 3 }}>검진대비보험 건은 성과가 아니라 <b style={{ color: HM_C.dark }}>지역단 순서</b>로 나눠요(모집자격 보유 프로만). 순번은 평가와 무관해요. {pro.lic ? "" : "— 현재 사번은 모집자격 미보유라 안내 발송까지만 가능해요."}</div>
     </div>
     <div style={{ fontWeight: 900, fontSize: 13, margin: "12px 0 7px" }}>내 배정 {mine.length}건</div>
     {mine.length ? mine.map((x) => row(x, true)) : <div className="hmrow" style={{ color: HM_C.mut }}>이번 순번 배정이 없어요 — 다음 회차에 자동 배정돼요.</div>}
@@ -579,7 +649,7 @@ function HmTabUw({ code, cview }) {
       <div style={{ fontSize: 11.6, color: HM_C.mut, lineHeight: 1.6, marginTop: 4 }}>하이핀은 <b style={{ color: HM_C.dark }}>보장공백 유형 코드 + 연령대·성별 + 건강 등급(플래그 수)만</b> 정리해 넘기고, 결과를 받아 해설해요. 원본 수치·인수 판정은 넘기지 않아요.</div>
       {m && <div style={{ marginTop: 8, fontSize: 12 }}>
         <select value={sel || ""} onChange={(e) => { setSel(e.target.value); setLog([]); }} style={{ border: `1.5px solid ${HM_C.line}`, borderRadius: 8, padding: "6px 9px", fontSize: 12 }}>
-          {members.map((x) => <option key={x.email} value={x.email}>{_hmMask(x.name)} · {_hmBand(x)} {x.sex}{x._cohort ? " · 코호트" : " · 체험"}</option>)}
+          {members.map((x) => <option key={x.email} value={x.email}>{_hmMask(x.name)} · {_hmBand(x)} {x.sex}{x._cohort ? " · 코호트" : (typeof hmIsSelf === "function" && hmIsSelf(x) ? " · 본인(실측)" : " · 체험")}</option>)}
         </select>
         {gaps && gaps.gaps && <span style={{ marginLeft: 8, color: HM_C.mut, fontSize: 11.5 }}>보장공백 신호 {gaps.gaps.length}건 감지</span>}
       </div>}
@@ -719,8 +789,12 @@ function HmTabBoard({ code, pro, onContact, cview }) {
       {list.map((c, i) => (
         <div key={i} className={"hmrow" + (c.status.k === "HELD" ? " lock" : "")}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-            <div style={{ fontWeight: 900 }}>{c.mask} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.m.sex} · {c.dan.replace("지역단", "")}</span>
-              <span className="hmpill" style={{ marginLeft: 6, background: "#EFF6FF", color: HM_C.blue }}>체험</span>
+            {/* 핀 — 본인 계정(조성래)은 실측 데이터다. 「체험」으로 찍으면 "조성래 실데이터로 설명한다"는
+                 시연 전제와 정면으로 어긋나므로 분기한다. 지역 표기는 코호트 카드와 같은 "시도 시군구". */}
+            <div style={{ fontWeight: 900 }}>{c.mask} <span style={{ color: HM_C.mut, fontWeight: 600 }}>· {c.band} {c.m.sex} · {c.place || c.dan.replace("지역단", "")}</span>
+              {c.self
+                ? <span className="hmpill" style={{ marginLeft: 6, background: "#ECFDF5", color: HM_C.ok }}>실측(본인)</span>
+                : <span className="hmpill" style={{ marginLeft: 6, background: "#EFF6FF", color: HM_C.blue }}>체험</span>}
               <span className="hmpill" style={{ marginLeft: 7, background: HM_C.bg, color: HM_C.dark }}>{c.stage.cur} {HM_STAGES.find((s) => s.k === c.stage.cur).name}</span>
               {c.stage.stalled && <span className="hmpill" style={{ marginLeft: 4, background: "#FFF7ED", color: HM_C.stall }}>🟠 정체 {c.stage.stalledDays}일</span>}
             </div>
@@ -735,7 +809,8 @@ function HmTabBoard({ code, pro, onContact, cview }) {
             <div style={{ background: "#F8FAFC", borderRadius: 9, padding: "7px 11px", fontSize: 11.6, lineHeight: 1.7 }}>
               <b style={{ color: HM_C.deep, fontSize: 11 }}>관리상태</b><br />
               {c.status.ko} · 마지막 접촉 {c.last ? _hmDay(c.last.at) : "없음"}<br />
-              다음 터치 {c.next ? _hmDay(c.next.when) : c.dueNow ? "지금" : "예정 없음"}{c.plan.endSrc ? " · 만기 관리 중" : ""}
+              {/* 만기 문구는 증서 상태를 따른다 — 이미 지난 증서에 "관리 중"을 붙이면 ③탭의 "만기 경과"와 어긋난다 */}
+              다음 터치 {c.next ? _hmDay(c.next.when) : c.dueNow ? "지금" : "예정 없음"}{c.plan.endSrc ? (c.plan.items.some((x) => x.ended) ? " · 보장 종료(재가입 안내 대상)" : " · 만기 관리 중") : ""}
             </div>
           </div>
           <div className="hmhi"><Bot size={12} style={{ verticalAlign: -2 }} /> {c.hi}</div>
@@ -754,7 +829,7 @@ function HmTabBoard({ code, pro, onContact, cview }) {
           </div>)}
         </div>
       ))}
-      {!list.length && <div className="hmrow" style={{ color: HM_C.mut }}>이 필터에 해당하는 체험 고객이 없어요.</div>}
+      {!list.length && <div className="hmrow" style={{ color: HM_C.mut }}>이 필터에 해당하는 상호작용층 고객이 없어요.</div>}
       {cview && <HmCohortList title="⑨ 담당 코호트 고객" code={code}
         ids={(stFilter === "_stall" ? cview.stall : stFilter ? (cview.byStage[stFilter] || []) : cview.ids).slice().sort((a, b) => { const A = cohortStageOf(a), B = cohortStageOf(b); return (B.stalled ? B.stalledDays : -1) - (A.stalled ? A.stalledDays : -1); })} />}
     </div>)}
@@ -1156,8 +1231,16 @@ function HmStageGuide({ code, cview }) {
         <b style={{ fontSize: 13.5 }}>{st.k} {st.name}</b> <span style={{ fontSize: 11.4, opacity: .9 }}>— {st.desc} · 내 관할 {((byStage[st.k] || []).length)}명</span>
       </div>
       <div style={{ padding: "10px 13px", fontSize: 12.2, lineHeight: 1.75 }}>
-        {[["들어오는 조건", gd.entry], ["프로가 하는 일", gd.doKo], ["다음 단계로", gd.next]].map(([k, v]) => (
-          <div key={k} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: "#F1F5F9", color: "#334155", marginRight: 7 }}>{k}</span>{v}</div>))}
+        {/* 세 줄의 뜻을 눈으로 구분한다 — 들어오는 조건(이 단계에 들어오는 기준)은 D1~L8 전 단계에서 강조 상자로 보여 준다 */}
+        <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderLeft: `4px solid ${HM_C.pri}`, borderRadius: 10, padding: "8px 11px", marginBottom: 7 }}>
+          <div style={{ fontSize: 11.2, fontWeight: 900, color: "#C2410C", marginBottom: 2 }}>▶ 들어오는 조건 <span style={{ fontWeight: 600, opacity: .8 }}>— 회원이 이 단계로 올라오는 기준</span></div>
+          <div style={{ fontSize: 12.3, color: HM_C.ink, fontWeight: 700 }}>{gd.entry}</div>
+        </div>
+        {[["프로가 하는 일", gd.doKo, "#EFF6FF", "#1D4ED8", "이 단계에서 할 행동"], ["다음 단계로", gd.next, "#F0FDF4", "#15803D", "무엇이 생기면 다음 단계로 가는지"]].map(([k, v, bg, fg, hint]) => (
+          <div key={k} style={{ background: bg, borderRadius: 10, padding: "8px 11px", marginBottom: 5 }}>
+            <div style={{ fontSize: 11.2, fontWeight: 900, color: fg, marginBottom: 2 }}>{k} <span style={{ fontWeight: 600, opacity: .75 }}>— {hint}</span></div>
+            <div style={{ fontSize: 12.2, color: "#374151" }}>{v}</div>
+          </div>))}
         <div style={{ marginTop: 8, background: "#FFFBF5", border: "1px dashed #FED7AA", borderRadius: 9, padding: "7px 10px" }}>
           <b style={{ fontSize: 11.4, color: "#C2410C" }}>📖 사례 [예시·시연]</b>
           <div style={{ fontSize: 11.8, color: "#374151" }}>{gd.ex}</div>
@@ -1192,7 +1275,7 @@ function HmTabToday({ code, onToast, cview }) {
   return (<div>
     <div className="hmcard" style={{ background: "#FFFBF5", border: "1px solid #FED7AA" }}>
       <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-        <div style={{ fontWeight: 900, fontSize: 14.5, color: "#C2410C" }}>☀️ 오늘의 지시서 · {roster.list.length}건 <span style={{ fontSize: 11.4, color: HM_C.mut, fontWeight: 600 }}>· {today} · 시드=날짜+프로코드(같은 날 같은 카드) · [예시·시연 데이터]</span></div>
+        <div style={{ fontWeight: 900, fontSize: 14.5, color: "#C2410C" }}>☀️ 오늘의 지시서 · {roster.list.length}건 <span style={{ fontSize: 11.4, color: HM_C.mut, fontWeight: 600 }}>· {today} · 시드=날짜+프로 사번(같은 날 같은 카드) · [예시·시연 데이터]</span></div>
         <div style={{ fontSize: 11.6, color: "#475569" }}>{["H", "M", "L"].filter((k) => gr[k]).map((k) => `${k} ${gr[k]}건`).join(" · ") || "대상 없음"} · 관할 {roster.counts.managed}명(락 {roster.counts.locked} · 후보 {roster.counts.candidates})</div>
       </div>
       <div style={{ marginTop: 6, fontSize: 11.6, color: HM_C.mut }}>하이가 등급·응답 시한·정체를 계산해 우선순위로 선별했어요 — 프로는 카드 순서대로 확인·접촉·기록만. 대본 없는 통화는 없어요(대본 보기 ▼).</div>
@@ -1255,9 +1338,10 @@ function HmOpsAllocBlock({ S, sidos, maxSido, box, bt }) {
       {br && (() => { const b2 = list.find((x) => x.branch === br); if (!b2) return null; return (
         <div style={{ marginTop: 7, background: "#F8FAFC", borderRadius: 9, padding: "7px 10px" }}>
           {b2.pros.map((pr) => (<div key={pr.sabun} style={{ display: "flex", gap: 10, fontSize: 11.6, padding: "3px 0", borderBottom: "1px dashed #EEF2F6", alignItems: "center" }}>
-            <b style={{ color: "#C2410C", width: 52 }}>{pr.sabun}</b><span style={{ width: 58, fontWeight: 700 }}>{pr.name} 프로</span>
+            {/* 사번 단일 표기 — 스냅샷에 구 코드가 남아 있어도 신 사번으로 해석해 찍는다(병기 금지) */}
+            <b style={{ color: "#C2410C", width: 52 }}>{(typeof hmCodeNorm === "function") ? hmCodeNorm(pr.code || pr.sabun) : (pr.sabun || pr.code)}</b><span style={{ width: 58, fontWeight: 700 }}>{pr.name} 프로</span>
             <span style={{ color: HM_C.mut }}>담당 {pr.managed}명 · 오늘 지시서 {pr.today}건</span>
-            <span style={{ marginLeft: "auto", fontSize: 10, color: "#94A3B8" }}>{pr.code}</span></div>))}
+            </div>))}
         </div>); })()}
       <div style={{ fontSize: 10.2, color: HM_C.mut, marginTop: 5 }}>배분 원천 = 시군구 실사 배속(수기 재배분 없음) · 수치는 배치 스냅샷({S.date})과 동일</div>
     </div>)}
@@ -1492,11 +1576,29 @@ function HmDemoGuide({ onTab }) {
 
 /* ══ 메인 섹션 ══ */
 function HealthMateSection({ onGo }) {
-  const [code, setCode] = React.useState(() => { try { return sessionStorage.getItem("hifin_hm_code") || null; } catch (e) { return null; } });
+  /* 세션 복원 — 구 코드(HM-…)가 남아 있어도 신 사번으로 정규화해 들어온다.
+     정규화하지 않으면 hmInsQueue()·hmIdeas() 같은 저장소 비교(x.code === code)가 빗나가 집계가 0으로 뜬다. */
+  const [code, setCode] = React.useState(() => {
+    try {
+      const v = sessionStorage.getItem("hifin_hm_code");
+      if (!v) return null;
+      const n = (typeof hmCodeNorm === "function") ? hmCodeNorm(v) : v;
+      if (n && n !== v) { try { sessionStorage.setItem("hifin_hm_code", n); } catch (e2) {} }
+      return n || null;
+    } catch (e) { return null; }
+  });
   const [tab, setTab] = React.useState(0);   /* P5: 프로의 아침은 오늘의 지시서에서 시작 */
   const [tick, setTick] = React.useState(0);
   const [toastM, setToastM] = React.useState("");
   const refresh = () => setTick((t) => t + 1);
+  /* 본인 계정 시연 전제 — 금고 검진·보험 시드와 상담·안내 시드 동의를 1회만 보강한다.
+     ⚠️ 전에는 hmPopulation()이 렌더 중에 이 일을 했고, 거기서 ConsentNFT를 자체 발행해
+        회원이 철회해도 새로고침 한 번에 되살아났다(실측). 쓰기는 반드시 이 effect에서만 한다. */
+  React.useEffect(() => {
+    let changed = false;
+    try { changed = (typeof hmSelfEnsure === "function") ? !!hmSelfEnsure() : false; } catch (e) {}
+    if (changed) refresh();
+  }, []);
   const cview = React.useMemo(() => (code && typeof hmcProView === "function") ? hmcProView(code) : null, [code]);
   if (!code) return <HmGate onPass={(c) => setCode(c)} />;
   const pro = hmProOf(code);
@@ -1508,9 +1610,10 @@ function HealthMateSection({ onGo }) {
     refresh();
     return r;
   };
-  /* Today 집계 — 체험(상호작용층) + 코호트(관측층) 합산 */
+  /* Today 집계 — 상호작용층(체험 + 본인 계정) + 코호트(관측층) 합산 */
   const members = hmScope(code);
   const cards = members.map((m) => hmCustomerCard(m));
+  const selfN = cards.filter((c) => c.self).length;   /* 본인 계정(실측) — 「체험」과 섞어 세지 않는다 */
   const needN = cards.filter((c) => c.status.k === "NEED").length + (cview ? cview.signals.length : 0);
   const heldN = hmInsQueue().filter((x) => x.code === code && hmLockState({ email: x.email }).locked).length + (cview ? cview.held.length : 0);
   const stallN = cards.filter((c) => c.stage.stalled).length + (cview ? cview.stall.length : 0);
@@ -1518,6 +1621,9 @@ function HealthMateSection({ onGo }) {
   const slaN = hmSignals(code).filter((s) => s.sla <= 4).length + (cview ? cview.ids.filter((i) => { const g = cohortSignalOf(i); return g && g.sla <= 4; }).length : 0);
   /* R3 — 만기 임박(T4·T5): 검진대비보험 만기 D-20 이내 회원(달력 값이 정하는 오늘의 일) */
   const matN = cview ? cview.ids.filter((i) => { try { const cy = cycleOf(i); return cy && (cy.t === "T4" || cy.t === "T5" || cy.t === "T6"); } catch (e) { return false; } }).length : 0;
+  /* 첫 통화 대상 — 검진 결과가 막 도착해 첫 연결 골든타임(D2 · 사이클 T2)에 들어온 회원 */
+  const firstN = cards.filter((c) => c.stage && c.stage.k === "D2").length
+    + (cview ? cview.ids.filter((i) => { try { const cy = cycleOf(i); return cy && cy.t === "T2"; } catch (e) { return false; } }).length : 0);
   const totalN = members.length + (cview ? cview.n : 0);
   const TABS = [
     [0, "⓪ 오늘의 지시서", Sparkles],
@@ -1532,21 +1638,34 @@ function HealthMateSection({ onGo }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
           <div>
             <div className="k">HEALTHMATE PRO CONSOLE · 헬스케어 전문가(하이핀 프로)</div>
-            <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9, cursor: "help" }} title="프로 등급 4단계 — HM1 안내(기본 안내만) · HM2 상담(결과 해설·보장 상담) · HM3 설계·가족(심화 상담+가족 단위 확장) · HM4 지역리드(지역단 집계 관측 — 개인 상세는 못 봐요). 코드는 자격·권한·실적의 단일 키, '모집자격'은 보험 모집 라이선스 보유 표시예요.">· 사번 {pro.sabun || "-"} · {pro.code} · {pro.branch || pro.dan}{pro.sgg ? " · " + pro.sgg : ""} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격" : " · 안내 전용"}{pro.hyundai ? " · 현대해상 위촉" : ""}</span></h2>
-            <div style={{ fontSize: 12.3, fontWeight: 800, marginTop: 2 }}>담당 회원 {totalN.toLocaleString()}명 <span style={{ fontWeight: 600, opacity: .85 }}>(체험 {members.length} · 코호트 {(cview ? cview.n : 0).toLocaleString()}) — 관할: {(pro.coverage || []).slice(0, 5).join("·") || pro.dan}{(pro.coverage || []).length > 5 ? " 외 " + ((pro.coverage || []).length - 5) + "곳" : ""}{pro.gap ? " (겸임 포함)" : ""}</span></div>
+            <h2>{pro.name} 프로 <span style={{ fontSize: 12.5, fontWeight: 700, opacity: .9, cursor: "help" }} title="프로 등급 4단계 — HM1 안내(기본 안내만) · HM2 상담(결과 해설·보장 상담) · HM3 설계·가족(심화 상담+가족 단위 확장) · HM4 지역리드(지역단 집계 관측 — 개인 상세는 못 봐요). 사번(8H0001~8H9999)은 자격·권한·실적의 단일 키, '모집자격'은 보험 모집 라이선스 보유 표시예요.">· 사번 {pro.sabun || pro.code || "-"} · {pro.branch || pro.dan}{pro.sgg ? " · " + pro.sgg : ""} · {pro.grade}({pro.gradeKo}){pro.lic ? " · 모집자격" : " · 안내 전용"}{pro.hyundai ? " · 현대해상 위촉" : ""}</span></h2>
+            <div style={{ fontSize: 12.3, fontWeight: 800, marginTop: 2 }}>담당 회원 {totalN.toLocaleString()}명 <span style={{ fontWeight: 600, opacity: .85 }}>({selfN ? "본인(실측) " + selfN + " · " : ""}체험 {members.length - selfN} · 코호트 {(cview ? cview.n : 0).toLocaleString()}) — 관할: {(pro.coverage || []).slice(0, 5).join("·") || pro.dan}{(pro.coverage || []).length > 5 ? " 외 " + ((pro.coverage || []).length - 5) + "곳" : ""}{pro.gap ? " (겸임 포함)" : ""}</span></div>
             <div style={{ fontSize: 12, opacity: .92 }}>하이가 분석·선별·문안·타이밍을 만들고, 프로는 확인·접촉·기록합니다 — 동의의 범위가 곧 활동의 범위.</div>
           </div>
-          <button className="hmbtn gh" style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }} onClick={() => { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} setCode(null); }}>코드 잠금</button>
+          <button className="hmbtn gh" style={{ background: "rgba(255,255,255,.16)", border: "1px solid rgba(255,255,255,.4)", color: "#fff" }} onClick={() => { try { sessionStorage.removeItem("hifin_hm_code"); } catch (e) {} setCode(null); }}>사번 잠금</button>
         </div>
-        {/* 오늘의 숫자 5칸 — 호버 툴팁: 담당 전체를 나눈 분류가 아니라 '오늘 볼 것'만 걸러낸 렌즈(겹침 있음) */}
-        <div className="hmnum">
-          {[["오늘 접촉할 회원", needN + slaN, 9, "터치 시점이 온 회원 + 응답 시한 임박 회원 — 오늘 통화할 명단이에요. 담당 전체를 나눈 칸이 아니라 오늘 기준 렌즈라, 아래 칸들과 겹칠 수 있고 나머지 회원은 '오늘 조치 없음'이 정상이에요."],
-            ["응답 시한 임박(4h)", slaN, 1, "응답 시한이 4시간 안으로 남은 카드예요 — 위 「오늘 접촉할 회원」에 이미 포함된 부분 표시예요."],
-            ["검진결과 대기(락)", heldN, 2, "검진 결과 수령 전이라 접촉이 금지된 회원이에요 — 지금은 연락하지 않는 것이 일이에요. 결과가 도착하면 하이가 자동으로 해제하고 알려드려요."],
-            ["만기 예정 터치", expN, 3, "보장·서비스 만기가 다가와 안내가 필요한 회원이에요 — 만기 D-30·D-7 순서로 정리해 드려요."],
-            ["만기 임박(D-20)", matN, 0, "검진대비보험 만기가 20일 안으로 온 회원이에요 — D-20 보장 종료 예고, D-7 보장맵 안내(가장 중요한 30초), 만기 당일 2차 골든타임까지 달력이 오늘의 일을 정해요."],
-            ["정체 회원", stallN, 9, "14일 이상 다음 행동이 멈춘 회원이에요 — 오늘의 우선순위로 올라오고, 재개 대본('한동안 챙겨드리지 못해서요')으로 다시 잇습니다."]].map(([k, v, t, tip], i) => (
-            <div key={i} className="n" title={tip} style={i === 2 ? { opacity: .75, cursor: "help" } : { cursor: "help" }} onClick={() => setTab(t)}><b>{v}</b><span>{k}{i === 2 ? " 🔒" : ""}</span></div>
+        {/* 오늘의 숫자 — 「지금 할 일 · 달력이 정한 일 · 지금 하면 안 되는 일」 세 묶음(겹칠 수 있는 렌즈이지 담당 분류가 아니다) */}
+        <div className="hmnumwrap">
+          {[["지금 할 일", [
+            ["오늘 첫 통화할 회원", firstN, 1, "검진 결과가 막 도착해 첫 연결의 골든타임에 들어온 회원이에요 — 무료 3종과 앞으로의 건강관리를 이 한 통화에서 전합니다.", "첫 연결(D2·결과 직후)"],
+            ["오늘 이어서 연락할 회원", needN, 9, "이미 관계가 시작된 회원 중 오늘 터치 시점이 온 분들이에요 — 하이가 문안과 타이밍을 준비해 둡니다.", "터치 시점 도래"],
+            ["4시간 안에 답해야 할 카드", slaN, 1, "카드 발행 후 응답 시한이 4시간 안으로 남았어요 — 위 명단과 겹칠 수 있는 긴급 표시예요.", "응답 시한 임박"],
+            ["상담이 멈춘 회원", stallN, 9, "14일 이상 다음 행동이 없는 회원이에요 — 재개 대본(「한동안 챙겨드리지 못해서요」)으로 다시 잇습니다.", "14일 이상 정체"]]],
+          ["달력이 정한 일", [
+            ["검진대비보험 만기 임박", matN, 0, "검진대비보험 만기가 20일 안으로 온 회원이에요 — D-20 종료 예고, D-7 보장맵 안내, 만기 당일 2차 골든타임 순서로 달력이 할 일을 정합니다.", "D-20 이내"],
+            ["만기·재검진 안내 예정", expN, 3, "보장·서비스 만기와 재검진이 다가와 안내가 필요한 회원이에요.", "D-30 · D-7 순서"]]],
+          ["지금 하면 안 되는 일", [
+            ["검진결과 기다리는 중 — 연락 금지", heldN, 2, "검진 결과 수령 전이라 접촉이 금지된 회원이에요. 결과가 도착하면 하이가 자동으로 풀고 알려드립니다.", "락 · 자동 해제"]]]].map(([grp, items]) => (
+            <div key={grp} className="hmnumgrp">
+              <div className="hmnumgt">{grp === "지금 할 일" ? "🔔" : grp === "달력이 정한 일" ? "📅" : "🔒"} {grp}</div>
+              <div className="hmnum">
+                {items.map(([k, v, t, tip, sub]) => (
+                  <div key={k} className={"n" + (grp === "지금 하면 안 되는 일" ? " hold" : "")} title={tip} onClick={() => setTab(t)}>
+                    <b>{v}</b><span>{k}</span><em>{sub}</em>
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
         <div style={{ marginTop: 10, background: "rgba(255,255,255,.13)", borderRadius: 10, padding: "8px 12px", fontSize: 12, lineHeight: 1.6 }}>
@@ -1571,7 +1690,7 @@ function HealthMateSection({ onGo }) {
       </div>
       <div className="hmfoot" style={{ textAlign: "center" }}>
         개인정보보호법 §17·§22②·§23·§24 · 신용정보법 §32 · 보험업법(설명의무·부당 권유 금지) · 정보통신망법 §50 —
-        원본 건강수치·원가성 정보 비노출 · 진단·인수·등급 단정 금지 · 시연 환경(체험 회원 시드) 고지
+        원본 건강수치·원가성 정보 비노출 · 진단·인수·등급 단정 금지 · 시연 환경 고지 — {selfN ? "본인 계정은 실측 데이터, " : ""}체험 회원 16명·코호트 10만 명은 시연 시드
       </div>
       <HiProDock />
       <HmDemoGuide onTab={setTab} />

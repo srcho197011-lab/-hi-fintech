@@ -42,6 +42,9 @@ NLU=$(cd docs/hi_nlu && node test-accuracy.mjs | grep -o "acc=[0-9.]*" | cut -d=
 echo "[GATE] 기존 NLU 회귀: $NLU% (기준선 99.22)"
 python -c "import sys; sys.exit(0 if float('$NLU') >= 99.22 else 1)" || { echo "[GATE] 기존 NLU 저하 — 커밋 차단"; exit 1; }
 python scripts/gen_nav_inventory.py --clear-bypass
+# 스냅샷 신선도 2차 확인 — 회귀 스냅샷이 "어느 인벤토리에서 측정됐는지"까지 대조한다.
+# (META만 보면 인벤토리 재생성 후 회귀를 다시 돌리지 않아도 date만 올라가 '오늘 통과'로 보인다 — 실측 사례 있음)
+python scripts/gen_nav_inventory.py --check-reg || { echo "[GATE] 회귀 스냅샷이 현재 인벤토리보다 낡음 — 커밋 차단"; exit 1; }
 git add scripts/nav_regression_snapshot.json src/data/navRegSnapshot.js src/data/navInventory.js 2>/dev/null || true
 echo "[GATE] 통과 — 회귀 스냅샷 자동 스테이지 완료"
 
