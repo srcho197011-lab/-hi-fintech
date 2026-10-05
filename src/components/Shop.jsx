@@ -65,18 +65,22 @@ const SHOP_BRANDS = {
     ["세라젬", "척추온열 의료기"], ["바디프랜드", "안마의자·헬스케어"], ["휴테크", "안마의자"], ["코지마", "안마·온열 기기"],
   ],
 };
+/* [실측 통일 2026-10-06] SHOP_AI의 5번째 칸(근거 문구)은 어디에서도 렌더되지 않는 죽은 값인데
+   본인 실측 소스(selfRealProfile·selfRealDiseaseOf)를 읽고 있었다 — 죽은 값이 살아나는 순간
+   조성래의 간 나이·당뇨 위험이 전 회원 화면으로 나간다. 칸과 실측 참조를 함께 삭제했다.
+   표의 모양: [분야, 아이콘, 제품, 효능, 제휴·취급, 색, 배경] */
 const SHOP_AI = [
-  ["영양제", "capsule", "밀크씨슬(실리마린)", "간세포 보호·항산화 — 간 건강 기능성", "간 생체나이 54.4세·췌장 경고 → 간 기능 관리 우선", "JW중외제약 · 조윈", "#7C3AED", "#F1ECFE"],
-  ["영양제", "brain", "오메가3 (EPA·DHA)", "혈중 중성지방 개선·혈행·기억력 도움", "뇌·심혈관 위험 예방", "조윈 뇌졸중 영양제", "#2563EB", "#E8F1FE"],
-  ["영양제", "capsule", "혈당 케어 (바나바·여주·아연)", "식후 혈당 상승 억제에 도움", "당뇨병 위험 동년배 대비 +6.2%", "JW중외제약", "#F59E0B", "#FEF3E2"],
-  ["영양제", "eye", "루테인·지아잔틴", "황반색소 밀도 유지 — 눈 건강", "50대 눈 노화·시력 관리", "조윈 눈 영양제", "#16A34A", "#E7F8EE"],
-  ["영양제", "joint", "글루코사민·MSM·보스웰리아", "관절·연골 건강과 유연성", "중년 관절 건강 관리", "조윈 관절 영양제", "#0D9488", "#CCFBF1"],
-  ["영양제", "immune", "면역 다당체·베타글루칸", "면역세포 활성·항산화", "췌장암 경고 등 암 위험 대비 면역 관리", "조윈 암(면역) 영양제", "#DB2777", "#FCE7F3"],
-  ["건강식단", "meal", "저당·고식이섬유 맞춤식단", "혈당·체중·복부비만 관리", "당뇨 위험·대사증후군 관리", "풀무원 디자인밀", "#16A34A", "#E7F8EE"],
-  ["건강식단", "leaf", "간 건강 식단(저지방·채소·식물성 단백)", "간 부담↓·항산화 식이", "간·췌장 생체나이 높음", "풀무원", "#7C3AED", "#F1ECFE"],
-  ["의료기기", "device", "연속혈당측정기(CGM)·혈당계", "실시간 혈당 추적·식이 피드백", "당뇨 위험 일상 모니터링", "자원메디칼 · 오므론", "#F59E0B", "#FEF3E2"],
-  ["의료기기", "heartpulse", "가정용 자동 혈압계", "고혈압·심혈관 일상 모니터링", "심뇌혈관 위험 관리", "오므론 · 휴비딕", "#EF4444", "#FDECEC"],
-  ["의료기기", "device", "체성분 분석기", "근육·체지방·복부비만 추적", "비만·대사 관리", "인바디 · GN바디닥터", "#0E7490", "#E0F2FE"],
+  ["영양제", "capsule", "밀크씨슬(실리마린)", "간세포 보호·항산화 — 간 건강 기능성", "JW중외제약 · 조윈", "#7C3AED", "#F1ECFE"],
+  ["영양제", "brain", "오메가3 (EPA·DHA)", "혈중 중성지방 개선·혈행·기억력 도움", "조윈 뇌졸중 영양제", "#2563EB", "#E8F1FE"],
+  ["영양제", "capsule", "혈당 케어 (바나바·여주·아연)", "식후 혈당 상승 억제에 도움", "JW중외제약", "#F59E0B", "#FEF3E2"],
+  ["영양제", "eye", "루테인·지아잔틴", "황반색소 밀도 유지 — 눈 건강", "조윈 눈 영양제", "#16A34A", "#E7F8EE"],
+  ["영양제", "joint", "글루코사민·MSM·보스웰리아", "관절·연골 건강과 유연성", "조윈 관절 영양제", "#0D9488", "#CCFBF1"],
+  ["영양제", "immune", "면역 다당체·베타글루칸", "면역세포 활성·항산화", "조윈 암(면역) 영양제", "#DB2777", "#FCE7F3"],
+  ["건강식단", "meal", "저당·고식이섬유 맞춤식단", "혈당·체중·복부비만 관리", "풀무원 디자인밀", "#16A34A", "#E7F8EE"],
+  ["건강식단", "leaf", "간 건강 식단(저지방·채소·식물성 단백)", "간 부담↓·항산화 식이", "풀무원", "#7C3AED", "#F1ECFE"],
+  ["의료기기", "device", "연속혈당측정기(CGM)·혈당계", "실시간 혈당 추적·식이 피드백", "자원메디칼 · 오므론", "#F59E0B", "#FEF3E2"],
+  ["의료기기", "heartpulse", "가정용 자동 혈압계", "고혈압·심혈관 일상 모니터링", "오므론 · 휴비딕", "#EF4444", "#FDECEC"],
+  ["의료기기", "device", "체성분 분석기", "근육·체지방·복부비만 추적", "인바디 · GN바디닥터", "#0E7490", "#E0F2FE"],
 ];
 
 /* ── 사단법인 정밀영양협회 권위 배너 (건강쇼핑 상단) ── */
@@ -1411,17 +1415,28 @@ function ConsultDeviceCard({ a }) {
 function ConsultRecCard() {
   const AI = (typeof SHOP_AI !== "undefined") ? SHOP_AI : [];
   const fcolor = { "영양제": "#7C3AED", "건강식단": "#16A34A", "의료기기": "#0E7490" };
+  /* [실측 통일 2026-10-06] 제목·근거를 **현재 로그인 회원**에서 읽는다 —
+     전에는 제목이 「조성래님」 고정이고 근거를 selfRealProfile()에서 만들어, 체험 회원이 이 카드를 열면
+     조성래의 간 나이·당뇨 위험이 자기 추천 근거로 떴다(코드 경로). 회원 리포트가 없으면 수치를 뺀다. */
+  const _me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const _nm = (_me && _me.name) || "회원";
+  const _R = (_me && typeof demoReport === "function") ? (() => { try { return demoReport(_me); } catch (e) { return null; } })() : null;
+  const _liver = _R ? (_R.organs || []).find((o) => o[0] === "간") : null;
+  const _dm = _R ? (_R.diseases || []).find((d) => d[0] === "당뇨병") : null;
+  const _basis = _R
+    ? `${_R.selfReal ? "프롬에이지 Premium 리포트" : "하이핀 정밀분석"}(생체나이 ${_R.bio}세${_liver ? ` · 간 ${_liver[1]}세` : ""}${_dm ? ` · 당뇨 위험 ${_dm[1] > 0 ? "+" : ""}${_dm[1]}%` : ""})를 분석한 분야별 참고 추천이에요.`
+    : "검진 결과를 연결하시면 내 수치 기준으로 추천 근거를 보여드려요.";
   return (
     <div className="kcard" style={{ borderLeft: "4px solid #F97316", width: "100%" }}>
-      <div className="kt-t" style={{ color: "#EA580C" }}>🎯 조성래님 맞춤 건강제품 추천</div>
+      <div className="kt-t" style={{ color: "#EA580C" }}>🎯 {_nm}님 맞춤 건강제품 추천</div>
       <div style={{ padding: "8px 13px 12px" }}>
-        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 9 }}>프롬에이지 Premium 리포트(생체나이 52.5세 · 간 54.4세 · 당뇨 위험↑)를 분석한 분야별 참고 추천이에요.</div>
+        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 9 }}>{_basis}</div>
         {["영양제", "건강식단", "의료기기"].map((f) => {
           const items = AI.filter((x) => x[0] === f); if (!items.length) return null; const fc = fcolor[f];
           return (
             <div key={f} style={{ marginBottom: 10 }}>
               <div style={{ fontSize: 12.5, fontWeight: 800, color: fc, margin: "2px 0 6px" }}>{f}</div>
-              {items.map(([, art, prod, benefit, , partner], i) => (
+              {items.map(([, art, prod, benefit, partner], i) => (
                 <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0", borderTop: i ? "1px solid var(--line)" : "none" }}>
                   <span style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", display: "grid", placeItems: "center", flexShrink: 0, boxShadow: "0 2px 6px -2px rgba(0,0,0,.18)" }}>{typeof Art === "function" ? <Art name={art} size={19} /> : null}</span>
                   <div><div style={{ fontSize: 13, fontWeight: 700 }}>{prod}</div><div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 1 }}>{benefit} · {partner}</div></div>
@@ -1435,11 +1450,16 @@ function ConsultRecCard() {
     </div>
   );
 }
+/* 상담 답변의 호칭 — 체험 세션이 있으면 그 회원, 없으면 본인 계정 */
+function _shopWho() {
+  try { const m = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? selfMember() : null); return (m && m.name) || "회원"; } catch (e) { return "회원"; }
+}
 function shopConsultReply(text) {
   const nz = (s) => (s || "").toString().toLowerCase().replace(/\s/g, "");
   const t = nz(text);
   if (/추천|맞춤|내건강|뭐먹|뭐사|뭘사|골라|나에게|내게|필요한|리포트/.test(t))
-    return [{ kind: "text", text: "조성래님 건강분석 리포트를 바탕으로 분야별 맞춤 제품을 추천해 드릴게요. 😊 (참고용)" }, { kind: "rec" }];
+    /* [실측 통일 2026-10-06] 이름 상수 제거 — 체험 회원에게 「조성래님」이라고 말했다. 현재 로그인 회원의 이름을 쓴다. */
+    return [{ kind: "text", text: `${_shopWho()}님 건강분석 리포트를 바탕으로 분야별 맞춤 제품을 추천해 드릴게요. 😊 (참고용)` }, { kind: "rec" }];
   const supp = SHOP_INTEL_AREAS.filter((a) => shopAreaMatch(a, t));
   const dev = SHOP_INTEL_DEVICES.filter((a) => shopAreaMatch(a, t));
   const out = [];

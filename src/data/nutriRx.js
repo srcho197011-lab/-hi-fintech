@@ -54,13 +54,13 @@ function nutriRx(m) {
   const medical = [];
   abn.forEach((r) => {
     const md = RX_MEDICAL_FIRST[r.key];
-    if (md) medical.push({ key: r.key, name: (r.item && r.item.name) || r.key, value: r.series ? r.series[2].value : null, unit: r.unit || "", dept: md.dept, note: md.note });
+    if (md) medical.push({ key: r.key, name: (r.item && r.item.name) || r.key, value: r.series ? (typeof chkCur === "function" ? chkCur(r).value : r.series[r.series.length - 1].value) : null, unit: r.unit || "", dept: md.dept, note: md.note });
   });
   const medicalKeys = new Set(medical.map((x) => x.key));
 
   /* ② 혈당 이상 — 식이·운동이 먼저라는 안내만(보충제 우선 추천 금지) */
   const glucose = abn.filter((r) => r.key === "fbs" || r.key === "hba1c").map((r) => ({
-    name: (r.item && r.item.name) || r.key, value: r.series ? r.series[2].value : null, unit: r.unit || "",
+    name: (r.item && r.item.name) || r.key, value: r.series ? (typeof chkCur === "function" ? chkCur(r).value : r.series[r.series.length - 1].value) : null, unit: r.unit || "",
     note: "혈당 관리는 식사·운동 조절이 우선이에요. 건강기능식품은 보조 수단이며 혈당 강하제를 대신하지 않아요.",
   }));
 
@@ -69,7 +69,7 @@ function nutriRx(m) {
   RX_RULES.forEach((rule) => {
     rule.keys.forEach((k) => {
       const r = chk.items[k]; if (!r || r.sev < 1 || medicalKeys.has(k)) return;
-      const v = r.series ? r.series[2].value : null; if (v == null) return;
+      const v = r.series ? (typeof chkCur === "function" ? chkCur(r).value : r.series[r.series.length - 1].value) : null; if (v == null) return;
       const nm = (r.item && r.item.name) || k;
       const cur = byIng[rule.ing];
       const score = rule.prio * 10 + r.sev * 3;

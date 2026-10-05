@@ -58,11 +58,17 @@ const WALLET_GIVE_FLOW = [
 ];
 
 /* ── 건강 NFT/SBT(Nft) ── */
+/* [실측 통일 2026-10-05] 검진일·생체나이·종합·노화등수·노화속도는 mcp_josungrae.json에서 읽는다(문자열 상수 금지) */
+const _NFT_PR = (typeof selfRealProfile === "function") ? selfRealProfile() : null;
 const NFT_MINE = [
-  { art: "doc", type: "리포트 NFT", name: "프롬에이지 Premium 건강분석 리포트", meta: "검진일 2024.12.26 · 생체나이 52.5세 · 종합 좋음", id: "0x7f3a…b29c", to: "manage", col: "#7C3AED" },
-  { art: "calendar", type: "예약증 SBT", name: "건강검진 예약증", meta: "서울 KMI 광화문센터 · 2025.06.15 (토)", id: "0x91c4…0e7a", to: "checkup", col: "#2563EB" },
-  { art: "badge", type: "보험증서 SBT", name: "건강검진보험 증서 (표준형)", meta: "암 500·뇌·심 500만원 · 검진 연계 자동가입", id: "0x2db8…f5a1", to: "insurance", col: "#2F5BEA" },
-  { art: "check", type: "건강인증서 SBT", name: "건강상태 인증서", meta: "종합 좋음 · 노화등수 37등 · 노화속도 0.97배", id: "0x55a0…9c3d", to: "manage", col: "#16A34A" },
+  { art: "doc", type: "리포트 NFT", name: "프롬에이지 Premium 건강분석 리포트", meta: _NFT_PR ? `검진일 ${String(_NFT_PR.checkupDate).replace(/-/g, ".")} · 생체나이 ${_NFT_PR.biologicalAge}세 · 종합 ${_NFT_PR.overall}` : "검진 연동 대기", id: "0x7f3a…b29c", to: "manage", col: "#7C3AED" },
+  /* [실측 통일 2026-10-06] 예약증·보험증서의 상수 메타를 비웠다 —
+     ① 「서울 KMI 광화문센터 · 2025.06.15」은 원천에 없는 예약이었다(실제 예약 기록에서 읽는다 → Nft.jsx).
+     ② 「암 500·뇌·심 500만원」은 치료비 케어 ①(insService.checkupIns coverage)의 1,000만원과 어긋났다
+        — 금액은 그 한 소스에서 읽는다. 여기서는 수치를 선언하지 않는다. */
+  { art: "calendar", type: "예약증 SBT", name: "건강검진 예약증", meta: "", id: "0x91c4…0e7a", to: "checkup", col: "#2563EB" },
+  { art: "badge", type: "보험증서 SBT", name: "건강검진보험 증서 (표준형)", meta: "", id: "0x2db8…f5a1", to: "insurance", col: "#2F5BEA" },
+  { art: "check", type: "건강인증서 SBT", name: "건강상태 인증서", meta: _NFT_PR ? `종합 ${_NFT_PR.overall} · 노화등수 ${_NFT_PR.agingRank}등 · 노화속도 ${_NFT_PR.agingSpeed}배` : "분석 연동 대기", id: "0x55a0…9c3d", to: "manage", col: "#16A34A" },
   { art: "hash", type: "데이터 증명", name: "데이터 제공 동의 증명", meta: "DID 동의 · Health Token +1,900 보상", id: "0xa1f7…7b20", to: "wallet", col: "#0EA5E9" },
   { art: "building", type: "진료기록 해시", name: "진료·검사 기록 무결성 해시", meta: "온체인 앵커링 · 위·변조 방지 (설계)", id: "0xc803…1d4e", to: "hospital", col: "#0EA5E9" },
 ];

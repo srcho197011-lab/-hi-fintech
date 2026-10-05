@@ -67,6 +67,26 @@ function _hmProName(x) {
   }
   return String(x.mask || "회원");                            /* 원천을 못 찾으면 마스크 그대로(열지 않는다) */
 }
+/* 대본 문장 표시 — 「고객 이름을 전부 다 나오게」(형 지시 2026-10-05).
+   대본의 {가명} 슬롯은 데이터 계층에서 마스크(박○○)로 채워진다. 그 정의를 바꾸지 않고
+   **렌더 지점에서만** 실제 이름으로 되돌린다 — 이유는 마스크 문자열이 흘러가는 곳이 셋이기 때문이다:
+     ① 대본 {가명}(이 화면) ② card.member.mask(memberContext 360뷰·dailyRoster 러너 산출) ③ script.sms.
+   ②③과 골든셋(fixtures/handoff_*_v1.json)·제공 DB(hyundaiFeed)·회원 화면(_hmMask)은 손대지 않는다.
+   ③ 문자·앱알림 줄은 **치환하지 않는다**(형 지시 2026-10-05) — 프로가 보는 초안과 실제 발송문이
+      달라지면 안 되기 때문이다. 치환은 「프로가 읽는 대본 문장」에만 적용된다.
+   ⚠️ 길이 전제 — 현 합성 코호트는 전건 3자(_SURN 1자 + _GIVN 2자)라 마스크(3자)와 실명(3자)의
+      치환이 문장 길이를 바꾸지 않는다. **실데이터로 바꿀 때는 이 전제가 깨진다**(2자·4자 이름):
+      §S-5 ⑩ 문장 길이 검사는 마스크 문장으로 돌기 때문에, 그 시점에 치환 후 재검사가 필요하다.
+      TODO(실데이터 전환): _hmScrText 치환 결과 길이를 규격 한도로 재검사하거나, 규격 검사를
+      실명 치환 후 문장으로 돌릴 것. */
+function _hmScrText(card, t) {
+  const s = String(t == null ? "" : t);
+  const mk = card && card.member && card.member.mask;
+  if (!mk || s.indexOf(mk) < 0) return s;
+  const nm = _hmProName(card.member);
+  if (!nm || nm === mk) return s;                             /* 원천을 못 찾으면 마스크 그대로 */
+  return s.split(mk).join(nm);
+}
 
 /* 「이 화면의 DB」 패널 — HM_DB_NOTE 단일 소스, 접이식 + 담당 단계 배지 */
 function HmDbNote({ k }) {
@@ -131,7 +151,7 @@ function HmCohortCard({ card, code, onDone, compact }) {
       {!compact && (<div className="hmgrid2" style={{ marginTop: 7 }}>
         <div style={{ background: "#F8FAFC", borderRadius: 9, padding: "6px 10px", fontSize: 11.4, lineHeight: 1.65 }}>
           <b style={{ color: HM_C.deep, fontSize: 10.5 }}>건강현황</b><br />
-          종합 등급 <b>{c.hb.grade}</b> · 관리 필요 <b>{c.hb.sevN}항목</b> · 위험 밴드 <b>{c.hb.band}</b>
+          종합 등급 <b>{c.hb.grade}</b> · 관리 필요 <b>{c.hb.sevN}항목</b> · 위험 밴드 <b>{c.hb.band === "—" ? "해당 없음" : c.hb.band}</b>
         </div>
         <div style={{ background: "#F8FAFC", borderRadius: 9, padding: "6px 10px", fontSize: 11.4, lineHeight: 1.65 }}>
           <b style={{ color: HM_C.deep, fontSize: 10.5 }}>관리상태</b><br />
@@ -361,7 +381,16 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
   };
 
   const sc = card && card.script;
-  const lines = sc ? [sc.opening, ...(sc.core || []), sc.ask].filter(Boolean).slice(0, 4) : [];
+  /* 통화 중 띄우는 대본 — 단계 과업(sc.stage)도 함께 보여준다(단계마다 할 말이 다르다).
+     ⚠️ 두 가지를 길이 예산에 밀리지 않게 **고정**한다(형 지시 2026-10-05 수선):
+       ① 응급 선행 안내(sc.alert) — a4-triage-safety의 「상담보다 위·맨 앞」은 한 화면에서만
+          지켜지면 의미가 없다. 종전 lines는 alert를 아예 읽지 않아 L6 전건에서 119 안내가 빠졌다.
+       ② 제안(sc.ask) — slice(0,5) 상한에 core 2 + stage 2가 차면 ask가 밀려 나갔다(전건 34%).
+          회원에게 「무엇을 하자」고 말하는 단 하나의 블록이라 상한 밖으로 꺼낸다.
+     그래서 상한은 중간(core·stage)에만 적용하고, alert·opening·ask는 언제나 남는다. */
+  const scAlert = sc ? (sc.alert || []).filter(Boolean) : [];
+  const scMid = sc ? [...(sc.core || []).slice(0, 2), ...(sc.stage || []).slice(0, 2)].filter(Boolean) : [];
+  const lines = sc ? [sc.opening, ...scMid, sc.ask].filter(Boolean) : [];
   const wrap = { position: "fixed", inset: 0, zIndex: 1480, background: "rgba(11,34,57,.58)", display: "flex", alignItems: "center", justifyContent: "center" };
   const box = { width: "min(760px,94vw)", maxHeight: "92vh", overflow: "auto", background: "#fff", borderRadius: 18, boxShadow: "0 20px 60px rgba(0,0,0,.35)" };
 
@@ -396,8 +425,12 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
       <div style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 0 }}>
         <div style={{ padding: "14px 16px", borderRight: "1px solid #E2E8F0" }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 7 }}>🗒 대본 — 화면에 띄운 채로 읽어요</div>
+          {/* 응급 선행 안내 — 패널과 같은 빨간 띠로 맨 앞에 고정(길이 예산에 밀리지 않는다) */}
+          {scAlert.map((b) => (<div key={b.id} style={{ marginBottom: 7, background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 7, padding: "5px 9px", fontSize: 12, lineHeight: 1.7, color: "#1F2937" }}>
+            <span className="hmpill" style={{ background: "#B91C1C", color: "#fff", marginRight: 6, fontWeight: 900 }}>🚑 응급 먼저</span>
+            <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.5 }}>{b.ko}</i><div style={{ fontWeight: 700 }}>“{_hmScrText(card, b.text)}”</div></div>))}
           {lines.length ? lines.map((b, i) => (<div key={i} style={{ marginBottom: 7, fontSize: 12, lineHeight: 1.7, color: "#1F2937" }}>
-            <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.5 }}>{b.ko}</i><div>“{b.text}”</div></div>))
+            <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.5 }}>{b.ko}</i><div>“{_hmScrText(card, b.text)}”</div></div>))
             : <div style={{ fontSize: 11.5, color: "#94A3B8" }}>이 회원의 지시서 카드가 없어요 — 대본 없이는 통화하지 않아요.</div>}
           <div style={{ marginTop: 11, borderTop: "1px dashed #E2E8F0", paddingTop: 9 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 6 }}>🖥 함께 볼 화면 <span style={{ fontWeight: 600, color: "#94A3B8" }}>· 띄우는 것도 발화예요(§0-V9)</span></div>
@@ -604,11 +637,12 @@ function HmTabRisk({ code, cview }) {
           {rc.rows.map((r, j) => (
             <div key={j} style={{ border: "1px solid #F1F5F9", borderRadius: 10, padding: "8px 11px" }}>
               <b style={{ fontSize: 12.3 }}>{r.ko}</b>
-              <span className="hmpill" style={{ marginLeft: 6, background: r.band === "상" ? "#FFF7ED" : r.band === "중" ? "#FFFBEB" : "#F0FDF4", color: r.band === "상" ? HM_C.stall : r.band === "중" ? HM_C.warn : HM_C.ok }}>위험 밴드 {r.band}</span>
+              <span className="hmpill" style={{ marginLeft: 6, background: r.band === "상" ? "#FFF7ED" : r.band === "중" ? "#FFFBEB" : r.band === "—" ? "#F1F5F9" : "#F0FDF4", color: r.band === "상" ? HM_C.stall : r.band === "중" ? HM_C.warn : r.band === "—" ? HM_C.mut : HM_C.ok }}>{r.band === "—" ? "위험 밴드 해당 없음" : "위험 밴드 " + r.band}</span>
               <div style={{ fontSize: 11.4, color: HM_C.mut, marginTop: 3, lineHeight: 1.55 }}>{r.why}</div>
             </div>
           ))}
         </div>
+        {rc.note ? <div style={{ fontSize: 11.2, color: HM_C.mut, marginTop: 4 }}>※ {rc.note}</div> : null}
         <div className="hmfoot">예측은 통계적 경향이며 진단이 아닙니다. 확인은 의료기관에서. — [예방 검진 안내] [주치의(A1) 연결] [보장공백 점검(⑦)]으로만 잇습니다.</div>
       </div>);
     })}
@@ -830,7 +864,7 @@ function HmTabBoard({ code, pro, onContact, cview }) {
           <div className="hmgrid2" style={{ marginTop: 8 }}>
             <div style={{ background: "#F8FAFC", borderRadius: 9, padding: "7px 11px", fontSize: 11.6, lineHeight: 1.7 }}>
               <b style={{ color: HM_C.deep, fontSize: 11 }}>건강현황</b><br />
-              종합 등급 <b>{c.hb.grade}</b> · 관리 필요 <b>{c.hb.sevN}항목</b> · 위험 밴드 <b>{c.hb.band}</b><br />
+              종합 등급 <b>{c.hb.grade}</b> · 관리 필요 <b>{c.hb.sevN}항목</b> · 위험 밴드 <b>{c.hb.band === "—" ? "해당 없음" : c.hb.band}</b><br />
               최근 검진 {c.hb.year} · 리포트 {c.hb.seen ? "열람 ✓" : "미열람"}
             </div>
             <div style={{ background: "#F8FAFC", borderRadius: 9, padding: "7px 11px", fontSize: 11.6, lineHeight: 1.7 }}>
@@ -1000,7 +1034,9 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
               background: golden.indexOf(g.k) >= 0 ? "#FDE68A" : "#fff", color: golden.indexOf(g.k) >= 0 ? "#92400E" : "#78716C" }}>
               {golden.indexOf(g.k) >= 0 ? "✓ " : ""}{g.ko}</span>))}
         </div>
-        <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>체크는 「헬스메이트 센터 통합 운영」(관리자 화면)의 골든타임 전달률에 집계돼요 — 5칸 다 전하는 게 목표예요.</div>
+        {/* 칸 수는 HMR_GOLDEN_KEYS(단일 사전)를 따라간다 — 화면에 숫자를 박아 두면 사전이 늘어날 때
+            화면만 옛 숫자로 남는다(형 지시 2026-10-05). 사전은 handoffResult.js 소관 */}
+        <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>체크는 「헬스메이트 센터 통합 운영」(관리자 화면)의 골든타임 전달률에 집계돼요 — {(typeof HMR_GOLDEN_KEYS !== "undefined" ? HMR_GOLDEN_KEYS.length : 0)}칸 다 전하는 게 목표예요.</div>
       </div>)}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
         <b style={{ fontSize: 11.6, color: "#475569", width: 118, flex: "none" }}>간단 메모</b>
@@ -1179,35 +1215,80 @@ function HmHandoffCard({ ent, code, onToast }) {
         })()}
       </details>
       <details style={{ marginTop: 8, border: "1px dashed #CBD5E1", borderRadius: 9, padding: "7px 10px" }}>
-        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>🗒 대본 보기(v2) — {c.script.variant} 변형 · 읽기 약 {c.script.readSec}초</summary>
+        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>🗒 대본 보기(v2) — {c.member.stage} 단계 대본 · {c.script.variant} 변형 · 본대본 읽기 약 {c.script.readSec}초
+          {c.script.readSecAll > c.script.readSec && <span style={{ fontWeight: 600, color: "#94A3B8" }}> (접이식·응대까지 전부 읽으면 {c.script.readSecAll}초)</span>}
+          {(c.script.prep || []).length > 0 && <span className="hmpill" style={{ marginLeft: 6, background: "#FEF2F2", color: "#B91C1C", fontWeight: 900 }}>🔒 접촉 금지 — 오늘 통화 없음</span>}</summary>
         {(() => {
           /* 대본 v2 미리보기(P5 검수 중) — 발행·알림은 v1 그대로, 화면에서만 [초안] 라벨로 병기 */
           const s2 = c.script.v2 ? c.script : null;   /* v2 정식(2026-08-30 승인) — 카드 자체가 v2 */
-          const draft = (t, b) => b && <div key={b.id + t} style={{ marginBottom: 5, background: "#F8F7FF", borderRadius: 7, padding: "4px 8px" }}><span className="hmpill" style={{ background: "#6D28D9", color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>;
-          return (<div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
+          /* 문장 표시는 전부 이 함수를 지난다 — 「고객 이름 전부 표시」(형 지시 2026-10-05)의 유일한 통로 */
+          const tx = (b) => _hmScrText(c, b.text);
+          const draft = (t, b) => b && <div key={b.id + t} style={{ marginBottom: 5, background: "#F8F7FF", borderRadius: 7, padding: "4px 8px" }}><span className="hmpill" style={{ background: "#6D28D9", color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{tx(b)}”</div></div>;
+          /* D1(접촉 금지 단계)은 통화 대본을 접는다 — 오늘 할 일은 사전 준비뿐이다(형 지시 2026-10-05) */
+          const isD1 = c.member.stage === "D1" && s2 && (s2.prep || []).length > 0;
+          const flow = (<>
+          {s2 && (s2.alert || []).map((b) => <div key={b.id} style={{ marginBottom: 6, background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 7, padding: "5px 9px" }}><span className="hmpill" style={{ background: "#B91C1C", color: "#fff", marginRight: 6, fontWeight: 900 }}>🚑 응급 먼저</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div style={{ fontWeight: 700 }}>“{tx(b)}”</div></div>)}
           {[["오프닝", c.script.opening]].map(([t, b], i) => b &&
-            <div key={i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
+            <div key={i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{tx(b)}”</div></div>)}
           {s2 && (s2.firstconnect || []).map((b) => draft("⭐ 첫 연결", b))}
           {s2 && (s2.talk || []).map((b) => draft("💬 생활 대화", b))}
           {c.script.core.map((b, i) =>
-            <div key={"c" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>본론</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
+            <div key={"c" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>본론</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{tx(b)}”</div></div>)}
           {s2 && (s2.seed || []).map((b) => draft("🌱 여정 씨앗", b))}
+          {/* 단계 과업 — 이 단계에서 프로가 해야 할 일(HM_STAGE_GUIDE.doKo)이 대본으로 나오는 자리 */}
+          {s2 && (s2.stage || []).map((b) => <div key={b.id} style={{ marginBottom: 5, background: "#F0F9FF", borderRadius: 7, padding: "4px 8px" }}><span className="hmpill" style={{ background: "#0369A1", color: "#fff", marginRight: 6 }}>🎯 {c.member.stage} 과업</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{tx(b)}”</div></div>)}
           {[["제안", c.script.ask]].map(([t, b], i) => b &&
-            <div key={"a" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{b.text}”</div></div>)}
+            <div key={"a" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{tx(b)}”</div></div>)}
           {s2 && (s2.careplan || []).map((b) => draft("🧰 케어 플랜", b))}
           {s2 && (s2.maturity || []).map((b) => draft("⏳ 만기 국면", b))}
           {s2 && (s2.fcTail || []).map((b) => draft("⭐ 첫 연결", b))}
-          <div style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#64748B", marginBottom: 4 }}>회원 반응별 응대 10종(수락·보류·거절·질문·치료비·가족·기존보험·바쁨·두려움)</div>
-            {(s2 ? s2.branches : c.script.branches).map((b, i) => <div key={b.id} style={{ marginBottom: 4 }}><b style={{ color: "#C2410C", fontSize: 11 }}>응대 {i + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("(")[0].split("—")[0].trim()}</i><div>“{b.text}”</div></div>)}
-          </div>
+          {c.script.closing && <div><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>다음 약속</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{c.script.closing.ko}</i><div>“{tx(c.script.closing)}”</div></div>}
+          {/* D2 보조 3종 — 필요할 때만 꺼내는 접이식(통화 길이를 본대본 기준으로 유지) */}
+          {s2 && (s2.fcExtra || []).length > 0 && (
+            <details style={{ border: "1px dashed #DDD6FE", background: "#FAF5FF", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
+              {/* 갈래 수는 조립 결과를 따라간다 — 숫자를 박아 두면 블록이 늘 때 라벨만 옛 숫자로 남는다 */}
+              <summary style={{ cursor: "pointer", fontSize: 11.4, fontWeight: 800, color: "#6D28D9" }}>⭐ 더 설명이 필요할 때 — {(s2.fcExtra || []).length}갈래 <span style={{ fontWeight: 600, color: "#64748B" }}>({(s2.fcExtra || []).map((b) => b.ko.split("(")[0].trim()).join(" · ")} · 본대본에는 넣지 않아요)</span></summary>
+              {(s2.fcExtra || []).map((b) => <div key={b.id} style={{ marginTop: 4 }}><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko}</i><div>“{tx(b)}”</div></div>)}
+            </details>)}
+          </>);
+          /* 응대·자발 대화·발송 문안 — D1에서는 이 셋까지 통화 대본과 **같은 접이식 안**에 넣는다.
+             종전에는 접이식 밖 최상위에 펼쳐져 있어, 접촉 금지 회원의 문자 문안이 복사해 보내기만
+             하면 되는 자리에 그대로 노출됐다(형 지시 2026-10-05 수선). */
+          const branchesBlock = (<>
+          {/* 회원 반응별 응대 — 상황별 선택지라 접어 둔다(본대본을 먼저 읽게) */}
+          <details style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
+            <summary style={{ cursor: "pointer", fontSize: 11.4, fontWeight: 800, color: "#64748B" }}>🗣 회원 반응별 응대 {(s2 ? s2.branches : c.script.branches).length}종 <span style={{ fontWeight: 600 }}>(수락·보류·거절·질문·치료비·가족·기존보험·바쁨·두려움)</span></summary>
+            {(s2 ? s2.branches : c.script.branches).map((b, i) => <div key={b.id} style={{ marginTop: 4 }}><b style={{ color: "#C2410C", fontSize: 11 }}>응대 {i + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("(")[0].split("—")[0].trim()}</i><div>“{tx(b)}”</div></div>)}
+          </details>
           {s2 && (s2.voluntary || []).length > 0 && (
             <details style={{ border: "1px dashed #A7F3D0", background: "#F0FDF4", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
               <summary style={{ cursor: "pointer", fontSize: 11.4, fontWeight: 800, color: "#15803D" }}>💬 회원이 먼저 건강 이야기를 꺼내면 — 자발 대화 6갈래 <span style={{ fontWeight: 600, color: "#64748B" }}>(먼저 꺼내지 않아요 · 회원이 열었을 때만)</span></summary>
-              {(s2.voluntary || []).map((b, i2) => <div key={b.id} style={{ marginTop: 4 }}><b style={{ color: "#15803D", fontSize: 11 }}>{i2 + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("·")[1] ? b.ko.split("·")[1].trim() : b.ko}</i><div>“{b.text}”</div></div>)}
+              {(s2.voluntary || []).map((b, i2) => <div key={b.id} style={{ marginTop: 4 }}><b style={{ color: "#15803D", fontSize: 11 }}>{i2 + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("·")[1] ? b.ko.split("·")[1].trim() : b.ko}</i><div>“{tx(b)}”</div></div>)}
             </details>)}
-          {c.script.closing && <div><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>클로징</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{c.script.closing.ko}</i><div>“{c.script.closing.text}”</div></div>}
-          <div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}><b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}</div>
+          {/* 발송 문안 — 치환하지 않는다. 화면과 실제 발송문이 달라지면 프로가 읽는 초안과
+              발행 artifact가 불일치한다(마스킹 규칙은 외부 전달물 쪽을 그대로 둔다 — 형 지시 2026-10-05) */}
+          <div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}>
+            <b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}
+            {!isD1 && <div style={{ fontSize: 10.2, color: "#94A3B8", marginTop: 2 }}>※ 발송 문안은 이름을 마스크 표기로 내보내요 — 화면에 보이는 그대로 나갑니다(대본만 실제 이름으로 보여드려요).</div>}
+          </div>
+          </>);
+          return (<div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
+          {/* D1 — 사전 준비(오늘 할 일). 통화 대본은 아래에 접어 둔다.
+              prep는 회원에게 하는 말이 아니라 프로가 읽는 지시문이라 인용부호(“ ”) 대신 ▸로 표기한다 */}
+          {isD1 && (<div style={{ marginBottom: 7, background: "#F1F5F9", border: "1px solid #CBD5E1", borderRadius: 8, padding: "7px 10px" }}>
+            <div style={{ fontSize: 11.4, fontWeight: 900, color: "#B91C1C", marginBottom: 4 }}>🔒 접촉 금지 — 결과 대기 단계(오늘 통화 없음)</div>
+            <div style={{ fontSize: 10.4, color: "#64748B", marginBottom: 4 }}>아래는 회원에게 하는 말이 아니라 프로가 읽는 지시문이에요</div>
+            {(s2.prep || []).map((b) => <div key={b.id} style={{ marginBottom: 4 }}><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div style={{ color: "#334155" }}>▸ {tx(b)}</div></div>)}
+          </div>)}
+          {isD1
+            ? <details style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
+                <summary style={{ cursor: "pointer", fontSize: 11.4, fontWeight: 800, color: "#64748B" }}>📞 결과 도착 후 쓸 통화 대본 초안 <span style={{ fontWeight: 600 }}>(지금은 쓰지 않아요 — 응대·발송 문안도 여기 안에 있어요)</span></summary>
+                <div style={{ marginTop: 6 }}>
+                  <div style={{ fontSize: 10.4, color: "#B45309", marginBottom: 5 }}>⚠ 아직 결과가 없는 회원이라 이 초안은 구간 표현이 비어 있어요. 결과가 도착하면 D2 골든타임 대본(무료 3종 안내)으로 카드가 다시 발행돼요.</div>
+                  {flow}{branchesBlock}
+                </div>
+              </details>
+            : <>{flow}{branchesBlock}</>}
         </div>);
         })()}
       </details>

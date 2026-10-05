@@ -54,6 +54,9 @@ function riskPredict(m) {
   const age = (typeof demoRegAge === "function") ? demoRegAge(m) : (m.regAge || m.age || 45);
   const band = age < 30 ? "20" : age < 40 ? "30" : age < 50 ? "40" : age < 60 ? "50" : age < 70 ? "60" : "70";
   const sex = m.sex || "남";
+  /* [실측 통일 2026-10-05] 본인 계정은 **백분위를 비운다** — 분포가 합성 코호트(synthCheckupValues)라
+     「상위 1% 구간」 같은 말에 실측 근거가 없다(형 지시 ②). 지표 근거(실측값)는 그대로 보여 준다. */
+  const _noPct = (typeof selfRealIsSelf === "function") ? selfRealIsSelf(m) : false;
   const out = RISK_GROUPS.map((g) => {
     const r = _rkScore(ck.map, g, age);
     let trend = "유지", tAdj = 0;
@@ -67,10 +70,28 @@ function riskPredict(m) {
     const dist = _rkBandDist(g.code, band, sex);
     let pct = 50;
     if (dist.length > 10) { let lo = 0; while (lo < dist.length && dist[lo] < s) lo++; pct = Math.round((1 - lo / dist.length) * 100); }   // 상위 N%
-    return { code: g.code, ko: g.ko, prob, topPct: Math.max(1, Math.min(99, pct)), trend, basis: r.basis.slice(0, 3), cat: g.cat };
+    /* [실측 통일 2026-10-06] 근거가 임계값으로는 비는데 **결과지 판정문은 정상이 아닌** 경우
+       (혈압 119/78 「유질환자(관리중)」 — 수치는 범위 안, 판정은 유질환) 원천 판정문을 근거로 쓴다.
+       그러지 않으면 이 화면만 「전 지표 정상범위」라고 말해 다른 전 화면(유질환자(관리중))과 어긋난다.
+       판정 행(flagRow) 기준으로 묶어 혈압이 수축기·이완기 2행으로 늘어나지 않게 한다. */
+    let basis = r.basis.slice(0, 3);
+    if (!basis.length && ck.flags) {
+      const seen = {};
+      Object.keys(g.keys).forEach((k) => {
+        const fl = ck.flags[k]; if (!fl || /^정상/.test(fl)) return;
+        const row = (ck.rowOf && ck.rowOf[k]) || k; if (seen[row]) return; seen[row] = 1;
+        const raw = (ck.rawOf && ck.rawOf[k] != null) ? ck.rawOf[k] : ck.map[k];
+        basis.push({ k, ko: row, value: `${raw}${(ck.unitOf && ck.unitOf[k]) || ""} 「${fl}」`, sev: 0, w: 0, fromSrc: true });
+      });
+      basis = basis.slice(0, 3);
+    }
+    return { code: g.code, ko: g.ko, prob, topPct: _noPct ? null : Math.max(1, Math.min(99, pct)), trend, basis, cat: g.cat };
   }).sort((a, b) => b.prob - a.prob);
-  return { ok: true, band: band + "대", sex, date: ck.date, risks: out,
-    honesty: "※ 위험 정보이지 의료 진단이 아니에요 — 합성 코호트 대비 통계 모델(백테스트 수치 공개)이며, 이상 신호는 의료기관 상담을 권해요." };
+  return { ok: true, band: band + "대", sex, date: ck.date, risks: out, real: _noPct,
+    pctNote: _noPct ? "동년배 백분위(상위 N%)는 실측 원천에 없어 표시하지 않습니다 — 근거는 검진 실측값입니다." : "",
+    honesty: _noPct
+      ? "※ 위험 정보이지 의료 진단이 아니에요 — 근거는 국민건강보험공단 결과통보서 실측값이며, 이상 신호는 의료기관 상담을 권해요."
+      : "※ 위험 정보이지 의료 진단이 아니에요 — 합성 코호트 대비 통계 모델(백테스트 수치 공개)이며, 이상 신호는 의료기관 상담을 권해요." };
 }
 /* ── 백테스트 — 코호트 라벨(유병)로 구분력(AUC 근사)·캘리브레이션 측정 ── */
 function riskBacktest(sampleN) {
@@ -105,13 +126,26 @@ function coverageMatch(m) {
   let held = [];
   try { const v = vaultLoad(anonToken(m)); held = (v.insurance || []); } catch (e) {}
   const CAT_NEED = { "심장": 20000000, "뇌": 20000000, "간": 15000000, "신장": 15000000 };   // 필요 보장 기준: 코호트 뇌·심장 진단비 평균(INS_TARGETS.bhBenefitMean) 계열 — 데이터셋 명세 근거
+  /* [실측 통일 2026-10-06] 보유 진단비 금액을 모르면 「부족액」을 만들지 않는다.
+     본인 계정의 실계약 9건(신용정보원 조회)에는 특약 금액이 없어 보유액이 0으로 계산된다 —
+     그대로 두면 「간질환 15,000,000원 부족」이라고 단정해, 같은 섹션의 보장분석이
+     「진단비 특약 금액 미확인 — 보유 여부를 단정할 수 없습니다」라고 말하는 것과 정면으로 어긋났다.
+     본인 계정(rp.real)에만 적용한다 — 체험·코호트는 합성 보유액 0이 설계대로이고(형 지시 ①),
+     거기까지 「확인 필요」로 바꾸면 합성 경로의 금액이 사라진다. */
+  const benefitKnown = held.some((c) => Number(c.benefit) > 0);
+  const unknownAll = !!rp.real && !benefitKnown && held.length > 0;
   const rows = rp.risks.slice(0, 3).map((r) => {
     const need = CAT_NEED[r.cat] || 10000000;
     const have = held.filter((c) => (c.kind === "암" && r.cat === "암") || new RegExp(r.cat).test(c.product || "")).reduce((s, c) => s + (c.benefit || 0), 0);
-    return { code: r.code, ko: r.ko, topPct: r.topPct, need, have, gap: Math.max(0, need - have),
-      why: `같은 ${rp.band} ${rp.sex}성 중 위험 상위 ${r.topPct}% (${r.basis.map((b) => b.ko + " " + b.value).join("·") || "지표 추세"}) — 필요 보장 ${need.toLocaleString()}원 대비 보유 ${have.toLocaleString()}원` };
+    const _bas = r.basis.map((b) => b.ko + " " + b.value).join("·") || "지표 추세";
+    const unknown = unknownAll;
+    return { code: r.code, ko: r.ko, topPct: r.topPct, need, have: unknown ? null : have,
+      gap: unknown ? null : Math.max(0, need - have),
+      gapNote: unknown ? `실계약 ${held.length}건에 진단비 특약 금액 정보가 없어 부족액을 산출하지 않습니다 — 필요 보장 기준 ${need.toLocaleString()}원` : "",
+      why: (r.topPct != null ? `같은 ${rp.band} ${rp.sex}성 중 위험 상위 ${r.topPct}% (${_bas})` : `검진 실측 근거: ${_bas}`)
+        + (unknown ? ` — 필요 보장 ${need.toLocaleString()}원 · 보유 진단비 확인 필요` : ` — 필요 보장 ${need.toLocaleString()}원 대비 보유 ${have.toLocaleString()}원`) };
   });
-  return { ok: true, rows, band: rp.band, sex: rp.sex };
+  return { ok: true, rows, band: rp.band, sex: rp.sex, benefitKnown };
 }
 /* ── UnderwritingGateway — 고지 자동 구성·인수 예측·유병자 할인·포용 경로(실청약은 GA 경유) ── */
 function underwrite(m, productKo) {

@@ -62,10 +62,29 @@ function HiEnCard({ onGo, onClose }) {
    실측(2026-10-05 · 은평지점장 8M1029 세션 · 1500×1100): 관제 화면 옆에서 독이 「조성래님, 반가워요!
    저는 조성래님 전담 AI 매니저 하이예요」 + 회원용 선택지 6종(건강검진 받고 싶어요 / 내 건강상태 / …)을
    띄웠다. 지점장 범위로 인증한 화면 옆에서 운영자를 회원 이름으로 부르고 회원 메뉴를 권하는 셈이다.
-   ⚠️ 숫자는 **hmoOrgIndex()(지금 인증된 범위로 잘린 색인)만** 쓴다. 회원 엔진(agentAnswer)은 아예 부르지
-      않는다 — 독에 조직 Q&A가 붙는 순간 범위 제한 밖의 답변 창구가 하나 더 생기기 때문이다.
+   ⚠️ 숫자는 **범위 통과 함수만** 쓴다 — 조회·집계는 hmOpsAsk.js 한 곳에 모았고, 그 엔진은 hmoOrgIndex()
+      (지금 인증된 범위로 잘린 색인)·hmoScopePros·hmoProRow·hmoResultAgg·hmoCycleAgg만 부른다.
+      회원 엔진(agentAnswer·aiDoctorAgent)은 여기서 아예 부르지 않는다 — 독에 회원 Q&A가 붙는 순간
+      범위 제한 밖의 답변 창구가 하나 더 생기기 때문이다.
+   ⚠️ 형 지시(2026-10-05 ⑦)로 독은 **안내 창구에서 조회·이동 창구**가 됐다. 「○○지점 현황 보여줘」면
+      화면을 그 단위로 옮기고(CustomEvent hifin:hmops), 「오늘의 지시서 이행율」이면 숫자로 답한다.
+      숫자를 낸 질의는 guardLog("hmops_ask", …)에 남는다 — 화면 밖 창구도 콘솔 훅과 같은 감사 기준.
    ⚠️ 운영본부에서는 기본 접힘(버블)이다. 열고 싶은 사람만 연다. */
-const HIDOCK_OPS_CHIPS = ["지금 내 범위는 어디까지예요?", "이 탭에서 무엇을 볼 수 있어요?", "범위 밖은 왜 안 보여요?", "범위를 바꾸려면요?"];
+/* 빠른 질문 칩 — 형 지시(2026-10-05 ⑦)에 맞춰 **조회·이동**을 앞에 둔다.
+   ⚠️ 지점 이름을 리터럴로 박지 않는다 — 지점이 늘거나 줄면 사번·정렬이 밀려서 「화면이 알려 준 예시」가
+      엉뚱한 지점을 열게 된다. 그래서 첫 칩은 **지금 인증된 범위의 색인**에서 이름을 뽑아 만든다
+      (지점장은 자기 지점, 지역단장·본사는 그 범위에서 담당이 가장 많은 지점). */
+const HIDOCK_OPS_CHIPS = ["내 범위 D1~L8 분포", "오늘의 지시서 이행율", "정체 많은 프로", "범위 밖은 왜 안 보여요?"];
+function hidockOpsChips() {
+  const base = HIDOCK_OPS_CHIPS.slice();
+  try {
+    const O = (typeof hmoOrgIndex === "function") ? hmoOrgIndex() : null;
+    if (!O) return base;
+    const bs = Object.keys(O.branches).map((k) => O.branches[k]).sort((a, b) => b.managed - a.managed);
+    if (bs.length) return [bs[0].branch + " 현황 보여줘"].concat(base.slice(0, 3));
+  } catch (e) {}
+  return base;
+}
 function hidockOpsAdm() { try { return (typeof hmoAdmin === "function") ? hmoAdmin() : null; } catch (e) { return null; } }
 function hidockOpsScope() {
   const a = hidockOpsAdm(); if (!a) return null;
@@ -75,16 +94,47 @@ function hidockOpsScope() {
 }
 function hidockOpsIntro() {
   const s = hidockOpsScope();
-  if (!s) return { lines: ["헬스메이트 운영본부예요. 아직 운영자 사번(8M####)을 인증하지 않으셨어요 — 인증 전에는 조직·회원 숫자를 하나도 집계하지 않아요.", "화면 가운데 인증 칸에 사번을 넣으면 그 직책만큼 범위가 열려요(지점장은 자기 지점, 지역단장은 자기 지역단, 본사만 전국)."], buttons: [] };
+  /* ⚠️ 인사말이 **옛 사번 체계(8M####)**를 적고 있었다. 실제 체계는 본사 1H · 지역단장 2H · 지점장 3H이고
+     hmAdminCheck는 8H를 「프로 사번」으로 거절한다 — 시연 중 운영자가 독 안내대로 8M을 치면 그냥 막힌다.
+     이름 인식·조회를 붙이기 전에 이 문구부터 맞춘다(화면이 스스로를 반증하지 않게). */
+  if (!s) return { lines: ["헬스메이트 운영본부예요. 아직 운영자 사번을 인증하지 않으셨어요 — **인증 전에는 조직·회원 숫자를 하나도 집계하지 않아요**.",
+    "화면 가운데 인증 칸에 사번을 넣어 주세요: 본사 **1H####** · 지역단장 **2H####** · 지점장 **3H####**(예: 3H0001). 그 직책만큼 범위가 열려요."], buttons: [] };
   const n = s.hq ? s.hq.n.toLocaleString() : "-", m = s.hq ? s.hq.managed.toLocaleString() : "-";
-  return { lines: [s.a.title + " " + s.a.name + " 님, 운영본부예요. 저는 여기서 이 화면 안내만 드려요(관측 전용).",
-    "지금 범위는 " + s.where + " — 프로 " + n + "명 · 담당 회원 " + m + "명이에요. 범위 밖 프로·회원은 모든 탭·모든 표에서 집계되지 않아요."],
-    buttons: HIDOCK_OPS_CHIPS.slice(0, 3) };
+  return { lines: [s.a.title + " " + s.a.name + " 님, 운영본부예요. 조직·관리 현황은 제가 **조회해서 숫자로** 답해 드려요(관측 전용 — 조작은 없어요).",
+    "지금 범위는 " + s.where + " — 프로 " + n + "명 · 담당 회원 " + m + "명이에요. 범위 밖 프로·회원은 모든 탭·모든 표에서 집계되지 않아요.",
+    "「○○지점 현황 보여줘」라고 하시면 그 단위로 **화면도 옮겨** 드리고, 「오늘의 지시서 이행율」처럼 물으시면 **조사해서** 답해 드려요."],
+    buttons: hidockOpsChips().slice(0, 3) };
 }
-function hidockOpsReply(text) {
+/* ── 운영본부 질의 — **새 엔진(hmOpsAsk)을 먼저 태운다** ─────────────────────────────────
+   형 지시(2026-10-05 ⑦): ① 「은평지점 현황 보여줘」면 그 화면을 띄우고 ② 통계는 조사해서 답한다.
+   엔진이 못 알아들은 질문(kind === "unknown")만 아래 화면 안내로 떨어진다.
+   ⚠️ 회원 엔진(agentAnswer·aiDoctorAgent)은 여기서도 **부르지 않는다** — 범위 밖 숫자를 꺼낼 수 있는
+      답변 창구를 하나 더 만들지 않기 위해서다. 조직 수치는 hmOpsAsk가 범위 통과 함수만 써서 만든다. */
+/* ⚠️ 입력 채널(via)을 엔진까지 넘긴다 — **음성 한마디로 화면 범위·탭을 바꾸지 않기** 위해서다.
+   같은 독이 예약 확정·결제는 입력칸에만 채우고 버튼을 한 번 더 받는데(hiVoiceRisky), 조직 이동은
+   HI_VOICE_RISKY에 조회·이동 어휘가 없어 음성만으로 일어났다. 본사 범위 272지점에서는 오인식 결과가
+   **유효한 다른 지점명**일 수 있고, 되돌아가기는 탭·선택까지 복원하지 못한다.
+   → 엔진이 navConfirm을 돌려주면 이동을 발행하지 않고 확인 칩(opsNav)으로 넘긴다. 숫자 답변은 그대로 준다. */
+function hidockOpsReply(text, via) {
   const s = hidockOpsScope();
   const q = String(text || "");
-  if (/범위|어디까지|내지점|우리지점|얼마나/.test(q.replace(/\s/g, ""))) {
+  let eng = null;
+  try { if (typeof hmOpsAsk === "function") eng = hmOpsAsk(q, { channel: via }); } catch (e) { eng = null; }
+  if (eng && eng.kind !== "unknown") {
+    /* 이동 신호는 **해석이 성공한 단위에만** 실려 온다(실패하면 eng.nav가 null이다) */
+    if (eng.nav && typeof hmOpsAskGo === "function") hmOpsAskGo(eng.nav);
+    return { lines: eng.lines, buttons: (eng.buttons || []).filter(Boolean).slice(0, 3), opsNav: eng.navConfirm || null, hit: true };
+  }
+  /* ⚠️ 「왜 안 보여요?」를 **먼저** 본다 — 이 문장에도 '범위'가 들어 있어서, 범위 안내가 앞에 있으면
+     「범위 밖은 왜 안 보여요?」 칩이 자기 질문이 아닌 현재 범위 숫자를 답했다(실측). */
+  if (/왜안|범위밖|안보이|가려|숨기/.test(q.replace(/\s/g, ""))) {
+    return { lines: ["가리는 게 아니라 모집단에 없어서 안 보여요. 조직 색인을 돌려주는 함수가 범위로 자른 것만 돌려주고, 조직 목록·실적·D1~L8 표·배치 관제·표 내보내기가 전부 그 하나를 통과해요.",
+      "그래서 「한 탭만 가려지고 다른 탭에서 전국이 보이는」 구멍이 없어요. 관리자 콘솔 훅도 같은 가드를 씁니다."], buttons: [] };
+  }
+  /* ⚠️ `내지점`·`우리지점`·`얼마나`가 들어 있던 동안, 엔진이 「못 알아들었다」고 한 질문
+     (「우리 지점 이탈률 몇 퍼센트예요?」)까지 이 분기가 받아서 **묻지 않은 범위 숫자**를 답했다.
+     범위를 묻는 말만 받는다 — 사전에 없는 지표는 엔진의 되묻기가 그대로 나가야 한다. */
+  if (/범위|어디까지|권한은|보이는것/.test(q.replace(/\s/g, ""))) {
     if (!s) return { lines: ["아직 운영자 사번을 인증하지 않으셨어요 — 인증 전에는 아무 숫자도 집계하지 않아요."], buttons: [] };
     const h = s.hq;
     return { lines: ["지금 범위는 " + s.where + "(" + s.a.title + " " + s.a.code + ")예요.",
@@ -95,20 +145,27 @@ function hidockOpsReply(text) {
     return { lines: ["탭 다섯 개예요 — ① 조직 드릴다운(범위 안 조직·프로) ② 단위 실적·통계 ③ D1~L8 관리 현황(담당 회원 전건 단계 판정) ④ 배치·배분 관제(60일 사이클) ⑤ 운영자 도구(보기 설정·이 화면의 경계).",
       "전국만 쪼갤 수 없는 숫자(등급 분포·시도별 부하·제공 DB 스키마 검사)는 본사 범위에서만 적어요 — 전국 숫자에 지점 이름을 붙이지 않습니다."], buttons: ["지금 내 범위는 어디까지예요?"] };
   }
-  if (/왜안|범위밖|안보이|가려|숨기/.test(q.replace(/\s/g, ""))) {
-    return { lines: ["가리는 게 아니라 모집단에 없어서 안 보여요. 조직 색인을 돌려주는 함수가 범위로 자른 것만 돌려주고, 조직 목록·실적·D1~L8 표·배치 관제·표 내보내기가 전부 그 하나를 통과해요.",
-      "그래서 「한 탭만 가려지고 다른 탭에서 전국이 보이는」 구멍이 없어요. 관리자 콘솔 훅도 같은 가드를 씁니다."], buttons: [] };
-  }
   if (/바꾸|전환|다른지점|재인증|잠금/.test(q.replace(/\s/g, ""))) {
     return { lines: ["머리띠의 [범위 전환 — 잠금 해제 후 재인증]을 누르고 운영자 사번을 다시 인증하세요. 한 번 클릭으로 범위가 바뀌는 버튼은 두지 않았어요(그 버튼이 있으면 「지점장은 자기 지점만 본다」가 같은 화면에서 반증됩니다).",
       "보던 탭은 그대로 유지돼요 — 같은 탭에서 범위만 갈아 보실 수 있어요."], buttons: [] };
   }
-  return { lines: ["여기서는 운영본부 안내만 드려요 — 조직·회원 숫자는 탭에서 직접 보셔야 하고, 저는 지금 인증된 범위 밖 숫자는 꺼내지 않아요.",
-    "건강·보험 상담은 다른 화면에서 물어봐 주세요(운영본부는 관측 전용이라 회원 상담 동선을 열지 않습니다)."], buttons: HIDOCK_OPS_CHIPS.slice(0, 2) };
+  /* 엔진이 「못 알아들었다」고 한 경우 — 지어내지 않고 **엔진이 적은 가능한 지표 목록**을 그대로 보여 준다
+     (예전 기본 답은 「숫자는 탭에서 직접 보세요」였는데, 이제 조회가 되므로 그 문장은 사실이 아니다). */
+  if (eng && eng.lines && eng.lines.length) return { lines: eng.lines, buttons: (eng.buttons || []).filter(Boolean).slice(0, 3), hit: false };
+  return { hit: false, lines: ["그 질문은 제가 아직 못 알아들었어요 — 지어내지 않고 되묻는 쪽을 택할게요.",
+    "조직·관리 현황은 제가 조회해 드려요(담당 회원 수 · 오늘 지시서 이행율 · 단계 분포 · 정체 · 사이클). 건강·보험 상담은 회원 화면에서 받아요 — 운영본부는 관측 전용이라 회원 상담 동선을 열지 않습니다."], buttons: hidockOpsChips().slice(0, 2) };
 }
 
 /* 응답 대기 — 엔진 실계산은 평균 7.3ms다. 지금까지 체감 지연의 95%는 여기 박아둔 연출용 대기였다.
    음성은 회원이 이미 인식을 기다렸으므로 글자보다 더 빨리 답한다. 타이핑 표시는 유지하고 시간만 줄인다. */
+/* 운영본부 답변의 **강조**를 글자 그대로 찍지 않는다 — 독 말풍선은 평문 렌더라 「제가 **조회해서 숫자로**
+   답해 드려요」처럼 별표가 그대로 보였다(대표 시연 화면). HTML을 만들지 않고 React 조각으로만 쪼갠다. */
+function hidockBold(line) {
+  const t = String(line == null ? "" : line);
+  if (t.indexOf("**") < 0) return t;
+  const parts = t.split("**");
+  return parts.map((seg, i) => (i % 2 ? <b key={i} className="hib">{seg}</b> : <React.Fragment key={i}>{seg}</React.Fragment>));
+}
 const HIDOCK_WAIT = { voice: 90, text: 320 };
 function hidockWait(via) { return via === "voice" ? HIDOCK_WAIT.voice : HIDOCK_WAIT.text; }
 
@@ -268,7 +325,14 @@ function AgentDock({ onGo, sec }) {
       setInput("");
       setMsgs((m) => [...m, { who: "me", ops: true, lines: [text], buttons: [], nav: null }]);
       setTyping(true);
-      setTimeout(() => { const r = hidockOpsReply(text); setTyping(false); setMsgs((m) => [...m, { who: "hi", ops: true, lines: r.lines, buttons: r.buttons || [], nav: null, channel: via }]); }, hidockWait(via));
+      /* 턴 대장 — 운영본부만 계측이 비어 있어 음성·타자 채널 비교에서 이 화면이 통째로 빠졌다(회원 분기와 같은 지점에서 센다) */
+      const t0o = Date.now();
+      setTimeout(() => {
+        const r = hidockOpsReply(text, via);
+        setTyping(false);
+        setMsgs((m) => [...m, { who: "hi", ops: true, lines: r.lines, buttons: r.buttons || [], nav: null, opsNav: r.opsNav || null, channel: via }]);
+        try { if (typeof telemTurn === "function") telemTurn(via, Date.now() - t0o, !!r.hit); } catch (e) {}
+      }, hidockWait(via));
       return;
     }
     /* 하고 싶은 활동(섹션 안내형 칩) — 질의 전송 대신 섹션 가이드로 즉답하고 화면까지 데려간다 */
@@ -344,6 +408,14 @@ function AgentDock({ onGo, sec }) {
 
   /* [2단계] SARG 응답 칩 처리 — 알림 예약(followup 저장)·미리보기 열기는 대화 재질의 없이 즉시 실행 */
   const chipClick = (msg, b) => {
+    /* 운영본부 음성 확인 칩 — 이 버튼 하나만 화면을 옮긴다(질의로 되돌려 보내지 않는다) */
+    if (msg.opsNav && b === msg.opsNav.chip) {
+      let ok = false;
+      try { ok = (typeof hmOpsAskGo === "function") ? hmOpsAskGo(msg.opsNav) : false; } catch (e) { ok = false; }
+      setMsgs((mv) => [...mv, { who: "hi", ops: true, nav: null, buttons: [],
+        lines: [ok ? ("「" + msg.opsNav.label + "」 단위로 옮겼어요" + (typeof msg.opsNav.tab === "number" ? " — 탭도 그 지표가 사는 자리로 맞췄어요." : " — 탭은 그대로 뒀어요.")) : "지금은 화면을 옮기지 못했어요 — 운영본부 화면이 떠 있을 때만 옮길 수 있어요."] }]);
+      return;
+    }
     if (msg.followup && (b === "알림 받기" || b === "알림 예약")) {
       let ok = false;
       try { const mm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; ok = (typeof hiFollowupSave === "function") ? hiFollowupSave(mm || { email: "self" }, msg.followup) : false; } catch (e) { ok = false; }
@@ -358,7 +430,9 @@ function AgentDock({ onGo, sec }) {
   };
   /* 음성 안내는 말풍선으로 남긴다 — 마이크가 조용히 실패하면 회원은 자기 탓을 한다.
      로컬 생성이라 미답변 로그를 오염시키지 않는다(도우미 칩과 같은 규약). */
-  const voiceNote = (line) => { if (line) setMsgs((m) => [...m, { who: "hi", lines: [line], buttons: [], nav: null, notice: true }]); };
+  /* ⚠️ ops 플래그가 없어서 운영본부에서는 이 말풍선이 **보이지 않았다**(shown이 ops로 갈라 본다).
+     마이크가 조용히 실패하면 운영자는 자기 탓을 한다 — 그 안내가 사라지면 안 된다. */
+  const voiceNote = (line) => { if (line) setMsgs((m) => [...m, { who: "hi", ops: ops, lines: [line], buttons: [], nav: null, notice: true }]); };
 
   /* 듣기 — 시작/중지 한 버튼. 인스턴스 관리·무음 종료·끼어들기는 hiVoice가 맡는다 */
   const startStt = () => {
@@ -417,7 +491,7 @@ function AgentDock({ onGo, sec }) {
         <div className={"hidock" + (welcome && !shown.length ? " wel" : "")} ref={dockRef}>
           <div className="hidock-hd">
             <span className="hidock-av"><HiAvatar size={26} plain /></span>
-            <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{ops ? "운영본부 안내 · 관측 전용" : t("hi.role")}</span></div>
+            <div className="hidock-t"><b>{t("hi.name", (typeof AGENT_PERSONA !== "undefined" ? AGENT_PERSONA.name : "하이"))}</b><span>{ops ? "운영본부 조회 · 관측 전용" : t("hi.role")}</span></div>
             <button className={"hidock-ib" + (easy ? " on" : "")} title="쉬운 말 모드(큰 글씨)" onClick={() => setEasy((v) => !v)}>가나</button>
             {/* 읽어주기 — 기본은 꺼짐, 켜면 기억한다(화면을 옮겨도 유지). 미지원 브라우저면 이유를 말한다 */}
             {lang !== "en" && (
@@ -472,7 +546,7 @@ function AgentDock({ onGo, sec }) {
                       {Array.isArray(m.agents) && m.agents.length > 1 && <span className="hidock-ens">함께 답했어요</span>}
                     </div>
                   )}
-                  {m.lines.map((l, j) => <div className={"hidock-bub " + m.who + (m.announce ? " announce" : "") + (m.notice ? " notice" : "")} key={j}>{l}</div>)}
+                  {m.lines.map((l, j) => <div className={"hidock-bub " + m.who + (m.announce ? " announce" : "") + (m.notice ? " notice" : "")} key={j}>{m.ops ? hidockBold(l) : l}</div>)}
                   {m.cite && m.cite.length > 0 && (
                     <div className="hidock-cite">📚 근거 {m.cite.map((c, ci) => <span key={ci}>{c.source}{c.title ? ` · ${c.title}` : ""}</span>)}</div>
                   )}
@@ -502,8 +576,8 @@ function AgentDock({ onGo, sec }) {
             </>}
             <div ref={endRef} />
           </div>
-          {lang !== "en" && (!welcome || shown.length > 0) && <div className="hidock-quick" role="group" aria-label={ops ? "운영본부 안내 바로가기" : "하고 싶은 건강활동 바로가기"}>
-            {(() => { if (ops) return HIDOCK_OPS_CHIPS.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>);
+          {lang !== "en" && (!welcome || shown.length > 0) && <div className="hidock-quick" role="group" aria-label={ops ? "운영본부 조회·이동 바로가기" : "하고 싶은 건강활동 바로가기"}>
+            {(() => { if (ops) return hidockOpsChips().map((q) => <button key={q} onClick={() => send(q)}>{q}</button>);
               let mm = null; try { mm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; } catch (e) {}
               return hidockQuicks(mm).map((q) => <button key={q} onClick={() => send(q)}>{q}</button>); })()}
           </div>}
@@ -534,7 +608,7 @@ function AgentDock({ onGo, sec }) {
               {listening ? <X size={16} /> : <Mic size={16} />}</button>}
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} enterKeyHint="send"
               onFocus={() => { try { setTimeout(() => { if (endRef.current) endRef.current.scrollIntoView({ block: "end" }); }, 250); } catch (e) {} }}
-              placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : (ops ? "운영본부 안내만 드려요 · 예) 지금 내 범위는 어디까지예요?" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘")} />
+              placeholder={listening ? "듣고 있어요… 편하게 말씀하세요" : (ops ? "조직·관리 현황을 물어보세요 · 예) 은평지점 오늘의 지시서 이행율 보여 줘" : "무엇이든 물어보세요 · 예) 내 건강검진 예약 알아봐줘")} />
             <button className={"hidock-send" + (input.trim() ? " on" : "")} onClick={() => send()} aria-label="보내기"><Send size={15} /></button>
           </div>
         </div>

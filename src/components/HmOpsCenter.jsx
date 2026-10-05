@@ -137,7 +137,19 @@ function HmoStyle() {
 /* 세션 메모리 캐시. localStorage를 쓰지 않는다(관측 전용 화면 — 저장 키를 새로 만들지 않는다).
    view·cycle·mids는 **운영자 범위별로 칸이 나뉜다** — 한 칸을 공유하면 본사로 한 번 본 뒤
    지점장으로 바꿨을 때 앞 사람의 전국 집계가 그대로 보인다(범위 제한이 캐시에서 뚫린다). */
-const _HMO = { org: null, view: {}, row: {}, cycle: {}, mids: {} };
+const _HMO = { org: null, view: {}, row: {}, cycle: {}, mids: {}, now: null };
+
+/* ── 지금 화면이 보고 있는 범위·탭(관측용 한 칸) ──────────────────────────────────────────
+   하이(독)가 「○○지점 현황 보여줘」에 답할 때 **이동 전 범위를 되돌아가기 버튼으로** 제공하려면
+   화면의 현재 선택을 알아야 한다. 저장 키를 새로 만들지 않기 위해(관측 전용 화면 규약) 세션 메모리
+   한 칸에만 적는다 — 읽기 전용이고, 이 값으로 범위가 넓어지는 일은 없다(렌더는 늘 hmoScopeClamp를 통과).
+   ⚠️ 상설 전역 함수(window.__hifinHmOpsGo 류)는 두지 않는다 — `__hifinHmScope`가 범위 제한을 통째로
+      우회했던 전례가 그 종류였다. 여기 있는 것은 **쓰기 통로가 아니라 현재 선택의 사본**이다. */
+function hmoScopeNow() { return _HMO.now; }
+function hmoScopeNowSet(scope, tab) { _HMO.now = { scope, tab }; }
+/* 프로 행이 이미 계산돼 있는지 — **존재만** 본다. 행 자체는 돌려주지 않는다(범위 가드가 있는
+   hmoProRow를 거치지 않고 _HMO.row를 읽으면, 사번만 키인 그 칸에서 범위 제한이 뚫린다). */
+function hmoRowWarm(code) { return !!_HMO.row[code]; }
 
 /* ── 운영자 신원·관리 범위 ──────────────────────────────────────────────────────
    세션(hifin_hmops_admin)에 있는 운영자 사번 → 명부 레코드. 없으면 null이고, null이면 화면이
@@ -437,10 +449,14 @@ function HmoExport({ name, head, rows }) {
    그리고 중지를 만들었다: 전에는 「이 범위 전체」를 한 번 누르면 끝까지 되돌릴 방법이 없었다. */
 function useHmoRows(codes, cap) {
   const key = codes.join(",") + "|" + cap;
-  /* 프로 1~2명 범위(지점 일부·프로 단건)는 비용이 없으니 버튼 없이 바로 계산한다 */
-  const auto = (cap === 0 ? codes.length : Math.min(codes.length, cap)) <= 2;
-  const [st, setSt] = React.useState({ key, rows: [], run: auto });
   const take = React.useMemo(() => (cap === 0 ? codes : codes.slice(0, cap)), [key]);
+  /* 프로 1~2명 범위(지점 일부·프로 단건)는 비용이 없으니 버튼 없이 바로 계산한다.
+     ⚠️ 모집단 전원이 **이미 계산돼 있을 때도** 바로 띄운다 — 하이(독)가 범위 전건을 집계한 직후
+        같은 탭이 「집계 계산」 버튼만 보여 주면, 운영자는 하이가 말한 숫자와 화면의 빈 분포를 동시에 본다
+        (하이가 이동 신호에 cap=0을 실어 모집단까지 맞춰 보내므로, 여기서 계산할 것이 남아 있지 않다). */
+  const warmAll = take.length > 0 && take.every((c) => !!_HMO.row[c]);
+  const auto = (cap === 0 ? codes.length : Math.min(codes.length, cap)) <= 2 || warmAll;
+  const [st, setSt] = React.useState({ key, rows: [], run: auto });
   React.useEffect(() => { setSt({ key, rows: [], run: auto }); }, [key]);
   React.useEffect(() => {
     if (!st.run || st.key !== key || st.rows.length >= take.length) return;
@@ -607,7 +623,7 @@ function HmoUnitStats({ scope, R, period }) {
         {R.rows.length ? (<div style={{ fontSize: 12.2, lineHeight: 2 }}>
           접촉 락(연락 금지) <b style={{ color: "#64748B" }}>{S.held.toLocaleString()}명</b> · 첫 연결 대기 <b style={{ color: HMO_C.cyan }}>{S.ready.toLocaleString()}명</b><br />
           하이 신호 도래 <b style={{ color: HMO_C.blue }}>{S.signals.toLocaleString()}명</b> · 고위험 관리 <b style={{ color: HMO_C.red }}>{S.riskHi.toLocaleString()}명</b><br />
-          정체 <b style={{ color: HMO_C.stall }}>{S.stall.toLocaleString()}명</b>({S.n ? Math.round(S.stall / S.n * 100) : 0}%) · 평균 체류 {S.stallDays != null ? S.stallDays + "일" : "-"}
+          정체 <b style={{ color: HMO_C.stall }}>{S.stall.toLocaleString()}명</b>({hmoaPctKo(S.stall, S.n)}) · 평균 체류 {S.stallDays != null ? S.stallDays + "일" : "-"}
         </div>) : <HmoProgress R={R} label="접촉 상태 계산" />}
       </HmoBox>
 
@@ -636,7 +652,7 @@ function HmoUnitStats({ scope, R, period }) {
               <div style={{ fontSize: 9.6, color: "#94A3B8" }}>{m.n.toLocaleString()}</div>
             </div>))}
           </div>
-          <div style={{ fontSize: 12, color: "#475569", marginTop: 6 }}>{period}개월 합 <b>{advSum.toLocaleString()}건</b> · 담당 {S.n.toLocaleString()}명 대비 전진율 <b>{S.n ? Math.round(advSum / S.n * 100) : 0}%</b></div>
+          <div style={{ fontSize: 12, color: "#475569", marginTop: 6 }}>{period}개월 합 <b>{advSum.toLocaleString()}건</b> · 담당 {S.n.toLocaleString()}명 대비 전진율 <b>{hmoaPctKo(advSum, S.n)}</b></div>
         </div>) : <HmoProgress R={R} label="전진 추이 계산" />}
       </HmoBox>
 
@@ -649,7 +665,7 @@ function HmoUnitStats({ scope, R, period }) {
             <b style={{ width: 28, textAlign: "right", fontSize: 11.4 }}>{c.n}</b></div>))}
           <div style={{ fontSize: 11.8, color: "#475569", marginTop: 5, lineHeight: 1.8 }}>
             기록 <b>{res.n}건</b> · 수락률 {res.acceptRate != null ? res.acceptRate + "%" : "-"} · 후속 약속 {res.followUps}건<br />
-            ⭐ D2 골든타임 전달 체크 {res.gRows}건 중 5칸 완주 <b>{res.gFull}건</b>{res.gRows ? `(${Math.round(res.gFull / res.gRows * 100)}%)` : ""}
+            ⭐ D2 골든타임 전달 체크 {res.gRows}건 중 5칸 완주 <b>{res.gFull}건</b>{res.gRows ? `(${hmoaPctKo(res.gFull, res.gRows)})` : ""}
           </div>
         </div>) : <div className="hmonote">이 단위에서 아직 기록된 결과가 없어요 — 프로가 통화 후 「결과 남기기」를 누르면 여기 쌓입니다(가공·추정 없음).</div>}
       </HmoBox>
@@ -772,7 +788,7 @@ function HmoProStageList({ row, onClose, initStage }) {
           <span style={{ fontSize: 11, color: HMO_C.mut, whiteSpace: "nowrap" }}>{c.band} · {c.sex} · {c.region ? c.region.sido + " " + c.region.sgg : "-"}</span>
           <span className="hmopill" style={{ background: c.status.bg, color: c.status.c }}>{c.status.ko}</span>
           {c.stage.stalled ? <span className="hmopill" style={{ background: "#FFF4E8", color: "#C2410C" }}>{c.stage.stalledDays}일 정체</span> : null}
-          <span style={{ fontSize: 11, color: "#475569" }}>건강 {c.hb ? c.hb.grade + " · 위험밴드 " + c.hb.band : "-"}</span>
+          <span style={{ fontSize: 11, color: "#475569" }}>건강 {c.hb ? c.hb.grade + " · 위험밴드 " + (c.hb.band === "—" ? "해당 없음" : c.hb.band) : "-"}</span>
           <span style={{ fontSize: 11, color: HMO_C.mut, flex: 1, minWidth: 140 }}>{c.hi}</span>
         </div>))}
         <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 6 }}>
@@ -847,7 +863,7 @@ function HmoStageBoard({ scope, R, picked, onPick, adm }) {
         <HmoDef>평균 체류일 = 정체 회원의 체류일 평균(cohortStageOf.stalledDays) · 정체 비율 = 정체 회원 ÷ 담당 회원 · 접촉 락 = D1 검진결과 수령 전 — 셋 다 담당 회원 전건을 <b>단계 판정해 센 실판정값</b>입니다(추정 없음).</HmoDef>
         {live ? (<div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12.2 }}>
           {[["평균 체류일(정체)", (S.stallDays != null ? S.stallDays + "일" : "-"), HMO_C.warn],
-            ["정체 비율", (S.n ? Math.round(S.stall / S.n * 100) : 0) + "%", HMO_C.stall],
+            ["정체 비율", hmoaPctKo(S.stall, S.n), HMO_C.stall],
             ["정체 인원", S.stall.toLocaleString() + "명", HMO_C.stall],
             ["접촉 락", S.held.toLocaleString() + "명", "#64748B"]].map(([k, v, c], i) => (
             <div key={i}><b style={{ fontSize: 16, color: c, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.4, color: HMO_C.mut }}>{k}</div></div>))}
@@ -862,6 +878,46 @@ function HmoStageBoard({ scope, R, picked, onPick, adm }) {
       <HmoProTable R={R} scope={scope} onPick={onPick} />
     </HmoBox>
   </div>);
+}
+
+/* ④-0 선택 단위의 「오늘」 — **하이(독)와 같은 함수(hmoaFulfil) 하나로 계산한다.**
+   ⚠️⚠️ 지금까지 ④ 탭에는 이행율 블록이 아예 없었고, ④의 다른 상자들은 선택 범위(scope)가 아니라
+      관리 범위(adm)만 봤다. 그래서 하이가 「은평지점 … 발행 28건」이라고 답하면서 「④ 탭으로 맞췄어요」라고
+      적었는데, 같은 순간 화면 ④는 「강북지역단 … 460건」을 보여 줬다(실측 2H0001) — 운영자가 한 화면에서
+      서로 다른 두 숫자를 보는, 이 화면이 가장 경계해 온 종류다.
+      → 이행율·발행·열람은 **선택 단위**로 이 상자가 맡고, 정의문·분모·분자는 하이와 한 글자도 갈라지지
+        않게 같은 함수에서 나오게 한다(정의가 둘이면 한쪽만 고쳐져 숫자가 갈라진다 — ops-console 규약 ②). */
+function HmoFulfilScoped({ scope }) {
+  const pros = hmoScopePros(scope);
+  const codes = pros.map((p) => p.code);
+  const key = codes.join(",");
+  const d = hmoaToday();
+  /* 로스터 조립은 프로당 약 33ms라 지점(≤12명)은 그대로 돌고, 그보다 넓으면 버튼으로 한 번 더 받는다 */
+  const [force, setForce] = React.useState(false);
+  React.useEffect(() => { setForce(false); }, [key]);
+  const F = React.useMemo(() => hmoaFulfil(pros, d, force), [key, d, force]);
+  const op = React.useMemo(() => hmoaOpened(codes, d), [key, d]);
+  const sec = Math.max(1, Math.round(codes.length * 0.033));
+  const KP = [["오늘 발행", F.issued.toLocaleString() + "건"], ["결과 남김", F.num.toLocaleString() + "건"],
+    ["이행율", F.pct == null ? "-" : F.pct + "%"], ["지시서 열람", op + "/" + codes.length + "명"]];
+  return (<HmoBox t={<><Target size={14} color={HMO_C.warn} /> 오늘의 지시서 이행율 — {hmoScopeLabel(scope)}</>}
+    tag={F.strict ? "로스터 실집계" : "교집합 미확인"} tagC={F.strict ? HMO_TAG_FULL : HMO_TAG_SAMP}>
+    <HmoDef>{F.strict
+      ? <>분모 = <b>오늘 발행된 카드</b> = 지금 보드에 남은 카드({F.live.toLocaleString()}건) + 오늘 결과로 내려간 카드({F.num.toLocaleString()}건) · 분자 = 오늘자 결과 7코드 중 <b>그 프로의 담당 회원</b>인 행(회원 중복은 1건). 결과를 남긴 카드는 그날 로스터에서 내려가므로(R7 완결 · R1 D+7 재큐 · R3 쉬어가기 · R5 번호 확인) 둘을 더한 것이 오늘 발행분입니다 — 분자가 분모에 들어 있어 <b>100%를 넘을 수 없습니다</b>. 라이브 조립 {F.ms}ms · 프로 {F.pros}명.</>
+      : <>분모 = 배치 스냅샷의 사번별 오늘 발행 건수 합 · 분자 = 오늘자 결과 7코드 행 수. 프로 {F.pros}명(로스터 조립 상한 {HMOA_ROSTER_MAX}명)이라 <b>담당 회원과의 교집합을 확인하지 않았습니다</b> — 담당 밖·전일 카드 기록이 분자에 섞일 수 있어 비율은 100%로 캡해 적습니다.</>}
+    </HmoDef>
+    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12.2 }}>
+      {KP.map(([k, v], i) => (<div key={i}><b style={{ fontSize: 16, color: HMO_C.navy, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.4, color: HMO_C.mut }}>{k}</div></div>))}
+    </div>
+    {F.strict && F.outside ? <div className="hmonote">오늘자 기록 중 <b>{F.outside.toLocaleString()}건</b>은 그 프로의 담당 회원이 아니어서 분자·분모 어디에도 넣지 않았습니다(담당 밖 기록).</div> : null}
+    {F.strict && F.snapIssued !== F.issued ? <div className="hmonote">배치 스냅샷의 오늘 발행 합은 {F.snapIssued.toLocaleString()}건입니다 — 라이브 조립과 다른 이유는 ①완결된 카드 자리에 다른 후보가 채워지거나 ②스냅샷 기준일이 오늘과 다르기 때문입니다(온디맨드 조립이라 「발행 로그」가 따로 없고, 화면이 대신 추정하지 않습니다).</div> : null}
+    {F.over ? <div className="hmonote">⚠️ 오늘자 기록 {F.todayRows.toLocaleString()}건 &gt; 스냅샷 발행 {F.snapIssued.toLocaleString()}건 — 분모 밖 기록이 섞여 있습니다. 아래 버튼으로 담당 교집합까지 다시 재어 보세요.</div> : null}
+    {!F.strict && codes.length > 0 && codes.length <= HMOA_SLOW
+      ? <div style={{ marginTop: 7 }}><button className="hmobtn pri" onClick={() => setForce(true)}><Gauge size={12} style={{ verticalAlign: -2 }} /> 로스터·담당 교집합으로 정확히 계산(프로 {codes.length}명 · 약 {sec}초)</button>
+        <span className="hmonote" style={{ marginLeft: 7 }}>누르면 분모도 로스터 기준으로 바뀝니다 — 그 사이 화면이 잠시 멈춥니다.</span></div>
+      : null}
+    <div className="hmonote">이행 = 프로가 「결과 남기기」로 7코드를 남긴 것입니다(사번별 저장 키). 열람은 Today 보드가 1회 노출될 때 남는 프로 1/0 플래그라서 「몇 건을 봤나」는 셀 수 없습니다. 기록은 프로 각자의 브라우저 localStorage에 쌓이므로 지금 수치는 <b>이 기기에 모인 기록 기준</b>이고, 실운영에서는 서버 집계로 바뀌어야 합니다. 독(하이)에게 「오늘의 지시서 이행율」이라고 물으셔도 <b>같은 함수</b>로 계산해 같은 수치가 나옵니다.</div>
+  </HmoBox>);
 }
 
 /* ═══════════════════ ④ 배치·배분 관제(기존 ⑩ 재구성) ═══════════════════ */
@@ -976,7 +1032,9 @@ function HmoBatchScoped({ adm }) {
     </HmoBox>
 
     <HmoBox t={<><Gauge size={14} color={HMO_C.blue} /> 부하 균형 — {branch ? "프로별 담당" : "지점별 프로당 담당"}</>} tag="범위 전수" tagC={HMO_TAG_FULL}>
-      <HmoDef>{branch ? "프로 1명당 담당 회원 수(배치 스냅샷 managed)" : "지점 담당 합 ÷ 그 지점 프로 수"} · 배율은 <b>이 범위 평균({avg.toLocaleString()}명/프로)</b> 대비입니다 — <b>전국 평균이 아닙니다</b>(전국 평균은 본사 범위에서만 표기). 1.0에서 멀수록 재배속 검토 대상이지만, 이 화면에서 배분을 바꾸지는 않습니다.</HmoDef>
+      {/* 배율 정의문은 하이(hmoaLoadDef)와 **같은 함수**에서 꺼낸다 — 전에는 양쪽이 각자 「이 범위 평균 대비」라고
+          적으면서 분모가 달라(선택 단위 평균 vs 관리 범위 평균) 같은 지점 배율이 1.45와 1.09로 갈렸다. */}
+      <HmoDef>{hmoaLoadDef(branch ? "프로 1명당 담당 회원 수(배치 스냅샷 managed)" : "지점 담당 합 ÷ 그 지점 프로 수", hmoScopeLabel(hmoAdmRoot(adm)), avg)} 1.0에서 멀수록 재배속 검토 대상이지만, 이 화면에서 배분을 바꾸지는 않습니다.</HmoDef>
       <div style={{ maxHeight: 210, overflowY: "auto" }}>
         {rows.map((r) => (<HmoBarRow key={r.k} label={r.label} n={r.per} max={maxPer}
           color={ratio(r.per) >= 1.2 ? HMO_C.stall : ratio(r.per) <= 0.82 ? "#60A5FA" : HMO_C.cyan}
@@ -1034,44 +1092,54 @@ function hmoScopeMemberIds(adm) {
   _HMO.mids[k] = r;
   return r;
 }
-function HmoCycleOps({ adm }) {
+/* 사이클 집계 — **화면과 하이(독)가 같은 하나를 쓴다.**
+   전에는 이 계산이 HmoCycleOps의 useMemo 안에 있어서, 독에서 「T5 동의율」을 물으면 같은 정의를 한 번 더
+   짜야 했다(정의가 둘이면 한쪽만 고쳐져서 숫자가 갈라진다 — ops-console 규약 ②). 그래서 순수 함수로
+   떼어내 모듈 캐시(_HMO.cycle)에 담는다. 호출자는 화면이든 독이든 같은 칸을 본다. */
+/* 이미 돌려 둔 사이클 집계가 있으면 그것만 돌려준다(없으면 null — 여기서 계산하지 않는다).
+   하이가 「제공 DB 무결성」처럼 **그 집계 안에 들어 있는 값**을 물을 때, 화면이 이미 만든 캐시를
+   재사용하기 위한 창구다. 범위 키(hmoAdmKey)로 칸이 나뉘어 있어 앞 사람의 전국 숫자가 남지 않는다. */
+function hmoCycleCached(adm) { return _HMO.cycle[hmoAdmKey(adm)] || null; }
+function hmoCycleAgg(adm) {
   const hq = !adm || adm.role === "hq";
   const ckey = hmoAdmKey(adm);
-  const M = React.useMemo(() => {
-    if (_HMO.cycle[ckey]) return _HMO.cycle[ckey];
-    const dist = {}, seg = {}; let n2Yes = 0, t5plus = 0, recov = 0, uncov = 0, n = 0;
-    /* 모집단 — 본사는 전국 인덱스(1·26·51…), 그 밖은 범위 안 담당 회원 인덱스에서 균등 추출.
-       ⚠️ step을 함께 내보낸다. 범위가 작은 지점은 step === 1이 되어 **전수**가 되는데, 정의문이
-          「균등 추출해(463명)」이라고 적어서 추출한 적 없는 숫자를 추출이라고 소개했다(실측: ids 600 · step 1). */
-    let draw = [], src = null, step = HMO_CYCLE_STEP;
-    if (hq) { for (let i = 1; i <= HMO_CYCLE_N; i += HMO_CYCLE_STEP) draw.push(i); }
-    else {
-      src = hmoScopeMemberIds(adm);
-      step = Math.max(1, Math.ceil(src.ids.length / HMO_CYCLE_DRAWS));
-      for (let j = 0; j < src.ids.length; j += step) draw.push(src.ids[j]);
-    }
-    try {
-      draw.forEach((i) => {
-        const cy = (typeof cycleOf === "function") ? cycleOf(i) : null;
-        if (!cy || !cy.t) return;
-        n++; dist[cy.t] = (dist[cy.t] || 0) + 1;
-        if (["T5", "T6", "T7", "T8"].indexOf(cy.t) >= 0) { t5plus++; if (typeof consentHas === "function" && consentHas("n2", i)) n2Yes++; }
-        if (cy.secondGolden) { uncov++; if (typeof consentHas === "function" && consentHas("n2", i)) recov++; }
-        const g = (typeof gSegOf === "function") ? gSegOf(i) : null;
-        if (g && g.top) seg[g.top] = (seg[g.top] || 0) + 1;
-      });
-    } catch (e) {}
-    /* 제공 DB 무결성(hyFeedScan)은 전국 피드의 **스키마** 검사라 조직 축이 없다 — 본사 범위에서만 띄운다 */
-    let feed = null;
-    if (hq) { try { feed = (typeof hyFeedScan === "function") ? hyFeedScan(300) : null; } catch (e) { feed = null; } }
-    /* draw N명 중 판정 M명 / 미판정 N−M명 — 이 셋을 **같이** 들고 나간다.
-       전에는 n(판정)만 내보내서, 600명을 전수로 돌렸는데 463명이라고만 적혔다(미판정 137명이 조용히 빠졌다).
-       미판정 사유는 하나다 — cycleOf가 검진 예약·검진 이력을 못 찾아 `t: null`(「사이클 전」)을 돌려주는 경우. */
-    const out = { dist, seg, n2Yes, t5plus, recov, uncov, n, feed, hq, src,
-      drawN: draw.length, unjudged: draw.length - n, step, full: step === 1 };
-    _HMO.cycle[ckey] = out;
-    return out;
-  }, [ckey]);
+  if (_HMO.cycle[ckey]) return _HMO.cycle[ckey];
+  const dist = {}, seg = {}; let n2Yes = 0, t5plus = 0, recov = 0, uncov = 0, n = 0;
+  /* 모집단 — 본사는 전국 인덱스(1·26·51…), 그 밖은 범위 안 담당 회원 인덱스에서 균등 추출.
+     ⚠️ step을 함께 내보낸다. 범위가 작은 지점은 step === 1이 되어 **전수**가 되는데, 정의문이
+        「균등 추출해(463명)」이라고 적어서 추출한 적 없는 숫자를 추출이라고 소개했다(실측: ids 600 · step 1). */
+  let draw = [], src = null, step = HMO_CYCLE_STEP;
+  if (hq) { for (let i = 1; i <= HMO_CYCLE_N; i += HMO_CYCLE_STEP) draw.push(i); }
+  else {
+    src = hmoScopeMemberIds(adm);
+    step = Math.max(1, Math.ceil(src.ids.length / HMO_CYCLE_DRAWS));
+    for (let j = 0; j < src.ids.length; j += step) draw.push(src.ids[j]);
+  }
+  try {
+    draw.forEach((i) => {
+      const cy = (typeof cycleOf === "function") ? cycleOf(i) : null;
+      if (!cy || !cy.t) return;
+      n++; dist[cy.t] = (dist[cy.t] || 0) + 1;
+      if (["T5", "T6", "T7", "T8"].indexOf(cy.t) >= 0) { t5plus++; if (typeof consentHas === "function" && consentHas("n2", i)) n2Yes++; }
+      if (cy.secondGolden) { uncov++; if (typeof consentHas === "function" && consentHas("n2", i)) recov++; }
+      const g = (typeof gSegOf === "function") ? gSegOf(i) : null;
+      if (g && g.top) seg[g.top] = (seg[g.top] || 0) + 1;
+    });
+  } catch (e) {}
+  /* 제공 DB 무결성(hyFeedScan)은 전국 피드의 **스키마** 검사라 조직 축이 없다 — 본사 범위에서만 띄운다 */
+  let feed = null;
+  if (hq) { try { feed = (typeof hyFeedScan === "function") ? hyFeedScan(300) : null; } catch (e) { feed = null; } }
+  /* draw N명 중 판정 M명 / 미판정 N−M명 — 이 셋을 **같이** 들고 나간다.
+     전에는 n(판정)만 내보내서, 600명을 전수로 돌렸는데 463명이라고만 적혔다(미판정 137명이 조용히 빠졌다).
+     미판정 사유는 하나다 — cycleOf가 검진 예약·검진 이력을 못 찾아 `t: null`(「사이클 전」)을 돌려주는 경우. */
+  const out = { dist, seg, n2Yes, t5plus, recov, uncov, n, feed, hq, src,
+    drawN: draw.length, unjudged: draw.length - n, step, full: step === 1 };
+  _HMO.cycle[ckey] = out;
+  return out;
+}
+function HmoCycleOps({ adm }) {
+  const ckey = hmoAdmKey(adm);
+  const M = React.useMemo(() => hmoCycleAgg(adm), [ckey]);   /* 집계는 hmoCycleAgg 하나 — 독도 같은 칸을 본다 */
   const T = ["T0", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"];
   const maxT = Math.max(1, ...T.map((t) => M.dist[t] || 0));
   const segTop = Object.keys(M.seg).sort((a, b) => M.seg[b] - M.seg[a]).slice(0, 6);
@@ -1307,6 +1375,7 @@ function HmOpsCenterSection({ onGo }) {
   const [tab, setTab] = React.useState(0);
   const [scope, setScopeRaw] = React.useState(() => hmoAdmRoot(hmoAdmin()));
   const [picked, setPicked] = React.useState(null);
+  const scRef = React.useRef(null);               /* 렌더마다 갑신하는 현장 범위 사본(이벤트 핸들러용 · 쓰기 통로 아님) */
   const [metric, setMetric] = React.useState("managed");
   const [period, setPeriod] = React.useState(6);
   const [cap, setCap] = React.useState(20);
@@ -1327,6 +1396,38 @@ function HmOpsCenterSection({ onGo }) {
      화면 상태가 범위 밖 값을 들고 있으면 조직 경로·제목이 범위 밖 이름을 적는다. */
   const setScope = (s) => { setScopeRaw(hmoScopeClamp(s, adm)); setPicked(null); };
   const enter = () => { setAdmTick((t) => t + 1); setScopeRaw(hmoAdmRoot(hmoAdmin())); setPicked(null); };
+  /* ── 하이(독)에서 온 보기 이동 — 전역 CustomEvent 하나(hifin:hmops) ──────────────────────
+     형 지시(2026-10-05 ⑦ ①): 「은평지점 현황 보여줘」라고 말하면 **그 화면을 띄워 준다**.
+     ⚠️ 받는 쪽 가드는 기존 setScope 하나로 끝난다 — setScope가 hmoScopeClamp를 통과시키고 렌더도 다시
+        clamp를 통과하므로, 어떤 경로로 범위 밖 scope가 들어와도 조용히 관리 범위 뿌리로 되돌아간다.
+     ⚠️ 그래도 **조용한 되돌림에만 의지하지 않는다** — 하이는 색인(이미 직책으로 잘린 것)에서 이름을
+        해석하는 데 성공한 단위에만 이 이벤트를 쏘고, 실패하면 아예 쏘지 않는다(hmOpsAsk.js).
+     ⚠️ sessionStorage·상설 전역 함수는 쓰지 않는다. 관측 전용 화면이라 저장 키를 새로 만들지 않고
+        (새 키는 dataCatalog 등재까지 번진다), `__hifinHmScope`처럼 범위 제한을 우회할 수 있는
+        상설 전역 쓰기 통로도 두지 않는다. 이벤트는 화면이 떠 있는 동안만 받는다.
+     ⚠️ 탭은 detail.tab이 숫자일 때만 바꾼다 — 하이가 탭을 말하지 않았으면 지금 보던 탭을 유지한다
+        (운영자 전환 때도 탭을 되돌리지 않기로 한 기존 결정과 같은 결). */
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const h = (e) => {
+      const d = (e && e.detail) || {};
+      if (d.scope) {
+        const c = hmoScopeClamp(d.scope, hmoAdmin());
+        /* ⚠️ setPicked(null)을 무조건 부르면, 범위는 그대로인 이동(탭만 옮기는 경우)에도 운영자가
+           열어 둔 단계별 명단 패널이 닫힌다(실측). 실제로 범위가 **달라질 때만** 선택을 비운다. */
+        const same = scRef.current && hmoaScopeEq(c, scRef.current);
+        setScopeRaw(c);
+        if (!same) setPicked(null);
+      }
+      if (typeof d.tab === "number" && d.tab >= 0 && d.tab <= 4) setTab(d.tab);
+      /* 모집단(cap)도 **허용값만** 받는다(tab을 0~4로 검사하는 것과 같은 방식).
+         하이가 범위 전건을 집계해 답했는데 화면이 표본 20명으로 자르면, 같은 지표의 두 숫자가
+         한 화면에 선다(실측: 하이 D1 5,347 / 화면 D1 1,553). */
+      if (typeof d.cap === "number" && [0, 20, 60].indexOf(d.cap) >= 0) setCap(d.cap);
+    };
+    window.addEventListener("hifin:hmops", h);
+    return () => window.removeEventListener("hifin:hmops", h);
+  }, []);
   const unlock = () => {
     try { if (typeof hmoAdminSessionClear === "function") hmoAdminSessionClear(); } catch (e) {}
     try { if (typeof guardLog === "function") guardLog("hmops_unlock", "운영본부 범위 잠금 해제"); } catch (e) {}
@@ -1335,6 +1436,7 @@ function HmOpsCenterSection({ onGo }) {
   /* 렌더에 쓰는 범위는 **항상 clamp를 통과한 값**이다 — state가 어떤 이유로든 범위 밖을 들고 있어도
      라벨·조직 경로·집계가 같은 하나를 본다(라벨만 맞추는 수선은 전국 데이터를 화면에 남겨 둔다). */
   const sc = hmoScopeClamp(scope, adm);
+  scRef.current = sc;                             /* 이벤트 핸들러가 「지금 범위」와 들어온 범위를 비교할 수 있게 둔 사본 */
   const codes = React.useMemo(() => ((admin && adm) ? hmoScopePros(sc).map((p) => p.code) : []),
     [admin, admCode, sc.level, sc.dan, sc.branch, sc.code]);
   const R = useHmoRows(codes, sc.level === "pro" ? 0 : cap);
@@ -1345,6 +1447,11 @@ function HmOpsCenterSection({ onGo }) {
     const r = _HMO.row[sc.code];
     if (r) setPicked(r);
   }, [admin, admCode, sc.level, sc.code, R.rows.length]);
+  /* 지금 보고 있는 범위·탭을 관측용 한 칸에 적는다 — 하이가 「이동 전 범위로 돌아가기」 버튼을 만들 때만
+     읽는다(쓰기 통로가 아니다). 인증 전에는 null로 둬서 미인증 상태의 선택이 남지 않게 한다. */
+  React.useEffect(() => {
+    if (admin && adm) hmoScopeNowSet(sc, tab); else hmoScopeNowSet(null, null);
+  }, [admin, admCode, sc.level, sc.dan, sc.branch, sc.code, tab]);
   if (!admin) {
     return (<div className="hmowrap"><HmoStyle />
       <div className="hmocard" style={{ maxWidth: 580 }}>
@@ -1402,7 +1509,7 @@ function HmOpsCenterSection({ onGo }) {
       </HmoBox>)}
       {tab === 1 && <HmoUnitStats scope={sc} R={R} period={period} />}
       {tab === 2 && <HmoStageBoard scope={sc} R={R} picked={picked} onPick={setPicked} adm={adm} />}
-      {tab === 3 && (<div>{hqRole ? <HmoBatchOps /> : <div><HmoBatchSystem /><HmoBatchScoped adm={adm} /></div>}<HmoCycleOps adm={adm} /></div>)}
+      {tab === 3 && (<div><HmoFulfilScoped scope={sc} />{hqRole ? <HmoBatchOps /> : <div><HmoBatchSystem /><HmoBatchScoped adm={adm} /></div>}<HmoCycleOps adm={adm} /></div>)}
       {tab === 4 && <HmoToolbox scope={sc} onScope={setScope} metric={metric} onMetric={setMetric} period={period} onPeriod={setPeriod} cap={cap} onCap={setCap} R={R} adm={adm} />}
     </div>
     <div className="hmonote" style={{ textAlign: "center", padding: "12px 0 4px" }}>

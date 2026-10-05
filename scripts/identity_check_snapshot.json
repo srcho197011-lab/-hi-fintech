@@ -12,7 +12,7 @@
   },
   "nameTok": "pt-e69eb1542d250d3490a8",
   "emailTok": "pt-0427b52a1a36558f9a55",
-  "emailKeys": 9,
+  "emailKeys": 8,
   "nameKeys": 0,
   "selfVault": {
     "checkups": 2,
@@ -33,5 +33,5 @@
     }
   ],
   "fails": 0,
-  "secs": 58.1
+  "secs": 59
 }

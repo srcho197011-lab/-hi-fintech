@@ -26,9 +26,19 @@ function hiBranchArm(snap) {
   const c = (snap && (snap.checkup || snap.s1)) || {};
   return hiBranchSave({ stage: "offered", latestYear: c.latestYear, currentYear: c.currentYear,
     pastYears: (c.pastYears || []).slice(), booked: !!c.currentYearBooked, bookingInDays: c.bookingInDays,
+    /* 추이 자격 조건(간격·기관)도 함께 들고 간다 — hiStateModel과 같은 기준으로 판단하기 위함 */
+    recordGapYears: c.recordGapYears, providerCount: c.providerCount,
     bookingDate: c.bookingDate, ambig: 0 });
 }
 
+/* 연도별 「추이」를 말할 자격 — 2시점 이상 + 간격 3년 이하 + 측정기관 동일(hiStateModel과 같은 기준) */
+function _hiBrTrendOk(st) {
+  const ys = (st && st.pastYears) || [];
+  if (ys.length < 2) return false;
+  if (st.recordGapYears != null && st.recordGapYears > 3) return false;
+  if (st.providerCount != null && st.providerCount > 1) return false;
+  return true;
+}
 /* ── 응답 해석 ── */
 const HI_BR_NO = /(나중|다음에|아니|안\s*볼|안\s*할|괜찮|생각해|보류|천천히|패스|싫)/;
 const HI_BR_YES = /(^|\s)(네|넹|예|응|어|그래|좋아|좋습니다|좋아요|부탁|해줘|해주세요|보여|알려|okay|ok|오케이|콜|ㅇㅇ|진행|할게|할래|하자)/;
@@ -91,7 +101,8 @@ function hiBranchAnalysis(m, st, opts) {
   } else {
     lines.push(easy ? "자세한 숫자는 리포트 화면에서 크게 보여드릴게요." : `${y}년 결과의 항목별 수치와 정상 범위는 정밀리포트 화면에서 바로 보실 수 있어요 — 어려운 용어는 제가 쉬운 말로 풀어드릴게요.`);
   }
-  if ((st.pastYears || []).length >= 2) lines.push(`${st.pastYears[0]}~${st.pastYears[st.pastYears.length - 1]}년 기록이 있어서 연도별 추이도 함께 보여드릴 수 있어요.`);
+  if (_hiBrTrendOk(st)) lines.push(`${st.pastYears[0]}~${st.pastYears[st.pastYears.length - 1]}년 기록이 있어서 연도별 추이도 함께 보여드릴 수 있어요.`);
+  else if ((st.pastYears || []).length >= 2) lines.push(`${(st.pastYears || []).join("·")}년 기록이 있지만 ${st.recordGapYears || "여러"}년 간격${(st.providerCount || 0) > 1 ? "에 측정기관도 달라" : ""}라서 연도별 추이는 산출하지 않고 시점별 판정으로 보여드려요.`);
   const analysis = lines.slice();          // 여기까지가 결과 해석 — 담당은 A1(AI 주치의)
   const ask = [];
   const buttons = [];
@@ -104,7 +115,7 @@ function hiBranchAnalysis(m, st, opts) {
     buttons.push.apply(buttons, nx.buttons);
   }
   hiBranchSave(Object.assign(st, { stage: stage, ambig: 0 }));
-  if ((st.pastYears || []).length >= 2 && buttons.length < 3) buttons.push("추이 비교 보여줘");
+  if (_hiBrTrendOk(st) && buttons.length < 3) buttons.push("추이 비교 보여줘");
 
   /* [Phase A] 결과 해석은 A1이 담당 — 하이가 인계하고, 다음 행동 제안은 하이가 되돌려받는다 */
   let parts = null;
@@ -225,7 +236,7 @@ function hiBranchHandle(rawText, norm, m) {
     const wantBook = HI_BR_BOOK.test(t) && !(askYear && askYear < cy && HI_BR_PAST.test(t));
     if (wantBook && !wantPast) return hiBranchBook(m, st);
     if (wantPast) return hiBranchAnalysis(m, st, { year: (askYear && (st.pastYears || []).indexOf(askYear) >= 0) ? askYear : y });
-    if (HI_BR_TREND.test(t) && (st.pastYears || []).length >= 2) return hiBranchAnalysis(m, st);
+    if (HI_BR_TREND.test(t) && (st.pastYears || []).length >= 2) return hiBranchAnalysis(m, st);   /* 시점 비교 요청 — 추이 자격은 _hiBrTrendOk가 문구로 가린다 */
     if (HI_BR_PREP.test(t) && st.booked) return hiBranchPrep(st);
 
     /* 단계별 예/아니오 — 거절이 먼저(“나중에 볼게요”가 수락으로 읽히지 않게) */

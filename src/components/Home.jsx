@@ -246,18 +246,25 @@ function MyHealthHero({ onGo }) {
   const go = onGo || (() => {}); void go;
   const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
   const authU = (typeof authCurrent === "function") ? authCurrent() : null;
-  const R = dm ? demoReport(dm) : null;
-  const nm = dm ? dm.name : (authU && authU.name ? authU.name : "조성래");
-  const regA = R ? R.reg : "54.1";
-  const bioA = R ? R.bio : "52.5";
+  /* [실측 통일 2026-10-05] 본인 계정도 demoReport를 거친다 — 전에는 dm이 없으면 R=null로 두고
+     폴백 상수(52.5·37·0.97·좋음)를 그려서, 같은 수치가 두 군데(여기·core.jsx PT)에 하드코딩돼 있었다.
+     지금은 양쪽 모두 mcp_josungrae.json 하나를 읽는다. */
+  const me = dm || ((typeof selfMember === "function") ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
+  const R = (me && typeof demoReport === "function") ? (() => { try { return demoReport(me); } catch (e) { return null; } })() : null;
+  const nm = me ? me.name : (authU && authU.name ? authU.name : "조성래");
+  const regA = R ? R.reg : (typeof PT !== "undefined" ? PT.regAge : "");
+  const bioA = R ? R.bio : (typeof PT !== "undefined" ? PT.bioAge : "");
+  const rankA = R ? R.agingRank : (typeof PT !== "undefined" ? PT.agingRank : "");
+  const spdA = R ? R.agingSpeed : (typeof PT !== "undefined" ? PT.agingSpeed : "");
+  const evalA = R ? R.evalLabel : (typeof PT !== "undefined" ? PT.overall : "");
   return (
     <>
       <div className="profile">
         <span className="pa">{nm[0]}</span>
-        <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{R ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {R ? `${nm}님 시연용 체험 회원 · 맞춤 건강분석 적용` : `${PT.addr} · 하이핀 정밀분석 기준`}</div></div>
+        <div><div className="pn">{nm} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>{regA}세{dm ? "" : " · 남"}</span></div><div className="pmeta"><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {dm ? `${nm}님 시연용 체험 회원 · 맞춤 건강분석 적용` : `${PT.addr} · ${(R && R.src) || "하이핀 정밀분석 기준"}`}</div></div>
         <div className="pstats">
-          {[[regA + "세", "주민등록"], [bioA + "세", "생체나이"], [(R ? R.agingRank : 37) + "등", "노화등수"], [(R ? R.agingSpeed : 0.97) + "배", "노화속도"]].map(([v, k]) => (<div className="pstat" key={k}><div className="v">{v}</div><div className="k">{k}</div></div>))}
-          <div className="pstat"><span className="tag-w" style={{ color: R ? R.cg[1] : "#16A34A", background: R ? R.cg[2] : "#E7F8EE" }}>종합 {R ? R.evalLabel : "좋음"}</span><div className="k" style={{ marginTop: 6 }}>생체나이</div></div>
+          {[[regA + "세", "주민등록"], [bioA + "세", "생체나이"], [rankA + "등", "노화등수"], [spdA + "배", "노화속도"]].map(([v, k]) => (<div className="pstat" key={k}><div className="v">{v}</div><div className="k">{k}</div></div>))}
+          <div className="pstat"><span className="tag-w" style={{ color: R ? R.cg[1] : "#16A34A", background: R ? R.cg[2] : "#E7F8EE" }}>종합 {evalA}</span><div className="k" style={{ marginTop: 6 }}>생체나이</div></div>
         </div>
       </div>
     </>
@@ -365,6 +372,8 @@ function ActivityGauge({ value }) {
 /* ══════════ 활용 스토리 — '결과지를 버리던 남자' (조성래 10년 여정) ══════════
    사업을 숫자가 아닌 삶으로 보여주는 고객 여정. 모든 장면은 이 홈페이지에서 실동작하는 기능 위에 서 있고,
    장면마다 해당 화면 바로가기와 '하이에게 물어보기'로 연결된다. */
+/* 스토리 수치의 단일 소스 — 리포트(mcp_josungrae.json)의 생체나이. 없으면 수치를 빼고 말한다. */
+const _STORY_BIO = (() => { try { const P = selfRealProfile(); return (P && P.biologicalAge != null) ? String(P.biologicalAge) + "세" : ""; } catch (e) { return ""; } })();
 const STORY_SCENES = [
   { era: "프롤로그", title: "뜯지 않은 봉투", c: "#64748B",
     text: ["조성래(54) 씨의 서랍에는 뜯지 않은 건강검진 봉투가 세 장 있습니다. 나쁜 소식일까 봐 — 이유는 그게 전부였습니다.", "3년 전, 오랜 친구 민석은 췌장암을 너무 늦게 발견했습니다. 2년에 한 번 오던 그 봉투를, 민석도 뜯지 않았습니다. 치료비는 가족의 아파트 평수를 줄였고, 이듬해 민석을 데려갔습니다.", "장례식장에서 조 씨는 생각했습니다. '나도 검진 안 받은 지 4년째구나.' 그러나 두려움은 행동이 되지 못했습니다 — 작년까지는."],
@@ -377,7 +386,9 @@ const STORY_SCENES = [
     text: ["'하이'에게 \"검진 예약 도와줘\" 한마디로 검진센터 세 곳이 비교됐고, 예약과 동시에 검진대비보험 전자증권이 NFT로 지갑에 담겼습니다.", "검진을 마친 저녁, 4년 만에 처음 '뜯은' 결과지를 폰으로 찍자 OCR이 12개 항목을 읽어 표준코드(FHIR)로 바꾸고 블록체인에 기록했습니다. \"위변조 없음 ✓ — 이 데이터는 이제 조성래 님의 디지털 자산입니다.\" (1세대·원본 자산)", "버려지던 종이가 배당을 낳는 자산이 됐습니다. 조 씨는 서랍 속 봉투 세 장을 떠올렸습니다 — 저 안에도 자산이 잠들어 있었구나."],
     links: [["데이터 연결 — 사진 한 장, 1분", "onboarding"], ["데이터 금고 — 내 자산 확인", "mywallet"]] },
   { era: "5월", title: "민석의 숫자", c: "#16A34A",
-    text: ["정밀리포트의 생체나이 52.5세 — 나쁘지 않았습니다. 그런데 한 줄이 숨을 멎게 했습니다. '췌장 관리 필요 · 당뇨 위험 주의.' 민석의 병이 시작된 곳이었습니다.", "다음 날 아침 '하이'는 담담했습니다. \"지금은 '위험'이 아니라 '신호'예요. 신호일 때 움직이면, 결과가 달라져요.\" 리포트는 두 번째 자산이 됐고(2세대·분석 자산), 하이가 짚어준 진단비 공백은 월 1.2만 원대 간편보험 가입 3분으로 메웠습니다.", "혈당 영양제는 광고가 아니라 성적표로 골랐습니다 — \"품질 인증: 이 제품 복용 회원군 지표 개선폭 상위 3%.\" 소비 마진의 " + WALLET_SPLIT.earn + "%는 HTK로 적립되고, 그중 30%는 보험료·치료비 전용 지갑에 잠깁니다. 소비할 때마다, 미래의 치료비가 쌓입니다."],
+    /* [실측 통일 2026-10-06] 생체나이 리터럴 제거 — 리포트가 바뀌면 스토리가 조용히 어긋난다.
+       수치는 selfRealProfile()(= mcp_josungrae.json) 한 곳에서 읽는다. */
+    text: ["정밀리포트의 생체나이" + (_STORY_BIO ? " " + _STORY_BIO : "") + " — 나쁘지 않았습니다. 그런데 한 줄이 숨을 멎게 했습니다. '췌장 관리 필요 · 당뇨 위험 주의.' 민석의 병이 시작된 곳이었습니다.", "다음 날 아침 '하이'는 담담했습니다. \"지금은 '위험'이 아니라 '신호'예요. 신호일 때 움직이면, 결과가 달라져요.\" 리포트는 두 번째 자산이 됐고(2세대·분석 자산), 하이가 짚어준 진단비 공백은 월 1.2만 원대 간편보험 가입 3분으로 메웠습니다.", "혈당 영양제는 광고가 아니라 성적표로 골랐습니다 — \"품질 인증: 이 제품 복용 회원군 지표 개선폭 상위 3%.\" 소비 마진의 " + WALLET_SPLIT.earn + "%는 HTK로 적립되고, 그중 30%는 보험료·치료비 전용 지갑에 잠깁니다. 소비할 때마다, 미래의 치료비가 쌓입니다."],
     links: [["나의 건강현황 — 생체나이·위험 리포트", "manage"], ["치료비 케어 — 보장 공백 3분 점검", "insurance"], ["건강쇼핑 — 성적표로 고르는 소비", "shop"]] },
   { era: "7월", title: "세 사람의 지갑", c: "#EA580C",
     text: ["아내(51)의 검진을 예약하고, 우리가족건강관리에 82세 노모를 등록했습니다.", "노모의 지갑에는 NFC 응급태그 — 구조사가 태그를 대면 혈액형·복용약·보호자만 제한 열람되고, 열람 기록은 체인에 남습니다. 노모의 혈압계는 매일 아침 수치를 플랫폼으로 보내기 시작했습니다.", "세 사람의 건강자본이 한 지갑 체계 안에서 함께 자라기 시작했습니다."],

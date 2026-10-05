@@ -90,7 +90,11 @@ function hiKoAge(text) {
 }
 
 const TOOL_RUN = {
-  rep(m) { try { const R = (typeof demoReport === "function") ? demoReport(m) : null; if (!R) return null; return { lines: [`${m.name}님 리포트 요약이에요 — 생체나이 ${R.bio}세(실제보다 ${R.diff > 0 ? "+" : ""}${R.diff}세), 암위험 ${R.cancerTotal}등급(${R.evalLabel}).`, `관리가 필요한 장기: ${R.worstNames.join("·")} · 금년 예상 의료비 ${_won(R.costThis)}, 10년 후 ${_won(R.cost10)}.`] }; } catch (e) { return null; } },
+  /* [실측 통일 2026-10-06] 암위험 등급 라벨은 cgLabel(리포트 「낮은 편」)이다 —
+     합성 경로에서는 evalLabel === cg[0]이라 같았지만, 실측 계정은 종합평가(「좋음」)와
+     암위험 라벨(「낮은 편」)이 다른 값이다. evalLabel을 쓰면 「암위험 4등급(좋음)」처럼
+     건강현황·리포트 카드(「4등급/10 · 낮은 편」)와 어긋난다. */
+  rep(m) { try { const R = (typeof demoReport === "function") ? demoReport(m) : null; if (!R) return null; const _cg = R.cgLabel || (R.cg ? R.cg[0] : "") || R.evalLabel; return { lines: [`${m.name}님 리포트 요약이에요 — 생체나이 ${R.bio}세(실제보다 ${R.diff > 0 ? "+" : ""}${R.diff}세), 암위험 ${R.cancerTotal}등급(${_cg}).`, `관리가 필요한 장기: ${R.worstNames.join("·")} · 금년 예상 의료비 ${_won(R.costThis)}, 10년 후 ${_won(R.cost10)}.`] }; } catch (e) { return null; } },
   gap(m) { try { const g = (typeof analyzeCoverageGap === "function") ? analyzeCoverageGap(m) : null; if (!g) return null; const top = g.gaps.slice(0, 3).map((f) => `${f.sev === "crit" ? "🔴" : "🟠"} ${f.t}`); return { lines: [`보장 충실도 ${g.grade} · ${g.score}점이에요.`, top.length ? "우선 챙길 것: " + top.join(" / ") : "현재 보장이 충실해요."] }; } catch (e) { return null; } },
   sil(m) { try { const ins = (typeof memberInsurance === "function") ? memberInsurance(m) : null; if (!ins) return null; const s = ins.silson; if (!s.enrolled) return { lines: [`${m.name}님은 현재 실손 미가입이에요 — 치료비 안전망이 없어서 4·5세대 신규 가입 검토를 권해요.`] }; return { lines: [`${m.name}님 실손은 ${s.gen}(급여 자기부담 ${s.coGen}·비급여 ${s.coNon})이에요.`, `통원 회당 ${_won(s.outLimit)}·입원 ${_won(s.inLimit)}, 월 보험료 약 ${_won(s.monthly)} · 진단비: ${ins.riders.length ? ins.riders.map((r) => r.cat).join("·") + " 보유" : "미보유"}.`] }; } catch (e) { return null; } },
   oop(m, text) { try { const t = String(text || ""); const kind = /mri/i.test(t) ? "MRI" : /주사/.test(t) ? "비급여주사" : /입원/.test(t) ? "입원" : "도수치료"; const base = { MRI: 500000, 비급여주사: 100000, 입원: 3000000, 도수치료: 100000 }[kind]; const r = (typeof calcOutOfPocket === "function") ? calcOutOfPocket(m, kind, base) : null; if (!r) return null; return { lines: [`${kind} ${_won(base)} 기준, ${r.gen} 실손 적용 시 예상 본인부담은 약 ${_won(r.oop)}이에요.`, r.note] }; } catch (e) { return null; } },
@@ -817,7 +821,8 @@ function agentGreeting() {
     else if (mem.lastQ) parts.push(`${who}님, 다시 오셨네요! 지난번 "${mem.lastQ}" 이야기 이어서 해드릴까요?`);
     else {
       const R = (m && typeof demoReport === "function") ? demoReport(m) : null;
-      if (R && R.hr && R.hr.length) parts.push(`${who}님, 어서 오세요. 검진상 ${R.hr[0]} 위험이 보여서 오늘은 그 관리부터 챙겨드리고 싶어요.`);
+      /* [실측 통일 2026-10-05] 근거는 리포트의 암경고(report.cancerWarn)다 — 「검진상」이 아니라 출처대로 말한다 */
+      if (R && R.hr && R.hr.length) parts.push(`${who}님, 어서 오세요. ${R.selfReal ? "건강분석 리포트에" : "검진상"} ${R.hr[0]} 위험이 보여서 오늘은 그 관리부터 챙겨드리고 싶어요.`);
       else parts.push(`${who}님, 어서 오세요! 오늘은 무엇을 도와드릴까요?`);
     }
   } catch (e) { parts.push(`${who}님, 어서 오세요! 무엇을 도와드릴까요?`); }

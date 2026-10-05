@@ -22,7 +22,22 @@ const { KDCA_KB, HEALTH_CONTENTS, FULL_GRP, FULL_COLLECT, FULL_THIRD, FULL_MARKE
    [H-2 비식별화] 기관 등록번호(reg)와 벤더 표기는 제거했다 — 공개 소스에 남을 이유가 없는
    실제 기관 식별자였다. 검진일·분석일도 금고 기록에서 읽으므로 상수로 두지 않는다.
    화면에 필요한 값은 memberRegion()·demoReport()가 회원 기준으로 제공한다. */
-const PT = { name: "조성래", sexAge: "남 / 54.1세", regAge: 54.1, bioAge: 52.5, agingRank: 37, agingSpeed: 0.97, sido: "서울", sigungu: "은평구", dong: "불광동", addr: "서울특별시 은평구 불광동" };
+/* [실측 통일 2026-10-05] 생체나이·노화등수·노화속도·종합은 더 이상 상수가 아니다 —
+   src/data/mcp_josungrae.json(실측 단일 소스)을 selfRealProfile()로 읽는다. 거주지만 여기서 선언한다. */
+const _PT_REAL = (typeof selfRealProfile === "function") ? selfRealProfile() : null;
+const PT = {
+  name: (_PT_REAL && _PT_REAL.name) || "조성래",
+  sexAge: _PT_REAL ? `${_PT_REAL.sex} / ${_PT_REAL.regAge}세` : "남 / 54.1세",
+  regAge: _PT_REAL ? _PT_REAL.regAge : 54.1,
+  bioAge: _PT_REAL ? _PT_REAL.biologicalAge : 52.5,
+  agingRank: _PT_REAL ? _PT_REAL.agingRank : 37,
+  agingSpeed: _PT_REAL ? _PT_REAL.agingSpeed : 0.97,
+  overall: (_PT_REAL && _PT_REAL.overall) || "좋음",
+  birth: (_PT_REAL && _PT_REAL.birth) || "",
+  checkupDate: (_PT_REAL && _PT_REAL.checkupDate) || "",
+  src: (_PT_REAL && _PT_REAL.src) || "",
+  sido: "서울", sigungu: "은평구", dong: "불광동", addr: "서울특별시 은평구 불광동",
+};
 
 /* ── 회원 거주지역 추정 — 검진센터·병원 '내 주변' 추천용 ──
    demoCurrentUser().addr(있으면 파싱) → 없으면 이름/ID 해시로 결정론적 배정 → 게이트 사용자는 PT(은평구). */
@@ -64,9 +79,10 @@ function memberRegion() {
   } else { sidoFull = "서울특별시"; sgg = "은평구"; }
   return { name, sidoFull, sidoShort: short(sidoFull), sgg, addr: addr || (sidoFull + " " + sgg), exact };
 }
-const ORGANS = [["비만체형", "50.9", "좋음", true], ["심장", "50.7", "좋음", true], ["간", "54.4", "나쁨", false], ["췌장", "56.2", "나쁨", false], ["신장", "53.4", "좋음", true]];
-const DISEASES = [["비만", -24.8, "25.5%"], ["고지혈증", -17.1, "46.4%"], ["고혈압", -3.9, "22.3%"], ["당뇨병", 6.2, "10.9%"], ["허혈심장질환", -5.0, "12.0%"], ["급성심근경색증", -8.9, "8.1%"], ["뇌혈관질환", -3.7, "10.8%"], ["뇌졸중", -4.7, "6.9%"], ["치매", -5.5, "5.9%"]];
-const CANCERS = [["간암", "주의"], ["담낭암", "주의"], ["췌장암", "경고"], ["위암", "주의"], ["대장암", "주의"], ["폐암", "양호"], ["신장암", "주의"], ["방광암", "양호"], ["전립선암", "주의"], ["갑상선암", "주의"]];
+/* [실측 통일 2026-10-05] 장기 5종·질병 9종·암 10종은 mcp_josungrae.json(report.organs/diseaseAll/cancerAll)에서 읽는다 */
+const ORGANS = (() => { const o = (typeof selfRealOrgans === "function") ? selfRealOrgans() : []; return o.length ? o.map(([nm, age, st, good]) => [nm, String(age), st, good]) : []; })();
+const DISEASES = (typeof selfRealDiseases === "function") ? selfRealDiseases() : [];
+const CANCERS = (typeof selfRealCancers === "function") ? selfRealCancers() : [];
 const gradeColor = (g) => g === "경고" ? "#EF4444" : g === "위험" || g === "고위험" ? "#DC2626" : g === "주의" ? "#F59E0B" : "#16A34A";
 const CANCER_DETAIL = [
   { n: "간암", g: "주의", risk: "1.5%", inc: "50대 남성 인구 10만명당 27.1명", do: ["신선·무첨가 커피 섭취(예방 효과)", "곰팡이(아플라톡신) 없는 신선한 식품"], avoid: ["과다 약물복용·검증 안 된 민간요법", "하루 3잔(45g) 이상 알코올"], remember: ["간 수치만으론 조기발견 어려움 → 간초음파 병행", "B/C형 간염·간경변 고위험군 6개월 주기 초음파+AFP"] },
@@ -79,7 +95,9 @@ const CANCER_DETAIL = [
   { n: "방광암", g: "양호", risk: "10.4%", inc: "50대 13.4", do: ["비소 없는 적합한 식수", "녹황색 채소·과일(베타카로틴)"], avoid: ["흡연·간접흡연(주된 요인)", "고무·가죽·인쇄·페인트 화학약품 노출"], remember: ["전이암 생존율 낮아 조기발견 중요", "혈뇨 시 추가 검사"] },
   { n: "전립선암", g: "주의", risk: "5.5%", inc: "50대 8.9", do: ["적정 체중 유지", "라이코펜(토마토)·셀레늄·제니스테인(콩)"], avoid: ["동물성 지방 과다", "흡연·농약·유기용제"], remember: ["남성호르몬 억제제는 주치의 상담 후", "PSA·전립선 초음파 검진"] },
   { n: "갑상선암", g: "주의", risk: "9.8%", inc: "50대 23.0", do: ["십자화과 채소(브로콜리·양배추 등)", "갑상선 질환 정기 검사"], avoid: ["불필요한 목 부위 방사선 촬영", "과체중·비만"], remember: ["무증상 시 일상 검진 비권장", "수질암 가족력 시 RET 유전자 확인"] },
-];
+  /* 예방가이드 문구(do/avoid/remember)는 전 회원 공통 의학정보 —
+     위험도·등급·발생률만 실측 원천(report.cancerAll)에서 덮어쓴다(아래 map). */
+].map((c) => { try { const r = (typeof selfRealCancerOf === "function") ? selfRealCancerOf(c.n) : null; return r ? Object.assign({}, c, { risk: r.risk, g: r.flag, inc: r.inc || c.inc }) : c; } catch (e) { return c; } });
 const WARN_SIGNS = [
   { n: "당뇨병", tag: "위험 ↑", color: "#F59E0B", signs: ["소변을 자주 본다", "체중이 점점 빠진다", "갈증으로 물을 많이 마신다", "자주 허기지고 많이 먹는다", "충분히 자도 피곤하다"] },
   { n: "심장질환 (허혈·심근경색)", tag: "응급", color: "#EF4444", signs: ["가슴 한가운데가 조이거나 쥐어짜는 통증", "가슴 통증이 30분 이상 지속", "통증이 목·턱·왼팔로 퍼진다", "숨쉬기 힘들고 구역질이 난다", "얼굴이 창백하고 식은땀이 난다"] },

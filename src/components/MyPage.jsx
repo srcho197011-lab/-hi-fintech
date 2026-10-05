@@ -36,13 +36,20 @@ function selfMember() {
   if (dm) return dm;
   const nm = (typeof authCurrent === "function" && authCurrent() && authCurrent().name) || (typeof PT !== "undefined" ? PT.name : "조성래");
   const em = (typeof authCurrent === "function" && authCurrent() && authCurrent().email) || "srcho197011@hizenhealth.com";
-  return {
-    id: "self-" + (em.split("@")[0] || "user"), name: nm, email: em, sex: "남", regAge: 54,
-    biologicalAge: 52.5, obesityAge: 50.9, heartAge: 50.7, liverAge: 54.4, pancreasAge: 56.2, kidneyAge: 53.4,
-    cancerRiskGrade: 4, highRiskCancerTypes: ["췌장암"], highRiskDiseases: ["당뇨병", "지방간"], estimatedMedicalCost: 2381477,
-    managementPoints: ["금주·절주 실천", "저당 식단·혈당 모니터링", "복부 초음파(췌장·간)", "주 3회 유산소 운동"],
-    category: "일반", isDemoUser: false, realVerified: true, isSelf: true,
-  };
+  /* [실측 통일 2026-10-05] 본인 프로필은 mcp_josungrae.json 하나에서 읽는다 — 여기서 수치를 선언하지 않는다.
+     확정 질환은 국가검진 판정에 적힌 고혈압(잘 조절됨) 1종뿐이다(당뇨병·지방간은 위험·의심 단계이므로 확정 칸에서 내렸다). */
+  const P = (typeof selfRealProfile === "function") ? selfRealProfile() : null;
+  const base = { id: "self-" + (em.split("@")[0] || "user"), name: nm, email: em, category: "일반", isDemoUser: false, realVerified: true, isSelf: true };
+  if (!P) return Object.assign(base, { sex: "남", regAge: 54.1, highRiskCancerTypes: [], highRiskDiseases: [], managementPoints: [] });
+  return Object.assign(base, {
+    sex: P.sex, regAge: P.regAge, birth: P.birth,
+    biologicalAge: P.biologicalAge, agingSpeed: P.agingSpeed, agingRank: P.agingRank, overall: P.overall,
+    obesityAge: P.obesityAge, heartAge: P.heartAge, liverAge: P.liverAge, pancreasAge: P.pancreasAge, kidneyAge: P.kidneyAge,
+    cancerRiskGrade: P.cancerRiskGrade, cancerGradeLabel: P.cancerGradeLabel,
+    highRiskCancerTypes: P.highRiskCancerTypes, highRiskDiseases: P.highRiskDiseases, confirmedNote: P.confirmedNote,
+    judgment: P.judgment, checkupDate: P.checkupDate, reportDate: P.reportDate,
+    estimatedMedicalCost: P.estimatedMedicalCost, managementPoints: P.managementPoints, srcLabel: P.src,
+  });
 }
 
 /* ── 우리가족 건강관리(구성원 탭 + 검진결과·예측의료비 한눈에) ── */
@@ -104,7 +111,7 @@ function FamilyHealthCare({ member, onGo }) {
       {isChild ? (
         <div className="fhc-ck child"><div className="fhc-ckhd"><Activity size={14} color="#16A34A" /> 아동·청소년 건강검진 <b>성장·발달 관리</b></div><div className="fhc-abn"><span>성장발달 체크</span><span>시력·비만 관리</span><span>예방접종(NIP)</span><span>구강검진</span></div></div>
       ) : chk ? (
-        <div className="fhc-ck"><div className="fhc-ckhd"><ClipboardList size={14} color="#2563EB" /> 국가검진 「<b>{chk.nat.grade}</b>」 · 이상항목 {chk.comp.abnormals.length}건 · 진행형태 「{chk.trendLabel}」</div>
+        <div className="fhc-ck"><div className="fhc-ckhd"><ClipboardList size={14} color="#2563EB" /> 국가검진 「<b>{chk.nat.gradeLabel || chk.nat.grade}</b>」 · {chk.selfReal ? `이상·의심 ${(chk.abnMain || []).length}항목` : `이상항목 ${chk.comp.abnormals.length}건`} · 진행형태 「{chk.trendLabel}」</div>
           {chk.comp.abnormals.length ? <div className="fhc-abn">{chk.comp.abnormals.slice(0, 6).map((a, i) => <span key={i}>{a}</span>)}{chk.comp.abnormals.length > 6 ? <span className="more">+{chk.comp.abnormals.length - 6}</span> : null}</div> : <div className="fhc-okline">✅ 종합검진 주요 항목 정상 범위</div>}
         </div>
       ) : null}

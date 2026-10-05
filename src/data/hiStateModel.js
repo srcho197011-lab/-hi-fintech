@@ -269,12 +269,20 @@ const HI_SEGMENTS = [
     /* 순차 상담: 현황 확인 → ①최신 연도 결과 분석 제안(먼저) → 수락·거절 후 ②올해 예약 제안(hiCheckupBranch.js) */
     sarg: function (s) {
       const c = s.checkup || s.s1, ys = c.pastYears || [];
-      const multi = ys.length >= 2;
+      /* [실측 통일 2026-10-06] 「연도별 추이까지 볼 수 있어요」는 **시점 수만으로** 말하지 않는다 —
+         본인 계정 실측은 2시점이지만 6년 간격·측정기관이 달라(2020 명지병원 ↔ 2024 서울늘편한내과의원)
+         화면·엔진 전부가 「진행형태 해당 없음」으로 적는다. 간격 3년 이하 + 동일 기관일 때만 추이다. */
+      const gapOk = (c.recordGapYears == null) ? true : c.recordGapYears <= 3;
+      const orgOk = (c.providerCount == null) ? true : c.providerCount <= 1;
+      const multi = ys.length >= 2 && gapOk && orgOk;
+      const twoPt = ys.length >= 2 && !multi;
       return {
         situation: `확인해 보니 가장 최근 검진이 ${_d(c.latestYear)}년이고, ${_d(c.currentYear)}년 검진은 아직 안 받으셨어요.`,
         assess: multi
           ? `${ys[0]}~${ys[ys.length - 1]}년 기록이 연결돼 있어서 연도별 추이까지 함께 볼 수 있어요.`
-          : `${_d(c.latestYear)}년 결과가 연결돼 있어서 지금 바로 분석해 드릴 수 있어요.`,
+          : twoPt
+            ? `${ys.join("·")}년 기록이 연결돼 있어요 — 다만 ${c.recordGapYears}년 간격${orgOk ? "" : "에 측정기관도 달라"}라서 연도별 추이는 산출하지 않고 시점별 판정으로 보여드려요.`
+            : `${_d(c.latestYear)}년 결과가 연결돼 있어서 지금 바로 분석해 드릴 수 있어요.`,
         route: `먼저 ${_d(c.latestYear)}년 결과 분석을 보여드릴까요?`,
         guide: c.currentYearBooked
           ? `보고 나면, 이미 잡혀 있는 올해 검진(D-${_d(c.bookingInDays)}) 준비도 이어서 챙겨드릴게요.`

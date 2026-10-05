@@ -157,12 +157,16 @@ function memberReportShape(m) {
   let R = null; try { R = demoReport(m); } catch (e) { return null; }
   if (!R) return null;
   const G = (typeof demoCancerGrade === "function") ? (() => { try { return demoCancerGrade(m.cancerRiskGrade); } catch (e) { return null; } })() : null;
+  const _real = !!R.selfReal;                 /* 본인 계정 = 실측 리포트(mcp_josungrae.json) */
   /* 암 상세 안내문(do/avoid/remember)은 회원과 무관한 공통 의학 정보다 — 등급만 회원 값으로 바꿔 붙인다 */
   const detail = (typeof CANCER_DETAIL !== "undefined") ? CANCER_DETAIL : [];
   const cancer = (R.cancers || []).map(([nm, grade]) => {
     const d = detail.find((x) => x.n === nm) || {};
-    return { n: nm, grade, risk: d.risk ? Number(String(d.risk).replace("%", "")) : 0,
-      level: grade === "경고" ? "높음" : grade === "주의" ? "보통" : "낮음",
+    /* [실측 통일 2026-10-06] 「(전체대비 낮음/보통)」은 등급에서 만든 수식어였다 —
+       원천(프롬에이지 리포트 암종별 상세면)은 「50대 남성대비 OO발생 위험도 N% · 높음/낮음 · 등급」을 따로 적는다.
+       실측 계정은 그 vs 값을 그대로 쓰고, 없으면(체험·코호트) 방향을 말하지 않는다. */
+    const _vs = (_real && typeof selfRealCancerOf === "function") ? (() => { try { const r = selfRealCancerOf(nm); return (r && r.vs) || null; } catch (e) { return null; } })() : null;
+    return { n: nm, grade, risk: d.risk ? Number(String(d.risk).replace("%", "")) : 0, vs: _vs,
       do: d.do || [], avoid: d.avoid || [], remember: d.remember || [] };
   });
   const disease = (R.diseases || []).map(([nm, rel, rate]) => ({ n: nm, rel, rate: Number(String(rate).replace("%", "")) || 0, guide: [], warn: "" }));
@@ -171,12 +175,16 @@ function memberReportShape(m) {
       speed: R.agingSpeed, rank: R.agingRank, overall: R.evalLabel,
       date: (R._lineage && R._lineage.date) ? String(R._lineage.date).replace(/-/g, ".") : "",
       reg: "",                                   /* 기관 등록번호는 회원에게 없다 — 비운다 */
-      source: (R._lineage && R._lineage.source === "vault") ? "하이핀 정밀분석 · 연결된 검진 수치 기준" : "하이핀 정밀분석" },
+      source: _real ? (R.src || "실측 리포트") : (R._lineage && R._lineage.source === "vault") ? "하이핀 정밀분석 · 연결된 검진 수치 기준" : "하이핀 정밀분석" },
     organs: (R.organs || []).map((o) => [o[0], o[1], o[2]]),
     disease, cancer,
-    cancerTotal: { grade: R.cancerTotal, of: 10, label: (G && G[0]) || R.evalLabel || "" },
-    cost: { ty: R.costThis, tyAvg: R.costThis, y10: R.cost10, y10Avg: R.cost10, out: 0, inp: 0 },
-    _member: true,
+    cancerTotal: { grade: R.cancerTotal, of: 10, label: R.cgLabel || (G && G[0]) || R.evalLabel || "" },
+    /* [실측 통일 2026-10-05] 동년배 평균은 리포트 실값을 읽는다 — 전에는 자기값을 복사해 「동년배 대비 +0%」가 나왔다.
+       리포트에 10년 후 동년배 값이 없으면(체험 회원) 비워 둔다. */
+    cost: { ty: R.costThis, tyAvg: R.costPeer != null ? R.costPeer : null, y10: R.cost10, y10Avg: R.cost10Peer != null ? R.cost10Peer : null,
+      out: (R.visits && R.visits.thisYear) ? R.visits.thisYear.outpatient : 0, outAvg: (R.visits && R.visits.thisYear) ? R.visits.thisYear.outpatientPeer : null,
+      inp: (R.visits && R.visits.thisYear) ? R.visits.thisYear.inpatient : 0, inpAvg: (R.visits && R.visits.thisYear) ? R.visits.thisYear.inpatientPeer : null },
+    real: _real, _member: true,
   };
 }
 function useReport() {
@@ -198,11 +206,15 @@ function reportAnswer(q, R) {
   // 생체나이·노화·장기 나이
   if (/생체나이|노화|장기나이|간나이|췌장나이|심장나이|신장나이|콩팥나이|몇살|몇세/.test(t)) {
     const bad = R.organs.filter((o) => o[2] === "나쁨").map((o) => `${o[0]} 나이 ${o[1]}세`).join(", ");
-    return `${N}님의 생체나이는 ${R.meta.bioAge}세로 주민등록나이 ${R.meta.regAge}세보다 ${Math.abs(R.meta.diff)}세 젊어요. 노화속도는 ${R.meta.speed}배로 동년배 평균보다 느리고, 노화등수는 ${R.meta.rank}등으로 종합 '${R.meta.overall}'이에요.${bad ? ` 다만 ${bad}는 '나쁨'으로 나와 관리가 필요해요.` : ""}`;
+    /* [실측 통일 2026-10-05] 방향 문구를 수치에서 분기한다 — 전에는 「젊어요·느리고」가 상수여서 값과 어긋날 수 있었다 */
+    const _ydir = R.meta.diff <= 0 ? `${Math.abs(R.meta.diff)}세 젊어요` : `${Math.abs(R.meta.diff)}세 많아요`;
+    const _sdir = R.meta.speed <= 1 ? "느리고" : "빠르고";
+    return `${N}님의 생체나이는 ${R.meta.bioAge}세로 주민등록나이 ${R.meta.regAge}세보다 ${_ydir}. 노화속도는 ${R.meta.speed}배로 동년배 평균보다 ${_sdir}, 노화등수는 ${R.meta.rank}등/100으로 종합 '${R.meta.overall}'이에요.${bad ? ` 다만 ${bad}는 '나쁨'으로 나와 관리가 필요해요.` : ""}`;
   }
   // 의료비·의료 이용
   if (/의료비|병원비|의료이용|외래|입원|비용|돈/.test(t)) {
-    return `${N}님의 올해 예상 의료비는 약 ${won(R.cost.ty)}으로 동년배 평균 ${won(R.cost.tyAvg)}보다 ${R.cost.ty >= R.cost.tyAvg ? "조금 높아요" : "낮은 편이에요"}. 10년 후엔 약 ${won(R.cost.y10)}으로 늘어날 것으로 예상돼요(생체나이 기반 추정). 모두 연간 기준이에요.`;
+    const _pc = R.cost.tyAvg != null ? ` 동년배 평균 ${won(R.cost.tyAvg)} 대비 ${R.cost.ty >= R.cost.tyAvg ? "+" : "-"}${Math.abs(Math.round((R.cost.ty - R.cost.tyAvg) / R.cost.tyAvg * 1000) / 10)}%예요.` : " 동년배 평균값은 리포트에 없어 비교하지 않아요.";
+    return `${N}님의 올해 예상 의료비는 약 ${won(R.cost.ty)}이에요.${_pc} 10년 후엔 약 ${won(R.cost.y10)}${R.cost.y10Avg != null ? `(동년배 ${won(R.cost.y10Avg)})` : ""}으로 예상돼요. 모두 연간 기준이에요.`;
   }
   const personal = /내|나의|제|저의|위험|등급|얼마|몇|어때|어떤가|상태|높|낮|걸릴|발생|예측/.test(t);
   // 특정 암 (개인화 질문일 때)
@@ -240,7 +252,7 @@ function reportAnalysisCards(R) {
   bubbles.push({ kind: "card", card: { title: "🧬 생체나이 · 노화 종합", items: [
     `생체나이 ${M.bioAge}세 — 실제나이 ${M.regAge}세보다 ${Math.abs(M.diff)}세 ${younger ? "젊음 ✅" : "많음 ⚠️"}`,
     `노화속도 ${M.speed}배 — 동년배 평균보다 ${M.speed <= 1 ? "느림(양호)" : "빠름(주의)"}`,
-    `노화등수 상위 ${M.rank}% · 종합 등급 ‘${M.overall}’`,
+    `노화등수 ${M.rank}등 / 100 · 종합 등급 ‘${M.overall}’`,
   ], buttons: [] } });
   // 2) 장기별 생체나이
   const organs = R.organs || [];
@@ -253,7 +265,7 @@ function reportAnalysisCards(R) {
   const warnCancers = cancers.filter((c) => /경고|고위험|위험/.test(c.grade));
   if (cancers.length) {
     const top = cancers.slice().sort((a, b) => (b.risk || 0) - (a.risk || 0)).slice(0, 5);
-    bubbles.push({ kind: "card", card: { title: `🎗 암 위험 종합 — 전체 ${R.cancerTotal.grade}/${R.cancerTotal.of || 10}등급(${R.cancerTotal.label})`, items: top.map((c) => `${c.n}: 위험도 ${c.risk}% · ‘${c.grade}’ (전체대비 ${c.level})`), buttons: ["🔬 특수검진 정밀검사 보기"] } });
+    bubbles.push({ kind: "card", card: { title: `🎗 암 위험 종합 — 전체 ${R.cancerTotal.grade}/${R.cancerTotal.of || 10}등급(${R.cancerTotal.label})`, items: top.map((c) => `${c.n}: 50대 남성대비 위험도 ${c.risk}%${c.vs ? ` (${c.vs})` : ""} · 등급 ‘${c.grade}’`), buttons: ["🔬 특수검진 정밀검사 보기"] } });
   }
   // 4) 경고/고위험 암 집중관리(최대 2종)
   warnCancers.slice(0, 2).forEach((c) => {
@@ -276,12 +288,14 @@ function reportAnalysisCards(R) {
   });
   // 7) 예상 의료비
   const C = R.cost;
-  if (C) { const dp = C.tyAvg ? Math.round((C.ty - C.tyAvg) / C.tyAvg * 100) : 0;
+  if (C) { const dp = C.tyAvg ? Math.round((C.ty - C.tyAvg) / C.tyAvg * 1000) / 10 : null;
     bubbles.push({ kind: "card", card: { title: "💰 예상 의료비 (연간 기준)", items: [
-      `올해 약 ${money(C.ty)} — 동년배 평균 ${money(C.tyAvg)}보다 ${dp >= 0 ? "+" + dp : dp}%${dp > 0 ? " ⚠️" : ""}`,
-      `10년 후 약 ${money(C.y10)}${C.y10Avg ? ` (평균 ${money(C.y10Avg)})` : ""} — 생체나이 기반 증가 추정`,
-      `현 추세 유지 시 10년간 누적 약 ${money(Math.round((C.ty + C.y10) / 2 * 10))} 예상`,
-    ], buttons: ["의료비 예측"] } });
+      dp != null ? `올해 약 ${money(C.ty)} — 동년배 평균 ${money(C.tyAvg)}보다 ${dp >= 0 ? "+" + dp : dp}%${dp > 0 ? " ⚠️" : ""}` : `올해 약 ${money(C.ty)} (동년배 평균은 해당 없음)`,
+      `10년 후 약 ${money(C.y10)}${C.y10Avg ? ` (동년배 ${money(C.y10Avg)})` : ""}`,
+      (C.out ? `외래 ${C.out}일${C.outAvg != null ? `(동년배 ${C.outAvg}일)` : ""} · 입원 ${C.inp}일${C.inpAvg != null ? `(동년배 ${C.inpAvg}일)` : ""}` : null),
+      /* 누적 추정은 리포트에 없는 파생값 — 실측 리포트에서는 말하지 않는다(형 지시 ④) */
+      R.real ? null : `현 추세 유지 시 10년간 누적 약 ${money(Math.round((C.ty + C.y10) / 2 * 10))} 예상`,
+    ].filter(Boolean), buttons: ["의료비 예측"] } });
   }
   // 8) 종합 판단 + 맞춤 액션
   const focusList = [warnCancers.map((c) => c.n).join("·"), hiDz.map((d) => d.n).join("·")].filter(Boolean).join(" / ");
@@ -1221,7 +1235,8 @@ function SpecialistChat({ checkupMode }) {
       const m = (typeof _member === "function") ? _member() : null;
       const R = (m && typeof demoReport === "function") ? demoReport(m) : null;
       if (m && R) {
-        brief = { name: m.name, bio: R.bio, worst: (R.worstNames || []).join("·"), risk: `암위험 ${R.cancerTotal}등급(${R.evalLabel})`, hr: (R.hr || []).join("·"), rpm: (typeof window !== "undefined" && window._teleRPM) || null };
+        /* [실측 통일 2026-10-06] 암위험 라벨 = cgLabel(「낮은 편」) · 종합평가(evalLabel 「좋음」)와 다른 값이다 */
+        brief = { name: m.name, bio: R.bio, worst: (R.worstNames || []).join("·"), risk: `암위험 ${R.cancerTotal}등급(${R.cgLabel || (R.cg ? R.cg[0] : "") || R.evalLabel})`, hr: (R.hr || []).join("·"), rpm: (typeof window !== "undefined" && window._teleRPM) || null };
         try { vaultAccessLog(anonToken(m), `${s.name}(${s.hosp})`, "AI 예진 요약 열람(진료 목적 · 가명 요약만)"); } catch (e) {}
       }
     } catch (e) {}
@@ -2732,6 +2747,17 @@ function aiRespond(text, corpus, report, QA) {
   } catch (e) {}
   return res;
 }
+/* [실측 통일 2026-10-06] 하이가 「내 …」 질문에 쓰는 회원 — 체험 세션이 없으면 **본인 계정**이다.
+   전에는 demoCurrentUser()만 넘겨서, 본인 계정(hifin_demo_session = null)에서는 검진데이터 RAG가
+   항상 null을 반환했다. 그 결과 금고에 실측 2건이 있는데도 하이가 「검진결과를 연결하면…」이라고
+   답하고, 「내 공복혈당 결과」에 본인 실측값(100 「공복혈당장애 의심」) 대신 교과서 문장만 말했다. */
+function _aidMember() {
+  try {
+    const dm = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null;
+    if (dm) return dm;
+    return (typeof selfMember === "function") ? selfMember() : null;
+  } catch (e) { return null; }
+}
 function aiRespondCore(text, corpus, report, QA) {
   const has = (...ks) => ks.some((k) => text.includes(k));
   // 보험·보장 의도는 질병 정보로 답하지 말고 보험 AI 상담사로 연결(예: 'OO 대비 보험')
@@ -2744,9 +2770,9 @@ function aiRespondCore(text, corpus, report, QA) {
   // AI KB 라운지 RAG — 검진 수치 판정 + 근거 + 관련 보험·건강미션(예: '공복혈당 110', '혈압 140/90', 'BMI 27')
   if (typeof kbCheckupCounsel === "function") { const _kb = kbCheckupCounsel(text); if (_kb) return _kb; }
   // 회원 검진데이터 RAG — '내 건강상태 분석'(데이터하우스 세부 검진데이터로 정밀 다중카드 분석)
-  if (typeof memberDeepAnalysis === "function") { const _cm1 = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; const _da = memberDeepAnalysis(text, _cm1); if (_da) return _da; }
+  if (typeof memberDeepAnalysis === "function") { const _da = memberDeepAnalysis(text, _aidMember()); if (_da) return _da; }
   // 회원 검진데이터 RAG — 로그인 회원의 '내 검진 결과'(예: '내 콜레스테롤 결과', '내 검진 결과 요약', '내 공복혈당 어때?')
-  if (typeof memberCheckupCounsel === "function") { const _cm0 = (typeof demoCurrentUser === "function") ? demoCurrentUser() : null; const _mc = memberCheckupCounsel(text, _cm0); if (_mc) return _mc; }
+  if (typeof memberCheckupCounsel === "function") { const _mc = memberCheckupCounsel(text, _aidMember()); if (_mc) return _mc; }
   // AI KB 라운지 RAG — 질환 정의·개요(예: '고혈압이 뭐야?', '당뇨병 위험요인') → KB 정의·위험요인·근거 (질환명은 항목기준보다 우선)
   if (typeof kbDiseaseCounsel === "function") { const _dz = kbDiseaseCounsel(text); if (_dz) return _dz; }
   // 검진 이해 KB — 종합검진 목적·체성분·생체나이·암예방·항목 기준(예: '체성분이 뭐예요?', '공복혈당 정상 범위')

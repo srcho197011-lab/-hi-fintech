@@ -165,8 +165,8 @@
     }
   },
   "coverage": {
-    "n": 19,
-    "kept": 19,
+    "n": 17,
+    "kept": 17,
     "pct": 100,
     "miss": []
   },
@@ -190,10 +190,10 @@
       "shop": true
     },
     "spread": 1,
-    "voiceAvg": 108,
+    "voiceAvg": 111,
     "voiceP95": 123,
-    "textAvg": 346,
-    "textP95": 375,
+    "textAvg": 347,
+    "textP95": 368,
     "n": {
       "voice": 6,
       "text": 6
@@ -340,6 +340,6 @@
       "pass": true
     }
   ],
-  "seconds": 58.5,
+  "seconds": 61.3,
   "pass": true
 }

@@ -31,6 +31,13 @@ function demoMakeProfile(name, email, birth6, genderCode) {
 }
 /* 건강관리 리포트 어댑터 — 체험 회원 가용 필드로 6개 서브섹션 데이터 도출 */
 function demoReport(m) {
+  /* [실측 통일 2026-10-05] 본인 계정(isSelf)은 실측 리포트를 그대로 읽는다 —
+     생체나이 52.5 · 노화속도 0.97 · 노화등수 37 · 종합 「좋음」 · 장기 5종 · 암 4/10(낮은 편) ·
+     췌장암 경고 · 당뇨 +6.2%(10년 10.9%) · 고혈압 -3.9%(22.3%) · 의료비 3종.
+     아래 휴리스틱(lineageProfile 편차합산 → bio/organs, agingRank=50+diff×2.5 등)은 체험·코호트 전용이다. */
+  if (typeof selfRealIsSelf === "function" && selfRealIsSelf(m) && typeof selfRealShape === "function") {
+    const _sr = selfRealShape(m); if (_sr) return _sr;   /* 금고 검증(실측 2건 존재)까지 보고 배지를 정한다 */
+  }
   // 세션 객체가 과거 데이터여도 항상 최신 소스(demoMembers)로 갱신
   if (typeof demoMembers !== "undefined" && demoMembers && demoMembers.length) { const src = demoMembers.find((x) => x.email === m.email); if (src) m = src; }
   // M1-1 계보 실연결: 금고에 1세대 실검진값이 있으면 분석 입력(생체·장기나이·암등급)을 실측 기반 프로필로 교체 — 난수 프로필은 금고 없는 회원의 폴백
@@ -65,7 +72,9 @@ function demoReport(m) {
   const flags = [];
   // M1-1: 분석 입력의 출처 표기 — 실측(금고) 기반이면 계보 배지 + 근거 요약(설명가능성 가드레일 ⓖ)
   if (_lb) {
-    flags.push({ t: `1세대 실측 검진 연동 ✓ ${_lb.date}${_lb.history > 1 ? ` · ${_lb.history}개년` : ""} · ${_lb.n}항목`, c: "#065F46", bg: "#D1FAE5", ic: "check" });
+    /* [실측 통일 2026-10-05] 「실측」은 결과지 원문을 읽은 본인 계정에서만 쓴다 —
+       체험·코호트 금고는 합성 시드이므로 배지에서 그 단어를 뺀다(합성값에 실측 배지 금지). */
+    flags.push({ t: `1세대 검진 연동 ✓ ${_lb.date}${_lb.history > 1 ? ` · ${_lb.history}개년` : ""} · ${_lb.n}항목 (시연 시드)`, c: "#065F46", bg: "#D1FAE5", ic: "check" });
     const ev = (typeof lineageEvidenceLine === "function") ? lineageEvidenceLine(_lb) : "";
     if (ev) flags.push({ t: ev, c: "#1E40AF", bg: "#DBEAFE" });
   }

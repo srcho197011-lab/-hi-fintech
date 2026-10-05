@@ -4447,6 +4447,9 @@ body.easyread .hiwel-card b { font-size: 14px; } body.easyread .hiwel-card .hint
 .hidock-bub { border-radius: 13px; padding: 9px 12px; font-size: 12.8px; line-height: 1.6; white-space: pre-line; }
 .hidock-bub.hi { background: #fff; border: 1px solid var(--border); color: #26324A; border-top-left-radius: 4px; }
 .hidock-bub.me { background: #F97316; color: #fff; border-top-right-radius: 4px; }
+/* 운영본부 답변의 **강조** — 말풍선은 평문 렌더라 별표가 글자로 보였다(hidockBold가 이 클래스로 쪼갠다) */
+.hidock-bub .hib { font-weight: 800; color: #0F2A47; }
+.hidock-bub.me .hib { color: #fff; }
 .hidock-nav { display: inline-flex; align-items: center; gap: 3px; align-self: flex-start; border: 1px solid #FED7AA; background: #FFF7ED; color: #C2410C; font-size: 11.5px; font-weight: 800; padding: 7px 12px; border-radius: 10px; cursor: pointer; }
 .hidock-card { border: 1px solid #FED7AA; background: #fff; border-radius: 13px; padding: 10px 12px; }
 .hidock-card b { display: block; font-size: 12.5px; color: #C2410C; margin-bottom: 6px; }

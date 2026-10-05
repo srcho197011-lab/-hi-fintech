@@ -114,7 +114,11 @@ function memberInsurance(m) {
     coGen: spec.coGen, coNon: spec.coNon, outLimit: spec.outLimit, inLimit: spec.inLimit,
     nonPayAnnual: spec.nonPayAnnual || 0, renew: spec.renew, reEnroll: spec.reEnroll,
     riderNote: spec.riderNote, inNote: spec.inNote || "", feature: spec.feature,
-    monthly: _silsonMonthly(gen, age), enrolled, enrollYear,
+    /* [실측 통일 2026-10-05] 본인 계정의 실손 월 보험료·가입연도는 실계약(신용정보원 조회 9건)의 값을 쓴다 —
+       추정식(_silsonMonthly)으로 월 4만원을 만들면 같은 세션 ③내 보험현황(월 154,000원)과 어긋난다. */
+    monthly: (m.isSelf && m.forcedMonthly) ? m.forcedMonthly : _silsonMonthly(gen, age),
+    monthlySrc: (m.isSelf && m.forcedMonthly) ? "실계약(신용정보원 조회)" : "시연 추정",
+    enrolled, enrollYear: (m.isSelf && m.forcedEnrollYear) ? m.forcedEnrollYear : enrollYear,
     hasNonPayRider: enrolled && (gen === "3세대" || gen === "4세대" || gen === "5세대") ? rng() < 0.55 : (gen === "1세대" || gen === "2세대") };
 
   // 중대질환 진단 이력 + 진단비 특약
@@ -141,7 +145,10 @@ function memberInsurance(m) {
   const hasRider = riders.length > 0;
   const riderTotal = riders.reduce((s, r) => s + r.benefit, 0);
   const dxTotal = dx.reduce((s, d) => s + d.benefit, 0);
-  return { silson, dx, riders, hasRider, riderTotal, dxTotal, hasCritical: dx.length > 0 };
+  return { silson, dx, riders, hasRider, riderTotal, dxTotal, hasCritical: dx.length > 0,
+    /* 본인 계정: 실계약 9건에는 진단비 특약 금액이 포함돼 있지 않다 → 금액을 만들지 않고 「확인 필요」로 둔다 */
+    riderNote: (m.isSelf && m.riderUnknown) ? "확인 필요 — 실계약 9건(신용정보원 조회)에 특약 금액 정보 없음" : "",
+    real: !!(m.isSelf && m.forcedMonthly) };
 }
 /* 세대 판매기간 내 가입연도(결정론) */
 function _silsonEnrollYear(gen, rng) {
@@ -167,9 +174,12 @@ function insuranceSolution(m) {
   const age = m.regAge != null ? Math.round(m.regAge) : (m.age != null ? m.age : 45);
   const risk = m.risk != null ? m.risk : (m.cancerRiskGrade != null ? Math.min(5, Math.round(m.cancerRiskGrade / 1.6)) : 2);
   const isSelfPerson = m.isSelf || m.name === "조성래";
-  const diseases = (m.diseases || m.highRiskDiseases || []).concat(isSelfPerson ? ["당뇨병"] : []);
+  /* [실측 통일 2026-10-05] 본인 계정은 질환을 주입하지 않는다 — 확정은 고혈압(관리중) 1종이고,
+     당뇨·간은 「위험·의심」 단계다. 보장 공백의 근거 문구도 실측 수치로 적는다(selfRealInsBasis). */
+  const SR = (isSelfPerson && typeof selfRealIsSelf === "function" && selfRealIsSelf(m) && typeof selfRealInsBasis === "function") ? selfRealInsBasis() : null;
+  const diseases = (m.diseases || m.highRiskDiseases || []).concat(SR ? [] : (isSelfPerson ? ["당뇨병"] : []));
   const cancerRisk = !!m.cancer || (Array.isArray(m.highRiskCancerTypes) && m.highRiskCancerTypes.length > 0) || isSelfPerson;
-  const drinker = !!m.drinker || isSelfPerson, smoker = !!m.smoker;
+  const drinker = SR ? !!SR.drinker : (!!m.drinker || isSelfPerson), smoker = !!m.smoker;
   const riderCats = ins.riders.map((r) => r.cat);
   const dxCats = ins.dx.map((d) => d.cat);
   const F = []; // {sev:'crit'|'warn'|'good', t, d, a}
@@ -184,11 +194,18 @@ function insuranceSolution(m) {
   }
 
   // 2) 중대질환 진단비 갭(건강위험 융합)
+  if (SR) {
+    /* 본인 계정 — 보유 여부를 단정하지 않는다(실계약 조회에 특약 금액이 없다). 근거는 전부 실측 수치다. */
+    F.push({ sev: "warn", t: "암 진단비 — 보유 여부 확인 필요", d: `${SR.cancerBasis}. 실계약 9건(신용정보원 조회)에 진단비 특약 금액 정보가 없어 보유 여부를 단정할 수 없습니다.`, a: "증권 확인 후 고액암(췌장암 포함) 진단비 한도 점검" });
+    if (SR.kidneyBasis) F.push({ sev: "warn", t: "신장(말기신부전) 대비 점검", d: SR.kidneyBasis, a: "말기신부전 진단비 특약 검토 + 혈당·신기능 추적" });
+    if (SR.liverBasis) F.push({ sev: "warn", t: "간(간경화·간부전) 대비 점검", d: SR.liverBasis, a: "간경화·간부전 진단비 특약 검토 + 절주·간수치 추적" });
+  } else {
   if (cancerRisk && !riderCats.includes("암")) F.push({ sev: "crit", t: "암 진단비 공백 (암 위험군)", d: "검진·가족력상 암 위험군이나 암 진단비 특약 미보유. 고액암 시 수천만원 치료비 자기부담.", a: "일반암 3,000만+·고액암 특약 가입 권고" });
   else if (!riderCats.includes("암") && age >= 40) F.push({ sev: "warn", t: "암 진단비 미보유", d: "40대 이후 암 발생률 상승 구간. 진단비 특약 없음.", a: "일반암 진단비 특약 검토" });
   if (risk >= 4 && !riderCats.includes("뇌") && !riderCats.includes("심장")) F.push({ sev: "warn", t: "뇌·심장 진단비 공백 (고위험)", d: "심뇌혈관 고위험군이나 뇌·심장 진단비 특약 미보유.", a: "뇌졸중·급성심근경색 진단비(허혈성심장질환 확대형) 가입 권고" });
   if ((diseases.includes("당뇨병") || diseases.includes("만성콩팥병") || diseases.includes("신장질환")) && !riderCats.includes("신장")) F.push({ sev: "warn", t: "신장(말기신부전) 대비 필요", d: "당뇨·신장질환 이력 — 투석·이식 시 고액 의료비.", a: "말기신부전 진단비 특약 검토" });
   if ((drinker || diseases.includes("지방간") || diseases.includes("간질환") || diseases.includes("간경화")) && !riderCats.includes("간")) F.push({ sev: "warn", t: "간(간경화·간부전) 대비 필요", d: `${drinker ? "음주 이력" : "간질환 이력"} — 간경화·간부전 진행 시 고액 치료비. 간 진단비 미보유.`, a: "간경화·간부전 진단비 특약 검토 + 절주·간수치 추적" });
+  }
 
   // 3) 진단 이력 → 재발·후유 보장
   if (dxCats.length) F.push({ sev: "warn", t: `중대질환 진단 이력 (${dxCats.join("·")})`, d: `이미 진단 이력이 있어 신규 가입 제한 가능. 후유·재발·간병 보장 점검 필요.`, a: "간병·후유장해·재진단 담보 및 유병자보험 연계 검토" });
@@ -202,6 +219,9 @@ function insuranceSolution(m) {
   score -= F.filter((x) => x.sev === "warn").length * 6;
   score = Math.max(5, Math.min(98, score));
   const grade = score >= 80 ? "충실" : score >= 60 ? "보통" : score >= 40 ? "부족" : "취약";
+  /* [실측 통일 2026-10-05] 본인 계정은 보장 충실도 점수를 내지 않는다 —
+     진단비 특약 금액이 확인되지 않아 점수의 입력이 비어 있다(원천 없는 값을 만들지 않는다). */
+  if (SR) return { ins, findings: F, score: null, grade: "해당 없음", scoreNote: "진단비 특약 금액 미확인 — 보장 충실도 점수는 산출하지 않습니다", critNeed, silsonMonthly: ins.silson.monthly, real: true, src: SR.src };
   return { ins, findings: F, score, grade, critNeed, silsonMonthly: ins.silson.monthly };
 }
 
@@ -327,16 +347,20 @@ function ciRiskProfile(m) {
   const ins = _mIns(m);
   const riderCats = ins ? ins.riders.map((r) => r.cat) : [];
   const isSelfPerson = m.isSelf || m.name === "조성래";
-  const diseases = (m.diseases || m.highRiskDiseases || []).concat(isSelfPerson ? ["당뇨병", "지방간"] : []);
-  const cancerTypes = (m.highRiskCancerTypes || []).concat(isSelfPerson ? ["췌장암"] : []);
+  /* [실측 통일 2026-10-05] 본인 계정은 질환명을 주입하지 않고 실측 신호 문구를 쓴다 —
+     「당뇨병 위험 — 공복혈당 100mg/dL 공복혈당장애 의심」처럼 적어서, 온톨로지 매칭은 유지하되
+     화면 근거(source)가 확정 진단처럼 보이지 않게 한다. */
+  const _SR = (isSelfPerson && typeof selfRealIsSelf === "function" && selfRealIsSelf(m) && typeof selfRealInsBasis === "function") ? selfRealInsBasis() : null;
+  const diseases = (m.diseases || m.highRiskDiseases || []).concat(_SR ? _SR.ciDiseases : (isSelfPerson ? ["당뇨병", "지방간"] : []));
+  const cancerTypes = (m.highRiskCancerTypes || []).concat(_SR ? [] : (isSelfPerson ? ["췌장암"] : []));
   const dxHist = ins ? ins.dx.map((d) => d.cat) : [];   // 진단 이력(재발·추적 신호)
-  const drinker = !!m.drinker || isSelfPerson, smoker = !!m.smoker;
+  const drinker = _SR ? !!_SR.drinker : (!!m.drinker || isSelfPerson), smoker = !!m.smoker;
   const rows = [];
   for (const o of CI_ONTOLOGY) {
     let matched = false, src = "";
     for (const d of diseases) { const dl = String(d).toLowerCase(); if (o.indKeys.some((k) => dl.includes(k))) { matched = true; src = d; break; } }
     if (!matched && o.ci.includes("암") && cancerTypes.length) { matched = true; src = cancerTypes[0] + " 위험군"; }
-    if (!matched && o.disease.includes("간") && drinker) { matched = true; src = "음주 이력"; }
+    if (!matched && o.disease.includes("간") && drinker) { matched = true; src = (_SR && _SR.drinkerBasis) || "음주 이력"; }
     if (!matched && o.ci.includes("폐") && smoker) { matched = true; src = "흡연 이력"; }
     if (!matched && o.ci.some((c) => dxHist.includes(c))) { matched = true; src = "진단 이력 추적"; }
     if (!matched) continue;
@@ -352,14 +376,26 @@ function ciRiskProfile(m) {
   return { rows, checkups, shopCats, gapDiseases, hasRisk: rows.length > 0, silson: ins ? ins.silson.gen : null };
 }
 
-/* ── 조성래(실측 회원, 100,001번째·시연 기준 인물) ──
-   2세대 실손 보유 + 암·뇌·심장 진단비 보유, 간·신장 진단비 미보유(보장 공백 시연).
-   췌장암 위험군·미진단, 음주 이력 → 간·신장 공백이 융합 솔루션에서 드러나도록 설계. */
+/* ── 조성래(본인 계정·100,001번째) 보장 현황 ──
+   [실측 통일 2026-10-05] 실손 2세대·월 154,000원·2012-03-29 가입은 **실계약**(SELF_REAL_CONTRACTS, 신용정보원 조회 9건).
+   진단비 특약은 그 조회에 금액이 없으므로 보유 3종·7,000만원을 **만들지 않고** 「확인 필요」로 비운다(형 지시 ④).
+   음주 이력 대신 국가검진 생활습관 문진 「절주 필요」를 근거로 쓴다(selfRealInsBasis). */
 let _selfInsCache = null;
 function selfInsurance() {
   if (_selfInsCache) return _selfInsCache;
-  _selfInsCache = memberInsurance({ id: "SELF-JOSUNGRAE", name: "조성래", sex: "남", regAge: 54, isChild: false,
-    isSelf: true, forcedGen: "2세대", forcedRiders: ["cancer", "brain", "heart"], drinker: true, smoker: false });
+  const P = (typeof selfRealProfile === "function") ? selfRealProfile() : null;
+  const B = (typeof selfRealInsBasis === "function") ? selfRealInsBasis() : null;
+  /* SELF_REAL_CONTRACTS는 healthDataVault.js(번들 뒷부분) 선언이다 — 렌더 시점에는 초기화돼 있지만,
+     초기화 전 호출(모듈 평가 중)에도 터지지 않게 try로 감싼다. */
+  let real = null; try { real = (typeof SELF_REAL_CONTRACTS !== "undefined") ? SELF_REAL_CONTRACTS.find((c) => c.kind === "실손") : null; } catch (e) { real = null; }
+  _selfInsCache = memberInsurance({ id: "SELF-JOSUNGRAE", name: (P && P.name) || "조성래", sex: (P && P.sex) || "남",
+    regAge: (P && P.regAge) || 54.1, isChild: false, isSelf: true,
+    forcedGen: (real && real.gen) || "2세대",
+    forcedMonthly: real ? real.monthly : null,
+    forcedEnrollYear: real ? Number(String(real.join).slice(0, 4)) : null,
+    forcedRiders: [], riderUnknown: true,
+    highRiskCancerTypes: (P && P.highRiskCancerTypes) || [], highRiskDiseases: (P && P.highRiskDiseases) || [],
+    drinker: !!(B && B.drinker), smoker: false });
   return _selfInsCache;
 }
 

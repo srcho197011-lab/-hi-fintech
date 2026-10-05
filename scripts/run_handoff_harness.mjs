@@ -41,7 +41,11 @@ for (let i = 0; i < SAMPLE; i += 500) {
       if (c.compliance.publishable) out.pub++;
       else out.bad.push({ i: j, why: "unpub", detail: { miss: c.compliance.missingBlocks, unappr: c.compliance.unapprovedBlocks, slots: c.compliance.slotsFilled, spec: c.compliance.specOk, forb: (c.compliance.forbiddenHits || []).slice(0, 2) } });
       const s = c.script;
-      for (const bl of [s.opening, ...s.core, s.ask, ...s.branches, s.closing].filter(Boolean))
+      /* 블록 사용 집계 — 단계 축 파트(alert·prep·stage)와 D2 첫 연결(fc)까지 센다(형 지시 2026-10-05).
+         종전에는 5파트만 세어, 새로 조립된 블록이 「사용 0」인지 아닌지 리포트로 알 수 없었다 */
+      for (const bl of [...(s.alert || []), ...(s.prep || []), s.opening, ...(s.firstconnect || []), ...(s.fcExtra || []),
+        ...(s.talk || []), ...s.core, ...(s.seed || []), ...(s.stage || []), s.ask, ...(s.careplan || []),
+        ...(s.maturity || []), ...(s.fcTail || []), ...s.branches, s.closing].filter(Boolean))
         out.blocksUsed[bl.id] = (out.blocksUsed[bl.id] || 0) + 1;
       if (s.readSec > out.readSecMax) out.readSecMax = s.readSec;
     }
@@ -84,8 +88,19 @@ const golden = JSON.parse(readFileSync(join(ROOT, "fixtures/handoff_cards_sample
 for (const cs of golden.cases) {
   const want = cs.card;
   const got = await p.evaluate((i) => window.__hifinCard(i), want.member.cohortIndex);
+  /* 비교 대상(형 지시 2026-10-05 확장) — 종전 flat()은 opening/core/ask/branches/closing 전문만 봤다.
+     그래서 단계 축(prep·alert·stage)과 D2 골든타임(firstconnect·fcExtra·fcTail = **무료 3종 문안 전부**)이
+     비교 밖이었고, free3Def나 슬롯 조립이 깨져도 하네스는 PASS했다. 발송 문안(notif·sms)과 변형 이름도
+     카드의 사실 주장이라 함께 고정한다 — D1의 접촉 금지 규약이 조용히 풀리는 것을 막는다. */
   const flat = (c) => JSON.stringify({ g: c.grade, why: c.gradeWhy, grp: c.group, trig: c.trigger, ev: c.evidence,
-    acts: c.actions.map(a => a.key), op: c.script.opening.id, texts: [c.script.opening, ...c.script.core, c.script.ask, ...c.script.branches, c.script.closing].filter(Boolean).map(b2 => b2.text) });
+    acts: c.actions.map(a => a.key), op: c.script.opening.id, variant: c.script.variant,
+    notif: c.script.notif, sms: c.script.sms,
+    ids: [...(c.script.alert || []), ...(c.script.prep || []), ...(c.script.firstconnect || []), ...(c.script.fcExtra || []),
+      ...(c.script.stage || []), ...(c.script.fcTail || [])].map(b2 => b2.id),
+    texts: [...(c.script.alert || []), ...(c.script.prep || []), c.script.opening,
+      ...(c.script.firstconnect || []), ...(c.script.fcExtra || []), ...c.script.core,
+      ...(c.script.stage || []), c.script.ask, ...(c.script.fcTail || []),
+      ...c.script.branches, c.script.closing].filter(Boolean).map(b2 => b2.text) });
   if (!got || flat(got) !== flat(want)) fails.golden.push({ key: cs.key, i: want.member.cohortIndex });
 }
 

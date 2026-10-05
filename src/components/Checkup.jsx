@@ -1476,8 +1476,10 @@ function PublicSupport() {
 }
 
 /* 금고 기록의 출처 표기 — 어디서 온 값인지 회원이 알 수 있어야 한다(§0-H6) */
+/* [실측 통일 2026-10-05] self-real = 결과지·결과표 원문값(국민건강보험공단·명지병원)만 붙는 라벨이다.
+   합성 시드(체험·구 시드)는 「시연 시드」로 내렸다 — 합성값에 「실측」 배지를 붙이지 않는다. */
 const CKUP_SRC_LABEL = { nhis: "공단 연계", upload: "결과지 업로드", ocr: "사진 인식", photo: "사진 인식",
-  cohort: "국가검진 연계", "self-real": "실측 결과지", "self-seed": "실측 결과지", aggregate: "기관 연계" };
+  cohort: "국가검진 연계", "self-real": "실측 결과지 원문", "self-seed": "시연 시드", aggregate: "기관 연계" };
 
 function CheckupResults() {
   const [kakao, setKakao] = useState(true);
@@ -1515,6 +1517,16 @@ function CheckupResults() {
   const _judge = (rec) => {
     const its = (rec && rec.items) || [];
     if (!its.length) return { label: "항목 없음", tone: "#64748B", n: 0 };
+    /* [실측 통일 2026-10-05] 결과지에 판정 문구(flagKo)가 있으면 그걸 센다 — 하이핀이 다시 판정하지 않는다.
+       혈압처럼 한 판정 행이 두 항목(sbp·dbp)으로 쪼개진 경우 flagRow로 한 건으로 묶는다. */
+    const hasSrc = its.some((it) => it.flagKo);
+    if (hasSrc) {
+      const rows = {};
+      its.forEach((it) => { if (it.flagKo && !/^정상|^음성/.test(String(it.flagKo))) rows[it.flagRow || it.key] = it.flagKo; });
+      const n = Object.keys(rows).length;
+      if (!n) return { label: "이상 항목 없음", tone: "#16A34A", n: 0 };
+      return { label: `이상·의심 ${n}항목`, tone: "#B45309", n };
+    }
     const abn = (typeof ckupFlag === "function") ? its.filter((it) => ckupFlag(it.key, it.value)) : [];
     if (!abn.length) return { label: "이상 항목 없음", tone: "#16A34A", n: 0 };
     return { label: `확인 필요 ${abn.length}항목`, tone: abn.length >= 4 ? "#DC2626" : "#B45309", n: abn.length };
@@ -1536,7 +1548,7 @@ function CheckupResults() {
         </div>)}
       {_rep && (
         <div className="resitem"><span className="ic"><Activity size={18} color="#7C3AED" /></span>
-          <div style={{ flex: 1 }}><b style={{ fontSize: 13.5 }}>하이핀 정밀분석 리포트</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>연결된 검진 수치 기준 · 생체나이 {_rep.bio}세{typeof _rep.diff === "number" ? ` (실제보다 ${_rep.diff > 0 ? "+" : ""}${_rep.diff}세)` : ""}</div></div>
+          <div style={{ flex: 1 }}><b style={{ fontSize: 13.5 }}>{_rep.selfReal ? "건강분석 리포트(실측)" : "하이핀 정밀분석 리포트"}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{_rep.selfReal ? _rep.src : "연결된 검진 수치 기준"} · 생체나이 {_rep.bio}세{typeof _rep.diff === "number" ? ` (실제보다 ${_rep.diff > 0 ? "+" : ""}${_rep.diff}세)` : ""}{_rep.evalLabel ? ` · 종합 「${_rep.evalLabel}」` : ""}</div></div>
           <button className="cbtn" style={{ width: "auto", margin: 0, padding: "8px 14px" }} onClick={() => nav("care")}>결과 보기</button></div>)}
       {_recs.map((r, i) => {
         const j = _judge(r);

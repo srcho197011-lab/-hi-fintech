@@ -47,12 +47,9 @@ function InsAgencyLine() {
   return <div className="ipscompliance" style={{ borderColor: "#C7D8FA", background: "#F8FAFF" }}><b>판매 주체</b> · {AGENCY_INFO.full} (등록번호 {AGENCY_INFO.regNo} · {AGENCY_INFO.basis})</div>;
 }
 
-const INS_PRODUCTS = [
-  ["immune", "(무)건강한미래 암보험", "췌장암·간암 등 특정암 진단비 강화 · 표적항암·수술·입원비", "월 38,400원", "췌장암 경고 · 암 주의 다수"],
-  ["heart", "간·소화기 질환 보장보험", "간질환·췌장염·복부 정밀검사·입원 치료비 보장", "월 22,100원", "간 54.4세 · 췌장 56.2세"],
-  ["heartpulse", "당뇨케어 건강보험", "당뇨 진단·합병증(신장·망막·신경) 보장", "월 19,800원", "당뇨병 위험 +6.2%"],
-  ["badge", "4세대 실손의료비", "입원·통원 실제 치료비 보장 (자기부담 일부)", "월 13,200원", "치료비 기본 대비"],
-];
+/* [실측 통일 2026-10-06] INS_PRODUCTS 삭제 — 어디에서도 렌더되지 않는 죽은 상수인데
+   추천 사유를 selfRealProfile()·selfRealDiseaseOf()에서 읽고 있었다(살아나는 순간 전 회원 화면으로 나간다).
+   보험 추천은 insuranceSolution·covAnalysis 경로가 회원별로 담당한다. */
 const INS_COVERAGE = [
   { name: "무료 검진보험 (임베디드·자동가입)", status: "보유", rows: [["검진 중 질환 진단지원금", "한도 1,000,000원"], ["검진 연계 정밀검사비", "한도 300,000원"]], note: "검진 예약 시 추가 보험료 없이 자동가입" },
   { name: "4세대 실손의료비", status: "보유", rows: [["입원 치료비", "한도 50,000,000원"], ["통원 치료비", "회당 한도 200,000원"]], note: "2023.04 가입 · 갱신형" },
@@ -210,8 +207,11 @@ function InsJoin({ onGo }) {
   const [info, setInfo] = useState(() => {
     const me = (typeof demoCurrentUser === "function" && demoCurrentUser()) || (typeof selfMember === "function" ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
     const rg = (typeof memberRegion === "function") ? (() => { try { return memberRegion(); } catch (e) { return null; } })() : null;
+    /* [실측 통일 2026-10-05] 생년월일 상수 「1970.11.20」은 실제(1970-12-02)와 달랐다 —
+       청약 서식에 찍히는 값이므로 실측 원천(member.birth)에서 읽는다. */
     const isSelf = me && me.isSelf;
-    return { name: (me && me.name) || "", birth: isSelf ? "1970.11.20" : "", sex: (me && me.sex) || "", phone: "", addr: (rg && rg.addr) || "" };
+    const _birth = (me && me.birth) ? String(me.birth).replace(/-/g, ".") : ((typeof PT !== "undefined" && PT.birth) ? String(PT.birth).replace(/-/g, ".") : "");
+    return { name: (me && me.name) || "", birth: isSelf ? _birth : "", sex: (me && me.sex) || "", phone: "", addr: (rg && rg.addr) || "" };
   });
   // 가드레일 ⓟ(진단 #46): 주민등록번호 평문 수집 폼 제거 — 실번호 입력 대신 PASS 본인인증(시연) 완료 플래그로 대체
   const [rrnVerified, setRrnVerified] = useState(false);
@@ -467,12 +467,16 @@ function _insServiceRoute(text, member) {
     const S = insService.checkupIns(member);
     if (!S) return null;
     if (!S.policy) return { bubbles: [{ kind: "text", text: S.hasCheckup ? "검진 기록이 연결돼 있어요 — 치료비 준비 진단 탭 ①에서 무상 발급을 받으실 수 있어요(확인 한 번이면 돼요)." : "검진 기록을 연결하면 무상 검진대비보험을 발급해 드려요." }], quicks: ["치료비 준비 진단 열어줘"] };
-    if (/청구/.test(text) && S.timeline.phase === "보장 중") {
+    if (/청구/.test(text) && S.timeline && S.timeline.phase === "보장 중") {
       const r = insService.claimSubmit(member, { kind: "검진 연계 정밀검사", fee: 100000 });
       if (r.ok) return { bubbles: [{ kind: "text", text: `접수 완료 ✓ — ${r.claim.id} (검진 연계 정밀검사 지원). 바로 심사할까요?` }], quicks: [`심사 진행 · ${r.claim.id}`] };
       return { bubbles: [{ kind: "text", text: "🔒 " + r.reason }] };
     }
-    return { bubbles: [{ kind: "card", card: { title: `🩺 검진대비보험 — ${S.timeline.phase}`, items: [`증서 ${S.policy.id} · 무상(추가 보험료 0원)`, `보장기간 ${new Date(S.timeline.start).toLocaleDateString("ko-KR")}~${new Date(S.timeline.end).toLocaleDateString("ko-KR")}`].concat(S.coverage.map(([scen, name, amt]) => `${name} ${amt.toLocaleString()}원 — "${scen}"일 때`)), buttons: S.timeline.phase === "보장 중" ? ["검진보험 청구해줘"] : [] } }], quicks: [] };
+    /* 보장기간·만기는 insCheckupWindow(증서 날짜) 한 소스 — 하이도 회원 화면·프로 콘솔과 같은 문장을 말한다 */
+    const _tl = S.timeline;
+    return { bubbles: [{ kind: "card", card: { title: `🩺 검진대비보험 — ${_tl ? _tl.phase : "보장기간 확인 필요"}`, items: [`증서 ${S.policy.id} · 무상(추가 보험료 0원)`,
+      _tl ? `보장기간 ${new Date(_tl.start).toLocaleDateString("ko-KR")}~${new Date(_tl.end).toLocaleDateString("ko-KR")}${_tl.src ? ` · ${_tl.src}` : ""}` : "보장기간 — 증서 날짜를 확인하지 못했어요",
+      S.endedNote].filter(Boolean).concat(S.coverage.map(([scen, name, amt]) => `${name} ${amt.toLocaleString()}원 — "${scen}"일 때`)), buttons: (_tl && _tl.phase === "보장 중") ? ["검진보험 청구해줘"] : [] } }], quicks: [] };
   }
   // M2 — 위험 예측·인수 시뮬(상담사)
   if (/위험\s*(예측|알려|얼마|분석)|무슨\s*병|질병\s*위험/.test(text)) {
@@ -520,8 +524,9 @@ function AIPlannerChat({ onSimple, initialAsk }) {
   const Mx = useMemo(() => {
     if (!member) return null;
     const myIns = dm && typeof memberInsurance === "function" ? memberInsurance(dm) : (typeof selfInsurance === "function" ? selfInsurance() : null);
-    // 조성래(시연 기준 인물): 음주·당뇨·지방간 컨텍스트를 주입해 간·신장 보장 공백이 드러나게
-    const selfCtx = !dm ? { drinker: true, regAge: 54, sex: "남", highRiskCancerTypes: ["췌장암"], diseases: (member.diseases && member.diseases.length ? member.diseases : ["당뇨병", "지방간"]) } : {};
+    /* [실측 통일 2026-10-05] 본인 계정에 질환(당뇨병·지방간)을 주입하지 않는다 —
+       member(selfMember)가 이미 실측 원천을 담고 있고, 보장 공백 근거는 insuranceStats가 실측 수치로 적는다. */
+    const selfCtx = {};
     return Object.assign({}, member, selfCtx, { _ins: myIns });
   }, [dm, member && member.name]);
   const topGap = useMemo(() => { if (!Mx || typeof analyzeCoverageGap !== "function") return null; try { const g = analyzeCoverageGap(Mx); return g && g.top ? g.top : null; } catch (e) { return null; } }, [Mx]);
@@ -1039,15 +1044,20 @@ function SilsonStatsPanel() {
           <div><span>비급여 자기부담</span><b>{myIns.silson.coNon}</b></div>
           <div><span>통원 한도</span><b>{_w(myIns.silson.outLimit)}/회</b></div>
           <div><span>입원 한도</span><b>{_w(myIns.silson.inLimit)}</b></div>
-          <div><span>월 보험료(추정)</span><b>{_w(myIns.silson.monthly)}</b></div>
-          <div><span>중대질환 진단비 특약</span><b>{myIns.riders.length ? _w(myIns.riderTotal) + " (" + myIns.riders.length + "종)" : "없음"}</b></div>
+          {/* [실측 통일 2026-10-05] 월 보험료는 실계약값(월 154,000원·2012-03-29)일 때 「추정」이라 쓰지 않는다.
+              진단비 특약은 실계약 조회에 금액이 없으므로 「확인 필요」로 둔다(7,000만원 3종을 만들지 않는다). */}
+          <div><span>월 보험료{myIns.silson.monthlySrc === "실계약(신용정보원 조회)" ? "" : "(추정)"}</span><b>{_w(myIns.silson.monthly)}</b>{myIns.silson.monthlySrc === "실계약(신용정보원 조회)" ? <em style={{ fontStyle: "normal", fontSize: 10, color: "var(--soft)", marginLeft: 4 }}>실계약</em> : null}</div>
+          <div><span>중대질환 진단비 특약</span><b>{myIns.riders.length ? _w(myIns.riderTotal) + " (" + myIns.riders.length + "종)" : (myIns.riderNote ? "확인 필요" : "없음")}</b></div>
         </div>) : <div className="silme-none"><AlertTriangle size={13} /> 실손 미가입 — 검진 후 치료비 보장 공백. 무료 검진보험·적립 지원으로 보완 가능</div>}
         {myIns.dx.length > 0 && <div className="sildx">중대질환 진단 이력: {myIns.dx.map((d) => <span key={d.cat + d.sub}>{d.cat}·{d.sub} <b>{_w(d.benefit)}</b></span>)}</div>}
+        {myIns.riderNote ? <div className="silnote" style={{ marginTop: 6 }}>※ 진단비 특약: {myIns.riderNote}</div> : null}
       </div>)}
 
       {mySol && (<div className="silsol">
         <div className="silsol-h"><Sparkles size={15} color="#7C3AED" /> AI 보험 솔루션 <span>건강데이터 × 보험데이터 융합 분석</span>
-          <span className="silsol-score" style={{ color: mySol.grade === "충실" ? "#15803D" : mySol.grade === "보통" ? "#B45309" : "#B91C1C" }}>보장 충실도 {mySol.grade} · {mySol.score}점</span></div>
+          {/* [실측 통일 2026-10-05] 점수의 입력(진단비 특약 금액)이 확인되지 않은 계정은 점수를 적지 않는다 */}
+          <span className="silsol-score" style={{ color: mySol.score == null ? "#64748B" : mySol.grade === "충실" ? "#15803D" : mySol.grade === "보통" ? "#B45309" : "#B91C1C" }}>보장 충실도 {mySol.grade}{mySol.score != null ? ` · ${mySol.score}점` : ""}</span></div>
+        {mySol.scoreNote ? <div className="silnote" style={{ marginTop: 2 }}>※ {mySol.scoreNote}{mySol.src ? ` · 근거: ${mySol.src}` : ""}</div> : null}
         {mySol.findings.length ? <div className="silsol-list">{mySol.findings.map((f, i) => { const C = { crit: "#DC2626", warn: "#D97706", good: "#15803D" }[f.sev]; return (
           <div className="silsol-f" key={i} style={{ borderLeftColor: C }}>
             <div className="silsol-ft"><span className="silsol-sev" style={{ background: C + "1A", color: C }}>{f.sev === "crit" ? "시급" : f.sev === "warn" ? "권고" : "양호"}</span> <b>{f.t}</b></div>
@@ -1325,8 +1335,11 @@ function InsCheckupInsSection({ onEnroll }) {
   const won = (n) => Number(n || 0).toLocaleString();
   if (!m || !S) return null;
   const nm = m.name || "회원";
-  const TL = ["발급", "보장 시작", "지켜지는 중", "만료"];
-  const tlIdx = !S.policy ? -1 : S.timeline.phase === "만료" ? 3 : S.timeline.phase === "보장 중" ? 2 : 1;
+  /* [실측 통일 2026-10-06] 보장기간은 insService.checkupIns → insCheckupWindow(증서 날짜) 하나에서 온다 —
+     프로 콘솔 ⑨(hmTouchPlan)와 같은 근거다. 만기가 지난 증서는 여기서도 「보장 종료」로 적는다. */
+  const TL = ["발급", "보장 시작", "지켜지는 중", "보장 종료"];
+  const ended = !!(S.policy && S.ended);
+  const tlIdx = !S.policy || !S.timeline ? -1 : ended ? 3 : S.timeline.phase === "보장 중" ? 2 : 1;
   const active = tlIdx === 2;
   return (
     <div className="card" id="cins-checkup" style={{ border: "1.5px solid #BFD0FF", overflow: "hidden" }}>
@@ -1336,9 +1349,11 @@ function InsCheckupInsSection({ onEnroll }) {
         {!S.policy ? (
           <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님, 검진 받으셨죠?<br />그 순간을 위해 <span style={{ color: "#FDE68A" }}>무료 보장</span>이 준비돼 있어요.</div>
         ) : (
-          <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님은 지금 <span style={{ color: "#FDE68A" }}>지켜지고 있어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>검진에서 무슨 일이 발견돼도 — 치료비 걱정에 치료를 미루는 일은 없게요.</span></div>
+          ended
+            ? <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님의 무료 보장은 <span style={{ color: "#FDE68A" }}>만기가 지났어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>다음 검진 주기를 잡으시면 같은 보장이 다시 시작돼요.</span></div>
+            : <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님은 지금 <span style={{ color: "#FDE68A" }}>지켜지고 있어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>검진에서 무슨 일이 발견돼도 — 치료비 걱정에 치료를 미루는 일은 없게요.</span></div>
         )}
-        {S.policy && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.18)", borderRadius: 99, padding: "5px 12px", fontSize: 11.5, fontWeight: 700 }}><Check size={13} /> {active ? "지금 보장되고 있어요" : S.timeline.phase} · {new Date(S.timeline.start).toLocaleDateString("ko-KR")} ~ {new Date(S.timeline.end).toLocaleDateString("ko-KR")}</div>}
+        {S.policy && S.timeline && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.18)", borderRadius: 99, padding: "5px 12px", fontSize: 11.5, fontWeight: 700 }}>{ended ? <AlertTriangle size={13} /> : <Check size={13} />} {active ? "지금 보장되고 있어요" : S.timeline.phase} · {new Date(S.timeline.start).toLocaleDateString("ko-KR")} ~ {new Date(S.timeline.end).toLocaleDateString("ko-KR")}{S.coverSrc ? ` · ${S.coverSrc}` : ""}</div>}
       </div>
 
       {!S.policy ? (
@@ -1354,8 +1369,9 @@ function InsCheckupInsSection({ onEnroll }) {
         <div style={{ display: "flex", gap: 4, margin: "0 0 12px", fontSize: 10.5, fontWeight: 700 }}>
           {TL.map((s, i) => <span key={s} style={{ flex: 1, textAlign: "center", padding: "5px 0", borderRadius: 8, background: i <= tlIdx ? "#DBEAFE" : "#F1F5F9", color: i <= tlIdx ? "#1D4ED8" : "#94A3B8" }}>{i <= tlIdx ? "✓ " : ""}{s}</span>)}
         </div>
+        {ended && S.endedNote && <div style={{ margin: "0 0 10px", padding: "11px 13px", background: "#FEF3E2", border: "1px solid #FDE68A", borderRadius: 12, fontSize: 12.5, lineHeight: 1.7, color: "#92400E", fontWeight: 600 }}>{S.endedNote}</div>}
         {/* ── "만약에…" 시나리오 카드 — 큰 글씨·상황 언어 ── */}
-        <div style={{ fontSize: 13, fontWeight: 800, margin: "2px 0 8px" }}>만약에 이런 일이 생기면요,</div>
+        <div style={{ fontSize: 13, fontWeight: 800, margin: "2px 0 8px" }}>{ended ? "보장 기간에는 이렇게 지켜드렸어요," : "만약에 이런 일이 생기면요,"}</div>
         <div style={{ display: "grid", gap: 8 }}>
           {S.coverage.map(([scen, name, amt, d]) => (
             <div key={name} style={{ display: "flex", alignItems: "center", gap: 12, border: "1px solid #E3ECFB", background: "#F8FAFF", borderRadius: 12, padding: "12px 14px" }}>
@@ -1460,18 +1476,25 @@ function InsRiskCard() {
       <p style={{ fontSize: 12.5, color: "var(--muted)" }}>{(R && R.reason) || "검진 데이터를 연결하면 질병별 위험과 맞춤 보장을 예측해 드려요."}</p></div>);
   return (
     <div className="card" style={{ border: "1.5px solid #DDD6FE" }}>
-      <div className="rct"><Sparkles size={17} color="#7C3AED" /> 질병별 위험 예측 <span className="cbadge" style={{ marginLeft: 8, color: "#6D28D9", background: "#EDE9FE" }}>내 검진 실측 기반 · {R.date}</span></div>
+      {/* [실측 통일 2026-10-05] 「실측 기반」 배지는 금고가 실측일 때만 쓴다. 백분위(상위 N%)는 분포가
+          합성 코호트라 본인 계정에서는 비운다 — 근거는 결과통보서 실측값으로만 적는다. */}
+      <div className="rct"><Sparkles size={17} color="#7C3AED" /> 질병별 위험 예측 <span className="cbadge" style={{ marginLeft: 8, color: "#6D28D9", background: "#EDE9FE" }}>{R.real ? "내 검진 실측 기반" : "내 검진 수치 기반"} · {R.date}</span></div>
       {R.risks.slice(0, 3).map((r) => (
         <div key={r.code} style={{ border: "1px solid #EEF2F7", borderRadius: 10, padding: "8px 12px", margin: "5px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
             <b>{r.ko} <span style={{ fontSize: 10.5, color: "var(--soft)" }}>{r.code}</span></b>
-            <span className="cbadge" style={{ color: r.topPct <= 30 ? "#B91C1C" : "#B45309", background: r.topPct <= 30 ? "#FDECEC" : "#FEF3E2" }}>같은 {R.band} {R.sex}성 중 상위 {r.topPct}%</span>
+            {r.topPct != null
+              ? <span className="cbadge" style={{ color: r.topPct <= 30 ? "#B91C1C" : "#B45309", background: r.topPct <= 30 ? "#FDECEC" : "#FEF3E2" }}>같은 {R.band} {R.sex}성 중 상위 {r.topPct}%</span>
+              : <span className="cbadge" style={{ color: "#475569", background: "#F1F5F9" }}>동년배 백분위 해당 없음</span>}
             <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: r.trend === "악화 추세" ? "#B91C1C" : r.trend === "개선 추세" ? "#15803D" : "var(--muted)" }}>{r.trend}</span>
           </div>
           <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 3 }}>근거: {r.basis.length ? r.basis.map((b) => `${b.ko} ${b.value}`).join(" · ") : "전 지표 정상범위"}</div>
         </div>))}
-      {CM && CM.ok && CM.rows.filter((r) => r.gap > 0).slice(0, 2).map((r) => (
-        <div className="costrow" key={r.code}><span className="cl">🧩 {r.ko} 보장 갭</span><span className="cv" style={{ color: "#B45309" }}>{r.gap.toLocaleString()}원 부족</span><span className="ca">보완 권장</span></div>))}
+      {R.pctNote ? <div className="chnote" style={{ marginTop: 4 }}>※ {R.pctNote}</div> : null}
+      {/* [실측 통일 2026-10-06] 보유 진단비가 미확인이면 부족액을 적지 않는다 — 금액 대신 「확인 필요」 + 사유 */}
+      {CM && CM.ok && CM.rows.filter((r) => r.gap == null || r.gap > 0).slice(0, 2).map((r) => (
+        <div className="costrow" key={r.code}><span className="cl">🧩 {r.ko} 보장 갭</span><span className="cv" style={{ color: r.gap == null ? "#475569" : "#B45309" }}>{r.gap == null ? "확인 필요" : r.gap.toLocaleString() + "원 부족"}</span><span className="ca">{r.gap == null ? "증권 확인" : "보완 권장"}</span></div>))}
+      {CM && CM.ok && CM.benefitKnown === false && CM.rows.length ? <div className="chnote" style={{ marginTop: 4 }}>※ {CM.rows[0].gapNote}</div> : null}
       <button className="cbtn" style={{ marginTop: 6 }} onClick={() => setUw(insService.underwrite(m, "치료비 준비 진단"))}><ShieldCheck size={14} /> 가입 심사 미리보기 (인수 시뮬레이션)</button>
       {uw && uw.ok && (
         <div style={{ background: "#F8FAFF", border: "1px solid #DBEAFE", borderRadius: 10, padding: "9px 12px", marginTop: 8, fontSize: 12.2, lineHeight: 1.65 }}>
@@ -1617,7 +1640,10 @@ function InsRerateTab() {
       ) : !C.eligible ? (
         <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.7 }}>{C.reason}</p>
       ) : (<>
-        <div className="costrow"><span className="cl">개선된 지표 (작년 → 올해)</span><span className="cv" style={{ color: C.improvedN ? "var(--green)" : "var(--muted)" }}>{C.improvedN ? C.improved.map((x) => x.ko).join(" · ") : "확인되지 않음"}</span><span className="ca">{C.improvedN}건</span></div>
+        {/* [실측 통일 2026-10-05] 「작년 → 올해」가 아니라 **비교한 두 검진일**을 밝힌다 */}
+        <div className="costrow"><span className="cl">개선된 지표 {C.fromDate && C.toDate ? `(${C.fromDate} → ${C.toDate})` : "(작년 → 올해)"}</span><span className="cv" style={{ color: C.improvedN ? "var(--green)" : "var(--muted)" }}>{C.improvedN ? C.improved.map((x) => x.ko).join(" · ") : "확인되지 않음"}</span><span className="ca">{C.improvedN}건</span></div>
+        {C.fromProvider && C.toProvider && !C.sameProvider ? <div className="chnote" style={{ marginTop: 6 }}>※ 두 시점의 측정기관이 다릅니다({C.fromDate} {C.fromProvider} ↔ {C.toDate} {C.toProvider}) — 기관·장비·기준치가 달라 「개선·악화」는 같은 선에 놓고 읽지 않습니다. 보험료는 개선이 확인될 때만 내려가고, 악화는 표시만 합니다(불이익 없음).</div> : null}
+        {C.worsenedN ? <div className="costrow"><span className="cl">악화 지표(표시만 · 보험료 영향 없음)</span><span className="cv" style={{ color: "#B45309" }}>{(C.worsened || []).map((k) => (typeof CKUP_LOINC !== "undefined" && CKUP_LOINC[k]) ? CKUP_LOINC[k].ko : k).join(" · ")}</span><span className="ca">{C.worsenedN}건</span></div> : null}
         <div className="costrow"><span className="cl">현재 → 재산정 보험료(월)</span><span className="cv" style={{ color: "var(--blue)", fontWeight: 800 }}>{won(C.before)} → {won(C.after)}{C.pct > 0 ? ` (−${C.pct}%)` : ""}</span><span className="ca">{C.pct > 0 ? "인하 가능" : "유지"}</span></div>
         <button className="cbtn pri" style={{ marginTop: 8, opacity: C.pct > 0 ? 1 : .55 }} disabled={C.pct <= 0} onClick={() => { const r = insService.rerateApply(m); if (typeof toast === "function") toast(r.ok ? `재산정 적용 ✓ 연 ${(r.state.saving * 12).toLocaleString()}원 아껴요` : r.reason); setTick((t) => t + 1); }}><Check size={15} /> {C.pct > 0 ? "인하 적용 신청하기" : "개선 지표가 생기면 신청할 수 있어요"}</button>
         <div className="chnote" style={{ marginTop: 8 }}>지표가 나빠져도 보험료는 <b>절대 오르지 않아요</b>(단방향 게이트) — 데이터는 나에게 유리할 때만 쓰여요. 인하율은 제휴 보험사 계리 검증 전 시연 기준({insService.config.RERATE_PER_IMPROVE}%/지표·최대 {insService.config.RERATE_MAX_PCT}%)입니다.</div>

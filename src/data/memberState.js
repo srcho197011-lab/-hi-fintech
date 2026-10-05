@@ -40,7 +40,12 @@ function _hiLiveOverlay(m, base, nowTs) {
   if (ob) {
     const cks = (v && v.checkups) || [];
     const years = {}; let lastCk = null, fullAny = false, nhis = false, uploads = 0;
+    /* [실측 통일 2026-10-06] 측정기관 수도 센다 — 「연도별 추이를 보여드릴 수 있어요」를 말할 자격의 조건이다.
+       (본인 계정 실측은 2020 명지병원 · 2024 서울늘편한내과의원 — 6년 간격·기관 상이라 추이가 아니다) */
+    const provs = {};
     cks.forEach(function (c) {
+      var pv = c.provider || (c.meta && c.meta.provider) || "";
+      if (pv) provs[pv] = 1;
       const t = _hiParseDate(c.date || (c.meta && c.meta.date), nowTs);
       if (t) { years[new Date(t).getFullYear()] = 1; if (!lastCk || t > lastCk) lastCk = t; }
       if ((c.completeness || (c.meta && c.meta.completeness)) === "full") fullAny = true;
@@ -56,6 +61,8 @@ function _hiLiveOverlay(m, base, nowTs) {
     live.s1 = { currentYear: thisYear, recordYears: recordYears, pastYears: pastYears,
       hasCurrentYear: ckThisYear, latestYear: recordYears.length ? recordYears[recordYears.length - 1] : null,
       group: ckThisYear ? "current" : (pastYears.length ? "past" : "none"),
+      recordGapYears: recordYears.length >= 2 ? (recordYears[recordYears.length - 1] - recordYears[0]) : 0,
+      providerCount: Object.keys(provs).length,
       checkedThisYear: ckThisYear, checkedLastYear: !!years[thisYear - 1], resultArrived: ckThisYear };
     if (ckThisYear && lastCk) { live.s1.checkupDaysAgo = Math.max(0, Math.round((nowTs - lastCk) / day)); live.s1.resultAgeDays = live.s1.checkupDaysAgo; live.s1.checkupAt = new Date(lastCk).toISOString().slice(0, 10); }
     const trendYears = recordYears.length;

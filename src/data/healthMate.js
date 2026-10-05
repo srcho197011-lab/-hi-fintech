@@ -74,7 +74,7 @@ function hmActivePros(dan) {
 /* ── 8단계 정의(단일 소스) — DB 4단계 + 이후 4단계. 판정은 hmStageOf가 "데이터만" 근거로 수행 ── */
 const HM_STAGES = [
   { k: "D1", part: "DB", name: "확보", desc: "동의 + 기본 세그먼트", mission: "연락하지 않는다 — 락 상태에서 준비만", tab: 2 },
-  { k: "D2", part: "DB", name: "검진 데이터", desc: "1세대 자산 — 실측 검진값(금고)", mission: "첫 연결 — 결과+보장 결합 안내", tab: 3 },
+  { k: "D2", part: "DB", name: "검진 데이터", desc: "1세대 자산 — 실측 검진값(금고)", mission: "첫 연결 골든타임 — 무료 3종·지원 약속·건강관리 동의", tab: 3 },
   { k: "D3", part: "DB", name: "분석 데이터", desc: "2세대 자산 — 등급·위험도·리포트", mission: "예측 해설 · 치료비 보장 점검", tab: 4 },
   { k: "D4", part: "DB", name: "통합 데이터", desc: "3세대 자산 — 보험·행동·가족 결합", mission: "생활 밀착 관리 · 공백 채우기", tab: 5 },
   { k: "L5", part: "LIFE", name: "정기 케어", desc: "단발 → 주기(반복 터치·시계열)", mission: "주기 관리 · 만기 터치 · 재검진", tab: 3 },
@@ -82,14 +82,23 @@ const HM_STAGES = [
   { k: "L7", part: "LIFE", name: "데이터 자산화", desc: "동의 증서 · 데이터 이용 대가", mission: "설명 지원 · 동의 관리 도움(권유 아님)", tab: 9 },
   { k: "L8", part: "LIFE", name: "평생주기", desc: "다년 추이 → 재산정·재설계", mission: "재산정 안내 · 차기 생애설계", tab: 7 },
 ];
-/* 단계 상세 가이드(P6+ — 프로 교육용 단일 소스): 서술 사례는 [예시·시연] 라벨, 실사례는 화면이 관할 코호트에서 산다 */
+/* 단계 상세 가이드(P6+ — 프로 교육용 단일 소스): 서술 사례는 [예시·시연] 라벨, 실사례는 화면이 관할 코호트에서 산다.
+   ⚠️ 여기 doKo(단계에서 할 일)와 **실제 조립되는 대본**은 같아야 한다 — 그 연결이 끊어져 있던 것을
+   형 지시(2026-10-05)로 이었다. 연결 지점은 src/data/handoffCard.js의 HM_STAGE_PLAN 한 곳뿐이다:
+     D1 prep(접촉 금지·사전 학습) · D2 무료 3종(free3Def 원천)+지원 약속+건강관리 동의 ·
+     D3 리포트 해설+치료비 브리프 · D4 생활 밀착+빈 곳 사실 고지 · L5 주기 리듬 · L6 응급 선행+가족·돌봄 ·
+     L7 데이터 권리·대가 · L8 재산정+생애 재설계. doKo를 고치면 그 표도 같이 고친다(이원화 금지).
+   ⚠️ 개수도 함께 맞춘다 — D2는 ①무료 3종 ②향후 지원 약속 ③건강관리 동의로 **셋**이다(형 지시
+      2026-10-05). 종전 doKo는 「두 덩어리」라 쓰고 동의를 문장 끝에 꼬리로 붙여, 프로 교육용 단일
+      소스가 지시의 구조를 보여주지 못했다. doKo·이 표·조립 대본(HM_STAGE_PLAN)·전달 체크가
+      같은 개수를 따라가야 한다(전달 체크 칸 수는 handoffResult.HMR_GOLDEN_KEYS 소관). */
 const HM_STAGE_GUIDE = {
   D1: { entry: "회원 가입 + 건강·AI 활용 동의(동의의 범위가 곧 활동의 범위)",
     doKo: "연락하지 않아요 — 검진 결과 수령 전 접촉 금지(락). 프로필·관할 사전 학습만 해둡니다.",
     next: "검진을 받고 결과가 금고에 들어오면 D2로 — 락은 하이가 자동 해제하고 알려드려요.",
     ex: "회사 단체 가입으로 들어온 40대 회원 — 검진 예약만 잡혀 있고 결과가 아직 없어요. 지금 전화하면 락 위반입니다. 결과 도착 알림이 오면 그때가 첫 연결이에요." },
   D2: { entry: "실측 검진값이 데이터 금고에 저장(1세대 자산)",
-    doKo: "첫 연결의 골든타임 — 한 통화에 두 덩어리를 전해요. 〔무료 3종〕 ①보험 혜택 — 검진대비보험 0원 자동 가입(암·뇌졸중·급성심근경색 각 최대 1,000만원)과 적용법 ②건강분석 리포트 — 생체나이·질병 위험·의료비 예측 발행·해설 ③맞춤 케어 키트 — 검진 결과 기반(만성질환 보유 시 그에 맞춘) 영양소·홈케어 측정기기 무료 제공. 〔향후 지원 약속〕 진료 안내 · 추가검진 안내 · 맞춤 영양 · 케어 활동을 앞으로 계속 챙겨드린다는 약속. 이 통화에서 앞으로의 건강관리 동의도 함께 받아요 — 동의의 범위가 곧 활동의 범위예요.",
+    doKo: "첫 연결의 골든타임 — 한 통화에 세 덩어리를 전해요. ①〔무료 3종〕 ⓐ보험 혜택 — 검진대비보험 0원 자동 가입(암·뇌졸중·급성심근경색 각 최대 1,000만원)과 적용법 ⓑAI 정밀리포트 — 생체나이·질병 위험·의료비 예측 발행·해설 ⓒ맞춤 케어 키트 — 검진 결과 기반(만성질환 보유 시 그에 맞춘) 영양소·홈케어 측정기기 무료 제공 + 진료 안내·추가검진 안내. ②〔향후 지원 약속〕 비대면 진료 · 맞춤 영양 · 케어 활동을 앞으로 계속 챙겨드린다는 약속(진료 안내·추가검진 안내는 ⓒ 케어 키트 구성에 들어 있어 거기서 한 번만 말해요). ③〔건강관리 동의〕 앞으로의 건강관리 동의를 이 통화에서 함께 받아요 — 동의의 범위가 곧 활동의 범위예요.",
     next: "AI 분석 리포트(등급·위험도)가 발급되면 D3로.",
     ex: "어제 검진 결과가 도착한 50대 회원 — '결과 보셨어요?'로 시작해 위험 구간 1개와 재검진 예약까지 한 번에 정리한 사례가 표준이에요." },
   D3: { entry: "등급·위험도·예측 리포트 생성(2세대 자산)",
@@ -153,7 +162,10 @@ function _hmDay(ts) { const d = new Date(ts); return `${d.getFullYear()}.${d.get
 const _HM_DAY = 86400000;
 /* 증서 발급 시각 — c.date("YYYY-MM-DD" 또는 "YYYYMMDD")가 단일 근거. 날짜가 없는 옛 증서만 c.at으로 폴백한다.
    c.at은 "그 기기가 시드를 기록한 벽시계 시각"이라 기기마다 다른 만기를 만들었다(hmTouchPlan 주석 참고). */
+/* [실측 통일 2026-10-06] 증서 발급 시각 판정은 insService.js의 insCertAt 하나로 모았다 —
+   회원 화면(치료비 케어 ①)과 프로 콘솔 ⑨가 각자 계산하면 같은 증서가 두 기간으로 갈라진다. */
 function _hmCertAt(c) {
+  if (typeof insCertAt === "function") return insCertAt(c);
   if (!c) return null;
   const d = String(c.date || "").replace(/[^0-9]/g, "");
   if (d.length >= 8) {
@@ -471,11 +483,12 @@ function hmHealthBrief(m) {
   /* 연도는 금고 실측이 1순위 — 생성 검진(genMemberCheckup)의 가상 연차를 먼저 쓰면 금고에 실측을 가진
      회원(본인 계정)의 화면 연도와 ⑨ 단계 근거의 검진일이 몇 해씩 어긋난다(숫자 모순 지점). */
   try { const vk = (typeof vaultCheckupMap === "function") ? vaultCheckupMap(m) : null; if (vk && vk.date) year = String(vk.date).slice(0, 4) + "년"; } catch (e) {}
-  if (year === "-") { try { const c = m._chk || ((typeof genMemberCheckup === "function") ? genMemberCheckup(m) : null); if (c && c.years) year = c.years[2] + "년"; } catch (e) {} }
-  /* 위험 밴드 — riskPredict(금고 연동) 우선, 미연동 시 회원 건강 프로필(시연 시드)로 조립 */
+  if (year === "-") { try { const c = m._chk || ((typeof genMemberCheckup === "function") ? genMemberCheckup(m) : null); if (c && c.years && c.years.length) year = c.years[c.years.length - 1] + "년"; } catch (e) {} }   /* [실측 통일 2026-10-06] 2시점 회원에서 years[2]는 undefined — 「undefined년」이 떴다 */
+  /* 위험 밴드 — riskPredict(금고 연동) 우선, 미연동 시 회원 건강 프로필(시연 시드)로 조립.
+     [실측 통일 2026-10-05] 본인 계정은 밴드를 비운다(「—」) — 백분위 분포가 합성 코호트라 실측 근거가 없다(형 지시 ②). */
   try {
     const rp = (typeof riskPredict === "function") ? riskPredict(m) : null;
-    if (rp && rp.ok && rp.risks.length) band = rp.risks[0].topPct <= 20 ? "상" : rp.risks[0].topPct <= 50 ? "중" : "하";
+    if (rp && rp.ok && rp.risks.length) band = (rp.risks[0].topPct == null) ? "—" : rp.risks[0].topPct <= 20 ? "상" : rp.risks[0].topPct <= 50 ? "중" : "하";
     else { const cg = m.cancerRiskGrade || 3; band = cg >= 6 ? "상" : cg >= 4 ? "중" : "하"; }
   } catch (e) {}
   seen = !!_hmLs("hifin_hm_resultseen_" + m.email, null);
@@ -504,16 +517,11 @@ function hmTouchPlan(m) {
         근거 문구는 "증서 CERT-JSR2024A"라고 밝히면서 만기는 시드 시각 + 61일로 계산해, 2024년 증서가
         2026년 12월에 만기되는 모순이 화면에 떴고 새 기기에서 시드하면 기기마다 다른 날짜가 나왔다(실측).
         이제 증서 날짜(c.date — 발급 사실의 날짜)가 단일 근거다. c.at은 날짜가 없는 증서의 폴백으로만 쓴다. */
-  let issueAt = null, src = null;
-  try {
-    const certs = _hmLs("hifin_ins_certs", []);
-    const c = certs.filter((x) => x.insured && x.insured.name === m.name).pop();
-    if (c) { issueAt = _hmCertAt(c); src = "증서 " + c.id + (c.date ? " · 발급 " + String(c.date).replace(/-/g, ".") : ""); }
-  } catch (e) {}
-  if (!issueAt) { const q = hmInsQueue().find((x) => x.email === m.email); if (q) { issueAt = q.at; src = "청약일 기준(시연)"; } }
+  /* 보장기간은 insCheckupWindow 하나에서 읽는다 — 회원 화면(insService.checkupIns)과 같은 근거다 */
+  const W = (typeof insCheckupWindow === "function") ? insCheckupWindow(m) : null;
+  let issueAt = W ? W.issuedAt : null, src = W ? W.src : null;
   if (issueAt) {
-    const start = new Date(issueAt); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
-    const end = start.getTime() + 60 * _HM_DAY;
+    const end = W.end;
     if (now > end) {
       /* 이미 만기가 지난 증서 — D-30·D-7 "예정" 행을 만들면 지난 날짜가 오늘의 할 일로 올라온다.
          보장 종료 사실 1행으로 요약하고, 다음 검진 주기 제안으로 잇는다. */
@@ -529,9 +537,19 @@ function hmTouchPlan(m) {
 
 /* ── ④ 질병 예측 카드 — riskPredict 우선, 미연동 시 회원 건강 프로필 조립(계산 없음·밴드만) ── */
 function hmRiskCards(m) {
+  /* [실측 통일 2026-10-05] 본인 계정은 실측 리포트 행을 그대로 보여 준다 —
+     「당뇨병 상 — 상위 1% 구간」 같은 밴드는 합성 코호트 백분위라 실측 근거가 없다(형 지시 ②).
+     대신 리포트 수치(당뇨 +6.2%/10년 10.9% · 고혈압 -3.9%/22.3% · 간 54.4세 · 췌장암 경고)를 근거로 적는다. */
+  try {
+    if (typeof selfRealIsSelf === "function" && selfRealIsSelf(m) && typeof selfRealRiskRows === "function") {
+      const sr = selfRealRiskRows();
+      if (sr && sr.rows.length) return { src: sr.src, note: sr.bandNote, rows: sr.rows.slice(0, 3).map((r) => ({ ko: r.ko, band: "—", why: r.why, trend: r.trend })) };
+    }
+  } catch (e) {}
   try {
     const rp = (typeof riskPredict === "function") ? riskPredict(m) : null;
-    if (rp && rp.ok) return { src: "riskPredict(금고 실측)", rows: rp.risks.slice(0, 3).map((r) => ({ ko: r.ko, band: r.topPct <= 20 ? "상" : r.topPct <= 50 ? "중" : "하", why: `동년배 대비 상대 위험 상위 ${r.topPct}% 구간 · ${r.trend}`, trend: r.trend })) };
+    /* 「실측」 표기는 본인 계정(위 분기)에만 — 체험·코호트 금고는 시연 시드다 */
+    if (rp && rp.ok) return { src: "riskPredict(금고 검진값 · 시연 시드)", rows: rp.risks.slice(0, 3).map((r) => ({ ko: r.ko, band: r.topPct == null ? "—" : r.topPct <= 20 ? "상" : r.topPct <= 50 ? "중" : "하", why: r.topPct == null ? `검진 수치 근거 · ${r.trend}` : `동년배 대비 상대 위험 상위 ${r.topPct}% 구간 · ${r.trend}`, trend: r.trend })) };
   } catch (e) {}
   const rows = [];
   (m.highRiskCancerTypes || []).slice(0, 2).forEach((c) => rows.push({ ko: c, band: (m.cancerRiskGrade || 3) >= 6 ? "상" : "중", why: "암 위험 등급 " + (m.cancerRiskGrade || "-") + " · 관리 권고", trend: "관리 필요" }));

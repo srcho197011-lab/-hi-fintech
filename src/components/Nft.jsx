@@ -7,9 +7,20 @@ function NFTSection({ onGo }) {
   const _nftNm = (_nftMe && _nftMe.name) || "회원";
   const _nftR = (_nftMe && typeof demoReport === "function") ? (() => { try { return demoReport(_nftMe); } catch (e) { return null; } })() : null;
   const _nftCk = (() => { try { if (!_nftMe || typeof vaultLoad !== "function") return ""; const v = vaultLoad(anonToken(_nftMe)); const cs = ((v && v.checkups) || []).slice().sort((x, y) => String(y.date || "").localeCompare(String(x.date || ""))); return cs.length ? String(cs[0].date || "").replace(/-/g, ".") : ""; } catch (e) { return ""; } })();
+  /* 예약증 SBT — 실제 예약 증서(hifin_ins_certs)의 기관·날짜. 없으면 비운다 */
+  /* ⚠️ hifin_ins_certs는 기기 공용 저장소다 — 회원으로 거르지 않으면 본인(조성래)의 증서가
+     체험 회원 화면에 뜬다(persona_diff가 잡는다). 증서 주인(insured.name)이 이 회원인 것만 읽는다. */
+  const _nftBook = (() => { try { const c = (typeof insCheckupCert === "function") ? insCheckupCert(_nftMe) : null; if (!c) return ""; const d = String(c.date || "").replace(/-/g, "."); return [c.center || "", d, c.time || ""].filter(Boolean).join(" · "); } catch (e) { return ""; } })();
+  /* 보험증서 SBT — 보장 금액은 치료비 케어 ①과 같은 소스(insService.checkupIns coverage) */
+  const _nftCov = (() => { try { if (!_nftMe || typeof insService === "undefined") return ""; const S = insService.checkupIns(_nftMe); if (!S || !S.coverage) return ""; return S.coverage.slice(0, 3).map(([, nm, amt]) => `${nm} ${Number(amt).toLocaleString()}원`).join(" · ") + (!S.policy ? " · 발급 대기" : S.ended ? ` · 보장 종료(만기 ${new Date(S.timeline.end).toLocaleDateString("ko-KR")})` : " · 검진 연계 자동가입"); } catch (e) { return ""; } })();
   const _nftMine = (typeof NFT_MINE !== "undefined" ? NFT_MINE : []).map((n) => {
     if (n.type === "리포트 NFT") return Object.assign({}, n, { name: "하이핀 정밀분석 리포트", meta: [_nftCk && `검진일 ${_nftCk}`, _nftR && `생체나이 ${_nftR.bio}세`, _nftR && _nftR.evalLabel && `종합 ${_nftR.evalLabel}`].filter(Boolean).join(" · ") || "검진 결과 연결 후 발행" });
     if (n.type === "건강인증서 SBT") return Object.assign({}, n, { meta: [_nftR && _nftR.evalLabel && `종합 ${_nftR.evalLabel}`, _nftR && _nftR.agingRank != null && `노화등수 ${_nftR.agingRank}등`, _nftR && _nftR.agingSpeed != null && `노화속도 ${_nftR.agingSpeed}배`].filter(Boolean).join(" · ") || "검진 결과 연결 후 발행" });
+    /* [실측 통일 2026-10-06] 예약증·보험증서도 상수를 내보내지 않는다 —
+       예약은 실제 예약 기록(hifin_ins_certs)에서, 보장 금액은 insService.checkupIns(m).coverage 한 소스에서 읽는다.
+       근거가 없으면 수치를 만들지 않고 「기록 없음」으로 비운다(형 지시 ④). */
+    if (n.type === "예약증 SBT") return Object.assign({}, n, { meta: _nftBook || "예약 기록 없음 — 검진을 예약하면 발행돼요" });
+    if (n.type === "보험증서 SBT") return Object.assign({}, n, { meta: _nftCov || "검진대비보험 발급 후 표시돼요" });
     return n;
   });
   const [tab, setTab] = useState("mine");

@@ -164,7 +164,14 @@ function rerateCompute(m) {
     const pct = Math.min(INS_CONFIG.RERATE_MAX_PCT, improved.length * INS_CONFIG.RERATE_PER_IMPROVE);
     const after = Math.round(monthly * (1 - pct / 100) / 100) * 100;
     // 인하 및 가입확대형 전용 단방향 게이트: 개선 없으면 "유지"(인상·거절 경로 없음 — 악화 지표는 표시만)
-    return { eligible: true, improvedN: improved.length, improved, worsenedN: worsened.length, pct, before: monthly, after: pct > 0 ? after : monthly, saving: pct > 0 ? monthly - after : 0, downOnly: true };
+    /* [실측 통일 2026-10-05] 비교한 두 검진의 날짜를 함께 돌려준다 —
+       본인 계정은 실측 2시점(2020-06-23 → 2024-12-26)이라 「작년 → 올해」가 아니다. 화면이 날짜를 밝혀야 한다. */
+    return { eligible: true, improvedN: improved.length, improved, worsenedN: worsened.length, worsened, pct, before: monthly, after: pct > 0 ? after : monthly, saving: pct > 0 ? monthly - after : 0, downOnly: true,
+      fromDate: cks[cks.length - 2].date || "", toDate: cks[cks.length - 1].date || "",
+      /* [실측 통일 2026-10-06] 「개선/악화 N건」을 말할 때 **측정기관이 같은지**를 함께 밝힌다 —
+         본인 계정 실측은 2020 명지병원 ↔ 2024 서울늘편한내과의원으로 기관이 달라 같은 선에 놓고 읽을 수 없다. */
+      fromProvider: cks[cks.length - 2].provider || "", toProvider: cks[cks.length - 1].provider || "",
+      sameProvider: !!(cks[cks.length - 2].provider && cks[cks.length - 1].provider && cks[cks.length - 2].provider === cks[cks.length - 1].provider) };
   } catch (e) { return { eligible: false, reason: "재산정 계산 오류" }; }
 }
 function rerateApplyReal(m) {
@@ -182,6 +189,46 @@ function rerateApplyReal(m) {
     try { if (typeof hiEvent === "function") hiEvent("rerate_applied", { n: c.pct }); } catch (e3) {}
     return { ok: true, state: s, compute: c };
   } catch (e) { return { ok: false, reason: "적용 저장 실패" }; }
+}
+
+/* ══ 검진대비보험 보장기간의 **단일 근거** ══════════════════════════════════════════
+   [실측 통일 2026-10-06] 전에는 회원 화면(치료비 케어 ①)이 pol.createdAt —— 그 기기가 금고를 처음
+   시드한 벽시계 시각 —— 으로 기간을 계산해 「보장 개시 대기 · 2026.10.7 ~ 2026.12.5」라고 띄우면서
+   바로 아래에 증서 이름을 「CERT-JSR2024A(증서 날짜 2024-12-26)」라고 적었고, 프로 콘솔 ⑨의 같은 사람
+   행은 증서 날짜 기준으로 「만기 경과(2025.2.25)」라고 말했다. 새 기기에서 열 때마다 회원 화면의
+   기간이 달라졌다. 이제 두 화면이 이 함수 하나를 호출한다(각자 계산하면 다시 갈라진다).
+   근거 우선순위 ① 증서 날짜(c.date) ② 증서 기록 시각(c.at) ③ 청약일(시연) ④ 계약 생성 시각. */
+const INS_COVER_DAYS = 60;                      /* 발급 익일 0시 + 60일 — CYCLE_SPEC.expiryDay와 정합(형 확정 2026-09-03) */
+function insCertAt(c) {
+  if (!c) return null;
+  const d = String(c.date || "").replace(/[^0-9]/g, "");
+  if (d.length >= 8) {
+    const t = new Date(Number(d.slice(0, 4)), Number(d.slice(4, 6)) - 1, Number(d.slice(6, 8))).getTime();
+    if (!isNaN(t)) return t;
+  }
+  return c.at || null;
+}
+function insCheckupCert(m) {
+  try {
+    const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]");
+    const mine = l.filter((x) => x && x.insured && x.insured.name === (m && m.name));
+    return mine.length ? mine[mine.length - 1] : null;
+  } catch (e) { return null; }
+}
+/* {issueAt, start, end, phase, src, cert, ended} — 증서가 없으면 null */
+function insCheckupWindow(m, pol) {
+  try {
+    let issueAt = null, src = null, cert = null;
+    cert = insCheckupCert(m);
+    if (cert) { issueAt = insCertAt(cert); src = "증서 " + cert.id + (cert.date ? " · 발급 " + String(cert.date).replace(/-/g, ".") : ""); }
+    if (!issueAt && typeof hmInsQueue === "function") { try { const q = hmInsQueue().find((x) => x.email === (m && m.email)); if (q) { issueAt = q.at; src = "청약일 기준(시연)"; } } catch (e) {} }
+    if (!issueAt && pol && pol.createdAt) { issueAt = pol.createdAt; src = "계약 생성 시각(증서 미발급)"; }
+    if (!issueAt) return null;
+    const st = new Date(issueAt); st.setDate(st.getDate() + 1); st.setHours(0, 0, 0, 0);
+    const start = st.getTime(), end = start + INS_COVER_DAYS * 86400000, now = Date.now();
+    const phase = now > end ? "보장 종료" : now >= start ? "보장 중" : "보장 개시 대기";
+    return { issuedAt: issueAt, start, end, phase, src, cert, ended: now > end };
+  } catch (e) { return null; }
 }
 
 /* ══ insService — 상담사·화면 공용 진입점 ══ */
@@ -228,14 +275,13 @@ const insService = {
     let hasCheckup = false, checkupDate = null;
     try { const v = vaultLoad(anonToken(m)); const cks = (v && v.checkups) || []; hasCheckup = cks.length > 0; checkupDate = cks.length ? cks[cks.length - 1].date : null; } catch (e) {}
     const pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product));
-    let phase = null, timeline = null;
-    if (pol) {
-      const start = pol.createdAt + 86400000, end = pol.createdAt + 60 * 86400000;   // 보장 개시 익일·기간 60일(검진 주기 연동 — CYCLE_SPEC.expiryDay 정합, 형 확정 2026-09-03)
-      phase = Date.now() > end ? "만료" : Date.now() >= start ? "보장 중" : "보장 개시 대기";
-      timeline = { issuedAt: pol.createdAt, start, end, phase };
-    }
+    /* 보장기간은 insCheckupWindow 하나에서 읽는다 — 프로 콘솔 ⑨(hmTouchPlan)와 같은 근거(증서 날짜) */
+    const timeline = pol ? insCheckupWindow(m, pol) : null;
+    const ended = !!(timeline && timeline.ended);
     const claims = _claims().filter((c) => /검진/.test(c.kind || ""));
-    return { hasCheckup, checkupDate, policy: pol || null, timeline, claims,
+    return { hasCheckup, checkupDate, policy: pol || null, timeline, claims, ended,
+      endedNote: ended ? `보장 종료 — 검진대비보험 만기 경과(${new Date(timeline.end).toLocaleDateString("ko-KR")}) · 다음 검진 주기를 잡으면 무상 보장이 다시 시작돼요` : null,
+      coverSrc: timeline ? timeline.src : null,
       coverage: [
         ["검진에서 암이 발견됐어요", "일반암 진단금", 10000000, "확정 진단과 동시에 — 치료 시작 비용부터 해결 (기타암 제외)"],
         ["뇌졸중·심근경색 진단을 받았어요", "2대 질환 진단금", 10000000, "골든타임 치료에 바로 보태세요"],

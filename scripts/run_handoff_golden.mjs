@@ -27,6 +27,14 @@ const CASES = [
   { key: "c3", ko: "간수치 + 절주 플래그 · 30대 남(습관 우선 특례)", pick: c => c.group === "liver" && male(c.member.sex) && c.member.ageBand === "30대" && c.evidence.some(e => e.indexOf("절주") >= 0) && c.member.stalledDays < 14 },
   { key: "c4", ko: "H · 70대↑ 여 · 쉬운말 변형(고령 대본)", pick: c => c.grade === "H" && female(c.member.sex) && c.script.variant === "쉬운말" && c.member.stalledDays < 14 },
   { key: "c5", ko: "정체 14일+ · 관리 재개", pick: c => c.member.stalledDays >= 14 && c.trigger.indexOf("정체") === 0 },
+  /* 단계 케이스(형 지시 2026-10-05) — 종전 5케이스는 D1 4건·정체 D4 1건이라, 단계 축으로 새로
+     조립되는 경로(D2 골든타임·접촉 금지 prep·L6 응급 선행·L8 재산정)를 한 건도 지나지 않았다.
+     조건은 「단계가 그 단계인 실존 회원」이지 특정 문안이 아니다 — 데이터가 케이스를 고르지 않는다. */
+  { key: "c6", ko: "D2 첫 연결 골든타임 · 무료 3종 전달", pick: c => c.member.stage === "D2" && c.member.stalledDays < 14 && (c.script.firstconnect || []).length > 0 },
+  { key: "c7", ko: "D2 정체 · 3종을 아직 못 받은 회원(재개 변형)", pick: c => c.member.stage === "D2" && c.member.stalledDays >= 14 && (c.script.firstconnect || []).length > 0 },
+  { key: "c8", ko: "D1 접촉 금지 · 사전 준비(발송 문안 없음)", pick: c => c.member.stage === "D1" && (c.script.prep || []).length > 0 && c.trigger.indexOf("배정 완료") === 0 },
+  { key: "c9", ko: "L6 가족·돌봄 · 응급 선행 안내", pick: c => c.member.stage === "L6" && (c.script.alert || []).length > 0 },
+  { key: "c10", ko: "L8 평생주기 · 재산정 안내(심사 단서 동반)", pick: c => c.member.stage === "L8" && (c.script.stage || []).length > 0 },
 ];
 /* 완화 단계 — 1차 스캔에서 비면 조건을 한 겹 풀어 재탐색(완화 사실은 산출물에 기록) */
 const RELAX = {
@@ -46,7 +54,7 @@ for (let i = 0; i < N; i += CH) {
     if (!c.compliance.publishable) { stats.unpub++; continue; }
     for (const cs of CASES) if (!found[cs.key] && cs.pick(c)) found[cs.key] = c;
   }
-  if (Object.keys(found).length === 5) break;
+  if (Object.keys(found).length === CASES.length) break;
 }
 for (const cs of CASES) {
   if (found[cs.key] || !RELAX[cs.key]) continue;
@@ -63,7 +71,9 @@ for (const cs of CASES) console.log(`${found[cs.key] ? "✅" : "❌"} ${cs.key} 
 if (missing.length) { console.error("골든셋 미충족 — 조건 재협의 필요"); process.exit(1); }
 
 mkdirSync(join(ROOT, "fixtures"), { recursive: true });
-const doc = { meta: { v: "1.0", spec: "지시서 v1.3 §8-P3", scanned: stats.scanned, relaxed: Object.keys(relaxed), note: "코호트 실스캔 — 케이스가 데이터를 고름(역방향 조작 없음)" },
+const doc = { meta: { v: "1.1", spec: "지시서 v1.3 §8-P3 + 단계 축(형 지시 2026-10-05)", scanned: stats.scanned, relaxed: Object.keys(relaxed),
+    note: "코호트 실스캔 — 케이스가 데이터를 고름(역방향 조작 없음)",
+    why: "v1.1 재생성 사유 — ①D1 카드가 결과 기반 필드(trigger·evidence·앱알림·문자)를 만들지 않게 바뀜 ②쉬운말 L5~L8 클로징이 cl-promise-easy로 바뀜 ③fc-ins 분할·fc-support 중복 제거·3종 슬롯이 free3Def.say 구어체 문장으로 바뀜 ④단계 케이스 c6~c10 추가(D2·정체 D2·D1·L6·L8)" },
   cases: CASES.map(cs => ({ key: cs.key, ko: cs.ko, relaxed: !!relaxed[cs.key], card: found[cs.key] })) };
 writeFileSync(join(ROOT, "fixtures/handoff_cards_sample_v1.json"), JSON.stringify(doc, null, 2), "utf8");
 console.log(`fixtures/handoff_cards_sample_v1.json 저장 · ${((Date.now() - t0) / 1000).toFixed(1)}s`);

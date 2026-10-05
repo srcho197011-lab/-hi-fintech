@@ -369,7 +369,6 @@ function MemberCheckupArchive({ m }) {
   if (!chk || typeof CHECKUP_ITEMS === "undefined") return null;
   const sevCol = ["#16A34A", "#F59E0B", "#EF4444"];
   const trendCol = { improve: "#16A34A", worsen: "#EF4444", stable: "#F59E0B" }[chk.trend];
-  const yIdx = chk.years.indexOf(year);
   const NAT_KEYS = ["bmi", "waist", "sbp", "dbp", "hb", "fbs", "tc", "hdl", "tg", "ldl", "ast", "alt", "ggtp", "cr", "egfr"];
   const allItems = CHECKUP_ITEMS.filter((it) => chk.items[it.key] && chk.items[it.key].series).map((it) => chk.items[it.key]);
   const rows = allItems.filter((row) => cat === "comp" || NAT_KEYS.indexOf(row.key) >= 0);
@@ -383,13 +382,16 @@ function MemberCheckupArchive({ m }) {
     const sev = (typeof _judgeVal === "function") ? _judgeVal(row.key, v, chk.sex) : p.sev;
     return { year: p.year, value: v, sev, label: (typeof _chkLabel === "function") ? _chkLabel(row.key, sev) : p.label, edited: true };
   });
+  /* [실측 통일 2026-10-05] 시점 수가 회원마다 다르다(합성 3개년 / 본인 실측 2시점·항목별 1~2점) —
+     연도 인덱스로 집으면 undefined가 된다. 연도로 찾고, 그 해 값이 없으면 빈 칸으로 둔다. */
+  const ptOf = (s, y) => (s || []).find((p) => p.year === y) || null;
   const th = (row) => (typeof _thOf === "function") ? _thOf(row.key, chk.sex) : null;
   const setEdit = (key, y, val) => setEdits((prev) => { const nx = Object.assign({}, prev); nx[key] = Object.assign({}, nx[key], { [y]: val }); return nx; });
   const _stamp = () => { try { const d = new Date(); const p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; } catch (e) { return ""; } };
   const saveEdits = () => {
     // 원본 대비 변경 추출 → 이력 기록
     const changes = [];
-    Object.keys(edits).forEach((k) => { const row = chk.items[k]; if (!row) return; chk.years.forEach((y, i) => { const ov = edits[k][y]; if (ov === undefined || ov === "") return; const nv = parseNum(ov); const orig = row.series[i].value; if (nv != null && nv !== orig) changes.push({ item: row.name, year: y, from: orig, to: nv, unit: row.unit }); }); });
+    Object.keys(edits).forEach((k) => { const row = chk.items[k]; if (!row) return; chk.years.forEach((y) => { const ov = edits[k][y]; if (ov === undefined || ov === "") return; const nv = parseNum(ov); const op = ptOf(row.series, y); if (!op) return; const orig = op.value; if (nv != null && nv !== orig) changes.push({ item: row.name, year: y, from: orig, to: nv, unit: row.unit }); }); });
     if (changes.length) { const entry = { at: _stamp(), n: changes.length, changes }; const nl = [entry, ...log].slice(0, 30); setLog(nl); try { localStorage.setItem(LKEY, JSON.stringify(nl)); } catch (e) {} }
     try { localStorage.setItem(EKEY, JSON.stringify(edits)); } catch (e) {}
     setEditing(false); if (typeof toast === "function") toast(`${m.name}님 검진값 저장 완료${changes.length ? ` · 변경 ${changes.length}건 이력 기록` : ""}`);
@@ -430,7 +432,10 @@ function MemberCheckupArchive({ m }) {
         <div className="ckloghd"><Clock size={12} /> 편집 이력 <span>{log.length}건</span>{log.length > 0 && <button onClick={clearLog}>이력 삭제</button>}</div>
         {log.length ? log.map((e, i) => <div className="cklogrow" key={i}><span className="cklogt">{e.at}</span><div className="cklogc">{e.changes.map((c, j) => <span key={j} className="cklogchg">{c.item} <em>{c.year}</em> {c.from}→<b>{c.to}</b>{c.unit}</span>)}</div></div>) : <div className="ckmut" style={{ padding: "8px 2px" }}>아직 편집 이력이 없습니다. 값을 수정·저장하면 기록됩니다.</div>}
       </div>}
-      <div className="ckarch-sub">국가검진 판정 「<b>{chk.nat.grade}</b>」 · 최근 3년({chk.years[0]}~{chk.years[chk.years.length - 1]}) 시계열 · 이상항목 {chk.comp.abnormals.length}건 · 진행형태 「{chk.trendLabel}」{anyEdited && <span className="ckedited-tag"> · ✏️ 편집값 반영됨</span>}</div>
+      {/* [실측 통일 2026-10-06] 판정은 gradeLabel(「정상B · 유질환자(고혈압, 잘 조절됨)」 — 다른 전 화면과 동일),
+          이상항목 건수는 실측이면 국가검진 판정 행(abnMain)에서 세고 출처를 함께 적는다(종합검진으로 읽히지 않게). */}
+      <div className="ckarch-sub">국가검진 판정 「<b>{chk.nat.gradeLabel || chk.nat.grade}</b>」 · {chk.selfReal ? "실측" : "최근 " + chk.years.length + "년"}({chk.years[0]}~{chk.years[chk.years.length - 1]}) 시점 · {chk.selfReal ? `이상·의심 ${(chk.abnMain || []).length}항목(국가검진 ${chk.nat.date})` : `이상항목 ${chk.comp.abnormals.length}건`} · 진행형태 「{chk.trendLabel}」{anyEdited && <span className="ckedited-tag"> · ✏️ 편집값 반영됨</span>}</div>
+      {chk.selfReal && chk.trendNote ? <div className="ckmut" style={{ padding: "2px 2px 6px", fontSize: 11 }}>※ {chk.trendNote}</div> : null}
       <div className="ckarch-cat">{[["nat", "국가건강검진"], ["comp", "종합건강진단"], ["report", "건강분석리포트"]].map(([k, t]) => <button key={k} className={cat === k ? "on" : ""} onClick={() => setCat(k)}>{t}</button>)}</div>
       {editing && cat !== "report" && <div className="ckedit-bar"><span>연도별 값을 직접 입력하면 판정이 자동 재계산됩니다.</span><button className="save" onClick={saveEdits}>저장</button><button className="reset" onClick={resetEdits} disabled={!anyEdited}>초기화</button></div>}
       {cat !== "report" && !editing && <div className="ckarch-yr">{chk.years.map((y) => <button key={y} className={year === y ? "on" : ""} onClick={() => setYear(y)}>{y}년</button>)}</div>}
@@ -440,24 +445,24 @@ function MemberCheckupArchive({ m }) {
             <thead><tr><th>검사항목</th><th>참고치</th>{chk.years.map((y) => <th key={y}>{y}년</th>)}<th>판정({chk.years[chk.years.length - 1]})</th></tr></thead>
             <tbody>{rows.map((row) => { const s = eff(row); const last = s[s.length - 1]; return (
               <tr key={row.key}><td>{row.name}</td><td className="ckmut">{row.ref}</td>
-                {chk.years.map((y, i) => { const cur = (edits[row.key] && edits[row.key][y] !== undefined) ? edits[row.key][y] : row.series[i].value; return (
-                  <td key={y}><input className="ckedit-input" type="number" step="any" value={cur} onChange={(e) => setEdit(row.key, y, e.target.value)} /></td>
+                {chk.years.map((y) => { const op = ptOf(row.series, y); const cur = (edits[row.key] && edits[row.key][y] !== undefined) ? edits[row.key][y] : (op ? op.value : ""); return (
+                  <td key={y}>{op ? <input className="ckedit-input" type="number" step="any" value={cur} onChange={(e) => setEdit(row.key, y, e.target.value)} /> : <span className="ckmut">—</span>}</td>
                 ); })}
                 <td><span className="ckbadge" style={{ background: sevCol[last.sev] + "22", color: sevCol[last.sev] }}>{last.label}</span></td></tr>
             ); })}</tbody>
           </table></div>
         ) : (
           <div className="onttbl-wrap"><table className="onttbl ckarch-tbl">
-            <thead><tr><th>검사항목</th><th>참고치</th><th>{year}년</th><th>판정</th><th>3년 추이</th></tr></thead>
-            <tbody>{rows.map((row) => { const s = eff(row); const p = s[yIdx]; const isOpen = openRow === row.key; return (
+            <thead><tr><th>검사항목</th><th>참고치</th><th>{year}년</th><th>판정</th><th>{chk.selfReal ? `${chk.years.length}시점` : `${chk.years.length}년 추이`}</th></tr></thead>
+            <tbody>{rows.map((row) => { const s = eff(row); const p = ptOf(s, year) || s[s.length - 1]; if (!p) return null; const isOpen = openRow === row.key; return (
               <React.Fragment key={row.key}>
-                <tr className={"ckrow" + (isOpen ? " open" : "")} onClick={() => setOpenRow(isOpen ? null : row.key)} title="클릭 시 3년 추이 그래프">
+                <tr className={"ckrow" + (isOpen ? " open" : "")} onClick={() => setOpenRow(isOpen ? null : row.key)} title={chk.selfReal ? `클릭 시 ${chk.years.length}시점 비교 그래프` : `클릭 시 ${chk.years.length}년 추이 그래프`}>
                   <td>{row.name}{p.edited && <i className="ckdot" title="편집값" />}</td><td className="ckmut">{row.ref}</td>
                   <td className="mono"><b>{p.value}</b><em className="ckunit">{row.unit}</em></td>
                   <td><span className="ckbadge" style={{ background: sevCol[p.sev] + "22", color: sevCol[p.sev] }}>{p.label}</span></td>
                   <td><Spark row={row} /> <ChevronRight size={12} className={"ckchev" + (isOpen ? " r" : "")} /></td>
                 </tr>
-                {isOpen && <tr className="ckchart-row"><td colSpan={5}><div className="ckchart-wrap"><div className="ckchart-t">{row.name} · 최근 3년 추이 <span>{row.item && row.item.mean ? "· " + row.item.mean : ""}</span></div><ArchLineChart pts={s.map((x) => ({ year: x.year, value: x.value, sev: x.sev }))} zones={th(row)} unit={row.unit} /><div className="ckzone-lg"><span><i style={{ background: "#16A34A" }} />정상</span><span><i style={{ background: "#F59E0B" }} />주의</span><span><i style={{ background: "#EF4444" }} />위험</span></div></div></td></tr>}
+                {isOpen && <tr className="ckchart-row"><td colSpan={5}><div className="ckchart-wrap"><div className="ckchart-t">{row.name} · {chk.selfReal ? `실측 ${chk.years.join("·")} 시점 비교` : `최근 ${chk.years.length}년 추이`} <span>{row.item && row.item.mean ? "· " + row.item.mean : ""}</span></div><ArchLineChart pts={s.map((x) => ({ year: x.year, value: x.value, sev: x.sev }))} zones={th(row)} unit={row.unit} /><div className="ckzone-lg"><span><i style={{ background: "#16A34A" }} />정상</span><span><i style={{ background: "#F59E0B" }} />주의</span><span><i style={{ background: "#EF4444" }} />위험</span></div></div></td></tr>}
               </React.Fragment>
             ); })}</tbody>
           </table></div>
@@ -465,8 +470,8 @@ function MemberCheckupArchive({ m }) {
       ) : (
         <div className="ckarch-report">
           <div className="ckrep-charts">
-            <div className="ckrep-chart"><div className="ckrep-ct">생체나이 (3년)</div>{chk.report ? <ArchLineChart pts={chk.report.years.map((y, i) => ({ year: y, value: chk.report.bio[i], suffix: "세" }))} /> : <div className="ckmut">데이터 없음</div>}</div>
-            <div className="ckrep-chart"><div className="ckrep-ct">예상 의료비 (만원, 3년)</div>{chk.report ? <ArchLineChart pts={chk.report.years.map((y, i) => ({ year: y, value: Math.round(chk.report.cost[i] / 10000) }))} /> : <div className="ckmut">데이터 없음</div>}</div>
+            <div className="ckrep-chart"><div className="ckrep-ct">생체나이 {chk.report ? `(${chk.report.years.length}년)` : "(측정 1시점 — 추이 없음)"}</div>{chk.report ? <ArchLineChart pts={chk.report.years.map((y, i) => ({ year: y, value: chk.report.bio[i], suffix: "세" }))} /> : <div className="ckmut">데이터 없음</div>}</div>
+            <div className="ckrep-chart"><div className="ckrep-ct">예상 의료비 (만원{chk.report ? `, ${chk.report.years.length}년` : " · 측정 1시점"})</div>{chk.report ? <ArchLineChart pts={chk.report.years.map((y, i) => ({ year: y, value: Math.round(chk.report.cost[i] / 10000) }))} /> : <div className="ckmut">데이터 없음</div>}</div>
           </div>
           {R && <>
             <div className="ckrep-h">질병 발생 위험도 <em>동년배 대비 · 최근연도</em></div>

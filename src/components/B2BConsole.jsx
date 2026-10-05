@@ -177,7 +177,8 @@ function DoctorConsole() {
   const [live, setLive] = useState(null);
   const rxList = (() => { try { return JSON.parse(localStorage.getItem("hifin_rx") || "[]").slice(-3).reverse(); } catch (e) { return []; } })();
   const queue = [
-    { id: "q1", name: "조성래(54)", brief: "생체나이 52.5 · 주의 장기 췌장·간 · 암위험 4등급", rpm: "부모 혈압 152/94 급등(RPM)", mode: "메시지", wait: "대기 2분" },
+    /* [실측 통일 2026-10-05] 본인 수치는 mcp_josungrae.json에서 읽는다 */
+    { id: "q1", name: `조성래(${(typeof PT !== "undefined" && PT.regAge) || 54})`, brief: (() => { try { const P = selfRealProfile(); const bad = (selfRealOrgans() || []).filter((o) => o[2] !== "좋음").map((o) => o[0].replace("비만체형", "비만")).join("·"); return `생체나이 ${P.biologicalAge} · 주의 장기 ${bad} · 암위험 ${P.cancerRiskGrade}등급`; } catch (e) { return "생체나이·장기·암위험 연동"; } })(), rpm: "부모 혈압 152/94 급등(RPM)", mode: "메시지", wait: "대기 2분" },
     { id: "q2", name: "김하늘(29)", brief: "피부 발진 사진 2매 첨부 · 초진(경증)", rpm: null, mode: "화상", wait: "대기 5분" },
     { id: "q3", name: "박정순(71)", brief: "고혈압 재진 · 최근 혈압 125/75 안정", rpm: null, mode: "메시지", wait: "비동기 · 24h 내", async: true },
   ];

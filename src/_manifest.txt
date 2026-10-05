@@ -1,3 +1,4 @@
+src/data/selfReal.js
 src/data/i18n.js
 src/data/hiOpsConfig.js
 src/data/opsMetrics.js
@@ -82,6 +83,7 @@ src/data/coachAgent.js
 src/data/hiProAgent.js
 src/data/handoffResult.js
 src/data/dailyRoster.js
+src/data/hmOpsAsk.js
 src/data/dataCatalog.js
 src/data/backupRestore.js
 src/data/demoScript.js

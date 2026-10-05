@@ -238,7 +238,8 @@ function DconStatus({ cfg, all, onList }) {
             <div className="dconst-organs">{D.report.organs.map((o, i) => <span key={i} style={{ color: o.flag === "좋음" ? "#34D399" : "#F87171" }}>{o.k} {o.age}세 {o.flag === "좋음" ? "✓" : "▲"}</span>)}</div>
           </div>)}
 
-          <div className="dconst-foot"><Bot size={12} color="#67E8F9" /> 이 실데이터는 AI 주치의·상담·검진 아카이브에서 그대로 활용됩니다. {D.meta ? D.meta.disclaimer : ""}</div>
+          {/* [실측 통일 2026-10-05] 배선 완료 — 이 문서가 본인 계정의 단일 원천이다(selfReal.js → 금고 시드·리포트·프로 콘솔) */}
+          <div className="dconst-foot"><Bot size={12} color="#67E8F9" /> 이 실데이터는 본인 계정의 <b>단일 원천</b>입니다 — 데이터 금고 시드(국가검진 12항목)·건강분석 리포트·AI 주치의·헬스메이트 프로 콘솔이 모두 이 문서를 읽습니다(selfReal.js). {D.meta ? D.meta.disclaimer : ""}</div>
         </div>
       )}
     </div>

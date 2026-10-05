@@ -127,10 +127,21 @@ function _reportTrend(m, trend, rng) {
   return { years: yrs, bio: bioS, cost: costS, reg: R.reg };
 }
 
+/* ── 시계열 접근자 — 시점 수가 회원마다 다르다(합성 3개년 / 본인 실측 2시점).
+   series[2]를 직접 집던 자리를 전부 이 두 함수로 모았다 — 시점이 2개인 회원에서 undefined가 되던 자리다. ── */
+function chkCur(r) { return (r && r.series && r.series.length) ? (r.cur || r.series[r.series.length - 1]) : null; }
+function chkFst(r) { return (r && r.series && r.series.length) ? r.series[0] : null; }
+function chkHasTrend(r) { return !!(r && r.series && r.series.length >= 2); }
+
 /* ── 회원별 국가검진(nat) + 종합검진(comp) 생성 (캐시) ── */
 function genMemberCheckup(m) {
   if (!m) return null;
   if (m._chk) return m._chk;
+  /* [실측 통일 2026-10-05] 본인 계정은 실측 2시점(국가검진 2024-12-26 · 종합검진 2020-06-23)을 그대로 쓴다.
+     아래 합성 생성기(_CHK_RANGE × _chkSev)는 체험 회원·코호트 전용 — 같은 사람에게 또 다른 값을 만들지 않는다. */
+  if (typeof selfRealIsSelf === "function" && selfRealIsSelf(m) && typeof selfRealCheckup === "function") {
+    const _sr = selfRealCheckup(); if (_sr) { m._chk = _sr; return _sr; }
+  }
   const sex = m.sex === "여" ? "f" : "m";
   const rng = _chkRng(_chkSeed(m.id || m.email || m.name));
   const trend = _chkTrend(m);
@@ -202,19 +213,44 @@ function memberCheckupCounsel(text, m) {
   const chk = genMemberCheckup(m);
   const N = m.name || "회원";
   const it0 = _matchItem(raw);
-  const trendQ = /추이|추세|변화|경과|3년|삼년|작년|재작년|나아졌|좋아졌|나빠졌|악화|호전|그대로|어떻게 변|추적/.test(raw);
-  const _serLine = (row) => (row && row.series) ? `📈 최근 3년 추이: ${row.series.map((p) => `${p.year} ${p.value}${row.unit}(${p.label})`).join(" → ")} — 「${chk.trendLabel}」` : "";
-  const _trendMsg = { improve: "이전보다 좋아지는 흐름이에요. 지금 관리를 계속 유지하세요. 👍", worsen: "이전보다 나빠지는 흐름이에요. 생활습관 교정과 정밀 추적이 필요해요.", stable: "큰 변화 없이 유지되고 있어요. 목표 범위로 개선해 보면 좋겠어요." }[chk.trend];
+  const trendQ = /추이|추세|변화|경과|3년|삼년|작년|재작년|나아졌|좋아졌|나빠졌|악화|호전|그대로|어떻게 변|추적|시점별|시점 비교|시점비교/.test(raw);
+  /* [실측 통일 2026-10-06] 실측 계정은 2시점(6년 간격·기관 상이)뿐이라 「3년 추이」가 아니다 —
+     버튼·퀵칩 라벨도 보유 시점만 말한다. (라벨에 네 자리 연도를 넣으면 위 `\d{2,}` 컷에 걸리므로 넣지 않는다) */
+  const trendBtn = chk.selfReal ? "내 검진 시점별 비교" : "내 3년 검진 추이";
+  const _trLab = (c) => (c.selfReal ? `실측 ${c.years.join("·")} 시점` : `최근 3년`);
+  /* [실측 통일 2026-10-06] 실측 2시점은 「추이」가 아니라 「시점 비교」다 — 꼬리에 trendLabel(「해당 없음」)을 붙이면
+     바로 앞에서 비교를 보여주고 「해당 없음」이라고 적는 모순이 된다. */
+  const _serLine = (row) => !(row && row.series) ? ""
+    : chk.selfReal ? `📈 시점 비교: ${row.series.map((p) => `${p.date || p.year} ${p.value}${row.unit}(${p.label})`).join(" → ")}`
+    : `📈 ${_trLab(chk)} 추이: ${row.series.map((p) => `${p.year} ${p.value}${row.unit}(${p.label})`).join(" → ")} — 「${chk.trendLabel}」`;
+  /* chk.trend가 null인 회원(실측 2시점)에는 흐름 문장이 없다 — 없으면 「추이 없음」의 근거 한 문장을 쓴다(전에는 「undefined」가 찍혔다) */
+  const _trendMsg = { improve: "이전보다 좋아지는 흐름이에요. 지금 관리를 계속 유지하세요. 👍", worsen: "이전보다 나빠지는 흐름이에요. 생활습관 교정과 정밀 추적이 필요해요.", stable: "큰 변화 없이 유지되고 있어요. 목표 범위로 개선해 보면 좋겠어요." }[chk.trend]
+    || chk.trendNote || "";
 
+  // 추이 질의(특정 항목 없이) — 실측 계정은 「추이 없음」의 근거 한 문장 + 시점별 판정으로 답한다
+  if (trendQ && !it0 && chk.selfReal) {
+    const rows = Object.keys(chk.items).map((k) => chk.items[k]).filter((r) => r.series && r.series.length >= 2).slice(0, 6);
+    const lines = [`📊 ${N}님 ${chk.trendCompareLabel || "검진 시점별 비교"} — ${chk.trendNote || "연도별 추이는 산출하지 않습니다."}`]
+      .concat(rows.map((r) => `• ${r.name}: ${r.series.map((p) => `${p.year} ${p.value}${r.unit}(${p.label})`).join(" → ")}`));
+    if (!rows.length) lines.push("• 두 시점에 모두 측정된 항목이 없어 비교할 행이 없습니다.");
+    const drills = (chk.abnMain || []).slice(0, 2).map((a) => { const it = _matchItem(a.ko); return it ? `내 ${it.name.split("(")[0]} 결과` : null; }).filter(Boolean);
+    return {
+      bubbles: [
+        { kind: "text", text: lines.join("\n") + `\n📚 근거: ${chk.nat.src} · ${chk.comp.src} (회원 검진데이터 RAG · 값은 결과지 원문 그대로)` },
+        { kind: "card", card: { title: `🩺 ${N}님 시점별 비교 안내`, items: ["두 시점은 측정기관이 달라 같은 선에 놓고 「좋아졌다·나빠졌다」로 읽지 않습니다.", "각 시점의 판정 문구는 결과지에 적힌 그대로입니다.", "다음 국가검진을 받으시면 같은 기관 기준의 비교가 시작돼요."], buttons: [...drills, "내 검진 결과 요약"].slice(0, 3) } },
+      ],
+      quicks: [...drills, "내 검진 결과 요약", "내 의료비 예측"].filter(Boolean).slice(0, 4),
+    };
+  }
   // 최근 3년 전체 추이 요약(특정 항목 없이 추이 질의)
   if (trendQ && !it0) {
     const R = chk.report; const fmt = (n) => Number(n).toLocaleString("ko-KR");
     const worst = Object.keys(chk.items).filter((k) => chk.items[k].sev >= 1).slice(0, 3).map((k) => chk.items[k]);
     const lines = [
-      `📊 ${N}님 최근 3년 검진 추이 — 전반적으로 「${chk.trendLabel}」 흐름 ${TREND_EMOJI[chk.trend]}`,
+      `📊 ${N}님 ${_trLab(chk)} 검진 추이 — 전반적으로 「${chk.trendLabel}」 흐름 ${TREND_EMOJI[chk.trend] || ""}`,
       R ? `• 생체나이: ${R.years.map((y, i) => `${y} ${R.bio[i]}세`).join(" → ")} (주민등록 ${R.reg}세)` : null,
       R ? `• 예상 의료비: ${R.years.map((y, i) => `${y} ${fmt(R.cost[i])}원`).join(" → ")}` : null,
-      ...worst.map((row) => `• ${row.name}: ${row.series.map((p) => `${p.year} ${p.value}${row.unit}`).join(" → ")} (${row.series[0].label}→${row.series[2].label})`),
+      ...worst.map((row) => `• ${row.name}: ${row.series.map((p) => `${p.year} ${p.value}${row.unit}`).join(" → ")}${chkHasTrend(row) ? ` (${chkFst(row).label}→${chkCur(row).label})` : ` (${chkCur(row).label})`}`),
       worst.length ? null : "• 주요 항목이 3년간 정상 범위로 잘 유지되고 있어요.",
     ].filter(Boolean);
     const drills = worst.slice(0, 2).map((row) => `내 ${row.name.split("(")[0]} 추이`);
@@ -233,20 +269,21 @@ function memberCheckupCounsel(text, m) {
     const abn = chk.comp.abnormals;
     const lines = [
       `📋 ${N}님 검진 결과 요약`,
-      `• 국가건강검진 판정: 「${chk.nat.grade}」 — ${chk.nat.gradeDesc}`,
+      `• 국가건강검진 판정: 「${chk.nat.gradeLabel || chk.nat.grade}」${chk.nat.date ? ` (${chk.nat.date})` : ""} — ${chk.nat.gradeDesc}`,
       abn.length ? `• 주의·이상 항목: ${abn.join(" · ")}` : `• 종합검진 주요 항목 모두 정상 범위입니다.`,
       chk.nat.life.length ? `• 생활습관 관리: ${chk.nat.life.join(" · ")}` : null,
-      R ? `• 생체나이 ${R.bio}세(주민등록 ${R.reg}세, ${R.diff <= 0 ? R.diff + "세" : "+" + R.diff + "세"}) · 암위험 ${R.cancerTotal}등급(${R.evalLabel})` : null,
+      /* [실측 통일 2026-10-06] 암위험 라벨 = cgLabel(「낮은 편」) — 종합평가(evalLabel)와 혼용하면 화면과 어긋난다 */
+      R ? `• 생체나이 ${R.bio}세(주민등록 ${R.reg}세, ${R.diff <= 0 ? R.diff + "세" : "+" + R.diff + "세"}) · 암위험 ${R.cancerTotal}등급(${R.cgLabel || (R.cg ? R.cg[0] : "") || R.evalLabel})` : null,
       R ? `• 올해 예상 의료비 약 ${Number(R.costThis).toLocaleString("ko-KR")}원` : null,
-      `• 최근 3년 진행형태: 「${chk.trendLabel}」 ${TREND_EMOJI[chk.trend]}`,
+      `• ${chk.selfReal ? "진행형태" : "최근 3년 진행형태"}: 「${chk.trendLabel}」 ${TREND_EMOJI[chk.trend] || ""}${chk.selfReal && chk.trendNote ? ` — ${chk.trendNote}` : ""}`,
     ].filter(Boolean);
     const drills = abn.slice(0, 2).map((s) => { const it = _matchItem(s); return it ? `내 ${it.name.split("(")[0]} 결과` : null; }).filter(Boolean);
     return {
       bubbles: [
         { kind: "text", text: lines.join("\n") + `\n📚 근거: ${chk.nat.src} · ${chk.comp.src} · ${typeof REPORT_SRC !== "undefined" ? REPORT_SRC : "건강분석리포트"} (회원 검진데이터 RAG)` },
-        { kind: "card", card: { title: `🩺 ${N}님 사후관리 제안`, items: [chk.nat.grade === "유질환자" ? "진단된 만성질환은 정기 추적·복약 관리가 중요해요." : "정기검진 주기를 지키며 생활습관을 관리하세요.", "이상 항목은 아래 버튼으로 항목별 해석을 확인하세요.", "고위험 항목은 관련 건강미션·보장 안내로 이어드려요."], buttons: [...drills, "내 3년 검진 추이"].slice(0, 3) } },
+        { kind: "card", card: { title: `🩺 ${N}님 사후관리 제안`, items: [/유질환자/.test(chk.nat.gradeLabel || chk.nat.grade) ? "진단된 만성질환은 정기 추적·복약 관리가 중요해요." : "정기검진 주기를 지키며 생활습관을 관리하세요.", "이상 항목은 아래 버튼으로 항목별 해석을 확인하세요.", "고위험 항목은 관련 건강미션·보장 안내로 이어드려요."], buttons: [...drills, trendBtn].slice(0, 3) } },
       ],
-      quicks: [...drills, "내 3년 검진 추이", "내 의료비 예측"].filter(Boolean).slice(0, 4),
+      quicks: [...drills, trendBtn, "내 의료비 예측"].filter(Boolean).slice(0, 4),
     };
   }
 
@@ -261,22 +298,35 @@ function memberCheckupCounsel(text, m) {
   const emoji = _chkEmoji(row.sev);
   const interp = row.sev === 0 ? "현재 정상 범위입니다. 잘 유지하고 계세요. 👍" : (it.lowIsBad ? it.lo : it.hi);
   const serLine = _serLine(row);
-  const cardItems = [`🎯 관리: ${it.tip}`, `🔗 관련 질환: ${it.dz}`, `🕒 진행형태: ${row.series ? `${row.series[0].label} → ${row.series[2].label}` : ""} (${chk.trendLabel})`];
+  const cardItems = [`🎯 관리: ${it.tip}`, `🔗 관련 질환: ${it.dz}`,
+    chk.selfReal
+      ? (chkHasTrend(row) ? `🕒 시점별 판정: ${row.series.map((p) => `${p.date || p.year} ${p.label}`).join(" → ")} · 연도별 추이는 산출하지 않습니다`
+                          : `🕒 측정 ${chkCur(row) ? (chkCur(row).date || chkCur(row).year) : "-"} 1시점 — 진행형태 해당 없음`)
+      : `🕒 진행형태: ${chkHasTrend(row) ? `${chkFst(row).label} → ${chkCur(row).label}` : "해당 없음(단일 시점)"} (${chk.trendLabel})`];
   if (row.sev >= 1) cardItems.push("관련 건강미션·보장 안내를 이어서 받아보실 수 있어요.");
   const btns = [`${it.dz} 생활습관 관리법은?`];
   if (row.sev >= 1) btns.push(`${it.dz} 대비 보험`); else btns.push("내 검진 결과 요약");
   return {
     bubbles: [
-      { kind: "text", text: `${emoji} ${N}님 ${it.name}: ${row.value}${it.unit} → 「${row.label}」 (참고치 ${row.ref})\n${serLine}\n${it.mean}\n${row.sev === 0 ? interp : interp + " " + _trendMsg}\n📚 근거: ${chk.comp.src} · 회원 검진데이터 · 참고치 국민건강보험공단·대한검진의학회` },
+      /* 근거는 **그 값이 나온 결과지**를 적는다 — 2024 값에 2020 결과표를 출처로 달면 안 된다 */
+      { kind: "text", text: [`${emoji} ${N}님 ${it.name}: ${row.value}${it.unit} → 「${row.label}」 (참고치 ${row.ref})`, serLine, it.mean,
+        (row.sev === 0 ? interp : (interp + (_trendMsg ? " " + _trendMsg : ""))),
+        `📚 근거: ${chk.selfReal ? `${row.srcTitle || chk.nat.src}(${row.srcDate || chk.nat.date})` : chk.comp.src} · 회원 검진데이터 · 참고치 국민건강보험공단·대한검진의학회`].filter(Boolean).join("\n") },
       { kind: "card", card: { title: `🩺 ${it.name} 관리 가이드`, items: cardItems, buttons: btns } },
     ],
-    quicks: [`${it.dz} 생활습관 관리법은?`, "내 3년 검진 추이", row.sev >= 1 ? `${it.dz} 대비 보험` : "내 검진 결과 요약"].slice(0, 3),
+    quicks: [`${it.dz} 생활습관 관리법은?`, trendBtn, row.sev >= 1 ? `${it.dz} 대비 보험` : "내 검진 결과 요약"].slice(0, 3),
   };
 }
 
 /* ── 회원 건강상태 8등급 분류(§6.7) → {grade, meta} ── */
 function memberHealthGrade(m) {
   if (!m || typeof genMemberCheckup !== "function") return null;
+  /* [실측 통일 2026-10-05] 본인 계정은 실측 판정을 쓴다 —
+     국가검진 「정상B · 유질환자(고혈압, 잘 조절됨)」 + 리포트 종합 「좋음」 ⇒ 「지속관리」.
+     「고위험(중대한 위험 가능성·우선진료)」은 실측 근거가 없어 쓰지 않는다(형 지시 ④). */
+  if (typeof selfRealIsSelf === "function" && selfRealIsSelf(m) && typeof selfRealGrade === "function") {
+    const _sg = selfRealGrade(); if (_sg) return _sg;
+  }
   const chk = genMemberCheckup(m);
   const items = Object.keys(chk.items).map((k) => chk.items[k]);
   const sev2 = items.filter((r) => r.sev === 2).length;
@@ -312,6 +362,11 @@ const _MED_BY_DZ = {
 };
 function memberClinicalProfile(m) {
   if (!m) return null;
+  /* [실측 통일 2026-10-05] 본인 계정의 확정 진단은 국가검진 판정의 고혈압(잘 조절됨) 1종뿐이고,
+     약물명·복약 순응도·생활미션·수검연도는 원천에 없다 → 「해당 없음」으로 비운다(지어내지 않는다). */
+  if (typeof selfRealIsSelf === "function" && selfRealIsSelf(m) && typeof selfRealClinical === "function") {
+    const _sc = selfRealClinical(); if (_sc) return _sc;
+  }
   const HRD = m.highRiskDiseases || [];
   const rng = _chkRng(_chkSeed("clin" + (m.id || m.email || m.name)));
   const diagnoses = HRD.map((d, i) => ({ name: d, since: (2026 - (1 + Math.floor(rng() * 6))) + "년 진단" }));
@@ -332,13 +387,14 @@ function memberDeepAnalysis(text, m) {
   const chk = genMemberCheckup(m);
   const R = (typeof demoReport === "function") ? (() => { try { return demoReport(m); } catch (e) { return null; } })() : null;
   const N = m.name || "회원";
+  const trendBtn = chk.selfReal ? "내 검진 시점별 비교" : "내 3년 검진 추이";   /* 실측 2시점 — 「3년 추이」라고 적지 않는다 */
   const emoji = ["✅", "⚠️", "🚨"];
   const fmt = (n) => Number(n).toLocaleString("ko-KR");
   const shortName = (nm) => nm.split(" (")[0].split("(")[0];
   // 검진 이상항목 상세(위험>주의 순)
-  const abn = Object.keys(chk.items).map((k) => chk.items[k]).filter((r) => r.sev >= 1 && r.series).sort((a, b) => b.sev - a.sev || b.series[2].value - a.series[2].value);
-  const arrow = (r) => { const a = r.series[0].value, b = r.series[2].value; if (Math.abs(b - a) < Math.abs(a) * 0.02) return "→ 유지"; const worseUp = !(r.item && r.item.lowIsBad); const better = worseUp ? b < a : b > a; return better ? "📉 개선 중" : "📈 악화 중"; };
-  const abnItems = abn.slice(0, 7).map((r) => { const p = r.series[2]; return `${emoji[r.sev]} ${r.name} ${p.value}${r.unit} 「${p.label}」 (참고치 ${r.ref}) · 3년 ${arrow(r)}`; });
+  const abn = Object.keys(chk.items).map((k) => chk.items[k]).filter((r) => r.sev >= 1 && r.series).sort((a, b) => b.sev - a.sev || chkCur(b).value - chkCur(a).value);
+  const arrow = (r) => { if (!chkHasTrend(r)) return "→ 추이 없음"; const a = chkFst(r).value, b = chkCur(r).value; if (Math.abs(b - a) < Math.abs(a) * 0.02) return "→ 유지"; const worseUp = !(r.item && r.item.lowIsBad); const better = worseUp ? b < a : b > a; return better ? "📉 개선 중" : "📈 악화 중"; };
+  const abnItems = abn.slice(0, 7).map((r) => { const p = chkCur(r); return `${emoji[r.sev]} ${r.name} ${p.value}${r.unit} 「${p.label}」 (참고치 ${r.ref}) · ${chk.selfReal ? r.srcDate + " 기준" : "3년"} ${arrow(r)}`; });
   // 생체나이·장기
   const organLines = R ? R.organs.map((o) => `${o[0]} ${o[1]}세 ${o[3] ? "✓ 양호" : "▲ 노화 빠름"}`) : [];
   // 질병 위험 상위 + 암
@@ -347,28 +403,30 @@ function memberDeepAnalysis(text, m) {
   // 카테고리별 관리 액션
   const cats = {}; abn.forEach((r) => { const it = r.item; if (it && !cats[it.dz]) cats[it.dz] = it.tip; });
   const actions = Object.keys(cats).slice(0, 5).map((dz) => `${dz} → ${cats[dz]}`);
-  const trendMsg = { improve: "최근 3년 전반적으로 개선되는 흐름이에요. 지금 관리를 계속 유지하세요. 👍", worsen: "최근 3년 악화 흐름이에요. 생활습관 교정과 정밀 추적이 필요해요.", stable: "최근 3년 큰 변화 없이 유지 중이에요. 이상 항목은 목표 범위로 개선을 권해요." }[chk.trend];
+  const trendMsg = { improve: "최근 3년 전반적으로 개선되는 흐름이에요. 지금 관리를 계속 유지하세요. 👍", worsen: "최근 3년 악화 흐름이에요. 생활습관 교정과 정밀 추적이 필요해요.", stable: "최근 3년 큰 변화 없이 유지 중이에요. 이상 항목은 목표 범위로 개선을 권해요." }[chk.trend]
+    || (chk.trendNote || `실측 검진 ${(chk.years || []).join("·")} 시점만 있어 추이(진행형태)는 산출하지 않았어요 — 각 시점의 판정으로 보여 드려요.`);
   const costLine = chk.report ? chk.report.years.map((y, i) => `'${String(y).slice(2)} ${fmt(chk.report.cost[i])}원`).join(" → ") : (R ? fmt(R.costThis) + "원" : "-");
 
   const G = (typeof memberHealthGrade === "function") ? memberHealthGrade(m) : null;
   const head = `🔬 ${N}님 정밀 건강분석입니다 (데이터하우스 검진데이터 기반)\n` +
     (G ? `• 건강상태 등급 「${G.grade}」 — ${G.act}\n` : "") +
     (R ? `• 생체나이 ${R.bio}세 (주민등록 ${R.reg}세, ${R.diff <= 0 ? R.diff : "+" + R.diff}세) · 종합평가 「${R.evalLabel}」 · 노화속도 ${R.agingSpeed}배\n` : "") +
-    `• 국가건강검진 판정 「${chk.nat.grade}」 · 종합검진 이상항목 ${abn.length}건 · 최근 3년 진행형태 「${chk.trendLabel}」`;
+    `• 국가건강검진 판정 「${chk.nat.gradeLabel || chk.nat.grade}」 · ${chk.selfReal ? `이상·의심 ${(chk.abnMain || []).length}항목(${chk.nat.date})` : `종합검진 이상항목 ${abn.length}건`} · 진행형태 「${chk.trendLabel}」`;
 
   const bubbles = [{ kind: "text", text: head }];
-  if (organLines.length) bubbles.push({ kind: "card", card: { title: "🧬 생체나이 · 장기 정밀", items: organLines, buttons: ["내 생체나이는?", "내 3년 검진 추이"] } });
+  if (organLines.length) bubbles.push({ kind: "card", card: { title: "🧬 생체나이 · 장기 정밀", items: organLines, buttons: ["내 생체나이는?", trendBtn] } });
   if (abnItems.length) bubbles.push({ kind: "card", card: { title: `📋 검진 이상항목 상세 (${abn.length}건)`, items: abnItems, buttons: abn.slice(0, 2).map((r) => `내 ${shortName(r.name)} 결과`) } });
-  else bubbles.push({ kind: "card", card: { title: "📋 종합검진 결과", items: ["주요 항목이 모두 정상 범위입니다. 잘 유지하고 계세요. 👍"], buttons: ["내 3년 검진 추이"] } });
+  else bubbles.push({ kind: "card", card: { title: "📋 종합검진 결과", items: ["주요 항목이 모두 정상 범위입니다. 잘 유지하고 계세요. 👍"], buttons: [trendBtn] } });
   const riskItems = dzTop.slice();
   if (cancerHi.length) riskItems.push(`⚠️ 주의 암종: ${cancerHi.slice(0, 4).join(" · ")}`);
-  if (R) riskItems.push(`전체 암 발생 위험도 ${R.cancerTotal}등급 (${R.evalLabel})`);
+  /* [실측 통일 2026-10-06] 암위험 라벨 = cgLabel(「낮은 편」) — 종합평가(evalLabel)로 쓰면 「4등급(좋음)」이 된다 */
+  if (R) riskItems.push(`전체 암 발생 위험도 ${R.cancerTotal}등급 (${R.cgLabel || (R.cg ? R.cg[0] : "") || R.evalLabel})`);
   if (riskItems.length) bubbles.push({ kind: "card", card: { title: "📊 질병 · 암 발생 위험도", items: riskItems, buttons: [dzTop[0] ? `${dzTop[0].split(" ")[0]} 생활습관 관리법은?` : "내가 가장 조심해야 할 암은?", "내가 가장 조심해야 할 암은?"] } });
-  const careItems = [`예상 의료비(3년): ${costLine}`].concat(actions.length ? actions : ["현재 뚜렷한 이상 항목이 없어요. 정기검진·생활습관을 유지하세요."]);
+  const careItems = [chk.report ? `예상 의료비(3년): ${costLine}` : `올해 예상 의료비: ${costLine}`].concat(actions.length ? actions : ["현재 뚜렷한 이상 항목이 없어요. 정기검진·생활습관을 유지하세요."]);
   bubbles.push({ kind: "card", card: { title: "🎯 핵심 관리 · 의료비", items: careItems, buttons: ["내 의료비 예측", "맞춤 홈케어 의료기기"] } });
   bubbles.push({ kind: "text", text: `${trendMsg}\n📚 근거: ${chk.nat.src} · ${chk.comp.src} · ${typeof REPORT_SRC !== "undefined" ? REPORT_SRC : "건강분석리포트"} (회원 검진데이터 RAG)\n※ 확정 진단이 아닌 위험 '가능성' 안내이며, 정확한 진단·판단은 의료진 상담이 필요합니다.` });
 
-  const quicks = [abn[0] ? `내 ${shortName(abn[0].name)} 결과` : "내 3년 검진 추이", "내 3년 검진 추이", "내 의료비 예측", "내가 가장 조심해야 할 암은?"].filter((v, i, a) => a.indexOf(v) === i).slice(0, 4);
+  const quicks = [abn[0] ? `내 ${shortName(abn[0].name)} 결과` : trendBtn, trendBtn, "내 의료비 예측", "내가 가장 조심해야 할 암은?"].filter((v, i, a) => a.indexOf(v) === i).slice(0, 4);
   return { bubbles, quicks };
 }
 

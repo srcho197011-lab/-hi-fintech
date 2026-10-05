@@ -464,7 +464,9 @@ function DataVaultPanel({ onGo }) {
       <div className="dv-sec">내 데이터</div>
       {(v.checkups || []).map((c, i) => (
         <div className="dv-item" key={"c" + i}><span className="dv-ic" style={{ background: "#E8F1FE", color: "#2563EB" }}><FileText size={16} /></span>
-          <div className="dv-ib"><b>건강검진 {c.date} <span className={"dv-tag " + (c.completeness === "full" ? "full" : "part")}>{c.completeness === "full" ? "전체" : "부분"}</span></b><span>{c.channel === "nhis" ? "공단 연계" : c.channel === "photo" ? "사진 촬영" : "파일 업로드"} · {(c.items || []).length}항목 · FHIR/LOINC</span></div>
+          {/* [실측 통일 2026-10-06] 항목 수는 **결과지 판정 행** 기준으로 센다 — 혈압은 금고에 sbp/dbp 2키로 들어가므로
+              items.length로 세면 결과통보서 12항목이 13항목으로 보였다(건강현황 배지·계보 블록은 12로 표기해 어긋남). */}
+          <div className="dv-ib"><b>건강검진 {c.date} <span className={"dv-tag " + (c.completeness === "full" ? "full" : "part")}>{c.completeness === "full" ? "전체" : "부분"}</span></b><span>{c.provider ? c.provider + " · " : ""}{c.channel === "nhis" ? "공단 연계" : c.channel === "photo" ? "사진 촬영" : "파일 업로드"} · {(() => { const it = c.items || []; const rows = new Set(it.map((x) => x && x.flagRow).filter(Boolean)); return rows.size || it.length; })()}항목 · FHIR/LOINC{(c.unmapped || []).length ? ` · 표준코드 미매핑 ${c.unmapped.length}항목` : ""}</span></div>
           <code className="dv-hash">{(c.fhirHash || "").slice(0, 10)}…</code></div>
       ))}
       {(v.insurance || []).length > 0 && (

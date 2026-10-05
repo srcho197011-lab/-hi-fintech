@@ -15,9 +15,20 @@ function vaultCheckupMap(member) {
     const sorted = v.checkups.slice().sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")));
     const latest = sorted[sorted.length - 1];
     const map = {};
-    (latest.items || []).forEach((it) => { if (it && it.key != null && it.value != null) map[it.key] = it.value; });
+    /* [실측 통일 2026-10-06] 결과지 판정문(flagKo)·판정 행(flagRow)·원문 값(raw)을 함께 들고 나간다 —
+       임계값으로 다시 판정하면 「혈압 119/78 = 정상범위」가 되어 결과통보서의 「유질환자(관리중)」과 어긋난다.
+       합성 금고 레코드에는 이 필드가 없어 맵이 비고, 기존 경로는 그대로 동작한다. */
+    const flags = {}, rowOf = {}, rawOf = {}, unitOf = {};
+    (latest.items || []).forEach((it) => {
+      if (!it || it.key == null) return;
+      if (it.value != null) map[it.key] = it.value;
+      if (it.flagKo) flags[it.key] = it.flagKo;
+      if (it.flagRow) rowOf[it.key] = it.flagRow;
+      if (it.raw != null) rawOf[it.key] = it.raw;
+      if (it.unit) unitOf[it.key] = it.unit;
+    });
     if (!Object.keys(map).length) return null;
-    return { map, date: latest.date, channel: latest.channel, completeness: latest.completeness, n: Object.keys(map).length, history: sorted.length };
+    return { map, flags, rowOf, rawOf, unitOf, date: latest.date, channel: latest.channel, completeness: latest.completeness, n: Object.keys(map).length, history: sorted.length };
   } catch (e) { return null; }
 }
 
@@ -48,8 +59,23 @@ const LB_ORGANS = [
 /* ── 2세대 분석 프로필 — 실검진값의 결정론 함수(설명가능) ──
    반환: { fields:{biologicalAge, 장기나이 5종, cancerRiskGrade}, evidence, date, n } 또는 null(금고 비어있음) */
 function lineageProfile(member) {
+  /* [실측 통일 2026-10-05] 본인 계정은 자체 휴리스틱(편차등급 합산)을 쓰지 않는다 —
+     생체·장기나이·암등급은 메디에이지 리포트의 실값이 있으므로 그대로 읽는다(만들지 않는다). */
+  const _real = (typeof selfRealIsSelf === "function" && selfRealIsSelf(member) && typeof selfRealLineage === "function") ? selfRealLineage() : null;
   const ck = vaultCheckupMap(member);
-  if (!ck) return null;
+  if (!ck) return _real || null;
+  if (_real) {
+    try {                                                   /* 2세대 자산 레코드 append는 그대로(검진 날짜별 1회 멱등) */
+      const tk0 = anonToken(member); const k0 = "hifin_g2_" + tk0;
+      const l0 = JSON.parse(localStorage.getItem(k0) || "[]");
+      if (!l0.some((r) => r.date === _real.date)) {
+        l0.push({ date: _real.date, n: _real.n, at: Date.now() });
+        localStorage.setItem(k0, JSON.stringify(l0));
+        if (typeof chainAppend === "function") chainAppend({ type: "record", token: tk0, note: `2세대 분석 자산 생성 — 검진(${_real.date}·${_real.n}항목) 기반 AI 리포트` });
+      }
+    } catch (e) {}
+    return _real;
+  }
   const reg = (typeof demoRegAge === "function") ? demoRegAge(member) : (member.regAge || member.age || 45);
   const fields = {}, evidence = [];
   let totalSev = 0, riskyOrgans = 0;

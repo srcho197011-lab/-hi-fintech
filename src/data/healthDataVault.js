@@ -81,7 +81,9 @@ function synthCheckupValues(member) {
   const age = member ? (member.regAge != null ? Math.round(member.regAge) : (member.age || 45)) : 45;
   const dz = (member && (member.highRiskDiseases || member.diseases)) || [];
   const sex = (member && member.sex) || "남";
-  const has = (re) => dz.some((d) => re.test(d)) || (member && member.name === "조성래" && /당뇨|지방간/.test(re.source));
+  /* [실측 통일 2026-10-05] 인물 하드코딩(조성래 → 당뇨·지방간 강제) 제거.
+     본인 계정은 합성 생성기를 아예 타지 않는다(_seedSelfCheckups의 실측 분기) — 여기는 체험·코호트 전용이다. */
+  const has = (re) => dz.some((d) => re.test(d));
   const R = (a, b) => Math.round(a + rng() * (b - a));
   const R1 = (a, b) => Math.round((a + rng() * (b - a)) * 10) / 10;
   const dm = has(/당뇨/), htn = has(/고혈압/), lip = has(/지질|고지혈/), liver = has(/간|지방간/), kid = has(/신장|콩팥/);
@@ -218,11 +220,18 @@ function vaultSaveCheckup(member, items, meta) {
   /* [H-2 W6] 검진일도 폴백을 두지 않는다 — 없으면 「2025-11-01」로 저장돼 남의 날짜가 내 검진일이 됐다.
      source와 같은 방식(fail-closed): 날짜를 모르면 저장하지 않고 되묻게 한다. */
   if (!meta.date) return { ok: false, reason: "검진일이 없어 저장하지 않았어요 — 결과지의 검진일을 확인해 주세요." };
-  const rec = { token, kind: "checkup", date: meta.date, source: meta.source, completeness: meta.completeness || "full", channel: meta.channel || "upload", fileName: meta.fileName || null, items, fhir, fileHash, fhirHash, savedAt: Date.now() };
+  /* [실측 통일 2026-10-06] 측정기관(provider)과 원천 행 수·표준코드 미매핑 목록을 함께 보존한다 —
+     「개선/악화 N건」을 말하는 화면이 기관 상이를 고지할 수 있어야 하고, 배지의 「N항목」이 근거를 가져야 한다. */
+  const rec = { token, kind: "checkup", date: meta.date, source: meta.source, completeness: meta.completeness || "full", channel: meta.channel || "upload", fileName: meta.fileName || null,
+    provider: meta.provider || null, srcRows: meta.srcRows != null ? meta.srcRows : null, unmapped: meta.unmapped || null,
+    items, fhir, fileHash, fhirHash, savedAt: Date.now() };
   const cur = vaultLoad(token) || { token, checkups: [], insurance: [], consents: null };
   cur.checkups = (cur.checkups || []).filter((c) => c.date !== rec.date).concat(rec);
   try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur)); } catch (e) {}
-  const block = chainAppend({ type: "checkup", token, fileHash, fhirHash, note: `검진결과 저장(${rec.channel}·${rec.completeness}) ${items.length}항목` });
+  /* [실측 통일 2026-10-06] 블록 문구의 항목 수도 **판정 행** 기준(화면 배지와 동일) —
+     혈압이 sbp·dbp 2행으로 저장돼 「13항목」이라고 적히면 같은 화면의 「12항목」 배지와 어긋난다. */
+  const _rowN = (() => { try { const r = {}; let plain = 0; items.forEach((it) => { if (it && it.flagRow) r[it.flagRow] = 1; else plain++; }); const n = Object.keys(r).length; return n ? n + plain : items.length; } catch (e) { return items.length; } })();
+  const block = chainAppend({ type: "checkup", token, fileHash, fhirHash, note: `검진결과 저장(${rec.channel}·${rec.completeness}) ${_rowN}항목` + (rec.unmapped && rec.unmapped.length ? ` · 표준코드 미매핑 ${rec.unmapped.length}항목` : "") });
   vaultAccessLog(token, "member", "검진데이터 저장");
   return { ok: true, rec, block };
 }
@@ -273,13 +282,51 @@ function onboardStatus(member) {
    올해(2026) 미수검이라 하이는 "2024년 결과 vs 2026년 예약" 두 갈래를 제시하고, 2023~2024 추이도 보여줄 수 있다.
    ⚠️ 단년만 필요하면 years를 [2024]로 두면 된다(그 외 코드 변경 불필요 — 금고·증서가 자동 이관된다). */
 const SELF_CHECKUP_SEED = { years: [2023, 2024], monthDay: "-12-26" };
-const SELF_SEED_FILE = /^(국가검진결과|검진결과_촬영본)_(\d{4})\.(pdf|jpg)$/;
+const SELF_SEED_FILE = /^(국가검진결과|검진결과_촬영본|국가건강검진_결과통보서|종합건강진단결과표)_(\d{4})\.(pdf|jpg)$/;
+/* [실측 통일 2026-10-05] 본인 금고 실측 이관 버전 플래그 —
+   합성 시드가 이미 localStorage에 영속화된 기기에서는 연도가 같아 _migrateSelfCheckupSeed의 연도 비교로는
+   이관이 돌지 않는다(2024는 그대로다). 이 플래그가 없으면 시드분을 비우고 실측으로 다시 시드한다. */
+const SELF_REAL_SEED_FLAG = "hifin_self_real_v1";
 
 /* 시드로 저장된 금고를 현재 SELF_CHECKUP_SEED 기준으로 1회 이관 — 회원이 직접 올린 자료가 섞여 있으면 건드리지 않는다 */
+/* 금고에 실측 2건(selfRealSources의 날짜)이 그대로 들어 있는가 — 배지·이관 판정의 공통 근거 */
+function _selfVaultRealOk(token) {
+  try {
+    if (typeof selfRealSources !== "function") return false;
+    const want = selfRealSources().map((x) => x.date).sort();
+    const have = ((vaultLoad(token) || {}).checkups || []).filter((c) => c.source === "self-real").map((c) => c.date).sort();
+    return want.length > 0 && want.length === have.length && want.every((d, i) => d === have[i]);
+  } catch (e) { return false; }
+}
 function _migrateSelfCheckupSeed(member, token, v) {
   try {
     const cks = v.checkups || [];
     if (!cks.length) return false;
+    /* [실측 통일 2026-10-06] 본인 계정 실측 이관은 **파일명 조건과 분리**한다 —
+       전에는 「금고의 모든 파일명이 시드 규격과 일치할 때」만 돌아서, 과거에 데이터 연결·사진 OCR로
+       결과지를 한 건이라도 올린 기기에서는 조건이 깨져 이관이 영구히 건너뛰어졌다(구 합성 금고
+       공복혈당 175·AST 88·ALT 68이 그대로 남았다). 이제 **시드분만** 치환하고 회원이 직접 올린
+       레코드는 남긴다. 판정 근거는 source(self-real·self-seed) + 시드 파일명 규격 두 가지다. */
+    if (typeof selfRealIsSelf === "function" && selfRealIsSelf(member)) {
+      const isSeed = (c) => !!c && (c.source === "self-real" || c.source === "self-seed" || SELF_SEED_FILE.test(c.fileName || ""));
+      const mine = cks.filter((c) => !isSeed(c));                                 // 회원이 직접 올린 결과지 — 보존
+      let done = false; try { done = !!localStorage.getItem(SELF_REAL_SEED_FLAG); } catch (e) {}
+      /* 레코드 모양이 낡으면(원문 값 raw 없음) 한 번 더 갈아끼운다 —
+         플래그 이름을 바꾸면 가드(run_selfreal_check)가 찾는 키가 달라지므로, 플래그는 두고 모양으로 판단한다. */
+      if (done && !cks.some((c) => c.source === "self-real" && (c.items || []).some((it) => it && it.raw != null))) done = false;
+      if (done && !_selfVaultRealOk(token)) done = false;                         // 플래그만 남고 실측이 없는 기기 → 다시 이관
+      if (!done) {
+        const cur0 = vaultLoad(token); cur0.checkups = mine;
+        try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur0)); } catch (e) {}
+        _seedSelfCheckups(member);
+        _migrateSelfCert(member);
+        /* 치환 뒤에도 실측 2건이 없으면 플래그를 세우지 않는다 — 화면이 「실측」 배지를 달지 않도록
+           (demoReport → selfRealShape(m)이 금고를 다시 확인한다). */
+        try { if (_selfVaultRealOk(token)) localStorage.setItem(SELF_REAL_SEED_FLAG, "1"); else localStorage.removeItem(SELF_REAL_SEED_FLAG); } catch (e) {}
+        return true;
+      }
+      return false;                                                               // 이미 실측 — 연도 비교(합성 시드 기준)로 되돌리지 않는다
+    }
     if (!cks.every((c) => SELF_SEED_FILE.test(c.fileName || ""))) return false;   // 회원 업로드분 포함 → 이관 대상 아님
     const have = cks.map((c) => Number((String(c.fileName).match(SELF_SEED_FILE) || [])[2])).sort();
     const want = SELF_CHECKUP_SEED.years.slice().sort();
@@ -287,21 +334,42 @@ function _migrateSelfCheckupSeed(member, token, v) {
     const cur = vaultLoad(token); cur.checkups = [];
     try { localStorage.setItem(_vaultKey(token), JSON.stringify(cur)); } catch (e) {}
     _seedSelfCheckups(member);
-    _migrateSelfCert();
+    _migrateSelfCert(member);
     return true;
   } catch (e) { return false; }
 }
 /* 검진대비보험 증서(시드분)도 최신 검진 연도에 맞춘다 — 증서 연도와 검진 연도가 어긋나 보이지 않게 */
-function _migrateSelfCert() {
+/* 증서 메타(발급 기관·검진일)의 단일 근거 — 본인 계정은 실측 원천(mcp_josungrae.json national.provider·date).
+   [실측 통일 2026-10-06] 전에는 center가 「강북삼성병원 종합검진센터」 상수였는데 실측 2024-12-26 검진기관은
+   서울늘편한내과의원이다. 원천에 기관이 없으면 만들지 않고 비운다(화면은 빈 값을 「해당 없음」으로 처리). */
+function _selfCertSrc(member) {
   try {
-    const y = SELF_CHECKUP_SEED.years[SELF_CHECKUP_SEED.years.length - 1];
+    if (typeof selfRealIsSelf === "function" && selfRealIsSelf(member) && typeof selfRealReport === "function") {
+      const d = selfRealReport();
+      if (d && d.national) return { center: d.national.provider || "", date: d.national.date, time: "" };
+    }
+  } catch (e) {}
+  const y = SELF_CHECKUP_SEED.years[SELF_CHECKUP_SEED.years.length - 1];
+  return { center: "검진 연동 발급", date: String(y) + SELF_CHECKUP_SEED.monthDay, time: "09:00" };
+}
+function _migrateSelfCert(member) {
+  try {
+    const sv = _selfCertSrc(member);
+    const y = String(sv.date).slice(0, 4);
     const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]");
     let hit = false;
-    l.forEach((c) => { if (c && /^CERT-JSR\d{4}A$/.test(c.id || "")) { c.id = `CERT-JSR${y}A`; c.date = String(y) + SELF_CHECKUP_SEED.monthDay; hit = true; } });
+    l.forEach((c) => { if (c && /^CERT-JSR\d{4}A$/.test(c.id || "")) { c.id = `CERT-JSR${y}A`; c.date = sv.date; if (sv.center) c.center = sv.center; hit = true; } });
     if (hit) localStorage.setItem("hifin_ins_certs", JSON.stringify(l));
   } catch (e) {}
 }
 function _seedSelfCheckups(member) {
+  /* [실측 통일 2026-10-05] 본인 계정은 실측 2건으로 시드한다 —
+     ① 국민건강보험공단 결과통보서 2024-12-26(12항목) ② 명지병원 종합건강진단결과표 2020-06-23(6패널).
+     합성 생성기(synthCheckupValues)는 체험·코호트 전용. 원천: src/data/mcp_josungrae.json */
+  if (typeof selfRealIsSelf === "function" && selfRealIsSelf(member) && typeof selfRealVaultRecords === "function") {
+    const recs = selfRealVaultRecords();
+    if (recs.length) { recs.forEach((r) => vaultSaveCheckup(member, r.items, r.meta)); try { localStorage.setItem(SELF_REAL_SEED_FLAG, "1"); } catch (e) {} return; }
+  }
   const vals = synthCheckupValues(member);
   const items = CKUP_ORDER.map((k) => ({ key: k, value: vals[k], source: "upload", confidence: 0.93 }));
   SELF_CHECKUP_SEED.years.forEach((y, i) => {
@@ -329,11 +397,12 @@ function seedSelfVault(member) {
     vaultSaveConsents(member, { insurance: true, link: true, step: "insurance" });
     const contracts = (typeof insAggregateFetch === "function") ? insAggregateFetch(member).contracts : [];
     if (contracts.length) vaultSaveInsurance(member, contracts, { source: "aggregate", channel: "aggregate" });
-    const certB = chainAppend({ type: "ins-cert", token, note: "무상 검진대비보험 증서 발급(강북삼성병원 종합검진)" });
+    const _cs0 = _selfCertSrc(member);
+    const certB = chainAppend({ type: "ins-cert", token, note: "무상 검진대비보험 증서 발급" + (_cs0.center ? `(${_cs0.center} ${_cs0.date})` : "") });
     /* insured(계약자·피보험자)를 명시해 둔다 — 증서의 주인이 누구인지가 빠져 있어서
        헬스메이트 ③터치 플랜(만기 D-30/D-7/D+1 산출)과 ⑨단계 D4(보험 결합 근거)가 이 증서를
        본인 것으로 인식하지 못했다. 값을 만들지 않고 보유 사실만 채운다(Checkup 증서 화면은 기존대로 동작). */
-    try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) { l.push({ id: `CERT-JSR${SELF_CHECKUP_SEED.years[SELF_CHECKUP_SEED.years.length - 1]}A`, center: "강북삼성병원 종합검진센터", date: String(SELF_CHECKUP_SEED.years[SELF_CHECKUP_SEED.years.length - 1]) + SELF_CHECKUP_SEED.monthDay, time: "09:00", at: Date.now(), hash: certB && certB.hash, insured: { name: member.name } });localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } } catch (e) {}
+    try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) { l.push({ id: `CERT-JSR${String(_cs0.date).slice(0, 4)}A`, center: _cs0.center, date: _cs0.date, time: _cs0.time, at: Date.now(), hash: certB && certB.hash, insured: { name: member.name } });localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } } catch (e) {}
     // ④ 분석·활용 기록 — AI 정밀리포트 생성(분석 결과의 지문도 체인에)
     chainAppend({ type: "record", token, note: "AI 정밀리포트 생성 — 분석 결과 해시 기록(가명 토큰 기준)" });
     // ⑤ 거래 앵커 — 쇼핑 적립·HTK 크레딧 전환
@@ -498,13 +567,20 @@ function assetLineage(m) {
     let g2rec = [], g4rec = [];
     try { g2rec = JSON.parse(localStorage.getItem("hifin_g2_" + tk) || "[]"); } catch (e) {}
     try { g4rec = JSON.parse(localStorage.getItem("hifin_g4_" + tk) || "[]"); } catch (e) {}
-    const g2 = g2rec.length || g1;   // 실레코드 없으면 검진 1건당 리포트 1건 프록시
+    /* [실측 통일 2026-10-06] 본인 계정은 프록시(검진 1건당 리포트 1건)를 쓰지 않는다 —
+       실제 분석 리포트는 메디에이지 1건뿐인데 검진이 2건이라 「2세대 2건」이 되고,
+       화면을 어떤 순서로 들렀는지에 따라(lineageProfile 호출 여부) 1건/2건이 오갔다. */
+    const _selfReal = (typeof selfRealIsSelf === "function") ? selfRealIsSelf(m) : false;
+    const g2 = g2rec.length || (_selfReal ? ((typeof selfRealLineage === "function" && selfRealLineage()) ? 1 : 0) : g1);   // 실레코드 없으면 검진 1건당 리포트 1건 프록시
     let certs = 0, claims = 0;
     try { certs = (JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]")).length; } catch (e) {}
     try { claims = (JSON.parse(localStorage.getItem("hifin_claims") || "[]")).length; } catch (e) {}
     const g3 = certs + claims + blocks.filter((b) => b.type === "tx" || b.type === "swap").length;
     const rr = rerateState();
-    const g4 = g4rec.length || ((g1 >= 2 ? 1 : 0) + (rr.status === "done" ? 1 : 0));
+    /* [실측 통일 2026-10-06] 4세대는 「지표 개선 증명(RWE)」이다 — 본인 계정은 검진 2건이 있어도
+       개선 지표가 0건(요율 재산정 화면: 개선 0 · 악화 4)이라 성과 자산이 없다.
+       「검진 2건 이상 → 1건」 프록시를 그대로 쓰면 같은 앱의 재산정 화면과 정면으로 어긋난다. */
+    const g4 = g4rec.length || ((_selfReal ? 0 : (g1 >= 2 ? 1 : 0)) + (rr.status === "done" ? 1 : 0));
     return { g1, g2, g3, g4, total: g1 + g2 + g3 + g4 };
   } catch (e) { return { g1: 0, g2: 0, g3: 0, g4: 0, total: 0 }; }
 }
