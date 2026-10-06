@@ -350,7 +350,7 @@ function hmoProRow(code) {
    ⚠️ 캐시하지 않는다 — 프로가 방금 남긴 기록이 캐시에 가려 0으로 보이면 「집계는 원천과 일치」가 깨진다.
       비용은 사번당 저장 키 1회 읽기라 전원(702명)이어도 밀리초 단위다. */
 function hmoResultAgg(codes) {
-  const by = {}; let n = 0, followUps = 0, gRows = 0, gFull = 0;
+  const by = {}; const gBy = {}; const gFullByGn = {}; let n = 0, followUps = 0, gRows = 0, gFull = 0;
   const RC = (typeof HM_RESULT_CODES !== "undefined") ? HM_RESULT_CODES : [];
   RC.forEach((c) => { by[c.k] = 0; });
   codes.forEach((c) => {
@@ -358,11 +358,16 @@ function hmoResultAgg(codes) {
     if (!s) return;
     n += s.n; followUps += s.followUps || 0;
     RC.forEach((x) => { by[x.k] += (s.by[x.k] || 0); });
-    if (s.golden) { gRows += s.golden.rows || 0; gFull += s.golden.full || 0; }
+    /* 항목별 분포(by)도 합산한다 — 종전에는 rows·full만 더하고 by를 버려서, 신설 칸이 0건으로
+       시작하는 사실을 ⑩에서 보여줄 경로가 없었다(그러면 「프로들이 동의를 안 받았다」로 읽힌다) */
+    if (s.golden) { gRows += s.golden.rows || 0; gFull += s.golden.full || 0;
+      const gb = s.golden.by || {}; Object.keys(gb).forEach((k) => { gBy[k] = (gBy[k] || 0) + gb[k]; });
+      /* 기록 시점 사전별 완주 분해 — 라벨이 분자와 같은 기준을 말하게 한다(적대적 리뷰 수선) */
+      const fg = s.golden.fullByGn || {}; Object.keys(fg).forEach((k) => { gFullByGn[k] = (gFullByGn[k] || 0) + fg[k]; }); }
   });
   const accepted = (by.R1 || 0) + (by.R7 || 0);
   const connected = accepted + (by.R2 || 0) + (by.R3 || 0);
-  return { n, by, followUps, gRows, gFull,
+  return { n, by, followUps, gRows, gFull, gBy, gFullByGn,
     acceptRate: connected ? Math.round(accepted / connected * 100) : null,
     codes: RC.map((c) => ({ k: c.k, ko: c.ko, icon: c.icon, n: by[c.k] || 0 })) };
 }
@@ -409,6 +414,13 @@ function HmoBox({ t, tag, tagC, children }) {
 const HMO_TAG_DEMO = { bg: "#FEF3E2", c: "#B45309" };
 const HMO_TAG_FULL = { bg: "#E7F8EE", c: "#15803D" };
 const HMO_TAG_SAMP = { bg: "#EAF4FE", c: "#1D4ED8" };
+/* 단계 판정으로 센 D1 전건 = 배치 스냅샷의 결과 대기(W) — W는 「검진 결과 수령 전」이라 D1과 같은 집합이다
+   (형 지시 2026-10-06 ②로 D1 전건이 W가 됐다). 여기서 다시 세지 않고 스냅샷에서 읽는다 — 화면이 수치를
+   새로 만들지 않는다는 원칙(§7-⑥)이고, 스냅샷이 없으면 null로 두어 문장 자체를 붙이지 않는다.
+   ⚠️ **파일 최상위 상수로 두면 안 된다** — 번들은 _manifest.txt 순서로 한 모듈에 이어 붙으므로
+   이 파일(42번째)이 hmOpsSnapshot.js(77번째)보다 먼저 평가되고, const는 TDZ라 typeof조차 던진다
+   (실측: 조용히 null이 되어 문장이 통째로 사라졌다). 그래서 **호출 시점에** 읽는 함수로 둔다. */
+function _hmoFunnelReal() { try { return (typeof HM_OPS_SNAPSHOT !== "undefined" && HM_OPS_SNAPSHOT && HM_OPS_SNAPSHOT.byGrade) ? (HM_OPS_SNAPSHOT.byGrade.W || null) : null; } catch (e) { return null; } }
 function HmoBarRow({ label, n, max, color, right, on, onClick, sub }) {
   /* 누를 수 없는 행(관리 범위 상위·표시 전용)은 손가락 커서도 주지 않는다 — 눌러도 안 되는 것을 눌러 보게 두지 않는다 */
   return (<div className={"hmorow" + (on ? " on" : "") + (onClick ? "" : " dead")} onClick={onClick || undefined} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}>
@@ -657,7 +669,9 @@ function HmoUnitStats({ scope, R, period }) {
       </HmoBox>
 
       <HmoBox t={<><FileText size={14} color="#7C3AED" /> 활동 결과 7코드 — 지시가 어떻게 끝났나</>} tag="실기록" tagC={HMO_TAG_FULL}>
-        <HmoDef>프로가 「결과 남기기」로 직접 남긴 기록만 셉니다 — 저장 키 hifin_handoff_result_&#123;사번&#125;을 이 단위 프로 {codes.length}명분 전수 합산. 기록이 없으면 0으로 두고 추정하지 않습니다.</HmoDef>
+        <HmoDef>프로가 「결과 남기기」로 직접 남긴 기록만 셉니다 — 저장 키 hifin_handoff_result_&#123;사번&#125;을 이 단위 프로 {codes.length}명분 전수 합산. 기록이 없으면 0으로 두고 추정하지 않습니다.
+          골든타임 전달률의 <b>분모는 전달 체크를 한 칸이라도 누른 D2 통화 행</b>이고(한 칸도 누르지 않은 통화는 비율에 들어가지 않습니다), 완주 기준 칸 수는 기록 시점 사전을 따릅니다.
+          「건강관리 동의 요청」 칸은 2026-10-06 신설이라 그 전 기록에는 칸이 없습니다 — 0건이 미이행은 아닙니다.</HmoDef>
         {res.n ? (<div>
           {res.codes.map((c) => (<div key={c.k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
             <span style={{ width: 86, fontSize: 10.8, fontWeight: 700, color: "#475569" }}>{c.icon} {c.ko}</span>
@@ -665,7 +679,13 @@ function HmoUnitStats({ scope, R, period }) {
             <b style={{ width: 28, textAlign: "right", fontSize: 11.4 }}>{c.n}</b></div>))}
           <div style={{ fontSize: 11.8, color: "#475569", marginTop: 5, lineHeight: 1.8 }}>
             기록 <b>{res.n}건</b> · 수락률 {res.acceptRate != null ? res.acceptRate + "%" : "-"} · 후속 약속 {res.followUps}건<br />
-            ⭐ D2 골든타임 전달 체크 {res.gRows}건 중 5칸 완주 <b>{res.gFull}건</b>{res.gRows ? `(${hmoaPctKo(res.gFull, res.gRows)})` : ""}
+            {/* ⚠️ 헤드라인에 **현재 사전 길이를 쓰지 않는다**(적대적 리뷰 실증 2026-10-06): 분자는
+                기록 시점 사전(row.gn)을 따르는데 라벨만 「6칸 완주」로 찍혀, 5칸 시절 기록 1건이
+                「6칸 완주 1건」으로 표시됐다. 기준별 분해를 바로 뒤에 적는다. */}
+            ⭐ D2 골든타임 전달 체크 {res.gRows}건 중 <b>전부 체크(기록 시점 기준) {res.gFull}건</b>{res.gRows ? `(${hmoaPctKo(res.gFull, res.gRows)})` : ""}
+            {Object.keys(res.gFullByGn || {}).length ? <><br /><span style={{ fontSize: 11 }}>기준별 완주 — {Object.keys(res.gFullByGn).sort().map((k) => k + "칸 사전 " + res.gFullByGn[k] + "건").join(" · ")}{(typeof HMR_GOLDEN_KEYS !== "undefined") ? `(현재 사전 ${HMR_GOLDEN_KEYS.length}칸)` : ""}</span></> : null}
+            {/* 항목별 분포 — 어느 칸이 덜 전달되는지가 보여야 「완주율」이 행동으로 이어진다 */}
+            {(typeof HMR_GOLDEN_KEYS !== "undefined") && res.gRows ? <><br /><span style={{ fontSize: 11 }}>칸별 — {HMR_GOLDEN_KEYS.map((g) => g.ko + " " + ((res.gBy || {})[g.k] || 0)).join(" · ")}</span></> : null}
           </div>
         </div>) : <div className="hmonote">이 단위에서 아직 기록된 결과가 없어요 — 프로가 통화 후 「결과 남기기」를 누르면 여기 쌓입니다(가공·추정 없음).</div>}
       </HmoBox>
@@ -828,7 +848,11 @@ function HmoStageBoard({ scope, R, picked, onPick, adm }) {
     <HmoBox t={<><Network size={14} color={HMO_C.cyan} /> 단계별 인원 분포 — {hmoScopeLabel(scope)}</>}>
       {hq && !live ? (<>
         <HmoStageDist byStage={nByStage} total={nation.reduce((a, x) => a + x.n, 0)}
-          label="전국 코호트 10만명 — HM_FUNNEL 비율 × 모집단 수식(finModel 정합, 루프 없이 전수). 이 상자는 수식 분포라 명단이 없어요 — 아래에서 집계를 누르면 칩이 눌리고 단계별 명단까지 이어져요." tag="전수(수식)" tagC={HMO_TAG_FULL} />
+          label={"전국 코호트 10만명 — HM_FUNNEL 비율 × 모집단 수식(finModel 정합, 루프 없이 전수). 이 상자는 수식 분포라 명단이 없어요 — 아래에서 집계를 누르면 칩이 눌리고 단계별 명단까지 이어져요."
+            /* 수식 D1(55,000)과 단계 판정 D1은 수백 명 어긋난다 — 「배치·배분 관제」의 결과 대기(W)가
+               판정 D1 전건이라 두 숫자가 같은 화면에 나란히 보인다. 어느 쪽이 수식인지 말해 두지 않으면
+               시연에서 먼저 짚히는 자리다(형 지시 2026-10-06 — 집계가 서로 어긋나 보이면 안 된다). */
+            + (_hmoFunnelReal() != null ? " 단계 판정으로 센 D1 전건은 " + _hmoFunnelReal().toLocaleString() + "명이에요(「배치·배분 관제」의 결과 대기 W) — 이 상자의 D1은 비율 수식이라 그만큼 차이가 납니다." : "")} tag="전수(수식)" tagC={HMO_TAG_FULL} />
         <div style={{ marginTop: 9 }}><HmoProgress R={R} label="본사 소속 프로 단계 분포 계산" /></div>
       </>) : live ? (<>
         <HmoStageDist byStage={S.byStage} total={S.n} sel={dsel} onSel={setDsel}
@@ -932,7 +956,23 @@ function HmoBatchOps() {
   const W = (typeof HM_WEEKLY_SNAPSHOT !== "undefined") ? HM_WEEKLY_SNAPSHOT : null;
   const ev = React.useMemo(() => { try { return (typeof hiEventStats === "function") ? hiEventStats() : null; } catch (e) { return null; } }, []);
   if (!S || !S.total) return <div className="hmocard">배치 스냅샷이 아직 없어요 — scripts/run_handoff_batch.mjs를 돌리면 이 블록이 채워집니다(화면이 대신 추정하지 않습니다).</div>;
-  const GU = { H: { ko: "H 고위험", c: "#EA580C", bg: "#FFF1E2" }, M: { ko: "M 중위험", c: "#D97706", bg: "#FEF7E0" }, L: { ko: "L 관심", c: "#0891B2", bg: "#E0F5FA" } };
+  /* W(결과 대기)는 '-'(관리 리듬 양호)와 **섞지 않는다** — 섞으면 아래 「대상아님(관리 리듬 양호)」
+     사유 문구가 결과 대기 회원 전건분 거짓이 된다. 별 행으로 두면 byGrade 합(코호트 전원)이 보존된다 */
+  const GU = { H: { ko: "H 고위험", c: "#EA580C", bg: "#FFF1E2" }, M: { ko: "M 중위험", c: "#D97706", bg: "#FEF7E0" }, L: { ko: "L 관심", c: "#0891B2", bg: "#E0F5FA" },
+    W: { ko: "결과 대기", c: "#64748B", bg: "#F1F5F9" },
+    /* ⚠️ 행 이름을 「첫 연결 D2」로 두면 등급 H/M/L인 D2 카드도 첫 연결인데 이 행(등급 '-'인 것만)이
+       D2 전체를 가리키는 것처럼 읽힌다 — 등급 축 행이므로 등급 이름을 앞세운다(적대적 리뷰 수선).
+       라벨 어휘는 RISK_GRADE_META['-'].ko와 같은 사전을 쓴다. */
+    D2: { ko: "등급 해당 없음 · D2", c: "#0E7490", bg: "#E0F5FA" } };
+  /* 등급 '-' 인데 **카드 대상**인 건 = D2 첫 연결(등급과 무관하게 포함 · 형 지시 2026-10-06 ①).
+     이 행이 없으면 네 행(H·M·L·W)의 합이 카드 대상에 3.8% 모자란데 설명이 화면에 없고, 아래
+     「대상아님」이 byGrade['-'] 전건을 가져가 **일일 명단에 실제로 올라 있는 회원까지** 대상 아님으로
+     적는다(로스터 등급 합계에 '-' 802건이 같은 상자 안에 찍혀 있어 바로 들킨다).
+     스냅샷에 필드를 더하지 않고 파생한다 — 배치 counts의 「대상 아님」과 같은 수가 나와야 맞다
+     (실측 19,560 − 3,138 = 16,422 = 배치 제외 분해의 대상 아님). */
+  const gSum4 = ["H", "M", "L", "W"].reduce((a, k) => a + (S.byGrade[k] || 0), 0);
+  const gD2Dash = Math.max(0, S.cards - gSum4);
+  const gOffCycle = Math.max(0, (S.byGrade["-"] || 0) - gD2Dash);
   const load = (S.loadBySido || []).slice().sort((a, b) => b.perPro - a.perPro);
   const maxPer = Math.max(1, ...load.map((x) => x.perPro));
   return (<div className="hmogrid">
@@ -946,19 +986,37 @@ function HmoBatchOps() {
       </div>
       <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.95 }}>
         카드 정의 <b>{S.cards.toLocaleString()}건</b> · 발행 가능 <b>{S.publishable === S.cards ? "100%" : S.publishable.toLocaleString()}</b> · 접촉 락 <b>{S.locked.toLocaleString()}명</b><br />
+        {/* ⚠️ 분모 전환을 명시한다(적대적 리뷰 실증 2026-10-06) — 「카드 대상」은 2026-10-06에 결과 대기(W)
+            전건을 편입해 56,945 → 83,578(+46.8%)로 커졌고, 그 65.5%는 **명단에 올리지 않는** 카드다.
+            고지가 없으면 바로 아래 H 비율(11.1% → 3.3%)이 전일과 비교 가능한 숫자로 읽힌다. */}
+        <span style={{ fontSize: 11.4 }}>그중 <b>명단 대상 {Math.max(0, S.cards - (S.byGrade.W || 0)).toLocaleString()}건</b> · <b>결과 대기(명단 밖) {(S.byGrade.W || 0).toLocaleString()}건</b> — 2026-10-06에 결과 대기 전건을 카드 대상에 편입했어요(그 전 분모 56,945). 그래서 아래 등급 비율은 <b>전일과 비교할 수 없습니다</b>.</span><br />
         전원 조립 검사 {S.rosterChecked}명 — 위반 <b style={{ color: S.rosterViol ? HMO_C.red : HMO_C.ok }}>{S.rosterViol}건</b> · 일일 지시서 평균 {S.avgRoster}건(상한 {S.maxRoster})
+        {S.rosterWin ? <> · 쿼터 D2 {S.rosterWin.d2}칸 + 만기 {S.rosterWin.mat}칸</> : null}
       </div>
       {W && W.week ? <div className="hmonote">📚 주간 학습 루프({W.week}) — 과다 사용 {W.monotony.length}블록 · 미사용 승인 {W.unused.length}블록 · 개선 후보 {W.candidates.length}건. 문안 반영은 대표 검수 경유만(자동 반영 없음).</div> : null}
     </HmoBox>
 
     <HmoBox t={<><AlertTriangle size={14} color={HMO_C.stall} /> 위험 분포 · 응답 시한 티어</>} tag="전수" tagC={HMO_TAG_FULL}>
-      <HmoDef>카드 대상 {S.cards.toLocaleString()}건을 등급(H/M/L)으로 나눈 분포. 등급은 시한 티어로 이어집니다(H 48시간 · M 7일 · L 14일, 미응답은 D+7 재큐). E(응급)는 트리아지 소유로 카드 밖입니다.</HmoDef>
-      {["H", "M", "L"].map((k) => { const n = S.byGrade[k] || 0; const g = GU[k]; return (
+      {/* ⚠️ 「D2 우선」의 대가를 한 줄로 적는다(적대적 리뷰 실증 2026-10-06) — 쿼터가 상한 7 안에서
+          먼저 앉으면 H 고위험(48시간 시한)이 뒤로 밀리는데, 그 사실을 세는 지표가 한 곳도 없었다
+          (로스터 H가 3,204 → 1,824로 43% 줄었는데 화면·러너·보고서 어디에도 없었다).
+          화면이 새로 계산하지 않고 **배치 스냅샷에서 읽는다**(§7-⑥). */}
+      {S.hUnseated != null ? <div className="hmonote" style={{ background: "#FEF2F2", borderColor: "#FECACA", color: "#991B1B" }}>
+        오늘 <b>명단 밖 H 고위험 {Number(S.hUnseated).toLocaleString()}명</b> — H 후보 {Number(S.hCand || 0).toLocaleString()}명 중 명단 등재 {Number((S.byRosterGrade || {}).H || 0).toLocaleString()}명.
+        쿼터(D2 {(S.rosterWin || {}).d2}칸 + 만기 {(S.rosterWin || {}).mat}칸)가 상한 {S.maxRoster}건 안에서 먼저 앉은 결과예요 — 이 수가 쿼터 칸 수를 조정할 근거입니다.
+        {S.slaLessRoster != null ? <> 응답 시한이 없는 로스터 카드는 {Number(S.slaLessRoster).toLocaleString()}칸이에요(등급 '-' D2는 등급 시한 대신 첫 연결 창에서 시한을 파생합니다).</> : null}
+      </div> : null}
+      <HmoDef>카드 대상 {S.cards.toLocaleString()}건을 등급(H/M/L/결과 대기/등급 해당 없음·D2)으로 나눈 분포 — 다섯 행의 합이 카드 대상과 같습니다. 등급은 시한 티어로 이어집니다(H 48시간 · M 7일 · L 14일, 미응답은 D+7 재큐).
+        <b>결과 대기(W)</b>는 검진 결과 수령 전이라 등급을 산정하지 않는 구간이고 응답 시한이 없습니다 — 접촉 금지라 일일 명단에도 올리지 않습니다.
+        ⚠️ <b>모집단 주의</b> — 여기서 「결과 대기」는 <b>D1 전건</b>({(S.byGrade.W || 0).toLocaleString()}명 = 접촉 락 {S.locked.toLocaleString()}명 + 락 없는 접촉 금지 {Math.max(0, (S.byGrade.W || 0) - S.locked).toLocaleString()}명)입니다. 프로 콘솔 ②탭의 「결과 대기(락 없음)」 명단은 <b>그중 락 없는 쪽만</b>이라 숫자가 다릅니다 — 같은 단어가 두 모집단을 가리키지 않게 양쪽에 모집단을 적어 둡니다.
+        <b>등급 해당 없음 · D2</b>는 등급이 「-」인데도 카드를 내는 구간입니다(첫 연결은 등급과 무관하게 한 번은 반드시 나가야 하는 안내). D2 전체가 아니라 등급 '-'인 D2만입니다. E(응급)는 트리아지 소유로 카드 밖입니다.</HmoDef>
+      {["H", "M", "L", "W", "D2"].map((k) => { const n = k === "D2" ? gD2Dash : (S.byGrade[k] || 0); const g = GU[k]; return (
         <div key={k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
           <span className="hmopill" style={{ background: g.bg, color: g.c, width: 62, textAlign: "center" }}>{g.ko}</span>
           <div className="hmobar"><i style={{ width: (n / S.cards * 100) + "%", background: g.c }} /></div>
           <span style={{ width: 104, fontSize: 10.8, color: "#475569", textAlign: "right" }}>{n.toLocaleString()} ({(n / S.cards * 100).toFixed(1)}%)</span></div>); })}
-      <div className="hmonote">대상아님(관리 리듬 양호) {(S.byGrade["-"] || 0).toLocaleString()}명 · 일일 로스터 등급 합계 {Object.entries(S.byRosterGrade || {}).map(([k, v]) => k + " " + v).join(" · ")}</div>
+      <div className="hmonote">대상아님(관리 리듬 양호) {gOffCycle.toLocaleString()}명 — 등급 「등급 해당 없음(-)」 {(S.byGrade["-"] || 0).toLocaleString()}명 중 D2 {gD2Dash.toLocaleString()}명은 위 분포에서 카드 대상으로 셌습니다(D2 전체가 아니라 등급이 '-'인 D2만입니다) · 일일 로스터 등급 합계 {["H", "M", "L", "W", "-"].filter((k) => (S.byRosterGrade || {})[k]).concat(Object.keys(S.byRosterGrade || {}).filter((k) => ["H", "M", "L", "W", "-"].indexOf(k) < 0)).map((k) => k + " " + S.byRosterGrade[k]).join(" · ")}
+        {S.d2GoldenLeft ? <> · 로스터 D2 창 상태 {Object.entries(S.d2GoldenLeft).map(([k, v]) => k + " " + v).join(" · ")}(쿼터 자격은 D2 단계이고 창이 열린 카드를 1순위로 앉힙니다 — 「창이 닫히면 되돌릴 수 없다」는 근거는 창이 열린 칸에만 적습니다)</> : null}</div>
     </HmoBox>
 
     <HmoBox t={<><Gauge size={14} color={HMO_C.blue} /> 부하 균형 — 시도별 프로당 담당</>} tag="전수" tagC={HMO_TAG_FULL}>

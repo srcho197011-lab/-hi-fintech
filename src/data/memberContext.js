@@ -15,7 +15,11 @@ function memberContext(i) {
   const ins = (typeof cohortInsurance === "function") ? cohortInsurance(Number(i)) : null;
   const sig = (typeof cohortSignalOf === "function") ? cohortSignalOf(Number(i)) : null;
   return {
-    v: 1,                                                     /* 스키마 버전 — D-2 이관 러너가 검증 */
+    /* v:2(형 지시 2026-10-06) — 필드 이름은 같은데 **의미가 바뀌었다**: 결과 수령 전 구간에서
+       checkup.grade에 W(결과 대기)가, checkup.group에 "결과 도착 후 판정"이 오고, care.actions는
+       빈 배열이며 script.opening은 null일 수 있다. 360뷰는 에이전트가 읽는 계약이라 의미 변경에
+       버전이 따라가야 한다(D-2 이관이 이 스키마를 읽는다). */
+    v: 2,                                                     /* 스키마 버전 — D-2 이관 러너가 검증 */
     member: { id: prof.id, mask: card ? card.member.mask : (String(prof.name || "회")[0] + "○○"),
       ageBand: Math.floor((prof.age || 0) / 10) * 10 + "대", sex: prof.sex,
       region: region ? (region.sido + " " + region.sgg) : prof.sido,

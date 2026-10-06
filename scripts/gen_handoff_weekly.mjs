@@ -32,7 +32,9 @@ const md = [
   `# 주간 학습 리포트 — ${WEEK} (지시서 엔진)`, "",
   `> 자동 수집 신호 + 개선 **후보**만. 문안 개선은 형 검수 후 hmScriptBlocks에만 반영(자동 반영 금지). [시연 분포]`, "",
   "## 1. 이번 주 배치 기준선",
-  `- 코호트 ${B.total.toLocaleString()}명 · 카드 ${B.cards.toLocaleString()}건(발행 ${B.publishable === B.cards ? "100%" : B.publishable}) · H ${B.byGrade.H.toLocaleString()} · M ${B.byGrade.M.toLocaleString()} · L ${B.byGrade.L.toLocaleString()}`,
+  /* 등급 키를 사전 추종으로 — H/M/L만 적으면 「카드 N건 · 등급 합 N의 3분의 1」이 어긋난 문서가
+     매주 자동 생성된다(터지지 않고 조용히 틀리는 쪽이다 · 형 지시 2026-10-06) */
+  `- 코호트 ${B.total.toLocaleString()}명 · 카드 ${B.cards.toLocaleString()}건(발행 ${B.publishable === B.cards ? "100%" : B.publishable}) · ${Object.keys(B.byGrade).sort().map(k => `${k} ${(B.byGrade[k] || 0).toLocaleString()}`).join(" · ")}`,
   `- 프로 ${B.pros}명 전원 조립 위반 ${B.rosterViol}건 · 일일 평균 ${B.avgRoster}건 · A5 회귀 ${H.coachAcc}%(${H.coachN}문항) · 금지어 ${H.forbiddenHits}건`, "",
   "## 2. 블록 사용 분포(표본 조립 " + H.sample.toLocaleString() + "명 기준 · 사용 " + Object.keys(used).length + "/" + idsSimple.length + "종)", "",
   "| 블록 | 사용 | 점유 |", "|---|---|---|",

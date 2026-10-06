@@ -253,7 +253,14 @@ function cohortStageOf(i) {
 function cohortStatusOf(i, st) {
   st = st || cohortStageOf(i);
   if (!st) return null;
-  if (st.enrolled) return Object.assign({ k: "HELD" }, HM_MSTATUS.HELD, { why: "검진결과 수령 전 — 접촉 금지(하이가 자동 해제)" });
+  /* ⚠️ 첫 분기는 **단계**다(hmContactBlocked와 같은 축 · 적대적 리뷰 실증 2026-10-06 수선).
+     종전에는 `st.enrolled`만 봐서, 비가입 D1(전국 21,925명 · 박성호 28명)이 아래 해시 분기로
+     떨어져 「접촉 완료 / 진행 중 / 종결」이 찍혔다 — **한 번도 연락한 적 없는 회원에게 「접촉 완료」**가
+     ②탭·⑨탭 시연 화면에 그대로 떴다(D1은 cohortSignalOf도 null, st.stalled도 false라 폴백까지 간다).
+     HM_MSTATUS에 새 키를 만들지 않고 HELD 표기(「대기(접촉 금지)」)를 공유한다 — ②탭·⑨탭·⑩·하이가
+     같은 라벨을 쓰게 하려면 상태 코드가 하나여야 한다. 갈라 적는 것은 why 한 줄뿐이다. */
+  if (st.cur === "D1" || st.enrolled) return Object.assign({ k: "HELD" }, HM_MSTATUS.HELD, {
+    why: st.enrolled ? "검진결과 수령 전 — 접촉 금지(락 · 하이가 자동 해제)" : "검진결과 수령 전 — 접촉 금지(락 아님 · 검진대비보험 미가입)" });
   if (cohortSignalOf(i)) return Object.assign({ k: "NEED" }, HM_MSTATUS.NEED, { why: "하이 신호 도래 — 접촉 시점" });
   if (st.stalled) return Object.assign({ k: "STALL" }, HM_MSTATUS.STALL, { why: `${st.cur} 단계에서 ${st.stalledDays}일 정체` });
   const r = _hmHash("ms|" + i) % 100;
@@ -293,6 +300,9 @@ function cohortCardOf(i) {
   const asg = cohortProOf(i);
   const nextStage = HM_STAGES[HM_STAGES.findIndex((s) => s.k === stage.cur) + 1];
   let hi;
+  /* ⚠️ HELD가 단계 축으로 넓어졌으므로 이 문안이 **비가입 D1까지** 덮는다(수선 전에는 폴백
+     「예정된 연락 때까지는 지켜봐도 좋아요 … 그 단계에 맞는 행동을 고르시면 돼요」가 나가
+     접촉 금지 회원에게 행동을 권했다). 연락 권유 어휘를 쓰지 않는다 — 러너가 단언한다. */
   if (status.k === "HELD") hi = "검진결과 수령 전이에요. 지금은 프로필 사전 학습만 — 결과가 오면 제가 바로 알려드릴게요.";
   else if (status.k === "NEED") hi = "하이 신호가 도래했어요 — 오늘 연결하는 게 좋겠어요.";
   else if (stage.stalled) hi = `${stage.stalledDays}일째 ${stage.cur}에 멈춰 있어요.` + (nextStage ? ` ${nextStage.k}(${nextStage.name})로 가려면 ${nextStage.desc.split("—")[0].trim()}이 필요해요.` : "");
@@ -305,10 +315,23 @@ function hmNationStats() {
   const N = (typeof PILOT_N !== "undefined") ? PILOT_N : 100000;
   return HM_FUNNEL.map(([k, p, why]) => ({ k, n: Math.round(N * p), pct: Math.round(p * 1000) / 10, why }));
 }
+/* ── 접촉 금지 판정(단일 원천 · 형 지시 2026-10-06) ──
+   실제 소비처(2026-10-06 실사 · 「전부 이 함수만 읽는다」는 보증이 아니라 오인 유발 문장이었다):
+     읽는 곳 — cohortStatusOf · cohortCardOf · hmcTouch · vsGateOf(코호트 분기) · hmAct 진입 가드 ·
+                HealthMate ⓪①③⑨탭 버튼 가드(_hmBlocked) · run_handoff_batch · run_video_regression.
+     읽지 않는 곳 — hmLockState(상호작용층 실회원 경로)는 검진대비보험 큐 기준을 그대로 쓴다.
+                    그래서 hmAct가 두 판정을 **OR**로 읽어 한 곳에서 합친다(아래 healthMate.js).
+   기준을 락(검진대비보험 가입)에서 **단계**로 올렸다: 락은 D1 중 60%에만 붙으므로 비가입 D1
+   21,925명은 접촉 기록이 통과하고 hmLockViolation도 울리지 않았다(실측). 로스터에서만 빼면
+   ③탭 단계별 명단·⑨탭 드릴다운·영상 요청 세 경로가 열린 채 남는다 — 결과가 도착하기 전에는
+   가입 여부와 무관하게 연락하지 않는다. */
+function hmContactBlocked(i) {
+  const st = (typeof cohortStageOf === "function") ? cohortStageOf(i) : null;
+  return !!(st && (st.cur === "D1" || st.enrolled));
+}
 /* 관측층 접촉 — 세션 메모리만(localStorage 오염 금지 · 새로고침 시 초기화) */
 function hmcTouch(code, i, label) {
-  const st = cohortStageOf(i);
-  if (st && st.enrolled) { hmLockViolation(code, { email: "cohort-" + i }); return { ok: false, reason: "접촉 금지 상태예요 — 검진결과 수령 후 하이가 자동으로 열어 드려요." }; }
+  if (hmContactBlocked(i)) { hmLockViolation(code, { email: "cohort-" + i }); return { ok: false, reason: "접촉 금지 상태예요 — 검진결과 수령 후 하이가 자동으로 열어 드려요." }; }
   const sk = (typeof hmCodeNorm === "function") ? hmCodeNorm(code) : code;
   (_HMC.session[sk] || (_HMC.session[sk] = [])).push({ at: Date.now(), i, label });
   return { ok: true, session: true };
@@ -325,13 +348,22 @@ function hmcProView(code) {
   const ck = (typeof hmCodeNorm === "function") ? hmCodeNorm(code) : code;
   if (ck && _HMC.view[ck]) return _HMC.view[ck];
   const ids = hmMembersOfPro(code);
-  const v = { ids, n: ids.length, held: [], ready: [], signals: [], stall: [], byStage: {}, riskHi: [], family: [], shop: [] };
+  const v = { ids, n: ids.length, held: [], preResult: [], ready: [], signals: [], stall: [], byStage: {}, riskHi: [], family: [], shop: [] };
   HM_STAGES.forEach((s) => { v.byStage[s.k] = []; });
   ids.forEach((i) => {
     const st = cohortStageOf(i);
     v.byStage[st.cur].push(i);
     if (st.enrolled) v.held.push(i);
     else if (st.cur === "D2" && _hmHash("rdy|" + i) % 100 < 18) v.ready.push(i);
+    /* preResult — 접촉 금지인데 **락이 아닌** 회원(검진대비보험 미가입 D1). held와 합치면
+       hmContactBlocked(D1 ∪ enrolled)와 정확히 같은 집합이고 서로 겹치지 않는다.
+       hmContactBlocked(i)를 여기서 다시 부르지 않는 이유는 그 함수가 cohortStageOf를 한 번 더
+       돌려 이 한 패스 스캔이 두 배가 되기 때문이다(위 캐시 주석의 42초 사례) — 판정 기준은
+       저 함수가 단일 원천이고, 여기서는 이미 손에 든 st로 같은 분할만 만든다.
+       **held(접촉 락)를 바꾸지 않는다** — ②탭 분해·⑩관제탑·하이 답변·hmOpsSnapshot이 모두
+       「접촉 락 = 검진대비보험 가입」으로 같은 숫자를 쓰고 있어, 그 정의를 넓히면 네 곳이 한꺼번에
+       흔들린다. 넓어진 「연락 금지 전체」는 held + preResult로 파생해서 쓴다. */
+    if (st.cur === "D1" && !st.enrolled) v.preResult.push(i);
     if (cohortSignalOf(i)) v.signals.push(i);
     if (st.stalled) v.stall.push(i);
     const m = cohortMemberAt(i);
@@ -525,3 +557,20 @@ function hmAdminCheck(raw) {
   if (a.status !== "활성") return { ok: false, why: a.name + " " + a.title + "은 현재 " + a.status + " 상태예요." };
   return { ok: true, code: a.code, adm: a };
 }
+
+/* ── 러너·검증 훅(관리자 전용 · §7 훅 규약) ──
+   ⑨탭 카드 조립기를 그대로 내보낸다 — 러너가 「D1 전건의 status.k가 HELD이고 하이 한 줄에 연락
+   권유 어휘가 없다」를 **화면과 같은 경로로** 단언한다(DOM 덤프는 표본 28행에서 멈춘다). */
+try {
+  if (typeof window !== "undefined") {
+    window.__hifinCohortCard = function (i) {
+      try {
+        if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
+        const c = cohortCardOf(Number(i));
+        if (!c) return null;
+        return { i: c.i, mask: c.mask, stage: c.stage, status: { k: c.status.k, ko: c.status.ko, why: c.status.why },
+          hi: c.hi, blocked: (typeof hmContactBlocked === "function") ? hmContactBlocked(Number(i)) : null };
+      } catch (e) { return { error: String(e).slice(0, 160) }; }
+    };
+  }
+} catch (e) {}

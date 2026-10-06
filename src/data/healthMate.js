@@ -91,12 +91,22 @@ const HM_STAGES = [
    ⚠️ 개수도 함께 맞춘다 — D2는 ①무료 3종 ②향후 지원 약속 ③건강관리 동의로 **셋**이다(형 지시
       2026-10-05). 종전 doKo는 「두 덩어리」라 쓰고 동의를 문장 끝에 꼬리로 붙여, 프로 교육용 단일
       소스가 지시의 구조를 보여주지 못했다. doKo·이 표·조립 대본(HM_STAGE_PLAN)·전달 체크가
-      같은 개수를 따라가야 한다(전달 체크 칸 수는 handoffResult.HMR_GOLDEN_KEYS 소관). */
+      같은 개수를 따라가야 한다(전달 체크 칸 수는 handoffResult.HMR_GOLDEN_KEYS 소관).
+   ⚠️ doKo 3덩어리 ↔ 전달 체크 6칸 대응(형 지시 2026-10-06 · 동의 칸 신설):
+        ①무료 3종 = svc3(우산 칸) + ins · report · kit → **4칸**
+        ②향후 지원 약속 = support → 1칸
+        ③건강관리 동의 = consent(「건강관리 동의 요청」 — 블록 fc-consent의 ko와 한 글자까지 같다) → 1칸
+      svc3가 ins·report·kit의 우산 칸이라는 관계는 시트에 보이지 않는다(기존 결함 — 묶음 표시는
+      다음 단위). 어느 칸이 어느 덩어리인지 여기 적어 두지 않으면 다음에 칸을 늘릴 때 또 어긋난다. */
 const HM_STAGE_GUIDE = {
   D1: { entry: "회원 가입 + 건강·AI 활용 동의(동의의 범위가 곧 활동의 범위)",
-    doKo: "연락하지 않아요 — 검진 결과 수령 전 접촉 금지(락). 프로필·관할 사전 학습만 해둡니다.",
-    next: "검진을 받고 결과가 금고에 들어오면 D2로 — 락은 하이가 자동 해제하고 알려드려요.",
-    ex: "회사 단체 가입으로 들어온 40대 회원 — 검진 예약만 잡혀 있고 결과가 아직 없어요. 지금 전화하면 락 위반입니다. 결과 도착 알림이 오면 그때가 첫 연결이에요." },
+    /* ⚠️ 접촉 금지 판정이 락에서 **단계**로 올라갔으므로(hmContactBlocked) 이 표도 단계 기준으로
+       적는다 — HM_STAGE_GUIDE는 ③탭 STAGE_GUIDE·하이프로 답변의 단일 원천이라, 여기가 락 기준으로
+       남아 있으면 프로 교육 경로가 새 규칙과 **반대되는 사실**을 말한다(②탭은 같은 집단을
+       「접촉 금지(락 아님)」로 적고 있었다 · 적대적 리뷰 실증 2026-10-06). */
+    doKo: "연락하지 않아요 — 검진 결과 수령 전에는 가입 여부와 무관하게 접촉 금지예요(가입자는 락, 미가입자는 결과 대기). 프로필·관할 사전 학습만 해둡니다.",
+    next: "검진을 받고 결과가 금고에 들어오면 D2로 — 가입자의 락은 하이가 자동 해제하고, 미가입자도 결과가 도착하면 알려드려요.",
+    ex: "회사 단체 가입으로 들어온 40대 회원 — 검진 예약만 잡혀 있고 결과가 아직 없어요. 검진대비보험에 가입했든 안 했든 지금 전화하면 접촉 금지 위반입니다. 결과 도착 알림이 오면 그때가 첫 연결이에요." },
   D2: { entry: "실측 검진값이 데이터 금고에 저장(1세대 자산)",
     doKo: "첫 연결의 골든타임 — 한 통화에 세 덩어리를 전해요. ①〔무료 3종〕 ⓐ보험 혜택 — 검진대비보험 0원 자동 가입(암·뇌졸중·급성심근경색 각 최대 1,000만원)과 적용법 ⓑAI 정밀리포트 — 생체나이·질병 위험·의료비 예측 발행·해설 ⓒ맞춤 케어 키트 — 검진 결과 기반(만성질환 보유 시 그에 맞춘) 영양소·홈케어 측정기기 무료 제공 + 진료 안내·추가검진 안내. ②〔향후 지원 약속〕 비대면 진료 · 맞춤 영양 · 케어 활동을 앞으로 계속 챙겨드린다는 약속(진료 안내·추가검진 안내는 ⓒ 케어 키트 구성에 들어 있어 거기서 한 번만 말해요). ③〔건강관리 동의〕 앞으로의 건강관리 동의를 이 통화에서 함께 받아요 — 동의의 범위가 곧 활동의 범위예요.",
     next: "AI 분석 리포트(등급·위험도)가 발급되면 D3로.",
@@ -393,10 +403,17 @@ function hmSimResult(email) {
   try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `검진결과 수령 이벤트(시연) — 접촉 락 자동 해제(${_hmMask(email)})` }); } catch (e) {}
   return { ok: true };
 }
-function hmLockViolation(code, m) {   // 잠금 위반 시도 — 감사 기록
-  const l = _hmLs("hifin_hm_lockviol", []); l.push({ at: Date.now(), code, email: m.email });
+/* 잠금 위반 시도 — 감사 기록.
+   ⚠️ 첫 인자는 **프로 사번**이다. 집계(hmMyStats)가 `x.code === code`로 사번과 비교하므로 여기에
+      채널 이름("video")을 넣으면 그 행은 어느 프로의 viol/lockOk에도 들어가지 않는다 — 실제로
+      영상 경로가 그랬다(적대적 리뷰 실증 2026-10-06). 채널은 별도 필드(channel)로 남긴다.
+   ⚠️ 사번을 알 수 없는 호출은 code를 비우고 channel만 남긴다 — 「프로 집계에 들어오지 않는 행」이
+      조용히 생기지 않게, 비어 있다는 사실이 행에 적힌다. */
+function hmLockViolation(code, m, channel) {
+  const l = _hmLs("hifin_hm_lockviol", []);
+  l.push({ at: Date.now(), code: code || "", email: m && m.email, channel: channel || "call" });
   _hmSave("hifin_hm_lockviol", l);
-  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `LOCK_VIOLATION_ATTEMPT — ${code} · 검진결과 전 접촉 시도 차단` }); } catch (e) {}
+  try { if (typeof chainAppend === "function") chainAppend({ type: "record", token: null, note: `LOCK_VIOLATION_ATTEMPT — ${code || "(사번 없음)"} · 채널 ${channel || "call"} · 검진결과 전 접촉 시도 차단` }); } catch (e) {}
 }
 
 /* ── 단계 판정 — 데이터만 근거(수기 승급 없음). 전이는 캐시 비교 후 체인 기록 ── */
@@ -594,7 +611,15 @@ function hmUnderwriteTalk(m, q) {
 const HM_BANNED = ["무조건", "확정", "보장됩니다", "100%", "가입 가능합니다", "거절됩니다", "수익", "원금"];
 function hmAct(code, m, act) {
   const lk = hmLockState(m);
-  if (lk.locked) { hmLockViolation(code, m); return { ok: false, reason: "접촉 금지 상태예요 — 검진결과 수령 후 하이가 자동으로 열어 드려요." }; }
+  if (lk.locked) { hmLockViolation(code, m, (act && act.channel) || "call"); return { ok: false, reason: "접촉 금지 상태예요 — 검진결과 수령 후 하이가 자동으로 열어 드려요." }; }
+  /* ⚠️ 단계 축도 함께 본다(적대적 리뷰 실증 2026-10-06) — hmLockState는 「검진대비보험 큐에 있고
+     결과 미수령」만 보므로, D1이면서 큐에 없는 회원은 ①탭 신호 접촉·③탭 터치 연결·⑨탭 연결하기·
+     알림 발송이 전부 열려 있었다(코호트는 hmContactBlocked로 막았는데 상호작용층만 남았다).
+     모든 접촉 기록의 단일 통로가 이 함수이므로, 판정을 여기서 합쳐 네 경로가 한 번에 닫힌다. */
+  try {
+    const st = (typeof hmStageOf === "function") ? hmStageOf(m) : null;
+    if (st && st.cur === "D1") { hmLockViolation(code, m, (act && act.channel) || "call"); return { ok: false, reason: "검진 결과 수령 전이라 연락하지 않아요(가입 여부와 무관) — 결과가 도착하면 하이가 열어 드려요." }; }
+  } catch (e) {}
   const c = hmConsentOK(m);
   if (!c.ok) return { ok: false, reason: "유효한 동의가 없어요 — 접촉할 수 없어요." };
   if (act.note && HM_BANNED.some((w) => act.note.indexOf(w) >= 0)) return { ok: false, reason: "금칙어가 포함돼 있어요 — 단정·과장 표현은 보낼 수 없어요." };

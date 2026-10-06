@@ -106,19 +106,46 @@ function buildHandoffCard(i, opts) {
      프로는 카드 상단만 보고 전화를 걸 수 있다 — 그래서 결과 기반 필드를 D1에서 만들지 않는다. */
   const stKey = stage && stage.cur ? stage.cur : "D1";
   const preResult = stKey === "D1";   /* 결과 수령 전 구간 — 결과를 사실로 말하지 않는다 */
+  /* ══ 등급을 매기지 않는다(형 지시 2026-10-06) ══
+     결과가 도착하기 전(D1)에는 위험 등급을 **없애거나 다른 값에 섞지 않고** 네 번째 상태
+     「결과 대기(W)」로 카드에 명시한다. 그리고 그 등급에서 파생되는 모든 것 — 응답 시한·권장 개입
+     3종·등급별 본론·씨앗·케어 플랜·주도 지표군, 그리고 그 위에 서 있던 통화 대본 전체 — 을
+     **폴백 없이 조립하지 않는다**. D1 카드는 「등급이 없는 카드」가 아니라 「아직 등급을 매길 수
+     없다고 적힌, 통화 대본이 아닌 사전 준비(prep) 카드」가 된다.
+     ⚠️ 새 플래그를 만들지 않는다 — preResult 하나가 이미 같은 사실을 들고 있다(같은 사실을 두
+        변수가 말하면 뒤에 한쪽만 고쳐져 새는 구조가 남는다). */
+  const gc = preResult ? { grade: "W", why: "검진 결과 수령 전 — 등급 미산정", keys: [] } : g;
 
-  /* 주도 지표군 — sev2 우선, 없으면 sev1 첫 항목 */
+  /* 주도 지표군 — sev2 우선, 없으면 sev1 첫 항목.
+     결과 수령 전에는 지표군도 단정하지 않는다 — 「등급은 결과 대기인데 지표군은 간 기능」이라는
+     자기모순 페어가 memberContext 360뷰와 10만 지표군 분포로 흘러갔다(형 지시 2026-10-06) */
   let leadKey = null, leadSev = 0;
   for (const k in chk.items) { const s = chk.items[k].sev || 0; if (s > leadSev) { leadSev = s; leadKey = k; } }
-  const group = leadKey ? riskGroupOf(leadKey) : "organ";
+  const group = preResult ? null : (leadKey ? riskGroupOf(leadKey) : "organ");
 
-  /* trigger — 우선순위: 결과 대기(D1) > 정체 재개 > 등급 사유 > 추세·플래그.
-     D1이 맨 앞인 이유: 접촉이 한 번도 없었던 구간이라 「정체 — 관리 재개」도 성립하지 않는다 */
+  /* 골든타임 창 실산출 — cycleOf 한 번만 부르고 trigger·timing이 같은 값을 읽는다.
+     ⚠️ D2라는 사실만으로 「골든타임」이라고 쓰지 않는다(적대적 리뷰 실증 2026-10-06): cycleOf 판정상
+        D2는 열린 창(T2·잔여>0) 42.8% · 창 종료(T2·잔여 0h) 16.7% · 창 밖(T3) 40.5%로 갈리고,
+        종전에는 창 밖 T3 카드 140건까지 「첫 연결 골든타임」을 달았다 — 시연에서 「왜 골든타임인가」를
+        물으면 cycleOf가 T3(코칭 구간)라고 답하는 카드가 셋 중 한 장이었다.
+     ⚠️ cycleOf는 **날짜가 아니라 회원 시드**로 경과일을 파생한다(_cycleExamOffset) — 그래서 이 분기를
+        trigger에 넣어도 골든셋 텍스트가 날마다 흔들리지 않는다(결정론 유지). */
+  let gLeftH = null;
+  try { if (stKey === "D2" && typeof cycleOf === "function") { const _cy = cycleOf(i, stage); if (_cy && _cy.t === "T2" && _cy.goldenLeftH > 0) gLeftH = _cy.goldenLeftH; } } catch (e) {}
+  /* trigger — 우선순위: 결과 대기(D1) > 정체 재개 > D2 첫 연결 > 등급 사유 > 추세·플래그.
+     D1이 맨 앞인 이유: 접촉이 한 번도 없었던 구간이라 「정체 — 관리 재개」도 성립하지 않는다.
+     D2가 등급 사유 **앞**인 이유(형 지시 2026-10-06): 등급 '-'인 D2 회원이 「정기 리듬 점검」을
+     머리에 달고 무료 3종 골든타임 전문을 본문으로 읽어, 카드 머리글이 본문을 부정했다.
+     ⚠️ H·M D2는 **등급 사유를 뒤에 병기**한다(적대적 리뷰 실증: i=158 H·「위험 구간 2항목」·시한
+        48시간인데 머리글은 안내 과업만 말했다 — i≤6000에서 43건). 카드 머리글이 배지를 부정하지
+        않게, 한 줄에 과업과 위험 사실을 함께 둔다. */
   const stalled = stage && stage.stalled && stage.stalledDays >= 14;
+  const d2Lead = gLeftH != null ? "첫 연결 골든타임 — 무료 3종 전달" : "첫 연결 미완료 — 무료 3종 미전달";
   const trigger = preResult ? "배정 완료 — 결과 대기(접촉 금지)"
     : stalled ? ("정체 " + stage.stalledDays + "일 — 관리 재개")
-    : g.grade === "H" || g.grade === "M" ? ("신규 검진 결과 수신 — " + (g.why || ""))
-    : g.grade === "L" ? ("추세·생활 신호 — " + (g.why || "")) : "정기 리듬 점검";
+    : stKey === "D2" ? (d2Lead + ((gc.grade === "H" || gc.grade === "M") && gc.why ? " · " + gc.why : ""))
+    : gc.grade === "H" || gc.grade === "M" ? ("신규 검진 결과 수신 — " + (gc.why || ""))
+    : gc.grade === "L" ? ("추세·생활 신호 — " + (gc.why || "")) : "정기 리듬 점검";
 
   /* evidence — 등급·플래그·추세만(수치 없음) ≤3줄. D1은 결과 근거가 존재하지 않는 구간이라
      「검진 예약 확인」 한 줄만 둔다(결과 항목을 근거로 적지 않는다) */
@@ -133,16 +160,22 @@ function buildHandoffCard(i, opts) {
   }
   const evidence = ev.slice(0, 3);
 
-  /* actions — 매핑 + 특례(명문화 3종만) */
-  let acts = (typeof interventionsFor === "function") ? interventionsFor(g.grade === "-" ? "L" : g.grade, group) : [];
-  if (m.age >= 60 && group === "body") {
-    acts = acts.map((a) => a.key === "move" ? Object.assign({}, a, { ko: a.ko + "(강도 하향)" }) : a);
-    if (!acts.some((a) => a.key === "family")) acts.splice(1, 0, Object.assign({ key: "family" }, INTERVENTIONS.family));
+  /* actions — 매핑 + 특례(명문화 3종만).
+     ⚠️ 절단은 이 블록 **전체**를 감싼다(형 지시 2026-10-06). acts를 빈 배열로만 두면 바로 아래
+        60세↑ 특례의 `[].splice(1,0,x)`가 `[x]`를 만들어 개입이 되살아나고, coachAgent.next가
+        non-null이 되어 하네스 ⑤가 「정상」으로 **조용히 PASS**한다. */
+  let acts = [];
+  if (!preResult) {
+    acts = (typeof interventionsFor === "function") ? interventionsFor(gc.grade === "-" ? "L" : gc.grade, group) : [];
+    if (m.age >= 60 && group === "body") {
+      acts = acts.map((a) => a.key === "move" ? Object.assign({}, a, { ko: a.ko + "(강도 하향)" }) : a);
+      if (!acts.some((a) => a.key === "family")) acts.splice(1, 0, Object.assign({ key: "family" }, INTERVENTIONS.family));
+    }
+    if (group === "liver" && flags.some((f) => /절주/.test(f))) {
+      acts.sort((a, b) => (a.key === "habit" ? -1 : b.key === "habit" ? 1 : 0));
+    }
+    acts = acts.slice(0, 3);
   }
-  if (group === "liver" && flags.some((f) => /절주/.test(f))) {
-    acts.sort((a, b) => (a.key === "habit" ? -1 : b.key === "habit" ? 1 : 0));
-  }
-  acts = acts.slice(0, 3);
 
   /* script — 블록 조립(§3-S). 변형: 65세↑ 쉬운말 */
   const easy = m.age >= 65;
@@ -154,55 +187,67 @@ function buildHandoffCard(i, opts) {
     예약처: HANDOFF_SLOTS_SAFE.예약처, 다음약속: HANDOFF_SLOTS_SAFE.다음약속,
   }, _hcFree3Slots(out));
   /* 등급별 쉬운말 — L·'-'에 "조금 높은 항목이 하나 있어요"(co-m-easy)가 나가던 결함 수선(형 지시 2026-10-05) */
-  const gradeCo = g.grade === "H" ? "co-h" : g.grade === "M" ? "co-m" : "co-l";
-  const gradeCoEasy = g.grade === "H" ? "co-h-easy" : g.grade === "M" ? "co-m-easy" : "co-l-easy";
+  const gradeCo = gc.grade === "H" ? "co-h" : gc.grade === "M" ? "co-m" : "co-l";
+  const gradeCoEasy = gc.grade === "H" ? "co-h-easy" : gc.grade === "M" ? "co-m-easy" : "co-l-easy";
   /* 정체 재개가 쉬운말보다 우선 — op-restart·cl-open(재큐 고지)은 시나리오의 핵심이라 변형에 밀리지 않는다.
      정체가 아니면 단계가 첫 마디를 정한다(HM_STAGE_PLAN) — D1은 통화 자체가 없어 표에 open이 없다 */
   let opening = stalled ? "op-restart" : (easy ? "op-first-easy" : "op-first");
   if (!stalled) { const so = easy ? plan.easyOpen : plan.open; if (so) opening = so; }
+  /* ⚠️ 통화 대본 미조립(형 지시 2026-10-06) — preResult 카드는 오프닝·본론·제안·응대·클로징을
+     **만들지 않는다**. 본론만 끊으면 「내용 없는 통화 대본」이 되어 종전보다 나쁘다: 실측으로 D1
+     카드는 prep 「오늘은 연락하지 않아요」와 opening op-first 「지금 2분 정도 괜찮으세요?」를 한 장
+     안에 함께 조립했다(표에 open이 없으면 op-first로 폴백하기 때문이다).
+     구현 규약 — **스칼라 파트는 null · 배열 파트는 빈 배열**(러너·화면이 양쪽을 다르게 가드한다). */
   const script = {
     channel: "전화",     /* P3: 전 케이스 전화 1순위 — 알림·문자는 변형으로 동반 */
     variant: stalled && easy ? "정체 재개·쉬운말" : stalled ? "정체 재개" : easy ? "쉬운말" : "기본",
+    callScript: !preResult,   /* 통화를 권하는 카드인가 — 결과 대기(D1)는 false(가드가 반대 방향도 본다) */
     stage: [], prep: [], alert: [],   /* 단계 축 파트 — 아래 v2 구간에서 채운다 */
-    opening: _hcBlock(opening, slots, out),
-    core: [_hcBlock(easy ? gradeCoEasy : gradeCo, slots, out),
+    opening: preResult ? null : _hcBlock(opening, slots, out),
+    core: preResult ? [] : [_hcBlock(easy ? gradeCoEasy : gradeCo, slots, out),
            !easy ? _hcBlock("co-" + group, slots, out) : null].filter(Boolean),
-    ask: _hcBlock(easy && acts[0] && acts[0].key === "clinic" ? "ak-clinic-easy" : "ak-" + (acts[0] ? acts[0].key : "recheck"), slots, out),
+    ask: preResult ? null : _hcBlock(easy && acts[0] && acts[0].key === "clinic" ? "ak-clinic-easy" : "ak-" + (acts[0] ? acts[0].key : "recheck"), slots, out),
     /* 화면 표기는 「회원 반응별 응대」(형 확정 2026-08-29) — 내부 필드명은 branches 유지 */
-    branches: [
+    branches: preResult ? [] : [
       _hcBlock("br-yes", slots, out), _hcBlock("br-hold2", slots, out),
       _hcBlock(easy ? "br-no-easy" : "br-no", slots, out),
       _hcBlock("br-q-serious", slots, out), _hcBlock("br-q-ins", slots, out),
     ].filter(Boolean),
     /* 쉬운말 변형이 단계 표를 덮지 않는다 — easyClose가 있으면 그것, 없을 때만 cl-done-easy(형 지시 2026-10-05) */
-    closing: _hcBlock(stalled ? "cl-open" : (easy ? (plan.easyClose || "cl-done-easy") : (plan.close || "cl-done")), slots, out),
+    closing: preResult ? null : _hcBlock(stalled ? "cl-open" : (easy ? (plan.easyClose || "cl-done-easy") : (plan.close || "cl-done")), slots, out),
   };
   /* ── 대본 v2(P5 · HM_SCRIPT_V2 시) — 7파트: 생활 대화 2 · 씨앗 ≤1 · 케어 플랜(핵심1+보조2) · 응대 10 ── */
   if (v2on) {
-    /* L6은 가족·돌봄 단계 — 생활 대화의 공통 한 칸을 동전던지기에 맡기지 않고 가족(tk-fam)으로 고정한다 */
-    script.talk = [_hcBlock("tk-" + group, slots, out),
-      _hcBlock(stKey === "L6" ? "tk-fam" : (_drOr(i, 2) ? "tk-sleep" : "tk-fam"), slots, out)].filter(Boolean);
-    if (g.grade === "H" || g.grade === "M") script.seed = [_hcBlock("sd-" + group, slots, out)].filter(Boolean);
-    else script.seed = [];
+    /* L6은 가족·돌봄 단계 — 생활 대화의 공통 한 칸을 동전던지기에 맡기지 않고 가족(tk-fam)으로 고정한다.
+       결과 대기(preResult)는 생활 대화·씨앗·케어 플랜·추가 응대를 조립하지 않는다 — 통화가 없다 */
+    if (!preResult) {
+      script.talk = [_hcBlock("tk-" + group, slots, out),
+        _hcBlock(stKey === "L6" ? "tk-fam" : (_drOr(i, 2) ? "tk-sleep" : "tk-fam"), slots, out)].filter(Boolean);
+      if (gc.grade === "H" || gc.grade === "M") script.seed = [_hcBlock("sd-" + group, slots, out)].filter(Boolean);
+      else script.seed = [];
+    } else { script.talk = []; script.seed = []; }
     /* ── 단계 과업(형 지시 2026-10-05) — 응급 선행 → 사전 준비 → 과업. 단계가 유일한 선택축이고,
           쉬운말 변형도 그 표 안에서 고른다(easyAlert·easyPrep·easyTask). 변형 칸이 비어 있으면
-          기본 칸을 쓴다 — 「쉬운말이라 표를 무시한다」가 되지 않게 ── */
+          기본 칸을 쓴다 — 「쉬운말이라 표를 무시한다」가 되지 않게.
+          ⚠️ 이 세 파트는 결과 대기 카드에도 그대로 조립된다 — D1의 과업은 prep 3블록이다 ── */
     const pick = (ez, base) => ((easy && ez) ? ez : (base || []));
     script.alert = pick(plan.easyAlert, plan.alert).map((id) => _hcBlock(id, slots, out)).filter(Boolean);
     script.prep = pick(plan.easyPrep, plan.prep).map((id) => _hcBlock(id, slots, out)).filter(Boolean);
     script.stage = pick(plan.easyTask, plan.task).map((id) => _hcBlock(id, slots, out)).filter(Boolean);
-    const ckMap = { clinic: "ck-clinic", tele: "ck-clinic", recheck: "ck-recheck", diet: "ck-meal", supp: "ck-supp", move: "ck-care", habit: "ck-care", family: "ck-care" };
-    script.careplan = acts.slice(0, 3).map((a) => _hcBlock(ckMap[a.key] || "ck-care", slots, out)).filter(Boolean)
-      .filter((b2, ix, arr) => arr.findIndex((x) => x.id === b2.id) === ix);
-    /* 홈케어 기기(ck-device)는 개입 사전에 키가 없어 영구 미조립이었다 — D4(생활 밀착)에서 빈 보조 칸을 채운다.
-       3칸 상한은 그대로라 대본이 길어지지 않는다(중복 제거로 비는 칸만 쓴다) */
-    if (stKey === "D4" && script.careplan.length < 3) {
-      const dev = _hcBlock("ck-device", slots, out); if (dev) script.careplan.push(dev);
-    }
-    script.branches = script.branches.concat([
-      _hcBlock("br2-treatcost", slots, out), _hcBlock("br2-fam", slots, out),
-      _hcBlock("br2-oldins", slots, out), _hcBlock("br2-busy", slots, out), _hcBlock("br2-fear", slots, out),
-    ].filter(Boolean));
+    if (!preResult) {
+      const ckMap = { clinic: "ck-clinic", tele: "ck-clinic", recheck: "ck-recheck", diet: "ck-meal", supp: "ck-supp", move: "ck-care", habit: "ck-care", family: "ck-care" };
+      script.careplan = acts.slice(0, 3).map((a) => _hcBlock(ckMap[a.key] || "ck-care", slots, out)).filter(Boolean)
+        .filter((b2, ix, arr) => arr.findIndex((x) => x.id === b2.id) === ix);
+      /* 홈케어 기기(ck-device)는 개입 사전에 키가 없어 영구 미조립이었다 — D4(생활 밀착)에서 빈 보조 칸을 채운다.
+         3칸 상한은 그대로라 대본이 길어지지 않는다(중복 제거로 비는 칸만 쓴다) */
+      if (stKey === "D4" && script.careplan.length < 3) {
+        const dev = _hcBlock("ck-device", slots, out); if (dev) script.careplan.push(dev);
+      }
+      script.branches = script.branches.concat([
+        _hcBlock("br2-treatcost", slots, out), _hcBlock("br2-fam", slots, out),
+        _hcBlock("br2-oldins", slots, out), _hcBlock("br2-busy", slots, out), _hcBlock("br2-fear", slots, out),
+      ].filter(Boolean));
+    } else { script.careplan = []; }
     script.v2 = true;
   }
   /* ── D2 첫 연결 골든타임(F2 · 프롬프트 v1.1 §5 — 형 승인 2026-08-31) — D2 카드에만 fc 파트 삽입.
@@ -247,7 +292,7 @@ function buildHandoffCard(i, opts) {
   }
   /* ── 만기 국면 대본(R4 결선 · 형 승인 2026-09-03) — T4~T7 카드에만. 값은 covAnalysis 보장맵 실산출만 ──
         보장맵이 없으면(N1 미동의) 보장맵 화법(mt-t5-map)은 조립되지 않는다 — 동의가 곧 대본의 문 */
-  if (v2on) {
+  if (v2on && !preResult) {
     let cyc = null; try { cyc = (typeof cycleOf === "function") ? cycleOf(i) : null; } catch (e) {}
     const inMat = cyc && ["T4", "T5", "T6"].indexOf(cyc.t) >= 0;
     const inKeep = cyc && cyc.t === "T7" && cyc.secondGolden;
@@ -273,10 +318,12 @@ function buildHandoffCard(i, opts) {
          뒤집었다(D4·L5에서 재현). 승인된 만기 문안을 고치는 대신 조립에서 겹치지 않게 한다. */
       if (script.stage && script.stage.length) script.stage = script.stage.filter((b2) => !/^tc-/.test(b2.id));
     }
-    /* 회원 자발 건강 대화(§0-V5) — 회원이 먼저 꺼냈을 때만 쓰는 갈래. 본대본·응대 규격에 포함되지 않는 선택 갈래 */
+    /* 회원 자발 건강 대화(§0-V5) — 회원이 먼저 꺼냈을 때만 쓰는 갈래. 본대본·응대 규격에 포함되지 않는 선택 갈래.
+       결과 대기 구간에는 통화 자체가 없으므로 이 갈래도 조립하지 않는다(형 지시 2026-10-06) */
     script.voluntary = ["vd-listen", "vd-confirm", "vd-offer", "vd-consent", "vd-boundary", "vd-record"]
       .map((id) => _hcBlock(id, slots, out)).filter(Boolean);
   }
+  if (preResult) script.voluntary = [];
   /* 채널 변형 — 규칙 적용(창작 아님): 알림=core[0]+ask 축약 · 문자=고정 형식(수치·등급 미포함).
      D1(결과 수령 전)은 **발송 문안을 만들지 않는다** — 복사해 보내기만 하면 되는 자리에 결과 안내
      문자가 놓여 있던 것이 접촉 금지 구간의 가장 큰 위험이었다(형 지시 2026-10-05).
@@ -304,7 +351,7 @@ function buildHandoffCard(i, opts) {
   const numLeak = /\d{2,}/.test(numSrc.replace(/2년|3년|1회|2분|150분|1,000만원|코엔자임Q10|\d+일\s*뒤|연\s*[\d,]+만원|D-\d+/g, ""));   // 관용 표현 예외 후 2자리 이상 숫자 검출(1,000만원=보장 사실 고지·§0-C 동반 / Q10=성분명·수치 아님)
   const slotLeak = /\{[가-힣A-Za-z]+\}/.test(joined);                            // 미치환 슬롯 잔존({링크}는 sms 전용 — joined 밖)
 
-  const meta = (typeof RISK_GRADE_META !== "undefined") ? RISK_GRADE_META[g.grade] : null;
+  const meta = (typeof RISK_GRADE_META !== "undefined") ? RISK_GRADE_META[gc.grade] : null;
   const preCard = { script: script };   /* 가드 스캔용 최소 형태(§S-5 ⑨⑩ — 사전은 hmScriptGuard 단일 소스) */
   const scan = (typeof hmScriptScan === "function") ? hmScriptScan(preCard) : { ok: true, forbidden: [], spec: { ok: true, readSec: 0, sentences: 0 } };
   /* readSec = 본대본을 처음부터 끝까지 읽는 시간 · readSecAll = 접이식·응대까지 전부 읽었을 때의 상한.
@@ -313,12 +360,24 @@ function buildHandoffCard(i, opts) {
   script.readSecAll = scan.spec ? (scan.spec.readSecAll || scan.spec.readSec) : 0;
   return {
     member: { mask: _hcMask(m.name), ageBand: Math.floor(m.age / 10) * 10 + "대", sex: m.sex, region: region ? region.sgg : "",
-      stage: stage ? stage.cur : "D1", stalledDays: stage ? stage.stalledDays : 0, pro: pro ? pro.name + " 프로" : "", cohortIndex: i, callbackToken: "cb-" + i },
-    grade: g.grade, gradeWhy: g.why, group: group, groupKo: (HM_RISK_GROUPS[group] || {}).ko || group,
+      stage: stage ? stage.cur : "D1", stalledDays: stage ? stage.stalledDays : 0,
+      /* stalled — **정체 판정** 그 자체. stalledDays는 정체 여부를 뜻하지 않으므로(cohortStageOf가
+         비정체 회원에게도 0~24일을 넣는다) 로스터 정렬·점수·배지가 이 필드를 읽는다 */
+      stalled: !!stalled, pro: pro ? pro.name + " 프로" : "", cohortIndex: i, callbackToken: "cb-" + i },
+    grade: gc.grade, gradeWhy: gc.why, group: group,
+    groupKo: preResult ? "결과 도착 후 판정" : ((HM_RISK_GROUPS[group] || {}).ko || group),
     trigger: trigger, evidence: evidence,
     actions: acts.map((a, ix) => ({ order: ix + 1, key: a.key, ko: a.ko, nav: a.nav, tab: a.tab || null, ev: a.ev, evNote: a.evNote })),
     script: script,
-    timing: { sla: meta ? meta.slaKo : "-", slaTier: meta ? meta.tier : "-",   /* 표기는 사람 말, 코드는 별도 필드 */
+    timing: {
+      /* sla — 사람 말 표기. 등급 '-'은 RISK_GRADE_META에 등재했으므로 더는 "-"로 떨어지지 않고,
+         그중 **D2 카드만** 실제 창(goldenLeftH)에서 시한을 파생해 덮어쓴다. 등급 H/M/L의 시한은
+         건드리지 않는다 — 48시간·7일·14일은 등급 규약이고 창은 과업 창이라 축이 다르다. */
+      sla: (gc.grade === "-" && stKey === "D2")
+        ? (gLeftH != null ? "첫 연결 골든타임 " + gLeftH + "시간 남음" : "첫 연결 창 만료 — 가능한 빨리")
+        : (meta ? meta.slaKo : "-"),
+      slaTier: meta ? meta.tier : "-",   /* 표기는 사람 말, 코드는 별도 필드 */
+      goldenLeftH: gLeftH,               /* 창 잔여 실산출 — 화면·러너가 재계산하지 않는다 */
       lock: !!(stage && stage.enrolled),   /* 검진대비보험 가입·결과 수령 전 = 접촉 금지(하이가 자동 해제) — 로스터가 제외 */
       cooldown: "통과(시연)", requeue: "미완결 시 D+7 재큐" },
     compliance: { medical: scan.forbidden.filter((h) => h.key === "diagnosis" || h.key === "verdict" || h.key === "fear").length === 0,
@@ -352,7 +411,8 @@ try {
             const m = cohortLoginProfile(j); if (!m) continue;
             const chk = genMemberCheckup(m);
             const c = buildHandoffCard(j); if (!c) continue;
-            rows.push({ i: j, grade: c.grade, group: c.group, age: c.member.ageBand, sex: c.member.sex,
+            rows.push({ i: j, grade: c.grade, group: c.group, stage: c.member.stage,   /* stage — 배치 러너의 모집단 판정이 단계를 읽는다(형 지시 2026-10-06) */
+              age: c.member.ageBand, sex: c.member.sex,
               sido: m.sido || "", sgg: c.member.region, lock: c.timing.lock,
               stall: c.member.stalledDays, flags: (chk.nat && chk.nat.life) || [], pub: c.compliance.publishable });
           } catch (e) {}

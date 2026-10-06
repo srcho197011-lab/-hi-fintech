@@ -262,7 +262,8 @@ const HMOA_METRICS = [
   { k: "family",  tab: 2, cost: "rows",   pat: /가족단위|가구|쇼핑연계|쇼핑/ },
   { k: "result",  tab: 1, cost: "free",   pat: /7코드|결과코드|결과기록|활동결과|R1|결과남긴/ },
   { k: "accept",  tab: 1, cost: "free",   pat: /수락률|수락율|후속약속|후속일/ },
-  { k: "golden",  tab: 1, cost: "free",   pat: /전달체크|완주율|골든타임전달|5칸/ },
+  /* `\d칸` — 사전이 늘면 「6칸 몇 건이에요」가 미매치로 다른 지표에 떨어진다(형 지시 2026-10-06) */
+  { k: "golden",  tab: 1, cost: "free",   pat: /전달체크|완주율|골든타임전달|\d칸/ },
   { k: "adv",     tab: 1, cost: "rows",   pat: /전진|전진율|실적은|실적을|실적이/ },
   { k: "perf",    tab: 1, cost: "rows",   pat: /시한준수|준수율|첫연결수행|만기터치|수행률|수행율|SLA/i },
   /* `만족도`를 혼자 두면 「고객 만족도 지수」(원천 없음)가 조용히 「회원 평가 별점」으로 답해졌다 —
@@ -528,9 +529,19 @@ const HMOA_ANS = {
     const a = (typeof hmoResultAgg === "function") ? hmoResultAgg(ctx.codes) : null;
     if (!a) return { lines: ["결과 기록 집계기를 불러오지 못했어요."] };
     const pct = hmoaPct(a.gFull, a.gRows);
+    /* 숫자와 항목 이름을 **같은 사전에서 생성**한다 — 종전에는 둘 다 문자열로 복제돼 있어
+       숫자만 고치면 하이가 「6칸」이라 말하면서 5개만 열거했다(형 지시 2026-10-06) */
+    const GK = (typeof HMR_GOLDEN_KEYS !== "undefined") ? HMR_GOLDEN_KEYS : [];
+    /* ⚠️ 헤드라인에 현재 사전 길이(「6칸 모두 체크」)를 쓰지 않는다 — 분자는 기록 시점 사전을
+       따르므로 라벨이 분자와 다른 기준을 말하게 된다(적대적 리뷰 실증 2026-10-06). 기준별 분해를
+       같은 답변 안에서 낭독한다. */
+    const fg = a.gFullByGn || {};
+    const fgKo = Object.keys(fg).sort().map((k) => k + "칸 사전 " + fg[k] + "건").join(" · ");
     return { lines: [
-      ctx.label + " D2 골든타임 전달 체크 완주율 " + (pct == null ? "체크가 있는 행이 0건이라 비율을 내지 않아요" : pct + "%") + " — 체크가 하나라도 있는 행 " + a.gRows + "건 중 5칸 모두 체크 " + a.gFull + "건이에요.",
-      "집계 정의 — 5칸은 무료 3종 안내 · 보험 혜택·적용법 · 리포트 발행·안내 · 케어 키트 안내 · 향후 지원 약속이에요(HMR_GOLDEN_KEYS). 결과 기록과 같은 실기록 원천이에요.",
+      ctx.label + " D2 골든타임 전달 체크 완주율 " + (pct == null ? "체크가 있는 행이 0건이라 비율을 내지 않아요" : pct + "%") + " — 체크가 하나라도 있는 행 " + a.gRows + "건 중 **전부 체크(기록 시점 기준)** " + a.gFull + "건이에요" + (fgKo ? " (기준별 — " + fgKo + " · 현재 사전 " + GK.length + "칸)" : "") + ".",
+      "집계 정의 — 현재 " + GK.length + "칸은 " + GK.map((g) => g.ko).join(" · ") + "이에요(HMR_GOLDEN_KEYS). 결과 기록과 같은 실기록 원천이에요.",
+      "완주 기준 칸 수는 **기록 시점 사전**을 따릅니다 — 「건강관리 동의 요청」 칸은 2026-10-06 신설이라, 그 전 기록에는 칸이 없어서 0건이 미이행은 아니에요. 그래서 헤드라인도 「6칸」이 아니라 「전부 체크(기록 시점 기준)」로 말해요.",
+      "분모는 전달 체크를 **한 칸이라도 누른 D2 통화 행**이에요 — 한 칸도 누르지 않은 통화는 이 비율에 들어가지 않아요(그래서 체크를 안 하는 프로가 많아지면 비율은 올라갑니다).",
     ], buttons: ["결과 7코드 분포"] };
   },
   /* ── 프로 행 집계(비용 게이트 통과 후) ── */
@@ -619,19 +630,38 @@ const HMOA_ANS = {
   /* ── 오늘 로스터 ── */
   roster: function (ctx) {
     const d = hmoaToday(), t0 = Date.now();
-    const acc = { managed: 0, candidates: 0, locked: 0, offCycle: 0, unpublishable: 0, resultSkipped: 0, followUpBoost: 0, cards: 0, byGrade: {} };
+    const acc = { managed: 0, candidates: 0, locked: 0, preResult: 0, offCycle: 0, unpublishable: 0, resultSkipped: 0, followUpBoost: 0,
+      d2Quota: 0, matQuota: 0, d2Cand: 0, d2OpenCand: 0, d2OpenSeated: 0, dashD2: 0, hCand: 0, cards: 0, byGrade: {} };
+    /* 쿼터·상한 상수 — 로스터가 counts.win으로 내보낸다. 폴백은 상수 부재 시에만 쓰이는 값이다 */
+    let W = { d2: 3, mat: 1, max: 7, target: 5 };
     ctx.codes.forEach((c) => {
       let r = null; try { r = (typeof hmDailyRoster === "function") ? hmDailyRoster(c, d) : null; } catch (e) { r = null; }
       if (!r) return;
       acc.cards += r.list.length;
-      ["managed", "candidates", "locked", "offCycle", "unpublishable", "resultSkipped", "followUpBoost"].forEach((k) => { acc[k] += (r.counts[k] || 0); });
+      /* 키 배열에 preResult를 넣지 않고 문장만 고치면 하이가 「접촉 금지 단계 제외 undefined」를 말하고,
+         배열만 고치면 더 조용히 틀린다 — 아래 분해 문장은 **산술 등식 낭독**이다(형 지시 2026-10-06) */
+      ["managed", "candidates", "locked", "preResult", "offCycle", "unpublishable", "resultSkipped", "followUpBoost",
+        "d2Quota", "matQuota", "d2Cand", "d2OpenCand", "d2OpenSeated", "dashD2", "hCand"].forEach((k) => { acc[k] += (r.counts[k] || 0); });
+      /* 쿼터·상한 상수는 로스터가 돌려주는 값을 그대로 쓴다 — 하이 문장에 숫자를 복제하지 않는다 */
+      if (r.counts.win) W = r.counts.win;
       Object.keys(r.counts.byGrade || {}).forEach((g) => { acc.byGrade[g] = (acc.byGrade[g] || 0) + r.counts.byGrade[g]; });
     });
-    const gk = ["H", "M", "L"].filter((g) => acc.byGrade[g]);
+    /* 화이트리스트를 두지 않는다 — 새 상태(W·D2의 '-')가 생기면 「로스터 N건인데 등급 합 < N」이 되어
+       「분자는 분모에 포함」 규약을 어긴다.
+       ⚠️ 다만 **표시 순서는 중증도 고정**이다 — Object.keys().sort()는 '-'→H→L→M→W(문자순)를 내서
+          같은 줄에서 위험 순서가 뒤집힌 채 낭독됐다(화면 ⓪탭과 같은 수선 · 적대적 리뷰). */
+    const _ord = ["H", "M", "L", "W", "-"];
+    const gk = _ord.filter((g) => acc.byGrade[g]).concat(Object.keys(acc.byGrade).filter((g) => acc.byGrade[g] && _ord.indexOf(g) < 0).sort());
     return { lines: [
       ctx.label + " 오늘 로스터 " + hmoaN(acc.cards) + "건 — 등급 " + (gk.length ? gk.map((g) => g + " " + acc.byGrade[g]).join(" · ") : "-") + "이에요(라이브 조립 " + (Date.now() - t0) + "ms).",
-      "왜 담당은 많은데 오늘은 이만큼인가 — 담당 " + hmoaN(acc.managed) + "명 → 후보 " + hmoaN(acc.candidates) + "명(접촉 락 제외 " + hmoaN(acc.locked) + " · 대상 아님 " + hmoaN(acc.offCycle) + " · 발행 불가 " + hmoaN(acc.unpublishable) + " · 결과 기록으로 제외 " + hmoaN(acc.resultSkipped) + ") → 발행 " + hmoaN(acc.cards) + "건(프로당 상한 7건 · 후속일 가산 " + acc.followUpBoost + "건).",
+      "왜 담당은 많은데 오늘은 이만큼인가 — 담당 " + hmoaN(acc.managed) + "명 → 후보 " + hmoaN(acc.candidates) + "명(접촉 락 제외 " + hmoaN(acc.locked) + " · 접촉 금지 단계 제외 " + hmoaN(acc.preResult) + " · 대상 아님 " + hmoaN(acc.offCycle) + " · 발행 불가 " + hmoaN(acc.unpublishable) + " · 결과 기록으로 제외 " + hmoaN(acc.resultSkipped) + ") → 발행 " + hmoaN(acc.cards) + "건(프로당 상한 7건 · 후속일 가산 " + acc.followUpBoost + "건).",
       "집계 정의 — hmDailyRoster(사번, " + d + ")를 범위 프로 " + ctx.codes.length + "명에게 그 자리에서 조립한 값이에요(온디맨드 결정론 — 저장하지 않아요).",
+      /* ⚠️ 「골든타임이 열려 있는 카드」라고 단언하지 않는다(적대적 리뷰 실증 2026-10-06) — 쿼터 자격은
+         단계이고 창 상태는 **정렬 1순위**다. 전국 좌석 중 창이 없는 D2가 3분의 1이었으므로, 이 문장은
+         자격·정렬·창 분해를 그대로 낭독하고 쿼터 상수도 리터럴이 아니라 counts에서 읽는다.
+         ⚠️ 쿼터가 선점하는 대가(H 고위험 미등재)도 같은 답변에서 말한다 — 「D2 우선」의 가격이다. */
+      "선별 규칙 — 되돌릴 수 없는 창을 상한 " + W.max + "건 안에서 먼저 앉혀요: D2 **첫 연결 미완료** 최대 " + W.d2 + "칸 " + hmoaN(acc.d2Quota) + "건(자격은 D2 단계 · 창이 열린 카드를 1순위로 앉혀요 — 후보 " + hmoaN(acc.d2Cand) + "명 중 창 열림 " + hmoaN(acc.d2OpenCand) + "명 · 등재 " + hmoaN(acc.d2OpenSeated) + "명) · 만기 D-7·당일 최대 " + W.mat + "칸 " + hmoaN(acc.matQuota) + "건. 남은 칸은 등급(H)·만기 선두군 → 나머지 순서예요. 접촉 금지 단계(결과 대기)는 명단에 올리지 않아요.",
+      "쿼터의 대가 — 이 범위에서 H 고위험 후보 " + hmoaN(acc.hCand) + "명 중 " + hmoaN(acc.byGrade.H || 0) + "명이 올랐고 **" + hmoaN(Math.max(0, acc.hCand - (acc.byGrade.H || 0))) + "명은 상한 " + W.max + "건 밖**이에요. H는 48시간 시한 등급이라, 쿼터 칸 수(" + W.d2 + "+" + W.mat + ")를 조정할 근거는 이 숫자예요.",
     ], buttons: ["오늘의 지시서 이행율"] };
   },
   /* ── 60일 사이클 — 화면과 **같은 모집단·같은 함수**(hmoCycleAgg)를 쓴다 ──
@@ -711,6 +741,11 @@ const HMOA_ANS = {
     if (!G) return { lines: ["응답 시한 규칙표를 불러오지 못했어요."] };
     return { lines: [
       "응답 시한 티어(규칙 상수) — H " + G.H.slaKo + "(" + G.H.tier + ") · M " + G.M.slaKo + "(" + G.M.tier + ") · L " + G.L.slaKo + "(" + G.L.tier + ") · E " + G.E.slaKo + "예요. 미응답은 D+7에 재큐돼요.",
+      /* W가 생긴 뒤 규칙표가 4종만 말하면 「규칙표에 없는 상태」가 화면에 돈다(형 지시 2026-10-06) */
+      "결과 대기(W)는 " + (G.W ? G.W.slaKo : "결과 도착 후 산정") + " — 검진 결과가 도착하기 전에는 등급을 매기지 않고, 그 구간은 접촉 금지라 명단에도 올리지 않아요.",
+      /* '-'도 규칙표에 적는다 — ①로 명단에 오르기 시작한 등급이라, 표에 없으면 「규칙표에 없는 상태」가
+         시한 없이 명단 최상단에 서게 된다(적대적 리뷰 실증: 로스터 '-' 전국 802건) */
+      (G["-"] ? "등급 해당 없음('-')은 " + G["-"].slaKo + "이에요 — 다만 그중 **D2 첫 연결 카드**는 명단에 올라오고, 그 카드의 시한은 등급이 아니라 첫 연결 창(goldenLeftH)에서 파생돼요(창이 열려 있으면 「잔여 N시간」, 지났으면 「창 만료 — 가능한 빨리」). 티어는 H/M/L 집계에 섞지 않으려고 「-」로 둬요." : ""),
       "집계 정의 — 등급→시한 매핑은 규칙이라 즉답할 수 있어요. 다만 「시한 내 실제로 응답했는가」의 **실기록은 아직 없어요**(응답 시각 저장이 없습니다).",
     ], buttons: ["오늘의 지시서 이행율"] };
   },

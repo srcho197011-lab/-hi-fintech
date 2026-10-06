@@ -128,10 +128,22 @@ function HmPager({ total, page, setPage, per = 20 }) {
     </div>
   );
 }
+/* 상호작용층(실회원) 접촉 금지 판정 — **hmAct와 같은 축**을 읽는다(적대적 리뷰 실증 2026-10-06).
+   코호트 관측층은 hmContactBlocked(단계)로 막았는데 상호작용층은 hmLockState(검진대비보험 큐)만
+   봐서, D1이면서 큐에 없는 회원은 ①탭 신호 접촉·③탭 터치 연결·⑨탭 연결하기·알림 발송이 전부
+   열려 있었다. 판정은 hmAct 진입부가 단일 원천이고, 버튼은 같은 두 조건을 읽어 **미리** 비활성된다
+   (hmAct가 거부만 하면 프로가 누른 뒤에야 알게 된다). */
+function _hmMemBlocked(m) {
+  try { if (typeof hmLockState === "function" && hmLockState(m).locked) return true; } catch (e) {}
+  try { if (typeof hmStageOf === "function") { const st = hmStageOf(m); if (st && st.cur === "D1") return true; } } catch (e) {}
+  return false;
+}
 /* 코호트 관측층 카드 — 체험 카드와 같은 2축, 행동 결과는 세션에만 */
 function HmCohortCard({ card, code, onDone, compact }) {
   const c = card;
-  const locked = c.status.k === "HELD";
+  /* 접촉 금지 판정은 공통 함수 하나만 읽는다(형 지시 2026-10-06) — 종전 기준(status HELD = 검진대비
+     보험 가입)은 D1의 60%에만 붙어, 비가입 D1 회원에게 「연결하기」가 활성 렌더됐다 */
+  const locked = (typeof hmContactBlocked === "function") ? hmContactBlocked(c.i) : c.status.k === "HELD";
   const [vidOpen, setVidOpen] = React.useState(false);   /* 영상 V2 */
   let vg = { ok: false, code: "" };
   try { vg = vsGateOf(c.i); } catch (e) {}
@@ -164,7 +176,9 @@ function HmCohortCard({ card, code, onDone, compact }) {
         {vg.ok
           ? <><button className="hmbtn gh" style={{ padding: "5px 11px", fontSize: 11 }} onClick={() => setVidOpen(true)}><Video size={11} /> 영상 상담 요청</button>
               {vfit && vfit.fit === "high" && <span className="hmpill" style={{ background: "#EFF6FF", color: "#1D4ED8", fontSize: 10.2 }} title={vfit.why}>📹 영상 권장 · {vfit.seg}</span>}</>
-          : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.2 }} title={vg.why || ""}>📹 {vg.code === "consent" ? "영상 동의 없음" : vg.code === "lock" ? "접촉 락" : vg.code === "hold" ? "접촉 보류" : "요청 불가"}</span>}
+          /* ⚠️ pre(결과 대기 · 락 아님)를 lock과 갈라 적는다 — 종전에는 단계 차단도 code "lock"이라
+             「락 아님」 명단 전건에 「📹 접촉 락」이 붙어 제목이 칩을 부정했다(적대적 리뷰 실증) */
+          : <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.2 }} title={vg.why || ""}>📹 {vg.code === "consent" ? "영상 동의 없음" : vg.code === "lock" ? "접촉 락" : vg.code === "pre" ? "결과 대기(락 아님)" : vg.code === "hold" ? "접촉 보류" : "요청 불가"}</span>}
         <span style={{ fontSize: 10.3, color: HM_C.mut }}>{locked ? "결과 수령 대기 — 시스템이 자동 해제" : "시연 기록(세션) — 새로고침 시 초기화"}</span>
       </div>
       {vidOpen && <HmVideoModal subject={c.i} name={_hmProName(c.m)} card={(() => { try { return buildHandoffCard(c.i, { v2: true }); } catch (e) { return null; } })()}
@@ -330,8 +344,8 @@ function HmTabSignals({ code, onContact, cview }) {
           {c.why.map((w, j) => <div key={j} style={{ fontSize: 11.8, color: HM_C.mut, lineHeight: 1.6 }}>· {w[0]} <b style={{ color: HM_C.dark }}>{w[1]}</b></div>)}
           <div className="hmhi"><Bot size={12} style={{ verticalAlign: -2 }} /> 권장 첫 마디 — "{_hmProName(c.m)}님, {c.typeKo} 관련해서 확인해 드릴 게 있어 연락드렸어요. 지금 2분 괜찮으세요?"</div>
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-            <button className="hmbtn" onClick={() => onContact(c.m, { key: "sig-" + c.type, tab: "①", label: "신호 접촉(" + c.typeKo + ")", result: "연결됨" })}><Phone size={12} /> 연결하기</button>
-            <button className="hmbtn gh" onClick={() => onContact(c.m, { key: "sig-noti", tab: "①", label: "안내 발송", result: "발송", notify: "담당 프로가 " + c.typeKo + " 안내를 보내드렸어요 — 하이에게 물어보셔도 돼요.", notifyTitle: "건강 안내 도착" })}><Send size={12} /> 안내 발송</button>
+            <button className="hmbtn" disabled={_hmMemBlocked(c.m)} title={_hmMemBlocked(c.m) ? "검진 결과 수령 전이라 연락하지 않아요(가입 여부와 무관)" : ""} onClick={() => onContact(c.m, { key: "sig-" + c.type, tab: "①", label: "신호 접촉(" + c.typeKo + ")", result: "연결됨" })}><Phone size={12} /> 연결하기</button>
+            <button className="hmbtn gh" disabled={_hmMemBlocked(c.m)} title={_hmMemBlocked(c.m) ? "검진 결과 수령 전이라 안내도 보내지 않아요" : ""} onClick={() => onContact(c.m, { key: "sig-noti", tab: "①", label: "안내 발송", result: "발송", notify: "담당 프로가 " + c.typeKo + " 안내를 보내드렸어요 — 하이에게 물어보셔도 돼요.", notifyTitle: "건강 안내 도착" })}><Send size={12} /> 안내 발송</button>
           </div>
           <div className="hmfoot">연락처는 카드에 없어요 — [연결하기] 순간 동의를 재검증하고 콜백 토큰으로 연결돼요.</div>
         </div>)}
@@ -546,7 +560,7 @@ function HmTabIns({ code, pro, onContact, refresh, cview, onTab }) {
             {(() => {   /* 영상 V2 — 게이트를 통과하지 못하면 버튼이 없다(문구 숨김이 아니라 부재) */
               let g = { ok: false, why: "" };
               try { g = vsGateOf(m); } catch (e) {}
-              if (!g.ok) return <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.4 }} title={g.why}>📹 영상 상담 불가 · {g.code === "consent" ? "동의 없음" : g.code === "lock" ? "접촉 락" : g.code === "hold" ? "접촉 보류" : g.code}</span>;
+              if (!g.ok) return <span className="hmpill" style={{ background: "#F8FAFC", color: HM_C.mut, fontSize: 10.4 }} title={g.why}>📹 영상 상담 불가 · {g.code === "consent" ? "동의 없음" : g.code === "lock" ? "접촉 락" : g.code === "pre" ? "결과 대기(락 아님)" : g.code === "hold" ? "접촉 보류" : g.code}</span>;
               return <button className="hmbtn gh" onClick={() => setVidFor(m)}><Video size={12} /> 영상 상담 요청</button>;
             })()}
             <button className="hmbtn gh" disabled={lk.locked} onClick={() => onContact(m, { key: "ins-noti", tab: "②", label: "알림 안내", result: "발송", notify: "검진 결과 안내와 보장 설명을 준비해 두었어요.", notifyTitle: "담당 프로 안내" })}><Send size={12} /> 알림</button>
@@ -564,7 +578,14 @@ function HmTabIns({ code, pro, onContact, refresh, cview, onTab }) {
     </div>
     <div style={{ fontWeight: 900, fontSize: 13, margin: "12px 0 7px" }}>내 배정 {mine.length}건</div>
     {mine.length ? mine.map((x) => row(x, true)) : <div className="hmrow" style={{ color: HM_C.mut }}>이번 순번 배정이 없어요 — 다음 회차에 자동 배정돼요.</div>}
-    {cview && <HmCohortList title="② 검진 전 대기(락) — 배정 완료·접촉 금지" ids={cview.held} code={code} compact />}
+    {cview && <HmCohortList title="② 검진 전 대기(락) — 검진대비보험 가입·접촉 금지" ids={cview.held} code={code} compact />}
+    {/* 결과 대기(보험 미가입 D1) — 접촉 금지인데 **락이 없는** 회원. 접촉 금지 판정이 단계로 올라간 뒤
+        (hmContactBlocked · 형 지시 2026-10-06) 이 사람들이 어느 탭에도 명단으로 없었다. ⓪탭 「연락 금지」
+        칸이 두 명단의 합이므로, 칸을 눌러 여기로 오면 숫자가 실제로 맞춰진다. */}
+    {/* ⚠️ 제목에 모집단을 적는다(적대적 리뷰 실증 2026-10-06) — ⑩관제탑의 「결과 대기」는 D1 전건
+        (전국 54,780 = 락 32,855 + 락 없음 21,925)이고 이 명단은 **락 없는 쪽만**이라 2.5배 다른
+        모집단을 같은 단어가 가리켰다. 양쪽에 모집단을 적어 둔다. */}
+    {cview && <HmCohortList title="② 결과 대기(락 없음) — 검진대비보험 미가입·접촉 금지 · ⑩관제탑의 「결과 대기」는 D1 전건(락 포함)이라 더 큽니다" ids={cview.preResult} code={code} compact />}
     {cview && cview.ready.length ? (<div className="hmcard" style={{ marginTop: 10, background: "#F0FDF4", border: "1px solid #BBF7D0", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
       <span style={{ fontSize: 12.2, lineHeight: 1.6, flex: 1, minWidth: 200 }}>
         <b style={{ color: HM_C.ok }}>락이 풀린 회원 {cview.ready.length.toLocaleString()}명</b> — 검진 결과가 도착해 연락이 가능해졌어요.
@@ -604,7 +625,7 @@ function HmTabTouch({ code, onContact, cview, onTab }) {
                 <b style={{ color: it.pack ? HM_C.dark : HM_C.ink }}>{it.title}</b>
                 <span style={{ color: HM_C.mut, marginLeft: 6 }}>{_hmDay(it.when)}{it.done ? " · 완료" : it.due ? " · 지금" : ""}</span>
               </div>
-              {it.due && !it.done && <button className="hmbtn" style={{ padding: "5px 10px", fontSize: 11 }} onClick={() => onContact(m, { key: it.key, tab: "③", label: it.title.split("—")[0].trim(), result: "연결됨" })}>연결</button>}
+              {it.due && !it.done && <button className="hmbtn" style={{ padding: "5px 10px", fontSize: 11 }} disabled={_hmMemBlocked(m)} title={_hmMemBlocked(m) ? "검진 결과 수령 전이라 연락하지 않아요(가입 여부와 무관)" : ""} onClick={() => onContact(m, { key: it.key, tab: "③", label: it.title.split("—")[0].trim(), result: "연결됨" })}>연결</button>}
             </div>
           ))}
         </div>
@@ -877,7 +898,7 @@ function HmTabBoard({ code, pro, onContact, cview }) {
           <div className="hmhi"><Bot size={12} style={{ verticalAlign: -2 }} /> {c.hi}</div>
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <button className="hmbtn gh" onClick={() => setDetail(detail === c.m.email ? null : c.m.email)}>{detail === c.m.email ? "상세 접기" : "상세"}</button>
-            <button className="hmbtn" disabled={c.status.k === "HELD"} onClick={() => onContact(c.m, { key: c.dueNow ? c.dueNow.key : "manual", tab: "⑨", label: c.dueNow ? c.dueNow.title.split("—")[0].trim() : "정기 확인 연락", result: "연결됨" })}><Phone size={12} /> 연결하기</button>
+            <button className="hmbtn" disabled={c.status.k === "HELD" || _hmMemBlocked(c.m)} onClick={() => onContact(c.m, { key: c.dueNow ? c.dueNow.key : "manual", tab: "⑨", label: c.dueNow ? c.dueNow.title.split("—")[0].trim() : "정기 확인 연락", result: "연결됨" })}><Phone size={12} /> 연결하기</button>
           </div>
           {detail === c.m.email && (<div style={{ marginTop: 9, borderTop: "1px dashed #E5E7EB", paddingTop: 8, fontSize: 11.7, lineHeight: 1.7 }}>
             <b style={{ color: HM_C.deep, fontSize: 11 }}>단계 근거(데이터가 정한다 — 수기 변경 불가)</b>
@@ -977,14 +998,32 @@ function HmTabBoard({ code, pro, onContact, cview }) {
 const HM_GRADE_UI = {
   H: { ko: "H 고위험", c: "#EA580C", bg: "#FFF1E2" }, M: { ko: "M 중위험", c: "#D97706", bg: "#FEF7E0" },
   L: { ko: "L 관심", c: "#0891B2", bg: "#E0F5FA" },
+  /* W — 결과 대기(형 지시 2026-10-06). 등재하지 않으면 아래 폴백이 「L 관심」으로 조용히 오표기한다 */
+  W: { ko: "결과 대기", c: "#64748B", bg: "#F1F5F9" },
 };
+/* 미등재 등급 코드·null의 폴백은 **중립값**이다 — 종전 폴백(HM_GRADE_UI.L)은 「L 관심」이라는
+   틀린 사실을 시안색 배지로 조용히 주장했다(등급 '-' D2 카드가 바로 이 경로를 탄다) */
+/* 등급 '-'와 미등재 코드의 라벨은 **RISK_GRADE_META에서 읽는다**(단일 사전).
+   종전 「표기 불가」는 등급이 해당 없다는 뜻이 아니라 렌더 실패처럼 읽혔고, 같은 '-' 코드가
+   카드 칩 「표기 불가」·⑩ 「대상아님」·⓪탭 머리 「-」 세 라벨로 한 운영자 눈앞에 동시에 떴다. */
+const HM_GRADE_UI_NONE = { ko: (function () { try { return (RISK_GRADE_META["-"] || {}).ko || "등급 해당 없음"; } catch (e) { return "등급 해당 없음"; } })(), c: "#94A3B8", bg: "#F8FAFC" };
+/* 등급 표시 순서 — 중증도 고정. Object.keys().sort()는 '-'→H→L→M→W(문자순)를 내서 같은 줄에서
+   위험 순서가 뒤집혔다(실측 「H 3 · L 3」). 사전에 없는 새 코드만 뒤에 붙인다. */
+const HM_GRADE_ORDER = ["H", "M", "L", "W", "-"];
+function _hmGradeKeys(gr) {
+  const ks = HM_GRADE_ORDER.filter((k) => gr[k]);
+  Object.keys(gr).forEach((k) => { if (gr[k] && ks.indexOf(k) < 0) ks.push(k); });
+  return ks;
+}
+/* 코드 + 사람 말을 함께 적는다 — ⑩관제탑이 「H 고위험」으로 적으므로 같은 어휘여야 교차 참조가 된다 */
+function _hmGradeKo(k) { try { const ko = ((typeof RISK_GRADE_META !== "undefined" && RISK_GRADE_META[k]) || {}).ko; return ko ? (k === "-" ? ko : k + " " + ko) : k; } catch (e) { return k; } }
 /* 결과 기록 시트(2단계 P2 — A안 한 판 그리드, 형 실물 확인용 실장 2026-08-30) — §0-B 기록은 선택지다 */
 function HmResultSheet({ card, code, onClose, onSaved }) {
   const [result, setResult] = React.useState(null);
   const [branch, setBranch] = React.useState(null);
   const [follow, setFollow] = React.useState(null);
   const [memo, setMemo] = React.useState("");
-  const [golden, setGolden] = React.useState([]);   /* D2 골든타임 전달 체크(F3) — 5칸 선택지 */
+  const [golden, setGolden] = React.useState([]);   /* D2 골든타임 전달 체크(F3) — 칸 수는 HMR_GOLDEN_KEYS 사전 소관 */
   const today = new Date();
   const day = (n) => new Date(today.getTime() + n * 86400000).toISOString().slice(0, 10);
   const FOLLOWS = [["내일", day(1)], ["다음 주", day(7)], ["2주 뒤", day(14)], ["필요 없어요", null]];
@@ -1036,7 +1075,7 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
         </div>
         {/* 칸 수는 HMR_GOLDEN_KEYS(단일 사전)를 따라간다 — 화면에 숫자를 박아 두면 사전이 늘어날 때
             화면만 옛 숫자로 남는다(형 지시 2026-10-05). 사전은 handoffResult.js 소관 */}
-        <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>체크는 「헬스메이트 센터 통합 운영」(관리자 화면)의 골든타임 전달률에 집계돼요 — {(typeof HMR_GOLDEN_KEYS !== "undefined" ? HMR_GOLDEN_KEYS.length : 0)}칸 다 전하는 게 목표예요.</div>
+        <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>체크는 「헬스메이트 운영본부」(관리자 화면)의 골든타임 전달률에 집계돼요 — {(typeof HMR_GOLDEN_KEYS !== "undefined" ? HMR_GOLDEN_KEYS.length : 0)}칸 다 전하는 게 목표예요.</div>
       </div>)}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
         <b style={{ fontSize: 11.6, color: "#475569", width: 118, flex: "none" }}>간단 메모</b>
@@ -1129,7 +1168,7 @@ function HmCovMap({ i }) {
 }
 
 function HmHandoffCard({ ent, code, onToast }) {
-  const c = ent.card; const g = HM_GRADE_UI[c.grade] || HM_GRADE_UI.L;
+  const c = ent.card; const g = HM_GRADE_UI[c.grade] || HM_GRADE_UI_NONE;
   const [done, setDone] = React.useState(false);
   const [sheet, setSheet] = React.useState(false);   /* 결과 기록 시트(P2) */
   const [coach, setCoach] = React.useState(null);   /* A5 코치 답변(부분 활성 — 카드 해설 한정) */
@@ -1152,7 +1191,16 @@ function HmHandoffCard({ ent, code, onToast }) {
           {_hmProName(c.member)} <span style={{ color: HM_C.mut, fontWeight: 600, fontSize: 12 }}>· {c.member.ageBand} {c.member.sex} · {c.member.region}</span>
           <span className="hmpill" style={{ marginLeft: 6, background: g.bg, color: g.c }}>{g.ko}</span>
           <span className="hmpill" style={{ marginLeft: 4, background: "#F1F5F9", color: "#475569" }}>{c.member.stage} 단계</span>
-          {(c.script.firstconnect || []).length > 0 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDE68A", color: "#92400E", fontWeight: 900 }}>⭐ 첫 연결 골든타임</span>}
+          {/* 첫 연결 배지 — **창 상태를 카드에서 갈라 적는다**(적대적 리뷰 실증 2026-10-06 수선).
+              종전에는 D2 전건에 「⭐ 첫 연결 골든타임」 + 「창이 닫히면 되돌릴 수 없어서 먼저 배정돼요」
+              툴팁이 붙었는데, 실제로 창이 열린 D2는 42.8%뿐이고 창 밖(T3) 카드에는 잔여 시간이 아예
+              안 붙어 프로가 창이 닫힌 것을 알 수 없었다. 시간 주장은 열린 창에만 한다.
+              잔여는 카드가 이미 들고 있는 timing.goldenLeftH만 읽는다(화면에서 재계산 없음). */}
+          {(c.script.firstconnect || []).length > 0 && (c.timing.goldenLeftH != null
+            ? <span className="hmpill" style={{ marginLeft: 4, background: "#FDE68A", color: "#92400E", fontWeight: 900 }}
+                title={"결과 도착 직후 48시간이 첫 연결 골든타임이에요 — 이 카드는 창이 " + c.timing.goldenLeftH + "시간 남아 있어서 일일 명단 최상단에 배정돼요."}>⭐ 첫 연결 골든타임 · 잔여 {c.timing.goldenLeftH}시간</span>
+            : <span className="hmpill" style={{ marginLeft: 4, background: "#F1F5F9", color: "#64748B", fontWeight: 900 }}
+                title="첫 연결 48시간 창은 이미 지났어요(결과 도착 후 2일 이상) — 무료 3종을 아직 전하지 못한 회원이라 명단에는 올라오지만, 「되돌릴 수 없는 창」이라는 근거는 이 카드엔 없어요. 대본은 같고 시간 주장만 빠져요.">⭐ 첫 연결 미완료 · 창 만료</span>)}
           {/* R3 — 60일 사이클 배지(만기 국면): 보험 시계가 카드에 보인다 */}
           {(() => { try {
             const cy = cycleOf(c.member.cohortIndex);
@@ -1163,7 +1211,10 @@ function HmHandoffCard({ ent, code, onToast }) {
             if (cy.secondGolden) return <span className="hmpill" style={{ marginLeft: 4, background: "#FFF7ED", color: "#C2410C", fontWeight: 800 }} title="만기 후 무보장 상태 — 30일 안에 회복하지 못하면 조용한 이탈로 이어져요.">🕐 무보장 {cy.s20}일째</span>;
             return null;
           } catch (e) { return null; } })()}
-          {c.member.stalledDays >= 14 && <span className="hmpill" style={{ marginLeft: 4, background: "#FDECEC", color: "#B91C1C" }}>정체 {c.member.stalledDays}일</span>}
+          {/* ⚠️ member.stalled(실제 정체 판정)만 본다 — stalledDays는 비정체 회원에게도 0~24일이 들어
+              있어서, 종전 `>= 14` 조건은 정체가 아닌 회원에게 「정체 N일」 배지를 달았다(실측 D2
+              230건 중 153건이 오판 · 적대적 리뷰) */}
+          {c.member.stalled && <span className="hmpill" style={{ marginLeft: 4, background: "#FDECEC", color: "#B91C1C" }}>정체 {c.member.stalledDays}일</span>}
         </div>
         <HmStageDots reached={(typeof cohortStageOf === "function" && cohortStageOf(c.member.cohortIndex) || { reached: [c.member.stage] }).reached} />
       </div>
@@ -1181,7 +1232,7 @@ function HmHandoffCard({ ent, code, onToast }) {
       </div>
       {/* 발밑 표시 4종 — 호버 툴팁(형 지시 2026-09-01 · 설명서 부록과 같은 문안) */}
       <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11.4, color: "#475569", alignItems: "center" }}>
-        <b style={{ color: g.c, cursor: "help" }} title="카드 발행 후 이 시간 안에 첫 접촉이 이뤄져야 해요 — 회원의 위험 등급이 시한을 정해요. 넘기면 「응답 시한 임박」 칸과 「헬스메이트 센터 통합 운영」(관리자 화면)의 준수율 집계에 잡혀요.">⏱ {c.timing.sla}</b>
+        <b style={{ color: g.c, cursor: "help" }} title="카드 발행 후 이 시간 안에 첫 접촉이 이뤄져야 해요 — 회원의 위험 등급이 시한을 정해요. 검진 결과를 기다리는 구간(결과 대기)은 등급을 매기지 않아 시한도 없어요. 넘기면 「응답 시한 임박」 칸과 「헬스메이트 운영본부」(관리자 화면)의 준수율 집계에 잡혀요.">⏱ {c.timing.sla}</b>
         <span style={{ cursor: "help" }} title="통화만 하면 '접촉'이에요 — 1순위 개입이 실제 행동(예약·등록 등 데이터)으로 이어져야 '완결'로 집계돼요.">완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
         {/* 영상 V5 — 진료 연결 완결 회수. 「연결됨」 사실만 돌아온다(병원·진료과·내용은 오지 않음) */}
         {(() => {
@@ -1215,7 +1266,7 @@ function HmHandoffCard({ ent, code, onToast }) {
         })()}
       </details>
       <details style={{ marginTop: 8, border: "1px dashed #CBD5E1", borderRadius: 9, padding: "7px 10px" }}>
-        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>🗒 대본 보기(v2) — {c.member.stage} 단계 대본 · {c.script.variant} 변형 · 본대본 읽기 약 {c.script.readSec}초
+        <summary style={{ cursor: "pointer", fontSize: 12, fontWeight: 800, color: "#334155" }}>🗒 대본 보기(v2) — {c.member.stage} 단계 대본 · {c.script.variant} 변형 · {c.script.callScript === false ? "사전 준비" : "본대본"} 읽기 약 {c.script.readSec}초
           {c.script.readSecAll > c.script.readSec && <span style={{ fontWeight: 600, color: "#94A3B8" }}> (접이식·응대까지 전부 읽으면 {c.script.readSecAll}초)</span>}
           {(c.script.prep || []).length > 0 && <span className="hmpill" style={{ marginLeft: 6, background: "#FEF2F2", color: "#B91C1C", fontWeight: 900 }}>🔒 접촉 금지 — 오늘 통화 없음</span>}</summary>
         {(() => {
@@ -1224,15 +1275,17 @@ function HmHandoffCard({ ent, code, onToast }) {
           /* 문장 표시는 전부 이 함수를 지난다 — 「고객 이름 전부 표시」(형 지시 2026-10-05)의 유일한 통로 */
           const tx = (b) => _hmScrText(c, b.text);
           const draft = (t, b) => b && <div key={b.id + t} style={{ marginBottom: 5, background: "#F8F7FF", borderRadius: 7, padding: "4px 8px" }}><span className="hmpill" style={{ background: "#6D28D9", color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{tx(b)}”</div></div>;
-          /* D1(접촉 금지 단계)은 통화 대본을 접는다 — 오늘 할 일은 사전 준비뿐이다(형 지시 2026-10-05) */
-          const isD1 = c.member.stage === "D1" && s2 && (s2.prep || []).length > 0;
+          /* 통화 없는 카드(결과 대기)는 통화 대본 자체가 조립되지 않는다 — 오늘 할 일은 사전 준비뿐이다.
+             판정은 단계 이름이 아니라 **조립 사실**(callScript)을 읽는다(형 지시 2026-10-06) */
+          const noCall = c.script.callScript === false;
+          const isD1 = noCall && s2 && (s2.prep || []).length > 0;
           const flow = (<>
           {s2 && (s2.alert || []).map((b) => <div key={b.id} style={{ marginBottom: 6, background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 7, padding: "5px 9px" }}><span className="hmpill" style={{ background: "#B91C1C", color: "#fff", marginRight: 6, fontWeight: 900 }}>🚑 응급 먼저</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div style={{ fontWeight: 700 }}>“{tx(b)}”</div></div>)}
           {[["오프닝", c.script.opening]].map(([t, b], i) => b &&
             <div key={i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{tx(b)}”</div></div>)}
           {s2 && (s2.firstconnect || []).map((b) => draft("⭐ 첫 연결", b))}
           {s2 && (s2.talk || []).map((b) => draft("💬 생활 대화", b))}
-          {c.script.core.map((b, i) =>
+          {(c.script.core || []).map((b, i) =>
             <div key={"c" + i} style={{ marginBottom: 5 }}><span className="hmpill" style={{ background: HM_C.ink, color: "#fff", marginRight: 6 }}>본론</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{tx(b)}”</div></div>)}
           {s2 && (s2.seed || []).map((b) => draft("🌱 여정 씨앗", b))}
           {/* 단계 과업 — 이 단계에서 프로가 해야 할 일(HM_STAGE_GUIDE.doKo)이 대본으로 나오는 자리 */}
@@ -1251,9 +1304,9 @@ function HmHandoffCard({ ent, code, onToast }) {
               {(s2.fcExtra || []).map((b) => <div key={b.id} style={{ marginTop: 4 }}><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko}</i><div>“{tx(b)}”</div></div>)}
             </details>)}
           </>);
-          /* 응대·자발 대화·발송 문안 — D1에서는 이 셋까지 통화 대본과 **같은 접이식 안**에 넣는다.
-             종전에는 접이식 밖 최상위에 펼쳐져 있어, 접촉 금지 회원의 문자 문안이 복사해 보내기만
-             하면 되는 자리에 그대로 노출됐다(형 지시 2026-10-05 수선). */
+          /* 응대·자발 대화 — 통화가 있는 카드에만 렌더한다.
+             (2026-10-05에는 D1에서도 이 둘을 통화 대본과 같은 접이식 안에 넣어 가렸지만,
+              2026-10-06부터는 **조립 자체가 되지 않는다** — 가리는 것과 없는 것을 구분한다.) */
           const branchesBlock = (<>
           {/* 회원 반응별 응대 — 상황별 선택지라 접어 둔다(본대본을 먼저 읽게) */}
           <details style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
@@ -1265,13 +1318,14 @@ function HmHandoffCard({ ent, code, onToast }) {
               <summary style={{ cursor: "pointer", fontSize: 11.4, fontWeight: 800, color: "#15803D" }}>💬 회원이 먼저 건강 이야기를 꺼내면 — 자발 대화 6갈래 <span style={{ fontWeight: 600, color: "#64748B" }}>(먼저 꺼내지 않아요 · 회원이 열었을 때만)</span></summary>
               {(s2.voluntary || []).map((b, i2) => <div key={b.id} style={{ marginTop: 4 }}><b style={{ color: "#15803D", fontSize: 11 }}>{i2 + 1}</b> <i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>· {b.ko.split("·")[1] ? b.ko.split("·")[1].trim() : b.ko}</i><div>“{tx(b)}”</div></div>)}
             </details>)}
-          {/* 발송 문안 — 치환하지 않는다. 화면과 실제 발송문이 달라지면 프로가 읽는 초안과
-              발행 artifact가 불일치한다(마스킹 규칙은 외부 전달물 쪽을 그대로 둔다 — 형 지시 2026-10-05) */}
-          <div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}>
-            <b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}
-            {!isD1 && <div style={{ fontSize: 10.2, color: "#94A3B8", marginTop: 2 }}>※ 발송 문안은 이름을 마스크 표기로 내보내요 — 화면에 보이는 그대로 나갑니다(대본만 실제 이름으로 보여드려요).</div>}
-          </div>
           </>);
+          /* 발송 문안 — 치환하지 않는다. 화면과 실제 발송문이 달라지면 프로가 읽는 초안과
+             발행 artifact가 불일치한다(마스킹 규칙은 외부 전달물 쪽을 그대로 둔다 — 형 지시 2026-10-05).
+             통화 없는 카드에서도 이 칸은 남는다 — 「발송하지 않아요」 고지가 A5 코치의 sms 원천이다. */
+          const sendBlock = (<div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}>
+            <b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}
+            {!noCall && <div style={{ fontSize: 10.2, color: "#94A3B8", marginTop: 2 }}>※ 발송 문안은 이름을 마스크 표기로 내보내요 — 화면에 보이는 그대로 나갑니다(대본만 실제 이름으로 보여드려요).</div>}
+          </div>);
           return (<div style={{ marginTop: 7, fontSize: 12.2, lineHeight: 1.75, color: "#1F2937" }}>
           {/* D1 — 사전 준비(오늘 할 일). 통화 대본은 아래에 접어 둔다.
               prep는 회원에게 하는 말이 아니라 프로가 읽는 지시문이라 인용부호(“ ”) 대신 ▸로 표기한다 */}
@@ -1280,15 +1334,16 @@ function HmHandoffCard({ ent, code, onToast }) {
             <div style={{ fontSize: 10.4, color: "#64748B", marginBottom: 4 }}>아래는 회원에게 하는 말이 아니라 프로가 읽는 지시문이에요</div>
             {(s2.prep || []).map((b) => <div key={b.id} style={{ marginBottom: 4 }}><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div style={{ color: "#334155" }}>▸ {tx(b)}</div></div>)}
           </div>)}
-          {isD1
-            ? <details style={{ border: "1px dashed #CBD5E1", borderRadius: 8, padding: "6px 9px", margin: "6px 0" }}>
-                <summary style={{ cursor: "pointer", fontSize: 11.4, fontWeight: 800, color: "#64748B" }}>📞 결과 도착 후 쓸 통화 대본 초안 <span style={{ fontWeight: 600 }}>(지금은 쓰지 않아요 — 응대·발송 문안도 여기 안에 있어요)</span></summary>
-                <div style={{ marginTop: 6 }}>
-                  <div style={{ fontSize: 10.4, color: "#B45309", marginBottom: 5 }}>⚠ 아직 결과가 없는 회원이라 이 초안은 구간 표현이 비어 있어요. 결과가 도착하면 D2 골든타임 대본(무료 3종 안내)으로 카드가 다시 발행돼요.</div>
-                  {flow}{branchesBlock}
-                </div>
-              </details>
-            : <>{flow}{branchesBlock}</>}
+          {/* ⚠️ 종전에는 여기에 「결과 도착 후 쓸 통화 대본 초안」 접이식을 두고 그 안에 통화 대본 전문을
+              넣었다. 이제 통화 대본은 **조립되지 않으므로** 빈 접이식을 만들지 않는다 — 열면 아무것도
+              없는 초안은 「있는데 접어 둔 것」으로 읽혀 더 나쁘다(형 지시 2026-10-06) */}
+          {noCall
+            ? <div style={{ fontSize: 11.4, color: "#64748B", background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 8, padding: "7px 10px" }}>
+                📞 통화 대본은 <b>아직 만들지 않아요</b> — 결과가 없는 회원에게는 할 말을 미리 적어 두지 않습니다(없는 구간을 말하지 않기 위해서예요).
+                결과가 도착하면 D2 골든타임 대본(무료 3종 안내·향후 지원 약속·건강관리 동의)으로 카드가 다시 발행돼요.
+                {sendBlock}
+              </div>
+            : <>{flow}{branchesBlock}{sendBlock}</>}
         </div>);
         })()}
       </details>
@@ -1499,9 +1554,27 @@ function HmTabToday({ code, onToast, cview }) {
     <div className="hmcard" style={{ background: "#FFFBF5", border: "1px solid #FED7AA" }}>
       <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
         <div style={{ fontWeight: 900, fontSize: 14.5, color: "#C2410C" }}>☀️ 오늘의 지시서 · {roster.list.length}건 <span style={{ fontSize: 11.4, color: HM_C.mut, fontWeight: 600 }}>· {today} · 시드=날짜+프로 사번(같은 날 같은 카드) · [예시·시연 데이터]</span></div>
-        <div style={{ fontSize: 11.6, color: "#475569" }}>{["H", "M", "L"].filter((k) => gr[k]).map((k) => `${k} ${gr[k]}건`).join(" · ") || "대상 없음"} · 관할 {roster.counts.managed}명(락 {roster.counts.locked} · 후보 {roster.counts.candidates})</div>
+        {/* 등급 화이트리스트를 두지 않는다 — 새 상태가 생기면 「7건인데 등급 합 5」가 되어
+            「분자는 분모에 포함」 규약이 깨진다(형 지시 2026-10-06).
+            단 **표시 순서는 중증도 고정**이고 라벨은 RISK_GRADE_META 사전을 읽는다(원시 키 금지) */}
+        <div style={{ fontSize: 11.6, color: "#475569" }}>{_hmGradeKeys(gr).map((k) => `${_hmGradeKo(k)} ${gr[k]}건`).join(" · ") || "대상 없음"} · 관할 {roster.counts.managed}명(접촉 락(코호트) {roster.counts.locked} · 접촉 금지 단계 {roster.counts.preResult || 0} · 대상 아님 {roster.counts.offCycle} · 후보 {roster.counts.candidates})</div>
       </div>
       <div style={{ marginTop: 6, fontSize: 11.6, color: HM_C.mut }}>하이가 등급·응답 시한·정체를 계산해 우선순위로 선별했어요 — 프로는 카드 순서대로 확인·접촉·기록만. 대본 없는 통화는 없어요(대본 보기 ▼).</div>
+      {/* ⚠️ 쿼터 숫자는 **상수를 읽는다**(roster.counts.win) — 종전에는 「최대 3칸」이 화면 두 곳과
+          하이 문장에 리터럴로 복제돼 있어 상수를 바꾸면 세 화면이 거짓을 말했다.
+          ⚠️ 창 상태 분해와 「H가 밀린다」는 사실을 함께 적는다 — 쿼터가 선점하는 만큼 상한 7 안에서
+             H 고위험이 뒤로 밀리는데 그 사실이 화면에 없었다(적대적 리뷰 실증). */}
+      {(() => {
+        const W = roster.counts.win || { d2: 3, mat: 1, max: 7, target: 5 };
+        const dC = roster.counts.d2Cand || 0, dO = roster.counts.d2OpenCand || 0, dS = roster.counts.d2OpenSeated || 0;
+        const hC = roster.counts.hCand || 0, hS = gr.H || 0;
+        return (<div style={{ marginTop: 4, fontSize: 11.2, color: HM_C.mut }}>
+          D2 <b>첫 연결 미완료</b>는 최대 <b>{W.d2}칸</b>, 만기 D-7·당일은 최대 <b>{W.mat}칸</b>을 상한 {W.max}건 안에서 먼저 배정해요 — 나머지는 등급·응답 시한·정체 순서예요.
+          D2 후보 {dC}명 중 <b>창이 열린 카드 {dO}명</b>(48시간 안)을 먼저 앉혀 {dS}명이 올랐어요 — 창이 지난 카드도 무료 3종을 아직 못 받았으니 뒤에 올라오지만, 그 카드에는 「되돌릴 수 없는 창」이라고 적지 않아요.
+          {hC > hS ? <> 그 대가로 오늘 <b style={{ color: "#B91C1C" }}>H 고위험 {hC - hS}명</b>이 상한 {W.max}건 밖으로 밀렸어요(후보 {hC} · 등재 {hS}) — H는 48시간 시한 등급이에요.</> : null}
+          {" "}검진 결과를 기다리는 회원(접촉 금지)은 명단에 올리지 않아요.
+        </div>);
+      })()}
     </div>
     <HmStageGuide code={code} cview={cview} onToast={onToast} />
     {/* R3 — 60일 터치 플랜: 검진일 기준 9시점이 자동 계산되어 뜬다. 프로가 「누구에게 언제」를 고민할 일이 없다 */}
@@ -1539,7 +1612,7 @@ function HmTabToday({ code, onToast, cview }) {
 }
 
 /* ⑩ 통합 운영은 이 파일에서 떼어 냈다(형 지시 2026-10-05) — 지점장·사업단장·본사 직원용
-   「헬스메이트 센터 통합 운영」 관리자 전용 화면으로 분리했고, 프로 콘솔에는 탭조차 없다.
+   「헬스메이트 운영본부」 관리자 전용 화면으로 분리했고, 프로 콘솔에는 탭조차 없다.
    옛 구현(HmOpsAllocBlock · HmTabOps)은 그 화면으로 이관했으니 여기서 되살리지 말 것. */
 /* ══ 하이프로 대화 독(2단계 P6) — 프로 전용 · 보라 톤(회원 하이와 구분) · 답변은 원천 조립만(출처 칩 동반) ══ */
 function HiProDock() {
@@ -1654,9 +1727,25 @@ function HealthMateSection({ onGo }) {
   const cards = members.map((m) => hmCustomerCard(m));
   const selfN = cards.filter((c) => c.self).length;   /* 본인 계정(실측) — 「체험」과 섞어 세지 않는다 */
   const needN = cards.filter((c) => c.status.k === "NEED").length + (cview ? cview.signals.length : 0);
-  const heldN = hmInsQueue().filter((x) => x.code === code && hmLockState({ email: x.email }).locked).length + (cview ? cview.held.length : 0);
+  const lockQN = hmInsQueue().filter((x) => x.code === code && hmLockState({ email: x.email }).locked).length;
+  /* 접촉 락(검진대비보험 가입) — ②탭 분해·⑩관제탑·하이 답변과 같은 정의.
+     ⚠️ heldN(코호트 락 + 내 배정 큐)과 roster.counts.locked(코호트만)는 **값이 다르다**(실측 44 vs 43).
+        같은 ⓪탭에 두 숫자가 같은 이름으로 서 있었으므로, 부제를 산술 등식으로 분해해 적고
+        로스터 머리에는 「(코호트)」를 병기한다 — 같은 단어가 두 값을 가리키지 않게 한다. */
+  const heldN = lockQN + (cview ? cview.held.length : 0);
+  /* 연락 금지 전체 = 접촉 락 + 결과 대기(보험 미가입 D1). 접촉 금지 판정이 락에서 **단계**로
+     올라갔으므로(hmContactBlocked · 형 지시 2026-10-06) 「지금 하면 안 되는 일」 칸을 락만으로
+     세면 안 된다 — 락은 D1의 60%에만 붙어서, 나머지 D1 회원을 프로가 「연락해도 되는 사람」으로
+     읽는다(실측 박성호 44 vs 실제 72 · 전국 32,855 vs 54,780). 칸을 누르면 ②탭에서 두 명단으로
+     나뉘어 보이고, 두 숫자의 합이 이 칸과 같다. */
+  const preResN = cview ? cview.preResult.length : 0;
+  const blockedN = heldN + preResN;
   const stallN = cards.filter((c) => c.stage.stalled).length + (cview ? cview.stall.length : 0);
-  const expN = cards.filter((c) => c.plan.items.some((x) => x.key.indexOf("m") === 0 && x.due && !x.done)).length + (cview ? cview.ready.length : 0);
+  /* ⚠️ cview.ready를 더하지 않는다(적대적 리뷰 실증 2026-10-06 수선) — ready는 `D2 ∧ hash%100<18`로
+     「첫 연결 대기」 집합이고, 이 KPI는 「만기·재검진 안내 예정(D-30·D-7)」이라 **축이 다르다**.
+     만기 축은 matN이 cycleOf T4~T6로 이미 센다. 섞어 두면 같은 화면의 「첫 연결」 숫자가 넷으로
+     불고(로스터 D2 카드 · 첫 통화 KPI · ③탭 첫 연결 대기 · 이 KPI 안에 숨은 ready) 비교가 안 된다. */
+  const expN = cards.filter((c) => c.plan.items.some((x) => x.key.indexOf("m") === 0 && x.due && !x.done)).length;
   const slaN = hmSignals(code).filter((s) => s.sla <= 4).length + (cview ? cview.ids.filter((i) => { const g = cohortSignalOf(i); return g && g.sla <= 4; }).length : 0);
   /* R3 — 만기 임박(T4·T5): 검진대비보험 만기 D-20 이내 회원(달력 값이 정하는 오늘의 일) */
   const matN = cview ? cview.ids.filter((i) => { try { const cy = cycleOf(i); return cy && (cy.t === "T4" || cy.t === "T5" || cy.t === "T6"); } catch (e) { return false; } }).length : 0;
@@ -1671,7 +1760,7 @@ function HealthMateSection({ onGo }) {
   const TABS = [
     [0, "⓪ 오늘의 지시서", Sparkles, "하이가 오늘 발행한 카드 — 순서대로 확인·접촉·기록만 하면 돼요"],
     [1, "① 지금 연락할 회원", Users, "하이가 접촉 근거(신호)를 찾은 회원 — 응답 시한이 짧은 카드부터"],
-    [2, "② 배정·접촉 락 회원", ShieldCheck, "검진대비보험 순번 배정과 접촉 락 — 결과 수령 전은 연락 금지, 락이 풀리면 ③ 첫 연결로 넘어가요"],
+    [2, "② 배정·접촉 락 회원", ShieldCheck, "검진대비보험 순번 배정과 접촉 금지 명단 두 벌(가입 = 락 · 미가입 = 결과 대기) — 결과 수령 전은 연락 금지, 결과가 오면 ③ 첫 연결로 넘어가요"],
     [3, "③ 첫 연결·만기 터치 회원", HeartPulse, "락이 풀린 회원의 첫 연결(결과분석+보장 안내 1회 통합)과 그 뒤 만기·재검진 터치 계획"],
     [4, "④ 질병 위험 살펴볼 회원", Activity, "예측 위험 밴드 상·중 회원 — 예방 검진·주치의 연결로만 이어요(진단 아님)"],
     [5, "⑤ 제품·재구매 안내할 회원", ShoppingCart, "관리 포인트에 맞는 생활·제품 안내와 재구매 시점이 온 회원"],
@@ -1703,7 +1792,7 @@ function HealthMateSection({ onGo }) {
             ["검진대비보험 만기 임박", matN, 0, "검진대비보험 만기가 20일 안으로 온 회원이에요 — D-20 종료 예고, D-7 보장맵 안내, 만기 당일 2차 골든타임 순서로 달력이 할 일을 정합니다.", "D-20 이내"],
             ["만기·재검진 안내 예정", expN, 3, "보장·서비스 만기와 재검진이 다가와 안내가 필요한 회원이에요.", "D-30 · D-7 순서"]]],
           ["지금 하면 안 되는 일", [
-            ["검진결과 기다리는 중 — 연락 금지", heldN, 2, "검진 결과 수령 전이라 접촉이 금지된 회원이에요. 결과가 도착하면 하이가 자동으로 풀고 알려드립니다.", "락 · 자동 해제"]]]].map(([grp, items]) => (
+            ["검진결과 기다리는 중 — 연락 금지", blockedN, 2, "검진 결과 수령 전이라 접촉이 금지된 회원이에요(D1 단계 전원 — 검진대비보험 가입 여부와 무관). 접촉 락 " + heldN + "명(코호트 " + (cview ? cview.held.length : 0) + " + 내 배정 큐 " + lockQN + ") + 결과 대기(보험 미가입) " + preResN + "명이고, 결과가 도착하면 하이가 자동으로 풀고 알려드립니다. 아래 로스터 머리의 「접촉 락(코호트)」는 배정 큐를 빼고 세므로 이 숫자보다 " + lockQN + "명 적어요.", "접촉 락 " + (cview ? cview.held.length : 0) + "(코호트) + 배정 큐 " + lockQN + " · 결과 대기 " + preResN]]]].map(([grp, items]) => (
             <div key={grp} className="hmnumgrp">
               <div className="hmnumgt">{grp === "지금 할 일" ? "🔔" : grp === "달력이 정한 일" ? "📅" : "🔒"} {grp}</div>
               <div className="hmnum">
@@ -1717,7 +1806,7 @@ function HealthMateSection({ onGo }) {
           ))}
         </div>
         <div style={{ marginTop: 10, background: "rgba(255,255,255,.13)", borderRadius: 10, padding: "8px 12px", fontSize: 12, lineHeight: 1.6 }}>
-          <b>🤖 하이 브리핑</b> — {heldN ? `검진결과 대기 ${heldN}건은 지금 하면 안 되는 일이에요(자동 해제 예정). ` : ""}{stallN ? `정체 ${stallN}명이 오늘의 우선순위예요 — ⑨ 현황판에서 멈춘 단계를 확인하세요. ` : ""}{needN ? `터치 시점이 온 회원 ${needN}명이 있어요.` : "예정 터치가 없어요 — 고객 현황을 둘러보세요."}
+          <b>🤖 하이 브리핑</b> — {blockedN ? `연락 금지 ${blockedN}건(접촉 락 ${cview ? cview.held.length : 0} + 배정 큐 ${lockQN} + 결과 대기 ${preResN})은 지금 하면 안 되는 일이에요(자동 해제 예정). ` : ""}{stallN ? `정체 ${stallN}명이 오늘의 우선순위예요 — ⑨ 현황판에서 멈춘 단계를 확인하세요. ` : ""}{needN ? `터치 시점이 온 회원 ${needN}명이 있어요.` : "예정 터치가 없어요 — 고객 현황을 둘러보세요."}
         </div>
       </div>
       <div className="hmtabs">

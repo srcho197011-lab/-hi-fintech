@@ -1,20 +1,22 @@
 {
-  "date": "2026-10-05",
+  "date": "2026-10-06",
   "sample": 572,
-  "open": 109,
+  "open": 78,
   "byCode": {
     "lock": 188,
-    "consent": 258,
-    "open": 109,
+    "consent": 168,
+    "pre": 121,
+    "open": 78,
     "hold": 17
   },
   "steps": {
     "blocked:lock": 188,
-    "blocked:consent": 258,
-    "requested→connected→ended→summarized": 70,
+    "blocked:consent": 168,
+    "blocked:pre": 121,
+    "requested→connected→ended→summarized": 50,
     "blocked:hold": 17,
-    "requested→expired": 14,
-    "requested→declined": 25
+    "requested→expired": 10,
+    "requested→declined": 18
   },
   "bad": 0,
   "ruleBad": 0,
@@ -28,6 +30,6 @@
   "shareDocs": 4,
   "t3cov": 0,
   "drift": 0,
-  "seconds": 24.9,
+  "seconds": 26,
   "pass": true
 }

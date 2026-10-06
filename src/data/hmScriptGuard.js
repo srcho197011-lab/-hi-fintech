@@ -121,6 +121,11 @@ function _hmSentences(text) {
 }
 function hmSpecCheck(card) {
   const s = card && card.script; if (!s) return { ok: false, why: ["script 없음"] };
+  /* 통화가 없는 카드(결과 대기 D1 — 형 지시 2026-10-06): flowBlocks가 비는 것이 **정상**이고,
+     그때 프로가 실제로 읽는 분량은 sideBlocks(prep)다. 아래 v2 하한 단언(유도 질문 ≥2 등)은
+     통화가 있는 카드에만 걸고, 통화 없는 카드에는 반대 방향 단언을 따로 넣는다 —
+     「빼야 할 것이 빠졌는지」와 「빼면 안 될 것이 빠졌는지」를 둘 다 러너가 보게 한다. */
+  const hasCall = !(s.callScript === false);
   /* 단계 축 파트(형 지시 2026-10-05) — alert(응급 선행)·prep(D1 사전 준비)·stage(단계 과업)가 본대본에 든다.
      fcExtra(D2 보조·접이식)는 본대본 문장 수에는 넣지 않되 아래에서 같은 문장 길이 한도로 검사한다. */
   const blocks = [...(s.alert || []), ...(s.prep || []), s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), ...(s.stage || []), s.ask, ...(s.careplan || []), ...(s.maturity || []), ...(s.fcTail || []), ...(s.branches || []), s.closing].filter(Boolean);
@@ -133,12 +138,26 @@ function hmSpecCheck(card) {
   const flowBlocks = [...(s.alert || []), s.opening, ...(s.firstconnect || []), ...(s.talk || []), ...(s.core || []), ...(s.seed || []), ...(s.stage || []), s.ask, ...(s.careplan || []), ...(s.maturity || []), ...(s.fcTail || []), s.closing].filter(Boolean);                            /* v2: 생활 대화·씨앗 포함 전화 3~5분(§4-S3) */
   const sideBlocks = [...(s.prep || []), ...(s.fcExtra || [])].filter(Boolean);   /* 문장 수 밖 · 길이·금지어는 동일 검사 */
   if (s.v2) {
-    const qN = (s.talk || []).reduce((a, b2) => a + (String(b2.text).match(/\?/g) || []).length, 0);
-    if (qN < 2) why.push("유도 질문 부족(" + qN + "<2)");
-    if ((s.seed || []).length > 2) why.push("씨앗 과다(" + s.seed.length + ">2)");
-    /* §0-P 선발화 — 니즈 수치 표현이 응대(질문 응답) 밖에서 등장하면 차단 */
+    /* ⚠️ 아래 두 줄은 상한이 아니라 **하한 단언**이다 — 통화 대본이 없는 카드에 그대로 걸면
+       spec.ok=false → publishable=false로 결과 대기 전건이 발행 불가가 된다(형 지시 2026-10-06) */
+    if (hasCall) {
+      const qN = (s.talk || []).reduce((a, b2) => a + (String(b2.text).match(/\?/g) || []).length, 0);
+      if (qN < 2) why.push("유도 질문 부족(" + qN + "<2)");
+      if ((s.seed || []).length > 2) why.push("씨앗 과다(" + s.seed.length + ">2)");
+    }
+    /* §0-P 선발화 — 니즈 수치 표현이 응대(질문 응답) 밖에서 등장하면 차단(통화 유무와 무관) */
     const nonBranch = flowBlocks.concat(sideBlocks);
     for (const b2 of nonBranch) if (HM_NEEDS_UTTER.test(b2.text)) why.push("선발화 감지 [" + b2.id + "]");
+  }
+  /* 통화 없는 카드 — 반대 방향 단언(형 지시 2026-10-06). 사전 준비가 있어야 하고, 통화 파트는 0이어야 한다.
+     이 단언이 없으면 다음에 누가 폴백을 되살려도 전 러너가 PASS한다(현 가드는 부재를 FAIL시키지 않는다) */
+  if (!hasCall) {
+    if (!(s.prep || []).length) why.push("통화 없는 카드에 사전 준비 블록 없음");
+    const callParts = [["본론", s.core], ["제안", s.ask ? [s.ask] : []], ["씨앗", s.seed], ["케어 플랜", s.careplan],
+      ["응대", s.branches], ["생활 대화", s.talk], ["첫 연결", s.firstconnect], ["만기 국면", s.maturity], ["자발 대화", s.voluntary]];
+    for (const [ko, arr] of callParts) if ((arr || []).length) why.push("통화 없는 카드에 " + ko + " 조립(" + arr.length + ")");
+    if (s.opening) why.push("통화 없는 카드에 오프닝 조립 [" + s.opening.id + "]");
+    if (s.closing) why.push("통화 없는 카드에 클로징 조립 [" + s.closing.id + "]");
   }
   /* 요율 재산정 단서 게이트 — 단서 없는 인하 확정 통보를 막는다(형 지시 2026-10-05) */
   for (const b2 of flowBlocks.concat(sideBlocks)) {
@@ -176,7 +195,9 @@ function hmSpecCheck(card) {
         이제 readSec = 본대본(flowBlocks) 한 통화를 처음부터 끝까지 읽는 시간이고,
         readSecAll = 접이식·응대까지 전부 읽었을 때의 상한이다. 둘을 함께 적어 둔다. */
   const sumLen = (l) => l.map((b) => b.text.length).reduce((a, b2) => a + b2, 0);
-  const flowChars = sumLen(s.v2 ? flowBlocks : blocks);
+  /* 통화가 없는 카드는 flowBlocks가 비어 readSec이 0이 된다 — 그때 프로가 읽는 분량은 prep다.
+     「계측 집합을 바꿔 0으로 보이게」가 되지 않도록 sideBlocks로 갈아 센다(형 지시 2026-10-06) */
+  const flowChars = sumLen(s.v2 ? (flowBlocks.length ? flowBlocks : sideBlocks) : blocks);
   const allChars = sumLen(blocks.concat(s.fcExtra || []));   /* blocks에 prep·branches가 이미 들어 있다 — 중복 합산 금지 */
   return { ok: why.length === 0, why, sentences: nSent,
     readSec: Math.round(flowChars / 5), readSecAll: Math.round(allChars / 5) };

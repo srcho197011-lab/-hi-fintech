@@ -13,6 +13,16 @@ CHANGED=$(git diff --cached --name-only)
 if echo "$CHANGED" | grep -q "^src/"; then
   python scripts/check_data_catalog.py || { echo "[GATE] 미등재 저장 키 — dataCatalog.js 등재 후 커밋"; exit 1; }
 fi
+# == 애블레이션 마커 금칙(2026-10-06 · 적대적 리뷰 실증) ==
+# 리뷰 중 「되돌려 보기」 실증으로 심은 REVERT-TEST 마커가 index.html/preview.html(추적 파일이고
+# push 즉시 배포된다)에 들어간 채 커밋 창에 걸리면, 스냅샷·fixtures는 기능이 적용됐다고 말하는데
+# 번들은 기능이 꺼진 상태로 배포된다. 마커 문자열이 고정돼 있으니 한 줄로 영구히 막는다.
+# 훅 자신의 소스에도 이 문자열이 들어 있으므로(주석·패턴) 훅 디렉터리는 스캔에서 뺀다 —
+# 빼지 않으면 이 게이트를 담은 커밋 자체가 막혀 영구 자기 함정이 된다(2026-10-06 실측).
+# 지워지는 줄이 아니라 **추가되는 줄**만 본다.
+if git diff --cached -U0 -- src index.html fixtures scripts ':(exclude)scripts/githooks/*'    | grep '^+' | grep -q "REVERT-TEST"; then
+  echo "[GATE] 스테이지에 애블레이션 마커가 있습니다 - 되돌려 보기 흔적을 지우고 다시 커밋하세요"; exit 1
+fi
 NEED=0
 WATCH=$(python scripts/gen_nav_inventory.py --list-watch 2>/dev/null)
 for f in $WATCH src/data/navRouting.js src/data/navInventory.js scripts/gen_nav_corpus.py scripts/run_nav_regression.mjs; do
@@ -54,7 +64,8 @@ fi  # NEED(내비 게이트) 끝
 # 카드 판정·대본 감시 파일이 스테이지에 있으면: 조립 전건·금지어·규격·골든셋·A5 회귀. 실패 = 커밋 차단.
 HM_NEED=0
 for f in src/data/hmScriptBlocks.js src/data/hmScriptGuard.js src/data/handoffCard.js src/data/coachAgent.js \
-         src/data/riskGrade.js src/data/interventionMap.js src/data/clinicalBands.js src/data/checkupEngine.js \n         src/data/handoffResult.js src/data/needsEngine.js \
+         src/data/riskGrade.js src/data/interventionMap.js src/data/clinicalBands.js src/data/checkupEngine.js \
+         src/data/handoffResult.js src/data/needsEngine.js src/data/memberContext.js \
          src/data/pilotCohort.js src/data/healthMateCohort.js src/utils/demoAuth.js \
          scripts/run_handoff_harness.mjs fixtures/handoff_cards_sample_v1.json; do
   if echo "$CHANGED" | grep -qxF "$f"; then HM_NEED=1; fi
@@ -68,6 +79,21 @@ if [ $HM_NEED -eq 1 ]; then
   node scripts/run_handoff_harness.mjs || { echo "[GATE] 스크립트 하네스 실패 — 커밋 차단(그 날 지시서 미발행 규약)"; exit 1; }
   git add scripts/handoff_harness_snapshot.json src/data/hmHarnessSnapshot.js 2>/dev/null || true
   echo "[GATE] 지시서 하네스 통과 — 스냅샷 자동 스테이지 완료"
+fi
+
+# == 일일 로스터 게이트(2026-10-06 · 적대적 리뷰 실증) ==
+# 지시 ①(D1 제외·D2 등급무관 포함)·④⑤(D2 우선 쿼터)가 전부 src/data/dailyRoster.js 한 파일에
+# 들어갔는데, 그 파일은 **어떤 게이트의 감시목록에도 없었다**. 그리고 로스터 불변식을 실제로
+# 검사하는 유일한 러너(run_handoff_batch)는 아무것도 자동 실행하지 않았다(package.json·CI 부재).
+# 즉 dailyRoster.js만 고친 커밋은 게이트를 한 개도 통과하지 않았다 - 그 구멍을 닫는다.
+if echo "$CHANGED" | grep -qE "^(src/data/dailyRoster\.js|scripts/run_handoff_batch\.mjs)$"; then
+  echo "[GATE] 일일 로스터 감시 파일 변경 - 배치 러너 실행(쿼터·단계 필터·등급 - 포함 불변식)"
+  if ! curl -s -o /dev/null --max-time 2 http://127.0.0.1:5601/preview.html; then
+    (python -m http.server 5601 --bind 127.0.0.1 >/dev/null 2>&1 &)
+    sleep 2
+  fi
+  node scripts/run_handoff_batch.mjs || { echo "[GATE] 배치 러너 실패 - 커밋 차단(로스터 불변식)"; exit 1; }
+  git add scripts/handoff_batch_report.json src/data/hmOpsSnapshot.js fixtures/handoff_roster_sample_v1.json 2>/dev/null || true
 fi
 
 # ══ 제공 DB 무결성 게이트(리뉴얼 R5 · §0-V3) — 사전 밖 필드·건강 상태 값·등급 유입 차단 ══

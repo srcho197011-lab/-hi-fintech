@@ -61,16 +61,36 @@ function vsGateOf(ref, opt) {
   const m = (i == null) ? ref : null;
   const out = { ok: false, why: "", code: "" };
 
-  /* ① 락 — 요청도 접촉이다 */
-  let locked = false, lockWhy = "";
+  /* ① 락 — 요청도 접촉이다.
+     ⚠️ 사이클만 보면 새는 경로가 있었다(형 지시 2026-10-06 실측): 비가입 D1은 _cycleExamOffset이
+        null을 돌려줘 cycleOf가 {t:null}을 반환하므로 T0/T1 검사에 걸리지 않고, 영상 상담 요청
+        버튼이 접촉 금지 구간에서 활성 렌더됐다(i<6000 구간 31.9%가 ok:true). 그래서 접촉 금지
+        기준을 단계로 올린 공통 판정(hmContactBlocked)을 **OR**로 함께 읽는다 — 네 게이트가 한 판정을 본다. */
+  /* ⚠️ 차단 코드를 **락(lock)과 결과 대기(pre)로 갈라 쓴다**(적대적 리뷰 실증 2026-10-06):
+     종전에는 단계 차단도 code "lock"으로 돌려줘, 같은 커밋에서 신설한 ②탭 「검진대비보험
+     미가입·접촉 금지(**락 아님**)」 명단 28행 전건에 「📹 접촉 락」 칩이 붙었다 — 제목이 칩을
+     부정했다. 가입자(검진대비보험 큐·T0/T1)만 lock, 비가입 D1은 pre다. 차단이라는 결과는 같다. */
+  let locked = false, lockWhy = "", lockCode = "lock";
   if (i != null) {
     try { const c = (typeof cycleOf === "function") ? cycleOf(i) : null;
-      if (c && (c.t === "T0" || c.t === "T1")) { locked = true; lockWhy = c.ko; } } catch (e) {}
+      if (c && (c.t === "T0" || c.t === "T1")) { locked = true; lockWhy = c.ko; lockCode = "lock"; } } catch (e) {}
+    try {
+      if (!locked && typeof hmContactBlocked === "function" && hmContactBlocked(i)) {
+        locked = true;
+        const st = (typeof cohortStageOf === "function") ? cohortStageOf(i) : null;
+        if (st && st.enrolled) { lockCode = "lock"; lockWhy = "검진결과 수령 전 — 접촉 금지(락)"; }
+        else { lockCode = "pre"; lockWhy = "검진 결과 대기 — 접촉 금지(락 아님)"; }
+      }
+    } catch (e) {}
   } else if (m) {
     try { const lk = (typeof hmLockState === "function") ? hmLockState(m) : null;
-      if (lk && lk.locked) { locked = true; lockWhy = lk.why || "검진결과 수령 전"; } } catch (e) {}
+      if (lk && lk.locked) { locked = true; lockCode = "lock"; lockWhy = lk.reason || "검진결과 수령 전"; } } catch (e) {}
+    /* 상호작용층도 단계 축을 함께 본다 — 큐에 없는 D1 실회원이 영상 요청만 열려 있던 비대칭 수선 */
+    try { if (!locked && typeof hmStageOf === "function") { const st = hmStageOf(m); if (st && st.cur === "D1") { locked = true; lockCode = "pre"; lockWhy = "검진 결과 대기 — 접촉 금지(락 아님)"; } } } catch (e) {}
   }
-  if (locked) { out.code = "lock"; out.why = "접촉 금지 구간이에요(" + lockWhy + ") — 결과가 도착하면 하이가 자동으로 열어 드려요."; return out; }
+  /* ⚠️ 이 함수는 **순수 판정**이다 — 기록하지 않는다. 화면이 카드마다 렌더 때 부르기 때문에
+     여기서 감사 기록을 남기면 보기만 해도 위반 로그가 쌓인다. 기록은 실제 시도(vsRequest)에서 한다. */
+  if (locked) { out.code = lockCode; out.why = "접촉 금지 구간이에요(" + lockWhy + ") — 결과가 도착하면 하이가 자동으로 열어 드려요."; return out; }
 
   /* ② 접촉 보류(G8) — 채널이 늘었다고 접촉 총량이 늘지 않는다 */
   if (i != null) {
@@ -112,7 +132,23 @@ function vsMove(sess, to, meta) {
 /* 요청 — 프로가 할 수 있는 유일한 시작 행위(§0-V7). 게이트를 통과하지 못하면 세션이 생기지 않는다 */
 function vsRequest(ref, opt) {
   const g = vsGateOf(ref, opt);
-  if (!g.ok) { try { hiEvent("video_blocked", { kind: g.code }); } catch (e) {} return { ok: false, why: g.why, code: g.code }; }
+  if (!g.ok) {
+    try { hiEvent("video_blocked", { kind: g.code }); } catch (e) {}
+    /* 접촉 금지 구간에서의 영상 요청 시도는 전화와 같은 접촉 시도다 — 같은 감사 기록에 남긴다
+       (종전에는 video_blocked만 남아 접촉 금지 위반 집계에 들어오지 않았다 · 형 지시 2026-10-06) */
+    /* ⚠️ 첫 인자는 프로 사번이다 — 종전에는 "video"를 넣어 채널 이름이 사번 자리에 들어갔고,
+       집계(hmMyStats)가 `x.code === 사번`으로 비교하므로 **어느 프로의 위반에도 들어가지 않았다**
+       (적대적 리뷰 실증: 「같은 감사 기록에 남긴다」고 적었으나 고친 뒤에도 안 들어갔다).
+       채널은 세 번째 인자로 남긴다. 사번은 세션 또는 호출부(opt.code)에서 가져온다. */
+    if (g.code === "lock" || g.code === "pre") {
+      try {
+        let pc = (opt && opt.code) || null;
+        if (!pc) { try { pc = (typeof hmProSession === "function") ? hmProSession() : null; } catch (e2) { pc = null; } }
+        if (typeof hmLockViolation === "function") hmLockViolation(pc || "", { email: "cohort-" + (typeof ref === "number" ? ref : ((ref && ref.email) || "?")) }, "video");
+      } catch (e) {}
+    }
+    return { ok: false, why: g.why, code: g.code };
+  }
   const sess = { state: "idle", mode: null, trail: [], shared: [], summary: null,
                  declinedCount: Number((opt && opt.declinedCount) || 0) };
   vsMove(sess, "requested", { by: "pro" });

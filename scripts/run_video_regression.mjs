@@ -37,10 +37,26 @@ const res = await p.evaluate((cfg) => {
 
     /* ① 게이트 정합 — 차단 사유가 실제 상태와 일치하는가 */
     const cyc = window.__hifinCycle(i), seg = window.__hifinGSeg(i);
-    const locked = cyc && (cyc.t === "T0" || cyc.t === "T1");
+    /* 접촉 금지는 사이클이 아니라 **단계**가 정한다(형 지시 2026-10-06) — 비가입 D1은 사이클이
+       null이라 T0/T1 검사에 걸리지 않아 영상 요청이 열려 있었다(실측 31.9%가 ok:true).
+       기준을 올린 뒤에는 역방향 단언(「차단 사유가 없는데 막힘」)도 이 축을 함께 읽어야 한다. */
+    /* ⚠️ 단계 축을 **별도 변수**로 뽑는다(적대적 리뷰 실증 2026-10-06 수선) — 종전에는 locked 식에
+       이미 `stage === "D1" || enrolled`가 들어 있어서 그 아래 「접촉 금지 단계인데 요청 가능」 단언이
+       같은 건을 두 번 세는 중복이었고, 누가 locked에서 단계 항을 지우면 **두 단언이 함께 침묵**했다
+       (독립 보증이 아니었다). 이제 stageBlocked만 읽는 단언이 하나 남아 독립적으로 FAIL한다. */
+    const cycLocked = cyc && (cyc.t === "T0" || cyc.t === "T1");
+    const stageBlocked = !!(cyc && (cyc.stage === "D1" || cyc.enrolled));
+    const locked = cycLocked || stageBlocked;
     const held = seg && (seg.segs || []).indexOf("G8") >= 0;
     const hasV1 = window.__hifinConsent("has", "v1", i).has;
-    if (locked && g.ok) out.bad.push({ i, why: "락 구간인데 요청 가능", t: cyc.t });
+    if (locked && g.ok) out.bad.push({ i, why: "락 구간인데 요청 가능", t: cyc.t, stage: cyc.stage });
+    if (stageBlocked && g.ok) out.bad.push({ i, why: "접촉 금지 단계인데 영상 요청 가능", enrolled: cyc.enrolled });
+    /* 차단 코드 정합 — 가입(락)은 lock, 비가입 D1은 pre. 같은 코드로 뭉치면 ②탭 「락 아님」 명단
+       전건에 「📹 접촉 락」 칩이 붙는다(같은 커밋이 신설한 구분을 화면에서 지웠던 결함) */
+    if (!g.ok && stageBlocked && !cycLocked && !held) {
+      const want = cyc.enrolled ? "lock" : "pre";
+      if (g.code !== want && g.code !== "consent" && g.code !== "reask") out.bad.push({ i, why: "차단 코드 불일치", want, got: g.code, enrolled: cyc.enrolled });
+    }
     if (held && g.ok) out.bad.push({ i, why: "접촉 보류인데 요청 가능" });
     if (!hasV1 && g.ok) out.bad.push({ i, why: "미동의인데 요청 가능" });
     if (g.ok && !(cyc && !locked && !held && hasV1)) out.bad.push({ i, why: "게이트 통과 조건 불일치" });

@@ -112,6 +112,12 @@ function hiproAnswer(q, ctx) {
       if (ctx && ctx.card) {
         const a = coachAnswer(ctx.card, q);
         if (a) return R(a.source + ":" + a.id, a.text, ["카드 " + ((typeof _hmProName === "function") ? _hmProName(ctx.card.member) : ctx.card.member.mask)]);
+        /* 카드는 열려 있는데 답할 원천이 없는 경우 — 결과 대기 구간은 통화 대본(응대·오프닝)이
+           조립되지 않는다. 그때 「카드를 연 상태로 물어봐 주세요」는 **사실이 아니다**(카드는 열려
+           있다) — 없는 이유를 말한다(형 지시 2026-10-06). */
+        if (ctx.card.script && ctx.card.script.callScript === false) {
+          return R("card:nocall", "이 회원은 검진 결과를 기다리는 구간이라 통화 대본이 없어요 — 거절·심각 응대도 아직 만들지 않았어요. 오늘 할 일은 카드의 사전 준비뿐이고, 결과가 도착하면 하이가 락을 풀고 D2 골든타임 대본으로 다시 발행해요.", ["card.script.callScript", "HM_STAGE_PLAN.D1"]);
+        }
       }
       return R("card:noctx", "그건 회원 카드를 보면서 답해드릴 수 있어요 — ⓪ 오늘의 지시서에서 카드를 연 상태로 물어봐 주세요.", ["coachAnswer"]);
     }
@@ -328,7 +334,10 @@ function hiproAnswer(q, ctx) {
       /* D2 골든타임·무료 3종·케어 키트(F4) — 원천: FREE3_DEF·HMR_GOLDEN_KEYS·HM_STAGE_GUIDE */
       if (/골든\s*타임/.test(t)) {
         const gk = (typeof HMR_GOLDEN_KEYS !== "undefined") ? HMR_GOLDEN_KEYS.map((g, ix) => (ix + 1) + " " + g.ko).join(" · ") : "";
-        return R("role:golden", "D2 첫 통화(골든타임)에서 전할 다섯 가지 — " + gk + ". 대본의 ⭐ 첫 연결 파트가 이 순서대로 준비돼 있고, 통화 후 「결과 남기기」의 전달 체크 5칸에 누르면 「헬스메이트 운영본부」(관리자 화면)에 집계돼요.", ["HMR_GOLDEN_KEYS", "HM_STAGE_GUIDE.D2"]);
+        /* 한글 수사(「다섯」)는 length로 치환할 수 없다 — 수사 맵을 새로 만들지 말고 문장 틀을 바꾼다.
+           한 문장에 숫자가 두 번 박혀 있어 한쪽만 고치면 하이가 같은 문장 안에서 자기모순한다(형 지시 2026-10-06) */
+        const gn = (typeof HMR_GOLDEN_KEYS !== "undefined") ? HMR_GOLDEN_KEYS.length : 0;
+        return R("role:golden", "D2 첫 통화(골든타임)에서 전할 것 " + gn + "가지 — " + gk + ". 대본의 ⭐ 첫 연결 파트가 이 순서대로 준비돼 있고, 통화 후 「결과 남기기」의 전달 체크 " + gn + "칸에 누르면 「헬스메이트 운영본부」(관리자 화면)에 집계돼요.", ["HMR_GOLDEN_KEYS", "HM_STAGE_GUIDE.D2"]);
       }
       if (/3종|삼종/.test(t) && typeof FREE3_DEF !== "undefined") {
         return R("role:free3", "무료 3종은 ① " + FREE3_DEF.items[0].long + " ② " + FREE3_DEF.items[1].long + " ③ " + FREE3_DEF.items[2].long + " — 셋 다 회원 부담 0원이에요. 회원에게는 대본의 fc-3svc 문장 그대로 전하면 돼요.", ["FREE3_DEF", "fc-3svc"]);
