@@ -21,14 +21,48 @@ function pbPolicyCreate(m, o) {
   o = o || {};
   const pols = pbPolicies(m);
   const dup = pols.find((p) => p.product === o.product && p.status === "active");
-  if (dup) return { ok: true, policy: dup, existed: true };
+  if (dup) {
+    /* 멱등 재사용 경로에도 보장 개시일을 병합한다 — 계약이 이미 있는 기기(= 시연 기기 대부분)에서
+       coverFrom이 비어 있으면 보장 창이 다시 pol.createdAt(그 기기의 벽시계)로 떨어진다. */
+    let ch = false;
+    if (o.coverFrom != null && dup.coverFrom == null) { dup.coverFrom = o.coverFrom; ch = true; }
+    if (o.coverSeed && !dup.coverSeed) { dup.coverSeed = o.coverSeed; ch = true; }
+    /* term 병합은 **검진대비보험 보정 호출에만** 허용한다(2026-10-08 수선).
+       전에는 상품을 가리지 않고 `o.term !== dup.term`이면 무조건 덮어썼다. 간편가입 위자드
+       (Insurance.jsx:726 → insService.policyCreate)는 회원이 고른 term을 그대로 넘기므로,
+       같은 상품으로 다시 완주하면서 보험기간만 다르게 고르면 기존 유효 계약의 term이 조용히
+       바뀌고 monthly·cover는 옛 값으로 남았다 — 실측: 「1년(자동갱신)·월 42,000·암 3천만」
+       계약이 2회차 호출 뒤 「10년·월 42,000·암 3천만」이 됐고 체인 블록은 0건이었다.
+       금액이 걸린 원장이라 감사 기록 없는 변경은 더 둘 수 없다. */
+    if (o.term && dup.term !== o.term && /검진.?대비/.test(String(dup.product || "")) && o.coverSeed) { dup.term = o.term; ch = true; }
+    if (ch) {
+      _pbSavePolicies(m, pols);
+      /* 원장 값이 바뀌었으면 사유를 남긴다 — 생성 경로는 chainAppend로 체결을 기록하는데
+         이 경로는 아무 기록도 남기지 않아 계약 값이 감사 추적 없이 바뀌었다. */
+      if (typeof chainAppend === "function") chainAppend({ type: "policy", token: _pbToken(m), note: `보험계약 보장 창 보정 — ${dup.product} (${dup.id}) · 보장 개시일·보험기간 표기 갱신` });
+    }
+    return { ok: true, policy: dup, existed: true };
+  }
   const pol = { id: o.policyNo || ("POL-" + Date.now().toString(36).toUpperCase()), product: o.product || "치료비 준비 진단",
     monthly: Math.max(0, Math.floor(o.monthly || 0)), cover: o.cover || null, term: o.term || "1년(자동갱신)", pay: o.pay || "wallet",
-    start: _pbYm(), status: "active", createdAt: Date.now() };
+    start: _pbYm(), status: "active", createdAt: Date.now(),
+    /* 보장 개시일 — 보장 창의 1순위 근거(insCheckupWindow basis "policy"). coverSeed: "demo" = 시연 기준일 파생 / "live" = 실계약 */
+    coverFrom: (o.coverFrom != null ? o.coverFrom : null), coverSeed: o.coverSeed || null };
   pols.push(pol); _pbSavePolicies(m, pols);
   if (typeof chainAppend === "function") chainAppend({ type: "policy", token: _pbToken(m), note: `보험계약 체결 — ${pol.product} · 월 ${pol.monthly.toLocaleString()}원 (${pol.id})` });
   pbEnsureBills(m);
   return { ok: true, policy: pol };
+}
+
+/* ── 계약 레코드 부분 수정(원장 단일 쓰기 경로) — 호출자가 localStorage를 직접 만지지 않게 한다 ── */
+function pbPolicyPatch(m, id, o) {
+  const pols = pbPolicies(m);
+  const p = pols.find((x) => x.id === id);
+  if (!p) return { ok: false, reason: "계약을 찾을 수 없습니다" };
+  let ch = false;
+  Object.keys(o || {}).forEach((k) => { if (p[k] !== o[k]) { p[k] = o[k]; ch = true; } });
+  if (ch) _pbSavePolicies(m, pols);
+  return { ok: true, policy: p, changed: ch };
 }
 
 /* ── 청구서 생성 + 상태머신(lazy) — 유효 계약의 시작월~당월 청구서를 보장하고 미납 단계 평가 ── */

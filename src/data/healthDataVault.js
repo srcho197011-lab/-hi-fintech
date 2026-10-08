@@ -446,11 +446,15 @@ function selfEnsureInsSeed(member) {
       cl.forEach((c) => { if (c && /^CERT-JSR\d{4}A$/.test(c.id || "") && !c.insured) { c.insured = { name: member.name }; fix = true; } });
       if (fix) localStorage.setItem("hifin_ins_certs", JSON.stringify(cl));
     } catch (e) {}
+    /* 보장 창 보정(2026-10-06 형 지시) — 아래 v4·v3 조기 반환 **앞에** 둔다.
+       이미 시드가 깔린 기기(hifin_self_ins_v4=1)는 v3 분기에서 return false로 빠지므로,
+       뒤에 두면 그 기기의 검진대비보험 계약에 coverFrom이 영구히 비어 있게 된다(= 벽시계 폴백). */
+    try { if (typeof insCheckupCoverEnsure === "function") insCheckupCoverEnsure(member); } catch (e) {}
     // v4(2026-07-26): 목업 계약을 형 실계약 9건으로 교체(검진·체인·원장은 보존)
     if (!localStorage.getItem("hifin_self_ins_v4")) {
       seedSelfVault(member);
       vaultSaveInsurance(member, SELF_REAL_CONTRACTS, { source: "self-real", channel: "aggregate" });
-      if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" });
+      if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "60일(검진 연동)", coverFrom: (typeof insDemoCoverFrom === "function") ? insDemoCoverFrom() : null, coverSeed: "demo" });
       if (typeof tlSync === "function") tlSync(member);
       localStorage.setItem("hifin_self_ins_v4", "1");
       localStorage.setItem("hifin_self_ins_v3", "1");
@@ -467,7 +471,7 @@ function selfEnsureInsSeed(member) {
     if (!has(/운전자/)) add.push({ insurer: "DB손해보험", product: "운전자보험", kind: "일반", benefit: 10000000, monthly: 9800, years: 5, detail: { diag: 10000000, surgery: 2000000, daily: 30000 } });
     if (add.length) vaultSaveInsurance(member, (v.insurance || []).concat(add), { source: "self-seed", channel: "aggregate" });
     // 검진대비보험 발급 이력(무상 계약) — pbPolicyCreate 멱등
-    if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" });
+    if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "60일(검진 연동)", coverFrom: (typeof insDemoCoverFrom === "function") ? insDemoCoverFrom() : null, coverSeed: "demo" });
     if (typeof tlSync === "function") tlSync(member);   // 원장 제네시스 보장(12,480 이월)
     localStorage.setItem("hifin_self_ins_v3", "1");
     return true;

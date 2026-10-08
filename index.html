@@ -7553,11 +7553,23 @@ function useHira() {
 }
 
 /* ── 검진대비보험 가입증서 화면 — 발급 스냅샷(hifin_ins_certs) 렌더. 예약 완료·치료비 준비 진단 양쪽에서 사용 ── */
-function InsCertModal({ cert, onClose }) {
+function InsCertModal({ cert, onClose, win }) {
   if (!cert) return null;
-  const d0 = new Date(cert.at); const start = new Date(d0); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
-  const end = new Date(start); end.setDate(end.getDate() + 60);   /* 보험기간 60일 — CYCLE_SPEC.expiryDay와 정합(형 확정 2026-09-03) */
-  const fmt = (d) => `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+  /* [2026-10-08 수선] 증서 모달은 **이 증서 자신의 기간**(발급 스냅샷)을 적고, 회원의 현재 보장 창은
+     별 행으로 분리한다. 직전 변경은 win(회원 계약 창)을 1순위로 써서 두 가지를 섞었다 —
+     ① CERT-JSR2024A(검진 2024-12-26)가 「보험기간 2026. 9. 6. ~ 2026. 11. 5.」라고 자기 기간을
+        바꿔 말했고, 같은 카드 본문은 같은 증서를 두고 2024. 12. 27. ~ 2025. 2. 25.라고 적었다.
+     ② 2026-11-20 예약으로 받은 증서에는 그 **검진보다 15일 먼저 끝나는** 보험기간이 적혔다
+        (연계 검진 2026-11-20 / 보험기간 ~2026. 11. 5. — 실측).
+     그래서 산식은 insWindowOf 하나를 쓰되(한 소스는 유지), 창의 **주인**을 증서로 되돌린다. */
+  const certAtMs = (typeof insCertAt === "function" ? insCertAt(cert) : null) || cert.at;
+  const W = ((typeof insWindowOf === "function") && certAtMs != null) ? insWindowOf(certAtMs, "live") : (win || null);
+  if (!W) return null;
+  const dayStr = (ms) => (typeof insDayStr === "function") ? insDayStr(ms) : new Date(ms).toLocaleDateString("ko-KR");
+  const coverDays = Math.round((W.end - W.start) / 86400000);
+  /* 현재 보장 창 — 이 증서의 창과 다를 때만 따로 적는다(같으면 한 줄로 충분하다) */
+  const curW = win || null;
+  const curDiff = !!(curW && curW.start !== W.start);
   const covers = cert.covers && cert.covers.length ? cert.covers : [];
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,.55)", zIndex: 1200, display: "grid", placeItems: "center", padding: 16 }} onClick={onClose}>
@@ -7576,9 +7588,13 @@ function InsCertModal({ cert, onClose }) {
             <tbody>
               {[["계약자·피보험자", cert.insured ? `${cert.insured.name}${cert.insured.rrn ? " · " + cert.insured.rrn : ""}` : "회원 본인"],
                 ["가입 플랜", (cert.plan || "기본형") + " · 무상(보험료 0원)"],
-                ["보험기간", `${fmt(start)} 0시 ~ ${fmt(end)} (60일 · 검진 주기 연동)`],
-                ["연계 검진", `${cert.center}${cert.date ? ` · ${cert.date} ${cert.time || ""}` : ""}`],
-                ["인수사 · 판매", "현대해상(전속 제휴) · 글로벌예방금융(주) 금융위 등록 보험대리점 제2025060038호"]].map(([k, v], i) => (
+                /* 「0시 ~ 0시」로 양쪽 시각을 적는다 — end는 배타적 경계라서 끝 날짜만 적으면
+                   포함으로 읽혀 괄호의 (60일)과 하루 어긋나 보였다. */
+                ["보험기간(이 증서)", `${dayStr(W.start)} 0시 ~ ${dayStr(W.end)} 0시 (${coverDays}일 · 검진 주기 연동)${W.ended ? " · 이미 지난 기간" : ""}`],
+                ["연계 검진", `${cert.center}${cert.date ? ` · ${cert.date} ${cert.time || ""}` : ""}`]].concat(curDiff
+                  ? [["현재 보장(계약)", `${dayStr(curW.start)} ~ ${dayStr(curW.end)} · ${curW.phase}${curW.seed === "demo" ? "(시연 시드)" : ""} — 이 증서의 기간과 다릅니다`]]
+                  : []).concat([
+                ["인수사 · 판매", "현대해상(전속 제휴) · 글로벌예방금융(주) 금융위 등록 보험대리점 제2025060038호"]]).map(([k, v], i) => (
                 <tr key={i} style={{ borderBottom: "1px solid #EEF2F7" }}>
                   <td style={{ padding: "8px 0", color: "#64748B", fontWeight: 700, width: 108, verticalAlign: "top" }}>{k}</td>
                   <td style={{ padding: "8px 0", fontWeight: 600, lineHeight: 1.5 }}>{v}</td>
@@ -7614,7 +7630,7 @@ function InsCertModal({ cert, onClose }) {
           </div>
           {/* 유의사항 */}
           <div style={{ fontSize: 10.8, color: "#94A3B8", lineHeight: 1.6, marginTop: 10 }}>
-            ※ 보장은 가입 다음날 0시부터 시작되며, 개시 전 진단 확정·고의 사고·검진과 무관한 일반 진료비는 보장하지 않습니다. 실제 보장·인수·지급은 보험사 심사에 따르며, 청약철회·해지는 데이터 금고 › 동의 관리 또는 하이에게 요청으로 언제든 가능합니다. 본 증서는 데모 환경의 시연용 증서입니다.
+            ※ 보장은 위 「보험기간(이 증서)」의 개시일 0시부터 시작되며, 개시 전 진단 확정·고의 사고·검진과 무관한 일반 진료비는 보장하지 않습니다. 실제 보장·인수·지급은 보험사 심사에 따르며, 청약철회·해지는 데이터 금고 › 동의 관리 또는 하이에게 요청으로 언제든 가능합니다. 본 증서는 데모 환경의 시연용 증서입니다.
           </div>
         </div>
       </div>
@@ -10866,7 +10882,7 @@ function _insServiceRoute(text, member) {
     /* 보장기간·만기는 insCheckupWindow(증서 날짜) 한 소스 — 하이도 회원 화면·프로 콘솔과 같은 문장을 말한다 */
     const _tl = S.timeline;
     return { bubbles: [{ kind: "card", card: { title: `🩺 검진대비보험 — ${_tl ? _tl.phase : "보장기간 확인 필요"}`, items: [`증서 ${S.policy.id} · 무상(추가 보험료 0원)`,
-      _tl ? `보장기간 ${new Date(_tl.start).toLocaleDateString("ko-KR")}~${new Date(_tl.end).toLocaleDateString("ko-KR")}${_tl.src ? ` · ${_tl.src}` : ""}` : "보장기간 — 증서 날짜를 확인하지 못했어요",
+      _tl ? `보장기간 ${insDayStr(_tl.start)} ~ ${insDayStr(_tl.end)}${_tl.src ? ` · ${_tl.src}` : ""}` : "보장기간 — 증서 날짜를 확인하지 못했어요",
       S.endedNote].filter(Boolean).concat(S.coverage.map(([scen, name, amt]) => `${name} ${amt.toLocaleString()}원 — "${scen}"일 때`)), buttons: (_tl && _tl.phase === "보장 중") ? ["검진보험 청구해줘"] : [] } }], quicks: [] };
   }
   // M2 — 위험 예측·인수 시뮬(상담사)
@@ -11730,8 +11746,21 @@ function InsCheckupInsSection({ onEnroll }) {
      프로 콘솔 ⑨(hmTouchPlan)와 같은 근거다. 만기가 지난 증서는 여기서도 「보장 종료」로 적는다. */
   const TL = ["발급", "보장 시작", "지켜지는 중", "보장 종료"];
   const ended = !!(S.policy && S.ended);
-  const tlIdx = !S.policy || !S.timeline ? -1 : ended ? 3 : S.timeline.phase === "보장 중" ? 2 : 1;
+  /* 「이 계약이 자기 보장 기간을 산 적이 없다」(계약 생성 시각이 창 만기 뒤) — 그 과거 보장은
+     데이터에 없다. 전에는 이 경우에도 타임라인 4단계가 전건 점등되고 「보장 기간에는 이렇게
+     지켜드렸어요」(과거완료)가 떴다(실측: 발급 직후 창이 전부 과거인 계약). 점등 수·시제를
+     이 한 변수에서 가른다 — 발급 1단계만 켜고 사실만 적는다. */
+  const never = !!(S.policy && S.neverActive);
+  /* 점등 수 = **국면**. 「보장 개시 대기」에 ✓를 2단계까지 켜면 같은 카드가 「✓ 보장 시작」과
+     「보장은 2026. 10. 9. 0시부터 시작돼요」를 나란히 적는다(실측: 코호트 000042 발급 직후).
+     아직 시작하지 않은 보장을 시작했다고 적지 않는다 — 개시 전은 발급 1단계까지다. */
+  const tlIdx = !S.policy || !S.timeline ? -1 : never ? 0 : ended ? 3 : S.timeline.phase === "보장 중" ? 2 : 0;
   const active = tlIdx === 2;
+  /* 「보장 개시 대기」는 종료도 보장 중도 아닌 **세 번째 국면**이다(2026-10-08 수선).
+     전에는 히어로가 ended만 보고 두 갈래로 갈라, 배지가 「보장 개시 대기」인 회원에게도
+     히어로는 「지금 지켜지고 있어요」라고 말했다 — 한 카드가 배지·히어로·타임라인·청구 버튼
+     네 가지로 말했다(실측). 아래 문구·배지·버튼이 모두 이 한 변수에서 갈라진다. */
+  const waiting = !!(S.policy && S.timeline && !ended && !active);
   return (
     <div className="card" id="cins-checkup" style={{ border: "1.5px solid #BFD0FF", overflow: "hidden" }}>
       {/* ── 히어로: 한 문장으로 마음에 닿기 ── */}
@@ -11740,16 +11769,20 @@ function InsCheckupInsSection({ onEnroll }) {
         {!S.policy ? (
           <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님, 검진 받으셨죠?<br />그 순간을 위해 <span style={{ color: "#FDE68A" }}>무료 보장</span>이 준비돼 있어요.</div>
         ) : (
-          ended
+          never
+            ? <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님, 이 검진 기록으로는 <span style={{ color: "#FDE68A" }}>보장 창이 이미 지났어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>다음 검진 주기를 잡으시면 같은 보장이 열려요 — 지난 기간에 보장을 받으신 기록은 없어요.</span></div>
+            : ended
             ? <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님의 무료 보장은 <span style={{ color: "#FDE68A" }}>만기가 지났어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>다음 검진 주기를 잡으시면 같은 보장이 다시 시작돼요.</span></div>
-            : <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님은 지금 <span style={{ color: "#FDE68A" }}>지켜지고 있어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>검진에서 무슨 일이 발견돼도 — 치료비 걱정에 치료를 미루는 일은 없게요.</span></div>
+            : waiting
+              ? <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님의 무료 보장이 <span style={{ color: "#FDE68A" }}>준비됐어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>보장은 {insDayStr(S.timeline.start)} 0시부터 시작돼요 — 그때부터는 치료비 걱정에 치료를 미루는 일이 없게요.</span></div>
+              : <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님은 지금 <span style={{ color: "#FDE68A" }}>지켜지고 있어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>검진에서 무슨 일이 발견돼도 — 치료비 걱정에 치료를 미루는 일은 없게요.</span></div>
         )}
-        {S.policy && S.timeline && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.18)", borderRadius: 99, padding: "5px 12px", fontSize: 11.5, fontWeight: 700 }}>{ended ? <AlertTriangle size={13} /> : <Check size={13} />} {active ? "지금 보장되고 있어요" : S.timeline.phase} · {new Date(S.timeline.start).toLocaleDateString("ko-KR")} ~ {new Date(S.timeline.end).toLocaleDateString("ko-KR")}{S.coverSrc ? ` · ${S.coverSrc}` : ""}</div>}
+        {S.policy && S.timeline && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: 6, background: "rgba(255,255,255,.18)", borderRadius: 99, padding: "5px 12px", fontSize: 11.5, fontWeight: 700 }}>{ended ? <AlertTriangle size={13} /> : active ? <Check size={13} /> : <ShieldCheck size={13} />} {active ? "지금 보장되고 있어요" : S.timeline.phase} · {insDayStr(S.timeline.start)} ~ {insDayStr(S.timeline.end)}{active && S.timeline.remainDays != null ? ` · 만기까지 ${S.timeline.remainDays}일` : ""}{waiting ? ` · 개시 ${insDayStr(S.timeline.start)}${S.timeline.startsInDays != null ? ` (개시까지 ${S.timeline.startsInDays}일)` : ""}` : ""}{S.coverSrc ? ` · ${S.coverSrc}` : ""}{S.timeline.seed === "demo" && typeof INS_DEMO !== "undefined" ? <span style={{ background: "rgba(255,255,255,.22)", borderRadius: 99, padding: "1px 7px", fontSize: 10.5, fontWeight: 800 }}>· 시연 기준일 {String(INS_DEMO.asOf).replace(/-/g, ".")}</span> : null}</div>}
       </div>
 
       {!S.policy ? (
         S.hasCheckup ? (<>
-          <p style={{ fontSize: 13.5, color: "#3a4659", lineHeight: 1.7 }}>검진 기록(<b>{S.checkupDate}</b>)이 연결돼 있어요. 버튼 한 번이면 <b>암·뇌졸중·심근경색 진단금과 대부분 질병의 수술비</b>까지 지켜주는 보장이 켜져요 — <b style={{ color: "var(--green)" }}>돈은 한 푼도 들지 않아요.</b></p>
+          <p style={{ fontSize: 13.5, color: "#3a4659", lineHeight: 1.7 }}>검진 기록(<b>{S.checkupDate}</b>)이 연결돼 있어요. 버튼 한 번이면 <b>암·뇌졸중·심근경색 진단금과 대부분 질병의 수술비</b>까지 지켜주는 보장이 준비돼요 — <b style={{ color: "var(--green)" }}>돈은 한 푼도 들지 않아요.</b> 보장은 <b>다음날 0시</b>부터 시작돼요(정확한 개시일은 발급 직후 배지에 적혀요).</p>
           <button className="cbtn pri" style={{ fontSize: 15, padding: "14px" }} onClick={() => setConfirm("issue")}><ShieldCheck size={16} /> 내 무료 보장 켜기 (10초)</button>
         </>) : (<>
           <p style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.7 }}>건강검진을 예약하시면 <b>보험료 0원</b>으로 검진 대비 보장이 함께 준비돼요 — 검진이 곧 보험이 되는 거예요.</p>
@@ -11761,8 +11794,22 @@ function InsCheckupInsSection({ onEnroll }) {
           {TL.map((s, i) => <span key={s} style={{ flex: 1, textAlign: "center", padding: "5px 0", borderRadius: 8, background: i <= tlIdx ? "#DBEAFE" : "#F1F5F9", color: i <= tlIdx ? "#1D4ED8" : "#94A3B8" }}>{i <= tlIdx ? "✓ " : ""}{s}</span>)}
         </div>
         {ended && S.endedNote && <div style={{ margin: "0 0 10px", padding: "11px 13px", background: "#FEF3E2", border: "1px solid #FDE68A", borderRadius: 12, fontSize: 12.5, lineHeight: 1.7, color: "#92400E", fontWeight: 600 }}>{S.endedNote}</div>}
+        {/* 연계 증서로 산출되는 창을 숨기지 않고 한 줄로 밝힌다.
+            ⚠️ 「재가입」·「재개」·「만기 종료」 같은 **계약 행위 어휘를 쓰지 않는다**(2026-10-08 수선) —
+            계약 레코드는 1건뿐이고 증서도 1건뿐이며 바뀐 것은 coverFrom 하나다. 새 청약·새 계약·
+            새 증서·감사 기록이 하나도 없는데 화면이 「재가입으로 2026. 9. 6. 재개」라고 단정했다.
+            또 12-27·02-25는 실측이 아니라 **연계 검진일에 60일 규칙을 적용한 산출값**이므로
+            「(실측 검진 연동)」이 아니라 무엇이 측정이고 무엇이 계산인지 갈라 적는다.
+            라벨은 「연계 검진일」(중립) — 이 블록은 조성래(실측)뿐 아니라 코호트·체험 회원의
+            **합성 검진일**로도 렌더된다. 그 날짜에 「실측」을 붙이면 데이터에 없는 성격을 단정한다. */}
+        {S.timeline && S.timeline.prior && S.timeline.prior.ended && S.timeline.prior.end < S.timeline.start && (
+          <div style={{ margin: "0 0 10px", fontSize: 11.6, color: "var(--muted)", lineHeight: 1.65 }}>
+            연계 증서 {S.timeline.prior.cert ? S.timeline.prior.cert.id : ""}(연계 검진일 {S.timeline.prior.cert && S.timeline.prior.cert.date ? S.timeline.prior.cert.date : "—"})로 산출되는 보장 창은 {insDayStr(S.timeline.prior.start)} ~ {insDayStr(S.timeline.prior.end)} — 이미 지난 기간이에요. 지금 적용되는 창은 계약 보장 개시일 기준 {insDayStr(S.timeline.start)} ~ {insDayStr(S.timeline.end)}{S.timeline.seed === "demo" ? "(시연 시드)" : ""}예요.
+          </div>
+        )}
         {/* ── "만약에…" 시나리오 카드 — 큰 글씨·상황 언어 ── */}
-        <div style={{ fontSize: 13, fontWeight: 800, margin: "2px 0 8px" }}>{ended ? "보장 기간에는 이렇게 지켜드렸어요," : "만약에 이런 일이 생기면요,"}</div>
+        {/* 시제 — 「지켜드렸어요」(과거완료)는 그 보장 기간이 **실제로 이 계약에 적용된 뒤**에만 참이다 */}
+        <div style={{ fontSize: 13, fontWeight: 800, margin: "2px 0 8px" }}>{never ? "이 검진 기록으로 열리는 보장 창은 이미 지난 기간이에요 — 보장 내용은 이랬어요," : ended ? "보장 기간에는 이렇게 지켜드렸어요," : "만약에 이런 일이 생기면요,"}</div>
         <div style={{ display: "grid", gap: 8 }}>
           {S.coverage.map(([scen, name, amt, d]) => (
             <div key={name} style={{ display: "flex", alignItems: "center", gap: 12, border: "1px solid #E3ECFB", background: "#F8FAFF", borderRadius: 12, padding: "12px 14px" }}>
@@ -11782,8 +11829,11 @@ function InsCheckupInsSection({ onEnroll }) {
         </div>
         {S.claims.length > 0 && S.claims.map((c) => <div className="costrow" key={c.id}><span className="cl">청구 {c.id}</span><span className="cv">{/지급완료/.test(c.status) ? `지급 ${won(c.payout)}원 — 지갑에 들어왔어요` : c.status}</span><span className="ca" style={{ color: /지급완료/.test(c.status) ? "var(--green)" : "#B45309" }}>{/지급완료/.test(c.status) ? "완료 ✓" : "진행 중"}</span></div>)}
         {active && <button className="cbtn pri" style={{ marginTop: 4, fontSize: 14.5, padding: "13px" }} onClick={() => { const r = insService.claimSubmit(m, { kind: "검진 연계 정밀검사", fee: 100000 }); if (r.ok) { const rv = insService.claimReview(m, r.claim.id); if (rv.ok) setConfirm({ claim: rv }); else if (typeof toast === "function") toast("🔒 " + rv.reason); } else if (typeof toast === "function") toast("🔒 " + r.reason); }}><Coins size={15} /> 치료비 청구하기 — 서류 없이 바로</button>}
-        {(() => { try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) return null; const c = l[l.length - 1]; return (<>
-          {typeof InsCertModal === "function" && _certView && <InsCertModal cert={c} onClose={() => setCertView(false)} />}
+        {/* 증서 선택도 insCheckupCert와 같은 소유 판정(insured.name)을 쓴다 — 전에는 l[l.length-1]로
+            **필터 없이** 마지막 증서를 집어, 한 브라우저를 여러 회원이 거친 시연 기기에서 다른 회원의
+            증서번호·기관에 내 보장기간이 붙어 설 수 있었다. */}
+        {(() => { try { const c = (typeof insCheckupCert === "function") ? insCheckupCert(m) : null; if (!c) return null; const l = (typeof insCheckupCerts === "function") ? insCheckupCerts(m) : [c]; return (<>
+          {typeof InsCertModal === "function" && _certView && <InsCertModal cert={c} win={S.timeline} onClose={() => setCertView(false)} />}
           <button className="cbtn" style={{ marginTop: 8 }} onClick={() => setCertView(true)}><FileText size={14} /> 내 가입증서 보기 — {c.id} ({l.length}건)</button>
         </>); } catch (e) { return null; } })()}
         <details style={{ fontSize: 12, margin: "10px 0 0" }}><summary style={{ cursor: "pointer", fontWeight: 700, color: "var(--soft)" }}>미리 알려드려요 — 이런 경우는 보장이 어려워요</summary><ul style={{ margin: "6px 0 0", paddingLeft: 18, color: "var(--muted)", lineHeight: 1.7 }}>{S.exclusions.map((x) => <li key={x}>{x}</li>)}</ul></details>
@@ -11793,10 +11843,13 @@ function InsCheckupInsSection({ onEnroll }) {
         <div className="bkov" onClick={() => setConfirm(null)}><div className="bk" style={{ maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
           <div className="bkh"><div className="bt"><ShieldCheck size={16} color="#2563EB" /> 발급 확인</div></div>
           <div className="bkb" style={{ padding: 18 }}>
-            <p style={{ fontSize: 13, lineHeight: 1.7 }}>검진 기록 연동으로 <b>건강검진 대비보험(무상)</b>을 발급할까요? 보장은 <b>내일 0시부터 3개월</b>이고, 증서·계약이 내 지갑 원장과 체인에 기록돼요.</p>
+            {/* 「내일 0시부터 3개월」은 두 군데가 틀렸다 — 보험기간은 INS_COVER_DAYS(60일)이고,
+                개시일은 연계 검진일(없으면 발급일) 다음날 0시다. 발급 직후 배지가 적는 개시일과
+                이 문장이 어긋나면 회원이 방금 읽은 약속과 화면이 다른 말을 한다. */}
+            <p style={{ fontSize: 13, lineHeight: 1.7 }}>검진 기록 연동으로 <b>건강검진 대비보험(무상)</b>을 발급할까요? 보장은 <b>연계 검진일(없으면 발급일) 다음날 0시부터 {typeof INS_COVER_DAYS !== "undefined" ? INS_COVER_DAYS : 60}일</b>이고, 증서·계약이 내 지갑 원장과 체인에 기록돼요. 정확한 보장 개시일은 발급 직후 이 카드의 보장 배지에 적혀요.</p>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <button className="cbtn" style={{ margin: 0 }} onClick={() => setConfirm(null)}>취소</button>
-              <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { const r = insService.issueCheckupIns(m); if (typeof toast === "function") toast(r.ok ? "발급 완료 ✓ — 증서가 온체인에 기록됐어요(보장은 내일 0시 개시)" : "🔒 " + r.reason); setConfirm(null); setTick((t) => t + 1); }}>✅ 발급 확정</button>
+              <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { const r = insService.issueCheckupIns(m); if (typeof toast === "function") toast(r.ok ? `발급 완료 ✓ — 증서가 온체인에 기록됐어요${r.window ? `(보장 개시 ${insDayStr(r.window.start)} 0시)` : ""}` : "🔒 " + r.reason); setConfirm(null); setTick((t) => t + 1); }}>✅ 발급 확정</button>
             </div>
           </div>
         </div></div>)}
@@ -12486,7 +12539,7 @@ function NFTSection({ onGo }) {
      체험 회원 화면에 뜬다(persona_diff가 잡는다). 증서 주인(insured.name)이 이 회원인 것만 읽는다. */
   const _nftBook = (() => { try { const c = (typeof insCheckupCert === "function") ? insCheckupCert(_nftMe) : null; if (!c) return ""; const d = String(c.date || "").replace(/-/g, "."); return [c.center || "", d, c.time || ""].filter(Boolean).join(" · "); } catch (e) { return ""; } })();
   /* 보험증서 SBT — 보장 금액은 치료비 케어 ①과 같은 소스(insService.checkupIns coverage) */
-  const _nftCov = (() => { try { if (!_nftMe || typeof insService === "undefined") return ""; const S = insService.checkupIns(_nftMe); if (!S || !S.coverage) return ""; return S.coverage.slice(0, 3).map(([, nm, amt]) => `${nm} ${Number(amt).toLocaleString()}원`).join(" · ") + (!S.policy ? " · 발급 대기" : S.ended ? ` · 보장 종료(만기 ${new Date(S.timeline.end).toLocaleDateString("ko-KR")})` : " · 검진 연계 자동가입"); } catch (e) { return ""; } })();
+  const _nftCov = (() => { try { if (!_nftMe || typeof insService === "undefined") return ""; const S = insService.checkupIns(_nftMe); if (!S || !S.coverage) return ""; return S.coverage.slice(0, 3).map(([, nm, amt]) => `${nm} ${Number(amt).toLocaleString()}원`).join(" · ") + (!S.policy ? " · 발급 대기" : S.ended ? ` · 보장 종료(만기 ${((ms) => (typeof insDayStr === "function") ? insDayStr(ms) : new Date(ms).toLocaleDateString("ko-KR"))(S.timeline.end)})` : " · 검진 연계 자동가입"); } catch (e) { return ""; } })();
   const _nftMine = (typeof NFT_MINE !== "undefined" ? NFT_MINE : []).map((n) => {
     if (n.type === "리포트 NFT") return Object.assign({}, n, { name: "하이핀 정밀분석 리포트", meta: [_nftCk && `검진일 ${_nftCk}`, _nftR && `생체나이 ${_nftR.bio}세`, _nftR && _nftR.evalLabel && `종합 ${_nftR.evalLabel}`].filter(Boolean).join(" · ") || "검진 결과 연결 후 발행" });
     if (n.type === "건강인증서 SBT") return Object.assign({}, n, { meta: [_nftR && _nftR.evalLabel && `종합 ${_nftR.evalLabel}`, _nftR && _nftR.agingRank != null && `노화등수 ${_nftR.agingRank}등`, _nftR && _nftR.agingSpeed != null && `노화속도 ${_nftR.agingSpeed}배`].filter(Boolean).join(" · ") || "검진 결과 연결 후 발행" });
@@ -22295,7 +22348,10 @@ function HealthMateSection({ onGo }) {
      「첫 연결 대기」 집합이고, 이 KPI는 「만기·재검진 안내 예정(D-30·D-7)」이라 **축이 다르다**.
      만기 축은 matN이 cycleOf T4~T6로 이미 센다. 섞어 두면 같은 화면의 「첫 연결」 숫자가 넷으로
      불고(로스터 D2 카드 · 첫 통화 KPI · ③탭 첫 연결 대기 · 이 KPI 안에 숨은 ready) 비교가 안 된다. */
-  const expN = cards.filter((c) => c.plan.items.some((x) => x.key.indexOf("m") === 0 && x.due && !x.done)).length;
+  /* 키는 만기 **예정** 3행(m30·m7·m1)만 센다 — indexOf("m") === 0은 만기 **경과** 행 "mend"까지
+     함께 집었다. mend는 due가 늘 true라서, 보장이 끝난 회원이 「만기·재검진 안내 예정」에 섞여
+     D-30·D-7 안내 대상 수를 부풀렸다(같은 지표가 두 숫자가 되는 지점). */
+  const expN = cards.filter((c) => c.plan.items.some((x) => /^m(30|7|1)$/.test(x.key) && x.due && !x.done)).length;
   const slaN = hmSignals(code).filter((s) => s.sla <= 4).length + (cview ? cview.ids.filter((i) => { const g = cohortSignalOf(i); return g && g.sla <= 4; }).length : 0);
   /* R3 — 만기 임박(T4·T5): 검진대비보험 만기 D-20 이내 회원(달력 값이 정하는 오늘의 일) */
   const matN = cview ? cview.ids.filter((i) => { try { const cy = cycleOf(i); return cy && (cy.t === "T4" || cy.t === "T5" || cy.t === "T6"); } catch (e) { return false; } }).length : 0;
@@ -25850,7 +25906,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-10-06", ver:"v2.5", ch:[6], feat:"결과 대기 회원 분리·전달 체크 6칸·첫 연결 골든타임 우선 배치", src:"헬스메이트 센터(프로 콘솔) · 헬스메이트 운영본부 · 회원 여정 D1~L8", summary:"검진 결과가 들어오기 전인 회원은 연락 대상 명단에서 빼고 위험 등급과 권장 행동도 붙이지 않도록 해 결과 없이 판정하던 것을 멈췄으며, 등급이 매겨지지 않아 명단에 아예 오르지 못했던 첫 연결 대상 회원을 등급과 무관하게 포함시키고 첫 연결 골든타임을 명단 우선순위 최상위로 올려 프로가 하루에 그 창을 가장 먼저 쓰도록 규칙을 세웠으며, 그 우선순위 때문에 명단 밖으로 밀리는 고위험 회원 수를 화면과 답변에 함께 드러내 대가를 숨기지 않았고, 첫 통화에서 전해야 할 항목에 건강관리 동의를 더해 여섯 가지로 올리면서 전달률을 세는 모든 화면이 한 숫자를 따라가게 했으며 완주의 뜻이 기록 시점에 따라 달라지던 것을 분해해 표기했다", refs:[], status:"반영", hash:"920acf9", auto:true },
+  { date:"2026-10-08", ver:"v2.1", ch:[9], feat:"검진대비보험 보장 창 단일화·청구 심사 진료일 축·보장 가드 재설계", src:"치료비 케어(회원) · 가입증서 · 헬스메이트 센터 터치 계획", summary:"검진대비보험의 보장 기간이 이미 지난 날짜로 표시되던 것을 계약이 보장 개시일을 들고 있게 바꿔 현재 보장 중으로 맞추고 남은 기간을 함께 적게 했으며, 회원이 무료 보장을 켜도 곧바로 만기로 떨어지던 길과 증서가 자기 기간과 다른 기간을 말하던 길을 함께 고쳤고, 보장 기간 밖에 받은 진료까지 청구가 자동 승인되던 심사에 진료일 기준을 세워 개시 전과 만기 후를 모두 거르게 했으며, 화면이 실제로 일어나지 않은 재가입을 말하던 문장을 데이터가 말할 수 있는 범위로 낮추고, 이 규칙들을 지키는 검사가 스스로를 기준으로 삼아 늘 통과하던 허점을 없애 고정된 날짜와 실제 동작으로 검사하도록 다시 지었다", refs:[], status:"반영", hash:"a0ce421", auto:true },
+  { date:"2026-10-06", ver:"v2.5", ch:[6], feat:"결과 대기 회원 분리·전달 체크 6칸·첫 연결 골든타임 우선 배치", src:"헬스메이트 센터(프로 콘솔) · 헬스메이트 운영본부 · 회원 여정 D1~L8", summary:"검진 결과가 들어오기 전인 회원은 연락 대상 명단에서 빼고 위험 등급과 권장 행동도 붙이지 않도록 해 결과 없이 판정하던 것을 멈췄으며, 등급이 매겨지지 않아 명단에 아예 오르지 못했던 첫 연결 대상 회원을 등급과 무관하게 포함시키고 첫 연결 골든타임을 명단 우선순위 최상위로 올려 프로가 하루에 그 창을 가장 먼저 쓰도록 규칙을 세웠으며, 그 우선순위 때문에 명단 밖으로 밀리는 고위험 회원 수를 화면과 답변에 함께 드러내 대가를 숨기지 않았고, 첫 통화에서 전해야 할 항목에 건강관리 동의를 더해 여섯 가지로 올리면서 전달률을 세는 모든 화면이 한 숫자를 따라가게 했으며 완주의 뜻이 기록 시점에 따라 달라지던 것을 분해해 표기했다", refs:[], status:"반영", hash:"e9fb6dc", auto:true },
   { date:"2026-10-06", ver:"v2.4", ch:[6], feat:"단계별 대본 정합·본인 실측 단일원천·운영본부 하이 조회", src:"헬스메이트 센터(프로 콘솔) · 헬스메이트 운영본부 · 나의 건강현황 · 건강검진 · 치료비 케어", summary:"회원 여정 D1~L8 여덟 단계가 모두 같은 통화 대본을 쓰던 것을 단계마다 다른 과업·첫 마디·끝말로 갈라 주고 D2 첫 연결에 무료 3종과 향후 지원 약속에 이어 건강관리 동의까지 한 통화에 들어가게 했으며 접촉 금지 단계인 D1은 결과를 단정하지 않고 재가돌봄 단계는 응급 안내를 상담보다 앞에 두게 했고, 프로가 보는 대본에서는 회원을 이름으로 부를 수 있게 하되 발행 데이터와 외부 제공 자료의 가림은 유지했으며, 본인 계정의 건강 수치가 화면마다 다르게 보이던 원인인 합성 검진값 시드를 없애고 실제 검진 결과지와 건강분석 리포트를 단일 원천으로 삼아 생체나이·장기나이·질병 확률·의료비·보장기간을 한 곳에서 계산하게 하고 근거 없는 등급 표현을 거두었으며, 운영본부에서는 조직 단위를 말하면 그 화면으로 이동해 범위 안 통계를 집계 정의와 함께 답하고 범위 밖·조작·금액·개인식별은 거절하도록 했다", refs:[], status:"반영", hash:"af12be5", auto:true },
   { date:"2026-10-05", ver:"v2.3", ch:[6], feat:"운영본부 시연용 계정 전환 칩", src:"헬스메이트 운영본부", summary:"시연 중 지점장과 본사 화면을 한 번 클릭으로 오갈 수 있도록 신원 띠에 계정 전환 칩을 되살리되 세션 기록 경로를 하나로 묶고 전환을 감사 기록에 남겨 범위 판정이 계정 직책에서 나온다는 원칙을 유지", refs:[], status:"반영", hash:"e6e59f0", auto:true },
   { date:"2026-10-05", ver:"v2.2", ch:[6], feat:"운영자 사번 체계와 직책별 관리 범위", src:"헬스메이트 운영본부", summary:"운영본부에 운영자 사번 인증을 두어 본사 1H·지역단장 2H·지점장 3H로 신원을 가르고 직책만큼만 조직·실적·단계 현황·배치·내보내기가 보이도록 데이터 경로에서 범위를 강제했으며 지점장은 자기 지점만 보이게 하고 시연용 세 계정을 게이트에서 한 번에 고를 수 있게 함", refs:[], status:"반영", hash:"55e96cf", auto:true },
@@ -29973,10 +30030,10 @@ function interventionsFor(grade, groupKey) {
 }
 
 /* 자동 생성 — run_handoff_harness.mjs (P4). 콘솔 하네스 타일이 읽는 최근 통과 스냅샷 — 손대지 말 것 */
-const HM_HARNESS_SNAPSHOT = {"date":"2026-10-06","sample":3000,"cards":2496,"publishable":2496,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
+const HM_HARNESS_SNAPSHOT = {"date":"2026-10-08","sample":3000,"cards":2496,"publishable":2496,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
 
 /* 자동 생성 — run_handoff_batch.mjs (P5). ⑩관제탑이 읽는 배치 스냅샷 — 손대지 말 것(운영 정합 §7-⑥: 관제탑 집계 = 이 스냅샷 = 배치 리포트). */
-const HM_OPS_SNAPSHOT = {"date":"2026-10-06","total":100000,"cards":83578,"publishable":83578,"locked":32855,"byGrade":{"W":54780,"-":19560,"M":2000,"L":20891,"H":2769},"bySido":{"충북":2626,"경북":4393,"서울":15928,"부산":6161,"전북":2479,"제주":1707,"경기":19329,"대전":2604,"충남":3632,"울산":1804,"전남":2825,"강원":2652,"인천":5497,"광주":2407,"대구":4237,"경남":4342,"세종":955},"pros":648,"prosAll":702,"sabunOk":true,"rosterChecked":648,"rosterViol":0,"avgRoster":6.97,"maxRoster":7,"byRosterGrade":{"L":1530,"H":1844,"-":812,"M":331},"byRosterStage":{"D2":2071,"D3":1585,"D4":522,"L6":119,"L5":171,"L7":39,"L8":10},"byRosterCycle":{"T2":1853,"T5":730,"T4":805,"T3":625,"T7":294,"T8":67,"T6":143},"d2Quota":1930,"matQuota":635,"d2GoldenLeft":{"24h이내":1205,"48h이내":552,"창닫힘":96,"창밖":218},"underTargetPros":2,"rosterWin":{"d2":3,"mat":1,"max":7,"target":5},"hCand":2769,"hUnseated":925,"d2OpenCand":2821,"d2OpenSeated":1757,"dashD2Exempt":3138,"slaLessRoster":0,"loadAvg":154.3,"loadRatioMax":1.29,"loadRatioMin":0.91,"loadBySido":[{"sido":"강원","pros":16,"perPro":199.5,"ratio":1.29},{"sido":"세종","pros":6,"perPro":190.7,"ratio":1.24},{"sido":"충북","pros":17,"perPro":184.9,"ratio":1.2},{"sido":"울산","pros":13,"perPro":165.8,"ratio":1.07},{"sido":"인천","pros":41,"perPro":161,"ratio":1.04},{"sido":"부산","pros":46,"perPro":160.8,"ratio":1.04},{"sido":"전남","pros":21,"perPro":159.5,"ratio":1.03},{"sido":"충남","pros":28,"perPro":155.8,"ratio":1.01},{"sido":"경기","pros":149,"perPro":155.5,"ratio":1.01},{"sido":"대전","pros":20,"perPro":155.1,"ratio":1},{"sido":"경북","pros":34,"perPro":153.3,"ratio":0.99},{"sido":"광주","pros":19,"perPro":153.2,"ratio":0.99},{"sido":"경남","pros":34,"perPro":152.7,"ratio":0.99},{"sido":"제주","pros":14,"perPro":144.3,"ratio":0.93},{"sido":"서울","pros":133,"perPro":143.4,"ratio":0.93},{"sido":"대구","pros":35,"perPro":143.3,"ratio":0.93},{"sido":"전북","pros":21,"perPro":140.9,"ratio":0.91}],"seconds":50,"pass":true};
+const HM_OPS_SNAPSHOT = {"date":"2026-10-08","total":100000,"cards":83578,"publishable":83578,"locked":32855,"byGrade":{"W":54780,"-":19560,"M":2000,"L":20891,"H":2769},"bySido":{"충북":2626,"경북":4393,"서울":15928,"부산":6161,"전북":2479,"제주":1707,"경기":19329,"대전":2604,"충남":3632,"울산":1804,"전남":2825,"강원":2652,"인천":5497,"광주":2407,"대구":4237,"경남":4342,"세종":955},"pros":648,"prosAll":702,"sabunOk":true,"rosterChecked":648,"rosterViol":0,"avgRoster":6.97,"maxRoster":7,"byRosterGrade":{"L":1530,"H":1844,"-":812,"M":331},"byRosterStage":{"D2":2073,"D3":1578,"D4":525,"L6":113,"L5":177,"L7":40,"L8":11},"byRosterCycle":{"T2":1862,"T5":728,"T4":808,"T3":611,"T7":297,"T8":68,"T6":143},"d2Quota":1930,"matQuota":635,"d2GoldenLeft":{"24h이내":1205,"48h이내":552,"창닫힘":105,"창밖":211},"underTargetPros":2,"rosterWin":{"d2":3,"mat":1,"max":7,"target":5},"hCand":2769,"hUnseated":925,"d2OpenCand":2821,"d2OpenSeated":1757,"dashD2Exempt":3138,"slaLessRoster":0,"loadAvg":154.3,"loadRatioMax":1.29,"loadRatioMin":0.91,"loadBySido":[{"sido":"강원","pros":16,"perPro":199.5,"ratio":1.29},{"sido":"세종","pros":6,"perPro":190.7,"ratio":1.24},{"sido":"충북","pros":17,"perPro":184.9,"ratio":1.2},{"sido":"울산","pros":13,"perPro":165.8,"ratio":1.07},{"sido":"인천","pros":41,"perPro":161,"ratio":1.04},{"sido":"부산","pros":46,"perPro":160.8,"ratio":1.04},{"sido":"전남","pros":21,"perPro":159.5,"ratio":1.03},{"sido":"충남","pros":28,"perPro":155.8,"ratio":1.01},{"sido":"경기","pros":149,"perPro":155.5,"ratio":1.01},{"sido":"대전","pros":20,"perPro":155.1,"ratio":1},{"sido":"경북","pros":34,"perPro":153.3,"ratio":0.99},{"sido":"광주","pros":19,"perPro":153.2,"ratio":0.99},{"sido":"경남","pros":34,"perPro":152.7,"ratio":0.99},{"sido":"제주","pros":14,"perPro":144.3,"ratio":0.93},{"sido":"서울","pros":133,"perPro":143.4,"ratio":0.93},{"sido":"대구","pros":35,"perPro":143.3,"ratio":0.93},{"sido":"전북","pros":21,"perPro":140.9,"ratio":0.91}],"seconds":61.4,"pass":true};
 const HM_OPS_BRANCHES = [{"sido":"서울","branch":"은평지점","pros":[{"sabun":"8H0001","name":"박성호","code":"8H0001","managed":136,"today":7},{"sabun":"8H0129","name":"손세훈","code":"8H0129","managed":217,"today":7},{"sabun":"8H0130","name":"양지오","code":"8H0130","managed":121,"today":7},{"sabun":"8H0131","name":"전예진","code":"8H0131","managed":126,"today":7}]},{"sido":"서울","branch":"강남지점","pros":[{"sabun":"8H0002","name":"김지원","code":"8H0002","managed":106,"today":7},{"sabun":"8H0003","name":"정태윤","code":"8H0003","managed":175,"today":7},{"sabun":"8H0045","name":"강민서","code":"8H0045","managed":216,"today":7},{"sabun":"8H0046","name":"김지영","code":"8H0046","managed":208,"today":7},{"sabun":"8H0047","name":"손채아","code":"8H0047","managed":100,"today":7},{"sabun":"8H0048","name":"신소은","code":"8H0048","managed":121,"today":7}]},{"sido":"서울","branch":"송파지점","pros":[{"sabun":"8H0004","name":"이수민","code":"8H0004","managed":136,"today":7},{"sabun":"8H0091","name":"정예린","code":"8H0091","managed":128,"today":7},{"sabun":"8H0092","name":"곽선우","code":"8H0092","managed":115,"today":7},{"sabun":"8H0093","name":"조수정","code":"8H0093","managed":125,"today":7},{"sabun":"8H0094","name":"황예빈","code":"8H0094","managed":128,"today":7}]},{"sido":"서울","branch":"강북수유지점","pros":[{"sabun":"8H0005","name":"한서연","code":"8H0005","managed":160,"today":7},{"sabun":"8H0108","name":"서원준","code":"8H0108","managed":147,"today":7},{"sabun":"8H0109","name":"문지훈","code":"8H0109","managed":130,"today":7},{"sabun":"8H0110","name":"장춘자","code":"8H0110","managed":120,"today":7}]},{"sido":"서울","branch":"강서지점","pros":[{"sabun":"8H0006","name":"최민준","code":"8H0006","managed":170,"today":7},{"sabun":"8H0068","name":"박종석","code":"8H0068","managed":111,"today":7},{"sabun":"8H0069","name":"남민준","code":"8H0069","managed":121,"today":7},{"sabun":"8H0070","name":"송세훈","code":"8H0070","managed":137,"today":7}]},{"sido":"경기","branch":"수원지점","pros":[{"sabun":"8H0007","name":"서지우","code":"8H0007","managed":148,"today":7},{"sabun":"8H0327","name":"배민규","code":"8H0327","managed":161,"today":7}]},{"sido":"","branch":"본사(광역)","pros":[{"sabun":"8H0009","name":"오현석","code":"8H0009","managed":0,"today":0}]},{"sido":"서울","branch":"세종로지점","pros":[{"sabun":"8H0011","name":"박시윤","code":"8H0011","managed":120,"today":7},{"sabun":"8H0012","name":"민민준","code":"8H0012","managed":129,"today":7},{"sabun":"8H0013","name":"남유주","code":"8H0013","managed":124,"today":7},{"sabun":"8H0014","name":"장혜정","code":"8H0014","managed":107,"today":7}]},{"sido":"서울","branch":"광화문지점","pros":[{"sabun":"8H0015","name":"주서율","code":"8H0015","managed":129,"today":7},{"sabun":"8H0016","name":"민다연","code":"8H0016","managed":129,"today":7},{"sabun":"8H0017","name":"윤세훈","code":"8H0017","managed":107,"today":7}]},{"sido":"서울","branch":"새문안지점","pros":[{"sabun":"8H0018","name":"남서율","code":"8H0018","managed":110,"today":7},{"sabun":"8H0019","name":"민시온","code":"8H0019","managed":132,"today":7},{"sabun":"8H0020","name":"주지아","code":"8H0020","managed":217,"today":7}]},{"sido":"서울","branch":"중부지점","pros":[{"sabun":"8H0022","name":"구민준","code":"8H0022","managed":216,"today":7},{"sabun":"8H0023","name":"윤수정","code":"8H0023","managed":138,"today":7},{"sabun":"8H0024","name":"신미영","code":"8H0024","managed":367,"today":7}]},{"sido":"서울","branch":"초동지점","pros":[{"sabun":"8H0025","name":"전지운","code":"8H0025","managed":121,"today":7},{"sabun":"8H0026","name":"심하영","code":"8H0026","managed":113,"today":7},{"sabun":"8H0027","name":"장승우","code":"8H0027","managed":108,"today":7}]},{"sido":"서울","branch":"강북TC지점","pros":[{"sabun":"8H0028","name":"성승우","code":"8H0028","managed":118,"today":7},{"sabun":"8H0029","name":"양혜정","code":"8H0029","managed":194,"today":7},{"sabun":"8H0030","name":"우진우","code":"8H0030","managed":137,"today":7}]},{"sido":"서울","branch":"강북드림영업실지점","pros":[{"sabun":"8H0031","name":"신소윤","code":"8H0031","managed":227,"today":7},{"sabun":"8H0032","name":"정병철","code":"8H0032","managed":126,"today":7},{"sabun":"8H0033","name":"노예준","code":"8H0033","managed":123,"today":7}]},{"sido":"서울","branch":"명동TC지점","pros":[{"sabun":"8H0035","name":"우금자","code":"8H0035","managed":209,"today":7},{"sabun":"8H0036","name":"장우성","code":"8H0036","managed":124,"today":7},{"sabun":"8H0037","name":"곽정호","code":"8H0037","managed":120,"today":7}]},{"sido":"서울","branch":"강남제일지점","pros":[{"sabun":"8H0038","name":"구병철","code":"8H0038","managed":127,"today":7},{"sabun":"8H0039","name":"구지아","code":"8H0039","managed":108,"today":7},{"sabun":"8H0040","name":"이세훈","code":"8H0040","managed":208,"today":7}]},{"sido":"서울","branch":"역삼제일지점","pros":[{"sabun":"8H0041","name":"황현우","code":"8H0041","managed":105,"today":7},{"sabun":"8H0042","name":"한유나","code":"8H0042","managed":105,"today":7},{"sabun":"8H0043","name":"차나연","code":"8H0043","managed":192,"today":7},{"sabun":"8H0044","name":"황수빈","code":"8H0044","managed":253,"today":7}]},{"sido":"서울","branch":"역삼지점","pros":[{"sabun":"8H0049","name":"남준수","code":"8H0049","managed":180,"today":7},{"sabun":"8H0050","name":"전소연","code":"8H0050","managed":102,"today":7}]},{"sido":"서울","branch":"답십리지점","pros":[{"sabun":"8H0052","name":"안덕수","code":"8H0052","managed":165,"today":7},{"sabun":"8H0053","name":"정재현","code":"8H0053","managed":263,"today":7},{"sabun":"8H0054","name":"하수아","code":"8H0054","managed":171,"today":7},{"sabun":"8H0055","name":"성지율","code":"8H0055","managed":160,"today":7}]},{"sido":"서울","branch":"왕십리지점","pros":[{"sabun":"8H0056","name":"안정우","code":"8H0056","managed":126,"today":7},{"sabun":"8H0057","name":"곽수아","code":"8H0057","managed":171,"today":7},{"sabun":"8H0058","name":"곽만수","code":"8H0058","managed":258,"today":7}]},{"sido":"서울","branch":"성동지점","pros":[{"sabun":"8H0060","name":"하예린","code":"8H0060","managed":180,"today":7}]},{"sido":"서울","branch":"광진TC지점","pros":[{"sabun":"8H0062","name":"황병국","code":"8H0062","managed":15,"today":5},{"sabun":"8H0063","name":"하선우","code":"8H0063","managed":167,"today":7},{"sabun":"8H0064","name":"성하윤","code":"8H0064","managed":163,"today":7}]},{"sido":"서울","branch":"여의도지점","pros":[{"sabun":"8H0065","name":"성혜정","code":"8H0065","managed":138,"today":7},{"sabun":"8H0066","name":"주정호","code":"8H0066","managed":108,"today":7},{"sabun":"8H0067","name":"노나연","code":"8H0067","managed":116,"today":7}]},{"sido":"서울","branch":"서울지점","pros":[{"sabun":"8H0071","name":"우규민","code":"8H0071","managed":130,"today":7},{"sabun":"8H0072","name":"홍유주","code":"8H0072","managed":105,"today":7},{"sabun":"8H0073","name":"백정숙","code":"8H0073","managed":197,"today":7}]},{"sido":"서울","branch":"서울중앙지점","pros":[{"sabun":"8H0074","name":"고혜정","code":"8H0074","managed":128,"today":7},{"sabun":"8H0075","name":"이시현","code":"8H0075","managed":122,"today":7},{"sabun":"8H0076","name":"정종석","code":"8H0076","managed":113,"today":7},{"sabun":"8H0077","name":"주채아","code":"8H0077","managed":115,"today":7}]},{"sido":"서울","branch":"신여의도지점","pros":[{"sabun":"8H0078","name":"백승현","code":"8H0078","managed":110,"today":7},{"sabun":"8H0079","name":"최영자","code":"8H0079","managed":106,"today":7},{"sabun":"8H0080","name":"정우성","code":"8H0080","managed":121,"today":7},{"sabun":"8H0081","name":"조찬호","code":"8H0081","managed":119,"today":7}]},{"sido":"서울","branch":"강서TC지점","pros":[{"sabun":"8H0082","name":"최서우","code":"8H0082","managed":128,"today":7},{"sabun":"8H0083","name":"전말순","code":"8H0083","managed":132,"today":7},{"sabun":"8H0084","name":"임기훈","code":"8H0084","managed":117,"today":7}]},{"sido":"서울","branch":"강서드림영업실지점","pros":[{"sabun":"8H0085","name":"강정숙","code":"8H0085","managed":114,"today":7},{"sabun":"8H0086","name":"차말순","code":"8H0086","managed":117,"today":7},{"sabun":"8H0087","name":"황선영","code":"8H0087","managed":113,"today":7}]},{"sido":"서울","branch":"잠실중앙지점","pros":[{"sabun":"8H0088","name":"심덕수","code":"8H0088","managed":189,"today":7},{"sabun":"8H0089","name":"구수빈","code":"8H0089","managed":206,"today":7},{"sabun":"8H0090","name":"차세아","code":"8H0090","managed":214,"today":7}]},{"sido":"서울","branch":"잠실타워지점","pros":[{"sabun":"8H0095","name":"곽준우","code":"8H0095","managed":136,"today":7},{"sabun":"8H0097","name":"문지안","code":"8H0097","managed":128,"today":7}]},{"sido":"서울","branch":"잠실스타지점","pros":[{"sabun":"8H0099","name":"황연서","code":"8H0099","managed":129,"today":7},{"sabun":"8H0100","name":"권지영","code":"8H0100","managed":117,"today":7}]},{"sido":"서울","branch":"잠실지점","pros":[{"sabun":"8H0101","name":"하세훈","code":"8H0101","managed":131,"today":7},{"sabun":"8H0102","name":"정소은","code":"8H0102","managed":201,"today":7},{"sabun":"8H0103","name":"남지운","code":"8H0103","managed":113,"today":7}]},{"sido":"서울","branch":"강남드림영업실지점","pros":[{"sabun":"8H0104","name":"하소윤","code":"8H0104","managed":116,"today":7},{"sabun":"8H0105","name":"백유진","code":"8H0105","managed":122,"today":7},{"sabun":"8H0106","name":"장혜정","code":"8H0106","managed":119,"today":7},{"sabun":"8H0107","name":"성수빈","code":"8H0107","managed":127,"today":7}]},{"sido":"서울","branch":"도봉지점","pros":[{"sabun":"8H0111","name":"심지운","code":"8H0111","managed":152,"today":7},{"sabun":"8H0112","name":"김달수","code":"8H0112","managed":139,"today":7},{"sabun":"8H0113","name":"박우진","code":"8H0113","managed":190,"today":7}]},{"sido":"서울","branch":"북부지점","pros":[{"sabun":"8H0114","name":"조태오","code":"8H0114","managed":161,"today":7},{"sabun":"8H0115","name":"유재민","code":"8H0115","managed":136,"today":7},{"sabun":"8H0116","name":"유혜원","code":"8H0116","managed":216,"today":7}]},{"sido":"서울","branch":"북서울TC지점","pros":[{"sabun":"8H0117","name":"윤민준","code":"8H0117","managed":157,"today":7},{"sabun":"8H0118","name":"권서우","code":"8H0118","managed":125,"today":7},{"sabun":"8H0119","name":"신승우","code":"8H0119","managed":209,"today":7}]},{"sido":"서울","branch":"영등포지점","pros":[{"sabun":"8H0120","name":"정지안","code":"8H0120","managed":171,"today":7},{"sabun":"8H0121","name":"구정호","code":"8H0121","managed":222,"today":7},{"sabun":"8H0122","name":"정선영","code":"8H0122","managed":134,"today":7}]},{"sido":"서울","branch":"신도림지점","pros":[{"sabun":"8H0123","name":"강서진","code":"8H0123","managed":168,"today":7},{"sabun":"8H0124","name":"장준혁","code":"8H0124","managed":223,"today":7},{"sabun":"8H0125","name":"윤정희","code":"8H0125","managed":124,"today":7}]},{"sido":"서울","branch":"구로지점","pros":[{"sabun":"8H0126","name":"민말순","code":"8H0126","managed":157,"today":7},{"sabun":"8H0127","name":"서가은","code":"8H0127","managed":124,"today":7},{"sabun":"8H0128","name":"성이준","code":"8H0128","managed":134,"today":7}]},{"sido":"서울","branch":"은평중앙지점","pros":[{"sabun":"8H0132","name":"민예서","code":"8H0132","managed":121,"today":7},{"sabun":"8H0133","name":"고가은","code":"8H0133","managed":121,"today":7},{"sabun":"8H0134","name":"이동현","code":"8H0134","managed":100,"today":7}]},{"sido":"서울","branch":"불광지점","pros":[{"sabun":"8H0135","name":"송소민","code":"8H0135","managed":116,"today":7},{"sabun":"8H0136","name":"전하영","code":"8H0136","managed":104,"today":7},{"sabun":"8H0137","name":"하순자","code":"8H0137","managed":103,"today":7}]},{"sido":"서울","branch":"은평TC지점","pros":[{"sabun":"8H0138","name":"고주원","code":"8H0138","managed":111,"today":7},{"sabun":"8H0139","name":"서현정","code":"8H0139","managed":102,"today":7},{"sabun":"8H0140","name":"정태오","code":"8H0140","managed":91,"today":7},{"sabun":"8H0141","name":"한라온","code":"8H0141","managed":110,"today":7}]},{"sido":"서울","branch":"은평제일지점","pros":[{"sabun":"8H0142","name":"송아린","code":"8H0142","managed":118,"today":7},{"sabun":"8H0143","name":"백서아","code":"8H0143","managed":115,"today":7},{"sabun":"8H0144","name":"안정숙","code":"8H0144","managed":107,"today":7}]},{"sido":"인천","branch":"인천지점","pros":[{"sabun":"8H0145","name":"남라온","code":"8H0145","managed":135,"today":7},{"sabun":"8H0146","name":"한시우","code":"8H0146","managed":147,"today":7},{"sabun":"8H0147","name":"정다은","code":"8H0147","managed":209,"today":7}]},{"sido":"인천","branch":"새인천지점","pros":[{"sabun":"8H0148","name":"구시아","code":"8H0148","managed":131,"today":7},{"sabun":"8H0149","name":"강수현","code":"8H0149","managed":117,"today":7},{"sabun":"8H0150","name":"민예나","code":"8H0150","managed":222,"today":7}]},{"sido":"인천","branch":"송도지점","pros":[{"sabun":"8H0151","name":"구동현","code":"8H0151","managed":123,"today":7},{"sabun":"8H0152","name":"고지오","code":"8H0152","managed":120,"today":7},{"sabun":"8H0153","name":"남예서","code":"8H0153","managed":118,"today":7}]},{"sido":"인천","branch":"구월지점","pros":[{"sabun":"8H0154","name":"홍은채","code":"8H0154","managed":253,"today":7},{"sabun":"8H0156","name":"우이안","code":"8H0156","managed":123,"today":7}]},{"sido":"인천","branch":"인천미래지점","pros":[{"sabun":"8H0157","name":"조민서","code":"8H0157","managed":209,"today":7},{"sabun":"8H0158","name":"전찬호","code":"8H0158","managed":136,"today":7},{"sabun":"8H0159","name":"강하준","code":"8H0159","managed":235,"today":7}]},{"sido":"인천","branch":"남동지점","pros":[{"sabun":"8H0160","name":"조영숙","code":"8H0160","managed":298,"today":7},{"sabun":"8H0161","name":"정병철","code":"8H0161","managed":139,"today":7},{"sabun":"8H0162","name":"박서현","code":"8H0162","managed":124,"today":7}]},{"sido":"인천","branch":"인천TC지점","pros":[{"sabun":"8H0163","name":"고민재","code":"8H0163","managed":105,"today":7},{"sabun":"8H0164","name":"윤다은","code":"8H0164","managed":126,"today":7},{"sabun":"8H0165","name":"차지오","code":"8H0165","managed":224,"today":7}]},{"sido":"인천","branch":"인천중앙지점","pros":[{"sabun":"8H0166","name":"정서아","code":"8H0166","managed":147,"today":7},{"sabun":"8H0167","name":"최주원","code":"8H0167","managed":147,"today":7},{"sabun":"8H0168","name":"오현서","code":"8H0168","managed":142,"today":7}]},{"sido":"인천","branch":"경인드림영업실지점","pros":[{"sabun":"8H0169","name":"김영수","code":"8H0169","managed":296,"today":7},{"sabun":"8H0170","name":"허지훈","code":"8H0170","managed":227,"today":7},{"sabun":"8H0171","name":"곽병국","code":"8H0171","managed":129,"today":7}]},{"sido":"인천","branch":"청라지점","pros":[{"sabun":"8H0172","name":"고금자","code":"8H0172","managed":242,"today":7},{"sabun":"8H0173","name":"임재윤","code":"8H0173","managed":210,"today":7},{"sabun":"8H0174","name":"백은주","code":"8H0174","managed":123,"today":7}]},{"sido":"인천","branch":"백운지점","pros":[{"sabun":"8H0175","name":"노우진","code":"8H0175","managed":161,"today":7},{"sabun":"8H0176","name":"한명숙","code":"8H0176","managed":127,"today":7},{"sabun":"8H0177","name":"오지영","code":"8H0177","managed":127,"today":7}]},{"sido":"인천","branch":"경인지점","pros":[{"sabun":"8H0178","name":"이아린","code":"8H0178","managed":161,"today":7},{"sabun":"8H0179","name":"박민지","code":"8H0179","managed":106,"today":7},{"sabun":"8H0180","name":"하서윤","code":"8H0180","managed":104,"today":7}]},{"sido":"인천","branch":"부평TC지점","pros":[{"sabun":"8H0181","name":"조다연","code":"8H0181","managed":228,"today":7},{"sabun":"8H0182","name":"안채린","code":"8H0182","managed":115,"today":7},{"sabun":"8H0183","name":"손형준","code":"8H0183","managed":115,"today":7}]},{"sido":"인천","branch":"부평지점","pros":[{"sabun":"8H0184","name":"장태윤","code":"8H0184","managed":155,"today":7},{"sabun":"8H0185","name":"구동현","code":"8H0185","managed":127,"today":7},{"sabun":"8H0186","name":"김소윤","code":"8H0186","managed":116,"today":7}]},{"sido":"경기","branch":"평촌지점","pros":[{"sabun":"8H0187","name":"하소민","code":"8H0187","managed":129,"today":7},{"sabun":"8H0188","name":"양은주","code":"8H0188","managed":132,"today":7},{"sabun":"8H0189","name":"고나윤","code":"8H0189","managed":146,"today":7}]},{"sido":"경기","branch":"동안지점","pros":[{"sabun":"8H0190","name":"강도경","code":"8H0190","managed":139,"today":7},{"sabun":"8H0191","name":"안이준","code":"8H0191","managed":190,"today":7}]},{"sido":"경기","branch":"안양미래지점","pros":[{"sabun":"8H0192","name":"유춘자","code":"8H0192","managed":135,"today":7},{"sabun":"8H0193","name":"고재윤","code":"8H0193","managed":126,"today":7}]},{"sido":"경기","branch":"안양TC지점","pros":[{"sabun":"8H0194","name":"최덕수","code":"8H0194","managed":148,"today":7},{"sabun":"8H0195","name":"전지율","code":"8H0195","managed":133,"today":7},{"sabun":"8H0196","name":"주도윤","code":"8H0196","managed":143,"today":7}]},{"sido":"경기","branch":"동안TC지점","pros":[{"sabun":"8H0197","name":"심소연","code":"8H0197","managed":111,"today":7},{"sabun":"8H0198","name":"한예나","code":"8H0198","managed":105,"today":7},{"sabun":"8H0199","name":"서소율","code":"8H0199","managed":121,"today":7}]},{"sido":"경기","branch":"용인현대지점","pros":[{"sabun":"8H0200","name":"권상철","code":"8H0200","managed":128,"today":7},{"sabun":"8H0201","name":"차유나","code":"8H0201","managed":144,"today":7},{"sabun":"8H0202","name":"서승현","code":"8H0202","managed":122,"today":7}]},{"sido":"경기","branch":"용인지점","pros":[{"sabun":"8H0203","name":"민미영","code":"8H0203","managed":135,"today":7},{"sabun":"8H0204","name":"배말순","code":"8H0204","managed":225,"today":7},{"sabun":"8H0205","name":"배유나","code":"8H0205","managed":137,"today":7}]},{"sido":"경기","branch":"기흥지점","pros":[{"sabun":"8H0206","name":"성미영","code":"8H0206","managed":143,"today":7}]},{"sido":"경기","branch":"용인중앙지점","pros":[{"sabun":"8H0208","name":"하정우","code":"8H0208","managed":244,"today":7},{"sabun":"8H0209","name":"구세아","code":"8H0209","managed":142,"today":7},{"sabun":"8H0210","name":"고병국","code":"8H0210","managed":127,"today":7}]},{"sido":"경기","branch":"성남지점","pros":[{"sabun":"8H0211","name":"고서우","code":"8H0211","managed":164,"today":7},{"sabun":"8H0212","name":"김지호","code":"8H0212","managed":153,"today":7}]},{"sido":"경기","branch":"분당지점","pros":[{"sabun":"8H0213","name":"한광호","code":"8H0213","managed":156,"today":7},{"sabun":"8H0214","name":"주우진","code":"8H0214","managed":134,"today":7},{"sabun":"8H0215","name":"성진우","code":"8H0215","managed":154,"today":7}]},{"sido":"경기","branch":"성남제일지점","pros":[{"sabun":"8H0217","name":"최시온","code":"8H0217","managed":168,"today":7}]},{"sido":"경기","branch":"판교TC지점","pros":[{"sabun":"8H0218","name":"고상현","code":"8H0218","managed":132,"today":7},{"sabun":"8H0219","name":"우하람","code":"8H0219","managed":148,"today":7}]},{"sido":"경기","branch":"서현TC지점","pros":[{"sabun":"8H0220","name":"임영숙","code":"8H0220","managed":134,"today":7},{"sabun":"8H0221","name":"서재현","code":"8H0221","managed":144,"today":7},{"sabun":"8H0222","name":"윤재현","code":"8H0222","managed":140,"today":7}]},{"sido":"경기","branch":"성남드림영업실지점","pros":[{"sabun":"8H0223","name":"한시아","code":"8H0223","managed":172,"today":7},{"sabun":"8H0224","name":"최윤아","code":"8H0224","managed":142,"today":7}]},{"sido":"경기","branch":"경기광주지점","pros":[{"sabun":"8H0225","name":"권소율","code":"8H0225","managed":204,"today":7},{"sabun":"8H0226","name":"차하영","code":"8H0226","managed":125,"today":7},{"sabun":"8H0227","name":"오서아","code":"8H0227","managed":144,"today":7}]},{"sido":"경기","branch":"여주지점","pros":[{"sabun":"8H0228","name":"박서율","code":"8H0228","managed":179,"today":7},{"sabun":"8H0229","name":"오예빈","code":"8H0229","managed":146,"today":7},{"sabun":"8H0230","name":"심채아","code":"8H0230","managed":189,"today":7}]},{"sido":"경기","branch":"이천지점","pros":[{"sabun":"8H0231","name":"송금자","code":"8H0231","managed":194,"today":7},{"sabun":"8H0232","name":"문지훈","code":"8H0232","managed":179,"today":7}]},{"sido":"경기","branch":"이천중앙지점","pros":[{"sabun":"8H0233","name":"백시윤","code":"8H0233","managed":176,"today":7},{"sabun":"8H0234","name":"한병철","code":"8H0234","managed":184,"today":7}]},{"sido":"경기","branch":"시흥지점","pros":[{"sabun":"8H0235","name":"한채은","code":"8H0235","managed":231,"today":7},{"sabun":"8H0236","name":"임서진","code":"8H0236","managed":221,"today":7}]},{"sido":"경기","branch":"소사지점","pros":[{"sabun":"8H0237","name":"곽현정","code":"8H0237","managed":179,"today":7},{"sabun":"8H0238","name":"배도현","code":"8H0238","managed":119,"today":7},{"sabun":"8H0239","name":"우이안","code":"8H0239","managed":133,"today":7}]},{"sido":"경기","branch":"신중동지점","pros":[{"sabun":"8H0240","name":"최가은","code":"8H0240","managed":163,"today":7},{"sabun":"8H0241","name":"성상철","code":"8H0241","managed":128,"today":7},{"sabun":"8H0242","name":"성민재","code":"8H0242","managed":117,"today":7}]},{"sido":"경기","branch":"부천지점","pros":[{"sabun":"8H0243","name":"고덕순","code":"8H0243","managed":145,"today":7}]},{"sido":"경기","branch":"부천중앙지점","pros":[{"sabun":"8H0245","name":"권현정","code":"8H0245","managed":119,"today":7},{"sabun":"8H0246","name":"민형준","code":"8H0246","managed":118,"today":7},{"sabun":"8H0247","name":"곽승현","code":"8H0247","managed":163,"today":7}]},{"sido":"경기","branch":"부천TC지점","pros":[{"sabun":"8H0248","name":"서선우","code":"8H0248","managed":122,"today":7},{"sabun":"8H0249","name":"권연서","code":"8H0249","managed":137,"today":7}]},{"sido":"경기","branch":"김포지점","pros":[{"sabun":"8H0251","name":"손영숙","code":"8H0251","managed":178,"today":7},{"sabun":"8H0252","name":"정영수","code":"8H0252","managed":128,"today":7},{"sabun":"8H0253","name":"신준서","code":"8H0253","managed":156,"today":7}]},{"sido":"경기","branch":"의정부지점","pros":[{"sabun":"8H0254","name":"배미영","code":"8H0254","managed":153,"today":7},{"sabun":"8H0255","name":"노정호","code":"8H0255","managed":136,"today":7}]},{"sido":"경기","branch":"경기북부지점","pros":[{"sabun":"8H0256","name":"안리아","code":"8H0256","managed":132,"today":7},{"sabun":"8H0257","name":"임채원","code":"8H0257","managed":135,"today":7},{"sabun":"8H0258","name":"오서윤","code":"8H0258","managed":117,"today":7}]},{"sido":"경기","branch":"의정부TC지점","pros":[{"sabun":"8H0259","name":"배옥순","code":"8H0259","managed":141,"today":7},{"sabun":"8H0260","name":"심소연","code":"8H0260","managed":124,"today":7},{"sabun":"8H0261","name":"민성민","code":"8H0261","managed":140,"today":7}]},{"sido":"경기","branch":"포천양주지점","pros":[{"sabun":"8H0262","name":"민유나","code":"8H0262","managed":148,"today":7},{"sabun":"8H0263","name":"구정희","code":"8H0263","managed":114,"today":7},{"sabun":"8H0264","name":"윤지오","code":"8H0264","managed":128,"today":7}]},{"sido":"경기","branch":"옥정지점","pros":[{"sabun":"8H0265","name":"전지훈","code":"8H0265","managed":157,"today":7},{"sabun":"8H0266","name":"배성민","code":"8H0266","managed":108,"today":7},{"sabun":"8H0267","name":"노유나","code":"8H0267","managed":111,"today":7}]},{"sido":"경기","branch":"일산중앙지점","pros":[{"sabun":"8H0268","name":"유지원","code":"8H0268","managed":138,"today":7},{"sabun":"8H0269","name":"손소은","code":"8H0269","managed":143,"today":7}]},{"sido":"경기","branch":"일산제일지점","pros":[{"sabun":"8H0270","name":"강준수","code":"8H0270","managed":120,"today":7},{"sabun":"8H0271","name":"강소율","code":"8H0271","managed":127,"today":7}]},{"sido":"경기","branch":"일산대화지점","pros":[{"sabun":"8H0272","name":"정정숙","code":"8H0272","managed":156,"today":7},{"sabun":"8H0273","name":"허예은","code":"8H0273","managed":125,"today":7}]},{"sido":"경기","branch":"일산TC지점","pros":[{"sabun":"8H0275","name":"이지원","code":"8H0275","managed":153,"today":7},{"sabun":"8H0276","name":"남예린","code":"8H0276","managed":153,"today":7},{"sabun":"8H0277","name":"심하린","code":"8H0277","managed":145,"today":7}]},{"sido":"경기","branch":"일산미래TC지점","pros":[{"sabun":"8H0278","name":"이승현","code":"8H0278","managed":149,"today":7},{"sabun":"8H0279","name":"전수현","code":"8H0279","managed":194,"today":7}]},{"sido":"경기","branch":"북부드림영업실지점","pros":[{"sabun":"8H0280","name":"노상수","code":"8H0280","managed":136,"today":7},{"sabun":"8H0281","name":"송병국","code":"8H0281","managed":154,"today":7},{"sabun":"8H0282","name":"이호준","code":"8H0282","managed":159,"today":7}]},{"sido":"경기","branch":"운정지점","pros":[{"sabun":"8H0283","name":"민하린","code":"8H0283","managed":157,"today":7},{"sabun":"8H0284","name":"손민규","code":"8H0284","managed":145,"today":7},{"sabun":"8H0285","name":"하말순","code":"8H0285","managed":152,"today":7}]},{"sido":"경기","branch":"파주운정TC지점","pros":[{"sabun":"8H0286","name":"송찬호","code":"8H0286","managed":155,"today":7},{"sabun":"8H0287","name":"안상철","code":"8H0287","managed":165,"today":7}]},{"sido":"경기","branch":"안성지점","pros":[{"sabun":"8H0288","name":"오혜원","code":"8H0288","managed":223,"today":7},{"sabun":"8H0289","name":"차준우","code":"8H0289","managed":188,"today":7},{"sabun":"8H0290","name":"곽유주","code":"8H0290","managed":190,"today":7}]},{"sido":"경기","branch":"안성중앙지점","pros":[{"sabun":"8H0292","name":"주유진","code":"8H0292","managed":192,"today":7}]},{"sido":"경기","branch":"송탄지점","pros":[{"sabun":"8H0293","name":"허민규","code":"8H0293","managed":190,"today":7},{"sabun":"8H0294","name":"윤유나","code":"8H0294","managed":134,"today":7},{"sabun":"8H0295","name":"양다연","code":"8H0295","managed":159,"today":7}]},{"sido":"경기","branch":"서평택지점","pros":[{"sabun":"8H0297","name":"박영자","code":"8H0297","managed":160,"today":7}]},{"sido":"경기","branch":"평택지점","pros":[{"sabun":"8H0298","name":"강예준","code":"8H0298","managed":153,"today":7},{"sabun":"8H0299","name":"남민재","code":"8H0299","managed":127,"today":7}]},{"sido":"경기","branch":"중앙TC지점","pros":[{"sabun":"8H0300","name":"권달수","code":"8H0300","managed":180,"today":7},{"sabun":"8H0301","name":"권다연","code":"8H0301","managed":144,"today":7},{"sabun":"8H0302","name":"홍하린","code":"8H0302","managed":116,"today":7}]},{"sido":"경기","branch":"광명지점","pros":[{"sabun":"8H0303","name":"백민준","code":"8H0303","managed":226,"today":7},{"sabun":"8H0304","name":"곽지수","code":"8H0304","managed":191,"today":7}]},{"sido":"경기","branch":"안산지점","pros":[{"sabun":"8H0305","name":"노덕순","code":"8H0305","managed":224,"today":7},{"sabun":"8H0306","name":"고예나","code":"8H0306","managed":154,"today":7}]},{"sido":"경기","branch":"고잔지점","pros":[{"sabun":"8H0307","name":"배은주","code":"8H0307","managed":167,"today":7},{"sabun":"8H0308","name":"장수아","code":"8H0308","managed":153,"today":7}]},{"sido":"경기","branch":"단원지점","pros":[{"sabun":"8H0309","name":"홍리아","code":"8H0309","managed":145,"today":7},{"sabun":"8H0310","name":"허준서","code":"8H0310","managed":174,"today":7},{"sabun":"8H0311","name":"구다은","code":"8H0311","managed":142,"today":7}]},{"sido":"경기","branch":"안산제일지점","pros":[{"sabun":"8H0312","name":"남우성","code":"8H0312","managed":138,"today":7},{"sabun":"8H0313","name":"민지오","code":"8H0313","managed":170,"today":7},{"sabun":"8H0314","name":"신도윤","code":"8H0314","managed":171,"today":7}]},{"sido":"경기","branch":"안산중앙지점","pros":[{"sabun":"8H0315","name":"차시현","code":"8H0315","managed":142,"today":7}]},{"sido":"경기","branch":"경인TC지점","pros":[{"sabun":"8H0317","name":"정현우","code":"8H0317","managed":112,"today":7},{"sabun":"8H0318","name":"심봉주","code":"8H0318","managed":124,"today":7}]},{"sido":"경기","branch":"안산TC지점","pros":[{"sabun":"8H0319","name":"남시온","code":"8H0319","managed":128,"today":7},{"sabun":"8H0320","name":"임지유","code":"8H0320","managed":133,"today":7},{"sabun":"8H0321","name":"주형준","code":"8H0321","managed":138,"today":7}]},{"sido":"경기","branch":"수원중앙지점","pros":[{"sabun":"8H0322","name":"전재현","code":"8H0322","managed":155,"today":7},{"sabun":"8H0323","name":"유지유","code":"8H0323","managed":188,"today":7}]},{"sido":"경기","branch":"수원미래지점","pros":[{"sabun":"8H0324","name":"권현정","code":"8H0324","managed":150,"today":7},{"sabun":"8H0325","name":"양원준","code":"8H0325","managed":152,"today":7}]},{"sido":"경기","branch":"경기TC지점","pros":[{"sabun":"8H0328","name":"성나연","code":"8H0328","managed":151,"today":7},{"sabun":"8H0329","name":"안도경","code":"8H0329","managed":167,"today":7}]},{"sido":"경기","branch":"경기드림영업실지점","pros":[{"sabun":"8H0330","name":"장유나","code":"8H0330","managed":150,"today":7},{"sabun":"8H0331","name":"남채원","code":"8H0331","managed":177,"today":7}]},{"sido":"경기","branch":"오산지점","pros":[{"sabun":"8H0332","name":"남수현","code":"8H0332","managed":237,"today":7},{"sabun":"8H0333","name":"김정호","code":"8H0333","managed":206,"today":7}]},{"sido":"경기","branch":"남양주지점","pros":[{"sabun":"8H0334","name":"홍수빈","code":"8H0334","managed":143,"today":7},{"sabun":"8H0335","name":"조하은","code":"8H0335","managed":152,"today":7}]},{"sido":"경기","branch":"호평지점","pros":[{"sabun":"8H0336","name":"조이안","code":"8H0336","managed":144,"today":7},{"sabun":"8H0337","name":"송지수","code":"8H0337","managed":153,"today":7},{"sabun":"8H0338","name":"권지호","code":"8H0338","managed":150,"today":7}]},{"sido":"경기","branch":"구리지점","pros":[{"sabun":"8H0339","name":"문소은","code":"8H0339","managed":130,"today":7},{"sabun":"8H0341","name":"유다은","code":"8H0341","managed":164,"today":7}]},{"sido":"경기","branch":"하남미사지점","pros":[{"sabun":"8H0342","name":"심재현","code":"8H0342","managed":241,"today":7},{"sabun":"8H0343","name":"전하린","code":"8H0343","managed":223,"today":7}]},{"sido":"경기","branch":"동탄TC지점","pros":[{"sabun":"8H0344","name":"조지영","code":"8H0344","managed":448,"today":7}]},{"sido":"강원","branch":"속초지점","pros":[{"sabun":"8H0346","name":"임재현","code":"8H0346","managed":188,"today":7},{"sabun":"8H0347","name":"구리아","code":"8H0347","managed":203,"today":7}]},{"sido":"강원","branch":"강릉지점","pros":[{"sabun":"8H0348","name":"배지유","code":"8H0348","managed":140,"today":7},{"sabun":"8H0349","name":"배연서","code":"8H0349","managed":182,"today":7},{"sabun":"8H0350","name":"홍소은","code":"8H0350","managed":103,"today":7}]},{"sido":"강원","branch":"동해지점","pros":[{"sabun":"8H0352","name":"송종배","code":"8H0352","managed":177,"today":7},{"sabun":"8H0353","name":"한정숙","code":"8H0353","managed":174,"today":7}]},{"sido":"강원","branch":"삼척지점","pros":[{"sabun":"8H0355","name":"황달수","code":"8H0355","managed":412,"today":7}]},{"sido":"강원","branch":"북원지점","pros":[{"sabun":"8H0356","name":"고도윤","code":"8H0356","managed":231,"today":7},{"sabun":"8H0357","name":"홍하람","code":"8H0357","managed":210,"today":7}]},{"sido":"강원","branch":"원주TC지점","pros":[{"sabun":"8H0358","name":"차하윤","code":"8H0358","managed":292,"today":7},{"sabun":"8H0359","name":"하지원","code":"8H0359","managed":216,"today":7}]},{"sido":"강원","branch":"춘천지점","pros":[{"sabun":"8H0362","name":"전금자","code":"8H0362","managed":217,"today":7},{"sabun":"8H0363","name":"장은호","code":"8H0363","managed":171,"today":7},{"sabun":"8H0364","name":"우윤아","code":"8H0364","managed":131,"today":7}]},{"sido":"강원","branch":"호반지점","pros":[{"sabun":"8H0365","name":"강하영","code":"8H0365","managed":145,"today":7}]},{"sido":"대전","branch":"대전혁신지점","pros":[{"sabun":"8H0367","name":"임민준","code":"8H0367","managed":110,"today":7},{"sabun":"8H0369","name":"노민지","code":"8H0369","managed":130,"today":7}]},{"sido":"대전","branch":"선화지점","pros":[{"sabun":"8H0370","name":"김다연","code":"8H0370","managed":128,"today":7},{"sabun":"8H0371","name":"한지원","code":"8H0371","managed":188,"today":7}]},{"sido":"대전","branch":"대전동부지점","pros":[{"sabun":"8H0373","name":"정아린","code":"8H0373","managed":186,"today":7},{"sabun":"8H0374","name":"신우진","code":"8H0374","managed":138,"today":7}]},{"sido":"대전","branch":"둔산지점","pros":[{"sabun":"8H0376","name":"홍성현","code":"8H0376","managed":137,"today":7},{"sabun":"8H0377","name":"정춘자","code":"8H0377","managed":139,"today":7},{"sabun":"8H0378","name":"정지호","code":"8H0378","managed":125,"today":7}]},{"sido":"대전","branch":"대전TC지점","pros":[{"sabun":"8H0379","name":"하지훈","code":"8H0379","managed":192,"today":7},{"sabun":"8H0380","name":"허예린","code":"8H0380","managed":123,"today":7},{"sabun":"8H0381","name":"백윤서","code":"8H0381","managed":185,"today":7}]},{"sido":"대전","branch":"둔산미래지점","pros":[{"sabun":"8H0382","name":"권준혁","code":"8H0382","managed":126,"today":7},{"sabun":"8H0383","name":"전지안","code":"8H0383","managed":199,"today":7}]},{"sido":"대전","branch":"충청TC지점","pros":[{"sabun":"8H0384","name":"정태오","code":"8H0384","managed":131,"today":7},{"sabun":"8H0385","name":"성지우","code":"8H0385","managed":273,"today":7},{"sabun":"8H0386","name":"차라온","code":"8H0386","managed":157,"today":7}]},{"sido":"대전","branch":"충청드림영업실지점","pros":[{"sabun":"8H0387","name":"차상철","code":"8H0387","managed":214,"today":7},{"sabun":"8H0388","name":"허서연","code":"8H0388","managed":104,"today":7},{"sabun":"8H0389","name":"백복희","code":"8H0389","managed":116,"today":7}]},{"sido":"세종","branch":"세종행복지점","pros":[{"sabun":"8H0390","name":"민은주","code":"8H0390","managed":127,"today":7},{"sabun":"8H0391","name":"임예서","code":"8H0391","managed":217,"today":7},{"sabun":"8H0392","name":"심수정","code":"8H0392","managed":257,"today":7}]},{"sido":"세종","branch":"세종TC지점","pros":[{"sabun":"8H0393","name":"홍정우","code":"8H0393","managed":127,"today":7},{"sabun":"8H0394","name":"배유주","code":"8H0394","managed":329,"today":7},{"sabun":"8H0395","name":"김정희","code":"8H0395","managed":87,"today":7}]},{"sido":"충남","branch":"천안지점","pros":[{"sabun":"8H0396","name":"윤세아","code":"8H0396","managed":117,"today":7},{"sabun":"8H0397","name":"백시온","code":"8H0397","managed":128,"today":7}]},{"sido":"충남","branch":"천안중앙지점","pros":[{"sabun":"8H0398","name":"최세아","code":"8H0398","managed":198,"today":7},{"sabun":"8H0399","name":"우소율","code":"8H0399","managed":134,"today":7}]},{"sido":"충남","branch":"천안TC지점","pros":[{"sabun":"8H0400","name":"차하은","code":"8H0400","managed":126,"today":7},{"sabun":"8H0401","name":"강도윤","code":"8H0401","managed":114,"today":7}]},{"sido":"충남","branch":"천안신화지점","pros":[{"sabun":"8H0402","name":"정소윤","code":"8H0402","managed":102,"today":7},{"sabun":"8H0403","name":"구민서","code":"8H0403","managed":110,"today":7}]},{"sido":"충남","branch":"새천안TC지점","pros":[{"sabun":"8H0404","name":"신서현","code":"8H0404","managed":105,"today":7},{"sabun":"8H0405","name":"민은호","code":"8H0405","managed":137,"today":7}]},{"sido":"충남","branch":"중부TC지점","pros":[{"sabun":"8H0406","name":"홍예나","code":"8H0406","managed":132,"today":7},{"sabun":"8H0407","name":"송수빈","code":"8H0407","managed":137,"today":7}]},{"sido":"충남","branch":"중부드림영업실지점","pros":[{"sabun":"8H0408","name":"임재윤","code":"8H0408","managed":116,"today":7},{"sabun":"8H0409","name":"차소민","code":"8H0409","managed":124,"today":7}]},{"sido":"충남","branch":"보령지점","pros":[{"sabun":"8H0411","name":"성덕순","code":"8H0411","managed":356,"today":7}]},{"sido":"충남","branch":"홍성지점","pros":[{"sabun":"8H0412","name":"최정호","code":"8H0412","managed":251,"today":7},{"sabun":"8H0413","name":"우수정","code":"8H0413","managed":181,"today":7}]},{"sido":"충남","branch":"내포지점","pros":[{"sabun":"8H0414","name":"안호준","code":"8H0414","managed":195,"today":7}]},{"sido":"충남","branch":"서산현대지점","pros":[{"sabun":"8H0416","name":"성채은","code":"8H0416","managed":204,"today":7},{"sabun":"8H0417","name":"배하린","code":"8H0417","managed":202,"today":7}]},{"sido":"충남","branch":"서산TC지점","pros":[{"sabun":"8H0418","name":"한달수","code":"8H0418","managed":139,"today":7},{"sabun":"8H0419","name":"백상현","code":"8H0419","managed":144,"today":7}]},{"sido":"충남","branch":"당진지점","pros":[{"sabun":"8H0420","name":"김서진","code":"8H0420","managed":129,"today":7},{"sabun":"8H0421","name":"박현준","code":"8H0421","managed":153,"today":7}]},{"sido":"충남","branch":"당진TC지점","pros":[{"sabun":"8H0422","name":"박유진","code":"8H0422","managed":168,"today":7},{"sabun":"8H0423","name":"안유진","code":"8H0423","managed":134,"today":7}]},{"sido":"충남","branch":"논산지점","pros":[{"sabun":"8H0424","name":"민은주","code":"8H0424","managed":181,"today":7},{"sabun":"8H0425","name":"임윤아","code":"8H0425","managed":146,"today":7}]},{"sido":"충북","branch":"퍼스티지점","pros":[{"sabun":"8H0427","name":"손서아","code":"8H0427","managed":142,"today":7},{"sabun":"8H0428","name":"손성현","code":"8H0428","managed":171,"today":7}]},{"sido":"충북","branch":"서원지점","pros":[{"sabun":"8H0429","name":"이말순","code":"8H0429","managed":165,"today":7},{"sabun":"8H0430","name":"차호준","code":"8H0430","managed":162,"today":7}]},{"sido":"충북","branch":"청주지점","pros":[{"sabun":"8H0431","name":"문수빈","code":"8H0431","managed":137,"today":7},{"sabun":"8H0432","name":"손예진","code":"8H0432","managed":203,"today":7},{"sabun":"8H0433","name":"안지율","code":"8H0433","managed":271,"today":7}]},{"sido":"충북","branch":"충청미래지점","pros":[{"sabun":"8H0434","name":"안유진","code":"8H0434","managed":164,"today":7},{"sabun":"8H0435","name":"민명숙","code":"8H0435","managed":148,"today":7}]},{"sido":"충북","branch":"청주TC지점","pros":[{"sabun":"8H0437","name":"황정숙","code":"8H0437","managed":147,"today":7}]},{"sido":"충북","branch":"충주지점","pros":[{"sabun":"8H0438","name":"윤예진","code":"8H0438","managed":414,"today":7}]},{"sido":"충북","branch":"옥천지점","pros":[{"sabun":"8H0440","name":"노복희","code":"8H0440","managed":253,"today":7},{"sabun":"8H0441","name":"남하율","code":"8H0441","managed":195,"today":7},{"sabun":"8H0442","name":"한만수","code":"8H0442","managed":108,"today":7}]},{"sido":"충북","branch":"제천지점","pros":[{"sabun":"8H0443","name":"조형준","code":"8H0443","managed":227,"today":7},{"sabun":"8H0444","name":"손아린","code":"8H0444","managed":124,"today":7},{"sabun":"8H0445","name":"유지훈","code":"8H0445","managed":112,"today":7}]},{"sido":"광주","branch":"광주지점","pros":[{"sabun":"8H0446","name":"황시아","code":"8H0446","managed":222,"today":7},{"sabun":"8H0447","name":"최만수","code":"8H0447","managed":193,"today":7}]},{"sido":"광주","branch":"광주미래지점","pros":[{"sabun":"8H0449","name":"심형준","code":"8H0449","managed":145,"today":7}]},{"sido":"광주","branch":"광주직할지점","pros":[{"sabun":"8H0450","name":"이나윤","code":"8H0450","managed":149,"today":7},{"sabun":"8H0451","name":"고주원","code":"8H0451","managed":149,"today":7}]},{"sido":"광주","branch":"신광주지점","pros":[{"sabun":"8H0452","name":"안다은","code":"8H0452","managed":182,"today":7},{"sabun":"8H0453","name":"송승현","code":"8H0453","managed":141,"today":7}]},{"sido":"광주","branch":"광주TC지점","pros":[{"sabun":"8H0454","name":"조다연","code":"8H0454","managed":182,"today":7},{"sabun":"8H0455","name":"문나윤","code":"8H0455","managed":191,"today":7}]},{"sido":"광주","branch":"광주제일지점","pros":[{"sabun":"8H0456","name":"고주원","code":"8H0456","managed":147,"today":7},{"sabun":"8H0457","name":"오서아","code":"8H0457","managed":143,"today":7}]},{"sido":"광주","branch":"새광주지점","pros":[{"sabun":"8H0458","name":"양유준","code":"8H0458","managed":130,"today":7}]},{"sido":"광주","branch":"상무중앙지점","pros":[{"sabun":"8H0460","name":"배예은","code":"8H0460","managed":118,"today":7},{"sabun":"8H0461","name":"홍서진","code":"8H0461","managed":179,"today":7}]},{"sido":"광주","branch":"상무제일지점","pros":[{"sabun":"8H0462","name":"최아린","code":"8H0462","managed":114,"today":7}]},{"sido":"광주","branch":"동광주TC지점","pros":[{"sabun":"8H0464","name":"손유찬","code":"8H0464","managed":109,"today":7},{"sabun":"8H0465","name":"윤지원","code":"8H0465","managed":107,"today":7}]},{"sido":"광주","branch":"호남드림영업실지점","pros":[{"sabun":"8H0466","name":"신혜정","code":"8H0466","managed":187,"today":7},{"sabun":"8H0467","name":"강예서","code":"8H0467","managed":123,"today":7}]},{"sido":"전남","branch":"순천지점","pros":[{"sabun":"8H0468","name":"권서진","code":"8H0468","managed":239,"today":7},{"sabun":"8H0469","name":"송소민","code":"8H0469","managed":173,"today":7}]},{"sido":"전남","branch":"호남TC지점","pros":[{"sabun":"8H0470","name":"조소윤","code":"8H0470","managed":180,"today":7},{"sabun":"8H0471","name":"구소율","code":"8H0471","managed":219,"today":7}]},{"sido":"전남","branch":"여수지점","pros":[{"sabun":"8H0472","name":"허예나","code":"8H0472","managed":237,"today":7},{"sabun":"8H0473","name":"민하린","code":"8H0473","managed":159,"today":7},{"sabun":"8H0474","name":"민수빈","code":"8H0474","managed":153,"today":7}]},{"sido":"전남","branch":"여수제일지점","pros":[{"sabun":"8H0475","name":"민지호","code":"8H0475","managed":190,"today":7}]},{"sido":"전남","branch":"광양지점","pros":[{"sabun":"8H0477","name":"고다은","code":"8H0477","managed":213,"today":7},{"sabun":"8H0478","name":"노준우","code":"8H0478","managed":195,"today":7}]},{"sido":"전남","branch":"전남지점","pros":[{"sabun":"8H0479","name":"차혜정","code":"8H0479","managed":124,"today":7},{"sabun":"8H0480","name":"노태오","code":"8H0480","managed":109,"today":7}]},{"sido":"전남","branch":"목포지점","pros":[{"sabun":"8H0481","name":"임은채","code":"8H0481","managed":107,"today":7},{"sabun":"8H0482","name":"조지운","code":"8H0482","managed":202,"today":7},{"sabun":"8H0483","name":"구은주","code":"8H0483","managed":114,"today":7}]},{"sido":"전남","branch":"전남제일지점","pros":[{"sabun":"8H0484","name":"문준영","code":"8H0484","managed":124,"today":7},{"sabun":"8H0485","name":"임리아","code":"8H0485","managed":120,"today":7},{"sabun":"8H0486","name":"서유주","code":"8H0486","managed":195,"today":7}]},{"sido":"전남","branch":"전남TC지점","pros":[{"sabun":"8H0487","name":"노봉주","code":"8H0487","managed":9,"today":2},{"sabun":"8H0488","name":"권혜원","code":"8H0488","managed":174,"today":7},{"sabun":"8H0489","name":"손세훈","code":"8H0489","managed":114,"today":7}]},{"sido":"전북","branch":"전주지점","pros":[{"sabun":"8H0490","name":"우서현","code":"8H0490","managed":124,"today":7},{"sabun":"8H0491","name":"안지수","code":"8H0491","managed":123,"today":7}]},{"sido":"전북","branch":"더전주지점","pros":[{"sabun":"8H0492","name":"전태윤","code":"8H0492","managed":101,"today":7}]},{"sido":"전북","branch":"전주중앙지점","pros":[{"sabun":"8H0493","name":"정진우","code":"8H0493","managed":149,"today":7}]},{"sido":"전북","branch":"새전주지점","pros":[{"sabun":"8H0494","name":"주지유","code":"8H0494","managed":114,"today":7}]},{"sido":"전북","branch":"전주TC지점","pros":[{"sabun":"8H0495","name":"차지훈","code":"8H0495","managed":135,"today":7}]},{"sido":"전북","branch":"전북드림영업실지점","pros":[{"sabun":"8H0496","name":"조서진","code":"8H0496","managed":130,"today":7}]},{"sido":"전북","branch":"전주혁신지점","pros":[{"sabun":"8H0497","name":"양하준","code":"8H0497","managed":211,"today":7}]},{"sido":"전북","branch":"남원지점","pros":[{"sabun":"8H0498","name":"노서연","code":"8H0498","managed":218,"today":7}]},{"sido":"전북","branch":"김제지점","pros":[{"sabun":"8H0499","name":"곽하은","code":"8H0499","managed":218,"today":7}]},{"sido":"전북","branch":"고창지점","pros":[{"sabun":"8H0500","name":"손정우","code":"8H0500","managed":206,"today":7}]},{"sido":"전북","branch":"정읍지점","pros":[{"sabun":"8H0501","name":"신성현","code":"8H0501","managed":122,"today":7},{"sabun":"8H0502","name":"유은채","code":"8H0502","managed":111,"today":7}]},{"sido":"전북","branch":"호남지점","pros":[{"sabun":"8H0503","name":"민하율","code":"8H0503","managed":92,"today":7}]},{"sido":"전북","branch":"군장지점","pros":[{"sabun":"8H0504","name":"하연서","code":"8H0504","managed":156,"today":7}]},{"sido":"전북","branch":"군산지점","pros":[{"sabun":"8H0505","name":"민채원","code":"8H0505","managed":150,"today":7}]},{"sido":"전북","branch":"익산제일지점","pros":[{"sabun":"8H0506","name":"서태윤","code":"8H0506","managed":131,"today":7}]},{"sido":"전북","branch":"익산지점","pros":[{"sabun":"8H0507","name":"양하윤","code":"8H0507","managed":103,"today":7},{"sabun":"8H0508","name":"신선영","code":"8H0508","managed":111,"today":7}]},{"sido":"전북","branch":"익산중앙지점","pros":[{"sabun":"8H0509","name":"서정희","code":"8H0509","managed":120,"today":7}]},{"sido":"전북","branch":"전북TC지점","pros":[{"sabun":"8H0510","name":"주다인","code":"8H0510","managed":134,"today":7}]},{"sido":"대구","branch":"대구미래지점","pros":[{"sabun":"8H0511","name":"서다은","code":"8H0511","managed":121,"today":7},{"sabun":"8H0512","name":"강지우","code":"8H0512","managed":107,"today":7},{"sabun":"8H0514","name":"배영자","code":"8H0514","managed":119,"today":7}]},{"sido":"대구","branch":"대구현대지점","pros":[{"sabun":"8H0515","name":"장서율","code":"8H0515","managed":209,"today":7},{"sabun":"8H0516","name":"남예서","code":"8H0516","managed":116,"today":7},{"sabun":"8H0517","name":"백병철","code":"8H0517","managed":110,"today":7},{"sabun":"8H0518","name":"홍하준","code":"8H0518","managed":102,"today":7}]},{"sido":"대구","branch":"대구중앙지점","pros":[{"sabun":"8H0519","name":"황수빈","code":"8H0519","managed":101,"today":7},{"sabun":"8H0520","name":"유서아","code":"8H0520","managed":103,"today":7},{"sabun":"8H0522","name":"허하윤","code":"8H0522","managed":105,"today":7}]},{"sido":"대구","branch":"광장지점","pros":[{"sabun":"8H0523","name":"김정희","code":"8H0523","managed":205,"today":7},{"sabun":"8H0524","name":"우지환","code":"8H0524","managed":101,"today":7},{"sabun":"8H0525","name":"권미영","code":"8H0525","managed":105,"today":7},{"sabun":"8H0526","name":"한지아","code":"8H0526","managed":114,"today":7}]},{"sido":"대구","branch":"대경TC지점","pros":[{"sabun":"8H0527","name":"박우성","code":"8H0527","managed":98,"today":7},{"sabun":"8H0528","name":"오채아","code":"8H0528","managed":200,"today":7},{"sabun":"8H0529","name":"오유나","code":"8H0529","managed":118,"today":7}]},{"sido":"대구","branch":"달구벌TC지점","pros":[{"sabun":"8H0530","name":"배유찬","code":"8H0530","managed":107,"today":7},{"sabun":"8H0531","name":"홍순자","code":"8H0531","managed":165,"today":7},{"sabun":"8H0532","name":"박소율","code":"8H0532","managed":380,"today":7},{"sabun":"8H0533","name":"권도윤","code":"8H0533","managed":199,"today":7}]},{"sido":"대구","branch":"대경드림영업실지점","pros":[{"sabun":"8H0534","name":"홍다인","code":"8H0534","managed":188,"today":7},{"sabun":"8H0535","name":"윤동욱","code":"8H0535","managed":111,"today":7},{"sabun":"8H0536","name":"유우성","code":"8H0536","managed":110,"today":7},{"sabun":"8H0537","name":"배정우","code":"8H0537","managed":209,"today":7}]},{"sido":"대구","branch":"동대구지점","pros":[{"sabun":"8H0538","name":"남서아","code":"8H0538","managed":123,"today":7},{"sabun":"8H0540","name":"윤지성","code":"8H0540","managed":105,"today":7},{"sabun":"8H0541","name":"오현준","code":"8H0541","managed":117,"today":7}]},{"sido":"대구","branch":"범어지점","pros":[{"sabun":"8H0542","name":"심시현","code":"8H0542","managed":98,"today":7},{"sabun":"8H0543","name":"안원준","code":"8H0543","managed":123,"today":7},{"sabun":"8H0544","name":"안세훈","code":"8H0544","managed":128,"today":7},{"sabun":"8H0545","name":"조달수","code":"8H0545","managed":244,"today":7}]},{"sido":"대구","branch":"대구TC지점","pros":[{"sabun":"8H0546","name":"조예준","code":"8H0546","managed":203,"today":7},{"sabun":"8H0547","name":"유정숙","code":"8H0547","managed":127,"today":7},{"sabun":"8H0548","name":"주지안","code":"8H0548","managed":145,"today":7}]},{"sido":"경북","branch":"포항지점","pros":[{"sabun":"8H0549","name":"곽봉주","code":"8H0549","managed":148,"today":7},{"sabun":"8H0550","name":"남지유","code":"8H0550","managed":114,"today":7}]},{"sido":"경북","branch":"형산지점","pros":[{"sabun":"8H0551","name":"양규민","code":"8H0551","managed":127,"today":7},{"sabun":"8H0552","name":"최라온","code":"8H0552","managed":135,"today":7},{"sabun":"8H0553","name":"문덕순","code":"8H0553","managed":121,"today":7}]},{"sido":"경북","branch":"포항북부지점","pros":[{"sabun":"8H0554","name":"안영숙","code":"8H0554","managed":142,"today":7},{"sabun":"8H0555","name":"강준우","code":"8H0555","managed":126,"today":7},{"sabun":"8H0556","name":"주다연","code":"8H0556","managed":141,"today":7}]},{"sido":"경북","branch":"포항TC지점","pros":[{"sabun":"8H0557","name":"황규현","code":"8H0557","managed":134,"today":7},{"sabun":"8H0558","name":"한하준","code":"8H0558","managed":145,"today":7}]},{"sido":"경북","branch":"경주지점","pros":[{"sabun":"8H0559","name":"김영자","code":"8H0559","managed":170,"today":7},{"sabun":"8H0560","name":"유이안","code":"8H0560","managed":143,"today":7},{"sabun":"8H0561","name":"강도현","code":"8H0561","managed":182,"today":7}]},{"sido":"경북","branch":"구미제일지점","pros":[{"sabun":"8H0562","name":"신정희","code":"8H0562","managed":117,"today":7},{"sabun":"8H0563","name":"김규민","code":"8H0563","managed":137,"today":7},{"sabun":"8H0564","name":"백주원","code":"8H0564","managed":125,"today":7}]},{"sido":"경북","branch":"구미미래지점","pros":[{"sabun":"8H0565","name":"고소윤","code":"8H0565","managed":203,"today":7},{"sabun":"8H0566","name":"한시현","code":"8H0566","managed":127,"today":7}]},{"sido":"경북","branch":"구미TC지점","pros":[{"sabun":"8H0567","name":"주예나","code":"8H0567","managed":120,"today":7},{"sabun":"8H0568","name":"곽시우","code":"8H0568","managed":146,"today":7},{"sabun":"8H0569","name":"우준우","code":"8H0569","managed":111,"today":7}]},{"sido":"경북","branch":"김천지점","pros":[{"sabun":"8H0570","name":"김서진","code":"8H0570","managed":194,"today":7},{"sabun":"8H0571","name":"장수아","code":"8H0571","managed":205,"today":7}]},{"sido":"경북","branch":"상주지점","pros":[{"sabun":"8H0572","name":"고시현","code":"8H0572","managed":212,"today":7}]},{"sido":"경북","branch":"안동지점","pros":[{"sabun":"8H0575","name":"이재현","code":"8H0575","managed":196,"today":7},{"sabun":"8H0576","name":"손지환","code":"8H0576","managed":134,"today":7},{"sabun":"8H0577","name":"서유주","code":"8H0577","managed":142,"today":7}]},{"sido":"경북","branch":"영주지점","pros":[{"sabun":"8H0578","name":"장종배","code":"8H0578","managed":231,"today":7},{"sabun":"8H0579","name":"양소윤","code":"8H0579","managed":177,"today":7}]},{"sido":"경북","branch":"경산지점","pros":[{"sabun":"8H0580","name":"강현서","code":"8H0580","managed":147,"today":7},{"sabun":"8H0581","name":"정수빈","code":"8H0581","managed":139,"today":7},{"sabun":"8H0582","name":"이예빈","code":"8H0582","managed":204,"today":7}]},{"sido":"경북","branch":"경북혁신지점","pros":[{"sabun":"8H0584","name":"홍수정","code":"8H0584","managed":163,"today":7},{"sabun":"8H0585","name":"조시아","code":"8H0585","managed":154,"today":7}]},{"sido":"부산","branch":"신선지점","pros":[{"sabun":"8H0586","name":"손경희","code":"8H0586","managed":128,"today":7},{"sabun":"8H0587","name":"우유하","code":"8H0587","managed":102,"today":7},{"sabun":"8H0588","name":"차하람","code":"8H0588","managed":93,"today":7},{"sabun":"8H0589","name":"노미영","code":"8H0589","managed":197,"today":7}]},{"sido":"부산","branch":"부산TC지점","pros":[{"sabun":"8H0590","name":"백수아","code":"8H0590","managed":111,"today":7},{"sabun":"8H0592","name":"오시우","code":"8H0592","managed":288,"today":7},{"sabun":"8H0593","name":"임서아","code":"8H0593","managed":235,"today":7}]},{"sido":"부산","branch":"부산제일지점","pros":[{"sabun":"8H0594","name":"우소윤","code":"8H0594","managed":284,"today":7},{"sabun":"8H0595","name":"홍경희","code":"8H0595","managed":90,"today":7},{"sabun":"8H0596","name":"신소은","code":"8H0596","managed":135,"today":7}]},{"sido":"부산","branch":"부산미래지점","pros":[{"sabun":"8H0598","name":"노순자","code":"8H0598","managed":97,"today":7},{"sabun":"8H0599","name":"허상철","code":"8H0599","managed":111,"today":7},{"sabun":"8H0600","name":"정지아","code":"8H0600","managed":119,"today":7},{"sabun":"8H0601","name":"안다연","code":"8H0601","managed":443,"today":7}]},{"sido":"부산","branch":"부산드림영업실지점","pros":[{"sabun":"8H0602","name":"유서우","code":"8H0602","managed":99,"today":7},{"sabun":"8H0603","name":"한현서","code":"8H0603","managed":218,"today":7},{"sabun":"8H0604","name":"정하율","code":"8H0604","managed":195,"today":7},{"sabun":"8H0605","name":"곽예원","code":"8H0605","managed":93,"today":7}]},{"sido":"부산","branch":"사하지점","pros":[{"sabun":"8H0608","name":"장시온","code":"8H0608","managed":296,"today":7},{"sabun":"8H0609","name":"남미영","code":"8H0609","managed":364,"today":7}]},{"sido":"부산","branch":"금정지점","pros":[{"sabun":"8H0610","name":"정민규","code":"8H0610","managed":115,"today":7},{"sabun":"8H0611","name":"배민서","code":"8H0611","managed":117,"today":7},{"sabun":"8H0612","name":"황하윤","code":"8H0612","managed":215,"today":7}]},{"sido":"부산","branch":"해운대지점","pros":[{"sabun":"8H0613","name":"권서준","code":"8H0613","managed":247,"today":7},{"sabun":"8H0614","name":"최서준","code":"8H0614","managed":103,"today":7},{"sabun":"8H0615","name":"정민규","code":"8H0615","managed":137,"today":7}]},{"sido":"부산","branch":"연제지점","pros":[{"sabun":"8H0616","name":"성예서","code":"8H0616","managed":99,"today":7},{"sabun":"8H0617","name":"우소율","code":"8H0617","managed":115,"today":7},{"sabun":"8H0618","name":"정건우","code":"8H0618","managed":11,"today":5},{"sabun":"8H0619","name":"우준영","code":"8H0619","managed":219,"today":7}]},{"sido":"부산","branch":"동래TC지점","pros":[{"sabun":"8H0620","name":"조복희","code":"8H0620","managed":120,"today":7},{"sabun":"8H0621","name":"문예빈","code":"8H0621","managed":110,"today":7},{"sabun":"8H0622","name":"정가은","code":"8H0622","managed":112,"today":7},{"sabun":"8H0623","name":"황시우","code":"8H0623","managed":231,"today":7}]},{"sido":"부산","branch":"수영지점","pros":[{"sabun":"8H0624","name":"최하린","code":"8H0624","managed":361,"today":7},{"sabun":"8H0625","name":"고서연","code":"8H0625","managed":90,"today":7},{"sabun":"8H0626","name":"유서윤","code":"8H0626","managed":111,"today":7},{"sabun":"8H0627","name":"유민재","code":"8H0627","managed":115,"today":7}]},{"sido":"부산","branch":"부경TC지점","pros":[{"sabun":"8H0628","name":"안지아","code":"8H0628","managed":121,"today":7},{"sabun":"8H0629","name":"한동현","code":"8H0629","managed":9,"today":4},{"sabun":"8H0630","name":"차동현","code":"8H0630","managed":271,"today":7},{"sabun":"8H0631","name":"오준혁","code":"8H0631","managed":120,"today":7}]},{"sido":"부산","branch":"북부산지점","pros":[{"sabun":"8H0632","name":"차수빈","code":"8H0632","managed":142,"today":7},{"sabun":"8H0633","name":"구은주","code":"8H0633","managed":141,"today":7},{"sabun":"8H0634","name":"유서준","code":"8H0634","managed":134,"today":7},{"sabun":"8H0635","name":"한채은","code":"8H0635","managed":133,"today":7}]},{"sido":"울산","branch":"동울산지점","pros":[{"sabun":"8H0636","name":"조윤아","code":"8H0636","managed":159,"today":7}]},{"sido":"울산","branch":"중부지점","pros":[{"sabun":"8H0637","name":"한예준","code":"8H0637","managed":135,"today":7}]},{"sido":"울산","branch":"신울산지점","pros":[{"sabun":"8H0638","name":"배지원","code":"8H0638","managed":201,"today":7}]},{"sido":"울산","branch":"울산지점","pros":[{"sabun":"8H0639","name":"오소윤","code":"8H0639","managed":164,"today":7}]},{"sido":"울산","branch":"번영로지점","pros":[{"sabun":"8H0640","name":"박지원","code":"8H0640","managed":133,"today":7}]},{"sido":"울산","branch":"울산현대지점","pros":[{"sabun":"8H0641","name":"강승우","code":"8H0641","managed":139,"today":7}]},{"sido":"울산","branch":"울산TC지점","pros":[{"sabun":"8H0642","name":"황지훈","code":"8H0642","managed":174,"today":7}]},{"sido":"울산","branch":"울산혁신TC지점","pros":[{"sabun":"8H0643","name":"고우성","code":"8H0643","managed":113,"today":7}]},{"sido":"울산","branch":"영남드림영업실지점","pros":[{"sabun":"8H0644","name":"문서율","code":"8H0644","managed":133,"today":7}]},{"sido":"울산","branch":"청운지점","pros":[{"sabun":"8H0646","name":"양하린","code":"8H0646","managed":265,"today":7}]},{"sido":"울산","branch":"울산남목지점","pros":[{"sabun":"8H0647","name":"윤태오","code":"8H0647","managed":185,"today":7}]},{"sido":"울산","branch":"동울산TC지점","pros":[{"sabun":"8H0648","name":"최도현","code":"8H0648","managed":167,"today":7}]},{"sido":"울산","branch":"화봉지점","pros":[{"sabun":"8H0649","name":"배나연","code":"8H0649","managed":187,"today":7}]},{"sido":"경남","branch":"마산지점","pros":[{"sabun":"8H0650","name":"하유준","code":"8H0650","managed":123,"today":7},{"sabun":"8H0651","name":"주우성","code":"8H0651","managed":143,"today":7}]},{"sido":"경남","branch":"창원지점","pros":[{"sabun":"8H0652","name":"노다연","code":"8H0652","managed":131,"today":7},{"sabun":"8H0653","name":"정태오","code":"8H0653","managed":117,"today":7},{"sabun":"8H0654","name":"오덕순","code":"8H0654","managed":123,"today":7}]},{"sido":"경남","branch":"경남미래지점","pros":[{"sabun":"8H0655","name":"전미영","code":"8H0655","managed":203,"today":7},{"sabun":"8H0656","name":"안수아","code":"8H0656","managed":123,"today":7}]},{"sido":"경남","branch":"동양산지점","pros":[{"sabun":"8H0657","name":"고태오","code":"8H0657","managed":140,"today":7},{"sabun":"8H0658","name":"강윤아","code":"8H0658","managed":189,"today":7}]},{"sido":"경남","branch":"양산지점","pros":[{"sabun":"8H0660","name":"전수아","code":"8H0660","managed":167,"today":7},{"sabun":"8H0661","name":"민하린","code":"8H0661","managed":187,"today":7}]},{"sido":"경남","branch":"진주지점","pros":[{"sabun":"8H0662","name":"권정호","code":"8H0662","managed":193,"today":7},{"sabun":"8H0664","name":"민현우","code":"8H0664","managed":145,"today":7}]},{"sido":"경남","branch":"동진주지점","pros":[{"sabun":"8H0665","name":"강하은","code":"8H0665","managed":148,"today":7},{"sabun":"8H0666","name":"고정희","code":"8H0666","managed":178,"today":7}]},{"sido":"경남","branch":"진주TC지점","pros":[{"sabun":"8H0667","name":"안도윤","code":"8H0667","managed":146,"today":7}]},{"sido":"경남","branch":"진주중앙지점","pros":[{"sabun":"8H0669","name":"강서윤","code":"8H0669","managed":139,"today":7},{"sabun":"8H0670","name":"정유주","code":"8H0670","managed":167,"today":7}]},{"sido":"경남","branch":"경남드림영업실지점","pros":[{"sabun":"8H0671","name":"홍지원","code":"8H0671","managed":123,"today":7},{"sabun":"8H0672","name":"백종배","code":"8H0672","managed":149,"today":7}]},{"sido":"경남","branch":"거제지점","pros":[{"sabun":"8H0673","name":"양덕수","code":"8H0673","managed":167,"today":7},{"sabun":"8H0674","name":"배하은","code":"8H0674","managed":162,"today":7}]},{"sido":"경남","branch":"옥포지점","pros":[{"sabun":"8H0675","name":"안나윤","code":"8H0675","managed":151,"today":7},{"sabun":"8H0676","name":"임봉주","code":"8H0676","managed":158,"today":7}]},{"sido":"경남","branch":"통영지점","pros":[{"sabun":"8H0677","name":"남순자","code":"8H0677","managed":225,"today":7},{"sabun":"8H0678","name":"곽서율","code":"8H0678","managed":128,"today":7},{"sabun":"8H0679","name":"구다은","code":"8H0679","managed":140,"today":7}]},{"sido":"경남","branch":"충무지점","pros":[{"sabun":"8H0680","name":"임정숙","code":"8H0680","managed":114,"today":7},{"sabun":"8H0681","name":"안형준","code":"8H0681","managed":124,"today":7}]},{"sido":"경남","branch":"김해지점","pros":[{"sabun":"8H0682","name":"심예준","code":"8H0682","managed":207,"today":7},{"sabun":"8H0683","name":"곽아린","code":"8H0683","managed":122,"today":7}]},{"sido":"경남","branch":"김해중앙지점","pros":[{"sabun":"8H0684","name":"전하은","code":"8H0684","managed":129,"today":7},{"sabun":"8H0685","name":"안수아","code":"8H0685","managed":143,"today":7},{"sabun":"8H0686","name":"안민서","code":"8H0686","managed":187,"today":7}]},{"sido":"제주","branch":"제주지점","pros":[{"sabun":"8H0687","name":"배지우","code":"8H0687","managed":126,"today":7},{"sabun":"8H0688","name":"민지오","code":"8H0688","managed":131,"today":7},{"sabun":"8H0689","name":"오재윤","code":"8H0689","managed":151,"today":7}]},{"sido":"제주","branch":"행운지점","pros":[{"sabun":"8H0690","name":"성지율","code":"8H0690","managed":142,"today":7},{"sabun":"8H0692","name":"윤상현","code":"8H0692","managed":135,"today":7}]},{"sido":"제주","branch":"백록지점","pros":[{"sabun":"8H0693","name":"최영숙","code":"8H0693","managed":122,"today":7},{"sabun":"8H0694","name":"하민서","code":"8H0694","managed":103,"today":7},{"sabun":"8H0695","name":"윤지유","code":"8H0695","managed":103,"today":7}]},{"sido":"제주","branch":"신제주지점","pros":[{"sabun":"8H0696","name":"배동현","code":"8H0696","managed":95,"today":7},{"sabun":"8H0697","name":"홍영숙","code":"8H0697","managed":124,"today":7}]},{"sido":"제주","branch":"제주TC지점","pros":[{"sabun":"8H0698","name":"정하람","code":"8H0698","managed":112,"today":7},{"sabun":"8H0699","name":"홍미영","code":"8H0699","managed":120,"today":7},{"sabun":"8H0700","name":"양소율","code":"8H0700","managed":136,"today":7}]},{"sido":"제주","branch":"서귀포지점","pros":[{"sabun":"8H0702","name":"배형준","code":"8H0702","managed":420,"today":7}]}];
 
 /* 자동 생성 — gen_handoff_weekly.mjs (P6). 관제탑 ⑥ 주간 학습 타일 — 손대지 말 것. 개선 반영은 형 검수 경유만 */
@@ -33682,6 +33739,13 @@ const HY_FIELDS = [
   { n: 22,  k: "consent_origin",        ko: "동의 취득 경로",           form: "DIRECT/SUBMITTED/PROVIDED", note: "규제 대응 자동화" },
   { n: 23,  k: "consent_evidence_id",   ko: "동의 증빙 id",             form: "화면 버전·시각", note: "민원 시 즉시 소명" },
   { n: 24,  k: "notice_status",         ko: "출처 통지 상태",           form: "불요/필요·이행", note: "제20조 — 직접 수집은 불요" },
+  /* ⚠️ 체계 차이(2026-10-08 기록 · 값은 바꾸지 않는다) — 아래 maturity_date·days_to_expiry는
+     검진일(D0) 기반 cycleStage 사이클과 _hyDate(벽시계)에서 나온다. 회원 화면의 보장 창
+     (insCheckupWindow — 계약 coverFrom 파생 · 시연 시드는 INS_DEMO 기준일 고정)과 **산출 체계가
+     다르다**. 이름이 같은 지표가 두 원천을 가지므로, 코호트 회원 한 명을 화면과 제공 DB 행으로
+     나란히 보여 주면 「만기까지 남은 일수」가 두 숫자로 선다. 제공 DB는 외부 제공 계약면이라
+     형 확정 없이 바꿀 자리가 아니다 — 기준일 체계를 넓히는 후속 변경의 범위에 이 두 필드를
+     반드시 포함할 것. */
   { n: 25,  k: "maturity_date",         ko: "검진대비보험 만기일",      form: "날짜", note: "최상위 타이밍 신호 S14" },
   { n: 26,  k: "days_to_expiry",        ko: "만기까지 남은 일수",       form: "정수(≤45)", note: "D-20/D-7/D-1 자동 발동 · 개시 전 null" },
   { n: 27,  k: "result_received_at",    ko: "결과 수령 시각",           form: "날짜", note: "결과 내용은 미포함" },
@@ -35512,11 +35576,15 @@ function selfEnsureInsSeed(member) {
       cl.forEach((c) => { if (c && /^CERT-JSR\d{4}A$/.test(c.id || "") && !c.insured) { c.insured = { name: member.name }; fix = true; } });
       if (fix) localStorage.setItem("hifin_ins_certs", JSON.stringify(cl));
     } catch (e) {}
+    /* 보장 창 보정(2026-10-06 형 지시) — 아래 v4·v3 조기 반환 **앞에** 둔다.
+       이미 시드가 깔린 기기(hifin_self_ins_v4=1)는 v3 분기에서 return false로 빠지므로,
+       뒤에 두면 그 기기의 검진대비보험 계약에 coverFrom이 영구히 비어 있게 된다(= 벽시계 폴백). */
+    try { if (typeof insCheckupCoverEnsure === "function") insCheckupCoverEnsure(member); } catch (e) {}
     // v4(2026-07-26): 목업 계약을 형 실계약 9건으로 교체(검진·체인·원장은 보존)
     if (!localStorage.getItem("hifin_self_ins_v4")) {
       seedSelfVault(member);
       vaultSaveInsurance(member, SELF_REAL_CONTRACTS, { source: "self-real", channel: "aggregate" });
-      if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" });
+      if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "60일(검진 연동)", coverFrom: (typeof insDemoCoverFrom === "function") ? insDemoCoverFrom() : null, coverSeed: "demo" });
       if (typeof tlSync === "function") tlSync(member);
       localStorage.setItem("hifin_self_ins_v4", "1");
       localStorage.setItem("hifin_self_ins_v3", "1");
@@ -35533,7 +35601,7 @@ function selfEnsureInsSeed(member) {
     if (!has(/운전자/)) add.push({ insurer: "DB손해보험", product: "운전자보험", kind: "일반", benefit: 10000000, monthly: 9800, years: 5, detail: { diag: 10000000, surgery: 2000000, daily: 30000 } });
     if (add.length) vaultSaveInsurance(member, (v.insurance || []).concat(add), { source: "self-seed", channel: "aggregate" });
     // 검진대비보험 발급 이력(무상 계약) — pbPolicyCreate 멱등
-    if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" });
+    if (typeof pbPolicyCreate === "function") pbPolicyCreate(member, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "60일(검진 연동)", coverFrom: (typeof insDemoCoverFrom === "function") ? insDemoCoverFrom() : null, coverSeed: "demo" });
     if (typeof tlSync === "function") tlSync(member);   // 원장 제네시스 보장(12,480 이월)
     localStorage.setItem("hifin_self_ins_v3", "1");
     return true;
@@ -36154,14 +36222,48 @@ function pbPolicyCreate(m, o) {
   o = o || {};
   const pols = pbPolicies(m);
   const dup = pols.find((p) => p.product === o.product && p.status === "active");
-  if (dup) return { ok: true, policy: dup, existed: true };
+  if (dup) {
+    /* 멱등 재사용 경로에도 보장 개시일을 병합한다 — 계약이 이미 있는 기기(= 시연 기기 대부분)에서
+       coverFrom이 비어 있으면 보장 창이 다시 pol.createdAt(그 기기의 벽시계)로 떨어진다. */
+    let ch = false;
+    if (o.coverFrom != null && dup.coverFrom == null) { dup.coverFrom = o.coverFrom; ch = true; }
+    if (o.coverSeed && !dup.coverSeed) { dup.coverSeed = o.coverSeed; ch = true; }
+    /* term 병합은 **검진대비보험 보정 호출에만** 허용한다(2026-10-08 수선).
+       전에는 상품을 가리지 않고 `o.term !== dup.term`이면 무조건 덮어썼다. 간편가입 위자드
+       (Insurance.jsx:726 → insService.policyCreate)는 회원이 고른 term을 그대로 넘기므로,
+       같은 상품으로 다시 완주하면서 보험기간만 다르게 고르면 기존 유효 계약의 term이 조용히
+       바뀌고 monthly·cover는 옛 값으로 남았다 — 실측: 「1년(자동갱신)·월 42,000·암 3천만」
+       계약이 2회차 호출 뒤 「10년·월 42,000·암 3천만」이 됐고 체인 블록은 0건이었다.
+       금액이 걸린 원장이라 감사 기록 없는 변경은 더 둘 수 없다. */
+    if (o.term && dup.term !== o.term && /검진.?대비/.test(String(dup.product || "")) && o.coverSeed) { dup.term = o.term; ch = true; }
+    if (ch) {
+      _pbSavePolicies(m, pols);
+      /* 원장 값이 바뀌었으면 사유를 남긴다 — 생성 경로는 chainAppend로 체결을 기록하는데
+         이 경로는 아무 기록도 남기지 않아 계약 값이 감사 추적 없이 바뀌었다. */
+      if (typeof chainAppend === "function") chainAppend({ type: "policy", token: _pbToken(m), note: `보험계약 보장 창 보정 — ${dup.product} (${dup.id}) · 보장 개시일·보험기간 표기 갱신` });
+    }
+    return { ok: true, policy: dup, existed: true };
+  }
   const pol = { id: o.policyNo || ("POL-" + Date.now().toString(36).toUpperCase()), product: o.product || "치료비 준비 진단",
     monthly: Math.max(0, Math.floor(o.monthly || 0)), cover: o.cover || null, term: o.term || "1년(자동갱신)", pay: o.pay || "wallet",
-    start: _pbYm(), status: "active", createdAt: Date.now() };
+    start: _pbYm(), status: "active", createdAt: Date.now(),
+    /* 보장 개시일 — 보장 창의 1순위 근거(insCheckupWindow basis "policy"). coverSeed: "demo" = 시연 기준일 파생 / "live" = 실계약 */
+    coverFrom: (o.coverFrom != null ? o.coverFrom : null), coverSeed: o.coverSeed || null };
   pols.push(pol); _pbSavePolicies(m, pols);
   if (typeof chainAppend === "function") chainAppend({ type: "policy", token: _pbToken(m), note: `보험계약 체결 — ${pol.product} · 월 ${pol.monthly.toLocaleString()}원 (${pol.id})` });
   pbEnsureBills(m);
   return { ok: true, policy: pol };
+}
+
+/* ── 계약 레코드 부분 수정(원장 단일 쓰기 경로) — 호출자가 localStorage를 직접 만지지 않게 한다 ── */
+function pbPolicyPatch(m, id, o) {
+  const pols = pbPolicies(m);
+  const p = pols.find((x) => x.id === id);
+  if (!p) return { ok: false, reason: "계약을 찾을 수 없습니다" };
+  let ch = false;
+  Object.keys(o || {}).forEach((k) => { if (p[k] !== o[k]) { p[k] = o[k]; ch = true; } });
+  if (ch) _pbSavePolicies(m, pols);
+  return { ok: true, policy: p, changed: ch };
 }
 
 /* ── 청구서 생성 + 상태머신(lazy) — 유효 계약의 시작월~당월 청구서를 보장하고 미납 단계 평가 ── */
@@ -36307,6 +36409,8 @@ const CLAIM_DENY = {
   DUP: { ko: "중복 청구", easy: "지급이 안 된 이유: 같은 진료 건으로 이미 지급받으셨어요", fix: "다른 진료 건이라면 이의신청으로 알려주세요" },
   LIMIT: { ko: "연간 한도 소진", easy: "지급이 안 된 이유: 올해 보장 한도를 모두 사용했어요", fix: "내년 갱신 후 한도가 초기화돼요 — 잔여 한도는 계산 내역에서 확인" },
   NO_RIDER: { ko: "특약 미가입", easy: "지급이 안 된 이유: 이 항목(3대 비급여)은 별도 특약 가입이 필요해요", fix: "치료비 준비 진단 탭에서 특약 보완을 검토해 보세요" },
+  /* 만기 경과 — 전에는 만기 검사가 없어서 보장이 끝난 뒤에도 검진 트랙이 자동승인됐다(결함). */
+  COVER_END: { ko: "보장 종료", easy: "지급이 안 된 이유: 검진대비보험 보장 기간이 끝났어요", fix: "다음 검진 주기를 잡으면 같은 보장이 다시 열려요" },
 };
 /* 연간 사용 한도 원장 — 급여/비급여 누적(청구 지급 시 차감) */
 function _limitUsed(m) { try { const y = new Date().getFullYear(); const o = JSON.parse(localStorage.getItem("hifin_claim_used_" + ((m && m.email) || "d")) || "{}"); return (o.year === y) ? o : { year: y, pay: 0, non: 0 }; } catch (e) { return { year: new Date().getFullYear(), pay: 0, non: 0 }; } }
@@ -36323,7 +36427,35 @@ function claimReview(m, claimId) {
   if (/검진/.test(c.kind || "")) {
     const pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product));
     if (!pol) return { ok: false, code: "NO_CONTRACT", deny: { ko: "검진대비보험 미발급", easy: "지급이 안 된 이유: 검진대비보험이 아직 발급되지 않았어요", fix: "치료비 준비 진단 탭 ①에서 검진 연동 무상 발급을 먼저 받아 주세요" }, reason: "검진대비보험이 발급되어 있지 않아요" };
-    if (Date.now() < pol.createdAt + 86400000) return { ok: false, code: "NO_CONTRACT", deny: { ko: "보장 개시 전", easy: "보장은 발급 다음날 0시부터 시작돼요", fix: "내일 다시 청구해 주세요" }, reason: "보장 개시 전이에요(익일 0시 개시)" };
+    /* 개시·만기 판정은 보장 창 한 소스(insCheckupWindow)에서 — 전에는 pol.createdAt + 1일만 봐서
+       ① 기기마다 개시일이 달라지고 ② 만기가 지난 뒤에도 자동승인이 났다. 두 결함을 함께 닫는다. */
+    const W = (typeof insCheckupWindow === "function") ? insCheckupWindow(m, pol) : null;
+    /* 거절 문구의 날짜도 창에서 만든다 — 개시 판정 근거를 계약 coverFrom으로 옮겼는데 설명만
+       「발급 다음날」·「내일」로 남아 있었다. 조성래는 증서(2024-12-26)·계약 생성(벽시계)·보장 개시
+       (2026-09-06)가 전부 다른 날이라 어느 쪽도 맞지 않는 문장이었다. */
+    if (W && W.phase === "보장 개시 대기") return { ok: false, code: "NO_CONTRACT",
+      deny: { ko: "보장 개시 전", easy: `보장은 보장 개시일(${insDayStr(W.start)}) 0시부터 시작돼요`, fix: `${insDayStr(W.start)} 이후에 다시 청구해 주세요` },
+      reason: `보장 개시 전이에요(보장 개시일 ${insDayStr(W.start)} 0시 개시)` };
+    if (W && W.ended) return { ok: false, code: "COVER_END",
+      deny: Object.assign({}, CLAIM_DENY.COVER_END, { easy: `지급이 안 된 이유: 검진대비보험 보장 기간이 ${insDayStr(W.end)}에 끝났어요` }),
+      reason: `보장 종료 — 검진대비보험 만기 경과(${insDayStr(W.end)}) · 다음 검진 주기를 잡으면 같은 보장이 다시 열려요` };
+    /* ── 두 번째 축: **청구 건의 진료일**(c.at) ───────────────────────────────────
+       전에는 계약 국면(W.phase·W.ended)만 봤다 — 청구 건의 날짜는 심사에 **한 번도** 들어가지
+       않았다. 그래서 보장 창 밖의 진료일로 접수한 검진 청구가 그대로 자동승인됐다(실측 2026-10-08 ·
+       창 2026. 9. 6. ~ 2026. 11. 5. · 판정 2026. 10. 6.: 진료일 2026-12-01 → ok payout 100,000 /
+       2026-08-01 → ok 100,000 / 2024-12-26(실측 검진일) → ok 100,000). 같은 카드의 면책 목록은
+       바로 두 줄 아래에서 「보장 기간 밖에 받은 진단」을 보장하지 않는다고 적고 있었다 —
+       화면과 심사가 서로 다른 말을 한 자리다.
+       두 축은 뜻이 다르므로 함께 본다: 위 분기는 「계약이 지금 유효한가」, 이 분기는
+       「그 진료가 보장 기간 안에 있었나」. 경계는 창과 같다(start 포함 · end 배타적). */
+    const _at = Number(c.at) || null;
+    if (W && _at != null && _at < W.start) return { ok: false, code: "NO_CONTRACT",
+      deny: { ko: "보장 개시 전 진료", easy: `지급이 안 된 이유: 진료일(${insDayStr(_at)})이 보장 개시일(${insDayStr(W.start)}) 0시보다 앞서요`,
+              fix: `보장 기간(${insDayStr(W.start)} ~ ${insDayStr(W.end)}) 안에 받은 진료로 청구해 주세요` },
+      reason: `보장 개시 전 진료 — 진료일 ${insDayStr(_at)} · 보장 개시일 ${insDayStr(W.start)} 0시` };
+    if (W && _at != null && _at >= W.end) return { ok: false, code: "COVER_END",
+      deny: Object.assign({}, CLAIM_DENY.COVER_END, { easy: `지급이 안 된 이유: 진료일(${insDayStr(_at)})이 보장 기간(${insDayStr(W.start)} ~ ${insDayStr(W.end)}) 밖이에요` }),
+      reason: `보장 기간 밖 진료 — 진료일 ${insDayStr(_at)} · 검진대비보험 만기 ${insDayStr(W.end)} · 다음 검진 주기를 잡으면 같은 보장이 다시 열려요` };
     const fp0 = _claimFp(c);
     if (l.some((x) => x.id !== c.id && /지급/.test(x.status || "") && _claimFp(x) === fp0)) return { ok: false, code: "DUP", deny: CLAIM_DENY.DUP, reason: CLAIM_DENY.DUP.easy };
     const payout = 100000;   // 카탈로그(기본형 정밀검사 지원금) — CHECK_COVERS 근거
@@ -36363,8 +36495,14 @@ function claimSubmit(m, o) {
   o = o || {};
   const fee = Math.max(0, Math.floor(o.fee || 0));
   if (!fee) return { ok: false, reason: "진료비 금액을 알려주세요" };
-  const c = { id: "CLM-" + Date.now().toString(36).toUpperCase(), at: o.date || Date.now(), status: "접수", kind: o.kind || "진료", fee, channel: o.channel || "수동 접수" };
+  /* id에 접수 **순번**을 더한다(2026-10-08 수선) — 전에는 "CLM-" + Date.now()뿐이어서 같은
+     밀리초에 접수한 두 청구가 **같은 id**를 갖고, claimReview가 `l.find((x) => x.id === claimId)`로
+     먼저 들어온 건을 집었다. 청구 원장(hifin_claims)은 회원별이 아니라 **한 개**라, 그 경우
+     다른 회원의 진료일로 내 청구가 심사됐다(실측: 벽시계를 한 값으로 고정한 격리 컨텍스트에서
+     전건 충돌 — 조성래의 2026-10-06 건이 다른 회원 심사 결과로 돌아왔다). 순번은 원장 길이에서
+     나오므로 난수가 아니다(회귀 결정론 유지 — rng 금지 규칙과 정합). */
   const l = _claims();
+  const c = { id: "CLM-" + Date.now().toString(36).toUpperCase() + "-" + (l.length + 1).toString(36).toUpperCase(), at: o.date || Date.now(), status: "접수", kind: o.kind || "진료", fee, channel: o.channel || "수동 접수" };
   const fp = _claimFp(c);
   if (l.some((x) => /지급/.test(x.status || "") && _claimFp(x) === fp)) return { ok: false, code: "DUP", reason: CLAIM_DENY.DUP.easy };
   l.push(c); _claimsSave(l);
@@ -36449,8 +36587,70 @@ function rerateApplyReal(m) {
    바로 아래에 증서 이름을 「CERT-JSR2024A(증서 날짜 2024-12-26)」라고 적었고, 프로 콘솔 ⑨의 같은 사람
    행은 증서 날짜 기준으로 「만기 경과(2025.2.25)」라고 말했다. 새 기기에서 열 때마다 회원 화면의
    기간이 달라졌다. 이제 두 화면이 이 함수 하나를 호출한다(각자 계산하면 다시 갈라진다).
-   근거 우선순위 ① 증서 날짜(c.date) ② 증서 기록 시각(c.at) ③ 청약일(시연) ④ 계약 생성 시각. */
+   근거 우선순위 ⓐ 계약 보장 개시일(pol.coverFrom) ⓑ 증서 날짜(c.date→c.at) ⓒ 청약일(시연) ⓓ 계약 생성 시각.
+   ⓐ가 1순위인 이유: 보장 창의 주인은 증서가 아니라 **계약**이다. 실측 증서(CERT-JSR2024A · 2024-12-26)로
+   열렸던 1차 보장은 2025-02-25에 이미 끝났고, 그 증서를 고쳐서 창을 다시 열 수는 없다(실측 불변).
+   재가입으로 다시 열린 창은 계약 레코드의 coverFrom이 말한다 — 1차 이력은 prior로 함께 반환한다. */
+
+/* ── 시연 기준일(단일 상수) ─────────────────────────────────────────────────────────
+   형 지시(2026-10-06) 「검진대비보험 만기 경과되지 않고 **한 달이 남도록** 조치해 줘」.
+   창의 **양쪽**(보장 개시일 coverFrom · 판정 시각 now)을 이 상수 하나에서 파생시킨다.
+   한쪽만 고정하면 날이 지날수록 잔여일이 줄어들고, 어느 날 조용히 「보장 종료」로 넘어간다.
+   ⚠️ escrowPay._escNow()의 「실시계가 기준일 이후면 실시계」 분기를 **베끼지 않는다** —
+      그 규칙이면 2026-11-06부터 「보장 종료」와 「만기까지 30일」이 한 줄에 같이 뜬다.
+   범위: 검진대비보험 보장 창 전용. 법령 시행일(regGate)·동의 취득일·접속 로그·체인 블록 시각·
+      정체 일수·제공 DB·연간 한도 원장은 벽시계 그대로다(전역 now로 승격하지 않는다).
+   잔여일을 바꾸려면 remainDays 한 줄만 고친다(coverFrom·만기·배지·프로 ⑨가 함께 따라온다).
+   ⚠️ 저장소에는 재무·에스크로 기준일 FB_ASOF(2027-09-17 · finBudget.js:12)가 따로 있다 —
+      이 상수와 11개월 차다. 합치지 않는 것은 **형이 정한 값**이다(2026-10-06 지시: asOf 2026-10-06 ·
+      잔여 30일). FB_ASOF는 회원 10만 실적 환산 시점(= 사업 미래 시점)이고 이 상수는 시연에서
+      보여 줄 「오늘」이라 뜻이 다르다. 그래서 여기서 FB_ASOF를 파생하지 않고, 반대로 이 값이
+      escrowPay._escNow()처럼 실시계로 승격되지도 않게 한다(가드가 _escNow·FB_ASOF 미참조를 단언).
+      두 기준일을 합치려면 형 확정이 먼저다 — 합치는 날 아래 remainDays는 그대로 두면 된다. */
+const INS_DEMO = { asOf: "2026-10-06", remainDays: 30, label: "시연 기준일" };
 const INS_COVER_DAYS = 60;                      /* 발급 익일 0시 + 60일 — CYCLE_SPEC.expiryDay와 정합(형 확정 2026-09-03) */
+/* "YYYY-MM-DD" → 로컬 0시 ms(날짜 문자열에서만 만든다 — 인자 없는 new Date() 금지) */
+function insDateMs(s) {
+  const d = String(s || "").replace(/[^0-9]/g, "");
+  if (d.length < 8) return null;
+  const t = new Date(Number(d.slice(0, 4)), Number(d.slice(4, 6)) - 1, Number(d.slice(6, 8))).getTime();
+  return isNaN(t) ? null : t;
+}
+function insAsOfMs() { return insDateMs(INS_DEMO.asOf); }
+/* 창 판정 시각 — 기준일 그 자체다. 실시계 비교 분기를 넣지 않는다(의도된 설계). */
+function insNow() { return insAsOfMs(); }
+/* 창 날짜 **단일 포맷터**(2026-10-08) — 전에는 같은 만기일이 한 화면에서 두 철자로 섰다:
+   배지·증서는 toLocaleDateString("ko-KR")의 「2026. 11. 5.」, 거절 문구·프로 ⑨ mend 행은
+   「2026.11.5」. 숫자는 하나지만 형이 한 화면에서 두 표기를 읽는다. 이제 창을 소비하는 문구는
+   전부 이 함수를 부른다(로케일 의존 없이 ko-KR 표기를 직접 만든다 — 환경마다 달라지지 않게). */
+function insDayStr(ms) { const d = new Date(ms); return d.getFullYear() + ". " + (d.getMonth() + 1) + ". " + d.getDate() + "."; }
+/* 창 판정 시각을 **시드로 가른다**(2026-10-08 수선) ───────────────────────────────────
+   전에는 insNow()(기준일 고정)를 **모든** 창의 개시·만기 판정에 썼다. 그러면 기준일 이후에
+   열리는 창 —— 즉 오늘 「내 무료 보장 켜기」를 누르는 모든 회원 —— 은 now < start가 영구히 참이라
+   「보장 개시 대기」에서 빠져나오지 못하고 청구가 영원히 거절됐다(코호트 회원 실측 2026-10-08:
+   배지 「보장 개시 대기 · 2026. 10. 9. ~ 2026. 12. 8. · 만기까지 63일」 · claimReview NO_CONTRACT ·
+   「내일 다시 청구해 주세요」의 그 내일이 오지 않음). 계획이 hmTouchPlan 첫 연결 블록에 대해
+   경고한 「영구 미도래」가 창의 **개시 쪽**에 그대로 재현된 자리다.
+   그래서 기준일 시계는 **시연 시드 창(coverSeed "demo")에만** 적용한다 —
+   증서·청약·계약 생성 시각에서 온 창(seed "live")은 벽시계로 판정해 다음날 자연히 개시된다. */
+function insJudgeNow(seed) { return seed === "demo" ? insAsOfMs() : Date.now(); }
+/* 보장 창 산식의 유일한 구현 — 발급 익일 0시 + INS_COVER_DAYS일. 국면·잔여일도 여기서만 나온다. */
+function insWindowOf(issueAtMs, seed) {
+  const st = new Date(issueAtMs); st.setDate(st.getDate() + 1); st.setHours(0, 0, 0, 0);
+  const start = st.getTime(), end = start + INS_COVER_DAYS * 86400000, now = insJudgeNow(seed);
+  /* end는 **배타적** 경계다(보장 마지막 날 24시 = 표기상 만기일 0시).
+     전에는 ended: now > end여서 만기일 당일에 「지금 보장되고 있어요 · 만기까지 0일」이 하루 떴고
+     claimReview도 그날 자동승인했다(실측). now >= end면 종료로 고정한다. */
+  const phase = now >= end ? "보장 종료" : now >= start ? "보장 중" : "보장 개시 대기";
+  return { start, end, now, seed: seed || "live", phase, ended: phase === "보장 종료",
+    /* 잔여일은 「보장 중」에서만 뜻이 있다. 개시 전에는 end − now가 보험기간(60일)을 넘어
+       「60일 상품인데 만기까지 106일」이 배지에 섰다(증서 날짜 2026-11-20 실측) —
+       구조적으로 불가능하게 null로 돌리고, 개시 전에는 startsInDays를 쓴다. */
+    remainDays: phase === "보장 중" ? Math.max(1, Math.ceil((end - now) / 86400000)) : null,
+    startsInDays: phase === "보장 개시 대기" ? Math.max(1, Math.ceil((start - now) / 86400000)) : null };
+}
+/* 시연 시드 보장 개시일 — 기준일에 remainDays가 남도록 역산(= 기준일 − (60 − 30 + 1)일 = 2026-09-05 청약 → 09-06 개시 → 11-05 만기) */
+function insDemoCoverFrom() { return insAsOfMs() - Math.max(1, INS_COVER_DAYS - INS_DEMO.remainDays + 1) * 86400000; }
 function insCertAt(c) {
   if (!c) return null;
   const d = String(c.date || "").replace(/[^0-9]/g, "");
@@ -36460,27 +36660,72 @@ function insCertAt(c) {
   }
   return c.at || null;
 }
-function insCheckupCert(m) {
+/* 내 증서 전체 — 증서 날짜(insCertAt) 오름차순. 「1차 증서」·「최신 증서」를 가려 쓰려면
+   목록이 필요하다. 전에는 insCheckupCert(= 마지막 1건)만 있어서, 증서가 2건이 되는 순간
+   **최신 증서를 「1차 증서」라고 부르고** 1차 보장 이력 줄이 화면에서 사라졌다(실측:
+   예약완료 경로가 만든 CERT-NEW01(2026-11-20) 1건을 더하자 근거 문구가 「1차 증서 CERT-NEW01」이
+   되고 prior가 null이 됐다). 예약 1건만 보여 주면 재현되는 주력 흐름이다. */
+function insCheckupCerts(m) {
   try {
     const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]");
-    const mine = l.filter((x) => x && x.insured && x.insured.name === (m && m.name));
-    return mine.length ? mine[mine.length - 1] : null;
-  } catch (e) { return null; }
+    return l.filter((x) => x && x.insured && x.insured.name === (m && m.name))
+      .map((x) => ({ c: x, at: insCertAt(x) })).filter((x) => x.at != null)
+      .sort((a, b) => a.at - b.at);
+  } catch (e) { return []; }
 }
-/* {issueAt, start, end, phase, src, cert, ended} — 증서가 없으면 null */
+/* 최신 증서(화면이 「내 가입증서 보기」로 띄우는 것) */
+function insCheckupCert(m) { const l = insCheckupCerts(m); return l.length ? l[l.length - 1].c : null; }
+/* 창보다 **앞선 가장 이른** 증서 = 1차 증서. 없으면 null(근거 문구에 조각을 붙이지 않는다). */
+function insCheckupCertFirst(m, beforeMs) {
+  const l = insCheckupCerts(m);
+  for (let i = 0; i < l.length; i++) if (beforeMs == null || l[i].at < beforeMs) return l[i];
+  return null;
+}
+/* {issuedAt, start, end, phase, remainDays, basis, seed, src, cert, prior, ended} — 근거가 하나도 없으면 null.
+   pol을 넘기지 않으면 여기서 찾는다(프로 콘솔 ⑨ hmTouchPlan은 계약을 모른 채 호출한다 —
+   폴백이 없으면 회원 화면은 계약 coverFrom을, 콘솔은 증서를 보고 같은 사람이 두 기간으로 갈라진다). */
 function insCheckupWindow(m, pol) {
   try {
-    let issueAt = null, src = null, cert = null;
-    cert = insCheckupCert(m);
-    if (cert) { issueAt = insCertAt(cert); src = "증서 " + cert.id + (cert.date ? " · 발급 " + String(cert.date).replace(/-/g, ".") : ""); }
-    if (!issueAt && typeof hmInsQueue === "function") { try { const q = hmInsQueue().find((x) => x.email === (m && m.email)); if (q) { issueAt = q.at; src = "청약일 기준(시연)"; } } catch (e) {} }
-    if (!issueAt && pol && pol.createdAt) { issueAt = pol.createdAt; src = "계약 생성 시각(증서 미발급)"; }
+    if (!pol) { try { pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product)) || null; } catch (e0) { pol = null; } }
+    let issueAt = null, src = null, basis = null, seed = null;
+    const cert = insCheckupCert(m);                       /* 최신 증서 — 신원 표시용 */
+    const certAt = cert ? insCertAt(cert) : null;
+    const certSrc = cert ? ("증서 " + cert.id + (cert.date ? " · 발급 " + String(cert.date).replace(/-/g, ".") : "")) : null;
+    if (pol && pol.coverFrom != null) { issueAt = pol.coverFrom; basis = "policy"; seed = pol.coverSeed === "demo" ? "demo" : "live"; }
+    if (!issueAt && certAt) { issueAt = certAt; basis = "cert"; seed = "live"; src = certSrc; }
+    /* seed는 「기준일(INS_DEMO)에서 파생된 날짜인가」의 뜻만 갖는다 — 전에는 청약 큐 분기가
+       issueAt = q.at(벽시계 청약 시각)을 쓰면서 seed = "demo"를 함께 박아, 날마다 달라지는 창에
+       배지가 「· 시연 기준일 2026.10.06」 칩과 「(시연 시드)」 꼬리를 붙였다(규칙의 역방향 위반). */
+    if (!issueAt && typeof hmInsQueue === "function") { try { const q = hmInsQueue().find((x) => x.email === (m && m.email)); if (q) { issueAt = q.at; basis = "queue"; seed = "live"; src = "청약일 기준"; } } catch (e) {} }
+    if (!issueAt && pol && pol.createdAt) { issueAt = pol.createdAt; basis = "created"; seed = "live"; src = "계약 생성 시각(증서 미발급)"; }
     if (!issueAt) return null;
-    const st = new Date(issueAt); st.setDate(st.getDate() + 1); st.setHours(0, 0, 0, 0);
-    const start = st.getTime(), end = start + INS_COVER_DAYS * 86400000, now = Date.now();
-    const phase = now > end ? "보장 종료" : now >= start ? "보장 중" : "보장 개시 대기";
-    return { issuedAt: issueAt, start, end, phase, src, cert, ended: now > end };
+    const W = insWindowOf(issueAt, seed);
+    /* 1차 증서 = 창보다 앞선 **가장 이른** 증서(마지막 증서가 아니다). 라벨도 「1차 증서」로 박지 않고
+       「연계 증서」로 적는다 — 그 증서가 몇 번째인지는 데이터가 말해 주지 않는다. */
+    const first = (basis === "policy") ? insCheckupCertFirst(m, issueAt) : null;
+    if (!src) src = "계약 보장 개시일 " + insDayStr(W.start) + (seed === "demo" ? "(시연 시드)" : "") + (first ? " · 연계 증서 " + first.c.id : "");
+    /* 앞선 보장 창 — 연계 증서(실측)로 산출되는, 이미 지난 창. 읽기만 한다(증서를 고치거나 더하지 않는다).
+       계약 레코드는 1건뿐이고 바뀐 것은 coverFrom 하나이므로, 이 값으로 「재가입·재개·만기 종료」 같은
+       **계약 행위**를 단정하지 않는다(화면 문구는 Insurance.jsx에서 산출임을 밝혀 적는다). */
+    const prior = first ? Object.assign({ cert: first.c }, insWindowOf(first.at, "live")) : null;
+    /* now를 함께 돌려준다 — 이 창을 소비하는 쪽(프로 ⑨ hmTouchPlan)이 insNow()를 따로 부르면
+       시연 시드가 아닌 창까지 기준일로 판정한다. 판정 시각도 창 한 소스에서 나오게 한다. */
+    return { issuedAt: issueAt, now: W.now, start: W.start, end: W.end, phase: W.phase, remainDays: W.remainDays,
+      startsInDays: W.startsInDays, basis, seed, src, cert, priorCert: first ? first.c : null, prior, ended: W.ended };
   } catch (e) { return null; }
+}
+/* 검진대비보험 계약의 보장 창을 시연 기준일에 맞춘다(멱등).
+   coverSeed "live"(실계약에서 온 개시일)는 건드리지 않는다 — 시연 시드만 다시 쓴다. */
+function insCheckupCoverEnsure(m) {
+  try {
+    if (!m || typeof pbPolicies !== "function" || typeof pbPolicyPatch !== "function") return false;
+    const pol = pbPolicies(m).find((p) => /검진.?대비/.test(p.product));
+    if (!pol || pol.coverSeed === "live") return false;
+    const want = insDemoCoverFrom(), term = INS_COVER_DAYS + "일(검진 연동)";
+    if (pol.coverFrom === want && pol.coverSeed === "demo" && pol.term === term) return false;
+    pbPolicyPatch(m, pol.id, { coverFrom: want, coverSeed: "demo", term });
+    return true;
+  } catch (e) { return false; }
 }
 
 /* ══ insService — 상담사·화면 공용 진입점 ══ */
@@ -36530,9 +36775,21 @@ const insService = {
     /* 보장기간은 insCheckupWindow 하나에서 읽는다 — 프로 콘솔 ⑨(hmTouchPlan)와 같은 근거(증서 날짜) */
     const timeline = pol ? insCheckupWindow(m, pol) : null;
     const ended = !!(timeline && timeline.ended);
+    /* 「이 계약이 자기 보장 기간을 한 번이라도 산 적이 있나」 — 계약 생성 시각이 창의 만기 뒤면
+       그 보장 기간에 이 계약은 **존재하지 않았다**. 전에는 화면이 그 경우에도 타임라인 4단계
+       (발급·보장 시작·지켜지는 중·보장 종료)를 전건 점등하고 「보장 기간에는 이렇게 지켜드렸어요」
+       (과거완료)라고 적었다(실측: 코호트 회원 발급 직후 창 2025. 11. 2. ~ 2026. 1. 1. · 계약
+       createdAt은 누른 그 순간). 데이터에 없는 과거 보장을 화면이 단정한 자리다 — 조성래 카드에서
+       「재가입으로 재개」를 지운 것과 같은 종류의 단정이다.
+       ⚠️ 창이 **아직 끝나지 않았으면**(보장 중·개시 대기) 이 판정은 뜻이 없다 — ended를 함께 본다.
+       그러지 않으면 기준일 창(만기 2026-11-05)을 그 날짜 뒤에 처음 시드한 기기에서 배지는
+       「보장 중」인데 카드는 「이미 지난 기간이에요」가 되어, 창 하나에서 두 말이 나온다
+       (실측: 벽시계 2026-11-15 격리 컨텍스트). 국면은 창 한 소스가 말하고 이 값은 그 위에 얹힌다. */
+    const neverActive = !!(pol && timeline && timeline.ended && timeline.end <= (pol.createdAt || 0));
     const claims = _claims().filter((c) => /검진/.test(c.kind || ""));
-    return { hasCheckup, checkupDate, policy: pol || null, timeline, claims, ended,
-      endedNote: ended ? `보장 종료 — 검진대비보험 만기 경과(${new Date(timeline.end).toLocaleDateString("ko-KR")}) · 다음 검진 주기를 잡으면 무상 보장이 다시 시작돼요` : null,
+    return { hasCheckup, checkupDate, policy: pol || null, timeline, claims, ended, neverActive,
+      /* 만기일 표기는 insDayStr 한 포맷터 — 전에는 여기만 toLocaleDateString이라 같은 날짜가 두 철자로 섰다 */
+      endedNote: ended ? `보장 종료 — 검진대비보험 만기 경과(${insDayStr(timeline.end)}) · 다음 검진 주기를 잡으면 무상 보장이 다시 시작돼요` : null,
       coverSrc: timeline ? timeline.src : null,
       coverage: [
         ["검진에서 암이 발견됐어요", "일반암 진단금", 10000000, "확정 진단과 동시에 — 치료 시작 비용부터 해결 (기타암 제외)"],
@@ -36542,7 +36799,11 @@ const insService = {
       ],   // 카탈로그(CHECK_COVERS 고급형) 근거 — 암·뇌졸중·급성심근경색 각 1,000만원 · 21대 질병 수술비 300만원.
            // 정밀검사 지원 10만원은 무상 정액 지원금(insService.claimEval payout)과 동일 값으로 고정.
            // "진단금 최대 1,000만 원" 문구(홈 스토리·검진·하이 안내)와 정합.
-      exclusions: ["보장이 시작되기 전(발급 다음날 0시 이전)에 받은 진단", "일부러 낸 사고", "검진과 관계없는 일반 진료비(그건 실손보험 영역이에요)"] };
+      /* 면책 문구는 심사가 실제로 보는 **양쪽 경계**를 적는다(claimReview의 진료일 축과 한 입) —
+         전에는 개시 전만 적어 두고 만기 후 진료일은 자동승인됐다. */
+      exclusions: [timeline
+        ? `보장 기간(${insDayStr(timeline.start)} 0시 ~ ${insDayStr(timeline.end)} 0시) 밖에 받은 진단 — 개시 전·만기 후 진료일은 심사에서 거절돼요`
+        : "보장이 시작되기 전에 받은 진단", "일부러 낸 사고", "검진과 관계없는 일반 진료비(그건 실손보험 영역이에요)"] };
   },
   /* ①-2 검진대비보험 발급 — 검진 기록 필수·PolicyLedger+증서+체인 */
   issueCheckupIns(m) {
@@ -36550,11 +36811,31 @@ const insService = {
     const st = this.checkupIns(m);
     if (!st.hasCheckup) return { ok: false, reason: "검진 기록이 아직 없어요 — 검진결과를 먼저 연결해 주세요(무상 발급의 연동 조건)" };
     if (st.policy) return { ok: false, reason: "이미 발급된 검진대비보험이 있어요(" + st.policy.id + ")" };
-    const r = (typeof pbPolicyCreate === "function") ? pbPolicyCreate(m, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" }) : { ok: false };
+    /* 창의 주인은 증서가 아니라 **계약**이다 — 발급 시점에 보장 개시일을 계약에 동봉한다(2026-10-08 수선).
+       전에는 coverFrom을 넘기지 않아 근거가 ⓑ증서(= 연계 검진일)로 떨어졌고, 그 날짜가 시드 리터럴
+       (코호트 2025-11-01 · 체험 회원 2024-12-26)이라 60일 창이 **이미 닫혀** 있었다. 실측(vm 프로브,
+       금고 주입 없음): 코호트 42·7·113 전건 issueOk=true인데 phase=「보장 종료」 · 창 2025. 11. 2. ~
+       2026. 1. 1. · claimReview COVER_END · 발급 알림은 「보장 개시 2025. 11. 2. 0시」. 오늘 체결한
+       계약을 두고 11개월 전에 보장이 개시·종료됐다고 회원에게 말한 자리다.
+       하한 규칙 — 연계 검진일로 열리는 창이 아직 닫히지 않았으면 그 날짜를 쓴다(확인 모달의
+       「연계 검진일 다음날 0시」 서술이 지켜진다). 이미 닫혔으면 **발급일**을 하한으로 내려
+       창을 연다(발급 다음날 0시 개시 — 그 내일은 실제로 온다).
+       coverSeed "live": 실계약에서 온 개시일이라 벽시계로 판정한다(기준일 시계는 시연 시드 전용). */
+    const _ckAt = insDateMs(st.checkupDate);
+    const _w0 = (_ckAt != null) ? insWindowOf(_ckAt, "live") : null;
+    const _cf = (_w0 && !_w0.ended) ? _ckAt : Date.now();
+    const r = (typeof pbPolicyCreate === "function") ? pbPolicyCreate(m, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: INS_COVER_DAYS + "일(검진 연동)", coverFrom: _cf, coverSeed: "live" }) : { ok: false };
     if (!r.ok) return r;
-    try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `검진대비보험 증서 발급 — ${r.policy.id} · 검진(${st.checkupDate}) 연동 무상` }); const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push({ id: "CERT-" + r.policy.id.slice(-5), center: "검진 연동 발급", date: st.checkupDate, at: Date.now(), hash: b && b.hash }); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } catch (e) {}
-    if (typeof notifPush === "function") notifPush({ ic: "check", t: "검진대비보험 발급", d: "검진 기록 연동으로 무상 보장이 시작돼요(익일 0시 개시)", target: "insurance" });
-    return { ok: true, policy: r.policy };
+    /* 증서에 insured를 담는다 — 문서화된 근거 우선순위 ⓑ(증서 날짜)는 insCheckupCert가
+       `x.insured.name === m.name`인 증서만 「내 것」으로 인정하는데, 이 경로가 push하는 레코드에
+       insured가 없어서 ⓑ가 **도달 불가**였다(코호트 회원 발급 직후 basis가 "cert"가 아니라
+       "created"로 떨어지는 것을 실측). 폴백 사다리가 끊겨 있던 자리이고, 증서 모달이 다른 회원의
+       증서를 띄우던 자리이기도 하다. 실측 증서(CERT-JSR2024A)는 손대지 않는다. */
+    try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `검진대비보험 증서 발급 — ${r.policy.id} · 검진(${st.checkupDate}) 연동 무상` }); const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push({ id: "CERT-" + r.policy.id.slice(-5), center: "검진 연동 발급", date: st.checkupDate, at: Date.now(), insured: { name: m.name }, hash: b && b.hash }); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } catch (e) {}
+    /* 개시 시점은 창이 말한다 — 「익일 0시」로 단정하면 연계 검진일 기준으로 열리는 창과 어긋난다 */
+    const _W = insCheckupWindow(m);
+    if (typeof notifPush === "function") notifPush({ ic: "check", t: "검진대비보험 발급", d: `검진 기록 연동으로 무상 보장이 준비됐어요${_W ? `(보장 개시 ${insDayStr(_W.start)} 0시)` : ""}`, target: "insurance" });
+    return { ok: true, policy: r.policy, window: _W };
   },
   /* ② 실손 현황 — 세대·한도·잔여·코호트 대비 */
   silStatus(m) {
@@ -37615,18 +37896,25 @@ function hmTouchPlan(m) {
         근거 문구는 "증서 CERT-JSR2024A"라고 밝히면서 만기는 시드 시각 + 61일로 계산해, 2024년 증서가
         2026년 12월에 만기되는 모순이 화면에 떴고 새 기기에서 시드하면 기기마다 다른 날짜가 나왔다(실측).
         이제 증서 날짜(c.date — 발급 사실의 날짜)가 단일 근거다. c.at은 날짜가 없는 증서의 폴백으로만 쓴다. */
-  /* 보장기간은 insCheckupWindow 하나에서 읽는다 — 회원 화면(insService.checkupIns)과 같은 근거다 */
+  /* 보장기간은 insCheckupWindow 하나에서 읽는다 — 회원 화면(insService.checkupIns)과 같은 근거다.
+     만기 분기의 시계만 창 판정 시각(insNow — 시연 기준일)으로 쓴다. 위의 첫 연결 블록
+     (combo·d7·d14·d30)은 base가 회원이 결과를 본 실제 시각(seen.at)이라 벽시계를 그대로 둔다 —
+     전체를 기준일로 바꾸면 기준일보다 뒤에 결과를 본 회원의 첫 연결이 영구 미도래가 된다. */
   const W = (typeof insCheckupWindow === "function") ? insCheckupWindow(m) : null;
+  /* 만기 분기의 판정 시각은 **창이 쓴 그 시각**(W.now)을 받아 쓴다 — 전에는 insNow()를 직접 불러
+     시연 시드가 아닌 창(증서·청약·계약 생성 기반)까지 기준일로 판정했다. 그러면 기준일 이후에
+     열리는 창은 영구히 개시 전이 되어 D-30·D-7이 끝까지 도래하지 않는다. */
+  const wnow = W ? W.now : ((typeof insNow === "function") ? insNow() : now);
   let issueAt = W ? W.issuedAt : null, src = W ? W.src : null;
   if (issueAt) {
     const end = W.end;
-    if (now > end) {
+    if (wnow > end) {
       /* 이미 만기가 지난 증서 — D-30·D-7 "예정" 행을 만들면 지난 날짜가 오늘의 할 일로 올라온다.
          보장 종료 사실 1행으로 요약하고, 다음 검진 주기 제안으로 잇는다. */
-      items.push({ key: "mend", title: `보장 종료 — 검진대비보험 만기 경과(${_hmDay(end)}) · 다음 검진 주기 제안`, when: end + _HM_DAY, due: true, done: !!doneKeys.mend, src, ended: true });
+      items.push({ key: "mend", title: `보장 종료 — 검진대비보험 만기 경과(${(typeof insDayStr === "function") ? insDayStr(end) : _hmDay(end)}) · 다음 검진 주기 제안`, when: end + _HM_DAY, due: true, done: !!doneKeys.mend, src, ended: true });
     } else {
       [["m30", "만기 D-30 — 검진대비보험 만기 예정 안내", end - 30 * _HM_DAY], ["m7", "만기 D-7 — 재가입·차기 검진 연계 안내", end - 7 * _HM_DAY], ["m1", "만기 D+1 — 보장 종료·다음 검진 주기 제안", end + _HM_DAY]].forEach(([k, t, w]) => {
-        items.push({ key: k, title: t, when: w, due: now >= w, done: !!doneKeys[k], src });
+        items.push({ key: k, title: t, when: w, due: wnow >= w, done: !!doneKeys[k], src });
       });
     }
   }
@@ -37775,7 +38063,13 @@ function hmCustomerCard(m) {
   const plan = hmTouchPlan(m);
   const touches = _hmLs("hifin_hm_touch_" + m.email, []);
   const last = touches.length ? touches[touches.length - 1] : null;
-  const next = plan.items.find((x) => !x.done && x.when > Date.now());
+  /* 「다음 터치」는 **각 행이 자기 시계로 판정한 due**로 고른다(2026-10-08 수선).
+     전에는 when > Date.now()로 골랐는데, plan.items의 when은 만기 분기가 기준일 파생 창에서,
+     첫 연결 분기가 벽시계(seen.at)에서 만든 **서로 다른 두 시계**의 값이다. 그래서 같은 카드가
+     한 시계로 고른 「다음 터치」와 다른 시계로 고른 「오늘 연결」을 나란히 적었고, 벽시계가
+     창을 지나면(실측: 2026-11-10·2026-12-20) next가 null이 되어 「다음 터치 지금」이 영구히
+     남았다. due는 그 행을 만든 시계가 판정한 값이므로 !due = 「아직 때가 아니다」로 일치한다. */
+  const next = plan.items.find((x) => !x.done && !x.due);
   const dueNow = plan.items.find((x) => x.due && !x.done);
   /* 하이의 한 줄 — 상태·단계·타이밍을 근거로 조립(새 문장 창작이 아니라 규칙 조립) */
   let hi;
@@ -40947,7 +41241,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "aa85f233eb6e9b57", "generatedAt": "2026-10-06", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "384e900072070877", "generatedAt": "2026-10-08", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -41150,7 +41444,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-10-06","seed":20260828,"inventory":{"version":1,"sourceHash":"aa85f233eb6e9b57","generatedAt":"2026-10-06","bypass":false},"total":13095,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.36,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-10-08","seed":20260828,"inventory":{"version":1,"sourceHash":"384e900072070877","generatedAt":"2026-10-08","bypass":false},"total":13095,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.32,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

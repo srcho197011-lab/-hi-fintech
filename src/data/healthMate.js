@@ -534,18 +534,25 @@ function hmTouchPlan(m) {
         근거 문구는 "증서 CERT-JSR2024A"라고 밝히면서 만기는 시드 시각 + 61일로 계산해, 2024년 증서가
         2026년 12월에 만기되는 모순이 화면에 떴고 새 기기에서 시드하면 기기마다 다른 날짜가 나왔다(실측).
         이제 증서 날짜(c.date — 발급 사실의 날짜)가 단일 근거다. c.at은 날짜가 없는 증서의 폴백으로만 쓴다. */
-  /* 보장기간은 insCheckupWindow 하나에서 읽는다 — 회원 화면(insService.checkupIns)과 같은 근거다 */
+  /* 보장기간은 insCheckupWindow 하나에서 읽는다 — 회원 화면(insService.checkupIns)과 같은 근거다.
+     만기 분기의 시계만 창 판정 시각(insNow — 시연 기준일)으로 쓴다. 위의 첫 연결 블록
+     (combo·d7·d14·d30)은 base가 회원이 결과를 본 실제 시각(seen.at)이라 벽시계를 그대로 둔다 —
+     전체를 기준일로 바꾸면 기준일보다 뒤에 결과를 본 회원의 첫 연결이 영구 미도래가 된다. */
   const W = (typeof insCheckupWindow === "function") ? insCheckupWindow(m) : null;
+  /* 만기 분기의 판정 시각은 **창이 쓴 그 시각**(W.now)을 받아 쓴다 — 전에는 insNow()를 직접 불러
+     시연 시드가 아닌 창(증서·청약·계약 생성 기반)까지 기준일로 판정했다. 그러면 기준일 이후에
+     열리는 창은 영구히 개시 전이 되어 D-30·D-7이 끝까지 도래하지 않는다. */
+  const wnow = W ? W.now : ((typeof insNow === "function") ? insNow() : now);
   let issueAt = W ? W.issuedAt : null, src = W ? W.src : null;
   if (issueAt) {
     const end = W.end;
-    if (now > end) {
+    if (wnow > end) {
       /* 이미 만기가 지난 증서 — D-30·D-7 "예정" 행을 만들면 지난 날짜가 오늘의 할 일로 올라온다.
          보장 종료 사실 1행으로 요약하고, 다음 검진 주기 제안으로 잇는다. */
-      items.push({ key: "mend", title: `보장 종료 — 검진대비보험 만기 경과(${_hmDay(end)}) · 다음 검진 주기 제안`, when: end + _HM_DAY, due: true, done: !!doneKeys.mend, src, ended: true });
+      items.push({ key: "mend", title: `보장 종료 — 검진대비보험 만기 경과(${(typeof insDayStr === "function") ? insDayStr(end) : _hmDay(end)}) · 다음 검진 주기 제안`, when: end + _HM_DAY, due: true, done: !!doneKeys.mend, src, ended: true });
     } else {
       [["m30", "만기 D-30 — 검진대비보험 만기 예정 안내", end - 30 * _HM_DAY], ["m7", "만기 D-7 — 재가입·차기 검진 연계 안내", end - 7 * _HM_DAY], ["m1", "만기 D+1 — 보장 종료·다음 검진 주기 제안", end + _HM_DAY]].forEach(([k, t, w]) => {
-        items.push({ key: k, title: t, when: w, due: now >= w, done: !!doneKeys[k], src });
+        items.push({ key: k, title: t, when: w, due: wnow >= w, done: !!doneKeys[k], src });
       });
     }
   }
@@ -694,7 +701,13 @@ function hmCustomerCard(m) {
   const plan = hmTouchPlan(m);
   const touches = _hmLs("hifin_hm_touch_" + m.email, []);
   const last = touches.length ? touches[touches.length - 1] : null;
-  const next = plan.items.find((x) => !x.done && x.when > Date.now());
+  /* 「다음 터치」는 **각 행이 자기 시계로 판정한 due**로 고른다(2026-10-08 수선).
+     전에는 when > Date.now()로 골랐는데, plan.items의 when은 만기 분기가 기준일 파생 창에서,
+     첫 연결 분기가 벽시계(seen.at)에서 만든 **서로 다른 두 시계**의 값이다. 그래서 같은 카드가
+     한 시계로 고른 「다음 터치」와 다른 시계로 고른 「오늘 연결」을 나란히 적었고, 벽시계가
+     창을 지나면(실측: 2026-11-10·2026-12-20) next가 null이 되어 「다음 터치 지금」이 영구히
+     남았다. due는 그 행을 만든 시계가 판정한 값이므로 !due = 「아직 때가 아니다」로 일치한다. */
+  const next = plan.items.find((x) => !x.done && !x.due);
   const dueNow = plan.items.find((x) => x.due && !x.done);
   /* 하이의 한 줄 — 상태·단계·타이밍을 근거로 조립(새 문장 창작이 아니라 규칙 조립) */
   let hi;

@@ -1,2 +1,2 @@
 /* 자동 생성 — run_handoff_harness.mjs (P4). 콘솔 하네스 타일이 읽는 최근 통과 스냅샷 — 손대지 말 것 */
-const HM_HARNESS_SNAPSHOT = {"date":"2026-10-06","sample":3000,"cards":2496,"publishable":2496,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};
+const HM_HARNESS_SNAPSHOT = {"date":"2026-10-08","sample":3000,"cards":2496,"publishable":2496,"coachAcc":100,"forbiddenHits":0,"goldenDrift":0,"pass":true};

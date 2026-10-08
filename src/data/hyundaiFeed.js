@@ -32,6 +32,13 @@ const HY_FIELDS = [
   { n: 22,  k: "consent_origin",        ko: "동의 취득 경로",           form: "DIRECT/SUBMITTED/PROVIDED", note: "규제 대응 자동화" },
   { n: 23,  k: "consent_evidence_id",   ko: "동의 증빙 id",             form: "화면 버전·시각", note: "민원 시 즉시 소명" },
   { n: 24,  k: "notice_status",         ko: "출처 통지 상태",           form: "불요/필요·이행", note: "제20조 — 직접 수집은 불요" },
+  /* ⚠️ 체계 차이(2026-10-08 기록 · 값은 바꾸지 않는다) — 아래 maturity_date·days_to_expiry는
+     검진일(D0) 기반 cycleStage 사이클과 _hyDate(벽시계)에서 나온다. 회원 화면의 보장 창
+     (insCheckupWindow — 계약 coverFrom 파생 · 시연 시드는 INS_DEMO 기준일 고정)과 **산출 체계가
+     다르다**. 이름이 같은 지표가 두 원천을 가지므로, 코호트 회원 한 명을 화면과 제공 DB 행으로
+     나란히 보여 주면 「만기까지 남은 일수」가 두 숫자로 선다. 제공 DB는 외부 제공 계약면이라
+     형 확정 없이 바꿀 자리가 아니다 — 기준일 체계를 넓히는 후속 변경의 범위에 이 두 필드를
+     반드시 포함할 것. */
   { n: 25,  k: "maturity_date",         ko: "검진대비보험 만기일",      form: "날짜", note: "최상위 타이밍 신호 S14" },
   { n: 26,  k: "days_to_expiry",        ko: "만기까지 남은 일수",       form: "정수(≤45)", note: "D-20/D-7/D-1 자동 발동 · 개시 전 null" },
   { n: 27,  k: "result_received_at",    ko: "결과 수령 시각",           form: "날짜", note: "결과 내용은 미포함" },

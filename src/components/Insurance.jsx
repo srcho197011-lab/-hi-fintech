@@ -475,7 +475,7 @@ function _insServiceRoute(text, member) {
     /* 보장기간·만기는 insCheckupWindow(증서 날짜) 한 소스 — 하이도 회원 화면·프로 콘솔과 같은 문장을 말한다 */
     const _tl = S.timeline;
     return { bubbles: [{ kind: "card", card: { title: `🩺 검진대비보험 — ${_tl ? _tl.phase : "보장기간 확인 필요"}`, items: [`증서 ${S.policy.id} · 무상(추가 보험료 0원)`,
-      _tl ? `보장기간 ${new Date(_tl.start).toLocaleDateString("ko-KR")}~${new Date(_tl.end).toLocaleDateString("ko-KR")}${_tl.src ? ` · ${_tl.src}` : ""}` : "보장기간 — 증서 날짜를 확인하지 못했어요",
+      _tl ? `보장기간 ${insDayStr(_tl.start)} ~ ${insDayStr(_tl.end)}${_tl.src ? ` · ${_tl.src}` : ""}` : "보장기간 — 증서 날짜를 확인하지 못했어요",
       S.endedNote].filter(Boolean).concat(S.coverage.map(([scen, name, amt]) => `${name} ${amt.toLocaleString()}원 — "${scen}"일 때`)), buttons: (_tl && _tl.phase === "보장 중") ? ["검진보험 청구해줘"] : [] } }], quicks: [] };
   }
   // M2 — 위험 예측·인수 시뮬(상담사)
@@ -1339,8 +1339,21 @@ function InsCheckupInsSection({ onEnroll }) {
      프로 콘솔 ⑨(hmTouchPlan)와 같은 근거다. 만기가 지난 증서는 여기서도 「보장 종료」로 적는다. */
   const TL = ["발급", "보장 시작", "지켜지는 중", "보장 종료"];
   const ended = !!(S.policy && S.ended);
-  const tlIdx = !S.policy || !S.timeline ? -1 : ended ? 3 : S.timeline.phase === "보장 중" ? 2 : 1;
+  /* 「이 계약이 자기 보장 기간을 산 적이 없다」(계약 생성 시각이 창 만기 뒤) — 그 과거 보장은
+     데이터에 없다. 전에는 이 경우에도 타임라인 4단계가 전건 점등되고 「보장 기간에는 이렇게
+     지켜드렸어요」(과거완료)가 떴다(실측: 발급 직후 창이 전부 과거인 계약). 점등 수·시제를
+     이 한 변수에서 가른다 — 발급 1단계만 켜고 사실만 적는다. */
+  const never = !!(S.policy && S.neverActive);
+  /* 점등 수 = **국면**. 「보장 개시 대기」에 ✓를 2단계까지 켜면 같은 카드가 「✓ 보장 시작」과
+     「보장은 2026. 10. 9. 0시부터 시작돼요」를 나란히 적는다(실측: 코호트 000042 발급 직후).
+     아직 시작하지 않은 보장을 시작했다고 적지 않는다 — 개시 전은 발급 1단계까지다. */
+  const tlIdx = !S.policy || !S.timeline ? -1 : never ? 0 : ended ? 3 : S.timeline.phase === "보장 중" ? 2 : 0;
   const active = tlIdx === 2;
+  /* 「보장 개시 대기」는 종료도 보장 중도 아닌 **세 번째 국면**이다(2026-10-08 수선).
+     전에는 히어로가 ended만 보고 두 갈래로 갈라, 배지가 「보장 개시 대기」인 회원에게도
+     히어로는 「지금 지켜지고 있어요」라고 말했다 — 한 카드가 배지·히어로·타임라인·청구 버튼
+     네 가지로 말했다(실측). 아래 문구·배지·버튼이 모두 이 한 변수에서 갈라진다. */
+  const waiting = !!(S.policy && S.timeline && !ended && !active);
   return (
     <div className="card" id="cins-checkup" style={{ border: "1.5px solid #BFD0FF", overflow: "hidden" }}>
       {/* ── 히어로: 한 문장으로 마음에 닿기 ── */}
@@ -1349,16 +1362,20 @@ function InsCheckupInsSection({ onEnroll }) {
         {!S.policy ? (
           <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님, 검진 받으셨죠?<br />그 순간을 위해 <span style={{ color: "#FDE68A" }}>무료 보장</span>이 준비돼 있어요.</div>
         ) : (
-          ended
+          never
+            ? <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님, 이 검진 기록으로는 <span style={{ color: "#FDE68A" }}>보장 창이 이미 지났어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>다음 검진 주기를 잡으시면 같은 보장이 열려요 — 지난 기간에 보장을 받으신 기록은 없어요.</span></div>
+            : ended
             ? <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님의 무료 보장은 <span style={{ color: "#FDE68A" }}>만기가 지났어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>다음 검진 주기를 잡으시면 같은 보장이 다시 시작돼요.</span></div>
-            : <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님은 지금 <span style={{ color: "#FDE68A" }}>지켜지고 있어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>검진에서 무슨 일이 발견돼도 — 치료비 걱정에 치료를 미루는 일은 없게요.</span></div>
+            : waiting
+              ? <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님의 무료 보장이 <span style={{ color: "#FDE68A" }}>준비됐어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>보장은 {insDayStr(S.timeline.start)} 0시부터 시작돼요 — 그때부터는 치료비 걱정에 치료를 미루는 일이 없게요.</span></div>
+              : <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님은 지금 <span style={{ color: "#FDE68A" }}>지켜지고 있어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>검진에서 무슨 일이 발견돼도 — 치료비 걱정에 치료를 미루는 일은 없게요.</span></div>
         )}
-        {S.policy && S.timeline && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.18)", borderRadius: 99, padding: "5px 12px", fontSize: 11.5, fontWeight: 700 }}>{ended ? <AlertTriangle size={13} /> : <Check size={13} />} {active ? "지금 보장되고 있어요" : S.timeline.phase} · {new Date(S.timeline.start).toLocaleDateString("ko-KR")} ~ {new Date(S.timeline.end).toLocaleDateString("ko-KR")}{S.coverSrc ? ` · ${S.coverSrc}` : ""}</div>}
+        {S.policy && S.timeline && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: 6, background: "rgba(255,255,255,.18)", borderRadius: 99, padding: "5px 12px", fontSize: 11.5, fontWeight: 700 }}>{ended ? <AlertTriangle size={13} /> : active ? <Check size={13} /> : <ShieldCheck size={13} />} {active ? "지금 보장되고 있어요" : S.timeline.phase} · {insDayStr(S.timeline.start)} ~ {insDayStr(S.timeline.end)}{active && S.timeline.remainDays != null ? ` · 만기까지 ${S.timeline.remainDays}일` : ""}{waiting ? ` · 개시 ${insDayStr(S.timeline.start)}${S.timeline.startsInDays != null ? ` (개시까지 ${S.timeline.startsInDays}일)` : ""}` : ""}{S.coverSrc ? ` · ${S.coverSrc}` : ""}{S.timeline.seed === "demo" && typeof INS_DEMO !== "undefined" ? <span style={{ background: "rgba(255,255,255,.22)", borderRadius: 99, padding: "1px 7px", fontSize: 10.5, fontWeight: 800 }}>· 시연 기준일 {String(INS_DEMO.asOf).replace(/-/g, ".")}</span> : null}</div>}
       </div>
 
       {!S.policy ? (
         S.hasCheckup ? (<>
-          <p style={{ fontSize: 13.5, color: "#3a4659", lineHeight: 1.7 }}>검진 기록(<b>{S.checkupDate}</b>)이 연결돼 있어요. 버튼 한 번이면 <b>암·뇌졸중·심근경색 진단금과 대부분 질병의 수술비</b>까지 지켜주는 보장이 켜져요 — <b style={{ color: "var(--green)" }}>돈은 한 푼도 들지 않아요.</b></p>
+          <p style={{ fontSize: 13.5, color: "#3a4659", lineHeight: 1.7 }}>검진 기록(<b>{S.checkupDate}</b>)이 연결돼 있어요. 버튼 한 번이면 <b>암·뇌졸중·심근경색 진단금과 대부분 질병의 수술비</b>까지 지켜주는 보장이 준비돼요 — <b style={{ color: "var(--green)" }}>돈은 한 푼도 들지 않아요.</b> 보장은 <b>다음날 0시</b>부터 시작돼요(정확한 개시일은 발급 직후 배지에 적혀요).</p>
           <button className="cbtn pri" style={{ fontSize: 15, padding: "14px" }} onClick={() => setConfirm("issue")}><ShieldCheck size={16} /> 내 무료 보장 켜기 (10초)</button>
         </>) : (<>
           <p style={{ fontSize: 13.5, color: "var(--muted)", lineHeight: 1.7 }}>건강검진을 예약하시면 <b>보험료 0원</b>으로 검진 대비 보장이 함께 준비돼요 — 검진이 곧 보험이 되는 거예요.</p>
@@ -1370,8 +1387,22 @@ function InsCheckupInsSection({ onEnroll }) {
           {TL.map((s, i) => <span key={s} style={{ flex: 1, textAlign: "center", padding: "5px 0", borderRadius: 8, background: i <= tlIdx ? "#DBEAFE" : "#F1F5F9", color: i <= tlIdx ? "#1D4ED8" : "#94A3B8" }}>{i <= tlIdx ? "✓ " : ""}{s}</span>)}
         </div>
         {ended && S.endedNote && <div style={{ margin: "0 0 10px", padding: "11px 13px", background: "#FEF3E2", border: "1px solid #FDE68A", borderRadius: 12, fontSize: 12.5, lineHeight: 1.7, color: "#92400E", fontWeight: 600 }}>{S.endedNote}</div>}
+        {/* 연계 증서로 산출되는 창을 숨기지 않고 한 줄로 밝힌다.
+            ⚠️ 「재가입」·「재개」·「만기 종료」 같은 **계약 행위 어휘를 쓰지 않는다**(2026-10-08 수선) —
+            계약 레코드는 1건뿐이고 증서도 1건뿐이며 바뀐 것은 coverFrom 하나다. 새 청약·새 계약·
+            새 증서·감사 기록이 하나도 없는데 화면이 「재가입으로 2026. 9. 6. 재개」라고 단정했다.
+            또 12-27·02-25는 실측이 아니라 **연계 검진일에 60일 규칙을 적용한 산출값**이므로
+            「(실측 검진 연동)」이 아니라 무엇이 측정이고 무엇이 계산인지 갈라 적는다.
+            라벨은 「연계 검진일」(중립) — 이 블록은 조성래(실측)뿐 아니라 코호트·체험 회원의
+            **합성 검진일**로도 렌더된다. 그 날짜에 「실측」을 붙이면 데이터에 없는 성격을 단정한다. */}
+        {S.timeline && S.timeline.prior && S.timeline.prior.ended && S.timeline.prior.end < S.timeline.start && (
+          <div style={{ margin: "0 0 10px", fontSize: 11.6, color: "var(--muted)", lineHeight: 1.65 }}>
+            연계 증서 {S.timeline.prior.cert ? S.timeline.prior.cert.id : ""}(연계 검진일 {S.timeline.prior.cert && S.timeline.prior.cert.date ? S.timeline.prior.cert.date : "—"})로 산출되는 보장 창은 {insDayStr(S.timeline.prior.start)} ~ {insDayStr(S.timeline.prior.end)} — 이미 지난 기간이에요. 지금 적용되는 창은 계약 보장 개시일 기준 {insDayStr(S.timeline.start)} ~ {insDayStr(S.timeline.end)}{S.timeline.seed === "demo" ? "(시연 시드)" : ""}예요.
+          </div>
+        )}
         {/* ── "만약에…" 시나리오 카드 — 큰 글씨·상황 언어 ── */}
-        <div style={{ fontSize: 13, fontWeight: 800, margin: "2px 0 8px" }}>{ended ? "보장 기간에는 이렇게 지켜드렸어요," : "만약에 이런 일이 생기면요,"}</div>
+        {/* 시제 — 「지켜드렸어요」(과거완료)는 그 보장 기간이 **실제로 이 계약에 적용된 뒤**에만 참이다 */}
+        <div style={{ fontSize: 13, fontWeight: 800, margin: "2px 0 8px" }}>{never ? "이 검진 기록으로 열리는 보장 창은 이미 지난 기간이에요 — 보장 내용은 이랬어요," : ended ? "보장 기간에는 이렇게 지켜드렸어요," : "만약에 이런 일이 생기면요,"}</div>
         <div style={{ display: "grid", gap: 8 }}>
           {S.coverage.map(([scen, name, amt, d]) => (
             <div key={name} style={{ display: "flex", alignItems: "center", gap: 12, border: "1px solid #E3ECFB", background: "#F8FAFF", borderRadius: 12, padding: "12px 14px" }}>
@@ -1391,8 +1422,11 @@ function InsCheckupInsSection({ onEnroll }) {
         </div>
         {S.claims.length > 0 && S.claims.map((c) => <div className="costrow" key={c.id}><span className="cl">청구 {c.id}</span><span className="cv">{/지급완료/.test(c.status) ? `지급 ${won(c.payout)}원 — 지갑에 들어왔어요` : c.status}</span><span className="ca" style={{ color: /지급완료/.test(c.status) ? "var(--green)" : "#B45309" }}>{/지급완료/.test(c.status) ? "완료 ✓" : "진행 중"}</span></div>)}
         {active && <button className="cbtn pri" style={{ marginTop: 4, fontSize: 14.5, padding: "13px" }} onClick={() => { const r = insService.claimSubmit(m, { kind: "검진 연계 정밀검사", fee: 100000 }); if (r.ok) { const rv = insService.claimReview(m, r.claim.id); if (rv.ok) setConfirm({ claim: rv }); else if (typeof toast === "function") toast("🔒 " + rv.reason); } else if (typeof toast === "function") toast("🔒 " + r.reason); }}><Coins size={15} /> 치료비 청구하기 — 서류 없이 바로</button>}
-        {(() => { try { const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); if (!l.length) return null; const c = l[l.length - 1]; return (<>
-          {typeof InsCertModal === "function" && _certView && <InsCertModal cert={c} onClose={() => setCertView(false)} />}
+        {/* 증서 선택도 insCheckupCert와 같은 소유 판정(insured.name)을 쓴다 — 전에는 l[l.length-1]로
+            **필터 없이** 마지막 증서를 집어, 한 브라우저를 여러 회원이 거친 시연 기기에서 다른 회원의
+            증서번호·기관에 내 보장기간이 붙어 설 수 있었다. */}
+        {(() => { try { const c = (typeof insCheckupCert === "function") ? insCheckupCert(m) : null; if (!c) return null; const l = (typeof insCheckupCerts === "function") ? insCheckupCerts(m) : [c]; return (<>
+          {typeof InsCertModal === "function" && _certView && <InsCertModal cert={c} win={S.timeline} onClose={() => setCertView(false)} />}
           <button className="cbtn" style={{ marginTop: 8 }} onClick={() => setCertView(true)}><FileText size={14} /> 내 가입증서 보기 — {c.id} ({l.length}건)</button>
         </>); } catch (e) { return null; } })()}
         <details style={{ fontSize: 12, margin: "10px 0 0" }}><summary style={{ cursor: "pointer", fontWeight: 700, color: "var(--soft)" }}>미리 알려드려요 — 이런 경우는 보장이 어려워요</summary><ul style={{ margin: "6px 0 0", paddingLeft: 18, color: "var(--muted)", lineHeight: 1.7 }}>{S.exclusions.map((x) => <li key={x}>{x}</li>)}</ul></details>
@@ -1402,10 +1436,13 @@ function InsCheckupInsSection({ onEnroll }) {
         <div className="bkov" onClick={() => setConfirm(null)}><div className="bk" style={{ maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
           <div className="bkh"><div className="bt"><ShieldCheck size={16} color="#2563EB" /> 발급 확인</div></div>
           <div className="bkb" style={{ padding: 18 }}>
-            <p style={{ fontSize: 13, lineHeight: 1.7 }}>검진 기록 연동으로 <b>건강검진 대비보험(무상)</b>을 발급할까요? 보장은 <b>내일 0시부터 3개월</b>이고, 증서·계약이 내 지갑 원장과 체인에 기록돼요.</p>
+            {/* 「내일 0시부터 3개월」은 두 군데가 틀렸다 — 보험기간은 INS_COVER_DAYS(60일)이고,
+                개시일은 연계 검진일(없으면 발급일) 다음날 0시다. 발급 직후 배지가 적는 개시일과
+                이 문장이 어긋나면 회원이 방금 읽은 약속과 화면이 다른 말을 한다. */}
+            <p style={{ fontSize: 13, lineHeight: 1.7 }}>검진 기록 연동으로 <b>건강검진 대비보험(무상)</b>을 발급할까요? 보장은 <b>연계 검진일(없으면 발급일) 다음날 0시부터 {typeof INS_COVER_DAYS !== "undefined" ? INS_COVER_DAYS : 60}일</b>이고, 증서·계약이 내 지갑 원장과 체인에 기록돼요. 정확한 보장 개시일은 발급 직후 이 카드의 보장 배지에 적혀요.</p>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <button className="cbtn" style={{ margin: 0 }} onClick={() => setConfirm(null)}>취소</button>
-              <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { const r = insService.issueCheckupIns(m); if (typeof toast === "function") toast(r.ok ? "발급 완료 ✓ — 증서가 온체인에 기록됐어요(보장은 내일 0시 개시)" : "🔒 " + r.reason); setConfirm(null); setTick((t) => t + 1); }}>✅ 발급 확정</button>
+              <button className="cbtn pri" style={{ margin: 0 }} onClick={() => { const r = insService.issueCheckupIns(m); if (typeof toast === "function") toast(r.ok ? `발급 완료 ✓ — 증서가 온체인에 기록됐어요${r.window ? `(보장 개시 ${insDayStr(r.window.start)} 0시)` : ""}` : "🔒 " + r.reason); setConfirm(null); setTick((t) => t + 1); }}>✅ 발급 확정</button>
             </div>
           </div>
         </div></div>)}

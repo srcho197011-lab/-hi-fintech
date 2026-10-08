@@ -1745,7 +1745,10 @@ function HealthMateSection({ onGo }) {
      「첫 연결 대기」 집합이고, 이 KPI는 「만기·재검진 안내 예정(D-30·D-7)」이라 **축이 다르다**.
      만기 축은 matN이 cycleOf T4~T6로 이미 센다. 섞어 두면 같은 화면의 「첫 연결」 숫자가 넷으로
      불고(로스터 D2 카드 · 첫 통화 KPI · ③탭 첫 연결 대기 · 이 KPI 안에 숨은 ready) 비교가 안 된다. */
-  const expN = cards.filter((c) => c.plan.items.some((x) => x.key.indexOf("m") === 0 && x.due && !x.done)).length;
+  /* 키는 만기 **예정** 3행(m30·m7·m1)만 센다 — indexOf("m") === 0은 만기 **경과** 행 "mend"까지
+     함께 집었다. mend는 due가 늘 true라서, 보장이 끝난 회원이 「만기·재검진 안내 예정」에 섞여
+     D-30·D-7 안내 대상 수를 부풀렸다(같은 지표가 두 숫자가 되는 지점). */
+  const expN = cards.filter((c) => c.plan.items.some((x) => /^m(30|7|1)$/.test(x.key) && x.due && !x.done)).length;
   const slaN = hmSignals(code).filter((s) => s.sla <= 4).length + (cview ? cview.ids.filter((i) => { const g = cohortSignalOf(i); return g && g.sla <= 4; }).length : 0);
   /* R3 — 만기 임박(T4·T5): 검진대비보험 만기 D-20 이내 회원(달력 값이 정하는 오늘의 일) */
   const matN = cview ? cview.ids.filter((i) => { try { const cy = cycleOf(i); return cy && (cy.t === "T4" || cy.t === "T5" || cy.t === "T6"); } catch (e) { return false; } }).length : 0;

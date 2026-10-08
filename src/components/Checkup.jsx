@@ -1659,11 +1659,23 @@ function useHira() {
 }
 
 /* ── 검진대비보험 가입증서 화면 — 발급 스냅샷(hifin_ins_certs) 렌더. 예약 완료·치료비 준비 진단 양쪽에서 사용 ── */
-function InsCertModal({ cert, onClose }) {
+function InsCertModal({ cert, onClose, win }) {
   if (!cert) return null;
-  const d0 = new Date(cert.at); const start = new Date(d0); start.setDate(start.getDate() + 1); start.setHours(0, 0, 0, 0);
-  const end = new Date(start); end.setDate(end.getDate() + 60);   /* 보험기간 60일 — CYCLE_SPEC.expiryDay와 정합(형 확정 2026-09-03) */
-  const fmt = (d) => `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+  /* [2026-10-08 수선] 증서 모달은 **이 증서 자신의 기간**(발급 스냅샷)을 적고, 회원의 현재 보장 창은
+     별 행으로 분리한다. 직전 변경은 win(회원 계약 창)을 1순위로 써서 두 가지를 섞었다 —
+     ① CERT-JSR2024A(검진 2024-12-26)가 「보험기간 2026. 9. 6. ~ 2026. 11. 5.」라고 자기 기간을
+        바꿔 말했고, 같은 카드 본문은 같은 증서를 두고 2024. 12. 27. ~ 2025. 2. 25.라고 적었다.
+     ② 2026-11-20 예약으로 받은 증서에는 그 **검진보다 15일 먼저 끝나는** 보험기간이 적혔다
+        (연계 검진 2026-11-20 / 보험기간 ~2026. 11. 5. — 실측).
+     그래서 산식은 insWindowOf 하나를 쓰되(한 소스는 유지), 창의 **주인**을 증서로 되돌린다. */
+  const certAtMs = (typeof insCertAt === "function" ? insCertAt(cert) : null) || cert.at;
+  const W = ((typeof insWindowOf === "function") && certAtMs != null) ? insWindowOf(certAtMs, "live") : (win || null);
+  if (!W) return null;
+  const dayStr = (ms) => (typeof insDayStr === "function") ? insDayStr(ms) : new Date(ms).toLocaleDateString("ko-KR");
+  const coverDays = Math.round((W.end - W.start) / 86400000);
+  /* 현재 보장 창 — 이 증서의 창과 다를 때만 따로 적는다(같으면 한 줄로 충분하다) */
+  const curW = win || null;
+  const curDiff = !!(curW && curW.start !== W.start);
   const covers = cert.covers && cert.covers.length ? cert.covers : [];
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,.55)", zIndex: 1200, display: "grid", placeItems: "center", padding: 16 }} onClick={onClose}>
@@ -1682,9 +1694,13 @@ function InsCertModal({ cert, onClose }) {
             <tbody>
               {[["계약자·피보험자", cert.insured ? `${cert.insured.name}${cert.insured.rrn ? " · " + cert.insured.rrn : ""}` : "회원 본인"],
                 ["가입 플랜", (cert.plan || "기본형") + " · 무상(보험료 0원)"],
-                ["보험기간", `${fmt(start)} 0시 ~ ${fmt(end)} (60일 · 검진 주기 연동)`],
-                ["연계 검진", `${cert.center}${cert.date ? ` · ${cert.date} ${cert.time || ""}` : ""}`],
-                ["인수사 · 판매", "현대해상(전속 제휴) · 글로벌예방금융(주) 금융위 등록 보험대리점 제2025060038호"]].map(([k, v], i) => (
+                /* 「0시 ~ 0시」로 양쪽 시각을 적는다 — end는 배타적 경계라서 끝 날짜만 적으면
+                   포함으로 읽혀 괄호의 (60일)과 하루 어긋나 보였다. */
+                ["보험기간(이 증서)", `${dayStr(W.start)} 0시 ~ ${dayStr(W.end)} 0시 (${coverDays}일 · 검진 주기 연동)${W.ended ? " · 이미 지난 기간" : ""}`],
+                ["연계 검진", `${cert.center}${cert.date ? ` · ${cert.date} ${cert.time || ""}` : ""}`]].concat(curDiff
+                  ? [["현재 보장(계약)", `${dayStr(curW.start)} ~ ${dayStr(curW.end)} · ${curW.phase}${curW.seed === "demo" ? "(시연 시드)" : ""} — 이 증서의 기간과 다릅니다`]]
+                  : []).concat([
+                ["인수사 · 판매", "현대해상(전속 제휴) · 글로벌예방금융(주) 금융위 등록 보험대리점 제2025060038호"]]).map(([k, v], i) => (
                 <tr key={i} style={{ borderBottom: "1px solid #EEF2F7" }}>
                   <td style={{ padding: "8px 0", color: "#64748B", fontWeight: 700, width: 108, verticalAlign: "top" }}>{k}</td>
                   <td style={{ padding: "8px 0", fontWeight: 600, lineHeight: 1.5 }}>{v}</td>
@@ -1720,7 +1736,7 @@ function InsCertModal({ cert, onClose }) {
           </div>
           {/* 유의사항 */}
           <div style={{ fontSize: 10.8, color: "#94A3B8", lineHeight: 1.6, marginTop: 10 }}>
-            ※ 보장은 가입 다음날 0시부터 시작되며, 개시 전 진단 확정·고의 사고·검진과 무관한 일반 진료비는 보장하지 않습니다. 실제 보장·인수·지급은 보험사 심사에 따르며, 청약철회·해지는 데이터 금고 › 동의 관리 또는 하이에게 요청으로 언제든 가능합니다. 본 증서는 데모 환경의 시연용 증서입니다.
+            ※ 보장은 위 「보험기간(이 증서)」의 개시일 0시부터 시작되며, 개시 전 진단 확정·고의 사고·검진과 무관한 일반 진료비는 보장하지 않습니다. 실제 보장·인수·지급은 보험사 심사에 따르며, 청약철회·해지는 데이터 금고 › 동의 관리 또는 하이에게 요청으로 언제든 가능합니다. 본 증서는 데모 환경의 시연용 증서입니다.
           </div>
         </div>
       </div>

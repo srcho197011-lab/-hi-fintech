@@ -179,3 +179,16 @@ if echo "$CHANGED" | grep -qE "^src/(components/(Wallet|MyPage|Insurance|FamilyC
   HIFIN_SECTIONS="$MSEC" node scripts/run_money_check.mjs || { echo "[GATE] 금전 대조 실패 — 커밋 차단(옛 상수가 여러 회원에게 같이 보인다)"; exit 1; }
   git add scripts/money_check_snapshot.json 2>/dev/null || true
 fi
+
+# == 보장 창 게이트(2026-10-08 · 적대적 리뷰 실증) ==
+# 검진대비보험 보장 창의 단언이 어느 커밋 게이트에도 연결되지 않았다.
+# 사슬 - premiumBilling.js·healthMate.js는 catalog 게이트 하나만 거쳤고,
+# scripts/run_selfreal_check.mjs는 0건이었고 package.json·.github도 없어
+# 이 가드는 사람이 직접 타이핑할 때만 돌았다. catalog 게이트는 저장 키 등재만 보고
+# money_check는 금액 상수만 보므로 둘 다 보장 창을 보지 않는다.
+# e9fb6dc가 dailyRoster.js에서 닫은 구멍과 같은 유형이 창 파일에서 재발한 자리다.
+# 러너는 수 초라 예산 부담이 없고, 새 게이트를 발명하지 않고 기존 게이트 마지막에 편입한다.
+if echo "$CHANGED" | grep -qE "^(src/data/(insService|premiumBilling|healthMate|healthDataVault)\.js|src/components/(Insurance|Checkup|HealthMate)\.jsx|scripts/run_selfreal_check\.mjs)$"; then
+  echo "[GATE] 보장 창 감시 파일 변경 - 보장 창·실측 가드 실행(절대 날짜 대조·국면 3분기·벽시계 스캔)"
+  node scripts/run_selfreal_check.mjs || { echo "[GATE] 보장 창·실측 가드 실패 - 커밋 차단"; exit 1; }
+fi

@@ -55,6 +55,8 @@ const CLAIM_DENY = {
   DUP: { ko: "중복 청구", easy: "지급이 안 된 이유: 같은 진료 건으로 이미 지급받으셨어요", fix: "다른 진료 건이라면 이의신청으로 알려주세요" },
   LIMIT: { ko: "연간 한도 소진", easy: "지급이 안 된 이유: 올해 보장 한도를 모두 사용했어요", fix: "내년 갱신 후 한도가 초기화돼요 — 잔여 한도는 계산 내역에서 확인" },
   NO_RIDER: { ko: "특약 미가입", easy: "지급이 안 된 이유: 이 항목(3대 비급여)은 별도 특약 가입이 필요해요", fix: "치료비 준비 진단 탭에서 특약 보완을 검토해 보세요" },
+  /* 만기 경과 — 전에는 만기 검사가 없어서 보장이 끝난 뒤에도 검진 트랙이 자동승인됐다(결함). */
+  COVER_END: { ko: "보장 종료", easy: "지급이 안 된 이유: 검진대비보험 보장 기간이 끝났어요", fix: "다음 검진 주기를 잡으면 같은 보장이 다시 열려요" },
 };
 /* 연간 사용 한도 원장 — 급여/비급여 누적(청구 지급 시 차감) */
 function _limitUsed(m) { try { const y = new Date().getFullYear(); const o = JSON.parse(localStorage.getItem("hifin_claim_used_" + ((m && m.email) || "d")) || "{}"); return (o.year === y) ? o : { year: y, pay: 0, non: 0 }; } catch (e) { return { year: new Date().getFullYear(), pay: 0, non: 0 }; } }
@@ -71,7 +73,35 @@ function claimReview(m, claimId) {
   if (/검진/.test(c.kind || "")) {
     const pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product));
     if (!pol) return { ok: false, code: "NO_CONTRACT", deny: { ko: "검진대비보험 미발급", easy: "지급이 안 된 이유: 검진대비보험이 아직 발급되지 않았어요", fix: "치료비 준비 진단 탭 ①에서 검진 연동 무상 발급을 먼저 받아 주세요" }, reason: "검진대비보험이 발급되어 있지 않아요" };
-    if (Date.now() < pol.createdAt + 86400000) return { ok: false, code: "NO_CONTRACT", deny: { ko: "보장 개시 전", easy: "보장은 발급 다음날 0시부터 시작돼요", fix: "내일 다시 청구해 주세요" }, reason: "보장 개시 전이에요(익일 0시 개시)" };
+    /* 개시·만기 판정은 보장 창 한 소스(insCheckupWindow)에서 — 전에는 pol.createdAt + 1일만 봐서
+       ① 기기마다 개시일이 달라지고 ② 만기가 지난 뒤에도 자동승인이 났다. 두 결함을 함께 닫는다. */
+    const W = (typeof insCheckupWindow === "function") ? insCheckupWindow(m, pol) : null;
+    /* 거절 문구의 날짜도 창에서 만든다 — 개시 판정 근거를 계약 coverFrom으로 옮겼는데 설명만
+       「발급 다음날」·「내일」로 남아 있었다. 조성래는 증서(2024-12-26)·계약 생성(벽시계)·보장 개시
+       (2026-09-06)가 전부 다른 날이라 어느 쪽도 맞지 않는 문장이었다. */
+    if (W && W.phase === "보장 개시 대기") return { ok: false, code: "NO_CONTRACT",
+      deny: { ko: "보장 개시 전", easy: `보장은 보장 개시일(${insDayStr(W.start)}) 0시부터 시작돼요`, fix: `${insDayStr(W.start)} 이후에 다시 청구해 주세요` },
+      reason: `보장 개시 전이에요(보장 개시일 ${insDayStr(W.start)} 0시 개시)` };
+    if (W && W.ended) return { ok: false, code: "COVER_END",
+      deny: Object.assign({}, CLAIM_DENY.COVER_END, { easy: `지급이 안 된 이유: 검진대비보험 보장 기간이 ${insDayStr(W.end)}에 끝났어요` }),
+      reason: `보장 종료 — 검진대비보험 만기 경과(${insDayStr(W.end)}) · 다음 검진 주기를 잡으면 같은 보장이 다시 열려요` };
+    /* ── 두 번째 축: **청구 건의 진료일**(c.at) ───────────────────────────────────
+       전에는 계약 국면(W.phase·W.ended)만 봤다 — 청구 건의 날짜는 심사에 **한 번도** 들어가지
+       않았다. 그래서 보장 창 밖의 진료일로 접수한 검진 청구가 그대로 자동승인됐다(실측 2026-10-08 ·
+       창 2026. 9. 6. ~ 2026. 11. 5. · 판정 2026. 10. 6.: 진료일 2026-12-01 → ok payout 100,000 /
+       2026-08-01 → ok 100,000 / 2024-12-26(실측 검진일) → ok 100,000). 같은 카드의 면책 목록은
+       바로 두 줄 아래에서 「보장 기간 밖에 받은 진단」을 보장하지 않는다고 적고 있었다 —
+       화면과 심사가 서로 다른 말을 한 자리다.
+       두 축은 뜻이 다르므로 함께 본다: 위 분기는 「계약이 지금 유효한가」, 이 분기는
+       「그 진료가 보장 기간 안에 있었나」. 경계는 창과 같다(start 포함 · end 배타적). */
+    const _at = Number(c.at) || null;
+    if (W && _at != null && _at < W.start) return { ok: false, code: "NO_CONTRACT",
+      deny: { ko: "보장 개시 전 진료", easy: `지급이 안 된 이유: 진료일(${insDayStr(_at)})이 보장 개시일(${insDayStr(W.start)}) 0시보다 앞서요`,
+              fix: `보장 기간(${insDayStr(W.start)} ~ ${insDayStr(W.end)}) 안에 받은 진료로 청구해 주세요` },
+      reason: `보장 개시 전 진료 — 진료일 ${insDayStr(_at)} · 보장 개시일 ${insDayStr(W.start)} 0시` };
+    if (W && _at != null && _at >= W.end) return { ok: false, code: "COVER_END",
+      deny: Object.assign({}, CLAIM_DENY.COVER_END, { easy: `지급이 안 된 이유: 진료일(${insDayStr(_at)})이 보장 기간(${insDayStr(W.start)} ~ ${insDayStr(W.end)}) 밖이에요` }),
+      reason: `보장 기간 밖 진료 — 진료일 ${insDayStr(_at)} · 검진대비보험 만기 ${insDayStr(W.end)} · 다음 검진 주기를 잡으면 같은 보장이 다시 열려요` };
     const fp0 = _claimFp(c);
     if (l.some((x) => x.id !== c.id && /지급/.test(x.status || "") && _claimFp(x) === fp0)) return { ok: false, code: "DUP", deny: CLAIM_DENY.DUP, reason: CLAIM_DENY.DUP.easy };
     const payout = 100000;   // 카탈로그(기본형 정밀검사 지원금) — CHECK_COVERS 근거
@@ -111,8 +141,14 @@ function claimSubmit(m, o) {
   o = o || {};
   const fee = Math.max(0, Math.floor(o.fee || 0));
   if (!fee) return { ok: false, reason: "진료비 금액을 알려주세요" };
-  const c = { id: "CLM-" + Date.now().toString(36).toUpperCase(), at: o.date || Date.now(), status: "접수", kind: o.kind || "진료", fee, channel: o.channel || "수동 접수" };
+  /* id에 접수 **순번**을 더한다(2026-10-08 수선) — 전에는 "CLM-" + Date.now()뿐이어서 같은
+     밀리초에 접수한 두 청구가 **같은 id**를 갖고, claimReview가 `l.find((x) => x.id === claimId)`로
+     먼저 들어온 건을 집었다. 청구 원장(hifin_claims)은 회원별이 아니라 **한 개**라, 그 경우
+     다른 회원의 진료일로 내 청구가 심사됐다(실측: 벽시계를 한 값으로 고정한 격리 컨텍스트에서
+     전건 충돌 — 조성래의 2026-10-06 건이 다른 회원 심사 결과로 돌아왔다). 순번은 원장 길이에서
+     나오므로 난수가 아니다(회귀 결정론 유지 — rng 금지 규칙과 정합). */
   const l = _claims();
+  const c = { id: "CLM-" + Date.now().toString(36).toUpperCase() + "-" + (l.length + 1).toString(36).toUpperCase(), at: o.date || Date.now(), status: "접수", kind: o.kind || "진료", fee, channel: o.channel || "수동 접수" };
   const fp = _claimFp(c);
   if (l.some((x) => /지급/.test(x.status || "") && _claimFp(x) === fp)) return { ok: false, code: "DUP", reason: CLAIM_DENY.DUP.easy };
   l.push(c); _claimsSave(l);
@@ -197,8 +233,70 @@ function rerateApplyReal(m) {
    바로 아래에 증서 이름을 「CERT-JSR2024A(증서 날짜 2024-12-26)」라고 적었고, 프로 콘솔 ⑨의 같은 사람
    행은 증서 날짜 기준으로 「만기 경과(2025.2.25)」라고 말했다. 새 기기에서 열 때마다 회원 화면의
    기간이 달라졌다. 이제 두 화면이 이 함수 하나를 호출한다(각자 계산하면 다시 갈라진다).
-   근거 우선순위 ① 증서 날짜(c.date) ② 증서 기록 시각(c.at) ③ 청약일(시연) ④ 계약 생성 시각. */
+   근거 우선순위 ⓐ 계약 보장 개시일(pol.coverFrom) ⓑ 증서 날짜(c.date→c.at) ⓒ 청약일(시연) ⓓ 계약 생성 시각.
+   ⓐ가 1순위인 이유: 보장 창의 주인은 증서가 아니라 **계약**이다. 실측 증서(CERT-JSR2024A · 2024-12-26)로
+   열렸던 1차 보장은 2025-02-25에 이미 끝났고, 그 증서를 고쳐서 창을 다시 열 수는 없다(실측 불변).
+   재가입으로 다시 열린 창은 계약 레코드의 coverFrom이 말한다 — 1차 이력은 prior로 함께 반환한다. */
+
+/* ── 시연 기준일(단일 상수) ─────────────────────────────────────────────────────────
+   형 지시(2026-10-06) 「검진대비보험 만기 경과되지 않고 **한 달이 남도록** 조치해 줘」.
+   창의 **양쪽**(보장 개시일 coverFrom · 판정 시각 now)을 이 상수 하나에서 파생시킨다.
+   한쪽만 고정하면 날이 지날수록 잔여일이 줄어들고, 어느 날 조용히 「보장 종료」로 넘어간다.
+   ⚠️ escrowPay._escNow()의 「실시계가 기준일 이후면 실시계」 분기를 **베끼지 않는다** —
+      그 규칙이면 2026-11-06부터 「보장 종료」와 「만기까지 30일」이 한 줄에 같이 뜬다.
+   범위: 검진대비보험 보장 창 전용. 법령 시행일(regGate)·동의 취득일·접속 로그·체인 블록 시각·
+      정체 일수·제공 DB·연간 한도 원장은 벽시계 그대로다(전역 now로 승격하지 않는다).
+   잔여일을 바꾸려면 remainDays 한 줄만 고친다(coverFrom·만기·배지·프로 ⑨가 함께 따라온다).
+   ⚠️ 저장소에는 재무·에스크로 기준일 FB_ASOF(2027-09-17 · finBudget.js:12)가 따로 있다 —
+      이 상수와 11개월 차다. 합치지 않는 것은 **형이 정한 값**이다(2026-10-06 지시: asOf 2026-10-06 ·
+      잔여 30일). FB_ASOF는 회원 10만 실적 환산 시점(= 사업 미래 시점)이고 이 상수는 시연에서
+      보여 줄 「오늘」이라 뜻이 다르다. 그래서 여기서 FB_ASOF를 파생하지 않고, 반대로 이 값이
+      escrowPay._escNow()처럼 실시계로 승격되지도 않게 한다(가드가 _escNow·FB_ASOF 미참조를 단언).
+      두 기준일을 합치려면 형 확정이 먼저다 — 합치는 날 아래 remainDays는 그대로 두면 된다. */
+const INS_DEMO = { asOf: "2026-10-06", remainDays: 30, label: "시연 기준일" };
 const INS_COVER_DAYS = 60;                      /* 발급 익일 0시 + 60일 — CYCLE_SPEC.expiryDay와 정합(형 확정 2026-09-03) */
+/* "YYYY-MM-DD" → 로컬 0시 ms(날짜 문자열에서만 만든다 — 인자 없는 new Date() 금지) */
+function insDateMs(s) {
+  const d = String(s || "").replace(/[^0-9]/g, "");
+  if (d.length < 8) return null;
+  const t = new Date(Number(d.slice(0, 4)), Number(d.slice(4, 6)) - 1, Number(d.slice(6, 8))).getTime();
+  return isNaN(t) ? null : t;
+}
+function insAsOfMs() { return insDateMs(INS_DEMO.asOf); }
+/* 창 판정 시각 — 기준일 그 자체다. 실시계 비교 분기를 넣지 않는다(의도된 설계). */
+function insNow() { return insAsOfMs(); }
+/* 창 날짜 **단일 포맷터**(2026-10-08) — 전에는 같은 만기일이 한 화면에서 두 철자로 섰다:
+   배지·증서는 toLocaleDateString("ko-KR")의 「2026. 11. 5.」, 거절 문구·프로 ⑨ mend 행은
+   「2026.11.5」. 숫자는 하나지만 형이 한 화면에서 두 표기를 읽는다. 이제 창을 소비하는 문구는
+   전부 이 함수를 부른다(로케일 의존 없이 ko-KR 표기를 직접 만든다 — 환경마다 달라지지 않게). */
+function insDayStr(ms) { const d = new Date(ms); return d.getFullYear() + ". " + (d.getMonth() + 1) + ". " + d.getDate() + "."; }
+/* 창 판정 시각을 **시드로 가른다**(2026-10-08 수선) ───────────────────────────────────
+   전에는 insNow()(기준일 고정)를 **모든** 창의 개시·만기 판정에 썼다. 그러면 기준일 이후에
+   열리는 창 —— 즉 오늘 「내 무료 보장 켜기」를 누르는 모든 회원 —— 은 now < start가 영구히 참이라
+   「보장 개시 대기」에서 빠져나오지 못하고 청구가 영원히 거절됐다(코호트 회원 실측 2026-10-08:
+   배지 「보장 개시 대기 · 2026. 10. 9. ~ 2026. 12. 8. · 만기까지 63일」 · claimReview NO_CONTRACT ·
+   「내일 다시 청구해 주세요」의 그 내일이 오지 않음). 계획이 hmTouchPlan 첫 연결 블록에 대해
+   경고한 「영구 미도래」가 창의 **개시 쪽**에 그대로 재현된 자리다.
+   그래서 기준일 시계는 **시연 시드 창(coverSeed "demo")에만** 적용한다 —
+   증서·청약·계약 생성 시각에서 온 창(seed "live")은 벽시계로 판정해 다음날 자연히 개시된다. */
+function insJudgeNow(seed) { return seed === "demo" ? insAsOfMs() : Date.now(); }
+/* 보장 창 산식의 유일한 구현 — 발급 익일 0시 + INS_COVER_DAYS일. 국면·잔여일도 여기서만 나온다. */
+function insWindowOf(issueAtMs, seed) {
+  const st = new Date(issueAtMs); st.setDate(st.getDate() + 1); st.setHours(0, 0, 0, 0);
+  const start = st.getTime(), end = start + INS_COVER_DAYS * 86400000, now = insJudgeNow(seed);
+  /* end는 **배타적** 경계다(보장 마지막 날 24시 = 표기상 만기일 0시).
+     전에는 ended: now > end여서 만기일 당일에 「지금 보장되고 있어요 · 만기까지 0일」이 하루 떴고
+     claimReview도 그날 자동승인했다(실측). now >= end면 종료로 고정한다. */
+  const phase = now >= end ? "보장 종료" : now >= start ? "보장 중" : "보장 개시 대기";
+  return { start, end, now, seed: seed || "live", phase, ended: phase === "보장 종료",
+    /* 잔여일은 「보장 중」에서만 뜻이 있다. 개시 전에는 end − now가 보험기간(60일)을 넘어
+       「60일 상품인데 만기까지 106일」이 배지에 섰다(증서 날짜 2026-11-20 실측) —
+       구조적으로 불가능하게 null로 돌리고, 개시 전에는 startsInDays를 쓴다. */
+    remainDays: phase === "보장 중" ? Math.max(1, Math.ceil((end - now) / 86400000)) : null,
+    startsInDays: phase === "보장 개시 대기" ? Math.max(1, Math.ceil((start - now) / 86400000)) : null };
+}
+/* 시연 시드 보장 개시일 — 기준일에 remainDays가 남도록 역산(= 기준일 − (60 − 30 + 1)일 = 2026-09-05 청약 → 09-06 개시 → 11-05 만기) */
+function insDemoCoverFrom() { return insAsOfMs() - Math.max(1, INS_COVER_DAYS - INS_DEMO.remainDays + 1) * 86400000; }
 function insCertAt(c) {
   if (!c) return null;
   const d = String(c.date || "").replace(/[^0-9]/g, "");
@@ -208,27 +306,72 @@ function insCertAt(c) {
   }
   return c.at || null;
 }
-function insCheckupCert(m) {
+/* 내 증서 전체 — 증서 날짜(insCertAt) 오름차순. 「1차 증서」·「최신 증서」를 가려 쓰려면
+   목록이 필요하다. 전에는 insCheckupCert(= 마지막 1건)만 있어서, 증서가 2건이 되는 순간
+   **최신 증서를 「1차 증서」라고 부르고** 1차 보장 이력 줄이 화면에서 사라졌다(실측:
+   예약완료 경로가 만든 CERT-NEW01(2026-11-20) 1건을 더하자 근거 문구가 「1차 증서 CERT-NEW01」이
+   되고 prior가 null이 됐다). 예약 1건만 보여 주면 재현되는 주력 흐름이다. */
+function insCheckupCerts(m) {
   try {
     const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]");
-    const mine = l.filter((x) => x && x.insured && x.insured.name === (m && m.name));
-    return mine.length ? mine[mine.length - 1] : null;
-  } catch (e) { return null; }
+    return l.filter((x) => x && x.insured && x.insured.name === (m && m.name))
+      .map((x) => ({ c: x, at: insCertAt(x) })).filter((x) => x.at != null)
+      .sort((a, b) => a.at - b.at);
+  } catch (e) { return []; }
 }
-/* {issueAt, start, end, phase, src, cert, ended} — 증서가 없으면 null */
+/* 최신 증서(화면이 「내 가입증서 보기」로 띄우는 것) */
+function insCheckupCert(m) { const l = insCheckupCerts(m); return l.length ? l[l.length - 1].c : null; }
+/* 창보다 **앞선 가장 이른** 증서 = 1차 증서. 없으면 null(근거 문구에 조각을 붙이지 않는다). */
+function insCheckupCertFirst(m, beforeMs) {
+  const l = insCheckupCerts(m);
+  for (let i = 0; i < l.length; i++) if (beforeMs == null || l[i].at < beforeMs) return l[i];
+  return null;
+}
+/* {issuedAt, start, end, phase, remainDays, basis, seed, src, cert, prior, ended} — 근거가 하나도 없으면 null.
+   pol을 넘기지 않으면 여기서 찾는다(프로 콘솔 ⑨ hmTouchPlan은 계약을 모른 채 호출한다 —
+   폴백이 없으면 회원 화면은 계약 coverFrom을, 콘솔은 증서를 보고 같은 사람이 두 기간으로 갈라진다). */
 function insCheckupWindow(m, pol) {
   try {
-    let issueAt = null, src = null, cert = null;
-    cert = insCheckupCert(m);
-    if (cert) { issueAt = insCertAt(cert); src = "증서 " + cert.id + (cert.date ? " · 발급 " + String(cert.date).replace(/-/g, ".") : ""); }
-    if (!issueAt && typeof hmInsQueue === "function") { try { const q = hmInsQueue().find((x) => x.email === (m && m.email)); if (q) { issueAt = q.at; src = "청약일 기준(시연)"; } } catch (e) {} }
-    if (!issueAt && pol && pol.createdAt) { issueAt = pol.createdAt; src = "계약 생성 시각(증서 미발급)"; }
+    if (!pol) { try { pol = ((typeof pbPolicies === "function") ? pbPolicies(m) : []).find((p) => /검진.?대비/.test(p.product)) || null; } catch (e0) { pol = null; } }
+    let issueAt = null, src = null, basis = null, seed = null;
+    const cert = insCheckupCert(m);                       /* 최신 증서 — 신원 표시용 */
+    const certAt = cert ? insCertAt(cert) : null;
+    const certSrc = cert ? ("증서 " + cert.id + (cert.date ? " · 발급 " + String(cert.date).replace(/-/g, ".") : "")) : null;
+    if (pol && pol.coverFrom != null) { issueAt = pol.coverFrom; basis = "policy"; seed = pol.coverSeed === "demo" ? "demo" : "live"; }
+    if (!issueAt && certAt) { issueAt = certAt; basis = "cert"; seed = "live"; src = certSrc; }
+    /* seed는 「기준일(INS_DEMO)에서 파생된 날짜인가」의 뜻만 갖는다 — 전에는 청약 큐 분기가
+       issueAt = q.at(벽시계 청약 시각)을 쓰면서 seed = "demo"를 함께 박아, 날마다 달라지는 창에
+       배지가 「· 시연 기준일 2026.10.06」 칩과 「(시연 시드)」 꼬리를 붙였다(규칙의 역방향 위반). */
+    if (!issueAt && typeof hmInsQueue === "function") { try { const q = hmInsQueue().find((x) => x.email === (m && m.email)); if (q) { issueAt = q.at; basis = "queue"; seed = "live"; src = "청약일 기준"; } } catch (e) {} }
+    if (!issueAt && pol && pol.createdAt) { issueAt = pol.createdAt; basis = "created"; seed = "live"; src = "계약 생성 시각(증서 미발급)"; }
     if (!issueAt) return null;
-    const st = new Date(issueAt); st.setDate(st.getDate() + 1); st.setHours(0, 0, 0, 0);
-    const start = st.getTime(), end = start + INS_COVER_DAYS * 86400000, now = Date.now();
-    const phase = now > end ? "보장 종료" : now >= start ? "보장 중" : "보장 개시 대기";
-    return { issuedAt: issueAt, start, end, phase, src, cert, ended: now > end };
+    const W = insWindowOf(issueAt, seed);
+    /* 1차 증서 = 창보다 앞선 **가장 이른** 증서(마지막 증서가 아니다). 라벨도 「1차 증서」로 박지 않고
+       「연계 증서」로 적는다 — 그 증서가 몇 번째인지는 데이터가 말해 주지 않는다. */
+    const first = (basis === "policy") ? insCheckupCertFirst(m, issueAt) : null;
+    if (!src) src = "계약 보장 개시일 " + insDayStr(W.start) + (seed === "demo" ? "(시연 시드)" : "") + (first ? " · 연계 증서 " + first.c.id : "");
+    /* 앞선 보장 창 — 연계 증서(실측)로 산출되는, 이미 지난 창. 읽기만 한다(증서를 고치거나 더하지 않는다).
+       계약 레코드는 1건뿐이고 바뀐 것은 coverFrom 하나이므로, 이 값으로 「재가입·재개·만기 종료」 같은
+       **계약 행위**를 단정하지 않는다(화면 문구는 Insurance.jsx에서 산출임을 밝혀 적는다). */
+    const prior = first ? Object.assign({ cert: first.c }, insWindowOf(first.at, "live")) : null;
+    /* now를 함께 돌려준다 — 이 창을 소비하는 쪽(프로 ⑨ hmTouchPlan)이 insNow()를 따로 부르면
+       시연 시드가 아닌 창까지 기준일로 판정한다. 판정 시각도 창 한 소스에서 나오게 한다. */
+    return { issuedAt: issueAt, now: W.now, start: W.start, end: W.end, phase: W.phase, remainDays: W.remainDays,
+      startsInDays: W.startsInDays, basis, seed, src, cert, priorCert: first ? first.c : null, prior, ended: W.ended };
   } catch (e) { return null; }
+}
+/* 검진대비보험 계약의 보장 창을 시연 기준일에 맞춘다(멱등).
+   coverSeed "live"(실계약에서 온 개시일)는 건드리지 않는다 — 시연 시드만 다시 쓴다. */
+function insCheckupCoverEnsure(m) {
+  try {
+    if (!m || typeof pbPolicies !== "function" || typeof pbPolicyPatch !== "function") return false;
+    const pol = pbPolicies(m).find((p) => /검진.?대비/.test(p.product));
+    if (!pol || pol.coverSeed === "live") return false;
+    const want = insDemoCoverFrom(), term = INS_COVER_DAYS + "일(검진 연동)";
+    if (pol.coverFrom === want && pol.coverSeed === "demo" && pol.term === term) return false;
+    pbPolicyPatch(m, pol.id, { coverFrom: want, coverSeed: "demo", term });
+    return true;
+  } catch (e) { return false; }
 }
 
 /* ══ insService — 상담사·화면 공용 진입점 ══ */
@@ -278,9 +421,21 @@ const insService = {
     /* 보장기간은 insCheckupWindow 하나에서 읽는다 — 프로 콘솔 ⑨(hmTouchPlan)와 같은 근거(증서 날짜) */
     const timeline = pol ? insCheckupWindow(m, pol) : null;
     const ended = !!(timeline && timeline.ended);
+    /* 「이 계약이 자기 보장 기간을 한 번이라도 산 적이 있나」 — 계약 생성 시각이 창의 만기 뒤면
+       그 보장 기간에 이 계약은 **존재하지 않았다**. 전에는 화면이 그 경우에도 타임라인 4단계
+       (발급·보장 시작·지켜지는 중·보장 종료)를 전건 점등하고 「보장 기간에는 이렇게 지켜드렸어요」
+       (과거완료)라고 적었다(실측: 코호트 회원 발급 직후 창 2025. 11. 2. ~ 2026. 1. 1. · 계약
+       createdAt은 누른 그 순간). 데이터에 없는 과거 보장을 화면이 단정한 자리다 — 조성래 카드에서
+       「재가입으로 재개」를 지운 것과 같은 종류의 단정이다.
+       ⚠️ 창이 **아직 끝나지 않았으면**(보장 중·개시 대기) 이 판정은 뜻이 없다 — ended를 함께 본다.
+       그러지 않으면 기준일 창(만기 2026-11-05)을 그 날짜 뒤에 처음 시드한 기기에서 배지는
+       「보장 중」인데 카드는 「이미 지난 기간이에요」가 되어, 창 하나에서 두 말이 나온다
+       (실측: 벽시계 2026-11-15 격리 컨텍스트). 국면은 창 한 소스가 말하고 이 값은 그 위에 얹힌다. */
+    const neverActive = !!(pol && timeline && timeline.ended && timeline.end <= (pol.createdAt || 0));
     const claims = _claims().filter((c) => /검진/.test(c.kind || ""));
-    return { hasCheckup, checkupDate, policy: pol || null, timeline, claims, ended,
-      endedNote: ended ? `보장 종료 — 검진대비보험 만기 경과(${new Date(timeline.end).toLocaleDateString("ko-KR")}) · 다음 검진 주기를 잡으면 무상 보장이 다시 시작돼요` : null,
+    return { hasCheckup, checkupDate, policy: pol || null, timeline, claims, ended, neverActive,
+      /* 만기일 표기는 insDayStr 한 포맷터 — 전에는 여기만 toLocaleDateString이라 같은 날짜가 두 철자로 섰다 */
+      endedNote: ended ? `보장 종료 — 검진대비보험 만기 경과(${insDayStr(timeline.end)}) · 다음 검진 주기를 잡으면 무상 보장이 다시 시작돼요` : null,
       coverSrc: timeline ? timeline.src : null,
       coverage: [
         ["검진에서 암이 발견됐어요", "일반암 진단금", 10000000, "확정 진단과 동시에 — 치료 시작 비용부터 해결 (기타암 제외)"],
@@ -290,7 +445,11 @@ const insService = {
       ],   // 카탈로그(CHECK_COVERS 고급형) 근거 — 암·뇌졸중·급성심근경색 각 1,000만원 · 21대 질병 수술비 300만원.
            // 정밀검사 지원 10만원은 무상 정액 지원금(insService.claimEval payout)과 동일 값으로 고정.
            // "진단금 최대 1,000만 원" 문구(홈 스토리·검진·하이 안내)와 정합.
-      exclusions: ["보장이 시작되기 전(발급 다음날 0시 이전)에 받은 진단", "일부러 낸 사고", "검진과 관계없는 일반 진료비(그건 실손보험 영역이에요)"] };
+      /* 면책 문구는 심사가 실제로 보는 **양쪽 경계**를 적는다(claimReview의 진료일 축과 한 입) —
+         전에는 개시 전만 적어 두고 만기 후 진료일은 자동승인됐다. */
+      exclusions: [timeline
+        ? `보장 기간(${insDayStr(timeline.start)} 0시 ~ ${insDayStr(timeline.end)} 0시) 밖에 받은 진단 — 개시 전·만기 후 진료일은 심사에서 거절돼요`
+        : "보장이 시작되기 전에 받은 진단", "일부러 낸 사고", "검진과 관계없는 일반 진료비(그건 실손보험 영역이에요)"] };
   },
   /* ①-2 검진대비보험 발급 — 검진 기록 필수·PolicyLedger+증서+체인 */
   issueCheckupIns(m) {
@@ -298,11 +457,31 @@ const insService = {
     const st = this.checkupIns(m);
     if (!st.hasCheckup) return { ok: false, reason: "검진 기록이 아직 없어요 — 검진결과를 먼저 연결해 주세요(무상 발급의 연동 조건)" };
     if (st.policy) return { ok: false, reason: "이미 발급된 검진대비보험이 있어요(" + st.policy.id + ")" };
-    const r = (typeof pbPolicyCreate === "function") ? pbPolicyCreate(m, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: "3개월(검진 연동)" }) : { ok: false };
+    /* 창의 주인은 증서가 아니라 **계약**이다 — 발급 시점에 보장 개시일을 계약에 동봉한다(2026-10-08 수선).
+       전에는 coverFrom을 넘기지 않아 근거가 ⓑ증서(= 연계 검진일)로 떨어졌고, 그 날짜가 시드 리터럴
+       (코호트 2025-11-01 · 체험 회원 2024-12-26)이라 60일 창이 **이미 닫혀** 있었다. 실측(vm 프로브,
+       금고 주입 없음): 코호트 42·7·113 전건 issueOk=true인데 phase=「보장 종료」 · 창 2025. 11. 2. ~
+       2026. 1. 1. · claimReview COVER_END · 발급 알림은 「보장 개시 2025. 11. 2. 0시」. 오늘 체결한
+       계약을 두고 11개월 전에 보장이 개시·종료됐다고 회원에게 말한 자리다.
+       하한 규칙 — 연계 검진일로 열리는 창이 아직 닫히지 않았으면 그 날짜를 쓴다(확인 모달의
+       「연계 검진일 다음날 0시」 서술이 지켜진다). 이미 닫혔으면 **발급일**을 하한으로 내려
+       창을 연다(발급 다음날 0시 개시 — 그 내일은 실제로 온다).
+       coverSeed "live": 실계약에서 온 개시일이라 벽시계로 판정한다(기준일 시계는 시연 시드 전용). */
+    const _ckAt = insDateMs(st.checkupDate);
+    const _w0 = (_ckAt != null) ? insWindowOf(_ckAt, "live") : null;
+    const _cf = (_w0 && !_w0.ended) ? _ckAt : Date.now();
+    const r = (typeof pbPolicyCreate === "function") ? pbPolicyCreate(m, { product: "건강검진 대비보험(무상)", monthly: 0, cover: "진단지원 최대 100만", term: INS_COVER_DAYS + "일(검진 연동)", coverFrom: _cf, coverSeed: "live" }) : { ok: false };
     if (!r.ok) return r;
-    try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `검진대비보험 증서 발급 — ${r.policy.id} · 검진(${st.checkupDate}) 연동 무상` }); const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push({ id: "CERT-" + r.policy.id.slice(-5), center: "검진 연동 발급", date: st.checkupDate, at: Date.now(), hash: b && b.hash }); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } catch (e) {}
-    if (typeof notifPush === "function") notifPush({ ic: "check", t: "검진대비보험 발급", d: "검진 기록 연동으로 무상 보장이 시작돼요(익일 0시 개시)", target: "insurance" });
-    return { ok: true, policy: r.policy };
+    /* 증서에 insured를 담는다 — 문서화된 근거 우선순위 ⓑ(증서 날짜)는 insCheckupCert가
+       `x.insured.name === m.name`인 증서만 「내 것」으로 인정하는데, 이 경로가 push하는 레코드에
+       insured가 없어서 ⓑ가 **도달 불가**였다(코호트 회원 발급 직후 basis가 "cert"가 아니라
+       "created"로 떨어지는 것을 실측). 폴백 사다리가 끊겨 있던 자리이고, 증서 모달이 다른 회원의
+       증서를 띄우던 자리이기도 하다. 실측 증서(CERT-JSR2024A)는 손대지 않는다. */
+    try { const tk = anonToken(m); const b = chainAppend({ type: "ins-cert", token: tk, note: `검진대비보험 증서 발급 — ${r.policy.id} · 검진(${st.checkupDate}) 연동 무상` }); const l = JSON.parse(localStorage.getItem("hifin_ins_certs") || "[]"); l.push({ id: "CERT-" + r.policy.id.slice(-5), center: "검진 연동 발급", date: st.checkupDate, at: Date.now(), insured: { name: m.name }, hash: b && b.hash }); localStorage.setItem("hifin_ins_certs", JSON.stringify(l)); } catch (e) {}
+    /* 개시 시점은 창이 말한다 — 「익일 0시」로 단정하면 연계 검진일 기준으로 열리는 창과 어긋난다 */
+    const _W = insCheckupWindow(m);
+    if (typeof notifPush === "function") notifPush({ ic: "check", t: "검진대비보험 발급", d: `검진 기록 연동으로 무상 보장이 준비됐어요${_W ? `(보장 개시 ${insDayStr(_W.start)} 0시)` : ""}`, target: "insurance" });
+    return { ok: true, policy: r.policy, window: _W };
   },
   /* ② 실손 현황 — 세대·한도·잔여·코호트 대비 */
   silStatus(m) {
