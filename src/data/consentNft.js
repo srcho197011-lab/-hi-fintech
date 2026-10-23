@@ -46,7 +46,7 @@ function cnAllowed(m, scopeItem) {
 /* ══ LeadDBFactory — 2층 분리 ══ */
 function statsDb() {   // ⓐ 비식별 통계(코호트 집계) — 퍼미션 불요
   const st = (typeof cohortInsStats === "function") ? cohortInsStats() : null;
-  return st ? { kind: "stats", n: st.n, silsonRate: st.silsonRate, uninsured: st.uninsured, genMix: st.genMix, label: "합성 코호트 비식별 집계" } : null;
+  return st ? { kind: "stats", n: st.n, silsonRate: st.silsonRate, uninsured: st.uninsured, genMix: st.genMix, label: "파일럿 코호트 비식별 집계" } : null;
 }
 function leadDbBuild() {   // ⓑ 리드 DB — RegGate 시뮬 게이트 + 동의 보유자만(코드 강제)
   const g = (typeof regGateAllowed === "function") ? regGateAllowed("leadDb", "simulation") : { ok: false, reason: "게이트 없음" };

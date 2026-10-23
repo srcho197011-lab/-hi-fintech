@@ -2,7 +2,9 @@
    결정적(mulberry32 시드) 생성기 — 매 로드 동일 데이터(재현 가능).
    ▸ 정합성 규칙: 진료과목·질병에 성별/연령 제약을 적용(남성 산부인과·여성 전립선암·청년 골다공증 등 방지).
    ▸ 가족(가구) 구조: 가구주·배우자·자녀·부(父)·모(母) 관계 + 연령/성별 정합성.
-   ▸ 실제 온톨로지(DEPT_CATS·CHECKUP_ONTOLOGY·DISEASE_INSURANCE) 재사용. (시연용 합성·가명 데이터) */
+   ▸ 실제 온톨로지(DEPT_CATS·CHECKUP_ONTOLOGY·DISEASE_INSURANCE) 재사용.
+   ▸ 시연·통계용 데이터이고 이름·식별자는 가명이다 — **화면 표기 규약은 insuranceCohort.js 머리 주석 하나**를
+     따른다(화면 호칭 「파일럿 코호트」 · 신원 고지 문장 · 「가명정보」 호칭 금지 · run_wording_guard). */
 
 function _mul32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function _pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }

@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-08",
+  "date": "2026-10-23",
   "total": 100000,
   "cards": 83578,
   "publishable": 83578,
@@ -46,36 +46,36 @@
   "maxRoster": 7,
   "zeroRosterPros": 1,
   "byRosterGrade": {
-    "L": 1530,
+    "L": 1532,
     "H": 1844,
-    "-": 812,
+    "-": 810,
     "M": 331
   },
   "byRosterStage": {
-    "D2": 2073,
-    "D3": 1578,
-    "D4": 525,
-    "L6": 113,
-    "L5": 177,
-    "L7": 40,
-    "L8": 11
+    "D2": 2072,
+    "D3": 1594,
+    "D4": 508,
+    "L6": 105,
+    "L5": 184,
+    "L7": 42,
+    "L8": 12
   },
   "byRosterCycle": {
-    "T2": 1862,
-    "T5": 728,
-    "T4": 808,
-    "T3": 611,
+    "T2": 1859,
+    "T5": 732,
+    "T4": 789,
+    "T3": 634,
     "T7": 297,
-    "T8": 68,
+    "T8": 63,
     "T6": 143
   },
   "d2Quota": 1930,
   "matQuota": 635,
   "d2GoldenLeft": {
     "24h이내": 1205,
-    "48h이내": 552,
-    "창닫힘": 105,
-    "창밖": 211
+    "48h이내": 551,
+    "창닫힘": 103,
+    "창밖": 213
   },
   "underTargetPros": 2,
   "rosterWin": {
@@ -88,7 +88,7 @@
   "hSeatedRoster": 1844,
   "hUnseated": 925,
   "d2OpenCand": 2821,
-  "d2OpenSeated": 1757,
+  "d2OpenSeated": 1756,
   "dashD2Exempt": 3138,
   "slaLessRoster": 0,
   "natGate": [],
@@ -199,6 +199,6 @@
       "ratio": 0.91
     }
   ],
-  "seconds": 61.4,
+  "seconds": 78,
   "pass": true
 }

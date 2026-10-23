@@ -59,7 +59,11 @@ function AuthLogin() {
         </span></label>
       {err && <div className="autherr">{err}</div>}
       <button className="authbtn authprimary" type="submit" disabled={locked}>{locked ? `잠금 — ${Math.ceil(lockMs / 60000)}분 후 재시도` : "로그인"}</button>
-      <div className="guestnote" style={{ marginTop: 10 }}>👥 <b>체험 계정</b>: 아이디 <b>000001</b>~<b>100000</b>(합성 코호트 10만 명 중 한 명의 건강지갑) · 데모 공용 비밀번호 <b>hifin002</b> — 어떤 번호로 들어와도 그 회원의 실데이터 기준으로 전 화면이 동작합니다.</div>
+      {/* [표기 규약 2026-10-23] 두 가지를 **같이** 적는다 — ① 데이터 성격(시연용 예시 데이터 · 실제
+          개인정보가 아닙니다) ② 신원(이름·식별자는 가명 표기). 신원만 적으면 바로 뒤의 「실데이터
+          기준」과 붙어 「실제 개인정보를 가명처리해 들고 있다」로 읽힌다(실측 — 성격 표식이 빠진
+          상태로 이 문장을 읽어 보고 걸렸다). 성격 표기는 insuranceCohort.js 머리 규약 ②를 따른다. */}
+      <div className="guestnote" style={{ marginTop: 10 }}>👥 <b>체험 계정</b>: 아이디 <b>000001</b>~<b>100000</b>(파일럿 코호트 10만 명 중 한 명의 건강지갑 — <b>시연용 예시 데이터</b>이며 실제 개인정보가 아닙니다) · 데모 공용 비밀번호 <b>hifin002</b> — 어떤 번호로 들어와도 그 회원의 데이터 기준으로 전 화면이 동작합니다. 회원 이름·식별자는 <b>가명으로 표시</b>되며 특정 개인을 알아볼 수 없습니다.</div>
     </form>
   );
 }

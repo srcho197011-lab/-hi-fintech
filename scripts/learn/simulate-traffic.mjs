@@ -1,4 +1,4 @@
-/* ══════════ Phase F STEP2 — 합성 트래픽 생성기 ══════════
+/* ══════════ Phase F STEP2 — 시뮬레이션 트래픽 생성기 ══════════
    ⚠️ 이건 **데모용 하네스이지 실사용 데이터가 아니다.**
    이 저장소에는 실사용 로그가 없어서, 학습 루프(수확→증분→게이트)가 실제로 도는지 확인하려면
    신호가 있어야 한다. 그래서 코퍼스를 변형해 재생하고, **일부러 실패가 나오도록** 설계된 문항을 섞는다.
@@ -65,5 +65,5 @@ for (let i = 0; i < N; i++) {
 
 total += flushTelemetry(B._store);
 const n = total;
-console.log(`■ 합성 트래픽 ${asked}턴(실패 유도 ${fails}턴) → 텔레메트리 ${n}건 적재`);
-console.log(`■ docs/hi_learn/telemetry.jsonl  ⚠️ 데모용 합성 데이터(실사용 로그 아님)`);
+console.log(`■ 시뮬레이션 트래픽 ${asked}턴(실패 유도 ${fails}턴) → 텔레메트리 ${n}건 적재`);
+console.log(`■ docs/hi_learn/telemetry.jsonl  ⚠️ 데모용 시뮬레이션 데이터(실사용 로그 아님)`);

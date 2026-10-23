@@ -6,7 +6,7 @@
    검사 3종
      ① 스냅샷 동일성 — src/data/selfReal.js에 실린 JSON 전문 === src/data/mcp_josungrae.json (드리프트 금지)
      ② 실측 고정값   — 금고 시드·demoReport·검진 항목현황·건강등급·보험이 전부 실측값을 내는가
-     ③ 격리          — 체험 회원 16명은 합성 경로 유지(본인 값이 새지 않는가) + 구 합성 금고의 1회 이관
+     ③ 격리          — 체험 회원 16명은 시연 시드 경로 유지(본인 값이 새지 않는가) + 구 시연 시드 금고의 1회 이관
 
    사용: node scripts/run_selfreal_check.mjs
 */
@@ -468,7 +468,7 @@ if (S) {
           어휘 금칙을 S.timeline.prior를 참조하는 **모든 줄**에 겹쳐 걸었다.
        ⑤ 「산출 날짜에 「실측」을 붙이지 않고 실측은 **검진일**로 한정해 적는다」 →
           블록 안의 「실측」을 **전면 금지**하고 중립 라벨 「연계 검진일」을 요구한다(1단어 허용 →
-          0단어 허용). 이 블록은 코호트·체험 회원의 **합성** 검진일로도 렌더되기 때문이다.
+          0단어 허용). 이 블록은 코호트·체험 회원의 **시연 시드** 검진일로도 렌더되기 때문이다.
        ⑥ 「발급 경로가 만든 증서를 insCheckupCert가 찾아낸다(ⓑ 폴백이 산다)」 → 그 상태(basis
           "cert")가 결함이었다(창의 주인이 증서가 되어 발급 직후 「보장 종료」). 창의 주인을
           계약(basis "policy")으로 옮기고, 구 단언의 뜻은 ⓐ 증서 동봉(certInsured) ⓑ coverFrom을
@@ -706,7 +706,7 @@ if (S) {
   const forbidden = [/63\s*세/, /1\.17/, /73등/, /고위험/, /악화/, /175/, /\b88\b/, /\b68\b/];
   const blob = JSON.stringify(S.R) + JSON.stringify(S.C) + JSON.stringify(S.G);
   const hit = forbidden.filter((re) => re.test(blob));
-  chk(hit.length === 0, "합성 잔재(63세·1.17·73등·고위험·악화·175·88·68) 없음", hit.map(String));
+  chk(hit.length === 0, "시연 시드 잔재(63세·1.17·73등·고위험·악화·175·88·68) 없음", hit.map(String));
 }
 
 /* ── ③ 격리 + 이관 ── */
@@ -717,7 +717,7 @@ try {
     return JSON.parse(JSON.stringify({ n: list.length, rows }));
   `);
   chk(D.n === 16, "체험 회원 16명", D.n);
-  chk(D.rows.every((r) => !r.real && !r.isSelf), "체험 회원은 합성 경로 유지(실측 미적용)", D.rows.filter((r) => r.real || r.isSelf));
+  chk(D.rows.every((r) => !r.real && !r.isSelf), "체험 회원은 시연 시드 경로 유지(실측 미적용)", D.rows.filter((r) => r.real || r.isSelf));
   chk(D.rows.every((r) => r.bio !== 52.5), "체험 회원 화면에 본인 생체나이(52.5) 누출 없음", D.rows.filter((r) => r.bio === 52.5));
 } catch (e) { fail.push("체험 회원 격리 검사 실패: " + e.message); }
 
@@ -735,7 +735,7 @@ try {
     const mp = vaultCheckupMap(me).map;
     return JSON.parse(JSON.stringify({ dates: (vaultLoad(tk).checkups || []).map((c) => c.date), glucose: mp.glucose, ast: mp.ast, alt: mp.alt, flag: localStorage.getItem("hifin_self_real_v1") }));
   `);
-  chk(M.flag === "1" && M.glucose === 100 && M.ast === 36 && M.alt === 43, "구 합성 금고 → 실측 1회 이관(hifin_self_real_v1)", M);
+  chk(M.flag === "1" && M.glucose === 100 && M.ast === 36 && M.alt === 43, "구 시연 시드 금고 → 실측 1회 이관(hifin_self_real_v1)", M);
 } catch (e) { fail.push("금고 이관 검사 실패: " + e.message); }
 
 /* ── ③-2 이관: 회원이 직접 올린 결과지가 섞인 금고(파일명 조건이 깨지는 케이스) ── */
@@ -746,7 +746,7 @@ try {
     const me = Object.assign({ id: "self-srcho197011", name: "조성래", email: "srcho197011@hizenhealth.com", isDemoUser: false, realVerified: true, isSelf: true }, P);
     const tk = anonToken(me);
     const old = { token: tk, checkups: [], insurance: [], consents: null };
-    /* 회원 업로드 1건(파일명이 시드 규격과 다름) + 구 합성 시드 2건 */
+    /* 회원 업로드 1건(파일명이 시드 규격과 다름) + 구 시연 시드 2건 */
     old.checkups.push({ token: tk, kind: "checkup", date: "2022-03-03", source: "upload", completeness: "partial", channel: "upload",
       fileName: "내가올린결과지.pdf", items: [{ key: "glucose", value: 99 }] });
     [2023, 2024].forEach((y) => old.checkups.push({ token: tk, kind: "checkup", date: y + "-12-26", source: "upload", completeness: "full", channel: "upload",
@@ -763,7 +763,7 @@ try {
   chk(JSON.stringify(M2.dates) === JSON.stringify(["2020-06-23", "2022-03-03", "2024-12-26"]),
     "업로드 혼재 금고 — 시드분만 실측으로 치환하고 회원 업로드분(2022-03-03)은 보존", M2.dates);
   chk(M2.files.indexOf("내가올린결과지.pdf") >= 0, "회원이 올린 결과지 파일이 그대로 남는다", M2.files);
-  chk(M2.glucose === 100 && M2.ast === 36 && M2.alt === 43 && M2.flag === "1", "구 합성 잔재(175·88·68) 제거 · 실측 이관 플래그", M2);
+  chk(M2.glucose === 100 && M2.ast === 36 && M2.alt === 43 && M2.flag === "1", "구 시연 시드 잔재(175·88·68) 제거 · 실측 이관 플래그", M2);
   chk(M2.vaultOk === true && /실측 검진 연동 ✓/.test(M2.flag0 || ""), "금고 검증 통과 → 「실측 검진 연동 ✓」 배지", [M2.vaultOk, M2.flag0]);
 } catch (e) { fail.push("업로드 혼재 이관 검사 실패: " + e.message); }
 
@@ -774,7 +774,7 @@ try {
     const P = selfRealProfile();
     const me = Object.assign({ id: "self-srcho197011", name: "조성래", email: "srcho197011@hizenhealth.com", isDemoUser: false, realVerified: true, isSelf: true }, P);
     const tk = anonToken(me);
-    /* 플래그만 서 있고 금고는 구 합성인 기기(이관이 건너뛰어진 상태) — 화면이 어떻게 말하는가 */
+    /* 플래그만 서 있고 금고는 구 시연 시드인 기기(이관이 건너뛰어진 상태) — 화면이 어떻게 말하는가 */
     localStorage.setItem("hifin_self_real_v1", "1");
     localStorage.setItem("hifin_vault_" + tk, JSON.stringify({ token: tk, checkups: [{ token: tk, kind: "checkup", date: "2023-12-26", source: "upload", channel: "upload",
       completeness: "full", fileName: "내가올린결과지.pdf", items: [{ key: "glucose", value: 175 }] }], insurance: [], consents: null }));
@@ -796,7 +796,7 @@ chk(/function _aidMember\(\)[\s\S]{0,400}selfMember\(\)/.test(AID), "_aidMember�
 chk(!/전체대비/.test(codeOf("src/components/AIDoctor.jsx")), "암 등급에서 파생한 수식어(「전체대비 낮음/보통」) 제거");
 chk(/50대 남성대비/.test(AID) && /c\.vs/.test(AID), "암 위험도는 원천 라벨(50대 남성대비 · 높음/낮음)로 적는다");
 const HM = srcOf("src/components/HealthManage.jsx");
-chk(!/BioTrendChart/.test(HM.replace(/\/\*[\s\S]*?\*\//g, "")), "합성 4개년 생체나이 차트(BioTrendChart) 삭제");
+chk(!/BioTrendChart/.test(HM.replace(/\/\*[\s\S]*?\*\//g, "")), "시연 4개년 생체나이 차트(BioTrendChart) 삭제");
 chk(/R\.trendNote/.test(HM), "생체나이 카드가 단일 「추이 없음」 문장을 읽는다");
 chk(/chk\.abnMain/.test(HM) && /topStale/.test(HM), "진료 연계 카드가 최신 판정 시점 행 + 측정일을 쓴다");
 const ONT = srcOf("src/components/Ontology.jsx");
@@ -844,11 +844,11 @@ chk(!/재가입|재개|만기 종료/.test(PRIORLINES),
   "앞선 창을 참조하는 **모든 줄**에 계약 행위 어휘(재가입·재개·만기 종료) 없음(블록 추출과 이중으로 건다)", (PRIORLINES.match(/재가입|재개|만기 종료/g) || []));
 chk(!/재가입|재개|만기 종료/.test(PRIORBLK), "앞선 창 문구에 계약 행위 어휘(재가입·재개·만기 종료) 없음", (PRIORBLK.match(/재가입|재개|만기 종료/g) || []));
 /* ⚠️ 구 단언 「실측은 **검진일**로 한정해 적는다」(/실측 검진일/ 요구)의 승계 — 이 블록은
-   조성래(실측)뿐 아니라 코호트·체험 회원의 **합성 검진일**로도 렌더된다. 그 날짜에 「실측」을
+   조성래(실측)뿐 아니라 코호트·체험 회원의 **시연 시드 검진일**로도 렌더된다. 그 날짜에 「실측」을
    붙이면 데이터에 없는 성격을 단정한다. 그래서 라벨을 중립(「연계 검진일」)으로 내리고
    블록 안의 「실측」을 **전면 금지**한다 — 구 단언보다 강하다(한 단어만 허용 → 0단어 허용). */
 chk(!/실측/.test(PRIORBLK) && /연계 검진일/.test(PRIORBLK),
-  "앞선 창 문구가 산출 날짜에 「실측」을 붙이지 않는다(중립 라벨 「연계 검진일」 — 합성 검진일에 실측 표기 금지)", (PRIORBLK.match(/실측[^\s<{]*/g) || []));
+  "앞선 창 문구가 산출 날짜에 「실측」을 붙이지 않는다(중립 라벨 「연계 검진일」 — 시연 시드 검진일에 실측 표기 금지)", (PRIORBLK.match(/실측[^\s<{]*/g) || []));
 chk(/시연 시드/.test(PRIORBLK), "기준일 파생 창임을 블록 **꼬리**에서 밝힌다(「(시연 시드)」 표기 — 꼬리 제거가 통과하지 않는다)");
 chk(/prior\.ended/.test(PRIORBLK) && /prior\.end < S\.timeline\.start/.test(PRIORBLK),
   "앞선 창 줄은 그 창이 실제로 지났고 현재 창보다 앞설 때만 렌더된다");

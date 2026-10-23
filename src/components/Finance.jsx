@@ -160,7 +160,7 @@ function finReplayFeed(months, D, cohort, limit) {
     if (p.dd === 1 && p.mo.invIn) es.unshift({ dr: "현금", cr: "납입자본", amt: p.mo.invIn, c: "#E11D48", who: "투자금 납입", date, key: day + "-inv", i: -1 });
     for (const e of es) {
       let who = e.who || e.dr;
-      if (e.who === "cohort") { const m = cohort.length ? cohort[(day * 31 + 7) % cohort.length] : null; who = m ? `${m.name}(${m.id}) · 파일럿 합성 코호트` : "회원"; }
+      if (e.who === "cohort") { const m = cohort.length ? cohort[(day * 31 + 7) % cohort.length] : null; who = m ? `${m.name}(${m.id}) · 파일럿 코호트` : "회원"; }
       out.push({ ...e, who });
       if (out.length >= limit) break;
     }
@@ -242,8 +242,8 @@ function FinanceLive() {
       ))}
     </div>
     <div className="finlink"><Network size={13} color="#22D3EE" /> {yr === 0
-      ? <>재생은 <b>{yearOf(0)}-01-01부터 기준일 {S.date}까지</b> 실적 월 흐름(월 ÷ 그 달 일수)을 계정별로 분개합니다. 기준일에 도달하면 위 KPI(기준일 실적)와 같은 값이 됩니다. <b>현재 회원(기준일)</b> {finNumS(S.actualMembers, "명")}은 실적 배율의 근거이고, 분개 거래 상대 이름은 <b>파일럿 합성 코호트</b>({finNumS(cohort.length, "명")} · 가상 인물)에서 표시용으로만 가져옵니다.</>
-      : <>{yearOf(yr)} <b>계획</b> 원장(예산양식 월별 계획)을 1년 재생합니다 — 실적이 아닌 계획치입니다. 분개 거래 상대 이름은 <b>파일럿 합성 코호트</b>(가상 인물) 표시용입니다.</>}
+      ? <>재생은 <b>{yearOf(0)}-01-01부터 기준일 {S.date}까지</b> 실적 월 흐름(월 ÷ 그 달 일수)을 계정별로 분개합니다. 기준일에 도달하면 위 KPI(기준일 실적)와 같은 값이 됩니다. <b>현재 회원(기준일)</b> {finNumS(S.actualMembers, "명")}은 실적 배율의 근거이고, 분개 거래 상대 이름은 <b>파일럿 코호트</b>({finNumS(cohort.length, "명")} · 이름은 가명 표기이고 특정 개인이 아닙니다)에서 표시용으로만 가져옵니다.</>
+      : <>{yearOf(yr)} <b>계획</b> 원장(예산양식 월별 계획)을 1년 재생합니다 — 실적이 아닌 계획치입니다. 분개 거래 상대 이름은 <b>파일럿 코호트</b>(가명 표기 · 특정 개인이 아닙니다) 표시용입니다.</>}
     </div>
 
     <div className="chtabs" style={{ marginTop: 12 }}>{[["pl", "손익계산서 (P&L)", Receipt], ["bs", "재무상태표 (B/S)", Landmark], ["cf", "현금흐름표 (C/F)", TrendingUp], ["cash", "AI 출수납", Landmark], ["escrow", "선수납·정산", Lock], ["invest", "AI 투자", TrendingUp], ["trend", "결산 추이", PieChart], ["annual", "연간 예상(계획)", Banknote], ["plan", "사업계획(월·분기)", Receipt], ["my", "중장기(5개년)", TrendingUp], ["ten", "10개년", TrendingUp], ["saas", "SaaS·투자 KPI", Percent], ["params", "파라미터·시나리오", Zap], ["gtm", "회원·GTM", Users], ["val", "밸류에이션", PieChart], ["graph", "재무 온톨로지·AI", Network]].map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>

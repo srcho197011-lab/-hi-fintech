@@ -1292,7 +1292,9 @@ function InsAnalysisTab({ onGo, onTab }) {
       {g.contracts.filter((c) => c.kind !== "실손").map((c, i) => (
         <div className="costrow" key={i}><span className="cl">{c.product} ({c.insurer || "보험사"})</span><span className="cv">{c.benefit ? "진단금 " + won(c.benefit) : "가입 중"}{c.monthly ? ` · 월 ${won(c.monthly)}` : ""}</span><span className="ca">보장 중</span></div>
       ))}
-      {g.peer && <div className="chnote" style={{ marginTop: 10 }}>👥 나와 같은 <b>합성 코호트 10만 명</b> 평균: 실손 가입율 {g.peer.silsonRate}% · 월 보험료 {won(g.peer.avgMonthly)} · 계약 {g.peer.avgContracts}건 — 평균이 아니라 <b>내 값</b>으로 판단하세요.</div>}
+      {/* [표기 규약 2026-10-23] 호칭만 바꾸면 또래 평균이 아무 표식 없는 실통계로 읽힌다 —
+          데이터 성격(시연용 예시 데이터)을 같은 문장에 적는다(insuranceCohort.js 머리 규약 ②). */}
+      {g.peer && <div className="chnote" style={{ marginTop: 10 }}>👥 나와 같은 <b>파일럿 코호트 10만 명</b> 평균(<b>시연용 예시 데이터</b> · 실제 개인정보가 아닙니다): 실손 가입율 {g.peer.silsonRate}% · 월 보험료 {won(g.peer.avgMonthly)} · 계약 {g.peer.avgContracts}건 — 평균이 아니라 <b>내 값</b>으로 판단하세요.</div>}
     </div>
     {g.solution && g.solution.findings && g.solution.findings.length > 0 && (
       <div className="card" style={{ border: "1.5px dashed #FBCFB6" }}>

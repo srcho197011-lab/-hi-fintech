@@ -1,0 +1,51 @@
+{
+  "files": 181,
+  "screen": 0,
+  "comment": 84,
+  "compound": 16,
+  "exempt": 1,
+  "notices": 11,
+  "counts": {
+    "정합성": 8,
+    "적합성": 8,
+    "합성어": 0
+  },
+  "perFile": {
+    "정합성": {
+      "src/components/Ontology.jsx": 2,
+      "src/data/whitepaper.js": 4,
+      "src/data/wpAutoLog.js": 2
+    },
+    "적합성": {
+      "src/components/Insurance.jsx": 1,
+      "src/data/kbDomainData.js": 2,
+      "src/data/telemed.js": 1,
+      "src/data/whitepaper.js": 4
+    },
+    "합성어": {}
+  },
+  "perFileText": {
+    "정합성": {
+      "src/components/AIDoctor.jsx": 1,
+      "src/components/Ontology.jsx": 2,
+      "src/data/pilotCohort.js": 4,
+      "src/data/whitepaper.js": 4,
+      "src/data/wpAutoLog.js": 2
+    },
+    "적합성": {
+      "src/components/Insurance.jsx": 1,
+      "src/data/kbDomainData.js": 2,
+      "src/data/telemed.js": 1,
+      "src/data/whitepaper.js": 5
+    },
+    "합성어": {
+      "src/data/aiNative.js": 3,
+      "src/data/hiNluCore.js": 3,
+      "src/data/hiNluDict.js": 1
+    }
+  },
+  "virtual": 0,
+  "bundle": 0,
+  "wpRoundTrip": true,
+  "fails": 0
+}

@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-08",
+  "date": "2026-10-23",
   "handles": {
     "agent": true,
     "voice": true,
@@ -190,10 +190,10 @@
       "shop": true
     },
     "spread": 1,
-    "voiceAvg": 121,
-    "voiceP95": 140,
-    "textAvg": 353,
-    "textP95": 378,
+    "voiceAvg": 120,
+    "voiceP95": 136,
+    "textAvg": 364,
+    "textP95": 382,
     "n": {
       "voice": 6,
       "text": 6
@@ -340,6 +340,6 @@
       "pass": true
     }
   ],
-  "seconds": 63.7,
+  "seconds": 66.9,
   "pass": true
 }

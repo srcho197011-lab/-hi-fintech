@@ -83,7 +83,7 @@ const T = (o, n) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n || 
 const md = `# 수확 리포트 — 무엇부터 고칠 것인가
 
 > 텔레메트리 ${events.length.toLocaleString()}건에서 후보 ${cands.length}건 추출
-> ⚠️ 현재 입력은 **데모용 합성 트래픽**입니다(실사용 로그 아님).
+> ⚠️ 현재 입력은 **데모용 시뮬레이션 트래픽**입니다(실사용 로그 아님).
 
 ## 우선순위 = 영향도 × log(빈도+1)
 

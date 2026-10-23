@@ -5447,3 +5447,23 @@ body.easyread .hidock-who, body.easyread .hidock-cite, body.easyread .hidock-pen
 a.snav-link{text-decoration:none;color:inherit;position:relative}
 a.snav-link:hover{background:rgba(249,115,22,.14)}
 .snav-ext{margin-left:auto;font-size:11px;color:#FDBA74;opacity:.9}
+
+/* 데이터 보강 로드맵(온톨로지 · 헬스케어 탭 하단) — 종전 데이터 성격 고지 문단을 대체 */
+.ontgap-st{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin:15px 2px 8px;padding-top:12px;border-top:1px solid #1F2E48;}
+.ontgap-st b{font-size:12.5px;font-weight:800;color:#EAF2FF;}
+.ontgap-st span{font-size:11px;color:#8FA1C0;}
+.ontgap-st em{margin-left:auto;font-style:normal;font-size:10.5px;font-weight:800;color:#7C8BA8;background:#0C1730;border:1px solid #24324D;border-radius:999px;padding:2px 9px;}
+.ontgap-i{display:flex;gap:10px;background:#0C1730;border:1px solid #24324D;border-left:3px solid #24324D;border-radius:11px;padding:11px 13px;margin-bottom:7px;}
+.ontgap-ic{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;}
+.ontgap-b{flex:1;min-width:0;}
+.ontgap-t{font-size:12.5px;font-weight:800;color:#EAF2FF;margin-bottom:4px;}
+.ontgap-i p{font-size:11.8px;color:#AFC0DE;line-height:1.65;margin:0 0 2px;}
+.ontgap-i p b{color:#EAF2FF;font-weight:800;}
+.ontgap-i p em{font-style:normal;font-weight:800;color:#7C8BA8;margin-right:6px;}
+/* 파일럿 코호트 최소 표식 — 데이터 칩(.ontchip.gap 「보장 공백」)과 같은 모양을 쓰지 않는다(형 지시 2026-10-23).
+   클래스 이름은 화면에 안 나오므로 그대로 두되, 칩 문구는 화면 표기 규약(insuranceCohort.js 머리 주석)을 따른다.
+   어두운 온톨로지 화면에서 한눈에 보이도록 경고 톤·테두리로 분리한다. */
+.ontgap-synth{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:5px 11px;font-size:11.5px;font-weight:800;background:#3a2a12;color:#FCD34D;border:1px solid #6B4A14;box-shadow:0 0 0 1px rgba(251,191,36,.12) inset;}
+.ontgap-done{margin-top:13px;padding-top:11px;border-top:1px solid #1F2E48;font-size:11.5px;color:#8FA1C0;line-height:1.7;}
+.ontgap-done b{color:#A7D8F0;}
+@media(max-width:760px){.ontgap-st em{margin-left:0;}.ontgap-i{padding:10px 11px;}}

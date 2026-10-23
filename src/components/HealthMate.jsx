@@ -57,7 +57,8 @@ function HmStyle() {
    ⚠️ 마스킹 정의(_hmMask · _hcMask)와 데이터 계층은 손대지 않는다 — 회원이 보는 화면의 마스킹 규칙,
       인계 카드 데이터(card.member.mask)와 대본 {가명} 슬롯, 골든셋(fixtures/handoff_*_v1.json)은 그대로다.
       해제는 "렌더 지점"에서만 일어나고, 그 유일한 통로가 이 함수다. 이 콘솔은 사번 게이트 뒤의
-      프로 전용 화면이고(회원 역할은 isRestrictedSection으로 도달 불가), 코호트 10만 명은 합성 데이터다. */
+      프로 전용 화면이고(회원 역할은 isRestrictedSection으로 도달 불가), 코호트 10만 명의 이름은 가명이다
+      (화면 표기 규약 — insuranceCohort.js 머리 주석). */
 function _hmProName(x) {
   if (!x) return "회원";
   if (typeof x === "string") return x;                       /* 이미 이름 문자열 */
@@ -1832,7 +1833,7 @@ function HealthMateSection({ onGo }) {
       <div className="hmfoot" style={{ textAlign: "center" }}>
         개인정보보호법 §17·§22②·§23·§24 · 신용정보법 §32 · 보험업법(설명의무·부당 권유 금지) · 정보통신망법 §50 —
         원본 건강수치·원가성 정보 비노출 · 진단·인수·등급 단정 금지 · 시연 환경 고지 — {selfN ? "본인 계정은 실측 데이터, " : ""}체험 회원 16명·코호트 10만 명은 시연 시드
-        <div style={{ marginTop: 3 }}>이 콘솔에 표시되는 회원 이름은 <b>시연용 합성 데이터</b>예요{selfN ? "(본인 계정만 실측)" : ""} — 프로 전용 화면이라 가리지 않고 전체 이름으로 보여드려요. 회원이 보는 화면과 외부 전달물에는 마스킹 규칙이 그대로 적용돼요.</div>
+        <div style={{ marginTop: 3 }}>이 콘솔에 표시되는 회원 이름·식별자는 <b>가명으로 표시</b>돼 특정 개인을 알아볼 수 없어요{selfN ? "(본인 계정만 실측)" : ""} — 프로 전용 화면이라 가리지 않고 전체 이름으로 보여드려요. 회원이 보는 화면과 외부 전달물에는 마스킹 규칙이 그대로 적용돼요.</div>
       </div>
       <HiProDock />
       {/* 데모 대본(demoScript.js)이 아직 없는 탭(⑩)을 가리킬 수 있다 — 없는 번호는 ⓪로 되돌린다 */}

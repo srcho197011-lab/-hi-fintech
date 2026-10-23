@@ -20,10 +20,25 @@ fi
 bash scripts/gen_wp_log.sh >/dev/null 2>&1 || exit 0
 bash build_preview.sh    >/dev/null 2>&1 || exit 0
 
+# == 화면 표기 규약 재확인(2026-10-23) ==
+# 방금 재생성한 wpAutoLog.js 는 **커밋 메시지에서** 만들어진다. 커밋 메시지에 치환표 밖의
+# 금칙 표현이 들어 있으면 그 문구가 백서 ›반영 로그 화면에 그대로 뜬다 — 이 커밋이 번들에
+# 문구를 다시 심는 것이다(2026-10-23 실측). 커밋은 이미 끝났으니 막을 수는 없고, **크게 알린다**.
+# (다음 커밋의 pre-commit 게이트가 실제로 차단하므로 여기서 놓쳐도 조용히 배포되지는 않는다.)
+# ⚠️ 순서가 뜻이다 — 가드의 검사 ⑧이 번들(index.html)을 읽으므로 **재빌드 뒤에** 돌린다.
+#    재빌드 전에 돌리면 낡은 번들을 보고 엉뚱한 경고를 낸다.
+if ! node scripts/run_wording_guard.mjs >/dev/null 2>&1; then
+  echo "[WP-LOG] 화면 표기 규약 위반 — 재생성된 백서반영표에 금칙 표현이 들어왔습니다."
+  echo "         고치는 자리: scripts/wp_wording_table.json (치환표 또는 해시 override)"
+  echo "         자세히:      node scripts/run_wording_guard.mjs"
+fi
+
 # preview.html 은 .gitignore 대상이라 추적되지 않는다. 목록에 두면 add 마다 무시 경고만 나와
 # 원인 추적을 흐린다(2026-09-10, 이 경고를 실패로 오독한 적이 있다). 추적 대상만 남긴다.
-if ! git diff --quiet -- src/data/wpAutoLog.js index.html 2>/dev/null; then
-  git add src/data/wpAutoLog.js index.html
+# 표기 규약 스냅샷도 같은 커밋에 편입한다 — 위 가드 재실행이 이 파일을 다시 쓰기 때문이다.
+# (스냅샷에 소요 시간을 담지 않으므로 내용이 바뀔 때만 amend가 일어난다 — run_wording_guard 주석 참조)
+if ! git diff --quiet -- src/data/wpAutoLog.js index.html scripts/wording_guard_snapshot.json 2>/dev/null; then
+  git add src/data/wpAutoLog.js index.html scripts/wording_guard_snapshot.json
   WPLOG_SKIP=1 git commit --amend --no-edit --no-verify >/dev/null 2>&1
 fi
 exit 0

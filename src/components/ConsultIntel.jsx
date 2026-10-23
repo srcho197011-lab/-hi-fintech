@@ -127,7 +127,7 @@ function ConsultIntel({ onGo }) {
             );
           })}
         </div>
-        <div className="chnote" style={{ marginTop: 12 }}>※ 상담 내용은 <b>시연용 합성 데이터</b>이며 실제 진단이 아닙니다. 5대 안내는 상담·검진·위험도 신호를 온톨로지(CHECKUP·DISEASE·DEPT·NUTRITION·DEVICE·DIET)로 매핑한 <b>결과 안내</b>로, 확정 진단·처방이 아닙니다. 실서비스는 회원 동의(DID) 하에 암호화 저장·분석됩니다.</div>
+        <div className="chnote" style={{ marginTop: 12 }}>※ 상담 내용은 <b>시연용 데이터</b>이며 실제 진단이 아닙니다. 회원 이름·식별자는 <b>가명으로 표시</b>되며 특정 개인을 알아볼 수 없습니다. 5대 안내는 상담·검진·위험도 신호를 온톨로지(CHECKUP·DISEASE·DEPT·NUTRITION·DEVICE·DIET)로 매핑한 <b>결과 안내</b>로, 확정 진단·처방이 아닙니다. 실서비스는 회원 동의(DID) 하에 암호화 저장·분석됩니다.</div>
       </div>
     </div>
   );

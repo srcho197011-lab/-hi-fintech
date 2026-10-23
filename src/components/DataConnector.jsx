@@ -238,8 +238,11 @@ function DconStatus({ cfg, all, onList }) {
             <div className="dconst-organs">{D.report.organs.map((o, i) => <span key={i} style={{ color: o.flag === "좋음" ? "#34D399" : "#F87171" }}>{o.k} {o.age}세 {o.flag === "좋음" ? "✓" : "▲"}</span>)}</div>
           </div>)}
 
-          {/* [실측 통일 2026-10-05] 배선 완료 — 이 문서가 본인 계정의 단일 원천이다(selfReal.js → 금고 시드·리포트·프로 콘솔) */}
-          <div className="dconst-foot"><Bot size={12} color="#67E8F9" /> 이 실데이터는 본인 계정의 <b>단일 원천</b>입니다 — 데이터 금고 시드(국가검진 12항목)·건강분석 리포트·AI 주치의·헬스메이트 프로 콘솔이 모두 이 문서를 읽습니다(selfReal.js). {D.meta ? D.meta.disclaimer : ""}</div>
+          {/* [실측 통일 2026-10-05] 배선 완료 — 이 문서가 본인 계정의 단일 원천이다(selfReal.js → 금고 시드·리포트·프로 콘솔)
+              [표기 규약 2026-10-23] 고지를 meta.disclaimer 그대로 찍지 않고 화면에 직접 적는다 — 원천 스냅샷
+              (mcp_josungrae.json = selfReal.js 전문)은 드리프트 금지라 손대지 않고, 화면 표기 규약(insuranceCohort.js
+              머리 주석)은 원천 문장과 별개로 지켜야 하기 때문이다. 담은 사실은 원천 고지와 같다. */}
+          <div className="dconst-foot"><Bot size={12} color="#67E8F9" /> 이 실데이터는 본인 계정의 <b>단일 원천</b>입니다 — 데이터 금고 시드(국가검진 12항목)·건강분석 리포트·AI 주치의·헬스메이트 프로 콘솔이 모두 이 문서를 읽습니다(selfReal.js). 실측 검진데이터(교육·시연용)이며 확정 진단·처방은 의료진 상담이 필요합니다. 이 문서를 원천으로 쓰는 화면은 본인 계정뿐이고, 체험 회원 16명·파일럿 코호트 10만 명은 시연 시드 데이터입니다 — 이름·식별자는 가명으로 표시되며 특정 개인을 알아볼 수 없습니다.</div>
         </div>
       )}
     </div>

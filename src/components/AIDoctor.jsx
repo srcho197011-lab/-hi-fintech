@@ -1403,7 +1403,10 @@ function SpecialistChat({ checkupMode }) {
         ))}</div>
         <button className="tmjoin" onClick={() => setJoin(true)}><Building2 size={15} /> 우리 병원도 원격주치의로 참여하기</button>
         {join && <HospitalJoinModal onClose={() => setJoin(false)} />}
-        <div className="kt-disc">안내: 전국 전문의는 시연용 가상 데이터이며 응답은 예시입니다. 실제 진단·처방은 의료기관에서 받으세요. 응급 시 119.</div>
+        {/* [표기 규약 2026-10-23] 「가상 데이터」는 「합성 데이터」와 같은 어감이라 함께 걷어낸다 —
+            이 안내문은 세 화면(원격진료·건강상담 / 검진 후 케어 / 건강쇼핑)에서 같은 자리로 렌더된다.
+            문구는 insuranceCohort.js 머리 규약을 따른다(가드 검사 ⑥이 「가상 데이터·인물·회원」을 센다). */}
+        <div className="kt-disc">안내: 전국 전문의 명단은 시연용 데이터이며 이름·식별자는 가명으로 표시됩니다(응답도 예시입니다). 실제 진단·처방은 의료기관에서 받으세요. 응급 시 119.</div>
       </div>
     );
   }

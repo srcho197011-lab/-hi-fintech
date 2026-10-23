@@ -12,6 +12,15 @@ CHANGED=$(git diff --cached --name-only)
 # ══ 데이터 카탈로그 게이트(운영계획 v1.1 D-1) — src 변경 시 저장 키 전수 대조(미등재=차단) ══
 if echo "$CHANGED" | grep -q "^src/"; then
   python scripts/check_data_catalog.py || { echo "[GATE] 미등재 저장 키 — dataCatalog.js 등재 후 커밋"; exit 1; }
+  # == 화면 표기 규약 게이트(2026-10-23 · 대표 지시 + 적대적 리뷰 실증) ==
+  # 「합성」·「가상 데이터」가 화면 문자열에 되살아나거나, 성격 고지가 떨어져 나가거나,
+  # 정합성·적합성·합성어를 잘못 치환하면 차단한다. 새 게이트를 발명하지 않고 이 src 블록에 편입한다.
+  # 왜 여기인가 — 가드를 만들어 두고 게이트에 걸지 않으면 **사람이 직접 타이핑할 때만** 돈다.
+  # 그 구멍이 dailyRoster.js·보장 창에서 이미 두 번 재발했다(아래 게이트들의 주석 참조).
+  # 그리고 백서반영표(src/data/wpAutoLog.js)는 커밋 메시지에서 재생성되는 파일이라,
+  # 이 가드의 검사 ⑦(생성기 왕복)이 없으면 post-commit 훅이 문구를 조용히 되돌린다 — 1.2초짜리 정적 스캔이다.
+  node scripts/run_wording_guard.mjs || { echo "[GATE] 화면 표기 규약 위반 — 커밋 차단(규약: src/data/insuranceCohort.js 머리 주석)"; exit 1; }
+  git add scripts/wording_guard_snapshot.json 2>/dev/null || true
 fi
 # == 애블레이션 마커 금칙(2026-10-06 · 적대적 리뷰 실증) ==
 # 리뷰 중 「되돌려 보기」 실증으로 심은 REVERT-TEST 마커가 index.html/preview.html(추적 파일이고

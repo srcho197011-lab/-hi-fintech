@@ -1,8 +1,8 @@
 /* ══════════ Phase F — 학습 루프 1회전 ══════════
-   수집(합성) → 수확 → 증분(스냅샷 포함) → 게이트(승격/롤백) → 드리프트
+   수집(시뮬레이션) → 수확 → 증분(스냅샷 포함) → 게이트(승격/롤백) → 드리프트
 
    실행: node scripts/learn/run.mjs [턴수]
-   ⚠️ 현재 입력은 **데모용 합성 트래픽**입니다(실사용 로그 아님). */
+   ⚠️ 현재 입력은 **데모용 시뮬레이션 트래픽**입니다(실사용 로그 아님). */
 import { execFileSync } from "node:child_process";
 import { ROOT } from "./lib.mjs";
 
@@ -13,7 +13,7 @@ const step = (label, args) => {
   catch (e) { process.stdout.write(String((e.stdout || "") + (e.stderr || ""))); return e.status == null ? 1 : e.status; }
 };
 
-step("① 수집(합성 트래픽)", ["scripts/learn/simulate-traffic.mjs", N]);
+step("① 수집(시뮬레이션 트래픽)", ["scripts/learn/simulate-traffic.mjs", N]);
 step("② 수확", ["scripts/learn/harvest.mjs"]);
 step("③ 증분(적용)", ["scripts/learn/promote.mjs", "--apply"]);
 const code = step("④ 게이트", ["scripts/learn/gate.mjs"]);
