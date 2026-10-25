@@ -10,7 +10,10 @@ CHANGED=$(git diff --cached --name-only)
 [ -z "$CHANGED" ] && exit 0
 
 # ══ 데이터 카탈로그 게이트(운영계획 v1.1 D-1) — src 변경 시 저장 키 전수 대조(미등재=차단) ══
-if echo "$CHANGED" | grep -q "^src/"; then
+# P7(2026-10-26): 가드 **자신**이 바뀔 때도 돈다. 종전 조건은 src/ 변경뿐이어서, 검사를 지우거나
+# 느슨하게 만드는 변경(러너 파일만 고치는 커밋)은 **어느 게이트도 통과하지 않았다** — 「사람이 칠 때만
+# 도는 가드는 안 도는 가드다」가 가드 자신에게 적용되지 않은 자리였다. 새 게이트를 만들지 않고 조건만 넓힌다.
+if echo "$CHANGED" | grep -qE "^src/|^scripts/(run_wording_guard\.mjs|check_data_catalog\.py)$"; then
   python scripts/check_data_catalog.py || { echo "[GATE] 미등재 저장 키 — dataCatalog.js 등재 후 커밋"; exit 1; }
   # == 화면 표기 규약 게이트(2026-10-23 · 대표 지시 + 적대적 리뷰 실증) ==
   # 「합성」·「가상 데이터」가 화면 문자열에 되살아나거나, 성격 고지가 떨어져 나가거나,
@@ -64,6 +67,12 @@ python scripts/gen_nav_inventory.py --clear-bypass
 # 스냅샷 신선도 2차 확인 — 회귀 스냅샷이 "어느 인벤토리에서 측정됐는지"까지 대조한다.
 # (META만 보면 인벤토리 재생성 후 회귀를 다시 돌리지 않아도 date만 올라가 '오늘 통과'로 보인다 — 실측 사례 있음)
 python scripts/gen_nav_inventory.py --check-reg || { echo "[GATE] 회귀 스냅샷이 현재 인벤토리보다 낡음 — 커밋 차단"; exit 1; }
+# ── 함정 세트(2026-10-26 편입) — 종전에는 어느 게이트에도 걸리지 않았다.
+# run_nav_traps.mjs 는 「게이트: 실패 0건이어야 커밋한다」를 머리 주석으로만 갖고 항상 exit 0 으로
+# 끝났고, 이 훅에도 등재되지 않았다. 그래서 알려진 실패 1건(대소문자만 다른 다의어 키가 만든
+# 「fin 열어줘 → 회원 대면 home」 착지)을 안고 커밋할 수 있었다. 새 게이트를 만들지 않고
+# 이 블록에 넣는다 — 사정권(navInventory · navRouting · WATCH)이 이미 같다.
+node scripts/run_nav_traps.mjs || { echo "[GATE] 함정 세트 실패 - 커밋 차단(다의어 · 부분문자열 · 소유자 가드)"; exit 1; }
 git add scripts/nav_regression_snapshot.json src/data/navRegSnapshot.js src/data/navInventory.js 2>/dev/null || true
 echo "[GATE] 통과 — 회귀 스냅샷 자동 스테이지 완료"
 
@@ -189,6 +198,31 @@ if echo "$CHANGED" | grep -qE "^src/(components/(Wallet|MyPage|Insurance|FamilyC
   git add scripts/money_check_snapshot.json 2>/dev/null || true
 fi
 
+# ══ 협력업체 통제 게이트(지시서 v2.3 §14-2 · P3) — 기존 게이트에 편입(새 게이트 발명 금지) ══
+# 정책 레지스트리·판정기·용어 원천·지면 계약이 스테이지에 있으면 정책 가드를 돌린다.
+# 왜 여기인가 — 조항·확인 등급·집행 수준은 「사람이 칠 때만 도는 가드」로 지킬 수 없다.
+# 하드 플로어가 뚫리면 확인하지 못한 법으로 위반을 적게 되고, 조문 번호 게이트가 뚫리면
+# 「미확인」 배지를 달고 틀린 조문이 보고서에 인쇄된다. 러너는 0.6초짜리 정적+직접호출 검사다.
+# P4에서 집행 가드(run_pg_scan)를 편입했다 - 러너가 실재하므로 이제 부를 수 있다(P3 주석의 유보 해소).
+# 집행 축을 함께 거는 이유 - 조항이 늘어나도 막는 자리가 없으면 Policy Enforcement가 아니고,
+# 기록되지 않는 차단은 차단이 아니다. 단언 10은 양성 테스트라 0 = 0으로 통과하지 않는다.
+# 감시 대상에 hiEvents.js(차단 이벤트 등재)·contentGuard.js(반출 예외)·hiOpsConfig.js(조정 가능 임계)·
+# dataCatalog.js(전용 저장 키)를 함께 넣는다 - 그 넷 중 하나만 되돌려도 집행 축이 조용히 비기 때문이다.
+# P6에서 감시 대상에 partnerAI.js(AI 거버넌스 선언)·PartnerGovReport.jsx(판정 지면 + 계산 레이어)를 더했다.
+# 새 게이트를 만들지 않고 **이 블록의 사정권만 넓힌다** - 두 파일이 빠져 있으면 점검 축·자기 거버넌스·
+# 사람 승인 게이트를 되돌리는 변경이 어느 게이트에도 걸리지 않는다(단언 22가 그 둘을 직접 읽는다).
+# 2026-10-26: 하이 4층 등록 파일을 사정권에 더한다(P7 산출물 ⑤⑥ · 단언 25).
+# 그 넷 중 하나만 되돌려도 섹션 가이드의 ADMIN 가드가 다시 죽은 분기가 되고, Q&A 의 adm 플래그가
+# 사라지면 회원 세션에서 협력업체 통제가 그대로 답한다(실측 누출 3건). 새 게이트를 만들지 않고
+# 이 블록의 사정권만 넓힌다.
+if echo "$CHANGED" | grep -qE "^(src/data/(partnerPolicy|partnerGov|partnerReport|partnerEnforce|partnerAI)\.js|src/components/(SupplyOntology|Ontology|PartnerGovReport)\.jsx|src/data/(supplyData|hiEvents|hiOpsConfig|dataCatalog|aiNative|aiQnaBank|hiNluDict|hiNluCore|agentRegistry)\.js|src/utils/contentGuard\.js|scripts/(run_pg_policy|run_pg_scan|run_persona_diff)\.mjs)$"; then
+  echo "[GATE] 협력업체 통제 파일 변경 - 정책 레지스트리·판정기 가드 실행(하드 플로어·조문 번호·골든 케이스)"
+  node scripts/run_pg_policy.mjs || { echo "[GATE] 협력업체 통제 가드 실패 - 커밋 차단(지시서 §13-5 단언 13항목)"; exit 1; }
+  echo "[GATE] 협력업체 집행 가드 실행(집행 지점 4곳·제출 필드 사전·차단 로그 양성·모드 스위치 양방향)"
+  node scripts/run_pg_scan.mjs || { echo "[GATE] 협력업체 집행 가드 실패 - 커밋 차단(지시서 §13-6 단언 17항목)"; exit 1; }
+  git add scripts/pg_policy_snapshot.json scripts/pg_scan_report.json 2>/dev/null || true
+fi
+
 # == 보장 창 게이트(2026-10-08 · 적대적 리뷰 실증) ==
 # 검진대비보험 보장 창의 단언이 어느 커밋 게이트에도 연결되지 않았다.
 # 사슬 - premiumBilling.js·healthMate.js는 catalog 게이트 하나만 거쳤고,
@@ -200,4 +234,51 @@ fi
 if echo "$CHANGED" | grep -qE "^(src/data/(insService|premiumBilling|healthMate|healthDataVault)\.js|src/components/(Insurance|Checkup|HealthMate)\.jsx|scripts/run_selfreal_check\.mjs)$"; then
   echo "[GATE] 보장 창 감시 파일 변경 - 보장 창·실측 가드 실행(절대 날짜 대조·국면 3분기·벽시계 스캔)"
   node scripts/run_selfreal_check.mjs || { echo "[GATE] 보장 창·실측 가드 실패 - 커밋 차단"; exit 1; }
+fi
+
+# == 번들 신선도 게이트(2026-10-26 · 적대적 리뷰 실증) ==
+# 겪은 사고: 러너가 **스냅샷 파일을 다시 쓴다**(navRegSnapshot.js · hmHarnessSnapshot.js ·
+# hmOpsSnapshot.js). 그 파일들은 src/_manifest.txt 에 등재돼 번들에 들어간다. 그래서 「빌드 →
+# 러너」 순서로 돌리면 번들이 스냅샷 재작성을 **놓치고**, index.html 이 자기 소스와 불일치인 채로
+# 커밋된다(실측: 같은 트리에서 다시 빌드하니 5,874,575 → 5,874,576바이트 · md5 가 움직였다).
+# 검증 보고의 번들 해시도 그 트리에서 재현되지 않는다.
+# 구조적으로 막는다 — index.html 이 매니페스트의 **어느 소스보다도 새로워야** 커밋된다.
+# 해소: 러너 전건 → 마지막에 `bash build_preview.sh` → 번들 해시 기록.
+if echo "$CHANGED" | grep -qE "^(index\.html|preview\.html|src/)"; then
+  # 이 훅의 러너들이 **방금** 스냅샷을 다시 썼다(navRegSnapshot·hmHarnessSnapshot·hmOpsSnapshot).
+  # 그래서 작성자가 아무리 마지막에 빌드해도 훅 안에서 번들이 다시 낡는다 — 사람이 지킬 수 없는
+  # 해소법이었다(2026-10-26 실측: 빌드 → 커밋 → 같은 자리에서 2회 연속 차단).
+  # 러너 뒤에 훅이 직접 다시 조립하고 스테이지에 넣는다. 아래 검사는 그대로 둔다 —
+  # 빌드가 실패하거나 매니페스트 밖 경로가 늦게 바뀌면 여전히 걸린다.
+  bash build_preview.sh >/dev/null 2>&1 || { echo "[GATE] 번들 재조립 실패 - 커밋 차단"; exit 1; }
+  git add index.html 2>/dev/null || true
+  STALE=$(python - <<'PY'
+import io, os, sys
+root = os.getcwd()
+mf = os.path.join(root, "src/_manifest.txt")
+try:
+    files = [l.strip() for l in io.open(mf, encoding="utf-8") if l.strip()]
+except Exception:
+    print(""); sys.exit(0)
+bt = None
+for b in ("index.html", "preview.html"):
+    p = os.path.join(root, b)
+    if os.path.exists(p):
+        t = os.path.getmtime(p)
+        bt = t if bt is None else min(bt, t)
+if bt is None:
+    print("index.html / preview.html 이 없다"); sys.exit(0)
+late = []
+for f in files:
+    p = os.path.join(root, f)
+    if os.path.exists(p) and os.path.getmtime(p) > bt + 1:
+        late.append(f)
+print(" ".join(late[:6]))
+PY
+)
+  if [ -n "$STALE" ]; then
+    echo "[GATE] 번들이 소스보다 낡았습니다 - 커밋 차단. 번들 뒤에 바뀐 파일: $STALE"
+    echo "       해소: bash build_preview.sh 를 **러너 다음에 마지막으로** 돌리고 번들 해시를 기록하세요"
+    exit 1
+  fi
 fi

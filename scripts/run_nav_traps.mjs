@@ -42,3 +42,12 @@ for (const [q, want] of [["내 건강지갑 확인해줘","mywallet|wallet"],["�
 }
 console.log('errors:', errs.length, errs.slice(0,2));
 await b.close();
+/* ★ 게이트를 **종료코드로** 만든다(2026-10-26). 종전에는 「게이트: 실패 0건이어야 커밋한다」가
+   머리 주석으로만 존재하고 스크립트가 항상 exit 0 으로 끝났다 — 그래서 알려진 ✘ 1건을 안고
+   커밋할 수 있었고 pre-commit 에도 편입돼 있지 않았다. 새 게이트를 만들지 않고 기존 내비 블록의
+   사정권에 편입한다(scripts/githooks/pre-commit). */
+if (res.failN || errs.length) {
+  console.log(`→ FAIL — 함정 실패 ${res.failN||0}건 · 페이지 오류 ${errs.length}건`);
+  process.exit(1);
+}
+console.log('→ PASS');

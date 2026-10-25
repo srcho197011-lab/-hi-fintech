@@ -1,6 +1,6 @@
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "8a5baee946678842", "generatedAt": "2026-10-23", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "bca38cf2f40ae76c", "generatedAt": "2026-10-26", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -72,6 +72,20 @@ const NAV_INVENTORY = [
   {"key": "tab.checkup.tele", "label": "원격진료·건강상담", "path": "checkup › 원격진료·건강상담", "surface": "tab", "nav": "checkup", "tab": "tele", "owner": "sarg", "admin": false, "desc": "", "aliases": ["dnjsrurwlsfyrjsrkdtkdeka", "원격진료건강상담"]},
   {"key": "tab.checkup.doctor", "label": "AI 주치의", "path": "checkup › 🩺 AI 주치의", "surface": "tab", "nav": "checkup", "tab": "doctor", "owner": "sarg", "admin": false, "desc": "", "aliases": ["AI 주치의", "AIwncldml", "AI주치의"]},
   {"key": "tab.checkup.emergency", "label": "응급신호", "path": "checkup › 🚨 응급신호", "surface": "tab", "nav": "checkup", "tab": "emergency", "owner": "sarg", "admin": false, "desc": "", "aliases": ["dmdrmqtlsgh", "응급신호"]},
+  {"key": "tab.ontology.health", "label": "헬스케어 온톨로지", "path": "ontology › 헬스케어 온톨로지", "surface": "tab", "nav": "ontology", "tab": "health", "owner": "nav", "admin": true, "desc": "", "aliases": ["gpftmzpdjdhsxhffhwl", "헬스케어온톨로지"]},
+  {"key": "tab.ontology.partner", "label": "협력업체 온톨로지 · 하네스", "path": "ontology › 협력업체 온톨로지 · 하네스", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["guqfurdjqcpdhsxhffhwlgksptm", "협력업체온톨로지하네스"]},
+  {"key": "tab.ontology.finance", "label": "재무회계", "path": "ontology › 재무회계", "surface": "tab", "nav": "ontology", "tab": "finance", "owner": "nav", "admin": true, "desc": "", "aliases": ["woanghlrP"]},
+  {"key": "tab.ontology.marketing", "label": "마케팅", "path": "ontology › 마케팅", "surface": "tab", "nav": "ontology", "tab": "marketing", "owner": "nav", "admin": true, "desc": "", "aliases": ["akzpxld"]},
+  {"key": "tab.ontology.bizops", "label": "사업 운영", "path": "ontology › 사업 운영", "surface": "tab", "nav": "ontology", "tab": "bizops", "owner": "nav", "admin": true, "desc": "", "aliases": ["tkdjqdnsdud", "사업운영"]},
+  {"key": "tab.ontology.foundation", "label": "HI-Fin 기반 온톨로지", "path": "ontology › HI-Fin 기반 온톨로지", "surface": "tab", "nav": "ontology", "tab": "foundation", "owner": "nav", "admin": true, "desc": "", "aliases": ["HI-Finrlqksdhsxhffhwl", "HI-Fin기반온톨로지"]},
+  {"key": "tab.ontology.ops", "label": "운영 콘솔", "path": "ontology › 운영 콘솔", "surface": "tab", "nav": "ontology", "tab": "ops", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnsdudzhsthf", "운영콘솔"]},
+  {"key": "tab.ontology.dataops", "label": "데이터 운영", "path": "ontology › 데이터 운영", "surface": "tab", "nav": "ontology", "tab": "dataops", "owner": "nav", "admin": true, "desc": "", "aliases": ["epdlxjdnsdud", "데이터운영"]},
+  {"key": "tab.ontology.whitepaper", "label": "백서", "path": "ontology › 백서", "surface": "tab", "nav": "ontology", "tab": "whitepaper", "owner": "nav", "admin": true, "desc": "", "aliases": ["qortj"]},
+  {"key": "sub.partner.overview", "label": "개요 · 객체", "path": "ontology › 협력업체 온톨로지 · 하네스 › 개요 · 객체", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rodyrorcp", "개요객체"]},
+  {"key": "sub.partner.trade", "label": "거래 · 운영", "path": "ontology › 협력업체 온톨로지 · 하네스 › 거래 · 운영", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rjfodnsdud", "거래운영"]},
+  {"key": "sub.partner.cost", "label": "원가 · 정산", "path": "ontology › 협력업체 온톨로지 · 하네스 › 원가 · 정산", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnjsrkwjdtks", "원가정산"]},
+  {"key": "sub.partner.report", "label": "내부통제 보고서", "path": "ontology › 협력업체 온톨로지 · 하네스 › 내부통제 보고서", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["soqnxhdwpqhrhtj", "내부통제보고서"]},
+  {"key": "sub.partner.engine", "label": "정책 · 판정 엔진", "path": "ontology › 협력업체 온톨로지 · 하네스 › 정책 · 판정 엔진", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["wjdcorvkswjddpswls", "정책판정엔진"]},
   {"key": "tab.healthmate.0", "label": "⓪ 오늘의 지시서", "path": "healthmate › ⓪ 오늘의 지시서", "surface": "tab", "nav": "healthmate", "tab": "0", "owner": "nav", "admin": true, "desc": "", "aliases": ["⓪dhsmfdmlwltltj", "⓪오늘의지시서"]},
   {"key": "tab.healthmate.1", "label": "① 지금 연락할 회원", "path": "healthmate › ① 지금 연락할 회원", "surface": "tab", "nav": "healthmate", "tab": "1", "owner": "nav", "admin": true, "desc": "", "aliases": ["ghldnjstlsgh", "ghldnjswjqchrtlsgh", "wlrmadusfkrgkfghldnjs", "지금 연락할 회원", "지금연락할회원", "회원 신호", "회원 접촉 신호", "회원신호", "회원접촉신호"]},
   {"key": "tab.healthmate.2", "label": "② 배정·접촉 락 회원", "path": "healthmate › ② 배정·접촉 락 회원", "surface": "tab", "nav": "healthmate", "tab": "2", "owner": "nav", "admin": true, "desc": "", "aliases": ["qhgjaqowjd", "qhgjaqowjdeorl", "qowjdeorl", "qowjdwjqchrfkrghldnjs", "배정·대기", "배정·접촉 락 회원", "배정대기", "배정접촉락회원", "보험 배정", "보험 배정·대기", "보험배정", "보험배정대기"]},

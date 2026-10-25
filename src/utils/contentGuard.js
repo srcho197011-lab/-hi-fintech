@@ -49,16 +49,27 @@ function guardExport() {
   } catch (e) {}
 }
 
+/* 워터마크 스탬프 · 이미지 URL — **두 자리가 같은 함수를 쓴다.**
+   화면 워터마크(#guardwm)와 인쇄 창 워터마크가 각자 조립하면 같은 문서가 두 가지 열람 기록을
+   달게 되고, 그때 「누가 언제 뽑았나」를 대조할 수 없다. 인쇄 창은 applyGuard의 리스너와 이
+   #guardwm 밖이므로(§10-6 ⓒ 실측) 반출 경로가 이 두 함수를 불러 **직접 인라인**한다. */
+function guardStamp() {
+  let who = "HI-Fin Tech";
+  try { const a = (typeof authCurrent === "function") ? authCurrent() : null; if (a && a.name) who = a.name; } catch (e) {}
+  let day = "";
+  try { day = new Date().toLocaleDateString("ko-KR"); } catch (e) { day = ""; }
+  return who + " · " + day + " · " + _guardSid();
+}
+function guardWmUrl(stamp) {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="200"><text x="18" y="120" transform="rotate(-24 180 100)" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="700" fill="rgba(37,99,235,0.07)">' + String(stamp || "").replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</text></svg>";
+  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+}
 function _guardWatermark(onFlag) {
   if (typeof document === "undefined") return;
   let el = document.getElementById("guardwm");
   if (!onFlag) { if (el) el.remove(); return; }
   if (!el) { el = document.createElement("div"); el.id = "guardwm"; el.setAttribute("aria-hidden", "true"); document.body.appendChild(el); }
-  let who = "HI-Fin Tech";
-  try { const a = (typeof authCurrent === "function") ? authCurrent() : null; if (a && a.name) who = a.name; } catch (e) {}
-  const stamp = who + " · " + new Date().toLocaleDateString("ko-KR") + " · " + _guardSid();
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="200"><text x="18" y="120" transform="rotate(-24 180 100)" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="700" fill="rgba(37,99,235,0.07)">' + stamp.replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</text></svg>";
-  el.style.backgroundImage = "url(\"data:image/svg+xml;utf8," + encodeURIComponent(svg) + "\")";
+  el.style.backgroundImage = "url(\"" + guardWmUrl(guardStamp()) + "\")";
 }
 
 function applyGuard() {
@@ -77,23 +88,60 @@ function applyGuard() {
   /* 판정은 이벤트 대상(e.target) 하나뿐이다 — activeElement로 보조 판정을 두었다가
      textarea에 포커스가 남아 있는 동안 화면 아무 곳에서나 복사가 열리는 구멍을 만들었다(실측으로 잡음).
      실제 Ctrl+C는 포커스된 요소가 곧 keydown/copy의 target이라 보조 판정이 필요하지 않다. */
-  const _exEl = (e) => {
+  /* 보고서 전용 반출 클래스(P7 · §10-6 ①) — 클래스 이름은 용어 원천이 소유한다.
+     여기에 문자로 적으면 지면과 예외가 갈릴 수 있고, 그때 증상은 「선택은 되는데 클립보드가 비는」
+     가짜 버튼이다. 두 클래스를 **가른다**: hmoex는 기본 복사를 그대로 허용하는 선례이고,
+     보고서 반출면은 **고지가 부분 선택에도 따라가야** 하므로 핸들러가 클립보드를 다시 쓴다. */
+  let _pgCls = null;
+  try { if (typeof pgExportClass === "function") _pgCls = pgExportClass(); } catch (x) {}
+  const _exKind = (e) => {
     try {
       const t = (e && e.target) || null;
-      if (t && t.classList && t.classList.contains("hmoex")) return t;
+      if (t && t.classList) {
+        if (_pgCls && t.classList.contains(_pgCls)) return "pg";
+        if (t.classList.contains("hmoex")) return "hm";
+      }
     } catch (x) {}
     return null;
   };
+  const _exEl = (e) => (_exKind(e) ? ((e && e.target) || null) : null);
+  /* 선택된 범위를 **그대로** 받아 고지를 앞에 붙여 다시 넣는다. 문자열을 만드는 자리는
+     반출 조립 함수 하나다(pgExportClip) — 보호 유틸이 고지 문안을 조립하면 원천이 둘이 된다. */
+  const _pgClip = (e) => {
+    const t = (e && e.target) || null;
+    let sel = "";
+    try {
+      if (t && typeof t.selectionStart === "number" && t.selectionEnd > t.selectionStart) sel = String(t.value == null ? "" : t.value).slice(t.selectionStart, t.selectionEnd);
+      else if (t && t.value != null) sel = String(t.value);
+    } catch (x) { sel = ""; }
+    let out = sel;
+    try { if (typeof pgExportClip === "function") out = pgExportClip(sel, "tsv").text; } catch (x) { out = sel; }
+    let wrote = false;
+    try { if (e && e.clipboardData && e.clipboardData.setData) { e.preventDefault(); e.clipboardData.setData("text/plain", out); wrote = true; } } catch (x) { wrote = false; }
+    guardLog("export", (typeof location !== "undefined" ? (location.hash || "/") : "/") + " · 협력업체 내부통제 보고서 복사" + (wrote ? "" : "(고지 삽입 실패)"));
+    return wrote;
+  };
   if (cfg.noCopy) {
     const b = deny("🔒 콘텐츠 보호 — 복사·저장·배포가 제한됩니다.");
-    const bx = (e) => { if (_exEl(e)) { guardLog("export", (typeof location !== "undefined" ? (location.hash || "/") : "/")); return; } return b(e); };
+    const bx = (e) => {
+      const k = _exKind(e);
+      if (k === "pg") { _pgClip(e); return; }
+      if (k === "hm") { guardLog("export", (typeof location !== "undefined" ? (location.hash || "/") : "/")); return; }
+      return b(e);
+    };
     on("copy", bx); on("cut", bx); on("dragstart", (e) => { if (_exEl(e)) return; e.preventDefault(); });
   }
   if (cfg.noCopy || cfg.noDevtool) on("keydown", (e) => {
     const k = (e.key || "").toLowerCase(); const ctrl = e.ctrlKey || e.metaKey;
     if (cfg.noCopy && ctrl && ["c", "x", "s", "u", "a"].indexOf(k) >= 0) {
-      /* .hmoex 안에서는 Ctrl+C(복사)·Ctrl+A(전체선택)만 통과시킨다 — 저장(S)·소스(U)·잘라내기(X)는 그대로 차단 */
-      if (_exEl(e) && (k === "c" || k === "a")) { if (k === "c") guardLog("export", (typeof location !== "undefined" ? (location.hash || "/") : "/")); return; }
+      /* 반출면(.hmoex · 보고서 반출 클래스) 안에서는 Ctrl+C(복사)·Ctrl+A(전체선택)만 통과시킨다
+         — 저장(S)·소스(U)·잘라내기(X)는 그대로 차단.
+         ⚠ 보고서 반출면의 Ctrl+C 는 **여기서 기록하지 않는다.** 통과시키면 copy 이벤트가 이어서
+            발생하고 그 핸들러가 클립보드를 다시 쓰며 기록을 남긴다 — 여기서도 적으면 복사 1건에
+            로그가 2행이 되어 「반출 건수 = 로그 건수」가 깨진다. 선례 .hmoex 의 기록 동작은
+            **종전 그대로 둔다**(그 쪽 단언의 기준선을 바꾸지 않는다). */
+      const _exk = _exKind(e);
+      if (_exk && (k === "c" || k === "a")) { if (k === "c" && _exk === "hm") guardLog("export", (typeof location !== "undefined" ? (location.hash || "/") : "/")); return; }
       e.preventDefault(); if (typeof toast === "function") toast("🔒 콘텐츠 보호 — 복사·저장이 제한됩니다."); }
     if (cfg.noDevtool && ((k === "f12") || (ctrl && e.shiftKey && ["i", "j", "c"].indexOf(k) >= 0) || (ctrl && k === "p"))) { e.preventDefault(); if (typeof toast === "function") toast("🔒 보호 — 개발자도구·인쇄가 제한됩니다."); guardLog(ctrl && k === "p" ? "print" : "devtool", location.hash || "/"); }
     if (e.key === "PrintScreen") { if (typeof toast === "function") toast("⚠️ 화면 캡처는 금지되어 있으며 접속 로그에 기록됩니다."); guardLog("printscreen", location.hash || "/"); try { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText("HI-Fin Tech — 무단 캡처 금지 (" + _guardSid() + ")"); } catch (x) {} }

@@ -97,7 +97,11 @@ const HI_AGENTS = [
     },
     outOfScope: ["치료 효과 단정", "진단", "보험"],
     handler: "shoppingAgent",   // Phase C — 비교 추천 엔진(1일 단가·성분 함량·성분당 단가) + 표시·광고 가드 6조
-    knowledge: ["commerceOntology(COMM_DISEASE)", "shopProducts(영양제 73·기기 50)", "shopCompare", "marketReference", "supplyData"],
+    /* ⚠ "supplyData" 를 **제거**했다(2026-10-25). 그 데이터셋은 거래처 원가율·공급가·마진율·수수료율을
+       들고 있고 이 에이전트는 **회원 대면**(ready:true)이다 — 지식층에 등재된 채로 두면 하이 4층 등록 시
+       회원 상담 경로로 원가가 흘러나가는 문이 열린다(aiQnaBank 의 lv 속성은 접근 제어에 쓰이지 않는다).
+       거래 사실·통제 객체는 관리자 전용 면(협력업체 온톨로지 · 하네스)에서만 다룬다. */
+    knowledge: ["commerceOntology(COMM_DISEASE)", "shopProducts(영양제 73·기기 50)", "shopCompare", "marketReference"],
     ready: true,
   },
   {

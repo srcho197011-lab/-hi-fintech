@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-23",
+  "date": "2026-10-25",
   "handles": {
     "agent": true,
     "voice": true,
@@ -190,10 +190,10 @@
       "shop": true
     },
     "spread": 1,
-    "voiceAvg": 120,
-    "voiceP95": 136,
-    "textAvg": 364,
-    "textP95": 382,
+    "voiceAvg": 122,
+    "voiceP95": 135,
+    "textAvg": 367,
+    "textP95": 399,
     "n": {
       "voice": 6,
       "text": 6
@@ -262,7 +262,7 @@
   "telemetry": {
     "bad": [],
     "static": [],
-    "evDefs": 32,
+    "evDefs": 34,
     "evVoiceNames": [],
     "channelWhite": true,
     "turns": {
@@ -340,6 +340,6 @@
       "pass": true
     }
   ],
-  "seconds": 66.9,
+  "seconds": 73.7,
   "pass": true
 }

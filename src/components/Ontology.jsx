@@ -863,7 +863,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTop("health"); setSub("explorer"); };
-  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["supply", "공급망 온톨로지", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"]];
+  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["partner", "협력업체 온톨로지 · 하네스", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"]];
   const healthTabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["chain", "블록체인 금고", Blocks], ["hiops", "하이 커버리지", Bot], ["kb", "AI KB 라운지", Database], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
   if (!agg) return null;
   return (
@@ -873,7 +873,7 @@ function OntologySection({ onGo }) {
         <div className="ontohero-l">
           <span className="ontotag"><Network size={13} /> Ontology Operations · Palantir-style</span>
           <div className="ontotitle">온톨로지 · 하네스 운영시스템</div>
-          <p><b>헬스케어 · 공급망 · 재무회계 · 마케팅</b>을 하나의 <b>객체·관계·액션</b> 온톨로지로 통합 운영합니다 — 파일럿 <b>{agg.n.toLocaleString()}명</b> 코호트부터 거래처·제품·주문·정산까지 하나의 지식그래프로 연결됩니다.</p>
+          <p><b>헬스케어 · 협력업체 · 재무회계 · 마케팅</b>을 하나의 <b>객체·관계·액션</b> 온톨로지로 통합 운영합니다 — 파일럿 <b>{agg.n.toLocaleString()}명</b> 코호트부터 거래처·제품·주문·정산까지 하나의 지식그래프로 연결됩니다.</p>
         </div>
         <div className="ontohero-kpi">
           <div><b>{agg.n.toLocaleString()}</b><span>회원 객체</span></div>
@@ -907,7 +907,9 @@ function OntologySection({ onGo }) {
         {/* 종전 데이터 성격 고지 문단 → 데이터 보강 로드맵으로 교체(형 지시 2026-10-23). 최소 표식은 블록 머리 칩으로 유지. */}
         <OntGapRoadmap agg={agg} />
       </>}
-      {top === "supply" && <SupplyOntology onGo={onGo} onTab={(k) => setTop(k)} />}
+      {/* 라우팅 키 supply → partner (개칭). top 은 useState 단순 상태이고 URL·localStorage 에 노출되지
+          않으므로 저장된 옛 키가 되살아날 경로는 없다(실측). 코드 식별자 SupplyOntology 는 그대로 둔다. */}
+      {top === "partner" && <SupplyOntology onGo={onGo} onTab={(k) => setTop(k)} />}
       {top === "finance" && <FinanceSection onGo={onGo} />}
       {top === "marketing" && <MarketingSection onGo={onGo} />}
       {top === "bizops" && typeof BizOpsConsole === "function" && <BizOpsConsole onGo={onGo} />}

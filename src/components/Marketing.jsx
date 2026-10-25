@@ -95,7 +95,7 @@ const MKT_STRATEGIES = [
   ["적응형 CRM(이탈군만 개입) · 앱푸시 1일 2건", "리텐션이 획득비의 1/5~1/7 · 이메일 리마인더 인게이지 +45%", "#34D399"],
   ["리퍼럴(만족 회원→지인 추천 보상)", "규제 준수 하 최강 획득·리텐션 그로스 루프", "#FBBF24"],
   ["기업복지·보험사 제휴 B2B2C 게이트웨이", "GC케어·라이프시맨틱스형 · 기관 통한 대량 온보딩", "#6366F1"],
-  ["의료광고 전건 사전심의 + 정보제공형 콘텐츠", "치료후기 금지(적발 31.7%) · 규제 준수를 설계 전제로", "#EF4444"],
+  ["의료광고 전건 자율심의 + 정보제공형 콘텐츠", "치료후기 금지(적발 31.7%) · 규제 준수를 설계 전제로", "#EF4444"],
 ];
 // 대형 플랫폼 제휴 (수백만~수천만 회원 확보) [플랫폼, 회원규모, 제휴유형, 기대효과, 색]
 const MKT_PLATFORMS = [
@@ -481,7 +481,7 @@ function MarketingSection({ onGo }) {
           {MKT_STRATEGIES.map(([t, d, c], i) => (
             <div className="mktrow" key={i} style={{ padding: "9px 11px" }}><span className="mkt-ic" style={{ background: c + "1A", width: 26, height: 26, fontSize: 12, fontWeight: 800, color: c }}>{i + 1}</span><div className="mkt-b"><b style={{ color: "#EAF2FF", fontSize: 12.3 }}>{t}</b><p style={{ color: "#90A0BD", fontSize: 11, marginTop: 2, lineHeight: 1.5 }}>{d}</p></div></div>
           ))}
-          <div className="finpl-note">벤치마크: 이커머스 ROAS 2.87x로 하락 추세 → <b>리텐션·리퍼럴 그로스 루프 + AI 소재 자동화로 CAC 절감</b>이 2025 핵심 레버. 한국 의료광고는 사전심의·24시간 차단 규제(10만+ 플랫폼 전건 심의).</div>
+          <div className="finpl-note">벤치마크: 이커머스 ROAS 2.87x로 하락 추세 → <b>리텐션·리퍼럴 그로스 루프 + AI 소재 자동화로 CAC 절감</b>이 2025 핵심 레버. 한국 의료광고는 자율심의(의료법 제57조 자율심의기구)·24시간 차단 규제(10만+ 플랫폼 전건 심의).</div>
         </div>
       </>)}
 

@@ -507,6 +507,13 @@ function AgentDock({ onGo, sec }) {
             {!ops && <button className="hidock-ib" title="전체 화면 상담" onClick={() => { setOpen(false); go("agent"); }}><MonitorSmartphone size={15} /></button>}
             <button className="hidock-ib" onClick={() => setOpen(false)} aria-label="닫기"><X size={16} /></button>
           </div>
+          {/* [P6 · G-08] 인공지능 기반 운용 **사전 고지** — 인공지능 투명성 확보 의무의 ①항이고
+              하이핀 자신이 수범자다(§8-3-1 · 자기 거버넌스 G-08). 하이 독은 App 이 섹션과 무관하게
+              마운트하므로 **이 한 자리가 「상주 화면 전수」를 덮는다** — 화면마다 복제하지 않는다.
+              ⚠ 머리 바로 아래 · 대화보다 **먼저** 둔다: 사전 고지는 첫 답변 뒤에 나오면 사전이 아니다.
+              ⚠ 문안 원천은 src/data/partnerAI.js 의 PG_AI_DOCK_NOTICE 하나다(사본 금지 · 가드 ⑯이 지킨다). */}
+          {typeof pgAiDockNotice === "function" && pgAiDockNotice("ops")
+            ? <div className="hidock-ainotice">{pgAiDockNotice("ops")}</div> : null}
           <div className="hidock-body" ref={bodyRef}>
             {lang === "en" && <HiEnCard onGo={go} onClose={() => setOpen(false)} />}
             {lang !== "en" && welcome && (
@@ -547,6 +554,12 @@ function AgentDock({ onGo, sec }) {
                     </div>
                   )}
                   {m.lines.map((l, j) => <div className={"hidock-bub " + m.who + (m.announce ? " announce" : "") + (m.notice ? " notice" : "")} key={j}>{m.ops ? hidockBold(l) : l}</div>)}
+                  {/* [P6 · G-09] 생성형 산출 표시 — 인공지능 투명성 확보 의무의 ②항이다(하이핀이 수범자 · §8-3-1).
+                      ⚠ 문안을 여기 적지 않는다: 원천은 src/data/partnerAI.js 의 PG_AI_DOCK_NOTICE 하나이고
+                        이 자리는 조회 경로(pgAiDockNotice)만 부른다 — 사본을 두면 한쪽만 고쳐질 때
+                        두 화면이 다른 고지를 한다. 원천이 없으면 빈 문자열이고 그 사실은 가드가 잡는다. */}
+                  {m.who === "hi" && typeof pgAiDockNotice === "function" && pgAiDockNotice("gen")
+                    ? <div className="hidock-genmark">{pgAiDockNotice("gen")}</div> : null}
                   {m.cite && m.cite.length > 0 && (
                     <div className="hidock-cite">📚 근거 {m.cite.map((c, ci) => <span key={ci}>{c.source}{c.title ? ` · ${c.title}` : ""}</span>)}</div>
                   )}

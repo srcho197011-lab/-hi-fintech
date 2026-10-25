@@ -33,11 +33,27 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
   /* 헬스메이트 운영본부 범위 세션(demoAuth.js hmoAdminSession*, 2026-10-05 형 지시 ⑥): 인증된 운영자 사번(8M####) 1개.
      프로 세션 키(hifin_hm_code)와 **일부러 다른 키**다 — 두 축이 섞이면 운영본부 라우트 가드가 자기 사용자를 내보낸다.
      세션(탭) 한정이고 사번 외 개인정보를 담지 않는다. 지점장이 자기 지점만 보는 범위 제한의 유일한 집행 키. */
-  "hifin_hmops_admin"];
+  "hifin_hmops_admin",
+  /* 협력업체 통제 집행(partnerEnforce.js — 지시서 v2.3 §9-6 · P4): 상수로 참조하므로 스캔 밖이라 수동 등재한다.
+     hifin_pg_enforce  집행 수준 저장값 — **ratchet 대상**. 배포 테이블보다 낮은 수준을 지정하면 무시되고
+                       배포 테이블 값으로 폴백한다(감시받는 쪽이 문지기 기준을 조정하지 못하게 하는 자리다).
+     hifin_pg_exempt   면제 레지스트리 — 사유·승인자·만료일. 만료일 없는 면제는 등록 자체가 거부되고
+                       만료 경과분은 적재 때 되살아나지 않는다(자동 차단 복귀).
+     hifin_pg_remedy   시정 과제 상태 + 집행 레코드 4필드(사전 통지·소명 기한·소명 내용·재심).
+     hifin_pg_block    **집행 차단 로그 전용**. 공용 hifin_events(500건 링버퍼)와 일부러 공유하지 않는다 —
+                       회원 퍼널 이벤트가 몰리면 차단 기록이 밀려 나가고 「차단 건수 = 로그 건수」가 유실로 깨진다.
+     ※ 판정 결과는 저장하지 않는다 — 정책이 바뀌면 낡은 판정이 거짓말한다. 「저장하지 않는다」도 등재 내용이다.
+     ※ 결정 로그(판정 호출·집행·면제·소명·재심)는 메모리에만 둔다 — 신규 키를 5종으로 확정했기 때문이고,
+       영속 소유자는 보고서 발행 스냅샷(아래 접두 키)을 세우는 단계다. */
+  "hifin_pg_enforce", "hifin_pg_exempt", "hifin_pg_remedy", "hifin_pg_block"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
-const HIFIN_KEYS_PREFIX = ["hifin_access_log_", "hifin_adh_", "hifin_agent_mem_", "hifin_bills_", "hifin_careguard_", "hifin_careloop_", "hifin_careplan_", "hifin_chk_editlog_", "hifin_chk_edits_", "hifin_claim_used_", "hifin_consent_nft_", "hifin_famauto_", "hifin_famconsent_", "hifin_family_", "hifin_famlink_", "hifin_famspend_", "hifin_famtask_", "hifin_g2_", "hifin_g4_", "hifin_handoff_issued_", "hifin_hi_esc_", "hifin_hi_followups_", "hifin_hi_state_", "hifin_hi_welcomed_", "hifin_hm_resultseen_", "hifin_hm_rr_", "hifin_hm_stagecache_", "hifin_hm_stagesel_", "hifin_hm_touch_", "hifin_htk_tl_", "hifin_htkbal_", "hifin_leads_", "hifin_policies_", "hifin_price_", "hifin_pu_done_", "hifin_ref_", "hifin_ref_by_", "hifin_ref_done_", "hifin_reports_", "hifin_rpm_ack_", "hifin_shop_htk_", "hifin_shop_orders_", "hifin_soap_", "hifin_sub_due_seen_", "hifin_subs_", "hifin_topup_orders_", "hifin_vault_", "hifin_vault_v2_", "hifin_vaultlog_", "pi_seq_", "hifin_backup_", "hifin_handoff_result_", "hifin_tele_booked_", "hifin_video_decl_"];
+const HIFIN_KEYS_PREFIX = ["hifin_access_log_", "hifin_adh_", "hifin_agent_mem_", "hifin_bills_", "hifin_careguard_", "hifin_careloop_", "hifin_careplan_", "hifin_chk_editlog_", "hifin_chk_edits_", "hifin_claim_used_", "hifin_consent_nft_", "hifin_famauto_", "hifin_famconsent_", "hifin_family_", "hifin_famlink_", "hifin_famspend_", "hifin_famtask_", "hifin_g2_", "hifin_g4_", "hifin_handoff_issued_", "hifin_hi_esc_", "hifin_hi_followups_", "hifin_hi_state_", "hifin_hi_welcomed_", "hifin_hm_resultseen_", "hifin_hm_rr_", "hifin_hm_stagecache_", "hifin_hm_stagesel_", "hifin_hm_touch_", "hifin_htk_tl_", "hifin_htkbal_", "hifin_leads_", "hifin_policies_", "hifin_price_", "hifin_pu_done_", "hifin_ref_", "hifin_ref_by_", "hifin_ref_done_", "hifin_reports_", "hifin_rpm_ack_", "hifin_shop_htk_", "hifin_shop_orders_", "hifin_soap_", "hifin_sub_due_seen_", "hifin_subs_", "hifin_topup_orders_", "hifin_vault_", "hifin_vault_v2_", "hifin_vaultlog_", "pi_seq_", "hifin_backup_", "hifin_handoff_result_", "hifin_tele_booked_", "hifin_video_decl_",
+  /* 협력업체 통제 — 발행 보고서 스냅샷(지시서 v2.3 §9-6 · 반출 통제 대상 · 민감도 상).
+     발행 주체·지면은 보고서 렌더 단계가 소유한다. 등재를 먼저 하는 이유 — 미등재 키는 커밋이 막히고,
+     그러면 그 단계가 설계 결정을 급하게 내린다. 이름과 그룹은 설계 단계에서 정한다. */
+  "hifin_pg_report_"];
 
 /* 키 그룹 규약(네임스페이스) — 새 키는 이 그룹 접두 중 하나를 따라야 한다(D-1 규약) */
 const HIFIN_KEY_GROUPS = [
@@ -48,7 +64,7 @@ const HIFIN_KEY_GROUPS = [
   { g: "family", ko: "가족·돌봄", pats: ["hifin_fam", "hifin_care", "hifin_rpm_"], sensitive: "높음(제3자)" },
   { g: "agent", ko: "에이전트 상태", pats: ["hifin_hi_", "hifin_agent_"], sensitive: "중간(대화 맥락)" },
   { g: "consent", ko: "동의·보안", pats: ["hifin_consent_", "hifin_self_mkt_seed", "hifin_access_log", "hifin_guard", "hifin_login_lock", "hifin_reggate", "hifin_mydata"], sensitive: "높음(감사 대상)" },
-  { g: "ops", ko: "계측·운영", pats: ["hifin_events", "hifin_consent2", "hifin_telem", "hifin_wp_log", "hifin_lead", "hifin_handoff_", "hifin_hm_", "hifin_nodes", "hifin_ocr", "hifin_backup"], sensitive: "낮음(경량 식별자만)" },
+  { g: "ops", ko: "계측·운영", pats: ["hifin_events", "hifin_consent2", "hifin_telem", "hifin_wp_log", "hifin_lead", "hifin_handoff_", "hifin_hm_", "hifin_nodes", "hifin_ocr", "hifin_backup", "hifin_pg_"], sensitive: "낮음(경량 식별자만) · 단 hifin_pg_report_는 반출 통제 대상(민감도 상)" },
   { g: "growth", ko: "추천·거버넌스·기타", pats: ["hifin_ref_", "hifin_gov_", "hifin_sharing", "hifin_share", "hifin_divi", "hifin_g2_", "hifin_g4_", "hifin_pu_", "pi_", "hifin_easyread", "hifin_connectors"], sensitive: "낮음" },
   { g: "session", ko: "세션(휘발)", pats: ["hifin_sid", "hifin_hm_code", "hifin_hmops_admin", "hifin_hi_welcome", "hifin_dl_ready", "hifin_force_onboard", "hifin_sso_hipet", "hipet_gate", "hipet_admin"], sensitive: "낮음(1회용 토큰·게이트 플래그)" },
 ];

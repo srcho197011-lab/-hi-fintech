@@ -1,10 +1,9 @@
 {
   "scoped": true,
   "sections": [
-    "care",
-    "insurance"
+    "care"
   ],
-  "chat": true,
+  "chat": false,
   "personas": [
     "000042=유아린",
     "007777=주경희"
@@ -12,18 +11,19 @@
   "visited": [
     "care(탭5)",
     "care:탭8",
-    "insurance(탭7)",
-    "insurance:탭7",
-    "chat(6문항)",
+    "chat:건너뜀",
+    "sens:건너뜀",
     "care(탭5)",
     "care:탭8",
-    "insurance(탭7)",
-    "insurance:탭7",
-    "chat(6문항)"
+    "chat:건너뜀",
+    "sens:건너뜀"
   ],
   "leaks": 0,
   "narrativeExcluded": 0,
   "bySection": {},
   "items": [],
-  "secs": 82.1
+  "sensitiveAsked": 0,
+  "sensitiveLeaks": 0,
+  "sensitiveItems": [],
+  "secs": 61.4
 }

@@ -73,6 +73,12 @@ function hiClassify(rawText, norm) {
   const scored = [];
   const bareQuery = !Object.keys(b).length;
   for (const it of HI_INTENTS) {
+    /* ★ 관리자 전용 인텐트는 **회원 세션에서 후보에 오르지 않는다**(2026-10-26 · 지시서 §14-5 G-06).
+       왜 여기인가: 점수 계산 뒤에 거르면 1등이 사라진 자리를 2등이 채워 **다른 영역의 답**이 나간다.
+       후보 단계에서 빼면 그 질의는 애초에 매칭되지 않고 미답변 폴백으로 간다 — 그것이 정답이다.
+       `typeof` 가드를 두는 이유: 채점 하네스처럼 세션이 없는 세계에서는 **관리자가 아닌 쪽**으로
+       안전하게 떨어져야 한다(없는 역할을 관리자로 읽으면 가드가 무장 해제된다). */
+    if (it.adm && !(typeof isAdminRole === "function" && isAdminRole())) continue;
     const aHits = (it.a || []).filter((g) => a[g]);
     if (!aHits.length) continue;
     const bHits = (it.b || []).filter((g) => b[g]);

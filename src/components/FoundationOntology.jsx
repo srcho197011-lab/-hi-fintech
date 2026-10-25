@@ -72,7 +72,7 @@ function FoundationGraph() {
           <text x={n.x} y={n.y + 4} fill="#EAF2FF" fontSize={n.t.length > 4 ? "9" : "10.5"} fontWeight="800" textAnchor="middle">{n.t}</text>
         </g>))}
       </svg>
-      <div className="ontgraph-note">Domains <b>7</b> — <b style={{ color: "#A78BFA" }}>데이터 거버넌스</b>가 온톨로지 표준·마스터데이터·개인정보의 중심축, <b style={{ color: "#22D3EE" }}>Audit</b>가 전방위 감사로그·내부통제를 담당합니다. 보안·AI전산·인사·총무·블록체인이 <b>HI-Fin 플랫폼</b>을 지탱하며, 헬스케어·공급망·재무·마케팅 온톨로지와 연결됩니다.</div>
+      <div className="ontgraph-note">Domains <b>7</b> — <b style={{ color: "#A78BFA" }}>데이터 거버넌스</b>가 온톨로지 표준·마스터데이터·개인정보의 중심축, <b style={{ color: "#22D3EE" }}>Audit</b>가 전방위 감사로그·내부통제를 담당합니다. 보안·AI전산·인사·총무·블록체인이 <b>HI-Fin 플랫폼</b>을 지탱하며, 헬스케어·협력업체·재무·마케팅 온톨로지와 연결됩니다.</div>
     </div>
   );
 }

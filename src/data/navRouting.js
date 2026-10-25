@@ -62,8 +62,16 @@ function _navBuild() {
   if (_navIdx) return;
   const rows = _navEntries();
   /* 같은 패턴이 서로 다른 nav를 가리키면 — 다의어 후보. 자동 등록(ambiguityPairs 단일 소스) */
+  /* ★ 다의어 키를 **소문자로 접는다**(2026-10-26). 판정기는 `lexNormalize` 가 소문자로 평탄화한
+     문장과 패턴을 비교하는데(`tm.indexOf(r.pat)`), 묶는 쪽은 대소문자를 구분했다 — 비대칭이다.
+     그래서 라벨 분해로 들어온 「Fin」과 정규화 변형으로 들어온 「fin」이 **대소문자만 다른 같은
+     낱말인데 다의어 키 2개**가 됐다. 결과 ①함정 생성기가 같은 낱말로 연달아 두 번 묻고
+     ②되묻기 상태가 사이에 낀 무관한 질의로 지워지지 않아 두 번째가 조용히 1순위로 착지했다.
+     실측 시퀀스: ["Fin 열어줘"→CLARIFY, "ㅡ"→null, "fin 열어줘"→home] — 관리자가 「HI-Fin 기반
+     온톨로지」를 「fin」으로 부르면 **회원 대면 home** 에 떨어졌다. 키를 접으면 ①대소문자 변형이
+     한 다의어 키가 되고 ②매칭 쪽과 묶는 쪽이 같은 평탄형을 쓴다(인덱스에 죽은 행이 남지 않는다). */
   const byPat = {};
-  rows.forEach((r) => { (byPat[r.pat] = byPat[r.pat] || []).push(r.e); });
+  rows.forEach((r) => { const k = String(r.pat).toLowerCase(); (byPat[k] = byPat[k] || []).push(r.e); });
   _navAmbig = {};
   const keep = [];
   Object.keys(byPat).forEach((p) => {
@@ -107,6 +115,12 @@ let _navClarifyPat = null;
 function navResolve(normText, roleOpt) {
   _navBuild();
   const t = String(normText || "");
+  /* ★ 되묻기 상태는 **바로 다음 질의까지만** 산다(2026-10-26). 종전에는 성공 착지(_navAnswer)에서만
+     지워져서, 사이에 낀 무관한 질의(값 질문 · 미매칭)가 상태를 지우지 못했다 — 그래서 한참 뒤에 같은
+     낱말을 다시 불러도 「2회 연속」으로 취급돼 되묻지 않고 1순위로 착지했다. 2회 연속 금지의 뜻은
+     「연속」이고 「영구」가 아니다. 비어 있는 입력은 질의가 아니므로 상태를 소비하지 않는다. */
+  const _prevClarify = _navClarifyPat;
+  if (t) _navClarifyPat = null;
   if (!t || NAV_VERB.value.test(t) || NAV_VERB.how.test(t)) return null;
   const tm = t.replace(/[\s·]/g, "");                    // 매칭 전용 평탄본 — 중점·공백 표기가 달라도 같은 화면
   /* roleOpt — 채점 전용 역할 시뮬레이션("MEMBER"|"ADMIN"). 제품 경로는 항상 미지정(세션 역할) */
@@ -127,7 +141,7 @@ function navResolve(normText, roleOpt) {
     else if (rz.mode === "clarify") {
       /* 진짜 되묻기 — 이동 의도가 확인될 때만(스치듯 언급에 되묻지 않는다), 2회 연속 금지 */
       if (!hasMove && (bestPat.length < 4 || tm.length > bestPat.length + 4)) return null;
-      if (_navClarifyPat !== bestAmbig) {
+      if (_prevClarify !== bestAmbig) {
         _navClarifyPat = bestAmbig;
         return { clarify: true, matched: "nav-ambig:" + bestAmbig,
           lines: ["「" + bestAmbig + "」 관련 화면이 두 곳 있어요 — 어디를 열어드릴까요?"],
@@ -182,6 +196,19 @@ function navTrapSet() {
     if (rz.mode === "auto") traps.push({ q: p + " 열어줘", expect: rz.e.nav, kind: "ambig-auto", admin: false });
     else if (rz.mode === "clarify") traps.push({ q: p + " 열어줘", expect: "CLARIFY", kind: "ambig", admin: false });
   });
+  /* 다의어 함정(P7 · 협력업체 통제 지시서 v2.3 §14-3) — 「협력업체」는 **두 자리**를 가리킬 수 있다.
+     ⓐ 관리자 전용 온톨로지 탭(협력업체 온톨로지 · 하네스 — 통제 · 판정 지면)
+     ⓑ 회원 대면 섹션 `sec.partner`(제휴 · 투자 신청)
+     공교롭게 **회원 대면 쪽의 nav 키가 literally `partner`** 다. 그래서 이 낱말이 그쪽으로 새면
+     통제 지면을 찾던 관리자 질의가 신청 화면에 착지하고, 거꾸로 제휴를 신청하려는 회원이 관리자
+     지면을 지칭하게 된다. 자동 발견 다의어는 **같은 패턴 문자열**일 때만 잡히므로(두 라벨은 다르다)
+     이 쌍은 자동으로 서지 않는다 — 이름으로 못 박는다. 기대값은 2026-10-26 실측값이다. */
+  traps.push({ q: "협력업체 보여줘", expect: "ontology", kind: "polysemy",
+    note: "sec.partner(제휴·투자 신청)로 새지 않는다 — 관리자 통제 지면이다", admin: true });
+  traps.push({ q: "제휴·투자 신청 보여줘", expect: "partner", kind: "polysemy",
+    note: "협력업체 온톨로지 탭으로 새지 않는다 — 회원 대면 신청 화면이다" });
+  traps.push({ q: "내부통제 보고서 보여줘", expect: "ontology", kind: "polysemy",
+    note: "서브탭 L3 등재(P7) — 착지는 상위 탭이다(서브탭 시드는 두지 않는다)", admin: true });
   /* 경계 회귀 — sarg·tool·값 질문은 null이어야 한다 */
   traps.push({ q: "건강검진 결과 알려줘", expect: null, kind: "owner-sarg" });
   traps.push({ q: "내 건강 봐줘", expect: null, kind: "owner-sarg" });

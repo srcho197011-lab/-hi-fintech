@@ -542,6 +542,15 @@ for (const nm of ["A", "B", "C"]) {
     cmpVal(P.chkOwnFee, E.escFee("own"), 0, acc, "자사 운영 수수료 = chkOwnFee");
     cmpVal(P.chkPtnFee, E.escFee("partner"), 0, acc, "제휴사 수수료 = chkPtnFee");
     cmpVal(P.chkOwnFee, E.escFee(), 0, acc, "채널 생략 = 자사 운영");
+    /* ══ 정산 산식 동결(형 확정 2026-10-25 Q11 · 협력업체 통제 지시서 v2.3 §15-10) ══
+       유인·알선 적합성(L-09)의 법률 검토 회신이 오기 전까지 escrowPay 의 정산 산식을 고치지 않는다.
+       ⚠️ 동결 대상은 **행 번호가 아니라 이름**이다 — finBudgetParams.js 는 export_site_fin.py 재생성물이라
+          재생성만으로 행이 밀리고 요율이 조용히 바뀐다. 그래서 위치가 아니라 **값**을 고정한다.
+       ⚠️ 검사 소유자는 이 러너다. scripts/run_pg_scan.mjs 는 이 러너의 결과를 읽을 뿐 중복 배치하지 않는다 —
+          중복 배치하면 검사 소유자가 이원화되고 「건드리지 않는다」가 검출되지 않는 금지로 남는다.
+       실제 공제식은 escFee()(위 3줄) + payout 표현식 2곳이고, 요율은 FB_P0 의 아래 6키에 위임된다. */
+    const FREEZE = { chkOwnFee: 30000, chkPtnFee: 10000, careRate: 0.01, carePerCenter: 3, careFee: 300000, careCostRate: 0.05 };
+    for (const k of Object.keys(FREEZE)) cmpVal(FREEZE[k], T.FB_P0[k], 0, acc, `정산 산식 동결 — FB_P0.${k}`);
     if (E.escSeedDemo() !== true) acc.bad.push("시드 생성 안 됨(옛 키를 읽었을 수 있음)");
     const l = E.escAll();
     if (l.some((o) => o.id === "OLD")) acc.bad.push("옛 키 hifin_escrow_orders를 읽음");

@@ -54,6 +54,19 @@ const HI_EVENT_DEFS = {
   video_shared:       { ko: "상담 중 화면 공유", stage: 2 },
   video_summarized:   { ko: "영상 상담 요약 확정(회원 확인)", stage: 2 },
   video_action_issued: { ko: "상담 중 개입 발행", stage: 2 },
+  /* 협력업체 통제 집행(P4) — 차단도 기록해 통제 작동을 숫자로 증명한다(동의 게이트·영상과 같은 방식).
+     ⚠️ 이것은 **회원 완결 퍼널의 단계가 아니다.** stage에 1/2/3 중 하나를 억지로 주면 hiEventStats()의
+        퍼널 집계가 **통제 차단 건수로 부풀어 오른다** — 그래서 stage는 null이고 축(axis)을 따로 둔다.
+        아래 hiEventStats()가 stage == null을 단계 집계에서 뺀다.
+     ⚠️ 집계의 **원천은 전용 키**(hifin_pg_block)다. 여기 공용 링버퍼는 500건이라 회원 퍼널 이벤트가
+        몰리면 차단 기록이 조용히 밀려 나가고, 그러면 「보고서 차단 건수 = 로그 건수」가 유실로 깨진다.
+        그래서 partnerEnforce.js가 전용 키에 먼저 쓰고 이 버스에는 **사본**을 보낸다. */
+  pg_blocked:      { ko: "협력업체 통제 차단", stage: null, axis: "control" },
+  /* 면제로 차단이 풀린 사실 — **차단과 같은 등급의 기록**이다. soft 집행 수준의 정의가
+     「막되 면제로 통과 — 그 사실이 로그로 남아 부인방지」이므로, 통과만 하고 기록이 없으면
+     그 수준은 구현되지 않은 것이다. 차단과 **다른 이름**으로 남긴다 — 같은 이름으로 접으면
+     보고서의 「집행 차단 건수」가 면제 통과만큼 부풀어 오른다. */
+  pg_exempted:     { ko: "협력업체 통제 면제 통과", stage: null, axis: "control" },
   /* [P1 실사 결과] telehealth_connected — 화상은 시연 화면(연결 저장 부재) → 등재 불가·후속(형 완결 정의 대기)
      diet_plan_activated — 식단 플랜 활성 트랜잭션 부재(구매·정기배송은 sub_registered가 커버) → 등재 불가·후속 */
 };
@@ -82,7 +95,9 @@ function hiEventStats() {
   let labeled = 0;
   l.forEach((e) => {
     by[e.name] = (by[e.name] || 0) + 1;
-    const d = HI_EVENT_DEFS[e.name]; if (d) stage[d.stage]++;
+    /* stage == null은 단계 축 밖 분류(통제 차단 등)다 — 퍼널 1/2/3 집계에서 뺀다.
+       빼지 않으면 stage[null] 칸이 생기고, 그 칸을 세는 소비자가 퍼널 합계를 부풀린다. */
+    const d = HI_EVENT_DEFS[e.name]; if (d && d.stage != null) stage[d.stage]++;
     const c = e.p && e.p.channel;
     if (c === "voice" || c === "text") { byChannel[c]++; labeled++; }
   });

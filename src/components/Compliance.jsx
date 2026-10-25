@@ -115,7 +115,13 @@ function ComplianceConsole() {
       </>}
 
       {tab === "vendor" && <>
-        <div className="cmp-h">마이데이터 사업자 선정 평가 <span>§15 · 12항목</span><span className="cmp-vgrade" style={{ color: vGrade[1], background: vGrade[1] + "1A" }}>{vGrade[0]} · 평균 {vAvg.toFixed(1)}/3</span></div>
+        {/* 범위 한정(2026-10-25) — 이 탭은 **의료마이데이터 사업자(수탁자) 선정 평가** 전용이다.
+            협력업체 일반 적합성 판정은 협력업체 온톨로지 · 하네스가 수행한다. 범위를 적지 않으면
+            같은 협력업체가 두 화면에서 서로 다른 방법론으로 등급을 받고, 「이름이 같은 지표가
+            두 원천을 가지면 두 숫자가 선다」는 저장소의 교훈을 스스로 재발시킨다.
+            「적합 / 보완 필요 / 부적합」 3등급 어법이 렌더되는 자리는 **여기 한 곳**이어야 한다. */}
+        <div className="cmp-h">의료마이데이터 사업자(수탁자) 선정 평가 <span>§15 · 12항목</span><span className="cmp-vgrade" style={{ color: vGrade[1], background: vGrade[1] + "1A" }}>{vGrade[0]} · 평균 {vAvg.toFixed(1)}/3</span></div>
+        <div className="chnote" style={{ marginBottom: 10 }}>※ 이 점수표의 범위는 <b>의료마이데이터 사업자(수탁자) 선정</b>입니다 — 선정 평가라는 성격에 맞는 가중평균 단일 점수이고, <b>협력업체 일반 적합성 판정은 협력업체 온톨로지 · 하네스에서 수행합니다</b>(그쪽은 총점을 쓰지 않고 통제항목별 결정값과 결함 3등급으로 적습니다).</div>
         <div className="cmp-vtbl">{CMP_VENDOR.map(([k, d], i) => (
           <div className="cmp-vrow" key={k}>
             <div className="cmp-vk"><b>{k}</b><span>{d}</span></div>

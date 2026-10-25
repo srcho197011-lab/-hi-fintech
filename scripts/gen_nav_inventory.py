@@ -39,6 +39,23 @@ WATCH = [
     "src/components/B2BConsole.jsx",      # L2 B2B 콘솔(관리자)
     "src/data/homecare.json",             # L4 재가 서비스
     "src/data/brandTokens.js",            # 고유명 토큰
+    # ── 협력업체 온톨로지·하네스(2026-10-25 P1) — 감시 구멍 닫기 ──
+    # 이 세 파일 + 용어 원천은 **어떤 커밋 게이트의 감시목록에도 없었다**. 그래서 개칭·신설이
+    # 「무사 통과」했는데, 그것은 안전의 증거가 아니라 감시 밖이라는 증거다
+    # (dailyRoster.js·보장 창에서 이미 두 번 재발한 유형이다). 새 게이트를 발명하지 않고
+    # pre-commit 이 --list-watch 로 읽는 이 목록에 편입해 기존 내비 게이트를 발동시킨다.
+    "src/components/Ontology.jsx",         # 온톨로지 상위 9탭(L2) — 개칭 사정권
+    "src/components/SupplyOntology.jsx",   # 협력업체 온톨로지·하네스 패널(거래 사실 레이어)
+    "src/data/supplyData.js",              # 거래 사실 생성기 — 정산은 주문 파생 종속 장부다
+    "src/data/partnerGov.js",              # 용어·표시명 단일 원천(PG_TERMS · PG_NAME_MODE · pgDisplayName)
+    # ── P3(2026-10-25) — 정책 레지스트리·판정기. 지시서 §13-5 산출물 ⑦·§14-3이 「P3에 1파일」로 못 박았다.
+    #    P1에서 미리 넣지 않은 이유는 read()에 예외 처리가 없어 파일이 없으면 빌드·커밋이 동시에 죽기 때문이고,
+    #    이제 파일이 생겼으므로 편입한다. 조문·확인 등급·집행 수준이 바뀌면 내비 게이트도 함께 발동한다.
+    "src/data/partnerPolicy.js",           # PG_LAWS · PG_POLICIES · PG_ENFORCE · pgDecide(하드 플로어)
+    # ── P7(2026-10-26) — 보고서 지면. 서브탭 5개가 여기서 렌더되고, 지면이 바뀌면 L3 등재도 흔들린다.
+    #    P5a·P5b가 「navInventory 재생성이 nav 회귀 기대치를 흔든다」는 사유로 미뤘던 항목이고,
+    #    지금 등재(아래 서브탭 블록)와 함께 들어온다 — 감시 밖에 신설 지면을 남기지 않는다.
+    "src/components/PartnerGovReport.jsx",  # 내부통제 보고서 · 정책 엔진 지면(서브탭 ④⑤)
     "scripts/gen_nav_inventory.py",       # 추출기 자신 — L3 큐레이션·파싱 규칙 변경도 드리프트다
 ]
 
@@ -136,6 +153,37 @@ def extract_l2():
         out.append({"key": "tab.checkup.%s" % k, "label": re.sub(r"^[^ ]*? ", "", label) if label[:1] in "🩺🚨" else label,
                     "path": "checkup › " + label, "surface": "tab", "nav": "checkup", "tab": k,
                     "owner": "sarg", "admin": False, "desc": "", "aliases": aliases_of(label)})
+    # 온톨로지 상위 탭(관리자 전용) — 등재가 없으면 하이가 지칭으로 찾아갈 수 없다.
+    # navInventory 106항목에 온톨로지 하위 탭이 **한 건도 없었다**(sec.ontology 1건뿐).
+    # ⚠ topTabs 의 라벨은 **리터럴**이어야 한다 — 이 추출기가 소스에서 읽는 유일한 자리이고,
+    #   상수로 바꾸면 여기서 라벨을 못 읽어 하한 검증에서 죽는다. 라벨의 뜻 원천은 partnerGov.js 의
+    #   PG_SECTION_KO 이고, 둘이 어긋나지 않는지는 run_wording_guard 가 정적으로 대조한다.
+    src = read("src/components/Ontology.jsx")
+    m = re.search(r"const topTabs = \[(.*?)\];", src, re.S)
+    assert m, "Ontology topTabs 파싱 실패 — 소스 형태 변경"
+    ot = re.findall(r'\[\s*"([a-z]+)"\s*,\s*"([^"]+)"', m.group(1))
+    assert len(ot) >= 9, "온톨로지 상위 탭 %d개 — 하한(9) 미달" % len(ot)
+    for k, label in ot:
+        out.append({"key": "tab.ontology.%s" % k, "label": label, "path": "ontology › " + label,
+                    "surface": "tab", "nav": "ontology", "tab": k, "owner": "nav",
+                    "admin": True, "desc": "", "aliases": aliases_of(label)})
+    # 협력업체 온톨로지·하네스 서브탭 5개(L3 · 관리자 전용 · P7 · 지시서 §13-10 산출물 ③)
+    # 왜 등재하는가 — 서브탭 분할(P5a) 뒤 하이가 「내부통제 보고서 보여줘」로 찾아갈 수 없었다.
+    #   상위 탭 1건(tab.ontology.partner)만 등재돼 있어서 **지면 5개가 지칭 밖**이었다.
+    # ⚠ 라벨의 단일 원천은 partnerGov.js 의 PG_SUBTABS 다(컴포넌트는 그 상수만 쓴다 — §0-5).
+    #   착지는 상위 탭(ontology › partner)이다. 서브탭 시드 경로는 두지 않는다 — 실소비처가
+    #   확인된 탭 시드는 insurance·checkup 두 곳뿐이고(위 _tabEntries 주석), 없는 시드를 만들면
+    #   「착지했다고 적는데 화면은 안 바뀌는」 자리가 생긴다.
+    src = read("src/data/partnerGov.js")
+    m = re.search(r"const PG_SUBTABS = \[(.*?)\];", src, re.S)
+    assert m, "PG_SUBTABS 파싱 실패 — 소스 형태 변경"
+    st = re.findall(r'\{\s*k:\s*"(\w+)",\s*ko:\s*"([^"]+)"', m.group(1))
+    assert len(st) == 5, "협력업체 서브탭 %d개 — 요구 5(PG_SUBTABS)" % len(st)
+    for k, label in st:
+        out.append({"key": "sub.partner.%s" % k, "label": label,
+                    "path": "ontology › 협력업체 온톨로지 · 하네스 › " + label,
+                    "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav",
+                    "admin": True, "desc": "", "aliases": aliases_of(label)})
     # HealthMate 워크벤치(숫자 키 — 관리자·프로 전용)
     src = read("src/components/HealthMate.jsx")
     # 리터럴이 ];로 끝나거나 ].filter(...)(P5 ⑩ 관리자 필터) 체인으로 이어져도 읽는다

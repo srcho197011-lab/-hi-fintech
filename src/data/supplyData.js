@@ -1,7 +1,16 @@
-/* ====================== 공급망 온톨로지 데모 데이터셋 (결정적 · 무재고/직배송) ======================
+/* ====================== 협력업체 온톨로지 · 하네스 — 거래 사실 레이어 데이터셋 ======================
+   Partner Ontology & Governance Harness 의 **거래 사실 레이어**다(결정적 · 무재고/직배송).
+   성격 — 이 파일은 「누구와 무슨 거래가 있었는가」만 들고 있다. 「그 거래가 적법·건전한가」는
+     src/data/partnerGov.js(용어·표시명) 및 그 뒤 단계의 판정 레지스트리가 맡는다. 섞지 않는다.
+   용어 — 화면에 찍는 낱말의 단일 원천은 partnerGov.js 의 PG_TERMS 다(§0-5). 여기서 라벨을 만들지 않는다.
+   코드 식별자(SC_* · _sc* · supplyData · supplyFinance)는 **개칭하지 않는다** — 단일 번들(전역 공유)이라
+     개칭 과도기에 같은 이름이 둘 생기면 조용히 덮어쓴다(§3-1).
+
    mulberry32 시드로 매 로드 동일 데이터(재현 가능). 고객·계정 = pilotCohort(10만) 재사용.
    나머지 7개 오브젝트(거래처·제품·계약·공급사 가용재고·주문·배송·정산)를 FK로 연결.
-   ★ 모델: 재고·배송은 거래처(공급사)가 수행, 당사는 주문·정산 오케스트레이션(무재고). (시연용 합성 데이터) */
+   ★ 모델: 재고·배송은 거래처(공급사)가 수행, 당사는 주문·정산 오케스트레이션(무재고).
+   ★ 매출·매입의 단일 원천은 **주문**이고 정산은 주문에서 전건 파생되는 **종속 장부**다(형 확정 Q1 · 2026-10-25).
+     수수료율의 단일 원천은 **계약(contract.feePct)**이다. 시연 시드 데이터다. */
 
 /* 건강쇼핑에 실제로 올라온 거래선 전수 [상호, 공급분류] — 특별제휴·회원사·상품몰 브랜드·건강식단사 (합성 이름 없음) */
 const SC_VENDORS = [
@@ -81,7 +90,6 @@ function supplyData() {
       ship: true, since: (2013 + Math.floor(rng() * 12)) + "년",
     };
   });
-  const V = vendors.length;
 
   /* 2) 제품·SKU (Product) — ★ 실제 상품몰 제품(SUPP·DEVICE·MEAL)을 SKU로 1:1 연결 + 거래처 매핑 */
   const vByKey = {}; vendors.forEach((v) => { vByKey[_vkey(v.name)] = v; });
@@ -113,18 +121,34 @@ function supplyData() {
     if (_hasP[v.id]) return;
     const cnt = 1 + Math.floor(rng() * 3);
     const words = SC_PROD_WORDS[v.category] || SC_PROD_WORDS["영양제"];
+    const used = {};                                   /* 같은 거래처 안의 같은 품목명을 막는다 */
     for (let k = 0; k < cnt; k++) {
-      const base = _pick(rng, words);
+      /* 품목명에 **상호를 심지 않는다.** 종전 `v.name.split("(")[0] + " " + base` 는 `vendorId` 가 없는
+         파생 문자열이라 표시명 함수가 닿을 수 없었다(합성 52건 전건에 상호 머리말이 박혔다).
+         카테고리 낱말만 쓴다(§4-6-5 ⓐ). 거래처 간 같은 품목명은 **커머스에서 정상**이고 SKU 가 가른다;
+         같은 거래처 안의 중복만 막는다 — 같은 상호의 두 SKU 가 같은 이름이면 화면에서 구별되지 않는다.
+         ★ 충돌 해소는 **새 rng() 없이** 사전 순회로 한다(결정론 — _pick 호출 수가 바뀌지 않는다). */
+      let base = _pick(rng, words);
+      if (used[base]) {
+        const s = words.indexOf(base);
+        for (let j = 1; j <= words.length; j++) { const c = words[(s + j) % words.length]; if (!used[c]) { base = c; break; } }
+      }
+      used[base] = 1;
       const salePrice = (5 + Math.floor(rng() * 95)) * 1000 + 900;
       const cr = _scCostRate(v.category, v.scale || "소", rng);
       products.push({
-        id: "P" + String(products.length + 1).padStart(5, "0"), name: v.name.split("(")[0] + " " + base, category: v.category, subcat: base,
+        id: "P" + String(products.length + 1).padStart(5, "0"), name: base, category: v.category, subcat: base,
         vendorId: v.id, vendorName: v.name, scale: v.scale, salePrice, supplyPrice: Math.round(salePrice * cr / 10) * 10, marginPct: Math.round((1 - cr) * 100),
         exp: _scDate(rng, 2027), lot: "L" + (230000 + Math.floor(rng() * 69999)), real: false,
       });
     }
   });
   const P = products.length;
+  /* 모집단 분모 — 제품 루프 **후**의 거래처 수다(P0 결정 ④).
+     resolveVendor 가 브랜드 미매칭 시 vendors 에 push 하므로, 루프 **전**에 고정하면
+     counts.vendor 만 107에 머물고 contracts·availability·정산은 108을 쓰는 두 분모가 생긴다.
+     이 숫자가 모든 통제 준수율의 분모가 된다. 중복 신원은 partnerGov.js 의 PG_IDENTITY_FIX 가 해소한다. */
+  const V = vendors.length;
 
   /* 3) 계약·단가 (Contract) — 거래처×카테고리 공급 계약 */
   const contracts = vendors.map((v, i) => ({
@@ -169,24 +193,87 @@ function supplyData() {
       id: "S" + String(shipments.length + 1).padStart(6, "0"), orderId: o.id, vendorId: o.vendorId, vendorName: o.vendorName,
       accountId: o.accountId, carrier: _pick(rng, SC_CARRIERS), tracking: String(1000000000 + Math.floor(rng() * 8999999999)),
       status: o.status === "배송완료" ? "배송완료" : o.status === "배송중" ? "배송중" : "집화대기",
-      eta: _scDate(rng, 2026), from: o.vendorName + " 물류창고", route: "거래처 직배송",
+      /* 출고 표기는 **데이터에 심지 않는다.** 종전 `o.vendorName + " 물류창고"` 는 `vendorId` 가 없는
+         파생 문자열이라 표시명 함수가 닿을 수 없었다(전건 28,755/28,755 에 상호가 박혔다).
+         데이터에는 식별자만 두고 표기는 렌더에서 조립한다 — 소비자는 pgShipFrom(s) 다(§4-6-5 ⓐ). */
+      eta: _scDate(rng, 2026), fromVid: o.vendorId, route: "거래처 직배송",
     });
   });
 
-  /* 7) 정산 (Settlement) — 거래처×월(최근 6개월) 수수료·마진·대금 */
+  /* 7) 정산 (Settlement) — 주문에서 **전건 파생**되는 종속 장부 (형 확정 Q1 · 2026-10-25)
+     ─────────────────────────────────────────────────────────────────────────────
+     단일 원천: 매출·공급대금 = 주문 / 수수료율 = 계약(contract.feePct).
+     같은 사실을 두 번 생성하지 않는다 — 이 블록의 **새 rng() 호출은 0회**다.
+     (종전 생성기는 sales·fee·supplyCost·margin·status에 독립 난수를 뽑아, 전 648행이
+      sales ≠ supplyCost + fee + margin 이었고 정산 매출이 주문 GMV의 1.98배였다.)
+
+     ★ plug는 marginNet 한 곳이다. supplyCost는 역산이 아니라 **주문이 이미 갖고 있는 사실**
+       (product.supplyPrice × qty)의 합이다. plug를 둔 축은 「무엇을 넣어도 항등식이 맞는」
+       검사되지 않는 축이 되므로, 밖에 비교 대상이 있는 축(매입)에 두면 안 된다 —
+       supplyCost를 plug로 두면 ΣsupplyCost가 주문축 매입원가와 전행 어긋나고
+       그 차이가 정확히 Σfee가 된다(원가회계·회계전기·분개2가 이미 그 값을 들고 있다).
+
+     수수료의 귀속: fee는 **플랫폼이 수취하는 마진의 내부 분해**이고 거래처가 따로 부담하는
+       추가 수수료가 아니다. order.margin이 이미 (salePrice − supplyPrice) × qty 전액이므로
+       supplyCost에서 또 빼면 거래처 수취액이 자기 계약 공급가보다 줄어든다. 그래서 margin 안에서 쪼갠다:
+         margin(주문) = fee + marginNet
+
+     행 항등식    sales === supplyCost + fee + marginNet
+     교차 항등식  Σ supplyCost       === supplyFinance().supplyCost   (창이 전 기간일 때)
+                 Σ (fee + marginNet) === supplyFinance().margin       (같은 조건)
+
+     상태 축(status)은 **이 산식이 만들지 않는다.** 재부여 규칙이 미정이고, 기존 status의
+       1:1 승계는 기각됐다 — 승계하면 「정산완료」 셀 안에 미출고 금액이 섞인다.
+       대신 preShip·delivered를 행에 실어 화면이 「정산 대상 중 미출고분」을 말할 수 있게 한다.
+
+     전표ID는 **결정적 키**(T-거래처-기간)다. 순번 ID는 「주문 0건 셀은 행을 만들지 않는다」와
+       양립하지 않는다 — 한 셀이 비는 순간 뒤의 전 행 번호가 다른 셀을 가리킨다. */
+  const SC_MONTHS = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"];
   const settlements = [];
-  const months = ["2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"];
-  vendors.forEach((v) => {
-    months.forEach((mo) => {
-      const sales = (30 + Math.floor(rng() * 470)) * 100000;
-      const fee = Math.round(sales * (0.03 + rng() * 0.05));
-      settlements.push({
-        id: "T" + String(settlements.length + 1).padStart(5, "0"), vendorId: v.id, vendorName: v.name, period: mo,
-        sales, supplyCost: sales - fee - Math.round(sales * (0.1 + rng() * 0.15)), fee,
-        margin: Math.round(sales * (0.1 + rng() * 0.15)), status: _pick(rng, ["정산완료", "정산완료", "정산예정"]),
+  {
+    const prodById = {}; products.forEach((p) => { prodById[p.id] = p; });
+    /* 수수료율의 단일 원천 = 계약. feePct는 toFixed(1) 산물이라 **문자열**이다 — 캐스팅을 빠뜨리면
+       sales * "5.1" / 100 이 조용히 동작하다가 문자열 결합 사고로 번진다. */
+    const feeByVendor = {};
+    contracts.forEach((ct) => { feeByVendor[ct.vendorId] = Number(ct.feePct); });
+
+    const cell = {};                                   /* key = vendorId|YYYY-MM */
+    orders.forEach((o) => {
+      if (o.status === "취소") return;                  /* 취소 제외 — 집계 4곳이 이미 쓰는 규약이다 */
+      const period = o.orderDate.slice(0, 7);          /* 주문일 기준 월 · 문자열 앞 7자.
+                                                          new Date()를 거치면 로컬 타임존에서 월 경계일이 밀린다
+                                                          (01-01·07-27이 경계에 있다). 배송일 축은 쓸 수 없다 —
+                                                          shipment.eta는 주문일과 독립 난수다. */
+      if (SC_MONTHS.indexOf(period) < 0) return;       /* 창 경계도 주문일 기준 */
+      const k = o.vendorId + "|" + period;
+      const c = cell[k] || (cell[k] = { sales: 0, supplyCost: 0, n: 0, preShip: 0, delivered: 0 });
+      const p = prodById[o.sku];
+      c.sales += o.amount;
+      c.supplyCost += p ? p.supplyPrice * o.qty : (o.amount - o.margin);   /* 주문 사실 — 역산이 아니다 */
+      c.n += 1;
+      if (o.status === "접수" || o.status === "출고준비") c.preShip += o.amount;
+      if (o.status === "배송완료") c.delivered += o.amount;
+    });
+
+    /* 순회 순서 = vendors 배열 순서(push 순서) × SC_MONTHS 오름차순 상수. 정렬을 끼우지 않는다. */
+    vendors.forEach((v) => {
+      SC_MONTHS.forEach((period) => {
+        const c = cell[v.id + "|" + period];
+        if (!c || c.n === 0) return;                   /* 주문 0건 셀은 행을 만들지 않는다 — 거래 사실이 없는
+                                                          거래처에 「매출 0원」 전표가 서면 판정 지면에서
+                                                          「미제출」과 구별되지 않는다 */
+        /* 반올림은 이 한 곳(행 1회)이고 연산 순서도 이 형태 그대로다. 상위 합계는 반드시 행 합으로만
+           만든다 — 거래처 수준에서 round(연매출 × feePct)로 재계산하면 월행 합과 어긋난다. */
+        const fee = Math.round(c.sales * feeByVendor[v.id] / 100);
+        settlements.push({
+          id: "T-" + v.id + "-" + period, vendorId: v.id, vendorName: v.name, period,
+          sales: c.sales, supplyCost: c.supplyCost, fee,
+          marginNet: c.sales - c.supplyCost - fee,     /* plug는 여기 한 곳 */
+          orders: c.n, preShip: c.preShip, delivered: c.delivered,
+        });
       });
     });
-  });
+  }
 
   _scData = {
     vendors, products, contracts, availability, orders, shipments, settlements,
@@ -195,7 +282,9 @@ function supplyData() {
   return _scData;
 }
 
-/* 공급망 → 회계·재무 전기(轉記) 집계 — 무재고(에이전트) 모델: 매출=마진(순액), 매입=거래처 공급대금 */
+/* 협력업체 거래 → 회계·재무 전기(轉記) 집계 — 무재고(에이전트) 모델: 매출=마진(순액), 매입=거래처 공급대금.
+   주문축(gmv·margin·supplyCost)이 원천이고, 정산축(fee·setTarget·setSupply·setMarginNet)은 주문 파생 종속 장부의 합이다.
+   둘은 창이 같을 때 원 단위까지 일치해야 한다 — 그 대조가 「정산 정확도」의 실패 가능한 지표다. */
 let _scFin = null;
 function supplyFinance() {
   if (_scFin) return _scFin;
@@ -206,13 +295,17 @@ function supplyFinance() {
     gmv += o.amount; margin += o.margin; supplyCost += (o.amount - o.margin);
     if (o.status === "배송완료") ordDone++; else ordActive++;
   });
-  let fee = 0, setDone = 0, setDue = 0;
-  D.settlements.forEach((s) => { fee += s.fee; if (s.status === "정산완료") setDone += s.sales; else setDue += s.sales; });
+  /* 정산 상태 축(status)은 아직 없다 — 재부여 규칙 미정이고 1:1 승계는 기각됐다(미출고 금액이
+     「정산완료」로 섞인다). 그래서 「정산 완료 / 정산 예정」 2칸을 만들지 않고 **정산 대상** 한 값으로만 집계한다.
+     setSupply = Σ 공급대금 — 매입채무를 빼는 분개가 읽어야 하는 축이다(고객 결제 총액이 아니다). */
+  let fee = 0, setTarget = 0, setSupply = 0, setMarginNet = 0, setPreShip = 0;
+  D.settlements.forEach((s) => { fee += s.fee; setTarget += s.sales; setSupply += s.supplyCost; setMarginNet += s.marginNet; setPreShip += (s.preShip || 0); });
   const vat = Math.round(gmv / 11);                 // 부가세 예수(총거래 기준)
   const receivable = Math.round(gmv * 0.12);        // 고객 미수금(진행분)
   const payable = Math.round(supplyCost * 0.34);    // 거래처 매입채무(정산 예정분)
   _scFin = {
-    gmv, revenue: margin, supplyCost, margin, fee, vat, receivable, payable, setDone, setDue, ordActive, ordDone,
+    gmv, revenue: margin, supplyCost, margin, fee, vat, receivable, payable,
+    setTarget, setSupply, setMarginNet, setPreShip, setRows: D.settlements.length, setMonths: 7, ordActive, ordDone,
     // 손익 기여(당사 관점): 매출=마진(순액 대행수익), 매출원가=거래처 공급대금은 상계(순액인식)
     accounts: [
       ["상품판매수익 (매출·GMV)", gmv, "#34D399", "수익"],
@@ -225,7 +318,9 @@ function supplyFinance() {
     journals: [
       ["판매 인식", "(차) 미수금 " + gmv, "(대) 상품판매수익·부가세예수", "#38BDF8"],
       ["매입 인식", "(차) 상품매입원가 " + supplyCost, "(대) 매입채무(거래처)", "#F472B6"],
-      ["거래처 정산·지급", "(차) 매입채무 " + setDone, "(대) 보통예금", "#94A3B8"],
+      /* 매입채무를 빼는 줄이므로 금액 원천은 **공급대금**이다 — 고객 결제 총액(판매대금)을 쓰면
+         분개2가 계상한 매입채무보다 더 빼게 된다. 정산 행의 supplyCost 합이 분개2와 0원 차로 닫힌다. */
+      ["거래처 정산·지급", "(차) 매입채무 " + setSupply, "(대) 보통예금", "#94A3B8"],
       ["고객 수금", "(차) 보통예금", "(대) 미수금", "#34D399"],
     ],
   };

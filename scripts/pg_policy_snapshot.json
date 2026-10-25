@@ -1,0 +1,127 @@
+{
+ "meta": {
+  "name": "pg_policy_snapshot",
+  "runAt": "2026-10-25",
+  "policyVer": "P3-1.0.0",
+  "policyHash": "0f2b0b48",
+  "asOf": "2026-10-25",
+  "note": "해시 · 건수 · 분포만 담는다. 전건 판정 결과 · partnerId · 표시명 0건 — 이 경로는 커밋되고 배포에 노출된다(§14-1-1)."
+ },
+ "counts": {
+  "laws": 32,
+  "articles": 18,
+  "lawSets": 3,
+  "policies": 29,
+  "peps": 4,
+  "selfEnforce": 7,
+  "golden": 99
+ },
+ "verifiedByArticle": {
+  "원문확인": 9,
+  "미확인": 4,
+  "부분확인": 5
+ },
+ "verifiedByLaw": {
+  "미확인": 18,
+  "원문확인": 4,
+  "부분확인": 10
+ },
+ "basisMix": {
+  "법률": 18,
+  "시행령": 1,
+  "조회사양": 3,
+  "지침": 1,
+  "표준": 6,
+  "규정": 1,
+  "문헌": 1,
+  "내부규약": 1
+ },
+ "groupMix": {
+  "L": 12,
+  "P": 9,
+  "T": 8
+ },
+ "decisionMix": {
+  "INDETERMINATE": 84,
+  "NOT_APPLICABLE": 32
+ },
+ "causeMix": {
+  "input_missing": 84,
+  "kind_mismatch": 32
+ },
+ "enforceEffective": {
+  "pep.register:advisory": 29,
+  "pep.settle:advisory": 29,
+  "pep.expose:advisory": 29,
+  "pep.export:hard": 29
+ },
+ "enforceDeclared": {
+  "pep.register:soft": 19,
+  "pep.settle:advisory": 29,
+  "pep.expose:advisory": 29,
+  "pep.register:advisory": 10
+ },
+ "denyBaseline": 33,
+ "unverifiedByReason": {
+  "1차 출처 유료": 2,
+  "접근 차단 · 본문 미입수": 22,
+  "제도 자체 불명확 · 사양 미공개": 3,
+  "당사 산출물 미비": 1
+ },
+ "workTable": {
+  "개인정보 보호법 제26조": "원문확인",
+  "전자상거래법 제20조": "원문확인",
+  "전자상거래법 제20조의2": "원문확인",
+  "전자상거래법 제17조": "부분확인",
+  "의료법 제27조": "원문확인",
+  "의료법 제57조": "원문확인",
+  "노인장기요양보험법 제35조": "원문확인",
+  "인공지능기본법 제31조": "원문확인"
+ },
+ "assertions": {
+  "total": 111,
+  "passed": 111
+ },
+ "missingAsVerdict": {
+  "denyCells": 33,
+  "denyAllAbsent": 0,
+  "exempt": []
+ },
+ "pendingAmend": {
+  "laws": [
+   "medAct"
+  ],
+  "futureLaws": [
+   "ltcAct"
+  ],
+  "asOf": "2026-10-25"
+ },
+ "laneUsed": {
+  "refCells": 116,
+  "withUnused": 50,
+  "missCells": 84,
+  "missNoUsed": 0
+ },
+ "stageEffect": {
+  "신규등록신청": {
+   "cause": "input_missing",
+   "level": "advisory",
+   "block": false,
+   "remedy": 1
+  },
+  "거래중": {
+   "cause": "input_missing",
+   "level": "advisory",
+   "block": false,
+   "remedy": 1
+  },
+  "갱신": {
+   "cause": "input_missing",
+   "level": "advisory",
+   "block": false,
+   "remedy": 1
+  }
+ },
+ "blockedNow": 0,
+ "exemptFingerprint": 2
+}

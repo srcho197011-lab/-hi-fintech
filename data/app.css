@@ -929,6 +929,9 @@
 .v360grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .v360li{font-size:11px;color:#B7C3DA;padding:5px 0;border-bottom:1px solid #182842;line-height:1.4;}
 .v360li:last-child{border-bottom:none;}
+/* 보고서 전용 반출면(P7) — 클래스 이름의 원천은 partnerGov.js 의 PG_EXPORT_CLASS 다.
+   보호 예외(contentGuard)와 지면이 같은 상수를 읽으므로 여기 선택자만 바꾸면 **스타일만** 바뀐다. */
+textarea.pgex{width:100%;min-height:150px;margin-top:6px;border:1px solid #243b5e;border-radius:9px;padding:8px 10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.4px;line-height:1.5;color:#CBD6EA;background:#0B1730;resize:vertical;}
 @media(max-width:640px){.scsimkpi{grid-template-columns:repeat(2,1fr);}.v360kpi{grid-template-columns:repeat(2,1fr);}.v360grid2{grid-template-columns:1fr;}}
 .scobjs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;}
 .scobjcard{background:#0F1B33;border:1px solid #24324D;border-top:2px solid var(--oc);border-radius:12px;padding:12px;}
@@ -5271,6 +5274,11 @@ body.easyread .hidock-preview .hidock-prev-d { font-size: 14px; line-height: 1.7
 .hidock-cite span { background: #fff; border: 1px solid #E2E8F0; border-radius: 6px; padding: 1px 6px; }
 .hidock-pending { font-size: 10.5px; color: #92400E; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 6px; padding: 2px 7px; align-self: flex-start; margin-top: 4px; }
 body.easyread .hidock-who, body.easyread .hidock-cite, body.easyread .hidock-pending { font-size: 12.5px; }
+/* [P6 · G-08 · G-09] 인공지능 기반 운용 사전 고지와 생성형 산출 표시 — 법정 의무 문구다.
+   ⚠ display:none 으로 숨길 수 있는 자리에 두지 않는다(고지가 DOM 에만 있고 보이지 않으면 고지가 아니다). */
+.hidock-ainotice { font-size: 10.8px; line-height: 1.5; color: #475569; background: #F1F5F9; border-bottom: 1px solid #E2E8F0; padding: 5px 12px; }
+.hidock-genmark { font-size: 10.2px; color: #6D28D9; background: #F5F3FF; border: 1px solid #DDD6FE; border-radius: 6px; padding: 2px 7px; align-self: flex-start; margin-top: 4px; }
+body.easyread .hidock-ainotice, body.easyread .hidock-genmark { font-size: 12.5px; }
 
 /* ══════════ 운영 콘솔(Phase G) — 관측이지 조작이 아니다 ══════════ */
 .opshead { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, #0F172A, #1E293B); border-radius: 13px; color: #fff; }

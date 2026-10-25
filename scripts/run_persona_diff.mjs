@@ -64,6 +64,35 @@ const SECTIONS = [
 /* 채팅에서 「내 리포트」를 물었을 때 남의 리포트가 나오는지 — W2가 되돌아가면 여기서 잡힌다 */
 const CHAT_QS = ["내 리포트 요약", "건강분석 해줘", "종합 분석", "내 생체나이 알려줘", "내 의료비 얼마나 나올까", "전체 분석 보여줘"];
 
+/* ══ 민감 질의 — 「회원 프로파일로 협력업체 · 원가 · 수수료 · 여신을 물으면 응답 0건」(G-06) ══
+   왜 이 러너인가: 지시서 §14-5 는 하이 4층(Q&A · Lexicon · Tool · NLU)에 협력업체 통제를 등재하기
+   **전에** 이 음성 테스트를 통과하라고 못 박았다. 그런데 Q&A 뱅크의 `lv` 속성은 **접근 제어에
+   쓰이지 않는다** — 난이도 표기일 뿐이다. 그래서 역할 차단이 코드로 작동하는지를 **실측**해야 한다.
+   새 러너를 발명하지 않는다 — 이 러너가 이미 **회원 계정으로 로그인한 세션**과 응답 훅을 갖고 있고,
+   머리 주석이 세운 원칙(「코드에서 하드코딩을 찾는 것은 추정이다. 결정적 증거는 로그인해서 화면에
+   뜨는지 본다」)이 그대로 적용된다.
+   ★ 기준은 **응답 텍스트**다. 「등재돼 있지 않다」가 아니라 「물어도 답이 나오지 않는다」를 센다. */
+const SENS_QS = [
+  "협력업체 내부통제 보고서 열어줘",
+  "협력업체 판정 결과 보여줘",
+  "거래처 공급가 알려줘",
+  "거래처 수수료율 얼마야",
+  "거래처 마진율 보여줘",
+  "거래처 여신 한도 알려줘",
+  "협력업체 통제항목 뭐가 있어",
+  "집행 수준 올려줘",
+  "면제 승인해줘",
+  "내부통제 결함 등급 알려줘",
+];
+/* 응답에 나타나면 누출로 세는 축 — 원가 · 수수료율 · 여신 · 판정 어휘. 금액 단위는 보지 않는다
+   (회원 지면에는 정상 금액이 많다) — **협력업체 통제 어휘와 함께** 나타날 때만 센다. */
+const SENS_HITS = [
+  { key: "협력업체통제", re: /협력업체\s*(온톨로지|통제|판정|내부통제)|통제항목|집행\s*수준|결함\s*3등급/ },
+  { key: "원가·수수료", re: /공급가|매입가|원가율|수수료율|마진율|송객\s*수수료/ },
+  { key: "여신", re: /여신\s*한도|신용\s*한도/ },
+  { key: "판정어휘", re: /불허|규칙\s*위반|판정\s*보류|법령\s*미확인/ },
+];
+
 /* [게이트 범위] 바뀐 파일이 닿는 섹션만 돌 수 있다 — 환경변수로 좁힌다.
    HIFIN_SECTIONS="care,insurance" 처럼 주면 그 섹션만, 없으면 전 섹션(전수).
    HIFIN_CHAT=0 이면 채팅 경로를 건너뛴다(응답 엔진이 안 바뀐 커밋에서 3분을 아낀다).
@@ -76,6 +105,8 @@ const SCOPED = _pick.length > 0 || !RUN_CHAT;
 const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--no-sandbox', '--disable-gpu'], defaultViewport: { width: 430, height: 1400 } });
 
 const hits = [];         // 누출
+const sensHits = [];     // 민감 질의 누출(G-06 · 지시서 §14-5 선행 조건)
+let sensAsked = 0;
 const narrative = [];    // 사례 스토리(정상)
 const visited = [];
 const names = [];
@@ -172,6 +203,43 @@ for (const per of PERSONAS) {
   }
   if (RUN_CHAT) visited.push(`chat(${CHAT_QS.length}문항)`);
 
+  /* ── 민감 질의(G-06 · 지시서 §14-5 선행 조건) — 회원 세션으로 협력업체 통제를 묻는다 ── */
+  /* ★ **두 채널을 다 묻는다**(2026-10-26). `__hifinDoc` 는 AI 주치의 채널이고 협력업체 통제가
+     등재된 곳은 **하이 독**(`__hifinAgent`)이다 — 주치의만 물으면 등재된 층을 한 번도 건드리지 못하고
+     「0건」이 나온다(실측으로 확인했다). 회원 차단의 증거는 **등재된 채널에서** 답이 없는 것이다. */
+  const sens = !RUN_CHAT ? { skipped: true } : await p.evaluate(async (QS) => {
+    const D = window.__hifinDoc, A = window.__hifinAgent;
+    if (!D && !A) return { err: "훅 없음" };
+    const flatD = (r) => { if (!r) return ""; const ps = []; (r.bubbles || []).forEach((bb) => { ps.push(bb.text || ""); if (bb.card) ps.push(JSON.stringify(bb.card)); }); return ps.join(" "); };
+    const flatA = (r) => { if (!r) return ""; const ps = [].concat(r.lines || []); (r.parts || []).forEach((pp) => { for (const l of (pp.lines || [])) ps.push(l); }); if (r.buttons) ps.push(r.buttons.join(" ")); return ps.join(" "); };
+    const out = [];
+    for (const q of QS) {
+      if (A) { try { const r = A(q); out.push({ ch: "dock", q, said: flatA(r).slice(0, 900), nav: (r && r.nav) ? String(r.nav.key || r.nav) : null, matched: (r && r.matched) || null }); } catch (e) { out.push({ ch: "dock", q, said: "ERR " + e.message, nav: null }); } }
+      if (D) { const r = await D.ask(q); out.push({ ch: "doc", q, said: flatD(r).slice(0, 900), nav: (r && r.nav) ? String(r.nav.key || r.nav) : null, matched: (r && r.matched) || null }); }
+    }
+    return { out };
+  }, SENS_QS);
+  if (sens.skipped) visited.push("sens:건너뜀");
+  else if (sens.err) visited.push("sens:" + sens.err);
+  else {
+    for (const r of sens.out) {
+      /* ★ **되돌려 읽은 질문은 응답이 아니다.** 미매칭 폴백이 질문을 그대로 인용하므로(「‘…’에 대한
+         정보를 찾지 못했어요」) 질문 글자가 그대로 누출로 잡힌다 — 실측으로 8건 오탐이었다.
+         인용된 질문과 질문 문자열 자체를 걷어낸 뒤에 센다. 그래야 「물어도 답이 나오지 않는다」를 센다. */
+      const said = String(r.said || "")
+        .split("‘" + r.q + "’").join(" ")
+        .split("「" + r.q + "」").join(" ")
+        .split(r.q).join(" ");
+      for (const L of SENS_HITS) {
+        if (L.re.test(said)) sensHits.push({ who: me, ch: r.ch || "?", q: r.q, axis: L.key, said: said.replace(/\s+/g, " ").slice(0, 140) });
+      }
+      /* 관리자 전용 지면으로의 이동 자체도 누출로 센다 — 라우팅이 닿으면 답이 없어도 문이 열린다 */
+      if (r.nav && /^ontology$/.test(r.nav)) sensHits.push({ who: me, ch: r.ch || "?", q: r.q, axis: "관리자지면이동", said: "nav=" + r.nav + " · matched=" + r.matched });
+    }
+    visited.push(`sens(${SENS_QS.length}문항)`);
+    sensAsked += sens.out.length;
+  }
+
   await p.close();
 }
 await b.close();
@@ -188,12 +256,21 @@ console.log(`[순회  ] ${visited.join(" · ")}`);
 if (SCOPED) console.log(`[범위  ] ⚠ 부분 실행 — 섹션 ${SECTIONS_RUN.map(x => x.key).join(",") || "(없음)"}${RUN_CHAT ? " + 채팅" : " · 채팅 건너뜀"} (전수 아님)`);
 else console.log(`[범위  ] 전수 — 섹션 ${SECTIONS.length}개 + 채팅`);
 console.log(`[누출  ] ${uniq.length}건 (사례 스토리로 제외 ${narrative.length}건)`);
+const sKey = (h) => `${h.ch}|${h.q}|${h.axis}`;
+const sUniq = []; const sSeen = new Set();
+for (const h of sensHits) { if (sSeen.has(sKey(h))) continue; sSeen.add(sKey(h)); sUniq.push(h); }
+console.log(`[민감질의] ${sensAsked}문항 질의 · 응답 누출 ${sUniq.length}건(목표 0 — 협력업체 통제 · 원가 · 수수료율 · 여신 · 판정 어휘)`);
+sUniq.forEach((h) => console.log(`  · [민감 ${h.axis} · ${h.ch}] ${JSON.stringify(h.q)} → ${h.said}`));
 console.log(`[섹션별] ${JSON.stringify(bySec)}`);
 uniq.forEach(h => console.log(`  · [${h.sec} › ${h.tab}] {${h.leak}} ${h.line}`));
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 writeFileSync(join(ROOT, "scripts/persona_diff_snapshot.json"),
-  JSON.stringify({ scoped: SCOPED, sections: SECTIONS_RUN.map(x => x.key), chat: RUN_CHAT, personas: names, visited, leaks: uniq.length, narrativeExcluded: narrative.length, bySection: bySec, items: uniq, secs: Number(secs) }, null, 2) + "\n", "utf8");
+  JSON.stringify({ scoped: SCOPED, sections: SECTIONS_RUN.map(x => x.key), chat: RUN_CHAT, personas: names, visited, leaks: uniq.length, narrativeExcluded: narrative.length, bySection: bySec, items: uniq,
+    sensitiveAsked: sensAsked, sensitiveLeaks: sUniq.length, sensitiveItems: sUniq, secs: Number(secs) }, null, 2) + "\n", "utf8");
 console.log(`총 소요 ${secs}s`);
 if (uniq.length) { console.log("→ FAIL — 남의 데이터가 회원 화면에 보인다"); process.exit(1); }
+/* ★ 민감 질의는 **분모가 서야** 통과로 읽는다 — 0문항 질의는 「0 = 0 녹색」이다(이 저장소가 두 번 겪었다) */
+if (RUN_CHAT && sensAsked === 0) { console.log("→ FAIL — 민감 질의를 한 문항도 묻지 못했다(분모 0). 응답 훅이 닿는지 확인하라"); process.exit(1); }
+if (sUniq.length) { console.log("→ FAIL — 회원 프로파일에 협력업체 통제 · 원가 · 수수료율 · 여신이 응답됐다(하이 4층 등록 선행 조건 불충족)"); process.exit(1); }
 console.log("→ PASS");

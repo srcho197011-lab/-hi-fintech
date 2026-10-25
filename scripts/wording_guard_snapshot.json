@@ -1,13 +1,13 @@
 {
-  "files": 181,
+  "files": 187,
   "screen": 0,
-  "comment": 84,
-  "compound": 16,
+  "comment": 94,
+  "compound": 21,
   "exempt": 1,
-  "notices": 11,
+  "notices": 14,
   "counts": {
     "정합성": 8,
-    "적합성": 8,
+    "적합성": 13,
     "합성어": 0
   },
   "perFile": {
@@ -17,8 +17,11 @@
       "src/data/wpAutoLog.js": 2
     },
     "적합성": {
+      "src/components/Compliance.jsx": 1,
       "src/components/Insurance.jsx": 1,
-      "src/data/kbDomainData.js": 2,
+      "src/data/partnerEnforce.js": 1,
+      "src/data/partnerPolicy.js": 3,
+      "src/data/partnerReport.js": 2,
       "src/data/telemed.js": 1,
       "src/data/whitepaper.js": 4
     },
@@ -28,24 +31,64 @@
     "정합성": {
       "src/components/AIDoctor.jsx": 1,
       "src/components/Ontology.jsx": 2,
+      "src/components/PartnerGovReport.jsx": 1,
       "src/data/pilotCohort.js": 4,
       "src/data/whitepaper.js": 4,
       "src/data/wpAutoLog.js": 2
     },
     "적합성": {
+      "src/components/Compliance.jsx": 2,
       "src/components/Insurance.jsx": 1,
-      "src/data/kbDomainData.js": 2,
+      "src/data/partnerEnforce.js": 3,
+      "src/data/partnerPolicy.js": 4,
+      "src/data/partnerReport.js": 2,
       "src/data/telemed.js": 1,
       "src/data/whitepaper.js": 5
     },
     "합성어": {
-      "src/data/aiNative.js": 3,
+      "src/data/aiNative.js": 4,
       "src/data/hiNluCore.js": 3,
-      "src/data/hiNluDict.js": 1
+      "src/data/hiNluDict.js": 2
     }
   },
   "virtual": 0,
   "bundle": 0,
   "wpRoundTrip": true,
+  "pgForbidWords": [
+    "사전심의",
+    "표시광고법",
+    "공급망",
+    "공급사 148",
+    "불인증"
+  ],
+  "pgForbidHits": 0,
+  "pgSectionKo": "협력업체 온톨로지 · 하네스",
+  "gradeSpots": [
+    "src/components/Compliance.jsx:60"
+  ],
+  "pgLabelFails": 0,
+  "pgSameLedger": 0,
+  "pgVerdictPages": 2,
+  "pgVerdictScanned": 2,
+  "pgVerdictMissing": 0,
+  "pgNameRenderFails": 0,
+  "pgIcfrHits": 0,
+  "pgAiNoticeRows": 4,
+  "pgAiNoticeFails": 0,
+  "pgExportNoticeAt": 3,
+  "pgExportNotices": 2,
+  "pgExportNoticeFails": 0,
+  "pgExportScan": 186,
+  "pgSelfScanRows": 1,
+  "pgSelfScanStatic": {
+    "brokerNotice": {
+      "registry": 0,
+      "screen": 0,
+      "at": []
+    }
+  },
+  "pgSelfScanFails": 0,
+  "pgSanctionGateSpots": [],
+  "pgDenomLabelFails": 0,
   "fails": 0
 }

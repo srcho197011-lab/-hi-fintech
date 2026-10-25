@@ -36,6 +36,17 @@ const HIFIN_LEXICON = [
   ["가입", ["개설", "회원되기"]],   // ⚠️ '등록' 치환 금지 — 가족등록·데이터등록 의도 파괴(famadd 패턴 사문화 버그 수정)
   ["삭제", ["지우기", "없애기", "지워"]],
   ["예약", ["에약", "예악"]],
+  /* ── 협력업체 통제 용어(P7 · 관리자 레벨 등재 · 지시서 §14-5 Lexicon 층) ──────────────
+     ⚠️ 변형은 **합성어를 깨지 않는 것만** 둔다 — 이 파일이 두 번 겪은 사고다(「키」→「신장」이
+       밀키트를 파괴 · 「사람」→「상담원」이 집사람을 파괴). 짧은 낱말은 변형을 비워 **표준어만**
+       등재한다(「신장」 선례와 같은 형태). 공백 변형은 lexNormalize 가 뒤에서 공백을 지우므로
+       치환 없이도 맞지만, 치환 단계에서 먼저 표준어로 모아 두면 사전 조회가 한 꼴로 선다. */
+  ["협력업체", ["협력사", "거래상대방"]],
+  ["내부통제", ["내부 통제"]],
+  ["통제항목", ["통제 항목"]],
+  ["집행수준", ["집행 수준"]],
+  ["결함등급", ["결함 등급", "결함 3등급"]],
+  ["면제", []],
   ["병원", ["뵹원"]],
   ["보험", ["보흠"]],   // ⚠️ '보험료'는 치환 금지 — 보험료(S3-PREMIUM)·premium_high 패턴이 죽는 버그(2026-07-27 수정)
 ];
@@ -111,6 +122,51 @@ const TOOL_RUN = {
   reset() { return { lines: ["대화를 새로 시작해요. 무엇이든 물어보세요!"], reset: true }; },
   // 재무 질의 — 통합 재무엔진(finModel.js) 자연어 인터페이스(매출·손익·구독료·CAC·LTV·EV·런웨이·시나리오)
   fin(m, text) { try { return (typeof finAsk === "function") ? finAsk(text) : null; } catch (e) { return null; } },
+
+  /* ══ 협력업체 통제 — **조회만** (P7 · 지시서 §14-5 Tool 층) ══════════════════════════
+     ★ 등록하지 않는 것: **판정 실행 · 집행 등록 · 면제 승인 · 집행 수준 변경.** 지시서가 이름으로
+       금지했고, 운영 콘솔 원칙(관측이지 조작이 아니다)이 같은 말을 한다. 이 두 도구는 이미 계산된
+       **반환 필드**를 읽어 문장으로 적을 뿐이고 숫자를 새로 만들지 않는다(G-01).
+     ★ 역할 차단을 **도구 안에서** 한다 — `aiQnaBank` 의 `lv` 는 난이도 표기이고 접근 제어에
+       쓰이지 않는다. 그래서 「등재돼 있지 않다」로는 회원 경로를 막을 수 없고, 코드로 막아야 한다.
+       그 차단이 실제로 작동하는지는 `scripts/run_persona_diff.mjs` 의 민감 질의 20문항이 실측한다
+       (지시서 §14-5 선행 조건 · G-06).
+     ★ 금액 · 원가 · 수수료율은 **담지 않는다** — 관리자 지면이라도 하이 답변은 반출 경로가 아니다. */
+  pgrep() { try {
+    if (typeof authRole !== "function" || authRole() !== "ADMIN") return null;
+    if (typeof pgVerdictRoll !== "function") return null;
+    const V = pgVerdictRoll({ level: "L1", type: "PG-R", stage: "거래중" });
+    if (!V) return null;
+    const concl = Object.keys(V.conclusion).map((k) => k + " " + V.conclusion[k] + "곳").join(" · ");
+    return { lines: [
+      "협력업체 내부통제 보고서예요 — 조항 " + V.policyN + "개 × 협력업체 " + V.partnerN + "곳, 정책 " + V.policyVer + " · 테이블 해시 " + V.policyHash + ".",
+      "결론은 " + concl + "이고, 판정 대상을 가른 준수율은 협력업체 축 분모 " + V.complyPartner.den + " · 당사 축 조항 " + V.selfAxis.policyN + "건이에요. 총점은 만들지 않아요.",
+      "판정 근거는 보고서 판정표의 칸을 누르면 추적 지면 다섯 레인으로 펼쳐져요 — 저는 조회만 하고 판정이나 집행은 실행하지 않아요.",
+    ], nav: { key: "ontology", label: (typeof PG_SECTION_KO !== "undefined") ? PG_SECTION_KO : "협력업체 온톨로지 · 하네스" } };
+  } catch (e) { return null; } },
+
+  pgart(m, text) { try {
+    if (typeof authRole !== "function" || authRole() !== "ADMIN") return null;
+    if (typeof PG_POLICIES === "undefined" || typeof pgPolicy !== "function") return null;
+    const t = String(text || "");
+    const hit = (t.match(/\b([LPT]-\d{2}[ab]?)\b/i) || [])[1];
+    const pol = hit ? pgPolicy(String(hit).toUpperCase()) : null;
+    if (!pol) {
+      const byGroup = {};
+      for (const p of PG_POLICIES) byGroup[p.group] = (byGroup[p.group] || 0) + 1;
+      return { lines: [
+        "통제항목은 " + PG_POLICIES.length + "개예요 — " + Object.keys(byGroup).map((g) => g + "군 " + byGroup[g] + "개").join(" · ") + ".",
+        "조항 번호를 말씀해 주시면(예: L-04) 그 조항의 표제 · 판정 대상 · 생애주기 · 근거 법령 확인 등급을 읽어드려요.",
+      ], nav: { key: "ontology" } };
+    }
+    const cite = (typeof pgLawCite === "function") ? pgLawCite(pol.lawRef, pol.lawArticle, (pol.appliesTo || [])[0]) : null;
+    const lawLine = cite ? (cite.render || []).map((r) => r.label).join(" · ") : "근거 법령 미등재";
+    return { lines: [
+      pol.id + " · " + pol.title + " — 판정 대상 " + (pol.subject === "당사" ? "ⓠ당사" : "ⓘ협력업체") + " · 생애주기 " + pol.lifecycle + " · " + (pol.obligation ? "의무 조항" : "권고 조항") + "이에요.",
+      "근거는 " + lawLine + "이고 확인 등급은 " + (cite ? cite.verified : "미확인") + "이에요 — 원문확인이 아니면 조문 번호를 인쇄하지 않고 집행도 보류해요.",
+      "판정 실행과 집행 등록은 제가 하지 않아요 — 정책 · 판정 엔진 지면에서 확인해 주세요.",
+    ], nav: { key: "ontology" } };
+  } catch (e) { return null; } },
 
   /* ══ Phase 2 하이 퍼스트 — 거래 실행 툴(조회를 넘어, 말 한마디로 실행) ══ */
   // 검진 예약 제안(내 지역 기준 센터+일시) → "이대로 예약 확정"으로 bookdo 실행
@@ -454,6 +510,12 @@ function agentMatch(normText) {
   let best = null, bestScore = 0;
   for (const it of (typeof AGENT_QNA !== "undefined" ? AGENT_QNA : [])) {
     if (!it.p || !it.p.length) continue;
+    /* ★ 관리자 전용 Q&A 는 **회원 세션에서 후보에 오르지 않는다**(2026-10-26 · 지시서 §14-5 G-06).
+       왜 여기인가: Q&A 뱅크의 `lv` 는 **난이도 표기이고 접근 제어에 쓰이지 않는다** — 지시서가
+       「별도 차단 필수」라고 적은 이유다. 실측으로 확인했다: `adm` 가드 없이 등재하니 회원 세션에서
+       「협력업체 내부통제 보고서 열어줘」가 **그대로 답했다**(민감 질의 3건 누출).
+       `typeof` 가드를 두는 이유 — 역할을 모르는 세계에서는 **관리자가 아닌 쪽**으로 떨어져야 한다. */
+    if (it.adm && !(typeof authRole === "function" && authRole() === "ADMIN")) continue;
     let score = 0;
     for (const pat of it.p) { const pn = pat.toLowerCase(); if (normText.includes(pn)) score = Math.max(score, pn.length); }
     if (score > bestScore) { bestScore = score; best = it; }
@@ -483,6 +545,15 @@ const AGENT_SEC_GUIDES = [
   { k: "story", label: "활용 스토리", words: ["활용스토리", "활용법", "고객여정", "스토리보여", "이야기로", "성래스토리", "어떻게쓰는지"], guide: "'결과지를 버리던 남자' — 조성래 님의 10년 이야기로 하이핀의 모든 기능을 여행처럼 보여드려요. 장면마다 실제 화면으로 바로 이동할 수 있어요.", btns: ["검진 예약 도와줘", "내 건강 봐줘"] },
   { k: "social", label: "사회적기업", words: ["사회공헌", "사회환원", "기부활동", "나눔활동"], guide: "사회적기업 화면에서 치료비 사각지대 나눔 등 하이핀의 사회환원 활동을 볼 수 있어요. 회원 소비에서 생긴 판매마진의 15%가 나눔 재원이 돼요.", btns: ["나눔은 어떻게 이뤄져요?"] },
   { k: "community", label: "커뮤니티", words: ["커뮤니티", "게시판", "후기보", "회원들이야기"], guide: "커뮤니티에서 회원들의 건강 이야기와 전문가 답변을 볼 수 있어요.", btns: [] },
+  /* ★ 관리자 전용 — **아래 agentNavIntent 의 `k === "ontology"` 가드가 지키는 항목이다.**
+     그 가드는 이 항목이 없는 동안 **지킬 것이 없는 죽은 분기**였다(실측: `k: "ontology"` 0건인데
+     분기는 살아 있었다). 등재하면서 가드에 실체를 준다 — 회원 세션에서는 이 줄이 건너뛰어지고,
+     그 차단이 실제로 작동하는지는 run_persona_diff 의 민감 질의 20문항이 실측한다(G-06).
+     ⚠️ 안내만 한다 — 판정 실행 · 집행 등록 · 면제 승인은 도구 층에도 등록하지 않았다. */
+  { k: "ontology", label: "협력업체 온톨로지 · 하네스", admin: true,
+    words: ["협력업체온톨로지", "협력업체통제", "내부통제보고서", "내부통제지면", "통제항목보", "통제보고서", "판정엔진", "정책레지스트리", "집행테이블", "협력업체하네스"],
+    guide: "협력업체 온톨로지 · 하네스를 열어드릴게요. 거래 사실 · 원가 정산과 함께 내부통제 보고서(범위 · 결론 · 실적 · 판정표 · 추적 · 시정 · 한계)와 정책 · 판정 엔진 지면을 볼 수 있어요. 저는 조회만 하고 판정이나 집행은 실행하지 않아요.",
+    btns: ["내부통제 보고서 열어줘", "통제항목 뭐가 있어"] },
 ];
 /* [라우팅 헌법 P1] 명시적 섹션·기능 지목 — 본 구현은 navRouting.js(navResolve · 인벤토리 단일 소스).
    P0의 수기 12군 표는 P2에서 인벤토리 기반으로 대체됐다(설계 프롬프트 v2.1 §4). */

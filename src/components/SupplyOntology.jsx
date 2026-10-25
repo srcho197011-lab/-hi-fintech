@@ -1,4 +1,10 @@
-/* ====================== 공급망 온톨로지 (Ontology · Harness 하위) ======================
+/* ====================== 협력업체 온톨로지 · 하네스 (Ontology · Harness 하위) ======================
+   Partner Ontology & Governance Harness — 이 패널은 그중 **거래 사실 레이어**를 렌더한다.
+   성격 — 「누구와 무슨 거래가 어떤 상태로 돌고 있는가」까지다. 「그 거래가 적법·건전한가」의 판정 지면은
+     다음 단계에서 신설되고, 그 지면의 표시명은 partnerGov.js 의 pgDisplayName() 하나에서만 나온다.
+   용어 — 화면 라벨의 단일 원천은 partnerGov.js 의 PG_TERMS / PG_COUNT_LABEL 이다. 여기서 낱말을 만들지 않는다.
+   코드 식별자(SC_* · Vendor360 · SupplyGraph 등)는 **개칭하지 않는다** — 단일 번들(전역 공유)이라
+     개칭 과도기에 같은 이름이 둘 생기면 조용히 덮어쓴다(§3-1).
    ★ 핵심 모델: 무재고(Asset-light) · 거래처 직배송(Dropship)
    - 제품은 거래처(공급사)가 보유하고 고객에게 '직접 배송'한다.
    - 당사는 재고 부담(보유·창고·재고자산 리스크)을 지지 않는다.
@@ -29,7 +35,7 @@ const SC_SYSTEMS = [
 ];
 
 const SC_AGENTS = [
-  { id: "orch", t: "공급망 오케스트레이터", c: "#22D3EE", ic: Workflow, scope: "무재고 발주 라우팅 · 공급사 가용재고 가시성", sys: ["ERP", "물류"], owns: ["주문", "공급사 가용재고", "거래처·공급사"], kpi: ["가용재고 정확도 ↑", "발주 자동화율 ↑", "품절·오배정 ↓"], guard: "최적 거래처 자동배정 · 예외 시 인간 승인(HITL)" },
+  { id: "orch", t: "협력업체 오케스트레이터", c: "#22D3EE", ic: Workflow, scope: "무재고 발주 라우팅 · 공급사 가용재고 가시성", sys: ["ERP", "물류"], owns: ["주문", "공급사 가용재고", "거래처·공급사"], kpi: ["가용재고 정확도 ↑", "발주 자동화율 ↑", "품절·오배정 ↓"], guard: "최적 거래처 자동배정 · 예외 시 인간 승인(HITL)" },
   { id: "vrisk", t: "거래처 리스크 에이전트", c: "#A78BFA", ic: ShieldCheck, scope: "공급 신뢰도 · 여신 · 대금 모니터링", sys: ["ERP"], owns: ["거래처·공급사", "정산"], kpi: ["직배송 이행률 ↑", "미지급 오류 0", "공급 지연 조기경보"], guard: "거래중지·대체공급 전환은 감사로그 + 승인" },
   { id: "growth", t: "고객 성장 에이전트", c: "#F472B6", ic: TrendingUp, scope: "세그먼트 · 업셀 · 이탈 방지", sys: ["CRM"], owns: ["고객·계정", "주문"], kpi: ["재구매율 ↑", "이탈률 ↓", "LTV ↑"], guard: "발송·할인은 동의·정책 검증 후 실행" },
   { id: "logi", t: "직배송 관제 에이전트", c: "#38BDF8", ic: Route, scope: "거래처 출고~고객 ETA · 지연 예외 관제", sys: ["물류"], owns: ["배송"], kpi: ["정시 직배송률 ↑", "출고 리드타임 ↓", "예외 대응시간 ↓"], guard: "대체 거래처·재배송 전환은 비용영향 리포트 후" },
@@ -221,15 +227,24 @@ function SupplyAgents() {
     <div className="ontpanel" style={{ marginTop: 12 }}>
       <div className="ontph"><Bot size={15} color="#F472B6" /> 책임 AI 에이전트 · 액션 실행 <span>· {SC_AGENTS.length} Agents · KPI·가드레일(HITL)</span></div>
       <div className="scagents">
-        {SC_AGENTS.map((a) => (
+        {SC_AGENTS.map((a) => {
+          /* [P6] 거버넌스 축 확장 — 새 에이전트를 만들지 않고 **기존 카드에 선언을 얹는다**(G-05).
+             ⚠ 선언을 이 파일에 적지 않는다: 거버넌스 범위가 바뀔 때 두 곳이 갈린다. 원천은
+               src/data/partnerAI.js 의 PG_AI_AGENTS 이고 여기서는 **렌더만** 한다.
+             ⚠ 모듈 최상위가 아니라 렌더 시점에 읽는다 — 데이터 파일이 이 파일보다 뒤에 붙으므로
+               최상위에서 읽으면 TDZ 로 번들이 통째로 죽는다. */
+          const ex = (typeof pgAgentExt === "function") ? pgAgentExt(a.id) : null;
+          return (
           <div className="scagentcard" key={a.id} style={{ "--ac": a.c }}>
             <div className="scagenthd"><span className="scagent-i"><a.ic size={18} /></span><div><b>{a.t}</b><span>{a.scope}</span></div></div>
-            <div className="scagentrow"><span className="scal">소관</span><span className="scav">{a.owns.join(" · ")}</span></div>
-            <div className="scagentkpi">{a.kpi.map((k, i) => <span key={i} className="sckpi">{k}</span>)}</div>
+            <div className="scagentrow"><span className="scal">소관</span><span className="scav">{a.owns.concat(ex ? ex.ownsAdd : []).join(" · ")}</span></div>
+            <div className="scagentkpi">{a.kpi.concat(ex ? ex.kpiAdd : []).map((k, i) => <span key={i} className="sckpi">{k}</span>)}</div>
             <div className="scactbtns">{(SC_AGENT_ACTIONS[a.id] || []).map((act, i) => <button key={i} className="scactbtn" style={{ "--ac": a.c }} onClick={() => run(a, act)}><Play size={11} /> {act.t}</button>)}</div>
             <div className="scagentguard"><ShieldCheck size={11} /> {a.guard}</div>
+            {ex ? <div className="scagentguard" style={{ color: "#B45309" }}><ShieldCheck size={11} /> {typeof _pgPlain === "function" ? _pgPlain(ex.guardAdd) : ex.guardAdd}</div> : null}
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="scjournalh" style={{ marginTop: 12 }}><Workflow size={13} /> 액션 실행 로그</div>
       <div className="scactlog">{log.length === 0 ? <div className="scempty">에이전트 카드의 액션 버튼을 눌러 실행하세요. (HITL 액션은 승인 필요)</div> : log.map((x) => (
@@ -243,13 +258,26 @@ function SupplyAgents() {
 }
 /* ── 거래처 360° 뷰 ── */
 function Vendor360({ v, D, idx, onClose, onGo }) {
-  const prods = idx.pByV[v.id] || [], conts = idx.cByV[v.id] || [], avails = idx.aByV[v.id] || [], setts = idx.sByV[v.id] || [];
-  const ords = D.orders.filter((o) => o.vendorId === v.id);
-  let sales = 0, mgn = 0; const st = {};
-  ords.forEach((o) => { st[o.status] = (st[o.status] || 0) + 1; if (o.status !== "취소") { sales += o.amount; mgn += o.margin; } });
-  const setSum = setts.reduce((s, x) => s + x.sales, 0);
+  const prods = idx.pByV[v.id] || [], conts = idx.cByV[v.id] || [], avails = idx.aByV[v.id] || [];
+  /* ★ 이 모달은 **기간축 롤업을 읽는 소비자**다(P5a 전환). 자기 계산을 갖지 않는다.
+       종전에는 주문 3만 건을 선형 주사해 sales·margin 을 여기서 다시 더했고, 같은 거래처의 매출이
+       보고서(롤업)와 모달(자체 계산) 두 곳에서 따로 계산됐다 — 두 값이 서는 경로였다.
+       금액·건수는 전부 pgVendorRoll() 반환 필드이고, 모달이 더하는 숫자는 0건이다.
+       상태 분포만 색인(oByV)에서 센다 — 취소를 포함한 분포는 금액 축이 아니라 운영 축이다. */
+  const VR = (typeof pgVendorRoll === "function") ? pgVendorRoll(v.id) : null;
+  const cell = (VR && VR.cell) || null;
+  const setts = (VR && VR.months) || (idx.sByV[v.id] || []);
+  const ords = (VR && VR.orders) || [];
+  const st = {};
+  ords.forEach((o) => { st[o.status] = (st[o.status] || 0) + 1; });
   const agents = SC_AGENTS.filter((a) => a.sys.includes("ERP") || a.sys.includes("물류")).slice(0, 3);
-  const kpi = [["총 거래액", _scW(sales), "#34D399"], ["주문", ords.length.toLocaleString() + "건", "#6366F1"], ["제품 SKU", prods.length, "#FBBF24"], ["정산누계", _scW(setSum), "#F59E0B"]];
+  /* 「정산누계」를 독립 장부로 읽히게 적지 않는다 — 정산은 주문에서 파생된 종속 표시이고
+     창이 같으면 총 거래액과 원 단위까지 같은 값이다(형 확정 Q1). 라벨의 원천은 PG_SETTLE_LABEL 하나다. */
+  const _setLabel = _scSetLabel();
+  const kpi = [["총 거래액", cell ? _scW(cell.sales) : "—", "#34D399"],
+    ["주문", cell ? cell.orders.toLocaleString() + "건" : "—", "#6366F1"],
+    ["제품 SKU", prods.length, "#FBBF24"],
+    [_setLabel, cell ? _scW(cell.settleTarget) : "—", "#F59E0B"]];
   return (
     <div className="ontov" onClick={onClose}><div className="ontmodal v360" onClick={(e) => e.stopPropagation()}>
       <div className="ontmh"><div><span className="ontmid">{v.id} · {v.type} · {v.category}</span><div className="ontmname">{v.name} <span>· 360° 뷰 · 신뢰도 {v.trust} · SLA D+{v.sla}</span></div></div><button onClick={onClose}><X size={19} /></button></div>
@@ -257,12 +285,18 @@ function Vendor360({ v, D, idx, onClose, onGo }) {
         <div className="v360kpi">{kpi.map(([k, val, c], i) => <div key={i}><b style={{ color: c }}>{val}</b><span>{k}</span></div>)}</div>
         <div className="v360sec"><b><Package size={12} /> 제품 · SKU ({prods.length})</b><div className="v360chips">{prods.slice(0, 10).map((p) => <span key={p.id} onClick={() => { onGo("product", p.name); onClose(); }}>{p.name} · {_scW(p.salePrice)}</span>)}{prods.length > 10 && <span className="more" onClick={() => { onGo("product", v.name); onClose(); }}>+{prods.length - 10} 더보기 ›</span>}</div></div>
         <div className="v360grid2">
-          <div className="v360sec"><b><ScrollText size={12} /> 계약·단가</b>{conts.map((c) => <div className="v360li" key={c.id}>{c.category} · 마진 {c.marginPct}% · 수수료 {c.feePct}% · {c.settleCycle}</div>)}</div>
+          {/* 계약은 **약정값**이다 — 주문에서 실현된 값과 다른 것이 정상이므로 라벨을 가른다.
+              값을 통일하지 않는다: 틀린 것은 값이 아니라 같은 이름으로 부른 것이다. */}
+          <div className="v360sec"><b><ScrollText size={12} /> 계약·단가</b>{conts.map((c) => <div className="v360li" key={c.id}>{c.category} · 계약 마진율(약정) {c.marginPct}% · 수수료 {c.feePct}% · 계약 주기(약정) {c.settleCycle}</div>)}</div>
           <div className="v360sec"><b><Boxes size={12} /> 공급사 가용재고 ({avails.length})</b>{avails.slice(0, 4).map((a) => <div className="v360li" key={a.id}><span style={{ color: a.qty < 30 ? "#F87171" : "#22D3EE", fontWeight: 800 }}>{a.qty}</span> · {a.skuName} · D+{a.leadDays}</div>)}</div>
         </div>
         <div className="v360sec"><b><Truck size={12} /> 주문·직배송 상태</b><div className="scpipe" style={{ height: 44 }}>{["접수", "출고준비", "배송중", "배송완료", "취소"].map((s) => { const val = st[s] || 0; return <div className="scpipe-seg" key={s} style={{ flex: Math.max(0.4, val), background: SC_ST_COLOR[s] }} title={s + " " + val}><b>{val}</b><span>{s}</span></div>; })}</div></div>
         <div className="v360grid2">
-          <div className="v360sec"><b><Receipt size={12} /> 정산 ({setts.length}개월)</b>{setts.slice(-3).map((s) => <div className="v360li" key={s.id}>{s.period} · 매출 {_scW(s.sales)} · 수수료 {_scW(s.fee)} · <span style={{ color: s.status === "정산완료" ? "#34D399" : "#FBBF24" }}>{s.status}</span></div>)}</div>
+          {/* 정산 행은 주문 집계다 — 수수료는 계약 feePct 그대로이므로 위 계약 섹션의 「수수료 N%」와 일치한다.
+              상태 축은 아직 없다(재부여 규칙 미정 · 1:1 승계 기각) → 상태 대신 **미출고분**을 적는다. */}
+          {/* 기간축을 **전부** 찍는다 — 최근 3건만 찍던 자리가 기간 추세를 말할 수 없게 만들던 자리다.
+              행은 롤업이 돌려준 월행 그대로이고 모달이 다시 더하지 않는다. */}
+          <div className="v360sec"><b><Receipt size={12} /> 월별 {_setLabel} ({setts.length}개월)</b>{setts.map((s) => <div className="v360li" key={s.period}>{s.period} · 매출 {_scW(s.sales)} · 수수료 {_scW(s.fee)} · 주문 {s.orders}건{s.preShip ? <span style={{ color: "#FBBF24" }}> · 미출고 {_scW(s.preShip)}</span> : null}</div>)}</div>
           <div className="v360sec"><b><Bot size={12} /> 담당 AI 에이전트</b>{agents.map((a) => <div className="v360li" key={a.id}><span style={{ color: a.c, fontWeight: 800 }}>●</span> {a.t} <span style={{ color: "#34D399" }}>· 정상</span></div>)}</div>
         </div>
         <div className="chnote">여신한도 {_scW(v.credit)} · 미지급 {_scW(v.payable)} · 거래시작 {v.since} · ★거래처 직배송(무재고) 수행</div>
@@ -273,6 +307,12 @@ function Vendor360({ v, D, idx, onClose, onGo }) {
 /* ── 운영 현황판: 현재 거래·진행 중 상태 실시간 집계 ── */
 const SC_ST_COLOR = { "접수": "#38BDF8", "출고준비": "#FBBF24", "배송중": "#818CF8", "배송완료": "#34D399", "취소": "#F87171" };
 function _scW(n) { return (typeof ontWon === "function") ? ontWon(n) : (n || 0).toLocaleString() + "원"; }
+/* 라벨의 단일 원천은 partnerGov.js 다 — 컴포넌트에서 낱말을 만들지 않는다(§0-5).
+   ⚠ **함수로 둔다.** 번들은 src/_manifest.txt 순서로 이어 붙인 단일 모듈이고 이 파일은 데이터 파일보다
+      앞에 온다. 그래서 모듈 최상위에서 `typeof PG_SETTLE_LABEL`을 평가하면 const 의 TDZ 에 걸려
+      ReferenceError 로 번들 전체가 죽는다. 렌더 시점에 부르면 이미 초기화돼 있다. */
+function _scSetLabel() { return (typeof PG_SETTLE_LABEL !== "undefined") ? PG_SETTLE_LABEL : "정산(주문 파생)"; }
+function _scCountLabel(id, fallback) { return (typeof pgCountLabel === "function" && pgCountLabel(id)) || fallback; }
 function SupplyDashboard() {
   const D = React.useMemo(() => (typeof supplyData === "function" ? supplyData() : null), []);
   const dash = React.useMemo(() => {
@@ -287,17 +327,32 @@ function SupplyDashboard() {
       if (o.status === "배송완료") done++; else active++;
       const p = prodById[o.sku]; const cat = p ? p.category : "기타";
       catSales[cat] = (catSales[cat] || 0) + o.amount;
-      venSales[o.vendorName] = (venSales[o.vendorName] || 0) + o.amount;
+      /* 집계 버킷 키는 **식별자**다. 상호 문자열을 키로 쓰면 표시명 모드를 내리는 순간
+         글자가 아니라 **동작**이 바뀐다(버킷이 갈라진다). 실측: 식별자로 키잉해도 버킷 108 동일 ·
+         손실 0. 라벨은 렌더에서 표시명 함수를 지나 만든다(§4-6-5 ⓒ). */
+      venSales[o.vendorId] = (venSales[o.vendorId] || 0) + o.amount;
     });
     const shipSt = {}; D.shipments.forEach((s) => { shipSt[s.status] = (shipSt[s.status] || 0) + 1; });
     const low = D.availability.filter((a) => a.qty < 80).sort((a, b) => a.qty - b.qty).slice(0, 8);
-    let setDone = 0, setDue = 0; D.settlements.forEach((s) => { if (s.status === "정산완료") setDone += s.sales; else setDue += s.sales; });
-    const venTop = Object.entries(venSales).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    /* 정산 상태 축은 아직 없다 — 「정산 완료 / 정산 예정」 2칸은 status 1:1 승계를 전제했고 그 승계는
+       기각됐다(미출고 금액이 「정산완료」로 섞인다). 그래서 **정산 대상** 한 값 + 그 안의 미출고분으로 적는다. */
+    let setTarget = 0, setPreShip = 0, setMonths = {};
+    D.settlements.forEach((s) => { setTarget += s.sales; setPreShip += (s.preShip || 0); setMonths[s.period] = 1; });
+    const setWin = Object.keys(setMonths).sort();
+    /* 라벨 조립 — 버킷은 식별자이고 표기는 표시명 함수 한 곳을 지난다.
+       ⚠ 동점 정렬은 **식별자 오름차순**으로 못 박는다. 금액만으로 정렬하면 동점 행의 순서가
+         엔진 구현에 달리고, 같은 입력이 같은 화면을 만들지 않는다(결정론). */
+    const venById = {}; D.vendors.forEach((v) => { venById[v.id] = v; });
+    const venTop = Object.entries(venSales)
+      .sort((a, b) => (b[1] - a[1]) || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+      .slice(0, 8)
+      .map(([vid, amt]) => [(typeof pgDisplayName === "function" ? pgDisplayName(venById[vid] || { vendorId: vid }) : vid), amt, vid]);
     const cats = [["영양제", "#7C3AED"], ["홈케어의료기", "#0891B2"], ["건강식단", "#16A34A"], ["의약외품", "#0EA5E9"]].map(([c, col]) => [c, catSales[c] || 0, col]);
-    return { gmv, margin, active, done, cancel, ocount, st, shipSt, low, setDone, setDue, venTop, cats };
+    return { gmv, margin, active, done, cancel, ocount, st, shipSt, low, setTarget, setPreShip, setWin, venTop, cats };
   }, [D]);
   if (!dash) return null;
   const PIPE = ["접수", "출고준비", "배송중", "배송완료", "취소"];
+  const _setLabel = _scSetLabel();
   const totOrd = D.counts.order;
   const catMax = Math.max(1, ...dash.cats.map((x) => x[1]));
   const venMax = Math.max(1, ...dash.venTop.map((x) => x[1]));
@@ -338,44 +393,63 @@ function SupplyDashboard() {
           <div className="scalerts">{dash.low.map((a) => <div className="scalert" key={a.id}><span className={"scalert-q" + (a.qty < 30 ? " crit" : "")}>{a.qty}</span><div><b>{a.skuName}</b><span>{a.vendorName} · 출고 D+{a.leadDays}</span></div><span className="scalert-tag">발주검토</span></div>)}</div>
         </div>
         <div className="ontpanel">
-          <div className="ontph"><Receipt size={14} color="#F59E0B" /> 정산 현황 <span>· 최근 6개월</span></div>
-          <div className="scsettle"><div className="scset-c"><b style={{ color: "#34D399" }}>{_scW(dash.setDone)}</b><span>정산 완료</span></div><div className="scset-c"><b style={{ color: "#FBBF24" }}>{_scW(dash.setDue)}</b><span>정산 예정</span></div></div>
-          <div className="scdashnote">정산 = 판매대금 수취 → 플랫폼 수수료·마진 차감 → <b>거래처 공급대금 지급</b> (무재고 중개 정산)</div>
+          {/* 창 라벨을 데이터에서 만든다 — 「최근 6개월」을 손으로 적어 두면 창이 바뀔 때 머리말만 거짓이 된다.
+              그리고 이 패널의 창이 위 KPI 「총 거래액」의 창과 같아야 한 화면에 두 숫자가 서지 않는다. */}
+          <div className="ontph"><Receipt size={14} color="#F59E0B" /> {_setLabel} <span>· {dash.setWin[0]} ~ {dash.setWin[dash.setWin.length - 1]} · 월별 {dash.setWin.length}개월</span></div>
+          <div className="scsettle"><div className="scset-c"><b style={{ color: "#34D399" }}>{_scW(dash.setTarget)}</b><span>정산 대상(상태 미정)</span></div><div className="scset-c"><b style={{ color: "#FBBF24" }}>{_scW(dash.setPreShip)}</b><span>그중 미출고분</span></div></div>
+          <div className="scdashnote">정산은 <b>주문에서 전건 파생</b>되는 종속 장부입니다 — 매출·공급대금은 주문, 수수료율은 계약이 단일 원천이고, 창이 같으므로 정산 대상 합은 위 <b>총 거래액(GMV)</b>과 같은 값입니다. 정산 완료·예정 상태 축은 재부여 규칙이 확정되기 전까지 표시하지 않습니다.</div>
         </div>
       </div>
     </div>
   );
 }
 /* ── 데이터 하우스: 오브젝트별 검색 + 온톨로지 관계 드릴다운 ── */
-const SC_MONEY = new Set(["salePrice", "supplyPrice", "amount", "margin", "ltv", "sales", "fee", "supplyCost", "credit", "payable"]);
-function _scCell(v, k) {
+const SC_MONEY = new Set(["salePrice", "supplyPrice", "amount", "margin", "ltv", "sales", "fee", "supplyCost", "credit", "payable", "marginNet", "preShip", "delivered"]);
+function _scCell(v, k, row) {
+  /* 파생 표기는 **데이터가 아니라 렌더**가 만든다 — 출고 표기는 식별자(fromVid)에서 조립한다.
+     그래서 표시명 모드를 내리면 이 칸도 함께 코드 표기가 된다(§4-6-5 ⓐ). */
+  if (k === "fromVid") return (typeof pgShipFrom === "function") ? pgShipFrom(row || { fromVid: v }) : String(v || "");
   if (v == null) return "";
   if (SC_MONEY.has(k) && typeof v === "number") return v >= 100000000 ? (v / 100000000).toFixed(1) + "억" : v >= 10000 ? Math.round(v / 10000).toLocaleString() + "만" : v.toLocaleString();
   if (k === "marginPct") return v + "%";
   if (typeof v === "number") return v.toLocaleString();
   return v;
 }
+/* 검색 · 조회 축 — **식별자 + 표시명 함수의 산출**이다. 저장된 상호 문자열(`vendorName`)을
+   직접 매칭 축으로 쓰지 않는다: 그러면 표시명 모드를 내렸을 때 화면에 보이는 글자와 찾아지는
+   글자가 어긋나고, 드릴다운이 넘기는 식별자와도 축이 맞지 않는다(§4-6-5 ⓒ).
+   표시명을 지나므로 실명 모드에서는 상호로도 그대로 찾아지고, 코드 모드에서는 코드로 찾아진다. */
+function _scVName(r) {
+  if (!r) return "";
+  return (typeof pgDisplayName === "function") ? pgDisplayName({ vendorId: r.vendorId || r.id, name: r.name, vendorName: r.vendorName }) : (r.vendorName || r.name || "");
+}
+function _scVKey(r) { return String((r && (r.vendorId || r.id)) || "") + _scVName(r); }
 const SC_TABLES = [
-  { key: "vendor", label: "거래처·공급사", ic: Factory, c: "#A78BFA", ph: "상호·유형·공급분류 검색", get: (d) => d.vendors, search: (r, q) => (r.name + r.id + r.category + r.type).includes(q), cols: [["id", "ID"], ["name", "상호"], ["type", "유형"], ["category", "공급분류"], ["sla", "SLA(D+)"], ["trust", "신뢰도"]] },
-  { key: "product", label: "제품·SKU", ic: Package, c: "#FBBF24", ph: "품목·거래처·분류 검색", get: (d) => d.products, search: (r, q) => (r.name + r.id + r.vendorName + r.category).includes(q), cols: [["id", "SKU"], ["name", "품목"], ["category", "분류"], ["vendorName", "공급 거래처"], ["salePrice", "판매가"], ["marginPct", "마진"]] },
-  { key: "contract", label: "계약·단가", ic: ScrollText, c: "#2DD4BF", ph: "거래처·분류 검색", get: (d) => d.contracts, search: (r, q) => (r.vendorName + r.id + r.category).includes(q), cols: [["id", "계약ID"], ["vendorName", "거래처"], ["category", "분류"], ["marginPct", "마진"], ["feePct", "수수료%"], ["settleCycle", "정산주기"]] },
-  { key: "availability", label: "공급사 가용재고", ic: Boxes, c: "#22D3EE", ph: "품목·거래처 검색 (당사 미보유)", get: (d) => d.availability, search: (r, q) => (r.skuName + r.id + r.vendorName + r.sku).includes(q), cols: [["id", "ID"], ["skuName", "품목"], ["vendorName", "보유 거래처"], ["qty", "가용수량"], ["leadDays", "출고 D+"], ["asof", "조회시각"]] },
+  { key: "vendor", label: "거래처·공급사", ic: Factory, c: "#A78BFA", ph: "상호·유형·공급분류 검색", get: (d) => d.vendors, search: (r, q) => (_scVKey(r) + r.id + r.category + r.type).includes(q), cols: [["id", "ID"], ["name", "상호"], ["type", "유형"], ["category", "공급분류"], ["sla", "SLA(D+)"], ["trust", "신뢰도"]] },
+  { key: "product", label: "제품·SKU", ic: Package, c: "#FBBF24", ph: "품목·거래처·분류 검색", get: (d) => d.products, search: (r, q) => (r.name + r.id + _scVKey(r) + r.category).includes(q), cols: [["id", "SKU"], ["name", "품목"], ["category", "분류"], ["vendorName", "공급 거래처"], ["salePrice", "판매가"], ["marginPct", "마진"]] },
+  { key: "contract", label: "계약·단가", ic: ScrollText, c: "#2DD4BF", ph: "거래처·분류 검색", get: (d) => d.contracts, search: (r, q) => (_scVKey(r) + r.id + r.category).includes(q), cols: [["id", "계약ID"], ["vendorName", "거래처"], ["category", "분류"], ["marginPct", "마진"], ["feePct", "수수료%"], ["settleCycle", "정산주기"]] },
+  { key: "availability", label: "공급사 가용재고", ic: Boxes, c: "#22D3EE", ph: "품목·거래처 검색 (당사 미보유)", get: (d) => d.availability, search: (r, q) => (r.skuName + r.id + _scVKey(r) + r.sku).includes(q), cols: [["id", "ID"], ["skuName", "품목"], ["vendorName", "보유 거래처"], ["qty", "가용수량"], ["leadDays", "출고 D+"], ["asof", "조회시각"]] },
   { key: "account", label: "고객·계정", ic: Users, c: "#F472B6", ph: "고객명·세그먼트·지역 검색", get: () => null, search: (r, q) => (r.name + r.id + r.seg + r.sido + r.grade).includes(q), cols: [["id", "계정ID"], ["name", "고객명"], ["seg", "세그먼트"], ["grade", "등급"], ["ltv", "LTV"], ["sido", "지역"]] },
-  { key: "order", label: "주문", ic: ClipboardList, c: "#6366F1", ph: "주문ID·품목·거래처·계정 검색", get: (d) => d.orders, search: (r, q) => (r.id + r.skuName + r.vendorName + r.accountId + r.status).includes(q), cols: [["id", "주문ID"], ["accountId", "계정"], ["skuName", "품목"], ["vendorName", "라우팅 거래처"], ["amount", "판매액"], ["status", "상태"]] },
-  { key: "shipment", label: "배송", ic: Truck, c: "#38BDF8", ph: "배송·주문·거래처·송장 검색", get: (d) => d.shipments, search: (r, q) => (r.id + r.orderId + r.vendorName + r.carrier + r.status + r.tracking).includes(q), cols: [["id", "배송ID"], ["orderId", "주문"], ["vendorName", "출고 거래처"], ["carrier", "운송사"], ["status", "상태"], ["eta", "ETA"]] },
-  { key: "settlement", label: "정산", ic: Receipt, c: "#F59E0B", ph: "거래처·기간 검색", get: (d) => d.settlements, search: (r, q) => (r.vendorName + r.id + r.period + r.status).includes(q), cols: [["id", "전표ID"], ["vendorName", "거래처"], ["period", "기간"], ["sales", "매출"], ["fee", "수수료"], ["status", "상태"]] },
+  { key: "order", label: "주문", ic: ClipboardList, c: "#6366F1", ph: "주문ID·품목·거래처·계정 검색", get: (d) => d.orders, search: (r, q) => (r.id + r.sku + r.skuName + _scVKey(r) + r.accountId + r.status).includes(q), cols: [["id", "주문ID"], ["accountId", "계정"], ["skuName", "품목"], ["vendorName", "라우팅 거래처"], ["amount", "판매액"], ["status", "상태"]] },
+  { key: "shipment", label: "배송", ic: Truck, c: "#38BDF8", ph: "배송·주문·거래처·송장 검색", get: (d) => d.shipments, search: (r, q) => (r.id + r.orderId + _scVKey(r) + r.carrier + r.status + r.tracking).includes(q), cols: [["id", "배송ID"], ["orderId", "주문"], ["vendorName", "출고 거래처"], ["carrier", "운송사"], ["status", "상태"], ["eta", "ETA"]] },
+  /* 정산 탭 — 상태 열을 두지 않는다(상태 축 미정 · 1:1 승계 기각). 대신 **공급대금**을 싣는다:
+     이 열의 합이 원가회계 「거래처 공급원가(매입)」·회계전기 「거래처 공급대금」과 원 단위까지 같아야 한다. */
+  { key: "settlement", label: "정산", ic: Receipt, c: "#F59E0B", ph: "거래처·기간·전표ID 검색", get: (d) => d.settlements, search: (r, q) => (_scVKey(r) + r.id + r.period).includes(q), cols: [["id", "전표ID"], ["vendorName", "거래처"], ["period", "기간"], ["sales", "매출"], ["supplyCost", "공급대금"], ["fee", "수수료"]] },
 ];
+/* 드릴다운 질의는 **식별자**다. 상호·품목명 문자열을 질의로 넘기면 표시명 모드를 내리는 순간
+   글자가 아니라 **동작**이 바뀌어 관계 카드가 아무것도 찾지 못한다(§4-6-5 ⓒ).
+   표 검색식도 같은 축(식별자)으로 맞춰 둬야 이 질의가 맞는다 — 둘은 한 쌍이다. */
 function _scRel(tab, r, IDX) {
   const L = [];
   const P = (t, n, k, q) => L.push({ t, n, k, q });
-  if (tab === "vendor") { P("제품", (IDX.pByV[r.id] || []).length, "product", r.name); P("계약", (IDX.cByV[r.id] || []).length, "contract", r.name); P("가용재고", (IDX.aByV[r.id] || []).length, "availability", r.name); P("정산", (IDX.sByV[r.id] || []).length, "settlement", r.name); }
-  else if (tab === "product") { P("공급 거래처", 1, "vendor", r.vendorName); P("가용재고", (IDX.aBySku[r.id] || []).length, "availability", r.id); P("주문(참조)", null, "order", r.name); }
-  else if (tab === "contract") { P("거래처", 1, "vendor", r.vendorName); }
-  else if (tab === "availability") { P("보유 거래처", 1, "vendor", r.vendorName); P("제품", 1, "product", r.sku); }
+  if (tab === "vendor") { P("제품", (IDX.pByV[r.id] || []).length, "product", r.id); P("계약", (IDX.cByV[r.id] || []).length, "contract", r.id); P("가용재고", (IDX.aByV[r.id] || []).length, "availability", r.id); P("정산", (IDX.sByV[r.id] || []).length, "settlement", r.id); }
+  else if (tab === "product") { P("공급 거래처", 1, "vendor", r.vendorId); P("가용재고", (IDX.aBySku[r.id] || []).length, "availability", r.id); P("주문(참조)", null, "order", r.id); }
+  else if (tab === "contract") { P("거래처", 1, "vendor", r.vendorId); }
+  else if (tab === "availability") { P("보유 거래처", 1, "vendor", r.vendorId); P("제품", 1, "product", r.sku); }
   else if (tab === "account") { P("주문", null, "order", r.id); }
-  else if (tab === "order") { P("고객·계정", 1, "account", r.accountId); P("제품", 1, "product", r.skuName); P("라우팅 거래처", 1, "vendor", r.vendorName); P("배송", IDX.shByOrd[r.id] ? 1 : 0, "shipment", r.id); }
-  else if (tab === "shipment") { P("주문", 1, "order", r.orderId); P("출고 거래처", 1, "vendor", r.vendorName); P("고객·계정", 1, "account", r.accountId); }
-  else if (tab === "settlement") { P("거래처", 1, "vendor", r.vendorName); }
+  else if (tab === "order") { P("고객·계정", 1, "account", r.accountId); P("제품", 1, "product", r.sku); P("라우팅 거래처", 1, "vendor", r.vendorId); P("배송", IDX.shByOrd[r.id] ? 1 : 0, "shipment", r.id); }
+  else if (tab === "shipment") { P("주문", 1, "order", r.orderId); P("출고 거래처", 1, "vendor", r.vendorId); P("고객·계정", 1, "account", r.accountId); }
+  else if (tab === "settlement") { P("거래처", 1, "vendor", r.vendorId); }
   return L;
 }
 function SupplyDetail({ rec, tab, idx, onClose, onGo }) {
@@ -385,7 +459,7 @@ function SupplyDetail({ rec, tab, idx, onClose, onGo }) {
     <div className="ontov" onClick={onClose}><div className="ontmodal scdetail" onClick={(e) => e.stopPropagation()}>
       <div className="ontmh"><div><span className="ontmid">{rec.id}</span><div className="ontmname">{rec.name || rec.skuName || rec.vendorName || rec.id} <span>· {T.label}</span></div></div><button onClick={onClose}><X size={19} /></button></div>
       <div className="ontmbody">
-        <div className="scdfields">{Object.entries(rec).filter(([k]) => !/^_|^mid$/.test(k)).map(([k, v]) => <div className="scdf" key={k}><span>{k}</span><b>{_scCell(v, k)}</b></div>)}</div>
+        <div className="scdfields">{Object.entries(rec).filter(([k]) => !/^_|^mid$/.test(k)).map(([k, v]) => <div className="scdf" key={k}><span>{k}</span><b>{_scCell(v, k, rec)}</b></div>)}</div>
         <div className="screlh"><Network size={13} /> 온톨로지 관계 (Links)</div>
         <div className="screlgrid">{rel.map((x, i) => (
           <button className="screlcard" key={i} onClick={() => onGo(x.k, x.q)}>
@@ -430,7 +504,7 @@ function SupplyExplorer() {
       <div className="sctabs">{SC_TABLES.map((t) => <button key={t.key} className={"sctab" + (tab === t.key ? " on" : "")} style={{ "--tc": t.c }} onClick={() => go(t.key, "")}><t.ic size={13} /> {t.label} <i>{tabCount(t).toLocaleString()}</i></button>)}</div>
       <div className="scsearch"><Search size={14} /><input value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder={T.ph} /><span>{filtered.length.toLocaleString()}건</span></div>
       <div className="sctablewrap"><table className="sctable"><thead><tr>{T.cols.map(([k, l]) => <th key={k}>{l}</th>)}</tr></thead>
-        <tbody>{view.map((r, i) => <tr key={i} onClick={() => setSel(r)}>{T.cols.map(([k]) => <td key={k}>{_scCell(r[k], k)}</td>)}</tr>)}</tbody></table></div>
+        <tbody>{view.map((r, i) => <tr key={i} onClick={() => setSel(r)}>{T.cols.map(([k]) => <td key={k}>{_scCell(r[k], k, r)}</td>)}</tr>)}</tbody></table></div>
       {filtered.length === 0 && <div className="scempty">검색 결과가 없습니다.</div>}
       <div className="scpager"><button disabled={pg <= 0} onClick={() => setPage(pg - 1)}>‹ 이전</button><span>{(pg + 1).toLocaleString()} / {pages.toLocaleString()} 페이지</span><button disabled={pg >= pages - 1} onClick={() => setPage(pg + 1)}>다음 ›</button></div>
       {sel && (tab === "vendor" ? <Vendor360 v={sel} D={D} idx={IDX} onClose={() => setSel(null)} onGo={go} /> : <SupplyDetail rec={sel} tab={tab} idx={IDX} onClose={() => setSel(null)} onGo={go} />)}
@@ -495,82 +569,148 @@ function SupplyLedger({ onTab }) {
         <div><b style={{ color: "#F472B6" }}>{_scW(F.supplyCost)}</b><span>매출원가(거래처 공급대금)</span></div>
         <div><b style={{ color: "#22D3EE" }}>{_scW(F.margin)}</b><span>매출총이익(플랫폼 마진)</span></div>
       </div>
-      <div className="scdashnote" style={{ marginTop: 10 }}>정산 데이터가 <b>ERP 전표로 자동 전기</b>되어 재무회계의 <b style={{ color: "#34D399" }}>손익계산서 「제품판매 매출 · 건강쇼핑(GMV)」</b>과 매출원가·매입채무·부가세에 반영됩니다.</div>
-      <button className="scfinbtn" onClick={() => onTab && onTab("finance")}><Landmark size={14} /> 재무회계 손익계산서에서 확인 <ChevronRight size={15} /></button>
+      {/* ⚠ 종전 문안은 「정산 데이터가 ERP 전표로 자동 전기되어 재무회계 손익계산서에 반영됩니다」였다.
+          두 지면은 **같은 장부가 아니다** — 재무회계는 회원 10만 환산 **계획 모델**(finBudget)이고
+          이 패널은 주문 30,000건의 **시연 시드 장부**다. 두 값이 다른 동안 「반영됩니다」라고 적으면
+          독자가 한쪽 숫자로 다른 쪽을 검산하려 한다. 주인이 다르다는 사실을 적는다. */}
+      <div className="scdashnote" style={{ marginTop: 10 }}>이 전기(轉記)는 <b>협력업체 거래 사실 레이어 안에서</b> 닫힙니다 — 매출·매입·플랫폼 마진이 모두 <b>주문 단일 원천</b>에서 나오고 정산 장부와 원 단위까지 일치합니다. <b style={{ color: "#FBBF24" }}>재무회계 탭의 손익계산서는 같은 장부가 아닙니다</b> — 그쪽은 회원 10만 명 환산 <b>계획 모델(예산양식)</b>이고 이 패널은 주문 {(typeof supplyData === "function" ? supplyData().counts.order : 0).toLocaleString()}건의 <b>시연 시드 장부</b>입니다. 두 지면의 금액은 산정 기준이 달라 서로 검산 대상이 아닙니다.</div>
+      <button className="scfinbtn" onClick={() => onTab && onTab("finance")}><Landmark size={14} /> 재무회계 계획 모델 손익계산서 보기(별 기준) <ChevronRight size={15} /></button>
     </div>
   );
+}
+/* ══════════════════════════════════════════════════════════════════════════════
+   협력업체 온톨로지 · 하네스 — 서브탭 5개 (P5a · 지시서 §10-1)
+   ══════════════════════════════════════════════════════════════════════════════
+   종전에는 서브탭 없이 10블록을 한 화면 세로로 쏟았다. 보고서를 11번째 블록으로 붙이면 스크롤 끝에
+   묻히므로, 형제 탭(사업 운영 콘솔)의 서브탭 패턴을 선례로 재배치한다. 구성은 §10-1 표 그대로다.
+
+   ★ 서브탭 라벨·순서·성질(verdict / factLayer)의 단일 원천은 partnerGov.js 의 PG_SUBTABS 다.
+     여기서 낱말을 만들지 않는다 — 컴포넌트는 키로 아이콘만 붙인다(§0-5). 러너도 그 표를 읽어
+     지면을 순회하므로, 라벨을 두 곳에 적으면 개칭이 갈릴 때 검사가 「이동 실패 = 0건」으로
+     조용히 통과한다.
+   ★ **패널 머리와 법인 축 고지는 서브탭과 무관하게 항상 보인다.** 상호가 뜨는 지면마다 성격 표기가
+     동반되어야 하는데, 탭을 옮기면 사라지는 고지는 2026-10-23 에 적발된 「다른 문단의 고지가 바닥을
+     메워 통과」 함정의 바로 그 형태다. 그래서 고지를 탭 안에 두지 않는다.
+   ★ ④와 ⑤를 **서로 잇는다** — 보고서의 한계 절에서 엔진 지면으로, 엔진의 조항 행에서 보고서
+     판정표의 그 열로. 결론과 근거가 두 탭으로 갈리면 「과정이 보이게」가 무너진다(§11-4).
+   ⚠ 서브탭 전환은 **관측의 이동**이지 조작이 아니다. 열람 등급·집행 수준·안전 임계값을 이 탭에서
+     바꾸게 만들지 않는다(운영 콘솔 원칙). */
+function _pgSubIcon(k) {
+  const I = { overview: Network, trade: Truck, cost: Receipt, report: Scale, engine: ScrollText };
+  return I[k] || Network;
 }
 function SupplyOntology({ onGo, onTab }) {
   const CNT = (typeof supplyData === "function") ? supplyData().counts : {};
   const _ck = { vendor: "vendor", product: "product", avail: "availability", contract: "contract", account: "account", order: "order", shipment: "shipment", payment: "settlement" };
+  const SUB = (typeof PG_SUBTABS !== "undefined") ? PG_SUBTABS : [];
+  const [sub, setSub] = useState(SUB.length ? SUB[0].k : "overview");
+  const [polFocus, setPolFocus] = useState(null);   /* 엔진 → 보고서 초점 {policyId, partnerId?} */
+  const [engFocus, setEngFocus] = useState(null);   /* 보고서 → 엔진 초점 {policyId} */
   return (
     <div>
+      {/* ── 패널 머리 (항상 보인다) ── */}
       <div className="ontpanel scintro">
-        <div className="ontph"><Network size={15} color="#22D3EE" /> 공급망 온톨로지 <span>· Supply-Chain Ontology · Asset-light Dropship</span></div>
+        <div className="ontph"><Network size={15} color="#22D3EE" /> 협력업체 온톨로지 · 하네스 <span>· Partner Ontology &amp; Governance Harness · Asset-light Dropship</span></div>
         <div className="scmodel">
           <span className="scmodel-b"><Boxes size={13} /> 무재고(Asset-light)</span>
           <span className="scmodel-b"><Truck size={13} /> 거래처 직배송(Dropship)</span>
           <span className="scmodel-b"><ShieldCheck size={13} /> 당사 재고자산·창고 = 0</span>
         </div>
-        <p className="scdesc">제품과 재고는 <b>거래처(공급사)가 보유</b>하고 <b style={{ color: "#38BDF8" }}>고객에게 직접 배송</b>합니다. 당사는 <b>재고 부담 없이</b> <b style={{ color: "#6366F1" }}>주문·데이터·정산을 오케스트레이션</b>하고, <b style={{ color: "#22D3EE" }}>공급사 가용재고를 실시간 조회(가시성)</b>만 합니다. 모든 오브젝트·연결·AI 에이전트가 이 무재고·직배송 모델로 정의됩니다.</p>
-        <div className="ontobjbar" style={{ marginTop: 10 }}>
-          {SC_OBJECTS.map((o) => (
-            <div className="ontobj" key={o.id}><span className="ontobj-i" style={{ background: o.c + "1A" }}><o.ic size={16} color={o.c} /></span><div><b style={{ fontSize: 14 }}>{(CNT[_ck[o.id]] || 0).toLocaleString()}</b><span>{o.t.split(" ")[0]}</span></div></div>
-          ))}
-        </div>
+        {/* 법인 축 고지 — 회원(개인) 축의 가명 표기 규약을 여기에 적용할 수 없다. 이 레이어는 **의도적으로
+            실상호**를 쓰므로 가명 표기를 적용하면 거짓이 된다. 그래서 성격 표기를 상호 축으로 따로 세운다.
+            ⚠ 호칭과 성격을 **같은 줄에서** 적는다 — 다른 문단의 고지가 바닥을 메우면 이 문장만 떼어도
+               가드가 통과하는 함정에 걸린다(2026-10-23 애블레이션 실측).
+            ⚠ 서브탭 **밖**에 둔다 — 탭을 옮기면 사라지는 고지는 그 함정의 또 다른 형태다. */}
+        <div className="chnote" style={{ marginTop: 10 }}>※ 이 레이어는 <b>거래 사실</b>만 들고 있습니다 — <b>거래처 상호는 실제 상호이며, 거래·통제 수치는 시연 시드 데이터입니다.</b> 회원 축의 가명 표기 규약과는 별 축입니다(법인에 가명 표기를 적용하면 거짓이 됩니다).</div>
       </div>
 
-      <SupplyLiveBoard />
+      {/* ── 서브탭 5개 ── */}
+      <div className="aitabs" style={{ margin: "12px 0" }}>{SUB.map((t) => {
+        const Ic = _pgSubIcon(t.k);
+        return <div key={t.k} className={"aitab " + (sub === t.k ? "on" : "")} title={t.asks} onClick={() => setSub(t.k)}><Ic size={14} /> {t.ko}</div>;
+      })}</div>
 
-      <SupplyDashboard />
-
-      <SupplyCostAccounting />
-
-      <SupplyLedger onTab={onTab} />
-
-      <div className="ontpanel" style={{ marginTop: 12 }}>
-        <div className="ontph"><Workflow size={15} color="#22D3EE" /> 개념도 · Concept Map <span>· 무재고 · 거래처 직배송</span></div>
-        <SupplyGraph />
-      </div>
-
-      <SupplyExplorer />
-
-      <div className="ontpanel" style={{ marginTop: 12 }}>
-        <div className="ontph"><Boxes size={15} color="#FBBF24" /> 오브젝트 정의 · 키 프로퍼티 <span>· {SC_OBJECTS.length} Object Types</span></div>
-        <div className="scobjs">
-          {SC_OBJECTS.map((o) => (
-            <div className="scobjcard" key={o.id} style={{ "--oc": o.c }}>
-              <div className="scobjhd"><span className="scobj-i"><o.ic size={16} /></span><b>{o.t}</b></div>
-              <div className="scobjtag">{o.tag}</div>
-              <div className="scobjsys">{o.sys.map((s) => <span key={s} className="scsysbadge">{s}</span>)}</div>
-              <ul className="scprops">{o.props.map((p, i) => <li key={i} className={/^★/.test(p) ? "hot" : ""}><Hash size={10} /> {p.replace(/^★/, "")}</li>)}</ul>
-            </div>
-          ))}
+      {sub === "overview" && <>
+        <div className="ontpanel scintro">
+          <p className="scdesc">제품과 재고는 <b>거래처(공급사)가 보유</b>하고 <b style={{ color: "#38BDF8" }}>고객에게 직접 배송</b>합니다. 당사는 <b>재고 부담 없이</b> <b style={{ color: "#6366F1" }}>주문·데이터·정산을 오케스트레이션</b>하고, <b style={{ color: "#22D3EE" }}>공급사 가용재고를 실시간 조회(가시성)</b>만 합니다. 모든 오브젝트·연결·AI 에이전트가 이 무재고·직배송 모델로 정의됩니다.</p>
+          <div className="ontobjbar" style={{ marginTop: 10 }}>
+            {SC_OBJECTS.map((o) => {
+              /* 라벨을 o.t.split(" ")[0] 로 만들던 방식은 **폐기**했다 — 8라벨 중 5건이 공백에서 잘려
+                 「공급사 가용재고」가 「공급사」로, 「거래처·공급사」가 「거래처」로 줄었다(형 캡처의 그 라벨).
+                 148은 가용재고 스냅샷 행수로 **정상**이고 틀린 것은 숫자가 아니라 이름이었다.
+                 이제 라벨은 partnerGov.js 의 PG_COUNT_LABEL 단일 원천에서 온다. */
+              return <div className="ontobj" key={o.id}><span className="ontobj-i" style={{ background: o.c + "1A" }}><o.ic size={16} color={o.c} /></span><div><b style={{ fontSize: 14 }}>{(CNT[_ck[o.id]] || 0).toLocaleString()}</b><span>{_scCountLabel(o.id, o.t)}</span></div></div>;
+            })}
+          </div>
         </div>
-        <div className="screl">
-          <b className="screl-h">관계 (Links)</b>
-          {SC_LINKS.map(([a, r, b], i) => <span className={"screlpill" + (/★/.test(r) ? " hot" : "")} key={i}>{a} <i>—{r.replace("★", "")}→</i> {b}</span>)}
+
+        <div className="ontpanel" style={{ marginTop: 12 }}>
+          <div className="ontph"><Workflow size={15} color="#22D3EE" /> 개념도 · Concept Map <span>· 무재고 · 거래처 직배송</span></div>
+          <SupplyGraph />
         </div>
-      </div>
 
-      <div className="ontpanel" style={{ marginTop: 12 }}>
-        <div className="ontph"><Cpu size={15} color="#34D399" /> 연결 시스템 · Integration <span>· ERP · CRM · 물류</span></div>
-        <div className="scsysgrid">
-          {SC_SYSTEMS.map((s) => (
-            <div className="scsyscard" key={s.id} style={{ "--sc": s.c }}>
-              <div className="scsyshd"><span className="scsys-i"><s.ic size={17} /></span><div><b>{s.t}</b><span>{s.sub}</span></div></div>
-              <div className="scsysex"><MonitorSmartphone size={11} /> {s.ex}</div>
-              <div className="scsyssync"><RefreshCw size={11} /> {s.sync}</div>
-              <div className="scsysobjs">{s.objs.map((o) => <span key={o}>{o}</span>)}</div>
-              <div className="scsysnote">{s.note}</div>
-            </div>
-          ))}
+        <div className="ontpanel" style={{ marginTop: 12 }}>
+          <div className="ontph"><Boxes size={15} color="#FBBF24" /> 오브젝트 정의 · 키 프로퍼티 <span>· {SC_OBJECTS.length} Object Types</span></div>
+          <div className="scobjs">
+            {SC_OBJECTS.map((o) => (
+              <div className="scobjcard" key={o.id} style={{ "--oc": o.c }}>
+                <div className="scobjhd"><span className="scobj-i"><o.ic size={16} /></span><b>{o.t}</b></div>
+                <div className="scobjtag">{o.tag}</div>
+                <div className="scobjsys">{o.sys.map((s) => <span key={s} className="scsysbadge">{s}</span>)}</div>
+                <ul className="scprops">{o.props.map((pp, i) => <li key={i} className={/^★/.test(pp) ? "hot" : ""}><Hash size={10} /> {pp.replace(/^★/, "")}</li>)}</ul>
+              </div>
+            ))}
+          </div>
+          <div className="screl">
+            <b className="screl-h">관계 (Links)</b>
+            {SC_LINKS.map(([a, r, b], i) => <span className={"screlpill" + (/★/.test(r) ? " hot" : "")} key={i}>{a} <i>—{r.replace("★", "")}→</i> {b}</span>)}
+          </div>
         </div>
-      </div>
 
-      <SupplyAgents />
+        <div className="ontpanel" style={{ marginTop: 12 }}>
+          <div className="ontph"><Cpu size={15} color="#34D399" /> 연결 시스템 · Integration <span>· ERP · CRM · 물류</span></div>
+          <div className="scsysgrid">
+            {SC_SYSTEMS.map((s) => (
+              <div className="scsyscard" key={s.id} style={{ "--sc": s.c }}>
+                <div className="scsyshd"><span className="scsys-i"><s.ic size={17} /></span><div><b>{s.t}</b><span>{s.sub}</span></div></div>
+                <div className="scsysex"><MonitorSmartphone size={11} /> {s.ex}</div>
+                <div className="scsyssync"><RefreshCw size={11} /> {s.sync}</div>
+                <div className="scsysobjs">{s.objs.map((o) => <span key={o}>{o}</span>)}</div>
+                <div className="scsysnote">{s.note}</div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      <div className="chnote" style={{ marginTop: 12 }}>※ <b>무재고(Asset-light)·거래처 직배송</b> 모델의 시연용 스키마입니다 — 제품·재고는 거래처(공급사)가 보유·배송하고 당사는 재고자산·창고를 두지 않습니다. 실제 운영 시 ERP(더존·SAP)·CRM(Salesforce)·물류(택배사 API·거래처 WMS) 커넥터 연동과 공급사 <b>가용재고 API</b>·권한·감사(HITL) 구성이 필요합니다.</div>
+        <SupplyAgents />
+
+        {/* [P6] AI 거버넌스 축 — 협력업체 AI 점검 7축 · 표준 매핑 · 자기 거버넌스 · 사람 승인 게이트.
+            책임 AI 에이전트 카드 **바로 뒤**에 둔다: 이 축이 그 카드가 무엇을 할 수 있고 무엇을 할 수
+            없는지를 정하므로, 떼어 놓으면 가드레일이 카드에서 보이지 않는다(§8-1 · §13-9). */}
+        {typeof PartnerAIGov === "function" ? <PartnerAIGov /> : null}
+
+        <div className="chnote" style={{ marginTop: 12 }}>※ <b>무재고(Asset-light)·거래처 직배송</b> 모델의 시연용 스키마입니다 — 제품·재고는 거래처(공급사)가 보유·배송하고 당사는 재고자산·창고를 두지 않습니다. 실제 운영 시 ERP(더존·SAP)·CRM(Salesforce)·물류(택배사 API·거래처 WMS) 커넥터 연동과 공급사 <b>가용재고 API</b>·권한·감사(HITL) 구성이 필요합니다.</div>
+      </>}
+
+      {sub === "trade" && <>
+        <SupplyLiveBoard />
+        <SupplyDashboard />
+        <SupplyExplorer />
+      </>}
+
+      {sub === "cost" && <>
+        <SupplyCostAccounting />
+        <SupplyLedger onTab={onTab} />
+      </>}
+
+      {/* ★ 두 지면의 초점을 **양방향으로** 넘긴다(§11-4). 초점 모양은 {policyId, partnerId} 하나이고
+          두 지면이 같은 모양을 받는다 — 모양이 갈리면 한쪽 링크가 조용히 죽는다.
+          보고서 → 엔진은 그 조항의 레지스트리 카드를, 엔진 → 보고서는 판정표의 그 열(또는 그 칸)을 연다. */}
+      {sub === "report" && <PartnerGovReport focusPolicy={polFocus}
+        onEngine={(id) => { setEngFocus(id ? { policyId: id } : null); setSub("engine"); }} />}
+
+      {sub === "engine" && <PartnerGovEngine focusPolicy={engFocus}
+        onReport={(f) => { setPolFocus(f && f.policyId ? f : null); setSub("report"); }} />}
     </div>
   );
 }

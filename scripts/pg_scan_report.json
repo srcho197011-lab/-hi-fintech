@@ -1,0 +1,286 @@
+{
+ "meta": {
+  "name": "pg_scan_report",
+  "runAt": "2026-10-25",
+  "enforceVer": "P4-1.0.0",
+  "policyVer": "P3-1.0.0",
+  "policyHash": "0f2b0b48",
+  "asOf": "2026-10-25",
+  "note": "단언 통과 수 · 차단 건수 분포 · 표시명 모드만 담는다. partnerId · 표시명 · 개별 판정 셀 0건 — 이 경로는 커밋되고 배포에 노출된다(§14-1-1)."
+ },
+ "nameMode": "real",
+ "counts": {
+  "fields": 60,
+  "refuse": 4,
+  "sites": 4,
+  "reviewBodies": 3,
+  "actionFields": 4,
+  "actorKinds": 3,
+  "storeKeys": 5,
+  "auditActions": 6,
+  "policies": 29
+ },
+ "population": 108,
+ "nameModeFloor": "real",
+ "exportDeclared": {
+  "rule": "PG-EXPORT",
+  "declared": "hard",
+  "effective": "hard",
+  "cap": "hard"
+ },
+ "keyAxis": {
+  "idBuckets": 108,
+  "nameBuckets": 108,
+  "shipRows": 28755,
+  "shipNamed": 0,
+  "synth": 52,
+  "prodNamed": 0
+ },
+ "settle": {
+  "rows": 756,
+  "months": 7,
+  "vendors": 108,
+  "cells": 756,
+  "idBreak": 0,
+  "feeBreak": 0,
+  "inverted": 0,
+  "crossCost": 0,
+  "crossTake": 0,
+  "crossSales": 0
+ },
+ "enforceEffective": {
+  "pep.register:advisory": 29,
+  "pep.settle:advisory": 29,
+  "pep.expose:advisory": 29,
+  "pep.export:hard": 29
+ },
+ "enforceDeclared": {
+  "pep.register:soft": 19,
+  "pep.settle:advisory": 29,
+  "pep.expose:advisory": 29,
+  "pep.export:advisory": 29,
+  "pep.register:advisory": 10
+ },
+ "pepCap": {
+  "pep.register": "soft",
+  "pep.settle": "advisory",
+  "pep.expose": "advisory",
+  "pep.export": "hard"
+ },
+ "pepBlockedNow": {
+  "pep.register": 0,
+  "pep.settle": 0,
+  "pep.expose": 0,
+  "pep.export": 0
+ },
+ "pepExpect": [
+  {
+   "pep": "pep.register",
+   "expect": 0,
+   "got": 0
+  },
+  {
+   "pep": "pep.settle",
+   "expect": 0,
+   "got": 0
+  },
+  {
+   "pep": "pep.expose",
+   "expect": 0,
+   "got": 0
+  },
+  {
+   "pep": "pep.export",
+   "expect": "심은 건수만",
+   "got": 0
+  }
+ ],
+ "blockPlanted": 7,
+ "blockStats": {
+  "total": 7,
+  "byPep": {
+   "pep.export": 7
+  },
+  "byCause": {
+   "rule_violation": 7
+  },
+  "byPolicy": {
+   "PG-EXPORT": 7
+  }
+ },
+ "modeProbe": {
+  "real": {
+   "rendered": 30,
+   "log": 0,
+   "notice": true
+  },
+  "code": {
+   "rendered": 0,
+   "log": 0,
+   "notice": false,
+   "mapped": 30
+  }
+ },
+ "owners": {
+  "단언 8 임계 리터럴": "scripts/run_pg_policy.mjs 단언 8-d",
+  "단언 15 산식 동결": "scripts/fin_site_check.mjs (FB_P0 6키 값 고정)",
+  "단언 17 「같은 장부」": "scripts/run_wording_guard.mjs 검사 ⑬"
+ },
+ "negative": {
+  "total": 15,
+  "blocked": 15
+ },
+ "verdictPages": {
+  "registered": 1,
+  "live": 1,
+  "files": [
+   "src/components/PartnerGovReport.jsx"
+  ]
+ },
+ "browser": {
+  "skipped": false,
+  "reached": true,
+  "chars": 54743,
+  "nameHits": 29,
+  "notices": {
+   "notice1": true,
+   "notice2": true
+  },
+  "verdictPagesLive": 1,
+  "subMoved": {
+   "overview": true,
+   "trade": true,
+   "cost": true,
+   "report": true,
+   "engine": true
+  },
+  "why": null
+ },
+ "laneSentences": {
+  "declared": 0,
+  "unregistered": 0,
+  "declBytes": 9618,
+  "positiveCatch": 1
+ },
+ "p5b": {
+  "lanes": 5,
+  "policies": 29,
+  "withUsed": 25,
+  "withUnused": 9,
+  "upRows": 5,
+  "ledgerBad": 0,
+  "det": {
+   "trace": true,
+   "whatIf": true,
+   "engine": true
+  },
+  "clampDrop": 19,
+  "clampCut": 4,
+  "engineBlocks": 7,
+  "engineAudit": 0,
+  "articleGate": 0,
+  "ruleN": 39,
+  "notYet": 0,
+  "unverified": 20,
+  "logLinked": true
+ },
+ "hiLayers": {
+  "secGuide": true,
+  "guardAlive": true,
+  "lexicon": 6,
+  "tools": [
+   "pgrep",
+   "pgart"
+  ],
+  "toolsGated": 2,
+  "toolsForbidden": 0,
+  "qna": 2,
+  "qnaGated": 2,
+  "nluSlots": 2,
+  "nluIntentAdm": true,
+  "coreGate": true,
+  "sensQuestions": 10
+ },
+ "p7fix": {
+  "clampDrop": {
+   "L2": 16,
+   "L3": 19,
+   "L4": 27
+  },
+  "l3MoneyFields": 14,
+  "l4IdFields": 13,
+  "vendorRollN": 108,
+  "vendorRollDiff": 0,
+  "exportCols": 9,
+  "exportSelfRows": 5,
+  "exportMixedLines": 0,
+  "ledgerAxes": 10
+ },
+ "p6": {
+  "axes": 7,
+  "verifiedMix": {
+   "원문확인": 3,
+   "부분확인": 4
+  },
+  "numHeld": 4,
+  "numShown": 4,
+  "numShownLowered": 0,
+  "std": 5,
+  "selfStd": 1,
+  "articleShown": 2,
+  "articleAll": 5,
+  "evidenceAxes": 3,
+  "gapAxes": 4,
+  "ctrl": 7,
+  "submitAbsent": 756,
+  "gov": 9,
+  "govMeasured": 8,
+  "govOk": 8,
+  "govUnmeasured": 1,
+  "govLawBacked": 2,
+  "agents": 2,
+  "actions": 4,
+  "hitl": 3,
+  "slots": 12,
+  "logByKind": {
+   "SYS": 1,
+   "EMP": 1
+  },
+  "det": true,
+  "audit": 0
+ },
+ "p7": {
+  "noticeAt": 3,
+  "cls": "pgex",
+  "logEv": {
+   "tsv": "export",
+   "doc": "print",
+   "clip": "export"
+  },
+  "tsvNotice": 1,
+  "docNotice": 1,
+  "tsvLog": 1,
+  "docLog": 1,
+  "clipLog": 2,
+  "clipAll": 1,
+  "clipPart": 1,
+  "ablation": {
+   "tsv": false,
+   "doc": false,
+   "level": "hard"
+  },
+  "guardPremise": {
+   "off": false,
+   "on": true
+  },
+  "commitOut": 2,
+  "commitHits": 0,
+  "tracked": 428,
+  "goldenTracked": 0,
+  "stray": 0
+ },
+ "assertions": {
+  "total": 279,
+  "passed": 279
+ }
+}

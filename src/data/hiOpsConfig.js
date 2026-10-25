@@ -25,6 +25,12 @@ const OPS_SPEC = {
   impactMiss:   { def: 2,    type: "int", min: 1, max: 10, label: "수확 가중치 · 미매칭" },
   rpmHighSys:   { def: 160,  type: "int", min: 140, max: 179, label: "RPM 관찰 임계 · 수축기", hint: "오늘 안에 진료(urgent) — crisis(180)는 잠금" },
   rpmHighDia:   { def: 100,  type: "int", min: 90,  max: 119, label: "RPM 관찰 임계 · 이완기", hint: "crisis(120)는 잠금" },
+  /* 협력업체 통제(P4 · 지시서 v2.3 §7-6) — **조정 가능한 것만** 여기 둔다.
+     판정 임계와 집행 수준 하한은 여기 두지 않는다(정책 파일이 소유하고, 저장값 주입으로 바뀌지 않는다).
+     코드에 상수로 흩뿌리면 다시 여섯 곳으로 흩어진다 — 그래서 조정 가능한 셋만 모았다. */
+  pgDefenseDays:  { def: 14, type: "int", min: 7,  max: 30, label: "협력업체 소명 접수 기한(일)", hint: "기한만 있고 소명할 곳이 없으면 모순이다 — 소명면이 열릴 때 함께 쓰인다" },
+  pgReportMonths: { def: 7,  type: "int", min: 1,  max: 12, label: "보고서 기간 범위(개월)", hint: "거래 사실의 창과 같아야 포착률이 1.0으로 선다" },
+  pgSlaWarnPct:   { def: 10, type: "int", min: 1,  max: 50, label: "배송 기준일 초과율 경고 임계(%)", hint: "경고선이다 — 차단선이 아니다" },
 };
 
 /* ── 절대 잠금 — 화면에서 못 바꾼다. 존재는 보여주되 회색으로 ── */
@@ -41,6 +47,14 @@ const OPS_LOCKED = [
     why: "협주는 조립이지 생성이 아니다(Phase E)" },
   { key: "gateCriteria", label: "게이트 통과 기준(정확도·하락폭 등)", where: "scripts/learn/gate.mjs",
     why: "문지기를 감시받는 쪽이 조정하면 문지기가 아니다" },
+  /* 협력업체 통제(P4) — ⚠️ **등재는 집행이 아니다.** 이 목록은 「무엇이 잠겨 있는지」를 화면에 회색으로
+     보여주는 문서 등재일 뿐이고, 실제 잠금은 코드에 있다: 통제 임계는 정책 파일이 소유하며 저장값을
+     읽지 않고, 집행 수준은 전환 함수가 하향과 무근거 승격을 거부하고, 저장값 적재기는 배포 테이블보다
+     낮은 수준을 **배포 테이블 값으로 폴백**한다. 그 셋을 러너가 주입 테스트로 단언한다. */
+  { key: "pgThresh", label: "협력업체 통제 판정 임계", where: "src/data/partnerPolicy.js",
+    why: "감시받는 쪽이 판정 기준을 조정하면 판정이 아니다 — 정책 파일은 저장값을 읽지 않는다" },
+  { key: "pgEnforceFloor", label: "협력업체 집행 수준 하한·지점 상한", where: "src/data/partnerPolicy.js · src/data/partnerEnforce.js",
+    why: "하향은 코드가 거부한다. 정산·노출 지점은 경고·기록 상한이 코드 고정이다" },
 ];
 const OPS_LOCKED_KEYS = OPS_LOCKED.map(function (l) { return l.key; });
 
