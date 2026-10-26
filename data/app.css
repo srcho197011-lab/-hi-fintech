@@ -974,6 +974,31 @@ textarea.pgex{width:100%;min-height:150px;margin-top:6px;border:1px solid #243b5
 .scagentguard svg{color:#67E8F9;flex-shrink:0;}
 @media(max-width:820px){.scobjs{grid-template-columns:repeat(2,1fr);}.scsysgrid{grid-template-columns:1fr;}.scagents{grid-template-columns:1fr;}}
 @media(max-width:520px){.scobjs{grid-template-columns:1fr;}}
+/* 협력업체 온톨로지·하네스 ①개요·객체 머리의 체계 소개 3문단(정의·목적·성과) — 대표 지시 2026-10-26.
+   모델 설명(무재고·직배송) 패널을 밀어내지 않고 그 위에 얹는다. 좁아지면 단을 접어 세로로 쌓는다. */
+.pgintro3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+.pgintrocard{background:#0F1B33;border:1px solid #24324D;border-top:2px solid #A78BFA;border-radius:12px;padding:13px;display:flex;flex-direction:column;}
+.pgintrohd{display:flex;align-items:baseline;gap:7px;margin-bottom:7px;}
+.pgintrohd svg{color:#A78BFA;flex-shrink:0;align-self:center;}
+.pgintrohd b{font-size:13px;color:#EAF2FF;font-weight:900;letter-spacing:-.2px;}
+.pgintrohd span{font-size:10px;color:#7C8BA8;font-weight:600;}
+.pgintrotx{font-size:12px;color:#C6D3EC;line-height:1.72;margin:0;letter-spacing:-.1px;}
+.pgintromiss{font-size:10.5px;color:#FBBF24;line-height:1.5;margin-top:8px;border-top:1px dashed #2A3A57;padding-top:7px;}
+@media(max-width:980px){.pgintro3{grid-template-columns:1fr;}}
+/* ── 하이 AI 독이 열려 있을 때 — **독 띠에 단을 두지 않는다**(2026-10-26 적대적 심사 반영) ──
+   실측 사고: 독(.hidock · 폭 372 + 우측 18, position:fixed · z-index 950)은 로그인 직후부터 열려 있어
+   화면 오른쪽 약 390px 띠를 덮는다. 종전 3단 격자는 **세 번째 카드(성과 — 수치가 전부 들어 있는 카드)**를
+   통째로 그 띠에 넣었다. 1920px 에서 폭의 66% · 1440px 94% · 1366px 이하 100% 가 가려져, 상용 데스크톱
+   폭 전 구간에서 성과 문단이 사실상 소실됐다(헤드리스 getBoundingClientRect 실측).
+   ⚠ 단을 세로로 쌓는 것만으로는 풀리지 않는다 — 1단이 되면 카드가 전폭이라 오른쪽 51% 가 덮인다.
+     그래서 **독 띠만큼 오른쪽 여백을 예약**하고, 남는 폭에 맞춰 단 수를 줄인다.
+   ⚠ 독이 닫히면 body.hidock-open 이 사라져 종전 3단 전폭 그대로다 — 빈 띠를 남기지 않는다. */
+body.hidock-open .pgintro3,body.hidock-open .pgintronote{padding-right:402px;}
+@media(max-width:1599px){body.hidock-open .pgintro3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:1279px){body.hidock-open .pgintro3{grid-template-columns:1fr;}}
+/* 900px 밑에서는 여백을 떼고 종전 거동으로 돌아간다 — 남는 폭이 한 줄에 열몇 자뿐이면 여백이
+   가림보다 나쁘다. 그 아래는 독이 거의 전폭이라 사용자가 독을 닫고 읽는 구간이다(사이트 공통). */
+@media(max-width:899px){body.hidock-open .pgintro3,body.hidock-open .pgintronote{padding-right:0;}}
 /* HI-Fin 기반 온톨로지 도메인 카드 */
 .fndgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
 .fndcard{background:#0F1B33;border:1px solid #24324D;border-top:2px solid var(--oc);border-radius:12px;padding:13px;display:flex;flex-direction:column;}

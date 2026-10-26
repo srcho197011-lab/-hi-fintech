@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-25",
+  "date": "2026-10-26",
   "sample": 3000,
   "cards": 2496,
   "publishable": 2496,
@@ -164,6 +164,6 @@
     "pub": 1624,
     "readSecMax": 33
   },
-  "seconds": 13.7,
+  "seconds": 14.6,
   "pass": true
 }

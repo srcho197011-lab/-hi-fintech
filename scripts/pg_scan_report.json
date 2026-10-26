@@ -140,7 +140,7 @@
  "browser": {
   "skipped": false,
   "reached": true,
-  "chars": 54743,
+  "chars": 56048,
   "nameHits": 29,
   "notices": {
    "notice1": true,
@@ -159,8 +159,55 @@
  "laneSentences": {
   "declared": 0,
   "unregistered": 0,
-  "declBytes": 9618,
+  "declBytes": 10885,
   "positiveCatch": 1
+ },
+ "pgIntro": {
+  "paras": [
+   {
+    "k": "def",
+    "filled": true,
+    "missing": [],
+    "chars": 231
+   },
+   {
+    "k": "why",
+    "filled": true,
+    "missing": [],
+    "chars": 227
+   },
+   {
+    "k": "done",
+    "filled": true,
+    "missing": [],
+    "chars": 235
+   }
+  ],
+  "notes": [
+   {
+    "k": "dup",
+    "filled": true,
+    "missing": [],
+    "chars": 96
+   },
+   {
+    "k": "pending",
+    "filled": true,
+    "missing": [],
+    "chars": 100
+   },
+   {
+    "k": "rowid",
+    "filled": true,
+    "missing": [],
+    "chars": 88
+   }
+  ],
+  "slots": 21,
+  "literals": 0,
+  "unknownSlots": 0,
+  "pageSentences": 0,
+  "unregistered": 0
  },
  "p5b": {
   "lanes": 5,
@@ -280,7 +327,7 @@
   "stray": 0
  },
  "assertions": {
-  "total": 279,
-  "passed": 279
+  "total": 285,
+  "passed": 285
  }
 }

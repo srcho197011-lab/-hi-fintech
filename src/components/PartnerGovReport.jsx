@@ -151,10 +151,17 @@ function pgRollup() {
     total.slaDen += 1; total.slaNum += done;
   }
 
-  /* ⓔ 창 밖 미포착 — 매출축과 매입축을 **둘 다** 센다. 하나만 적으면 매입축이 소리 없이 사라진다. */
-  let uSales = 0, uCost = 0, uN = 0;
+  /* ⓔ 창 밖 미포착 — 매출축과 매입축을 **둘 다** 센다. 하나만 적으면 매입축이 소리 없이 사라진다.
+     ★ 교차 항등식을 **같은 루프에서** 센다(2026-10-26 적대적 심사 반영). 왜 따로 세는가:
+       행 항등식(sales === supplyCost + fee + marginNet)은 정산 생성기가 marginNet 한 곳을 plug 로
+       두므로 **정의상 항상 참**이다 — 실패할 수 없는 지표를 성과로 내놓으면 사실이지만 증거가 없다.
+       run_pg_scan 음성 테스트도 「매입축을 역산 plug 로 되돌려도 행 항등식은 0건으로 통과한다」고
+       스스로 적어 두었다. 구별력이 있는 축은 **주문 축 합 = 정산 축 합**이다(두 축이 독립 생성이면
+       즉시 어긋난다). 그래서 이 값을 반환 필드로 봉인해 지면이 다시 더하지 않게 한다. */
+  let uSales = 0, uCost = 0, uN = 0, ordGmv = 0, ordN = 0;
   for (const od of D.orders) {
     if (od.status === "취소") continue;
+    ordGmv += od.amount; ordN += 1;
     if (mSeen[od.orderDate.slice(0, 7)]) continue;
     const pd = prodById[od.sku];
     uSales += od.amount; uCost += pd ? pd.supplyPrice * od.qty : (od.amount - od.margin); uN += 1;
@@ -187,6 +194,9 @@ function pgRollup() {
       gmv: total.sales, rows: period.length,
       uncaught: { sales: uSales, supplyCost: uCost, orders: uN,
         full: uN === 0, note: uN === 0 ? _pgDeclText("windowFull") : "" },
+      /* 교차 항등식 — 주문 축 합과 정산 축 합. diff 가 0 이어야 「주문 파생」이 성립한다. */
+      cross: { ordGmv: ordGmv, ordN: ordN, settleSales: total.sales,
+        diff: ordGmv - total.sales, ok: ordGmv === total.sales },
       grades: (typeof pgGradeMix === "function") ? pgGradeMix() : null,
       metricGrades: (typeof pgMetricGradeMix === "function") ? pgMetricGradeMix() : null,
       planModel: _pgPlanModel(),
@@ -537,10 +547,28 @@ function pgVerdictRoll(opt) {
   selfAxis.comply = _pgComply(selfAxis.byDecision);
   const complyPartner = _pgComply(partnerCounts);
 
+  /* ══ ④B4 격자 분모 — **지면이 곱하지 않게 여기서 봉인한다**(2026-10-26 적대적 심사 반영) ══
+     왜: cellN(= 조항 전체 × 레코드)은 당사 축 조항을 협력업체 레코드마다 복제한 칸을 포함한다.
+     그런데 ④B4 격자는 당사 축 열을 **빼고** 렌더하고(그 조항은 아래 별 띠에 조항 1행으로 싣는다),
+     같은 파일의 주석이 「전체 칸 수를 격자 분모로 적으면 보이지 않는 열이 있는 것으로 읽힌다」고
+     이미 금지해 두었다. 종전에는 지면이 `V.partnerN * polIds.length` 로 그 값을 **직접 곱했다** —
+     화면에 찍히는 「2,592칸」을 어느 반환 필드도 소유하지 않았다(「화면 자체 계산 0건」의 구멍).
+     그래서 전체(ALL)와 조항군별 분모를 함께 돌려준다 — 격자가 조항군으로 걸러져도 지면은 조회만 한다. */
+  const partnerPols = pols.filter((p) => p.subject !== "당사");
+  const gridCellByGroup = { ALL: partnerPols.length * recs.length };
+  const selfPolByGroup = { ALL: selfAxis.policyN };
+  for (const p of pols) {
+    const g = p.group;
+    if (p.subject === "당사") selfPolByGroup[g] = (selfPolByGroup[g] || 0) + 1;
+    else gridCellByGroup[g] = (gridCellByGroup[g] || 0) + recs.length;
+  }
+
   const enf = _pgEnforceStats();
   const out = {
     level: level, type: type, stage: stage, asOf: asOf,
     policyN: pols.length, partnerN: recs.length, cellN: pols.length * recs.length,
+    partnerPolicyN: partnerPols.length,
+    gridCellN: gridCellByGroup.ALL, gridCellByGroup: gridCellByGroup, selfPolByGroup: selfPolByGroup,
     total: total, comply: _pgComply(total),
     complyPartner: complyPartner, partnerCounts: partnerCounts, selfAxis: selfAxis,
     byPolicy: byPolicy, byPartner: byPartner, cells: cells,
@@ -1149,6 +1177,106 @@ function pgEngineRoll(opt) {
   return out;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   ⑦-b ①개요 · 객체 서브탭 머리의 체계 소개 — 정의 · 목적 · 성과 (대표 지시 2026-10-26)
+   ══════════════════════════════════════════════════════════════════════════════
+   문안은 선언 테이블(PG_INTRO)이 소유하고, **수치는 전부 반환 필드**다. 왜 지면이 아니라 여기인가:
+   소개 문단이 사는 지면(SupplyOntology)이 숫자를 만들면 그 숫자를 어느 함수도 소유하지 않는다 —
+   「화면 자체 계산 0건」이 문단 하나로 뚫린다(PG_NUM_RULE · §10-4 규약 4).
+   ⚠ 이 레이어에 리터럴 수치를 적지 않는다. 지금 코드로 재현되지 않는 과거 값만 PG_INTRO_BEFORE
+     선언에서 오고, 그 선언은 **측정일과 출처를 값과 같은 자리에** 들고 있다.
+   ⚠ 원천마다 try 를 따로 둔다 — 한 원천이 비면 그 슬롯만 「—」가 되고 문단 셋이 함께 죽지 않는다. */
+function pgIntroFacts() {
+  const F = {};
+  /* ⓐ 거래처 축 · 정산 행 — 기간축 롤업과 거래 사실 레이어의 반환 필드 */
+  try {
+    const R = pgRollup();
+    const D = (typeof supplyData === "function") ? supplyData() : null;
+    if (R && D) {
+      F["거래처"] = R.meta.vendorN;
+      F["협력업체"] = R.meta.partnerN;
+      F["정산행"] = D.counts.settlement;
+      F["미포착"] = R.meta.uncaught.sales;
+      F["미포착매입"] = R.meta.uncaught.supplyCost;
+      F["중복"] = R.meta.dupDeclared;
+      /* 교차 항등식 — 주문 축 합과 정산 축 합의 차. 롤업이 봉인한 반환 필드를 그대로 읽는다.
+         행 항등식은 생성기 구조상 실패할 수 없으므로(plug 가 marginNet 한 곳) 이 축을 머리에 둔다. */
+      if (R.meta.cross) { F["교차차액"] = R.meta.cross.diff; F["주문합"] = R.meta.cross.ordGmv; }
+      /* 행 항등식 — 롤업이 **봉인한 반환 필드**(rowIdentity)를 센다. 지면이 다시 더하지 않게
+         여기서 한 번 센다. 단언의 소유자는 run_pg_scan 인수 1 이고 이 값은 그 결과의 지면 표시다. */
+      let broken = 0;
+      for (const row of R.period) if (!row.rowIdentity) broken += 1;
+      F["위반"] = broken;
+    }
+  } catch (e) { /* 채우지 못한 슬롯은 「—」로 남는다 */ }
+  /* ⓑ 조항 수 · 판정 칸 — 판정 집계의 반환 필드다. 지면이 조항 수와 모집단을 곱하지 않는다. */
+  try {
+    const V = pgVerdictRoll();
+    if (V) {
+      F["조항"] = V.policyN;
+      F["판정칸"] = V.cellN;
+      F["판정모집단"] = V.partnerN;
+      if (V.selfAxis) F["당사조항"] = V.selfAxis.policyN;
+      /* ★ 격자 칸은 cellN 이 아니다 — cellN 은 당사 축 조항을 레코드마다 복제한 칸을 포함한다.
+         ④B4 가 실제로 세우는 분모는 gridCellN 이고, 그 값을 지면이 아니라 판정 집계가 소유한다. */
+      F["격자칸"] = V.gridCellN;
+      F["협력업체축조항"] = V.partnerPolicyN;
+      /* 보류 · 해당 없음 — **협력업체 축만** 센 값이다(complyPartner). 성과 문단이 칸 수만 적고
+         보류 비중을 숨기면 「판정이 섰다」로 읽힌다 — 같은 문장 안에서 함께 적는다. */
+      if (V.complyPartner) { F["보류"] = V.complyPartner.pending; F["해당없음"] = V.complyPartner.na; }
+      F["미확인"] = (V.unverified || []).length;
+      F["시행전"] = (V.notYet || []).length;
+    }
+  } catch (e) { /* 같음 */ }
+  /* ⓒ 추적 레인 — 선언 테이블의 길이다(지면이 레인을 하드코딩하지 않는 것과 같은 원천) */
+  try { if (typeof PG_TRACE_LANES !== "undefined") F["레인"] = PG_TRACE_LANES.length; } catch (e) {}
+  /* ⓓ 선언 자기감사 — 축 수와 위반 수를 **축 목록에서** 센다(셋을 손으로 더하지 않는다) */
+  try {
+    const ax = [];
+    if (typeof pgMetricAudit === "function") ax.push({ ko: "지표", n: pgMetricAudit().length });
+    if (typeof pgReportAudit === "function") ax.push({ ko: "지면", n: pgReportAudit().length });
+    if (typeof pgEngineAudit === "function") ax.push({ ko: "엔진", n: pgEngineAudit().length });
+    let bad = 0;
+    for (const a of ax) bad += a.n;
+    F["감사축"] = ax.length; F["감사위반"] = bad; F._audits = ax;
+  } catch (e) {}
+  /* ⓔ 개선 전 — 반환 필드가 될 수 없는 과거 값. 측정일 · 출처와 함께 선언에서만 온다. */
+  try {
+    const B = (typeof PG_INTRO_BEFORE !== "undefined") ? PG_INTRO_BEFORE : null;
+    if (B) { F["종전행"] = B.rows; F["종전배수"] = B.ratio; F["종전측정일"] = B.at; F._before = B; }
+  } catch (e) {}
+  return F;
+}
+
+/* 소개 3문단 조립 — 선언 문안의 슬롯을 반환 필드로 채운다. 채우지 못한 슬롯은 「—」로 남고
+   filled=false 가 되므로 숫자가 조용히 사라지지 않는다(지면이 그 사실을 함께 렌더한다).
+   chars 는 렌더되는 글자 수다 — 「200자 내외」를 사람이 눈으로 세지 않게 함께 돌려준다. */
+function _pgIntroFill(T, F) {
+  const fmt = function (v) {
+    if (v === null || v === undefined) return "—";
+    return (typeof v === "number") ? Number(v).toLocaleString() : String(v);
+  };
+  return (T || []).map(function (row) {
+    let s = String(row.text || "");
+    for (const k of Object.keys(F)) {
+      if (k.charAt(0) === "_") continue;
+      s = s.split("{" + k + "}").join(fmt(F[k]));
+    }
+    const miss = s.match(/\{[^}]+\}/g) || [];
+    for (const m of miss) s = s.split(m).join("—");
+    return { k: row.k, ko: row.ko, en: row.en, text: s, chars: s.length,
+      filled: miss.length === 0, missing: miss, before: F._before || null };
+  });
+}
+function pgIntro() {
+  return _pgIntroFill((typeof PG_INTRO !== "undefined") ? PG_INTRO : [], pgIntroFacts());
+}
+/* 소개 3문단의 **단서** 줄. 문단과 한 묶음이다 — 이 줄이 빠지면 문단만 읽은 독자가
+   ⓐ모집단을 한 축으로 ⓑ보류를 판정으로 ⓒ행 항등식을 증거로 읽는다(2026-10-26 적대적 심사). */
+function pgIntroNotes() {
+  return _pgIntroFill((typeof PG_INTRO_NOTE !== "undefined") ? PG_INTRO_NOTE : [], pgIntroFacts());
+}
+
 /* ⟦PG_CALC_END⟧ — 이 줄 위는 **순수 계산 레이어**다(JSX 0건). 러너가 여기까지를 vm 에 적재해
    추적 · 재판정 · 엔진 집계를 실측 단언한다(run_pg_scan 단언 21). 계산 함수를 이 줄 아래에
    쓰면 그 함수는 **단언 밖**에 남는다 — 그러면 지면이 늘어나도 검사가 0건으로 조용히 통과한다. */
@@ -1700,8 +1828,11 @@ function PGB4({ V, onCell, onFocus, focusCell }) {
       <div className="scpager">
         <button disabled={pg <= 0} onClick={() => setPage(pg - 1)}>‹ 이전</button>
         {/* 격자의 분모는 **ⓘ협력업체 축 조항**이다 — ⓠ 조항은 아래 별 띠에서 조항 1건으로 센다.
-            전체 칸 수를 격자 분모로 적으면 보이지 않는 열이 있는 것으로 읽힌다. */}
-        <span>{(pg + 1).toLocaleString()} / {pages.toLocaleString()} 페이지 · 전수 {_pgN(V.partnerN)}곳 × ⓘ{_pgN(polIds.length)}조항 = {_pgN(V.partnerN * polIds.length)}칸 · ⓠ당사 조항 {_pgN(selfPolIds.length)}건은 아래 띠</span>
+            전체 칸 수를 격자 분모로 적으면 보이지 않는 열이 있는 것으로 읽힌다.
+            ⚠ 칸 수를 **여기서 곱하지 않는다**(2026-10-26). 종전에는 `V.partnerN * polIds.length` 로
+              지면이 직접 곱해, 화면에 찍히는 칸 수를 어느 반환 필드도 소유하지 않았다. 조항군별
+              분모는 판정 집계가 gridCellByGroup 으로 봉인해 돌려준다 — 지면은 조회만 한다. */}
+        <span>{(pg + 1).toLocaleString()} / {pages.toLocaleString()} 페이지 · 전수 판정 레코드 {_pgN(V.partnerN)}행 × ⓘ{_pgN(polIds.length)}조항 = {_pgN(V.gridCellByGroup ? V.gridCellByGroup[grp] : null)}칸 · ⓠ당사 조항 {_pgN(selfPolIds.length)}건은 아래 띠</span>
         <button disabled={pg >= pages - 1} onClick={() => setPage(pg + 1)}>다음 ›</button>
       </div>
       {selfPolIds.length ? (
@@ -1939,7 +2070,7 @@ function PartnerGovReport({ onEngine, focusPolicy }) {
   return (
     <div data-pg-verdict="report">
       <div className="ontpanel">
-        <div className="ontph"><FileText size={15} color="#22D3EE" /> 내부통제 보고서 <span>· {V.policyN}조항 × {_pgN(V.partnerN)}곳 · 정책 {V.policyVer} · 해시 {V.policyHash}</span></div>
+        <div className="ontph"><FileText size={15} color="#22D3EE" /> 내부통제 보고서 <span>· {V.policyN}조항 × 판정 레코드 {_pgN(V.partnerN)}행 · 정책 {V.policyVer} · 해시 {V.policyHash}</span></div>
         <div className="aitabs" style={{ margin: "10px 0" }}>
           {TYPES.map((tp) => <div className={"aitab " + (type === tp.id ? "on" : "")} key={tp.id} onClick={() => { setType(tp.id); setCell(null); }}><ClipboardList size={14} /> {tp.id} {tp.ko}</div>)}
         </div>

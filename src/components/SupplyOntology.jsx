@@ -599,6 +599,55 @@ function _pgSubIcon(k) {
   const I = { overview: Network, trade: Truck, cost: Receipt, report: Scale, engine: ScrollText };
   return I[k] || Network;
 }
+
+/* ── ①개요 · 객체 머리의 체계 소개 — 정의 · 목적 · 성과 (대표 지시 2026-10-26) ─────────────────
+   왜 여기인가: 현대해상 설명에는 **체계의 정의 · 목적 · 성과가 먼저** 오는 편이 맞다는 판단이다.
+   그래서 이 블록을 서브탭 ① 의 **맨 앞**에 얹고, 종전 머리였던 무재고 · 거래처 직배송 모델 설명
+   패널은 **지우지 않고 바로 아래에 그대로** 둔다(형 지시 — 밀어내지 말고 위에 얹을 것).
+   ⚠ 이 컴포넌트는 문장도 숫자도 갖지 않는다. 문장은 PG_INTRO · PG_DECL(선언), 수치는 pgIntro()
+     반환 필드다. 슬롯을 채우지 못하면 그 자리에 「—」가 찍히고 그 사실을 함께 렌더한다. */
+function _pgIntroIcon(k) {
+  const I = { def: Network, why: Target, done: TrendingUp };
+  return I[k] || Network;
+}
+function PartnerIntro() {
+  const rows = (typeof pgIntro === "function") ? pgIntro() : [];
+  if (!rows.length) return null;
+  const notes = (typeof pgIntroNotes === "function") ? pgIntroNotes() : [];
+  const B = rows[0] ? rows[0].before : null;
+  const decl = (k) => ((typeof PG_DECL !== "undefined" && PG_DECL[k]) ? PG_DECL[k] : "");
+  return (
+    <div className="ontpanel">
+      <div className="ontph"><BookOpen size={15} color="#A78BFA" /> 체계 소개 <span>· 정의 · 목적 · 성과</span></div>
+      <div className="pgintro3">
+        {rows.map((r) => {
+          const Ic = _pgIntroIcon(r.k);
+          return (
+            <div className="pgintrocard" key={r.k}>
+              <div className="pgintrohd"><Ic size={14} /><b>{r.ko}</b><span>{r.en}</span></div>
+              <p className="pgintrotx">{r.text}</p>
+              {r.filled ? null : <div className="pgintromiss">{r.missing.join(" · ")} — {decl("introMiss")}</div>}
+            </div>
+          );
+        })}
+      </div>
+      {/* 단서 줄 — **문단과 한 묶음이다.** 200자 안에 담지 못했지만 빼면 문단이 과장이 되는 사실들을
+          선언 테이블(PG_INTRO_NOTE)이 들고 있고 수치는 반환 필드다. 지면은 순회해 찍기만 한다.
+          ⚠ 독이 가리는 오른쪽 띠를 피하도록 .pgintronote 가 같은 여백 규약을 쓴다. */}
+      {notes.length ? (
+        <div className="pgintronote">
+          <div className="chnote" style={{ marginTop: 10 }}>※ {decl("introNoteOwner")}</div>
+          {notes.map((n) => (
+            <div className="chnote" style={{ marginTop: 5 }} key={n.k}>· {n.text}
+              {n.filled ? null : <span className="pgintromiss"> {n.missing.join(" · ")} — {decl("introMiss")}</span>}
+            </div>
+          ))}
+          {B ? <div className="chnote" style={{ marginTop: 5 }}>· {decl("introBeforeOwner")} 측정 <b>{B.at}</b> · 정산 매출이 주문의 {B.ratio}배 · {B.rows}행 불성립 · 출처 {B.src} · {B.note}</div> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 function SupplyOntology({ onGo, onTab }) {
   const CNT = (typeof supplyData === "function") ? supplyData().counts : {};
   const _ck = { vendor: "vendor", product: "product", avail: "availability", contract: "contract", account: "account", order: "order", shipment: "shipment", payment: "settlement" };
@@ -631,7 +680,9 @@ function SupplyOntology({ onGo, onTab }) {
       })}</div>
 
       {sub === "overview" && <>
-        <div className="ontpanel scintro">
+        {/* ★ 체계의 정의 · 목적 · 성과가 먼저 읽히게 맨 앞에 둔다. 아래 모델 설명 패널은 그대로다. */}
+        <PartnerIntro />
+        <div className="ontpanel scintro" style={{ marginTop: 12 }}>
           <p className="scdesc">제품과 재고는 <b>거래처(공급사)가 보유</b>하고 <b style={{ color: "#38BDF8" }}>고객에게 직접 배송</b>합니다. 당사는 <b>재고 부담 없이</b> <b style={{ color: "#6366F1" }}>주문·데이터·정산을 오케스트레이션</b>하고, <b style={{ color: "#22D3EE" }}>공급사 가용재고를 실시간 조회(가시성)</b>만 합니다. 모든 오브젝트·연결·AI 에이전트가 이 무재고·직배송 모델로 정의됩니다.</p>
           <div className="ontobjbar" style={{ marginTop: 10 }}>
             {SC_OBJECTS.map((o) => {

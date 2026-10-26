@@ -1151,7 +1151,10 @@ snap.verdictPages = { registered: PG_VERDICT_PAGES.length, live: verdictLive.len
      여기서는 **구조와 실측**만 본다. */
 const PG_CALC_FILE = "src/components/PartnerGovReport.jsx";
 const PG_CALC_MARK = "⟦PG_CALC_END⟧";
-const PG_CALC_FNS = ["pgTrace", "pgWhatIf", "pgEngineRoll", "pgPolicyAffected", "_pgLedgerFp", "pgVerdictRoll", "pgPartnerRecs", "pgExportPlan"];
+const PG_CALC_FNS = ["pgTrace", "pgWhatIf", "pgEngineRoll", "pgPolicyAffected", "_pgLedgerFp", "pgVerdictRoll", "pgPartnerRecs", "pgExportPlan",
+  /* ①개요 머리의 체계 소개 — 종전에는 이 셋이 **어느 러너에도 등재되지 않아**, 문안에 수치
+     리터럴을 박거나 슬롯이 「—」로 비어도 전 게이트가 조용히 녹색이었다(2026-10-26 적대적 심사). */
+  "pgIntroFacts", "pgIntro", "pgIntroNotes"];
 {
   const jsxSrc = fs.readFileSync(path.join(ROOT, PG_CALC_FILE), "utf8");
   const marks = jsxSrc.split(PG_CALC_MARK).length - 1;
@@ -1191,17 +1194,19 @@ const PG_CALC_FNS = ["pgTrace", "pgWhatIf", "pgEngineRoll", "pgPolicyAffected", 
        짧은 라벨(「· 축」 「건」 「미확인」)은 사정권이 아니다. 문장이어야 지면이 사유를 지어낸 것이 된다.
      ★ 등재 여부는 **선언 테이블의 텍스트 전부**를 분모로 본다 — 러너가 문안을 적지 않는다(적으면 이원화).
      ★ 양성 테스트를 함께 돌린다 — 문장 1건을 심어 이 검사가 실제로 잡는지 확인한다(0 = 0 금지). */
-  {
-    const KO = "[\uac00-\ud7a3]";
+  /* ★ 문장 스캐너와 선언 분모는 **블록 밖**에 둔다 — 아래 단언 21-e 가 소개 지면(PartnerIntro)에
+     같은 사정권을 적용한다. 안에 가두면 검사마다 스캐너를 복제하게 되고, 복제된 검사는 한쪽만
+     고쳐지는 순간 사정권이 갈린다(이 저장소가 「검사 소유자 이원화」로 두 번 격은 형태다). */
+  const KO = "[\uac00-\ud7a3]";
     const END = /(습니다|합니다|입니다|됩니다|읽힙니다|같습니다|없습니다|있습니다)/;
-    const laneFns = ["PGLane", "PGWhatIfBox"];
     const declText = W.run(`
       const bag = [];
       const push = (v) => { if (typeof v === "string") bag.push(v); };
       try { for (const k of Object.keys(PG_DECL)) push(PG_DECL[k]); } catch (e) {}
       for (const t of ["PG_TRACE_LANES", "PG_TRACE_RULE", "PG_WHATIF_AXES", "PG_WHATIF_FORBID",
                        "PG_FLOOR", "PG_STAGE_EFFECT", "PG_NUM_RULE", "PG_SRC", "PG_VIEW",
-                       "PG_PEP_SITES", "PG_SCREEN_NOTICE", "PG_ENGINE_BLOCKS", "PG_BLOCKS"]) {
+                       "PG_PEP_SITES", "PG_SCREEN_NOTICE", "PG_ENGINE_BLOCKS", "PG_BLOCKS",
+                       "PG_INTRO", "PG_INTRO_NOTE"]) {
         try { const a = eval(t); if (Array.isArray(a)) for (const r of a) for (const k of Object.keys(r || {})) push(r[k]); } catch (e) {}
       }
       try { for (const k of Object.keys(PG_AI_DECL)) push(PG_AI_DECL[k]); } catch (e) {}
@@ -1232,6 +1237,8 @@ const PG_CALC_FNS = ["pgTrace", "pgWhatIf", "pgEngineRoll", "pgPolicyAffected", 
       }
       return found;
     };
+  {
+    const laneFns = ["PGLane", "PGWhatIfBox"];
     const liveSrc = fs.readFileSync(path.join(ROOT, PG_CALC_FILE), "utf8");
     const got = sentencesIn(liveSrc, laneFns);
     const unreg = got.filter((x) => declText.indexOf(x.text) < 0);
@@ -1265,6 +1272,64 @@ const PG_CALC_FNS = ["pgTrace", "pgWhatIf", "pgEngineRoll", "pgPolicyAffected", 
   chk(W5.bad.length === 0 && calcBad === null, "단언 21-a 계산 레이어가 적재된다(번들 순서 · 전역 충돌 사고를 여기서 잡는다)", calcBad || W5.bad.slice(0, 3));
 
   if (!calcBad && !W5.bad.length) {
+
+    /* ★ 단언 21-e — ①개요 머리의 **체계 소개 3문단**(정의 · 목적 · 성과)과 그 단서 줄(2026-10-26 신설).
+       ★ 왜 신설하는가: 이 블록은 현대해상이 섹션에서 **가장 먼저 읽는 문단**인데, 종전에는 어느 러너도
+         보지 않았다 — `grep "pgIntro|PG_INTRO|PartnerIntro" scripts/` 가 0 hit 였다. 기존 가드도 닿지
+         않았다: run_wording_guard 검사 ⑳은 분모 라벨 선언만 보고, 단언 21-c2 의 사정권은
+         PartnerGovReport.jsx 의 두 함수뿐이라 SupplyOntology.jsx 의 PartnerIntro 는 밖이었다. 그래서
+         누가 문안에 수치를 박거나 슬롯이 조용히 비어도 전 게이트가 녹색이었다 — 이 저장소가 두 번
+         적어 둔 「검사 밖에 남아 0건으로 조용히 통과」 형태다.
+       ★ 네 가지를 센다. ⓐ슬롯 미충족 0 ⓑ선언 문안의 수치 리터럴 0 ⓒ슬롯 이름이 반환 필드에 전건
+         존재 ⓓ소개 지면이 문장을 짓지 않음. ⓑ와 ⓓ는 **양성 테스트**를 함께 돌린다(0 = 0 금지). */
+    {
+      const I = W5.run(`
+        const rows = pgIntro(), notes = pgIntroNotes(), F = pgIntroFacts();
+        const keys = Object.keys(F).filter((k) => k.charAt(0) !== "_");
+        const slot = [], lit = [];
+        for (const t of [PG_INTRO, PG_INTRO_NOTE]) for (const r of t) {
+          const raw = String(r.text || "");
+          for (const m of (raw.match(/\{[^}]+\}/g) || [])) slot.push(m.slice(1, -1));
+          const bare = raw.replace(/\{[^}]+\}/g, "");
+          if (/[0-9]/.test(bare)) lit.push(r.k + " :: " + bare.replace(/[^0-9]/g, ""));
+        }
+        /* 양성 — 문안 사본에 수치 1자를 박아 같은 판정을 돌려 본다(검사가 살아 있다는 증거) */
+        const seeded = String((PG_INTRO[0] || {}).text || "").replace(/\{[^}]+\}/g, "") + "7";
+        return {
+          rows: rows.map((r) => ({ k: r.k, filled: r.filled, missing: r.missing, chars: r.chars })),
+          notes: notes.map((r) => ({ k: r.k, filled: r.filled, missing: r.missing, chars: r.chars })),
+          unknownSlot: slot.filter((x, i) => slot.indexOf(x) === i).filter((x) => keys.indexOf(x) < 0),
+          slotN: slot.length, lit: lit, litPositive: /[0-9]/.test(seeded),
+        };
+      `);
+      const miss = I.rows.concat(I.notes).filter((r) => !r.filled);
+      chk(miss.length === 0,
+        "단언 21-e1 체계 소개 문단 · 단서 줄의 슬롯이 **전건 채워진다**(미충족 0 — 채우지 못한 자리는 「—」로 찍혀 수치가 조용히 사라진다)", miss);
+      chk(I.rows.length >= 3 && I.notes.length >= 1,
+        "단언 21-e1 소개 문단(정의 · 목적 · 성과)과 단서 줄이 **함께** 선다 — 단서를 지우면 문단만 읽은 독자가 모집단 · 보류 · 행 항등식을 반대로 읽는다",
+        { rows: I.rows.length, notes: I.notes.length });
+      chk(I.lit.length === 0 && I.litPositive === true,
+        "단언 21-e2 소개 선언 문안에 **수치 리터럴 0건** — 모든 수치는 반환 필드 슬롯이다(양성 테스트 통과)", I.lit);
+      chk(I.unknownSlot.length === 0 && I.slotN > 0,
+        "단언 21-e3 소개 문안의 {슬롯} 이름이 pgIntroFacts() **반환 필드에 전건 존재**한다(" + I.slotN + "자리 — 이름을 늘리고 필드를 안 세우면 그 자리가 「—」로 찍힌다)", I.unknownSlot);
+      /* ⓓ 소개 지면이 문장을 짓지 않는가 — 사정권을 SupplyOntology.jsx 의 PartnerIntro 로 넓힌다 */
+      const INTRO_FILE = "src/components/SupplyOntology.jsx";
+      const introSrc = fs.readFileSync(path.join(ROOT, INTRO_FILE), "utf8");
+      const introGot = sentencesIn(introSrc, ["PartnerIntro"]);
+      const introUnreg = introGot.filter((x) => declText.indexOf(x.text) < 0);
+      chk(introUnreg.length === 0,
+        "단언 21-e4 소개 지면(PartnerIntro)의 **문장 전건이 선언 테이블에 등재**돼 있다 — 지면이 쓴 문장 " +
+        introGot.length + "건 중 미등재 0건", introUnreg);
+      const PLANT2 = "이 체계는 협력업체의 준법을 보증합니다.";
+      const seeded2 = introSrc.replace('<div className="pgintro3">',
+        '<div className="pgintro3">\n        <div className="chnote">' + PLANT2 + "</div>");
+      const caught2 = sentencesIn(seeded2, ["PartnerIntro"]).filter((x) => declText.indexOf(x.text) < 0);
+      chk(seeded2 !== introSrc && caught2.length === 1 && caught2[0].text === PLANT2,
+        "단언 21-e4 **양성** — 소개 지면에 문장 1건을 심으면 정확히 1건이 미등재로 잡힌다",
+        { seedApplied: seeded2 !== introSrc, caught: caught2.map((x) => x.text) });
+      snap.pgIntro = { paras: I.rows, notes: I.notes, slots: I.slotN, literals: I.lit.length,
+        unknownSlots: I.unknownSlot.length, pageSentences: introGot.length, unregistered: introUnreg.length };
+    }
     const M = W5.run(`
       const recs = pgPartnerRecs();
       const pid = recs[0].partnerId;

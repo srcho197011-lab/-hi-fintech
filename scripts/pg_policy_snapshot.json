@@ -1,7 +1,7 @@
 {
  "meta": {
   "name": "pg_policy_snapshot",
-  "runAt": "2026-10-25",
+  "runAt": "2026-10-26",
   "policyVer": "P3-1.0.0",
   "policyHash": "0f2b0b48",
   "asOf": "2026-10-25",
