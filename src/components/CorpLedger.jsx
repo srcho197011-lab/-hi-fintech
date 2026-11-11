@@ -391,7 +391,7 @@ function ClStatements({ S, cut }) {
               <tr className={"sum" + (S.pl.net < 0 ? " neg" : "")}><td colSpan="2">당기손익</td><td className="n">{corpWon(S.pl.net)}</td></tr>
             </tbody>
           </table>
-          <p className="cl-note">계획 축(재무계획)과 맞춰 보는 <b>예실 대비</b>는 Phase 6에서 만듭니다. 지금 두 축을 한 표에 섞지 않습니다.</p>
+          <p className="cl-note">계획 축(재무계획)과 맞춰 보는 <b>예실 대비</b>는 같은 팀의 별도 지면에 있습니다. 두 축은 산정 기준이 달라 한 표에 금액으로 섞지 않고, 대응이 확정된 계정만 나란히 둡니다.</p>
         </div>
       </div>
     </div>

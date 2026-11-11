@@ -31,8 +31,10 @@ src/components/DataOpsConsole.jsx
 src/data/corpOrg.js
 src/data/corpAvatars.js
 src/data/corpLedger.js
+src/data/corpPlanActual.js
 src/components/CorpAvatar.jsx
 src/components/CorpLedger.jsx
+src/components/CorpPlanActual.jsx
 src/components/CorpOps.jsx
 src/components/Ontology.jsx
 src/components/SupplyOntology.jsx

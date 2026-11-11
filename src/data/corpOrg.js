@@ -36,13 +36,14 @@ const CORP_TEAMS = [
     pages: [
       { t: "재무현황", kind: "mod", comp: "CorpLedgerSection", note: "실적 축 — 전표 · 원장 · 시산표 · 재무제표 · 은행 대사" },
       { t: "재무계획", kind: "tab", tab: "finance", comp: "FinanceSection", note: "계획 축 — 기존 재무회계에서 이관" },
-      { t: "예실 대비", kind: "new", at: "P6", note: "계획 ↔ 실적 차이" }],
+      { t: "예실 대비", kind: "mod", comp: "CorpPlanActualSection", note: "계획 ↔ 실적 — 대응표가 본체 · 차이는 조건이 설 때만" }],
     can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출"],
     cannot: [
       { act: "전표 승인", by: "기표 → 검토 → 승인 3단 · 승인 버튼은 사람 주체에서만 · 작성자 ≠ 승인자(corpJvCanAdvance)", at: "기존" },
       { act: "월마감 확정", by: "마감 후 신규 전표 거부 · 되돌리지 않는다 · 정정은 역분개 전표로만", at: "기존" },
       { act: "지급 실행", by: "지급은 회사 밖으로 나가는 행위 — 시스템에 실행 경로를 두지 않는다", at: "—" },
-      { act: "세무 신고 제출", by: "기한 경보까지만 · 제출은 사람이 외부에서 한다", at: "—" }] },
+      { act: "세무 신고 제출", by: "기한 경보까지만 · 제출은 사람이 외부에서 한다", at: "—" },
+      { act: "계정 대응 · 차이 원인 확정", by: "계정과목 제안까지만 · 확정 전 후보는 차이를 만들지 않는다(corpPaRows)", at: "기존" }] },
 
   { id: "M3", div: "MGMT", name: "인사총무팀", sh: "인사총무", own: "조성래", ownTitle: "CEO",
     ai: "인총이", aiWhy: "사람과 자산을 챙긴다", c: "#D96A52", th: 0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",

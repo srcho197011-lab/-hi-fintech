@@ -559,6 +559,7 @@ function corpPageComp(name) {
     if (name === "SupplyOntology") return typeof SupplyOntology === "function" ? SupplyOntology : null;
     if (name === "FinanceSection") return typeof FinanceSection === "function" ? FinanceSection : null;
     if (name === "CorpLedgerSection") return typeof CorpLedgerSection === "function" ? CorpLedgerSection : null;
+    if (name === "CorpPlanActualSection") return typeof CorpPlanActualSection === "function" ? CorpPlanActualSection : null;
     if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
     if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
     if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;
