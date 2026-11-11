@@ -409,8 +409,9 @@ function CorpOrgChart({ sel, pick, open, onTab }) {
                   </div>
                   <div className="co-work">{t.work}</div>
                   <div className="co-pages">{t.pages.map((p, i) => (
-                    <span key={i} className={p.kind === "new" ? "pg-new" : ""}>{p.t}
-                      {p.kind === "new" && <i>{p.at}</i>}</span>))}</div>
+                    <span key={i} className={p.kind === "new" ? "pg-new" : (p.kind === "mod" ? "pg-mod" : "")}>{p.t}
+                      {p.kind === "new" && <i>{p.at}</i>}
+                      {p.kind === "mod" && <i>신설</i>}</span>))}</div>
                   <div className="co-split">
                     <div className="co-can">
                       <div className="co-ck"><b>{t.ai}</b>가 끝까지 하는 일</div>
@@ -495,6 +496,7 @@ function CorpTeamBoard({ team, onGo, onTab, back }) {
           <button key={i} className={"cb-tab" + (i === page ? " on" : "")} onClick={() => setPage(i)}>
             {p.t}
             {p.kind === "new" && <em className="cb-soon">{p.at}</em>}
+            {p.kind === "mod" && <em className="cb-mod">신설</em>}
             {p.kind === "tab" && <em className="cb-live">기존</em>}
             {p.kind === "nav" && <em className="cb-out">이동</em>}
           </button>
@@ -509,6 +511,14 @@ function CorpTeamBoard({ team, onGo, onTab, back }) {
             <p>이 지면은 <b>{pg.at}</b>에서 만듭니다. 지금은 자리만 잡혀 있습니다 —
               데이터가 없는데 숫자를 채우면 그게 먼저 깨집니다.</p>
           </div>
+        )}
+        {pg && pg.kind === "mod" && (
+          Render ? <div className="cb-mod-body"><Render onGo={onGo} onTab={onTab} /></div> : (
+            <div className="cb-soonbox">
+              <div className="cb-st">{pg.t}</div>
+              <p>이 지면의 컴포넌트({pg.comp})를 찾지 못했습니다 — 번들 적재 순서를 확인해야 합니다.</p>
+            </div>
+          )
         )}
         {pg && pg.kind === "nav" && (
           <div className="cb-soonbox">
@@ -548,6 +558,7 @@ function corpPageComp(name) {
     if (name === "BizOpsConsole") return typeof BizOpsConsole === "function" ? BizOpsConsole : null;
     if (name === "SupplyOntology") return typeof SupplyOntology === "function" ? SupplyOntology : null;
     if (name === "FinanceSection") return typeof FinanceSection === "function" ? FinanceSection : null;
+    if (name === "CorpLedgerSection") return typeof CorpLedgerSection === "function" ? CorpLedgerSection : null;
     if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
     if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
     if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;

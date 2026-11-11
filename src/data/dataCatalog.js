@@ -45,7 +45,12 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
      ※ 판정 결과는 저장하지 않는다 — 정책이 바뀌면 낡은 판정이 거짓말한다. 「저장하지 않는다」도 등재 내용이다.
      ※ 결정 로그(판정 호출·집행·면제·소명·재심)는 메모리에만 둔다 — 신규 키를 5종으로 확정했기 때문이고,
        영속 소유자는 보고서 발행 스냅샷(아래 접두 키)을 세우는 단계다. */
-  "hifin_pg_enforce", "hifin_pg_exempt", "hifin_pg_remedy", "hifin_pg_block"];
+  "hifin_pg_enforce", "hifin_pg_exempt", "hifin_pg_remedy", "hifin_pg_block",
+  /* 회사 총괄운영 회계 엔진(corpLedger.js — CorpOps P5, 2026-11-11): 형이 입력한 전표 + 마감한 달 목록.
+     파일럿 전표는 **코드에 있고** 이 키에 들어가지 않는다 — 검증용 묶음과 입력분이 섞이면 둘 다 못 믿는다.
+     사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다.
+     ※ 실제 회계자료 반입(P10)은 Phase 0(보안 선행) 통과 뒤다 — 그 전까지 이 키에는 검증 입력만 들어간다. */
+  "hifin_corp_ledger"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
@@ -66,6 +71,7 @@ const HIFIN_KEY_GROUPS = [
   { g: "consent", ko: "동의·보안", pats: ["hifin_consent_", "hifin_self_mkt_seed", "hifin_access_log", "hifin_guard", "hifin_login_lock", "hifin_reggate", "hifin_mydata"], sensitive: "높음(감사 대상)" },
   { g: "ops", ko: "계측·운영", pats: ["hifin_events", "hifin_consent2", "hifin_telem", "hifin_wp_log", "hifin_lead", "hifin_handoff_", "hifin_hm_", "hifin_nodes", "hifin_ocr", "hifin_backup", "hifin_pg_"], sensitive: "낮음(경량 식별자만) · 단 hifin_pg_report_는 반출 통제 대상(민감도 상)" },
   { g: "growth", ko: "추천·거버넌스·기타", pats: ["hifin_ref_", "hifin_gov_", "hifin_sharing", "hifin_share", "hifin_divi", "hifin_g2_", "hifin_g4_", "hifin_pu_", "pi_", "hifin_easyread", "hifin_connectors"], sensitive: "낮음" },
+  { g: "corp", ko: "사내 운영(회사 총괄운영)", pats: ["hifin_corp_"], sensitive: "높음(사내 회계·계약 — 대외비 · 회원 데이터 아님)" },
   { g: "session", ko: "세션(휘발)", pats: ["hifin_sid", "hifin_hm_code", "hifin_hmops_admin", "hifin_hi_welcome", "hifin_dl_ready", "hifin_force_onboard", "hifin_sso_hipet", "hipet_gate", "hipet_admin"], sensitive: "낮음(1회용 토큰·게이트 플래그)" },
 ];
 function hifinKeyGroup(key) {

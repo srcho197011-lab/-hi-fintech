@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=49fa17c31c" />
+<link rel="stylesheet" href="./data/app.css?v=2fb3378bc7" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=49fa17c31c"></script>
-<script src="./src/data/section_data.js?v=49fa17c31c"></script>
-<script src="./src/data/demo_members.js?v=49fa17c31c"></script>
+<script src="./src/data/dummy_data.js?v=2fb3378bc7"></script>
+<script src="./src/data/section_data.js?v=2fb3378bc7"></script>
+<script src="./src/data/demo_members.js?v=2fb3378bc7"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -16078,13 +16078,13 @@ const CORP_TEAMS = [
     ai: "핀테크", aiWhy: "돈의 흐름을 맞춘다", c: "#E8795A", th: 0.00, ph: -0.90, head: 1, cap: 1, joined: "겸임",
     work: "전표 기장 · 장부 · 은행 대사 · 결산 · 재무제표 · 예실 대비",
     pages: [
-      { t: "재무현황", kind: "new", at: "P5", note: "실적 축 — 전표 · 원장 · 시산표 · 재무제표" },
+      { t: "재무현황", kind: "mod", comp: "CorpLedgerSection", note: "실적 축 — 전표 · 원장 · 시산표 · 재무제표 · 은행 대사" },
       { t: "재무계획", kind: "tab", tab: "finance", comp: "FinanceSection", note: "계획 축 — 기존 재무회계에서 이관" },
       { t: "예실 대비", kind: "new", at: "P6", note: "계획 ↔ 실적 차이" }],
     can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출"],
     cannot: [
-      { act: "전표 승인", by: "기표 → 검토 → 승인 3단 · 승인은 M2 책임자 세션에서만 · 작성자 ≠ 승인자", at: "P5" },
-      { act: "월마감 확정", by: "마감 후 수정 금지 · 정정은 역분개 전표로만", at: "P5" },
+      { act: "전표 승인", by: "기표 → 검토 → 승인 3단 · 승인 버튼은 사람 주체에서만 · 작성자 ≠ 승인자(corpJvCanAdvance)", at: "기존" },
+      { act: "월마감 확정", by: "마감 후 신규 전표 거부 · 되돌리지 않는다 · 정정은 역분개 전표로만", at: "기존" },
       { act: "지급 실행", by: "지급은 회사 밖으로 나가는 행위 — 시스템에 실행 경로를 두지 않는다", at: "—" },
       { act: "세무 신고 제출", by: "기한 경보까지만 · 제출은 사람이 외부에서 한다", at: "—" }] },
 
@@ -16441,6 +16441,397 @@ const CORP_AV_STATE = {
 function corpAvatar(ai) { return CORP_AVATARS[ai] || null; }
 const CORP_AVATAR_COUNT = Object.keys(CORP_AVATARS).length;
 
+/* ══════════════ 회계 엔진 — 실적 축(corpLedger.js) · CorpOps Phase 5 (형 지시 2026-11-11) ══════════════
+   재무「계획」축은 finBudget.js가 갖는다. 이 파일은 **실제로 일어난 거래**를 적는 장부다.
+   두 축을 한 파일에 두지 않는다 — 계획과 실적이 같은 숫자처럼 보이는 순간 둘 다 못 믿게 된다.
+
+   ⚠️ 이 파일의 전표는 **파일럿 전표**다 — 엔진이 맞게 도는지 확인하려고 넣은 검증용 묶음이고
+      하이젠케어의 실제 장부가 아니다. 실제 회계자료 반입은 Phase 10이며 Phase 0(보안 선행)을
+      통과한 뒤에만 시작한다. 화면도 러너도 이 사실을 숨기지 않는다(CORP_LEDGER_PILOT = true).
+
+   원칙
+     · 차변 합 ≠ 대변 합이면 **저장하지 않는다**. 경고가 아니라 거부다.
+     · 전기(posted)된 전표는 고치지 않는다. 정정은 역분개 전표로만 남긴다 — 지운 자국이 남아야 장부다.
+     · 작성자 ≠ 승인자. AI(핀테크)는 기표까지만 하고 승인 버튼을 누르지 못한다.
+     · 마감한 달에는 새 전표가 들어가지 않는다.
+     · 항등식은 화면과 러너가 **같은 함수**(corpLedgerIdentities)를 쓴다. 두 벌로 적으면 한 벌이 먼저 거짓말한다.
+     · 클라이언트 강제다 — 서버가 없으므로 권한을 서버에서 막지 못한다. 화면에도 그렇게 적는다. */
+
+const CORP_LEDGER_PILOT = true;              /* 실데이터 반입(P10) 시 false */
+const CORP_LEDGER_KEY = "hifin_corp_ledger"; /* dataCatalog.js 등재 필수 */
+
+/* ── ① 계정과목 ──────────────────────────────────────────────────────────────
+   t: A 자산 · L 부채 · E 자본 · R 수익 · X 비용
+   d: 정상잔액 방향(D 차변 / C 대변) — 표시에만 쓴다. 집계는 부호(차−대)로 한다.
+   contra: 차감 계정(감가상각누계액) — 자산이지만 정상잔액이 대변이다. */
+const CORP_ACCT = [
+  { c: "101", n: "현금",           t: "A", d: "D" },
+  { c: "103", n: "보통예금",        t: "A", d: "D", bank: true },
+  { c: "108", n: "외상매출금",      t: "A", d: "D" },
+  { c: "135", n: "부가세대급금",     t: "A", d: "D" },
+  { c: "176", n: "임차보증금",      t: "A", d: "D" },
+  { c: "212", n: "비품",           t: "A", d: "D" },
+  { c: "213", n: "감가상각누계액",   t: "A", d: "C", contra: true },
+  { c: "226", n: "소프트웨어",      t: "A", d: "D" },
+
+  { c: "253", n: "미지급금",        t: "L", d: "C" },
+  { c: "254", n: "예수금",          t: "L", d: "C" },
+  { c: "255", n: "부가세예수금",     t: "L", d: "C" },
+  { c: "260", n: "단기차입금",      t: "L", d: "C" },
+  { c: "262", n: "미지급비용",      t: "L", d: "C" },
+
+  { c: "331", n: "자본금",          t: "E", d: "C" },
+  { c: "341", n: "주식발행초과금",   t: "E", d: "C" },
+  { c: "375", n: "이월이익잉여금",   t: "E", d: "C" },
+
+  { c: "401", n: "용역매출",        t: "R", d: "C" },
+  { c: "411", n: "기타수익",        t: "R", d: "C" },
+
+  { c: "801", n: "급여",           t: "X", d: "D" },
+  { c: "811", n: "복리후생비",      t: "X", d: "D" },
+  { c: "812", n: "여비교통비",      t: "X", d: "D" },
+  { c: "813", n: "접대비",          t: "X", d: "D" },
+  { c: "814", n: "통신비",          t: "X", d: "D" },
+  { c: "817", n: "세금과공과",      t: "X", d: "D" },
+  { c: "818", n: "감가상각비",      t: "X", d: "D" },
+  { c: "819", n: "임차료",          t: "X", d: "D" },
+  { c: "821", n: "보험료",          t: "X", d: "D" },
+  { c: "825", n: "교육훈련비",      t: "X", d: "D" },
+  { c: "826", n: "도서인쇄비",      t: "X", d: "D" },
+  { c: "830", n: "지급수수료",      t: "X", d: "D" },
+  { c: "833", n: "광고선전비",      t: "X", d: "D" },
+  { c: "848", n: "잡비",           t: "X", d: "D" },
+  { c: "901", n: "이자비용",        t: "X", d: "D" },
+];
+
+const CORP_ACCT_T = { A: "자산", L: "부채", E: "자본", R: "수익", X: "비용" };
+function corpAcct(c) { return CORP_ACCT.find(a => a.c === c) || null; }
+function corpAcctName(c) { const a = corpAcct(c); return a ? a.n : "(미등록 " + c + ")"; }
+
+/* ── ② 파일럿 전표 ───────────────────────────────────────────────────────────
+   l: [계정코드, 차변, 대변, 적요] — 한 줄에 한 변만 적는다.
+   st: draft 기표 · review 검토 · posted 전기(승인 완료)
+   by: 작성자 · ap: 승인자(전기된 것만) */
+const CORP_JV_SEED = [
+  { id: "JV-0001", d: "2026-09-01", desc: "개시 잔액", by: "조성래", ap: "조성래", st: "posted", open: true, l: [
+    ["103", 120000000, 0, "보통예금 개시"], ["176", 20000000, 0, "사무실 보증금"], ["212", 12000000, 0, "비품"],
+    ["213", 0, 2000000, "감가상각누계액"], ["331", 0, 100000000, "자본금"], ["341", 0, 40000000, "주식발행초과금"],
+    ["375", 0, 10000000, "이월이익잉여금"]] },
+
+  { id: "JV-0002", d: "2026-09-05", desc: "9월 사무실 임차료", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["819", 3000000, 0, "9월분"], ["135", 300000, 0, "매입세액"], ["103", 0, 3300000, "이체"]] },
+  { id: "JV-0003", d: "2026-09-10", desc: "8월분 급여 지급", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["801", 18000000, 0, "8월 급여"], ["254", 0, 1620000, "소득세·4대보험"], ["103", 0, 16380000, "이체"]] },
+  { id: "JV-0004", d: "2026-09-15", desc: "용역매출 — 가온헬스", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["108", 22000000, 0, "세금계산서 발행"], ["401", 0, 20000000, "건강관리 운영 용역"], ["255", 0, 2000000, "매출세액"]] },
+  { id: "JV-0005", d: "2026-09-20", desc: "클라우드·회선 이용료", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["830", 1200000, 0, "9월"], ["135", 120000, 0, "매입세액"], ["103", 0, 1320000, "자동이체"]] },
+  { id: "JV-0006", d: "2026-09-25", desc: "복리후생비", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["811", 1500000, 0, "식대·경조"], ["135", 150000, 0, "매입세액"], ["103", 0, 1650000, "법인카드 결제"]] },
+  { id: "JV-0007", d: "2026-09-28", desc: "여비교통비", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["812", 620000, 0, "출장"], ["101", 0, 620000, "현금"]] },
+  { id: "JV-0008", d: "2026-09-30", desc: "9월 감가상각", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["818", 200000, 0, "비품 정액법"], ["213", 0, 200000, "누계액 가산"]] },
+
+  { id: "JV-0009", d: "2026-10-05", desc: "외상매출금 회수 — 가온헬스", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["103", 22000000, 0, "입금"], ["108", 0, 22000000, "9/15 건"]] },
+  { id: "JV-0010", d: "2026-10-05", desc: "10월 사무실 임차료", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["819", 3000000, 0, "10월분"], ["135", 300000, 0, "매입세액"], ["103", 0, 3300000, "이체"]] },
+  { id: "JV-0011", d: "2026-10-10", desc: "9월분 급여 지급", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["801", 18000000, 0, "9월 급여"], ["254", 0, 1620000, "소득세·4대보험"], ["103", 0, 16380000, "이체"]] },
+  { id: "JV-0012", d: "2026-10-10", desc: "예수금 납부", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["254", 1620000, 0, "8월분 납부"], ["103", 0, 1620000, "이체"]] },
+  { id: "JV-0013", d: "2026-10-12", desc: "광고선전비 — 10월 캠페인", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["833", 5000000, 0, "채널 집행"], ["135", 500000, 0, "매입세액"], ["103", 0, 5500000, "이체"]] },
+  { id: "JV-0014", d: "2026-10-15", desc: "용역매출 — 나래라이프", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["108", 33000000, 0, "세금계산서 발행"], ["401", 0, 30000000, "보장분석 용역"], ["255", 0, 3000000, "매출세액"]] },
+  { id: "JV-0015", d: "2026-10-18", desc: "업무용 소프트웨어 구입", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["226", 6000000, 0, "연간 라이선스"], ["135", 600000, 0, "매입세액"], ["253", 0, 6600000, "익월 결제"]] },
+  { id: "JV-0016", d: "2026-10-20", desc: "클라우드·회선 이용료", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["830", 1200000, 0, "10월"], ["135", 120000, 0, "매입세액"], ["103", 0, 1320000, "자동이체"]] },
+  { id: "JV-0017", d: "2026-10-22", desc: "교육훈련비", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["825", 900000, 0, "직무 교육"], ["103", 0, 900000, "이체"]] },
+  { id: "JV-0018", d: "2026-10-25", desc: "보험료", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["821", 450000, 0, "사업장 화재보험"], ["103", 0, 450000, "이체"]] },
+  { id: "JV-0019", d: "2026-10-25", desc: "도서인쇄비", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["826", 180000, 0, "자료 인쇄"], ["101", 0, 180000, "현금"]] },
+  { id: "JV-0020", d: "2026-10-31", desc: "10월 감가상각", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["818", 200000, 0, "비품 정액법"], ["213", 0, 200000, "누계액 가산"]] },
+
+  { id: "JV-0021", d: "2026-11-03", desc: "미지급금 결제 — 소프트웨어", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["253", 6600000, 0, "10/18 건"], ["103", 0, 6600000, "이체"]] },
+  { id: "JV-0022", d: "2026-11-05", desc: "11월 사무실 임차료", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["819", 3000000, 0, "11월분"], ["135", 300000, 0, "매입세액"], ["103", 0, 3300000, "이체"]] },
+  { id: "JV-0023", d: "2026-11-06", desc: "외상매출금 회수 — 나래라이프", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["103", 33000000, 0, "입금"], ["108", 0, 33000000, "10/15 건"]] },
+  { id: "JV-0024", d: "2026-11-07", desc: "예금 이자", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["103", 85000, 0, "이자 입금"], ["411", 0, 85000, "이자수익"]] },
+  { id: "JV-0025", d: "2026-11-10", desc: "10월분 급여 지급", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["801", 18000000, 0, "10월 급여"], ["254", 0, 1620000, "소득세·4대보험"], ["103", 0, 16380000, "이체"]] },
+  { id: "JV-0026", d: "2026-11-10", desc: "예수금 납부", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["254", 1620000, 0, "9월분 납부"], ["103", 0, 1620000, "이체"]] },
+  { id: "JV-0027", d: "2026-11-10", desc: "사무용품 구입", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["848", 240000, 0, "소모품"], ["103", 0, 240000, "이체 — 은행 미통과"]] },
+
+  /* 승인 전 상태 2건 — 3단(기표 → 검토 → 승인)이 실제로 걸리는지 화면에서 보이게 둔다 */
+  { id: "JV-0028", d: "2026-11-10", desc: "거래처 접대비", by: "핀테크", ap: null, st: "review", l: [
+    ["813", 363000, 0, "불공제"], ["101", 0, 363000, "현금"]] },
+  { id: "JV-0029", d: "2026-11-10", desc: "세금과공과", by: "핀테크", ap: null, st: "draft", l: [
+    ["817", 120000, 0, "등록면허세"], ["103", 0, 120000, "이체"]] },
+];
+
+/* ── ③ 은행 거래내역(보통예금 103) ──────────────────────────────────────────
+   a: 입금 +, 출금 −. 장부와 **따로** 들어온 자료라서 일부러 어긋나는 줄을 남겨 두었다
+   (은행에만 있는 2건 · 장부에만 있는 1건) — 전부 맞는 자료로는 대사가 도는지 알 수 없다. */
+const CORP_BANK_SEED = {
+  acct: "103", bank: "주거래은행 기업자유예금", mask: "***-******-***",
+  from: "2026-09-01", to: "2026-11-10",
+  lines: [
+    { d: "2026-09-01", a: 120000000, m: "개시 잔액" },
+    { d: "2026-09-05", a: -3300000, m: "임대인 이체" },
+    { d: "2026-09-10", a: -16380000, m: "급여 이체" },
+    { d: "2026-09-20", a: -1320000, m: "클라우드 자동이체" },
+    { d: "2026-09-25", a: -1650000, m: "법인카드 결제" },
+    { d: "2026-10-05", a: 22000000, m: "가온헬스 입금" },
+    { d: "2026-10-05", a: -3300000, m: "임대인 이체" },
+    { d: "2026-10-10", a: -16380000, m: "급여 이체" },
+    { d: "2026-10-10", a: -1620000, m: "세무서·공단 납부" },
+    { d: "2026-10-12", a: -5500000, m: "광고 집행" },
+    { d: "2026-10-20", a: -1320000, m: "클라우드 자동이체" },
+    { d: "2026-10-22", a: -900000, m: "교육기관 이체" },
+    { d: "2026-10-25", a: -450000, m: "보험료 이체" },
+    { d: "2026-11-03", a: -6600000, m: "소프트웨어 대금" },
+    { d: "2026-11-05", a: -3300000, m: "임대인 이체" },
+    { d: "2026-11-06", a: 33000000, m: "나래라이프 입금" },
+    { d: "2026-11-07", a: 85000, m: "이자" },
+    { d: "2026-11-09", a: -3000, m: "타행이체수수료" },
+    { d: "2026-11-10", a: -16380000, m: "급여 이체" },
+    { d: "2026-11-10", a: -1620000, m: "세무서·공단 납부" },
+    { d: "2026-11-10", a: 500000, m: "입금 — 보낸이 확인 필요" },
+  ],
+};
+
+/* ── ④ 저장 ──────────────────────────────────────────────────────────────────
+   파일럿 전표는 코드에 있고(항상 보인다), 형이 넣은 전표만 브라우저에 남는다.
+   서버가 없으므로 이 브라우저 밖으로는 나가지 않는다 — 화면에도 그렇게 적는다. */
+function corpLedgerRead() {
+  const empty = { v: 1, jv: [], closed: [], ov: {} };
+  try {
+    const raw = localStorage.getItem(CORP_LEDGER_KEY);
+    if (!raw) return empty;
+    const o = JSON.parse(raw);
+    return { v: 1, jv: Array.isArray(o.jv) ? o.jv : [], closed: Array.isArray(o.closed) ? o.closed : [],
+      ov: (o.ov && typeof o.ov === "object") ? o.ov : {} };
+  } catch (e) { return empty; }
+}
+function corpLedgerWrite(st) {
+  try {
+    localStorage.setItem(CORP_LEDGER_KEY, JSON.stringify({ v: 1, jv: st.jv || [], closed: st.closed || [], ov: st.ov || {} }));
+    return true;
+  } catch (e) { return false; }
+}
+/* 파일럿 + 입력분. 날짜 → 전표번호 순으로 정렬한다(같은 날은 번호 순).
+   ov는 **상태 덮어쓰기**다 — 파일럿 전표는 코드에 있어 고칠 수 없으므로, 형이 결재를 진행한
+   흔적만 따로 얹는다. 분개 줄은 덮지 않는다(금액을 덮으면 코드의 검증 묶음이 무너진다). */
+function corpJvAll(st) {
+  const ov = (st && st.ov) || {};
+  const put = (j) => {
+    const o = ov[j.id];
+    if (!o) return j;
+    return Object.assign({}, j, { st: o.st || j.st, ap: o.ap === undefined ? j.ap : o.ap });
+  };
+  return CORP_JV_SEED.map(put).concat(((st && st.jv) || []).map(put))
+    .sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : (a.id < b.id ? -1 : 1)));
+}
+/* 상태 전이 — 전이 가능 여부와 **왜 안 되는지**를 함께 돌려준다. 버튼을 그냥 흐리게 두면 이유를 모른다. */
+function corpJvCanAdvance(jv, actorId) {
+  const a = corpActor(actorId);
+  const S = CORP_JV_ST[jv.st];
+  if (!S || !S.next) return { ok: false, why: "전기된 전표입니다 — 정정은 역분개로만 합니다" };
+  if (S.next === "posted") {
+    if (!a.canApprove) return { ok: false, why: a.ko + "은(는) AI 팀장이라 승인하지 못합니다 — 승인은 사람이 합니다" };
+    if (jv.by === a.id) return { ok: false, why: "작성자와 승인자가 같습니다 — 다른 사람이 승인해야 합니다" };
+  }
+  return { ok: true, why: "", to: S.next, ko: S.nextKo };
+}
+function corpJvNextId(st) {
+  let max = 0;
+  corpJvAll(st).forEach(j => { const m = /^JV-(\d+)$/.exec(j.id || ""); if (m && +m[1] > max) max = +m[1]; });
+  return "JV-" + String(max + 1).padStart(4, "0");
+}
+
+/* ── ⑤ 검산 ──────────────────────────────────────────────────────────────────
+   저장 거부의 근거가 되는 자리다. 경고 문구를 돌려주는 게 아니라 ok:false를 돌려준다. */
+function corpJvSum(jv) {
+  let dr = 0, cr = 0;
+  ((jv && jv.l) || []).forEach(x => { dr += +x[1] || 0; cr += +x[2] || 0; });
+  return { dr: dr, cr: cr, diff: dr - cr, ok: dr === cr && dr > 0 };
+}
+function corpJvCheck(jv, st) {
+  const e = [];
+  const s = corpJvSum(jv);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test((jv && jv.d) || "")) e.push("날짜 형식이 YYYY-MM-DD가 아닙니다");
+  if (!((jv && jv.desc) || "").trim()) e.push("적요가 비었습니다");
+  if (!((jv && jv.l) || []).length) e.push("분개 줄이 없습니다");
+  ((jv && jv.l) || []).forEach((x, i) => {
+    if (!corpAcct(x[0])) e.push((i + 1) + "번 줄 — 계정과목 " + (x[0] || "(미선택)") + " 은 계정과목표에 없습니다");
+    const d = +x[1] || 0, c = +x[2] || 0;
+    if (d < 0 || c < 0) e.push((i + 1) + "번 줄 — 음수 금액은 적지 않습니다(반대 변에 적습니다)");
+    if (d > 0 && c > 0) e.push((i + 1) + "번 줄 — 한 줄에 차변과 대변을 같이 적지 않습니다");
+    if (d === 0 && c === 0) e.push((i + 1) + "번 줄 — 금액이 0입니다");
+  });
+  if (s.dr !== s.cr) e.push("차변 " + corpWon(s.dr) + " ≠ 대변 " + corpWon(s.cr) + " · 차이 " + corpWon(Math.abs(s.diff)) + " — 맞을 때까지 저장되지 않습니다");
+  else if (s.dr === 0) e.push("합계가 0입니다");
+  const mo = ((jv && jv.d) || "").slice(0, 7);
+  if (st && ((st.closed || []).indexOf(mo) >= 0)) e.push(mo + " 은 마감된 달입니다 — 신규 전표가 들어가지 않습니다. 정정은 역분개로 합니다");
+  return { ok: e.length === 0, errs: e, sum: s };
+}
+/* 역분개 — 전기된 전표를 고치는 유일한 길. 차·대를 뒤집은 새 전표를 만든다. */
+function corpJvReverse(jv, by, today) {
+  return {
+    id: null, d: today || jv.d, desc: "역분개 — " + jv.id + " · " + jv.desc, by: by || "조성래",
+    ap: null, st: "draft", rev: jv.id,
+    l: (jv.l || []).map(x => [x[0], +x[2] || 0, +x[1] || 0, "역분개 " + (x[3] || "")]),
+  };
+}
+
+/* ── ⑥ 원장 · 시산표 ────────────────────────────────────────────────────────
+   전기(posted)된 전표만 장부에 올린다. 기표·검토 상태는 집계 밖이다. */
+function corpPosted(jvs, upto) {
+  return (jvs || []).filter(j => j.st === "posted" && (!upto || j.d <= upto));
+}
+function corpLedgerBook(jvs, upto) {
+  const map = {};
+  CORP_ACCT.forEach(a => { map[a.c] = { c: a.c, n: a.n, t: a.t, d: a.d, contra: !!a.contra, dr: 0, cr: 0, lines: [] }; });
+  corpPosted(jvs, upto).forEach(j => {
+    (j.l || []).forEach(x => {
+      const row = map[x[0]]; if (!row) return;
+      const d = +x[1] || 0, c = +x[2] || 0;
+      row.dr += d; row.cr += c;
+      row.lines.push({ id: j.id, d: j.d, desc: j.desc, memo: x[3] || "", dr: d, cr: c });
+    });
+  });
+  Object.keys(map).forEach(k => {
+    const r = map[k];
+    r.sign = r.dr - r.cr;                                  /* 부호 잔액 — 집계는 늘 이걸로 한다 */
+    r.bal = r.d === "D" ? r.sign : -r.sign;                /* 정상잔액 — 표시용 */
+    let run = 0; r.lines.forEach(l => { run += l.dr - l.cr; l.run = r.d === "D" ? run : -run; });
+  });
+  return map;
+}
+function corpTrial(jvs, upto) {
+  const book = corpLedgerBook(jvs, upto);
+  const rows = CORP_ACCT.map(a => book[a.c]).filter(r => r.dr !== 0 || r.cr !== 0);
+  const drSum = rows.reduce((n, r) => n + r.dr, 0), crSum = rows.reduce((n, r) => n + r.cr, 0);
+  return { rows: rows, drSum: drSum, crSum: crSum, diff: drSum - crSum, ok: drSum === crSum, book: book };
+}
+/* 재무제표 — 시산표에서 파생한다. 따로 더하지 않는다(두 번 더하면 두 값이 생긴다). */
+function corpStatements(jvs, upto) {
+  const tr = corpTrial(jvs, upto), b = tr.book;
+  const by = (t) => CORP_ACCT.filter(a => a.t === t).map(a => b[a.c]).filter(r => r.dr !== 0 || r.cr !== 0);
+  const sum = (rows, flip) => rows.reduce((n, r) => n + (flip ? -r.sign : r.sign), 0);
+  const A = by("A"), L = by("L"), E = by("E"), R = by("R"), X = by("X");
+  const assets = sum(A), liab = sum(L, true), equity = sum(E, true);
+  const rev = sum(R, true), exp = sum(X);
+  const net = rev - exp;
+  return {
+    bs: { A: A, L: L, E: E, assets: assets, liab: liab, equity: equity, net: net,
+      total: liab + equity + net, ok: assets === liab + equity + net },
+    pl: { R: R, X: X, rev: rev, exp: exp, net: net },
+    trial: tr, upto: upto || null,
+  };
+}
+
+/* ── ⑦ 은행 대사 ────────────────────────────────────────────────────────────
+   같은 날 · 같은 금액을 한 번씩만 짝지어 준다. 두 번 쓰이지 않게 소비 표시를 남긴다.
+   자동으로 맞춰 주는 데까지가 AI의 몫이고, 남은 줄을 없애는 건 사람이 한다. */
+function corpBankRecon(jvs, bank, upto) {
+  const B = bank || CORP_BANK_SEED;
+  const acct = B.acct || "103";
+  const book = [];
+  corpPosted(jvs, upto).forEach(j => {
+    let net = 0, hit = false;
+    (j.l || []).forEach(x => { if (x[0] === acct) { net += (+x[1] || 0) - (+x[2] || 0); hit = true; } });
+    if (hit && net !== 0) book.push({ id: j.id, d: j.d, desc: j.desc, a: net, used: false });
+  });
+  const bl = (B.lines || []).filter(l => !upto || l.d <= upto).map(l => ({ d: l.d, a: l.a, m: l.m, used: false, jv: null }));
+  bl.forEach(l => {
+    const k = book.find(x => !x.used && x.d === l.d && x.a === l.a);
+    if (k) { k.used = true; l.used = true; l.jv = k.id; }
+  });
+  const bankOnly = bl.filter(l => !l.used);
+  const bookOnly = book.filter(x => !x.used);
+  const bankBal = bl.reduce((n, l) => n + l.a, 0);
+  const bookBal = book.reduce((n, x) => n + x.a, 0);
+  const bankOnlyNet = bankOnly.reduce((n, l) => n + l.a, 0);
+  const bookOnlyNet = bookOnly.reduce((n, x) => n + x.a, 0);
+  return {
+    acct: acct, bank: B.bank, mask: B.mask, lines: bl, book: book,
+    matched: bl.filter(l => l.used).length, bankOnly: bankOnly, bookOnly: bookOnly,
+    bankBal: bankBal, bookBal: bookBal, bankOnlyNet: bankOnlyNet, bookOnlyNet: bookOnlyNet,
+    /* 대사 항등식: 장부잔액 − 은행잔액 = 장부에만 있는 순액 − 은행에만 있는 순액 */
+    gap: (bookBal - bankBal) - (bookOnlyNet - bankOnlyNet),
+    ok: ((bookBal - bankBal) - (bookOnlyNet - bankOnlyNet)) === 0,
+  };
+}
+
+/* ── ⑧ 항등식 ───────────────────────────────────────────────────────────────
+   화면의 「검산」 패널과 커밋 게이트 러너가 **이 함수 하나**를 같이 쓴다.
+   n은 분모다 — 검사 대상이 0건이면 통과가 아니라 실패다(빈 장부는 늘 맞는다). */
+function corpLedgerIdentities(jvs, bank, upto) {
+  const all = jvs || CORP_JV_SEED;
+  const posted = corpPosted(all, upto);
+  const S = corpStatements(all, upto);
+  const R = corpBankRecon(all, bank, upto);
+  const bad = posted.filter(j => !corpJvSum(j).ok);
+  const unknown = [];
+  all.forEach(j => (j.l || []).forEach(x => { if (!corpAcct(x[0])) unknown.push(j.id + " / " + x[0]); }));
+  const seen = {}, dupes = [];
+  all.forEach(j => { if (seen[j.id]) dupes.push(j.id); seen[j.id] = 1; });
+  const selfAp = posted.filter(j => !j.open && j.ap && j.by === j.ap);
+  const noAp = posted.filter(j => !j.ap);
+
+  return [
+    { k: "jv",      ko: "전표별 차대 일치",         n: posted.length,       ok: bad.length === 0,     got: bad.length + "건 불일치", want: "0건" },
+    { k: "trial",   ko: "시산표 차변 = 대변",       n: S.trial.rows.length, ok: S.trial.ok,           got: corpWon(S.trial.drSum) + " / " + corpWon(S.trial.crSum), want: "같을 것" },
+    { k: "bs",      ko: "자산 = 부채 + 자본 + 손익", n: S.bs.A.length,       ok: S.bs.ok,              got: corpWon(S.bs.assets) + " / " + corpWon(S.bs.total), want: "같을 것" },
+    { k: "pl",      ko: "손익 = 수익 − 비용",       n: S.pl.R.length + S.pl.X.length, ok: S.pl.net === S.pl.rev - S.pl.exp, got: corpWon(S.pl.net), want: corpWon(S.pl.rev - S.pl.exp) },
+    { k: "bank",    ko: "은행 대사 차이 해소",       n: R.lines.length,      ok: R.ok,                 got: corpWon(R.gap), want: "0" },
+    { k: "acct",    ko: "미등록 계정 0건",          n: all.length,          ok: unknown.length === 0, got: unknown.length + "건", want: "0건" },
+    { k: "dupe",    ko: "전표번호 중복 0건",         n: all.length,          ok: dupes.length === 0,   got: dupes.length + "건", want: "0건" },
+    { k: "approve", ko: "작성자 ≠ 승인자",          n: posted.filter(j => !j.open).length, ok: selfAp.length === 0, got: selfAp.length + "건 동일인", want: "0건" },
+    { k: "signed",  ko: "전기 전표에 승인자 기록",    n: posted.length,       ok: noAp.length === 0,    got: noAp.length + "건 누락", want: "0건" },
+  ];
+}
+/* 전건 통과 여부 — 분모 0은 실패로 센다. 빈 장부가 조용히 통과하면 검사가 없는 것과 같다. */
+function corpLedgerVerdict(jvs, bank, upto) {
+  const rows = corpLedgerIdentities(jvs, bank, upto);
+  const zero = rows.filter(r => !(r.n > 0));
+  const fail = rows.filter(r => !r.ok);
+  return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
+}
+
+/* ── ⑨ 표시 ─────────────────────────────────────────────────────────────── */
+function corpWon(n) {
+  const v = Math.round(+n || 0);
+  return (v < 0 ? "−" : "") + Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+function corpJvMonths(jvs) {
+  const s = {}; (jvs || []).forEach(j => { s[(j.d || "").slice(0, 7)] = 1; });
+  return Object.keys(s).sort();
+}
+const CORP_JV_ST = {
+  draft:  { ko: "기표", next: "review", nextKo: "검토 요청" },
+  review: { ko: "검토", next: "posted", nextKo: "승인 · 전기" },
+  posted: { ko: "전기", next: null, nextKo: null },
+};
+/* 조작 주체 — 서버 세션이 없으므로 화면에서 고른다. AI는 승인하지 못한다(can/cannot의 코드판). */
+const CORP_ACTORS = [
+  { id: "조성래", ko: "조성래", role: "CEO · 회계팀 책임자", ai: false, canApprove: true },
+  { id: "핀테크", ko: "핀테크", role: "AI 팀장", ai: true, canApprove: false },
+];
+function corpActor(id) { return CORP_ACTORS.find(a => a.id === id) || CORP_ACTORS[0]; }
+
 /* ══════════════ AI 팀장 아바타 렌더(CorpAvatar.jsx) · CorpOps Phase 2 (형 지시 2026-11-11) ══════════════
    corpAvatars.js의 문양 명세를 SVG로 그린다. 상태는 테두리로만 말한다.
    ⚠️ AI임이 분명해야 한다 — 이 컴포넌트는 항상 AI 배지와 함께 쓰고, 사람 책임자는 글자로 적는다.
@@ -16491,6 +16882,472 @@ function CorpPair({ team, size }) {
         <span className="cp-k">AI 팀장</span>
         <b style={{ color: team.c }}>{team.ai}</b>
         <span className="corp-ai">AI</span>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ 재무현황 — 실적 축 화면(CorpLedger.jsx) · CorpOps Phase 5 (형 지시 2026-11-11) ══════════════
+   회계팀(M2)의 첫 지면. 장부를 **보여주는** 것이 아니라 **쓰는** 자리다.
+
+   이 화면이 지키는 것
+     · 차대가 안 맞으면 저장 버튼이 아니라 사유가 뜬다(corpJvCheck 가 거부한다).
+     · 승인 버튼은 사람 주체에서만, 그리고 작성자가 아닐 때만 눌린다(corpJvCanAdvance).
+     · 전기된 전표에는 수정 버튼이 없다 — 역분개뿐이다.
+     · 숫자는 전부 전표에서 나온다. 화면이 따로 더하지 않는다.
+     · 검산은 러너와 같은 함수(corpLedgerIdentities)를 부른다.
+
+   ⚠️ 서버가 없다. 권한은 브라우저에서만 걸린다 — 화면에 그렇게 적는다. 숨기면 더 위험하다. */
+
+function CorpLedgerSection() {
+  const [tab, setTab] = React.useState("sum");
+  const [st, setSt] = React.useState(() => (typeof corpLedgerRead === "function" ? corpLedgerRead() : { jv: [], closed: [], ov: {} }));
+  const [actor, setActor] = React.useState("조성래");
+  const [upto, setUpto] = React.useState("");
+  const [msg, setMsg] = React.useState(null);
+  const [acctSel, setAcctSel] = React.useState("103");
+  const [form, setForm] = React.useState(null);
+
+  const save = React.useCallback((next) => { corpLedgerWrite(next); setSt(Object.assign({}, next)); }, []);
+  const jvs = React.useMemo(() => corpJvAll(st), [st]);
+  const upMax = React.useMemo(() => jvs.reduce((s, j) => (j.d > s ? j.d : s), ""), [jvs]);
+  const cut = upto || "";
+  const V = React.useMemo(() => corpLedgerVerdict(jvs, CORP_BANK_SEED, cut), [jvs, cut]);
+  const S = React.useMemo(() => corpStatements(jvs, cut), [jvs, cut]);
+  const R = React.useMemo(() => corpBankRecon(jvs, CORP_BANK_SEED, cut), [jvs, cut]);
+  const months = React.useMemo(() => corpJvMonths(jvs), [jvs]);
+  const A = corpActor(actor);
+
+  /* 상태 전이 — 왜 안 되는지를 그대로 보여 준다 */
+  const advance = (jv) => {
+    const c = corpJvCanAdvance(jv, actor);
+    if (!c.ok) { setMsg({ bad: true, t: jv.id + " — " + c.why }); return; }
+    const ov = Object.assign({}, st.ov);
+    ov[jv.id] = { st: c.to, ap: c.to === "posted" ? actor : (jv.ap || null) };
+    save(Object.assign({}, st, { ov: ov }));
+    setMsg({ bad: false, t: jv.id + " → " + CORP_JV_ST[c.to].ko + (c.to === "posted" ? " · 승인자 " + actor : "") });
+  };
+  const reverse = (jv) => {
+    const r = corpJvReverse(jv, actor, upMax || jv.d);
+    setForm({ d: r.d, desc: r.desc, rev: r.rev, l: r.l.map(x => [x[0], String(x[1] || ""), String(x[2] || ""), x[3] || ""]) });
+    setTab("jv"); setMsg({ bad: false, t: jv.id + " 역분개 초안을 만들었습니다 — 저장하면 기표 상태로 들어갑니다" });
+  };
+  const closeMonth = (mo) => {
+    const closed = (st.closed || []).slice();
+    const i = closed.indexOf(mo);
+    if (i >= 0) { setMsg({ bad: true, t: mo + " 은 이미 마감되었습니다 — 마감은 되돌리지 않습니다. 정정은 역분개로 합니다" }); return; }
+    if (!A.canApprove) { setMsg({ bad: true, t: A.ko + "은(는) 마감을 확정하지 못합니다 — 마감 확정은 사람이 합니다" }); return; }
+    closed.push(mo);
+    save(Object.assign({}, st, { closed: closed }));
+    setMsg({ bad: false, t: mo + " 마감 — 이 달에는 신규 전표가 들어가지 않습니다" });
+  };
+
+  const TABS = [["sum", "검산"], ["jv", "전표"], ["gl", "원장"], ["tb", "시산표"], ["fs", "재무제표"], ["bank", "은행 대사"]];
+
+  return (
+    <div className="cl-wrap">
+      <div className="cl-top">
+        <div className="cl-ttl">
+          <b>재무현황</b><span className="cl-sub">실적 축 — 실제로 일어난 거래</span>
+          {CORP_LEDGER_PILOT && <span className="cl-pilot">파일럿 전표</span>}
+        </div>
+        <div className="cl-ctl">
+          <label>조작 주체
+            <select value={actor} onChange={e => setActor(e.target.value)}>
+              {CORP_ACTORS.map(a => <option key={a.id} value={a.id}>{a.ko} · {a.role}</option>)}
+            </select>
+          </label>
+          <label>기준일
+            <select value={upto} onChange={e => setUpto(e.target.value)}>
+              <option value="">전 기간</option>
+              {months.map(m => <option key={m} value={m + "-31"}>{m} 말</option>)}
+            </select>
+          </label>
+          <span className={"cl-verd" + (V.pass ? " on" : " bad")}>
+            검산 {V.rows.length - V.fail.length - V.zero.length} / {V.rows.length}
+          </span>
+        </div>
+      </div>
+
+      {CORP_LEDGER_PILOT && (
+        <div className="cl-warn">
+          여기 실린 전표 {CORP_JV_SEED.length}건은 <b>파일럿 전표</b>입니다 — 엔진이 맞게 도는지 보려고 넣은 검증용 묶음이고
+          회사의 실제 장부가 아닙니다. 실제 회계자료 반입은 Phase 10이며 보안 선행(Phase 0)을 통과한 뒤에 시작합니다.
+          <span className="cl-warn2">서버가 없어 권한은 이 브라우저 안에서만 걸립니다. 형이 넣은 전표도 이 브라우저에만 남습니다.</span>
+        </div>
+      )}
+
+      <div className="cl-tabs">
+        {TABS.map(([k, ko]) => (
+          <button key={k} className={"cl-tab" + (k === tab ? " on" : "")} onClick={() => { setTab(k); setMsg(null); }}>{ko}</button>
+        ))}
+      </div>
+
+      {msg && <div className={"cl-msg" + (msg.bad ? " bad" : "")} onClick={() => setMsg(null)}>{msg.t}</div>}
+
+      {tab === "sum" && <ClSummary V={V} S={S} R={R} jvs={jvs} st={st} months={months} onClose={closeMonth} actor={A} />}
+      {tab === "jv" && <ClJournal jvs={jvs} st={st} save={save} actor={actor} A={A} form={form} setForm={setForm}
+        advance={advance} reverse={reverse} setMsg={setMsg} upMax={upMax} />}
+      {tab === "gl" && <ClLedger S={S} sel={acctSel} setSel={setAcctSel} />}
+      {tab === "tb" && <ClTrial S={S} />}
+      {tab === "fs" && <ClStatements S={S} cut={cut} />}
+      {tab === "bank" && <ClBank R={R} />}
+    </div>
+  );
+}
+
+/* ── 검산 ─────────────────────────────────────────────────────────────────── */
+function ClSummary({ V, S, R, jvs, st, months, onClose, actor }) {
+  const cnt = (s) => jvs.filter(j => j.st === s).length;
+  return (
+    <div className="cl-body">
+      <div className="cl-kpis">
+        <div><b>{corpWon(S.pl.rev)}</b><span>수익</span></div>
+        <div><b>{corpWon(S.pl.exp)}</b><span>비용</span></div>
+        <div className={S.pl.net >= 0 ? "" : "neg"}><b>{corpWon(S.pl.net)}</b><span>당기손익</span></div>
+        <div><b>{corpWon(S.bs.assets)}</b><span>자산 총계</span></div>
+        <div><b>{corpWon(R.bookBal)}</b><span>보통예금 장부</span></div>
+        <div className={R.ok ? "" : "neg"}><b>{R.bankOnly.length + R.bookOnly.length}</b><span>미대사</span></div>
+      </div>
+
+      <div className="cl-sec">
+        <div className="cl-h">항등식 — 화면과 커밋 게이트 러너가 같은 함수를 봅니다</div>
+        <table className="cl-tbl id">
+          <thead><tr><th>항목</th><th>대상</th><th>결과</th><th>기대</th><th /></tr></thead>
+          <tbody>
+            {V.rows.map(r => (
+              <tr key={r.k} className={r.ok && r.n > 0 ? "" : "bad"}>
+                <td>{r.ko}</td>
+                <td className="n">{r.n}건</td>
+                <td className="n">{r.got}</td>
+                <td className="n">{r.want}</td>
+                <td className="st">{!(r.n > 0) ? "대상 0 — 실패" : (r.ok ? "통과" : "실패")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="cl-note">검사 대상이 <b>0건이면 실패</b>로 셉니다. 빈 장부는 어떤 항등식도 통과시키기 때문입니다.</p>
+      </div>
+
+      <div className="cl-grid2">
+        <div className="cl-sec">
+          <div className="cl-h">결재 상태</div>
+          <div className="cl-stat">
+            <div><b>{cnt("draft")}</b><span>기표</span></div>
+            <div><b>{cnt("review")}</b><span>검토</span></div>
+            <div><b>{cnt("posted")}</b><span>전기</span></div>
+          </div>
+          <p className="cl-note">기표 · 검토 상태는 장부에 올라가지 않습니다. 원장 · 시산표 · 재무제표는 <b>전기된 전표만</b> 집계합니다.</p>
+        </div>
+        <div className="cl-sec">
+          <div className="cl-h">월마감</div>
+          <div className="cl-months">
+            {months.map(m => {
+              const done = (st.closed || []).indexOf(m) >= 0;
+              return (
+                <button key={m} className={"cl-mo" + (done ? " done" : "")} onClick={() => onClose(m)} disabled={done}>
+                  {m}<i>{done ? "마감" : "열림"}</i>
+                </button>
+              );
+            })}
+          </div>
+          <p className="cl-note">마감한 달에는 신규 전표가 들어가지 않습니다. <b>마감은 되돌리지 않고</b> 정정은 역분개 전표로만 합니다.
+            {!actor.canApprove && <span className="cl-block"> 지금 주체({actor.ko})는 마감을 확정하지 못합니다.</span>}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── 전표 ─────────────────────────────────────────────────────────────────── */
+function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, setMsg, upMax }) {
+  const blank = () => ({ d: upMax || "2026-11-10", desc: "", rev: null, l: [["", "", "", ""], ["", "", "", ""]] });
+  const f = form;
+  const draft = f ? {
+    id: corpJvNextId(st), d: f.d, desc: f.desc, by: actor, ap: null, st: "draft", rev: f.rev || undefined,
+    l: f.l.filter(x => x[0]).map(x => [x[0], +String(x[1]).replace(/,/g, "") || 0, +String(x[2]).replace(/,/g, "") || 0, x[3]]),
+  } : null;
+  const chk = draft ? corpJvCheck(draft, st) : null;
+
+  const setL = (i, k, v) => { const l = f.l.map(r => r.slice()); l[i][k] = v; setForm(Object.assign({}, f, { l: l })); };
+  const commit = () => {
+    if (!chk.ok) { setMsg({ bad: true, t: "저장하지 않았습니다 — " + chk.errs[0] }); return; }
+    save(Object.assign({}, st, { jv: (st.jv || []).concat([draft]) }));
+    setForm(null); setMsg({ bad: false, t: draft.id + " 기표 완료 — 승인 전까지 장부에 올라가지 않습니다" });
+  };
+
+  return (
+    <div className="cl-body">
+      <div className="cl-rowbtn">
+        {!f && <button className="cl-new" onClick={() => setForm(blank())}>+ 전표 입력</button>}
+        <span className="cl-hint">작성 주체: <b>{A.ko}</b> · {A.role}{A.ai && <span className="corp-ai">AI</span>}</span>
+      </div>
+
+      {f && (
+        <div className="cl-form">
+          <div className="cl-fh">
+            <span className="cl-fid">{draft.id}</span>
+            <label>일자<input type="date" value={f.d} onChange={e => setForm(Object.assign({}, f, { d: e.target.value }))} /></label>
+            <label className="g">적요<input value={f.desc} placeholder="무슨 거래인지 적습니다"
+              onChange={e => setForm(Object.assign({}, f, { desc: e.target.value }))} /></label>
+            <button className="cl-x" onClick={() => setForm(null)}>닫기</button>
+          </div>
+          <table className="cl-tbl form">
+            <thead><tr><th>계정과목</th><th>차변</th><th>대변</th><th>적요</th><th /></tr></thead>
+            <tbody>
+              {f.l.map((r, i) => (
+                <tr key={i}>
+                  <td>
+                    <select value={r[0]} onChange={e => setL(i, 0, e.target.value)}>
+                      <option value="">— 선택 —</option>
+                      {["A", "L", "E", "R", "X"].map(t => (
+                        <optgroup key={t} label={CORP_ACCT_T[t]}>
+                          {CORP_ACCT.filter(a => a.t === t).map(a => <option key={a.c} value={a.c}>{a.c} {a.n}</option>)}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </td>
+                  <td><input className="n" inputMode="numeric" value={r[1]} onChange={e => setL(i, 1, e.target.value)} /></td>
+                  <td><input className="n" inputMode="numeric" value={r[2]} onChange={e => setL(i, 2, e.target.value)} /></td>
+                  <td><input value={r[3]} onChange={e => setL(i, 3, e.target.value)} /></td>
+                  <td><button className="cl-x s" onClick={() => setForm(Object.assign({}, f, { l: f.l.filter((_, k) => k !== i) }))}>−</button></td>
+                </tr>
+              ))}
+              <tr className="sum">
+                <td><button className="cl-addl" onClick={() => setForm(Object.assign({}, f, { l: f.l.concat([["", "", "", ""]]) }))}>+ 줄 추가</button></td>
+                <td className="n">{corpWon(chk.sum.dr)}</td>
+                <td className="n">{corpWon(chk.sum.cr)}</td>
+                <td colSpan="2" className={chk.sum.diff === 0 ? "ok" : "bad"}>
+                  {chk.sum.diff === 0 ? "차대 일치" : "차이 " + corpWon(Math.abs(chk.sum.diff))}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          {!chk.ok && (
+            <ul className="cl-errs">{chk.errs.map((e, i) => <li key={i}>{e}</li>)}</ul>
+          )}
+          <div className="cl-frow">
+            <button className={"cl-save" + (chk.ok ? "" : " off")} onClick={commit}>
+              {chk.ok ? "기표 저장" : "저장 불가 — 차대가 맞아야 합니다"}
+            </button>
+            <span className="cl-hint">저장해도 <b>기표</b> 상태입니다. 검토 · 승인을 거쳐야 장부에 올라갑니다.</span>
+          </div>
+        </div>
+      )}
+
+      <table className="cl-tbl jv">
+        <thead><tr><th>번호</th><th>일자</th><th>적요</th><th>차변</th><th>대변</th><th>작성</th><th>승인</th><th>상태</th><th /></tr></thead>
+        <tbody>
+          {jvs.slice().reverse().map(j => {
+            const s = corpJvSum(j), S = CORP_JV_ST[j.st] || {};
+            const c = corpJvCanAdvance(j, actor);
+            return (
+              <tr key={j.id} className={"st-" + j.st}>
+                <td className="id">{j.id}{j.rev && <i className="cl-rev">역분개</i>}</td>
+                <td>{j.d}</td>
+                <td className="desc">{j.desc}
+                  <div className="cl-lines">{(j.l || []).map((x, i) => (
+                    <span key={i}>{corpAcctName(x[0])} {x[1] ? "차 " + corpWon(x[1]) : "대 " + corpWon(x[2])}</span>
+                  ))}</div>
+                </td>
+                <td className="n">{corpWon(s.dr)}</td>
+                <td className="n">{corpWon(s.cr)}</td>
+                <td>{j.by}</td>
+                <td>{j.ap || "—"}</td>
+                <td><span className={"cl-st " + j.st}>{S.ko}</span></td>
+                <td className="act">
+                  {j.st !== "posted" && (
+                    <button className={"cl-go" + (c.ok ? "" : " off")} title={c.ok ? "" : c.why}
+                      onClick={() => advance(j)}>{S.nextKo}</button>
+                  )}
+                  {j.st === "posted" && <button className="cl-rv" onClick={() => reverse(j)}>역분개</button>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="cl-note">전기된 전표에는 <b>수정 버튼이 없습니다</b>. 지운 자국이 남아야 장부이기 때문에 정정은 역분개 전표로만 합니다.</p>
+    </div>
+  );
+}
+
+/* ── 원장 ─────────────────────────────────────────────────────────────────── */
+function ClLedger({ S, sel, setSel }) {
+  const book = S.trial.book;
+  const live = CORP_ACCT.filter(a => book[a.c] && (book[a.c].dr !== 0 || book[a.c].cr !== 0));
+  const r = book[sel] || (live[0] ? book[live[0].c] : null);
+  if (!r) return <div className="cl-body"><p className="cl-note">전기된 전표가 없습니다.</p></div>;
+  return (
+    <div className="cl-body">
+      <div className="cl-acctbar">
+        {live.map(a => (
+          <button key={a.c} className={"cl-ab" + (a.c === r.c ? " on" : "")} onClick={() => setSel(a.c)}>
+            <i>{a.c}</i>{a.n}
+          </button>
+        ))}
+      </div>
+      <div className="cl-sec">
+        <div className="cl-h">{r.c} {r.n} <span className="cl-t">{CORP_ACCT_T[r.t]}</span>
+          <span className="cl-bal">잔액 {corpWon(r.bal)} <i>{r.d === "D" ? "차변" : "대변"}</i></span></div>
+        <table className="cl-tbl gl">
+          <thead><tr><th>일자</th><th>전표</th><th>적요</th><th>차변</th><th>대변</th><th>잔액</th></tr></thead>
+          <tbody>
+            {r.lines.map((l, i) => (
+              <tr key={i}>
+                <td>{l.d}</td><td className="id">{l.id}</td>
+                <td className="desc">{l.desc}{l.memo && <i> · {l.memo}</i>}</td>
+                <td className="n">{l.dr ? corpWon(l.dr) : ""}</td>
+                <td className="n">{l.cr ? corpWon(l.cr) : ""}</td>
+                <td className="n b">{corpWon(l.run)}</td>
+              </tr>
+            ))}
+            <tr className="sum"><td colSpan="3">합계</td>
+              <td className="n">{corpWon(r.dr)}</td><td className="n">{corpWon(r.cr)}</td><td className="n b">{corpWon(r.bal)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ── 시산표 ───────────────────────────────────────────────────────────────── */
+function ClTrial({ S }) {
+  const T = S.trial;
+  return (
+    <div className="cl-body">
+      <div className="cl-sec">
+        <div className="cl-h">합계잔액시산표 <span className={"cl-flag" + (T.ok ? " on" : " bad")}>{T.ok ? "차변 = 대변" : "차이 " + corpWon(T.diff)}</span></div>
+        <table className="cl-tbl tb">
+          <thead><tr><th>구분</th><th>코드</th><th>계정과목</th><th>차변 합</th><th>대변 합</th><th>잔액</th></tr></thead>
+          <tbody>
+            {T.rows.map(r => (
+              <tr key={r.c}>
+                <td className={"cl-tt t" + r.t}>{CORP_ACCT_T[r.t]}</td>
+                <td className="id">{r.c}</td><td>{r.n}{r.contra && <i className="cl-ct">차감</i>}</td>
+                <td className="n">{corpWon(r.dr)}</td><td className="n">{corpWon(r.cr)}</td>
+                <td className="n b">{corpWon(r.bal)}<i>{r.d === "D" ? "차" : "대"}</i></td>
+              </tr>
+            ))}
+            <tr className="sum"><td colSpan="3">합계</td>
+              <td className="n">{corpWon(T.drSum)}</td><td className="n">{corpWon(T.crSum)}</td><td className="n">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ── 재무제표 ─────────────────────────────────────────────────────────────── */
+function ClStatements({ S, cut }) {
+  const row = (r, flip) => (
+    <tr key={r.c}><td className="id">{r.c}</td><td>{r.n}{r.contra && <i className="cl-ct">차감</i>}</td>
+      <td className="n">{corpWon(flip ? -r.sign : r.sign)}</td></tr>
+  );
+  return (
+    <div className="cl-body">
+      <div className="cl-fsbar">기준 {cut ? cut.slice(0, 7) + " 말" : "전 기간"} · 전기된 전표만 집계합니다</div>
+      <div className="cl-grid2">
+        <div className="cl-sec">
+          <div className="cl-h">재무상태표 <span className={"cl-flag" + (S.bs.ok ? " on" : " bad")}>
+            {S.bs.ok ? "자산 = 부채 + 자본 + 손익" : "불일치"}</span></div>
+          <table className="cl-tbl fs">
+            <tbody>
+              <tr className="grp"><td colSpan="3">자산</td></tr>
+              {S.bs.A.map(r => row(r, false))}
+              <tr className="sub"><td colSpan="2">자산 총계</td><td className="n">{corpWon(S.bs.assets)}</td></tr>
+              <tr className="grp"><td colSpan="3">부채</td></tr>
+              {S.bs.L.map(r => row(r, true))}
+              <tr className="sub"><td colSpan="2">부채 총계</td><td className="n">{corpWon(S.bs.liab)}</td></tr>
+              <tr className="grp"><td colSpan="3">자본</td></tr>
+              {S.bs.E.map(r => row(r, true))}
+              <tr><td className="id">—</td><td>당기손익</td><td className="n">{corpWon(S.bs.net)}</td></tr>
+              <tr className="sub"><td colSpan="2">자본 총계</td><td className="n">{corpWon(S.bs.equity + S.bs.net)}</td></tr>
+              <tr className="sum"><td colSpan="2">부채와 자본 총계</td><td className="n">{corpWon(S.bs.total)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="cl-sec">
+          <div className="cl-h">손익계산서</div>
+          <table className="cl-tbl fs">
+            <tbody>
+              <tr className="grp"><td colSpan="3">수익</td></tr>
+              {S.pl.R.map(r => row(r, true))}
+              <tr className="sub"><td colSpan="2">수익 합계</td><td className="n">{corpWon(S.pl.rev)}</td></tr>
+              <tr className="grp"><td colSpan="3">비용</td></tr>
+              {S.pl.X.map(r => row(r, false))}
+              <tr className="sub"><td colSpan="2">비용 합계</td><td className="n">{corpWon(S.pl.exp)}</td></tr>
+              <tr className={"sum" + (S.pl.net < 0 ? " neg" : "")}><td colSpan="2">당기손익</td><td className="n">{corpWon(S.pl.net)}</td></tr>
+            </tbody>
+          </table>
+          <p className="cl-note">계획 축(재무계획)과 맞춰 보는 <b>예실 대비</b>는 Phase 6에서 만듭니다. 지금 두 축을 한 표에 섞지 않습니다.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── 은행 대사 ────────────────────────────────────────────────────────────── */
+function ClBank({ R }) {
+  return (
+    <div className="cl-body">
+      <div className="cl-sec">
+        <div className="cl-h">{R.bank} <span className="cl-t">{R.mask}</span>
+          <span className={"cl-flag" + (R.ok ? " on" : " bad")}>{R.ok ? "조정 후 차이 0" : "차이 " + corpWon(R.gap)}</span></div>
+        {/* 양쪽을 각각 조정해 같은 금액에 닿는지 본다 — 한 줄로 이으면 겹부호(− −240,000)가 생겨 읽히지 않는다 */}
+        <div className="cl-recon">
+          <div className="side"><b>{corpWon(R.bankBal)}</b><span>은행 잔액</span></div>
+          <div className="op">{R.bankOnlyNet < 0 ? "+" : "−"}</div>
+          <div><b>{corpWon(Math.abs(R.bankOnlyNet))}</b><span>은행에만 ({R.bankOnly.length}건)</span></div>
+          <div className="op">=</div>
+          <div className="eq"><b>{corpWon(R.bankBal - R.bankOnlyNet)}</b><span>조정 후</span></div>
+        </div>
+        <div className="cl-recon">
+          <div className="side"><b>{corpWon(R.bookBal)}</b><span>장부 잔액</span></div>
+          <div className="op">{R.bookOnlyNet < 0 ? "+" : "−"}</div>
+          <div><b>{corpWon(Math.abs(R.bookOnlyNet))}</b><span>장부에만 ({R.bookOnly.length}건)</span></div>
+          <div className="op">=</div>
+          <div className="eq"><b>{corpWon(R.bookBal - R.bookOnlyNet)}</b><span>조정 후</span></div>
+        </div>
+        <div className="cl-reconx">두 조정 후 금액이 같아야 맞습니다 — 차이 <b>{corpWon(R.gap)}</b></div>
+        <p className="cl-note">같은 날 · 같은 금액을 한 번씩만 짝지었습니다 — <b>{R.matched}건</b> 자동 대사.
+          남은 줄을 없애는 것은 사람이 합니다(은행 수수료 기장 · 입금자 확인 · 미통과 건 추적).</p>
+      </div>
+
+      <div className="cl-grid2">
+        <div className="cl-sec">
+          <div className="cl-h">은행 거래내역</div>
+          <table className="cl-tbl bk">
+            <thead><tr><th>일자</th><th>적요</th><th>금액</th><th>대사</th></tr></thead>
+            <tbody>
+              {R.lines.map((l, i) => (
+                <tr key={i} className={l.used ? "" : "un"}>
+                  <td>{l.d}</td><td className="desc">{l.m}</td>
+                  <td className={"n " + (l.a >= 0 ? "in" : "out")}>{corpWon(l.a)}</td>
+                  <td className="id">{l.jv || <span className="cl-un">미대사</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="cl-sec">
+          <div className="cl-h">남은 것 — 사람이 처리합니다</div>
+          {R.bankOnly.length === 0 && R.bookOnly.length === 0 && <p className="cl-note">남은 건이 없습니다.</p>}
+          {R.bankOnly.map((l, i) => (
+            <div key={"a" + i} className="cl-open">
+              <span className="cl-tag bank">은행에만</span>
+              <b>{l.d}</b> {l.m} <span className="n">{corpWon(l.a)}</span>
+              <i>장부에 기장이 없습니다 — 전표를 올려야 맞습니다</i>
+            </div>
+          ))}
+          {R.bookOnly.map((x, i) => (
+            <div key={"b" + i} className="cl-open">
+              <span className="cl-tag book">장부에만</span>
+              <b>{x.d}</b> {x.id} {x.desc} <span className="n">{corpWon(x.a)}</span>
+              <i>은행을 아직 통과하지 않았습니다 — 다음 내역에서 확인합니다</i>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -16907,8 +17764,9 @@ function CorpOrgChart({ sel, pick, open, onTab }) {
                   </div>
                   <div className="co-work">{t.work}</div>
                   <div className="co-pages">{t.pages.map((p, i) => (
-                    <span key={i} className={p.kind === "new" ? "pg-new" : ""}>{p.t}
-                      {p.kind === "new" && <i>{p.at}</i>}</span>))}</div>
+                    <span key={i} className={p.kind === "new" ? "pg-new" : (p.kind === "mod" ? "pg-mod" : "")}>{p.t}
+                      {p.kind === "new" && <i>{p.at}</i>}
+                      {p.kind === "mod" && <i>신설</i>}</span>))}</div>
                   <div className="co-split">
                     <div className="co-can">
                       <div className="co-ck"><b>{t.ai}</b>가 끝까지 하는 일</div>
@@ -16993,6 +17851,7 @@ function CorpTeamBoard({ team, onGo, onTab, back }) {
           <button key={i} className={"cb-tab" + (i === page ? " on" : "")} onClick={() => setPage(i)}>
             {p.t}
             {p.kind === "new" && <em className="cb-soon">{p.at}</em>}
+            {p.kind === "mod" && <em className="cb-mod">신설</em>}
             {p.kind === "tab" && <em className="cb-live">기존</em>}
             {p.kind === "nav" && <em className="cb-out">이동</em>}
           </button>
@@ -17007,6 +17866,14 @@ function CorpTeamBoard({ team, onGo, onTab, back }) {
             <p>이 지면은 <b>{pg.at}</b>에서 만듭니다. 지금은 자리만 잡혀 있습니다 —
               데이터가 없는데 숫자를 채우면 그게 먼저 깨집니다.</p>
           </div>
+        )}
+        {pg && pg.kind === "mod" && (
+          Render ? <div className="cb-mod-body"><Render onGo={onGo} onTab={onTab} /></div> : (
+            <div className="cb-soonbox">
+              <div className="cb-st">{pg.t}</div>
+              <p>이 지면의 컴포넌트({pg.comp})를 찾지 못했습니다 — 번들 적재 순서를 확인해야 합니다.</p>
+            </div>
+          )
         )}
         {pg && pg.kind === "nav" && (
           <div className="cb-soonbox">
@@ -17046,6 +17913,7 @@ function corpPageComp(name) {
     if (name === "BizOpsConsole") return typeof BizOpsConsole === "function" ? BizOpsConsole : null;
     if (name === "SupplyOntology") return typeof SupplyOntology === "function" ? SupplyOntology : null;
     if (name === "FinanceSection") return typeof FinanceSection === "function" ? FinanceSection : null;
+    if (name === "CorpLedgerSection") return typeof CorpLedgerSection === "function" ? CorpLedgerSection : null;
     if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
     if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
     if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;
@@ -35594,6 +36462,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-11", ver:"v2.9", ch:[9], feat:"회계 엔진(전표·원장·시산표·재무제표·은행 대사)", src:"온톨로지 › 회사 총괄운영 › 회계팀 › 재무현황", summary:"회계팀의 재무현황을 자리만 잡힌 지면에서 실제로 전표를 쓰는 장부로 만들어 계정과목과 전표 기표·검토·승인 세 단계와 원장·시산표·재무상태표·손익계산서·은행 대사를 한 지면에 넣었고, 차변과 대변이 맞지 않으면 차이 금액을 숫자로 돌려주며 저장 자체를 거부하고 승인은 작성자가 아닌 사람만 누를 수 있게 했으며 전기된 전표는 고치지 못하고 역분개로만 정정하게 했고, 장부가 성립하는지를 확인하는 아홉 가지 항등식을 화면과 커밋 게이트가 같은 함수로 보게 해 한쪽만 맞는 일이 생기지 않게 했으며 검사 대상이 없으면 통과가 아니라 실패로 세도록 했다", refs:[], status:"반영", hash:"f4e5504", auto:true },
   { date:"2026-11-11", ver:"v2.8", ch:[9], feat:"지면의 팀 하위 이관과 캘린더·루틴 실계산", src:"온톨로지 › 회사 총괄운영", summary:"평면으로 놓여 있던 상단 탭 줄을 치우고 지면을 팀 아래로 옮기면서 내비 경로를 화면 그대로 고쳐 길 안내가 어긋나지 않게 했고, 지면을 열면 어느 팀 것인지가 윗줄에 뜨게 했으며, 탭을 눌러 들어가던 검사 프로그램은 지면 이름을 품은 조직도 카드를 찾아 들어가도록 고쳐 이름이 바뀌어도 빗나가지 않게 했고, 캘린더와 루틴 열두 종의 다음 예정 시각을 업무시간과 주기로 실제 계산해 보이되 실행 기능이 없는 단계에서 지난 예정을 밀림으로 칠하지 않도록 거두었다", refs:[], status:"반영", hash:"a611754", auto:true },
   { date:"2026-11-11", ver:"v2.7", ch:[9], feat:"팀 대시보드와 재무계획 이관", src:"온톨로지 › 회사 총괄운영 › 팀", summary:"평면으로 놓여 있던 상단 지면들을 팀 아래로 이으면서 화면을 복제하지 않고 같은 컴포넌트를 그대로 불러 진실이 갈리지 않게 했고, 재무회계를 재무계획으로 고쳐 계획 축임을 이름에서 드러냈으며 지면 제목도 함께 맞췄고, 아직 만들지 않은 지면은 자리만 잡고 언제 만드는지를 적어 비어 있음이 숨지 않게 했다", refs:[], status:"반영", hash:"a02620b", auto:true },
   { date:"2026-11-11", ver:"v2.6", ch:[9], feat:"회사 총괄운영 조직도와 AI 팀장 아바타", src:"온톨로지 › 회사 총괄운영 › 조직도", summary:"AI 팀장 여덟에게 점과 선으로 짜인 각자의 문양을 주어 사람과 한눈에 갈리게 했고, 조직도에 AI가 끝까지 하는 일과 사람이 마무리하는 일을 나란히 두되 뒤쪽에는 무엇이 그것을 막는지를 전건에 붙여 선언이 아니라 조건으로 읽히게 했으며, 이미 코드에 있는 차단과 앞으로 강제할 차단을 배지로 갈라 적었고, 자리와 사람을 섞어 세던 인원 집계를 재직 인원과 채워진 자리로 나눠 바로잡았다", refs:[], status:"반영", hash:"f5ff99c", auto:true },
@@ -42779,7 +43648,12 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
      ※ 판정 결과는 저장하지 않는다 — 정책이 바뀌면 낡은 판정이 거짓말한다. 「저장하지 않는다」도 등재 내용이다.
      ※ 결정 로그(판정 호출·집행·면제·소명·재심)는 메모리에만 둔다 — 신규 키를 5종으로 확정했기 때문이고,
        영속 소유자는 보고서 발행 스냅샷(아래 접두 키)을 세우는 단계다. */
-  "hifin_pg_enforce", "hifin_pg_exempt", "hifin_pg_remedy", "hifin_pg_block"];
+  "hifin_pg_enforce", "hifin_pg_exempt", "hifin_pg_remedy", "hifin_pg_block",
+  /* 회사 총괄운영 회계 엔진(corpLedger.js — CorpOps P5, 2026-11-11): 형이 입력한 전표 + 마감한 달 목록.
+     파일럿 전표는 **코드에 있고** 이 키에 들어가지 않는다 — 검증용 묶음과 입력분이 섞이면 둘 다 못 믿는다.
+     사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다.
+     ※ 실제 회계자료 반입(P10)은 Phase 0(보안 선행) 통과 뒤다 — 그 전까지 이 키에는 검증 입력만 들어간다. */
+  "hifin_corp_ledger"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
@@ -42800,6 +43674,7 @@ const HIFIN_KEY_GROUPS = [
   { g: "consent", ko: "동의·보안", pats: ["hifin_consent_", "hifin_self_mkt_seed", "hifin_access_log", "hifin_guard", "hifin_login_lock", "hifin_reggate", "hifin_mydata"], sensitive: "높음(감사 대상)" },
   { g: "ops", ko: "계측·운영", pats: ["hifin_events", "hifin_consent2", "hifin_telem", "hifin_wp_log", "hifin_lead", "hifin_handoff_", "hifin_hm_", "hifin_nodes", "hifin_ocr", "hifin_backup", "hifin_pg_"], sensitive: "낮음(경량 식별자만) · 단 hifin_pg_report_는 반출 통제 대상(민감도 상)" },
   { g: "growth", ko: "추천·거버넌스·기타", pats: ["hifin_ref_", "hifin_gov_", "hifin_sharing", "hifin_share", "hifin_divi", "hifin_g2_", "hifin_g4_", "hifin_pu_", "pi_", "hifin_easyread", "hifin_connectors"], sensitive: "낮음" },
+  { g: "corp", ko: "사내 운영(회사 총괄운영)", pats: ["hifin_corp_"], sensitive: "높음(사내 회계·계약 — 대외비 · 회원 데이터 아님)" },
   { g: "session", ko: "세션(휘발)", pats: ["hifin_sid", "hifin_hm_code", "hifin_hmops_admin", "hifin_hi_welcome", "hifin_dl_ready", "hifin_force_onboard", "hifin_sso_hipet", "hipet_gate", "hipet_admin"], sensitive: "낮음(1회용 토큰·게이트 플래그)" },
 ];
 function hifinKeyGroup(key) {
@@ -51201,7 +52076,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.36,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":3.44,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

@@ -223,6 +223,19 @@ if echo "$CHANGED" | grep -qE "^(src/data/(partnerPolicy|partnerGov|partnerRepor
   git add scripts/pg_policy_snapshot.json scripts/pg_scan_report.json 2>/dev/null || true
 fi
 
+# == 회계 엔진 게이트(CorpOps Phase 5 · 2026-11-11 형 지시) ==
+# 왜 필요한가 - 회계는 틀려도 화면이 멀쩡하다. 차대가 어긋난 전표 한 장은 숫자만 조금 바꿔
+# 놓고 조용히 섞여 들어가고, 원장·시산표·재무제표가 전부 그 값을 물고 간다. 눈으로는 못 잡는다.
+# 러너는 항등식 9항목을 **화면과 같은 함수**(corpLedgerIdentities)로 단언하고, 검사 대상이
+# 0건이면 실패로 센다(빈 장부는 어떤 항등식도 통과시킨다). 거부 경로는 자기시험을 먼저 한다.
+# 감시 대상에 dataCatalog.js 를 함께 넣는다 - 저장 키 등재가 빠지면 전표가 어디에 쌓이는지
+# 추적이 끊기고, 카탈로그 게이트보다 여기서 먼저 걸려야 원인이 분명하다.
+# 수 초짜리 정적+직접호출 검사라 예산 부담이 없다.
+if echo "$CHANGED" | grep -qE "^(src/data/(corpLedger|corpOrg|dataCatalog)\.js|src/components/(CorpLedger|CorpOps)\.jsx|scripts/run_corpops_ledger\.mjs)$"; then
+  echo "[GATE] 회계 엔진 파일 변경 - 장부 항등식 가드 실행(차대·시산표·재무상태표·은행 대사·결재 분리)"
+  node scripts/run_corpops_ledger.mjs || { echo "[GATE] 회계 엔진 가드 실패 - 커밋 차단(장부가 성립하지 않습니다)"; exit 1; }
+fi
+
 # == 보장 창 게이트(2026-10-08 · 적대적 리뷰 실증) ==
 # 검진대비보험 보장 창의 단언이 어느 커밋 게이트에도 연결되지 않았다.
 # 사슬 - premiumBilling.js·healthMate.js는 catalog 게이트 하나만 거쳤고,
