@@ -16,6 +16,11 @@ fi
 # 참고: 백서반영표 자동 로그(src/data/wpAutoLog.js)는 여기서 갱신하지 않는다.
 #       커밋 시 post-commit 훅(scripts/githooks/post-commit)만 갱신 → 일반 빌드/커밋 속도 유지.
 
+# ── 외부 자원 무결성(SRI · Phase 0) ──
+# 외부 CDN 7종에 sha384 무결성 해시를 건다. CDN이 바뀐 파일을 내려주면 브라우저가 **실행을 거부**한다.
+# ⚠️ 버전을 올리면 해시도 반드시 같이 갱신한다 — 안 하면 자원이 통째로 안 뜨고 화면이 빈다.
+#    갱신: curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A
+# crossorigin="anonymous" 가 없으면 SRI 검증 자체가 서지 않는다(교차 출처 자원이라 CORS가 전제다).
 cat > _h.txt <<'HEAD'
 <!doctype html>
 <html lang="ko">
@@ -37,9 +42,9 @@ cat > _h.txt <<'HEAD'
 <meta name="twitter:description" content="치료비 걱정 없는 평생 건강관리 생태계" />
 <meta name="twitter:image" content="https://www.hi-fintech.com/og.png" />
 <link rel="icon" type="image/png" href="./og.png" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="./data/app.css" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
@@ -53,10 +58,10 @@ cat > _h.txt <<'HEAD'
   }
 }
 </script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js" integrity="sha384-EIcs2MbARRLcLs7Gv2wqqhhfMlcLeW9yuJsWki1r5iveN1F5gpzHOwAKycJqSQOI" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
@@ -109,4 +114,14 @@ for F in index.html preview.html; do
   sed -i "s#\./data/app\.css#./data/app.css?v=$VER#g; s#\./src/data/dummy_data\.js#./src/data/dummy_data.js?v=$VER#g; s#\./src/data/section_data\.js#./src/data/section_data.js?v=$VER#g; s#\./src/data/demo_members\.js#./src/data/demo_members.js?v=$VER#g" "$F"
 done
 rm _h.txt _t.txt
+
+# ── SRI 자기검사(Phase 0) ──
+# 외부 자원을 하나 더 넣으면서 무결성 해시를 빠뜨리면 **그 자원만 조용히 무방비**가 된다.
+# 그래서 외부 자원 수와 integrity 수가 같은지 빌드가 직접 센다. 다르면 빌드를 멈춘다.
+_ext=$(grep -oE '(src|href)="https://(unpkg\.com|cdnjs\.cloudflare\.com)[^"]*"' index.html | wc -l | tr -d ' ')
+_sri=$(grep -c 'integrity="sha384-' index.html | tr -d ' ')
+if [ "$_ext" != "$_sri" ]; then
+  echo "[SRI] 외부 자원 $_ext 개 중 무결성 $_sri 개 — 빠진 자원이 있습니다. build_preview.sh 의 head 템플릿을 확인하세요." >&2
+  exit 1
+fi
 echo "rebuilt index.html / preview.html (src/ $(grep -c . src/_manifest.txt) files)"

@@ -264,7 +264,7 @@ fi
 # 검증 보고의 번들 해시도 그 트리에서 재현되지 않는다.
 # 구조적으로 막는다 — index.html 이 매니페스트의 **어느 소스보다도 새로워야** 커밋된다.
 # 해소: 러너 전건 → 마지막에 `bash build_preview.sh` → 번들 해시 기록.
-if echo "$CHANGED" | grep -qE "^(index\.html|preview\.html|src/)"; then
+if echo "$CHANGED" | grep -qE "^(index\.html|preview\.html|build_preview\.sh|src/)"; then
   # 이 훅의 러너들이 **방금** 스냅샷을 다시 썼다(navRegSnapshot·hmHarnessSnapshot·hmOpsSnapshot).
   # 그래서 작성자가 아무리 마지막에 빌드해도 훅 안에서 번들이 다시 낡는다 — 사람이 지킬 수 없는
   # 해소법이었다(2026-10-26 실측: 빌드 → 커밋 → 같은 자리에서 2회 연속 차단).
