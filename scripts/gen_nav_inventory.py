@@ -163,8 +163,21 @@ def extract_l2():
     assert m, "Ontology topTabs 파싱 실패 — 소스 형태 변경"
     ot = re.findall(r'\[\s*"([a-z]+)"\s*,\s*"([^"]+)"', m.group(1))
     assert len(ot) >= 9, "온톨로지 상위 탭 %d개 — 하한(9) 미달" % len(ot)
+    # 경로는 **화면 그대로** 적는다(형 지시 2026-11-11 — 상단 탭 줄을 치우고 회사 총괄운영 › 팀 아래로 이관).
+    #   탭 id → 담당 팀은 corpOrg.js 의 pages[].tab 이 단일 원천이다. 매핑이 없으면 옛 경로를 쓴다
+    #   (백서처럼 특정 팀에 속하지 않는 전사 지면이 있다).
+    corp = read("src/data/corpOrg.js")
+    tab2team = {}
+    # div: 를 반드시 요구한다 — 없으면 CORP_DIV(본부 목록)가 먼저 잡혀 팀 이름 자리에 본부명이 들어간다.
+    for blk in re.findall(r'\{ id: "(\w+)", div: "\w+", name: "([^"]+)".*?pages: \[(.*?)\],', corp, re.S):
+        tid, tname, pages = blk
+        for tb in re.findall(r'tab: "(\w+)"', pages):
+            tab2team[tb] = (tid, tname)
+    assert len(tab2team) >= 7, "corpOrg pages[].tab 매핑 %d건 — 하한(7) 미달" % len(tab2team)
     for k, label in ot:
-        out.append({"key": "tab.ontology.%s" % k, "label": label, "path": "ontology › " + label,
+        team = tab2team.get(k)
+        path = ("ontology › 회사 총괄운영 › %s › %s" % (team[1], label)) if team else ("ontology › " + label)
+        out.append({"key": "tab.ontology.%s" % k, "label": label, "path": path,
                     "surface": "tab", "nav": "ontology", "tab": k, "owner": "nav",
                     "admin": True, "desc": "", "aliases": aliases_of(label)})
     # 협력업체 온톨로지·하네스 서브탭 5개(L3 · 관리자 전용 · P7 · 지시서 §13-10 산출물 ③)
@@ -181,7 +194,7 @@ def extract_l2():
     assert len(st) == 5, "협력업체 서브탭 %d개 — 요구 5(PG_SUBTABS)" % len(st)
     for k, label in st:
         out.append({"key": "sub.partner.%s" % k, "label": label,
-                    "path": "ontology › 협력업체 온톨로지 · 하네스 › " + label,
+                    "path": "ontology › 회사 총괄운영 › 경영기획팀 › 협력업체 온톨로지 · 하네스 › " + label,
                     "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav",
                     "admin": True, "desc": "", "aliases": aliases_of(label)})
     # HealthMate 워크벤치(숫자 키 — 관리자·프로 전용)

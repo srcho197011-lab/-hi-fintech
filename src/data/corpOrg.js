@@ -192,21 +192,101 @@ const CORP_SCHEDULE = {
     ],
   },
   /* 브라우저가 닫혀 있으면 아무것도 돌지 않는다 — 「자동 실행」이 아니라 「다음 열람 시」다. */
+  /* every: workday(근무일) | mon | fri | month | release
+     at: 예정 시각 · day: 월 기준일 · owner: 사람 책임자 팀 코드 */
   routines: [
-    ["일마감", "매일", "전표 차대 검산 · 누락 점검", "이상 건 승인"],
-    ["은행 대사", "매일", "내역 대조 · 미대사 추출", "불일치 해소"],
-    ["주간보고 초안", "금", "팀별 지표 · 진척 · 이슈 · 차주 계획", "팀 책임자 확정"],
-    ["주간회의 자료", "월 09:30", "8팀 보고 통합", "CEO 승인"],
-    ["회의록 · 후속과제", "월 회의 직후", "초안 생성", "담당 · 기한 확정"],
-    ["월마감", "월 1회", "시산표 · 재무제표 생성", "마감 확정"],
-    ["예실 대비", "월 1회", "계획 대비 차이 · 원인 후보", "원인 확정"],
-    ["급여", "월 1회", "근태 집계 · 공제 계산", "지급 승인"],
-    ["계약 만료 점검", "주 1회", "만료 임박 추출", "갱신 · 해지 결정"],
-    ["보안 점검", "주 1회", "게이트 결과 · 확약 진척 집계", "조치 결정"],
-    ["릴리스 점검", "배포 전", "체크리스트 · 동일인 승인 탐지", "릴리스 승인(S1)"],
-    ["세무 기한 경보", "월 1회", "신고 기한 산출", "신고 제출"],
+    { t: "일마감",            every: "workday", at: "18:00", owner: "M2", ai: "핀테크",
+      does: "전표 차대 검산 · 누락 점검",            human: "이상 건 승인" },
+    { t: "은행 대사",          every: "workday", at: "10:00", owner: "M2", ai: "핀테크",
+      does: "내역 대조 · 미대사 추출",               human: "불일치 해소" },
+    { t: "주간보고 초안",       every: "fri",     at: "17:00", owner: "M1", ai: "전 팀",
+      does: "팀별 지표 · 진척 · 이슈 · 차주 계획",    human: "팀 책임자 확정" },
+    { t: "주간회의 자료",       every: "mon",     at: "09:30", owner: "M1", ai: "나침반",
+      does: "8팀 보고 통합",                        human: "CEO 승인" },
+    { t: "회의록 · 후속과제",    every: "mon",     at: "11:00", owner: "M1", ai: "각 AI 팀장",
+      does: "회의록 초안 생성",                      human: "담당 · 기한 확정" },
+    { t: "계약 만료 점검",      every: "mon",     at: "14:00", owner: "M1", ai: "나침반",
+      does: "만료 임박 추출",                        human: "갱신 · 해지 결정" },
+    { t: "보안 점검",          every: "mon",     at: "15:00", owner: "S1", ai: "하네스",
+      does: "게이트 결과 · 확약 진척 집계",           human: "조치 결정" },
+    { t: "월마감",             every: "month",   day: 5,  at: "15:00", owner: "M2", ai: "핀테크",
+      does: "시산표 · 재무제표 생성",                 human: "마감 확정" },
+    { t: "예실 대비",          every: "month",   day: 6,  at: "11:00", owner: "M2", ai: "핀테크",
+      does: "계획 대비 차이 · 원인 후보",             human: "원인 확정" },
+    { t: "급여",               every: "month",   day: 10, at: "10:00", owner: "M3", ai: "인총이",
+      does: "근태 집계 · 공제 계산",                  human: "지급 승인" },
+    { t: "세무 기한 경보",      every: "month",   day: 1,  at: "09:30", owner: "M2", ai: "핀테크",
+      does: "신고 기한 산출",                        human: "신고 제출" },
+    { t: "릴리스 점검",         every: "release", at: "배포 전", owner: "S1", ai: "하네스",
+      does: "체크리스트 · 동일인 승인 탐지",           human: "릴리스 승인" },
   ],
 };
 
 function corpTeam(id) { return CORP_TEAMS.find(t => t.id === id) || null; }
 function corpDiv(id) { return CORP_DIV.find(d => d.id === id) || null; }
+
+/* ══ 회사 운영의 시각 ══
+   근무일·회의 요일을 계산해야 하므로 **실제 오늘**을 쓴다.
+   ⚠️ 전역 now로 승격하지 않는다 — 보장 창 규약(창의 주인은 계약이고, 시연 시드만 기준일 고정)과
+      충돌한다. 이 파일 안에서만 쓰고, 러너는 corpOpsAt(iso)로 고정 날짜를 주입해 대조한다. */
+let _corpAt = null;
+function corpOpsAt(iso) { _corpAt = iso ? new Date(iso) : null; }
+function corpOpsNow() { return _corpAt ? new Date(_corpAt.getTime()) : new Date(); }
+
+function _corpHM(s) { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ""); return m ? [+m[1], +m[2]] : [9, 0]; }
+function _corpSet(d, hm) { const x = new Date(d.getTime()); x.setHours(hm[0], hm[1], 0, 0); return x; }
+function _corpWorkday(d) { const w = d.getDay(); return w >= 1 && w <= 5; }
+
+/* 루틴의 직전 예정 시각과 다음 예정 시각.
+   실행 기록이 없으므로(실데이터 미연결) 「직전 예정이 지났다 = 밀렸다」로만 판정한다.
+   이것이 「열었을 때 밀린 것을 알려준다」의 실체다 — 백엔드가 없어 스스로 돌지 않는다. */
+function corpRoutineWhen(r, now) {
+  now = now || corpOpsNow();
+  if (r.every === "release") return { kind: "release", prev: null, next: null };
+  const hm = _corpHM(r.at);
+  const mk = (d) => _corpSet(d, hm);
+  const day = (n) => { const d = new Date(now.getTime()); d.setDate(d.getDate() + n); return d; };
+  let prev = null, next = null;
+  if (r.every === "workday") {
+    for (let i = 0; i < 10 && !prev; i++) { const d = day(-i); if (_corpWorkday(d) && mk(d) <= now) prev = mk(d); }
+    for (let i = 0; i < 10 && !next; i++) { const d = day(i); if (_corpWorkday(d) && mk(d) > now) next = mk(d); }
+  } else if (r.every === "mon" || r.every === "fri") {
+    const want = r.every === "mon" ? 1 : 5;
+    for (let i = 0; i < 14 && !prev; i++) { const d = day(-i); if (d.getDay() === want && mk(d) <= now) prev = mk(d); }
+    for (let i = 0; i < 14 && !next; i++) { const d = day(i); if (d.getDay() === want && mk(d) > now) next = mk(d); }
+  } else if (r.every === "month") {
+    const at = (y, m) => mk(new Date(y, m, r.day || 1));
+    const y = now.getFullYear(), m = now.getMonth();
+    const thisM = at(y, m);
+    if (thisM <= now) { prev = thisM; next = at(y, m + 1); } else { prev = at(y, m - 1); next = thisM; }
+  }
+  return { kind: r.every, prev: prev, next: next, late: !!prev };
+}
+
+/* 이번 달 캘린더 — 주차 × 요일. 주간회의(월)와 오늘을 표시한다. */
+function corpCalendar(now) {
+  now = now || corpOpsNow();
+  const y = now.getFullYear(), m = now.getMonth();
+  const first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
+  const rows = []; let d = 1;
+  for (let w = 0; w < 6 && d <= last; w++) {
+    const row = [];
+    for (let i = 0; i < 7; i++) {
+      if ((w === 0 && i < first) || d > last) { row.push(null); continue; }
+      row.push({ d: d, dow: i, work: i >= 1 && i <= 5, meet: i === 1,
+        today: d === now.getDate(), past: d < now.getDate() });
+      d++;
+    }
+    rows.push(row);
+  }
+  return { y: y, m: m + 1, rows: rows, today: now.getDate() };
+}
+
+/* 탭 id → 담당 팀. 상단 탭 줄을 치운 뒤 「지금 보는 지면이 어느 팀 것인지」를 말해 준다. */
+function corpTeamOfTab(tab) {
+  for (let i = 0; i < CORP_TEAMS.length; i++) {
+    const t = CORP_TEAMS[i];
+    for (let j = 0; j < t.pages.length; j++) if (t.pages[j].tab === tab) return t;
+  }
+  return null;
+}

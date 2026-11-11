@@ -169,6 +169,30 @@ function CorpOps({ onGo, onTab }) {
   const selT = sel ? corpTeam(sel) : null;
   const sch = CORP_SCHEDULE;
 
+  /* 루틴·캘린더는 **실제 오늘**로 계산한다 — 근무일과 회의 요일을 따지기 때문이다.
+     실행 기록이 없으므로(실데이터 미연결) 「예정 시각이 지났다 = 밀렸다」로만 판정한다.
+     이것이 「열었을 때 밀린 것을 알려준다」의 실체다. */
+  const now = typeof corpOpsNow === "function" ? corpOpsNow() : new Date();
+  const cal = typeof corpCalendar === "function" ? corpCalendar(now) : { y: now.getFullYear(), m: now.getMonth() + 1, rows: [] };
+  const fmt = (d) => d ? (String(d.getMonth() + 1) + "/" + d.getDate() + " " +
+    String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0")) : "—";
+  const routines = (sch.routines || []).map(r => {
+    const w = typeof corpRoutineWhen === "function" ? corpRoutineWhen(r, now) : {};
+    if (w.kind === "release") return { r: r, state: "rel", when: "배포 전" };
+    /* ⚠️ 「밀림」이라 쓰지 않는다 — 루틴을 실행하는 기능이 아직 없으므로(P7) 안 돌린 것이 아니라
+       돌릴 수 있는 상태가 아니다. 지난 예정과 다음 예정을 그대로 보일 뿐이다. */
+    return { r: r, state: "wait", when: "다음 " + fmt(w.next), prev: w.prev ? fmt(w.prev) : null };
+  });
+  const lateN = 0;
+  const nextMeet = (function () {
+    const r = (sch.routines || []).find(x => x.every === "mon" && /주간회의/.test(x.t));
+    if (!r || typeof corpRoutineWhen !== "function") return null;
+    const w = corpRoutineWhen(r, now); if (!w.next) return null;
+    const d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const d1 = new Date(w.next.getFullYear(), w.next.getMonth(), w.next.getDate());
+    return { dday: Math.round((d1 - d0) / 86400000), label: fmt(w.next) };
+  })();
+
   return (
     <div className="corpops" ref={wrapRef}>
       <div className="corp-top">
@@ -182,7 +206,7 @@ function CorpOps({ onGo, onTab }) {
         <div className="corp-stub">실데이터 미연결 · 지표는 연결 후 채워집니다</div>
       </div>
 
-      {view === "org" && <CorpOrgChart sel={sel} pick={pick} open={(id) => { pick(id); setView("team"); }} />}
+      {view === "org" && <CorpOrgChart sel={sel} pick={pick} onTab={onTab} open={(id) => { pick(id); setView("team"); }} />}
       {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
       <div className="corp-shell" style={view !== "dash" ? { display: "none" } : undefined}>
@@ -204,6 +228,23 @@ function CorpOps({ onGo, onTab }) {
             <div className="corp-row"><span className="m">점심</span><span className="s">{sch.work.lunch}</span></div>
             <div className="corp-row"><span className="m">주간회의</span><span className="s">{sch.weekly.day} {sch.weekly.time} · {sch.weekly.mode}</span></div>
           </div>
+          <div className="corp-blk">
+            <div className="corp-lab">캘린더 <b>{cal.y}.{String(cal.m).padStart(2, "0")}</b>
+              <span className="corp-callegend"><i className="cl-meet" />회의 <i className="cl-work" />근무</span></div>
+            <table className="corp-cal"><tbody>
+              <tr>{["일", "월", "화", "수", "목", "금", "토"].map(d => <th key={d}>{d}</th>)}</tr>
+              {cal.rows.map((row, i) => (
+                <tr key={i}>{row.map((c, j) => (
+                  <td key={j} className={!c ? "off" : [c.work ? "w" : "", c.meet ? "m" : "", c.today ? "t" : "", c.past ? "p" : ""].join(" ")}>
+                    {c ? c.d : ""}</td>))}</tr>
+              ))}
+            </tbody></table>
+            <div className="corp-row" style={{ marginTop: 8 }}>
+              <span className="m">다음 주간회의</span>
+              <span className="s">{nextMeet ? (nextMeet.dday === 0 ? "오늘 " : "D-" + nextMeet.dday + " ") + nextMeet.label : "—"}</span>
+            </div>
+          </div>
+
           <div className="corp-blk">
             <div className="corp-lab">팀 바로가기 <b>{CORP_SUMMARY.teams}</b></div>
             {CORP_DIV.map(d => {
@@ -300,14 +341,17 @@ function CorpOps({ onGo, onTab }) {
           </div>
           <div className="corp-sec corp-last">
             <div className="corp-sh"><b>루틴</b><span className="c">{sch.routines.length}</span></div>
-            {sch.routines.slice(0, 6).map((r, i) => (
-              <div key={i} className="corp-rt">
-                <span className="nm">{r[0]}</span>
-                <span className="corp-pill wait">예약</span>
-                <span className="w">{r[1]}</span>
+            {routines.map((r, i) => (
+              <div key={i} className="corp-rt" title={"AI " + r.r.ai + " — " + r.r.does + " / 사람이 마무리 — " + r.r.human}>
+                <span className="nm">{r.r.t}<i className="rt-ai">{r.r.ai} · {r.r.does}</i></span>
+                <span className={"corp-pill " + (r.state === "rel" ? "rel" : "wait")}>
+                  {r.state === "rel" ? "배포 전" : "예정"}</span>
+                <span className="w">{r.when}</span>
               </div>
             ))}
-            <div className="corp-note">브라우저가 닫혀 있으면 돌지 않습니다 — 「예약」은 <b>다음 열람 시 점검</b>이라는 뜻입니다.</div>
+            <div className="corp-note">예정 시각은 업무시간과 주기로 계산한 <b>실제 값</b>입니다.
+              다만 <b>아직 돌릴 수 있는 상태가 아닙니다</b> — 루틴 실행은 Phase 7, 실행 기록은 Phase 10에서 붙습니다.
+              백엔드가 없어 브라우저가 닫히면 스스로 돌지 않으므로, 그때도 「자동 실행」이 아니라 <b>열었을 때 밀린 것을 알려주는</b> 방식입니다.</div>
           </div>
         </div>
       </div>
@@ -319,7 +363,7 @@ function CorpOps({ onGo, onTab }) {
    ⚠️ 두 가지를 반드시 함께 보인다:
      ① AI가 끝까지 하는 일   ② 사람이 마무리하는 일과 **무엇이 그것을 막는지**
    「AI는 ~하지 않습니다」라는 문장만으로는 부족하다 — 차단 조건이 없으면 그건 선언일 뿐이다. */
-function CorpOrgChart({ sel, pick, open }) {
+function CorpOrgChart({ sel, pick, open, onTab }) {
   const S = CORP_SUMMARY;
   return (
     <div className="corp-org">
@@ -364,7 +408,9 @@ function CorpOrgChart({ sel, pick, open }) {
                       <i>{t.joined}</i></div>
                   </div>
                   <div className="co-work">{t.work}</div>
-                  <div className="co-pages">{t.pages.map((p, i) => <span key={i}>{p}</span>)}</div>
+                  <div className="co-pages">{t.pages.map((p, i) => (
+                    <span key={i} className={p.kind === "new" ? "pg-new" : ""}>{p.t}
+                      {p.kind === "new" && <i>{p.at}</i>}</span>))}</div>
                   <div className="co-split">
                     <div className="co-can">
                       <div className="co-ck"><b>{t.ai}</b>가 끝까지 하는 일</div>
@@ -385,6 +431,24 @@ function CorpOrgChart({ sel, pick, open }) {
           </div>
         );
       })}
+
+      <div className="co-div">
+        <div className="co-dname">전사 공통<i>팀에 귀속하지 않음</i></div>
+        <div className="co-grid">
+          <div className="co-card" style={{ "--tc": "#6366F1" }}
+            onClick={() => typeof onTab === "function" && onTab("whitepaper")}>
+            <div className="co-top">
+              <div className="co-id">
+                <div className="co-tname">백서<span className="co-code">전사</span></div>
+                <div className="co-pair"><b>전 팀 열람</b><span className="co-sep">·</span>
+                  <i>담당 AI 없음 — 사람이 쓰고 사람이 고친다</i></div>
+              </div>
+            </div>
+            <div className="co-work">제품·사업·기술의 기록. 특정 팀의 산출물이 아니라 회사 전체가 함께 보는 지면입니다.</div>
+            <div className="co-pages"><span>백서 열기 →</span></div>
+          </div>
+        </div>
+      </div>
 
       <div className="co-foot">
         <b>자리와 사람은 다릅니다</b> — 실제 재직 인원은 <b>{S.peopleN}명</b>({S.people.join(" · ")})이고,

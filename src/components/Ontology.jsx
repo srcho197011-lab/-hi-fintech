@@ -857,12 +857,15 @@ function OntGapRoadmap({ agg }) {
 }
 
 function OntologySection({ onGo }) {
-  const [top, setTop] = useState("health");
+  const [top, setTop] = useState("corpops");   /* 회사 총괄운영이 이 섹션의 첫 지면이다(형 지시 2026-11-11) */
   const [sub, setSub] = useState("overview");
   const [seg, setSeg] = useState(null);
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTop("health"); setSub("explorer"); };
+  /* ⚠️ 이 배열은 **화면에 그리지 않는다**(형 지시 2026-11-11 — 지면은 회사 총괄운영 › 팀 아래로 이관).
+     그래도 지우면 안 된다: scripts/gen_nav_inventory.py 가 지면 목록을 읽는 유일한 자리이고,
+     setTop(k)로 여는 경로도 그대로 살아 있다(하이·내비가 이름으로 지칭한다). */
   const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["partner", "협력업체 온톨로지 · 하네스", Truck, "#0891B2"], ["finance", "재무계획", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"], ["corpops", "회사 총괄운영", Building2, "#E8795A"]];
   const healthTabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["chain", "블록체인 금고", Blocks], ["hiops", "하이 커버리지", Bot], ["kb", "AI KB 라운지", Database], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
   if (!agg) return null;
@@ -898,11 +901,20 @@ function OntologySection({ onGo }) {
       </div>
       )}
 
-      <div className="chtabs lv1" style={{ marginTop: 14 }}>{topTabs.map(([k, t, Ic, c]) => (
-        <div key={k} className={`chtab ${top === k ? "on" : ""}`} style={{ "--cc": c }} onClick={() => setTop(k)}>
-          <span className="ch-ic"><Ic size={19} /></span><span className="ch-t">{t}</span>
-        </div>
-      ))}</div>
+      {top !== "corpops" && (() => {
+        const cur = topTabs.find(x => x[0] === top);
+        const owner = (typeof corpTeamOfTab === "function") ? corpTeamOfTab(top) : null;
+        const Ic = cur && cur[2];
+        return (
+          <div className="ontback" style={{ "--cc": (cur && cur[3]) || "#E8795A" }}>
+            <button className="ontback-b" onClick={() => setTop("corpops")}>← 회사 총괄운영</button>
+            <span className="ontback-p">
+              {owner && <><b>{owner.name}</b><i>{owner.own} · {owner.ai}</i><span className="ontback-s">›</span></>}
+              {Ic && <Ic size={14} />}<b className="ontback-t">{cur && cur[1]}</b>
+            </span>
+          </div>
+        );
+      })()}
 
       {top === "health" && <>
         <div className="ontobjbar">

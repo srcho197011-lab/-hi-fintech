@@ -1074,9 +1074,26 @@ snap.verdictPages = { registered: PG_VERDICT_PAGES.length, live: verdictLive.len
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const movedSec = await click("온톨로지 · 하네스");
       await sleep(2600);
-      const movedTab = await click(label);
+      /* ★ 지면이 **회사 총괄운영 › 팀** 아래로 이관됐다(형 지시 2026-11-11 — 상단 탭 줄 제거).
+         담당 팀을 러너에 적지 않는다. 조직도에서 **그 지면 이름을 품은 카드**를 찾아 연다 —
+         화면이 단일 원천이므로 팀이 바뀌거나 지면이 개칭돼도 검사가 조용히 빗나가지 않는다. */
+      const openedTeam = await pg.evaluate((l) => {
+        const vt = [...document.querySelectorAll(".corp-vt")].filter((e) => /조직도/.test(e.textContent || ""))[0];
+        if (!vt) return false; vt.click();
+        return true;
+      }, label);
+      await sleep(900);
+      const openedCard = await pg.evaluate((l) => {
+        const c = [...document.querySelectorAll(".co-card")].filter((e) => (e.textContent || "").indexOf(l) >= 0)[0];
+        if (!c) return false; c.click(); return true;
+      }, label);
+      await sleep(1100);
+      const movedTab = await pg.evaluate((l) => {
+        const t = [...document.querySelectorAll(".cb-tab")].filter((e) => (e.innerText || "").indexOf(l) >= 0)[0];
+        if (!t) return false; t.click(); return true;
+      }, label);
       await sleep(3000);
-      if (!movedSec || !movedTab) why = "탭 이동 실패 — 섹션 " + movedSec + " / 탭 " + movedTab;
+      if (!movedSec || !movedTab) why = "지면 이동 실패 — 섹션 " + movedSec + " / 조직도 " + openedTeam + " / 팀카드 " + openedCard + " / 지면 " + movedTab;
       /* ★ P5a 가 이 패널을 **서브탭 5개**로 나눴다. 한 탭의 렌더 텍스트만 읽으면 ⓑ(상호 분모)와
          ⓒ(고지 2문구)와 ⓓ(판정 지면)가 **서로 다른 탭**에 있어 전부 0건이 되고, 그 0건은
          「이동 실패」와 구별되지 않는다 — 이 러너가 피하려는 바로 그 형태다. 그래서 서브탭을

@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=fe064298f8" />
+<link rel="stylesheet" href="./data/app.css?v=49fa17c31c" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=fe064298f8"></script>
-<script src="./src/data/section_data.js?v=fe064298f8"></script>
-<script src="./src/data/demo_members.js?v=fe064298f8"></script>
+<script src="./src/data/dummy_data.js?v=49fa17c31c"></script>
+<script src="./src/data/section_data.js?v=49fa17c31c"></script>
+<script src="./src/data/demo_members.js?v=49fa17c31c"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -16236,24 +16236,104 @@ const CORP_SCHEDULE = {
     ],
   },
   /* 브라우저가 닫혀 있으면 아무것도 돌지 않는다 — 「자동 실행」이 아니라 「다음 열람 시」다. */
+  /* every: workday(근무일) | mon | fri | month | release
+     at: 예정 시각 · day: 월 기준일 · owner: 사람 책임자 팀 코드 */
   routines: [
-    ["일마감", "매일", "전표 차대 검산 · 누락 점검", "이상 건 승인"],
-    ["은행 대사", "매일", "내역 대조 · 미대사 추출", "불일치 해소"],
-    ["주간보고 초안", "금", "팀별 지표 · 진척 · 이슈 · 차주 계획", "팀 책임자 확정"],
-    ["주간회의 자료", "월 09:30", "8팀 보고 통합", "CEO 승인"],
-    ["회의록 · 후속과제", "월 회의 직후", "초안 생성", "담당 · 기한 확정"],
-    ["월마감", "월 1회", "시산표 · 재무제표 생성", "마감 확정"],
-    ["예실 대비", "월 1회", "계획 대비 차이 · 원인 후보", "원인 확정"],
-    ["급여", "월 1회", "근태 집계 · 공제 계산", "지급 승인"],
-    ["계약 만료 점검", "주 1회", "만료 임박 추출", "갱신 · 해지 결정"],
-    ["보안 점검", "주 1회", "게이트 결과 · 확약 진척 집계", "조치 결정"],
-    ["릴리스 점검", "배포 전", "체크리스트 · 동일인 승인 탐지", "릴리스 승인(S1)"],
-    ["세무 기한 경보", "월 1회", "신고 기한 산출", "신고 제출"],
+    { t: "일마감",            every: "workday", at: "18:00", owner: "M2", ai: "핀테크",
+      does: "전표 차대 검산 · 누락 점검",            human: "이상 건 승인" },
+    { t: "은행 대사",          every: "workday", at: "10:00", owner: "M2", ai: "핀테크",
+      does: "내역 대조 · 미대사 추출",               human: "불일치 해소" },
+    { t: "주간보고 초안",       every: "fri",     at: "17:00", owner: "M1", ai: "전 팀",
+      does: "팀별 지표 · 진척 · 이슈 · 차주 계획",    human: "팀 책임자 확정" },
+    { t: "주간회의 자료",       every: "mon",     at: "09:30", owner: "M1", ai: "나침반",
+      does: "8팀 보고 통합",                        human: "CEO 승인" },
+    { t: "회의록 · 후속과제",    every: "mon",     at: "11:00", owner: "M1", ai: "각 AI 팀장",
+      does: "회의록 초안 생성",                      human: "담당 · 기한 확정" },
+    { t: "계약 만료 점검",      every: "mon",     at: "14:00", owner: "M1", ai: "나침반",
+      does: "만료 임박 추출",                        human: "갱신 · 해지 결정" },
+    { t: "보안 점검",          every: "mon",     at: "15:00", owner: "S1", ai: "하네스",
+      does: "게이트 결과 · 확약 진척 집계",           human: "조치 결정" },
+    { t: "월마감",             every: "month",   day: 5,  at: "15:00", owner: "M2", ai: "핀테크",
+      does: "시산표 · 재무제표 생성",                 human: "마감 확정" },
+    { t: "예실 대비",          every: "month",   day: 6,  at: "11:00", owner: "M2", ai: "핀테크",
+      does: "계획 대비 차이 · 원인 후보",             human: "원인 확정" },
+    { t: "급여",               every: "month",   day: 10, at: "10:00", owner: "M3", ai: "인총이",
+      does: "근태 집계 · 공제 계산",                  human: "지급 승인" },
+    { t: "세무 기한 경보",      every: "month",   day: 1,  at: "09:30", owner: "M2", ai: "핀테크",
+      does: "신고 기한 산출",                        human: "신고 제출" },
+    { t: "릴리스 점검",         every: "release", at: "배포 전", owner: "S1", ai: "하네스",
+      does: "체크리스트 · 동일인 승인 탐지",           human: "릴리스 승인" },
   ],
 };
 
 function corpTeam(id) { return CORP_TEAMS.find(t => t.id === id) || null; }
 function corpDiv(id) { return CORP_DIV.find(d => d.id === id) || null; }
+
+/* ══ 회사 운영의 시각 ══
+   근무일·회의 요일을 계산해야 하므로 **실제 오늘**을 쓴다.
+   ⚠️ 전역 now로 승격하지 않는다 — 보장 창 규약(창의 주인은 계약이고, 시연 시드만 기준일 고정)과
+      충돌한다. 이 파일 안에서만 쓰고, 러너는 corpOpsAt(iso)로 고정 날짜를 주입해 대조한다. */
+let _corpAt = null;
+function corpOpsAt(iso) { _corpAt = iso ? new Date(iso) : null; }
+function corpOpsNow() { return _corpAt ? new Date(_corpAt.getTime()) : new Date(); }
+
+function _corpHM(s) { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ""); return m ? [+m[1], +m[2]] : [9, 0]; }
+function _corpSet(d, hm) { const x = new Date(d.getTime()); x.setHours(hm[0], hm[1], 0, 0); return x; }
+function _corpWorkday(d) { const w = d.getDay(); return w >= 1 && w <= 5; }
+
+/* 루틴의 직전 예정 시각과 다음 예정 시각.
+   실행 기록이 없으므로(실데이터 미연결) 「직전 예정이 지났다 = 밀렸다」로만 판정한다.
+   이것이 「열었을 때 밀린 것을 알려준다」의 실체다 — 백엔드가 없어 스스로 돌지 않는다. */
+function corpRoutineWhen(r, now) {
+  now = now || corpOpsNow();
+  if (r.every === "release") return { kind: "release", prev: null, next: null };
+  const hm = _corpHM(r.at);
+  const mk = (d) => _corpSet(d, hm);
+  const day = (n) => { const d = new Date(now.getTime()); d.setDate(d.getDate() + n); return d; };
+  let prev = null, next = null;
+  if (r.every === "workday") {
+    for (let i = 0; i < 10 && !prev; i++) { const d = day(-i); if (_corpWorkday(d) && mk(d) <= now) prev = mk(d); }
+    for (let i = 0; i < 10 && !next; i++) { const d = day(i); if (_corpWorkday(d) && mk(d) > now) next = mk(d); }
+  } else if (r.every === "mon" || r.every === "fri") {
+    const want = r.every === "mon" ? 1 : 5;
+    for (let i = 0; i < 14 && !prev; i++) { const d = day(-i); if (d.getDay() === want && mk(d) <= now) prev = mk(d); }
+    for (let i = 0; i < 14 && !next; i++) { const d = day(i); if (d.getDay() === want && mk(d) > now) next = mk(d); }
+  } else if (r.every === "month") {
+    const at = (y, m) => mk(new Date(y, m, r.day || 1));
+    const y = now.getFullYear(), m = now.getMonth();
+    const thisM = at(y, m);
+    if (thisM <= now) { prev = thisM; next = at(y, m + 1); } else { prev = at(y, m - 1); next = thisM; }
+  }
+  return { kind: r.every, prev: prev, next: next, late: !!prev };
+}
+
+/* 이번 달 캘린더 — 주차 × 요일. 주간회의(월)와 오늘을 표시한다. */
+function corpCalendar(now) {
+  now = now || corpOpsNow();
+  const y = now.getFullYear(), m = now.getMonth();
+  const first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
+  const rows = []; let d = 1;
+  for (let w = 0; w < 6 && d <= last; w++) {
+    const row = [];
+    for (let i = 0; i < 7; i++) {
+      if ((w === 0 && i < first) || d > last) { row.push(null); continue; }
+      row.push({ d: d, dow: i, work: i >= 1 && i <= 5, meet: i === 1,
+        today: d === now.getDate(), past: d < now.getDate() });
+      d++;
+    }
+    rows.push(row);
+  }
+  return { y: y, m: m + 1, rows: rows, today: now.getDate() };
+}
+
+/* 탭 id → 담당 팀. 상단 탭 줄을 치운 뒤 「지금 보는 지면이 어느 팀 것인지」를 말해 준다. */
+function corpTeamOfTab(tab) {
+  for (let i = 0; i < CORP_TEAMS.length; i++) {
+    const t = CORP_TEAMS[i];
+    for (let j = 0; j < t.pages.length; j++) if (t.pages[j].tab === tab) return t;
+  }
+  return null;
+}
 
 /* ══════════════ AI 팀장 아바타 — 문양 단일 원천(corpAvatars.js) · CorpOps Phase 2 (형 지시 2026-11-11) ══════════════
    AI 팀장 8명에게 각자의 모습을 준다. 사람 사진이 아니라 **점과 선으로 짜인 기하 문양**이다 —
@@ -16587,6 +16667,30 @@ function CorpOps({ onGo, onTab }) {
   const selT = sel ? corpTeam(sel) : null;
   const sch = CORP_SCHEDULE;
 
+  /* 루틴·캘린더는 **실제 오늘**로 계산한다 — 근무일과 회의 요일을 따지기 때문이다.
+     실행 기록이 없으므로(실데이터 미연결) 「예정 시각이 지났다 = 밀렸다」로만 판정한다.
+     이것이 「열었을 때 밀린 것을 알려준다」의 실체다. */
+  const now = typeof corpOpsNow === "function" ? corpOpsNow() : new Date();
+  const cal = typeof corpCalendar === "function" ? corpCalendar(now) : { y: now.getFullYear(), m: now.getMonth() + 1, rows: [] };
+  const fmt = (d) => d ? (String(d.getMonth() + 1) + "/" + d.getDate() + " " +
+    String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0")) : "—";
+  const routines = (sch.routines || []).map(r => {
+    const w = typeof corpRoutineWhen === "function" ? corpRoutineWhen(r, now) : {};
+    if (w.kind === "release") return { r: r, state: "rel", when: "배포 전" };
+    /* ⚠️ 「밀림」이라 쓰지 않는다 — 루틴을 실행하는 기능이 아직 없으므로(P7) 안 돌린 것이 아니라
+       돌릴 수 있는 상태가 아니다. 지난 예정과 다음 예정을 그대로 보일 뿐이다. */
+    return { r: r, state: "wait", when: "다음 " + fmt(w.next), prev: w.prev ? fmt(w.prev) : null };
+  });
+  const lateN = 0;
+  const nextMeet = (function () {
+    const r = (sch.routines || []).find(x => x.every === "mon" && /주간회의/.test(x.t));
+    if (!r || typeof corpRoutineWhen !== "function") return null;
+    const w = corpRoutineWhen(r, now); if (!w.next) return null;
+    const d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const d1 = new Date(w.next.getFullYear(), w.next.getMonth(), w.next.getDate());
+    return { dday: Math.round((d1 - d0) / 86400000), label: fmt(w.next) };
+  })();
+
   return (
     <div className="corpops" ref={wrapRef}>
       <div className="corp-top">
@@ -16600,7 +16704,7 @@ function CorpOps({ onGo, onTab }) {
         <div className="corp-stub">실데이터 미연결 · 지표는 연결 후 채워집니다</div>
       </div>
 
-      {view === "org" && <CorpOrgChart sel={sel} pick={pick} open={(id) => { pick(id); setView("team"); }} />}
+      {view === "org" && <CorpOrgChart sel={sel} pick={pick} onTab={onTab} open={(id) => { pick(id); setView("team"); }} />}
       {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
       <div className="corp-shell" style={view !== "dash" ? { display: "none" } : undefined}>
@@ -16622,6 +16726,23 @@ function CorpOps({ onGo, onTab }) {
             <div className="corp-row"><span className="m">점심</span><span className="s">{sch.work.lunch}</span></div>
             <div className="corp-row"><span className="m">주간회의</span><span className="s">{sch.weekly.day} {sch.weekly.time} · {sch.weekly.mode}</span></div>
           </div>
+          <div className="corp-blk">
+            <div className="corp-lab">캘린더 <b>{cal.y}.{String(cal.m).padStart(2, "0")}</b>
+              <span className="corp-callegend"><i className="cl-meet" />회의 <i className="cl-work" />근무</span></div>
+            <table className="corp-cal"><tbody>
+              <tr>{["일", "월", "화", "수", "목", "금", "토"].map(d => <th key={d}>{d}</th>)}</tr>
+              {cal.rows.map((row, i) => (
+                <tr key={i}>{row.map((c, j) => (
+                  <td key={j} className={!c ? "off" : [c.work ? "w" : "", c.meet ? "m" : "", c.today ? "t" : "", c.past ? "p" : ""].join(" ")}>
+                    {c ? c.d : ""}</td>))}</tr>
+              ))}
+            </tbody></table>
+            <div className="corp-row" style={{ marginTop: 8 }}>
+              <span className="m">다음 주간회의</span>
+              <span className="s">{nextMeet ? (nextMeet.dday === 0 ? "오늘 " : "D-" + nextMeet.dday + " ") + nextMeet.label : "—"}</span>
+            </div>
+          </div>
+
           <div className="corp-blk">
             <div className="corp-lab">팀 바로가기 <b>{CORP_SUMMARY.teams}</b></div>
             {CORP_DIV.map(d => {
@@ -16718,14 +16839,17 @@ function CorpOps({ onGo, onTab }) {
           </div>
           <div className="corp-sec corp-last">
             <div className="corp-sh"><b>루틴</b><span className="c">{sch.routines.length}</span></div>
-            {sch.routines.slice(0, 6).map((r, i) => (
-              <div key={i} className="corp-rt">
-                <span className="nm">{r[0]}</span>
-                <span className="corp-pill wait">예약</span>
-                <span className="w">{r[1]}</span>
+            {routines.map((r, i) => (
+              <div key={i} className="corp-rt" title={"AI " + r.r.ai + " — " + r.r.does + " / 사람이 마무리 — " + r.r.human}>
+                <span className="nm">{r.r.t}<i className="rt-ai">{r.r.ai} · {r.r.does}</i></span>
+                <span className={"corp-pill " + (r.state === "rel" ? "rel" : "wait")}>
+                  {r.state === "rel" ? "배포 전" : "예정"}</span>
+                <span className="w">{r.when}</span>
               </div>
             ))}
-            <div className="corp-note">브라우저가 닫혀 있으면 돌지 않습니다 — 「예약」은 <b>다음 열람 시 점검</b>이라는 뜻입니다.</div>
+            <div className="corp-note">예정 시각은 업무시간과 주기로 계산한 <b>실제 값</b>입니다.
+              다만 <b>아직 돌릴 수 있는 상태가 아닙니다</b> — 루틴 실행은 Phase 7, 실행 기록은 Phase 10에서 붙습니다.
+              백엔드가 없어 브라우저가 닫히면 스스로 돌지 않으므로, 그때도 「자동 실행」이 아니라 <b>열었을 때 밀린 것을 알려주는</b> 방식입니다.</div>
           </div>
         </div>
       </div>
@@ -16737,7 +16861,7 @@ function CorpOps({ onGo, onTab }) {
    ⚠️ 두 가지를 반드시 함께 보인다:
      ① AI가 끝까지 하는 일   ② 사람이 마무리하는 일과 **무엇이 그것을 막는지**
    「AI는 ~하지 않습니다」라는 문장만으로는 부족하다 — 차단 조건이 없으면 그건 선언일 뿐이다. */
-function CorpOrgChart({ sel, pick, open }) {
+function CorpOrgChart({ sel, pick, open, onTab }) {
   const S = CORP_SUMMARY;
   return (
     <div className="corp-org">
@@ -16782,7 +16906,9 @@ function CorpOrgChart({ sel, pick, open }) {
                       <i>{t.joined}</i></div>
                   </div>
                   <div className="co-work">{t.work}</div>
-                  <div className="co-pages">{t.pages.map((p, i) => <span key={i}>{p}</span>)}</div>
+                  <div className="co-pages">{t.pages.map((p, i) => (
+                    <span key={i} className={p.kind === "new" ? "pg-new" : ""}>{p.t}
+                      {p.kind === "new" && <i>{p.at}</i>}</span>))}</div>
                   <div className="co-split">
                     <div className="co-can">
                       <div className="co-ck"><b>{t.ai}</b>가 끝까지 하는 일</div>
@@ -16803,6 +16929,24 @@ function CorpOrgChart({ sel, pick, open }) {
           </div>
         );
       })}
+
+      <div className="co-div">
+        <div className="co-dname">전사 공통<i>팀에 귀속하지 않음</i></div>
+        <div className="co-grid">
+          <div className="co-card" style={{ "--tc": "#6366F1" }}
+            onClick={() => typeof onTab === "function" && onTab("whitepaper")}>
+            <div className="co-top">
+              <div className="co-id">
+                <div className="co-tname">백서<span className="co-code">전사</span></div>
+                <div className="co-pair"><b>전 팀 열람</b><span className="co-sep">·</span>
+                  <i>담당 AI 없음 — 사람이 쓰고 사람이 고친다</i></div>
+              </div>
+            </div>
+            <div className="co-work">제품·사업·기술의 기록. 특정 팀의 산출물이 아니라 회사 전체가 함께 보는 지면입니다.</div>
+            <div className="co-pages"><span>백서 열기 →</span></div>
+          </div>
+        </div>
+      </div>
 
       <div className="co-foot">
         <b>자리와 사람은 다릅니다</b> — 실제 재직 인원은 <b>{S.peopleN}명</b>({S.people.join(" · ")})이고,
@@ -17769,12 +17913,15 @@ function OntGapRoadmap({ agg }) {
 }
 
 function OntologySection({ onGo }) {
-  const [top, setTop] = useState("health");
+  const [top, setTop] = useState("corpops");   /* 회사 총괄운영이 이 섹션의 첫 지면이다(형 지시 2026-11-11) */
   const [sub, setSub] = useState("overview");
   const [seg, setSeg] = useState(null);
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTop("health"); setSub("explorer"); };
+  /* ⚠️ 이 배열은 **화면에 그리지 않는다**(형 지시 2026-11-11 — 지면은 회사 총괄운영 › 팀 아래로 이관).
+     그래도 지우면 안 된다: scripts/gen_nav_inventory.py 가 지면 목록을 읽는 유일한 자리이고,
+     setTop(k)로 여는 경로도 그대로 살아 있다(하이·내비가 이름으로 지칭한다). */
   const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["partner", "협력업체 온톨로지 · 하네스", Truck, "#0891B2"], ["finance", "재무계획", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"], ["corpops", "회사 총괄운영", Building2, "#E8795A"]];
   const healthTabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["chain", "블록체인 금고", Blocks], ["hiops", "하이 커버리지", Bot], ["kb", "AI KB 라운지", Database], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
   if (!agg) return null;
@@ -17810,11 +17957,20 @@ function OntologySection({ onGo }) {
       </div>
       )}
 
-      <div className="chtabs lv1" style={{ marginTop: 14 }}>{topTabs.map(([k, t, Ic, c]) => (
-        <div key={k} className={`chtab ${top === k ? "on" : ""}`} style={{ "--cc": c }} onClick={() => setTop(k)}>
-          <span className="ch-ic"><Ic size={19} /></span><span className="ch-t">{t}</span>
-        </div>
-      ))}</div>
+      {top !== "corpops" && (() => {
+        const cur = topTabs.find(x => x[0] === top);
+        const owner = (typeof corpTeamOfTab === "function") ? corpTeamOfTab(top) : null;
+        const Ic = cur && cur[2];
+        return (
+          <div className="ontback" style={{ "--cc": (cur && cur[3]) || "#E8795A" }}>
+            <button className="ontback-b" onClick={() => setTop("corpops")}>← 회사 총괄운영</button>
+            <span className="ontback-p">
+              {owner && <><b>{owner.name}</b><i>{owner.own} · {owner.ai}</i><span className="ontback-s">›</span></>}
+              {Ic && <Ic size={14} />}<b className="ontback-t">{cur && cur[1]}</b>
+            </span>
+          </div>
+        );
+      })()}
 
       {top === "health" && <>
         <div className="ontobjbar">
@@ -35438,6 +35594,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-11", ver:"v2.8", ch:[9], feat:"지면의 팀 하위 이관과 캘린더·루틴 실계산", src:"온톨로지 › 회사 총괄운영", summary:"평면으로 놓여 있던 상단 탭 줄을 치우고 지면을 팀 아래로 옮기면서 내비 경로를 화면 그대로 고쳐 길 안내가 어긋나지 않게 했고, 지면을 열면 어느 팀 것인지가 윗줄에 뜨게 했으며, 탭을 눌러 들어가던 검사 프로그램은 지면 이름을 품은 조직도 카드를 찾아 들어가도록 고쳐 이름이 바뀌어도 빗나가지 않게 했고, 캘린더와 루틴 열두 종의 다음 예정 시각을 업무시간과 주기로 실제 계산해 보이되 실행 기능이 없는 단계에서 지난 예정을 밀림으로 칠하지 않도록 거두었다", refs:[], status:"반영", hash:"3221ab2", auto:true },
   { date:"2026-11-11", ver:"v2.7", ch:[9], feat:"팀 대시보드와 재무계획 이관", src:"온톨로지 › 회사 총괄운영 › 팀", summary:"평면으로 놓여 있던 상단 지면들을 팀 아래로 이으면서 화면을 복제하지 않고 같은 컴포넌트를 그대로 불러 진실이 갈리지 않게 했고, 재무회계를 재무계획으로 고쳐 계획 축임을 이름에서 드러냈으며 지면 제목도 함께 맞췄고, 아직 만들지 않은 지면은 자리만 잡고 언제 만드는지를 적어 비어 있음이 숨지 않게 했다", refs:[], status:"반영", hash:"a02620b", auto:true },
   { date:"2026-11-11", ver:"v2.6", ch:[9], feat:"회사 총괄운영 조직도와 AI 팀장 아바타", src:"온톨로지 › 회사 총괄운영 › 조직도", summary:"AI 팀장 여덟에게 점과 선으로 짜인 각자의 문양을 주어 사람과 한눈에 갈리게 했고, 조직도에 AI가 끝까지 하는 일과 사람이 마무리하는 일을 나란히 두되 뒤쪽에는 무엇이 그것을 막는지를 전건에 붙여 선언이 아니라 조건으로 읽히게 했으며, 이미 코드에 있는 차단과 앞으로 강제할 차단을 배지로 갈라 적었고, 자리와 사람을 섞어 세던 인원 집계를 재직 인원과 채워진 자리로 나눠 바로잡았다", refs:[], status:"반영", hash:"f5ff99c", auto:true },
   { date:"2026-11-11", ver:"v2.5", ch:[9], feat:"회사 총괄운영 총괄 대시보드와 조직 온톨로지", src:"온톨로지 › 회사 총괄운영", summary:"사람 책임자와 AI 팀장이 쌍으로 일하는 업무자동화 체계를 8팀 3단위로 세우고, 팀을 원으로 세운 조직 온톨로지를 원근 회전으로 보이게 했으며, 원 안에 사람과 AI를 나란히 적어 누가 마무리하는지가 화면에서 갈리게 했고, 실데이터가 붙기 전까지는 지표를 미연결로 비워 두어 숫자를 지어내지 않게 했다", refs:[], status:"반영", hash:"e224cf4", auto:true },
@@ -50811,7 +50968,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "db0d6b4d26d68bba", "generatedAt": "2026-11-11", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "9cd672105ffe6979", "generatedAt": "2026-11-11", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -50883,21 +51040,21 @@ const NAV_INVENTORY = [
   {"key": "tab.checkup.tele", "label": "원격진료·건강상담", "path": "checkup › 원격진료·건강상담", "surface": "tab", "nav": "checkup", "tab": "tele", "owner": "sarg", "admin": false, "desc": "", "aliases": ["dnjsrurwlsfyrjsrkdtkdeka", "원격진료건강상담"]},
   {"key": "tab.checkup.doctor", "label": "AI 주치의", "path": "checkup › 🩺 AI 주치의", "surface": "tab", "nav": "checkup", "tab": "doctor", "owner": "sarg", "admin": false, "desc": "", "aliases": ["AI 주치의", "AIwncldml", "AI주치의"]},
   {"key": "tab.checkup.emergency", "label": "응급신호", "path": "checkup › 🚨 응급신호", "surface": "tab", "nav": "checkup", "tab": "emergency", "owner": "sarg", "admin": false, "desc": "", "aliases": ["dmdrmqtlsgh", "응급신호"]},
-  {"key": "tab.ontology.health", "label": "헬스케어 온톨로지", "path": "ontology › 헬스케어 온톨로지", "surface": "tab", "nav": "ontology", "tab": "health", "owner": "nav", "admin": true, "desc": "", "aliases": ["gpftmzpdjdhsxhffhwl", "헬스케어온톨로지"]},
-  {"key": "tab.ontology.partner", "label": "협력업체 온톨로지 · 하네스", "path": "ontology › 협력업체 온톨로지 · 하네스", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["guqfurdjqcpdhsxhffhwlgksptm", "협력업체온톨로지하네스"]},
-  {"key": "tab.ontology.finance", "label": "재무계획", "path": "ontology › 재무계획", "surface": "tab", "nav": "ontology", "tab": "finance", "owner": "nav", "admin": true, "desc": "", "aliases": ["woanrPghlr"]},
-  {"key": "tab.ontology.marketing", "label": "마케팅", "path": "ontology › 마케팅", "surface": "tab", "nav": "ontology", "tab": "marketing", "owner": "nav", "admin": true, "desc": "", "aliases": ["akzpxld"]},
-  {"key": "tab.ontology.bizops", "label": "사업 운영", "path": "ontology › 사업 운영", "surface": "tab", "nav": "ontology", "tab": "bizops", "owner": "nav", "admin": true, "desc": "", "aliases": ["tkdjqdnsdud", "사업운영"]},
-  {"key": "tab.ontology.foundation", "label": "HI-Fin 기반 온톨로지", "path": "ontology › HI-Fin 기반 온톨로지", "surface": "tab", "nav": "ontology", "tab": "foundation", "owner": "nav", "admin": true, "desc": "", "aliases": ["HI-Finrlqksdhsxhffhwl", "HI-Fin기반온톨로지"]},
-  {"key": "tab.ontology.ops", "label": "운영 콘솔", "path": "ontology › 운영 콘솔", "surface": "tab", "nav": "ontology", "tab": "ops", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnsdudzhsthf", "운영콘솔"]},
-  {"key": "tab.ontology.dataops", "label": "데이터 운영", "path": "ontology › 데이터 운영", "surface": "tab", "nav": "ontology", "tab": "dataops", "owner": "nav", "admin": true, "desc": "", "aliases": ["epdlxjdnsdud", "데이터운영"]},
+  {"key": "tab.ontology.health", "label": "헬스케어 온톨로지", "path": "ontology › 회사 총괄운영 › 헬스케어팀 › 헬스케어 온톨로지", "surface": "tab", "nav": "ontology", "tab": "health", "owner": "nav", "admin": true, "desc": "", "aliases": ["gpftmzpdjdhsxhffhwl", "헬스케어온톨로지"]},
+  {"key": "tab.ontology.partner", "label": "협력업체 온톨로지 · 하네스", "path": "ontology › 회사 총괄운영 › 경영기획팀 › 협력업체 온톨로지 · 하네스", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["guqfurdjqcpdhsxhffhwlgksptm", "협력업체온톨로지하네스"]},
+  {"key": "tab.ontology.finance", "label": "재무계획", "path": "ontology › 회사 총괄운영 › 회계팀 › 재무계획", "surface": "tab", "nav": "ontology", "tab": "finance", "owner": "nav", "admin": true, "desc": "", "aliases": ["woanrPghlr"]},
+  {"key": "tab.ontology.marketing", "label": "마케팅", "path": "ontology › 회사 총괄운영 › 마케팅팀 › 마케팅", "surface": "tab", "nav": "ontology", "tab": "marketing", "owner": "nav", "admin": true, "desc": "", "aliases": ["akzpxld"]},
+  {"key": "tab.ontology.bizops", "label": "사업 운영", "path": "ontology › 회사 총괄운영 › 경영기획팀 › 사업 운영", "surface": "tab", "nav": "ontology", "tab": "bizops", "owner": "nav", "admin": true, "desc": "", "aliases": ["tkdjqdnsdud", "사업운영"]},
+  {"key": "tab.ontology.foundation", "label": "HI-Fin 기반 온톨로지", "path": "ontology › 회사 총괄운영 › 데이터관리팀 › HI-Fin 기반 온톨로지", "surface": "tab", "nav": "ontology", "tab": "foundation", "owner": "nav", "admin": true, "desc": "", "aliases": ["HI-Finrlqksdhsxhffhwl", "HI-Fin기반온톨로지"]},
+  {"key": "tab.ontology.ops", "label": "운영 콘솔", "path": "ontology › 회사 총괄운영 › 정보보안팀 › 운영 콘솔", "surface": "tab", "nav": "ontology", "tab": "ops", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnsdudzhsthf", "운영콘솔"]},
+  {"key": "tab.ontology.dataops", "label": "데이터 운영", "path": "ontology › 회사 총괄운영 › 데이터관리팀 › 데이터 운영", "surface": "tab", "nav": "ontology", "tab": "dataops", "owner": "nav", "admin": true, "desc": "", "aliases": ["epdlxjdnsdud", "데이터운영"]},
   {"key": "tab.ontology.whitepaper", "label": "백서", "path": "ontology › 백서", "surface": "tab", "nav": "ontology", "tab": "whitepaper", "owner": "nav", "admin": true, "desc": "", "aliases": ["qortj"]},
   {"key": "tab.ontology.corpops", "label": "회사 총괄운영", "path": "ontology › 회사 총괄운영", "surface": "tab", "nav": "ontology", "tab": "corpops", "owner": "nav", "admin": true, "desc": "", "aliases": ["ghltkchdrhkfdnsdud", "회사총괄운영"]},
-  {"key": "sub.partner.overview", "label": "개요 · 객체", "path": "ontology › 협력업체 온톨로지 · 하네스 › 개요 · 객체", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rodyrorcp", "개요객체"]},
-  {"key": "sub.partner.trade", "label": "거래 · 운영", "path": "ontology › 협력업체 온톨로지 · 하네스 › 거래 · 운영", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rjfodnsdud", "거래운영"]},
-  {"key": "sub.partner.cost", "label": "원가 · 정산", "path": "ontology › 협력업체 온톨로지 · 하네스 › 원가 · 정산", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnjsrkwjdtks", "원가정산"]},
-  {"key": "sub.partner.report", "label": "내부통제 보고서", "path": "ontology › 협력업체 온톨로지 · 하네스 › 내부통제 보고서", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["soqnxhdwpqhrhtj", "내부통제보고서"]},
-  {"key": "sub.partner.engine", "label": "정책 · 판정 엔진", "path": "ontology › 협력업체 온톨로지 · 하네스 › 정책 · 판정 엔진", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["wjdcorvkswjddpswls", "정책판정엔진"]},
+  {"key": "sub.partner.overview", "label": "개요 · 객체", "path": "ontology › 회사 총괄운영 › 경영기획팀 › 협력업체 온톨로지 · 하네스 › 개요 · 객체", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rodyrorcp", "개요객체"]},
+  {"key": "sub.partner.trade", "label": "거래 · 운영", "path": "ontology › 회사 총괄운영 › 경영기획팀 › 협력업체 온톨로지 · 하네스 › 거래 · 운영", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rjfodnsdud", "거래운영"]},
+  {"key": "sub.partner.cost", "label": "원가 · 정산", "path": "ontology › 회사 총괄운영 › 경영기획팀 › 협력업체 온톨로지 · 하네스 › 원가 · 정산", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnjsrkwjdtks", "원가정산"]},
+  {"key": "sub.partner.report", "label": "내부통제 보고서", "path": "ontology › 회사 총괄운영 › 경영기획팀 › 협력업체 온톨로지 · 하네스 › 내부통제 보고서", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["soqnxhdwpqhrhtj", "내부통제보고서"]},
+  {"key": "sub.partner.engine", "label": "정책 · 판정 엔진", "path": "ontology › 회사 총괄운영 › 경영기획팀 › 협력업체 온톨로지 · 하네스 › 정책 · 판정 엔진", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["wjdcorvkswjddpswls", "정책판정엔진"]},
   {"key": "tab.healthmate.0", "label": "⓪ 오늘의 지시서", "path": "healthmate › ⓪ 오늘의 지시서", "surface": "tab", "nav": "healthmate", "tab": "0", "owner": "nav", "admin": true, "desc": "", "aliases": ["⓪dhsmfdmlwltltj", "⓪오늘의지시서"]},
   {"key": "tab.healthmate.1", "label": "① 지금 연락할 회원", "path": "healthmate › ① 지금 연락할 회원", "surface": "tab", "nav": "healthmate", "tab": "1", "owner": "nav", "admin": true, "desc": "", "aliases": ["ghldnjstlsgh", "ghldnjswjqchrtlsgh", "wlrmadusfkrgkfghldnjs", "지금 연락할 회원", "지금연락할회원", "회원 신호", "회원 접촉 신호", "회원신호", "회원접촉신호"]},
   {"key": "tab.healthmate.2", "label": "② 배정·접촉 락 회원", "path": "healthmate › ② 배정·접촉 락 회원", "surface": "tab", "nav": "healthmate", "tab": "2", "owner": "nav", "admin": true, "desc": "", "aliases": ["qhgjaqowjd", "qhgjaqowjdeorl", "qowjdeorl", "qowjdwjqchrfkrghldnjs", "배정·대기", "배정·접촉 락 회원", "배정대기", "배정접촉락회원", "보험 배정", "보험 배정·대기", "보험배정", "보험배정대기"]},
@@ -51044,7 +51201,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"db0d6b4d26d68bba","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":3.72,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.36,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
