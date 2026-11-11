@@ -119,8 +119,8 @@ const CORP_TEAMS = [
     ai: "하네스", aiWhy: "막고 검증한다", c: "#C75B45", th: 0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "보안 통제 · 취약점 관리 · 접근 권한 · 침해 대응 · 내부통제와 감사 증적 · 릴리스 승인",
     pages: [
-      { t: "보안 현황", kind: "new", at: "P9" },
-      { t: "릴리스 · 감사", kind: "new", at: "P9" },
+      { t: "보안 현황", kind: "mod", comp: "CorpSecuritySection", note: "커밋 게이트 — 목록이 아니라 훅과 대조한다" },
+      { t: "릴리스 · 감사", kind: "mod", comp: "CorpReleaseSection", note: "작성자 ≠ 승인자 · 지금은 승인 가능자가 없다" },
       { t: "운영 콘솔", kind: "tab", tab: "ops", comp: "OpsConsoleSection" }],
     can: ["커밋 게이트 결과 수집", "미조치 항목 경보", "확약 진척 집계", "동일인 승인 탐지"],
     cannot: [

@@ -13,6 +13,9 @@
      ④ 역분개   — 정정 경로가 차·대를 뒤집고 금액이 맞물리는가.
      ⑤ 승인     — AI 주체에게 승인 권한이 없는가(canApprove=false) · 전기 전표에 작성자≠승인자.
      ⑥ 파일럿   — 실데이터 반입 전까지 CORP_LEDGER_PILOT 가 true 이고 화면이 그 사실을 적는가.
+     ⑩ 결재릴리스 — 승인 없이 상태가 넘어가지 않는가 · 동일인 승인을 탐지해 **기록**하는가 ·
+                   늘 거부하는 벽이 아니라 조건이 서면 열리는 게이트인가(자기시험) ·
+                   보안 현황의 게이트 목록이 훅과 **대조**되는가.
      ⑨ 인사계약 — 주민번호 값을 담는 자리가 **구조적으로** 없는가 · 만료일 없는 계약을 거부하는가 ·
                   확인하지 않은 조문을 찍지 않는가 · **민감자료 차단 게이트의 음성 테스트가 실제로 서는가**.
      ⑧ 주간회의 — 참석 인원이 **자리가 아니라 사람**인가 · 확정자 없는 팀에 확정 경로가 없는가 ·
@@ -60,9 +63,9 @@ const MTGBOARD = "src/components/CorpMeeting.jsx";
 const ORG = "src/data/corpOrg.js";
 /* 화면 어법 검사의 사정권 — 파일럿 고지(BOARDS)와 달리 **모든 사내 지면**이 진다.
    「자동 실행」·「보완 필요」·회원 영상 모듈 참조는 지면 종류를 가리지 않는다. */
-const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpOps.jsx"];
+const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpGov.jsx", "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
-  ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js"];
+  ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js"];
 for (const f of LOAD) {
   try { vm.runInContext(rd(f), ctx); }
   catch (e) { console.error("[회계] " + f + " 적재 실패 — " + e.message); process.exit(1); }
@@ -602,6 +605,123 @@ if (hook) {
   });
 }
 
+/* ── ⑩ 일정 · 공지 · 결재 · 릴리스 ──────────────────────────────────────
+   Phase 9 완료 조건 두 가지를 단언으로 1:1 대응시킨다 —
+     승인 없이 상태 전이 불가  → ⑩전이(거부 경로 + **자기시험**으로 정상 경로가 열리는지도 본다)
+     동일인 승인 탐지 동작      → ⑩동일인(거부하면서 same 표시를 돌려주고 기록 경로가 있는가)
+   늘 거부하는 함수는 게이트가 아니다. 그래서 거부만 보지 않고 통과도 함께 본다. */
+const GOVF = "src/data/corpGov.js";
+const GOVBOARD = "src/components/CorpGov.jsx";
+const GNOW = new Date(2026, 10, 12);
+ctx.GNOW = GNOW;
+const GST = G("corpGovRead")();
+ctx.GST = GST;
+const GV = G("corpGovPass")(GST, GNOW);
+GV.rows.forEach((r) => {
+  chk(r.ok, `⑩결재   ${r.ko} (대상 ${r.n}건)`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
+  chk(r.n > 0, `⑩분모   ${r.ko} 검사 대상 > 0`, r.n);
+});
+chk(GV.pass, "⑩결재   검산 전건 통과", GV.fail.map((f) => f.ko));
+
+/* 승인 가능자 — 지금은 0명이다. 그 사실을 러너가 고정한다.
+   0명인데 승인된 건이 있으면 어딘가 승인 경로가 샜다는 뜻이다. */
+const RELWHO = G("corpRelApprovers")();
+const RELS = G("corpRelAll")(GST);
+chk(RELS.length > 0, "⑩분모   릴리스 표본 > 0", RELS.length);
+chk(RELWHO.length === 0, "⑩승인   릴리스 승인 가능자 0명(S1 책임자 합류 전)", RELWHO.join(" "));
+chk(RELS.filter((r) => r.st === "approved").length === 0,
+  "⑩승인   승인 가능자가 없으면 승인된 릴리스도 0건", RELS.filter((r) => r.st === "approved").map((r) => r.ver).join(" "));
+
+/* 전이 — 거부 경로를 전수로 본다 */
+const R0 = RELS[0];
+const full = Object.assign({}, R0, { check: G("CORP_REL_CHECK").map((c) => c.k) });
+const relCan = G("corpRelCanApprove");
+const relCases = [
+  ["AI 주체", full, "온톨로", /사람이 아닙니다/],
+  ["합류 전 책임자", full, "김남용", /사람이 아닙니다/],
+  ["S1 아닌 재직자", full, "조예원", /정보보안팀/],
+  ["대표(S1 아님)", full, "조성래", /정보보안팀/],
+  ["주체 미선택", full, "", /고르지 않았/],
+  ["점검표 미충족", Object.assign({}, R0, { check: [] }), "조성래", /정보보안팀|점검표/],
+];
+relCases.forEach(([ko, r, who, re]) => {
+  const c = relCan(r, who);
+  chk(!c.ok && re.test(c.why || ""), `⑩전이   릴리스 — ${ko} 거부 + 사유`, c);
+});
+/* ⓐ 자기시험 — S1 재직자가 있다고 가정하면 승인이 **열려야** 한다.
+   늘 거부하는 함수는 게이트가 아니라 벽이다. 열리는 조건을 증명하지 않으면 거부에 뜻이 없다. */
+{
+  const HRsave = G("CORP_HR").slice();
+  vm.runInContext("CORP_HR.push({ no: '9C9999', name: '시험보안', title: '이사', teams: ['S1'], joined: '2026-11-01', on: true, expertise: [], certs: [], rrn: null });", ctx);
+  const opened = relCan(full, "시험보안");
+  chk(opened.ok, "⑩전이ⓐ 자기시험 — S1 재직자 + 점검표 충족이면 승인이 열린다", opened);
+  const selfTry = relCan(Object.assign({}, full, { by: "시험보안" }), "시험보안");
+  chk(!selfTry.ok && selfTry.same === true,
+    "⑩동일인 작성자 = 승인자면 거부하고 **동일인임을 표시**한다(기록할 수 있어야 한다)", selfTry);
+  const noCheck = relCan(Object.assign({}, R0, { check: ["gate"] }), "시험보안");
+  chk(!noCheck.ok && /점검표/.test(noCheck.why), "⑩전이   점검표가 덜 차면 S1이어도 거부", noCheck);
+  vm.runInContext("CORP_HR.length = " + HRsave.length + ";", ctx);
+  chk(G("CORP_HR").length === HRsave.length, "⑩전이ⓐ 자기시험 뒤 원상 복구", G("CORP_HR").length);
+}
+
+/* 결재 — 종류마다 승인 주체가 다르다 */
+const aprCan = G("corpAprCanAdvance");
+const mkApr = (o) => Object.assign({ id: "t", d: "2026-11-12", ko: "시험", kind: "exp", by: "조예원", ap: null, st: "review" }, o);
+chk(!aprCan(mkApr({}), "").ok, "⑩전이   결재 — 주체 미선택 거부");
+chk(!aprCan(mkApr({}), "나침반").ok, "⑩전이   결재 — AI 주체 거부");
+const selfApr = aprCan(mkApr({ by: "조성래" }), "조성래");
+chk(!selfApr.ok && selfApr.same === true, "⑩동일인 결재 — 작성자 = 승인자 거부 + 동일인 표시", selfApr);
+chk(aprCan(mkApr({}), "조성래").ok, "⑩전이ⓐ 자기시험 — 지출은 M1 소속(대표)이 승인할 수 있다", aprCan(mkApr({}), "조성래"));
+chk(!aprCan(mkApr({ kind: "rel" }), "조성래").ok, "⑩전이   릴리스 종류 결재는 S1만 — 대표도 거부");
+chk(!aprCan(mkApr({ st: "approved" }), "조성래").ok, "⑩전이   끝난 결재는 더 넘어가지 않는다");
+chk(aprCan(mkApr({ st: "draft", by: "조성래" }), "조성래").ok,
+  "⑩전이ⓐ 자기시험 — 기안 → 검토는 본인도 올릴 수 있다(승인만 분리한다)");
+
+/* 동일인 시도를 **기록**하는 경로가 있는가 */
+const denied = G("corpGovDeny")(GST, "시험", "조성래", "작성자와 승인자가 같습니다");
+chk((denied.deny || []).length === 1, "⑩동일인 막힌 시도를 기록한다", (denied.deny || []).length);
+chk(denied.deny[0].who === "조성래" && denied.deny[0].why, "⑩동일인 기록에 누가·왜가 남는다", denied.deny[0]);
+
+/* 필독 — 누른 사람만 센다 */
+const must = G("corpNoticeOpen")(GST);
+chk(must.length > 0, "⑩분모   필독 공지 표본 > 0", must.length);
+chk(must.every((m) => m.done.length === 0), "⑩필독   아무도 안 눌렀으면 읽음 0명(열람을 읽음으로 바꾸지 않는다)",
+  must.map((m) => m.n.id + ":" + m.done.length).join(" "));
+chk(must.every((m) => m.left.length > 0), "⑩필독   미확인자를 이름으로 센다", must.map((m) => m.left.length).join(" "));
+
+/* 커밋 게이트 목록 — **사본이 아니라 대조다** */
+const GATES = G("CORP_GATES");
+chk(GATES.length > 0, "⑩분모   게이트 목록 > 0", GATES.length);
+if (hook) {
+  const miss = GATES.filter((x) => hook.indexOf(x.run) < 0);
+  chk(miss.length === 0, "⑩게이트 화면 목록의 러너가 실제로 훅에 걸려 있다(목록만 두고 대조 안 하면 빠진 게이트가 녹색으로 보인다)",
+    miss.map((x) => x.run).join(" "));
+}
+chk(GATES.every((x) => (x.d || "").trim()), "⑩게이트 게이트마다 무엇을 막는지 적혀 있다");
+
+/* 결정론 · 화면 */
+let govSrc = "";
+try { govSrc = rd(GOVF); } catch (e) { fails.push("⑩결재   " + GOVF + " 없음"); }
+if (govSrc) {
+  const bare = govSrc.replace(/\/\*[\s\S]*?\*\//g, "");
+  chk((bare.match(/Math\.random/g) || []).length === 0, "⑩결정론 Math.random 0건");
+  chk((bare.match(/new Date\(\s*\)/g) || []).length === 0, "⑩결정론 인자 없는 new Date() 0건");
+}
+let govBoard = "";
+try { govBoard = rd(GOVBOARD); } catch (e) { fails.push("⑩결재   " + GOVBOARD + " 없음"); }
+if (govBoard) {
+  chk(govBoard.indexOf("corpGovPass(") >= 0, "⑩화면   검산이 러너와 같은 함수", "없음");
+  chk(govBoard.indexOf("corpGovDeny(") >= 0, "⑩화면   동일인 시도를 화면이 기록한다", "없음");
+  chk(/승인할 수 있는 사람이 없습니다/.test(govBoard), "⑩화면   승인 가능자가 없다는 사실을 적는다", "없음");
+  chk(/누른 사람만|읽었다고 누른/.test(govBoard), "⑩화면   필독을 누른 사람만 센다고 적는다", "없음");
+  chk(/사본이 아닙니다/.test(govBoard), "⑩화면   게이트 목록이 대조임을 적는다", "없음");
+}
+if (hook) {
+  ["corpGov", "CorpGov"].forEach((n) => {
+    chk(hook.indexOf(n) >= 0, `⑩게이트 pre-commit 감시 대상에 ${n}`, "미등재");
+  });
+}
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -614,6 +734,7 @@ console.log(`[예실대비] 계획 비목 ${PU.leaves}(확정 ${PU.planOk.length
 console.log(`[주간회의] 주차 ${MW && MW.key}(D-${MW && MW.dday}) · 참석 사람 ${ATT.people.length}(재직) · AI ${ATT.agents.length} · 공석 ${ATT.vacant.length} · ` +
   `보고 ${REPS.length}팀(확정 가능 ${canFix.length} · 확정자 공석 ${noOwner.length}) · 원천 연결 ${linked.length}팀 · ` +
   `생성 경로 루틴 ${GEN.length} / ${SCHED.routines.length}`);
+console.log(`[결재릴리스] 릴리스 ${RELS.length}건 · 승인 가능자 ${RELWHO.length}명(S1) · 결재 종류 ${G("CORP_APR_KIND").length}종 · 점검 ${G("CORP_REL_CHECK").length}항목 · 필독 ${must.length}건(미확인 ${must.reduce((n, m) => n + m.left.length, 0)}명) · 게이트 ${GATES.length}종 훅 대조`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {
   console.log(`[회계엔진] 통과 ${oks.length} · 실패 ${fails.length} / ${total}`);

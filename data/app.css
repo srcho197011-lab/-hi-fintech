@@ -6076,3 +6076,22 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .ad-alert{display:inline-block;font-size:9px;border:1px solid;border-radius:4px;padding:2px 7px;white-space:nowrap;}
 .ad-alert em{font-style:normal;font-size:8.5px;opacity:.8;margin-left:5px;}
 .ad-bad{display:block;font-style:normal;font-size:9px;color:#D9544A;margin-top:3px;}
+
+/* ══ 회사 총괄운영 · 일정 · 공지 · 결재 · 릴리스(CorpGov) — Phase 9 (2026-11-12) ══ */
+.gv-k{font-size:9px;border:1px solid currentColor;border-radius:3px;padding:1px 5px;white-space:nowrap;}
+.gv-tag{font-size:8.5px;border:1px solid var(--cl2);color:var(--cd);border-radius:3px;padding:1px 6px;margin-right:6px;white-space:nowrap;}
+.gv-tag.must{color:#D9544A;border-color:rgba(217,84,74,.5);}
+.gv-tag.deny{color:#D9544A;border-color:rgba(217,84,74,.5);background:rgba(217,84,74,.1);}
+.gv-tag.ok{color:#5FAE7E;border-color:rgba(95,174,126,.5);}
+.gv-meta{font-size:9.5px;color:var(--cd);margin-left:6px;}
+.gv-read{font-size:9.5px;color:var(--cd);margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.gv-read em{font-style:normal;color:var(--cw);}
+.gv-act{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap;}
+.gv-why{font-style:normal;font-size:9.5px;color:var(--cw);}
+.gv-items{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.gv-items span{font-size:9.5px;color:var(--cd);background:var(--cb);border:1px solid var(--cl);border-radius:4px;padding:2px 7px;}
+.gv-chk{display:flex;gap:6px;flex-wrap:wrap;}
+.gv-cbtn{font-size:10px;color:var(--cd);background:var(--cb);border:1px solid var(--cl2);
+  border-radius:6px;padding:5px 10px;cursor:pointer;font-family:inherit;}
+.gv-cbtn.on{color:#5FAE7E;border-color:rgba(95,174,126,.5);background:rgba(95,174,126,.08);}
+.gv-cbtn:disabled{cursor:default;opacity:.6;}

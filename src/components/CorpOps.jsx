@@ -199,6 +199,7 @@ function CorpOps({ onGo, onTab }) {
           <button className={"corp-vt" + (view === "dash" ? " on" : "")} onClick={() => setView("dash")}>총괄</button>
           <button className={"corp-vt" + (view === "org" ? " on" : "")} onClick={() => setView("org")}>조직도</button>
           <button className={"corp-vt" + (view === "mtg" ? " on" : "")} onClick={() => setView("mtg")}>주간회의</button>
+          <button className={"corp-vt" + (view === "gov" ? " on" : "")} onClick={() => setView("gov")}>일정 · 결재</button>
           {sel && <button className={"corp-vt" + (view === "team" ? " on" : "")} onClick={() => setView("team")}
             style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
         </div>
@@ -208,6 +209,7 @@ function CorpOps({ onGo, onTab }) {
 
       {view === "org" && <CorpOrgChart sel={sel} pick={pick} onTab={onTab} open={(id) => { pick(id); setView("team"); }} />}
       {view === "mtg" && typeof CorpMeetingSection === "function" && <CorpMeetingSection />}
+      {view === "gov" && typeof CorpBoardSection === "function" && <CorpBoardSection />}
       {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
       <div className="corp-shell" style={view !== "dash" ? { display: "none" } : undefined}>
@@ -568,6 +570,8 @@ function corpPageComp(name) {
     if (name === "CorpHrSection") return typeof CorpHrSection === "function" ? CorpHrSection : null;
     if (name === "CorpDocsSection") return typeof CorpDocsSection === "function" ? CorpDocsSection : null;
     if (name === "CorpContractSection") return typeof CorpContractSection === "function" ? CorpContractSection : null;
+    if (name === "CorpReleaseSection") return typeof CorpReleaseSection === "function" ? CorpReleaseSection : null;
+    if (name === "CorpSecuritySection") return typeof CorpSecuritySection === "function" ? CorpSecuritySection : null;
     if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
     if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
     if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;
