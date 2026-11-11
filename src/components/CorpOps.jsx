@@ -184,13 +184,12 @@ function CorpOps({ onGo, onTab }) {
     return { r: r, state: "wait", when: "다음 " + fmt(w.next), prev: w.prev ? fmt(w.prev) : null };
   });
   const lateN = 0;
+  /* ⚠️ 「주간회의 자료」 루틴(월 09:30)을 회의 시각으로 읽던 결함을 P7에서 고쳤다 —
+     회의 시각의 단일 원천은 CORP_SCHEDULE.weekly.time 이다. 자료 통합은 회의 30분 전 준비이지 회의가 아니다. */
   const nextMeet = (function () {
-    const r = (sch.routines || []).find(x => x.every === "mon" && /주간회의/.test(x.t));
-    if (!r || typeof corpRoutineWhen !== "function") return null;
-    const w = corpRoutineWhen(r, now); if (!w.next) return null;
-    const d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const d1 = new Date(w.next.getFullYear(), w.next.getMonth(), w.next.getDate());
-    return { dday: Math.round((d1 - d0) / 86400000), label: fmt(w.next) };
+    if (typeof corpMtgWeek !== "function") return null;
+    const w = corpMtgWeek(now); if (!w) return null;
+    return { dday: w.dday, label: fmt(w.at), live: w.live };
   })();
 
   return (
@@ -199,6 +198,7 @@ function CorpOps({ onGo, onTab }) {
         <div className="corp-vtabs">
           <button className={"corp-vt" + (view === "dash" ? " on" : "")} onClick={() => setView("dash")}>총괄</button>
           <button className={"corp-vt" + (view === "org" ? " on" : "")} onClick={() => setView("org")}>조직도</button>
+          <button className={"corp-vt" + (view === "mtg" ? " on" : "")} onClick={() => setView("mtg")}>주간회의</button>
           {sel && <button className={"corp-vt" + (view === "team" ? " on" : "")} onClick={() => setView("team")}
             style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
         </div>
@@ -207,6 +207,7 @@ function CorpOps({ onGo, onTab }) {
       </div>
 
       {view === "org" && <CorpOrgChart sel={sel} pick={pick} onTab={onTab} open={(id) => { pick(id); setView("team"); }} />}
+      {view === "mtg" && typeof CorpMeetingSection === "function" && <CorpMeetingSection />}
       {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
       <div className="corp-shell" style={view !== "dash" ? { display: "none" } : undefined}>
@@ -324,9 +325,12 @@ function CorpOps({ onGo, onTab }) {
           <div className="corp-sec">
             <div className="corp-sh"><b>이번 주 회의</b><span className="c">{sch.weekly.day} {sch.weekly.time.split("~")[0]}</span></div>
             <div className="corp-card">
-              <div className="ti">주간 업무회의 <span className="corp-pill wait">자료 미생성</span></div>
-              <div className="by">{sch.weekly.mode} · 사람 {sch.weekly.joinPeople} + AI 팀장 {sch.weekly.joinAgents}</div>
-              <div className="ds">금요일에 각 AI 팀장이 주간보고 초안을 만들고, 팀 책임자가 확정하면 월 09:30에 <b>나침반</b>이 1부로 통합합니다.</div>
+              <div className="ti">주간 업무회의
+                <button className="corp-pill go" onClick={() => setView("mtg")}>지면 열기 →</button></div>
+              <div className="by">{sch.weekly.mode} · 사람 {CORP_SUMMARY.peopleN} + AI 팀장 {CORP_SUMMARY.agents}
+                {CORP_SUMMARY.pendingN > 0 && <span className="corp-vac"> · 책임자 공석 {CORP_SUMMARY.pendingN}석</span>}</div>
+              <div className="ds">금요일에 각 AI 팀장이 주간보고 초안을 만들고, 팀 책임자가 확정하면 월 09:30에 <b>나침반</b>이 1부로 통합합니다.
+                참석 인원은 <b>재직자</b>만 셉니다 — 합류 전 책임자는 참석자가 아니라 공석입니다.</div>
             </div>
           </div>
           <div className="corp-sec">
@@ -350,8 +354,9 @@ function CorpOps({ onGo, onTab }) {
               </div>
             ))}
             <div className="corp-note">예정 시각은 업무시간과 주기로 계산한 <b>실제 값</b>입니다.
-              다만 <b>아직 돌릴 수 있는 상태가 아닙니다</b> — 루틴 실행은 Phase 7, 실행 기록은 Phase 10에서 붙습니다.
-              백엔드가 없어 브라우저가 닫히면 스스로 돌지 않으므로, 그때도 「자동 실행」이 아니라 <b>열었을 때 밀린 것을 알려주는</b> 방식입니다.</div>
+              생성 경로가 붙은 것은 주간회의 관련 <b>셋</b>뿐이고, 나머지 아홉은 아직 돌 수 있는 상태가 아닙니다(실행 기록은 Phase 10).
+              백엔드가 없어 브라우저가 닫히면 스스로 돌지 않습니다 — <b>열었을 때 그 주차 자료가 없으면 그때 만드는</b> 방식입니다.
+              <button className="corp-pill go" onClick={() => setView("mtg")}>루틴 상태 보기 →</button></div>
           </div>
         </div>
       </div>

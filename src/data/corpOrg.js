@@ -267,6 +267,9 @@ function corpRoutineWhen(r, now) {
 /* 이번 달 캘린더 — 주차 × 요일. 주간회의(월)와 오늘을 표시한다. */
 function corpCalendar(now) {
   now = now || corpOpsNow();
+  /* 회의 요일의 단일 원천은 CORP_SCHEDULE.weekly.day다 — 숫자를 박아 두면 요일을 바꿔도 달력이 따라오지 않는다(P7 수선). */
+  const _dow = { "일요일": 0, "월요일": 1, "화요일": 2, "수요일": 3, "목요일": 4, "금요일": 5, "토요일": 6 };
+  const meetDow = _dow[((CORP_SCHEDULE.weekly || {}).day)] === undefined ? 1 : _dow[CORP_SCHEDULE.weekly.day];
   const y = now.getFullYear(), m = now.getMonth();
   const first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
   const rows = []; let d = 1;
@@ -274,7 +277,7 @@ function corpCalendar(now) {
     const row = [];
     for (let i = 0; i < 7; i++) {
       if ((w === 0 && i < first) || d > last) { row.push(null); continue; }
-      row.push({ d: d, dow: i, work: i >= 1 && i <= 5, meet: i === 1,
+      row.push({ d: d, dow: i, work: i >= 1 && i <= 5, meet: i === meetDow,
         today: d === now.getDate(), past: d < now.getDate() });
       d++;
     }

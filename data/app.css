@@ -5988,3 +5988,69 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .pa-chip{display:inline-block;font-size:9.5px;color:var(--cd);background:var(--cp);
   border:1px dashed var(--cl2);border-radius:4px;padding:2px 7px;margin:2px 4px 2px 0;cursor:help;}
 .pa-chipnote{display:block;font-style:normal;font-size:9px;color:var(--cd);margin-top:6px;line-height:1.6;}
+
+/* ══ 회사 총괄운영 · 주간회의(CorpMeeting) — Phase 7 (2026-11-11) ══
+   뼈대는 cl-* 재사용(.corpops 변수에 묶여 있어 이 섹션 안에서만 선다). 여기서는 회의 고유 표시만 만든다. */
+.wm-dday{font-size:9px;color:var(--cw);border:1px solid rgba(224,163,63,.45);border-radius:4px;padding:2px 7px;margin-left:8px;}
+.wm-dday.live{color:#5FAE7E;border-color:rgba(95,174,126,.6);background:rgba(95,174,126,.12);}
+.wm-work{font-size:9.5px;color:var(--cd);border:1px solid var(--cl2);border-radius:5px;padding:3px 8px;}
+.wm-work.on{color:#5FAE7E;border-color:rgba(95,174,126,.45);}
+.wm-pill{font-size:9px;border-radius:4px;padding:2px 7px;border:1px solid var(--cl2);color:var(--cd);white-space:nowrap;}
+.wm-pill.draft{color:var(--cw);border-color:rgba(224,163,63,.45);border-style:dashed;}
+.wm-pill.fixed{color:#5FAE7E;border-color:rgba(95,174,126,.5);background:rgba(95,174,126,.1);}
+.wm-pill.noowner{color:var(--cd2);border-style:dashed;}
+.wm-pill.rt-made{color:#5FAE7E;border-color:rgba(95,174,126,.5);}
+.wm-pill.rt-due{color:#D9544A;border-color:rgba(217,84,74,.55);background:rgba(217,84,74,.12);}
+.wm-pill.rt-wait{color:var(--cw);border-color:rgba(224,163,63,.4);}
+.wm-pill.rt-nogen{color:var(--cd2);border-style:dashed;}
+.wm-pill.rt-rel{color:var(--cd);}
+
+.wm-att{display:flex;flex-wrap:wrap;gap:7px;}
+.wm-p,.wm-a{display:flex;align-items:center;gap:5px;background:var(--cb);border:1px solid var(--cl);
+  border-radius:7px;padding:6px 10px;}
+.wm-a{border-color:var(--tc);}
+.wm-pn{font-size:11px;font-weight:700;}
+.wm-p i,.wm-a i{font-style:normal;font-size:9px;color:var(--cd);}
+.wm-pt{font-size:8.5px;color:var(--cd2);border-left:1px solid var(--cl2);padding-left:6px;margin-left:2px;}
+.wm-pt em{font-style:normal;color:var(--cw);margin-left:4px;}
+.wm-vac{margin-top:10px;background:var(--cb);border:1px dashed var(--cl2);border-radius:7px;padding:9px 11px;}
+.wm-vn{display:inline-block;font-size:9.5px;color:var(--cd);margin:2px 9px 2px 0;}
+.wm-vn i{font-style:normal;color:var(--cd2);font-size:8.5px;margin-left:3px;}
+
+.wm-tl{display:flex;flex-direction:column;gap:4px;}
+.wm-step{display:flex;align-items:flex-start;gap:9px;background:var(--cb);border:1px solid var(--cl);
+  border-radius:6px;padding:6px 10px;}
+.wm-at{font-size:10px;font-weight:700;color:var(--cw);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:84px;}
+.wm-at i{font-style:normal;color:var(--cd2);font-weight:400;font-size:9px;}
+.wm-what{flex:1;font-size:10.5px;}
+.wm-who{font-size:9px;color:var(--cd);text-align:right;max-width:40%;}
+
+.wm-link{display:flex;gap:8px;align-items:center;}
+.wm-link input{flex:1;font-size:10.5px;color:var(--ct);background:var(--cb);border:1px solid var(--cl2);
+  border-radius:5px;padding:5px 9px;font-family:inherit;}
+.wm-none{font-size:10px;color:var(--cd2);}
+
+.wm-tag{font-size:8.5px;border-radius:3px;padding:1px 5px;margin-right:6px;white-space:nowrap;}
+.wm-tag.open{color:#D9544A;border:1px solid rgba(217,84,74,.45);}
+.wm-tag.done{color:#5FAE7E;border:1px solid rgba(95,174,126,.45);}
+.wm-tag.vac{color:var(--cd2);border:1px dashed var(--cl2);}
+.wm-tag.none{color:var(--cd2);border:1px dashed var(--cl2);}
+.wm-tag.unsure{color:var(--cw);border:1px solid rgba(224,163,63,.5);background:rgba(224,163,63,.12);font-weight:700;}
+.wm-tag.v-human{color:#6FB0D6;border:1px solid rgba(111,176,214,.45);}
+.wm-tag.v-ai{color:#A58FD6;border:1px solid rgba(165,143,214,.45);}
+.wm-tag.v-lookup{color:var(--cw);border:1px solid rgba(224,163,63,.45);}
+.wm-meta{font-size:10px;color:var(--cd);margin-left:6px;}
+.wm-scope{font-size:9.5px;color:var(--cd);margin-bottom:8px;padding-left:9px;border-left:2px solid var(--cl2);}
+.wm-nosrc{font-size:10px;color:var(--cd);background:var(--cb);border:1px dashed var(--cl2);
+  border-radius:6px;padding:8px 11px;line-height:1.7;}
+.wm-nosrc b{color:var(--cw);}
+.wm-form{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;}
+.wm-form input,.wm-form select{font-size:10.5px;color:var(--ct);background:var(--cb);border:1px solid var(--cl2);
+  border-radius:5px;padding:5px 8px;font-family:inherit;}
+.wm-form input.g{flex:1;min-width:180px;}
+.wm-log{display:flex;align-items:center;gap:5px;font-size:10px;padding:4px 0;border-bottom:1px solid var(--cl);}
+.wm-log i{margin-left:auto;font-style:normal;font-size:9px;color:var(--cd2);}
+.corp-pill.go{cursor:pointer;background:transparent;color:var(--cw);border:1px solid rgba(224,163,63,.5);
+  font-family:inherit;margin-left:7px;}
+.corp-vac{color:var(--cd2);}
+.cl-tbl td i{font-style:normal;font-size:8.5px;color:var(--cw);margin-left:5px;}
