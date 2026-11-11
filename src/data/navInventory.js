@@ -1,6 +1,6 @@
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "29dbc34f5f44f80e", "generatedAt": "2026-11-11", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "db0d6b4d26d68bba", "generatedAt": "2026-11-11", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -74,7 +74,7 @@ const NAV_INVENTORY = [
   {"key": "tab.checkup.emergency", "label": "응급신호", "path": "checkup › 🚨 응급신호", "surface": "tab", "nav": "checkup", "tab": "emergency", "owner": "sarg", "admin": false, "desc": "", "aliases": ["dmdrmqtlsgh", "응급신호"]},
   {"key": "tab.ontology.health", "label": "헬스케어 온톨로지", "path": "ontology › 헬스케어 온톨로지", "surface": "tab", "nav": "ontology", "tab": "health", "owner": "nav", "admin": true, "desc": "", "aliases": ["gpftmzpdjdhsxhffhwl", "헬스케어온톨로지"]},
   {"key": "tab.ontology.partner", "label": "협력업체 온톨로지 · 하네스", "path": "ontology › 협력업체 온톨로지 · 하네스", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["guqfurdjqcpdhsxhffhwlgksptm", "협력업체온톨로지하네스"]},
-  {"key": "tab.ontology.finance", "label": "재무회계", "path": "ontology › 재무회계", "surface": "tab", "nav": "ontology", "tab": "finance", "owner": "nav", "admin": true, "desc": "", "aliases": ["woanghlrP"]},
+  {"key": "tab.ontology.finance", "label": "재무계획", "path": "ontology › 재무계획", "surface": "tab", "nav": "ontology", "tab": "finance", "owner": "nav", "admin": true, "desc": "", "aliases": ["woanrPghlr"]},
   {"key": "tab.ontology.marketing", "label": "마케팅", "path": "ontology › 마케팅", "surface": "tab", "nav": "ontology", "tab": "marketing", "owner": "nav", "admin": true, "desc": "", "aliases": ["akzpxld"]},
   {"key": "tab.ontology.bizops", "label": "사업 운영", "path": "ontology › 사업 운영", "surface": "tab", "nav": "ontology", "tab": "bizops", "owner": "nav", "admin": true, "desc": "", "aliases": ["tkdjqdnsdud", "사업운영"]},
   {"key": "tab.ontology.foundation", "label": "HI-Fin 기반 온톨로지", "path": "ontology › HI-Fin 기반 온톨로지", "surface": "tab", "nav": "ontology", "tab": "foundation", "owner": "nav", "admin": true, "desc": "", "aliases": ["HI-Finrlqksdhsxhffhwl", "HI-Fin기반온톨로지"]},

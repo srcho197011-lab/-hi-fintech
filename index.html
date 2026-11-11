@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=77097c4391" />
+<link rel="stylesheet" href="./data/app.css?v=fe064298f8" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=77097c4391"></script>
-<script src="./src/data/section_data.js?v=77097c4391"></script>
-<script src="./src/data/demo_members.js?v=77097c4391"></script>
+<script src="./src/data/dummy_data.js?v=fe064298f8"></script>
+<script src="./src/data/section_data.js?v=fe064298f8"></script>
+<script src="./src/data/demo_members.js?v=fe064298f8"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -16063,7 +16063,10 @@ const CORP_TEAMS = [
   { id: "M1", div: "MGMT", name: "경영기획팀", sh: "경영기획", own: "조성래", ownTitle: "CEO",
     ai: "나침반", aiWhy: "방향을 잡는다", c: "#FF8A65", th: -0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
     work: "사업계획 · 투자 유치 · 제휴 · 협력업체 관리 · 전사 지표",
-    pages: ["사업 운영", "협력업체 온톨로지 · 하네스", "경영 현황"],
+    pages: [
+      { t: "경영 현황", kind: "new", at: "P6" },
+      { t: "사업 운영", kind: "tab", tab: "bizops", comp: "BizOpsConsole" },
+      { t: "협력업체 온톨로지 · 하네스", kind: "tab", tab: "partner", comp: "SupplyOntology" }],
     can: ["전사 지표 집계", "계획 대비 진척 산출", "제휴 단계 추적", "주간 회의자료 통합"],
     cannot: [
       { act: "대외 발표", by: "발행 버튼은 CEO 세션에만 · 초안 상태에서 외부 공유 경로 없음", at: "P9" },
@@ -16074,7 +16077,10 @@ const CORP_TEAMS = [
   { id: "M2", div: "MGMT", name: "회계팀", sh: "회계", own: "조성래", ownTitle: "CEO",
     ai: "핀테크", aiWhy: "돈의 흐름을 맞춘다", c: "#E8795A", th: 0.00, ph: -0.90, head: 1, cap: 1, joined: "겸임",
     work: "전표 기장 · 장부 · 은행 대사 · 결산 · 재무제표 · 예실 대비",
-    pages: ["재무현황(실적)", "재무계획(기존 이관)", "예실 대비"],
+    pages: [
+      { t: "재무현황", kind: "new", at: "P5", note: "실적 축 — 전표 · 원장 · 시산표 · 재무제표" },
+      { t: "재무계획", kind: "tab", tab: "finance", comp: "FinanceSection", note: "계획 축 — 기존 재무회계에서 이관" },
+      { t: "예실 대비", kind: "new", at: "P6", note: "계획 ↔ 실적 차이" }],
     can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출"],
     cannot: [
       { act: "전표 승인", by: "기표 → 검토 → 승인 3단 · 승인은 M2 책임자 세션에서만 · 작성자 ≠ 승인자", at: "P5" },
@@ -16085,7 +16091,9 @@ const CORP_TEAMS = [
   { id: "M3", div: "MGMT", name: "인사총무팀", sh: "인사총무", own: "조성래", ownTitle: "CEO",
     ai: "인총이", aiWhy: "사람과 자산을 챙긴다", c: "#D96A52", th: 0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
     work: "인사 기록 · 근태 · 급여 대장 · 자산 대장 · 위임전결",
-    pages: ["조직 · 인사", "총무 · 자산"],
+    pages: [
+      { t: "조직 · 인사", kind: "new", at: "P8" },
+      { t: "총무 · 자산", kind: "new", at: "P8" }],
     can: ["근태 집계", "연차 잔여 계산", "교육 이수 점검", "자산 대장 갱신"],
     cannot: [
       { act: "채용 · 해고", by: "인사 상태 전이는 CEO 승인 필수", at: "P8" },
@@ -16096,7 +16104,10 @@ const CORP_TEAMS = [
   { id: "H1", div: "HINS", name: "헬스케어팀", sh: "헬스케어", own: "전소윤", ownTitle: "센터장",
     ai: "헬시", aiWhy: "회원의 건강을 살핀다", c: "#FF7A6B", th: 1.96, ph: 0.16, head: 0, cap: 1, joined: "미정",
     work: "회원 건강관리 운영 · 헬스메이트 조직 · 상담 품질 · 검진 연계 · 응급 대응",
-    pages: ["헬스케어 온톨로지", "운영 현황", "헬스메이트 센터"],
+    pages: [
+      { t: "운영 현황", kind: "new", at: "P7" },
+      { t: "헬스케어 온톨로지", kind: "tab", tab: "health" },
+      { t: "헬스메이트 센터", kind: "nav", nav: "healthmate" }],
     can: ["회원 지표 집계", "인계카드 발행 조건 점검", "미응답·지연 건 추출", "골든타임 경보"],
     cannot: [
       { act: "의료 판단", by: "제품 규약 — 진단·처방에 해당하는 문장을 생성하지 않는다", at: "기존" },
@@ -16107,7 +16118,10 @@ const CORP_TEAMS = [
   { id: "H2", div: "HINS", name: "보험팀", sh: "보험", own: "문형석", ownTitle: "센터장",
     ai: "인슈러", aiWhy: "덮이지 않은 곳을 찾는다", c: "#E6906A", th: 2.52, ph: 0.16, head: 0, cap: 1, joined: "미정",
     work: "보장 설계 · 검진대비보험 · 치료비 케어 · 보장 갭 분석 · 청구 지원",
-    pages: ["보장 현황", "치료비 케어", "검진대비보험"],
+    pages: [
+      { t: "보장 현황", kind: "new", at: "P7" },
+      { t: "치료비 케어", kind: "nav", nav: "carecost" },
+      { t: "검진대비보험", kind: "nav", nav: "insurance" }],
     can: ["보장 갭 집계", "만기·갱신 도래 추출", "청구 가능 건 후보 제시", "보장 창 경과 경보"],
     cannot: [
       { act: "인수 확정", by: "인수는 인수사 심사 — 제품에 확정 경로가 없다", at: "기존" },
@@ -16118,7 +16132,9 @@ const CORP_TEAMS = [
   { id: "K1", div: "DIRECT", name: "마케팅팀", sh: "마케팅", own: "조예원", ownTitle: "수석매니저",
     ai: "애디", aiWhy: "메시지를 퍼뜨리고 반응을 듣는다", c: "#FF9E7A", th: -2.26, ph: 0.10, head: 1, cap: 1, joined: "2026-10-01",
     work: "브랜드 · 콘텐츠 · 채널 운영 · 캠페인 · 회원 획득 · 성과 분석",
-    pages: ["마케팅", "캠페인 현황"],
+    pages: [
+      { t: "캠페인 현황", kind: "new", at: "P7" },
+      { t: "마케팅", kind: "tab", tab: "marketing", comp: "MarketingSection" }],
     can: ["채널별 유입·전환 집계", "콘텐츠 성과 비교", "캠페인 일정 추적", "소재 초안"],
     cannot: [
       { act: "캠페인 집행", by: "집행 버튼은 K1 책임자 세션에만 · 초안은 미확정 배지를 단다", at: "P9" },
@@ -16129,7 +16145,10 @@ const CORP_TEAMS = [
   { id: "D1", div: "DIRECT", name: "데이터관리팀", sh: "데이터", own: "박원식", ownTitle: "CTO",
     ai: "온톨로", aiWhy: "데이터 지도를 그린다", c: "#F2815F", th: -0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "데이터 구조 설계 · 저장 키 거버넌스 · 품질 관리 · 외부 연동 · UI 표준",
-    pages: ["데이터 운영", "HI-Fin 기반 온톨로지", "데이터 품질"],
+    pages: [
+      { t: "데이터 품질", kind: "new", at: "P6" },
+      { t: "데이터 운영", kind: "tab", tab: "dataops", comp: "DataOpsConsole" },
+      { t: "HI-Fin 기반 온톨로지", kind: "tab", tab: "foundation", comp: "FoundationOntology" }],
     can: ["저장 키 등재 대조", "정합성 스캔", "품질 리포트", "외부 API 변경 감지"],
     cannot: [
       { act: "데이터 파기", by: "되돌릴 수 없는 행위 — 파기 경로를 두지 않는다", at: "—" },
@@ -16140,7 +16159,10 @@ const CORP_TEAMS = [
   { id: "S1", div: "DIRECT", name: "정보보안팀", sh: "보안", own: "김남용", ownTitle: "보안담당이사",
     ai: "하네스", aiWhy: "막고 검증한다", c: "#C75B45", th: 0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "보안 통제 · 취약점 관리 · 접근 권한 · 침해 대응 · 내부통제와 감사 증적 · 릴리스 승인",
-    pages: ["운영 콘솔", "보안 현황", "릴리스 · 감사"],
+    pages: [
+      { t: "보안 현황", kind: "new", at: "P9" },
+      { t: "릴리스 · 감사", kind: "new", at: "P9" },
+      { t: "운영 콘솔", kind: "tab", tab: "ops", comp: "OpsConsoleSection" }],
     can: ["커밋 게이트 결과 수집", "미조치 항목 경보", "확약 진척 집계", "동일인 승인 탐지"],
     cannot: [
       { act: "사고 인정", by: "사고를 사고로 인정하는 결정은 법상 책임자의 판단", at: "—" },
@@ -16404,7 +16426,7 @@ function CorpPair({ team, size }) {
      · 좌표·점은 corpOrg.js의 고정 시드 산출물을 읽는다 — 이 파일에 Math.random을 두지 않는다.
    원천: src/data/corpOrg.js(조직·일정 단일 소스) */
 
-function CorpOps({ onGo }) {
+function CorpOps({ onGo, onTab }) {
   const wrapRef = React.useRef(null);
   const svgRef = React.useRef(null);
   const [view, setView] = React.useState("dash");   /* dash 총괄 · org 조직도 */
@@ -16571,14 +16593,17 @@ function CorpOps({ onGo }) {
         <div className="corp-vtabs">
           <button className={"corp-vt" + (view === "dash" ? " on" : "")} onClick={() => setView("dash")}>총괄</button>
           <button className={"corp-vt" + (view === "org" ? " on" : "")} onClick={() => setView("org")}>조직도</button>
+          {sel && <button className={"corp-vt" + (view === "team" ? " on" : "")} onClick={() => setView("team")}
+            style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
         </div>
         <div className="corp-sp" />
         <div className="corp-stub">실데이터 미연결 · 지표는 연결 후 채워집니다</div>
       </div>
 
-      {view === "org" && <CorpOrgChart sel={sel} pick={pick} />}
+      {view === "org" && <CorpOrgChart sel={sel} pick={pick} open={(id) => { pick(id); setView("team"); }} />}
+      {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
-      <div className="corp-shell" style={view === "org" ? { display: "none" } : undefined}>
+      <div className="corp-shell" style={view !== "dash" ? { display: "none" } : undefined}>
         {/* ── 좌 ── */}
         <div className="corp-col corp-L">
           <div className="corp-blk">
@@ -16640,6 +16665,7 @@ function CorpOps({ onGo }) {
                 <span className="sid">{selT.id}</span>
                 <span className="sname">{selT.name}</span>
                 <span className="sgrp">{(corpDiv(selT.div) || {}).name}</span>
+                <button className="corp-btn on" onClick={() => setView("team")}>팀 대시보드 →</button>
                 <button className="sclose" onClick={() => pick(selT.id)}>닫기</button>
               </div>
               <div className="sy">
@@ -16711,7 +16737,7 @@ function CorpOps({ onGo }) {
    ⚠️ 두 가지를 반드시 함께 보인다:
      ① AI가 끝까지 하는 일   ② 사람이 마무리하는 일과 **무엇이 그것을 막는지**
    「AI는 ~하지 않습니다」라는 문장만으로는 부족하다 — 차단 조건이 없으면 그건 선언일 뿐이다. */
-function CorpOrgChart({ sel, pick }) {
+function CorpOrgChart({ sel, pick, open }) {
   const S = CORP_SUMMARY;
   return (
     <div className="corp-org">
@@ -16741,7 +16767,7 @@ function CorpOrgChart({ sel, pick }) {
             <div className="co-grid">
               {list.map(t => (
                 <div key={t.id} className={"co-card" + (sel === t.id ? " sel" : "")}
-                  style={{ "--tc": t.c }} onClick={() => pick(t.id)}>
+                  style={{ "--tc": t.c }} onClick={() => (typeof open === "function" ? open(t.id) : pick(t.id))}>
                   <div className="co-top">
                     {typeof CorpAvatar === "function" && <CorpAvatar ai={t.ai} size={44} title={t.ai} />}
                     <div className="co-id">
@@ -16786,6 +16812,102 @@ function CorpOrgChart({ sel, pick }) {
       </div>
     </div>
   );
+}
+
+/* ══════════════ 팀 대시보드 — 현황 + 기존 지면 + 계획/대비 (Phase 3) ══════════════
+   ⚠️ 컴포넌트를 복제하지 않는다. 기존 지면은 **같은 전역 컴포넌트를 그대로 호출**한다 —
+      복제하면 같은 화면이 두 벌이 되고 진실이 갈린다.
+      회계팀이 본보기다: 재무현황(실적·신설) + 재무계획(기존 「재무회계」 이관) + 예실 대비. */
+function CorpTeamBoard({ team, onGo, onTab, back }) {
+  const [page, setPage] = React.useState(0);
+  React.useEffect(() => { setPage(0); }, [team && team.id]);
+  if (!team) return null;
+  const pg = team.pages[page] || team.pages[0];
+  const Render = pg && pg.comp ? corpPageComp(pg.comp) : null;
+
+  return (
+    <div className="corp-board" style={{ "--tc": team.c }}>
+      <div className="cb-head">
+        <button className="cb-back" onClick={back}>← 총괄</button>
+        {typeof CorpAvatar === "function" && <CorpAvatar ai={team.ai} size={38} />}
+        <div className="cb-id">
+          <div className="cb-name">{team.name}<span className="cb-code">{team.id}</span>
+            <span className="cb-div">{(corpDiv(team.div) || {}).name}</span></div>
+          <div className="cb-pair"><b>{team.own}</b><i>{team.ownTitle}</i>
+            <span className="co-sep">·</span>
+            <b style={{ color: team.c }}>{team.ai}</b><span className="corp-ai">AI</span></div>
+        </div>
+        <div className="cb-kpi">
+          {team.kpis ? null : null}
+          <div><b>{team.head} / {team.cap}</b><span>자리</span></div>
+          <div><b>{team.pages.length}</b><span>지면</span></div>
+        </div>
+      </div>
+
+      <div className="cb-tabs">
+        {team.pages.map((p, i) => (
+          <button key={i} className={"cb-tab" + (i === page ? " on" : "")} onClick={() => setPage(i)}>
+            {p.t}
+            {p.kind === "new" && <em className="cb-soon">{p.at}</em>}
+            {p.kind === "tab" && <em className="cb-live">기존</em>}
+            {p.kind === "nav" && <em className="cb-out">이동</em>}
+          </button>
+        ))}
+      </div>
+      {pg && pg.note && <div className="cb-note">{pg.note}</div>}
+
+      <div className="cb-body">
+        {pg && pg.kind === "new" && (
+          <div className="cb-soonbox">
+            <div className="cb-st">{pg.t}</div>
+            <p>이 지면은 <b>{pg.at}</b>에서 만듭니다. 지금은 자리만 잡혀 있습니다 —
+              데이터가 없는데 숫자를 채우면 그게 먼저 깨집니다.</p>
+          </div>
+        )}
+        {pg && pg.kind === "nav" && (
+          <div className="cb-soonbox">
+            <div className="cb-st">{pg.t}</div>
+            <p>이 지면은 회사 총괄운영 밖에 있습니다. 같은 화면을 두 벌로 만들지 않고 그대로 씁니다.</p>
+            <button className="corp-btn on" onClick={() => typeof onGo === "function" && onGo(pg.nav)}>
+              {pg.t} 열기 →</button>
+          </div>
+        )}
+        {pg && pg.kind === "tab" && (
+          Render ? (
+            <div className="cb-embed">
+              <div className="cb-embedbar">같은 컴포넌트를 그대로 부릅니다 — 복제본이 아닙니다
+                <button className="cb-jump" onClick={() => typeof onTab === "function" && onTab(pg.tab)}>
+                  기존 탭에서 보기 →</button></div>
+              <Render onGo={onGo} onTab={onTab} />
+            </div>
+          ) : (
+            <div className="cb-soonbox">
+              <div className="cb-st">{pg.t}</div>
+              <p>이 지면은 온톨로지·하네스 상단 탭에 그대로 있습니다. 복제하지 않고 그 탭으로 보냅니다.</p>
+              <button className="corp-btn on" onClick={() => typeof onTab === "function" && onTab(pg.tab)}>
+                {pg.t} 탭 열기 →</button>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* 기존 지면 컴포넌트 — 이름으로 전역 함수를 잇는다(복제 아님).
+   eval·window 조회를 쓰지 않는다 — 번들이 모듈 스코프라 둘 다 불안정하다.
+   전부 함수 선언이라 호이스팅되므로 렌더 시점 조회로 충분하다. */
+function corpPageComp(name) {
+  try {
+    if (name === "BizOpsConsole") return typeof BizOpsConsole === "function" ? BizOpsConsole : null;
+    if (name === "SupplyOntology") return typeof SupplyOntology === "function" ? SupplyOntology : null;
+    if (name === "FinanceSection") return typeof FinanceSection === "function" ? FinanceSection : null;
+    if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
+    if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
+    if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;
+    if (name === "OpsConsoleSection") return typeof OpsConsoleSection === "function" ? OpsConsoleSection : null;
+  } catch (e) { return null; }
+  return null;
 }
 
 /* ====================== 온톨로지 운영시스템 (팔란티어 Foundry 스타일) ======================
@@ -17653,7 +17775,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTop("health"); setSub("explorer"); };
-  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["partner", "협력업체 온톨로지 · 하네스", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"], ["corpops", "회사 총괄운영", Building2, "#E8795A"]];
+  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["partner", "협력업체 온톨로지 · 하네스", Truck, "#0891B2"], ["finance", "재무계획", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"], ["corpops", "회사 총괄운영", Building2, "#E8795A"]];
   const healthTabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["chain", "블록체인 금고", Blocks], ["hiops", "하이 커버리지", Bot], ["kb", "AI KB 라운지", Database], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
   if (!agg) return null;
   return (
@@ -17726,7 +17848,7 @@ function OntologySection({ onGo }) {
       {top === "dataops" && typeof DataOpsConsole === "function" && <DataOpsConsole />}
 
       {top === "whitepaper" && <WhitepaperSection onGo={onGo} />}
-      {top === "corpops" && typeof CorpOps === "function" && <CorpOps onGo={onGo} />}
+      {top === "corpops" && typeof CorpOps === "function" && <CorpOps onGo={onGo} onTab={(k) => setTop(k)} />}
     </div>
   );
 }
@@ -22310,7 +22432,10 @@ function WpRefLibrary({ onGoChapter }) {
   );
 }
 
-/* ====================== 재무회계 온톨로지 시스템 (K-IFRS · 투자금 산정 예산양식 엔진) ======================
+/* ====================== 재무계획 온톨로지 시스템 (K-IFRS · 투자금 산정 예산양식 엔진) ======================
+   ⚠️ 이 지면은 **계획 축**이다(형 결정 2026-11-11). 전표·원장에서 올라오는 **실적 축**은
+      회사 총괄운영 › 회계팀 › 재무현황(Phase 5)이 맡는다. 두 축을 한 화면에서 섞지 않는다 —
+      금액에는 「계획」/「실적」/「차이」 라벨을 반드시 붙인다.
    금액·비율·정책 문구는 모두 재무 엔진(finBudget.js → finModel.js 래퍼)에서 가져온다 — 이 파일에 금액 상수를 두지 않는다.
    · 현재(실적) 화면 = fbModel().asOf — 기준일까지 누적(회원 연동 계정 × k, 고정비 계획대로), 계획 대비 달성률 병기
    · 계획 화면 = 예산양식 연간·월별 계획(finYears · finMonthlyY1 · finSaaSModel · finKPIs · finValModel · finBSYear)
@@ -23195,7 +23320,7 @@ function FinanceSection({ onGo }) {
         <div className="ontohero-bg"><span /><span /></div>
         <div className="ontohero-l">
           <span className="ontotag"><Landmark size={13} /> Financial Accounting Ontology · K-IFRS</span>
-          <div className="ontotitle">재무회계 온톨로지 시스템</div>
+          <div className="ontotitle">재무계획 온톨로지 시스템</div>
           <p>투자금 산정 예산양식{ver ? " " + ver : ""}의 가정·산식으로 <b>계획</b>(연간·월별·5개년·10개년)과 <b>기준일 실적</b>(현재 회원 기준 환산)을 함께 계산합니다. 수익원은 <b>AI 플랫폼 구독(기관 유형별) · 건강검진 연계(자사·제휴사) · 헬스메이트센터 사용료 · 건강커머스 · 예약 서비스 · 재가·돌봄 파트너 이용료</b>이고, 거래는 1일 단위 <b>실시간 분개</b>로 재생됩니다.</p>
         </div>
         <div className="ontohero-kpi">
@@ -35313,6 +35438,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-11", ver:"v2.7", ch:[9], feat:"팀 대시보드와 재무계획 이관", src:"온톨로지 › 회사 총괄운영 › 팀", summary:"평면으로 놓여 있던 상단 지면들을 팀 아래로 이으면서 화면을 복제하지 않고 같은 컴포넌트를 그대로 불러 진실이 갈리지 않게 했고, 재무회계를 재무계획으로 고쳐 계획 축임을 이름에서 드러냈으며 지면 제목도 함께 맞췄고, 아직 만들지 않은 지면은 자리만 잡고 언제 만드는지를 적어 비어 있음이 숨지 않게 했다", refs:[], status:"반영", hash:"ffd0bf4", auto:true },
   { date:"2026-11-11", ver:"v2.6", ch:[9], feat:"회사 총괄운영 조직도와 AI 팀장 아바타", src:"온톨로지 › 회사 총괄운영 › 조직도", summary:"AI 팀장 여덟에게 점과 선으로 짜인 각자의 문양을 주어 사람과 한눈에 갈리게 했고, 조직도에 AI가 끝까지 하는 일과 사람이 마무리하는 일을 나란히 두되 뒤쪽에는 무엇이 그것을 막는지를 전건에 붙여 선언이 아니라 조건으로 읽히게 했으며, 이미 코드에 있는 차단과 앞으로 강제할 차단을 배지로 갈라 적었고, 자리와 사람을 섞어 세던 인원 집계를 재직 인원과 채워진 자리로 나눠 바로잡았다", refs:[], status:"반영", hash:"f5ff99c", auto:true },
   { date:"2026-11-11", ver:"v2.5", ch:[9], feat:"회사 총괄운영 총괄 대시보드와 조직 온톨로지", src:"온톨로지 › 회사 총괄운영", summary:"사람 책임자와 AI 팀장이 쌍으로 일하는 업무자동화 체계를 8팀 3단위로 세우고, 팀을 원으로 세운 조직 온톨로지를 원근 회전으로 보이게 했으며, 원 안에 사람과 AI를 나란히 적어 누가 마무리하는지가 화면에서 갈리게 했고, 실데이터가 붙기 전까지는 지표를 미연결로 비워 두어 숫자를 지어내지 않게 했다", refs:[], status:"반영", hash:"e224cf4", auto:true },
   { date:"2026-10-26", ver:"v2.4", ch:[9], feat:"협력업체 온톨로지·하네스 체계 소개(정의·목적·성과)", src:"온톨로지 › 협력업체 온톨로지·하네스 › 개요·객체", summary:"협력업체를 다루는 체계가 무엇이고 무엇을 위한 것이며 무엇이 달라졌는지를 각 200자 안팎으로 정리해 개요 화면 맨 앞에 두었고, 그 문장에 들어가는 숫자를 화면에 적어 넣지 않고 집계와 선언에서 읽어 채우도록 해 데이터가 바뀌면 문장도 따라 바뀌게 했으며, 채우지 못한 자리는 비워 두는 대신 채우지 못했다는 사실을 함께 보이게 했고, 초안에 있던 과장과 사실과 다른 대목은 코드로 확인해 바로잡거나 덜어냈다", refs:[], status:"반영", hash:"d28bf9d", auto:true },
@@ -50685,7 +50811,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "29dbc34f5f44f80e", "generatedAt": "2026-11-11", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "db0d6b4d26d68bba", "generatedAt": "2026-11-11", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -50759,7 +50885,7 @@ const NAV_INVENTORY = [
   {"key": "tab.checkup.emergency", "label": "응급신호", "path": "checkup › 🚨 응급신호", "surface": "tab", "nav": "checkup", "tab": "emergency", "owner": "sarg", "admin": false, "desc": "", "aliases": ["dmdrmqtlsgh", "응급신호"]},
   {"key": "tab.ontology.health", "label": "헬스케어 온톨로지", "path": "ontology › 헬스케어 온톨로지", "surface": "tab", "nav": "ontology", "tab": "health", "owner": "nav", "admin": true, "desc": "", "aliases": ["gpftmzpdjdhsxhffhwl", "헬스케어온톨로지"]},
   {"key": "tab.ontology.partner", "label": "협력업체 온톨로지 · 하네스", "path": "ontology › 협력업체 온톨로지 · 하네스", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["guqfurdjqcpdhsxhffhwlgksptm", "협력업체온톨로지하네스"]},
-  {"key": "tab.ontology.finance", "label": "재무회계", "path": "ontology › 재무회계", "surface": "tab", "nav": "ontology", "tab": "finance", "owner": "nav", "admin": true, "desc": "", "aliases": ["woanghlrP"]},
+  {"key": "tab.ontology.finance", "label": "재무계획", "path": "ontology › 재무계획", "surface": "tab", "nav": "ontology", "tab": "finance", "owner": "nav", "admin": true, "desc": "", "aliases": ["woanrPghlr"]},
   {"key": "tab.ontology.marketing", "label": "마케팅", "path": "ontology › 마케팅", "surface": "tab", "nav": "ontology", "tab": "marketing", "owner": "nav", "admin": true, "desc": "", "aliases": ["akzpxld"]},
   {"key": "tab.ontology.bizops", "label": "사업 운영", "path": "ontology › 사업 운영", "surface": "tab", "nav": "ontology", "tab": "bizops", "owner": "nav", "admin": true, "desc": "", "aliases": ["tkdjqdnsdud", "사업운영"]},
   {"key": "tab.ontology.foundation", "label": "HI-Fin 기반 온톨로지", "path": "ontology › HI-Fin 기반 온톨로지", "surface": "tab", "nav": "ontology", "tab": "foundation", "owner": "nav", "admin": true, "desc": "", "aliases": ["HI-Finrlqksdhsxhffhwl", "HI-Fin기반온톨로지"]},
@@ -50918,7 +51044,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"29dbc34f5f44f80e","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.02,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"db0d6b4d26d68bba","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":3.72,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

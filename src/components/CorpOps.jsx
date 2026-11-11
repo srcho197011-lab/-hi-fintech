@@ -8,7 +8,7 @@
      · 좌표·점은 corpOrg.js의 고정 시드 산출물을 읽는다 — 이 파일에 Math.random을 두지 않는다.
    원천: src/data/corpOrg.js(조직·일정 단일 소스) */
 
-function CorpOps({ onGo }) {
+function CorpOps({ onGo, onTab }) {
   const wrapRef = React.useRef(null);
   const svgRef = React.useRef(null);
   const [view, setView] = React.useState("dash");   /* dash 총괄 · org 조직도 */
@@ -175,14 +175,17 @@ function CorpOps({ onGo }) {
         <div className="corp-vtabs">
           <button className={"corp-vt" + (view === "dash" ? " on" : "")} onClick={() => setView("dash")}>총괄</button>
           <button className={"corp-vt" + (view === "org" ? " on" : "")} onClick={() => setView("org")}>조직도</button>
+          {sel && <button className={"corp-vt" + (view === "team" ? " on" : "")} onClick={() => setView("team")}
+            style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
         </div>
         <div className="corp-sp" />
         <div className="corp-stub">실데이터 미연결 · 지표는 연결 후 채워집니다</div>
       </div>
 
-      {view === "org" && <CorpOrgChart sel={sel} pick={pick} />}
+      {view === "org" && <CorpOrgChart sel={sel} pick={pick} open={(id) => { pick(id); setView("team"); }} />}
+      {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
-      <div className="corp-shell" style={view === "org" ? { display: "none" } : undefined}>
+      <div className="corp-shell" style={view !== "dash" ? { display: "none" } : undefined}>
         {/* ── 좌 ── */}
         <div className="corp-col corp-L">
           <div className="corp-blk">
@@ -244,6 +247,7 @@ function CorpOps({ onGo }) {
                 <span className="sid">{selT.id}</span>
                 <span className="sname">{selT.name}</span>
                 <span className="sgrp">{(corpDiv(selT.div) || {}).name}</span>
+                <button className="corp-btn on" onClick={() => setView("team")}>팀 대시보드 →</button>
                 <button className="sclose" onClick={() => pick(selT.id)}>닫기</button>
               </div>
               <div className="sy">
@@ -315,7 +319,7 @@ function CorpOps({ onGo }) {
    ⚠️ 두 가지를 반드시 함께 보인다:
      ① AI가 끝까지 하는 일   ② 사람이 마무리하는 일과 **무엇이 그것을 막는지**
    「AI는 ~하지 않습니다」라는 문장만으로는 부족하다 — 차단 조건이 없으면 그건 선언일 뿐이다. */
-function CorpOrgChart({ sel, pick }) {
+function CorpOrgChart({ sel, pick, open }) {
   const S = CORP_SUMMARY;
   return (
     <div className="corp-org">
@@ -345,7 +349,7 @@ function CorpOrgChart({ sel, pick }) {
             <div className="co-grid">
               {list.map(t => (
                 <div key={t.id} className={"co-card" + (sel === t.id ? " sel" : "")}
-                  style={{ "--tc": t.c }} onClick={() => pick(t.id)}>
+                  style={{ "--tc": t.c }} onClick={() => (typeof open === "function" ? open(t.id) : pick(t.id))}>
                   <div className="co-top">
                     {typeof CorpAvatar === "function" && <CorpAvatar ai={t.ai} size={44} title={t.ai} />}
                     <div className="co-id">
@@ -390,4 +394,100 @@ function CorpOrgChart({ sel, pick }) {
       </div>
     </div>
   );
+}
+
+/* ══════════════ 팀 대시보드 — 현황 + 기존 지면 + 계획/대비 (Phase 3) ══════════════
+   ⚠️ 컴포넌트를 복제하지 않는다. 기존 지면은 **같은 전역 컴포넌트를 그대로 호출**한다 —
+      복제하면 같은 화면이 두 벌이 되고 진실이 갈린다.
+      회계팀이 본보기다: 재무현황(실적·신설) + 재무계획(기존 「재무회계」 이관) + 예실 대비. */
+function CorpTeamBoard({ team, onGo, onTab, back }) {
+  const [page, setPage] = React.useState(0);
+  React.useEffect(() => { setPage(0); }, [team && team.id]);
+  if (!team) return null;
+  const pg = team.pages[page] || team.pages[0];
+  const Render = pg && pg.comp ? corpPageComp(pg.comp) : null;
+
+  return (
+    <div className="corp-board" style={{ "--tc": team.c }}>
+      <div className="cb-head">
+        <button className="cb-back" onClick={back}>← 총괄</button>
+        {typeof CorpAvatar === "function" && <CorpAvatar ai={team.ai} size={38} />}
+        <div className="cb-id">
+          <div className="cb-name">{team.name}<span className="cb-code">{team.id}</span>
+            <span className="cb-div">{(corpDiv(team.div) || {}).name}</span></div>
+          <div className="cb-pair"><b>{team.own}</b><i>{team.ownTitle}</i>
+            <span className="co-sep">·</span>
+            <b style={{ color: team.c }}>{team.ai}</b><span className="corp-ai">AI</span></div>
+        </div>
+        <div className="cb-kpi">
+          {team.kpis ? null : null}
+          <div><b>{team.head} / {team.cap}</b><span>자리</span></div>
+          <div><b>{team.pages.length}</b><span>지면</span></div>
+        </div>
+      </div>
+
+      <div className="cb-tabs">
+        {team.pages.map((p, i) => (
+          <button key={i} className={"cb-tab" + (i === page ? " on" : "")} onClick={() => setPage(i)}>
+            {p.t}
+            {p.kind === "new" && <em className="cb-soon">{p.at}</em>}
+            {p.kind === "tab" && <em className="cb-live">기존</em>}
+            {p.kind === "nav" && <em className="cb-out">이동</em>}
+          </button>
+        ))}
+      </div>
+      {pg && pg.note && <div className="cb-note">{pg.note}</div>}
+
+      <div className="cb-body">
+        {pg && pg.kind === "new" && (
+          <div className="cb-soonbox">
+            <div className="cb-st">{pg.t}</div>
+            <p>이 지면은 <b>{pg.at}</b>에서 만듭니다. 지금은 자리만 잡혀 있습니다 —
+              데이터가 없는데 숫자를 채우면 그게 먼저 깨집니다.</p>
+          </div>
+        )}
+        {pg && pg.kind === "nav" && (
+          <div className="cb-soonbox">
+            <div className="cb-st">{pg.t}</div>
+            <p>이 지면은 회사 총괄운영 밖에 있습니다. 같은 화면을 두 벌로 만들지 않고 그대로 씁니다.</p>
+            <button className="corp-btn on" onClick={() => typeof onGo === "function" && onGo(pg.nav)}>
+              {pg.t} 열기 →</button>
+          </div>
+        )}
+        {pg && pg.kind === "tab" && (
+          Render ? (
+            <div className="cb-embed">
+              <div className="cb-embedbar">같은 컴포넌트를 그대로 부릅니다 — 복제본이 아닙니다
+                <button className="cb-jump" onClick={() => typeof onTab === "function" && onTab(pg.tab)}>
+                  기존 탭에서 보기 →</button></div>
+              <Render onGo={onGo} onTab={onTab} />
+            </div>
+          ) : (
+            <div className="cb-soonbox">
+              <div className="cb-st">{pg.t}</div>
+              <p>이 지면은 온톨로지·하네스 상단 탭에 그대로 있습니다. 복제하지 않고 그 탭으로 보냅니다.</p>
+              <button className="corp-btn on" onClick={() => typeof onTab === "function" && onTab(pg.tab)}>
+                {pg.t} 탭 열기 →</button>
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* 기존 지면 컴포넌트 — 이름으로 전역 함수를 잇는다(복제 아님).
+   eval·window 조회를 쓰지 않는다 — 번들이 모듈 스코프라 둘 다 불안정하다.
+   전부 함수 선언이라 호이스팅되므로 렌더 시점 조회로 충분하다. */
+function corpPageComp(name) {
+  try {
+    if (name === "BizOpsConsole") return typeof BizOpsConsole === "function" ? BizOpsConsole : null;
+    if (name === "SupplyOntology") return typeof SupplyOntology === "function" ? SupplyOntology : null;
+    if (name === "FinanceSection") return typeof FinanceSection === "function" ? FinanceSection : null;
+    if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
+    if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
+    if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;
+    if (name === "OpsConsoleSection") return typeof OpsConsoleSection === "function" ? OpsConsoleSection : null;
+  } catch (e) { return null; }
+  return null;
 }

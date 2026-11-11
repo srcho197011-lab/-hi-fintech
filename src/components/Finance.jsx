@@ -1,4 +1,7 @@
-/* ====================== 재무회계 온톨로지 시스템 (K-IFRS · 투자금 산정 예산양식 엔진) ======================
+/* ====================== 재무계획 온톨로지 시스템 (K-IFRS · 투자금 산정 예산양식 엔진) ======================
+   ⚠️ 이 지면은 **계획 축**이다(형 결정 2026-11-11). 전표·원장에서 올라오는 **실적 축**은
+      회사 총괄운영 › 회계팀 › 재무현황(Phase 5)이 맡는다. 두 축을 한 화면에서 섞지 않는다 —
+      금액에는 「계획」/「실적」/「차이」 라벨을 반드시 붙인다.
    금액·비율·정책 문구는 모두 재무 엔진(finBudget.js → finModel.js 래퍼)에서 가져온다 — 이 파일에 금액 상수를 두지 않는다.
    · 현재(실적) 화면 = fbModel().asOf — 기준일까지 누적(회원 연동 계정 × k, 고정비 계획대로), 계획 대비 달성률 병기
    · 계획 화면 = 예산양식 연간·월별 계획(finYears · finMonthlyY1 · finSaaSModel · finKPIs · finValModel · finBSYear)
@@ -883,7 +886,7 @@ function FinanceSection({ onGo }) {
         <div className="ontohero-bg"><span /><span /></div>
         <div className="ontohero-l">
           <span className="ontotag"><Landmark size={13} /> Financial Accounting Ontology · K-IFRS</span>
-          <div className="ontotitle">재무회계 온톨로지 시스템</div>
+          <div className="ontotitle">재무계획 온톨로지 시스템</div>
           <p>투자금 산정 예산양식{ver ? " " + ver : ""}의 가정·산식으로 <b>계획</b>(연간·월별·5개년·10개년)과 <b>기준일 실적</b>(현재 회원 기준 환산)을 함께 계산합니다. 수익원은 <b>AI 플랫폼 구독(기관 유형별) · 건강검진 연계(자사·제휴사) · 헬스메이트센터 사용료 · 건강커머스 · 예약 서비스 · 재가·돌봄 파트너 이용료</b>이고, 거래는 1일 단위 <b>실시간 분개</b>로 재생됩니다.</p>
         </div>
         <div className="ontohero-kpi">

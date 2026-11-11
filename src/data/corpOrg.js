@@ -19,7 +19,10 @@ const CORP_TEAMS = [
   { id: "M1", div: "MGMT", name: "경영기획팀", sh: "경영기획", own: "조성래", ownTitle: "CEO",
     ai: "나침반", aiWhy: "방향을 잡는다", c: "#FF8A65", th: -0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
     work: "사업계획 · 투자 유치 · 제휴 · 협력업체 관리 · 전사 지표",
-    pages: ["사업 운영", "협력업체 온톨로지 · 하네스", "경영 현황"],
+    pages: [
+      { t: "경영 현황", kind: "new", at: "P6" },
+      { t: "사업 운영", kind: "tab", tab: "bizops", comp: "BizOpsConsole" },
+      { t: "협력업체 온톨로지 · 하네스", kind: "tab", tab: "partner", comp: "SupplyOntology" }],
     can: ["전사 지표 집계", "계획 대비 진척 산출", "제휴 단계 추적", "주간 회의자료 통합"],
     cannot: [
       { act: "대외 발표", by: "발행 버튼은 CEO 세션에만 · 초안 상태에서 외부 공유 경로 없음", at: "P9" },
@@ -30,7 +33,10 @@ const CORP_TEAMS = [
   { id: "M2", div: "MGMT", name: "회계팀", sh: "회계", own: "조성래", ownTitle: "CEO",
     ai: "핀테크", aiWhy: "돈의 흐름을 맞춘다", c: "#E8795A", th: 0.00, ph: -0.90, head: 1, cap: 1, joined: "겸임",
     work: "전표 기장 · 장부 · 은행 대사 · 결산 · 재무제표 · 예실 대비",
-    pages: ["재무현황(실적)", "재무계획(기존 이관)", "예실 대비"],
+    pages: [
+      { t: "재무현황", kind: "new", at: "P5", note: "실적 축 — 전표 · 원장 · 시산표 · 재무제표" },
+      { t: "재무계획", kind: "tab", tab: "finance", comp: "FinanceSection", note: "계획 축 — 기존 재무회계에서 이관" },
+      { t: "예실 대비", kind: "new", at: "P6", note: "계획 ↔ 실적 차이" }],
     can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출"],
     cannot: [
       { act: "전표 승인", by: "기표 → 검토 → 승인 3단 · 승인은 M2 책임자 세션에서만 · 작성자 ≠ 승인자", at: "P5" },
@@ -41,7 +47,9 @@ const CORP_TEAMS = [
   { id: "M3", div: "MGMT", name: "인사총무팀", sh: "인사총무", own: "조성래", ownTitle: "CEO",
     ai: "인총이", aiWhy: "사람과 자산을 챙긴다", c: "#D96A52", th: 0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
     work: "인사 기록 · 근태 · 급여 대장 · 자산 대장 · 위임전결",
-    pages: ["조직 · 인사", "총무 · 자산"],
+    pages: [
+      { t: "조직 · 인사", kind: "new", at: "P8" },
+      { t: "총무 · 자산", kind: "new", at: "P8" }],
     can: ["근태 집계", "연차 잔여 계산", "교육 이수 점검", "자산 대장 갱신"],
     cannot: [
       { act: "채용 · 해고", by: "인사 상태 전이는 CEO 승인 필수", at: "P8" },
@@ -52,7 +60,10 @@ const CORP_TEAMS = [
   { id: "H1", div: "HINS", name: "헬스케어팀", sh: "헬스케어", own: "전소윤", ownTitle: "센터장",
     ai: "헬시", aiWhy: "회원의 건강을 살핀다", c: "#FF7A6B", th: 1.96, ph: 0.16, head: 0, cap: 1, joined: "미정",
     work: "회원 건강관리 운영 · 헬스메이트 조직 · 상담 품질 · 검진 연계 · 응급 대응",
-    pages: ["헬스케어 온톨로지", "운영 현황", "헬스메이트 센터"],
+    pages: [
+      { t: "운영 현황", kind: "new", at: "P7" },
+      { t: "헬스케어 온톨로지", kind: "tab", tab: "health" },
+      { t: "헬스메이트 센터", kind: "nav", nav: "healthmate" }],
     can: ["회원 지표 집계", "인계카드 발행 조건 점검", "미응답·지연 건 추출", "골든타임 경보"],
     cannot: [
       { act: "의료 판단", by: "제품 규약 — 진단·처방에 해당하는 문장을 생성하지 않는다", at: "기존" },
@@ -63,7 +74,10 @@ const CORP_TEAMS = [
   { id: "H2", div: "HINS", name: "보험팀", sh: "보험", own: "문형석", ownTitle: "센터장",
     ai: "인슈러", aiWhy: "덮이지 않은 곳을 찾는다", c: "#E6906A", th: 2.52, ph: 0.16, head: 0, cap: 1, joined: "미정",
     work: "보장 설계 · 검진대비보험 · 치료비 케어 · 보장 갭 분석 · 청구 지원",
-    pages: ["보장 현황", "치료비 케어", "검진대비보험"],
+    pages: [
+      { t: "보장 현황", kind: "new", at: "P7" },
+      { t: "치료비 케어", kind: "nav", nav: "carecost" },
+      { t: "검진대비보험", kind: "nav", nav: "insurance" }],
     can: ["보장 갭 집계", "만기·갱신 도래 추출", "청구 가능 건 후보 제시", "보장 창 경과 경보"],
     cannot: [
       { act: "인수 확정", by: "인수는 인수사 심사 — 제품에 확정 경로가 없다", at: "기존" },
@@ -74,7 +88,9 @@ const CORP_TEAMS = [
   { id: "K1", div: "DIRECT", name: "마케팅팀", sh: "마케팅", own: "조예원", ownTitle: "수석매니저",
     ai: "애디", aiWhy: "메시지를 퍼뜨리고 반응을 듣는다", c: "#FF9E7A", th: -2.26, ph: 0.10, head: 1, cap: 1, joined: "2026-10-01",
     work: "브랜드 · 콘텐츠 · 채널 운영 · 캠페인 · 회원 획득 · 성과 분석",
-    pages: ["마케팅", "캠페인 현황"],
+    pages: [
+      { t: "캠페인 현황", kind: "new", at: "P7" },
+      { t: "마케팅", kind: "tab", tab: "marketing", comp: "MarketingSection" }],
     can: ["채널별 유입·전환 집계", "콘텐츠 성과 비교", "캠페인 일정 추적", "소재 초안"],
     cannot: [
       { act: "캠페인 집행", by: "집행 버튼은 K1 책임자 세션에만 · 초안은 미확정 배지를 단다", at: "P9" },
@@ -85,7 +101,10 @@ const CORP_TEAMS = [
   { id: "D1", div: "DIRECT", name: "데이터관리팀", sh: "데이터", own: "박원식", ownTitle: "CTO",
     ai: "온톨로", aiWhy: "데이터 지도를 그린다", c: "#F2815F", th: -0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "데이터 구조 설계 · 저장 키 거버넌스 · 품질 관리 · 외부 연동 · UI 표준",
-    pages: ["데이터 운영", "HI-Fin 기반 온톨로지", "데이터 품질"],
+    pages: [
+      { t: "데이터 품질", kind: "new", at: "P6" },
+      { t: "데이터 운영", kind: "tab", tab: "dataops", comp: "DataOpsConsole" },
+      { t: "HI-Fin 기반 온톨로지", kind: "tab", tab: "foundation", comp: "FoundationOntology" }],
     can: ["저장 키 등재 대조", "정합성 스캔", "품질 리포트", "외부 API 변경 감지"],
     cannot: [
       { act: "데이터 파기", by: "되돌릴 수 없는 행위 — 파기 경로를 두지 않는다", at: "—" },
@@ -96,7 +115,10 @@ const CORP_TEAMS = [
   { id: "S1", div: "DIRECT", name: "정보보안팀", sh: "보안", own: "김남용", ownTitle: "보안담당이사",
     ai: "하네스", aiWhy: "막고 검증한다", c: "#C75B45", th: 0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "보안 통제 · 취약점 관리 · 접근 권한 · 침해 대응 · 내부통제와 감사 증적 · 릴리스 승인",
-    pages: ["운영 콘솔", "보안 현황", "릴리스 · 감사"],
+    pages: [
+      { t: "보안 현황", kind: "new", at: "P9" },
+      { t: "릴리스 · 감사", kind: "new", at: "P9" },
+      { t: "운영 콘솔", kind: "tab", tab: "ops", comp: "OpsConsoleSection" }],
     can: ["커밋 게이트 결과 수집", "미조치 항목 경보", "확약 진척 집계", "동일인 승인 탐지"],
     cannot: [
       { act: "사고 인정", by: "사고를 사고로 인정하는 결정은 법상 책임자의 판단", at: "—" },
