@@ -251,7 +251,7 @@ fi
 # 유일한 실행 경로가 run_pg_scan(협력업체 게이트) 경유라서, 계획 축을 고쳐도 32항목을 확인하지
 # 않고 커밋이 통과했다. 「사람이 칠 때만 도는 가드는 안 도는 가드다」(이 파일 :21)의 같은 구멍이라
 # 여기서 닫는다. 두 러너 합쳐 수 초라 예산 부담이 없다.
-if echo "$CHANGED" | grep -qE "^(src/data/(corpLedger|corpPlanActual|corpMeeting|corpAdmin|corpGov|corpOrg|dataCatalog|finBudget|finBudgetParams|finModel)\.js|src/components/(CorpLedger|CorpPlanActual|CorpMeeting|CorpAdmin|CorpGov|CorpOps|Finance)\.jsx|scripts/(run_corpops_ledger|fin_site_check)\.mjs)$"; then
+if echo "$CHANGED" | grep -qE "^(src/data/(corpLedger|corpPlanActual|corpMeeting|corpAdmin|corpGov|corpUpload|corpAgent|corpOrg|dataCatalog|finBudget|finBudgetParams|finModel)\.js|src/components/(CorpLedger|CorpPlanActual|CorpMeeting|CorpAdmin|CorpGov|CorpUpload|CorpAgentChat|CorpOps|Finance)\.jsx|scripts/(run_corpops_ledger|fin_site_check)\.mjs)$"; then
   echo "[GATE] 재무 두 축 파일 변경 - 장부 항등식·예실 대비 가드 실행(차대·시산표·은행 대사·결재 분리·계정 매핑·대응 없음)"
   node scripts/run_corpops_ledger.mjs || { echo "[GATE] 회계 엔진·예실 대비 가드 실패 - 커밋 차단(장부가 성립하지 않습니다)"; exit 1; }
   echo "[GATE] 계획 축 가드 실행(예산양식 v3.8 대조 32항목)"

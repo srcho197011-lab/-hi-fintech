@@ -13,6 +13,9 @@
      ④ 역분개   — 정정 경로가 차·대를 뒤집고 금액이 맞물리는가.
      ⑤ 승인     — AI 주체에게 승인 권한이 없는가(canApprove=false) · 전기 전표에 작성자≠승인자.
      ⑥ 파일럿   — 실데이터 반입 전까지 CORP_LEDGER_PILOT 가 true 이고 화면이 그 사실을 적는가.
+     ⑪ 반입대화 — 민감자료가 **미리보기보다 먼저** 걸리는가 · 틀린 줄만 빠지는가 ·
+                  도구 없는 에이전트가 답을 **지어내지 않는가**(실제로 물어보는 양성 검사) ·
+                  시키면 거절하고 물으면 답하는가.
      ⑩ 결재릴리스 — 승인 없이 상태가 넘어가지 않는가 · 동일인 승인을 탐지해 **기록**하는가 ·
                    늘 거부하는 벽이 아니라 조건이 서면 열리는 게이트인가(자기시험) ·
                    보안 현황의 게이트 목록이 훅과 **대조**되는가.
@@ -63,9 +66,11 @@ const MTGBOARD = "src/components/CorpMeeting.jsx";
 const ORG = "src/data/corpOrg.js";
 /* 화면 어법 검사의 사정권 — 파일럿 고지(BOARDS)와 달리 **모든 사내 지면**이 진다.
    「자동 실행」·「보완 필요」·회원 영상 모듈 참조는 지면 종류를 가리지 않는다. */
-const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpGov.jsx", "src/components/CorpOps.jsx"];
+const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpGov.jsx",
+  "src/components/CorpUpload.jsx", "src/components/CorpAgentChat.jsx", "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
-  ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js"];
+  ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
+  "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js"];
 for (const f of LOAD) {
   try { vm.runInContext(rd(f), ctx); }
   catch (e) { console.error("[회계] " + f + " 적재 실패 — " + e.message); process.exit(1); }
@@ -722,6 +727,128 @@ if (hook) {
   });
 }
 
+/* ── ⑪ 자료 반입 · AI 팀장 대화 ─────────────────────────────────────────
+   들어오는 길과 말하는 길을 함께 본다.
+     반입 — 민감자료가 **미리보기보다 먼저** 걸리는가 · 틀린 줄만 빠지는가 · 받지 않을 열을 떼는가
+     대화 — 도구가 없으면 **지어내지 않는가**(양성 검사) · 시키면 거절하고 물으면 답하는가
+   「지어내지 않는다」는 음성 명제라, 도구 없는 에이전트에게 실제로 물어보는 표본이 있어야 뜻이 선다. */
+const UPF = "src/data/corpUpload.js";
+const UPBOARD = "src/components/CorpUpload.jsx";
+const AGF = "src/data/corpAgent.js";
+const AGBOARD = "src/components/CorpAgentChat.jsx";
+
+const UV = G("corpUpPass")();
+UV.rows.forEach((r) => {
+  chk(r.ok, `⑪반입   ${r.ko} (대상 ${r.n}건)`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
+  chk(r.n > 0, `⑪분모   ${r.ko} 검사 대상 > 0`, r.n);
+});
+chk(UV.pass, "⑪반입   검산 전건 통과", UV.fail.map((f) => f.ko));
+
+/* 민감자료 — 표에 섞여 들어오면 걸려야 한다. 커밋 게이트와 **같은 판정**인지 본다. */
+const scan = G("corpUpScan");
+const upPlanted = [["홍길동", "950101-1234564"], ["김아무", "4111-1111-1111-1111"]];
+const hits = scan(upPlanted, ["성명", "주민번호"]);
+chk(hits.length === 2, "⑪반입   심은 민감자료 2건을 모두 잡는다", hits.map((h) => h.k).join(" "));
+chk(hits.every((h) => h.row > 0 && h.col && h.why), "⑪반입   어느 줄 어느 열인지와 이유가 함께 나온다", JSON.stringify(hits[0] || {}));
+chk(JSON.stringify(hits).indexOf("950101") < 0, "⑪반입   **값을 담지 않는다**(적중 좌표만)", "값이 섞였다");
+/* ⓐ 자기시험 — 깨끗한 표는 통과해야 한다. 늘 막으면 아무것도 못 올린다. */
+const upClean = scan([["2026-11-12", "1234567890123", "1234-5678-9012-3456"]], ["일자", "금액", "번호"]);
+chk(upClean.length === 0, "⑪반입ⓐ 자기시험 — 날짜·금액·검증식 실패 번호는 잡지 않는다", upClean.map((h) => h.k + "@" + h.col).join(" "));
+
+/* 받지 않을 열 — 이름으로 떼어 낸다 */
+const upDeny = G("corpUpDenyCols")(["성명", "주민등록번호", "연락처", "직위"], G("corpUpSpec")("hr"));
+chk(upDeny.length === 2, "⑪반입   인사에서 주민번호·연락처 열을 떼어 낸다", upDeny.map((d) => d.h).join(" "));
+chk(G("corpUpDenyCols")(["성명", "직위"], G("corpUpSpec")("hr")).length === 0,
+  "⑪반입ⓐ 자기시험 — 받아도 되는 열은 떼지 않는다");
+
+/* 검증 — 틀린 줄만 뺀다 */
+const csvText = "전표번호,일자,적요,계정과목,차변,대변\nJV-T1,2026-11-01,시험,819,3000000,0\n" +
+  "JV-T1,2026-11-01,시험,103,0,3000000\nJV-T2,2026-11-02,불일치,801,1000000,0\n" +
+  "JV-T2,2026-11-02,불일치,103,0,900000\nJV-T3,2026-11-03,없는계정,999,100,0\n";
+const P = G("corpUpParseCsv")(csvText);
+chk(P.head.length === 6 && P.rows.length === 5, "⑪반입   CSV 머리글·행 수", P.head.length + " / " + P.rows.length);
+const sug = G("corpUpSuggest")(P.head, G("corpUpSpec")("jv"));
+chk(Object.keys(sug).length >= 6, "⑪반입   열 매핑을 제안한다(확정은 사람이 한다)", JSON.stringify(sug));
+const VR = G("corpUpValidate")("jv", P.head, P.rows, sug);
+chk(VR.ok.length === 4 && VR.bad.length === 1, "⑪반입   틀린 줄만 뺀다", "통과 " + VR.ok.length + " · 제외 " + VR.bad.length);
+chk(VR.bad[0] && VR.bad[0].row > 0 && VR.bad[0].why.length, "⑪반입   뺀 줄의 번호와 이유를 남긴다", JSON.stringify(VR.bad[0] || {}));
+const GJ = G("corpUpGroupJv")(VR.ok);
+chk(GJ.length === 2, "⑪반입   전표 번호로 묶는다", GJ.length);
+chk(GJ.filter((x) => x.ok).length === 1 && GJ.filter((x) => !x.ok).length === 1,
+  "⑪반입   묶은 뒤 차대가 맞는 전표만 통과", GJ.map((x) => x.no + ":" + (x.ok ? "ok" : "no")).join(" "));
+/* 필수 열이 비면 반입하지 않는다 */
+const noMap = G("corpUpValidate")("jv", P.head, P.rows, { no: 0 });
+chk(noMap.missing.length > 0 && noMap.ok.length === 0, "⑪반입   필수 열이 비면 한 줄도 받지 않는다", noMap.missing.join(" "));
+
+/* ── AI 팀장 대화 ── */
+const AGV = G("corpAgPass")();
+AGV.rows.forEach((r) => {
+  chk(r.ok, `⑪대화   ${r.ko} (대상 ${r.n}건)`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
+  chk(r.n > 0, `⑪분모   ${r.ko} 검사 대상 > 0`, r.n);
+});
+chk(AGV.pass, "⑪대화   검산 전건 통과", AGV.fail.map((f) => f.ko));
+
+const AGL = G("corpAgList")();
+chk(AGL.length === G("CORP_TEAMS").length, "⑪대화   팀마다 AI 팀장 하나", AGL.length);
+const noTool = AGL.filter((x) => x.noTool);
+const hasTool = AGL.filter((x) => !x.noTool);
+chk(noTool.length > 0, "⑪분모   도구 없는 에이전트 표본 > 0(없으면 침묵 검사가 공집합)", noTool.length);
+chk(hasTool.length > 0, "⑪분모   도구 있는 에이전트 표본 > 0", hasTool.length);
+/* **지어내지 않는가** — 도구 없는 에이전트에게 실제로 물어본다 */
+const askNo = noTool.map((x) => G("corpAgAnswer")(x.ai, "이번 달 매출이랑 회원 수 알려줘"));
+chk(askNo.every((r) => r.kind === "notool"), "⑪대화   도구 없으면 답을 만들어 내지 않는다",
+  askNo.filter((r) => r.kind !== "notool").map((r) => r.kind).join(" "));
+chk(askNo.every((r) => !r.rows || !r.rows.length), "⑪대화   도구 없는 답에 수치가 붙지 않는다");
+/* 도구 있는 에이전트는 실제 값을 낸다 — 늘 모른다고 해도 쓸모없다 */
+const askYes = hasTool.map((x) => ({ ai: x.ai, r: G("corpAgAnswer")(x.ai, x.tools[0].ask[0]) }));
+chk(askYes.every((x) => x.r.kind === "ok"), "⑪대화   도구 있으면 실제 값을 낸다",
+  askYes.filter((x) => x.r.kind !== "ok").map((x) => x.ai + ":" + x.r.kind).join(" "));
+chk(askYes.every((x) => x.r.rows && x.r.rows.length > 0), "⑪대화   값에 근거 표가 붙는다",
+  askYes.filter((x) => !x.r.rows || !x.r.rows.length).map((x) => x.ai).join(" "));
+/* 시키면 거절하고 물으면 답한다 */
+const doIt = G("corpAgAnswer")("핀테크", "전표 승인 해줘");
+chk(doIt.kind === "refuse", "⑪대화   못 하는 일을 시키면 거절", doIt.kind);
+chk((doIt.t || "").length > 20, "⑪대화   거절에 사유가 붙는다", doIt.t);
+const justAsk = G("corpAgAnswer")("하네스", "릴리스 승인 누가 해");
+chk(justAsk.kind === "ok", "⑪대화ⓐ 자기시험 — 물음은 거절하지 않는다(막으면 쓸 수 없다)", justAsk.kind);
+/* 거절 사유가 조직 원천과 같은 글자인가 — 화면과 거절이 어긋나면 둘 다 못 믿는다 */
+const M2 = G("CORP_TEAMS").find((t) => t.id === "M2");
+chk(M2 && M2.cannot.some((c) => (doIt.t || "").indexOf(c.act) >= 0),
+  "⑪대화   거절 사유가 조직 원천(cannot)에서 그대로 온다", doIt.t);
+
+/* 결정론 · 화면 */
+[[UPF, "⑪반입"], [AGF, "⑪대화"]].forEach(([f, tag]) => {
+  let t = "";
+  try { t = rd(f); } catch (e) { fails.push(tag + "   " + f + " 없음"); return; }
+  const bare = t.replace(/\/\*[\s\S]*?\*\//g, "");
+  chk((bare.match(/Math\.random/g) || []).length === 0, `${tag}   ${f} Math.random 0건`);
+});
+let upBoard = "", agBoard = "";
+try { upBoard = rd(UPBOARD); } catch (e) { fails.push("⑪반입   " + UPBOARD + " 없음"); }
+try { agBoard = rd(AGBOARD); } catch (e) { fails.push("⑪대화   " + AGBOARD + " 없음"); }
+if (upBoard) {
+  chk(upBoard.indexOf("corpUpScan(") >= 0, "⑪화면   반입 화면이 민감자료를 스스로 검사한다", "없음");
+  /* 검사가 미리보기보다 **앞**인가 — 띄워 놓고 지우라고 하면 이미 띄운 것이다 */
+  /* setRaw(null) 은 초기화라 미리보기가 아니다 — 실제로 표를 올리는 setRaw({ 와 견준다 */
+  const iScan = upBoard.indexOf("corpUpScan(");
+  const iPrev = upBoard.indexOf("setRaw({");
+  chk(iScan >= 0 && iPrev >= 0 && iScan < iPrev,
+    "⑪화면   민감 검사가 미리보기보다 앞에 있다", { scan: iScan, prev: iPrev });
+  chk(/어디로도 전송되지 않습니다/.test(upBoard), "⑪화면   파일이 전송되지 않는다고 적는다", "없음");
+  chk(upBoard.indexOf("corpUpPass(") >= 0, "⑪화면   검산이 러너와 같은 함수", "없음");
+}
+if (agBoard) {
+  chk(agBoard.indexOf("corpAgAnswer(") >= 0, "⑪화면   대화창이 답하기 함수를 그대로 부른다", "없음");
+  chk(agBoard.indexOf("corpAgPass(") >= 0, "⑪화면   검산이 러너와 같은 함수", "없음");
+  chk(/지어낼 수단 자체를 두지 않았습니다|지어내지/.test(agBoard), "⑪화면   지어내지 않는다고 적는다", "없음");
+  chk(/물음은 거절하지 않습니다|물어보는 것까지 막으면/.test(agBoard), "⑪화면   물음과 요청을 가른다고 적는다", "없음");
+}
+if (hook) {
+  ["corpUpload", "CorpUpload", "corpAgent", "CorpAgentChat"].forEach((n) => {
+    chk(hook.indexOf(n) >= 0, `⑪게이트 pre-commit 감시 대상에 ${n}`, "미등재");
+  });
+}
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -734,6 +861,7 @@ console.log(`[예실대비] 계획 비목 ${PU.leaves}(확정 ${PU.planOk.length
 console.log(`[주간회의] 주차 ${MW && MW.key}(D-${MW && MW.dday}) · 참석 사람 ${ATT.people.length}(재직) · AI ${ATT.agents.length} · 공석 ${ATT.vacant.length} · ` +
   `보고 ${REPS.length}팀(확정 가능 ${canFix.length} · 확정자 공석 ${noOwner.length}) · 원천 연결 ${linked.length}팀 · ` +
   `생성 경로 루틴 ${GEN.length} / ${SCHED.routines.length}`);
+console.log(`[반입대화] 반입 섹션 ${G("CORP_UP_SPEC").length}종(상한 ${G("CORP_UP_MAXKB")}KB) · 민감 패턴 ${G("CORP_UP_SCAN").length}종 · AI 팀장 ${AGL.length}명(도구 보유 ${hasTool.length} · 도구 없음 ${noTool.length}) · 도구 ${G("CORP_AG_TOOL").length}종`);
 console.log(`[결재릴리스] 릴리스 ${RELS.length}건 · 승인 가능자 ${RELWHO.length}명(S1) · 결재 종류 ${G("CORP_APR_KIND").length}종 · 점검 ${G("CORP_REL_CHECK").length}항목 · 필독 ${must.length}건(미확인 ${must.reduce((n, m) => n + m.left.length, 0)}명) · 게이트 ${GATES.length}종 훅 대조`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {

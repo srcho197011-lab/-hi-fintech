@@ -1,0 +1,270 @@
+/* ══════════════ 섹션별 자료 반입(corpUpload.js) · CorpOps (형 지시 2026-11-12) ══════════════
+   형이 실제 자료를 올리는 자리. 전표 · 은행 내역 · 계약 · 인사 · 문서 목록을 받는다.
+
+   ⚠️ 서버가 없다. 파일은 **브라우저 안에서만** 읽힌다 — 어디로도 전송되지 않는다.
+      그래서 두 가지가 따라온다.
+        ① 용량 한계가 있다. 브라우저 저장소는 수 MB가 한계라, 큰 파일은 **미리보기와 검증까지만**
+           하고 반입은 거부한다. 「반입했다」고 적어 놓고 일부만 들어가는 것보다 낫다.
+        ② 파일을 고르는 순간부터 그 내용이 이 화면에 뜬다. 민감자료가 섞여 있으면 **읽기 전에** 막는다.
+
+   원칙
+     · **받기 전에 본다.** 주민등록번호 꼴이 섞인 자료는 미리보기도 하지 않고 거부한다.
+       커밋 게이트(check_sensitive.py)와 같은 판정을 브라우저에서도 한다 — 들어오는 길이 둘이면
+       한쪽만 막는 것은 막는 것이 아니다.
+     · **검증을 통과한 줄만 반입한다.** 한 줄이라도 틀리면 그 줄만 빼고, 뺀 사실과 이유를 적는다.
+       전부 받거나 전부 거부하는 방식은 실무에서 쓸 수 없다.
+     · **반입은 되돌릴 수 있다.** 직전 반입을 통째로 물릴 수 있어야 한다.
+     · 열 이름이 제각각인 것을 전제한다 — 매핑을 사람이 고른다. 추측해서 넣지 않는다. */
+
+const CORP_UP_KEY = "hifin_corp_upload";   /* dataCatalog.js 등재 필수 — 반입 이력 */
+const CORP_UP_MAXKB = 1024;                /* 한 번에 받는 상한. 넘으면 미리보기까지만 한다 */
+
+/* ── ① 섹션 정의 — 무엇을 어디로 받는가 ───────────────────────────────
+   need  필수 열. 하나라도 매핑이 비면 반입하지 않는다.
+   opt   선택 열.
+   into  반입 대상(기존 저장 키). 「어디로 들어가는지」를 화면이 먼저 말한다.
+   deny  이 섹션에서 **절대 받지 않는** 열 이름. 들어오면 그 열을 떼고 받는다. */
+const CORP_UP_SPEC = [
+  {
+    k: "jv", ko: "회계 전표", team: "M2", into: "재무현황(장부)",
+    d: "날짜 · 적요 · 계정 · 차변 · 대변. 한 전표가 여러 줄이면 전표번호로 묶습니다.",
+    need: ["no", "date", "desc", "acct", "dr", "cr"], opt: ["memo"],
+    deny: [],
+    label: { no: "전표번호", date: "일자", desc: "적요", acct: "계정과목(코드 또는 이름)", dr: "차변", cr: "대변", memo: "줄 적요" },
+  },
+  {
+    k: "bank", ko: "은행 거래내역", team: "M2", into: "재무현황(은행 대사)",
+    d: "일자 · 적요 · 입금 또는 출금. 한 열에 부호로 적혀 있어도 됩니다.",
+    need: ["date", "desc", "amt"], opt: ["io"],
+    deny: [],
+    label: { date: "일자", desc: "적요", amt: "금액", io: "입출 구분(선택)" },
+  },
+  {
+    k: "ct", ko: "계약", team: "M1", into: "계약 대장",
+    d: "계약명 · 상대 · 개시일 · 만료일 · 금액. **만료일 없는 줄은 받지 않습니다.**",
+    need: ["ko", "party", "from", "to"], opt: ["amount", "kind", "note"],
+    deny: [],
+    label: { ko: "계약명", party: "상대", from: "개시일", to: "만료일", amount: "금액", kind: "종류", note: "비고" },
+  },
+  {
+    k: "hr", ko: "인사 기록", team: "M3", into: "조직 · 인사",
+    d: "성명 · 직위 · 소속 · 합류일. **주민번호·주소·연락처 열은 떼고 받습니다.**",
+    need: ["name", "title", "team"], opt: ["joined", "expertise", "cert"],
+    deny: ["rrn", "주민", "주민등록번호", "생년월일", "birth", "주소", "addr", "연락처", "전화", "phone", "휴대", "이메일", "email", "급여", "salary"],
+    label: { name: "성명", title: "직위", team: "소속 팀 코드", joined: "합류일", expertise: "전문영역", cert: "자격증(보유 사실)" },
+  },
+  {
+    k: "doc", ko: "문서 목록", team: "M3", into: "총무 · 문서",
+    d: "문서명 · 분류 · 작성일. 파일 자체가 아니라 **목록**을 받습니다.",
+    need: ["ko", "cls"], opt: ["d", "where", "note"],
+    deny: [],
+    label: { ko: "문서명", cls: "분류 코드", d: "작성일", where: "보관 위치", note: "비고" },
+  },
+];
+function corpUpSpec(k) { return CORP_UP_SPEC.find((x) => x.k === k) || null; }
+
+/* ── ② 민감자료 — **받기 전에** 본다 ──────────────────────────────────
+   커밋 게이트와 같은 판정이다. 들어오는 길이 둘인데 한쪽만 막으면 막는 것이 아니다.
+   ⚠️ 값을 화면에 띄우지 않는다. 몇 줄 몇 열에서 어떤 종류가 걸렸는지까지만 적는다. */
+function corpUpRrnOk(s) {
+  const m = /^(\d{2})(\d{2})(\d{2})[- ]?([1-4])(\d{6})$/.exec(String(s).replace(/\s/g, ""));
+  if (!m) return false;
+  if (!(+m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31)) return false;
+  const d = (m[1] + m[2] + m[3] + m[4] + m[5]).split("").map(Number);
+  const w = [2, 3, 4, 5, 6, 7, 8, 9, 2, 3, 4, 5];
+  return ((11 - d.slice(0, 12).reduce((n, x, i) => n + x * w[i], 0) % 11) % 10) === d[12];
+}
+/* 카드 검증식 — 구분자만 보면 재무 숫자가 걸린다. 커밋 게이트와 같은 판정을 쓴다. */
+function corpUpLuhn(s) {
+  const d = String(s).replace(/[^0-9]/g, "");
+  if (d.length !== 16) return false;
+  let t = 0, alt = false;
+  for (let i = d.length - 1; i >= 0; i--) {
+    let x = +d[i];
+    if (alt) { x *= 2; if (x > 9) x -= 9; }
+    t += x; alt = !alt;
+  }
+  return t % 10 === 0;
+}
+const CORP_UP_SCAN = [
+  /* 앞뒤가 숫자면 더 긴 숫자의 일부다 — 금액 한가운데를 주민번호로 읽지 않는다 */
+  { k: "rrn", ko: "주민등록번호", re: /(?:^|[^0-9])(\d{6}[- ]?[1-4]\d{6})(?![0-9])/g, check: corpUpRrnOk, grp: 1,
+    why: "고유식별정보입니다. 이 시스템은 값을 담지 않습니다 — 그 열을 지우고 다시 올려 주세요." },
+  { k: "card", ko: "카드번호", re: /(?:^|[^0-9-])(\d{4}[- ]\d{4}[- ]\d{4}[- ]\d{4})(?![0-9-])/g, check: corpUpLuhn, grp: 1,
+    why: "결제수단 전체번호입니다. 마지막 네 자리만 남기고 다시 올려 주세요." },
+  { k: "passport", ko: "여권번호", re: /\b[MSROD]\d{8}\b/g, check: null,
+    why: "고유식별정보에 준합니다. 그 열을 지우고 다시 올려 주세요." },
+];
+/* 표 전체를 훑어 적중 좌표만 돌려준다 — 값은 담지 않는다 */
+function corpUpScan(rows, head) {
+  const hit = [];
+  (rows || []).forEach((r, ri) => {
+    (r || []).forEach((cell, ci) => {
+      const s = String(cell == null ? "" : cell);
+      if (!s) return;
+      CORP_UP_SCAN.forEach((p) => {
+        p.re.lastIndex = 0;
+        let m;
+        while ((m = p.re.exec(s)) !== null) {
+          const v = p.grp ? m[p.grp] : m[0];
+          if (p.check && !p.check(v)) continue;
+          hit.push({ k: p.k, ko: p.ko, why: p.why, row: ri + 1, col: (head && head[ci]) || ("" + (ci + 1)) });
+          break;
+        }
+      });
+    });
+  });
+  return hit;
+}
+/* 받지 않기로 한 열 — 이름으로 떼어 낸다. 떼었다는 사실을 화면이 적는다. */
+function corpUpDenyCols(head, spec) {
+  if (!spec || !spec.deny.length) return [];
+  return (head || []).map((h, i) => ({ h: h, i: i }))
+    .filter(({ h }) => spec.deny.some((d) => String(h || "").toLowerCase().indexOf(String(d).toLowerCase()) >= 0));
+}
+
+/* ── ③ CSV 파싱 — 따옴표와 줄바꿈을 지킨다 ───────────────────────────── */
+function corpUpParseCsv(text) {
+  const s = String(text || "").replace(/^﻿/, "");
+  const rows = [];
+  let row = [], cell = "", q = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (q) {
+      if (c === '"') { if (s[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (c === "\r") { /* 무시 */ }
+    else cell += c;
+  }
+  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  const nonEmpty = rows.filter((r) => r.some((x) => String(x).trim() !== ""));
+  if (!nonEmpty.length) return { head: [], rows: [] };
+  return { head: nonEmpty[0].map((x) => String(x).trim()), rows: nonEmpty.slice(1) };
+}
+
+/* 열 이름에서 매핑 후보를 **제안**한다. 확정은 사람이 한다 — 추측해서 넣지 않는다. */
+const CORP_UP_HINT = {
+  no: ["전표", "번호", "no", "voucher", "id"], date: ["일자", "날짜", "date", "거래일"],
+  desc: ["적요", "내용", "摘要", "desc", "memo", "비고"], acct: ["계정", "과목", "acct", "account"],
+  dr: ["차변", "출금", "debit", "dr"], cr: ["대변", "입금", "credit", "cr"],
+  amt: ["금액", "amount", "amt"], io: ["구분", "입출", "type"],
+  ko: ["계약명", "문서명", "제목", "name", "title", "ko"], party: ["상대", "거래처", "party"],
+  from: ["개시", "시작", "from", "start"], to: ["만료", "종료", "to", "end"],
+  amount: ["금액", "계약금", "amount"], kind: ["종류", "유형", "kind", "type"],
+  name: ["성명", "이름", "name"], title: ["직위", "직급", "title"], team: ["소속", "팀", "team", "부서"],
+  joined: ["합류", "입사", "joined", "hire"], expertise: ["전문", "담당", "expertise"], cert: ["자격", "cert"],
+  cls: ["분류", "class", "cls", "category"], where: ["보관", "위치", "where"], note: ["비고", "note"],
+};
+function corpUpSuggest(head, spec) {
+  const out = {};
+  if (!spec) return out;
+  spec.need.concat(spec.opt).forEach((k) => {
+    const hints = CORP_UP_HINT[k] || [];
+    const i = (head || []).findIndex((h) => hints.some((x) => String(h || "").toLowerCase().indexOf(x.toLowerCase()) >= 0));
+    if (i >= 0) out[k] = i;
+  });
+  return out;
+}
+
+/* ── ④ 검증 — 줄 단위로 본다. 틀린 줄만 뺀다 ───────────────────────── */
+function corpUpValidate(kind, head, rows, map) {
+  const spec = corpUpSpec(kind);
+  const ok = [], bad = [];
+  const need = spec ? spec.need : [];
+  const missing = need.filter((k) => map[k] === undefined || map[k] === null || map[k] === "");
+  if (missing.length) {
+    return { ok: [], bad: [], missing: missing, msg: "필수 열이 매핑되지 않았습니다 — " + missing.map((k) => spec.label[k]).join(" · ") };
+  }
+  const g = (r, k) => String(r[map[k]] == null ? "" : r[map[k]]).trim();
+  const num = (v) => { const n = Number(String(v).replace(/[,\s원]/g, "")); return isFinite(n) ? n : NaN; };
+  const dt = (v) => {
+    const m = /^(\d{4})[-./]?(\d{1,2})[-./]?(\d{1,2})$/.exec(String(v).trim());
+    if (!m) return "";
+    return m[1] + "-" + String(+m[2]).padStart(2, "0") + "-" + String(+m[3]).padStart(2, "0");
+  };
+  (rows || []).forEach((r, i) => {
+    const why = [];
+    const o = { _row: i + 2 };                 /* 머리글이 1행이므로 +2 */
+    need.concat(spec.opt).forEach((k) => { if (map[k] !== undefined && map[k] !== "") o[k] = g(r, k); });
+    if (o.date !== undefined) { const d = dt(o.date); if (!d) why.push("일자 형식을 읽지 못했습니다"); else o.date = d; }
+    if (o.from !== undefined) { const d = dt(o.from); if (!d) why.push("개시일 형식을 읽지 못했습니다"); else o.from = d; }
+    if (o.to !== undefined) { const d = dt(o.to); if (!d) why.push("만료일이 없거나 형식을 읽지 못했습니다 — 만료일 없는 계약은 받지 않습니다"); else o.to = d; }
+    if (o.dr !== undefined || o.cr !== undefined) {
+      const a = num(o.dr || 0), b = num(o.cr || 0);
+      if (isNaN(a) || isNaN(b)) why.push("차변·대변이 숫자가 아닙니다");
+      else { o.dr = a; o.cr = b; if (a > 0 && b > 0) why.push("한 줄에 차변과 대변이 같이 적혀 있습니다"); if (a === 0 && b === 0) why.push("금액이 0입니다"); }
+    }
+    if (o.amt !== undefined) { const a = num(o.amt); if (isNaN(a)) why.push("금액이 숫자가 아닙니다"); else o.amt = a; }
+    if (o.amount !== undefined && o.amount !== "") { const a = num(o.amount); if (isNaN(a)) why.push("금액이 숫자가 아닙니다"); else o.amount = a; }
+    need.forEach((k) => { if (o[k] === "" || o[k] === undefined) why.push(spec.label[k] + "이(가) 비었습니다"); });
+    if (kind === "jv" && o.acct && typeof corpAcct === "function") {
+      const code = /^\d{3}$/.test(o.acct) ? o.acct : ((typeof CORP_ACCT !== "undefined" ? CORP_ACCT.find((a) => a.n === o.acct) : null) || {}).c;
+      if (!code || !corpAcct(code)) why.push("계정과목 「" + o.acct + "」을(를) 계정과목표에서 찾지 못했습니다");
+      else o.acctCode = code;
+    }
+    (why.length ? bad : ok).push(why.length ? { row: o._row, why: why } : o);
+  });
+  return { ok: ok, bad: bad, missing: [], msg: "" };
+}
+
+/* 전표는 번호로 묶는다 — 묶고 나서 차대가 맞는지 본다 */
+function corpUpGroupJv(rows) {
+  const by = {};
+  rows.forEach((r) => { (by[r.no] = by[r.no] || []).push(r); });
+  return Object.keys(by).map((no) => {
+    const l = by[no];
+    const dr = l.reduce((n, x) => n + (+x.dr || 0), 0);
+    const cr = l.reduce((n, x) => n + (+x.cr || 0), 0);
+    return {
+      no: no, d: l[0].date, desc: l[0].desc, lines: l, dr: dr, cr: cr,
+      ok: dr === cr && dr > 0,
+      why: dr !== cr ? "차변 " + dr + " ≠ 대변 " + cr : (dr === 0 ? "합계가 0입니다" : ""),
+    };
+  }).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : (a.no < b.no ? -1 : 1)));
+}
+
+/* ── ⑤ 반입 이력 — 되돌릴 수 있어야 한다 ───────────────────────────── */
+function corpUpRead() {
+  const empty = { v: 1, log: [] };
+  try {
+    const raw = localStorage.getItem(CORP_UP_KEY);
+    if (!raw) return empty;
+    const o = JSON.parse(raw);
+    return { v: 1, log: Array.isArray(o.log) ? o.log : [] };
+  } catch (e) { return empty; }
+}
+function corpUpWrite(st) {
+  try { localStorage.setItem(CORP_UP_KEY, JSON.stringify({ v: 1, log: (st.log || []).slice(-50) })); return true; }
+  catch (e) { return false; }
+}
+function corpUpSizeKb(text) { return Math.round((String(text || "").length * 2) / 1024); }
+
+/* ── ⑥ 단언 — 화면과 러너가 같은 함수를 부른다 ───────────────────── */
+function corpUpVerdict() {
+  const specs = CORP_UP_SPEC;
+  const noLabel = specs.filter((s) => s.need.concat(s.opt).some((k) => !s.label[k]));
+  const noInto = specs.filter((s) => !s.into || !s.d);
+  const hr = corpUpSpec("hr");
+  /* 민감 탐지기 자기시험 — 합성 표본을 먹여 살아 있음을 먼저 증명한다 */
+  const pos = corpUpScan([["950101-1234564"], ["4111-1111-1111-1111"], ["M12345678"]], ["c"]);
+  const neg = corpUpScan([["950101-1234567"], ["1234-5678-9012-3456"], ["2026-11-12"], ["1234567890123"]], ["c"]);
+  const csv = corpUpParseCsv('a,b\n"1,2",3\n');
+  return [
+    { k: "spec", ko: "섹션 정의", n: specs.length, ok: specs.length > 0 && noInto.length === 0, got: specs.length + "종", want: "반입처·설명 전건" },
+    { k: "label", ko: "열마다 이름", n: specs.reduce((n, s) => n + s.need.length + s.opt.length, 0), ok: noLabel.length === 0, got: noLabel.length + "종 누락", want: "0종" },
+    { k: "deny", ko: "인사에서 받지 않는 열 목록", n: hr ? hr.deny.length : 0, ok: !!hr && hr.deny.length > 0 && hr.deny.indexOf("rrn") >= 0, got: hr ? hr.deny.length + "개" : "없음", want: "주민번호 포함" },
+    { k: "scanpos", ko: "민감 탐지기 자기시험(양성)", n: 3, ok: pos.length === 3, got: pos.length + "건 탐지", want: "3건" },
+    { k: "scanneg", ko: "민감 탐지기 자기시험(음성)", n: 4, ok: neg.length === 0, got: neg.length + "건 오탐", want: "0건" },
+    { k: "csv", ko: "CSV 따옴표 파싱", n: 1, ok: csv.head.length === 2 && csv.rows[0] && csv.rows[0][0] === "1,2", got: JSON.stringify(csv.rows[0] || []), want: '["1,2","3"]' },
+    { k: "max", ko: "용량 상한 선언", n: 1, ok: CORP_UP_MAXKB > 0, got: CORP_UP_MAXKB + "KB", want: "> 0" },
+  ];
+}
+function corpUpPass() {
+  const rows = corpUpVerdict();
+  const zero = rows.filter((r) => !(r.n > 0));
+  const fail = rows.filter((r) => !r.ok);
+  return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
+}

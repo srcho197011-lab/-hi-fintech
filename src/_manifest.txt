@@ -35,12 +35,16 @@ src/data/corpPlanActual.js
 src/data/corpMeeting.js
 src/data/corpAdmin.js
 src/data/corpGov.js
+src/data/corpUpload.js
+src/data/corpAgent.js
 src/components/CorpAvatar.jsx
 src/components/CorpLedger.jsx
 src/components/CorpPlanActual.jsx
 src/components/CorpMeeting.jsx
 src/components/CorpAdmin.jsx
 src/components/CorpGov.jsx
+src/components/CorpUpload.jsx
+src/components/CorpAgentChat.jsx
 src/components/CorpOps.jsx
 src/components/Ontology.jsx
 src/components/SupplyOntology.jsx

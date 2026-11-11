@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="./data/app.css?v=b7f14c09e1" />
+<link rel="stylesheet" href="./data/app.css?v=2892ac8e86" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=b7f14c09e1"></script>
-<script src="./src/data/section_data.js?v=b7f14c09e1"></script>
-<script src="./src/data/demo_members.js?v=b7f14c09e1"></script>
+<script src="./src/data/dummy_data.js?v=2892ac8e86"></script>
+<script src="./src/data/section_data.js?v=2892ac8e86"></script>
+<script src="./src/data/demo_members.js?v=2892ac8e86"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -17910,6 +17910,574 @@ function corpGovPass(st, now) {
   return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
 }
 
+/* ══════════════ 섹션별 자료 반입(corpUpload.js) · CorpOps (형 지시 2026-11-12) ══════════════
+   형이 실제 자료를 올리는 자리. 전표 · 은행 내역 · 계약 · 인사 · 문서 목록을 받는다.
+
+   ⚠️ 서버가 없다. 파일은 **브라우저 안에서만** 읽힌다 — 어디로도 전송되지 않는다.
+      그래서 두 가지가 따라온다.
+        ① 용량 한계가 있다. 브라우저 저장소는 수 MB가 한계라, 큰 파일은 **미리보기와 검증까지만**
+           하고 반입은 거부한다. 「반입했다」고 적어 놓고 일부만 들어가는 것보다 낫다.
+        ② 파일을 고르는 순간부터 그 내용이 이 화면에 뜬다. 민감자료가 섞여 있으면 **읽기 전에** 막는다.
+
+   원칙
+     · **받기 전에 본다.** 주민등록번호 꼴이 섞인 자료는 미리보기도 하지 않고 거부한다.
+       커밋 게이트(check_sensitive.py)와 같은 판정을 브라우저에서도 한다 — 들어오는 길이 둘이면
+       한쪽만 막는 것은 막는 것이 아니다.
+     · **검증을 통과한 줄만 반입한다.** 한 줄이라도 틀리면 그 줄만 빼고, 뺀 사실과 이유를 적는다.
+       전부 받거나 전부 거부하는 방식은 실무에서 쓸 수 없다.
+     · **반입은 되돌릴 수 있다.** 직전 반입을 통째로 물릴 수 있어야 한다.
+     · 열 이름이 제각각인 것을 전제한다 — 매핑을 사람이 고른다. 추측해서 넣지 않는다. */
+
+const CORP_UP_KEY = "hifin_corp_upload";   /* dataCatalog.js 등재 필수 — 반입 이력 */
+const CORP_UP_MAXKB = 1024;                /* 한 번에 받는 상한. 넘으면 미리보기까지만 한다 */
+
+/* ── ① 섹션 정의 — 무엇을 어디로 받는가 ───────────────────────────────
+   need  필수 열. 하나라도 매핑이 비면 반입하지 않는다.
+   opt   선택 열.
+   into  반입 대상(기존 저장 키). 「어디로 들어가는지」를 화면이 먼저 말한다.
+   deny  이 섹션에서 **절대 받지 않는** 열 이름. 들어오면 그 열을 떼고 받는다. */
+const CORP_UP_SPEC = [
+  {
+    k: "jv", ko: "회계 전표", team: "M2", into: "재무현황(장부)",
+    d: "날짜 · 적요 · 계정 · 차변 · 대변. 한 전표가 여러 줄이면 전표번호로 묶습니다.",
+    need: ["no", "date", "desc", "acct", "dr", "cr"], opt: ["memo"],
+    deny: [],
+    label: { no: "전표번호", date: "일자", desc: "적요", acct: "계정과목(코드 또는 이름)", dr: "차변", cr: "대변", memo: "줄 적요" },
+  },
+  {
+    k: "bank", ko: "은행 거래내역", team: "M2", into: "재무현황(은행 대사)",
+    d: "일자 · 적요 · 입금 또는 출금. 한 열에 부호로 적혀 있어도 됩니다.",
+    need: ["date", "desc", "amt"], opt: ["io"],
+    deny: [],
+    label: { date: "일자", desc: "적요", amt: "금액", io: "입출 구분(선택)" },
+  },
+  {
+    k: "ct", ko: "계약", team: "M1", into: "계약 대장",
+    d: "계약명 · 상대 · 개시일 · 만료일 · 금액. **만료일 없는 줄은 받지 않습니다.**",
+    need: ["ko", "party", "from", "to"], opt: ["amount", "kind", "note"],
+    deny: [],
+    label: { ko: "계약명", party: "상대", from: "개시일", to: "만료일", amount: "금액", kind: "종류", note: "비고" },
+  },
+  {
+    k: "hr", ko: "인사 기록", team: "M3", into: "조직 · 인사",
+    d: "성명 · 직위 · 소속 · 합류일. **주민번호·주소·연락처 열은 떼고 받습니다.**",
+    need: ["name", "title", "team"], opt: ["joined", "expertise", "cert"],
+    deny: ["rrn", "주민", "주민등록번호", "생년월일", "birth", "주소", "addr", "연락처", "전화", "phone", "휴대", "이메일", "email", "급여", "salary"],
+    label: { name: "성명", title: "직위", team: "소속 팀 코드", joined: "합류일", expertise: "전문영역", cert: "자격증(보유 사실)" },
+  },
+  {
+    k: "doc", ko: "문서 목록", team: "M3", into: "총무 · 문서",
+    d: "문서명 · 분류 · 작성일. 파일 자체가 아니라 **목록**을 받습니다.",
+    need: ["ko", "cls"], opt: ["d", "where", "note"],
+    deny: [],
+    label: { ko: "문서명", cls: "분류 코드", d: "작성일", where: "보관 위치", note: "비고" },
+  },
+];
+function corpUpSpec(k) { return CORP_UP_SPEC.find((x) => x.k === k) || null; }
+
+/* ── ② 민감자료 — **받기 전에** 본다 ──────────────────────────────────
+   커밋 게이트와 같은 판정이다. 들어오는 길이 둘인데 한쪽만 막으면 막는 것이 아니다.
+   ⚠️ 값을 화면에 띄우지 않는다. 몇 줄 몇 열에서 어떤 종류가 걸렸는지까지만 적는다. */
+function corpUpRrnOk(s) {
+  const m = /^(\d{2})(\d{2})(\d{2})[- ]?([1-4])(\d{6})$/.exec(String(s).replace(/\s/g, ""));
+  if (!m) return false;
+  if (!(+m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= 31)) return false;
+  const d = (m[1] + m[2] + m[3] + m[4] + m[5]).split("").map(Number);
+  const w = [2, 3, 4, 5, 6, 7, 8, 9, 2, 3, 4, 5];
+  return ((11 - d.slice(0, 12).reduce((n, x, i) => n + x * w[i], 0) % 11) % 10) === d[12];
+}
+/* 카드 검증식 — 구분자만 보면 재무 숫자가 걸린다. 커밋 게이트와 같은 판정을 쓴다. */
+function corpUpLuhn(s) {
+  const d = String(s).replace(/[^0-9]/g, "");
+  if (d.length !== 16) return false;
+  let t = 0, alt = false;
+  for (let i = d.length - 1; i >= 0; i--) {
+    let x = +d[i];
+    if (alt) { x *= 2; if (x > 9) x -= 9; }
+    t += x; alt = !alt;
+  }
+  return t % 10 === 0;
+}
+const CORP_UP_SCAN = [
+  /* 앞뒤가 숫자면 더 긴 숫자의 일부다 — 금액 한가운데를 주민번호로 읽지 않는다 */
+  { k: "rrn", ko: "주민등록번호", re: /(?:^|[^0-9])(\d{6}[- ]?[1-4]\d{6})(?![0-9])/g, check: corpUpRrnOk, grp: 1,
+    why: "고유식별정보입니다. 이 시스템은 값을 담지 않습니다 — 그 열을 지우고 다시 올려 주세요." },
+  { k: "card", ko: "카드번호", re: /(?:^|[^0-9-])(\d{4}[- ]\d{4}[- ]\d{4}[- ]\d{4})(?![0-9-])/g, check: corpUpLuhn, grp: 1,
+    why: "결제수단 전체번호입니다. 마지막 네 자리만 남기고 다시 올려 주세요." },
+  { k: "passport", ko: "여권번호", re: /\b[MSROD]\d{8}\b/g, check: null,
+    why: "고유식별정보에 준합니다. 그 열을 지우고 다시 올려 주세요." },
+];
+/* 표 전체를 훑어 적중 좌표만 돌려준다 — 값은 담지 않는다 */
+function corpUpScan(rows, head) {
+  const hit = [];
+  (rows || []).forEach((r, ri) => {
+    (r || []).forEach((cell, ci) => {
+      const s = String(cell == null ? "" : cell);
+      if (!s) return;
+      CORP_UP_SCAN.forEach((p) => {
+        p.re.lastIndex = 0;
+        let m;
+        while ((m = p.re.exec(s)) !== null) {
+          const v = p.grp ? m[p.grp] : m[0];
+          if (p.check && !p.check(v)) continue;
+          hit.push({ k: p.k, ko: p.ko, why: p.why, row: ri + 1, col: (head && head[ci]) || ("" + (ci + 1)) });
+          break;
+        }
+      });
+    });
+  });
+  return hit;
+}
+/* 받지 않기로 한 열 — 이름으로 떼어 낸다. 떼었다는 사실을 화면이 적는다. */
+function corpUpDenyCols(head, spec) {
+  if (!spec || !spec.deny.length) return [];
+  return (head || []).map((h, i) => ({ h: h, i: i }))
+    .filter(({ h }) => spec.deny.some((d) => String(h || "").toLowerCase().indexOf(String(d).toLowerCase()) >= 0));
+}
+
+/* ── ③ CSV 파싱 — 따옴표와 줄바꿈을 지킨다 ───────────────────────────── */
+function corpUpParseCsv(text) {
+  const s = String(text || "").replace(/^﻿/, "");
+  const rows = [];
+  let row = [], cell = "", q = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (q) {
+      if (c === '"') { if (s[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (c === "\r") { /* 무시 */ }
+    else cell += c;
+  }
+  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  const nonEmpty = rows.filter((r) => r.some((x) => String(x).trim() !== ""));
+  if (!nonEmpty.length) return { head: [], rows: [] };
+  return { head: nonEmpty[0].map((x) => String(x).trim()), rows: nonEmpty.slice(1) };
+}
+
+/* 열 이름에서 매핑 후보를 **제안**한다. 확정은 사람이 한다 — 추측해서 넣지 않는다. */
+const CORP_UP_HINT = {
+  no: ["전표", "번호", "no", "voucher", "id"], date: ["일자", "날짜", "date", "거래일"],
+  desc: ["적요", "내용", "摘要", "desc", "memo", "비고"], acct: ["계정", "과목", "acct", "account"],
+  dr: ["차변", "출금", "debit", "dr"], cr: ["대변", "입금", "credit", "cr"],
+  amt: ["금액", "amount", "amt"], io: ["구분", "입출", "type"],
+  ko: ["계약명", "문서명", "제목", "name", "title", "ko"], party: ["상대", "거래처", "party"],
+  from: ["개시", "시작", "from", "start"], to: ["만료", "종료", "to", "end"],
+  amount: ["금액", "계약금", "amount"], kind: ["종류", "유형", "kind", "type"],
+  name: ["성명", "이름", "name"], title: ["직위", "직급", "title"], team: ["소속", "팀", "team", "부서"],
+  joined: ["합류", "입사", "joined", "hire"], expertise: ["전문", "담당", "expertise"], cert: ["자격", "cert"],
+  cls: ["분류", "class", "cls", "category"], where: ["보관", "위치", "where"], note: ["비고", "note"],
+};
+function corpUpSuggest(head, spec) {
+  const out = {};
+  if (!spec) return out;
+  spec.need.concat(spec.opt).forEach((k) => {
+    const hints = CORP_UP_HINT[k] || [];
+    const i = (head || []).findIndex((h) => hints.some((x) => String(h || "").toLowerCase().indexOf(x.toLowerCase()) >= 0));
+    if (i >= 0) out[k] = i;
+  });
+  return out;
+}
+
+/* ── ④ 검증 — 줄 단위로 본다. 틀린 줄만 뺀다 ───────────────────────── */
+function corpUpValidate(kind, head, rows, map) {
+  const spec = corpUpSpec(kind);
+  const ok = [], bad = [];
+  const need = spec ? spec.need : [];
+  const missing = need.filter((k) => map[k] === undefined || map[k] === null || map[k] === "");
+  if (missing.length) {
+    return { ok: [], bad: [], missing: missing, msg: "필수 열이 매핑되지 않았습니다 — " + missing.map((k) => spec.label[k]).join(" · ") };
+  }
+  const g = (r, k) => String(r[map[k]] == null ? "" : r[map[k]]).trim();
+  const num = (v) => { const n = Number(String(v).replace(/[,\s원]/g, "")); return isFinite(n) ? n : NaN; };
+  const dt = (v) => {
+    const m = /^(\d{4})[-./]?(\d{1,2})[-./]?(\d{1,2})$/.exec(String(v).trim());
+    if (!m) return "";
+    return m[1] + "-" + String(+m[2]).padStart(2, "0") + "-" + String(+m[3]).padStart(2, "0");
+  };
+  (rows || []).forEach((r, i) => {
+    const why = [];
+    const o = { _row: i + 2 };                 /* 머리글이 1행이므로 +2 */
+    need.concat(spec.opt).forEach((k) => { if (map[k] !== undefined && map[k] !== "") o[k] = g(r, k); });
+    if (o.date !== undefined) { const d = dt(o.date); if (!d) why.push("일자 형식을 읽지 못했습니다"); else o.date = d; }
+    if (o.from !== undefined) { const d = dt(o.from); if (!d) why.push("개시일 형식을 읽지 못했습니다"); else o.from = d; }
+    if (o.to !== undefined) { const d = dt(o.to); if (!d) why.push("만료일이 없거나 형식을 읽지 못했습니다 — 만료일 없는 계약은 받지 않습니다"); else o.to = d; }
+    if (o.dr !== undefined || o.cr !== undefined) {
+      const a = num(o.dr || 0), b = num(o.cr || 0);
+      if (isNaN(a) || isNaN(b)) why.push("차변·대변이 숫자가 아닙니다");
+      else { o.dr = a; o.cr = b; if (a > 0 && b > 0) why.push("한 줄에 차변과 대변이 같이 적혀 있습니다"); if (a === 0 && b === 0) why.push("금액이 0입니다"); }
+    }
+    if (o.amt !== undefined) { const a = num(o.amt); if (isNaN(a)) why.push("금액이 숫자가 아닙니다"); else o.amt = a; }
+    if (o.amount !== undefined && o.amount !== "") { const a = num(o.amount); if (isNaN(a)) why.push("금액이 숫자가 아닙니다"); else o.amount = a; }
+    need.forEach((k) => { if (o[k] === "" || o[k] === undefined) why.push(spec.label[k] + "이(가) 비었습니다"); });
+    if (kind === "jv" && o.acct && typeof corpAcct === "function") {
+      const code = /^\d{3}$/.test(o.acct) ? o.acct : ((typeof CORP_ACCT !== "undefined" ? CORP_ACCT.find((a) => a.n === o.acct) : null) || {}).c;
+      if (!code || !corpAcct(code)) why.push("계정과목 「" + o.acct + "」을(를) 계정과목표에서 찾지 못했습니다");
+      else o.acctCode = code;
+    }
+    (why.length ? bad : ok).push(why.length ? { row: o._row, why: why } : o);
+  });
+  return { ok: ok, bad: bad, missing: [], msg: "" };
+}
+
+/* 전표는 번호로 묶는다 — 묶고 나서 차대가 맞는지 본다 */
+function corpUpGroupJv(rows) {
+  const by = {};
+  rows.forEach((r) => { (by[r.no] = by[r.no] || []).push(r); });
+  return Object.keys(by).map((no) => {
+    const l = by[no];
+    const dr = l.reduce((n, x) => n + (+x.dr || 0), 0);
+    const cr = l.reduce((n, x) => n + (+x.cr || 0), 0);
+    return {
+      no: no, d: l[0].date, desc: l[0].desc, lines: l, dr: dr, cr: cr,
+      ok: dr === cr && dr > 0,
+      why: dr !== cr ? "차변 " + dr + " ≠ 대변 " + cr : (dr === 0 ? "합계가 0입니다" : ""),
+    };
+  }).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : (a.no < b.no ? -1 : 1)));
+}
+
+/* ── ⑤ 반입 이력 — 되돌릴 수 있어야 한다 ───────────────────────────── */
+function corpUpRead() {
+  const empty = { v: 1, log: [] };
+  try {
+    const raw = localStorage.getItem(CORP_UP_KEY);
+    if (!raw) return empty;
+    const o = JSON.parse(raw);
+    return { v: 1, log: Array.isArray(o.log) ? o.log : [] };
+  } catch (e) { return empty; }
+}
+function corpUpWrite(st) {
+  try { localStorage.setItem(CORP_UP_KEY, JSON.stringify({ v: 1, log: (st.log || []).slice(-50) })); return true; }
+  catch (e) { return false; }
+}
+function corpUpSizeKb(text) { return Math.round((String(text || "").length * 2) / 1024); }
+
+/* ── ⑥ 단언 — 화면과 러너가 같은 함수를 부른다 ───────────────────── */
+function corpUpVerdict() {
+  const specs = CORP_UP_SPEC;
+  const noLabel = specs.filter((s) => s.need.concat(s.opt).some((k) => !s.label[k]));
+  const noInto = specs.filter((s) => !s.into || !s.d);
+  const hr = corpUpSpec("hr");
+  /* 민감 탐지기 자기시험 — 합성 표본을 먹여 살아 있음을 먼저 증명한다 */
+  const pos = corpUpScan([["950101-1234564"], ["4111-1111-1111-1111"], ["M12345678"]], ["c"]);
+  const neg = corpUpScan([["950101-1234567"], ["1234-5678-9012-3456"], ["2026-11-12"], ["1234567890123"]], ["c"]);
+  const csv = corpUpParseCsv('a,b\n"1,2",3\n');
+  return [
+    { k: "spec", ko: "섹션 정의", n: specs.length, ok: specs.length > 0 && noInto.length === 0, got: specs.length + "종", want: "반입처·설명 전건" },
+    { k: "label", ko: "열마다 이름", n: specs.reduce((n, s) => n + s.need.length + s.opt.length, 0), ok: noLabel.length === 0, got: noLabel.length + "종 누락", want: "0종" },
+    { k: "deny", ko: "인사에서 받지 않는 열 목록", n: hr ? hr.deny.length : 0, ok: !!hr && hr.deny.length > 0 && hr.deny.indexOf("rrn") >= 0, got: hr ? hr.deny.length + "개" : "없음", want: "주민번호 포함" },
+    { k: "scanpos", ko: "민감 탐지기 자기시험(양성)", n: 3, ok: pos.length === 3, got: pos.length + "건 탐지", want: "3건" },
+    { k: "scanneg", ko: "민감 탐지기 자기시험(음성)", n: 4, ok: neg.length === 0, got: neg.length + "건 오탐", want: "0건" },
+    { k: "csv", ko: "CSV 따옴표 파싱", n: 1, ok: csv.head.length === 2 && csv.rows[0] && csv.rows[0][0] === "1,2", got: JSON.stringify(csv.rows[0] || []), want: '["1,2","3"]' },
+    { k: "max", ko: "용량 상한 선언", n: 1, ok: CORP_UP_MAXKB > 0, got: CORP_UP_MAXKB + "KB", want: "> 0" },
+  ];
+}
+function corpUpPass() {
+  const rows = corpUpVerdict();
+  const zero = rows.filter((r) => !(r.n > 0));
+  const fail = rows.filter((r) => !r.ok);
+  return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
+}
+
+/* ══════════════ AI 팀장 능력 · 대화(corpAgent.js) · CorpOps (형 지시 2026-11-12) ══════════════
+   AI 팀장 여덟이 **실제로 무엇을 할 수 있는가**를 도구로 정의하고, 사람 직원과 대화하는 창을 받친다.
+
+   ⚠️ 가장 중요한 규칙 — **도구가 있는 것만 답한다.**
+      이 제품에는 사내용 언어모델이 붙어 있지 않다. 그럴듯한 문장을 지어낼 수단 자체를 두지 않았다.
+      에이전트는 등록된 도구를 **실제로 돌려** 나온 값을 말하고, 도구가 없으면
+      「그 질문에 답할 도구가 없습니다」라고 말한다. 모르는 것을 아는 척하지 않는다.
+
+   두 번째 규칙 — **사내 에이전트는 회원 데이터를 보지 않는다.**
+      헬시·인슈러는 회원을 돌보는 이름이지만, 여기 있는 것은 **사내 운영 축**이다.
+      회원 데이터는 회원 대면 에이전트의 것이고, 사내 축이 들여다보면 경계가 무너진다.
+      그래서 그 둘은 사내 도구가 적고, 적다는 사실을 그대로 말한다.
+
+   세 번째 규칙 — **할 수 있는 일과 못 하는 일이 같은 원천에서 나온다.**
+      corpOrg.js 의 can/cannot 을 그대로 읽는다. 화면에 적은 제약과 실제 거절이 어긋나지 않게. */
+
+const CORP_AG_KEY = "hifin_corp_chat";   /* dataCatalog.js 등재 필수 — 대화 기록 */
+
+/* ── ① 도구 — 에이전트가 실제로 돌릴 수 있는 것 ──────────────────────
+   k    도구 코드
+   ko   사람이 읽는 이름
+   ask  이 도구를 부르는 말(의도 매칭). 겹치면 먼저 선언된 것이 이긴다.
+   run  **실제 값을 계산한다.** 문장을 지어내지 않는다. { t: 한 줄 답, rows: [[이름, 값]] }
+   ⚠️ run 안에서 typeof 로 함수 존재를 확인한다 — 번들 적재 순서 때문이다. */
+const CORP_AG_TOOL = [
+  /* ── 핀테크(M2 회계) ── */
+  { ai: "핀테크", k: "jv", ko: "전표 현황", ask: ["전표", "분개", "기표", "승인 대기"],
+    run: function () {
+      if (typeof corpJvAll !== "function") return null;
+      const jvs = corpJvAll(corpLedgerRead());
+      const p = corpPosted(jvs);
+      return { t: "전표 " + jvs.length + "건 가운데 " + p.length + "건이 전기됐고 " + (jvs.length - p.length) + "건이 승인 전입니다.",
+        rows: [["전체", jvs.length + "건"], ["전기", p.length + "건"],
+               ["검토", jvs.filter(function (j) { return j.st === "review"; }).length + "건"],
+               ["기표", jvs.filter(function (j) { return j.st === "draft"; }).length + "건"]] };
+    } },
+  { ai: "핀테크", k: "check", ko: "장부 검산", ask: ["검산", "항등식", "차대", "맞는지", "이상"],
+    run: function () {
+      if (typeof corpLedgerVerdict !== "function") return null;
+      const V = corpLedgerVerdict(corpJvAll(corpLedgerRead()), CORP_BANK_SEED);
+      const bad = V.filter(function (r) { return !r.ok; });
+      return { t: "항등식 " + V.length + "항목 중 " + (V.length - bad.length) + "항목이 통과했습니다" + (bad.length ? " — 실패 " + bad.length + "항목." : "."),
+        rows: V.map(function (r) { return [r.ko, (r.ok ? "통과" : "실패") + " · " + r.got]; }) };
+    } },
+  { ai: "핀테크", k: "fs", ko: "재무제표", ask: ["재무제표", "손익", "자산", "매출", "비용", "이익"],
+    run: function () {
+      if (typeof corpStatements !== "function") return null;
+      const S = corpStatements(corpJvAll(corpLedgerRead()));
+      return { t: "수익 " + corpWon(S.pl.rev) + "원 · 비용 " + corpWon(S.pl.exp) + "원 · 당기손익 " + corpWon(S.pl.net) + "원입니다.",
+        rows: [["수익", corpWon(S.pl.rev)], ["비용", corpWon(S.pl.exp)], ["당기손익", corpWon(S.pl.net)],
+               ["자산 총계", corpWon(S.bs.assets)], ["부채", corpWon(S.bs.liab)], ["자본", corpWon(S.bs.equity)]] };
+    } },
+  { ai: "핀테크", k: "bank", ko: "은행 대사", ask: ["은행", "대사", "미대사", "입출금", "통장"],
+    run: function () {
+      if (typeof corpBankRecon !== "function") return null;
+      const R = corpBankRecon(corpJvAll(corpLedgerRead()), CORP_BANK_SEED);
+      return { t: "자동 대사 " + R.matched + "건, 남은 것 " + (R.bankOnly.length + R.bookOnly.length) + "건입니다. 남은 줄은 사람이 처리합니다.",
+        rows: [["은행 잔액", corpWon(R.bankBal)], ["장부 잔액", corpWon(R.bookBal)],
+               ["은행에만", R.bankOnly.length + "건"], ["장부에만", R.bookOnly.length + "건"],
+               ["조정 후 차이", corpWon(R.gap)]] };
+    } },
+  { ai: "핀테크", k: "pa", ko: "예실 대비", ask: ["예실", "계획 대비", "달성", "차이"],
+    run: function () {
+      if (typeof corpPaUnmatched !== "function") return null;
+      const jvs = corpJvAll(corpLedgerRead());
+      const U = corpPaUnmatched(jvs, "");
+      const M = typeof corpPaMonths === "function" ? corpPaMonths(jvs) : [];
+      return { t: "두 축이 겹치는 달은 " + (M.length ? M.join(" · ") : "없습니다") + "이고, 그 달은 계획에서 준비기간이라 손익 밖입니다. 그래서 지금 차이 칸이 서지 않습니다.",
+        rows: [["계획 비목", U.leaves + "개"], ["대응 확정", U.planOk.length + "개"],
+               ["확정 대기", U.planAsk.length + "개"], ["대응 없음", U.planNone.length + "개"],
+               ["겹치는 달", M.join(" · ") || "없음"]] };
+    } },
+
+  /* ── 나침반(M1 경영기획) ── */
+  { ai: "나침반", k: "org", ko: "조직 현황", ask: ["조직", "인원", "팀", "몇 명", "공석"],
+    run: function () {
+      if (typeof CORP_SUMMARY === "undefined") return null;
+      return { t: "팀 " + CORP_SUMMARY.teams + "개 · AI 팀장 " + CORP_SUMMARY.agents + "명 · 재직 " + CORP_SUMMARY.peopleN + "명입니다. 자리는 " + CORP_SUMMARY.filled + " / " + CORP_SUMMARY.cap + "이고 합류 전이 " + CORP_SUMMARY.pendingN + "명입니다.",
+        rows: [["팀", CORP_SUMMARY.teams + "개"], ["재직", CORP_SUMMARY.peopleN + "명"],
+               ["채워진 자리", CORP_SUMMARY.filled + " / " + CORP_SUMMARY.cap],
+               ["합류 전", CORP_SUMMARY.pending.join(" · ")]] };
+    } },
+  { ai: "나침반", k: "ct", ko: "계약 만료", ask: ["계약", "만료", "갱신", "기한"],
+    run: function () {
+      if (typeof CORP_CT === "undefined" || typeof corpCtAlert !== "function") return null;
+      const now = corpOpsNow();
+      const rows = CORP_CT.map(function (c) { return { c: c, a: corpCtAlert(c, now) }; })
+        .sort(function (x, y) { return (x.a.d || 0) - (y.a.d || 0); });
+      const near = rows.filter(function (r) { return r.a.k !== "ok" && r.a.k !== "none"; });
+      return { t: "계약 " + CORP_CT.length + "건 중 경보가 선 것은 " + near.length + "건입니다. 갱신·해지 결정은 사람이 합니다.",
+        rows: rows.map(function (r) { return [r.c.ko, r.a.ko + " · " + r.c.to]; }) };
+    } },
+  { ai: "나침반", k: "mtg", ko: "주간회의", ask: ["회의", "주간", "언제", "보고"],
+    run: function () {
+      if (typeof corpMtgWeek !== "function") return null;
+      const w = corpMtgWeek(corpOpsNow());
+      if (!w) return { t: "다음 회의를 계산하지 못했습니다.", rows: [] };
+      const st = corpMtgRead(); const wk = corpMtgOf(st, w);
+      const mg = wk ? corpMtgCanMerge(wk) : null;
+      return { t: "다음 주간회의는 " + w.key + " " + w.time + " · " + w.mode + "입니다(D-" + w.dday + ").",
+        rows: [["일시", w.key + " " + w.time], ["방식", w.mode],
+               ["보고 확정", mg ? mg.done + " / " + mg.need + "팀" : "자료 미생성"],
+               ["확정자 공석", mg ? mg.skip + "팀" : "—"]] };
+    } },
+  { ai: "나침반", k: "rt", ko: "루틴 상태", ask: ["루틴", "일마감", "월마감", "밀린", "예정"],
+    run: function () {
+      if (typeof CORP_SCHEDULE === "undefined" || typeof corpRoutineState !== "function") return null;
+      const now = corpOpsNow(); const st = corpMtgRead(); const w = corpMtgWeek(now);
+      const rs = CORP_SCHEDULE.routines.map(function (r) { return { t: r.t, s: corpRoutineState(r, st, now, w) }; });
+      const due = rs.filter(function (x) { return x.s.state === "due"; });
+      return { t: "루틴 " + rs.length + "종 가운데 생성 경로가 붙은 것은 " + CORP_MTG_GEN.length + "종이고, 지금 밀린 것은 " + due.length + "건입니다.",
+        rows: rs.map(function (x) { return [x.t, x.s.ko]; }) };
+    } },
+
+  /* ── 인총이(M3 인사총무) ── */
+  { ai: "인총이", k: "hr", ko: "인사 기록", ask: ["인사", "직원", "사번", "직위", "전문"],
+    run: function () {
+      if (typeof CORP_HR === "undefined") return null;
+      return { t: "인사 기록 " + CORP_HR.length + "명(재직 " + corpHrOn().length + ")입니다. 직무 정보만 듭니다 — 주민번호 값·주소·연락처는 담지 않습니다.",
+        rows: CORP_HR.map(function (h) { return [h.name + (h.on ? "" : "(합류 전)"), (h.no || "사번 없음") + " · " + h.title + " · " + h.teams.join("·")]; }) };
+    } },
+  { ai: "인총이", k: "rrn", ko: "주민번호 보관", ask: ["주민", "주민번호", "4대보험", "원천징수", "신고"],
+    run: function () {
+      if (typeof CORP_RRN_GATE === "undefined") return null;
+      const open = corpRrnOpen();
+      return { t: "주민번호 **값은 이 시스템이 들지 않습니다**. 보유 여부·근거·보관 위치·파기 예정만 듭니다. 값을 담으려면 네 조건이 서야 하는데 지금은 " + CORP_RRN_GATE.filter(function (g) { return g.ok; }).length + " / " + CORP_RRN_GATE.length + "입니다.",
+        rows: CORP_RRN_GATE.map(function (g) { return [g.ko, g.ok ? "충족" : "미충족"]; })
+          .concat(open.length ? [["보관 책임자 미지정", open.map(function (h) { return h.name; }).join(" · ")]] : []) };
+    } },
+  { ai: "인총이", k: "doc", ko: "문서 보존기한", ask: ["문서", "보존", "보관", "몇 년", "폐기", "파기"],
+    run: function () {
+      if (typeof CORP_DOC_CLASS === "undefined") return null;
+      return { t: "문서 분류 " + CORP_DOC_CLASS.length + "종입니다. " + CORP_DOC_CLASS.filter(function (d) { return !d.checked; }).length + "종은 법령 원문 대조 전이라 조문 번호를 적지 않았습니다.",
+        rows: CORP_DOC_CLASS.map(function (d) { return [d.ko, (d.years === 0 ? "영구" : d.years + "년") + " · " + d.basisKo + (d.checked ? "" : " (원문 미확인)")]; }) };
+    } },
+
+  /* ── 하네스(S1 정보보안) ── */
+  { ai: "하네스", k: "gate", ko: "커밋 게이트", ask: ["게이트", "보안", "차단", "검사", "막"],
+    run: function () {
+      if (typeof CORP_GATES === "undefined") return null;
+      return { t: "커밋 게이트 " + CORP_GATES.length + "종이 걸려 있습니다. 결과는 커밋할 때 터미널에 뜹니다 — 이 화면이 러너를 돌리지는 못합니다.",
+        rows: CORP_GATES.map(function (g) { return [g.ko, g.run]; }) };
+    } },
+  { ai: "하네스", k: "rel", ko: "릴리스", ask: ["릴리스", "배포", "승인", "release"],
+    run: function () {
+      if (typeof corpRelAll !== "function") return null;
+      const st = corpGovRead(); const rel = corpRelAll(st); const who = corpRelApprovers();
+      return { t: who.length ? "릴리스 승인 가능자는 " + who.join(" · ") + "입니다." : "**지금 릴리스를 승인할 수 있는 사람이 없습니다** — 정보보안팀 책임자가 합류 전입니다. 승인 경로를 대표에게 열지 않았습니다.",
+        rows: rel.map(function (r) { return [r.ver + " " + r.ko, r.st === "approved" ? "승인 · " + r.ap : "승인 대기"]; })
+          .concat([["승인 가능자", who.length ? who.join(" · ") : "0명"]]) };
+    } },
+
+  /* ── 온톨로(D1 데이터관리) ── */
+  { ai: "온톨로", k: "key", ko: "저장 키", ask: ["저장", "키", "카탈로그", "데이터", "어디에"],
+    run: function () {
+      if (typeof hifinCatalogSummary !== "function") return null;
+      const s = hifinCatalogSummary();
+      return { t: "브라우저 저장 키는 정적 " + s.keysStatic + "개 · 접두 " + s.keysPrefix + "개가 등재돼 있습니다. 등재 안 된 키는 커밋이 막힙니다.",
+        rows: [["정적 키", s.keysStatic + "개"], ["접두 키", s.keysPrefix + "개"],
+               ["그룹", s.groups + "개"], ["외부 소스", s.external + "종"]] };
+    } },
+];
+
+/* ── ② 에이전트 — 능력은 조직 원천에서 온다 ──────────────────────── */
+function corpAgTools(ai) { return CORP_AG_TOOL.filter(function (t) { return t.ai === ai; }); }
+function corpAgList() {
+  const T = typeof CORP_TEAMS !== "undefined" ? CORP_TEAMS : [];
+  return T.map(function (t) {
+    const tools = corpAgTools(t.ai);
+    return {
+      ai: t.ai, team: t.id, sh: t.sh, c: t.c, own: t.own, head: t.head,
+      why: t.aiWhy, work: t.work,
+      can: t.can, cannot: t.cannot,          /* 조직 원천 그대로 — 화면과 거절이 어긋나지 않게 */
+      tools: tools,
+      /* 사내 도구가 없는 에이전트는 그 사실을 사유와 함께 말한다 */
+      noTool: tools.length === 0,
+      noWhy: (t.id === "H1" || t.id === "H2")
+        ? "회원 데이터는 회원 대면 에이전트의 것입니다. 사내 축이 들여다보면 경계가 무너져서 조회 도구를 두지 않았습니다."
+        : "사내 조회 원천이 아직 없습니다. 실데이터가 들어오면(Phase 10) 도구가 붙습니다.",
+    };
+  });
+}
+function corpAgOf(ai) { return corpAgList().find(function (a) { return a.ai === ai; }) || null; }
+
+/* ── ③ 의도 매칭 — 지어내지 않고 **고른다** ──────────────────────────
+   말뭉치가 아니라 낱말 겹침이다. 고르지 못하면 고르지 못했다고 말한다. */
+function corpAgPick(ai, q) {
+  const s = String(q || "").toLowerCase();
+  if (!s.trim()) return null;
+  const tools = corpAgTools(ai);
+  let best = null, bestN = 0;
+  tools.forEach(function (t) {
+    let n = 0;
+    t.ask.forEach(function (w) { if (s.indexOf(String(w).toLowerCase()) >= 0) n += String(w).length; });
+    if (n > bestN) { bestN = n; best = t; }
+  });
+  return best;
+}
+/* 시키는 말 — 이게 있어야 「요청」이다.
+   ⚠️ 없으면 물음까지 거절하게 된다. 「릴리스 승인 누가 해?」는 승인해 달라는 말이 아니다. */
+const CORP_AG_DO = ["해줘", "해 줘", "해주세요", "해 주세요", "해라", "하라", "해다오", "처리", "실행",
+  "올려", "보내", "발행", "제출", "확정해", "지급", "눌러", "진행해", "시켜", "부탁"];
+/* 못 하는 일을 **시켰는가** — 조직 원천의 cannot 과 맞춰 본다 */
+function corpAgRefuse(ai, q) {
+  const a = corpAgOf(ai);
+  if (!a) return null;
+  const s = String(q || "").toLowerCase();
+  if (!CORP_AG_DO.some(function (w) { return s.indexOf(w) >= 0; })) return null;
+  const hit = (a.cannot || []).find(function (c) {
+    return String(c.act).split(" · ").some(function (w) {
+      const k = String(w).replace(/\s/g, "").toLowerCase();
+      return k.length >= 2 && s.replace(/\s/g, "").indexOf(k) >= 0;
+    });
+  });
+  return hit || null;
+}
+
+/* ── ④ 답하기 — 도구를 **실제로 돌려** 값을 말한다 ────────────────── */
+function corpAgAnswer(ai, q) {
+  const a = corpAgOf(ai);
+  if (!a) return { kind: "none", t: "그런 이름의 AI 팀장이 없습니다." };
+  const ref = corpAgRefuse(ai, q);
+  if (ref) {
+    return { kind: "refuse", t: "그건 제가 끝내지 못합니다 — " + ref.act + ". " + ref.by, act: ref.act };
+  }
+  const tool = corpAgPick(ai, q);
+  if (!tool) {
+    return {
+      kind: "notool",
+      t: a.noTool
+        ? "저는 사내 조회 도구가 없습니다. " + a.noWhy
+        : "그 질문에 답할 도구가 없습니다. 지어내지 않겠습니다 — 제가 돌릴 수 있는 것은 아래뿐입니다.",
+      tools: a.tools.map(function (t) { return t.ko; }),
+    };
+  }
+  let out = null;
+  try { out = tool.run(); } catch (e) { out = null; }
+  if (!out) return { kind: "fail", t: "「" + tool.ko + "」을(를) 돌렸지만 원천을 읽지 못했습니다. 값을 지어내지 않겠습니다." };
+  return { kind: "ok", tool: tool.ko, t: out.t, rows: out.rows || [] };
+}
+
+/* ── ⑤ 대화 기록 ────────────────────────────────────────────────── */
+function corpAgRead() {
+  const empty = { v: 1, log: {} };
+  try {
+    const raw = localStorage.getItem(CORP_AG_KEY);
+    if (!raw) return empty;
+    const o = JSON.parse(raw);
+    return { v: 1, log: (o.log && typeof o.log === "object") ? o.log : {} };
+  } catch (e) { return empty; }
+}
+function corpAgWrite(st) {
+  try {
+    const log = {};
+    Object.keys(st.log || {}).forEach(function (k) { log[k] = (st.log[k] || []).slice(-40); });
+    localStorage.setItem(CORP_AG_KEY, JSON.stringify({ v: 1, log: log }));
+    return true;
+  } catch (e) { return false; }
+}
+
+/* ── ⑥ 단언 — 화면과 러너가 같은 함수를 부른다 ─────────────────── */
+function corpAgVerdict() {
+  const L = corpAgList();
+  const withTool = L.filter(function (a) { return a.tools.length > 0; });
+  const noTool = L.filter(function (a) { return a.noTool; });
+  const badRun = CORP_AG_TOOL.filter(function (t) { return typeof t.run !== "function" || !t.ask.length || !t.ko; });
+  const orphan = CORP_AG_TOOL.filter(function (t) { return !L.some(function (a) { return a.ai === t.ai; }); });
+  /* 도구가 없는 에이전트가 **아무 말이나 하지 않는지** — 양성 검사 */
+  const mute = noTool.map(function (a) { return corpAgAnswer(a.ai, "이번 달 매출 얼마야"); });
+  const madeUp = mute.filter(function (r) { return r.kind === "ok"; });
+  /* 도구가 있는 에이전트는 **실제로 값을 내는지** — 늘 모른다고 하면 그것도 쓸모없다 */
+  const live = withTool.map(function (a) { return corpAgAnswer(a.ai, a.tools[0].ask[0]); });
+  const dead = live.filter(function (r) { return r.kind !== "ok"; });
+  const refuse = corpAgAnswer("핀테크", "전표 승인 해줘");
+  const ask = corpAgAnswer("하네스", "릴리스 승인 누가 해");   /* 물음은 거절이 아니다 */
+
+  return [
+    { k: "list", ko: "에이전트 목록", n: L.length, ok: L.length > 0, got: L.length + "명", want: "> 0" },
+    { k: "tool", ko: "도구 정의", n: CORP_AG_TOOL.length, ok: badRun.length === 0, got: badRun.length + "건 결함", want: "0건" },
+    { k: "orphan", ko: "주인 없는 도구 0건", n: CORP_AG_TOOL.length, ok: orphan.length === 0, got: orphan.length + "건", want: "0건" },
+    { k: "withtool", ko: "도구를 가진 에이전트", n: L.length, ok: withTool.length > 0, got: withTool.length + " / " + L.length + "명", want: "> 0" },
+    { k: "notool", ko: "도구 없는 에이전트 표본", n: L.length, ok: noTool.length > 0, got: noTool.length + "명", want: "> 0(없으면 침묵 검사가 공집합)" },
+    { k: "mute", ko: "도구 없으면 답을 지어내지 않는다", n: mute.length, ok: madeUp.length === 0, got: madeUp.length + "건 지어냄", want: "0건" },
+    { k: "mutewhy", ko: "못 하는 이유를 말한다", n: noTool.length, ok: noTool.every(function (a) { return (a.noWhy || "").trim(); }), got: noTool.length + "명", want: "전건 사유" },
+    { k: "live", ko: "도구 있는 에이전트는 실제 값을 낸다", n: live.length, ok: dead.length === 0, got: dead.length + "명 실패", want: "0명" },
+    { k: "refuse", ko: "못 하는 일을 시키면 거절한다", n: 1, ok: refuse.kind === "refuse", got: refuse.kind, want: "refuse" },
+    { k: "ask", ko: "물음은 거절하지 않는다", n: 1, ok: ask.kind === "ok", got: ask.kind, want: "ok(물어보는 것까지 막으면 쓸 수 없다)" },
+    { k: "src", ko: "능력이 조직 원천에서 온다", n: L.length, ok: L.every(function (a) { return (a.can || []).length && (a.cannot || []).length; }), got: L.length + "명", want: "can·cannot 전건" },
+  ];
+}
+function corpAgPass() {
+  const rows = corpAgVerdict();
+  const zero = rows.filter(function (r) { return !(r.n > 0); });
+  const fail = rows.filter(function (r) { return !r.ok; });
+  return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
+}
+
 /* ══════════════ AI 팀장 아바타 렌더(CorpAvatar.jsx) · CorpOps Phase 2 (형 지시 2026-11-11) ══════════════
    corpAvatars.js의 문양 명세를 SVG로 그린다. 상태는 테두리로만 말한다.
    ⚠️ AI임이 분명해야 한다 — 이 컴포넌트는 항상 AI 배지와 함께 쓰고, 사람 책임자는 글자로 적는다.
@@ -19621,6 +20189,457 @@ function GovCheck({ V }) {
   );
 }
 
+/* ══════════════ 자료 반입 화면(CorpUpload.jsx) · CorpOps (형 지시 2026-11-12) ══════════════
+   형이 실제 자료를 올리는 자리. 총괄운영의 여섯째 뷰다.
+
+   흐름 — 고르기 → **민감자료 검사** → 미리보기 → 열 맞추기 → 검증 → 반입
+   민감자료 검사가 미리보기보다 **앞**이다. 주민번호가 섞인 표를 띄워 놓고 「지우세요」라고
+   말하는 것은 이미 띄운 것이다.
+
+   이 화면이 지키는 것
+     · 파일은 **어디로도 전송되지 않는다.** 브라우저 안에서 읽고 끝난다.
+     · **틀린 줄만 뺀다.** 전부 받거나 전부 거부하는 방식은 실무에서 못 쓴다. 뺀 이유를 줄 번호로 적는다.
+     · **반입처를 먼저 말한다.** 어디로 들어가는지 모르고 누르게 하지 않는다.
+     · **되돌릴 수 있다.** 직전 반입을 통째로 물린다.
+     · 용량을 넘으면 미리보기와 검증까지만 한다 — 「반입했다」고 적어 놓고 일부만 들어가는 것보다 낫다. */
+
+function CorpUploadSection() {
+  const [kind, setKind] = React.useState("jv");
+  const [file, setFile] = React.useState(null);
+  const [raw, setRaw] = React.useState(null);      /* { head, rows, kb, name } */
+  const [block, setBlock] = React.useState(null);  /* 민감자료 적중 — 있으면 미리보기를 막는다 */
+  const [map, setMap] = React.useState({});
+  const [res, setRes] = React.useState(null);
+  const [msg, setMsg] = React.useState(null);
+  const [up, setUp] = React.useState(() => corpUpRead());
+  const V = React.useMemo(() => corpUpPass(), []);
+  const spec = corpUpSpec(kind);
+  const fileRef = React.useRef(null);
+
+  const reset = () => { setRaw(null); setBlock(null); setMap({}); setRes(null); setFile(null); };
+
+  const onPick = (f) => {
+    if (!f) return;
+    reset(); setFile(f);
+    const rd = new FileReader();
+    rd.onload = () => {
+      const text = String(rd.result || "");
+      const kb = corpUpSizeKb(text);
+      const p = corpUpParseCsv(text);
+      if (!p.head.length) { setMsg({ bad: true, t: "표를 읽지 못했습니다 — CSV(쉼표로 나뉜 표)인지 확인해 주세요" }); return; }
+      /* ① 민감자료 — 미리보기보다 **먼저** 본다 */
+      const hit = corpUpScan(p.rows, p.head);
+      if (hit.length) { setBlock({ hit: hit, name: f.name, kb: kb }); return; }
+      setRaw({ head: p.head, rows: p.rows, kb: kb, name: f.name });
+      setMap(corpUpSuggest(p.head, corpUpSpec(kind)));
+      setMsg({ bad: false, t: f.name + " — " + p.rows.length + "행 읽었습니다. 열이 맞는지 확인해 주세요." });
+    };
+    rd.onerror = () => setMsg({ bad: true, t: "파일을 읽지 못했습니다" });
+    rd.readAsText(f, "utf-8");
+  };
+
+  const validate = () => {
+    if (!raw) return;
+    const r = corpUpValidate(kind, raw.head, raw.rows, map);
+    setRes(r);
+    if (r.msg) setMsg({ bad: true, t: r.msg });
+    else setMsg({ bad: false, t: "검증 — 통과 " + r.ok.length + "행 · 제외 " + r.bad.length + "행" });
+  };
+
+  const commit = () => {
+    if (!res || !res.ok.length) { setMsg({ bad: true, t: "반입할 줄이 없습니다" }); return; }
+    if (raw.kb > CORP_UP_MAXKB) {
+      setMsg({ bad: true, t: "용량이 " + raw.kb + "KB로 상한(" + CORP_UP_MAXKB + "KB)을 넘습니다 — 미리보기와 검증까지만 합니다. 나눠서 올려 주세요." });
+      return;
+    }
+    let n = 0, note = "";
+    if (kind === "jv") {
+      const g = corpUpGroupJv(res.ok).filter((x) => x.ok);
+      const st = corpLedgerRead();
+      const add = g.map((x) => ({
+        id: x.no, d: x.d, desc: x.desc, by: "반입", ap: null, st: "draft",
+        l: x.lines.map((l) => [l.acctCode, +l.dr || 0, +l.cr || 0, l.memo || ""]),
+      }));
+      corpLedgerWrite(Object.assign({}, st, { jv: (st.jv || []).concat(add) }));
+      n = add.length; note = "전표는 **기표 상태**로 들어갑니다 — 검토·승인을 거쳐야 장부에 올라갑니다.";
+    } else {
+      setMsg({ bad: true, t: spec.ko + "은(는) 반입 경로가 아직 열려 있지 않습니다 — 검증까지만 됩니다. 장부(전표)부터 열었습니다." });
+      return;
+    }
+    const log = (up.log || []).concat([{ kind: kind, name: raw.name, n: n, bad: res.bad.length, at: raw.name }]);
+    const next = { v: 1, log: log };
+    corpUpWrite(next); setUp(next);
+    setMsg({ bad: false, t: n + "건 반입했습니다. " + note });
+  };
+
+  const undo = () => {
+    if (kind !== "jv") { setMsg({ bad: true, t: "되돌릴 반입이 없습니다" }); return; }
+    const st = corpLedgerRead();
+    const keep = (st.jv || []).filter((j) => j.by !== "반입");
+    const removed = (st.jv || []).length - keep.length;
+    corpLedgerWrite(Object.assign({}, st, { jv: keep }));
+    setMsg({ bad: false, t: "반입분 " + removed + "건을 물렸습니다 — 파일럿 전표는 코드에 있어 영향받지 않습니다." });
+  };
+
+  const cols = spec ? spec.need.concat(spec.opt) : [];
+  const grouped = res && kind === "jv" ? corpUpGroupJv(res.ok) : null;
+
+  return (
+    <div className="cl-wrap">
+      <div className="cl-top">
+        <div className="cl-ttl"><b>자료 반입</b><span className="cl-sub">실제 자료를 올리는 자리</span></div>
+        <div className="cl-ctl">
+          <span className="ad-chip">상한 {CORP_UP_MAXKB}KB</span>
+          <span className={"cl-verd" + (V.pass ? " on" : " bad")}>검산 {V.rows.length - V.fail.length - V.zero.length} / {V.rows.length}</span>
+        </div>
+      </div>
+
+      <div className="cl-warn">
+        <b>파일은 어디로도 전송되지 않습니다.</b> 서버가 없어 브라우저 안에서 읽고 끝납니다 —
+        그래서 용량 한계가 있고, 큰 파일은 미리보기와 검증까지만 합니다.
+        <span className="cl-warn2">
+          <b>민감자료 검사가 미리보기보다 먼저입니다.</b> 주민번호가 섞인 표를 띄워 놓고 「지우세요」라고
+          말하는 것은 이미 띄운 것입니다. 커밋 게이트와 같은 판정을 여기서도 합니다 —
+          들어오는 길이 둘인데 한쪽만 막으면 막는 것이 아닙니다.
+        </span>
+      </div>
+
+      <div className="cl-body">
+        <div className="cl-sec">
+          <div className="cl-h">① 무엇을 올리는가</div>
+          <div className="up-kinds">
+            {CORP_UP_SPEC.map((s) => (
+              <button key={s.k} className={"up-kind" + (s.k === kind ? " on" : "")}
+                onClick={() => { setKind(s.k); reset(); }}>
+                <b>{s.ko}</b><i>{s.team}</i>
+                <span>{s.into}</span>
+              </button>
+            ))}
+          </div>
+          {spec && (
+            <div className="up-spec">
+              <div className="up-d">{spec.d}</div>
+              <div className="up-cols">
+                {spec.need.map((k) => <span key={k} className="up-col req">{spec.label[k]}<i>필수</i></span>)}
+                {spec.opt.map((k) => <span key={k} className="up-col">{spec.label[k]}</span>)}
+              </div>
+              {spec.deny.length > 0 && (
+                <div className="up-deny">
+                  <b>받지 않는 열</b> — {spec.deny.slice(0, 8).join(" · ")}{spec.deny.length > 8 ? " 외" : ""}.
+                  이런 이름의 열은 <b>떼고 받습니다</b>.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="cl-sec">
+          <div className="cl-h">② 파일 고르기 <span className="cl-t">CSV — 엑셀에서 「다른 이름으로 저장 → CSV UTF-8」</span></div>
+          <div className="up-pick">
+            <input ref={fileRef} type="file" accept=".csv,text/csv,text/plain"
+              onChange={(e) => onPick(e.target.files && e.target.files[0])} />
+            {file && <span className="up-f">{file.name}{raw ? " · " + raw.kb + "KB · " + raw.rows.length + "행" : ""}</span>}
+            {(raw || block) && <button className="cl-rv" onClick={() => { reset(); if (fileRef.current) fileRef.current.value = ""; }}>지우기</button>}
+          </div>
+        </div>
+
+        {msg && <div className={"cl-msg" + (msg.bad ? " bad" : "")} onClick={() => setMsg(null)}>{msg.t}</div>}
+
+        {block && (
+          <div className="cl-sec up-block">
+            <div className="cl-h">받지 않았습니다 — 민감자료가 섞여 있습니다
+              <span className="cl-flag bad">{block.hit.length}건</span></div>
+            <p className="cl-note">미리보기도 하지 않았습니다. <b>값은 화면에 띄우지 않습니다</b> —
+              어느 줄 어느 열에 무엇이 있는지까지만 적습니다.</p>
+            {Object.keys(block.hit.reduce((a, h) => { a[h.k] = h; return a; }, {})).map((k) => {
+              const h = block.hit.find((x) => x.k === k);
+              const where = block.hit.filter((x) => x.k === k);
+              return (
+                <div key={k} className="cl-open">
+                  <span className="pa-tag none">{h.ko} {where.length}건</span>
+                  <i>{h.why}</i>
+                  <div className="up-where">{where.slice(0, 12).map((w, i) => <span key={i}>{w.row}행 · {w.col}</span>)}
+                    {where.length > 12 && <span>외 {where.length - 12}건</span>}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {raw && (
+          <div className="cl-sec">
+            <div className="cl-h">③ 열 맞추기 <span className="cl-t">추측해서 넣지 않습니다 — 확인하고 고르세요</span></div>
+            <div className="up-map">
+              {cols.map((k) => (
+                <label key={k} className={spec.need.indexOf(k) >= 0 ? "req" : ""}>
+                  <span>{spec.label[k]}{spec.need.indexOf(k) >= 0 && <i>필수</i>}</span>
+                  <select value={map[k] === undefined ? "" : map[k]}
+                    onChange={(e) => setMap(Object.assign({}, map, { [k]: e.target.value === "" ? undefined : +e.target.value }))}>
+                    <option value="">— 없음 —</option>
+                    {raw.head.map((h, i) => <option key={i} value={i}>{h || "(" + (i + 1) + "열)"}</option>)}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <div className="up-prev">
+              <table className="cl-tbl">
+                <thead><tr>{raw.head.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {raw.rows.slice(0, 5).map((r, i) => (
+                    <tr key={i}>{raw.head.map((h, j) => <td key={j} className="desc">{String(r[j] == null ? "" : r[j]).slice(0, 24)}</td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="cl-note">앞 5행만 보여 줍니다 — 전체 {raw.rows.length}행.</p>
+            </div>
+            <button className="cl-save" onClick={validate}>④ 검증</button>
+          </div>
+        )}
+
+        {res && (
+          <div className="cl-sec">
+            <div className="cl-h">⑤ 검증 결과
+              <span className={"cl-flag" + (res.bad.length ? " bad" : " on")}>통과 {res.ok.length} · 제외 {res.bad.length}</span></div>
+            {res.bad.length > 0 && (
+              <div className="up-bad">
+                {res.bad.slice(0, 15).map((b, i) => (
+                  <div key={i}><b>{b.row}행</b> {b.why.join(" · ")}</div>
+                ))}
+                {res.bad.length > 15 && <div>… 외 {res.bad.length - 15}행</div>}
+              </div>
+            )}
+            {grouped && (
+              <table className="cl-tbl">
+                <thead><tr><th>전표</th><th>일자</th><th>적요</th><th>차변</th><th>대변</th><th>판정</th></tr></thead>
+                <tbody>
+                  {grouped.slice(0, 20).map((g) => (
+                    <tr key={g.no} className={g.ok ? "" : "bad"}>
+                      <td className="id">{g.no}</td><td className="id">{g.d}</td><td className="desc">{g.desc}</td>
+                      <td className="n">{corpWon(g.dr)}</td><td className="n">{corpWon(g.cr)}</td>
+                      <td className="st">{g.ok ? "차대 일치" : g.why}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <p className="cl-note"><b>틀린 줄만 뺍니다.</b> 전부 받거나 전부 거부하면 실무에서 쓸 수 없습니다 —
+              뺀 이유를 줄 번호로 적습니다.</p>
+            <div className="gv-act">
+              <button className={"cl-save" + (res.ok.length ? "" : " off")} onClick={commit}>⑥ 반입 — {spec.into}</button>
+              <button className="cl-rv" onClick={undo}>직전 반입 되돌리기</button>
+            </div>
+          </div>
+        )}
+
+        {(up.log || []).length > 0 && (
+          <div className="cl-sec">
+            <div className="cl-h">반입 이력 <span className="cl-t">{up.log.length}건</span></div>
+            {up.log.slice().reverse().slice(0, 10).map((l, i) => (
+              <div key={i} className="cl-open"><span className="gv-tag ok">반입</span>
+                <b>{(corpUpSpec(l.kind) || {}).ko}</b>
+                <span className="gv-meta">{l.name} · {l.n}건{l.bad ? " · 제외 " + l.bad : ""}</span></div>
+            ))}
+          </div>
+        )}
+
+        <div className="cl-sec">
+          <div className="cl-h">검산 — 화면과 커밋 게이트 러너가 같은 함수를 봅니다</div>
+          <table className="cl-tbl id">
+            <thead><tr><th>항목</th><th>대상</th><th>결과</th><th>기대</th><th /></tr></thead>
+            <tbody>
+              {V.rows.map((r) => (
+                <tr key={r.k} className={r.ok && r.n > 0 ? "" : "bad"}>
+                  <td>{r.ko}</td><td className="n">{r.n}건</td><td className="n">{r.got}</td>
+                  <td className="n">{r.want}</td>
+                  <td className="st">{!(r.n > 0) ? "대상 0 — 실패" : (r.ok ? "통과" : "실패")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ AI 팀장 대화창(CorpAgentChat.jsx) · CorpOps (형 지시 2026-11-12) ══════════════
+   사람 직원이 AI 팀장과 이야기하는 자리. 총괄운영의 일곱째 뷰다.
+   왼쪽에 여덟 명, 오른쪽에 그 사람과의 대화 — 대화는 **에이전트별로 따로** 남는다.
+
+   이 화면이 지키는 것
+     · **도구가 있는 것만 답한다.** 사내용 언어모델이 붙어 있지 않다 —
+       그럴듯한 문장을 지어낼 수단 자체를 두지 않았다. 등록된 도구를 실제로 돌려 나온 값만 말한다.
+     · **못 하는 일을 시키면 거절한다.** 거절 사유는 조직 원천(corpOrg.js cannot)에서 그대로 온다 —
+       화면에 적은 제약과 실제 거절이 어긋나지 않게.
+     · **물음은 거절하지 않는다.** 「릴리스 승인 누가 해?」는 승인해 달라는 말이 아니다.
+       물어보는 것까지 막으면 쓸 수 없는 도구가 된다.
+     · 사내 도구가 없는 에이전트는 **없다고 말한다.** 헬시·인슈러는 회원 데이터를 보지 않는다 —
+       회원 축과 사내 축의 경계를 지키는 자리다. */
+
+function CorpAgentChatSection() {
+  const list = React.useMemo(function () { return corpAgList(); }, []);
+  const [sel, setSel] = React.useState(list.length ? list[0].ai : "");
+  const [st, setSt] = React.useState(function () { return corpAgRead(); });
+  const [q, setQ] = React.useState("");
+  const V = React.useMemo(function () { return corpAgPass(); }, []);
+  const a = corpAgOf(sel);
+  const log = (st.log || {})[sel] || [];
+  const endRef = React.useRef(null);
+
+  React.useEffect(function () {
+    if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "end" });
+  }, [sel, log.length]);
+
+  const send = function (text) {
+    const s = String(text === undefined ? q : text).trim();
+    if (!s || !a) return;
+    const r = corpAgAnswer(sel, s);
+    const next = Object.assign({}, st, { log: Object.assign({}, st.log) });
+    next.log[sel] = (next.log[sel] || []).concat([{ who: "me", t: s }, { who: "ai", r: r }]);
+    corpAgWrite(next); setSt(next); setQ("");
+  };
+  const clear = function () {
+    const next = Object.assign({}, st, { log: Object.assign({}, st.log) });
+    next.log[sel] = [];
+    corpAgWrite(next); setSt(next);
+  };
+
+  return (
+    <div className="cl-wrap">
+      <div className="cl-top">
+        <div className="cl-ttl"><b>AI 팀장 대화</b><span className="cl-sub">사람 직원 ↔ AI 팀장 {list.length}명</span></div>
+        <div className="cl-ctl">
+          <span className="ad-chip">도구 {CORP_AG_TOOL.length}종</span>
+          <span className={"cl-verd" + (V.pass ? " on" : " bad")}>검산 {V.rows.length - V.fail.length - V.zero.length} / {V.rows.length}</span>
+        </div>
+      </div>
+
+      <div className="cl-warn">
+        <b>도구가 있는 것만 답합니다.</b> 이 제품에는 사내용 언어모델이 붙어 있지 않습니다 —
+        그럴듯한 문장을 지어낼 수단 자체를 두지 않았습니다. 등록된 도구를 <b>실제로 돌려</b> 나온 값만 말하고,
+        도구가 없으면 없다고 말합니다.
+        <span className="cl-warn2">
+          못 하는 일을 시키면 거절합니다. 거절 사유는 조직도의 「사람이 마무리」 목록에서 그대로 옵니다 —
+          화면에 적은 제약과 실제 거절이 어긋나면 둘 다 못 믿게 됩니다.
+        </span>
+      </div>
+
+      <div className="ag-wrap">
+        <div className="ag-side">
+          {list.map(function (x) {
+            return (
+              <button key={x.ai} className={"ag-who" + (x.ai === sel ? " on" : "")} style={{ "--tc": x.c }}
+                onClick={function () { setSel(x.ai); }}>
+                {typeof CorpAvatar === "function" && <CorpAvatar ai={x.ai} size={30} title={x.ai} />}
+                <span className="ag-n" style={{ color: x.c }}>{x.ai}</span>
+                <span className="corp-ai">AI</span>
+                <i>{x.sh}</i>
+                <em className={x.noTool ? "none" : ""}>{x.noTool ? "도구 없음" : "도구 " + x.tools.length}</em>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="ag-main">
+          {a && (
+            <div className="ag-head" style={{ "--tc": a.c }}>
+              <div className="ag-hn"><b style={{ color: a.c }}>{a.ai}</b><span className="corp-ai">AI</span>
+                <i>{a.sh}팀 · {a.why}</i></div>
+              <div className="ag-pair">사람 책임자 <b>{a.own}</b>{a.head === 0 && <em>합류 전</em>}</div>
+              <button className="cl-rv" onClick={clear}>대화 지우기</button>
+            </div>
+          )}
+
+          {a && (
+            <div className="ag-cap">
+              <div className="ag-capb">
+                <span className="ag-k">끝까지 하는 일</span>
+                {a.can.map(function (c, i) { return <span key={i} className="ag-chip">{c}</span>; })}
+              </div>
+              <div className="ag-capb">
+                <span className="ag-k no">사람이 마무리</span>
+                {a.cannot.map(function (c, i) { return <span key={i} className="ag-chip no" title={c.by}>{c.act}</span>; })}
+              </div>
+              <div className="ag-capb">
+                <span className="ag-k tool">돌릴 수 있는 도구</span>
+                {a.noTool
+                  ? <span className="ag-none">{a.noWhy}</span>
+                  : a.tools.map(function (t) {
+                    return <button key={t.k} className="ag-chip tool" onClick={function () { send(t.ask[0]); }}>{t.ko}</button>;
+                  })}
+              </div>
+            </div>
+          )}
+
+          <div className="ag-log">
+            {!log.length && (
+              <div className="ag-hint">
+                {a && a.noTool
+                  ? <span>{a.ai}에게는 사내 조회 도구가 없습니다. {a.noWhy}</span>
+                  : <span>위의 도구 이름을 누르거나, 물어보세요. 예 — 「미대사 몇 건이야」 · 「손익 어때」 · 「다음 회의 언제」</span>}
+              </div>
+            )}
+            {log.map(function (m, i) {
+              if (m.who === "me") return <div key={i} className="ag-me">{m.t}</div>;
+              const r = m.r || {};
+              return (
+                <div key={i} className={"ag-ai k-" + (r.kind || "none")}>
+                  <div className="ag-t">
+                    {r.kind === "ok" && <span className="ag-tag ok">{r.tool}</span>}
+                    {r.kind === "refuse" && <span className="ag-tag no">거절</span>}
+                    {r.kind === "notool" && <span className="ag-tag none">도구 없음</span>}
+                    {r.kind === "fail" && <span className="ag-tag none">원천 못 읽음</span>}
+                    {r.t}
+                  </div>
+                  {r.rows && r.rows.length > 0 && (
+                    <table className="cl-tbl ag-tbl"><tbody>
+                      {r.rows.map(function (row, j) { return <tr key={j}><td>{row[0]}</td><td className="n">{row[1]}</td></tr>; })}
+                    </tbody></table>
+                  )}
+                  {r.tools && r.tools.length > 0 && (
+                    <div className="ag-sug">쓸 수 있는 것 — {r.tools.join(" · ")}</div>
+                  )}
+                </div>
+              );
+            })}
+            <div ref={endRef} />
+          </div>
+
+          <div className="ag-input">
+            <input value={q} placeholder={a && a.noTool ? "도구가 없어 답하지 못합니다" : "물어보세요"}
+              onChange={function (e) { setQ(e.target.value); }}
+              onKeyDown={function (e) { if (e.key === "Enter") send(); }} />
+            <button className="cl-go" onClick={function () { send(); }}>보내기</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="cl-body">
+        <div className="cl-sec">
+          <div className="cl-h">검산 — 화면과 커밋 게이트 러너가 같은 함수를 봅니다</div>
+          <table className="cl-tbl id">
+            <thead><tr><th>항목</th><th>대상</th><th>결과</th><th>기대</th><th /></tr></thead>
+            <tbody>
+              {V.rows.map(function (r) {
+                return (
+                  <tr key={r.k} className={r.ok && r.n > 0 ? "" : "bad"}>
+                    <td>{r.ko}</td><td className="n">{r.n}건</td><td className="n">{r.got}</td>
+                    <td className="n">{r.want}</td>
+                    <td className="st">{!(r.n > 0) ? "대상 0 — 실패" : (r.ok ? "통과" : "실패")}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="cl-note">「지어내지 않는다」는 음성 명제라 그냥 두면 증명되지 않습니다 —
+            <b>도구 없는 에이전트에게 실제로 물어보고</b> 답을 만들어 내지 않는지 셉니다.
+            반대로 도구 있는 에이전트가 늘 모른다고 해도 쓸모없으므로, 실제 값을 내는지도 함께 봅니다.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════ 회사 총괄운영 — 총괄 대시보드(CorpOps.jsx) · Phase 1 (형 지시 2026-11-11) ══════════════
    화면: 다크 콕핏 3단 — 좌(지표) · 중앙(조직 온톨로지 · 원근 회전) · 우(사람이 결정할 것 · 루틴).
    ⚠️ 원칙:
@@ -19823,6 +20842,8 @@ function CorpOps({ onGo, onTab }) {
           <button className={"corp-vt" + (view === "org" ? " on" : "")} onClick={() => setView("org")}>조직도</button>
           <button className={"corp-vt" + (view === "mtg" ? " on" : "")} onClick={() => setView("mtg")}>주간회의</button>
           <button className={"corp-vt" + (view === "gov" ? " on" : "")} onClick={() => setView("gov")}>일정 · 결재</button>
+          <button className={"corp-vt" + (view === "up" ? " on" : "")} onClick={() => setView("up")}>자료 반입</button>
+          <button className={"corp-vt" + (view === "ag" ? " on" : "")} onClick={() => setView("ag")}>AI 팀장 대화</button>
           {sel && <button className={"corp-vt" + (view === "team" ? " on" : "")} onClick={() => setView("team")}
             style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
         </div>
@@ -19833,6 +20854,8 @@ function CorpOps({ onGo, onTab }) {
       {view === "org" && <CorpOrgChart sel={sel} pick={pick} onTab={onTab} open={(id) => { pick(id); setView("team"); }} />}
       {view === "mtg" && typeof CorpMeetingSection === "function" && <CorpMeetingSection />}
       {view === "gov" && typeof CorpBoardSection === "function" && <CorpBoardSection />}
+      {view === "up" && typeof CorpUploadSection === "function" && <CorpUploadSection />}
+      {view === "ag" && typeof CorpAgentChatSection === "function" && <CorpAgentChatSection />}
       {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
       <div className="corp-shell" style={view !== "dash" ? { display: "none" } : undefined}>
@@ -38743,6 +39766,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-12", ver:"v3.6", ch:[9], feat:"섹션별 자료 반입 · AI 팀장 대화창", src:"온톨로지 › 회사 총괄운영 › 자료 반입 · AI 팀장 대화", summary:"전표와 은행 내역과 계약과 인사와 문서 목록을 받는 반입 창구를 만들되 민감자료 검사를 미리보기보다 앞에 두어 주민번호가 섞인 표는 띄우지도 않게 했고 틀린 줄만 빼고 이유를 줄 번호로 적게 했으며 들어온 전표는 기표 상태로 앉혀 승인 분리가 사라지지 않게 했고, AI 팀장 여덟과 따로 대화하는 창을 만들어 등록된 도구를 실제로 돌려 나온 값만 말하고 도구가 없으면 없다고 말하며 시키면 거절하되 물음은 막지 않게 했다", refs:[], status:"반영", hash:"fa89086", auto:true },
   { date:"2026-11-12", ver:"v3.5", ch:[9], feat:"일정·공지·결재·릴리스 승인 분리", src:"온톨로지 › 회사 총괄운영 › 일정 · 결재 · 정보보안팀", summary:"기안과 검토와 승인을 유일한 길로 두고 결재 종류마다 승인 주체를 갈라 대표여도 릴리스는 승인하지 못하게 했으며, 정보보안팀 책임자가 합류 전이라 릴리스를 승인할 사람이 지금 없다는 사실을 숨기지 않고 승인 경로를 대표에게 열지 않았고, 작성자와 승인자가 같으면 막으면서 그 시도를 기록하게 했으며, 늘 거부하는 벽이 되지 않도록 조건이 서면 승인이 열리는지까지 검사가 확인하고, 보안 현황의 게이트 목록은 사본이 아니라 커밋 훅과 대조하게 했다", refs:[], status:"반영", hash:"8ccff2e", auto:true },
   { date:"2026-11-12", ver:"v3.4", ch:[9], feat:"인사 기록·계약 대장·문서 보존기한", src:"온톨로지 › 회사 총괄운영 › 인사총무팀 · 경영기획팀", summary:"인사 기록을 직무 정보만으로 세우고 주민등록번호는 세무와 사대보험 신고에 필요한 법정 항목이라 필드를 두되 암호화 의무를 서버 없이 지킬 수 없으므로 값을 담는 자리를 아예 만들지 않고 보유 여부와 근거와 보관 위치와 파기 예정만 들게 했으며, 수집하지 않는 것을 이름을 대고 적고, 만료일 없는 계약은 등록을 거부하며 만료 경과를 임박과 따로 보이게 했고, 법령 원문을 대조하지 않은 보존기한에는 조문 번호를 찍지 않고 미확인임을 배지로 달았다", refs:[], status:"반영", hash:"c5b892a", auto:true },
   { date:"2026-11-12", ver:"v3.3", ch:[9], feat:"민감자료 차단 게이트(패턴 5종·음성 테스트)", src:"커밋 게이트", summary:"주민번호와 여권과 카드와 비밀값이 저장소에 들어오는 것을 커밋 단계에서 막되 재무 금액이나 법인등록번호를 잘못 잡지 않도록 검사숫자와 날짜 꼴까지 보게 했고, 면제는 사유와 승인자와 날짜가 없으면 인정하지 않으며 값은 절대 출력하지 않고 파일과 줄만 적게 했으며, 탐지기가 살아 있는지 검사용 표본으로 먼저 증명한 뒤 금지 자료를 실제로 심어 막히는지 확인하고 심은 자료가 저장소에 남지 않는지까지 세도록 했다", refs:[], status:"반영", hash:"4540f58", auto:true },
@@ -45949,7 +46973,14 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
   /* 일정·공지·결재·릴리스(corpGov.js — CorpOps P9, 2026-11-12): 결재 큐 · 필독 확인자 · 릴리스 점검표와
      승인 상태 · 추가 일정 · **동일인 승인 시도 기록**. 상수 참조라 스캔 밖이므로 수동 등재한다.
      차단 기록을 공용 이벤트 키와 섞지 않는다 — 섞으면 밀려 나가 「차단 건수 = 로그 건수」가 깨진다. */
-  "hifin_corp_gov"];
+  "hifin_corp_gov",
+  /* 자료 반입 이력(corpUpload.js — 2026-11-12): 무엇을 언제 몇 건 들였고 몇 건을 뺐는지.
+     ⚠️ 올린 **파일 내용은 담지 않는다** — 반입된 자료는 각 섹션의 제 키로 들어간다.
+     여기에 또 담으면 같은 자료가 두 곳에 생기고, 지울 때 한쪽이 남는다. */
+  "hifin_corp_upload",
+  /* AI 팀장 대화 기록(corpAgent.js — 2026-11-12): 에이전트별 최근 40턴. 사내 대화이고 회원 대화가 아니다.
+     회원 대면 에이전트의 대화 키(hifin_hi_*)와 **일부러 다른 키**다 — 섞이면 사내 질문이 회원 계측에 잡힌다. */
+  "hifin_corp_chat"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
@@ -54372,7 +55403,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.8,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.89,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
