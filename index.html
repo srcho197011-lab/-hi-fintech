@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=ba0cb2edef" />
+<link rel="stylesheet" href="./data/app.css?v=77097c4391" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=ba0cb2edef"></script>
-<script src="./src/data/section_data.js?v=ba0cb2edef"></script>
-<script src="./src/data/demo_members.js?v=ba0cb2edef"></script>
+<script src="./src/data/dummy_data.js?v=77097c4391"></script>
+<script src="./src/data/section_data.js?v=77097c4391"></script>
+<script src="./src/data/demo_members.js?v=77097c4391"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -16065,56 +16065,89 @@ const CORP_TEAMS = [
     work: "사업계획 · 투자 유치 · 제휴 · 협력업체 관리 · 전사 지표",
     pages: ["사업 운영", "협력업체 온톨로지 · 하네스", "경영 현황"],
     can: ["전사 지표 집계", "계획 대비 진척 산출", "제휴 단계 추적", "주간 회의자료 통합"],
-    cannot: ["대외 발표", "가격 결정", "계약 체결", "투자 자료 제출"] },
+    cannot: [
+      { act: "대외 발표", by: "발행 버튼은 CEO 세션에만 · 초안 상태에서 외부 공유 경로 없음", at: "P9" },
+      { act: "가격 결정", by: "가격 필드는 읽기 전용 · 변경은 승인 전표를 남긴다", at: "P9" },
+      { act: "계약 체결", by: "체결 전이는 M1 책임자 승인 필요 · 작성자 ≠ 승인자", at: "P8" },
+      { act: "투자 자료 제출", by: "제출은 외부 전송이라 사람 확인 단계를 거친다", at: "P9" }] },
 
   { id: "M2", div: "MGMT", name: "회계팀", sh: "회계", own: "조성래", ownTitle: "CEO",
     ai: "핀테크", aiWhy: "돈의 흐름을 맞춘다", c: "#E8795A", th: 0.00, ph: -0.90, head: 1, cap: 1, joined: "겸임",
     work: "전표 기장 · 장부 · 은행 대사 · 결산 · 재무제표 · 예실 대비",
     pages: ["재무현황(실적)", "재무계획(기존 이관)", "예실 대비"],
     can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출"],
-    cannot: ["전표 승인", "월마감 확정", "지급 실행", "세무 신고 제출"] },
+    cannot: [
+      { act: "전표 승인", by: "기표 → 검토 → 승인 3단 · 승인은 M2 책임자 세션에서만 · 작성자 ≠ 승인자", at: "P5" },
+      { act: "월마감 확정", by: "마감 후 수정 금지 · 정정은 역분개 전표로만", at: "P5" },
+      { act: "지급 실행", by: "지급은 회사 밖으로 나가는 행위 — 시스템에 실행 경로를 두지 않는다", at: "—" },
+      { act: "세무 신고 제출", by: "기한 경보까지만 · 제출은 사람이 외부에서 한다", at: "—" }] },
 
   { id: "M3", div: "MGMT", name: "인사총무팀", sh: "인사총무", own: "조성래", ownTitle: "CEO",
     ai: "인총이", aiWhy: "사람과 자산을 챙긴다", c: "#D96A52", th: 0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
     work: "인사 기록 · 근태 · 급여 대장 · 자산 대장 · 위임전결",
     pages: ["조직 · 인사", "총무 · 자산"],
     can: ["근태 집계", "연차 잔여 계산", "교육 이수 점검", "자산 대장 갱신"],
-    cannot: ["채용 · 해고", "급여 확정", "평가 확정", "인사 기록 외부 제공"] },
+    cannot: [
+      { act: "채용 · 해고", by: "인사 상태 전이는 CEO 승인 필수", at: "P8" },
+      { act: "급여 확정", by: "급여 금액 열람은 CEO와 M3 책임자 한정 · 확정 버튼은 CEO 세션에만", at: "P8" },
+      { act: "평가 확정", by: "초안만 생성 · 확정 전이에 사람 서명 필요", at: "P8" },
+      { act: "인사 기록 외부 제공", by: "내보내기 경로 없음 · 민감자료 차단 게이트가 커밋도 막는다", at: "P0" }] },
 
   { id: "H1", div: "HINS", name: "헬스케어팀", sh: "헬스케어", own: "전소윤", ownTitle: "센터장",
     ai: "헬시", aiWhy: "회원의 건강을 살핀다", c: "#FF7A6B", th: 1.96, ph: 0.16, head: 0, cap: 1, joined: "미정",
     work: "회원 건강관리 운영 · 헬스메이트 조직 · 상담 품질 · 검진 연계 · 응급 대응",
     pages: ["헬스케어 온톨로지", "운영 현황", "헬스메이트 센터"],
     can: ["회원 지표 집계", "인계카드 발행 조건 점검", "미응답·지연 건 추출", "골든타임 경보"],
-    cannot: ["의료 판단", "상담 답변 자동 발송", "응급 판정 대체", "검진 결과 해석 확정"] },
+    cannot: [
+      { act: "의료 판단", by: "제품 규약 — 진단·처방에 해당하는 문장을 생성하지 않는다", at: "기존" },
+      { act: "상담 답변 자동 발송", by: "인계카드 5조건 AND를 통과해야 발행 · 발송은 사람이 누른다", at: "기존" },
+      { act: "응급 판정 대체", by: "응급은 상담보다 앞서 선판정되고 119 안내가 맨 앞에 선다", at: "기존" },
+      { act: "검진 결과 해석 확정", by: "수치는 보여주되 해석은 전문가 확인 전까지 미확정으로 표시", at: "P7" }] },
 
   { id: "H2", div: "HINS", name: "보험팀", sh: "보험", own: "문형석", ownTitle: "센터장",
     ai: "인슈러", aiWhy: "덮이지 않은 곳을 찾는다", c: "#E6906A", th: 2.52, ph: 0.16, head: 0, cap: 1, joined: "미정",
     work: "보장 설계 · 검진대비보험 · 치료비 케어 · 보장 갭 분석 · 청구 지원",
     pages: ["보장 현황", "치료비 케어", "검진대비보험"],
     can: ["보장 갭 집계", "만기·갱신 도래 추출", "청구 가능 건 후보 제시", "보장 창 경과 경보"],
-    cannot: ["인수 확정", "보험 가입 권유 · 모집", "청구 제출", "지급 여부 판정"] },
+    cannot: [
+      { act: "인수 확정", by: "인수는 인수사 심사 — 제품에 확정 경로가 없다", at: "기존" },
+      { act: "보험 가입 권유 · 모집", by: "모집은 자격·등록의 문제 · 금칙 스캔으로 권유 문구를 차단", at: "P7" },
+      { act: "청구 제출", by: "후보 제시까지만 · 제출은 사람이 한다", at: "기존" },
+      { act: "지급 여부 판정", by: "등급·금액 단정 금지 규약을 그대로 따른다", at: "기존" }] },
 
   { id: "K1", div: "DIRECT", name: "마케팅팀", sh: "마케팅", own: "조예원", ownTitle: "수석매니저",
     ai: "애디", aiWhy: "메시지를 퍼뜨리고 반응을 듣는다", c: "#FF9E7A", th: -2.26, ph: 0.10, head: 1, cap: 1, joined: "2026-10-01",
     work: "브랜드 · 콘텐츠 · 채널 운영 · 캠페인 · 회원 획득 · 성과 분석",
     pages: ["마케팅", "캠페인 현황"],
     can: ["채널별 유입·전환 집계", "콘텐츠 성과 비교", "캠페인 일정 추적", "소재 초안"],
-    cannot: ["캠페인 집행", "광고 집행 · 예산 소진", "대외 발행 · 게시", "보험 모집 표현 문구 확정"] },
+    cannot: [
+      { act: "캠페인 집행", by: "집행 버튼은 K1 책임자 세션에만 · 초안은 미확정 배지를 단다", at: "P9" },
+      { act: "광고 집행 · 예산 소진", by: "예산을 쓰는 행위라 승인 전표를 남긴다", at: "P9" },
+      { act: "대외 발행 · 게시", by: "회사 밖으로 나가는 행위 — 사람이 마무리", at: "P9" },
+      { act: "보험 모집 표현 문구 확정", by: "금칙 스캔이 후보를 거르고, 확정은 책임자와 준법 검토를 거친다", at: "P7" }] },
 
   { id: "D1", div: "DIRECT", name: "데이터관리팀", sh: "데이터", own: "박원식", ownTitle: "CTO",
     ai: "온톨로", aiWhy: "데이터 지도를 그린다", c: "#F2815F", th: -0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "데이터 구조 설계 · 저장 키 거버넌스 · 품질 관리 · 외부 연동 · UI 표준",
     pages: ["데이터 운영", "HI-Fin 기반 온톨로지", "데이터 품질"],
     can: ["저장 키 등재 대조", "정합성 스캔", "품질 리포트", "외부 API 변경 감지"],
-    cannot: ["데이터 파기", "외부 제공", "공개 전환", "스키마 변경 반영"] },
+    cannot: [
+      { act: "데이터 파기", by: "되돌릴 수 없는 행위 — 파기 경로를 두지 않는다", at: "—" },
+      { act: "외부 제공", by: "제3자 제공은 동의·위탁의 문제 · 내보내기에 사람 확인 단계", at: "P8" },
+      { act: "공개 전환", by: "등급 A 자료의 공개 전환은 커밋 게이트가 차단", at: "P0" },
+      { act: "스키마 변경 반영", by: "저장 키 등재 대조(check_data_catalog)를 통과해야 커밋된다", at: "기존" }] },
 
   { id: "S1", div: "DIRECT", name: "정보보안팀", sh: "보안", own: "김남용", ownTitle: "보안담당이사",
     ai: "하네스", aiWhy: "막고 검증한다", c: "#C75B45", th: 0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "보안 통제 · 취약점 관리 · 접근 권한 · 침해 대응 · 내부통제와 감사 증적 · 릴리스 승인",
     pages: ["운영 콘솔", "보안 현황", "릴리스 · 감사"],
     can: ["커밋 게이트 결과 수집", "미조치 항목 경보", "확약 진척 집계", "동일인 승인 탐지"],
-    cannot: ["사고 인정", "당국 신고", "서비스 중단 결정", "권한 부여", "릴리스 승인"] },
+    cannot: [
+      { act: "사고 인정", by: "사고를 사고로 인정하는 결정은 법상 책임자의 판단", at: "—" },
+      { act: "당국 신고", by: "72시간 통지·신고는 사람이 판단하고 제출한다", at: "—" },
+      { act: "서비스 중단 결정", by: "중단은 영향이 외부로 나가는 결정", at: "—" },
+      { act: "권한 부여", by: "역할 변경은 S1 책임자 승인 · 변경 이력을 남긴다", at: "P9" },
+      { act: "릴리스 승인", by: "작성자 ≠ 승인자 강제 · 동일인 승인은 탐지해 막는다", at: "P9" }] },
 ];
 
 /* 팀 사이 업무 흐름 */
@@ -16145,15 +16178,25 @@ const CORP_DOTS = (function () {
   return out;
 })();
 
-/* 집계 — 실데이터가 붙기 전에는 전부 「미연결」이다. 숫자를 지어내지 않는다. */
-const CORP_SUMMARY = {
-  teams: CORP_TEAMS.length,
-  agents: CORP_TEAMS.length,
-  head: CORP_TEAMS.reduce((n, t) => n + t.head, 0),
-  cap: CORP_TEAMS.reduce((n, t) => n + t.cap, 0),
-  people: ["조성래", "조예원", "전소윤", "문형석", "박원식", "김남용"].length,
-  dataLinked: false,            /* Phase 10에서 실데이터가 붙으면 true */
-};
+/* 집계 — 실데이터가 붙기 전에는 전부 「미연결」이다. 숫자를 지어내지 않는다.
+   ⚠️ 「자리」와 「사람」을 반드시 구분한다 — CEO가 세 팀을 겸임하므로 채워진 자리와
+      실제 재직 인원이 다르다. 자리 수를 사람 수로 말하면 인원을 부풀리는 셈이 된다. */
+const CORP_SUMMARY = (function () {
+  const names = {};
+  CORP_TEAMS.forEach(t => { if (t.head > 0) names[t.own] = true; });
+  const pending = CORP_TEAMS.filter(t => t.head === 0).map(t => t.own);
+  return {
+    teams: CORP_TEAMS.length,
+    agents: CORP_TEAMS.length,
+    filled: CORP_TEAMS.reduce((n, t) => n + t.head, 0),   /* 채워진 자리 */
+    cap: CORP_TEAMS.reduce((n, t) => n + t.cap, 0),       /* 정원(자리) */
+    people: Object.keys(names),                            /* 실제 재직자 — 겸임을 한 사람으로 센다 */
+    peopleN: Object.keys(names).length,
+    pending: pending,                                      /* 합류 예정 */
+    pendingN: pending.length,
+    dataLinked: false,            /* Phase 10에서 실데이터가 붙으면 true */
+  };
+})();
 
 /* 업무시간 · 주간회의 — 형 확정 2026-11-11 */
 const CORP_SCHEDULE = {
@@ -16190,6 +16233,167 @@ const CORP_SCHEDULE = {
 function corpTeam(id) { return CORP_TEAMS.find(t => t.id === id) || null; }
 function corpDiv(id) { return CORP_DIV.find(d => d.id === id) || null; }
 
+/* ══════════════ AI 팀장 아바타 — 문양 단일 원천(corpAvatars.js) · CorpOps Phase 2 (형 지시 2026-11-11) ══════════════
+   AI 팀장 8명에게 각자의 모습을 준다. 사람 사진이 아니라 **점과 선으로 짜인 기하 문양**이다 —
+   총괄 대시보드 중앙의 조직 온톨로지(구·점)와 같은 시각 언어라 한 화면에서 따로 놀지 않는다.
+   ⚠️ 원칙:
+     · 사람과 AI를 같은 모양으로 쓰지 않는다 — 아바타 옆에는 항상 AI 배지가 붙고,
+       사람 책임자는 이름·직위를 글자로 적는다(CorpAvatar.jsx가 강제).
+     · 좌표는 **고정값**이다. 이 파일에 Math.random을 두지 않는다(결정론 규약).
+     · 사내 전용 — 회원 화면에는 노출하지 않는다.
+   좌표계: 96×96 · 중심 (48,48) · 테두리 원 r=45 */
+
+/* 요소 명세 — k: line|circle|path|poly|rect, w: 선 굵기, f: 채움, o: 불투명도, d: 점선 */
+const CORP_AVATARS = {
+  "나침반": { c: "#FF8A65", why: "8방향 방사 바늘 + 중심점 — 방향을 가리킨다", s: [
+    { k: "line", x1: 48, y1: 48, x2: 65, y2: 31, w: 1, o: .45 },
+    { k: "line", x1: 48, y1: 48, x2: 65, y2: 65, w: 1, o: .45 },
+    { k: "line", x1: 48, y1: 48, x2: 31, y2: 65, w: 1, o: .45 },
+    { k: "line", x1: 48, y1: 48, x2: 31, y2: 31, w: 1, o: .45 },
+    { k: "circle", cx: 65, cy: 31, r: 1.8, f: 1, o: .45 }, { k: "circle", cx: 65, cy: 65, r: 1.8, f: 1, o: .45 },
+    { k: "circle", cx: 31, cy: 65, r: 1.8, f: 1, o: .45 }, { k: "circle", cx: 31, cy: 31, r: 1.8, f: 1, o: .45 },
+    { k: "line", x1: 48, y1: 48, x2: 48, y2: 19, w: 2 }, { k: "line", x1: 48, y1: 48, x2: 77, y2: 48, w: 2 },
+    { k: "line", x1: 48, y1: 48, x2: 48, y2: 77, w: 2 }, { k: "line", x1: 48, y1: 48, x2: 19, y2: 48, w: 2 },
+    { k: "circle", cx: 48, cy: 19, r: 3, f: 1 }, { k: "circle", cx: 77, cy: 48, r: 2.4, f: 1 },
+    { k: "circle", cx: 48, cy: 77, r: 2.4, f: 1 }, { k: "circle", cx: 19, cy: 48, r: 2.4, f: 1 },
+    { k: "circle", cx: 48, cy: 48, r: 4.6, f: 1 }, { k: "circle", cx: 48, cy: 48, r: 9, w: 1, o: .5 } ] },
+
+  "핀테크": { c: "#E8795A", why: "저울 축 + 좌우 점열 — 차변·대변의 균형", s: [
+    { k: "line", x1: 48, y1: 24, x2: 48, y2: 72, w: 2 },
+    { k: "line", x1: 22, y1: 34, x2: 74, y2: 34, w: 2 },
+    { k: "line", x1: 22, y1: 34, x2: 22, y2: 44, w: 1.4 }, { k: "line", x1: 74, y1: 34, x2: 74, y2: 44, w: 1.4 },
+    { k: "path", d: "M 13 44 Q 22 58 31 44", w: 1.6, o: .85 },
+    { k: "path", d: "M 65 44 Q 74 58 83 44", w: 1.6, o: .85 },
+    { k: "circle", cx: 18, cy: 48, r: 1.9, f: 1, o: .9 }, { k: "circle", cx: 22, cy: 51, r: 1.9, f: 1, o: .9 },
+    { k: "circle", cx: 26, cy: 48, r: 1.9, f: 1, o: .9 }, { k: "circle", cx: 70, cy: 48, r: 1.9, f: 1, o: .9 },
+    { k: "circle", cx: 74, cy: 51, r: 1.9, f: 1, o: .9 }, { k: "circle", cx: 78, cy: 48, r: 1.9, f: 1, o: .9 },
+    { k: "circle", cx: 48, cy: 30, r: 3.4, f: 1 },
+    { k: "line", x1: 38, y1: 64, x2: 58, y2: 64, w: 1.4, o: .45 },
+    { k: "line", x1: 40, y1: 70, x2: 56, y2: 70, w: 1.4, o: .45 } ] },
+
+  "인총이": { c: "#D96A52", why: "3×3 격자 점 + 외곽 호 — 사람과 자산을 챙긴다", s: [
+    { k: "path", d: "M 16 48 A 32 32 0 0 1 48 16", w: 2 },
+    { k: "path", d: "M 80 48 A 32 32 0 0 1 48 80", w: 2 },
+    { k: "line", x1: 33, y1: 33, x2: 63, y2: 33, w: 1, o: .3 }, { k: "line", x1: 33, y1: 48, x2: 63, y2: 48, w: 1, o: .3 },
+    { k: "line", x1: 33, y1: 63, x2: 63, y2: 63, w: 1, o: .3 }, { k: "line", x1: 33, y1: 33, x2: 33, y2: 63, w: 1, o: .3 },
+    { k: "line", x1: 48, y1: 33, x2: 48, y2: 63, w: 1, o: .3 }, { k: "line", x1: 63, y1: 33, x2: 63, y2: 63, w: 1, o: .3 },
+    { k: "circle", cx: 33, cy: 33, r: 2.6, f: 1 }, { k: "circle", cx: 48, cy: 33, r: 2.6, f: 1 }, { k: "circle", cx: 63, cy: 33, r: 2.6, f: 1 },
+    { k: "circle", cx: 33, cy: 48, r: 2.6, f: 1 }, { k: "circle", cx: 48, cy: 48, r: 4.2, f: 1 }, { k: "circle", cx: 63, cy: 48, r: 2.6, f: 1 },
+    { k: "circle", cx: 33, cy: 63, r: 2.6, f: 1 }, { k: "circle", cx: 48, cy: 63, r: 2.6, f: 1 }, { k: "circle", cx: 63, cy: 63, r: 2.6, f: 1 } ] },
+
+  "헬시": { c: "#FF7A6B", why: "심박 파형 + 맥점 — 회원의 건강을 살핀다", s: [
+    { k: "circle", cx: 48, cy: 48, r: 30, w: 1.2, o: .28 },
+    { k: "path", d: "M 15 48 H 29 L 35 31 L 44 67 L 52 39 L 57 48 H 81", w: 2.4 },
+    { k: "circle", cx: 44, cy: 67, r: 3, f: 1 }, { k: "circle", cx: 35, cy: 31, r: 2.6, f: 1 },
+    { k: "circle", cx: 15, cy: 48, r: 1.8, f: 1, o: .5 }, { k: "circle", cx: 81, cy: 48, r: 1.8, f: 1, o: .5 } ] },
+
+  "인슈러": { c: "#E6906A", why: "덮개 호 3겹 + 아래 점 — 덮이지 않은 곳을 찾는다", s: [
+    { k: "path", d: "M 19 53 A 29 29 0 0 1 77 53", w: 2.2 },
+    { k: "path", d: "M 27 55 A 21 21 0 0 1 69 55", w: 1.6, o: .58 },
+    { k: "path", d: "M 35 57 A 13 13 0 0 1 61 57", w: 1.2, o: .32 },
+    { k: "circle", cx: 48, cy: 23, r: 2.6, f: 1 },
+    { k: "circle", cx: 19, cy: 53, r: 1.8, f: 1, o: .45 }, { k: "circle", cx: 77, cy: 53, r: 1.8, f: 1, o: .45 },
+    { k: "circle", cx: 36, cy: 70, r: 3.1, f: 1 }, { k: "circle", cx: 48, cy: 70, r: 3.1, f: 1 },
+    /* 오른쪽 하나만 비어 있다 — 덮이지 않은 곳(보장 갭) */
+    { k: "circle", cx: 60, cy: 70, r: 3.1, w: 1.4, o: .42, d: "2.2 2.2" } ] },
+
+  "애디": { c: "#FF9E7A", why: "동심원 파동 3겹 + 발신점 — 퍼지고 돌아온다", s: [
+    { k: "circle", cx: 48, cy: 48, r: 32, w: 1.4, o: .2 },
+    { k: "circle", cx: 48, cy: 48, r: 24, w: 1.6, o: .4 },
+    { k: "circle", cx: 48, cy: 48, r: 16, w: 1.8, o: .7 },
+    { k: "circle", cx: 48, cy: 48, r: 5.2, f: 1 },
+    { k: "circle", cx: 48, cy: 16, r: 2.4, f: 1, o: .85 }, { k: "circle", cx: 80, cy: 48, r: 2.4, f: 1, o: .85 },
+    { k: "circle", cx: 48, cy: 80, r: 2.4, f: 1, o: .85 }, { k: "circle", cx: 16, cy: 48, r: 2.4, f: 1, o: .85 },
+    { k: "circle", cx: 71, cy: 25, r: 1.6, f: 1, o: .45 }, { k: "circle", cx: 71, cy: 71, r: 1.6, f: 1, o: .45 },
+    { k: "circle", cx: 25, cy: 71, r: 1.6, f: 1, o: .45 }, { k: "circle", cx: 25, cy: 25, r: 1.6, f: 1, o: .45 } ] },
+
+  "온톨로": { c: "#F2815F", why: "노드-엣지 그물 5점 — 데이터 지도를 그린다", s: [
+    { k: "line", x1: 48, y1: 21, x2: 23, y2: 41, w: 1.5, o: .6 }, { k: "line", x1: 48, y1: 21, x2: 73, y2: 41, w: 1.5, o: .6 },
+    { k: "line", x1: 23, y1: 41, x2: 33, y2: 71, w: 1.5, o: .6 }, { k: "line", x1: 73, y1: 41, x2: 63, y2: 71, w: 1.5, o: .6 },
+    { k: "line", x1: 33, y1: 71, x2: 63, y2: 71, w: 1.5, o: .6 }, { k: "line", x1: 23, y1: 41, x2: 73, y2: 41, w: 1.5, o: .6 },
+    { k: "line", x1: 48, y1: 21, x2: 48, y2: 48, w: 1.5, o: .6 }, { k: "line", x1: 23, y1: 41, x2: 63, y2: 71, w: 1.5, o: .6 },
+    { k: "line", x1: 73, y1: 41, x2: 33, y2: 71, w: 1.5, o: .6 },
+    { k: "circle", cx: 48, cy: 21, r: 3.8, f: 1 }, { k: "circle", cx: 23, cy: 41, r: 3.2, f: 1 },
+    { k: "circle", cx: 73, cy: 41, r: 3.2, f: 1 }, { k: "circle", cx: 33, cy: 71, r: 3.2, f: 1 },
+    { k: "circle", cx: 63, cy: 71, r: 3.2, f: 1 }, { k: "circle", cx: 48, cy: 48, r: 2.4, f: 1, o: .7 } ] },
+
+  "하네스": { c: "#C75B45", why: "육각 방패 2겹 + 잠금점 — 막고 검증한다", s: [
+    { k: "poly", p: "48,17 74,32 74,62 48,79 22,62 22,32", w: 2 },
+    { k: "poly", p: "48,31 62,39 62,57 48,66 34,57 34,39", w: 1.4, o: .55 },
+    { k: "circle", cx: 48, cy: 17, r: 2.6, f: 1, o: .9 }, { k: "circle", cx: 74, cy: 32, r: 2.2, f: 1, o: .9 },
+    { k: "circle", cx: 74, cy: 62, r: 2.2, f: 1, o: .9 }, { k: "circle", cx: 48, cy: 79, r: 2.6, f: 1, o: .9 },
+    { k: "circle", cx: 22, cy: 62, r: 2.2, f: 1, o: .9 }, { k: "circle", cx: 22, cy: 32, r: 2.2, f: 1, o: .9 },
+    { k: "rect", x: 43, y: 46, w2: 10, h: 9, rx: 1.6, w: 1.8 },
+    { k: "path", d: "M 45 46 V 43 a 3 3 0 0 1 6 0 v 3", w: 1.6 },
+    { k: "circle", cx: 48, cy: 50.5, r: 1.5, f: 1 } ] },
+};
+
+/* 상태 — 테두리로만 말한다. 「사람 승인 대기」만 유독 밝은 이유는 사람이 움직여야 하는 유일한 상태라서다. */
+const CORP_AV_STATE = {
+  idle: { label: "대기", ring: "#2E2E37", w: 1.5, dash: "", pulse: false },
+  work: { label: "작업 중", ring: "", w: 2, dash: "", pulse: true },          /* ring 빈값 = 팀 색 */
+  wait: { label: "사람 승인 대기", ring: "#FFB38A", w: 4, dash: "", pulse: false },
+  stop: { label: "중단", ring: "#8A8A93", w: 1.5, dash: "4 5", pulse: false },
+};
+
+function corpAvatar(ai) { return CORP_AVATARS[ai] || null; }
+const CORP_AVATAR_COUNT = Object.keys(CORP_AVATARS).length;
+
+/* ══════════════ AI 팀장 아바타 렌더(CorpAvatar.jsx) · CorpOps Phase 2 (형 지시 2026-11-11) ══════════════
+   corpAvatars.js의 문양 명세를 SVG로 그린다. 상태는 테두리로만 말한다.
+   ⚠️ AI임이 분명해야 한다 — 이 컴포넌트는 항상 AI 배지와 함께 쓰고, 사람 책임자는 글자로 적는다.
+      사람 자리에 이 아바타를 쓰지 않는다(그러면 사람과 AI가 같은 모양이 된다). */
+
+function CorpAvatar({ ai, size, state, title }) {
+  const av = typeof corpAvatar === "function" ? corpAvatar(ai) : null;
+  if (!av) return null;
+  const S = (typeof CORP_AV_STATE !== "undefined" && CORP_AV_STATE[state || "idle"]) || { ring: "#2E2E37", w: 1.5, dash: "", pulse: false };
+  const px = size || 96;
+  const ring = S.ring || av.c;
+
+  return (
+    <svg className={"corp-av" + (S.pulse ? " pulse" : "")} width={px} height={px} viewBox="0 0 96 96"
+      role="img" aria-label={(title || ai) + " 아바타"}>
+      <circle cx="48" cy="48" r="45" fill="none" stroke={ring} strokeWidth={S.w} strokeDasharray={S.dash || undefined} />
+      {state === "wait" && <circle cx="48" cy="48" r="38" fill="none" stroke={ring} strokeWidth="1" opacity=".4" />}
+      <g stroke={av.c} fill={av.c} strokeLinecap="round" strokeLinejoin="round">
+        {av.s.map((e, i) => {
+          const o = e.o === undefined ? 1 : e.o;
+          if (e.k === "line") return <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} strokeWidth={e.w} opacity={o} fill="none" />;
+          if (e.k === "circle") return <circle key={i} cx={e.cx} cy={e.cy} r={e.r}
+            fill={e.f ? av.c : "none"} stroke={e.f ? "none" : av.c} strokeWidth={e.w || 1}
+            strokeDasharray={e.d || undefined} opacity={o} />;
+          if (e.k === "path") return <path key={i} d={e.d} fill="none" strokeWidth={e.w} opacity={o} />;
+          if (e.k === "poly") return <polygon key={i} points={e.p} fill="none" strokeWidth={e.w} opacity={o} />;
+          if (e.k === "rect") return <rect key={i} x={e.x} y={e.y} width={e.w2} height={e.h} rx={e.rx}
+            fill="none" strokeWidth={e.w} opacity={o} />;
+          return null;
+        })}
+      </g>
+    </svg>
+  );
+}
+
+/* 사람 책임자 · AI 팀장을 한 줄로 — 둘을 같은 모양으로 쓰지 않는다 */
+function CorpPair({ team, size }) {
+  if (!team) return null;
+  return (
+    <div className="corp-pair">
+      <div className="cp-human">
+        <span className="cp-k">사람 책임자</span>
+        <b>{team.own}</b><i>{team.ownTitle}</i>
+      </div>
+      <div className="cp-div" />
+      <div className="cp-ai">
+        <CorpAvatar ai={team.ai} size={size || 34} title={team.ai} />
+        <span className="cp-k">AI 팀장</span>
+        <b style={{ color: team.c }}>{team.ai}</b>
+        <span className="corp-ai">AI</span>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════ 회사 총괄운영 — 총괄 대시보드(CorpOps.jsx) · Phase 1 (형 지시 2026-11-11) ══════════════
    화면: 다크 콕핏 3단 — 좌(지표) · 중앙(조직 온톨로지 · 원근 회전) · 우(사람이 결정할 것 · 루틴).
    ⚠️ 원칙:
@@ -16203,6 +16407,7 @@ function corpDiv(id) { return CORP_DIV.find(d => d.id === id) || null; }
 function CorpOps({ onGo }) {
   const wrapRef = React.useRef(null);
   const svgRef = React.useRef(null);
+  const [view, setView] = React.useState("dash");   /* dash 총괄 · org 조직도 */
   const [sel, setSel] = React.useState(null);
   const [spin, setSpin] = React.useState(true);
   const [showLink, setShowLink] = React.useState(true);
@@ -16226,6 +16431,7 @@ function CorpOps({ onGo }) {
   }, []);
 
   React.useEffect(() => {
+    if (view !== "dash") return;
     const svg = svgRef.current; if (!svg) return;
     const NS = "http://www.w3.org/2000/svg";
     const mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
@@ -16354,7 +16560,7 @@ function CorpOps({ onGo }) {
       svg.removeEventListener("click", onClick);
       window.removeEventListener("resize", onResize);
     };
-  }, [pick]);
+  }, [pick, view]);
 
   const selT = sel ? corpTeam(sel) : null;
   const sch = CORP_SCHEDULE;
@@ -16362,13 +16568,17 @@ function CorpOps({ onGo }) {
   return (
     <div className="corpops" ref={wrapRef}>
       <div className="corp-top">
-        <div className="corp-logo">회사 <span>총괄운영</span></div>
-        <div className="corp-tag">사람 책임자 + AI 팀장</div>
+        <div className="corp-vtabs">
+          <button className={"corp-vt" + (view === "dash" ? " on" : "")} onClick={() => setView("dash")}>총괄</button>
+          <button className={"corp-vt" + (view === "org" ? " on" : "")} onClick={() => setView("org")}>조직도</button>
+        </div>
         <div className="corp-sp" />
-        <div className="corp-stub">Phase 1 — 실데이터 미연결 · 지표는 연결 후 채워집니다</div>
+        <div className="corp-stub">실데이터 미연결 · 지표는 연결 후 채워집니다</div>
       </div>
 
-      <div className="corp-shell">
+      {view === "org" && <CorpOrgChart sel={sel} pick={pick} />}
+
+      <div className="corp-shell" style={view === "org" ? { display: "none" } : undefined}>
         {/* ── 좌 ── */}
         <div className="corp-col corp-L">
           <div className="corp-blk">
@@ -16409,8 +16619,9 @@ function CorpOps({ onGo }) {
           </div>
           <div className="corp-blk corp-last">
             <div className="corp-lab">인원</div>
-            <div className="corp-row"><span className="m">현재</span><span className="s"><b>{CORP_SUMMARY.head}</b> / 정원 {CORP_SUMMARY.cap}</span></div>
-            <div className="corp-note">합류 전 자리는 0으로 둡니다 — 없는 인원을 있는 것처럼 세지 않습니다.</div>
+            <div className="corp-row"><span className="m">재직</span><span className="s"><b>{CORP_SUMMARY.peopleN}</b>명</span></div>
+            <div className="corp-row"><span className="m">채워진 자리</span><span className="s"><b>{CORP_SUMMARY.filled}</b> / {CORP_SUMMARY.cap}</span></div>
+            <div className="corp-note">겸임이 있어 <b>자리 수와 사람 수가 다릅니다</b> — 합류 전 자리는 0으로 둡니다.</div>
           </div>
         </div>
 
@@ -16434,14 +16645,17 @@ function CorpOps({ onGo }) {
               <div className="sy">
                 <div className="sp"><span className="pk">사람 책임자</span><b>{selT.own}</b><i>{selT.ownTitle}</i></div>
                 <div className="pdiv" />
-                <div className="sp"><span className="pk">AI 팀장</span><b style={{ color: selT.c }}>{selT.ai}</b><span className="corp-ai">AI</span></div>
+                <div className="sp">
+                  {typeof CorpAvatar === "function" && <CorpAvatar ai={selT.ai} size={26} />}
+                  <span className="pk">AI 팀장</span><b style={{ color: selT.c }}>{selT.ai}</b><span className="corp-ai">AI</span>
+                </div>
                 <div className="pdiv" />
                 <div className="sp"><span className="pk">인원</span><b>{selT.head} / {selT.cap}</b><i>{selT.joined}</i></div>
               </div>
               <div className="sw">{selT.work}</div>
               <div className="sv">
                 <div><span className="vk ok">{selT.ai}가 하는 일</span>{selT.can.join(" · ")}</div>
-                <div><span className="vk no">사람이 마무리</span>{selT.cannot.join(" · ")}</div>
+                <div><span className="vk no">사람이 마무리</span>{selT.cannot.map(x => x.act).join(" · ")}</div>
               </div>
             </div>
           )}
@@ -16488,6 +16702,87 @@ function CorpOps({ onGo }) {
             <div className="corp-note">브라우저가 닫혀 있으면 돌지 않습니다 — 「예약」은 <b>다음 열람 시 점검</b>이라는 뜻입니다.</div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ 조직도 — 본부·팀·사람 책임자·AI 팀장과 책임 경계 (Phase 2) ══════════════
+   ⚠️ 두 가지를 반드시 함께 보인다:
+     ① AI가 끝까지 하는 일   ② 사람이 마무리하는 일과 **무엇이 그것을 막는지**
+   「AI는 ~하지 않습니다」라는 문장만으로는 부족하다 — 차단 조건이 없으면 그건 선언일 뿐이다. */
+function CorpOrgChart({ sel, pick }) {
+  const S = CORP_SUMMARY;
+  return (
+    <div className="corp-org">
+      <div className="co-head">
+        <div>
+          <h3>조직구조와 책임 체계</h3>
+          <p>모든 팀에 <b>사람 책임자 1명</b>과 <b>AI 팀장 1명</b>이 쌍으로 있습니다.
+            되돌릴 수 없거나 · 책임이 회사 밖으로 나가거나 · 법적 효과가 생기는 일은 <b>사람이 마무리합니다</b>.</p>
+        </div>
+        <div className="co-sum">
+          <div><span className="n">{S.teams}</span><span className="k">팀</span></div>
+          <div><span className="n">{S.agents}</span><span className="k">AI 팀장</span></div>
+          <div><span className="n">{S.peopleN}</span><span className="k">재직 인원</span></div>
+          <div><span className="n">{S.filled}<em>/{S.cap}</em></span><span className="k">채워진 자리</span></div>
+        </div>
+      </div>
+
+      <div className="co-ceo"><span className="co-crown">CEO</span> 조성래
+        <span className="co-note">경영관리본부 3팀 겸임 · 법상 정보보호 최고책임자 · 개인정보 보호책임자</span></div>
+
+      {CORP_DIV.map(d => {
+        const list = CORP_TEAMS.filter(t => t.div === d.id);
+        if (!list.length) return null;
+        return (
+          <div key={d.id} className="co-div">
+            <div className="co-dname">{d.name}<i>{d.note}</i></div>
+            <div className="co-grid">
+              {list.map(t => (
+                <div key={t.id} className={"co-card" + (sel === t.id ? " sel" : "")}
+                  style={{ "--tc": t.c }} onClick={() => pick(t.id)}>
+                  <div className="co-top">
+                    {typeof CorpAvatar === "function" && <CorpAvatar ai={t.ai} size={44} title={t.ai} />}
+                    <div className="co-id">
+                      <div className="co-tname">{t.name}<span className="co-code">{t.id}</span></div>
+                      <div className="co-pair">
+                        <b>{t.own}</b><i>{t.ownTitle}</i>
+                        <span className="co-sep">·</span>
+                        <b style={{ color: t.c }}>{t.ai}</b><span className="corp-ai">AI</span>
+                      </div>
+                    </div>
+                    <div className={"co-head-c" + (t.head === 0 ? " zero" : "")}>{t.head} / {t.cap}
+                      <i>{t.joined}</i></div>
+                  </div>
+                  <div className="co-work">{t.work}</div>
+                  <div className="co-pages">{t.pages.map((p, i) => <span key={i}>{p}</span>)}</div>
+                  <div className="co-split">
+                    <div className="co-can">
+                      <div className="co-ck"><b>{t.ai}</b>가 끝까지 하는 일</div>
+                      <ul>{t.can.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                    </div>
+                    <div className="co-cannot">
+                      <div className="co-nk">사람이 마무리 — 무엇이 막는가</div>
+                      <ul>{t.cannot.map((x, i) => (
+                        <li key={i}><b>{x.act}</b><span className="co-by">{x.by}</span>
+                          <em className={x.at === "기존" ? "done" : (x.at === "—" ? "none" : "")}>
+                            {x.at === "기존" ? "이미 코드에 있음" : (x.at === "—" ? "경로 자체를 두지 않음" : x.at + "에서 강제")}</em></li>
+                      ))}</ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="co-foot">
+        <b>자리와 사람은 다릅니다</b> — 실제 재직 인원은 <b>{S.peopleN}명</b>({S.people.join(" · ")})이고,
+        채워진 자리는 <b>{S.filled} / {S.cap}</b>입니다. CEO가 경영관리본부 세 팀을 겸임하므로 자리 수가 사람 수보다 큽니다.
+        합류 전 자리는 0으로 둡니다 — {S.pending.join(" · ")} {S.pendingN}분은 합류일이 정해지면 숫자가 올라갑니다.
+        없는 인원을 있는 것처럼 세면 투자사에 제출한 보안 리포트의 「인력 0명」 선언과 어긋납니다.
       </div>
     </div>
   );
@@ -17363,6 +17658,21 @@ function OntologySection({ onGo }) {
   if (!agg) return null;
   return (
     <div style={{ marginTop: 16 }}>
+      {top === "corpops" ? (
+      <div className="ontohero corphero">
+        <div className="ontohero-bg"><span /><span /></div>
+        <div className="ontohero-l">
+          <span className="ontotag"><Building2 size={13} /> Corporate Operations · 사람 책임자 + AI 팀장</span>
+          <div className="ontotitle">회사 총괄운영</div>
+          <p><b>{typeof CORP_SUMMARY !== "undefined" ? CORP_SUMMARY.teams : 8}개 팀</b>을 <b>사람 책임자</b>와 <b>AI 팀장</b>이 쌍으로 운영합니다 — AI는 모으고·고르고·맞추고·초안을 만들고, <b>되돌릴 수 없거나 책임이 회사 밖으로 나가거나 법적 효과가 생기는 일은 사람이 마무리합니다.</b></p>
+        </div>
+        <div className="ontohero-kpi">
+          <div><b>{typeof CORP_SUMMARY !== "undefined" ? CORP_SUMMARY.teams : 8}</b><span>팀</span></div>
+          <div><b>{typeof CORP_SUMMARY !== "undefined" ? CORP_SUMMARY.agents : 8}</b><span>AI 팀장</span></div>
+          <div><b>{typeof CORP_SUMMARY !== "undefined" ? CORP_SUMMARY.peopleN : 2}</b><span>재직 인원</span></div>
+        </div>
+      </div>
+      ) : (
       <div className="ontohero">
         <div className="ontohero-bg"><span /><span /></div>
         <div className="ontohero-l">
@@ -17376,6 +17686,7 @@ function OntologySection({ onGo }) {
           <div><b>{ontWon(agg.totalCost)}</b><span>총 예상의료비</span></div>
         </div>
       </div>
+      )}
 
       <div className="chtabs lv1" style={{ marginTop: 14 }}>{topTabs.map(([k, t, Ic, c]) => (
         <div key={k} className={`chtab ${top === k ? "on" : ""}`} style={{ "--cc": c }} onClick={() => setTop(k)}>
@@ -35002,7 +35313,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-11-11", ver:"v2.5", ch:[9], feat:"회사 총괄운영 총괄 대시보드와 조직 온톨로지", src:"온톨로지 › 회사 총괄운영", summary:"사람 책임자와 AI 팀장이 쌍으로 일하는 업무자동화 체계를 8팀 3단위로 세우고, 팀을 원으로 세운 조직 온톨로지를 원근 회전으로 보이게 했으며, 원 안에 사람과 AI를 나란히 적어 누가 마무리하는지가 화면에서 갈리게 했고, 실데이터가 붙기 전까지는 지표를 미연결로 비워 두어 숫자를 지어내지 않게 했다", refs:[], status:"반영", hash:"42e7e1d", auto:true },
+  { date:"2026-11-11", ver:"v2.6", ch:[9], feat:"회사 총괄운영 조직도와 AI 팀장 아바타", src:"온톨로지 › 회사 총괄운영 › 조직도", summary:"AI 팀장 여덟에게 점과 선으로 짜인 각자의 문양을 주어 사람과 한눈에 갈리게 했고, 조직도에 AI가 끝까지 하는 일과 사람이 마무리하는 일을 나란히 두되 뒤쪽에는 무엇이 그것을 막는지를 전건에 붙여 선언이 아니라 조건으로 읽히게 했으며, 이미 코드에 있는 차단과 앞으로 강제할 차단을 배지로 갈라 적었고, 자리와 사람을 섞어 세던 인원 집계를 재직 인원과 채워진 자리로 나눠 바로잡았다", refs:[], status:"반영", hash:"8f23a35", auto:true },
+  { date:"2026-11-11", ver:"v2.5", ch:[9], feat:"회사 총괄운영 총괄 대시보드와 조직 온톨로지", src:"온톨로지 › 회사 총괄운영", summary:"사람 책임자와 AI 팀장이 쌍으로 일하는 업무자동화 체계를 8팀 3단위로 세우고, 팀을 원으로 세운 조직 온톨로지를 원근 회전으로 보이게 했으며, 원 안에 사람과 AI를 나란히 적어 누가 마무리하는지가 화면에서 갈리게 했고, 실데이터가 붙기 전까지는 지표를 미연결로 비워 두어 숫자를 지어내지 않게 했다", refs:[], status:"반영", hash:"e224cf4", auto:true },
   { date:"2026-10-26", ver:"v2.4", ch:[9], feat:"협력업체 온톨로지·하네스 체계 소개(정의·목적·성과)", src:"온톨로지 › 협력업체 온톨로지·하네스 › 개요·객체", summary:"협력업체를 다루는 체계가 무엇이고 무엇을 위한 것이며 무엇이 달라졌는지를 각 200자 안팎으로 정리해 개요 화면 맨 앞에 두었고, 그 문장에 들어가는 숫자를 화면에 적어 넣지 않고 집계와 선언에서 읽어 채우도록 해 데이터가 바뀌면 문장도 따라 바뀌게 했으며, 채우지 못한 자리는 비워 두는 대신 채우지 못했다는 사실을 함께 보이게 했고, 초안에 있던 과장과 사실과 다른 대목은 코드로 확인해 바로잡거나 덜어냈다", refs:[], status:"반영", hash:"d28bf9d", auto:true },
   { date:"2026-10-26", ver:"v2.3", ch:[9], feat:"협력업체 온톨로지·하네스와 내부통제 보고서·정책 판정 엔진", src:"온톨로지 › 협력업체 온톨로지·하네스(서브탭 5) · 내부통제 보고서 · 정책·판정 엔진", summary:"거래처를 다루던 화면을 협력업체 온톨로지와 하네스로 다시 세우고, 협력업체가 법령을 지키며 운영하는지와 건전한 제품·서비스를 제공하는지, 신뢰를 위한 체계를 갖추고 지속하는지를 보는 내부통제 보고서를 서브섹션으로 만들었으며, 법령을 코드가 읽는 자료로 선언해 확인된 조항만 판정에 쓰고 시행 전과 확인 대기는 따로 표시하도록 했고, 판정을 차단·경고·기록 세 단계로 집행하면서 그 수준이 조용히 낮아지지 못하게 하한을 두었으며, 판정 한 칸을 누르면 어떤 규칙이 어떤 증거로 그 결정을 냈고 무엇이 쓰이지 않았는지까지 펼쳐 보이게 해 결과만이 아니라 과정을 확인할 수 있게 했고, 같은 화면이 매출을 두 번 말하던 원인인 독립 생성 정산을 주문에서 전건 파생해 한 숫자로 묶었으며, 우리 쪽이 지켜야 할 조항의 결함이 협력업체 이름에 그대로 찍혀 나가던 경로를 끊고 반출물에 판정 대상을 밝히도록 했다", refs:[], status:"반영", hash:"5647835", auto:true },
   { date:"2026-10-23", ver:"v2.2", ch:[9], feat:"화면 표기 규약(가명 표기 통일)과 데이터 보강 로드맵", src:"온톨로지 › 헬스케어 온톨로지 · 로그인 · 치료비 케어 · 헬스메이트 센터·운영본부 · 원격진료", summary:"회원 데이터를 가리키던 표현이 데이터의 신뢰도를 깎는 오해를 불러온다는 지적에 따라 화면에서 그 표현을 모두 걷어내고 호칭을 파일럿 코호트로 통일했으며 이름과 식별자가 가명으로 표시되어 특정 개인을 알아볼 수 없다는 사실을 같은 뜻으로 아홉 화면에 맞춰 적었고, 표현만 바꾸면 실제 개인정보를 가공해 보유한 것처럼 읽히는 세 자리에는 데이터의 성격을 함께 밝혀 뜻이 어긋나지 않게 했으며, 이 표기 규약을 사람이 아니라 검사가 지키도록 전용 가드를 만들어 커밋과 배포 번들 양쪽에서 확인하게 하고, 자동으로 다시 만들어지는 백서 반영표는 생성기 쪽에 규약을 두어 손수정이 되돌아가지 않게 했으며, 헬스케어 온톨로지의 고지 문단 자리에는 회원 데이터를 전건 측정해 무엇이 비어 있고 무엇으로 채우며 채우면 무엇이 가능해지는지를 단계별로 적은 데이터 보강 로드맵을 넣었다", refs:[], status:"반영", hash:"a576d61", auto:true },
@@ -50373,7 +50685,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "1375d5475141764d", "generatedAt": "2026-11-11", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "29dbc34f5f44f80e", "generatedAt": "2026-11-11", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -50606,7 +50918,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"1375d5475141764d","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.33,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"29dbc34f5f44f80e","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.02,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

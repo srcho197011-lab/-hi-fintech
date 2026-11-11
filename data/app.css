@@ -5606,3 +5606,94 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 @media(max-width:1180px){.corp-shell{grid-template-columns:224px 1fr 260px;}}
 @media(max-width:900px){.corp-shell{grid-template-columns:1fr;height:auto;}
   .corp-C{height:440px;}.corp-L,.corp-R{border:0;border-top:1px solid var(--cl);}}
+
+/* ── CorpOps Phase 2 — 아바타 · 조직도 ── */
+.corp-av{display:block;flex-shrink:0;}
+@keyframes corpPuls{0%,100%{opacity:.4}50%{opacity:1}}
+.corp-av.pulse>circle:first-child{animation:corpPuls 1.6s ease-in-out infinite;}
+.corp-vtabs{display:flex;gap:4px;margin-left:4px;}
+.corp-vt{font-size:11px;color:var(--cd);background:transparent;border:1px solid var(--cl2);
+  border-radius:5px;padding:4px 12px;cursor:pointer;font-family:inherit;}
+.corp-vt:hover{color:var(--ct);}
+.corp-vt.on{color:#0B0B0D;background:var(--cc);border-color:var(--cc);font-weight:700;}
+.corp-pair{display:flex;align-items:center;gap:10px;}
+.cp-human,.cp-ai{display:flex;align-items:center;gap:5px;font-size:12px;}
+.cp-k{font-size:9.5px;color:var(--cd2);}
+.cp-human b,.cp-ai b{font-weight:700;}
+.cp-human i{font-size:9.5px;color:var(--cd2);font-style:normal;}
+.cp-div{width:1px;height:14px;background:var(--cl2);}
+.corp-org{padding:18px 20px 22px;background:var(--cb);}
+.co-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
+  padding-bottom:14px;border-bottom:1px solid var(--cl);margin-bottom:16px;flex-wrap:wrap;}
+.co-head h3{margin:0 0 5px;font-size:14px;font-weight:700;}
+.co-head p{margin:0;font-size:11px;color:var(--cd);line-height:1.65;max-width:620px;}
+.co-head p b{color:#CFCBC7;}
+.co-sum{display:flex;gap:16px;}
+.co-sum>div{text-align:center;}
+.co-sum .n{display:block;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+.co-sum .k{font-size:9.5px;color:var(--cd2);}
+.co-ceo{font-size:13px;font-weight:700;padding:10px 13px;border-radius:8px;margin-bottom:14px;
+  background:rgba(232,121,90,.1);border:1px solid #C75B45;}
+.co-crown{font-size:9.5px;font-weight:700;color:#0B0B0D;background:var(--cc);
+  border-radius:3px;padding:2px 6px;margin-right:7px;}
+.co-note{display:block;font-size:10px;color:var(--cd);font-weight:400;margin-top:4px;}
+.co-div{margin-bottom:16px;}
+.co-dname{font-size:11px;font-weight:700;color:var(--cc-hi);margin-bottom:8px;
+  padding-left:9px;border-left:2px solid var(--cc);}
+.co-dname i{font-size:9.5px;color:var(--cd2);font-weight:400;font-style:normal;margin-left:7px;}
+.co-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(344px,1fr));gap:10px;}
+.co-card{background:var(--cp);border:1px solid var(--cl);border-radius:10px;padding:13px;
+  cursor:pointer;transition:border-color .15s;}
+.co-card:hover{border-color:var(--cl2);}
+.co-card.sel{border-color:var(--tc);box-shadow:0 0 0 1px var(--tc) inset;}
+.co-top{display:flex;align-items:center;gap:11px;margin-bottom:9px;}
+.co-id{flex:1;min-width:0;}
+.co-tname{font-size:13px;font-weight:700;letter-spacing:-.01em;}
+.co-code{font-size:9px;color:var(--cd2);margin-left:6px;letter-spacing:.05em;}
+.co-pair{display:flex;align-items:center;gap:4px;font-size:11px;margin-top:3px;flex-wrap:wrap;}
+.co-pair b{color:#CFCBC7;font-weight:600;}
+.co-pair i{font-size:9.5px;color:var(--cd2);font-style:normal;}
+.co-sep{color:#45454E;}
+.co-head-c{font-size:12px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums;}
+.co-head-c.zero{color:var(--cd2);}
+.co-head-c i{display:block;font-size:9px;color:var(--cd2);font-style:normal;font-weight:400;}
+.co-work{font-size:10.5px;color:var(--cd);line-height:1.55;padding-bottom:8px;border-bottom:1px solid var(--cl);}
+.co-pages{display:flex;flex-wrap:wrap;gap:4px;padding:8px 0;}
+.co-pages span{font-size:9.5px;color:var(--cd);background:var(--cp2);border:1px solid var(--cl);
+  border-radius:3px;padding:2px 6px;}
+.co-split{display:grid;grid-template-columns:1fr;gap:9px;border-top:1px solid var(--cl);padding-top:9px;}
+.co-ck,.co-nk{font-size:9.5px;font-weight:700;margin-bottom:5px;}
+.co-ck{color:var(--cc-hi);}
+.co-ck b{font-weight:700;}
+.co-nk{color:var(--cw);}
+.co-split ul{list-style:none;margin:0;padding:0;}
+.co-can li{font-size:10.5px;color:var(--cd);padding:1.5px 0 1.5px 10px;position:relative;line-height:1.5;}
+.co-can li:before{content:"";position:absolute;left:0;top:8px;width:4px;height:4px;
+  border-radius:50%;background:var(--cc);opacity:.55;}
+.co-cannot li{font-size:10.5px;padding:4px 0;border-bottom:1px solid #18181D;line-height:1.5;}
+.co-cannot li:last-child{border-bottom:0;}
+.co-cannot li b{color:#E9E7E4;font-weight:600;}
+.co-by{display:block;font-size:9.5px;color:var(--cd);margin-top:1px;}
+.co-cannot em{display:inline-block;font-size:8.5px;font-style:normal;margin-top:3px;
+  color:var(--cw);border:1px solid rgba(224,163,63,.4);border-radius:3px;padding:1px 5px;}
+.co-cannot em.done{color:#5FAE7E;border-color:rgba(95,174,126,.4);}
+.co-cannot em.none{color:var(--cd2);border-color:var(--cl2);}
+.co-foot{font-size:10.5px;color:var(--cd);line-height:1.7;border-left:2px solid #C75B45;
+  padding-left:12px;margin-top:6px;}
+.co-foot b{color:#CFCBC7;}
+@media(min-width:1280px){.co-split{grid-template-columns:1fr 1.25fr;gap:14px;}}
+.co-sum .n em{font-size:12px;color:var(--cd2);font-style:normal;font-weight:600;}
+
+/* 회사 총괄운영 전용 히어로 — 기존 박스 형태 그대로, 색만 코랄 계열로 */
+.corphero{background:linear-gradient(120deg,#170D09,#2B1511 56%,#3C1C14) !important;
+  border-color:#5C3328 !important;box-shadow:0 22px 48px -28px rgba(232,121,90,.55) !important;
+  color:#F6EFEA !important;}
+.corphero .ontohero-bg span:first-child{background:#E8795A !important;opacity:.17 !important;}
+.corphero .ontohero-bg span:last-child{background:#FF9E7A !important;opacity:.13 !important;}
+.corphero .ontotag{background:rgba(232,121,90,.18) !important;border-color:#C75B45 !important;color:#FFC2A6 !important;}
+.corphero .ontotitle{color:#FFF3EC !important;}
+.corphero p b{color:#FFC2A6 !important;}
+.corphero .ontohero-kpi b{color:#FFF3EC !important;}
+.corphero .ontohero-kpi span{color:#C9A392 !important;}
+.corpops{margin-top:14px;}
+.corp-top{justify-content:flex-start;}

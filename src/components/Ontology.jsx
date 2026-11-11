@@ -868,6 +868,21 @@ function OntologySection({ onGo }) {
   if (!agg) return null;
   return (
     <div style={{ marginTop: 16 }}>
+      {top === "corpops" ? (
+      <div className="ontohero corphero">
+        <div className="ontohero-bg"><span /><span /></div>
+        <div className="ontohero-l">
+          <span className="ontotag"><Building2 size={13} /> Corporate Operations · 사람 책임자 + AI 팀장</span>
+          <div className="ontotitle">회사 총괄운영</div>
+          <p><b>{typeof CORP_SUMMARY !== "undefined" ? CORP_SUMMARY.teams : 8}개 팀</b>을 <b>사람 책임자</b>와 <b>AI 팀장</b>이 쌍으로 운영합니다 — AI는 모으고·고르고·맞추고·초안을 만들고, <b>되돌릴 수 없거나 책임이 회사 밖으로 나가거나 법적 효과가 생기는 일은 사람이 마무리합니다.</b></p>
+        </div>
+        <div className="ontohero-kpi">
+          <div><b>{typeof CORP_SUMMARY !== "undefined" ? CORP_SUMMARY.teams : 8}</b><span>팀</span></div>
+          <div><b>{typeof CORP_SUMMARY !== "undefined" ? CORP_SUMMARY.agents : 8}</b><span>AI 팀장</span></div>
+          <div><b>{typeof CORP_SUMMARY !== "undefined" ? CORP_SUMMARY.peopleN : 2}</b><span>재직 인원</span></div>
+        </div>
+      </div>
+      ) : (
       <div className="ontohero">
         <div className="ontohero-bg"><span /><span /></div>
         <div className="ontohero-l">
@@ -881,6 +896,7 @@ function OntologySection({ onGo }) {
           <div><b>{ontWon(agg.totalCost)}</b><span>총 예상의료비</span></div>
         </div>
       </div>
+      )}
 
       <div className="chtabs lv1" style={{ marginTop: 14 }}>{topTabs.map(([k, t, Ic, c]) => (
         <div key={k} className={`chtab ${top === k ? "on" : ""}`} style={{ "--cc": c }} onClick={() => setTop(k)}>

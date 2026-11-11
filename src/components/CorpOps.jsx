@@ -11,6 +11,7 @@
 function CorpOps({ onGo }) {
   const wrapRef = React.useRef(null);
   const svgRef = React.useRef(null);
+  const [view, setView] = React.useState("dash");   /* dash 총괄 · org 조직도 */
   const [sel, setSel] = React.useState(null);
   const [spin, setSpin] = React.useState(true);
   const [showLink, setShowLink] = React.useState(true);
@@ -34,6 +35,7 @@ function CorpOps({ onGo }) {
   }, []);
 
   React.useEffect(() => {
+    if (view !== "dash") return;
     const svg = svgRef.current; if (!svg) return;
     const NS = "http://www.w3.org/2000/svg";
     const mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
@@ -162,7 +164,7 @@ function CorpOps({ onGo }) {
       svg.removeEventListener("click", onClick);
       window.removeEventListener("resize", onResize);
     };
-  }, [pick]);
+  }, [pick, view]);
 
   const selT = sel ? corpTeam(sel) : null;
   const sch = CORP_SCHEDULE;
@@ -170,13 +172,17 @@ function CorpOps({ onGo }) {
   return (
     <div className="corpops" ref={wrapRef}>
       <div className="corp-top">
-        <div className="corp-logo">회사 <span>총괄운영</span></div>
-        <div className="corp-tag">사람 책임자 + AI 팀장</div>
+        <div className="corp-vtabs">
+          <button className={"corp-vt" + (view === "dash" ? " on" : "")} onClick={() => setView("dash")}>총괄</button>
+          <button className={"corp-vt" + (view === "org" ? " on" : "")} onClick={() => setView("org")}>조직도</button>
+        </div>
         <div className="corp-sp" />
-        <div className="corp-stub">Phase 1 — 실데이터 미연결 · 지표는 연결 후 채워집니다</div>
+        <div className="corp-stub">실데이터 미연결 · 지표는 연결 후 채워집니다</div>
       </div>
 
-      <div className="corp-shell">
+      {view === "org" && <CorpOrgChart sel={sel} pick={pick} />}
+
+      <div className="corp-shell" style={view === "org" ? { display: "none" } : undefined}>
         {/* ── 좌 ── */}
         <div className="corp-col corp-L">
           <div className="corp-blk">
@@ -217,8 +223,9 @@ function CorpOps({ onGo }) {
           </div>
           <div className="corp-blk corp-last">
             <div className="corp-lab">인원</div>
-            <div className="corp-row"><span className="m">현재</span><span className="s"><b>{CORP_SUMMARY.head}</b> / 정원 {CORP_SUMMARY.cap}</span></div>
-            <div className="corp-note">합류 전 자리는 0으로 둡니다 — 없는 인원을 있는 것처럼 세지 않습니다.</div>
+            <div className="corp-row"><span className="m">재직</span><span className="s"><b>{CORP_SUMMARY.peopleN}</b>명</span></div>
+            <div className="corp-row"><span className="m">채워진 자리</span><span className="s"><b>{CORP_SUMMARY.filled}</b> / {CORP_SUMMARY.cap}</span></div>
+            <div className="corp-note">겸임이 있어 <b>자리 수와 사람 수가 다릅니다</b> — 합류 전 자리는 0으로 둡니다.</div>
           </div>
         </div>
 
@@ -242,14 +249,17 @@ function CorpOps({ onGo }) {
               <div className="sy">
                 <div className="sp"><span className="pk">사람 책임자</span><b>{selT.own}</b><i>{selT.ownTitle}</i></div>
                 <div className="pdiv" />
-                <div className="sp"><span className="pk">AI 팀장</span><b style={{ color: selT.c }}>{selT.ai}</b><span className="corp-ai">AI</span></div>
+                <div className="sp">
+                  {typeof CorpAvatar === "function" && <CorpAvatar ai={selT.ai} size={26} />}
+                  <span className="pk">AI 팀장</span><b style={{ color: selT.c }}>{selT.ai}</b><span className="corp-ai">AI</span>
+                </div>
                 <div className="pdiv" />
                 <div className="sp"><span className="pk">인원</span><b>{selT.head} / {selT.cap}</b><i>{selT.joined}</i></div>
               </div>
               <div className="sw">{selT.work}</div>
               <div className="sv">
                 <div><span className="vk ok">{selT.ai}가 하는 일</span>{selT.can.join(" · ")}</div>
-                <div><span className="vk no">사람이 마무리</span>{selT.cannot.join(" · ")}</div>
+                <div><span className="vk no">사람이 마무리</span>{selT.cannot.map(x => x.act).join(" · ")}</div>
               </div>
             </div>
           )}
@@ -296,6 +306,87 @@ function CorpOps({ onGo }) {
             <div className="corp-note">브라우저가 닫혀 있으면 돌지 않습니다 — 「예약」은 <b>다음 열람 시 점검</b>이라는 뜻입니다.</div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ 조직도 — 본부·팀·사람 책임자·AI 팀장과 책임 경계 (Phase 2) ══════════════
+   ⚠️ 두 가지를 반드시 함께 보인다:
+     ① AI가 끝까지 하는 일   ② 사람이 마무리하는 일과 **무엇이 그것을 막는지**
+   「AI는 ~하지 않습니다」라는 문장만으로는 부족하다 — 차단 조건이 없으면 그건 선언일 뿐이다. */
+function CorpOrgChart({ sel, pick }) {
+  const S = CORP_SUMMARY;
+  return (
+    <div className="corp-org">
+      <div className="co-head">
+        <div>
+          <h3>조직구조와 책임 체계</h3>
+          <p>모든 팀에 <b>사람 책임자 1명</b>과 <b>AI 팀장 1명</b>이 쌍으로 있습니다.
+            되돌릴 수 없거나 · 책임이 회사 밖으로 나가거나 · 법적 효과가 생기는 일은 <b>사람이 마무리합니다</b>.</p>
+        </div>
+        <div className="co-sum">
+          <div><span className="n">{S.teams}</span><span className="k">팀</span></div>
+          <div><span className="n">{S.agents}</span><span className="k">AI 팀장</span></div>
+          <div><span className="n">{S.peopleN}</span><span className="k">재직 인원</span></div>
+          <div><span className="n">{S.filled}<em>/{S.cap}</em></span><span className="k">채워진 자리</span></div>
+        </div>
+      </div>
+
+      <div className="co-ceo"><span className="co-crown">CEO</span> 조성래
+        <span className="co-note">경영관리본부 3팀 겸임 · 법상 정보보호 최고책임자 · 개인정보 보호책임자</span></div>
+
+      {CORP_DIV.map(d => {
+        const list = CORP_TEAMS.filter(t => t.div === d.id);
+        if (!list.length) return null;
+        return (
+          <div key={d.id} className="co-div">
+            <div className="co-dname">{d.name}<i>{d.note}</i></div>
+            <div className="co-grid">
+              {list.map(t => (
+                <div key={t.id} className={"co-card" + (sel === t.id ? " sel" : "")}
+                  style={{ "--tc": t.c }} onClick={() => pick(t.id)}>
+                  <div className="co-top">
+                    {typeof CorpAvatar === "function" && <CorpAvatar ai={t.ai} size={44} title={t.ai} />}
+                    <div className="co-id">
+                      <div className="co-tname">{t.name}<span className="co-code">{t.id}</span></div>
+                      <div className="co-pair">
+                        <b>{t.own}</b><i>{t.ownTitle}</i>
+                        <span className="co-sep">·</span>
+                        <b style={{ color: t.c }}>{t.ai}</b><span className="corp-ai">AI</span>
+                      </div>
+                    </div>
+                    <div className={"co-head-c" + (t.head === 0 ? " zero" : "")}>{t.head} / {t.cap}
+                      <i>{t.joined}</i></div>
+                  </div>
+                  <div className="co-work">{t.work}</div>
+                  <div className="co-pages">{t.pages.map((p, i) => <span key={i}>{p}</span>)}</div>
+                  <div className="co-split">
+                    <div className="co-can">
+                      <div className="co-ck"><b>{t.ai}</b>가 끝까지 하는 일</div>
+                      <ul>{t.can.map((x, i) => <li key={i}>{x}</li>)}</ul>
+                    </div>
+                    <div className="co-cannot">
+                      <div className="co-nk">사람이 마무리 — 무엇이 막는가</div>
+                      <ul>{t.cannot.map((x, i) => (
+                        <li key={i}><b>{x.act}</b><span className="co-by">{x.by}</span>
+                          <em className={x.at === "기존" ? "done" : (x.at === "—" ? "none" : "")}>
+                            {x.at === "기존" ? "이미 코드에 있음" : (x.at === "—" ? "경로 자체를 두지 않음" : x.at + "에서 강제")}</em></li>
+                      ))}</ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="co-foot">
+        <b>자리와 사람은 다릅니다</b> — 실제 재직 인원은 <b>{S.peopleN}명</b>({S.people.join(" · ")})이고,
+        채워진 자리는 <b>{S.filled} / {S.cap}</b>입니다. CEO가 경영관리본부 세 팀을 겸임하므로 자리 수가 사람 수보다 큽니다.
+        합류 전 자리는 0으로 둡니다 — {S.pending.join(" · ")} {S.pendingN}분은 합류일이 정해지면 숫자가 올라갑니다.
+        없는 인원을 있는 것처럼 세면 투자사에 제출한 보안 리포트의 「인력 0명」 선언과 어긋납니다.
       </div>
     </div>
   );
