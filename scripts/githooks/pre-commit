@@ -9,6 +9,21 @@ cd "$(git rev-parse --show-toplevel)"
 CHANGED=$(git diff --cached --name-only)
 [ -z "$CHANGED" ] && exit 0
 
+# ══ 민감자료 차단 게이트(Phase 0/8 · 2026-11-12 형 지시) — **가장 먼저 돈다** ══
+# 왜 맨 앞인가 — 세 가지 이유가 있다.
+#   ① 아래 내비 게이트(:46 근방)에 `exit 0` 이 있다. 우회 모드가 켜지면 훅이 거기서 끝나
+#      뒤쪽 게이트가 **전부** 건너뛰어진다. 민감자료는 그 뒤에 있으면 안 된다.
+#   ② data/ 만 바꾼 커밋은 지금 아래 블록들의 경로 필터를 **하나도** 타지 않는다.
+#      그래서 이 게이트에는 경로 필터를 걸지 않는다 — 모든 커밋이 거친다.
+#   ③ 한 번 들어간 자료는 이력에 영원히 남는다. 막는 쪽이 지우는 쪽보다 싸다.
+# 스테이지된 파일만 보므로 수 초다. 게이트 자신이 바뀌면 음성 테스트까지 돌린다.
+python scripts/check_sensitive.py --staged || { echo "[GATE] 민감자료 차단 - 커밋 차단(값은 출력하지 않습니다)"; exit 1; }
+if echo "$CHANGED" | grep -qE "^scripts/check_sensitive\.py$"; then
+  echo "[GATE] 차단 게이트 자신이 바뀜 - 음성 테스트 실행(금지 자료를 심어 실제로 막히는지)"
+  python scripts/check_sensitive.py --negative || { echo "[GATE] 음성 테스트 실패 - 커밋 차단(막는다고 적어 놓고 막지 않습니다)"; exit 1; }
+  python scripts/check_sensitive.py || { echo "[GATE] 전수 검사 실패 - 커밋 차단"; exit 1; }
+fi
+
 # ══ 데이터 카탈로그 게이트(운영계획 v1.1 D-1) — src 변경 시 저장 키 전수 대조(미등재=차단) ══
 # P7(2026-10-26): 가드 **자신**이 바뀔 때도 돈다. 종전 조건은 src/ 변경뿐이어서, 검사를 지우거나
 # 느슨하게 만드는 변경(러너 파일만 고치는 커밋)은 **어느 게이트도 통과하지 않았다** — 「사람이 칠 때만
