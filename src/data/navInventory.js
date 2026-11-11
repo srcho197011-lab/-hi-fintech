@@ -1,6 +1,6 @@
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "511cba105fcabf44", "generatedAt": "2026-10-26", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "1375d5475141764d", "generatedAt": "2026-11-11", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -81,6 +81,7 @@ const NAV_INVENTORY = [
   {"key": "tab.ontology.ops", "label": "운영 콘솔", "path": "ontology › 운영 콘솔", "surface": "tab", "nav": "ontology", "tab": "ops", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnsdudzhsthf", "운영콘솔"]},
   {"key": "tab.ontology.dataops", "label": "데이터 운영", "path": "ontology › 데이터 운영", "surface": "tab", "nav": "ontology", "tab": "dataops", "owner": "nav", "admin": true, "desc": "", "aliases": ["epdlxjdnsdud", "데이터운영"]},
   {"key": "tab.ontology.whitepaper", "label": "백서", "path": "ontology › 백서", "surface": "tab", "nav": "ontology", "tab": "whitepaper", "owner": "nav", "admin": true, "desc": "", "aliases": ["qortj"]},
+  {"key": "tab.ontology.corpops", "label": "회사 총괄운영", "path": "ontology › 회사 총괄운영", "surface": "tab", "nav": "ontology", "tab": "corpops", "owner": "nav", "admin": true, "desc": "", "aliases": ["ghltkchdrhkfdnsdud", "회사총괄운영"]},
   {"key": "sub.partner.overview", "label": "개요 · 객체", "path": "ontology › 협력업체 온톨로지 · 하네스 › 개요 · 객체", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rodyrorcp", "개요객체"]},
   {"key": "sub.partner.trade", "label": "거래 · 운영", "path": "ontology › 협력업체 온톨로지 · 하네스 › 거래 · 운영", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rjfodnsdud", "거래운영"]},
   {"key": "sub.partner.cost", "label": "원가 · 정산", "path": "ontology › 협력업체 온톨로지 · 하네스 › 원가 · 정산", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnjsrkwjdtks", "원가정산"]},

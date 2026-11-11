@@ -1,18 +1,19 @@
 {
-  "files": 187,
+  "files": 189,
   "screen": 0,
   "comment": 94,
-  "compound": 21,
+  "compound": 22,
   "exempt": 1,
   "notices": 14,
   "counts": {
-    "정합성": 8,
+    "정합성": 9,
     "적합성": 13,
     "합성어": 0
   },
   "perFile": {
     "정합성": {
       "src/components/Ontology.jsx": 2,
+      "src/data/corpOrg.js": 1,
       "src/data/whitepaper.js": 4,
       "src/data/wpAutoLog.js": 2
     },
@@ -32,6 +33,7 @@
       "src/components/AIDoctor.jsx": 1,
       "src/components/Ontology.jsx": 2,
       "src/components/PartnerGovReport.jsx": 1,
+      "src/data/corpOrg.js": 1,
       "src/data/pilotCohort.js": 4,
       "src/data/whitepaper.js": 4,
       "src/data/wpAutoLog.js": 2
@@ -78,7 +80,7 @@
   "pgExportNoticeAt": 3,
   "pgExportNotices": 2,
   "pgExportNoticeFails": 0,
-  "pgExportScan": 186,
+  "pgExportScan": 188,
   "pgSelfScanRows": 1,
   "pgSelfScanStatic": {
     "brokerNotice": {

@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<link rel="stylesheet" href="./data/app.css?v=02b43e6eab" />
+<link rel="stylesheet" href="./data/app.css?v=ba0cb2edef" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=02b43e6eab"></script>
-<script src="./src/data/section_data.js?v=02b43e6eab"></script>
-<script src="./src/data/demo_members.js?v=02b43e6eab"></script>
+<script src="./src/data/dummy_data.js?v=ba0cb2edef"></script>
+<script src="./src/data/section_data.js?v=ba0cb2edef"></script>
+<script src="./src/data/demo_members.js?v=ba0cb2edef"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -16042,6 +16042,457 @@ function DataOpsConsole() {
   </div>);
 }
 
+/* ══════════════ 회사 총괄운영 — 조직 단일 원천(corpOrg.js) · CorpOps Phase 1 (형 지시 2026-11-11) ══════════════
+   원천 사상: 업무자동화 체계다. 모든 팀에 **사람 책임자 1명과 AI 팀장 1명**이 쌍으로 있고,
+   되돌릴 수 없거나 · 책임이 회사 밖으로 나가거나 · 법적 효과가 생기는 일은 **사람이 마무리한다**.
+   ⚠️ 원칙:
+     · 사람과 AI를 같은 모양으로 표시하지 않는다 — AI에는 항상 AI 배지가 붙는다.
+     · 없는 인원을 있는 것처럼 세지 않는다 — head(현재)와 cap(정원)을 나눠 적고, 합류 전은 0이다.
+     · 사내 전용이다 — 이 레지스트리는 회원 대면 에이전트(agentRegistry.js)와 섞지 않는다.
+     · 실데이터는 아직 없다. 지표 자리는 비워 두고 「미연결」로 보인다(숫자를 지어내지 않는다).
+     · 좌표·점 배치는 고정 시드로 만든다 — Math.random 금지(결정론 규약). */
+
+const CORP_DIV = [
+  { id: "MGMT", name: "경영관리본부", note: "CEO 직할" },
+  { id: "HINS", name: "헬스인슈어본부", note: "헬스케어 · 보험" },
+  { id: "DIRECT", name: "직할", note: "대표 직속" },
+];
+
+/* th·ph = 구면 좌표(라디안). 같은 본부는 가까이 묶어 한 덩어리로 돌게 한다. */
+const CORP_TEAMS = [
+  { id: "M1", div: "MGMT", name: "경영기획팀", sh: "경영기획", own: "조성래", ownTitle: "CEO",
+    ai: "나침반", aiWhy: "방향을 잡는다", c: "#FF8A65", th: -0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
+    work: "사업계획 · 투자 유치 · 제휴 · 협력업체 관리 · 전사 지표",
+    pages: ["사업 운영", "협력업체 온톨로지 · 하네스", "경영 현황"],
+    can: ["전사 지표 집계", "계획 대비 진척 산출", "제휴 단계 추적", "주간 회의자료 통합"],
+    cannot: ["대외 발표", "가격 결정", "계약 체결", "투자 자료 제출"] },
+
+  { id: "M2", div: "MGMT", name: "회계팀", sh: "회계", own: "조성래", ownTitle: "CEO",
+    ai: "핀테크", aiWhy: "돈의 흐름을 맞춘다", c: "#E8795A", th: 0.00, ph: -0.90, head: 1, cap: 1, joined: "겸임",
+    work: "전표 기장 · 장부 · 은행 대사 · 결산 · 재무제표 · 예실 대비",
+    pages: ["재무현황(실적)", "재무계획(기존 이관)", "예실 대비"],
+    can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출"],
+    cannot: ["전표 승인", "월마감 확정", "지급 실행", "세무 신고 제출"] },
+
+  { id: "M3", div: "MGMT", name: "인사총무팀", sh: "인사총무", own: "조성래", ownTitle: "CEO",
+    ai: "인총이", aiWhy: "사람과 자산을 챙긴다", c: "#D96A52", th: 0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
+    work: "인사 기록 · 근태 · 급여 대장 · 자산 대장 · 위임전결",
+    pages: ["조직 · 인사", "총무 · 자산"],
+    can: ["근태 집계", "연차 잔여 계산", "교육 이수 점검", "자산 대장 갱신"],
+    cannot: ["채용 · 해고", "급여 확정", "평가 확정", "인사 기록 외부 제공"] },
+
+  { id: "H1", div: "HINS", name: "헬스케어팀", sh: "헬스케어", own: "전소윤", ownTitle: "센터장",
+    ai: "헬시", aiWhy: "회원의 건강을 살핀다", c: "#FF7A6B", th: 1.96, ph: 0.16, head: 0, cap: 1, joined: "미정",
+    work: "회원 건강관리 운영 · 헬스메이트 조직 · 상담 품질 · 검진 연계 · 응급 대응",
+    pages: ["헬스케어 온톨로지", "운영 현황", "헬스메이트 센터"],
+    can: ["회원 지표 집계", "인계카드 발행 조건 점검", "미응답·지연 건 추출", "골든타임 경보"],
+    cannot: ["의료 판단", "상담 답변 자동 발송", "응급 판정 대체", "검진 결과 해석 확정"] },
+
+  { id: "H2", div: "HINS", name: "보험팀", sh: "보험", own: "문형석", ownTitle: "센터장",
+    ai: "인슈러", aiWhy: "덮이지 않은 곳을 찾는다", c: "#E6906A", th: 2.52, ph: 0.16, head: 0, cap: 1, joined: "미정",
+    work: "보장 설계 · 검진대비보험 · 치료비 케어 · 보장 갭 분석 · 청구 지원",
+    pages: ["보장 현황", "치료비 케어", "검진대비보험"],
+    can: ["보장 갭 집계", "만기·갱신 도래 추출", "청구 가능 건 후보 제시", "보장 창 경과 경보"],
+    cannot: ["인수 확정", "보험 가입 권유 · 모집", "청구 제출", "지급 여부 판정"] },
+
+  { id: "K1", div: "DIRECT", name: "마케팅팀", sh: "마케팅", own: "조예원", ownTitle: "수석매니저",
+    ai: "애디", aiWhy: "메시지를 퍼뜨리고 반응을 듣는다", c: "#FF9E7A", th: -2.26, ph: 0.10, head: 1, cap: 1, joined: "2026-10-01",
+    work: "브랜드 · 콘텐츠 · 채널 운영 · 캠페인 · 회원 획득 · 성과 분석",
+    pages: ["마케팅", "캠페인 현황"],
+    can: ["채널별 유입·전환 집계", "콘텐츠 성과 비교", "캠페인 일정 추적", "소재 초안"],
+    cannot: ["캠페인 집행", "광고 집행 · 예산 소진", "대외 발행 · 게시", "보험 모집 표현 문구 확정"] },
+
+  { id: "D1", div: "DIRECT", name: "데이터관리팀", sh: "데이터", own: "박원식", ownTitle: "CTO",
+    ai: "온톨로", aiWhy: "데이터 지도를 그린다", c: "#F2815F", th: -0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
+    work: "데이터 구조 설계 · 저장 키 거버넌스 · 품질 관리 · 외부 연동 · UI 표준",
+    pages: ["데이터 운영", "HI-Fin 기반 온톨로지", "데이터 품질"],
+    can: ["저장 키 등재 대조", "정합성 스캔", "품질 리포트", "외부 API 변경 감지"],
+    cannot: ["데이터 파기", "외부 제공", "공개 전환", "스키마 변경 반영"] },
+
+  { id: "S1", div: "DIRECT", name: "정보보안팀", sh: "보안", own: "김남용", ownTitle: "보안담당이사",
+    ai: "하네스", aiWhy: "막고 검증한다", c: "#C75B45", th: 0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
+    work: "보안 통제 · 취약점 관리 · 접근 권한 · 침해 대응 · 내부통제와 감사 증적 · 릴리스 승인",
+    pages: ["운영 콘솔", "보안 현황", "릴리스 · 감사"],
+    can: ["커밋 게이트 결과 수집", "미조치 항목 경보", "확약 진척 집계", "동일인 승인 탐지"],
+    cannot: ["사고 인정", "당국 신고", "서비스 중단 결정", "권한 부여", "릴리스 승인"] },
+];
+
+/* 팀 사이 업무 흐름 */
+const CORP_LINKS = [
+  ["M1","M2"],["M3","M2"],["M1","M3"],["M1","K1"],["M1","D1"],["M1","H1"],["M1","H2"],
+  ["K1","H1"],["D1","H1"],["D1","K1"],["D1","H2"],["H1","H2"],["H2","M2"],
+  ["S1","M1"],["S1","M2"],["S1","D1"],["S1","H2"],
+];
+
+/* ── 결정론 시드 — Math.random 금지(이 레포 규약) ── */
+function corpSeed(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function corpRng(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* 팀 둘레 점 — 작은 구면에 피보나치 배치 + 시드 지터(같은 팀은 늘 같은 모양) */
+const CORP_DOTN = 16;
+const CORP_DOTS = (function () {
+  const out = {};
+  CORP_TEAMS.forEach(t => {
+    const r = corpRng(corpSeed(t.id + t.ai));
+    const a = [];
+    for (let i = 0; i < CORP_DOTN; i++) {
+      const y = 1 - (i / (CORP_DOTN - 1)) * 2, rad = Math.sqrt(Math.max(0, 1 - y * y));
+      const ga = i * 2.399963229728653 + r() * 0.9;
+      a.push({ x: Math.cos(ga) * rad, y: y * (0.86 + r() * 0.2), z: Math.sin(ga) * rad, s: 0.75 + r() * 0.6 });
+    }
+    out[t.id] = a;
+  });
+  return out;
+})();
+
+/* 집계 — 실데이터가 붙기 전에는 전부 「미연결」이다. 숫자를 지어내지 않는다. */
+const CORP_SUMMARY = {
+  teams: CORP_TEAMS.length,
+  agents: CORP_TEAMS.length,
+  head: CORP_TEAMS.reduce((n, t) => n + t.head, 0),
+  cap: CORP_TEAMS.reduce((n, t) => n + t.cap, 0),
+  people: ["조성래", "조예원", "전소윤", "문형석", "박원식", "김남용"].length,
+  dataLinked: false,            /* Phase 10에서 실데이터가 붙으면 true */
+};
+
+/* 업무시간 · 주간회의 — 형 확정 2026-11-11 */
+const CORP_SCHEDULE = {
+  work: { from: "09:00", to: "18:00", lunch: "12:00~13:00", days: "월~금" },
+  weekly: {
+    day: "월요일", time: "10:00~11:00", mode: "화상회의",
+    joinPeople: 6, joinAgents: 8,
+    steps: [
+      ["10:00", "개회 · 지난주 결정사항 확인", "CEO"],
+      ["10:02", "전사 지표", "나침반"],
+      ["10:08", "팀별 보고 — 각 4분 · AI가 펼치고 사람 책임자가 보충", "핀테크 → 인총이 → 헬시 → 인슈러 → 애디 → 온톨로 → 하네스"],
+      ["10:45", "지난주 후속조치 점검 — 미종결 건이 먼저", "나침반"],
+      ["10:52", "결정 안건", "사람이 결정"],
+      ["11:00", "폐회 — 회의록 · 후속과제 초안", "각 AI 팀장"],
+    ],
+  },
+  /* 브라우저가 닫혀 있으면 아무것도 돌지 않는다 — 「자동 실행」이 아니라 「다음 열람 시」다. */
+  routines: [
+    ["일마감", "매일", "전표 차대 검산 · 누락 점검", "이상 건 승인"],
+    ["은행 대사", "매일", "내역 대조 · 미대사 추출", "불일치 해소"],
+    ["주간보고 초안", "금", "팀별 지표 · 진척 · 이슈 · 차주 계획", "팀 책임자 확정"],
+    ["주간회의 자료", "월 09:30", "8팀 보고 통합", "CEO 승인"],
+    ["회의록 · 후속과제", "월 회의 직후", "초안 생성", "담당 · 기한 확정"],
+    ["월마감", "월 1회", "시산표 · 재무제표 생성", "마감 확정"],
+    ["예실 대비", "월 1회", "계획 대비 차이 · 원인 후보", "원인 확정"],
+    ["급여", "월 1회", "근태 집계 · 공제 계산", "지급 승인"],
+    ["계약 만료 점검", "주 1회", "만료 임박 추출", "갱신 · 해지 결정"],
+    ["보안 점검", "주 1회", "게이트 결과 · 확약 진척 집계", "조치 결정"],
+    ["릴리스 점검", "배포 전", "체크리스트 · 동일인 승인 탐지", "릴리스 승인(S1)"],
+    ["세무 기한 경보", "월 1회", "신고 기한 산출", "신고 제출"],
+  ],
+};
+
+function corpTeam(id) { return CORP_TEAMS.find(t => t.id === id) || null; }
+function corpDiv(id) { return CORP_DIV.find(d => d.id === id) || null; }
+
+/* ══════════════ 회사 총괄운영 — 총괄 대시보드(CorpOps.jsx) · Phase 1 (형 지시 2026-11-11) ══════════════
+   화면: 다크 콕핏 3단 — 좌(지표) · 중앙(조직 온톨로지 · 원근 회전) · 우(사람이 결정할 것 · 루틴).
+   ⚠️ 원칙:
+     · 실데이터가 붙기 전에는 지표를 「미연결」로 둔다 — 숫자를 지어내지 않는다(Phase 10에서 연결).
+     · 「자동 실행」이라 쓰지 않는다 — 백엔드가 없어 브라우저가 닫히면 아무것도 돌지 않는다.
+       루틴의 실체는 「예약 — 다음 열람 시」다.
+     · 사람과 AI를 같은 모양으로 쓰지 않는다 — AI에는 AI 배지가 붙는다.
+     · 좌표·점은 corpOrg.js의 고정 시드 산출물을 읽는다 — 이 파일에 Math.random을 두지 않는다.
+   원천: src/data/corpOrg.js(조직·일정 단일 소스) */
+
+function CorpOps({ onGo }) {
+  const wrapRef = React.useRef(null);
+  const svgRef = React.useRef(null);
+  const [sel, setSel] = React.useState(null);
+  const [spin, setSpin] = React.useState(true);
+  const [showLink, setShowLink] = React.useState(true);
+  const [showDot, setShowDot] = React.useState(true);
+  const st = React.useRef({ rot: 0, target: null, hover: null, sel: null, spin: true, link: true, dot: true });
+
+  React.useEffect(() => { st.current.sel = sel; }, [sel]);
+  React.useEffect(() => { st.current.spin = spin; }, [spin]);
+  React.useEffect(() => { st.current.link = showLink; }, [showLink]);
+  React.useEffect(() => { st.current.dot = showDot; }, [showDot]);
+
+  /* 팀 선택 — 중앙 원 박스와 좌측 팀 바로가기가 같은 동작을 한다 */
+  const pick = React.useCallback((id) => {
+    setSel(prev => {
+      const next = (prev === id) ? null : id;
+      const t = next ? corpTeam(next) : null;
+      st.current.target = t ? (Math.PI - t.th) : null;
+      if (t) setSpin(false);
+      return next;
+    });
+  }, []);
+
+  React.useEffect(() => {
+    const svg = svgRef.current; if (!svg) return;
+    const NS = "http://www.w3.org/2000/svg";
+    const mk = (n, a) => { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; };
+    let W = 0, H = 0, CX = 0, CY = 0, R = 0, FOC = 0, raf = 0, last = 0;
+    const TAU = Math.PI * 2;
+
+    svg.innerHTML = "";
+    const defs = mk("defs", {});
+    defs.innerHTML = '<filter id="corpGl" x="-70%" y="-70%" width="240%" height="240%">' +
+      '<feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+    svg.appendChild(defs);
+    const gLink = mk("g", {}), gCore = mk("g", {}), gNode = mk("g", {});
+    svg.appendChild(gLink); svg.appendChild(gCore); svg.appendChild(gNode);
+
+    function measure() {
+      const b = svg.getBoundingClientRect();
+      W = b.width || 600; H = b.height || 420; CX = W / 2; CY = H / 2 + 10;
+      R = Math.min(W * 0.40, Math.max(66, (H - 124) * 0.50)); FOC = R * 3.4;
+      svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    }
+    const proj = (x, y, z) => { const k = FOC / (FOC + z); return { x: CX + x * k, y: CY + y * k, k }; };
+
+    function draw() {
+      const S = st.current, P = {};
+      CORP_TEAMS.forEach(t => {
+        const a = t.th + S.rot;
+        const x = R * Math.cos(t.ph) * Math.sin(a), y = R * Math.sin(t.ph), z = R * Math.cos(t.ph) * Math.cos(a);
+        P[t.id] = Object.assign(proj(x, y, z), { z: z, t: t });
+      });
+
+      /* 코어 */
+      gCore.innerHTML = "";
+      const c0 = proj(0, 0, 0);
+      gCore.appendChild(mk("circle", { cx: c0.x, cy: c0.y, r: R * 0.085, fill: "none", stroke: "#E8795A", "stroke-width": 1, opacity: .30 }));
+      gCore.appendChild(mk("circle", { cx: c0.x, cy: c0.y, r: R * 0.05, fill: "#E8795A", opacity: .55, filter: "url(#corpGl)" }));
+      const ct = mk("text", { x: c0.x, y: c0.y + R * 0.17, "text-anchor": "middle", fill: "#8B8B94", "font-size": 10 });
+      ct.textContent = "하이핀"; gCore.appendChild(ct);
+
+      /* 연결선 */
+      gLink.innerHTML = "";
+      if (S.link) {
+        const key = S.hover || S.sel;
+        CORP_LINKS.forEach(pair => {
+          const A = P[pair[0]], B = P[pair[1]]; if (!A || !B) return;
+          const zm = (A.z + B.z) / 2, op = 0.07 + 0.17 * (1 - (zm + R) / (2 * R));
+          const hl = key && (pair[0] === key || pair[1] === key);
+          gLink.appendChild(mk("line", {
+            x1: A.x, y1: A.y, x2: B.x, y2: B.y, stroke: hl ? "#FF9E7A" : "#E8795A",
+            "stroke-width": hl ? 1.6 : 0.9, opacity: hl ? 0.62 : (S.sel ? op * 0.45 : op),
+          }));
+        });
+      }
+
+      /* 노드 — 뒤에서 앞으로 */
+      gNode.innerHTML = "";
+      CORP_TEAMS.slice().sort((p, q) => P[q.id].z - P[p.id].z).forEach(t => {
+        const q = P[t.id], k = q.k, near = 1 - (q.z + R) / (2 * R);
+        const hl = (S.hover === t.id) || (S.sel === t.id);
+        let op = 0.34 + 0.66 * near; if (S.sel && S.sel !== t.id) op *= 0.42;
+        const rr = R * 0.168 * k * (S.sel === t.id ? 1.08 : 1);
+        const g = mk("g", { opacity: op, style: "cursor:pointer" });
+        g.dataset.id = t.id;
+
+        if (S.dot) {
+          (CORP_DOTS[t.id] || []).forEach(d => {
+            const dx = d.x * rr * 1.62, dy = d.y * rr * 1.62, dz = d.z * rr * 1.62;
+            const pp = proj((q.x - CX) / k + dx, (q.y - CY) / k + dy, q.z + dz);
+            const dn = 1 - (dz + rr * 1.7) / (rr * 3.4);
+            g.appendChild(mk("circle", { cx: pp.x, cy: pp.y, r: Math.max(.5, 1.5 * k * d.s), fill: t.c, opacity: 0.22 + 0.5 * dn }));
+          });
+        }
+        if (hl || near > 0.72) g.appendChild(mk("circle", { cx: q.x, cy: q.y, r: rr * 1.26, fill: t.c, opacity: hl ? .14 : .07, filter: "url(#corpGl)" }));
+        g.appendChild(mk("circle", { cx: q.x, cy: q.y, r: rr, fill: "#0C0C0F", stroke: t.c, "stroke-width": hl ? 2 : 1.3, opacity: .97 }));
+        g.appendChild(mk("circle", { cx: q.x, cy: q.y, r: rr * 0.80, fill: "none", stroke: t.c, "stroke-width": .6, opacity: .30 }));
+
+        const fit = Math.min(1, (rr * 1.70) / (t.sh.length * Math.max(8.4, 11.0 * k)));
+        const fs = Math.max(7.4, 11.0 * k * fit);
+        const t1 = mk("text", { x: q.x, y: q.y - fs * 0.42, "text-anchor": "middle", fill: "#F2EFEC", "font-size": fs, "font-weight": 700, "letter-spacing": "-.03em" });
+        t1.textContent = t.sh; g.appendChild(t1);
+
+        /* 사람 책임자 · AI 팀장을 나란히 */
+        const ps = Math.max(6.4, fs * 0.72);
+        const pair = mk("text", { x: q.x, y: q.y + ps * 1.22, "text-anchor": "middle", "font-size": ps, "font-weight": 600 });
+        const s1 = mk("tspan", { fill: "#CFCBC7" }); s1.textContent = t.own;
+        const s2 = mk("tspan", { fill: "#5F5F68" }); s2.textContent = " · ";
+        const s3 = mk("tspan", { fill: t.c }); s3.textContent = t.ai;
+        pair.appendChild(s1); pair.appendChild(s2); pair.appendChild(s3); g.appendChild(pair);
+
+        if (near > 0.62) {
+          const am = mk("text", { x: q.x, y: q.y + ps * 2.22, "text-anchor": "middle", fill: "#55555E", "font-size": Math.max(5.4, ps * 0.70), "letter-spacing": ".06em" });
+          am.textContent = "사람 · AI"; g.appendChild(am);
+        }
+        const t3 = mk("text", { x: q.x, y: q.y - rr - 4.5 * k, "text-anchor": "middle", fill: "#6E6E78", "font-size": Math.max(6.2, 7.6 * k), "letter-spacing": ".04em" });
+        t3.textContent = t.id; g.appendChild(t3);
+        gNode.appendChild(g);
+      });
+    }
+
+    function loop(ts) {
+      const S = st.current, dt = last ? Math.min(60, ts - last) : 16;
+      if (S.target !== null) {
+        let d = ((S.target - S.rot + Math.PI) % TAU + TAU) % TAU - Math.PI;
+        if (Math.abs(d) < 0.004) { S.rot = S.target; S.target = null; } else S.rot += d * Math.min(1, dt * 0.0075);
+      } else if (S.spin) S.rot += dt * 0.000125;
+      last = ts; draw(); raf = requestAnimationFrame(loop);
+    }
+
+    const onMove = (e) => {
+      const g = e.target.closest ? e.target.closest("g[data-id]") : null;
+      st.current.hover = g ? g.dataset.id : null;
+    };
+    const onLeave = () => { st.current.hover = null; };
+    const onClick = (e) => { const g = e.target.closest ? e.target.closest("g[data-id]") : null; pick(g ? g.dataset.id : null); };
+    const onResize = () => measure();
+
+    measure();
+    svg.addEventListener("mousemove", onMove);
+    svg.addEventListener("mouseleave", onLeave);
+    svg.addEventListener("click", onClick);
+    window.addEventListener("resize", onResize);
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      svg.removeEventListener("mousemove", onMove);
+      svg.removeEventListener("mouseleave", onLeave);
+      svg.removeEventListener("click", onClick);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [pick]);
+
+  const selT = sel ? corpTeam(sel) : null;
+  const sch = CORP_SCHEDULE;
+
+  return (
+    <div className="corpops" ref={wrapRef}>
+      <div className="corp-top">
+        <div className="corp-logo">회사 <span>총괄운영</span></div>
+        <div className="corp-tag">사람 책임자 + AI 팀장</div>
+        <div className="corp-sp" />
+        <div className="corp-stub">Phase 1 — 실데이터 미연결 · 지표는 연결 후 채워집니다</div>
+      </div>
+
+      <div className="corp-shell">
+        {/* ── 좌 ── */}
+        <div className="corp-col corp-L">
+          <div className="corp-blk">
+            <div className="corp-lab">현금 · 런웨이</div>
+            <div className="corp-kpi"><div><span className="n">—</span><span className="u">원</span><div className="k">현금 잔고</div></div><div className="corp-dlt">미연결</div></div>
+            <div className="corp-kpi"><div><span className="n">—</span><span className="u">개월</span><div className="k">런웨이</div></div><div className="corp-dlt">—</div></div>
+          </div>
+          <div className="corp-blk">
+            <div className="corp-lab">이번 달 <b>실적</b></div>
+            <div className="corp-kpi"><div><span className="n">—</span><span className="u">원</span><div className="k">매출</div></div><div className="corp-dlt">—</div></div>
+            <div className="corp-kpi"><div><span className="n">—</span><span className="u">건</span><div className="k">전표</div></div><div className="corp-dlt">—</div></div>
+          </div>
+          <div className="corp-blk">
+            <div className="corp-lab">업무시간 <b>확정</b></div>
+            <div className="corp-row"><span className="m">근무</span><span className="s">{sch.work.from} ~ {sch.work.to}</span></div>
+            <div className="corp-row"><span className="m">점심</span><span className="s">{sch.work.lunch}</span></div>
+            <div className="corp-row"><span className="m">주간회의</span><span className="s">{sch.weekly.day} {sch.weekly.time} · {sch.weekly.mode}</span></div>
+          </div>
+          <div className="corp-blk">
+            <div className="corp-lab">팀 바로가기 <b>{CORP_SUMMARY.teams}</b></div>
+            {CORP_DIV.map(d => {
+              const list = CORP_TEAMS.filter(t => t.div === d.id);
+              if (!list.length) return null;
+              return (
+                <div key={d.id}>
+                  <div className="corp-divname">{d.name}</div>
+                  {list.map(t => (
+                    <div key={t.id} className={"corp-team" + (sel === t.id ? " sel" : "")} onClick={() => pick(t.id)}
+                      title={t.name + " — 책임자 " + t.own + " · AI 팀장 " + t.ai}>
+                      <span className="dot" style={{ background: t.c }} />
+                      <span className="tn">{t.sh}</span>
+                      <span className="ag"><b>{t.own}</b><i> · </i><b style={{ color: t.c }}>{t.ai}</b></span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+          <div className="corp-blk corp-last">
+            <div className="corp-lab">인원</div>
+            <div className="corp-row"><span className="m">현재</span><span className="s"><b>{CORP_SUMMARY.head}</b> / 정원 {CORP_SUMMARY.cap}</span></div>
+            <div className="corp-note">합류 전 자리는 0으로 둡니다 — 없는 인원을 있는 것처럼 세지 않습니다.</div>
+          </div>
+        </div>
+
+        {/* ── 중앙 ── */}
+        <div className="corp-col corp-C">
+          <svg ref={svgRef} className="corp-stage" />
+          <div className="corp-cap">
+            <h3>조직 온톨로지</h3>
+            <p>원 = 팀 · 원 안은 <b>사람 책임자 · AI 팀장</b> · 선 = 팀 사이 업무 흐름<br />
+              원근 회전 — 앞은 크고 밝게, 뒤는 작고 흐리게. 원을 누르면 그 팀이 정면으로 옵니다.</p>
+          </div>
+          {selT && (
+            <div className="corp-selbox">
+              <div className="sx">
+                <span className="sdot" style={{ background: selT.c }} />
+                <span className="sid">{selT.id}</span>
+                <span className="sname">{selT.name}</span>
+                <span className="sgrp">{(corpDiv(selT.div) || {}).name}</span>
+                <button className="sclose" onClick={() => pick(selT.id)}>닫기</button>
+              </div>
+              <div className="sy">
+                <div className="sp"><span className="pk">사람 책임자</span><b>{selT.own}</b><i>{selT.ownTitle}</i></div>
+                <div className="pdiv" />
+                <div className="sp"><span className="pk">AI 팀장</span><b style={{ color: selT.c }}>{selT.ai}</b><span className="corp-ai">AI</span></div>
+                <div className="pdiv" />
+                <div className="sp"><span className="pk">인원</span><b>{selT.head} / {selT.cap}</b><i>{selT.joined}</i></div>
+              </div>
+              <div className="sw">{selT.work}</div>
+              <div className="sv">
+                <div><span className="vk ok">{selT.ai}가 하는 일</span>{selT.can.join(" · ")}</div>
+                <div><span className="vk no">사람이 마무리</span>{selT.cannot.join(" · ")}</div>
+              </div>
+            </div>
+          )}
+          <div className="corp-ctl">
+            <button className={"corp-btn" + (spin ? " on" : "")} onClick={() => { setSpin(s => !s); st.current.target = null; }}>{spin ? "회전 멈춤" : "회전 시작"}</button>
+            <button className={"corp-btn" + (!showLink ? " on" : "")} onClick={() => setShowLink(v => !v)}>{showLink ? "연결선 끄기" : "연결선 켜기"}</button>
+            <button className={"corp-btn" + (!showDot ? " on" : "")} onClick={() => setShowDot(v => !v)}>{showDot ? "점 끄기" : "점 켜기"}</button>
+          </div>
+        </div>
+
+        {/* ── 우 ── */}
+        <div className="corp-col corp-R">
+          <div className="corp-sec">
+            <div className="corp-sh"><b>지금 사람이 결정할 것</b><span className="c">0</span></div>
+            <div className="corp-empty">대기 중인 결재가 없습니다 — 결재 흐름은 Phase 9에서 붙습니다</div>
+          </div>
+          <div className="corp-sec">
+            <div className="corp-sh"><b>이번 주 회의</b><span className="c">{sch.weekly.day} {sch.weekly.time.split("~")[0]}</span></div>
+            <div className="corp-card">
+              <div className="ti">주간 업무회의 <span className="corp-pill wait">자료 미생성</span></div>
+              <div className="by">{sch.weekly.mode} · 사람 {sch.weekly.joinPeople} + AI 팀장 {sch.weekly.joinAgents}</div>
+              <div className="ds">금요일에 각 AI 팀장이 주간보고 초안을 만들고, 팀 책임자가 확정하면 월 09:30에 <b>나침반</b>이 1부로 통합합니다.</div>
+            </div>
+          </div>
+          <div className="corp-sec">
+            <div className="corp-sh"><b>책임자 · AI 팀장</b><span className="c">{CORP_SUMMARY.agents}</span></div>
+            {CORP_TEAMS.map(t => (
+              <div key={t.id} className={"corp-rt" + (sel === t.id ? " sel" : "")} onClick={() => pick(t.id)}>
+                <span className="dot" style={{ background: t.c }} />
+                <span className="nm"><b>{t.own}</b><i> · </i><b style={{ color: t.c }}>{t.ai}</b></span>
+                <span className="corp-ai">AI</span><span className="w">{t.id}</span>
+              </div>
+            ))}
+          </div>
+          <div className="corp-sec corp-last">
+            <div className="corp-sh"><b>루틴</b><span className="c">{sch.routines.length}</span></div>
+            {sch.routines.slice(0, 6).map((r, i) => (
+              <div key={i} className="corp-rt">
+                <span className="nm">{r[0]}</span>
+                <span className="corp-pill wait">예약</span>
+                <span className="w">{r[1]}</span>
+              </div>
+            ))}
+            <div className="corp-note">브라우저가 닫혀 있으면 돌지 않습니다 — 「예약」은 <b>다음 열람 시 점검</b>이라는 뜻입니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ====================== 온톨로지 운영시스템 (팔란티어 Foundry 스타일) ======================
    1,000명 파일럿 코호트(pilotCohort)를 객체(Object)·관계(Link)·액션(Action) 온톨로지로 운영.
    개요(코호트 집계) · 객체 탐색기 · 온톨로지 관계 · 액션(세그먼트→보험/나눔/케어). */
@@ -16907,7 +17358,7 @@ function OntologySection({ onGo }) {
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTop("health"); setSub("explorer"); };
-  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["partner", "협력업체 온톨로지 · 하네스", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"]];
+  const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["partner", "협력업체 온톨로지 · 하네스", Truck, "#0891B2"], ["finance", "재무회계", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"], ["corpops", "회사 총괄운영", Building2, "#E8795A"]];
   const healthTabs = [["overview", "코호트 개요", Activity], ["intel", "상담 인텔리전스", MessageSquare], ["live", "실시간 시뮬레이션", Zap], ["explorer", "데이터 하우스", Search], ["chain", "블록체인 금고", Blocks], ["hiops", "하이 커버리지", Bot], ["kb", "AI KB 라운지", Database], ["graph", "온톨로지 관계", Network], ["actions", "액션", Sparkles]];
   if (!agg) return null;
   return (
@@ -16964,6 +17415,7 @@ function OntologySection({ onGo }) {
       {top === "dataops" && typeof DataOpsConsole === "function" && <DataOpsConsole />}
 
       {top === "whitepaper" && <WhitepaperSection onGo={onGo} />}
+      {top === "corpops" && typeof CorpOps === "function" && <CorpOps onGo={onGo} />}
     </div>
   );
 }
@@ -34550,6 +35002,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-11", ver:"v2.5", ch:[9], feat:"회사 총괄운영 총괄 대시보드와 조직 온톨로지", src:"온톨로지 › 회사 총괄운영", summary:"사람 책임자와 AI 팀장이 쌍으로 일하는 업무자동화 체계를 8팀 3단위로 세우고, 팀을 원으로 세운 조직 온톨로지를 원근 회전으로 보이게 했으며, 원 안에 사람과 AI를 나란히 적어 누가 마무리하는지가 화면에서 갈리게 했고, 실데이터가 붙기 전까지는 지표를 미연결로 비워 두어 숫자를 지어내지 않게 했다", refs:[], status:"반영", hash:"42e7e1d", auto:true },
   { date:"2026-10-26", ver:"v2.4", ch:[9], feat:"협력업체 온톨로지·하네스 체계 소개(정의·목적·성과)", src:"온톨로지 › 협력업체 온톨로지·하네스 › 개요·객체", summary:"협력업체를 다루는 체계가 무엇이고 무엇을 위한 것이며 무엇이 달라졌는지를 각 200자 안팎으로 정리해 개요 화면 맨 앞에 두었고, 그 문장에 들어가는 숫자를 화면에 적어 넣지 않고 집계와 선언에서 읽어 채우도록 해 데이터가 바뀌면 문장도 따라 바뀌게 했으며, 채우지 못한 자리는 비워 두는 대신 채우지 못했다는 사실을 함께 보이게 했고, 초안에 있던 과장과 사실과 다른 대목은 코드로 확인해 바로잡거나 덜어냈다", refs:[], status:"반영", hash:"d28bf9d", auto:true },
   { date:"2026-10-26", ver:"v2.3", ch:[9], feat:"협력업체 온톨로지·하네스와 내부통제 보고서·정책 판정 엔진", src:"온톨로지 › 협력업체 온톨로지·하네스(서브탭 5) · 내부통제 보고서 · 정책·판정 엔진", summary:"거래처를 다루던 화면을 협력업체 온톨로지와 하네스로 다시 세우고, 협력업체가 법령을 지키며 운영하는지와 건전한 제품·서비스를 제공하는지, 신뢰를 위한 체계를 갖추고 지속하는지를 보는 내부통제 보고서를 서브섹션으로 만들었으며, 법령을 코드가 읽는 자료로 선언해 확인된 조항만 판정에 쓰고 시행 전과 확인 대기는 따로 표시하도록 했고, 판정을 차단·경고·기록 세 단계로 집행하면서 그 수준이 조용히 낮아지지 못하게 하한을 두었으며, 판정 한 칸을 누르면 어떤 규칙이 어떤 증거로 그 결정을 냈고 무엇이 쓰이지 않았는지까지 펼쳐 보이게 해 결과만이 아니라 과정을 확인할 수 있게 했고, 같은 화면이 매출을 두 번 말하던 원인인 독립 생성 정산을 주문에서 전건 파생해 한 숫자로 묶었으며, 우리 쪽이 지켜야 할 조항의 결함이 협력업체 이름에 그대로 찍혀 나가던 경로를 끊고 반출물에 판정 대상을 밝히도록 했다", refs:[], status:"반영", hash:"5647835", auto:true },
   { date:"2026-10-23", ver:"v2.2", ch:[9], feat:"화면 표기 규약(가명 표기 통일)과 데이터 보강 로드맵", src:"온톨로지 › 헬스케어 온톨로지 · 로그인 · 치료비 케어 · 헬스메이트 센터·운영본부 · 원격진료", summary:"회원 데이터를 가리키던 표현이 데이터의 신뢰도를 깎는 오해를 불러온다는 지적에 따라 화면에서 그 표현을 모두 걷어내고 호칭을 파일럿 코호트로 통일했으며 이름과 식별자가 가명으로 표시되어 특정 개인을 알아볼 수 없다는 사실을 같은 뜻으로 아홉 화면에 맞춰 적었고, 표현만 바꾸면 실제 개인정보를 가공해 보유한 것처럼 읽히는 세 자리에는 데이터의 성격을 함께 밝혀 뜻이 어긋나지 않게 했으며, 이 표기 규약을 사람이 아니라 검사가 지키도록 전용 가드를 만들어 커밋과 배포 번들 양쪽에서 확인하게 하고, 자동으로 다시 만들어지는 백서 반영표는 생성기 쪽에 규약을 두어 손수정이 되돌아가지 않게 했으며, 헬스케어 온톨로지의 고지 문단 자리에는 회원 데이터를 전건 측정해 무엇이 비어 있고 무엇으로 채우며 채우면 무엇이 가능해지는지를 단계별로 적은 데이터 보강 로드맵을 넣었다", refs:[], status:"반영", hash:"a576d61", auto:true },
@@ -49920,7 +50373,7 @@ function brandAliases(token) { const b = BRAND_TOKENS.find((x) => x.token === to
 
 /* 자동 생성 파일 — 직접 수정 금지. 재생성: python scripts/gen_nav_inventory.py
    단일 소스(설계 프롬프트 v2.1 §3): 코퍼스·사전·회귀·P1 판정기가 전부 이 파일을 참조한다. */
-const NAV_INV_META = {"version": 1, "sourceHash": "511cba105fcabf44", "generatedAt": "2026-10-26", "bypass": false};
+const NAV_INV_META = {"version": 1, "sourceHash": "1375d5475141764d", "generatedAt": "2026-11-11", "bypass": false};
 const NAV_INVENTORY = [
   {"key": "sec.home", "label": "HI-Fin Tech란", "path": "HI-Fin Tech란", "surface": "section", "nav": "home", "owner": "nav", "admin": false, "desc": "회사 소개·비전·사회환원·커뮤니티", "aliases": ["HI-FinTechfks", "HI-FinTech란"]},
   {"key": "sec.checkup", "label": "건강검진 예약", "path": "건강검진 예약", "surface": "section", "nav": "checkup", "owner": "sarg", "admin": false, "desc": "예약·결과조회·검진보험", "aliases": ["rjsrkdrjawlsdPdir", "건강검진예약"]},
@@ -50001,6 +50454,7 @@ const NAV_INVENTORY = [
   {"key": "tab.ontology.ops", "label": "운영 콘솔", "path": "ontology › 운영 콘솔", "surface": "tab", "nav": "ontology", "tab": "ops", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnsdudzhsthf", "운영콘솔"]},
   {"key": "tab.ontology.dataops", "label": "데이터 운영", "path": "ontology › 데이터 운영", "surface": "tab", "nav": "ontology", "tab": "dataops", "owner": "nav", "admin": true, "desc": "", "aliases": ["epdlxjdnsdud", "데이터운영"]},
   {"key": "tab.ontology.whitepaper", "label": "백서", "path": "ontology › 백서", "surface": "tab", "nav": "ontology", "tab": "whitepaper", "owner": "nav", "admin": true, "desc": "", "aliases": ["qortj"]},
+  {"key": "tab.ontology.corpops", "label": "회사 총괄운영", "path": "ontology › 회사 총괄운영", "surface": "tab", "nav": "ontology", "tab": "corpops", "owner": "nav", "admin": true, "desc": "", "aliases": ["ghltkchdrhkfdnsdud", "회사총괄운영"]},
   {"key": "sub.partner.overview", "label": "개요 · 객체", "path": "ontology › 협력업체 온톨로지 · 하네스 › 개요 · 객체", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rodyrorcp", "개요객체"]},
   {"key": "sub.partner.trade", "label": "거래 · 운영", "path": "ontology › 협력업체 온톨로지 · 하네스 › 거래 · 운영", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["rjfodnsdud", "거래운영"]},
   {"key": "sub.partner.cost", "label": "원가 · 정산", "path": "ontology › 협력업체 온톨로지 · 하네스 › 원가 · 정산", "surface": "tab", "nav": "ontology", "tab": "partner", "owner": "nav", "admin": true, "desc": "", "aliases": ["dnjsrkwjdtks", "원가정산"]},
@@ -50152,7 +50606,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-10-26","seed":20260828,"inventory":{"version":1,"sourceHash":"511cba105fcabf44","generatedAt":"2026-10-26","bypass":false},"total":14575,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.49,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-11","seed":20260828,"inventory":{"version":1,"sourceHash":"1375d5475141764d","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.33,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
