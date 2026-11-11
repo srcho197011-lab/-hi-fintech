@@ -266,7 +266,7 @@ function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, s
                 <td>{j.by}</td>
                 <td>{j.ap || "—"}</td>
                 <td><span className={"cl-st " + j.st}>{S.ko}</span></td>
-                <td className="act">
+                <td className="cl-act">
                   {j.st !== "posted" && (
                     <button className={"cl-go" + (c.ok ? "" : " off")} title={c.ok ? "" : c.why}
                       onClick={() => advance(j)}>{S.nextKo}</button>
@@ -407,18 +407,18 @@ function ClBank({ R }) {
           <span className={"cl-flag" + (R.ok ? " on" : " bad")}>{R.ok ? "조정 후 차이 0" : "차이 " + corpWon(R.gap)}</span></div>
         {/* 양쪽을 각각 조정해 같은 금액에 닿는지 본다 — 한 줄로 이으면 겹부호(− −240,000)가 생겨 읽히지 않는다 */}
         <div className="cl-recon">
-          <div className="side"><b>{corpWon(R.bankBal)}</b><span>은행 잔액</span></div>
-          <div className="op">{R.bankOnlyNet < 0 ? "+" : "−"}</div>
+          <div className="cl-side"><b>{corpWon(R.bankBal)}</b><span>은행 잔액</span></div>
+          <div className="cl-op">{R.bankOnlyNet < 0 ? "+" : "−"}</div>
           <div><b>{corpWon(Math.abs(R.bankOnlyNet))}</b><span>은행에만 ({R.bankOnly.length}건)</span></div>
-          <div className="op">=</div>
-          <div className="eq"><b>{corpWon(R.bankBal - R.bankOnlyNet)}</b><span>조정 후</span></div>
+          <div className="cl-op">=</div>
+          <div className="cl-eq"><b>{corpWon(R.bankBal - R.bankOnlyNet)}</b><span>조정 후</span></div>
         </div>
         <div className="cl-recon">
-          <div className="side"><b>{corpWon(R.bookBal)}</b><span>장부 잔액</span></div>
-          <div className="op">{R.bookOnlyNet < 0 ? "+" : "−"}</div>
+          <div className="cl-side"><b>{corpWon(R.bookBal)}</b><span>장부 잔액</span></div>
+          <div className="cl-op">{R.bookOnlyNet < 0 ? "+" : "−"}</div>
           <div><b>{corpWon(Math.abs(R.bookOnlyNet))}</b><span>장부에만 ({R.bookOnly.length}건)</span></div>
-          <div className="op">=</div>
-          <div className="eq"><b>{corpWon(R.bookBal - R.bookOnlyNet)}</b><span>조정 후</span></div>
+          <div className="cl-op">=</div>
+          <div className="cl-eq"><b>{corpWon(R.bookBal - R.bookOnlyNet)}</b><span>조정 후</span></div>
         </div>
         <div className="cl-reconx">두 조정 후 금액이 같아야 맞습니다 — 차이 <b>{corpWon(R.gap)}</b></div>
         <p className="cl-note">같은 날 · 같은 금액을 한 번씩만 짝지었습니다 — <b>{R.matched}건</b> 자동 대사.
