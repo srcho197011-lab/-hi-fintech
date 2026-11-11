@@ -33,10 +33,12 @@ src/data/corpAvatars.js
 src/data/corpLedger.js
 src/data/corpPlanActual.js
 src/data/corpMeeting.js
+src/data/corpAdmin.js
 src/components/CorpAvatar.jsx
 src/components/CorpLedger.jsx
 src/components/CorpPlanActual.jsx
 src/components/CorpMeeting.jsx
+src/components/CorpAdmin.jsx
 src/components/CorpOps.jsx
 src/components/Ontology.jsx
 src/components/SupplyOntology.jsx

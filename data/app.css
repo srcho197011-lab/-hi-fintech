@@ -6054,3 +6054,25 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
   font-family:inherit;margin-left:7px;}
 .corp-vac{color:var(--cd2);}
 .cl-tbl td i{font-style:normal;font-size:8.5px;color:var(--cw);margin-left:5px;}
+
+/* ══ 회사 총괄운영 · 인사 · 계약 · 문서(CorpAdmin) — Phase 8 (2026-11-12) ══ */
+.ad-chip{font-size:9.5px;color:var(--cd);border:1px solid var(--cl2);border-radius:5px;padding:3px 8px;}
+.ad-chip.warn{color:var(--cw);border-color:rgba(224,163,63,.5);}
+.cl-tbl tr.ad-off td{color:var(--cd2);}
+.ad-pend{font-style:normal;font-size:8.5px;color:var(--cd2);border:1px dashed var(--cl2);border-radius:3px;padding:1px 4px;margin-left:5px;}
+.ad-rrn{font-size:9px;border-radius:4px;padding:2px 6px;white-space:nowrap;}
+.ad-rrn.ok{color:#5FAE7E;border:1px solid rgba(95,174,126,.45);}
+.ad-rrn.open{color:var(--cw);border:1px solid rgba(224,163,63,.45);border-style:dashed;}
+.ad-na{font-size:9px;color:var(--cd2);}
+.ad-tag{font-size:8.5px;border-radius:3px;padding:1px 6px;margin-right:6px;white-space:nowrap;}
+.ad-tag.ok{color:#5FAE7E;border:1px solid rgba(95,174,126,.45);}
+.ad-tag.no{color:var(--cw);border:1px solid rgba(224,163,63,.45);}
+.ad-no{display:flex;flex-wrap:wrap;gap:5px;}
+.ad-nochip{font-size:9.5px;color:var(--cd2);background:var(--cb);border:1px dashed var(--cl2);
+  border-radius:4px;padding:3px 8px;text-decoration:line-through;}
+.ad-auto{font-style:normal;font-size:8.5px;color:var(--cw);border:1px solid rgba(224,163,63,.4);
+  border-radius:3px;padding:1px 4px;margin-left:5px;}
+.ad-note{font-size:9px;color:var(--cd);margin-top:3px;}
+.ad-alert{display:inline-block;font-size:9px;border:1px solid;border-radius:4px;padding:2px 7px;white-space:nowrap;}
+.ad-alert em{font-style:normal;font-size:8.5px;opacity:.8;margin-left:5px;}
+.ad-bad{display:block;font-style:normal;font-size:9px;color:#D9544A;margin-top:3px;}

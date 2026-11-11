@@ -1,5 +1,5 @@
 {
-  "files": 197,
+  "files": 199,
   "screen": 0,
   "comment": 94,
   "compound": 22,
@@ -80,7 +80,7 @@
   "pgExportNoticeAt": 3,
   "pgExportNotices": 2,
   "pgExportNoticeFails": 0,
-  "pgExportScan": 196,
+  "pgExportScan": 198,
   "pgSelfScanRows": 1,
   "pgSelfScanStatic": {
     "brokerNotice": {

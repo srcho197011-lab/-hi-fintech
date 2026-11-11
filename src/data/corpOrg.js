@@ -22,7 +22,8 @@ const CORP_TEAMS = [
     pages: [
       { t: "경영 현황", kind: "new", at: "P6" },
       { t: "사업 운영", kind: "tab", tab: "bizops", comp: "BizOpsConsole" },
-      { t: "협력업체 온톨로지 · 하네스", kind: "tab", tab: "partner", comp: "SupplyOntology" }],
+      { t: "협력업체 온톨로지 · 하네스", kind: "tab", tab: "partner", comp: "SupplyOntology" },
+      { t: "계약 대장", kind: "mod", comp: "CorpContractSection", note: "만료 경보 — 「계약 만료 점검」 루틴의 주관이 M1이라 여기 둔다" }],
     can: ["전사 지표 집계", "계획 대비 진척 산출", "제휴 단계 추적", "주간 회의자료 통합"],
     cannot: [
       { act: "대외 발표", by: "발행 버튼은 CEO 세션에만 · 초안 상태에서 외부 공유 경로 없음", at: "P9" },
@@ -49,14 +50,15 @@ const CORP_TEAMS = [
     ai: "인총이", aiWhy: "사람과 자산을 챙긴다", c: "#D96A52", th: 0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
     work: "인사 기록 · 근태 · 급여 대장 · 자산 대장 · 위임전결",
     pages: [
-      { t: "조직 · 인사", kind: "new", at: "P8" },
-      { t: "총무 · 자산", kind: "new", at: "P8" }],
+      { t: "조직 · 인사", kind: "mod", comp: "CorpHrSection", note: "직무 정보만 — 주민번호는 보관 상태만 들고 값은 들지 않는다" },
+      { t: "총무 · 문서", kind: "mod", comp: "CorpDocsSection", note: "문서 분류와 법정 보존기한" }],
     can: ["근태 집계", "연차 잔여 계산", "교육 이수 점검", "자산 대장 갱신"],
     cannot: [
       { act: "채용 · 해고", by: "인사 상태 전이는 CEO 승인 필수", at: "P8" },
       { act: "급여 확정", by: "급여 금액 열람은 CEO와 M3 책임자 한정 · 확정 버튼은 CEO 세션에만", at: "P8" },
       { act: "평가 확정", by: "초안만 생성 · 확정 전이에 사람 서명 필요", at: "P8" },
-      { act: "인사 기록 외부 제공", by: "내보내기 경로 없음 · 민감자료 차단 게이트가 커밋도 막는다", at: "P0" }] },
+      { act: "인사 기록 외부 제공", by: "내보내기 경로 없음 · 민감자료 차단 게이트가 커밋도 막는다", at: "기존" },
+      { act: "주민번호 값 보관", by: "값을 담는 필드를 두지 않는다 · 암호화 저장소·고지·접근 통제·파기 절차 넷이 서야 담는다", at: "기존" }] },
 
   { id: "H1", div: "HINS", name: "헬스케어팀", sh: "헬스케어", own: "전소윤", ownTitle: "센터장",
     ai: "헬시", aiWhy: "회원의 건강을 살핀다", c: "#FF7A6B", th: 1.96, ph: 0.16, head: 0, cap: 1, joined: "미정",

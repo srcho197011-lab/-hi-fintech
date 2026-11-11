@@ -13,6 +13,8 @@
      ④ 역분개   — 정정 경로가 차·대를 뒤집고 금액이 맞물리는가.
      ⑤ 승인     — AI 주체에게 승인 권한이 없는가(canApprove=false) · 전기 전표에 작성자≠승인자.
      ⑥ 파일럿   — 실데이터 반입 전까지 CORP_LEDGER_PILOT 가 true 이고 화면이 그 사실을 적는가.
+     ⑨ 인사계약 — 주민번호 값을 담는 자리가 **구조적으로** 없는가 · 만료일 없는 계약을 거부하는가 ·
+                  확인하지 않은 조문을 찍지 않는가 · **민감자료 차단 게이트의 음성 테스트가 실제로 서는가**.
      ⑧ 주간회의 — 참석 인원이 **자리가 아니라 사람**인가 · 확정자 없는 팀에 확정 경로가 없는가 ·
                   근거 없는 팀에 지표를 싣지 않는가 · 즉석 조회에 미확정 배지가 붙는가 ·
                   「밀림」이 생성 경로 있는 루틴에만 붙는가 · 사내 회의가 회원 영상 모듈을 끌어오지 않는가.
@@ -27,6 +29,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -57,9 +60,9 @@ const MTGBOARD = "src/components/CorpMeeting.jsx";
 const ORG = "src/data/corpOrg.js";
 /* 화면 어법 검사의 사정권 — 파일럿 고지(BOARDS)와 달리 **모든 사내 지면**이 진다.
    「자동 실행」·「보완 필요」·회원 영상 모듈 참조는 지면 종류를 가리지 않는다. */
-const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpOps.jsx"];
+const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
-  ORG, LEDGER, PA, MTG];
+  ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js"];
 for (const f of LOAD) {
   try { vm.runInContext(rd(f), ctx); }
   catch (e) { console.error("[회계] " + f + " 적재 실패 — " + e.message); process.exit(1); }
@@ -484,6 +487,121 @@ if (hook) {
   });
 }
 
+/* ── ⑨ 인사 · 계약 · 문서 ────────────────────────────────────────────────
+   Phase 8 완료 조건 두 가지를 단언으로 1:1 대응시킨다 —
+     민감자료 차단 게이트 음성 테스트 통과  → ⑨게이트(check_sensitive.py 를 직접 돌린다)
+     주민번호/연락처 필드 부재 확인        → ⑨부재(사람 수 × 금지 필드 수를 분모로 전수)
+   「필드가 없다」는 음성 명제다. 분모 없이 0건을 통과시키면 아무것도 증명하지 않는다. */
+const ADM = "src/data/corpAdmin.js";
+const ADMBOARD = "src/components/CorpAdmin.jsx";
+const ANOW = new Date(2026, 10, 12);            /* 고정 날짜 주입 — 벽시계를 쓰지 않는다 */
+ctx.ANOW = ANOW;
+const AV = G("corpAdminPass")(ANOW);
+AV.rows.forEach((r) => {
+  chk(r.ok, `⑨인사   ${r.ko} (대상 ${r.n}건)`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
+  chk(r.n > 0, `⑨분모   ${r.ko} 검사 대상 > 0`, r.n);
+});
+chk(AV.pass, "⑨인사   검산 전건 통과", AV.fail.map((f) => f.ko));
+
+/* 주민번호 — 값을 담는 자리가 **구조적으로** 없는가 */
+const HR = G("CORP_HR");
+const BAN = G("CORP_HR_BAN");
+chk(HR.length > 0 && BAN.length > 0, "⑨분모   사람 수 × 금지 필드 수 > 0", HR.length + " × " + BAN.length);
+const leaked = [];
+HR.forEach((h) => BAN.forEach((k) => {
+  if (Object.prototype.hasOwnProperty.call(h, k)) leaked.push(h.name + "." + k);
+  if (h.rrn && Object.prototype.hasOwnProperty.call(h.rrn, k)) leaked.push(h.name + ".rrn." + k);
+}));
+chk(leaked.length === 0, "⑨부재   금지 필드 전수 부재(주민번호 값·주소·생년월일·연락처·급여·평가)", leaked.join(" "));
+chk(BAN.indexOf("rrnValue") >= 0 && BAN.indexOf("phone") >= 0 && BAN.indexOf("addr") >= 0,
+  "⑨부재   금지 목록이 주민번호 값·연락처·주소를 이름으로 들고 있다", BAN.join(","));
+/* ⓐ 자기시험 — 금지 필드를 심으면 실제로 잡혀야 한다. 늘 0건인 검사는 검사가 아니다. */
+const planted = Object.assign({}, HR[0], { phone: "x" });
+const caught = BAN.filter((k) => Object.prototype.hasOwnProperty.call(planted, k));
+chk(caught.length > 0, "⑨부재ⓐ 자기시험 — 금지 필드를 심으면 잡힌다", caught.join(","));
+chk(HR.filter((h) => h.rrn && h.rrn.held).length === 0, "⑨부재   주민번호 값 보유 0명",
+  HR.filter((h) => h.rrn && h.rrn.held).map((h) => h.name).join(" "));
+const GATE4 = G("CORP_RRN_GATE");
+chk(GATE4.length === 4, "⑨보관   값 보관 조건이 넷이다", GATE4.length);
+chk(GATE4.every((g) => !g.ok), "⑨보관   넷이 아직 서지 않았다 — 그래서 담지 않는다", GATE4.filter((g) => g.ok).map((g) => g.k).join(" "));
+chk(GATE4.every((g) => (g.d || "").trim()), "⑨보관   조건마다 왜 필요한지 적혀 있다");
+
+/* 계약 — 만료일 없는 계약은 등록 자체를 거부한다 */
+const CT = G("CORP_CT");
+chk(CT.length > 0, "⑨분모   계약 표본 > 0", CT.length);
+chk(CT.every((c) => G("corpCtCheck")(c).ok), "⑨계약   등록 검사 전건 통과",
+  CT.filter((c) => !G("corpCtCheck")(c).ok).map((c) => c.id).join(" "));
+/* ⓐ 자기시험 — 만료일을 비우면 거부해야 한다 */
+const noTo = G("corpCtCheck")(Object.assign({}, CT[0], { to: "" }));
+chk(!noTo.ok && /만료일/.test(noTo.errs.join(" ")), "⑨계약ⓐ 자기시험 — 만료일 없는 계약은 거부", noTo);
+const badClass = G("corpCtCheck")(Object.assign({}, CT[0], { doc: "nope" }));
+chk(!badClass.ok, "⑨계약   분류표에 없는 문서 분류는 거부", badClass);
+/* 경보 — 고정 날짜로 같은 답이 나온다 */
+const a1 = CT.map((c) => G("corpCtAlert")(c, ANOW).k).join(",");
+const a2 = CT.map((c) => G("corpCtAlert")(c, ANOW).k).join(",");
+chk(a1 === a2, "⑨경보   같은 날짜 · 같은 결과(결정론)");
+chk(CT.every((c) => G("corpCtAlert")(c, ANOW).k !== "none"), "⑨경보   전건 경보 산출");
+const over = G("corpCtAlert")(Object.assign({}, CT[0], { to: "2026-01-01" }), ANOW);
+chk(over.k === "over" && over.d < 0, "⑨경보ⓐ 자기시험 — 지난 계약은 「만료 경과」", over);
+const soon = G("corpCtAlert")(Object.assign({}, CT[0], { to: "2026-11-15" }), ANOW);
+chk(soon.k === "d7", "⑨경보ⓐ 자기시험 — 사흘 뒤 만료는 「7일 이내」", soon);
+
+/* 문서 — 확인하지 않은 조문 번호를 화면에 찍지 않는다 */
+const DOC = G("CORP_DOC_CLASS");
+chk(DOC.length > 0, "⑨분모   문서 분류 표본 > 0", DOC.length);
+chk(DOC.every((d) => (d.basisKo || "").trim()), "⑨문서   분류마다 근거 법률 이름", DOC.filter((d) => !d.basisKo).map((d) => d.k).join(" "));
+chk(DOC.some((d) => !d.checked), "⑨분모   원문 미확인 표본 > 0 (전건 확인이면 그 표시가 증명되지 않는다)",
+  DOC.filter((d) => !d.checked).length);
+let admSrc = "";
+try { admSrc = rd(ADM); } catch (e) { fails.push("⑨인사   " + ADM + " 없음"); }
+if (admSrc) {
+  /* 확인하지 않은 조문 번호를 데이터에 적지 않는다 — 제NN조 꼴이 basisKo 에 들어가면 안 된다 */
+  const article = DOC.filter((d) => /제\s*\d+\s*조/.test(d.basisKo || ""));
+  chk(article.length === 0, "⑨문서   미확인 분류에 조문 번호 0건", article.map((d) => d.k).join(" "));
+  const bare = admSrc.replace(/\/\*[\s\S]*?\*\//g, "");
+  chk((bare.match(/Math\.random/g) || []).length === 0, "⑨결정론 Math.random 0건");
+  chk((bare.match(/new Date\(\s*\)/g) || []).length === 0, "⑨결정론 인자 없는 new Date() 0건");
+}
+let admBoard = "";
+try { admBoard = rd(ADMBOARD); } catch (e) { fails.push("⑨인사   " + ADMBOARD + " 없음"); }
+if (admBoard) {
+  chk(admBoard.indexOf("corpAdminPass(") >= 0, "⑨화면   검산이 러너와 같은 함수", "없음");
+  chk(/수집하지 않는 것/.test(admBoard), "⑨화면   수집하지 않는 것을 이름을 대고 적는다", "없음");
+  chk(/값은 이 시스템이 들지 않습니다|값을 담는 필드/.test(admBoard), "⑨화면   주민번호 값을 들지 않는다고 적는다", "없음");
+  chk(/원문 대조를 거치지 않았습니다|원문 미확인/.test(admBoard), "⑨화면   법령 원문 미확인을 숨기지 않는다", "없음");
+  /* 화면에 주민번호 값이 들어갈 자리가 없는지 — 입력 요소로 받지 않는다 */
+  chk(!/rrn[^.]*(value=|onChange)/.test(admBoard), "⑨화면   주민번호 값 입력 요소 0건", "있다");
+}
+
+/* 민감자료 차단 게이트 — **실제로 돌려** 음성 테스트가 서는지 본다 */
+{
+  const r = spawnSync("python", ["scripts/check_sensitive.py", "--negative"],
+    { cwd: ROOT, encoding: "utf8", timeout: 120000 });
+  const out = String(r.stdout || "") + String(r.stderr || "");
+  chk(r.status === 0, "⑨게이트 민감자료 차단 게이트 음성 테스트 통과", out.split("\n").filter((x) => x.indexOf("✗") >= 0).join(" | ") || ("status=" + r.status));
+  const m = /음성 테스트 — 통과 (\d+) · 실패 (\d+)/.exec(out);
+  chk(!!m, "⑨게이트 음성 테스트가 결과를 보고한다", out.slice(0, 120));
+  if (m) {
+    chk(+m[1] > 0, "⑨분모   음성 테스트 표본 > 0 (0건이면 막았다고 말할 수 없다)", m[1]);
+    chk(+m[2] === 0, "⑨게이트 음성 테스트 실패 0건", m[2]);
+  }
+  const s2 = /자기시험 — 통과 (\d+) · 실패 (\d+)/.exec(out);
+  chk(!!s2 && +s2[1] > 0 && +s2[2] === 0, "⑨게이트 탐지기 자기시험 통과", s2 ? s2[0] : "없음");
+}
+if (hook) {
+  chk(/check_sensitive\.py --staged/.test(hook), "⑨게이트 pre-commit 이 모든 커밋에서 민감자료를 검사한다", "미등재");
+  /* 내비 게이트에 우회용 exit 0 이 있어, 그 뒤에 있으면 우회 모드에서 통째로 건너뛰어진다.
+     그래서 「내비 게이트보다 앞」을 글자 위치로 단언한다. */
+  const iSens = hook.indexOf("check_sensitive.py");
+  const iNav = hook.indexOf("gen_nav_inventory.py");
+  chk(iSens >= 0 && iNav >= 0 && iSens < iNav,
+    "⑨게이트 민감자료 검사가 내비 게이트보다 앞에 있다(뒤면 우회 모드의 exit 0 에 가린다)",
+    { 민감: iSens, 내비: iNav });
+  ["corpAdmin", "CorpAdmin"].forEach((n) => {
+    chk(hook.indexOf(n) >= 0, `⑨게이트 pre-commit 감시 대상에 ${n}`, "미등재");
+  });
+}
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -496,6 +614,7 @@ console.log(`[예실대비] 계획 비목 ${PU.leaves}(확정 ${PU.planOk.length
 console.log(`[주간회의] 주차 ${MW && MW.key}(D-${MW && MW.dday}) · 참석 사람 ${ATT.people.length}(재직) · AI ${ATT.agents.length} · 공석 ${ATT.vacant.length} · ` +
   `보고 ${REPS.length}팀(확정 가능 ${canFix.length} · 확정자 공석 ${noOwner.length}) · 원천 연결 ${linked.length}팀 · ` +
   `생성 경로 루틴 ${GEN.length} / ${SCHED.routines.length}`);
+console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {
   console.log(`[회계엔진] 통과 ${oks.length} · 실패 ${fails.length} / ${total}`);
   fails.forEach((f) => console.log("  ✗ " + f));
