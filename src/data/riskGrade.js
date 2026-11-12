@@ -41,12 +41,12 @@ function riskGradeOf(items, trend, flags) {
 
 /* 등급 → SLA 티어(leadRouting T1~T4 재사용 — 별도 타이머 구현 금지) + 표기 */
 const RISK_GRADE_META = {
-  /* slaKo — 프로 화면 표기는 사람 말로(형 확정 2026-08-30): 시간·일 단위 풀어쓰기. tier는 내부 규약 코드 */
+  /* slaKo — 프로 화면 표기는 사람 말로(조성래님 확정 2026-08-30): 시간·일 단위 풀어쓰기. tier는 내부 규약 코드 */
   H: { ko: "고위험", tier: "T2", slaH: 48,  slaKo: "48시간 안 응답", color: "var(--hm-grade-h, #EA580C)", dir: "연결" },
   M: { ko: "중위험", tier: "T3", slaH: 168, slaKo: "7일 안 응답",   color: "var(--hm-grade-m, #D97706)", dir: "재검+코칭" },
   L: { ko: "관심",   tier: "T4", slaH: 336, slaKo: "14일 안 응답",  color: "var(--hm-grade-l, #0891B2)", dir: "코칭" },
   E: { ko: "응급",   tier: "T1", slaH: 0,   slaKo: "즉시(트리아지 소유)", color: "var(--hm-grade-e, #DC2626)", dir: "즉시(트리아지 소유)" },
-  /* W — 네 번째 상태: 결과 대기(형 지시 2026-10-06). 검진 결과가 도착하기 전에는 위험 등급을
+  /* W — 네 번째 상태: 결과 대기(조성래님 지시 2026-10-06). 검진 결과가 도착하기 전에는 위험 등급을
      매기지 않는다. 「없다(-: 관리 리듬 양호)」와 「아직 모른다(W)」를 코드가 구분해야
      ⑩관제탑의 사유 문구가 거짓이 되지 않고, byGrade 합(코호트 전원)이 보존된다. */
   W: { ko: "결과 대기", tier: "-", slaH: null, slaKo: "결과 도착 후 산정 — 지금은 응답 시한이 없어요", color: "var(--hm-grade-w, #64748B)", dir: "접촉 금지(연락하지 않음)" },

@@ -9,7 +9,7 @@
 const HM_C = { pri: "#F5821F", dark: "#D96A00", deep: "#B34E00", bg: "#FFF6EE", line: "#FFDDBE", ink: "#1F2937", mut: "#6B7280", ok: "#16A34A", warn: "#F59E0B", stall: "#EA580C", hold: "#94A3B8", red: "#DC2626", blue: "#2563EB" };
 
 /* ── 프로 사번 명부(시연) — 사번 = 프로 코드 = 자격·권한·실적의 단일 키 ──
-   체계(형 지시 2026-10-05): 8H0001 ~ 8H9999 — 위촉 가능 1만 명 규모의 단일 번호대.
+   체계(조성래님 지시 2026-10-05): 8H0001 ~ 8H9999 — 위촉 가능 1만 명 규모의 단일 번호대.
    구 체계(HM-{지역단약호}-26-{일련})는 폐기한다. 번호에 조직 정보를 담지 않는 것이 핵심이다 —
    지역단·지점·시군구는 레코드 필드(dan·branch·sgg·coverage)로만 유지하고, 코드 문자열에서
    조직을 추출하는 로직은 어디에도 두지 않는다(약호 접두 추출·뒤 3자리 절단 등 전부 제거).
@@ -84,15 +84,15 @@ const HM_STAGES = [
 ];
 /* 단계 상세 가이드(P6+ — 프로 교육용 단일 소스): 서술 사례는 [예시·시연] 라벨, 실사례는 화면이 관할 코호트에서 산다.
    ⚠️ 여기 doKo(단계에서 할 일)와 **실제 조립되는 대본**은 같아야 한다 — 그 연결이 끊어져 있던 것을
-   형 지시(2026-10-05)로 이었다. 연결 지점은 src/data/handoffCard.js의 HM_STAGE_PLAN 한 곳뿐이다:
+   조성래님 지시(2026-10-05)로 이었다. 연결 지점은 src/data/handoffCard.js의 HM_STAGE_PLAN 한 곳뿐이다:
      D1 prep(접촉 금지·사전 학습) · D2 무료 3종(free3Def 원천)+지원 약속+건강관리 동의 ·
      D3 리포트 해설+치료비 브리프 · D4 생활 밀착+빈 곳 사실 고지 · L5 주기 리듬 · L6 응급 선행+가족·돌봄 ·
      L7 데이터 권리·대가 · L8 재산정+생애 재설계. doKo를 고치면 그 표도 같이 고친다(이원화 금지).
-   ⚠️ 개수도 함께 맞춘다 — D2는 ①무료 3종 ②향후 지원 약속 ③건강관리 동의로 **셋**이다(형 지시
+   ⚠️ 개수도 함께 맞춘다 — D2는 ①무료 3종 ②향후 지원 약속 ③건강관리 동의로 **셋**이다(조성래님 지시
       2026-10-05). 종전 doKo는 「두 덩어리」라 쓰고 동의를 문장 끝에 꼬리로 붙여, 프로 교육용 단일
       소스가 지시의 구조를 보여주지 못했다. doKo·이 표·조립 대본(HM_STAGE_PLAN)·전달 체크가
       같은 개수를 따라가야 한다(전달 체크 칸 수는 handoffResult.HMR_GOLDEN_KEYS 소관).
-   ⚠️ doKo 3덩어리 ↔ 전달 체크 6칸 대응(형 지시 2026-10-06 · 동의 칸 신설):
+   ⚠️ doKo 3덩어리 ↔ 전달 체크 6칸 대응(조성래님 지시 2026-10-06 · 동의 칸 신설):
         ①무료 3종 = svc3(우산 칸) + ins · report · kit → **4칸**
         ②향후 지원 약속 = support → 1칸
         ③건강관리 동의 = consent(「건강관리 동의 요청」 — 블록 fc-consent의 ko와 한 글자까지 같다) → 1칸
@@ -200,7 +200,7 @@ function hmDanOf(m) {
   return dan;
 }
 /* ── 시연 주인공(대표 본인 계정 = 조성래) ──
-   형 지시(2026-10-05): 앞으로 회원 건강관리 설명은 조성래 데이터로 한다 → 은평지점 박성호 프로의
+   조성래님 지시(2026-10-05): 앞으로 회원 건강관리 설명은 조성래 데이터로 한다 → 은평지점 박성호 프로의
    담당 회원으로 전 탭에 나와야 한다. 세 개의 게이트(모집단·동의·배정)를 모두 열어야 하고,
    배정은 해시 추첨이 아니라 고정(pin)이어야 한다 — 그래야 다른 회원 배정이 1명도 흔들리지 않는다. */
 const HM_SELF_PRO = HM_DEMO_SABUN;                        /* 조성래 담당 = 8H0001 박성호(은평지점) */
@@ -502,7 +502,7 @@ function hmHealthBrief(m) {
   try { const vk = (typeof vaultCheckupMap === "function") ? vaultCheckupMap(m) : null; if (vk && vk.date) year = String(vk.date).slice(0, 4) + "년"; } catch (e) {}
   if (year === "-") { try { const c = m._chk || ((typeof genMemberCheckup === "function") ? genMemberCheckup(m) : null); if (c && c.years && c.years.length) year = c.years[c.years.length - 1] + "년"; } catch (e) {} }   /* [실측 통일 2026-10-06] 2시점 회원에서 years[2]는 undefined — 「undefined년」이 떴다 */
   /* 위험 밴드 — riskPredict(금고 연동) 우선, 미연동 시 회원 건강 프로필(시연 시드)로 조립.
-     [실측 통일 2026-10-05] 본인 계정은 밴드를 비운다(「—」) — 백분위 분포가 합성 코호트라 실측 근거가 없다(형 지시 ②). */
+     [실측 통일 2026-10-05] 본인 계정은 밴드를 비운다(「—」) — 백분위 분포가 합성 코호트라 실측 근거가 없다(조성래님 지시 ②). */
   try {
     const rp = (typeof riskPredict === "function") ? riskPredict(m) : null;
     if (rp && rp.ok && rp.risks.length) band = (rp.risks[0].topPct == null) ? "—" : rp.risks[0].topPct <= 20 ? "상" : rp.risks[0].topPct <= 50 ? "중" : "하";
@@ -562,7 +562,7 @@ function hmTouchPlan(m) {
 /* ── ④ 질병 예측 카드 — riskPredict 우선, 미연동 시 회원 건강 프로필 조립(계산 없음·밴드만) ── */
 function hmRiskCards(m) {
   /* [실측 통일 2026-10-05] 본인 계정은 실측 리포트 행을 그대로 보여 준다 —
-     「당뇨병 상 — 상위 1% 구간」 같은 밴드는 합성 코호트 백분위라 실측 근거가 없다(형 지시 ②).
+     「당뇨병 상 — 상위 1% 구간」 같은 밴드는 합성 코호트 백분위라 실측 근거가 없다(조성래님 지시 ②).
      대신 리포트 수치(당뇨 +6.2%/10년 10.9% · 고혈압 -3.9%/22.3% · 간 54.4세 · 췌장암 경고)를 근거로 적는다. */
   try {
     if (typeof selfRealIsSelf === "function" && selfRealIsSelf(m) && typeof selfRealRiskRows === "function") {

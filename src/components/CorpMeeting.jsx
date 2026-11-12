@@ -1,4 +1,4 @@
-/* ══════════════ 주간회의 지면(CorpMeeting.jsx) · CorpOps Phase 7 (형 지시 2026-11-11) ══════════════
+/* ══════════════ 주간회의 지면(CorpMeeting.jsx) · CorpOps Phase 7 (조성래님 지시 2026-11-11) ══════════════
    전사 지면이라 특정 팀 보드가 아니라 총괄운영의 네 번째 뷰로 둔다.
 
    이 화면이 지키는 것
@@ -323,7 +323,7 @@ function CorpMeetingSection() {
       {tab === "rt" && (
         <div className="cl-body">
           <div className="cl-sec">
-            <div className="cl-h">업무시간 <span className="cl-t">형 확정 2026-11-11</span>
+            <div className="cl-h">업무시간 <span className="cl-t">조성래님 확정 2026-11-11</span>
               <span className={"cl-flag" + (inWork.ok ? " on" : "")}>{inWork.ok ? "지금 업무시간 안" : "지금 업무시간 밖 — " + inWork.why}</span></div>
             <table className="cl-tbl">
               <tbody>

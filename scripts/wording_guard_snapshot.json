@@ -56,6 +56,7 @@
   "virtual": 0,
   "bundle": 0,
   "wpRoundTrip": true,
+  "addrHits": 0,
   "pgForbidWords": [
     "사전심의",
     "표시광고법",

@@ -55,7 +55,7 @@ function riskPredict(m) {
   const band = age < 30 ? "20" : age < 40 ? "30" : age < 50 ? "40" : age < 60 ? "50" : age < 70 ? "60" : "70";
   const sex = m.sex || "남";
   /* [실측 통일 2026-10-05] 본인 계정은 **백분위를 비운다** — 분포가 합성 코호트(synthCheckupValues)라
-     「상위 1% 구간」 같은 말에 실측 근거가 없다(형 지시 ②). 지표 근거(실측값)는 그대로 보여 준다. */
+     「상위 1% 구간」 같은 말에 실측 근거가 없다(조성래님 지시 ②). 지표 근거(실측값)는 그대로 보여 준다. */
   const _noPct = (typeof selfRealIsSelf === "function") ? selfRealIsSelf(m) : false;
   const out = RISK_GROUPS.map((g) => {
     const r = _rkScore(ck.map, g, age);
@@ -132,7 +132,7 @@ function coverageMatch(m) {
      본인 계정의 실계약 9건(신용정보원 조회)에는 특약 금액이 없어 보유액이 0으로 계산된다 —
      그대로 두면 「간질환 15,000,000원 부족」이라고 단정해, 같은 섹션의 보장분석이
      「진단비 특약 금액 미확인 — 보유 여부를 단정할 수 없습니다」라고 말하는 것과 정면으로 어긋났다.
-     본인 계정(rp.real)에만 적용한다 — 체험·코호트는 합성 보유액 0이 설계대로이고(형 지시 ①),
+     본인 계정(rp.real)에만 적용한다 — 체험·코호트는 합성 보유액 0이 설계대로이고(조성래님 지시 ①),
      거기까지 「확인 필요」로 바꾸면 합성 경로의 금액이 사라진다. */
   const benefitKnown = held.some((c) => Number(c.benefit) > 0);
   const unknownAll = !!rp.real && !benefitKnown && held.length > 0;

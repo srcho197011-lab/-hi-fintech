@@ -73,7 +73,7 @@ function hcTriage(question, ctx) {
      「숨이」가 「수미」로 들린 한 글자에 응급이 통째로 꺼졌고, STT는 「숨이 차」를 「숨이 차 요」로 끊는다.
      ⚠️ 공백 지운 형태는 **원래 띄어쓰기가 있던 신호어에만** 댄다. 한 덩어리 신호어(고열·탈수 …)까지
         붙여 놓고 찾으면 「데이터금고 열어줘」가 '고열'로 걸린다 — 실제로 걸렸다(2026-09-20).
-     응급만큼은 오탐 쪽으로 기운다(오발동 불편 < 미발동 사고 — 형 확정 D4). */
+     응급만큼은 오탐 쪽으로 기운다(오발동 불편 < 미발동 사고 — 조성래님 확정 D4). */
   const raw = [q];
   try { if (typeof hiMishearNorm === "function") { const v = hiMishearNorm(q); if (v && v.t && raw.indexOf(v.t) < 0) raw.push(v.t); } } catch (e) {}
   const flat = raw.map(function (f) { return f.replace(/\s+/g, ""); });

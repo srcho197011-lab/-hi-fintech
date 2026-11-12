@@ -1,4 +1,4 @@
-/* ══════════════ 데이터 카탈로그(dataCatalog.js) — 데이터 운영계획 v1.1 §6 D-1 (2026-08-30 형 승인) ══════════════
+/* ══════════════ 데이터 카탈로그(dataCatalog.js) — 데이터 운영계획 v1.1 §6 D-1 (2026-08-30 조성래님 승인) ══════════════
    하이핀의 모든 데이터가 "어디에, 무엇이, 어떤 규약으로" 있는지의 단일 소스.
    ⚠️ 원칙:
      · 새 브라우저 저장 키는 여기 등재 후에만 코드에 넣을 수 있다 — scripts/check_data_catalog.py가 커밋 게이트.
@@ -30,7 +30,7 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
   /* 같은 교체의 1회용 이관 플래그(handoffResult.js _hmrMigrateCodes): 구 코드 키의 활동 기록을 신 사번 키로 합쳤는지 표시.
      접두 hifin_handoff_result_ 를 피해 이름을 지었다 — hmrStats 전역 prefix 스캔에 섞이면 집계가 어긋난다. */
   "hifin_hm_resultkey_mig_v2",
-  /* 헬스메이트 운영본부 범위 세션(demoAuth.js hmoAdminSession*, 2026-10-05 형 지시 ⑥): 인증된 운영자 사번(8M####) 1개.
+  /* 헬스메이트 운영본부 범위 세션(demoAuth.js hmoAdminSession*, 2026-10-05 조성래님 지시 ⑥): 인증된 운영자 사번(8M####) 1개.
      프로 세션 키(hifin_hm_code)와 **일부러 다른 키**다 — 두 축이 섞이면 운영본부 라우트 가드가 자기 사용자를 내보낸다.
      세션(탭) 한정이고 사번 외 개인정보를 담지 않는다. 지점장이 자기 지점만 보는 범위 제한의 유일한 집행 키. */
   "hifin_hmops_admin",
@@ -46,7 +46,7 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
      ※ 결정 로그(판정 호출·집행·면제·소명·재심)는 메모리에만 둔다 — 신규 키를 5종으로 확정했기 때문이고,
        영속 소유자는 보고서 발행 스냅샷(아래 접두 키)을 세우는 단계다. */
   "hifin_pg_enforce", "hifin_pg_exempt", "hifin_pg_remedy", "hifin_pg_block",
-  /* 회사 총괄운영 회계 엔진(corpLedger.js — CorpOps P5, 2026-11-11): 형이 입력한 전표 + 마감한 달 목록.
+  /* 회사 총괄운영 회계 엔진(corpLedger.js — CorpOps P5, 2026-11-11): 조성래님이 입력한 전표 + 마감한 달 목록.
      파일럿 전표는 **코드에 있고** 이 키에 들어가지 않는다 — 검증용 묶음과 입력분이 섞이면 둘 다 못 믿는다.
      사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다.
      ※ 실제 회계자료 반입(P10)은 Phase 0(보안 선행) 통과 뒤다 — 그 전까지 이 키에는 검증 입력만 들어간다. */
@@ -60,11 +60,11 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
      ⚠️ 틀린 선택도 영구히 복제되므로, 한 낱말이 지난 장부에서 두 계정으로 갈린 적이 있으면
         이 사전을 쓰지 않고 매번 다시 묻는다. 상수 참조라 스캔 밖이므로 수동 등재한다.
      사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다. */
-  /* 업무 지시(corpOrder.js — 2026-11-12): 형이 말로 시킨 일을 할 일로 쪼갠 기록과,
+  /* 업무 지시(corpOrder.js — 2026-11-12): 조성래님이 말로 시킨 일을 할 일로 쪼갠 기록과,
      어느 단계까지 끝났는지. ⚠️ 대화 기록(hifin_corp_chat)에 넣지 않는다 — 40턴만 남기고
      잘려서 며칠 걸리는 지시가 사라진다. 상수 참조라 스캔 밖이므로 수동 등재한다.
      사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다. */
-  /* 저장소 폴더 권한(corpVaultFs.js — 2026-11-12): 형이 한 번 고른 저장소 폴더의 **권한 손잡이**.
+  /* 저장소 폴더 권한(corpVaultFs.js — 2026-11-12): 조성래님이 한 번 고른 저장소 폴더의 **권한 손잡이**.
      ⚠️ 이것만은 localStorage 가 아니라 **IndexedDB**(이름 hifin_corp_vaultfs)에 둔다 —
         문자열 저장소에 넣으면 「[object FileSystemDirectoryHandle]」 로 뭉개져 되돌릴 수 없다(실측).
         그래서 카탈로그 자동 스캔이 보지 못한다. 여기 손으로 적어 두고 러너가 이중으로 단언한다.
@@ -134,7 +134,7 @@ const HIFIN_EXTERNAL_SOURCES = [
   { key: "mfds", ko: "식품안전나라 · 의약품안전나라(식약처)", url: "foodsafetykorea.go.kr · nedrug.mfds.go.kr", brings: "건기식 기능성·의약품 상호작용(A3 라벨 검증·supp 확인)", status: "계획", phase: "D-1~D-2", cycle: "분기" },
   { key: "stats", ko: "KOSIS · 국민건강영양조사 · 장기요양", url: "kosis.kr · knhanes.kdca.go.kr · longtermcare.or.kr", brings: "유병률(관리포인트 근사 원천화)·재가기관 1,705 갱신", status: "일부 사용 중", phase: "D-1", cycle: "연" },
   { key: "work-github", ko: "업무 커넥터 · GitHub", url: "github.com(저장소 연동)", brings: "코드·게이트·배포 이력", status: "즉시 연결 가능", phase: "즉시", cycle: "실시간" },
-  { key: "work-drive", ko: "업무 커넥터 · Google Drive/Gmail/Slack", url: "(Claude 커넥터)", brings: "형 검수 산출물 공유함·주간 리포트 발송", status: "즉시 연결 가능", phase: "즉시", cycle: "실시간" },
+  { key: "work-drive", ko: "업무 커넥터 · Google Drive/Gmail/Slack", url: "(Claude 커넥터)", brings: "조성래님 검수 산출물 공유함·주간 리포트 발송", status: "즉시 연결 가능", phase: "즉시", cycle: "실시간" },
   { key: "work-chrome", ko: "업무 커넥터 · Claude in Chrome", url: "(연결됨)", brings: "공시실·포털 자료 수집 자동화(공개 자료·본인 계정 한정)", status: "연결됨", phase: "즉시", cycle: "수시" },
 ];
 

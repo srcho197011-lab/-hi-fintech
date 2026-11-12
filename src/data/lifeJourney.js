@@ -1,4 +1,4 @@
-/* ══════════════ 생애 여정(lifeJourney.js) — 2단계 v1.4 축② P4 (형 승인 2026-08-30) ══════════════
+/* ══════════════ 생애 여정(lifeJourney.js) — 2단계 v1.4 축② P4 (조성래님 승인 2026-08-30) ══════════════
    L5~L8 구간의 "걸어온 길"을 D1~D4 실측치에서 파생한다(발명 금지):
    재검진 사이클 = 검진 시계열(series 3개년 [사실]) · 가족 = 실제 가구(pilotFamily [사실]) ·
    진료 이력 = 코호트 진료과(deptKey [사실]) · 데이터 대가 = HTK 원장 · 재산정 = 추이 개선 판정.
@@ -27,7 +27,7 @@ function journeyBrief(i) {
     try { const chk = genMemberCheckup(m); trendKo = chk.trendLabel || ""; } catch (e) {}
     push("검진 " + (reachedIdx >= 4 ? "여러 해" : "결과") + " 연결" + (trendKo ? " · 최근 흐름 「" + trendKo + "」" : ""));
   }
-  /* 진료·커머스 — memberActivity(검진 결과 개연성 매핑 · 형 지시 2026-08-30): 활동은 원인(검진)의 그림자 */
+  /* 진료·커머스 — memberActivity(검진 결과 개연성 매핑 · 조성래님 지시 2026-08-30): 활동은 원인(검진)의 그림자 */
   let act = null;
   try { act = (typeof memberActivity === "function") ? memberActivity(Number(i)) : null; } catch (e) {}
   if (act) {

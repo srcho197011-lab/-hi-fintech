@@ -1,4 +1,4 @@
-/* ══════════════ 내 대비 현황(NeedsCard.jsx) — 2단계 v1.4 축⓪ P1 실장(형 확정: 섹션=A안·위젯=B안 병용) ══════════════
+/* ══════════════ 내 대비 현황(NeedsCard.jsx) — 2단계 v1.4 축⓪ P1 실장(조성래님 확정: 섹션=A안·위젯=B안 병용) ══════════════
    두 곡선이 만나는 화면. §0-A 구간만·평가어 없음 / §0-P 회원이 눌러 물을 때만 해설(3단: 사실→판단 유보→절차) —
    누르는 순간 needs_asked가 기록된다(두 곡선 교차의 계측). 불안 색(적색) 미사용 — 네이비/브랜드 중립(§D). */
 
@@ -59,7 +59,7 @@ function NeedsCard({ variant }) {
         {EXPLAIN[open].map(([t, x]) => <div key={t}><b style={{ color: BRAND, marginRight: 6 }}>{t}</b>{x}</div>)}</div>}
     </div>);
   }
-  /* A안 — 3줄 리스트형(치료비 케어 섹션 상단, 형 확정 2026-08-30) */
+  /* A안 — 3줄 리스트형(치료비 케어 섹션 상단, 조성래님 확정 2026-08-30) */
   return (<div className="card" style={{ padding: 0, overflow: "hidden", margin: "12px 0" }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg,#0B2239,#16405F)", color: "#fff", padding: "11px 16px" }}>
       <b style={{ fontSize: 15 }}>🧾 내 대비 현황</b>

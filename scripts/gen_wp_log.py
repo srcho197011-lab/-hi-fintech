@@ -38,6 +38,10 @@ try:
 except Exception:
     _T = {"phrases": [], "allowPhrases": [], "allowCompoundPrev": "", "allowCompoundNext": "", "overrides": {}}
 _PH = [(a, b) for a, b in (p for p in _T.get("phrases", []) if len(p) == 2)]
+# 「re:」로 시작하는 찾을거리는 정규식으로 쓴다 — 낱말 경계가 필요한 치환 때문이다.
+# 「형」을 단순 문자열로 바꾸면 B형 간염 · 유형 · 세대형이 함께 깨진다(실측).
+_RX = [(re.compile(a[3:]), b) for a, b in _PH if a.startswith("re:")]
+_PH = [(a, b) for a, b in _PH if not a.startswith("re:")]
 _ALLOW = [p for p in _T.get("allowPhrases", [])]
 _CPREV = _T.get("allowCompoundPrev", "")
 _CNEXT = _T.get("allowCompoundNext", "")
@@ -51,6 +55,8 @@ def wording(s, h=""):
         return s
     for a, b in _PH:
         s = s.replace(a, b)
+    for rx, b in _RX:
+        s = rx.sub(b, s)
     i = -1
     while True:
         i = s.find("합성", i + 1)

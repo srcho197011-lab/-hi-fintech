@@ -1,4 +1,4 @@
-/* ══════════════ 인사 · 계약 · 문서 화면(CorpAdmin.jsx) · CorpOps Phase 8 (형 지시 2026-11-12) ══════════════
+/* ══════════════ 인사 · 계약 · 문서 화면(CorpAdmin.jsx) · CorpOps Phase 8 (조성래님 지시 2026-11-12) ══════════════
    세 지면을 한 파일에 둔다 — 같은 원천(corpAdmin.js)을 보고 표시 규약이 같기 때문이다.
      CorpHrSection        인사총무팀 M3 「조직 · 인사」
      CorpDocsSection      인사총무팀 M3 「총무 · 문서」

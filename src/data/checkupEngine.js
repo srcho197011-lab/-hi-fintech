@@ -86,7 +86,7 @@ const TREND_LABEL = { improve: "나아짐", worsen: "악화", stable: "유지" }
 const TREND_EMOJI = { improve: "📉✅", worsen: "📈⚠️", stable: "➡️" };
 
 /* 값→판정 임계치 — 단일 소스는 clinicalBands.js(출처 동반). 여기서는 역참조만 한다(진실 1곳 · v1.3 §1-2).
-   임계 변경은 clinicalBands에서 형 검수 표를 거쳐서만 — 값 변경은 코호트 전체 판정에 파급된다. */
+   임계 변경은 clinicalBands에서 조성래님 검수 표를 거쳐서만 — 값 변경은 코호트 전체 판정에 파급된다. */
 const _TH = (typeof clinicalTH === "function") ? clinicalTH() : {};
 function _thOf(key, sex) { const th = _TH[key]; if (!th) return null; const g = (x) => (x && typeof x === "object") ? (x[sex] || x.m) : x; return { dir: th.dir, t1: g(th.t1), t2: g(th.t2) }; }
 function _judgeVal(key, v, sex) { const th = _thOf(key, sex); if (!th || v == null) return 0; if (th.dir === "lo") { if (v > th.t1) return 0; if (v > th.t2) return 1; return 2; } if (v < th.t1) return 0; if (v < th.t2) return 1; return 2; }
@@ -323,7 +323,7 @@ function memberHealthGrade(m) {
   if (!m || typeof genMemberCheckup !== "function") return null;
   /* [실측 통일 2026-10-05] 본인 계정은 실측 판정을 쓴다 —
      국가검진 「정상B · 유질환자(고혈압, 잘 조절됨)」 + 리포트 종합 「좋음」 ⇒ 「지속관리」.
-     「고위험(중대한 위험 가능성·우선진료)」은 실측 근거가 없어 쓰지 않는다(형 지시 ④). */
+     「고위험(중대한 위험 가능성·우선진료)」은 실측 근거가 없어 쓰지 않는다(조성래님 지시 ④). */
   if (typeof selfRealIsSelf === "function" && selfRealIsSelf(m) && typeof selfRealGrade === "function") {
     const _sg = selfRealGrade(); if (_sg) return _sg;
   }

@@ -1,4 +1,4 @@
-/* ══════════════ 일정 · 공지 · 결재 · 릴리스 화면(CorpGov.jsx) · CorpOps Phase 9 (형 지시 2026-11-12) ══════════════
+/* ══════════════ 일정 · 공지 · 결재 · 릴리스 화면(CorpGov.jsx) · CorpOps Phase 9 (조성래님 지시 2026-11-12) ══════════════
      CorpBoardSection     총괄운영 다섯째 뷰 「일정 · 공지 · 결재」 — 전사 귀속
      CorpReleaseSection   정보보안팀 S1 「릴리스 · 감사」
      CorpSecuritySection  정보보안팀 S1 「보안 현황」
@@ -240,7 +240,7 @@ function CorpReleaseSection() {
         열면 「만든 쪽이 스스로 내보내지 못하게 한다」는 분리의 뜻이 사라집니다.
         <span className="cl-warn2">
           그래서 아래 릴리스는 점검표를 채워도 <b>승인되지 않습니다.</b> 자료가 덜 들어온 것이 아니라
-          승인할 사람이 아직 없는 것입니다. 대표 대리 승인을 열지는 형이 정할 자리입니다.
+          승인할 사람이 아직 없는 것입니다. 대표 대리 승인을 열지는 조성래님이 정할 자리입니다.
         </span>
       </div>
       {msg && <div className={"cl-msg" + (msg.bad ? " bad" : "")} onClick={() => setMsg(null)}>{msg.t}</div>}

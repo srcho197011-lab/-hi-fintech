@@ -797,7 +797,7 @@ function SimpleBodyInsurance({ initialPlanKey } = {}) {
 }
 /* ── 맞춤 헬스케어 보험 — 플랫폼 구조도 인포그래픽 ── */
 function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
-  /* 형 지시(2026-07-31): 프리미엄 상담 CTA = 내 지역 상담으로 통합 — 담당 지역단·상담사 연결 화면으로 직행 */
+  /* 조성래님 지시(2026-07-31): 프리미엄 상담 CTA = 내 지역 상담으로 통합 — 담당 지역단·상담사 연결 화면으로 직행 */
   const goRegion = () => { if (onTab) { onTab("region"); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) {} } else { try { window.__hifinInsRoute = { tab: "region" }; } catch (e) {} nav("insurance"); } };
   const regionTeaser = (() => {
     try {
@@ -876,7 +876,7 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
 
       <SimpleBodyInsurance initialPlanKey={initialPlanKey} />
 
-      {/* 형 지시(2026-07-26): 플랫폼 구조도는 고객 화면에서 숨김 — 사업 구조 설명은 내부·제휴용. 복원 시 false→true */}
+      {/* 조성래님 지시(2026-07-26): 플랫폼 구조도는 고객 화면에서 숨김 — 사업 구조 설명은 내부·제휴용. 복원 시 false→true */}
       {false && <div className="mhbox">
         <div className="bt">HI-Fin Tech 플랫폼 구조도</div>
         <div className="bs">건강관리부터 보험설계, 보험금 청구, 건강자산 관리까지 원스톱 통합 플랫폼</div>
@@ -892,7 +892,7 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
         <div className="platfb"><span className="ln" /><RefreshCw size={14} /> 건강관리 피드백 &amp; 리워드 제공 <span className="ln r" /></div>
       </div>}
 
-      {/* 형 지시(2026-07-31): 핵심 가치 6카드 박스 삭제 — 상담 동선을 내 지역 상담으로 일원화 */}
+      {/* 조성래님 지시(2026-07-31): 핵심 가치 6카드 박스 삭제 — 상담 동선을 내 지역 상담으로 일원화 */}
       <div className="mhend"><ShieldCheck size={16} /> HI-Fin Tech는 보험·헬스케어·금융·AI 기술이 융합된 차세대 국민 건강보장체계 구축을 지향합니다.</div>
       <div className="mhcta">
         <button className="cbtn pri" style={{ margin: 0, background: "linear-gradient(120deg,#F58220,#E4610F)", borderColor: "#E4610F", boxShadow: "0 12px 26px -16px rgba(228,97,15,.85)" }} onClick={goRegion}><MapPin size={15} /> 가까운 전문 상담사와 내 보장 점검하기</button>
@@ -1787,7 +1787,7 @@ function InsuranceSection({ onGo }) {
       <div className="aihead"><span className="aiico"><SecIcon k="insurance" /></span>
         <div><div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.5px" }}>치료비 케어</div>
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>건강검진대비보험 · 가입 · 보장조회 · 청구 · AI상담 — 치료비 걱정 없는 임베디드 보험</div></div></div>
-      {/* 2단계 P1(형 확정 A안) — 두 곡선의 상시 화면: 회원이 눌러 물을 때만 해설·계측(§0-P) */}
+      {/* 2단계 P1(조성래님 확정 A안) — 두 곡선의 상시 화면: 회원이 눌러 물을 때만 해설·계측(§0-P) */}
       {typeof NeedsCard === "function" && <NeedsCard />}
       <div className="chtabs">{tabs.map(([k, t, Ic]) => <div key={k} className={`chtab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><Ic size={15} /> {t}</div>)}</div>
 

@@ -1,4 +1,4 @@
-/* ══════════════ 데이터 운영 콘솔(DataOpsConsole.jsx) — 데이터 운영계획 v1.1의 시스템화 (형 지시 2026-08-30) ══════════════
+/* ══════════════ 데이터 운영 콘솔(DataOpsConsole.jsx) — 데이터 운영계획 v1.1의 시스템화 (조성래님 지시 2026-08-30) ══════════════
    온톨로지·하네스의 서브섹션. 이 화면은 문서가 아니라 **원천을 읽는다** —
    dataCatalog.js(단일 소스)·브라우저 저장소 실측·게이트 스냅샷이 바뀌면 화면이 그대로 따라온다.
    원칙: 관측이지 조작이 아니다(수기 편집 없음) · 갱신 경로는 단 하나 — 카탈로그 등재 → 게이트 통과 → 자동 반영. */
@@ -27,7 +27,7 @@ function doScanStorage() {
   return { rows: Object.values(rows).sort((a, b) => b.bytes - a.bytes), totalB: totalB, unknown: unknown, sessN: sessN };
 }
 
-/* ⑥ 백업·복원 — L3(회원 행동층) 유실 방어 브리지(형 지시 2026-08-30: 오리진 분리·삭제·PC 교체 = 전량 유실) */
+/* ⑥ 백업·복원 — L3(회원 행동층) 유실 방어 브리지(조성래님 지시 2026-08-30: 오리진 분리·삭제·PC 교체 = 전량 유실) */
 function DoBackupBlock({ scan, onRefresh }) {
   const [msg, setMsg] = React.useState(null);
   const [showSnip, setShowSnip] = React.useState(false);
@@ -164,20 +164,20 @@ function DataOpsConsole() {
         <div style={{ fontSize: 11.6, color: "#475569", lineHeight: 1.8 }}>
           {H && <span>A5 회귀 {H.coachAcc}% · 금지어 {H.forbiddenHits}건 · 골든셋 드리프트 {H.goldenDrift}건<br /></span>}
           {O && <span>배치 {O.date}: 코호트 {Number(O.total).toLocaleString()}명 · 카드 {Number(O.cards).toLocaleString()}건 · 발행 {O.publishable === O.cards ? "100%" : O.publishable} · 프로 {O.pros}명 조립 위반 {O.rosterViol}건<br /></span>}
-          {W && W.week && <span>주간 학습({W.week}): 블록 사용 {W.blockKinds}/{W.blockTotal}종 · 개선 후보 {W.candidates.length}건(형 검수 경유)<br /></span>}
+          {W && W.week && <span>주간 학습({W.week}): 블록 사용 {W.blockKinds}/{W.blockTotal}종 · 개선 후보 {W.candidates.length}건(조성래님 검수 경유)<br /></span>}
           <span style={{ fontSize: 10.6, color: DO_C.mut }}>갱신 경로는 하나: 카탈로그·스냅샷 등재 → pre-commit 게이트 통과 → 이 화면 자동 반영. 훅: __hifinCatalog · __hifinCtx(관리자)</span>
         </div>
       </div>
       {/* ⑤ 로드맵 */}
       <div style={box}><div style={bt}>⑤ 운영 로드맵 — D-1 → D-3</div>
         {[["D-1 카탈로그 상설", "dataCatalog 단일 소스 · 미등재 키 커밋 차단 · memberContext(id) 1콜 360뷰(500명 1초 검증)", "완료 · 2026-08-30", DO_C.ok, "#E7F8EE"],
-          ["D-2 서버 이관", "회원 원장 암호화 DB(금고 스키마 승격) · 마이헬스웨이/마이데이터/공시실 실연동 · 백업·보존·복구 리허설", "대기 — 형 검수+보안 점검", DO_C.warn, "#FFF7ED"],
-          ["D-3 자산화·실체인", "세대형 자산+SBT · 온체인=해시·동의증서·접근로그만(원본 오프체인) · 정산 컨트랙트 · L3 우선", "대기 — 형 승인+법률 검토", DO_C.mut, "#F1F5F9"]].map(([k, v, st, c, bg], i) => (
+          ["D-2 서버 이관", "회원 원장 암호화 DB(금고 스키마 승격) · 마이헬스웨이/마이데이터/공시실 실연동 · 백업·보존·복구 리허설", "대기 — 조성래님 검수+보안 점검", DO_C.warn, "#FFF7ED"],
+          ["D-3 자산화·실체인", "세대형 자산+SBT · 온체인=해시·동의증서·접근로그만(원본 오프체인) · 정산 컨트랙트 · L3 우선", "대기 — 조성래님 승인+법률 검토", DO_C.mut, "#F1F5F9"]].map(([k, v, st, c, bg], i) => (
           <div key={i} style={{ display: "flex", gap: 8, padding: "6px 0", borderBottom: "1px dashed #EEF2F6", fontSize: 11.8 }}>
             <div style={{ flex: 1 }}><b>{k}</b><div style={{ color: "#475569", fontSize: 11 }}>{v}</div></div>
             {pill(bg, c, st)}
           </div>))}
-        <div style={{ fontSize: 10.6, color: DO_C.mut, marginTop: 6 }}>거버넌스: 단일 소스 · 가공 금지 · 원가 비노출 · 원본은 회원에게(체인에는 해시만) · 문안·정책 변경은 형 검수 경유. 상세 보고서: docs/hi_dataops/…v1.1(md·pdf)</div>
+        <div style={{ fontSize: 10.6, color: DO_C.mut, marginTop: 6 }}>거버넌스: 단일 소스 · 가공 금지 · 원가 비노출 · 원본은 회원에게(체인에는 해시만) · 문안·정책 변경은 조성래님 검수 경유. 상세 보고서: docs/hi_dataops/…v1.1(md·pdf)</div>
       </div>
     </div>
 

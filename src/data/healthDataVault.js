@@ -422,7 +422,7 @@ function seedSelfVault(member) {
 
 /* ══ 과업C — 조성래(hifin) 보험 실현황 1회성 보강 시드(기존 데이터 보존·멱등) ══
    보험 섹션 진입 시 호출: 검진(seedSelfVault)·실손·일반 보험 2건·검진대비보험 발급 이력을 금고·원장에 정식 저장 — 화면은 그 저장본만 읽는다. */
-/* 조성래 실계약(2026-07-26 형 제공 — 신용정보원 조회 실데이터 기준) — 월 보험료·가입일·만기 실값 */
+/* 조성래 실계약(2026-07-26 조성래님 제공 — 신용정보원 조회 실데이터 기준) — 월 보험료·가입일·만기 실값 */
 const SELF_REAL_CONTRACTS = [
   { insurer: "현대해상", product: "무배당 하이라이프 新행복을다모은보험(Hi1112 · 실손 포함 종합)", kind: "실손", gen: "2세대", join: "2012-03-29", end: "2079-03-29", coGen: "10%", coNon: "20%", monthly: 154000, years: 14 },
   { insurer: "현대해상", product: "무배당 행복가득 생활보장보험(Hi2006 · 가족 실손 포함 종합)", kind: "가족실손종합", gen: "3세대", join: "2020-06-30", end: "2040-06-30", monthly: 150000, years: 6 },
@@ -446,11 +446,11 @@ function selfEnsureInsSeed(member) {
       cl.forEach((c) => { if (c && /^CERT-JSR\d{4}A$/.test(c.id || "") && !c.insured) { c.insured = { name: member.name }; fix = true; } });
       if (fix) localStorage.setItem("hifin_ins_certs", JSON.stringify(cl));
     } catch (e) {}
-    /* 보장 창 보정(2026-10-06 형 지시) — 아래 v4·v3 조기 반환 **앞에** 둔다.
+    /* 보장 창 보정(2026-10-06 조성래님 지시) — 아래 v4·v3 조기 반환 **앞에** 둔다.
        이미 시드가 깔린 기기(hifin_self_ins_v4=1)는 v3 분기에서 return false로 빠지므로,
        뒤에 두면 그 기기의 검진대비보험 계약에 coverFrom이 영구히 비어 있게 된다(= 벽시계 폴백). */
     try { if (typeof insCheckupCoverEnsure === "function") insCheckupCoverEnsure(member); } catch (e) {}
-    // v4(2026-07-26): 목업 계약을 형 실계약 9건으로 교체(검진·체인·원장은 보존)
+    // v4(2026-07-26): 목업 계약을 조성래님 실계약 9건으로 교체(검진·체인·원장은 보존)
     if (!localStorage.getItem("hifin_self_ins_v4")) {
       seedSelfVault(member);
       vaultSaveInsurance(member, SELF_REAL_CONTRACTS, { source: "self-real", channel: "aggregate" });

@@ -6,7 +6,7 @@
    ▸ 온톨로지 운영 콘솔의 [백서] 탭에서 렌더·관리된다.
    ▸ 본문(body)은 블록 배열: {t:"h|p|list|note|quote|kv|legal", ...}
 
-   핵심 원칙(형의 지침) — WP_META.principles 참조:
+   핵심 원칙(조성래님의 지침) — WP_META.principles 참조:
    ① Palantir Ontology·Anthropic Harness는 "참고한 설계 철학"으로 인용하고
       HI-Fin Tech 자체 아키텍처로 재구성한다(타사 기술 개념 존중).
    ② 의료·금융·토큰은 현행 국내 법제에서 '가능한 영역'과 '법·제도 개선이
@@ -42,7 +42,7 @@ const WP_STATUS = {
   done:     { k: "done",     label: "검증완료", ic: "●", color: "#16A34A", bg: "#DCFCE7", pct: 100 },
 };
 
-/* 4단계 편집 로드맵(형 제안) — 장 번호로 매핑 */
+/* 4단계 편집 로드맵(조성래님 제안) — 장 번호로 매핑 */
 const WP_PHASES = [
   { n: 1, key: "tech",   title: "1단계 · 기술 아키텍처",       desc: "Ontology · Harness · EMR · AI Agent · Blockchain · Security", chapters: [4, 5, 6, 7, 8, 9, 10, 13, 14] },
   { n: 2, key: "law",    title: "2단계 · 의료·금융 법률/규제",  desc: "국내 법령 · 해외 비교 · 토큰 규제 구분",                       chapters: [11, 12, 18] },

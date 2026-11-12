@@ -363,7 +363,7 @@ function MyPageSection({ onGo }) {
                   <div className="socmy-gc"><b>{score}</b><span>{grade}</span></div>
                 </div>
                 <div className="socmy-r">
-                  <div className="socmy-top">상위 <b style={{ color: "#E11D48" }}>{topPct}%</b> 기여 시민 — 형의 소비가 이웃의 치료비가 되었어요.</div>
+                  <div className="socmy-top">상위 <b style={{ color: "#E11D48" }}>{topPct}%</b> 기여 시민 — 회원님의 소비가 이웃의 치료비가 되었어요.</div>
                   <div className="socmy-mets">
                     <div><span><HeartHandshake size={13} color="#E11D48" /> 내가 만든 나눔</span><b>{w(myGive)}</b></div>
                     <div><span><HandCoins size={13} color="#16A34A" /> 건강적립 환원</span><b>{w(myEarn)}</b></div>

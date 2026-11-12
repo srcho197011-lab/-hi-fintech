@@ -724,7 +724,7 @@ const PG_POLICY_EXT = {
   "L-09": { lawArticle: null, effectiveDate: null, contractBasis: null, locked: true,
     remedy: [{ what: "정산 산식의 구조 변경 과제 수립 — 진료비 · 급여비 연동과 소개수수료 구조의 해소", owner: "당사 경영", due: "법률 검토 회신 후", status: "대기" },
              { what: "법률 검토 회신 확보(해제 조건이다)", owner: "당사 법무", due: "미정", status: "진행" }],
-    note: "집행은 경고 · 기록 고정이다(Q11 형 확정). 산식은 회신 전까지 **동결**이고 이 조항이 산식을 건드리지 않는다 — " +
+    note: "집행은 경고 · 기록 고정이다(Q11 조성래님 확정). 산식은 회신 전까지 **동결**이고 이 조항이 산식을 건드리지 않는다 — " +
           "회신 없이 산식을 고치면 확인하지 못한 법으로 우리 거래를 끊는 일이 된다. locked:true 가 그것을 코드로 막는다." },
   "L-10": { lawArticle: "제20조", effectiveDate: null, contractBasis: null,
     remedy: [{ what: "중개 지면에 통신판매중개자 지위 고지 문구를 미리 고지되는 위치에 등재", owner: "당사 커머스", due: "지면 변경 시", status: "미착수" }] },
@@ -799,7 +799,7 @@ function pgPolicy(id) { for (const p of PG_POLICIES) if (p.id === id) return p; 
    ⚠ 여기 적힌 값은 **선언된 의도**이고, 실효 수준은 pgEnforceLevel 이 플로어를 적용한 결과다.
       오늘은 contractBasis 가 전건 null 이므로 **실효 수준이 전건 advisory** 다 — 그것이 설계 의도이고
       §7-3-1 ③의 기대 차단 건수 0건과 같은 사실이다(전면 차단 사고가 아니다).
-   ⚠ L-09 는 Q11 형 확정으로 **조항 단위 advisory 고정**이다. soft · hard 가 하나라도 나타나면 러너가 실패한다. */
+   ⚠ L-09 는 Q11 조성래님 확정으로 **조항 단위 advisory 고정**이다. soft · hard 가 하나라도 나타나면 러너가 실패한다. */
 const PG_ENFORCE = (function () {
   const T = {};
   const src = (typeof PG_INPUTS !== "undefined") ? PG_INPUTS : [];

@@ -5,7 +5,7 @@
    수기 편집·재배분 기능 없음 — 로스터는 데이터에서만 나온다. */
 
 const HM_ROSTER_TARGET = 5, HM_ROSTER_MAX = 7;   // 5±2건(§5-F) — 상한·목표는 규약 문서 소관(불변)
-/* ── 되돌릴 수 없는 창 쿼터(제품 규칙 · 형 지시 2026-10-06) ──
+/* ── 되돌릴 수 없는 창 쿼터(제품 규칙 · 조성래님 지시 2026-10-06) ──
    상한(7) 안에서 **먼저 앉히는** 자리다. 상한을 올리지 않으므로 「5±2건」 규약은 그대로 지켜진다.
      d2  D2 **첫 연결 미완료** 최대 3칸 — 무료 3종을 한 번도 받지 못한 회원이다.
      mat 만기 D-7·당일(T5·T6) 최대 1칸 — CYCLE_STAGES가 「가장 중요한 30초」로 정의한 두 번째
@@ -29,7 +29,7 @@ function _drHash(s) { let h = 5381; for (let k = 0; k < s.length; k++) h = ((h <
    H(연결 우선) 300 > 정체 재개 +150 > M 200 > L 100 · 신호 SLA 임박 가산 · 동점은 날짜·프로 시드로 결정 */
 function _drScore(card, sig, dateStr, code) {
   /* W(결과 대기)는 0 — 단계 필터의 이중 가드다. L과 동점 100이면 자리가 비는 날 접촉 금지 카드가
-     다시 올라온다(형 지시 2026-10-06) */
+     다시 올라온다(조성래님 지시 2026-10-06) */
   let s = card.grade === "H" ? 300 : card.grade === "M" ? 200 : card.grade === "W" ? 0 : 100;
   /* ⚠️ 정체 가산은 **실제 정체 판정**(card.member.stalled)만 본다 — `stalledDays >= 14` 프록시는
      정체를 뜻하지 않는다(cohortStageOf가 비정체 회원에게도 0~24일을 넣는다). 실측: D2 432명 중
@@ -48,7 +48,7 @@ function hmDailyRoster(code, dateStr) {
     let card = null;
     try { card = buildHandoffCard(i); } catch (e) {}
     if (!card) continue;
-    /* ⚠️ 락 검사를 **그대로 먼저** 둔다(형 지시 2026-10-06) — 단계 검사를 앞에 두면 counts.locked가
+    /* ⚠️ 락 검사를 **그대로 먼저** 둔다(조성래님 지시 2026-10-06) — 단계 검사를 앞에 두면 counts.locked가
        전국 0이 되어 같은 화면의 ③탭 KPI(「접촉 락 N명」)와 ⓪탭 헤더가, 하이의 한 답변 안에서
        단계 분포의 락(32,855명)과 로스터 분해의 락(0)이 서로 충돌한다. */
     if (card.timing.lock) { lockedN++; continue; }
@@ -145,7 +145,7 @@ try {
         return l.map((x) => ({ code: x.code, sabun: x.sabun, name: x.name, sido: x.sido, sgg: x.sgg, branch: x.branch, status: x.status, legacy: !!x.legacy }));
       } catch (e) { return { error: String(e).slice(0, 160) }; }
     };
-    /* 전체 카드 동반 로스터(형 검수 표본·실렌더용) */
+    /* 전체 카드 동반 로스터(조성래님 검수 표본·실렌더용) */
     window.__hifinRosterFull = function (code, dateStr) {
       try {
         if (typeof isAdminRole !== "function" || !isAdminRole()) return { error: "admin only" };
@@ -159,7 +159,7 @@ try {
         const r = hmDailyRoster(String(code), String(dateStr));
         return { code: r.code, date: r.date, counts: r.counts,
           /* stage·cycle·sd 동반 — 이것이 없으면 「로스터에 접촉 금지 단계가 있으면 위반」을
-             러너가 **물리적으로 검사할 수 없다**(형 지시 2026-10-06) */
+             러너가 **물리적으로 검사할 수 없다**(조성래님 지시 2026-10-06) */
           rows: r.list.map((c) => ({ i: c.i, grade: c.card.grade, group: c.card.group, mask: c.card.member.mask,
             stage: c.card.member.stage, cycle: c.cycle, sd: c.card.member.stalledDays, stalled: !!c.card.member.stalled, gleft: c.gleft,
             sla: c.card.timing.sla, pub: c.card.compliance.publishable, lock: c.card.timing.lock,

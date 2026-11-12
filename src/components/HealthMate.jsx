@@ -53,7 +53,7 @@ function HmStyle() {
   `}</style>);
 }
 
-/* 표시 이름 — 프로/관리자 콘솔 안에서는 가리지 않고 전체 이름을 쓴다(형 지시 2026-10-05).
+/* 표시 이름 — 프로/관리자 콘솔 안에서는 가리지 않고 전체 이름을 쓴다(조성래님 지시 2026-10-05).
    ⚠️ 마스킹 정의(_hmMask · _hcMask)와 데이터 계층은 손대지 않는다 — 회원이 보는 화면의 마스킹 규칙,
       인계 카드 데이터(card.member.mask)와 대본 {가명} 슬롯, 골든셋(fixtures/handoff_*_v1.json)은 그대로다.
       해제는 "렌더 지점"에서만 일어나고, 그 유일한 통로가 이 함수다. 이 콘솔은 사번 게이트 뒤의
@@ -68,12 +68,12 @@ function _hmProName(x) {
   }
   return String(x.mask || "회원");                            /* 원천을 못 찾으면 마스크 그대로(열지 않는다) */
 }
-/* 대본 문장 표시 — 「고객 이름을 전부 다 나오게」(형 지시 2026-10-05).
+/* 대본 문장 표시 — 「고객 이름을 전부 다 나오게」(조성래님 지시 2026-10-05).
    대본의 {가명} 슬롯은 데이터 계층에서 마스크(박○○)로 채워진다. 그 정의를 바꾸지 않고
    **렌더 지점에서만** 실제 이름으로 되돌린다 — 이유는 마스크 문자열이 흘러가는 곳이 셋이기 때문이다:
      ① 대본 {가명}(이 화면) ② card.member.mask(memberContext 360뷰·dailyRoster 러너 산출) ③ script.sms.
    ②③과 골든셋(fixtures/handoff_*_v1.json)·제공 DB(hyundaiFeed)·회원 화면(_hmMask)은 손대지 않는다.
-   ③ 문자·앱알림 줄은 **치환하지 않는다**(형 지시 2026-10-05) — 프로가 보는 초안과 실제 발송문이
+   ③ 문자·앱알림 줄은 **치환하지 않는다**(조성래님 지시 2026-10-05) — 프로가 보는 초안과 실제 발송문이
       달라지면 안 되기 때문이다. 치환은 「프로가 읽는 대본 문장」에만 적용된다.
    ⚠️ 길이 전제 — 현 합성 코호트는 전건 3자(_SURN 1자 + _GIVN 2자)라 마스크(3자)와 실명(3자)의
       치환이 문장 길이를 바꾸지 않는다. **실데이터로 바꿀 때는 이 전제가 깨진다**(2자·4자 이름):
@@ -142,7 +142,7 @@ function _hmMemBlocked(m) {
 /* 코호트 관측층 카드 — 체험 카드와 같은 2축, 행동 결과는 세션에만 */
 function HmCohortCard({ card, code, onDone, compact }) {
   const c = card;
-  /* 접촉 금지 판정은 공통 함수 하나만 읽는다(형 지시 2026-10-06) — 종전 기준(status HELD = 검진대비
+  /* 접촉 금지 판정은 공통 함수 하나만 읽는다(조성래님 지시 2026-10-06) — 종전 기준(status HELD = 검진대비
      보험 가입)은 D1의 60%에만 붙어, 비가입 D1 회원에게 「연결하기」가 활성 렌더됐다 */
   const locked = (typeof hmContactBlocked === "function") ? hmContactBlocked(c.i) : c.status.k === "HELD";
   const [vidOpen, setVidOpen] = React.useState(false);   /* 영상 V2 */
@@ -397,7 +397,7 @@ function HmVideoModal({ subject, name, card, onDone, onClose }) {
 
   const sc = card && card.script;
   /* 통화 중 띄우는 대본 — 단계 과업(sc.stage)도 함께 보여준다(단계마다 할 말이 다르다).
-     ⚠️ 두 가지를 길이 예산에 밀리지 않게 **고정**한다(형 지시 2026-10-05 수선):
+     ⚠️ 두 가지를 길이 예산에 밀리지 않게 **고정**한다(조성래님 지시 2026-10-05 수선):
        ① 응급 선행 안내(sc.alert) — a4-triage-safety의 「상담보다 위·맨 앞」은 한 화면에서만
           지켜지면 의미가 없다. 종전 lines는 alert를 아예 읽지 않아 L6 전건에서 119 안내가 빠졌다.
        ② 제안(sc.ask) — slice(0,5) 상한에 core 2 + stage 2가 차면 ask가 밀려 나갔다(전건 34%).
@@ -581,7 +581,7 @@ function HmTabIns({ code, pro, onContact, refresh, cview, onTab }) {
     {mine.length ? mine.map((x) => row(x, true)) : <div className="hmrow" style={{ color: HM_C.mut }}>이번 순번 배정이 없어요 — 다음 회차에 자동 배정돼요.</div>}
     {cview && <HmCohortList title="② 검진 전 대기(락) — 검진대비보험 가입·접촉 금지" ids={cview.held} code={code} compact />}
     {/* 결과 대기(보험 미가입 D1) — 접촉 금지인데 **락이 없는** 회원. 접촉 금지 판정이 단계로 올라간 뒤
-        (hmContactBlocked · 형 지시 2026-10-06) 이 사람들이 어느 탭에도 명단으로 없었다. ⓪탭 「연락 금지」
+        (hmContactBlocked · 조성래님 지시 2026-10-06) 이 사람들이 어느 탭에도 명단으로 없었다. ⓪탭 「연락 금지」
         칸이 두 명단의 합이므로, 칸을 눌러 여기로 오면 숫자가 실제로 맞춰진다. */}
     {/* ⚠️ 제목에 모집단을 적는다(적대적 리뷰 실증 2026-10-06) — ⑩관제탑의 「결과 대기」는 D1 전건
         (전국 54,780 = 락 32,855 + 락 없음 21,925)이고 이 명단은 **락 없는 쪽만**이라 2.5배 다른
@@ -999,7 +999,7 @@ function HmTabBoard({ code, pro, onContact, cview }) {
 const HM_GRADE_UI = {
   H: { ko: "H 고위험", c: "#EA580C", bg: "#FFF1E2" }, M: { ko: "M 중위험", c: "#D97706", bg: "#FEF7E0" },
   L: { ko: "L 관심", c: "#0891B2", bg: "#E0F5FA" },
-  /* W — 결과 대기(형 지시 2026-10-06). 등재하지 않으면 아래 폴백이 「L 관심」으로 조용히 오표기한다 */
+  /* W — 결과 대기(조성래님 지시 2026-10-06). 등재하지 않으면 아래 폴백이 「L 관심」으로 조용히 오표기한다 */
   W: { ko: "결과 대기", c: "#64748B", bg: "#F1F5F9" },
 };
 /* 미등재 등급 코드·null의 폴백은 **중립값**이다 — 종전 폴백(HM_GRADE_UI.L)은 「L 관심」이라는
@@ -1018,7 +1018,7 @@ function _hmGradeKeys(gr) {
 }
 /* 코드 + 사람 말을 함께 적는다 — ⑩관제탑이 「H 고위험」으로 적으므로 같은 어휘여야 교차 참조가 된다 */
 function _hmGradeKo(k) { try { const ko = ((typeof RISK_GRADE_META !== "undefined" && RISK_GRADE_META[k]) || {}).ko; return ko ? (k === "-" ? ko : k + " " + ko) : k; } catch (e) { return k; } }
-/* 결과 기록 시트(2단계 P2 — A안 한 판 그리드, 형 실물 확인용 실장 2026-08-30) — §0-B 기록은 선택지다 */
+/* 결과 기록 시트(2단계 P2 — A안 한 판 그리드, 조성래님 실물 확인용 실장 2026-08-30) — §0-B 기록은 선택지다 */
 function HmResultSheet({ card, code, onClose, onSaved }) {
   const [result, setResult] = React.useState(null);
   const [branch, setBranch] = React.useState(null);
@@ -1028,7 +1028,7 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
   const today = new Date();
   const day = (n) => new Date(today.getTime() + n * 86400000).toISOString().slice(0, 10);
   const FOLLOWS = [["내일", day(1)], ["다음 주", day(7)], ["2주 뒤", day(14)], ["필요 없어요", null]];
-  /* 응대 칩 부연 제목 — 이 카드 대본의 실제 응대 이름(형 지시 2026-08-30: 번호만으론 알 수 없다) */
+  /* 응대 칩 부연 제목 — 이 카드 대본의 실제 응대 이름(조성래님 지시 2026-08-30: 번호만으론 알 수 없다) */
   const branches = (card.script && card.script.branches) || [];
   const brKo = (b2) => String(b2.ko || "").split("(")[0].split("—")[0].split("·")[0].trim() || "응대";
   const isD2 = card.member.stage === "D2" && card.script && (card.script.firstconnect || []).length > 0;
@@ -1075,7 +1075,7 @@ function HmResultSheet({ card, code, onClose, onSaved }) {
               {golden.indexOf(g.k) >= 0 ? "✓ " : ""}{g.ko}</span>))}
         </div>
         {/* 칸 수는 HMR_GOLDEN_KEYS(단일 사전)를 따라간다 — 화면에 숫자를 박아 두면 사전이 늘어날 때
-            화면만 옛 숫자로 남는다(형 지시 2026-10-05). 사전은 handoffResult.js 소관 */}
+            화면만 옛 숫자로 남는다(조성래님 지시 2026-10-05). 사전은 handoffResult.js 소관 */}
         <div style={{ fontSize: 10, color: "#B45309", marginTop: 5 }}>체크는 「헬스메이트 운영본부」(관리자 화면)의 골든타임 전달률에 집계돼요 — {(typeof HMR_GOLDEN_KEYS !== "undefined" ? HMR_GOLDEN_KEYS.length : 0)}칸 다 전하는 게 목표예요.</div>
       </div>)}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
@@ -1231,7 +1231,7 @@ function HmHandoffCard({ ent, code, onToast }) {
           ? <button key={a.key} className="hmbtn" style={{ background: g.c }} onClick={() => act(a)}>{a.ko} — 원탭 알림</button>
           : <button key={a.key} className="hmbtn gh" onClick={() => act(a)}>{a.ko}</button>)}
       </div>
-      {/* 발밑 표시 4종 — 호버 툴팁(형 지시 2026-09-01 · 설명서 부록과 같은 문안) */}
+      {/* 발밑 표시 4종 — 호버 툴팁(조성래님 지시 2026-09-01 · 설명서 부록과 같은 문안) */}
       <div style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap", fontSize: 11.4, color: "#475569", alignItems: "center" }}>
         <b style={{ color: g.c, cursor: "help" }} title="카드 발행 후 이 시간 안에 첫 접촉이 이뤄져야 해요 — 회원의 위험 등급이 시한을 정해요. 검진 결과를 기다리는 구간(결과 대기)은 등급을 매기지 않아 시한도 없어요. 넘기면 「응답 시한 임박」 칸과 「헬스메이트 운영본부」(관리자 화면)의 준수율 집계에 잡혀요.">⏱ {c.timing.sla}</b>
         <span style={{ cursor: "help" }} title="통화만 하면 '접촉'이에요 — 1순위 개입이 실제 행동(예약·등록 등 데이터)으로 이어져야 '완결'로 집계돼요.">완결 = {c.actions[0] ? c.actions[0].evNote.split("—")[0].split("[")[0].trim() : "-"}</span>
@@ -1273,11 +1273,11 @@ function HmHandoffCard({ ent, code, onToast }) {
         {(() => {
           /* 대본 v2 미리보기(P5 검수 중) — 발행·알림은 v1 그대로, 화면에서만 [초안] 라벨로 병기 */
           const s2 = c.script.v2 ? c.script : null;   /* v2 정식(2026-08-30 승인) — 카드 자체가 v2 */
-          /* 문장 표시는 전부 이 함수를 지난다 — 「고객 이름 전부 표시」(형 지시 2026-10-05)의 유일한 통로 */
+          /* 문장 표시는 전부 이 함수를 지난다 — 「고객 이름 전부 표시」(조성래님 지시 2026-10-05)의 유일한 통로 */
           const tx = (b) => _hmScrText(c, b.text);
           const draft = (t, b) => b && <div key={b.id + t} style={{ marginBottom: 5, background: "#F8F7FF", borderRadius: 7, padding: "4px 8px" }}><span className="hmpill" style={{ background: "#6D28D9", color: "#fff", marginRight: 6 }}>{t}</span><i style={{ fontStyle: "normal", color: "#94A3B8", fontSize: 10.8 }}>{b.ko}</i><div>“{tx(b)}”</div></div>;
           /* 통화 없는 카드(결과 대기)는 통화 대본 자체가 조립되지 않는다 — 오늘 할 일은 사전 준비뿐이다.
-             판정은 단계 이름이 아니라 **조립 사실**(callScript)을 읽는다(형 지시 2026-10-06) */
+             판정은 단계 이름이 아니라 **조립 사실**(callScript)을 읽는다(조성래님 지시 2026-10-06) */
           const noCall = c.script.callScript === false;
           const isD1 = noCall && s2 && (s2.prep || []).length > 0;
           const flow = (<>
@@ -1321,7 +1321,7 @@ function HmHandoffCard({ ent, code, onToast }) {
             </details>)}
           </>);
           /* 발송 문안 — 치환하지 않는다. 화면과 실제 발송문이 달라지면 프로가 읽는 초안과
-             발행 artifact가 불일치한다(마스킹 규칙은 외부 전달물 쪽을 그대로 둔다 — 형 지시 2026-10-05).
+             발행 artifact가 불일치한다(마스킹 규칙은 외부 전달물 쪽을 그대로 둔다 — 조성래님 지시 2026-10-05).
              통화 없는 카드에서도 이 칸은 남는다 — 「발송하지 않아요」 고지가 A5 코치의 sms 원천이다. */
           const sendBlock = (<div style={{ marginTop: 6, fontSize: 11.6, color: "#475569" }}>
             <b>📱 앱알림</b> {c.script.notif}<br /><b>✉️ 문자</b> {c.script.sms}
@@ -1337,7 +1337,7 @@ function HmHandoffCard({ ent, code, onToast }) {
           </div>)}
           {/* ⚠️ 종전에는 여기에 「결과 도착 후 쓸 통화 대본 초안」 접이식을 두고 그 안에 통화 대본 전문을
               넣었다. 이제 통화 대본은 **조립되지 않으므로** 빈 접이식을 만들지 않는다 — 열면 아무것도
-              없는 초안은 「있는데 접어 둔 것」으로 읽혀 더 나쁘다(형 지시 2026-10-06) */}
+              없는 초안은 「있는데 접어 둔 것」으로 읽혀 더 나쁘다(조성래님 지시 2026-10-06) */}
           {noCall
             ? <div style={{ fontSize: 11.4, color: "#64748B", background: "#F8FAFC", border: "1px dashed #CBD5E1", borderRadius: 8, padding: "7px 10px" }}>
                 📞 통화 대본은 <b>아직 만들지 않아요</b> — 결과가 없는 회원에게는 할 말을 미리 적어 두지 않습니다(없는 구간을 말하지 않기 위해서예요).
@@ -1362,7 +1362,7 @@ function HmHandoffCard({ ent, code, onToast }) {
   </div>);
 }
 /* ══ D1~L8 단계 가이드 — 단계를 누르면 설명 + 그 단계의 「인원 현황(명단)」이 열린다
-      (형 지시 2026-10-05: D1을 누르면 71명 현황이 보여야 하고, 닫고 되돌아오는 길이 확실해야 한다)
+      (조성래님 지시 2026-10-05: D1을 누르면 71명 현황이 보여야 하고, 닫고 되돌아오는 길이 확실해야 한다)
       · 명단은 기본 20명 + [더 보기] — 수백 명이어도 한 번에 그리지 않는다(카드 조립 비용은 1인당 약 0.4ms)
       · 선택 상태(펼친 단계·상세로 들어간 회원)는 sessionStorage에 둔다 → 다른 탭에 갔다 와도,
         접촉 기록으로 리마운트가 일어나도 보고 있던 자리로 되돌아온다 ══ */
@@ -1556,7 +1556,7 @@ function HmTabToday({ code, onToast, cview }) {
       <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
         <div style={{ fontWeight: 900, fontSize: 14.5, color: "#C2410C" }}>☀️ 오늘의 지시서 · {roster.list.length}건 <span style={{ fontSize: 11.4, color: HM_C.mut, fontWeight: 600 }}>· {today} · 시드=날짜+프로 사번(같은 날 같은 카드) · [예시·시연 데이터]</span></div>
         {/* 등급 화이트리스트를 두지 않는다 — 새 상태가 생기면 「7건인데 등급 합 5」가 되어
-            「분자는 분모에 포함」 규약이 깨진다(형 지시 2026-10-06).
+            「분자는 분모에 포함」 규약이 깨진다(조성래님 지시 2026-10-06).
             단 **표시 순서는 중증도 고정**이고 라벨은 RISK_GRADE_META 사전을 읽는다(원시 키 금지) */}
         <div style={{ fontSize: 11.6, color: "#475569" }}>{_hmGradeKeys(gr).map((k) => `${_hmGradeKo(k)} ${gr[k]}건`).join(" · ") || "대상 없음"} · 관할 {roster.counts.managed}명(접촉 락(코호트) {roster.counts.locked} · 접촉 금지 단계 {roster.counts.preResult || 0} · 대상 아님 {roster.counts.offCycle} · 후보 {roster.counts.candidates})</div>
       </div>
@@ -1612,7 +1612,7 @@ function HmTabToday({ code, onToast, cview }) {
   </div>);
 }
 
-/* ⑩ 통합 운영은 이 파일에서 떼어 냈다(형 지시 2026-10-05) — 지점장·사업단장·본사 직원용
+/* ⑩ 통합 운영은 이 파일에서 떼어 냈다(조성래님 지시 2026-10-05) — 지점장·사업단장·본사 직원용
    「헬스메이트 운영본부」 관리자 전용 화면으로 분리했고, 프로 콘솔에는 탭조차 없다.
    옛 구현(HmOpsAllocBlock · HmTabOps)은 그 화면으로 이관했으니 여기서 되살리지 말 것. */
 /* ══ 하이프로 대화 독(2단계 P6) — 프로 전용 · 보라 톤(회원 하이와 구분) · 답변은 원천 조립만(출처 칩 동반) ══ */
@@ -1735,7 +1735,7 @@ function HealthMateSection({ onGo }) {
         로스터 머리에는 「(코호트)」를 병기한다 — 같은 단어가 두 값을 가리키지 않게 한다. */
   const heldN = lockQN + (cview ? cview.held.length : 0);
   /* 연락 금지 전체 = 접촉 락 + 결과 대기(보험 미가입 D1). 접촉 금지 판정이 락에서 **단계**로
-     올라갔으므로(hmContactBlocked · 형 지시 2026-10-06) 「지금 하면 안 되는 일」 칸을 락만으로
+     올라갔으므로(hmContactBlocked · 조성래님 지시 2026-10-06) 「지금 하면 안 되는 일」 칸을 락만으로
      세면 안 된다 — 락은 D1의 60%에만 붙어서, 나머지 D1 회원을 프로가 「연락해도 되는 사람」으로
      읽는다(실측 박성호 44 vs 실제 72 · 전국 32,855 vs 54,780). 칸을 누르면 ②탭에서 두 명단으로
      나뉘어 보이고, 두 숫자의 합이 이 칸과 같다. */
@@ -1757,7 +1757,7 @@ function HealthMateSection({ onGo }) {
   const firstN = cards.filter((c) => c.stage && c.stage.k === "D2").length
     + (cview ? cview.ids.filter((i) => { try { const cy = cycleOf(i); return cy && cy.t === "T2"; } catch (e) { return false; } }).length : 0);
   const totalN = members.length + (cview ? cview.n : 0);
-  /* 탭 이름 — 「지금 할 일」 묶음과 같은 결로, 이름만 보고 무엇을 보는 화면인지 알게 한다(형 지시 2026-10-05).
+  /* 탭 이름 — 「지금 할 일」 묶음과 같은 결로, 이름만 보고 무엇을 보는 화면인지 알게 한다(조성래님 지시 2026-10-05).
      번호 체계(⓪~⑨)는 그대로 두고, 네 번째 칸은 탭 아래에 깔리는 한 줄 설명(부제)이다.
      ⑩ 통합 운영은 이 콘솔에서 떼어 관리자 전용 화면으로 분리했다 — 관리자가 들어와도 여기엔 없다.
      ⓪의 숫자 카드 → 탭 점프 매핑도 이 이름과 짝이 맞게 맞췄다(아래 hmnumwrap 참조). */

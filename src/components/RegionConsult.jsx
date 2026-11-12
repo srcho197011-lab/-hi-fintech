@@ -197,7 +197,7 @@ function RegionConsultSection({ onTab }) {
   const m = ((typeof demoCurrentUser === "function") ? demoCurrentUser() : null)
     || ((typeof authRole === "function" && authRole() !== "GUEST" && typeof selfMember === "function") ? (() => { try { return selfMember(); } catch (e) { return null; } })() : null);
   const [tick, setTick] = useState(0);
-  /* 자율 지역 선택(형 지시) — 병원 안내처럼 전국 관할을 직접 고를 수 있다(멀리 계신 가족을 위한 상담) */
+  /* 자율 지역 선택(조성래님 지시) — 병원 안내처럼 전국 관할을 직접 고를 수 있다(멀리 계신 가족을 위한 상담) */
   const [pickSido, setPickSido] = useState(null);
   const [pickDan, setPickDan] = useState(null);
   const [showPicker, setShowPicker] = useState(false);

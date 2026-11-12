@@ -293,7 +293,7 @@ function reportAnalysisCards(R) {
       dp != null ? `올해 약 ${money(C.ty)} — 동년배 평균 ${money(C.tyAvg)}보다 ${dp >= 0 ? "+" + dp : dp}%${dp > 0 ? " ⚠️" : ""}` : `올해 약 ${money(C.ty)} (동년배 평균은 해당 없음)`,
       `10년 후 약 ${money(C.y10)}${C.y10Avg ? ` (동년배 ${money(C.y10Avg)})` : ""}`,
       (C.out ? `외래 ${C.out}일${C.outAvg != null ? `(동년배 ${C.outAvg}일)` : ""} · 입원 ${C.inp}일${C.inpAvg != null ? `(동년배 ${C.inpAvg}일)` : ""}` : null),
-      /* 누적 추정은 리포트에 없는 파생값 — 실측 리포트에서는 말하지 않는다(형 지시 ④) */
+      /* 누적 추정은 리포트에 없는 파생값 — 실측 리포트에서는 말하지 않는다(조성래님 지시 ④) */
       R.real ? null : `현 추세 유지 시 10년간 누적 약 ${money(Math.round((C.ty + C.y10) / 2 * 10))} 예상`,
     ].filter(Boolean), buttons: ["의료비 예측"] } });
   }

@@ -1,4 +1,4 @@
-/* ══════════════ 자료실 게시판(CorpVault.jsx) · CorpOps (형 지시 2026-11-12) ══════════════
+/* ══════════════ 자료실 게시판(CorpVault.jsx) · CorpOps (조성래님 지시 2026-11-12) ══════════════
    회사 자료 저장소의 목차를 게시한다. 총괄운영의 여덟째 뷰.
 
    이 화면이 지키는 것
@@ -10,14 +10,14 @@
        섞인 채로 쓰면 장부가 오염된다.
      · 목록은 코드에 박지 않는다 — 파일명이 곧 회사 자료의 목차다. 반입해서 이 브라우저에만 둔다. */
 
-/* ── 저장소 폴더 잇기 — 형이 올려 두면 앱이 거기서 가져온다 (형 지시 2026-11-12) ──
+/* ── 저장소 폴더 잇기 — 조성래님이 올려 두면 앱이 거기서 가져온다 (조성래님 지시 2026-11-12) ──
    「저장소에 조회를 해서 가져오도록 하면 되잖아. 저장소에 내가 올려 놓으면 되잖아.」
 
-   ⚠️ 브라우저는 바탕화면을 마음대로 뒤지지 못한다. 형이 **한 번 폴더를 지정**해 주셔야 한다.
+   ⚠️ 브라우저는 바탕화면을 마음대로 뒤지지 못한다. 조성래님이 **한 번 폴더를 지정**해 주셔야 한다.
       그 뒤로는 권한이 남아 「지금 가져오기」 한 번이면 된다 — 저절로 도는 것이 아니다.
    ⚠️ 그리고 **기계가 「가장 새 파일」을 고르지 않는다.** 저장소의 은행 내역은 이름 꼴이
       열 가지로 갈려 있고 수정일이 파일명 날짜와 어긋난다(9월 파일의 수정일이 11월 것보다
-      늦다 — 실측). 늘어놓기만 하고 고르는 것은 형이 하신다. */
+      늦다 — 실측). 늘어놓기만 하고 고르는 것은 조성래님이 하신다. */
 function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
   const [can] = React.useState(function () { return cvfCan(); });
   const [h, setH] = React.useState(null);
@@ -98,7 +98,7 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
     setNote({ bad: false, t: "폴더 연결을 끊었습니다 — 저장소의 파일은 그대로입니다." });
   };
 
-  /* 팀으로 좁힌다 — 형 지시: 「회계 대시보드는 02.회계와 항상 연결되도록 해줘.」 */
+  /* 팀으로 좁힌다 — 조성래님 지시: 「회계 대시보드는 02.회계와 항상 연결되도록 해줘.」 */
   const sc = React.useMemo(function () {
     if (!scan) return null;
     return team ? cvfScope(scan.rows, team) : { rows: scan.rows, dir: "", n: scan.rows.length, all: scan.rows.length, ok: true };
@@ -123,7 +123,7 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
 
   return (
     <div className="cl-sec vf-wrap">
-      <div className="cl-h">저장소 폴더 <span className="cl-t">형이 올려 두면 제가 가져옵니다</span>
+      <div className="cl-h">저장소 폴더 <span className="cl-t">조성래님이 올려 두면 제가 가져옵니다</span>
         <span className={"cl-flag" + (perm === "granted" ? " on" : " hold")}>
           {!can.ok ? "이 브라우저는 못 합니다" : (perm === "granted" ? "이어져 있음" : (h ? "권한 확인 필요" : "아직 안 이음"))}
         </span>
@@ -135,7 +135,7 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
       {open && can.ok && (
         <div className="vf-body">
           <p className="cl-note">
-            브라우저는 바탕화면을 마음대로 뒤지지 못합니다 — <b>형이 한 번 폴더를 지정</b>해 주셔야 합니다.
+            브라우저는 바탕화면을 마음대로 뒤지지 못합니다 — <b>조성래님이 한 번 폴더를 지정</b>해 주셔야 합니다.
             그 뒤로는 권한이 남아 「지금 가져오기」 한 번이면 됩니다. <b>저절로 돌지는 않습니다</b> —
             화면을 열고 누르셔야 합니다(브라우저가 사람이 누를 때만 폴더를 열어 줍니다).
             <span className="cl-warn2">
@@ -199,7 +199,7 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
               <div className="cl-h2">고를 만한 파일 <span className="cl-t">{cands.n}건 / 전체 {cands.all}건</span></div>
               <p className="cl-note"><b>제가 고르지 않습니다.</b> 저장소의 은행 내역은 이름 꼴이 여러 가지이고,
                 <b>수정일이 파일명의 날짜와 어긋나는 것이 실제로 있습니다</b> — 「가장 새 것」을 기계가 집으면
-                틀린 달의 장부가 섭니다. 늘어놓기만 할 테니 형이 골라 주세요.</p>
+                틀린 달의 장부가 섭니다. 늘어놓기만 할 테니 조성래님이 골라 주세요.</p>
               {!cands.n && <p className="cl-note hold">엑셀 · CSV 로 된 거래내역을 찾지 못했습니다.</p>}
               {cands.n > 0 && (
                 <table className="cl-tbl vf-tbl">

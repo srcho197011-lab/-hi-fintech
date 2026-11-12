@@ -272,7 +272,7 @@ function Vendor360({ v, D, idx, onClose, onGo }) {
   ords.forEach((o) => { st[o.status] = (st[o.status] || 0) + 1; });
   const agents = SC_AGENTS.filter((a) => a.sys.includes("ERP") || a.sys.includes("물류")).slice(0, 3);
   /* 「정산누계」를 독립 장부로 읽히게 적지 않는다 — 정산은 주문에서 파생된 종속 표시이고
-     창이 같으면 총 거래액과 원 단위까지 같은 값이다(형 확정 Q1). 라벨의 원천은 PG_SETTLE_LABEL 하나다. */
+     창이 같으면 총 거래액과 원 단위까지 같은 값이다(조성래님 확정 Q1). 라벨의 원천은 PG_SETTLE_LABEL 하나다. */
   const _setLabel = _scSetLabel();
   const kpi = [["총 거래액", cell ? _scW(cell.sales) : "—", "#34D399"],
     ["주문", cell ? cell.orders.toLocaleString() + "건" : "—", "#6366F1"],
@@ -603,7 +603,7 @@ function _pgSubIcon(k) {
 /* ── ①개요 · 객체 머리의 체계 소개 — 정의 · 목적 · 성과 (대표 지시 2026-10-26) ─────────────────
    왜 여기인가: 현대해상 설명에는 **체계의 정의 · 목적 · 성과가 먼저** 오는 편이 맞다는 판단이다.
    그래서 이 블록을 서브탭 ① 의 **맨 앞**에 얹고, 종전 머리였던 무재고 · 거래처 직배송 모델 설명
-   패널은 **지우지 않고 바로 아래에 그대로** 둔다(형 지시 — 밀어내지 말고 위에 얹을 것).
+   패널은 **지우지 않고 바로 아래에 그대로** 둔다(조성래님 지시 — 밀어내지 말고 위에 얹을 것).
    ⚠ 이 컴포넌트는 문장도 숫자도 갖지 않는다. 문장은 PG_INTRO · PG_DECL(선언), 수치는 pgIntro()
      반환 필드다. 슬롯을 채우지 못하면 그 자리에 「—」가 찍히고 그 사실을 함께 렌더한다. */
 function _pgIntroIcon(k) {
@@ -687,7 +687,7 @@ function SupplyOntology({ onGo, onTab }) {
           <div className="ontobjbar" style={{ marginTop: 10 }}>
             {SC_OBJECTS.map((o) => {
               /* 라벨을 o.t.split(" ")[0] 로 만들던 방식은 **폐기**했다 — 8라벨 중 5건이 공백에서 잘려
-                 「공급사 가용재고」가 「공급사」로, 「거래처·공급사」가 「거래처」로 줄었다(형 캡처의 그 라벨).
+                 「공급사 가용재고」가 「공급사」로, 「거래처·공급사」가 「거래처」로 줄었다(조성래님 캡처의 그 라벨).
                  148은 가용재고 스냅샷 행수로 **정상**이고 틀린 것은 숫자가 아니라 이름이었다.
                  이제 라벨은 partnerGov.js 의 PG_COUNT_LABEL 단일 원천에서 온다. */
               return <div className="ontobj" key={o.id}><span className="ontobj-i" style={{ background: o.c + "1A" }}><o.ic size={16} color={o.c} /></span><div><b style={{ fontSize: 14 }}>{(CNT[_ck[o.id]] || 0).toLocaleString()}</b><span>{_scCountLabel(o.id, o.t)}</span></div></div>;

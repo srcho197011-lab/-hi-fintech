@@ -4,7 +4,7 @@
    실제 상용 판매에는 각 브랜드 제휴 또는 네이버/쿠팡 오픈마켓·제휴 API 연동이 필요함.
 
    건강적립금 규칙:  공급가 = P×SUPPLY_RATE(0.5) · 마진 = P−공급가 · 적립금 = 마진×MARGIN_REWARD_RATE(0.6) = P×0.30 (원 단위 내림)
-   MARGIN_REWARD_RATE는 판매마진 배분(적립·나눔·운영 %)의 적립 몫 — sectionData.js WALLET_SPLIT.earn 단일 정의(형 확정 2026-09-17)에서 파생,
+   MARGIN_REWARD_RATE는 판매마진 배분(적립·나눔·운영 %)의 적립 몫 — sectionData.js WALLET_SPLIT.earn 단일 정의(조성래님 확정 2026-09-17)에서 파생,
    노드 단독 로드(scripts/measure_reserve_dist.mjs 등)처럼 WALLET_SPLIT이 없으면 같은 값 0.60으로 폴백. */
 const SHOP_REWARD_CFG = { supplyRate: 0.50, marginRewardRate: (typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT && WALLET_SPLIT.earn != null) ? WALLET_SPLIT.earn / 100 : 0.60 };
 function healthReward(price, cfg) {

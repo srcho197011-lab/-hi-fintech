@@ -12,7 +12,7 @@ const INS_AI_POLICY = {
 /* 불가피한 상수(config) — 사유 주석 필수(하드코딩 금지 원칙의 예외 등록) */
 const INS_CONFIG = {
   PREMIUM_MARGIN_RATE: 0.10,   // 보험료 중 플랫폼 중개 수수료 가정(재무엔진 보험 중개 산식과 정합) — 나눔 재원 산출 기반
-  SHARE_RATE: ((typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give != null) ? WALLET_SPLIT.give : 15) / 100,   // 순환 마진의 나눔 적립 비율(사업계획서 원칙4 · WALLET_SPLIT.give에서 파생 — sectionData.js가 manifest 앞 순서, 형 확정 15%)
+  SHARE_RATE: ((typeof WALLET_SPLIT !== "undefined" && WALLET_SPLIT.give != null) ? WALLET_SPLIT.give : 15) / 100,   // 순환 마진의 나눔 적립 비율(사업계획서 원칙4 · WALLET_SPLIT.give에서 파생 — sectionData.js가 manifest 앞 순서, 조성래님 확정 15%)
   TELE_VISIT_FEE: 15900,       // 비대면 진찰료 수가 근사(2026 의원급 초진 기준 근사치) — 청구 지급 산정의 기본 진료비
   RERATE_PER_IMPROVE: 1.5,     // 개선 지표 1개당 요율 인하 %(계리 검증 전 시연 가정 — 제휴 보험사 협의 대상)
   RERATE_MAX_PCT: 15,          // 인하 상한 %(인하 및 가입확대형 전용 단방향 게이트)
@@ -239,7 +239,7 @@ function rerateApplyReal(m) {
    재가입으로 다시 열린 창은 계약 레코드의 coverFrom이 말한다 — 1차 이력은 prior로 함께 반환한다. */
 
 /* ── 시연 기준일(단일 상수) ─────────────────────────────────────────────────────────
-   형 지시(2026-10-06) 「검진대비보험 만기 경과되지 않고 **한 달이 남도록** 조치해 줘」.
+   조성래님 지시(2026-10-06) 「검진대비보험 만기 경과되지 않고 **한 달이 남도록** 조치해 줘」.
    창의 **양쪽**(보장 개시일 coverFrom · 판정 시각 now)을 이 상수 하나에서 파생시킨다.
    한쪽만 고정하면 날이 지날수록 잔여일이 줄어들고, 어느 날 조용히 「보장 종료」로 넘어간다.
    ⚠️ escrowPay._escNow()의 「실시계가 기준일 이후면 실시계」 분기를 **베끼지 않는다** —
@@ -248,13 +248,13 @@ function rerateApplyReal(m) {
       정체 일수·제공 DB·연간 한도 원장은 벽시계 그대로다(전역 now로 승격하지 않는다).
    잔여일을 바꾸려면 remainDays 한 줄만 고친다(coverFrom·만기·배지·프로 ⑨가 함께 따라온다).
    ⚠️ 저장소에는 재무·에스크로 기준일 FB_ASOF(2027-09-17 · finBudget.js:12)가 따로 있다 —
-      이 상수와 11개월 차다. 합치지 않는 것은 **형이 정한 값**이다(2026-10-06 지시: asOf 2026-10-06 ·
+      이 상수와 11개월 차다. 합치지 않는 것은 **조성래님이 정한 값**이다(2026-10-06 지시: asOf 2026-10-06 ·
       잔여 30일). FB_ASOF는 회원 10만 실적 환산 시점(= 사업 미래 시점)이고 이 상수는 시연에서
       보여 줄 「오늘」이라 뜻이 다르다. 그래서 여기서 FB_ASOF를 파생하지 않고, 반대로 이 값이
       escrowPay._escNow()처럼 실시계로 승격되지도 않게 한다(가드가 _escNow·FB_ASOF 미참조를 단언).
-      두 기준일을 합치려면 형 확정이 먼저다 — 합치는 날 아래 remainDays는 그대로 두면 된다. */
+      두 기준일을 합치려면 조성래님 확정이 먼저다 — 합치는 날 아래 remainDays는 그대로 두면 된다. */
 const INS_DEMO = { asOf: "2026-10-06", remainDays: 30, label: "시연 기준일" };
-const INS_COVER_DAYS = 60;                      /* 발급 익일 0시 + 60일 — CYCLE_SPEC.expiryDay와 정합(형 확정 2026-09-03) */
+const INS_COVER_DAYS = 60;                      /* 발급 익일 0시 + 60일 — CYCLE_SPEC.expiryDay와 정합(조성래님 확정 2026-09-03) */
 /* "YYYY-MM-DD" → 로컬 0시 ms(날짜 문자열에서만 만든다 — 인자 없는 new Date() 금지) */
 function insDateMs(s) {
   const d = String(s || "").replace(/[^0-9]/g, "");
@@ -267,7 +267,7 @@ function insAsOfMs() { return insDateMs(INS_DEMO.asOf); }
 function insNow() { return insAsOfMs(); }
 /* 창 날짜 **단일 포맷터**(2026-10-08) — 전에는 같은 만기일이 한 화면에서 두 철자로 섰다:
    배지·증서는 toLocaleDateString("ko-KR")의 「2026. 11. 5.」, 거절 문구·프로 ⑨ mend 행은
-   「2026.11.5」. 숫자는 하나지만 형이 한 화면에서 두 표기를 읽는다. 이제 창을 소비하는 문구는
+   「2026.11.5」. 숫자는 하나지만 조성래님이 한 화면에서 두 표기를 읽는다. 이제 창을 소비하는 문구는
    전부 이 함수를 부른다(로케일 의존 없이 ko-KR 표기를 직접 만든다 — 환경마다 달라지지 않게). */
 function insDayStr(ms) { const d = new Date(ms); return d.getFullYear() + ". " + (d.getMonth() + 1) + ". " + d.getDate() + "."; }
 /* 창 판정 시각을 **시드로 가른다**(2026-10-08 수선) ───────────────────────────────────

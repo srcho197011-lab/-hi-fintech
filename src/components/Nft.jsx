@@ -18,7 +18,7 @@ function NFTSection({ onGo }) {
     if (n.type === "건강인증서 SBT") return Object.assign({}, n, { meta: [_nftR && _nftR.evalLabel && `종합 ${_nftR.evalLabel}`, _nftR && _nftR.agingRank != null && `노화등수 ${_nftR.agingRank}등`, _nftR && _nftR.agingSpeed != null && `노화속도 ${_nftR.agingSpeed}배`].filter(Boolean).join(" · ") || "검진 결과 연결 후 발행" });
     /* [실측 통일 2026-10-06] 예약증·보험증서도 상수를 내보내지 않는다 —
        예약은 실제 예약 기록(hifin_ins_certs)에서, 보장 금액은 insService.checkupIns(m).coverage 한 소스에서 읽는다.
-       근거가 없으면 수치를 만들지 않고 「기록 없음」으로 비운다(형 지시 ④). */
+       근거가 없으면 수치를 만들지 않고 「기록 없음」으로 비운다(조성래님 지시 ④). */
     if (n.type === "예약증 SBT") return Object.assign({}, n, { meta: _nftBook || "예약 기록 없음 — 검진을 예약하면 발행돼요" });
     if (n.type === "보험증서 SBT") return Object.assign({}, n, { meta: _nftCov || "검진대비보험 발급 후 표시돼요" });
     return n;

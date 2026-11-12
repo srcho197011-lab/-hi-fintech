@@ -1,4 +1,4 @@
-/* ══════════════ 회원 컨텍스트(memberContext.js) — 데이터 운영계획 v1.1 §5 D-1 (2026-08-30 형 승인) ══════════════
+/* ══════════════ 회원 컨텍스트(memberContext.js) — 데이터 운영계획 v1.1 §5 D-1 (2026-08-30 조성래님 승인) ══════════════
    에이전트(하이 A0~A5)가 회원 상담에 필요한 전부를 **한 번에** 받는 360뷰 — 개별 배선 제거의 단일 진입점.
    ⚠️ 원칙:
      · 원본 수치는 담지 않는다 — 등급·구간 라벨·플래그만(데이터 경계 상속). 수치가 필요한 화면은 기존 경로 유지.
@@ -15,7 +15,7 @@ function memberContext(i) {
   const ins = (typeof cohortInsurance === "function") ? cohortInsurance(Number(i)) : null;
   const sig = (typeof cohortSignalOf === "function") ? cohortSignalOf(Number(i)) : null;
   return {
-    /* v:2(형 지시 2026-10-06) — 필드 이름은 같은데 **의미가 바뀌었다**: 결과 수령 전 구간에서
+    /* v:2(조성래님 지시 2026-10-06) — 필드 이름은 같은데 **의미가 바뀌었다**: 결과 수령 전 구간에서
        checkup.grade에 W(결과 대기)가, checkup.group에 "결과 도착 후 판정"이 오고, care.actions는
        빈 배열이며 script.opening은 null일 수 있다. 360뷰는 에이전트가 읽는 계약이라 의미 변경에
        버전이 따라가야 한다(D-2 이관이 이 스키마를 읽는다). */

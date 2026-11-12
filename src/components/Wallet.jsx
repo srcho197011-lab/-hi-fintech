@@ -42,7 +42,7 @@ function WalletSection({ onGo }) {
   const insRes = (typeof htkInsReserve === "function") ? htkInsReserve(total) : Math.floor(total * 0.30);
   const genRes = total - insRes;
   const insPct = (typeof HTK_INS_RATE !== "undefined") ? Math.round(HTK_INS_RATE * 100) : 30;
-  // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 × WALLET_SPLIT 60/15/25, 형 확정 2026-09-17). 1차연도(10만 회원) 기준 연간.
+  // 재무회계 연동 — 플랫폼 나눔/적립(제품마진 × WALLET_SPLIT 60/15/25, 조성래님 확정 2026-09-17). 1차연도(10만 회원) 기준 연간.
   const fs = (typeof finSocial === "function") ? finSocial(0) : { give: 98325000, earn: 393300000, beneficiaries: 386 };
   return (
     <div style={{ marginTop: 16 }}>

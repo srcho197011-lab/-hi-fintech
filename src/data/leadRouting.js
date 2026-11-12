@@ -152,7 +152,7 @@ function lrRegionOf(m) {
   return { sido, sgg, dan, info, agents, note: map.note, gap: !!map.note };
 }
 
-/* 자율 지역 선택(형 지시 2026-07-31) — 병원 안내처럼 전국 어느 지역이든 직접 선택: 멀리 계신 가족을 위한 상담 연결 */
+/* 자율 지역 선택(조성래님 지시 2026-07-31) — 병원 안내처럼 전국 어느 지역이든 직접 선택: 멀리 계신 가족을 위한 상담 연결 */
 function lrRegionBy(sido, danName) {
   const map = LR_DAN[sido] || LR_DAN["서울"];
   const dan = (danName && map.dans.includes(danName)) ? danName : map.dans[0];

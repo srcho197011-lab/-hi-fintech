@@ -1,4 +1,4 @@
-/* ══════════════ 팀 대화창(CorpTeamChat.jsx) · 팀 보드 맨 위 (형 지시 2026-11-12) ══════════════
+/* ══════════════ 팀 대화창(CorpTeamChat.jsx) · 팀 보드 맨 위 (조성래님 지시 2026-11-12) ══════════════
    「AI 팀장 대화 창을 한 곳에 두지 말고 해체하고 각 팀으로, 각 팀의 대시보드로 옮기고
     대화를 통해 업무를 진행할 수 있도록 해줘. 예를 들면 회계팀에 들어가면 제일 위에
     핀테크가 먼저 인삿말과 업무지시에 대해 말을 걸어 오도록 대화창을 만들어 줘.」
@@ -185,7 +185,7 @@ function CorpTeamChat({ team, onTab, compact }) {
               {greet.canOrder && (
                 <p className="tc-can"><b>업무를 말로 시키셔도 됩니다.</b> 제가 할 수 있는 일은
                   <b> {greet.order.join(" · ")}</b> 입니다 — 시키시면 할 일로 나눠 드리고,
-                  <b>승인 · 전기는 형이</b> 하십니다.</p>
+                  <b>승인 · 전기는 조성래님이</b> 하십니다.</p>
               )}
               {!a.noTool && (
                 <div className="tc-chips">
@@ -235,7 +235,7 @@ function CorpTeamChat({ team, onTab, compact }) {
                           <div key={j} className={"wo-step" + (s.can ? " on" : "") + (s.who === "human" ? " hu" : "")}>
                             <div className="wo-hd">
                               <span className="wo-n">{j + 1}</span><b>{s.ko}</b>
-                              <span className={"wo-who " + s.who}>{s.who === "ai" ? AI + "가 합니다" : "형이 하셔야 합니다"}</span>
+                              <span className={"wo-who " + s.who}>{s.who === "ai" ? AI + "가 합니다" : (t.own ? t.own + "님이 하셔야 합니다" : "책임자가 하셔야 합니다")}</span>
                               {s.n !== null && s.n !== undefined && <span className="wo-cnt">{s.n}건</span>}
                             </div>
                             <p className="wo-d">{s.d}</p>

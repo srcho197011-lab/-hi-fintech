@@ -4,7 +4,7 @@ const socNum = (n) => (n >= 10000 ? (n / 10000).toFixed(n >= 100000 ? 0 : 1).rep
 
 function socialImpact() {
   const agg = (typeof pilotAgg === "function") ? pilotAgg() : { n: 100000, needyN: 8200, gapN: 21000, households: 42000, totalCost: 0 };
-  // 재무회계 모델 연동 — 제품마진 → WALLET_SPLIT 적립60%·나눔15%·운영25%(형 확정 2026-09-17, +특별지원: 어르신 치료비·장애아동 재활). 1차연도(10만 회원, 파일럿 규모) 기준.
+  // 재무회계 모델 연동 — 제품마진 → WALLET_SPLIT 적립60%·나눔15%·운영25%(조성래님 확정 2026-09-17, +특별지원: 어르신 치료비·장애아동 재활). 1차연도(10만 회원, 파일럿 규모) 기준.
   const fs = (typeof finSocial === "function") ? finSocial(0) : { margin: 655500000, earn: 393300000, give: 98325000, ops: 163875000, animal: 8193750, beneficiaries: 386 };
   const earn = fs.earn, give = fs.give, ops = fs.ops, animal = fs.animal, marginTotal = fs.margin;
   const activeRate = 0.45;

@@ -152,7 +152,7 @@ function HealthManageSection({ onGo }) {
         ) : (
           /* [실측 통일 2026-10-06] 합성 4개년 꺾은선(BioTrendChart)과 「이전 시점은 추이 예시」 고지를 삭제했다 —
              실측 리포트는 2026-05-08 단일 측정이고 notAvailable에 「연도별 생체나이 추이(2024 이전)」가 명시돼 있다.
-             값을 만들지 않고, 측정 시점이 없으면 없다고 적는다(형 지시 ④). */
+             값을 만들지 않고, 측정 시점이 없으면 없다고 적는다(조성래님 지시 ④). */
           <div className="card">
             <div className="rct"><TrendingUp size={18} color="#2563EB" /> 생체나이 추이</div>
             <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>연도별 생체나이 추이는 <b>표시하지 않습니다</b> — 측정 시점이 아직 1개뿐입니다. <span style={{ color: "var(--soft)" }}>다음 검진·리포트가 쌓이면 실측 시점만으로 그려 드려요(예시 곡선은 그리지 않습니다).</span></p>

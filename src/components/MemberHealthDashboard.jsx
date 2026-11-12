@@ -16,7 +16,7 @@ function MemberHealthDashboard({ member, onGo, onLogout }) {
       <BiologicalAgeCard member={member} />
       <CancerRiskCard member={member} />
       <MedicalCostCard member={member} />
-      {/* 2단계 P1(형 확정 B안 위젯) — 건강현황 요약 자리의 콤팩트 대비 현황 */}
+      {/* 2단계 P1(조성래님 확정 B안 위젯) — 건강현황 요약 자리의 콤팩트 대비 현황 */}
       {typeof NeedsCard === "function" && <NeedsCard variant="widget" />}
       <div className="card">
         <div className="rct"><Sparkles size={18} color="#F59E0B" /> 핵심 관리 포인트</div>

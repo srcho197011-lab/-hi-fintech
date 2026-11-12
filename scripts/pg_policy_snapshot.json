@@ -3,7 +3,7 @@
   "name": "pg_policy_snapshot",
   "runAt": "2026-11-12",
   "policyVer": "P3-1.0.0",
-  "policyHash": "0f2b0b48",
+  "policyHash": "81275f00",
   "asOf": "2026-10-25",
   "note": "해시 · 건수 · 분포만 담는다. 전건 판정 결과 · partnerId · 표시명 0건 — 이 경로는 커밋되고 배포에 노출된다(§14-1-1)."
  },

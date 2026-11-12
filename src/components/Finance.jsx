@@ -1,5 +1,5 @@
 /* ====================== 재무계획 온톨로지 시스템 (K-IFRS · 투자금 산정 예산양식 엔진) ======================
-   ⚠️ 이 지면은 **계획 축**이다(형 결정 2026-11-11). 전표·원장에서 올라오는 **실적 축**은
+   ⚠️ 이 지면은 **계획 축**이다(조성래님 결정 2026-11-11). 전표·원장에서 올라오는 **실적 축**은
       회사 총괄운영 › 회계팀 › 재무현황(Phase 5)이 맡는다. 두 축을 한 화면에서 섞지 않는다 —
       금액에는 「계획」/「실적」/「차이」 라벨을 반드시 붙인다.
    금액·비율·정책 문구는 모두 재무 엔진(finBudget.js → finModel.js 래퍼)에서 가져온다 — 이 파일에 금액 상수를 두지 않는다.
@@ -68,9 +68,9 @@ function finAnnual(yi) {
 // 5개년 추정 — 재무 엔진 위임(외부 호환)
 function finMultiYear() { return finYears(5); }
 // ── 건강금융지갑·사회적기업 공통 지표 — 제품마진 연동(Wallet·Social이 finSocial(0) 사용 — 반환 모양 유지) ──
-/* 회원 화면 배분 규칙(형 확정 2026-09-17) — 특별지원 = 판매마진 × animalShare × animalRate(Social 문구 "25%×5%"), 치료비 1인 지원액 perBeneficiary(255,000원).
+/* 회원 화면 배분 규칙(조성래님 확정 2026-09-17) — 특별지원 = 판매마진 × animalShare × animalRate(Social 문구 "25%×5%"), 치료비 1인 지원액 perBeneficiary(255,000원).
    ※ 회원 화면(Wallet·Social) 문구는 WALLET_SPLIT(적립·나눔·운영 %)을 표시하므로, 금액도 같은 비율로 계산해 화면 안에서 비율과 금액을 맞춘다.
-     형 확정 2026-09-17: WALLET_SPLIT 60/15/25로 재무 엔진(예산양식) 손익의 P.rewardRate·P.donationRate(판매마진 대비)와 일치 — fin_site_check.mjs가 가드. */
+     조성래님 확정 2026-09-17: WALLET_SPLIT 60/15/25로 재무 엔진(예산양식) 손익의 P.rewardRate·P.donationRate(판매마진 대비)와 일치 — fin_site_check.mjs가 가드. */
 const FIN_SOCIAL_RULE = { animalShare: 0.25, animalRate: 0.05, perBeneficiary: 255000 };
 function finSocial(yi) {
   const rows = finMultiYear(), r = rows[yi == null ? 0 : Math.max(0, Math.min(4, yi))];
@@ -582,7 +582,7 @@ function FinanceLive() {
         [`온라인 타겟 광고(${chN}개 채널)`, `월 노출 ${finNumS(a0.mk2Impr, "회")} × 가중 CPM ${finWonU(finSafe(() => fbBlendCpm(C), null))} + 소재 제작${a0.cardAd ? " + 카드사 제휴" : ""}`, a0.media + a0.creative + a0.cardAd, "목표 미포함(상향 요인)"],
         ["제휴마케팅 인피니티케어(MOU)", `연계 가입 연 ${finNumS(P.infinityVolume, "명")} · 제휴 센터 ${finNumS(P.infinityCenters, "곳")}`, null, `${finNumS(P.infinityVolume, "명")} 가입 경로`],
         ["검진센터 QR", `누적 센터 ${finNumS(C.qrCenters && C.qrCenters[0], "곳")} · 키트 ${finWonU(C.qrKit)}/곳 · 스티커 ${finWonU(C.qrSticker)} × 검진 예약`, a0.kit + a0.sticker + a0.qrfee, "검진 예약 연계"],
-        ["기업 B2B", "기업 복지·단체검진 제휴", null, "-"], // 형 확정 2026-09-17 — 예산양식에 별도 금액·산식 없는 정성 채널
+        ["기업 B2B", "기업 복지·단체검진 제휴", null, "-"], // 조성래님 확정 2026-09-17 — 예산양식에 별도 금액·산식 없는 정성 채널
       ];
       const S_ = S;
       return (<>

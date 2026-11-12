@@ -727,8 +727,8 @@ function OntoLiveSim({ cohort, agg, onGo }) {
   </>);
 }
 
-/* ══════════ 데이터 보강 로드맵 — 헬스케어 온톨로지 탭 하단 (형 지시 2026-10-23) ══════════
-   종전에는 데이터 성격 고지 한 문단이 있던 자리다. 형 지시로 그 자리를 **더 보강해야 할 것**으로 바꿨다.
+/* ══════════ 데이터 보강 로드맵 — 헬스케어 온톨로지 탭 하단 (조성래님 지시 2026-10-23) ══════════
+   종전에는 데이터 성격 고지 한 문단이 있던 자리다. 조성래님 지시로 그 자리를 **더 보강해야 할 것**으로 바꿨다.
    이 화면은 투자·제휴 설명에 쓰이므로 각 항목이 네 가지를 말한다 — 지금 무엇이 비어 있는지(측정값)·
    왜 비어 있는지(구조적 원인)·무엇으로 채우는지(원천·방법)·채우면 무엇이 가능해지는지.
    ⚠️ 여기 적힌 수치는 전부 **코호트 전건(또는 명시한 표본) 실측값**이다. 추정·인용값을 섞지 않는다.
@@ -857,13 +857,13 @@ function OntGapRoadmap({ agg }) {
 }
 
 function OntologySection({ onGo }) {
-  const [top, setTop] = useState("corpops");   /* 회사 총괄운영이 이 섹션의 첫 지면이다(형 지시 2026-11-11) */
+  const [top, setTop] = useState("corpops");   /* 회사 총괄운영이 이 섹션의 첫 지면이다(조성래님 지시 2026-11-11) */
   const [sub, setSub] = useState("overview");
   const [seg, setSeg] = useState(null);
   const cohort = React.useMemo(() => (typeof pilotCohort === "function" ? pilotCohort() : []), []);
   const agg = React.useMemo(() => (typeof pilotAgg === "function" ? pilotAgg() : null), []);
   const goSeg = (k) => { setSeg(k); setTop("health"); setSub("explorer"); };
-  /* ⚠️ 이 배열은 **화면에 그리지 않는다**(형 지시 2026-11-11 — 지면은 회사 총괄운영 › 팀 아래로 이관).
+  /* ⚠️ 이 배열은 **화면에 그리지 않는다**(조성래님 지시 2026-11-11 — 지면은 회사 총괄운영 › 팀 아래로 이관).
      그래도 지우면 안 된다: scripts/gen_nav_inventory.py 가 지면 목록을 읽는 유일한 자리이고,
      setTop(k)로 여는 경로도 그대로 살아 있다(하이·내비가 이름으로 지칭한다). */
   const topTabs = [["health", "헬스케어 온톨로지", HeartPulse, "#E11D48"], ["partner", "협력업체 온톨로지 · 하네스", Truck, "#0891B2"], ["finance", "재무계획", Landmark, "#F59E0B"], ["marketing", "마케팅", Megaphone, "#EC4899"], ["bizops", "사업 운영", Target, "#7C3AED"], ["foundation", "HI-Fin 기반 온톨로지", ShieldCheck, "#0EA5E9"], ["ops", "운영 콘솔", Activity, "#DC2626"], ["dataops", "데이터 운영", Database, "#0891B2"], ["whitepaper", "백서", BookOpen, "#6366F1"], ["corpops", "회사 총괄운영", Building2, "#E8795A"]];
@@ -932,7 +932,7 @@ function OntologySection({ onGo }) {
         {sub === "kb" && <AIKBLounge onGo={onGo} />}
         {sub === "graph" && <div className="ontpanel"><div className="ontph"><Network size={15} color="#22D3EE" /> 온톨로지 스키마 (객체 · 관계)</div><OntGraph agg={agg} /></div>}
         {sub === "actions" && <OntActions agg={agg} onSeg={goSeg} />}
-        {/* 종전 데이터 성격 고지 문단 → 데이터 보강 로드맵으로 교체(형 지시 2026-10-23). 최소 표식은 블록 머리 칩으로 유지. */}
+        {/* 종전 데이터 성격 고지 문단 → 데이터 보강 로드맵으로 교체(조성래님 지시 2026-10-23). 최소 표식은 블록 머리 칩으로 유지. */}
         <OntGapRoadmap agg={agg} />
       </>}
       {/* 라우팅 키 supply → partner (개칭). top 은 useState 단순 상태이고 URL·localStorage 에 노출되지

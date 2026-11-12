@@ -9,21 +9,21 @@
 
 const HANDOFF_SLOTS_SAFE = { 예약처: "가까운 제휴 검진센터", 다음약속: "다음 주" };   // 자유 텍스트 금지 — 고정 안전값
 
-/* 대본 v2 스위치(2단계 P5) — 형이 신규 블록 전건(talk·seed·careplan·branch2·cost) 승인 시 true 전환.
+/* 대본 v2 스위치(2단계 P5) — 조성래님이 신규 블록 전건(talk·seed·careplan·branch2·cost) 승인 시 true 전환.
    false인 동안 조립은 기존 v1 그대로(하네스·발행 불변) — 초안이 발행 경로에 스며들 수 없다. */
-const HM_SCRIPT_V2 = true;   /* 2026-08-30 형 승인 — 대본 v2 정식 전환 */
+const HM_SCRIPT_V2 = true;   /* 2026-08-30 조성래님 승인 — 대본 v2 정식 전환 */
 
-/* ══ 단계 축(형 지시 2026-10-05) ══
+/* ══ 단계 축(조성래님 지시 2026-10-05) ══
    「D2 단계에서는 무료 3종 안내가 나가야 하는데, 그 단계에 맞는 스크립트가 짜여 있는지 다시 확인하고
     단계에 맞게 수정해 달라」 — 이전 조립기는 등급·지표군·나이·정체·개입·사이클만 보고 **단계는 D2 하나만**
-   봤다. 그래서 D1·D3·D4·L5~L8 대본이 서로 구분되지 않았고(실측 25블록 211초 동일), 형 검수를 통과한
+   봤다. 그래서 D1·D3·D4·L5~L8 대본이 서로 구분되지 않았고(실측 25블록 211초 동일), 조성래님 검수를 통과한
    lj-*(L5~L8)·tc-*(치료비) 블록이 한 번도 조립되지 않았다. 이 표가 그 단일 선택축이다.
      open/easyOpen   첫 마디(단계마다 다르다) — 단, 정체 14일+는 op-restart가 그대로 이긴다(기존 규약).
      alert/easyAlert 응급 선행 안내 — 상담보다 위·맨 앞(a4-triage-safety).
      prep/easyPrep   통화가 아닌 사전 준비(D1 접촉 금지) — 화면이 통화 대본을 접고 이것을 먼저 띄운다.
      task/easyTask   그 단계의 과업(HM_STAGE_GUIDE.doKo를 대본으로).
      close/easyClose 다음 약속(L 구간은 약속형 cl-promise).
-   ⚠️ easy* 칸이 왜 필요한가(형 지시 2026-10-05 수선) — 종전에는 「쉬운말이면 cl-done-easy」가
+   ⚠️ easy* 칸이 왜 필요한가(조성래님 지시 2026-10-05 수선) — 종전에는 「쉬운말이면 cl-done-easy」가
       plan.close보다 먼저 판정돼, 표에 close를 적어 둔 L5~L8의 65세↑ 회원 전건이 cl-promise에
       도달하지 못했다(L7·L8은 예약 행위가 없는 단계인데 「예약되면 문자 가요」로 끝났다).
       같은 구멍이 과업·응급·사전 준비에도 있었다 — 쉬운말 카드라고 표기한 채 60자 문장을 섞어 읽었다.
@@ -42,7 +42,7 @@ const HM_STAGE_PLAN = {
 };
 
 /* 무료 3종 문안 슬롯 — 단일 원천은 src/data/free3Def.js뿐이다(프롬프트 v1.1 §9).
-   형 지시 2026-10-05(절단 폐기): 종전에는 원천의 " · " 구획을 잘라 슬롯에 넣었다. 그 방식은
+   조성래님 지시 2026-10-05(절단 폐기): 종전에는 원천의 " · " 구획을 잘라 슬롯에 넣었다. 그 방식은
      ① 명사구를 이어 붙여 비문을 만들고(「증서는 데이터 금고 발급돼요」)
      ② 원천에 구획이 하나 늘거나 용어 안에 공백이 들어가면 슬롯이 밀려,
         폴백 문자열로 조용히 떨어지면서 **기타암 제외 고지만 정확히 사라지는** 경로를 만든다.
@@ -98,7 +98,7 @@ function buildHandoffCard(i, opts) {
   const flags = lifeAll.filter((f) => /절주|금연/.test(f));
   const g = (typeof riskGradeOf === "function") ? riskGradeOf(chk.items, chk.trend, flags) : { grade: "-", keys: [] };
   const stage = stage0;
-  /* 단계는 **카드 상단의 사실 주장**까지 정한다(형 지시 2026-10-05 수선).
+  /* 단계는 **카드 상단의 사실 주장**까지 정한다(조성래님 지시 2026-10-05 수선).
      종전에는 단계축이 대본 파트만 더했고 trigger·evidence·앱알림·문자는 단계를 보지 않은 채
      genMemberCheckup에서 결과를 끌어왔다. 그래서 D1 카드가 한 장 안에서 스스로를 뒤집었다 —
      대본은 「검진 결과가 들어오기 전이라 접촉 금지 구간」인데 trigger는 「신규 검진 결과 수신 —
@@ -106,7 +106,7 @@ function buildHandoffCard(i, opts) {
      프로는 카드 상단만 보고 전화를 걸 수 있다 — 그래서 결과 기반 필드를 D1에서 만들지 않는다. */
   const stKey = stage && stage.cur ? stage.cur : "D1";
   const preResult = stKey === "D1";   /* 결과 수령 전 구간 — 결과를 사실로 말하지 않는다 */
-  /* ══ 등급을 매기지 않는다(형 지시 2026-10-06) ══
+  /* ══ 등급을 매기지 않는다(조성래님 지시 2026-10-06) ══
      결과가 도착하기 전(D1)에는 위험 등급을 **없애거나 다른 값에 섞지 않고** 네 번째 상태
      「결과 대기(W)」로 카드에 명시한다. 그리고 그 등급에서 파생되는 모든 것 — 응답 시한·권장 개입
      3종·등급별 본론·씨앗·케어 플랜·주도 지표군, 그리고 그 위에 서 있던 통화 대본 전체 — 을
@@ -118,7 +118,7 @@ function buildHandoffCard(i, opts) {
 
   /* 주도 지표군 — sev2 우선, 없으면 sev1 첫 항목.
      결과 수령 전에는 지표군도 단정하지 않는다 — 「등급은 결과 대기인데 지표군은 간 기능」이라는
-     자기모순 페어가 memberContext 360뷰와 10만 지표군 분포로 흘러갔다(형 지시 2026-10-06) */
+     자기모순 페어가 memberContext 360뷰와 10만 지표군 분포로 흘러갔다(조성래님 지시 2026-10-06) */
   let leadKey = null, leadSev = 0;
   for (const k in chk.items) { const s = chk.items[k].sev || 0; if (s > leadSev) { leadSev = s; leadKey = k; } }
   const group = preResult ? null : (leadKey ? riskGroupOf(leadKey) : "organ");
@@ -134,7 +134,7 @@ function buildHandoffCard(i, opts) {
   try { if (stKey === "D2" && typeof cycleOf === "function") { const _cy = cycleOf(i, stage); if (_cy && _cy.t === "T2" && _cy.goldenLeftH > 0) gLeftH = _cy.goldenLeftH; } } catch (e) {}
   /* trigger — 우선순위: 결과 대기(D1) > 정체 재개 > D2 첫 연결 > 등급 사유 > 추세·플래그.
      D1이 맨 앞인 이유: 접촉이 한 번도 없었던 구간이라 「정체 — 관리 재개」도 성립하지 않는다.
-     D2가 등급 사유 **앞**인 이유(형 지시 2026-10-06): 등급 '-'인 D2 회원이 「정기 리듬 점검」을
+     D2가 등급 사유 **앞**인 이유(조성래님 지시 2026-10-06): 등급 '-'인 D2 회원이 「정기 리듬 점검」을
      머리에 달고 무료 3종 골든타임 전문을 본문으로 읽어, 카드 머리글이 본문을 부정했다.
      ⚠️ H·M D2는 **등급 사유를 뒤에 병기**한다(적대적 리뷰 실증: i=158 H·「위험 구간 2항목」·시한
         48시간인데 머리글은 안내 과업만 말했다 — i≤6000에서 43건). 카드 머리글이 배지를 부정하지
@@ -161,7 +161,7 @@ function buildHandoffCard(i, opts) {
   const evidence = ev.slice(0, 3);
 
   /* actions — 매핑 + 특례(명문화 3종만).
-     ⚠️ 절단은 이 블록 **전체**를 감싼다(형 지시 2026-10-06). acts를 빈 배열로만 두면 바로 아래
+     ⚠️ 절단은 이 블록 **전체**를 감싼다(조성래님 지시 2026-10-06). acts를 빈 배열로만 두면 바로 아래
         60세↑ 특례의 `[].splice(1,0,x)`가 `[x]`를 만들어 개입이 되살아나고, coachAgent.next가
         non-null이 되어 하네스 ⑤가 「정상」으로 **조용히 PASS**한다. */
   let acts = [];
@@ -186,14 +186,14 @@ function buildHandoffCard(i, opts) {
     구간표현: (!preResult && evidence[0]) || "확인이 필요한 구간", 개입명: acts[0] ? acts[0].ko : "확인",
     예약처: HANDOFF_SLOTS_SAFE.예약처, 다음약속: HANDOFF_SLOTS_SAFE.다음약속,
   }, _hcFree3Slots(out));
-  /* 등급별 쉬운말 — L·'-'에 "조금 높은 항목이 하나 있어요"(co-m-easy)가 나가던 결함 수선(형 지시 2026-10-05) */
+  /* 등급별 쉬운말 — L·'-'에 "조금 높은 항목이 하나 있어요"(co-m-easy)가 나가던 결함 수선(조성래님 지시 2026-10-05) */
   const gradeCo = gc.grade === "H" ? "co-h" : gc.grade === "M" ? "co-m" : "co-l";
   const gradeCoEasy = gc.grade === "H" ? "co-h-easy" : gc.grade === "M" ? "co-m-easy" : "co-l-easy";
   /* 정체 재개가 쉬운말보다 우선 — op-restart·cl-open(재큐 고지)은 시나리오의 핵심이라 변형에 밀리지 않는다.
      정체가 아니면 단계가 첫 마디를 정한다(HM_STAGE_PLAN) — D1은 통화 자체가 없어 표에 open이 없다 */
   let opening = stalled ? "op-restart" : (easy ? "op-first-easy" : "op-first");
   if (!stalled) { const so = easy ? plan.easyOpen : plan.open; if (so) opening = so; }
-  /* ⚠️ 통화 대본 미조립(형 지시 2026-10-06) — preResult 카드는 오프닝·본론·제안·응대·클로징을
+  /* ⚠️ 통화 대본 미조립(조성래님 지시 2026-10-06) — preResult 카드는 오프닝·본론·제안·응대·클로징을
      **만들지 않는다**. 본론만 끊으면 「내용 없는 통화 대본」이 되어 종전보다 나쁘다: 실측으로 D1
      카드는 prep 「오늘은 연락하지 않아요」와 opening op-first 「지금 2분 정도 괜찮으세요?」를 한 장
      안에 함께 조립했다(표에 open이 없으면 op-first로 폴백하기 때문이다).
@@ -207,13 +207,13 @@ function buildHandoffCard(i, opts) {
     core: preResult ? [] : [_hcBlock(easy ? gradeCoEasy : gradeCo, slots, out),
            !easy ? _hcBlock("co-" + group, slots, out) : null].filter(Boolean),
     ask: preResult ? null : _hcBlock(easy && acts[0] && acts[0].key === "clinic" ? "ak-clinic-easy" : "ak-" + (acts[0] ? acts[0].key : "recheck"), slots, out),
-    /* 화면 표기는 「회원 반응별 응대」(형 확정 2026-08-29) — 내부 필드명은 branches 유지 */
+    /* 화면 표기는 「회원 반응별 응대」(조성래님 확정 2026-08-29) — 내부 필드명은 branches 유지 */
     branches: preResult ? [] : [
       _hcBlock("br-yes", slots, out), _hcBlock("br-hold2", slots, out),
       _hcBlock(easy ? "br-no-easy" : "br-no", slots, out),
       _hcBlock("br-q-serious", slots, out), _hcBlock("br-q-ins", slots, out),
     ].filter(Boolean),
-    /* 쉬운말 변형이 단계 표를 덮지 않는다 — easyClose가 있으면 그것, 없을 때만 cl-done-easy(형 지시 2026-10-05) */
+    /* 쉬운말 변형이 단계 표를 덮지 않는다 — easyClose가 있으면 그것, 없을 때만 cl-done-easy(조성래님 지시 2026-10-05) */
     closing: preResult ? null : _hcBlock(stalled ? "cl-open" : (easy ? (plan.easyClose || "cl-done-easy") : (plan.close || "cl-done")), slots, out),
   };
   /* ── 대본 v2(P5 · HM_SCRIPT_V2 시) — 7파트: 생활 대화 2 · 씨앗 ≤1 · 케어 플랜(핵심1+보조2) · 응대 10 ── */
@@ -226,7 +226,7 @@ function buildHandoffCard(i, opts) {
       if (gc.grade === "H" || gc.grade === "M") script.seed = [_hcBlock("sd-" + group, slots, out)].filter(Boolean);
       else script.seed = [];
     } else { script.talk = []; script.seed = []; }
-    /* ── 단계 과업(형 지시 2026-10-05) — 응급 선행 → 사전 준비 → 과업. 단계가 유일한 선택축이고,
+    /* ── 단계 과업(조성래님 지시 2026-10-05) — 응급 선행 → 사전 준비 → 과업. 단계가 유일한 선택축이고,
           쉬운말 변형도 그 표 안에서 고른다(easyAlert·easyPrep·easyTask). 변형 칸이 비어 있으면
           기본 칸을 쓴다 — 「쉬운말이라 표를 무시한다」가 되지 않게.
           ⚠️ 이 세 파트는 결과 대기 카드에도 그대로 조립된다 — D1의 과업은 prep 3블록이다 ── */
@@ -250,9 +250,9 @@ function buildHandoffCard(i, opts) {
     } else { script.careplan = []; }
     script.v2 = true;
   }
-  /* ── D2 첫 연결 골든타임(F2 · 프롬프트 v1.1 §5 — 형 승인 2026-08-31) — D2 카드에만 fc 파트 삽입.
+  /* ── D2 첫 연결 골든타임(F2 · 프롬프트 v1.1 §5 — 조성래님 승인 2026-08-31) — D2 카드에만 fc 파트 삽입.
         재접촉·타 단계에 3종 반복 금지(스팸화 방지) · 키트 슬롯은 MA_MAP(검진 결과 기반)만.
-        형 지시 2026-10-05 — `!stalled` 조건을 걷었다: 무료 3종은 D2 회원이 **한 번은 반드시** 받아야 하는
+        조성래님 지시 2026-10-05 — `!stalled` 조건을 걷었다: 무료 3종은 D2 회원이 **한 번은 반드시** 받아야 하는
         안내이고, 정체 D2(294명 중 46명·16%)는 그 한 번을 아직 못 받은 사람들이다. 정체면 첫 마디만
         op-restart로 두고 3종 파트는 그대로 붙인다(안내를 놓친 사람에게 더 필요하다). ── */
   const d2first = v2on && stage && stage.cur === "D2";
@@ -276,7 +276,7 @@ function buildHandoffCard(i, opts) {
     const fcBlock = (id) => { const b2 = _hcBlock(id, kitSlots, out); return b2 ? Object.assign({}, b2, { text: fcFill((hmBlock(id) || {}).t || b2.text) }) : null; };
     /* 골든타임 오프닝은 결과 도착 결합(op-unlock) — HM_STAGE_PLAN.D2가 이미 고른다(쉬운말도 op-unlock-easy로).
        정체 D2만 op-restart를 유지한다 — "한동안 챙겨드리지 못해서요"가 이 회원에게는 사실이다.
-       형 지시 2026-10-05 — ①무료 3종(보험 혜택·리포트·케어 키트) ②향후 지원 약속 ③건강관리 동의가
+       조성래님 지시 2026-10-05 — ①무료 3종(보험 혜택·리포트·케어 키트) ②향후 지원 약속 ③건강관리 동의가
        한 통화에 전부 들어가도록 순서를 고쳤다: 3종(fc) → 지원 약속(fc-support) → 동의(fc-consent) → 평생 약속.
        정체 D2는 첫 마디(op-restart)의 전제에 맞춰 fc-open·fc-kit도 재개 변형을 쓴다 —
        「오늘부터 챙겨드리게 됐어요」/「며칠 안에 집으로 가요」는 61일 정체 회원에게 사실이 아니다.
@@ -290,7 +290,7 @@ function buildHandoffCard(i, opts) {
     script.fcTail = [fcBlock("fc-support"), fcBlock(easy ? "fc-consent-easy" : "fc-consent"), fcBlock("fc-lifetime")].filter(Boolean);
     script.branches = script.branches.concat([fcBlock("fc-q-free"), fcBlock("fc-q-sell")].filter(Boolean));
   }
-  /* ── 만기 국면 대본(R4 결선 · 형 승인 2026-09-03) — T4~T7 카드에만. 값은 covAnalysis 보장맵 실산출만 ──
+  /* ── 만기 국면 대본(R4 결선 · 조성래님 승인 2026-09-03) — T4~T7 카드에만. 값은 covAnalysis 보장맵 실산출만 ──
         보장맵이 없으면(N1 미동의) 보장맵 화법(mt-t5-map)은 조립되지 않는다 — 동의가 곧 대본의 문 */
   if (v2on && !preResult) {
     let cyc = null; try { cyc = (typeof cycleOf === "function") ? cycleOf(i) : null; } catch (e) {}
@@ -312,21 +312,21 @@ function buildHandoffCard(i, opts) {
       else ids.push("mt-t7-keep");
       script.maturity = ids.map((id) => _hcBlock(id, mSlots, out)).filter(Boolean);
       script.branches = script.branches.concat([_hcBlock("mt-q-why", mSlots, out), _hcBlock("mt-q-cost", mSlots, out)].filter(Boolean));
-      /* ⚠️ 상호 배타(형 지시 2026-10-05) — 만기 파트가 보장 주제를 이미 쥐고 있으면 단계 과업의
+      /* ⚠️ 상호 배타(조성래님 지시 2026-10-05) — 만기 파트가 보장 주제를 이미 쥐고 있으면 단계 과업의
          치료비 블록(tc-*)을 뺀다. 종전 D4 대본은 tc-gapfact로 보장 공백을 설명한 뒤 몇 블록 뒤
          mt-t7-keep이 「오늘은 보험 이야기가 아니라 안부예요」라고 말해 한 통화 안에서 스스로를
          뒤집었다(D4·L5에서 재현). 승인된 만기 문안을 고치는 대신 조립에서 겹치지 않게 한다. */
       if (script.stage && script.stage.length) script.stage = script.stage.filter((b2) => !/^tc-/.test(b2.id));
     }
     /* 회원 자발 건강 대화(§0-V5) — 회원이 먼저 꺼냈을 때만 쓰는 갈래. 본대본·응대 규격에 포함되지 않는 선택 갈래.
-       결과 대기 구간에는 통화 자체가 없으므로 이 갈래도 조립하지 않는다(형 지시 2026-10-06) */
+       결과 대기 구간에는 통화 자체가 없으므로 이 갈래도 조립하지 않는다(조성래님 지시 2026-10-06) */
     script.voluntary = ["vd-listen", "vd-confirm", "vd-offer", "vd-consent", "vd-boundary", "vd-record"]
       .map((id) => _hcBlock(id, slots, out)).filter(Boolean);
   }
   if (preResult) script.voluntary = [];
   /* 채널 변형 — 규칙 적용(창작 아님): 알림=core[0]+ask 축약 · 문자=고정 형식(수치·등급 미포함).
      D1(결과 수령 전)은 **발송 문안을 만들지 않는다** — 복사해 보내기만 하면 되는 자리에 결과 안내
-     문자가 놓여 있던 것이 접촉 금지 구간의 가장 큰 위험이었다(형 지시 2026-10-05).
+     문자가 놓여 있던 것이 접촉 금지 구간의 가장 큰 위험이었다(조성래님 지시 2026-10-05).
      ⚠️ null이 아니라 「발송 없음」 고지 문장을 넣는 이유: A5 코치(coachAgent)의 「문자로는 뭐라고
         보내요?」가 이 필드를 원천으로 읽는다 — null이면 코치가 답할 원천을 잃는다. 문안에는 이름도
         링크도 없어 그대로 복사해도 발송문이 되지 않는다. */
@@ -346,7 +346,7 @@ function buildHandoffCard(i, opts) {
   const joined = evidence.join(" ") + " " + allBlocks.map((b) => b.text).join(" ");
   /* 119 예외는 **응급 안내 블록(em-*)에만** 준다. 종전에는 replace 목록에 벌거벗은 `119`를 넣어
      문장 어디의 119든 지웠고, 「공복혈당 119로 확인됐어요」(당뇨 전단계 실임상값)가 유출 검사를
-     통과하는 길이 열려 있었다. 수축기혈압 119 mmHg도 같다(형 지시 2026-10-05 수선). */
+     통과하는 길이 열려 있었다. 수축기혈압 119 mmHg도 같다(조성래님 지시 2026-10-05 수선). */
   const numSrc = evidence.join(" ") + " " + allBlocks.map((b) => /^em-/.test(b.id) ? b.text.replace(/119/g, "") : b.text).join(" ");
   const numLeak = /\d{2,}/.test(numSrc.replace(/2년|3년|1회|2분|150분|1,000만원|코엔자임Q10|\d+일\s*뒤|연\s*[\d,]+만원|D-\d+/g, ""));   // 관용 표현 예외 후 2자리 이상 숫자 검출(1,000만원=보장 사실 고지·§0-C 동반 / Q10=성분명·수치 아님)
   const slotLeak = /\{[가-힣A-Za-z]+\}/.test(joined);                            // 미치환 슬롯 잔존({링크}는 sms 전용 — joined 밖)
@@ -411,7 +411,7 @@ try {
             const m = cohortLoginProfile(j); if (!m) continue;
             const chk = genMemberCheckup(m);
             const c = buildHandoffCard(j); if (!c) continue;
-            rows.push({ i: j, grade: c.grade, group: c.group, stage: c.member.stage,   /* stage — 배치 러너의 모집단 판정이 단계를 읽는다(형 지시 2026-10-06) */
+            rows.push({ i: j, grade: c.grade, group: c.group, stage: c.member.stage,   /* stage — 배치 러너의 모집단 판정이 단계를 읽는다(조성래님 지시 2026-10-06) */
               age: c.member.ageBand, sex: c.member.sex,
               sido: m.sido || "", sgg: c.member.region, lock: c.timing.lock,
               stall: c.member.stalledDays, flags: (chk.nat && chk.nat.life) || [], pub: c.compliance.publishable });

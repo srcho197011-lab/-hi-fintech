@@ -898,6 +898,45 @@ let denomFails = 0;
 
 console.log(`[⑱당사실측] PG_SELF_SCAN ${selfScanRows}항목 · 레지스트리↔화면 교차 ${JSON.stringify(selfScanStatic)} · 위반 ${selfScanFails}건(목표 0)`);
 console.log(`[⑲제재게이트] 제재 종류 게이트 밖 렌더 ${sancSpots.length}곳(목표 0)${sancSpots.length ? " — " + sancSpots.join(" / ") : ""}`);
+
+/* ── 21 호칭 — 공식 자리의 격 (대표 지시 2026-11-12) ───────────────────────
+   「공식적인 자리이니 만큼 조성래님이라고 해 줘.」
+
+   화면만 보지 않는다. 주석도 번들에 그대로 실려 공개 배포되므로 같이 센다.
+
+   ⚠️ 「형」 단독으로 찾지 않는다 — B형 간염 · 1형 당뇨 · 유형 · 형태 · 세대형 자산 ·
+      Foundry형 분석 · 'D자(강인)형' 이 전부 걸린다. 앞 글자가 한글·영숫자가 아닐 때,
+      그리고 뒤에 호칭다운 말이 올 때만 호칭으로 본다(생성기 치환표와 **같은 규칙**이다). */
+const ADDR_RX = /(?<![가-힣A-Za-z0-9])형(?=이|은|을|를|의|께|도|에게|한테|[ ](?:지시|확정|승인|검수|지적|요청|실물|실화면|붙임|결정|캡처|파일|초안|확인|몫|말씀|진단|개정|적발|제공|실계약|완결|보고|제안|대본|말|요구|판단|기준))/g;
+let addrHits = 0;
+const addrSpots = [];
+if (FILES.length === 0) {
+  fails.push({ chk: "21호칭", file: "(없음)", why: "src 파일을 0개 읽었다 — 분모가 비면 검사가 공집합에서 통과한다" });
+}
+for (const p of FILES) {
+  const t = rd(rel(p));
+  const lines = t.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    ADDR_RX.lastIndex = 0;
+    if (!ADDR_RX.test(lines[i])) continue;
+    addrHits++;
+    if (addrSpots.length < 12) addrSpots.push(rel(p) + ":" + (i + 1));
+    fails.push({ chk: "21호칭", file: rel(p), line: i + 1,
+      why: "공개 번들에 사사로운 호칭이 남아 있다 — 공식 호칭(조성래님)으로 적는다. 회원에게 하는 말이면 「회원님」, 팀 책임자면 조직 원천의 이름을 읽어 쓴다",
+      ctx: lines[i].trim().slice(0, 110) });
+  }
+}
+/* 치환표가 생성 파일(wpAutoLog.js)까지 덮는지 — 표에 규칙이 없으면 다음 커밋에서 되살아난다 */
+{
+  let tbl = null;
+  try { tbl = JSON.parse(rd("scripts/wp_wording_table.json")); } catch (e) { tbl = null; }
+  const has = !!(tbl && (tbl.phrases || []).some((q) => String(q[0]).startsWith("re:") && String(q[1]) === "조성래님"));
+  if (!has) {
+    fails.push({ chk: "21호칭", file: "scripts/wp_wording_table.json",
+      why: "생성기 치환표에 호칭 규칙이 없다 — wpAutoLog.js 는 커밋 메시지에서 다시 만들어지므로, 표에 없으면 다음 커밋에서 사사로운 호칭이 화면으로 되살아난다" });
+  }
+}
+console.log(`[21호칭  ] 공개 번들 사사로운 호칭 ${addrHits}곳(목표 0)${addrSpots.length ? " — " + addrSpots.join(" / ") : ""} · 생성기 치환표 규칙 대조`);
 console.log(`[⑳분모라벨] b1 출처 등급 분모 이름 · 지표 축 별 칸 · 위반 ${denomFails}건(목표 0)`);
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
@@ -907,6 +946,7 @@ writeFileSync(join(ROOT, "scripts/wording_guard_snapshot.json"),
   JSON.stringify({ files: FILES.length, screen: screenHits, comment: commentHits, compound: compoundHits, exempt: exemptHits,
     notices: NOTICE.length, counts, perFile, perFileText, virtual: virtualHits, bundle: bundleHits,
     wpRoundTrip: fails.filter((f) => f.chk === "⑦생성왕복").length === 0,
+    addrHits,
     pgForbidWords: forbidWords, pgForbidHits: forbidHits, pgSectionKo: sectionKo,
     gradeSpots, pgLabelFails: labelFails, pgSameLedger: sameLedger,
     pgVerdictPages: PG_VERDICT.length, pgVerdictScanned: verdictScanned, pgVerdictMissing: verdictMissing,
