@@ -30,9 +30,12 @@ const CORP_ORD_ACT = [
   { k: "reverse", ko: "역분개", who: "ai",
     w: ["역분개", "반대분개", "역분계", "되돌려", "되돌리", "무효로", "취소 전표"],
     d: "그날 은행 내역에서 만든 전표를 **역분개 초안**으로 만듭니다(승인·전기는 사람이 합니다)" },
-  { k: "refetch", ko: "은행 내역 다시 받기", who: "human",
-    w: ["다시 받", "다시 다운", "다시 내려", "다시 가져", "새로 받", "내려받", "다운받", "다시 조회"],
-    d: "은행 계좌를 제가 직접 열지 못합니다 — 형이 내려받아 올려 주셔야 합니다" },
+  /* ⚠️ who 가 **상황에 따라 바뀌는** 유일한 일이다. 저장소 폴더가 이어져 있으면 거기서
+     가져올 수 있으니 내 몫이고, 안 이어져 있으면 형이 올려 주셔야 하니 형 몫이다.
+     은행 계좌 자체를 여는 일은 **어느 쪽이든 못 한다** — 형이 내려받아 저장소에 두셔야 한다. */
+  { k: "refetch", ko: "은행 내역 가져오기", who: "human",
+    w: ["다시 받", "다시 다운", "다시 내려", "다시 가져", "새로 받", "내려받", "다운받", "다시 조회", "가져와", "가져오"],
+    d: "저장소 폴더가 이어져 있으면 제가 찾아 가져옵니다 — 은행 계좌 자체는 형이 내려받아 저장소에 두셔야 합니다" },
   { k: "rebuild", ko: "전표 다시 만들기", who: "ai",
     w: ["다시 만들", "다시 전표", "전표를 다시", "재생성", "다시 쳐", "다시 작성", "새로 만들"],
     d: "올라온 은행 내역에서 전표를 다시 만듭니다(역분개가 전기된 뒤에만 됩니다)" },
@@ -175,8 +178,9 @@ function corpOrdCanRebuild(jvs, iso, led, todayIso) {
 /* ── ⑦ 할 일로 쪼개기 ────────────────────────────────────────────────────
    한 문장에 일이 여럿이면 **차례대로** 세운다. 앞 단계가 안 끝나면 뒤는 잠겨 있다.
    단계마다 **누가 하는지**를 적는다 — 이게 이 화면의 본체다. */
-function corpOrdSteps(parsed, jvs, led, todayIso) {
+function corpOrdSteps(parsed, jvs, led, todayIso, fs) {
   const iso = parsed.date.iso;
+  const F = fs || null;
   const out = [];
   parsed.acts.forEach(function (a) {
     if (a.k === "reverse") {
@@ -196,11 +200,26 @@ function corpOrdSteps(parsed, jvs, led, todayIso) {
         ].filter(Boolean),
       });
     } else if (a.k === "refetch") {
+      /* 저장소가 이어져 있고 **그날 것이 하나뿐**이면 내가 가져온다.
+         여럿이면 고르지 않는다 — 수정일이 파일명 날짜와 어긋나는 것이 실제로 있어,
+         기계가 집으면 틀린 달의 장부가 선다. */
+      const M = F && F.match;
+      const mine = !!(F && F.linked && M && M.n === 1);
       out.push({
-        k: "refetch", ko: "은행 내역 다시 받기", who: "human", d: a.d,
-        n: null, can: false,
-        why: "은행 계좌를 제가 직접 열지 못합니다 — 형이 내려받아 **은행 대사 지면에서 올려** 주셔야 합니다",
-        note: [],
+        k: "refetch", ko: "은행 내역 가져오기", who: mine ? "ai" : "human", d: a.d,
+        n: M ? M.n : null, can: mine,
+        why: mine ? "" : (!F || !F.linked
+          ? "저장소 폴더가 아직 이어져 있지 않습니다 — 자료실이나 은행 대사 지면에서 한 번 이어 주시면 제가 찾아 가져옵니다. 그 전까지는 형이 올려 주셔야 합니다"
+          : (F.scope && !F.scope.ok ? F.scope.why
+            : (M ? M.why : "저장소에서 찾지 못했습니다"))),
+        pick: mine ? M.only : null,
+        list: M ? (M.n > 1 ? M.exact : M.month) : [],
+        note: [
+          F && F.linked && F.scope && F.scope.dir ? "저장소의 **" + F.scope.dir + "** 안만 봅니다(회계 자료가 거기 있습니다)" : "",
+          mine ? "그날 것이 하나뿐이라 그걸 씁니다 — 고른 것이 아니라 그것밖에 없는 것입니다" : "",
+          M && M.n > 1 ? "여럿이라 **제가 고르지 않습니다** — 아래에서 골라 주세요" : "",
+          "은행 계좌 자체는 제가 열지 못합니다 — 형이 내려받아 저장소에 두셔야 합니다",
+        ].filter(Boolean),
       });
     } else if (a.k === "rebuild") {
       const C = corpOrdCanRebuild(jvs, iso, led, todayIso);
@@ -230,7 +249,7 @@ function corpOrderPlan(q, ctx) {
   }
   const led = typeof corpLedgerRead === "function" ? corpLedgerRead() : { jv: [], bank: [] };
   const jvs = typeof corpJvAll === "function" ? corpJvAll(led) : [];
-  const steps = corpOrdSteps(P, jvs, led, todayIso);
+  const steps = corpOrdSteps(P, jvs, led, todayIso, ctx && ctx.fs);
   const head = "**" + P.date.iso + "** 로 읽었습니다"
     + (P.date.assumed ? "(" + P.date.why + " — 다르면 날짜를 적어 다시 말씀해 주세요)" : "")
     + ". 할 일 " + steps.length + "가지로 나눴습니다. 승인 · 전기는 형이 하십니다.";

@@ -1394,8 +1394,12 @@ chk(!!AO.order && AO.order.assumed === true && /올해/.test(String(AO.t)),
 chk(!!AO.order && AO.order.steps.every((s) => s.who === "ai" || s.who === "human"),
   "⑮대화   단계마다 누가 하는지 적혀 있다", AO.order && AO.order.steps.map((s) => s.who).join(","));
 const woHuman = AO.order.steps.filter((s) => s.who === "human");
-chk(woHuman.length === 1 && /직접 열지 못/.test(woHuman[0].why || ""),
-  "⑮대화   은행에서 가져오는 일은 **못 한다고 말한다**", woHuman.map((s) => s.ko).join(","));
+/* 저장소가 이어져 있지 않으면 **형 몫**이고, 왜 그런지 적는다.
+   (이어져 있고 그날 것이 하나뿐이면 핀테크 몫이 된다 — 아래 ⑯에서 따로 센다.) */
+chk(woHuman.length === 1 && /이어져 있지 않습니다|직접 열지 못/.test(woHuman[0].why || ""),
+  "⑮대화   저장소가 안 이어져 있으면 형 몫이라고 말한다", JSON.stringify(woHuman.map((s) => s.ko + ":" + String(s.why).slice(0, 24))));
+chk(AO.order.steps.some((s) => /은행 계좌 자체는/.test((s.note || []).join(" "))),
+  "⑮대화   은행 계좌 자체는 누구도 못 연다고 적는다", JSON.stringify(AO.order.steps[1] && AO.order.steps[1].note));
 chk(AO.order.steps.every((s) => s.can || (s.why || "").trim()),
   "⑮대화   못 하는 단계마다 **왜 못 하는지** 적는다", AO.order.steps.filter((s) => !s.can && !(s.why || "").trim()).map((s) => s.ko));
 /* ⓐ 자기시험 — 못 알아들으면 **되묻는다**(아무 날짜나 집어 역분개하지 않는다) */
@@ -1625,6 +1629,52 @@ if (vtBoard2) {
   chk(/OneDrive/.test(vtBoard2) || /내려받지/.test(vtBoard2),
     "⑯화면   내용을 못 읽은 파일을 숨기지 않는다", "없음");
 }
+/* ⑯-2 ②단계가 상황에 따라 **주인이 바뀌는가** — 이번 작업의 본체다 */
+const RQ = "11월 11일 은행 거래내역 다시 가져와 줘";
+const rowOf = function (fs) {
+  const s2_r = G("corpAgAnswer")("핀테크", RQ, { today: "2026-11-12", fs: fs });
+  return s2_r.order ? s2_r.order.steps.find(function (x) { return x.k === "refetch"; }) : null;
+};
+const mkRow = function (nm, dir) { return { rel: dir + "/" + nm, name: nm, dir: dir, ext: "xlsx", size: 1, at: "2026-11-12" }; };
+const DIR11 = "02.회계/2026.결산/26.11";
+const sc1 = G("cvfScope")([mkRow("거래내역_표본 (11.11).xlsx", DIR11)], "M2");
+const m1 = G("cvfMatchDay")(sc1.rows, "2026-11-11");
+const s2_sNone = rowOf(null);
+chk(!!s2_sNone && s2_sNone.who === "human" && /이어져 있지 않/.test(s2_sNone.why || ""),
+  "⑯단계   저장소가 안 이어져 있으면 **형 몫**이고 그렇게 말한다", s2_sNone && s2_sNone.who + " / " + String(s2_sNone.why).slice(0, 30));
+const sOne = rowOf({ linked: true, scope: sc1, match: m1 });
+chk(!!sOne && sOne.who === "ai" && sOne.can && !!sOne.pick,
+  "⑯단계ⓐ 이어져 있고 그날 것이 **하나뿐이면** 핀테크 몫이 된다", sOne && sOne.who + " / " + (sOne.pick && sOne.pick.name));
+chk(!!sOne && (sOne.note || []).some(function (x) { return /그것밖에 없는/.test(x); }),
+  "⑯단계   「고른 것이 아니라 그것밖에 없는 것」이라고 적는다", sOne && JSON.stringify(sOne.note));
+chk(!!sOne && (sOne.note || []).some(function (x) { return /02\.회계/.test(x); }),
+  "⑯단계   어느 폴더를 보는지 적는다(형 지시 — 회계는 늘 02.회계)", sOne && JSON.stringify(sOne.note));
+const sc2 = G("cvfScope")([mkRow("거래내역_표본 (11.11).xlsx", DIR11), mkRow("우리은행 거래내역_표본 20261111.xlsx", DIR11)], "M2");
+const sMany = rowOf({ linked: true, scope: sc2, match: G("cvfMatchDay")(sc2.rows, "2026-11-11") });
+chk(!!sMany && sMany.who === "human" && !sMany.pick && (sMany.list || []).length === 2,
+  "⑯단계ⓐ 여럿이면 **고르지 않고** 형께 넘긴다", sMany && sMany.who + " / 고를 거리 " + ((sMany.list || []).length));
+const sc3 = G("cvfScope")([mkRow("거래내역_표본 (10.31).xlsx", "02.회계/2026.결산/26.10")], "M2");
+const sMiss = rowOf({ linked: true, scope: sc3, match: G("cvfMatchDay")(sc3.rows, "2026-11-11") });
+chk(!!sMiss && sMiss.who === "human" && !sMiss.pick,
+  "⑯단계ⓐ 그날 것이 없으면 **다른 달 것을 집지 않는다**", sMiss && sMiss.who + " / " + String(sMiss.why).slice(0, 30));
+const scBad = G("cvfScope")([mkRow("무엇_표본.xlsx", "01.경영기획")], "M2");
+const sBad = rowOf({ linked: true, scope: scBad, match: G("cvfMatchDay")(scBad.rows, "2026-11-11") });
+chk(!!sBad && sBad.who === "human" && /02\.회계/.test(sBad.why || ""),
+  "⑯단계ⓐ 회계 폴더가 없는 곳을 이으면 그렇게 말한다", sBad && String(sBad.why).slice(0, 40));
+/* 화면 — 가져오는 길도 **같은 검사**를 지나는가 */
+let ordB = "";
+try { ordB = rd("src/components/CorpOrder.jsx"); } catch (e) { fails.push("⑯화면 CorpOrder.jsx 없음"); }
+if (ordB) {
+  chk(/const doRefetch = async/.test(ordB), "⑯화면   저장소에서 가져오는 자리가 있다", "없음");
+  const iF = ordB.indexOf("const doRefetch = async");
+  const iS = ordB.indexOf("corpUpScan(", iF);
+  const iW = ordB.indexOf("corpLedgerWrite(", iF);
+  chk(iS >= 0 && iW >= 0 && iS < iW,
+    "⑯화면   저장소에서 읽은 것도 **민감자료 검사를 지나야** 장부에 닿는다", { scan: iS, write: iW });
+  chk(/corpBjvChain\(/.test(ordB.slice(iF, iF + 3000)), "⑯화면   잔액 사슬이 끊긴 자료는 넣지 않는다", "없음");
+  chk(/cvfScope\(vault\.rows, "M2"\)/.test(ordB), "⑯화면   회계 지면은 늘 02.회계 와 이어져 있다(형 지시)", "없음");
+  chk(/덮는 기간은/.test(ordB), "⑯화면   기간을 어떻게 보았는지 적고 고칠 수 있게 한다", "없음");
+}
 if (hook) {
   chk(hook.indexOf("corpVaultFs") >= 0, "⑯게이트 pre-commit 감시 대상에 corpVaultFs", "미등재");
 }
@@ -1641,7 +1691,7 @@ console.log(`[회계엔진] 자산 ${G("corpWon")(S.bs.assets)} = 부채 ${G("co
 const PU = G("corpPaUnmatched")(G("CORP_JV_SEED"), PACAL);
 console.log(`[예실대비] 계획 비목 ${PU.leaves}(확정 ${PU.planOk.length} · 후보 ${PU.planAsk.length} · 대응없음 ${PU.planNone.length}) · ` +
   `손익 계정 ${PU.accts}(확정 ${PU.acctOk.length} · 후보 ${PU.acctAsk.length} · 대응없음 ${PU.acctNone.length}) · ` +
-  `비교 가능 달 ${PM.join("·") || "없음"} · 차이 산출 ${preRows.filter((r) => r.diff !== null).length}행`);
+  `비교 가능 달 ${PM.join("·") || "없음"} · 차이 산출 ${preRows.filter((s2_r) => s2_r.diff !== null).length}행`);
 console.log(`[주간회의] 주차 ${MW && MW.key}(D-${MW && MW.dday}) · 참석 사람 ${ATT.people.length}(재직) · AI ${ATT.agents.length} · 공석 ${ATT.vacant.length} · ` +
   `보고 ${REPS.length}팀(확정 가능 ${canFix.length} · 확정자 공석 ${noOwner.length}) · 원천 연결 ${linked.length}팀 · ` +
   `생성 경로 루틴 ${GEN.length} / ${SCHED.routines.length}`);

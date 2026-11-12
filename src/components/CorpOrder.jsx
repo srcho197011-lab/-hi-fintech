@@ -17,6 +17,10 @@ function CorpOrderSection({ onTab }) {
   const [led, setLed] = React.useState(function () { return corpLedgerRead(); });
   const [q, setQ] = React.useState("");
   const [msg, setMsg] = React.useState(null);
+  /* ⚠️ 저장소를 읽는 일은 비동기인데 답하는 함수는 동기다. 그래서 **미리 훑어 둔 것**을
+     상황으로 넘긴다 — 안 훑었으면 「안 이어져 있다」로 답한다(지어내지 않는다). */
+  const [vault, setVault] = React.useState(null);
+  const [handle, setHandle] = React.useState(null);
   const endRef = React.useRef(null);
 
   const now = typeof corpOpsNow === "function" ? corpOpsNow() : null;
@@ -26,6 +30,30 @@ function CorpOrderSection({ onTab }) {
   const V = React.useMemo(function () { return corpOrdVerdict(today); }, [today]);
   const jvs = React.useMemo(function () { return corpJvAll(led); }, [led]);
 
+  /* 이어 둔 폴더가 있으면 **회계팀 폴더(02.회계)** 안을 미리 훑어 둔다 — 형 지시대로
+     회계 지면은 늘 거기와 이어져 있다. 못 하는 브라우저면 조용히 넘어가지 않고 그대로 둔다. */
+  React.useEffect(function () {
+    let gone = false;
+    if (!cvfCan().ok) return;
+    cvfHandle().then(function (h) {
+      if (gone || !h) return;
+      setHandle(h);
+      return cvfPerm(h, false).then(function (p) {
+        if (gone || p !== "granted") return;
+        return cvfScan(h).then(function (S) { if (!gone) setVault(S); }).catch(function () {});
+      });
+    }).catch(function () {});
+    return function () { gone = true; };
+  }, []);
+
+  /* 지시를 읽을 때 넘길 저장소 상황 — 날짜가 정해져야 「그날 것」을 셀 수 있다 */
+  const fsFor = React.useCallback(function (iso) {
+    if (!vault) return { linked: false };
+    const sc = cvfScope(vault.rows, "M2");
+    const match = iso ? cvfMatchDay(sc.rows, iso) : null;
+    return { linked: true, scope: sc, match: match, root: vault.root };
+  }, [vault]);
+
   React.useEffect(function () {
     if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "end" });
   }, [log.length]);
@@ -33,7 +61,9 @@ function CorpOrderSection({ onTab }) {
   const send = function (text) {
     const s = String(text === undefined ? q : text).trim();
     if (!s) return;
-    const r = corpAgAnswer(AI, s, { now: now, today: today });
+    /* 날짜를 먼저 읽어 **그날 것**을 세어 넘긴다 — 날짜 없이는 저장소를 뒤져도 뜻이 없다 */
+    const pre = corpOrdParse(s, today);
+    const r = corpAgAnswer(AI, s, { now: now, today: today, fs: fsFor(pre.date.iso) });
     const next = Object.assign({}, st, { log: Object.assign({}, st.log) });
     next.log[AI] = (next.log[AI] || []).concat([{ who: "me", t: s }, { who: "ai", r: r }]);
     corpAgWrite(next); setSt(next); setQ(""); setMsg(null);
@@ -82,9 +112,52 @@ function CorpOrderSection({ onTab }) {
       + "기표 상태이니 전표 지면에서 검토 · 승인해 주세요." });
   };
 
+  /* 은행 내역 가져오기 — 저장소에서 읽어 **은행 대사와 같은 길**로 넣는다.
+     ⚠️ 민감자료 검사를 건너뛰지 않는다. 길이 둘인데 한쪽만 막으면 막는 것이 아니다. */
+  const doRefetch = async function (iso, pick) {
+    if (!handle) { setMsg({ bad: true, t: "이어 둔 저장소 폴더가 없습니다 — 은행 대사 지면에서 한 번 이어 주세요" }); return; }
+    if (!pick) { setMsg({ bad: true, t: "어느 파일인지 정해지지 않았습니다 — 은행 대사 지면에서 골라 주세요" }); return; }
+    setMsg({ bad: false, t: "「" + pick.name + "」을(를) 읽는 중입니다…" });
+    try {
+      const f = await cvfFile(handle, pick.rel);
+      const buf = new Uint8Array(await f.slice(0, 4).arrayBuffer());
+      const zip = buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+      let head = [], rows = [];
+      if (zip) { const X = await cbxRead(f); head = X.rows[0] || []; rows = X.rows.slice(1); }
+      else { const g = corpUpParseCsv(await f.text()); head = g.head || []; rows = g.rows || []; }
+      rows = rows.filter(function (r) { return r.join("").trim(); });
+      if (head.length < 2 || !rows.length) throw new Error("표를 읽지 못했습니다");
+      const hits = corpUpScan(rows, head);
+      if (hits.length) {
+        setMsg({ bad: true, t: "민감자료가 " + hits.length + "곳에서 걸렸습니다 — 읽기를 멈췄습니다. 그 열을 떼고 다시 해 주세요." });
+        return;
+      }
+      const map = corpUpSuggest(head, corpUpSpec("bank"));
+      const Vv = corpUpValidate("bank", head, rows, map);
+      if (Vv.missing.length) throw new Error(Vv.msg);
+      const T = corpUpToBank(Vv.ok);
+      if (!T.lines.length) throw new Error("읽을 은행줄이 없습니다");
+      const CH = corpBjvChain(T.lines);
+      if (CH.n > 0 && !CH.ok) throw new Error("잔액이 " + CH.breaks.length + "군데 끊겨 있습니다 — 빠진 거래가 있는 자료로는 넣지 않습니다");
+      const L = corpLedgerRead();
+      const M = corpUpMergeBank(L.bank || [], T.lines);
+      const ds = T.lines.map(function (x) { return x.d; }).sort();
+      const cov = { from: (L.bankCov && L.bankCov.from) || ds[0], to: ds[ds.length - 1] > ((L.bankCov && L.bankCov.to) || "") ? ds[ds.length - 1] : (L.bankCov && L.bankCov.to) || ds[ds.length - 1], at: pick.name };
+      const next = Object.assign({}, L, { bank: M.lines, bankCov: cov });
+      corpLedgerWrite(next); setLed(next);
+      setMsg({ bad: false, t: "「" + pick.name + "」에서 " + T.lines.length + "줄을 읽어 " + M.added + "줄 넣었습니다"
+        + (M.dup ? "(이미 받은 " + M.dup + "줄은 건너뜀)" : "") + ". "
+        + "이 자료가 덮는 기간은 **" + ds[0] + " ~ " + ds[ds.length - 1] + "** 로 보았습니다 — 다르면 은행 대사 지면에서 고쳐 주세요. "
+        + (CH.n > 0 ? "잔액 사슬 " + CH.n + "쌍 전건 성립." : "잔액 열이 없어 사슬은 확인하지 못했습니다.") });
+    } catch (e) {
+      setMsg({ bad: true, t: (e && e.message) || "가져오지 못했습니다" });
+    }
+  };
+
   const run = function (step, iso) {
     if (step.k === "reverse") return doReverse(iso);
     if (step.k === "rebuild") return doRebuild(iso);
+    if (step.k === "refetch") return doRefetch(iso, step.pick);
     setMsg({ bad: true, t: "이 일은 제가 하지 못합니다." });
   };
 
@@ -176,8 +249,12 @@ function CorpOrderSection({ onTab }) {
                               {s.who === "ai" && (
                                 <button className="cl-save" disabled={!s.can || !live}
                                   onClick={function () { run(s, iso); }}>
-                                  {s.k === "reverse" ? "역분개 초안 만들기" : "전표 다시 만들기"}
+                                  {s.k === "reverse" ? "역분개 초안 만들기"
+                                    : (s.k === "refetch" ? "저장소에서 가져오기 — " + (s.pick ? s.pick.name : "") : "전표 다시 만들기")}
                                 </button>
+                              )}
+                              {s.k === "refetch" && (s.list || []).length > 0 && (
+                                <span className="cl-t">고를 거리 {(s.list || []).length}건 — 은행 대사 지면에서 골라 주세요</span>
                               )}
                               {s.who === "human" && (
                                 <button className="cl-rv" onClick={function () { if (typeof onTab === "function") onTab("corpBank"); setMsg({ bad: false, t: "재무현황 지면의 **은행 대사** 탭에서 올리시면 됩니다." }); }}>
@@ -227,11 +304,15 @@ function CorpOrderSection({ onTab }) {
           <div className="cl-sec">
             <div className="cl-h">지금 장부 <span className="cl-t">지시가 보는 바탕</span></div>
             <div className="cl-stat">
+              <div className={vault ? "" : "hold"}><b>{vault ? cvfScope(vault.rows, "M2").n : "—"}</b><span>저장소 02.회계</span></div>
               <div><b>{jvs.length}</b><span>전표</span></div>
               <div><b>{corpPosted(jvs, "").length}</b><span>전기</span></div>
               <div><b>{((led && led.bank) || []).length}</b><span>은행줄</span></div>
               <div><b>{led && led.bankCov && led.bankCov.to ? led.bankCov.to : "—"}</b><span>은행 반입 끝</span></div>
             </div>
+            <p className="cl-note">{vault
+              ? <span>저장소 <b>{vault.root}</b> 와 이어져 있습니다 — 회계 지면은 <b>02.회계</b> 안만 봅니다. </span>
+              : <span>저장소 폴더가 아직 이어져 있지 않습니다 — 은행 대사 지면에서 한 번 이어 주시면 제가 찾아 가져옵니다. </span>}</p>
             <p className="cl-note">{corpJvLive(led)
               ? "반입된 실제 전표를 보고 있습니다."
               : "지금은 검증용 전표입니다 — 실제 전표가 반입되면 그것을 봅니다."}</p>

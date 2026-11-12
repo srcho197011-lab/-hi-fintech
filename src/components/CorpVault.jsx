@@ -18,7 +18,7 @@
    ⚠️ 그리고 **기계가 「가장 새 파일」을 고르지 않는다.** 저장소의 은행 내역은 이름 꼴이
       열 가지로 갈려 있고 수정일이 파일명 날짜와 어긋난다(9월 파일의 수정일이 11월 것보다
       늦다 — 실측). 늘어놓기만 하고 고르는 것은 형이 하신다. */
-function CorpVaultFs({ onRows, bankOnly, onPick }) {
+function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
   const [can] = React.useState(function () { return cvfCan(); });
   const [h, setH] = React.useState(null);
   const [perm, setPerm] = React.useState("");
@@ -72,11 +72,17 @@ function CorpVaultFs({ onRows, bankOnly, onPick }) {
     setNote({ bad: false, t: "폴더 연결을 끊었습니다 — 저장소의 파일은 그대로입니다." });
   };
 
+  /* 팀으로 좁힌다 — 형 지시: 「회계 대시보드는 02.회계와 항상 연결되도록 해줘.」 */
+  const sc = React.useMemo(function () {
+    if (!scan) return null;
+    return team ? cvfScope(scan.rows, team) : { rows: scan.rows, dir: "", n: scan.rows.length, all: scan.rows.length, ok: true };
+  }, [scan, team]);
   const cands = React.useMemo(function () {
-    if (!scan || !bankOnly) return null;
-    const C = cvfBankCandidates(scan.rows);
-    return { n: C.n, all: C.all, rows: C.rows.map(cvfPickRow) };
-  }, [scan, bankOnly]);
+    if (!sc || !bankOnly) return null;
+    const C = cvfBankCandidates(sc.rows);
+    const M = day ? cvfMatchDay(sc.rows, day) : null;
+    return { n: C.n, all: C.all, rows: C.rows.map(cvfPickRow), match: M };
+  }, [sc, bankOnly, day]);
 
   const take = async function (rel) {
     setBusy(true); setNote(null);
@@ -122,9 +128,18 @@ function CorpVaultFs({ onRows, bankOnly, onPick }) {
           </div>
           {note && <div className={"cl-msg" + (note.bad ? " bad" : "")} onClick={function () { setNote(null); }}>{note.t}</div>}
 
-          {scan && !bankOnly && (
-            <p className="cl-note">{scan.root} — <b>{scan.n}건</b> · {Math.round(scan.bytes / 104857.6) / 10}MB.
-              종류 · 법인 판별은 아래 대장이 합니다(여기서는 <b>사실만</b> 가져옵니다).</p>
+          {scan && (
+            <p className="cl-note">{scan.root}{scan.asDept ? "(부서 폴더를 직접 이으셨습니다)" : ""} — <b>{scan.n}건</b> · {Math.round(scan.bytes / 104857.6) / 10}MB.
+              {sc && sc.dir ? <span> 이 지면은 <b>{sc.dir}</b> 안만 봅니다 — <b>{sc.n}건</b>.</span> : null}
+              {!bankOnly && <span> 종류 · 법인 판별은 아래 대장이 합니다(여기서는 <b>사실만</b> 가져옵니다).</span>}</p>
+          )}
+          {sc && !sc.ok && <p className="cl-note hold">{sc.why}</p>}
+          {cands && cands.match && (
+            <p className={"cl-note" + (cands.match.n === 1 ? "" : " hold")}>
+              <b>{day}</b> 것 — {cands.match.why}.
+              {cands.match.n === 1 && <span> 「{cands.match.only.name}」 하나뿐이라 그걸 쓰시면 됩니다
+                — <b>고른 것이 아니라 그것밖에 없는 것</b>입니다.</span>}
+            </p>
           )}
 
           {cands && (

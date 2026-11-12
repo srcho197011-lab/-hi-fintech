@@ -591,7 +591,8 @@ function ClBankUp({ st, save, actor, A }) {
             은행에서 내려받은 <b>.xlsx 를 그대로</b> 올리시면 됩니다(CSV 도 받습니다).
             은행 계좌를 <b>자동으로 가져오지 못합니다</b> — 그래서 사람이 매일 올립니다.</p>
 
-          <CorpVaultFs bankOnly onPick={async (f) => { await readFile(f); }} />
+          {/* 형 지시 — 회계 지면은 늘 02.회계 와 이어 둔다(다른 팀 자료가 섞이지 않게) */}
+          <CorpVaultFs bankOnly team="M2" onPick={async (f) => { await readFile(f); }} />
 
           <div className="bk-row">
             <span className="cl-t">내 컴퓨터에서 고르기 —</span>

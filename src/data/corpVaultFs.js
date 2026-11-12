@@ -134,6 +134,13 @@ async function cvfScan(h, onTick) {
   if (!h) throw new Error("이어 둔 폴더가 없습니다");
   const perm = await cvfPerm(h, false);
   if (perm !== "granted") throw new Error("폴더를 읽을 권한이 없습니다 — 「폴더 다시 잇기」를 눌러 주세요");
+  /* ⚠️ 이은 것이 저장소 **루트**가 아니라 부서 폴더 하나일 수 있다(형이 02.회계 를 직접 이으셨다).
+     그러면 경로가 「2026.결산/26.11/…」로 시작해 팀 판별이 서지 않는다 — 앞에 그 폴더 이름을
+     붙여 루트에서 이은 것과 **같은 모양**으로 만든다. 어느 쪽을 이으셔도 되게. */
+  const rootName = String(h.name || "");
+  const asDept = typeof CORP_VAULT_DEPT !== "undefined"
+    && CORP_VAULT_DEPT.some(function (d) { return rootName === d.k + "." + d.ko || rootName.indexOf(d.k + ".") === 0; });
+  const base = asDept ? rootName : "";
   const rows = [];
   let cut = false;
   async function walk(dir, rel) {
@@ -163,9 +170,9 @@ async function cvfScan(h, onTick) {
       if (typeof onTick === "function") onTick(rows.length);
     }
   }
-  await walk(h, "");
+  await walk(h, base);
   rows.sort(function (a, b) { return a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0; });
-  return { root: h.name || "", rows: rows, n: rows.length, cut: cut,
+  return { root: rootName, asDept: asDept, base: base, rows: rows, n: rows.length, cut: cut,
     unread: rows.filter(function (r) { return r.unread; }).length,
     bytes: rows.reduce(function (n, r) { return n + (+r.size || 0); }, 0) };
 }
@@ -184,7 +191,11 @@ function cvfDay(ms) {
 /* ── ⑤ 파일 하나 꺼내기 ────────────────────────────────────────────────── */
 async function cvfFile(h, rel) {
   if (!h) throw new Error("이어 둔 폴더가 없습니다");
-  const parts = String(rel || "").split("/").filter(Boolean);
+  /* 훑을 때 붙인 부서 이름은 **떼고** 찾는다 — 안 떼면 그 폴더 안에서 같은 이름을 또 찾는다 */
+  let r = String(rel || "");
+  const rn = String(h.name || "");
+  if (rn && r.indexOf(rn + "/") === 0) r = r.slice(rn.length + 1);
+  const parts = r.split("/").filter(Boolean);
   if (!parts.length) throw new Error("파일 경로가 비었습니다");
   let dir = h;
   for (let i = 0; i < parts.length - 1; i++) {
@@ -239,6 +250,75 @@ function cvfPickRow(r) {
   };
 }
 
+/* ── ⑥-2 그 줄이 가리키는 날 ────────────────────────────────────────────
+   저장소의 폴더 이름이 「26.11」·「2026.결산」 꼴이고 파일명이 「(11.11)」 꼴이라,
+   둘을 합쳐야 날이 선다. **없으면 없다고 둔다** — 수정일로 메우지 않는다(수정일은 어긋난다).
+     · 「우리은행 거래내역조회 20260421.xlsx」        → 2026-04-21 (파일명만으로)
+     · 「26.11 / grid_exceldata (11.11).xlsx」        → 2026-11-11 (폴더 연월 + 파일명 날)
+     · 「26.10 / …」만 있고 날이 없으면               → 2026-10 (달까지만) */
+function cvfYm(dir) {
+  const s = String(dir || "");
+  let m = /(?:^|\/)(20\d{2})\.(\d{1,2})(?:\/|$)/.exec(s);
+  if (m) return m[1] + "-" + String(+m[2]).padStart(2, "0");
+  m = /(?:^|\/)(\d{2})\.(\d{1,2})(?:\/|$)/.exec(s);          /* 26.11 꼴 */
+  if (m) return "20" + m[1] + "-" + String(+m[2]).padStart(2, "0");
+  m = /(?:^|\/)(20\d{2})\.결산/.exec(s);
+  if (m) return m[1] + "-";
+  return "";
+}
+function cvfDayOf(r) {
+  const nd = cvfNameDate(r.name);
+  if (nd.iso) return { iso: nd.iso, ym: nd.iso.slice(0, 7), from: "파일명" };
+  const ym = cvfYm(r.dir);
+  if (nd.md && /^\d{4}-\d{2}$/.test(ym)) {
+    const mm = nd.md.slice(0, 2);
+    /* 폴더의 달과 파일명의 달이 어긋나면 **합치지 않는다** — 둘 중 어느 쪽이 맞는지 모른다 */
+    if (mm !== ym.slice(5, 7)) return { iso: "", ym: ym, from: "폴더(파일명과 달이 어긋남)", clash: true };
+    return { iso: ym.slice(0, 4) + "-" + nd.md, ym: ym, from: "폴더 + 파일명" };
+  }
+  if (/^\d{4}-\d{2}$/.test(ym)) return { iso: "", ym: ym, from: "폴더(달까지만)" };
+  return { iso: "", ym: "", from: "" };
+}
+
+/* ── ⑥-2b 팀의 폴더로 좁히기 ───────────────────────────────────────────
+   형 지시(2026-11-12): 「회계 대시보드는 02.회계와 항상 연결되도록 해줘.」
+   저장소 폴더가 곧 팀이다 — 회계팀 지면은 늘 02.회계 아래만 본다. 좁히지 않으면
+   다른 팀 자료가 회계 화면에 섞이고, 은행 내역을 찾을 때 엉뚱한 폴더까지 뒤진다. */
+function cvfDeptDir(team) {
+  if (typeof CORP_VAULT_DEPT === "undefined") return "";
+  const d = CORP_VAULT_DEPT.find(function (x) { return x.team === team; });
+  return d ? d.k + "." + d.ko : "";
+}
+function cvfScope(rows, team) {
+  const dir = cvfDeptDir(team);
+  if (!dir) return { rows: rows || [], dir: "", n: (rows || []).length, all: (rows || []).length, ok: true };
+  const hit = (rows || []).filter(function (r) { return String(r.rel || "").indexOf(dir + "/") === 0; });
+  return { rows: hit, dir: dir, n: hit.length, all: (rows || []).length,
+    /* 0건이면 **숨기지 않고 말한다** — 엉뚱한 폴더를 이으셨을 수 있다 */
+    ok: hit.length > 0,
+    why: hit.length ? "" : "이어 둔 폴더에 「" + dir + "」 가 없습니다 — 저장소 루트나 " + dir + " 폴더를 이어 주세요" };
+}
+
+/* ── ⑥-3 그날 것 찾기 — **고르지 않는다. 다만 하나뿐이면 하나뿐이라고 말한다** ──
+   ⚠️ 여럿이면 형이 고르신다. 하나뿐일 때 그것을 쓰는 것은 「고른 것」이 아니라
+      「그것밖에 없는 것」이다. 그 둘을 섞으면 틀린 달의 장부가 선다. */
+function cvfMatchDay(rows, iso, kindOf) {
+  const C = cvfBankCandidates(rows, kindOf);
+  const ym = /^\d{4}-\d{2}-\d{2}$/.test(String(iso || "")) ? String(iso).slice(0, 7) : "";
+  const tag = C.rows.map(function (r) { return Object.assign({}, cvfPickRow(r), { day: cvfDayOf(r) }); });
+  const exact = tag.filter(function (r) { return r.day.iso === iso; });
+  const month = tag.filter(function (r) { return r.day.iso !== iso && ym && r.day.ym === ym; });
+  return {
+    exact: exact, month: month, all: tag,
+    n: exact.length, only: exact.length === 1 ? exact[0] : null,
+    ym: ym,
+    why: exact.length === 1 ? "그날 것이 하나뿐입니다"
+      : (exact.length > 1 ? "그날 것이 " + exact.length + "건입니다 — 고르셔야 합니다"
+        : (month.length ? "그날 것은 없고 같은 달 것이 " + month.length + "건 있습니다 — 고르셔야 합니다"
+          : "그날이나 그 달 것을 찾지 못했습니다")),
+  };
+}
+
 /* ── ⑦ 검산 — 화면과 커밋 게이트 러너가 같은 함수를 본다 ────────────────
    ⚠️ 「목록을 잘 만든다」만 세면 안 된다. **고르지 않는다**는 것도 세야 한다. */
 const CORP_VFS_T = [
@@ -284,6 +364,56 @@ function cvfSelfTest() {
       got: CORP_VFS_DB, want: "IndexedDB" },
     { k: "cap", ko: "훑기에 상한이 있다(멈추지 않는 순회를 막는다)", n: 1,
       ok: CORP_VFS_MAXFILES > 0, got: CORP_VFS_MAXFILES + "개", want: "> 0" },
+    { k: "ym", ko: "폴더 이름에서 연 · 월을 읽는다", n: 3,
+      ok: cvfYm("02.회계/2026.결산/26.11") === "2026-11" && cvfYm("02.회계/2026.결산/2026.09") === "2026-09"
+        && cvfYm("01.경영기획") === "",
+      got: [cvfYm("02.회계/2026.결산/26.11"), cvfYm("02.회계/2026.결산/2026.09"), cvfYm("01.경영기획")].join(" / "),
+      want: "2026-11 / 2026-09 / (빈칸)" },
+    { k: "join", ko: "폴더 연 · 월과 파일명 날을 합쳐 날짜를 센다", n: 2,
+      ok: cvfDayOf({ name: "거래내역_표본 (11.11).xlsx", dir: "02.회계/2026.결산/26.11" }).iso === "2026-11-11"
+        && cvfDayOf({ name: "우리_표본 20260709.xlsx", dir: "02.회계/2026.결산" }).iso === "2026-07-09",
+      got: [cvfDayOf({ name: "거래내역_표본 (11.11).xlsx", dir: "02.회계/2026.결산/26.11" }).iso,
+        cvfDayOf({ name: "우리_표본 20260709.xlsx", dir: "02.회계/2026.결산" }).iso].join(" / "),
+      want: "2026-11-11 / 2026-07-09" },
+    { k: "clash", ko: "폴더의 달과 파일명의 달이 어긋나면 **합치지 않는다**", n: 1,
+      ok: cvfDayOf({ name: "거래내역_표본 (09.30).xlsx", dir: "02.회계/2026.결산/26.11" }).iso === ""
+        && cvfDayOf({ name: "거래내역_표본 (09.30).xlsx", dir: "02.회계/2026.결산/26.11" }).clash === true,
+      got: JSON.stringify(cvfDayOf({ name: "거래내역_표본 (09.30).xlsx", dir: "02.회계/2026.결산/26.11" })),
+      want: "날짜 비움 + 어긋남 표시" },
+    { k: "only", ko: "그날 것이 **하나뿐이면** 하나뿐이라고 말한다", n: 1,
+      ok: (function () {
+        const M = cvfMatchDay([{ rel: "x", name: "거래내역_표본 (11.11).xlsx", dir: "02.회계/2026.결산/26.11", ext: "xlsx", size: 1, at: "2026-11-12" }],
+          "2026-11-11", function () { return { k: "bank" }; });
+        return M.n === 1 && !!M.only;
+      })(), got: "하나", want: "하나" },
+    { k: "many", ko: "여럿이면 **고르지 않는다**(형이 고르신다)", n: 2,
+      ok: (function () {
+        const M = cvfMatchDay([
+          { rel: "a", name: "거래내역_표본 (11.11).xlsx", dir: "02.회계/2026.결산/26.11", ext: "xlsx", size: 1, at: "2026-11-12" },
+          { rel: "b", name: "우리_표본 20261111.xlsx", dir: "02.회계/2026.결산/26.11", ext: "xlsx", size: 1, at: "2026-11-12" },
+        ], "2026-11-11", function () { return { k: "bank" }; });
+        return M.n === 2 && M.only === null && /고르셔야/.test(M.why);
+      })(), got: "고르지 않음", want: "고르지 않음" },
+    { k: "scope", ko: "팀의 폴더로 좁힌다(회계는 늘 02.회계)", n: 3,
+      ok: cvfDeptDir("M2") === "02.회계" && cvfDeptDir("M1") === "01.경영기획" && cvfDeptDir("없는팀") === "",
+      got: [cvfDeptDir("M2"), cvfDeptDir("M1"), cvfDeptDir("없는팀")].join(" / "), want: "02.회계 / 01.경영기획 / (빈칸)" },
+    { k: "scoperow", ko: "다른 팀 자료가 섞이지 않는다", n: 3,
+      ok: (function () {
+        const R = [{ rel: "02.회계/가_표본.xlsx" }, { rel: "01.경영기획/나_표본.pdf" }, { rel: "02.회계/2026.결산/다_표본.xlsx" }];
+        const S = cvfScope(R, "M2");
+        return S.n === 2 && S.all === 3 && S.ok;
+      })(), got: "2 / 3", want: "2 / 3" },
+    { k: "scopenone", ko: "그 팀 폴더가 없으면 **0건이라고 말한다**(숨기지 않는다)", n: 1,
+      ok: (function () {
+        const S = cvfScope([{ rel: "01.경영기획/나_표본.pdf" }], "M2");
+        return S.n === 0 && !S.ok && (S.why || "").indexOf("02.회계") >= 0;
+      })(), got: "0건 + 이유", want: "0건 + 이유" },
+    { k: "none", ko: "그날 것이 없으면 **아무거나 집지 않는다**", n: 1,
+      ok: (function () {
+        const M = cvfMatchDay([{ rel: "c", name: "거래내역_표본 (10.31).xlsx", dir: "02.회계/2026.결산/26.10", ext: "xlsx", size: 1, at: "2026-11-12" }],
+          "2026-11-11", function () { return { k: "bank" }; });
+        return M.n === 0 && M.only === null;
+      })(), got: "집지 않음", want: "집지 않음" },
   ];
 }
 function cvfVerdict() {

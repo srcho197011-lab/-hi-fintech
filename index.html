@@ -19261,6 +19261,13 @@ async function cvfScan(h, onTick) {
   if (!h) throw new Error("이어 둔 폴더가 없습니다");
   const perm = await cvfPerm(h, false);
   if (perm !== "granted") throw new Error("폴더를 읽을 권한이 없습니다 — 「폴더 다시 잇기」를 눌러 주세요");
+  /* ⚠️ 이은 것이 저장소 **루트**가 아니라 부서 폴더 하나일 수 있다(형이 02.회계 를 직접 이으셨다).
+     그러면 경로가 「2026.결산/26.11/…」로 시작해 팀 판별이 서지 않는다 — 앞에 그 폴더 이름을
+     붙여 루트에서 이은 것과 **같은 모양**으로 만든다. 어느 쪽을 이으셔도 되게. */
+  const rootName = String(h.name || "");
+  const asDept = typeof CORP_VAULT_DEPT !== "undefined"
+    && CORP_VAULT_DEPT.some(function (d) { return rootName === d.k + "." + d.ko || rootName.indexOf(d.k + ".") === 0; });
+  const base = asDept ? rootName : "";
   const rows = [];
   let cut = false;
   async function walk(dir, rel) {
@@ -19290,9 +19297,9 @@ async function cvfScan(h, onTick) {
       if (typeof onTick === "function") onTick(rows.length);
     }
   }
-  await walk(h, "");
+  await walk(h, base);
   rows.sort(function (a, b) { return a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0; });
-  return { root: h.name || "", rows: rows, n: rows.length, cut: cut,
+  return { root: rootName, asDept: asDept, base: base, rows: rows, n: rows.length, cut: cut,
     unread: rows.filter(function (r) { return r.unread; }).length,
     bytes: rows.reduce(function (n, r) { return n + (+r.size || 0); }, 0) };
 }
@@ -19311,7 +19318,11 @@ function cvfDay(ms) {
 /* ── ⑤ 파일 하나 꺼내기 ────────────────────────────────────────────────── */
 async function cvfFile(h, rel) {
   if (!h) throw new Error("이어 둔 폴더가 없습니다");
-  const parts = String(rel || "").split("/").filter(Boolean);
+  /* 훑을 때 붙인 부서 이름은 **떼고** 찾는다 — 안 떼면 그 폴더 안에서 같은 이름을 또 찾는다 */
+  let r = String(rel || "");
+  const rn = String(h.name || "");
+  if (rn && r.indexOf(rn + "/") === 0) r = r.slice(rn.length + 1);
+  const parts = r.split("/").filter(Boolean);
   if (!parts.length) throw new Error("파일 경로가 비었습니다");
   let dir = h;
   for (let i = 0; i < parts.length - 1; i++) {
@@ -19366,6 +19377,75 @@ function cvfPickRow(r) {
   };
 }
 
+/* ── ⑥-2 그 줄이 가리키는 날 ────────────────────────────────────────────
+   저장소의 폴더 이름이 「26.11」·「2026.결산」 꼴이고 파일명이 「(11.11)」 꼴이라,
+   둘을 합쳐야 날이 선다. **없으면 없다고 둔다** — 수정일로 메우지 않는다(수정일은 어긋난다).
+     · 「우리은행 거래내역조회 20260421.xlsx」        → 2026-04-21 (파일명만으로)
+     · 「26.11 / grid_exceldata (11.11).xlsx」        → 2026-11-11 (폴더 연월 + 파일명 날)
+     · 「26.10 / …」만 있고 날이 없으면               → 2026-10 (달까지만) */
+function cvfYm(dir) {
+  const s = String(dir || "");
+  let m = /(?:^|\/)(20\d{2})\.(\d{1,2})(?:\/|$)/.exec(s);
+  if (m) return m[1] + "-" + String(+m[2]).padStart(2, "0");
+  m = /(?:^|\/)(\d{2})\.(\d{1,2})(?:\/|$)/.exec(s);          /* 26.11 꼴 */
+  if (m) return "20" + m[1] + "-" + String(+m[2]).padStart(2, "0");
+  m = /(?:^|\/)(20\d{2})\.결산/.exec(s);
+  if (m) return m[1] + "-";
+  return "";
+}
+function cvfDayOf(r) {
+  const nd = cvfNameDate(r.name);
+  if (nd.iso) return { iso: nd.iso, ym: nd.iso.slice(0, 7), from: "파일명" };
+  const ym = cvfYm(r.dir);
+  if (nd.md && /^\d{4}-\d{2}$/.test(ym)) {
+    const mm = nd.md.slice(0, 2);
+    /* 폴더의 달과 파일명의 달이 어긋나면 **합치지 않는다** — 둘 중 어느 쪽이 맞는지 모른다 */
+    if (mm !== ym.slice(5, 7)) return { iso: "", ym: ym, from: "폴더(파일명과 달이 어긋남)", clash: true };
+    return { iso: ym.slice(0, 4) + "-" + nd.md, ym: ym, from: "폴더 + 파일명" };
+  }
+  if (/^\d{4}-\d{2}$/.test(ym)) return { iso: "", ym: ym, from: "폴더(달까지만)" };
+  return { iso: "", ym: "", from: "" };
+}
+
+/* ── ⑥-2b 팀의 폴더로 좁히기 ───────────────────────────────────────────
+   형 지시(2026-11-12): 「회계 대시보드는 02.회계와 항상 연결되도록 해줘.」
+   저장소 폴더가 곧 팀이다 — 회계팀 지면은 늘 02.회계 아래만 본다. 좁히지 않으면
+   다른 팀 자료가 회계 화면에 섞이고, 은행 내역을 찾을 때 엉뚱한 폴더까지 뒤진다. */
+function cvfDeptDir(team) {
+  if (typeof CORP_VAULT_DEPT === "undefined") return "";
+  const d = CORP_VAULT_DEPT.find(function (x) { return x.team === team; });
+  return d ? d.k + "." + d.ko : "";
+}
+function cvfScope(rows, team) {
+  const dir = cvfDeptDir(team);
+  if (!dir) return { rows: rows || [], dir: "", n: (rows || []).length, all: (rows || []).length, ok: true };
+  const hit = (rows || []).filter(function (r) { return String(r.rel || "").indexOf(dir + "/") === 0; });
+  return { rows: hit, dir: dir, n: hit.length, all: (rows || []).length,
+    /* 0건이면 **숨기지 않고 말한다** — 엉뚱한 폴더를 이으셨을 수 있다 */
+    ok: hit.length > 0,
+    why: hit.length ? "" : "이어 둔 폴더에 「" + dir + "」 가 없습니다 — 저장소 루트나 " + dir + " 폴더를 이어 주세요" };
+}
+
+/* ── ⑥-3 그날 것 찾기 — **고르지 않는다. 다만 하나뿐이면 하나뿐이라고 말한다** ──
+   ⚠️ 여럿이면 형이 고르신다. 하나뿐일 때 그것을 쓰는 것은 「고른 것」이 아니라
+      「그것밖에 없는 것」이다. 그 둘을 섞으면 틀린 달의 장부가 선다. */
+function cvfMatchDay(rows, iso, kindOf) {
+  const C = cvfBankCandidates(rows, kindOf);
+  const ym = /^\d{4}-\d{2}-\d{2}$/.test(String(iso || "")) ? String(iso).slice(0, 7) : "";
+  const tag = C.rows.map(function (r) { return Object.assign({}, cvfPickRow(r), { day: cvfDayOf(r) }); });
+  const exact = tag.filter(function (r) { return r.day.iso === iso; });
+  const month = tag.filter(function (r) { return r.day.iso !== iso && ym && r.day.ym === ym; });
+  return {
+    exact: exact, month: month, all: tag,
+    n: exact.length, only: exact.length === 1 ? exact[0] : null,
+    ym: ym,
+    why: exact.length === 1 ? "그날 것이 하나뿐입니다"
+      : (exact.length > 1 ? "그날 것이 " + exact.length + "건입니다 — 고르셔야 합니다"
+        : (month.length ? "그날 것은 없고 같은 달 것이 " + month.length + "건 있습니다 — 고르셔야 합니다"
+          : "그날이나 그 달 것을 찾지 못했습니다")),
+  };
+}
+
 /* ── ⑦ 검산 — 화면과 커밋 게이트 러너가 같은 함수를 본다 ────────────────
    ⚠️ 「목록을 잘 만든다」만 세면 안 된다. **고르지 않는다**는 것도 세야 한다. */
 const CORP_VFS_T = [
@@ -19411,6 +19491,56 @@ function cvfSelfTest() {
       got: CORP_VFS_DB, want: "IndexedDB" },
     { k: "cap", ko: "훑기에 상한이 있다(멈추지 않는 순회를 막는다)", n: 1,
       ok: CORP_VFS_MAXFILES > 0, got: CORP_VFS_MAXFILES + "개", want: "> 0" },
+    { k: "ym", ko: "폴더 이름에서 연 · 월을 읽는다", n: 3,
+      ok: cvfYm("02.회계/2026.결산/26.11") === "2026-11" && cvfYm("02.회계/2026.결산/2026.09") === "2026-09"
+        && cvfYm("01.경영기획") === "",
+      got: [cvfYm("02.회계/2026.결산/26.11"), cvfYm("02.회계/2026.결산/2026.09"), cvfYm("01.경영기획")].join(" / "),
+      want: "2026-11 / 2026-09 / (빈칸)" },
+    { k: "join", ko: "폴더 연 · 월과 파일명 날을 합쳐 날짜를 센다", n: 2,
+      ok: cvfDayOf({ name: "거래내역_표본 (11.11).xlsx", dir: "02.회계/2026.결산/26.11" }).iso === "2026-11-11"
+        && cvfDayOf({ name: "우리_표본 20260709.xlsx", dir: "02.회계/2026.결산" }).iso === "2026-07-09",
+      got: [cvfDayOf({ name: "거래내역_표본 (11.11).xlsx", dir: "02.회계/2026.결산/26.11" }).iso,
+        cvfDayOf({ name: "우리_표본 20260709.xlsx", dir: "02.회계/2026.결산" }).iso].join(" / "),
+      want: "2026-11-11 / 2026-07-09" },
+    { k: "clash", ko: "폴더의 달과 파일명의 달이 어긋나면 **합치지 않는다**", n: 1,
+      ok: cvfDayOf({ name: "거래내역_표본 (09.30).xlsx", dir: "02.회계/2026.결산/26.11" }).iso === ""
+        && cvfDayOf({ name: "거래내역_표본 (09.30).xlsx", dir: "02.회계/2026.결산/26.11" }).clash === true,
+      got: JSON.stringify(cvfDayOf({ name: "거래내역_표본 (09.30).xlsx", dir: "02.회계/2026.결산/26.11" })),
+      want: "날짜 비움 + 어긋남 표시" },
+    { k: "only", ko: "그날 것이 **하나뿐이면** 하나뿐이라고 말한다", n: 1,
+      ok: (function () {
+        const M = cvfMatchDay([{ rel: "x", name: "거래내역_표본 (11.11).xlsx", dir: "02.회계/2026.결산/26.11", ext: "xlsx", size: 1, at: "2026-11-12" }],
+          "2026-11-11", function () { return { k: "bank" }; });
+        return M.n === 1 && !!M.only;
+      })(), got: "하나", want: "하나" },
+    { k: "many", ko: "여럿이면 **고르지 않는다**(형이 고르신다)", n: 2,
+      ok: (function () {
+        const M = cvfMatchDay([
+          { rel: "a", name: "거래내역_표본 (11.11).xlsx", dir: "02.회계/2026.결산/26.11", ext: "xlsx", size: 1, at: "2026-11-12" },
+          { rel: "b", name: "우리_표본 20261111.xlsx", dir: "02.회계/2026.결산/26.11", ext: "xlsx", size: 1, at: "2026-11-12" },
+        ], "2026-11-11", function () { return { k: "bank" }; });
+        return M.n === 2 && M.only === null && /고르셔야/.test(M.why);
+      })(), got: "고르지 않음", want: "고르지 않음" },
+    { k: "scope", ko: "팀의 폴더로 좁힌다(회계는 늘 02.회계)", n: 3,
+      ok: cvfDeptDir("M2") === "02.회계" && cvfDeptDir("M1") === "01.경영기획" && cvfDeptDir("없는팀") === "",
+      got: [cvfDeptDir("M2"), cvfDeptDir("M1"), cvfDeptDir("없는팀")].join(" / "), want: "02.회계 / 01.경영기획 / (빈칸)" },
+    { k: "scoperow", ko: "다른 팀 자료가 섞이지 않는다", n: 3,
+      ok: (function () {
+        const R = [{ rel: "02.회계/가_표본.xlsx" }, { rel: "01.경영기획/나_표본.pdf" }, { rel: "02.회계/2026.결산/다_표본.xlsx" }];
+        const S = cvfScope(R, "M2");
+        return S.n === 2 && S.all === 3 && S.ok;
+      })(), got: "2 / 3", want: "2 / 3" },
+    { k: "scopenone", ko: "그 팀 폴더가 없으면 **0건이라고 말한다**(숨기지 않는다)", n: 1,
+      ok: (function () {
+        const S = cvfScope([{ rel: "01.경영기획/나_표본.pdf" }], "M2");
+        return S.n === 0 && !S.ok && (S.why || "").indexOf("02.회계") >= 0;
+      })(), got: "0건 + 이유", want: "0건 + 이유" },
+    { k: "none", ko: "그날 것이 없으면 **아무거나 집지 않는다**", n: 1,
+      ok: (function () {
+        const M = cvfMatchDay([{ rel: "c", name: "거래내역_표본 (10.31).xlsx", dir: "02.회계/2026.결산/26.10", ext: "xlsx", size: 1, at: "2026-11-12" }],
+          "2026-11-11", function () { return { k: "bank" }; });
+        return M.n === 0 && M.only === null;
+      })(), got: "집지 않음", want: "집지 않음" },
   ];
 }
 function cvfVerdict() {
@@ -20064,9 +20194,12 @@ const CORP_ORD_ACT = [
   { k: "reverse", ko: "역분개", who: "ai",
     w: ["역분개", "반대분개", "역분계", "되돌려", "되돌리", "무효로", "취소 전표"],
     d: "그날 은행 내역에서 만든 전표를 **역분개 초안**으로 만듭니다(승인·전기는 사람이 합니다)" },
-  { k: "refetch", ko: "은행 내역 다시 받기", who: "human",
-    w: ["다시 받", "다시 다운", "다시 내려", "다시 가져", "새로 받", "내려받", "다운받", "다시 조회"],
-    d: "은행 계좌를 제가 직접 열지 못합니다 — 형이 내려받아 올려 주셔야 합니다" },
+  /* ⚠️ who 가 **상황에 따라 바뀌는** 유일한 일이다. 저장소 폴더가 이어져 있으면 거기서
+     가져올 수 있으니 내 몫이고, 안 이어져 있으면 형이 올려 주셔야 하니 형 몫이다.
+     은행 계좌 자체를 여는 일은 **어느 쪽이든 못 한다** — 형이 내려받아 저장소에 두셔야 한다. */
+  { k: "refetch", ko: "은행 내역 가져오기", who: "human",
+    w: ["다시 받", "다시 다운", "다시 내려", "다시 가져", "새로 받", "내려받", "다운받", "다시 조회", "가져와", "가져오"],
+    d: "저장소 폴더가 이어져 있으면 제가 찾아 가져옵니다 — 은행 계좌 자체는 형이 내려받아 저장소에 두셔야 합니다" },
   { k: "rebuild", ko: "전표 다시 만들기", who: "ai",
     w: ["다시 만들", "다시 전표", "전표를 다시", "재생성", "다시 쳐", "다시 작성", "새로 만들"],
     d: "올라온 은행 내역에서 전표를 다시 만듭니다(역분개가 전기된 뒤에만 됩니다)" },
@@ -20209,8 +20342,9 @@ function corpOrdCanRebuild(jvs, iso, led, todayIso) {
 /* ── ⑦ 할 일로 쪼개기 ────────────────────────────────────────────────────
    한 문장에 일이 여럿이면 **차례대로** 세운다. 앞 단계가 안 끝나면 뒤는 잠겨 있다.
    단계마다 **누가 하는지**를 적는다 — 이게 이 화면의 본체다. */
-function corpOrdSteps(parsed, jvs, led, todayIso) {
+function corpOrdSteps(parsed, jvs, led, todayIso, fs) {
   const iso = parsed.date.iso;
+  const F = fs || null;
   const out = [];
   parsed.acts.forEach(function (a) {
     if (a.k === "reverse") {
@@ -20230,11 +20364,26 @@ function corpOrdSteps(parsed, jvs, led, todayIso) {
         ].filter(Boolean),
       });
     } else if (a.k === "refetch") {
+      /* 저장소가 이어져 있고 **그날 것이 하나뿐**이면 내가 가져온다.
+         여럿이면 고르지 않는다 — 수정일이 파일명 날짜와 어긋나는 것이 실제로 있어,
+         기계가 집으면 틀린 달의 장부가 선다. */
+      const M = F && F.match;
+      const mine = !!(F && F.linked && M && M.n === 1);
       out.push({
-        k: "refetch", ko: "은행 내역 다시 받기", who: "human", d: a.d,
-        n: null, can: false,
-        why: "은행 계좌를 제가 직접 열지 못합니다 — 형이 내려받아 **은행 대사 지면에서 올려** 주셔야 합니다",
-        note: [],
+        k: "refetch", ko: "은행 내역 가져오기", who: mine ? "ai" : "human", d: a.d,
+        n: M ? M.n : null, can: mine,
+        why: mine ? "" : (!F || !F.linked
+          ? "저장소 폴더가 아직 이어져 있지 않습니다 — 자료실이나 은행 대사 지면에서 한 번 이어 주시면 제가 찾아 가져옵니다. 그 전까지는 형이 올려 주셔야 합니다"
+          : (F.scope && !F.scope.ok ? F.scope.why
+            : (M ? M.why : "저장소에서 찾지 못했습니다"))),
+        pick: mine ? M.only : null,
+        list: M ? (M.n > 1 ? M.exact : M.month) : [],
+        note: [
+          F && F.linked && F.scope && F.scope.dir ? "저장소의 **" + F.scope.dir + "** 안만 봅니다(회계 자료가 거기 있습니다)" : "",
+          mine ? "그날 것이 하나뿐이라 그걸 씁니다 — 고른 것이 아니라 그것밖에 없는 것입니다" : "",
+          M && M.n > 1 ? "여럿이라 **제가 고르지 않습니다** — 아래에서 골라 주세요" : "",
+          "은행 계좌 자체는 제가 열지 못합니다 — 형이 내려받아 저장소에 두셔야 합니다",
+        ].filter(Boolean),
       });
     } else if (a.k === "rebuild") {
       const C = corpOrdCanRebuild(jvs, iso, led, todayIso);
@@ -20264,7 +20413,7 @@ function corpOrderPlan(q, ctx) {
   }
   const led = typeof corpLedgerRead === "function" ? corpLedgerRead() : { jv: [], bank: [] };
   const jvs = typeof corpJvAll === "function" ? corpJvAll(led) : [];
-  const steps = corpOrdSteps(P, jvs, led, todayIso);
+  const steps = corpOrdSteps(P, jvs, led, todayIso, ctx && ctx.fs);
   const head = "**" + P.date.iso + "** 로 읽었습니다"
     + (P.date.assumed ? "(" + P.date.why + " — 다르면 날짜를 적어 다시 말씀해 주세요)" : "")
     + ". 할 일 " + steps.length + "가지로 나눴습니다. 승인 · 전기는 형이 하십니다.";
@@ -21015,7 +21164,8 @@ function ClBankUp({ st, save, actor, A }) {
             은행에서 내려받은 <b>.xlsx 를 그대로</b> 올리시면 됩니다(CSV 도 받습니다).
             은행 계좌를 <b>자동으로 가져오지 못합니다</b> — 그래서 사람이 매일 올립니다.</p>
 
-          <CorpVaultFs bankOnly onPick={async (f) => { await readFile(f); }} />
+          {/* 형 지시 — 회계 지면은 늘 02.회계 와 이어 둔다(다른 팀 자료가 섞이지 않게) */}
+          <CorpVaultFs bankOnly team="M2" onPick={async (f) => { await readFile(f); }} />
 
           <div className="bk-row">
             <span className="cl-t">내 컴퓨터에서 고르기 —</span>
@@ -22949,7 +23099,7 @@ function CorpAgentChatSection() {
    ⚠️ 그리고 **기계가 「가장 새 파일」을 고르지 않는다.** 저장소의 은행 내역은 이름 꼴이
       열 가지로 갈려 있고 수정일이 파일명 날짜와 어긋난다(9월 파일의 수정일이 11월 것보다
       늦다 — 실측). 늘어놓기만 하고 고르는 것은 형이 하신다. */
-function CorpVaultFs({ onRows, bankOnly, onPick }) {
+function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
   const [can] = React.useState(function () { return cvfCan(); });
   const [h, setH] = React.useState(null);
   const [perm, setPerm] = React.useState("");
@@ -23003,11 +23153,17 @@ function CorpVaultFs({ onRows, bankOnly, onPick }) {
     setNote({ bad: false, t: "폴더 연결을 끊었습니다 — 저장소의 파일은 그대로입니다." });
   };
 
+  /* 팀으로 좁힌다 — 형 지시: 「회계 대시보드는 02.회계와 항상 연결되도록 해줘.」 */
+  const sc = React.useMemo(function () {
+    if (!scan) return null;
+    return team ? cvfScope(scan.rows, team) : { rows: scan.rows, dir: "", n: scan.rows.length, all: scan.rows.length, ok: true };
+  }, [scan, team]);
   const cands = React.useMemo(function () {
-    if (!scan || !bankOnly) return null;
-    const C = cvfBankCandidates(scan.rows);
-    return { n: C.n, all: C.all, rows: C.rows.map(cvfPickRow) };
-  }, [scan, bankOnly]);
+    if (!sc || !bankOnly) return null;
+    const C = cvfBankCandidates(sc.rows);
+    const M = day ? cvfMatchDay(sc.rows, day) : null;
+    return { n: C.n, all: C.all, rows: C.rows.map(cvfPickRow), match: M };
+  }, [sc, bankOnly, day]);
 
   const take = async function (rel) {
     setBusy(true); setNote(null);
@@ -23053,9 +23209,18 @@ function CorpVaultFs({ onRows, bankOnly, onPick }) {
           </div>
           {note && <div className={"cl-msg" + (note.bad ? " bad" : "")} onClick={function () { setNote(null); }}>{note.t}</div>}
 
-          {scan && !bankOnly && (
-            <p className="cl-note">{scan.root} — <b>{scan.n}건</b> · {Math.round(scan.bytes / 104857.6) / 10}MB.
-              종류 · 법인 판별은 아래 대장이 합니다(여기서는 <b>사실만</b> 가져옵니다).</p>
+          {scan && (
+            <p className="cl-note">{scan.root}{scan.asDept ? "(부서 폴더를 직접 이으셨습니다)" : ""} — <b>{scan.n}건</b> · {Math.round(scan.bytes / 104857.6) / 10}MB.
+              {sc && sc.dir ? <span> 이 지면은 <b>{sc.dir}</b> 안만 봅니다 — <b>{sc.n}건</b>.</span> : null}
+              {!bankOnly && <span> 종류 · 법인 판별은 아래 대장이 합니다(여기서는 <b>사실만</b> 가져옵니다).</span>}</p>
+          )}
+          {sc && !sc.ok && <p className="cl-note hold">{sc.why}</p>}
+          {cands && cands.match && (
+            <p className={"cl-note" + (cands.match.n === 1 ? "" : " hold")}>
+              <b>{day}</b> 것 — {cands.match.why}.
+              {cands.match.n === 1 && <span> 「{cands.match.only.name}」 하나뿐이라 그걸 쓰시면 됩니다
+                — <b>고른 것이 아니라 그것밖에 없는 것</b>입니다.</span>}
+            </p>
           )}
 
           {cands && (
@@ -23340,6 +23505,10 @@ function CorpOrderSection({ onTab }) {
   const [led, setLed] = React.useState(function () { return corpLedgerRead(); });
   const [q, setQ] = React.useState("");
   const [msg, setMsg] = React.useState(null);
+  /* ⚠️ 저장소를 읽는 일은 비동기인데 답하는 함수는 동기다. 그래서 **미리 훑어 둔 것**을
+     상황으로 넘긴다 — 안 훑었으면 「안 이어져 있다」로 답한다(지어내지 않는다). */
+  const [vault, setVault] = React.useState(null);
+  const [handle, setHandle] = React.useState(null);
   const endRef = React.useRef(null);
 
   const now = typeof corpOpsNow === "function" ? corpOpsNow() : null;
@@ -23349,6 +23518,30 @@ function CorpOrderSection({ onTab }) {
   const V = React.useMemo(function () { return corpOrdVerdict(today); }, [today]);
   const jvs = React.useMemo(function () { return corpJvAll(led); }, [led]);
 
+  /* 이어 둔 폴더가 있으면 **회계팀 폴더(02.회계)** 안을 미리 훑어 둔다 — 형 지시대로
+     회계 지면은 늘 거기와 이어져 있다. 못 하는 브라우저면 조용히 넘어가지 않고 그대로 둔다. */
+  React.useEffect(function () {
+    let gone = false;
+    if (!cvfCan().ok) return;
+    cvfHandle().then(function (h) {
+      if (gone || !h) return;
+      setHandle(h);
+      return cvfPerm(h, false).then(function (p) {
+        if (gone || p !== "granted") return;
+        return cvfScan(h).then(function (S) { if (!gone) setVault(S); }).catch(function () {});
+      });
+    }).catch(function () {});
+    return function () { gone = true; };
+  }, []);
+
+  /* 지시를 읽을 때 넘길 저장소 상황 — 날짜가 정해져야 「그날 것」을 셀 수 있다 */
+  const fsFor = React.useCallback(function (iso) {
+    if (!vault) return { linked: false };
+    const sc = cvfScope(vault.rows, "M2");
+    const match = iso ? cvfMatchDay(sc.rows, iso) : null;
+    return { linked: true, scope: sc, match: match, root: vault.root };
+  }, [vault]);
+
   React.useEffect(function () {
     if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "end" });
   }, [log.length]);
@@ -23356,7 +23549,9 @@ function CorpOrderSection({ onTab }) {
   const send = function (text) {
     const s = String(text === undefined ? q : text).trim();
     if (!s) return;
-    const r = corpAgAnswer(AI, s, { now: now, today: today });
+    /* 날짜를 먼저 읽어 **그날 것**을 세어 넘긴다 — 날짜 없이는 저장소를 뒤져도 뜻이 없다 */
+    const pre = corpOrdParse(s, today);
+    const r = corpAgAnswer(AI, s, { now: now, today: today, fs: fsFor(pre.date.iso) });
     const next = Object.assign({}, st, { log: Object.assign({}, st.log) });
     next.log[AI] = (next.log[AI] || []).concat([{ who: "me", t: s }, { who: "ai", r: r }]);
     corpAgWrite(next); setSt(next); setQ(""); setMsg(null);
@@ -23405,9 +23600,52 @@ function CorpOrderSection({ onTab }) {
       + "기표 상태이니 전표 지면에서 검토 · 승인해 주세요." });
   };
 
+  /* 은행 내역 가져오기 — 저장소에서 읽어 **은행 대사와 같은 길**로 넣는다.
+     ⚠️ 민감자료 검사를 건너뛰지 않는다. 길이 둘인데 한쪽만 막으면 막는 것이 아니다. */
+  const doRefetch = async function (iso, pick) {
+    if (!handle) { setMsg({ bad: true, t: "이어 둔 저장소 폴더가 없습니다 — 은행 대사 지면에서 한 번 이어 주세요" }); return; }
+    if (!pick) { setMsg({ bad: true, t: "어느 파일인지 정해지지 않았습니다 — 은행 대사 지면에서 골라 주세요" }); return; }
+    setMsg({ bad: false, t: "「" + pick.name + "」을(를) 읽는 중입니다…" });
+    try {
+      const f = await cvfFile(handle, pick.rel);
+      const buf = new Uint8Array(await f.slice(0, 4).arrayBuffer());
+      const zip = buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+      let head = [], rows = [];
+      if (zip) { const X = await cbxRead(f); head = X.rows[0] || []; rows = X.rows.slice(1); }
+      else { const g = corpUpParseCsv(await f.text()); head = g.head || []; rows = g.rows || []; }
+      rows = rows.filter(function (r) { return r.join("").trim(); });
+      if (head.length < 2 || !rows.length) throw new Error("표를 읽지 못했습니다");
+      const hits = corpUpScan(rows, head);
+      if (hits.length) {
+        setMsg({ bad: true, t: "민감자료가 " + hits.length + "곳에서 걸렸습니다 — 읽기를 멈췄습니다. 그 열을 떼고 다시 해 주세요." });
+        return;
+      }
+      const map = corpUpSuggest(head, corpUpSpec("bank"));
+      const Vv = corpUpValidate("bank", head, rows, map);
+      if (Vv.missing.length) throw new Error(Vv.msg);
+      const T = corpUpToBank(Vv.ok);
+      if (!T.lines.length) throw new Error("읽을 은행줄이 없습니다");
+      const CH = corpBjvChain(T.lines);
+      if (CH.n > 0 && !CH.ok) throw new Error("잔액이 " + CH.breaks.length + "군데 끊겨 있습니다 — 빠진 거래가 있는 자료로는 넣지 않습니다");
+      const L = corpLedgerRead();
+      const M = corpUpMergeBank(L.bank || [], T.lines);
+      const ds = T.lines.map(function (x) { return x.d; }).sort();
+      const cov = { from: (L.bankCov && L.bankCov.from) || ds[0], to: ds[ds.length - 1] > ((L.bankCov && L.bankCov.to) || "") ? ds[ds.length - 1] : (L.bankCov && L.bankCov.to) || ds[ds.length - 1], at: pick.name };
+      const next = Object.assign({}, L, { bank: M.lines, bankCov: cov });
+      corpLedgerWrite(next); setLed(next);
+      setMsg({ bad: false, t: "「" + pick.name + "」에서 " + T.lines.length + "줄을 읽어 " + M.added + "줄 넣었습니다"
+        + (M.dup ? "(이미 받은 " + M.dup + "줄은 건너뜀)" : "") + ". "
+        + "이 자료가 덮는 기간은 **" + ds[0] + " ~ " + ds[ds.length - 1] + "** 로 보았습니다 — 다르면 은행 대사 지면에서 고쳐 주세요. "
+        + (CH.n > 0 ? "잔액 사슬 " + CH.n + "쌍 전건 성립." : "잔액 열이 없어 사슬은 확인하지 못했습니다.") });
+    } catch (e) {
+      setMsg({ bad: true, t: (e && e.message) || "가져오지 못했습니다" });
+    }
+  };
+
   const run = function (step, iso) {
     if (step.k === "reverse") return doReverse(iso);
     if (step.k === "rebuild") return doRebuild(iso);
+    if (step.k === "refetch") return doRefetch(iso, step.pick);
     setMsg({ bad: true, t: "이 일은 제가 하지 못합니다." });
   };
 
@@ -23499,8 +23737,12 @@ function CorpOrderSection({ onTab }) {
                               {s.who === "ai" && (
                                 <button className="cl-save" disabled={!s.can || !live}
                                   onClick={function () { run(s, iso); }}>
-                                  {s.k === "reverse" ? "역분개 초안 만들기" : "전표 다시 만들기"}
+                                  {s.k === "reverse" ? "역분개 초안 만들기"
+                                    : (s.k === "refetch" ? "저장소에서 가져오기 — " + (s.pick ? s.pick.name : "") : "전표 다시 만들기")}
                                 </button>
+                              )}
+                              {s.k === "refetch" && (s.list || []).length > 0 && (
+                                <span className="cl-t">고를 거리 {(s.list || []).length}건 — 은행 대사 지면에서 골라 주세요</span>
                               )}
                               {s.who === "human" && (
                                 <button className="cl-rv" onClick={function () { if (typeof onTab === "function") onTab("corpBank"); setMsg({ bad: false, t: "재무현황 지면의 **은행 대사** 탭에서 올리시면 됩니다." }); }}>
@@ -23550,11 +23792,15 @@ function CorpOrderSection({ onTab }) {
           <div className="cl-sec">
             <div className="cl-h">지금 장부 <span className="cl-t">지시가 보는 바탕</span></div>
             <div className="cl-stat">
+              <div className={vault ? "" : "hold"}><b>{vault ? cvfScope(vault.rows, "M2").n : "—"}</b><span>저장소 02.회계</span></div>
               <div><b>{jvs.length}</b><span>전표</span></div>
               <div><b>{corpPosted(jvs, "").length}</b><span>전기</span></div>
               <div><b>{((led && led.bank) || []).length}</b><span>은행줄</span></div>
               <div><b>{led && led.bankCov && led.bankCov.to ? led.bankCov.to : "—"}</b><span>은행 반입 끝</span></div>
             </div>
+            <p className="cl-note">{vault
+              ? <span>저장소 <b>{vault.root}</b> 와 이어져 있습니다 — 회계 지면은 <b>02.회계</b> 안만 봅니다. </span>
+              : <span>저장소 폴더가 아직 이어져 있지 않습니다 — 은행 대사 지면에서 한 번 이어 주시면 제가 찾아 가져옵니다. </span>}</p>
             <p className="cl-note">{corpJvLive(led)
               ? "반입된 실제 전표를 보고 있습니다."
               : "지금은 검증용 전표입니다 — 실제 전표가 반입되면 그것을 봅니다."}</p>
@@ -42757,7 +43003,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-11-12", ver:"v4.0", ch:[9], feat:"저장소 폴더 잇기 — 올려 두면 앱이 가져온다", src:"온톨로지 › 회사 총괄운영 › 자료실 · 재무현황 은행 대사", summary:"브라우저가 바탕화면을 뒤지지 못하므로 형이 한 번 저장소 폴더를 지정하면 그 권한을 기억했다 다음부터는 버튼 한 번으로 안을 훑어 목록과 파일을 가져오게 했고 저절로 도는 것이 아니라 사람이 눌러야 한다고 화면에 적었으며, 저장소의 은행 내역이 이름 꼴이 열 가지로 갈려 있고 수정일로 최신을 고르면 구월 파일이 뽑히는 것을 실측해 기계가 하나를 고르지 않고 전건을 이름 순으로 늘어놓기만 하며 파일명 날짜와 수정일이 어긋나는 줄은 이유와 함께 표시하게 했고, 폴더 권한 손잡이는 문자열 저장소에 넣으면 되돌릴 수 없게 뭉개지므로 인덱스드디비에만 두고 카탈로그 자동 스캔이 보지 못하는 자리라 손으로 등재해 러너가 이중으로 확인하게 했으며, 사파리와 파이어폭스와 아이폰은 이 길이 없어 조용히 빈 결과가 되지 않도록 기능을 실제로 만들어 보고 못 하면 못 한다고 적게 했고, 저장소에서 고른 파일도 내 컴퓨터에서 고른 것과 같은 함수로 읽어 민감자료 검사를 건너뛰는 길이 생기지 않게 했으며, 자료실 자기시험에 실제 파일명 네 건이 박혀 공개 배포본에 실려 있던 것을 표본 이름으로 바꾸고 비밀 검사가 상수 선언부만 보던 것을 파일 전체로 넓혔고, 파서가 객체를 돌려주는데 배열처럼 받아 죽어 있던 은행 대사의 CSV 길을 되살렸다", refs:[], status:"반영", hash:"aa436ae", auto:true },
+  { date:"2026-11-12", ver:"v4.1", ch:[9], feat:"업무 지시 2단계 — 저장소에서 은행 내역 가져오기", src:"온톨로지 › 회사 총괄운영 › 회계팀 › 업무 지시 · 은행 대사", summary:"저장소 폴더를 이은 뒤에는 은행 내역 가져오기가 핀테크 몫이 되도록 단계의 주인이 상황에 따라 바뀌게 했고 안 이어졌을 때와 그날 것이 하나뿐일 때와 여럿일 때와 없을 때를 모두 갈라 여럿이면 고르지 않고 형께 넘기며 하나뿐일 때 쓰는 것은 고른 것이 아니라 그것밖에 없는 것이라고 적게 했으며, 회계 지면은 늘 저장소의 회계 폴더 안만 보도록 팀마다 제 부서 폴더로 좁히고 저장소 루트를 이으셔도 부서 폴더를 직접 이으셔도 같은 모양이 되게 경로를 맞췄고 그 팀 폴더가 없는 곳을 이으면 영 건이라고 말하게 했으며, 폴더 이름의 연월과 파일명의 날을 합쳐 날짜를 세되 어느 쪽으로도 서지 않으면 수정일로 메우지 않고 폴더의 달과 파일명의 달이 어긋나면 합치지 않게 했고, 저장소에서 읽은 자료도 파일 머리 확인과 민감자료 검사와 잔액 사슬을 그대로 지나게 하여 검사를 건너뛰는 길이 생기지 않게 했으며 잔액이 끊긴 자료는 넣지 않고 기간은 자료에서 읽은 범위로 보되 그렇게 보았다고 적어 고칠 수 있게 했다", refs:[], status:"반영", hash:"1c1b30e", auto:true },
+  { date:"2026-11-12", ver:"v4.0", ch:[9], feat:"저장소 폴더 잇기 — 올려 두면 앱이 가져온다", src:"온톨로지 › 회사 총괄운영 › 자료실 · 재무현황 은행 대사", summary:"브라우저가 바탕화면을 뒤지지 못하므로 형이 한 번 저장소 폴더를 지정하면 그 권한을 기억했다 다음부터는 버튼 한 번으로 안을 훑어 목록과 파일을 가져오게 했고 저절로 도는 것이 아니라 사람이 눌러야 한다고 화면에 적었으며, 저장소의 은행 내역이 이름 꼴이 열 가지로 갈려 있고 수정일로 최신을 고르면 구월 파일이 뽑히는 것을 실측해 기계가 하나를 고르지 않고 전건을 이름 순으로 늘어놓기만 하며 파일명 날짜와 수정일이 어긋나는 줄은 이유와 함께 표시하게 했고, 폴더 권한 손잡이는 문자열 저장소에 넣으면 되돌릴 수 없게 뭉개지므로 인덱스드디비에만 두고 카탈로그 자동 스캔이 보지 못하는 자리라 손으로 등재해 러너가 이중으로 확인하게 했으며, 사파리와 파이어폭스와 아이폰은 이 길이 없어 조용히 빈 결과가 되지 않도록 기능을 실제로 만들어 보고 못 하면 못 한다고 적게 했고, 저장소에서 고른 파일도 내 컴퓨터에서 고른 것과 같은 함수로 읽어 민감자료 검사를 건너뛰는 길이 생기지 않게 했으며, 자료실 자기시험에 실제 파일명 네 건이 박혀 공개 배포본에 실려 있던 것을 표본 이름으로 바꾸고 비밀 검사가 상수 선언부만 보던 것을 파일 전체로 넓혔고, 파서가 객체를 돌려주는데 배열처럼 받아 죽어 있던 은행 대사의 CSV 길을 되살렸다", refs:[], status:"반영", hash:"ad966cc", auto:true },
   { date:"2026-11-12", ver:"v3.9", ch:[9], feat:"핀테크 팀장에게 말로 업무 지시", src:"온톨로지 › 회사 총괄운영 › 회계팀 › 업무 지시", summary:"시키는 말을 받으면 조용히 상태 보고로 답하던 것을 고쳐 지시로 읽고 할 일로 쪼개게 했으며 한 문장에 든 셋을 각각 누가 하는지와 몇 건인지와 못 하면 왜 못 하는지까지 적어 세웠고 은행에서 가져오는 일은 못 한다고 말하게 했으며, 날짜를 지어내지 않고 연도가 없으면 올해로 읽었다고 되읽어 주며 없는 날짜를 만들지 않고 못 알아들으면 되묻게 했고 되묻는지까지 검산이 세게 했으며, 역분개를 기표인 채로 두고 전표를 다시 만들면 같은 거래가 두 번 서는데 그것을 잡는 항등식이 없어 보통예금이 은행보다 어긋나도 열셋이 모두 녹색이던 것을 한 은행줄에 상쇄되지 않은 전기 전표는 한 장 이하라는 검사로 막았고, 역분개가 전기된 전표의 은행줄만 다시 쓸 수 있게 열어 다시 만들기가 실제로 돌게 했으며, 대상은 은행 내역에서 나온 전표만으로 좁혀 손으로 적은 전표를 건드리지 않게 했고 역분개 전표의 작성자를 핀테크로 두어 승인 가능자가 한 명뿐이어도 전기될 수 있게 했으며, 전기된 전표를 지우던 되돌리기 버튼도 함께 고쳐 승인 전인 것만 물리게 했다", refs:[], status:"반영", hash:"822b33e", auto:true },
   { date:"2026-11-12", ver:"v3.8", ch:[9], feat:"조직 온톨로지 — 원을 눌러 팀 안내 열기", src:"온톨로지 › 회사 총괄운영 › 총괄", summary:"그래프가 원근 회전을 그리느라 매 프레임 원을 지웠다 다시 만드는데 사람 손의 클릭은 백 밀리초쯤 걸려 그 사이 원이 사라지므로 브라우저가 클릭을 공통 조상에 쏘았고 화면은 그것을 아무 팀도 아닌 것으로 읽어 원을 정확히 눌러도 안내가 열리지 않았으며 빠른 자동 클릭은 한 프레임 안에 끝나 멀쩡히 열리는 탓에 오래 숨어 있던 자리였는데, 누르는 순간 어느 팀인지를 적어 두고 뗄 때 그 값으로 고르도록 바꾸어 원이 그 사이 사라져도 열리게 했고 끌었거나 창 밖에서 떼면 고르지 않게 했으며, 손이 쉽게 닿도록 보이지 않는 넓은 원을 깔았더니 앞 노드가 뒤 노드의 클릭을 가로채 다른 팀이 열리기에 그것을 걷어내고 마지막으로 그린 좌표로 세어 겹쳐 보이면 앞에 있는 쪽이 골라지게 했고, 회전을 멈추고 여덟 팀을 각각 길게 눌렀다 떼어 전건 제 팀이 열리는 것까지 확인했다", refs:[], status:"반영", hash:"4edb88a", auto:true },
   { date:"2026-11-12", ver:"v3.8", ch:[9], feat:"은행 내역 업로드 → 전표 생성 · 잔액 사슬 · 매일 운영", src:"온톨로지 › 회사 총괄운영 › 재무현황 › 은행 대사", summary:"은행에서 내려받은 엑셀을 외부 라이브러리 없이 브라우저 내장 기능만으로 읽되 압축 해제는 검사할 수 없는 층이라 판단을 전부 문자열이 들어가고 배열이 나오는 층에 두어 커밋 게이트가 직접 시험하게 했고 빈 셀과 자기닫는 셀과 건너뛴 행처럼 실제로 터졌던 꼴을 표본에 모두 넣었으며, 여태 통과로 세던 은행 대사 차이가 짝지은 줄의 금액이 같아 늘 0이 되는 항진식임을 드러내 판정에서 빼고 그 자리에 은행 표의 잔액 사슬과 장부 대조를 세워 부호 뒤집기와 한 줄 빼기와 열 맞바꾸기가 실제로 깨지는지를 게이트가 확인하게 했고, 계정은 거래를 한 사람만 알고 같은 낱말이 달마다 다른 계정으로 간 적이 있어 코드가 못 박은 대응을 하나만 두고 나머지는 책임자가 고르되 모르는 줄을 건너뛰지 않고 행 번호와 이유를 달아 남겨 은행 줄과 전표가 전건 대응하는지 세게 했으며, 같은 줄 판정에 시각과 잔액을 넣어 같은 날 같은 금액의 두 거래가 한 건으로 접히지 않게 하고 손으로 넣은 전표와 겹칠 때도 조용히 두 배가 되지 않게 사람에게 보였고, 핀테크 팀장의 은행 대사 루틴에 점검과 알림까지만 적고 승인과 월마감은 사람 칸에 두었으며 밀린 날은 거래일이 아니라 사람이 적은 기간으로 세게 했다", refs:[], status:"반영", hash:"4042a86", auto:true },
@@ -58420,7 +58667,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.4,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.46,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
