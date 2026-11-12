@@ -17,48 +17,81 @@
 const CORP_LEDGER_PILOT = true;              /* 실데이터 반입(P10) 시 false */
 const CORP_LEDGER_KEY = "hifin_corp_ledger"; /* dataCatalog.js 등재 필수 */
 
-/* ── ① 계정과목 ──────────────────────────────────────────────────────────────
+/* ── ① 계정과목 — **하이젠케어(주) 실제 계정과목** ────────────────────────
+   원천: 세성세무법인 날인 재무제표확인원
+     · 제1기 2025.12.31 (2026-04-29 확인)
+     · 제2기 2026.09.30 (2026-10-23 확인)
+   코드는 전산회계 표준 대역을 따른다. **과목명은 확인원 그대로** 쓴다 —
+   이름을 바꾸면 확인원과 대조할 때 사람이 한 번 더 번역해야 하고, 거기서 틀린다.
+
    t: A 자산 · L 부채 · E 자본 · R 수익 · X 비용
    d: 정상잔액 방향(D 차변 / C 대변) — 표시에만 쓴다. 집계는 부호(차−대)로 한다.
-   contra: 차감 계정(감가상각누계액) — 자산이지만 정상잔액이 대변이다. */
+   contra: 차감 계정(감가상각누계액) — 자산이지만 정상잔액이 대변이다.
+   fs: 확인원의 분류(화면이 재무제표를 확인원과 같은 꼴로 세운다) */
 const CORP_ACCT = [
-  { c: "101", n: "현금",           t: "A", d: "D" },
-  { c: "103", n: "보통예금",        t: "A", d: "D", bank: true },
-  { c: "108", n: "외상매출금",      t: "A", d: "D" },
-  { c: "135", n: "부가세대급금",     t: "A", d: "D" },
-  { c: "176", n: "임차보증금",      t: "A", d: "D" },
-  { c: "212", n: "비품",           t: "A", d: "D" },
-  { c: "213", n: "감가상각누계액",   t: "A", d: "C", contra: true },
-  { c: "226", n: "소프트웨어",      t: "A", d: "D" },
+  /* 당좌자산 */
+  { c: "101", n: "현금",              t: "A", d: "D", fs: "당좌자산" },
+  { c: "103", n: "보통예금",          t: "A", d: "D", fs: "당좌자산", bank: true },
+  { c: "108", n: "외상매출금",        t: "A", d: "D", fs: "당좌자산" },
+  { c: "114", n: "미수금",            t: "A", d: "D", fs: "당좌자산" },
+  { c: "131", n: "선급금",            t: "A", d: "D", fs: "당좌자산" },
+  { c: "134", n: "가지급금",          t: "A", d: "D", fs: "당좌자산" },
+  { c: "135", n: "부가세대급금",       t: "A", d: "D", fs: "당좌자산" },
+  /* 재고자산 */
+  { c: "146", n: "상품",              t: "A", d: "D", fs: "재고자산" },
+  /* 유형자산 */
+  { c: "212", n: "비품",              t: "A", d: "D", fs: "유형자산" },
+  { c: "213", n: "감가상각누계액",     t: "A", d: "C", fs: "유형자산", contra: true },
+  /* 무형자산 */
+  { c: "226", n: "개발비",            t: "A", d: "D", fs: "무형자산" },
+  /* 기타비유동자산 */
+  { c: "232", n: "임차보증금",        t: "A", d: "D", fs: "기타비유동자산" },
 
-  { c: "253", n: "미지급금",        t: "L", d: "C" },
-  { c: "254", n: "예수금",          t: "L", d: "C" },
-  { c: "255", n: "부가세예수금",     t: "L", d: "C" },
-  { c: "260", n: "단기차입금",      t: "L", d: "C" },
-  { c: "262", n: "미지급비용",      t: "L", d: "C" },
+  /* 유동부채 */
+  { c: "251", n: "외상매입금",        t: "L", d: "C", fs: "유동부채" },
+  { c: "253", n: "미지급금",          t: "L", d: "C", fs: "유동부채" },
+  { c: "254", n: "예수금",            t: "L", d: "C", fs: "유동부채" },
+  { c: "255", n: "부가세예수금",       t: "L", d: "C", fs: "유동부채" },
+  { c: "257", n: "가수금",            t: "L", d: "C", fs: "유동부채" },
+  { c: "260", n: "단기차입금",        t: "L", d: "C", fs: "유동부채" },
+  { c: "262", n: "미지급비용",        t: "L", d: "C", fs: "유동부채" },
 
-  { c: "331", n: "자본금",          t: "E", d: "C" },
-  { c: "341", n: "주식발행초과금",   t: "E", d: "C" },
-  { c: "375", n: "이월이익잉여금",   t: "E", d: "C" },
+  /* 자본 */
+  { c: "331", n: "자본금",            t: "E", d: "C", fs: "자본금" },
+  { c: "341", n: "주식발행초과금",     t: "E", d: "C", fs: "자본잉여금" },
+  { c: "375", n: "이월이익잉여금",     t: "E", d: "C", fs: "이익잉여금" },
 
-  { c: "401", n: "용역매출",        t: "R", d: "C" },
-  { c: "411", n: "기타수익",        t: "R", d: "C" },
+  /* 매출 */
+  { c: "401", n: "상품매출",          t: "R", d: "C", fs: "매출액" },
+  { c: "404", n: "기술사용료수익",     t: "R", d: "C", fs: "매출액" },
+  { c: "405", n: "광고수익",          t: "R", d: "C", fs: "매출액" },
+  /* 영업외수익 */
+  { c: "901", n: "이자수익",          t: "R", d: "C", fs: "영업외수익" },
+  { c: "930", n: "잡이익",            t: "R", d: "C", fs: "영업외수익" },
 
-  { c: "801", n: "급여",           t: "X", d: "D" },
-  { c: "811", n: "복리후생비",      t: "X", d: "D" },
-  { c: "812", n: "여비교통비",      t: "X", d: "D" },
-  { c: "813", n: "접대비",          t: "X", d: "D" },
-  { c: "814", n: "통신비",          t: "X", d: "D" },
-  { c: "817", n: "세금과공과",      t: "X", d: "D" },
-  { c: "818", n: "감가상각비",      t: "X", d: "D" },
-  { c: "819", n: "임차료",          t: "X", d: "D" },
-  { c: "821", n: "보험료",          t: "X", d: "D" },
-  { c: "825", n: "교육훈련비",      t: "X", d: "D" },
-  { c: "826", n: "도서인쇄비",      t: "X", d: "D" },
-  { c: "830", n: "지급수수료",      t: "X", d: "D" },
-  { c: "833", n: "광고선전비",      t: "X", d: "D" },
-  { c: "848", n: "잡비",           t: "X", d: "D" },
-  { c: "901", n: "이자비용",        t: "X", d: "D" },
+  /* 매출원가 */
+  { c: "451", n: "상품매출원가",       t: "X", d: "D", fs: "매출원가" },
+  /* 판매비와관리비 */
+  { c: "801", n: "직원급여",          t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "811", n: "복리후생비",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "812", n: "여비교통비",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "813", n: "접대비(기업업무추진비)", t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "814", n: "통신비",            t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "817", n: "세금과공과금",       t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "818", n: "감가상각비",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "819", n: "지급임차료",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "821", n: "보험료",            t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "822", n: "차량유지비",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "825", n: "교육훈련비",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "826", n: "도서인쇄비",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "830", n: "소모품비",          t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "831", n: "지급수수료",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "833", n: "광고선전비",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "837", n: "건물관리비",        t: "X", d: "D", fs: "판매비와관리비" },
+  { c: "848", n: "잡비",              t: "X", d: "D", fs: "판매비와관리비" },
+  /* 영업외비용 */
+  { c: "951", n: "이자비용",          t: "X", d: "D", fs: "영업외비용" },
+  { c: "980", n: "잡손실",            t: "X", d: "D", fs: "영업외비용" },
 ];
 
 const CORP_ACCT_T = { A: "자산", L: "부채", E: "자본", R: "수익", X: "비용" };
@@ -71,7 +104,7 @@ function corpAcctName(c) { const a = corpAcct(c); return a ? a.n : "(미등록 "
    by: 작성자 · ap: 승인자(전기된 것만) */
 const CORP_JV_SEED = [
   { id: "JV-0001", d: "2026-09-01", desc: "개시 잔액", by: "조성래", ap: "조성래", st: "posted", open: true, l: [
-    ["103", 120000000, 0, "보통예금 개시"], ["176", 20000000, 0, "사무실 보증금"], ["212", 12000000, 0, "비품"],
+    ["103", 120000000, 0, "보통예금 개시"], ["232", 20000000, 0, "사무실 보증금"], ["212", 12000000, 0, "비품"],
     ["213", 0, 2000000, "감가상각누계액"], ["331", 0, 100000000, "자본금"], ["341", 0, 40000000, "주식발행초과금"],
     ["375", 0, 10000000, "이월이익잉여금"]] },
 
@@ -79,10 +112,10 @@ const CORP_JV_SEED = [
     ["819", 3000000, 0, "9월분"], ["135", 300000, 0, "매입세액"], ["103", 0, 3300000, "이체"]] },
   { id: "JV-0003", d: "2026-09-10", desc: "8월분 급여 지급", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["801", 18000000, 0, "8월 급여"], ["254", 0, 1620000, "소득세·4대보험"], ["103", 0, 16380000, "이체"]] },
-  { id: "JV-0004", d: "2026-09-15", desc: "용역매출 — 가온헬스", by: "핀테크", ap: "조성래", st: "posted", l: [
-    ["108", 22000000, 0, "세금계산서 발행"], ["401", 0, 20000000, "건강관리 운영 용역"], ["255", 0, 2000000, "매출세액"]] },
+  { id: "JV-0004", d: "2026-09-15", desc: "기술사용료수익 — 가온헬스", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["108", 22000000, 0, "세금계산서 발행"], ["404", 0, 20000000, "건강관리 운영 용역"], ["255", 0, 2000000, "매출세액"]] },
   { id: "JV-0005", d: "2026-09-20", desc: "클라우드·회선 이용료", by: "핀테크", ap: "조성래", st: "posted", l: [
-    ["830", 1200000, 0, "9월"], ["135", 120000, 0, "매입세액"], ["103", 0, 1320000, "자동이체"]] },
+    ["831", 1200000, 0, "9월"], ["135", 120000, 0, "매입세액"], ["103", 0, 1320000, "자동이체"]] },
   { id: "JV-0006", d: "2026-09-25", desc: "복리후생비", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["811", 1500000, 0, "식대·경조"], ["135", 150000, 0, "매입세액"], ["103", 0, 1650000, "법인카드 결제"]] },
   { id: "JV-0007", d: "2026-09-28", desc: "여비교통비", by: "핀테크", ap: "조성래", st: "posted", l: [
@@ -100,12 +133,12 @@ const CORP_JV_SEED = [
     ["254", 1620000, 0, "8월분 납부"], ["103", 0, 1620000, "이체"]] },
   { id: "JV-0013", d: "2026-10-12", desc: "광고선전비 — 10월 캠페인", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["833", 5000000, 0, "채널 집행"], ["135", 500000, 0, "매입세액"], ["103", 0, 5500000, "이체"]] },
-  { id: "JV-0014", d: "2026-10-15", desc: "용역매출 — 나래라이프", by: "핀테크", ap: "조성래", st: "posted", l: [
-    ["108", 33000000, 0, "세금계산서 발행"], ["401", 0, 30000000, "보장분석 용역"], ["255", 0, 3000000, "매출세액"]] },
-  { id: "JV-0015", d: "2026-10-18", desc: "업무용 소프트웨어 구입", by: "핀테크", ap: "조성래", st: "posted", l: [
+  { id: "JV-0014", d: "2026-10-15", desc: "기술사용료수익 — 나래라이프", by: "핀테크", ap: "조성래", st: "posted", l: [
+    ["108", 33000000, 0, "세금계산서 발행"], ["404", 0, 30000000, "보장분석 용역"], ["255", 0, 3000000, "매출세액"]] },
+  { id: "JV-0015", d: "2026-10-18", desc: "업무용 개발비 구입", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["226", 6000000, 0, "연간 라이선스"], ["135", 600000, 0, "매입세액"], ["253", 0, 6600000, "익월 결제"]] },
   { id: "JV-0016", d: "2026-10-20", desc: "클라우드·회선 이용료", by: "핀테크", ap: "조성래", st: "posted", l: [
-    ["830", 1200000, 0, "10월"], ["135", 120000, 0, "매입세액"], ["103", 0, 1320000, "자동이체"]] },
+    ["831", 1200000, 0, "10월"], ["135", 120000, 0, "매입세액"], ["103", 0, 1320000, "자동이체"]] },
   { id: "JV-0017", d: "2026-10-22", desc: "교육훈련비", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["825", 900000, 0, "직무 교육"], ["103", 0, 900000, "이체"]] },
   { id: "JV-0018", d: "2026-10-25", desc: "보험료", by: "핀테크", ap: "조성래", st: "posted", l: [
@@ -115,14 +148,14 @@ const CORP_JV_SEED = [
   { id: "JV-0020", d: "2026-10-31", desc: "10월 감가상각", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["818", 200000, 0, "비품 정액법"], ["213", 0, 200000, "누계액 가산"]] },
 
-  { id: "JV-0021", d: "2026-11-03", desc: "미지급금 결제 — 소프트웨어", by: "핀테크", ap: "조성래", st: "posted", l: [
+  { id: "JV-0021", d: "2026-11-03", desc: "미지급금 결제 — 개발비", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["253", 6600000, 0, "10/18 건"], ["103", 0, 6600000, "이체"]] },
   { id: "JV-0022", d: "2026-11-05", desc: "11월 사무실 임차료", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["819", 3000000, 0, "11월분"], ["135", 300000, 0, "매입세액"], ["103", 0, 3300000, "이체"]] },
   { id: "JV-0023", d: "2026-11-06", desc: "외상매출금 회수 — 나래라이프", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["103", 33000000, 0, "입금"], ["108", 0, 33000000, "10/15 건"]] },
   { id: "JV-0024", d: "2026-11-07", desc: "예금 이자", by: "핀테크", ap: "조성래", st: "posted", l: [
-    ["103", 85000, 0, "이자 입금"], ["411", 0, 85000, "이자수익"]] },
+    ["103", 85000, 0, "이자 입금"], ["930", 0, 85000, "이자수익"]] },
   { id: "JV-0025", d: "2026-11-10", desc: "10월분 급여 지급", by: "핀테크", ap: "조성래", st: "posted", l: [
     ["801", 18000000, 0, "10월 급여"], ["254", 0, 1620000, "소득세·4대보험"], ["103", 0, 16380000, "이체"]] },
   { id: "JV-0026", d: "2026-11-10", desc: "예수금 납부", by: "핀테크", ap: "조성래", st: "posted", l: [
@@ -172,18 +205,20 @@ const CORP_BANK_SEED = {
    파일럿 전표는 코드에 있고(항상 보인다), 형이 넣은 전표만 브라우저에 남는다.
    서버가 없으므로 이 브라우저 밖으로는 나가지 않는다 — 화면에도 그렇게 적는다. */
 function corpLedgerRead() {
-  const empty = { v: 1, jv: [], closed: [], ov: {} };
+  const empty = { v: 1, jv: [], closed: [], ov: {}, bank: [] };
   try {
     const raw = localStorage.getItem(CORP_LEDGER_KEY);
     if (!raw) return empty;
     const o = JSON.parse(raw);
     return { v: 1, jv: Array.isArray(o.jv) ? o.jv : [], closed: Array.isArray(o.closed) ? o.closed : [],
-      ov: (o.ov && typeof o.ov === "object") ? o.ov : {} };
+      ov: (o.ov && typeof o.ov === "object") ? o.ov : {},
+      bank: Array.isArray(o.bank) ? o.bank : [] };
   } catch (e) { return empty; }
 }
 function corpLedgerWrite(st) {
   try {
-    localStorage.setItem(CORP_LEDGER_KEY, JSON.stringify({ v: 1, jv: st.jv || [], closed: st.closed || [], ov: st.ov || {} }));
+    localStorage.setItem(CORP_LEDGER_KEY, JSON.stringify({ v: 1, jv: st.jv || [], closed: st.closed || [],
+      ov: st.ov || {}, bank: st.bank || [] }));
     return true;
   } catch (e) { return false; }
 }
@@ -197,7 +232,11 @@ function corpJvAll(st) {
     if (!o) return j;
     return Object.assign({}, j, { st: o.st || j.st, ap: o.ap === undefined ? j.ap : o.ap });
   };
-  return CORP_JV_SEED.map(put).concat(((st && st.jv) || []).map(put))
+  const add = ((st && st.jv) || []).map(put);
+  /* 반입된 실제 전표가 하나라도 있으면 파일럿을 빼고 **실제 장부만** 본다.
+     섞으면 재무제표가 검증용 숫자를 품은 채 나와 그 자체로 거짓이 된다. */
+  const base = add.length ? [] : CORP_JV_SEED.map(put);
+  return base.concat(add)
     .sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : (a.id < b.id ? -1 : 1)));
 }
 /* 상태 전이 — 전이 가능 여부와 **왜 안 되는지**를 함께 돌려준다. 버튼을 그냥 흐리게 두면 이유를 모른다. */
@@ -211,10 +250,66 @@ function corpJvCanAdvance(jv, actorId) {
   }
   return { ok: true, why: "", to: S.next, ko: S.nextKo };
 }
-function corpJvNextId(st) {
+/* 전표번호 — **일자별 일련 YYYYMMDD-NN**.
+   날짜를 알면 바로 찾을 수 있어야 한다. 임의 접두나 통짜 일련은 조회에 쓸모가 없다.
+   파일럿 전표는 JV-####로 남겨 둔다 — 번호만 봐도 검증용인지 실제 장부인지 갈린다. */
+function corpJvNo(d, n) {
+  return String(d || "").replace(/-/g, "") + "-" + String(n).padStart(2, "0");
+}
+function corpJvNextId(st, d) {
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(d || "") ? d : "";
+  if (!day) return corpJvNo("00000000", 1);
+  const pre = day.replace(/-/g, "") + "-";
   let max = 0;
-  corpJvAll(st).forEach(j => { const m = /^JV-(\d+)$/.exec(j.id || ""); if (m && +m[1] > max) max = +m[1]; });
-  return "JV-" + String(max + 1).padStart(4, "0");
+  corpJvAll(st).forEach(j => {
+    const id = String(j.id || "");
+    if (id.indexOf(pre) !== 0) return;
+    const n = +id.slice(pre.length);
+    if (n > max) max = n;
+  });
+  return corpJvNo(day, max + 1);
+}
+/* 실제 장부가 들어오면 파일럿은 빠진다 — 검증용과 실제를 한 표에 섞지 않는다. */
+function corpJvLive(st) { return ((st && st.jv) || []).length > 0; }
+/* 은행 내역도 반입분이 있으면 그것을 본다.
+   ⚠️ 실제 전표를 **파일럿 은행 내역**과 대사하면 전건이 미대사로 뜬다 — 거짓 경보다.
+      그래서 전표가 실제인데 은행 내역이 아직 없으면 **대사를 돌리지 않고** 그 사실을 말한다. */
+function corpBankOf(st) {
+  const b = (st && st.bank) || [];
+  if (b.length) return { acct: "103", bank: "반입 내역", mask: "", lines: b, live: true };
+  if (corpJvLive(st)) return null;          /* 실제 전표 + 은행 미반입 → 대사 대상 없음 */
+  return CORP_BANK_SEED;
+}
+
+/* ── ④-2 조회 — 전표는 모두 찾을 수 있어야 한다 ─────────────────────
+   q · from · to · st · acct 로 거른다. 돌려주는 것에 **분모**(전체 건수)를 함께 담는다 —
+   「3건」만 보이면 몇 건 중 3건인지 모른다. */
+function corpJvFind(jvs, q) {
+  const Q = q || {};
+  const kw = String(Q.q || "").trim().toLowerCase();
+  const all = jvs || [];
+  const hit = all.filter((j) => {
+    if (Q.from && j.d < Q.from) return false;
+    if (Q.to && j.d > Q.to) return false;
+    if (Q.st && j.st !== Q.st) return false;
+    if (Q.acct && !(j.l || []).some((x) => x[0] === Q.acct)) return false;
+    if (!kw) return true;
+    if (String(j.id || "").toLowerCase().indexOf(kw) >= 0) return true;
+    if (String(j.desc || "").toLowerCase().indexOf(kw) >= 0) return true;
+    if (String(j.by || "").toLowerCase().indexOf(kw) >= 0) return true;
+    return (j.l || []).some((x) =>
+      String(x[0]).indexOf(kw) >= 0 ||
+      corpAcctName(x[0]).toLowerCase().indexOf(kw) >= 0 ||
+      String(x[3] || "").toLowerCase().indexOf(kw) >= 0);
+  });
+  return { rows: hit, n: hit.length, all: all.length,
+    sum: hit.reduce((n, j) => n + corpJvSum(j).dr, 0) };
+}
+/* 쓰인 계정과목만 — 조회 거르개에 안 쓰는 과목까지 늘어놓지 않는다 */
+function corpJvAccts(jvs) {
+  const s = {};
+  (jvs || []).forEach((j) => (j.l || []).forEach((x) => { s[x[0]] = (s[x[0]] || 0) + 1; }));
+  return CORP_ACCT.filter((a) => s[a.c]).map((a) => ({ c: a.c, n: a.n, cnt: s[a.c] }));
 }
 
 /* ── ⑤ 검산 ──────────────────────────────────────────────────────────────────
@@ -303,7 +398,11 @@ function corpStatements(jvs, upto) {
    같은 날 · 같은 금액을 한 번씩만 짝지어 준다. 두 번 쓰이지 않게 소비 표시를 남긴다.
    자동으로 맞춰 주는 데까지가 AI의 몫이고, 남은 줄을 없애는 건 사람이 한다. */
 function corpBankRecon(jvs, bank, upto) {
-  const B = bank || CORP_BANK_SEED;
+  /* ⚠️ bank === null 은 「은행 내역이 반입되지 않았다」는 뜻이다.
+     여기서 파일럿 내역으로 되돌리면 **반입된 실제 전표를 파일럿 은행줄과 대사**하게 되고,
+     전 건이 미대사로 뜬다. 상대가 없으면 대사를 돌리지 않고, 돌리지 않았다고 말한다. */
+  const none = bank === null;
+  const B = none ? { acct: "103", bank: "", mask: "", lines: [] } : (bank || CORP_BANK_SEED);
   const acct = B.acct || "103";
   const book = [];
   corpPosted(jvs, upto).forEach(j => {
@@ -323,12 +422,12 @@ function corpBankRecon(jvs, bank, upto) {
   const bankOnlyNet = bankOnly.reduce((n, l) => n + l.a, 0);
   const bookOnlyNet = bookOnly.reduce((n, x) => n + x.a, 0);
   return {
-    acct: acct, bank: B.bank, mask: B.mask, lines: bl, book: book,
+    none: none, acct: acct, bank: B.bank, mask: B.mask, lines: bl, book: book,
     matched: bl.filter(l => l.used).length, bankOnly: bankOnly, bookOnly: bookOnly,
     bankBal: bankBal, bookBal: bookBal, bankOnlyNet: bankOnlyNet, bookOnlyNet: bookOnlyNet,
     /* 대사 항등식: 장부잔액 − 은행잔액 = 장부에만 있는 순액 − 은행에만 있는 순액 */
-    gap: (bookBal - bankBal) - (bookOnlyNet - bankOnlyNet),
-    ok: ((bookBal - bankBal) - (bookOnlyNet - bankOnlyNet)) === 0,
+    gap: none ? 0 : (bookBal - bankBal) - (bookOnlyNet - bankOnlyNet),
+    ok: none ? true : ((bookBal - bankBal) - (bookOnlyNet - bankOnlyNet)) === 0,
   };
 }
 
@@ -353,19 +452,27 @@ function corpLedgerIdentities(jvs, bank, upto) {
     { k: "trial",   ko: "시산표 차변 = 대변",       n: S.trial.rows.length, ok: S.trial.ok,           got: corpWon(S.trial.drSum) + " / " + corpWon(S.trial.crSum), want: "같을 것" },
     { k: "bs",      ko: "자산 = 부채 + 자본 + 손익", n: S.bs.A.length,       ok: S.bs.ok,              got: corpWon(S.bs.assets) + " / " + corpWon(S.bs.total), want: "같을 것" },
     { k: "pl",      ko: "손익 = 수익 − 비용",       n: S.pl.R.length + S.pl.X.length, ok: S.pl.net === S.pl.rev - S.pl.exp, got: corpWon(S.pl.net), want: corpWon(S.pl.rev - S.pl.exp) },
-    { k: "bank",    ko: "은행 대사 차이 해소",       n: R.lines.length,      ok: R.ok,                 got: corpWon(R.gap), want: "0" },
+    /* 보류 — 통과도 실패도 아니다. 대사할 상대가 없다는 사실을 그대로 띄운다. */
+    { k: "bank",    ko: "은행 대사 차이 해소",       n: R.lines.length,      ok: R.ok,                 got: R.none ? "은행 내역 미반입" : corpWon(R.gap), want: "0",
+      skip: R.none, why: R.none ? "은행 거래내역이 반입되지 않았습니다 — 대사할 상대가 없어 돌리지 않았습니다" : "" },
     { k: "acct",    ko: "미등록 계정 0건",          n: all.length,          ok: unknown.length === 0, got: unknown.length + "건", want: "0건" },
     { k: "dupe",    ko: "전표번호 중복 0건",         n: all.length,          ok: dupes.length === 0,   got: dupes.length + "건", want: "0건" },
     { k: "approve", ko: "작성자 ≠ 승인자",          n: posted.filter(j => !j.open).length, ok: selfAp.length === 0, got: selfAp.length + "건 동일인", want: "0건" },
     { k: "signed",  ko: "전기 전표에 승인자 기록",    n: posted.length,       ok: noAp.length === 0,    got: noAp.length + "건 누락", want: "0건" },
+    { k: "no",      ko: "전표번호 전건 부여",      n: all.length,          ok: all.every((j) => String(j.id || "").trim()), got: all.filter((j) => !String(j.id || "").trim()).length + "건 누락", want: "0건" },
+    { k: "find",    ko: "전표 조회 — 전건 찾을 수 있음", n: all.length,     ok: corpJvFind(all, {}).n === all.length, got: corpJvFind(all, {}).n + " / " + all.length, want: "전건" },
   ];
 }
 /* 전건 통과 여부 — 분모 0은 실패로 센다. 빈 장부가 조용히 통과하면 검사가 없는 것과 같다. */
 function corpLedgerVerdict(jvs, bank, upto) {
   const rows = corpLedgerIdentities(jvs, bank, upto);
-  const zero = rows.filter(r => !(r.n > 0));
-  const fail = rows.filter(r => !r.ok);
-  return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
+  /* 보류(skip)는 분모 0 실패로 세지 않는다 — 대신 보류인 채로 화면에 남는다.
+     보류를 통과로 접어 넣으면 「대사 맞음」으로 읽혀, 안 돌린 검사가 통과로 둔갑한다. */
+  const skip = rows.filter(r => r.skip);
+  const live = rows.filter(r => !r.skip);
+  const zero = live.filter(r => !(r.n > 0));
+  const fail = live.filter(r => !r.ok);
+  return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero, skip: skip };
 }
 
 /* ── ⑨ 표시 ─────────────────────────────────────────────────────────────── */

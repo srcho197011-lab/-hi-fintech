@@ -202,6 +202,7 @@ function CorpOps({ onGo, onTab }) {
           <button className={"corp-vt" + (view === "gov" ? " on" : "")} onClick={() => setView("gov")}>일정 · 결재</button>
           <button className={"corp-vt" + (view === "up" ? " on" : "")} onClick={() => setView("up")}>자료 반입</button>
           <button className={"corp-vt" + (view === "ag" ? " on" : "")} onClick={() => setView("ag")}>AI 팀장 대화</button>
+          <button className={"corp-vt" + (view === "vt" ? " on" : "")} onClick={() => setView("vt")}>자료실</button>
           {sel && <button className={"corp-vt" + (view === "team" ? " on" : "")} onClick={() => setView("team")}
             style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
         </div>
@@ -214,6 +215,7 @@ function CorpOps({ onGo, onTab }) {
       {view === "gov" && typeof CorpBoardSection === "function" && <CorpBoardSection />}
       {view === "up" && typeof CorpUploadSection === "function" && <CorpUploadSection />}
       {view === "ag" && typeof CorpAgentChatSection === "function" && <CorpAgentChatSection />}
+      {view === "vt" && typeof CorpVaultSection === "function" && <CorpVaultSection />}
       {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
       <div className="corp-shell" style={view !== "dash" ? { display: "none" } : undefined}>
@@ -524,7 +526,7 @@ function CorpTeamBoard({ team, onGo, onTab, back }) {
           </div>
         )}
         {pg && pg.kind === "mod" && (
-          Render ? <div className="cb-mod-body"><Render onGo={onGo} onTab={onTab} /></div> : (
+          Render ? <div className="cb-mod-body"><Render onGo={onGo} onTab={onTab} team={team.id} /></div> : (
             <div className="cb-soonbox">
               <div className="cb-st">{pg.t}</div>
               <p>이 지면의 컴포넌트({pg.comp})를 찾지 못했습니다 — 번들 적재 순서를 확인해야 합니다.</p>
@@ -576,6 +578,7 @@ function corpPageComp(name) {
     if (name === "CorpContractSection") return typeof CorpContractSection === "function" ? CorpContractSection : null;
     if (name === "CorpReleaseSection") return typeof CorpReleaseSection === "function" ? CorpReleaseSection : null;
     if (name === "CorpSecuritySection") return typeof CorpSecuritySection === "function" ? CorpSecuritySection : null;
+    if (name === "CorpVaultSection") return typeof CorpVaultSection === "function" ? CorpVaultSection : null;
     if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
     if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
     if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;

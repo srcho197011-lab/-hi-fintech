@@ -23,9 +23,13 @@ function CorpLedgerSection() {
   const jvs = React.useMemo(() => corpJvAll(st), [st]);
   const upMax = React.useMemo(() => jvs.reduce((s, j) => (j.d > s ? j.d : s), ""), [jvs]);
   const cut = upto || "";
-  const V = React.useMemo(() => corpLedgerVerdict(jvs, CORP_BANK_SEED, cut), [jvs, cut]);
+  /* 은행줄은 **반입분이 있으면 그것**, 실제 전표만 들어왔고 은행이 없으면 null(대사 보류).
+     여기서 파일럿 내역을 쓰면 반입 전표 전건이 미대사로 뜬다. */
+  const live = corpJvLive(st);
+  const BK = React.useMemo(() => corpBankOf(st), [st]);
+  const V = React.useMemo(() => corpLedgerVerdict(jvs, BK, cut), [jvs, BK, cut]);
   const S = React.useMemo(() => corpStatements(jvs, cut), [jvs, cut]);
-  const R = React.useMemo(() => corpBankRecon(jvs, CORP_BANK_SEED, cut), [jvs, cut]);
+  const R = React.useMemo(() => corpBankRecon(jvs, BK, cut), [jvs, BK, cut]);
   const months = React.useMemo(() => corpJvMonths(jvs), [jvs]);
   const A = corpActor(actor);
 
@@ -60,7 +64,8 @@ function CorpLedgerSection() {
       <div className="cl-top">
         <div className="cl-ttl">
           <b>재무현황</b><span className="cl-sub">실적 축 — 실제로 일어난 거래</span>
-          {CORP_LEDGER_PILOT && <span className="cl-pilot">파일럿 전표</span>}
+          {CORP_LEDGER_PILOT && !live && <span className="cl-pilot">파일럿 전표</span>}
+          {live && <span className="cl-live">반입 전표 {jvs.length}건</span>}
         </div>
         <div className="cl-ctl">
           <label>조작 주체
@@ -71,20 +76,29 @@ function CorpLedgerSection() {
           <label>기준일
             <select value={upto} onChange={e => setUpto(e.target.value)}>
               <option value="">전 기간</option>
-              {months.map(m => <option key={m} value={m + "-31"}>{m} 말</option>)}
+              {/* 없는 날짜를 만들지 않는다 — 9월 31일은 없다. 예실 축과 같은 함수로 월말을 센다. */}
+              {months.map(m => <option key={m} value={corpPaCut(m)}>{m} 말</option>)}
             </select>
           </label>
           <span className={"cl-verd" + (V.pass ? " on" : " bad")}>
-            검산 {V.rows.length - V.fail.length - V.zero.length} / {V.rows.length}
+            검산 {V.rows.length - V.fail.length - V.zero.length - V.skip.length} / {V.rows.length - V.skip.length}
+            {V.skip.length > 0 && <i> · 보류 {V.skip.length}</i>}
           </span>
         </div>
       </div>
 
-      {CORP_LEDGER_PILOT && (
+      {CORP_LEDGER_PILOT && !live && (
         <div className="cl-warn">
           여기 실린 전표 {CORP_JV_SEED.length}건은 <b>파일럿 전표</b>입니다 — 엔진이 맞게 도는지 보려고 넣은 검증용 묶음이고
           회사의 실제 장부가 아닙니다. 실제 회계자료 반입은 Phase 10이며 보안 선행(Phase 0)을 통과한 뒤에 시작합니다.
           <span className="cl-warn2">서버가 없어 권한은 이 브라우저 안에서만 걸립니다. 형이 넣은 전표도 이 브라우저에만 남습니다.</span>
+        </div>
+      )}
+      {live && (
+        <div className="cl-warn ok">
+          <b>반입된 실제 전표</b>를 보고 있습니다 — 파일럿 전표는 빠졌습니다.
+          <span className="cl-warn2">이 장부는 <b>이 브라우저에만</b> 있습니다(공개 배포본에 회사 숫자를 싣지 않기 위해서입니다).
+            다른 기기 · 다른 브라우저에서는 다시 반입해야 보입니다.</span>
         </div>
       )}
 
@@ -118,7 +132,9 @@ function ClSummary({ V, S, R, jvs, st, months, onClose, actor }) {
         <div className={S.pl.net >= 0 ? "" : "neg"}><b>{corpWon(S.pl.net)}</b><span>당기손익</span></div>
         <div><b>{corpWon(S.bs.assets)}</b><span>자산 총계</span></div>
         <div><b>{corpWon(R.bookBal)}</b><span>보통예금 장부</span></div>
-        <div className={R.ok ? "" : "neg"}><b>{R.bankOnly.length + R.bookOnly.length}</b><span>미대사</span></div>
+        <div className={R.none ? "hold" : (R.ok ? "" : "neg")}>
+          <b>{R.none ? "—" : R.bankOnly.length + R.bookOnly.length}</b>
+          <span>{R.none ? "미대사 (내역 미반입)" : "미대사"}</span></div>
       </div>
 
       <div className="cl-sec">
@@ -127,17 +143,21 @@ function ClSummary({ V, S, R, jvs, st, months, onClose, actor }) {
           <thead><tr><th>항목</th><th>대상</th><th>결과</th><th>기대</th><th /></tr></thead>
           <tbody>
             {V.rows.map(r => (
-              <tr key={r.k} className={r.ok && r.n > 0 ? "" : "bad"}>
+              <tr key={r.k} className={r.skip ? "hold" : (r.ok && r.n > 0 ? "" : "bad")}>
                 <td>{r.ko}</td>
                 <td className="n">{r.n}건</td>
                 <td className="n">{r.got}</td>
                 <td className="n">{r.want}</td>
-                <td className="st">{!(r.n > 0) ? "대상 0 — 실패" : (r.ok ? "통과" : "실패")}</td>
+                <td className="st">{r.skip ? "보류" : (!(r.n > 0) ? "대상 0 — 실패" : (r.ok ? "통과" : "실패"))}</td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="cl-note">검사 대상이 <b>0건이면 실패</b>로 셉니다. 빈 장부는 어떤 항등식도 통과시키기 때문입니다.</p>
+        {V.skip.map(r => (
+          <p key={r.k} className="cl-note hold"><b>보류 — {r.ko}</b> · {r.why}.
+            <span> 보류는 통과가 아닙니다. 상대 자료가 들어오면 그때 돌립니다.</span></p>
+        ))}
       </div>
 
       <div className="cl-grid2">
@@ -172,10 +192,11 @@ function ClSummary({ V, S, R, jvs, st, months, onClose, actor }) {
 
 /* ── 전표 ─────────────────────────────────────────────────────────────────── */
 function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, setMsg, upMax }) {
+  const [q, setQ] = React.useState({ q: "", from: "", to: "", st: "", acct: "" });
   const blank = () => ({ d: upMax || "2026-11-10", desc: "", rev: null, l: [["", "", "", ""], ["", "", "", ""]] });
   const f = form;
   const draft = f ? {
-    id: corpJvNextId(st), d: f.d, desc: f.desc, by: actor, ap: null, st: "draft", rev: f.rev || undefined,
+    id: corpJvNextId(st, f.d), d: f.d, desc: f.desc, by: actor, ap: null, st: "draft", rev: f.rev || undefined,
     l: f.l.filter(x => x[0]).map(x => [x[0], +String(x[1]).replace(/,/g, "") || 0, +String(x[2]).replace(/,/g, "") || 0, x[3]]),
   } : null;
   const chk = draft ? corpJvCheck(draft, st) : null;
@@ -187,8 +208,36 @@ function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, s
     setForm(null); setMsg({ bad: false, t: draft.id + " 기표 완료 — 승인 전까지 장부에 올라가지 않습니다" });
   };
 
+  const F = corpJvFind(jvs, q);
+  const accts = corpJvAccts(jvs);
+  const clearQ = () => setQ({ q: "", from: "", to: "", st: "", acct: "" });
+  const on = !!(q.q || q.from || q.to || q.st || q.acct);
+
   return (
     <div className="cl-body">
+      {/* ── 조회 — 전표는 모두 찾을 수 있어야 한다 ── */}
+      <div className="cl-sec jv-find">
+        <div className="cl-h">전표 조회
+          <span className="cl-t">번호 · 적요 · 계정과목 · 작성자 어디서든 찾습니다</span>
+          <span className={"cl-flag" + (on ? " on" : "")}>{F.n} / {F.all}건 · 차변 합 {corpWon(F.sum)}</span></div>
+        <div className="jv-q">
+          <input className="g" value={q.q} placeholder="전표번호 · 적요 · 계정과목 · 작성자"
+            onChange={(e) => setQ(Object.assign({}, q, { q: e.target.value }))} />
+          <label>기간<input type="date" value={q.from} onChange={(e) => setQ(Object.assign({}, q, { from: e.target.value }))} /></label>
+          <label>~<input type="date" value={q.to} onChange={(e) => setQ(Object.assign({}, q, { to: e.target.value }))} /></label>
+          <select value={q.st} onChange={(e) => setQ(Object.assign({}, q, { st: e.target.value }))}>
+            <option value="">상태 전체</option>
+            {Object.keys(CORP_JV_ST).map((k) => <option key={k} value={k}>{CORP_JV_ST[k].ko}</option>)}
+          </select>
+          <select value={q.acct} onChange={(e) => setQ(Object.assign({}, q, { acct: e.target.value }))}>
+            <option value="">계정과목 전체</option>
+            {accts.map((a2) => <option key={a2.c} value={a2.c}>{a2.c} {a2.n} ({a2.cnt})</option>)}
+          </select>
+          {on && <button className="cl-rv" onClick={clearQ}>조건 지우기</button>}
+        </div>
+        {on && F.n === 0 && <p className="cl-note">조건에 맞는 전표가 <b>없습니다</b> — 조건을 넓혀 보세요.</p>}
+      </div>
+
       <div className="cl-rowbtn">
         {!f && <button className="cl-new" onClick={() => setForm(blank())}>+ 전표 입력</button>}
         <span className="cl-hint">작성 주체: <b>{A.ko}</b> · {A.role}{A.ai && <span className="corp-ai">AI</span>}</span>
@@ -249,7 +298,7 @@ function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, s
       <table className="cl-tbl jv">
         <thead><tr><th>번호</th><th>일자</th><th>적요</th><th>차변</th><th>대변</th><th>작성</th><th>승인</th><th>상태</th><th /></tr></thead>
         <tbody>
-          {jvs.slice().reverse().map(j => {
+          {F.rows.slice().reverse().map(j => {
             const s = corpJvSum(j), S = CORP_JV_ST[j.st] || {};
             const c = corpJvCanAdvance(j, actor);
             return (
@@ -278,6 +327,9 @@ function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, s
           })}
         </tbody>
       </table>
+      <p className="cl-note">전표번호는 <b>일자별 일련(YYYYMMDD-NN)</b>입니다 — 날짜를 알면 바로 찾습니다.
+        {corpJvLive(st) ? <span> 지금은 <b>반입된 실제 전표</b>를 보고 있습니다 — 파일럿 전표는 빠졌습니다.</span>
+          : <span> 지금은 <b>파일럿 전표</b>입니다(번호가 JV-로 시작합니다). 실제 전표가 반입되면 파일럿은 빠집니다.</span>}</p>
       <p className="cl-note">전기된 전표에는 <b>수정 버튼이 없습니다</b>. 지운 자국이 남아야 장부이기 때문에 정정은 역분개 전표로만 합니다.</p>
     </div>
   );
@@ -400,6 +452,24 @@ function ClStatements({ S, cut }) {
 
 /* ── 은행 대사 ────────────────────────────────────────────────────────────── */
 function ClBank({ R }) {
+  if (R.none) {
+    return (
+      <div className="cl-body">
+        <div className="cl-sec">
+          <div className="cl-h">은행 대사 <span className="cl-flag hold">보류</span></div>
+          <p className="cl-note"><b>은행 거래내역이 반입되지 않았습니다.</b> 대사할 상대가 없어 <b>돌리지 않았습니다</b> —
+            「차이 0」이라고 적지 않습니다. 안 돌린 검사를 통과로 적으면, 맞는 줄 알고 넘어갑니다.</p>
+          <div className="cl-recon">
+            <div className="cl-side"><b>{corpWon(R.bookBal)}</b><span>보통예금 장부 잔액</span></div>
+            <div className="cl-op">vs</div>
+            <div className="cl-eq"><b>—</b><span>은행 내역 없음</span></div>
+          </div>
+          <p className="cl-note">자료 반입 창구의 <b>은행 거래내역</b>에 내역을 올리면 같은 날 · 같은 금액으로 자동 대사합니다.
+            장부에서 보통예금이 움직인 전표는 <b>{R.book.length}건</b> 있습니다.</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="cl-body">
       <div className="cl-sec">

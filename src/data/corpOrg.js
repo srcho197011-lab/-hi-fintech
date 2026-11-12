@@ -23,7 +23,8 @@ const CORP_TEAMS = [
       { t: "경영 현황", kind: "new", at: "P6" },
       { t: "사업 운영", kind: "tab", tab: "bizops", comp: "BizOpsConsole" },
       { t: "협력업체 온톨로지 · 하네스", kind: "tab", tab: "partner", comp: "SupplyOntology" },
-      { t: "계약 대장", kind: "mod", comp: "CorpContractSection", note: "만료 경보 — 「계약 만료 점검」 루틴의 주관이 M1이라 여기 둔다" }],
+      { t: "계약 대장", kind: "mod", comp: "CorpContractSection", note: "만료 경보 — 「계약 만료 점검」 루틴의 주관이 M1이라 여기 둔다" },
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["전사 지표 집계", "계획 대비 진척 산출", "제휴 단계 추적", "주간 회의자료 통합"],
     cannot: [
       { act: "대외 발표", by: "발행 버튼은 CEO 세션에만 · 초안 상태에서 외부 공유 경로 없음", at: "P9" },
@@ -37,7 +38,8 @@ const CORP_TEAMS = [
     pages: [
       { t: "재무현황", kind: "mod", comp: "CorpLedgerSection", note: "실적 축 — 전표 · 원장 · 시산표 · 재무제표 · 은행 대사" },
       { t: "재무계획", kind: "tab", tab: "finance", comp: "FinanceSection", note: "계획 축 — 기존 재무회계에서 이관" },
-      { t: "예실 대비", kind: "mod", comp: "CorpPlanActualSection", note: "계획 ↔ 실적 — 대응표가 본체 · 차이는 조건이 설 때만" }],
+      { t: "예실 대비", kind: "mod", comp: "CorpPlanActualSection", note: "계획 ↔ 실적 — 대응표가 본체 · 차이는 조건이 설 때만" },
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출"],
     cannot: [
       { act: "전표 승인", by: "기표 → 검토 → 승인 3단 · 승인 버튼은 사람 주체에서만 · 작성자 ≠ 승인자(corpJvCanAdvance)", at: "기존" },
@@ -51,7 +53,8 @@ const CORP_TEAMS = [
     work: "인사 기록 · 근태 · 급여 대장 · 자산 대장 · 위임전결",
     pages: [
       { t: "조직 · 인사", kind: "mod", comp: "CorpHrSection", note: "직무 정보만 — 주민번호는 보관 상태만 들고 값은 들지 않는다" },
-      { t: "총무 · 문서", kind: "mod", comp: "CorpDocsSection", note: "문서 분류와 법정 보존기한" }],
+      { t: "총무 · 문서", kind: "mod", comp: "CorpDocsSection", note: "문서 분류와 법정 보존기한" },
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["근태 집계", "연차 잔여 계산", "교육 이수 점검", "자산 대장 갱신"],
     cannot: [
       { act: "채용 · 해고", by: "인사 상태 전이는 CEO 승인 필수", at: "P8" },
@@ -66,7 +69,8 @@ const CORP_TEAMS = [
     pages: [
       { t: "운영 현황", kind: "new", at: "P7" },
       { t: "헬스케어 온톨로지", kind: "tab", tab: "health" },
-      { t: "헬스메이트 센터", kind: "nav", nav: "healthmate" }],
+      { t: "헬스메이트 센터", kind: "nav", nav: "healthmate" },
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["회원 지표 집계", "인계카드 발행 조건 점검", "미응답·지연 건 추출", "골든타임 경보"],
     cannot: [
       { act: "의료 판단", by: "제품 규약 — 진단·처방에 해당하는 문장을 생성하지 않는다", at: "기존" },
@@ -80,7 +84,8 @@ const CORP_TEAMS = [
     pages: [
       { t: "보장 현황", kind: "new", at: "P7" },
       { t: "치료비 케어", kind: "nav", nav: "carecost" },
-      { t: "검진대비보험", kind: "nav", nav: "insurance" }],
+      { t: "검진대비보험", kind: "nav", nav: "insurance" },
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["보장 갭 집계", "만기·갱신 도래 추출", "청구 가능 건 후보 제시", "보장 창 경과 경보"],
     cannot: [
       { act: "인수 확정", by: "인수는 인수사 심사 — 제품에 확정 경로가 없다", at: "기존" },
@@ -93,7 +98,8 @@ const CORP_TEAMS = [
     work: "브랜드 · 콘텐츠 · 채널 운영 · 캠페인 · 회원 획득 · 성과 분석",
     pages: [
       { t: "캠페인 현황", kind: "new", at: "P7" },
-      { t: "마케팅", kind: "tab", tab: "marketing", comp: "MarketingSection" }],
+      { t: "마케팅", kind: "tab", tab: "marketing", comp: "MarketingSection" },
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["채널별 유입·전환 집계", "콘텐츠 성과 비교", "캠페인 일정 추적", "소재 초안"],
     cannot: [
       { act: "캠페인 집행", by: "집행 버튼은 K1 책임자 세션에만 · 초안은 미확정 배지를 단다", at: "P9" },
@@ -107,7 +113,8 @@ const CORP_TEAMS = [
     pages: [
       { t: "데이터 품질", kind: "new", at: "P6" },
       { t: "데이터 운영", kind: "tab", tab: "dataops", comp: "DataOpsConsole" },
-      { t: "HI-Fin 기반 온톨로지", kind: "tab", tab: "foundation", comp: "FoundationOntology" }],
+      { t: "HI-Fin 기반 온톨로지", kind: "tab", tab: "foundation", comp: "FoundationOntology" },
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["저장 키 등재 대조", "정합성 스캔", "품질 리포트", "외부 API 변경 감지"],
     cannot: [
       { act: "데이터 파기", by: "되돌릴 수 없는 행위 — 파기 경로를 두지 않는다", at: "—" },
@@ -121,7 +128,8 @@ const CORP_TEAMS = [
     pages: [
       { t: "보안 현황", kind: "mod", comp: "CorpSecuritySection", note: "커밋 게이트 — 목록이 아니라 훅과 대조한다" },
       { t: "릴리스 · 감사", kind: "mod", comp: "CorpReleaseSection", note: "작성자 ≠ 승인자 · 지금은 승인 가능자가 없다" },
-      { t: "운영 콘솔", kind: "tab", tab: "ops", comp: "OpsConsoleSection" }],
+      { t: "운영 콘솔", kind: "tab", tab: "ops", comp: "OpsConsoleSection" },
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["커밋 게이트 결과 수집", "미조치 항목 경보", "확약 진척 집계", "동일인 승인 탐지"],
     cannot: [
       { act: "사고 인정", by: "사고를 사고로 인정하는 결정은 법상 책임자의 판단", at: "—" },

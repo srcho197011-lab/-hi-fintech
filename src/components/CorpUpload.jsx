@@ -71,8 +71,21 @@ function CorpUploadSection() {
       }));
       corpLedgerWrite(Object.assign({}, st, { jv: (st.jv || []).concat(add) }));
       n = add.length; note = "전표는 **기표 상태**로 들어갑니다 — 검토·승인을 거쳐야 장부에 올라갑니다.";
+    } else if (kind === "bank") {
+      const st = corpLedgerRead();
+      const M = corpUpMergeBank(st.bank || [], corpUpToBank(res.ok));
+      corpLedgerWrite(Object.assign({}, st, { bank: M.lines }));
+      n = M.added;
+      note = "은행 대사를 이 내역으로 돌립니다" + (M.dup ? " — 이미 받은 " + M.dup + "줄은 건너뛰었습니다(두 번 받으면 잔액이 두 배가 됩니다)." : ".");
+    } else if (kind === "doc") {
+      const list = corpUpToVault(res.ok);
+      const before = (corpVaultRead().list || []).length;
+      corpVaultWrite({ at: raw.name, list: list });
+      n = list.length;
+      note = "자료실 목차를 이 목록으로 **갈아 끼웠습니다**(이전 " + before + "건) — 이어 붙이면 지워진 파일이 영영 남습니다. "
+        + "목록만 받았고 파일은 받지 않았습니다.";
     } else {
-      setMsg({ bad: true, t: spec.ko + "은(는) 반입 경로가 아직 열려 있지 않습니다 — 검증까지만 됩니다. 장부(전표)부터 열었습니다." });
+      setMsg({ bad: true, t: spec.ko + "은(는) 반입 경로가 아직 열려 있지 않습니다 — 검증까지만 됩니다." });
       return;
     }
     const log = (up.log || []).concat([{ kind: kind, name: raw.name, n: n, bad: res.bad.length, at: raw.name }]);
@@ -82,12 +95,28 @@ function CorpUploadSection() {
   };
 
   const undo = () => {
-    if (kind !== "jv") { setMsg({ bad: true, t: "되돌릴 반입이 없습니다" }); return; }
-    const st = corpLedgerRead();
-    const keep = (st.jv || []).filter((j) => j.by !== "반입");
-    const removed = (st.jv || []).length - keep.length;
-    corpLedgerWrite(Object.assign({}, st, { jv: keep }));
-    setMsg({ bad: false, t: "반입분 " + removed + "건을 물렸습니다 — 파일럿 전표는 코드에 있어 영향받지 않습니다." });
+    if (kind === "jv") {
+      const st = corpLedgerRead();
+      const keep = (st.jv || []).filter((j) => j.by !== "반입");
+      const removed = (st.jv || []).length - keep.length;
+      corpLedgerWrite(Object.assign({}, st, { jv: keep }));
+      setMsg({ bad: false, t: "반입분 " + removed + "건을 물렸습니다 — 파일럿 전표는 코드에 있어 영향받지 않습니다." });
+      return;
+    }
+    if (kind === "bank") {
+      const st = corpLedgerRead();
+      const removed = (st.bank || []).length;
+      corpLedgerWrite(Object.assign({}, st, { bank: [] }));
+      setMsg({ bad: false, t: "은행 내역 " + removed + "줄을 물렸습니다 — 대사는 다시 보류로 돌아갑니다(돌리지 않습니다)." });
+      return;
+    }
+    if (kind === "doc") {
+      const removed = (corpVaultRead().list || []).length;
+      corpVaultWrite({ at: "", list: [] });
+      setMsg({ bad: false, t: "자료실 목차 " + removed + "건을 비웠습니다 — 저장소의 파일은 그대로입니다." });
+      return;
+    }
+    setMsg({ bad: true, t: spec.ko + "은(는) 아직 반입된 것이 없습니다 — 되돌릴 것이 없습니다" });
   };
 
   const cols = spec ? spec.need.concat(spec.opt) : [];

@@ -160,6 +160,7 @@ function CorpDocsSection() {
   const now = typeof corpOpsNow === "function" ? corpOpsNow() : new Date();
   const V = React.useMemo(() => corpAdminPass(now), [now && now.getTime()]);
   const unchecked = CORP_DOC_CLASS.filter((d) => !d.checked).length;
+  const undec = CORP_DOC_CLASS.filter((d) => !corpKeepSet(d)).length;
 
   return (
     <div className="cl-wrap">
@@ -175,30 +176,39 @@ function CorpDocsSection() {
         그래서 근거가 되는 법률의 이름만 적고 <b>조문 번호는 적지 않습니다</b>. 확인하지 않은 조문을 화면에 찍으면
         읽는 사람이 그걸 믿고 쓰게 됩니다.
         <span className="cl-warn2">
-          그리고 이 표는 「법정 연한이 몇 년인가」까지입니다. <b>「우리가 몇 년 보관한다」가 아닙니다</b> —
-          서버가 없어 보관 자체를 이 시스템이 하지 않습니다.
+          <b>두 축을 갈라 둡니다</b> — 「법정 연한」은 법령에서 오고, 「회사 보존」은 대표가 정합니다.
+          회사 보존은 {CORP_DOC_CLASS.length - undec}종 정해졌고 {undec}종은 아직 미정입니다.
+          둘을 한 칸에 적으면 어느 쪽이 근거인지 알 수 없게 됩니다.
+          보관 자체는 저장소(바탕화면 폴더)가 하고, 이 화면은 <b>그 규칙을 적어 두는 자리</b>입니다.
         </span>
       </div>
       <div className="cl-body">
         <div className="cl-sec">
-          <div className="cl-h">문서 분류 <span className="cl-t">법정 보존 연한</span>
-            <span className={"cl-flag" + (unchecked ? " bad" : " on")}>원문 미확인 {unchecked} / {CORP_DOC_CLASS.length}</span></div>
+          <div className="cl-h">문서 분류 <span className="cl-t">법정 연한 · 회사 보존</span>
+            <span className={"cl-flag" + (unchecked ? " bad" : " on")}>원문 미확인 {unchecked} / {CORP_DOC_CLASS.length}</span>
+            <span className={"cl-flag" + (undec ? " hold" : " on")}>회사 보존 미정 {undec} / {CORP_DOC_CLASS.length}</span></div>
           <table className="cl-tbl">
-            <thead><tr><th>분류</th><th>보존 연한</th><th>근거 법률</th><th>원문 대조</th><th>예</th></tr></thead>
+            <thead><tr><th>분류</th><th>법정 연한</th><th>근거 법률</th><th>원문 대조</th>
+              <th>회사 보존</th><th>정한 주체</th><th>예</th></tr></thead>
             <tbody>
               {CORP_DOC_CLASS.map((d) => (
-                <tr key={d.k}>
+                <tr key={d.k} className={d.keep === 0 ? "ad-perm" : ""}>
                   <td>{d.ko}</td>
-                  <td className="n">{d.years === 0 ? "영구" : d.years + "년"}</td>
+                  <td className="n">{corpYearsKo(d.years)}</td>
                   <td className="id">{d.basisKo}</td>
                   <td><span className={"ad-tag " + (d.checked ? "ok" : "no")}>{d.checked ? "확인" : "미확인"}</span></td>
+                  <td className="n">{!corpKeepSet(d) ? <span className="ad-un">미정</span>
+                    : <b className={d.keep === 0 ? "ad-pm" : ""}>{corpKeepKo(d)}</b>}</td>
+                  <td className="desc">{d.keepBy || <span className="ad-un">—</span>}</td>
                   <td className="desc">{d.ex}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <p className="cl-note"><b>재무제표는 영구보관</b>이고 <b>회계장부 · 전표는 10년</b>입니다 — 대표가 그렇게 정했습니다.
+            그래서 두 분류를 <b>갈라 두었습니다</b>. 한 분류로 묶어 두면 10년 뒤 장부를 버릴 때 재무제표가 함께 버려집니다.</p>
           <p className="cl-note">계약 대장의 각 계약은 이 분류 중 하나를 가리킵니다 — 계약과 문서가 끊기면
-            보존기한이 어디서 오는지 알 수 없습니다.</p>
+            보존기한이 어디서 오는지 알 수 없습니다. 자료실의 「보존」 칸도 이 표를 봅니다.</p>
         </div>
         <AdCheck V={V} />
       </div>

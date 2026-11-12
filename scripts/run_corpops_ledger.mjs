@@ -13,6 +13,8 @@
      ④ 역분개   — 정정 경로가 차·대를 뒤집고 금액이 맞물리는가.
      ⑤ 승인     — AI 주체에게 승인 권한이 없는가(canApprove=false) · 전기 전표에 작성자≠승인자.
      ⑥ 파일럿   — 실데이터 반입 전까지 CORP_LEDGER_PILOT 가 true 이고 화면이 그 사실을 적는가.
+     ⑫ 자료실   — 저장소 목차를 **팀별로** 게시하는가 · 목록을 코드에 박지 않는가 ·
+                  분류를 한 곳에서만 하는가 · 확정 자료(확인원)를 작업본과 가르는가.
      ⑪ 반입대화 — 민감자료가 **미리보기보다 먼저** 걸리는가 · 틀린 줄만 빠지는가 ·
                   도구 없는 에이전트가 답을 **지어내지 않는가**(실제로 물어보는 양성 검사) ·
                   시키면 거절하고 물으면 답하는가.
@@ -67,10 +69,11 @@ const ORG = "src/data/corpOrg.js";
 /* 화면 어법 검사의 사정권 — 파일럿 고지(BOARDS)와 달리 **모든 사내 지면**이 진다.
    「자동 실행」·「보완 필요」·회원 영상 모듈 참조는 지면 종류를 가리지 않는다. */
 const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpGov.jsx",
-  "src/components/CorpUpload.jsx", "src/components/CorpAgentChat.jsx", "src/components/CorpOps.jsx"];
+  "src/components/CorpUpload.jsx", "src/components/CorpAgentChat.jsx", "src/components/CorpVault.jsx",
+  "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
   ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
-  "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js"];
+  "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js", "src/data/corpVault.js"];
 for (const f of LOAD) {
   try { vm.runInContext(rd(f), ctx); }
   catch (e) { console.error("[회계] " + f + " 적재 실패 — " + e.message); process.exit(1); }
@@ -186,7 +189,12 @@ if (board) {
   chk(/CORP_LEDGER_PILOT/.test(board), "⑥파일럿 화면이 플래그를 읽는다(문구 하드코딩 아님)", "없음");
   /* 부정이 아니라 **명시**를 요구한다 — 「실제 장부」라는 낱말만 세면 그 사실을 부인하는 문장까지 걸린다 */
   chk(board.indexOf("실제 장부가 아닙니다") >= 0, "⑥파일럿 화면이 실제 장부가 아님을 명시", "없음");
-  chk(board.indexOf("Phase 10") >= 0, "⑥파일럿 화면이 실데이터 반입 시점을 명시", "없음");
+  /* 반입된 전표가 있으면 화면이 파일럿 배지를 **내린다** — 둘을 동시에 달아 두면
+     어느 장부를 보고 있는지 화면이 말해 주지 않는다. 플래그 하나로 갈리지 않고 상황으로 갈린다. */
+  chk(/CORP_LEDGER_PILOT && !live/.test(board), "⑥파일럿 반입 전표가 있으면 파일럿 고지를 내린다", "없음");
+  chk(/corpJvLive\(st\)/.test(board), "⑥파일럿 화면이 반입 여부를 상황에서 읽는다(corpJvLive)", "없음");
+  chk(board.indexOf("반입 전표") >= 0, "⑥파일럿 반입 상태 표기가 따로 있다", "없음");
+  chk(/이 브라우저에만/.test(board), "⑥파일럿 반입 장부가 이 브라우저에만 있다고 적는다", "없음");
   /* 서버 없는 집행임을 숨기지 않는다 — 숨기면 더 위험하다 */
   chk(/서버가 없/.test(board), "⑥파일럿 화면이 서버 없는 집행임을 명시", "없음");
 }
@@ -217,6 +225,81 @@ SURFACES.forEach((f) => {
      회의 기록이 회원 접촉·프로 위반 집계에 섞인다. 완료 조건의 코드판이다. */
   const vs = t.split("videoSession").length - 1;
   chk(vs === 0, "⑥어법   " + f + " 에 videoSession 참조 0건", vs + "건");
+});
+
+/* ── ⑥-2 은행 대사 상대 ─────────────────────────────────────────────────
+   반입된 전표를 파일럿 은행줄과 대사하면 전 건이 미대사로 뜨고,
+   그걸 보고 사람은 「장부가 틀렸나」 한다. 상대가 없으면 돌리지 않고, 돌리지 않았다고 말해야 한다. */
+const bankOf = G("corpBankOf");
+chk(bankOf({ jv: [], bank: [] }) === G("CORP_BANK_SEED"),
+  "⑥은행   반입분이 없으면 파일럿 은행줄을 쓴다");
+chk(bankOf({ jv: [{ id: "20260930-01" }], bank: [] }) === null,
+  "⑥은행   실제 전표 + 은행 미반입 → null(대사를 돌리지 않는다)",
+  JSON.stringify(bankOf({ jv: [{ id: "x" }], bank: [] })));
+const bkLive = bankOf({ jv: [{ id: "x" }], bank: [{ d: "2026-10-01", a: 100, m: "입금" }] });
+chk(!!bkLive && bkLive.live === true && bkLive.lines.length === 1,
+  "⑥은행   반입된 은행 내역이 있으면 그걸 쓴다", JSON.stringify(bkLive));
+const RN = G("corpBankRecon")(G("CORP_JV_SEED"), null, "");
+chk(RN.none === true && RN.lines.length === 0 && RN.gap === 0,
+  "⑥은행   상대가 없으면 은행줄 0 · 차이 0", JSON.stringify({ none: RN.none, n: RN.lines.length, gap: RN.gap }));
+chk(RN.book.length > 0, "⑥분모   대사 보류여도 장부 쪽은 보여 주는가", RN.book.length);
+const VN = G("corpLedgerVerdict")(G("CORP_JV_SEED"), null, "");
+chk(VN.skip.length === 1 && VN.skip[0].k === "bank",
+  "⑥보류   은행 항등식 하나만 보류로 잡힌다", VN.skip.map((r) => r.k).join(" "));
+chk(VN.skip.every((r) => (r.why || "").trim()), "⑥보류   보류 항등식은 이유를 지닌다", VN.skip.map((r) => r.why));
+chk(VN.zero.length === 0, "⑥보류   보류를 「분모 0 실패」로 세지 않는다", VN.zero.map((r) => r.k));
+const VS = G("corpLedgerVerdict")(G("CORP_JV_SEED"), G("CORP_BANK_SEED"), "");
+chk(VS.skip.length === 0, "⑥보류   은행줄이 있으면 보류가 없다(돌려야 한다)", VS.skip.map((r) => r.k));
+chk(VS.rows.length === VN.rows.length, "⑥보류   보류로 항등식 항목을 지우지 않는다", [VS.rows.length, VN.rows.length]);
+if (board) {
+  chk(/V\.skip/.test(board), "⑥보류   화면이 보류 수를 적는다", "없음");
+  chk(/R\.none/.test(board), "⑥보류   은행 지면이 상대 없음을 가른다", "없음");
+  chk(board.indexOf("돌리지 않았습니다") >= 0, "⑥보류   화면이 「돌리지 않았다」고 적는다", "없음");
+  chk(/value={corpPaCut\(m\)}/.test(board), "⑥경계   기준일 선택지가 실제 월말이다(9월 31일은 없다)", "-31 고정");
+  chk(!/m \+ "-31"/.test(board), "⑥경계   없는 날짜를 만들지 않는다", "m + -31 남아 있음");
+  chk(board.indexOf("corpBankOf(st)") >= 0, "⑥은행   화면이 은행줄을 상황에서 골랐다", "CORP_BANK_SEED 직접 사용");
+  chk(!/corpLedgerVerdict\(jvs, CORP_BANK_SEED/.test(board) && !/corpBankRecon\(jvs, CORP_BANK_SEED/.test(board),
+    "⑥은행   화면이 파일럿 은행줄을 고정으로 박지 않는다", "박혀 있음");
+}
+
+/* ── ⑥-3 보존 두 축 ───────────────────────────────────────────────────────
+   keep 0 은 **영구**다. falsy 로 읽으면 영구 보존이 「미정」으로 둔갑하고,
+   그 「미정」을 보고 사람이 자료를 버린다. 한 자리에서만 틀려도 그렇게 된다. */
+const KS = G("corpKeepSet"), KK = G("corpKeepKo"), YK = G("corpYearsKo"), DA = G("corpDisposeAt");
+const DCLS = G("CORP_DOC_CLASS");
+const clsFs = DCLS.find((d) => d.k === "fs"), clsAcct = DCLS.find((d) => d.k === "acct");
+chk(!!clsFs && clsFs.keep === 0, "⑥보존   재무제표 분류가 있고 영구보관이다", clsFs && clsFs.keep);
+chk(!!clsAcct && clsAcct.keep === 10, "⑥보존   회계장부 · 전표는 10년", clsAcct && clsAcct.keep);
+chk(clsFs.k !== clsAcct.k, "⑥보존   둘은 다른 분류다(묶으면 10년 뒤 함께 버린다)");
+chk((clsAcct.ex || "").indexOf("재무제표") < 0,
+  "⑥보존   장부 분류 예시에 재무제표가 남아 있지 않다", clsAcct.ex);
+chk(KK(clsFs) === "영구" && KS(clsFs) === true, "⑥보존   keep 0 을 「영구」로 읽는다(미정 아니다)", KK(clsFs));
+chk(KK({ keep: null }) === "미정" && KS({ keep: null }) === false, "⑥보존ⓐ 정하지 않은 것은 미정이다", KK({ keep: null }));
+chk(KK({ keep: 10 }) === "10년", "⑥보존   연한은 년으로 읽는다", KK({ keep: 10 }));
+chk(YK(0) === "영구" && YK(5) === "5년" && YK(null) === "—", "⑥보존   법정 연한 표기도 같은 사상", [YK(0), YK(5), YK(null)]);
+chk(DA("2026-10-23", clsFs) === "", "⑥폐기   영구보관은 폐기 예정일을 만들지 않는다", DA("2026-10-23", clsFs));
+chk(DA("2026-10-23", clsAcct) === "2036-10-23", "⑥폐기   10년 보존 → 수정일 + 10년", DA("2026-10-23", clsAcct));
+chk(DA("2026-10-23", { keep: null }) === "", "⑥폐기ⓐ 보존이 미정이면 폐기 예정일을 찍지 않는다", DA("2026-10-23", { keep: null }));
+chk(DA("", clsAcct) === "" && DA("2026-10", clsAcct) === "", "⑥폐기   수정일 형식이 아니면 지어내지 않는다", [DA("", clsAcct), DA("2026-10", clsAcct)]);
+const KVK = G("CORP_VAULT_KIND");
+["fsconf", "fs"].forEach((k) => {
+  const K = KVK.find((x) => x.k === k);
+  chk(!!K && K.cls === "fs", "⑥보존   자료실 「" + (K ? K.ko : k) + "」이 재무제표 분류를 가리킨다", K && K.cls);
+});
+const vconf = "HF_하이젠케어_재무제표확인원26.10.23.pdf";
+const vrow = G("corpVaultRows")({ list: [{ rel: "02.회계/" + vconf, name: vconf, size: 1, at: "2026-10-23" }] })[0];
+chk(!!vrow && vrow.keep === 0 && vrow.keepKo === "영구" && vrow.dispose === "",
+  "⑥보존   확인원 한 줄이 영구 · 폐기 없음으로 내려왔다", JSON.stringify(vrow && { keep: vrow.keep, ko: vrow.keepKo, dp: vrow.dispose }));
+const vledg = "총계정원장.xlsx";
+const vrow2 = G("corpVaultRows")({ list: [{ rel: "02.회계/" + vledg, name: vledg, size: 1, at: "2026-10-23" }] })[0];
+chk(!!vrow2 && vrow2.keep === 10 && vrow2.dispose === "2036-10-23",
+  "⑥보존   장부 한 줄은 10년 · 폐기 2036-10-23", JSON.stringify(vrow2 && { keep: vrow2.keep, dp: vrow2.dispose }));
+[["src/components/CorpAdmin.jsx", "corpKeepKo"], ["src/components/CorpVault.jsx", "r.keep"]].forEach(([f, n]) => {
+  let t = "";
+  try { t = rd(f); } catch (e) { fails.push("⑥보존 " + f + " 없음"); return; }
+  chk(t.indexOf(n) >= 0, "⑥보존   " + f + " 가 회사 보존을 읽는다(" + n + ")", "없음");
+  chk(!/d\.keep \?/.test(t.replace(/\/\*[\s\S]*?\*\//g, "")),
+    "⑥보존   " + f + " 가 keep 을 falsy 로 보지 않는다(0 = 영구)", "falsy 판정");
 });
 
 /* 저장 키 등재 — 카탈로그 게이트와 이중으로 본다(여기서 먼저 걸리면 원인이 분명하다) */
@@ -836,7 +919,49 @@ if (upBoard) {
     "⑪화면   민감 검사가 미리보기보다 앞에 있다", { scan: iScan, prev: iPrev });
   chk(/어디로도 전송되지 않습니다/.test(upBoard), "⑪화면   파일이 전송되지 않는다고 적는다", "없음");
   chk(upBoard.indexOf("corpUpPass(") >= 0, "⑪화면   검산이 러너와 같은 함수", "없음");
+  /* live: true 라고 적어 놓고 받는 길이 없으면, 올려도 0건이 된다 — 그래서 사람은
+     「분류가 잘못됐나」를 뒤진다. 열어 둔 창구는 **실제로 들어가는 자리까지** 이어져야 한다. */
+  G("CORP_UP_SPEC").filter((x) => x.live).forEach((x) => {
+    chk(new RegExp('kind === "' + x.k + '"').test(upBoard),
+      "⑪반입   열어 둔 창구 「" + x.ko + "」에 받는 길이 있다", "live 인데 커밋 분기 없음");
+  });
+  chk(/kind === "bank"/.test(upBoard) && /kind === "doc"/.test(upBoard),
+    "⑪반입   은행 내역 · 자료 목록이 저장까지 간다", "없음");
+  chk(upBoard.indexOf("corpVaultWrite(") >= 0, "⑪반입   자료 목록이 자료실 저장소로 간다", "없음");
+  chk(/bank: M\.lines/.test(upBoard), "⑪반입   은행 내역이 장부 상태에 붙는다", "없음");
+  chk((upBoard.match(/kind === "bank"/g) || []).length >= 2 && (upBoard.match(/kind === "doc"/g) || []).length >= 2,
+    "⑪반입   받은 것은 되돌릴 수도 있다(반입 · 되돌리기 양쪽)", "되돌리기 분기 없음");
 }
+
+/* ── ⑪-2 반입 변환 ─────────────────────────────────────────────────────
+   저장 모양으로 바꾸는 자리는 하나다. 화면이 즉석에서 만들면 러너가 보지 못한다. */
+const toBank = G("corpUpToBank"), mrgBank = G("corpUpMergeBank"), toVault = G("corpUpToVault");
+const bIn = G("corpUpBankIn");
+chk(bIn("입금") === 1 && bIn("출금") === -1, "⑪변환   입출 구분을 읽는다", [bIn("입금"), bIn("출금")]);
+chk(bIn("") === null && bIn("이체") === null, "⑪변환ⓐ 모르는 구분은 null — 부호를 추측하지 않는다", [bIn(""), bIn("이체")]);
+const bk1 = toBank([{ date: "2026-10-05", desc: "카드대금", amt: 100, io: "출금" },
+                    { date: "2026-10-06", desc: "매출입금", amt: 200, io: "입금" },
+                    { date: "2026-10-07", desc: "부호대로", amt: -50 }]);
+chk(bk1.length === 3 && bk1[0].a === -100 && bk1[1].a === 200 && bk1[2].a === -50,
+  "⑪변환   출금은 음수 · 입금은 양수 · 구분 없으면 적힌 부호 그대로", JSON.stringify(bk1.map((x) => x.a)));
+chk(toBank([{ date: "", desc: "x", amt: 10 }, { date: "2026-10-05", desc: "x", amt: 0 }]).length === 0,
+  "⑪변환   일자 없는 줄 · 금액 0인 줄은 버린다");
+const mg = mrgBank(bk1, bk1.concat([{ d: "2026-10-08", a: 7, m: "새 줄" }]));
+chk(mg.dup === 3 && mg.added === 1 && mg.lines.length === 4,
+  "⑪변환   같은 줄을 두 번 받지 않는다(두 배가 된다)", JSON.stringify({ dup: mg.dup, add: mg.added }));
+chk(mg.lines.every((l, i, A) => i === 0 || A[i - 1].d <= l.d), "⑪변환   은행줄은 날짜 순으로 선다");
+const vl = toVault([{ rel: "02.회계/a.pdf", name: "a.pdf", dir: "02.회계", size: "12", at: "2026-10-23", ext: "PDF" },
+                    { rel: "", name: "b.pdf" }]);
+chk(vl.length === 1 && vl[0].size === 12 && vl[0].ext === "pdf",
+  "⑪변환   자료 목록은 경로 없는 줄을 버리고 크기 · 확장자를 고른다", JSON.stringify(vl));
+/* 들어온 은행줄이 실제로 대사를 돌게 하는가 — 끝까지 이어지는지 본다 */
+const bkState = { jv: [{ id: "x" }], bank: [{ d: "2026-10-05", a: -100, m: "카드대금" }] };
+const BKS = G("corpBankOf")(bkState);
+chk(!!BKS && BKS.live === true, "⑪반입   반입된 은행줄이 대사 상대가 된다", JSON.stringify(BKS));
+chk(G("corpLedgerVerdict")(G("CORP_JV_SEED"), BKS, "").skip.length === 0,
+  "⑪반입   은행줄이 들어오면 보류가 풀린다(돌린다)");
+
+
 if (agBoard) {
   chk(agBoard.indexOf("corpAgAnswer(") >= 0, "⑪화면   대화창이 답하기 함수를 그대로 부른다", "없음");
   chk(agBoard.indexOf("corpAgPass(") >= 0, "⑪화면   검산이 러너와 같은 함수", "없음");
@@ -846,6 +971,95 @@ if (agBoard) {
 if (hook) {
   ["corpUpload", "CorpUpload", "corpAgent", "CorpAgentChat"].forEach((n) => {
     chk(hook.indexOf(n) >= 0, `⑪게이트 pre-commit 감시 대상에 ${n}`, "미등재");
+  });
+}
+
+/* ── ⑫ 자료실 ──────────────────────────────────────────────────────────
+   저장소 목차를 **팀별로** 게시한다.
+     · 목록은 코드에 박지 않는다 — 파일명이 곧 대외비 저장소의 목차다.
+     · 분류는 화면에서만 한다 — 스캔 스크립트와 두 벌이 되면 규칙이 갈라진다.
+     · 팀 자료가 섞이지 않는다 — 팀마다 자기 것만 본다. */
+const VLT = "src/data/corpVault.js";
+const VLTBOARD = "src/components/CorpVault.jsx";
+const VLTGEN = "scripts/gen_vault_index.py";
+
+const VST = G("corpVaultRead")();
+const VV = G("corpVaultPass")(VST);
+VV.rows.forEach((r) => {
+  chk(r.ok, `⑫자료실 ${r.ko} (대상 ${r.n}건)`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
+  chk(r.n > 0, `⑫분모   ${r.ko} 검사 대상 > 0`, r.n);
+});
+chk(VV.pass, "⑫자료실 검산 전건 통과", VV.fail.map((f) => f.ko));
+
+/* 분류기 — 표본을 먹여 살아 있음을 증명한다(규칙이 죽으면 「전부 기타」로 조용히 통과한다) */
+const vk = G("corpVaultKind");
+const ve = G("corpVaultEntity");
+const KINDS = G("CORP_VAULT_KIND");
+chk(KINDS.length > 1, "⑫분모   자료 종류 표본 > 1", KINDS.length);
+chk(vk("HF_하이젠케어_재무제표확인원26.10.23.pdf", "02.회계/2026.결산/26.09").k === "fsconf",
+  "⑫분류   재무제표확인원을 확정 자료로 가른다", vk("HF_하이젠케어_재무제표확인원26.10.23.pdf", "").k);
+chk(vk("0.하이젠케어_재무제표_2026.09.30.xlsx", "").k === "fs",
+  "⑫분류   작업본 재무제표는 확정 자료와 **다르게** 가른다", vk("0.하이젠케어_재무제표_2026.09.30.xlsx", "").k);
+chk(KINDS.find((k) => k.k === "fsconf").key === true && !KINDS.find((k) => k.k === "fs").key,
+  "⑫분류   확정 자료 표시는 확인원에만 붙는다 — 작업본을 보고 숫자를 믿는 사고를 막는다");
+chk(vk("아무개.txt", "99.없음").k === "etc", "⑫분류ⓐ 자기시험 — 모르는 것은 기타로 둔다(억지로 끼우지 않는다)");
+chk(ve("주주명부(글로벌예방금융).hwp", "").k === "gpf" && ve("HF_재무제표확인2025(하이젠케어).pdf", "").k === "hgc",
+  "⑫법인   두 법인을 가른다(섞이면 장부가 오염된다)");
+
+/* 팀별 — 섞이지 않는가 */
+const DEPTS = G("CORP_VAULT_DEPT");
+chk(DEPTS.length === G("CORP_TEAMS").length, "⑫팀     저장소 부서 수 = 팀 수", DEPTS.length + " / " + G("CORP_TEAMS").length);
+chk(DEPTS.every((d) => G("CORP_TEAMS").some((t) => t.id === d.team)),
+  "⑫팀     부서가 가리키는 팀이 조직도에 있다", DEPTS.filter((d) => !G("CORP_TEAMS").some((t) => t.id === d.team)).map((d) => d.team).join(" "));
+const sample = [{ rel: "02.회계/x.pdf", name: "x.pdf", size: 1 }, { rel: "01.경영기획/y.pdf", name: "y.pdf", size: 1 }];
+const srows = G("corpVaultRows")({ list: sample });
+chk(srows.length === 2, "⑫분모   팀 분배 표본 2건", srows.length);
+chk(G("corpVaultOfTeam")(srows, "M2").length === 1 && G("corpVaultOfTeam")(srows, "M1").length === 1,
+  "⑫팀     자료가 제 팀으로 간다", JSON.stringify(srows.map((r) => r.team)));
+chk(G("corpVaultOfTeam")(srows, "S1").length === 0, "⑫팀ⓐ   자기 팀 것이 아니면 보이지 않는다");
+chk(G("corpVaultOfTeam")(srows, "").length === 2, "⑫팀     팀을 고르지 않으면 전사가 보인다");
+
+/* 목록을 코드에 박지 않는다 — 상수 선언부에 실제 파일명이 없어야 한다 */
+let vsrc = "";
+try { vsrc = rd(VLT); } catch (e) { fails.push("⑫자료실 " + VLT + " 없음"); }
+if (vsrc) {
+  const head = vsrc.slice(0, vsrc.indexOf("function corpVaultVerdict"));
+  const names = head.match(/["'][^"']*\.(pdf|xlsx|xls|docx|hwp|pptx|zip)["']/gi) || [];
+  chk(names.length === 0, "⑫비밀   상수 선언부에 실제 파일명 0건(목차를 공개 배포본에 싣지 않는다)", names.join(" "));
+  chk(vsrc.indexOf("localStorage") >= 0, "⑫비밀   목록은 브라우저 저장소에 둔다", "없음");
+  const bare = vsrc.replace(/\/\*[\s\S]*?\*\//g, "");
+  chk((bare.match(/Math\.random/g) || []).length === 0, "⑫결정론 Math.random 0건");
+}
+/* 분류를 두 곳에서 하지 않는다 — 스캔 스크립트는 사실만 내보낸다 */
+let gsrc = "";
+try { gsrc = rd(VLTGEN); } catch (e) { fails.push("⑫자료실 " + VLTGEN + " 없음"); }
+if (gsrc) {
+  const kws = ["재무제표확인", "총계정", "거래내역", "주주명부"];
+  const leak = kws.filter((w) => gsrc.indexOf(w) >= 0);
+  chk(leak.length === 0, "⑫단일   스캔 스크립트가 분류하지 않는다(규칙은 화면 한 곳에만)", leak.join(" "));
+  chk(/사실만/.test(gsrc), "⑫단일   스크립트가 제 몫을 적어 둔다", "없음");
+}
+let vboard = "";
+try { vboard = rd(VLTBOARD); } catch (e) { fails.push("⑫자료실 " + VLTBOARD + " 없음"); }
+if (vboard) {
+  chk(/function CorpVaultSection\(\{ team \}\)/.test(vboard), "⑫화면   게시판이 팀 인자를 받는다", "없음");
+  chk(vboard.indexOf("corpVaultOfTeam(") >= 0, "⑫화면   팀 거르개를 화면이 부른다", "없음");
+  chk(vboard.indexOf("corpVaultPass(") >= 0, "⑫화면   검산이 러너와 같은 함수", "없음");
+  chk(/열어 주는 척하지 않습니다/.test(vboard), "⑫화면   파일을 열어 주지 못한다고 적는다", "없음");
+  chk(/0건인 팀을 숨기지 않습니다/.test(vboard), "⑫화면   자료 0건인 팀을 숨기지 않는다고 적는다", "없음");
+}
+/* 조직 원천 — 팀마다 자료실 지면이 있는가 */
+chk(G("CORP_TEAMS").every((t) => t.pages.some((p) => p.comp === "CorpVaultSection")),
+  "⑫지면   여덟 팀 모두 자료실 지면을 갖는다",
+  G("CORP_TEAMS").filter((t) => !t.pages.some((p) => p.comp === "CorpVaultSection")).map((t) => t.id).join(" "));
+/* 반입 창구가 자료실로 이어지는가 */
+const docSpec = G("corpUpSpec")("doc");
+chk(!!docSpec && docSpec.need.indexOf("rel") >= 0 && docSpec.need.indexOf("name") >= 0,
+  "⑫반입   자료 목록 반입은 경로·파일명을 필수로 받는다", docSpec && docSpec.need.join(","));
+chk(!!docSpec && /자료실/.test(docSpec.into), "⑫반입   반입처가 자료실임을 적는다", docSpec && docSpec.into);
+if (hook) {
+  ["corpVault", "CorpVault"].forEach((n) => {
+    chk(hook.indexOf(n) >= 0, `⑫게이트 pre-commit 감시 대상에 ${n}`, "미등재");
   });
 }
 
@@ -861,6 +1075,7 @@ console.log(`[예실대비] 계획 비목 ${PU.leaves}(확정 ${PU.planOk.length
 console.log(`[주간회의] 주차 ${MW && MW.key}(D-${MW && MW.dday}) · 참석 사람 ${ATT.people.length}(재직) · AI ${ATT.agents.length} · 공석 ${ATT.vacant.length} · ` +
   `보고 ${REPS.length}팀(확정 가능 ${canFix.length} · 확정자 공석 ${noOwner.length}) · 원천 연결 ${linked.length}팀 · ` +
   `생성 경로 루틴 ${GEN.length} / ${SCHED.routines.length}`);
+console.log(`[자료실  ] 종류 ${KINDS.length}종(확정 자료 ${KINDS.filter((k) => k.key).length}) · 부서 ${DEPTS.length} ↔ 팀 ${G("CORP_TEAMS").length} · 팀별 지면 ${G("CORP_TEAMS").filter((t) => t.pages.some((p) => p.comp === "CorpVaultSection")).length}/${G("CORP_TEAMS").length} · 대장 ${G("corpVaultRows")(VST).length}건(반입분)`);
 console.log(`[반입대화] 반입 섹션 ${G("CORP_UP_SPEC").length}종(상한 ${G("CORP_UP_MAXKB")}KB) · 민감 패턴 ${G("CORP_UP_SCAN").length}종 · AI 팀장 ${AGL.length}명(도구 보유 ${hasTool.length} · 도구 없음 ${noTool.length}) · 도구 ${G("CORP_AG_TOOL").length}종`);
 console.log(`[결재릴리스] 릴리스 ${RELS.length}건 · 승인 가능자 ${RELWHO.length}명(S1) · 결재 종류 ${G("CORP_APR_KIND").length}종 · 점검 ${G("CORP_REL_CHECK").length}항목 · 필독 ${must.length}건(미확인 ${must.reduce((n, m) => n + m.left.length, 0)}명) · 게이트 ${GATES.length}종 훅 대조`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);

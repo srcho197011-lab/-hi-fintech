@@ -6178,3 +6178,53 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .ag-input{display:flex;gap:7px;margin-top:9px;}
 .ag-input input{flex:1;font-size:11px;color:var(--ct);background:var(--cb);border:1px solid var(--cl2);
   border-radius:7px;padding:8px 11px;font-family:inherit;}
+.jv-find{border-color:var(--cl2);}
+.jv-q{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.jv-q input,.jv-q select{font-size:10.5px;color:var(--ct);background:var(--cb);border:1px solid var(--cl2);
+  border-radius:5px;padding:5px 8px;font-family:inherit;}
+.jv-q input.g{flex:1;min-width:200px;}
+.jv-q label{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--cd);}
+
+/* ══ 회사 총괄운영 · 자료실(CorpVault) — 2026-11-12 ══ */
+.vt-key{font-size:9px;color:#5FAE7E;border:1px solid rgba(95,174,126,.5);background:rgba(95,174,126,.1);
+  border-radius:4px;padding:2px 7px;}
+.vt-keybox{border-color:rgba(95,174,126,.4);}
+.vt-row b{margin-right:6px;}
+.vt-kind{font-size:8.5px;color:var(--cd);border:1px solid var(--cl2);border-radius:3px;
+  padding:1px 6px;margin-right:6px;white-space:nowrap;}
+.vt-kind.key{color:#5FAE7E;border-color:rgba(95,174,126,.5);font-weight:700;}
+.vt-ent{font-size:8.5px;color:#6FB0D6;border:1px solid rgba(111,176,214,.4);border-radius:3px;
+  padding:1px 5px;margin-right:6px;white-space:nowrap;}
+.vt-meta{font-size:9.5px;color:var(--cd);margin-left:6px;}
+.cl-tbl.vt tr.vt-k td{background:rgba(95,174,126,.05);}
+.vt-un{font-style:normal;font-size:8px;color:var(--cw);margin-left:4px;}
+.vt-chk{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--cd);cursor:pointer;}
+.vt-how{margin:6px 0 0;padding-left:18px;font-size:10.5px;color:var(--cd);line-height:1.9;}
+.vt-how code{background:var(--cb);border:1px solid var(--cl2);border-radius:4px;padding:1px 6px;
+  font-size:10px;color:var(--cw);}
+.vt-teams{display:flex;gap:6px;flex-wrap:wrap;}
+.vt-tchip{font-size:10px;color:var(--cd2);background:var(--cb);border:1px dashed var(--cl2);
+  border-radius:6px;padding:5px 10px;}
+.vt-tchip.on{color:var(--ct);border-style:solid;border-color:var(--cw);}
+.vt-tchip i{font-style:normal;font-size:9px;color:var(--cw);margin-left:5px;}
+.vt-nocls{color:var(--cd2);font-size:9px;}
+
+/* 반입 전표 · 보류 표시 — 「안 돌린 검사」를 통과와 다른 색으로 둔다.
+   초록(통과) · 빨강(실패) 둘만 두면 보류가 어느 한쪽으로 접혀 들어간다. */
+.cl-live{font-size:9px;color:#5FAE7E;border:1px solid rgba(95,174,126,.45);
+  background:rgba(95,174,126,.1);border-radius:4px;padding:2px 6px;margin-left:8px;font-weight:700;}
+.cl-verd i{font-style:normal;color:var(--cd2);font-size:9.5px;}
+.cl-warn.ok{background:rgba(95,174,126,.07);border-left-color:rgba(95,174,126,.5);}
+.cl-warn.ok b{color:#5FAE7E;}
+.cl-flag.hold{color:#7AA7D9;border-color:rgba(122,167,217,.5);background:rgba(122,167,217,.12);}
+.cl-tbl tr.hold td{color:var(--cd);background:rgba(122,167,217,.06);}
+.cl-tbl tr.hold td.st{color:#7AA7D9;}
+.cl-note.hold{color:#7AA7D9;border-left:2px solid rgba(122,167,217,.45);padding-left:8px;margin-top:6px;}
+.cl-note.hold b{color:#7AA7D9;}
+.cl-kpis>div.hold{border-color:rgba(122,167,217,.35);}
+.cl-kpis>div.hold b{color:#7AA7D9;}
+
+/* 영구보관 — 파기 예정일이 없는 자료. 연한이 있는 줄과 눈으로 갈린다. */
+.ad-perm td{background:rgba(95,174,126,.05);}
+.ad-pm,.vt-perm{color:#5FAE7E;font-weight:700;}
+.ad-un{color:var(--cd2);font-size:9.5px;}

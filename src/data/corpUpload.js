@@ -26,14 +26,14 @@ const CORP_UP_MAXKB = 1024;                /* 한 번에 받는 상한. 넘으�
    deny  이 섹션에서 **절대 받지 않는** 열 이름. 들어오면 그 열을 떼고 받는다. */
 const CORP_UP_SPEC = [
   {
-    k: "jv", ko: "회계 전표", team: "M2", into: "재무현황(장부)",
+    k: "jv", ko: "회계 전표", team: "M2", into: "재무현황(장부)", live: true,
     d: "날짜 · 적요 · 계정 · 차변 · 대변. 한 전표가 여러 줄이면 전표번호로 묶습니다.",
     need: ["no", "date", "desc", "acct", "dr", "cr"], opt: ["memo"],
     deny: [],
     label: { no: "전표번호", date: "일자", desc: "적요", acct: "계정과목(코드 또는 이름)", dr: "차변", cr: "대변", memo: "줄 적요" },
   },
   {
-    k: "bank", ko: "은행 거래내역", team: "M2", into: "재무현황(은행 대사)",
+    k: "bank", ko: "은행 거래내역", team: "M2", into: "재무현황(은행 대사)", live: true,
     d: "일자 · 적요 · 입금 또는 출금. 한 열에 부호로 적혀 있어도 됩니다.",
     need: ["date", "desc", "amt"], opt: ["io"],
     deny: [],
@@ -54,11 +54,12 @@ const CORP_UP_SPEC = [
     label: { name: "성명", title: "직위", team: "소속 팀 코드", joined: "합류일", expertise: "전문영역", cert: "자격증(보유 사실)" },
   },
   {
-    k: "doc", ko: "문서 목록", team: "M3", into: "총무 · 문서",
-    d: "문서명 · 분류 · 작성일. 파일 자체가 아니라 **목록**을 받습니다.",
-    need: ["ko", "cls"], opt: ["d", "where", "note"],
+    k: "doc", ko: "자료 목록", team: "M3", into: "자료실(팀별 게시판)", live: true,
+    d: "저장소 목차입니다. scripts/gen_vault_index.py 가 만든 04_자료목록.csv 를 그대로 올리세요. "
+       + "파일 자체가 아니라 **목록**을 받습니다 — 종류·법인·팀 판별은 화면이 합니다.",
+    need: ["rel", "name"], opt: ["dir", "size", "at", "ext"],
     deny: [],
-    label: { ko: "문서명", cls: "분류 코드", d: "작성일", where: "보관 위치", note: "비고" },
+    label: { rel: "경로", name: "파일명", dir: "폴더", size: "크기", at: "수정일", ext: "확장자" },
   },
 ];
 function corpUpSpec(k) { return CORP_UP_SPEC.find((x) => x.k === k) || null; }
@@ -154,9 +155,11 @@ const CORP_UP_HINT = {
   ko: ["계약명", "문서명", "제목", "name", "title", "ko"], party: ["상대", "거래처", "party"],
   from: ["개시", "시작", "from", "start"], to: ["만료", "종료", "to", "end"],
   amount: ["금액", "계약금", "amount"], kind: ["종류", "유형", "kind", "type"],
-  name: ["성명", "이름", "name"], title: ["직위", "직급", "title"], team: ["소속", "팀", "team", "부서"],
+  name: ["파일명", "성명", "이름", "name"],   /* 「파일명」이 먼저다 — 자료 목록의 열 이름이다 */ title: ["직위", "직급", "title"], team: ["소속", "팀", "team", "부서"],
   joined: ["합류", "입사", "joined", "hire"], expertise: ["전문", "담당", "expertise"], cert: ["자격", "cert"],
   cls: ["분류", "class", "cls", "category"], where: ["보관", "위치", "where"], note: ["비고", "note"],
+  rel: ["경로", "rel", "path"], dir: ["폴더", "dir", "folder"], size: ["크기", "size"],
+  at: ["수정", "날짜", "at", "date"], ext: ["확장자", "ext"],
 };
 function corpUpSuggest(head, spec) {
   const out = {};
@@ -224,6 +227,48 @@ function corpUpGroupJv(rows) {
       why: dr !== cr ? "차변 " + dr + " ≠ 대변 " + cr : (dr === 0 ? "합계가 0입니다" : ""),
     };
   }).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : (a.no < b.no ? -1 : 1)));
+}
+
+/* ── ④-2 저장 모양으로 바꾼다 ────────────────────────────────────────
+   화면이 즉석에서 모양을 만들면 러너가 못 본다. 바꾸는 자리를 하나로 둔다. */
+
+/* 은행 — 입출 구분이 따로 있으면 그걸 따르고, 없으면 적힌 부호를 그대로 쓴다.
+   ⚠️ 부호를 추측하지 않는다. 「출금」인지 모르는 줄을 음수로 만들면 잔액이 조용히 틀어진다. */
+function corpUpBankIn(s) {
+  const t = String(s || "").trim();
+  if (!t) return null;
+  if (/^(입금|입|수입|in|deposit|\+)$/i.test(t)) return 1;
+  if (/^(출금|출|지급|지출|out|withdraw|withdrawal|-)$/i.test(t)) return -1;
+  return null;
+}
+function corpUpToBank(rows) {
+  return (rows || []).map((r) => {
+    const sign = corpUpBankIn(r.io);
+    const a = +r.amt || 0;
+    return { d: r.date, a: sign === null ? a : Math.abs(a) * sign, m: String(r.desc || "").trim() };
+  }).filter((x) => x.d && x.a !== 0);
+}
+/* 같은 줄을 두 번 받지 않는다 — 같은 파일을 두 번 올리면 잔액이 두 배가 된다 */
+function corpUpMergeBank(prev, add) {
+  const seen = {};
+  (prev || []).forEach((x) => { seen[x.d + "|" + x.a + "|" + x.m] = 1; });
+  const out = (prev || []).slice();
+  let dup = 0;
+  (add || []).forEach((x) => {
+    const k = x.d + "|" + x.a + "|" + x.m;
+    if (seen[k]) { dup++; return; }
+    seen[k] = 1; out.push(x);
+  });
+  out.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+  return { lines: out, dup: dup, added: out.length - (prev || []).length };
+}
+/* 자료 목록 — 목차는 **갈아 끼운다**. 지난 목차에 이어 붙이면 지워진 파일이 영영 남는다. */
+function corpUpToVault(rows) {
+  return (rows || []).map((r) => ({
+    rel: String(r.rel || "").trim(), name: String(r.name || "").trim(),
+    dir: String(r.dir || "").trim(), size: +r.size || 0,
+    at: String(r.at || "").trim(), ext: String(r.ext || "").trim().toLowerCase(),
+  })).filter((x) => x.rel && x.name);
 }
 
 /* ── ⑤ 반입 이력 — 되돌릴 수 있어야 한다 ───────────────────────────── */

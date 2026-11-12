@@ -101,28 +101,52 @@ const CORP_CT_ALERT = [
 ];
 
 /* ── ④ 문서 분류 · 보존기한 ───────────────────────────────────────────
-   years    통설상 보존 연한. **법령 원문 대조 전이다.**
+   ⚠️ **두 축을 가른다** — 섞으면 「법이 그렇다」와 「우리가 그렇게 하기로 했다」가 한 숫자가 된다.
+   years    **법정 연한**(통설). 법령 원문 대조 전이다.
    basisKo  근거가 되는 법률의 이름. ⚠️ 조문 번호는 적지 않는다 —
             확인하지 않은 조문을 화면에 찍지 않는 것이 이 저장소의 규약이다.
-   checked  원문 대조 여부. 전건 false이고, 화면이 그 사실을 배지로 단다. */
+   checked  원문 대조 여부. 화면이 그 사실을 배지로 단다.
+   keep     **회사 보존 정책**. 대표가 정한 연한이다. 없으면 null(미정)이고, 있으면 keepBy가 있어야 한다.
+   keepBy   누가 언제 정했는가. 비면 정책이 아니라 누군가의 메모다. */
 const CORP_DOC_CLASS = [
+  /* 재무제표는 장부와 **다른 분류**다 — 대표가 영구보관으로 정했다.
+     한 분류에 묶어 두면 10년 뒤 장부를 버릴 때 재무제표가 함께 버려진다. */
+  { k: "fs", ko: "재무제표 · 확인원", years: 10, basisKo: "상법(상업장부)", checked: false,
+    keep: 0, keepBy: "대표 확정 2026-11-12 — 영구보관",
+    ex: "재무제표확인원 · 재무상태표 · 손익계산서 · 세무조정계산서 · 이익잉여금처분계산서" },
   { k: "acct", ko: "회계장부 · 전표", years: 10, basisKo: "상법(상업장부)", checked: false,
-    ex: "분개장 · 총계정원장 · 증빙" },
+    keep: 10, keepBy: "대표 확정 2026-11-12",
+    ex: "분개장 · 총계정원장 · 전표 · 증빙 · 은행 거래내역" },
+  /* 세무 신고 자료는 법정 연한이 5년이지만 회계자료와 함께 보관한다 —
+     「회계자료는 10년」이라는 대표 확정을 같은 묶음에 적용했다. 다르게 보시면 고친다. */
   { k: "tax", ko: "세무 신고 자료", years: 5, basisKo: "국세기본법", checked: false,
+    keep: 10, keepBy: "대표 확정 2026-11-12 — 회계자료와 함께 보관",
     ex: "부가세 · 법인세 · 원천징수 신고서" },
-  { k: "contract", ko: "계약서", years: 10, basisKo: "상법 · 민법(소멸시효)", checked: false,
+  { k: "contract", ko: "계약서", years: 10, basisKo: "상법 · 민법(소멸시효)", checked: false, keep: null, keepBy: "",
     ex: "임대차 · 용역 · 라이선스 · 투자 · 제휴" },
-  { k: "hr", ko: "근로자 명부 · 근로계약", years: 3, basisKo: "근로기준법", checked: false,
+  { k: "hr", ko: "근로자 명부 · 근로계약", years: 3, basisKo: "근로기준법", checked: false, keep: null, keepBy: "",
     ex: "명부 · 근로계약서 · 임금대장 · 근태" },
-  { k: "corp", ko: "법인 등기 · 정관", years: 0, basisKo: "상법(영구 보존)", checked: false,
+  { k: "corp", ko: "법인 등기 · 정관", years: 0, basisKo: "상법(영구 보존)", checked: false, keep: null, keepBy: "",
     ex: "정관 · 등기부 · 주주명부 · 이사회 의사록" },
-  { k: "privacy", ko: "개인정보 처리 기록", years: 3, basisKo: "개인정보보호법", checked: false,
+  { k: "privacy", ko: "개인정보 처리 기록", years: 3, basisKo: "개인정보보호법", checked: false, keep: null, keepBy: "",
     ex: "동의 기록 · 파기 기록 · 열람 요구 처리" },
-  { k: "access", ko: "접속기록", years: 2, basisKo: "개인정보보호법(안전성 확보조치)", checked: false,
+  { k: "access", ko: "접속기록", years: 2, basisKo: "개인정보보호법(안전성 확보조치)", checked: false, keep: null, keepBy: "",
     ex: "시스템 접속 로그" },
-  { k: "fin", ko: "금융소비자 보호 자료", years: 10, basisKo: "금융소비자보호법", checked: true,
+  { k: "fin", ko: "금융소비자 보호 자료", years: 10, basisKo: "금융소비자보호법", checked: true, keep: null, keepBy: "",
     ex: "설명 의무 이행 기록 · 광고 자료" },
 ];
+
+/* 보존 연한 표기 — **0은 영구**다. 이 둘을 함수로 묶어 두지 않으면 자리마다 falsy 판정을 하다 틀린다. */
+function corpKeepSet(d) { return !!d && d.keep !== null && d.keep !== undefined; }
+function corpKeepKo(d) { return !corpKeepSet(d) ? "미정" : (d.keep === 0 ? "영구" : d.keep + "년"); }
+function corpYearsKo(y) { return y === null || y === undefined ? "—" : (y === 0 ? "영구" : y + "년"); }
+/* 파기 예정일 — 회사 보존 정책이 있을 때만 센다. 영구는 파기하지 않는다. */
+function corpDisposeAt(d, cls) {
+  if (!corpKeepSet(cls) || cls.keep === 0) return "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d || ""));
+  if (!m) return "";
+  return (Number(m[1]) + cls.keep) + "-" + m[2] + "-" + m[3];
+}
 
 /* ── ⑤ 시각 — 고정 날짜를 주입할 수 있어야 한다 ──────────────────────── */
 function corpAdminDays(fromIso, now) {
@@ -193,6 +217,18 @@ function corpAdminVerdict(now) {
     { k: "alert", ko: "만료 경보 산출", n: alerts.length, ok: alerts.every((a) => a.k !== "none"), got: alerts.filter((a) => a.k === "none").length + "건 만료일 없음", want: "0건" },
     { k: "doc", ko: "문서 분류표", n: CORP_DOC_CLASS.length, ok: CORP_DOC_CLASS.every((d) => (d.basisKo || "").trim()), got: CORP_DOC_CLASS.length + "종", want: "근거 전건 기재" },
     { k: "checked", ko: "법령 원문 미확인 표시", n: CORP_DOC_CLASS.length, ok: CORP_DOC_CLASS.some((d) => !d.checked), got: CORP_DOC_CLASS.filter((d) => !d.checked).length + "종 미확인", want: "숨기지 않는다" },
+    /* ⚠️ keep 0 은 **영구**다. falsy 로 읽으면 영구 보존이 「미정」으로 둔갑한다. */
+    { k: "keep", ko: "회사 보존 정책에 정한 주체", n: CORP_DOC_CLASS.filter(corpKeepSet).length,
+      ok: CORP_DOC_CLASS.filter(corpKeepSet).every((d) => (d.keepBy || "").trim()),
+      got: CORP_DOC_CLASS.filter((d) => corpKeepSet(d) && !(d.keepBy || "").trim()).length + "종 누락", want: "0종" },
+    { k: "keepfs", ko: "재무제표는 영구 · 장부는 연한", n: 2,
+      ok: (CORP_DOC_CLASS.find((d) => d.k === "fs") || {}).keep === 0 && (CORP_DOC_CLASS.find((d) => d.k === "acct") || {}).keep === 10,
+      got: "재무제표 " + corpKeepKo(CORP_DOC_CLASS.find((d) => d.k === "fs")) + " · 장부 " + corpKeepKo(CORP_DOC_CLASS.find((d) => d.k === "acct")),
+      want: "갈라져 있을 것" },
+    { k: "keepsep", ko: "법정 연한과 회사 보존을 가른다", n: CORP_DOC_CLASS.length,
+      ok: CORP_DOC_CLASS.some(corpKeepSet) && CORP_DOC_CLASS.some((d) => !corpKeepSet(d)),
+      got: CORP_DOC_CLASS.filter(corpKeepSet).length + "종 확정 · " + CORP_DOC_CLASS.filter((d) => !corpKeepSet(d)).length + "종 미정",
+      want: "둘 다 존재(섞지 않는다)" },
   ];
 }
 function corpAdminPass(now) {

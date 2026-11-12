@@ -66,7 +66,11 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
   "hifin_corp_upload",
   /* AI 팀장 대화 기록(corpAgent.js — 2026-11-12): 에이전트별 최근 40턴. 사내 대화이고 회원 대화가 아니다.
      회원 대면 에이전트의 대화 키(hifin_hi_*)와 **일부러 다른 키**다 — 섞이면 사내 질문이 회원 계측에 잡힌다. */
-  "hifin_corp_chat"];
+  "hifin_corp_chat",
+  /* 자료실 대장(corpVault.js — 2026-11-12): 회사 자료 저장소의 **목록**(경로·크기·날짜).
+     ⚠️ 파일 본문은 담지 않는다. 그리고 목록을 코드에 넣지 않는 이유가 여기 있다 —
+     파일명이 곧 대외비 저장소의 목차라, 공개 배포본에 실리면 목차를 공개하는 셈이다. */
+  "hifin_corp_vault"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
