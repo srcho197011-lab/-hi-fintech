@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="./data/app.css?v=f06f75d8d2" />
+<link rel="stylesheet" href="./data/app.css?v=21aa5de8aa" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=f06f75d8d2"></script>
-<script src="./src/data/section_data.js?v=f06f75d8d2"></script>
-<script src="./src/data/demo_members.js?v=f06f75d8d2"></script>
+<script src="./src/data/dummy_data.js?v=21aa5de8aa"></script>
+<script src="./src/data/section_data.js?v=21aa5de8aa"></script>
+<script src="./src/data/demo_members.js?v=21aa5de8aa"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -18870,6 +18870,50 @@ function corpAgAnswer(ai, q, ctx) {
   return { kind: "ok", tool: tool.ko, t: out.t, rows: out.rows || [] };
 }
 
+/* ── ⑦ 인사 — 들어오시면 **먼저 말을 건다** ──────────────────────────────
+   형 지시(2026-11-12): 「각 팀의 대시보드로 옮기고 대화를 통해 업무를 진행할 수 있도록.
+   예를 들면 회계팀에 들어가면 제일 위에 핀테크가 먼저 인삿말과 업무지시에 대해 말을 걸어
+   오도록 대화창을 만들어 줘.」
+
+   ⚠️ 인사도 **지어내지 않는다.** 「오늘도 좋은 하루 되세요」 같은 말은 아무것도 말하지 않는다.
+      등록된 도구를 **실제로 돌려** 지금 상태를 가져와 말한다. 도구가 없으면 없다고 말한다.
+   ⚠️ 날짜는 **인자로 받는다** — 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
+function corpAgGreet(ai, ctx) {
+  const a = corpAgOf(ai);
+  if (!a) return null;
+  const C = ctx || {};
+  const t = typeof corpTeam === "function" ? corpTeam(a.team) : null;
+  const head = (C.who ? C.who + "님, " : "") + a.ai + "입니다"
+    + (t ? " — " + t.name + " AI 팀장이에요." : ".");
+
+  /* 지금 상태 — 도구를 **실제로 돌려** 가져온다. 돌지 않으면 그 줄을 비운다(지어내지 않는다). */
+  const rows = [];
+  (a.tools || []).slice(0, 3).forEach(function (tool) {
+    let out = null;
+    try { out = tool.run(C.now); } catch (e) { out = null; }
+    if (out && out.t) rows.push([tool.ko, String(out.t)]);
+  });
+
+  const can = (t && t.can) || [];
+  const cannot = ((t && t.cannot) || []).map(function (c) { return c.act; });
+  const order = typeof corpOrdActs === "function" && a.ai === "핀테크" ? corpOrdActs() : [];
+
+  const body = a.noTool
+    ? a.noWhy + " 그래서 이 자리에서는 사내 숫자를 말씀드리지 못합니다."
+    : (rows.length
+      ? "지금 이렇습니다."
+      : "등록된 도구를 돌렸지만 읽을 원천이 아직 없습니다 — 값을 지어내지 않겠습니다.");
+
+  return {
+    kind: "greet", ai: a.ai, team: a.team, t: head, body: body, rows: rows,
+    can: can, cannot: cannot, order: order,
+    tools: (a.tools || []).map(function (x) { return x.ko; }),
+    ask: (a.tools || []).map(function (x) { return (x.ask && x.ask[0]) || x.ko; }),
+    /* 업무를 말로 시킬 수 있는 팀인지 — 지금은 회계(핀테크)뿐이다. 없는 것을 있다고 하지 않는다. */
+    canOrder: order.length > 0,
+  };
+}
+
 /* ── ⑤ 대화 기록 ────────────────────────────────────────────────── */
 function corpAgRead() {
   const empty = { v: 1, log: {} };
@@ -24102,6 +24146,272 @@ function CorpOrderSection({ onTab }) {
   );
 }
 
+/* ══════════════ 팀 대화창(CorpTeamChat.jsx) · 팀 보드 맨 위 (형 지시 2026-11-12) ══════════════
+   「AI 팀장 대화 창을 한 곳에 두지 말고 해체하고 각 팀으로, 각 팀의 대시보드로 옮기고
+    대화를 통해 업무를 진행할 수 있도록 해줘. 예를 들면 회계팀에 들어가면 제일 위에
+    핀테크가 먼저 인삿말과 업무지시에 대해 말을 걸어 오도록 대화창을 만들어 줘.」
+
+   이 화면이 지키는 것
+     · **먼저 말을 건다.** 들어오시면 그 팀 AI가 인사하고 **지금 상태**를 말한다.
+       그 상태는 등록된 도구를 **실제로 돌려** 가져온 값이다 — 인사말이라고 지어내지 않는다.
+     · **도구가 있는 것만 답한다.** 사내용 언어모델이 붙어 있지 않다. 없으면 없다고 말한다.
+     · **시키는 일은 쪼갠다.** 회계팀(핀테크)은 말로 시키면 할 일로 나눈다 —
+       쪼개기까지가 AI고, 승인은 사람이다.
+     · 대화는 **에이전트별로 따로** 남고, 어디서 열든 **같은 기록**을 본다(두 벌이 되지 않게). */
+
+function CorpTeamChat({ team, onTab, compact }) {
+  const t = typeof corpTeam === "function" ? corpTeam(team) : null;
+  const AI = t ? t.ai : "";
+  const [st, setSt] = React.useState(function () { return corpAgRead(); });
+  const [led, setLed] = React.useState(function () { return corpLedgerRead(); });
+  const [q, setQ] = React.useState("");
+  const [msg, setMsg] = React.useState(null);
+  const [open, setOpen] = React.useState(true);
+  const [vault, setVault] = React.useState(null);
+  const [handle, setHandle] = React.useState(null);
+  const endRef = React.useRef(null);
+
+  const now = typeof corpOpsNow === "function" ? corpOpsNow() : null;
+  const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
+  const a = AI ? corpAgOf(AI) : null;
+  const log = (st.log || {})[AI] || [];
+  const greet = React.useMemo(
+    function () { return AI ? corpAgGreet(AI, { who: t && t.own, now: now }) : null; },
+    [AI, led]
+  );
+
+  /* 회계팀만 — 이어 둔 저장소를 미리 훑어 둔다(지시를 읽을 때 상황으로 넘긴다) */
+  React.useEffect(function () {
+    let gone = false;
+    if (team !== "M2" || typeof cvfCan !== "function" || !cvfCan().ok) return;
+    cvfHandle().then(function (h) {
+      if (gone || !h) return;
+      setHandle(h);
+      return cvfPerm(h, false).then(function (p) {
+        if (gone || p !== "granted") return;
+        return cvfScan(h).then(function (S) { if (!gone) setVault(S); }).catch(function () {});
+      });
+    }).catch(function () {});
+    return function () { gone = true; };
+  }, [team]);
+
+  React.useEffect(function () {
+    if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "end" });
+  }, [log.length]);
+
+  const fsFor = React.useCallback(function (iso) {
+    if (!vault) return { linked: false };
+    const sc = cvfScope(vault.rows, "M2");
+    return { linked: true, scope: sc, match: iso ? cvfMatchDay(sc.rows, iso) : null, root: vault.root };
+  }, [vault]);
+
+  const send = function (text) {
+    const s = String(text === undefined ? q : text).trim();
+    if (!s || !a) return;
+    const pre = (team === "M2" && typeof corpOrdParse === "function") ? corpOrdParse(s, today) : null;
+    const r = corpAgAnswer(AI, s, {
+      now: now, today: today,
+      fs: pre ? fsFor(pre.date.iso) : undefined,
+    });
+    const next = Object.assign({}, st, { log: Object.assign({}, st.log) });
+    next.log[AI] = (next.log[AI] || []).concat([{ who: "me", t: s }, { who: "ai", r: r }]);
+    corpAgWrite(next); setSt(next); setQ(""); setMsg(null);
+    if (r.kind === "order" && typeof corpOrderRead === "function") {
+      const t2 = corpOrderRead();
+      t2.tasks = (t2.tasks || []).concat([{ id: corpOrdNextId(t2, r.order.iso, today), at: today, q: s, iso: r.order.iso, done: [] }]);
+      corpOrderWrite(t2);
+    }
+  };
+
+  /* 시키신 일을 집행한다 — 쪼개기까지가 AI, 승인은 사람 */
+  const doReverse = function (iso) {
+    const L = corpLedgerRead();
+    const R = corpOrdReverse(corpJvAll(L), iso, today, L);
+    if (!R.made.length) {
+      setMsg({ bad: true, t: R.held.length ? "초안을 만들지 못했습니다 — " + R.held[0].why : iso + " 자 역분개할 전표가 없습니다" });
+      return;
+    }
+    const next = Object.assign({}, L, { jv: (L.jv || []).concat(R.made) });
+    corpLedgerWrite(next); setLed(next);
+    setMsg({ bad: false, t: R.made.length + "건을 **역분개 초안**으로 올렸습니다(" + R.made.map(function (j) { return j.id; }).join(" · ") + "). "
+      + "기표 상태입니다 — 재무현황 › 전표에서 **검토 · 승인**하셔야 장부에 반영됩니다. 승인은 제가 못 합니다." });
+  };
+  const doRebuild = function (iso) {
+    const L = corpLedgerRead();
+    const all = corpJvAll(L);
+    const C = corpOrdCanRebuild(all, iso, L, today);
+    if (!C.ok) { setMsg({ bad: true, t: "아직 못 합니다 — " + C.need.join(" · ") }); return; }
+    const B = corpBjvBuild((L.bank || []).filter(function (l) { return l.d === iso; }), corpBjvRead(), L, all);
+    if (!B.made.length) {
+      setMsg({ bad: true, t: "다시 만들 줄이 없습니다 — " + (B.held.length ? "계정을 못 고른 줄 " + B.held.length + "건이 있습니다(은행 대사 지면에서 골라 주세요)" : "이미 모두 들어와 있습니다") });
+      return;
+    }
+    const next = Object.assign({}, L, { jv: (L.jv || []).concat(B.made) });
+    corpLedgerWrite(next); setLed(next);
+    setMsg({ bad: false, t: B.made.length + "건을 다시 만들었습니다 — 기표 상태이니 전표 지면에서 검토 · 승인해 주세요." });
+  };
+  const doRefetch = async function (iso, pick) {
+    if (!handle || !pick) { setMsg({ bad: true, t: "저장소에서 고를 파일이 정해지지 않았습니다 — 은행 대사 지면에서 골라 주세요" }); return; }
+    setMsg({ bad: false, t: "「" + pick.name + "」을(를) 읽는 중입니다…" });
+    try {
+      const f = await cvfFile(handle, pick.rel);
+      const buf = new Uint8Array(await f.slice(0, 4).arrayBuffer());
+      const zip = buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+      let head = [], rows = [];
+      if (zip) { const X = await cbxRead(f); head = X.rows[0] || []; rows = X.rows.slice(1); }
+      else { const g = corpUpParseCsv(await f.text()); head = g.head || []; rows = g.rows || []; }
+      rows = rows.filter(function (r) { return r.join("").trim(); });
+      const hits = corpUpScan(rows, head);
+      if (hits.length) { setMsg({ bad: true, t: "민감자료가 " + hits.length + "곳에서 걸렸습니다 — 읽기를 멈췄습니다." }); return; }
+      const V2 = corpUpValidate("bank", head, rows, corpUpSuggest(head, corpUpSpec("bank")));
+      const T2 = corpUpToBank(V2.ok);
+      if (!T2.lines.length) throw new Error("읽을 은행줄이 없습니다");
+      const CH = corpBjvChain(T2.lines);
+      if (CH.n > 0 && !CH.ok) throw new Error("잔액이 " + CH.breaks.length + "군데 끊겨 있습니다 — 빠진 거래가 있는 자료로는 넣지 않습니다");
+      const L = corpLedgerRead();
+      const M = corpUpMergeBank(L.bank || [], T2.lines);
+      const ds = T2.lines.map(function (x) { return x.d; }).sort();
+      const next = Object.assign({}, L, { bank: M.lines,
+        bankCov: { from: (L.bankCov && L.bankCov.from) || ds[0], to: ds[ds.length - 1], at: pick.name } });
+      corpLedgerWrite(next); setLed(next);
+      setMsg({ bad: false, t: "「" + pick.name + "」에서 " + T2.lines.length + "줄을 읽어 " + M.added + "줄 넣었습니다. "
+        + "덮는 기간은 **" + ds[0] + " ~ " + ds[ds.length - 1] + "** 로 보았습니다 — 다르면 은행 대사 지면에서 고쳐 주세요." });
+    } catch (e) { setMsg({ bad: true, t: (e && e.message) || "가져오지 못했습니다" }); }
+  };
+  const run = function (step, iso) {
+    if (step.k === "reverse") return doReverse(iso);
+    if (step.k === "rebuild") return doRebuild(iso);
+    if (step.k === "refetch") return doRefetch(iso, step.pick);
+    setMsg({ bad: true, t: "이 일은 제가 하지 못합니다." });
+  };
+
+  if (!a || !t) return null;
+
+  return (
+    <div className="tc-wrap" style={{ "--tc": t.c }}>
+      <div className="tc-head" onClick={function () { setOpen(!open); }}>
+        {typeof CorpAvatar === "function" && <CorpAvatar ai={AI} size={30} />}
+        <div className="tc-id">
+          <b>{AI}</b><span className="corp-ai">AI</span>
+          <i>{t.name} · {t.aiWhy}</i>
+        </div>
+        <span className="tc-n">{a.noTool ? "도구 없음" : "도구 " + a.tools.length}</span>
+        {greet && greet.canOrder && <span className="tc-order">말로 시킬 수 있습니다</span>}
+        <button className="cl-rv">{open ? "접기" : "열기"}</button>
+      </div>
+
+      {open && (
+        <div className="tc-body">
+          {greet && (
+            <div className="tc-greet">
+              <div className="tc-hi">{greet.t}</div>
+              <div className="tc-sub">{greet.body}</div>
+              {greet.rows.length > 0 && (
+                <table className="cl-tbl tc-tbl"><tbody>
+                  {greet.rows.map(function (r, i) { return <tr key={i}><td className="k">{r[0]}</td><td>{r[1]}</td></tr>; })}
+                </tbody></table>
+              )}
+              {greet.canOrder && (
+                <p className="tc-can"><b>업무를 말로 시키셔도 됩니다.</b> 제가 할 수 있는 일은
+                  <b> {greet.order.join(" · ")}</b> 입니다 — 시키시면 할 일로 나눠 드리고,
+                  <b>승인 · 전기는 형이</b> 하십니다.</p>
+              )}
+              {!a.noTool && (
+                <div className="tc-chips">
+                  {a.tools.map(function (x) {
+                    return <button key={x.k} className="ag-chip tool" onClick={function () { send(x.ask[0]); }}>{x.ko}</button>;
+                  })}
+                </div>
+              )}
+              {(t.cannot || []).length > 0 && (
+                <p className="tc-no">제가 <b>끝내지 못하는 일</b> — {(t.cannot || []).map(function (c) { return c.act; }).join(" · ")}.
+                  화면에 적은 제약과 실제 거절이 어긋나지 않게, 이 목록은 조직 원천에서 그대로 옵니다.</p>
+              )}
+            </div>
+          )}
+
+          {msg && <div className={"cl-msg" + (msg.bad ? " bad" : "")} onClick={function () { setMsg(null); }}>{msg.t}</div>}
+
+          <div className="ag-log tc-log">
+            {log.map(function (m, i) {
+              if (m.who === "me") return <div key={i} className="ag-me">{m.t}</div>;
+              const r = m.r || {};
+              const iso = r.order ? r.order.iso : "";
+              return (
+                <div key={i} className={"ag-ai k-" + (r.kind || "none")}>
+                  <div className="ag-t">
+                    {r.kind === "ok" && <span className="ag-tag ok">{r.tool}</span>}
+                    {r.kind === "refuse" && <span className="ag-tag no">못 하는 일</span>}
+                    {r.kind === "ask" && <span className="ag-tag none">되묻습니다</span>}
+                    {r.kind === "order" && <span className="ag-tag ok">할 일 {r.order.steps.length}</span>}
+                    {r.kind === "notool" && <span className="ag-tag none">도구 없음</span>}
+                    {r.kind === "fail" && <span className="ag-tag none">원천 못 읽음</span>}
+                    {r.t}
+                  </div>
+                  {r.rows && r.rows.length > 0 && (
+                    <table className="cl-tbl ag-tbl"><tbody>
+                      {r.rows.map(function (row, j) { return <tr key={j}><td>{row[0]}</td><td className="n">{row[1]}</td></tr>; })}
+                    </tbody></table>
+                  )}
+                  {r.tools && r.tools.length > 0 && <div className="ag-sug">제가 할 수 있는 일 — {r.tools.join(" · ")}</div>}
+                  {r.kind === "order" && (
+                    <div className="wo-steps">
+                      {r.order.steps.map(function (s, j) {
+                        const live = i === log.length - 1;
+                        return (
+                          <div key={j} className={"wo-step" + (s.can ? " on" : "") + (s.who === "human" ? " hu" : "")}>
+                            <div className="wo-hd">
+                              <span className="wo-n">{j + 1}</span><b>{s.ko}</b>
+                              <span className={"wo-who " + s.who}>{s.who === "ai" ? AI + "가 합니다" : "형이 하셔야 합니다"}</span>
+                              {s.n !== null && s.n !== undefined && <span className="wo-cnt">{s.n}건</span>}
+                            </div>
+                            <p className="wo-d">{s.d}</p>
+                            {!s.can && s.why && <p className="wo-why">{s.why}</p>}
+                            {(s.note || []).map(function (x, k) { return <p key={k} className="wo-note">· {x}</p>; })}
+                            <div className="wo-act">
+                              {s.who === "ai" && (
+                                <button className="cl-save" disabled={!s.can || !live} onClick={function () { run(s, iso); }}>
+                                  {s.k === "reverse" ? "역분개 초안 만들기"
+                                    : (s.k === "refetch" ? "저장소에서 가져오기" + (s.pick ? " — " + s.pick.name : "") : "전표 다시 만들기")}
+                                </button>
+                              )}
+                              {s.who === "human" && (
+                                <button className="cl-rv" onClick={function () { if (typeof onTab === "function") onTab(s.k === "refetch" ? "bank" : "jv"); }}>
+                                  어디서 하나요
+                                </button>
+                              )}
+                              {!live && <span className="cl-t">지난 지시입니다 — 다시 말씀하시면 지금 상태로 새로 셉니다</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <p className="cl-note">만든 전표는 <b>기표 상태</b>로 앉습니다 — 재무현황 › 전표에서
+                        <b> 검토 · 승인</b>하셔야 장부에 올라갑니다. 승인은 제가 하지 못합니다(작성자 ≠ 승인자).</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <div ref={endRef} />
+          </div>
+
+          <div className="ag-input tc-input">
+            <input value={q}
+              placeholder={a.noTool ? "도구가 없어 답하지 못합니다" : (greet && greet.canOrder ? "물어보시거나, 시키세요 — 예: 11월 11일 은행 전표 역분개해 줘" : "물어보세요")}
+              onChange={function (e) { setQ(e.target.value); }}
+              onKeyDown={function (e) { if (e.key === "Enter") send(); }} />
+            <button className="cl-save" onClick={function () { send(); }}>보내기</button>
+            {log.length > 0 && <button className="cl-rv" onClick={function () {
+              const next = Object.assign({}, st, { log: Object.assign({}, st.log) });
+              next.log[AI] = []; corpAgWrite(next); setSt(next);
+            }}>대화 지우기</button>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ══════════════ 회사 총괄운영 — 총괄 대시보드(CorpOps.jsx) · Phase 1 (형 지시 2026-11-11) ══════════════
    화면: 다크 콕핏 3단 — 좌(지표) · 중앙(조직 온톨로지 · 원근 회전) · 우(사람이 결정할 것 · 루틴).
    ⚠️ 원칙:
@@ -24347,7 +24657,6 @@ function CorpOps({ onGo, onTab }) {
           <button className={"corp-vt" + (view === "mtg" ? " on" : "")} onClick={() => setView("mtg")}>주간회의</button>
           <button className={"corp-vt" + (view === "gov" ? " on" : "")} onClick={() => setView("gov")}>일정 · 결재</button>
           <button className={"corp-vt" + (view === "up" ? " on" : "")} onClick={() => setView("up")}>자료 반입</button>
-          <button className={"corp-vt" + (view === "ag" ? " on" : "")} onClick={() => setView("ag")}>AI 팀장 대화</button>
           <button className={"corp-vt" + (view === "vt" ? " on" : "")} onClick={() => setView("vt")}>자료실</button>
           {sel && <button className={"corp-vt" + (view === "team" ? " on" : "")} onClick={() => setView("team")}
             style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
@@ -24360,7 +24669,6 @@ function CorpOps({ onGo, onTab }) {
       {view === "mtg" && typeof CorpMeetingSection === "function" && <CorpMeetingSection />}
       {view === "gov" && typeof CorpBoardSection === "function" && <CorpBoardSection />}
       {view === "up" && typeof CorpUploadSection === "function" && <CorpUploadSection />}
-      {view === "ag" && typeof CorpAgentChatSection === "function" && <CorpAgentChatSection />}
       {view === "vt" && typeof CorpVaultSection === "function" && <CorpVaultSection />}
       {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
@@ -24650,6 +24958,15 @@ function CorpTeamBoard({ team, onGo, onTab, back }) {
           <div><b>{team.pages.length}</b><span>지면</span></div>
         </div>
       </div>
+
+      {/* 형 지시 2026-11-12 — 들어오시면 그 팀 AI가 **먼저 말을 건다**.
+          한 곳에 모아 두지 않고 각 팀 보드 맨 위에 둔다. 대화 기록은 한 벌이라 어디서 열든 같다. */}
+      {typeof CorpTeamChat === "function" && (
+        <CorpTeamChat team={team.id} onTab={(k) => {
+          const i = team.pages.findIndex((p) => p.comp === (k === "bank" || k === "jv" ? "CorpLedgerSection" : ""));
+          if (i >= 0) setPage(i);
+        }} />
+      )}
 
       <div className="cb-tabs">
         {team.pages.map((p, i) => (
@@ -43275,7 +43592,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-11-12", ver:"v4.6", ch:[9], feat:"전표 — 두 번 되돌리기 금지와 승인 전 물리기", src:"온톨로지 › 회사 총괄운영 › 회계팀 › 재무현황 전표", summary:"역분개 버튼에 두 번 누르는 것을 막는 장치가 없어 한 전표가 열세 번 되돌려지고 역분개가 열여섯 장 쌓인 것을 승인 전이라 장부 숫자를 건드리지 않고 되돌렸으며, 두 번 되돌리면 원래 거래가 거꾸로 서고 세 번이면 또 뒤집히므로 화면 버튼뿐 아니라 저장되는 자리에서도 막아 다른 길로 들어온 것도 걸리게 했고 이미 되돌린 전표에는 그 역분개 번호가 적히게 했으며 역분개를 또 역분개하지 않고 승인 전 전표는 되돌릴 것이 없고 물리면 된다고 적었고, 형이 혼자 되돌릴 길이 없던 것을 승인 전 역분개마다 물리기와 한꺼번에 물리기로 내되 전기된 전표는 지우지 않고 역분개로 바로잡는다는 원칙을 지켜 승인 전 것만 집게 했다", refs:[], status:"반영", hash:"4cfe6d8", auto:true },
+  { date:"2026-11-12", ver:"v4.6", ch:[9], feat:"AI 팀장 대화 — 상단 통합 탭 해체와 팀별 먼저 말 걸기", src:"온톨로지 › 회사 총괄운영 › 팀 보드 맨 위", summary:"한 곳에 모아 둔 AI 팀장 대화 탭은 일하는 자리와 떨어져 있어 말을 걸 일이 없으므로 탭을 없애고 팀 보드 맨 위에 그 팀 AI를 앉혀 고르지 않아도 먼저 말을 걸게 했고, 인사말도 지어내지 않도록 등록된 도구를 실제로 돌려 지금 상태를 말하게 하고 러너가 그 줄을 도구 출력과 글자까지 대조해 다르면 커밋을 막게 했으며, 여덟 팀 가운데 사내 조회 도구가 없는 셋은 회원 데이터는 회원 대면 에이전트의 것이거나 원천이 아직 없다는 까닭만 말하고 숫자를 한 줄도 적지 않게 했고, 말로 업무를 시킬 수 있는 팀은 아직 회계뿐이라 나머지 일곱 팀은 시킬 일을 지어내지 않게 했으며 못 하는 일 목록은 조직 원천 그대로여서 한 글자라도 다르면 막히고 대화 기록은 한 벌이라 어디서 열든 같은 기록을 본다", refs:[], status:"반영", hash:"9e373b3", auto:true },
+  { date:"2026-11-12", ver:"v4.6", ch:[9], feat:"전표 — 두 번 되돌리기 금지와 승인 전 물리기", src:"온톨로지 › 회사 총괄운영 › 회계팀 › 재무현황 전표", summary:"역분개 버튼에 두 번 누르는 것을 막는 장치가 없어 한 전표가 열세 번 되돌려지고 역분개가 열여섯 장 쌓인 것을 승인 전이라 장부 숫자를 건드리지 않고 되돌렸으며, 두 번 되돌리면 원래 거래가 거꾸로 서고 세 번이면 또 뒤집히므로 화면 버튼뿐 아니라 저장되는 자리에서도 막아 다른 길로 들어온 것도 걸리게 했고 이미 되돌린 전표에는 그 역분개 번호가 적히게 했으며 역분개를 또 역분개하지 않고 승인 전 전표는 되돌릴 것이 없고 물리면 된다고 적었고, 형이 혼자 되돌릴 길이 없던 것을 승인 전 역분개마다 물리기와 한꺼번에 물리기로 내되 전기된 전표는 지우지 않고 역분개로 바로잡는다는 원칙을 지켜 승인 전 것만 집게 했다", refs:[], status:"반영", hash:"af77b81", auto:true },
   { date:"2026-11-12", ver:"v4.5", ch:[9], feat:"은행 대사 — 올리면 바로 돌고 전표가 되는 과정을 보여 준다", src:"온톨로지 › 회사 총괄운영 › 회계팀 › 은행 대사", summary:"올리기 버튼이 은행줄 넣기와 전표 만들기를 한 데 묶고 있어 전표가 영 건일 때 은행줄도 들어가지 않고 대사가 영원히 보류가 되던 것을 갈라 은행줄은 읽었으면 들어가고 전표는 만들 게 있을 때만 만들도록 했으며 버튼에도 둘을 따로 적었고, 결과만 보여 주던 것을 한 줄이 전표가 되기까지의 자취를 줄 순서 그대로 남겨 분류를 어떻게 읽었고 어느 계정이 어떤 근거로 골라졌고 차변과 대변이 어떻게 서는지와 전표번호나 보류 까닭까지 한 표로 보이게 했으며 은행 줄에는 계정이 없다는 사실을 맨 위에 적었고, 형이 고르신 폴더의 파일을 그대로 흘려 과정 표 열한 줄과 은행줄 반입과 조정 후 차이 영까지 도는 것을 확인했다", refs:[], status:"반영", hash:"748aeac", auto:true },
   { date:"2026-11-12", ver:"v4.4", ch:[9], feat:"저장소 폴더 — 팀 폴더 안쪽을 고르셔도 쓴다", src:"온톨로지 › 회사 총괄운영 › 회계팀 은행 대사 · 자료실", summary:"회계 지면이 늘 회계 폴더와 이어지게 하려고 경로가 그 폴더로 시작하는 것만 남겼더니 형이 그 안쪽 폴더를 고르셨을 때 경로에 그 이름이 없어 바르게 고르고도 영 건을 보시게 된 것을 고쳐, 그 팀 폴더가 경로에 있으면 그것만 보고 다른 팀 폴더가 보이면 어느 팀 자료인지 말하며 부서 표시가 아예 없으면 고르신 것을 그대로 쓰되 그렇게 했다고 화면에 적도록 세 갈래로 갈랐고, 형이 고르신 것과 같은 모양을 끝까지 흘려 가져오기와 열 맞추기와 잔액 사슬과 꼬리 합계 제외와 기존 전표와의 짝짓기까지 도는 것을 확인했다", refs:[], status:"반영", hash:"78cafb5", auto:true },
   { date:"2026-11-12", ver:"v4.3", ch:[9], feat:"저장소 폴더 — 두 번째 길과 사실대로 적기", src:"온톨로지 › 회사 총괄운영 › 자료실 · 회계팀 은행 대사", summary:"폴더 고르기 앞의 클립보드 쓰기가 사람이 눌렀다는 자격을 소비해 창을 막는다고 단정하고 주석까지 적었으나 실측으로 뒤집혀 기준이 횟수가 아니라 약 오초의 시간임을 확인하고 틀린 설명을 코드에서 지웠으며, 폴더를 고르는 행위 자체가 읽기 허락이라 권한 창이 따로 뜨지 않는데도 화면이 뜨지도 않은 창을 가리켜 적고 있던 것을 사실로 고치고 방문할 때마다 허용은 다음에 다시 열 때 뜬다는 것까지 적었고, 브라우저가 취소와 막는 폴더와 권한 거부를 같은 이름 하나로 돌려주는데 화면은 취소하셨다고만 적어 취소하지 않은 사람이 자기를 의심하게 되던 것을 셋을 모두 적도록 바꿨으며, 폴더 잇기가 안 될 때도 막히지 않도록 폴더를 통째로 골라 그 자리에서 읽는 두 번째 길을 내되 권한이 남지 않아 올릴 때마다 다시 골라야 한다는 한계를 숨기지 않고 적었고 경로 모양이 같아 팀 좁히기와 그날 것 찾기와 민감자료 검사와 잔액 사슬이 두 벌이 되지 않고 그대로 돌게 했다", refs:[], status:"반영", hash:"5db3e3e", auto:true },
@@ -58944,7 +59262,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.61,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.39,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

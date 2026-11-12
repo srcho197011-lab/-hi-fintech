@@ -70,7 +70,7 @@ const ORG = "src/data/corpOrg.js";
    「자동 실행」·「보완 필요」·회원 영상 모듈 참조는 지면 종류를 가리지 않는다. */
 const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpGov.jsx",
   "src/components/CorpUpload.jsx", "src/components/CorpAgentChat.jsx", "src/components/CorpVault.jsx",
-  "src/components/CorpOrder.jsx", "src/components/CorpOps.jsx"];
+  "src/components/CorpOrder.jsx", "src/components/CorpTeamChat.jsx", "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
   ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
   "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js", "src/data/corpVault.js",
@@ -1751,6 +1751,107 @@ chk(MANI.indexOf("src/data/corpVaultFs.js") >= 0, "⑯번들   corpVaultFs.js �
 chk(MANI.indexOf("src/data/corpVault.js") < MANI.indexOf("src/data/corpVaultFs.js"),
   "⑯번들   자료실 뒤에 선다(종류 판별을 그쪽에서 가져온다)");
 
+/* ── ⑰ 팀 대화창 — 들어오시면 그 팀 AI가 **먼저 말을 건다** (형 지시 2026-11-12) ──
+   「AI 팀장 대화 창을 한 곳에 두지 말고 해체하고 각 팀의 대시보드로 옮기고 …
+    회계팀에 들어가면 제일 위에 핀테크가 먼저 인삿말과 업무지시에 대해 말을 걸어 오도록」
+
+   ⚠️ 인사말은 **지어내지 않는다.** 「지금 이렇습니다」 아래 줄은 등록된 도구를 실제로
+      돌린 값과 **글자까지 같아야** 한다. 도구가 없으면 숫자를 한 줄도 적지 않는다.
+   ⚠️ 날짜는 인자로 넣는다 — 벽시계를 읽으면 내일 이 검사가 혼자 무너진다. */
+G('var __TCNOW = new Date(2026, 10, 12);');
+const TCG = JSON.parse(G(`JSON.stringify(CORP_TEAMS.map(function (t) {
+  var g = corpAgGreet(t.ai, { who: t.own, now: __TCNOW });
+  var a = corpAgOf(t.ai);
+  var runs = (a.tools || []).slice(0, 3).map(function (x) {
+    var o = null; try { o = x.run(__TCNOW); } catch (e) { o = null; }
+    return (o && o.t) ? String(o.t) : "";
+  }).filter(function (x) { return x; });
+  return { id: t.id, ai: t.ai, name: t.name, own: t.own || "", noTool: !!a.noTool,
+    nTool: (a.tools || []).length, t: String(g.t), body: String(g.body),
+    rows: g.rows.map(function (r) { return [String(r[0]), String(r[1])]; }),
+    runs: runs, can: (g.can || []).length, cannot: (g.cannot || []).slice(),
+    srcCannot: ((t.cannot) || []).map(function (c) { return String(c.act); }),
+    tools: (g.tools || []).slice(), canOrder: !!g.canOrder, nOrder: (g.order || []).length };
+}))`));
+const TCT = G("CORP_TEAMS.length");
+chk(TCG.length === TCT && TCG.length >= 6, "⑰분모   팀마다 인사가 선다(표본)", TCG.length + " / " + TCT);
+chk(TCG.every((x) => x.t.trim() && x.body.trim()), "⑰인사   빈 인사말이 없다",
+  TCG.filter((x) => !x.t.trim() || !x.body.trim()).map((x) => x.id).join(","));
+chk(TCG.every((x) => x.t.indexOf(x.ai) >= 0 && x.t.indexOf(x.name) >= 0),
+  "⑰인사   누가 · 어느 팀인지 밝히고 시작한다",
+  TCG.filter((x) => x.t.indexOf(x.ai) < 0 || x.t.indexOf(x.name) < 0).map((x) => x.id).join(","));
+chk(TCG.every((x) => !x.own || x.t.indexOf(x.own) >= 0), "⑰인사   팀장 이름으로 부른다",
+  TCG.filter((x) => x.own && x.t.indexOf(x.own) < 0).map((x) => x.id + ":" + x.own).join(","));
+
+/* ⓐ 도구가 있는 팀 — 인사의 숫자는 **도구가 돌아 나온 그 글자**다 */
+const TCH = TCG.filter((x) => !x.noTool);
+chk(TCH.length >= 4, "⑰분모   도구 있는 팀 ≥ 4", TCH.length);
+chk(TCH.every((x) => x.rows.length > 0), "⑰실측   도구가 있으면 지금 상태를 말한다",
+  TCH.filter((x) => !x.rows.length).map((x) => x.id).join(","));
+chk(TCH.every((x) => x.rows.map((r) => r[1]).join("|") === x.runs.join("|")),
+  "⑰실측   인사의 숫자는 **도구를 돌린 값 그대로**다(지어내지 않는다)",
+  TCH.filter((x) => x.rows.map((r) => r[1]).join("|") !== x.runs.join("|")).map((x) => x.id).join(","));
+chk(TCH.every((x) => x.rows.length <= 3), "⑰실측   인사에 도구를 셋까지만 돌린다(들어올 때 무거워지지 않게)",
+  TCH.map((x) => x.id + ":" + x.rows.length).join(" "));
+
+/* ⓑ 도구가 없는 팀 — **숫자를 한 줄도 적지 않고**, 왜 없는지 말한다 */
+const TCN = TCG.filter((x) => x.noTool);
+chk(TCN.length >= 2, "⑰분모   도구 없는 팀 ≥ 2(없으면 침묵 검사가 공집합)", TCN.length);
+chk(TCN.every((x) => x.rows.length === 0), "⑰침묵   도구가 없으면 상태 줄이 서지 않는다",
+  TCN.filter((x) => x.rows.length).map((x) => x.id).join(","));
+chk(TCN.every((x) => !/[\d,]+\s*원/.test(x.body) && !/\d+\s*건/.test(x.body)),
+  "⑰침묵   도구가 없는 팀은 인사말에 **사내 숫자를 적지 않는다**",
+  TCN.filter((x) => /[\d,]+\s*원/.test(x.body) || /\d+\s*건/.test(x.body)).map((x) => x.id).join(","));
+chk(TCN.every((x) => x.body.indexOf("못") >= 0 || x.body.indexOf("없") >= 0),
+  "⑰침묵   못 하는 까닭을 함께 말한다", TCN.map((x) => x.id).join(","));
+
+/* ⓒ 말로 시킬 수 있는 팀은 **회계(핀테크) 하나뿐**이다 — 없는 것을 있다고 하지 않는다 */
+const TCO = TCG.filter((x) => x.canOrder);
+chk(TCO.length === 1 && TCO[0].ai === "핀테크" && TCO[0].id === "M2",
+  "⑰지시   업무를 말로 시킬 수 있는 팀은 회계(핀테크)뿐이라고 적는다", TCO.map((x) => x.id + ":" + x.ai).join(","));
+chk(TCO[0] && TCO[0].nOrder >= 3, "⑰지시   시킬 수 있는 일이 셋 이상 적혀 있다", TCO[0] && TCO[0].nOrder);
+chk(TCG.filter((x) => !x.canOrder).every((x) => x.nOrder === 0),
+  "⑰지시   나머지 팀은 시킬 일을 지어내지 않는다",
+  TCG.filter((x) => !x.canOrder && x.nOrder).map((x) => x.id).join(","));
+
+/* ⓓ 못 하는 일 — **조직 원천 그대로**다. 화면과 거절이 어긋나면 약속이 두 벌이 된다 */
+chk(TCG.reduce((n, x) => n + x.cannot.length, 0) > 0, "⑰분모   못 하는 일 표본 > 0",
+  TCG.reduce((n, x) => n + x.cannot.length, 0));
+chk(TCG.every((x) => x.cannot.join("|") === x.srcCannot.join("|")),
+  "⑰경계   못 하는 일은 조직 원천(CORP_TEAMS.cannot)과 **한 글자도 다르지 않다**",
+  TCG.filter((x) => x.cannot.join("|") !== x.srcCannot.join("|")).map((x) => x.id).join(","));
+
+/* ⓔ 화면 — 팀 보드 **맨 위**에 서고, 한 곳에 모아 두던 탭은 해체됐다 */
+const TCF = rd("src/components/CorpTeamChat.jsx");
+chk(/corpAgGreet\(/.test(TCF), "⑰화면   인사를 엔진에서 가져온다(화면에 적어 두지 않는다)", "없음");
+chk(!/new Date\(\)/.test(TCF), "⑰화면   벽시계를 읽지 않는다(날짜는 인자로 받는다)", "읽는다");
+chk(/corpAgRead\(/.test(TCF) && /corpAgWrite\(/.test(TCF),
+  "⑰기록   대화 기록은 **한 벌**이다(어디서 열든 같은 기록을 본다)", "다른 저장소");
+if (opsSrc) {
+  const iChat = opsSrc.indexOf("<CorpTeamChat");
+  const iTabs = opsSrc.indexOf('className="cb-tabs"');
+  chk(iChat >= 0 && iTabs >= 0 && iChat < iTabs,
+    "⑰화면   팀 보드 **맨 위**(지면 탭보다 앞)에 선다", { chat: iChat, tabs: iTabs });
+  chk(opsSrc.indexOf("CorpTeamChat team={team.id}") >= 0 || /<CorpTeamChat[^>]*team=\{team\.id\}/.test(opsSrc),
+    "⑰화면   들어온 그 팀의 AI가 말을 건다(팀을 넘겨받는다)", "팀을 안 넘긴다");
+  chk(opsSrc.indexOf("AI 팀장 대화") < 0 && opsSrc.indexOf('setView("ag")') < 0,
+    "⑰해체   한 곳에 모아 두던 상단 탭은 **없다**(형 지시 — 해체)", "남아 있다");
+}
+chk(MANI.indexOf("src/components/CorpTeamChat.jsx") >= 0, "⑰번들   CorpTeamChat.jsx 가 매니페스트에 있다", "없음");
+chk(MANI.indexOf("src/data/corpAgent.js") < MANI.indexOf("src/components/CorpTeamChat.jsx") &&
+  MANI.indexOf("src/components/CorpTeamChat.jsx") < MANI.indexOf("src/components/CorpOps.jsx"),
+  "⑰번들   에이전트 엔진 뒤 · 팀 보드 앞에 선다(없는 이름을 부르지 않게)");
+if (hook) {
+  chk(hook.indexOf("CorpTeamChat") >= 0, "⑰게이트 pre-commit 감시 대상에 CorpTeamChat", "미등재");
+}
+/* 엔진 쪽도 벽시계를 읽지 않는다 — 인사 함수 안에 argless new Date() 가 없어야 한다 */
+{
+  const agS = rd("src/data/corpAgent.js");
+  const iG = agS.indexOf("function corpAgGreet");
+  chk(iG >= 0 && !/new Date\(\)/.test(agS.slice(iG, iG + 2000)),
+    "⑰엔진   인사 함수가 벽시계를 읽지 않는다", "읽는다");
+}
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -1769,6 +1870,7 @@ console.log(`[결재릴리스] 릴리스 ${RELS.length}건 · 승인 가능자 $
 console.log(`[은행전표] 엑셀 표 층 ${XT.length}항목 · 잔액 사슬 ${BT.length}항목 · 확실한 계정 대응 ${SURE.length}종(나머지는 사람이 확정) · 표본 ${BB.n}줄 → 전표 ${BB.made.length} · 보류 ${BB.held.length}`);
 console.log(`[업무지시] 해석 자기시험 ${OV.rows.length}항목 · 아는 행위 ${G("CORP_ORD_ACT").length}종 · 되물음 표본 ${G("CORP_ORD_T_ASK").length} · 형 문장 → ${AO.order ? AO.order.steps.length : 0}단계(AI ${AO.order ? AO.order.steps.filter((s) => s.who === "ai").length : 0} · 사람 ${AO.order ? AO.order.steps.filter((s) => s.who === "human").length : 0})`);
 console.log(`[폴더잇기] 자기시험 ${FV.rows.length}항목 · 고를 거리 ${FC.n} / ${FC.all} · 어긋남 표시 ${warn.length}건 · 권한 손잡이 ${G("CORP_VFS_DB")}(IndexedDB)`);
+console.log(`[팀대화창] 팀 ${TCG.length}곳 전부 인사(도구 보유 ${TCH.length} · 도구 없음 ${TCN.length}) · 상태 줄 ${TCG.reduce((n, x) => n + x.rows.length, 0)}줄 전건 도구 실측 일치 · 말로 시킬 수 있는 팀 ${TCO.map((x) => x.name).join("·") || "없음"} · 상단 통합 탭 해체`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {
   console.log(`[회계엔진] 통과 ${oks.length} · 실패 ${fails.length} / ${total}`);

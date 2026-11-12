@@ -305,6 +305,50 @@ function corpAgAnswer(ai, q, ctx) {
   return { kind: "ok", tool: tool.ko, t: out.t, rows: out.rows || [] };
 }
 
+/* ── ⑦ 인사 — 들어오시면 **먼저 말을 건다** ──────────────────────────────
+   형 지시(2026-11-12): 「각 팀의 대시보드로 옮기고 대화를 통해 업무를 진행할 수 있도록.
+   예를 들면 회계팀에 들어가면 제일 위에 핀테크가 먼저 인삿말과 업무지시에 대해 말을 걸어
+   오도록 대화창을 만들어 줘.」
+
+   ⚠️ 인사도 **지어내지 않는다.** 「오늘도 좋은 하루 되세요」 같은 말은 아무것도 말하지 않는다.
+      등록된 도구를 **실제로 돌려** 지금 상태를 가져와 말한다. 도구가 없으면 없다고 말한다.
+   ⚠️ 날짜는 **인자로 받는다** — 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
+function corpAgGreet(ai, ctx) {
+  const a = corpAgOf(ai);
+  if (!a) return null;
+  const C = ctx || {};
+  const t = typeof corpTeam === "function" ? corpTeam(a.team) : null;
+  const head = (C.who ? C.who + "님, " : "") + a.ai + "입니다"
+    + (t ? " — " + t.name + " AI 팀장이에요." : ".");
+
+  /* 지금 상태 — 도구를 **실제로 돌려** 가져온다. 돌지 않으면 그 줄을 비운다(지어내지 않는다). */
+  const rows = [];
+  (a.tools || []).slice(0, 3).forEach(function (tool) {
+    let out = null;
+    try { out = tool.run(C.now); } catch (e) { out = null; }
+    if (out && out.t) rows.push([tool.ko, String(out.t)]);
+  });
+
+  const can = (t && t.can) || [];
+  const cannot = ((t && t.cannot) || []).map(function (c) { return c.act; });
+  const order = typeof corpOrdActs === "function" && a.ai === "핀테크" ? corpOrdActs() : [];
+
+  const body = a.noTool
+    ? a.noWhy + " 그래서 이 자리에서는 사내 숫자를 말씀드리지 못합니다."
+    : (rows.length
+      ? "지금 이렇습니다."
+      : "등록된 도구를 돌렸지만 읽을 원천이 아직 없습니다 — 값을 지어내지 않겠습니다.");
+
+  return {
+    kind: "greet", ai: a.ai, team: a.team, t: head, body: body, rows: rows,
+    can: can, cannot: cannot, order: order,
+    tools: (a.tools || []).map(function (x) { return x.ko; }),
+    ask: (a.tools || []).map(function (x) { return (x.ask && x.ask[0]) || x.ko; }),
+    /* 업무를 말로 시킬 수 있는 팀인지 — 지금은 회계(핀테크)뿐이다. 없는 것을 있다고 하지 않는다. */
+    canOrder: order.length > 0,
+  };
+}
+
 /* ── ⑤ 대화 기록 ────────────────────────────────────────────────── */
 function corpAgRead() {
   const empty = { v: 1, log: {} };

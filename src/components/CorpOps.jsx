@@ -243,7 +243,6 @@ function CorpOps({ onGo, onTab }) {
           <button className={"corp-vt" + (view === "mtg" ? " on" : "")} onClick={() => setView("mtg")}>주간회의</button>
           <button className={"corp-vt" + (view === "gov" ? " on" : "")} onClick={() => setView("gov")}>일정 · 결재</button>
           <button className={"corp-vt" + (view === "up" ? " on" : "")} onClick={() => setView("up")}>자료 반입</button>
-          <button className={"corp-vt" + (view === "ag" ? " on" : "")} onClick={() => setView("ag")}>AI 팀장 대화</button>
           <button className={"corp-vt" + (view === "vt" ? " on" : "")} onClick={() => setView("vt")}>자료실</button>
           {sel && <button className={"corp-vt" + (view === "team" ? " on" : "")} onClick={() => setView("team")}
             style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
@@ -256,7 +255,6 @@ function CorpOps({ onGo, onTab }) {
       {view === "mtg" && typeof CorpMeetingSection === "function" && <CorpMeetingSection />}
       {view === "gov" && typeof CorpBoardSection === "function" && <CorpBoardSection />}
       {view === "up" && typeof CorpUploadSection === "function" && <CorpUploadSection />}
-      {view === "ag" && typeof CorpAgentChatSection === "function" && <CorpAgentChatSection />}
       {view === "vt" && typeof CorpVaultSection === "function" && <CorpVaultSection />}
       {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
@@ -546,6 +544,15 @@ function CorpTeamBoard({ team, onGo, onTab, back }) {
           <div><b>{team.pages.length}</b><span>지면</span></div>
         </div>
       </div>
+
+      {/* 형 지시 2026-11-12 — 들어오시면 그 팀 AI가 **먼저 말을 건다**.
+          한 곳에 모아 두지 않고 각 팀 보드 맨 위에 둔다. 대화 기록은 한 벌이라 어디서 열든 같다. */}
+      {typeof CorpTeamChat === "function" && (
+        <CorpTeamChat team={team.id} onTab={(k) => {
+          const i = team.pages.findIndex((p) => p.comp === (k === "bank" || k === "jv" ? "CorpLedgerSection" : ""));
+          if (i >= 0) setPage(i);
+        }} />
+      )}
 
       <div className="cb-tabs">
         {team.pages.map((p, i) => (

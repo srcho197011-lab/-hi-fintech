@@ -6309,3 +6309,25 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .bk-trace tr.st-dup td{opacity:.62;}
 .cl-done{font-size:9px;color:var(--cd2);white-space:nowrap;}
 .cl-act2{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;}
+
+/* 팀 대화창 — 팀 보드 맨 위. 접두 tc- */
+.tc-wrap{border:1px solid var(--cl2);border-left:3px solid var(--tc,#E8795A);border-radius:9px;background:var(--cp);margin:12px 14px 0;overflow:hidden;}
+.tc-head{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;background:rgba(232,121,90,.05);}
+.tc-id{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.tc-id b{font-size:12.5px;color:var(--tc,#E8795A);}
+.tc-id i{font-style:normal;font-size:9.5px;color:var(--cd);}
+.tc-n{font-size:9px;color:var(--cd2);white-space:nowrap;}
+.tc-order{font-size:9px;font-weight:700;color:#5FAE7E;border:1px solid rgba(95,174,126,.45);background:rgba(95,174,126,.1);border-radius:4px;padding:2px 7px;white-space:nowrap;}
+.tc-body{padding:0 12px 12px;}
+.tc-greet{border-bottom:1px solid var(--cl);padding-bottom:10px;margin-bottom:8px;}
+.tc-hi{font-size:12px;font-weight:700;color:var(--ct);}
+.tc-sub{font-size:10.5px;color:var(--cd);margin-top:3px;line-height:1.7;}
+.tc-tbl{margin-top:7px;}
+.tc-tbl td.k{color:var(--tc,#E8795A);font-weight:700;white-space:nowrap;width:1%;padding-right:10px;}
+.tc-can{margin:8px 0 0;font-size:10.5px;color:var(--cd);line-height:1.75;background:rgba(95,174,126,.07);border-left:2px solid rgba(95,174,126,.5);padding:7px 10px;border-radius:0 6px 6px 0;}
+.tc-can b{color:#5FAE7E;}
+.tc-no{margin:7px 0 0;font-size:9.5px;color:var(--cd2);line-height:1.65;}
+.tc-no b{color:var(--cw);}
+.tc-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+.tc-log{max-height:none;}
+.tc-input{margin-top:8px;}

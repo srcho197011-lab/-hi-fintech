@@ -52,6 +52,7 @@ src/components/CorpUpload.jsx
 src/components/CorpAgentChat.jsx
 src/components/CorpVault.jsx
 src/components/CorpOrder.jsx
+src/components/CorpTeamChat.jsx
 src/components/CorpOps.jsx
 src/components/Ontology.jsx
 src/components/SupplyOntology.jsx
