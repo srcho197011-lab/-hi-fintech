@@ -96,6 +96,30 @@ const CORP_AG_TOOL = [
                ["확정 대기", U.planAsk.length + "개"], ["대응 없음", U.planNone.length + "개"],
                ["겹치는 달", M.join(" · ") || "없음"]] };
     } },
+  /* 조성래님 지시 2026-11-12 — 총괄 대시보드와 **같은 함수**(corpKpiOf)를 본다.
+     화면과 하이의 답이 갈라지지 않으려면 둘이 한 벌을 봐야 한다.
+     ⚠️ 목록 **끝에** 둔다 — 인사말은 앞 세 도구를 돌리므로 앞에 끼우면 인사가 통째로 바뀐다.
+     ⚠️ 날짜는 인자로 받는다. */
+  { ai: "핀테크", k: "cash", ko: "현금 · 런웨이",
+    ask: ["현금", "잔고", "런웨이", "소진", "번레이트", "얼마 남", "버틸"],
+    run: function (at) {
+      if (typeof corpKpiOf !== "function") return null;
+      const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
+      const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
+      const K = corpKpiOf(null, today);
+      if (!K || !K.ok) return { t: (K && K.why) || "장부를 읽지 못했습니다.", rows: [] };
+      const rw = K.t.run.txt + K.t.run.u;
+      return { t: K.srcKo + " 기준 현금 " + corpWon(K.cash.won) + "원 · 런웨이 " + rw + "입니다."
+          + (K.t.run.warn ? " " + K.t.run.warn + "." : ""),
+        rows: [["현금 잔고", corpWon(K.cash.won) + "원"],
+               ["전월 말 대비", corpWon(K.cash.won - K.cashPrev.won) + "원"],
+               /* 순유출이 음수면 그건 유출이 아니라 **유입**이다 — 「순유출 −245만원」이라 적지 않는다 */
+               ["월 현금흐름", K.burn.burn === null ? K.burn.why
+                 : (K.burn.burn > 0 ? "순유출 " + corpWon(K.burn.burn) : "순유입 " + corpWon(-K.burn.burn))
+                   + "원 · " + K.burn.n + "개월 평균"],
+               ["런웨이", rw],
+               ["이번 달 매출", corpWon(K.rev.won) + "원"]] };
+    } },
 
   /* ── 나침반(M1 경영기획) ── */
   { ai: "나침반", k: "org", ko: "조직 현황", ask: ["조직", "인원", "팀", "몇 명", "공석"],

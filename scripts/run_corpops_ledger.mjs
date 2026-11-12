@@ -57,7 +57,7 @@ const PABOARD = "src/components/CorpPlanActual.jsx";
 const FINSCR = "src/components/Finance.jsx";
 /* 화면 고지 검사(⑥)의 사정권 — 파일럿 전표를 쓰는 지면은 모두 같은 고지를 진다.
    한 파일만 보면 지면이 늘어날 때 검사가 조용히 빈다. */
-const BOARDS = [BOARD, PABOARD];
+const BOARDS = [BOARD, PABOARD, "src/components/CorpOps.jsx"];
 const ctx = { console: { log() {}, warn() {}, error() {} },
   localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} } };
 vm.createContext(ctx);
@@ -1395,7 +1395,7 @@ chk(OV.pass, "⑮지시   해석 자기시험 전건 통과", OV.fail.map((f) =>
 chk(G("CORP_ORD_T_ASK").length >= 3, "⑮분모   되물어야 할 표본 ≥ 3", G("CORP_ORD_T_ASK").length);
 chk(G("CORP_ORD_ACT").length >= 3, "⑮분모   아는 행위 ≥ 3", G("CORP_ORD_ACT").length);
 
-/* 대화에서 들어오는 자리 — 형 문장 원문으로 */
+/* 대화에서 들어오는 자리 — 조성래님 문장 원문으로 */
 const ORDQ = "11월 11일 전표를 모두 역분개하고 은행 거래내역을 다시 다운받아 다시 전표를 만들어 줘";
 const AO = G("corpAgAnswer")("핀테크", ORDQ, { today: TODAY });
 chk(AO.kind === "order", "⑮대화   시키는 말을 **지시로 받는다**(상태 보고로 답하지 않는다)", AO.kind + " / " + String(AO.t).slice(0, 40));
@@ -1864,6 +1864,169 @@ if (hook) {
     "⑰엔진   인사 함수가 벽시계를 읽지 않는다", "읽는다");
 }
 
+/* ── ⑱ 총괄 지표 — 대시보드 네 칸이 **장부에서** 나온다 (조성래님 지시 2026-11-12) ──
+   「회계에서 가져와서 저 화면 항상 숫자 채워 줘.」
+
+   이 블록이 지키는 것은 「숫자가 떠 있다」가 아니라 **「그 숫자가 장부의 그 숫자다」**이다.
+   화면이 따로 더하기 시작하면 두 값이 생기고, 그때부터 둘 다 못 믿는다.
+
+   ⚠️ 기준일을 **박아 넣는다**. 벽시계로 세면 내일 이 검사가 저절로 틀어진다. */
+const KDAY = "2026-11-12";
+const KP = JSON.parse(G('JSON.stringify(corpKpi(CORP_JV_SEED, "' + KDAY + '"))'));
+const KB = JSON.parse(G('JSON.stringify(corpLedgerBook(CORP_JV_SEED, "' + KDAY + '"))'));
+
+/* 분모 — 빈 장부가 조용히 통과하면 검사가 없는 것과 같다 */
+chk(KP.n > 0 && KP.ok, "⑱분모   기준일까지 전기된 전표가 있다(분모)", KP.n + "건");
+chk(Object.keys(KP.t).length === 4, "⑱분모   채울 칸이 네 개 다 선다", Object.keys(KP.t).join("·"));
+
+/* 현금 — 원장에서 **다시** 더해 대조한다. 같은 함수를 두 번 부르는 게 아니라 계정 잔액을 직접 합친다. */
+{
+  const want = (KB["101"] ? KB["101"].sign : 0) + (KB["103"] ? KB["103"].sign : 0);
+  chk(KP.cash.won === want, "⑱현금   현금 잔고 = 현금(101) + 보통예금(103) 부호잔액", KP.cash.won + " ≠ " + want);
+  chk(KP.cash.won === 94025000, "⑱현금   파일럿 장부의 현금 잔고는 94,025,000원(손계산 대조)", KP.cash.won);
+  /* 103 만 세는 실수를 잡는다 — 그랬다면 94,825,000 이 나온다 */
+  chk(KP.cash.won !== (KB["103"] ? KB["103"].sign : 0),
+    "⑱현금   보통예금만 세지 않았다(현금 과목이 빠지면 조용히 80만원이 는다)", KP.cash.won);
+  chk(KP.cash.accts.length === 2 && KP.cash.n > 0, "⑱현금   현금성 과목 2종이 장부에 실재하고 거래가 있다", JSON.stringify(KP.cash.accts));
+  /* 음수 과목을 감추지 않는다 — 파일럿 전표에 현금(101) 개시 시재가 없어 실제로 음수다 */
+  chk(KP.cash.minus.length === 1 && KP.cash.minus[0].c === "101",
+    "⑱현금   음수인 현금 과목을 **감추지 않고** 돌려준다", JSON.stringify(KP.cash.minus));
+  chk(KP.t.cash.warn.indexOf("음수") >= 0, "⑱현금   화면 글자가 그 사실을 적는다", KP.t.cash.warn || "(없음)");
+}
+
+/* 항등식 — 이번 달 현금 증감은 월별 순증감과 **같은 수**여야 한다. 두 길이 갈리면 한 길이 거짓말이다. */
+{
+  const cur = KP.months.filter((m) => m.ym === KP.ym);
+  chk(cur.length === 1, "⑱항등   기준월의 현금 순증감 줄이 하나 있다", cur.length + "줄");
+  chk(cur.length === 1 && (KP.cash.won - KP.cashPrev.won) === cur[0].net,
+    "⑱항등   현금 − 전월말 현금 = 기준월 순증감",
+    (KP.cash.won - KP.cashPrev.won) + " ≠ " + (cur.length ? cur[0].net : "없음"));
+}
+
+/* 개시 전표 — 흐름이 아니라 출발선이다. 섞으면 첫 달이 거대한 유입으로 뒤집힌다. */
+{
+  const sep = KP.months.filter((m) => m.ym === "2026-09");
+  chk(sep.length === 1 && sep[0].net < 0,
+    "⑱개시   첫 달 현금 순증감이 유출이다(개시 전표를 흐름에 넣지 않았다)", JSON.stringify(sep));
+  chk(sep.length === 1 && sep[0].net === -23270000, "⑱개시   첫 달 순유출 23,270,000원(손계산 대조)", sep.length ? sep[0].net : "없음");
+}
+
+/* 런웨이 — 분모가 무엇이었는지까지 말한다 */
+{
+  const B = KP.burn;
+  chk(B.n > 0, "⑱런웨이 월 소모의 분모가 비어 있지 않다", B.n + "개월");
+  chk(B.months.indexOf(KP.ym) < 0,
+    "⑱런웨이 **기준월은 분모에서 뺀다**(끝나지 않은 달을 한 달로 세면 소모가 작아 보인다)", B.months.join("·"));
+  chk(B.months.length <= 3, "⑱런웨이 창은 세 달을 넘지 않는다", B.months.join("·"));
+  chk(B.burn === 15460000, "⑱런웨이 월 순유출 15,460,000원(손계산 대조)", B.burn);
+  chk(Math.abs(KP.run.m - KP.cash.won / B.burn) < 1e-9,
+    "⑱런웨이 런웨이 = 기준일 현금 ÷ 월 순유출(재무계획 화면과 같은 자)", KP.run.m);
+  chk(KP.t.run.txt === "6.1", "⑱런웨이 화면에 찍히는 글자는 6.1개월", KP.t.run.txt);
+  chk(KP.t.run.warn.indexOf("2개") >= 0,
+    "⑱런웨이 표본이 창보다 짧으면 그 사실을 적는다", KP.t.run.warn || "(없음)");
+}
+
+/* 매출 — 매출액 과목만. 영업외수익을 섞으면 11월에 85,000원이 매출로 선다. */
+{
+  const R = JSON.parse(G('JSON.stringify((function(){var a=corpLedgerBook(CORP_JV_SEED,"' + KDAY + '"),b=corpLedgerBook(CORP_JV_SEED,"' + KP.pend + '"),s=0;' +
+    'CORP_ACCT.forEach(function(x){if(x.t!=="R")return;var p=a[x.c]?a[x.c].sign:0,q=b[x.c]?b[x.c].sign:0;s+=-(p-q);});return {all:s};})())'));
+  chk(R.all === 85000, "⑱매출   기준월 수익 과목 전체는 85,000원이다(영업외수익만 있다)", R.all);
+  chk(KP.rev.won === 0, "⑱매출   그런데 **매출**은 0원이다 — 이자·잡이익을 매출에 섞지 않았다", KP.rev.won);
+  chk(KP.rev.accts.length === 3, "⑱매출   매출액 과목은 분류(fs)에서 뽑는다 — 3과목", KP.rev.accts.join("·"));
+  chk(KP.revMonth.won === 30000000, "⑱매출   전월 한 달 매출 30,000,000원(손계산 대조)", KP.revMonth.won);
+  /* 월중 수치를 전월 **한 달**과 견주면 언제나 「급감」으로 보인다 — 같은 날까지를 함께 낸다 */
+  chk(KP.psame === "2026-10-12", "⑱매출   전월 같은 날 절단이 선다", KP.psame);
+  chk(KP.revSame.won === 0 && KP.revSame.won <= KP.revMonth.won,
+    "⑱매출   전월 **같은 기간**을 따로 낸다(10/15 전표는 10/12 절단에 안 걸린다)", KP.revSame.won);
+  chk(KP.t.rev.sub.indexOf("같은 기간") >= 0 && KP.t.rev.sub.indexOf("한 달") >= 0,
+    "⑱매출   화면이 두 자를 모두 적는다", KP.t.rev.sub);
+}
+
+/* 전표 — 승인 전은 장부에 없지만 **셈에는 있다**. 결재하실 것이 몇 건인지가 이 칸의 쓸모다. */
+{
+  chk(KP.jv.all === KP.jv.posted + KP.jv.wait, "⑱전표   전건 = 전기 + 승인 전", JSON.stringify(KP.jv));
+  chk(KP.jv.all === 9 && KP.jv.posted === 7 && KP.jv.wait === 2,
+    "⑱전표   기준월 9건(전기 7 · 승인 전 2) — 손계산 대조", JSON.stringify(KP.jv));
+  /* 비전기 전표가 **잔액**에는 섞이지 않았다 — 섞였다면 현금이 93,542,000 이 된다 */
+  chk(KP.cash.won !== 93542000, "⑱전표   승인 전 전표가 잔액에 섞이지 않았다", KP.cash.won);
+}
+
+/* 빈 장부 · 기준일 없음 — 0 을 쓰지 않고 **까닭**을 적는다 */
+{
+  const E = JSON.parse(G('JSON.stringify(corpKpi([], "' + KDAY + '"))'));
+  chk(E.ok === false && E.n === 0, "⑱빈장부 전표가 없으면 ok 가 서지 않는다", JSON.stringify({ ok: E.ok, n: E.n }));
+  ["cash", "run", "rev"].forEach((k) => {
+    chk(E.t[k].txt === "—", "⑱빈장부 " + E.t[k].k + " 칸에 0 을 쓰지 않는다", E.t[k].txt);
+    chk(E.t[k].sub.length > 0, "⑱빈장부 " + E.t[k].k + " 칸이 못 세는 까닭을 적는다", E.t[k].sub || "(비어 있음)");
+  });
+  const N = JSON.parse(G('JSON.stringify(corpKpi(CORP_JV_SEED, ""))'));
+  chk(N.ok === false && N.why.indexOf("기준일") >= 0, "⑱빈장부 기준일을 안 주면 그렇다고 말한다", N.why);
+}
+
+/* 결정론 — 벽시계에 매달리지 않는다 */
+{
+  chk(G('JSON.stringify(corpKpi(CORP_JV_SEED,"' + KDAY + '"))') === G('JSON.stringify(corpKpi(CORP_JV_SEED,"' + KDAY + '"))'),
+    "⑱결정론 같은 인자로 두 번 부르면 같은 값");
+  const src = rd(LEDGER);
+  const bad = (src.match(/new Date\(\s*\)/g) || []).length;
+  chk(bad === 0, "⑱결정론 장부 엔진에 인자 없는 new Date() 0건", bad + "건");
+  const other = JSON.parse(G('JSON.stringify(corpKpi(CORP_JV_SEED, "2026-10-20"))'));
+  chk(other.cash.won !== KP.cash.won && other.ym === "2026-10",
+    "⑱결정론 기준일을 바꾸면 값이 따라 바뀐다(박힌 숫자가 아니다)", JSON.stringify({ ym: other.ym, won: other.cash.won }));
+}
+
+/* 지금 사람이 결정할 것 — 여기엔 글자 그대로 0 이 박혀 있었다 */
+{
+  const D = JSON.parse(G('JSON.stringify(corpDecideNow("' + KDAY + '"))'));
+  chk(D.n > 0, "⑱결정   기다리는 것을 실제로 센다(분모)", D.n + "건");
+  chk(D.n === D.rows.length, "⑱결정   머리 숫자와 줄 수가 같다", D.n + " ≠ " + D.rows.length);
+  const kinds = D.rows.map((r) => r.k);
+  chk(kinds.indexOf("rel") >= 0, "⑱결정   승인 대기 릴리스를 센다", kinds.join("·"));
+  chk(kinds.indexOf("jv") >= 0, "⑱결정   승인 전 전표를 **장부에서** 센다(화면이 따로 세지 않는다)", kinds.join("·"));
+  chk(D.rows.every((r) => r.t && r.sub), "⑱결정   줄마다 무엇을·왜 가 적혀 있다");
+  /* 승인자가 없으면 그 사실까지 적는다 — 흐린 버튼은 까닭을 말하지 않는다 */
+  const rel = D.rows.filter((r) => r.k === "rel");
+  chk(rel.length > 0 && rel.every((r) => r.sub.length > 0), "⑱결정   릴리스 줄이 승인 가능자(또는 공석)를 적는다",
+    rel.map((r) => r.sub).join(" / "));
+}
+
+/* 화면 — 러너는 JSX 를 올리지 못한다. **부르는지와 안 부르는지**만 글자로 본다. */
+{
+  const O = rd("src/components/CorpOps.jsx");
+  chk(/corpKpiOf\(/.test(O), "⑱화면   대시보드가 장부 지표를 부른다(corpKpiOf)", "없음");
+  chk(/corpDecideNow\(/.test(O), "⑱화면   결정 목록을 부른다(corpDecideNow)", "없음");
+  chk(/corpOpsToday\(/.test(O) && /corpKpiOf\(null, today\)/.test(O),
+    "⑱화면   기준일을 **넘겨서** 부른다(함수 안에서 오늘을 읽지 않는다)", "없음");
+  const screen = O.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  chk(screen.indexOf("미연결") < 0, "⑱화면   옛 자리표시자 「미연결」이 남아 있지 않다", "남음");
+  chk(screen.indexOf("Phase 9에서 붙습니다") < 0, "⑱화면   이미 붙은 기능을 「나중에 붙습니다」라고 적지 않는다", "남음");
+  chk(!/<span className="c">0<\/span>/.test(screen), "⑱화면   머리 숫자를 0 으로 박아 두지 않는다", "박혀 있음");
+  /* 화면이 숫자를 **직접 적지 않는다** — 엔진이 낸 글자를 그대로 쓴다 */
+  chk(!/[0-9]{1,3}(,[0-9]{3})+\s*원/.test(screen), "⑱화면   지면에 금액 리터럴이 없다(엔진이 낸 글자를 쓴다)", "있음");
+  chk(/파일럿 전표/.test(O), "⑱화면   어느 장부인지 적는다(파일럿 고지)", "없음");
+  chk(/corpJvLive|K\.live/.test(O), "⑱화면   파일럿인지 반입분인지 **상황에서** 가린다", "없음");
+}
+
+/* 하이의 답과 화면이 갈라지지 않는다 — 둘이 **같은 함수**를 봐야 한다.
+   도구를 따로 더하기 시작하면 「화면은 6.1개월인데 핀테크는 10.9개월」이 된다. */
+{
+  G('var __KNOW = new Date(2026, 10, 12);');
+  const A = JSON.parse(G('JSON.stringify((function(){var t=(CORP_AG_TOOL||[]).filter(function(x){return x.ai==="핀테크"&&x.k==="cash";})[0];' +
+    'if(!t) return null; var o=t.run(__KNOW); return {ko:t.ko, ask:t.ask, t:o&&o.t, rows:o&&o.rows};})())'));
+  chk(A && A.rows && A.rows.length > 0, "⑱한벌   핀테크에게 현금·런웨이를 물을 도구가 있다", A ? JSON.stringify(A.ko) : "없음");
+  chk(!!(A && A.ask.indexOf("런웨이") >= 0 && A.ask.indexOf("현금") >= 0),
+    "⑱한벌   「현금」·「런웨이」로 물으면 그 도구가 잡힌다", A ? A.ask.join("·") : "없음");
+  /* 러너는 브라우저 저장소가 없으므로 파일럿 장부를 본다 — 화면의 파일럿 값과 글자까지 같아야 한다 */
+  const want = G("corpWon")(KP.cash.won) + "원";
+  chk(!!(A && A.rows.some((r) => r[0] === "현금 잔고" && r[1] === want)),
+    "⑱한벌   핀테크가 말하는 현금이 화면의 현금과 **같은 글자**다", A ? JSON.stringify(A.rows) : "없음");
+  chk(!!(A && A.rows.some((r) => r[0] === "런웨이" && r[1] === KP.t.run.txt + KP.t.run.u)),
+    "⑱한벌   핀테크가 말하는 런웨이가 화면의 런웨이와 같다", A ? JSON.stringify(A.rows) : "없음");
+  /* 앞 세 도구를 돌리는 인사말을 건드리지 않았는지 — 도구는 목록 **끝에** 붙어야 한다 */
+  const first3 = JSON.parse(G('JSON.stringify((CORP_AG_TOOL||[]).filter(function(x){return x.ai==="핀테크";}).slice(0,3).map(function(x){return x.k;}))'));
+  chk(first3.indexOf("cash") < 0, "⑱한벌   새 도구가 인사말의 앞 세 도구를 밀어내지 않았다", first3.join("·"));
+}
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -1880,9 +2043,10 @@ console.log(`[자료실  ] 종류 ${KINDS.length}종(확정 자료 ${KINDS.filte
 console.log(`[반입대화] 반입 섹션 ${G("CORP_UP_SPEC").length}종(상한 ${G("CORP_UP_MAXKB")}KB) · 민감 패턴 ${G("CORP_UP_SCAN").length}종 · AI 팀장 ${AGL.length}명(도구 보유 ${hasTool.length} · 도구 없음 ${noTool.length}) · 도구 ${G("CORP_AG_TOOL").length}종`);
 console.log(`[결재릴리스] 릴리스 ${RELS.length}건 · 승인 가능자 ${RELWHO.length}명(S1) · 결재 종류 ${G("CORP_APR_KIND").length}종 · 점검 ${G("CORP_REL_CHECK").length}항목 · 필독 ${must.length}건(미확인 ${must.reduce((n, m) => n + m.left.length, 0)}명) · 게이트 ${GATES.length}종 훅 대조`);
 console.log(`[은행전표] 엑셀 표 층 ${XT.length}항목 · 잔액 사슬 ${BT.length}항목 · 확실한 계정 대응 ${SURE.length}종(나머지는 사람이 확정) · 표본 ${BB.n}줄 → 전표 ${BB.made.length} · 보류 ${BB.held.length}`);
-console.log(`[업무지시] 해석 자기시험 ${OV.rows.length}항목 · 아는 행위 ${G("CORP_ORD_ACT").length}종 · 되물음 표본 ${G("CORP_ORD_T_ASK").length} · 형 문장 → ${AO.order ? AO.order.steps.length : 0}단계(AI ${AO.order ? AO.order.steps.filter((s) => s.who === "ai").length : 0} · 사람 ${AO.order ? AO.order.steps.filter((s) => s.who === "human").length : 0})`);
+console.log(`[업무지시] 해석 자기시험 ${OV.rows.length}항목 · 아는 행위 ${G("CORP_ORD_ACT").length}종 · 되물음 표본 ${G("CORP_ORD_T_ASK").length} · 조성래님 문장 → ${AO.order ? AO.order.steps.length : 0}단계(AI ${AO.order ? AO.order.steps.filter((s) => s.who === "ai").length : 0} · 사람 ${AO.order ? AO.order.steps.filter((s) => s.who === "human").length : 0})`);
 console.log(`[폴더잇기] 자기시험 ${FV.rows.length}항목 · 고를 거리 ${FC.n} / ${FC.all} · 어긋남 표시 ${warn.length}건 · 권한 손잡이 ${G("CORP_VFS_DB")}(IndexedDB)`);
 console.log(`[팀대화창] 팀 ${TCG.length}곳 전부 인사(도구 보유 ${TCH.length} · 도구 없음 ${TCN.length}) · 상태 줄 ${TCG.reduce((n, x) => n + x.rows.length, 0)}줄 전건 도구 실측 일치 · 말로 시킬 수 있는 팀 ${TCO.map((x) => x.name).join("·") || "없음"} · 상단 통합 탭 해체`);
+console.log(`[총괄지표] 기준일 ${KDAY} · 현금 ${G("corpWon")(KP.cash.won)}원(전월말 대비 ${G("corpWon")(KP.cash.won - KP.cashPrev.won)}) · 런웨이 ${KP.t.run.txt}개월(월 순유출 ${G("corpWon")(KP.burn.burn)} · 분모 ${KP.burn.n}개월 ${KP.burn.months.join("·")}) · 매출 ${G("corpWon")(KP.rev.won)}(전월 같은 기간 ${G("corpWon")(KP.revSame.won)} · 전월 한 달 ${G("corpWon")(KP.revMonth.won)}) · 전표 ${KP.jv.all}건(전기 ${KP.jv.posted} · 승인 전 ${KP.jv.wait}) · 사람이 결정할 것 ${JSON.parse(G('JSON.stringify(corpDecideNow("' + KDAY + '"))')).n}건`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {
   console.log(`[회계엔진] 통과 ${oks.length} · 실패 ${fails.length} / ${total}`);

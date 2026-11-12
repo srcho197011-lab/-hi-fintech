@@ -572,3 +572,198 @@ const CORP_ACTORS = [
   { id: "핀테크", ko: "핀테크", role: "AI 팀장", ai: true, canApprove: false },
 ];
 function corpActor(id) { return CORP_ACTORS.find(a => a.id === id) || CORP_ACTORS[0]; }
+
+/* ── ⑩ 총괄 지표 — 대시보드 왼쪽 네 칸의 **단일 원천** (조성래님 지시 2026-11-12) ──────
+   「회계에서 가져와서 저 화면 항상 숫자 채워 줘.」
+
+   네 칸(현금 잔고 · 런웨이 · 이번 달 매출 · 전표)은 전부 **이 장부**에서 나온다.
+   화면이 따로 더하지 않는다 — 같은 숫자를 두 곳에서 더하면 두 값이 생기고 둘 다 못 믿게 된다.
+
+   ⚠️ 기준일은 **인자로 받는다**. 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다.
+   ⚠️ 못 세면 0 을 쓰지 않는다 — 「0원」과 「셀 수 없음」은 다른 말이다.
+      못 세는 까닭(why)을 함께 돌려주고, 화면은 그 까닭을 그대로 적는다.
+   ⚠️ 월중 수치를 전월 **한 달**과 나란히 놓지 않는다 — 11월 12일까지의 매출을 10월 한 달과
+      견주면 무슨 일이 있어도 「급감」으로 보인다. 전월은 **같은 날까지**를 함께 돌려준다. */
+
+/* 현금성 — 과목 분류(fs)로 묶지 않는다. 「당좌자산」에는 외상매출금·선급금·가지급금이
+   함께 들어 있고 그건 아직 현금이 아니다. 그래서 여기만 과목코드를 직접 적는다.
+   대신 과목에 실재하는지 확인한다 — 과목이 바뀌면 조용히 0 이 되지 않게. */
+const CORP_CASH_C = ["101", "103"];
+function corpCashAccts() { return CORP_CASH_C.filter(function (c) { return !!corpAcct(c); }); }
+
+/* 잔액 — 전기된 전표만, 원장(corpLedgerBook) 한 길로만 더한다.
+   음수인 현금 과목을 함께 돌려준다 — 개시 시재 없이 현금 지출만 잡히면 잔액이 음수가 되고,
+   그건 장부의 결함이지 화면이 감출 일이 아니다. */
+function corpKpiCash(jvs, upto) {
+  const acc = corpCashAccts();
+  const b = corpLedgerBook(jvs, upto);
+  let won = 0, n = 0;
+  const minus = [];
+  acc.forEach(function (c) {
+    const r = b[c]; if (!r) return;
+    won += r.sign; n += r.lines.length;
+    if (r.sign < 0) minus.push({ c: r.c, n: r.n, won: r.sign });
+  });
+  return { won: won, n: n, accts: acc, minus: minus,
+    why: acc.length !== CORP_CASH_C.length ? "현금성 과목이 장부에 없습니다"
+       : (n ? "" : "전기된 현금 거래가 없습니다") };
+}
+
+/* 달마다의 현금 순증감 — **잔액 차분이 아니라 줄을 걸어** 센다.
+   차분으로 내면 개시 전표가 첫 달의 유입으로 잡혀 소모가 통째로 사라진다.
+   개시 잔액은 들어온 돈이 아니라 출발선이다. */
+function corpCashMonths(jvs, upto) {
+  const acc = corpCashAccts(), s = {};
+  corpPosted(jvs, upto).forEach(function (j) {
+    if (j.open) return;
+    const ym = String(j.d || "").slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(ym)) return;
+    (j.l || []).forEach(function (x) {
+      if (acc.indexOf(x[0]) < 0) return;
+      if (!s[ym]) s[ym] = { ym: ym, net: 0, n: 0 };
+      s[ym].net += (+x[1] || 0) - (+x[2] || 0);
+      s[ym].n += 1;
+    });
+  });
+  return Object.keys(s).sort().map(function (k) { return s[k]; });
+}
+
+/* 월 순유출 — 정의는 재무계획 축(finBudget.js 의 burn3m)과 **같은 말**이다:
+   최근 세 달 평균 순유출. 원천만 다르다(저기는 예산양식, 여기는 장부).
+   정의까지 갈라지면 같은 이름의 숫자가 두 뜻이 된다.
+   ⚠️ 기준월은 뺀다 — 달이 끝나지도 않았는데 한 달치로 세면 소모가 작아 보인다.
+      이 장부의 11월이 실제로 그렇다(외상매출금 회수가 들어와 **유입**으로 뜬다).
+   ⚠️ 장부가 열리기 전 달은 「0원 쓴 달」이 아니라 「자료가 없는 달」이다. 분모에 넣지 않는다. */
+const CORP_BURN_WIN = 3;
+function corpKpiBurn(jvs, upto, ym) {
+  const done = corpCashMonths(jvs, upto).filter(function (m) { return m.ym < ym; });
+  const win = done.slice(-CORP_BURN_WIN);
+  if (!win.length) return { burn: null, n: 0, months: [], why: "장부에 끝난 달이 없어 월 소모를 세지 못합니다" };
+  const net = win.reduce(function (a, m) { return a + m.net; }, 0) / win.length;
+  return { burn: -net, n: win.length, months: win.map(function (m) { return m.ym; }), why: "" };
+}
+function corpKpiRunway(cash, burn) {
+  if (!cash || !burn) return { m: null, why: "셀 거리가 없습니다" };
+  if (burn.burn === null) return { m: null, why: burn.why };
+  if (!(cash.n > 0)) return { m: null, why: cash.why || "현금 잔액을 세지 못했습니다" };
+  /* 순유입이면 런웨이는 수학적으로 끝이 없다. 「—」로 두면 **못 센 것**처럼 보이므로
+     재무계획 화면(Finance.jsx)과 **같은 낱말**로 「흑자」라 적고, 까닭은 밑줄에 정확히 쓴다. */
+  if (burn.burn <= 0) return { m: null, surplus: true,
+    why: "최근 " + burn.n + "개월이 순유입이라 런웨이가 서지 않습니다" };
+  if (cash.won <= 0) return { m: 0, why: "" };
+  return { m: cash.won / burn.burn, why: "" };
+}
+
+/* 매출 — **매출액 과목만**. 이자수익·잡이익은 영업외수익이라 매출이 아니다.
+   과목 목록을 여기 또 적지 않고 분류(fs)에서 뽑는다 — 과목이 늘 때 한쪽만 늘지 않게.
+   구간 누계는 예실 대비와 **같은 방법**(두 절단의 차분)으로 낸다.
+   after 는 구간 **바로 앞 날**이다(그 날은 포함하지 않는다). */
+function corpSalesAccts() {
+  return CORP_ACCT.filter(function (a) { return a.fs === "매출액"; }).map(function (a) { return a.c; });
+}
+function corpKpiRev(jvs, after, upto) {
+  const acc = corpSalesAccts();
+  const cur = corpLedgerBook(jvs, upto), pre = corpLedgerBook(jvs, after);
+  let won = 0, n = 0;
+  acc.forEach(function (c) {
+    const a = cur[c]; if (!a) return;
+    const b = pre[c];
+    won += -(a.sign - (b ? b.sign : 0));       /* 수익은 대변이 정상이라 한 번 뒤집는다 */
+    n += a.lines.filter(function (l) { return l.d > after && l.d <= upto; }).length;
+  });
+  return { won: won, n: n, accts: acc };
+}
+
+/* 전표 건수 — 잔액과 달리 **날짜로** 센다. 승인 전(기표·검토)도 건수에는 들어간다.
+   장부에는 안 올라가지만 결재하실 것이 몇 건인지가 이 칸의 쓸모다. */
+function corpKpiJv(jvs, from, to) {
+  const inR = (jvs || []).filter(function (j) { return j.d >= from && j.d <= to; });
+  const p = inR.filter(function (j) { return j.st === "posted"; });
+  return { all: inR.length, posted: p.length, wait: inR.length - p.length };
+}
+
+/* 전월 **같은 날까지** — 월중 수치를 전월 한 달과 견주지 않기 위한 자.
+   전월에 그 날짜가 없으면(3/31 → 2월) 전월 말일로 맞춘다. */
+function corpSameDayPrev(today) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(today || "");
+  if (!m || typeof corpPaPrevYm !== "function" || typeof corpPaCut !== "function") return "";
+  const pym = corpPaPrevYm(m[1] + "-" + m[2]);
+  const end = corpPaCut(pym);
+  const d = pym + "-" + m[3];
+  return d > end ? end : d;
+}
+
+/* 네 칸 한꺼번에 — 화면과 AI 팀장이 **이 함수 하나**를 같이 본다. */
+function corpKpi(jvs, today) {
+  const okd = /^\d{4}-\d{2}-\d{2}$/.test(today || "");
+  const hasCut = typeof corpPaCut === "function" && typeof corpPaPrevYm === "function";
+  if (!okd || !hasCut) {
+    return { ok: false, n: 0, today: today || "", ym: "", t: {},
+      why: okd ? "달 경계를 세는 함수가 없습니다" : "기준일을 받지 못했습니다" };
+  }
+  const ym = today.slice(0, 7);
+  const pym = corpPaPrevYm(ym);
+  const pend = corpPaCut(pym);                      /* 전월 말일 — 이번 달 구간 바로 앞 */
+  const ppend = corpPaCut(corpPaPrevYm(pym));       /* 전전월 말일 */
+  const psame = corpSameDayPrev(today);             /* 전월 같은 날 */
+  const n = corpPosted(jvs, today).length;
+
+  const cash = corpKpiCash(jvs, today);
+  const cashP = corpKpiCash(jvs, pend);
+  const burn = corpKpiBurn(jvs, today, ym);
+  const run = corpKpiRunway(cash, burn);
+  const rev = corpKpiRev(jvs, pend, today);         /* 이번 달 1일 ~ 기준일 */
+  const revS = corpKpiRev(jvs, ppend, psame);       /* 전월 같은 기간 */
+  const revM = corpKpiRev(jvs, ppend, pend);        /* 전월 한 달 */
+  const jv = corpKpiJv(jvs, ym + "-01", today);
+  /* 장부가 어디까지 적혀 있는가 — 기준일(벽시계)과 다를 수 있다.
+     달이 바뀌었는데 전표가 안 들어왔으면 「이번 달 0건」이 맞는 답이고, 그 까닭이 이것이다. */
+  const ds = (jvs || []).map(function (j) { return String(j.d || ""); }).filter(function (d) { return d; }).sort();
+  const last = ds.length ? ds[ds.length - 1] : "";
+
+  const W = corpWon;
+  const sgn = function (v) { return (v > 0 ? "+" : v < 0 ? "−" : "") + W(Math.abs(v)); };
+  const dCash = cash.won - cashP.won;
+  const t = {
+    cash: { k: "현금 잔고", u: "원",
+      txt: cash.n ? W(cash.won) : "—",
+      sub: !cash.n ? cash.why : "전월 말 대비 " + sgn(dCash) + "원",
+      warn: cash.minus.length
+        ? cash.minus.map(function (m) { return m.n + "(" + m.c + ") " + W(m.won) + "원"; }).join(" · ")
+          + " — 잔액이 음수입니다. 개시 시재가 빠져 있습니다"
+        : "" },
+    run: { k: "런웨이", u: run.m === null ? "" : "개월",
+      txt: run.m === null ? (run.surplus ? "흑자" : "—") : (Math.round(run.m * 10) / 10).toFixed(1),
+      sub: run.why || ("월 순유출 " + W(burn.burn) + "원 · 최근 " + burn.n + "개월 평균(" + burn.months.join(" · ") + ")"),
+      /* 표본이 창보다 짧으면 그 사실을 적는다 — 두 달짜리 평균은 한 달만 더해도 크게 흔들린다 */
+      warn: (run.m !== null && burn.n < CORP_BURN_WIN)
+        ? "끝난 달이 " + burn.n + "개뿐이라 한 달만 더해도 크게 흔들립니다" : "" },
+    rev: { k: "매출", u: "원",
+      txt: n ? W(rev.won) : "—",
+      sub: !n ? "장부에 전기된 전표가 없습니다"
+         : "전월 같은 기간 " + W(revS.won) + "원 · 전월 한 달 " + W(revM.won) + "원",
+      warn: (n && !rev.n) ? "이번 달 매출 전표가 아직 없습니다" : "" },
+    jv: { k: "전표", u: "건",
+      txt: String(jv.all),
+      sub: (+ym.slice(5)) + "월 1일~" + (+today.slice(8)) + "일 · 전기 " + jv.posted + " · 승인 전 " + jv.wait,
+      warn: jv.wait > 0 ? "승인 전 " + jv.wait + "건은 장부에 올라가 있지 않습니다" : "" },
+  };
+  return { ok: n > 0, n: n, why: n ? "" : "장부에 전기된 전표가 없습니다",
+    today: today, ym: ym, pym: pym, pend: pend, ppend: ppend, psame: psame,
+    last: last, stale: !!(last && last.slice(0, 7) < ym),
+    cash: cash, cashPrev: cashP, burn: burn, run: run,
+    rev: rev, revSame: revS, revMonth: revM, jv: jv,
+    months: corpCashMonths(jvs, today), t: t };
+}
+
+/* 화면이 부르는 한 줄 — 반입분까지 읽어 **원천 이름**을 붙인다.
+   파일럿인지 반입 장부인지는 숫자보다 먼저 알아야 한다. */
+function corpKpiOf(st, today) {
+  const S = st || corpLedgerRead();
+  const K = corpKpi(corpJvAll(S), today);
+  K.live = corpJvLive(S);
+  /* 낱말을 재무현황 화면(CorpLedger.jsx)과 **같은 것**으로 쓴다 —
+     같은 장부를 두 지면이 다른 이름으로 부르면 같은 장부인지 알 수 없다. */
+  K.srcKo = K.live ? "반입 전표" : "파일럿 전표";
+  return K;
+}

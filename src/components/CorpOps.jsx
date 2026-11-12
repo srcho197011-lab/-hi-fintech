@@ -1,7 +1,9 @@
 /* ══════════════ 회사 총괄운영 — 총괄 대시보드(CorpOps.jsx) · Phase 1 (조성래님 지시 2026-11-11) ══════════════
    화면: 다크 콕핏 3단 — 좌(지표) · 중앙(조직 온톨로지 · 원근 회전) · 우(사람이 결정할 것 · 루틴).
    ⚠️ 원칙:
-     · 실데이터가 붙기 전에는 지표를 「미연결」로 둔다 — 숫자를 지어내지 않는다(Phase 10에서 연결).
+     · 지표는 **장부에서만** 가져온다 — 이 화면이 따로 더하지 않는다(corpKpi · corpDecideNow 한 벌).
+       숫자를 지어내지 않고, 못 세면 0 대신 까닭을 적는다. 어느 장부를 보고 있는지(파일럿인지
+       반입분인지)도 숫자 옆에 같이 적는다 — 숫자보다 먼저 알아야 하는 것이다.
      · 「자동 실행」이라 쓰지 않는다 — 백엔드가 없어 브라우저가 닫히면 아무것도 돌지 않는다.
        루틴의 실체는 「예약 — 다음 열람 시」다.
      · 사람과 AI를 같은 모양으로 쓰지 않는다 — AI에는 AI 배지가 붙는다.
@@ -226,6 +228,19 @@ function CorpOps({ onGo, onTab }) {
     return { r: r, state: "wait", when: "다음 " + fmt(w.next), prev: w.prev ? fmt(w.prev) : null };
   });
   const lateN = 0;
+  /* 지표 — **장부 한 벌**에서 받는다. 여기서 더하지 않는다.
+     기준일을 인자로 넘긴다(함수 안에서 오늘을 읽지 않는다는 규약의 화면 쪽 짝이다). */
+  const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
+  const K = typeof corpKpiOf === "function" ? corpKpiOf(null, today) : null;
+  const DEC = typeof corpDecideNow === "function" ? corpDecideNow(today) : { n: 0, rows: [] };
+  /* 한 칸을 그리는 틀 — 네 칸이 같은 모양이어야 숫자끼리 견줄 수 있다 */
+  const kpiBox = (x) => x ? (
+    <div className="corp-kpi">
+      <div><span className="n">{x.txt}</span><span className="u">{x.u}</span><div className="k">{x.k}</div></div>
+      <div className="corp-dlt">{x.sub}</div>
+      {x.warn ? <div className="corp-dlt warn">{x.warn}</div> : null}
+    </div>
+  ) : null;
   /* ⚠️ 「주간회의 자료」 루틴(월 09:30)을 회의 시각으로 읽던 결함을 P7에서 고쳤다 —
      회의 시각의 단일 원천은 CORP_SCHEDULE.weekly.time 이다. 자료 통합은 회의 30분 전 준비이지 회의가 아니다. */
   const nextMeet = (function () {
@@ -248,7 +263,10 @@ function CorpOps({ onGo, onTab }) {
             style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
         </div>
         <div className="corp-sp" />
-        <div className="corp-stub">실데이터 미연결 · 지표는 연결 후 채워집니다</div>
+        {/* 어느 장부를 보고 있는지 — 숫자보다 먼저 알아야 한다 */}
+        <div className="corp-stub">{K && K.ok
+          ? (K.srcKo + " 기준 " + K.today + (K.stale ? " · 최신 전표 " + K.last : ""))
+          : "장부에 전기된 전표가 없습니다"}</div>
       </div>
 
       {view === "org" && <CorpOrgChart sel={sel} pick={pick} onTab={onTab} open={(id) => { pick(id); setView("team"); }} />}
@@ -263,13 +281,22 @@ function CorpOps({ onGo, onTab }) {
         <div className="corp-col corp-L">
           <div className="corp-blk">
             <div className="corp-lab">현금 · 런웨이</div>
-            <div className="corp-kpi"><div><span className="n">—</span><span className="u">원</span><div className="k">현금 잔고</div></div><div className="corp-dlt">미연결</div></div>
-            <div className="corp-kpi"><div><span className="n">—</span><span className="u">개월</span><div className="k">런웨이</div></div><div className="corp-dlt">—</div></div>
+            {kpiBox(K && K.t.cash)}
+            {kpiBox(K && K.t.run)}
+            <div className="corp-note">현금은 <b>현금 · 보통예금</b>만 셉니다 — 외상매출금은 아직 들어오지 않은 돈입니다.
+              런웨이는 <b>기준일 현금 ÷ 최근 세 달 평균 순유출</b>입니다(재무계획 화면과 같은 자, 원천만 장부입니다).
+              {/* 어느 장부를 보고 있는지 — 숫자를 띄우는 지면은 모두 같은 고지를 진다(러너 ⑥) */}
+              {CORP_LEDGER_PILOT && K && !K.live && <span className="cl-warn2">여기 숫자는 <b>파일럿 전표</b>에서 나옵니다 —
+                엔진이 맞게 도는지 보려고 넣은 검증용 묶음이고 회사의 실제 장부가 아닙니다. 실제 회계자료 반입은 Phase 10입니다.</span>}
+              {K && K.live && <span className="cl-warn2">여기 숫자는 <b>반입 전표</b>에서 나옵니다 — 파일럿은 빠졌습니다.
+                이 장부는 <b>이 브라우저에만</b> 있습니다. 서버가 없어 공개 배포본에는 회사 숫자가 실리지 않습니다.</span>}</div>
           </div>
           <div className="corp-blk">
-            <div className="corp-lab">이번 달 <b>실적</b></div>
-            <div className="corp-kpi"><div><span className="n">—</span><span className="u">원</span><div className="k">매출</div></div><div className="corp-dlt">—</div></div>
-            <div className="corp-kpi"><div><span className="n">—</span><span className="u">건</span><div className="k">전표</div></div><div className="corp-dlt">—</div></div>
+            <div className="corp-lab">이번 달 <b>실적</b> {K && K.ok && <span className="corp-dlt">{K.ym}</span>}</div>
+            {kpiBox(K && K.t.rev)}
+            {kpiBox(K && K.t.jv)}
+            <div className="corp-note">매출은 <b>매출액 과목</b>만 셉니다 — 이자수익·잡이익은 영업외수익이라 뺍니다.
+              달이 끝나기 전이라 전월은 <b>같은 날까지</b>를 함께 적습니다.</div>
           </div>
           <div className="corp-blk">
             <div className="corp-lab">업무시간 <b>확정</b></div>
@@ -368,8 +395,17 @@ function CorpOps({ onGo, onTab }) {
         {/* ── 우 ── */}
         <div className="corp-col corp-R">
           <div className="corp-sec">
-            <div className="corp-sh"><b>지금 사람이 결정할 것</b><span className="c">0</span></div>
-            <div className="corp-empty">대기 중인 결재가 없습니다 — 결재 흐름은 Phase 9에서 붙습니다</div>
+            <div className="corp-sh"><b>지금 사람이 결정할 것</b><span className="c">{DEC.n}</span></div>
+            {/* 비어서 0 이 아니라 **세는 코드가 없어서** 0 이던 자리다(조성래님 지시 2026-11-12).
+                AI 는 여기까지만 모은다 — 승인·전기·내보내기는 전부 사람이 한다. */}
+            {DEC.n === 0
+              ? <div className="corp-empty">사람이 결정할 것이 없습니다 — 결재 · 릴리스 · 승인 전 전표 · 필독을 함께 셉니다</div>
+              : DEC.rows.map((r, i) => (
+                <div key={i} className="corp-rt" onClick={() => { if (r.go === "team") { pick("M2"); setView("team"); } else setView("gov"); }}>
+                  <span className="nm"><b>{r.t}</b><i className="rt-ai">{r.sub}</i></span>
+                  <span className="corp-pill wait">{r.ko}</span>
+                </div>
+              ))}
           </div>
           <div className="corp-sec">
             <div className="corp-sh"><b>이번 주 회의</b><span className="c">{sch.weekly.day} {sch.weekly.time.split("~")[0]}</span></div>

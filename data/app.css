@@ -5524,8 +5524,12 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .corp-last{border-bottom:0 !important;}
 .corp-lab{font-size:10.5px;color:var(--cd);margin-bottom:9px;}
 .corp-lab b{color:var(--ct);font-weight:600;}
-.corp-kpi{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px;}
+/* 값 → 이름 → 증감 → 경고를 **세로로** 쌓는다. 왼쪽 칸이 260px 라 금액과 증감을
+   한 줄에 나란히 두면 아홉 자리 금액에서 증감이 밀려 나간다(조성래님 지시 2026-11-12). */
+.corp-kpi{display:block;margin-bottom:13px;}
 .corp-kpi:last-child{margin-bottom:0;}
+.corp-kpi .corp-dlt{margin-top:5px;line-height:1.5;}
+.corp-dlt.warn{color:var(--cw);}
 .corp-kpi .n{font-size:24px;font-weight:800;letter-spacing:-.025em;line-height:1;font-variant-numeric:tabular-nums;}
 .corp-kpi .u{font-size:11px;color:var(--cd);margin-left:3px;}
 .corp-kpi .k{font-size:10.5px;color:var(--cd);margin-top:3px;}

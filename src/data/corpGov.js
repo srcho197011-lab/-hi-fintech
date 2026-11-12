@@ -239,3 +239,54 @@ function corpGovPass(st, now) {
   const fail = rows.filter((r) => !r.ok);
   return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
 }
+
+/* ── ⑩ 지금 사람이 결정할 것 — 총괄 대시보드 오른쪽 머리의 **단일 원천**
+   (조성래님 지시 2026-11-12 「회계에서 가져와서 저 화면 항상 숫자 채워 줘」의 곁에서 함께 고친다)
+
+   여기엔 「0」이 글자 그대로 박혀 있었고 그 밑에 「결재 흐름은 Phase 9에서 붙습니다」라고
+   적혀 있었다. Phase 9 는 이미 붙어 있고, 실제로는 기다리는 것이 네 건 있었다.
+   비어서 0 이 아니라 **세는 코드가 없어서** 0 이었다 — 화면이 거짓말을 하고 있었다.
+
+   AI 는 여기까지만 모은다. 승인·전기·내보내기는 전부 사람이 한다.
+   ⚠️ 기준일은 **인자로 받는다** — 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
+function corpDecideNow(today) {
+  const rows = [];
+  const st = typeof corpGovRead === "function" ? corpGovRead() : { apr: [], rel: {}, read: {} };
+
+  /* ① 결재 — 기안·검토는 사람이 다음 칸으로 밀어야 끝난다 */
+  (typeof corpAprAll === "function" ? corpAprAll(st) : []).forEach(function (a) {
+    const S = CORP_APR_ST[a.st];
+    if (!S || !S.next) return;
+    rows.push({ k: "apr", ko: "결재", t: a.ko,
+      sub: S.ko + " → " + S.nextKo + " · 기안 " + a.by + " · " + a.d, go: "gov" });
+  });
+
+  /* ② 릴리스 — 만든 쪽이 스스로 내보내지 못한다.
+     승인할 수 있는 사람이 없으면 **그 사실까지** 적는다. 흐리게 둔 버튼은 까닭을 말하지 않는다. */
+  (typeof corpRelAll === "function" ? corpRelAll(st) : []).forEach(function (r) {
+    if (r.st !== "review") return;
+    const who = typeof corpRelApprovers === "function" ? corpRelApprovers() : [];
+    rows.push({ k: "rel", ko: "릴리스", t: r.ver + " " + r.ko,
+      sub: who.length ? "승인 가능 " + who.join(" · ")
+                      : "승인할 수 있는 사람이 없습니다 — 정보보안팀 책임자 공석", go: "gov" });
+  });
+
+  /* ③ 전표 — 승인 전은 장부에 올라가 있지 않다.
+     건수는 **장부에서** 센다(화면도 여기도 따로 세지 않는다). */
+  if (typeof corpKpiOf === "function") {
+    const K = corpKpiOf(null, today);
+    if (K && K.jv && K.jv.wait > 0) {
+      rows.push({ k: "jv", ko: "전표", t: "승인 전 " + K.jv.wait + "건",
+        sub: (+K.ym.slice(5)) + "월분 · 승인과 전기는 사람이 합니다", go: "team" });
+    }
+  }
+
+  /* ④ 필독 — 누른 사람만 읽은 것으로 센다 */
+  (typeof corpNoticeOpen === "function" ? corpNoticeOpen(st) : []).forEach(function (o) {
+    if (!o.left.length) return;
+    rows.push({ k: "no", ko: "필독", t: o.n.ko,
+      sub: "미확인 " + o.left.length + "명 — " + o.left.join(" · "), go: "gov" });
+  });
+
+  return { n: rows.length, rows: rows };
+}
