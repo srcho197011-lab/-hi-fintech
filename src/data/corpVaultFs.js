@@ -93,20 +93,37 @@ function cvfDbDel(key) {
   });
 }
 
+/* 고르실 폴더 — 바탕화면 기준 상대 경로다. **계정 이름이 든 전체 경로는 적지 않는다**
+   (공개 배포본에 윈도우 계정명을 싣지 않는다). 대화상자가 바탕화면에서 열리므로 이걸로 닿는다. */
+const CORP_VFS_WANT = "0.HI-fin 온톨로지하네스\\02.회계";
+
 /* ── ③ 폴더 잇기 · 권한 ──────────────────────────────────────────────────
-   ⚠️ 폴더 고르기 창은 **사람이 누를 때만** 뜬다(브라우저 규칙). 저절로 띄울 수 없다 —
-      그래서 이 기능은 「버튼 한 번」이지 「저절로」가 아니다. 그렇게 적는다. */
-async function cvfPick() {
+   ⚠️ 폴더 고르기 창은 **사람이 누를 때만** 뜬다(브라우저 규칙). 코드로 만든 클릭은
+      자격이 없고, 열린 창도 웹페이지가 아니라 운영체제 창이라 앱이 손을 대지 못한다.
+      그래서 이 기능은 「형이 버튼 한 번」이지 「저절로」가 아니다. 그렇게 적는다.
+   ⚠️ 대신 바탕화면에서 열고, 붙여 넣을 경로를 미리 챙겨 손을 한 번으로 줄인다. */
+async function cvfPick(opt) {
   const can = cvfCan();
   if (!can.ok) throw new Error(can.why);
+  /* 경로를 미리 챙겨 둔다 — 대화상자에서 Ctrl+V 한 번이면 닿는다. 실패해도 그냥 간다. */
+  let copied = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(CORP_VFS_WANT);
+      copied = true;
+    }
+  } catch (e) { copied = false; }
   let h;
   try {
-    h = await window.showDirectoryPicker({ id: "hifinVault", mode: "read" });
+    h = await window.showDirectoryPicker({ id: "hifinVault", mode: "read", startIn: (opt && opt.startIn) || "desktop" });
   } catch (e) {
-    if (e && e.name === "AbortError") throw new Error("폴더를 고르지 않으셨습니다");
-    throw new Error("폴더를 열지 못했습니다 — 바탕화면 자체는 고를 수 없습니다. 저장소 폴더를 직접 골라 주세요");
+    if (e && e.name === "AbortError") { const err = new Error("폴더를 고르지 않으셨습니다"); err.copied = copied; throw err; }
+    const err = new Error("폴더를 열지 못했습니다 — 바탕화면 자체는 고를 수 없습니다. 그 안의 저장소 폴더를 골라 주세요");
+    err.copied = copied;
+    throw err;
   }
   await cvfDbPut(CORP_VFS_KEY, h);
+  h.__copied = copied;
   return h;
 }
 async function cvfHandle() {

@@ -46,7 +46,10 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
       setH(x);
       setPerm(await cvfPerm(x, true));
       setNote({ bad: false, t: "「" + (x.name || "폴더") + "」을(를) 이었습니다. 「방문할 때마다 허용」을 고르셨다면 다음부터 다시 묻지 않습니다." });
-    } catch (e) { setNote({ bad: true, t: (e && e.message) || "폴더를 잇지 못했습니다" }); }
+    } catch (e) {
+      setNote({ bad: true, t: ((e && e.message) || "폴더를 잇지 못했습니다")
+        + (e && e.copied ? " (경로 「" + CORP_VFS_WANT + "」를 복사해 두었습니다 — 창이 열리면 Ctrl+V 로 붙여 넣고 Enter 를 누르시면 됩니다)" : "") });
+    }
     setBusy(false);
   };
   const grant = async function () {
@@ -112,8 +115,14 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
             그 뒤로는 권한이 남아 「지금 가져오기」 한 번이면 됩니다. <b>저절로 돌지는 않습니다</b> —
             화면을 열고 누르셔야 합니다(브라우저가 사람이 누를 때만 폴더를 열어 줍니다).
             <span className="cl-warn2">
-              폴더를 고르실 때 <b>바탕화면 자체는 고를 수 없습니다</b> — 저장소 폴더를 직접 골라 주세요.
+              누르시면 <b>바탕화면에서 창이 열리고</b>, 경로 <b>{CORP_VFS_WANT}</b> 를 미리 복사해 둡니다 —
+              창에서 <b>Ctrl+V</b> 로 붙여 넣고 <b>Enter</b> 를 누르시면 바로 그 폴더입니다
+              (폴더를 두 번 눌러 들어가셔도 됩니다). <b>바탕화면 자체는 고를 수 없습니다.</b>
               권한을 물을 때 <b>「방문할 때마다 허용」</b>을 고르시면 다음부터 다시 묻지 않습니다.
+            </span>
+            <span className="cl-warn2">
+              <b>권한은 주소마다 따로입니다</b> — 미리보기(localhost)에서 이으신 것과 배포본에서 이으신 것은
+              서로 다릅니다. 쓰시는 쪽에서 한 번씩 이어 주셔야 합니다.
             </span>
           </p>
 
