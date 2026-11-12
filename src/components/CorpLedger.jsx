@@ -535,9 +535,12 @@ function ClBankUp({ st, save, actor, A }) {
     await readFile(f);
   };
 
+  /* ⚠️ 은행줄 넣기와 전표 만들기를 **가른다.** 한 버튼에 묶여 있어서, 전표가 0건이면
+     (이미 다 들어와 있으면) 은행줄도 안 들어갔다 — 그러면 대사가 **영원히 보류**다.
+     은행줄은 읽었으면 들어가야 한다. 대사는 그 줄이 있어야 돈다. */
   const commit = () => {
     if (!B || !T) return;
-    if (!B.made.length) { setNote({ bad: true, t: "전표가 될 줄이 없습니다 — 보류 줄의 계정을 골라 주세요" }); return; }
+    if (!T.lines.length) { setNote({ bad: true, t: "읽은 은행줄이 없습니다" }); return; }
     if (!cov.from || !cov.to) { setNote({ bad: true, t: "이 자료가 **며칠부터 며칠까지**인지 적어 주세요 — 거래가 없던 날과 안 올린 날은 자료만으로 구별되지 않습니다" }); return; }
     const M = corpUpMergeBank(st.bank || [], T.lines);
     const next = Object.assign({}, st, {
@@ -551,9 +554,10 @@ function ClBankUp({ st, save, actor, A }) {
       corpBjvWrite({ map: nm, log: (bjv.log || []).concat([{ at: cov.to, n: Object.keys(pick).length }]) });
     }
     const held = B.held.length;
-    setNote({ bad: false, t: B.made.length + "건을 전표로 올렸습니다(기표 상태 — 검토·승인을 거쳐야 장부에 들어갑니다). "
-      + "은행줄 " + M.added + "줄 추가" + (M.dup ? " · 이미 받은 " + M.dup + "줄 건너뜀" : "")
-      + (held ? " · **보류 " + held + "줄은 그대로 남았습니다** — 계정을 고를 때까지 장부가 은행보다 적습니다." : "") });
+    setNote({ bad: false, t: "은행줄 " + M.added + "줄을 넣었습니다"
+      + (M.dup ? "(이미 받은 " + M.dup + "줄은 건너뜀)" : "") + " — **이제 대사가 돕니다.** "
+      + (B.made.length ? B.made.length + "건을 전표로 올렸습니다(기표 상태 — 검토·승인을 거쳐야 장부에 들어갑니다). " : "새로 만들 전표는 없었습니다(이미 들어와 있습니다). ")
+      + (held ? "**보류 " + held + "줄은 그대로 남았습니다** — 계정을 고를 때까지 장부가 은행보다 적습니다." : "") });
     reset();
   };
 
@@ -650,6 +654,45 @@ function ClBankUp({ st, save, actor, A }) {
           {B && (
             <div className="bk-prev">
               <div className="cl-h2">전표가 될 줄 <span className="cl-t">{B.made.length} 만듦 · {B.held.length} 보류 · {B.dup.length} 이미 있음 / 은행 {B.n}줄</span></div>
+              <div className="cl-h2">한 줄이 전표가 되기까지 <span className="cl-t">은행 줄 순서 그대로</span></div>
+              <p className="cl-note">은행 줄에는 금액 · 날짜 · 상대가 있지만 <b>계정이 없습니다</b>.
+                분류 칸에 적힌 낱말로 계정을 찾고, 입금이면 보통예금 <b>차변</b>에 · 출금이면 <b>대변</b>에 세웁니다.</p>
+              <table className="cl-tbl bk-tbl bk-trace">
+                <thead><tr><th>행</th><th>일자 · 시각</th><th>내용</th><th>금액</th>
+                  <th>① 분류</th><th>② 계정</th><th>③ 분개</th><th>결과</th></tr></thead>
+                <tbody>
+                  {(B.trace || []).slice(0, 60).map((r) => (
+                    <tr key={r.row} className={"st-" + r.state}>
+                      <td className="id">{r.row}</td>
+                      <td className="id">{r.d}<i className="bk-t">{r.t}</i></td>
+                      <td className="desc">{r.m}</td>
+                      <td className={"n " + (r.a >= 0 ? "in" : "out")}>{corpWon(r.a)}</td>
+                      <td className="id">{r.cls || <span className="bk-no">비었음</span>}</td>
+                      <td className="id">{r.acct
+                        ? <span>{r.acct} {r.acctKo}{r.src === "sure" ? <i className="bk-why">표에 그대로 있음</i>
+                          : (r.src === "saved" ? <i className="bk-why">전에 고르신 것</i>
+                            : (r.src === "picked" ? <i className="bk-why">방금 고르신 것</i> : null))}</span>
+                        : <span className="bk-no">모름</span>}</td>
+                      <td className="id">{r.lines
+                        ? r.lines.map((l, i) => (
+                          <div key={i} className="bk-ln">
+                            <b>{l[1] > 0 ? "차" : "대"}</b> {l[0]} {corpAcctName(l[0])} <span className="n">{corpWon(l[1] || l[2])}</span>
+                          </div>))
+                        : <span className="bk-no">—</span>}</td>
+                      <td className="st">{r.state === "made" ? <span className="bk-ok">{r.id}</span>
+                        : (r.state === "dup" ? <span className="bk-dup">이미 있음 · {r.id}</span>
+                          : <span className="bk-held">보류</span>)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {(B.trace || []).some((r) => r.state !== "made") && (
+                <p className="cl-note">보류 · 이미 있음인 줄의 까닭:
+                  {[...new Set((B.trace || []).filter((r) => r.state !== "made").map((r) => r.why))].slice(0, 4)
+                    .map((w, i) => <span key={i}> · {w}</span>)}</p>
+              )}
+              {(B.trace || []).length > 60 && <p className="cl-note">앞 60줄만 보여 줍니다(전체 {B.trace.length}줄).</p>}
+
               {B.made.length > 0 && (
                 <table className="cl-tbl bk-tbl">
                   <thead><tr><th>번호</th><th>일자</th><th>적요</th><th>차변</th><th>대변</th><th>금액</th></tr></thead>
@@ -716,8 +759,8 @@ function ClBankUp({ st, save, actor, A }) {
               )}
 
               <div className="bk-act">
-                <button className="cl-save" disabled={!B.made.length || (CH && CH.n > 0 && !CH.ok)} onClick={commit}>
-                  전표 {B.made.length}건 올리기
+                <button className="cl-save" disabled={!T.lines.length || (CH && CH.n > 0 && !CH.ok)} onClick={commit}>
+                  은행 내역 {T.lines.length}줄 넣기{B.made.length ? " · 전표 " + B.made.length + "건" : ""}
                 </button>
                 {!A.canApprove && <span className="cl-t">올리는 것까지는 됩니다 — 승인·전기는 사람이 합니다</span>}
                 {B.held.length > 0 && <span className="cl-t">보류 {B.held.length}줄을 남기면 장부 잔액이 은행과 맞지 않습니다</span>}

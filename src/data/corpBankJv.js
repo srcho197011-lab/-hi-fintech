@@ -150,6 +150,10 @@ function corpBjvBuild(lines, st, ledger, jvs) {
   (jvs || []).forEach(function (j) { if (j.bk && !revPosted[j.id]) have[j.bk] = j.id; });
   const seq = {};
   const made = [], held = [], dup = [];
+  /* ⚠️ 결과만 돌려주면 「왜 이 줄이 전표가 됐고 저 줄은 안 됐는지」가 안 보인다.
+     한 줄이 지나온 자리를 **줄 순서대로** 남긴다 — 분류를 어떻게 읽었고, 어느 계정이
+     골라졌고, 어떤 분개가 되었는지. 화면이 그걸 그대로 보여 준다. */
+  const trace = [];
   /* 그날 이미 쓰인 번호부터 이어 붙인다 — 기존 전표와 번호가 부딪히지 않게 */
   (jvs || []).forEach(function (j) {
     const id = String(j.id || ""), m = /^(\d{8})-(\d+)$/.exec(id);
@@ -169,18 +173,30 @@ function corpBjvBuild(lines, st, ledger, jvs) {
   L.forEach(function (x, i) {
     const row = x.row || i + 1;
     const key = corpBjvKey(x);
-    if (have[key]) { dup.push({ row: row, d: x.d, a: x.a, m: x.m, id: have[key], why: "이 은행줄에서 만든 전표가 이미 있습니다" }); return; }
-    const dir = (+x.a || 0) >= 0 ? "in" : "out";
+    const dir0 = (+x.a || 0) >= 0 ? "in" : "out";
+    const base = { row: row, d: x.d, t: x.t || "", a: x.a, m: x.m, cls: corpBjvWord(x.cls), dir: dir0,
+      bal: x.bal, acct: "", acctKo: "", lines: null, state: "", id: "", why: "", src: "" };
+    if (have[key]) {
+      dup.push({ row: row, d: x.d, a: x.a, m: x.m, id: have[key], why: "이 은행줄에서 만든 전표가 이미 있습니다" });
+      trace.push(Object.assign({}, base, { state: "dup", id: have[key], why: "이 은행줄에서 만든 전표가 이미 있습니다" }));
+      return;
+    }
+    const dir = dir0;
     const abs0 = Math.abs(+x.a || 0);
     const hit = soft.find(function (p) { return !p.used && p.d === x.d && (dir === "in" ? p.in : p.out) === abs0; });
     if (hit) {
       hit.used = true;
-      dup.push({ row: row, d: x.d, a: x.a, m: x.m, id: hit.id, soft: true,
-        why: "장부에 같은 날 같은 금액의 보통예금 전표(" + hit.id + ")가 이미 있습니다 — 같은 거래로 보입니다. 두 건이 맞다면 그 전표를 먼저 정리해 주세요" });
+      const w = "장부에 같은 날 같은 금액의 보통예금 전표(" + hit.id + ")가 이미 있습니다 — 같은 거래로 보입니다. 두 건이 맞다면 그 전표를 먼저 정리해 주세요";
+      dup.push({ row: row, d: x.d, a: x.a, m: x.m, id: hit.id, soft: true, why: w });
+      trace.push(Object.assign({}, base, { state: "dup", id: hit.id, why: w }));
       return;
     }
     const p = corpBjvPick(x.cls, dir, st, jvs);
-    if (!p.c) { held.push({ row: row, d: x.d, t: x.t, a: x.a, m: x.m, cls: x.cls, dir: dir, why: p.why, hint: p.hint || "", bk: key }); return; }
+    if (!p.c) {
+      held.push({ row: row, d: x.d, t: x.t, a: x.a, m: x.m, cls: x.cls, dir: dir, why: p.why, hint: p.hint || "", bk: key });
+      trace.push(Object.assign({}, base, { state: "held", why: p.why, src: p.src || "" }));
+      return;
+    }
     const amt = Math.abs(+x.a || 0);
     const desc = (corpBjvWord(x.cls) ? corpBjvWord(x.cls) + " — " : "") + String(x.m || "").trim();
     seq[x.d] = (seq[x.d] || 0) + 1;
@@ -192,10 +208,20 @@ function corpBjvBuild(lines, st, ledger, jvs) {
         : [[p.c, amt, 0, corpBjvWord(x.cls) || "분류"], ["103", 0, amt, "은행 출금"]],
     };
     const chk = typeof corpJvCheck === "function" ? corpJvCheck(jv, ledger) : { ok: true, errs: [] };
-    if (!chk.ok) { seq[x.d]--; held.push({ row: row, d: x.d, t: x.t, a: x.a, m: x.m, cls: x.cls, dir: dir, why: chk.errs.join(" · "), bk: key }); return; }
+    if (!chk.ok) {
+      seq[x.d]--;
+      held.push({ row: row, d: x.d, t: x.t, a: x.a, m: x.m, cls: x.cls, dir: dir, why: chk.errs.join(" · "), bk: key });
+      trace.push(Object.assign({}, base, { state: "held", acct: p.c, why: chk.errs.join(" · "), src: p.src || "" }));
+      return;
+    }
     made.push(jv);
+    trace.push(Object.assign({}, base, {
+      state: "made", id: jv.id, acct: p.c,
+      acctKo: typeof corpAcctName === "function" ? corpAcctName(p.c) : "",
+      lines: jv.l, src: p.src || "", why: p.why || "",
+    }));
   });
-  return { made: made, held: held, dup: dup, n: L.length, chain: corpBjvChain(L) };
+  return { made: made, held: held, dup: dup, n: L.length, chain: corpBjvChain(L), trace: trace };
 }
 
 /* ── ⑤ 검산 — 화면과 커밋 게이트 러너가 이 함수 하나를 같이 본다 ──────── */
@@ -229,6 +255,9 @@ function corpBjvRows(lines, st, ledger, jvs) {
       ok: B.dup.every(function (d) { return d.id && (d.why || "").trim(); }),
       got: B.dup.filter(function (d) { return !d.id || !(d.why || "").trim(); }).length + "건 누락", want: "0건",
       skip: B.dup.length === 0, why: B.dup.length === 0 ? "겹치는 줄이 없습니다 — 검사할 대상이 없습니다" : "" },
+    { k: "trace", ko: "줄마다 어떻게 됐는지 자취가 남는다", n: B.n,
+      ok: (B.trace || []).length === B.n && (B.trace || []).every(function (t) { return !!t.state; }),
+      got: (B.trace || []).length + " / " + B.n, want: "같을 것" },
     { k: "held", ko: "계정을 못 고른 줄은 **남는다**(사라지지 않는다)", n: B.held.length + B.made.length,
       ok: B.held.every(function (h) { return (h.why || "").trim(); }),
       got: B.held.length + "건 보류 · 사유 " + B.held.filter(function (h) { return (h.why || "").trim(); }).length + "건", want: "전건 사유" },

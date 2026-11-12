@@ -1306,6 +1306,18 @@ if (bkBoard) {
   chk(iScan2 >= 0 && iSet2 >= 0 && iScan2 < iSet2,
     "⑬화면   민감자료 검사가 미리보기보다 **앞**이다(입구가 둘인데 한쪽만 막으면 막는 것이 아니다)", { scan: iScan2, prev: iSet2 });
   chk(/corpBjvBuild\(/.test(bkBoard) && /corpBjvChain\(/.test(bkBoard), "⑬화면   전표 만들기·잔액 검사는 러너와 같은 함수", "없음");
+  /* ⚠️ 은행줄 넣기와 전표 만들기가 한 버튼에 묶여 있으면, 전표가 0건일 때(이미 다 들어와 있을 때)
+     은행줄도 안 들어가 **대사가 영원히 보류**가 된다. 실제로 그랬다. 조건을 갈라 둔다. */
+  chk(/disabled=\{!T\.lines\.length/.test(bkBoard),
+    "⑬반입ⓐ 은행줄은 전표가 0건이어도 들어간다(대사가 돌아야 한다)", "전표 건수에 묶여 있음");
+  chk(!/disabled=\{!B\.made\.length/.test(bkBoard), "⑬반입   올리기가 전표 건수에 묶여 있지 않다", "묶여 있음");
+  chk(/은행 내역 \{T\.lines\.length\}줄 넣기/.test(bkBoard), "⑬반입   버튼이 은행줄 수를 적는다", "없음");
+  /* 과정 — 한 줄이 전표가 되기까지를 보여 준다 */
+  chk(/bk-trace/.test(bkBoard), "⑬과정   한 줄이 전표가 되기까지를 보여 준다", "없음");
+  chk(/B\.trace/.test(bkBoard), "⑬과정   줄마다의 자취를 화면이 읽는다", "없음");
+  chk(/① 분류/.test(bkBoard) && /② 계정/.test(bkBoard) && /③ 분개/.test(bkBoard),
+    "⑬과정   분류 → 계정 → 분개 세 자리를 나눠 보여 준다", "없음");
+  chk(/계정이 없습니다/.test(bkBoard), "⑬과정   은행 줄에 계정이 없다는 사실을 적는다", "없음");
   chk(/0xd0/.test(bkBoard) && /0x50/.test(bkBoard), "⑬화면   파일 머리를 보고 엑셀·구형엑셀을 가른다(쓰레기 표를 띄우지 않는다)", "없음");
   chk(/자동으로 가져오지 못/.test(bkBoard), "⑬화면   계좌를 자동으로 가져오지 못한다고 적는다", "없음");
   chk(/어디로도 전송되지 않습니다/.test(bkBoard), "⑬화면   파일이 전송되지 않는다고 적는다", "없음");

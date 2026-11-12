@@ -6292,3 +6292,18 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .vf-tbl tr.warn td.id{color:var(--cw);}
 .vf-alt{border-top:1px dashed var(--cl2);padding-top:9px;margin-top:2px;}
 .vf-alt-why{font-style:normal;font-size:9.5px;color:var(--cd2);flex:1 1 220px;}
+
+/* 한 줄이 전표가 되기까지 — 과정 표 */
+.bk-trace td{vertical-align:top;font-size:9.5px;}
+.bk-trace td.desc{max-width:150px;}
+.bk-trace .bk-t{display:block;font-style:normal;font-size:8px;color:var(--cd2);}
+.bk-trace .bk-no{color:var(--cd2);}
+.bk-trace .bk-why{display:block;font-style:normal;font-size:8px;color:#5FAE7E;}
+.bk-trace .bk-ln{white-space:nowrap;font-size:9px;}
+.bk-trace .bk-ln b{display:inline-block;width:14px;color:var(--ct);}
+.bk-trace .bk-ok{color:#5FAE7E;font-weight:700;}
+.bk-trace .bk-dup{color:var(--cd2);}
+.bk-trace .bk-held{color:var(--cw);font-weight:700;}
+.bk-trace tr.st-made td{background:rgba(95,174,126,.05);}
+.bk-trace tr.st-held td{background:rgba(224,163,63,.07);}
+.bk-trace tr.st-dup td{opacity:.62;}
