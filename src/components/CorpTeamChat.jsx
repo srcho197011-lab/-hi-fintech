@@ -3,6 +3,10 @@
     대화를 통해 업무를 진행할 수 있도록 해줘. 예를 들면 회계팀에 들어가면 제일 위에
     핀테크가 먼저 인삿말과 업무지시에 대해 말을 걸어 오도록 대화창을 만들어 줘.」
 
+   아래 탭에 있던 「업무 지시」 지면(CorpOrder.jsx)도 2026-11-12 에 지웠다 — 이 창과 같은 일을
+   하고 있었다. 말을 거는 자리가 둘이면 어느 쪽에 적었는지 헷갈리고, 기록도 두 곳을 봐야 한다.
+   그 지면의 자기시험(지시 해석 검산)과 기준일 표시는 이 창이 이어받았다.
+
    한 곳에 모아 두던 「AI 팀장 대화」 화면(CorpAgentChat.jsx)은 해체하면서 지웠다 —
    들어갈 길이 없는 화면을 번들에 남겨 두면, 아무도 보지 못하는 자리에서 약속만 한다.
    그 화면이 지고 있던 두 약속(자기시험 · 물음과 요청 가르기)은 이 화면이 그대로 이어받았다.
@@ -37,6 +41,12 @@ function CorpTeamChat({ team, onTab, compact }) {
     function () { return AI ? corpAgGreet(AI, { who: t && t.own, now: now }) : null; },
     [AI, led]
   );
+  const greetCanOrder = !!(greet && greet.canOrder);
+  /* 지시 해석 자기시험 — 없앤 「업무 지시」 지면이 지고 있던 약속이다.
+     말로 시키는 팀에서만 선다(지금은 회계팀뿐). */
+  const OV = React.useMemo(function () {
+    return (greetCanOrder && typeof corpOrdVerdict === "function") ? corpOrdVerdict(today) : null;
+  }, [greetCanOrder, today]);
 
   /* 회계팀만 — 이어 둔 저장소를 미리 훑어 둔다(지시를 읽을 때 상황으로 넘긴다) */
   React.useEffect(function () {
@@ -155,6 +165,8 @@ function CorpTeamChat({ team, onTab, compact }) {
         </div>
         <span className="tc-n">{a.noTool ? "도구 없음" : "도구 " + a.tools.length}</span>
         <span className={"cl-verd" + (V.pass ? " on" : " bad")}>검산 {V.rows.length - V.fail.length - V.zero.length} / {V.rows.length}</span>
+        {OV && <span className={"cl-verd" + (OV.pass ? " on" : " bad")}>지시 해석 {OV.rows.length - OV.fail.length - OV.zero.length} / {OV.rows.length}</span>}
+        {OV && <span className="ad-chip">기준일 {today || "—"}</span>}
         {greet && greet.canOrder && <span className="tc-order">말로 시킬 수 있습니다</span>}
         <button className="cl-rv">{open ? "접기" : "열기"}</button>
       </div>

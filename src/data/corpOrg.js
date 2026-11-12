@@ -39,8 +39,9 @@ const CORP_TEAMS = [
       { t: "재무현황", kind: "mod", comp: "CorpLedgerSection", note: "실적 축 — 전표 · 원장 · 시산표 · 재무제표 · 은행 대사" },
       { t: "재무계획", kind: "tab", tab: "finance", comp: "FinanceSection", note: "계획 축 — 기존 재무회계에서 이관" },
       { t: "예실 대비", kind: "mod", comp: "CorpPlanActualSection", note: "계획 ↔ 실적 — 대응표가 본체 · 차이는 조건이 설 때만" },
-      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" },
-      { t: "업무 지시", kind: "mod", comp: "CorpOrderSection", note: "형이 말로 시키면 할 일로 쪼갠다 — 쪼개기까지가 AI, 승인은 사람" }],
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
+      /* 「업무 지시」 지면은 2026-11-12 에 없앴다(조성래님 지시) — 보드 맨 위 대화창이
+         같은 일을 하고 있었다. 말을 거는 자리가 둘이면 어느 쪽에 적었는지 헷갈린다. */
     can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출",
       "역분개 전표 초안 생성", "지시를 할 일로 쪼개기"],
     cannot: [

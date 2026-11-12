@@ -629,7 +629,6 @@ function corpPageComp(name) {
     if (name === "CorpReleaseSection") return typeof CorpReleaseSection === "function" ? CorpReleaseSection : null;
     if (name === "CorpSecuritySection") return typeof CorpSecuritySection === "function" ? CorpSecuritySection : null;
     if (name === "CorpVaultSection") return typeof CorpVaultSection === "function" ? CorpVaultSection : null;
-    if (name === "CorpOrderSection") return typeof CorpOrderSection === "function" ? CorpOrderSection : null;
     if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
     if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
     if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;

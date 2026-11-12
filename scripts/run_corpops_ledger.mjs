@@ -70,7 +70,7 @@ const ORG = "src/data/corpOrg.js";
    「자동 실행」·「보완 필요」·회원 영상 모듈 참조는 지면 종류를 가리지 않는다. */
 const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpGov.jsx",
   "src/components/CorpUpload.jsx", "src/components/CorpVault.jsx",
-  "src/components/CorpOrder.jsx", "src/components/CorpTeamChat.jsx", "src/components/CorpOps.jsx"];
+  "src/components/CorpTeamChat.jsx", "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
   ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
   "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js", "src/data/corpVault.js",
@@ -1555,7 +1555,19 @@ const wo_M2 = G("CORP_TEAMS").find((t) => t.id === "M2");
 chk(wo_M2.can.some((c) => /역분개/.test(c)), "⑮조직   역분개 초안 생성이 can 에 적혀 있다", wo_M2.can.join(" · "));
 chk(wo_M2.cannot.some((c) => /삭제/.test(c.act)), "⑮조직   전표 삭제가 cannot 에 적혀 있다", wo_M2.cannot.map((c) => c.act).join(" · "));
 chk(wo_M2.cannot.some((c) => /전표 승인/.test(c.act)), "⑮조직   전표 승인은 여전히 cannot 이다(지시를 받아도 선을 넘지 않는다)");
-chk(wo_M2.pages.some((p) => p.comp === "CorpOrderSection"), "⑮지면   회계팀 보드에 업무 지시 지면이 있다", wo_M2.pages.map((p) => p.t).join(" · "));
+/* 조성래님 지시 2026-11-12 — 「업무지시가 중복되는데 아래 업무지시 란을 없애 줘.」
+   보드 맨 위 대화창이 같은 일을 하고 있었다. 말을 거는 자리는 **한 곳**이어야 한다. */
+chk(!wo_M2.pages.some((p) => p.comp === "CorpOrderSection"),
+  "⑮지면   회계팀 보드에 업무 지시 지면이 **없다**(맨 위 대화창이 그 자리다)", wo_M2.pages.map((p) => p.t).join(" · "));
+chk(!G("CORP_TEAMS").some((t) => (t.pages || []).some((p) => p.comp === "CorpOrderSection")),
+  "⑮지면   **어느 팀 보드에도** 업무 지시 지면이 없다(다른 팀도 중복되지 않는다)",
+  G("CORP_TEAMS").filter((t) => (t.pages || []).some((p) => p.comp === "CorpOrderSection")).map((t) => t.id).join(","));
+/* 말을 거는 자리가 둘이 되지 않게 — 지면 이름에 「대화」·「지시」가 섞여 들어오면 걸린다 */
+{
+  const dupPages = G("CORP_TEAMS").flatMap((t) => (t.pages || [])
+    .filter((p) => /업무 지시|AI 대화|팀장 대화/.test(p.t)).map((p) => t.id + ":" + p.t));
+  chk(dupPages.length === 0, "⑮지면   말을 거는 지면이 보드 탭에 다시 생기지 않았다", dupPages.join(" · "));
+}
 
 /* 결정론 · 비밀 */
 let ordSrc = "";
@@ -1577,7 +1589,7 @@ if (agSrc2) {
 }
 if (hook) {
   chk(hook.indexOf("corpOrder") >= 0, "⑮게이트 pre-commit 감시 대상에 corpOrder", "미등재");
-  chk(hook.indexOf("CorpOrder") >= 0, "⑮게이트 pre-commit 감시 대상에 CorpOrder", "미등재");
+  chk(hook.indexOf("CorpTeamChat") >= 0, "⑮게이트 pre-commit 감시 대상에 CorpTeamChat", "미등재");
 }
 chk(MANI.indexOf("src/data/corpOrder.js") >= 0, "⑮번들   corpOrder.js 가 매니페스트에 있다", "없음");
 chk(MANI.indexOf("src/data/corpBankJv.js") < MANI.indexOf("src/data/corpOrder.js"),
@@ -1731,8 +1743,8 @@ const sBad = rowOf({ linked: true, scope: scBad, match: G("cvfMatchDay")(scBad.r
 chk(!!sBad && sBad.who === "human" && /02\.회계/.test(sBad.why || ""),
   "⑯단계ⓐ 회계 폴더가 없는 곳을 이으면 그렇게 말한다", sBad && String(sBad.why).slice(0, 40));
 /* 화면 — 가져오는 길도 **같은 검사**를 지나는가 */
-let ordB = "";
-try { ordB = rd("src/components/CorpOrder.jsx"); } catch (e) { fails.push("⑯화면 CorpOrder.jsx 없음"); }
+let ordB = "";   /* 지시를 집행하는 자리 — 지면을 없앤 뒤로는 보드 맨 위 대화창이다 */
+try { ordB = rd("src/components/CorpTeamChat.jsx"); } catch (e) { fails.push("⑯화면 CorpTeamChat.jsx 없음"); }
 if (ordB) {
   chk(/const doRefetch = async/.test(ordB), "⑯화면   저장소에서 가져오는 자리가 있다", "없음");
   const iF = ordB.indexOf("const doRefetch = async");

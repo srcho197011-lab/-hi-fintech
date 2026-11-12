@@ -50,7 +50,6 @@ src/components/CorpAdmin.jsx
 src/components/CorpGov.jsx
 src/components/CorpUpload.jsx
 src/components/CorpVault.jsx
-src/components/CorpOrder.jsx
 src/components/CorpTeamChat.jsx
 src/components/CorpOps.jsx
 src/components/Ontology.jsx
