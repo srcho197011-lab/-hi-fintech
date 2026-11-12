@@ -180,10 +180,12 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
           {scan && scan.once && <p className="cl-note hold">지금 읽은 것은 <b>이번 한 번</b>입니다 — 권한이 남지 않습니다.</p>}
           {scan && (
             <p className="cl-note">{scan.root}{scan.asDept ? "(부서 폴더를 직접 이으셨습니다)" : ""} — <b>{scan.n}건</b> · {Math.round(scan.bytes / 104857.6) / 10}MB.
-              {sc && sc.dir ? <span> 이 지면은 <b>{sc.dir}</b> 안만 봅니다 — <b>{sc.n}건</b>.</span> : null}
+              {sc && sc.dir && sc.mode === "scoped" ? <span> 이 지면은 <b>{sc.dir}</b> 안만 봅니다 — <b>{sc.n}건</b>.</span> : null}
+              {sc && sc.mode === "asis" ? <span> 고르신 폴더를 그대로 씁니다 — <b>{sc.n}건</b>.</span> : null}
               {!bankOnly && <span> 종류 · 법인 판별은 아래 대장이 합니다(여기서는 <b>사실만</b> 가져옵니다).</span>}</p>
           )}
           {sc && !sc.ok && <p className="cl-note hold">{sc.why}</p>}
+          {sc && sc.ok && sc.mode === "asis" && <p className="cl-note">{sc.why}</p>}
           {cands && cands.match && (
             <p className={"cl-note" + (cands.match.n === 1 ? "" : " hold")}>
               <b>{day}</b> 것 — {cands.match.why}.

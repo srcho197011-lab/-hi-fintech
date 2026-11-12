@@ -344,14 +344,39 @@ function cvfDeptDir(team) {
   const d = CORP_VAULT_DEPT.find(function (x) { return x.team === team; });
   return d ? d.k + "." + d.ko : "";
 }
+/* ⚠️ 고르신 폴더가 **그 팀 폴더 안쪽**일 수 있다. 형이 02.회계 전체가 아니라
+   그 안의 「26.11」만 고르시면 경로에 「02.회계」가 없다 — 그걸 「없는 자료」로 버리면
+   형은 바르게 고르고도 0건을 보신다. 실제로 그렇게 버렸다.
+   그래서 세 갈래로 가른다:
+     · 그 팀 폴더가 경로에 **있으면** → 그것만 (저장소 루트를 이으신 경우)
+     · **다른 팀 폴더**가 보이면 → 거부하고 어느 팀 자료인지 말한다
+     · 아무 부서 표시도 없으면 → **고르신 것을 그대로 쓴다**(그 안을 고르신 것으로 본다) */
+function cvfDeptHead(rel) {
+  const first = String(rel || "").split("/")[0] || "";
+  if (typeof CORP_VAULT_DEPT === "undefined") return null;
+  return CORP_VAULT_DEPT.find(function (d) { return first === d.k + "." + d.ko; }) || null;
+}
 function cvfScope(rows, team) {
   const dir = cvfDeptDir(team);
-  if (!dir) return { rows: rows || [], dir: "", n: (rows || []).length, all: (rows || []).length, ok: true };
-  const hit = (rows || []).filter(function (r) { return String(r.rel || "").indexOf(dir + "/") === 0; });
-  return { rows: hit, dir: dir, n: hit.length, all: (rows || []).length,
-    /* 0건이면 **숨기지 않고 말한다** — 엉뚱한 폴더를 이으셨을 수 있다 */
-    ok: hit.length > 0,
-    why: hit.length ? "" : "이어 둔 폴더에 「" + dir + "」 가 없습니다 — 저장소 루트나 " + dir + " 폴더를 이어 주세요" };
+  const all = rows || [];
+  if (!dir) return { rows: all, dir: "", n: all.length, all: all.length, ok: true, mode: "none", why: "" };
+  const hit = all.filter(function (r) { return String(r.rel || "").indexOf(dir + "/") === 0; });
+  if (hit.length) {
+    return { rows: hit, dir: dir, n: hit.length, all: all.length, ok: true, mode: "scoped", why: "" };
+  }
+  const other = all.map(function (r) { return cvfDeptHead(r.rel); })
+    .find(function (d) { return d && d.team !== team; });
+  if (other) {
+    return { rows: [], dir: dir, n: 0, all: all.length, ok: false, mode: "other",
+      why: "이어 둔 폴더는 「" + other.k + "." + other.ko + "」 자료입니다 — 이 지면은 " + dir + " 것만 봅니다. "
+        + dir + " 또는 그 안의 폴더를 골라 주세요" };
+  }
+  if (!all.length) {
+    return { rows: [], dir: dir, n: 0, all: 0, ok: false, mode: "empty",
+      why: "고르신 폴더에 파일이 없습니다" };
+  }
+  return { rows: all, dir: dir, n: all.length, all: all.length, ok: true, mode: "asis",
+    why: "경로에 「" + dir + "」가 없지만 **고르신 폴더를 그대로 씁니다** — 그 안의 폴더를 고르신 것으로 봅니다" };
 }
 
 /* ── ⑥-3 그날 것 찾기 — **고르지 않는다. 다만 하나뿐이면 하나뿐이라고 말한다** ──
@@ -458,11 +483,20 @@ function cvfSelfTest() {
         const S = cvfScope(R, "M2");
         return S.n === 2 && S.all === 3 && S.ok;
       })(), got: "2 / 3", want: "2 / 3" },
-    { k: "scopenone", ko: "그 팀 폴더가 없으면 **0건이라고 말한다**(숨기지 않는다)", n: 1,
+    { k: "scopeother", ko: "**다른 팀** 폴더를 고르시면 거부하고 어느 팀인지 말한다", n: 1,
       ok: (function () {
         const S = cvfScope([{ rel: "01.경영기획/나_표본.pdf" }], "M2");
-        return S.n === 0 && !S.ok && (S.why || "").indexOf("02.회계") >= 0;
-      })(), got: "0건 + 이유", want: "0건 + 이유" },
+        return S.n === 0 && !S.ok && S.mode === "other" && (S.why || "").indexOf("경영기획") >= 0;
+      })(), got: "거부 + 이유", want: "거부 + 이유" },
+    { k: "scopeasis", ko: "그 팀 폴더 **안쪽**을 고르시면 그대로 쓴다(0건으로 버리지 않는다)", n: 2,
+      ok: (function () {
+        const S = cvfScope([{ rel: "26.11/거래내역_표본 (11.11).xlsx" }], "M2");
+        const T = cvfScope([{ rel: "2026.결산/26.11/거래내역_표본 (11.11).xlsx" }], "M2");
+        return S.n === 1 && S.ok && S.mode === "asis" && T.n === 1 && T.ok;
+      })(), got: "그대로 씀", want: "그대로 씀" },
+    { k: "scopeempty", ko: "파일이 하나도 없으면 그렇게 말한다", n: 1,
+      ok: (function () { const S = cvfScope([], "M2"); return !S.ok && S.mode === "empty"; })(),
+      got: "0건 + 이유", want: "0건 + 이유" },
     { k: "none", ko: "그날 것이 없으면 **아무거나 집지 않는다**", n: 1,
       ok: (function () {
         const M = cvfMatchDay([{ rel: "c", name: "거래내역_표본 (10.31).xlsx", dir: "02.회계/2026.결산/26.10", ext: "xlsx", size: 1, at: "2026-11-12" }],

@@ -19471,14 +19471,39 @@ function cvfDeptDir(team) {
   const d = CORP_VAULT_DEPT.find(function (x) { return x.team === team; });
   return d ? d.k + "." + d.ko : "";
 }
+/* ⚠️ 고르신 폴더가 **그 팀 폴더 안쪽**일 수 있다. 형이 02.회계 전체가 아니라
+   그 안의 「26.11」만 고르시면 경로에 「02.회계」가 없다 — 그걸 「없는 자료」로 버리면
+   형은 바르게 고르고도 0건을 보신다. 실제로 그렇게 버렸다.
+   그래서 세 갈래로 가른다:
+     · 그 팀 폴더가 경로에 **있으면** → 그것만 (저장소 루트를 이으신 경우)
+     · **다른 팀 폴더**가 보이면 → 거부하고 어느 팀 자료인지 말한다
+     · 아무 부서 표시도 없으면 → **고르신 것을 그대로 쓴다**(그 안을 고르신 것으로 본다) */
+function cvfDeptHead(rel) {
+  const first = String(rel || "").split("/")[0] || "";
+  if (typeof CORP_VAULT_DEPT === "undefined") return null;
+  return CORP_VAULT_DEPT.find(function (d) { return first === d.k + "." + d.ko; }) || null;
+}
 function cvfScope(rows, team) {
   const dir = cvfDeptDir(team);
-  if (!dir) return { rows: rows || [], dir: "", n: (rows || []).length, all: (rows || []).length, ok: true };
-  const hit = (rows || []).filter(function (r) { return String(r.rel || "").indexOf(dir + "/") === 0; });
-  return { rows: hit, dir: dir, n: hit.length, all: (rows || []).length,
-    /* 0건이면 **숨기지 않고 말한다** — 엉뚱한 폴더를 이으셨을 수 있다 */
-    ok: hit.length > 0,
-    why: hit.length ? "" : "이어 둔 폴더에 「" + dir + "」 가 없습니다 — 저장소 루트나 " + dir + " 폴더를 이어 주세요" };
+  const all = rows || [];
+  if (!dir) return { rows: all, dir: "", n: all.length, all: all.length, ok: true, mode: "none", why: "" };
+  const hit = all.filter(function (r) { return String(r.rel || "").indexOf(dir + "/") === 0; });
+  if (hit.length) {
+    return { rows: hit, dir: dir, n: hit.length, all: all.length, ok: true, mode: "scoped", why: "" };
+  }
+  const other = all.map(function (r) { return cvfDeptHead(r.rel); })
+    .find(function (d) { return d && d.team !== team; });
+  if (other) {
+    return { rows: [], dir: dir, n: 0, all: all.length, ok: false, mode: "other",
+      why: "이어 둔 폴더는 「" + other.k + "." + other.ko + "」 자료입니다 — 이 지면은 " + dir + " 것만 봅니다. "
+        + dir + " 또는 그 안의 폴더를 골라 주세요" };
+  }
+  if (!all.length) {
+    return { rows: [], dir: dir, n: 0, all: 0, ok: false, mode: "empty",
+      why: "고르신 폴더에 파일이 없습니다" };
+  }
+  return { rows: all, dir: dir, n: all.length, all: all.length, ok: true, mode: "asis",
+    why: "경로에 「" + dir + "」가 없지만 **고르신 폴더를 그대로 씁니다** — 그 안의 폴더를 고르신 것으로 봅니다" };
 }
 
 /* ── ⑥-3 그날 것 찾기 — **고르지 않는다. 다만 하나뿐이면 하나뿐이라고 말한다** ──
@@ -19585,11 +19610,20 @@ function cvfSelfTest() {
         const S = cvfScope(R, "M2");
         return S.n === 2 && S.all === 3 && S.ok;
       })(), got: "2 / 3", want: "2 / 3" },
-    { k: "scopenone", ko: "그 팀 폴더가 없으면 **0건이라고 말한다**(숨기지 않는다)", n: 1,
+    { k: "scopeother", ko: "**다른 팀** 폴더를 고르시면 거부하고 어느 팀인지 말한다", n: 1,
       ok: (function () {
         const S = cvfScope([{ rel: "01.경영기획/나_표본.pdf" }], "M2");
-        return S.n === 0 && !S.ok && (S.why || "").indexOf("02.회계") >= 0;
-      })(), got: "0건 + 이유", want: "0건 + 이유" },
+        return S.n === 0 && !S.ok && S.mode === "other" && (S.why || "").indexOf("경영기획") >= 0;
+      })(), got: "거부 + 이유", want: "거부 + 이유" },
+    { k: "scopeasis", ko: "그 팀 폴더 **안쪽**을 고르시면 그대로 쓴다(0건으로 버리지 않는다)", n: 2,
+      ok: (function () {
+        const S = cvfScope([{ rel: "26.11/거래내역_표본 (11.11).xlsx" }], "M2");
+        const T = cvfScope([{ rel: "2026.결산/26.11/거래내역_표본 (11.11).xlsx" }], "M2");
+        return S.n === 1 && S.ok && S.mode === "asis" && T.n === 1 && T.ok;
+      })(), got: "그대로 씀", want: "그대로 씀" },
+    { k: "scopeempty", ko: "파일이 하나도 없으면 그렇게 말한다", n: 1,
+      ok: (function () { const S = cvfScope([], "M2"); return !S.ok && S.mode === "empty"; })(),
+      got: "0건 + 이유", want: "0건 + 이유" },
     { k: "none", ko: "그날 것이 없으면 **아무거나 집지 않는다**", n: 1,
       ok: (function () {
         const M = cvfMatchDay([{ rel: "c", name: "거래내역_표본 (10.31).xlsx", dir: "02.회계/2026.결산/26.10", ext: "xlsx", size: 1, at: "2026-11-12" }],
@@ -23316,10 +23350,12 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
           {scan && scan.once && <p className="cl-note hold">지금 읽은 것은 <b>이번 한 번</b>입니다 — 권한이 남지 않습니다.</p>}
           {scan && (
             <p className="cl-note">{scan.root}{scan.asDept ? "(부서 폴더를 직접 이으셨습니다)" : ""} — <b>{scan.n}건</b> · {Math.round(scan.bytes / 104857.6) / 10}MB.
-              {sc && sc.dir ? <span> 이 지면은 <b>{sc.dir}</b> 안만 봅니다 — <b>{sc.n}건</b>.</span> : null}
+              {sc && sc.dir && sc.mode === "scoped" ? <span> 이 지면은 <b>{sc.dir}</b> 안만 봅니다 — <b>{sc.n}건</b>.</span> : null}
+              {sc && sc.mode === "asis" ? <span> 고르신 폴더를 그대로 씁니다 — <b>{sc.n}건</b>.</span> : null}
               {!bankOnly && <span> 종류 · 법인 판별은 아래 대장이 합니다(여기서는 <b>사실만</b> 가져옵니다).</span>}</p>
           )}
           {sc && !sc.ok && <p className="cl-note hold">{sc.why}</p>}
+          {sc && sc.ok && sc.mode === "asis" && <p className="cl-note">{sc.why}</p>}
           {cands && cands.match && (
             <p className={"cl-note" + (cands.match.n === 1 ? "" : " hold")}>
               <b>{day}</b> 것 — {cands.match.why}.
@@ -43108,7 +43144,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-11-12", ver:"v4.3", ch:[9], feat:"저장소 폴더 — 두 번째 길과 사실대로 적기", src:"온톨로지 › 회사 총괄운영 › 자료실 · 회계팀 은행 대사", summary:"폴더 고르기 앞의 클립보드 쓰기가 사람이 눌렀다는 자격을 소비해 창을 막는다고 단정하고 주석까지 적었으나 실측으로 뒤집혀 기준이 횟수가 아니라 약 오초의 시간임을 확인하고 틀린 설명을 코드에서 지웠으며, 폴더를 고르는 행위 자체가 읽기 허락이라 권한 창이 따로 뜨지 않는데도 화면이 뜨지도 않은 창을 가리켜 적고 있던 것을 사실로 고치고 방문할 때마다 허용은 다음에 다시 열 때 뜬다는 것까지 적었고, 브라우저가 취소와 막는 폴더와 권한 거부를 같은 이름 하나로 돌려주는데 화면은 취소하셨다고만 적어 취소하지 않은 사람이 자기를 의심하게 되던 것을 셋을 모두 적도록 바꿨으며, 폴더 잇기가 안 될 때도 막히지 않도록 폴더를 통째로 골라 그 자리에서 읽는 두 번째 길을 내되 권한이 남지 않아 올릴 때마다 다시 골라야 한다는 한계를 숨기지 않고 적었고 경로 모양이 같아 팀 좁히기와 그날 것 찾기와 민감자료 검사와 잔액 사슬이 두 벌이 되지 않고 그대로 돌게 했다", refs:[], status:"반영", hash:"6d9e03e", auto:true },
+  { date:"2026-11-12", ver:"v4.4", ch:[9], feat:"저장소 폴더 — 팀 폴더 안쪽을 고르셔도 쓴다", src:"온톨로지 › 회사 총괄운영 › 회계팀 은행 대사 · 자료실", summary:"회계 지면이 늘 회계 폴더와 이어지게 하려고 경로가 그 폴더로 시작하는 것만 남겼더니 형이 그 안쪽 폴더를 고르셨을 때 경로에 그 이름이 없어 바르게 고르고도 영 건을 보시게 된 것을 고쳐, 그 팀 폴더가 경로에 있으면 그것만 보고 다른 팀 폴더가 보이면 어느 팀 자료인지 말하며 부서 표시가 아예 없으면 고르신 것을 그대로 쓰되 그렇게 했다고 화면에 적도록 세 갈래로 갈랐고, 형이 고르신 것과 같은 모양을 끝까지 흘려 가져오기와 열 맞추기와 잔액 사슬과 꼬리 합계 제외와 기존 전표와의 짝짓기까지 도는 것을 확인했다", refs:[], status:"반영", hash:"7ef7a10", auto:true },
+  { date:"2026-11-12", ver:"v4.3", ch:[9], feat:"저장소 폴더 — 두 번째 길과 사실대로 적기", src:"온톨로지 › 회사 총괄운영 › 자료실 · 회계팀 은행 대사", summary:"폴더 고르기 앞의 클립보드 쓰기가 사람이 눌렀다는 자격을 소비해 창을 막는다고 단정하고 주석까지 적었으나 실측으로 뒤집혀 기준이 횟수가 아니라 약 오초의 시간임을 확인하고 틀린 설명을 코드에서 지웠으며, 폴더를 고르는 행위 자체가 읽기 허락이라 권한 창이 따로 뜨지 않는데도 화면이 뜨지도 않은 창을 가리켜 적고 있던 것을 사실로 고치고 방문할 때마다 허용은 다음에 다시 열 때 뜬다는 것까지 적었고, 브라우저가 취소와 막는 폴더와 권한 거부를 같은 이름 하나로 돌려주는데 화면은 취소하셨다고만 적어 취소하지 않은 사람이 자기를 의심하게 되던 것을 셋을 모두 적도록 바꿨으며, 폴더 잇기가 안 될 때도 막히지 않도록 폴더를 통째로 골라 그 자리에서 읽는 두 번째 길을 내되 권한이 남지 않아 올릴 때마다 다시 골라야 한다는 한계를 숨기지 않고 적었고 경로 모양이 같아 팀 좁히기와 그날 것 찾기와 민감자료 검사와 잔액 사슬이 두 벌이 되지 않고 그대로 돌게 했다", refs:[], status:"반영", hash:"5db3e3e", auto:true },
   { date:"2026-11-12", ver:"v4.2", ch:[9], feat:"저장소 폴더 잇기 — 경로를 챙겨 손을 한 번으로", src:"온톨로지 › 회사 총괄운영 › 회계팀 › 은행 대사 · 자료실", summary:"폴더 고르기 창은 브라우저가 사람이 직접 누른 직후에만 열어 주고 열린 창도 운영체제 창이라 앱이 대신 누르지 못한다는 사실을 화면에 그대로 적었고, 대신 창이 바탕화면에서 열리게 하고 고르실 폴더의 경로를 누르는 순간 미리 복사해 두어 붙여 넣고 엔터만 치면 닿도록 손을 한 번으로 줄였으며 못 고르셨을 때도 경로를 복사해 두었다고 알려 다시 누르면 바로 붙여 넣으실 수 있게 했고, 윈도우 계정 이름이 든 전체 경로는 공개 배포본에 싣지 않도록 바탕화면 기준 상대 경로만 두었으며, 폴더 권한이 주소마다 따로여서 미리보기에서 이은 것과 배포본에서 이은 것이 서로 다르다는 사실도 화면에 적었다", refs:[], status:"반영", hash:"fb66384", auto:true },
   { date:"2026-11-12", ver:"v4.1", ch:[9], feat:"업무 지시 2단계 — 저장소에서 은행 내역 가져오기", src:"온톨로지 › 회사 총괄운영 › 회계팀 › 업무 지시 · 은행 대사", summary:"저장소 폴더를 이은 뒤에는 은행 내역 가져오기가 핀테크 몫이 되도록 단계의 주인이 상황에 따라 바뀌게 했고 안 이어졌을 때와 그날 것이 하나뿐일 때와 여럿일 때와 없을 때를 모두 갈라 여럿이면 고르지 않고 형께 넘기며 하나뿐일 때 쓰는 것은 고른 것이 아니라 그것밖에 없는 것이라고 적게 했으며, 회계 지면은 늘 저장소의 회계 폴더 안만 보도록 팀마다 제 부서 폴더로 좁히고 저장소 루트를 이으셔도 부서 폴더를 직접 이으셔도 같은 모양이 되게 경로를 맞췄고 그 팀 폴더가 없는 곳을 이으면 영 건이라고 말하게 했으며, 폴더 이름의 연월과 파일명의 날을 합쳐 날짜를 세되 어느 쪽으로도 서지 않으면 수정일로 메우지 않고 폴더의 달과 파일명의 달이 어긋나면 합치지 않게 했고, 저장소에서 읽은 자료도 파일 머리 확인과 민감자료 검사와 잔액 사슬을 그대로 지나게 하여 검사를 건너뛰는 길이 생기지 않게 했으며 잔액이 끊긴 자료는 넣지 않고 기간은 자료에서 읽은 범위로 보되 그렇게 보았다고 적어 고칠 수 있게 했다", refs:[], status:"반영", hash:"6850915", auto:true },
   { date:"2026-11-12", ver:"v4.0", ch:[9], feat:"저장소 폴더 잇기 — 올려 두면 앱이 가져온다", src:"온톨로지 › 회사 총괄운영 › 자료실 · 재무현황 은행 대사", summary:"브라우저가 바탕화면을 뒤지지 못하므로 형이 한 번 저장소 폴더를 지정하면 그 권한을 기억했다 다음부터는 버튼 한 번으로 안을 훑어 목록과 파일을 가져오게 했고 저절로 도는 것이 아니라 사람이 눌러야 한다고 화면에 적었으며, 저장소의 은행 내역이 이름 꼴이 열 가지로 갈려 있고 수정일로 최신을 고르면 구월 파일이 뽑히는 것을 실측해 기계가 하나를 고르지 않고 전건을 이름 순으로 늘어놓기만 하며 파일명 날짜와 수정일이 어긋나는 줄은 이유와 함께 표시하게 했고, 폴더 권한 손잡이는 문자열 저장소에 넣으면 되돌릴 수 없게 뭉개지므로 인덱스드디비에만 두고 카탈로그 자동 스캔이 보지 못하는 자리라 손으로 등재해 러너가 이중으로 확인하게 했으며, 사파리와 파이어폭스와 아이폰은 이 길이 없어 조용히 빈 결과가 되지 않도록 기능을 실제로 만들어 보고 못 하면 못 한다고 적게 했고, 저장소에서 고른 파일도 내 컴퓨터에서 고른 것과 같은 함수로 읽어 민감자료 검사를 건너뛰는 길이 생기지 않게 했으며, 자료실 자기시험에 실제 파일명 네 건이 박혀 공개 배포본에 실려 있던 것을 표본 이름으로 바꾸고 비밀 검사가 상수 선언부만 보던 것을 파일 전체로 넓혔고, 파서가 객체를 돌려주는데 배열처럼 받아 죽어 있던 은행 대사의 CSV 길을 되살렸다", refs:[], status:"반영", hash:"ad966cc", auto:true },
@@ -58774,7 +58811,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.45,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.44,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
