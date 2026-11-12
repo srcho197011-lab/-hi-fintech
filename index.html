@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="./data/app.css?v=3b9184165c" />
+<link rel="stylesheet" href="./data/app.css?v=8e34df9c97" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=3b9184165c"></script>
-<script src="./src/data/section_data.js?v=3b9184165c"></script>
-<script src="./src/data/demo_members.js?v=3b9184165c"></script>
+<script src="./src/data/dummy_data.js?v=8e34df9c97"></script>
+<script src="./src/data/section_data.js?v=8e34df9c97"></script>
+<script src="./src/data/demo_members.js?v=8e34df9c97"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -16252,8 +16252,13 @@ const CORP_SCHEDULE = {
   routines: [
     { t: "일마감",            every: "workday", at: "18:00", owner: "M2", ai: "핀테크",
       does: "전표 차대 검산 · 누락 점검",            human: "이상 건 승인" },
+    /* 형 지시 2026-11-12 — 「전일 것을 매일 업로드만 시키면 전표가 쳐져서 실시간 재무제표가
+       만들어지도록 핀테크 팀장에게 업무를 확정」. 다만 **은행에서 자동으로 가져오지 못한다** —
+       그래서 사람이 올리는 일이 맨 앞에 선다. 핀테크가 하는 일은 **점검과 알림**이지 승인이 아니다. */
     { t: "은행 대사",          every: "workday", at: "10:00", owner: "M2", ai: "핀테크",
-      does: "내역 대조 · 미대사 추출",               human: "불일치 해소" },
+      does: "어제 것까지 들어왔는지 점검 · 들어온 줄에서 전표 후보 생성 · 계정 제안 · 잔액 사슬 검사",
+      human: "은행 내역 올리기 · 모르는 계정 확정 · 전표 승인",
+      need: "은행 내역을 **사람이 올려야** 시작됩니다 — 계좌를 자동으로 가져오지 못합니다" },
     { t: "주간보고 초안",       every: "fri",     at: "17:00", owner: "M1", ai: "전 팀",
       does: "팀별 지표 · 진척 · 이슈 · 차주 계획",    human: "팀 책임자 확정" },
     { t: "주간회의 자료",       every: "mon",     at: "09:30", owner: "M1", ai: "나침반",
@@ -16283,10 +16288,19 @@ function corpDiv(id) { return CORP_DIV.find(d => d.id === id) || null; }
 /* ══ 회사 운영의 시각 ══
    근무일·회의 요일을 계산해야 하므로 **실제 오늘**을 쓴다.
    ⚠️ 전역 now로 승격하지 않는다 — 보장 창 규약(창의 주인은 계약이고, 시연 시드만 기준일 고정)과
-      충돌한다. 이 파일 안에서만 쓰고, 러너는 corpOpsAt(iso)로 고정 날짜를 주입해 대조한다. */
+      충돌한다. 이 파일 안에서만 쓴다.
+   ⚠️ 러너는 corpOpsAt 를 쓰지 않는다 — 전역 스위치를 켜 두면 검사끼리 서로의 날짜를 밟는다.
+      날짜가 필요한 판정 함수는 **인자로** 받는다(corpMtgVerdict(st, now) 선례). corpOpsAt 는
+      화면에서 기준일을 고정해 둘러볼 때만 쓰는 손잡이다. */
 let _corpAt = null;
 function corpOpsAt(iso) { _corpAt = iso ? new Date(iso) : null; }
 function corpOpsNow() { return _corpAt ? new Date(_corpAt.getTime()) : new Date(); }
+/* 오늘 날짜 — **현지 시각**으로 센다. UTC 로 세면 한국 자정~오전 9시에 어제가 된다. */
+function corpOpsToday(now) {
+  const d = now || corpOpsNow();
+  const p = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
 
 function _corpHM(s) { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ""); return m ? [+m[1], +m[2]] : [9, 0]; }
 function _corpSet(d, hm) { const x = new Date(d.getTime()); x.setHours(hm[0], hm[1], 0, 0); return x; }
@@ -16633,28 +16647,30 @@ const CORP_JV_SEED = [
 const CORP_BANK_SEED = {
   acct: "103", bank: "주거래은행 기업자유예금", mask: "***-******-***",
   from: "2026-09-01", to: "2026-11-10",
+  /* ⚠️ 잔액을 함께 싣는다 — 잔액 사슬은 「흘린 거래」를 잡는 **단 하나의 외부 사실**이고,
+     잔액이 없는 표본으로는 그 검사가 분모 0이 된다(= 검사가 없는 것과 같다). */
   lines: [
-    { d: "2026-09-01", a: 120000000, m: "개시 잔액" },
-    { d: "2026-09-05", a: -3300000, m: "임대인 이체" },
-    { d: "2026-09-10", a: -16380000, m: "급여 이체" },
-    { d: "2026-09-20", a: -1320000, m: "클라우드 자동이체" },
-    { d: "2026-09-25", a: -1650000, m: "법인카드 결제" },
-    { d: "2026-10-05", a: 22000000, m: "가온헬스 입금" },
-    { d: "2026-10-05", a: -3300000, m: "임대인 이체" },
-    { d: "2026-10-10", a: -16380000, m: "급여 이체" },
-    { d: "2026-10-10", a: -1620000, m: "세무서·공단 납부" },
-    { d: "2026-10-12", a: -5500000, m: "광고 집행" },
-    { d: "2026-10-20", a: -1320000, m: "클라우드 자동이체" },
-    { d: "2026-10-22", a: -900000, m: "교육기관 이체" },
-    { d: "2026-10-25", a: -450000, m: "보험료 이체" },
-    { d: "2026-11-03", a: -6600000, m: "소프트웨어 대금" },
-    { d: "2026-11-05", a: -3300000, m: "임대인 이체" },
-    { d: "2026-11-06", a: 33000000, m: "나래라이프 입금" },
-    { d: "2026-11-07", a: 85000, m: "이자" },
-    { d: "2026-11-09", a: -3000, m: "타행이체수수료" },
-    { d: "2026-11-10", a: -16380000, m: "급여 이체" },
-    { d: "2026-11-10", a: -1620000, m: "세무서·공단 납부" },
-    { d: "2026-11-10", a: 500000, m: "입금 — 보낸이 확인 필요" },
+    { d: "2026-09-01", a: 120000000, bal: 120000000, m: "개시 잔액" },
+    { d: "2026-09-05", a: -3300000, bal: 116700000, m: "임대인 이체" },
+    { d: "2026-09-10", a: -16380000, bal: 100320000, m: "급여 이체" },
+    { d: "2026-09-20", a: -1320000, bal: 99000000, m: "클라우드 자동이체" },
+    { d: "2026-09-25", a: -1650000, bal: 97350000, m: "법인카드 결제" },
+    { d: "2026-10-05", a: 22000000, bal: 119350000, m: "가온헬스 입금" },
+    { d: "2026-10-05", a: -3300000, bal: 116050000, m: "임대인 이체" },
+    { d: "2026-10-10", a: -16380000, bal: 99670000, m: "급여 이체" },
+    { d: "2026-10-10", a: -1620000, bal: 98050000, m: "세무서·공단 납부" },
+    { d: "2026-10-12", a: -5500000, bal: 92550000, m: "광고 집행" },
+    { d: "2026-10-20", a: -1320000, bal: 91230000, m: "클라우드 자동이체" },
+    { d: "2026-10-22", a: -900000, bal: 90330000, m: "교육기관 이체" },
+    { d: "2026-10-25", a: -450000, bal: 89880000, m: "보험료 이체" },
+    { d: "2026-11-03", a: -6600000, bal: 83280000, m: "소프트웨어 대금" },
+    { d: "2026-11-05", a: -3300000, bal: 79980000, m: "임대인 이체" },
+    { d: "2026-11-06", a: 33000000, bal: 112980000, m: "나래라이프 입금" },
+    { d: "2026-11-07", a: 85000, bal: 113065000, m: "이자" },
+    { d: "2026-11-09", a: -3000, bal: 113062000, m: "타행이체수수료" },
+    { d: "2026-11-10", a: -16380000, bal: 96682000, m: "급여 이체" },
+    { d: "2026-11-10", a: -1620000, bal: 95062000, m: "세무서·공단 납부" },
+    { d: "2026-11-10", a: 500000, bal: 95562000, m: "입금 — 보낸이 확인 필요" },
   ],
 };
 
@@ -16669,13 +16685,15 @@ function corpLedgerRead() {
     const o = JSON.parse(raw);
     return { v: 1, jv: Array.isArray(o.jv) ? o.jv : [], closed: Array.isArray(o.closed) ? o.closed : [],
       ov: (o.ov && typeof o.ov === "object") ? o.ov : {},
-      bank: Array.isArray(o.bank) ? o.bank : [] };
+      bank: Array.isArray(o.bank) ? o.bank : [],
+    /* 커버 기간 — 최상위 키라 읽기·쓰기 **양쪽**에 있어야 살아남는다(줄 안의 필드와 다르다) */
+    bankCov: (o && o.bankCov && typeof o.bankCov === "object") ? { from: String(o.bankCov.from || ""), to: String(o.bankCov.to || ""), at: String(o.bankCov.at || "") } : null };
   } catch (e) { return empty; }
 }
 function corpLedgerWrite(st) {
   try {
     localStorage.setItem(CORP_LEDGER_KEY, JSON.stringify({ v: 1, jv: st.jv || [], closed: st.closed || [],
-      ov: st.ov || {}, bank: st.bank || [] }));
+      ov: st.ov || {}, bank: st.bank || [], bankCov: st.bankCov || null }));
     return true;
   } catch (e) { return false; }
 }
@@ -16733,7 +16751,8 @@ function corpJvLive(st) { return ((st && st.jv) || []).length > 0; }
       그래서 전표가 실제인데 은행 내역이 아직 없으면 **대사를 돌리지 않고** 그 사실을 말한다. */
 function corpBankOf(st) {
   const b = (st && st.bank) || [];
-  if (b.length) return { acct: "103", bank: "반입 내역", mask: "", lines: b, live: true };
+  const cov = (st && st.bankCov) || null;
+  if (b.length) return { acct: "103", bank: "반입 내역", mask: "", lines: b, live: true, cov: cov };
   if (corpJvLive(st)) return null;          /* 실제 전표 + 은행 미반입 → 대사 대상 없음 */
   return CORP_BANK_SEED;
 }
@@ -16867,7 +16886,14 @@ function corpBankRecon(jvs, bank, upto) {
     (j.l || []).forEach(x => { if (x[0] === acct) { net += (+x[1] || 0) - (+x[2] || 0); hit = true; } });
     if (hit && net !== 0) book.push({ id: j.id, d: j.d, desc: j.desc, a: net, used: false });
   });
-  const bl = (B.lines || []).filter(l => !upto || l.d <= upto).map(l => ({ d: l.d, a: l.a, m: l.m, used: false, jv: null }));
+  /* ⚠️ 잔액(bal)·시각(t)·분류(cls)·행번호(row)를 **떨어뜨리지 않는다.**
+     여기서 새 객체를 만들며 bal 을 흘리면 잔액 사슬 검사가 분모 0이 되어
+     「흘린 거래를 잡는 단 하나의 검사」가 조용히 꺼진다. 실제로 그렇게 꺼져 있었다. */
+  const bl = (B.lines || []).filter(l => !upto || l.d <= upto).map(l => ({
+    d: l.d, a: l.a, m: l.m, t: l.t || "", cls: l.cls || "", row: l.row || 0,
+    bal: (l.bal === undefined || l.bal === null || l.bal === "") ? null : +l.bal,
+    used: false, jv: null,
+  }));
   bl.forEach(l => {
     const k = book.find(x => !x.used && x.d === l.d && x.a === l.a);
     if (k) { k.used = true; l.used = true; l.jv = k.id; }
@@ -16880,6 +16906,7 @@ function corpBankRecon(jvs, bank, upto) {
   const bookOnlyNet = bookOnly.reduce((n, x) => n + x.a, 0);
   return {
     none: none, acct: acct, bank: B.bank, mask: B.mask, lines: bl, book: book,
+    live: !!B.live, from: B.from || (B.cov && B.cov.from) || "", to: B.to || (B.cov && B.cov.to) || "",
     matched: bl.filter(l => l.used).length, bankOnly: bankOnly, bookOnly: bookOnly,
     bankBal: bankBal, bookBal: bookBal, bankOnlyNet: bankOnlyNet, bookOnlyNet: bookOnlyNet,
     /* 대사 항등식: 장부잔액 − 은행잔액 = 장부에만 있는 순액 − 은행에만 있는 순액 */
@@ -16896,6 +16923,13 @@ function corpLedgerIdentities(jvs, bank, upto) {
   const posted = corpPosted(all, upto);
   const S = corpStatements(all, upto);
   const R = corpBankRecon(all, bank, upto);
+  /* 잔액 축 — 이 둘만이 「빠진 거래」를 잡는다. corpBankJv.js 의 함수를 그대로 쓴다(두 벌 금지). */
+  const CH = typeof corpBjvChain === "function" ? corpBjvChain(R.lines || [])
+    : { n: 0, ok: false, breaks: [], open: null, last: null, noBal: 0 };
+  const bookBal = (function () {
+    const r = (S.trial && S.trial.rows || []).find(function (x) { return x.c === (R.acct || "103"); });
+    return r ? Math.round(r.bal) : 0;
+  })();
   const bad = posted.filter(j => !corpJvSum(j).ok);
   const unknown = [];
   all.forEach(j => (j.l || []).forEach(x => { if (!corpAcct(x[0])) unknown.push(j.id + " / " + x[0]); }));
@@ -16909,9 +16943,27 @@ function corpLedgerIdentities(jvs, bank, upto) {
     { k: "trial",   ko: "시산표 차변 = 대변",       n: S.trial.rows.length, ok: S.trial.ok,           got: corpWon(S.trial.drSum) + " / " + corpWon(S.trial.crSum), want: "같을 것" },
     { k: "bs",      ko: "자산 = 부채 + 자본 + 손익", n: S.bs.A.length,       ok: S.bs.ok,              got: corpWon(S.bs.assets) + " / " + corpWon(S.bs.total), want: "같을 것" },
     { k: "pl",      ko: "손익 = 수익 − 비용",       n: S.pl.R.length + S.pl.X.length, ok: S.pl.net === S.pl.rev - S.pl.exp, got: corpWon(S.pl.net), want: corpWon(S.pl.rev - S.pl.exp) },
-    /* 보류 — 통과도 실패도 아니다. 대사할 상대가 없다는 사실을 그대로 띄운다. */
+    /* ⚠️ 이 줄은 **판정에서 뺀다.** 짝지은 줄은 금액이 같으니 gap 은 대수적으로 늘 0이다 —
+       조작한 은행줄을 먹여도 통과한다. 「언제나 맞는 검사」를 통과로 세면 검사가 없는 것과 같다.
+       흘린 거래를 잡는 일은 **잔액 축**(아래 두 줄)이 한다. 값은 참고로 그대로 보여 준다. */
     { k: "bank",    ko: "은행 대사 차이 해소",       n: R.lines.length,      ok: R.ok,                 got: R.none ? "은행 내역 미반입" : corpWon(R.gap), want: "0",
-      skip: R.none, why: R.none ? "은행 거래내역이 반입되지 않았습니다 — 대사할 상대가 없어 돌리지 않았습니다" : "" },
+      skip: true, why: R.none ? "은행 거래내역이 반입되지 않았습니다 — 대사할 상대가 없어 돌리지 않았습니다"
+        : "이 값은 구조적으로 늘 0입니다(짝지은 줄은 금액이 같습니다) — 통과로 세지 않습니다. 흘린 거래는 아래 잔액 축이 잡습니다" },
+    /* 잔액 사슬 — 은행 표가 스스로 증명하는 **외부 사실**이다.
+       잔액[i] = 잔액[i-1] + 입금 - 출금 이 한 군데라도 안 서면 표에 없는 거래가 있다. */
+    { k: "chain",   ko: "은행 잔액 사슬 전건 성립",   n: CH.n,                ok: CH.ok,
+      got: CH.n === 0 ? "잔액 없음" : (CH.breaks.length ? CH.breaks.length + "군데 끊김(" + CH.breaks[0].d + " " + corpWon(CH.breaks[0].gap) + ")" : "끊김 없음"),
+      want: "끊김 0", skip: CH.n === 0,
+      why: CH.n === 0 ? "은행 내역에 잔액이 없습니다 — 흘린 거래를 잡을 길이 없어 검사하지 않았습니다" : "" },
+    /* ⚠️ 이 대조는 **계좌 전체를 덮는 표**라야 뜻이 있다. 검증용 묶음은 일부러 미대사를 품고
+       있어서, 그 표의 마지막 잔액을 장부와 견주면 늘 어긋난다 — 그걸 실패로 세면
+       사람이 「원래 빨간 것」으로 배우고, 진짜 어긋날 때 아무도 안 본다. */
+    { k: "balmatch", ko: "은행 마지막 잔액 = 장부 보통예금", n: (CH.last === null || !R.live) ? 0 : 1,
+      ok: CH.last !== null && R.live && CH.last === Math.round(bookBal),
+      got: CH.last === null ? "잔액 없음" : corpWon(CH.last) + " / " + corpWon(bookBal),
+      want: "같을 것", skip: CH.last === null || !R.live,
+      why: CH.last === null ? "은행 내역에 잔액이 없습니다 — 대조할 상대가 없어 검사하지 않았습니다"
+        : (!R.live ? "지금 보고 있는 것은 검증용 은행 묶음입니다(계좌 전체가 아닙니다) — 반입된 실제 내역에서만 대조합니다" : "") },
     { k: "acct",    ko: "미등록 계정 0건",          n: all.length,          ok: unknown.length === 0, got: unknown.length + "건", want: "0건" },
     { k: "dupe",    ko: "전표번호 중복 0건",         n: all.length,          ok: dupes.length === 0,   got: dupes.length + "건", want: "0건" },
     { k: "approve", ko: "작성자 ≠ 승인자",          n: posted.filter(j => !j.open).length, ok: selfAp.length === 0, got: selfAp.length + "건 동일인", want: "0건" },
@@ -17509,11 +17561,23 @@ function corpMtgTaskId(st) {
    corpRoutineWhen의 late는 「직전 예정이 있었다」라 사실상 늘 참이다. 그걸 빨갛게 칠하면
    루틴 열둘이 전건 빨강이 되고, 나중에 진짜 밀렸을 때 아무도 보지 않는다.
    여기서 밀림은 **생성 경로가 있는 루틴인데 그 주기분 생성물이 없고 예정 시각이 지났을 때**뿐이다. */
-function corpRoutineState(r, st, now, week) {
+function corpRoutineState(r, st, now, week, led) {
   const w = typeof corpRoutineWhen === "function" ? corpRoutineWhen(r, now) : {};
   if (w.kind === "release") return { state: "rel", ko: "배포 전", next: null, prev: null };
   const next = r.every === "month" ? corpWorkdayShift(w.next) : w.next;
   const shifted = !!(r.every === "month" && w.next && next && next.getTime() !== w.next.getTime());
+  /* ⚠️ 은행 대사는 **생성 경로가 아니라 사람 반입 경로**다. 시스템이 만들어 내는 것이 아니라
+     사람이 올려야 시작된다 — 그래서 CORP_MTG_GEN(생성 경로)에 넣지 않고 따로 가른다.
+     넣어 버리면 「생성됨」이라는 말이 거짓이 되고, 안 가르면 영영 「경로 없음」으로 남는다. */
+  if (r.t === "은행 대사") {
+    const D = typeof corpBjvDue === "function"
+      ? corpBjvDue((led && led.bankCov) || null, typeof corpOpsToday === "function" ? corpOpsToday(now) : "")
+      : { ok: false, ko: "셀 수 없습니다" };
+    const late = !D.ok && !!w.prev && w.prev <= now;
+    return { state: D.ok ? "made" : (late ? "due" : "wait"),
+      ko: D.ok ? "어제까지 들어옴" : (late ? "밀림 — " + D.ko : "예정 — 사람이 올려야 시작됩니다"),
+      next: next, prev: w.prev, shifted: shifted, was: w.next, due: D, human: true };
+  }
   if (CORP_MTG_GEN.indexOf(r.t) < 0) {
     return { state: "nogen", ko: "생성 경로 없음", next: next, prev: w.prev, shifted: shifted, was: w.next };
   }
@@ -18096,11 +18160,21 @@ const CORP_UP_SPEC = [
     label: { no: "전표번호", date: "일자", desc: "적요", acct: "계정과목(코드 또는 이름)", dr: "차변", cr: "대변", memo: "줄 적요" },
   },
   {
-    k: "bank", ko: "은행 거래내역", team: "M2", into: "재무현황(은행 대사)", live: true,
-    d: "일자 · 적요 · 입금 또는 출금. 한 열에 부호로 적혀 있어도 됩니다.",
-    need: ["date", "desc", "amt"], opt: ["io"],
+    k: "bank", ko: "은행 거래내역", team: "M2", into: "재무현황(은행 대사 · 전표)", live: true,
+    d: "은행에서 내려받은 거래내역을 그대로 올립니다(.xlsx 또는 CSV). "
+       + "**입금액 · 출금액이 두 열로 나뉘어 있어도 받습니다** — 은행마다 열 순서가 거꾸로라 "
+       + "어느 쪽이 입금인지 **사람이 확정합니다**. 추측하면 모든 부호가 뒤집힙니다. "
+       + "**잔액 열을 꼭 맞춰 주세요** — 잔액이 이어지는지 보아야 흘린 거래를 잡습니다.",
+    need: ["date", "desc"], opt: ["inAmt", "outAmt", "amt", "io", "bal", "cls"],
     deny: [],
-    label: { date: "일자", desc: "적요", amt: "금액", io: "입출 구분(선택)" },
+    /* 힌트를 창구마다 덮어쓴다 — 은행 표에서 「적요」는 거래 수단(BZ뱅크·타행MB)이고
+       상대가 적힌 칸은 「내용」이다. 전역 힌트를 그대로 쓰면 상대를 통째로 버린다. */
+    hint: { desc: ["내용", "적요", "摘要", "desc"], date: ["거래일시", "거래일", "일자", "날짜", "date"],
+      /* 「전체선택」은 은행 사이트의 체크박스 열이다. 거기에 분류를 적어 쓰는 관행이 있어
+         후보로는 올리되, 맞는지는 **열 맞추기에서 사람이 확인한다**(제안은 확정이 아니다). */
+      cls: ["분류", "전체선택", "계정", "계정과목", "class", "category"] },
+    label: { date: "거래일시", desc: "내용(상대 · 적요)", inAmt: "입금액", outAmt: "출금액",
+      amt: "금액(한 열에 부호로)", io: "입출 구분", bal: "잔액", cls: "분류(계정으로 보낼 낱말)" },
   },
   {
     k: "ct", ko: "계약", team: "M1", into: "계약 대장",
@@ -18215,6 +18289,11 @@ const CORP_UP_HINT = {
   desc: ["적요", "내용", "摘要", "desc", "memo", "비고"], acct: ["계정", "과목", "acct", "account"],
   dr: ["차변", "출금", "debit", "dr"], cr: ["대변", "입금", "credit", "cr"],
   amt: ["금액", "amount", "amt"], io: ["구분", "입출", "type"],
+  /* ⚠️ 「입금액」에는 「금액」이 들어 있다 — amt 가 입금 열을 집어가면 출금이 통째로 사라진다.
+     그래서 ⓐ 머리글이 **그대로 같은** 것을 먼저 보고 ⓑ 입금·출금이 둘 다 잡히면 amt 를 비운다. */
+  inAmt: ["입금액", "입금(원)", "입금", "deposit", "입금금액"],
+  outAmt: ["출금액", "지급(원)", "출금", "지급", "withdraw", "출금금액"],
+  bal: ["거래후잔액", "잔액", "balance", "잔고"],
   ko: ["계약명", "문서명", "제목", "name", "title", "ko"], party: ["상대", "거래처", "party"],
   from: ["개시", "시작", "from", "start"], to: ["만료", "종료", "to", "end"],
   amount: ["금액", "계약금", "amount"], kind: ["종류", "유형", "kind", "type"],
@@ -18227,11 +18306,31 @@ const CORP_UP_HINT = {
 function corpUpSuggest(head, spec) {
   const out = {};
   if (!spec) return out;
-  spec.need.concat(spec.opt).forEach((k) => {
-    const hints = CORP_UP_HINT[k] || [];
-    const i = (head || []).findIndex((h) => hints.some((x) => String(h || "").toLowerCase().indexOf(x.toLowerCase()) >= 0));
-    if (i >= 0) out[k] = i;
+  const H = (head || []).map((h) => String(h == null ? "" : h).replace(/\s+/g, "").toLowerCase());
+  const taken = {};
+  const keys = spec.need.concat(spec.opt);
+  const hintsOf = (k) => ((spec.hint && spec.hint[k]) || CORP_UP_HINT[k] || []).map((x) => String(x).replace(/\s+/g, "").toLowerCase());
+  /* ⓐ 머리글이 힌트와 **그대로 같은** 것 먼저 — 「입금액」이 「금액」에 먹히지 않게 */
+  keys.forEach((k) => {
+    /* ⚠️ 힌트를 **적은 순서대로** 본다. 머리글 순서로 보면 은행 표에서 「적요」(거래 수단)가
+       「내용」(상대)보다 앞에 있다는 이유만으로 상대를 통째로 버린다. */
+    const hs = hintsOf(k);
+    for (let x = 0; x < hs.length; x++) {
+      const i = H.findIndex((h, j) => !taken[j] && h && h === hs[x]);
+      if (i >= 0) { out[k] = i; taken[i] = 1; break; }
+    }
   });
+  /* ⓑ 남은 것만 부분 일치로 */
+  keys.forEach((k) => {
+    if (out[k] !== undefined) return;
+    const hs = hintsOf(k);
+    for (let x = 0; x < hs.length; x++) {
+      const i = H.findIndex((h, j) => !taken[j] && h && h.indexOf(hs[x]) >= 0);
+      if (i >= 0) { out[k] = i; taken[i] = 1; break; }
+    }
+  });
+  /* ⓒ 입금·출금이 둘 다 잡혔으면 한 열짜리 금액·구분은 **비운다** — 둘을 같이 쓰면 두 번 센다 */
+  if (out.inAmt !== undefined && out.outAmt !== undefined) { delete out.amt; delete out.io; }
   return out;
 }
 
@@ -18246,16 +18345,40 @@ function corpUpValidate(kind, head, rows, map) {
   }
   const g = (r, k) => String(r[map[k]] == null ? "" : r[map[k]]).trim();
   const num = (v) => { const n = Number(String(v).replace(/[,\s원]/g, "")); return isFinite(n) ? n : NaN; };
+  /* 은행 표의 거래일시는 「2026.11.11 20:05:15」 꼴이다. 시각을 이유로 줄을 떨구면
+     그 파일은 한 줄도 안 들어간다. 시각은 **버리지 않고 따로 보관한다** —
+     같은 날 같은 금액 두 줄을 가르는 유일한 표시이기 때문이다. */
+  const DTRE = /^(\d{4})[-./]?(\d{1,2})[-./]?(\d{1,2})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/;
   const dt = (v) => {
-    const m = /^(\d{4})[-./]?(\d{1,2})[-./]?(\d{1,2})$/.exec(String(v).trim());
+    const m = DTRE.exec(String(v).trim());
     if (!m) return "";
     return m[1] + "-" + String(+m[2]).padStart(2, "0") + "-" + String(+m[3]).padStart(2, "0");
+  };
+  const tm = (v) => {
+    const m = DTRE.exec(String(v).trim());
+    if (!m || !m[4]) return "";
+    return String(+m[4]).padStart(2, "0") + ":" + m[5] + ":" + (m[6] || "00");
   };
   (rows || []).forEach((r, i) => {
     const why = [];
     const o = { _row: i + 2 };                 /* 머리글이 1행이므로 +2 */
     need.concat(spec.opt).forEach((k) => { if (map[k] !== undefined && map[k] !== "") o[k] = g(r, k); });
-    if (o.date !== undefined) { const d = dt(o.date); if (!d) why.push("일자 형식을 읽지 못했습니다"); else o.date = d; }
+    if (o.date !== undefined) { const t = tm(o.date); const d = dt(o.date); if (!d) why.push("일자 형식을 읽지 못했습니다"); else { o.date = d; o.time = t; } }
+    /* 입금·출금·잔액 — 숫자가 아니면 **지어내지 않고** 그 줄을 뺀다.
+       ⚠️ 잔액 0 은 참값이다(계좌를 비운 날이 실제로 있다). 빈칸과 0 을 가른다. */
+    ["inAmt", "outAmt"].forEach((k) => {
+      if (o[k] === undefined || o[k] === "") { if (o[k] === "") o[k] = 0; return; }
+      const a = num(o[k]); if (isNaN(a)) why.push(spec.label[k] + "이(가) 숫자가 아닙니다"); else o[k] = a;
+    });
+    if (o.bal !== undefined) {
+      if (String(o.bal).trim() === "") o.bal = null;
+      else { const a = num(o.bal); if (isNaN(a)) why.push("잔액이 숫자가 아닙니다"); else o.bal = a; }
+    }
+    if (kind === "bank" && o.inAmt !== undefined && o.outAmt !== undefined) {
+      const i = +o.inAmt || 0, u = +o.outAmt || 0;
+      if (i > 0 && u > 0) why.push("한 줄에 입금과 출금이 같이 적혀 있습니다 — 어느 쪽인지 알 수 없습니다");
+      if (i === 0 && u === 0) why.push("입금과 출금이 모두 0입니다");
+    }
     if (o.from !== undefined) { const d = dt(o.from); if (!d) why.push("개시일 형식을 읽지 못했습니다"); else o.from = d; }
     if (o.to !== undefined) { const d = dt(o.to); if (!d) why.push("만료일이 없거나 형식을 읽지 못했습니다 — 만료일 없는 계약은 받지 않습니다"); else o.to = d; }
     if (o.dr !== undefined || o.cr !== undefined) {
@@ -18305,24 +18428,43 @@ function corpUpBankIn(s) {
   return null;
 }
 function corpUpToBank(rows) {
-  return (rows || []).map((r) => {
-    const sign = corpUpBankIn(r.io);
-    const a = +r.amt || 0;
-    return { d: r.date, a: sign === null ? a : Math.abs(a) * sign, m: String(r.desc || "").trim() };
-  }).filter((x) => x.d && x.a !== 0);
+  const lines = [], dropped = [];
+  (rows || []).forEach((r) => {
+    const two = r.inAmt !== undefined || r.outAmt !== undefined;
+    const a = two ? (+r.inAmt || 0) - (+r.outAmt || 0)
+                  : (corpUpBankIn(r.io) === null ? (+r.amt || 0) : Math.abs(+r.amt || 0) * corpUpBankIn(r.io));
+    const x = {
+      d: r.date, t: r.time || "", a: a, m: String(r.desc || "").trim(),
+      bal: r.bal === undefined || r.bal === null || r.bal === "" ? null : +r.bal,
+      cls: String(r.cls || "").trim(), row: r._row || 0,
+    };
+    /* ⚠️ 버리는 줄을 **센다.** 조용히 건너뛰면 장부가 은행보다 적어지고 아무도 모른다. */
+    if (!x.d) { dropped.push({ row: x.row, why: "일자를 읽지 못했습니다" }); return; }
+    if (a === 0) { dropped.push({ row: x.row, why: "입금도 출금도 0입니다" }); return; }
+    lines.push(x);
+  });
+  return { lines: lines, dropped: dropped, n: (rows || []).length };
 }
 /* 같은 줄을 두 번 받지 않는다 — 같은 파일을 두 번 올리면 잔액이 두 배가 된다 */
 function corpUpMergeBank(prev, add) {
+  /* ⚠️ 일자+금액+적요로는 못 가른다 — 형 파일에 2026-11-10 1,800,000원이 두 줄 있고
+     적요가 둘 다 「타행MB」다(내용만 다르다). 그 키로는 진짜 거래 둘이 한 건으로 접힌다.
+     같은 줄 판정은 corpBjvKey 한 곳에서만 한다 — 두 벌이 되면 한쪽만 고쳐진다. */
+  const key = (x) => (typeof corpBjvKey === "function" ? corpBjvKey(x)
+    : [x.d || "", x.t || "", Math.round(+x.a || 0), x.bal == null ? "" : Math.round(+x.bal), String(x.m || "").replace(/\s+/g, "")].join("|"));
   const seen = {};
-  (prev || []).forEach((x) => { seen[x.d + "|" + x.a + "|" + x.m] = 1; });
+  (prev || []).forEach((x) => { seen[key(x)] = 1; });
   const out = (prev || []).slice();
   let dup = 0;
   (add || []).forEach((x) => {
-    const k = x.d + "|" + x.a + "|" + x.m;
+    const k = key(x);
     if (seen[k]) { dup++; return; }
     seen[k] = 1; out.push(x);
   });
-  out.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+  out.sort((a, b) => {
+    const ka = (a.d || "") + " " + (a.t || ""), kb = (b.d || "") + " " + (b.t || "");
+    return ka < kb ? -1 : ka > kb ? 1 : 0;
+  });
   return { lines: out, dup: dup, added: out.length - (prev || []).length };
 }
 /* 자료 목록 — 목차는 **갈아 끼운다**. 지난 목차에 이어 붙이면 지워진 파일이 영영 남는다. */
@@ -18416,10 +18558,17 @@ const CORP_AG_TOOL = [
   { ai: "핀테크", k: "check", ko: "장부 검산", ask: ["검산", "항등식", "차대", "맞는지", "이상"],
     run: function () {
       if (typeof corpLedgerVerdict !== "function") return null;
-      const V = corpLedgerVerdict(corpJvAll(corpLedgerRead()), CORP_BANK_SEED);
-      const bad = V.filter(function (r) { return !r.ok; });
-      return { t: "항등식 " + V.length + "항목 중 " + (V.length - bad.length) + "항목이 통과했습니다" + (bad.length ? " — 실패 " + bad.length + "항목." : "."),
-        rows: V.map(function (r) { return [r.ko, (r.ok ? "통과" : "실패") + " · " + r.got]; }) };
+      /* ⚠️ corpLedgerVerdict 는 **객체**를 돌려준다(배열이 아니다). 배열처럼 다루면
+         조용히 빈 답이 나온다 — 실제로 그렇게 깨져 있었다. 그리고 은행줄은 상황에서 고른다
+         (검증용 묶음을 고정으로 쓰면 반입된 장부를 엉뚱한 내역과 견준다). */
+      const st = corpLedgerRead();
+      const V = corpLedgerVerdict(corpJvAll(st), corpBankOf(st));
+      const live = V.rows.filter(function (r) { return !r.skip; });
+      const bad = live.filter(function (r) { return !r.ok || !(r.n > 0); });
+      return { t: "항등식 " + live.length + "항목 중 " + (live.length - bad.length) + "항목이 통과했습니다"
+          + (bad.length ? " — 실패 " + bad.length + "항목." : ".")
+          + (V.skip.length ? " 보류 " + V.skip.length + "항목은 돌리지 않았습니다(통과가 아닙니다)." : ""),
+        rows: V.rows.map(function (r) { return [r.ko, (r.skip ? "보류" : (r.ok && r.n > 0 ? "통과" : "실패")) + " · " + r.got]; }) };
     } },
   { ai: "핀테크", k: "fs", ko: "재무제표", ask: ["재무제표", "손익", "자산", "매출", "비용", "이익"],
     run: function () {
@@ -18437,6 +18586,21 @@ const CORP_AG_TOOL = [
         rows: [["은행 잔액", corpWon(R.bankBal)], ["장부 잔액", corpWon(R.bookBal)],
                ["은행에만", R.bankOnly.length + "건"], ["장부에만", R.bookOnly.length + "건"],
                ["조정 후 차이", corpWon(R.gap)]] };
+    } },
+  /* 형 지시 2026-11-12 — 매일 은행 내역이 들어왔는지 사람에게 알려 주는 일.
+     ⚠️ 날짜를 **인자로 받는다**. 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
+  { ai: "핀테크", k: "bankup", ko: "은행 반입 상태", ask: ["어제", "오늘", "올렸", "반입", "업로드", "들어왔", "밀렸", "며칠"],
+    run: function (now) {
+      if (typeof corpBjvDue !== "function") return null;
+      const st = corpLedgerRead();
+      const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
+      const D = corpBjvDue(st && st.bankCov, today);
+      const B = corpBankOf(st);
+      return { t: D.ko + (D.ok ? "" : " 제가 은행에서 직접 가져오지는 못합니다 — 책임자가 올려 주셔야 전표가 만들어집니다."),
+        rows: [["기준(오늘)", today || "정해지지 않음"],
+               ["들어온 기간", st && st.bankCov && st.bankCov.from ? st.bankCov.from + " ~ " + st.bankCov.to : "없음"],
+               ["비어 있는 날", D.ok ? "없음" : (D.late === null ? "셀 수 없음" : D.late + "일")],
+               ["담긴 은행줄", B && B.lines ? B.lines.length + "줄" : "0줄"]] };
     } },
   { ai: "핀테크", k: "pa", ko: "예실 대비", ask: ["예실", "계획 대비", "달성", "차이"],
     run: function () {
@@ -18891,6 +19055,609 @@ function corpVaultPass(st) {
   return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   은행 엑셀 읽기 — 라이브러리를 더하지 않고 브라우저 내장 기능만 쓴다
+
+   은행에서 내려받는 거래내역은 .xlsx 다. 이걸 읽자고 SheetJS 같은 라이브러리를
+   CDN 에서 끌어오면 공개 배포본의 외부 의존이 하나 늘고 SRI 관리 대상이 하나 는다.
+   xlsx 는 ZIP 안의 XML 이고, 압축 해제는 브라우저가 이미 할 줄 안다
+   (DecompressionStream). 그래서 더하지 않고 읽는다.
+
+   ⚠️ 층을 둘로 가른다 — 이게 이 파일의 설계 전부다.
+     · **바이트 층**(cbxRead·cbxZip…) — async 이고 브라우저 전용이다.
+       커밋 게이트 러너는 vm 컨텍스트라 DecompressionStream·TextDecoder 가 **없다**.
+     · **표 층**(cbxShared·cbxSheet…) — 순수 동기, 문자열 들어가고 배열 나온다.
+       러너가 **이 층을 직접 시험한다**. 검사할 수 있는 쪽에 판단을 모아 둔다.
+
+   실제로 터졌던 함정을 여기 적어 둔다 — 다시 밟지 않으려고.
+     ① 공유문자열에 `<si><t/></si>`(빈 문자열)가 섞여 있다. `<t>…</t>` 짝만 세는
+        파서는 그 뒤가 한 칸씩 밀려, 형 파일에서 **출금 1,320,000원이 매출로** 읽힌다.
+     ② 빈 셀이 `<c r="J2" s="4"/>` 꼴 자기닫음으로 온다(형 파일에 51개). 쌍 태그만
+        찾는 파서는 이 칸을 흘려 열이 밀린다. 실제로 조사 중 한 파서가 이 함정에
+        빠져 「J·K·L 은 셀이 없다」고 잘못 보고했다.
+     ③ 목차(central directory)의 extra 길이와 로컬 머리의 extra 길이가 **다르다**.
+        형 파일은 목차가 0, 로컬이 520·264 다. 목차 값으로 시작점을 재면 520바이트
+        앞을 가리켜 쓰레기를 푼다. **크기는 목차에서, 길이는 로컬 머리에서** 읽는다.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── ① XML 글자 되돌리기 ───────────────────────────────────────────────── */
+function cbxUnesc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, function (m, h) { return String.fromCodePoint(parseInt(h, 16)); })
+    .replace(/&#(\d+);/g, function (m, d) { return String.fromCodePoint(+d); })
+    .replace(/&amp;/g, "&");          /* & 는 **맨 끝에** — 먼저 풀면 &amp;lt; 가 < 가 된다 */
+}
+
+/* 한 덩이 안의 <t> 를 전부 이어 붙인다.
+   ⚠️ <rPh>(한글 발음) 안의 <t> 는 글자가 아니라 발음이다 — 먼저 떼지 않으면
+      「한국」이 「한국한국」이 된다. 그리고 <t/> 는 **빈 문자열이지 없는 것이 아니다**. */
+function cbxJoinT(xml) {
+  const body = String(xml || "").replace(/<rPh\b[\s\S]*?<\/rPh>/g, "").replace(/<rPh\b[^>]*\/>/g, "");
+  let out = "";
+  const re = /<t\b([^>]*?)(\/>|>([\s\S]*?)<\/t>)/g;
+  let m;
+  while ((m = re.exec(body))) out += m[1] && m[2] === "/>" ? "" : cbxUnesc(m[3] || "");
+  return out;
+}
+
+/* ── ② 공유문자열 ─────────────────────────────────────────────────────────
+   돌려주는 것에 **선언된 개수**(uniqueCount)를 함께 담는다. 읽어 낸 수가 그와
+   다르면 한 칸 밀린 것이고, 밀린 표는 틀린 계정으로 전표를 만든다. 세어 본다. */
+function cbxShared(xml) {
+  const s = String(xml || "");
+  const out = [];
+  const re = /<si\b([^>]*?)(\/>|>([\s\S]*?)<\/si>)/g;
+  let m;
+  while ((m = re.exec(s))) out.push(m[2] === "/>" ? "" : cbxJoinT(m[3] || ""));
+  const u = /uniqueCount="(\d+)"/.exec(s);
+  return { list: out, declared: u ? +u[1] : null, ok: !u || +u[1] === out.length };
+}
+
+/* ── ③ 열 이름 → 자리 ─────────────────────────────────────────────────────
+   A→0 · Z→25 · AA→26 · AB→27. 셀이 생략되든 자기닫음이든, 자리는 r 이 말해 준다.
+   순서를 세어 자리를 맞추면 한 칸만 흘려도 표 전체가 밀린다. */
+function cbxColIdx(ref) {
+  const m = /^([A-Z]+)/.exec(String(ref || "").toUpperCase());
+  if (!m) return -1;
+  let n = 0;
+  for (let i = 0; i < m[1].length; i++) n = n * 26 + (m[1].charCodeAt(i) - 64);
+  return n - 1;
+}
+function cbxRowIdx(ref) {
+  const m = /(\d+)$/.exec(String(ref || ""));
+  return m ? +m[1] - 1 : -1;
+}
+
+/* ── ④ 셀 한 칸 ───────────────────────────────────────────────────────────
+   t 속성이 글자의 종류를 말한다. 모르는 종류는 **지어내지 않고** 빈칸으로 둔다. */
+function cbxCell(attrs, inner, shared) {
+  const t = (/\bt="([^"]*)"/.exec(attrs || "") || [])[1] || "n";
+  const body = inner || "";
+  if (t === "inlineStr") return cbxJoinT((/<is\b[^>]*>([\s\S]*?)<\/is>/.exec(body) || [])[1] || body);
+  const v = (/<v\b[^>]*>([\s\S]*?)<\/v>/.exec(body) || [])[1];
+  if (v === undefined) return "";
+  if (t === "s") {
+    const i = +cbxUnesc(v);
+    const L = (shared && shared.list) || [];
+    return i >= 0 && i < L.length ? L[i] : "";
+  }
+  if (t === "b") return cbxUnesc(v) === "1" ? "TRUE" : "FALSE";
+  /* str(수식 결과) · e(오류값) · d(ISO 날짜) · n(숫자) 은 글자 그대로 넘긴다.
+     오류값 #REF! 도 지우지 않는다 — 지우면 빈칸으로 보여 사람이 못 알아챈다. */
+  return cbxUnesc(v);
+}
+
+/* ── ⑤ 시트 → 표 ─────────────────────────────────────────────────────────
+   행 번호도 r 에서 복원한다. 빈 행은 통째로 생략될 수 있는데, 순서로 세면
+   사람이 엑셀에서 보는 행 번호와 어긋나 「몇 행이 틀렸습니다」가 거짓말이 된다. */
+function cbxSheet(xml, shared) {
+  const s = String(xml || "");
+  const rows = [];
+  let maxCol = 0;
+  const rre = /<row\b([^>]*?)(\/>|>([\s\S]*?)<\/row>)/g;
+  let rm, seq = 0;
+  while ((rm = rre.exec(s))) {
+    const rattr = rm[1] || "";
+    const rno = (/\br="(\d+)"/.exec(rattr) || [])[1];
+    const ri = rno ? +rno - 1 : seq;
+    seq = ri + 1;
+    const body = rm[2] === "/>" ? "" : (rm[3] || "");
+    const cells = [];
+    const cre = /<c\b([^>]*?)(\/>|>([\s\S]*?)<\/c>)/g;
+    let cm, cseq = 0;
+    while ((cm = cre.exec(body))) {
+      const cattr = cm[1] || "";
+      const ref = (/\br="([A-Z]+\d+)"/.exec(cattr) || [])[1];
+      const ci = ref ? cbxColIdx(ref) : cseq;
+      cseq = ci + 1;
+      if (ci < 0) continue;
+      while (cells.length < ci) cells.push("");
+      cells[ci] = cm[2] === "/>" ? "" : cbxCell(cattr, cm[3] || "", shared);
+      if (ci + 1 > maxCol) maxCol = ci + 1;
+    }
+    while (rows.length < ri) rows.push([]);
+    rows[ri] = cells;
+  }
+  rows.forEach(function (r) { while (r.length < maxCol) r.push(""); });
+  return rows;
+}
+
+/* ── ⑥ 자기시험 표본 ───────────────────────────────────────────────────────
+   러너가 이 층을 직접 돌린다. 표본에 **실제로 터졌던 꼴**을 전부 넣는다 —
+   하나라도 빼면 그 길은 분모 0 이고, 분모 0 은 통과가 아니다. */
+const CBX_T_SS =
+  '<?xml version="1.0"?><sst xmlns="x" count="9" uniqueCount="7">'
+  + "<si><t>머리</t></si>"
+  + "<si><t/></si>"                                              /* 빈 문자열 — 여기서 밀린다 */
+  + '<si><t>분류</t><phoneticPr fontId="1"/></si>'               /* <t> 뒤 형제 노드 */
+  + "<si><rPh sb=\"0\" eb=\"2\"><t>발음</t></rPh><t>글자</t></si>" /* 발음은 글자가 아니다 */
+  + "<si><r><t>리치</t></r><r><t>텍스트</t></r></si>"              /* 이어 붙인다 */
+  + '<si><t xml:space="preserve">뒤공백 </t></si>'
+  + "<si><t>&lt;꺾쇠&gt; &amp;amp;</t></si>"                      /* 글자 되돌리기 */
+  + "</sst>";
+const CBX_T_SHEET =
+  '<?xml version="1.0"?><worksheet><sheetData>'
+  + '<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>2</v></c><c r="C1" t="s"><v>5</v></c></row>'
+  + '<row r="2"><c r="A2" t="s"><v>3</v></c><c r="B2" s="4"/><c r="C2"><v>1200000</v></c></row>'
+  + '<row r="4"><c r="A4" t="s"><v>3</v></c><c r="C4" t="inlineStr"><is><t>인라인</t></is></c></row>'
+  + '<row r="5"><c r="B5" t="s"><v>6</v></c><c r="C5" t="s"><v>1</v></c></row>'
+  + "</sheetData></worksheet>";
+
+/* 돌려주는 것에 n(분모)을 담는다 — 「통과」만 세면 아무것도 안 돈 것과 구별되지 않는다 */
+function cbxSelfTest() {
+  const ss = cbxShared(CBX_T_SS);
+  const rows = cbxSheet(CBX_T_SHEET, ss);
+  const r = function (i, j) { return (rows[i] || [])[j]; };
+  return [
+    { k: "ss", ko: "공유문자열 개수 = 선언된 개수", n: ss.list.length,
+      ok: ss.ok && ss.list.length === 7, got: ss.list.length + " / " + ss.declared, want: "같을 것" },
+    { k: "empty", ko: "빈 문자열도 한 자리를 차지한다", n: 1,
+      ok: ss.list[1] === "" && ss.list[2] === "분류",
+      got: JSON.stringify([ss.list[1], ss.list[2]]), want: '["","분류"]' },
+    { k: "rph", ko: "발음은 글자가 아니다", n: 1,
+      ok: ss.list[3] === "글자", got: ss.list[3], want: "글자" },
+    { k: "rich", ko: "리치텍스트는 이어 붙인다", n: 1,
+      ok: ss.list[4] === "리치텍스트", got: ss.list[4], want: "리치텍스트" },
+    { k: "space", ko: "뒤 공백을 보존한다", n: 1,
+      ok: ss.list[5] === "뒤공백 ", got: JSON.stringify(ss.list[5]), want: '"뒤공백 "' },
+    { k: "esc", ko: "꺾쇠·앰퍼샌드를 되돌린다", n: 1,
+      ok: ss.list[6] === "<꺾쇠> &amp;", got: ss.list[6], want: "<꺾쇠> &amp;" },
+    { k: "selfclose", ko: "자기닫는 빈 셀이 자리를 지킨다", n: 1,
+      ok: r(1, 1) === "" && r(1, 2) === "1200000",
+      got: JSON.stringify([r(1, 1), r(1, 2)]), want: '["","1200000"]' },
+    { k: "gap", ko: "생략된 셀의 자리를 r 로 복원한다", n: 1,
+      ok: r(3, 0) === "글자" && r(3, 1) === "" && r(3, 2) === "인라인",
+      got: JSON.stringify(rows[3]), want: '["글자","","인라인"]' },
+    { k: "rowgap", ko: "건너뛴 행 번호를 지킨다(3행은 비어 있다)", n: rows.length,
+      ok: rows.length === 5 && (rows[2] || []).join("") === "",
+      got: rows.length + "행 · 3행 " + JSON.stringify(rows[2]), want: "5행 · 3행 빈칸" },
+    { k: "inline", ko: "인라인 문자열을 읽는다", n: 1,
+      ok: r(3, 2) === "인라인", got: r(3, 2), want: "인라인" },
+    { k: "width", ko: "모든 행의 칸 수가 같다", n: rows.length,
+      ok: rows.every(function (x) { return x.length === 3; }),
+      got: rows.map(function (x) { return x.length; }).join(","), want: "전부 3" },
+  ];
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   바이트 층 — 여기부터는 브라우저에서만 돈다
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 쓸 수 있는지 **실제로 만들어 본다.** typeof 로 끝내면 있는데 막힌 경우를 놓친다.
+   그리고 못 쓰면 **파일을 고르기 전에** 말한다 — 고르고 나서 0건이 되면
+   사람은 파일을 의심하지 시스템을 의심하지 않는다. */
+function cbxCan() {
+  try {
+    if (typeof DecompressionStream !== "function") return { ok: false, why: "이 브라우저는 압축 해제 기능(DecompressionStream)을 갖고 있지 않습니다" };
+    new DecompressionStream("deflate-raw");
+    if (typeof TextDecoder !== "function") return { ok: false, why: "이 브라우저는 글자 해독 기능(TextDecoder)을 갖고 있지 않습니다" };
+    return { ok: true, why: "" };
+  } catch (e) {
+    return { ok: false, why: "이 브라우저에서 압축 해제 기능을 쓸 수 없습니다 — 엑셀을 CSV로 저장해 올려 주세요" };
+  }
+}
+
+const CBX_MAX_MB = 40;                 /* 풀린 크기 상한 — 작게 눌러 담은 파일(압축 폭탄) 방어 */
+
+function cbxU16(b, i) { return b[i] | (b[i + 1] << 8); }
+function cbxU32(b, i) { return ((b[i] | (b[i + 1] << 8) | (b[i + 2] << 16)) + b[i + 3] * 16777216); }
+
+/* ZIP 목차 — 끝에서 EOCD 를 찾아 거기서부터 읽는다.
+   앞에서 순차로 걷지 않는 이유: 압축 크기를 뒤(data descriptor)에 적는 파일이 있어
+   순차 걷기가 불가능하고, 우리는 네 조각만 꺼내면 되므로 전수 걷기가 애초에 낭비다. */
+function cbxEntries(b) {
+  let eo = -1;
+  const low = Math.max(0, b.length - 66000);
+  for (let i = b.length - 22; i >= low; i--) {
+    if (b[i] === 0x50 && b[i + 1] === 0x4b && b[i + 2] === 0x05 && b[i + 3] === 0x06) { eo = i; break; }
+  }
+  if (eo < 0) throw new Error("엑셀 파일의 끝(ZIP 목차)을 찾지 못했습니다 — 파일이 잘렸거나 엑셀이 아닙니다");
+  const n = cbxU16(b, eo + 10);
+  let p = cbxU32(b, eo + 16);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    if (b[p] !== 0x50 || b[p + 1] !== 0x4b || b[p + 2] !== 0x01 || b[p + 3] !== 0x02) break;
+    const nlen = cbxU16(b, p + 28), elen = cbxU16(b, p + 30), clen = cbxU16(b, p + 32);
+    out.push({
+      name: new TextDecoder("utf-8").decode(b.subarray(p + 46, p + 46 + nlen)),
+      method: cbxU16(b, p + 10), csize: cbxU32(b, p + 20), usize: cbxU32(b, p + 24),
+      lho: cbxU32(b, p + 42),
+    });
+    p += 46 + nlen + elen + clen;
+  }
+  return out;
+}
+
+/* 한 조각 꺼내기 — **크기는 목차에서, 이름·extra 길이는 로컬 머리에서.**
+   목차의 extra 길이를 믿으면 형 파일에서 264바이트 앞을 가리켜 쓰레기를 푼다. */
+async function cbxEntryText(b, e) {
+  const o = e.lho;
+  if (b[o] !== 0x50 || b[o + 1] !== 0x4b || b[o + 2] !== 0x03 || b[o + 3] !== 0x04) {
+    throw new Error("엑셀 안의 「" + e.name + "」를 찾지 못했습니다 — 파일이 깨졌습니다");
+  }
+  const nlen = cbxU16(b, o + 26), elen = cbxU16(b, o + 28);
+  const start = o + 30 + nlen + elen;
+  const raw = b.subarray(start, start + e.csize);
+  if (e.usize > CBX_MAX_MB * 1048576) throw new Error("엑셀 안의 내용이 너무 큽니다(" + Math.round(e.usize / 1048576) + "MB)");
+  let bytes;
+  if (e.method === 0) bytes = raw;
+  else if (e.method === 8) {
+    const ds = new DecompressionStream("deflate-raw");
+    const ab = await new Response(new Blob([raw]).stream().pipeThrough(ds)).arrayBuffer();
+    bytes = new Uint8Array(ab);
+  } else throw new Error("엑셀이 모르는 방식으로 압축되어 있습니다(method " + e.method + ")");
+  /* 푼 것이 정말 XML 인가 — 오프셋이 틀리면 여기서 걸린다. 조용히 빈 표가 되지 않는다. */
+  if (!(bytes[0] === 0x3c && (bytes[1] === 0x3f || bytes[1] === 0x45 || bytes[1] === 0x77 || bytes[1] === 0x73))) {
+    throw new Error("엑셀 안의 「" + e.name + "」를 풀었지만 내용이 XML이 아닙니다 — 읽기를 멈춥니다");
+  }
+  return new TextDecoder("utf-8").decode(bytes);
+}
+
+/* 시트 목록 — 이름과 파일을 r:id 로 잇는다. sheetId 로 이으면 틀린 시트를 연다. */
+function cbxSheetList(wbXml, relXml) {
+  const rel = {};
+  const rre = /<Relationship\b([^>]*)\/>/g;
+  let m;
+  while ((m = rre.exec(String(relXml || "")))) {
+    const id = (/\bId="([^"]+)"/.exec(m[1]) || [])[1];
+    let t = (/\bTarget="([^"]+)"/.exec(m[1]) || [])[1];
+    if (!id || !t) continue;
+    t = t.replace(/^\//, "").replace(/^xl\//, "");
+    rel[id] = "xl/" + t;
+  }
+  const out = [];
+  const sre = /<sheet\b([^>]*)\/>/g;
+  while ((m = sre.exec(String(wbXml || "")))) {
+    const nm = (/\bname="([^"]*)"/.exec(m[1]) || [])[1];
+    const rid = (/\br:id="([^"]+)"/.exec(m[1]) || /\bid="([^"]+)"/.exec(m[1]) || [])[1];
+    out.push({ name: cbxUnesc(nm || ""), path: rel[rid] || "" });
+  }
+  return out;
+}
+
+/* 파일 하나 읽기 — 시트 이름과 표를 돌려준다. 시트가 여럿이면 **사람이 고른다.** */
+async function cbxRead(file, pickName) {
+  const can = cbxCan();
+  if (!can.ok) throw new Error(can.why);
+  const b = new Uint8Array(await file.arrayBuffer());
+  if (!(b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04)) {
+    if (b[0] === 0xd0 && b[1] === 0xcf) throw new Error("구형 엑셀(.xls)은 읽지 못합니다 — 엑셀에서 「다른 이름으로 저장 → .xlsx」로 바꿔 주세요");
+    throw new Error("엑셀(.xlsx) 파일이 아닙니다");
+  }
+  const ents = cbxEntries(b);
+  const total = ents.reduce(function (n, e) { return n + e.usize; }, 0);
+  if (total > CBX_MAX_MB * 1048576) throw new Error("엑셀을 풀면 " + Math.round(total / 1048576) + "MB 입니다 — 상한 " + CBX_MAX_MB + "MB");
+  const find = function (n) { return ents.find(function (e) { return e.name === n; }); };
+  const wbE = find("xl/workbook.xml"), relE = find("xl/_rels/workbook.xml.rels");
+  let sheets = [];
+  if (wbE && relE) sheets = cbxSheetList(await cbxEntryText(b, wbE), await cbxEntryText(b, relE));
+  sheets = sheets.filter(function (s) { return s.path && find(s.path); });
+  if (!sheets.length) {
+    const s1 = find("xl/worksheets/sheet1.xml");
+    if (!s1) throw new Error("엑셀 안에서 시트를 찾지 못했습니다");
+    sheets = [{ name: "sheet1", path: "xl/worksheets/sheet1.xml" }];
+  }
+  const ssE = find("xl/sharedStrings.xml");
+  const ss = ssE ? cbxShared(await cbxEntryText(b, ssE)) : { list: [], declared: null, ok: true };
+  if (!ss.ok) throw new Error("엑셀의 글자표가 선언된 개수(" + ss.declared + ")와 다릅니다(" + ss.list.length + ") — 한 칸씩 밀려 읽힐 수 있어 멈춥니다");
+  const pick = (pickName && sheets.find(function (s) { return s.name === pickName; })) || sheets[0];
+  const rows = cbxSheet(await cbxEntryText(b, find(pick.path)), ss);
+  return { sheet: pick.name, sheets: sheets.map(function (s) { return s.name; }), rows: rows, shared: ss.list.length };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   은행 한 줄 → 전표 한 장
+
+   형 지시(2026-11-12): 「은행거래내역 자료에 따라서만 전표를 발생시켜. 그리고 책임자가
+   전표를 넣을 수 있도록 시스템을 만들고. 은행자료를 전일 것을 매일 업로드만 시키면
+   전표가 쳐져서 실시간 재무제표가 만들어 지도록.」
+
+   ⚠️ 이 파일이 지키는 것 하나 — **기계는 고르지 않는다.**
+   은행 줄에는 금액·날짜·상대가 있지만 **계정이 없다.** 계정은 거래를 한 사람만 안다.
+   그래서 확실한 대응 하나만 코드에 두고, 나머지는 전부 사람에게 묻는다.
+   형이 실제로 쓰신 분류를 보면 왜 그래야 하는지가 그대로 보인다:
+     · 「매입비용」 — 10월엔 251 외상매입금, 11월엔 831 지급수수료로 **갈렸다**
+     · 「수수료」   — 831 두 건, 253 미지급금 한 건으로 **갈렸다**
+     · 「영업외수익」으로 적힌 줄이 출금이었고 사람이 951 이자비용으로 고쳤다
+   한 낱말이 늘 한 계정이면 자동이 되지만, 실제 장부는 그렇지 않다.
+   기계가 하나로 못 박으면 **둘 중 하나는 반드시 틀린다.**
+
+   ⚠️ 그리고 이 파일이 들고 있는 것 — **잔액 사슬.**
+   「은행 대사 차이 0」은 사실 항진식이다. 짝지은 줄은 금액이 같으니 구조적으로 늘 0이고,
+   조작한 은행줄을 먹여도 통과한다. 전표를 은행줄에서 만들면 미대사까지 0이 되어
+   「언제나 100% 맞는」 공허한 통과가 된다. 그걸 막는 **단 하나의 외부 사실**이
+   은행 표의 잔액 열이다 — 잔액이 한 줄이라도 안 맞으면 거래를 흘린 것이다.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const CORP_BJV_KEY = "hifin_corp_bankmap";
+
+/* ── ① 확실한 대응 — **하나뿐이다** ────────────────────────────────────────
+   낱말이 계정과목표의 이름과 **그대로 같고**, 실제 장부에서 갈린 적이 없는 것만 둔다.
+   「매입비용」·「수수료」는 여기 없다. 표에 없는 이름이고, 실제로 갈렸다. */
+const CORP_BJV_SURE = [
+  { w: "상품매출", c: "401", dir: "in", why: "계정과목표의 이름과 그대로 같고, 10·11월 전건이 401로 갔다" },
+];
+
+/* 사람이 확정한 대응을 기억한다 — 없으면 형이 매일 열한 번씩 고르셔야 한다.
+   ⚠️ 다만 **틀린 선택도 영구히 복제된다.** 그래서 한 낱말이 두 계정으로 쓰인 적이
+      있으면 기억을 쓰지 않고 **매번 다시 묻는다**(corpBjvPick 의 split 갈래). */
+function corpBjvRead() {
+  const empty = { v: 1, map: {}, log: [] };
+  try {
+    const raw = localStorage.getItem(CORP_BJV_KEY);
+    if (!raw) return empty;
+    const o = JSON.parse(raw);
+    return { v: 1, map: (o && typeof o.map === "object" && o.map) || {}, log: Array.isArray(o && o.log) ? o.log : [] };
+  } catch (e) { return empty; }
+}
+function corpBjvWrite(st) {
+  try { localStorage.setItem(CORP_BJV_KEY, JSON.stringify({ v: 1, map: (st && st.map) || {}, log: (st && st.log) || [] })); return true; }
+  catch (e) { return false; }
+}
+function corpBjvWord(s) { return String(s == null ? "" : s).replace(/\s+/g, "").trim(); }
+
+/* 지난 장부에서 이 낱말이 어느 계정으로 갔는지 **센다**.
+   기억이 아니라 실제 전표에서 읽는다 — 기억은 지워질 수 있지만 장부는 남는다. */
+function corpBjvPast(jvs, word) {
+  const w = corpBjvWord(word);
+  const hit = {};
+  if (!w) return hit;
+  (jvs || []).forEach(function (j) {
+    const txt = corpBjvWord(j.desc) + corpBjvWord((j.l || []).map(function (x) { return x[3]; }).join(""));
+    if (txt.indexOf(w) < 0) return;
+    (j.l || []).forEach(function (x) {
+      if (x[0] === "103") return;                 /* 상대편(보통예금)은 센다고 뜻이 없다 */
+      hit[x[0]] = (hit[x[0]] || 0) + 1;
+    });
+  });
+  return hit;
+}
+
+/* 한 낱말의 계정을 고른다 — 또는 **고르지 못한다고 말한다.**
+   돌려주는 것에 왜 그런지를 함께 담는다. 「모름」이 이유 없이 뜨면 사람이 못 고친다. */
+function corpBjvPick(word, dir, st, jvs) {
+  const w = corpBjvWord(word);
+  if (!w) return { c: "", src: "none", why: "분류 칸이 비었습니다 — 엑셀의 분류 열에 적어 주시거나 여기서 고르세요" };
+  /* 지금 사람이 고른 것이 **맨 앞**이다 — 사전도, 지난 장부도 이걸 못 덮는다.
+     이 줄이 뒤에 있으면 「갈린 낱말」이 영원히 고를 수 없는 줄이 된다. */
+  const chosen = ((st && st.pick) || {})[w + "|" + dir];
+  if (chosen) return { c: chosen, src: "picked", why: "책임자가 방금 고른 계정입니다" };
+  const past = corpBjvPast(jvs, w);
+  const used = Object.keys(past);
+  if (used.length > 1) {
+    return { c: "", src: "split", why: "「" + w + "」은(는) 지난 장부에서 " + used.length + "개 계정으로 갈렸습니다(" + used.join(" · ") + ") — 이번 줄은 어느 쪽인지 사람이 골라야 합니다", past: past };
+  }
+  const sure = CORP_BJV_SURE.find(function (x) { return x.w === w && (!x.dir || x.dir === dir); });
+  if (sure) return { c: sure.c, src: "sure", why: sure.why, past: past };
+  const saved = ((st && st.map) || {})[w + "|" + dir];
+  if (saved) return { c: saved, src: "saved", why: "전에 사람이 「" + w + "」을(를) 이 계정으로 확정했습니다", past: past };
+  if (used.length === 1) {
+    return { c: "", src: "hint", why: "지난 장부에서 「" + w + "」은(는) " + used[0] + " 로 갔습니다 — 이번에도 같은지는 사람이 확인해 주세요", past: past, hint: used[0] };
+  }
+  return { c: "", src: "unknown", why: "「" + w + "」에 맞는 계정을 알지 못합니다 — 계정과목표에 없는 이름입니다. 골라 주세요", past: past };
+}
+
+/* ── ② 잔액 사슬 — 흘린 거래를 잡는 **단 하나의 외부 사실** ──────────────
+   은행 표가 내림차순이든 오름차순이든, 날짜 오름차순으로 세운 뒤
+   `잔액[i] = 잔액[i-1] + 입금 - 출금` 이 서야 한다. 한 군데라도 안 서면
+   그 사이에 **표에 없는 거래가 있다.** 그러면 전표를 만들지 않는다. */
+function corpBjvSort(lines) {
+  return (lines || []).slice().sort(function (a, b) {
+    const ka = (a.d || "") + " " + (a.t || ""), kb = (b.d || "") + " " + (b.t || "");
+    if (ka !== kb) return ka < kb ? -1 : 1;
+    return (a.row || 0) - (b.row || 0);
+  });
+}
+function corpBjvChain(lines) {
+  const L = corpBjvSort(lines).filter(function (x) { return x.bal !== null && x.bal !== undefined && x.bal !== ""; });
+  const breaks = [];
+  for (let i = 1; i < L.length; i++) {
+    const want = (+L[i - 1].bal || 0) + (+L[i].a || 0);
+    if (Math.round(want) !== Math.round(+L[i].bal || 0)) {
+      breaks.push({ row: L[i].row || i + 1, d: L[i].d, want: Math.round(want), got: Math.round(+L[i].bal || 0), gap: Math.round((+L[i].bal || 0) - want) });
+    }
+  }
+  /* 첫 줄의 직전 잔액 — 역산한 값이다. 「이 표가 전부라면」의 값일 뿐이고
+     그 앞에 빠진 거래가 있으면 못 잡는다. 그렇게 적어 둔다. */
+  const open = L.length ? Math.round((+L[0].bal || 0) - (+L[0].a || 0)) : null;
+  return {
+    n: Math.max(0, L.length - 1), ok: breaks.length === 0 && L.length > 1,
+    breaks: breaks, open: open, last: L.length ? Math.round(+L[L.length - 1].bal || 0) : null,
+    noBal: (lines || []).length - L.length,
+  };
+}
+
+/* ── ③ 같은 줄인가 ────────────────────────────────────────────────────────
+   ⚠️ 일자+금액+적요로는 **못 가른다.** 형 파일에 2026-11-10 에 1,800,000원이
+      두 줄 있고 적요가 둘 다 「타행MB」다(내용만 다르다). 그 키로는 진짜 거래
+      두 건이 한 건으로 접힌다 — 실제로 접혔다. 시각과 잔액까지 넣는다. */
+function corpBjvKey(x) {
+  return [x.d || "", x.t || "", Math.round(+x.a || 0), x.bal === null || x.bal === undefined ? "" : Math.round(+x.bal), corpBjvWord(x.m)].join("|");
+}
+
+/* ── ④ 전표로 바꾼다 ──────────────────────────────────────────────────────
+   전표번호는 **거래일시 오름차순**으로 그날 01부터. 10·11월 기존 12건을
+   역산해 확정한 규약이다(엑셀 줄 순서를 뒤집은 것).
+   분개: 입금 → (차)103 / (대)분류계정 · 출금 → (차)분류계정 / (대)103.
+
+   ⚠️ 계정을 못 고른 줄은 **건너뛰지 않는다.** 건너뛰면 장부가 은행보다 적어지고,
+      그 차이는 아무도 모른다. 보류 목록에 번호와 이유를 달고 남긴다.
+      (전표가 된 줄) + (보류 줄) = (은행 줄) 이 늘 서야 한다. */
+function corpBjvBuild(lines, st, ledger, jvs) {
+  const L = corpBjvSort(lines);
+  const have = {};
+  (jvs || []).forEach(function (j) { if (j.bk) have[j.bk] = j.id; });
+  const seq = {};
+  const made = [], held = [], dup = [];
+  /* 그날 이미 쓰인 번호부터 이어 붙인다 — 기존 전표와 번호가 부딪히지 않게 */
+  (jvs || []).forEach(function (j) {
+    const id = String(j.id || ""), m = /^(\d{8})-(\d+)$/.exec(id);
+    if (!m) return;
+    const d = m[1].slice(0, 4) + "-" + m[1].slice(4, 6) + "-" + m[1].slice(6, 8);
+    if (!seq[d] || +m[2] > seq[d]) seq[d] = +m[2];
+  });
+  /* 은행에서 만들지 않은 전표도 **같은 거래일 수 있다.** 손으로 넣었거나 표로 반입한 것이
+     이미 장부에 있으면, 은행줄을 그대로 전표로 만들면 그 거래가 두 번 선다.
+     ⚠️ 그렇다고 조용히 건너뛰지도 않는다 — 같은 날 같은 금액이 진짜로 두 건일 수도 있다.
+        「이미 있을 수 있습니다」로 세워 **사람에게 보인다.** 한 전표는 한 번만 짝짓는다. */
+  const soft = (jvs || []).filter(function (j) { return !j.bk; }).map(function (j) {
+    const l = (j.l || []).find(function (x) { return x[0] === "103"; });
+    return l ? { id: j.id, d: j.d, in: +l[1] || 0, out: +l[2] || 0, used: false } : null;
+  }).filter(Boolean);
+  L.forEach(function (x, i) {
+    const row = x.row || i + 1;
+    const key = corpBjvKey(x);
+    if (have[key]) { dup.push({ row: row, d: x.d, a: x.a, m: x.m, id: have[key], why: "이 은행줄에서 만든 전표가 이미 있습니다" }); return; }
+    const dir = (+x.a || 0) >= 0 ? "in" : "out";
+    const abs0 = Math.abs(+x.a || 0);
+    const hit = soft.find(function (p) { return !p.used && p.d === x.d && (dir === "in" ? p.in : p.out) === abs0; });
+    if (hit) {
+      hit.used = true;
+      dup.push({ row: row, d: x.d, a: x.a, m: x.m, id: hit.id, soft: true,
+        why: "장부에 같은 날 같은 금액의 보통예금 전표(" + hit.id + ")가 이미 있습니다 — 같은 거래로 보입니다. 두 건이 맞다면 그 전표를 먼저 정리해 주세요" });
+      return;
+    }
+    const p = corpBjvPick(x.cls, dir, st, jvs);
+    if (!p.c) { held.push({ row: row, d: x.d, t: x.t, a: x.a, m: x.m, cls: x.cls, dir: dir, why: p.why, hint: p.hint || "", bk: key }); return; }
+    const amt = Math.abs(+x.a || 0);
+    const desc = (corpBjvWord(x.cls) ? corpBjvWord(x.cls) + " — " : "") + String(x.m || "").trim();
+    seq[x.d] = (seq[x.d] || 0) + 1;
+    const jv = {
+      id: (typeof corpJvNo === "function" ? corpJvNo(x.d, seq[x.d]) : x.d.replace(/-/g, "") + "-" + String(seq[x.d]).padStart(2, "0")),
+      d: x.d, desc: desc, by: "은행반입", ap: null, st: "draft", bk: key, bt: x.t || "",
+      l: dir === "in"
+        ? [["103", amt, 0, "은행 입금"], [p.c, 0, amt, corpBjvWord(x.cls) || "분류"]]
+        : [[p.c, amt, 0, corpBjvWord(x.cls) || "분류"], ["103", 0, amt, "은행 출금"]],
+    };
+    const chk = typeof corpJvCheck === "function" ? corpJvCheck(jv, ledger) : { ok: true, errs: [] };
+    if (!chk.ok) { seq[x.d]--; held.push({ row: row, d: x.d, t: x.t, a: x.a, m: x.m, cls: x.cls, dir: dir, why: chk.errs.join(" · "), bk: key }); return; }
+    made.push(jv);
+  });
+  return { made: made, held: held, dup: dup, n: L.length, chain: corpBjvChain(L) };
+}
+
+/* ── ⑤ 검산 — 화면과 커밋 게이트 러너가 이 함수 하나를 같이 본다 ──────── */
+function corpBjvRows(lines, st, ledger, jvs) {
+  const B = corpBjvBuild(lines, st, ledger, jvs);
+  const C = B.chain;
+  const bookBal = (function () {
+    if (typeof corpStatements !== "function") return null;
+    const S = corpStatements(jvs || [], "");
+    const r = (S.trial && S.trial.rows || []).find(function (x) { return x.c === "103"; });
+    return r ? Math.round(r.bal) : 0;
+  })();
+  return [
+    { k: "cover", ko: "은행 줄 = 전표 + 보류 + 이미 있음", n: B.n,
+      ok: B.n > 0 && B.made.length + B.held.length + B.dup.length === B.n,
+      got: B.made.length + " + " + B.held.length + " + " + B.dup.length + " / " + B.n, want: "같을 것" },
+    { k: "chain", ko: "잔액 사슬 전건 성립", n: C.n,
+      ok: C.ok, got: C.breaks.length ? C.breaks.length + "군데 끊김(" + C.breaks[0].row + "행 " + (typeof corpWon === "function" ? corpWon(C.breaks[0].gap) : C.breaks[0].gap) + ")" : "끊김 없음",
+      want: "끊김 0", skip: C.n === 0, why: C.n === 0 ? "잔액 열이 맞춰지지 않았습니다 — 흘린 거래를 잡을 길이 없어 검사하지 않았습니다" : "" },
+    { k: "bal", ko: "은행 마지막 잔액 = 장부 보통예금", n: C.last === null ? 0 : 1,
+      ok: C.last !== null && bookBal !== null && C.last === bookBal,
+      got: (typeof corpWon === "function" ? corpWon(C.last || 0) + " / " + corpWon(bookBal || 0) : C.last + " / " + bookBal), want: "같을 것",
+      skip: C.last === null, why: C.last === null ? "잔액 열이 맞춰지지 않았습니다" : "" },
+    { k: "nobal", ko: "잔액이 빈 줄 0건", n: B.n,
+      ok: C.noBal === 0, got: C.noBal + "건", want: "0건" },
+    { k: "dupkey", ko: "같은 줄 판정에 시각·잔액이 들어간다", n: B.n,
+      ok: B.n === 0 || corpBjvKey({ d: "2026-11-10", t: "11:27:40", a: 1800000, bal: 1, m: "타행MB" })
+        !== corpBjvKey({ d: "2026-11-10", t: "11:11:56", a: 1800000, bal: 2, m: "타행MB" }),
+      got: "다름", want: "다를 것" },
+    { k: "dupwhy", ko: "건너뛴 줄마다 어느 전표와 겹치는지 적는다", n: B.dup.length,
+      ok: B.dup.every(function (d) { return d.id && (d.why || "").trim(); }),
+      got: B.dup.filter(function (d) { return !d.id || !(d.why || "").trim(); }).length + "건 누락", want: "0건",
+      skip: B.dup.length === 0, why: B.dup.length === 0 ? "겹치는 줄이 없습니다 — 검사할 대상이 없습니다" : "" },
+    { k: "held", ko: "계정을 못 고른 줄은 **남는다**(사라지지 않는다)", n: B.held.length + B.made.length,
+      ok: B.held.every(function (h) { return (h.why || "").trim(); }),
+      got: B.held.length + "건 보류 · 사유 " + B.held.filter(function (h) { return (h.why || "").trim(); }).length + "건", want: "전건 사유" },
+  ];
+}
+function corpBjvVerdict(lines, st, ledger, jvs) {
+  const rows = corpBjvRows(lines, st, ledger, jvs);
+  const skip = rows.filter(function (r) { return r.skip; });
+  const live = rows.filter(function (r) { return !r.skip; });
+  const zero = live.filter(function (r) { return !(r.n > 0); });
+  const fail = live.filter(function (r) { return !r.ok; });
+  return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero, skip: skip };
+}
+
+/* ── ⑥ 자기시험 — 음성 표본이 **실제로 깨지는지** 본다 ────────────────────
+   「맞는 표본이 통과한다」만 세면, 아무것도 검사하지 않는 코드도 만점을 받는다. */
+const CORP_BJV_T = [
+  { row: 2, d: "2026-11-10", t: "11:05:45", a: 900000, bal: 1977986, m: "입금A", cls: "상품매출" },
+  { row: 3, d: "2026-11-10", t: "11:11:56", a: 1800000, bal: 3777986, m: "입금B", cls: "상품매출" },
+  { row: 4, d: "2026-11-10", t: "11:25:55", a: -2420000, bal: 1357986, m: "출금A", cls: "상품매출" },
+  { row: 5, d: "2026-11-10", t: "11:27:40", a: 120000, bal: 1477986, m: "입금C", cls: "상품매출" },
+];
+function corpBjvSelfTest() {
+  const good = corpBjvChain(CORP_BJV_T);
+  const flip = corpBjvChain(CORP_BJV_T.map(function (x, i) { return i === 2 ? Object.assign({}, x, { a: -x.a }) : x; }));
+  const bend = corpBjvChain(CORP_BJV_T.map(function (x, i) { return i === 1 ? Object.assign({}, x, { a: x.a + 1 }) : x; }));
+  const drop = corpBjvChain(CORP_BJV_T.filter(function (x, i) { return i !== 1; }));
+  const swap = corpBjvChain(CORP_BJV_T.map(function (x) { return Object.assign({}, x, { a: -x.a }); }));
+  return [
+    { k: "ok", ko: "맞는 표본은 사슬이 선다", n: good.n, ok: good.ok && good.n === 3, got: good.breaks.length + "군데 끊김 · 분모 " + good.n, want: "0군데 · 분모 3" },
+    { k: "open", ko: "직전 잔액을 역산한다", n: 1, ok: good.open === 1077986, got: String(good.open), want: "1077986" },
+    { k: "flip", ko: "한 줄 부호를 뒤집으면 **깨진다**", n: flip.n, ok: !flip.ok, got: flip.breaks.length + "군데", want: "≥ 1군데" },
+    { k: "bend", ko: "1원만 비틀어도 **깨진다**", n: bend.n, ok: !bend.ok, got: bend.breaks.length + "군데", want: "≥ 1군데" },
+    { k: "drop", ko: "한 줄을 빼면 **깨진다**(흘린 거래를 잡는다)", n: drop.n, ok: !drop.ok, got: drop.breaks.length + "군데", want: "≥ 1군데" },
+    { k: "swap", ko: "입금·출금 열을 맞바꾸면 **깨진다**", n: swap.n, ok: !swap.ok, got: swap.breaks.length + "군데", want: "≥ 1군데" },
+    { k: "empty", ko: "빈 표는 통과가 아니다", n: 1, ok: !corpBjvChain([]).ok, got: "불성립", want: "불성립" },
+  ];
+}
+
+/* ── ⑦ 매일 운영 — 어디까지 들어왔는가 ───────────────────────────────────
+   ⚠️ 「거래가 있던 마지막 날」로 세면 안 된다 — 거래가 0건인 날과 **안 올린 날**이
+      구분되지 않는다. 올린 사람이 적어 준 기간(from~to)으로 센다.
+   ⚠️ 날짜는 **인자로 받는다.** 함수 안에서 오늘을 읽으면 러너가 벽시계에 매달린다. */
+function corpBjvDays(from, to) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from || "") || !/^\d{4}-\d{2}-\d{2}$/.test(to || "")) return 0;
+  const a = Date.parse(from + "T00:00:00Z"), b = Date.parse(to + "T00:00:00Z");
+  if (!isFinite(a) || !isFinite(b)) return 0;
+  return Math.round((b - a) / 86400000);
+}
+function corpBjvShiftDay(iso, n) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || "")) return "";
+  const t = Date.parse(iso + "T00:00:00Z");
+  if (!isFinite(t)) return "";
+  return new Date(t + n * 86400000).toISOString().slice(0, 10);
+}
+/* 오늘(주입)을 받아 「어제 것까지 들어왔는가」를 센다 */
+function corpBjvDue(cov, todayIso) {
+  const today = /^\d{4}-\d{2}-\d{2}$/.test(todayIso || "") ? todayIso : "";
+  const y = today ? corpBjvShiftDay(today, -1) : "";
+  if (!cov || !cov.to) {
+    return { ok: false, late: null, to: "", need: y, ko: y ? "아직 한 번도 올리지 않았습니다 — " + y + " 까지의 내역이 필요합니다" : "오늘이 정해지지 않아 세지 못합니다" };
+  }
+  if (!y) return { ok: false, late: null, to: cov.to, need: "", ko: "오늘이 정해지지 않아 세지 못합니다" };
+  const late = corpBjvDays(cov.to, y);
+  if (late <= 0) return { ok: true, late: 0, to: cov.to, need: "", ko: cov.to + " 까지 들어왔습니다 — 어제(" + y + ") 것까지 있습니다" };
+  return { ok: false, late: late, to: cov.to, need: corpBjvShiftDay(cov.to, 1) + " ~ " + y,
+    ko: cov.to + " 까지만 들어왔습니다 — " + corpBjvShiftDay(cov.to, 1) + " 부터 " + y + " 까지 " + late + "일치가 비어 있습니다" };
+}
+
 /* ══════════════ AI 팀장 아바타 렌더(CorpAvatar.jsx) · CorpOps Phase 2 (형 지시 2026-11-11) ══════════════
    corpAvatars.js의 문양 명세를 SVG로 그린다. 상태는 테두리로만 말한다.
    ⚠️ AI임이 분명해야 한다 — 이 컴포넌트는 항상 AI 배지와 함께 쓰고, 사람 책임자는 글자로 적는다.
@@ -19064,7 +19831,7 @@ function CorpLedgerSection() {
       {tab === "gl" && <ClLedger S={S} sel={acctSel} setSel={setAcctSel} />}
       {tab === "tb" && <ClTrial S={S} />}
       {tab === "fs" && <ClStatements S={S} cut={cut} />}
-      {tab === "bank" && <ClBank R={R} />}
+      {tab === "bank" && <ClBank R={R} st={st} save={save} actor={actor} A={A} />}
     </div>
   );
 }
@@ -19399,10 +20166,285 @@ function ClStatements({ S, cut }) {
 }
 
 /* ── 은행 대사 ────────────────────────────────────────────────────────────── */
-function ClBank({ R }) {
+/* ── 은행 내역 올리기 — **은행 대사 지면 안에** 둔다 (형 지시 2026-11-12) ────
+   「은행자료를 전일 것을 매일 업로드만 시키면 전표가 쳐져서 실시간 재무제표가 만들어지도록.
+    다만 은행자료를 자동으로 가져오지 못하니 사람 책임자가 업로드 할 수 있도록.」
+
+   ⚠️ 이 패널은 두 갈래(내역 없음 · 내역 있음) **앞**에 선다. 「없음」 갈래 안에 넣으면
+      한 번 올린 다음 날 올릴 자리가 사라진다.
+   ⚠️ 민감자료 검사가 **미리보기보다 앞**이다. 띄워 놓고 「지우세요」라고 말하는 것은
+      이미 띄운 것이다. 반입 창구와 **같은 판정 함수**를 쓴다 — 입구가 둘인데 한쪽만
+      막으면 막는 것이 아니다. */
+function ClBankUp({ st, save, actor, A }) {
+  const [raw, setRaw] = React.useState(null);
+  const [map, setMap] = React.useState({});
+  const [cov, setCov] = React.useState({ from: "", to: "" });
+  const [pick, setPick] = React.useState({});
+  const [keep, setKeep] = React.useState(true);
+  const [note, setNote] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const fileRef = React.useRef(null);
+
+  const spec = corpUpSpec("bank");
+  const bjv = React.useMemo(() => corpBjvRead(), [note]);
+  const jvs = React.useMemo(() => corpJvAll(st), [st]);
+  const can = React.useMemo(() => cbxCan(), []);
+  const cur = corpBankOf(st);
+  const due = corpBjvDue(st && st.bankCov, corpOpsToday());
+
+  /* 검증 → 은행줄 → 전표 후보. 화면과 러너가 **같은 함수**를 본다. */
+  const V = React.useMemo(() => (raw ? corpUpValidate("bank", raw.head, raw.rows, map) : null), [raw, map]);
+  const T = React.useMemo(() => (V && !V.missing.length ? corpUpToBank(V.ok) : null), [V]);
+  const CH = React.useMemo(() => (T ? corpBjvChain(T.lines) : null), [T]);
+  const B = React.useMemo(
+    () => (T ? corpBjvBuild(T.lines, { map: bjv.map, pick: pick }, st, jvs) : null),
+    [T, pick, bjv, st, jvs]
+  );
+
+  const reset = () => { setRaw(null); setMap({}); setPick({}); setCov({ from: "", to: "" }); if (fileRef.current) fileRef.current.value = ""; };
+
+  const onFile = async (e) => {
+    const f = (e.target.files || [])[0];
+    if (!f) { reset(); return; }
+    setBusy(true); setNote(null);
+    try {
+      const buf = new Uint8Array(await f.slice(0, 4).arrayBuffer());
+      const zip = buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+      const ole = buf[0] === 0xd0 && buf[1] === 0xcf;
+      if (ole) throw new Error("구형 엑셀(.xls)은 읽지 못합니다 — 엑셀에서 「다른 이름으로 저장 → .xlsx」로 바꿔 주세요");
+      let head = [], rows = [], sheet = "", sheets = [];
+      if (zip) {
+        const X = await cbxRead(f);
+        head = X.rows[0] || []; rows = X.rows.slice(1); sheet = X.sheet; sheets = X.sheets;
+      } else {
+        const txt = await f.text();
+        const g = corpUpParseCsv(txt);
+        head = g[0] || []; rows = g.slice(1);
+      }
+      rows = rows.filter((r) => r.join("").trim());
+      if (head.length < 2 || !rows.length) throw new Error("표를 읽지 못했습니다 — 머리글과 자료 줄이 있는지 보아 주세요");
+      /* ⚠️ 검사가 **먼저** — 걸리면 표를 띄우지 않는다. 값은 적지 않고 좌표만 적는다. */
+      const hits = corpUpScan(rows, head);
+      if (hits.length) {
+        setNote({ bad: true, t: "민감자료가 " + hits.length + "곳에서 걸렸습니다 — 표를 띄우지 않고 멈췄습니다. "
+          + hits.slice(0, 4).map((h) => h.row + "행 " + h.col + "열(" + h.why + ")").join(" · ") + ". 그 열을 떼고 다시 올려 주세요." });
+        reset(); setBusy(false); return;
+      }
+      const kb = Math.round(f.size / 1024);
+      setRaw({ name: f.name, kb: kb, head: head, rows: rows, sheet: sheet, sheets: sheets, zip: zip });
+      const m = corpUpSuggest(head, spec);
+      setMap(m);
+      /* 기간은 **사람이 확정한다** — 자료에서 읽은 것은 제안일 뿐이다.
+         거래가 0건인 날과 안 올린 날은 자료만 보고는 구별되지 않는다. */
+      const ds = rows.map((r) => String(r[m.date] || "")).map((x) => (/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/.exec(x) || [])[0] || "")
+        .filter(Boolean).map((x) => x.replace(/[./]/g, "-").replace(/-(\d)(?=-|$)/g, "-0$1")).sort();
+      setCov({ from: ds[0] || "", to: ds[ds.length - 1] || "" });
+      setNote({ bad: false, t: f.name + " — " + rows.length + "행 읽었습니다" + (sheet ? "(시트 「" + sheet + "」)" : "") + ". 열이 맞는지 확인해 주세요." });
+    } catch (err) {
+      reset();
+      setNote({ bad: true, t: (err && err.message) || "파일을 읽지 못했습니다" });
+    }
+    setBusy(false);
+  };
+
+  const commit = () => {
+    if (!B || !T) return;
+    if (!B.made.length) { setNote({ bad: true, t: "전표가 될 줄이 없습니다 — 보류 줄의 계정을 골라 주세요" }); return; }
+    if (!cov.from || !cov.to) { setNote({ bad: true, t: "이 자료가 **며칠부터 며칠까지**인지 적어 주세요 — 거래가 없던 날과 안 올린 날은 자료만으로 구별되지 않습니다" }); return; }
+    const M = corpUpMergeBank(st.bank || [], T.lines);
+    const next = Object.assign({}, st, {
+      jv: (st.jv || []).concat(B.made),
+      bank: M.lines,
+      bankCov: { from: (st.bankCov && st.bankCov.from) || cov.from, to: cov.to > ((st.bankCov && st.bankCov.to) || "") ? cov.to : (st.bankCov && st.bankCov.to) || cov.to, at: raw ? raw.name : "" },
+    });
+    save(next);
+    if (keep && Object.keys(pick).length) {
+      const nm = Object.assign({}, bjv.map, pick);
+      corpBjvWrite({ map: nm, log: (bjv.log || []).concat([{ at: cov.to, n: Object.keys(pick).length }]) });
+    }
+    const held = B.held.length;
+    setNote({ bad: false, t: B.made.length + "건을 전표로 올렸습니다(기표 상태 — 검토·승인을 거쳐야 장부에 들어갑니다). "
+      + "은행줄 " + M.added + "줄 추가" + (M.dup ? " · 이미 받은 " + M.dup + "줄 건너뜀" : "")
+      + (held ? " · **보류 " + held + "줄은 그대로 남았습니다** — 계정을 고를 때까지 장부가 은행보다 적습니다." : "") });
+    reset();
+  };
+
+  const undo = () => {
+    const keepJv = (st.jv || []).filter((j) => j.by !== "은행반입");
+    const n = (st.jv || []).length - keepJv.length;
+    save(Object.assign({}, st, { jv: keepJv, bank: [], bankCov: null }));
+    setNote({ bad: false, t: "은행에서 만든 전표 " + n + "건과 은행줄을 모두 물렸습니다 — 대사는 보류로 돌아갑니다." });
+  };
+
+  const cols = spec ? spec.need.concat(spec.opt) : [];
+  const words = B ? B.held.map((h) => corpBjvWord(h.cls) + "|" + h.dir) : [];
+  const uniqWords = words.filter((w, i) => words.indexOf(w) === i);
+
+  return (
+    <div className="cl-sec bk-up">
+      <div className="cl-h">은행 내역 올리기 <span className="cl-t">전표는 이 자료에서만 나옵니다</span>
+        <span className={"cl-flag" + (due.ok ? " on" : " hold")}>{due.ok ? "어제까지 들어옴" : (due.late === null ? "아직 없음" : due.late + "일치 비었음")}</span>
+        <button className="cl-rv" onClick={() => setOpen(!open)}>{open ? "접기" : "열기"}</button>
+      </div>
+      <p className="cl-note">{due.ko}
+        {cur && cur.live && <span> · 지금 담긴 은행줄 <b>{cur.lines.length}줄</b>{st.bankCov && st.bankCov.from ? "(" + st.bankCov.from + " ~ " + st.bankCov.to + ")" : ""}</span>}</p>
+
+      {open && (
+        <div className="bk-body">
+          {!can.ok && <p className="cl-note hold"><b>이 브라우저에서는 엑셀을 바로 읽지 못합니다.</b> {can.why}</p>}
+          <p className="cl-note"><b>파일은 어디로도 전송되지 않습니다</b> — 서버가 없어 이 브라우저 안에서 읽고 끝납니다.
+            은행에서 내려받은 <b>.xlsx 를 그대로</b> 올리시면 됩니다(CSV 도 받습니다).
+            은행 계좌를 <b>자동으로 가져오지 못합니다</b> — 그래서 사람이 매일 올립니다.</p>
+
+          <div className="bk-row">
+            <input ref={fileRef} type="file" accept=".xlsx,.csv,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={onFile} disabled={busy} />
+            {raw && <button className="cl-rv" onClick={reset}>지우기</button>}
+            {busy && <span className="cl-t">읽는 중…</span>}
+          </div>
+          {note && <div className={"cl-msg" + (note.bad ? " bad" : "")} onClick={() => setNote(null)}>{note.t}</div>}
+
+          {raw && (
+            <div className="bk-map">
+              <div className="cl-h2">열 맞추기 <span className="cl-t">추측해서 넣지 않습니다 — 확인하고 고르세요</span></div>
+              <p className="cl-note">은행마다 <b>입금·출금 열의 순서가 거꾸로</b>입니다. 어느 쪽이 기본값이든 한 은행은 부호가
+                통째로 뒤집힙니다 — 그래서 고정하지 않고 보여 드립니다. <b>잔액 열을 꼭 맞춰 주세요</b>:
+                잔액이 이어지는지 보아야 빠진 거래를 잡습니다.</p>
+              <div className="bk-cols">
+                {cols.map((k) => (
+                  <label key={k} className={spec.need.indexOf(k) >= 0 ? "need" : ""}>
+                    <span>{spec.label[k]}{spec.need.indexOf(k) >= 0 && <i>필수</i>}</span>
+                    <select value={map[k] === undefined ? "" : map[k]}
+                      onChange={(e) => { const v = e.target.value; const m = Object.assign({}, map); if (v === "") delete m[k]; else m[k] = +v; setMap(m); }}>
+                      <option value="">— 없음 —</option>
+                      {raw.head.map((h, i) => <option key={i} value={i}>{String(h).trim() || "(" + (i + 1) + "열)"}</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+              <div className="bk-cov">
+                <label>이 자료가 덮는 기간<input type="date" value={cov.from} onChange={(e) => setCov(Object.assign({}, cov, { from: e.target.value }))} /></label>
+                <span>~</span>
+                <label><input type="date" value={cov.to} onChange={(e) => setCov(Object.assign({}, cov, { to: e.target.value }))} /></label>
+                <i>거래가 0건인 날과 안 올린 날은 자료만으로 구별되지 않습니다 — 사람이 적습니다.</i>
+              </div>
+            </div>
+          )}
+
+          {V && V.missing.length > 0 && <p className="cl-note hold">{V.msg}</p>}
+
+          {T && CH && (
+            <div className="bk-chain">
+              <div className={"bk-chip" + (CH.ok ? " on" : " bad")}>
+                잔액 사슬 {CH.n === 0 ? "검사 못 함" : (CH.ok ? "전건 성립 (" + CH.n + "쌍)" : CH.breaks.length + "군데 끊김")}
+              </div>
+              <span className="cl-t">
+                {CH.n === 0 ? "잔액 열을 맞춰 주세요 — 빠진 거래를 잡을 길이 없습니다"
+                  : CH.ok ? "직전 잔액 " + corpWon(CH.open) + " → 마지막 " + corpWon(CH.last) + " 까지 한 줄도 끊기지 않았습니다"
+                    : "이 사이에 표에 없는 거래가 있습니다 — " + CH.breaks.slice(0, 2).map((x) => x.row + "행 " + corpWon(x.gap)).join(" · ")}
+              </span>
+              {!CH.ok && CH.n > 0 && <p className="cl-note hold">잔액이 끊긴 자료로는 전표를 만들지 않습니다 — 빠진 거래가 있는 채로 장부를 세우면 그 차이는 아무도 모릅니다.</p>}
+              {V && V.bad.length > 0 && <p className="cl-note">읽지 못한 줄 {V.bad.length}건: {V.bad.slice(0, 3).map((b) => b.row + "행 — " + b.why.join(" / ")).join(" · ")}</p>}
+              {T.dropped.length > 0 && <p className="cl-note">뺀 줄 {T.dropped.length}건: {T.dropped.slice(0, 3).map((d) => d.row + "행 — " + d.why).join(" · ")}</p>}
+            </div>
+          )}
+
+          {B && (
+            <div className="bk-prev">
+              <div className="cl-h2">전표가 될 줄 <span className="cl-t">{B.made.length} 만듦 · {B.held.length} 보류 · {B.dup.length} 이미 있음 / 은행 {B.n}줄</span></div>
+              {B.made.length > 0 && (
+                <table className="cl-tbl bk-tbl">
+                  <thead><tr><th>번호</th><th>일자</th><th>적요</th><th>차변</th><th>대변</th><th>금액</th></tr></thead>
+                  <tbody>
+                    {B.made.slice(0, 40).map((j) => (
+                      <tr key={j.id}>
+                        <td className="id">{j.id}</td><td>{j.d}</td><td className="desc">{j.desc}</td>
+                        <td className="id">{j.l[0][0]} {corpAcctName(j.l[0][0])}</td>
+                        <td className="id">{j.l[1][0]} {corpAcctName(j.l[1][0])}</td>
+                        <td className="n">{corpWon(j.l[0][1] || j.l[0][2])}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {B.made.length > 40 && <p className="cl-note">앞 40건만 보여 줍니다(전체 {B.made.length}건).</p>}
+
+              {B.held.length > 0 && (
+                <div className="bk-held">
+                  <div className="cl-h2">책임자가 정해야 할 줄 <span className="cl-t">{B.held.length}건</span></div>
+                  <p className="cl-note"><b>기계가 고르지 않습니다.</b> 은행 줄에는 금액·날짜·상대가 있지만 <b>계정이 없습니다</b> —
+                    계정은 거래를 한 사람만 압니다. 실제로 같은 낱말이 10월과 11월에 <b>다른 계정</b>으로 갔습니다.
+                    기계가 하나로 못 박으면 둘 중 하나는 반드시 틀립니다.</p>
+                  <table className="cl-tbl bk-tbl">
+                    <thead><tr><th>행</th><th>일자</th><th>내용</th><th>금액</th><th>분류</th><th>계정</th><th>왜 못 골랐나</th></tr></thead>
+                    <tbody>
+                      {B.held.map((h) => {
+                        const key = corpBjvWord(h.cls) + "|" + h.dir;
+                        return (
+                          <tr key={h.row}>
+                            <td className="id">{h.row}</td><td>{h.d}</td><td className="desc">{h.m}</td>
+                            <td className={"n " + (h.a >= 0 ? "in" : "out")}>{corpWon(h.a)}</td>
+                            <td className="id">{h.cls || "—"}</td>
+                            <td>
+                              <select value={pick[key] || ""} onChange={(e) => {
+                                const p = Object.assign({}, pick); const v = e.target.value;
+                                if (!v) delete p[key]; else p[key] = v; setPick(p);
+                              }}>
+                                <option value="">— 고르세요 —</option>
+                                {CORP_ACCT.filter((a) => a.c !== "103").map((a) => (
+                                  <option key={a.c} value={a.c}>{a.c} {a.n}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="desc">{h.why}{h.hint ? " (지난 장부: " + h.hint + ")" : ""}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <p className="cl-note">같은 낱말은 한 번만 고르시면 그 묶음 전체에 붙습니다(지금 고를 낱말 {uniqWords.length}가지).</p>
+                  <label className="bk-keep">
+                    <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
+                    <span>고른 대응을 기억해서 다음부터 자동으로 씁니다</span>
+                    <i>기억하지 않으면 매일 다시 고르셔야 합니다. 다만 <b>틀린 선택도 그대로 복제됩니다</b> —
+                      지난 장부에서 두 계정으로 갈린 낱말은 기억해도 매번 다시 묻습니다.</i>
+                  </label>
+                </div>
+              )}
+
+              {B.dup.length > 0 && (
+                <p className="cl-note">이미 들어와 있는 줄 {B.dup.length}건은 건너뜁니다 — 같은 파일을 두 번 올려도 장부가 두 배가 되지 않습니다
+                  ({B.dup.slice(0, 3).map((d) => d.row + "행 → " + d.id).join(" · ")}).</p>
+              )}
+
+              <div className="bk-act">
+                <button className="cl-save" disabled={!B.made.length || (CH && CH.n > 0 && !CH.ok)} onClick={commit}>
+                  전표 {B.made.length}건 올리기
+                </button>
+                {!A.canApprove && <span className="cl-t">올리는 것까지는 됩니다 — 승인·전기는 사람이 합니다</span>}
+                {B.held.length > 0 && <span className="cl-t">보류 {B.held.length}줄을 남기면 장부 잔액이 은행과 맞지 않습니다</span>}
+              </div>
+            </div>
+          )}
+
+          {cur && cur.live && (
+            <div className="bk-act">
+              <button className="cl-rv" onClick={undo}>은행에서 만든 전표 전부 물리기</button>
+              <span className="cl-t">직접 입력한 전표와 검증용 전표는 그대로 둡니다</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClBank({ R, st, save, actor, A }) {
+  const UP = <ClBankUp st={st} save={save} actor={actor} A={A} />;
   if (R.none) {
     return (
       <div className="cl-body">
+        {UP}
         <div className="cl-sec">
           <div className="cl-h">은행 대사 <span className="cl-flag hold">보류</span></div>
           <p className="cl-note"><b>은행 거래내역이 반입되지 않았습니다.</b> 대사할 상대가 없어 <b>돌리지 않았습니다</b> —
@@ -19412,7 +20454,8 @@ function ClBank({ R }) {
             <div className="cl-op">vs</div>
             <div className="cl-eq"><b>—</b><span>은행 내역 없음</span></div>
           </div>
-          <p className="cl-note">자료 반입 창구의 <b>은행 거래내역</b>에 내역을 올리면 같은 날 · 같은 금액으로 자동 대사합니다.
+          <p className="cl-note"><b>바로 위에서</b> 은행 내역을 올리시면 전표가 만들어지고 대사가 돕니다
+            (자료 반입 창구의 「은행 거래내역」으로 올리셔도 같습니다 — 판정은 같은 함수가 합니다).
             장부에서 보통예금이 움직인 전표는 <b>{R.book.length}건</b> 있습니다.</p>
         </div>
       </div>
@@ -19420,6 +20463,7 @@ function ClBank({ R }) {
   }
   return (
     <div className="cl-body">
+      {UP}
       <div className="cl-sec">
         <div className="cl-h">{R.bank} <span className="cl-t">{R.mask}</span>
           <span className={"cl-flag" + (R.ok ? " on" : " bad")}>{R.ok ? "조정 후 차이 0" : "차이 " + corpWon(R.gap)}</span></div>
@@ -20039,7 +21083,9 @@ function CorpMeetingSection() {
               <thead><tr><th>루틴</th><th>AI</th><th>사람이 마무리</th><th>상태</th><th>다음</th></tr></thead>
               <tbody>
                 {(sch.routines || []).map((r, i) => {
-                  const s = corpRoutineState(r, st, now, week);
+                  /* 은행 대사는 장부 상태(반입 기간)를 보아야 밀림을 알 수 있다 —
+                     주간회의 상태만으로는 「사람이 올렸는가」를 셀 수 없다. */
+                  const s = corpRoutineState(r, st, now, week, corpLedgerRead());
                   const f = (d) => d ? (d.getMonth() + 1) + "/" + d.getDate() + " " +
                     String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") : "—";
                   return (
@@ -40518,7 +41564,8 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
-  { date:"2026-11-12", ver:"v3.7", ch:[9], feat:"팀별 자료실 · 보존 두 축 · 반입 세 갈래 · 은행 대사 보류", src:"온톨로지 › 회사 총괄운영 › 자료실 · 총무 문서 · 자료 반입 · 재무현황", summary:"저장소 목차를 팀별 게시판으로 올리되 파일명이 곧 대외비 목차라 코드에 넣지 않고 반입해서 그 브라우저에만 두었고 분류는 화면 한 곳에서만 하며 스캔 스크립트는 사실만 내보내게 했고, 법령이 정하는 연한과 회사가 정하는 보존을 다른 축으로 갈라 누가 언제 정했는지를 함께 적게 했으며 대표가 정한 대로 재무제표는 영구보관 회계장부와 전표는 10년으로 분류 자체를 갈라 10년 뒤 장부를 버릴 때 재무제표가 함께 버려지지 않게 했고 영구를 뜻하는 0을 거짓으로 읽어 미정으로 둔갑시키지 않도록 읽는 함수를 하나로 두었으며 보존이 미정인 자료에는 파기 예정일을 찍지 않게 했고, 창구만 열려 있고 들어가는 자리가 없던 은행 내역과 자료 목록을 저장까지 잇고 같은 줄을 두 번 받지 않게 했으며 입출 구분이 없으면 부호를 추측하지 않게 했고, 대사할 상대가 없으면 돌리지 않고 보류로 두어 안 돌린 검사가 통과로 둔갑하지 않게 했다", refs:[], status:"반영", hash:"c71e0b8", auto:true },
+  { date:"2026-11-12", ver:"v3.8", ch:[9], feat:"은행 내역 업로드 → 전표 생성 · 잔액 사슬 · 매일 운영", src:"온톨로지 › 회사 총괄운영 › 재무현황 › 은행 대사", summary:"은행에서 내려받은 엑셀을 외부 라이브러리 없이 브라우저 내장 기능만으로 읽되 압축 해제는 검사할 수 없는 층이라 판단을 전부 문자열이 들어가고 배열이 나오는 층에 두어 커밋 게이트가 직접 시험하게 했고 빈 셀과 자기닫는 셀과 건너뛴 행처럼 실제로 터졌던 꼴을 표본에 모두 넣었으며, 여태 통과로 세던 은행 대사 차이가 짝지은 줄의 금액이 같아 늘 0이 되는 항진식임을 드러내 판정에서 빼고 그 자리에 은행 표의 잔액 사슬과 장부 대조를 세워 부호 뒤집기와 한 줄 빼기와 열 맞바꾸기가 실제로 깨지는지를 게이트가 확인하게 했고, 계정은 거래를 한 사람만 알고 같은 낱말이 달마다 다른 계정으로 간 적이 있어 코드가 못 박은 대응을 하나만 두고 나머지는 책임자가 고르되 모르는 줄을 건너뛰지 않고 행 번호와 이유를 달아 남겨 은행 줄과 전표가 전건 대응하는지 세게 했으며, 같은 줄 판정에 시각과 잔액을 넣어 같은 날 같은 금액의 두 거래가 한 건으로 접히지 않게 하고 손으로 넣은 전표와 겹칠 때도 조용히 두 배가 되지 않게 사람에게 보였고, 핀테크 팀장의 은행 대사 루틴에 점검과 알림까지만 적고 승인과 월마감은 사람 칸에 두었으며 밀린 날은 거래일이 아니라 사람이 적은 기간으로 세게 했다", refs:[], status:"반영", hash:"7be26b4", auto:true },
+  { date:"2026-11-12", ver:"v3.7", ch:[9], feat:"팀별 자료실 · 보존 두 축 · 반입 세 갈래 · 은행 대사 보류", src:"온톨로지 › 회사 총괄운영 › 자료실 · 총무 문서 · 자료 반입 · 재무현황", summary:"저장소 목차를 팀별 게시판으로 올리되 파일명이 곧 대외비 목차라 코드에 넣지 않고 반입해서 그 브라우저에만 두었고 분류는 화면 한 곳에서만 하며 스캔 스크립트는 사실만 내보내게 했고, 법령이 정하는 연한과 회사가 정하는 보존을 다른 축으로 갈라 누가 언제 정했는지를 함께 적게 했으며 대표가 정한 대로 재무제표는 영구보관 회계장부와 전표는 10년으로 분류 자체를 갈라 10년 뒤 장부를 버릴 때 재무제표가 함께 버려지지 않게 했고 영구를 뜻하는 0을 거짓으로 읽어 미정으로 둔갑시키지 않도록 읽는 함수를 하나로 두었으며 보존이 미정인 자료에는 파기 예정일을 찍지 않게 했고, 창구만 열려 있고 들어가는 자리가 없던 은행 내역과 자료 목록을 저장까지 잇고 같은 줄을 두 번 받지 않게 했으며 입출 구분이 없으면 부호를 추측하지 않게 했고, 대사할 상대가 없으면 돌리지 않고 보류로 두어 안 돌린 검사가 통과로 둔갑하지 않게 했다", refs:[], status:"반영", hash:"431fc62", auto:true },
   { date:"2026-11-12", ver:"v3.6", ch:[9], feat:"섹션별 자료 반입 · AI 팀장 대화창", src:"온톨로지 › 회사 총괄운영 › 자료 반입 · AI 팀장 대화", summary:"전표와 은행 내역과 계약과 인사와 문서 목록을 받는 반입 창구를 만들되 민감자료 검사를 미리보기보다 앞에 두어 주민번호가 섞인 표는 띄우지도 않게 했고 틀린 줄만 빼고 이유를 줄 번호로 적게 했으며 들어온 전표는 기표 상태로 앉혀 승인 분리가 사라지지 않게 했고, AI 팀장 여덟과 따로 대화하는 창을 만들어 등록된 도구를 실제로 돌려 나온 값만 말하고 도구가 없으면 없다고 말하며 시키면 거절하되 물음은 막지 않게 했다", refs:[], status:"반영", hash:"0ff8ea0", auto:true },
   { date:"2026-11-12", ver:"v3.5", ch:[9], feat:"일정·공지·결재·릴리스 승인 분리", src:"온톨로지 › 회사 총괄운영 › 일정 · 결재 · 정보보안팀", summary:"기안과 검토와 승인을 유일한 길로 두고 결재 종류마다 승인 주체를 갈라 대표여도 릴리스는 승인하지 못하게 했으며, 정보보안팀 책임자가 합류 전이라 릴리스를 승인할 사람이 지금 없다는 사실을 숨기지 않고 승인 경로를 대표에게 열지 않았고, 작성자와 승인자가 같으면 막으면서 그 시도를 기록하게 했으며, 늘 거부하는 벽이 되지 않도록 조건이 서면 승인이 열리는지까지 검사가 확인하고, 보안 현황의 게이트 목록은 사본이 아니라 커밋 훅과 대조하게 했다", refs:[], status:"반영", hash:"8ccff2e", auto:true },
   { date:"2026-11-12", ver:"v3.4", ch:[9], feat:"인사 기록·계약 대장·문서 보존기한", src:"온톨로지 › 회사 총괄운영 › 인사총무팀 · 경영기획팀", summary:"인사 기록을 직무 정보만으로 세우고 주민등록번호는 세무와 사대보험 신고에 필요한 법정 항목이라 필드를 두되 암호화 의무를 서버 없이 지킬 수 없으므로 값을 담는 자리를 아예 만들지 않고 보유 여부와 근거와 보관 위치와 파기 예정만 들게 했으며, 수집하지 않는 것을 이름을 대고 적고, 만료일 없는 계약은 등록을 거부하며 만료 경과를 임박과 따로 보이게 했고, 법령 원문을 대조하지 않은 보존기한에는 조문 번호를 찍지 않고 미확인임을 배지로 달았다", refs:[], status:"반영", hash:"c5b892a", auto:true },
@@ -47722,6 +48769,12 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
      워크로그 · 외부 화상 링크. **상수로 참조**하므로 스캔 밖이라 수동 등재한다(러너가 이중 단언한다).
      접두(hifin_corp_)로 묶지 않는다 — 넓게 잡으면 앞으로의 모든 corp 키가 개별 대조를 영영 받지 않는다.
      사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다. */
+  /* 은행 낱말 → 계정 사전(corpBankJv.js — 2026-11-12): 은행 표의 분류 칸에 적힌 낱말을 어느
+     계정과목으로 보낼지, **사람이 확정한 것만** 담는다. 기계가 고른 것은 담지 않는다.
+     ⚠️ 틀린 선택도 영구히 복제되므로, 한 낱말이 지난 장부에서 두 계정으로 갈린 적이 있으면
+        이 사전을 쓰지 않고 매번 다시 묻는다. 상수 참조라 스캔 밖이므로 수동 등재한다.
+     사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다. */
+  "hifin_corp_bankmap",
   "hifin_corp_mtg",
   /* 일정·공지·결재·릴리스(corpGov.js — CorpOps P9, 2026-11-12): 결재 큐 · 필독 확인자 · 릴리스 점검표와
      승인 상태 · 추가 일정 · **동일인 승인 시도 기록**. 상수 참조라 스캔 밖이므로 수동 등재한다.
@@ -56160,7 +57213,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.42,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":6.09,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

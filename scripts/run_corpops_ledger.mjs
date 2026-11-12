@@ -73,7 +73,8 @@ const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src
   "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
   ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
-  "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js", "src/data/corpVault.js"];
+  "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js", "src/data/corpVault.js",
+  "src/data/corpBankXlsx.js", "src/data/corpBankJv.js"];   /* 매니페스트와 **같은 순서** — 어긋나면 러너 녹색·브라우저 사망 */
 for (const f of LOAD) {
   try { vm.runInContext(rd(f), ctx); }
   catch (e) { console.error("[회계] " + f + " 적재 실패 — " + e.message); process.exit(1); }
@@ -93,9 +94,17 @@ const G = (expr) => vm.runInContext(expr, ctx);
 /* ── ① 항등식 + ② 분모 ───────────────────────────────────────────────── */
 const V = G("corpLedgerVerdict(CORP_JV_SEED, CORP_BANK_SEED)");
 V.rows.forEach((r) => {
+  /* 보류는 통과도 실패도 아니다 — 대신 **이유를 반드시 지닌다**. 이유 없는 보류는
+     「검사를 껐다」와 구별되지 않는다. 그래서 보류 줄은 이유로 센다. */
+  if (r.skip) { chk(!!(r.why || "").trim(), `①보류   ${r.ko} — 보류 이유가 적혀 있다`, "이유 없음"); return; }
   chk(r.ok, `①항등식 ${r.ko} (대상 ${r.n}건)`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
   chk(r.n > 0, `②분모   ${r.ko} 검사 대상 > 0`, r.n);
 });
+/* 보류가 조용히 번지지 않게 — 보류로 둘 수 있는 항등식을 **이름으로 못 박는다** */
+const SKIPPABLE = ["bank", "chain", "balmatch"];
+chk(V.rows.filter((r) => r.skip).every((r) => SKIPPABLE.indexOf(r.k) >= 0),
+  "①보류   보류는 은행 축 세 줄에서만 난다(다른 검사를 끄지 못한다)", V.rows.filter((r) => r.skip && SKIPPABLE.indexOf(r.k) < 0).map((r) => r.k));
+chk(V.rows.filter((r) => !r.skip).length >= 8, "②분모   실제로 도는 항등식 ≥ 8", V.rows.filter((r) => !r.skip).length);
 chk(V.pass, "①항등식 전건 통과", V.fail.map((f) => f.ko));
 
 /* 파일럿 전표 규모 — 완료 조건이 20~30건이다. 세 건짜리 장부로는 항등식이 의미가 없다. */
@@ -244,12 +253,37 @@ chk(RN.none === true && RN.lines.length === 0 && RN.gap === 0,
   "⑥은행   상대가 없으면 은행줄 0 · 차이 0", JSON.stringify({ none: RN.none, n: RN.lines.length, gap: RN.gap }));
 chk(RN.book.length > 0, "⑥분모   대사 보류여도 장부 쪽은 보여 주는가", RN.book.length);
 const VN = G("corpLedgerVerdict")(G("CORP_JV_SEED"), null, "");
-chk(VN.skip.length === 1 && VN.skip[0].k === "bank",
-  "⑥보류   은행 항등식 하나만 보류로 잡힌다", VN.skip.map((r) => r.k).join(" "));
+chk(VN.skip.map((r) => r.k).sort().join(" ") === "balmatch bank chain",
+  "⑥보류   상대가 없으면 은행 축 세 줄이 **모두** 보류로 잡힌다", VN.skip.map((r) => r.k).join(" "));
 chk(VN.skip.every((r) => (r.why || "").trim()), "⑥보류   보류 항등식은 이유를 지닌다", VN.skip.map((r) => r.why));
 chk(VN.zero.length === 0, "⑥보류   보류를 「분모 0 실패」로 세지 않는다", VN.zero.map((r) => r.k));
 const VS = G("corpLedgerVerdict")(G("CORP_JV_SEED"), G("CORP_BANK_SEED"), "");
-chk(VS.skip.length === 0, "⑥보류   은행줄이 있으면 보류가 없다(돌려야 한다)", VS.skip.map((r) => r.k));
+/* 검증용 묶음은 일부러 미대사를 품는다 — 잔액 사슬은 **돌고**, 장부 대조만 보류다.
+   「보류가 0」을 바라면 검증용 묶음이 통과하려고 자기 성질을 지워야 한다. */
+chk(VS.skip.map((r) => r.k).sort().join(" ") === "balmatch bank",
+  "⑥보류   은행줄이 있으면 잔액 사슬은 **돈다**(항진식과 계좌 전체 대조만 보류)", VS.skip.map((r) => r.k));
+const chRow = VS.rows.find((r) => r.k === "chain");
+chk(!!chRow && !chRow.skip && chRow.n > 0 && chRow.ok,
+  "⑥잔액   검증용 은행 묶음의 잔액 사슬이 전건 성립한다", JSON.stringify(chRow && { n: chRow.n, ok: chRow.ok, got: chRow.got }));
+/* ⓐ 음성 — 한 줄을 지우면 사슬이 **깨져야** 한다. 안 깨지면 검사가 없는 것이다. */
+const seedCut = Object.assign({}, G("CORP_BANK_SEED"), { lines: G("CORP_BANK_SEED").lines.filter((l, i) => i !== 5) });
+const VCut = G("corpLedgerVerdict")(G("CORP_JV_SEED"), seedCut, "");
+const chCut = VCut.rows.find((r) => r.k === "chain");
+chk(!!chCut && !chCut.skip && !chCut.ok, "⑥잔액ⓐ 은행 한 줄을 지우면 잔액 사슬이 깨진다(흘린 거래를 잡는다)", JSON.stringify(chCut && chCut.got));
+/* ⓑ 음성 — 금액만 1원 비틀어도 깨져야 한다 */
+const seedBend = Object.assign({}, G("CORP_BANK_SEED"), { lines: G("CORP_BANK_SEED").lines.map((l, i) => (i === 5 ? Object.assign({}, l, { a: l.a + 1 }) : l)) });
+const chBend = G("corpLedgerVerdict")(G("CORP_JV_SEED"), seedBend, "").rows.find((r) => r.k === "chain");
+chk(!!chBend && !chBend.ok, "⑥잔액ⓐ 금액을 1원 비틀어도 잔액 사슬이 깨진다", JSON.stringify(chBend && chBend.got));
+/* ⓒ 「언제나 맞는 검사」를 통과로 세지 않는다 — gap 은 조작한 은행줄에도 0이다 */
+const fake = { acct: "103", bank: "지어낸 줄", mask: "", live: true, from: "2026-01-01", to: "2026-01-02",
+  lines: [{ d: "2026-01-01", a: 1, bal: 1, m: "ㄱ" }, { d: "2026-01-02", a: 2, bal: 3, m: "ㄴ" }] };
+const VF = G("corpLedgerVerdict")(G("CORP_JV_SEED"), fake, "");
+const gapRow = VF.rows.find((r) => r.k === "bank");
+chk(gapRow.ok && gapRow.skip,
+  "⑥항진   지어낸 은행줄에도 대사 차이는 0이다 — 그래서 판정에서 뺀다", JSON.stringify({ ok: gapRow.ok, skip: gapRow.skip }));
+chk(/구조적으로/.test(gapRow.why || ""), "⑥항진   왜 판정에서 뺐는지 화면이 읽을 이유가 붙어 있다", gapRow.why);
+const balRow = VF.rows.find((r) => r.k === "balmatch");
+chk(!balRow.skip && !balRow.ok, "⑥항진   그 지어낸 줄은 **잔액 대조에서 걸린다**", balRow.got);
 chk(VS.rows.length === VN.rows.length, "⑥보류   보류로 항등식 항목을 지우지 않는다", [VS.rows.length, VN.rows.length]);
 if (board) {
   chk(/V\.skip/.test(board), "⑥보류   화면이 보류 수를 적는다", "없음");
@@ -515,10 +549,29 @@ chk(OPEN2.length === 0, "⑧선두ⓐ 자기시험 — 그 주차 자신의 과�
 const RT = SCHED.routines.map((r) => ({ t: r.t, s: G("corpRoutineState")(r, MST, MNOW, MW) }));
 const GEN = G("CORP_MTG_GEN");
 chk(GEN.length > 0, "⑧분모   생성 경로 루틴 표본 > 0", GEN.length);
-chk(RT.filter((x) => x.s.state === "due" && GEN.indexOf(x.t) < 0).length === 0,
-  "⑧루틴   생성 경로 없는 루틴에 「밀림」 0건", RT.filter((x) => x.s.state === "due" && GEN.indexOf(x.t) < 0).map((x) => x.t).join(" "));
-chk(RT.filter((x) => GEN.indexOf(x.t) < 0 && x.s.state !== "rel").every((x) => x.s.state === "nogen"),
-  "⑧루틴   나머지는 「생성 경로 없음」으로 표시", RT.filter((x) => GEN.indexOf(x.t) < 0 && x.s.state !== "rel" && x.s.state !== "nogen").map((x) => x.t).join(" "));
+/* 은행 대사는 **사람 반입 경로**다 — 생성 경로도 아니고 「경로 없음」도 아니다.
+   예외를 이름으로 못 박는다. 이름 없이 열어 두면 다른 루틴도 슬그머니 끼어든다. */
+const HUMANPATH = ["은행 대사"];
+const NOGEN = RT.filter((x) => GEN.indexOf(x.t) < 0 && HUMANPATH.indexOf(x.t) < 0);
+chk(NOGEN.filter((x) => x.s.state === "due").length === 0,
+  "⑧루틴   생성 경로 없는 루틴에 「밀림」 0건", NOGEN.filter((x) => x.s.state === "due").map((x) => x.t).join(" "));
+chk(NOGEN.filter((x) => x.s.state !== "rel").every((x) => x.s.state === "nogen"),
+  "⑧루틴   나머지는 「생성 경로 없음」으로 표시", NOGEN.filter((x) => x.s.state !== "rel" && x.s.state !== "nogen").map((x) => x.t).join(" "));
+/* 사람 반입 루틴 — 올리지 않았으면 「밀림」이 뜨고, 올렸으면 뜨지 않는다.
+   늘 빨간 벽이면 사람이 색을 안 믿고, 늘 녹색이면 검사가 없는 것과 같다. 양쪽을 다 본다. */
+const BRT = SCHED.routines.find((r) => r.t === "은행 대사");
+chk(!!BRT && BRT.ai === "핀테크" && BRT.owner === "M2", "⑧반입   은행 대사 루틴의 담당이 핀테크 · M2", BRT && [BRT.ai, BRT.owner].join(" "));
+chk(/사람이 올려야|사람이 올리/.test(BRT.need || ""), "⑧반입   자동으로 가져오지 못한다고 루틴에 적혀 있다", BRT && BRT.need);
+chk(/승인/.test(BRT.human || "") && !/승인/.test(BRT.does || ""),
+  "⑧반입   승인은 사람 칸에만 있다(AI 칸에 없다)", JSON.stringify({ does: BRT.does, human: BRT.human }));
+const sNone = G("corpRoutineState")(BRT, MST, MNOW, MW, { bankCov: null });
+chk(sNone.state === "due" && /밀림/.test(sNone.ko), "⑧반입   한 번도 안 올렸으면 밀림으로 뜬다", sNone.ko);
+const yesterday = G("corpBjvShiftDay")(G("corpOpsToday")(MNOW), -1);
+const sOk = G("corpRoutineState")(BRT, MST, MNOW, MW, { bankCov: { from: "2026-11-01", to: yesterday } });
+chk(sOk.state === "made" && /어제까지/.test(sOk.ko), "⑧반입   어제 것까지 올렸으면 밀림이 아니다(늘 빨간 벽이 아니다)", sOk.ko);
+const sLate = G("corpRoutineState")(BRT, MST, MNOW, MW, { bankCov: { from: "2026-11-01", to: G("corpBjvShiftDay")(yesterday, -3) } });
+chk(sLate.state === "due" && /3일/.test(sLate.ko), "⑧반입   며칠치가 비었는지 날수로 적는다", sLate.ko);
+chk(G("corpBjvDue")({ to: yesterday }, G("corpOpsToday")(MNOW)).late === 0, "⑧반입   밀린 날수는 거래일이 아니라 **올린 기간**으로 센다(거래 0건인 날과 안 올린 날을 가른다)");
 chk(RT.some((x) => x.s.state === "made"), "⑧루틴   생성된 루틴이 표시된다", RT.filter((x) => x.s.state === "made").map((x) => x.t).join(" "));
 /* ⓐ 자기시험 — 기한이 지났는데 생성물이 없으면 실제로 밀림이 떠야 한다 */
 const LATE = G("corpRoutineState")(SCHED.routines.find((r) => r.t === "주간회의 자료"),
@@ -939,17 +992,51 @@ const toBank = G("corpUpToBank"), mrgBank = G("corpUpMergeBank"), toVault = G("c
 const bIn = G("corpUpBankIn");
 chk(bIn("입금") === 1 && bIn("출금") === -1, "⑪변환   입출 구분을 읽는다", [bIn("입금"), bIn("출금")]);
 chk(bIn("") === null && bIn("이체") === null, "⑪변환ⓐ 모르는 구분은 null — 부호를 추측하지 않는다", [bIn(""), bIn("이체")]);
-const bk1 = toBank([{ date: "2026-10-05", desc: "카드대금", amt: 100, io: "출금" },
-                    { date: "2026-10-06", desc: "매출입금", amt: 200, io: "입금" },
-                    { date: "2026-10-07", desc: "부호대로", amt: -50 }]);
+const bk1r = toBank([{ date: "2026-10-05", desc: "카드대금", amt: 100, io: "출금", _row: 2 },
+                     { date: "2026-10-06", desc: "매출입금", amt: 200, io: "입금", _row: 3 },
+                     { date: "2026-10-07", desc: "부호대로", amt: -50, _row: 4 }]);
+const bk1 = bk1r.lines;
 chk(bk1.length === 3 && bk1[0].a === -100 && bk1[1].a === 200 && bk1[2].a === -50,
   "⑪변환   출금은 음수 · 입금은 양수 · 구분 없으면 적힌 부호 그대로", JSON.stringify(bk1.map((x) => x.a)));
-chk(toBank([{ date: "", desc: "x", amt: 10 }, { date: "2026-10-05", desc: "x", amt: 0 }]).length === 0,
-  "⑪변환   일자 없는 줄 · 금액 0인 줄은 버린다");
-const mg = mrgBank(bk1, bk1.concat([{ d: "2026-10-08", a: 7, m: "새 줄" }]));
+/* 두 열(입금액·출금액)로 오는 은행이 대부분이다 — 한 열만 받으면 출금이 통째로 사라진다 */
+const bk2 = toBank([{ date: "2026-10-05", desc: "입금줄", inAmt: 500, outAmt: 0, bal: 500, _row: 2 },
+                    { date: "2026-10-06", desc: "출금줄", inAmt: 0, outAmt: 300, bal: 200, _row: 3 }]);
+chk(bk2.lines.length === 2 && bk2.lines[0].a === 500 && bk2.lines[1].a === -300,
+  "⑪변환   입금·출금 두 열을 받는다(출금을 흘리지 않는다)", JSON.stringify(bk2.lines.map((x) => x.a)));
+chk(bk2.lines[0].bal === 500 && bk2.lines[1].bal === 200, "⑪변환   잔액을 싣는다(흘린 거래를 잡는 유일한 사실)", JSON.stringify(bk2.lines.map((x) => x.bal)));
+/* ⚠️ 버리는 줄을 **센다** — 조용히 건너뛰면 장부가 은행보다 적어지고 아무도 모른다 */
+const bkDrop = toBank([{ date: "", desc: "x", amt: 10, _row: 9 }, { date: "2026-10-05", desc: "x", amt: 0, _row: 10 }]);
+chk(bkDrop.lines.length === 0 && bkDrop.dropped.length === 2 && bkDrop.n === 2,
+  "⑪변환   일자 없는 줄 · 금액 0인 줄은 **사유와 함께** 버린다", JSON.stringify(bkDrop.dropped));
+chk(bkDrop.dropped.every((d) => d.row > 0 && (d.why || "").trim()), "⑪변환   버린 줄마다 몇 행인지와 이유가 있다", JSON.stringify(bkDrop.dropped));
+const mg = mrgBank(bk1, bk1.concat([{ d: "2026-10-08", t: "", a: 7, bal: null, m: "새 줄" }]));
 chk(mg.dup === 3 && mg.added === 1 && mg.lines.length === 4,
   "⑪변환   같은 줄을 두 번 받지 않는다(두 배가 된다)", JSON.stringify({ dup: mg.dup, add: mg.added }));
 chk(mg.lines.every((l, i, A) => i === 0 || A[i - 1].d <= l.d), "⑪변환   은행줄은 날짜 순으로 선다");
+/* ⓐ 자기시험 — 같은 날 같은 금액 **두 거래**가 한 건으로 접히지 않는가.
+   형 파일에 2026-11-10 1,800,000원이 두 줄 있고 적요가 둘 다 「타행MB」다. 실제로 접혔었다. */
+const twin = [{ d: "2026-11-10", t: "11:11:56", a: 1800000, bal: 3777986, m: "타행MB" },
+              { d: "2026-11-10", t: "11:27:40", a: 1800000, bal: 1477986, m: "타행MB" }];
+const mgTwin = mrgBank([], twin);
+chk(mgTwin.lines.length === 2 && mgTwin.dup === 0,
+  "⑪변환ⓐ 같은 날 같은 금액 두 거래가 **접히지 않는다**(시각·잔액으로 가른다)", JSON.stringify({ n: mgTwin.lines.length, dup: mgTwin.dup }));
+const mgSame = mrgBank(twin, twin);
+chk(mgSame.added === 0 && mgSame.dup === 2, "⑪변환   같은 파일을 두 번 올리면 하나도 더해지지 않는다", JSON.stringify({ add: mgSame.added, dup: mgSame.dup }));
+/* 열 제안 — 실제 은행 머리글을 먹여 **어느 열을 집는지 못 박는다**.
+   「입금액」에는 「금액」이 들어 있어, 순진한 부분 일치는 출금을 통째로 버린다. */
+const BHEAD = ["No", "전체선택", "거래일시", "적요", "입금액", "출금액", "내용", "잔액", "거래점명", "입금인코드", "메모", "메모"];
+const bmap = G("corpUpSuggest")(BHEAD, G("corpUpSpec")("bank"));
+chk(bmap.date === 2, "⑪제안   거래일시 열을 집는다", bmap.date);
+chk(bmap.desc === 6, "⑪제안   상대가 적힌 「내용」을 집는다(거래 수단 「적요」가 아니다)", bmap.desc + " = " + BHEAD[bmap.desc]);
+chk(bmap.inAmt === 4 && bmap.outAmt === 5, "⑪제안   입금액·출금액을 따로 집는다", JSON.stringify([bmap.inAmt, bmap.outAmt]));
+chk(bmap.amt === undefined, "⑪제안ⓐ 두 열이 잡히면 한 열짜리 금액은 **비운다**(두 번 세지 않는다)", bmap.amt);
+chk(bmap.bal === 7, "⑪제안   잔액 열을 집는다", bmap.bal);
+/* 시각 붙은 날짜 — 이걸 떨구면 은행 파일이 한 줄도 안 들어간다 */
+const dtOk = G("corpUpValidate")("bank", BHEAD, [["1", "상품매출", "2026.11.11 20:05:15", "BZ뱅크", "0", "1320000", "수수료지급", "707986", "", "", "", ""]], bmap);
+chk(dtOk.ok.length === 1 && dtOk.ok[0].date === "2026-11-11" && dtOk.ok[0].time === "20:05:15",
+  "⑪날짜   「2026.11.11 20:05:15」을 받고 시각을 따로 보관한다", JSON.stringify(dtOk.bad.length ? dtOk.bad : dtOk.ok[0]));
+const dtSum = G("corpUpValidate")("bank", BHEAD, [["", "합계", "합계", "", "", "", "", "", "", "", "", ""]], bmap);
+chk(dtSum.ok.length === 0 && dtSum.bad.length === 1, "⑪날짜   꼬리 「합계」 줄은 거래로 읽지 않는다", JSON.stringify(dtSum.bad[0] && dtSum.bad[0].why));
 const vl = toVault([{ rel: "02.회계/a.pdf", name: "a.pdf", dir: "02.회계", size: "12", at: "2026-10-23", ext: "PDF" },
                     { rel: "", name: "b.pdf" }]);
 chk(vl.length === 1 && vl[0].size === 12 && vl[0].ext === "pdf",
@@ -958,8 +1045,9 @@ chk(vl.length === 1 && vl[0].size === 12 && vl[0].ext === "pdf",
 const bkState = { jv: [{ id: "x" }], bank: [{ d: "2026-10-05", a: -100, m: "카드대금" }] };
 const BKS = G("corpBankOf")(bkState);
 chk(!!BKS && BKS.live === true, "⑪반입   반입된 은행줄이 대사 상대가 된다", JSON.stringify(BKS));
-chk(G("corpLedgerVerdict")(G("CORP_JV_SEED"), BKS, "").skip.length === 0,
-  "⑪반입   은행줄이 들어오면 보류가 풀린다(돌린다)");
+const VBK = G("corpLedgerVerdict")(G("CORP_JV_SEED"), BKS, "");
+chk(VBK.skip.map((r) => r.k).indexOf("chain") < 0 || VBK.rows.find((r) => r.k === "chain").n === 0,
+  "⑪반입   잔액이 실린 은행줄이 들어오면 사슬 검사가 돈다", VBK.skip.map((r) => r.k).join(" "));
 
 
 if (agBoard) {
@@ -1063,6 +1151,177 @@ if (hook) {
   });
 }
 
+/* ── ⑬ 은행 내역 → 전표 ────────────────────────────────────────────────
+   형 지시 2026-11-12 — 「은행거래내역 자료에 따라서만 전표를 발생시켜.」
+   여기서 지키는 것 셋:
+     ① 엑셀 읽기는 **검사할 수 있는 층**(문자열 in / 배열 out)에 둔다. ZIP 해제는
+        러너의 vm 에 DecompressionStream 이 없어 돌릴 수 없다 — 그 층에 판단을 두면 검사가 없다.
+     ② 「흘린 거래」를 잡는 것은 잔액 사슬뿐이다. 대사 차이는 항진식이라 늘 0이다.
+     ③ 계정은 **기계가 고르지 않는다.** 못 고른 줄이 조용히 사라지면 장부가 은행보다 적어진다. */
+const XLSXF = "src/data/corpBankXlsx.js";
+const BJVF = "src/data/corpBankJv.js";
+
+/* 엑셀 표 층 — 실제로 터졌던 꼴을 전부 먹인다 */
+const XT = G("cbxSelfTest")();
+chk(XT.length >= 10, "⑬엑셀   표 층 자기시험 항목 ≥ 10", XT.length);
+XT.forEach((r) => {
+  chk(r.ok, `⑬엑셀   ${r.ko}`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
+  chk(r.n > 0, `⑬분모   ${r.ko} 검사 대상 > 0`, r.n);
+});
+/* ⓐ 자기시험 — 자기닫는 빈 셀을 흘리는 파서는 **열이 밀린다.** 실제로 조사 중 한 파서가
+   이 함정에 빠져 파일 구조를 잘못 보고했다. 밀리면 출금이 매출로 읽힌다. */
+const ssBad = G("cbxShared")('<sst uniqueCount="3"><si><t>가</t></si><si><t/></si><si><t>다</t></si></sst>');
+chk(ssBad.list.length === 3 && ssBad.ok && ssBad.list[2] === "다",
+  "⑬엑셀ⓐ 빈 문자열을 흘리면 그 뒤가 한 칸 밀린다 — 밀리지 않는다", JSON.stringify(ssBad.list));
+chk(!G("cbxShared")('<sst uniqueCount="5"><si><t>가</t></si></sst>').ok,
+  "⑬엑셀ⓐ 선언된 개수와 다르면 **성립하지 않는다**(밀린 채 읽지 않는다)");
+chk(G("cbxColIdx")("A1") === 0 && G("cbxColIdx")("Z9") === 25 && G("cbxColIdx")("AA1") === 26 && G("cbxColIdx")("AB1") === 27,
+  "⑬엑셀   열 이름을 자리로 되돌린다(A·Z·AA·AB)", [G("cbxColIdx")("A1"), G("cbxColIdx")("Z9"), G("cbxColIdx")("AA1"), G("cbxColIdx")("AB1")].join(","));
+chk(typeof G("cbxRead") === "function" && typeof G("cbxCan") === "function",
+  "⑬엑셀   바이트 층은 따로 있다(브라우저 전용 · 러너는 표 층만 돌린다)");
+let xsrc = "";
+try { xsrc = rd(XLSXF); } catch (e) { fails.push("⑬엑셀 " + XLSXF + " 없음"); }
+if (xsrc) {
+  chk(/DecompressionStream/.test(xsrc), "⑬엑셀   압축 해제는 브라우저 내장 기능을 쓴다(라이브러리를 더하지 않는다)", "없음");
+  /* ⚠️ **주석을 걷고** 센다 — 왜 안 쓰는지 적어 둔 주석이 「쓴다」로 걸리면,
+     사람이 설명을 지워 가드를 통과시키는 사고가 난다. */
+  const bare = xsrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  chk(!/sheetjs|SheetJS|exceljs|cdn\./i.test(bare), "⑬엑셀   외부 엑셀 라이브러리를 끌어오지 않는다", "걸림");
+  chk(/\+ 30 \+ nlen \+ elen/.test(bare),
+    "⑬엑셀   데이터 시작점을 **로컬 머리**의 이름·extra 길이로 잰다(목차 값과 다르다)", "없음");
+  chk(/cbxU16\(b, o \+ 28\)/.test(bare), "⑬엑셀   extra 길이를 로컬 머리에서 다시 읽는다(목차는 0으로 적혀 있다)", "없음");
+  chk(/0x3c/.test(bare), "⑬엑셀   푼 내용이 XML 인지 보고 아니면 멈춘다(조용히 빈 표가 되지 않는다)", "없음");
+  chk((bare.match(/Math\.random/g) || []).length === 0, "⑬결정론 corpBankXlsx.js Math.random 0건");
+}
+
+/* 잔액 사슬 — 음성 표본이 **실제로 깨지는지** 본다 */
+const BT = G("corpBjvSelfTest")();
+chk(BT.length >= 6, "⑬잔액   사슬 자기시험 항목 ≥ 6", BT.length);
+BT.forEach((r) => {
+  chk(r.ok, `⑬잔액   ${r.ko}`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
+  chk(r.n > 0, `⑬분모   ${r.ko} 검사 대상 > 0`, r.n);
+});
+
+/* 계정 고르기 — 지어낸 기본값이 없는가 */
+const SURE = G("CORP_BJV_SURE");
+chk(SURE.length >= 1, "⑬분모   확실한 대응 표본 > 0", SURE.length);
+chk(SURE.every((x) => G("corpAcct")(x.c)), "⑬계정   확실한 대응은 전부 계정과목표에 있다", SURE.filter((x) => !G("corpAcct")(x.c)).map((x) => x.c));
+chk(SURE.every((x) => (x.why || "").trim()), "⑬계정   확실하다고 한 근거가 적혀 있다", SURE.filter((x) => !(x.why || "").trim()).map((x) => x.w));
+chk(!SURE.some((x) => x.w === "매입비용" || x.w === "수수료"),
+  "⑬계정ⓐ 실제 장부에서 갈린 낱말은 **코드가 못 박지 않는다**", SURE.map((x) => x.w).join(" "));
+const pickEmpty = G("corpBjvPick")("", "in", { map: {} }, []);
+chk(!pickEmpty.c && (pickEmpty.why || "").trim(), "⑬계정   분류가 비면 고르지 않고 이유를 적는다", pickEmpty.why);
+const pickUnknown = G("corpBjvPick")("처음보는낱말", "out", { map: {} }, []);
+chk(!pickUnknown.c && (pickUnknown.why || "").trim(), "⑬계정ⓐ 모르는 낱말을 **아무 계정에나 넣지 않는다**", pickUnknown.why);
+const pickSure = G("corpBjvPick")("상품매출", "in", { map: {} }, []);
+chk(pickSure.c === "401" && pickSure.src === "sure", "⑬계정   확실한 낱말은 바로 선다(늘 막는 벽이 아니다)", JSON.stringify(pickSure));
+const pickSaved = G("corpBjvPick")("처음보는낱말", "out", { map: { "처음보는낱말|out": "831" } }, []);
+chk(pickSaved.c === "831" && pickSaved.src === "saved", "⑬계정   사람이 확정한 것을 기억해 다음부터 쓴다", JSON.stringify(pickSaved));
+/* 한 낱말이 지난 장부에서 두 계정으로 갈렸으면 **기억해도 다시 묻는다** */
+const splitJv = [{ id: "a", d: "2026-10-01", desc: "매입비용 지급", l: [["251", 100, 0, ""], ["103", 0, 100, ""]] },
+                 { id: "b", d: "2026-11-01", desc: "매입비용 지급", l: [["831", 100, 0, ""], ["103", 0, 100, ""]] }];
+const pickSplit = G("corpBjvPick")("매입비용", "out", { map: { "매입비용|out": "831" } }, splitJv);
+chk(!pickSplit.c && pickSplit.src === "split", "⑬계정ⓐ 갈린 낱말은 기억이 있어도 **다시 묻는다**(틀린 선택이 복제되지 않게)", JSON.stringify(pickSplit));
+const pickNow = G("corpBjvPick")("매입비용", "out", { map: {}, pick: { "매입비용|out": "451" } }, splitJv);
+chk(pickNow.c === "451" && pickNow.src === "picked", "⑬계정   지금 사람이 고른 것이 무엇보다 앞선다(고를 수 없는 줄이 되지 않는다)", JSON.stringify(pickNow));
+
+/* 전표로 바꾸기 — 전건 대응이 서는가 */
+const BL = [
+  { row: 2, d: "2026-11-10", t: "11:05:45", a: 900000, bal: 1977986, m: "입금A", cls: "상품매출" },
+  { row: 3, d: "2026-11-10", t: "11:11:56", a: 1800000, bal: 3777986, m: "입금B", cls: "상품매출" },
+  { row: 4, d: "2026-11-10", t: "11:25:55", a: -2420000, bal: 1357986, m: "출금A", cls: "매입비용" },
+  { row: 5, d: "2026-11-10", t: "11:27:40", a: 120000, bal: 1477986, m: "입금C", cls: "상품매출" },
+];
+const BB = G("corpBjvBuild")(BL, { map: {} }, { jv: [], closed: [], ov: {} }, []);
+chk(BB.made.length + BB.held.length + BB.dup.length === BB.n && BB.n === 4,
+  "⑬전표   은행 줄 = 전표 + 보류 + 이미 있음 (한 줄도 흘리지 않는다)", JSON.stringify({ made: BB.made.length, held: BB.held.length, dup: BB.dup.length, n: BB.n }));
+chk(BB.made.length === 3 && BB.held.length === 1,
+  "⑬전표   확실한 줄은 전표가 되고 모르는 줄만 남는다", JSON.stringify({ made: BB.made.length, held: BB.held.length }));
+chk(BB.held.every((h) => (h.why || "").trim() && h.row > 0), "⑬전표   보류 줄마다 몇 행인지와 이유가 있다", JSON.stringify(BB.held[0]));
+chk(BB.made.every((j) => (j.l || []).some((l) => l[0] === "103")), "⑬전표   모든 전표가 보통예금을 상대로 선다");
+chk(BB.made.every((j) => G("corpJvSum")(j).ok), "⑬전표   만든 전표가 전건 차대 일치");
+const inJv = BB.made.find((j) => j.l[0][0] === "103");
+chk(!!inJv && inJv.l[0][1] > 0, "⑬전표   입금은 보통예금 **차변**에 선다", JSON.stringify(inJv && inJv.l));
+const outRow = BB.made.find((j) => j.l[1][0] === "103");
+chk(!outRow || outRow.l[1][2] > 0, "⑬전표   출금은 보통예금 **대변**에 선다");
+const ids = BB.made.map((j) => j.id);
+chk(ids.join(" ") === "20261110-01 20261110-02 20261110-03",
+  "⑬전표   번호는 거래 **시각 오름차순**으로 그날 01부터(기존 10·11월 규약 역산)", ids.join(" "));
+chk(BB.made.every((j) => j.by === "은행반입" && !j.ap && j.st === "draft"),
+  "⑬전표   은행에서 만든 전표는 **기표 상태**로 앉는다(반입이 곧 장부가 되지 않는다)", JSON.stringify(BB.made[0] && { by: BB.made[0].by, st: BB.made[0].st }));
+/* 마감된 달은 들어가지 않는다 — 그리고 **사라지지도 않는다** */
+const BBC = G("corpBjvBuild")(BL, { map: {} }, { jv: [], closed: ["2026-11"], ov: {} }, []);
+chk(BBC.made.length === 0 && BBC.held.length === 4,
+  "⑬마감   마감된 달의 줄은 전표가 되지 않고 **보류로 남는다**", JSON.stringify({ made: BBC.made.length, held: BBC.held.length }));
+chk(BBC.held.some((h) => /마감/.test(h.why || "")), "⑬마감   왜 안 들어갔는지 마감이라고 적는다", BBC.held[0] && BBC.held[0].why);
+/* 두 번 올려도 두 배가 되지 않는다 */
+const BB2 = G("corpBjvBuild")(BL, { map: {} }, { jv: BB.made, closed: [], ov: {} }, BB.made);
+chk(BB2.made.length === 0 && BB2.dup.length === 3,
+  "⑬중복   같은 파일을 두 번 올려도 전표가 더 생기지 않는다", JSON.stringify({ made: BB2.made.length, dup: BB2.dup.length }));
+chk(BB2.dup.every((d) => d.id && (d.why || "").trim()), "⑬중복   건너뛴 줄마다 어느 전표와 겹치는지 적는다", JSON.stringify(BB2.dup[0]));
+/* 손으로 넣은 전표와 겹칠 때도 조용히 두 배가 되지 않는다 */
+const hand = [{ id: "20261110-99", d: "2026-11-10", desc: "손으로 넣음", st: "posted", by: "조성래", ap: "핀테크",
+  l: [["103", 900000, 0, ""], ["401", 0, 900000, ""]] }];
+const BB3 = G("corpBjvBuild")(BL, { map: {} }, { jv: hand, closed: [], ov: {} }, hand);
+chk(BB3.dup.length === 1 && BB3.dup[0].soft && /이미 있습니다/.test(BB3.dup[0].why || ""),
+  "⑬중복ⓐ 은행에서 만들지 않은 같은 거래도 **사람에게 보인다**", JSON.stringify(BB3.dup[0] && { id: BB3.dup[0].id, soft: !!BB3.dup[0].soft }));
+chk(BB3.made.length + BB3.held.length + BB3.dup.length === 4, "⑬중복   그래도 전건 대응은 선다", BB3.made.length + "+" + BB3.held.length + "+" + BB3.dup.length);
+
+/* 밀린 날 세기 — 거래일이 아니라 **올린 기간**으로 센다 */
+chk(G("corpBjvDue")({ to: "2026-11-11" }, "2026-11-12").ok, "⑬매일   어제 것까지 있으면 밀리지 않았다");
+chk(G("corpBjvDue")({ to: "2026-11-08" }, "2026-11-12").late === 3, "⑬매일   비어 있는 날수를 센다", G("corpBjvDue")({ to: "2026-11-08" }, "2026-11-12").late);
+chk(!G("corpBjvDue")(null, "2026-11-12").ok, "⑬매일   한 번도 안 올렸으면 밀린 것이다");
+chk(!G("corpBjvDue")({ to: "2026-11-11" }, "").ok, "⑬매일ⓐ 오늘이 정해지지 않으면 **통과로 세지 않는다**");
+chk(G("corpBjvShiftDay")("2026-03-01", -1) === "2026-02-28" && G("corpBjvShiftDay")("2027-01-01", -1) === "2026-12-31",
+  "⑬매일   달·해를 넘어가도 어제를 바르게 센다", [G("corpBjvShiftDay")("2026-03-01", -1), G("corpBjvShiftDay")("2027-01-01", -1)].join(" "));
+
+/* 화면 — 은행 대사 지면 안에 있고, 민감 검사가 미리보기보다 **앞**인가 */
+let bkBoard = "";
+try { bkBoard = rd(BOARD); } catch (e) { fails.push("⑬화면 " + BOARD + " 없음"); }
+if (bkBoard) {
+  chk(/function ClBankUp\(/.test(bkBoard), "⑬화면   은행 내역 올리기 패널이 재무현황 지면에 있다", "없음");
+  chk(/<ClBankUp /.test(bkBoard), "⑬화면   은행 대사 지면이 그 패널을 띄운다", "없음");
+  const iUp = bkBoard.indexOf("const UP = <ClBankUp");
+  const iNone = bkBoard.indexOf("if (R.none)");
+  chk(iUp >= 0 && iNone >= 0 && iUp < iNone,
+    "⑬화면   패널이 **두 갈래 앞**에 선다(한 번 올린 뒤 올릴 자리가 사라지지 않는다)", { up: iUp, none: iNone });
+  const iScan2 = bkBoard.indexOf("corpUpScan(");
+  const iSet2 = bkBoard.indexOf("setRaw({");
+  chk(iScan2 >= 0 && iSet2 >= 0 && iScan2 < iSet2,
+    "⑬화면   민감자료 검사가 미리보기보다 **앞**이다(입구가 둘인데 한쪽만 막으면 막는 것이 아니다)", { scan: iScan2, prev: iSet2 });
+  chk(/corpBjvBuild\(/.test(bkBoard) && /corpBjvChain\(/.test(bkBoard), "⑬화면   전표 만들기·잔액 검사는 러너와 같은 함수", "없음");
+  chk(/0xd0/.test(bkBoard) && /0x50/.test(bkBoard), "⑬화면   파일 머리를 보고 엑셀·구형엑셀을 가른다(쓰레기 표를 띄우지 않는다)", "없음");
+  chk(/자동으로 가져오지 못/.test(bkBoard), "⑬화면   계좌를 자동으로 가져오지 못한다고 적는다", "없음");
+  chk(/어디로도 전송되지 않습니다/.test(bkBoard), "⑬화면   파일이 전송되지 않는다고 적는다", "없음");
+  chk(/기계가 고르지 않습니다/.test(bkBoard), "⑬화면   계정은 사람이 고른다고 적는다", "없음");
+  chk(/틀린 선택도 그대로 복제됩니다|틀린 선택도/.test(bkBoard), "⑬화면   기억의 위험도 함께 적는다", "없음");
+  chk(/거래가 0건인 날과 안 올린 날/.test(bkBoard), "⑬화면   기간을 사람이 적는 까닭을 적는다", "없음");
+}
+let bjvSrc = "";
+try { bjvSrc = rd(BJVF); } catch (e) { fails.push("⑬엔진 " + BJVF + " 없음"); }
+if (bjvSrc) {
+  const bare = bjvSrc.replace(/\/\*[\s\S]*?\*\//g, "");
+  chk((bare.match(/Math\.random/g) || []).length === 0, "⑬결정론 corpBankJv.js Math.random 0건");
+  chk(!/new Date\(\)/.test(bare), "⑬결정론 corpBankJv.js 인자 없는 new Date() 0건(날짜는 인자로 받는다)");
+  const names = bare.match(/["'][^"']*(연세|이지영|설영호|이일규)[^"']*["']/g) || [];
+  chk(names.length === 0, "⑬비밀   실제 거래 상대 이름이 코드에 0건(공개 배포본에 회사 거래를 싣지 않는다)", names.join(" "));
+}
+/* 저장 키 등재 */
+chk(cat.indexOf('"' + G("CORP_BJV_KEY") + '"') >= 0, `⑬카탈로그 저장 키 ${G("CORP_BJV_KEY")} dataCatalog.js 등재`, "미등재");
+if (hook) {
+  ["corpBankXlsx", "corpBankJv"].forEach((n) => {
+    chk(hook.indexOf(n) >= 0, `⑬게이트 pre-commit 감시 대상에 ${n}`, "미등재");
+  });
+}
+/* 매니페스트와 러너 적재 순서가 **같은가** — 어긋나면 러너 녹색·브라우저 사망이 가능하다 */
+const MANI = rd("src/_manifest.txt").split("\n").map((x) => x.trim()).filter(Boolean);
+["src/data/corpBankXlsx.js", "src/data/corpBankJv.js"].forEach((f) => {
+  chk(MANI.indexOf(f) >= 0, `⑬번들   ${f} 가 매니페스트에 있다`, "없음");
+});
+chk(MANI.indexOf("src/data/corpBankXlsx.js") < MANI.indexOf("src/data/corpBankJv.js"),
+  "⑬번들   매니페스트 순서가 러너 적재 순서와 같다");
+
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -1078,6 +1337,7 @@ console.log(`[주간회의] 주차 ${MW && MW.key}(D-${MW && MW.dday}) · 참석
 console.log(`[자료실  ] 종류 ${KINDS.length}종(확정 자료 ${KINDS.filter((k) => k.key).length}) · 부서 ${DEPTS.length} ↔ 팀 ${G("CORP_TEAMS").length} · 팀별 지면 ${G("CORP_TEAMS").filter((t) => t.pages.some((p) => p.comp === "CorpVaultSection")).length}/${G("CORP_TEAMS").length} · 대장 ${G("corpVaultRows")(VST).length}건(반입분)`);
 console.log(`[반입대화] 반입 섹션 ${G("CORP_UP_SPEC").length}종(상한 ${G("CORP_UP_MAXKB")}KB) · 민감 패턴 ${G("CORP_UP_SCAN").length}종 · AI 팀장 ${AGL.length}명(도구 보유 ${hasTool.length} · 도구 없음 ${noTool.length}) · 도구 ${G("CORP_AG_TOOL").length}종`);
 console.log(`[결재릴리스] 릴리스 ${RELS.length}건 · 승인 가능자 ${RELWHO.length}명(S1) · 결재 종류 ${G("CORP_APR_KIND").length}종 · 점검 ${G("CORP_REL_CHECK").length}항목 · 필독 ${must.length}건(미확인 ${must.reduce((n, m) => n + m.left.length, 0)}명) · 게이트 ${GATES.length}종 훅 대조`);
+console.log(`[은행전표] 엑셀 표 층 ${XT.length}항목 · 잔액 사슬 ${BT.length}항목 · 확실한 계정 대응 ${SURE.length}종(나머지는 사람이 확정) · 표본 ${BB.n}줄 → 전표 ${BB.made.length} · 보류 ${BB.held.length}`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {
   console.log(`[회계엔진] 통과 ${oks.length} · 실패 ${fails.length} / ${total}`);

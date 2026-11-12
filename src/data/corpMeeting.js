@@ -252,11 +252,23 @@ function corpMtgTaskId(st) {
    corpRoutineWhen의 late는 「직전 예정이 있었다」라 사실상 늘 참이다. 그걸 빨갛게 칠하면
    루틴 열둘이 전건 빨강이 되고, 나중에 진짜 밀렸을 때 아무도 보지 않는다.
    여기서 밀림은 **생성 경로가 있는 루틴인데 그 주기분 생성물이 없고 예정 시각이 지났을 때**뿐이다. */
-function corpRoutineState(r, st, now, week) {
+function corpRoutineState(r, st, now, week, led) {
   const w = typeof corpRoutineWhen === "function" ? corpRoutineWhen(r, now) : {};
   if (w.kind === "release") return { state: "rel", ko: "배포 전", next: null, prev: null };
   const next = r.every === "month" ? corpWorkdayShift(w.next) : w.next;
   const shifted = !!(r.every === "month" && w.next && next && next.getTime() !== w.next.getTime());
+  /* ⚠️ 은행 대사는 **생성 경로가 아니라 사람 반입 경로**다. 시스템이 만들어 내는 것이 아니라
+     사람이 올려야 시작된다 — 그래서 CORP_MTG_GEN(생성 경로)에 넣지 않고 따로 가른다.
+     넣어 버리면 「생성됨」이라는 말이 거짓이 되고, 안 가르면 영영 「경로 없음」으로 남는다. */
+  if (r.t === "은행 대사") {
+    const D = typeof corpBjvDue === "function"
+      ? corpBjvDue((led && led.bankCov) || null, typeof corpOpsToday === "function" ? corpOpsToday(now) : "")
+      : { ok: false, ko: "셀 수 없습니다" };
+    const late = !D.ok && !!w.prev && w.prev <= now;
+    return { state: D.ok ? "made" : (late ? "due" : "wait"),
+      ko: D.ok ? "어제까지 들어옴" : (late ? "밀림 — " + D.ko : "예정 — 사람이 올려야 시작됩니다"),
+      next: next, prev: w.prev, shifted: shifted, was: w.next, due: D, human: true };
+  }
   if (CORP_MTG_GEN.indexOf(r.t) < 0) {
     return { state: "nogen", ko: "생성 경로 없음", next: next, prev: w.prev, shifted: shifted, was: w.next };
   }

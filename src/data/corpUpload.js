@@ -33,11 +33,21 @@ const CORP_UP_SPEC = [
     label: { no: "전표번호", date: "일자", desc: "적요", acct: "계정과목(코드 또는 이름)", dr: "차변", cr: "대변", memo: "줄 적요" },
   },
   {
-    k: "bank", ko: "은행 거래내역", team: "M2", into: "재무현황(은행 대사)", live: true,
-    d: "일자 · 적요 · 입금 또는 출금. 한 열에 부호로 적혀 있어도 됩니다.",
-    need: ["date", "desc", "amt"], opt: ["io"],
+    k: "bank", ko: "은행 거래내역", team: "M2", into: "재무현황(은행 대사 · 전표)", live: true,
+    d: "은행에서 내려받은 거래내역을 그대로 올립니다(.xlsx 또는 CSV). "
+       + "**입금액 · 출금액이 두 열로 나뉘어 있어도 받습니다** — 은행마다 열 순서가 거꾸로라 "
+       + "어느 쪽이 입금인지 **사람이 확정합니다**. 추측하면 모든 부호가 뒤집힙니다. "
+       + "**잔액 열을 꼭 맞춰 주세요** — 잔액이 이어지는지 보아야 흘린 거래를 잡습니다.",
+    need: ["date", "desc"], opt: ["inAmt", "outAmt", "amt", "io", "bal", "cls"],
     deny: [],
-    label: { date: "일자", desc: "적요", amt: "금액", io: "입출 구분(선택)" },
+    /* 힌트를 창구마다 덮어쓴다 — 은행 표에서 「적요」는 거래 수단(BZ뱅크·타행MB)이고
+       상대가 적힌 칸은 「내용」이다. 전역 힌트를 그대로 쓰면 상대를 통째로 버린다. */
+    hint: { desc: ["내용", "적요", "摘要", "desc"], date: ["거래일시", "거래일", "일자", "날짜", "date"],
+      /* 「전체선택」은 은행 사이트의 체크박스 열이다. 거기에 분류를 적어 쓰는 관행이 있어
+         후보로는 올리되, 맞는지는 **열 맞추기에서 사람이 확인한다**(제안은 확정이 아니다). */
+      cls: ["분류", "전체선택", "계정", "계정과목", "class", "category"] },
+    label: { date: "거래일시", desc: "내용(상대 · 적요)", inAmt: "입금액", outAmt: "출금액",
+      amt: "금액(한 열에 부호로)", io: "입출 구분", bal: "잔액", cls: "분류(계정으로 보낼 낱말)" },
   },
   {
     k: "ct", ko: "계약", team: "M1", into: "계약 대장",
@@ -152,6 +162,11 @@ const CORP_UP_HINT = {
   desc: ["적요", "내용", "摘要", "desc", "memo", "비고"], acct: ["계정", "과목", "acct", "account"],
   dr: ["차변", "출금", "debit", "dr"], cr: ["대변", "입금", "credit", "cr"],
   amt: ["금액", "amount", "amt"], io: ["구분", "입출", "type"],
+  /* ⚠️ 「입금액」에는 「금액」이 들어 있다 — amt 가 입금 열을 집어가면 출금이 통째로 사라진다.
+     그래서 ⓐ 머리글이 **그대로 같은** 것을 먼저 보고 ⓑ 입금·출금이 둘 다 잡히면 amt 를 비운다. */
+  inAmt: ["입금액", "입금(원)", "입금", "deposit", "입금금액"],
+  outAmt: ["출금액", "지급(원)", "출금", "지급", "withdraw", "출금금액"],
+  bal: ["거래후잔액", "잔액", "balance", "잔고"],
   ko: ["계약명", "문서명", "제목", "name", "title", "ko"], party: ["상대", "거래처", "party"],
   from: ["개시", "시작", "from", "start"], to: ["만료", "종료", "to", "end"],
   amount: ["금액", "계약금", "amount"], kind: ["종류", "유형", "kind", "type"],
@@ -164,11 +179,31 @@ const CORP_UP_HINT = {
 function corpUpSuggest(head, spec) {
   const out = {};
   if (!spec) return out;
-  spec.need.concat(spec.opt).forEach((k) => {
-    const hints = CORP_UP_HINT[k] || [];
-    const i = (head || []).findIndex((h) => hints.some((x) => String(h || "").toLowerCase().indexOf(x.toLowerCase()) >= 0));
-    if (i >= 0) out[k] = i;
+  const H = (head || []).map((h) => String(h == null ? "" : h).replace(/\s+/g, "").toLowerCase());
+  const taken = {};
+  const keys = spec.need.concat(spec.opt);
+  const hintsOf = (k) => ((spec.hint && spec.hint[k]) || CORP_UP_HINT[k] || []).map((x) => String(x).replace(/\s+/g, "").toLowerCase());
+  /* ⓐ 머리글이 힌트와 **그대로 같은** 것 먼저 — 「입금액」이 「금액」에 먹히지 않게 */
+  keys.forEach((k) => {
+    /* ⚠️ 힌트를 **적은 순서대로** 본다. 머리글 순서로 보면 은행 표에서 「적요」(거래 수단)가
+       「내용」(상대)보다 앞에 있다는 이유만으로 상대를 통째로 버린다. */
+    const hs = hintsOf(k);
+    for (let x = 0; x < hs.length; x++) {
+      const i = H.findIndex((h, j) => !taken[j] && h && h === hs[x]);
+      if (i >= 0) { out[k] = i; taken[i] = 1; break; }
+    }
   });
+  /* ⓑ 남은 것만 부분 일치로 */
+  keys.forEach((k) => {
+    if (out[k] !== undefined) return;
+    const hs = hintsOf(k);
+    for (let x = 0; x < hs.length; x++) {
+      const i = H.findIndex((h, j) => !taken[j] && h && h.indexOf(hs[x]) >= 0);
+      if (i >= 0) { out[k] = i; taken[i] = 1; break; }
+    }
+  });
+  /* ⓒ 입금·출금이 둘 다 잡혔으면 한 열짜리 금액·구분은 **비운다** — 둘을 같이 쓰면 두 번 센다 */
+  if (out.inAmt !== undefined && out.outAmt !== undefined) { delete out.amt; delete out.io; }
   return out;
 }
 
@@ -183,16 +218,40 @@ function corpUpValidate(kind, head, rows, map) {
   }
   const g = (r, k) => String(r[map[k]] == null ? "" : r[map[k]]).trim();
   const num = (v) => { const n = Number(String(v).replace(/[,\s원]/g, "")); return isFinite(n) ? n : NaN; };
+  /* 은행 표의 거래일시는 「2026.11.11 20:05:15」 꼴이다. 시각을 이유로 줄을 떨구면
+     그 파일은 한 줄도 안 들어간다. 시각은 **버리지 않고 따로 보관한다** —
+     같은 날 같은 금액 두 줄을 가르는 유일한 표시이기 때문이다. */
+  const DTRE = /^(\d{4})[-./]?(\d{1,2})[-./]?(\d{1,2})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/;
   const dt = (v) => {
-    const m = /^(\d{4})[-./]?(\d{1,2})[-./]?(\d{1,2})$/.exec(String(v).trim());
+    const m = DTRE.exec(String(v).trim());
     if (!m) return "";
     return m[1] + "-" + String(+m[2]).padStart(2, "0") + "-" + String(+m[3]).padStart(2, "0");
+  };
+  const tm = (v) => {
+    const m = DTRE.exec(String(v).trim());
+    if (!m || !m[4]) return "";
+    return String(+m[4]).padStart(2, "0") + ":" + m[5] + ":" + (m[6] || "00");
   };
   (rows || []).forEach((r, i) => {
     const why = [];
     const o = { _row: i + 2 };                 /* 머리글이 1행이므로 +2 */
     need.concat(spec.opt).forEach((k) => { if (map[k] !== undefined && map[k] !== "") o[k] = g(r, k); });
-    if (o.date !== undefined) { const d = dt(o.date); if (!d) why.push("일자 형식을 읽지 못했습니다"); else o.date = d; }
+    if (o.date !== undefined) { const t = tm(o.date); const d = dt(o.date); if (!d) why.push("일자 형식을 읽지 못했습니다"); else { o.date = d; o.time = t; } }
+    /* 입금·출금·잔액 — 숫자가 아니면 **지어내지 않고** 그 줄을 뺀다.
+       ⚠️ 잔액 0 은 참값이다(계좌를 비운 날이 실제로 있다). 빈칸과 0 을 가른다. */
+    ["inAmt", "outAmt"].forEach((k) => {
+      if (o[k] === undefined || o[k] === "") { if (o[k] === "") o[k] = 0; return; }
+      const a = num(o[k]); if (isNaN(a)) why.push(spec.label[k] + "이(가) 숫자가 아닙니다"); else o[k] = a;
+    });
+    if (o.bal !== undefined) {
+      if (String(o.bal).trim() === "") o.bal = null;
+      else { const a = num(o.bal); if (isNaN(a)) why.push("잔액이 숫자가 아닙니다"); else o.bal = a; }
+    }
+    if (kind === "bank" && o.inAmt !== undefined && o.outAmt !== undefined) {
+      const i = +o.inAmt || 0, u = +o.outAmt || 0;
+      if (i > 0 && u > 0) why.push("한 줄에 입금과 출금이 같이 적혀 있습니다 — 어느 쪽인지 알 수 없습니다");
+      if (i === 0 && u === 0) why.push("입금과 출금이 모두 0입니다");
+    }
     if (o.from !== undefined) { const d = dt(o.from); if (!d) why.push("개시일 형식을 읽지 못했습니다"); else o.from = d; }
     if (o.to !== undefined) { const d = dt(o.to); if (!d) why.push("만료일이 없거나 형식을 읽지 못했습니다 — 만료일 없는 계약은 받지 않습니다"); else o.to = d; }
     if (o.dr !== undefined || o.cr !== undefined) {
@@ -242,24 +301,43 @@ function corpUpBankIn(s) {
   return null;
 }
 function corpUpToBank(rows) {
-  return (rows || []).map((r) => {
-    const sign = corpUpBankIn(r.io);
-    const a = +r.amt || 0;
-    return { d: r.date, a: sign === null ? a : Math.abs(a) * sign, m: String(r.desc || "").trim() };
-  }).filter((x) => x.d && x.a !== 0);
+  const lines = [], dropped = [];
+  (rows || []).forEach((r) => {
+    const two = r.inAmt !== undefined || r.outAmt !== undefined;
+    const a = two ? (+r.inAmt || 0) - (+r.outAmt || 0)
+                  : (corpUpBankIn(r.io) === null ? (+r.amt || 0) : Math.abs(+r.amt || 0) * corpUpBankIn(r.io));
+    const x = {
+      d: r.date, t: r.time || "", a: a, m: String(r.desc || "").trim(),
+      bal: r.bal === undefined || r.bal === null || r.bal === "" ? null : +r.bal,
+      cls: String(r.cls || "").trim(), row: r._row || 0,
+    };
+    /* ⚠️ 버리는 줄을 **센다.** 조용히 건너뛰면 장부가 은행보다 적어지고 아무도 모른다. */
+    if (!x.d) { dropped.push({ row: x.row, why: "일자를 읽지 못했습니다" }); return; }
+    if (a === 0) { dropped.push({ row: x.row, why: "입금도 출금도 0입니다" }); return; }
+    lines.push(x);
+  });
+  return { lines: lines, dropped: dropped, n: (rows || []).length };
 }
 /* 같은 줄을 두 번 받지 않는다 — 같은 파일을 두 번 올리면 잔액이 두 배가 된다 */
 function corpUpMergeBank(prev, add) {
+  /* ⚠️ 일자+금액+적요로는 못 가른다 — 형 파일에 2026-11-10 1,800,000원이 두 줄 있고
+     적요가 둘 다 「타행MB」다(내용만 다르다). 그 키로는 진짜 거래 둘이 한 건으로 접힌다.
+     같은 줄 판정은 corpBjvKey 한 곳에서만 한다 — 두 벌이 되면 한쪽만 고쳐진다. */
+  const key = (x) => (typeof corpBjvKey === "function" ? corpBjvKey(x)
+    : [x.d || "", x.t || "", Math.round(+x.a || 0), x.bal == null ? "" : Math.round(+x.bal), String(x.m || "").replace(/\s+/g, "")].join("|"));
   const seen = {};
-  (prev || []).forEach((x) => { seen[x.d + "|" + x.a + "|" + x.m] = 1; });
+  (prev || []).forEach((x) => { seen[key(x)] = 1; });
   const out = (prev || []).slice();
   let dup = 0;
   (add || []).forEach((x) => {
-    const k = x.d + "|" + x.a + "|" + x.m;
+    const k = key(x);
     if (seen[k]) { dup++; return; }
     seen[k] = 1; out.push(x);
   });
-  out.sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+  out.sort((a, b) => {
+    const ka = (a.d || "") + " " + (a.t || ""), kb = (b.d || "") + " " + (b.t || "");
+    return ka < kb ? -1 : ka > kb ? 1 : 0;
+  });
   return { lines: out, dup: dup, added: out.length - (prev || []).length };
 }
 /* 자료 목록 — 목차는 **갈아 끼운다**. 지난 목차에 이어 붙이면 지워진 파일이 영영 남는다. */

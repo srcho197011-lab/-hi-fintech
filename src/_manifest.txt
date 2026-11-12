@@ -38,6 +38,8 @@ src/data/corpGov.js
 src/data/corpUpload.js
 src/data/corpAgent.js
 src/data/corpVault.js
+src/data/corpBankXlsx.js
+src/data/corpBankJv.js
 src/components/CorpAvatar.jsx
 src/components/CorpLedger.jsx
 src/components/CorpPlanActual.jsx

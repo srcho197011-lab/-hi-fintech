@@ -208,8 +208,13 @@ const CORP_SCHEDULE = {
   routines: [
     { t: "일마감",            every: "workday", at: "18:00", owner: "M2", ai: "핀테크",
       does: "전표 차대 검산 · 누락 점검",            human: "이상 건 승인" },
+    /* 형 지시 2026-11-12 — 「전일 것을 매일 업로드만 시키면 전표가 쳐져서 실시간 재무제표가
+       만들어지도록 핀테크 팀장에게 업무를 확정」. 다만 **은행에서 자동으로 가져오지 못한다** —
+       그래서 사람이 올리는 일이 맨 앞에 선다. 핀테크가 하는 일은 **점검과 알림**이지 승인이 아니다. */
     { t: "은행 대사",          every: "workday", at: "10:00", owner: "M2", ai: "핀테크",
-      does: "내역 대조 · 미대사 추출",               human: "불일치 해소" },
+      does: "어제 것까지 들어왔는지 점검 · 들어온 줄에서 전표 후보 생성 · 계정 제안 · 잔액 사슬 검사",
+      human: "은행 내역 올리기 · 모르는 계정 확정 · 전표 승인",
+      need: "은행 내역을 **사람이 올려야** 시작됩니다 — 계좌를 자동으로 가져오지 못합니다" },
     { t: "주간보고 초안",       every: "fri",     at: "17:00", owner: "M1", ai: "전 팀",
       does: "팀별 지표 · 진척 · 이슈 · 차주 계획",    human: "팀 책임자 확정" },
     { t: "주간회의 자료",       every: "mon",     at: "09:30", owner: "M1", ai: "나침반",
@@ -239,10 +244,19 @@ function corpDiv(id) { return CORP_DIV.find(d => d.id === id) || null; }
 /* ══ 회사 운영의 시각 ══
    근무일·회의 요일을 계산해야 하므로 **실제 오늘**을 쓴다.
    ⚠️ 전역 now로 승격하지 않는다 — 보장 창 규약(창의 주인은 계약이고, 시연 시드만 기준일 고정)과
-      충돌한다. 이 파일 안에서만 쓰고, 러너는 corpOpsAt(iso)로 고정 날짜를 주입해 대조한다. */
+      충돌한다. 이 파일 안에서만 쓴다.
+   ⚠️ 러너는 corpOpsAt 를 쓰지 않는다 — 전역 스위치를 켜 두면 검사끼리 서로의 날짜를 밟는다.
+      날짜가 필요한 판정 함수는 **인자로** 받는다(corpMtgVerdict(st, now) 선례). corpOpsAt 는
+      화면에서 기준일을 고정해 둘러볼 때만 쓰는 손잡이다. */
 let _corpAt = null;
 function corpOpsAt(iso) { _corpAt = iso ? new Date(iso) : null; }
 function corpOpsNow() { return _corpAt ? new Date(_corpAt.getTime()) : new Date(); }
+/* 오늘 날짜 — **현지 시각**으로 센다. UTC 로 세면 한국 자정~오전 9시에 어제가 된다. */
+function corpOpsToday(now) {
+  const d = now || corpOpsNow();
+  const p = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
 
 function _corpHM(s) { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ""); return m ? [+m[1], +m[2]] : [9, 0]; }
 function _corpSet(d, hm) { const x = new Date(d.getTime()); x.setHours(hm[0], hm[1], 0, 0); return x; }

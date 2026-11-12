@@ -116,7 +116,7 @@ function CorpLedgerSection() {
       {tab === "gl" && <ClLedger S={S} sel={acctSel} setSel={setAcctSel} />}
       {tab === "tb" && <ClTrial S={S} />}
       {tab === "fs" && <ClStatements S={S} cut={cut} />}
-      {tab === "bank" && <ClBank R={R} />}
+      {tab === "bank" && <ClBank R={R} st={st} save={save} actor={actor} A={A} />}
     </div>
   );
 }
@@ -451,10 +451,285 @@ function ClStatements({ S, cut }) {
 }
 
 /* ── 은행 대사 ────────────────────────────────────────────────────────────── */
-function ClBank({ R }) {
+/* ── 은행 내역 올리기 — **은행 대사 지면 안에** 둔다 (형 지시 2026-11-12) ────
+   「은행자료를 전일 것을 매일 업로드만 시키면 전표가 쳐져서 실시간 재무제표가 만들어지도록.
+    다만 은행자료를 자동으로 가져오지 못하니 사람 책임자가 업로드 할 수 있도록.」
+
+   ⚠️ 이 패널은 두 갈래(내역 없음 · 내역 있음) **앞**에 선다. 「없음」 갈래 안에 넣으면
+      한 번 올린 다음 날 올릴 자리가 사라진다.
+   ⚠️ 민감자료 검사가 **미리보기보다 앞**이다. 띄워 놓고 「지우세요」라고 말하는 것은
+      이미 띄운 것이다. 반입 창구와 **같은 판정 함수**를 쓴다 — 입구가 둘인데 한쪽만
+      막으면 막는 것이 아니다. */
+function ClBankUp({ st, save, actor, A }) {
+  const [raw, setRaw] = React.useState(null);
+  const [map, setMap] = React.useState({});
+  const [cov, setCov] = React.useState({ from: "", to: "" });
+  const [pick, setPick] = React.useState({});
+  const [keep, setKeep] = React.useState(true);
+  const [note, setNote] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const fileRef = React.useRef(null);
+
+  const spec = corpUpSpec("bank");
+  const bjv = React.useMemo(() => corpBjvRead(), [note]);
+  const jvs = React.useMemo(() => corpJvAll(st), [st]);
+  const can = React.useMemo(() => cbxCan(), []);
+  const cur = corpBankOf(st);
+  const due = corpBjvDue(st && st.bankCov, corpOpsToday());
+
+  /* 검증 → 은행줄 → 전표 후보. 화면과 러너가 **같은 함수**를 본다. */
+  const V = React.useMemo(() => (raw ? corpUpValidate("bank", raw.head, raw.rows, map) : null), [raw, map]);
+  const T = React.useMemo(() => (V && !V.missing.length ? corpUpToBank(V.ok) : null), [V]);
+  const CH = React.useMemo(() => (T ? corpBjvChain(T.lines) : null), [T]);
+  const B = React.useMemo(
+    () => (T ? corpBjvBuild(T.lines, { map: bjv.map, pick: pick }, st, jvs) : null),
+    [T, pick, bjv, st, jvs]
+  );
+
+  const reset = () => { setRaw(null); setMap({}); setPick({}); setCov({ from: "", to: "" }); if (fileRef.current) fileRef.current.value = ""; };
+
+  const onFile = async (e) => {
+    const f = (e.target.files || [])[0];
+    if (!f) { reset(); return; }
+    setBusy(true); setNote(null);
+    try {
+      const buf = new Uint8Array(await f.slice(0, 4).arrayBuffer());
+      const zip = buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+      const ole = buf[0] === 0xd0 && buf[1] === 0xcf;
+      if (ole) throw new Error("구형 엑셀(.xls)은 읽지 못합니다 — 엑셀에서 「다른 이름으로 저장 → .xlsx」로 바꿔 주세요");
+      let head = [], rows = [], sheet = "", sheets = [];
+      if (zip) {
+        const X = await cbxRead(f);
+        head = X.rows[0] || []; rows = X.rows.slice(1); sheet = X.sheet; sheets = X.sheets;
+      } else {
+        const txt = await f.text();
+        const g = corpUpParseCsv(txt);
+        head = g[0] || []; rows = g.slice(1);
+      }
+      rows = rows.filter((r) => r.join("").trim());
+      if (head.length < 2 || !rows.length) throw new Error("표를 읽지 못했습니다 — 머리글과 자료 줄이 있는지 보아 주세요");
+      /* ⚠️ 검사가 **먼저** — 걸리면 표를 띄우지 않는다. 값은 적지 않고 좌표만 적는다. */
+      const hits = corpUpScan(rows, head);
+      if (hits.length) {
+        setNote({ bad: true, t: "민감자료가 " + hits.length + "곳에서 걸렸습니다 — 표를 띄우지 않고 멈췄습니다. "
+          + hits.slice(0, 4).map((h) => h.row + "행 " + h.col + "열(" + h.why + ")").join(" · ") + ". 그 열을 떼고 다시 올려 주세요." });
+        reset(); setBusy(false); return;
+      }
+      const kb = Math.round(f.size / 1024);
+      setRaw({ name: f.name, kb: kb, head: head, rows: rows, sheet: sheet, sheets: sheets, zip: zip });
+      const m = corpUpSuggest(head, spec);
+      setMap(m);
+      /* 기간은 **사람이 확정한다** — 자료에서 읽은 것은 제안일 뿐이다.
+         거래가 0건인 날과 안 올린 날은 자료만 보고는 구별되지 않는다. */
+      const ds = rows.map((r) => String(r[m.date] || "")).map((x) => (/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/.exec(x) || [])[0] || "")
+        .filter(Boolean).map((x) => x.replace(/[./]/g, "-").replace(/-(\d)(?=-|$)/g, "-0$1")).sort();
+      setCov({ from: ds[0] || "", to: ds[ds.length - 1] || "" });
+      setNote({ bad: false, t: f.name + " — " + rows.length + "행 읽었습니다" + (sheet ? "(시트 「" + sheet + "」)" : "") + ". 열이 맞는지 확인해 주세요." });
+    } catch (err) {
+      reset();
+      setNote({ bad: true, t: (err && err.message) || "파일을 읽지 못했습니다" });
+    }
+    setBusy(false);
+  };
+
+  const commit = () => {
+    if (!B || !T) return;
+    if (!B.made.length) { setNote({ bad: true, t: "전표가 될 줄이 없습니다 — 보류 줄의 계정을 골라 주세요" }); return; }
+    if (!cov.from || !cov.to) { setNote({ bad: true, t: "이 자료가 **며칠부터 며칠까지**인지 적어 주세요 — 거래가 없던 날과 안 올린 날은 자료만으로 구별되지 않습니다" }); return; }
+    const M = corpUpMergeBank(st.bank || [], T.lines);
+    const next = Object.assign({}, st, {
+      jv: (st.jv || []).concat(B.made),
+      bank: M.lines,
+      bankCov: { from: (st.bankCov && st.bankCov.from) || cov.from, to: cov.to > ((st.bankCov && st.bankCov.to) || "") ? cov.to : (st.bankCov && st.bankCov.to) || cov.to, at: raw ? raw.name : "" },
+    });
+    save(next);
+    if (keep && Object.keys(pick).length) {
+      const nm = Object.assign({}, bjv.map, pick);
+      corpBjvWrite({ map: nm, log: (bjv.log || []).concat([{ at: cov.to, n: Object.keys(pick).length }]) });
+    }
+    const held = B.held.length;
+    setNote({ bad: false, t: B.made.length + "건을 전표로 올렸습니다(기표 상태 — 검토·승인을 거쳐야 장부에 들어갑니다). "
+      + "은행줄 " + M.added + "줄 추가" + (M.dup ? " · 이미 받은 " + M.dup + "줄 건너뜀" : "")
+      + (held ? " · **보류 " + held + "줄은 그대로 남았습니다** — 계정을 고를 때까지 장부가 은행보다 적습니다." : "") });
+    reset();
+  };
+
+  const undo = () => {
+    const keepJv = (st.jv || []).filter((j) => j.by !== "은행반입");
+    const n = (st.jv || []).length - keepJv.length;
+    save(Object.assign({}, st, { jv: keepJv, bank: [], bankCov: null }));
+    setNote({ bad: false, t: "은행에서 만든 전표 " + n + "건과 은행줄을 모두 물렸습니다 — 대사는 보류로 돌아갑니다." });
+  };
+
+  const cols = spec ? spec.need.concat(spec.opt) : [];
+  const words = B ? B.held.map((h) => corpBjvWord(h.cls) + "|" + h.dir) : [];
+  const uniqWords = words.filter((w, i) => words.indexOf(w) === i);
+
+  return (
+    <div className="cl-sec bk-up">
+      <div className="cl-h">은행 내역 올리기 <span className="cl-t">전표는 이 자료에서만 나옵니다</span>
+        <span className={"cl-flag" + (due.ok ? " on" : " hold")}>{due.ok ? "어제까지 들어옴" : (due.late === null ? "아직 없음" : due.late + "일치 비었음")}</span>
+        <button className="cl-rv" onClick={() => setOpen(!open)}>{open ? "접기" : "열기"}</button>
+      </div>
+      <p className="cl-note">{due.ko}
+        {cur && cur.live && <span> · 지금 담긴 은행줄 <b>{cur.lines.length}줄</b>{st.bankCov && st.bankCov.from ? "(" + st.bankCov.from + " ~ " + st.bankCov.to + ")" : ""}</span>}</p>
+
+      {open && (
+        <div className="bk-body">
+          {!can.ok && <p className="cl-note hold"><b>이 브라우저에서는 엑셀을 바로 읽지 못합니다.</b> {can.why}</p>}
+          <p className="cl-note"><b>파일은 어디로도 전송되지 않습니다</b> — 서버가 없어 이 브라우저 안에서 읽고 끝납니다.
+            은행에서 내려받은 <b>.xlsx 를 그대로</b> 올리시면 됩니다(CSV 도 받습니다).
+            은행 계좌를 <b>자동으로 가져오지 못합니다</b> — 그래서 사람이 매일 올립니다.</p>
+
+          <div className="bk-row">
+            <input ref={fileRef} type="file" accept=".xlsx,.csv,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={onFile} disabled={busy} />
+            {raw && <button className="cl-rv" onClick={reset}>지우기</button>}
+            {busy && <span className="cl-t">읽는 중…</span>}
+          </div>
+          {note && <div className={"cl-msg" + (note.bad ? " bad" : "")} onClick={() => setNote(null)}>{note.t}</div>}
+
+          {raw && (
+            <div className="bk-map">
+              <div className="cl-h2">열 맞추기 <span className="cl-t">추측해서 넣지 않습니다 — 확인하고 고르세요</span></div>
+              <p className="cl-note">은행마다 <b>입금·출금 열의 순서가 거꾸로</b>입니다. 어느 쪽이 기본값이든 한 은행은 부호가
+                통째로 뒤집힙니다 — 그래서 고정하지 않고 보여 드립니다. <b>잔액 열을 꼭 맞춰 주세요</b>:
+                잔액이 이어지는지 보아야 빠진 거래를 잡습니다.</p>
+              <div className="bk-cols">
+                {cols.map((k) => (
+                  <label key={k} className={spec.need.indexOf(k) >= 0 ? "need" : ""}>
+                    <span>{spec.label[k]}{spec.need.indexOf(k) >= 0 && <i>필수</i>}</span>
+                    <select value={map[k] === undefined ? "" : map[k]}
+                      onChange={(e) => { const v = e.target.value; const m = Object.assign({}, map); if (v === "") delete m[k]; else m[k] = +v; setMap(m); }}>
+                      <option value="">— 없음 —</option>
+                      {raw.head.map((h, i) => <option key={i} value={i}>{String(h).trim() || "(" + (i + 1) + "열)"}</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+              <div className="bk-cov">
+                <label>이 자료가 덮는 기간<input type="date" value={cov.from} onChange={(e) => setCov(Object.assign({}, cov, { from: e.target.value }))} /></label>
+                <span>~</span>
+                <label><input type="date" value={cov.to} onChange={(e) => setCov(Object.assign({}, cov, { to: e.target.value }))} /></label>
+                <i>거래가 0건인 날과 안 올린 날은 자료만으로 구별되지 않습니다 — 사람이 적습니다.</i>
+              </div>
+            </div>
+          )}
+
+          {V && V.missing.length > 0 && <p className="cl-note hold">{V.msg}</p>}
+
+          {T && CH && (
+            <div className="bk-chain">
+              <div className={"bk-chip" + (CH.ok ? " on" : " bad")}>
+                잔액 사슬 {CH.n === 0 ? "검사 못 함" : (CH.ok ? "전건 성립 (" + CH.n + "쌍)" : CH.breaks.length + "군데 끊김")}
+              </div>
+              <span className="cl-t">
+                {CH.n === 0 ? "잔액 열을 맞춰 주세요 — 빠진 거래를 잡을 길이 없습니다"
+                  : CH.ok ? "직전 잔액 " + corpWon(CH.open) + " → 마지막 " + corpWon(CH.last) + " 까지 한 줄도 끊기지 않았습니다"
+                    : "이 사이에 표에 없는 거래가 있습니다 — " + CH.breaks.slice(0, 2).map((x) => x.row + "행 " + corpWon(x.gap)).join(" · ")}
+              </span>
+              {!CH.ok && CH.n > 0 && <p className="cl-note hold">잔액이 끊긴 자료로는 전표를 만들지 않습니다 — 빠진 거래가 있는 채로 장부를 세우면 그 차이는 아무도 모릅니다.</p>}
+              {V && V.bad.length > 0 && <p className="cl-note">읽지 못한 줄 {V.bad.length}건: {V.bad.slice(0, 3).map((b) => b.row + "행 — " + b.why.join(" / ")).join(" · ")}</p>}
+              {T.dropped.length > 0 && <p className="cl-note">뺀 줄 {T.dropped.length}건: {T.dropped.slice(0, 3).map((d) => d.row + "행 — " + d.why).join(" · ")}</p>}
+            </div>
+          )}
+
+          {B && (
+            <div className="bk-prev">
+              <div className="cl-h2">전표가 될 줄 <span className="cl-t">{B.made.length} 만듦 · {B.held.length} 보류 · {B.dup.length} 이미 있음 / 은행 {B.n}줄</span></div>
+              {B.made.length > 0 && (
+                <table className="cl-tbl bk-tbl">
+                  <thead><tr><th>번호</th><th>일자</th><th>적요</th><th>차변</th><th>대변</th><th>금액</th></tr></thead>
+                  <tbody>
+                    {B.made.slice(0, 40).map((j) => (
+                      <tr key={j.id}>
+                        <td className="id">{j.id}</td><td>{j.d}</td><td className="desc">{j.desc}</td>
+                        <td className="id">{j.l[0][0]} {corpAcctName(j.l[0][0])}</td>
+                        <td className="id">{j.l[1][0]} {corpAcctName(j.l[1][0])}</td>
+                        <td className="n">{corpWon(j.l[0][1] || j.l[0][2])}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {B.made.length > 40 && <p className="cl-note">앞 40건만 보여 줍니다(전체 {B.made.length}건).</p>}
+
+              {B.held.length > 0 && (
+                <div className="bk-held">
+                  <div className="cl-h2">책임자가 정해야 할 줄 <span className="cl-t">{B.held.length}건</span></div>
+                  <p className="cl-note"><b>기계가 고르지 않습니다.</b> 은행 줄에는 금액·날짜·상대가 있지만 <b>계정이 없습니다</b> —
+                    계정은 거래를 한 사람만 압니다. 실제로 같은 낱말이 10월과 11월에 <b>다른 계정</b>으로 갔습니다.
+                    기계가 하나로 못 박으면 둘 중 하나는 반드시 틀립니다.</p>
+                  <table className="cl-tbl bk-tbl">
+                    <thead><tr><th>행</th><th>일자</th><th>내용</th><th>금액</th><th>분류</th><th>계정</th><th>왜 못 골랐나</th></tr></thead>
+                    <tbody>
+                      {B.held.map((h) => {
+                        const key = corpBjvWord(h.cls) + "|" + h.dir;
+                        return (
+                          <tr key={h.row}>
+                            <td className="id">{h.row}</td><td>{h.d}</td><td className="desc">{h.m}</td>
+                            <td className={"n " + (h.a >= 0 ? "in" : "out")}>{corpWon(h.a)}</td>
+                            <td className="id">{h.cls || "—"}</td>
+                            <td>
+                              <select value={pick[key] || ""} onChange={(e) => {
+                                const p = Object.assign({}, pick); const v = e.target.value;
+                                if (!v) delete p[key]; else p[key] = v; setPick(p);
+                              }}>
+                                <option value="">— 고르세요 —</option>
+                                {CORP_ACCT.filter((a) => a.c !== "103").map((a) => (
+                                  <option key={a.c} value={a.c}>{a.c} {a.n}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="desc">{h.why}{h.hint ? " (지난 장부: " + h.hint + ")" : ""}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <p className="cl-note">같은 낱말은 한 번만 고르시면 그 묶음 전체에 붙습니다(지금 고를 낱말 {uniqWords.length}가지).</p>
+                  <label className="bk-keep">
+                    <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
+                    <span>고른 대응을 기억해서 다음부터 자동으로 씁니다</span>
+                    <i>기억하지 않으면 매일 다시 고르셔야 합니다. 다만 <b>틀린 선택도 그대로 복제됩니다</b> —
+                      지난 장부에서 두 계정으로 갈린 낱말은 기억해도 매번 다시 묻습니다.</i>
+                  </label>
+                </div>
+              )}
+
+              {B.dup.length > 0 && (
+                <p className="cl-note">이미 들어와 있는 줄 {B.dup.length}건은 건너뜁니다 — 같은 파일을 두 번 올려도 장부가 두 배가 되지 않습니다
+                  ({B.dup.slice(0, 3).map((d) => d.row + "행 → " + d.id).join(" · ")}).</p>
+              )}
+
+              <div className="bk-act">
+                <button className="cl-save" disabled={!B.made.length || (CH && CH.n > 0 && !CH.ok)} onClick={commit}>
+                  전표 {B.made.length}건 올리기
+                </button>
+                {!A.canApprove && <span className="cl-t">올리는 것까지는 됩니다 — 승인·전기는 사람이 합니다</span>}
+                {B.held.length > 0 && <span className="cl-t">보류 {B.held.length}줄을 남기면 장부 잔액이 은행과 맞지 않습니다</span>}
+              </div>
+            </div>
+          )}
+
+          {cur && cur.live && (
+            <div className="bk-act">
+              <button className="cl-rv" onClick={undo}>은행에서 만든 전표 전부 물리기</button>
+              <span className="cl-t">직접 입력한 전표와 검증용 전표는 그대로 둡니다</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClBank({ R, st, save, actor, A }) {
+  const UP = <ClBankUp st={st} save={save} actor={actor} A={A} />;
   if (R.none) {
     return (
       <div className="cl-body">
+        {UP}
         <div className="cl-sec">
           <div className="cl-h">은행 대사 <span className="cl-flag hold">보류</span></div>
           <p className="cl-note"><b>은행 거래내역이 반입되지 않았습니다.</b> 대사할 상대가 없어 <b>돌리지 않았습니다</b> —
@@ -464,7 +739,8 @@ function ClBank({ R }) {
             <div className="cl-op">vs</div>
             <div className="cl-eq"><b>—</b><span>은행 내역 없음</span></div>
           </div>
-          <p className="cl-note">자료 반입 창구의 <b>은행 거래내역</b>에 내역을 올리면 같은 날 · 같은 금액으로 자동 대사합니다.
+          <p className="cl-note"><b>바로 위에서</b> 은행 내역을 올리시면 전표가 만들어지고 대사가 돕니다
+            (자료 반입 창구의 「은행 거래내역」으로 올리셔도 같습니다 — 판정은 같은 함수가 합니다).
             장부에서 보통예금이 움직인 전표는 <b>{R.book.length}건</b> 있습니다.</p>
         </div>
       </div>
@@ -472,6 +748,7 @@ function ClBank({ R }) {
   }
   return (
     <div className="cl-body">
+      {UP}
       <div className="cl-sec">
         <div className="cl-h">{R.bank} <span className="cl-t">{R.mask}</span>
           <span className={"cl-flag" + (R.ok ? " on" : " bad")}>{R.ok ? "조정 후 차이 0" : "차이 " + corpWon(R.gap)}</span></div>

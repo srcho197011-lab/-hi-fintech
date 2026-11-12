@@ -37,10 +37,17 @@ const CORP_AG_TOOL = [
   { ai: "핀테크", k: "check", ko: "장부 검산", ask: ["검산", "항등식", "차대", "맞는지", "이상"],
     run: function () {
       if (typeof corpLedgerVerdict !== "function") return null;
-      const V = corpLedgerVerdict(corpJvAll(corpLedgerRead()), CORP_BANK_SEED);
-      const bad = V.filter(function (r) { return !r.ok; });
-      return { t: "항등식 " + V.length + "항목 중 " + (V.length - bad.length) + "항목이 통과했습니다" + (bad.length ? " — 실패 " + bad.length + "항목." : "."),
-        rows: V.map(function (r) { return [r.ko, (r.ok ? "통과" : "실패") + " · " + r.got]; }) };
+      /* ⚠️ corpLedgerVerdict 는 **객체**를 돌려준다(배열이 아니다). 배열처럼 다루면
+         조용히 빈 답이 나온다 — 실제로 그렇게 깨져 있었다. 그리고 은행줄은 상황에서 고른다
+         (검증용 묶음을 고정으로 쓰면 반입된 장부를 엉뚱한 내역과 견준다). */
+      const st = corpLedgerRead();
+      const V = corpLedgerVerdict(corpJvAll(st), corpBankOf(st));
+      const live = V.rows.filter(function (r) { return !r.skip; });
+      const bad = live.filter(function (r) { return !r.ok || !(r.n > 0); });
+      return { t: "항등식 " + live.length + "항목 중 " + (live.length - bad.length) + "항목이 통과했습니다"
+          + (bad.length ? " — 실패 " + bad.length + "항목." : ".")
+          + (V.skip.length ? " 보류 " + V.skip.length + "항목은 돌리지 않았습니다(통과가 아닙니다)." : ""),
+        rows: V.rows.map(function (r) { return [r.ko, (r.skip ? "보류" : (r.ok && r.n > 0 ? "통과" : "실패")) + " · " + r.got]; }) };
     } },
   { ai: "핀테크", k: "fs", ko: "재무제표", ask: ["재무제표", "손익", "자산", "매출", "비용", "이익"],
     run: function () {
@@ -58,6 +65,21 @@ const CORP_AG_TOOL = [
         rows: [["은행 잔액", corpWon(R.bankBal)], ["장부 잔액", corpWon(R.bookBal)],
                ["은행에만", R.bankOnly.length + "건"], ["장부에만", R.bookOnly.length + "건"],
                ["조정 후 차이", corpWon(R.gap)]] };
+    } },
+  /* 형 지시 2026-11-12 — 매일 은행 내역이 들어왔는지 사람에게 알려 주는 일.
+     ⚠️ 날짜를 **인자로 받는다**. 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
+  { ai: "핀테크", k: "bankup", ko: "은행 반입 상태", ask: ["어제", "오늘", "올렸", "반입", "업로드", "들어왔", "밀렸", "며칠"],
+    run: function (now) {
+      if (typeof corpBjvDue !== "function") return null;
+      const st = corpLedgerRead();
+      const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
+      const D = corpBjvDue(st && st.bankCov, today);
+      const B = corpBankOf(st);
+      return { t: D.ko + (D.ok ? "" : " 제가 은행에서 직접 가져오지는 못합니다 — 책임자가 올려 주셔야 전표가 만들어집니다."),
+        rows: [["기준(오늘)", today || "정해지지 않음"],
+               ["들어온 기간", st && st.bankCov && st.bankCov.from ? st.bankCov.from + " ~ " + st.bankCov.to : "없음"],
+               ["비어 있는 날", D.ok ? "없음" : (D.late === null ? "셀 수 없음" : D.late + "일")],
+               ["담긴 은행줄", B && B.lines ? B.lines.length + "줄" : "0줄"]] };
     } },
   { ai: "핀테크", k: "pa", ko: "예실 대비", ask: ["예실", "계획 대비", "달성", "차이"],
     run: function () {

@@ -6228,3 +6228,30 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .ad-perm td{background:rgba(95,174,126,.05);}
 .ad-pm,.vt-perm{color:#5FAE7E;font-weight:700;}
 .ad-un{color:var(--cd2);font-size:9.5px;}
+
+/* 은행 내역 올리기 — 은행 대사 지면 안. 접두 bk- 로 묶는다(맨낱말 클래스는 전역과 부딪힌다). */
+.bk-up .cl-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.bk-body{margin-top:10px;display:flex;flex-direction:column;gap:12px;}
+.bk-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.bk-row input[type=file]{font-size:10.5px;color:var(--cd);font-family:inherit;max-width:100%;}
+.cl-h2{font-size:11px;font-weight:700;color:var(--ct);margin:2px 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.bk-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:6px 0;}
+.bk-cols label{display:flex;flex-direction:column;gap:3px;font-size:9.5px;color:var(--cd);}
+.bk-cols label.need>span{color:var(--ct);}
+.bk-cols label i{font-style:normal;font-size:8px;color:var(--cw);margin-left:4px;}
+.bk-cols select{font-size:10.5px;color:var(--ct);background:var(--cp);border:1px solid var(--cl2);border-radius:5px;padding:3px 6px;font-family:inherit;}
+.bk-cov{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:9.5px;color:var(--cd);margin-top:4px;}
+.bk-cov label{display:flex;align-items:center;gap:5px;}
+.bk-cov input{font-size:10.5px;color:var(--ct);background:var(--cp);border:1px solid var(--cl2);border-radius:5px;padding:3px 6px;font-family:inherit;}
+.bk-cov i{font-style:normal;color:var(--cd2);font-size:9px;flex:1 1 220px;}
+.bk-chain{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.bk-chip{font-size:10px;font-weight:700;border-radius:5px;padding:3px 9px;border:1px solid var(--cl2);color:var(--cd);}
+.bk-chip.on{color:#5FAE7E;border-color:rgba(95,174,126,.5);background:rgba(95,174,126,.1);}
+.bk-chip.bad{color:#D9544A;border-color:rgba(217,84,74,.5);background:rgba(217,84,74,.12);}
+.bk-prev,.bk-held,.bk-map{display:flex;flex-direction:column;gap:4px;}
+.bk-tbl td.desc{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bk-tbl select{font-size:10px;color:var(--ct);background:var(--cp);border:1px solid var(--cl2);border-radius:4px;padding:2px 4px;font-family:inherit;max-width:160px;}
+.bk-tbl td.n.in{color:#5FAE7E;} .bk-tbl td.n.out{color:#D9544A;}
+.bk-keep{display:flex;align-items:flex-start;gap:6px;font-size:9.5px;color:var(--cd);margin-top:6px;flex-wrap:wrap;}
+.bk-keep i{font-style:normal;color:var(--cd2);flex:1 1 100%;margin-left:20px;}
+.bk-act{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;}

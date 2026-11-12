@@ -343,7 +343,9 @@ function CorpMeetingSection() {
               <thead><tr><th>루틴</th><th>AI</th><th>사람이 마무리</th><th>상태</th><th>다음</th></tr></thead>
               <tbody>
                 {(sch.routines || []).map((r, i) => {
-                  const s = corpRoutineState(r, st, now, week);
+                  /* 은행 대사는 장부 상태(반입 기간)를 보아야 밀림을 알 수 있다 —
+                     주간회의 상태만으로는 「사람이 올렸는가」를 셀 수 없다. */
+                  const s = corpRoutineState(r, st, now, week, corpLedgerRead());
                   const f = (d) => d ? (d.getMonth() + 1) + "/" + d.getDate() + " " +
                     String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") : "—";
                   return (

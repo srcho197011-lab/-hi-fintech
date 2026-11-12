@@ -176,28 +176,30 @@ const CORP_JV_SEED = [
 const CORP_BANK_SEED = {
   acct: "103", bank: "주거래은행 기업자유예금", mask: "***-******-***",
   from: "2026-09-01", to: "2026-11-10",
+  /* ⚠️ 잔액을 함께 싣는다 — 잔액 사슬은 「흘린 거래」를 잡는 **단 하나의 외부 사실**이고,
+     잔액이 없는 표본으로는 그 검사가 분모 0이 된다(= 검사가 없는 것과 같다). */
   lines: [
-    { d: "2026-09-01", a: 120000000, m: "개시 잔액" },
-    { d: "2026-09-05", a: -3300000, m: "임대인 이체" },
-    { d: "2026-09-10", a: -16380000, m: "급여 이체" },
-    { d: "2026-09-20", a: -1320000, m: "클라우드 자동이체" },
-    { d: "2026-09-25", a: -1650000, m: "법인카드 결제" },
-    { d: "2026-10-05", a: 22000000, m: "가온헬스 입금" },
-    { d: "2026-10-05", a: -3300000, m: "임대인 이체" },
-    { d: "2026-10-10", a: -16380000, m: "급여 이체" },
-    { d: "2026-10-10", a: -1620000, m: "세무서·공단 납부" },
-    { d: "2026-10-12", a: -5500000, m: "광고 집행" },
-    { d: "2026-10-20", a: -1320000, m: "클라우드 자동이체" },
-    { d: "2026-10-22", a: -900000, m: "교육기관 이체" },
-    { d: "2026-10-25", a: -450000, m: "보험료 이체" },
-    { d: "2026-11-03", a: -6600000, m: "소프트웨어 대금" },
-    { d: "2026-11-05", a: -3300000, m: "임대인 이체" },
-    { d: "2026-11-06", a: 33000000, m: "나래라이프 입금" },
-    { d: "2026-11-07", a: 85000, m: "이자" },
-    { d: "2026-11-09", a: -3000, m: "타행이체수수료" },
-    { d: "2026-11-10", a: -16380000, m: "급여 이체" },
-    { d: "2026-11-10", a: -1620000, m: "세무서·공단 납부" },
-    { d: "2026-11-10", a: 500000, m: "입금 — 보낸이 확인 필요" },
+    { d: "2026-09-01", a: 120000000, bal: 120000000, m: "개시 잔액" },
+    { d: "2026-09-05", a: -3300000, bal: 116700000, m: "임대인 이체" },
+    { d: "2026-09-10", a: -16380000, bal: 100320000, m: "급여 이체" },
+    { d: "2026-09-20", a: -1320000, bal: 99000000, m: "클라우드 자동이체" },
+    { d: "2026-09-25", a: -1650000, bal: 97350000, m: "법인카드 결제" },
+    { d: "2026-10-05", a: 22000000, bal: 119350000, m: "가온헬스 입금" },
+    { d: "2026-10-05", a: -3300000, bal: 116050000, m: "임대인 이체" },
+    { d: "2026-10-10", a: -16380000, bal: 99670000, m: "급여 이체" },
+    { d: "2026-10-10", a: -1620000, bal: 98050000, m: "세무서·공단 납부" },
+    { d: "2026-10-12", a: -5500000, bal: 92550000, m: "광고 집행" },
+    { d: "2026-10-20", a: -1320000, bal: 91230000, m: "클라우드 자동이체" },
+    { d: "2026-10-22", a: -900000, bal: 90330000, m: "교육기관 이체" },
+    { d: "2026-10-25", a: -450000, bal: 89880000, m: "보험료 이체" },
+    { d: "2026-11-03", a: -6600000, bal: 83280000, m: "소프트웨어 대금" },
+    { d: "2026-11-05", a: -3300000, bal: 79980000, m: "임대인 이체" },
+    { d: "2026-11-06", a: 33000000, bal: 112980000, m: "나래라이프 입금" },
+    { d: "2026-11-07", a: 85000, bal: 113065000, m: "이자" },
+    { d: "2026-11-09", a: -3000, bal: 113062000, m: "타행이체수수료" },
+    { d: "2026-11-10", a: -16380000, bal: 96682000, m: "급여 이체" },
+    { d: "2026-11-10", a: -1620000, bal: 95062000, m: "세무서·공단 납부" },
+    { d: "2026-11-10", a: 500000, bal: 95562000, m: "입금 — 보낸이 확인 필요" },
   ],
 };
 
@@ -212,13 +214,15 @@ function corpLedgerRead() {
     const o = JSON.parse(raw);
     return { v: 1, jv: Array.isArray(o.jv) ? o.jv : [], closed: Array.isArray(o.closed) ? o.closed : [],
       ov: (o.ov && typeof o.ov === "object") ? o.ov : {},
-      bank: Array.isArray(o.bank) ? o.bank : [] };
+      bank: Array.isArray(o.bank) ? o.bank : [],
+    /* 커버 기간 — 최상위 키라 읽기·쓰기 **양쪽**에 있어야 살아남는다(줄 안의 필드와 다르다) */
+    bankCov: (o && o.bankCov && typeof o.bankCov === "object") ? { from: String(o.bankCov.from || ""), to: String(o.bankCov.to || ""), at: String(o.bankCov.at || "") } : null };
   } catch (e) { return empty; }
 }
 function corpLedgerWrite(st) {
   try {
     localStorage.setItem(CORP_LEDGER_KEY, JSON.stringify({ v: 1, jv: st.jv || [], closed: st.closed || [],
-      ov: st.ov || {}, bank: st.bank || [] }));
+      ov: st.ov || {}, bank: st.bank || [], bankCov: st.bankCov || null }));
     return true;
   } catch (e) { return false; }
 }
@@ -276,7 +280,8 @@ function corpJvLive(st) { return ((st && st.jv) || []).length > 0; }
       그래서 전표가 실제인데 은행 내역이 아직 없으면 **대사를 돌리지 않고** 그 사실을 말한다. */
 function corpBankOf(st) {
   const b = (st && st.bank) || [];
-  if (b.length) return { acct: "103", bank: "반입 내역", mask: "", lines: b, live: true };
+  const cov = (st && st.bankCov) || null;
+  if (b.length) return { acct: "103", bank: "반입 내역", mask: "", lines: b, live: true, cov: cov };
   if (corpJvLive(st)) return null;          /* 실제 전표 + 은행 미반입 → 대사 대상 없음 */
   return CORP_BANK_SEED;
 }
@@ -410,7 +415,14 @@ function corpBankRecon(jvs, bank, upto) {
     (j.l || []).forEach(x => { if (x[0] === acct) { net += (+x[1] || 0) - (+x[2] || 0); hit = true; } });
     if (hit && net !== 0) book.push({ id: j.id, d: j.d, desc: j.desc, a: net, used: false });
   });
-  const bl = (B.lines || []).filter(l => !upto || l.d <= upto).map(l => ({ d: l.d, a: l.a, m: l.m, used: false, jv: null }));
+  /* ⚠️ 잔액(bal)·시각(t)·분류(cls)·행번호(row)를 **떨어뜨리지 않는다.**
+     여기서 새 객체를 만들며 bal 을 흘리면 잔액 사슬 검사가 분모 0이 되어
+     「흘린 거래를 잡는 단 하나의 검사」가 조용히 꺼진다. 실제로 그렇게 꺼져 있었다. */
+  const bl = (B.lines || []).filter(l => !upto || l.d <= upto).map(l => ({
+    d: l.d, a: l.a, m: l.m, t: l.t || "", cls: l.cls || "", row: l.row || 0,
+    bal: (l.bal === undefined || l.bal === null || l.bal === "") ? null : +l.bal,
+    used: false, jv: null,
+  }));
   bl.forEach(l => {
     const k = book.find(x => !x.used && x.d === l.d && x.a === l.a);
     if (k) { k.used = true; l.used = true; l.jv = k.id; }
@@ -423,6 +435,7 @@ function corpBankRecon(jvs, bank, upto) {
   const bookOnlyNet = bookOnly.reduce((n, x) => n + x.a, 0);
   return {
     none: none, acct: acct, bank: B.bank, mask: B.mask, lines: bl, book: book,
+    live: !!B.live, from: B.from || (B.cov && B.cov.from) || "", to: B.to || (B.cov && B.cov.to) || "",
     matched: bl.filter(l => l.used).length, bankOnly: bankOnly, bookOnly: bookOnly,
     bankBal: bankBal, bookBal: bookBal, bankOnlyNet: bankOnlyNet, bookOnlyNet: bookOnlyNet,
     /* 대사 항등식: 장부잔액 − 은행잔액 = 장부에만 있는 순액 − 은행에만 있는 순액 */
@@ -439,6 +452,13 @@ function corpLedgerIdentities(jvs, bank, upto) {
   const posted = corpPosted(all, upto);
   const S = corpStatements(all, upto);
   const R = corpBankRecon(all, bank, upto);
+  /* 잔액 축 — 이 둘만이 「빠진 거래」를 잡는다. corpBankJv.js 의 함수를 그대로 쓴다(두 벌 금지). */
+  const CH = typeof corpBjvChain === "function" ? corpBjvChain(R.lines || [])
+    : { n: 0, ok: false, breaks: [], open: null, last: null, noBal: 0 };
+  const bookBal = (function () {
+    const r = (S.trial && S.trial.rows || []).find(function (x) { return x.c === (R.acct || "103"); });
+    return r ? Math.round(r.bal) : 0;
+  })();
   const bad = posted.filter(j => !corpJvSum(j).ok);
   const unknown = [];
   all.forEach(j => (j.l || []).forEach(x => { if (!corpAcct(x[0])) unknown.push(j.id + " / " + x[0]); }));
@@ -452,9 +472,27 @@ function corpLedgerIdentities(jvs, bank, upto) {
     { k: "trial",   ko: "시산표 차변 = 대변",       n: S.trial.rows.length, ok: S.trial.ok,           got: corpWon(S.trial.drSum) + " / " + corpWon(S.trial.crSum), want: "같을 것" },
     { k: "bs",      ko: "자산 = 부채 + 자본 + 손익", n: S.bs.A.length,       ok: S.bs.ok,              got: corpWon(S.bs.assets) + " / " + corpWon(S.bs.total), want: "같을 것" },
     { k: "pl",      ko: "손익 = 수익 − 비용",       n: S.pl.R.length + S.pl.X.length, ok: S.pl.net === S.pl.rev - S.pl.exp, got: corpWon(S.pl.net), want: corpWon(S.pl.rev - S.pl.exp) },
-    /* 보류 — 통과도 실패도 아니다. 대사할 상대가 없다는 사실을 그대로 띄운다. */
+    /* ⚠️ 이 줄은 **판정에서 뺀다.** 짝지은 줄은 금액이 같으니 gap 은 대수적으로 늘 0이다 —
+       조작한 은행줄을 먹여도 통과한다. 「언제나 맞는 검사」를 통과로 세면 검사가 없는 것과 같다.
+       흘린 거래를 잡는 일은 **잔액 축**(아래 두 줄)이 한다. 값은 참고로 그대로 보여 준다. */
     { k: "bank",    ko: "은행 대사 차이 해소",       n: R.lines.length,      ok: R.ok,                 got: R.none ? "은행 내역 미반입" : corpWon(R.gap), want: "0",
-      skip: R.none, why: R.none ? "은행 거래내역이 반입되지 않았습니다 — 대사할 상대가 없어 돌리지 않았습니다" : "" },
+      skip: true, why: R.none ? "은행 거래내역이 반입되지 않았습니다 — 대사할 상대가 없어 돌리지 않았습니다"
+        : "이 값은 구조적으로 늘 0입니다(짝지은 줄은 금액이 같습니다) — 통과로 세지 않습니다. 흘린 거래는 아래 잔액 축이 잡습니다" },
+    /* 잔액 사슬 — 은행 표가 스스로 증명하는 **외부 사실**이다.
+       잔액[i] = 잔액[i-1] + 입금 - 출금 이 한 군데라도 안 서면 표에 없는 거래가 있다. */
+    { k: "chain",   ko: "은행 잔액 사슬 전건 성립",   n: CH.n,                ok: CH.ok,
+      got: CH.n === 0 ? "잔액 없음" : (CH.breaks.length ? CH.breaks.length + "군데 끊김(" + CH.breaks[0].d + " " + corpWon(CH.breaks[0].gap) + ")" : "끊김 없음"),
+      want: "끊김 0", skip: CH.n === 0,
+      why: CH.n === 0 ? "은행 내역에 잔액이 없습니다 — 흘린 거래를 잡을 길이 없어 검사하지 않았습니다" : "" },
+    /* ⚠️ 이 대조는 **계좌 전체를 덮는 표**라야 뜻이 있다. 검증용 묶음은 일부러 미대사를 품고
+       있어서, 그 표의 마지막 잔액을 장부와 견주면 늘 어긋난다 — 그걸 실패로 세면
+       사람이 「원래 빨간 것」으로 배우고, 진짜 어긋날 때 아무도 안 본다. */
+    { k: "balmatch", ko: "은행 마지막 잔액 = 장부 보통예금", n: (CH.last === null || !R.live) ? 0 : 1,
+      ok: CH.last !== null && R.live && CH.last === Math.round(bookBal),
+      got: CH.last === null ? "잔액 없음" : corpWon(CH.last) + " / " + corpWon(bookBal),
+      want: "같을 것", skip: CH.last === null || !R.live,
+      why: CH.last === null ? "은행 내역에 잔액이 없습니다 — 대조할 상대가 없어 검사하지 않았습니다"
+        : (!R.live ? "지금 보고 있는 것은 검증용 은행 묶음입니다(계좌 전체가 아닙니다) — 반입된 실제 내역에서만 대조합니다" : "") },
     { k: "acct",    ko: "미등록 계정 0건",          n: all.length,          ok: unknown.length === 0, got: unknown.length + "건", want: "0건" },
     { k: "dupe",    ko: "전표번호 중복 0건",         n: all.length,          ok: dupes.length === 0,   got: dupes.length + "건", want: "0건" },
     { k: "approve", ko: "작성자 ≠ 승인자",          n: posted.filter(j => !j.open).length, ok: selfAp.length === 0, got: selfAp.length + "건 동일인", want: "0건" },
