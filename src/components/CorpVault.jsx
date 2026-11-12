@@ -27,6 +27,7 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
   const [note, setNote] = React.useState(null);
   const [scan, setScan] = React.useState(null);
   const [open, setOpen] = React.useState(false);
+  const dirRef = React.useRef(null);
 
   React.useEffect(function () {
     let gone = false;
@@ -45,12 +46,18 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
       const x = await cvfPick();
       setH(x);
       setPerm(await cvfPerm(x, true));
-      setNote({ bad: false, t: "「" + (x.name || "폴더") + "」을(를) 이었습니다. 「방문할 때마다 허용」을 고르셨다면 다음부터 다시 묻지 않습니다." });
-    } catch (e) {
-      setNote({ bad: true, t: ((e && e.message) || "폴더를 잇지 못했습니다")
-        + (e && e.copied ? " (경로 「" + CORP_VFS_WANT + "」를 복사해 두었습니다 — 창이 열리면 Ctrl+V 로 붙여 넣고 Enter 를 누르시면 됩니다)" : "") });
-    }
+      /* ⚠️ 「방문할 때마다 허용」은 **이을 때 뜨지 않는다** — 다음에 여실 때 뜬다.
+         안 뜬 창을 가리켜 적으면 사람이 기다리거나 자기가 뭘 놓쳤다고 여긴다. */
+      setNote({ bad: false, t: "「" + (x.name || "폴더") + "」을(를) 이었습니다 — 고르신 것이 곧 읽기 허락이라 따로 묻지 않습니다."
+        + " 이제 「지금 가져오기」를 누르시면 됩니다." });
+    } catch (e) { setNote({ bad: true, t: (e && e.message) || "폴더를 잇지 못했습니다" }); }
     setBusy(false);
+  };
+  const copyPath = async function () {
+    const ok = await cvfCopyPath();
+    setNote({ bad: !ok, t: ok
+      ? "경로 「" + CORP_VFS_WANT + "」를 복사했습니다 — 폴더 창에서 Ctrl+V 로 붙여 넣고 Enter 를 누르세요."
+      : "복사하지 못했습니다 — 바탕화면에서 「0.HI-fin 온톨로지하네스」 → 「02.회계」 로 들어가 주세요." });
   };
   const grant = async function () {
     setBusy(true);
@@ -70,6 +77,22 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
     } catch (e) { setNote({ bad: true, t: (e && e.message) || "가져오지 못했습니다" }); }
     setBusy(false);
   };
+  /* 두 번째 길 — 폴더를 통째로 고른다. 권한은 안 남지만 지금 바로 된다. */
+  const onDir = function (e) {
+    const fl = e.target.files;
+    if (!fl || !fl.length) return;
+    setBusy(true); setNote(null);
+    try {
+      const S = cvfFromInput(fl);
+      setScan(S);
+      if (typeof onRows === "function") onRows(S.rows);
+      setNote({ bad: false, t: S.n + "건을 읽었습니다(" + Math.round(S.bytes / 104857.6) / 10 + "MB). "
+        + "**이 길은 권한이 남지 않습니다** — 다음에 올리실 때 폴더를 다시 고르셔야 합니다. "
+        + "한 번 이어 두고 쓰시려면 위의 「저장소 폴더 잇기」를 써 주세요." });
+    } catch (err) { setNote({ bad: true, t: (err && err.message) || "읽지 못했습니다" }); }
+    setBusy(false);
+  };
+
   const forget = async function () {
     await cvfForget(); setH(null); setPerm(""); setScan(null);
     setNote({ bad: false, t: "폴더 연결을 끊었습니다 — 저장소의 파일은 그대로입니다." });
@@ -90,7 +113,8 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
   const take = async function (rel) {
     setBusy(true); setNote(null);
     try {
-      const f = await cvfFile(h, rel);
+      /* 통째로 고른 길이면 그 자리에서 파일이 나온다 — 폴더를 다시 열 일이 없다 */
+      const f = (scan && scan.map && scan.map[rel]) ? scan.map[rel] : await cvfFile(h, rel);
       if (typeof onPick === "function") await onPick(f, rel);
       setNote({ bad: false, t: "「" + rel + "」을(를) 가져왔습니다." });
     } catch (e) { setNote({ bad: true, t: (e && e.message) || "파일을 읽지 못했습니다" }); }
@@ -115,10 +139,15 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
             그 뒤로는 권한이 남아 「지금 가져오기」 한 번이면 됩니다. <b>저절로 돌지는 않습니다</b> —
             화면을 열고 누르셔야 합니다(브라우저가 사람이 누를 때만 폴더를 열어 줍니다).
             <span className="cl-warn2">
-              누르시면 <b>바탕화면에서 창이 열리고</b>, 경로 <b>{CORP_VFS_WANT}</b> 를 미리 복사해 둡니다 —
-              창에서 <b>Ctrl+V</b> 로 붙여 넣고 <b>Enter</b> 를 누르시면 바로 그 폴더입니다
-              (폴더를 두 번 눌러 들어가셔도 됩니다). <b>바탕화면 자체는 고를 수 없습니다.</b>
-              권한을 물을 때 <b>「방문할 때마다 허용」</b>을 고르시면 다음부터 다시 묻지 않습니다.
+              누르시면 <b>바탕화면에서 창이 열립니다</b> — 거기서 <b>0.HI-fin 온톨로지하네스</b> →
+              <b>02.회계</b> 로 들어가 「폴더 선택」을 누르시면 됩니다.
+              경로를 붙여 넣는 게 편하시면 <b>먼저 「경로 복사」</b>를 누르시고, 폴더 창에서 Ctrl+V → Enter 하세요.
+              <b>바탕화면 자체는 고를 수 없습니다.</b>
+            </span>
+            <span className="cl-warn2">
+              <b>권한을 따로 묻지 않습니다</b> — 폴더를 고르시는 것이 곧 읽기 허락입니다.
+              창이 하나 더 뜨기를 기다리지 마세요. 이은 뒤에는 위 배지가 <b>「이어져 있음」</b>으로 바뀝니다.
+              <b>「방문할 때마다 허용」</b>은 <b>다음에 다시 여실 때</b> 뜹니다 — 그때 그걸 고르시면 그 뒤로는 안 묻습니다.
             </span>
             <span className="cl-warn2">
               <b>권한은 주소마다 따로입니다</b> — 미리보기(localhost)에서 이으신 것과 배포본에서 이으신 것은
@@ -128,6 +157,7 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
 
           <div className="vf-row">
             {!h && <button className="cl-save" disabled={busy} onClick={link}>저장소 폴더 잇기</button>}
+            {!h && <button className="cl-rv" disabled={busy} onClick={copyPath}>경로 복사</button>}
             {h && perm !== "granted" && <button className="cl-save" disabled={busy} onClick={grant}>권한 다시 받기</button>}
             {h && perm === "granted" && <button className="cl-save" disabled={busy} onClick={fetchNow}>지금 가져오기</button>}
             {h && <button className="cl-rv" disabled={busy} onClick={link}>폴더 바꾸기</button>}
@@ -135,8 +165,19 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
             {h && <span className="cl-t">이어진 폴더 · {h.name}</span>}
             {busy && <span className="cl-t">{tick ? tick + "건 읽는 중…" : "잠시만요…"}</span>}
           </div>
+
+          <div className="vf-row vf-alt">
+            <span className="cl-t">잘 안 되면 이 길로 —</span>
+            <button className="cl-rv" disabled={busy} onClick={function () { if (dirRef.current) dirRef.current.click(); }}>
+              폴더 통째 고르기
+            </button>
+            <input ref={dirRef} type="file" webkitdirectory="" directory="" multiple
+              style={{ display: "none" }} onChange={onDir} />
+            <i className="vf-alt-why">권한이 남지 않아 <b>올리실 때마다 다시 고르셔야</b> 합니다. 지금 바로는 됩니다.</i>
+          </div>
           {note && <div className={"cl-msg" + (note.bad ? " bad" : "")} onClick={function () { setNote(null); }}>{note.t}</div>}
 
+          {scan && scan.once && <p className="cl-note hold">지금 읽은 것은 <b>이번 한 번</b>입니다 — 권한이 남지 않습니다.</p>}
           {scan && (
             <p className="cl-note">{scan.root}{scan.asDept ? "(부서 폴더를 직접 이으셨습니다)" : ""} — <b>{scan.n}건</b> · {Math.round(scan.bytes / 104857.6) / 10}MB.
               {sc && sc.dir ? <span> 이 지면은 <b>{sc.dir}</b> 안만 봅니다 — <b>{sc.n}건</b>.</span> : null}

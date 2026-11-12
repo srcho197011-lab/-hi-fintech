@@ -6290,3 +6290,5 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .vf-tbl td.desc{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .vf-tbl tr.warn td{background:rgba(224,163,63,.08);}
 .vf-tbl tr.warn td.id{color:var(--cw);}
+.vf-alt{border-top:1px dashed var(--cl2);padding-top:9px;margin-top:2px;}
+.vf-alt-why{font-style:normal;font-size:9.5px;color:var(--cd2);flex:1 1 220px;}

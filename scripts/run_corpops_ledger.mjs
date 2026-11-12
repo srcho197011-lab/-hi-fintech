@@ -1595,6 +1595,28 @@ if (vfsSrc) {
     "⑯브라우저 못 하는 브라우저를 **가려 말한다**(조용히 0건이 되지 않는다)", "없음");
   chk(/사파리|파이어폭스|아이폰/.test(vfsSrc), "⑯브라우저 어느 브라우저가 안 되는지 적는다", "없음");
   chk(/CORP_VFS_MAXFILES/.test(bareF), "⑯순회   상한이 있다(멈추지 않는 순회를 막는다)", "없음");
+  /* ⚠️ 폴더 창은 「사람이 방금 눌렀다」는 자격으로 열린다. 그 **앞에 await 가 끼면**
+     자격이 먼저 쓰여 창이 열리지 않는다 — 경로를 미리 복사해 주려다 실제로 그렇게 막혔다.
+     cvfPick 안에서 showDirectoryPicker 보다 먼저 await 하는 것이 없어야 한다. */
+  const iPickDecl = bareF.indexOf("async function cvfPick(");
+  const iCopyDecl = bareF.indexOf("async function cvfCopyPath(");
+  const pickFn = iPickDecl >= 0 ? bareF.slice(iPickDecl, iCopyDecl > iPickDecl ? iCopyDecl : iPickDecl + 2000) : "";
+  chk(pickFn.length > 0, "⑯분모   cvfPick 본문을 찾았다", pickFn.length);
+  const iAwait = pickFn.indexOf("await");
+  const iPicker = pickFn.indexOf("await window.showDirectoryPicker");
+  chk(iAwait >= 0 && iAwait === iPicker,
+    "⑯제스처ⓐ 폴더 창보다 **먼저 await 하는 것이 없다**(있으면 창이 안 열린다)",
+    pickFn.slice(Math.max(0, iAwait - 40), iAwait + 60).replace(/\s+/g, " "));
+  chk(!/clipboard/.test(pickFn), "⑯제스처   폴더 고르기에 클립보드를 섞지 않는다(따로 둔다)", "섞여 있음");
+  chk(/async function cvfCopyPath/.test(bareF), "⑯제스처   경로 복사는 **다른 함수**다", "없음");
+  /* 틀린 설명을 코드에 새겨 두면 다음 사람이 그걸 믿고 엉뚱한 데를 고친다.
+     「소비한다」는 실측으로 뒤집혔다 — 기준은 횟수가 아니라 **시간(약 5초)** 이다. */
+  chk(vfsSrc.indexOf("자격이 먼저 쓰여") < 0, "⑯제스처ⓐ 뒤집힌 설명을 코드에 남기지 않는다", "옛 설명 남음");
+  chk(/약 5초|5초/.test(vfsSrc), "⑯제스처   자격이 시간으로 만료된다고 적는다", "없음");
+  /* AbortError 는 세 가지를 한 이름으로 온다 — 하나만 적으면 취소 안 한 사람이 자기를 의심한다 */
+  chk(/브라우저가 막는 폴더/.test(vfsSrc) && /취소하셨거나/.test(vfsSrc) && /권한을 받지 못했습니다/.test(vfsSrc),
+    "⑯오류   폴더를 못 고른 까닭 셋을 **모두** 적는다", "하나만 적음");
+  chk(/function cvfFromInput/.test(bareF), "⑯두번째 폴더 통째 고르기 길이 있다(잇기가 안 될 때)", "없음");
   chk((bareF.match(/Math\.random/g) || []).length === 0, "⑯결정론 corpVaultFs.js Math.random 0건");
   const nm2 = (bareF.match(/["'][^"']*\.(pdf|xlsx|xls|docx|hwp|pptx|zip)["']/gi) || [])
     .filter((x) => x.indexOf("_표본") < 0);
@@ -1603,7 +1625,6 @@ if (vfsSrc) {
   chk(!/CORP_VAULT_KIND\s*=|CORP_VAULT_ENTITY\s*=/.test(bareF),
     "⑯단일   종류 · 법인 판별을 다시 정의하지 않는다(화면 한 곳에만)", "두 벌");
 }
-
 /* 화면 — 어디서 골랐든 **같은 길**로 읽는가 */
 if (bkBoard) {
   chk(/const readFile = async/.test(bkBoard), "⑯화면   파일 읽는 길이 하나다", "없음");
@@ -1625,6 +1646,15 @@ if (vtBoard2) {
   chk(/저절로 돌지는 않습니다/.test(vtBoard2), "⑯화면   저절로 돌지 않는다고 적는다(「자동 실행」이 아니다)", "없음");
   chk(/한 번 폴더를 지정/.test(vtBoard2), "⑯화면   한 번은 사람이 지정해야 한다고 적는다", "없음");
   chk(/바탕화면 자체는 고를 수 없습니다/.test(vtBoard2), "⑯화면   바탕화면을 고를 수 없다고 미리 적는다", "없음");
+  /* 권한을 따로 묻지 않는다 — 고르는 것이 곧 허락이다. 「창이 또 뜬다」고 적으면 사람이 기다린다. */
+  chk(/권한을 따로 묻지 않습니다/.test(vtBoard2), "⑯화면   권한을 따로 묻지 않는다고 적는다(기다리지 않게)", "없음");
+  chk(!/권한을 물을 때/.test(vtBoard2), "⑯화면ⓐ 「권한을 물을 때」라고 적지 않는다(안 묻는다)", "옛 문구 남음");
+  chk(/경로 복사/.test(vtBoard2), "⑯화면   경로 복사는 별도 버튼이다", "없음");
+  chk(/폴더 통째 고르기/.test(vtBoard2), "⑯화면   잘 안 될 때 쓸 두 번째 길이 있다", "없음");
+  chk(/권한이 남지 않/.test(vtBoard2), "⑯화면   두 번째 길은 권한이 안 남는다고 적는다(숨기지 않는다)", "없음");
+  chk(/다음에 다시 여실 때/.test(vtBoard2), "⑯화면   「방문할 때마다 허용」이 언제 뜨는지 적는다", "없음");
+  chk(!/방문할 때마다 허용」을 고르셨다면/.test(vtBoard2),
+    "⑯화면ⓐ 뜨지도 않은 창을 가리켜 적지 않는다", "옛 문구 남음");
   chk(/제가 고르지 않습니다/.test(vtBoard2), "⑯화면   기계가 고르지 않는다고 적는다", "없음");
   chk(/OneDrive/.test(vtBoard2) || /내려받지/.test(vtBoard2),
     "⑯화면   내용을 못 읽은 파일을 숨기지 않는다", "없음");
@@ -1681,7 +1711,6 @@ if (hook) {
 chk(MANI.indexOf("src/data/corpVaultFs.js") >= 0, "⑯번들   corpVaultFs.js 가 매니페스트에 있다", "없음");
 chk(MANI.indexOf("src/data/corpVault.js") < MANI.indexOf("src/data/corpVaultFs.js"),
   "⑯번들   자료실 뒤에 선다(종류 판별을 그쪽에서 가져온다)");
-
 
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;

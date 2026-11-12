@@ -105,26 +105,64 @@ const CORP_VFS_WANT = "0.HI-fin 온톨로지하네스\\02.회계";
 async function cvfPick(opt) {
   const can = cvfCan();
   if (!can.ok) throw new Error(can.why);
-  /* 경로를 미리 챙겨 둔다 — 대화상자에서 Ctrl+V 한 번이면 닿는다. 실패해도 그냥 간다. */
-  let copied = false;
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(CORP_VFS_WANT);
-      copied = true;
-    }
-  } catch (e) { copied = false; }
+  /* ⚠️ 폴더 창은 「사람이 방금 눌렀다」는 자격이 **살아 있는 동안**에만 열린다.
+     그 자격은 크로미움에서 **약 5초** 뒤 만료된다 — 횟수가 아니라 시간이다.
+     한때 이 앞에서 클립보드 복사를 await 했는데, 그게 자격을 **소비한다고 적어 두었다가
+     실측으로 뒤집혔다**(클릭 → writeText 16ms → 자격 여전히 살아 있음). 소비는 아니다.
+     그래도 떼어 둔다 — 느린 클립보드(다른 프로그램이 붙잡고 있을 때)가 5초를 먹으면
+     그때는 정말로 막히고, 창이 떠 있는 동안 복사는 어차피 쓸모가 없다.
+     ⚠️ 틀린 설명을 코드에 새겨 두면 다음 사람이 그걸 믿고 엉뚱한 데를 고친다. 바로잡아 둔다. */
   let h;
   try {
     h = await window.showDirectoryPicker({ id: "hifinVault", mode: "read", startIn: (opt && opt.startIn) || "desktop" });
   } catch (e) {
-    if (e && e.name === "AbortError") { const err = new Error("폴더를 고르지 않으셨습니다"); err.copied = copied; throw err; }
-    const err = new Error("폴더를 열지 못했습니다 — 바탕화면 자체는 고를 수 없습니다. 그 안의 저장소 폴더를 골라 주세요");
-    err.copied = copied;
-    throw err;
+    /* ⚠️ AbortError 하나에 **세 가지**가 섞여 온다 — ① 취소 ② 브라우저가 막는 폴더
+       ③ 권한을 받지 못함. 브라우저가 어느 쪽인지 알려 주지 않으므로, 셋을 다 적는다.
+       「취소하셨습니다」 한 줄만 적으면 취소하지 않으신 분이 자기를 의심하게 된다. */
+    if (e && e.name === "AbortError") {
+      throw new Error("폴더를 고르지 못했습니다. 브라우저가 까닭을 알려 주지 않아 셋 중 하나입니다 — "
+        + "① 취소하셨거나, **창이 떠 있는 동안 다른 창으로 옮기셔서** 닫혔습니다(스크린샷을 찍으셔도 그렇게 됩니다) · "
+        + "② 브라우저가 막는 폴더입니다(바탕화면 · 문서 · 다운로드 **그 자체**는 못 고릅니다. 그 **안쪽** 폴더를 골라 주세요) · "
+        + "③ 권한을 받지 못했습니다. "
+        + "창을 띄운 채로 바로 「폴더 선택」을 눌러 보시고, 그래도 안 되면 아래 **「폴더 통째 고르기」**를 쓰시면 됩니다");
+    }
+    if (e && e.name === "SecurityError") throw new Error("폴더 창이 열리지 않았습니다 — 버튼을 **직접** 눌러 주셔야 열립니다(브라우저 규칙입니다)");
+    throw new Error("폴더를 열지 못했습니다(" + ((e && e.name) || "알 수 없음") + ") — 바탕화면 자체는 고를 수 없습니다. 그 안의 저장소 폴더를 골라 주세요");
   }
   await cvfDbPut(CORP_VFS_KEY, h);
-  h.__copied = copied;
   return h;
+}
+
+/* ── ③-2 두 번째 길 — 폴더를 통째로 고른다 ──────────────────────────────
+   ⚠️ 폴더 잇기(권한이 남는 길)가 안 될 때가 있다 — 창이 포커스를 잃으면 닫히고,
+      브라우저에 따라 아예 못 한다. 그럴 때도 형이 막히지 않게 **두 번째 길**을 둔다.
+   ⚠️ 다만 이 길은 **권한이 남지 않는다.** 올릴 때마다 다시 고르셔야 한다.
+      그걸 숨기지 않는다 — 숨기면 「왜 또 고르라 하지」가 된다.
+   webkitRelativePath 가 「02.회계/2026.결산/…」 꼴로 와서 폴더 잇기와 **같은 모양**이 된다. */
+function cvfFromInput(fileList) {
+  const rows = [], map = {};
+  const L = fileList ? Array.prototype.slice.call(fileList) : [];
+  L.forEach(function (f) {
+    const rel = f.webkitRelativePath || f.name;
+    const nm = f.name;
+    if (CORP_VFS_SKIPPRE.some(function (p) { return nm.indexOf(p) === 0; })) return;
+    const parts = rel.split("/");
+    if (parts.some(function (x) { return CORP_VFS_SKIPDIR.indexOf(x) >= 0; })) return;
+    rows.push({ rel: rel, name: nm, dir: parts.slice(0, -1).join("/"), size: f.size, at: cvfDay(f.lastModified), ext: cvfExt(nm) });
+    map[rel] = f;
+  });
+  rows.sort(function (a, b) { return a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0; });
+  return { root: (rows[0] && rows[0].rel.split("/")[0]) || "", rows: rows, map: map, n: rows.length,
+    bytes: rows.reduce(function (n, r) { return n + (+r.size || 0); }, 0), once: true, unread: 0, cut: false, asDept: true };
+}
+
+/* 경로 복사 — **폴더 고르기와 섞지 않는다.** 버튼을 따로 둔다. */
+async function cvfCopyPath() {
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return false;
+    await navigator.clipboard.writeText(CORP_VFS_WANT);
+    return true;
+  } catch (e) { return false; }
 }
 async function cvfHandle() {
   const can = cvfCan();
