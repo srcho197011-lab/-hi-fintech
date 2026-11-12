@@ -40,6 +40,7 @@ src/data/corpAgent.js
 src/data/corpVault.js
 src/data/corpBankXlsx.js
 src/data/corpBankJv.js
+src/data/corpOrder.js
 src/components/CorpAvatar.jsx
 src/components/CorpLedger.jsx
 src/components/CorpPlanActual.jsx
@@ -49,6 +50,7 @@ src/components/CorpGov.jsx
 src/components/CorpUpload.jsx
 src/components/CorpAgentChat.jsx
 src/components/CorpVault.jsx
+src/components/CorpOrder.jsx
 src/components/CorpOps.jsx
 src/components/Ontology.jsx
 src/components/SupplyOntology.jsx

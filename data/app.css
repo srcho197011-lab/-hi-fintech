@@ -6255,3 +6255,29 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .bk-keep{display:flex;align-items:flex-start;gap:6px;font-size:9.5px;color:var(--cd);margin-top:6px;flex-wrap:wrap;}
 .bk-keep i{font-style:normal;color:var(--cd2);flex:1 1 100%;margin-left:20px;}
 .bk-act{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;}
+
+/* 업무 지시 — 회계팀 보드. 접두 wo- 로 묶는다(맨낱말 클래스는 전역과 부딪힌다). */
+.wo-badge{font-size:8px;font-weight:800;color:#0C0C0F;background:var(--tc,#E8795A);border-radius:3px;padding:1px 5px;margin-left:7px;vertical-align:middle;}
+.wo-log{max-height:none;}
+.wo-ex{display:block;margin:4px 0;text-align:left;max-width:100%;white-space:normal;line-height:1.5;}
+.wo-input{margin-top:10px;}
+.wo-steps{margin-top:8px;display:flex;flex-direction:column;gap:8px;}
+.wo-step{border:1px solid var(--cl2);border-left:3px solid var(--cd2);border-radius:7px;padding:9px 11px;background:var(--cp);}
+.wo-step.on{border-left-color:#5FAE7E;}
+.wo-step.hu{border-left-color:var(--cw);}
+.wo-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.wo-hd b{font-size:11.5px;}
+.wo-n{font-size:9px;font-weight:800;color:var(--cd);border:1px solid var(--cl2);border-radius:50%;width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.wo-who{font-size:9px;border-radius:4px;padding:1px 7px;white-space:nowrap;}
+.wo-who.ai{color:#5FAE7E;border:1px solid rgba(95,174,126,.45);background:rgba(95,174,126,.1);}
+.wo-who.human{color:var(--cw);border:1px solid rgba(224,163,63,.45);background:rgba(224,163,63,.1);}
+.wo-cnt{font-size:9.5px;color:var(--ct);font-weight:700;}
+.wo-d{margin:5px 0 0;font-size:10px;color:var(--cd);line-height:1.65;}
+.wo-why{margin:4px 0 0;font-size:10px;color:var(--cw);line-height:1.65;}
+.wo-note{margin:2px 0 0;font-size:9.5px;color:var(--cd2);line-height:1.6;}
+.wo-act{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:7px;}
+.wo-task{display:flex;align-items:center;gap:9px;font-size:10px;padding:5px 0;border-bottom:1px solid var(--cl);}
+.wo-task .desc{color:var(--cd);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wo-iso{color:var(--ct);font-weight:700;white-space:nowrap;}
+.ag-ai.k-ask{border-left-color:#7AA7D9;}
+.ag-ai.k-order{border-left-color:#5FAE7E;}

@@ -556,10 +556,17 @@ function ClBankUp({ st, save, actor, A }) {
   };
 
   const undo = () => {
-    const keepJv = (st.jv || []).filter((j) => j.by !== "은행반입");
-    const n = (st.jv || []).length - keepJv.length;
-    save(Object.assign({}, st, { jv: keepJv, bank: [], bankCov: null }));
-    setNote({ bad: false, t: "은행에서 만든 전표 " + n + "건과 은행줄을 모두 물렸습니다 — 대사는 보류로 돌아갑니다." });
+    /* ⚠️ **전기된 전표는 지우지 않는다**(형 확정 2026-11-12). 이 장부가 스스로 적은 원칙이다 —
+       「정정은 역분개로 한다 · 지운 자국이 남아야 장부다」. 아직 승인 전인 것만 물린다. */
+    const all = st.jv || [];
+    const posted = all.filter((j) => j.by === "은행반입" && j.st === "posted");
+    const keepJv = all.filter((j) => j.by !== "은행반입" || j.st === "posted");
+    const n = all.length - keepJv.length;
+    save(Object.assign({}, st, { jv: keepJv }));
+    setNote({ bad: false, t: "아직 승인 전인 " + n + "건을 물렸습니다."
+      + (posted.length ? " **이미 전기된 " + posted.length + "건은 남겼습니다** — 전기된 전표는 지우지 않습니다. 바로잡으시려면 업무 지시에서 「역분개」를 시키시거나 전표 지면에서 역분개하세요."
+        : "")
+      + " 은행줄은 그대로 둡니다 — 지우면 어디까지 받았는지가 사라집니다." });
   };
 
   const cols = spec ? spec.need.concat(spec.opt) : [];

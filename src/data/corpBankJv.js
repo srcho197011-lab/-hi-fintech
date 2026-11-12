@@ -138,8 +138,16 @@ function corpBjvKey(x) {
       (전표가 된 줄) + (보류 줄) = (은행 줄) 이 늘 서야 한다. */
 function corpBjvBuild(lines, st, ledger, jvs) {
   const L = corpBjvSort(lines);
+  /* ⚠️ 역분개가 **전기된** 전표의 은행줄은 「소진」으로 보지 않는다 — 그래야 같은 파일을
+     다시 올렸을 때 전표가 다시 만들어진다. 형 지시의 ③단계가 여기서 열린다.
+     ⚠️ 다만 bk 필드는 **지우지 않는다.** 지우면 그 전표가 소프트 중복 후보가 되어
+        자기 자신 때문에 또 막힌다(실측 — bk 를 떼면 made 0 · dup 2 로 똑같이 막혔다).
+     ⚠️ 그리고 역분개가 **기표인 채로** 다시 만들면 같은 거래가 두 번 선다.
+        그건 여기서 막지 않고 항등식(한 은행줄에 상쇄 안 된 전기 전표 1장)이 잡는다. */
+  const revPosted = {};
+  (jvs || []).forEach(function (j) { if (j.rev && j.st === "posted") revPosted[j.rev] = 1; });
   const have = {};
-  (jvs || []).forEach(function (j) { if (j.bk) have[j.bk] = j.id; });
+  (jvs || []).forEach(function (j) { if (j.bk && !revPosted[j.id]) have[j.bk] = j.id; });
   const seq = {};
   const made = [], held = [], dup = [];
   /* 그날 이미 쓰인 번호부터 이어 붙인다 — 기존 전표와 번호가 부딪히지 않게 */
@@ -153,7 +161,8 @@ function corpBjvBuild(lines, st, ledger, jvs) {
      이미 장부에 있으면, 은행줄을 그대로 전표로 만들면 그 거래가 두 번 선다.
      ⚠️ 그렇다고 조용히 건너뛰지도 않는다 — 같은 날 같은 금액이 진짜로 두 건일 수도 있다.
         「이미 있을 수 있습니다」로 세워 **사람에게 보인다.** 한 전표는 한 번만 짝짓는다. */
-  const soft = (jvs || []).filter(function (j) { return !j.bk; }).map(function (j) {
+  /* 역분개 전표는 소프트 중복 후보가 아니다 — 원전표를 지우려고 만든 것이지 거래가 아니다 */
+  const soft = (jvs || []).filter(function (j) { return !j.bk && !j.rev && !revPosted[j.id]; }).map(function (j) {
     const l = (j.l || []).find(function (x) { return x[0] === "103"; });
     return l ? { id: j.id, d: j.d, in: +l[1] || 0, out: +l[2] || 0, used: false } : null;
   }).filter(Boolean);

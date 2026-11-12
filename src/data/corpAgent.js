@@ -68,9 +68,13 @@ const CORP_AG_TOOL = [
     } },
   /* 형 지시 2026-11-12 — 매일 은행 내역이 들어왔는지 사람에게 알려 주는 일.
      ⚠️ 날짜를 **인자로 받는다**. 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
-  { ai: "핀테크", k: "bankup", ko: "은행 반입 상태", ask: ["어제", "오늘", "올렸", "반입", "업로드", "들어왔", "밀렸", "며칠"],
-    run: function (now) {
+  { ai: "핀테크", k: "bankup", ko: "은행 반입 상태", ask: ["어제", "오늘", "올렸", "반입", "업로드", "들어왔", "밀렸", "며칠",
+      /* 「다시 받아 와」류는 **긴 어구로** 잡는다 — 「다시」 단독으로 잡으면
+         「다시 계산해」까지 끌어와 엉뚱한 도구가 된다 */
+      "다시 받", "다시 다운", "다시 내려", "다시 가져", "새로 받", "내려받"],
+    run: function (at) {
       if (typeof corpBjvDue !== "function") return null;
+      const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
       const st = corpLedgerRead();
       const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
       const D = corpBjvDue(st && st.bankCov, today);
@@ -103,9 +107,11 @@ const CORP_AG_TOOL = [
                ["합류 전", CORP_SUMMARY.pending.join(" · ")]] };
     } },
   { ai: "나침반", k: "ct", ko: "계약 만료", ask: ["계약", "만료", "갱신", "기한"],
-    run: function () {
+    /* ⚠️ 날짜는 **인자로** 받는다. 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
+    run: function (at) {
       if (typeof CORP_CT === "undefined" || typeof corpCtAlert !== "function") return null;
-      const now = corpOpsNow();
+      const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
+      if (!now) return null;
       const rows = CORP_CT.map(function (c) { return { c: c, a: corpCtAlert(c, now) }; })
         .sort(function (x, y) { return (x.a.d || 0) - (y.a.d || 0); });
       const near = rows.filter(function (r) { return r.a.k !== "ok" && r.a.k !== "none"; });
@@ -113,9 +119,11 @@ const CORP_AG_TOOL = [
         rows: rows.map(function (r) { return [r.c.ko, r.a.ko + " · " + r.c.to]; }) };
     } },
   { ai: "나침반", k: "mtg", ko: "주간회의", ask: ["회의", "주간", "언제", "보고"],
-    run: function () {
+    run: function (at) {
       if (typeof corpMtgWeek !== "function") return null;
-      const w = corpMtgWeek(corpOpsNow());
+      const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
+      if (!now) return null;
+      const w = corpMtgWeek(now);
       if (!w) return { t: "다음 회의를 계산하지 못했습니다.", rows: [] };
       const st = corpMtgRead(); const wk = corpMtgOf(st, w);
       const mg = wk ? corpMtgCanMerge(wk) : null;
@@ -125,10 +133,13 @@ const CORP_AG_TOOL = [
                ["확정자 공석", mg ? mg.skip + "팀" : "—"]] };
     } },
   { ai: "나침반", k: "rt", ko: "루틴 상태", ask: ["루틴", "일마감", "월마감", "밀린", "예정"],
-    run: function () {
+    run: function (at) {
       if (typeof CORP_SCHEDULE === "undefined" || typeof corpRoutineState !== "function") return null;
-      const now = corpOpsNow(); const st = corpMtgRead(); const w = corpMtgWeek(now);
-      const rs = CORP_SCHEDULE.routines.map(function (r) { return { t: r.t, s: corpRoutineState(r, st, now, w) }; });
+      const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
+      if (!now) return null;
+      const st = corpMtgRead(); const w = corpMtgWeek(now);
+      const led = typeof corpLedgerRead === "function" ? corpLedgerRead() : null;
+      const rs = CORP_SCHEDULE.routines.map(function (r) { return { t: r.t, s: corpRoutineState(r, st, now, w, led) }; });
       const due = rs.filter(function (x) { return x.s.state === "due"; });
       return { t: "루틴 " + rs.length + "종 가운데 생성 경로가 붙은 것은 " + CORP_MTG_GEN.length + "종이고, 지금 밀린 것은 " + due.length + "건입니다.",
         rows: rs.map(function (x) { return [x.t, x.s.ko]; }) };
@@ -221,15 +232,32 @@ function corpAgPick(ai, q) {
 /* 시키는 말 — 이게 있어야 「요청」이다.
    ⚠️ 없으면 물음까지 거절하게 된다. 「릴리스 승인 누가 해?」는 승인해 달라는 말이 아니다. */
 const CORP_AG_DO = ["해줘", "해 줘", "해주세요", "해 주세요", "해라", "하라", "해다오", "처리", "실행",
-  "올려", "보내", "발행", "제출", "확정해", "지급", "눌러", "진행해", "시켜", "부탁"];
+  "올려", "보내", "발행", "제출", "확정해", "지급", "눌러", "진행해", "시켜", "부탁",
+  /* 「지워줘」·「만들어 줘」처럼 **동사 + 줘** 꼴은 「해줘」로 안 잡힌다(실측 — 「전표 다 지워줘」가
+     그냥 상태 보고로 답했다). 「줘」 단독을 넣되, 「알려줘」·「보여줘」는 묻는 말 표지가 건져 낸다. */
+  "줘", "주세요", "주라", "해야 한다", "하세요"];
+/* 묻는 말 — 시키는 말이 **글자로는 들어 있어도** 이게 있으면 물음이다.
+   「전표 승인 누가 **해줘야** 해?」에는 「해줘」가 박혀 있어 거절로 떨어졌다(실측).
+   물음을 거절하면 사람은 물어보는 것조차 그만둔다. */
+const CORP_AG_ASKMARK = ["누가", "누구", "언제", "어디", "어떻게", "어떤", "왜", "얼마", "몇",
+  "알려", "보여", "어때", "되나", "되냐", "있나", "있냐", "인가", "인지", "하나요", "할까", "해야"];
+function corpAgIsAsk(q) {
+  const s = String(q || "").replace(/\s/g, "");
+  return CORP_AG_ASKMARK.some(function (w) { return s.indexOf(w.replace(/\s/g, "")) >= 0; })
+    || /[?？]\s*$/.test(String(q || "").trim());
+}
 /* 못 하는 일을 **시켰는가** — 조직 원천의 cannot 과 맞춰 본다 */
 function corpAgRefuse(ai, q) {
   const a = corpAgOf(ai);
   if (!a) return null;
   const s = String(q || "").toLowerCase();
   if (!CORP_AG_DO.some(function (w) { return s.indexOf(w) >= 0; })) return null;
+  if (corpAgIsAsk(q)) return null;                /* 물음은 거절하지 않는다 */
   const hit = (a.cannot || []).find(function (c) {
-    return String(c.act).split(" · ").some(function (w) {
+    /* 걸릴 낱말을 따로 적어 둔 것이 있으면 그걸 쓴다 — 보이는 이름(act)과 걸리는 낱말은 다르다.
+       「전표 삭제」라고 적어 두면 「다 지워줘」가 안 걸린다(실측). 이름을 어지럽히지 않고 낱말만 는다. */
+    const words = (c.hit && c.hit.length) ? c.hit : String(c.act).split(" · ");
+    return words.some(function (w) {
       const k = String(w).replace(/\s/g, "").toLowerCase();
       return k.length >= 2 && s.replace(/\s/g, "").indexOf(k) >= 0;
     });
@@ -237,13 +265,29 @@ function corpAgRefuse(ai, q) {
   return hit || null;
 }
 
-/* ── ④ 답하기 — 도구를 **실제로 돌려** 값을 말한다 ────────────────── */
-function corpAgAnswer(ai, q) {
+/* 시키는 말인가 — 거절 대상은 아닌데 **일을 시킨** 경우를 가른다.
+   이게 없으면 「역분개해 줘」가 조용히 「전표 현황」표로 답한다(실측). 거절보다 나쁘다 —
+   거절은 못 한다고 말하지만, 이건 딴 소리를 하면서 답한 척한다. */
+function corpAgIsOrder(q) {
+  if (corpAgIsAsk(q)) return false;
+  const s = String(q || "").toLowerCase();
+  return CORP_AG_DO.some(function (w) { return s.indexOf(w) >= 0; });
+}
+
+/* ── ④ 답하기 — 도구를 **실제로 돌려** 값을 말한다 ──────────────────
+   ⚠️ ctx 는 바깥에서 넣어 주는 것이다(지금은 now 하나). 함수 안에서 오늘을 읽으면
+      커밋 게이트가 벽시계에 매달린다 — 날짜는 **인자로 받는다**. */
+function corpAgAnswer(ai, q, ctx) {
   const a = corpAgOf(ai);
   if (!a) return { kind: "none", t: "그런 이름의 AI 팀장이 없습니다." };
   const ref = corpAgRefuse(ai, q);
   if (ref) {
     return { kind: "refuse", t: "그건 제가 끝내지 못합니다 — " + ref.act + ". " + ref.by, act: ref.act };
+  }
+  /* 일을 시킨 것이라면 — 해석해서 **할 일로 쪼개** 돌려준다. 못 알아들으면 되묻는다. */
+  if (corpAgIsOrder(q) && typeof corpOrderRead === "function" && a.ai === "핀테크") {
+    const plan = corpOrderPlan(q, ctx || {});
+    if (plan) return plan;
   }
   const tool = corpAgPick(ai, q);
   if (!tool) {
@@ -256,7 +300,7 @@ function corpAgAnswer(ai, q) {
     };
   }
   let out = null;
-  try { out = tool.run(); } catch (e) { out = null; }
+  try { out = tool.run(ctx && ctx.now); } catch (e) { out = null; }
   if (!out) return { kind: "fail", t: "「" + tool.ko + "」을(를) 돌렸지만 원천을 읽지 못했습니다. 값을 지어내지 않겠습니다." };
   return { kind: "ok", tool: tool.ko, t: out.t, rows: out.rows || [] };
 }

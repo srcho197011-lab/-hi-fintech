@@ -70,11 +70,11 @@ const ORG = "src/data/corpOrg.js";
    「자동 실행」·「보완 필요」·회원 영상 모듈 참조는 지면 종류를 가리지 않는다. */
 const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpGov.jsx",
   "src/components/CorpUpload.jsx", "src/components/CorpAgentChat.jsx", "src/components/CorpVault.jsx",
-  "src/components/CorpOps.jsx"];
+  "src/components/CorpOrder.jsx", "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
   ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
   "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js", "src/data/corpVault.js",
-  "src/data/corpBankXlsx.js", "src/data/corpBankJv.js"];   /* 매니페스트와 **같은 순서** — 어긋나면 러너 녹색·브라우저 사망 */
+  "src/data/corpBankXlsx.js", "src/data/corpBankJv.js", "src/data/corpOrder.js"];   /* 매니페스트와 **같은 순서** — 어긋나면 러너 녹색·브라우저 사망 */
 for (const f of LOAD) {
   try { vm.runInContext(rd(f), ctx); }
   catch (e) { console.error("[회계] " + f + " 적재 실패 — " + e.message); process.exit(1); }
@@ -101,7 +101,7 @@ V.rows.forEach((r) => {
   chk(r.n > 0, `②분모   ${r.ko} 검사 대상 > 0`, r.n);
 });
 /* 보류가 조용히 번지지 않게 — 보류로 둘 수 있는 항등식을 **이름으로 못 박는다** */
-const SKIPPABLE = ["bank", "chain", "balmatch"];
+const SKIPPABLE = ["bank", "chain", "balmatch", "bkdup"];
 chk(V.rows.filter((r) => r.skip).every((r) => SKIPPABLE.indexOf(r.k) >= 0),
   "①보류   보류는 은행 축 세 줄에서만 난다(다른 검사를 끄지 못한다)", V.rows.filter((r) => r.skip && SKIPPABLE.indexOf(r.k) < 0).map((r) => r.k));
 chk(V.rows.filter((r) => !r.skip).length >= 8, "②분모   실제로 도는 항등식 ≥ 8", V.rows.filter((r) => !r.skip).length);
@@ -253,15 +253,19 @@ chk(RN.none === true && RN.lines.length === 0 && RN.gap === 0,
   "⑥은행   상대가 없으면 은행줄 0 · 차이 0", JSON.stringify({ none: RN.none, n: RN.lines.length, gap: RN.gap }));
 chk(RN.book.length > 0, "⑥분모   대사 보류여도 장부 쪽은 보여 주는가", RN.book.length);
 const VN = G("corpLedgerVerdict")(G("CORP_JV_SEED"), null, "");
-chk(VN.skip.map((r) => r.k).sort().join(" ") === "balmatch bank chain",
-  "⑥보류   상대가 없으면 은행 축 세 줄이 **모두** 보류로 잡힌다", VN.skip.map((r) => r.k).join(" "));
+chk(VN.skip.map((r) => r.k).sort().join(" ") === "balmatch bank bkdup chain",
+  "⑥보류   상대가 없으면 은행 축 네 줄이 **모두** 보류로 잡힌다", VN.skip.map((r) => r.k).join(" "));
 chk(VN.skip.every((r) => (r.why || "").trim()), "⑥보류   보류 항등식은 이유를 지닌다", VN.skip.map((r) => r.why));
 chk(VN.zero.length === 0, "⑥보류   보류를 「분모 0 실패」로 세지 않는다", VN.zero.map((r) => r.k));
 const VS = G("corpLedgerVerdict")(G("CORP_JV_SEED"), G("CORP_BANK_SEED"), "");
 /* 검증용 묶음은 일부러 미대사를 품는다 — 잔액 사슬은 **돌고**, 장부 대조만 보류다.
    「보류가 0」을 바라면 검증용 묶음이 통과하려고 자기 성질을 지워야 한다. */
-chk(VS.skip.map((r) => r.k).sort().join(" ") === "balmatch bank",
-  "⑥보류   은행줄이 있으면 잔액 사슬은 **돈다**(항진식과 계좌 전체 대조만 보류)", VS.skip.map((r) => r.k));
+chk(VS.skip.map((r) => r.k).sort().join(" ") === "balmatch bank bkdup",
+  "⑥보류   은행줄이 있으면 잔액 사슬은 **돈다**(항진식·계좌 전체 대조·은행줄 겹침만 보류)", VS.skip.map((r) => r.k));
+/* 검증용 전표에는 은행줄 열쇠가 없어 겹침 검사가 돌 대상이 없다 — 보류이지 통과가 아니다 */
+const bkRow = VS.rows.find((r) => r.k === "bkdup");
+chk(!!bkRow && bkRow.skip && /검사할 대상이 없/.test(bkRow.why || ""),
+  "⑥보류   은행줄 겹침 검사는 대상이 없으면 **보류**로 적는다", JSON.stringify(bkRow && bkRow.why));
 const chRow = VS.rows.find((r) => r.k === "chain");
 chk(!!chRow && !chRow.skip && chRow.n > 0 && chRow.ok,
   "⑥잔액   검증용 은행 묶음의 잔액 사슬이 전건 성립한다", JSON.stringify(chRow && { n: chRow.n, ok: chRow.ok, got: chRow.got }));
@@ -1347,6 +1351,184 @@ if (gphSrc) {
   chk(/원을 누르면<\/b> 그 팀이 정면으로 오고/.test(gphSrc), "⑭그래프 화면이 무엇이 열리는지 적는다", "없음");
 }
 
+/* ── ⑮ 업무 지시 ────────────────────────────────────────────────────────
+   형 지시 2026-11-12 — 「대화로 업무를 진행하는 시스템」.
+   여기서 지키는 것 넷:
+     ① 쪼개기까지가 AI, 승인은 사람 — 조직 원천의 cannot 을 넘지 않는다.
+     ② 못 알아들으면 **되묻는다** — 지어낸 날짜로 엉뚱한 날 전표를 역분개하지 않는다.
+     ③ 한 거래가 장부에 **두 번 서지 않는다** — 역분개가 전기된 뒤에만 다시 만들어진다.
+     ④ 손으로 넣은 전표는 **건드리지 않는다** — 은행 재반입으로 복구되지 않기 때문이다. */
+const ORDF = "src/data/corpOrder.js";
+const TODAY = "2026-11-12";
+
+/* 지시 해석 — 양성과 음성을 함께 센다 */
+const OV = G("corpOrdVerdict")(TODAY);
+OV.rows.forEach((r) => {
+  chk(r.ok, `⑮지시   ${r.ko}`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
+  chk(r.n > 0, `⑮분모   ${r.ko} 검사 대상 > 0`, r.n);
+});
+chk(OV.pass, "⑮지시   해석 자기시험 전건 통과", OV.fail.map((f) => f.ko));
+chk(G("CORP_ORD_T_ASK").length >= 3, "⑮분모   되물어야 할 표본 ≥ 3", G("CORP_ORD_T_ASK").length);
+chk(G("CORP_ORD_ACT").length >= 3, "⑮분모   아는 행위 ≥ 3", G("CORP_ORD_ACT").length);
+
+/* 대화에서 들어오는 자리 — 형 문장 원문으로 */
+const ORDQ = "11월 11일 전표를 모두 역분개하고 은행 거래내역을 다시 다운받아 다시 전표를 만들어 줘";
+const AO = G("corpAgAnswer")("핀테크", ORDQ, { today: TODAY });
+chk(AO.kind === "order", "⑮대화   시키는 말을 **지시로 받는다**(상태 보고로 답하지 않는다)", AO.kind + " / " + String(AO.t).slice(0, 40));
+chk(!!AO.order && AO.order.steps.length === 3, "⑮대화   한 문장에 든 일 셋으로 쪼갠다", AO.order && AO.order.steps.map((s) => s.ko).join(" · "));
+chk(!!AO.order && AO.order.iso === "2026-11-11", "⑮대화   날짜를 바르게 읽는다", AO.order && AO.order.iso);
+chk(!!AO.order && AO.order.assumed === true && /올해/.test(String(AO.t)),
+  "⑮대화   연도를 지어냈으면 **되읽어 준다**", AO.order && AO.order.assumed);
+chk(!!AO.order && AO.order.steps.every((s) => s.who === "ai" || s.who === "human"),
+  "⑮대화   단계마다 누가 하는지 적혀 있다", AO.order && AO.order.steps.map((s) => s.who).join(","));
+const woHuman = AO.order.steps.filter((s) => s.who === "human");
+chk(woHuman.length === 1 && /직접 열지 못/.test(woHuman[0].why || ""),
+  "⑮대화   은행에서 가져오는 일은 **못 한다고 말한다**", woHuman.map((s) => s.ko).join(","));
+chk(AO.order.steps.every((s) => s.can || (s.why || "").trim()),
+  "⑮대화   못 하는 단계마다 **왜 못 하는지** 적는다", AO.order.steps.filter((s) => !s.can && !(s.why || "").trim()).map((s) => s.ko));
+/* ⓐ 자기시험 — 못 알아들으면 **되묻는다**(아무 날짜나 집어 역분개하지 않는다) */
+const AA1 = G("corpAgAnswer")("핀테크", "역분개해 줘", { today: TODAY });
+chk(AA1.kind === "ask" && /며칠/.test(String(AA1.t)), "⑮대화ⓐ 날짜가 없으면 되묻는다", AA1.kind + " / " + String(AA1.t).slice(0, 36));
+const AA2 = G("corpAgAnswer")("핀테크", "그거 좀 해 줘", { today: TODAY });
+chk(AA2.kind === "ask" && /알아듣지 못/.test(String(AA2.t)), "⑮대화ⓐ 무엇을 할지 모르면 되묻는다", AA2.kind);
+chk(G("corpAgAnswer")("핀테크", "전표 삭제해 줘", { today: TODAY }).kind === "refuse",
+  "⑮대화ⓐ 못 하는 일은 **지시로 받지 않고 거절한다**(조직 원천의 cannot)");
+chk(G("corpAgAnswer")("핀테크", "전표 승인 누가 해줘야 해?", { today: TODAY }).kind !== "refuse",
+  "⑮대화ⓐ **물음은 거절하지 않는다**(「해줘」가 「해줘야」에 박혀 있어도)");
+/* 「다시 받아 와」는 날짜가 없으니 **되묻는 것이 맞다** — 지어낸 날로 일을 벌이지 않는다.
+   고쳐야 했던 것은 그걸 「자동 대사 19건」이라는 **엉뚱한 보고**로 답하던 쪽이다. */
+const ARF = G("corpAgAnswer")("핀테크", "은행 거래내역 다시 다운받아 줘", { today: TODAY });
+chk(ARF.kind === "ask" || ARF.kind === "order", "⑮대화   「다시 받아 와」를 지시로 읽는다(은행 대사 보고로 답하지 않는다)", ARF.kind + " / " + String(ARF.t).slice(0, 40));
+chk(ARF.tool !== "은행 대사", "⑮대화ⓐ 엉뚱한 도구를 돌려 답한 척하지 않는다", ARF.tool);
+const ARF2 = G("corpAgAnswer")("핀테크", "11월 11일 은행 거래내역 다시 다운받아 줘", { today: TODAY });
+chk(ARF2.kind === "order" && ARF2.order.steps.length === 1 && ARF2.order.steps[0].who === "human",
+  "⑮대화   날짜가 있으면 단계로 세우고 **사람 몫**이라고 적는다", ARF2.kind + " / " + (ARF2.order && ARF2.order.steps.map((x) => x.who).join(",")));
+
+/* 대상 고르기 — 형 확정(2026-11-12): **은행에서 만든 전표만** */
+const OJ = [
+  { id: "20261111-01", d: "2026-11-11", desc: "은행 하나", by: "은행반입", ap: "조성래", st: "posted", bk: "k1", l: [["103", 1000000, 0, ""], ["401", 0, 1000000, ""]] },
+  { id: "20261111-02", d: "2026-11-11", desc: "은행 둘", by: "은행반입", ap: "조성래", st: "posted", bk: "k2", l: [["103", 200000, 0, ""], ["401", 0, 200000, ""]] },
+  { id: "20261111-03", d: "2026-11-11", desc: "아직 승인 전", by: "은행반입", ap: null, st: "draft", bk: "k3", l: [["103", 300000, 0, ""], ["401", 0, 300000, ""]] },
+  { id: "20261111-99", d: "2026-11-11", desc: "사람이 넣음", by: "조성래", ap: "핀테크", st: "posted", l: [["103", 50000, 0, ""], ["401", 0, 50000, ""]] },
+  { id: "20261110-01", d: "2026-11-10", desc: "다른 날", by: "은행반입", ap: "조성래", st: "posted", bk: "k0", l: [["103", 70000, 0, ""], ["401", 0, 70000, ""]] },
+];
+const OT = G("corpOrdTargets")(OJ, "2026-11-11");
+chk(OT.day === 4, "⑮분모   그날 전표 표본 4건", OT.day);
+chk(OT.n === 2, "⑮대상   전기된 **은행 전표만** 고른다", OT.n + "건 · " + OT.rows.map((j) => j.id).join(","));
+chk(OT.hand.length === 1, "⑮대상   손으로 적은 전표는 **건드리지 않는다**(은행 재반입으로 복구되지 않는다)", OT.hand.map((j) => j.id).join(","));
+/* ⓐ 자료 반입 창구로 올린 전표(by="반입")도 은행 내역에서 나온 것이다 — 빠뜨리면
+   형이 실제로 쓰시는 장부에서 대상이 0건이 된다(실측으로 그렇게 나왔다). */
+const OJB = [{ id: "20261111-11", d: "2026-11-11", desc: "표로 반입", by: "반입", ap: "조성래", st: "posted", l: [["103", 10000, 0, ""], ["401", 0, 10000, ""]] }];
+const OTB = G("corpOrdTargets")(OJB, "2026-11-11");
+chk(OTB.n === 1 && OTB.hand.length === 0, "⑮대상ⓐ 표로 반입한 전표도 은행에서 나온 것으로 센다", OTB.n + " / 손 " + OTB.hand.length);
+chk(OTB.loose === 1 && OTB.linked === 0, "⑮대상   은행줄과 직접 짝이 지어졌는지를 갈라 센다", OTB.linked + " 짝 · " + OTB.loose + " 짝 없음");
+chk(OT.draft.length === 1, "⑮대상   아직 승인 전인 것은 역분개 대상이 아니다(장부에 올라가 있지 않다)", OT.draft.map((j) => j.id).join(","));
+chk(!OT.rows.some((j) => j.d !== "2026-11-11"), "⑮대상   다른 날 전표가 섞이지 않는다", OT.rows.map((j) => j.d).join(","));
+/* ⓐ 이미 역분개된 것은 다시 잡히지 않는다 — 두 번 역분개하면 장부가 거꾸로 선다 */
+const OJ2 = OJ.concat([{ id: "20261112-01", d: "2026-11-12", desc: "역분개 — 20261111-01", by: "핀테크", ap: "조성래", st: "posted", rev: "20261111-01", l: [["103", 0, 1000000, ""], ["401", 1000000, 0, ""]] }]);
+const OT2 = G("corpOrdTargets")(OJ2, "2026-11-11");
+chk(OT2.n === 1 && OT2.already.length === 1, "⑮대상ⓐ 이미 역분개된 전표는 빠지고 사유가 붙는다", OT2.n + " / 이미 " + OT2.already.length);
+
+/* 역분개 초안 — 작성자가 핀테크여야 **승인될 수 있다** */
+const OR = G("corpOrdReverse")(OJ, "2026-11-11", "2026-11-12", { jv: OJ, closed: [], ov: {} });
+chk(OR.made.length === 2, "⑮역분개 대상만큼 초안이 선다", OR.made.length);
+chk(OR.made.every((j) => j.by === "핀테크"), "⑮역분개 작성자는 **핀테크**다", [...new Set(OR.made.map((j) => j.by))].join(","));
+chk(OR.made.every((j) => j.st === "draft" && !j.ap), "⑮역분개 기표 상태로 앉는다(AI가 승인하지 않는다)", JSON.stringify(OR.made[0] && { st: OR.made[0].st, ap: OR.made[0].ap }));
+chk(OR.made.every((j) => j.d === "2026-11-12"), "⑮역분개 날짜는 **역분개한 날**이다(형 확정)", [...new Set(OR.made.map((j) => j.d))].join(","));
+chk(OR.made.every((j) => (j.rev || "").length > 0), "⑮역분개 어느 전표를 되돌리는지 적는다", OR.made.map((j) => j.rev).join(","));
+chk(OR.made.every((j) => G("corpJvSum")(j).ok), "⑮역분개 차대가 맞는다");
+const wo_ids = OR.made.map((j) => j.id);
+chk(wo_ids.length === new Set(wo_ids).size && !OJ.some((j) => wo_ids.indexOf(j.id) >= 0),
+  "⑮역분개 번호가 겹치지 않는다(기존 번호를 다시 쓰지 않는다)", wo_ids.join(" "));
+/* ⓐ **늘 막는 벽이 아니다** — 조건이 서면 실제로 승인·전기까지 열린다 */
+const advA = OR.made.map((j) => G("corpJvCanAdvance")(j, "조성래"));
+chk(advA.every((a) => a.ok), "⑮역분개ⓐ 기표 → 검토가 열린다", advA.filter((a) => !a.ok).map((a) => a.why).join(" / "));
+const advB = OR.made.map((j) => G("corpJvCanAdvance")(Object.assign({}, j, { st: "review" }), "조성래"));
+chk(advB.every((a) => a.ok), "⑮역분개ⓐ 검토 → 전기가 열린다(작성자 ≠ 승인자라 막히지 않는다)", advB.filter((a) => !a.ok).map((a) => a.why).join(" / "));
+/* ⓐ 마감된 달에는 들어가지 않고, **사라지지도 않는다** */
+const ORC = G("corpOrdReverse")(OJ, "2026-11-11", "2026-11-12", { jv: OJ, closed: ["2026-11"], ov: {} });
+chk(ORC.made.length === 0 && ORC.held.length === 2, "⑮마감   마감된 달이면 초안이 서지 않고 보류로 남는다", ORC.made.length + " / " + ORC.held.length);
+chk(ORC.held.every((h) => /마감/.test(h.why || "")), "⑮마감   왜 안 됐는지 마감이라고 적는다", ORC.held[0] && ORC.held[0].why);
+
+/* 다시 만들기 — 선행조건 **둘**이 다 서야 열린다 */
+const LEDN = { jv: [], bank: [], bankCov: null };
+const C0 = G("corpOrdCanRebuild")(OJ, "2026-11-11", LEDN, TODAY);
+chk(!C0.ok && C0.need.length === 2, "⑮재생성 선행조건이 **둘**이다(역분개 전기 + 은행 내역)", C0.need.join(" / "));
+const OJ3 = OJ.map((j) => j).concat(OR.made.map((j) => Object.assign({}, j, { st: "posted", ap: "조성래" })));
+const LEDB = { jv: [], bank: [{ d: "2026-11-11", t: "10:00:00", a: 1000000, bal: 1000000, m: "ㄱ" }], bankCov: { from: "2026-11-01", to: "2026-11-11" } };
+const C1 = G("corpOrdCanRebuild")(OJ3, "2026-11-11", LEDB, TODAY);
+chk(C1.ok, "⑮재생성ⓐ 둘 다 서면 **열린다**(늘 막는 벽이 아니다)", C1.need.join(" / "));
+const C2 = G("corpOrdCanRebuild")(OJ, "2026-11-11", LEDB, TODAY);
+chk(!C2.ok && C2.need.some((x) => /전기되지 않았/.test(x)), "⑮재생성ⓐ 역분개가 기표인 채면 열리지 않는다", C2.need.join(" / "));
+
+/* 한 거래가 두 번 서지 않는가 — 은행 반입 쪽 가드 */
+const RL = [{ row: 2, d: "2026-11-11", t: "10:00:00", a: 1000000, bal: 1000000, m: "ㄱ", cls: "상품매출" }];
+const mk1 = G("corpBjvBuild")(RL, { map: {} }, { jv: [], closed: [], ov: {} }, []);
+chk(mk1.made.length === 1, "⑮분모   재생성 표본 1건", mk1.made.length);
+const p1 = mk1.made.map((j) => Object.assign({}, j, { st: "posted", ap: "조성래" }));
+const again = G("corpBjvBuild")(RL, { map: {} }, { jv: p1, closed: [], ov: {} }, p1);
+chk(again.made.length === 0 && again.dup.length === 1, "⑮중복   역분개 없이 다시 올리면 만들지 않는다", again.made.length + " / " + again.dup.length);
+const revD = G("corpOrdReverse")(p1, "2026-11-11", "2026-11-12", { jv: p1, closed: [], ov: {} }).made;
+const withDraft = p1.concat(revD);
+const mid = G("corpBjvBuild")(RL, { map: {} }, { jv: withDraft, closed: [], ov: {} }, withDraft);
+chk(mid.made.length === 0, "⑮중복ⓐ 역분개가 **기표인 채로**는 다시 만들지 않는다(장부가 두 배가 된다)", mid.made.length);
+const withPosted = p1.concat(revD.map((j) => Object.assign({}, j, { st: "posted", ap: "조성래" })));
+const re2 = G("corpBjvBuild")(RL, { map: {} }, { jv: withPosted, closed: [], ov: {} }, withPosted);
+chk(re2.made.length === 1 && re2.dup.length === 0, "⑮재생성 역분개가 **전기된 뒤**에는 다시 만들어진다", re2.made.length + " / " + re2.dup.length);
+chk(re2.made[0].id !== p1[0].id, "⑮재생성 전표번호를 다시 쓰지 않는다", re2.made[0].id + " vs " + p1[0].id);
+chk(re2.made[0].bk === p1[0].bk, "⑮재생성 같은 은행줄에서 나왔다는 표시는 남는다", re2.made[0].bk);
+/* ⓐ 항등식이 **실제로 깨지는지** — 같은 은행줄에 전기 전표 둘을 억지로 세워 본다 */
+const wo_twin = p1.concat([Object.assign({}, p1[0], { id: "20261111-77" })]);
+const VT = G("corpLedgerVerdict")(wo_twin, { acct: "103", bank: "시험", mask: "", live: true, lines: RL }, "");
+const bkT = VT.rows.find((r) => r.k === "bkdup");
+chk(!!bkT && !bkT.skip && !bkT.ok, "⑮항등식ⓐ 한 은행줄에 전기 전표가 둘이면 **실패한다**", JSON.stringify(bkT && { skip: bkT.skip, ok: bkT.ok, got: bkT.got }));
+const VG = G("corpLedgerVerdict")(withPosted.concat(re2.made.map((j) => Object.assign({}, j, { st: "posted", ap: "조성래" }))),
+  { acct: "103", bank: "시험", mask: "", live: true, lines: RL }, "");
+const bkG = VG.rows.find((r) => r.k === "bkdup");
+chk(!!bkG && !bkG.skip && bkG.ok, "⑮항등식   바르게 돌린 뒤에는 통과한다(늘 빨간 벽이 아니다)", JSON.stringify(bkG && bkG.got));
+
+/* 작업 기록 — 대화 기록과 **따로** 둔다 */
+chk(typeof G("corpOrderRead") === "function" && typeof G("corpOrderWrite") === "function", "⑮기록   작업 기록을 읽고 쓰는 자리가 있다");
+chk(G("CORP_ORDER_KEY") !== G("CORP_AG_KEY"), "⑮기록   대화 기록과 **다른 키**다(대화는 40턴만 남기고 잘린다)", G("CORP_ORDER_KEY"));
+chk(cat.indexOf('"' + G("CORP_ORDER_KEY") + '"') >= 0, `⑮카탈로그 저장 키 ${G("CORP_ORDER_KEY")} dataCatalog.js 등재`, "미등재");
+const wo1 = G("corpOrdNextId")({ tasks: [] }, "2026-11-11", TODAY);
+const wo2 = G("corpOrdNextId")({ tasks: [{ id: wo1 }] }, "2026-11-11", TODAY);
+chk(wo1 !== wo2, "⑮기록   지시마다 번호가 는다(같은 지시를 두 번 눌러도 섞이지 않는다)", wo1 + " → " + wo2);
+
+/* 조직 원천 — 할 수 있는 것과 못 하는 것이 **코드가 아니라 조직에** 적혀 있다 */
+const wo_M2 = G("CORP_TEAMS").find((t) => t.id === "M2");
+chk(wo_M2.can.some((c) => /역분개/.test(c)), "⑮조직   역분개 초안 생성이 can 에 적혀 있다", wo_M2.can.join(" · "));
+chk(wo_M2.cannot.some((c) => /삭제/.test(c.act)), "⑮조직   전표 삭제가 cannot 에 적혀 있다", wo_M2.cannot.map((c) => c.act).join(" · "));
+chk(wo_M2.cannot.some((c) => /전표 승인/.test(c.act)), "⑮조직   전표 승인은 여전히 cannot 이다(지시를 받아도 선을 넘지 않는다)");
+chk(wo_M2.pages.some((p) => p.comp === "CorpOrderSection"), "⑮지면   회계팀 보드에 업무 지시 지면이 있다", wo_M2.pages.map((p) => p.t).join(" · "));
+
+/* 결정론 · 비밀 */
+let ordSrc = "";
+try { ordSrc = rd(ORDF); } catch (e) { fails.push("⑮지시 " + ORDF + " 없음"); }
+if (ordSrc) {
+  const wo_bare = ordSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  chk((wo_bare.match(/Math\.random/g) || []).length === 0, "⑮결정론 corpOrder.js Math.random 0건");
+  chk(!/new Date\(\)/.test(wo_bare), "⑮결정론 corpOrder.js 인자 없는 new Date() 0건(날짜는 인자로 받는다)");
+  chk(/todayIso/.test(wo_bare), "⑮결정론 오늘을 바깥에서 받는다", "없음");
+  const wo_names = wo_bare.match(/["'][^"']*(연세|이지영|설영호|이일규|하이젠케어)[^"']*["']/g) || [];
+  chk(wo_names.length === 0, "⑮비밀   실제 거래 상대·법인 이름이 코드에 0건", wo_names.join(" "));
+}
+let agSrc2 = "";
+try { agSrc2 = rd(AGF); } catch (e) { /* 위에서 잡힌다 */ }
+if (agSrc2) {
+  const bare2 = agSrc2.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  chk(!/new Date\(\)/.test(bare2), "⑮결정론 corpAgent.js 인자 없는 new Date() 0건");
+  chk(/tool\.run\(ctx && ctx\.now\)/.test(bare2), "⑮결정론 도구에 날짜를 넘긴다(벽시계를 읽지 않는다)", "없음");
+}
+if (hook) {
+  chk(hook.indexOf("corpOrder") >= 0, "⑮게이트 pre-commit 감시 대상에 corpOrder", "미등재");
+  chk(hook.indexOf("CorpOrder") >= 0, "⑮게이트 pre-commit 감시 대상에 CorpOrder", "미등재");
+}
+chk(MANI.indexOf("src/data/corpOrder.js") >= 0, "⑮번들   corpOrder.js 가 매니페스트에 있다", "없음");
+chk(MANI.indexOf("src/data/corpBankJv.js") < MANI.indexOf("src/data/corpOrder.js"),
+  "⑮번들   은행 전표 엔진보다 뒤에 선다(지시가 그걸 부른다)");
+
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -1363,6 +1545,7 @@ console.log(`[자료실  ] 종류 ${KINDS.length}종(확정 자료 ${KINDS.filte
 console.log(`[반입대화] 반입 섹션 ${G("CORP_UP_SPEC").length}종(상한 ${G("CORP_UP_MAXKB")}KB) · 민감 패턴 ${G("CORP_UP_SCAN").length}종 · AI 팀장 ${AGL.length}명(도구 보유 ${hasTool.length} · 도구 없음 ${noTool.length}) · 도구 ${G("CORP_AG_TOOL").length}종`);
 console.log(`[결재릴리스] 릴리스 ${RELS.length}건 · 승인 가능자 ${RELWHO.length}명(S1) · 결재 종류 ${G("CORP_APR_KIND").length}종 · 점검 ${G("CORP_REL_CHECK").length}항목 · 필독 ${must.length}건(미확인 ${must.reduce((n, m) => n + m.left.length, 0)}명) · 게이트 ${GATES.length}종 훅 대조`);
 console.log(`[은행전표] 엑셀 표 층 ${XT.length}항목 · 잔액 사슬 ${BT.length}항목 · 확실한 계정 대응 ${SURE.length}종(나머지는 사람이 확정) · 표본 ${BB.n}줄 → 전표 ${BB.made.length} · 보류 ${BB.held.length}`);
+console.log(`[업무지시] 해석 자기시험 ${OV.rows.length}항목 · 아는 행위 ${G("CORP_ORD_ACT").length}종 · 되물음 표본 ${G("CORP_ORD_T_ASK").length} · 형 문장 → ${AO.order ? AO.order.steps.length : 0}단계(AI ${AO.order ? AO.order.steps.filter((s) => s.who === "ai").length : 0} · 사람 ${AO.order ? AO.order.steps.filter((s) => s.who === "human").length : 0})`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {
   console.log(`[회계엔진] 통과 ${oks.length} · 실패 ${fails.length} / ${total}`);

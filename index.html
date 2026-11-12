@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="./data/app.css?v=8e34df9c97" />
+<link rel="stylesheet" href="./data/app.css?v=03af3e09b4" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=8e34df9c97"></script>
-<script src="./src/data/section_data.js?v=8e34df9c97"></script>
-<script src="./src/data/demo_members.js?v=8e34df9c97"></script>
+<script src="./src/data/dummy_data.js?v=03af3e09b4"></script>
+<script src="./src/data/section_data.js?v=03af3e09b4"></script>
+<script src="./src/data/demo_members.js?v=03af3e09b4"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -16083,10 +16083,15 @@ const CORP_TEAMS = [
       { t: "재무현황", kind: "mod", comp: "CorpLedgerSection", note: "실적 축 — 전표 · 원장 · 시산표 · 재무제표 · 은행 대사" },
       { t: "재무계획", kind: "tab", tab: "finance", comp: "FinanceSection", note: "계획 축 — 기존 재무회계에서 이관" },
       { t: "예실 대비", kind: "mod", comp: "CorpPlanActualSection", note: "계획 ↔ 실적 — 대응표가 본체 · 차이는 조건이 설 때만" },
-      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
-    can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출"],
+      { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" },
+      { t: "업무 지시", kind: "mod", comp: "CorpOrderSection", note: "형이 말로 시키면 할 일로 쪼갠다 — 쪼개기까지가 AI, 승인은 사람" }],
+    can: ["은행 내역에서 전표 후보 생성", "계정과목 제안", "차대 검산", "미대사 건 추출",
+      "역분개 전표 초안 생성", "지시를 할 일로 쪼개기"],
     cannot: [
       { act: "전표 승인", by: "기표 → 검토 → 승인 3단 · 승인 버튼은 사람 주체에서만 · 작성자 ≠ 승인자(corpJvCanAdvance)", at: "기존" },
+      /* 지시 기능을 열면서 함께 적는다 — 「지워 줘」를 거절할 근거가 조직 원천에 없었다(실측 kind:"ok"). */
+      { act: "전표 삭제", hit: ["전표삭제", "지워", "지우", "삭제", "없애", "지웁"],
+        by: "전기된 전표는 지우지 않는다 · 정정은 역분개 전표로만 · 지운 자국이 남아야 장부다", at: "2026-11-12" },
       { act: "월마감 확정", by: "마감 후 신규 전표 거부 · 되돌리지 않는다 · 정정은 역분개 전표로만", at: "기존" },
       { act: "지급 실행", by: "지급은 회사 밖으로 나가는 행위 — 시스템에 실행 경로를 두지 않는다", at: "—" },
       { act: "세무 신고 제출", by: "기한 경보까지만 · 제출은 사람이 외부에서 한다", at: "—" },
@@ -16935,6 +16940,16 @@ function corpLedgerIdentities(jvs, bank, upto) {
   all.forEach(j => (j.l || []).forEach(x => { if (!corpAcct(x[0])) unknown.push(j.id + " / " + x[0]); }));
   const seen = {}, dupes = [];
   all.forEach(j => { if (seen[j.id]) dupes.push(j.id); seen[j.id] = 1; });
+  /* 은행줄 하나에 살아 있는(역분개로 상쇄되지 않은) 전기 전표가 몇 장인가 */
+  const bkLive = (function () {
+    const revP = {};
+    all.forEach(j => { if (j.rev && j.st === "posted") revP[j.rev] = 1; });
+    const live = posted.filter(j => j.bk && !revP[j.id]);
+    const by = {};
+    live.forEach(j => { (by[j.bk] = by[j.bk] || []).push(j.id); });
+    const bad = Object.keys(by).filter(k => by[k].length > 1).map(k => by[k].join(" + "));
+    return { n: live.length, bad: bad };
+  })();
   const selfAp = posted.filter(j => !j.open && j.ap && j.by === j.ap);
   const noAp = posted.filter(j => !j.ap);
 
@@ -16964,6 +16979,13 @@ function corpLedgerIdentities(jvs, bank, upto) {
       want: "같을 것", skip: CH.last === null || !R.live,
       why: CH.last === null ? "은행 내역에 잔액이 없습니다 — 대조할 상대가 없어 검사하지 않았습니다"
         : (!R.live ? "지금 보고 있는 것은 검증용 은행 묶음입니다(계좌 전체가 아닙니다) — 반입된 실제 내역에서만 대조합니다" : "") },
+    /* ⚠️ 한 은행줄에서 만든 전표가 **둘 다 살아 있으면** 그 거래가 장부에 두 번 선다.
+       역분개를 기표인 채로 두고 다시 만들면 정확히 그렇게 된다(실측 — 103 잔액이 은행보다
+       2,200,000 많은데 다른 항등식 열셋이 전부 녹색이었다). 상쇄된 것은 빼고 센다. */
+    { k: "bkdup",   ko: "한 은행줄에 살아 있는 전기 전표 1장 이하", n: bkLive.n,
+      ok: bkLive.bad.length === 0,
+      got: bkLive.bad.length ? bkLive.bad.length + "줄 겹침(" + bkLive.bad[0] + ")" : "겹침 없음", want: "0줄",
+      skip: bkLive.n === 0, why: bkLive.n === 0 ? "은행에서 만든 전기 전표가 없습니다 — 검사할 대상이 없습니다" : "" },
     { k: "acct",    ko: "미등록 계정 0건",          n: all.length,          ok: unknown.length === 0, got: unknown.length + "건", want: "0건" },
     { k: "dupe",    ko: "전표번호 중복 0건",         n: all.length,          ok: dupes.length === 0,   got: dupes.length + "건", want: "0건" },
     { k: "approve", ko: "작성자 ≠ 승인자",          n: posted.filter(j => !j.open).length, ok: selfAp.length === 0, got: selfAp.length + "건 동일인", want: "0건" },
@@ -18589,9 +18611,13 @@ const CORP_AG_TOOL = [
     } },
   /* 형 지시 2026-11-12 — 매일 은행 내역이 들어왔는지 사람에게 알려 주는 일.
      ⚠️ 날짜를 **인자로 받는다**. 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
-  { ai: "핀테크", k: "bankup", ko: "은행 반입 상태", ask: ["어제", "오늘", "올렸", "반입", "업로드", "들어왔", "밀렸", "며칠"],
-    run: function (now) {
+  { ai: "핀테크", k: "bankup", ko: "은행 반입 상태", ask: ["어제", "오늘", "올렸", "반입", "업로드", "들어왔", "밀렸", "며칠",
+      /* 「다시 받아 와」류는 **긴 어구로** 잡는다 — 「다시」 단독으로 잡으면
+         「다시 계산해」까지 끌어와 엉뚱한 도구가 된다 */
+      "다시 받", "다시 다운", "다시 내려", "다시 가져", "새로 받", "내려받"],
+    run: function (at) {
       if (typeof corpBjvDue !== "function") return null;
+      const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
       const st = corpLedgerRead();
       const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
       const D = corpBjvDue(st && st.bankCov, today);
@@ -18624,9 +18650,11 @@ const CORP_AG_TOOL = [
                ["합류 전", CORP_SUMMARY.pending.join(" · ")]] };
     } },
   { ai: "나침반", k: "ct", ko: "계약 만료", ask: ["계약", "만료", "갱신", "기한"],
-    run: function () {
+    /* ⚠️ 날짜는 **인자로** 받는다. 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
+    run: function (at) {
       if (typeof CORP_CT === "undefined" || typeof corpCtAlert !== "function") return null;
-      const now = corpOpsNow();
+      const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
+      if (!now) return null;
       const rows = CORP_CT.map(function (c) { return { c: c, a: corpCtAlert(c, now) }; })
         .sort(function (x, y) { return (x.a.d || 0) - (y.a.d || 0); });
       const near = rows.filter(function (r) { return r.a.k !== "ok" && r.a.k !== "none"; });
@@ -18634,9 +18662,11 @@ const CORP_AG_TOOL = [
         rows: rows.map(function (r) { return [r.c.ko, r.a.ko + " · " + r.c.to]; }) };
     } },
   { ai: "나침반", k: "mtg", ko: "주간회의", ask: ["회의", "주간", "언제", "보고"],
-    run: function () {
+    run: function (at) {
       if (typeof corpMtgWeek !== "function") return null;
-      const w = corpMtgWeek(corpOpsNow());
+      const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
+      if (!now) return null;
+      const w = corpMtgWeek(now);
       if (!w) return { t: "다음 회의를 계산하지 못했습니다.", rows: [] };
       const st = corpMtgRead(); const wk = corpMtgOf(st, w);
       const mg = wk ? corpMtgCanMerge(wk) : null;
@@ -18646,10 +18676,13 @@ const CORP_AG_TOOL = [
                ["확정자 공석", mg ? mg.skip + "팀" : "—"]] };
     } },
   { ai: "나침반", k: "rt", ko: "루틴 상태", ask: ["루틴", "일마감", "월마감", "밀린", "예정"],
-    run: function () {
+    run: function (at) {
       if (typeof CORP_SCHEDULE === "undefined" || typeof corpRoutineState !== "function") return null;
-      const now = corpOpsNow(); const st = corpMtgRead(); const w = corpMtgWeek(now);
-      const rs = CORP_SCHEDULE.routines.map(function (r) { return { t: r.t, s: corpRoutineState(r, st, now, w) }; });
+      const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
+      if (!now) return null;
+      const st = corpMtgRead(); const w = corpMtgWeek(now);
+      const led = typeof corpLedgerRead === "function" ? corpLedgerRead() : null;
+      const rs = CORP_SCHEDULE.routines.map(function (r) { return { t: r.t, s: corpRoutineState(r, st, now, w, led) }; });
       const due = rs.filter(function (x) { return x.s.state === "due"; });
       return { t: "루틴 " + rs.length + "종 가운데 생성 경로가 붙은 것은 " + CORP_MTG_GEN.length + "종이고, 지금 밀린 것은 " + due.length + "건입니다.",
         rows: rs.map(function (x) { return [x.t, x.s.ko]; }) };
@@ -18742,15 +18775,32 @@ function corpAgPick(ai, q) {
 /* 시키는 말 — 이게 있어야 「요청」이다.
    ⚠️ 없으면 물음까지 거절하게 된다. 「릴리스 승인 누가 해?」는 승인해 달라는 말이 아니다. */
 const CORP_AG_DO = ["해줘", "해 줘", "해주세요", "해 주세요", "해라", "하라", "해다오", "처리", "실행",
-  "올려", "보내", "발행", "제출", "확정해", "지급", "눌러", "진행해", "시켜", "부탁"];
+  "올려", "보내", "발행", "제출", "확정해", "지급", "눌러", "진행해", "시켜", "부탁",
+  /* 「지워줘」·「만들어 줘」처럼 **동사 + 줘** 꼴은 「해줘」로 안 잡힌다(실측 — 「전표 다 지워줘」가
+     그냥 상태 보고로 답했다). 「줘」 단독을 넣되, 「알려줘」·「보여줘」는 묻는 말 표지가 건져 낸다. */
+  "줘", "주세요", "주라", "해야 한다", "하세요"];
+/* 묻는 말 — 시키는 말이 **글자로는 들어 있어도** 이게 있으면 물음이다.
+   「전표 승인 누가 **해줘야** 해?」에는 「해줘」가 박혀 있어 거절로 떨어졌다(실측).
+   물음을 거절하면 사람은 물어보는 것조차 그만둔다. */
+const CORP_AG_ASKMARK = ["누가", "누구", "언제", "어디", "어떻게", "어떤", "왜", "얼마", "몇",
+  "알려", "보여", "어때", "되나", "되냐", "있나", "있냐", "인가", "인지", "하나요", "할까", "해야"];
+function corpAgIsAsk(q) {
+  const s = String(q || "").replace(/\s/g, "");
+  return CORP_AG_ASKMARK.some(function (w) { return s.indexOf(w.replace(/\s/g, "")) >= 0; })
+    || /[?？]\s*$/.test(String(q || "").trim());
+}
 /* 못 하는 일을 **시켰는가** — 조직 원천의 cannot 과 맞춰 본다 */
 function corpAgRefuse(ai, q) {
   const a = corpAgOf(ai);
   if (!a) return null;
   const s = String(q || "").toLowerCase();
   if (!CORP_AG_DO.some(function (w) { return s.indexOf(w) >= 0; })) return null;
+  if (corpAgIsAsk(q)) return null;                /* 물음은 거절하지 않는다 */
   const hit = (a.cannot || []).find(function (c) {
-    return String(c.act).split(" · ").some(function (w) {
+    /* 걸릴 낱말을 따로 적어 둔 것이 있으면 그걸 쓴다 — 보이는 이름(act)과 걸리는 낱말은 다르다.
+       「전표 삭제」라고 적어 두면 「다 지워줘」가 안 걸린다(실측). 이름을 어지럽히지 않고 낱말만 는다. */
+    const words = (c.hit && c.hit.length) ? c.hit : String(c.act).split(" · ");
+    return words.some(function (w) {
       const k = String(w).replace(/\s/g, "").toLowerCase();
       return k.length >= 2 && s.replace(/\s/g, "").indexOf(k) >= 0;
     });
@@ -18758,13 +18808,29 @@ function corpAgRefuse(ai, q) {
   return hit || null;
 }
 
-/* ── ④ 답하기 — 도구를 **실제로 돌려** 값을 말한다 ────────────────── */
-function corpAgAnswer(ai, q) {
+/* 시키는 말인가 — 거절 대상은 아닌데 **일을 시킨** 경우를 가른다.
+   이게 없으면 「역분개해 줘」가 조용히 「전표 현황」표로 답한다(실측). 거절보다 나쁘다 —
+   거절은 못 한다고 말하지만, 이건 딴 소리를 하면서 답한 척한다. */
+function corpAgIsOrder(q) {
+  if (corpAgIsAsk(q)) return false;
+  const s = String(q || "").toLowerCase();
+  return CORP_AG_DO.some(function (w) { return s.indexOf(w) >= 0; });
+}
+
+/* ── ④ 답하기 — 도구를 **실제로 돌려** 값을 말한다 ──────────────────
+   ⚠️ ctx 는 바깥에서 넣어 주는 것이다(지금은 now 하나). 함수 안에서 오늘을 읽으면
+      커밋 게이트가 벽시계에 매달린다 — 날짜는 **인자로 받는다**. */
+function corpAgAnswer(ai, q, ctx) {
   const a = corpAgOf(ai);
   if (!a) return { kind: "none", t: "그런 이름의 AI 팀장이 없습니다." };
   const ref = corpAgRefuse(ai, q);
   if (ref) {
     return { kind: "refuse", t: "그건 제가 끝내지 못합니다 — " + ref.act + ". " + ref.by, act: ref.act };
+  }
+  /* 일을 시킨 것이라면 — 해석해서 **할 일로 쪼개** 돌려준다. 못 알아들으면 되묻는다. */
+  if (corpAgIsOrder(q) && typeof corpOrderRead === "function" && a.ai === "핀테크") {
+    const plan = corpOrderPlan(q, ctx || {});
+    if (plan) return plan;
   }
   const tool = corpAgPick(ai, q);
   if (!tool) {
@@ -18777,7 +18843,7 @@ function corpAgAnswer(ai, q) {
     };
   }
   let out = null;
-  try { out = tool.run(); } catch (e) { out = null; }
+  try { out = tool.run(ctx && ctx.now); } catch (e) { out = null; }
   if (!out) return { kind: "fail", t: "「" + tool.ko + "」을(를) 돌렸지만 원천을 읽지 못했습니다. 값을 지어내지 않겠습니다." };
   return { kind: "ok", tool: tool.ko, t: out.t, rows: out.rows || [] };
 }
@@ -19507,8 +19573,16 @@ function corpBjvKey(x) {
       (전표가 된 줄) + (보류 줄) = (은행 줄) 이 늘 서야 한다. */
 function corpBjvBuild(lines, st, ledger, jvs) {
   const L = corpBjvSort(lines);
+  /* ⚠️ 역분개가 **전기된** 전표의 은행줄은 「소진」으로 보지 않는다 — 그래야 같은 파일을
+     다시 올렸을 때 전표가 다시 만들어진다. 형 지시의 ③단계가 여기서 열린다.
+     ⚠️ 다만 bk 필드는 **지우지 않는다.** 지우면 그 전표가 소프트 중복 후보가 되어
+        자기 자신 때문에 또 막힌다(실측 — bk 를 떼면 made 0 · dup 2 로 똑같이 막혔다).
+     ⚠️ 그리고 역분개가 **기표인 채로** 다시 만들면 같은 거래가 두 번 선다.
+        그건 여기서 막지 않고 항등식(한 은행줄에 상쇄 안 된 전기 전표 1장)이 잡는다. */
+  const revPosted = {};
+  (jvs || []).forEach(function (j) { if (j.rev && j.st === "posted") revPosted[j.rev] = 1; });
   const have = {};
-  (jvs || []).forEach(function (j) { if (j.bk) have[j.bk] = j.id; });
+  (jvs || []).forEach(function (j) { if (j.bk && !revPosted[j.id]) have[j.bk] = j.id; });
   const seq = {};
   const made = [], held = [], dup = [];
   /* 그날 이미 쓰인 번호부터 이어 붙인다 — 기존 전표와 번호가 부딪히지 않게 */
@@ -19522,7 +19596,8 @@ function corpBjvBuild(lines, st, ledger, jvs) {
      이미 장부에 있으면, 은행줄을 그대로 전표로 만들면 그 거래가 두 번 선다.
      ⚠️ 그렇다고 조용히 건너뛰지도 않는다 — 같은 날 같은 금액이 진짜로 두 건일 수도 있다.
         「이미 있을 수 있습니다」로 세워 **사람에게 보인다.** 한 전표는 한 번만 짝짓는다. */
-  const soft = (jvs || []).filter(function (j) { return !j.bk; }).map(function (j) {
+  /* 역분개 전표는 소프트 중복 후보가 아니다 — 원전표를 지우려고 만든 것이지 거래가 아니다 */
+  const soft = (jvs || []).filter(function (j) { return !j.bk && !j.rev && !revPosted[j.id]; }).map(function (j) {
     const l = (j.l || []).find(function (x) { return x[0] === "103"; });
     return l ? { id: j.id, d: j.d, in: +l[1] || 0, out: +l[2] || 0, used: false } : null;
   }).filter(Boolean);
@@ -19656,6 +19731,341 @@ function corpBjvDue(cov, todayIso) {
   if (late <= 0) return { ok: true, late: 0, to: cov.to, need: "", ko: cov.to + " 까지 들어왔습니다 — 어제(" + y + ") 것까지 있습니다" };
   return { ok: false, late: late, to: cov.to, need: corpBjvShiftDay(cov.to, 1) + " ~ " + y,
     ko: cov.to + " 까지만 들어왔습니다 — " + corpBjvShiftDay(cov.to, 1) + " 부터 " + y + " 까지 " + late + "일치가 비어 있습니다" };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   업무 지시 — 형이 말로 시키면, 할 일로 쪼갠다
+
+   형 지시(2026-11-12): 「회계팀 대시보드 안에서 핀테크 팀장에게 대화로 업무를 진행하는
+   시스템. 예를 들면 11월 11일 행했던 전표를 모두 역분개하고 은행 거래내역을 다시 받아
+   다시 전표를 만들어 달라는 지시를 하였을 때 핀테크 팀장이 행할 수 있도록.」
+
+   ⚠️ 이 파일이 지키는 것 셋 —
+
+   ① **쪼개기까지가 AI, 승인은 사람.** 조직 원천(corpOrg M2)이 「전표 승인」·「월마감 확정」·
+      「전표 삭제」를 cannot 으로 적어 두었다. 지시를 받았다고 그 선을 넘지 않는다.
+      핀테크가 하는 일은 **대상을 고르고 초안을 만드는 것**까지다.
+
+   ② **못 알아들으면 되묻는다.** 날짜를 지어내지 않고, 모르는 행위를 비슷한 것으로 바꾸지
+      않는다. 알아들은 것은 **되읽어 주고** 형이 보고 고칠 수 있게 한다.
+      지금까지는 「역분개해 줘」가 조용히 「전표 현황」 표로 답했다 — 거절보다 나쁘다.
+      거절은 못 한다고 말하지만, 그건 딴 소리를 하면서 답한 척한 것이다.
+
+   ③ **반쯤 하다 멈춘 자리를 남긴다.** 형 지시 한 문장에 성격이 다른 셋이 들어 있다 —
+      역분개(기계가 초안까지) · 은행 내역 다시 받기(사람이 올려야 한다) · 전표 다시 만들기
+      (앞 둘이 끝나야 한다). 브라우저가 닫혀도 「어디까지 했는지」가 남아야 한다.
+      그래서 대화 기록이 아니라 **따로 적는다**(대화 기록은 40턴만 남기고 잘린다).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const CORP_ORDER_KEY = "hifin_corp_task";
+
+/* ── ① 낱말 사전 — 아는 것만 적는다 ──────────────────────────────────────
+   모르는 말을 비슷한 것으로 바꾸지 않는다. 사전에 없으면 되묻는다. */
+const CORP_ORD_ACT = [
+  { k: "reverse", ko: "역분개", who: "ai",
+    w: ["역분개", "반대분개", "역분계", "되돌려", "되돌리", "무효로", "취소 전표"],
+    d: "그날 은행 내역에서 만든 전표를 **역분개 초안**으로 만듭니다(승인·전기는 사람이 합니다)" },
+  { k: "refetch", ko: "은행 내역 다시 받기", who: "human",
+    w: ["다시 받", "다시 다운", "다시 내려", "다시 가져", "새로 받", "내려받", "다운받", "다시 조회"],
+    d: "은행 계좌를 제가 직접 열지 못합니다 — 형이 내려받아 올려 주셔야 합니다" },
+  { k: "rebuild", ko: "전표 다시 만들기", who: "ai",
+    w: ["다시 만들", "다시 전표", "전표를 다시", "재생성", "다시 쳐", "다시 작성", "새로 만들"],
+    d: "올라온 은행 내역에서 전표를 다시 만듭니다(역분개가 전기된 뒤에만 됩니다)" },
+];
+/* 행위를 못 알아들었을 때 **되묻는 말**에 쓸 목록 — 아는 것만 늘어놓는다 */
+function corpOrdActs() { return CORP_ORD_ACT.map(function (a) { return a.ko; }); }
+
+/* ── ② 날짜 — 지어내지 않는다 ────────────────────────────────────────────
+   ⚠️ 연도가 없으면 **가정했다고 말한다.** 「12월 15일」을 1월에 말하면 작년일 수 있다.
+      기계가 말없이 정하면 엉뚱한 날의 전표를 역분개한다. */
+function corpOrdPad(n) { return String(n).padStart(2, "0"); }
+function corpOrdDate(q, todayIso) {
+  const s = String(q || "");
+  const today = /^\d{4}-\d{2}-\d{2}$/.test(todayIso || "") ? todayIso : "";
+  /* 그 달에 **실제로 있는 날**인지 센다 — 2월 30일은 없다. 31로만 거르면 만들어진다. */
+  const dim = function (Y, M) {
+    const t = [31, (Y % 4 === 0 && Y % 100 !== 0) || Y % 400 === 0 ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    return t[M - 1] || 0;
+  };
+  const mk = function (y, m, d, assumed, why) {
+    const Y = +y, M = +m, D = +d;
+    if (!(M >= 1 && M <= 12 && D >= 1 && D <= dim(Y, M))) return null;
+    return { iso: Y + "-" + corpOrdPad(M) + "-" + corpOrdPad(D), assumed: !!assumed, why: why || "" };
+  };
+  /* ⓐ 연도까지 적힌 것 — 가장 확실하다 */
+  let m = /(\d{4})[-./년]\s*(\d{1,2})[-./월]\s*(\d{1,2})/.exec(s);
+  if (m) { const r = mk(m[1], m[2], m[3], false); if (r) return r; }
+  /* ⓑ 연도 없는 것 — 오늘의 연도로 읽되 **가정이라고 적는다** */
+  m = /(\d{1,2})\s*월\s*(\d{1,2})\s*일?/.exec(s);
+  if (!m) m = /(?:^|[^\d])(\d{1,2})[./](\d{1,2})(?:[^\d]|$)/.exec(s);
+  if (m) {
+    if (!today) return { iso: "", assumed: false, why: "연도가 적혀 있지 않고 오늘이 정해지지 않아 며칠인지 셀 수 없습니다" };
+    const r = mk(today.slice(0, 4), m[1], m[2], true, "연도를 적지 않으셔서 올해(" + today.slice(0, 4) + "년)로 읽었습니다");
+    if (r) return r;
+  }
+  /* ⓒ 어제·오늘 */
+  if (/어제|전일|지난날/.test(s)) {
+    if (!today) return { iso: "", assumed: false, why: "오늘이 정해지지 않아 어제를 셀 수 없습니다" };
+    const y = typeof corpBjvShiftDay === "function" ? corpBjvShiftDay(today, -1) : "";
+    return { iso: y, assumed: true, why: "「어제」를 " + y + " 로 읽었습니다" };
+  }
+  if (/오늘|금일/.test(s)) {
+    if (!today) return { iso: "", assumed: false, why: "오늘이 정해지지 않았습니다" };
+    return { iso: today, assumed: true, why: "「오늘」을 " + today + " 로 읽었습니다" };
+  }
+  return { iso: "", assumed: false, why: "며칠 것인지 적어 주세요(예: 11월 11일 · 2026-11-11)" };
+}
+
+/* ── ③ 지시 읽기 — 알아들은 것만 돌려준다 ──────────────────────────────── */
+function corpOrdParse(q, todayIso) {
+  const s = String(q || "");
+  const acts = CORP_ORD_ACT.filter(function (a) {
+    return a.w.some(function (w) { return s.replace(/\s/g, "").indexOf(w.replace(/\s/g, "")) >= 0; });
+  });
+  const date = corpOrdDate(s, todayIso);
+  return { q: s, acts: acts, date: date };
+}
+
+/* ── ④ 대상 고르기 — 「모두」가 어디까지인가 ────────────────────────────
+   형 확정(2026-11-12): **은행 내역에서 만든 전표만**(by = "은행반입").
+   손으로 넣은 전표를 같이 역분개하면 은행 재반입으로 복구되지 않아 영영 되돌릴 수 없다.
+   ⚠️ 전기(posted)된 것만 센다 — 기표·검토는 장부에 올라가 있지 않아, 역분개해 봤자
+      효과 0인 유령 두 장만 남는다(실측). 그건 역분개가 아니라 **물리는 것**이 맞다. */
+/* 「은행 내역에서 나온 것」의 범위 — 작성자가 **사람이 아닌** 전표다.
+   ⚠️ 「은행반입」(은행 대사 지면)만 보면 안 된다. 자료 반입 창구로 올린 전표는 by 가 「반입」이고,
+      그것도 은행 내역에서 나온 것이라 은행 파일을 다시 올리면 복구된다(실측).
+      손으로 적은 전표(by 가 사람 이름)만 건드리지 않는다 — 그건 재반입으로 돌아오지 않는다. */
+const CORP_ORD_FROMBANK = ["은행반입", "반입"];
+function corpOrdFromBank(j) { return CORP_ORD_FROMBANK.indexOf(String((j && j.by) || "")) >= 0; }
+
+function corpOrdTargets(jvs, iso) {
+  const all = jvs || [];
+  const day = all.filter(function (j) { return j.d === iso; });
+  const bank = day.filter(corpOrdFromBank);
+  const posted = bank.filter(function (j) { return j.st === "posted"; });
+  /* 이미 역분개된 것은 빼고, 왜 뺐는지 적는다 */
+  const revd = {};
+  all.forEach(function (j) { if (j.rev) revd[j.rev] = j.id; });
+  const hit = posted.filter(function (j) { return !revd[j.id]; });
+  const already = posted.filter(function (j) { return !!revd[j.id]; })
+    .map(function (j) { return { id: j.id, by: revd[j.id] }; });
+  return {
+    rows: hit, n: hit.length,
+    day: day.length, bank: bank.length,
+    draft: bank.filter(function (j) { return j.st !== "posted"; }),
+    hand: day.filter(function (j) { return !corpOrdFromBank(j); }),
+    /* 은행줄과 **직접 짝이 지어진** 것과 아닌 것을 가른다 — 복구가 보장되는 범위가 다르다 */
+    linked: hit.filter(function (j) { return !!j.bk; }).length,
+    loose: hit.filter(function (j) { return !j.bk; }).length,
+    already: already,
+  };
+}
+
+/* ── ⑤ 역분개 초안 만들기 ────────────────────────────────────────────────
+   ⚠️ 작성자는 **핀테크**다. 「조성래」로 적으면 승인 가능자가 조성래 한 명뿐이라
+      「작성자 ≠ 승인자」에 걸려 **영원히 전기되지 않는다**(실측).
+   ⚠️ 날짜는 형 확정대로 **역분개한 날**이다. 원전표 날짜로 적으면 그 달이 마감돼 있을 때
+      한 건도 들어가지 않는다. */
+function corpOrdReverse(jvs, iso, atIso, ledger) {
+  const T = corpOrdTargets(jvs, iso);
+  const seq = {};
+  (jvs || []).forEach(function (j) {
+    const m = /^(\d{8})-(\d+)$/.exec(String(j.id || ""));
+    if (!m) return;
+    const d = m[1].slice(0, 4) + "-" + m[1].slice(4, 6) + "-" + m[1].slice(6, 8);
+    if (!seq[d] || +m[2] > seq[d]) seq[d] = +m[2];
+  });
+  const made = [], held = [];
+  T.rows.forEach(function (j) {
+    const draft = typeof corpJvReverse === "function" ? corpJvReverse(j, "핀테크", atIso) : null;
+    if (!draft) { held.push({ id: j.id, why: "역분개를 만들지 못했습니다" }); return; }
+    seq[atIso] = (seq[atIso] || 0) + 1;
+    draft.id = typeof corpJvNo === "function" ? corpJvNo(atIso, seq[atIso])
+      : atIso.replace(/-/g, "") + "-" + corpOrdPad(seq[atIso]);
+    const chk = typeof corpJvCheck === "function" ? corpJvCheck(draft, ledger) : { ok: true, errs: [] };
+    if (!chk.ok) { seq[atIso]--; held.push({ id: j.id, why: chk.errs.join(" · ") }); return; }
+    made.push(draft);
+  });
+  return { made: made, held: held, target: T };
+}
+
+/* ── ⑥ 전표 다시 만들기 — 앞에 매여 있다 ────────────────────────────────
+   선행조건이 **둘**이다. 하나만 보면 장부가 두 배가 된다(실측 — 역분개가 기표인 채로
+   다시 만들면 103 잔액이 은행보다 많아지는데 항등식 13개가 전부 녹색이었다). */
+function corpOrdCanRebuild(jvs, iso, led, todayIso) {
+  const T = corpOrdTargets(jvs, iso);
+  const all = jvs || [];
+  const revOf = {};
+  all.forEach(function (j) { if (j.rev) revOf[j.rev] = j; });
+  const orig = all.filter(function (j) { return j.d === iso && corpOrdFromBank(j) && j.st === "posted"; });
+  const notYet = orig.filter(function (j) { const r = revOf[j.id]; return !r || r.st !== "posted"; });
+  const due = typeof corpBjvDue === "function" ? corpBjvDue(led && led.bankCov, todayIso) : { ok: false, ko: "셀 수 없습니다" };
+  const bankN = ((led && led.bank) || []).filter(function (l) { return l.d === iso; }).length;
+  const need = [];
+  if (notYet.length) need.push("역분개 " + notYet.length + "건이 아직 전기되지 않았습니다 — 전표 지면에서 검토 · 승인해 주세요");
+  if (!bankN) need.push(iso + " 자 은행 내역이 담겨 있지 않습니다 — 은행 대사 지면에서 올려 주세요");
+  return { ok: need.length === 0, need: need, notYet: notYet, bankN: bankN, due: due, target: T };
+}
+
+/* ── ⑦ 할 일로 쪼개기 ────────────────────────────────────────────────────
+   한 문장에 일이 여럿이면 **차례대로** 세운다. 앞 단계가 안 끝나면 뒤는 잠겨 있다.
+   단계마다 **누가 하는지**를 적는다 — 이게 이 화면의 본체다. */
+function corpOrdSteps(parsed, jvs, led, todayIso) {
+  const iso = parsed.date.iso;
+  const out = [];
+  parsed.acts.forEach(function (a) {
+    if (a.k === "reverse") {
+      const T = corpOrdTargets(jvs, iso);
+      out.push({
+        k: "reverse", ko: "역분개 초안 만들기", who: "ai", d: a.d,
+        n: T.n, can: T.n > 0,
+        why: T.n > 0 ? "" : (T.day === 0
+          ? iso + " 자 전표가 장부에 없습니다"
+          : (T.bank === 0 ? iso + " 자 전표 " + T.day + "건은 모두 손으로 적은 것입니다 — 은행 내역에서 나온 전표만 역분개합니다"
+            : "은행 전표 " + T.bank + "건이 있지만 전기된 것이 없거나 이미 역분개되었습니다")),
+        note: [
+          T.hand.length ? "손으로 적은 전표 " + T.hand.length + "건은 **건드리지 않습니다**(은행 파일을 다시 올려도 돌아오지 않습니다)" : "",
+          T.loose ? "그중 " + T.loose + "건은 은행줄과 직접 짝이 지어져 있지 않습니다 — 같은 날 은행 내역을 올리시면 다시 만들어지지만, 짝을 제가 보증하지는 못합니다" : "",
+          T.draft.length ? "아직 전기되지 않은 " + T.draft.length + "건은 역분개 대상이 아닙니다(장부에 올라가 있지 않습니다)" : "",
+          T.already.length ? "이미 역분개된 " + T.already.length + "건은 뺐습니다" : "",
+        ].filter(Boolean),
+      });
+    } else if (a.k === "refetch") {
+      out.push({
+        k: "refetch", ko: "은행 내역 다시 받기", who: "human", d: a.d,
+        n: null, can: false,
+        why: "은행 계좌를 제가 직접 열지 못합니다 — 형이 내려받아 **은행 대사 지면에서 올려** 주셔야 합니다",
+        note: [],
+      });
+    } else if (a.k === "rebuild") {
+      const C = corpOrdCanRebuild(jvs, iso, led, todayIso);
+      out.push({
+        k: "rebuild", ko: "전표 다시 만들기", who: "ai", d: a.d,
+        n: C.bankN, can: C.ok,
+        why: C.ok ? "" : C.need.join(" · "),
+        note: ["앞의 두 단계가 끝나야 열립니다 — 역분개가 전기되지 않은 채로 다시 만들면 같은 거래가 두 번 섭니다"],
+      });
+    }
+  });
+  return out;
+}
+
+/* ── ⑧ 대화에서 부르는 자리 — 못 알아들으면 되묻는다 ──────────────────── */
+function corpOrderPlan(q, ctx) {
+  const todayIso = (ctx && ctx.today) ||
+    (typeof corpOpsToday === "function" ? corpOpsToday(ctx && ctx.now) : "");
+  const P = corpOrdParse(q, todayIso);
+  if (!P.acts.length) {
+    return { kind: "ask", t: "무엇을 해 드릴지 알아듣지 못했습니다 — 지어내지 않겠습니다. 제가 할 수 있는 일은 이것뿐입니다: "
+      + corpOrdActs().join(" · ") + ".", tools: corpOrdActs() };
+  }
+  if (!P.date.iso) {
+    return { kind: "ask", t: P.date.why + " (" + P.acts.map(function (a) { return a.ko; }).join(" · ") + " 를 하려면 날짜가 있어야 합니다)",
+      tools: corpOrdActs() };
+  }
+  const led = typeof corpLedgerRead === "function" ? corpLedgerRead() : { jv: [], bank: [] };
+  const jvs = typeof corpJvAll === "function" ? corpJvAll(led) : [];
+  const steps = corpOrdSteps(P, jvs, led, todayIso);
+  const head = "**" + P.date.iso + "** 로 읽었습니다"
+    + (P.date.assumed ? "(" + P.date.why + " — 다르면 날짜를 적어 다시 말씀해 주세요)" : "")
+    + ". 할 일 " + steps.length + "가지로 나눴습니다. 승인 · 전기는 형이 하십니다.";
+  return { kind: "order", t: head, order: { q: String(q || ""), iso: P.date.iso, assumed: !!P.date.assumed, steps: steps, at: todayIso } };
+}
+
+/* ── ⑨ 작업 기록 — 반쯤 하다 멈춘 자리가 남아야 한다 ────────────────────
+   ⚠️ 대화 기록(hifin_corp_chat)에 넣지 않는다 — 40턴만 남기고 잘리고, 형제 필드를
+      다음 읽기에서 버린다(실측). 지시는 며칠 걸릴 수 있으니 따로 적는다. */
+function corpOrderRead() {
+  const empty = { v: 1, tasks: [] };
+  try {
+    const raw = localStorage.getItem(CORP_ORDER_KEY);
+    if (!raw) return empty;
+    const o = JSON.parse(raw);
+    return { v: 1, tasks: Array.isArray(o && o.tasks) ? o.tasks : [] };
+  } catch (e) { return empty; }
+}
+function corpOrderWrite(st) {
+  try { localStorage.setItem(CORP_ORDER_KEY, JSON.stringify({ v: 1, tasks: (st && st.tasks || []).slice(-60) })); return true; }
+  catch (e) { return false; }
+}
+/* 지시 하나에 번호를 준다 — 같은 지시를 두 번 눌러도 두 번 집행되지 않게 */
+function corpOrdId(iso, at, n) { return "WO-" + String(iso || "").replace(/-/g, "") + "-" + corpOrdPad(n || 1); }
+function corpOrdNextId(st, iso, at) {
+  const pre = "WO-" + String(iso || "").replace(/-/g, "") + "-";
+  let max = 0;
+  ((st && st.tasks) || []).forEach(function (t) {
+    const id = String(t.id || "");
+    if (id.indexOf(pre) !== 0) return;
+    const n = +id.slice(pre.length);
+    if (n > max) max = n;
+  });
+  return corpOrdId(iso, at, max + 1);
+}
+
+/* ── ⑩ 검산 — 화면과 커밋 게이트 러너가 이 함수 하나를 같이 본다 ────────
+   ⚠️ 양성만 세면 아무것도 안 하는 코드가 만점을 받는다. 음성 표본을 함께 넣는다. */
+const CORP_ORD_T_OK = [
+  "11월 11일 전표를 모두 역분개해 줘",
+  "2026-11-11 역분개 해줘",
+  "어제 은행 전표 되돌려 줘",
+  "11/11 전표 다시 만들어 줘",
+  "11월 11일 전표 역분개하고 은행 내역 다시 받아서 다시 전표 만들어 줘",
+];
+const CORP_ORD_T_ASK = [
+  "전표 좀 어떻게 해 줘",            /* 무엇을 할지 모른다 */
+  "역분개해 줘",                      /* 며칠 것인지 모른다 */
+  "다 되돌려 줘",                     /* 날짜가 없다 */
+  "지난주 거 정리해 줘",              /* 행위도 날짜도 흐릿하다 */
+];
+function corpOrdSelfTest(todayIso) {
+  const today = todayIso || "2026-11-12";
+  const ok = CORP_ORD_T_OK.map(function (q) { return { q: q, p: corpOrdParse(q, today) }; });
+  const ask = CORP_ORD_T_ASK.map(function (q) { return { q: q, p: corpOrdParse(q, today) }; });
+  const d = function (q) { return corpOrdDate(q, today); };
+  return [
+    { k: "act", ko: "할 일을 알아듣는다", n: ok.length,
+      ok: ok.every(function (x) { return x.p.acts.length > 0; }),
+      got: ok.filter(function (x) { return !x.p.acts.length; }).map(function (x) { return x.q; }).join(" / ") || "전건",
+      want: "전건" },
+    { k: "date", ko: "날짜를 알아듣는다", n: ok.length,
+      ok: ok.every(function (x) { return !!x.p.date.iso; }),
+      got: ok.filter(function (x) { return !x.p.date.iso; }).map(function (x) { return x.q; }).join(" / ") || "전건",
+      want: "전건" },
+    { k: "iso", ko: "같은 날을 가리킨다", n: 4,
+      ok: d("11월 11일").iso === "2026-11-11" && d("2026-11-11").iso === "2026-11-11"
+        && d("11/11").iso === "2026-11-11" && d("어제").iso === "2026-11-11",
+      got: [d("11월 11일").iso, d("2026-11-11").iso, d("11/11").iso, d("어제").iso].join(" "), want: "전부 2026-11-11" },
+    { k: "assumed", ko: "연도를 지어냈으면 **그렇게 적는다**", n: 2,
+      ok: d("11월 11일").assumed === true && d("2026-11-11").assumed === false
+        && (d("11월 11일").why || "").length > 0,
+      got: JSON.stringify([d("11월 11일").assumed, d("2026-11-11").assumed]), want: "[true,false]" },
+    { k: "ask", ko: "못 알아들으면 **되묻는다**(지어내지 않는다)", n: ask.length,
+      ok: ask.every(function (x) { return x.p.acts.length === 0 || !x.p.date.iso; }),
+      got: ask.filter(function (x) { return x.p.acts.length > 0 && x.p.date.iso; }).map(function (x) { return x.q; }).join(" / ") || "전건 되묻기",
+      want: "전건 되묻기" },
+    { k: "multi", ko: "한 문장에 든 일 셋을 모두 집는다", n: 3,
+      ok: corpOrdParse(CORP_ORD_T_OK[4], today).acts.length === 3,
+      got: corpOrdParse(CORP_ORD_T_OK[4], today).acts.map(function (a) { return a.ko; }).join(" · "),
+      want: "역분개 · 은행 내역 다시 받기 · 전표 다시 만들기" },
+    { k: "noday", ko: "오늘을 모르면 「어제」를 지어내지 않는다", n: 1,
+      ok: corpOrdDate("어제 역분개", "").iso === "" && (corpOrdDate("어제 역분개", "").why || "").length > 0,
+      got: JSON.stringify(corpOrdDate("어제 역분개", "")), want: "빈 날짜 + 이유" },
+    { k: "bad", ko: "없는 날짜를 만들지 않는다", n: 2,
+      ok: corpOrdDate("13월 40일", today).iso === "" && corpOrdDate("2026-02-30", today).iso !== "2026-02-30",
+      got: [corpOrdDate("13월 40일", today).iso, corpOrdDate("2026-02-30", today).iso].join(" / "), want: "둘 다 안 만든다" },
+    { k: "who", ko: "단계마다 누가 하는지 적혀 있다", n: CORP_ORD_ACT.length,
+      ok: CORP_ORD_ACT.every(function (a) { return a.who === "ai" || a.who === "human"; }),
+      got: CORP_ORD_ACT.map(function (a) { return a.ko + "=" + a.who; }).join(" · "), want: "전건" },
+    { k: "human", ko: "은행에서 가져오는 일은 **사람 몫**이라고 적혀 있다", n: 1,
+      ok: (CORP_ORD_ACT.find(function (a) { return a.k === "refetch"; }) || {}).who === "human",
+      got: (CORP_ORD_ACT.find(function (a) { return a.k === "refetch"; }) || {}).who, want: "human" },
+  ];
+}
+function corpOrdVerdict(todayIso) {
+  const rows = corpOrdSelfTest(todayIso);
+  const zero = rows.filter(function (r) { return !(r.n > 0); });
+  const fail = rows.filter(function (r) { return !r.ok; });
+  return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
 }
 
 /* ══════════════ AI 팀장 아바타 렌더(CorpAvatar.jsx) · CorpOps Phase 2 (형 지시 2026-11-11) ══════════════
@@ -20271,10 +20681,17 @@ function ClBankUp({ st, save, actor, A }) {
   };
 
   const undo = () => {
-    const keepJv = (st.jv || []).filter((j) => j.by !== "은행반입");
-    const n = (st.jv || []).length - keepJv.length;
-    save(Object.assign({}, st, { jv: keepJv, bank: [], bankCov: null }));
-    setNote({ bad: false, t: "은행에서 만든 전표 " + n + "건과 은행줄을 모두 물렸습니다 — 대사는 보류로 돌아갑니다." });
+    /* ⚠️ **전기된 전표는 지우지 않는다**(형 확정 2026-11-12). 이 장부가 스스로 적은 원칙이다 —
+       「정정은 역분개로 한다 · 지운 자국이 남아야 장부다」. 아직 승인 전인 것만 물린다. */
+    const all = st.jv || [];
+    const posted = all.filter((j) => j.by === "은행반입" && j.st === "posted");
+    const keepJv = all.filter((j) => j.by !== "은행반입" || j.st === "posted");
+    const n = all.length - keepJv.length;
+    save(Object.assign({}, st, { jv: keepJv }));
+    setNote({ bad: false, t: "아직 승인 전인 " + n + "건을 물렸습니다."
+      + (posted.length ? " **이미 전기된 " + posted.length + "건은 남겼습니다** — 전기된 전표는 지우지 않습니다. 바로잡으시려면 업무 지시에서 「역분개」를 시키시거나 전표 지면에서 역분개하세요."
+        : "")
+      + " 은행줄은 그대로 둡니다 — 지우면 어디까지 받았는지가 사라집니다." });
   };
 
   const cols = spec ? spec.need.concat(spec.opt) : [];
@@ -22435,6 +22852,269 @@ function CorpVaultSection({ team }) {
   );
 }
 
+/* ══════════════ 업무 지시(CorpOrder.jsx) · 회계팀 보드 (형 지시 2026-11-12) ══════════════
+   「회계팀 대시보드 안에서 핀테크 팀장에게 대화로 업무를 진행하는 시스템.」
+
+   이 화면이 지키는 것
+     · **쪼개기까지가 핀테크, 승인은 형.** 조직 원천(corpOrg M2 cannot)이 「전표 승인」·
+       「월마감 확정」·「전표 삭제」를 못 하는 일로 적어 두었다. 지시를 받았다고 넘지 않는다.
+     · **단계마다 누가 하는지 적는다.** 형 지시 한 문장에 성격이 다른 셋이 들어 있다 —
+       역분개(핀테크가 초안까지) · 은행 내역 다시 받기(형이 올려야 한다) · 전표 다시 만들기
+       (앞 둘이 끝나야 한다). 뭉뚱그리면 누가 멈춰 있는지 아무도 모른다.
+     · **못 알아들으면 되묻는다.** 날짜를 지어내지 않는다. 알아들은 것은 되읽어 준다.
+     · **반쯤 하다 멈춘 자리가 남는다.** 지시는 며칠 걸릴 수 있다. 브라우저를 닫아도 남는다. */
+
+function CorpOrderSection({ onTab }) {
+  const AI = "핀테크";
+  const [st, setSt] = React.useState(function () { return corpAgRead(); });
+  const [task, setTask] = React.useState(function () { return corpOrderRead(); });
+  const [led, setLed] = React.useState(function () { return corpLedgerRead(); });
+  const [q, setQ] = React.useState("");
+  const [msg, setMsg] = React.useState(null);
+  const endRef = React.useRef(null);
+
+  const now = typeof corpOpsNow === "function" ? corpOpsNow() : null;
+  const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
+  const a = corpAgOf(AI);
+  const log = (st.log || {})[AI] || [];
+  const V = React.useMemo(function () { return corpOrdVerdict(today); }, [today]);
+  const jvs = React.useMemo(function () { return corpJvAll(led); }, [led]);
+
+  React.useEffect(function () {
+    if (endRef.current && endRef.current.scrollIntoView) endRef.current.scrollIntoView({ block: "end" });
+  }, [log.length]);
+
+  const send = function (text) {
+    const s = String(text === undefined ? q : text).trim();
+    if (!s) return;
+    const r = corpAgAnswer(AI, s, { now: now, today: today });
+    const next = Object.assign({}, st, { log: Object.assign({}, st.log) });
+    next.log[AI] = (next.log[AI] || []).concat([{ who: "me", t: s }, { who: "ai", r: r }]);
+    corpAgWrite(next); setSt(next); setQ(""); setMsg(null);
+    /* 지시로 읽힌 것은 **따로 적는다** — 대화는 40턴만 남기고 잘린다 */
+    if (r.kind === "order") {
+      const t2 = corpOrderRead();
+      const id = corpOrdNextId(t2, r.order.iso, today);
+      t2.tasks = (t2.tasks || []).concat([{ id: id, at: today, q: s, iso: r.order.iso, done: [] }]);
+      corpOrderWrite(t2); setTask(t2);
+    }
+  };
+
+  /* 역분개 초안 만들기 — 핀테크가 할 수 있는 데까지 */
+  const doReverse = function (iso) {
+    const L = corpLedgerRead();
+    const all = corpJvAll(L);
+    const R = corpOrdReverse(all, iso, today, L);
+    if (!R.made.length) {
+      setMsg({ bad: true, t: R.held.length
+        ? "초안을 만들지 못했습니다 — " + R.held[0].why
+        : iso + " 자 역분개할 전표가 없습니다." });
+      return;
+    }
+    const next = Object.assign({}, L, { jv: (L.jv || []).concat(R.made) });
+    corpLedgerWrite(next); setLed(next);
+    setMsg({ bad: false, t: R.made.length + "건을 **역분개 초안**으로 올렸습니다(" + R.made.map(function (j) { return j.id; }).join(" · ") + "). "
+      + "아직 기표 상태입니다 — 전표 지면에서 **검토 · 승인**하셔야 장부에 반영됩니다. 승인은 제가 못 합니다." });
+  };
+
+  /* 전표 다시 만들기 — 선행조건 둘이 다 설 때만 */
+  const doRebuild = function (iso) {
+    const L = corpLedgerRead();
+    const all = corpJvAll(L);
+    const C = corpOrdCanRebuild(all, iso, L, today);
+    if (!C.ok) { setMsg({ bad: true, t: "아직 못 합니다 — " + C.need.join(" · ") }); return; }
+    const lines = (L.bank || []).filter(function (l) { return l.d === iso; });
+    const B = corpBjvBuild(lines, corpBjvRead(), L, all);
+    if (!B.made.length) {
+      setMsg({ bad: true, t: "다시 만들 줄이 없습니다 — " + (B.held.length ? "계정을 못 고른 줄 " + B.held.length + "건이 있습니다(은행 대사 지면에서 골라 주세요)" : "이미 모두 들어와 있습니다") });
+      return;
+    }
+    const next = Object.assign({}, L, { jv: (L.jv || []).concat(B.made) });
+    corpLedgerWrite(next); setLed(next);
+    setMsg({ bad: false, t: B.made.length + "건을 다시 만들었습니다(" + B.made.map(function (j) { return j.id; }).join(" · ") + "). "
+      + (B.held.length ? "계정을 못 고른 " + B.held.length + "줄은 남겨 두었습니다. " : "")
+      + "기표 상태이니 전표 지면에서 검토 · 승인해 주세요." });
+  };
+
+  const run = function (step, iso) {
+    if (step.k === "reverse") return doReverse(iso);
+    if (step.k === "rebuild") return doRebuild(iso);
+    setMsg({ bad: true, t: "이 일은 제가 하지 못합니다." });
+  };
+
+  const EX = [
+    "11월 11일 전표를 모두 역분개하고 은행 거래내역을 다시 받아서 다시 전표를 만들어 줘",
+    "어제 은행 전표 역분개해 줘",
+    "11월 11일 전표 다시 만들어 줘",
+  ];
+
+  return (
+    <div className="cl-wrap wo-wrap">
+      <div className="cl-top">
+        <div className="cl-ttl"><b>업무 지시</b><span className="cl-sub">{AI}에게 말로 시킵니다</span>
+          <span className="wo-badge">AI</span></div>
+        <div className="cl-ctl">
+          <span className="ad-chip">기준일 {today || "—"}</span>
+          <span className={"cl-verd" + (V.pass ? " on" : " bad")}>검산 {V.rows.length - V.fail.length - V.zero.length} / {V.rows.length}</span>
+        </div>
+      </div>
+
+      <div className="cl-warn">
+        <b>쪼개기까지가 {AI}, 승인은 형이 하십니다.</b> 시키신 일을 할 일로 나누고, 단계마다 <b>누가 하는지</b>를 적습니다.
+        전표 승인 · 월마감 확정 · 전표 삭제는 제가 못 합니다 — 조직에 그렇게 적혀 있습니다.
+        <span className="cl-warn2">
+          <b>못 알아들으면 되묻습니다.</b> 날짜를 지어내지 않고, 모르는 일을 비슷한 것으로 바꾸지 않습니다.
+          제가 아는 일은 <b>{corpOrdActs().join(" · ")}</b> 뿐입니다.
+          그리고 <b>은행 계좌를 직접 열지 못합니다</b> — 내려받아 올리시는 일은 형 몫입니다.
+        </span>
+      </div>
+
+      <div className="cl-body">
+        {msg && <div className={"cl-msg" + (msg.bad ? " bad" : "")} onClick={function () { setMsg(null); }}>{msg.t}</div>}
+
+        <div className="cl-sec">
+          <div className="cl-h">대화 <span className="cl-t">시키신 말을 할 일로 나눕니다</span>
+            {log.length > 0 && <button className="cl-rv" onClick={function () {
+              const next = Object.assign({}, st, { log: Object.assign({}, st.log) });
+              next.log[AI] = []; corpAgWrite(next); setSt(next);
+            }}>대화 지우기</button>}
+          </div>
+
+          <div className="ag-log wo-log">
+            {!log.length && (
+              <div className="ag-hint">
+                이렇게 말씀해 보세요 —
+                {EX.map(function (x, i) {
+                  return <button key={i} className="ag-chip tool wo-ex" onClick={function () { send(x); }}>{x}</button>;
+                })}
+              </div>
+            )}
+            {log.map(function (m, i) {
+              if (m.who === "me") return <div key={i} className="ag-me">{m.t}</div>;
+              const r = m.r || {};
+              const iso = r.order ? r.order.iso : "";
+              return (
+                <div key={i} className={"ag-ai k-" + (r.kind || "none")}>
+                  <div className="ag-t">
+                    {r.kind === "ok" && <span className="ag-tag ok">{r.tool}</span>}
+                    {r.kind === "refuse" && <span className="ag-tag no">못 하는 일</span>}
+                    {r.kind === "ask" && <span className="ag-tag none">되묻습니다</span>}
+                    {r.kind === "order" && <span className="ag-tag ok">할 일 {r.order.steps.length}</span>}
+                    {r.kind === "notool" && <span className="ag-tag none">도구 없음</span>}
+                    {r.kind === "fail" && <span className="ag-tag none">원천 못 읽음</span>}
+                    {r.t}
+                  </div>
+                  {r.rows && r.rows.length > 0 && (
+                    <table className="cl-tbl ag-tbl"><tbody>
+                      {r.rows.map(function (row, j) { return <tr key={j}><td>{row[0]}</td><td className="n">{row[1]}</td></tr>; })}
+                    </tbody></table>
+                  )}
+                  {r.tools && r.tools.length > 0 && <div className="ag-sug">제가 할 수 있는 일 — {r.tools.join(" · ")}</div>}
+
+                  {r.kind === "order" && (
+                    <div className="wo-steps">
+                      {r.order.steps.map(function (s, j) {
+                        const live = i === log.length - 1;      /* 가장 마지막 지시에서만 집행한다 */
+                        return (
+                          <div key={j} className={"wo-step" + (s.can ? " on" : "") + (s.who === "human" ? " hu" : "")}>
+                            <div className="wo-hd">
+                              <span className="wo-n">{j + 1}</span>
+                              <b>{s.ko}</b>
+                              <span className={"wo-who " + s.who}>{s.who === "ai" ? AI + "가 합니다" : "형이 하셔야 합니다"}</span>
+                              {s.n !== null && s.n !== undefined && <span className="wo-cnt">{s.n}건</span>}
+                            </div>
+                            <p className="wo-d">{s.d}</p>
+                            {!s.can && s.why && <p className="wo-why">{s.why}</p>}
+                            {(s.note || []).map(function (x, k) { return <p key={k} className="wo-note">· {x}</p>; })}
+                            <div className="wo-act">
+                              {s.who === "ai" && (
+                                <button className="cl-save" disabled={!s.can || !live}
+                                  onClick={function () { run(s, iso); }}>
+                                  {s.k === "reverse" ? "역분개 초안 만들기" : "전표 다시 만들기"}
+                                </button>
+                              )}
+                              {s.who === "human" && (
+                                <button className="cl-rv" onClick={function () { if (typeof onTab === "function") onTab("corpBank"); setMsg({ bad: false, t: "재무현황 지면의 **은행 대사** 탭에서 올리시면 됩니다." }); }}>
+                                  어디서 올리나요
+                                </button>
+                              )}
+                              {!live && <span className="cl-t">지난 지시입니다 — 다시 말씀하시면 지금 상태로 새로 셉니다</span>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <p className="cl-note">만든 전표는 <b>기표 상태</b>로 앉습니다 — 재무현황 › 전표에서 <b>검토 · 승인</b>하셔야 장부에 올라갑니다.
+                        승인은 제가 하지 못합니다(작성자 ≠ 승인자).</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <div ref={endRef} />
+          </div>
+
+          <div className="ag-input wo-input">
+            <input value={q} placeholder="무엇을 할까요 — 예: 11월 11일 은행 전표 역분개해 줘"
+              onChange={function (e) { setQ(e.target.value); }}
+              onKeyDown={function (e) { if (e.key === "Enter") send(); }} />
+            <button className="cl-save" onClick={function () { send(); }}>보내기</button>
+          </div>
+        </div>
+
+        <div className="cl-grid2">
+          <div className="cl-sec">
+            <div className="cl-h">받은 지시 <span className="cl-t">{(task.tasks || []).length}건</span></div>
+            {!(task.tasks || []).length && <p className="cl-note">아직 받은 지시가 없습니다.</p>}
+            {(task.tasks || []).slice(-8).reverse().map(function (t) {
+              return (
+                <div key={t.id} className="wo-task">
+                  <span className="id">{t.id}</span>
+                  <span className="wo-iso">{t.iso}</span>
+                  <span className="desc">{t.q}</span>
+                </div>
+              );
+            })}
+            <p className="cl-note">지시는 <b>대화와 따로</b> 적어 둡니다 — 대화는 40턴만 남기고 잘려서,
+              며칠 걸리는 일이 사라집니다.</p>
+          </div>
+
+          <div className="cl-sec">
+            <div className="cl-h">지금 장부 <span className="cl-t">지시가 보는 바탕</span></div>
+            <div className="cl-stat">
+              <div><b>{jvs.length}</b><span>전표</span></div>
+              <div><b>{corpPosted(jvs, "").length}</b><span>전기</span></div>
+              <div><b>{((led && led.bank) || []).length}</b><span>은행줄</span></div>
+              <div><b>{led && led.bankCov && led.bankCov.to ? led.bankCov.to : "—"}</b><span>은행 반입 끝</span></div>
+            </div>
+            <p className="cl-note">{corpJvLive(led)
+              ? "반입된 실제 전표를 보고 있습니다."
+              : "지금은 검증용 전표입니다 — 실제 전표가 반입되면 그것을 봅니다."}</p>
+          </div>
+        </div>
+
+        <div className="cl-sec">
+          <div className="cl-h">검산 <span className="cl-t">화면과 커밋 게이트 러너가 같은 함수를 봅니다</span></div>
+          <table className="cl-tbl id">
+            <thead><tr><th>항목</th><th>대상</th><th>결과</th><th>기대</th><th /></tr></thead>
+            <tbody>
+              {V.rows.map(function (r) {
+                return (
+                  <tr key={r.k} className={r.ok && r.n > 0 ? "" : "bad"}>
+                    <td>{r.ko}</td><td className="n">{r.n}건</td><td className="n">{r.got}</td><td className="n">{r.want}</td>
+                    <td className="st">{!(r.n > 0) ? "대상 0 — 실패" : (r.ok ? "통과" : "실패")}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <p className="cl-note"><b>알아듣는 것만 세지 않습니다.</b> 못 알아들었을 때 되묻는지,
+            없는 날짜를 만들지 않는지도 함께 셉니다 — 알아듣는 것만 세면 아무 말이나 받는 코드가 만점을 받습니다.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ══════════════ 회사 총괄운영 — 총괄 대시보드(CorpOps.jsx) · Phase 1 (형 지시 2026-11-11) ══════════════
    화면: 다크 콕핏 3단 — 좌(지표) · 중앙(조직 온톨로지 · 원근 회전) · 우(사람이 결정할 것 · 루틴).
    ⚠️ 원칙:
@@ -23059,6 +23739,7 @@ function corpPageComp(name) {
     if (name === "CorpReleaseSection") return typeof CorpReleaseSection === "function" ? CorpReleaseSection : null;
     if (name === "CorpSecuritySection") return typeof CorpSecuritySection === "function" ? CorpSecuritySection : null;
     if (name === "CorpVaultSection") return typeof CorpVaultSection === "function" ? CorpVaultSection : null;
+    if (name === "CorpOrderSection") return typeof CorpOrderSection === "function" ? CorpOrderSection : null;
     if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
     if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
     if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;
@@ -41607,6 +42288,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-12", ver:"v3.9", ch:[9], feat:"핀테크 팀장에게 말로 업무 지시", src:"온톨로지 › 회사 총괄운영 › 회계팀 › 업무 지시", summary:"시키는 말을 받으면 조용히 상태 보고로 답하던 것을 고쳐 지시로 읽고 할 일로 쪼개게 했으며 한 문장에 든 셋을 각각 누가 하는지와 몇 건인지와 못 하면 왜 못 하는지까지 적어 세웠고 은행에서 가져오는 일은 못 한다고 말하게 했으며, 날짜를 지어내지 않고 연도가 없으면 올해로 읽었다고 되읽어 주며 없는 날짜를 만들지 않고 못 알아들으면 되묻게 했고 되묻는지까지 검산이 세게 했으며, 역분개를 기표인 채로 두고 전표를 다시 만들면 같은 거래가 두 번 서는데 그것을 잡는 항등식이 없어 보통예금이 은행보다 어긋나도 열셋이 모두 녹색이던 것을 한 은행줄에 상쇄되지 않은 전기 전표는 한 장 이하라는 검사로 막았고, 역분개가 전기된 전표의 은행줄만 다시 쓸 수 있게 열어 다시 만들기가 실제로 돌게 했으며, 대상은 은행 내역에서 나온 전표만으로 좁혀 손으로 적은 전표를 건드리지 않게 했고 역분개 전표의 작성자를 핀테크로 두어 승인 가능자가 한 명뿐이어도 전기될 수 있게 했으며, 전기된 전표를 지우던 되돌리기 버튼도 함께 고쳐 승인 전인 것만 물리게 했다", refs:[], status:"반영", hash:"825e5df", auto:true },
   { date:"2026-11-12", ver:"v3.8", ch:[9], feat:"조직 온톨로지 — 원을 눌러 팀 안내 열기", src:"온톨로지 › 회사 총괄운영 › 총괄", summary:"그래프가 원근 회전을 그리느라 매 프레임 원을 지웠다 다시 만드는데 사람 손의 클릭은 백 밀리초쯤 걸려 그 사이 원이 사라지므로 브라우저가 클릭을 공통 조상에 쏘았고 화면은 그것을 아무 팀도 아닌 것으로 읽어 원을 정확히 눌러도 안내가 열리지 않았으며 빠른 자동 클릭은 한 프레임 안에 끝나 멀쩡히 열리는 탓에 오래 숨어 있던 자리였는데, 누르는 순간 어느 팀인지를 적어 두고 뗄 때 그 값으로 고르도록 바꾸어 원이 그 사이 사라져도 열리게 했고 끌었거나 창 밖에서 떼면 고르지 않게 했으며, 손이 쉽게 닿도록 보이지 않는 넓은 원을 깔았더니 앞 노드가 뒤 노드의 클릭을 가로채 다른 팀이 열리기에 그것을 걷어내고 마지막으로 그린 좌표로 세어 겹쳐 보이면 앞에 있는 쪽이 골라지게 했고, 회전을 멈추고 여덟 팀을 각각 길게 눌렀다 떼어 전건 제 팀이 열리는 것까지 확인했다", refs:[], status:"반영", hash:"4edb88a", auto:true },
   { date:"2026-11-12", ver:"v3.8", ch:[9], feat:"은행 내역 업로드 → 전표 생성 · 잔액 사슬 · 매일 운영", src:"온톨로지 › 회사 총괄운영 › 재무현황 › 은행 대사", summary:"은행에서 내려받은 엑셀을 외부 라이브러리 없이 브라우저 내장 기능만으로 읽되 압축 해제는 검사할 수 없는 층이라 판단을 전부 문자열이 들어가고 배열이 나오는 층에 두어 커밋 게이트가 직접 시험하게 했고 빈 셀과 자기닫는 셀과 건너뛴 행처럼 실제로 터졌던 꼴을 표본에 모두 넣었으며, 여태 통과로 세던 은행 대사 차이가 짝지은 줄의 금액이 같아 늘 0이 되는 항진식임을 드러내 판정에서 빼고 그 자리에 은행 표의 잔액 사슬과 장부 대조를 세워 부호 뒤집기와 한 줄 빼기와 열 맞바꾸기가 실제로 깨지는지를 게이트가 확인하게 했고, 계정은 거래를 한 사람만 알고 같은 낱말이 달마다 다른 계정으로 간 적이 있어 코드가 못 박은 대응을 하나만 두고 나머지는 책임자가 고르되 모르는 줄을 건너뛰지 않고 행 번호와 이유를 달아 남겨 은행 줄과 전표가 전건 대응하는지 세게 했으며, 같은 줄 판정에 시각과 잔액을 넣어 같은 날 같은 금액의 두 거래가 한 건으로 접히지 않게 하고 손으로 넣은 전표와 겹칠 때도 조용히 두 배가 되지 않게 사람에게 보였고, 핀테크 팀장의 은행 대사 루틴에 점검과 알림까지만 적고 승인과 월마감은 사람 칸에 두었으며 밀린 날은 거래일이 아니라 사람이 적은 기간으로 세게 했다", refs:[], status:"반영", hash:"4042a86", auto:true },
   { date:"2026-11-12", ver:"v3.7", ch:[9], feat:"팀별 자료실 · 보존 두 축 · 반입 세 갈래 · 은행 대사 보류", src:"온톨로지 › 회사 총괄운영 › 자료실 · 총무 문서 · 자료 반입 · 재무현황", summary:"저장소 목차를 팀별 게시판으로 올리되 파일명이 곧 대외비 목차라 코드에 넣지 않고 반입해서 그 브라우저에만 두었고 분류는 화면 한 곳에서만 하며 스캔 스크립트는 사실만 내보내게 했고, 법령이 정하는 연한과 회사가 정하는 보존을 다른 축으로 갈라 누가 언제 정했는지를 함께 적게 했으며 대표가 정한 대로 재무제표는 영구보관 회계장부와 전표는 10년으로 분류 자체를 갈라 10년 뒤 장부를 버릴 때 재무제표가 함께 버려지지 않게 했고 영구를 뜻하는 0을 거짓으로 읽어 미정으로 둔갑시키지 않도록 읽는 함수를 하나로 두었으며 보존이 미정인 자료에는 파기 예정일을 찍지 않게 했고, 창구만 열려 있고 들어가는 자리가 없던 은행 내역과 자료 목록을 저장까지 잇고 같은 줄을 두 번 받지 않게 했으며 입출 구분이 없으면 부호를 추측하지 않게 했고, 대사할 상대가 없으면 돌리지 않고 보류로 두어 안 돌린 검사가 통과로 둔갑하지 않게 했다", refs:[], status:"반영", hash:"431fc62", auto:true },
@@ -48818,6 +49500,11 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
      ⚠️ 틀린 선택도 영구히 복제되므로, 한 낱말이 지난 장부에서 두 계정으로 갈린 적이 있으면
         이 사전을 쓰지 않고 매번 다시 묻는다. 상수 참조라 스캔 밖이므로 수동 등재한다.
      사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다. */
+  /* 업무 지시(corpOrder.js — 2026-11-12): 형이 말로 시킨 일을 할 일로 쪼갠 기록과,
+     어느 단계까지 끝났는지. ⚠️ 대화 기록(hifin_corp_chat)에 넣지 않는다 — 40턴만 남기고
+     잘려서 며칠 걸리는 지시가 사라진다. 상수 참조라 스캔 밖이므로 수동 등재한다.
+     사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다. */
+  "hifin_corp_task",
   "hifin_corp_bankmap",
   "hifin_corp_mtg",
   /* 일정·공지·결재·릴리스(corpGov.js — CorpOps P9, 2026-11-12): 결재 큐 · 필독 확인자 · 릴리스 점검표와
@@ -57257,7 +57944,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.72,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-12","seed":20260828,"inventory":{"version":1,"sourceHash":"9cd672105ffe6979","generatedAt":"2026-11-11","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.41,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

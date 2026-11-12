@@ -464,6 +464,16 @@ function corpLedgerIdentities(jvs, bank, upto) {
   all.forEach(j => (j.l || []).forEach(x => { if (!corpAcct(x[0])) unknown.push(j.id + " / " + x[0]); }));
   const seen = {}, dupes = [];
   all.forEach(j => { if (seen[j.id]) dupes.push(j.id); seen[j.id] = 1; });
+  /* 은행줄 하나에 살아 있는(역분개로 상쇄되지 않은) 전기 전표가 몇 장인가 */
+  const bkLive = (function () {
+    const revP = {};
+    all.forEach(j => { if (j.rev && j.st === "posted") revP[j.rev] = 1; });
+    const live = posted.filter(j => j.bk && !revP[j.id]);
+    const by = {};
+    live.forEach(j => { (by[j.bk] = by[j.bk] || []).push(j.id); });
+    const bad = Object.keys(by).filter(k => by[k].length > 1).map(k => by[k].join(" + "));
+    return { n: live.length, bad: bad };
+  })();
   const selfAp = posted.filter(j => !j.open && j.ap && j.by === j.ap);
   const noAp = posted.filter(j => !j.ap);
 
@@ -493,6 +503,13 @@ function corpLedgerIdentities(jvs, bank, upto) {
       want: "같을 것", skip: CH.last === null || !R.live,
       why: CH.last === null ? "은행 내역에 잔액이 없습니다 — 대조할 상대가 없어 검사하지 않았습니다"
         : (!R.live ? "지금 보고 있는 것은 검증용 은행 묶음입니다(계좌 전체가 아닙니다) — 반입된 실제 내역에서만 대조합니다" : "") },
+    /* ⚠️ 한 은행줄에서 만든 전표가 **둘 다 살아 있으면** 그 거래가 장부에 두 번 선다.
+       역분개를 기표인 채로 두고 다시 만들면 정확히 그렇게 된다(실측 — 103 잔액이 은행보다
+       2,200,000 많은데 다른 항등식 열셋이 전부 녹색이었다). 상쇄된 것은 빼고 센다. */
+    { k: "bkdup",   ko: "한 은행줄에 살아 있는 전기 전표 1장 이하", n: bkLive.n,
+      ok: bkLive.bad.length === 0,
+      got: bkLive.bad.length ? bkLive.bad.length + "줄 겹침(" + bkLive.bad[0] + ")" : "겹침 없음", want: "0줄",
+      skip: bkLive.n === 0, why: bkLive.n === 0 ? "은행에서 만든 전기 전표가 없습니다 — 검사할 대상이 없습니다" : "" },
     { k: "acct",    ko: "미등록 계정 0건",          n: all.length,          ok: unknown.length === 0, got: unknown.length + "건", want: "0건" },
     { k: "dupe",    ko: "전표번호 중복 0건",         n: all.length,          ok: dupes.length === 0,   got: dupes.length + "건", want: "0건" },
     { k: "approve", ko: "작성자 ≠ 승인자",          n: posted.filter(j => !j.open).length, ok: selfAp.length === 0, got: selfAp.length + "건 동일인", want: "0건" },
