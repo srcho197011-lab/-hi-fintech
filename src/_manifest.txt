@@ -49,7 +49,6 @@ src/components/CorpMeeting.jsx
 src/components/CorpAdmin.jsx
 src/components/CorpGov.jsx
 src/components/CorpUpload.jsx
-src/components/CorpAgentChat.jsx
 src/components/CorpVault.jsx
 src/components/CorpOrder.jsx
 src/components/CorpTeamChat.jsx

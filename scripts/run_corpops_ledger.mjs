@@ -69,7 +69,7 @@ const ORG = "src/data/corpOrg.js";
 /* 화면 어법 검사의 사정권 — 파일럿 고지(BOARDS)와 달리 **모든 사내 지면**이 진다.
    「자동 실행」·「보완 필요」·회원 영상 모듈 참조는 지면 종류를 가리지 않는다. */
 const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpGov.jsx",
-  "src/components/CorpUpload.jsx", "src/components/CorpAgentChat.jsx", "src/components/CorpVault.jsx",
+  "src/components/CorpUpload.jsx", "src/components/CorpVault.jsx",
   "src/components/CorpOrder.jsx", "src/components/CorpTeamChat.jsx", "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
   ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
@@ -881,7 +881,7 @@ if (hook) {
 const UPF = "src/data/corpUpload.js";
 const UPBOARD = "src/components/CorpUpload.jsx";
 const AGF = "src/data/corpAgent.js";
-const AGBOARD = "src/components/CorpAgentChat.jsx";
+const AGBOARD = "src/components/CorpTeamChat.jsx";   /* 해체 뒤 — 대화는 팀 보드 맨 위에서 한다 */
 
 const UV = G("corpUpPass")();
 UV.rows.forEach((r) => {
@@ -1067,7 +1067,7 @@ if (agBoard) {
   chk(/물음은 거절하지 않습니다|물어보는 것까지 막으면/.test(agBoard), "⑪화면   물음과 요청을 가른다고 적는다", "없음");
 }
 if (hook) {
-  ["corpUpload", "CorpUpload", "corpAgent", "CorpAgentChat"].forEach((n) => {
+  ["corpUpload", "CorpUpload", "corpAgent", "CorpTeamChat"].forEach((n) => {
     chk(hook.indexOf(n) >= 0, `⑪게이트 pre-commit 감시 대상에 ${n}`, "미등재");
   });
 }

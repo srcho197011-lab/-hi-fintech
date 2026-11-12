@@ -3,6 +3,10 @@
     대화를 통해 업무를 진행할 수 있도록 해줘. 예를 들면 회계팀에 들어가면 제일 위에
     핀테크가 먼저 인삿말과 업무지시에 대해 말을 걸어 오도록 대화창을 만들어 줘.」
 
+   한 곳에 모아 두던 「AI 팀장 대화」 화면(CorpAgentChat.jsx)은 해체하면서 지웠다 —
+   들어갈 길이 없는 화면을 번들에 남겨 두면, 아무도 보지 못하는 자리에서 약속만 한다.
+   그 화면이 지고 있던 두 약속(자기시험 · 물음과 요청 가르기)은 이 화면이 그대로 이어받았다.
+
    이 화면이 지키는 것
      · **먼저 말을 건다.** 들어오시면 그 팀 AI가 인사하고 **지금 상태**를 말한다.
        그 상태는 등록된 도구를 **실제로 돌려** 가져온 값이다 — 인사말이라고 지어내지 않는다.
@@ -26,6 +30,8 @@ function CorpTeamChat({ team, onTab, compact }) {
   const now = typeof corpOpsNow === "function" ? corpOpsNow() : null;
   const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
   const a = AI ? corpAgOf(AI) : null;
+  /* 자기시험 — 러너가 돌리는 그 함수다(화면과 게이트가 다른 것을 보면 둘 다 못 믿는다) */
+  const V = React.useMemo(function () { return corpAgPass(); }, []);
   const log = (st.log || {})[AI] || [];
   const greet = React.useMemo(
     function () { return AI ? corpAgGreet(AI, { who: t && t.own, now: now }) : null; },
@@ -148,6 +154,7 @@ function CorpTeamChat({ team, onTab, compact }) {
           <i>{t.name} · {t.aiWhy}</i>
         </div>
         <span className="tc-n">{a.noTool ? "도구 없음" : "도구 " + a.tools.length}</span>
+        <span className={"cl-verd" + (V.pass ? " on" : " bad")}>검산 {V.rows.length - V.fail.length - V.zero.length} / {V.rows.length}</span>
         {greet && greet.canOrder && <span className="tc-order">말로 시킬 수 있습니다</span>}
         <button className="cl-rv">{open ? "접기" : "열기"}</button>
       </div>
@@ -177,7 +184,9 @@ function CorpTeamChat({ team, onTab, compact }) {
               )}
               {(t.cannot || []).length > 0 && (
                 <p className="tc-no">제가 <b>끝내지 못하는 일</b> — {(t.cannot || []).map(function (c) { return c.act; }).join(" · ")}.
-                  화면에 적은 제약과 실제 거절이 어긋나지 않게, 이 목록은 조직 원천에서 그대로 옵니다.</p>
+                  화면에 적은 제약과 실제 거절이 어긋나지 않게, 이 목록은 조직 원천에서 그대로 옵니다.
+                  <b> 다만 물음은 거절하지 않습니다</b> — 「승인 누가 해?」는 승인해 달라는 말이 아니라
+                  묻는 말입니다. 물어보는 것까지 막으면 아무것도 알 수 없습니다.</p>
               )}
             </div>
           )}
