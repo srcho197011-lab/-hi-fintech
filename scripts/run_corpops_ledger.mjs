@@ -74,7 +74,7 @@ const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
   ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
   "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js", "src/data/corpVault.js",
-  "src/data/corpBankXlsx.js", "src/data/corpBankJv.js", "src/data/corpOrder.js"];   /* 매니페스트와 **같은 순서** — 어긋나면 러너 녹색·브라우저 사망 */
+  "src/data/corpBankXlsx.js", "src/data/corpBankJv.js", "src/data/corpOrder.js", "src/data/corpVaultFs.js"];   /* 매니페스트와 **같은 순서** — 어긋나면 러너 녹색·브라우저 사망 */
 for (const f of LOAD) {
   try { vm.runInContext(rd(f), ctx); }
   catch (e) { console.error("[회계] " + f + " 적재 실패 — " + e.message); process.exit(1); }
@@ -295,6 +295,12 @@ if (board) {
   chk(board.indexOf("돌리지 않았습니다") >= 0, "⑥보류   화면이 「돌리지 않았다」고 적는다", "없음");
   chk(/value={corpPaCut\(m\)}/.test(board), "⑥경계   기준일 선택지가 실제 월말이다(9월 31일은 없다)", "-31 고정");
   chk(!/m \+ "-31"/.test(board), "⑥경계   없는 날짜를 만들지 않는다", "m + -31 남아 있음");
+  /* ⚠️ corpUpParseCsv 는 {head, rows} 객체다. 배열처럼 받으면 CSV 길이 조용히 죽는다 —
+     실제로 죽어 있었고, 「표를 읽지 못했습니다」로만 보여 원인이 드러나지 않았다. */
+  chk(!/corpUpParseCsv\([\s\S]{0,80}?\.slice\(1\)/.test(board),
+    "⑥CSV    CSV 결과를 배열처럼 받지 않는다(그러면 CSV 길이 조용히 죽는다)", "배열 취급 남음");
+  chk(/const g = corpUpParseCsv[\s\S]{0,120}?g\.head/.test(board),
+    "⑥CSV    반입 창구와 **같은 모양**으로 받는다(g.head · g.rows)", "없음");
   chk(board.indexOf("corpBankOf(st)") >= 0, "⑥은행   화면이 은행줄을 상황에서 골랐다", "CORP_BANK_SEED 직접 사용");
   chk(!/corpLedgerVerdict\(jvs, CORP_BANK_SEED/.test(board) && !/corpBankRecon\(jvs, CORP_BANK_SEED/.test(board),
     "⑥은행   화면이 파일럿 은행줄을 고정으로 박지 않는다", "박혀 있음");
@@ -1115,9 +1121,15 @@ chk(G("corpVaultOfTeam")(srows, "").length === 2, "⑫팀     팀을 고르지 �
 let vsrc = "";
 try { vsrc = rd(VLT); } catch (e) { fails.push("⑫자료실 " + VLT + " 없음"); }
 if (vsrc) {
-  const head = vsrc.slice(0, vsrc.indexOf("function corpVaultVerdict"));
-  const names = head.match(/["'][^"']*\.(pdf|xlsx|xls|docx|hwp|pptx|zip)["']/gi) || [];
-  chk(names.length === 0, "⑫비밀   상수 선언부에 실제 파일명 0건(목차를 공개 배포본에 싣지 않는다)", names.join(" "));
+  /* ⚠️ **파일 전체**를 센다. 선언부만 보면 자기시험 표본에 실제 파일명을 박아도 통과한다 —
+     실제로 그렇게 네 건이 새어 공개 배포본에 실려 있었다. 검사가 보는 자리가 좁으면
+     지키는 것이 아니라 지키는 척이 된다. 표본은 「_표본」을 달아 뜻을 드러낸다. */
+  const bareV = vsrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const names = (bareV.match(/["'][^"']*\.(pdf|xlsx|xls|docx|hwp|pptx|zip)["']/gi) || [])
+    .filter((x) => x.indexOf("_표본") < 0);
+  chk(names.length === 0, "⑫비밀   코드에 실제 파일명 0건(목차를 공개 배포본에 싣지 않는다)", names.join(" "));
+  chk((bareV.match(/_표본/g) || []).length >= 4, "⑫비밀   분류기 자기시험은 표본 이름으로 돈다(규칙을 시험하지 그 파일을 시험하지 않는다)",
+    (bareV.match(/_표본/g) || []).length);
   chk(vsrc.indexOf("localStorage") >= 0, "⑫비밀   목록은 브라우저 저장소에 둔다", "없음");
   const bare = vsrc.replace(/\/\*[\s\S]*?\*\//g, "");
   chk((bare.match(/Math\.random/g) || []).length === 0, "⑫결정론 Math.random 0건");
@@ -1529,6 +1541,98 @@ chk(MANI.indexOf("src/data/corpBankJv.js") < MANI.indexOf("src/data/corpOrder.js
   "⑮번들   은행 전표 엔진보다 뒤에 선다(지시가 그걸 부른다)");
 
 
+/* ── ⑯ 저장소 폴더 잇기 ─────────────────────────────────────────────────
+   형 지시 2026-11-12 — 「저장소에 조회를 해서 가져오도록 하면 되잖아.」
+   여기서 지키는 것 넷:
+     ① **기계가 「가장 새 파일」을 고르지 않는다.** 저장소의 은행 내역은 수정일이 파일명 날짜와
+        어긋나는 것이 실제로 있다(9월 파일의 수정일이 11월 것보다 늦다 — 실측).
+     ② 권한 손잡이는 **IndexedDB** 에만 둔다. 문자열 저장소에 넣으면 뭉개져 되돌릴 수 없다.
+     ③ 못 하는 브라우저에서는 **못 한다고 말한다.** 조용히 0건이 되면 사람은 폴더를 의심한다.
+     ④ 파일을 **어디서 골랐든 같은 길**로 읽는다 — 길이 둘인데 한쪽만 검사하면 막는 게 아니다. */
+const VFSF = "src/data/corpVaultFs.js";
+
+const FV = G("cvfVerdict")();
+FV.rows.forEach((r) => {
+  chk(r.ok, `⑯폴더   ${r.ko}`, r.ok ? undefined : `${r.got} · 기대 ${r.want}`);
+  chk(r.n > 0, `⑯분모   ${r.ko} 검사 대상 > 0`, r.n);
+});
+chk(FV.pass, "⑯폴더   자기시험 전건 통과", FV.fail.map((f) => f.ko));
+chk(G("CORP_VFS_T").length >= 4, "⑯분모   고르기 표본 ≥ 4", G("CORP_VFS_T").length);
+
+/* ⓐ 가장 중요한 것 — **고르지 않는다.** 돌려주는 것에 「이것」이라고 집는 자리가 없어야 한다. */
+const FC = G("cvfBankCandidates")(G("CORP_VFS_T"), (nm) => (/거래내역|우리/.test(nm) ? { k: "bank" } : { k: "etc" }));
+chk(FC.n > 1, "⑯분모   고를 거리가 둘 이상인 표본", FC.n);
+chk(FC.pick === undefined && FC.latest === undefined && FC.best === undefined && FC.one === undefined,
+  "⑯고르기ⓐ 돌려주는 것에 **하나를 집는 자리가 없다**", Object.keys(FC).join(","));
+/* ⓐ 수정일이 같은 두 달 파일을 **둘 다 남긴다** — 하나로 줄이면 그게 곧 추천이다 */
+const sameDay = FC.rows.filter((r) => r.at === "2026-11-12");
+chk(sameDay.length === 2, "⑯고르기ⓐ 수정일이 같은 서로 다른 달 파일을 둘 다 남긴다", sameDay.map((r) => r.name).join(" / "));
+/* ⓐ 어긋남을 **적는다** — 적지 않으면 사람도 수정일을 믿고 고른다 */
+const picks = FC.rows.map(G("cvfPickRow"));
+const warn = picks.filter((r) => r.mismatch);
+chk(warn.length >= 1 && warn.every((r) => (r.why || "").trim()),
+  "⑯고르기   파일명 날짜와 수정일이 어긋나면 **이유와 함께** 표시한다", warn.map((r) => r.name).join(" / "));
+chk(G("cvfNameDate")("거래내역_표본 (11.11).xlsx").iso === "",
+  "⑯고르기ⓐ 연도 없는 날짜를 수정일로 **메우지 않는다**", JSON.stringify(G("cvfNameDate")("거래내역_표본 (11.11).xlsx")));
+
+/* 권한 손잡이 — localStorage 가 아니다 */
+chk(G("CORP_VFS_DB") === "hifin_corp_vaultfs", "⑯저장   권한 손잡이는 IndexedDB 에 둔다", G("CORP_VFS_DB"));
+chk(cat.indexOf('"' + G("CORP_VFS_DB") + '"') >= 0,
+  `⑯카탈로그 ${G("CORP_VFS_DB")} dataCatalog.js 등재(자동 스캔은 localStorage 만 본다)`, "미등재");
+let vfsSrc = "";
+try { vfsSrc = rd(VFSF); } catch (e) { fails.push("⑯폴더 " + VFSF + " 없음"); }
+if (vfsSrc) {
+  const bareF = vfsSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  chk(!/localStorage/.test(bareF),
+    "⑯저장ⓐ 핸들을 localStorage 에 넣지 않는다(「[object …]」로 뭉개진다)", "localStorage 사용 있음");
+  chk(/indexedDB\.open/.test(bareF), "⑯저장   IndexedDB 를 직접 연다", "없음");
+  chk(/isSecureContext/.test(bareF), "⑯안전   안전한 주소에서만 연다", "없음");
+  chk(/showDirectoryPicker !== "function"/.test(bareF),
+    "⑯브라우저 못 하는 브라우저를 **가려 말한다**(조용히 0건이 되지 않는다)", "없음");
+  chk(/사파리|파이어폭스|아이폰/.test(vfsSrc), "⑯브라우저 어느 브라우저가 안 되는지 적는다", "없음");
+  chk(/CORP_VFS_MAXFILES/.test(bareF), "⑯순회   상한이 있다(멈추지 않는 순회를 막는다)", "없음");
+  chk((bareF.match(/Math\.random/g) || []).length === 0, "⑯결정론 corpVaultFs.js Math.random 0건");
+  const nm2 = (bareF.match(/["'][^"']*\.(pdf|xlsx|xls|docx|hwp|pptx|zip)["']/gi) || [])
+    .filter((x) => x.indexOf("_표본") < 0);
+  chk(nm2.length === 0, "⑯비밀   실제 파일명 0건(표본만 쓴다)", nm2.join(" "));
+  /* 종류·법인 판별을 **여기서 또 하지 않는다** — 규칙이 두 벌이 되면 갈라진 줄도 모른다 */
+  chk(!/CORP_VAULT_KIND\s*=|CORP_VAULT_ENTITY\s*=/.test(bareF),
+    "⑯단일   종류 · 법인 판별을 다시 정의하지 않는다(화면 한 곳에만)", "두 벌");
+}
+
+/* 화면 — 어디서 골랐든 **같은 길**로 읽는가 */
+if (bkBoard) {
+  chk(/const readFile = async/.test(bkBoard), "⑯화면   파일 읽는 길이 하나다", "없음");
+  chk(/<CorpVaultFs bankOnly/.test(bkBoard), "⑯화면   은행 대사에서 저장소 폴더를 고를 수 있다", "없음");
+  chk(/onPick=\{async \(f\) => \{ await readFile\(f\); \}\}/.test(bkBoard),
+    "⑯화면ⓐ 저장소에서 고른 파일도 **같은 길**로 읽는다(검사를 건너뛰지 않는다)", "다른 길");
+  const iR = bkBoard.indexOf("const readFile = async");
+  const iScan3 = bkBoard.indexOf("corpUpScan(", iR);
+  const iSet3 = bkBoard.indexOf("setRaw({", iR);
+  chk(iScan3 >= 0 && iSet3 >= 0 && iScan3 < iSet3,
+    "⑯화면   그 길에서도 민감자료 검사가 미리보기보다 **앞**이다", { scan: iScan3, prev: iSet3 });
+  chk(/저절로 돌지는 않습니다/.test(bkBoard) || true, "⑯화면   (문구는 자료실 쪽에서 센다)");
+}
+let vtBoard2 = "";
+try { vtBoard2 = rd("src/components/CorpVault.jsx"); } catch (e) { fails.push("⑯화면 CorpVault.jsx 없음"); }
+if (vtBoard2) {
+  chk(/function CorpVaultFs\(/.test(vtBoard2), "⑯화면   폴더 잇기 패널이 있다", "없음");
+  chk(/<CorpVaultFs onRows=/.test(vtBoard2), "⑯화면   자료실이 폴더에서 목록을 받는다", "없음");
+  chk(/저절로 돌지는 않습니다/.test(vtBoard2), "⑯화면   저절로 돌지 않는다고 적는다(「자동 실행」이 아니다)", "없음");
+  chk(/한 번 폴더를 지정/.test(vtBoard2), "⑯화면   한 번은 사람이 지정해야 한다고 적는다", "없음");
+  chk(/바탕화면 자체는 고를 수 없습니다/.test(vtBoard2), "⑯화면   바탕화면을 고를 수 없다고 미리 적는다", "없음");
+  chk(/제가 고르지 않습니다/.test(vtBoard2), "⑯화면   기계가 고르지 않는다고 적는다", "없음");
+  chk(/OneDrive/.test(vtBoard2) || /내려받지/.test(vtBoard2),
+    "⑯화면   내용을 못 읽은 파일을 숨기지 않는다", "없음");
+}
+if (hook) {
+  chk(hook.indexOf("corpVaultFs") >= 0, "⑯게이트 pre-commit 감시 대상에 corpVaultFs", "미등재");
+}
+chk(MANI.indexOf("src/data/corpVaultFs.js") >= 0, "⑯번들   corpVaultFs.js 가 매니페스트에 있다", "없음");
+chk(MANI.indexOf("src/data/corpVault.js") < MANI.indexOf("src/data/corpVaultFs.js"),
+  "⑯번들   자료실 뒤에 선다(종류 판별을 그쪽에서 가져온다)");
+
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -1546,6 +1650,7 @@ console.log(`[반입대화] 반입 섹션 ${G("CORP_UP_SPEC").length}종(상한 
 console.log(`[결재릴리스] 릴리스 ${RELS.length}건 · 승인 가능자 ${RELWHO.length}명(S1) · 결재 종류 ${G("CORP_APR_KIND").length}종 · 점검 ${G("CORP_REL_CHECK").length}항목 · 필독 ${must.length}건(미확인 ${must.reduce((n, m) => n + m.left.length, 0)}명) · 게이트 ${GATES.length}종 훅 대조`);
 console.log(`[은행전표] 엑셀 표 층 ${XT.length}항목 · 잔액 사슬 ${BT.length}항목 · 확실한 계정 대응 ${SURE.length}종(나머지는 사람이 확정) · 표본 ${BB.n}줄 → 전표 ${BB.made.length} · 보류 ${BB.held.length}`);
 console.log(`[업무지시] 해석 자기시험 ${OV.rows.length}항목 · 아는 행위 ${G("CORP_ORD_ACT").length}종 · 되물음 표본 ${G("CORP_ORD_T_ASK").length} · 형 문장 → ${AO.order ? AO.order.steps.length : 0}단계(AI ${AO.order ? AO.order.steps.filter((s) => s.who === "ai").length : 0} · 사람 ${AO.order ? AO.order.steps.filter((s) => s.who === "human").length : 0})`);
+console.log(`[폴더잇기] 자기시험 ${FV.rows.length}항목 · 고를 거리 ${FC.n} / ${FC.all} · 어긋남 표시 ${warn.length}건 · 권한 손잡이 ${G("CORP_VFS_DB")}(IndexedDB)`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {
   console.log(`[회계엔진] 통과 ${oks.length} · 실패 ${fails.length} / ${total}`);

@@ -6281,3 +6281,12 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .wo-iso{color:var(--ct);font-weight:700;white-space:nowrap;}
 .ag-ai.k-ask{border-left-color:#7AA7D9;}
 .ag-ai.k-order{border-left-color:#5FAE7E;}
+
+/* 저장소 폴더 잇기 — 접두 vf- (맨낱말 클래스는 전역과 부딪힌다) */
+.vf-wrap .cl-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.vf-body{margin-top:9px;display:flex;flex-direction:column;gap:10px;}
+.vf-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.vf-pick{display:flex;flex-direction:column;gap:4px;}
+.vf-tbl td.desc{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vf-tbl tr.warn td{background:rgba(224,163,63,.08);}
+.vf-tbl tr.warn td.id{color:var(--cw);}

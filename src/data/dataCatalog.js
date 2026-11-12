@@ -64,6 +64,12 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
      어느 단계까지 끝났는지. ⚠️ 대화 기록(hifin_corp_chat)에 넣지 않는다 — 40턴만 남기고
      잘려서 며칠 걸리는 지시가 사라진다. 상수 참조라 스캔 밖이므로 수동 등재한다.
      사내 자료이고 회원 데이터가 아니다. 서버가 없으므로 이 브라우저 밖으로 나가지 않는다. */
+  /* 저장소 폴더 권한(corpVaultFs.js — 2026-11-12): 형이 한 번 고른 저장소 폴더의 **권한 손잡이**.
+     ⚠️ 이것만은 localStorage 가 아니라 **IndexedDB**(이름 hifin_corp_vaultfs)에 둔다 —
+        문자열 저장소에 넣으면 「[object FileSystemDirectoryHandle]」 로 뭉개져 되돌릴 수 없다(실측).
+        그래서 카탈로그 자동 스캔이 보지 못한다. 여기 손으로 적어 두고 러너가 이중으로 단언한다.
+     파일 내용을 담지 않는다 — 열 수 있는 **권한**만 담는다. 이 브라우저 밖으로 나가지 않는다. */
+  "hifin_corp_vaultfs",
   "hifin_corp_task",
   "hifin_corp_bankmap",
   "hifin_corp_mtg",

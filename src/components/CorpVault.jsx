@@ -10,8 +10,172 @@
        섞인 채로 쓰면 장부가 오염된다.
      · 목록은 코드에 박지 않는다 — 파일명이 곧 회사 자료의 목차다. 반입해서 이 브라우저에만 둔다. */
 
+/* ── 저장소 폴더 잇기 — 형이 올려 두면 앱이 거기서 가져온다 (형 지시 2026-11-12) ──
+   「저장소에 조회를 해서 가져오도록 하면 되잖아. 저장소에 내가 올려 놓으면 되잖아.」
+
+   ⚠️ 브라우저는 바탕화면을 마음대로 뒤지지 못한다. 형이 **한 번 폴더를 지정**해 주셔야 한다.
+      그 뒤로는 권한이 남아 「지금 가져오기」 한 번이면 된다 — 저절로 도는 것이 아니다.
+   ⚠️ 그리고 **기계가 「가장 새 파일」을 고르지 않는다.** 저장소의 은행 내역은 이름 꼴이
+      열 가지로 갈려 있고 수정일이 파일명 날짜와 어긋난다(9월 파일의 수정일이 11월 것보다
+      늦다 — 실측). 늘어놓기만 하고 고르는 것은 형이 하신다. */
+function CorpVaultFs({ onRows, bankOnly, onPick }) {
+  const [can] = React.useState(function () { return cvfCan(); });
+  const [h, setH] = React.useState(null);
+  const [perm, setPerm] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [tick, setTick] = React.useState(0);
+  const [note, setNote] = React.useState(null);
+  const [scan, setScan] = React.useState(null);
+  const [open, setOpen] = React.useState(false);
+
+  React.useEffect(function () {
+    let gone = false;
+    if (!can.ok) return;
+    cvfHandle().then(function (x) {
+      if (gone || !x) return;
+      setH(x);
+      cvfPerm(x, false).then(function (p) { if (!gone) setPerm(p); });
+    });
+    return function () { gone = true; };
+  }, [can.ok]);
+
+  const link = async function () {
+    setBusy(true); setNote(null);
+    try {
+      const x = await cvfPick();
+      setH(x);
+      setPerm(await cvfPerm(x, true));
+      setNote({ bad: false, t: "「" + (x.name || "폴더") + "」을(를) 이었습니다. 「방문할 때마다 허용」을 고르셨다면 다음부터 다시 묻지 않습니다." });
+    } catch (e) { setNote({ bad: true, t: (e && e.message) || "폴더를 잇지 못했습니다" }); }
+    setBusy(false);
+  };
+  const grant = async function () {
+    setBusy(true);
+    const p = await cvfPerm(h, true);
+    setPerm(p); setBusy(false);
+    if (p !== "granted") setNote({ bad: true, t: "권한을 받지 못했습니다 — 폴더를 다시 이어 주세요" });
+  };
+  const fetchNow = async function () {
+    setBusy(true); setNote(null); setTick(0);
+    try {
+      const S = await cvfScan(h, function (n) { setTick(n); });
+      setScan(S);
+      if (typeof onRows === "function") onRows(S.rows);
+      setNote({ bad: false, t: S.n + "건을 가져왔습니다(" + Math.round(S.bytes / 104857.6) / 10 + "MB)."
+        + (S.unread ? " **" + S.unread + "건은 내용을 읽지 못했습니다** — OneDrive 가 아직 내려받지 않았을 수 있습니다." : "")
+        + (S.cut ? " 상한에 걸려 멈췄습니다." : "") });
+    } catch (e) { setNote({ bad: true, t: (e && e.message) || "가져오지 못했습니다" }); }
+    setBusy(false);
+  };
+  const forget = async function () {
+    await cvfForget(); setH(null); setPerm(""); setScan(null);
+    setNote({ bad: false, t: "폴더 연결을 끊었습니다 — 저장소의 파일은 그대로입니다." });
+  };
+
+  const cands = React.useMemo(function () {
+    if (!scan || !bankOnly) return null;
+    const C = cvfBankCandidates(scan.rows);
+    return { n: C.n, all: C.all, rows: C.rows.map(cvfPickRow) };
+  }, [scan, bankOnly]);
+
+  const take = async function (rel) {
+    setBusy(true); setNote(null);
+    try {
+      const f = await cvfFile(h, rel);
+      if (typeof onPick === "function") await onPick(f, rel);
+      setNote({ bad: false, t: "「" + rel + "」을(를) 가져왔습니다." });
+    } catch (e) { setNote({ bad: true, t: (e && e.message) || "파일을 읽지 못했습니다" }); }
+    setBusy(false);
+  };
+
+  return (
+    <div className="cl-sec vf-wrap">
+      <div className="cl-h">저장소 폴더 <span className="cl-t">형이 올려 두면 제가 가져옵니다</span>
+        <span className={"cl-flag" + (perm === "granted" ? " on" : " hold")}>
+          {!can.ok ? "이 브라우저는 못 합니다" : (perm === "granted" ? "이어져 있음" : (h ? "권한 확인 필요" : "아직 안 이음"))}
+        </span>
+        <button className="cl-rv" onClick={function () { setOpen(!open); }}>{open ? "접기" : "열기"}</button>
+      </div>
+
+      {!can.ok && <p className="cl-note hold"><b>{can.why}</b></p>}
+
+      {open && can.ok && (
+        <div className="vf-body">
+          <p className="cl-note">
+            브라우저는 바탕화면을 마음대로 뒤지지 못합니다 — <b>형이 한 번 폴더를 지정</b>해 주셔야 합니다.
+            그 뒤로는 권한이 남아 「지금 가져오기」 한 번이면 됩니다. <b>저절로 돌지는 않습니다</b> —
+            화면을 열고 누르셔야 합니다(브라우저가 사람이 누를 때만 폴더를 열어 줍니다).
+            <span className="cl-warn2">
+              폴더를 고르실 때 <b>바탕화면 자체는 고를 수 없습니다</b> — 저장소 폴더를 직접 골라 주세요.
+              권한을 물을 때 <b>「방문할 때마다 허용」</b>을 고르시면 다음부터 다시 묻지 않습니다.
+            </span>
+          </p>
+
+          <div className="vf-row">
+            {!h && <button className="cl-save" disabled={busy} onClick={link}>저장소 폴더 잇기</button>}
+            {h && perm !== "granted" && <button className="cl-save" disabled={busy} onClick={grant}>권한 다시 받기</button>}
+            {h && perm === "granted" && <button className="cl-save" disabled={busy} onClick={fetchNow}>지금 가져오기</button>}
+            {h && <button className="cl-rv" disabled={busy} onClick={link}>폴더 바꾸기</button>}
+            {h && <button className="cl-rv" disabled={busy} onClick={forget}>연결 끊기</button>}
+            {h && <span className="cl-t">이어진 폴더 · {h.name}</span>}
+            {busy && <span className="cl-t">{tick ? tick + "건 읽는 중…" : "잠시만요…"}</span>}
+          </div>
+          {note && <div className={"cl-msg" + (note.bad ? " bad" : "")} onClick={function () { setNote(null); }}>{note.t}</div>}
+
+          {scan && !bankOnly && (
+            <p className="cl-note">{scan.root} — <b>{scan.n}건</b> · {Math.round(scan.bytes / 104857.6) / 10}MB.
+              종류 · 법인 판별은 아래 대장이 합니다(여기서는 <b>사실만</b> 가져옵니다).</p>
+          )}
+
+          {cands && (
+            <div className="vf-pick">
+              <div className="cl-h2">고를 만한 파일 <span className="cl-t">{cands.n}건 / 전체 {cands.all}건</span></div>
+              <p className="cl-note"><b>제가 고르지 않습니다.</b> 저장소의 은행 내역은 이름 꼴이 여러 가지이고,
+                <b>수정일이 파일명의 날짜와 어긋나는 것이 실제로 있습니다</b> — 「가장 새 것」을 기계가 집으면
+                틀린 달의 장부가 섭니다. 늘어놓기만 할 테니 형이 골라 주세요.</p>
+              {!cands.n && <p className="cl-note hold">엑셀 · CSV 로 된 거래내역을 찾지 못했습니다.</p>}
+              {cands.n > 0 && (
+                <table className="cl-tbl vf-tbl">
+                  <thead><tr><th>파일</th><th>폴더</th><th>파일명 날짜</th><th>수정일</th><th>크기</th><th /></tr></thead>
+                  <tbody>
+                    {cands.rows.slice(0, 40).map(function (r) {
+                      return (
+                        <tr key={r.rel} className={r.mismatch ? "warn" : ""}>
+                          <td className="desc">{r.name}</td>
+                          <td className="id">{r.dir || "(루트)"}</td>
+                          <td className="id">{r.nameDate || "—"}</td>
+                          <td className="id">{r.at || "—"}</td>
+                          <td className="n">{Math.max(1, Math.round(r.size / 1024))}KB</td>
+                          <td>
+                            <button className="cl-rv" disabled={busy || r.unread} onClick={function () { take(r.rel); }}>
+                              {r.unread ? "못 읽음" : "이걸로"}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+              {cands.rows.some(function (r) { return r.mismatch; }) && (
+                <p className="cl-note hold">노란 줄은 <b>파일명의 날짜와 수정일이 다릅니다</b> — 어느 달 것인지 보고 골라 주세요.</p>
+              )}
+              {cands.n > 40 && <p className="cl-note">앞 40건만 보여 줍니다(전체 {cands.n}건).</p>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CorpVaultSection({ team }) {
-  const [st] = React.useState(() => corpVaultRead());
+  const [st, setSt] = React.useState(() => corpVaultRead());
+  /* 폴더에서 가져온 목록을 그대로 대장으로 쓴다 — 종류 · 법인 판별은 아래가 한다(두 벌이 되지 않게) */
+  const takeRows = React.useCallback((rows) => {
+    const next = { at: "저장소 폴더", list: rows };
+    corpVaultWrite(next); setSt(next);
+  }, []);
   const [q, setQ] = React.useState({ q: "", dept: "", kind: "", ent: "", key: false });
   const [copied, setCopied] = React.useState("");
   /* 팀 보드에서는 **그 팀 자료만** 본다. 총괄 자료실에서는 전사가 보인다.
@@ -65,6 +229,7 @@ function CorpVaultSection({ team }) {
       </div>
 
       <div className="cl-body">
+        <CorpVaultFs onRows={takeRows} />
         {!rows.length && all.length > 0 && team && (
           <div className="cl-sec">
             <div className="cl-h">{T ? T.sh + "팀" : "이 팀"} 자료가 아직 없습니다

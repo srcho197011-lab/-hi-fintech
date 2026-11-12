@@ -140,7 +140,7 @@
  "browser": {
   "skipped": false,
   "reached": true,
-  "chars": 56671,
+  "chars": 56635,
   "nameHits": 29,
   "notices": {
    "notice1": true,
@@ -322,7 +322,7 @@
   },
   "commitOut": 2,
   "commitHits": 0,
-  "tracked": 455,
+  "tracked": 456,
   "goldenTracked": 0,
   "stray": 0
  },

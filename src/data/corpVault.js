@@ -175,13 +175,17 @@ function corpVaultVerdict(st) {
   const noPat = kinds.filter((k) => k.k !== "etc" && !k.pat.length);
   const noD = kinds.filter((k) => !(k.d || "").trim());
   const badCls = kinds.filter((k) => k.cls && typeof CORP_DOC_CLASS !== "undefined" && !CORP_DOC_CLASS.some((c) => c.k === k.cls));
-  /* 분류기 자기시험 — 규칙이 오타로 죽어도 「전부 기타」는 조용히 통과한다 */
+  /* 분류기 자기시험 — 규칙이 오타로 죽어도 「전부 기타」는 조용히 통과한다.
+     ⚠️ 표본에 **실제 파일명을 쓰지 않는다.** 이 파일 머리글이 적어 둔 그대로다 —
+        파일명이 곧 대외비 저장소의 목차라, 자기시험이라도 코드에 박으면 공개 배포본에 실린다.
+        시험하는 것은 **규칙**이지 그 파일이 아니므로, 규칙에서 만든 이름이면 충분하다.
+        (법인 이름은 회사 이름이라 가려 두는 것이 아니다 — 그건 판별 규칙 자체다.) */
   const probe = [
-    ["HF_하이젠케어_재무제표확인원26.10.23.pdf", "02.회계/2026.결산/26.09", "fsconf", "hgc"],
-    ["거래내역(신한,202607~202609)_.xlsx", "02.회계/2026.결산", "bank", null],
-    ["주주명부(글로벌예방금융).hwp", "02.회계/2025.결산", "corp", "gpf"],
-    ["0.하이젠케어 총계정장.xlsx", "02.회계/2026.결산/26.06", "book", "hgc"],
-    ["아무개.txt", "99.없음", "etc", null],
+    ["재무제표확인원_표본(하이젠케어).pdf", "02.회계/표본", "fsconf", "hgc"],
+    ["거래내역_표본.xlsx", "02.회계/표본", "bank", null],
+    ["주주명부_표본(글로벌예방금융).hwp", "02.회계/표본", "corp", "gpf"],
+    ["총계정원장_표본.xlsx", "02.회계/표본", "book", null],
+    ["무엇인지모를것_표본.txt", "99.없음", "etc", null],
   ];
   const miss = probe.filter((p) => corpVaultKind(p[0], p[1]).k !== p[2]);
   const missE = probe.filter((p) => {

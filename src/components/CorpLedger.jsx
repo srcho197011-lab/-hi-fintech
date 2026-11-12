@@ -489,9 +489,9 @@ function ClBankUp({ st, save, actor, A }) {
 
   const reset = () => { setRaw(null); setMap({}); setPick({}); setCov({ from: "", to: "" }); if (fileRef.current) fileRef.current.value = ""; };
 
-  const onFile = async (e) => {
-    const f = (e.target.files || [])[0];
-    if (!f) { reset(); return; }
+  /* 파일 하나를 받아 읽는다 — 고른 곳이 내 컴퓨터든 이어 둔 저장소 폴더든 **같은 길**이다.
+     길이 둘인데 한쪽만 민감자료 검사를 하면 막는 것이 아니다. */
+  const readFile = async (f) => {
     setBusy(true); setNote(null);
     try {
       const buf = new Uint8Array(await f.slice(0, 4).arrayBuffer());
@@ -505,23 +505,19 @@ function ClBankUp({ st, save, actor, A }) {
       } else {
         const txt = await f.text();
         const g = corpUpParseCsv(txt);
-        head = g[0] || []; rows = g.slice(1);
+        head = g.head || []; rows = g.rows || [];
       }
       rows = rows.filter((r) => r.join("").trim());
       if (head.length < 2 || !rows.length) throw new Error("표를 읽지 못했습니다 — 머리글과 자료 줄이 있는지 보아 주세요");
-      /* ⚠️ 검사가 **먼저** — 걸리면 표를 띄우지 않는다. 값은 적지 않고 좌표만 적는다. */
       const hits = corpUpScan(rows, head);
       if (hits.length) {
         setNote({ bad: true, t: "민감자료가 " + hits.length + "곳에서 걸렸습니다 — 표를 띄우지 않고 멈췄습니다. "
           + hits.slice(0, 4).map((h) => h.row + "행 " + h.col + "열(" + h.why + ")").join(" · ") + ". 그 열을 떼고 다시 올려 주세요." });
         reset(); setBusy(false); return;
       }
-      const kb = Math.round(f.size / 1024);
-      setRaw({ name: f.name, kb: kb, head: head, rows: rows, sheet: sheet, sheets: sheets, zip: zip });
+      setRaw({ name: f.name, kb: Math.round(f.size / 1024), head: head, rows: rows, sheet: sheet, sheets: sheets, zip: zip });
       const m = corpUpSuggest(head, spec);
       setMap(m);
-      /* 기간은 **사람이 확정한다** — 자료에서 읽은 것은 제안일 뿐이다.
-         거래가 0건인 날과 안 올린 날은 자료만 보고는 구별되지 않는다. */
       const ds = rows.map((r) => String(r[m.date] || "")).map((x) => (/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/.exec(x) || [])[0] || "")
         .filter(Boolean).map((x) => x.replace(/[./]/g, "-").replace(/-(\d)(?=-|$)/g, "-0$1")).sort();
       setCov({ from: ds[0] || "", to: ds[ds.length - 1] || "" });
@@ -531,6 +527,12 @@ function ClBankUp({ st, save, actor, A }) {
       setNote({ bad: true, t: (err && err.message) || "파일을 읽지 못했습니다" });
     }
     setBusy(false);
+  };
+
+  const onFile = async (e) => {
+    const f = (e.target.files || [])[0];
+    if (!f) { reset(); return; }
+    await readFile(f);
   };
 
   const commit = () => {
@@ -589,7 +591,10 @@ function ClBankUp({ st, save, actor, A }) {
             은행에서 내려받은 <b>.xlsx 를 그대로</b> 올리시면 됩니다(CSV 도 받습니다).
             은행 계좌를 <b>자동으로 가져오지 못합니다</b> — 그래서 사람이 매일 올립니다.</p>
 
+          <CorpVaultFs bankOnly onPick={async (f) => { await readFile(f); }} />
+
           <div className="bk-row">
+            <span className="cl-t">내 컴퓨터에서 고르기 —</span>
             <input ref={fileRef} type="file" accept=".xlsx,.csv,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={onFile} disabled={busy} />
             {raw && <button className="cl-rv" onClick={reset}>지우기</button>}
             {busy && <span className="cl-t">읽는 중…</span>}

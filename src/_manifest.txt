@@ -38,6 +38,7 @@ src/data/corpGov.js
 src/data/corpUpload.js
 src/data/corpAgent.js
 src/data/corpVault.js
+src/data/corpVaultFs.js
 src/data/corpBankXlsx.js
 src/data/corpBankJv.js
 src/data/corpOrder.js
