@@ -1322,6 +1322,31 @@ chk(MANI.indexOf("src/data/corpBankXlsx.js") < MANI.indexOf("src/data/corpBankJv
   "⑬번들   매니페스트 순서가 러너 적재 순서와 같다");
 
 
+/* ── ⑭ 그래프 노드 고르기 ──────────────────────────────────────────────
+   조직 온톨로지는 매 프레임 다시 그린다 — 누른 원이 뗄 때는 이미 없다.
+   click 에 기대면 브라우저가 공통 조상(svg)에 쏘아 「원을 눌렀는데 아무 일도 안 난다」가 된다.
+   사람 손의 클릭은 100ms 안팎이라 거의 매번 걸리고, 빠른 자동 클릭으로는 재현되지 않는다. */
+const OPSF = "src/components/CorpOps.jsx";
+let gphSrc = "";
+try { gphSrc = rd(OPSF); } catch (e) { fails.push("⑭그래프 " + OPSF + " 없음"); }
+if (gphSrc) {
+  chk(/gNode\.innerHTML = ""/.test(gphSrc), "⑭그래프 노드를 매 프레임 다시 그린다(이 사실이 전제다)", "없음");
+  chk(/addEventListener\("pointerdown", onDown\)/.test(gphSrc),
+    "⑭그래프 **누르는 순간** 어느 팀인지를 잡는다", "없음");
+  chk(/pointerup", onUp/.test(gphSrc), "⑭그래프 뗄 때 그 값으로 고른다", "없음");
+  chk(!/addEventListener\("click", onClick\)/.test(gphSrc),
+    "⑭그래프 click 하나에 기대지 않는다(원이 사라진 뒤라 svg 가 받는다)", "click 의존 남음");
+  chk(/downId = idAt\(e\)/.test(gphSrc), "⑭그래프 누른 팀을 적어 둔다(뗄 때 다시 찾지 않는다)", "없음");
+  chk(/moved > 10/.test(gphSrc), "⑭그래프 끌었으면 고르지 않는다", "없음");
+  chk(/removeEventListener\("pointerdown"/.test(gphSrc) && /removeEventListener\("pointerup"/.test(gphSrc),
+    "⑭그래프 떠날 때 손잡이를 모두 뗀다(겹쳐 달리면 눌러도 토글되어 안 열린다)", "없음");
+  chk(/S\.pos\.push\(/.test(gphSrc), "⑭그래프 그린 자리를 적어 둔다(고를 때 쓴다)", "없음");
+  chk(/p\.z < hit\.z/.test(gphSrc), "⑭그래프 겹쳐 보이면 **앞에 있는 쪽**을 고른다(보이는 대로)", "없음");
+  chk(!/"pointer-events": "all"/.test(gphSrc),
+    "⑭그래프ⓐ 보이지 않는 넓은 원을 깔지 않는다(앞 노드가 뒤 노드의 클릭을 가로챈다)", "깔려 있음");
+  chk(/원을 누르면<\/b> 그 팀이 정면으로 오고/.test(gphSrc), "⑭그래프 화면이 무엇이 열리는지 적는다", "없음");
+}
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);

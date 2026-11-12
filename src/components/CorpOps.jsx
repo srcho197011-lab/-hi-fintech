@@ -91,6 +91,10 @@ function CorpOps({ onGo, onTab }) {
 
       /* 노드 — 뒤에서 앞으로 */
       gNode.innerHTML = "";
+      /* ⚠️ 그린 자리를 적어 둔다. 고르기는 **이 좌표로** 센다 —
+         보이지 않는 넓은 원을 깔아 두면 앞 노드가 뒤 노드의 클릭을 가로채
+         「M1 을 눌렀는데 M3 가 열리는」 일이 생긴다(실측). 좌표로 세면 보이는 대로 골라진다. */
+      S.pos = [];
       CORP_TEAMS.slice().sort((p, q) => P[q.id].z - P[p.id].z).forEach(t => {
         const q = P[t.id], k = q.k, near = 1 - (q.z + R) / (2 * R);
         const hl = (S.hover === t.id) || (S.sel === t.id);
@@ -130,6 +134,7 @@ function CorpOps({ onGo, onTab }) {
         }
         const t3 = mk("text", { x: q.x, y: q.y - rr - 4.5 * k, "text-anchor": "middle", fill: "#6E6E78", "font-size": Math.max(6.2, 7.6 * k), "letter-spacing": ".04em" });
         t3.textContent = t.id; g.appendChild(t3);
+        S.pos.push({ id: t.id, x: q.x, y: q.y, r: rr, z: q.z });
         gNode.appendChild(g);
       });
     }
@@ -143,25 +148,62 @@ function CorpOps({ onGo, onTab }) {
       last = ts; draw(); raf = requestAnimationFrame(loop);
     }
 
-    const onMove = (e) => {
-      const g = e.target.closest ? e.target.closest("g[data-id]") : null;
-      st.current.hover = g ? g.dataset.id : null;
+    /* 어느 팀을 눌렀나 — DOM 이 아니라 **마지막으로 그린 좌표**로 센다.
+       viewBox 가 CSS 크기와 같아 화면 좌표에서 테두리 위치만 빼면 그대로 쓸 수 있다.
+       겹쳐 보이면 **앞에 있는 쪽**(z 가 작은 쪽)이 골라진다 — 보이는 대로다. */
+    const idAt = (e) => {
+      const list = st.current.pos || [];
+      if (!list.length) return null;
+      const b = svg.getBoundingClientRect();
+      const x = e.clientX - b.left, y = e.clientY - b.top;
+      let hit = null;
+      list.forEach((p) => {
+        const d = Math.sqrt((x - p.x) * (x - p.x) + (y - p.y) * (y - p.y));
+        if (d > p.r * 1.2) return;                 /* 원 밖이면 그 팀이 아니다 */
+        if (!hit || p.z < hit.z) hit = p;          /* 겹치면 앞에 있는 쪽 */
+      });
+      return hit ? hit.id : null;
     };
+    const onMove = (e) => { st.current.hover = idAt(e); };
     const onLeave = () => { st.current.hover = null; };
-    const onClick = (e) => { const g = e.target.closest ? e.target.closest("g[data-id]") : null; pick(g ? g.dataset.id : null); };
+
+    /* ⚠️ click 으로는 원을 고를 수 없다 — 그래프를 **매 프레임 다시 그리기** 때문이다.
+       gNode.innerHTML = "" 가 원을 통째로 지웠다 다시 만들므로, 누른 요소와 뗀 요소가 달라지고
+       브라우저는 click 을 **공통 조상**(svg)에 쏜다. 그러면 노드를 눌렀는데도 pick(null) 이 돌아
+       아무 일도 일어나지 않는다. 사람 손의 클릭은 100ms 안팎이라 그 사이 예닐곱 프레임이 지나간다
+       — 2ms 짜리 자동 클릭으로는 재현되지 않아 오래 숨어 있던 자리다(실측: 120ms 뒤 다른 요소).
+       그래서 **누르는 순간** 어느 팀인지를 적어 두고, 뗄 때 그 값으로 고른다. */
+    let downId = null, downPt = null;
+    const onDown = (e) => { downId = idAt(e); downPt = { x: e.clientX, y: e.clientY }; };
+    const onUp = (e) => {
+      if (!downPt) return;
+      const moved = Math.abs(e.clientX - downPt.x) + Math.abs(e.clientY - downPt.y);
+      const id = downId, from = downPt;
+      downId = null; downPt = null;
+      if (moved > 10) return;                       /* 끌었으면 고르지 않는다 */
+      const r = svg.getBoundingClientRect();        /* 밖에서 뗐으면 고르지 않는다 */
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+      void from;
+      pick(id);
+    };
+    const onCancel = () => { downId = null; downPt = null; };
     const onResize = () => measure();
 
     measure();
     svg.addEventListener("mousemove", onMove);
     svg.addEventListener("mouseleave", onLeave);
-    svg.addEventListener("click", onClick);
+    svg.addEventListener("pointerdown", onDown);
+    svg.addEventListener("pointercancel", onCancel);
+    window.addEventListener("pointerup", onUp);     /* 창 밖에서 떼도 상태가 남지 않게 */
     window.addEventListener("resize", onResize);
     raf = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(raf);
       svg.removeEventListener("mousemove", onMove);
       svg.removeEventListener("mouseleave", onLeave);
-      svg.removeEventListener("click", onClick);
+      svg.removeEventListener("pointerdown", onDown);
+      svg.removeEventListener("pointercancel", onCancel);
+      window.removeEventListener("pointerup", onUp);
       window.removeEventListener("resize", onResize);
     };
   }, [pick, view]);
@@ -288,7 +330,8 @@ function CorpOps({ onGo, onTab }) {
           <div className="corp-cap">
             <h3>조직 온톨로지</h3>
             <p>원 = 팀 · 원 안은 <b>사람 책임자 · AI 팀장</b> · 선 = 팀 사이 업무 흐름<br />
-              원근 회전 — 앞은 크고 밝게, 뒤는 작고 흐리게. 원을 누르면 그 팀이 정면으로 옵니다.</p>
+              원근 회전 — 앞은 크고 밝게, 뒤는 작고 흐리게.<br />
+              <b>원을 누르면</b> 그 팀이 정면으로 오고 아래에 안내가 열립니다 — 같은 원을 다시 누르면 닫힙니다.</p>
           </div>
           {selT && (
             <div className="corp-selbox">
