@@ -43,10 +43,30 @@ function CorpLedgerSection() {
     setMsg({ bad: false, t: jv.id + " → " + CORP_JV_ST[c.to].ko + (c.to === "posted" ? " · 승인자 " + actor : "") });
   };
   const reverse = (jv) => {
+    const can = corpJvCanReverse(jv, jvs);
+    if (!can.ok) { setMsg({ bad: true, t: jv.id + " — " + can.why }); return; }
     const r = corpJvReverse(jv, actor, upMax || jv.d);
     setForm({ d: r.d, desc: r.desc, rev: r.rev, l: r.l.map(x => [x[0], String(x[1] || ""), String(x[2] || ""), x[3] || ""]) });
     setTab("jv"); setMsg({ bad: false, t: jv.id + " 역분개 초안을 만들었습니다 — 저장하면 기표 상태로 들어갑니다" });
   };
+  /* 승인 전 역분개를 물린다 — 형이 여러 번 눌러 쌓인 것을 스스로 되돌릴 수 있어야 한다.
+     ⚠️ **전기된 것은 건드리지 않는다.** 장부에 올라간 전표는 지우지 않고 역분개로 바로잡는다. */
+  const dropDraft = (jv) => {
+    if (jv.st === "posted") { setMsg({ bad: true, t: jv.id + " 은(는) 이미 전기됐습니다 — 전기된 전표는 지우지 않습니다" }); return; }
+    const ov = Object.assign({}, st.ov); delete ov[jv.id];
+    save(Object.assign({}, st, { jv: (st.jv || []).filter((x) => x.id !== jv.id), ov: ov }));
+    setMsg({ bad: false, t: jv.id + " 을(를) 물렸습니다 — 승인 전이라 장부에는 없던 것입니다." });
+  };
+  const dropAllDraftRev = () => {
+    const drop = jvs.filter((j) => j.rev && j.st !== "posted");
+    if (!drop.length) { setMsg({ bad: true, t: "물릴 역분개 초안이 없습니다" }); return; }
+    const ov = Object.assign({}, st.ov);
+    drop.forEach((j) => { delete ov[j.id]; });
+    const ids = {}; drop.forEach((j) => { ids[j.id] = 1; });
+    save(Object.assign({}, st, { jv: (st.jv || []).filter((x) => !ids[x.id]), ov: ov }));
+    setMsg({ bad: false, t: "승인 전 역분개 " + drop.length + "건을 물렸습니다 — 장부 숫자는 바뀌지 않습니다(올라가 있지 않던 것입니다)." });
+  };
+
   const closeMonth = (mo) => {
     const closed = (st.closed || []).slice();
     const i = closed.indexOf(mo);
@@ -320,7 +340,15 @@ function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, s
                     <button className={"cl-go" + (c.ok ? "" : " off")} title={c.ok ? "" : c.why}
                       onClick={() => advance(j)}>{S.nextKo}</button>
                   )}
-                  {j.st === "posted" && <button className="cl-rv" onClick={() => reverse(j)}>역분개</button>}
+                  {j.st === "posted" && (function () {
+                    const cr = corpJvCanReverse(j, jvs);
+                    return cr.ok
+                      ? <button className="cl-rv" onClick={() => reverse(j)}>역분개</button>
+                      : <span className="cl-done" title={cr.why}>{cr.by ? "역분개됨 · " + cr.by : "—"}</span>;
+                  })()}
+                  {j.st !== "posted" && j.rev && (
+                    <button className="cl-rv" onClick={() => dropDraft(j)}>물리기</button>
+                  )}
                 </td>
               </tr>
             );
@@ -330,7 +358,16 @@ function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, s
       <p className="cl-note">전표번호는 <b>일자별 일련(YYYYMMDD-NN)</b>입니다 — 날짜를 알면 바로 찾습니다.
         {corpJvLive(st) ? <span> 지금은 <b>반입된 실제 전표</b>를 보고 있습니다 — 파일럿 전표는 빠졌습니다.</span>
           : <span> 지금은 <b>파일럿 전표</b>입니다(번호가 JV-로 시작합니다). 실제 전표가 반입되면 파일럿은 빠집니다.</span>}</p>
-      <p className="cl-note">전기된 전표에는 <b>수정 버튼이 없습니다</b>. 지운 자국이 남아야 장부이기 때문에 정정은 역분개 전표로만 합니다.</p>
+      <p className="cl-note">전기된 전표에는 <b>수정 버튼이 없습니다</b>. 지운 자국이 남아야 장부이기 때문에 정정은 역분개 전표로만 합니다.
+        <b>같은 전표를 두 번 되돌리지 못합니다</b> — 두 번 되돌리면 원래 거래가 거꾸로 섭니다. 이미 되돌린 전표에는 그 번호가 적힙니다.</p>
+      {jvs.filter((j) => j.rev && j.st !== "posted").length > 0 && (
+        <div className="cl-act2">
+          <button className="cl-rv" onClick={dropAllDraftRev}>
+            승인 전 역분개 {jvs.filter((j) => j.rev && j.st !== "posted").length}건 모두 물리기
+          </button>
+          <span className="cl-t">아직 장부에 올라가지 않은 것만 물립니다 — 숫자는 바뀌지 않습니다</span>
+        </div>
+      )}
     </div>
   );
 }

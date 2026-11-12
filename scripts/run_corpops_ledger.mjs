@@ -1478,6 +1478,33 @@ const ORC = G("corpOrdReverse")(OJ, "2026-11-11", "2026-11-12", { jv: OJ, closed
 chk(ORC.made.length === 0 && ORC.held.length === 2, "⑮마감   마감된 달이면 초안이 서지 않고 보류로 남는다", ORC.made.length + " / " + ORC.held.length);
 chk(ORC.held.every((h) => /마감/.test(h.why || "")), "⑮마감   왜 안 됐는지 마감이라고 적는다", ORC.held[0] && ORC.held[0].why);
 
+/* ⑮-2 같은 전표를 **두 번 되돌리지 못한다** — 실제로 한 전표가 열세 번 되돌려졌다.
+   두 번 되돌리면 원래 거래가 거꾸로 서고, 세 번이면 또 뒤집힌다. 장부가 춤춘다. */
+const RV0 = OJ[0];                                   /* 전기된 은행 전표 */
+chk(G("corpJvCanReverse")(RV0, OJ).ok, "⑮되돌리기 전기된 전표는 되돌릴 수 있다(늘 막는 벽이 아니다)", JSON.stringify(G("corpJvCanReverse")(RV0, OJ)));
+const RVD = G("corpOrdReverse")(OJ, "2026-11-11", "2026-11-12", { jv: OJ, closed: [], ov: {} }).made[0];
+const OJrv = OJ.concat([Object.assign({}, RVD, { st: "posted", ap: "조성래" })]);
+const can2 = G("corpJvCanReverse")(RV0, OJrv);
+chk(!can2.ok && /이미 역분개/.test(can2.why || "") && can2.by === RVD.id,
+  "⑮되돌리기ⓐ 이미 되돌린 전표는 **또 되돌리지 못한다**(그 번호를 알려 준다)", JSON.stringify(can2));
+chk(!G("corpJvCanReverse")(RVD, OJrv).ok, "⑮되돌리기ⓐ 역분개를 또 역분개하지 않는다", JSON.stringify(G("corpJvCanReverse")(RVD, OJrv).why));
+chk(!G("corpJvCanReverse")(OJ[2], OJ).ok, "⑮되돌리기ⓐ 승인 전 전표는 되돌릴 것이 없다(물리면 된다)", JSON.stringify(G("corpJvCanReverse")(OJ[2], OJ).why));
+/* 저장되는 자리에서도 막는다 — 화면 버튼만 막으면 다른 길로 들어온 것을 못 막는다 */
+const dupRev = Object.assign({}, RVD, { id: "20261112-99" });
+const chkDup = G("corpJvCheck")(dupRev, { jv: OJrv, closed: [], ov: {} });
+chk(!chkDup.ok && chkDup.errs.some((x) => /이미 역분개/.test(x)),
+  "⑮되돌리기ⓐ **저장되는 자리**에서도 두 번째 역분개를 막는다", JSON.stringify(chkDup.errs));
+chk(G("corpJvCheck")(RVD, { jv: OJ, closed: [], ov: {} }).ok,
+  "⑮되돌리기   첫 역분개는 그대로 저장된다(막는 벽이 아니다)");
+let revBoard = "";
+try { revBoard = rd(BOARD); } catch (e) { /* 위에서 잡힌다 */ }
+if (revBoard) {
+  chk(/corpJvCanReverse\(j, jvs\)/.test(revBoard), "⑮화면   역분개 버튼이 미리 막는다", "없음");
+  chk(/const dropAllDraftRev/.test(revBoard), "⑮화면   승인 전 역분개를 **한 번에 물릴** 길이 있다", "없음");
+  chk(/이미 전기됐습니다/.test(revBoard), "⑮화면   전기된 것은 물리지 않는다고 적는다", "없음");
+  chk(/두 번 되돌리면 원래 거래가 거꾸로/.test(revBoard), "⑮화면   왜 두 번 안 되는지 적는다", "없음");
+}
+
 /* 다시 만들기 — 선행조건 **둘**이 다 서야 열린다 */
 const LEDN = { jv: [], bank: [], bankCov: null };
 const C0 = G("corpOrdCanRebuild")(OJ, "2026-11-11", LEDN, TODAY);

@@ -341,9 +341,31 @@ function corpJvCheck(jv, st) {
   else if (s.dr === 0) e.push("합계가 0입니다");
   const mo = ((jv && jv.d) || "").slice(0, 7);
   if (st && ((st.closed || []).indexOf(mo) >= 0)) e.push(mo + " 은 마감된 달입니다 — 신규 전표가 들어가지 않습니다. 정정은 역분개로 합니다");
+  /* ⚠️ 같은 전표를 두 번 되돌리지 못하게 **저장되는 자리**에서 막는다.
+     화면 버튼만 막으면 다른 길로 들어온 것을 못 막는다. 실제로 한 전표가 열세 번 되돌려졌다. */
+  if (jv && jv.rev && st) {
+    const all = typeof corpJvAll === "function" ? corpJvAll(st) : (st.jv || []);
+    const had = all.find(function (x) { return x.rev === jv.rev && x.id !== jv.id; });
+    if (had) e.push("「" + jv.rev + "」은(는) 이미 역분개했습니다(" + had.id + ") — 두 번 되돌리면 원래 거래가 거꾸로 섭니다");
+  }
   return { ok: e.length === 0, errs: e, sum: s };
 }
 /* 역분개 — 전기된 전표를 고치는 유일한 길. 차·대를 뒤집은 새 전표를 만든다. */
+/* 이 전표를 되돌린 전표를 찾는다 — 있으면 **또 되돌리면 안 된다**.
+   두 번 되돌리면 원래 거래가 거꾸로 서고, 세 번이면 또 뒤집힌다. 장부가 춤춘다. */
+function corpJvRevOf(jvs, id) {
+  return (jvs || []).find(function (j) { return j.rev === id; }) || null;
+}
+/* 되돌릴 수 있는가 — 안 되면 **왜 안 되는지** 함께 돌려준다 */
+function corpJvCanReverse(jv, jvs) {
+  if (!jv) return { ok: false, why: "전표가 없습니다" };
+  if (jv.st !== "posted") return { ok: false, why: "아직 전기되지 않았습니다 — 장부에 올라가 있지 않아 되돌릴 것이 없습니다(승인 전이면 그냥 물리면 됩니다)" };
+  if (jv.rev) return { ok: false, why: "이 전표 자체가 역분개입니다 — 역분개를 또 역분개하지 않습니다" };
+  const had = corpJvRevOf(jvs, jv.id);
+  if (had) return { ok: false, why: "이미 역분개했습니다(" + had.id + ") — 두 번 되돌리면 원래 거래가 거꾸로 섭니다", by: had.id };
+  return { ok: true, why: "" };
+}
+
 function corpJvReverse(jv, by, today) {
   return {
     id: null, d: today || jv.d, desc: "역분개 — " + jv.id + " · " + jv.desc, by: by || "조성래",

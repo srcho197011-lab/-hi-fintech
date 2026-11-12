@@ -6307,3 +6307,5 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .bk-trace tr.st-made td{background:rgba(95,174,126,.05);}
 .bk-trace tr.st-held td{background:rgba(224,163,63,.07);}
 .bk-trace tr.st-dup td{opacity:.62;}
+.cl-done{font-size:9px;color:var(--cd2);white-space:nowrap;}
+.cl-act2{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;}
