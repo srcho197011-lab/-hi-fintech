@@ -72,7 +72,9 @@ const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src
   "src/components/CorpUpload.jsx", "src/components/CorpVault.jsx",
   "src/components/CorpTeamChat.jsx", "src/components/CorpOps.jsx"];
 const LOAD = ["src/data/finBudgetParams.js", "src/data/finBudget.js", "src/data/finModel.js",
-  ORG, LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
+  /* corpAvatars.js 는 이름으로 문양을 정확 일치 조회한다 — 어긋나면 에러 없이 그림만 사라진다.
+     그래서 호칭 검사(┙)가 볼 수 있게 함께 싣는다(매니페스트 32번 자리). */
+  ORG, "src/data/corpAvatars.js", LEDGER, PA, MTG, "src/data/corpAdmin.js", "src/data/corpGov.js",
   "src/data/corpUpload.js", "src/data/dataCatalog.js", "src/data/corpAgent.js", "src/data/corpVault.js",
   "src/data/corpBankXlsx.js", "src/data/corpBankJv.js", "src/data/corpOrder.js", "src/data/corpVaultFs.js"];   /* 매니페스트와 **같은 순서** — 어긋나면 러너 녹색·브라우저 사망 */
 for (const f of LOAD) {
@@ -2027,6 +2029,153 @@ chk(Object.keys(KP.t).length === 4, "⑱분모   채울 칸이 네 개 다 선�
   chk(first3.indexOf("cash") < 0, "⑱한벌   새 도구가 인사말의 앞 세 도구를 밀어내지 않았다", first3.join("·"));
 }
 
+/* ══════════════ ⑲호칭 — 부르는 이름은 한 곳에서 만든다 (조성래님 지시 2026-11-13) ══════════════
+   지시: 책임자는 이름 뒤에 직책을, AI 팀장은 이름 뒤에 「팀장」을 붙여 부른다.
+
+   ⚠️ 이 블록이 지키는 것은 **열쇠와 호칭의 분리**다.
+   own · ai 값은 전표 작성자 · 승인 권한 · 아바타 문양 · 대화 도구가 글자 그대로 대조하는 열쇠다.
+   값에 호칭을 섞으면 아바타 여덟이 **에러 한 줄 없이** 사라지고 승인 거부가 조용히 풀린다.
+   그래서 호칭은 부를 때만 붙이고, 그 자리가 한 곳인지를 여기서 센다.
+
+   직책 원천이 셋(조직 · 인사 기록 · 전표 주체)으로 흩어져 있는데 **서로 대조하는 단언이
+   저장소에 없었다.** 한쪽만 고치면 조직도는 「이사」, 인사 기록은 「CTO」라 말하고도 통과했다. */
+const NAMING = JSON.parse(G(`JSON.stringify((function () {
+  var hr = {}; CORP_HR.forEach(function (h) { hr[h.name] = h.title; });
+  return {
+    rows: CORP_TEAMS.map(function (t) {
+      return { id: t.id, own: t.own, title: t.ownTitle, hr: hr[t.own] === undefined ? null : hr[t.own],
+               ai: t.ai, aiKo: corpAiKo(t.ai), ownKo: corpOwnKo(t),
+               av: !!corpAvatar(t.ai), tool: !!corpAgOf(t.ai) };
+    }),
+    head: CORP_HEAD, hrN: CORP_HR.length, hrTitles: CORP_HR.map(function (h) { return h.title; }),
+    actors: CORP_ACTORS.map(function (a) { return { id: a.id, ko: a.ko, role: a.role, ai: a.ai }; }),
+    ex: ["전 팀", "각 AI 팀장", "사람이 결정"].map(function (x) { return corpAiKo(x); }),
+    idem: CORP_TEAMS.map(function (t) { return corpAiKo(corpAiKo(t.ai)); }),
+    empty: [corpAiKo(null), corpAiKo(""), corpOwnKo(null)],
+    steps: CORP_SCHEDULE.weekly.steps.map(function (s) {
+      return { raw: s[2], ko: corpAiKo(s[2]), name: CORP_TEAMS.some(function (t) { return t.ai === s[2]; }) };
+    }),
+    rt: CORP_SCHEDULE.routines.map(function (r) {
+      return { raw: r.ai, ko: corpAiKo(r.ai), name: CORP_TEAMS.some(function (t) { return t.ai === r.ai; }) };
+    }),
+    jv: CORP_JV_SEED.map(function (j) { return String(j.by) + "/" + String(j.ap); })
+  };
+})())`));
+const NR = NAMING.rows;
+const TITLE_OK = ["대표", "센터장", "수석매니저", "이사"];
+
+/* ⑲분모 — 셀 것이 없는데 통과하는 일은 없다 */
+chk(NR.length === 8 && NAMING.hrN >= 6, "⑲분모   팀 8곳 · 인사 기록 6명 이상을 센다", NR.length + " / " + NAMING.hrN);
+
+/* ⑲원천 — 직책을 적어 둔 곳이 셋인데, 셋이 같은 말을 해야 한다 */
+chk(NR.every((r) => r.title && TITLE_OK.indexOf(r.title) >= 0),
+  "⑲원천   직책은 조성래님이 정한 네 가지뿐 — 대표 · 센터장 · 수석매니저 · 이사",
+  NR.filter((r) => TITLE_OK.indexOf(r.title) < 0).map((r) => r.id + ":" + r.title));
+chk(NR.every((r) => r.hr === null || r.hr === r.title),
+  "⑲원천   조직의 직책 = 인사 기록의 직책 — 한쪽만 고치면 화면마다 다른 말을 한다",
+  NR.filter((r) => r.hr !== null && r.hr !== r.title).map((r) => r.own + " 조직:" + r.title + " 인사:" + r.hr));
+chk(NAMING.hrTitles.every((t) => TITLE_OK.indexOf(t) >= 0),
+  "⑲원천   인사 기록의 직책도 같은 네 가지뿐", NAMING.hrTitles.filter((t) => TITLE_OK.indexOf(t) < 0));
+const HUMAN_ACTOR = NAMING.actors.filter((a) => !a.ai);
+chk(HUMAN_ACTOR.length > 0 && HUMAN_ACTOR.every((a) => {
+  const r = NR.filter((x) => x.own === a.id)[0];
+  return !!r && a.role.indexOf(r.title) === 0;
+}), "⑲원천   전표 주체의 직책도 조직과 같은 말로 시작한다",
+  HUMAN_ACTOR.map((a) => a.id + ":" + a.role));
+
+/* ⑲옛이름 — 바꾼 직책이 공개 번들에 남아 있지 않다.
+   ⚠️ 「CTO」를 글자 그대로 찾으면 「DO**CTO**R」가 걸린다. 앞뒤가 영문이면 직책이 아니다. */
+const SRCS = fs.readdirSync(path.join(ROOT, "src/data")).filter((f) => f.endsWith(".js")).map((f) => "src/data/" + f)
+  .concat(fs.readdirSync(path.join(ROOT, "src/components")).filter((f) => f.endsWith(".jsx")).map((f) => "src/components/" + f));
+chk(SRCS.length > 100, "⑲옛이름 공개 번들 소스를 전수로 훑는다", SRCS.length);
+const OLD_T = [/(?<![A-Za-z])CEO(?![A-Za-z])/, /(?<![A-Za-z])CTO(?![A-Za-z])/, /보안담당이사/];
+const LEFT = SRCS.filter((f) => { const s = rd(f); return OLD_T.some((rx) => rx.test(s)); });
+chk(LEFT.length === 0, "⑲옛이름 옛 직책(CEO · CTO · 보안담당이사)은 번들에 0곳 — 주석까지 센다", LEFT);
+
+/* ⑲팀장 — AI 팀장은 이름 뒤에 「팀장」을 붙여 부른다 */
+chk(NR.every((r) => r.aiKo === r.ai + " 팀장"),
+  "⑲팀장   여덟 AI 팀장 전부 이름 뒤에 「팀장」", NR.filter((r) => r.aiKo !== r.ai + " 팀장").map((r) => r.aiKo));
+chk(NAMING.ex.join("|") === "전 팀|각 AI 팀장|사람이 결정",
+  "⑲팀장   이름이 아닌 담당 값에는 붙이지 않는다 — 「전 팀 팀장」이 되지 않는다", NAMING.ex);
+chk(NAMING.idem.every((x, i) => x === NR[i].aiKo),
+  "⑲팀장   두 번 불러도 「팀장 팀장」이 되지 않는다(멱등)", NAMING.idem);
+chk(NAMING.empty.join("|") === "||", "⑲팀장   부를 이름이 없으면 빈 글자 — 「 팀장」을 만들지 않는다", NAMING.empty);
+/* 글자를 세지 않고 **규칙**을 단언한다 — 「각 AI 팀장」에도 「 팀장」이 들어 있어
+   세면 예외 칸이 이름 칸으로 잡힌다(실제로 그렇게 틀렸다).
+   규칙은 하나다 — **조직 원천에 있는 이름일 때만** 붙이고, 아니면 손대지 않는다. */
+const koRule = (x) => (x.name ? x.ko === x.raw + " 팀장" : x.ko === x.raw);
+chk(NAMING.steps.length > 0 && NAMING.steps.every(koRule)
+  && NAMING.steps.filter((x) => x.name).length > 0 && NAMING.steps.filter((x) => !x.name).length > 0,
+  "⑲팀장   주간회의 식순 — AI 이름 칸만 붙고 예외 칸은 그대로",
+  NAMING.steps.filter((x) => !koRule(x)).map((x) => x.raw + " → " + x.ko));
+chk(NAMING.rt.length > 0 && NAMING.rt.every(koRule)
+  && NAMING.rt.filter((x) => x.name).length > 0 && NAMING.rt.filter((x) => !x.name).length === 2,
+  "⑲팀장   루틴 담당 — 예외 둘만 남고 나머지는 전부 「○○ 팀장」",
+  NAMING.rt.filter((x) => !koRule(x) || !x.name).map((x) => x.raw + " → " + x.ko));
+
+/* ⑲책임자 — 이름 뒤에 직책을 붙이되, **맨 이름을 바꾸지 않는다** */
+chk(NR.every((r) => r.ownKo === r.own + " " + r.title),
+  "⑲책임자 책임자는 이름 뒤에 직책", NR.map((r) => r.ownKo));
+chk(NR.every((r) => r.ownKo.indexOf(r.own) === 0),
+  "⑲책임자 호칭을 붙여도 맨 이름이 앞에 그대로 — 비교는 맨 이름으로 한다");
+chk(NAMING.head.name === NR[0].own && NAMING.head.title === NR[0].title
+  && NAMING.head.ko === NR[0].own + " " + NR[0].title && NAMING.head.aiKo === NR[0].ai + " 팀장",
+  "⑲책임자 대표는 조직 원천에서 읽는다 — 화면에 직책을 박지 않는다", NAMING.head);
+
+/* ⑲열쇠 — 호칭을 붙였는데 열쇠가 망가졌는지.
+   아바타는 이름으로 **정확 일치 조회**라, 어긋나면 에러 없이 그림만 사라진다. */
+chk(NR.every((r) => r.av), "⑲열쇠   여덟 아바타가 이름으로 전부 찾아진다", NR.filter((r) => !r.av).map((r) => r.ai));
+chk(NR.every((r) => r.tool), "⑲열쇠   여덟 대화 상대가 이름으로 전부 찾아진다", NR.filter((r) => !r.tool).map((r) => r.ai));
+chk(NR.every((r) => r.ai.indexOf("팀장") < 0 && r.own.indexOf(" ") < 0),
+  "⑲열쇠   원천의 이름 값에는 호칭이 섞여 있지 않다", NR.map((r) => r.own + "/" + r.ai));
+chk(NAMING.jv.length > 0 && NAMING.jv.every((x) => x.indexOf("팀장") < 0 && x.indexOf("대표") < 0),
+  "⑲열쇠   전표의 작성자 · 승인자 칸에 호칭이 섞이지 않았다",
+  NAMING.jv.filter((x) => x.indexOf("팀장") >= 0 || x.indexOf("대표") >= 0));
+
+/* ⑲화면 — 지면이 호칭을 스스로 만들지 않는다 */
+const kSrc = rd("src/components/CorpOps.jsx");
+chk(kSrc.indexOf("corpAiKo(") > 0 && kSrc.split("corpAiKo(").length - 1 >= 7,
+  "⑲화면   총괄 지면은 호칭을 한 벌에서 받아 쓴다", kSrc.split("corpAiKo(").length - 1);
+chk(kSrc.indexOf("팀장 팀장") < 0 && kSrc.indexOf('>AI 팀장</span><b style={{ color: selT.c }}>{corpAiKo') < 0,
+  "⑲화면   「AI 팀장」 딱지가 붙은 자리에는 또 붙이지 않는다");
+chk(kSrc.indexOf("CORP_HEAD.title") > 0 && kSrc.indexOf("CORP_HEAD.name") > 0,
+  "⑲화면   조직도 머리띠의 직책 · 이름은 원천에서 읽는다");
+chk(/<span className="co-crown">\{CORP_HEAD\.title\}<\/span>/.test(kSrc),
+  "⑲화면   머리띠에 직책 글자를 박아 두지 않았다");
+
+/* 조사 — 「○○ 팀장」은 받침이 있어 항상 「이」를 받는다.
+   이름만 쓰던 시절에 「가」를 붙여 둔 자리가 있었고(「나침반가 합니다」), 호칭을 붙이면 더 틀린다. */
+const CHAT = rd("src/components/CorpTeamChat.jsx");
+chk(CHAT.indexOf("corpAiKo(AI)") > 0,
+  "⑲화면   팀 대화창 이름표도 같은 한 벌에서 받아 쓴다 — 한 화면에 두 표기가 서지 않는다");
+const JOSA_F = [BOARD, PABOARD, MTGBOARD, "src/components/CorpOps.jsx", "src/components/CorpTeamChat.jsx",
+  "src/components/CorpGov.jsx", "src/components/CorpAdmin.jsx"];
+/* 부정 단언은 살피는 지면이 없어도 통과한다 — 호칭을 쓰는 지면이 실제로 있는지 먼저 센다. */
+const JOSA_USE = JOSA_F.filter((f) => rd(f).indexOf("corpAiKo(") >= 0);
+chk(JOSA_USE.length >= 3, "⑲화면   호칭을 쓰는 지면을 센다(분모)", JOSA_USE.length);
+const JOSA = JOSA_F
+  .filter((f) => { const x = rd(f);
+    return ["corpAiKo(AI) + \"가", "{corpAiKo(selT.ai)}가", "{corpAiKo(t.ai)}가",
+      "{corpAiKo(r.ai)}가", "{corpAiKo(team.ai)}가", "{corpAiKo(AI)}가",
+      "{CORP_HEAD.aiKo}가"].some((pat) => x.indexOf(pat) >= 0); });
+chk(JOSA.length === 0, "⑲화면   호칭 뒤에 「가」를 붙이지 않는다 — 「팀장가」는 말이 아니다", JOSA);
+
+/* ⑲간격 — 책임자와 AI 팀장 사이를 띄운다. 조판은 CSS 가 정하므로 거기서 센다. */
+const CSS = rd("data/app.css");
+chk(/\.corp-pr\{[^}]*display:flex/.test(CSS) && /\.corp-psep\{[^}]*margin:0 7px/.test(CSS),
+  "⑲간격   짝 표기는 전용 클래스로 띄운다 — 두 줄짜리 행(.rt-ai)을 건드리지 않는다");
+chk(/\.co-sep\{[^}]*margin:0 5px/.test(CSS), "⑲간격   조직도 카드 · 팀 보드 머리의 구분자도 띄운다");
+chk(kSrc.indexOf('className="nm corp-pr"') > 0 && kSrc.indexOf('className="ag corp-pr"') > 0,
+  "⑲간격   띄우는 클래스가 실제로 그 두 줄에 붙어 있다");
+
+/* ⑲훅 — data/app.css 만 고친 커밋이 번들 해시를 낡은 채로 통과시키던 구멍을 막았다 */
+const PCS = rd("scripts/githooks/pre-commit");
+const GLINE = PCS.split(String.fromCharCode(10)).filter((l) => l.indexOf("grep -qE") >= 0 && l.indexOf("build_preview") >= 0)[0] || "";
+chk(GLINE.indexOf("data/app") > 0,
+  "⑲훅     스타일만 고친 커밋도 번들을 다시 조립한다(?v= 해시가 낡지 않는다)",
+  GLINE.trim() || "그 줄을 찾지 못했다");
+
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -2047,6 +2196,7 @@ console.log(`[업무지시] 해석 자기시험 ${OV.rows.length}항목 · 아�
 console.log(`[폴더잇기] 자기시험 ${FV.rows.length}항목 · 고를 거리 ${FC.n} / ${FC.all} · 어긋남 표시 ${warn.length}건 · 권한 손잡이 ${G("CORP_VFS_DB")}(IndexedDB)`);
 console.log(`[팀대화창] 팀 ${TCG.length}곳 전부 인사(도구 보유 ${TCH.length} · 도구 없음 ${TCN.length}) · 상태 줄 ${TCG.reduce((n, x) => n + x.rows.length, 0)}줄 전건 도구 실측 일치 · 말로 시킬 수 있는 팀 ${TCO.map((x) => x.name).join("·") || "없음"} · 상단 통합 탭 해체`);
 console.log(`[총괄지표] 기준일 ${KDAY} · 현금 ${G("corpWon")(KP.cash.won)}원(전월말 대비 ${G("corpWon")(KP.cash.won - KP.cashPrev.won)}) · 런웨이 ${KP.t.run.txt}개월(월 순유출 ${G("corpWon")(KP.burn.burn)} · 분모 ${KP.burn.n}개월 ${KP.burn.months.join("·")}) · 매출 ${G("corpWon")(KP.rev.won)}(전월 같은 기간 ${G("corpWon")(KP.revSame.won)} · 전월 한 달 ${G("corpWon")(KP.revMonth.won)}) · 전표 ${KP.jv.all}건(전기 ${KP.jv.posted} · 승인 전 ${KP.jv.wait}) · 사람이 결정할 것 ${JSON.parse(G('JSON.stringify(corpDecideNow("' + KDAY + '"))')).n}건`);
+console.log(`[호칭  ] 책임자 ${[...new Set(NR.map((r) => r.ownKo))].join(" · ")} — 직책 원천 3곳(조직 · 인사 기록 · 전표 주체) 일치 · AI 팀장 ${NR.map((r) => r.aiKo).join(" · ")} · 이름이 아닌 담당 값 ${NAMING.rt.filter((x) => !x.name).map((x) => x.raw).join(" · ")} 불변 · 여덟 아바타 · 대화 상대 전수 연결`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {
   console.log(`[회계엔진] 통과 ${oks.length} · 실패 ${fails.length} / ${total}`);

@@ -160,7 +160,7 @@ function CorpTeamChat({ team, onTab, compact }) {
       <div className="tc-head" onClick={function () { setOpen(!open); }}>
         {typeof CorpAvatar === "function" && <CorpAvatar ai={AI} size={30} />}
         <div className="tc-id">
-          <b>{AI}</b><span className="corp-ai">AI</span>
+          <b>{corpAiKo(AI)}</b><span className="corp-ai">AI</span>
           <i>{t.name} · {t.aiWhy}</i>
         </div>
         <span className="tc-n">{a.noTool ? "도구 없음" : "도구 " + a.tools.length}</span>
@@ -235,7 +235,7 @@ function CorpTeamChat({ team, onTab, compact }) {
                           <div key={j} className={"wo-step" + (s.can ? " on" : "") + (s.who === "human" ? " hu" : "")}>
                             <div className="wo-hd">
                               <span className="wo-n">{j + 1}</span><b>{s.ko}</b>
-                              <span className={"wo-who " + s.who}>{s.who === "ai" ? AI + "가 합니다" : (t.own ? t.own + "님이 하셔야 합니다" : "책임자가 하셔야 합니다")}</span>
+                              <span className={"wo-who " + s.who}>{s.who === "ai" ? corpAiKo(AI) + "이 합니다" : (t.own ? t.own + "님이 하셔야 합니다" : "책임자가 하셔야 합니다")}</span>
                               {s.n !== null && s.n !== undefined && <span className="wo-cnt">{s.n}건</span>}
                             </div>
                             <p className="wo-d">{s.d}</p>

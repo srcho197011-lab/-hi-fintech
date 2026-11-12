@@ -49,7 +49,7 @@ const CORP_RRN_GATE = [
    담는 것: 성명 · 사번 · 직위 · 소속 · 전문영역 · 자격증 보유 사실 · 합류일
    담지 않는 것: 주민번호 값 · 주소 · 생년월일 · 개인 연락처 · 자격증 번호 · 평가 · 급여액 */
 const CORP_HR = [
-  { no: "9C0001", name: "조성래", title: "CEO", teams: ["M1", "M2", "M3"], joined: "2026-01-02", on: true,
+  { no: "9C0001", name: "조성래", title: "대표", teams: ["M1", "M2", "M3"], joined: "2026-01-02", on: true,
     expertise: ["사업기획", "재무회계", "인사총무", "투자 유치"], certs: [],
     rrn: corpRrnSlot("세무대리인", "미지정") },
   { no: "9C0002", name: "조예원", title: "수석매니저", teams: ["K1"], joined: "2026-10-01", on: true,
@@ -59,9 +59,9 @@ const CORP_HR = [
     expertise: ["건강관리 운영", "상담 품질", "검진 연계"], certs: [], rrn: null },
   { no: "", name: "문형석", title: "센터장", teams: ["H2"], joined: "", on: false,
     expertise: ["보장 설계", "청구 지원", "보장 갭 분석"], certs: [], rrn: null },
-  { no: "", name: "박원식", title: "CTO", teams: ["D1"], joined: "", on: false,
+  { no: "", name: "박원식", title: "이사", teams: ["D1"], joined: "", on: false,
     expertise: ["데이터 구조", "외부 연동", "품질 관리"], certs: [], rrn: null },
-  { no: "", name: "김남용", title: "보안담당이사", teams: ["S1"], joined: "", on: false,
+  { no: "", name: "김남용", title: "이사", teams: ["S1"], joined: "", on: false,
     expertise: ["보안 통제", "침해 대응", "내부통제"], certs: [], rrn: null },
 ];
 

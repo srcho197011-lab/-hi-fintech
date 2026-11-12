@@ -9,14 +9,14 @@
      · 좌표·점 배치는 고정 시드로 만든다 — Math.random 금지(결정론 규약). */
 
 const CORP_DIV = [
-  { id: "MGMT", name: "경영관리본부", note: "CEO 직할" },
+  { id: "MGMT", name: "경영관리본부", note: "대표 직할" },
   { id: "HINS", name: "헬스인슈어본부", note: "헬스케어 · 보험" },
   { id: "DIRECT", name: "직할", note: "대표 직속" },
 ];
 
 /* th·ph = 구면 좌표(라디안). 같은 본부는 가까이 묶어 한 덩어리로 돌게 한다. */
 const CORP_TEAMS = [
-  { id: "M1", div: "MGMT", name: "경영기획팀", sh: "경영기획", own: "조성래", ownTitle: "CEO",
+  { id: "M1", div: "MGMT", name: "경영기획팀", sh: "경영기획", own: "조성래", ownTitle: "대표",
     ai: "나침반", aiWhy: "방향을 잡는다", c: "#FF8A65", th: -0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
     work: "사업계획 · 투자 유치 · 제휴 · 협력업체 관리 · 전사 지표",
     pages: [
@@ -27,12 +27,12 @@ const CORP_TEAMS = [
       { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["전사 지표 집계", "계획 대비 진척 산출", "제휴 단계 추적", "주간 회의자료 통합"],
     cannot: [
-      { act: "대외 발표", by: "발행 버튼은 CEO 세션에만 · 초안 상태에서 외부 공유 경로 없음", at: "P9" },
+      { act: "대외 발표", by: "발행 버튼은 대표 세션에만 · 초안 상태에서 외부 공유 경로 없음", at: "P9" },
       { act: "가격 결정", by: "가격 필드는 읽기 전용 · 변경은 승인 전표를 남긴다", at: "P9" },
       { act: "계약 체결", by: "체결 전이는 M1 책임자 승인 필요 · 작성자 ≠ 승인자", at: "P8" },
       { act: "투자 자료 제출", by: "제출은 외부 전송이라 사람 확인 단계를 거친다", at: "P9" }] },
 
-  { id: "M2", div: "MGMT", name: "회계팀", sh: "회계", own: "조성래", ownTitle: "CEO",
+  { id: "M2", div: "MGMT", name: "회계팀", sh: "회계", own: "조성래", ownTitle: "대표",
     ai: "핀테크", aiWhy: "돈의 흐름을 맞춘다", c: "#E8795A", th: 0.00, ph: -0.90, head: 1, cap: 1, joined: "겸임",
     work: "전표 기장 · 장부 · 은행 대사 · 결산 · 재무제표 · 예실 대비",
     pages: [
@@ -54,7 +54,7 @@ const CORP_TEAMS = [
       { act: "세무 신고 제출", by: "기한 경보까지만 · 제출은 사람이 외부에서 한다", at: "—" },
       { act: "계정 대응 · 차이 원인 확정", by: "계정과목 제안까지만 · 확정 전 후보는 차이를 만들지 않는다(corpPaRows)", at: "기존" }] },
 
-  { id: "M3", div: "MGMT", name: "인사총무팀", sh: "인사총무", own: "조성래", ownTitle: "CEO",
+  { id: "M3", div: "MGMT", name: "인사총무팀", sh: "인사총무", own: "조성래", ownTitle: "대표",
     ai: "인총이", aiWhy: "사람과 자산을 챙긴다", c: "#D96A52", th: 0.50, ph: -0.74, head: 1, cap: 1, joined: "겸임",
     work: "인사 기록 · 근태 · 급여 대장 · 자산 대장 · 위임전결",
     pages: [
@@ -63,8 +63,8 @@ const CORP_TEAMS = [
       { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
     can: ["근태 집계", "연차 잔여 계산", "교육 이수 점검", "자산 대장 갱신"],
     cannot: [
-      { act: "채용 · 해고", by: "인사 상태 전이는 CEO 승인 필수", at: "P8" },
-      { act: "급여 확정", by: "급여 금액 열람은 CEO와 M3 책임자 한정 · 확정 버튼은 CEO 세션에만", at: "P8" },
+      { act: "채용 · 해고", by: "인사 상태 전이는 대표 승인 필수", at: "P8" },
+      { act: "급여 확정", by: "급여 금액 열람은 대표와 M3 책임자 한정 · 확정 버튼은 대표 세션에만", at: "P8" },
       { act: "평가 확정", by: "초안만 생성 · 확정 전이에 사람 서명 필요", at: "P8" },
       { act: "인사 기록 외부 제공", by: "내보내기 경로 없음 · 민감자료 차단 게이트가 커밋도 막는다", at: "기존" },
       { act: "주민번호 값 보관", by: "값을 담는 필드를 두지 않는다 · 암호화 저장소·고지·접근 통제·파기 절차 넷이 서야 담는다", at: "기존" }] },
@@ -113,7 +113,7 @@ const CORP_TEAMS = [
       { act: "대외 발행 · 게시", by: "회사 밖으로 나가는 행위 — 사람이 마무리", at: "P9" },
       { act: "보험 모집 표현 문구 확정", by: "금칙 스캔이 후보를 거르고, 확정은 책임자와 준법 검토를 거친다", at: "P7" }] },
 
-  { id: "D1", div: "DIRECT", name: "데이터관리팀", sh: "데이터", own: "박원식", ownTitle: "CTO",
+  { id: "D1", div: "DIRECT", name: "데이터관리팀", sh: "데이터", own: "박원식", ownTitle: "이사",
     ai: "온톨로", aiWhy: "데이터 지도를 그린다", c: "#F2815F", th: -0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "데이터 구조 설계 · 저장 키 거버넌스 · 품질 관리 · 외부 연동 · UI 표준",
     pages: [
@@ -128,7 +128,7 @@ const CORP_TEAMS = [
       { act: "공개 전환", by: "등급 A 자료의 공개 전환은 커밋 게이트가 차단", at: "P0" },
       { act: "스키마 변경 반영", by: "저장 키 등재 대조(check_data_catalog)를 통과해야 커밋된다", at: "기존" }] },
 
-  { id: "S1", div: "DIRECT", name: "정보보안팀", sh: "보안", own: "김남용", ownTitle: "보안담당이사",
+  { id: "S1", div: "DIRECT", name: "정보보안팀", sh: "보안", own: "김남용", ownTitle: "이사",
     ai: "하네스", aiWhy: "막고 검증한다", c: "#C75B45", th: 0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "보안 통제 · 취약점 관리 · 접근 권한 · 침해 대응 · 내부통제와 감사 증적 · 릴리스 승인",
     pages: [
@@ -174,7 +174,7 @@ const CORP_DOTS = (function () {
 })();
 
 /* 집계 — 실데이터가 붙기 전에는 전부 「미연결」이다. 숫자를 지어내지 않는다.
-   ⚠️ 「자리」와 「사람」을 반드시 구분한다 — CEO가 세 팀을 겸임하므로 채워진 자리와
+   ⚠️ 「자리」와 「사람」을 반드시 구분한다 — 대표가 세 팀을 겸임하므로 채워진 자리와
       실제 재직 인원이 다르다. 자리 수를 사람 수로 말하면 인원을 부풀리는 셈이 된다. */
 const CORP_SUMMARY = (function () {
   const names = {};
@@ -200,7 +200,7 @@ const CORP_SCHEDULE = {
     day: "월요일", time: "10:00~11:00", mode: "화상회의",
     joinPeople: 6, joinAgents: 8,
     steps: [
-      ["10:00", "개회 · 지난주 결정사항 확인", "CEO"],
+      ["10:00", "개회 · 지난주 결정사항 확인", "대표"],
       ["10:02", "전사 지표", "나침반"],
       ["10:08", "팀별 보고 — 각 4분 · AI가 펼치고 사람 책임자가 보충", "핀테크 → 인총이 → 헬시 → 인슈러 → 애디 → 온톨로 → 하네스"],
       ["10:45", "지난주 후속조치 점검 — 미종결 건이 먼저", "나침반"],
@@ -224,7 +224,7 @@ const CORP_SCHEDULE = {
     { t: "주간보고 초안",       every: "fri",     at: "17:00", owner: "M1", ai: "전 팀",
       does: "팀별 지표 · 진척 · 이슈 · 차주 계획",    human: "팀 책임자 확정" },
     { t: "주간회의 자료",       every: "mon",     at: "09:30", owner: "M1", ai: "나침반",
-      does: "8팀 보고 통합",                        human: "CEO 승인" },
+      does: "8팀 보고 통합",                        human: "대표 승인" },
     { t: "회의록 · 후속과제",    every: "mon",     at: "11:00", owner: "M1", ai: "각 AI 팀장",
       does: "회의록 초안 생성",                      human: "담당 · 기한 확정" },
     { t: "계약 만료 점검",      every: "mon",     at: "14:00", owner: "M1", ai: "나침반",
@@ -324,3 +324,36 @@ function corpTeamOfTab(tab) {
   }
   return null;
 }
+
+/* ══════════════ 호칭 — 부르는 이름은 한 곳에서 만든다 (조성래님 지시 2026-11-13) ══════════════
+   ⚠️ 원천의 own · ai 는 **열쇠**다. 전표 작성자(by/ap) · 승인 권한 · 아바타 문양 조회 ·
+   대화 도구 연결이 모두 이 글자와 글자 그대로 대조한다. 값에 직책이나 「팀장」을 섞어 넣으면
+   아바타 여덟이 에러 한 줄 없이 사라지고 승인 거부가 풀린다.
+   그래서 호칭은 값에 붙이지 않고 **부를 때** 붙인다 — 붙이는 자리는 여기 한 곳뿐이다. */
+const CORP_AI_TITLE = "팀장";
+
+/* 담당 칸에는 AI 이름이 아닌 값도 들어온다 — 「전 팀」 · 「각 AI 팀장」 · 「사람이 결정」.
+   이름표가 아닌 말에 직책을 붙이면 「전 팀 팀장」이 된다. 그래서 **조직 원천에 있는 이름일
+   때만** 붙이고, 아닌 값은 손대지 않고 그대로 돌려준다. */
+function corpAiKo(ai) {
+  const s = ai == null ? "" : String(ai);
+  if (!s) return "";
+  for (let i = 0; i < CORP_TEAMS.length; i++) if (CORP_TEAMS[i].ai === s) return s + " " + CORP_AI_TITLE;
+  return s;
+}
+
+/* 사람 책임자 — 이름과 직책을 한 덩어리로 **부를 때만** 쓴다.
+   비교에는 쓰지 않는다. 비교는 언제나 맨 이름(t.own)으로 한다. */
+function corpOwnKo(t) {
+  if (!t) return "";
+  return t.ownTitle ? t.own + " " + t.ownTitle : t.own;
+}
+
+/* 회사를 대표하는 사람 — 조직도 머리띠와 설명문이 직책을 또 적지 않도록 원천에서 뽑는다.
+   경영기획팀 책임자가 곧 대표다. 화면에 직책을 박으면 원천을 고쳐도 그 글자만 남는다. */
+const CORP_HEAD = (function () {
+  let t = null;
+  for (let i = 0; i < CORP_TEAMS.length; i++) if (CORP_TEAMS[i].id === "M1") t = CORP_TEAMS[i];
+  if (!t) t = CORP_TEAMS[0];
+  return { name: t.own, title: t.ownTitle, ko: corpOwnKo(t), ai: t.ai, aiKo: corpAiKo(t.ai) };
+})();

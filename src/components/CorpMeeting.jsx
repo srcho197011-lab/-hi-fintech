@@ -188,13 +188,13 @@ function CorpMeetingSection() {
                   <div key={i} className="wm-step">
                     <span className="wm-at">{s[0]}{nextAt && <i>~{nextAt}</i>}</span>
                     <span className="wm-what">{s[1]}</span>
-                    <span className="wm-who">{s[2]}</span>
+                    <span className="wm-who">{corpAiKo(s[2])}</span>
                   </div>
                 );
               })}
             </div>
             <p className="cl-note">팀별 보고는 10:08부터 각 4분 · 7차례라 10:36에 끝나고 <b>다음 단계가 10:45</b>입니다 —
-              사이 9분은 질의·예비 시간입니다. 나침반은 전사 지표와 후속조치 점검에 따로 서므로 <b>AI 팀장 8명이 모두</b> 타임라인에 등장합니다.</p>
+              사이 9분은 질의·예비 시간입니다. {CORP_HEAD.aiKo}은 전사 지표와 후속조치 점검에 따로 서므로 <b>AI 팀장 8명이 모두</b> 타임라인에 등장합니다.</p>
           </div>
 
           {/* 화상 접속 — 연결을 만들지 않고 링크만 등록한다 */}
@@ -217,7 +217,7 @@ function CorpMeetingSection() {
       {tab === "rep" && wk && (
         <div className="cl-body">
           <div className="cl-sec">
-            <div className="cl-h">통합 <span className="cl-t">{sch.weekly.day} 09:30 · 나침반</span>
+            <div className="cl-h">통합 <span className="cl-t">{sch.weekly.day} 09:30 · {CORP_HEAD.aiKo}</span>
               <span className={"cl-flag" + (wk.merged ? " on" : "")}>
                 확정 {mg.done} / {mg.need}팀{mg.skip ? " · 공석 제외 " + mg.skip + "팀" : ""}</span></div>
             <button className={"cl-save" + (mg.ok && actor ? "" : " off")} onClick={merge}>
@@ -350,7 +350,7 @@ function CorpMeetingSection() {
                     String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") : "—";
                   return (
                     <tr key={i}>
-                      <td>{r.t}</td><td className="id">{r.ai}</td><td className="id">{r.human}</td>
+                      <td>{r.t}</td><td className="id">{corpAiKo(r.ai)}</td><td className="id">{r.human}</td>
                       <td><span className={"wm-pill rt-" + s.state}>{s.ko}</span></td>
                       <td className="n">{s.state === "rel" ? "배포 전" : f(s.next)}
                         {s.shifted && <i title="주말에 떨어져 다음 영업일로 미뤘습니다">주말 미룸</i>}</td>

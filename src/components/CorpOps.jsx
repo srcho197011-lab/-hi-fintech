@@ -331,10 +331,10 @@ function CorpOps({ onGo, onTab }) {
                   <div className="corp-divname">{d.name}</div>
                   {list.map(t => (
                     <div key={t.id} className={"corp-team" + (sel === t.id ? " sel" : "")} onClick={() => pick(t.id)}
-                      title={t.name + " — 책임자 " + t.own + " · AI 팀장 " + t.ai}>
+                      title={t.name + " — " + corpOwnKo(t) + " · " + corpAiKo(t.ai)}>
                       <span className="dot" style={{ background: t.c }} />
                       <span className="tn">{t.sh}</span>
-                      <span className="ag"><b>{t.own}</b><i> · </i><b style={{ color: t.c }}>{t.ai}</b></span>
+                      <span className="ag corp-pr"><b>{t.own}</b><i>{t.ownTitle}</i><em className="corp-psep">·</em><b style={{ color: t.c }}>{corpAiKo(t.ai)}</b></span>
                     </div>
                   ))}
                 </div>
@@ -380,7 +380,7 @@ function CorpOps({ onGo, onTab }) {
               </div>
               <div className="sw">{selT.work}</div>
               <div className="sv">
-                <div><span className="vk ok">{selT.ai}가 하는 일</span>{selT.can.join(" · ")}</div>
+                <div><span className="vk ok">{corpAiKo(selT.ai)}이 하는 일</span>{selT.can.join(" · ")}</div>
                 <div><span className="vk no">사람이 마무리</span>{selT.cannot.map(x => x.act).join(" · ")}</div>
               </div>
             </div>
@@ -414,7 +414,7 @@ function CorpOps({ onGo, onTab }) {
                 <button className="corp-pill go" onClick={() => setView("mtg")}>지면 열기 →</button></div>
               <div className="by">{sch.weekly.mode} · 사람 {CORP_SUMMARY.peopleN} + AI 팀장 {CORP_SUMMARY.agents}
                 {CORP_SUMMARY.pendingN > 0 && <span className="corp-vac"> · 책임자 공석 {CORP_SUMMARY.pendingN}석</span>}</div>
-              <div className="ds">금요일에 각 AI 팀장이 주간보고 초안을 만들고, 팀 책임자가 확정하면 월 09:30에 <b>나침반</b>이 1부로 통합합니다.
+              <div className="ds">금요일에 각 AI 팀장이 주간보고 초안을 만들고, 팀 책임자가 확정하면 월 09:30에 <b>{CORP_HEAD.aiKo}</b>이 1부로 통합합니다.
                 참석 인원은 <b>재직자</b>만 셉니다 — 합류 전 책임자는 참석자가 아니라 공석입니다.</div>
             </div>
           </div>
@@ -423,7 +423,7 @@ function CorpOps({ onGo, onTab }) {
             {CORP_TEAMS.map(t => (
               <div key={t.id} className={"corp-rt" + (sel === t.id ? " sel" : "")} onClick={() => pick(t.id)}>
                 <span className="dot" style={{ background: t.c }} />
-                <span className="nm"><b>{t.own}</b><i> · </i><b style={{ color: t.c }}>{t.ai}</b></span>
+                <span className="nm corp-pr"><b>{t.own}</b><i>{t.ownTitle}</i><em className="corp-psep">·</em><b style={{ color: t.c }}>{corpAiKo(t.ai)}</b></span>
                 <span className="corp-ai">AI</span><span className="w">{t.id}</span>
               </div>
             ))}
@@ -431,8 +431,8 @@ function CorpOps({ onGo, onTab }) {
           <div className="corp-sec corp-last">
             <div className="corp-sh"><b>루틴</b><span className="c">{sch.routines.length}</span></div>
             {routines.map((r, i) => (
-              <div key={i} className="corp-rt" title={"AI " + r.r.ai + " — " + r.r.does + " / 사람이 마무리 — " + r.r.human}>
-                <span className="nm">{r.r.t}<i className="rt-ai">{r.r.ai} · {r.r.does}</i></span>
+              <div key={i} className="corp-rt" title={corpAiKo(r.r.ai) + " — " + r.r.does + " / 사람이 마무리 — " + r.r.human}>
+                <span className="nm">{r.r.t}<i className="rt-ai">{corpAiKo(r.r.ai)} · {r.r.does}</i></span>
                 <span className={"corp-pill " + (r.state === "rel" ? "rel" : "wait")}>
                   {r.state === "rel" ? "배포 전" : "예정"}</span>
                 <span className="w">{r.when}</span>
@@ -471,7 +471,7 @@ function CorpOrgChart({ sel, pick, open, onTab }) {
         </div>
       </div>
 
-      <div className="co-ceo"><span className="co-crown">CEO</span> 조성래
+      <div className="co-ceo"><span className="co-crown">{CORP_HEAD.title}</span> {CORP_HEAD.name}
         <span className="co-note">경영관리본부 3팀 겸임 · 법상 정보보호 최고책임자 · 개인정보 보호책임자</span></div>
 
       {CORP_DIV.map(d => {
@@ -491,7 +491,7 @@ function CorpOrgChart({ sel, pick, open, onTab }) {
                       <div className="co-pair">
                         <b>{t.own}</b><i>{t.ownTitle}</i>
                         <span className="co-sep">·</span>
-                        <b style={{ color: t.c }}>{t.ai}</b><span className="corp-ai">AI</span>
+                        <b style={{ color: t.c }}>{corpAiKo(t.ai)}</b><span className="corp-ai">AI</span>
                       </div>
                     </div>
                     <div className={"co-head-c" + (t.head === 0 ? " zero" : "")}>{t.head} / {t.cap}
@@ -543,7 +543,7 @@ function CorpOrgChart({ sel, pick, open, onTab }) {
 
       <div className="co-foot">
         <b>자리와 사람은 다릅니다</b> — 실제 재직 인원은 <b>{S.peopleN}명</b>({S.people.join(" · ")})이고,
-        채워진 자리는 <b>{S.filled} / {S.cap}</b>입니다. CEO가 경영관리본부 세 팀을 겸임하므로 자리 수가 사람 수보다 큽니다.
+        채워진 자리는 <b>{S.filled} / {S.cap}</b>입니다. 경영관리본부 세 팀은 {CORP_HEAD.ko} 겸임이라 자리 수가 사람 수보다 큽니다.
         합류 전 자리는 0으로 둡니다 — {S.pending.join(" · ")} {S.pendingN}분은 합류일이 정해지면 숫자가 올라갑니다.
         없는 인원을 있는 것처럼 세면 투자사에 제출한 보안 리포트의 「인력 0명」 선언과 어긋납니다.
       </div>
@@ -572,7 +572,7 @@ function CorpTeamBoard({ team, onGo, onTab, back }) {
             <span className="cb-div">{(corpDiv(team.div) || {}).name}</span></div>
           <div className="cb-pair"><b>{team.own}</b><i>{team.ownTitle}</i>
             <span className="co-sep">·</span>
-            <b style={{ color: team.c }}>{team.ai}</b><span className="corp-ai">AI</span></div>
+            <b style={{ color: team.c }}>{corpAiKo(team.ai)}</b><span className="corp-ai">AI</span></div>
         </div>
         <div className="cb-kpi">
           {team.kpis ? null : null}

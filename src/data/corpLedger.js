@@ -568,7 +568,7 @@ const CORP_JV_ST = {
 };
 /* 조작 주체 — 서버 세션이 없으므로 화면에서 고른다. AI는 승인하지 못한다(can/cannot의 코드판). */
 const CORP_ACTORS = [
-  { id: "조성래", ko: "조성래", role: "CEO · 회계팀 책임자", ai: false, canApprove: true },
+  { id: "조성래", ko: "조성래", role: "대표 · 회계팀 책임자", ai: false, canApprove: true },
   { id: "핀테크", ko: "핀테크", role: "AI 팀장", ai: true, canApprove: false },
 ];
 function corpActor(id) { return CORP_ACTORS.find(a => a.id === id) || CORP_ACTORS[0]; }
