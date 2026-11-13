@@ -113,10 +113,12 @@ function CorpMeetingSection() {
       <div className="cl-warn">
         이 지면은 <b>스스로 돌지 않습니다</b> — 백엔드가 없어 브라우저를 닫으면 아무것도 생성되지 않습니다.
         열었을 때 그 주차 자료가 없으면 그때 만듭니다.
-        <span className="cl-warn2">
+        <CorpDefn>
+          <span className="cl-warn2">
           AI 팀장이 만드는 것은 <b>조립이지 창작이 아닙니다</b>. 사내 조회 원천이 있는 팀은 회계팀 하나뿐이라,
           나머지 일곱 팀의 지표 자리는 「—」와 「원천 미연결」로 둡니다. 채우면 그게 지어낸 숫자입니다.
-        </span>
+          </span>
+        </CorpDefn>
       </div>
 
       <div className="cl-tabs">

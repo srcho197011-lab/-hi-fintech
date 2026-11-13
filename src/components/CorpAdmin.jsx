@@ -32,10 +32,12 @@ function CorpHrSection() {
         <b>주민등록번호는 필드를 두되 값은 이 시스템이 들지 않습니다.</b> 근로소득 원천징수와 4대보험 취득신고에
         법정 필수 기재사항이라 뺄 수 없지만, 고유식별정보라 저장 시 암호화가 법정 의무인데 <b>서버가 없습니다</b>.
         브라우저 저장소는 평문이고, 브라우저에서 하는 암호화는 열쇠가 같은 자리에 있어 암호화가 아닙니다.
-        <span className="cl-warn2">
+        <CorpDefn>
+          <span className="cl-warn2">
           그래서 하이핀은 <b>보유 여부 · 수집 근거 · 보관 위치와 책임자 · 열람 이력 · 파기 예정일</b>까지만 듭니다.
           신고 제출은 세무대리인이 합니다 — 하이핀이 할 일은 값을 쥐는 것이 아니라 놓치지 않는 것입니다.
-        </span>
+          </span>
+        </CorpDefn>
       </div>
 
       <div className="cl-body">
@@ -122,7 +124,9 @@ function CorpContractSection() {
       <div className="cl-warn">
         <b>만료일 없는 계약은 등록하지 않습니다.</b> 만료일이 없으면 경보를 세울 수 없고, 경보가 없는 대장은
         있으나 마나입니다. 자동갱신이어도 경보는 그대로 울립니다 — 갱신 시점이 조건이 바뀌는 자리이기 때문입니다.
-        <span className="cl-warn2">갱신·해지 결정은 사람이 합니다. 이 화면은 기한이 왔다는 것까지만 말합니다.</span>
+        <CorpDefn>
+          <span className="cl-warn2">갱신·해지 결정은 사람이 합니다. 이 화면은 기한이 왔다는 것까지만 말합니다.</span>
+        </CorpDefn>
       </div>
       <div className="cl-body">
         <div className="cl-sec">
@@ -175,12 +179,14 @@ function CorpDocsSection() {
         보존기한은 <b>법령에서 옵니다</b>. 이 표의 {unchecked}종은 아직 <b>법령 원문 대조를 거치지 않았습니다</b> —
         그래서 근거가 되는 법률의 이름만 적고 <b>조문 번호는 적지 않습니다</b>. 확인하지 않은 조문을 화면에 찍으면
         읽는 사람이 그걸 믿고 쓰게 됩니다.
-        <span className="cl-warn2">
+        <CorpDefn>
+          <span className="cl-warn2">
           <b>두 축을 갈라 둡니다</b> — 「법정 연한」은 법령에서 오고, 「회사 보존」은 대표가 정합니다.
           회사 보존은 {CORP_DOC_CLASS.length - undec}종 정해졌고 {undec}종은 아직 미정입니다.
           둘을 한 칸에 적으면 어느 쪽이 근거인지 알 수 없게 됩니다.
           보관 자체는 저장소(바탕화면 폴더)가 하고, 이 화면은 <b>그 규칙을 적어 두는 자리</b>입니다.
-        </span>
+          </span>
+        </CorpDefn>
       </div>
       <div className="cl-body">
         <div className="cl-sec">

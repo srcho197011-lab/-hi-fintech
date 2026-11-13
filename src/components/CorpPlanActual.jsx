@@ -64,10 +64,12 @@ function CorpPlanActualSection() {
         <b>{months.length ? months.join(" · ") : "없습니다"}</b>
         {planRow && planRow.idx < 1 && <span>{" "}뿐이고, 그 달은 계획에서 <b>준비기간</b>이라 손익 밖입니다
           (비용이 결손금으로만 쌓입니다).</span>}
-        <span className="cl-warn2">
+        <CorpDefn>
+          <span className="cl-warn2">
           그래서 지금 <b>차이 칸이 {cmp.length}줄</b> 섭니다. 자료가 덜 들어온 것이 아니라,
           두 축이 아직 만나지 않은 것입니다. 실데이터 반입(Phase 10) 뒤 겹치는 달이 생기면 같은 표가 그대로 숫자를 냅니다.
-        </span>
+          </span>
+        </CorpDefn>
       </div>
 
       {!P && (

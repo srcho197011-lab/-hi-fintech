@@ -111,14 +111,18 @@ function CorpLedgerSection() {
         <div className="cl-warn">
           여기 실린 전표 {CORP_JV_SEED.length}건은 <b>파일럿 전표</b>입니다 — 엔진이 맞게 도는지 보려고 넣은 검증용 묶음이고
           회사의 실제 장부가 아닙니다. 실제 회계자료 반입은 Phase 10이며 보안 선행(Phase 0)을 통과한 뒤에 시작합니다.
-          <span className="cl-warn2">서버가 없어 권한은 이 브라우저 안에서만 걸립니다. 조성래님이 넣은 전표도 이 브라우저에만 남습니다.</span>
+          <CorpDefn>
+            <span className="cl-warn2">서버가 없어 권한은 이 브라우저 안에서만 걸립니다. 조성래님이 넣은 전표도 이 브라우저에만 남습니다.</span>
+          </CorpDefn>
         </div>
       )}
       {live && (
         <div className="cl-warn ok">
           <b>반입된 실제 전표</b>를 보고 있습니다 — 파일럿 전표는 빠졌습니다.
-          <span className="cl-warn2">이 장부는 <b>이 브라우저에만</b> 있습니다(공개 배포본에 회사 숫자를 싣지 않기 위해서입니다).
+          <CorpDefn>
+            <span className="cl-warn2">이 장부는 <b>이 브라우저에만</b> 있습니다(공개 배포본에 회사 숫자를 싣지 않기 위해서입니다).
             다른 기기 · 다른 브라우저에서는 다시 반입해야 보입니다.</span>
+          </CorpDefn>
         </div>
       )}
 

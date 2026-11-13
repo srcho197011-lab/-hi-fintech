@@ -75,7 +75,9 @@ function CorpBoardSection() {
       <div className="cl-warn">
         <b>승인 없이는 아무 상태도 넘어가지 않습니다.</b> 기안 → 검토 → 승인이 유일한 길이고,
         조건이 안 서면 왜 안 되는지를 함께 보여 줍니다. 작성자와 승인자가 같으면 거부하고 <b>그 시도를 기록합니다</b>.
-        <span className="cl-warn2">서버가 없어 여기 쌓이는 것은 이 브라우저 안에만 있습니다.</span>
+        <CorpDefn>
+          <span className="cl-warn2">서버가 없어 여기 쌓이는 것은 이 브라우저 안에만 있습니다.</span>
+        </CorpDefn>
       </div>
       <div className="cl-tabs">
         {TABS.map(([k, ko]) => <button key={k} className={"cl-tab" + (k === tab ? " on" : "")} onClick={() => { setTab(k); setMsg(null); }}>{ko}</button>)}
@@ -238,10 +240,12 @@ function CorpReleaseSection() {
         <b>지금 릴리스를 승인할 수 있는 사람이 없습니다.</b> 릴리스 승인은 정보보안팀(S1)이 하는데
         그 자리의 책임자가 아직 합류 전입니다. <b>승인 경로를 대표에게 열지 않았습니다</b> —
         열면 「만든 쪽이 스스로 내보내지 못하게 한다」는 분리의 뜻이 사라집니다.
-        <span className="cl-warn2">
+        <CorpDefn>
+          <span className="cl-warn2">
           그래서 아래 릴리스는 점검표를 채워도 <b>승인되지 않습니다.</b> 자료가 덜 들어온 것이 아니라
           승인할 사람이 아직 없는 것입니다. 대표 대리 승인을 열지는 조성래님이 정할 자리입니다.
-        </span>
+          </span>
+        </CorpDefn>
       </div>
       {msg && <div className={"cl-msg" + (msg.bad ? " bad" : "")} onClick={() => setMsg(null)}>{msg.t}</div>}
       <div className="cl-body">
@@ -309,10 +313,12 @@ function CorpSecuritySection() {
       <div className="cl-warn">
         이 목록은 <b>사본이 아닙니다</b> — 커밋 게이트 러너가 훅 파일을 직접 읽어 여기 적힌 러너가
         실제로 그 훅에 걸려 있는지 대조합니다. 없으면 실패합니다.
-        <span className="cl-warn2">
+        <CorpDefn>
+          <span className="cl-warn2">
           목록만 두고 대조하지 않으면, 훅에서 빠진 게이트가 화면에서는 계속 녹색으로 보입니다 —
           <b>그게 가장 위험한 상태입니다.</b>
-        </span>
+          </span>
+        </CorpDefn>
       </div>
       <div className="cl-body">
         <div className="cl-sec">

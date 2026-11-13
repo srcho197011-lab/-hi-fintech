@@ -24,7 +24,7 @@ const CORP_AG_KEY = "hifin_corp_chat";   /* dataCatalog.js 등재 필수 — 대
    ⚠️ run 안에서 typeof 로 함수 존재를 확인한다 — 번들 적재 순서 때문이다. */
 const CORP_AG_TOOL = [
   /* ── 핀테크(M2 회계) ── */
-  { ai: "핀테크", k: "jv", ko: "전표 현황", ask: ["전표", "분개", "기표", "승인 대기"],
+  { ai: "핀테크", k: "jv", ko: "전표 현황", d: "기표 · 승인 전 · 전기된 전표를 센다", ask: ["전표", "분개", "기표", "승인 대기"],
     run: function () {
       if (typeof corpJvAll !== "function") return null;
       const jvs = corpJvAll(corpLedgerRead());
@@ -34,7 +34,7 @@ const CORP_AG_TOOL = [
                ["검토", jvs.filter(function (j) { return j.st === "review"; }).length + "건"],
                ["기표", jvs.filter(function (j) { return j.st === "draft"; }).length + "건"]] };
     } },
-  { ai: "핀테크", k: "check", ko: "장부 검산", ask: ["검산", "항등식", "차대", "맞는지", "이상"],
+  { ai: "핀테크", k: "check", ko: "장부 검산", d: "차변=대변 · 자산=부채+자본+손익이 맞는지 본다", ask: ["검산", "항등식", "차대", "맞는지", "이상"],
     run: function () {
       if (typeof corpLedgerVerdict !== "function") return null;
       /* ⚠️ corpLedgerVerdict 는 **객체**를 돌려준다(배열이 아니다). 배열처럼 다루면
@@ -49,7 +49,7 @@ const CORP_AG_TOOL = [
           + (V.skip.length ? " 보류 " + V.skip.length + "항목은 돌리지 않았습니다(통과가 아닙니다)." : ""),
         rows: V.rows.map(function (r) { return [r.ko, (r.skip ? "보류" : (r.ok && r.n > 0 ? "통과" : "실패")) + " · " + r.got]; }) };
     } },
-  { ai: "핀테크", k: "fs", ko: "재무제표", ask: ["재무제표", "손익", "자산", "매출", "비용", "이익"],
+  { ai: "핀테크", k: "fs", ko: "재무제표", d: "지금 장부로 재무상태표와 손익계산서를 낸다", ask: ["재무제표", "손익", "자산", "매출", "비용", "이익"],
     run: function () {
       if (typeof corpStatements !== "function") return null;
       const S = corpStatements(corpJvAll(corpLedgerRead()));
@@ -57,7 +57,7 @@ const CORP_AG_TOOL = [
         rows: [["수익", corpWon(S.pl.rev)], ["비용", corpWon(S.pl.exp)], ["당기손익", corpWon(S.pl.net)],
                ["자산 총계", corpWon(S.bs.assets)], ["부채", corpWon(S.bs.liab)], ["자본", corpWon(S.bs.equity)]] };
     } },
-  { ai: "핀테크", k: "bank", ko: "은행 대사", ask: ["은행", "대사", "미대사", "입출금", "통장"],
+  { ai: "핀테크", k: "bank", ko: "은행 대사", d: "통장 줄과 장부 줄을 맞춰 안 맞는 건을 집는다", ask: ["은행", "대사", "미대사", "입출금", "통장"],
     run: function () {
       if (typeof corpBankRecon !== "function") return null;
       const R = corpBankRecon(corpJvAll(corpLedgerRead()), CORP_BANK_SEED);
@@ -68,7 +68,7 @@ const CORP_AG_TOOL = [
     } },
   /* 조성래님 지시 2026-11-12 — 매일 은행 내역이 들어왔는지 사람에게 알려 주는 일.
      ⚠️ 날짜를 **인자로 받는다**. 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
-  { ai: "핀테크", k: "bankup", ko: "은행 반입 상태", ask: ["어제", "오늘", "올렸", "반입", "업로드", "들어왔", "밀렸", "며칠",
+  { ai: "핀테크", k: "bankup", ko: "은행 반입 상태", d: "은행 내역이 며칠까지 올라왔는지 본다", ask: ["어제", "오늘", "올렸", "반입", "업로드", "들어왔", "밀렸", "며칠",
       /* 「다시 받아 와」류는 **긴 어구로** 잡는다 — 「다시」 단독으로 잡으면
          「다시 계산해」까지 끌어와 엉뚱한 도구가 된다 */
       "다시 받", "다시 다운", "다시 내려", "다시 가져", "새로 받", "내려받"],
@@ -85,7 +85,7 @@ const CORP_AG_TOOL = [
                ["비어 있는 날", D.ok ? "없음" : (D.late === null ? "셀 수 없음" : D.late + "일")],
                ["담긴 은행줄", B && B.lines ? B.lines.length + "줄" : "0줄"]] };
     } },
-  { ai: "핀테크", k: "pa", ko: "예실 대비", ask: ["예실", "계획 대비", "달성", "차이"],
+  { ai: "핀테크", k: "pa", ko: "예실 대비", d: "계획 비목과 실적 계정을 맞춰 차이를 본다", ask: ["예실", "계획 대비", "달성", "차이"],
     run: function () {
       if (typeof corpPaUnmatched !== "function") return null;
       const jvs = corpJvAll(corpLedgerRead());
@@ -100,7 +100,7 @@ const CORP_AG_TOOL = [
      화면과 하이의 답이 갈라지지 않으려면 둘이 한 벌을 봐야 한다.
      ⚠️ 목록 **끝에** 둔다 — 인사말은 앞 세 도구를 돌리므로 앞에 끼우면 인사가 통째로 바뀐다.
      ⚠️ 날짜는 인자로 받는다. */
-  { ai: "핀테크", k: "cash", ko: "현금 · 런웨이",
+  { ai: "핀테크", k: "cash", ko: "현금 · 런웨이", d: "현금 잔고와 몇 달 버틸지를 센다",
     ask: ["현금", "잔고", "런웨이", "소진", "번레이트", "얼마 남", "버틸"],
     run: function (at) {
       if (typeof corpKpiOf !== "function") return null;
@@ -122,7 +122,7 @@ const CORP_AG_TOOL = [
     } },
 
   /* ── 나침반(M1 경영기획) ── */
-  { ai: "나침반", k: "org", ko: "조직 현황", ask: ["조직", "인원", "팀", "몇 명", "공석"],
+  { ai: "나침반", k: "org", ko: "조직 현황", d: "팀 · AI 팀장 · 재직과 공석을 센다", ask: ["조직", "인원", "팀", "몇 명", "공석"],
     run: function () {
       if (typeof CORP_SUMMARY === "undefined") return null;
       return { t: "팀 " + CORP_SUMMARY.teams + "개 · AI 팀장 " + CORP_SUMMARY.agents + "명 · 재직 " + CORP_SUMMARY.peopleN + "명입니다. 자리는 " + CORP_SUMMARY.filled + " / " + CORP_SUMMARY.cap + "이고 합류 전이 " + CORP_SUMMARY.pendingN + "명입니다.",
@@ -130,7 +130,7 @@ const CORP_AG_TOOL = [
                ["채워진 자리", CORP_SUMMARY.filled + " / " + CORP_SUMMARY.cap],
                ["합류 전", CORP_SUMMARY.pending.join(" · ")]] };
     } },
-  { ai: "나침반", k: "ct", ko: "계약 만료", ask: ["계약", "만료", "갱신", "기한"],
+  { ai: "나침반", k: "ct", ko: "계약 만료", d: "만료가 가까운 계약을 집는다", ask: ["계약", "만료", "갱신", "기한"],
     /* ⚠️ 날짜는 **인자로** 받는다. 함수 안에서 오늘을 읽으면 커밋 게이트가 벽시계에 매달린다. */
     run: function (at) {
       if (typeof CORP_CT === "undefined" || typeof corpCtAlert !== "function") return null;
@@ -142,7 +142,7 @@ const CORP_AG_TOOL = [
       return { t: "계약 " + CORP_CT.length + "건 중 경보가 선 것은 " + near.length + "건입니다. 갱신·해지 결정은 사람이 합니다.",
         rows: rows.map(function (r) { return [r.c.ko, r.a.ko + " · " + r.c.to]; }) };
     } },
-  { ai: "나침반", k: "mtg", ko: "주간회의", ask: ["회의", "주간", "언제", "보고"],
+  { ai: "나침반", k: "mtg", ko: "주간회의", d: "이번 주 회의 날짜 · 참석 · 보고 상태를 본다", ask: ["회의", "주간", "언제", "보고"],
     run: function (at) {
       if (typeof corpMtgWeek !== "function") return null;
       const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
@@ -156,7 +156,7 @@ const CORP_AG_TOOL = [
                ["보고 확정", mg ? mg.done + " / " + mg.need + "팀" : "자료 미생성"],
                ["확정자 공석", mg ? mg.skip + "팀" : "—"]] };
     } },
-  { ai: "나침반", k: "rt", ko: "루틴 상태", ask: ["루틴", "일마감", "월마감", "밀린", "예정"],
+  { ai: "나침반", k: "rt", ko: "루틴 상태", d: "일마감 · 월마감 같은 루틴이 밀렸는지 본다", ask: ["루틴", "일마감", "월마감", "밀린", "예정"],
     run: function (at) {
       if (typeof CORP_SCHEDULE === "undefined" || typeof corpRoutineState !== "function") return null;
       const now = at || (typeof corpOpsNow === "function" ? corpOpsNow() : null);
@@ -170,13 +170,13 @@ const CORP_AG_TOOL = [
     } },
 
   /* ── 인총이(M3 인사총무) ── */
-  { ai: "인총이", k: "hr", ko: "인사 기록", ask: ["인사", "직원", "사번", "직위", "전문"],
+  { ai: "인총이", k: "hr", ko: "인사 기록", d: "직원 명부 · 사번 · 직책 · 전문을 본다", ask: ["인사", "직원", "사번", "직위", "전문"],
     run: function () {
       if (typeof CORP_HR === "undefined") return null;
       return { t: "인사 기록 " + CORP_HR.length + "명(재직 " + corpHrOn().length + ")입니다. 직무 정보만 듭니다 — 주민번호 값·주소·연락처는 담지 않습니다.",
         rows: CORP_HR.map(function (h) { return [h.name + (h.on ? "" : "(합류 전)"), (h.no || "사번 없음") + " · " + h.title + " · " + h.teams.join("·")]; }) };
     } },
-  { ai: "인총이", k: "rrn", ko: "주민번호 보관", ask: ["주민", "주민번호", "4대보험", "원천징수", "신고"],
+  { ai: "인총이", k: "rrn", ko: "주민번호 보관", d: "주민번호를 어디에 왜 두는지와 열람 이력을 본다", ask: ["주민", "주민번호", "4대보험", "원천징수", "신고"],
     run: function () {
       if (typeof CORP_RRN_GATE === "undefined") return null;
       const open = corpRrnOpen();
@@ -184,7 +184,7 @@ const CORP_AG_TOOL = [
         rows: CORP_RRN_GATE.map(function (g) { return [g.ko, g.ok ? "충족" : "미충족"]; })
           .concat(open.length ? [["보관 책임자 미지정", open.map(function (h) { return h.name; }).join(" · ")]] : []) };
     } },
-  { ai: "인총이", k: "doc", ko: "문서 보존기한", ask: ["문서", "보존", "보관", "몇 년", "폐기", "파기"],
+  { ai: "인총이", k: "doc", ko: "문서 보존기한", d: "문서 종류별 보존 기한과 파기 예정을 본다", ask: ["문서", "보존", "보관", "몇 년", "폐기", "파기"],
     run: function () {
       if (typeof CORP_DOC_CLASS === "undefined") return null;
       return { t: "문서 분류 " + CORP_DOC_CLASS.length + "종입니다. " + CORP_DOC_CLASS.filter(function (d) { return !d.checked; }).length + "종은 법령 원문 대조 전이라 조문 번호를 적지 않았습니다.",
@@ -192,13 +192,13 @@ const CORP_AG_TOOL = [
     } },
 
   /* ── 하네스(S1 정보보안) ── */
-  { ai: "하네스", k: "gate", ko: "커밋 게이트", ask: ["게이트", "보안", "차단", "검사", "막"],
+  { ai: "하네스", k: "gate", ko: "커밋 게이트", d: "배포 전에 무엇이 막히는지 검사 목록을 본다", ask: ["게이트", "보안", "차단", "검사", "막"],
     run: function () {
       if (typeof CORP_GATES === "undefined") return null;
       return { t: "커밋 게이트 " + CORP_GATES.length + "종이 걸려 있습니다. 결과는 커밋할 때 터미널에 뜹니다 — 이 화면이 러너를 돌리지는 못합니다.",
         rows: CORP_GATES.map(function (g) { return [g.ko, g.run]; }) };
     } },
-  { ai: "하네스", k: "rel", ko: "릴리스", ask: ["릴리스", "배포", "승인", "release"],
+  { ai: "하네스", k: "rel", ko: "릴리스", d: "릴리스 승인 상태와 승인할 수 있는 사람을 본다", ask: ["릴리스", "배포", "승인", "release"],
     run: function () {
       if (typeof corpRelAll !== "function") return null;
       const st = corpGovRead(); const rel = corpRelAll(st); const who = corpRelApprovers();
@@ -208,7 +208,7 @@ const CORP_AG_TOOL = [
     } },
 
   /* ── 온톨로(D1 데이터관리) ── */
-  { ai: "온톨로", k: "key", ko: "저장 키", ask: ["저장", "키", "카탈로그", "데이터", "어디에"],
+  { ai: "온톨로", k: "key", ko: "저장 키", d: "어떤 자료가 어느 저장 키에 담기는지 본다", ask: ["저장", "키", "카탈로그", "데이터", "어디에"],
     run: function () {
       if (typeof hifinCatalogSummary !== "function") return null;
       const s = hifinCatalogSummary();

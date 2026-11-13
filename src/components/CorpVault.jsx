@@ -138,21 +138,23 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
             브라우저는 바탕화면을 마음대로 뒤지지 못합니다 — <b>조성래님이 한 번 폴더를 지정</b>해 주셔야 합니다.
             그 뒤로는 권한이 남아 「지금 가져오기」 한 번이면 됩니다. <b>저절로 돌지는 않습니다</b> —
             화면을 열고 누르셔야 합니다(브라우저가 사람이 누를 때만 폴더를 열어 줍니다).
-            <span className="cl-warn2">
+            <CorpDefn>
+              <span className="cl-warn2">
               누르시면 <b>바탕화면에서 창이 열립니다</b> — 거기서 <b>0.HI-fin 온톨로지하네스</b> →
               <b>02.회계</b> 로 들어가 「폴더 선택」을 누르시면 됩니다.
               경로를 붙여 넣는 게 편하시면 <b>먼저 「경로 복사」</b>를 누르시고, 폴더 창에서 Ctrl+V → Enter 하세요.
               <b>바탕화면 자체는 고를 수 없습니다.</b>
-            </span>
-            <span className="cl-warn2">
+              </span>
+              <span className="cl-warn2">
               <b>권한을 따로 묻지 않습니다</b> — 폴더를 고르시는 것이 곧 읽기 허락입니다.
               창이 하나 더 뜨기를 기다리지 마세요. 이은 뒤에는 위 배지가 <b>「이어져 있음」</b>으로 바뀝니다.
               <b>「방문할 때마다 허용」</b>은 <b>다음에 다시 여실 때</b> 뜹니다 — 그때 그걸 고르시면 그 뒤로는 안 묻습니다.
-            </span>
-            <span className="cl-warn2">
+              </span>
+              <span className="cl-warn2">
               <b>권한은 주소마다 따로입니다</b> — 미리보기(localhost)에서 이으신 것과 배포본에서 이으신 것은
               서로 다릅니다. 쓰시는 쪽에서 한 번씩 이어 주셔야 합니다.
-            </span>
+              </span>
+            </CorpDefn>
           </p>
 
           <div className="vf-row">
@@ -289,10 +291,12 @@ function CorpVaultSection({ team }) {
       <div className="cl-warn">
         이 게시판은 <b>목록이지 파일이 아닙니다.</b> 서버가 없어 브라우저가 저장소 파일을 열지 못합니다 —
         경로를 복사해 탐색기에 붙이면 열립니다. <b>열어 주는 척하지 않습니다.</b>
-        <span className="cl-warn2">
+        <CorpDefn>
+          <span className="cl-warn2">
           목록은 코드에 넣지 않았습니다. 파일명이 곧 회사 자료의 목차라, 공개 배포본에 실리면
           대외비 저장소의 목차를 공개하는 셈입니다 — <b>반입해서 이 브라우저에만</b> 둡니다.
-        </span>
+          </span>
+        </CorpDefn>
       </div>
 
       <div className="cl-body">

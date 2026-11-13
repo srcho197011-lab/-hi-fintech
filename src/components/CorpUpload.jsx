@@ -135,11 +135,13 @@ function CorpUploadSection() {
       <div className="cl-warn">
         <b>파일은 어디로도 전송되지 않습니다.</b> 서버가 없어 브라우저 안에서 읽고 끝납니다 —
         그래서 용량 한계가 있고, 큰 파일은 미리보기와 검증까지만 합니다.
-        <span className="cl-warn2">
+        <CorpDefn>
+          <span className="cl-warn2">
           <b>민감자료 검사가 미리보기보다 먼저입니다.</b> 주민번호가 섞인 표를 띄워 놓고 「지우세요」라고
           말하는 것은 이미 띄운 것입니다. 커밋 게이트와 같은 판정을 여기서도 합니다 —
           들어오는 길이 둘인데 한쪽만 막으면 막는 것이 아닙니다.
-        </span>
+          </span>
+        </CorpDefn>
       </div>
 
       <div className="cl-body">

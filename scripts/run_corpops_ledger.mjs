@@ -2176,6 +2176,59 @@ chk(GLINE.indexOf("data/app") > 0,
   GLINE.trim() || "그 줄을 찾지 못했다");
 
 
+/* ============== ⑳업무 — 화면은 업무가 먼저 (조성래님 지시 2026-11-13) ==============
+   지시: ① 설명의 작은 글씨는 「업무 정의」 버튼을 눌렀을 때만 · ② 개별 알림은 버튼 아래 서브 섹션으로
+   · ③ 업무를 시행하는 버튼은 크게 — 처음 보면 업무가 무엇인지 한눈에.
+
+   ⚠️ **접는 것과 숨기는 것은 다르다.** 러너는 소스 글자만 보므로 접기로는 어떤 단언도 깨지지
+   않는다 — 바로 그래서 어느 장부인지의 고지와 숫자가 틀릴 수 있다는 경고가 버튼 뒤로
+   들어가도 게이트가 못 잡는다. 그 둘만은 여기서 직접 센다. */
+const DEFN_F = [BOARD, PABOARD, MTGBOARD, "src/components/CorpOps.jsx", "src/components/CorpTeamChat.jsx",
+  "src/components/CorpGov.jsx", "src/components/CorpAdmin.jsx", "src/components/CorpUpload.jsx",
+  "src/components/CorpVault.jsx"];
+const DEFN_SRC = {};
+DEFN_F.forEach((f) => { DEFN_SRC[f] = rd(f); });
+const defnUse = DEFN_F.filter((f) => DEFN_SRC[f].indexOf("<CorpDefn") >= 0);
+chk(defnUse.length >= 8, "⑳분모   업무 정의로 접은 지면을 센다", defnUse.length + " / " + DEFN_F.length);
+
+/* 접는 장치는 한 벌이어야 한다 — 지면마다 따로 만들면 어떤 건 접히고 어떤 건 안 접힌다. */
+const DEFN_DEF = rd("src/components/CorpAvatar.jsx");
+chk(DEFN_DEF.indexOf("function CorpDefn(") > 0
+  && DEFN_F.every((f) => DEFN_SRC[f].indexOf("function CorpDefn(") < 0),
+  "⑳한벌   접는 장치는 한 곳에서만 선다",
+  DEFN_F.filter((f) => DEFN_SRC[f].indexOf("function CorpDefn(") >= 0));
+
+/* 접힌 안인가 — 앞에 열린 <CorpDefn> 와 닫힌 </CorpDefn> 의 수를 센다. */
+const inDefn = (src, needle) => {
+  const at = src.indexOf(needle);
+  if (at < 0) return null;
+  const head = src.slice(0, at);
+  return head.split("<CorpDefn").length - 1 > head.split("</CorpDefn>").length - 1;
+};
+const OPSX = DEFN_SRC["src/components/CorpOps.jsx"];
+chk(inDefn(OPSX, "여기 숫자는 <b>파일럿 전표</b>에서 나옵니다") === false,
+  "⑳고지   어느 장부인지는 접지 않는다 — 버튼 뒤로 넣으면 검증용 숫자가 회사 실적으로 보인다");
+chk(inDefn(OPSX, "여기 숫자는 <b>반입 전표</b>에서 나옵니다") === false,
+  "⑳고지   반입 장부 고지도 접지 않는다");
+chk(inDefn(OPSX, "corp-dlt warn") === false,
+  "⑳경고   숫자가 틀릴 수 있다는 경고는 접지 않는다");
+chk(inDefn(DEFN_SRC[BOARD], "파일럿 전표</b>입니다") === false,
+  "⑳고지   재무현황의 파일럿 고지 머리 문장도 밖에 선다");
+
+/* ⑳업무 — 버튼에 이름만 크게 적으면 이름만 커진다. 무슨 일인지가 버튼에 있어야 한다. */
+const TOOLD = JSON.parse(G('JSON.stringify((CORP_AG_TOOL || []).map(function (x) { return { ai: x.ai, k: x.k, ko: x.ko, d: x.d }; }))'));
+chk(TOOLD.length > 0 && TOOLD.every((x) => typeof x.d === "string" && x.d.length >= 8),
+  "⑳업무   도구 전부에 뜻 한 줄이 붙어 있다", TOOLD.filter((x) => !x.d || x.d.length < 8).map((x) => x.ko));
+chk(new Set(TOOLD.map((x) => x.d)).size === TOOLD.length,
+  "⑳업무   뜻이 서로 같지 않다 — 붙여넣기로 채우지 않았다", TOOLD.length - new Set(TOOLD.map((x) => x.d)).size);
+const CHATX = DEFN_SRC["src/components/CorpTeamChat.jsx"];
+chk(CHATX.indexOf("className=\"tc-job\"") > 0 && CHATX.indexOf("ag-chip tool") < 0,
+  "⑳업무   업무 버튼은 작은 칩이 아니라 큰 칸이다");
+chk(CHATX.indexOf("{x.ko}") > 0 && CHATX.indexOf("{x.d}") > 0,
+  "⑳업무   버튼 글자는 도구 원천의 것을 그대로 쓴다 — 화면이 따로 적지 않는다");
+chk(inDefn(CHATX, "끝내지 못하는 일</b>") === true,
+  "⑳알림   끝내지 못하는 일은 버튼 아래 서브 섹션에 남는다 — 지우지 않았다");
+
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
@@ -2196,6 +2249,7 @@ console.log(`[업무지시] 해석 자기시험 ${OV.rows.length}항목 · 아�
 console.log(`[폴더잇기] 자기시험 ${FV.rows.length}항목 · 고를 거리 ${FC.n} / ${FC.all} · 어긋남 표시 ${warn.length}건 · 권한 손잡이 ${G("CORP_VFS_DB")}(IndexedDB)`);
 console.log(`[팀대화창] 팀 ${TCG.length}곳 전부 인사(도구 보유 ${TCH.length} · 도구 없음 ${TCN.length}) · 상태 줄 ${TCG.reduce((n, x) => n + x.rows.length, 0)}줄 전건 도구 실측 일치 · 말로 시킬 수 있는 팀 ${TCO.map((x) => x.name).join("·") || "없음"} · 상단 통합 탭 해체`);
 console.log(`[총괄지표] 기준일 ${KDAY} · 현금 ${G("corpWon")(KP.cash.won)}원(전월말 대비 ${G("corpWon")(KP.cash.won - KP.cashPrev.won)}) · 런웨이 ${KP.t.run.txt}개월(월 순유출 ${G("corpWon")(KP.burn.burn)} · 분모 ${KP.burn.n}개월 ${KP.burn.months.join("·")}) · 매출 ${G("corpWon")(KP.rev.won)}(전월 같은 기간 ${G("corpWon")(KP.revSame.won)} · 전월 한 달 ${G("corpWon")(KP.revMonth.won)}) · 전표 ${KP.jv.all}건(전기 ${KP.jv.posted} · 승인 전 ${KP.jv.wait}) · 사람이 결정할 것 ${JSON.parse(G('JSON.stringify(corpDecideNow("' + KDAY + '"))')).n}건`);
+console.log(`[업무화면] 업무 정의로 접은 지면 ${defnUse.length} / ${DEFN_F.length} · 업무 버튼 ${TOOLD.length}개 전부 뜻 한 줄 보유 · 장부 출처 고지 · 경고 접지 않음 · 끝내지 못하는 일 서브 섹션 존재`);
 console.log(`[호칭  ] 책임자 ${[...new Set(NR.map((r) => r.ownKo))].join(" · ")} — 직책 원천 3곳(조직 · 인사 기록 · 전표 주체) 일치 · AI 팀장 ${NR.map((r) => r.aiKo).join(" · ")} · 이름이 아닌 담당 값 ${NAMING.rt.filter((x) => !x.name).map((x) => x.raw).join(" · ")} 불변 · 여덟 아바타 · 대화 상대 전수 연결`);
 console.log(`[인사계약] 인사 ${HR.length}명(재직 ${G("corpHrOn")().length}) · 금지 필드 ${BAN.length}종 전수 부재 · 주민번호 값 보유 0 · 보관 조건 0/${GATE4.length} · 계약 ${CT.length}건(경보 ${CT.filter((c) => { const k = G("corpCtAlert")(c, ANOW).k; return k !== "ok" && k !== "none"; }).length}) · 문서 분류 ${DOC.length}종(원문 미확인 ${DOC.filter((d) => !d.checked).length})`);
 if (fails.length) {

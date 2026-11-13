@@ -6342,3 +6342,36 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .tc-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
 .tc-log{max-height:none;}
 .tc-input{margin-top:8px;}
+
+/* ══════════════ 업무 정의 · 업무 버튼 (조성래님 지시 2026-11-13) ══════════════
+   ① 설명의 작은 글씨는 「업무 정의」를 눌렀을 때만 편다
+   ③ 업무를 시행하는 버튼은 크게 — 처음 보면 업무가 무엇인지 한눈에 */
+.corp-defn{font-size:9px;font-weight:700;color:var(--cd2);background:transparent;
+  border:1px solid var(--cl2);border-radius:4px;padding:2px 7px;cursor:pointer;
+  font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;line-height:1.5;}
+.corp-defn:hover{color:var(--cc-hi);border-color:var(--cc);}
+.corp-defn.on{color:var(--cc-hi);border-color:var(--cc);background:rgba(232,121,90,.1);}
+.corp-defn.pad{margin-top:8px;}
+.corp-defn i{font-style:normal;font-size:10.5px;line-height:1;opacity:.65;}
+.corp-defnbox{margin-top:6px;padding:8px 10px;border-left:2px solid var(--cl2);
+  background:rgba(255,255,255,.02);border-radius:0 6px 6px 0;}
+.corp-defnbox>*:first-child{margin-top:0;}
+.corp-defnbox>*:last-child{margin-bottom:0;}
+.corp-lab .corp-defn,.corp-sh .corp-defn{margin-left:auto;}
+.corp-sh .corp-defn+.c{margin-left:7px;}
+
+/* 업무 버튼 — 이름은 크게, 무슨 일인지는 바로 밑에 한 줄 */
+.tc-jobh{display:flex;align-items:center;gap:7px;margin-top:11px;font-size:10px;
+  font-weight:700;color:var(--cd2);letter-spacing:.02em;}
+.tc-jobh::after{content:"";flex:1;height:1px;background:var(--cl);}
+.tc-jobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(166px,1fr));gap:7px;margin-top:7px;}
+.tc-job{display:block;text-align:left;background:var(--cb);border:1px solid var(--cl);
+  border-left:3px solid var(--tc,#E8795A);border-radius:7px;padding:9px 11px;
+  cursor:pointer;font-family:inherit;transition:background .12s,border-color .12s;}
+.tc-job:hover{border-color:var(--tc,#E8795A);background:rgba(232,121,90,.09);}
+.tc-job b{display:block;font-size:12.5px;font-weight:700;color:var(--ct);letter-spacing:-.01em;}
+.tc-job span{display:block;font-size:9.5px;color:var(--cd);margin-top:3px;line-height:1.5;}
+@media(max-width:1180px){.tc-jobs{grid-template-columns:repeat(auto-fill,minmax(148px,1fr));}}
+.tc-verds{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 6px;}
+/* .corp-cap 은 pointer-events:none 이라 그 안의 버튼이 눌리지 않는다 — 버튼만 되살린다 */
+.corp-cap .corp-defn{pointer-events:auto;margin-top:5px;}

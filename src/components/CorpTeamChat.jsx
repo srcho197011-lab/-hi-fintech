@@ -164,9 +164,6 @@ function CorpTeamChat({ team, onTab, compact }) {
           <i>{t.name} · {t.aiWhy}</i>
         </div>
         <span className="tc-n">{a.noTool ? "도구 없음" : "도구 " + a.tools.length}</span>
-        <span className={"cl-verd" + (V.pass ? " on" : " bad")}>검산 {V.rows.length - V.fail.length - V.zero.length} / {V.rows.length}</span>
-        {OV && <span className={"cl-verd" + (OV.pass ? " on" : " bad")}>지시 해석 {OV.rows.length - OV.fail.length - OV.zero.length} / {OV.rows.length}</span>}
-        {OV && <span className="ad-chip">기준일 {today || "—"}</span>}
         {greet && greet.canOrder && <span className="tc-order">말로 시킬 수 있습니다</span>}
         <button className="cl-rv">{open ? "접기" : "열기"}</button>
       </div>
@@ -182,24 +179,43 @@ function CorpTeamChat({ team, onTab, compact }) {
                   {greet.rows.map(function (r, i) { return <tr key={i}><td className="k">{r[0]}</td><td>{r[1]}</td></tr>; })}
                 </tbody></table>
               )}
-              {greet.canOrder && (
-                <p className="tc-can"><b>업무를 말로 시키셔도 됩니다.</b> 제가 할 수 있는 일은
+              {/* ③ 업무 버튼 — 화면을 처음 보면 무슨 업무인지 한눈에 (조성래님 지시 2026-11-13).
+                  이름만 키우면 이름만 커진다 — **무슨 일인지**가 버튼에 적혀야 한다. 뜻은 도구 원천의 d 에서 온다. */}
+              {!a.noTool && (
+                <React.Fragment>
+                  <div className="tc-jobh">할 수 있는 업무 {a.tools.length}</div>
+                  <div className="tc-jobs">
+                    {a.tools.map(function (x) {
+                      return (
+                        <button key={x.k} className="tc-job" onClick={function () { send(x.ask[0]); }}>
+                          <b>{x.ko}</b>{x.d ? <span>{x.d}</span> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </React.Fragment>
+              )}
+
+              {/* ①② 설명과 검산 배지는 눌렀을 때만 — **지우지 않는다, 접을 뿐이다.**
+                  끝내지 못하는 일은 여기 안에 그대로 남는다 — 화면에 적은 제약과 실제 거절이 어긋나면 안 된다. */}
+              <CorpDefn pad>
+                <p className="tc-verds">
+                  <span className={"cl-verd" + (V.pass ? " on" : " bad")}>검산 {V.rows.length - V.fail.length - V.zero.length} / {V.rows.length}</span>
+                  {OV && <span className={"cl-verd" + (OV.pass ? " on" : " bad")}>지시 해석 {OV.rows.length - OV.fail.length - OV.zero.length} / {OV.rows.length}</span>}
+                  {OV && <span className="ad-chip">기준일 {today || "—"}</span>}
+                </p>
+                {greet.canOrder && (
+                  <p className="tc-can"><b>업무를 말로 시키셔도 됩니다.</b> 제가 할 수 있는 일은
                   <b> {greet.order.join(" · ")}</b> 입니다 — 시키시면 할 일로 나눠 드리고,
                   <b>승인 · 전기는 조성래님이</b> 하십니다.</p>
-              )}
-              {!a.noTool && (
-                <div className="tc-chips">
-                  {a.tools.map(function (x) {
-                    return <button key={x.k} className="ag-chip tool" onClick={function () { send(x.ask[0]); }}>{x.ko}</button>;
-                  })}
-                </div>
-              )}
-              {(t.cannot || []).length > 0 && (
-                <p className="tc-no">제가 <b>끝내지 못하는 일</b> — {(t.cannot || []).map(function (c) { return c.act; }).join(" · ")}.
+                )}
+                {(t.cannot || []).length > 0 && (
+                  <p className="tc-no">제가 <b>끝내지 못하는 일</b> — {(t.cannot || []).map(function (c) { return c.act; }).join(" · ")}.
                   화면에 적은 제약과 실제 거절이 어긋나지 않게, 이 목록은 조직 원천에서 그대로 옵니다.
                   <b> 다만 물음은 거절하지 않습니다</b> — 「승인 누가 해?」는 승인해 달라는 말이 아니라
                   묻는 말입니다. 물어보는 것까지 막으면 아무것도 알 수 없습니다.</p>
-              )}
+                )}
+              </CorpDefn>
             </div>
           )}
 

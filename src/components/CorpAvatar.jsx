@@ -52,3 +52,27 @@ function CorpPair({ team, size }) {
     </div>
   );
 }
+
+/* ══════════════ 업무 정의 — 설명은 눌렀을 때만 편다 (조성래님 지시 2026-11-13) ══════════════
+   지시: 「작은 글씨가 너무 많아 설명의 작은 글씨는 업무정의 버튼을 만들고
+   그 버튼을 클릭할 때 보일 수 있도록 조치 해줘.」
+
+   화면을 처음 보면 **업무가 무엇인지**가 먼저 보여야 한다. 까닭 · 전제 · 셈법은
+   물었을 때 답하면 된다.
+
+   ⚠️ 접는 것과 지우는 것은 다르다. 접히는 자리에 넣어도 되는 것은 **설명**뿐이다.
+   어느 장부를 보고 있는지(파일럿 · 반입), 숫자가 틀릴 수 있다는 경고, 0이 나온 까닭,
+   할 수 없는 일의 사유 — 이 넷은 접지 않는다. 접으면 그건 숨기는 것이다. */
+function CorpDefn({ children, lab, pad }) {
+  const [on, setOn] = React.useState(false);
+  if (!children) return null;
+  return (
+    <React.Fragment>
+      <button className={"corp-defn" + (on ? " on" : "") + (pad ? " pad" : "")}
+        onClick={function () { setOn(!on); }}>
+        {lab || "업무 정의"}<i>{on ? "\u2212" : "+"}</i>
+      </button>
+      {on && <div className="corp-defnbox">{children}</div>}
+    </React.Fragment>
+  );
+}

@@ -283,8 +283,11 @@ function CorpOps({ onGo, onTab }) {
             <div className="corp-lab">현금 · 런웨이</div>
             {kpiBox(K && K.t.cash)}
             {kpiBox(K && K.t.run)}
-            <div className="corp-note">현금은 <b>현금 · 보통예금</b>만 셉니다 — 외상매출금은 아직 들어오지 않은 돈입니다.
-              런웨이는 <b>기준일 현금 ÷ 최근 세 달 평균 순유출</b>입니다(재무계획 화면과 같은 자, 원천만 장부입니다).
+            <CorpDefn>
+              <div className="corp-note">현금은 <b>현금 · 보통예금</b>만 셉니다 — 외상매출금은 아직 들어오지 않은 돈입니다.
+                런웨이는 <b>기준일 현금 ÷ 최근 세 달 평균 순유출</b>입니다(재무계획 화면과 같은 자, 원천만 장부입니다).</div>
+            </CorpDefn>
+            <div className="corp-note">
               {/* 어느 장부를 보고 있는지 — 숫자를 띄우는 지면은 모두 같은 고지를 진다(러너 ⑥) */}
               {CORP_LEDGER_PILOT && K && !K.live && <span className="cl-warn2">여기 숫자는 <b>파일럿 전표</b>에서 나옵니다 —
                 엔진이 맞게 도는지 보려고 넣은 검증용 묶음이고 회사의 실제 장부가 아닙니다. 실제 회계자료 반입은 Phase 10입니다.</span>}
@@ -295,8 +298,10 @@ function CorpOps({ onGo, onTab }) {
             <div className="corp-lab">이번 달 <b>실적</b> {K && K.ok && <span className="corp-dlt">{K.ym}</span>}</div>
             {kpiBox(K && K.t.rev)}
             {kpiBox(K && K.t.jv)}
-            <div className="corp-note">매출은 <b>매출액 과목</b>만 셉니다 — 이자수익·잡이익은 영업외수익이라 뺍니다.
+            <CorpDefn>
+              <div className="corp-note">매출은 <b>매출액 과목</b>만 셉니다 — 이자수익·잡이익은 영업외수익이라 뺍니다.
               달이 끝나기 전이라 전월은 <b>같은 날까지</b>를 함께 적습니다.</div>
+            </CorpDefn>
           </div>
           <div className="corp-blk">
             <div className="corp-lab">업무시간 <b>확정</b></div>
@@ -345,7 +350,9 @@ function CorpOps({ onGo, onTab }) {
             <div className="corp-lab">인원</div>
             <div className="corp-row"><span className="m">재직</span><span className="s"><b>{CORP_SUMMARY.peopleN}</b>명</span></div>
             <div className="corp-row"><span className="m">채워진 자리</span><span className="s"><b>{CORP_SUMMARY.filled}</b> / {CORP_SUMMARY.cap}</span></div>
-            <div className="corp-note">겸임이 있어 <b>자리 수와 사람 수가 다릅니다</b> — 합류 전 자리는 0으로 둡니다.</div>
+            <CorpDefn>
+              <div className="corp-note">겸임이 있어 <b>자리 수와 사람 수가 다릅니다</b> — 합류 전 자리는 0으로 둡니다.</div>
+            </CorpDefn>
           </div>
         </div>
 
@@ -354,9 +361,11 @@ function CorpOps({ onGo, onTab }) {
           <svg ref={svgRef} className="corp-stage" />
           <div className="corp-cap">
             <h3>조직 온톨로지</h3>
-            <p>원 = 팀 · 원 안은 <b>사람 책임자 · AI 팀장</b> · 선 = 팀 사이 업무 흐름<br />
+            <CorpDefn>
+              <p>원 = 팀 · 원 안은 <b>사람 책임자 · AI 팀장</b> · 선 = 팀 사이 업무 흐름<br />
               원근 회전 — 앞은 크고 밝게, 뒤는 작고 흐리게.<br />
               <b>원을 누르면</b> 그 팀이 정면으로 오고 아래에 안내가 열립니다 — 같은 원을 다시 누르면 닫힙니다.</p>
+            </CorpDefn>
           </div>
           {selT && (
             <div className="corp-selbox">
@@ -414,8 +423,10 @@ function CorpOps({ onGo, onTab }) {
                 <button className="corp-pill go" onClick={() => setView("mtg")}>지면 열기 →</button></div>
               <div className="by">{sch.weekly.mode} · 사람 {CORP_SUMMARY.peopleN} + AI 팀장 {CORP_SUMMARY.agents}
                 {CORP_SUMMARY.pendingN > 0 && <span className="corp-vac"> · 책임자 공석 {CORP_SUMMARY.pendingN}석</span>}</div>
-              <div className="ds">금요일에 각 AI 팀장이 주간보고 초안을 만들고, 팀 책임자가 확정하면 월 09:30에 <b>{CORP_HEAD.aiKo}</b>이 1부로 통합합니다.
+              <CorpDefn>
+                <div className="ds">금요일에 각 AI 팀장이 주간보고 초안을 만들고, 팀 책임자가 확정하면 월 09:30에 <b>{CORP_HEAD.aiKo}</b>이 1부로 통합합니다.
                 참석 인원은 <b>재직자</b>만 셉니다 — 합류 전 책임자는 참석자가 아니라 공석입니다.</div>
+              </CorpDefn>
             </div>
           </div>
           <div className="corp-sec">
@@ -438,8 +449,11 @@ function CorpOps({ onGo, onTab }) {
                 <span className="w">{r.when}</span>
               </div>
             ))}
-            <div className="corp-note">예정 시각은 업무시간과 주기로 계산한 <b>실제 값</b>입니다.
-              생성 경로가 붙은 것은 주간회의 관련 <b>셋</b>뿐이고, 나머지 아홉은 아직 돌 수 있는 상태가 아닙니다(실행 기록은 Phase 10).
+            <CorpDefn>
+              <div className="corp-note">예정 시각은 업무시간과 주기로 계산한 <b>실제 값</b>입니다.
+                생성 경로가 붙은 것은 주간회의 관련 <b>셋</b>뿐이고, 나머지 아홉은 아직 돌 수 있는 상태가 아닙니다(실행 기록은 Phase 10).</div>
+            </CorpDefn>
+            <div className="corp-note">
               백엔드가 없어 브라우저가 닫히면 스스로 돌지 않습니다 — <b>열었을 때 그 주차 자료가 없으면 그때 만드는</b> 방식입니다.
               <button className="corp-pill go" onClick={() => setView("mtg")}>루틴 상태 보기 →</button></div>
           </div>
