@@ -2238,6 +2238,23 @@ chk(CHATX.indexOf("send(x.ask[0], x.ko)") > 0,
   "⑳기록   버튼을 누른 기록에 **버튼 이름**이 남는다(라우팅 낱말이 아니라)");
 chk(CHATX.indexOf("again ? prev.slice(0, -2)") > 0 && CHATX.indexOf("last[0].t === shown") > 0,
   "⑳기록   바로 앞과 같은 질문이면 새로 쌓지 않고 그 칸을 갈아 끼운다");
+/* 저장소를 잃는 가장 흔한 길은 **엉뚱한 폴더를 고르는 것**이었다(조성래님 실측 2026-11-13).
+   자료실이 팀마다가 된 뒤로는 **루트**를 고르셔야 여덟 팀이 찼다. 화면이 그렇게 적는지 센다. */
+chk(G("CORP_VFS_WANT").indexOf("02.") < 0,
+  "⑳저장소 고를 폴더는 팀 폴더가 아니라 저장소 루트다", G("CORP_VFS_WANT"));
+chk(vtBoard2.indexOf("그 안으로 들어가지 마세요") > 0 && vtBoard2.indexOf("vf-aim") > 0,
+  "⑳저장소 어디를 고를지를 **접지 않고** 적는다");
+/* 이은 뒤 한 번 더 누르게 하면 「왜 안 뜨지」가 된다 — 이은 그 자리에서 바로 가져온다. */
+chk(vtBoard2.indexOf("바로 " + String.fromCharCode(34) + " + S.n +") > 0 || /바로 " \+ S\.n/.test(vtBoard2),
+  "⑳저장소 이으면 그 자리에서 바로 가져온다");
+/* 팀 표시가 없는 폴더를 이으셔도 **버리지 않되**, 여덟 팀이 같은 걸 본다고 적는다. */
+const scWide = G("cvfScope")([{ rel: "26.11/무엇_표본.xlsx", name: "무엇_표본.xlsx", dir: "26.11" }], "M2");
+chk(scWide.ok === true && scWide.n === 1 && /여덟 팀이 모두 같은 목록/.test(scWide.why || ""),
+  "⑳저장소 팀 표시 없는 폴더는 그대로 쓰되 그 사실을 적는다", scWide.mode + " / " + String(scWide.why).slice(0, 36));
+/* 루트를 「폴더 통째 고르기」로 이으면 경로 앞에 루트 이름이 붙는다 — 그래도 팀을 찾아야 한다. */
+const scRoot = G("cvfScope")([{ rel: "0.HI-fin 온톨로지하네스/02.회계/2026.결산/x_표본.xlsx", name: "x_표본.xlsx", dir: "0.HI-fin 온톨로지하네스/02.회계/2026.결산" }], "M2");
+chk(scRoot.mode === "scoped" && scRoot.n === 1,
+  "⑳저장소 루트 이름이 앞에 붙어도 팀 폴더를 찾는다", scRoot.mode + " / " + scRoot.n);
 chk(inDefn(CHATX, "끝내지 못하는 일</b>") === true,
   "⑳알림   끝내지 못하는 일은 버튼 아래 서브 섹션에 남는다 — 지우지 않았다");
 

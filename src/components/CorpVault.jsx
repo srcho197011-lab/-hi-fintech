@@ -49,8 +49,18 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
       setPerm(await cvfPerm(x, true));
       /* ⚠️ 「방문할 때마다 허용」은 **이을 때 뜨지 않는다** — 다음에 여실 때 뜬다.
          안 뜬 창을 가리켜 적으면 사람이 기다리거나 자기가 뭘 놓쳤다고 여긴다. */
+      /* 이은 것이 곧 읽기 허락이다. 그런데 한 번 더 누르게 하면 「왜 안 뜨지」가 된다 —
+         이어진 그 자리에서 바로 가져온다(조성래님 지적 2026-11-13). */
+      let got = "";
+      try {
+        const S = await cvfScan(x, function (n) { setTick(n); });
+        setScan(S);
+        if (typeof onRows === "function") onRows(S.rows);
+        got = " 바로 " + S.n + "건을 가져왔습니다(" + Math.round(S.bytes / 104857.6) / 10 + "MB)."
+          + (S.unread ? " **" + S.unread + "건은 내용을 읽지 못했습니다** — OneDrive 가 아직 내려받지 않았을 수 있습니다." : "");
+      } catch (e2) { got = " 다만 아직 못 읽었습니다 — 「지금 가져오기」를 눌러 주세요(" + ((e2 && e2.message) || "까닭 모름") + ")."; }
       setNote({ bad: false, t: "「" + (x.name || "폴더") + "」을(를) 이었습니다 — 고르신 것이 곧 읽기 허락이라 따로 묻지 않습니다."
-        + " 이제 「지금 가져오기」를 누르시면 됩니다." });
+        + got });
     } catch (e) { setNote({ bad: true, t: (e && e.message) || "폴더를 잇지 못했습니다" }); }
     setBusy(false);
   };
@@ -58,7 +68,7 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
     const ok = await cvfCopyPath();
     setNote({ bad: !ok, t: ok
       ? "경로 「" + CORP_VFS_WANT + "」를 복사했습니다 — 폴더 창에서 Ctrl+V 로 붙여 넣고 Enter 를 누르세요."
-      : "복사하지 못했습니다 — 바탕화면에서 「0.HI-fin 온톨로지하네스」 → 「02.회계」 로 들어가 주세요." });
+      : "복사하지 못했습니다 — 바탕화면에서 「0.HI-fin 온톨로지하네스」를 고르시면 됩니다(안으로 들어가지 마세요)." });
   };
   const grant = async function () {
     setBusy(true);
@@ -139,12 +149,15 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
             브라우저는 바탕화면을 마음대로 뒤지지 못합니다 — <b>조성래님이 한 번 폴더를 지정</b>해 주셔야 합니다.
             그 뒤로는 권한이 남아 「지금 가져오기」 한 번이면 됩니다. <b>저절로 돌지는 않습니다</b> —
             화면을 열고 누르셔야 합니다(브라우저가 사람이 누를 때만 폴더를 열어 줍니다).
+            <b className="vf-aim">고르실 것은 <u>0.HI-fin 온톨로지하네스</u> 한 칸입니다 — 그 안으로 들어가지 마세요.
+              루트를 고르셔야 여덟 팀이 한 번에 찹니다.</b>
             <CorpDefn>
               <span className="cl-warn2">
-              누르시면 <b>바탕화면에서 창이 열립니다</b> — 거기서 <b>0.HI-fin 온톨로지하네스</b> →
-              <b>02.회계</b> 로 들어가 「폴더 선택」을 누르시면 됩니다.
+              누르시면 <b>바탕화면에서 창이 열립니다</b> — 거기서 <b>0.HI-fin 온톨로지하네스</b>를
+              <b>한 번만 누르고</b>(열지 말고) 아래 「폴더 선택」을 누르시면 됩니다.
               경로를 붙여 넣는 게 편하시면 <b>먼저 「경로 복사」</b>를 누르시고, 폴더 창에서 Ctrl+V → Enter 하세요.
               <b>바탕화면 자체는 고를 수 없습니다.</b>
+              안으로 더 들어가 02.회계나 26.11을 고르시면 그 팀만, 또는 여덟 팀이 같은 목록을 보게 됩니다.
               </span>
               <span className="cl-warn2">
               <b>권한을 따로 묻지 않습니다</b> — 폴더를 고르시는 것이 곧 읽기 허락입니다.

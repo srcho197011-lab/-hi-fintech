@@ -95,7 +95,7 @@ function cvfDbDel(key) {
 
 /* 고르실 폴더 — 바탕화면 기준 상대 경로다. **계정 이름이 든 전체 경로는 적지 않는다**
    (공개 배포본에 윈도우 계정명을 싣지 않는다). 대화상자가 바탕화면에서 열리므로 이걸로 닿는다. */
-const CORP_VFS_WANT = "0.HI-fin 온톨로지하네스\\02.회계";
+const CORP_VFS_WANT = "0.HI-fin 온톨로지하네스";
 
 /* ── ③ 폴더 잇기 · 권한 ──────────────────────────────────────────────────
    ⚠️ 폴더 고르기 창은 **사람이 누를 때만** 뜬다(브라우저 규칙). 코드로 만든 클릭은
@@ -379,16 +379,26 @@ function cvfDeptDir(team) {
      · 그 팀 폴더가 경로에 **있으면** → 그것만 (저장소 루트를 이으신 경우)
      · **다른 팀 폴더**가 보이면 → 거부하고 어느 팀 자료인지 말한다
      · 아무 부서 표시도 없으면 → **고르신 것을 그대로 쓴다**(그 안을 고르신 것으로 본다) */
+/* ⚠️ 한때 첫 칸만 보았다. 그러면 저장소 **루트**를 이으셨을 때 — 경로가
+   「0.HI-fin 온톨로지하네스/02.회계/…」로 오는 「폴더 통째 고르기」 길 — 팀을 못 찾는다.
+   자료실이 팀마다가 된 뒤로는 루트를 이으셔야 맞으므로, 경로 **어디서든** 찾는다. */
 function cvfDeptHead(rel) {
-  const first = String(rel || "").split("/")[0] || "";
   if (typeof CORP_VAULT_DEPT === "undefined") return null;
-  return CORP_VAULT_DEPT.find(function (d) { return first === d.k + "." + d.ko; }) || null;
+  const parts = String(rel || "").split("/").slice(0, -1);   /* 마지막은 파일 이름이다 */
+  for (let i = 0; i < parts.length; i++) {
+    const d = CORP_VAULT_DEPT.find(function (x) { return parts[i] === x.k + "." + x.ko; });
+    if (d) return d;
+  }
+  return null;
 }
 function cvfScope(rows, team) {
   const dir = cvfDeptDir(team);
   const all = rows || [];
   if (!dir) return { rows: all, dir: "", n: all.length, all: all.length, ok: true, mode: "none", why: "" };
-  const hit = all.filter(function (r) { return String(r.rel || "").indexOf(dir + "/") === 0; });
+  const hit = all.filter(function (r) {
+    const parts = String(r.rel || "").split("/").slice(0, -1);
+    return parts.indexOf(dir) >= 0;
+  });
   if (hit.length) {
     return { rows: hit, dir: dir, n: hit.length, all: all.length, ok: true, mode: "scoped", why: "" };
   }
@@ -403,8 +413,14 @@ function cvfScope(rows, team) {
     return { rows: [], dir: dir, n: 0, all: 0, ok: false, mode: "empty",
       why: "고르신 폴더에 파일이 없습니다" };
   }
-  return { rows: all, dir: dir, n: all.length, all: all.length, ok: true, mode: "asis",
-    why: "경로에 「" + dir + "」가 없지만 **고르신 폴더를 그대로 씁니다** — 그 안의 폴더를 고르신 것으로 봅니다" };
+  /* ⚠️ 두 교훈이 여기서 만난다.
+       ① 고르신 것을 **0건으로 버리지 않는다** — 바르게 고르고도 빈 화면을 보셨던 일이 있다.
+       ② 그런데 경로에 팀 표시가 없으면 **여덟 팀이 모두 같은 파일을 보게 된다.**
+     그래서 그대로 쓰되, 그 사실을 숨기지 않고 적는다. 갈라서 보시려면 루트를 고르시면 된다. */
+  return { rows: all, dir: dir, n: all.length, all: all.length, ok: true, mode: "asis", wide: true,
+    why: "경로에 「" + dir + "」가 없지만 **고르신 폴더를 그대로 씁니다** — 그 안의 폴더를 고르신 것으로 봅니다. "
+      + "다만 팀 표시가 없어 **여덟 팀이 모두 같은 목록을 보게 됩니다** — 팀마다 갈라서 보시려면 "
+      + "저장소 **루트**(" + (typeof CORP_VFS_WANT === "string" ? CORP_VFS_WANT : "저장소 폴더") + ")를 고르세요" };
 }
 
 /* ── ⑥-3 그날 것 찾기 — **고르지 않는다. 다만 하나뿐이면 하나뿐이라고 말한다** ──

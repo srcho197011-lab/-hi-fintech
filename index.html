@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="./data/app.css?v=d29c901b10" />
+<link rel="stylesheet" href="./data/app.css?v=1792ee2743" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=d29c901b10"></script>
-<script src="./src/data/section_data.js?v=d29c901b10"></script>
-<script src="./src/data/demo_members.js?v=d29c901b10"></script>
+<script src="./src/data/dummy_data.js?v=1792ee2743"></script>
+<script src="./src/data/section_data.js?v=1792ee2743"></script>
+<script src="./src/data/demo_members.js?v=1792ee2743"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -19595,7 +19595,7 @@ function cvfDbDel(key) {
 
 /* 고르실 폴더 — 바탕화면 기준 상대 경로다. **계정 이름이 든 전체 경로는 적지 않는다**
    (공개 배포본에 윈도우 계정명을 싣지 않는다). 대화상자가 바탕화면에서 열리므로 이걸로 닿는다. */
-const CORP_VFS_WANT = "0.HI-fin 온톨로지하네스\\02.회계";
+const CORP_VFS_WANT = "0.HI-fin 온톨로지하네스";
 
 /* ── ③ 폴더 잇기 · 권한 ──────────────────────────────────────────────────
    ⚠️ 폴더 고르기 창은 **사람이 누를 때만** 뜬다(브라우저 규칙). 코드로 만든 클릭은
@@ -19879,16 +19879,26 @@ function cvfDeptDir(team) {
      · 그 팀 폴더가 경로에 **있으면** → 그것만 (저장소 루트를 이으신 경우)
      · **다른 팀 폴더**가 보이면 → 거부하고 어느 팀 자료인지 말한다
      · 아무 부서 표시도 없으면 → **고르신 것을 그대로 쓴다**(그 안을 고르신 것으로 본다) */
+/* ⚠️ 한때 첫 칸만 보았다. 그러면 저장소 **루트**를 이으셨을 때 — 경로가
+   「0.HI-fin 온톨로지하네스/02.회계/…」로 오는 「폴더 통째 고르기」 길 — 팀을 못 찾는다.
+   자료실이 팀마다가 된 뒤로는 루트를 이으셔야 맞으므로, 경로 **어디서든** 찾는다. */
 function cvfDeptHead(rel) {
-  const first = String(rel || "").split("/")[0] || "";
   if (typeof CORP_VAULT_DEPT === "undefined") return null;
-  return CORP_VAULT_DEPT.find(function (d) { return first === d.k + "." + d.ko; }) || null;
+  const parts = String(rel || "").split("/").slice(0, -1);   /* 마지막은 파일 이름이다 */
+  for (let i = 0; i < parts.length; i++) {
+    const d = CORP_VAULT_DEPT.find(function (x) { return parts[i] === x.k + "." + x.ko; });
+    if (d) return d;
+  }
+  return null;
 }
 function cvfScope(rows, team) {
   const dir = cvfDeptDir(team);
   const all = rows || [];
   if (!dir) return { rows: all, dir: "", n: all.length, all: all.length, ok: true, mode: "none", why: "" };
-  const hit = all.filter(function (r) { return String(r.rel || "").indexOf(dir + "/") === 0; });
+  const hit = all.filter(function (r) {
+    const parts = String(r.rel || "").split("/").slice(0, -1);
+    return parts.indexOf(dir) >= 0;
+  });
   if (hit.length) {
     return { rows: hit, dir: dir, n: hit.length, all: all.length, ok: true, mode: "scoped", why: "" };
   }
@@ -19903,8 +19913,14 @@ function cvfScope(rows, team) {
     return { rows: [], dir: dir, n: 0, all: 0, ok: false, mode: "empty",
       why: "고르신 폴더에 파일이 없습니다" };
   }
-  return { rows: all, dir: dir, n: all.length, all: all.length, ok: true, mode: "asis",
-    why: "경로에 「" + dir + "」가 없지만 **고르신 폴더를 그대로 씁니다** — 그 안의 폴더를 고르신 것으로 봅니다" };
+  /* ⚠️ 두 교훈이 여기서 만난다.
+       ① 고르신 것을 **0건으로 버리지 않는다** — 바르게 고르고도 빈 화면을 보셨던 일이 있다.
+       ② 그런데 경로에 팀 표시가 없으면 **여덟 팀이 모두 같은 파일을 보게 된다.**
+     그래서 그대로 쓰되, 그 사실을 숨기지 않고 적는다. 갈라서 보시려면 루트를 고르시면 된다. */
+  return { rows: all, dir: dir, n: all.length, all: all.length, ok: true, mode: "asis", wide: true,
+    why: "경로에 「" + dir + "」가 없지만 **고르신 폴더를 그대로 씁니다** — 그 안의 폴더를 고르신 것으로 봅니다. "
+      + "다만 팀 표시가 없어 **여덟 팀이 모두 같은 목록을 보게 됩니다** — 팀마다 갈라서 보시려면 "
+      + "저장소 **루트**(" + (typeof CORP_VFS_WANT === "string" ? CORP_VFS_WANT : "저장소 폴더") + ")를 고르세요" };
 }
 
 /* ── ⑥-3 그날 것 찾기 — **고르지 않는다. 다만 하나뿐이면 하나뿐이라고 말한다** ──
@@ -23597,8 +23613,18 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
       setPerm(await cvfPerm(x, true));
       /* ⚠️ 「방문할 때마다 허용」은 **이을 때 뜨지 않는다** — 다음에 여실 때 뜬다.
          안 뜬 창을 가리켜 적으면 사람이 기다리거나 자기가 뭘 놓쳤다고 여긴다. */
+      /* 이은 것이 곧 읽기 허락이다. 그런데 한 번 더 누르게 하면 「왜 안 뜨지」가 된다 —
+         이어진 그 자리에서 바로 가져온다(조성래님 지적 2026-11-13). */
+      let got = "";
+      try {
+        const S = await cvfScan(x, function (n) { setTick(n); });
+        setScan(S);
+        if (typeof onRows === "function") onRows(S.rows);
+        got = " 바로 " + S.n + "건을 가져왔습니다(" + Math.round(S.bytes / 104857.6) / 10 + "MB)."
+          + (S.unread ? " **" + S.unread + "건은 내용을 읽지 못했습니다** — OneDrive 가 아직 내려받지 않았을 수 있습니다." : "");
+      } catch (e2) { got = " 다만 아직 못 읽었습니다 — 「지금 가져오기」를 눌러 주세요(" + ((e2 && e2.message) || "까닭 모름") + ")."; }
       setNote({ bad: false, t: "「" + (x.name || "폴더") + "」을(를) 이었습니다 — 고르신 것이 곧 읽기 허락이라 따로 묻지 않습니다."
-        + " 이제 「지금 가져오기」를 누르시면 됩니다." });
+        + got });
     } catch (e) { setNote({ bad: true, t: (e && e.message) || "폴더를 잇지 못했습니다" }); }
     setBusy(false);
   };
@@ -23606,7 +23632,7 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
     const ok = await cvfCopyPath();
     setNote({ bad: !ok, t: ok
       ? "경로 「" + CORP_VFS_WANT + "」를 복사했습니다 — 폴더 창에서 Ctrl+V 로 붙여 넣고 Enter 를 누르세요."
-      : "복사하지 못했습니다 — 바탕화면에서 「0.HI-fin 온톨로지하네스」 → 「02.회계」 로 들어가 주세요." });
+      : "복사하지 못했습니다 — 바탕화면에서 「0.HI-fin 온톨로지하네스」를 고르시면 됩니다(안으로 들어가지 마세요)." });
   };
   const grant = async function () {
     setBusy(true);
@@ -23687,12 +23713,15 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
             브라우저는 바탕화면을 마음대로 뒤지지 못합니다 — <b>조성래님이 한 번 폴더를 지정</b>해 주셔야 합니다.
             그 뒤로는 권한이 남아 「지금 가져오기」 한 번이면 됩니다. <b>저절로 돌지는 않습니다</b> —
             화면을 열고 누르셔야 합니다(브라우저가 사람이 누를 때만 폴더를 열어 줍니다).
+            <b className="vf-aim">고르실 것은 <u>0.HI-fin 온톨로지하네스</u> 한 칸입니다 — 그 안으로 들어가지 마세요.
+              루트를 고르셔야 여덟 팀이 한 번에 찹니다.</b>
             <CorpDefn>
               <span className="cl-warn2">
-              누르시면 <b>바탕화면에서 창이 열립니다</b> — 거기서 <b>0.HI-fin 온톨로지하네스</b> →
-              <b>02.회계</b> 로 들어가 「폴더 선택」을 누르시면 됩니다.
+              누르시면 <b>바탕화면에서 창이 열립니다</b> — 거기서 <b>0.HI-fin 온톨로지하네스</b>를
+              <b>한 번만 누르고</b>(열지 말고) 아래 「폴더 선택」을 누르시면 됩니다.
               경로를 붙여 넣는 게 편하시면 <b>먼저 「경로 복사」</b>를 누르시고, 폴더 창에서 Ctrl+V → Enter 하세요.
               <b>바탕화면 자체는 고를 수 없습니다.</b>
+              안으로 더 들어가 02.회계나 26.11을 고르시면 그 팀만, 또는 여덟 팀이 같은 목록을 보게 됩니다.
               </span>
               <span className="cl-warn2">
               <b>권한을 따로 묻지 않습니다</b> — 폴더를 고르시는 것이 곧 읽기 허락입니다.
@@ -43464,6 +43493,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-13", ver:"v5.2", ch:[9], feat:"저장소 폴더 잇기 — 루트를 고르게 하고 팀을 경로 어디서든 찾는다", src:"회사 총괄운영 팀 자료실 폴더 잇기", summary:"자료실을 여덟 팀으로 돌린 뒤에도 화면 안내가 회계팀 폴더로 들어가라고 적고 있어 그대로 따르면 일곱 팀이 영영 0건이 되는데 조성래님은 그 말을 따라 더 깊은 달 폴더까지 들어가셨고, 그렇게 팀 표시가 없는 폴더를 이으면 어느 팀 것인지 알 길이 없는데도 코드가 모든 팀에 같은 파일을 보여 주어 모르면서 아는 척하고 있었으며, 게다가 폴더 통째 고르기로 루트를 고르면 경로 앞에 루트 이름이 붙는데 팀 찾기가 첫 칸만 보고 있어 루트를 고르라고 바꾸는 순간 터질 자리였으므로, 고를 곳을 저장소 루트로 바꾸고 접히지 않는 한 줄로 어디를 고를지 화면 맨 앞에 적었으며 팀 폴더를 경로 어디서든 찾게 하고 팀 표시가 없는 폴더는 바르게 고르고도 빈 화면을 보셨던 옛 교훈을 지켜 버리지 않되 여덟 팀이 같은 목록을 보게 된다는 사실을 적게 했고 이으면 그 자리에서 바로 가져오게 하여 한 번 더 누르는 단계를 없앴다", refs:[], status:"반영", hash:"96bcaf7", auto:true },
   { date:"2026-11-13", ver:"v5.1", ch:[9], feat:"팀 대화 기록 — 버튼 이름을 남기고 연달은 같은 질문은 갈아 끼운다", src:"회사 총괄운영 팀 대화창", summary:"같은 답이 두 번 떠 있다는 지적을 받아 기록을 세어 보니 한 번 누르면 질문과 답 두 줄만 쌓이고 두 번 도는 곳은 없었으며 같은 질문이 두 번 보내진 것이었는데 그 사이의 질문 줄이 라우팅용 낱말만 담은 작은 칩이라 눈에 띄지 않아 큰 답 두 개만 보여 고장처럼 읽혔으므로, 보내는 말은 라우팅 때문에 그대로 두고 기록에 남길 말만 따로 받아 버튼 이름이 남게 했고, 바로 앞과 같은 질문이면 새로 쌓지 않고 그 칸을 갈아 끼우되 그 사이 숫자가 바뀌었으면 바뀐 값이 뜨므로 감추는 것이 아니며 다른 질문을 사이에 했으면 둘 다 남겨 지나온 길을 지우지 않게 했다", refs:[], status:"반영", hash:"304ef58", auto:true },
   { date:"2026-11-13", ver:"v5.0", ch:[9], feat:"자료실 — 팀마다 하나 · 목록만 · 눌러서 열기", src:"회사 총괄운영 팀 자료실 · 회계팀 자료 반입", summary:"전사 자료반입과 자료실 탭을 해체하고 여덟 팀에 이미 등재돼 있던 팀 자료실만 남겼으며 지운 탭이 조용히 돌아오지 못하게 없다는 것을 세는 단언을 더했고, 자료실 화면이 블록 열하나였던 것을 목록 하나로 줄여 저장소에서 보던 대로 하위 폴더로 묶고 줄에는 파일 이름과 크기와 수정일만 두되 보존기한은 짚으면 뜨게 얹었으며, 브라우저는 경로로 파일을 열지 못하고 사람이 한 번 고른 폴더 핸들로만 열 수 있으므로 폴더 잇기 한 번은 남기고 그 뒤로는 줄을 누르면 그 자리에서 읽어 새 탭에 넘기되 팝업 차단을 피하려 창을 먼저 열고 주소를 뒤에 넘기며 실패하면 빈 탭을 닫고 까닭을 적게 했고, 읽은 내용은 어디에도 담지 않고 임시 주소를 일 분 뒤 거두어 대장이 목록만 들게 했으며, 전까지 화면이 파일을 열어 주는 척하지 않는다고 적고 러너가 그 문장을 요구하고 있었으므로 이제 정말 열어 주는 이상 그 약속은 거짓이 되어 문구와 단언을 함께 고쳐 내용을 담지 않는다는 약속을 세게 했고, 자료 반입에 전표를 표로 한꺼번에 넣는 유일한 길이 있어 탭만 지우면 러너가 녹색인 채로 기능이 사라지므로 회계팀 지면으로 옮겨 살려 두고 옮겨 살아 있는지를 단언으로 세었다", refs:[], status:"반영", hash:"eeda5e5", auto:true },
   { date:"2026-11-13", ver:"v4.9", ch:[9], feat:"업무 화면 — 설명을 접고 업무 버튼을 앞에", src:"회사 총괄운영 전 지면 · 팀 대화창", summary:"총괄 화면의 설명 글자가 마흔 줄이어서 숫자보다 까닭이 넓은 자리를 차지하고 있었으므로 설명을 업무 정의 버튼 뒤로 접되 어느 장부를 보고 있는지와 숫자가 틀릴 수 있다는 경고와 0이 나온 까닭과 할 수 없는 일의 사유는 설명이 아니라 사실이라 접지 않았고, 러너가 소스 글자만 보아 고지를 숨겨도 전건 통과하는 자리라 고지가 접힘 밖에 있는지를 괄호 수로 세어 직접 단언했으며, 팀 지면마다 맨 위 배너가 한 문장 알림과 긴 부연으로 되어 있어 부연 열세 묶음만 버튼 아래 서브 섹션으로 내리고 팀 대화창 머리 배지 셋도 함께 내렸으되 끝내지 못하는 일은 화면의 제약과 실제 거절이 어긋나지 않게 그 안에 그대로 두었고, 업무 버튼은 작은 칩이라 이름만 키우면 이름만 커지므로 큰 칸으로 바꾸고 무슨 일인지 한 줄을 도구 원천에 적어 화면이 그것을 읽게 했으며 열일곱 도구의 뜻이 서로 같지 않은지까지 세었고, 인사말이 앞의 세 도구를 실제로 돌려 상태를 가져오므로 도구 순서는 흔들지 않았다", refs:[], status:"반영", hash:"df363cd", auto:true },
@@ -59142,7 +59172,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-13","seed":20260828,"inventory":{"version":1,"sourceHash":"9d941d999551ca7a","generatedAt":"2026-11-12","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.51,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-13","seed":20260828,"inventory":{"version":1,"sourceHash":"9d941d999551ca7a","generatedAt":"2026-11-12","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.62,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
