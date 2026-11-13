@@ -1151,7 +1151,13 @@ if (vboard) {
   chk(/function CorpVaultSection\(\{ team \}\)/.test(vboard), "⑫화면   게시판이 팀 인자를 받는다", "없음");
   chk(vboard.indexOf("corpVaultOfTeam(") >= 0, "⑫화면   팀 거르개를 화면이 부른다", "없음");
   chk(vboard.indexOf("corpVaultPass(") >= 0, "⑫화면   검산이 러너와 같은 함수", "없음");
-  chk(/열어 주는 척하지 않습니다/.test(vboard), "⑫화면   파일을 열어 주지 못한다고 적는다", "없음");
+  /* 2026-11-13 — 조성래님 지시로 **정말 열어 준다**(cvfOpenFile). 예전 문장을 그대로
+     요구하면 화면이 거짓말을 하게 된다. 대신 **내용을 담지 않는다**는 약속을 센다. */
+  chk(vboard.indexOf("누르신 그 자리에서 읽고 바로 놓습니다") >= 0
+    && vboard.indexOf("열어 주는 척하지 않습니다") < 0,
+    "⑩화면   파일을 열되 내용은 담아 두지 않는다고 적는다", "없음");
+  chk(vboard.indexOf("cvfOpenFile(") >= 0,
+    "⑩화면   줄을 누르면 이어 둔 폴더에서 여는 함수를 부른다", "없음");
   chk(/0건인 팀을 숨기지 않습니다/.test(vboard), "⑫화면   자료 0건인 팀을 숨기지 않는다고 적는다", "없음");
 }
 /* 조직 원천 — 팀마다 자료실 지면이 있는가 */
@@ -2228,6 +2234,21 @@ chk(CHATX.indexOf("{x.ko}") > 0 && CHATX.indexOf("{x.d}") > 0,
   "⑳업무   버튼 글자는 도구 원천의 것을 그대로 쓴다 — 화면이 따로 적지 않는다");
 chk(inDefn(CHATX, "끝내지 못하는 일</b>") === true,
   "⑳알림   끝내지 못하는 일은 버튼 아래 서브 섹션에 남는다 — 지우지 않았다");
+
+/* ⑳자료실 — 전사 탭을 해체하고 팀마다 둔다 (조성래님 지시 2026-11-13).
+   지운 탭은 다음 커밋에 조용히 돌아온다 — 없다는 것을 센다. */
+chk(kSrc.indexOf('setView("up")') < 0 && kSrc.indexOf('setView("vt")') < 0,
+  "⑳자료실 자료 반입 · 자료실 전사 탭은 **없다**");
+/* 탭을 없악다고 기능까지 사라지면 그건 해체가 아니라 삭제다 — 갈 자리를 센다. */
+const UPPAGE = G("CORP_TEAMS").filter((t) => t.pages.some((p) => p.comp === "CorpUploadSection"));
+chk(UPPAGE.length === 1 && UPPAGE[0].id === "M2",
+  "⑳자료실 전표 반입은 회계팀 지면으로 옮겨 살아 있다", UPPAGE.map((t) => t.id).join(" ") || "갈 자리 없음");
+chk(kSrc.indexOf('name === "CorpUploadSection"') > 0,
+  "⑳자료실 그 지면을 그릴 수 있게 등록도 되어 있다");
+/* 여는 함수는 **내용을 남기지 않는다** — 임시 주소를 만들고 거둔다. */
+const VFSSRC = rd("src/data/corpVaultFs.js");
+chk(VFSSRC.indexOf("async function cvfOpenFile(") > 0 && VFSSRC.indexOf("revokeObjectURL") > 0,
+  "⑳자료실 여는 함수가 임시 주소를 거둔다(내용을 쥐고 있지 않다)");
 
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;

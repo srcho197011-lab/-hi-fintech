@@ -2,8 +2,9 @@
    회사 자료 저장소의 목차를 게시한다. 총괄운영의 여덟째 뷰.
 
    이 화면이 지키는 것
-     · **목록이지 파일이 아니다.** 서버가 없어 브라우저가 로컬 파일을 열지 못한다.
-       경로를 복사해 탐색기에 붙이면 열린다 — 열어 주는 척하지 않는다.
+     · **목록은 화면이 들고, 파일은 폴더가 든다.** 줄을 누르면 이어 둔 폴더에서
+       그 파일을 열어 준다(cvfOpenFile) — 내용은 그 자리에서 읽고 바로 놓는다.
+       브라우저는 경로로 파일을 열지 못하므로 **사람이 한 번 고른 폴더**만 열 수 있다.
      · **확정 자료를 맨 위에 둔다.** 재무제표확인원처럼 다른 자료가 따라야 하는 것은
        작업본과 섞여 있으면 안 된다. 작업본을 보고 숫자를 믿는 사고가 거기서 난다.
      · **두 법인을 가른다.** 저장소에 하이젠케어(주)와 글로벌예방금융(주) 자료가 섞여 있다.
@@ -238,6 +239,14 @@ function CorpVaultFs({ onRows, bankOnly, onPick, team, day }) {
   );
 }
 
+/* ══════════════ 팀 자료실 — 목록 하나 (조성래님 지시 2026-11-13) ══════════════
+   지시: 「자료반입 / 자료실은 해체하고 각 팀별로 자료실을 만들어 주고, 화면에는
+   목록만을 두고 목록을 클릭하면 저장소의 각 팀별 섹션과 바로 연결하여 파일을
+   볼 수 있도록 해줘. 가급적 단순하게 만들어 줘.」
+
+   ⚠️ 브라우저는 **경로로 파일을 열지 못한다.** 사람이 한 번 고른 폴더 핸들로만 연다.
+   그래서 「폴더 잇기」 한 번은 남는다 — 그 뒤로는 줄을 누르면 바로 열린다.
+   ⚠️ 읽은 내용은 **어디에도 담지 않는다.** 대장은 목록만 든다(corpVaultPass 의 「root」). */
 function CorpVaultSection({ team }) {
   const [st, setSt] = React.useState(() => corpVaultRead());
   /* 폴더에서 가져온 목록을 그대로 대장으로 쓴다 — 종류 · 법인 판별은 아래가 한다(두 벌이 되지 않게) */
@@ -245,28 +254,28 @@ function CorpVaultSection({ team }) {
     const next = { at: "저장소 폴더", list: rows };
     corpVaultWrite(next); setSt(next);
   }, []);
-  const [q, setQ] = React.useState({ q: "", dept: "", kind: "", ent: "", key: false });
-  const [copied, setCopied] = React.useState("");
-  /* 팀 보드에서는 **그 팀 자료만** 본다. 총괄 자료실에서는 전사가 보인다.
-     같은 함수가 인자만 달리 받는다 — 팀마다 화면을 복제하지 않는다. */
+  const [why, setWhy] = React.useState("");
+
+  /* 팀 보드에서는 **그 팀 자료만** 본다. 같은 함수가 인자만 달리 받는다 — 화면을 복제하지 않는다. */
   const all = React.useMemo(() => corpVaultRows(st), [st]);
   const rows = React.useMemo(() => corpVaultOfTeam(all, team), [all, team]);
   const byTeam = React.useMemo(() => corpVaultByTeam(all), [all]);
   const T = team && typeof corpTeam === "function" ? corpTeam(team) : null;
   const folder = team ? corpVaultFolder(team) : "";
-  const F = React.useMemo(() => corpVaultFind(rows, q), [rows, q]);
   const S = React.useMemo(() => corpVaultStats(rows), [rows]);
   const V = React.useMemo(() => corpVaultPass(st), [st]);
-  const keyRows = rows.filter((r) => r.key);
-  const on = !!(q.q || q.dept || q.kind || q.ent || q.key);
 
-  const copy = (r) => {
-    const p = corpVaultPath(r);
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(p);
-      setCopied(r.rel);
-    } catch (e) { setCopied(""); }
-  };
+  /* 저장소에서 보던 모양 그대로 — 하위 폴더로 묶는다. 팀 폴더 이름은 묶음 이름에서 뺀다(모두 같으므로). */
+  const groups = React.useMemo(() => {
+    const g = {};
+    rows.forEach((r) => {
+      const p = String(r.rel || "").split("/");
+      const k = p.slice(1, -1).join(" › ") || "·";
+      (g[k] = g[k] || []).push(r);
+    });
+    return Object.keys(g).sort().map((k) => ({ k: k, list: g[k] }));
+  }, [rows]);
+
   const kb = (n) => {
     const v = +n || 0;
     if (v >= 1048576) return (v / 1048576).toFixed(1) + " MB";
@@ -274,12 +283,20 @@ function CorpVaultSection({ team }) {
     return v + " B";
   };
 
+  /* 누르신 **그 순간** 새 탭을 연다 — await 뒤에 열면 브라우저가 팝업으로 보고 막는다. */
+  const show = (r) => {
+    setWhy("");
+    if (typeof cvfOpenFile !== "function") { setWhy("이 브라우저에서는 파일을 열지 못합니다"); return; }
+    const w = window.open("", "_blank");
+    cvfOpenFile(r.rel, w).then((o) => { if (!o || !o.ok) setWhy((o && o.why) || "파일을 열지 못했습니다"); });
+  };
+
   return (
     <div className="cl-wrap">
       <div className="cl-top">
         <div className="cl-ttl">
           <b>{T ? T.sh + "팀 자료실" : "자료실"}</b>
-          <span className="cl-sub">{team ? CORP_VAULT_ROOT + " \ " + folder : CORP_VAULT_ROOT}</span>
+          <span className="cl-sub">{team ? CORP_VAULT_ROOT + " › " + folder : CORP_VAULT_ROOT}</span>
         </div>
         <div className="cl-ctl">
           <span className="ad-chip">{S.n}건 · {S.mb}MB</span>
@@ -289,173 +306,67 @@ function CorpVaultSection({ team }) {
       </div>
 
       <div className="cl-warn">
-        이 게시판은 <b>목록이지 파일이 아닙니다.</b> 서버가 없어 브라우저가 저장소 파일을 열지 못합니다 —
-        경로를 복사해 탐색기에 붙이면 열립니다. <b>열어 주는 척하지 않습니다.</b>
+        목록은 <b>저장소 폴더를 훑어</b> 만듭니다 — 줄을 누르면 이어 둔 폴더에서 <b>그 파일을 엽니다.</b>
+        파일 내용은 담아 두지 않습니다 — <b>누르신 그 자리에서 읽고 바로 놓습니다.</b>
         <CorpDefn>
           <span className="cl-warn2">
           목록은 코드에 넣지 않았습니다. 파일명이 곧 회사 자료의 목차라, 공개 배포본에 실리면
-          대외비 저장소의 목차를 공개하는 셈입니다 — <b>반입해서 이 브라우저에만</b> 둡니다.
+          대외비 저장소의 목차를 공개하는 셈입니다 — <b>폴더를 이어 이 브라우저에만</b> 둡니다.
+          PDF · 이미지 · 표는 새 탭에 뜨고, 엑셀 · 한글처럼 브라우저가 못 그리는 것은 내려받기가 됩니다.
           </span>
         </CorpDefn>
       </div>
 
       <div className="cl-body">
         <CorpVaultFs onRows={takeRows} />
-        {!rows.length && all.length > 0 && team && (
+        {why && <div className="cl-msg bad" onClick={() => setWhy("")}>{why}</div>}
+
+        {rows.length > 0 && groups.map((g) => (
+          <div key={g.k} className="cl-sec">
+            <div className="cl-h">{g.k}<span className="cl-t">{g.list.length}건</span></div>
+            <div className="vt-list">
+              {g.list.map((r) => (
+                <button key={r.rel} className="vt-row" onClick={() => show(r)}
+                  title={r.ko + " · 회사 보존 " + r.keep + "년 · 파기 예정 " + (r.dispose || "—")}>
+                  <span className="nm">{r.name}</span>
+                  {r.key ? <i className="vt-k">확정</i> : null}
+                  <span className="sz">{kb(r.size)}</span>
+                  <span className="dt">{r.at}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {!rows.length && (
           <div className="cl-sec">
             <div className="cl-h">{T ? T.sh + "팀" : "이 팀"} 자료가 아직 없습니다
-              <span className="cl-flag">전사 {all.length}건</span></div>
+              {all.length > 0 && <span className="cl-flag">전사 {all.length}건</span>}</div>
             <p className="cl-note">
-              저장소에 <b>{folder}</b> 폴더를 만들고 자료를 넣은 뒤 목록을 다시 올리면 여기 채워집니다.
-              다른 팀 자료는 <b>여기 보이지 않습니다</b> — 팀마다 자기 것만 봅니다.
-            </p>
+              위 <b>폴더 잇기</b>를 한 번 하시면 저장소의 <b>{folder || "팀 폴더"}</b> 아래가 그대로 목록이 됩니다.
+              다른 팀 자료는 <b>여기 보이지 않습니다</b> — 팀마다 자기 것만 봅니다.</p>
+          </div>
+        )}
+
+        {all.length > 0 && (
+          <div className="cl-sec">
+            <div className="cl-h">다른 팀 <span className="cl-t">0건인 팀을 숨기지 않습니다</span></div>
             <div className="vt-teams">
-              {CORP_VAULT_DEPT.map((d) => (
-                <span key={d.k} className={"vt-tchip" + (byTeam[d.team] && byTeam[d.team].n ? " on" : "")}>
-                  {d.ko}<i>{(byTeam[d.team] || {}).n || 0}</i>
-                </span>
+              {byTeam.map((b) => (
+                <span key={b.team} className={"ad-chip" + (b.team === team ? " on" : "")}>{b.sh} {b.n}</span>
               ))}
             </div>
           </div>
         )}
 
-        {!all.length && (
-          <div className="cl-sec">
-            <div className="cl-h">자료 대장이 아직 없습니다</div>
-            <p className="cl-note">
-              저장소를 훑어 목록을 만들고 올리면 여기 채워집니다. 두 단계입니다 —
-            </p>
-            <ol className="vt-how">
-              <li>터미널에서 <code>python scripts/gen_vault_index.py</code> 를 돌립니다.
-                저장소의 <b>_반입 \ 04_자료목록.csv</b> 가 만들어집니다.</li>
-              <li><b>자료 반입</b> 뷰에서 「문서 목록」을 고르고 그 파일을 올립니다.</li>
-            </ol>
-            <p className="cl-note">스캔 스크립트는 <b>사실만</b> 내보냅니다 — 경로 · 크기 · 날짜.
-              종류와 법인 판별은 이 화면이 합니다. 두 곳에서 분류하면 규칙이 갈라지고, 갈라진 줄도 모릅니다.</p>
-          </div>
-        )}
-
-        {!team && all.length > 0 && (
-          <div className="cl-sec">
-            <div className="cl-h">팀별 자료 <span className="cl-t">저장소 폴더가 곧 팀입니다</span></div>
-            <div className="vt-teams">
-              {CORP_VAULT_DEPT.map((d) => (
-                <span key={d.k} className={"vt-tchip" + (byTeam[d.team] && byTeam[d.team].n ? " on" : "")}>
-                  {d.k}. {d.ko}<i>{(byTeam[d.team] || {}).n || 0}건</i>
-                </span>
-              ))}
-            </div>
-            <p className="cl-note">0건인 팀을 숨기지 않습니다 — 숨기면 <b>아직 안 올렸다</b>는 사실이 안 보입니다.
-              각 팀 보드의 「자료실」 지면에서 그 팀 자료만 따로 봅니다.</p>
-          </div>
-        )}
-
-        {keyRows.length > 0 && (
-          <div className="cl-sec vt-keybox">
-            <div className="cl-h">확정 자료 <span className="cl-t">다른 자료가 이것을 따릅니다</span>
-              <span className="cl-flag on">{keyRows.length}건</span></div>
-            {keyRows.map((r) => (
-              <div key={r.rel} className="cl-open vt-row">
-                <span className="vt-kind key">{r.kindKo}</span>
-                {r.ent && <span className="vt-ent">{r.ent}</span>}
-                <b>{r.name}</b>
-                <span className="vt-meta">{r.dir || "(루트)"} · {kb(r.size)} · {r.at}</span>
-                <button className="cl-go" onClick={() => copy(r)}>{copied === r.rel ? "복사됨" : "경로 복사"}</button>
-              </div>
+        <CorpDefn lab="검산">
+          <table className="cl-tbl"><tbody>
+            {V.rows.map((r, i) => (
+              <tr key={i}><td className="k">{r.ko}</td>
+                <td><span className={"cl-verd" + (r.ok ? " on" : " bad")}>{r.ok ? "맞음" : "어긋남"}</span> {r.got}</td></tr>
             ))}
-            <p className="cl-note">작업본과 섞여 있으면 작업본을 보고 숫자를 믿는 사고가 납니다 — 그래서 맨 위에 따로 둡니다.</p>
-          </div>
-        )}
-
-        <div className="cl-sec">
-          <div className="cl-h">자료 조회
-            <span className={"cl-flag" + (on ? " on" : "")}>{F.n} / {F.all}건 · {F.mb}MB</span></div>
-          <div className="jv-q">
-            <input className="g" value={q.q} placeholder="파일명 · 폴더 · 종류"
-              onChange={(e) => setQ(Object.assign({}, q, { q: e.target.value }))} />
-            {!team && (
-              <select value={q.dept} onChange={(e) => setQ(Object.assign({}, q, { dept: e.target.value }))}>
-                <option value="">부서 전체</option>
-                {CORP_VAULT_DEPT.filter((d) => S.byDept[d.ko]).map((d) => (
-                  <option key={d.k} value={d.ko}>{d.k}. {d.ko} ({S.byDept[d.ko]})</option>
-                ))}
-              </select>
-            )}
-            <select value={q.kind} onChange={(e) => setQ(Object.assign({}, q, { kind: e.target.value }))}>
-              <option value="">종류 전체</option>
-              {CORP_VAULT_KIND.filter((k) => S.byKind[k.k]).map((k) => (
-                <option key={k.k} value={k.k}>{k.ko} ({S.byKind[k.k]})</option>
-              ))}
-            </select>
-            <select value={q.ent} onChange={(e) => setQ(Object.assign({}, q, { ent: e.target.value }))}>
-              <option value="">법인 전체</option>
-              {CORP_VAULT_ENTITY.filter((e2) => S.byEnt[e2.k]).map((e2) => (
-                <option key={e2.k} value={e2.k}>{e2.ko} ({S.byEnt[e2.k]})</option>
-              ))}
-            </select>
-            <label className="vt-chk">
-              <input type="checkbox" checked={q.key} onChange={(e) => setQ(Object.assign({}, q, { key: e.target.checked }))} />
-              확정 자료만
-            </label>
-            {on && <button className="cl-rv" onClick={() => setQ({ q: "", dept: "", kind: "", ent: "", key: false })}>조건 지우기</button>}
-          </div>
-
-          {F.n === 0 && rows.length > 0 && <p className="cl-note">조건에 맞는 자료가 <b>없습니다</b>.</p>}
-
-          {F.n > 0 && (
-            <table className="cl-tbl vt">
-              <thead><tr><th>종류</th><th>법인</th><th>파일</th><th>폴더</th><th>크기</th><th>수정</th>
-                <th>법정</th><th>회사 보존</th><th>파기 예정</th><th /></tr></thead>
-              <tbody>
-                {F.rows.slice(0, 200).map((r) => (
-                  <tr key={r.rel} className={r.key ? "vt-k" : ""}>
-                    <td><span className={"vt-kind" + (r.key ? " key" : "")}>{r.kindKo}</span></td>
-                    <td className="id">{r.ent || "—"}</td>
-                    <td className="desc">{r.name}</td>
-                    <td className="id">{r.dir || "(루트)"}</td>
-                    <td className="n">{kb(r.size)}</td>
-                    <td className="id">{r.at}</td>
-                    <td className="id">{r.years === null ? <span className="vt-nocls">분류 미정</span>
-                      : (r.years === 0 ? "영구" : r.years + "년")}
-                      {r.cls && !r.checked && <i className="vt-un">미확인</i>}</td>
-                    <td className="id">{r.keep === 0 ? <b className="vt-perm">영구</b>
-                      : (r.keep === null ? <span className="vt-nocls">미정</span> : <b>{r.keepKo}</b>)}</td>
-                    <td className="id">{r.dispose || (r.keep === 0 ? <span className="vt-perm">파기 없음</span>
-                      : <span className="vt-nocls">—</span>)}</td>
-                    <td><button className="cl-rv" onClick={() => copy(r)}>{copied === r.rel ? "복사됨" : "경로"}</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-          {F.n > 200 && <p className="cl-note">앞 200건만 보여 줍니다 — 조건을 좁혀 주세요(전체 {F.n}건).</p>}
-          {rows.length > 0 && (<React.Fragment>
-            <p className="cl-note">보존기한은 <b>문서 분류</b>에서 옵니다(총무 · 문서 지면).
-              「미확인」은 법령 원문 대조를 아직 안 했다는 뜻입니다 — 확인하지 않은 조문을 찍지 않습니다.</p>
-            <p className="cl-note"><b>재무제표 · 확인원은 영구보관</b>입니다(대표 확정) — 파기 예정일이 없습니다.
-              <b>회계장부 · 전표는 10년</b>이라 파기 예정일이 수정일 + 10년으로 찍힙니다.
-              <b>회사 보존이 「미정」인 자료는 파기 예정일을 찍지 않습니다</b> — 정하지 않은 규칙으로 날짜를 만들면,
-              그 날짜를 보고 자료를 버립니다.</p>
-          </React.Fragment>)}
-        </div>
-
-        <div className="cl-sec">
-          <div className="cl-h">검산 — 화면과 커밋 게이트 러너가 같은 함수를 봅니다</div>
-          <table className="cl-tbl id">
-            <thead><tr><th>항목</th><th>대상</th><th>결과</th><th>기대</th><th /></tr></thead>
-            <tbody>
-              {V.rows.map((r) => (
-                <tr key={r.k} className={r.ok && r.n > 0 ? "" : "bad"}>
-                  <td>{r.ko}</td><td className="n">{r.n}건</td><td className="n">{r.got}</td>
-                  <td className="n">{r.want}</td>
-                  <td className="st">{!(r.n > 0) ? "대상 0 — 실패" : (r.ok ? "통과" : "실패")}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="cl-note">분류 규칙이 오타로 죽어도 「전부 기타」는 조용히 통과합니다 —
-            그래서 <b>표본을 먹여 분류기가 살아 있는지</b> 먼저 증명합니다.</p>
-        </div>
+          </tbody></table>
+        </CorpDefn>
       </div>
     </div>
   );

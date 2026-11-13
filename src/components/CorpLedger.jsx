@@ -837,7 +837,7 @@ function ClBank({ R, st, save, actor, A }) {
             <div className="cl-eq"><b>—</b><span>은행 내역 없음</span></div>
           </div>
           <p className="cl-note"><b>바로 위에서</b> 은행 내역을 올리시면 전표가 만들어지고 대사가 돕니다
-            (자료 반입 창구의 「은행 거래내역」으로 올리셔도 같습니다 — 판정은 같은 함수가 합니다).
+            (회계팀 「전표 반입」 지면으로 올리셔도 같습니다 — 판정은 같은 함수가 합니다).
             장부에서 보통예금이 움직인 전표는 <b>{R.book.length}건</b> 있습니다.</p>
         </div>
       </div>

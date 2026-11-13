@@ -257,8 +257,8 @@ function CorpOps({ onGo, onTab }) {
           <button className={"corp-vt" + (view === "org" ? " on" : "")} onClick={() => setView("org")}>조직도</button>
           <button className={"corp-vt" + (view === "mtg" ? " on" : "")} onClick={() => setView("mtg")}>주간회의</button>
           <button className={"corp-vt" + (view === "gov" ? " on" : "")} onClick={() => setView("gov")}>일정 · 결재</button>
-          <button className={"corp-vt" + (view === "up" ? " on" : "")} onClick={() => setView("up")}>자료 반입</button>
-          <button className={"corp-vt" + (view === "vt" ? " on" : "")} onClick={() => setView("vt")}>자료실</button>
+          {/* 「자료 반입」·「자료실」 전사 탭은 없다(조성래님 지시 2026-11-13 — 해체).
+              자료실은 **팀마다** 서 있고(CORP_TEAMS[].pages), 전표 반입은 회계팀 지면으로 들어갔다. */}
           {sel && <button className={"corp-vt" + (view === "team" ? " on" : "")} onClick={() => setView("team")}
             style={{ borderColor: (corpTeam(sel) || {}).c }}>{(corpTeam(sel) || {}).sh} 팀</button>}
         </div>
@@ -272,8 +272,6 @@ function CorpOps({ onGo, onTab }) {
       {view === "org" && <CorpOrgChart sel={sel} pick={pick} onTab={onTab} open={(id) => { pick(id); setView("team"); }} />}
       {view === "mtg" && typeof CorpMeetingSection === "function" && <CorpMeetingSection />}
       {view === "gov" && typeof CorpBoardSection === "function" && <CorpBoardSection />}
-      {view === "up" && typeof CorpUploadSection === "function" && <CorpUploadSection />}
-      {view === "vt" && typeof CorpVaultSection === "function" && <CorpVaultSection />}
       {view === "team" && sel && <CorpTeamBoard team={corpTeam(sel)} onGo={onGo} onTab={onTab} back={() => setView("dash")} />}
 
       <div className="corp-shell" style={view !== "dash" ? { display: "none" } : undefined}>
@@ -679,6 +677,7 @@ function corpPageComp(name) {
     if (name === "CorpReleaseSection") return typeof CorpReleaseSection === "function" ? CorpReleaseSection : null;
     if (name === "CorpSecuritySection") return typeof CorpSecuritySection === "function" ? CorpSecuritySection : null;
     if (name === "CorpVaultSection") return typeof CorpVaultSection === "function" ? CorpVaultSection : null;
+    if (name === "CorpUploadSection") return typeof CorpUploadSection === "function" ? CorpUploadSection : null;
     if (name === "MarketingSection") return typeof MarketingSection === "function" ? MarketingSection : null;
     if (name === "DataOpsConsole") return typeof DataOpsConsole === "function" ? DataOpsConsole : null;
     if (name === "FoundationOntology") return typeof FoundationOntology === "function" ? FoundationOntology : null;

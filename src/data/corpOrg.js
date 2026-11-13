@@ -38,6 +38,9 @@ const CORP_TEAMS = [
     pages: [
       { t: "재무현황", kind: "mod", comp: "CorpLedgerSection", note: "실적 축 — 전표 · 원장 · 시산표 · 재무제표 · 은행 대사" },
       { t: "재무계획", kind: "tab", tab: "finance", comp: "FinanceSection", note: "계획 축 — 기존 재무회계에서 이관" },
+      /* 전사 「자료 반입」 탭을 해체하면서 여기로 옮겨 왔다(조성래님 지시 2026-11-13).
+         전표를 표로 한꺼번에 넣는 길은 이곳뿐이라 없애면 기능이 사라진다. */
+      { t: "자료 반입", kind: "mod", comp: "CorpUploadSection", note: "전사 탭에서 옮겨 왔다 — 표로 한꺼번에 넣는 길은 여기뿐이다" },
       { t: "예실 대비", kind: "mod", comp: "CorpPlanActualSection", note: "계획 ↔ 실적 — 대응표가 본체 · 차이는 조건이 설 때만" },
       { t: "자료실", kind: "mod", comp: "CorpVaultSection", note: "이 팀 자료만 — 저장소 폴더가 곧 팀이다" }],
       /* 「업무 지시」 지면은 2026-11-12 에 없앴다(조성래님 지시) — 보드 맨 위 대화창이

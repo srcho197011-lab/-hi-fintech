@@ -262,6 +262,34 @@ async function cvfFile(h, rel) {
   return f;
 }
 
+
+/* ── ⑤-2 파일 하나 **열기** ──────────────────────────────────────────────
+   조성래님 지시(2026-11-13): 「목록을 클릭하면 … 파일을 볼 수 있도록 해줘.」
+
+   ⚠️ 브라우저는 **경로로 파일을 열지 못한다.** 이어 둔 폴더 핸들로만 연다 —
+   그래서 「폴더 잇기」 한 번은 남는다. 그 뒤로는 줄을 누르면 바로 열린다.
+   ⚠️ 읽은 내용은 **어디에도 담지 않는다.** 그 자리에서 읽어 임시 주소를 만들고
+   새 탭에 넘긴 뒤 거둔다. 대장은 목록만 든다(corpVaultPass 의 「root」).
+   ⚠️ 새 탭은 **사람이 누른 그 순간** 열어 두고 넘겨받는다. await 뒤에 열면
+   브라우저가 팝업으로 보고 막는다 — 그래서 win 을 인자로 받는다. */
+async function cvfOpenFile(rel, win) {
+  const bad = function (why) { try { if (win) win.close(); } catch (e) {} return { ok: false, why: why }; };
+  if (!rel) return bad("열 파일이 없습니다");
+  let h = null;
+  try { h = await cvfHandle(); } catch (e) { h = null; }
+  if (!h) return bad("이어 둔 폴더가 없습니다 — 위 「폴더 잇기」를 한 번 해 주세요");
+  let f = null;
+  try { f = await cvfFile(h, rel); }
+  catch (e) { return bad((e && e.message) || "파일을 읽지 못했습니다"); }
+  let url = "";
+  try { url = URL.createObjectURL(f); }
+  catch (e) { return bad("파일을 띄우지 못했습니다"); }
+  /* 새 탭이 다 읽을 시간을 준 뒤 거둔다 — 바로 거두면 빈 탭이 뜬다 */
+  setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 60000);
+  if (win) { try { win.location = url; } catch (e) { return bad("새 탭으로 넘기지 못했습니다"); } }
+  else if (!window.open(url, "_blank")) return { ok: false, why: "새 탭이 막혔습니다 — 팝업 차단을 풀어 주세요" };
+  return { ok: true, name: f.name, size: f.size };
+}
 /* ══════════════════════════════════════════════════════════════════════════
    여기부터는 **순수 함수** — 러너가 직접 시험한다
    ══════════════════════════════════════════════════════════════════════════ */

@@ -6375,3 +6375,18 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .tc-verds{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 6px;}
 /* .corp-cap 은 pointer-events:none 이라 그 안의 버튼이 눌리지 않는다 — 버튼만 되살린다 */
 .corp-cap .corp-defn{pointer-events:auto;margin-top:5px;}
+
+/* ══════════════ 팀 자료실 — 목록만 (조성래님 지시 2026-11-13) ══════════════ */
+.vt-list{display:flex;flex-direction:column;gap:2px;margin-top:4px;}
+.vt-row{display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  background:transparent;border:1px solid transparent;border-radius:5px;padding:6px 9px;
+  cursor:pointer;font-family:inherit;font-size:11.5px;color:var(--ct);}
+.vt-row:hover{background:rgba(232,121,90,.1);border-color:rgba(232,121,90,.35);}
+.vt-row .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vt-row .sz,.vt-row .dt{font-size:9.5px;color:var(--cd2);white-space:nowrap;
+  font-variant-numeric:tabular-nums;}
+.vt-row .dt{width:72px;text-align:right;}
+.vt-row .vt-k{font-size:8.5px;font-weight:700;font-style:normal;color:var(--cw);
+  border:1px solid rgba(224,163,63,.45);border-radius:3px;padding:1px 4px;white-space:nowrap;}
+.vt-teams{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+.vt-teams .ad-chip.on{color:var(--cc-hi);border-color:var(--cc);}
