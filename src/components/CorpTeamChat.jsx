@@ -73,7 +73,11 @@ function CorpTeamChat({ team, onTab, compact }) {
     return { linked: true, scope: sc, match: iso ? cvfMatchDay(sc.rows, iso) : null, root: vault.root };
   }, [vault]);
 
-  const send = function (text) {
+  /* lab — **기록에 남길 말.** 업무 버튼은 라우팅용 낱말(「현금」)을 보내지만,
+     기록에는 누른 버튼 이름(「현금 · 런웨이」)이 남아야 무엇을 눌렀는지 알 수 있다.
+     낱말만 남기면 41px 짜리 칩이 되어 눈에 안 띄고, 같은 답이 두 번 보일 때
+     「중복」으로 읽힌다(조성래님 지적 2026-11-13). */
+  const send = function (text, lab) {
     const s = String(text === undefined ? q : text).trim();
     if (!s || !a) return;
     const pre = (team === "M2" && typeof corpOrdParse === "function") ? corpOrdParse(s, today) : null;
@@ -82,7 +86,16 @@ function CorpTeamChat({ team, onTab, compact }) {
       fs: pre ? fsFor(pre.date.iso) : undefined,
     });
     const next = Object.assign({}, st, { log: Object.assign({}, st.log) });
-    next.log[AI] = (next.log[AI] || []).concat([{ who: "me", t: s }, { who: "ai", r: r }]);
+    const shown = String(lab || s);
+    const prev = next.log[AI] || [];
+    /* **바로 앞과 같은 질문이면 쌓지 않고 그 자리를 갈아 끼운다.**
+       같은 버튼을 두 번 누르면 똑같은 칸이 두 개 서서 고장처럼 보인다.
+       숫자가 그사이 바뀜으면 갈아 끼운 칸에 바뀐 값이 뜨므로 감추는 것이 아니다.
+       다른 질문을 사이에 하셨으면 둘 다 남는다 — 지나온 길은 지우지 않는다. */
+    const last = prev.slice(-2);
+    const again = last.length === 2 && last[0].who === "me" && last[0].t === shown && last[1].who === "ai";
+    const pair = [{ who: "me", t: shown }, { who: "ai", r: r }];
+    next.log[AI] = (again ? prev.slice(0, -2) : prev).concat(pair);
     corpAgWrite(next); setSt(next); setQ(""); setMsg(null);
     if (r.kind === "order" && typeof corpOrderRead === "function") {
       const t2 = corpOrderRead();
@@ -187,7 +200,7 @@ function CorpTeamChat({ team, onTab, compact }) {
                   <div className="tc-jobs">
                     {a.tools.map(function (x) {
                       return (
-                        <button key={x.k} className="tc-job" onClick={function () { send(x.ask[0]); }}>
+                        <button key={x.k} className="tc-job" onClick={function () { send(x.ask[0], x.ko); }}>
                           <b>{x.ko}</b>{x.d ? <span>{x.d}</span> : null}
                         </button>
                       );

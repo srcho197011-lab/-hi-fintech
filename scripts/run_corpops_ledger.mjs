@@ -2232,6 +2232,12 @@ chk(CHATX.indexOf("className=\"tc-job\"") > 0 && CHATX.indexOf("ag-chip tool") <
   "⑳업무   업무 버튼은 작은 칩이 아니라 큰 칸이다");
 chk(CHATX.indexOf("{x.ko}") > 0 && CHATX.indexOf("{x.d}") > 0,
   "⑳업무   버튼 글자는 도구 원천의 것을 그대로 쓴다 — 화면이 따로 적지 않는다");
+/* 같은 버튼을 두 번 누르면 똑같은 칸이 두 개 서서 고장처럼 보였다(조성래님 지적 2026-11-13).
+   나란히 쌓지 않고 그 자리를 갈아 끼운다 — 숫자가 바뀜으면 바뀐 값이 뜨므로 감추는 것이 아니다. */
+chk(CHATX.indexOf("send(x.ask[0], x.ko)") > 0,
+  "⑳기록   버튼을 누른 기록에 **버튼 이름**이 남는다(라우팅 낱말이 아니라)");
+chk(CHATX.indexOf("again ? prev.slice(0, -2)") > 0 && CHATX.indexOf("last[0].t === shown") > 0,
+  "⑳기록   바로 앞과 같은 질문이면 새로 쌓지 않고 그 칸을 갈아 끼운다");
 chk(inDefn(CHATX, "끝내지 못하는 일</b>") === true,
   "⑳알림   끝내지 못하는 일은 버튼 아래 서브 섹션에 남는다 — 지우지 않았다");
 
