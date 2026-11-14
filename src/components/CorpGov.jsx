@@ -1,7 +1,7 @@
 /* ══════════════ 일정 · 공지 · 결재 · 릴리스 화면(CorpGov.jsx) · CorpOps Phase 9 (조성래님 지시 2026-11-12) ══════════════
      CorpBoardSection     총괄운영 다섯째 뷰 「일정 · 공지 · 결재」 — 전사 귀속
-     CorpReleaseSection   정보보안팀 S1 「릴리스 · 감사」
-     CorpSecuritySection  정보보안팀 S1 「보안 현황」
+     CorpReleaseSection   AI시스템팀 S1 「릴리스 · 감사」
+     CorpSecuritySection  AI시스템팀 S1 「보안 현황」
 
    이 화면이 지키는 것
      · 승인 없이 상태가 넘어가지 않는다. 전이 함수가 유일한 길이다.
@@ -237,7 +237,7 @@ function CorpReleaseSection() {
         </div>
       </div>
       <div className="cl-warn">
-        <b>지금 릴리스를 승인할 수 있는 사람이 없습니다.</b> 릴리스 승인은 정보보안팀(S1)이 하는데
+        <b>지금 릴리스를 승인할 수 있는 사람이 없습니다.</b> 릴리스 승인은 AI시스템팀(S1)이 하는데
         그 자리의 책임자가 아직 합류 전입니다. <b>승인 경로를 대표에게 열지 않았습니다</b> —
         열면 「만든 쪽이 스스로 내보내지 못하게 한다」는 분리의 뜻이 사라집니다.
         <CorpDefn>

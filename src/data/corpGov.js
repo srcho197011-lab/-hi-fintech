@@ -24,7 +24,7 @@ const CORP_APR_ST = {
   rejected: { ko: "반려", next: null, nextKo: null, c: "#D9544A" },
 };
 /* 결재 종류 — 무엇을 승인하는가에 따라 승인 권한이 다르다.
-   rel(릴리스)은 S1 정보보안팀이 승인한다. 만든 팀이 스스로 내보내지 못하게 하는 자리다. */
+   rel(릴리스)은 S1 AI시스템팀이 승인한다. 만든 팀이 스스로 내보내지 못하게 하는 자리다. */
 const CORP_APR_KIND = [
   { k: "exp", ko: "지출 · 예산 집행", by: "M1", d: "예산을 쓰는 행위라 승인 전표를 남긴다" },
   { k: "ct", ko: "계약 체결", by: "M1", d: "회사 밖으로 책임이 나간다" },
@@ -162,7 +162,7 @@ function corpRelCanApprove(rel, actorId) {
   if (!a) return { ok: false, why: actorId + "은(는) 재직 중인 사람이 아닙니다 — AI는 릴리스를 승인하지 못합니다" };
   if (rel.by === actorId) return { ok: false, why: "작성자와 승인자가 같습니다 — 만든 사람이 스스로 내보내면 검토가 없는 것과 같습니다", same: true };
   if (a.teams.indexOf("S1") < 0) {
-    return { ok: false, why: "릴리스 승인은 정보보안팀(S1)이 합니다 — " + actorId + "은(는) " + a.teams.join("·") + " 소속입니다" };
+    return { ok: false, why: "릴리스 승인은 AI시스템팀(S1)이 합니다 — " + actorId + "은(는) " + a.teams.join("·") + " 소속입니다" };
   }
   const miss = CORP_REL_CHECK.filter((c) => (rel.check || []).indexOf(c.k) < 0 && (rel.check || []).indexOf(c.ko) < 0);
   if (miss.length) return { ok: false, why: "점검표 " + miss.length + "항목이 비었습니다 — " + miss.map((m) => m.ko).join(" · ") };
@@ -268,7 +268,7 @@ function corpDecideNow(today) {
     const who = typeof corpRelApprovers === "function" ? corpRelApprovers() : [];
     rows.push({ k: "rel", ko: "릴리스", t: r.ver + " " + r.ko,
       sub: who.length ? "승인 가능 " + who.join(" · ")
-                      : "승인할 수 있는 사람이 없습니다 — 정보보안팀 책임자 공석", go: "gov" });
+                      : "승인할 수 있는 사람이 없습니다 — AI시스템팀 책임자 공석", go: "gov" });
   });
 
   /* ③ 전표 — 승인 전은 장부에 올라가 있지 않다.

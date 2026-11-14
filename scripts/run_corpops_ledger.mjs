@@ -791,11 +791,11 @@ const full = Object.assign({}, R0, { check: G("CORP_REL_CHECK").map((c) => c.k) 
 const relCan = G("corpRelCanApprove");
 const relCases = [
   ["AI 주체", full, "온톨로", /사람이 아닙니다/],
-  ["합류 전 책임자", full, "김남용", /사람이 아닙니다/],
-  ["S1 아닌 재직자", full, "조예원", /정보보안팀/],
-  ["대표(S1 아님)", full, "조성래", /정보보안팀/],
+  ["합류 전 책임자", full, "박원식", /사람이 아닙니다/],
+  ["S1 아닌 재직자", full, "조예원", /AI시스템팀/],
+  ["대표(S1 아님)", full, "조성래", /AI시스템팀/],
   ["주체 미선택", full, "", /고르지 않았/],
-  ["점검표 미충족", Object.assign({}, R0, { check: [] }), "조성래", /정보보안팀|점검표/],
+  ["점검표 미충족", Object.assign({}, R0, { check: [] }), "조성래", /AI시스템팀|점검표/],
 ];
 relCases.forEach(([ko, r, who, re]) => {
   const c = relCan(r, who);
@@ -2273,6 +2273,38 @@ const VFSSRC = rd("src/data/corpVaultFs.js");
 chk(VFSSRC.indexOf("async function cvfOpenFile(") > 0 && VFSSRC.indexOf("revokeObjectURL") > 0,
   "⑳자료실 여는 함수가 임시 주소를 거둔다(내용을 쥐고 있지 않다)");
 
+/* ⑳개칭 — 정보보안팀 → AI시스템팀 · 책임자 교체 (조성래님 지시 2026-11-14).
+   개칭은 한 줄이 아니라 **여러 곳에 흔어진 글자**다 — 런타임 문구·인사 기록·러너 정규식이
+   서로 다른 이름을 말해도 아무도 못 잡았다. 여기서 한꺼번에 센다. */
+const RENAMED = ["src/data/corpOrg.js", "src/data/corpGov.js", "src/data/corpAgent.js",
+  "src/data/corpMeeting.js", "src/data/corpAdmin.js", "src/components/CorpGov.jsx",
+  "src/components/CorpOps.jsx", "src/components/CorpVault.jsx"];
+const oldLeft = RENAMED.filter((f) => rd(f).indexOf("정보보안팀") >= 0 || rd(f).indexOf("김남용") >= 0);
+chk(RENAMED.length >= 8 && oldLeft.length === 0,
+  "⑳개칭   옛 팀 이름·옛 책임자가 화면과 엔진에 0곳 — 주석까지 센다", oldLeft);
+const TS1 = G("CORP_TEAMS").filter((t) => t.id === "S1")[0];
+const TD1 = G("CORP_TEAMS").filter((t) => t.id === "D1")[0];
+chk(!!TS1 && TS1.name === "AI시스템팀" && TS1.sh === "AI시스템" && TS1.own === "박원식",
+  "⑳개칭   S1 은 AI시스템팀 · 책임자 박원식", TS1 && [TS1.name, TS1.sh, TS1.own].join(" / "));
+chk(!!TD1 && TD1.own === "이호택",
+  "⑳개칭   데이터관리팀 책임자는 이호택", TD1 && TD1.own);
+/* ⚠️ 조직은 「S1 책임자」라 말하는데 인사 기록은 「D1 소속」이면 승인 권한이
+   조용히 안 생긴다. 두 원천이 서로 맞는지를 대조하는 단언이 없었다. */
+const HRMAP = {};
+G("CORP_HR").forEach((h) => { HRMAP[h.name] = h.teams || []; });
+const owBad = G("CORP_TEAMS").filter((t) => !HRMAP[t.own] || HRMAP[t.own].indexOf(t.id) < 0);
+chk(G("CORP_TEAMS").length > 0 && owBad.length === 0,
+  "⑳개칭   책임자의 인사 기록 소속이 그 팀과 같다(조직 ↔ 명부)",
+  owBad.map((t) => t.id + ":" + t.own + "→" + ((HRMAP[t.own] || []).join("·") || "명부에 없음")).join(" "));
+/* 저장소 폴더는 실물이다 — 팀 이름을 바꿨다고 따라가면 없는 폴더를 가리킨다(조성래님 확정). */
+const S1DIR = G("CORP_VAULT_DEPT").filter((d) => d.team === "S1")[0];
+chk(!!S1DIR && S1DIR.ko === "보안",
+  "⑳개칭   저장소 폴더는 08.보안 그대로 — 실물을 따른다", S1DIR && S1DIR.k + "." + S1DIR.ko);
+/* 인벤토리 경로가 팀 이름을 들고 있는데 생성기가 그 원천을 **감시하지 않았다** — 구멍을 닫았다. */
+chk(rd("scripts/gen_nav_inventory.py").indexOf(String.fromCharCode(34) + "src/data/corpOrg.js" + String.fromCharCode(34)) > 0,
+  "⑳개칭   내비 인벤토리 생성기가 조직 원천을 감시한다(개칭이 무사통과하지 않게)");
+chk(rd("src/data/navInventory.js").indexOf("정보보안팀") < 0,
+  "⑳개칭   내비 경로에 옛 팀 이름이 남지 않았다");
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);

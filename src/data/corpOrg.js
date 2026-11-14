@@ -116,7 +116,7 @@ const CORP_TEAMS = [
       { act: "대외 발행 · 게시", by: "회사 밖으로 나가는 행위 — 사람이 마무리", at: "P9" },
       { act: "보험 모집 표현 문구 확정", by: "금칙 스캔이 후보를 거르고, 확정은 책임자와 준법 검토를 거친다", at: "P7" }] },
 
-  { id: "D1", div: "DIRECT", name: "데이터관리팀", sh: "데이터", own: "박원식", ownTitle: "이사",
+  { id: "D1", div: "DIRECT", name: "데이터관리팀", sh: "데이터", own: "이호택", ownTitle: "이사",
     ai: "온톨로", aiWhy: "데이터 지도를 그린다", c: "#F2815F", th: -0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "데이터 구조 설계 · 저장 키 거버넌스 · 품질 관리 · 외부 연동 · UI 표준",
     pages: [
@@ -131,7 +131,7 @@ const CORP_TEAMS = [
       { act: "공개 전환", by: "등급 A 자료의 공개 전환은 커밋 게이트가 차단", at: "P0" },
       { act: "스키마 변경 반영", by: "저장 키 등재 대조(check_data_catalog)를 통과해야 커밋된다", at: "기존" }] },
 
-  { id: "S1", div: "DIRECT", name: "정보보안팀", sh: "보안", own: "김남용", ownTitle: "이사",
+  { id: "S1", div: "DIRECT", name: "AI시스템팀", sh: "AI시스템", own: "박원식", ownTitle: "이사",
     ai: "하네스", aiWhy: "막고 검증한다", c: "#C75B45", th: 0.88, ph: 0.58, head: 0, cap: 1, joined: "미정",
     work: "보안 통제 · 취약점 관리 · 접근 권한 · 침해 대응 · 내부통제와 감사 증적 · 릴리스 승인",
     pages: [

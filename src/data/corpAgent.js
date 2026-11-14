@@ -191,8 +191,8 @@ const CORP_AG_TOOL = [
         rows: CORP_DOC_CLASS.map(function (d) { return [d.ko, (d.years === 0 ? "영구" : d.years + "년") + " · " + d.basisKo + (d.checked ? "" : " (원문 미확인)")]; }) };
     } },
 
-  /* ── 하네스(S1 정보보안) ── */
-  { ai: "하네스", k: "gate", ko: "커밋 게이트", d: "배포 전에 무엇이 막히는지 검사 목록을 본다", ask: ["게이트", "보안", "차단", "검사", "막"],
+  /* ── 하네스(S1 AI시스템) ── */
+  { ai: "하네스", k: "gate", ko: "커밋 게이트", d: "배포 전에 무엇이 막히는지 검사 목록을 본다", ask: ["게이트", "보안", "AI시스템", "차단", "검사", "막"],
     run: function () {
       if (typeof CORP_GATES === "undefined") return null;
       return { t: "커밋 게이트 " + CORP_GATES.length + "종이 걸려 있습니다. 결과는 커밋할 때 터미널에 뜹니다 — 이 화면이 러너를 돌리지는 못합니다.",
@@ -202,7 +202,7 @@ const CORP_AG_TOOL = [
     run: function () {
       if (typeof corpRelAll !== "function") return null;
       const st = corpGovRead(); const rel = corpRelAll(st); const who = corpRelApprovers();
-      return { t: who.length ? "릴리스 승인 가능자는 " + who.join(" · ") + "입니다." : "**지금 릴리스를 승인할 수 있는 사람이 없습니다** — 정보보안팀 책임자가 합류 전입니다. 승인 경로를 대표에게 열지 않았습니다.",
+      return { t: who.length ? "릴리스 승인 가능자는 " + who.join(" · ") + "입니다." : "**지금 릴리스를 승인할 수 있는 사람이 없습니다** — AI시스템팀 책임자가 합류 전입니다. 승인 경로를 대표에게 열지 않았습니다.",
         rows: rel.map(function (r) { return [r.ver + " " + r.ko, r.st === "approved" ? "승인 · " + r.ap : "승인 대기"]; })
           .concat([["승인 가능자", who.length ? who.join(" · ") : "0명"]]) };
     } },

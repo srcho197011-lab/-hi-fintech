@@ -59,10 +59,12 @@ const CORP_HR = [
     expertise: ["건강관리 운영", "상담 품질", "검진 연계"], certs: [], rrn: null },
   { no: "", name: "문형석", title: "센터장", teams: ["H2"], joined: "", on: false,
     expertise: ["보장 설계", "청구 지원", "보장 갭 분석"], certs: [], rrn: null },
-  { no: "", name: "박원식", title: "이사", teams: ["D1"], joined: "", on: false,
+  /* 전문 분야는 **사람의 것**이라 소속이 바뎀다고 바꾸지 않는다 — 팀이 하는 일은 CORP_TEAMS[].work 에 따로 있다. */
+  { no: "", name: "박원식", title: "이사", teams: ["S1"], joined: "", on: false,
     expertise: ["데이터 구조", "외부 연동", "품질 관리"], certs: [], rrn: null },
-  { no: "", name: "김남용", title: "이사", teams: ["S1"], joined: "", on: false,
-    expertise: ["보안 통제", "침해 대응", "내부통제"], certs: [], rrn: null },
+  /* 전문 분야는 **비워 둔다** — 아직 듣지 못했다. 지어내면 명부가 거짓말을 한다. */
+  { no: "", name: "이호택", title: "이사", teams: ["D1"], joined: "", on: false,
+    expertise: [], certs: [], rrn: null },
 ];
 
 /* ── ③ 계약 대장 ──────────────────────────────────────────────────────
