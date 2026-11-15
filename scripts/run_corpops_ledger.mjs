@@ -963,6 +963,44 @@ chk(UPSRC.indexOf("corpUpMergeBank(st.bank || [], corpUpToBank(") < 0,
 chk(/corpUpMergeBank\([^)]*\.lines\)/.test(UPSRC), "⑪은행   반입 화면이 .lines 를 넘긴다", "없음");
 chk(UPSRC.indexOf("dropped.length") > 0, "⑪은행   읽지 못해 뺀 줄을 화면이 적는다", "적지 않는다");
 
+/* ── 한 번에 올리기 — 횟수만 줄였는가, 벽을 치웠는가 ────────────────────────
+   전표 열여섯 장을 올리려면 서른두 번을 눌러야 해서 한 번에 올리는 자리를 냈다.
+   편해진 만큼 위험하다 — 검증을 건너뛰면 그건 편의가 아니라 **벽을 치운 것**이다.
+   그래서 그 자리가 한 장씩 누를 때와 **같은 함수**를 부르는지 본다.
+   ⚠️ 여기서 정규식을 쓰지 않는다 — 손으로 적은 이스케이프가 풀려 러너가 통째로 죽었다. */
+const BLK = rd(BOARD);
+const bI = BLK.indexOf("const bulkPost = ");
+const bE = BLK.indexOf("const accts = corpJvAccts", bI);
+const bulkFn = bI > 0 && bE > bI ? BLK.slice(bI, bE) : "";
+chk(bulkFn.length > 400, "㉒한벌   한 번에 올리는 자리가 있다", bulkFn.length);
+chk(bulkFn.indexOf("corpJvCanAdvance(cur, actor)") > 0,
+  "㉒한벌   한 장씩 누를 때와 **같은 검증 함수**를 부른다", "부르지 않는다");
+chk(bulkFn.indexOf("if (!c.ok) { stuck.push") > 0,
+  "㉒한벌   막힌 전표는 올리지 않고 **까닭을 모은다**", "막힌 것을 그냥 지나친다");
+chk(bulkFn.indexOf("step < 2") > 0 && bulkFn.indexOf("st: c.to") > 0,
+  "㉒한벌   단계를 건너뛰지 않는다(기표 → 검토 → 전기)", "건너뛴다");
+chk(bulkFn.indexOf("if (!bulkAsk)") > 0, "㉒한벌   되돌릴 수 없는 일이라 **먼저 묻는다**", "묻지 않는다");
+/* 전기 경로에는 corpJvCheck 가 없다 — 한 벌로 미는 쪽은 **엄한 쪽**으로 달라야 한다 */
+chk(bulkFn.indexOf("corpJvCheck(cur, st)") > 0,
+  "㉒한벌   올리기 직전에 마감월·기초선을 다시 본다(한 장씩보다 엄하게)", "다시 보지 않는다");
+chk(bulkFn.indexOf('j.st !== "posted"') > 0, "㉒한벌   이미 전기된 것은 건드리지 않는다", "건드린다");
+/* 화면이 그 사실을 적는가 — 접어도 러너는 소스만 보므로 문구 자체를 요구한다 */
+chk(BLK.indexOf("올린 전표는 지우지 못합니다") > 0, "㉒한벌   지우지 못한다고 화면이 적는다", "적지 않는다");
+chk(BLK.indexOf("여기서도 올라가지 않습니다") > 0,
+  "㉒한벌   한 장씩일 때 막히는 것은 여기서도 막힌다고 적는다", "적지 않는다");
+/* 벽이 실제로 서는가 — 늘 통과하는 함수는 검증이 아니다 */
+const CA = G("corpJvCanAdvance");
+const jvD = { id: "T-1", st: "draft", by: "은행반입", ap: null };
+const jvR = { id: "T-2", st: "review", by: "은행반입", ap: null };
+chk(CA(jvD, "조성래").ok && CA(jvD, "조성래").to === "review",
+  "㉒한벌ⓐ 자기시험 — 기표는 검토로 넘어간다", JSON.stringify(CA(jvD, "조성래")));
+chk(CA(jvR, "조성래").ok && CA(jvR, "조성래").to === "posted",
+  "㉒한벌ⓐ 자기시험 — 검토는 전기로 넘어간다", JSON.stringify(CA(jvR, "조성래")));
+chk(!CA({ id: "T-3", st: "review", by: "조성래", ap: null }, "조성래").ok,
+  "㉒한벌   작성자와 승인자가 같으면 올라가지 않는다", "올라간다");
+chk(!CA(jvR, "핀테크").ok, "㉒한벌   AI 팀장은 승인하지 못한다", JSON.stringify(CA(jvR, "핀테크")));
+chk(!CA({ id: "T-4", st: "posted", by: "은행반입" }, "조성래").ok,
+  "㉒한벌   전기된 전표는 다시 올라가지 않는다", "올라간다");
 /* ── AI 팀장 대화 ── */
 const AGV = G("corpAgPass")();
 AGV.rows.forEach((r) => {

@@ -355,6 +355,43 @@ function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, d
   };
 
   const F = corpJvFind(jvs, q);
+  /* 한 번에 올리기 — 되돌릴 수 없는 일이라 누르기 전에 한 번 묻는다 */
+  const [bulkAsk, setBulkAsk] = React.useState(false);
+  /* 전기를 기다리는 한 벌을 한 번에 올린다.
+     ⚠️ 이것은 **횟수만 줄이는 일**이다 — 검증을 건너뛰지 않는다.
+     한 장씩 누를 때와 똑같이 corpJvCanAdvance 를 부르고, 막히면 막힌 채로 두고 까닭을 적는다.
+     작성자와 승인자가 같은 전표, AI 가 승인하려는 전표는 여기서도 그대로 막힌다.
+     단계도 건너뛰지 않는다 — 기표는 검토를 거쳐 전기로 간다. */
+  const bulkPost = () => {
+    const wait = (F.rows || []).filter((j) => j.st !== "posted");
+    if (!wait.length) { setMsg({ bad: true, t: "전기를 기다리는 전표가 이 목록에 없습니다" }); return; }
+    if (!bulkAsk) { setBulkAsk(true); return; }
+    setBulkAsk(false);
+    const ov = Object.assign({}, st.ov);
+    let done = 0;
+    const stuck = [];
+    wait.forEach((j) => {
+      let cur = j;
+      /* ⚠️ 전기 경로에는 corpJvCheck 가 없다 — 기표된 뒤에 그 달이 마감되었거나 기초 확정선이
+         앞으로 밀렸어도 다시 보지 않는다. 한 장씩이면 사람이 알아채지만 한 벌이면 통째로 들어간다.
+         그래서 **여기서는 올리기 직전에 한 번 더 본다**. 느슨한 쪽이 아니라 **엄한 쪽**으로 다르다. */
+      const re = typeof corpJvCheck === "function" ? corpJvCheck(cur, st) : { ok: true, errs: [] };
+      if (!re.ok) { stuck.push(cur.id + " — " + (re.errs || []).join(" · ")); return; }
+      for (let step = 0; step < 2; step++) {
+        const c = corpJvCanAdvance(cur, actor);
+        if (!c.ok) { stuck.push(cur.id + " — " + c.why); return; }
+        ov[cur.id] = { st: c.to, ap: c.to === "posted" ? actor : (cur.ap || null) };
+        cur = Object.assign({}, cur, { st: c.to, ap: ov[cur.id].ap });
+        if (c.to === "posted") { done++; return; }
+      }
+    });
+    save(Object.assign({}, st, { ov: ov }));
+    setMsg({ bad: false, t: done + "장을 장부에 올렸습니다 — 승인자 " + actor + "."
+      + (stuck.length ? " **" + stuck.length + "장은 올리지 못했습니다**: " + stuck.slice(0, 3).join(" · ")
+          + (stuck.length > 3 ? " 외 " + (stuck.length - 3) + "장" : "") + "." : "")
+      + " 전기된 전표는 지우지 않습니다 — 정정은 역분개로만 합니다." });
+  };
+
   const accts = corpJvAccts(jvs);
   const clearQ = () => setQ({ q: "", from: "", to: "", st: "", acct: "" });
   const on = !!(q.q || q.from || q.to || q.st || q.acct);
@@ -441,6 +478,30 @@ function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, d
         </div>
       )}
 
+      {(function () {
+        /* 전기를 기다리는 한 벌 — 보이는 목록만 센다. 안 보이는 것에 손대지 않는다 */
+        const wait = (F.rows || []).filter((j) => j.st !== "posted");
+        if (!wait.length) return null;
+        return (
+          <div className="cl-bulk">
+            <p className="cl-note">
+              전기를 기다리는 전표가 <b>{wait.length}장</b> 있습니다{on ? " — 지금 걸러 놓으신 목록 기준입니다" : ""}.
+              한 장씩 올리면 <b>{wait.length * 2}번</b>을 누르셔야 합니다(기표 → 검토 → 전기).
+            </p>
+            <p className="cl-note hold">
+              <b>올린 전표는 지우지 못합니다.</b> 장부에 올라간 것은 되돌리지 않고 역분개로 바로잡습니다.
+              승인자는 지금 고르신 <b>{A.ko}</b>로 적힙니다 — 작성자가 같은 전표와 AI 팀장이 승인하려는 전표는
+              한 장씩 누를 때와 똑같이 <b>여기서도 올라가지 않습니다</b>.
+            </p>
+            <div className="cl-frow">
+              <button className="cl-save" onClick={bulkPost}>
+                {bulkAsk ? "네, " + wait.length + "장을 올립니다" : wait.length + "장을 한 번에 올리기"}
+              </button>
+              {bulkAsk && <button className="cl-rv" onClick={() => setBulkAsk(false)}>그만두기</button>}
+            </div>
+          </div>
+        );
+      })()}
       <table className="cl-tbl jv">
         <thead><tr><th>번호</th><th>일자</th><th>적요</th><th>차변</th><th>대변</th><th>작성</th><th>승인</th><th>상태</th><th /></tr></thead>
         <tbody>
