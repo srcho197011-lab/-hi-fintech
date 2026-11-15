@@ -326,6 +326,12 @@ function corpJvSum(jv) {
 function corpJvCheck(jv, st) {
   const e = [];
   const s = corpJvSum(jv);
+  /* ⚠️ 기초 확정선 안쪽은 **재무확인원이 이미 품고 있다** — 전표로 또 세우면 두 번 선다.
+     조성래님 원칙(2026-11-15): 9월말까지는 확정, 그 뒤는 은행 내역으로만. */
+  const asOf = typeof corpOpenAsOf === "function" ? corpOpenAsOf(null) : "";
+  if (asOf && jv && /^\d{4}-\d{2}-\d{2}$/.test(String(jv.d)) && String(jv.d) <= asOf) {
+    e.push(asOf + " 까지는 기초 확정선 안쪽입니다 — 그 날까지의 거래는 재무확인원이 이미 품고 있어 전표를 따로 세우지 않습니다");
+  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test((jv && jv.d) || "")) e.push("날짜 형식이 YYYY-MM-DD가 아닙니다");
   if (!((jv && jv.desc) || "").trim()) e.push("적요가 비었습니다");
   if (!((jv && jv.l) || []).length) e.push("분개 줄이 없습니다");
@@ -378,9 +384,18 @@ function corpJvReverse(jv, by, today) {
 function corpPosted(jvs, upto) {
   return (jvs || []).filter(j => j.st === "posted" && (!upto || j.d <= upto));
 }
-function corpLedgerBook(jvs, upto) {
+/* ⚠️ 장부는 0 이 아니라 **기초 확정선에서 출발한다**(조성래님 원칙 2026-11-15).
+   기초는 줄(lines)에 넣지 않는다 — 넣으면 월별 현금흐름이 그걸 유입으로 삼켜
+   소모가 통째로 사라진다. 출발선은 들어온 돈이 아니다.
+   open 을 따로 넘기면 그걸 쓰고, 안 넘기면 승인된 판을 읽는다. */
+function corpLedgerBook(jvs, upto, open) {
   const map = {};
-  CORP_ACCT.forEach(a => { map[a.c] = { c: a.c, n: a.n, t: a.t, d: a.d, contra: !!a.contra, dr: 0, cr: 0, lines: [] }; });
+  const ob = open === undefined ? corpOpenBal(null) : (open || {});
+  CORP_ACCT.forEach(a => {
+    const o = Math.round(+ob[a.c] || 0);
+    map[a.c] = { c: a.c, n: a.n, t: a.t, d: a.d, contra: !!a.contra,
+      dr: o > 0 ? o : 0, cr: o < 0 ? -o : 0, open: o, lines: [] };
+  });
   corpPosted(jvs, upto).forEach(j => {
     (j.l || []).forEach(x => {
       const row = map[x[0]]; if (!row) return;
@@ -764,6 +779,18 @@ function corpKpiOf(st, today) {
   /* 낱말을 재무현황 화면(CorpLedger.jsx)과 **같은 것**으로 쓴다 —
      같은 장부를 두 지면이 다른 이름으로 부르면 같은 장부인지 알 수 없다. */
   K.srcKo = K.live ? "반입 전표" : "실제 전표";
+  /* 「현금잔고는 그냥 은행거래내역서의 잔액을 표시해 줘」(조성래님 지시 2026-11-15).
+     은행 잔액은 **바깥 사실**이다 — 장부보다 먼저 믿는다. 다만 장부 값을 지우지는
+     않는다 — 밑줄에 나란히 적고, 차이가 있으면 그걸 경고로 세운다.
+     은행 내역이 없으면 장부 값을 그대로 두고 그 사실을 적는다(0 이라 적지 않는다). */
+  K.gap = typeof corpBankGap === "function" ? corpBankGap(S, today) : null;
+  if (K.gap && K.gap.ok && K.t && K.t.cash) {
+    K.t.cash = { k: "현금 잔고", u: "원", txt: corpWon(K.gap.bank),
+      sub: "은행 거래내역서 마지막 잔액 · 장부 " + corpWon(K.gap.book) + "원",
+      warn: K.gap.diff ? "장부와 " + corpWon(K.gap.diff) + "원 차이 — " + (K.gap.why[0] || "까닭을 세지 못했습니다") : "" };
+    K.cashSrc = "bank";
+  } else { K.cashSrc = "book"; }
+  K.open = typeof corpOpenPass === "function" ? corpOpenPass(null) : null;
   return K;
 }
 
@@ -821,4 +848,96 @@ function corpBankGap(st, upto) {
     why: why, match: has && diff === 0, matchAfter: has && after === 0,
     none: !has ? (last === null || last === undefined ? "은행 내역에 잔액 열이 없습니다"
       : "반입된 은행 내역이 없습니다 — 맞춰 볼 상대가 없습니다") : "" };
+}
+
+/* ══════════════ ⑫ 기초 확정선 — 출발선은 전표가 아니라 선언이다 ══════════════
+   조성래님 원칙(2026-11-15): 「9월말 재무확인원을 최종확정 재무제표 및 손익계산서로
+   숫자를 확정하고, 10월~현재까지 은행거래내역서만을 전제로 전표를 발생시키되
+   사람 책임자의 승인을 통해 확정시킨다. 분기말 마감회계처리 시 재조정이 가능하도록.」
+
+   ⚠️ 기초를 **전표로 두지 않는다.** 전표로 두면 두 가지가 깨진다 —
+     ① 반입 전표가 한 건이라도 생기면 코드 전표가 통째로 빠지면서 기초도 같이 증발한다
+     ② 출발선과 거래가 구별되지 않아 역분개·마감·승인 흐름에 섞인다
+   그래서 **별도 선언**으로 두고, 장부는 0이 아니라 그 선언에서 **출발**한다.
+
+   ⚠️ 판(rev)을 쌓는다. 분기말에 고칠 때 기초를 **덮어쓰지 않고** 새 판을 얹는다 —
+   지난 판이 남아야 「무엇이 언제 바뀌었는지」를 말할 수 있다.
+
+   ⚠️ 기초도 **승인을 받는다.** 승인 전 판은 장부에 서지 않는다. 지금까지 개시 전표는
+   「작성자 ≠ 승인자」 검사에서 예외였다 — 승인 규칙 밖에 있었다는 뜻이다. 그걸 없앤다. */
+const CORP_OPEN_KEY = "hifin_corp_open";   /* dataCatalog.js 등재 필수 */
+
+function corpOpenRead() {
+  const empty = { v: 1, list: [] };
+  try {
+    const raw = localStorage.getItem(CORP_OPEN_KEY);
+    if (!raw) return empty;
+    const o = JSON.parse(raw);
+    return { v: 1, list: Array.isArray(o.list) ? o.list : [] };
+  } catch (e) { return empty; }
+}
+function corpOpenWrite(o) {
+  try { localStorage.setItem(CORP_OPEN_KEY, JSON.stringify({ v: 1, list: (o && o.list) || [] })); return true; }
+  catch (e) { return false; }
+}
+/* 지금 장부가 쓰는 판 — **승인된 것 중 가장 나중 것**. 승인 전 판은 쓰지 않는다. */
+function corpOpenCur(o) {
+  const L = ((o || corpOpenRead()).list || []).filter(function (x) { return x && x.ap; });
+  if (!L.length) return null;
+  return L.slice().sort(function (a, b) { return (+a.rev || 0) - (+b.rev || 0); }).pop();
+}
+/* 계정별 부호잔액 — 차변이 양수다. 승인된 판이 없으면 **빈 것**을 돌려준다(0 이 아니라 없음). */
+function corpOpenBal(o) {
+  const cur = corpOpenCur(o);
+  if (!cur || !cur.bal) return {};
+  const out = {};
+  Object.keys(cur.bal).forEach(function (c) {
+    const v = Math.round(+cur.bal[c] || 0);
+    if (v) out[c] = v;
+  });
+  return out;
+}
+/* 기초도 차대가 맞아야 한다 — 안 맞으면 그 자체로 장부가 기울어 시작한다 */
+function corpOpenSum(bal) {
+  let dr = 0, cr = 0;
+  Object.keys(bal || {}).forEach(function (c) {
+    const v = +bal[c] || 0;
+    if (v > 0) dr += v; else cr += -v;
+  });
+  return { dr: dr, cr: cr, gap: dr - cr, ok: dr - cr === 0, n: Object.keys(bal || {}).length };
+}
+/* 확정선 — 이 날짜까지는 **재무확인원이 이미 품고 있다**. 그 안쪽 전표는 받지 않는다. */
+function corpOpenAsOf(o) {
+  const cur = corpOpenCur(o);
+  return (cur && /^\d{4}-\d{2}-\d{2}$/.test(String(cur.asOf || ""))) ? cur.asOf : "";
+}
+function corpOpenPass(o) {
+  const S0 = o || corpOpenRead();
+  const list = S0.list || [];
+  const cur = corpOpenCur(S0);
+  const bal = corpOpenBal(S0);
+  const sum = corpOpenSum(bal);
+  const rows = [
+    { k: "has", ko: "확정된 기초가 있다", n: list.length, ok: !!cur,
+      got: cur ? cur.asOf + " · " + sum.n + "과목" : (list.length ? "승인 전 " + list.length + "판" : "없음"),
+      want: "승인된 판 1개 이상", skip: false,
+      why: cur ? "" : (list.length ? "적어 두신 판이 있지만 아직 승인 전입니다 — 승인하셔야 장부가 그 숫자에서 출발합니다"
+        : "기초를 아직 세우지 않았습니다 — 장부가 0에서 출발합니다") },
+    { k: "bal", ko: "기초의 차변 = 대변", n: sum.n, ok: !cur || sum.ok,
+      got: cur ? corpWon(sum.dr) + " / " + corpWon(sum.cr) : "기초 없음",
+      want: "같을 것", skip: !cur,
+      why: !cur ? "확정된 기초가 없어 검사하지 않았습니다" : (sum.ok ? "" : "기초가 " + corpWon(sum.gap) + "원 기울어 있습니다 — 재무확인원 숫자를 다시 보셔야 합니다") },
+    { k: "src", ko: "어느 자료에서 왔는지 적혀 있다", n: cur ? 1 : 0, ok: !cur || !!String((cur && cur.src) || "").trim(),
+      got: cur ? (cur.src || "안 적힘") : "기초 없음", want: "출처", skip: !cur,
+      why: !cur ? "확정된 기초가 없어 검사하지 않았습니다"
+        : (String(cur.src || "").trim() ? "" : "어느 확인원에서 온 숫자인지 적혀 있지 않습니다 — 나중에 누구도 되짚지 못합니다") },
+    { k: "ap", ko: "사람이 승인했다", n: cur ? 1 : 0, ok: !cur || (!!cur.ap && cur.ap !== cur.by),
+      got: cur ? ((cur.by || "?") + " 작성 / " + (cur.ap || "미승인") + " 승인") : "기초 없음",
+      want: "작성자 ≠ 승인자", skip: !cur,
+      why: !cur ? "확정된 기초가 없어 검사하지 않았습니다"
+        : (cur.ap && cur.ap !== cur.by ? "" : "작성한 사람이 스스로 승인했습니다 — 기초도 전표와 같은 규칙을 집니다") },
+  ];
+  return { rows: rows, pass: rows.every(function (r) { return r.ok || r.skip; }),
+    fail: rows.filter(function (r) { return !r.ok && !r.skip; }),
+    zero: rows.filter(function (r) { return r.skip; }), cur: cur, bal: bal, sum: sum };
 }

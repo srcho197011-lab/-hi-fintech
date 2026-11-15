@@ -77,7 +77,7 @@ function CorpLedgerSection() {
     setMsg({ bad: false, t: mo + " 마감 — 이 달에는 신규 전표가 들어가지 않습니다" });
   };
 
-  const TABS = [["sum", "검산"], ["jv", "전표"], ["gl", "원장"], ["tb", "시산표"], ["fs", "재무제표"], ["bank", "은행 대사"]];
+  const TABS = [["sum", "검산"], ["open", "기초 확정선"], ["jv", "전표"], ["gl", "원장"], ["tb", "시산표"], ["fs", "재무제표"], ["bank", "은행 대사"]];
 
   return (
     <div className="cl-wrap">
@@ -137,6 +137,7 @@ function CorpLedgerSection() {
       {tab === "jv" && <ClJournal jvs={jvs} st={st} save={save} actor={actor} A={A} form={form} setForm={setForm}
         dropDraft={dropDraft} dropAllDraftRev={dropAllDraftRev}
         advance={advance} reverse={reverse} setMsg={setMsg} upMax={upMax} />}
+      {tab === "open" && <ClOpen actor={actor} A={A} setMsg={setMsg} />}
       {tab === "gl" && <ClLedger S={S} sel={acctSel} setSel={setAcctSel} />}
       {tab === "tb" && <ClTrial S={S} />}
       {tab === "fs" && <ClStatements S={S} cut={cut} />}
@@ -940,6 +941,154 @@ function ClBank({ R, st, save, actor, A }) {
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ 기초 확정선 — 출발선을 사람이 세운다 (조성래님 원칙 2026-11-15) ══════════════
+   「9월말 재무확인원을 최종확정 재무제표 및 손익계산서로 숫자를 확정하고,
+   그 뒤는 은행거래내역서만을 전제로 전표를 발생시키되 사람 책임자의 승인을 통해 확정시킨다.
+   분기말 마감회계처리 시 재조정이 가능하도록.」
+
+   ⚠️ 숫자는 **조성래님이 확인원을 보고 적으신다.** 기계가 파일에서 긁어 오지 않는다 —
+   확인원이 여러 판 있고, 어느 것이 확정본인지는 사람만 안다.
+   ⚠️ 고칠 때 덮어쓰지 않는다. **새 판을 얹는다** — 지난 판이 남아야 무엇이 언제 바뀌었는지 안다. */
+function ClOpen({ actor, A, setMsg }) {
+  const [o, setO] = React.useState(function () { return corpOpenRead(); });
+  const [draft, setDraft] = React.useState(null);
+  const P = React.useMemo(function () { return corpOpenPass(o); }, [o]);
+  const cur = P.cur;
+  const list = (o.list || []).slice().sort(function (a, b) { return (+b.rev || 0) - (+a.rev || 0); });
+  const won = function (v) { return corpWon(v); };
+
+  const keep = function (next) { corpOpenWrite(next); setO(next); };
+  const start = function () {
+    setDraft({ asOf: (cur && cur.asOf) || "2026-09-30", src: "", bal: cur ? Object.assign({}, cur.bal) : {}, note: "" });
+  };
+  const put = function (c, v) {
+    const b = Object.assign({}, draft.bal);
+    const n = Math.round(+String(v).replace(/[^0-9-]/g, "") || 0);
+    if (!n) { delete b[c]; } else { b[c] = n; }
+    setDraft(Object.assign({}, draft, { bal: b }));
+  };
+  const commit = function () {
+    const sum = corpOpenSum(draft.bal);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.asOf)) { setMsg({ bad: true, t: "기준일을 YYYY-MM-DD 로 적어 주세요" }); return; }
+    if (!String(draft.src || "").trim()) { setMsg({ bad: true, t: "어느 확인원에서 온 숫자인지 적어 주세요 — 나중에 되짚을 수 있어야 합니다" }); return; }
+    if (!sum.n) { setMsg({ bad: true, t: "적으신 잔액이 없습니다" }); return; }
+    if (!sum.ok) { setMsg({ bad: true, t: "차변과 대변이 " + won(sum.gap) + "원 어긋납니다 — 기울어진 채로는 세우지 않습니다" }); return; }
+    const rev = (o.list || []).reduce(function (n, x) { return Math.max(n, +x.rev || 0); }, 0) + 1;
+    keep({ v: 1, list: (o.list || []).concat([{ rev: rev, asOf: draft.asOf, src: draft.src.trim(),
+      bal: draft.bal, note: (draft.note || "").trim(), by: actor, ap: null, at: "" }]) });
+    setDraft(null);
+    setMsg({ bad: false, t: "제" + rev + "판을 적었습니다 — 아직 승인 전이라 장부는 이 숫자를 쓰지 않습니다. 다른 분이 승인하셔야 섭니다." });
+  };
+  const approve = function (r) {
+    if (r.by === actor) { setMsg({ bad: true, t: "적으신 분이 스스로 승인하지 못합니다 — 기초도 전표와 같은 규칙을 집니다" }); return; }
+    if (!A || !A.canApprove) { setMsg({ bad: true, t: ((A && A.ko) || "이 주체") + "은(는) 승인하지 못합니다" }); return; }
+    keep({ v: 1, list: (o.list || []).map(function (x) {
+      return x.rev === r.rev ? Object.assign({}, x, { ap: actor, at: r.asOf }) : x; }) });
+    setMsg({ bad: false, t: "제" + r.rev + "판을 승인했습니다 — 이제 장부가 이 숫자에서 출발합니다." });
+  };
+  const dsum = draft ? corpOpenSum(draft.bal) : null;
+
+  return (
+    <div className="cl-body">
+      <div className="cl-warn ok">
+        장부는 0이 아니라 <b>여기서 출발합니다.</b> 이 날짜까지의 거래는 재무확인원이 이미 품고 있어
+        전표를 따로 세우지 않습니다 — 그 뒤부터 은행 거래내역으로 전표가 섭니다.
+        <CorpDefn>
+          <span className="cl-warn2">
+          숫자는 조성래님이 확인원을 보고 적으십니다. 기계가 파일에서 긁어 오지 않습니다 —
+          확인원이 여러 판 있고 어느 것이 확정본인지는 사람만 알기 때문입니다.
+          분기말에 고치실 때는 <b>덮어쓰지 않고 새 판을 얹습니다</b> — 지난 판이 남아야
+          무엇이 언제 바뀌었는지 말할 수 있습니다.
+          </span>
+        </CorpDefn>
+      </div>
+
+      <div className="cl-sec">
+        <div className="cl-h">지금 쓰는 기초
+          <span className={"cl-flag" + (cur ? " on" : " hold")}>{cur ? "제" + cur.rev + "판 · " + cur.asOf : "없음"}</span>
+          {!draft && <button className="cl-save" onClick={start}>{cur ? "새 판 적기(분기말 재조정)" : "기초 적기"}</button>}</div>
+        {!cur && <p className="cl-note hold">기초가 없어 장부가 <b>0에서 출발</b>합니다 — 재무확인원 숫자를 적어 주세요.</p>}
+        {cur && (
+          <React.Fragment>
+            <p className="cl-note">출처 <b>{cur.src}</b> · 적은이 {cur.by} · 승인 {cur.ap}{cur.note ? " · " + cur.note : ""}</p>
+            <table className="cl-tbl"><thead><tr><th>계정</th><th className="n">차변</th><th className="n">대변</th></tr></thead><tbody>
+              {Object.keys(cur.bal).map(function (c) {
+                const v = +cur.bal[c] || 0;
+                const a = corpAcct(c);
+                return (
+                  <tr key={c}><td>{c} {a ? a.n : "?"}</td>
+                    <td className="n">{v > 0 ? won(v) : ""}</td><td className="n">{v < 0 ? won(-v) : ""}</td></tr>
+                );
+              })}
+              <tr><td className="k">합계</td><td className="n">{won(P.sum.dr)}</td><td className="n">{won(P.sum.cr)}</td></tr>
+            </tbody></table>
+          </React.Fragment>
+        )}
+      </div>
+
+      {draft && (
+        <div className="cl-sec">
+          <div className="cl-h">새 판 적기 <span className="cl-t">차변은 그대로, 대변은 앞에 −</span></div>
+          <div className="cl-form">
+            <label>기준일<input value={draft.asOf} placeholder="2026-09-30"
+              onChange={function (e) { setDraft(Object.assign({}, draft, { asOf: e.target.value })); }} /></label>
+            <label>출처<input value={draft.src} placeholder="재무제표확인원 2026.09.30 — 어느 판인지 적어 주세요"
+              onChange={function (e) { setDraft(Object.assign({}, draft, { src: e.target.value })); }} /></label>
+            <label>비고<input value={draft.note} placeholder="분기말 재조정 사유 등"
+              onChange={function (e) { setDraft(Object.assign({}, draft, { note: e.target.value })); }} /></label>
+          </div>
+          <table className="cl-tbl"><thead><tr><th>계정</th><th>부호잔액</th></tr></thead><tbody>
+            {CORP_ACCT.filter(function (a) { return a.t !== "X" && a.t !== "R"; }).map(function (a) {
+              return (
+                <tr key={a.c}><td>{a.c} {a.n}</td>
+                  <td><input className="cl-num" placeholder="0"
+                    value={draft.bal[a.c] === undefined ? "" : draft.bal[a.c]}
+                    onChange={function (e) { put(a.c, e.target.value); }} /></td></tr>
+              );
+            })}
+          </tbody></table>
+          <p className={"cl-note" + (dsum.ok ? "" : " hold")}>
+            차변 {won(dsum.dr)} · 대변 {won(dsum.cr)}
+            {dsum.ok ? " — 맞습니다" : " — " + won(dsum.gap) + "원 어긋납니다"}</p>
+          <div className="bk-act">
+            <button className="cl-save" onClick={commit}>이 판으로 적기</button>
+            <button className="cl-rv" onClick={function () { setDraft(null); }}>그만두기</button>
+          </div>
+        </div>
+      )}
+
+      {list.length > 0 && (
+        <div className="cl-sec">
+          <div className="cl-h">판 이력 <span className="cl-t">덮어쓰지 않고 쌓습니다</span></div>
+          <table className="cl-tbl"><thead><tr><th>판</th><th>기준일</th><th>출처</th><th>적은이</th><th>승인</th><th /></tr></thead><tbody>
+            {list.map(function (r) {
+              return (
+                <tr key={r.rev}><td>제{r.rev}판</td><td className="id">{r.asOf}</td><td>{r.src}</td><td className="id">{r.by}</td>
+                  <td className="id">{r.ap ? r.ap : <span className="cl-flag hold">승인 전</span>}</td>
+                  <td>{!r.ap && <button className="cl-save" onClick={function () { approve(r); }}>승인</button>}</td></tr>
+              );
+            })}
+          </tbody></table>
+        </div>
+      )}
+
+      <div className="cl-sec">
+        <div className="cl-h">검산 — 화면과 커밋 게이트 러너가 같은 함수를 봅니다
+          <span className={"cl-verd" + (P.pass ? " on" : " bad")}>{P.rows.length - P.fail.length - P.zero.length} / {P.rows.length}</span></div>
+        <table className="cl-tbl"><tbody>
+          {P.rows.map(function (r, i) {
+            return (
+              <tr key={i}><td className="k">{r.ko}</td>
+                <td><span className={"cl-verd" + (r.ok ? " on" : (r.skip ? "" : " bad"))}>{r.skip ? "보류" : (r.ok ? "맞음" : "어긋남")}</span> {r.got}
+                  {r.why ? <i className="cl-t"> — {r.why}</i> : null}</td></tr>
+            );
+          })}
+        </tbody></table>
       </div>
     </div>
   );

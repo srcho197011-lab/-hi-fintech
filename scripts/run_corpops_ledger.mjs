@@ -2349,6 +2349,31 @@ chk(rd(BOARD).indexOf("ov: ov2") > 0,
   "⑳통장   물린 전표의 승인 기록도 같이 지운다(유령 승인 방지)", "없음");
 chk(rd(BOARD).indexOf("dropDraft={dropDraft}") > 0,
   "⑳통장   전표 탭의 물리기 버튼이 스코프 안에 있다(누르면 화면이 죽었다)", "없음");
+/* ⑳기초 — 출발선은 전표가 아니라 선언이다 (조성래님 원칙 2026-11-15).
+   「9월말 재무확인원을 최종확정으로 숫자를 확정하고, 그 뒤는 은행거래내역서만을
+   전제로 전표를 발생시키되 사람 책임자의 승인을 통해 확정시킨다.」 */
+const OPEN0 = JSON.parse(G('JSON.stringify(corpOpenPass(null))'));
+chk(OPEN0.cur === null && /0에서 출발/.test(OPEN0.rows[0].why || ""),
+  "⑳기초   확정된 기초가 없으면 **0에서 출발한다고 적는다**(없는 걸 있는 척 하지 않는다)", OPEN0.rows[0].got);
+/* 기울어진 기초는 장부가 기울어진 채로 시작한다는 뜻이다. */
+const OSUM = JSON.parse(G('JSON.stringify([corpOpenSum({"103":100,"331":-100}), corpOpenSum({"103":100})])'));
+chk(OSUM[0].ok === true && OSUM[1].ok === false && OSUM[1].gap === 100,
+  "⑳기초   기초도 차변 = 대변이어야 한다", JSON.stringify(OSUM));
+/* 장부는 0 이 아니라 기초에서 출발한다 — 그리고 기초는 줄에 섞이지 않는다. */
+const BK0 = JSON.parse(G('JSON.stringify((function(){var a=corpLedgerBook(CORP_JV_SEED,"2026-11-15",{});var b=corpLedgerBook(CORP_JV_SEED,"2026-11-15",{"103":1000000,"331":-1000000});return {a:a["103"].sign,b:b["103"].sign,la:a["103"].lines.length,lb:b["103"].lines.length,open:b["103"].open};})())'));
+chk(BK0.b - BK0.a === 1000000 && BK0.la === BK0.lb && BK0.open === 1000000,
+  "⑳기초   장부가 기초에서 출발하되 기초는 줄에 섞이지 않는다(현금흐름 오염 방지)", JSON.stringify(BK0));
+/* 확정선 안쪽 거래는 확인원이 이미 품고 있다 — 전표로 또 세우면 두 번 선다. */
+chk(rd(LEDGER).indexOf("corpOpenAsOf(null)") > 0 && rd(LEDGER).indexOf("기초 확정선 안쪽입니다") > 0,
+  "⑳기초   확정선 이전 날짜의 전표는 받지 않는다", "없음");
+/* 기초도 사람의 승인을 받는다 — 예전엔 개시 전표가 「작성자 ≠ 승인자」 예외였다. */
+chk(rd(BOARD).indexOf("기초도 전표와 같은 규칙을 집니다") > 0 && rd(BOARD).indexOf("function ClOpen(") > 0,
+  "⑳기초   기초를 적은 사람은 스스로 승인하지 못한다", "없음");
+chk(rd(BOARD).indexOf('["open", "기초 확정선"]') > 0,
+  "⑳기초   재무현황에 기초 확정선 지면이 있다", "없음");
+/* 현금 잔고는 은행 잔액을 보인다(조성래님 지시) — 다만 은행 내역이 없으면 장부를 두고 그렇다고 적는다. */
+chk(rd(LEDGER).indexOf("K.cashSrc") > 0 && rd(LEDGER).indexOf("은행 거래내역서 마지막 잔액") > 0,
+  "⑳기초   현금 잔고 칸은 은행 잔액을 보인다(없으면 장부 · 어느 쪽인지 적는다)", "없음");
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);

@@ -16839,6 +16839,12 @@ function corpJvSum(jv) {
 function corpJvCheck(jv, st) {
   const e = [];
   const s = corpJvSum(jv);
+  /* ⚠️ 기초 확정선 안쪽은 **재무확인원이 이미 품고 있다** — 전표로 또 세우면 두 번 선다.
+     조성래님 원칙(2026-11-15): 9월말까지는 확정, 그 뒤는 은행 내역으로만. */
+  const asOf = typeof corpOpenAsOf === "function" ? corpOpenAsOf(null) : "";
+  if (asOf && jv && /^\d{4}-\d{2}-\d{2}$/.test(String(jv.d)) && String(jv.d) <= asOf) {
+    e.push(asOf + " 까지는 기초 확정선 안쪽입니다 — 그 날까지의 거래는 재무확인원이 이미 품고 있어 전표를 따로 세우지 않습니다");
+  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test((jv && jv.d) || "")) e.push("날짜 형식이 YYYY-MM-DD가 아닙니다");
   if (!((jv && jv.desc) || "").trim()) e.push("적요가 비었습니다");
   if (!((jv && jv.l) || []).length) e.push("분개 줄이 없습니다");
@@ -16891,9 +16897,18 @@ function corpJvReverse(jv, by, today) {
 function corpPosted(jvs, upto) {
   return (jvs || []).filter(j => j.st === "posted" && (!upto || j.d <= upto));
 }
-function corpLedgerBook(jvs, upto) {
+/* ⚠️ 장부는 0 이 아니라 **기초 확정선에서 출발한다**(조성래님 원칙 2026-11-15).
+   기초는 줄(lines)에 넣지 않는다 — 넣으면 월별 현금흐름이 그걸 유입으로 삼켜
+   소모가 통째로 사라진다. 출발선은 들어온 돈이 아니다.
+   open 을 따로 넘기면 그걸 쓰고, 안 넘기면 승인된 판을 읽는다. */
+function corpLedgerBook(jvs, upto, open) {
   const map = {};
-  CORP_ACCT.forEach(a => { map[a.c] = { c: a.c, n: a.n, t: a.t, d: a.d, contra: !!a.contra, dr: 0, cr: 0, lines: [] }; });
+  const ob = open === undefined ? corpOpenBal(null) : (open || {});
+  CORP_ACCT.forEach(a => {
+    const o = Math.round(+ob[a.c] || 0);
+    map[a.c] = { c: a.c, n: a.n, t: a.t, d: a.d, contra: !!a.contra,
+      dr: o > 0 ? o : 0, cr: o < 0 ? -o : 0, open: o, lines: [] };
+  });
   corpPosted(jvs, upto).forEach(j => {
     (j.l || []).forEach(x => {
       const row = map[x[0]]; if (!row) return;
@@ -17277,6 +17292,18 @@ function corpKpiOf(st, today) {
   /* 낱말을 재무현황 화면(CorpLedger.jsx)과 **같은 것**으로 쓴다 —
      같은 장부를 두 지면이 다른 이름으로 부르면 같은 장부인지 알 수 없다. */
   K.srcKo = K.live ? "반입 전표" : "실제 전표";
+  /* 「현금잔고는 그냥 은행거래내역서의 잔액을 표시해 줘」(조성래님 지시 2026-11-15).
+     은행 잔액은 **바깥 사실**이다 — 장부보다 먼저 믿는다. 다만 장부 값을 지우지는
+     않는다 — 밑줄에 나란히 적고, 차이가 있으면 그걸 경고로 세운다.
+     은행 내역이 없으면 장부 값을 그대로 두고 그 사실을 적는다(0 이라 적지 않는다). */
+  K.gap = typeof corpBankGap === "function" ? corpBankGap(S, today) : null;
+  if (K.gap && K.gap.ok && K.t && K.t.cash) {
+    K.t.cash = { k: "현금 잔고", u: "원", txt: corpWon(K.gap.bank),
+      sub: "은행 거래내역서 마지막 잔액 · 장부 " + corpWon(K.gap.book) + "원",
+      warn: K.gap.diff ? "장부와 " + corpWon(K.gap.diff) + "원 차이 — " + (K.gap.why[0] || "까닭을 세지 못했습니다") : "" };
+    K.cashSrc = "bank";
+  } else { K.cashSrc = "book"; }
+  K.open = typeof corpOpenPass === "function" ? corpOpenPass(null) : null;
   return K;
 }
 
@@ -17334,6 +17361,98 @@ function corpBankGap(st, upto) {
     why: why, match: has && diff === 0, matchAfter: has && after === 0,
     none: !has ? (last === null || last === undefined ? "은행 내역에 잔액 열이 없습니다"
       : "반입된 은행 내역이 없습니다 — 맞춰 볼 상대가 없습니다") : "" };
+}
+
+/* ══════════════ ⑫ 기초 확정선 — 출발선은 전표가 아니라 선언이다 ══════════════
+   조성래님 원칙(2026-11-15): 「9월말 재무확인원을 최종확정 재무제표 및 손익계산서로
+   숫자를 확정하고, 10월~현재까지 은행거래내역서만을 전제로 전표를 발생시키되
+   사람 책임자의 승인을 통해 확정시킨다. 분기말 마감회계처리 시 재조정이 가능하도록.」
+
+   ⚠️ 기초를 **전표로 두지 않는다.** 전표로 두면 두 가지가 깨진다 —
+     ① 반입 전표가 한 건이라도 생기면 코드 전표가 통째로 빠지면서 기초도 같이 증발한다
+     ② 출발선과 거래가 구별되지 않아 역분개·마감·승인 흐름에 섞인다
+   그래서 **별도 선언**으로 두고, 장부는 0이 아니라 그 선언에서 **출발**한다.
+
+   ⚠️ 판(rev)을 쌓는다. 분기말에 고칠 때 기초를 **덮어쓰지 않고** 새 판을 얹는다 —
+   지난 판이 남아야 「무엇이 언제 바뀌었는지」를 말할 수 있다.
+
+   ⚠️ 기초도 **승인을 받는다.** 승인 전 판은 장부에 서지 않는다. 지금까지 개시 전표는
+   「작성자 ≠ 승인자」 검사에서 예외였다 — 승인 규칙 밖에 있었다는 뜻이다. 그걸 없앤다. */
+const CORP_OPEN_KEY = "hifin_corp_open";   /* dataCatalog.js 등재 필수 */
+
+function corpOpenRead() {
+  const empty = { v: 1, list: [] };
+  try {
+    const raw = localStorage.getItem(CORP_OPEN_KEY);
+    if (!raw) return empty;
+    const o = JSON.parse(raw);
+    return { v: 1, list: Array.isArray(o.list) ? o.list : [] };
+  } catch (e) { return empty; }
+}
+function corpOpenWrite(o) {
+  try { localStorage.setItem(CORP_OPEN_KEY, JSON.stringify({ v: 1, list: (o && o.list) || [] })); return true; }
+  catch (e) { return false; }
+}
+/* 지금 장부가 쓰는 판 — **승인된 것 중 가장 나중 것**. 승인 전 판은 쓰지 않는다. */
+function corpOpenCur(o) {
+  const L = ((o || corpOpenRead()).list || []).filter(function (x) { return x && x.ap; });
+  if (!L.length) return null;
+  return L.slice().sort(function (a, b) { return (+a.rev || 0) - (+b.rev || 0); }).pop();
+}
+/* 계정별 부호잔액 — 차변이 양수다. 승인된 판이 없으면 **빈 것**을 돌려준다(0 이 아니라 없음). */
+function corpOpenBal(o) {
+  const cur = corpOpenCur(o);
+  if (!cur || !cur.bal) return {};
+  const out = {};
+  Object.keys(cur.bal).forEach(function (c) {
+    const v = Math.round(+cur.bal[c] || 0);
+    if (v) out[c] = v;
+  });
+  return out;
+}
+/* 기초도 차대가 맞아야 한다 — 안 맞으면 그 자체로 장부가 기울어 시작한다 */
+function corpOpenSum(bal) {
+  let dr = 0, cr = 0;
+  Object.keys(bal || {}).forEach(function (c) {
+    const v = +bal[c] || 0;
+    if (v > 0) dr += v; else cr += -v;
+  });
+  return { dr: dr, cr: cr, gap: dr - cr, ok: dr - cr === 0, n: Object.keys(bal || {}).length };
+}
+/* 확정선 — 이 날짜까지는 **재무확인원이 이미 품고 있다**. 그 안쪽 전표는 받지 않는다. */
+function corpOpenAsOf(o) {
+  const cur = corpOpenCur(o);
+  return (cur && /^\d{4}-\d{2}-\d{2}$/.test(String(cur.asOf || ""))) ? cur.asOf : "";
+}
+function corpOpenPass(o) {
+  const S0 = o || corpOpenRead();
+  const list = S0.list || [];
+  const cur = corpOpenCur(S0);
+  const bal = corpOpenBal(S0);
+  const sum = corpOpenSum(bal);
+  const rows = [
+    { k: "has", ko: "확정된 기초가 있다", n: list.length, ok: !!cur,
+      got: cur ? cur.asOf + " · " + sum.n + "과목" : (list.length ? "승인 전 " + list.length + "판" : "없음"),
+      want: "승인된 판 1개 이상", skip: false,
+      why: cur ? "" : (list.length ? "적어 두신 판이 있지만 아직 승인 전입니다 — 승인하셔야 장부가 그 숫자에서 출발합니다"
+        : "기초를 아직 세우지 않았습니다 — 장부가 0에서 출발합니다") },
+    { k: "bal", ko: "기초의 차변 = 대변", n: sum.n, ok: !cur || sum.ok,
+      got: cur ? corpWon(sum.dr) + " / " + corpWon(sum.cr) : "기초 없음",
+      want: "같을 것", skip: !cur,
+      why: !cur ? "확정된 기초가 없어 검사하지 않았습니다" : (sum.ok ? "" : "기초가 " + corpWon(sum.gap) + "원 기울어 있습니다 — 재무확인원 숫자를 다시 보셔야 합니다") },
+    { k: "src", ko: "어느 자료에서 왔는지 적혀 있다", n: cur ? 1 : 0, ok: !cur || !!String((cur && cur.src) || "").trim(),
+      got: cur ? (cur.src || "안 적힘") : "기초 없음", want: "출처", skip: !cur,
+      why: !cur ? "확정된 기초가 없어 검사하지 않았습니다"
+        : (String(cur.src || "").trim() ? "" : "어느 확인원에서 온 숫자인지 적혀 있지 않습니다 — 나중에 누구도 되짚지 못합니다") },
+    { k: "ap", ko: "사람이 승인했다", n: cur ? 1 : 0, ok: !cur || (!!cur.ap && cur.ap !== cur.by),
+      got: cur ? ((cur.by || "?") + " 작성 / " + (cur.ap || "미승인") + " 승인") : "기초 없음",
+      want: "작성자 ≠ 승인자", skip: !cur,
+      why: !cur ? "확정된 기초가 없어 검사하지 않았습니다"
+        : (cur.ap && cur.ap !== cur.by ? "" : "작성한 사람이 스스로 승인했습니다 — 기초도 전표와 같은 규칙을 집니다") },
+  ];
+  return { rows: rows, pass: rows.every(function (r) { return r.ok || r.skip; }),
+    fail: rows.filter(function (r) { return !r.ok && !r.skip; }),
+    zero: rows.filter(function (r) { return r.skip; }), cur: cur, bal: bal, sum: sum };
 }
 
 /* ══════════════ 예실 대비 — 두 축 대조(corpPlanActual.js) · CorpOps Phase 6 (조성래님 지시 2026-11-11) ══════════════
@@ -21271,7 +21390,7 @@ function CorpLedgerSection() {
     setMsg({ bad: false, t: mo + " 마감 — 이 달에는 신규 전표가 들어가지 않습니다" });
   };
 
-  const TABS = [["sum", "검산"], ["jv", "전표"], ["gl", "원장"], ["tb", "시산표"], ["fs", "재무제표"], ["bank", "은행 대사"]];
+  const TABS = [["sum", "검산"], ["open", "기초 확정선"], ["jv", "전표"], ["gl", "원장"], ["tb", "시산표"], ["fs", "재무제표"], ["bank", "은행 대사"]];
 
   return (
     <div className="cl-wrap">
@@ -21331,6 +21450,7 @@ function CorpLedgerSection() {
       {tab === "jv" && <ClJournal jvs={jvs} st={st} save={save} actor={actor} A={A} form={form} setForm={setForm}
         dropDraft={dropDraft} dropAllDraftRev={dropAllDraftRev}
         advance={advance} reverse={reverse} setMsg={setMsg} upMax={upMax} />}
+      {tab === "open" && <ClOpen actor={actor} A={A} setMsg={setMsg} />}
       {tab === "gl" && <ClLedger S={S} sel={acctSel} setSel={setAcctSel} />}
       {tab === "tb" && <ClTrial S={S} />}
       {tab === "fs" && <ClStatements S={S} cut={cut} />}
@@ -22134,6 +22254,154 @@ function ClBank({ R, st, save, actor, A }) {
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ 기초 확정선 — 출발선을 사람이 세운다 (조성래님 원칙 2026-11-15) ══════════════
+   「9월말 재무확인원을 최종확정 재무제표 및 손익계산서로 숫자를 확정하고,
+   그 뒤는 은행거래내역서만을 전제로 전표를 발생시키되 사람 책임자의 승인을 통해 확정시킨다.
+   분기말 마감회계처리 시 재조정이 가능하도록.」
+
+   ⚠️ 숫자는 **조성래님이 확인원을 보고 적으신다.** 기계가 파일에서 긁어 오지 않는다 —
+   확인원이 여러 판 있고, 어느 것이 확정본인지는 사람만 안다.
+   ⚠️ 고칠 때 덮어쓰지 않는다. **새 판을 얹는다** — 지난 판이 남아야 무엇이 언제 바뀌었는지 안다. */
+function ClOpen({ actor, A, setMsg }) {
+  const [o, setO] = React.useState(function () { return corpOpenRead(); });
+  const [draft, setDraft] = React.useState(null);
+  const P = React.useMemo(function () { return corpOpenPass(o); }, [o]);
+  const cur = P.cur;
+  const list = (o.list || []).slice().sort(function (a, b) { return (+b.rev || 0) - (+a.rev || 0); });
+  const won = function (v) { return corpWon(v); };
+
+  const keep = function (next) { corpOpenWrite(next); setO(next); };
+  const start = function () {
+    setDraft({ asOf: (cur && cur.asOf) || "2026-09-30", src: "", bal: cur ? Object.assign({}, cur.bal) : {}, note: "" });
+  };
+  const put = function (c, v) {
+    const b = Object.assign({}, draft.bal);
+    const n = Math.round(+String(v).replace(/[^0-9-]/g, "") || 0);
+    if (!n) { delete b[c]; } else { b[c] = n; }
+    setDraft(Object.assign({}, draft, { bal: b }));
+  };
+  const commit = function () {
+    const sum = corpOpenSum(draft.bal);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.asOf)) { setMsg({ bad: true, t: "기준일을 YYYY-MM-DD 로 적어 주세요" }); return; }
+    if (!String(draft.src || "").trim()) { setMsg({ bad: true, t: "어느 확인원에서 온 숫자인지 적어 주세요 — 나중에 되짚을 수 있어야 합니다" }); return; }
+    if (!sum.n) { setMsg({ bad: true, t: "적으신 잔액이 없습니다" }); return; }
+    if (!sum.ok) { setMsg({ bad: true, t: "차변과 대변이 " + won(sum.gap) + "원 어긋납니다 — 기울어진 채로는 세우지 않습니다" }); return; }
+    const rev = (o.list || []).reduce(function (n, x) { return Math.max(n, +x.rev || 0); }, 0) + 1;
+    keep({ v: 1, list: (o.list || []).concat([{ rev: rev, asOf: draft.asOf, src: draft.src.trim(),
+      bal: draft.bal, note: (draft.note || "").trim(), by: actor, ap: null, at: "" }]) });
+    setDraft(null);
+    setMsg({ bad: false, t: "제" + rev + "판을 적었습니다 — 아직 승인 전이라 장부는 이 숫자를 쓰지 않습니다. 다른 분이 승인하셔야 섭니다." });
+  };
+  const approve = function (r) {
+    if (r.by === actor) { setMsg({ bad: true, t: "적으신 분이 스스로 승인하지 못합니다 — 기초도 전표와 같은 규칙을 집니다" }); return; }
+    if (!A || !A.canApprove) { setMsg({ bad: true, t: ((A && A.ko) || "이 주체") + "은(는) 승인하지 못합니다" }); return; }
+    keep({ v: 1, list: (o.list || []).map(function (x) {
+      return x.rev === r.rev ? Object.assign({}, x, { ap: actor, at: r.asOf }) : x; }) });
+    setMsg({ bad: false, t: "제" + r.rev + "판을 승인했습니다 — 이제 장부가 이 숫자에서 출발합니다." });
+  };
+  const dsum = draft ? corpOpenSum(draft.bal) : null;
+
+  return (
+    <div className="cl-body">
+      <div className="cl-warn ok">
+        장부는 0이 아니라 <b>여기서 출발합니다.</b> 이 날짜까지의 거래는 재무확인원이 이미 품고 있어
+        전표를 따로 세우지 않습니다 — 그 뒤부터 은행 거래내역으로 전표가 섭니다.
+        <CorpDefn>
+          <span className="cl-warn2">
+          숫자는 조성래님이 확인원을 보고 적으십니다. 기계가 파일에서 긁어 오지 않습니다 —
+          확인원이 여러 판 있고 어느 것이 확정본인지는 사람만 알기 때문입니다.
+          분기말에 고치실 때는 <b>덮어쓰지 않고 새 판을 얹습니다</b> — 지난 판이 남아야
+          무엇이 언제 바뀌었는지 말할 수 있습니다.
+          </span>
+        </CorpDefn>
+      </div>
+
+      <div className="cl-sec">
+        <div className="cl-h">지금 쓰는 기초
+          <span className={"cl-flag" + (cur ? " on" : " hold")}>{cur ? "제" + cur.rev + "판 · " + cur.asOf : "없음"}</span>
+          {!draft && <button className="cl-save" onClick={start}>{cur ? "새 판 적기(분기말 재조정)" : "기초 적기"}</button>}</div>
+        {!cur && <p className="cl-note hold">기초가 없어 장부가 <b>0에서 출발</b>합니다 — 재무확인원 숫자를 적어 주세요.</p>}
+        {cur && (
+          <React.Fragment>
+            <p className="cl-note">출처 <b>{cur.src}</b> · 적은이 {cur.by} · 승인 {cur.ap}{cur.note ? " · " + cur.note : ""}</p>
+            <table className="cl-tbl"><thead><tr><th>계정</th><th className="n">차변</th><th className="n">대변</th></tr></thead><tbody>
+              {Object.keys(cur.bal).map(function (c) {
+                const v = +cur.bal[c] || 0;
+                const a = corpAcct(c);
+                return (
+                  <tr key={c}><td>{c} {a ? a.n : "?"}</td>
+                    <td className="n">{v > 0 ? won(v) : ""}</td><td className="n">{v < 0 ? won(-v) : ""}</td></tr>
+                );
+              })}
+              <tr><td className="k">합계</td><td className="n">{won(P.sum.dr)}</td><td className="n">{won(P.sum.cr)}</td></tr>
+            </tbody></table>
+          </React.Fragment>
+        )}
+      </div>
+
+      {draft && (
+        <div className="cl-sec">
+          <div className="cl-h">새 판 적기 <span className="cl-t">차변은 그대로, 대변은 앞에 −</span></div>
+          <div className="cl-form">
+            <label>기준일<input value={draft.asOf} placeholder="2026-09-30"
+              onChange={function (e) { setDraft(Object.assign({}, draft, { asOf: e.target.value })); }} /></label>
+            <label>출처<input value={draft.src} placeholder="재무제표확인원 2026.09.30 — 어느 판인지 적어 주세요"
+              onChange={function (e) { setDraft(Object.assign({}, draft, { src: e.target.value })); }} /></label>
+            <label>비고<input value={draft.note} placeholder="분기말 재조정 사유 등"
+              onChange={function (e) { setDraft(Object.assign({}, draft, { note: e.target.value })); }} /></label>
+          </div>
+          <table className="cl-tbl"><thead><tr><th>계정</th><th>부호잔액</th></tr></thead><tbody>
+            {CORP_ACCT.filter(function (a) { return a.t !== "X" && a.t !== "R"; }).map(function (a) {
+              return (
+                <tr key={a.c}><td>{a.c} {a.n}</td>
+                  <td><input className="cl-num" placeholder="0"
+                    value={draft.bal[a.c] === undefined ? "" : draft.bal[a.c]}
+                    onChange={function (e) { put(a.c, e.target.value); }} /></td></tr>
+              );
+            })}
+          </tbody></table>
+          <p className={"cl-note" + (dsum.ok ? "" : " hold")}>
+            차변 {won(dsum.dr)} · 대변 {won(dsum.cr)}
+            {dsum.ok ? " — 맞습니다" : " — " + won(dsum.gap) + "원 어긋납니다"}</p>
+          <div className="bk-act">
+            <button className="cl-save" onClick={commit}>이 판으로 적기</button>
+            <button className="cl-rv" onClick={function () { setDraft(null); }}>그만두기</button>
+          </div>
+        </div>
+      )}
+
+      {list.length > 0 && (
+        <div className="cl-sec">
+          <div className="cl-h">판 이력 <span className="cl-t">덮어쓰지 않고 쌓습니다</span></div>
+          <table className="cl-tbl"><thead><tr><th>판</th><th>기준일</th><th>출처</th><th>적은이</th><th>승인</th><th /></tr></thead><tbody>
+            {list.map(function (r) {
+              return (
+                <tr key={r.rev}><td>제{r.rev}판</td><td className="id">{r.asOf}</td><td>{r.src}</td><td className="id">{r.by}</td>
+                  <td className="id">{r.ap ? r.ap : <span className="cl-flag hold">승인 전</span>}</td>
+                  <td>{!r.ap && <button className="cl-save" onClick={function () { approve(r); }}>승인</button>}</td></tr>
+              );
+            })}
+          </tbody></table>
+        </div>
+      )}
+
+      <div className="cl-sec">
+        <div className="cl-h">검산 — 화면과 커밋 게이트 러너가 같은 함수를 봅니다
+          <span className={"cl-verd" + (P.pass ? " on" : " bad")}>{P.rows.length - P.fail.length - P.zero.length} / {P.rows.length}</span></div>
+        <table className="cl-tbl"><tbody>
+          {P.rows.map(function (r, i) {
+            return (
+              <tr key={i}><td className="k">{r.ko}</td>
+                <td><span className={"cl-verd" + (r.ok ? " on" : (r.skip ? "" : " bad"))}>{r.skip ? "보류" : (r.ok ? "맞음" : "어긋남")}</span> {r.got}
+                  {r.why ? <i className="cl-t"> — {r.why}</i> : null}</td></tr>
+            );
+          })}
+        </tbody></table>
       </div>
     </div>
   );
@@ -43587,6 +43855,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-15", ver:"v5.6", ch:[9], feat:"기초 확정선 — 출발선을 선언으로 세우고 판을 쌓는다", src:"회사 총괄운영 회계팀 재무현황", summary:"현금잔고 구십사백만원의 근거를 알 수 없다는 지적에 따라 그 숫자가 개시 전표의 일억이천만원에서 출발해 스무 줄을 거친 값이고 그 일억이천만원의 근거가 코드 어디에도 적혀 있지 않았음을 밝혔으며, 기초를 전표로 두면 반입 전표가 한 건이라도 생길 때 코드 전표와 함께 증발하고 출발선과 거래가 구별되지 않아 승인 규칙 밖에 놓이므로 기초를 별도 선언으로 옮겨 장부가 영이 아니라 거기서 출발하게 하되 기초가 줄에 섞이면 월별 현금흐름이 유입으로 삼켜 소모가 사라지므로 줄에는 넣지 않았고, 분기말 재조정을 위해 덮어쓰지 않고 판을 쌓아 판마다 기준일과 출처와 적은이와 승인자를 붙이고 승인된 판만 장부에 서게 했으며 적은 사람이 스스로 승인하지 못하게 해 기초도 전표와 같은 규칙을 지게 했고, 숫자는 확인원이 여러 판 있어 어느 것이 확정본인지 사람만 알므로 기계가 긁어 오지 않고 조성래님이 적으시게 했으며, 확정선 이전 날짜의 전표는 재무확인원이 이미 품고 있어 두 번 서므로 까닭을 적어 거부하고, 현금 잔고 칸은 은행 거래내역서의 잔액을 보이되 장부 값을 밑줄에 나란히 적고 차이가 있으면 경고로 세우며 은행 내역이 없으면 장부를 두고 그 사실을 적게 했다", refs:[], status:"반영", hash:"033751c", auto:true },
   { date:"2026-11-15", ver:"v5.5", ch:[9], feat:"은행 반입 — 보류 해소 · 승인 길 복구 · 통장 차이 상시 표시", src:"회사 총괄운영 회계팀 재무현황", summary:"계정이 분류된 은행 파일에서 보류 일곱 건이 난 까닭은 낱말이 갈려서가 아니라 사전에 매입비용과 수수료라는 이름이 아예 없어서였으므로 조성래님이 둘 다 831 지급수수료로 정하신 것을 근거와 함께 사전에 적고 사전에 든 낱말은 전부 사람이 정한 근거를 달아야 한다는 검사를 세워 기계는 고르지 않는다는 원칙을 지켰으며, 승인하면 전표 섹션으로 이관되어 재무제표에 반영되는 길은 이미 같은 키와 같은 배열로 돌고 있었으나 믿을 수 없게 만들던 세 가지를 고쳐 물리기가 승인 상태를 ov 가 아니라 jv 의 상태에서 읽어 승인한 전표까지 지우던 것과 물린 전표의 승인 기록이 남아 같은 파일을 다시 올리면 아무도 누르지 않은 승인이 붙던 것과 전표 탭의 물리기 버튼이 스코프 밖 함수를 불러 누르면 화면이 죽던 것을 바로잡았고, 현금잔액을 계좌와 맞추라는 지시는 덮어쓰기로 읽으면 차변만 바뀌고 대변이 없어 복식부기가 끝나므로 은행 마지막 잔액과 전기 기준 장부와 승인하면 될 장부와 차이를 나란히 두고 차이가 0이 아니면 무엇으로 이루어졌는지 적되 대조할 은행 내역이 없으면 차이 0이라 적지 않게 했으며 개시 잔액의 상대 계정은 조성래님 뜻대로 정하지 않고 차이로만 보였다", refs:[], status:"반영", hash:"82fe640", auto:true },
   { date:"2026-11-15", ver:"v5.4", ch:[9], feat:"장부 — 파일럿이 아니라 실제 전표 기준", src:"회사 총괄운영 전 지면 · 재무현황 · 회계팀 대화", summary:"전표와 은행거래내역이 파일럿이 아니라 실제 전표가 발생하는 기준이라는 확정을 받아 화면 스무 곳과 주석 열여덟 곳과 러너 단언 스물다섯 줄에 흩어져 있던 파일럿과 검증용과 실제 장부가 아닙니다와 Phase 10 문구를 한 커밋에서 함께 걷었고, 가르는 축이 진위가 아니라 어느 묶음이냐로 바뀌었으므로 낱말을 실제 전표와 반입 전표로 두되 낱말을 만드는 자리를 한 곳으로 유지해 화면과 하이가 같은 글자를 받아 쓰게 했으며, 저장소와 공개 배포와 아이디별 권한에 관한 말은 화면에 올리지 않고 어느 전표를 며칠 기준으로 보는지만 적게 했고, 파일럿 깃발을 없애 반입분인지 아닌지를 엔진이 한 번만 가르게 하고 러너도 화면이 아니라 엔진을 세게 했으며, 실제 장부를 경고색으로 칠하던 뱃지를 중립색으로 바꾸고 총괄 대시보드의 고지 블록은 맨 위 띠지가 같은 말을 하고 있어 걷었으며, 검사는 파일럿임을 적는가에서 어느 전표를 며칠 기준으로 보는지 적는가로 다시 쓰고 예전 문구가 숫자를 띄우는 지면에 주석까지 0곳인지를 못 박았다", refs:[], status:"반영", hash:"0bd6a87", auto:true },
   { date:"2026-11-14", ver:"v5.3", ch:[9], feat:"조직 개칭 — AI시스템팀과 책임자 교체", src:"회사 총괄운영 전 지면", summary:"데이터관리팀 책임자를 이호택 이사로 정보보안팀을 AI시스템팀으로 그 책임자를 박원식 이사로 바꾸고 합류 전이던 김남용 이사를 명부에서 뺐으며, 조직 원천을 읽어 쓰는 자리는 따라오지만 팀 이름을 글자로 박아 둔 일곱 자리는 따라오지 않아 개칭 뒤에도 없는 팀 이름을 계속 말하게 되므로 함께 고쳤고 그중 릴리스 거절 사유는 러너가 정규식으로 요구하고 있어 한쪽만 고치면 커밋이 막히거나 검사가 사라진 이름을 대조하므로 같은 커밋에 넣었으며, 조직이 책임자라 말하는데 인사 기록 소속이 다르면 승인 권한이 생기지 않는데 두 원천을 대조하는 단언이 없어 직책만 보고 소속은 안 보던 구멍을 막았고, 내비 인벤토리 생성기가 조직 원천을 읽으면서 감시하지 않아 팀 이름을 고쳐도 해시가 그대로라 경로가 옛 이름을 들고 있던 구멍도 감시 목록 편입으로 닫았으며, 저장소 폴더는 실물이라 08.보안 그대로 두고 보안이 팀 이름이 아닌 자리와 사람의 전문 분야는 건드리지 않았고 새 책임자의 전문 분야는 아직 듣지 못해 지어내지 않고 비워 두었다", refs:[], status:"반영", hash:"d56caad", auto:true },
@@ -50846,7 +51115,9 @@ const HIFIN_KEYS_STATIC = ["hifin_addrbook", "hifin_agent_handoff", "hifin_agent
   /* 자료실 대장(corpVault.js — 2026-11-12): 회사 자료 저장소의 **목록**(경로·크기·날짜).
      ⚠️ 파일 본문은 담지 않는다. 그리고 목록을 코드에 넣지 않는 이유가 여기 있다 —
      파일명이 곧 대외비 저장소의 목차라, 공개 배포본에 실리면 목차를 공개하는 셈이다. */
-  "hifin_corp_vault"];
+  "hifin_corp_vault",
+  /* 기초 확정선 — 9월말 재무확인원 숫자. 판(rev)으로 쌓는다(조성래님 원칙 2026-11-15) */
+  "hifin_corp_open"];
 /* 영상 상담(videoSession.js — 영상 V0): 저장 키가 없다. 세션은 메모리에만 존재하고 종료 시 사라지며,
    남는 것은 회원이 확인한 요약뿐이다(§0-V8 — 영상·음성 미저장). 요약은 기존 접촉 기록(hifin_hm_touch_)에 실린다.
    즉 이 기능은 새 데이터 소스를 만들지 않는다 — 등재할 키가 없다는 것이 등재 내용이다. */
@@ -59269,7 +59540,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-15","seed":20260828,"inventory":{"version":1,"sourceHash":"65e6f2f5e5fe3d37","generatedAt":"2026-11-14","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.44,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-15","seed":20260828,"inventory":{"version":1,"sourceHash":"65e6f2f5e5fe3d37","generatedAt":"2026-11-14","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.06,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.
