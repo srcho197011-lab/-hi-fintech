@@ -199,6 +199,9 @@
   .tr{gap:10px;}
   .user{gap:7px;}
 }
+/* 장부 사본 — 회계 재무현황 검산 지면 */
+.cl-bak .bk-act{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px;}
+.cl-bak .cl-t{font-weight:600;}
 /* 더 좁은 기기(SE 급) — 조작 단추는 다 남기고 여백만 더 줄인다 */
 @media(max-width:380px){.top{gap:8px;padding:12px 9px;}.tr{gap:8px;}}
 /* compact 카드 — 안내문 ~50% 축소 */

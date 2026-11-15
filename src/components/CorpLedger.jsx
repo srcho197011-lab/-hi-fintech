@@ -19,7 +19,78 @@ function CorpLedgerSection() {
   const [acctSel, setAcctSel] = React.useState("103");
   const [form, setForm] = React.useState(null);
 
-  const save = React.useCallback((next) => { corpLedgerWrite(next); setSt(Object.assign({}, next)); }, []);
+  /* 사본 — 브라우저 저장소가 비면 장부가 통째로 사라진다. 2026-11-15에 실제로 그랬다. */
+  const [bak, setBak] = React.useState({ on: false, why: "", at: "", busy: false, ask: false });
+  const bakRef = React.useRef({ on: false, h: null });
+
+  /* ⚠️ corpLedgerWrite 는 실패하면 false 를 돌려준다. 그 값을 버리면 저장되지 않았는데도
+     화면은 저장된 것처럼 보이고, 새로고침하는 순간 사라진다 — 바로 그 사고가 났다. */
+  const save = React.useCallback((next) => {
+    const ok = corpLedgerWrite(next);
+    setSt(Object.assign({}, next));
+    if (!ok) {
+      setMsg({ bad: true, t: "이 브라우저에 저장하지 못했습니다 — 지금 화면만 바뀌었고 새로고침하면 사라집니다. 아래 「저장소에 사본 두기」로 회사 폴더에 먼저 내보내 주세요." });
+      return;
+    }
+    /* 쓰기 허락이 이미 있으면 **묻지 않고** 회사 폴더에도 같이 남긴다 */
+    const R = bakRef.current;
+    if (R.on && R.h && typeof cvfLedgerSave === "function") {
+      cvfLedgerSave(R.h, next).then(function (r) {
+        setBak(function (v) { return Object.assign({}, v, { at: r && r.rel ? corpOpsToday() : v.at }); });
+      }).catch(function () { /* 사본 실패가 저장을 되돌리지는 않는다 — 아래 블록이 상태를 적는다 */ });
+    }
+  }, []);
+
+  const bakAsk = function () {
+    cvfHandle().then(function (h) {
+      if (!h) { setMsg({ bad: true, t: "먼저 팀 자료실에서 「저장소 폴더 잇기」를 해 주세요." }); return; }
+      cvfAskWrite(h).then(function (x) {
+        const on = x === "granted";
+        bakRef.current = { on: on, h: h };
+        setBak(function (v) { return Object.assign({}, v, { on: on, why: on ? "" : "허락을 받지 못했습니다" }); });
+      });
+    });
+  };
+  const bakNow = function () {
+    setBak(function (v) { return Object.assign({}, v, { busy: true }); });
+    cvfHandle().then(async function (h) {
+      try {
+        if (!h) throw new Error("저장소 폴더가 이어지지 않았습니다");
+        const r = await cvfLedgerSave(h, st);
+        setMsg({ bad: false, t: "저장소에 사본을 두었습니다 — " + r.rel + " (" + (jvs.length) + "건)" });
+        setBak(function (v) { return Object.assign({}, v, { at: corpOpsToday(), busy: false }); });
+      } catch (e) {
+        setMsg({ bad: true, t: "사본을 두지 못했습니다 — " + ((e && e.message) || "까닭 모름") });
+        setBak(function (v) { return Object.assign({}, v, { busy: false }); });
+      }
+    });
+  };
+  /* 되읽기는 지금 장부를 **덮는다**. 한 번 더 묻고 나서 한다 */
+  const bakLoad = function () {
+    setBak(function (v) { return Object.assign({}, v, { busy: true }); });
+    cvfHandle().then(async function (h) {
+      try {
+        if (!h) throw new Error("저장소 폴더가 이어지지 않았습니다");
+        const r = await cvfLedgerLoad(h, false);
+        corpLedgerWrite(r.data);
+        setSt(Object.assign({}, r.data));
+        setMsg({ bad: false, t: "저장소 사본으로 되읽었습니다 — " + r.at + " 사본 · 전표 " + r.jv + "건 · 은행 " + r.bank + "줄" });
+      } catch (e) {
+        setMsg({ bad: true, t: "되읽지 못했습니다 — " + ((e && e.message) || "까닭 모름") });
+      }
+      setBak(function (v) { return Object.assign({}, v, { busy: false, ask: false }); });
+    });
+  };
+  React.useEffect(function () {
+    let gone = false;
+    if (typeof cvfLedgerState !== "function") return;
+    cvfLedgerState().then(function (x) {
+      if (gone) return;
+      bakRef.current = { on: !!x.on, h: x.h || null };
+      setBak(function (v) { return Object.assign({}, v, { on: !!x.on, why: x.why || "" }); });
+    });
+    return function () { gone = true; };
+  }, []);
   const jvs = React.useMemo(() => corpJvAll(st), [st]);
   const upMax = React.useMemo(() => jvs.reduce((s, j) => (j.d > s ? j.d : s), ""), [jvs]);
   const cut = upto || "";
@@ -133,6 +204,37 @@ function CorpLedgerSection() {
 
       {msg && <div className={"cl-msg" + (msg.bad ? " bad" : "")} onClick={() => setMsg(null)}>{msg.t}</div>}
 
+      {/* ── 장부 사본 — 브라우저만 믿지 않는다 (조성래님 지시 2026-11-15) ──
+          반입해 두신 은행 전표가 통째로 사라진 적이 있다. 장부가 이 브라우저 저장소에만
+          있었기 때문이다. 회사 폴더에 사본을 두면 OneDrive 백업과 버전 기록이 같이 걸린다. */}
+      {tab === "sum" && (
+        <div className="cl-sec cl-bak">
+          <div className="cl-h">장부 사본
+            <span className="cl-t">02.회계 폴더에 둡니다 — 이 브라우저가 비어도 되읽을 수 있습니다</span>
+            {!bak.on && <button className="cl-save" onClick={bakAsk}>사본 허락</button>}</div>
+          {bak.on ? (
+            <React.Fragment>
+              <p className="cl-note">전표를 고치실 때마다 <b>자동으로</b> 같이 남깁니다.
+                {bak.at ? <span> 마지막 사본 {bak.at}.</span> : <span> 아직 이번 판의 사본이 없습니다.</span>}</p>
+              <div className="bk-act">
+                <button className="cl-save" disabled={bak.busy} onClick={bakNow}>{bak.busy ? "쓰는 중…" : "지금 내보내기"}</button>
+                {!bak.ask ? (
+                  <button className="cl-rv" disabled={bak.busy} onClick={() => setBak(Object.assign({}, bak, { ask: true }))}>저장소에서 되읽기</button>
+                ) : (
+                  <React.Fragment>
+                    <span className="cl-t">지금 장부를 사본으로 <b>덮습니다</b>. 되돌릴 수 없습니다.</span>
+                    <button className="cl-save" disabled={bak.busy} onClick={bakLoad}>덮고 되읽기</button>
+                    <button className="cl-rv" onClick={() => setBak(Object.assign({}, bak, { ask: false }))}>그만두기</button>
+                  </React.Fragment>
+                )}
+              </div>
+            </React.Fragment>
+          ) : (
+            <p className="cl-note hold">{bak.why || "저장소 폴더가 아직 이어지지 않았습니다"} —
+              사본이 없으면 이 브라우저의 저장소가 비는 순간 장부를 되살릴 길이 없습니다.</p>
+          )}
+        </div>
+      )}
       {tab === "sum" && <ClSummary V={V} S={S} R={R} jvs={jvs} st={st} months={months} onClose={closeMonth} actor={A} />}
       {tab === "jv" && <ClJournal jvs={jvs} st={st} save={save} actor={actor} A={A} form={form} setForm={setForm}
         dropDraft={dropDraft} dropAllDraftRev={dropAllDraftRev}

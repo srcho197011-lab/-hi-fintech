@@ -2424,6 +2424,30 @@ chk(vtBoard2.indexOf("속을 이 시스템은 보지 못합니다") > 0,
   "⑳올리기 문서 속을 검사하지 못한다고 적는다(주민번호 원칙과 닿는 자리)", "없음");
 chk(vtBoard2.indexOf("cvfPutFile(h, folder, f)") > 0,
   "⑳올리기 그 팀 폴더로 들어간다(다른 팀 자료에 섞이지 않는다)", "없음");
+/* ㉑장부 사본 — 브라우저만 믿지 않는다 (조성래님 지시 2026-11-15).
+   반입해 두신 은행 전표가 통째로 사라져 화면이 코드에 실린 숫자로 되돌아간 사고가 있었다.
+   까닭은 장부가 브라우저 저장소에만 있었다는 것이고, 되살릴 길이 코드에 없었다. */
+const CLG = rd("src/components/CorpLedger.jsx");
+/* ⚠️ corpLedgerWrite 는 실패하면 false 를 돌려준다. 그 값을 버리면 저장되지 않았는데도
+   화면은 저장된 것처럼 보이고 새로고침하는 순간 사라진다 — 실제로 그렇게 잃었다. */
+chk(/const ok = corpLedgerWrite\(next\)/.test(CLG) && CLG.indexOf("if (!ok)") > 0,
+  "㉑사본   저장이 실패하면 삼키지 않고 그렇게 말한다", "반환값을 버림");
+chk(VFSW.indexOf("async function cvfLedgerSave(") > 0 && VFSW.indexOf("async function cvfLedgerLoad(") > 0,
+  "㉑사본   장부를 저장소 폴더에 내보내고 되읽는 길이 있다", "없음");
+chk(VFSW.indexOf("CVF_LEDGER_DIR = ") > 0 && /CVF_LEDGER_DIR = "02\./.test(VFSW),
+  "㉑사본   사본은 회계 폴더로 간다(팀 폴더를 섞지 않는다)", "행선지 불명");
+/* 사본이 하나뿐이면 잘못 쓴 그 순간 원본까지 잃는다 — 덮기 전에 직전 것을 한 벌 민다 */
+chk(VFSW.indexOf("CVF_LEDGER_PREV") > 0 && /cvfLedgerSave[\s\S]{0,900}?CVF_LEDGER_PREV/.test(VFSW),
+  "㉑사본   덮기 전에 직전 사본을 한 벌 밀어 둔다", "직전 사본 없음");
+/* 되읽기는 지금 장부를 덮는다. 한 번 더 묻지 않으면 손이 미끄러진 순간 장부가 바뀐다 */
+chk(CLG.indexOf("덮고 되읽기") > 0 && CLG.indexOf("되돌릴 수 없습니다") > 0,
+  "㉑사본   되읽기는 덮기 전에 한 번 더 묻는다", "바로 덮음");
+/* 되읽은 것이 장부 모양인지 보지 않고 넣으면 엉뚱한 파일 하나로 장부가 지워진다 */
+chk(VFSW.indexOf("사본의 모양이 장부가 아닙니다") > 0,
+  "㉑사본   모양이 장부가 아니면 되읽지 않는다", "검사 없음");
+/* 쓰기 허락을 묻는 것은 사람이 누른 직후뿐이다 — 자동 사본은 이미 허락이 있을 때만 돈다 */
+chk(CLG.indexOf("R.on && R.h") > 0 && CLG.indexOf("cvfLedgerSave(R.h, next)") > 0,
+  "㉑사본   허락이 이미 있을 때만 묻지 않고 같이 남긴다", "없음");
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);

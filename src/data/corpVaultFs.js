@@ -677,3 +677,56 @@ async function cvfBoardWrite(h, relDir, data) {
   await w.close();
   return true;
 }
+
+/* ══════════════ ⑧ 장부 사본 — 브라우저만 믿지 않는다 (조성래님 지시 2026-11-15) ══════════════
+   2026-11-15, 반입해 두신 은행 전표가 통째로 사라져 화면이 코드에 실린 숫자로 되돌아갔다.
+   까닭은 하나다 — **장부가 브라우저 저장소에만 있었다.** 그 저장소는 사이트 데이터 삭제,
+   다른 브라우저, 다른 주소(로컬과 배포본은 주소가 달라 저장소도 따로다), 시크릿 창,
+   용량 초과 어느 하나에도 지워지거나 비어 보인다. 되살릴 길이 코드에 없었다.
+
+   그래서 저장소 폴더에 **사본**을 둔다. 회사 폴더이므로 OneDrive 백업과 버전 기록이
+   그대로 걸린다. 덮어쓰기 전에 직전 사본을 한 벌 밀어 둔다 — 잘못 쓴 사본 하나로
+   원본까지 잃지 않기 위해서다.
+
+   ⚠️ 사본은 조성래님 회사 폴더로만 간다. 이 저장소(코드)에는 숫자가 한 줄도 들어가지 않는다. */
+const CVF_LEDGER = "_장부사본.json";
+const CVF_LEDGER_PREV = "_장부사본.이전.json";
+const CVF_LEDGER_DIR = "02.회계";
+
+/* 쓸 수 있는 상태인가 — **묻지 않고** 본다. 묻는 창은 사람이 누른 직후에만 뜬다 */
+async function cvfLedgerState() {
+  if (typeof cvfHandle !== "function") return { on: false, why: "이 브라우저에서는 폴더를 이을 수 없습니다" };
+  const h = await cvfHandle();
+  if (!h) return { on: false, why: "저장소 폴더가 아직 이어지지 않았습니다" };
+  const st = await cvfWriteState(h);
+  if (st !== "granted") return { on: false, h: h, why: "폴더가 읽기로만 이어져 있습니다 — 「사본 허락」을 한 번 눌러 주세요" };
+  return { on: true, h: h, why: "" };
+}
+
+async function cvfLedgerSave(h, data) {
+  if (!h) throw new Error("이어 둔 폴더가 없습니다");
+  const dir = await cvfDirOf(h, CVF_LEDGER_DIR, true);
+  /* 덮어쓰기 전에 직전 사본을 한 벌 민다 — 사본이 하나뿐이면 잘못 쓴 순간 둘 다 잃는다 */
+  try {
+    const old = await (await (await dir.getFileHandle(CVF_LEDGER)).getFile()).text();
+    if (old && old.length > 2) {
+      const pw = await (await dir.getFileHandle(CVF_LEDGER_PREV, { create: true })).createWritable();
+      await pw.write(new Blob([old], { type: "application/json" })); await pw.close();
+    }
+  } catch (e) { /* 첫 사본이면 직전이 없다 — 까닭이 아니다 */ }
+  const body = JSON.stringify({ v: 1, at: cvfDay(Date.now()), by: "회사 총괄운영 · 회계", d: data }, null, 1);
+  const w = await (await dir.getFileHandle(CVF_LEDGER, { create: true })).createWritable();
+  await w.write(new Blob([body], { type: "application/json" })); await w.close();
+  return { rel: CVF_LEDGER_DIR + "/" + CVF_LEDGER, bytes: body.length };
+}
+
+/* 되읽기 — **덮어쓰지 않고 돌려만 준다.** 장부를 바꾸는 결정은 화면에서 사람이 한다 */
+async function cvfLedgerLoad(h, prev) {
+  if (!h) throw new Error("이어 둔 폴더가 없습니다");
+  const dir = await cvfDirOf(h, CVF_LEDGER_DIR, false);
+  const f = await (await dir.getFileHandle(prev ? CVF_LEDGER_PREV : CVF_LEDGER)).getFile();
+  const o = JSON.parse(await f.text());
+  const d = o && o.d;
+  if (!d || !Array.isArray(d.jv)) throw new Error("사본의 모양이 장부가 아닙니다 — 되읽지 않았습니다");
+  return { at: String(o.at || ""), jv: d.jv.length, bank: Array.isArray(d.bank) ? d.bank.length : 0, data: d };
+}
