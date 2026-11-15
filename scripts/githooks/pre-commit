@@ -40,6 +40,13 @@ if echo "$CHANGED" | grep -qE "^src/|^scripts/(run_wording_guard\.mjs|check_data
   node scripts/run_wording_guard.mjs || { echo "[GATE] 화면 표기 규약 위반 — 커밋 차단(규약: src/data/insuranceCohort.js 머리 주석)"; exit 1; }
   git add scripts/wording_guard_snapshot.json 2>/dev/null || true
 fi
+# == 디자인 토큰 게이트(2026-11-15 · 조성래님 지시) ==
+# 「모서리 라운드 값을 일관성있게 관리하고」. 토큰을 세우는 것만으로는 관리가 아니다 —
+# 2026-11-15 이전에 모서리가 21종까지 불어난 것은 누가 잘못해서가 아니라 **막는 것이 없었기** 때문이다.
+# data/app.css 는 추적 파일이고 push 즉시 배포된다. 가드 자신이 바뀔 때도 돈다(위 P7 사상과 같다).
+if echo "$CHANGED" | grep -qE "^(src/|data/app\.css$|scripts/check_design_tokens\.mjs$)"; then
+  node scripts/check_design_tokens.mjs || { echo "[GATE] 디자인 토큰 위반 — 커밋 차단(눈금: app.css :root 의 --r-* · --shadow-pop*)"; exit 1; }
+fi
 # == 애블레이션 마커 금칙(2026-10-06 · 적대적 리뷰 실증) ==
 # 리뷰 중 「되돌려 보기」 실증으로 심은 REVERT-TEST 마커가 index.html/preview.html(추적 파일이고
 # push 즉시 배포된다)에 들어간 채 커밋 창에 걸리면, 스냅샷·fixtures는 기능이 적용됐다고 말하는데

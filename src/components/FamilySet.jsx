@@ -28,37 +28,37 @@ function FamilySetCard({ onGo }) {
   const toggle = (k) => setSel(Object.assign({}, keys, { [k]: !keys[k] }));
 
   return (
-    <div className="card" style={{ margin: "0 0 12px", border: "1.5px solid #FBCFE8", background: "linear-gradient(125deg,#FFF5F9,#FFF9FC)" }}>
+    <div className="card" style={{ margin: "0 0 12px", border: "1.5px solid #FBCFE8", background: "#FFF9FC" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
-        <span style={{ width: 34, height: 34, borderRadius: 10, background: "#DB2777", display: "grid", placeItems: "center", flexShrink: 0 }}><HeartHandshake size={18} color="#fff" /></span>
+        <span style={{ width: 34, height: 34, borderRadius: "var(--r-md)", background: "#DB2777", display: "grid", placeItems: "center", flexShrink: 0 }}><HeartHandshake size={18} color="#fff" /></span>
         <div style={{ flex: "1 1 220px" }}>
           <b style={{ fontSize: 14.5, color: "#9D174D" }}>우리 가족 건강 세트</b>
-          <div style={{ fontSize: 11.8, color: "var(--muted)", marginTop: 2 }}>가족 {set.count}명 · {set.itemCount}종 · 묶음 적립 보너스 최대 15%</div>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>가족 {set.count}명 · {set.itemCount}종 · 묶음 적립 보너스 최대 15%</div>
         </div>
         <button className="cbtn" style={{ margin: 0, width: "auto", padding: "6px 12px", fontSize: 11.5 }} onClick={() => setOpen((v) => !v)}>{open ? "접기" : "구성 보기"}</button>
       </div>
 
       {!open && (
-        <div style={{ fontSize: 12.3, color: "#831843", marginTop: 8, lineHeight: 1.65 }}>
+        <div style={{ fontSize: 12.5, color: "#831843", marginTop: 8, lineHeight: 1.65 }}>
           {set.members.map((x) => x.name).join(" · ")}의 나이·성별에 맞는 기본 관리를 한 번에 챙길 수 있어요 — 합계 {_fsWon(set.total)} · 적립 <b>{_fsWon(set.reward)}</b>
         </div>
       )}
 
       {open && (<>
         {set.members.map((mm) => (
-          <div key={mm.key} style={{ border: `1.5px solid ${keys[mm.key] ? "#FBCFE8" : "var(--border)"}`, background: "#fff", borderRadius: 12, padding: "10px 12px", marginTop: 9, opacity: keys[mm.key] ? 1 : .6 }}>
+          <div key={mm.key} style={{ border: `1.5px solid ${keys[mm.key] ? "#FBCFE8" : "var(--border)"}`, background: "#fff", borderRadius: "var(--r-md)", padding: "10px 12px", marginTop: 9, opacity: keys[mm.key] ? 1 : .6 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
-              <button onClick={() => toggle(mm.key)} style={{ width: 26, height: 26, borderRadius: 8, border: "none", cursor: "pointer", background: keys[mm.key] ? "#DB2777" : "#EEF1F6", color: "#fff", fontWeight: 800, flexShrink: 0 }}>{keys[mm.key] ? "✓" : ""}</button>
+              <button onClick={() => toggle(mm.key)} style={{ width: 26, height: 26, borderRadius: "var(--r-sm)", border: "none", cursor: "pointer", background: keys[mm.key] ? "#DB2777" : "#EEF1F6", color: "#fff", fontWeight: 800, flexShrink: 0 }}>{keys[mm.key] ? "✓" : ""}</button>
               <b style={{ fontSize: 13 }}>{mm.name}</b>
-              <span style={{ fontSize: 11.3, color: "var(--muted)" }}>{mm.relation}{mm.age ? ` · ${mm.age}세` : ""}{mm.group ? ` · ${mm.group}` : ""}</span>
-              <span style={{ fontSize: 10.8, fontWeight: 800, marginLeft: "auto", color: mm.items[0].basis === "검진" ? "#1D4ED8" : "#9D174D", background: mm.items[0].basis === "검진" ? "#EEF3FF" : "#FDF2F8", borderRadius: 999, padding: "3px 9px" }}>
+              <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{mm.relation}{mm.age ? ` · ${mm.age}세` : ""}{mm.group ? ` · ${mm.group}` : ""}</span>
+              <span style={{ fontSize: 11, fontWeight: 800, marginLeft: "auto", color: mm.items[0].basis === "검진" ? "#1D4ED8" : "#9D174D", background: mm.items[0].basis === "검진" ? "#EEF3FF" : "#FDF2F8", borderRadius: "var(--r-pill)", padding: "3px 9px" }}>
                 {mm.items[0].basis === "검진" ? "내 검진 수치 근거" : "연령·성별 일반 권장"}
               </span>
             </div>
             {mm.items.map((it) => (
               <div key={it.product.id} style={{ fontSize: 12, color: "#475569", marginTop: 7, paddingLeft: 35, lineHeight: 1.55 }}>
                 <b style={{ color: "#334155" }}>{it.ing}</b> · {it.product.name} <b>{_fsWon(it.product.price)}</b>
-                <div style={{ fontSize: 11.3, color: "var(--muted)" }}>{it.why}</div>
+                <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{it.why}</div>
               </div>
             ))}
           </div>

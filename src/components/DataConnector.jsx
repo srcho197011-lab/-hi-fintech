@@ -92,7 +92,7 @@ function DataConnectorHub() {
 
   return (
     <div className="dcon">
-      <div className="ontstore-def" style={{ background: "linear-gradient(120deg,#0B1B33,#0E2740)", borderColor: "#1E4064" }}>
+      <div className="ontstore-def" style={{ background: "#0B1B33", borderColor: "#1E4064" }}>
         <span className="ontstore-ic" style={{ background: "#0C2036" }}><Server size={15} color="#38BDF8" /></span>
         <div><b>데이터 커넥터 · 외부 건강정보 연동 허브</b><p>국민건강보험공단·심평원·질병청·검진센터·병원 EMR·웨어러블·<b>MCP 서버</b>를 <b>MCP / REST / FHIR / 마이데이터</b> 프로토콜로 연동합니다. <b style={{ color: "#7DD3FC" }}>엔드포인트 URL과 인증키만 입력하면 즉시 연결</b>되며, 저장된 설정을 백엔드 커넥터에 그대로 주입해 운영에 사용합니다.</p></div>
       </div>

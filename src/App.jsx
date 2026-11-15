@@ -190,7 +190,7 @@ export default function App() {
                 {x.k === "insurance" && (
                   <a className="snav snav-link" href="./pet/?sso=1" target="_blank" rel="noopener" title="하이펫 — 반려동물 건강·치료비 케어 (새 창)"
                     onClick={() => { if (typeof hipetSsoIssue === "function") hipetSsoIssue(); }}>
-                    <span className="sico" style={{ background: "linear-gradient(135deg,#F59E0B,#F97316)" }}><PawPrint size={18} color="#fff" /></span> {t("nav.hipet", "하이펫 · 반려동물 케어")}<span className="snav-ext">↗</span>
+                    <span className="sico" style={{ background: "#F59E0B" }}><PawPrint size={18} color="#fff" /></span> {t("nav.hipet", "하이펫 · 반려동물 케어")}<span className="snav-ext">↗</span>
                   </a>
                 )}
               </React.Fragment>

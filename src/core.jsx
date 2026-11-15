@@ -110,20 +110,20 @@ const WARN_SIGNS = [
 /* ====================== sections ====================== */
 // 섹션별 컬러풀 아이콘 타일 그라데이션
 const ICONBG = {
-  home: "linear-gradient(145deg,#FF7A7A,#EE5253)",
-  ai: "linear-gradient(145deg,#8B7BFF,#5B6EF0)",
-  checkup: "linear-gradient(145deg,#34D399,#16A34A)",
-  manage: "linear-gradient(145deg,#2DD4BF,#0EA5E9)",
-  hospital: "linear-gradient(145deg,#56C5FB,#2563EB)",
-  homecare: "linear-gradient(145deg,#F472B6,#DB2777)",
-  shop: "linear-gradient(145deg,#FBBF24,#F59E0B)",
-  insurance: "linear-gradient(145deg,#60A5FA,#1D4ED8)",
-  wallet: "linear-gradient(145deg,#34D399,#059669)",
-  nft: "linear-gradient(145deg,#B07CFB,#7C3AED)",
-  community: "linear-gradient(145deg,#FFA45B,#F97316)",
-  mypage: "linear-gradient(145deg,#9AA7BD,#64748B)",
-  ontology: "linear-gradient(145deg,#22D3EE,#4F46E5)",
-  finance: "linear-gradient(145deg,#34D399,#0EA5E9)",
+  home: "#FF7A7A",
+  ai: "#5B6EF0",
+  checkup: "#34D399",
+  manage: "#2DD4BF",
+  hospital: "#56C5FB",
+  homecare: "#DB2777",
+  shop: "#FBBF24",
+  insurance: "#60A5FA",
+  wallet: "#34D399",
+  nft: "#7C3AED",
+  community: "#FFA45B",
+  mypage: "#9AA7BD",
+  ontology: "#22D3EE",
+  finance: "#34D399",
 };
 // 입체 일러스트 섹션 아이콘 (배경 없음, 특징 강조)
 function SecIcon({ k }) {
@@ -515,26 +515,26 @@ function ConsultModal({ interest, onClose }) {
         <div className="bkh"><div className="bt">{done ? "상담 신청 완료" : "상담 신청"}</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
         <div className="bkb">
           {!done ? (<>
-            <div style={{ display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(120deg,#2563EB,#1E40C8)", color: "#fff", borderRadius: 12, padding: "12px 14px", boxShadow: "0 12px 24px -16px rgba(37,99,235,.7)" }}>
-              <span style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><MessageSquare size={20} color="#fff" /></span>
-              <div style={{ fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>라이선스 상담사가 <b style={{ color: "#FDE68A" }}>입력하신 연락처</b>로 1:1 맞춤 상담을 도와드립니다.
-                <div style={{ fontSize: 10.8, fontWeight: 600, opacity: .85, marginTop: 3 }}>글로벌예방금융(주) · 금융위 등록 보험대리점 제2025060038호</div></div>
+            <div style={{ display: "flex", alignItems: "center", gap: 11, background: "#1E40C8", color: "#fff", borderRadius: "var(--r-md)", padding: "12px 14px" }}>
+              <span style={{ width: 36, height: 36, borderRadius: "var(--r-md)", background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><MessageSquare size={20} color="#fff" /></span>
+              <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.5 }}>라이선스 상담사가 <b style={{ color: "#FDE68A" }}>입력하신 연락처</b>로 1:1 맞춤 상담을 도와드립니다.
+                <div style={{ fontSize: 11, fontWeight: 600, opacity: .85, marginTop: 3 }}>글로벌예방금융(주) · 금융위 등록 보험대리점 제2025060038호</div></div>
             </div>
-            {catLine && <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 700, color: f.interest === INT_PREMIUM ? "#14337A" : "#92400E", background: f.interest === INT_PREMIUM ? "#EEF3FF" : "#FFF7E8", border: `1px solid ${f.interest === INT_PREMIUM ? "#C7D8FA" : "#F3DFB6"}`, borderRadius: 10, padding: "8px 12px" }}><ShieldCheck size={14} /> {catLine}</div>}
+            {catLine && <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 700, color: f.interest === INT_PREMIUM ? "#14337A" : "#92400E", background: f.interest === INT_PREMIUM ? "#EEF3FF" : "#FFF7E8", border: `1px solid ${f.interest === INT_PREMIUM ? "#C7D8FA" : "#F3DFB6"}`, borderRadius: "var(--r-md)", padding: "8px 12px" }}><ShieldCheck size={14} /> {catLine}</div>}
             {f.interest === INT_PREMIUM && gm && consentOK && (
-              <div style={{ fontSize: 11.8, fontWeight: 600, color: "#166534", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "8px 12px", lineHeight: 1.55 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#166534", background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: "var(--r-md)", padding: "8px 12px", lineHeight: 1.55 }}>
                 ✓ 건강데이터 활용·보험 연계 동의가 확인되었습니다{consentDate ? ` (동의일 ${consentDate})` : ""} — 변경·철회는 동의관리에서 언제든 가능해요.
               </div>
             )}
             {needGate ? (<>
               {/* 사전 동의 게이트 — 필수(health·insurance) 동의 후에만 장기보험 상담 진행 */}
-              <div style={{ border: "1.5px solid #C7D8FA", background: "#F8FAFF", borderRadius: 13, padding: "13px 14px" }}>
+              <div style={{ border: "1.5px solid #C7D8FA", background: "#F8FAFF", borderRadius: "var(--r-md)", padding: "13px 14px" }}>
                 <div style={{ fontWeight: 800, fontSize: 13.5, color: "#14337A" }}>장기보험 상담 전, 동의를 확인해 주세요</div>
                 <div style={{ fontSize: 12, color: "#475569", margin: "5px 0 10px", lineHeight: 1.6 }}>프리미엄(장기)보험은 검진·건강데이터로 설계하고 제휴 보험사 인수심사에 연계돼요. 아래 필수 동의가 있어야 상담을 진행할 수 있어요.</div>
                 {[["health", "[필수] 건강데이터 활용 동의", "장기 설계의 근거 데이터로 사용해요"], ["insurance", "[필수] 보험 연계 동의", "제휴 보험사 설계·인수 목적으로만 제공돼요"], ["mkt", "[선택] 보험계약 상담·안내 수신", "계약 상담·보험금 심사 안내·건강등급 결과·기존 계약 비교설명·상품 안내를 받아볼 수 있어요"]].map(([k, t, d]) => (
                   <label key={k} style={{ display: "flex", gap: 9, alignItems: "flex-start", padding: "7px 2px", cursor: "pointer" }}>
                     <input type="checkbox" style={{ marginTop: 2 }} checked={!!cAgree[k] || !!(consentInfo && consentInfo.st[k])} disabled={!!(consentInfo && consentInfo.st[k])} onChange={(e) => setCAgree({ ...cAgree, [k]: e.target.checked })} />
-                    <span style={{ fontSize: 12.3, lineHeight: 1.5 }}><b style={{ color: k === "mkt" ? "#64748B" : "#14337A" }}>{t}</b>{consentInfo && consentInfo.st[k] ? <b style={{ color: "#16A34A" }}> · 동의됨 ✓</b> : null}<br /><span style={{ color: "#64748B", fontSize: 11.5 }}>{d}</span></span>
+                    <span style={{ fontSize: 12.5, lineHeight: 1.5 }}><b style={{ color: k === "mkt" ? "#64748B" : "#14337A" }}>{t}</b>{consentInfo && consentInfo.st[k] ? <b style={{ color: "#16A34A" }}> · 동의됨 ✓</b> : null}<br /><span style={{ color: "#64748B", fontSize: 11.5 }}>{d}</span></span>
                   </label>
                 ))}
                 <button className="cbtn pri" style={{ marginTop: 8, opacity: gateReady ? 1 : .5 }} disabled={!gateReady} onClick={doConsent}><ShieldCheck size={15} /> {gateReady ? "동의하고 상담 진행" : "필수 동의에 체크해 주세요"}</button>

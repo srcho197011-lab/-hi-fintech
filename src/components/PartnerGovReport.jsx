@@ -1328,7 +1328,7 @@ function PGGrade({ g }) {
   const A = (typeof PG_AXES !== "undefined") ? PG_AXES.source : [];
   let ko = g;
   for (const row of A) if (row[0] === g) ko = row[1];
-  return <span style={{ fontSize: 10, fontWeight: 800, color: C[g] || "#64748B", border: "1px solid " + (C[g] || "#CBD5E1"), borderRadius: 6, padding: "1px 5px", marginLeft: 6 }}>{ko}</span>;
+  return <span style={{ fontSize: 10, fontWeight: 800, color: C[g] || "#64748B", border: "1px solid " + (C[g] || "#CBD5E1"), borderRadius: "var(--r-sm)", padding: "1px 5px", marginLeft: 6 }}>{ko}</span>;
 }
 /* 수치 한 칸 — 라벨 · 값 · 출처 배지 · 원천 경로. 원천 경로를 같이 들고 다니는 것이 역추적의 실체다. */
 function PGStat({ mid, val, note }) {
@@ -1342,7 +1342,7 @@ function PGStat({ mid, val, note }) {
       <PGGrade g={M.grade} />
       {M.clamp ? <span style={{ fontSize: 10, color: "#B45309", fontWeight: 800 }}>열람 {M.clamp}</span> : null}
       {note ? <span style={{ fontSize: 11, color: "#64748B" }}>{note}</span> : null}
-      <span style={{ fontSize: 10, color: "#94A3B8", marginLeft: "auto" }}>{M.from}</span>
+      <span style={{ fontSize: 10, color: "var(--muted)", marginLeft: "auto" }}>{M.from}</span>
     </div>
   );
 }
@@ -1358,7 +1358,7 @@ function PGEStat({ mid, val, note }) {
       <b style={{ color: "#0F172A" }}>{val}</b>
       <PGGrade g={M.grade} />
       {note ? <span style={{ fontSize: 11, color: "#64748B" }}>{note}</span> : null}
-      <span style={{ fontSize: 10, color: "#94A3B8", marginLeft: "auto" }}>{M.from}</span>
+      <span style={{ fontSize: 10, color: "var(--muted)", marginLeft: "auto" }}>{M.from}</span>
     </div>
   );
 }
@@ -1396,7 +1396,7 @@ function PGLane({ L, onEngine, onPartner }) {
   return (
     <div className="v360sec" style={{ marginTop: 8, borderLeft: "3px solid #A78BFA", paddingLeft: 10 }}>
       <b><Hash size={12} /> 레인 {L.n} · {L.ko}</b>
-      <div className="v360li" style={{ color: "#64748B", fontSize: 11 }}>{L.shows} <span style={{ color: "#94A3B8" }}>· {L.from}</span></div>
+      <div className="v360li" style={{ color: "#64748B", fontSize: 11 }}>{L.shows} <span style={{ color: "var(--muted)" }}>· {L.from}</span></div>
 
       {L.n === 1 ? (
         <div>
@@ -1407,7 +1407,7 @@ function PGLane({ L, onEngine, onPartner }) {
               <b>{ir.field}</b>
               <span> · {ir.clamped ? "열람 등급 " + ir.clamped + " 에서 잘림" : (ir.value === null || ir.value === undefined ? "값 없음" : String(ir.value))}</span>
               <PGGrade g={ir.grade} />
-              {ir.asOf ? <span style={{ color: "#94A3B8", fontSize: 10 }}> · 수집 {ir.asOf}</span> : null}
+              {ir.asOf ? <span style={{ color: "var(--muted)", fontSize: 10 }}> · 수집 {ir.asOf}</span> : null}
               <span style={{ color: "#64748B" }}> · {ir.use}</span>
             </div>
           ))}
@@ -1516,7 +1516,7 @@ function PGWhatIfBox({ W }) {
         <span style={{ color: "#64748B" }}> · 집행 {_pgEnfKo(W.base.level)}{W.base.block ? " · 막힘" : " · 막은 것 없음"}</span></div>
       {W.axes.map((ax) => (
         <div key={ax.k} style={{ marginTop: 6 }}>
-          <div className="v360li"><b>{ax.ko}</b> <span style={{ color: "#64748B", fontSize: 11 }}>· {ax.answers} · {ax.how} <span style={{ color: "#94A3B8" }}>({ax.from})</span></span></div>
+          <div className="v360li"><b>{ax.ko}</b> <span style={{ color: "#64748B", fontSize: 11 }}>· {ax.answers} · {ax.how} <span style={{ color: "var(--muted)" }}>({ax.from})</span></span></div>
           {!ax.available ? <div className="v360li" style={{ color: "#64748B" }}>{ax.hint}</div> : null}
           {ax.rows.map((rw, i) => (
             <div className="v360li" key={i} style={{ background: rw.up ? "#ECFDF5" : undefined }}>
@@ -1556,7 +1556,7 @@ function PGB5({ TR, W, onEngine, head }) {
           {TR.lanes.map((L) => <PGLane L={L} key={L.n} onEngine={onEngine} />)}
           <PGWhatIfBox W={W} />
           <div className="chnote" style={{ marginTop: 8 }}>
-            {TR.rule.map((r) => <div key={r.n}>※ {r.ko} — {_pgPlain(r.rule)} <span style={{ color: "#94A3B8" }}>(검사 {r.owner})</span></div>)}
+            {TR.rule.map((r) => <div key={r.n}>※ {r.ko} — {_pgPlain(r.rule)} <span style={{ color: "var(--muted)" }}>(검사 {r.owner})</span></div>)}
           </div>
           <div className="chnote" style={{ marginTop: 6 }}>※ {TR.determinism}</div>
         </div>
@@ -1639,7 +1639,7 @@ function PGB2({ V, onPolicy, onCell }) {
       {concOpen && V.conclusionWhy[concOpen] ? (
         <div className="v360sec" style={{ marginTop: 6 }}>
           <b><Target size={12} /> {concOpen} — 판정기가 쓴 사유</b>
-          {V.conclusionWhy[concOpen].map((w, i) => <div className="v360li" key={i}>{w.why} <span style={{ color: "#94A3B8" }}>· {_pgN(w.n)}곳</span></div>)}
+          {V.conclusionWhy[concOpen].map((w, i) => <div className="v360li" key={i}>{w.why} <span style={{ color: "var(--muted)" }}>· {_pgN(w.n)}곳</span></div>)}
           <div className="v360li" style={{ color: "#64748B" }}>구성 조항 —
             {V.conclusionPolicies.map((id) => <span key={id} onClick={(e) => { e.stopPropagation(); onPolicy && onPolicy(id); }}
               style={{ marginLeft: 6, cursor: "pointer", fontWeight: 800, color: "#0E8FA6" }}>{id}</span>)}
@@ -1663,7 +1663,7 @@ function PGB2({ V, onPolicy, onCell }) {
               <td>{_pgN(mx.counts.DENY)}</td>
               <td>{_pgN(mx.counts.INDETERMINATE)}</td>
               <td>{_pgN(mx.counts.NOT_APPLICABLE)}</td>
-              <td>{_pgPct(mx.comply.rate)}<span style={{ fontSize: 10, color: "#94A3B8" }}> / 분모 {_pgN(mx.comply.den)}</span></td>
+              <td>{_pgPct(mx.comply.rate)}<span style={{ fontSize: 10, color: "var(--muted)" }}> / 분모 {_pgN(mx.comply.den)}</span></td>
             </tr>
           ))}
         </tbody></table>
@@ -1798,7 +1798,7 @@ function PGB4({ V, onCell, onFocus, focusCell }) {
             <th>협력업체</th>
             {polIds.map((id) => {
               const bp = V.byPolicy[id];
-              return <th key={id} title={bp.title}>{id}<br /><span style={{ fontSize: 9, color: "#94A3B8" }}>{bp.subject === "당사" ? "ⓠ당사" : "ⓘ업체"} · {bp.lifecycle}</span></th>;
+              return <th key={id} title={bp.title}>{id}<br /><span style={{ fontSize: 10, color: "var(--muted)" }}>{bp.subject === "당사" ? "ⓠ당사" : "ⓘ업체"} · {bp.lifecycle}</span></th>;
             })}
             <th>준수율</th><th>보류</th>
           </tr>
@@ -1806,7 +1806,7 @@ function PGB4({ V, onCell, onFocus, focusCell }) {
           {view.map((ln) => (
             <tr key={ln.partnerId}>
               <td onClick={() => onFocus && onFocus(ln.partnerId)} style={{ cursor: "pointer", whiteSpace: "nowrap" }}>
-                <b>{ln.dispName}</b><br /><span style={{ fontSize: 9, color: "#94A3B8" }}>{ln.code} · {ln.kind}</span>
+                <b>{ln.dispName}</b><br /><span style={{ fontSize: 10, color: "var(--muted)" }}>{ln.code} · {ln.kind}</span>
               </td>
               {polIds.map((id) => {
                 const sl = ln.cells[id] || null;
@@ -1819,7 +1819,7 @@ function PGB4({ V, onCell, onFocus, focusCell }) {
                   </td>
                 );
               })}
-              <td title="ⓘ협력업체 축만 센 준수율입니다 — ⓠ당사 조항은 아래 별 띠에서 조항 1건으로 셉니다">{_pgPct(ln.comply.rate)}<span style={{ fontSize: 9, color: "#94A3B8" }}> /{_pgN(ln.comply.den)}</span></td>
+              <td title="ⓘ협력업체 축만 센 준수율입니다 — ⓠ당사 조항은 아래 별 띠에서 조항 1건으로 셉니다">{_pgPct(ln.comply.rate)}<span style={{ fontSize: 10, color: "var(--muted)" }}> /{_pgN(ln.comply.den)}</span></td>
               <td>{_pgN(ln.comply.pending)}</td>
             </tr>
           ))}
@@ -1846,8 +1846,8 @@ function PGB4({ V, onCell, onFocus, focusCell }) {
               const rep = (V.byPartner[0] || {}).partnerId;
               return (
                 <tr key={id} onClick={() => onCell && rep && onCell(rep, id)} style={{ cursor: "pointer" }}>
-                  <td><b>당사</b><br /><span style={{ fontSize: 9, color: "#94A3B8" }}>{bp.title}</span></td>
-                  <td>{id}<br /><span style={{ fontSize: 9, color: "#94A3B8" }}>{bp.lifecycle} · {bp.severity}</span></td>
+                  <td><b>당사</b><br /><span style={{ fontSize: 10, color: "var(--muted)" }}>{bp.title}</span></td>
+                  <td>{id}<br /><span style={{ fontSize: 10, color: "var(--muted)" }}>{bp.lifecycle} · {bp.severity}</span></td>
                   <td style={{ color: PG_DEC_COLOR[ids === "혼재" ? "" : ids] || "#94A3B8", fontWeight: 800 }}>
                     {ids === "혼재" ? "협력업체별로 갈림" : _pgDecKo(ids)}</td>
                   <td>{bp.counts.DENY > 0 ? "규칙 위반" : (bp.counts.INDETERMINATE > 0 ? "판정 보류" : "—")}</td>
@@ -2240,7 +2240,7 @@ function PartnerGovEngine({ onReport, focusPolicy }) {
             {E.pepRows.map((s) => (
               <tr key={s.pep}>
                 <td><b>{s.pep}</b></td><td>{s.ko}</td><td>{s.blocks}</td><td>{_pgEnfKo(s.cap)}</td><td>{s.consumer}</td>
-                <td>{s.expect === null ? "—" : String(s.expect)}<span style={{ fontSize: 9, color: "#94A3B8" }}> {s.expectWhy}</span></td>
+                <td>{s.expect === null ? "—" : String(s.expect)}<span style={{ fontSize: 10, color: "var(--muted)" }}> {s.expectWhy}</span></td>
                 <td style={{ color: s.match === false ? "#DC2626" : undefined, fontWeight: s.match === false ? 800 : 600 }}>{s.got === null ? "—" : _pgN(s.got)}</td>
               </tr>
             ))}
@@ -2249,7 +2249,7 @@ function PartnerGovEngine({ onReport, focusPolicy }) {
         <div className="sctablewrap" style={{ marginTop: 8 }}>
           <table className="sctable"><thead><tr>
             <th>조항</th><th>판정 대상</th>
-            {PEPS.map((pep) => <th key={pep}>{pep}<br /><span style={{ fontSize: 9, color: "#94A3B8" }}>실효 / 선언 / 상한</span></th>)}
+            {PEPS.map((pep) => <th key={pep}>{pep}<br /><span style={{ fontSize: 10, color: "var(--muted)" }}>실효 / 선언 / 상한</span></th>)}
             <th>수준을 내린 것</th>
           </tr></thead><tbody>
             {E.grid.map((g) => (
@@ -2261,7 +2261,7 @@ function PartnerGovEngine({ onReport, focusPolicy }) {
                   return (
                     <td key={pep} style={{ textAlign: "center" }}>
                       <b>{_pgEnfKo(c.level)}</b><br />
-                      <span style={{ fontSize: 9, color: "#94A3B8" }}>{_pgEnfKo(c.declared)} / {_pgEnfKo(c.cap)}</span>
+                      <span style={{ fontSize: 10, color: "var(--muted)" }}>{_pgEnfKo(c.declared)} / {_pgEnfKo(c.cap)}</span>
                     </td>
                   );
                 })}
@@ -2328,9 +2328,9 @@ function PartnerGovEngine({ onReport, focusPolicy }) {
                     <td>{r.seq}</td><td>{r.at}</td>
                     <td style={{ color: r.name === "pg_blocked" ? "#DC2626" : "#B45309", fontWeight: 800 }}>{r.name === "pg_blocked" ? "차단" : "면제 통과"}</td>
                     <td>{r.policyId || "—"}</td><td>{r.pep || "—"}</td><td>{r.causeKo || r.cause || "—"}</td>
-                    <td>{r.src || "—"}{r.kindOf ? <span style={{ fontSize: 9, color: "#94A3B8" }}> · {r.kindOf}</span> : null}</td>
+                    <td>{r.src || "—"}{r.kindOf ? <span style={{ fontSize: 10, color: "var(--muted)" }}> · {r.kindOf}</span> : null}</td>
                     <td>{_pgEnfKo(r.level)}</td>
-                    <td>{r.traceable ? "추적 ›" : <span style={{ fontSize: 10, color: "#94A3B8" }}>모집단 밖</span>}</td>
+                    <td>{r.traceable ? "추적 ›" : <span style={{ fontSize: 10, color: "var(--muted)" }}>모집단 밖</span>}</td>
                   </tr>
                 ))}
               </tbody></table>
@@ -2456,9 +2456,9 @@ function PartnerGovEngine({ onReport, focusPolicy }) {
           </div>
           <div className="v360sec">
             <b><GitBranch size={12} /> 추적 지면 규약과 가정 축</b>
-            {E.method.traceRule.map((r) => <div className="v360li" key={r.n}>{r.n}. <b>{r.ko}</b> — {_pgPlain(r.rule)} <span style={{ color: "#94A3B8" }}>(검사 {r.owner})</span></div>)}
+            {E.method.traceRule.map((r) => <div className="v360li" key={r.n}>{r.n}. <b>{r.ko}</b> — {_pgPlain(r.rule)} <span style={{ color: "var(--muted)" }}>(검사 {r.owner})</span></div>)}
             {E.method.lanes.map((l) => <div className="v360li" key={l.n} style={{ color: "#64748B" }}>레인 {l.n} {l.ko} — {l.from}</div>)}
-            {E.method.whatIf.map((a) => <div className="v360li" key={a.k}><b>{a.ko}</b> — {a.how} <span style={{ color: "#94A3B8" }}>({a.from})</span></div>)}
+            {E.method.whatIf.map((a) => <div className="v360li" key={a.k}><b>{a.ko}</b> — {a.how} <span style={{ color: "var(--muted)" }}>({a.from})</span></div>)}
             {E.method.whatIfForbid.map((f) => <div className="v360li" key={f.k} style={{ color: "#64748B" }}>하지 않는 가정 · {f.ko} — {f.why}</div>)}
             <div className="v360li" style={{ marginTop: 6 }}>{E.method.determinism}</div>
           </div>
@@ -2568,7 +2568,7 @@ function PGAIStat({ mid, val, note }) {
       <b style={{ color: "#0F172A" }}>{val}</b>
       <PGGrade g={M.grade} />
       {note ? <span style={{ fontSize: 11, color: "#64748B" }}>{note}</span> : null}
-      <span style={{ fontSize: 10, color: "#94A3B8", marginLeft: "auto" }}>{M.from}</span>
+      <span style={{ fontSize: 10, color: "var(--muted)", marginLeft: "auto" }}>{M.from}</span>
     </div>
   );
 }
@@ -2587,7 +2587,7 @@ function PGAIHead({ id, ic }) {
 /* 확인 등급 배지 — 원문확인만 초록이다. 색이 등급을 말하므로 등급 없는 칸이 설 수 없다. */
 function PGVerif({ v }) {
   const c = v === "원문확인" ? "#16A34A" : v === "부분확인" ? "#B45309" : "#DC2626";
-  return <span style={{ fontSize: 10.5, fontWeight: 800, color: c, border: "1px solid " + c + "66", borderRadius: 6, padding: "1px 5px" }}>{v}</span>;
+  return <span style={{ fontSize: 10.5, fontWeight: 800, color: c, border: "1px solid " + c + "66", borderRadius: "var(--r-sm)", padding: "1px 5px" }}>{v}</span>;
 }
 /* 실측값 한 칸의 표기 — 배열 · 객체를 지면이 문장으로 바꾸지 않고 그대로 펼친다 */
 function _pgAiShow(v) {
@@ -2647,7 +2647,7 @@ function PartnerAIGov() {
               {ref.numLabel ? <span style={{ color: "#0E8FA6", fontWeight: 800 }}> · {ref.numLabel}</span> : null}
               {!ref.numLabel && ref.numGate ? <div style={{ fontSize: 11, color: "#B45309" }}>{_pgPlain(ref.numGate)}</div> : null}
               {ref.caution ? <div style={{ fontSize: 11, color: "#B45309" }}>{_pgPlain(ref.caution)}</div> : null}
-              {ref.cite ? <span style={{ fontSize: 10, color: "#94A3B8" }}> · 참조 등재</span> : null}
+              {ref.cite ? <span style={{ fontSize: 10, color: "var(--muted)" }}> · 참조 등재</span> : null}
             </div>
           ))}
           {ax.evidence.map((e) => (
@@ -2680,7 +2680,7 @@ function PartnerAIGov() {
           <b><BookOpen size={12} /> {std.name}</b> <PGVerif v={std.verified} />
           <span style={{ fontSize: 10.5, color: "#64748B", fontWeight: 800 }}> · {std.basis}</span>
           {std.appliesToSelf ? <span style={{ fontSize: 10.5, color: "#DC2626", fontWeight: 800 }}> · 우리도 수범자</span> : null}
-          {std.cite ? <span style={{ fontSize: 10.5, color: "#94A3B8", fontWeight: 800 }}> · 참조 등재(판정 근거 아님)</span> : null}
+          {std.cite ? <span style={{ fontSize: 10.5, color: "var(--muted)", fontWeight: 800 }}> · 참조 등재(판정 근거 아님)</span> : null}
           <div className="v360li">적용 대상 — {std.applies}</div>
           <div className="v360li" style={{ color: "#334155" }}>적용 범위 — {_pgPlain(std.range)}</div>
           {std.lawVersion ? <div className="v360li" style={{ color: "#64748B" }}>현행 — {std.lawVersion}</div> : null}
@@ -2722,12 +2722,12 @@ function PartnerAIGov() {
           </div> : null}
           {g.probe ? <div className="v360li" style={{ fontSize: 11, color: "#334155" }}>
             실측 — {Object.keys(g.probe.measured).map((k) => k + ": " + _pgAiShow(g.probe.measured[k])).join(" · ")}
-            <span style={{ fontSize: 10, color: "#94A3B8" }}> {g.probe.from}</span>
+            <span style={{ fontSize: 10, color: "var(--muted)" }}> {g.probe.from}</span>
           </div> : <div className="v360li" style={{ color: "#B45309" }}>{g.noProbe}</div>}
           {g.notice.map((n, i) => (
             <div className="v360li" key={i} style={{ color: "#0E8FA6" }}>
               <Bell size={11} /> {n.at} — 「{n.text}」
-              <div style={{ fontSize: 10.5, color: "#94A3B8" }}>{n.file} · 검사 소유자 {n.owner} · {n.why}</div>
+              <div style={{ fontSize: 10.5, color: "var(--muted)" }}>{n.file} · 검사 소유자 {n.owner} · {n.why}</div>
             </div>
           ))}
         </div>
@@ -2760,7 +2760,7 @@ function PartnerAIGov() {
                 ? <div style={{ fontSize: 11.5, color: "#334155" }}>{_pgPlain(act.msg)}</div>
                 : <div style={{ fontSize: 11.5, color: "#B45309" }}>{act.hint}</div>}
               {act.slots.map((s) => (
-                <div key={s.slot} style={{ fontSize: 10.5, color: "#94A3B8" }}>{s.slot} = {_pgN(s.value)} · {s.mid} · {s.from}</div>
+                <div key={s.slot} style={{ fontSize: 10.5, color: "var(--muted)" }}>{s.slot} = {_pgN(s.value)} · {s.mid} · {s.from}</div>
               ))}
               {act.blocks ? <div style={{ fontSize: 11, color: "#B45309" }}>막는 것 — {act.blocks} · {_pgPlain(act.effect)}</div> : null}
             </div>

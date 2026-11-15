@@ -19,27 +19,27 @@ function AdherenceCard() {
   const O = (typeof adhOutcome === "function") ? adhOutcome(m) : null;
 
   return (
-    <div className="card" style={{ margin: "0 0 12px", border: "1.5px solid #BBF7D0", background: "linear-gradient(125deg,#F0FDF4,#F8FFFB)" }}>
+    <div className="card" style={{ margin: "0 0 12px", border: "1.5px solid #BBF7D0", background: "#F8FFFB" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
-        <span style={{ width: 34, height: 34, borderRadius: 10, background: "#16A34A", display: "grid", placeItems: "center", flexShrink: 0 }}><Check size={19} color="#fff" /></span>
+        <span style={{ width: 34, height: 34, borderRadius: "var(--r-md)", background: "#16A34A", display: "grid", placeItems: "center", flexShrink: 0 }}><Check size={19} color="#fff" /></span>
         <div style={{ flex: "1 1 200px" }}>
           <b style={{ fontSize: 14.5, color: "#166534" }}>오늘 복용 체크</b>
-          <div style={{ fontSize: 11.8, color: "var(--muted)", marginTop: 2 }}>총 복용 {S.totalDays}일 · 평균 순응률 {S.avgRate}% · 오늘 {S.checkedToday}/{S.items.length} 완료</div>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>총 복용 {S.totalDays}일 · 평균 순응률 {S.avgRate}% · 오늘 {S.checkedToday}/{S.items.length} 완료</div>
         </div>
       </div>
 
       {/* 체크 목록 */}
       <div style={{ marginTop: 10 }}>
         {S.items.map((it) => (
-          <div key={it.pid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", background: "#fff", border: `1.5px solid ${it.checked ? "#BBF7D0" : "var(--border)"}`, borderRadius: 11, marginBottom: 7, flexWrap: "wrap" }}>
+          <div key={it.pid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", background: "#fff", border: `1.5px solid ${it.checked ? "#BBF7D0" : "var(--border)"}`, borderRadius: "var(--r-md)", marginBottom: 7, flexWrap: "wrap" }}>
             <button onClick={() => { adhCheck(m, it.pid); setTick((t) => t + 1); if (typeof toast === "function") toast(it.checked ? "체크를 해제했어요" : `✅ ${it.name} 복용 체크 · ${it.streak + 1}일 연속`); }}
-              style={{ width: 30, height: 30, borderRadius: 9, border: "none", cursor: "pointer", background: it.checked ? "#16A34A" : "#EEF1F6", color: "#fff", fontSize: 15, fontWeight: 800, flexShrink: 0 }}>{it.checked ? "✓" : ""}</button>
+              style={{ width: 30, height: 30, borderRadius: "var(--r-sm)", border: "none", cursor: "pointer", background: it.checked ? "#16A34A" : "#EEF1F6", color: "#fff", fontSize: 15, fontWeight: 800, flexShrink: 0 }}>{it.checked ? "✓" : ""}</button>
             <div style={{ flex: "1 1 160px" }}>
-              <b style={{ fontSize: 12.8, textDecoration: it.checked ? "none" : "none", color: it.checked ? "#166534" : "#334155" }}>{it.name}</b>
-              <div style={{ fontSize: 11.2, color: "var(--muted)" }}>{it.category} · {it.total}일 복용 · 순응률 {it.rate}%{it.streak >= 3 ? ` · 🔥 ${it.streak}일 연속` : ""}</div>
+              <b style={{ fontSize: 13, textDecoration: it.checked ? "none" : "none", color: it.checked ? "#166534" : "#334155" }}>{it.name}</b>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>{it.category} · {it.total}일 복용 · 순응률 {it.rate}%{it.streak >= 3 ? ` · 🔥 ${it.streak}일 연속` : ""}</div>
             </div>
             <div style={{ minWidth: 66 }}>
-              <div style={{ height: 6, background: "#EEF1F6", borderRadius: 999, overflow: "hidden" }}><div style={{ width: it.rate + "%", height: "100%", background: it.rate >= 70 ? "#16A34A" : it.rate >= 40 ? "#F59E0B" : "#EF4444" }} /></div>
+              <div style={{ height: 6, background: "#EEF1F6", borderRadius: "var(--r-pill)", overflow: "hidden" }}><div style={{ width: it.rate + "%", height: "100%", background: it.rate >= 70 ? "#16A34A" : it.rate >= 40 ? "#F59E0B" : "#EF4444" }} /></div>
             </div>
           </div>
         ))}
@@ -48,19 +48,19 @@ function AdherenceCard() {
       {/* 성과 리포트 */}
       {O && O.rows.length > 0 && (
         <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 12.3, fontWeight: 800, color: "#14532D", marginBottom: 7 }}>📈 복용 기간과 함께 기록된 변화</div>
+          <div style={{ fontSize: 12.5, fontWeight: 800, color: "#14532D", marginBottom: 7 }}>📈 복용 기간과 함께 기록된 변화</div>
           {O.rows.slice(0, 3).map((r) => (
-            <div key={r.pid + r.key} style={{ border: `1.5px solid ${r.better ? "#BBF7D0" : "var(--border)"}`, background: "#fff", borderRadius: 11, padding: "10px 12px", marginBottom: 7 }}>
+            <div key={r.pid + r.key} style={{ border: `1.5px solid ${r.better ? "#BBF7D0" : "var(--border)"}`, background: "#fff", borderRadius: "var(--r-md)", padding: "10px 12px", marginBottom: 7 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <b style={{ fontSize: 13 }}>{r.name}</b>
                 <span style={{ fontSize: 14, fontWeight: 800, color: r.better ? "#16A34A" : "#B45309" }}>
                   {r.from}{r.unit} → {r.to}{r.unit} {r.better ? "↘ 개선 방향" : "↗ 관리 필요"}
                 </span>
-                <span style={{ fontSize: 11.3, color: "var(--muted)", marginLeft: "auto" }}>{r.fromYear} → {r.toYear}</span>
+                <span style={{ fontSize: 11.5, color: "var(--muted)", marginLeft: "auto" }}>{r.fromYear} → {r.toYear}</span>
               </div>
-              <div style={{ fontSize: 11.8, color: "#475569", marginTop: 5, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 12, color: "#475569", marginTop: 5, lineHeight: 1.6 }}>
                 {r.ing}({r.product}) <b>{r.days}일 복용 · 순응률 {r.rate}%</b> 기간과 함께 기록된 변화예요.
-                <span style={{ color: "#94A3B8" }}> 생활습관·치료 등 다른 요인이 함께 작용하므로 제품의 효과로 단정하지 않아요.</span>
+                <span style={{ color: "var(--muted)" }}> 생활습관·치료 등 다른 요인이 함께 작용하므로 제품의 효과로 단정하지 않아요.</span>
               </div>
               <div style={{ display: "flex", gap: 7, marginTop: 8, flexWrap: "wrap" }}>
                 {r.better && !committed[r.pid + r.key] && (

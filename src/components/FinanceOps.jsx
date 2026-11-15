@@ -181,7 +181,7 @@ function AICashSystem() {
 
   return (
     <div>
-      <div className="ontstore-def" style={{ background: "linear-gradient(120deg,#062A47,#0F1B33)", borderColor: "#0067AC" }}>
+      <div className="ontstore-def" style={{ background: "#0F1B33", borderColor: "#0067AC" }}>
         <span className="ontstore-ic" style={{ background: "#052033" }}><Landmark size={15} color="#4DA8E0" /></span>
         <div><b>AI 출수납 시스템 · 우리은행 데모계좌 5</b><p>수납·출납·사업비 자금을 <b>모계좌 중심으로 AI가 집금·배분(스윕)</b>하고, 모든 이체를 <b>K-IFRS 자동 분개</b>로 회계에 인식합니다. 기준일 {D ? D.S.date : "-"} 총 관리자금 <b style={{ color: "#7DD3FC" }}>{_fnEok(total)}</b> = 재무상태표 실적 현금 {_fnEok(D ? D.total : NaN)}(투자금 납입 {_fnEok(D ? D.S.kpi.capitalIn : NaN)} 포함).</p></div>
       </div>
@@ -212,7 +212,7 @@ function AICashSystem() {
 
       <div className="ontpanel" style={{ marginTop: 12 }}>
         <div className="ontph"><TrendingUp size={15} color="#38BDF8" /> 전체 계좌 현금흐름 추이 <span>· 최근 6개월({flow.length ? `${flow[0].cal}~${flow[flow.length - 1].cal}` : "-"}) 실적 입금·출금·순현금흐름</span></div>
-        <div className="fflow-legend"><span><i style={{ background: "#22C58A" }} />입금(수납)</span><span><i style={{ background: "#F0776B" }} />출금(출납)</span><span><i style={{ background: "#38BDF8", borderRadius: 2 }} />순현금흐름</span></div>
+        <div className="fflow-legend"><span><i style={{ background: "#22C58A" }} />입금(수납)</span><span><i style={{ background: "#F0776B" }} />출금(출납)</span><span><i style={{ background: "#38BDF8", borderRadius: "var(--r-xs)" }} />순현금흐름</span></div>
         <FinFlowChart data={flow} />
         <div className="finpl-note">{lastF ? lastF.cal : "-"} 순현금흐름 <b style={{ color: monthNet >= 0 ? "#34D399" : "#F87171" }}>{monthNet >= 0 ? "+" : ""}{_fnEok(monthNet)}</b> — {monthNet >= 0 ? "입금(수납)이 출금(출납)을 상회합니다." : "출금(출납)이 입금(수납)을 상회하는 투자 집행 구간입니다(투자금 납입은 입금에서 제외, 조달 전 영업·투자 흐름)."}</div>
       </div>
@@ -283,7 +283,7 @@ function AIInvestSystem() {
   const DIS = { opacity: 0.45, cursor: "not-allowed" };
   return (
     <div>
-      <div className="ontstore-def" style={{ background: "linear-gradient(120deg,#1A1030,#0F1B33)", borderColor: "#4A2A6B" }}>
+      <div className="ontstore-def" style={{ background: "#1A1030", borderColor: "#4A2A6B" }}>
         <span className="ontstore-ic" style={{ background: "#14091F" }}><TrendingUp size={15} color="#C4B5FD" /></span>
         <div><b>AI 투자시스템 · 채권·주식·코인·대체투자</b><p><b>{stage}</b>. 보유 평가액 <b style={{ color: "#C4B5FD" }}>{_fnWon(totVal)}</b> · 평가손익 <b style={{ color: "#8FA1C0" }}>{_fnWon(totPl)}</b>. 기준일 {S ? S.date : "-"} 실적 현금 {_fnEok(S ? S.cash.actual.balance : NaN)}은 사업 운영(런웨이)에 쓰이며 투자용 계좌로 배분하지 않습니다.</p></div>
       </div>

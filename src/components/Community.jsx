@@ -26,7 +26,7 @@ function CommunitySection({ onGo }) {
           <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>질환별 모임 · 전문가 Q&A · 건강 후기 — 함께 관리하고 활동하면 Health Token 적립</div></div></div>
 
       <div className="chalbar">
-        <span style={{ width: 42, height: 42, borderRadius: 11, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><Footprints size={22} color="#fff" /></span>
+        <span style={{ width: 42, height: 42, borderRadius: "var(--r-md)", background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><Footprints size={22} color="#fff" /></span>
         <div style={{ flex: 1 }}><div style={{ fontWeight: 800, fontSize: 14 }}>이번 주 챌린지 · 하루 8,000보 걷기</div><div style={{ fontSize: 12, opacity: .92, marginTop: 2 }}>참여 3,210명 · 달성 시 <b>+200 HTK</b>{_streak ? <> · {_cnm}님 현재 {_streak}일째 🔥</> : <> · 지금 참여하실 수 있어요</>}</div></div>
         <button className="book" style={{ background: "#fff", color: "#F97316", border: "none", padding: "9px 14px", flexShrink: 0 }} onClick={() => go("wallet")}>리워드</button>
       </div>
@@ -62,8 +62,8 @@ function CommunitySection({ onGo }) {
         {COMM_QNA.map((x, i) => (
           <div className="qcard" key={i}>
             <div className="q"><span className="qm">Q</span><div style={{ flex: 1 }}><b style={{ fontSize: 13.5 }}>{x.q}</b><div style={{ fontSize: 11, color: "var(--soft)", marginTop: 2 }}>{x.asker} · {x.done ? "답변완료" : "답변 대기"}</div></div></div>
-            {x.done ? <div className="a"><span className="am">A</span><div><div style={{ fontSize: 11.5, color: "#15803D", fontWeight: 800, marginBottom: 3 }}>{x.spec}</div><div style={{ fontSize: 12.3, color: "#3a4659", lineHeight: 1.6 }}>{x.a}</div></div></div>
-              : <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 9, background: "#FEF8E0", borderRadius: 10, padding: "9px 11px" }}><Clock size={12} style={{ verticalAlign: "-2px" }} /> {x.spec} 배정 · 답변을 준비 중입니다.</div>}
+            {x.done ? <div className="a"><span className="am">A</span><div><div style={{ fontSize: 11.5, color: "#15803D", fontWeight: 800, marginBottom: 3 }}>{x.spec}</div><div style={{ fontSize: 12.5, color: "#3a4659", lineHeight: 1.6 }}>{x.a}</div></div></div>
+              : <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 9, background: "#FEF8E0", borderRadius: "var(--r-md)", padding: "9px 11px" }}><Clock size={12} style={{ verticalAlign: "-2px" }} /> {x.spec} 배정 · 답변을 준비 중입니다.</div>}
           </div>
         ))}
         <button className="cbtn pri" onClick={() => go("ai")}><MessageSquare size={15} /> 질문하기 · AI 1차 상담</button>

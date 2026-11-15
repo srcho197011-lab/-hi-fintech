@@ -44,18 +44,18 @@ function OntoCtaArt() {
 /* ====================== 홈 히어로 — AI Ontology 플랫폼 다이어그램 (Palantir-style) ====================== */
 function PlatformDiagram() {
   const CY = "#22D3EE";
-  const glass = { background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.13)", borderRadius: 16, backdropFilter: "blur(6px)" };
+  const glass = { background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.13)", borderRadius: "var(--r-lg)", backdropFilter: "blur(6px)" };
   const wrapMax = { width: "100%", maxWidth: 900, margin: "0 auto" };
   const Conn = () => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "3px 0" }}>
-      <div className="pdg-flow" style={{ width: 2, height: 20, background: "linear-gradient(#22D3EE,rgba(34,211,238,.15))", borderRadius: 2 }} />
+      <div className="pdg-flow" style={{ width: 2, height: 20, background: "linear-gradient(#22D3EE,rgba(34,211,238,.15))", borderRadius: "var(--r-xs)" }} />
       <ChevronDown size={15} color={CY} style={{ marginTop: -3 }} />
     </div>
   );
   const Stage = ({ n, tag, title, accent, children }) => (
     <div style={{ ...glass, ...wrapMax, padding: "13px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: children ? 11 : 0 }}>
-        <span style={{ width: 26, height: 26, borderRadius: 8, background: accent || CY, color: "#04121f", fontWeight: 900, fontSize: 13, display: "grid", placeItems: "center", flexShrink: 0 }}>{n}</span>
+        <span style={{ width: 26, height: 26, borderRadius: "var(--r-sm)", background: accent || CY, color: "#04121f", fontWeight: 900, fontSize: 13, display: "grid", placeItems: "center", flexShrink: 0 }}>{n}</span>
         <div>
           <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: accent || CY, textTransform: "uppercase" }}>{tag}</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", lineHeight: 1.2 }}>{title}</div>
@@ -65,13 +65,13 @@ function PlatformDiagram() {
     </div>
   );
   const Chip = ({ ic: Ic, children }) => (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,211,238,.09)", border: "1px solid rgba(34,211,238,.24)", color: "#D6F6FF", fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: 999 }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,211,238,.09)", border: "1px solid rgba(34,211,238,.24)", color: "#D6F6FF", fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-pill)" }}>
       {Ic && <Ic size={13} color={CY} />}{children}
     </span>
   );
   const SvcCard = ({ ic: Ic, t, sub, col }) => (
-    <div style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 13, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
-      <span style={{ width: 34, height: 34, borderRadius: 10, background: (col || CY) + "22", border: "1px solid " + (col || CY) + "55", display: "grid", placeItems: "center" }}><Ic size={17} color={col || CY} /></span>
+    <div style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", borderRadius: "var(--r-md)", padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
+      <span style={{ width: 34, height: 34, borderRadius: "var(--r-md)", background: (col || CY) + "22", border: "1px solid " + (col || CY) + "55", display: "grid", placeItems: "center" }}><Ic size={17} color={col || CY} /></span>
       <div style={{ fontSize: 12.5, fontWeight: 800, color: "#fff", lineHeight: 1.3 }}>{t}</div>
       {sub && <div style={{ fontSize: 10.5, color: "#9FD9EC", lineHeight: 1.3 }}>{sub}</div>}
     </div>
@@ -83,13 +83,13 @@ function PlatformDiagram() {
     [Activity, "맞춤 홈케어 의료기기", "", "#F472B6"], [ShieldCheck, "맞춤 건강보험", "", "#60A5FA"],
   ];
   return (
-    <div className="pdg-wrap" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(165deg,#0B1F3A 0%,#0E2A4E 55%,#0A2340 100%)", borderRadius: 22, padding: "30px 20px 26px", margin: "16px 0" }}>
+    <div className="pdg-wrap" style={{ position: "relative", overflow: "hidden", background: "linear-gradient(165deg,#0B1F3A 0%,#0E2A4E 55%,#0A2340 100%)", borderRadius: "var(--r-xl)", padding: "30px 20px 26px", margin: "16px 0" }}>
       <style>{`@keyframes pdgPulse{0%,100%{transform:scale(1);opacity:.55}50%{transform:scale(1.14);opacity:.15}}@keyframes pdgFlowMove{0%{background-position:0 0}100%{background-position:0 22px}}@keyframes pdgSpin{to{transform:rotate(360deg)}}.pdg-wrap *{box-sizing:border-box}.pdg-core-ring{animation:pdgPulse 3s ease-in-out infinite}.pdg-spin{animation:pdgSpin 14s linear infinite}@media(max-width:560px){.pdg-vr{grid-template-columns:1fr !important}.pdg-vr>div:nth-child(2){transform:rotate(90deg);margin:2px 0}}`}</style>
       <span style={{ position: "absolute", width: 320, height: 320, top: -120, right: -80, background: "radial-gradient(circle,#22D3EE55,transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
       <span style={{ position: "absolute", width: 300, height: 300, bottom: -120, left: -60, background: "radial-gradient(circle,#7C3AED44,transparent 70%)", filter: "blur(20px)", pointerEvents: "none" }} />
 
       <div style={{ position: "relative", textAlign: "center", marginBottom: 18 }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,211,238,.12)", border: "1px solid rgba(34,211,238,.3)", color: CY, fontSize: 11, fontWeight: 800, letterSpacing: 1, padding: "5px 13px", borderRadius: 999 }}><Network size={12} /> AI ONTOLOGY PLATFORM</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,211,238,.12)", border: "1px solid rgba(34,211,238,.3)", color: CY, fontSize: 11, fontWeight: 800, letterSpacing: 1, padding: "5px 13px", borderRadius: "var(--r-pill)" }}><Network size={12} /> AI ONTOLOGY PLATFORM</span>
         <div style={{ fontSize: 27, fontWeight: 900, color: "#fff", letterSpacing: -0.5, marginTop: 11 }}>HI-Fin Tech Platform</div>
         <div style={{ fontSize: 13.5, color: "#9FD9EC", marginTop: 5 }}>AI Ontology 기반 평생 건강관리 · 핀테크 사회적경제 플랫폼</div>
       </div>
@@ -97,9 +97,9 @@ function PlatformDiagram() {
       {/* AI Ontology Core */}
       <div style={{ position: "relative", display: "flex", justifyContent: "center", marginBottom: 6 }}>
         <div style={{ position: "relative", width: 150, height: 150, display: "grid", placeItems: "center" }}>
-          <span className="pdg-core-ring" style={{ position: "absolute", inset: 6, borderRadius: "50%", border: "2px solid #22D3EE" }} />
-          <span className="pdg-spin" style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px dashed rgba(34,211,238,.35)" }} />
-          <div style={{ width: 104, height: 104, borderRadius: "50%", background: "radial-gradient(circle at 50% 38%,#67E8F9,#0891B2 70%)", boxShadow: "0 0 40px -6px #22D3EEaa", display: "grid", placeItems: "center", textAlign: "center" }}>
+          <span className="pdg-core-ring" style={{ position: "absolute", inset: 6, borderRadius: "var(--r-circle)", border: "2px solid #22D3EE" }} />
+          <span className="pdg-spin" style={{ position: "absolute", inset: 0, borderRadius: "var(--r-circle)", border: "1px dashed rgba(34,211,238,.35)" }} />
+          <div style={{ width: 104, height: 104, borderRadius: "var(--r-circle)", background: "radial-gradient(circle at 50% 38%,#67E8F9,#0891B2 70%)", display: "grid", placeItems: "center", textAlign: "center" }}>
             <div>
               <Network size={26} color="#04202b" style={{ display: "block", margin: "0 auto 3px" }} />
               <div style={{ fontSize: 11.5, fontWeight: 900, color: "#04202b", lineHeight: 1.15 }}>AI Healthcare<br />Ontology</div>
@@ -139,7 +139,7 @@ function PlatformDiagram() {
 
       {/* ⑤ Lifetime */}
       <div style={wrapMax}><div style={{ ...glass, ...wrapMax, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, background: "rgba(34,211,238,.08)", borderColor: "rgba(34,211,238,.3)" }}>
-        <span style={{ width: 46, height: 46, borderRadius: 13, background: "#22D3EE22", border: "1px solid #22D3EE55", display: "grid", placeItems: "center", flexShrink: 0 }}><HeartPulse size={24} color={CY} /></span>
+        <span style={{ width: 46, height: 46, borderRadius: "var(--r-md)", background: "#22D3EE22", border: "1px solid #22D3EE55", display: "grid", placeItems: "center", flexShrink: 0 }}><HeartPulse size={24} color={CY} /></span>
         <div><div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: CY }}>⑤ LIFETIME HEALTHCARE</div><div style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>예방 중심 · 평생 건강관리</div><div style={{ fontSize: 11.5, color: "#9FD9EC" }}>Preventive · Lifetime Health Management</div></div>
       </div></div>
       <Conn />
@@ -177,7 +177,7 @@ function PlatformDiagram() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 10 }}>
           {[[Users, "건강 형평성", "Healthcare Equality", "#34D399"], [HeartPulse, "예방 의료", "Preventive Medicine", "#22D3EE"], [Landmark, "사회적 경제", "Social Economy", "#A78BFA"]].map(([Ic, t, en, col], i) => (
             <div key={i} style={{ ...glass, padding: "16px 12px", textAlign: "center" }}>
-              <span style={{ width: 44, height: 44, borderRadius: 14, background: col + "22", border: "1px solid " + col + "55", display: "grid", placeItems: "center", margin: "0 auto 9px" }}><Ic size={22} color={col} /></span>
+              <span style={{ width: 44, height: 44, borderRadius: "var(--r-lg)", background: col + "22", border: "1px solid " + col + "55", display: "grid", placeItems: "center", margin: "0 auto 9px" }}><Ic size={22} color={col} /></span>
               <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>{t}</div>
               <div style={{ fontSize: 10.5, color: "#9FD9EC", marginTop: 2 }}>{en}</div>
             </div>
@@ -455,7 +455,7 @@ function StoryJourney({ onGo }) {
 /* ── 오늘의 AI 추천 · 건강 활동 요약 — 홈에서 '검진 후 케어 › 나의 건강현황'으로 이동한 개인화 카드 ── */
 function TodayAIRecs({ onGo }) {
   const go = onGo || (() => {});
-  const PRODUCTS = [[Stethoscope, "복부 초음파 검진", "췌장·간 정밀 확인 권고.", "검진 예약", "#7C3AED", "linear-gradient(135deg,#EDE9FE,#DDD6FE)", "checkup"], [Salad, "당뇨 예방 식단", "저당·식이섬유 맞춤 식단.", "식단 보기", "#16A34A", "linear-gradient(135deg,#D1FAE5,#A7F3D0)", "shop"], [Pill, "간 건강 영양제", "밀크씨슬 등 간 영양제.", "제품 보기", "#F59E0B", "linear-gradient(135deg,#FEF3C7,#FDE68A)", "shop"], [Cigarette, "금연·절주 코칭", "췌장·간 위험 낮추기.", "신청하기", "#EF4444", "linear-gradient(135deg,#FEE2E2,#FECACA)", "ai"], [Dumbbell, "유산소 운동 코칭", "주 3회 운동 프로그램.", "신청하기", "#2563EB", "linear-gradient(135deg,#DBEAFE,#BFDBFE)", "ai"], [ClipboardList, "위·대장 내시경", "연령 권장 검진 예약.", "병원 보기", "#0EA5E9", "linear-gradient(135deg,#E0F2FE,#BAE6FD)", "hospital"]];
+  const PRODUCTS = [[Stethoscope, "복부 초음파 검진", "췌장·간 정밀 확인 권고.", "검진 예약", "#7C3AED", "#EDE9FE", "checkup"], [Salad, "당뇨 예방 식단", "저당·식이섬유 맞춤 식단.", "식단 보기", "#16A34A", "#D1FAE5", "shop"], [Pill, "간 건강 영양제", "밀크씨슬 등 간 영양제.", "제품 보기", "#F59E0B", "#FEF3C7", "shop"], [Cigarette, "금연·절주 코칭", "췌장·간 위험 낮추기.", "신청하기", "#EF4444", "#FEE2E2", "ai"], [Dumbbell, "유산소 운동 코칭", "주 3회 운동 프로그램.", "신청하기", "#2563EB", "#DBEAFE", "ai"], [ClipboardList, "위·대장 내시경", "연령 권장 검진 예약.", "병원 보기", "#0EA5E9", "#E0F2FE", "hospital"]];
   return (
     <div className="card" style={{ marginTop: 14 }}><div className="ch"><div className="ct">오늘의 AI 추천</div><span className="link">초개인화 추천 <Sparkles size={12} /></span></div>
       <div className="prods">{PRODUCTS.map(([Ic, t, d, link, col, bg, target]) => (<div className="prod" key={t} onClick={() => go(target)} style={{ cursor: "pointer" }}><div className="img" style={{ background: bg }}><Ic size={36} color={col} /></div><div className="pb"><div className="pt">{t}</div><div className="pd">{d}</div><span className="pl" role="button" onClick={(e) => { e.stopPropagation(); go(target); }}>{link} <ChevronRight size={12} style={{ verticalAlign: -2 }} /></span></div></div>))}</div></div>
@@ -467,7 +467,7 @@ function TodayAIRecs({ onGo }) {
 function ActivitySummaryCard() {
   const ACTS = [[Footprints, "걸음 수"], [Activity, "운동 시간"], [Moon, "수면 시간"], [Flame, "칼로리 소모"]];
   return (
-    <div className="card" style={{ marginTop: 14 }}><div className="ch"><div className="ct">건강 활동 요약</div><span className="link" style={{ border: "1px solid var(--border)", padding: "5px 10px", borderRadius: 8, color: "var(--muted)" }}>기기 연동 전</span></div>
+    <div className="card" style={{ marginTop: 14 }}><div className="ch"><div className="ct">건강 활동 요약</div><span className="link" style={{ border: "1px solid var(--border)", padding: "5px 10px", borderRadius: "var(--r-sm)", color: "var(--muted)" }}>기기 연동 전</span></div>
       <div className="chnote" style={{ margin: "2px 0 10px" }}>스마트워치·건강앱을 연결하시면 아래 항목을 매주 정리해 드려요. 아직 연결된 기기가 없어요.</div>
       <div className="act"><div className="metrics">{ACTS.map(([Ic, nm]) => (<div className="arow" key={nm}><Ic size={18} className="ic" /><span className="nm">{nm}</span><span className="bar"><i style={{ width: "0%" }} /></span><span className="vl" style={{ color: "var(--muted)" }}>—</span></div>))}</div></div></div>
   );

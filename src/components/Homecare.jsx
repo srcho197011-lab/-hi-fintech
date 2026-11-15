@@ -179,7 +179,7 @@ function HomecareDirectory({ data }) {
       <div className="chcount">{sido === "전체" ? "전국" : sido}{sgg !== "전체" ? " " + sgg : ""}{svc !== "전체" ? " · " + svc : ""} 재가기관 <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳</div>
       {view.map((p, i) => (
         <div className="center" key={i}>
-          <div className="cimg" style={{ background: "linear-gradient(150deg,#FCE7F3,#F3E8FF)" }}><Art name="visit" size={46} /></div>
+          <div className="cimg" style={{ background: "#FCE7F3" }}><Art name="visit" size={46} /></div>
           <div className="cmain" style={{ cursor: "pointer" }} onClick={() => setDetail(p)} title="기관 상세 보기">
             <div className="cname">{p[0]}<span className="cbadge" style={{ color: "#9D174D", background: "#FCE7F3" }}>재가</span></div>
             <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{data.sido[p[1]]} {p[2]}</span> · <MapPin size={12} />{p[3]}</div>
@@ -249,7 +249,7 @@ function HomecareBookingModal({ data, p, onClose }) {
         <div className="bkh"><div className="bt">{done ? "상담 신청 완료" : "재가/돌봄서비스 상담 신청"}</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
         <div className="bkb">
           {!done ? (<>
-            <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "12px 14px" }}>
               <div style={{ fontWeight: 800, fontSize: 14 }}>{p[0]} <span className="cbadge" style={{ color: "#9D174D", background: "#FCE7F3" }}>재가</span></div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {data.sido[p[1]]} {p[2]} · {p[3]}</div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>신청자: <b style={{ color: "var(--text)" }}>{_bkNm}</b>{_bkAge ? ` · ${_bkAge}` : ""}</div>

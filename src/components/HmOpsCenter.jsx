@@ -426,10 +426,10 @@ function _hmoFunnelReal() { try { return (typeof HM_OPS_SNAPSHOT !== "undefined"
 function HmoBarRow({ label, n, max, color, right, on, onClick, sub }) {
   /* 누를 수 없는 행(관리 범위 상위·표시 전용)은 손가락 커서도 주지 않는다 — 눌러도 안 되는 것을 눌러 보게 두지 않는다 */
   return (<div className={"hmorow" + (on ? " on" : "") + (onClick ? "" : " dead")} onClick={onClick || undefined} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}>
-    <span style={{ width: 96, fontSize: 11.2, fontWeight: 800, color: on ? HMO_C.blue : "#475569", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={label}>{label}</span>
+    <span style={{ width: 96, fontSize: 11, fontWeight: 800, color: on ? HMO_C.blue : "#475569", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={label}>{label}</span>
     <div className="hmobar"><i style={{ width: (max ? Math.max(1.5, n / max * 100) : 0) + "%", background: color || HMO_C.cyan }} /></div>
-    <span style={{ width: 118, fontSize: 10.8, color: HMO_C.mut, textAlign: "right" }}>{right}</span>
-    {sub ? <span style={{ fontSize: 10, color: "#94A3B8" }}>{sub}</span> : null}
+    <span style={{ width: 118, fontSize: 11, color: HMO_C.mut, textAlign: "right" }}>{right}</span>
+    {sub ? <span style={{ fontSize: 10, color: "var(--muted)" }}>{sub}</span> : null}
   </div>);
 }
 /* 표 내보내기 — 화면 복사용 TSV. 파일 저장·외부 전송은 하지 않는다(관측 전용).
@@ -528,7 +528,7 @@ function HmoCrumb({ scope, onScope, adm }) {
     : scope.level === "branch" ? { level: "dan", dan: scope.dan } : { level: "hq" };
   const canUp = cur > depth;
   return (<div className="hmocrumb">
-    <span style={{ fontSize: 10.6, fontWeight: 800, color: HMO_C.mut, marginRight: 2 }}>조직 경로</span>
+    <span style={{ fontSize: 10.5, fontWeight: 800, color: HMO_C.mut, marginRight: 2 }}>조직 경로</span>
     {steps.map((x, i) => {
       const dead = i < depth || i === cur;                 /* 관리 범위 상위 또는 현재 칩 — 눌러도 움직이지 않는다 */
       const locked = i < depth;
@@ -568,7 +568,7 @@ function HmoOrgDrill({ scope, onScope, metric, adm }) {
     {depth > 0 && <div className="hmonote" style={{ marginTop: 0, marginBottom: 6 }}>🔐 <b>관리 범위 밖은 목록에 없어요</b> — {lockBr ? "자기 지점 1곳과 그 소속 프로만 나옵니다(다른 지점은 숨긴 것이 아니라 조회 대상이 아니에요)." : "자기 지역단과 그 안의 지점·프로만 나옵니다."} 상위 단위({lockBr ? "본사·지역단" : "본사"})는 소속을 보여 주기 위해 <b>표시만</b> 합니다.</div>}
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 12 }}>
       <div>
-        <div style={{ fontSize: 11.6, fontWeight: 900, marginBottom: 5 }}>2단 · 지역단 {O.hq.dansReal}개{O.hq.dansSyn ? " + 광역 " + O.hq.dansSyn : ""} <span style={{ fontWeight: 600, color: HMO_C.mut, fontSize: 10.4 }}>{lockDan ? "(관리 범위 — 고정)" : "(누르면 지점이 열려요 · 「광역(전국)」은 실사 지역단이 아니라 구 명부 보존용 버킷)"}</span></div>
+        <div style={{ fontSize: 11.5, fontWeight: 900, marginBottom: 5 }}>2단 · 지역단 {O.hq.dansReal}개{O.hq.dansSyn ? " + 광역 " + O.hq.dansSyn : ""} <span style={{ fontWeight: 600, color: HMO_C.mut, fontSize: 10.5 }}>{lockDan ? "(관리 범위 — 고정)" : "(누르면 지점이 열려요 · 「광역(전국)」은 실사 지역단이 아니라 구 명부 보존용 버킷)"}</span></div>
         <div style={{ maxHeight: 268, overflowY: "auto" }}>
           {dans.map((d) => (<HmoBarRow key={d.key} label={d.key} n={d[mk]} max={maxD} color={d.key === danSel ? HMO_C.blue : HMO_C.cyan}
             on={d.key === danSel} onClick={lockDan ? null : () => onScope(d.key === danSel ? { level: "hq" } : { level: "dan", dan: d.key })}
@@ -579,7 +579,7 @@ function HmoOrgDrill({ scope, onScope, metric, adm }) {
       <div>
         {!danSel ? <div className="hmonote" style={{ paddingTop: 22, textAlign: "center" }}>← 지역단을 먼저 고르세요.</div> : (<>
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 5 }}>
-            <div style={{ fontSize: 11.6, fontWeight: 900 }}>3단 · {danSel} 지점 {brs.length}곳{lockBr ? " (관리 범위 — 고정)" : ""}</div>
+            <div style={{ fontSize: 11.5, fontWeight: 900 }}>3단 · {danSel} 지점 {brs.length}곳{lockBr ? " (관리 범위 — 고정)" : ""}</div>
             {!lockBr && <input className="hmoin" value={q} onChange={(e) => setQ(e.target.value)} placeholder="지점 이름" style={{ flex: 1, minWidth: 70 }} />}
           </div>
           <div style={{ maxHeight: 268, overflowY: "auto" }}>
@@ -593,14 +593,14 @@ function HmoOrgDrill({ scope, onScope, metric, adm }) {
       </div>
       <div>
         {!brSel ? <div className="hmonote" style={{ paddingTop: 22, textAlign: "center" }}>← 지점을 고르면 소속 프로가 나와요.</div> : (<>
-          <div style={{ fontSize: 11.6, fontWeight: 900, marginBottom: 5 }}>4단 · {brSel} 프로 {pros.length}명</div>
+          <div style={{ fontSize: 11.5, fontWeight: 900, marginBottom: 5 }}>4단 · {brSel} 프로 {pros.length}명</div>
           <div style={{ maxHeight: 268, overflowY: "auto" }}>
             {pros.map((p) => (<HmoBarRow key={p.code} label={p.name + " " + p.code} n={p.managed} max={maxP} color={p.code === scope.code ? HMO_C.blue : "#A78BFA"}
               on={p.code === scope.code} onClick={() => onScope(p.code === scope.code ? { level: "branch", dan: danSel, branch: brSel } : { level: "pro", dan: p.dan, branch: p.branch, code: p.code })}
               right={`담당 ${p.managed.toLocaleString()}명 · 오늘 ${p.today}건`}
               sub={p.status !== "활성" ? p.status : (p.lic ? "" : "모집자격 없음")} />))}
           </div>
-          {(O.branches[danSel + "|" + brSel] || {}).addr ? <div className="hmonote">지점 주소 {O.branches[danSel + "|" + brSel].addr} <span style={{ color: "#94A3B8" }}>(2026-07-31 지점찾기 실사값)</span></div> : null}
+          {(O.branches[danSel + "|" + brSel] || {}).addr ? <div className="hmonote">지점 주소 {O.branches[danSel + "|" + brSel].addr} <span style={{ color: "var(--muted)" }}>(2026-07-31 지점찾기 실사값)</span></div> : null}
         </>)}
       </div>
     </div>
@@ -622,34 +622,34 @@ function HmoUnitStats({ scope, R, period }) {
   const partial = R.rows.length < R.all;
   return (<div>
     <div className="hmogrid">
-      <HmoBox t={<><Users size={14} color={HMO_C.cyan} /> 담당·배분 <span style={{ fontWeight: 600, color: HMO_C.mut, fontSize: 10.6 }}>{hmoScopeLabel(scope)}</span></>} tag="전수" tagC={HMO_TAG_FULL}>
+      <HmoBox t={<><Users size={14} color={HMO_C.cyan} /> 담당·배분 <span style={{ fontWeight: 600, color: HMO_C.mut, fontSize: 10.5 }}>{hmoScopeLabel(scope)}</span></>} tag="전수" tagC={HMO_TAG_FULL}>
         <HmoDef>배치 스냅샷({(typeof HM_OPS_SNAPSHOT !== "undefined") ? HM_OPS_SNAPSHOT.date : "-"})의 사번별 담당 회원 수(managed)·오늘 지시서 건수(today)를 이 단위 소속 프로 전원에 대해 더한 값입니다. 화면이 따로 계산하지 않습니다.</HmoDef>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.2 }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
           {[["담당 회원", snapManaged.toLocaleString() + "명"], ["오늘 지시서", snapToday.toLocaleString() + "건"],
             ["소속 프로", base.length + "명"], ["활성", base.filter((p) => p.status === "활성").length + "명"],
             ["프로당 담당", base.length ? Math.round(snapManaged / base.length).toLocaleString() + "명" : "-"]].map(([k, v], i) => (
-            <div key={i}><b style={{ fontSize: 15.5, color: HMO_C.navy, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.4, color: HMO_C.mut }}>{k}</div></div>))}
+            <div key={i}><b style={{ fontSize: 15.5, color: HMO_C.navy, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.5, color: HMO_C.mut }}>{k}</div></div>))}
         </div>
         {base.some((p) => !p.inSnap) ? <div className="hmonote">스냅샷에 담당 배정이 없는 프로 {base.filter((p) => !p.inSnap).length}명(교육중·정지 등)은 담당 0명으로 집계돼요 — 인원에서 빼지 않습니다.</div> : null}
       </HmoBox>
 
       <HmoBox t={<><Target size={14} color={HMO_C.warn} /> 접촉 상태 — 지금 어디에 몰려 있나</>} tag={partial ? "표본" : "계산 범위 전수"} tagC={partial ? HMO_TAG_SAMP : HMO_TAG_FULL}>
         <HmoDef>계산한 프로 {R.rows.length}명의 담당 회원 {S.n.toLocaleString()}명을 단계 판정(cohortStageOf)해 센 값입니다. 접촉 락 = D1 검진결과 수령 전(연락 금지) · 정체 = 같은 단계 30~90일 체류 · 신호 = 하이 신호 도래.</HmoDef>
-        {R.rows.length ? (<div style={{ fontSize: 12.2, lineHeight: 2 }}>
+        {R.rows.length ? (<div style={{ fontSize: 12, lineHeight: 2 }}>
           접촉 락(연락 금지) <b style={{ color: "#64748B" }}>{S.held.toLocaleString()}명</b> · 첫 연결 대기 <b style={{ color: HMO_C.cyan }}>{S.ready.toLocaleString()}명</b><br />
           하이 신호 도래 <b style={{ color: HMO_C.blue }}>{S.signals.toLocaleString()}명</b> · 고위험 관리 <b style={{ color: HMO_C.red }}>{S.riskHi.toLocaleString()}명</b><br />
           정체 <b style={{ color: HMO_C.stall }}>{S.stall.toLocaleString()}명</b>({hmoaPctKo(S.stall, S.n)}) · 평균 체류 {S.stallDays != null ? S.stallDays + "일" : "-"}
         </div>) : <HmoProgress R={R} label="접촉 상태 계산" />}
       </HmoBox>
 
-      <HmoBox t={<><Clock size={14} color={HMO_C.blue} /> 응답 시한·터치 수행 <span style={{ fontWeight: 600, fontSize: 10.6, color: HMO_C.mut }}>최근 {period}개월</span></>} tag="시연 분포" tagC={HMO_TAG_DEMO}>
+      <HmoBox t={<><Clock size={14} color={HMO_C.blue} /> 응답 시한·터치 수행 <span style={{ fontWeight: 600, fontSize: 10.5, color: HMO_C.mut }}>최근 {period}개월</span></>} tag="시연 분포" tagC={HMO_TAG_DEMO}>
         <HmoDef>hmcProStats의 프로별 지표 평균 — 시한 준수율(slaRate)·첫 연결 수행률(firstRate)·만기 터치 수행률(expireRate)은 담당 규모와 등급에서 파생한 <b>시연 분포</b>입니다(실기록 아님). 평균은 값이 있는 프로만으로 냅니다.</HmoDef>
         {R.rows.length ? (<div>
           {[["응답 시한 준수", S.slaRate, HMO_C.ok], ["첫 연결 수행", S.firstRate, HMO_C.cyan], ["만기 터치 수행", S.expireRate, HMO_C.warn]].map(([k, v, c], i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-              <span style={{ width: 92, fontSize: 11.2, fontWeight: 700, color: "#475569" }}>{k}</span>
+              <span style={{ width: 92, fontSize: 11, fontWeight: 700, color: "#475569" }}>{k}</span>
               <div className="hmobar"><i style={{ width: (v || 0) + "%", background: c }} /></div>
-              <b style={{ width: 40, textAlign: "right", fontSize: 11.8 }}>{v != null ? v + "%" : "-"}</b></div>))}
+              <b style={{ width: 40, textAlign: "right", fontSize: 12 }}>{v != null ? v + "%" : "-"}</b></div>))}
           <div style={{ fontSize: 12, color: "#475569", marginTop: 5, lineHeight: 1.85 }}>
             접촉 시도 누계 <b>{S.touches.toLocaleString()}회</b> · 정체 해소 <b>{S.stallFixed.toLocaleString()}명</b>
             {S.stars != null && <> · 회원 평가 <b>★{S.stars}</b></>}
@@ -662,9 +662,9 @@ function HmoUnitStats({ scope, R, period }) {
         {R.rows.length ? (<div>
           <div style={{ display: "flex", gap: 5, alignItems: "flex-end", height: 62 }}>
             {adv.map((m) => (<div key={m.ym} style={{ flex: 1, textAlign: "center" }}>
-              <div style={{ height: Math.round(m.n / maxAdv * 42) + 3, background: HMO_C.cyan, borderRadius: 4 }} />
-              <div style={{ fontSize: 9.6, color: "#475569", marginTop: 3 }}>{m.ym}</div>
-              <div style={{ fontSize: 9.6, color: "#94A3B8" }}>{m.n.toLocaleString()}</div>
+              <div style={{ height: Math.round(m.n / maxAdv * 42) + 3, background: HMO_C.cyan, borderRadius: "var(--r-xs)" }} />
+              <div style={{ fontSize: 10, color: "#475569", marginTop: 3 }}>{m.ym}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)" }}>{m.n.toLocaleString()}</div>
             </div>))}
           </div>
           <div style={{ fontSize: 12, color: "#475569", marginTop: 6 }}>{period}개월 합 <b>{advSum.toLocaleString()}건</b> · 담당 {S.n.toLocaleString()}명 대비 전진율 <b>{hmoaPctKo(advSum, S.n)}</b></div>
@@ -677,10 +677,10 @@ function HmoUnitStats({ scope, R, period }) {
           「건강관리 동의 요청」 칸은 2026-10-06 신설이라 그 전 기록에는 칸이 없습니다 — 0건이 미이행은 아닙니다.</HmoDef>
         {res.n ? (<div>
           {res.codes.map((c) => (<div key={c.k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
-            <span style={{ width: 86, fontSize: 10.8, fontWeight: 700, color: "#475569" }}>{c.icon} {c.ko}</span>
+            <span style={{ width: 86, fontSize: 11, fontWeight: 700, color: "#475569" }}>{c.icon} {c.ko}</span>
             <div className="hmobar" style={{ height: 8 }}><i style={{ width: (c.n / maxRes * 100) + "%", background: HMO_C.navy, height: 8 }} /></div>
-            <b style={{ width: 28, textAlign: "right", fontSize: 11.4 }}>{c.n}</b></div>))}
-          <div style={{ fontSize: 11.8, color: "#475569", marginTop: 5, lineHeight: 1.8 }}>
+            <b style={{ width: 28, textAlign: "right", fontSize: 11.5 }}>{c.n}</b></div>))}
+          <div style={{ fontSize: 12, color: "#475569", marginTop: 5, lineHeight: 1.8 }}>
             기록 <b>{res.n}건</b> · 수락률 {res.acceptRate != null ? res.acceptRate + "%" : "-"} · 후속 약속 {res.followUps}건<br />
             {/* ⚠️ 헤드라인에 **현재 사전 길이를 쓰지 않는다**(적대적 리뷰 실증 2026-10-06): 분자는
                 기록 시점 사전(row.gn)을 따르는데 라벨만 「6칸 완주」로 찍혀, 5칸 시절 기록 1건이
@@ -709,7 +709,7 @@ function HmoStageDist({ byStage, total, label, tag, tagC, sel, onSel }) {
           <b style={{ color: c }}>{s.k}</b><span>{s.name}</span>
           <em>{n.toLocaleString()}명</em>
           <div className="hmobar" style={{ height: 5, marginTop: 4 }}><i style={{ width: (n / max * 100) + "%", background: c, height: 5 }} /></div>
-          <span style={{ fontSize: 9, color: "#A3AFC0" }}>{total ? (n / total * 100).toFixed(1) + "%" : "-"}</span>
+          <span style={{ fontSize: 10, color: "#A3AFC0" }}>{total ? (n / total * 100).toFixed(1) + "%" : "-"}</span>
         </div>); })}
     </div>
     <div className="hmonote">{label}{tag ? <span className="hmopill" style={{ background: (tagC || {}).bg, color: (tagC || {}).c, marginLeft: 6 }}>{tag}</span> : null}</div>
@@ -753,7 +753,7 @@ function HmoProTable({ R, scope, onPick }) {
       <div style={{ maxHeight: 420, overflow: "auto" }}>
         <table className="hmotbl"><thead><tr>{HMO_COLS.map((c) => th(c[0], c[1], c[2]))}</tr></thead>
           <tbody>{rows.map((r) => (<tr key={r.code} onClick={() => onPick(r)}>
-            <td className="l"><b>{r.name}</b> <span style={{ color: "#94A3B8", fontSize: 10.2 }}>{r.code}</span>{r.status !== "활성" ? <span className="hmopill" style={{ background: "#FEF2F2", color: HMO_C.red, marginLeft: 4 }}>{r.status}</span> : null}</td>
+            <td className="l"><b>{r.name}</b> <span style={{ color: "var(--muted)", fontSize: 10 }}>{r.code}</span>{r.status !== "활성" ? <span className="hmopill" style={{ background: "#FEF2F2", color: HMO_C.red, marginLeft: 4 }}>{r.status}</span> : null}</td>
             <td className="l" style={{ color: "#475569" }}>{r.branch}</td>
             <td><b>{r.managed.toLocaleString()}</b></td><td>{r.today}</td>
             {["D1", "D2", "D3", "D4", "L5", "L6", "L7", "L8"].map((k) => (<td key={k} style={{ color: (r.byStage[k] || 0) ? HMO_STAGE_C[k] : "#CBD5E1", fontWeight: (r.byStage[k] || 0) ? 700 : 400 }}>{r.byStage[k] || 0}</td>))}
@@ -789,7 +789,7 @@ function HmoProStageList({ row, onClose, initStage }) {
     return c ? [c.m.name, c.band, c.sex, c.region ? c.region.sido : "", c.region ? c.region.sgg : "", c.status.ko, c.stage.stalled ? String(c.stage.stalledDays) : "0", c.hb ? c.hb.grade : "", c.hb ? c.hb.band : ""] : [];
   }).filter((r) => r.length), [sel, row.code]);
   const stg = stages.find((s) => s.k === sel);
-  return (<div className="hmocard" style={{ borderColor: HMO_C.sky, boxShadow: "0 8px 22px -14px rgba(11,34,57,.5)" }}>
+  return (<div className="hmocard" style={{ borderColor: HMO_C.sky }}>
     <div className="hmoct">
       <Users size={14} color={HMO_C.blue} /> {row.name} 프로({row.code}) · {row.branch} — 단계별 명단
       <span className="hmopill" style={{ background: "#EEF2F6", color: HMO_C.mut }}>담당 {row.n.toLocaleString()}명</span>
@@ -801,7 +801,7 @@ function HmoProStageList({ row, onClose, initStage }) {
       label={`담당 회원 ${row.n.toLocaleString()}명 전건 단계 판정 — 단계 칩을 누르면 명단이 열리고, 같은 칩을 다시 누르면 닫혀요.`} tag="전수" tagC={HMO_TAG_FULL} />
     {sel && (<div style={{ marginTop: 10, borderTop: "1px dashed " + HMO_C.line, paddingTop: 9 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginBottom: 7 }}>
-        <b style={{ fontSize: 12.6, color: HMO_C.navy }}>{sel} {stg ? stg.name : ""} — {ids.length.toLocaleString()}명</b>
+        <b style={{ fontSize: 12.5, color: HMO_C.navy }}>{sel} {stg ? stg.name : ""} — {ids.length.toLocaleString()}명</b>
         {stg ? <span className="hmonote" style={{ margin: 0 }}>{stg.desc}</span> : null}
         <button className="hmobtn" style={{ marginLeft: "auto" }} onClick={() => setSel(null)}><X size={11} style={{ verticalAlign: -2 }} /> 명단 닫기</button>
       </div>
@@ -863,7 +863,7 @@ function HmoStageBoard({ scope, R, picked, onPick, adm }) {
           tag={R.rows.length < R.all ? `표본 ${R.rows.length}/${R.all}명` : "범위 전수"} tagC={R.rows.length < R.all ? HMO_TAG_SAMP : HMO_TAG_FULL} />
         {dsel && (<div style={{ marginTop: 9, borderTop: "1px dashed " + HMO_C.line, paddingTop: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginBottom: 5 }}>
-            <b style={{ fontSize: 12.4, color: HMO_C.navy }}>{dsel} {dstg ? dstg.name : ""} — {(S.byStage[dsel] || 0).toLocaleString()}명이 몰린 프로 상위 {top.length}명</b>
+            <b style={{ fontSize: 12.5, color: HMO_C.navy }}>{dsel} {dstg ? dstg.name : ""} — {(S.byStage[dsel] || 0).toLocaleString()}명이 몰린 프로 상위 {top.length}명</b>
             <span className="hmonote" style={{ margin: 0 }}>프로를 누르면 아래에 그 프로의 {dsel} 명단이 열려요</span>
             <button className="hmobtn" style={{ marginLeft: "auto" }} onClick={() => setDsel(null)}><X size={11} style={{ verticalAlign: -2 }} /> 닫기</button>
           </div>
@@ -880,20 +880,20 @@ function HmoStageBoard({ scope, R, picked, onPick, adm }) {
     <div className="hmogrid">
       <HmoBox t={<><TrendingUp size={14} color={HMO_C.ok} /> 단계 전진·정체 해소</>} tag="시연 분포" tagC={HMO_TAG_DEMO}>
         <HmoDef>전진율 = 6개월 단계 전진 건수 ÷ 담당 회원 · 전진 건수·정체 해소는 모두 hmcProStats 파생값으로 담당 규모·등급에서 만든 <b>시연 분포</b>입니다(실기록 아님). 계산 범위 = 프로 {R.rows.length}명.</HmoDef>
-        {live ? (<div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12.2 }}>
+        {live ? (<div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12 }}>
           {[["단계 전진율(6개월)", advRate + "%", HMO_C.ok], ["전진 건수", S.advTotal.toLocaleString() + "건", HMO_C.cyan],
             ["정체 해소", S.stallFixed.toLocaleString() + "명", HMO_C.ok]].map(([k, v, c], i) => (
-            <div key={i}><b style={{ fontSize: 16, color: c, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.4, color: HMO_C.mut }}>{k} <span className="hmopill" style={{ background: HMO_TAG_DEMO.bg, color: HMO_TAG_DEMO.c }}>시연</span></div></div>))}
+            <div key={i}><b style={{ fontSize: 16, color: c, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.5, color: HMO_C.mut }}>{k} <span className="hmopill" style={{ background: HMO_TAG_DEMO.bg, color: HMO_TAG_DEMO.c }}>시연</span></div></div>))}
         </div>) : <div className="hmonote">위 블록에서 계산을 먼저 눌러 주세요.</div>}
       </HmoBox>
       <HmoBox t={<><Gauge size={14} color={HMO_C.warn} /> 체류·정체·접촉 락</>} tag={R.rows.length < R.all ? `표본 ${R.rows.length}/${R.all}명` : "계산 범위 전수(실판정)"} tagC={R.rows.length < R.all ? HMO_TAG_SAMP : HMO_TAG_FULL}>
         <HmoDef>평균 체류일 = 정체 회원의 체류일 평균(cohortStageOf.stalledDays) · 정체 비율 = 정체 회원 ÷ 담당 회원 · 접촉 락 = D1 검진결과 수령 전 — 셋 다 담당 회원 전건을 <b>단계 판정해 센 실판정값</b>입니다(추정 없음).</HmoDef>
-        {live ? (<div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12.2 }}>
+        {live ? (<div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12 }}>
           {[["평균 체류일(정체)", (S.stallDays != null ? S.stallDays + "일" : "-"), HMO_C.warn],
             ["정체 비율", hmoaPctKo(S.stall, S.n), HMO_C.stall],
             ["정체 인원", S.stall.toLocaleString() + "명", HMO_C.stall],
             ["접촉 락", S.held.toLocaleString() + "명", "#64748B"]].map(([k, v, c], i) => (
-            <div key={i}><b style={{ fontSize: 16, color: c, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.4, color: HMO_C.mut }}>{k}</div></div>))}
+            <div key={i}><b style={{ fontSize: 16, color: c, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.5, color: HMO_C.mut }}>{k}</div></div>))}
         </div>) : <div className="hmonote">위 블록에서 계산을 먼저 눌러 주세요.</div>}
         {stages.length ? <div className="hmonote">정체가 가장 많이 쌓이는 구간은 D3(분석 데이터)입니다 — 단계 판정 규칙상 D3는 22%, 그 밖은 15%가 30~90일 정체로 들어갑니다(cohortStageOf).</div> : null}
       </HmoBox>
@@ -933,8 +933,8 @@ function HmoFulfilScoped({ scope }) {
       ? <>분모 = <b>오늘 발행된 카드</b> = 지금 보드에 남은 카드({F.live.toLocaleString()}건) + 오늘 결과로 내려간 카드({F.num.toLocaleString()}건) · 분자 = 오늘자 결과 7코드 중 <b>그 프로의 담당 회원</b>인 행(회원 중복은 1건). 결과를 남긴 카드는 그날 로스터에서 내려가므로(R7 완결 · R1 D+7 재큐 · R3 쉬어가기 · R5 번호 확인) 둘을 더한 것이 오늘 발행분입니다 — 분자가 분모에 들어 있어 <b>100%를 넘을 수 없습니다</b>. 라이브 조립 {F.ms}ms · 프로 {F.pros}명.</>
       : <>분모 = 배치 스냅샷의 사번별 오늘 발행 건수 합 · 분자 = 오늘자 결과 7코드 행 수. 프로 {F.pros}명(로스터 조립 상한 {HMOA_ROSTER_MAX}명)이라 <b>담당 회원과의 교집합을 확인하지 않았습니다</b> — 담당 밖·전일 카드 기록이 분자에 섞일 수 있어 비율은 100%로 캡해 적습니다.</>}
     </HmoDef>
-    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12.2 }}>
-      {KP.map(([k, v], i) => (<div key={i}><b style={{ fontSize: 16, color: HMO_C.navy, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.4, color: HMO_C.mut }}>{k}</div></div>))}
+    <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 12 }}>
+      {KP.map(([k, v], i) => (<div key={i}><b style={{ fontSize: 16, color: HMO_C.navy, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.5, color: HMO_C.mut }}>{k}</div></div>))}
     </div>
     {F.strict && F.outside ? <div className="hmonote">오늘자 기록 중 <b>{F.outside.toLocaleString()}건</b>은 그 프로의 담당 회원이 아니어서 분자·분모 어디에도 넣지 않았습니다(담당 밖 기록).</div> : null}
     {F.strict && F.snapIssued !== F.issued ? <div className="hmonote">배치 스냅샷의 오늘 발행 합은 {F.snapIssued.toLocaleString()}건입니다 — 라이브 조립과 다른 이유는 ①완결된 카드 자리에 다른 후보가 채워지거나 ②스냅샷 기준일이 오늘과 다르기 때문입니다(온디맨드 조립이라 「발행 로그」가 따로 없고, 화면이 대신 추정하지 않습니다).</div> : null}
@@ -992,7 +992,7 @@ function HmoBatchOps() {
         {/* ⚠️ 분모 전환을 명시한다(적대적 리뷰 실증 2026-10-06) — 「카드 대상」은 2026-10-06에 결과 대기(W)
             전건을 편입해 56,945 → 83,578(+46.8%)로 커졌고, 그 65.5%는 **명단에 올리지 않는** 카드다.
             고지가 없으면 바로 아래 H 비율(11.1% → 3.3%)이 전일과 비교 가능한 숫자로 읽힌다. */}
-        <span style={{ fontSize: 11.4 }}>그중 <b>명단 대상 {Math.max(0, S.cards - (S.byGrade.W || 0)).toLocaleString()}건</b> · <b>결과 대기(명단 밖) {(S.byGrade.W || 0).toLocaleString()}건</b> — 2026-10-06에 결과 대기 전건을 카드 대상에 편입했어요(그 전 분모 56,945). 그래서 아래 등급 비율은 <b>전일과 비교할 수 없습니다</b>.</span><br />
+        <span style={{ fontSize: 11.5 }}>그중 <b>명단 대상 {Math.max(0, S.cards - (S.byGrade.W || 0)).toLocaleString()}건</b> · <b>결과 대기(명단 밖) {(S.byGrade.W || 0).toLocaleString()}건</b> — 2026-10-06에 결과 대기 전건을 카드 대상에 편입했어요(그 전 분모 56,945). 그래서 아래 등급 비율은 <b>전일과 비교할 수 없습니다</b>.</span><br />
         전원 조립 검사 {S.rosterChecked}명 — 위반 <b style={{ color: S.rosterViol ? HMO_C.red : HMO_C.ok }}>{S.rosterViol}건</b> · 일일 지시서 평균 {S.avgRoster}건(상한 {S.maxRoster})
         {S.rosterWin ? <> · 쿼터 D2 {S.rosterWin.d2}칸 + 만기 {S.rosterWin.mat}칸</> : null}
       </div>
@@ -1017,7 +1017,7 @@ function HmoBatchOps() {
         <div key={k} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
           <span className="hmopill" style={{ background: g.bg, color: g.c, width: 62, textAlign: "center" }}>{g.ko}</span>
           <div className="hmobar"><i style={{ width: (n / S.cards * 100) + "%", background: g.c }} /></div>
-          <span style={{ width: 104, fontSize: 10.8, color: "#475569", textAlign: "right" }}>{n.toLocaleString()} ({(n / S.cards * 100).toFixed(1)}%)</span></div>); })}
+          <span style={{ width: 104, fontSize: 11, color: "#475569", textAlign: "right" }}>{n.toLocaleString()} ({(n / S.cards * 100).toFixed(1)}%)</span></div>); })}
       <div className="hmonote">대상아님(관리 리듬 양호) {gOffCycle.toLocaleString()}명 — 등급 「등급 해당 없음(-)」 {(S.byGrade["-"] || 0).toLocaleString()}명 중 D2 {gD2Dash.toLocaleString()}명은 위 분포에서 카드 대상으로 셌습니다(D2 전체가 아니라 등급이 '-'인 D2만입니다) · 일일 로스터 등급 합계 {["H", "M", "L", "W", "-"].filter((k) => (S.byRosterGrade || {})[k]).concat(Object.keys(S.byRosterGrade || {}).filter((k) => ["H", "M", "L", "W", "-"].indexOf(k) < 0)).map((k) => k + " " + S.byRosterGrade[k]).join(" · ")}
         {S.d2GoldenLeft ? <> · 로스터 D2 창 상태 {Object.entries(S.d2GoldenLeft).map(([k, v]) => k + " " + v).join(" · ")}(쿼터 자격은 D2 단계이고 창이 열린 카드를 1순위로 앉힙니다 — 「창이 닫히면 되돌릴 수 없다」는 근거는 창이 열린 칸에만 적습니다)</> : null}</div>
     </HmoBox>
@@ -1040,7 +1040,7 @@ function HmoBatchOps() {
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
             <span style={{ width: 86, fontSize: 11, fontWeight: 700, color: "#475569" }}>{k}</span>
             <div className="hmobar" style={{ height: 8 }}><i style={{ width: Math.min(100, v * 12) + "%", background: c, height: 8 }} /></div>
-            <b style={{ width: 26, textAlign: "right", fontSize: 11.6 }}>{v}</b></div>))}
+            <b style={{ width: 26, textAlign: "right", fontSize: 11.5 }}>{v}</b></div>))}
         <div className="hmonote">상위 기록: {(ev.names || []).slice(0, 4).map((x) => x.ko + " " + x.n).join(" · ")}</div>
       </div>) : <div className="hmonote">이번 세션에 기록된 이벤트가 아직 없어요 — 지시서 노출·원탭·검진 예약 등 실제 행동이 일어나면 집계됩니다.</div>}
     </HmoBox>
@@ -1084,10 +1084,10 @@ function HmoBatchScoped({ adm }) {
   return (<div className="hmogrid">
     <HmoBox t={<><Users size={14} color={HMO_C.cyan} /> 배분 현황 — {hmoScopeLabel(hmoAdmRoot(adm))}</>} tag="범위 전수" tagC={HMO_TAG_FULL}>
       <HmoDef>배치 스냅샷({SD})의 <b>사번별</b> 담당 회원 수·오늘 지시서 건수를 이 범위 소속 프로에 대해서만 더한 값입니다 — 전국 합계를 비율로 나눈 환산값이 아닙니다.</HmoDef>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.2 }}>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12 }}>
         {[["소속 프로", O.hq.n + "명"], ["활성", O.hq.active + "명"], ["담당 회원", O.hq.managed.toLocaleString() + "명"],
           ["오늘 지시서", O.hq.today.toLocaleString() + "건"], ["프로당 담당", avg ? avg.toLocaleString() + "명" : "-"]].map(([k, v], i) => (
-          <div key={i}><b style={{ fontSize: 15.5, color: HMO_C.navy, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.4, color: HMO_C.mut }}>{k}</div></div>))}
+          <div key={i}><b style={{ fontSize: 15.5, color: HMO_C.navy, fontVariantNumeric: "tabular-nums" }}>{v}</b><div style={{ fontSize: 10.5, color: HMO_C.mut }}>{k}</div></div>))}
       </div>
       <div className="hmonote">교육중 {O.hq.edu}명 · 정지 {O.hq.off}명은 담당 0명으로 집계돼요(인원에서 빼지 않습니다). 재배분·배정 변경 기능은 이 화면에 없어요 — 관측 전용입니다.</div>
     </HmoBox>
@@ -1120,7 +1120,7 @@ function HmoBatchScoped({ adm }) {
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
             <span style={{ width: 86, fontSize: 11, fontWeight: 700, color: "#475569" }}>{k}</span>
             <div className="hmobar" style={{ height: 8 }}><i style={{ width: Math.min(100, v * 12) + "%", background: c, height: 8 }} /></div>
-            <b style={{ width: 26, textAlign: "right", fontSize: 11.6 }}>{v}</b></div>))}
+            <b style={{ width: 26, textAlign: "right", fontSize: 11.5 }}>{v}</b></div>))}
       </div>) : <div className="hmonote">이번 세션에 기록된 이벤트가 아직 없어요 — 지시서 노출·원탭·검진 예약 등 실제 행동이 일어나면 집계됩니다.</div>}
     </HmoBox>
   </div>);
@@ -1219,12 +1219,12 @@ function HmoCycleOps({ adm }) {
       {" "}{M.full ? "전수라" : "추출은 결정론이라"} 누를 때마다 같은 숫자예요. 모집단은 <b>직책(관리 범위)</b>에 고정되고 드릴다운 선택에 따라 바뀌지 않습니다 — 누를 때마다 바뀌면 같은 화면의 숫자가 클릭마다 흔들려 비교가 안 됩니다. T5 동의율 = 만기 도달 회원 중 안내 동의(consentHas n2) 보유 비율.</HmoDef>
     <div style={{ display: "flex", gap: 3, marginTop: 6, alignItems: "flex-end", height: 52 }}>
       {T.map((t) => (<div key={t} style={{ flex: 1, textAlign: "center" }}>
-        <div style={{ height: Math.round((M.dist[t] || 0) / maxT * 34) + 2, background: ["T2", "T5", "T6"].indexOf(t) >= 0 ? HMO_C.gold : "#93C5FD", borderRadius: 3 }} />
-        <div style={{ fontSize: 9.4, color: "#475569", marginTop: 2 }}>{t}</div>
-        <div style={{ fontSize: 9, color: "#94A3B8" }}>{(M.dist[t] || 0).toLocaleString()}</div>
+        <div style={{ height: Math.round((M.dist[t] || 0) / maxT * 34) + 2, background: ["T2", "T5", "T6"].indexOf(t) >= 0 ? HMO_C.gold : "#93C5FD", borderRadius: "var(--r-xs)" }} />
+        <div style={{ fontSize: 10, color: "#475569", marginTop: 2 }}>{t}</div>
+        <div style={{ fontSize: 10, color: "var(--muted)" }}>{(M.dist[t] || 0).toLocaleString()}</div>
       </div>))}
     </div>
-    <div style={{ fontSize: 11.8, color: "#334155", lineHeight: 1.85, marginTop: 6 }}>
+    <div style={{ fontSize: 12, color: "#334155", lineHeight: 1.85, marginTop: 6 }}>
       📋 <b>T5 동의율(60일마다 나오는 성적표)</b> — 만기 도달 {M.t5plus.toLocaleString()}명 중 안내 동의 <b style={{ color: HMO_C.blue }}>{M.n2Yes.toLocaleString()}명({M.t5plus ? Math.round(M.n2Yes / M.t5plus * 100) : 0}%)</b><br />
       🕐 <b>2차 골든타임 회복</b> — 무보장 {M.uncov.toLocaleString()}명 중 동의 보유 {M.recov.toLocaleString()}명({M.uncov ? Math.round(M.recov / M.uncov * 100) : 0}%)<br />
       🎯 <b>세그먼트 상위</b> — {segTop.map((g) => g + " " + M.seg[g].toLocaleString()).join(" · ") || "-"}<br />
@@ -1320,11 +1320,11 @@ function HmoAdminGate({ onPass, onGo }) {
       <div style={{ display: "flex", gap: 7, marginTop: 9 }}>
         <input value={code} aria-label="운영자 사번" autoComplete="off" spellCheck={false}
           onChange={(e) => { setCode(e.target.value); if (err) setErr(""); }} placeholder={DEF}
-          style={{ flex: 1, border: "1.5px solid #CBD5E1", borderRadius: 9, padding: "10px 12px", font: "inherit", fontSize: 14.5, fontWeight: 800, letterSpacing: 1.4, color: HMO_C.ink }}
+          style={{ flex: 1, border: "1.5px solid #CBD5E1", borderRadius: "var(--r-sm)", padding: "10px 12px", font: "inherit", fontSize: 14.5, fontWeight: 800, letterSpacing: 1.4, color: HMO_C.ink }}
           onKeyDown={(e) => { if (e.key === "Enter") submit(); }} />
         <button className="hmobtn pri" style={{ fontSize: 13, fontWeight: 900, padding: "10px 18px" }} onClick={() => submit()}>인증</button>
       </div>
-      {cur && (<div style={{ marginTop: 8, background: HMO_C.soft, border: "1px solid " + HMO_C.line, borderRadius: 10, padding: "8px 11px", fontSize: 12.3, lineHeight: 1.7, color: HMO_C.ink }}>
+      {cur && (<div style={{ marginTop: 8, background: HMO_C.soft, border: "1px solid " + HMO_C.line, borderRadius: "var(--r-md)", padding: "8px 11px", fontSize: 12.5, lineHeight: 1.7, color: HMO_C.ink }}>
         <b style={{ color: HMO_C.navy }}>{cur.code}</b> — <b>{cur.name} {cur.title}</b> · 직책 {cur.roleKo} · 범위 {cur.role === "hq" ? "전국" : (cur.role === "dan" ? cur.dan : cur.dan + " " + cur.branch)}
         {cur.syn ? <span className="hmopill" style={{ background: "#FEF3E2", color: "#B45309", marginLeft: 5 }}>구 명부 보존용 버킷</span> : null}
         <div style={{ color: HMO_C.mut, marginTop: 2 }}>이 사번으로 들어가면 보이는 것 — 프로 <b style={{ color: HMO_C.ink }}>{peek ? peek.n.toLocaleString() : "-"}명</b>(활성 {peek ? peek.active : "-"}) · 담당 회원 <b style={{ color: HMO_C.ink }}>{peek ? peek.managed.toLocaleString() : "-"}명</b> · 지점 {peek ? peek.branchesReal + (peek.branchesSyn ? " + 본사 " + peek.branchesSyn : "") : "-"}곳{cur.role === "hq" ? " (전국)" : " (이 범위 밖은 집계에 들어오지 않아요)"}</div>
@@ -1341,7 +1341,7 @@ function HmoAdminGate({ onPass, onGo }) {
              지점장 사번은 'dan|branch' 정렬 인덱스에서 파생되므로(지점이 늘거나 줄면 뒤가 밀린다) 명부에서 뽑아 쓴다. */}
       <input className="hmoin" value={q} onChange={(e) => setQ(e.target.value)} placeholder={"예: 은평 · 지점장 · 강북지역단" + (DEF ? " · " + DEF : "")} style={{ width: "100%", boxSizing: "border-box", marginTop: 5 }} />
       {hits.map((a) => (<div key={a.code} onClick={() => submit(a.code)} role="button" tabIndex={0}
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, border: "1px solid #F1F5F9", borderRadius: 9, padding: "7px 11px", marginTop: 5, cursor: "pointer", fontSize: 12 }}>
+        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, border: "1px solid #F1F5F9", borderRadius: "var(--r-sm)", padding: "7px 11px", marginTop: 5, cursor: "pointer", fontSize: 12 }}>
         <span><b>{a.name} {a.title}</b> <span style={{ color: HMO_C.mut }}>· {a.code}{a.dan ? " · " + a.dan : ""}</span></span>
         <span className="hmopill" style={{ background: "#EAF4FE", color: HMO_C.blue }}>{a.roleKo} · 범위 {a.scopeKo}</span>
       </div>))}
@@ -1517,7 +1517,7 @@ function HmOpsCenterSection({ onGo }) {
     return (<div className="hmowrap"><HmoStyle />
       <div className="hmocard" style={{ maxWidth: 580 }}>
         <div className="hmoct"><Lock size={14} color={HMO_C.mut} /> 운영 담당자 화면이에요</div>
-        <div style={{ fontSize: 12.4, color: "#475569", lineHeight: 1.9 }}>
+        <div style={{ fontSize: 12.5, color: "#475569", lineHeight: 1.9 }}>
           이 화면은 지점장·지역단장·본사 운영 담당자용이에요(관측 전용).
           {proSess
             ? <> 지금은 <b>프로 사번 {proSess}</b>으로 들어온 세션이라 열 수 없어요 — 담당 회원 관리는 <b>헬스메이트 센터</b>에서 계속하시고, 운영 담당자로 보려면 센터 오른쪽 위 <b>[사번 잠금]</b>을 먼저 눌러 주세요.</>

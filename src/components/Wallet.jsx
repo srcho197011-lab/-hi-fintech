@@ -93,12 +93,12 @@ function WalletSection({ onGo }) {
         <div className="bklbl" style={{ margin: "2px 0 8px" }}><Coins size={14} color="#16A34A" style={{ verticalAlign: "-2px" }} /> 항목별 적립 토큰 <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· {WALLET_EARN.length}개 적립 채널</span></div>
         <div className="wgrid">
           {dm && (
-          <div className="wcard" style={{ borderColor: "#16A34A", background: "linear-gradient(180deg,#F3FCF6,#fff)" }}><span className="wi" style={{ background: "#E7F8EE" }}><Art name="heart" size={22} /></span>
+          <div className="wcard" style={{ borderColor: "#16A34A", background: "#fff" }}><span className="wi" style={{ background: "#E7F8EE" }}><Art name="heart" size={22} /></span>
             <div style={{ flex: 1 }}><div className="wn">AI 케어플랜 실천 적립 <span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE", fontSize: 10, padding: "1px 6px" }}>NEW</span></div><div className="wd">종합 케어플랜 영역을 완료하면 자동 적립 (병원·검진·영양·기기·식단·제도)</div></div>
             <span className="wamt" style={{ color: "#16A34A" }}>+{cpPts.toLocaleString()}</span></div>
           )}
           {shopPts > 0 && (
-          <div className="wcard" style={{ borderColor: "#F97316", background: "linear-gradient(180deg,#FFF7ED,#fff)" }}><span className="wi" style={{ background: "#FFEDD5" }}><Art name="capsule" size={22} /></span>
+          <div className="wcard" style={{ borderColor: "#F97316", background: "#fff" }}><span className="wi" style={{ background: "#FFEDD5" }}><Art name="capsule" size={22} /></span>
             <div style={{ flex: 1 }}><div className="wn">건강쇼핑 구매 적립 <span className="cbadge" style={{ color: "#C2410C", background: "#FFEDD5", fontSize: 10, padding: "1px 6px" }}>실적립</span></div><div className="wd">건강쇼핑(영양제·AI 상담사) 주문 시 판매마진의 {(typeof SHOP_REWARD_CFG !== "undefined" && SHOP_REWARD_CFG.marginRewardRate) ? Math.round(SHOP_REWARD_CFG.marginRewardRate * 100) : WALLET_SPLIT.earn}%를 실제 적립 · 누적 {won(shopWonBal)}</div></div>
             <span className="wamt" style={{ color: "#F97316" }}>+{shopPts.toLocaleString()}</span></div>
           )}
@@ -178,12 +178,12 @@ function WalletSection({ onGo }) {
       </>)}
 
       {tab === "sec" && (<>
-        <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(120deg,#0B1F4D,#2F5BEA 60%,#7C3AED)", color: "#fff", borderRadius: 16, padding: "18px 18px", boxShadow: "0 16px 32px -20px rgba(47,91,234,.8)" }}>
-          <span style={{ width: 46, height: 46, borderRadius: 12, background: "rgba(255,255,255,.18)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={26} color="#fff" /></span>
+        <div style={{ display: "flex", alignItems: "center", gap: 13, background: "#0B1F4D", color: "#fff", borderRadius: "var(--r-lg)", padding: "18px 18px" }}>
+          <span style={{ width: 46, height: 46, borderRadius: "var(--r-md)", background: "rgba(255,255,255,.18)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={26} color="#fff" /></span>
           <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.55 }}><b style={{ color: "#A7F3D0" }}>핀테크·헬스케어급 다층 보안</b>을 적용해 적립·환전·결제의 <b style={{ color: "#FDE68A" }}>위·변조 방지와 이상거래 탐지를 강화</b>합니다. <span style={{ opacity: .82, fontWeight: 600 }}>(설계 목표 · 시제품)</span></div>
         </div>
 
-        <div className="card" style={{ marginTop: 12, border: "1.5px solid #BFD0FF", background: "linear-gradient(180deg,#F7F9FF,#fff)" }}>
+        <div className="card" style={{ marginTop: 12, border: "1.5px solid #BFD0FF", background: "#fff" }}>
           <div className="rct"><Coins size={18} color="#2563EB" /> 결제 방식 안내</div>
           <div className="adv"><span className="ic" style={{ background: "#E7F8EE" }}><Art name="coin" size={20} /></span><div style={{ flex: 1 }}><b>현재 — 포인트 환전 후 현금결제</b><p>적립된 Health Token은 <b>플랫폼이 환전하여 현금(카드·계좌)으로 결제·정산</b>합니다. 가상자산이 아닌 포인트로 운영됩니다.</p></div></div>
           <div className="adv"><span className="ic" style={{ background: "#FEF3E2" }}><Art name="hash" size={20} /></span><div style={{ flex: 1 }}><b>향후 — 가상자산 결제(법제화 후)</b><p>스테이블코인 등 <b>가상자산 직접 결제는 관련 법률 제정 후 도입</b> 예정이며, 블록체인 온체인 정산·SBT 증서도 그 단계에서 적용합니다.</p></div></div>

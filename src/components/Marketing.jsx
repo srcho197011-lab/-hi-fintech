@@ -479,7 +479,7 @@ function MarketingSection({ onGo }) {
         <div className="ontpanel">
           <div className="ontph"><BookOpen size={15} color="#34D399" /> 권장 마케팅 전략 (시장조사 기반) <span>· TOP {MKT_STRATEGIES.length}</span></div>
           {MKT_STRATEGIES.map(([t, d, c], i) => (
-            <div className="mktrow" key={i} style={{ padding: "9px 11px" }}><span className="mkt-ic" style={{ background: c + "1A", width: 26, height: 26, fontSize: 12, fontWeight: 800, color: c }}>{i + 1}</span><div className="mkt-b"><b style={{ color: "#EAF2FF", fontSize: 12.3 }}>{t}</b><p style={{ color: "#90A0BD", fontSize: 11, marginTop: 2, lineHeight: 1.5 }}>{d}</p></div></div>
+            <div className="mktrow" key={i} style={{ padding: "9px 11px" }}><span className="mkt-ic" style={{ background: c + "1A", width: 26, height: 26, fontSize: 12, fontWeight: 800, color: c }}>{i + 1}</span><div className="mkt-b"><b style={{ color: "#EAF2FF", fontSize: 12.5 }}>{t}</b><p style={{ color: "#90A0BD", fontSize: 11, marginTop: 2, lineHeight: 1.5 }}>{d}</p></div></div>
           ))}
           <div className="finpl-note">벤치마크: 이커머스 ROAS 2.87x로 하락 추세 → <b>리텐션·리퍼럴 그로스 루프 + AI 소재 자동화로 CAC 절감</b>이 2025 핵심 레버. 한국 의료광고는 자율심의(의료법 제57조 자율심의기구)·24시간 차단 규제(10만+ 플랫폼 전건 심의).</div>
         </div>

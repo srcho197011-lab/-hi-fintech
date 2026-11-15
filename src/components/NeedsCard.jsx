@@ -45,14 +45,14 @@ function NeedsCard({ variant }) {
   ];
   if (variant === "widget") {   /* B안 — 3칼럼 콤팩트(홈·지갑 요약) */
     return (<div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg,#0B2239,#16405F)", color: "#fff", padding: "9px 14px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0B2239", color: "#fff", padding: "9px 14px" }}>
         <b style={{ fontSize: 13.5 }}>🧾 내 대비 현황</b><span style={{ fontSize: 10.5, color: "#9FB7CC" }}>구간으로만 · 판단은 내가 · [예시·시연]</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
         {rows.map((r) => (<div key={r.k} onClick={() => ask(r.k)} style={{ padding: "12px 8px", textAlign: "center", cursor: "pointer", borderRight: "1px solid #EEF2F6", background: r.k === "fund" ? "#FFFBF5" : "#fff" }}>
           <div style={{ fontSize: 11.5, fontWeight: 900, color: MUT }}>{r.lbl}</div>
           <div style={{ fontSize: 15.5, fontWeight: 900, color: r.c, margin: "4px 0 2px" }}>{r.v}</div>
-          <div style={{ fontSize: 10, color: "#94A3B8", lineHeight: 1.45 }}>{r.d2}</div>
+          <div style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.45 }}>{r.d2}</div>
         </div>))}
       </div>
       {open && <div style={{ padding: "9px 14px", background: "#F8FAFC", borderTop: "1px solid #EEF2F6", fontSize: 12, lineHeight: 1.7 }}>
@@ -61,24 +61,24 @@ function NeedsCard({ variant }) {
   }
   /* A안 — 3줄 리스트형(치료비 케어 섹션 상단, 조성래님 확정 2026-08-30) */
   return (<div className="card" style={{ padding: 0, overflow: "hidden", margin: "12px 0" }}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(135deg,#0B2239,#16405F)", color: "#fff", padding: "11px 16px" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0B2239", color: "#fff", padding: "11px 16px" }}>
       <b style={{ fontSize: 15 }}>🧾 내 대비 현황</b>
       <span style={{ fontSize: 11, color: "#9FB7CC" }}>지금 단계 기준 · 구간으로만 보여드려요 · [예시·시연]</span>
     </div>
     {rows.map((r) => (<div key={r.k} onClick={() => ask(r.k)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 16px", borderBottom: "1px solid #EEF2F6", cursor: "pointer", background: open === r.k ? "#F8FAFC" : "#fff" }}>
       <div style={{ width: 62, fontSize: 14.5, fontWeight: 900, color: NAVY }}>{r.lbl}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12.6, color: "#374151" }}>{r.d1}</div>
-        <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{r.d2}</div>
+        <div style={{ fontSize: 12.5, color: "#374151" }}>{r.d1}</div>
+        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{r.d2}</div>
       </div>
       <div style={{ fontSize: 17, fontWeight: 900, color: r.c, whiteSpace: "nowrap" }}>{r.v}</div>
       <span style={{ color: "#CBD5E1", fontSize: 12 }}>{open === r.k ? "▲" : "▼"}</span>
     </div>))}
-    {open && <div style={{ padding: "11px 16px", background: "#F8FAFC", borderBottom: "1px solid #EEF2F6", fontSize: 12.6, lineHeight: 1.75 }}>
+    {open && <div style={{ padding: "11px 16px", background: "#F8FAFC", borderBottom: "1px solid #EEF2F6", fontSize: 12.5, lineHeight: 1.75 }}>
       {EXPLAIN[open].map(([t, x]) => <div key={t} style={{ marginBottom: 3 }}><b style={{ color: BRAND, marginRight: 7 }}>{t}</b>{x}</div>)}
-      {open === "income" && sum.income.applicable && <div style={{ fontSize: 10.4, color: MUT, marginTop: 5 }}>근거: {sum.income.durSrc} · {sum.income.livingSrc} (일부 검수 대기 — 공식 확정 전 보수적 근사)</div>}
+      {open === "income" && sum.income.applicable && <div style={{ fontSize: 10.5, color: MUT, marginTop: 5 }}>근거: {sum.income.durSrc} · {sum.income.livingSrc} (일부 검수 대기 — 공식 확정 전 보수적 근사)</div>}
     </div>}
-    <div style={{ padding: "9px 16px", fontSize: 11.6, color: MUT, background: "#FFFBF5" }}>
+    <div style={{ padding: "9px 16px", fontSize: 11.5, color: MUT, background: "#FFFBF5" }}>
       검진 결과·미션 완결·계약이 바뀌면 자동으로 다시 계산돼요 · <b style={{ color: BRAND }}>궁금한 줄을 눌러보세요</b>
     </div>
   </div>);

@@ -43,7 +43,7 @@ function BizOpsConsole({ onGo }) {
   const SUB = [["revenue", "수익모델", Coins], ["roadmap", "추진 로드맵", Route], ["kpi", "KPI", Target], ["risk", "리스크", AlertTriangle]];
   return (
     <div className="biz">
-      <div className="ontstore-def" style={{ background: "linear-gradient(120deg,#1A1030,#0F1B33)", borderColor: "#4A2A6B" }}>
+      <div className="ontstore-def" style={{ background: "#1A1030", borderColor: "#4A2A6B" }}>
         <span className="ontstore-ic" style={{ background: "#14091F" }}><Target size={15} color="#C4B5FD" /></span>
         <div><b>사업 운영 콘솔</b><p>사업방법서의 <b>수익모델·추진 로드맵·KPI·리스크</b>를 운영 관점에서 정리합니다. B2C 구독과 B2B 채널에는 각각 <b>법적 가드레일</b>이 붙고, 단계별 <b>검증 게이트</b>와 <b>KPI·리스크 통제</b>로 지속 가능성을 점검합니다.</p></div>
       </div>

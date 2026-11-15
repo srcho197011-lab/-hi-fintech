@@ -35,7 +35,7 @@ const WP_META = {
 
 /* 장별 진행 상태 정의 (예정 → 조사중 → 작성중 → 검토중 → 검증완료) */
 const WP_STATUS = {
-  planned:  { k: "planned",  label: "예정",     ic: "○", color: "#94A3B8", bg: "#F1F5F9", pct: 0 },
+  planned:  { k: "planned",  label: "예정",     ic: "○", color: "var(--muted)", bg: "#F1F5F9", pct: 0 },
   research: { k: "research", label: "조사중",   ic: "◐", color: "#0EA5E9", bg: "#E0F2FE", pct: 25 },
   draft:    { k: "draft",    label: "작성중",   ic: "◑", color: "#F59E0B", bg: "#FEF3C7", pct: 55 },
   review:   { k: "review",   label: "검토중",   ic: "◕", color: "#8B5CF6", bg: "#EDE9FE", pct: 80 },

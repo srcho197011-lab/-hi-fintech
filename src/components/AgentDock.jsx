@@ -710,7 +710,7 @@ function AgentOpsConsole() {
         <button className="hiops-run" onClick={runLoop}><RefreshCw size={13} /> 주간 학습 루프 실행</button></div>
       <div className="hiops-list">{misses.slice(-10).reverse().map((m, i) => (
         <div className="hiops-row" key={i}><span className="hiops-t">{fmtT(m.ts)}</span><span className="hiops-q">"{m.q}"</span></div>
-      ))}{!misses.length && <div className="hiops-row"><span className="hiops-q" style={{ color: "#94A3B8" }}>미답변 없음 — 커버리지 양호</span></div>}</div>
+      ))}{!misses.length && <div className="hiops-row"><span className="hiops-q" style={{ color: "var(--muted)" }}>미답변 없음 — 커버리지 양호</span></div>}</div>
       {pending.length > 0 && (<>
         <div className="hiops-sec">신규 Q&A 후보 <span>(검수 대기 {pending.length}건 — 검수 후 뱅크 등록)</span></div>
         <div className="hiops-list">{pending.slice(0, 6).map((p, i) => (
@@ -728,7 +728,7 @@ function AgentOpsConsole() {
               <span className="cbadge" style={{ background: "#F0FDF4", color: "#15803D" }}>코퍼스 {snap.total.toLocaleString()}문항 · {snap.seconds}s</span>
               <span className="cbadge" style={{ background: snap.leaks ? "#FEF2F2" : "#F0FDF4", color: snap.leaks ? "#B91C1C" : "#15803D" }}>관리자 누출 {snap.leaks}건</span>
               <span className="cbadge" style={{ background: "#EFF6FF", color: "#1D4ED8" }}>기존 NLU {snap.nluAcc}% (기준선 유지)</span>
-            </div> : <div style={{ marginTop: 6, fontSize: 12, color: "#94A3B8" }}>스냅샷 없음 — node scripts/run_nav_regression.mjs 실행</div>}
+            </div> : <div style={{ marginTop: 6, fontSize: 12, color: "var(--muted)" }}>스냅샷 없음 — node scripts/run_nav_regression.mjs 실행</div>}
           </div>
           <div className="hiops-sec" style={{ display: "block" }}>완결 퍼널 <span>(시연 분포 — 실회원 리포트는 론칭 게이트)</span>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>

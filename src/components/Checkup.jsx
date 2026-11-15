@@ -229,7 +229,7 @@ const EMERGENCY_GUIDE = [
 function EmergencyGuide() {
   return (
     <div style={{ marginTop: 14 }}>
-      <div className="card" style={{ background: "linear-gradient(135deg,#7F1D1D 0%,#B91C1C 55%,#DC2626 100%)", color: "#fff", border: "none" }}>
+      <div className="card" style={{ background: "#7F1D1D", color: "#fff", border: "none" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 30 }}>🚨</span>
           <div>
@@ -238,8 +238,8 @@ function EmergencyGuide() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-          <a href="tel:119" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", color: "#B91C1C", fontWeight: 800, fontSize: 13.5, borderRadius: 9, padding: "9px 15px", textDecoration: "none" }}><Phone size={15} /> 119 응급 신고</a>
-          <a href="tel:1393" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.18)", color: "#fff", fontWeight: 800, fontSize: 13.5, borderRadius: 9, padding: "9px 15px", textDecoration: "none", border: "1px solid rgba(255,255,255,.5)" }}><Phone size={15} /> 자살예방 1393</a>
+          <a href="tel:119" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", color: "#B91C1C", fontWeight: 800, fontSize: 13.5, borderRadius: "var(--r-sm)", padding: "9px 15px", textDecoration: "none" }}><Phone size={15} /> 119 응급 신고</a>
+          <a href="tel:1393" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,.18)", color: "#fff", fontWeight: 800, fontSize: 13.5, borderRadius: "var(--r-sm)", padding: "9px 15px", textDecoration: "none", border: "1px solid rgba(255,255,255,.5)" }}><Phone size={15} /> 자살예방 1393</a>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 12, marginTop: 12 }}>
@@ -280,10 +280,10 @@ function CheckupSection() {
       </div>
       {cat === "health" && (<>
         {/* 검진 이후 상담 안내 스트립 — 검진→결과→원격상담 동선 */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 11, padding: "9px 13px", margin: "2px 0 10px", fontSize: 12.3 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "var(--r-md)", padding: "9px 13px", margin: "2px 0 10px", fontSize: 12.5 }}>
           <Stethoscope size={15} color="#1D4ED8" />
           <span style={{ flex: 1 }}>검진 후에는 결과를 아는 <b>전문의 원격 상담</b>까지 이어져요.</span>
-          <button style={{ border: "1px solid #1D4ED8", background: "#fff", color: "#1D4ED8", fontWeight: 800, borderRadius: 8, padding: "5px 11px", cursor: "pointer", fontSize: 11.5, flexShrink: 0 }} onClick={() => setCat("tele")}>원격진료·건강상담 ›</button>
+          <button style={{ border: "1px solid #1D4ED8", background: "#fff", color: "#1D4ED8", fontWeight: 800, borderRadius: "var(--r-sm)", padding: "5px 11px", cursor: "pointer", fontSize: 11.5, flexShrink: 0 }} onClick={() => setCat("tele")}>원격진료·건강상담 ›</button>
         </div>
         <div className="bklbl" style={{ margin: "0 0 8px" }}>검진 유형</div>
         <div className="regions" style={{ marginBottom: 4 }}>{HM.map(([k, t]) => <div key={k} className={`fsel ${healthMode === k ? "on" : ""}`} onClick={() => setHealthMode(k)}>{t}</div>)}</div>
@@ -304,10 +304,10 @@ function CheckupSection() {
       {cat === "doctor" && <div style={{ marginTop: 8 }}><div className="chnote" style={{ margin: "0 0 10px" }}>검진 관련이나 건강 궁금증을 AI 주치의에게 물어보세요. AI Super Agent에서 넘어온 상담도 여기서 이어집니다.</div><Chat acceptsSeed /></div>}
       {cat === "emergency" && <EmergencyGuide />}
       {cat === "result" && (<>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 11, padding: "9px 13px", margin: "8px 0 10px", fontSize: 12.3 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "var(--r-md)", padding: "9px 13px", margin: "8px 0 10px", fontSize: 12.5 }}>
           <Stethoscope size={15} color="#1D4ED8" />
           <span style={{ flex: 1 }}>결과에 궁금한 점이 있나요? <b>결과 상담하기</b> — 우리 동네 전문의 원격 상담으로 이어져요.</span>
-          <button style={{ border: "1px solid #1D4ED8", background: "#fff", color: "#1D4ED8", fontWeight: 800, borderRadius: 8, padding: "5px 11px", cursor: "pointer", fontSize: 11.5, flexShrink: 0 }} onClick={() => setCat("tele")}>결과 상담하기 ›</button>
+          <button style={{ border: "1px solid #1D4ED8", background: "#fff", color: "#1D4ED8", fontWeight: 800, borderRadius: "var(--r-sm)", padding: "5px 11px", cursor: "pointer", fontSize: 11.5, flexShrink: 0 }} onClick={() => setCat("tele")}>결과 상담하기 ›</button>
         </div>
         <CheckupResults />
       </>)}
@@ -386,8 +386,8 @@ function BrandDirectory({ only, catFilter }) {
   return (
     <>
       {catFilter && CHECKUP_CAT_META[catFilter] && (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, background: CHECKUP_CAT_META[catFilter].color + "12", border: "1px solid " + CHECKUP_CAT_META[catFilter].color + "33", borderRadius: 14, padding: "13px 16px", marginBottom: 12 }}>
-          <span style={{ width: 40, height: 40, borderRadius: 11, background: CHECKUP_CAT_META[catFilter].color + "22", display: "grid", placeItems: "center", flexShrink: 0, fontSize: 18, fontWeight: 900, color: CHECKUP_CAT_META[catFilter].color }}>{CHECKUP_CAT_META[catFilter].label[0]}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: CHECKUP_CAT_META[catFilter].color + "12", border: "1px solid " + CHECKUP_CAT_META[catFilter].color + "33", borderRadius: "var(--r-lg)", padding: "13px 16px", marginBottom: 12 }}>
+          <span style={{ width: 40, height: 40, borderRadius: "var(--r-md)", background: CHECKUP_CAT_META[catFilter].color + "22", display: "grid", placeItems: "center", flexShrink: 0, fontSize: 18, fontWeight: 900, color: CHECKUP_CAT_META[catFilter].color }}>{CHECKUP_CAT_META[catFilter].label[0]}</span>
           <div><div style={{ fontSize: 15, fontWeight: 900, color: "#12203F" }}>{catFilter === "nat" && natOrgs.data
             ? <>국가검진 · 전국 지정기관 <b style={{ color: "var(--blue)" }}>{natOrgs.data.meta.total.toLocaleString()}</b>곳 <span style={{ fontWeight: 700, color: "var(--muted)", fontSize: 12.5 }}>(공단 공개 데이터 기준 · 브랜드 큐레이션 {base.length}곳)</span></>
             : <>{CHECKUP_CAT_META[catFilter].label} · 브랜드 검진기관 {base.length}곳</>}</div><div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>{CHECKUP_CAT_META[catFilter].intro}</div></div>
@@ -475,8 +475,8 @@ function NationalOrgDirectory({ onlyType, personalOnly }) {
   const toCenter = (o) => ({ name: o[0], r: o[1], area: o[2], ad: o[4], tags: [d.types[o[3]], "공단 지정기관"], _noPrice: true, _plan: "basic" });
   return (
     <div style={{ marginTop: 18 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#F0F6FF", border: "1px solid #BFDBFE", borderRadius: 14, padding: "12px 15px", marginBottom: 10 }}>
-        <span style={{ width: 38, height: 38, borderRadius: 10, background: "#DBEAFE", display: "grid", placeItems: "center", flexShrink: 0 }}><Building2 size={19} color="#1D4ED8" /></span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#F0F6FF", border: "1px solid #BFDBFE", borderRadius: "var(--r-lg)", padding: "12px 15px", marginBottom: 10 }}>
+        <span style={{ width: 38, height: 38, borderRadius: "var(--r-md)", background: "#DBEAFE", display: "grid", placeItems: "center", flexShrink: 0 }}><Building2 size={19} color="#1D4ED8" /></span>
         <div>
           {personalOnly ? (<>
             <div style={{ fontSize: 15, fontWeight: 900, color: "#12203F" }}>전국 개인종합검진 가능 기관 <b style={{ color: "var(--blue)" }}>{(d.meta.personal || 0).toLocaleString()}</b>곳 — 공단 공개 데이터 기준</div>
@@ -754,14 +754,14 @@ function ReportPdfViewer({ onClose }) {
     <div className="voverlay" onClick={onClose}>
       <div className="viewer" onClick={(e) => e.stopPropagation()}>
         <div className="vhead">
-          <div className="vt"><FileText size={17} color="#7C3AED" /> 실물 리포트 원본 <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B45309", background: "#FEF3E2", borderRadius: 999, padding: "3px 9px", marginLeft: 6 }}>31p · 개인정보 마스킹 샘플</span></div>
+          <div className="vt"><FileText size={17} color="#7C3AED" /> 실물 리포트 원본 <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B45309", background: "#FEF3E2", borderRadius: "var(--r-pill)", padding: "3px 9px", marginLeft: 6 }}>31p · 개인정보 마스킹 샘플</span></div>
           <div className="vh-actions">
             <button className="close" onClick={onClose}><X size={15} /> 닫기</button>
           </div>
         </div>
         <div className="vbody" style={{ background: "#EDF0F6" }}>
           {PAGES.map((src, i) => (
-            <img key={src} src={src} alt={"리포트 " + (i + 1) + "쪽"} loading="lazy" style={{ display: "block", width: "100%", maxWidth: 860, margin: "0 auto 12px", borderRadius: 8, boxShadow: "0 6px 18px -10px rgba(20,30,70,.35)" }} />
+            <img key={src} src={src} alt={"리포트 " + (i + 1) + "쪽"} loading="lazy" style={{ display: "block", width: "100%", maxWidth: 860, margin: "0 auto 12px", borderRadius: "var(--r-sm)" }} />
           ))}
           <div style={{ textAlign: "center", fontSize: 11.5, color: "#64748B", padding: "6px 0 14px" }}>프롬에이지 Premium 실물 리포트(이름·등록번호 마스킹) — 신청 시 내 검진 데이터 기준으로 동일 구성이 생성됩니다.</div>
         </div>
@@ -794,16 +794,16 @@ function SignPad({ value, onChange }) {
   const clear = () => { const c = cv.current; if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height); onChange(""); };
   return (
     <div>
-      <div style={{ position: "relative", border: "1.5px dashed #94A3B8", borderRadius: 10, background: "#FCFDFF", overflow: "hidden" }}>
+      <div style={{ position: "relative", border: "1.5px dashed #94A3B8", borderRadius: "var(--r-md)", background: "#FCFDFF", overflow: "hidden" }}>
         <canvas ref={cv} width={620} height={140} className="signpad"
           onMouseDown={start} onMouseMove={move} onMouseUp={end} onMouseLeave={end}
           onTouchStart={start} onTouchMove={move} onTouchEnd={end}
           style={{ width: "100%", height: 118, display: "block", cursor: "crosshair", touchAction: "none" }} />
-        {!value && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", pointerEvents: "none", color: "#94A3B8", fontSize: 12.5, fontWeight: 600, textAlign: "center", lineHeight: 1.6 }}>이 칸에 계약자 본인이 자필로 서명해 주세요<br /><span style={{ fontSize: 11, fontWeight: 500 }}>마우스로 그리거나 휴대폰에서는 손가락으로 서명하면 돼요</span></div>}
+        {!value && <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", pointerEvents: "none", color: "var(--muted)", fontSize: 12.5, fontWeight: 600, textAlign: "center", lineHeight: 1.6 }}>이 칸에 계약자 본인이 자필로 서명해 주세요<br /><span style={{ fontSize: 11, fontWeight: 500 }}>마우스로 그리거나 휴대폰에서는 손가락으로 서명하면 돼요</span></div>}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: value ? "#16A34A" : "var(--muted)" }}>{value ? "✓ 서명이 입력됐어요 — 가입증서에 그대로 표시돼요" : "서명해야 보험계약이 성립돼요"}</span>
-        <button type="button" onClick={clear} style={{ border: "1px solid var(--border)", background: "#fff", borderRadius: 8, padding: "4px 11px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", color: "var(--muted)" }}>지우고 다시</button>
+        <button type="button" onClick={clear} style={{ border: "1px solid var(--border)", background: "#fff", borderRadius: "var(--r-sm)", padding: "4px 11px", fontSize: 11.5, fontWeight: 700, cursor: "pointer", color: "var(--muted)" }}>지우고 다시</button>
       </div>
     </div>
   );
@@ -931,7 +931,7 @@ function BookingModal({ center, mode, onClose }) {
         {showPdf && <ReportPdfViewer onClose={() => setShowPdf(false)} />}
         <div className="bkb">
           {!done ? (<>
-            <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "12px 14px" }}>
               <div style={{ fontWeight: 800, fontSize: 14 }}>{center.name}</div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {center.r} · {center.area}</div>
               {center._noPrice ? <div style={{ marginTop: 6, fontSize: 12.5, fontWeight: 800, color: "var(--blue)" }}>{(center.tags && center.tags[0]) || "검진"} · 검진비 기관 문의 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 무상 검진대비보험 자동적용</span></div> : mode === "nat" ? <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--green)" }}>공단검진 본인부담 0원 <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600 }}>· 추가검사 별도</span></div> : <div style={{ marginTop: 6, fontSize: 13, fontWeight: 800, color: "var(--blue)" }}>{won(center.price)} <span style={{ fontSize: 11, color: "var(--soft)", fontWeight: 600, textDecoration: "line-through" }}>{won(center.orig)}</span></div>}
@@ -940,17 +940,17 @@ function BookingModal({ center, mode, onClose }) {
               <div style={{ marginTop: 10 }}><MapView points={[{ name: center.name, addr: `${center.r} ${center.area}`, tel: bkGeo.tel, tag: "검진센터", lat: bkGeo.lat, lng: bkGeo.lng }]} height={185} /></div>
             )}
             {partnerCfg && (
-              <div style={{ marginTop: 12, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: "11px 14px" }}>
+              <div style={{ marginTop: 12, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "var(--r-md)", padding: "11px 14px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 800, color: "#1D4ED8" }}>
                   <Network size={14} /> {partnerCfg.partner} UIP 실시간 예약 연동
-                  <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 800, padding: "2px 9px", borderRadius: 999, background: partnerCfg.status === "live" ? "#DCFCE7" : "#FEF3C7", color: partnerCfg.status === "live" ? "#15803D" : "#B45309" }}>{partnerCfg.status === "live" ? "● 실시간 연동" : "연동 준비중"}</span>
+                  <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 800, padding: "2px 9px", borderRadius: "var(--r-pill)", background: partnerCfg.status === "live" ? "#DCFCE7" : "#FEF3C7", color: partnerCfg.status === "live" ? "#15803D" : "#B45309" }}>{partnerCfg.status === "live" ? "● 실시간 연동" : "연동 준비중"}</span>
                 </div>
                 <div style={{ fontSize: 11.5, color: "#475569", marginTop: 5, lineHeight: 1.5 }}>{partnerCfg.status === "live" ? `예약 확정 시 ${partnerCfg.partner} 예약 시스템으로 실시간 전송됩니다.` : partnerCfg.note}</div>
               </div>
             )}
-            <div onClick={() => setInsOpen((v) => !v)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(120deg,#0E9F6E,#16A34A)", color: "#fff", borderRadius: 12, padding: "12px 14px", marginTop: 12, boxShadow: "0 12px 24px -16px rgba(16,163,74,.75)" }}>
-              <span style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={20} color="#fff" /></span>
-              <div style={{ flex: 1, fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>건강검진 예약과 동시에 <b style={{ color: "#FDE68A" }}>무상 건강검진 대비보험</b>이 자동 적용됩니다. <u>보장 조회 ›</u></div>
+            <div onClick={() => setInsOpen((v) => !v)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 11, background: "#0E9F6E", color: "#fff", borderRadius: "var(--r-md)", padding: "12px 14px", marginTop: 12 }}>
+              <span style={{ width: 36, height: 36, borderRadius: "var(--r-md)", background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={20} color="#fff" /></span>
+              <div style={{ flex: 1, fontSize: 13, fontWeight: 700, lineHeight: 1.5 }}>건강검진 예약과 동시에 <b style={{ color: "#FDE68A" }}>무상 건강검진 대비보험</b>이 자동 적용됩니다. <u>보장 조회 ›</u></div>
               <ChevronDown size={18} color="#fff" style={{ transform: insOpen ? "rotate(180deg)" : "none", transition: ".2s", flexShrink: 0 }} />
             </div>
             {insOpen && (<>
@@ -968,9 +968,9 @@ function BookingModal({ center, mode, onClose }) {
               </div>
             </>)}
             {/* 3무 오퍼 ② — 무료 건강검진분석 리포트(프롬에이지 Premium · 시가 3만원) */}
-            <div onClick={() => setRepOpen((v) => !v)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(120deg,#6D28D9,#7C3AED)", color: "#fff", borderRadius: 12, padding: "12px 14px", marginTop: 10, boxShadow: "0 12px 24px -16px rgba(124,58,237,.7)" }}>
-              <span style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><FileText size={20} color="#fff" /></span>
-              <div style={{ flex: 1, fontSize: 12.8, fontWeight: 700, lineHeight: 1.5 }}>검진 후 <b style={{ color: "#FDE68A" }}>건강검진분석 리포트</b>(시가 3만 원)를 무료로 드려요. <u>내용 보기 ›</u></div>
+            <div onClick={() => setRepOpen((v) => !v)} style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 11, background: "#6D28D9", color: "#fff", borderRadius: "var(--r-md)", padding: "12px 14px", marginTop: 10 }}>
+              <span style={{ width: 36, height: 36, borderRadius: "var(--r-md)", background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><FileText size={20} color="#fff" /></span>
+              <div style={{ flex: 1, fontSize: 13, fontWeight: 700, lineHeight: 1.5 }}>검진 후 <b style={{ color: "#FDE68A" }}>건강검진분석 리포트</b>(시가 3만 원)를 무료로 드려요. <u>내용 보기 ›</u></div>
               <ChevronDown size={18} color="#fff" style={{ transform: repOpen ? "rotate(180deg)" : "none", transition: ".2s", flexShrink: 0 }} />
             </div>
             {repOpen && (
@@ -991,32 +991,32 @@ function BookingModal({ center, mode, onClose }) {
               </div>
             )}
             {/* 가입 절차(하이 안내형 4탭) — 중요사항 확인 게이트 → 필수 동의 → 확정. 상담·안내는 선택·미가입도 예약 가능(강매 금지 J2-3·J2-6) */}
-            <div style={{ border: "1.5px solid " + (enroll.st === "done" ? "#16A34A" : enroll.st === "skip" ? "var(--border)" : "#F59E0B"), borderRadius: 13, padding: "12px 13px", background: enroll.st === "done" ? "#F0FDF4" : "#FFFDF7", marginTop: 10 }}>
+            <div style={{ border: "1.5px solid " + (enroll.st === "done" ? "#16A34A" : enroll.st === "skip" ? "var(--border)" : "#F59E0B"), borderRadius: "var(--r-md)", padding: "12px 13px", background: enroll.st === "done" ? "#F0FDF4" : "#FFFDF7", marginTop: 10 }}>
               {enroll.st === "done" ? (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                  <span style={{ width: 30, height: 30, borderRadius: "50%", background: "#16A34A", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}><Check size={16} /></span>
-                  <div style={{ fontSize: 12.3, lineHeight: 1.55 }}>
+                  <span style={{ width: 30, height: 30, borderRadius: "var(--r-circle)", background: "#16A34A", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}><Check size={16} /></span>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.55 }}>
                     <b>무료 검진대비보험 가입 준비 완료</b> — 예약 확정 시 증서가 발급돼요 (보험료 0원 · 보장은 다음날 0시부터)
                     <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>일반암 진단금 기준(상피내암·갑상선암·기타피부암·경계성종양 제외) · 동의 내역은 데이터 금고에 기록{" · 상담·안내 동의 포함"} <button style={{ border: "none", background: "none", color: "#B45309", fontWeight: 700, cursor: "pointer", fontSize: 11, padding: 0, marginLeft: 4 }} onClick={() => { setInsAgree(false); setEnroll({ st: "idle", termsOpen: false, termsOk: false, req: false, mkt: false }); }}>변경</button></div>
                   </div>
                 </div>
               ) : enroll.st === "skip" ? (
-                <div style={{ fontSize: 12.3, color: "var(--muted)", display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ fontSize: 12.5, color: "var(--muted)", display: "flex", alignItems: "center", gap: 8 }}>
                   보험 없이 예약만 진행해요 — 나중에 하이에게 "검진보험 가입해줘"라고 하면 언제든 가입돼요.
-                  <button style={{ border: "1px solid #F59E0B", background: "#fff", color: "#B45309", fontWeight: 800, borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 11.5 }} onClick={() => setEnroll((s) => ({ ...s, st: "idle" }))}>다시 볼래요</button>
+                  <button style={{ border: "1px solid #F59E0B", background: "#fff", color: "#B45309", fontWeight: 800, borderRadius: "var(--r-sm)", padding: "4px 10px", cursor: "pointer", fontSize: 11.5 }} onClick={() => setEnroll((s) => ({ ...s, st: "idle" }))}>다시 볼래요</button>
                 </div>
               ) : (<>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                  <span style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#F97316,#EA580C)", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0, fontSize: 15 }}>🤖</span>
-                  <div style={{ fontSize: 12.4, lineHeight: 1.55 }}><b>하이가 도와드릴게요</b> — 두 가지만 확인하면 <b>보험료 0원</b>으로 가입돼요. 암 진단금은 <b>일반암 기준</b>이에요(상피내암·갑상선암 등 기타암은 보장하지 않아요).</div>
+                  <span style={{ width: 30, height: 30, borderRadius: "var(--r-circle)", background: "#EA580C", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0, fontSize: 15 }}>🤖</span>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.55 }}><b>하이가 도와드릴게요</b> — 두 가지만 확인하면 <b>보험료 0원</b>으로 가입돼요. 암 진단금은 <b>일반암 기준</b>이에요(상피내암·갑상선암 등 기타암은 보장하지 않아요).</div>
                 </div>
                 {/* ① 중요사항 확인 게이트 — 펼쳐 봐야 확인 버튼 활성(설명·확인 취지) */}
-                <div style={{ marginTop: 9, border: "1px solid var(--border)", borderRadius: 10, background: "#fff" }}>
-                  <div style={{ padding: "9px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontSize: 12.3, fontWeight: 800 }} onClick={() => setEnroll((s) => ({ ...s, termsOpen: !s.termsOpen }))}>
+                <div style={{ marginTop: 9, border: "1px solid var(--border)", borderRadius: "var(--r-md)", background: "#fff" }}>
+                  <div style={{ padding: "9px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", fontSize: 12.5, fontWeight: 800 }} onClick={() => setEnroll((s) => ({ ...s, termsOpen: !s.termsOpen }))}>
                     <span>① 약관 중요사항 {enroll.termsOk ? <b style={{ color: "#16A34A" }}>확인 완료 ✓</b> : "확인하기"}</span><ChevronDown size={15} style={{ transform: enroll.termsOpen ? "rotate(180deg)" : "none", transition: ".15s" }} />
                   </div>
                   {enroll.termsOpen && (
-                    <div style={{ padding: "0 12px 10px", fontSize: 11.6, lineHeight: 1.62, color: "#334155" }}>
+                    <div style={{ padding: "0 12px 10px", fontSize: 11.5, lineHeight: 1.62, color: "#334155" }}>
                       <b style={{ color: "#B42318" }}>1. 보장하지 않는 암</b> — 암 진단금은 <b>일반암만</b> 보장합니다. 상피내암(제자리암)·갑상선암·기타피부암·경계성종양은 <b>보장하지 않습니다</b>.<br />
                       <b>2. 보장 개시</b> — 가입 다음날 0시부터(개시 전 진단 확정은 보장 제외).<br />
                       <b>3. 보장 기간</b> — 검진일부터 60일(검진 주기 연동) · 기간 만료 시 자동 소멸.<br />
@@ -1034,13 +1034,13 @@ function BookingModal({ center, mode, onClose }) {
                 </label>
                 {/* ②-2 개인(신용)정보 동의 — 요약 카드 1층 → 그룹·개별 체크 2층 → 전문 3층.
                     화면은 압축하되 저장은 9건 개별(구분 동의). 고유식별정보 제공은 보험업법상 별도 요구로 원문 유지. */}
-                <div style={{ marginTop: 7, border: "1.5px solid " + (ciOk ? "#BBF7D0" : "#E2E8F0"), borderRadius: 11, background: ciOk ? "#F0FDF4" : "#fff", padding: "11px 12px", opacity: enroll.termsOk ? 1 : .55, pointerEvents: enroll.termsOk ? "auto" : "none" }}>
-                  <div style={{ fontSize: 12.4, fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ marginTop: 7, border: "1.5px solid " + (ciOk ? "#BBF7D0" : "#E2E8F0"), borderRadius: "var(--r-md)", background: ciOk ? "#F0FDF4" : "#fff", padding: "11px 12px", opacity: enroll.termsOk ? 1 : .55, pointerEvents: enroll.termsOk ? "auto" : "none" }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
                     ②-2 [필수] 개인(신용)정보 동의 {ciOk && <b style={{ color: "#16A34A" }}>동의 완료 ✓</b>}
                     <span style={{ marginLeft: "auto", fontSize: 10.5, color: "var(--soft)", fontWeight: 700 }}>{ciCount}/{CI_ALL.length}건</span>
                   </div>
                   {/* 1층 — 요약 카드: 누가·무엇을·언제까지·되돌릴 수 있나 */}
-                  <div style={{ fontSize: 11.3, color: "#334155", lineHeight: 1.62, marginTop: 6 }}>
+                  <div style={{ fontSize: 11.5, color: "#334155", lineHeight: 1.62, marginTop: 6 }}>
                     · <b>누가 보나요</b> — {CI_CONSENT.to}<br />
                     · <b>무엇을</b> — 성명·연락처 등 인적사항 / 보험계약·보험금 정보 / 건강에 관한 정보<br />
                     · <b>언제까지</b> — {CI_CONSENT.keep}<br />
@@ -1053,15 +1053,15 @@ function BookingModal({ center, mode, onClose }) {
                     const optN = CI_ALL.length - CI_REQ.length;
                     return (
                       <div style={{ marginTop: 9 }}>
-                        <button className={"cbtn" + (allOn ? " pri" : "")} style={{ margin: 0, width: "100%", padding: "11px 12px", fontSize: 12.6, fontWeight: 800, display: "flex", alignItems: "center", gap: 8, justifyContent: "center", border: someOn ? "1.5px solid #1D4ED8" : undefined }}
+                        <button className={"cbtn" + (allOn ? " pri" : "")} style={{ margin: 0, width: "100%", padding: "11px 12px", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 8, justifyContent: "center", border: someOn ? "1.5px solid #1D4ED8" : undefined }}
                           onClick={() => { const c = {}; CI_ALL.forEach((it) => { c[it.k] = !allOn; }); setEnroll((st) => ({ ...st, ci: c, ciFull: true })); }}>
-                          <span style={{ width: 19, height: 19, borderRadius: 5, border: "2px solid " + (allOn ? "#fff" : "#1D4ED8"), background: allOn ? "transparent" : (someOn ? "#DBEAFE" : "#fff"), display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: allOn ? "#fff" : "#1D4ED8", flexShrink: 0 }}>{allOn ? "✓" : someOn ? "－" : ""}</span>
+                          <span style={{ width: 19, height: 19, borderRadius: "var(--r-xs)", border: "2px solid " + (allOn ? "#fff" : "#1D4ED8"), background: allOn ? "transparent" : (someOn ? "#DBEAFE" : "#fff"), display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: allOn ? "#fff" : "#1D4ED8", flexShrink: 0 }}>{allOn ? "✓" : someOn ? "－" : ""}</span>
                           모든 항목 한 번에 동의 <span style={{ fontWeight: 600, opacity: .85 }}>(필수 {CI_REQ.length} + 선택 {optN})</span>
                         </button>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
-                          <button style={{ border: "none", background: "none", color: "#64748B", fontSize: 10.8, fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                          <button style={{ border: "none", background: "none", color: "#64748B", fontSize: 11, fontWeight: 700, cursor: "pointer", padding: 0, textDecoration: "underline" }}
                             onClick={() => { const c = {}; CI_ALL.forEach((it) => { c[it.k] = !!it.req; }); setEnroll((st) => ({ ...st, ci: c, ciFull: true })); }}>필수만 동의</button>
-                          <span style={{ fontSize: 10.4, color: "var(--soft)" }}>다시 누르면 풀려요 · 항목별로도 켜고 끌 수 있어요</span>
+                          <span style={{ fontSize: 10.5, color: "var(--soft)" }}>다시 누르면 풀려요 · 항목별로도 켜고 끌 수 있어요</span>
                         </div>
                       </div>
                     );
@@ -1072,29 +1072,29 @@ function BookingModal({ center, mode, onClose }) {
                   )}
                   {/* 2층 — 전 그룹 상시 펼침(동의 완료 후에만 접기) · 선택 항목은 손실 고지 2줄 */}
                   {(!ciOk || enroll.ciOpen) && CI_CONSENT.groups.map((g) => (
-                    <div key={g.g} style={{ marginTop: 9, border: "1px solid var(--border)", borderRadius: 9, background: "#fff", padding: "9px 11px" }}>
-                      <div style={{ fontSize: 12.2, fontWeight: 800, color: "#12203F" }}>{g.t}</div>
+                    <div key={g.g} style={{ marginTop: 9, border: "1px solid var(--border)", borderRadius: "var(--r-sm)", background: "#fff", padding: "9px 11px" }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: "#12203F" }}>{g.t}</div>
                       <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, lineHeight: 1.5 }}>{g.why}</div>
                       {g.items.map((it) => (
                         <div key={it.k} style={{ marginTop: 7, borderTop: "1px dashed #EEF2F7", paddingTop: 7 }}>
                           <label style={{ display: "flex", gap: 7, alignItems: "flex-start", cursor: "pointer" }}>
                             <input type="checkbox" style={{ marginTop: 2, width: 17, height: 17, flexShrink: 0 }} checked={!!enroll.ci[it.k]}
                               onChange={(e) => setEnroll((st) => ({ ...st, ci: Object.assign({}, st.ci, { [it.k]: e.target.checked }) }))} />
-                            <span style={{ fontSize: 11.8, lineHeight: 1.5 }}>
+                            <span style={{ fontSize: 12, lineHeight: 1.5 }}>
                               <b>{it.req ? "[필수] " : ""}{it.t}</b>
                               <span style={{ display: "block", color: "var(--muted)", fontSize: 11 }}>{it.why}</span>
-                              {it.gain && <span style={{ display: "block", fontSize: 10.8, color: "#15803D", marginTop: 3, lineHeight: 1.5 }}>✅ <b>동의하면</b> — {it.gain}</span>}
-                              {it.loss && <span style={{ display: "block", fontSize: 10.8, color: "#B45309", marginTop: 1, lineHeight: 1.5 }}>⚠️ <b>동의하지 않으면</b> — {it.loss}</span>}
-                              <button style={{ border: "none", background: "none", color: "#1D4ED8", fontWeight: 700, fontSize: 10.8, padding: 0, marginTop: 2, cursor: "pointer" }}
+                              {it.gain && <span style={{ display: "block", fontSize: 11, color: "#15803D", marginTop: 3, lineHeight: 1.5 }}>✅ <b>동의하면</b> — {it.gain}</span>}
+                              {it.loss && <span style={{ display: "block", fontSize: 11, color: "#B45309", marginTop: 1, lineHeight: 1.5 }}>⚠️ <b>동의하지 않으면</b> — {it.loss}</span>}
+                              <button style={{ border: "none", background: "none", color: "#1D4ED8", fontWeight: 700, fontSize: 11, padding: 0, marginTop: 2, cursor: "pointer" }}
                                 onClick={(e) => { e.preventDefault(); setEnroll((st) => ({ ...st, ciDetail: Object.assign({}, st.ciDetail, { [it.k]: !st.ciDetail[it.k] }) })); }}>
                                 {enroll.ciDetail[it.k] ? "내용 접기 ▲" : "내용 보기 ▼"}
                               </button>
-                              {enroll.ciDetail[it.k] && <span style={{ display: "block", fontSize: 10.8, color: "#475569", background: "#F8FAFC", borderRadius: 6, padding: "6px 8px", marginTop: 4, lineHeight: 1.55 }}>{it.d}</span>}
+                              {enroll.ciDetail[it.k] && <span style={{ display: "block", fontSize: 11, color: "#475569", background: "#F8FAFC", borderRadius: "var(--r-sm)", padding: "6px 8px", marginTop: 4, lineHeight: 1.55 }}>{it.d}</span>}
                             </span>
                           </label>
                         </div>
                       ))}
-                      {g.note && <div style={{ fontSize: 10.6, color: "var(--soft)", marginTop: 7, lineHeight: 1.5, borderTop: "1px dashed #EEF2F7", paddingTop: 6 }}>※ {g.note}</div>}
+                      {g.note && <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 7, lineHeight: 1.5, borderTop: "1px dashed #EEF2F7", paddingTop: 6 }}>※ {g.note}</div>}
                     </div>
                   ))}
                   {/* 3층 — 정식 전문 */}
@@ -1124,26 +1124,26 @@ function BookingModal({ center, mode, onClose }) {
                 {/* ④ 보험계약 가입란 — 동의 완료 후에만 노출(부담 완화). 계약자명·주민번호 + 자필서명으로 청약 완결.
                     주민번호: 뒤 7자리 마스킹 입력·평문 미저장(해시만 금고 보관) / 서명: 금고·증서에만 보관 */}
                 {enroll.termsOk && enroll.req && ciOk && enroll.mkt && (
-                  <div style={{ marginTop: 8, border: "1px solid var(--border)", borderRadius: 10, background: "#fff", padding: "10px 12px" }}>
+                  <div style={{ marginTop: 8, border: "1px solid var(--border)", borderRadius: "var(--r-md)", background: "#fff", padding: "10px 12px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
                       <ScrollText size={14} color="#1D4ED8" />
-                      <div style={{ fontSize: 12.8, fontWeight: 900 }}>④ 보험계약 가입</div>
-                      <span style={{ fontSize: 10.5, fontWeight: 800, color: "#1D4ED8", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 999, padding: "1px 7px" }}>청약서</span>
+                      <div style={{ fontSize: 13, fontWeight: 900 }}>④ 보험계약 가입</div>
+                      <span style={{ fontSize: 10.5, fontWeight: 800, color: "#1D4ED8", background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: "var(--r-pill)", padding: "1px 7px" }}>청약서</span>
                     </div>
                     <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.55, marginBottom: 8 }}>보험 계약 성립에는 법령상 성명·주민등록번호 확인이 필요해요. <b style={{ color: "#16A34A" }}>하이핀은 주민등록번호를 보관하지 않아요</b> — 형식 확인 후 검증용 해시만 남기고 평문은 즉시 폐기하며, 화면·기록에는 마스킹(앞 1자리만)으로 표시돼요. 다만 <b>보험업법에 따라 인수사(현대해상)에는 계약 체결을 위해 전달</b>되며, 이는 위 ②-2 동의 항목에 포함돼요.</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr 1.3fr", gap: 7 }}>
                       <input value={enroll.name} onChange={(e) => setEnroll((s) => ({ ...s, name: e.target.value }))} placeholder="성명"
-                        style={{ border: "1.5px solid var(--border)", borderRadius: 9, padding: "9px 11px", fontSize: 13, minWidth: 0 }} />
+                        style={{ border: "1.5px solid var(--border)", borderRadius: "var(--r-sm)", padding: "9px 11px", fontSize: 13, minWidth: 0 }} />
                       <input value={enroll.rrn1} inputMode="numeric" maxLength={6} onChange={(e) => setEnroll((s) => ({ ...s, rrn1: e.target.value.replace(/\D/g, "").slice(0, 6) }))} placeholder="주민번호 앞 6자리"
-                        style={{ border: "1.5px solid " + (enroll.rrn1 && !/^\d{6}$/.test(enroll.rrn1) ? "#F59E0B" : "var(--border)"), borderRadius: 9, padding: "9px 11px", fontSize: 13, minWidth: 0, letterSpacing: 1 }} />
+                        style={{ border: "1.5px solid " + (enroll.rrn1 && !/^\d{6}$/.test(enroll.rrn1) ? "#F59E0B" : "var(--border)"), borderRadius: "var(--r-sm)", padding: "9px 11px", fontSize: 13, minWidth: 0, letterSpacing: 1 }} />
                       <input value={enroll.rrn2} type="password" inputMode="numeric" maxLength={7} autoComplete="off" onChange={(e) => setEnroll((s) => ({ ...s, rrn2: e.target.value.replace(/\D/g, "").slice(0, 7) }))} placeholder="뒤 7자리 (●●●●●●●)"
-                        style={{ border: "1.5px solid " + (enroll.rrn2 && !/^\d{7}$/.test(enroll.rrn2) ? "#F59E0B" : "var(--border)"), borderRadius: 9, padding: "9px 11px", fontSize: 13, minWidth: 0, letterSpacing: 2 }} />
+                        style={{ border: "1.5px solid " + (enroll.rrn2 && !/^\d{7}$/.test(enroll.rrn2) ? "#F59E0B" : "var(--border)"), borderRadius: "var(--r-sm)", padding: "9px 11px", fontSize: 13, minWidth: 0, letterSpacing: 2 }} />
                     </div>
                     {idOk && <div style={{ fontSize: 11, color: "#16A34A", fontWeight: 700, marginTop: 6 }}>✓ 확인 완료 — {enroll.name.trim()} · {enroll.rrn1}-{enroll.rrn2.slice(0, 1)}•••••• (이렇게만 기록돼요)</div>}
                     {/* 보험계약 가입 서명란 — 자필서명으로 청약 의사표시 완결 */}
                     <div style={{ marginTop: 11, paddingTop: 10, borderTop: "1px dashed var(--border)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
-                        <div style={{ fontSize: 12.3, fontWeight: 900 }}>보험계약 가입 서명란</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 900 }}>보험계약 가입 서명란</div>
                         <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B42318" }}>필수</span>
                       </div>
                       <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.55, marginBottom: 7 }}>
@@ -1173,27 +1173,27 @@ function BookingModal({ center, mode, onClose }) {
             <div className="ctags">{center.tags.map((t) => <span key={t}>{t}</span>)}</div>
             {needPay && (<>
               <div className="bklbl">검진비 결제 <span style={{ fontWeight: 600, color: "var(--muted)" }}>· 하이핀에서 먼저 결제하고, 수검 완료까지 안전하게 보관돼요</span></div>
-              <div style={{ border: "1.5px solid #DBEAFE", borderRadius: 12, background: "#F8FBFF", padding: "11px 13px" }}>
+              <div style={{ border: "1.5px solid #DBEAFE", borderRadius: "var(--r-md)", background: "#F8FBFF", padding: "11px 13px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
                   <span style={{ fontSize: 12.5, fontWeight: 800, color: "#1D4ED8" }}>결제 금액{payIsStd && <span style={{ fontWeight: 600, color: "var(--muted)", fontSize: 11 }}> · 표준 검진비</span>}</span>
                   <span style={{ fontSize: 17, fontWeight: 900, color: "#1D4ED8" }}>{won(payAmount)}</span>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
                   {(typeof ESC_METHODS !== "undefined" ? ESC_METHODS : []).map((x) => (
-                    <div key={x.k} onClick={() => setPayMethod(x.k)} style={{ cursor: "pointer", border: "1.5px solid " + (payMethod === x.k ? "#1D4ED8" : "var(--border)"), background: payMethod === x.k ? "#EFF6FF" : "#fff", borderRadius: 9, padding: "7px 6px", textAlign: "center" }}>
+                    <div key={x.k} onClick={() => setPayMethod(x.k)} style={{ cursor: "pointer", border: "1.5px solid " + (payMethod === x.k ? "#1D4ED8" : "var(--border)"), background: payMethod === x.k ? "#EFF6FF" : "#fff", borderRadius: "var(--r-sm)", padding: "7px 6px", textAlign: "center" }}>
                       <div style={{ fontSize: 12, fontWeight: 800, color: payMethod === x.k ? "#1D4ED8" : "var(--ink)" }}>{x.ko}</div>
                       <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{x.sub}</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ display: "flex", gap: 7, alignItems: "flex-start", marginTop: 9, background: "#fff", border: "1px solid #E0EAFB", borderRadius: 9, padding: "8px 10px" }}>
+                <div style={{ display: "flex", gap: 7, alignItems: "flex-start", marginTop: 9, background: "#fff", border: "1px solid #E0EAFB", borderRadius: "var(--r-sm)", padding: "8px 10px" }}>
                   <Lock size={13} color="#1D4ED8" style={{ flexShrink: 0, marginTop: 1 }} />
-                  <div style={{ fontSize: 11.3, color: "var(--muted)", lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.6 }}>
                     결제 대금은 <b style={{ color: "var(--ink)" }}>수검을 마칠 때까지 결제대금예치(에스크로)로 분리 보관</b>되고, 검진을 받으신 뒤 검진기관에 전달돼요. 예약을 취소하시면 <b style={{ color: "var(--ink)" }}>전액 환불</b>됩니다.
                   </div>
                 </div>
-                {payIsStd && <div style={{ fontSize: 10.6, color: "var(--muted)", marginTop: 6, lineHeight: 1.6 }}>※ 선택하신 검진 플랜의 <b>표준 검진비</b>로 먼저 결제해요. 기관·검진 항목에 따라 최종 금액이 달라지면 <b>정산 시 차액이 조정</b>되고, 남는 금액은 환불해 드려요.</div>}
-                <div style={{ fontSize: 10.3, color: "var(--muted)", marginTop: 6 }}>※ 시연 환경입니다 — 실제 결제·승인은 이루어지지 않으며 승인번호는 예시 값이에요.</div>
+                {payIsStd && <div style={{ fontSize: 10.5, color: "var(--muted)", marginTop: 6, lineHeight: 1.6 }}>※ 선택하신 검진 플랜의 <b>표준 검진비</b>로 먼저 결제해요. 기관·검진 항목에 따라 최종 금액이 달라지면 <b>정산 시 차액이 조정</b>되고, 남는 금액은 환불해 드려요.</div>}
+                <div style={{ fontSize: 10.5, color: "var(--muted)", marginTop: 6 }}>※ 시연 환경입니다 — 실제 결제·승인은 이루어지지 않으며 승인번호는 예시 값이에요.</div>
               </div>
             </>)}
             <button className="cbtn pri" style={{ opacity: date && time ? 1 : .5 }} disabled={!date || !time} onClick={() => (needPay ? onPayAndConfirm() : onConfirm(true))}><CalendarCheck size={15} /> {!date || !time ? "날짜·시간을 선택하세요" : (needPay ? `${won(payAmount)} 결제하고 예약 확정` : `${date} ${time} 예약 확정`)}</button>
@@ -1204,22 +1204,22 @@ function BookingModal({ center, mode, onClose }) {
               <div style={{ fontWeight: 800, fontSize: 17 }}>{doneTitle}</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{center.name}<br />{date} {time}</div>
               {payOrder && (
-                <div style={{ marginTop: 12, background: "#F8FBFF", border: "1px solid #DBEAFE", borderRadius: 11, padding: "10px 12px", textAlign: "left" }}>
+                <div style={{ marginTop: 12, background: "#F8FBFF", border: "1px solid #DBEAFE", borderRadius: "var(--r-md)", padding: "10px 12px", textAlign: "left" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 12.3, fontWeight: 900, color: "#1D4ED8" }}><Lock size={12} style={{ verticalAlign: -1 }} /> 검진비 결제 완료 · 예치중</span>
+                    <span style={{ fontSize: 12.5, fontWeight: 900, color: "#1D4ED8" }}><Lock size={12} style={{ verticalAlign: -1 }} /> 검진비 결제 완료 · 예치중</span>
                     <b style={{ fontSize: 14, color: "#1D4ED8" }}>{won(payOrder.amount)}</b>
                   </div>
-                  <div style={{ fontSize: 11.3, color: "var(--muted)", marginTop: 5, lineHeight: 1.65 }}>
+                  <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5, lineHeight: 1.65 }}>
                     {payOrder.methodKo} · 승인번호 {payOrder.pgAuth} · 예치번호 {payOrder.escrowId}<br />
                     검진을 마치시면 검진기관에 정산되고, 취소 시 전액 환불돼요. 영수증은 <b style={{ color: "var(--ink)" }}>나의 건강지갑</b>에서 확인하실 수 있어요.
                   </div>
                 </div>
               )}
               {partnerCfg && rm === "pending" && (
-                <div style={{ marginTop: 12, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: "10px 12px", textAlign: "left" }}>
+                <div style={{ marginTop: 12, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--r-md)", padding: "10px 12px", textAlign: "left" }}>
                   <div style={{ fontSize: 12, fontWeight: 800, color: "#B45309", display: "flex", alignItems: "center", gap: 6 }}><Network size={13} /> {partnerCfg.partner} UIP 연동 준비중</div>
                   <div style={{ fontSize: 11.5, color: "#92400E", marginTop: 4, lineHeight: 1.5 }}>예약 요청이 접수되었습니다. 연동 확정 시 <b>{partnerCfg.partner}로 실시간 전송</b>되며, 그 전까지는 아래 번호로 즉시 예약하실 수 있습니다.</div>
-                  <a href={`tel:${partnerCfg.tel}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 12.5, fontWeight: 800, color: "#fff", background: "#2563EB", borderRadius: 8, padding: "7px 13px", textDecoration: "none" }}><Phone size={13} /> {partnerCfg.partner} 전화예약 {partnerCfg.tel}</a>
+                  <a href={`tel:${partnerCfg.tel}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 12.5, fontWeight: 800, color: "#fff", background: "#2563EB", borderRadius: "var(--r-sm)", padding: "7px 13px", textDecoration: "none" }}><Phone size={13} /> {partnerCfg.partner} 전화예약 {partnerCfg.tel}</a>
                 </div>
               )}
               {partnerCfg && rm === "live-url" && (<div style={{ marginTop: 10, fontSize: 12, color: "#1D4ED8" }}>새 창에서 {partnerCfg.partner} 예약을 완료해 주세요.</div>)}
@@ -1228,7 +1228,7 @@ function BookingModal({ center, mode, onClose }) {
                   <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><ShieldCheck size={18} color="#16A34A" /></span><div><b style={{ fontSize: 13 }}>보장이 시작되었습니다 — 무상 검진대비보험 {planName}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>추가 보험료 없이 검진 대비 보장(마음케어진단 포함)이 적용됩니다.</div></div></div>
                   <div className="resitem" style={{ margin: 0 }}><span className="ic"><BadgeCheck size={18} color="#7C3AED" /></span><div><b style={{ fontSize: 13 }}>증서 발급 완료{insCert ? ` — ${insCert.id}` : ""}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{insCert && insCert.hash ? <>블록체인 기록 <b style={{ color: "#16A34A" }}>위변조 없음 ✓</b> · 해시 {String(insCert.hash).slice(0, 10)}… · 데이터 금고에서 확인</> : "지갑에 SBT 증서가 발행되고 알림톡이 발송됩니다."}</div>{insCert && <button className="cbtn" style={{ marginTop: 7, padding: "7px 13px", fontSize: 12 }} onClick={() => setCertOpen(true)}><FileText size={13} /> 가입증서 보기</button>}</div></div>
                   <div className="resitem" style={{ margin: 0 }}><span className="ic"><Stethoscope size={18} color="#1D4ED8" /></span><div><b style={{ fontSize: 13 }}>검진 후 건강상담까지 이어져요</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>결과가 나오면 우리 동네 전문의 원격 상담으로 — 원격진료·건강상담 탭에서 기다릴게요.</div><button className="cbtn" style={{ marginTop: 7, padding: "7px 13px", fontSize: 12 }} onClick={() => { onClose(); try { if (_checkupGo) _checkupGo("tele"); } catch (e) {} }}><Video size={13} /> 원격진료·건강상담 미리 보기</button></div></div>
-                  <div className="resitem" style={{ margin: 0, background: "#FFF7ED", borderRadius: 10, padding: "8px 10px" }}><span className="ic" style={{ background: "#FFEDD5" }}><Bot size={18} color="#EA580C" /></span><div><b style={{ fontSize: 13 }}>하이의 한 줄 브리핑</b><div style={{ fontSize: 11.5, color: "#7C5230" }}>"{date} {time} 검진 예약과 보험 준비까지 끝났어요 — 검진 전날 제가 준비사항을 알려드릴게요."</div></div></div>
+                  <div className="resitem" style={{ margin: 0, background: "#FFF7ED", borderRadius: "var(--r-md)", padding: "8px 10px" }}><span className="ic" style={{ background: "#FFEDD5" }}><Bot size={18} color="#EA580C" /></span><div><b style={{ fontSize: 13 }}>하이의 한 줄 브리핑</b><div style={{ fontSize: 11.5, color: "#7C5230" }}>"{date} {time} 검진 예약과 보험 준비까지 끝났어요 — 검진 전날 제가 준비사항을 알려드릴게요."</div></div></div>
                 </>) : (
                   <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#EEF1F8" }}><ShieldCheck size={18} color="#64748B" /></span><div><b style={{ fontSize: 13 }}>보험 없이 예약되었습니다</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>검진일 전에 하이가 한 번만 다시 안내드릴게요 — 언제든 "검진보험 가입해줘"라고 말씀하세요.</div></div></div>
                 )}
@@ -1271,7 +1271,7 @@ function BizCheckup() {
     <div className="benefit" style={{ marginTop: 12 }}><span><Art name="percent" size={16} /> 단체 할인</span><span><Art name="doc" size={16} /> 세금계산서 발행</span><span><Art name="badge" size={16} /> 임직원 검진 여정 관리</span></div>
     <div className="bklbl">기업코드 입력</div>
     <div style={{ display: "flex", gap: 8 }}>
-      <input placeholder="예: HHIF-2026" style={{ flex: 1, border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", fontSize: 13, outline: "none" }} />
+      <input placeholder="예: HHIF-2026" style={{ flex: 1, border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "10px 12px", fontSize: 13, outline: "none" }} />
       <button className="cbtn pri" style={{ width: "auto", margin: 0, padding: "10px 18px" }} onClick={() => toast("기업검진 코드가 확인되었습니다. 제휴 혜택이 적용됩니다.")}>확인</button>
     </div>
     <button className="cbtn" style={{ marginTop: 10 }} onClick={() => openConsult("기업검진 도입")}><MessageSquare size={15} /> 기업검진 도입 문의</button>
@@ -1331,19 +1331,19 @@ function SpecialCheckup() {
         <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}>일반 검진으로 잡기 어려운 <b>파킨슨·치매·암·발달장애</b>를 <b>유전자·특수 단백질(바이오마커)·AI 뇌영상</b>으로 증상 전 조기 예측·선별하는 첨단 검사 기술과 대표 기관입니다. HI-Fin은 이들 정밀검사 기관과 연계해 <b>초기 위험 발굴 → 예방·관리</b>로 잇습니다.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 10, marginTop: 10 }}>
           {PRECISION_SCREEN.map((g, i) => { const Ic = g.ic; return (
-            <div key={i} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "13px 14px", borderLeft: "4px solid " + g.color }}>
+            <div key={i} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "13px 14px", borderLeft: "4px solid " + g.color }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 900, color: g.color }}><Ic size={16} /> {g.dz}</div>
               <div style={{ fontSize: 11.5, color: "var(--muted)", margin: "4px 0 6px", lineHeight: 1.5 }}>{g.desc}</div>
               {g.orgs.map((o, j) => (
                 <div key={j} style={{ marginTop: 8, padding: o.partner ? "9px 10px" : 0, background: o.partner ? "#F5F3FF" : "transparent", border: o.partner ? "1px solid #DDD6FE" : "none", borderRadius: o.partner ? 10 : 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12.5, fontWeight: 800, color: "#12203F" }}>{o.name}</span>
-                    {o.partner && <span style={{ fontSize: 9.5, fontWeight: 800, color: "#7C3AED", background: "#EDE9FE", padding: "2px 7px", borderRadius: 999 }}>✨ 제휴사</span>}
+                    {o.partner && <span style={{ fontSize: 10, fontWeight: 800, color: "#7C3AED", background: "#EDE9FE", padding: "2px 7px", borderRadius: "var(--r-pill)" }}>✨ 제휴사</span>}
                   </div>
                   <div style={{ fontSize: 11, color: "#475569", marginTop: 2, lineHeight: 1.45 }}>{o.desc}</div>
                   {o.partner
-                    ? <button onClick={() => setSpot(o.name)} style={{ marginTop: 8, fontSize: 11.5, fontWeight: 800, color: "#fff", background: "#7C3AED", border: "none", borderRadius: 8, padding: "6px 13px", cursor: "pointer" }}>제휴 혜택 보기 ›</button>
-                    : <button onClick={() => openConsult("정밀검사 상담 — " + o.name)} style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: "#475569", background: "#F1F5F9", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 13px", cursor: "pointer" }}>상담 문의</button>}
+                    ? <button onClick={() => setSpot(o.name)} style={{ marginTop: 8, fontSize: 11.5, fontWeight: 800, color: "#fff", background: "#7C3AED", border: "none", borderRadius: "var(--r-sm)", padding: "6px 13px", cursor: "pointer" }}>제휴 혜택 보기 ›</button>
+                    : <button onClick={() => openConsult("정밀검사 상담 — " + o.name)} style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: "#475569", background: "#F1F5F9", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", padding: "6px 13px", cursor: "pointer" }}>상담 문의</button>}
                 </div>
               ))}
             </div>
@@ -1357,7 +1357,7 @@ function SpecialCheckup() {
         <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.6 }}><b>유해인자에 노출되는 근로자</b>의 직업병을 조기 발견·예방하기 위해 사업주가 실시하는 법정 건강진단입니다. HI-Fin은 특수건강진단 지정기관과 연계해 <b>기업 근로자 검진 여정</b>을 관리합니다.</p>
         <div className="bklbl" style={{ marginTop: 6 }}>진단 유형</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 8 }}>
-          {TYPES.map(([t, d], i) => (<div key={i} style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, padding: "10px 12px" }}><b style={{ fontSize: 12.5, color: "#C2410C" }}>{t}</b><div style={{ fontSize: 11, color: "#9A3412", marginTop: 3, lineHeight: 1.4 }}>{d}</div></div>))}
+          {TYPES.map(([t, d], i) => (<div key={i} style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: "var(--r-md)", padding: "10px 12px" }}><b style={{ fontSize: 12.5, color: "#C2410C" }}>{t}</b><div style={{ fontSize: 11, color: "#9A3412", marginTop: 3, lineHeight: 1.4 }}>{d}</div></div>))}
         </div>
         <div className="bklbl" style={{ marginTop: 12 }}>주요 유해인자 · 검사</div>
         <div className="ctags">{HAZARDS.map(([h, e], i) => <span key={i} style={{ background: "#FFEDD5", color: "#C2410C", border: "none", fontWeight: 700 }}>{h} → {e}</span>)}</div>
@@ -1394,18 +1394,18 @@ function PrecisionPartnerModal({ name, onClose }) {
       <div className="bk" onClick={(e) => e.stopPropagation()}>
         <div className="bkh"><div className="bt">제휴사 · {name}</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
         <div className="bkb">
-          <div style={{ borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }}><PartnerBrainArt color={p.color} /></div>
+          <div style={{ borderRadius: "var(--r-lg)", overflow: "hidden", border: "1px solid var(--border)" }}><PartnerBrainArt color={p.color} /></div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
             <span style={{ fontSize: 18, fontWeight: 900, color: "#12203F" }}>{name}</span>
-            <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", background: p.color, padding: "3px 9px", borderRadius: 999 }}>✨ HI-Fin 제휴사</span>
+            <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", background: p.color, padding: "3px 9px", borderRadius: "var(--r-pill)" }}>✨ HI-Fin 제휴사</span>
           </div>
           <div style={{ fontSize: 13, fontWeight: 700, color: p.color, marginTop: 3 }}>{p.tagline}</div>
           <div style={{ fontSize: 12, color: "#475569", marginTop: 6, lineHeight: 1.6 }}>{p.tech}</div>
           <div className="bklbl" style={{ marginTop: 12 }}>HI-Fin 회원 제휴 혜택</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9 }}>
             {p.benefits.map(([t, d, Ic, col], i) => (
-              <div key={i} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 13px", borderTop: "3px solid " + col }}>
-                <span style={{ width: 32, height: 32, borderRadius: 9, background: col + "1A", display: "grid", placeItems: "center" }}><Ic size={17} color={col} /></span>
+              <div key={i} style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "12px 13px", borderTop: "3px solid " + col }}>
+                <span style={{ width: 32, height: 32, borderRadius: "var(--r-sm)", background: col + "1A", display: "grid", placeItems: "center" }}><Ic size={17} color={col} /></span>
                 <div style={{ fontSize: 12.5, fontWeight: 800, color: "#12203F", marginTop: 7 }}>{t}</div>
                 <div style={{ fontSize: 11, color: "#475569", marginTop: 3, lineHeight: 1.45 }}>{d}</div>
               </div>
@@ -1425,7 +1425,7 @@ function PrecisionPartnerModal({ name, onClose }) {
 /* ── 공공검진지원 — 노인 건강지원·장애아동 재활지원 (나눔 연계) ── */
 function SupportCard({ t, d, src, color }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 12, padding: "13px 15px", borderLeft: "4px solid " + color }}>
+    <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "13px 15px", borderLeft: "4px solid " + color }}>
       <div style={{ fontSize: 13.5, fontWeight: 800, color: "#12203F" }}>{t}</div>
       <div style={{ fontSize: 12, color: "#475569", marginTop: 5, lineHeight: 1.55 }}>{d}</div>
       <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 6 }}>근거·출처: {src}</div>
@@ -1448,7 +1448,7 @@ function PublicSupport() {
   ];
   return (
     <>
-      <div style={{ background: "linear-gradient(120deg,#0E9F6E,#16A34A)", color: "#fff", borderRadius: 14, padding: "16px 18px", marginBottom: 14 }}>
+      <div style={{ background: "#0E9F6E", color: "#fff", borderRadius: "var(--r-lg)", padding: "16px 18px", marginBottom: 14 }}>
         <div style={{ fontSize: 16, fontWeight: 900, display: "flex", alignItems: "center", gap: 8 }}><HeartHandshake size={18} /> 공공검진지원 — 건강 형평성을 위한 나눔</div>
         <p style={{ fontSize: 12.5, opacity: .95, marginTop: 6, lineHeight: 1.6 }}>HI-Fin이 지향하는 <b>어르신 건강</b>과 <b>장애아동 재활</b> 지원 제도·기관을 안내하고, 판매마진 나눔을 이 영역으로 순환시킵니다.</p>
       </div>
@@ -1572,10 +1572,10 @@ function CheckupResults() {
     </div>
     <div className="card">
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span className="ic" style={{ width: 40, height: 40, borderRadius: 11, background: "#FEF8E0", display: "grid", placeItems: "center" }}><MessageSquare size={20} color="#F2B544" /></span>
+        <span className="ic" style={{ width: 40, height: 40, borderRadius: "var(--r-md)", background: "#FEF8E0", display: "grid", placeItems: "center" }}><MessageSquare size={20} color="#F2B544" /></span>
         <div style={{ flex: 1 }}><b style={{ fontSize: 13.5 }}>결과 카카오톡으로 받기</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>검진 결과가 나오면 알림톡으로 보내드려요.</div></div>
-        <div onClick={() => setKakao((v) => !v)} style={{ width: 44, height: 26, borderRadius: 999, background: kakao ? "var(--green)" : "#CBD5E1", position: "relative", cursor: "pointer", transition: ".2s", flexShrink: 0 }}>
-          <span style={{ position: "absolute", top: 3, left: kakao ? 21 : 3, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: ".2s" }} />
+        <div onClick={() => setKakao((v) => !v)} style={{ width: 44, height: 26, borderRadius: "var(--r-pill)", background: kakao ? "var(--green)" : "#CBD5E1", position: "relative", cursor: "pointer", transition: ".2s", flexShrink: 0 }}>
+          <span style={{ position: "absolute", top: 3, left: kakao ? 21 : 3, width: 20, height: 20, borderRadius: "var(--r-circle)", background: "#fff", transition: ".2s" }} />
         </div>
       </div>
     </div>
@@ -1679,14 +1679,14 @@ function InsCertModal({ cert, onClose, win }) {
   const covers = cert.covers && cert.covers.length ? cert.covers : [];
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(10,20,40,.55)", zIndex: 1200, display: "grid", placeItems: "center", padding: 16 }} onClick={onClose}>
-      <div style={{ width: "min(560px, 96vw)", maxHeight: "92vh", overflowY: "auto", background: "#fff", borderRadius: 18, boxShadow: "0 30px 70px -30px rgba(0,0,0,.5)" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ width: "min(560px, 96vw)", maxHeight: "92vh", overflowY: "auto", background: "#fff", borderRadius: "var(--r-lg)", boxShadow: "var(--shadow-pop)" }} onClick={(e) => e.stopPropagation()}>
         {/* 증서 헤더 — 인장 느낌 */}
-        <div style={{ background: "linear-gradient(135deg,#12314E,#1D4ED8)", color: "#fff", borderRadius: "18px 18px 0 0", padding: "20px 22px", position: "relative" }}>
+        <div style={{ background: "#12314E", color: "#fff", borderRadius: "18px 18px 0 0", padding: "20px 22px", position: "relative" }}>
           <div style={{ fontSize: 11, letterSpacing: 3, opacity: .8, fontWeight: 700 }}>HI-FIN TECH · CERTIFICATE OF INSURANCE</div>
           <div style={{ fontSize: 20, fontWeight: 900, marginTop: 5 }}>건강검진대비보험 가입증서</div>
           <div style={{ fontSize: 12, opacity: .85, marginTop: 3 }}>증서번호 {cert.id} · 보험료 0원(하이핀 회원 혜택)</div>
-          <div style={{ position: "absolute", right: 84, top: 16, width: 62, height: 62, borderRadius: "50%", border: "2px solid rgba(255,255,255,.55)", display: "grid", placeItems: "center", fontSize: 10.5, fontWeight: 900, textAlign: "center", lineHeight: 1.25, transform: "rotate(-12deg)" }}>보장<br />개시<br />{cert.hash ? "✓" : "대기"}</div>
-          <button onClick={onClose} style={{ position: "absolute", right: 14, top: 12, border: "none", background: "rgba(255,255,255,.16)", color: "#fff", borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 12 }}>닫기 ✕</button>
+          <div style={{ position: "absolute", right: 84, top: 16, width: 62, height: 62, borderRadius: "var(--r-circle)", border: "2px solid rgba(255,255,255,.55)", display: "grid", placeItems: "center", fontSize: 10.5, fontWeight: 900, textAlign: "center", lineHeight: 1.25, transform: "rotate(-12deg)" }}>보장<br />개시<br />{cert.hash ? "✓" : "대기"}</div>
+          <button onClick={onClose} style={{ position: "absolute", right: 14, top: 12, border: "none", background: "rgba(255,255,255,.16)", color: "#fff", borderRadius: "var(--r-sm)", padding: "4px 10px", cursor: "pointer", fontSize: 12 }}>닫기 ✕</button>
         </div>
         <div style={{ padding: "16px 22px 20px" }}>
           {/* 계약 정보 */}
@@ -1710,7 +1710,7 @@ function InsCertModal({ cert, onClose, win }) {
           </table>
           {/* 보장 내역 */}
           <div style={{ fontSize: 12.5, fontWeight: 900, margin: "13px 0 6px", color: "#12314E" }}>보장 내역 <span style={{ fontWeight: 700, color: "#B42318", fontSize: 11 }}>· 암 진단금은 일반암만(상피내암·갑상선암·기타피부암·경계성종양 제외)</span></div>
-          <div style={{ border: "1px solid #E2E8F0", borderRadius: 11, overflow: "hidden" }}>
+          <div style={{ border: "1px solid #E2E8F0", borderRadius: "var(--r-md)", overflow: "hidden" }}>
             {covers.map((c, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 13px", fontSize: 12.5, background: i % 2 ? "#F8FAFC" : "#fff" }}>
                 <span style={{ fontWeight: 700 }}>{c.t}</span><b style={{ color: "#1D4ED8" }}>{c.amt}</b>
@@ -1720,7 +1720,7 @@ function InsCertModal({ cert, onClose, win }) {
           </div>
           {/* 계약자 자필서명 — 청약 시점 서명 이미지 그대로 */}
           {cert.insured && cert.insured.sign && (
-            <div style={{ marginTop: 12, border: "1px solid #E2E8F0", borderRadius: 11, padding: "9px 13px 7px", background: "#FCFDFF" }}>
+            <div style={{ marginTop: 12, border: "1px solid #E2E8F0", borderRadius: "var(--r-md)", padding: "9px 13px 7px", background: "#FCFDFF" }}>
               <div style={{ fontSize: 11.5, fontWeight: 800, color: "#64748B" }}>계약자 자필서명</div>
               <img src={cert.insured.sign} alt="계약자 자필서명" style={{ display: "block", width: "100%", maxWidth: 300, height: "auto", margin: "2px 0 0" }} />
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#64748B", borderTop: "1px solid #EEF2F7", paddingTop: 5, marginTop: 2 }}>
@@ -1730,12 +1730,12 @@ function InsCertModal({ cert, onClose, win }) {
             </div>
           )}
           {/* 블록체인 검증 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "9px 12px", marginTop: 11, fontSize: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: "var(--r-md)", padding: "9px 12px", marginTop: 11, fontSize: 12 }}>
             <ShieldCheck size={16} color="#16A34A" />
             <div><b style={{ color: "#15803D" }}>블록체인 기록 · 위변조 없음 ✓</b>{cert.hash && <span style={{ color: "#64748B" }}> — 해시 {String(cert.hash).slice(0, 14)}… · 데이터 금고에서 검증 가능</span>}</div>
           </div>
           {/* 유의사항 */}
-          <div style={{ fontSize: 10.8, color: "#94A3B8", lineHeight: 1.6, marginTop: 10 }}>
+          <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.6, marginTop: 10 }}>
             ※ 보장은 위 「보험기간(이 증서)」의 개시일 0시부터 시작되며, 개시 전 진단 확정·고의 사고·검진과 무관한 일반 진료비는 보장하지 않습니다. 실제 보장·인수·지급은 보험사 심사에 따르며, 청약철회·해지는 데이터 금고 › 동의 관리 또는 하이에게 요청으로 언제든 가능합니다. 본 증서는 데모 환경의 시연용 증서입니다.
           </div>
         </div>
@@ -1863,7 +1863,7 @@ function MapView({ points, accent, focus, height, cap }) {
   return (
     <div>
       <div style={{ position: "relative" }}>
-        <div ref={ref} style={{ height: height || 360, borderRadius: 14, overflow: "hidden", border: "1px solid var(--border)" }} />
+        <div ref={ref} style={{ height: height || 360, borderRadius: "var(--r-lg)", overflow: "hidden", border: "1px solid var(--border)" }} />
         <button className="maploc" onClick={locate}><MapPin size={12} /> 내 위치</button>
       </div>
       <div style={{ fontSize: 11, color: "var(--soft)", marginTop: 6 }}>{noCoord ? "좌표 정보가 없어 위치를 표시할 수 없습니다." : "지도 © OpenStreetMap 기여자 · 좌표 출처: 심평원 공공데이터"}{points && points.length > LIM ? ` · 표시 ${LIM.toLocaleString()}/${points.length.toLocaleString()}곳(상위)` : ""}</div>

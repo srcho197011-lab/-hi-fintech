@@ -1,7 +1,7 @@
 function Toggle({ on, onClick }) {
   return (
-    <div onClick={onClick} style={{ width: 44, height: 26, borderRadius: 999, background: on ? "var(--green)" : "#CBD5E1", position: "relative", cursor: "pointer", transition: ".2s", flexShrink: 0 }}>
-      <span style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: ".2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
+    <div onClick={onClick} style={{ width: 44, height: 26, borderRadius: "var(--r-pill)", background: on ? "var(--green)" : "#CBD5E1", position: "relative", cursor: "pointer", transition: ".2s", flexShrink: 0 }}>
+      <span style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: "var(--r-circle)", background: "#fff", transition: ".2s", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
     </div>
   );
 }
@@ -391,7 +391,7 @@ function MyPageSection({ onGo }) {
             <div className="csgroup-h">{cat}{/보험/.test(cat) && <span className="csgroup-sep">의료데이터 동의와 별도</span>}</div>
             {MY_CONSENT.map(([a, t, d, _def, req], i) => cat !== MY_CONSENT[i][5] ? null : (
               <div className="resitem" key={i}><span className="ic" style={{ background: "#EAF0FE" }}><Art name={a} size={18} /></span>
-                <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>{t} <span className={`reqtag ${req === "필수" ? "req" : "opt"}`} style={{ marginLeft: 4 }}>{req}</span></b><div style={{ fontSize: 11.3, color: "var(--muted)" }}>{d}</div></div>
+                <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>{t} <span className={`reqtag ${req === "필수" ? "req" : "opt"}`} style={{ marginLeft: 4 }}>{req}</span></b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d}</div></div>
                 <Toggle on={consent[i]} onClick={() => { if (req === "필수") return; setConsent((p) => p.map((v, j) => j === i ? !v : v)); }} />
               </div>
             ))}
@@ -401,7 +401,7 @@ function MyPageSection({ onGo }) {
         <div className="csgroup">
           <div className="csgroup-h">상담 기록</div>
           <div className="resitem"><span className="ic" style={{ background: "#E7F8EE" }}><Art name="lock" size={18} /></span>
-            <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>AI 주치의 상담 기록 저장 <span className="reqtag opt" style={{ marginLeft: 4 }}>선택</span></b><div style={{ fontSize: 11.3, color: "var(--muted)" }}>AI 상담 질문·위험도·보장추천을 내 기록으로 저장합니다(‘상담 기록’ 탭에서 조회·삭제·내보내기).</div></div>
+            <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>AI 주치의 상담 기록 저장 <span className="reqtag opt" style={{ marginLeft: 4 }}>선택</span></b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>AI 상담 질문·위험도·보장추천을 내 기록으로 저장합니다(‘상담 기록’ 탭에서 조회·삭제·내보내기).</div></div>
             <Toggle on={logConsent} onClick={() => { const v = !logConsent; LOG_CONSENT = v; setLogConsent(v); toast(v ? "상담 기록 저장에 동의했습니다." : "동의를 철회했습니다."); }} />
           </div>
         </div>
@@ -419,7 +419,7 @@ function MyPageSection({ onGo }) {
         <div className="benefit"><span><Art name="badge" size={16} /> 카카오톡 알림</span><span><Art name="hash" size={16} /> 앱 푸시</span><span><Art name="chat" size={16} /> 문자</span></div>
         {MY_NOTI.map(([a, t, d], i) => (
           <div className="resitem" key={i}><span className="ic" style={{ background: "#FEF8E0" }}><Art name={a} size={18} /></span>
-            <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>{t}</b><div style={{ fontSize: 11.3, color: "var(--muted)" }}>{d}</div></div>
+            <div style={{ flex: 1 }}><b style={{ fontSize: 13 }}>{t}</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>{d}</div></div>
             <Toggle on={noti[i]} onClick={() => setNoti((p) => p.map((v, j) => j === i ? !v : v))} />
           </div>
         ))}

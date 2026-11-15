@@ -1,7 +1,7 @@
 const SHOP_PARTNERS = {
   diet: [{
     name: "풀무원", brand: "디자인밀", sub: "건강식단 특별제휴", member: true,
-    bg: "linear-gradient(125deg,#15803D 0%,#16A34A 48%,#65A30D 100%)",
+    bg: "#15803D",
     tagline: "바른먹거리 기반 건강식단 — 저당·균형식·케어푸드로 만성질환 식이관리를 돕습니다.",
     strengths: [["meal", "맞춤 건강식단", "당뇨·체중·혈압 관리 식단(디자인밀)"], ["leaf", "바른먹거리", "무첨가·식물성 단백 중심 식단"], ["badge", "품질·안전", "HACCP·식품안전 관리 체계"], ["delivery", "정기 구독배송", "주간 식단 새벽배송"]],
     chips: ["저당 식단", "케어푸드", "식물성 단백", "샐러드·도시락"],
@@ -9,7 +9,7 @@ const SHOP_PARTNERS = {
     home: "https://www.pulmuone.co.kr", q: "건강식단 디자인밀",
   }, {
     name: "현대그린푸드", brand: "그리팅", sub: "건강식단 특별제휴", member: true,
-    bg: "linear-gradient(125deg,#14532D 0%,#166534 46%,#3F6212 100%)",
+    bg: "#14532D",
     tagline: "맞춤형 건강·케어푸드 전문 ‘그리팅’ — 영양사 설계 식단으로 만성질환·시니어 식이관리를 돕습니다.",
     strengths: [["meal", "맞춤 건강식단", "영양사 설계 당뇨·혈압·체중 관리식(그리팅)"], ["leaf", "케어푸드", "연화식·저염·고단백 등 질환별 식단"], ["badge", "품질·안전", "HACCP·대량급식 노하우 품질관리"], ["delivery", "정기 구독배송", "주간 맞춤식단 정기배송"]],
     chips: ["맞춤 건강식단", "케어푸드", "저염·저당", "시니어식"],
@@ -18,7 +18,7 @@ const SHOP_PARTNERS = {
   }],
   supp: [{
     name: "한국암웨이", brand: "뉴트리라이트", sub: "영양제 특별제휴", member: true, pharmacyFind: true,
-    bg: "linear-gradient(125deg,#0B3D91 0%,#1A56DB 48%,#2563EB 100%)",
+    bg: "#0B3D91",
     tagline: "글로벌 1위 비타민 브랜드 뉴트리라이트 — 자체 유기농 농장 원료와 식물영양소 중심의 종합 영양 설계.",
     strengths: [["badge", "글로벌 1위 영양제", "뉴트리라이트 종합비타민·미네랄"], ["leaf", "유기농 원료", "자체 인증 농장 식물영양소"], ["capsule", "종합 라인업", "더블엑스·오메가·프로바이오틱"], ["doc", "과학적 근거", "연구·품질 검증 시스템"]],
     chips: ["더블엑스", "종합비타민", "오메가3", "프로바이오틱스"],
@@ -26,7 +26,7 @@ const SHOP_PARTNERS = {
     home: "https://www.amway.co.kr", q: "암웨이 뉴트리라이트",
   }, {
     name: "한독", brand: "네이처셋(NatureSet)", sub: "영양제 특별제휴", member: true, pharmacyFind: true,
-    bg: "linear-gradient(125deg,#00417A 0%,#0067AC 50%,#2E97D8 100%)",
+    bg: "#00417A",
     tagline: "제약사 한독의 건강기능식품 브랜드 네이처셋 — 여성건강·홍삼·초임계 오메가3·면역비타민 등 근거 기반 종합 영양 라인업.",
     strengths: [["immune", "여성 멀티비타민", "네이처셋 더 액티브 포 우먼(18종)"], ["leaf", "홍삼 애니타임", "6년근 홍삼 면역·활력"], ["brain", "초임계 오메가3", "rTG·초임계 추출 혈행·눈·뇌"], ["capsule", "면역 비타민C 1000", "비타민C·아연 항산화·면역"]],
     chips: ["여성 멀티비타민", "홍삼 애니타임", "초임계 오메가3", "면역 비타민C"],
@@ -40,7 +40,7 @@ const SHOP_PARTNERS = {
   skin: [],
   device: [{
     name: "GN바디닥터", brand: "제너럴네트", sub: "의료기기 특별제휴",
-    bg: "linear-gradient(125deg,#0E7490 0%,#0891B2 48%,#6366F1 100%)",
+    bg: "#0E7490",
     tagline: "식약처·FDA 인증 가정용 의료기기 전문. 가정에서 안전하게 쓰는 검증된 헬스케어 기기를 공급합니다.",
     strengths: [["badge", "식약처·FDA 인증", "허가받은 가정용 의료기기"], ["device", "헬스케어 기기", "요실금치료기·EMS·고주파"], ["home", "가정용 케어", "집에서 쓰는 전문 기기"], ["badge", "품질·AS", "제조·품질·사후관리"]],
     chips: ["여성 웰니스 케어기기", "EMS 벨트", "고주파 리페어", "음파 매트"],
@@ -469,7 +469,7 @@ function BrandPharmacyModal({ brand, label, onClose }) {
             <div className="chcount">{sido === "전체" ? "전국" : sido}{sgg !== "전체" ? " " + sgg : ""} 취급 약국 <b style={{ color: "var(--blue)" }}>{list.length.toLocaleString()}</b>곳</div>
             {view.map((p, i) => (
               <div className="center" key={i}>
-                <div className="cimg" style={{ background: "linear-gradient(150deg,#DCFCE7,#D1FAE5)" }}><Art name="pill" size={40} /></div>
+                <div className="cimg" style={{ background: "#DCFCE7" }}><Art name="pill" size={40} /></div>
                 <div className="cmain">
                   <div className="cname">{p[0]}<span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE" }}><BadgeCheck size={10} /> 취급 확인</span></div>
                   <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{data.sido[p[1]]} {p[2]}</span> · <MapPin size={12} />{p[3]}{p[4] ? <> · <Phone size={12} />{p[4]}</> : null}</div>
@@ -643,21 +643,21 @@ function ShopCategory({ catKey, label, hideBrands }) {
 
 /* ── 스포츠건강 (골프예약·헬스서비스·스포츠용품 브랜드 + 종목별 구매) ── */
 const SPORTS_GOLF = [
-  ["스마트스코어", "골프장 부킹·스코어·간편결제", "https://www.smartscore.kr/", "linear-gradient(135deg,#0FA968,#14B8A6)", "#fff"],
-  ["카카오 골프예약", "카카오로 티타임 간편 예약", "https://golf.kakao.com/", "linear-gradient(135deg,#FEE500,#F6DE00)", "#3C1E1E"],
-  ["XGOLF", "전국 골프장 예약·특가 부킹", "https://www.xgolf.com/", "linear-gradient(135deg,#1D4ED8,#3B82F6)", "#fff"],
-  ["김캐디", "실시간 그린피 예약·결제", "https://www.kimcaddie.com/", "linear-gradient(135deg,#0E9F6E,#16A34A)", "#fff"],
+  ["스마트스코어", "골프장 부킹·스코어·간편결제", "https://www.smartscore.kr/", "#14B8A6", "#fff"],
+  ["카카오 골프예약", "카카오로 티타임 간편 예약", "https://golf.kakao.com/", "#FEE500", "#3C1E1E"],
+  ["XGOLF", "전국 골프장 예약·특가 부킹", "https://www.xgolf.com/", "#1D4ED8", "#fff"],
+  ["김캐디", "실시간 그린피 예약·결제", "https://www.kimcaddie.com/", "#0E9F6E", "#fff"],
 ];
 const SPORTS_FIT = [
-  ["스포애니", "24시간 무인 헬스장 멤버십 등록", "https://www.spoany.co.kr/", "linear-gradient(135deg,#DC2626,#F43F5E)", "#fff"],
-  ["커브스", "여성전용 30분 순환운동", naverHref("커브스", "피트니스 등록"), "linear-gradient(135deg,#7C3AED,#A855F7)", "#fff"],
-  ["헬스장·PT·필라테스", "내 주변 운동시설 찾기·등록", naverHref("헬스장 PT 필라테스 요가", "등록"), "linear-gradient(135deg,#2563EB,#0EA5E9)", "#fff"],
+  ["스포애니", "24시간 무인 헬스장 멤버십 등록", "https://www.spoany.co.kr/", "#DC2626", "#fff"],
+  ["커브스", "여성전용 30분 순환운동", naverHref("커브스", "피트니스 등록"), "#7C3AED", "#fff"],
+  ["헬스장·PT·필라테스", "내 주변 운동시설 찾기·등록", naverHref("헬스장 PT 필라테스 요가", "등록"), "#2563EB", "#fff"],
 ];
 const SPORTS_GOODS = [
-  ["데카트론", "스포츠용품 종합 (가성비)", "https://www.decathlon.co.kr/", "linear-gradient(135deg,#0082C3,#0EA5E9)", "#fff"],
-  ["나이키", "러닝·트레이닝 슈즈·웨어", "https://www.nike.com/kr/", "linear-gradient(135deg,#111827,#374151)", "#fff"],
-  ["아디다스", "스포츠 슈즈·웨어", "https://www.adidas.co.kr/", "linear-gradient(135deg,#1F2937,#4B5563)", "#fff"],
-  ["무신사", "스포츠·애슬레저 패션", "https://www.musinsa.com/", "linear-gradient(135deg,#0F172A,#334155)", "#fff"],
+  ["데카트론", "스포츠용품 종합 (가성비)", "https://www.decathlon.co.kr/", "#0082C3", "#fff"],
+  ["나이키", "러닝·트레이닝 슈즈·웨어", "https://www.nike.com/kr/", "#111827", "#fff"],
+  ["아디다스", "스포츠 슈즈·웨어", "https://www.adidas.co.kr/", "#1F2937", "#fff"],
+  ["무신사", "스포츠·애슬레저 패션", "https://www.musinsa.com/", "#0F172A", "#fff"],
 ];
 function SportPartnerGroup({ label, ic: Ic, color, items }) {
   return (<>
@@ -832,7 +832,7 @@ function ShopCartBar({ products }) {
           <div className="pdbody">
             {ordered ? (
               <div className="ordok"><span className="ic"><Check size={28} color="#16A34A" /></span><b>주문이 접수되었습니다</b><p>{totalCnt}개 · 상품 {shopWon(totalPrice)}{appliedWon > 0 ? <> · 적립금 <b style={{ color: "#B45309" }}>−{shopWon(appliedWon)}</b> 사용 → 결제 <b>{shopWon(payWon)}</b></> : null}<br />건강적립금 <b style={{ color: "#B45309" }}>{shopWon(totalReward)}</b>이 <b>건강금융지갑에 적립되었습니다.</b></p>
-                <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "9px 12px", margin: "4px 0 12px", fontSize: 12.5, color: "#166534" }}><Wallet size={13} style={{ verticalAlign: -2 }} /> 건강금융지갑 누적 쇼핑 적립: <b>{shopWon(walletBal)}</b></div>
+                <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: "var(--r-md)", padding: "9px 12px", margin: "4px 0 12px", fontSize: 12.5, color: "#166534" }}><Wallet size={13} style={{ verticalAlign: -2 }} /> 건강금융지갑 누적 쇼핑 적립: <b>{shopWon(walletBal)}</b></div>
                 {/* 재구매 설계: 주문 직후가 정기배송 전환율이 가장 높은 순간 */}
                 {typeof SubOfferAfterOrder === "function" && <SubOfferAfterOrder items={cartItems} />}
                 <button className="cbtn pri" onClick={() => { shopCartClear(); setCartOpen(false); setOrdered(false); }}>확인</button></div>
@@ -846,11 +846,11 @@ function ShopCartBar({ products }) {
               ); })}
               {/* 적립금 즉시 차감 — 결제 직전에 '지금 깎이는 돈'을 보여준다 */}
               {dm && usableWon > 0 && (
-                <div style={{ border: "1.5px solid #FDE68A", background: "#FFFBEB", borderRadius: 12, padding: "11px 13px", margin: "8px 0 4px" }}>
+                <div style={{ border: "1.5px solid #FDE68A", background: "#FFFBEB", borderRadius: "var(--r-md)", padding: "11px 13px", margin: "8px 0 4px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
                     <Coins size={15} color="#B45309" />
-                    <b style={{ fontSize: 12.8, color: "#92400E" }}>건강적립금으로 지금 바로 할인</b>
-                    <span style={{ fontSize: 11.3, color: "#A16207", marginLeft: "auto" }}>보유 {balHtk.toLocaleString()} HTK · 쇼핑 사용 가능 {shopWon(usableWon)}</span>
+                    <b style={{ fontSize: 13, color: "#92400E" }}>건강적립금으로 지금 바로 할인</b>
+                    <span style={{ fontSize: 11.5, color: "#A16207", marginLeft: "auto" }}>보유 {balHtk.toLocaleString()} HTK · 쇼핑 사용 가능 {shopWon(usableWon)}</span>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 9 }}>
                     <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 13px", fontSize: 11.5, background: appliedWon === 0 ? "#64748B" : undefined, color: appliedWon === 0 ? "#fff" : undefined }} onClick={() => setUseWon(0)}>사용 안 함</button>
@@ -967,9 +967,9 @@ function SupplementShop() {
             <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#7C3AED") + "10" }}><SuppImage p={detail} /></span>
               <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
             <p className="pddesc">{detail.desc}</p>
-            <div className="pdprice">{live ? shopWon(live.price) : shopWon(detail.price)}{live && <span style={{ fontSize: 13, color: "#94A3B8", fontWeight: 600, textDecoration: "line-through", marginLeft: 8 }}>{shopWon(detail.price)}</span>}</div>
+            <div className="pdprice">{live ? shopWon(live.price) : shopWon(detail.price)}{live && <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600, textDecoration: "line-through", marginLeft: 8 }}>{shopWon(detail.price)}</span>}</div>
             {PRICE_FEED_CFG.mode !== "off" && (
-              <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, padding: "9px 12px", margin: "8px 0", fontSize: 12, color: "#9A3412" }}>
+              <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: "var(--r-md)", padding: "9px 12px", margin: "8px 0", fontSize: 12, color: "#9A3412" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 800 }}><RefreshCw size={13} className={liveLoading ? "spin" : ""} /> {priceFeedLabel()}</div>
                 {liveLoading ? <div style={{ marginTop: 4 }}>최저가 조회 중…</div>
                   : live ? <div style={{ marginTop: 4 }}>현재 최저가 <b style={{ color: "#EA580C" }}>{shopWon(live.price)}</b> · <b>{live.mall}</b> · {new Date(live.ts).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })} 기준{live.demo ? " (예시)" : ""}</div>
@@ -1274,9 +1274,9 @@ function DeviceShop() {
             <div className="pdtop"><span className="pdimg" style={{ background: (m.col || "#0891B2") + "10" }}><DeviceImage p={detail} /></span>
               <div><div className="pbrand">{detail.brand}</div><div className="pvol">{detail.category} · {detail.volume}</div><div className="pdclaim">{detail.claim}</div></div></div>
             <p className="pddesc">{detail.desc}</p>
-            <div className="pdprice">{live ? shopWon(live.price) : shopWon(detail.price)}{live && <span style={{ fontSize: 13, color: "#94A3B8", fontWeight: 600, textDecoration: "line-through", marginLeft: 8 }}>{shopWon(detail.price)}</span>}</div>
+            <div className="pdprice">{live ? shopWon(live.price) : shopWon(detail.price)}{live && <span style={{ fontSize: 13, color: "var(--muted)", fontWeight: 600, textDecoration: "line-through", marginLeft: 8 }}>{shopWon(detail.price)}</span>}</div>
             {PRICE_FEED_CFG.mode !== "off" && (
-              <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, padding: "9px 12px", margin: "8px 0", fontSize: 12, color: "#9A3412" }}>
+              <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: "var(--r-md)", padding: "9px 12px", margin: "8px 0", fontSize: 12, color: "#9A3412" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 800 }}><RefreshCw size={13} className={liveLoading ? "spin" : ""} /> {priceFeedLabel()}</div>
                 {liveLoading ? <div style={{ marginTop: 4 }}>최저가 조회 중…</div>
                   : live ? <div style={{ marginTop: 4 }}>현재 최저가 <b style={{ color: "#EA580C" }}>{shopWon(live.price)}</b> · <b>{live.mall}</b> 기준{live.demo ? " (예시)" : ""}</div>
@@ -1438,7 +1438,7 @@ function ConsultRecCard() {
               <div style={{ fontSize: 12.5, fontWeight: 800, color: fc, margin: "2px 0 6px" }}>{f}</div>
               {items.map(([, art, prod, benefit, partner], i) => (
                 <div key={i} style={{ display: "flex", gap: 9, padding: "7px 0", borderTop: i ? "1px solid var(--line)" : "none" }}>
-                  <span style={{ width: 30, height: 30, borderRadius: 8, background: "#fff", display: "grid", placeItems: "center", flexShrink: 0, boxShadow: "0 2px 6px -2px rgba(0,0,0,.18)" }}>{typeof Art === "function" ? <Art name={art} size={19} /> : null}</span>
+                  <span style={{ width: 30, height: 30, borderRadius: "var(--r-sm)", background: "#fff", border: "1px solid var(--border)", display: "grid", placeItems: "center", flexShrink: 0 }}>{typeof Art === "function" ? <Art name={art} size={19} /> : null}</span>
                   <div><div style={{ fontSize: 13, fontWeight: 700 }}>{prod}</div><div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 1 }}>{benefit} · {partner}</div></div>
                 </div>
               ))}
@@ -1596,7 +1596,7 @@ function ShopConsultant() {
   const isCard = (m) => m.kind === "area" || m.kind === "dev" || m.kind === "rec";
   return (
     <div style={{ marginTop: 14 }}>
-      <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12, padding: "10px 13px", marginBottom: 12, fontSize: 11.5, color: "#9A3412", lineHeight: 1.6 }}>
+      <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: "var(--r-md)", padding: "10px 13px", marginBottom: 12, fontSize: 11.5, color: "#9A3412", lineHeight: 1.6 }}>
         <b>⚖️ 건강기능식품법·「식품 등의 표시·광고에 관한 법률」 준수</b> — 건강기능식품은 <b>질병의 예방·치료를 위한 의약품이 아닙니다.</b> AI 상담사 안내는 관련 <b>건강기능(식약처 인정 기능성)에 ‘도움을 줄 수 있는’</b> 정보이며 진단·처방을 대체하지 않습니다. 복용약·질환·알레르기가 있으면 섭취 전 전문가와 상의하세요.
       </div>
       <div className="kt shopai" style={{ maxWidth: 720 }}>

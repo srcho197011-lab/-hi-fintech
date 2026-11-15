@@ -22,12 +22,12 @@ function SubDueBanner({ onGoManage }) {
   const products = (typeof SUPP_PRODUCTS !== "undefined") ? SUPP_PRODUCTS : [];
   const p = products.find((x) => x.id === (d.pid || (d.sub && d.sub.pid)));
   return (
-    <div className="card" style={{ border: "1.5px solid #FED7AA", background: "linear-gradient(120deg,#FFF7ED,#FFFBEB)", margin: "0 0 12px" }}>
+    <div className="card" style={{ border: "1.5px solid #FED7AA", background: "#FFFBEB", margin: "0 0 12px" }}>
       <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ fontSize: 24 }}>⏳</span>
         <div style={{ flex: "1 1 260px" }}>
           <b style={{ fontSize: 14, color: "#9A3412" }}>{d.days === 0 ? `${d.name}, 오늘이면 다 떨어져요` : `${d.name}, ${d.days}일 뒤면 다 떨어져요`}</b>
-          <div style={{ fontSize: 12.3, color: "#7C2D12", marginTop: 4, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12.5, color: "#7C2D12", marginTop: 4, lineHeight: 1.6 }}>
             {d.kind === "sub"
               ? <>다음 정기배송은 <b>{_subDate(d.nextShipAt)}</b> 예정이에요. 더 빨리 필요하면 지금 받기로 앞당길 수 있어요.</>
               : <>끊기면 그동안의 관리가 리셋돼요 — 정기배송으로 등록하면 떨어지기 전에 알아서 도착해요.</>}
@@ -55,19 +55,19 @@ function SubOfferAfterOrder({ items, onDone }) {
   const c = subCycleOptions(main.p, main.qty);
   if (done) return <div className="chnote" style={{ marginTop: 8, color: "#166534" }}>✅ 정기배송이 등록됐어요 — 다음 배송 전에 미리 알려드릴게요(건너뛰기·해지 언제든 가능).</div>;
   return (
-    <div style={{ border: "1.5px solid #C7D8FA", background: "#F8FAFF", borderRadius: 12, padding: "12px 14px", margin: "10px 0 4px", textAlign: "left" }}>
+    <div style={{ border: "1.5px solid #C7D8FA", background: "#F8FAFF", borderRadius: "var(--r-md)", padding: "12px 14px", margin: "10px 0 4px", textAlign: "left" }}>
       <b style={{ fontSize: 13, color: "#14337A" }}>이 제품, {c.estDays}일이면 다 드세요</b>
-      <div style={{ fontSize: 12.2, color: "#475569", margin: "5px 0 9px", lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12, color: "#475569", margin: "5px 0 9px", lineHeight: 1.6 }}>
         {main.p.name} 기준 하루 {subPerDay(main.p)}회 섭취 시 약 <b>{c.estDays}일분</b>이에요. 떨어지기 전에 도착하도록 <b>{c.recommend}일 주기 정기배송</b>으로 등록할까요? 유지하시면 <b>적립 10% 추가</b>돼요.
       </div>
       <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
         {c.options.map((cy) => (
-          <button key={cy} className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 13px", fontSize: 11.8, background: cy === c.recommend ? "#1D4ED8" : undefined, color: cy === c.recommend ? "#fff" : undefined }}
+          <button key={cy} className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 13px", fontSize: 12, background: cy === c.recommend ? "#1D4ED8" : undefined, color: cy === c.recommend ? "#fff" : undefined }}
             onClick={() => { subCreate(m, main.p, main.qty, cy); setDone(true); if (typeof toast === "function") toast(`정기배송 등록 — ${cy}일마다 배송`); if (onDone) onDone(); }}>
             {cy}일마다{cy === c.recommend ? " (추천)" : ""}
           </button>
         ))}
-        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 13px", fontSize: 11.8, color: "#64748B" }} onClick={() => setDone(true)}>지금은 괜찮아요</button>
+        <button className="cbtn" style={{ margin: 0, width: "auto", padding: "8px 13px", fontSize: 12, color: "#64748B" }} onClick={() => setDone(true)}>지금은 괜찮아요</button>
       </div>
       <div className="chnote" style={{ marginTop: 7 }}>※ 자동 발송 전 항상 미리 알려드리고, 건너뛰기·주기 변경·해지가 언제든 가능해요(위약금 없음).</div>
     </div>
@@ -85,13 +85,13 @@ function SubscriptionPanel() {
 
   return (
     <div>
-      <div className="card" style={{ margin: "0 0 12px", background: "linear-gradient(125deg,#0B1F4B,#1D4ED8)", color: "#fff" }}>
+      <div className="card" style={{ margin: "0 0 12px", background: "#0B1F4B", color: "#fff" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
           <div><div style={{ fontSize: 11.5, opacity: .8 }}>진행 중 정기배송</div><b style={{ fontSize: 22 }}>{S.count}건</b></div>
           <div><div style={{ fontSize: 11.5, opacity: .8 }}>월 예상 금액</div><b style={{ fontSize: 22 }}>{_subWon(S.monthly)}</b></div>
           {S.next && <div><div style={{ fontSize: 11.5, opacity: .8 }}>다음 배송</div><b style={{ fontSize: 18 }}>{_subDate(S.next.nextShipAt)} · {S.next.name}</b></div>}
         </div>
-        <div style={{ fontSize: 11.3, opacity: .82, marginTop: 9, lineHeight: 1.6 }}>정기배송은 떨어지기 전에 도착하게 하는 장치예요 — 건너뛰기·주기 변경·해지가 언제든 가능하고 위약금이 없어요.</div>
+        <div style={{ fontSize: 11.5, opacity: .82, marginTop: 9, lineHeight: 1.6 }}>정기배송은 떨어지기 전에 도착하게 하는 장치예요 — 건너뛰기·주기 변경·해지가 언제든 가능하고 위약금이 없어요.</div>
       </div>
 
       {!subs.length && (
@@ -119,8 +119,8 @@ function SubscriptionPanel() {
               </div>
               <b style={{ fontSize: 15, color: dLeft <= 7 ? "#DC2626" : "#334155" }}>{dLeft}일치 남음</b>
             </div>
-            <div style={{ height: 8, background: "#EEF1F6", borderRadius: 999, overflow: "hidden", margin: "9px 0 10px" }}>
-              <div style={{ width: pct + "%", height: "100%", background: dLeft <= 7 ? "linear-gradient(90deg,#F97316,#DC2626)" : "linear-gradient(90deg,#1D4ED8,#0EA5E9)" }} />
+            <div style={{ height: 8, background: "#EEF1F6", borderRadius: "var(--r-pill)", overflow: "hidden", margin: "9px 0 10px" }}>
+              <div style={{ width: pct + "%", height: "100%", background: dLeft <= 7 ? "#DC2626" : "#1D4ED8" }} />
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {!paused && <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 12px", fontSize: 11.5 }} onClick={() => { subShipNow(m, s.id); setTick((t) => t + 1); if (typeof toast === "function") toast("지금 발송했어요 — 적립도 반영됐어요"); }}>지금 받기</button>}
@@ -134,9 +134,9 @@ function SubscriptionPanel() {
               <button className="cbtn" style={{ margin: 0, width: "auto", padding: "7px 12px", fontSize: 11.5, color: "#B91C1C" }} onClick={() => { subCancel(m, s.id); setTick((t) => t + 1); if (typeof toast === "function") toast("해지했어요 — 위약금은 없어요"); }}>해지</button>
             </div>
             {s.history && s.history.length > 0 && (
-              <details style={{ marginTop: 8 }}><summary style={{ cursor: "pointer", fontSize: 11.3, color: "var(--muted)", fontWeight: 700 }}>배송·변경 이력 {s.history.length}건</summary>
+              <details style={{ marginTop: 8 }}><summary style={{ cursor: "pointer", fontSize: 11.5, color: "var(--muted)", fontWeight: 700 }}>배송·변경 이력 {s.history.length}건</summary>
                 <div style={{ marginTop: 5 }}>{[...s.history].reverse().slice(0, 6).map((h, i) => (
-                  <div key={i} style={{ fontSize: 11.3, color: "#475569", padding: "3px 2px" }}>{_subDate(h.at)} · {h.ev}</div>
+                  <div key={i} style={{ fontSize: 11.5, color: "#475569", padding: "3px 2px" }}>{_subDate(h.at)} · {h.ev}</div>
                 ))}</div>
               </details>
             )}

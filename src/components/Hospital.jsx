@@ -198,7 +198,7 @@ function PharmacyDirectory({ data }) {
         const o = pharmOps(p[0], p[2]);
         return (
         <div className="center" key={i}>
-          <div className="cimg" style={{ background: "linear-gradient(150deg,#DCFCE7,#D1FAE5)" }}><Art name="pill" size={46} /></div>
+          <div className="cimg" style={{ background: "#DCFCE7" }}><Art name="pill" size={46} /></div>
           <div className="cmain">
             <div className="cname">{p[0]}<span className="cbadge" style={{ color: "#15803D", background: "#E7F8EE" }}>약국</span>{o.night && <span className="cbadge" style={{ color: "#4338CA", background: "#E8EAFE" }}><Moon size={10} /> 야간</span>}{o.holiday && <span className="cbadge" style={{ color: "#B45309", background: "#FEF3E2" }}>공휴일</span>}</div>
             <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{data.sido[p[1]]} {p[2]}</span> · <MapPin size={12} />{p[3]}{p[4] ? <> · <Phone size={12} />{p[4]}</> : null}</div>
@@ -230,7 +230,7 @@ function HospRow({ data, m, recoSet, onDetail, onBook }) {
       <div className="cmain" style={{ cursor: "pointer" }} onClick={() => onDetail(h)} title="병원 상세 보기">
         <div className="cname">{h[0]}
           <span className="cbadge" style={{ color: "#0369A1", background: "#E0F2FE" }}>{data.type[h[1]]}</span>
-          {m.partner && <span className="cbadge" style={{ color: "#fff", background: "linear-gradient(90deg,#2F5BEA,#7C3AED)" }}><BadgeCheck size={10} /> 제휴</span>}
+          {m.partner && <span className="cbadge" style={{ color: "#fff", background: "var(--blue)" }}><BadgeCheck size={10} /> 제휴</span>}
           {m.score >= 2 && <span className="cbadge" style={{ color: "#7C3AED", background: "#F1ECFE" }}><Sparkles size={10} /> 맞춤 {m.score}과</span>}
         </div>
         <div className="cmeta"><span style={{ fontWeight: 800, color: "#2563EB" }}>{data.sido[h[2]]} {h[3]}</span> · <MapPin size={12} />{h[4]}{h[5] ? <> · <Phone size={12} />{h[5]}</> : null}</div>
@@ -309,7 +309,7 @@ function HospitalRec({ data, onGo }) {
       {RECO.map((r, i) => (
         <div className="adv" key={i}><span className="ic" style={{ background: r.bg }}><r.ic size={18} color={r.col} /></span>
           <div style={{ flex: 1 }}><b>{r.dept}</b><p>{r.why}</p></div>
-          <button onClick={() => onGo({ sido: region, dept: r.dept })} style={{ alignSelf: "center", border: "1px solid var(--border)", background: "#fff", color: "var(--blue)", borderRadius: 9, padding: "7px 11px", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>{r.dept} ›</button></div>
+          <button onClick={() => onGo({ sido: region, dept: r.dept })} style={{ alignSelf: "center", border: "1px solid var(--border)", background: "#fff", color: "var(--blue)", borderRadius: "var(--r-sm)", padding: "7px 11px", fontWeight: 700, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>{r.dept} ›</button></div>
       ))}
       <div className="chnote" style={{ marginTop: 4 }}>※ 권장 진료과는 {_nm}님 검진 결과의 장기 생체나이·질병위험·암 등급을 바탕으로 자동 산출됩니다. 아래 병원은 위 진료과를 <b>실제로 운영하는</b> 심평원 등록 병원입니다.</div>
     </div>
@@ -322,7 +322,7 @@ function HospitalRec({ data, onGo }) {
     <div className="regions">{sidoChips.map((r) => <div key={r} className={`fsel ${region === r ? "on" : ""}`} onClick={() => setRegion(r)}>{r === _home && <Home size={11} style={{ verticalAlign: "-1px", marginRight: 3 }} />}{r}{distribution[r] ? <span style={{ color: "var(--soft)", fontWeight: 600, marginLeft: 4 }}>{distribution[r].toLocaleString()}</span> : ""}</div>)}</div>
 
     {partners.length > 0 && (
-      <div className="card" style={{ border: "1.5px solid #BFD0FF", background: "linear-gradient(180deg,#F7F9FF,#fff)" }}>
+      <div className="card" style={{ border: "1.5px solid #BFD0FF", background: "#fff" }}>
         <div className="rct"><BadgeCheck size={18} color="#2F5BEA" /> 제휴 병원 <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>· {region} {partners.length}곳</span></div>
         <div className="benefit" style={{ marginTop: 0, marginBottom: 12 }}><span><Art name="badge" size={16} /> 무료 검진보험 자동가입</span><span><Art name="calendar" size={16} /> 우선 예약</span><span><Art name="badge" size={16} /> NFT 예약증</span><span><Art name="doc" size={16} /> 검진·진료 통합관리</span></div>
         {partners.slice(0, 10).map((m, i) => <HospRow key={i} data={data} m={m} recoSet={recoSet} onDetail={onDetail} onBook={onBook} />)}
@@ -332,8 +332,8 @@ function HospitalRec({ data, onGo }) {
     <div className="bklbl" style={{ margin: "2px 0 8px" }}><MapPin size={14} color="#2F5BEA" style={{ verticalAlign: "-2px" }} /> {region} 지역별 추천 병원 {atHome && <span style={{ fontSize: 11.5, color: "var(--muted)", fontWeight: 600 }}>· 내 동네({_rg.sgg}) 우선</span>}</div>
     {byGu.length === 0 && partners.length === 0 && <div className="hload">{region}에서 조건에 맞는 병원을 찾지 못했습니다. 다른 지역을 선택해 보세요.</div>}
     {byGu.slice(0, 6).map(({ gu, items, home }) => (
-      <div className="card" key={gu} style={home ? { paddingBottom: 10, border: "1.5px solid #BFD0FF", background: "linear-gradient(180deg,#F7F9FF,#fff)" } : { paddingBottom: 10 }}>
-        <div className="rct" style={{ marginBottom: 8 }}><MapPin size={16} color={home ? "#2F5BEA" : "#2563EB"} /> {gu} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>· {items.length}곳</span>{home && <span className="cbadge" style={{ color: "#fff", background: "linear-gradient(90deg,#2F5BEA,#7C3AED)" }}><Home size={10} /> 내 동네</span>}</div>
+      <div className="card" key={gu} style={home ? { paddingBottom: 10, border: "1.5px solid #BFD0FF", background: "#fff" } : { paddingBottom: 10 }}>
+        <div className="rct" style={{ marginBottom: 8 }}><MapPin size={16} color={home ? "#2F5BEA" : "#2563EB"} /> {gu} <span style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>· {items.length}곳</span>{home && <span className="cbadge" style={{ color: "#fff", background: "var(--blue)" }}><Home size={10} /> 내 동네</span>}</div>
         {items.slice(0, 3).map((m, i) => <HospRow key={i} data={data} m={m} recoSet={recoSet} onDetail={onDetail} onBook={onBook} />)}
         {items.length > 3 && <button className="cbtn" style={{ marginTop: 4 }} onClick={() => onGo({ sido: region, sgg: gu, dept: "내과" })}>{gu} 추천 병원 더 보기 ({items.length - 3}곳 더) ›</button>}
       </div>
@@ -395,7 +395,7 @@ function HospitalBookingModal({ data, h, onClose }) {
         <div className="bkh"><div className="bt">{done ? "예약 완료" : "병원 예약"}</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={onClose}><X size={20} color="#8A97AE" /></button></div>
         <div className="bkb">
           {!done ? (<>
-            <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
+            <div style={{ background: "#F7F9FC", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "12px 14px" }}>
               <div style={{ fontWeight: 800, fontSize: 14 }}>{h[0]} <span className="cbadge" style={{ color: "#0369A1", background: "#E0F2FE" }}>{data.type[h[1]]}</span></div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}><MapPin size={11} style={{ verticalAlign: "-1px" }} /> {data.sido[h[2]]} {h[3]} · {h[4]}</div>
               {h[5] && <div style={{ fontSize: 12, color: "var(--blue)", marginTop: 4, fontWeight: 700 }}><Phone size={11} style={{ verticalAlign: "-1px" }} /> {h[5]}</div>}

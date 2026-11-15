@@ -65,7 +65,7 @@ function ComplianceConsole() {
 
   return (
     <div className="cmp">
-      <div className="ontstore-def" style={{ background: "linear-gradient(120deg,#221033,#0F1B33)", borderColor: "#3B2258" }}>
+      <div className="ontstore-def" style={{ background: "#221033", borderColor: "#3B2258" }}>
         <span className="ontstore-ic" style={{ background: "#1A0E2A" }}><Scale size={15} color="#C4B5FD" /></span>
         <div><b>규제·거버넌스 콘솔</b><p>의료마이데이터 사업방법서의 <b>규제 통제 항목</b>을 시각화·자가점검합니다 — 분석결과 5구분, 의료행위/AI 경계, SaMD 검토, 4-DB 분리, 외부 AI 전송통제, 사업자 평가, 사업 진행 판단(Go/No-Go). <b style={{ color: "#C4B5FD" }}>플랫폼 운영의 법적·안전 전제를 점검하는 콘솔</b>입니다.</p></div>
       </div>

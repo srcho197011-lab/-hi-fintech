@@ -103,7 +103,7 @@ function HealthManageSection({ onGo }) {
           <button className="hgb-btn" onClick={() => setCat("checkup")}>검진 현황 ›</button>
         </div>}
         <div className="card">
-          <div className="rct"><LayoutDashboard size={18} color="#2F5BEA" /> 한눈에 보기 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: R ? R.cg[1] : "var(--green)", background: R ? R.cg[2] : "#E7F8EE", padding: "4px 10px", borderRadius: 999 }}>종합평가 {evalLabel}</span></div>
+          <div className="rct"><LayoutDashboard size={18} color="#2F5BEA" /> 한눈에 보기 <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: R ? R.cg[1] : "var(--green)", background: R ? R.cg[2] : "#E7F8EE", padding: "4px 10px", borderRadius: "var(--r-pill)" }}>종합평가 {evalLabel}</span></div>
           <div className="sumgrid">
             <div className="sumcard"><div className="sl">생체나이</div><div className="sv" style={{ color: "var(--blue)" }}>{bioAge}세</div><span className="sb" style={{ color: diffGood ? "#15803D" : "#B91C1C", background: diffGood ? "#E7F8EE" : "#FDECEC" }}>주민등록 {diffLabel}</span></div>
             <div className="sumcard"><div className="sl">노화등수</div><div className="sv">{agingRank}등</div><span className="sb" style={{ color: "#2563EB", background: "#E8F1FE" }}>/100</span></div>
@@ -131,7 +131,7 @@ function HealthManageSection({ onGo }) {
       {cat === "bio" && (<>
         <div className="card">
           {/* [실측 통일 2026-10-05] 「종합평가 좋음」 상수 제거 — 한눈에 보기와 같은 R.evalLabel을 읽는다 */}
-          <div className="rct"><Activity size={18} color="#7C3AED" /> 생체나이 분석 {evalLabel ? <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: R ? R.cg[1] : "var(--green)", background: R ? R.cg[2] : "#E7F8EE", padding: "4px 10px", borderRadius: 999 }}>종합평가 {evalLabel}</span> : null}</div>
+          <div className="rct"><Activity size={18} color="#7C3AED" /> 생체나이 분석 {evalLabel ? <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: R ? R.cg[1] : "var(--green)", background: R ? R.cg[2] : "#E7F8EE", padding: "4px 10px", borderRadius: "var(--r-pill)" }}>종합평가 {evalLabel}</span> : null}</div>
           <div className="bigbio">
             <div><div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 700 }}>생체나이</div><div className="n">{bioAge}<span> 세</span></div></div>
             <div className="biokv">
@@ -257,7 +257,7 @@ function HMCheckupTab({ chk, member, onGo }) {
   return (<>
     <div className="card">
       <div className="rct"><ClipboardList size={18} color="#2563EB" /> 검진 결과 현황
-        <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 800, color: gradeCol, background: gradeBg, padding: "4px 11px", borderRadius: 999 }}>국가검진 {chk.nat.gradeLabel || chk.nat.grade}</span></div>
+        <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 800, color: gradeCol, background: gradeBg, padding: "4px 11px", borderRadius: "var(--r-pill)" }}>국가검진 {chk.nat.gradeLabel || chk.nat.grade}</span></div>
       <div className="hmck-sub">{chk.nat.gradeDesc}</div>
       <div className="hmck-meta">
         <div><span>{real ? "검진 시점" : "최근 3년"}</span><b>{real ? (chk.years || []).join(" · ") : `${chk.years[0]}~${chk.years[chk.years.length - 1]}`}</b></div>
@@ -271,7 +271,7 @@ function HMCheckupTab({ chk, member, onGo }) {
       {real && <div className="chnote" style={{ marginTop: 6 }}>※ 출처: {chk.nat.src} · {chk.comp.src}. 값·판정은 결과통보서·결과표에 적힌 그대로이며, 하이핀이 다시 계산하지 않습니다.</div>}
     </div>
     {cp && <div className="card">
-      <div className="rct"><FileText size={18} color="#7C3AED" /> 통합 임상 프로필 <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 800, color: "#7C3AED", background: "#F1EBFE", padding: "4px 11px", borderRadius: 999 }}>진료필요도 · {cp.careNeed}</span></div>
+      <div className="rct"><FileText size={18} color="#7C3AED" /> 통합 임상 프로필 <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 800, color: "#7C3AED", background: "#F1EBFE", padding: "4px 11px", borderRadius: "var(--r-pill)" }}>진료필요도 · {cp.careNeed}</span></div>
       <div className="cpf-grid">
         <div className="cpf-col"><div className="cpf-h">확정 진단</div>{cp.diagnoses.length ? cp.diagnoses.map((d) => <div className="cpf-dx" key={d.name}><b>{d.name}</b><span>{d.since}</span></div>) : <div className="cpf-none">진단된 만성질환 없음</div>}</div>
         <div className="cpf-col"><div className="cpf-h">복용 약물</div>{cp.meds.length ? cp.meds.map((md) => <div className="cpf-med" key={md.name}><b>{md.name}</b><span>{md.dose} · {md.cls}</span></div>) : <div className="cpf-none">{cp.medsNote || "복용 중인 약물 없음"}</div>}</div>
@@ -508,7 +508,7 @@ function OriginalReport({ onClose, name, sample, prov, R }) {
     <div className="voverlay" onClick={onClose}>
       <div className="viewer" onClick={(e) => e.stopPropagation()}>
         <div className="vhead">
-          <div className="vt"><FileText size={17} color="#7C3AED" /> 건강분석 리포트 {sample ? <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B45309", background: "#FEF3E2", borderRadius: 999, padding: "3px 9px", marginLeft: 6 }}>실물 샘플 — 신청 시 내 검진 데이터로 생성</span> : "(원본)"}</div>
+          <div className="vt"><FileText size={17} color="#7C3AED" /> 건강분석 리포트 {sample ? <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B45309", background: "#FEF3E2", borderRadius: "var(--r-pill)", padding: "3px 9px", marginLeft: 6 }}>실물 샘플 — 신청 시 내 검진 데이터로 생성</span> : "(원본)"}</div>
           <div className="vh-actions">
             <button onClick={() => window.print()}><Printer size={14} /> 인쇄</button>
             <button className="close" onClick={onClose}><X size={15} /> 닫기</button>

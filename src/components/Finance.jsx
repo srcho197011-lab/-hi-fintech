@@ -395,8 +395,8 @@ function FinanceLive() {
       const SS = (typeof ESC_STATUS !== "undefined") ? ESC_STATUS : {};
       const d = (ts) => { if (!ts) return "—"; const x = new Date(ts); return `${x.getMonth() + 1}.${x.getDate()}`; };
       const chKo = (c) => (c === "own" ? "자사 운영" : (c === "partner" || c === "ptn") ? "제휴사" : c);
-      const BTN_A = { border: "none", background: "#1D4ED8", color: "#fff", borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" };
-      const BTN_B = { border: "1px solid #475569", background: "transparent", color: "#94A3B8", borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" };
+      const BTN_A = { border: "none", background: "#1D4ED8", color: "#fff", borderRadius: "var(--r-sm)", padding: "3px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" };
+      const BTN_B = { border: "1px solid #475569", background: "transparent", color: "var(--muted)", borderRadius: "var(--r-sm)", padding: "3px 9px", fontSize: 11, fontWeight: 800, cursor: "pointer" };
       const act = (fn, id) => { const r = fn(id); if (typeof toast === "function") toast(r.ok ? "처리됐어요 — 체인에 기록됩니다" : r.reason); setEscTick((t) => t + 1); };
       return (<>
       <div className="finlink" style={{ background: "#0C1E3A", borderColor: "#1E3A6B" }}><Lock size={13} color="#60A5FA" /> <b>선수납 · 공제 정산</b> — 고객이 하이핀에서 <b>검진비를 먼저 결제</b>하면 수검 완료까지 <b>결제대금예치(에스크로)</b>로 분리 보관되고, 수검이 확인되면 <b>채널별 수수료(자사 운영 {finWonU(P.chkOwnFee)} · 제휴사 {finWonU(P.chkPtnFee)})를 공제한 잔액</b>이 검진기관에 정산됩니다. 결제 매입(PG)·예치·정산 대행은 제휴 결제사 라이선스로 수행하며, 아래는 시연 원장입니다.</div>
@@ -451,7 +451,7 @@ function FinanceLive() {
                 <i style={{ display: "block", width: "40%", height: finBarH(r[ak], max), background: r.partial ? "#FBBF24" : "#22D3EE", borderRadius: "3px 3px 0 0" }} title={`실적 ${finWon(r[ak])}`} />
               </div>))}
           </div>
-          <div style={{ display: "flex", gap: 4, marginTop: 4 }}>{rows.map((r) => <span key={r.cal} style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 9.5, color: "#8FA1C0", overflow: "hidden", whiteSpace: "nowrap" }}>{finMonKo(r.cal)}</span>)}</div>
+          <div style={{ display: "flex", gap: 4, marginTop: 4 }}>{rows.map((r) => <span key={r.cal} style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 10, color: "#8FA1C0", overflow: "hidden", whiteSpace: "nowrap" }}>{finMonKo(r.cal)}</span>)}</div>
         </div>);
       return (<>
         <div className="ontgrid2">
@@ -900,7 +900,7 @@ function FinanceSection({ onGo }) {
         {coa.map((g, i) => (
           <div className="ontobj" key={i} style={{ alignItems: "flex-start", flexDirection: "column", gap: 6 }}>
             <b style={{ color: g.c, fontSize: 12.5 }}>{g.g}</b>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>{g.items.map((it) => <span key={it} style={{ fontSize: 9.6, color: "#AFC0DE", background: "#0C1730", border: "1px solid #24324D", borderRadius: 6, padding: "2px 6px" }}>{it}</span>)}</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>{g.items.map((it) => <span key={it} style={{ fontSize: 10, color: "#AFC0DE", background: "#0C1730", border: "1px solid #24324D", borderRadius: "var(--r-sm)", padding: "2px 6px" }}>{it}</span>)}</div>
           </div>
         ))}
       </div>

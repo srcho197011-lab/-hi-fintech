@@ -173,25 +173,25 @@ function ConsentWallet({ member }) {
   const list = cnList(member);
   return (
     <div className="htk-card" style={{ marginTop: 14, background: "#0B1220" }}>
-      <div className="htk-top"><span className="htk-net"><ShieldCheck size={13} /> 내 동의 지갑 — 조건부 동의 증서(ConsentNFT)</span><span style={{ fontSize: 10.5, color: "#94A3B8" }}>철회는 즉시 효력 · 전부 체인 기록</span></div>
+      <div className="htk-top"><span className="htk-net"><ShieldCheck size={13} /> 내 동의 지갑 — 조건부 동의 증서(ConsentNFT)</span><span style={{ fontSize: 10.5, color: "var(--muted)" }}>철회는 즉시 효력 · 전부 체인 기록</span></div>
       <div style={{ display: "grid", gap: 6, marginTop: 10 }}>
         {list.length ? list.map((c) => (
-          <div key={c.id} style={{ background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.8 }}>
+          <div key={c.id} style={{ background: "rgba(255,255,255,.04)", borderRadius: "var(--r-md)", padding: "8px 10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
               <b style={{ color: "#E2E8F0" }}>{c.id}</b>
-              <span style={{ fontSize: 10, fontWeight: 800, color: c.status === "active" ? "#15803D" : "#B91C1C", background: c.status === "active" ? "#D1FAE5" : "#FDECEC", borderRadius: 99, padding: "1px 8px" }}>{c.status === "active" ? "유효" : "철회됨"}</span>
+              <span style={{ fontSize: 10, fontWeight: 800, color: c.status === "active" ? "#15803D" : "#B91C1C", background: c.status === "active" ? "#D1FAE5" : "#FDECEC", borderRadius: "var(--r-pill)", padding: "1px 8px" }}>{c.status === "active" ? "유효" : "철회됨"}</span>
               {c.status === "active" && <button className="htk-btn" style={{ marginLeft: "auto", fontSize: 10.5, padding: "3px 9px" }} onClick={() => setConfirm({ kind: "revoke", id: c.id })}>철회</button>}
             </div>
-            <div style={{ fontSize: 10.8, color: "#94A3B8", marginTop: 3 }}>[{(c.scopeKo || c.scope).join(" · ")}] → {c.to} · ~{c.until} · 목적: {c.purpose}{c.revokedAt ? ` · 철회 ${new Date(c.revokedAt).toLocaleDateString("ko-KR")}` : ""}</div>
+            <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 3 }}>[{(c.scopeKo || c.scope).join(" · ")}] → {c.to} · ~{c.until} · 목적: {c.purpose}{c.revokedAt ? ` · 철회 ${new Date(c.revokedAt).toLocaleDateString("ko-KR")}` : ""}</div>
           </div>
-        )) : <div style={{ fontSize: 11.5, color: "#94A3B8", padding: "4px 2px" }}>발행된 동의 증서가 없어요 — 증서를 발행하면 <b style={{ color: "#CBD5E1" }}>동의한 범위·기간 안에서만</b> 내 데이터가 안내에 쓰이고, 쓰일 때마다 <b style={{ color: "#CBD5E1" }}>데이터 이용 대가</b>가 지갑에 들어와요.</div>}
+        )) : <div style={{ fontSize: 11.5, color: "var(--muted)", padding: "4px 2px" }}>발행된 동의 증서가 없어요 — 증서를 발행하면 <b style={{ color: "#CBD5E1" }}>동의한 범위·기간 안에서만</b> 내 데이터가 안내에 쓰이고, 쓰일 때마다 <b style={{ color: "#CBD5E1" }}>데이터 이용 대가</b>가 지갑에 들어와요.</div>}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
         {!list.some((c) => c.status === "active") && <button className="htk-btn cyan" onClick={() => setConfirm({ kind: "issue" })}>맞춤 안내 동의 증서 발행</button>}
         <button className="htk-btn" onClick={() => { const r = (typeof leadDbBuild === "function") ? leadDbBuild() : null; if (r && r.ok) { setAudit(r.audit); const me = list.some((c) => c.status === "active"); if (me) { const f = (typeof dataFeePay === "function") ? dataFeePay(member, (list.find((c) => c.status === "active") || {}).id) : null; if (f && f.ok && typeof toast === "function") toast(`데이터 이용 대가 +${f.htk} HTK 입금(시뮬) — 잔액 ${f.balance.toLocaleString()}`); } } else if (typeof toast === "function") toast("🔒 " + ((r && r.reason) || "게이트 차단")); setTick((t) => t + 1); }}>리드 DB 생성 시뮬 — 동의 감사</button>
       </div>
       {audit && <div style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: audit.ok ? "#6EE7B7" : "#F87171" }}>감사 결과: 편입 {audit.rows}건 · 무동의 위반 {audit.violations}건 {audit.ok ? "— 동의 없는 회원은 단 1명도 포함되지 않았어요 ✓" : "⚠️ 위반 발견"}</div>}
-      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "#94A3B8" }}>※ 시뮬레이션(RegGate leadDb·dataFee 게이트) — 실제 DB 제공은 신용정보법·개인정보보호법(2026.9 강화)·보험업법 모집 규제 법률 검토와 GA 경유 확정 후에만 가능해요. 리드에는 건강 원본이 아니라 <b style={{ color: "#CBD5E1" }}>세그먼트 정보만</b> 담겨요.</div>
+      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "var(--muted)" }}>※ 시뮬레이션(RegGate leadDb·dataFee 게이트) — 실제 DB 제공은 신용정보법·개인정보보호법(2026.9 강화)·보험업법 모집 규제 법률 검토와 GA 경유 확정 후에만 가능해요. 리드에는 건강 원본이 아니라 <b style={{ color: "#CBD5E1" }}>세그먼트 정보만</b> 담겨요.</div>
       {confirm && (
         <div className="bkov" onClick={() => setConfirm(null)}><div className="bk" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
           <div className="bkh"><div className="bt"><ShieldCheck size={16} color={confirm.kind === "issue" ? "#0891B2" : "#B91C1C"} /> {confirm.kind === "issue" ? "동의 증서 발행 확인" : "동의 철회 확인"}</div></div>
@@ -253,14 +253,14 @@ function WalletPortability({ member }) {
   };
   return (
     <div className="htk-card" style={{ marginTop: 14, background: "#0B1220" }}>
-      <div className="htk-top"><span className="htk-net"><Wallet size={13} /> 내 자산 이동성 — 지갑 내보내기/불러오기</span><span style={{ fontSize: 10.5, color: "#94A3B8" }}>플랫폼이 사라져도 자산은 나에게</span></div>
+      <div className="htk-top"><span className="htk-net"><Wallet size={13} /> 내 자산 이동성 — 지갑 내보내기/불러오기</span><span style={{ fontSize: 10.5, color: "var(--muted)" }}>플랫폼이 사라져도 자산은 나에게</span></div>
       <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
         <button className="htk-btn" onClick={doExport}>💾 내 지갑 내보내기(JSON)</button>
         <button className="htk-btn cyan" onClick={() => fileRef.current && fileRef.current.click()}>📥 불러오기(무결성 검증)</button>
         <input ref={fileRef} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => { const f = e.target.files && e.target.files[0]; if (f) doImport(f); e.target.value = ""; }} />
       </div>
       {msg && <div style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: msg.ok ? "#6EE7B7" : "#F87171" }}>{msg.t}</div>}
-      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "#94A3B8" }}>금고·토큰 원장·계약·청구서·체인이 한 파일로 내보내져요 — 체크섬과 원장 재검증을 통과해야만 불러올 수 있어요.</div>
+      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "var(--muted)" }}>금고·토큰 원장·계약·청구서·체인이 한 파일로 내보내져요 — 체크섬과 원장 재검증을 통과해야만 불러올 수 있어요.</div>
     </div>);
 }
 
@@ -276,10 +276,10 @@ function ChainExplorer({ member }) {
         <button className="htk-btn" style={{ fontSize: 11 }} onClick={() => { const v = (typeof chainVerify === "function") ? chainVerify() : null; const s = (typeof chainSnapshot === "function") ? chainSnapshot() : null; const p = (typeof publicAnchorSend === "function") ? publicAnchorSend(s && s.root) : null; setRes({ v, s, p }); }}>전체 검증 + 스냅샷</button></div>
       <div style={{ display: "grid", gap: 5, marginTop: 10 }}>
         {last5.map((b) => (
-          <div key={b.idx} style={{ display: "flex", gap: 8, alignItems: "center", background: "rgba(255,255,255,.04)", borderRadius: 8, padding: "6px 10px", fontSize: 11 }}>
+          <div key={b.idx} style={{ display: "flex", gap: 8, alignItems: "center", background: "rgba(255,255,255,.04)", borderRadius: "var(--r-sm)", padding: "6px 10px", fontSize: 11 }}>
             <span style={{ color: "#93C5FD", fontWeight: 800 }}>#{b.idx}</span>
             <span style={{ color: "#E2E8F0", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.note || b.type}</span>
-            <code style={{ color: "#94A3B8" }}>{H(b.hash)}</code>
+            <code style={{ color: "var(--muted)" }}>{H(b.hash)}</code>
           </div>))}
       </div>
       {res && res.v && (
@@ -288,7 +288,7 @@ function ChainExplorer({ member }) {
           {res.s && <div style={{ color: "#93C5FD", marginTop: 3 }}>머클루트 스냅샷 보관: {H(res.s.root)} ({res.s.blocks}블록)</div>}
           {res.p && !res.p.ok && <div style={{ color: "#FBBF24", marginTop: 3 }}>퍼블릭 앵커: {res.p.reason} (시도는 기록됨)</div>}
         </div>)}
-      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "#94A3B8" }}>쉽게 말하면: 내 기록들이 <b style={{ color: "#CBD5E1" }}>번호표 있는 사슬</b>로 묶여 있어서, 중간을 몰래 바꾸면 사슬이 끊겨 바로 들통나요. 지금은 SHA-256 실제 해시로 봉인돼요(로컬 시뮬 · 퍼블릭 앵커는 규제 게이트 뒤).</div>
+      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "var(--muted)" }}>쉽게 말하면: 내 기록들이 <b style={{ color: "#CBD5E1" }}>번호표 있는 사슬</b>로 묶여 있어서, 중간을 몰래 바꾸면 사슬이 끊겨 바로 들통나요. 지금은 SHA-256 실제 해시로 봉인돼요(로컬 시뮬 · 퍼블릭 앵커는 규제 게이트 뒤).</div>
     </div>);
 }
 
@@ -306,14 +306,14 @@ function RegGatePanel({ member }) {
   };
   return (
     <div className="htk-card" style={{ marginTop: 14, background: "#0B1220" }}>
-      <div className="htk-top"><span className="htk-net"><ShieldCheck size={13} /> RegGate · 규제 시행일 동기화 게이트</span><span style={{ fontSize: 10.5, color: "#94A3B8" }}>시행일 도래 시 재배포 없이 전환</span></div>
+      <div className="htk-top"><span className="htk-net"><ShieldCheck size={13} /> RegGate · 규제 시행일 동기화 게이트</span><span style={{ fontSize: 10.5, color: "var(--muted)" }}>시행일 도래 시 재배포 없이 전환</span></div>
       <div style={{ display: "grid", gap: 7, marginTop: 10 }}>
         {gates.map((g) => { const md = MODE[g.mode] || MODE.off; return (
-          <div key={g.key} style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(255,255,255,.04)", borderRadius: 10, padding: "8px 10px" }}>
-            <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 800, color: md[1], background: md[2], borderRadius: 99, padding: "2px 9px", marginTop: 1 }}>{md[0]}</span>
+          <div key={g.key} style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(255,255,255,.04)", borderRadius: "var(--r-md)", padding: "8px 10px" }}>
+            <span style={{ flexShrink: 0, fontSize: 10.5, fontWeight: 800, color: md[1], background: md[2], borderRadius: "var(--r-pill)", padding: "2px 9px", marginTop: 1 }}>{md[0]}</span>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#E2E8F0" }}>{g.title}{g.effectiveDate && <em style={{ fontStyle: "normal", marginLeft: 6, fontSize: 10.5, color: "#93C5FD" }}>시행 {g.effectiveDate}</em>}</div>
-              <div style={{ fontSize: 10.8, color: "#94A3B8", lineHeight: 1.5 }}>{g.law} — {g.note}</div>
+              <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.5 }}>{g.law} — {g.note}</div>
             </div>
           </div>); })}
       </div>
@@ -321,7 +321,7 @@ function RegGatePanel({ member }) {
         <button className="htk-btn" style={{ fontSize: 11.5 }} onClick={tryCashout}>현금 출금 시도 — 차단 실증</button>
         {msg && <span style={{ fontSize: 11.5, fontWeight: 700, color: msg.ok ? "#F87171" : "#6EE7B7" }}>{msg.t}</span>}
       </div>
-      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "#94A3B8" }}>※ 폐쇄형(현금 교환 불가)·스테이블 시뮬레이션 한정·배당의 STO 트랙 분리는 문구가 아니라 <b style={{ color: "#CBD5E1" }}>코드 게이트</b>로 강제됩니다. live 전환은 근거 법령 시행일이 도래해야만 가능하며, 관리자 설정으로도 시행일 이전에는 열 수 없습니다.</div>
+      <div className="chnote" style={{ marginTop: 10, background: "rgba(255,255,255,.05)", color: "var(--muted)" }}>※ 폐쇄형(현금 교환 불가)·스테이블 시뮬레이션 한정·배당의 STO 트랙 분리는 문구가 아니라 <b style={{ color: "#CBD5E1" }}>코드 게이트</b>로 강제됩니다. live 전환은 근거 법령 시행일이 도래해야만 가능하며, 관리자 설정으로도 시행일 이전에는 열 수 없습니다.</div>
     </div>
   );
 }

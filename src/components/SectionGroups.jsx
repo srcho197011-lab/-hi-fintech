@@ -7,7 +7,7 @@
 function GroupHead({ ic: Ic, title, sub, color }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "2px 0 12px" }}>
-      <span style={{ width: 44, height: 44, borderRadius: 13, background: (color || "#2563EB") + "16", display: "grid", placeItems: "center", flexShrink: 0 }}><Ic size={22} color={color || "#2563EB"} /></span>
+      <span style={{ width: 44, height: 44, borderRadius: "var(--r-md)", background: (color || "#2563EB") + "16", display: "grid", placeItems: "center", flexShrink: 0 }}><Ic size={22} color={color || "#2563EB"} /></span>
       <div><div style={{ fontSize: 19, fontWeight: 900, color: "#0F1F45", letterSpacing: -0.3 }}>{title}</div><div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 1 }}>{sub}</div></div>
     </div>
   );

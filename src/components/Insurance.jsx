@@ -10,7 +10,7 @@ function InsAgencyBadge({ onGo }) {
   const [open, setOpen] = useState(false);
   return (<>
     <button onClick={() => setOpen(true)} title="보험대리점 등록 정보 보기" aria-label="보험대리점 등록 정보"
-      style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, background: "linear-gradient(125deg,#0B1F4B,#14337A)", border: "1px solid #C9A84C", borderRadius: 11, padding: "8px 13px", cursor: "pointer", flexShrink: 0, boxShadow: "0 10px 22px -14px rgba(11,31,75,.85)" }}>
+      style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, background: "#0B1F4B", border: "1px solid #C9A84C", borderRadius: "var(--r-md)", padding: "8px 13px", cursor: "pointer", flexShrink: 0 }}>
       <ShieldCheck size={17} color="#F5D98A" />
       <span style={{ textAlign: "left", lineHeight: 1.35 }}>
         <b style={{ display: "block", fontSize: 11.5, color: "#fff", letterSpacing: .2 }}>금융위 등록 보험대리점</b>
@@ -22,15 +22,15 @@ function InsAgencyBadge({ onGo }) {
         <div className="bk" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
           <div className="bkh"><div className="bt">보험대리점 등록 정보</div><button style={{ background: "none", border: "none", cursor: "pointer" }} onClick={() => setOpen(false)}><X size={20} color="#8A97AE" /></button></div>
           <div className="bkb">
-            <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(125deg,#0B1F4B,#14337A)", borderRadius: 13, padding: "16px 17px", boxShadow: "0 14px 28px -18px rgba(11,31,75,.9)" }}>
-              <span style={{ width: 46, height: 46, borderRadius: 12, background: "rgba(245,217,138,.16)", border: "1px solid #C9A84C", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={25} color="#F5D98A" /></span>
+            <div style={{ display: "flex", alignItems: "center", gap: 13, background: "#0B1F4B", borderRadius: "var(--r-md)", padding: "16px 17px" }}>
+              <span style={{ width: 46, height: 46, borderRadius: "var(--r-md)", background: "rgba(245,217,138,.16)", border: "1px solid #C9A84C", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={25} color="#F5D98A" /></span>
               <div style={{ lineHeight: 1.5 }}>
                 <b style={{ display: "block", fontSize: 16.5, color: "#fff" }}>{AGENCY_INFO.corp}</b>
                 <span style={{ fontSize: 12.5, color: "#F5D98A", fontWeight: 800 }}>보험대리점 등록번호 {AGENCY_INFO.regNo}</span>
               </div>
             </div>
             <p style={{ fontSize: 13, color: "#334155", lineHeight: 1.75, margin: "4px 2px" }}>{AGENCY_INFO.full}</p>
-            <div style={{ fontSize: 12.3, color: "#475569", background: "#F8FAFC", border: "1px solid var(--border)", borderRadius: 11, padding: "11px 13px", lineHeight: 1.8 }}>
+            <div style={{ fontSize: 12.5, color: "#475569", background: "#F8FAFC", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "11px 13px", lineHeight: 1.8 }}>
               · 등록 근거: <b>{AGENCY_INFO.basis}</b><br />
               · 인수사: 현대해상(전속 제휴)<br />
               · 상담·모집은 <b>라이선스 상담사</b>가 수행합니다.
@@ -109,7 +109,7 @@ function EnrollModal({ onClose, onGo }) {
               <div style={{ fontWeight: 800, fontSize: 17 }}>검진 예약 · 검진보험 자동가입 완료</div>
               <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>{planName} · {date || "검진일 예약"} · 서울 KMI 광화문센터</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16, textAlign: "left" }}>
-                <div className="resitem" style={{ margin: 0, borderColor: "#FCD34D", background: "linear-gradient(120deg,#FFFBEB,#fff)" }}><span className="ic" style={{ background: "#FEF3C7" }}><Art name="coin" size={20} /></span><div><b style={{ fontSize: 13 }}>건강토큰(Health Token) 적립</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>검진 예약으로 적립된 토큰으로 <b style={{ color: "#B45309" }}>무상 건강검진보험</b>이 가입됩니다.</div></div></div>
+                <div className="resitem" style={{ margin: 0, borderColor: "#FCD34D", background: "#fff" }}><span className="ic" style={{ background: "#FEF3C7" }}><Art name="coin" size={20} /></span><div><b style={{ fontSize: 13 }}>건강토큰(Health Token) 적립</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>검진 예약으로 적립된 토큰으로 <b style={{ color: "#B45309" }}>무상 건강검진보험</b>이 가입됩니다.</div></div></div>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#E7F8EE" }}><Art name="badge" size={20} /></span><div><b style={{ fontSize: 13 }}>검진보험 자동가입</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>추가 보험료 없이 {planName} 보장이 적용됩니다.</div></div></div>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic"><Art name="hash" size={20} /></span><div><b style={{ fontSize: 13 }}>NFT 보험증서 발행</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>건강지갑에 SBT 보험증서가 발행됩니다.</div></div></div>
                 <div className="resitem" style={{ margin: 0 }}><span className="ic" style={{ background: "#FEF3E2" }}><Art name="doc" size={20} /></span><div><b style={{ fontSize: 13 }}>검진 결과 자동 연동</b><div style={{ fontSize: 11.5, color: "var(--muted)" }}>검진 중·후 질환 진단 시 자동 청구로 연결됩니다.</div></div></div>
@@ -182,7 +182,7 @@ function CoverDetailModal({ name, onClose }) {
           <div className="dsec"><div className="dh">보장금액 (플랜별)</div>
             <MiniTbl head={["구분", "기본형", "표준형", "고급형"]} rows={[["보험가입금액", ...d.amounts.slice(0, 3)]]} />
           </div>
-          <div className="dsec"><div className="dh">보험금 지급사유</div><p style={{ fontSize: 12.8, color: "#3a4659", lineHeight: 1.65 }}>{d.pay}</p></div>
+          <div className="dsec"><div className="dh">보험금 지급사유</div><p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.65 }}>{d.pay}</p></div>
           {d.table && <div className="dsec"><div className="dh">{d.tableTitle || "분류·지급 기준"}</div><MiniTbl head={d.table.head} rows={d.table.rows} /></div>}
           {d.groups && <div className="dsec"><div className="dh">{d.groupsTitle || "분류표"}</div><GroupTbl groups={d.groups} /></div>}
           {d.def && <div className="dsec"><div className="dh">질병 정의</div><p style={{ fontSize: 12.5, color: "#3a4659", lineHeight: 1.6 }}>{d.def}</p></div>}
@@ -225,7 +225,7 @@ function InsJoin({ onGo }) {
   const Agree = ({ k, required: rq, title, summary, full, prov }) => (
     <div className="card" style={{ borderLeft: "4px solid " + (ag[k] === "yes" ? "#16A34A" : ag[k] === "no" ? "#EF4444" : "#CBD5E1") }}>
       <div className="rct" style={{ fontSize: 14, alignItems: "center" }}>{title}<span className={`reqtag ${rq ? "req" : "opt"}`}>{rq ? "필수" : "선택"}</span></div>
-      <p style={{ fontSize: 12.3, color: "#3a4659", lineHeight: 1.6 }}>{summary}</p>
+      <p style={{ fontSize: 12.5, color: "#3a4659", lineHeight: 1.6 }}>{summary}</p>
       {prov && <div className="provlist">{PROVIDERS.map((p) => <span key={p}>{p}</span>)}</div>}
       {full && <><button className="atoggle" onClick={() => tog(k)}>{open[k] ? "전문 접기 ▲" : "전문 보기 ▼"}</button>{open[k] && <div className="fulltxt">{full}</div>}</>}
       <div className="agree"><button className={`yes ${ag[k] === "yes" ? "on" : ""}`} onClick={() => set(k, "yes")}><Check size={14} style={{ verticalAlign: "-2px" }} /> 동의함</button><button className={`no ${ag[k] === "no" ? "on" : ""}`} onClick={() => set(k, "no")}>동의하지 않음</button></div>
@@ -234,7 +234,7 @@ function InsJoin({ onGo }) {
   const Confirm = ({ k, title, summary, full }) => (
     <div className="card" style={{ borderLeft: "4px solid " + (ag[k] ? "#2563EB" : "#CBD5E1") }}>
       <div className="rct" style={{ fontSize: 14, alignItems: "center" }}>{title}<span className="reqtag req">필수</span></div>
-      <p style={{ fontSize: 12.3, color: "#3a4659", lineHeight: 1.6 }}>{summary}</p>
+      <p style={{ fontSize: 12.5, color: "#3a4659", lineHeight: 1.6 }}>{summary}</p>
       {full && <><button className="atoggle" onClick={() => tog(k)}>{open[k] ? "전문 접기 ▲" : "전문 보기 ▼"}</button>{open[k] && <div className="fulltxt">{full}</div>}</>}
       <div className="agree"><button className={`chk ${ag[k] ? "on" : ""}`} onClick={() => set(k, !ag[k])}><Check size={14} style={{ verticalAlign: "-2px" }} /> 위 내용을 확인했습니다</button></div>
     </div>
@@ -242,7 +242,7 @@ function InsJoin({ onGo }) {
 
   if (done) return (
     <div className="card" style={{ textAlign: "center", padding: "28px 20px" }}>
-      <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#E7F8EE", display: "grid", placeItems: "center", margin: "0 auto 12px" }}><Check size={30} color="#16A34A" /></div>
+      <div style={{ width: 56, height: 56, borderRadius: "var(--r-circle)", background: "#E7F8EE", display: "grid", placeItems: "center", margin: "0 auto 12px" }}><Check size={30} color="#16A34A" /></div>
       <div style={{ fontWeight: 800, fontSize: 18 }}>건강검진보험 가입 동의가 접수되었습니다</div>
       <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 8, lineHeight: 1.6 }}>제휴 보험대리점 <b>글로벌예방금융㈜</b>가 청약·인수심사를 진행하며, 보험증권은 건강지갑(NFT 증서)으로 발행됩니다.</p>
       <button className="cbtn pri" style={{ maxWidth: 260, margin: "16px auto 0" }} onClick={() => setDone(false)}>확인</button>
@@ -282,8 +282,8 @@ function InsJoin({ onGo }) {
           {typeof TrustLine === "function" && <TrustLine ctx="rrn" />}
           <div style={{ fontSize: 11.5, fontWeight: 700, color: "#B45309", marginBottom: 5 }}><Lock size={11} style={{ verticalAlign: "-2px" }} /> 실명 확인 <span style={{ color: "var(--soft)", fontWeight: 600 }}>· 건강검진보험 가입 시 필수</span></div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, border: "1px solid var(--border)", borderRadius: 9, padding: "9px 12px", background: "#F8FAFC", color: "var(--soft)", fontSize: 13, letterSpacing: "2px" }}>●●●●●● — ●●●●●●●</div>
-            <button type="button" onClick={() => { setRrnVerified(true); if (typeof toast === "function") toast("PASS 본인인증이 완료되었습니다(시연)."); }} disabled={rrnVerified} style={{ border: "1px solid var(--border)", background: rrnVerified ? "#E7F8EE" : "#2563EB", borderRadius: 9, padding: "9px 13px", cursor: "pointer", color: rrnVerified ? "#15803D" : "#fff", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}><ShieldCheck size={13} /> {rrnVerified ? "인증 완료 ✓" : "PASS 본인인증(시연)"}</button>
+            <div style={{ flex: 1, border: "1px solid var(--border)", borderRadius: "var(--r-sm)", padding: "9px 12px", background: "#F8FAFC", color: "var(--soft)", fontSize: 13, letterSpacing: "2px" }}>●●●●●● — ●●●●●●●</div>
+            <button type="button" onClick={() => { setRrnVerified(true); if (typeof toast === "function") toast("PASS 본인인증이 완료되었습니다(시연)."); }} disabled={rrnVerified} style={{ border: "1px solid var(--border)", background: rrnVerified ? "#E7F8EE" : "#2563EB", borderRadius: "var(--r-sm)", padding: "9px 13px", cursor: "pointer", color: rrnVerified ? "#15803D" : "#fff", display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}><ShieldCheck size={13} /> {rrnVerified ? "인증 완료 ✓" : "PASS 본인인증(시연)"}</button>
           </div>
           <div style={{ fontSize: 10.5, color: "var(--soft)", marginTop: 5 }}>※ 시연 환경에서는 <b>주민등록번호를 수집하지 않습니다</b> — 실서비스는 PASS 간편 본인인증으로 대체되며, 인수심사 정보는 보험사에 암호화 전송됩니다.</div>
         </div>
@@ -847,10 +847,10 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
         <PremiumNotice />
         <img src={`./data/premium_infographic.${IMG_EXTS[imgExt]}`} alt="내 몸 맞춤 프리미엄보험 — Hi-Fin Tech 플랫폼 구조도 및 핵심 가치 안내" loading="lazy"
           onClick={() => openConsult("내 몸 맞춤 프리미엄보험")} title="맞춤 보험 상담 신청"
-          style={{ width: "100%", borderRadius: 16, display: "block", border: "1px solid var(--border)", boxShadow: "0 14px 32px -24px rgba(20,40,90,.5)", cursor: "pointer" }}
+          style={{ width: "100%", borderRadius: "var(--r-lg)", display: "block", border: "1px solid var(--border)", cursor: "pointer" }}
           onError={() => (imgExt + 1 < IMG_EXTS.length ? setImgExt(imgExt + 1) : setUseImg(false))} />
         <div className="mhcta">
-          <button className="cbtn pri" style={{ margin: 0, background: "linear-gradient(120deg,#F58220,#E4610F)", borderColor: "#E4610F", boxShadow: "0 12px 26px -16px rgba(228,97,15,.85)" }} onClick={goRegion}><MapPin size={15} /> 가까운 전문 상담사와 내 보장 점검하기</button>
+          <button className="cbtn pri" style={{ margin: 0, background: "#F58220", borderColor: "#E4610F" }} onClick={goRegion}><MapPin size={15} /> 가까운 전문 상담사와 내 보장 점검하기</button>
         </div>
         {regionTeaser && <div className="chnote" style={{ margin: "6px 0 2px" }}>{regionTeaser}</div>}
         <InsAgencyLine />
@@ -865,7 +865,7 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
         <div>
           <div className="ht">프리미엄 헬스케어 보험</div>
           <h2>내 몸 맞춤 프리미엄보험</h2>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.8, fontWeight: 800, color: "#14337A", background: "rgba(255,255,255,.85)", border: "1px solid #C7D8FA", borderRadius: 999, padding: "4px 12px", margin: "8px 0 2px" }}><ShieldCheck size={13} /> 장기보험 · 건강데이터 기반 종합 설계</div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 800, color: "#14337A", background: "rgba(255,255,255,.85)", border: "1px solid #C7D8FA", borderRadius: "var(--r-pill)", padding: "4px 12px", margin: "8px 0 2px" }}><ShieldCheck size={13} /> 장기보험 · 건강데이터 기반 종합 설계</div>
           <div className="hd">Health-InsurFin Tech 기반으로 개인 건강데이터를 분석하여 꼭 필요한 보장을 합리적인 비용으로 제공하고, 건강활동으로 적립한 건강자산으로 보험료 부담을 줄이는 새로운 건강금융 생태계를 만들어 갑니다.</div>
         </div>
         <div className="mhpartners">
@@ -895,7 +895,7 @@ function PremiumPolicySection({ initialPlanKey, onTab } = {}) {
       {/* 조성래님 지시(2026-07-31): 핵심 가치 6카드 박스 삭제 — 상담 동선을 내 지역 상담으로 일원화 */}
       <div className="mhend"><ShieldCheck size={16} /> HI-Fin Tech는 보험·헬스케어·금융·AI 기술이 융합된 차세대 국민 건강보장체계 구축을 지향합니다.</div>
       <div className="mhcta">
-        <button className="cbtn pri" style={{ margin: 0, background: "linear-gradient(120deg,#F58220,#E4610F)", borderColor: "#E4610F", boxShadow: "0 12px 26px -16px rgba(228,97,15,.85)" }} onClick={goRegion}><MapPin size={15} /> 가까운 전문 상담사와 내 보장 점검하기</button>
+        <button className="cbtn pri" style={{ margin: 0, background: "#F58220", borderColor: "#E4610F" }} onClick={goRegion}><MapPin size={15} /> 가까운 전문 상담사와 내 보장 점검하기</button>
       </div>
       {regionTeaser && <div className="chnote" style={{ margin: "6px 0 2px" }}>{regionTeaser}</div>}
       <InsAgencyLine />
@@ -1319,7 +1319,7 @@ function InsLadderCard({ onTab }) {
       <div className="costrow"><span className="cl">내 치료비 케어 적립금 (토큰의 30% 우선 적립)</span><span className="cv" style={{ color: "var(--blue)" }}>{L.reserve.toLocaleString()} HTK</span><span className="ca">{first ? "실손 우선 충당" : "치료비 준비 진단 활용"}</span></div>
       {first && P && (<>
         <div style={{ margin: "8px 0 4px", fontSize: 12, fontWeight: 700 }}>자동 적립 플랜 — 목표 {P.goalWon.toLocaleString()}원(첫 3개월 보험료) · 진행 {P.progress}%</div>
-        <div style={{ height: 10, background: "#FDE8D8", borderRadius: 99, overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: P.progress + "%", background: "linear-gradient(90deg,#F97316,#FB923C)" }} /></div>
+        <div style={{ height: 10, background: "#FDE8D8", borderRadius: "var(--r-pill)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: P.progress + "%", background: "#FB923C" }} /></div>
         <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 5 }}>{P.note}{P.monthlyEarn ? ` (최근 월 적립 속도 ≈ ${P.monthlyEarn.toLocaleString()} HTK)` : ""}</div>
       </>)}
       {first && <div className="chnote" style={{ marginTop: 8 }}>{L.legal}</div>}
@@ -1359,7 +1359,7 @@ function InsCheckupInsSection({ onEnroll }) {
   return (
     <div className="card" id="cins-checkup" style={{ border: "1.5px solid #BFD0FF", overflow: "hidden" }}>
       {/* ── 히어로: 한 문장으로 마음에 닿기 ── */}
-      <div style={{ margin: "-16px -16px 14px", padding: "22px 20px 18px", background: "linear-gradient(120deg,#1D4ED8 0%,#2563EB 55%,#0EA5E9 100%)", color: "#fff" }}>
+      <div style={{ margin: "-16px -16px 14px", padding: "22px 20px 18px", background: "#1D4ED8", color: "#fff" }}>
         <div style={{ fontSize: 12, fontWeight: 700, opacity: .9, marginBottom: 6 }}><ShieldCheck size={13} style={{ verticalAlign: "-2px" }} /> ① 건강검진대비보험 · 보험료 0원</div>
         {!S.policy ? (
           <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님, 검진 받으셨죠?<br />그 순간을 위해 <span style={{ color: "#FDE68A" }}>무료 보장</span>이 준비돼 있어요.</div>
@@ -1372,7 +1372,7 @@ function InsCheckupInsSection({ onEnroll }) {
               ? <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님의 무료 보장이 <span style={{ color: "#FDE68A" }}>준비됐어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>보장은 {insDayStr(S.timeline.start)} 0시부터 시작돼요 — 그때부터는 치료비 걱정에 치료를 미루는 일이 없게요.</span></div>
               : <div style={{ fontSize: 17.5, fontWeight: 800, lineHeight: 1.5 }}>{nm}님은 지금 <span style={{ color: "#FDE68A" }}>지켜지고 있어요.</span><br /><span style={{ fontSize: 13.5, fontWeight: 600, opacity: .95 }}>검진에서 무슨 일이 발견돼도 — 치료비 걱정에 치료를 미루는 일은 없게요.</span></div>
         )}
-        {S.policy && S.timeline && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: 6, background: "rgba(255,255,255,.18)", borderRadius: 99, padding: "5px 12px", fontSize: 11.5, fontWeight: 700 }}>{ended ? <AlertTriangle size={13} /> : active ? <Check size={13} /> : <ShieldCheck size={13} />} {active ? "지금 보장되고 있어요" : S.timeline.phase} · {insDayStr(S.timeline.start)} ~ {insDayStr(S.timeline.end)}{active && S.timeline.remainDays != null ? ` · 만기까지 ${S.timeline.remainDays}일` : ""}{waiting ? ` · 개시 ${insDayStr(S.timeline.start)}${S.timeline.startsInDays != null ? ` (개시까지 ${S.timeline.startsInDays}일)` : ""}` : ""}{S.coverSrc ? ` · ${S.coverSrc}` : ""}{S.timeline.seed === "demo" && typeof INS_DEMO !== "undefined" ? <span style={{ background: "rgba(255,255,255,.22)", borderRadius: 99, padding: "1px 7px", fontSize: 10.5, fontWeight: 800 }}>· 시연 기준일 {String(INS_DEMO.asOf).replace(/-/g, ".")}</span> : null}</div>}
+        {S.policy && S.timeline && <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", flexWrap: "wrap", gap: 6, background: "rgba(255,255,255,.18)", borderRadius: "var(--r-pill)", padding: "5px 12px", fontSize: 11.5, fontWeight: 700 }}>{ended ? <AlertTriangle size={13} /> : active ? <Check size={13} /> : <ShieldCheck size={13} />} {active ? "지금 보장되고 있어요" : S.timeline.phase} · {insDayStr(S.timeline.start)} ~ {insDayStr(S.timeline.end)}{active && S.timeline.remainDays != null ? ` · 만기까지 ${S.timeline.remainDays}일` : ""}{waiting ? ` · 개시 ${insDayStr(S.timeline.start)}${S.timeline.startsInDays != null ? ` (개시까지 ${S.timeline.startsInDays}일)` : ""}` : ""}{S.coverSrc ? ` · ${S.coverSrc}` : ""}{S.timeline.seed === "demo" && typeof INS_DEMO !== "undefined" ? <span style={{ background: "rgba(255,255,255,.22)", borderRadius: "var(--r-pill)", padding: "1px 7px", fontSize: 10.5, fontWeight: 800 }}>· 시연 기준일 {String(INS_DEMO.asOf).replace(/-/g, ".")}</span> : null}</div>}
       </div>
 
       {!S.policy ? (
@@ -1386,9 +1386,9 @@ function InsCheckupInsSection({ onEnroll }) {
       ) : (<>
         {/* ── 타임라인(진행이 늘 보이게) ── */}
         <div style={{ display: "flex", gap: 4, margin: "0 0 12px", fontSize: 10.5, fontWeight: 700 }}>
-          {TL.map((s, i) => <span key={s} style={{ flex: 1, textAlign: "center", padding: "5px 0", borderRadius: 8, background: i <= tlIdx ? "#DBEAFE" : "#F1F5F9", color: i <= tlIdx ? "#1D4ED8" : "#94A3B8" }}>{i <= tlIdx ? "✓ " : ""}{s}</span>)}
+          {TL.map((s, i) => <span key={s} style={{ flex: 1, textAlign: "center", padding: "5px 0", borderRadius: "var(--r-sm)", background: i <= tlIdx ? "#DBEAFE" : "#F1F5F9", color: i <= tlIdx ? "#1D4ED8" : "#94A3B8" }}>{i <= tlIdx ? "✓ " : ""}{s}</span>)}
         </div>
-        {ended && S.endedNote && <div style={{ margin: "0 0 10px", padding: "11px 13px", background: "#FEF3E2", border: "1px solid #FDE68A", borderRadius: 12, fontSize: 12.5, lineHeight: 1.7, color: "#92400E", fontWeight: 600 }}>{S.endedNote}</div>}
+        {ended && S.endedNote && <div style={{ margin: "0 0 10px", padding: "11px 13px", background: "#FEF3E2", border: "1px solid #FDE68A", borderRadius: "var(--r-md)", fontSize: 12.5, lineHeight: 1.7, color: "#92400E", fontWeight: 600 }}>{S.endedNote}</div>}
         {/* 연계 증서로 산출되는 창을 숨기지 않고 한 줄로 밝힌다.
             ⚠️ 「재가입」·「재개」·「만기 종료」 같은 **계약 행위 어휘를 쓰지 않는다**(2026-10-08 수선) —
             계약 레코드는 1건뿐이고 증서도 1건뿐이며 바뀐 것은 coverFrom 하나다. 새 청약·새 계약·
@@ -1398,7 +1398,7 @@ function InsCheckupInsSection({ onEnroll }) {
             라벨은 「연계 검진일」(중립) — 이 블록은 조성래(실측)뿐 아니라 코호트·체험 회원의
             **합성 검진일**로도 렌더된다. 그 날짜에 「실측」을 붙이면 데이터에 없는 성격을 단정한다. */}
         {S.timeline && S.timeline.prior && S.timeline.prior.ended && S.timeline.prior.end < S.timeline.start && (
-          <div style={{ margin: "0 0 10px", fontSize: 11.6, color: "var(--muted)", lineHeight: 1.65 }}>
+          <div style={{ margin: "0 0 10px", fontSize: 11.5, color: "var(--muted)", lineHeight: 1.65 }}>
             연계 증서 {S.timeline.prior.cert ? S.timeline.prior.cert.id : ""}(연계 검진일 {S.timeline.prior.cert && S.timeline.prior.cert.date ? S.timeline.prior.cert.date : "—"})로 산출되는 보장 창은 {insDayStr(S.timeline.prior.start)} ~ {insDayStr(S.timeline.prior.end)} — 이미 지난 기간이에요. 지금 적용되는 창은 계약 보장 개시일 기준 {insDayStr(S.timeline.start)} ~ {insDayStr(S.timeline.end)}{S.timeline.seed === "demo" ? "(시연 시드)" : ""}예요.
           </div>
         )}
@@ -1407,7 +1407,7 @@ function InsCheckupInsSection({ onEnroll }) {
         <div style={{ fontSize: 13, fontWeight: 800, margin: "2px 0 8px" }}>{never ? "이 검진 기록으로 열리는 보장 창은 이미 지난 기간이에요 — 보장 내용은 이랬어요," : ended ? "보장 기간에는 이렇게 지켜드렸어요," : "만약에 이런 일이 생기면요,"}</div>
         <div style={{ display: "grid", gap: 8 }}>
           {S.coverage.map(([scen, name, amt, d]) => (
-            <div key={name} style={{ display: "flex", alignItems: "center", gap: 12, border: "1px solid #E3ECFB", background: "#F8FAFF", borderRadius: 12, padding: "12px 14px" }}>
+            <div key={name} style={{ display: "flex", alignItems: "center", gap: 12, border: "1px solid #E3ECFB", background: "#F8FAFF", borderRadius: "var(--r-md)", padding: "12px 14px" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: "#334155" }}>😟 "{scen}"</div>
                 <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 3 }}>💙 {d}</div>
@@ -1419,7 +1419,7 @@ function InsCheckupInsSection({ onEnroll }) {
             </div>))}
         </div>
         {/* ── 약속 한 줄 + 행동 ── */}
-        <div style={{ margin: "12px 0 10px", padding: "12px 14px", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12, fontSize: 13, lineHeight: 1.7, color: "#78350F" }}>
+        <div style={{ margin: "12px 0 10px", padding: "12px 14px", background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: "var(--r-md)", fontSize: 13, lineHeight: 1.7, color: "#78350F" }}>
           <b>치료비 때문에 치료를 포기하지 마세요.</b> 받을 수 있는 치료비는 끝까지 받아서, 제대로 치료받으세요 — 청구는 서류 없이 <b>검진 기록으로 하이가 도와드려요.</b>
         </div>
         {S.claims.length > 0 && S.claims.map((c) => <div className="costrow" key={c.id}><span className="cl">청구 {c.id}</span><span className="cv">{/지급완료/.test(c.status) ? `지급 ${won(c.payout)}원 — 지갑에 들어왔어요` : c.status}</span><span className="ca" style={{ color: /지급완료/.test(c.status) ? "var(--green)" : "#B45309" }}>{/지급완료/.test(c.status) ? "완료 ✓" : "진행 중"}</span></div>)}
@@ -1519,7 +1519,7 @@ function InsRiskCard() {
           합성 코호트라 본인 계정에서는 비운다 — 근거는 결과통보서 실측값으로만 적는다. */}
       <div className="rct"><Sparkles size={17} color="#7C3AED" /> 질병별 위험 예측 <span className="cbadge" style={{ marginLeft: 8, color: "#6D28D9", background: "#EDE9FE" }}>{R.real ? "내 검진 실측 기반" : "내 검진 수치 기반"} · {R.date}</span></div>
       {R.risks.slice(0, 3).map((r) => (
-        <div key={r.code} style={{ border: "1px solid #EEF2F7", borderRadius: 10, padding: "8px 12px", margin: "5px 0" }}>
+        <div key={r.code} style={{ border: "1px solid #EEF2F7", borderRadius: "var(--r-md)", padding: "8px 12px", margin: "5px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
             <b>{r.ko} <span style={{ fontSize: 10.5, color: "var(--soft)" }}>{r.code}</span></b>
             {r.topPct != null
@@ -1536,7 +1536,7 @@ function InsRiskCard() {
       {CM && CM.ok && CM.benefitKnown === false && CM.rows.length ? <div className="chnote" style={{ marginTop: 4 }}>※ {CM.rows[0].gapNote}</div> : null}
       <button className="cbtn" style={{ marginTop: 6 }} onClick={() => setUw(insService.underwrite(m, "치료비 준비 진단"))}><ShieldCheck size={14} /> 가입 심사 미리보기 (인수 시뮬레이션)</button>
       {uw && uw.ok && (
-        <div style={{ background: "#F8FAFF", border: "1px solid #DBEAFE", borderRadius: 10, padding: "9px 12px", marginTop: 8, fontSize: 12.2, lineHeight: 1.65 }}>
+        <div style={{ background: "#F8FAFF", border: "1px solid #DBEAFE", borderRadius: "var(--r-md)", padding: "9px 12px", marginTop: 8, fontSize: 12, lineHeight: 1.65 }}>
           <b style={{ color: "#1D4ED8" }}>예상 결과: {uw.decision}</b><br />{uw.note}
           {uw.disclosures.length > 0 && <div style={{ marginTop: 4, color: "var(--muted)" }}>고지 자동 구성: {uw.disclosures.map((d) => d.item).join(" · ")} <i>(다시 입력하실 필요 없어요)</i></div>}
           <div style={{ marginTop: 4, fontSize: 11, color: "var(--soft)" }}>{uw.ga}</div>
@@ -1581,7 +1581,7 @@ function InsBillingTab() {
       <div className="rct"><Coins size={16} color="#16A34A" /> 청구·납부 내역</div>
       {S.bills.slice(0, 8).map((b) => (
         <div className="costrow" key={b.id}><span className="cl">{b.ym} · {b.product}</span><span className="cv">{won(b.amount)}{b.status === "수납" && b.htk ? ` (${b.htk.toLocaleString()} HTK)` : ""}</span>
-          <span className="ca" style={{ color: STC[b.status][0], background: STC[b.status][1], borderRadius: 8, padding: "2px 8px" }}>{b.status}</span>
+          <span className="ca" style={{ color: STC[b.status][0], background: STC[b.status][1], borderRadius: "var(--r-sm)", padding: "2px 8px" }}>{b.status}</span>
           {b.status !== "수납" && b.status !== "실효처리" && <button className="cbtn" style={{ width: "auto", margin: "0 0 0 8px", padding: "5px 10px", fontSize: 11 }} onClick={() => setConfirm(b)}>납부</button>}</div>
       ))}
       <div className="chnote" style={{ marginTop: 8 }}>납기+7일 지나면 <b>유예</b>, +30일 <b>미납</b>, 3회 연속 미납 시 <b>실효</b>돼요 — 상태는 언제나 여기서 보여요.</div>
@@ -1632,7 +1632,7 @@ function InsClaimPayTab({ onModal }) {
               <span className="ca">{paid ? "지급완료" : denied ? "부지급" : /이의신청/.test(c.status || "") ? "재심사 중" : <button className="cbtn" style={{ width: "auto", margin: 0, padding: "5px 10px", fontSize: 11 }} onClick={() => { const rv = insService.claimReview(m, c.id); if (!rv.ok) { insService.claimPay(m, c.id); if (typeof toast === "function") toast("🔒 " + rv.reason); setTick((t) => t + 1); return; } setConfirm(rv); }}>심사·지급</button>}</span>
             </div>
             {denied && deny && (
-              <div style={{ background: "#FFF7F7", border: "1px solid #FECACA", borderRadius: 10, padding: "8px 12px", margin: "2px 0 8px", fontSize: 12 }}>
+              <div style={{ background: "#FFF7F7", border: "1px solid #FECACA", borderRadius: "var(--r-md)", padding: "8px 12px", margin: "2px 0 8px", fontSize: 12 }}>
                 <b style={{ color: "#B91C1C" }}>{deny.ko}</b> — {deny.easy}<br /><span style={{ color: "var(--muted)" }}>해결: {deny.fix}</span>
                 <button className="cbtn" style={{ width: "auto", margin: "6px 0 0", padding: "5px 10px", fontSize: 11 }} onClick={() => { const r = insService.claimAppeal(m, c.id, "재검토 요청"); if (typeof toast === "function") toast(r.ok ? "이의신청이 접수됐어요 — 재심사 결과를 알림으로 알려드려요" : r.reason); setTick((t) => t + 1); }}>이의신청</button>
               </div>)}
@@ -1715,7 +1715,7 @@ function InsShareTab() {
     <div className="card">
       <div className="rct"><FileText size={16} color="#7C3AED" /> 치료비 지원 신청 (사각지대 지원)</div>
       {myApply.map((a) => (
-        <div key={a.id || a.at} style={{ border: "1px solid var(--border)", borderRadius: 12, padding: "10px 12px", margin: "6px 0" }}>
+        <div key={a.id || a.at} style={{ border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: "10px 12px", margin: "6px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <b style={{ fontSize: 13 }}>{a.id || "신청"}</b>
             {a.urgency && <span className="cbadge" style={{ color: a.urgency.grade === "긴급" ? "#B91C1C" : a.urgency.grade === "높음" ? "#B45309" : "#1D4ED8", background: a.urgency.grade === "긴급" ? "#FDECEC" : a.urgency.grade === "높음" ? "#FEF3E2" : "#EAF0FE" }}>긴급도 {a.urgency.grade} · {a.urgency.score}점</span>}
@@ -1723,7 +1723,7 @@ function InsShareTab() {
           </div>
           {/* 상태 타임라인 — 문의할 필요 없이 진행이 늘 보이게 */}
           <div style={{ display: "flex", gap: 4, margin: "8px 0 4px", fontSize: 10.5, fontWeight: 700 }}>
-            {["심사 대기", "선정", "집행 완료"].map((s, i) => { const on = ["심사 대기", "선정", "집행 완료"].indexOf(a.status) >= i || a.status === "보류" && i === 0; return <span key={s} style={{ flex: 1, textAlign: "center", padding: "4px 0", borderRadius: 8, background: on ? "#DBEAFE" : "#F1F5F9", color: on ? "#1D4ED8" : "#94A3B8" }}>{s}</span>; })}
+            {["심사 대기", "선정", "집행 완료"].map((s, i) => { const on = ["심사 대기", "선정", "집행 완료"].indexOf(a.status) >= i || a.status === "보류" && i === 0; return <span key={s} style={{ flex: 1, textAlign: "center", padding: "4px 0", borderRadius: "var(--r-sm)", background: on ? "#DBEAFE" : "#F1F5F9", color: on ? "#1D4ED8" : "#94A3B8" }}>{s}</span>; })}
           </div>
           {a.settle && <div style={{ fontSize: 11.5, color: "var(--green)", fontWeight: 700 }}>✓ {a.settle.hosp}에 {a.settle.amount.toLocaleString()}원 직접 정산 — 현금을 거치지 않고 치료가 진행돼요{a.outcome ? ` · 성과: ${a.outcome.note}` : ""}</div>}
           {/* 심사·집행 시연 흐름(운영 심사 시뮬 — 정직 표기) */}
@@ -1810,12 +1810,12 @@ function InsuranceSection({ onGo }) {
         <InsCheckupInsSection onEnroll={() => setEnroll(true)} />
         {/* Phase4 업셀 배너 — 치료비(보험금) 수령 경험 회원에게만: 다음 공백은 '치료 중 생활비' */}
         {(() => { try { const cl = JSON.parse(localStorage.getItem("hifin_claims") || "[]"); if (!cl.length) return null; } catch (e) { return null; } return (
-          <div className="card" style={{ border: "1.5px solid #F3DFB6", background: "linear-gradient(120deg,#FFFBEB,#FFF7E8)", margin: "10px 0 12px" }}>
+          <div className="card" style={{ border: "1.5px solid #F3DFB6", background: "#FFFBEB", margin: "10px 0 12px" }}>
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
               <span style={{ fontSize: 26 }}>💠</span>
               <div style={{ flex: "1 1 280px" }}>
                 <b style={{ fontSize: 14.5, color: "#92400E" }}>치료비는 지켜졌어요 — 다음은 치료 '중' 생활비예요</b>
-                <div style={{ fontSize: 12.3, color: "#78550F", marginTop: 4, lineHeight: 1.6 }}>보험금 수령을 경험하셨죠. 큰 병의 진짜 부담은 치료받는 동안 <b>일을 쉬며 끊기는 소득</b>이에요 — 장기 플랜은 그 공백까지 월급처럼 채워줘요.</div>
+                <div style={{ fontSize: 12.5, color: "#78550F", marginTop: 4, lineHeight: 1.6 }}>보험금 수령을 경험하셨죠. 큰 병의 진짜 부담은 치료받는 동안 <b>일을 쉬며 끊기는 소득</b>이에요 — 장기 플랜은 그 공백까지 월급처럼 채워줘요.</div>
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button className="cbtn pri" style={{ margin: 0, width: "auto", padding: "9px 15px", fontSize: 12 }} onClick={() => { const el = document.getElementById("cins-premium"); if (el) el.scrollIntoView({ behavior: "smooth" }); }}>치료비+생활비 설계 보기</button>
@@ -1845,7 +1845,7 @@ function InsuranceSection({ onGo }) {
           <span><Art name="doc" size={16} /> 검진 결과 자동 연동</span>
         </div>
         <div className="card">
-          <div className="rct"><ShieldCheck size={18} color="#2563EB" /> 건강검진 대비보험 <span style={{ fontSize: 11.5, color: "var(--soft)", fontWeight: 600 }}>· 현대해상 전속 보험대리점 글로벌예방금융㈜ 및 GA코리아와의 전략적 제휴 운영</span><span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "var(--green)", background: "#E7F8EE", padding: "4px 10px", borderRadius: 999 }}>검진 연계 자동가입</span></div>
+          <div className="rct"><ShieldCheck size={18} color="#2563EB" /> 건강검진 대비보험 <span style={{ fontSize: 11.5, color: "var(--soft)", fontWeight: 600 }}>· 현대해상 전속 보험대리점 글로벌예방금융㈜ 및 GA코리아와의 전략적 제휴 운영</span><span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "var(--green)", background: "#E7F8EE", padding: "4px 10px", borderRadius: "var(--r-pill)" }}>검진 연계 자동가입</span></div>
           <p style={{ fontSize: 13, color: "#3a4659", lineHeight: 1.65 }}>건강검진을 예약하면 <b>추가 보험료 없이 검진 대비보험이 자동 가입</b>됩니다. 검진 전후 발견되기 쉬운 <b>암·뇌졸중·급성심근경색·정신질환</b> 등을 진단·수술비로 보장해 치료비 부담을 덜어드립니다.</p>
           <button className="cbtn pri" onClick={() => setEnroll(true)}><CalendarCheck size={15} /> 검진 예약하고 자동가입</button>
         </div>
@@ -1870,9 +1870,9 @@ function InsuranceSection({ onGo }) {
 
         <div className="card" style={{ border: "1.5px solid #BFD0FF" }}>
           <div className="rct"><CalendarCheck size={18} color="#2F5BEA" /> 검진 예약 → 자동가입 절차</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(120deg,#0E9F6E 0%,#16A34A 45%,#0EA5E9 100%)", color: "#fff", borderRadius: 14, padding: "14px 16px", margin: "2px 0 14px", boxShadow: "0 14px 28px -16px rgba(14,165,233,.7)", position: "relative", overflow: "hidden" }}>
-            <span style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><Art name="coin" size={28} /></span>
-            <div style={{ fontSize: 13.8, fontWeight: 700, lineHeight: 1.55 }}>검진 예약을 하면 자동으로 <b style={{ color: "#FDE68A" }}>건강토큰(Health Token)</b>이 적립되어 <b style={{ color: "#FDE68A" }}>무상 건강검진보험</b>이 가입됩니다.</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 13, background: "#0E9F6E", color: "#fff", borderRadius: "var(--r-lg)", padding: "14px 16px", margin: "2px 0 14px", position: "relative", overflow: "hidden" }}>
+            <span style={{ width: 44, height: 44, borderRadius: "var(--r-md)", background: "rgba(255,255,255,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><Art name="coin" size={28} /></span>
+            <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.55 }}>검진 예약을 하면 자동으로 <b style={{ color: "#FDE68A" }}>건강토큰(Health Token)</b>이 적립되어 <b style={{ color: "#FDE68A" }}>무상 건강검진보험</b>이 가입됩니다.</div>
           </div>
           {[["검진 예약", "검진센터·일정을 예약하면 건강토큰(Health Token)이 적립되며 검진보험 가입이 함께 시작됩니다."], ["플랜 선택", "기본형·표준형·고급형 중 선택 (추가 보험료 0원·무상)."], ["자동가입 확정", "적립된 건강토큰으로 무상 가입 — 검진 15일 전부터 3개월간 보장(3개월 단위 연장)."], ["NFT 보험증서·결과 연동", "건강지갑에 SBT 증서 발행, 검진 결과가 자동 연동됩니다."], ["진단·수술 시 자동청구", "보장 사유 발생 시 검진·진료 기록으로 간편 청구."]].map(([t, d], i) => (
             <div className="istep" key={i}><span className="sn">{i + 1}</span><div><b>{t}</b><p>{d}</p></div></div>
@@ -1900,7 +1900,7 @@ function InsuranceSection({ onGo }) {
 
       {/* 과업3 §4: 전용 「AI 치료비 케어 상담사」 슬롯 — 현 Phase는 보험 특화 대화(AIPlannerChat)로 연결, 차기 Phase에서 insService.ctx(tab) 컨텍스트를 받는 전용 상담사 본체 장착(정책: insService.policy) */}
       {tab !== "ai" && (
-        <button className="cbtn pri" style={{ position: "fixed", right: 20, bottom: 96, width: "auto", margin: 0, zIndex: 40, borderRadius: 99, padding: "12px 18px", boxShadow: "0 14px 32px -12px rgba(37,99,235,.7)" }}
+        <button className="cbtn pri" style={{ position: "fixed", right: 20, bottom: 96, width: "auto", margin: 0, zIndex: 40, borderRadius: "var(--r-pill)", padding: "12px 18px", boxShadow: "var(--shadow-pop)" }}
           onClick={() => { try { window.__hifinInsCtx = insService.ctx(tab); } catch (e) {} setTab("ai"); }}>
           <MessageSquare size={15} /> 보험 상담사
         </button>)}

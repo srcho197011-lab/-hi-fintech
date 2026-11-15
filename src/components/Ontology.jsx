@@ -506,7 +506,7 @@ function DzCareLibrary() {
   const CAP = 60;
   return (
     <div className="dzlib">
-      <div className="ontstore-def" style={{ background: "linear-gradient(120deg,#0C2A20,#0F1B33)", borderColor: "#1F5137" }}><span className="ontstore-ic" style={{ background: "#0E241C" }}><Pill size={15} color="#34D399" /></span><div><b>질병 케어 라이브러리 · {entries.length || 197}개 질병</b><p>192개 질병별 <b>맞춤 영양소·복용 금기 영양소·홈케어 의료기기·건강식단·생활습관</b>을 전세계 권위기관 근거로 정리한 지식 스토리지입니다. 진료과·질병·영양소로 검색하세요.</p></div></div>
+      <div className="ontstore-def" style={{ background: "#0F1B33", borderColor: "#1F5137" }}><span className="ontstore-ic" style={{ background: "#0E241C" }}><Pill size={15} color="#34D399" /></span><div><b>질병 케어 라이브러리 · {entries.length || 197}개 질병</b><p>192개 질병별 <b>맞춤 영양소·복용 금기 영양소·홈케어 의료기기·건강식단·생활습관</b>을 전세계 권위기관 근거로 정리한 지식 스토리지입니다. 진료과·질병·영양소로 검색하세요.</p></div></div>
       <div className="ontfilters" style={{ gridTemplateColumns: "220px 1fr" }}>
         <select value={dept} onChange={(e) => setDept(e.target.value)}>{depts.map((d) => <option key={d} value={d}>{d === "전체" ? "진료과목 전체" : _deptL(d)}</option>)}</select>
         <div className="ontsearch"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="질병·영양소·기기 검색 (예: 오메가3, 혈당계, 당뇨)" /></div>
@@ -703,7 +703,7 @@ function OntoLiveSim({ cohort, agg, onGo }) {
       <div className="ontpanel">
         <div className="ontph"><Zap size={15} color="#22D3EE" /> 섹션별 건강케어 소비 <span>· 실시간 누적 · {st.buys.toLocaleString()}건</span></div>
         {SIM_SECTIONS.map((s) => <OntBar key={s.key} label={`${s.label} (${(st.secN[s.key] || 0).toLocaleString()}건)`} value={st.sec[s.key] || 0} max={secMax} color={s.c} sub="" />)}
-        <div className="ontsimsplit"><span>판매마진 분배</span><b style={{ color: "#16A34A" }}>적립 {WALLET_SPLIT.earn}%</b><b style={{ color: "#E11D48" }}>나눔 {WALLET_SPLIT.give}%</b><b style={{ color: "#94A3B8" }}>운영 {WALLET_SPLIT.ops}%</b></div>
+        <div className="ontsimsplit"><span>판매마진 분배</span><b style={{ color: "#16A34A" }}>적립 {WALLET_SPLIT.earn}%</b><b style={{ color: "#E11D48" }}>나눔 {WALLET_SPLIT.give}%</b><b style={{ color: "var(--muted)" }}>운영 {WALLET_SPLIT.ops}%</b></div>
       </div>
       <div className="ontpanel">
         <div className="ontph"><TrendingUp size={15} color="#EF4444" /> 자동 세그먼트 이동 <span>· 신규 진단 반영</span></div>

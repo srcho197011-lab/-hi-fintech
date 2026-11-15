@@ -181,7 +181,7 @@ function CheckupCollect({ member, onDone, onLater }) {
         <div className="obhint" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span>📅 <b>검진일</b> — 결과지에 적힌 날짜를 확인해 주세요</span>
           <input type="date" value={ckDate} max={_today} onChange={(e) => setCkDate(e.target.value)}
-            style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "5px 9px", fontSize: 12.5, fontFamily: "inherit" }} />
+            style={{ border: "1px solid var(--border)", borderRadius: "var(--r-sm)", padding: "5px 9px", fontSize: 12.5, fontFamily: "inherit" }} />
           {!ckDate && <span style={{ color: "#B45309", fontWeight: 700, fontSize: 11.5 }}>입력해야 저장돼요</span>}
         </div>
         {ocr && ocr.completeness === "partial" && <div className="obbanner"><AlertTriangle size={14} /> 공단 제공 항목({rows.length}개) 기준의 <b>부분 데이터</b>입니다. 결과지를 업로드하면 전체 정밀 분석이 가능해요.</div>}

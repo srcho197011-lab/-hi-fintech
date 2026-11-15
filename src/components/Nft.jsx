@@ -82,8 +82,8 @@ function NFTSection({ onGo }) {
       </>)}
 
       {tab === "sec" && (<>
-        <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(120deg,#4C1D95,#7C3AED 60%,#2F5BEA)", color: "#fff", borderRadius: 16, padding: "18px 18px", boxShadow: "0 16px 32px -20px rgba(124,58,237,.8)" }}>
-          <span style={{ width: 46, height: 46, borderRadius: 12, background: "rgba(255,255,255,.18)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={26} color="#fff" /></span>
+        <div style={{ display: "flex", alignItems: "center", gap: 13, background: "#4C1D95", color: "#fff", borderRadius: "var(--r-lg)", padding: "18px 18px" }}>
+          <span style={{ width: 46, height: 46, borderRadius: "var(--r-md)", background: "rgba(255,255,255,.18)", display: "grid", placeItems: "center", flexShrink: 0 }}><ShieldCheck size={26} color="#fff" /></span>
           <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.55 }}>건강·보험 인증서를 <b style={{ color: "#DDD6FE" }}>양도불가 SBT</b>로 발행하고, <b style={{ color: "#FDE68A" }}>온체인 해시로 위·변조를 방지</b>하도록 설계합니다. <span style={{ opacity: .82, fontWeight: 600 }}>(설계 목표 · 시제품)</span></div>
         </div>
         <div className="card" style={{ marginTop: 12 }}>
