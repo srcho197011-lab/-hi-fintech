@@ -941,3 +941,56 @@ function corpOpenPass(o) {
     fail: rows.filter(function (r) { return !r.ok && !r.skip; }),
     zero: rows.filter(function (r) { return r.skip; }), cur: cur, bal: bal, sum: sum };
 }
+
+/* ── ⑫-2 재무확인원에서 기초 불러오기 ──────────────────────────────────────
+   ⚠️ **숫자는 코드에 넣지 않는다.** 실제 회사 재무자료를 src/ 에 두면 공개 배포본에 실린다
+   (조성래님이 세워 두신 규약). 그래서 여기 두는 것은 **과목 이름과 계정코드의 대응**뿐이고,
+   금액은 조성래님 브라우저가 확인원 파일을 직접 읽어 채운다.
+
+   ⚠️ 이름 대응은 **완전 일치**(공백 제거 후)다. 비슷한 이름을 넘겨짚지 않는다 —
+   「예수금」과 「부가세예수금」처럼 한쪽이 다른 쪽을 품는 이름이 있어서다.
+   다만 괄호 설명이 붙는 과목이 있어(개발비 등) 괄호 앞까지만 보고 맞춘다. */
+const CORP_OPEN_MAP = [
+  { w: "현금및현금등가물", c: "103", why: "확인원에 한 줄로만 있어 전액 보통예금에 둡니다 — 금고 시재가 따로 있으면 나눠 주세요" },
+  { w: "외상매출금", c: "108" }, { w: "미수금", c: "114" }, { w: "선급금", c: "131" },
+  { w: "가지급금", c: "134" }, { w: "부가세대급금", c: "135" }, { w: "상품", c: "146" },
+  { w: "비품", c: "212" }, { w: "감가상각누계액", c: "213" }, { w: "개발비", c: "226" },
+  { w: "임차보증금", c: "232" },
+  { w: "외상매입금", c: "251" }, { w: "매입채무", c: "251" }, { w: "미지급금", c: "253" },
+  { w: "예수금", c: "254" }, { w: "부가세예수금", c: "255" }, { w: "가수금", c: "257" },
+  { w: "단기차입금", c: "260" }, { w: "미지급비용", c: "262" },
+  { w: "자본금", c: "331" }, { w: "미처분이익잉여금", c: "375" }, { w: "이월이익잉여금", c: "375" },
+];
+/* 부채·자본은 대변이 정상이라 **부호를 뒤집어** 담는다(이 장부는 차변을 양수로 쓴다).
+   감가상각누계액은 확인원이 이미 음수로 적으므로 그대로 둔다(자산 차감 계정). */
+function corpOpenWord(s) {
+  return String(s == null ? "" : s).split("(")[0].replace(/[\s\u00a0]/g, "")
+    .replace(/[.·ⅠⅡⅢⅣⅤ]/g, "").replace(/^[0-9]+/, "");
+}
+function corpOpenFromRows(rows) {
+  const out = {}, hit = [], miss = [];
+  (rows || []).forEach(function (r) {
+    const cells = (r || []).map(function (x) { return x; });
+    const nm = corpOpenWord(cells[0] !== undefined && String(cells[0]).trim() ? cells[0] : cells[1]);
+    if (!nm) return;
+    const m = CORP_OPEN_MAP.find(function (x) { return x.w === nm; });
+    if (!m) return;
+    /* 금액은 그 줄에서 **처음 나오는 수**를 쓴다 — 당기 칸이 앞이고 전기 칸이 뒤다 */
+    let v = null;
+    for (let i = 1; i < cells.length; i++) {
+      const n = Number(String(cells[i] == null ? "" : cells[i]).replace(/[,\s]/g, ""));
+      if (String(cells[i] == null ? "" : cells[i]).trim() !== "" && isFinite(n)) { v = Math.round(n); break; }
+    }
+    if (v === null) { miss.push(nm); return; }
+    const a = typeof corpAcct === "function" ? corpAcct(m.c) : null;
+    /* 부채(L) · 자본(E)은 대변이 정상이라 뒤집는다.
+       ⚠️ 감가상각누계액은 t=A 이고 확인원이 이미 음수로 적으므로 그대로 둔다. */
+    const flip = a && (a.t === "L" || a.t === "E");
+    const val = flip ? -v : v;
+    if (out[m.c] === undefined) out[m.c] = 0;
+    out[m.c] += val;
+    hit.push({ c: m.c, n: a ? a.n : nm, v: val, why: m.why || "" });
+  });
+  const sum = corpOpenSum(out);
+  return { bal: out, hit: hit, miss: miss, sum: sum };
+}

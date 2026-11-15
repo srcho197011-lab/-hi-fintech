@@ -17455,6 +17455,59 @@ function corpOpenPass(o) {
     zero: rows.filter(function (r) { return r.skip; }), cur: cur, bal: bal, sum: sum };
 }
 
+/* ── ⑫-2 재무확인원에서 기초 불러오기 ──────────────────────────────────────
+   ⚠️ **숫자는 코드에 넣지 않는다.** 실제 회사 재무자료를 src/ 에 두면 공개 배포본에 실린다
+   (조성래님이 세워 두신 규약). 그래서 여기 두는 것은 **과목 이름과 계정코드의 대응**뿐이고,
+   금액은 조성래님 브라우저가 확인원 파일을 직접 읽어 채운다.
+
+   ⚠️ 이름 대응은 **완전 일치**(공백 제거 후)다. 비슷한 이름을 넘겨짚지 않는다 —
+   「예수금」과 「부가세예수금」처럼 한쪽이 다른 쪽을 품는 이름이 있어서다.
+   다만 괄호 설명이 붙는 과목이 있어(개발비 등) 괄호 앞까지만 보고 맞춘다. */
+const CORP_OPEN_MAP = [
+  { w: "현금및현금등가물", c: "103", why: "확인원에 한 줄로만 있어 전액 보통예금에 둡니다 — 금고 시재가 따로 있으면 나눠 주세요" },
+  { w: "외상매출금", c: "108" }, { w: "미수금", c: "114" }, { w: "선급금", c: "131" },
+  { w: "가지급금", c: "134" }, { w: "부가세대급금", c: "135" }, { w: "상품", c: "146" },
+  { w: "비품", c: "212" }, { w: "감가상각누계액", c: "213" }, { w: "개발비", c: "226" },
+  { w: "임차보증금", c: "232" },
+  { w: "외상매입금", c: "251" }, { w: "매입채무", c: "251" }, { w: "미지급금", c: "253" },
+  { w: "예수금", c: "254" }, { w: "부가세예수금", c: "255" }, { w: "가수금", c: "257" },
+  { w: "단기차입금", c: "260" }, { w: "미지급비용", c: "262" },
+  { w: "자본금", c: "331" }, { w: "미처분이익잉여금", c: "375" }, { w: "이월이익잉여금", c: "375" },
+];
+/* 부채·자본은 대변이 정상이라 **부호를 뒤집어** 담는다(이 장부는 차변을 양수로 쓴다).
+   감가상각누계액은 확인원이 이미 음수로 적으므로 그대로 둔다(자산 차감 계정). */
+function corpOpenWord(s) {
+  return String(s == null ? "" : s).split("(")[0].replace(/[\s\u00a0]/g, "")
+    .replace(/[.·ⅠⅡⅢⅣⅤ]/g, "").replace(/^[0-9]+/, "");
+}
+function corpOpenFromRows(rows) {
+  const out = {}, hit = [], miss = [];
+  (rows || []).forEach(function (r) {
+    const cells = (r || []).map(function (x) { return x; });
+    const nm = corpOpenWord(cells[0] !== undefined && String(cells[0]).trim() ? cells[0] : cells[1]);
+    if (!nm) return;
+    const m = CORP_OPEN_MAP.find(function (x) { return x.w === nm; });
+    if (!m) return;
+    /* 금액은 그 줄에서 **처음 나오는 수**를 쓴다 — 당기 칸이 앞이고 전기 칸이 뒤다 */
+    let v = null;
+    for (let i = 1; i < cells.length; i++) {
+      const n = Number(String(cells[i] == null ? "" : cells[i]).replace(/[,\s]/g, ""));
+      if (String(cells[i] == null ? "" : cells[i]).trim() !== "" && isFinite(n)) { v = Math.round(n); break; }
+    }
+    if (v === null) { miss.push(nm); return; }
+    const a = typeof corpAcct === "function" ? corpAcct(m.c) : null;
+    /* 부채(L) · 자본(E)은 대변이 정상이라 뒤집는다.
+       ⚠️ 감가상각누계액은 t=A 이고 확인원이 이미 음수로 적으므로 그대로 둔다. */
+    const flip = a && (a.t === "L" || a.t === "E");
+    const val = flip ? -v : v;
+    if (out[m.c] === undefined) out[m.c] = 0;
+    out[m.c] += val;
+    hit.push({ c: m.c, n: a ? a.n : nm, v: val, why: m.why || "" });
+  });
+  const sum = corpOpenSum(out);
+  return { bal: out, hit: hit, miss: miss, sum: sum };
+}
+
 /* ══════════════ 예실 대비 — 두 축 대조(corpPlanActual.js) · CorpOps Phase 6 (조성래님 지시 2026-11-11) ══════════════
    계획 축(재무계획)과 실적 축(재무현황)을 맞댄다. **금액을 나란히 놓는 지면이 아니다.**
 
@@ -22304,6 +22357,26 @@ function ClOpen({ actor, A, setMsg }) {
       return x.rev === r.rev ? Object.assign({}, x, { ap: actor, at: r.asOf }) : x; }) });
     setMsg({ bad: false, t: "제" + r.rev + "판을 승인했습니다 — 이제 장부가 이 숫자에서 출발합니다." });
   };
+  /* 확인원 엑셀에서 불러온다 — **숫자는 코드에 없다.**
+     실제 재무자료를 소스에 두면 공개 배포본에 실린다 — 파일은 이 브라우저에서만 읽는다. */
+  const [busy, setBusy] = React.useState(false);
+  const [got, setGot] = React.useState(null);
+  const pickFile = function (e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    setBusy(true); setGot(null);
+    cbxRead(f, "재무상태표").then(function (R) {
+      const F = corpOpenFromRows(R.rows);
+      if (!F.hit.length) { setMsg({ bad: true, t: "이 파일에서 알아볼 과목을 하나도 못 찾았습니다 — 「재무상태표」 시트가 맞는지 봐 주세요(읽은 시트: " + R.sheet + ")" }); setBusy(false); return; }
+      setDraft(Object.assign({}, draft || { asOf: "2026-09-30", src: "", note: "" }, { bal: F.bal }));
+      setGot(F);
+      setMsg({ bad: false, t: F.hit.length + "과목을 불러왔습니다(" + R.sheet + ") — " + (F.sum.ok ? "차대가 맞습니다." : "차대가 " + corpWon(F.sum.gap) + "원 어긋납니다 — 확인원을 다시 봐 주세요.") + " 숫자는 이 브라우저에만 있습니다." });
+      setBusy(false);
+    }).catch(function (err) {
+      setMsg({ bad: true, t: (err && err.message) || "엑셀을 읽지 못했습니다" }); setBusy(false);
+    });
+  };
   const dsum = draft ? corpOpenSum(draft.bal) : null;
 
   return (
@@ -22347,6 +22420,15 @@ function ClOpen({ actor, A, setMsg }) {
       {draft && (
         <div className="cl-sec">
           <div className="cl-h">새 판 적기 <span className="cl-t">차변은 그대로, 대변은 앞에 −</span></div>
+          <div className="bk-act">
+            <label className="cl-save">{busy ? "읽는 중…" : "확인원 엑셀에서 불러오기"}
+              <input type="file" accept=".xlsx" style={{ display: "none" }} onChange={pickFile} /></label>
+            <span className="cl-t">재무제표 엑셀의 「재무상태표」 시트를 읽습니다 — 숫자는 코드에 남지 않습니다</span>
+          </div>
+          {got && got.hit.length > 0 && (
+            <p className="cl-note">불러온 과목 {got.hit.length}개
+              {got.hit.filter(function (h) { return h.why; }).map(function (h, i) {
+                return <span key={i}> · <b>{h.n}</b> — {h.why}</span>; })}</p>)}
           <div className="cl-form">
             <label>기준일<input value={draft.asOf} placeholder="2026-09-30"
               onChange={function (e) { setDraft(Object.assign({}, draft, { asOf: e.target.value })); }} /></label>
@@ -43855,6 +43937,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-15", ver:"v5.7", ch:[9], feat:"기초 불러오기 — 확인원 엑셀에서 받되 숫자는 코드에 남기지 않는다", src:"회사 총괄운영 회계팀 재무현황 기초 확정선", summary:"확인원을 확정숫자로 넣었느냐는 물음에 아직 틀만 세웠고 숫자는 비어 있었음을 밝히고 조성래님이 가리키신 00본을 확인하니 앞서 본 네 벌이 모두 가지급금 천오백팔십이만원이 빠져 차대가 기울어 있던 것과 달리 그 값을 채워 차대 검증이 영이었으므로 그 한 벌을 쓰기로 했고, 확인원 숫자를 상수로 코드에 넣으려 했으나 권한 검사가 막았고 그것이 실제 회사 재무자료를 소스에 두면 공개 배포본에 실린다는 조성래님 규약 그대로라 옳은 차단이어서 다른 길로 갔으며, 은행 내역을 읽던 엑셀 읽개를 그대로 쓰고 코드에는 과목 이름과 계정코드의 대응만 두어 금액은 브라우저가 파일에서 읽어 폼을 채우게 했고, 부호는 부채와 자본을 뒤집되 감가상각누계액은 차감 자산이라 확인원이 이미 음수로 적으므로 그대로 두었으며 소계와 총계 줄은 같은 돈을 두 번 세지 않도록 잡지 않았고, 실제 파일로 스무 과목을 맞춰 차대가 맞음을 확인했으며, 확인원에 현금 및 현금등가물이 한 줄로만 있어 현금과 보통예금을 가를 근거가 없으므로 전액을 보통예금에 두고 쪼개지 않았다", refs:[], status:"반영", hash:"c06af7f", auto:true },
   { date:"2026-11-15", ver:"v5.6", ch:[9], feat:"기초 확정선 — 출발선을 선언으로 세우고 판을 쌓는다", src:"회사 총괄운영 회계팀 재무현황", summary:"현금잔고 구십사백만원의 근거를 알 수 없다는 지적에 따라 그 숫자가 개시 전표의 일억이천만원에서 출발해 스무 줄을 거친 값이고 그 일억이천만원의 근거가 코드 어디에도 적혀 있지 않았음을 밝혔으며, 기초를 전표로 두면 반입 전표가 한 건이라도 생길 때 코드 전표와 함께 증발하고 출발선과 거래가 구별되지 않아 승인 규칙 밖에 놓이므로 기초를 별도 선언으로 옮겨 장부가 영이 아니라 거기서 출발하게 하되 기초가 줄에 섞이면 월별 현금흐름이 유입으로 삼켜 소모가 사라지므로 줄에는 넣지 않았고, 분기말 재조정을 위해 덮어쓰지 않고 판을 쌓아 판마다 기준일과 출처와 적은이와 승인자를 붙이고 승인된 판만 장부에 서게 했으며 적은 사람이 스스로 승인하지 못하게 해 기초도 전표와 같은 규칙을 지게 했고, 숫자는 확인원이 여러 판 있어 어느 것이 확정본인지 사람만 알므로 기계가 긁어 오지 않고 조성래님이 적으시게 했으며, 확정선 이전 날짜의 전표는 재무확인원이 이미 품고 있어 두 번 서므로 까닭을 적어 거부하고, 현금 잔고 칸은 은행 거래내역서의 잔액을 보이되 장부 값을 밑줄에 나란히 적고 차이가 있으면 경고로 세우며 은행 내역이 없으면 장부를 두고 그 사실을 적게 했다", refs:[], status:"반영", hash:"fb1bf0a", auto:true },
   { date:"2026-11-15", ver:"v5.5", ch:[9], feat:"은행 반입 — 보류 해소 · 승인 길 복구 · 통장 차이 상시 표시", src:"회사 총괄운영 회계팀 재무현황", summary:"계정이 분류된 은행 파일에서 보류 일곱 건이 난 까닭은 낱말이 갈려서가 아니라 사전에 매입비용과 수수료라는 이름이 아예 없어서였으므로 조성래님이 둘 다 831 지급수수료로 정하신 것을 근거와 함께 사전에 적고 사전에 든 낱말은 전부 사람이 정한 근거를 달아야 한다는 검사를 세워 기계는 고르지 않는다는 원칙을 지켰으며, 승인하면 전표 섹션으로 이관되어 재무제표에 반영되는 길은 이미 같은 키와 같은 배열로 돌고 있었으나 믿을 수 없게 만들던 세 가지를 고쳐 물리기가 승인 상태를 ov 가 아니라 jv 의 상태에서 읽어 승인한 전표까지 지우던 것과 물린 전표의 승인 기록이 남아 같은 파일을 다시 올리면 아무도 누르지 않은 승인이 붙던 것과 전표 탭의 물리기 버튼이 스코프 밖 함수를 불러 누르면 화면이 죽던 것을 바로잡았고, 현금잔액을 계좌와 맞추라는 지시는 덮어쓰기로 읽으면 차변만 바뀌고 대변이 없어 복식부기가 끝나므로 은행 마지막 잔액과 전기 기준 장부와 승인하면 될 장부와 차이를 나란히 두고 차이가 0이 아니면 무엇으로 이루어졌는지 적되 대조할 은행 내역이 없으면 차이 0이라 적지 않게 했으며 개시 잔액의 상대 계정은 조성래님 뜻대로 정하지 않고 차이로만 보였다", refs:[], status:"반영", hash:"82fe640", auto:true },
   { date:"2026-11-15", ver:"v5.4", ch:[9], feat:"장부 — 파일럿이 아니라 실제 전표 기준", src:"회사 총괄운영 전 지면 · 재무현황 · 회계팀 대화", summary:"전표와 은행거래내역이 파일럿이 아니라 실제 전표가 발생하는 기준이라는 확정을 받아 화면 스무 곳과 주석 열여덟 곳과 러너 단언 스물다섯 줄에 흩어져 있던 파일럿과 검증용과 실제 장부가 아닙니다와 Phase 10 문구를 한 커밋에서 함께 걷었고, 가르는 축이 진위가 아니라 어느 묶음이냐로 바뀌었으므로 낱말을 실제 전표와 반입 전표로 두되 낱말을 만드는 자리를 한 곳으로 유지해 화면과 하이가 같은 글자를 받아 쓰게 했으며, 저장소와 공개 배포와 아이디별 권한에 관한 말은 화면에 올리지 않고 어느 전표를 며칠 기준으로 보는지만 적게 했고, 파일럿 깃발을 없애 반입분인지 아닌지를 엔진이 한 번만 가르게 하고 러너도 화면이 아니라 엔진을 세게 했으며, 실제 장부를 경고색으로 칠하던 뱃지를 중립색으로 바꾸고 총괄 대시보드의 고지 블록은 맨 위 띠지가 같은 말을 하고 있어 걷었으며, 검사는 파일럿임을 적는가에서 어느 전표를 며칠 기준으로 보는지 적는가로 다시 쓰고 예전 문구가 숫자를 띄우는 지면에 주석까지 0곳인지를 못 박았다", refs:[], status:"반영", hash:"0bd6a87", auto:true },

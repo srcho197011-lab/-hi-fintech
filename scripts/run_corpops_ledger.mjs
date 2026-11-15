@@ -2374,6 +2374,23 @@ chk(rd(BOARD).indexOf('["open", "기초 확정선"]') > 0,
 /* 현금 잔고는 은행 잔액을 보인다(조성래님 지시) — 다만 은행 내역이 없으면 장부를 두고 그렇다고 적는다. */
 chk(rd(LEDGER).indexOf("K.cashSrc") > 0 && rd(LEDGER).indexOf("은행 거래내역서 마지막 잔액") > 0,
   "⑳기초   현금 잔고 칸은 은행 잔액을 보인다(없으면 장부 · 어느 쪽인지 적는다)", "없음");
+/* ⑳불러오기 — 확인원 엑셀에서 기초를 받는다 (조성래님 지시 2026-11-15).
+   ⚠️ 숫자는 코드에 없다 — 실제 재무자료를 src/ 에 두면 공개 배포본에 실린다.
+   여기 있는 것은 **과목 이름과 계정코드의 대응**뿐이다. 그 대응이 맞는지를 센다. */
+const OMAP = JSON.parse(G('JSON.stringify(CORP_OPEN_MAP)'));
+chk(OMAP.length >= 18 && OMAP.every((x) => !!G("corpAcct")(x.c)),
+  "⑳불러오기 대응표의 계정은 전부 계정과목표에 있다", OMAP.filter((x) => !G("corpAcct")(x.c)).map((x) => x.c).join(" "));
+chk(!OMAP.some((x) => x.c === "101"),
+  "⑳불러오기 현금등가물을 101/103 으로 **쪼개지 않는다**(근거가 없다)");
+/* 부호 — 부채·자본은 뒤집고, 감가상각누계액(차감 자산)은 이미 음수라 그대로 둔다. */
+const OF = JSON.parse(G('JSON.stringify(corpOpenFromRows([["현 금 및 현 금 등 가 물", 100], ["감 가 상 각 누 계 액", -30],["외 상 매 입 금 (매 입 채 무)", 40], ["자  본  금", 30],["자  산  총  계", 999]]))'));
+chk(OF.bal["103"] === 100 && OF.bal["213"] === -30 && OF.bal["251"] === -40 && OF.bal["331"] === -30,
+  "⑳불러오기 부채·자본은 대변으로 뒤집고 차감 계정은 그대로 둔다", JSON.stringify(OF.bal));
+chk(OF.sum.ok === true, "⑳불러오기 표본이 차대가 맞는다", JSON.stringify(OF.sum));
+chk(!OF.hit.some((h) => /총계/.test(h.n)),
+  "⑳불러오기 소계·총계 줄은 잡지 않는다(두 번 세지 않는다)", OF.hit.map((h) => h.n).join(" "));
+chk(rd(BOARD).indexOf("cbxRead(f, " + String.fromCharCode(34) + "재무상태표" + String.fromCharCode(34) + ")") > 0,
+  "⑳불러오기 화면이 확인원 엑셀을 읽는다(재무상태표 시트)", "없음");
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);

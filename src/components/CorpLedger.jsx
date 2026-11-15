@@ -991,6 +991,26 @@ function ClOpen({ actor, A, setMsg }) {
       return x.rev === r.rev ? Object.assign({}, x, { ap: actor, at: r.asOf }) : x; }) });
     setMsg({ bad: false, t: "제" + r.rev + "판을 승인했습니다 — 이제 장부가 이 숫자에서 출발합니다." });
   };
+  /* 확인원 엑셀에서 불러온다 — **숫자는 코드에 없다.**
+     실제 재무자료를 소스에 두면 공개 배포본에 실린다 — 파일은 이 브라우저에서만 읽는다. */
+  const [busy, setBusy] = React.useState(false);
+  const [got, setGot] = React.useState(null);
+  const pickFile = function (e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    setBusy(true); setGot(null);
+    cbxRead(f, "재무상태표").then(function (R) {
+      const F = corpOpenFromRows(R.rows);
+      if (!F.hit.length) { setMsg({ bad: true, t: "이 파일에서 알아볼 과목을 하나도 못 찾았습니다 — 「재무상태표」 시트가 맞는지 봐 주세요(읽은 시트: " + R.sheet + ")" }); setBusy(false); return; }
+      setDraft(Object.assign({}, draft || { asOf: "2026-09-30", src: "", note: "" }, { bal: F.bal }));
+      setGot(F);
+      setMsg({ bad: false, t: F.hit.length + "과목을 불러왔습니다(" + R.sheet + ") — " + (F.sum.ok ? "차대가 맞습니다." : "차대가 " + corpWon(F.sum.gap) + "원 어긋납니다 — 확인원을 다시 봐 주세요.") + " 숫자는 이 브라우저에만 있습니다." });
+      setBusy(false);
+    }).catch(function (err) {
+      setMsg({ bad: true, t: (err && err.message) || "엑셀을 읽지 못했습니다" }); setBusy(false);
+    });
+  };
   const dsum = draft ? corpOpenSum(draft.bal) : null;
 
   return (
@@ -1034,6 +1054,15 @@ function ClOpen({ actor, A, setMsg }) {
       {draft && (
         <div className="cl-sec">
           <div className="cl-h">새 판 적기 <span className="cl-t">차변은 그대로, 대변은 앞에 −</span></div>
+          <div className="bk-act">
+            <label className="cl-save">{busy ? "읽는 중…" : "확인원 엑셀에서 불러오기"}
+              <input type="file" accept=".xlsx" style={{ display: "none" }} onChange={pickFile} /></label>
+            <span className="cl-t">재무제표 엑셀의 「재무상태표」 시트를 읽습니다 — 숫자는 코드에 남지 않습니다</span>
+          </div>
+          {got && got.hit.length > 0 && (
+            <p className="cl-note">불러온 과목 {got.hit.length}개
+              {got.hit.filter(function (h) { return h.why; }).map(function (h, i) {
+                return <span key={i}> · <b>{h.n}</b> — {h.why}</span>; })}</p>)}
           <div className="cl-form">
             <label>기준일<input value={draft.asOf} placeholder="2026-09-30"
               onChange={function (e) { setDraft(Object.assign({}, draft, { asOf: e.target.value })); }} /></label>
