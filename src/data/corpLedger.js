@@ -2,9 +2,8 @@
    재무「계획」축은 finBudget.js가 갖는다. 이 파일은 **실제로 일어난 거래**를 적는 장부다.
    두 축을 한 파일에 두지 않는다 — 계획과 실적이 같은 숫자처럼 보이는 순간 둘 다 못 믿게 된다.
 
-   ⚠️ 이 파일의 전표는 **파일럿 전표**다 — 엔진이 맞게 도는지 확인하려고 넣은 검증용 묶음이고
-      하이젠케어의 실제 장부가 아니다. 실제 회계자료 반입은 Phase 10이며 Phase 0(보안 선행)을
-      통과한 뒤에만 시작한다. 화면도 러너도 이 사실을 숨기지 않는다(CORP_LEDGER_PILOT = true).
+   ⚠️ 여기 실린 전표는 **실제 장부**다(조성래님 확정 2026-11-15) — 검증용이 아니다.
+      반입 전표가 들어오면 그쪽을 보고, 없으면 여기 실린 것을 본다.
 
    원칙
      · 차변 합 ≠ 대변 합이면 **저장하지 않는다**. 경고가 아니라 거부다.
@@ -14,7 +13,6 @@
      · 항등식은 화면과 러너가 **같은 함수**(corpLedgerIdentities)를 쓴다. 두 벌로 적으면 한 벌이 먼저 거짓말한다.
      · 클라이언트 강제다 — 서버가 없으므로 권한을 서버에서 막지 못한다. 화면에도 그렇게 적는다. */
 
-const CORP_LEDGER_PILOT = true;              /* 실데이터 반입(P10) 시 false */
 const CORP_LEDGER_KEY = "hifin_corp_ledger"; /* dataCatalog.js 등재 필수 */
 
 /* ── ① 계정과목 — **하이젠케어(주) 실제 계정과목** ────────────────────────
@@ -98,7 +96,7 @@ const CORP_ACCT_T = { A: "자산", L: "부채", E: "자본", R: "수익", X: "�
 function corpAcct(c) { return CORP_ACCT.find(a => a.c === c) || null; }
 function corpAcctName(c) { const a = corpAcct(c); return a ? a.n : "(미등록 " + c + ")"; }
 
-/* ── ② 파일럿 전표 ───────────────────────────────────────────────────────────
+/* ── ② 전표 ───────────────────────────────────────────────────────────
    l: [계정코드, 차변, 대변, 적요] — 한 줄에 한 변만 적는다.
    st: draft 기표 · review 검토 · posted 전기(승인 완료)
    by: 작성자 · ap: 승인자(전기된 것만) */
@@ -204,7 +202,7 @@ const CORP_BANK_SEED = {
 };
 
 /* ── ④ 저장 ──────────────────────────────────────────────────────────────────
-   파일럿 전표는 코드에 있고(항상 보인다), 조성래님이 넣은 전표만 브라우저에 남는다.
+   먼저 실린 전표는 항상 보이고, 조성래님이 넣으신 전표만 브라우저에 남는다.
    서버가 없으므로 이 브라우저 밖으로는 나가지 않는다 — 화면에도 그렇게 적는다. */
 function corpLedgerRead() {
   const empty = { v: 1, jv: [], closed: [], ov: {}, bank: [] };
@@ -226,8 +224,8 @@ function corpLedgerWrite(st) {
     return true;
   } catch (e) { return false; }
 }
-/* 파일럿 + 입력분. 날짜 → 전표번호 순으로 정렬한다(같은 날은 번호 순).
-   ov는 **상태 덮어쓰기**다 — 파일럿 전표는 코드에 있어 고칠 수 없으므로, 조성래님이 결재를 진행한
+/* 먼저 실린 것 + 입력분. 날짜 → 전표번호 순으로 정렬한다(같은 날은 번호 순).
+   ov는 **상태 덮어쓰기**다 — 먼저 실린 전표는 고칠 수 없으므로, 조성래님이 결재를 진행한
    흔적만 따로 얹는다. 분개 줄은 덮지 않는다(금액을 덮으면 코드의 검증 묶음이 무너진다). */
 function corpJvAll(st) {
   const ov = (st && st.ov) || {};
@@ -237,8 +235,9 @@ function corpJvAll(st) {
     return Object.assign({}, j, { st: o.st || j.st, ap: o.ap === undefined ? j.ap : o.ap });
   };
   const add = ((st && st.jv) || []).map(put);
-  /* 반입된 실제 전표가 하나라도 있으면 파일럿을 빼고 **실제 장부만** 본다.
-     섞으면 재무제표가 검증용 숫자를 품은 채 나와 그 자체로 거짓이 된다. */
+  /* ⚠️ 반입 전표가 하나라도 있으면 먼저 실린 것을 **빼고** 반입분만 본다.
+     둘을 섞으면 같은 거래가 두 번 설 수 있어서다 — 다만 이제 **둘 다 실제 전표**이므로,
+     빼는 쪽도 실제 전표다. 반입 전에 두 장부를 어떻게 합칠지는 조성래님이 정하실 일이다. */
   const base = add.length ? [] : CORP_JV_SEED.map(put);
   return base.concat(add)
     .sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : (a.id < b.id ? -1 : 1)));
@@ -256,7 +255,7 @@ function corpJvCanAdvance(jv, actorId) {
 }
 /* 전표번호 — **일자별 일련 YYYYMMDD-NN**.
    날짜를 알면 바로 찾을 수 있어야 한다. 임의 접두나 통짜 일련은 조회에 쓸모가 없다.
-   파일럿 전표는 JV-####로 남겨 둔다 — 번호만 봐도 검증용인지 실제 장부인지 갈린다. */
+   먼저 실린 전표는 JV-####로 남겨 둔다 — 번호만 봐도 어느 묶음인지 갈린다. */
 function corpJvNo(d, n) {
   return String(d || "").replace(/-/g, "") + "-" + String(n).padStart(2, "0");
 }
@@ -273,10 +272,10 @@ function corpJvNextId(st, d) {
   });
   return corpJvNo(day, max + 1);
 }
-/* 실제 장부가 들어오면 파일럿은 빠진다 — 검증용과 실제를 한 표에 섞지 않는다. */
+/* 반입 전표가 들어오면 먼저 실린 것은 빠진다 — 두 묶음을 한 표에 섞지 않는다. */
 function corpJvLive(st) { return ((st && st.jv) || []).length > 0; }
 /* 은행 내역도 반입분이 있으면 그것을 본다.
-   ⚠️ 실제 전표를 **파일럿 은행 내역**과 대사하면 전건이 미대사로 뜬다 — 거짓 경보다.
+   ⚠️ 반입 전표를 **먼저 실린 은행 내역**과 대사하면 전건이 미대사로 뜬다 — 거짓 경보다.
       그래서 전표가 실제인데 은행 내역이 아직 없으면 **대사를 돌리지 않고** 그 사실을 말한다. */
 function corpBankOf(st) {
   const b = (st && st.bank) || [];
@@ -426,7 +425,7 @@ function corpStatements(jvs, upto) {
    자동으로 맞춰 주는 데까지가 AI의 몫이고, 남은 줄을 없애는 건 사람이 한다. */
 function corpBankRecon(jvs, bank, upto) {
   /* ⚠️ bank === null 은 「은행 내역이 반입되지 않았다」는 뜻이다.
-     여기서 파일럿 내역으로 되돌리면 **반입된 실제 전표를 파일럿 은행줄과 대사**하게 되고,
+     여기서 먼저 실린 내역으로 되돌리면 **반입 전표를 먼저 실린 은행줄과 대사**하게 되고,
      전 건이 미대사로 뜬다. 상대가 없으면 대사를 돌리지 않고, 돌리지 않았다고 말한다. */
   const none = bank === null;
   const B = none ? { acct: "103", bank: "", mask: "", lines: [] } : (bank || CORP_BANK_SEED);
@@ -516,7 +515,7 @@ function corpLedgerIdentities(jvs, bank, upto) {
       got: CH.n === 0 ? "잔액 없음" : (CH.breaks.length ? CH.breaks.length + "군데 끊김(" + CH.breaks[0].d + " " + corpWon(CH.breaks[0].gap) + ")" : "끊김 없음"),
       want: "끊김 0", skip: CH.n === 0,
       why: CH.n === 0 ? "은행 내역에 잔액이 없습니다 — 흘린 거래를 잡을 길이 없어 검사하지 않았습니다" : "" },
-    /* ⚠️ 이 대조는 **계좌 전체를 덮는 표**라야 뜻이 있다. 검증용 묶음은 일부러 미대사를 품고
+    /* ⚠️ 이 대조는 **계좌 전체를 덮는 표**라야 뜻이 있다. 이 은행 묶음은 계좌 전체가 아니라 미대사를 품고
        있어서, 그 표의 마지막 잔액을 장부와 견주면 늘 어긋난다 — 그걸 실패로 세면
        사람이 「원래 빨간 것」으로 배우고, 진짜 어긋날 때 아무도 안 본다. */
     { k: "balmatch", ko: "은행 마지막 잔액 = 장부 보통예금", n: (CH.last === null || !R.live) ? 0 : 1,
@@ -524,7 +523,7 @@ function corpLedgerIdentities(jvs, bank, upto) {
       got: CH.last === null ? "잔액 없음" : corpWon(CH.last) + " / " + corpWon(bookBal),
       want: "같을 것", skip: CH.last === null || !R.live,
       why: CH.last === null ? "은행 내역에 잔액이 없습니다 — 대조할 상대가 없어 검사하지 않았습니다"
-        : (!R.live ? "지금 보고 있는 것은 검증용 은행 묶음입니다(계좌 전체가 아닙니다) — 반입된 실제 내역에서만 대조합니다" : "") },
+        : (!R.live ? "지금 보고 있는 은행 내역은 계좌 전체가 아닙니다 — 반입된 내역에서만 대조합니다" : "") },
     /* ⚠️ 한 은행줄에서 만든 전표가 **둘 다 살아 있으면** 그 거래가 장부에 두 번 선다.
        역분개를 기표인 채로 두고 다시 만들면 정확히 그렇게 된다(실측 — 103 잔액이 은행보다
        2,200,000 많은데 다른 항등식 열셋이 전부 녹색이었다). 상쇄된 것은 빼고 센다. */
@@ -757,13 +756,13 @@ function corpKpi(jvs, today) {
 }
 
 /* 화면이 부르는 한 줄 — 반입분까지 읽어 **원천 이름**을 붙인다.
-   파일럿인지 반입 장부인지는 숫자보다 먼저 알아야 한다. */
+   먼저 실린 것인지 반입분인지는 숫자보다 먼저 알아야 한다. */
 function corpKpiOf(st, today) {
   const S = st || corpLedgerRead();
   const K = corpKpi(corpJvAll(S), today);
   K.live = corpJvLive(S);
   /* 낱말을 재무현황 화면(CorpLedger.jsx)과 **같은 것**으로 쓴다 —
      같은 장부를 두 지면이 다른 이름으로 부르면 같은 장부인지 알 수 없다. */
-  K.srcKo = K.live ? "반입 전표" : "파일럿 전표";
+  K.srcKo = K.live ? "반입 전표" : "실제 전표";
   return K;
 }

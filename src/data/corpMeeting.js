@@ -161,7 +161,7 @@ function corpMtgMetrics(teamId) {
       const U = corpPaUnmatched(jvs, "");
       rows.push({ k: "계정 대응", v: "확정 " + U.planOk.length + " · 대응 없음 " + (U.planAsk.length + U.planNone.length) + "건", src: "예실 대비" });
     }
-    return { linked: true, rows: rows, pilot: typeof CORP_LEDGER_PILOT !== "undefined" && CORP_LEDGER_PILOT };
+    return { linked: true, rows: rows };
   } catch (e) { return { linked: false, rows: [] }; }
 }
 /* 보고 골격 — 지표 외의 칸은 **비워 둔다.** 사람이 적는 자리이지 AI가 지어낼 자리가 아니다. */

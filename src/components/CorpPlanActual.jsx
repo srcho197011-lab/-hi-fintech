@@ -35,7 +35,7 @@ function CorpPlanActualSection() {
       <div className="cl-top">
         <div className="cl-ttl">
           <b>예실 대비</b><span className="cl-sub">계획 축 ↔ 실적 축</span>
-          <span className="cl-pilot">파일럿 전표</span>
+          <span className="cl-real">실적 축 — 실제 전표</span>
         </div>
         <div className="cl-ctl">
           <label>비교 월
@@ -67,7 +67,7 @@ function CorpPlanActualSection() {
         <CorpDefn>
           <span className="cl-warn2">
           그래서 지금 <b>차이 칸이 {cmp.length}줄</b> 섭니다. 자료가 덜 들어온 것이 아니라,
-          두 축이 아직 만나지 않은 것입니다. 실데이터 반입(Phase 10) 뒤 겹치는 달이 생기면 같은 표가 그대로 숫자를 냅니다.
+          두 축이 아직 만나지 않은 것입니다. 겹치는 달이 생기면 같은 표가 그대로 숫자를 냅니다.
           </span>
         </CorpDefn>
       </div>

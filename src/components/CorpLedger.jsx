@@ -24,7 +24,7 @@ function CorpLedgerSection() {
   const upMax = React.useMemo(() => jvs.reduce((s, j) => (j.d > s ? j.d : s), ""), [jvs]);
   const cut = upto || "";
   /* 은행줄은 **반입분이 있으면 그것**, 실제 전표만 들어왔고 은행이 없으면 null(대사 보류).
-     여기서 파일럿 내역을 쓰면 반입 전표 전건이 미대사로 뜬다. */
+     여기서 먼저 실린 내역을 쓰면 반입 전표 전건이 미대사로 뜬다. */
   const live = corpJvLive(st);
   const BK = React.useMemo(() => corpBankOf(st), [st]);
   const V = React.useMemo(() => corpLedgerVerdict(jvs, BK, cut), [jvs, BK, cut]);
@@ -84,7 +84,7 @@ function CorpLedgerSection() {
       <div className="cl-top">
         <div className="cl-ttl">
           <b>재무현황</b><span className="cl-sub">실적 축 — 실제로 일어난 거래</span>
-          {CORP_LEDGER_PILOT && !live && <span className="cl-pilot">파일럿 전표</span>}
+          {!live && <span className="cl-real">실제 전표 {CORP_JV_SEED.length}건</span>}
           {live && <span className="cl-live">반입 전표 {jvs.length}건</span>}
         </div>
         <div className="cl-ctl">
@@ -107,10 +107,9 @@ function CorpLedgerSection() {
         </div>
       </div>
 
-      {CORP_LEDGER_PILOT && !live && (
-        <div className="cl-warn">
-          여기 실린 전표 {CORP_JV_SEED.length}건은 <b>파일럿 전표</b>입니다 — 엔진이 맞게 도는지 보려고 넣은 검증용 묶음이고
-          회사의 실제 장부가 아닙니다. 실제 회계자료 반입은 Phase 10이며 보안 선행(Phase 0)을 통과한 뒤에 시작합니다.
+      {!live && (
+        <div className="cl-warn ok">
+          <b>실제 전표</b> {CORP_JV_SEED.length}건을 보고 있습니다 — 반입 전표를 올리시면 그것을 대신 봅니다.
           <CorpDefn>
             <span className="cl-warn2">서버가 없어 권한은 이 브라우저 안에서만 걸립니다. 조성래님이 넣은 전표도 이 브라우저에만 남습니다.</span>
           </CorpDefn>
@@ -118,9 +117,9 @@ function CorpLedgerSection() {
       )}
       {live && (
         <div className="cl-warn ok">
-          <b>반입된 실제 전표</b>를 보고 있습니다 — 파일럿 전표는 빠졌습니다.
+          <b>반입 전표</b>를 보고 있습니다 — 먼저 실린 전표는 빠졌습니다.
           <CorpDefn>
-            <span className="cl-warn2">이 장부는 <b>이 브라우저에만</b> 있습니다(공개 배포본에 회사 숫자를 싣지 않기 위해서입니다).
+            <span className="cl-warn2">반입하신 장부는 <b>이 브라우저에만</b> 있습니다.
             다른 기기 · 다른 브라우저에서는 다시 반입해야 보입니다.</span>
           </CorpDefn>
         </div>
@@ -360,8 +359,8 @@ function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, s
         </tbody>
       </table>
       <p className="cl-note">전표번호는 <b>일자별 일련(YYYYMMDD-NN)</b>입니다 — 날짜를 알면 바로 찾습니다.
-        {corpJvLive(st) ? <span> 지금은 <b>반입된 실제 전표</b>를 보고 있습니다 — 파일럿 전표는 빠졌습니다.</span>
-          : <span> 지금은 <b>파일럿 전표</b>입니다(번호가 JV-로 시작합니다). 실제 전표가 반입되면 파일럿은 빠집니다.</span>}</p>
+        {corpJvLive(st) ? <span> 지금은 <b>반입 전표</b>를 보고 있습니다 — 먼저 실린 전표는 빠졌습니다.</span>
+          : <span> 지금은 <b>먼저 실린 전표</b>입니다(번호가 JV-로 시작합니다). 반입 전표가 들어오면 그쪽을 봅니다.</span>}</p>
       <p className="cl-note">전기된 전표에는 <b>수정 버튼이 없습니다</b>. 지운 자국이 남아야 장부이기 때문에 정정은 역분개 전표로만 합니다.
         <b>같은 전표를 두 번 되돌리지 못합니다</b> — 두 번 되돌리면 원래 거래가 거꾸로 섭니다. 이미 되돌린 전표에는 그 번호가 적힙니다.</p>
       {jvs.filter((j) => j.rev && j.st !== "posted").length > 0 && (
@@ -812,7 +811,7 @@ function ClBankUp({ st, save, actor, A }) {
           {cur && cur.live && (
             <div className="bk-act">
               <button className="cl-rv" onClick={undo}>은행에서 만든 전표 전부 물리기</button>
-              <span className="cl-t">직접 입력한 전표와 검증용 전표는 그대로 둡니다</span>
+              <span className="cl-t">직접 입력한 전표와 먼저 실린 전표는 그대로 둡니다</span>
             </div>
           )}
         </div>

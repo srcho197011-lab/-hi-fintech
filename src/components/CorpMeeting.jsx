@@ -251,8 +251,7 @@ function CorpMeetingSection() {
                     실데이터 반입(Phase 10) 뒤에 채워집니다.
                   </div>
                 )}
-                {r.pilot && <p className="cl-note">실린 수치는 <b>파일럿 전표</b>에서 나온 값입니다 — 회사의 실제 장부가 아닙니다.</p>}
-                {r.head === 0 ? (
+                                {r.head === 0 ? (
                   <p className="cl-note"><b>{r.own} 책임자가 합류 전입니다.</b> 확정할 사람이 없어
                     이 보고는 합류 전까지 초안으로 남습니다 — <b>확정 버튼을 두지 않았습니다.</b></p>
                 ) : (

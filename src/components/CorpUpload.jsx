@@ -100,7 +100,7 @@ function CorpUploadSection() {
       const keep = (st.jv || []).filter((j) => j.by !== "반입");
       const removed = (st.jv || []).length - keep.length;
       corpLedgerWrite(Object.assign({}, st, { jv: keep }));
-      setMsg({ bad: false, t: "반입분 " + removed + "건을 물렸습니다 — 파일럿 전표는 코드에 있어 영향받지 않습니다." });
+      setMsg({ bad: false, t: "반입분 " + removed + "건을 물렸습니다 — 먼저 실린 전표는 영향받지 않습니다." });
       return;
     }
     if (kind === "bank") {

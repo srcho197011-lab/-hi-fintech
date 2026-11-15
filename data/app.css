@@ -6395,3 +6395,6 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
   color:var(--ct);background:rgba(95,174,126,.1);border-left:2px solid rgba(95,174,126,.55);
   border-radius:0 6px 6px 0;font-weight:600;}
 .vf-aim u{text-decoration:none;color:#5FAE7E;font-weight:800;}
+/* 실제 전표 뱃지 — 경고가 아니라 사실이다(조성래님 지시 2026-11-15) */
+.cl-real{font-size:9px;color:var(--cd);border:1px solid var(--cl2);border-radius:3px;
+  padding:1.5px 6px;white-space:nowrap;}

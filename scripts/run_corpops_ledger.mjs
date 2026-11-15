@@ -12,7 +12,7 @@
                   (ⓐ 자기시험 — 정상 전표는 통과해야 한다. 늘 거부하는 함수는 검사가 아니다.)
      ④ 역분개   — 정정 경로가 차·대를 뒤집고 금액이 맞물리는가.
      ⑤ 승인     — AI 주체에게 승인 권한이 없는가(canApprove=false) · 전기 전표에 작성자≠승인자.
-     ⑥ 파일럿   — 실데이터 반입 전까지 CORP_LEDGER_PILOT 가 true 이고 화면이 그 사실을 적는가.
+     ⑥ 장부     — 어느 전표를 몇일 기준으로 보고 있는지를 화면이 적는가.
      ⑫ 자료실   — 저장소 목차를 **팀별로** 게시하는가 · 목록을 코드에 박지 않는가 ·
                   분류를 한 곳에서만 하는가 · 확정 자료(확인원)를 작업본과 가르는가.
      ⑪ 반입대화 — 민감자료가 **미리보기보다 먼저** 걸리는가 · 틀린 줄만 빠지는가 ·
@@ -55,7 +55,7 @@ const BOARD = "src/components/CorpLedger.jsx";
 const PA = "src/data/corpPlanActual.js";
 const PABOARD = "src/components/CorpPlanActual.jsx";
 const FINSCR = "src/components/Finance.jsx";
-/* 화면 고지 검사(⑥)의 사정권 — 파일럿 전표를 쓰는 지면은 모두 같은 고지를 진다.
+/* 화면 표기 검사(⑥)의 사정권 — 숫자를 띄우는 지면은 모두 어느 전표인지를 적는다.
    한 파일만 보면 지면이 늘어날 때 검사가 조용히 빈다. */
 const BOARDS = [BOARD, PABOARD, "src/components/CorpOps.jsx"];
 const ctx = { console: { log() {}, warn() {}, error() {} },
@@ -66,7 +66,7 @@ vm.createContext(ctx);
 const MTG = "src/data/corpMeeting.js";
 const MTGBOARD = "src/components/CorpMeeting.jsx";
 const ORG = "src/data/corpOrg.js";
-/* 화면 어법 검사의 사정권 — 파일럿 고지(BOARDS)와 달리 **모든 사내 지면**이 진다.
+/* 화면 어법 검사의 사정권 — 장부 표기(BOARDS)와 달리 **모든 사내 지면**이 진다.
    「자동 실행」·「보완 필요」·회원 영상 모듈 참조는 지면 종류를 가리지 않는다. */
 const SURFACES = [BOARD, PABOARD, MTGBOARD, "src/components/CorpAdmin.jsx", "src/components/CorpGov.jsx",
   "src/components/CorpUpload.jsx", "src/components/CorpVault.jsx",
@@ -109,9 +109,9 @@ chk(V.rows.filter((r) => r.skip).every((r) => SKIPPABLE.indexOf(r.k) >= 0),
 chk(V.rows.filter((r) => !r.skip).length >= 8, "②분모   실제로 도는 항등식 ≥ 8", V.rows.filter((r) => !r.skip).length);
 chk(V.pass, "①항등식 전건 통과", V.fail.map((f) => f.ko));
 
-/* 파일럿 전표 규모 — 완료 조건이 20~30건이다. 세 건짜리 장부로는 항등식이 의미가 없다. */
+/* 전표 규모 — 완료 조건이 20~30건이다. 세 건짜리 장부로는 항등식이 의미가 없다. */
 const seedN = G("CORP_JV_SEED.length");
-chk(seedN >= 20, `②분모   파일럿 전표 ${seedN}건 (하한 20)`, seedN);
+chk(seedN >= 20, `②분모   전표 ${seedN}건 (하한 20)`, seedN);
 const postedN = G("corpPosted(CORP_JV_SEED).length");
 chk(postedN >= 20, `②분모   전기 전표 ${postedN}건 (하한 20)`, postedN);
 /* 승인 전 상태가 섞여 있어야 3단 결재가 화면에서 보인다 */
@@ -191,29 +191,35 @@ if (inReview && inDraft && posted0) {
   chk(!after.ok && /역분개/.test(after.why), "⑤승인   전기 뒤 전이 거부 + 역분개 안내", after);
 }
 
-/* ── ⑥ 파일럿 표기 ──────────────────────────────────────────────────────── */
-chk(G("CORP_LEDGER_PILOT") === true, "⑥파일럿 CORP_LEDGER_PILOT = true (실데이터 미반입)");
+/* ── ⑥ 장부 표기 — 어느 전표를 보고 있는가 ────────────────────
+   2026-11-15 — 조성래님 확정: 「현재의 전표나 은행거래내역은 파일럿이 아니야.
+   실제 전표가 발생하는 기준이야.」 그래서 「검증용·실제 장부가 아닙니다」를
+   **요구하던 단언을 걷었다** — 이제 그 문장은 거짓이다.
+
+   남는 약속은 하나다 — **어느 전표를 몇일 기준으로 보고 있는지**를 화면이 적는다.
+   반입분이 있으면 그걸 보고 없으면 먼저 실린 것을 본다 — 둘 중 어느 쪽인지를 말해야 한다.
+   ⚠️ 저장소·공개 배포·아이디별 권한은 **화면에 적지 않는다**(조성래님 지시) — 요구하지도 않는다. */
+chk(typeof G("typeof CORP_LEDGER_PILOT") === "string" && G("typeof CORP_LEDGER_PILOT") === "undefined",
+  "⑥장부   파일럿 깃발은 없다 — 장부는 실제다", G("typeof CORP_LEDGER_PILOT"));
 let board = "";
-try { board = rd(BOARD); } catch (e) { fails.push("⑥파일럿 " + BOARD + " 없음 — 화면이 파일럿임을 적을 자리가 없다"); }
+try { board = rd(BOARD); } catch (e) { fails.push("⑥장부 " + BOARD + " 없음"); }
 if (board) {
-  chk(board.indexOf("파일럿 전표") >= 0, "⑥파일럿 화면에 「파일럿 전표」 표기", "없음");
-  chk(/CORP_LEDGER_PILOT/.test(board), "⑥파일럿 화면이 플래그를 읽는다(문구 하드코딩 아님)", "없음");
-  /* 부정이 아니라 **명시**를 요구한다 — 「실제 장부」라는 낱말만 세면 그 사실을 부인하는 문장까지 걸린다 */
-  chk(board.indexOf("실제 장부가 아닙니다") >= 0, "⑥파일럿 화면이 실제 장부가 아님을 명시", "없음");
-  /* 반입된 전표가 있으면 화면이 파일럿 배지를 **내린다** — 둘을 동시에 달아 두면
-     어느 장부를 보고 있는지 화면이 말해 주지 않는다. 플래그 하나로 갈리지 않고 상황으로 갈린다. */
-  chk(/CORP_LEDGER_PILOT && !live/.test(board), "⑥파일럿 반입 전표가 있으면 파일럿 고지를 내린다", "없음");
-  chk(/corpJvLive\(st\)/.test(board), "⑥파일럿 화면이 반입 여부를 상황에서 읽는다(corpJvLive)", "없음");
-  chk(board.indexOf("반입 전표") >= 0, "⑥파일럿 반입 상태 표기가 따로 있다", "없음");
-  chk(/이 브라우저에만/.test(board), "⑥파일럿 반입 장부가 이 브라우저에만 있다고 적는다", "없음");
-  /* 서버 없는 집행임을 숨기지 않는다 — 숨기면 더 위험하다 */
-  chk(/서버가 없/.test(board), "⑥파일럿 화면이 서버 없는 집행임을 명시", "없음");
+  chk(board.indexOf("실제 전표") >= 0, "⑥장부   화면에 「실제 전표」 표기", "없음");
+  chk(board.indexOf("파일럿") < 0 && board.indexOf("검증용") < 0 && board.indexOf("실제 장부가 아닙니다") < 0,
+    "⑥장부   예전 문구(파일럿 · 검증용 · 실제 장부가 아닙니다)가 0곳 — 주석까지 센다");
+  chk(board.indexOf("corpJvLive(st)") >= 0, "⑥장부   화면이 반입 여부를 상황에서 읽는다", "없음");
+  chk(board.indexOf("반입 전표") >= 0, "⑥장부   반입 상태 표기가 따로 있다", "없음");
+  chk(board.indexOf("이 브라우저에만") >= 0, "⑥장부   반입 장부가 이 브라우저에만 있다고 적는다", "없음");
+  chk(board.indexOf("서버가 없") >= 0, "⑥장부   화면이 서버 없는 집행임을 명시", "없음");
 }
-/* 파일럿 전표를 쓰는 지면은 **모두** 같은 고지를 진다 — 지면이 늘어도 검사가 비지 않는다 */
+/* 숫자를 띄우는 지면은 **모두** 어느 전표인지를 적는다 — 지면이 늘어도 검사가 비지 않는다.
+   총괄 대시보드는 맨 위 띠지(corp-stub)가 K.srcKo 로 적으므로 그 길도 인정한다. */
 BOARDS.forEach((f) => {
   let t = "";
-  try { t = rd(f); } catch (e) { fails.push("⑥파일럿 " + f + " 없음"); return; }
-  chk(t.indexOf("파일럿 전표") >= 0, "⑥파일럿 " + f + " 에 「파일럿 전표」 표기", "없음");
+  try { t = rd(f); } catch (e) { fails.push("⑥장부 " + f + " 없음"); return; }
+  const says = t.indexOf("실제 전표") >= 0 || t.indexOf("srcKo") >= 0;
+  chk(says, "⑥장부   " + f + " 이 어느 전표인지를 적는다", "없음");
+  chk(t.indexOf("파일럿") < 0, "⑥장부   " + f + " 에 「파일럿」이 남아 있지 않다", "남음");
 });
 /* 화면 어법 — **주석을 걷은 본문** 기준이다. 표기 규약 ⑪·⑬ 이 주석 제거본으로 세므로 기준을 맞춘다.
    원문으로 세면 금지를 설명한 주석에서 한쪽 러너만 터지고, 그러면 사람이 주석을 지워 가드를 통과시키는 사고가 난다. */
@@ -239,11 +245,11 @@ SURFACES.forEach((f) => {
 });
 
 /* ── ⑥-2 은행 대사 상대 ─────────────────────────────────────────────────
-   반입된 전표를 파일럿 은행줄과 대사하면 전 건이 미대사로 뜨고,
+   반입 전표를 먼저 실린 은행줄과 대사하면 전 건이 미대사로 뜨고,
    그걸 보고 사람은 「장부가 틀렸나」 한다. 상대가 없으면 돌리지 않고, 돌리지 않았다고 말해야 한다. */
 const bankOf = G("corpBankOf");
 chk(bankOf({ jv: [], bank: [] }) === G("CORP_BANK_SEED"),
-  "⑥은행   반입분이 없으면 파일럿 은행줄을 쓴다");
+  "⑥은행   반입분이 없으면 먼저 실린 은행줄을 쓴다");
 chk(bankOf({ jv: [{ id: "20260930-01" }], bank: [] }) === null,
   "⑥은행   실제 전표 + 은행 미반입 → null(대사를 돌리지 않는다)",
   JSON.stringify(bankOf({ jv: [{ id: "x" }], bank: [] })));
@@ -260,17 +266,17 @@ chk(VN.skip.map((r) => r.k).sort().join(" ") === "balmatch bank bkdup chain",
 chk(VN.skip.every((r) => (r.why || "").trim()), "⑥보류   보류 항등식은 이유를 지닌다", VN.skip.map((r) => r.why));
 chk(VN.zero.length === 0, "⑥보류   보류를 「분모 0 실패」로 세지 않는다", VN.zero.map((r) => r.k));
 const VS = G("corpLedgerVerdict")(G("CORP_JV_SEED"), G("CORP_BANK_SEED"), "");
-/* 검증용 묶음은 일부러 미대사를 품는다 — 잔액 사슬은 **돌고**, 장부 대조만 보류다.
-   「보류가 0」을 바라면 검증용 묶음이 통과하려고 자기 성질을 지워야 한다. */
+/* 이 은행 묶음은 계좌 전체가 아니라 미대사를 품는다 — 잔액 사슬은 **돌고**, 장부 대조만 보류다.
+   「보류가 0」을 바라면 이 묶음이 통과하려고 자기 성질을 지워야 한다. */
 chk(VS.skip.map((r) => r.k).sort().join(" ") === "balmatch bank bkdup",
   "⑥보류   은행줄이 있으면 잔액 사슬은 **돈다**(항진식·계좌 전체 대조·은행줄 겹침만 보류)", VS.skip.map((r) => r.k));
-/* 검증용 전표에는 은행줄 열쇠가 없어 겹침 검사가 돌 대상이 없다 — 보류이지 통과가 아니다 */
+/* 먼저 실린 전표에는 은행줄 열쇠가 없어 겹침 검사가 돌 대상이 없다 — 보류이지 통과가 아니다 */
 const bkRow = VS.rows.find((r) => r.k === "bkdup");
 chk(!!bkRow && bkRow.skip && /검사할 대상이 없/.test(bkRow.why || ""),
   "⑥보류   은행줄 겹침 검사는 대상이 없으면 **보류**로 적는다", JSON.stringify(bkRow && bkRow.why));
 const chRow = VS.rows.find((r) => r.k === "chain");
 chk(!!chRow && !chRow.skip && chRow.n > 0 && chRow.ok,
-  "⑥잔액   검증용 은행 묶음의 잔액 사슬이 전건 성립한다", JSON.stringify(chRow && { n: chRow.n, ok: chRow.ok, got: chRow.got }));
+  "⑥잔액   먼저 실린 은행 묶음의 잔액 사슬이 전건 성립한다", JSON.stringify(chRow && { n: chRow.n, ok: chRow.ok, got: chRow.got }));
 /* ⓐ 음성 — 한 줄을 지우면 사슬이 **깨져야** 한다. 안 깨지면 검사가 없는 것이다. */
 const seedCut = Object.assign({}, G("CORP_BANK_SEED"), { lines: G("CORP_BANK_SEED").lines.filter((l, i) => i !== 5) });
 const VCut = G("corpLedgerVerdict")(G("CORP_JV_SEED"), seedCut, "");
@@ -305,7 +311,7 @@ if (board) {
     "⑥CSV    반입 창구와 **같은 모양**으로 받는다(g.head · g.rows)", "없음");
   chk(board.indexOf("corpBankOf(st)") >= 0, "⑥은행   화면이 은행줄을 상황에서 골랐다", "CORP_BANK_SEED 직접 사용");
   chk(!/corpLedgerVerdict\(jvs, CORP_BANK_SEED/.test(board) && !/corpBankRecon\(jvs, CORP_BANK_SEED/.test(board),
-    "⑥은행   화면이 파일럿 은행줄을 고정으로 박지 않는다", "박혀 있음");
+    "⑥은행   화면이 은행줄을 고정으로 박지 않는다", "박혀 있음");
 }
 
 /* ── ⑥-3 보존 두 축 ───────────────────────────────────────────────────────
@@ -352,7 +358,7 @@ chk(!!vrow2 && vrow2.keep === 10 && vrow2.dispose === "2036-10-23",
 const KEY = G("CORP_LEDGER_KEY");
 let cat = "";
 try { cat = rd("src/data/dataCatalog.js"); } catch (e) { /* 아래 단언이 잡는다 */ }
-chk(cat.indexOf('"' + KEY + '"') >= 0, `⑥파일럿 저장 키 ${KEY} dataCatalog.js 등재`, "미등재");
+chk(cat.indexOf('"' + KEY + '"') >= 0, `⑥장부   저장 키 ${KEY} dataCatalog.js 등재`, "미등재");
 
 /* ── ⑦ 예실 대비 ────────────────────────────────────────────────────────
    Phase 6 완료 조건 — ① 매핑 ② 「대응 없음」 화면 노출 ③ fin_site_check 32/32 유지.
@@ -1891,12 +1897,12 @@ chk(Object.keys(KP.t).length === 4, "⑱분모   채울 칸이 네 개 다 선�
 {
   const want = (KB["101"] ? KB["101"].sign : 0) + (KB["103"] ? KB["103"].sign : 0);
   chk(KP.cash.won === want, "⑱현금   현금 잔고 = 현금(101) + 보통예금(103) 부호잔액", KP.cash.won + " ≠ " + want);
-  chk(KP.cash.won === 94025000, "⑱현금   파일럿 장부의 현금 잔고는 94,025,000원(손계산 대조)", KP.cash.won);
+  chk(KP.cash.won === 94025000, "⑱현금   장부의 현금 잔고는 94,025,000원(손계산 대조)", KP.cash.won);
   /* 103 만 세는 실수를 잡는다 — 그랬다면 94,825,000 이 나온다 */
   chk(KP.cash.won !== (KB["103"] ? KB["103"].sign : 0),
     "⑱현금   보통예금만 세지 않았다(현금 과목이 빠지면 조용히 80만원이 는다)", KP.cash.won);
   chk(KP.cash.accts.length === 2 && KP.cash.n > 0, "⑱현금   현금성 과목 2종이 장부에 실재하고 거래가 있다", JSON.stringify(KP.cash.accts));
-  /* 음수 과목을 감추지 않는다 — 파일럿 전표에 현금(101) 개시 시재가 없어 실제로 음수다 */
+  /* 음수 과목을 감추지 않는다 — 전표에 현금(101) 개시 시재가 없어 실제로 음수다 */
   chk(KP.cash.minus.length === 1 && KP.cash.minus[0].c === "101",
     "⑱현금   음수인 현금 과목을 **감추지 않고** 돌려준다", JSON.stringify(KP.cash.minus));
   chk(KP.t.cash.warn.indexOf("음수") >= 0, "⑱현금   화면 글자가 그 사실을 적는다", KP.t.cash.warn || "(없음)");
@@ -2011,8 +2017,10 @@ chk(Object.keys(KP.t).length === 4, "⑱분모   채울 칸이 네 개 다 선�
   chk(!/<span className="c">0<\/span>/.test(screen), "⑱화면   머리 숫자를 0 으로 박아 두지 않는다", "박혀 있음");
   /* 화면이 숫자를 **직접 적지 않는다** — 엔진이 낸 글자를 그대로 쓴다 */
   chk(!/[0-9]{1,3}(,[0-9]{3})+\s*원/.test(screen), "⑱화면   지면에 금액 리터럴이 없다(엔진이 낸 글자를 쓴다)", "있음");
-  chk(/파일럿 전표/.test(O), "⑱화면   어느 장부인지 적는다(파일럿 고지)", "없음");
-  chk(/corpJvLive|K\.live/.test(O), "⑱화면   파일럿인지 반입분인지 **상황에서** 가린다", "없음");
+  chk(/K\.srcKo/.test(O), "⑱화면   머리 띠지가 어느 전표인지를 적는다(K.srcKo)", "없음");
+  const KOF = JSON.parse(G('JSON.stringify(corpKpiOf(null, "' + KDAY + '"))'));
+  chk(KOF.srcKo === (KOF.live ? "반입 전표" : "실제 전표"),
+    "⑱화면   어느 전표인지는 **엔진이** 가른다(화면은 그 글자를 받아 쓴다)", KOF.srcKo + " / live=" + KOF.live);
 }
 
 /* 하이의 답과 화면이 갈라지지 않는다 — 둘이 **같은 함수**를 봐야 한다.
@@ -2024,7 +2032,7 @@ chk(Object.keys(KP.t).length === 4, "⑱분모   채울 칸이 네 개 다 선�
   chk(A && A.rows && A.rows.length > 0, "⑱한벌   핀테크에게 현금·런웨이를 물을 도구가 있다", A ? JSON.stringify(A.ko) : "없음");
   chk(!!(A && A.ask.indexOf("런웨이") >= 0 && A.ask.indexOf("현금") >= 0),
     "⑱한벌   「현금」·「런웨이」로 물으면 그 도구가 잡힌다", A ? A.ask.join("·") : "없음");
-  /* 러너는 브라우저 저장소가 없으므로 파일럿 장부를 본다 — 화면의 파일럿 값과 글자까지 같아야 한다 */
+  /* 러너는 브라우저 저장소가 없으므로 먼저 실린 전표를 본다 — 화면의 값과 글자까지 같아야 한다 */
   const want = G("corpWon")(KP.cash.won) + "원";
   chk(!!(A && A.rows.some((r) => r[0] === "현금 잔고" && r[1] === want)),
     "⑱한벌   핀테크가 말하는 현금이 화면의 현금과 **같은 글자**다", A ? JSON.stringify(A.rows) : "없음");
@@ -2212,14 +2220,14 @@ const inDefn = (src, needle) => {
   return head.split("<CorpDefn").length - 1 > head.split("</CorpDefn>").length - 1;
 };
 const OPSX = DEFN_SRC["src/components/CorpOps.jsx"];
-chk(inDefn(OPSX, "여기 숫자는 <b>파일럿 전표</b>에서 나옵니다") === false,
-  "⑳고지   어느 장부인지는 접지 않는다 — 버튼 뒤로 넣으면 검증용 숫자가 회사 실적으로 보인다");
-chk(inDefn(OPSX, "여기 숫자는 <b>반입 전표</b>에서 나옵니다") === false,
-  "⑳고지   반입 장부 고지도 접지 않는다");
+/* 2026-11-15 — 대시보드의 고지 블록은 걷었다(조성래님 지시).
+   어느 전표인지는 맨 위 띠지가 기준일과 함께 적고, 그 띠지는 접히지 않는다. */
+chk(inDefn(OPSX, "K.srcKo") === false,
+  "⑳고지   어느 전표인지는 접지 않는다 — 띠지는 항상 보인다");
 chk(inDefn(OPSX, "corp-dlt warn") === false,
   "⑳경고   숫자가 틀릴 수 있다는 경고는 접지 않는다");
-chk(inDefn(DEFN_SRC[BOARD], "파일럿 전표</b>입니다") === false,
-  "⑳고지   재무현황의 파일럿 고지 머리 문장도 밖에 선다");
+chk(inDefn(DEFN_SRC[BOARD], "<b>실제 전표</b> {CORP_JV_SEED.length}건을 보고 있습니다") === false,
+  "⑳고지   재무현황도 어느 전표인지를 밖에 적는다");
 
 /* ⑳업무 — 버튼에 이름만 크게 적으면 이름만 커진다. 무슨 일인지가 버튼에 있어야 한다. */
 const TOOLD = JSON.parse(G('JSON.stringify((CORP_AG_TOOL || []).map(function (x) { return { ai: x.ai, k: x.k, ko: x.ko, d: x.d }; }))'));
@@ -2307,7 +2315,7 @@ chk(rd("src/data/navInventory.js").indexOf("정보보안팀") < 0,
   "⑳개칭   내비 경로에 옛 팀 이름이 남지 않았다");
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
-console.log(`[회계엔진] 파일럿 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
+console.log(`[회계엔진] 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);
 const S = G("corpStatements(CORP_JV_SEED)");
 console.log(`[회계엔진] 자산 ${G("corpWon")(S.bs.assets)} = 부채 ${G("corpWon")(S.bs.liab)} + 자본 ${G("corpWon")(S.bs.equity)} + 손익 ${G("corpWon")(S.pl.net)}`);
 const PU = G("corpPaUnmatched")(G("CORP_JV_SEED"), PACAL);

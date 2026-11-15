@@ -39,7 +39,7 @@ const CORP_AG_TOOL = [
       if (typeof corpLedgerVerdict !== "function") return null;
       /* ⚠️ corpLedgerVerdict 는 **객체**를 돌려준다(배열이 아니다). 배열처럼 다루면
          조용히 빈 답이 나온다 — 실제로 그렇게 깨져 있었다. 그리고 은행줄은 상황에서 고른다
-         (검증용 묶음을 고정으로 쓰면 반입된 장부를 엉뚱한 내역과 견준다). */
+         (먼저 실린 묶음을 고정으로 쓰면 반입된 장부를 엉뚱한 내역과 견준다). */
       const st = corpLedgerRead();
       const V = corpLedgerVerdict(corpJvAll(st), corpBankOf(st));
       const live = V.rows.filter(function (r) { return !r.skip; });
