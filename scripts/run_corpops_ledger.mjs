@@ -1237,8 +1237,13 @@ const SURE = G("CORP_BJV_SURE");
 chk(SURE.length >= 1, "⑬분모   확실한 대응 표본 > 0", SURE.length);
 chk(SURE.every((x) => G("corpAcct")(x.c)), "⑬계정   확실한 대응은 전부 계정과목표에 있다", SURE.filter((x) => !G("corpAcct")(x.c)).map((x) => x.c));
 chk(SURE.every((x) => (x.why || "").trim()), "⑬계정   확실하다고 한 근거가 적혀 있다", SURE.filter((x) => !(x.why || "").trim()).map((x) => x.w));
-chk(!SURE.some((x) => x.w === "매입비용" || x.w === "수수료"),
-  "⑬계정ⓐ 실제 장부에서 갈린 낱말은 **코드가 못 박지 않는다**", SURE.map((x) => x.w).join(" "));
+/* 원칙은 그대로다 — **기계가 추측해 넣지 않는다.**
+   다만 2026-11-15 조성래님이 갈렸던 두 낱말을 직접 정하셨고, 그건 기계의 추측이 아니다.
+   그래서 「그 낱말은 없어야 한다」 대신 「들어 있는 것은 전부 **사람이 정한 근거**를
+   달고 있어야 한다」로 센다 — 원칙은 지키고 사람의 결정은 막지 않는다. */
+chk(SURE.every((x) => /확정|그대로 같|전건이/.test(x.why || "")),
+  "⑬계정ⓐ 사전에 들어 있는 낱말은 전부 사람이 정한 근거가 적혀 있다(기계 추측 아니다)",
+  SURE.filter((x) => !/확정|그대로 같|전건이/.test(x.why || "")).map((x) => x.w).join(" "));
 const pickEmpty = G("corpBjvPick")("", "in", { map: {} }, []);
 chk(!pickEmpty.c && (pickEmpty.why || "").trim(), "⑬계정   분류가 비면 고르지 않고 이유를 적는다", pickEmpty.why);
 const pickUnknown = G("corpBjvPick")("처음보는낱말", "out", { map: {} }, []);
@@ -1259,7 +1264,10 @@ chk(pickNow.c === "451" && pickNow.src === "picked", "⑬계정   지금 사람�
 const BL = [
   { row: 2, d: "2026-11-10", t: "11:05:45", a: 900000, bal: 1977986, m: "입금A", cls: "상품매출" },
   { row: 3, d: "2026-11-10", t: "11:11:56", a: 1800000, bal: 3777986, m: "입금B", cls: "상품매출" },
-  { row: 4, d: "2026-11-10", t: "11:25:55", a: -2420000, bal: 1357986, m: "출금A", cls: "매입비용" },
+  /* ⚠️ 여기 낱말은 **사전에 없는 것**이어야 시험이 뜻을 가진다.
+     2026-11-15 조성래님이 「매입비용」·「수수료」를 831로 정하셔 그 둘은 이제 풀린다.
+     대신 실제로 있었던 어긋난 낱말을 쓴다 — 「영업외수익」이라 적혀 왔는데 출금이었던 줄이다. */
+  { row: 4, d: "2026-11-10", t: "11:25:55", a: -2420000, bal: 1357986, m: "출금A", cls: "영업외수익" },
   { row: 5, d: "2026-11-10", t: "11:27:40", a: 120000, bal: 1477986, m: "입금C", cls: "상품매출" },
 ];
 const BB = G("corpBjvBuild")(BL, { map: {} }, { jv: [], closed: [], ov: {} }, []);
@@ -1267,6 +1275,12 @@ chk(BB.made.length + BB.held.length + BB.dup.length === BB.n && BB.n === 4,
   "⑬전표   은행 줄 = 전표 + 보류 + 이미 있음 (한 줄도 흘리지 않는다)", JSON.stringify({ made: BB.made.length, held: BB.held.length, dup: BB.dup.length, n: BB.n }));
 chk(BB.made.length === 3 && BB.held.length === 1,
   "⑬전표   확실한 줄은 전표가 되고 모르는 줄만 남는다", JSON.stringify({ made: BB.made.length, held: BB.held.length }));
+/* 조성래님이 정하신 대응은 **사람의 결정**이다 — 나중에 조용히 돌아가지 않게 센다. */
+const BJVSURE = JSON.parse(G('JSON.stringify([corpBjvPick("매입비용","out",null,[]), corpBjvPick("수수료","out",null,[]), corpBjvPick("상품매출","in",null,[])])'));
+chk(BJVSURE[0].c === "831" && BJVSURE[0].src === "sure" && BJVSURE[1].c === "831" && BJVSURE[1].src === "sure",
+  "③사전   「매입비용」·「수수료」는 831 지급수수료(조성래님 확정 2026-11-15)",
+  BJVSURE.map((x) => x.c + "/" + x.src).join(" "));
+chk(BJVSURE[2].c === "401" && BJVSURE[2].src === "sure", "③사전   「상품매출」은 401 그대로", BJVSURE[2].c);
 chk(BB.held.every((h) => (h.why || "").trim() && h.row > 0), "⑬전표   보류 줄마다 몇 행인지와 이유가 있다", JSON.stringify(BB.held[0]));
 chk(BB.made.every((j) => (j.l || []).some((l) => l[0] === "103")), "⑬전표   모든 전표가 보통예금을 상대로 선다");
 chk(BB.made.every((j) => G("corpJvSum")(j).ok), "⑬전표   만든 전표가 전건 차대 일치");
@@ -2313,6 +2327,28 @@ chk(rd("scripts/gen_nav_inventory.py").indexOf(String.fromCharCode(34) + "src/da
   "⑳개칭   내비 인벤토리 생성기가 조직 원천을 감시한다(개칭이 무사통과하지 않게)");
 chk(rd("src/data/navInventory.js").indexOf("정보보안팀") < 0,
   "⑳개칭   내비 경로에 옛 팀 이름이 남지 않았다");
+/* ⑳통장 — 차이를 늘 보인다 (조성래님 지시 2026-11-15: 「현금잔액은 항상 계좌의 잔액과 일치시켜 줘」).
+   ⚠️ 「맞춘다」를 「덮어쓴다」로 읽으면 복식부기가 끝난다 — 차변만 바뀜고 대변이 없다.
+   그래서 여기서 센다 — 대조할 상대가 없으면 「차이 0」이라 적지 않고, 차이가 있으면 까닭을 적는다. */
+const GAP0 = JSON.parse(G('JSON.stringify(corpBankGap(null, "' + KDAY + '"))'));
+chk(GAP0.ok === false && (GAP0.none || "").length > 0,
+  "⑳통장   대조할 은행 내역이 없으면 **맞다고 적지 않는다**(까닭을 적는다)", GAP0.ok + " / " + GAP0.none);
+chk(GAP0.acct === "103",
+  "⑳통장   맞출 계정은 103 보통예금이다(101 현금은 은행 계좌가 아니다)", GAP0.acct);
+/* 은행 내역이 있고 차이가 남을 때 까닭이 비어 있으면 「모르겠다」를 숨긴 것이다. */
+const GAP1 = JSON.parse(G('JSON.stringify((function(){var st=corpLedgerRead(); st.bank={acct:"103",bank:"시험은행",lines:[{row:2,d:"2026-11-10",t:"10:00:00",a:500000,bal:5000000,m:"입금",cls:"상품매출"}],live:true}; return corpBankGap(st, "' + KDAY + '");})())'));
+chk(GAP1.ok !== true || GAP1.diff === 0 || GAP1.why.length > 0,
+  "⑳통장   차이가 0이 아니면 **무엇으로 이뤄졌는지** 적는다", JSON.stringify({ d: GAP1.diff, why: GAP1.why }));
+/* 화면이 숫자만 맞추지 않는다고 적는지 — 적어 두어야 다음 사람이 덮어쓰지 않는다. */
+chk(rd(BOARD).indexOf("장부에 집어넣지 않습니다") > 0 && rd(BOARD).indexOf("corpBankGap(") > 0,
+  "⑳통장   화면이 차이를 장부에 집어넣지 않는다고 적는다", "없음");
+/* 승인은 ov 에 쌓인다 — 물리기가 jv[].st 만 보면 승인하신 전표까지 지운다(실측했다). */
+chk(rd(BOARD).indexOf("corpJvAll(st)") > 0 && rd(BOARD).indexOf("eff[j.id]") > 0,
+  "⑳통장   물리기는 유효 상태(ov 반영)를 본다", "없음");
+chk(rd(BOARD).indexOf("ov: ov2") > 0,
+  "⑳통장   물린 전표의 승인 기록도 같이 지운다(유령 승인 방지)", "없음");
+chk(rd(BOARD).indexOf("dropDraft={dropDraft}") > 0,
+  "⑳통장   전표 탭의 물리기 버튼이 스코프 안에 있다(누르면 화면이 죽었다)", "없음");
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);

@@ -766,3 +766,59 @@ function corpKpiOf(st, today) {
   K.srcKo = K.live ? "반입 전표" : "실제 전표";
   return K;
 }
+
+/* ══════════════ ⑪ 통장 맞추기 — 차이를 늘 보이게 (조성래님 지시 2026-11-15) ══════════════
+   지시: 「현금잔액은 항상 계좌의 잔액과 일치시켜 줘.」
+   그리고 개시 잔액 상대 계정은 「지금은 정하지 말고 차이를 보여만 달라」.
+
+   ⚠️ **맞춘다 ≠ 덮어쓴다.** 장부 잔액을 은행 값으로 대입하면 그 순간 복식부기가 끝난다 —
+   차변만 바뀌고 대변이 없다. 차액을 조정전표로 자동으로 꽂는 것도 안 된다.
+   사람이 설명해야 할 돈이 설명된 척하게 된다.
+
+   그래서 「일치」를 **「차이를 늘 보이게 하고, 0이 아니면 그 차이가 무엇으로 이루어졌는지
+   적는다」**로 둔다. 차이가 0이 되는 날은 사람이 분개를 세운 날이지 기계가 맞춘 날이 아니다.
+
+   ⚠️ 맞출 계정은 **103 보통예금**이다. 101 현금은 은행 계좌가 아니다(계정과목표에서 bank:true 는 103 뿐).
+
+   세 수를 나란히 둔다 — ③(승인해야 반영)과 ④(항상 일치)가 승인 대기 구간에서 부딪히므로,
+   「지금 장부」와 「승인하면 될 장부」를 같이 보여야 거짓말을 하지 않는다. */
+function corpBankGap(st, upto) {
+  const S0 = st || corpLedgerRead();
+  const all = corpJvAll(S0);
+  const bank = corpBankOf(S0);
+  const R = corpBankRecon(all, bank, upto);
+  const acct = (R && R.acct) || "103";
+  const CH = typeof corpBjvChain === "function" ? corpBjvChain((R && R.lines) || [])
+    : { last: null, open: null };
+
+  /* 전기된 것만 — 장부가 지금 말하는 잔액 */
+  const bk = corpLedgerBook(all, upto)[acct];
+  const book = bk ? Math.round(bk.sign) : 0;
+
+  /* 승인 전 전표가 103 에 걸어 둔 금액 — 누르면 더해질 몫이다 */
+  let wait = 0, waitN = 0;
+  (all || []).forEach(function (j) {
+    if (j.st === "posted") return;
+    if (upto && String(j.d) > upto) return;
+    let hit = 0;
+    (j.l || []).forEach(function (x) { if (x[0] === acct) hit += (+x[1] || 0) - (+x[2] || 0); });
+    if (hit) { wait += hit; waitN += 1; }
+  });
+
+  const last = CH.last;
+  const has = last !== null && last !== undefined && R && R.live;
+  const diff = has ? last - book : null;
+  const after = has ? last - (book + wait) : null;
+  const why = [];
+  if (has) {
+    if (waitN) why.push("승인 전 " + waitN + "건 " + corpWon(wait) + "원");
+    if (R.bankOnly && R.bankOnly.length) why.push("은행에만 " + R.bankOnly.length + "건");
+    if (R.bookOnly && R.bookOnly.length) why.push("장부에만 " + R.bookOnly.length + "건");
+    if (after) why.push("개시 미등록 " + corpWon(after) + "원 — 이 표가 시작되기 전부터 계좌에 있던 돈입니다");
+  }
+  return { ok: has, acct: acct, bank: last, book: book, wait: wait, waitN: waitN,
+    after: has ? book + wait : null, diff: diff, afterDiff: after, open: CH.open,
+    why: why, match: has && diff === 0, matchAfter: has && after === 0,
+    none: !has ? (last === null || last === undefined ? "은행 내역에 잔액 열이 없습니다"
+      : "반입된 은행 내역이 없습니다 — 맞춰 볼 상대가 없습니다") : "" };
+}

@@ -135,6 +135,7 @@ function CorpLedgerSection() {
 
       {tab === "sum" && <ClSummary V={V} S={S} R={R} jvs={jvs} st={st} months={months} onClose={closeMonth} actor={A} />}
       {tab === "jv" && <ClJournal jvs={jvs} st={st} save={save} actor={actor} A={A} form={form} setForm={setForm}
+        dropDraft={dropDraft} dropAllDraftRev={dropAllDraftRev}
         advance={advance} reverse={reverse} setMsg={setMsg} upMax={upMax} />}
       {tab === "gl" && <ClLedger S={S} sel={acctSel} setSel={setAcctSel} />}
       {tab === "tb" && <ClTrial S={S} />}
@@ -214,7 +215,7 @@ function ClSummary({ V, S, R, jvs, st, months, onClose, actor }) {
 }
 
 /* ── 전표 ─────────────────────────────────────────────────────────────────── */
-function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, setMsg, upMax }) {
+function ClJournal({ jvs, st, save, actor, A, form, setForm, advance, reverse, dropDraft, dropAllDraftRev, setMsg, upMax }) {
   const [q, setQ] = React.useState({ q: "", from: "", to: "", st: "", acct: "" });
   const blank = () => ({ d: upMax || "2026-11-10", desc: "", rev: null, l: [["", "", "", ""], ["", "", "", ""]] });
   const f = form;
@@ -604,11 +605,22 @@ function ClBankUp({ st, save, actor, A }) {
   const undo = () => {
     /* ⚠️ **전기된 전표는 지우지 않는다**(조성래님 확정 2026-11-12). 이 장부가 스스로 적은 원칙이다 —
        「정정은 역분개로 한다 · 지운 자국이 남아야 장부다」. 아직 승인 전인 것만 물린다. */
+    /* ⚠️ 승인은 jv[].st 가 아니라 **ov 에 쌓인다**(advance 가 ov 에 적는다).
+       예전에 여기서 jv[].st 만 봐서, 승인하신 전표까지 지워졌다.
+       유효 상태는 장부가 보는 것과 **같은 함수**로 읽는다. */
     const all = st.jv || [];
-    const posted = all.filter((j) => j.by === "은행반입" && j.st === "posted");
-    const keepJv = all.filter((j) => j.by !== "은행반입" || j.st === "posted");
+    const eff = {};
+    (typeof corpJvAll === "function" ? corpJvAll(st) || [] : []).forEach((j) => { eff[j.id] = j.st; });
+    const isPosted = (j) => (eff[j.id] || j.st) === "posted";
+    const posted = all.filter((j) => j.by === "은행반입" && isPosted(j));
+    const keepJv = all.filter((j) => j.by !== "은행반입" || isPosted(j));
     const n = all.length - keepJv.length;
-    save(Object.assign({}, st, { jv: keepJv }));
+    /* ⚠️ 물린 전표의 ov 도 같이 지운다 — 남겨 두면 같은 파일을 다시 올렸을 때
+       새 전표가 같은 번호를 받아 **아무도 누르지 않은 승인**이 붙은 채 장부에 들어간다. */
+    const keepIds = {}; keepJv.forEach((j) => { keepIds[j.id] = 1; });
+    const ov2 = {};
+    Object.keys(st.ov || {}).forEach((k) => { if (keepIds[k]) ov2[k] = st.ov[k]; });
+    save(Object.assign({}, st, { jv: keepJv, ov: ov2 }));
     setNote({ bad: false, t: "아직 승인 전인 " + n + "건을 물렸습니다."
       + (posted.length ? " **이미 전기된 " + posted.length + "건은 남겼습니다** — 전기된 전표는 지우지 않습니다. 바로잡으시려면 업무 지시에서 「역분개」를 시키시거나 전표 지면에서 역분개하세요."
         : "")
@@ -822,10 +834,35 @@ function ClBankUp({ st, save, actor, A }) {
 
 function ClBank({ R, st, save, actor, A }) {
   const UP = <ClBankUp st={st} save={save} actor={actor} A={A} />;
+  /* 통장 맞추기 — 덮어쓰지 않고 **차이를 늘 보인다**(조성래님 지시 2026-11-15) */
+  const GAP = typeof corpBankGap === "function" ? corpBankGap(st, "") : null;
+  const gapBox = GAP ? (
+    <div className="cl-sec bk-gap">
+      <div className="cl-h">통장 맞추기
+        <span className={"cl-flag" + (GAP.match ? " on" : (GAP.ok ? " hold" : ""))}>
+          {!GAP.ok ? "대조 못 함" : GAP.match ? "맞음" : "차이 " + corpWon(GAP.diff) + "원"}</span></div>
+      {!GAP.ok ? <p className="cl-note">{GAP.none}</p> : (
+        <React.Fragment>
+          <table className="cl-tbl"><tbody>
+            <tr><td className="k">은행 마지막 잔액</td><td className="n">{corpWon(GAP.bank)}원</td></tr>
+            <tr><td className="k">장부 보통예금(전기 기준)</td><td className="n">{corpWon(GAP.book)}원</td></tr>
+            {GAP.waitN > 0 && (
+              <tr><td className="k">승인하시면 될 장부</td>
+                <td className="n">{corpWon(GAP.after)}원 <i className="cl-t">승인 전 {GAP.waitN}건</i></td></tr>)}
+            <tr><td className="k">차이</td><td className="n">{corpWon(GAP.diff)}원</td></tr>
+          </tbody></table>
+          {GAP.why.length > 0 && <p className="cl-note">차이는 이것으로 이뤄져 있습니다 — {GAP.why.join(" · ")}.</p>}
+          {GAP.matchAfter && !GAP.match && <p className="cl-note">승인만 하시면 맞습니다 — 승인 전 {GAP.waitN}건을 전기하면 은행과 같아집니다.</p>}
+          <p className="cl-note">차이를 <b>장부에 집어넣지 않습니다.</b> 숫자만 맞추면 분개 없는 돈이 생겨
+            복식부기가 그 자리에서 끝납니다. 차이가 0이 되는 날은 사람이 분개를 세운 날입니다.</p>
+        </React.Fragment>)}
+    </div>
+  ) : null;
   if (R.none) {
     return (
       <div className="cl-body">
         {UP}
+        {gapBox}
         <div className="cl-sec">
           <div className="cl-h">은행 대사 <span className="cl-flag hold">보류</span></div>
           <p className="cl-note"><b>은행 거래내역이 반입되지 않았습니다.</b> 대사할 상대가 없어 <b>돌리지 않았습니다</b> —
@@ -845,6 +882,7 @@ function ClBank({ R, st, save, actor, A }) {
   return (
     <div className="cl-body">
       {UP}
+      {gapBox}
       <div className="cl-sec">
         <div className="cl-h">{R.bank} <span className="cl-t">{R.mask}</span>
           <span className={"cl-flag" + (R.ok ? " on" : " bad")}>{R.ok ? "조정 후 차이 0" : "차이 " + corpWon(R.gap)}</span></div>
