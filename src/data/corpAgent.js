@@ -108,11 +108,15 @@ const CORP_AG_TOOL = [
       const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
       const K = corpKpiOf(null, today);
       if (!K || !K.ok) return { t: (K && K.why) || "장부를 읽지 못했습니다.", rows: [] };
+      /* ⚠️ 화면이 쓰는 칸(K.t)을 그대로 읽는다. K.cash.won 은 **장부 원시값**이라
+         은행 잔액을 반영하지 않는다 — 그걸 읽으면 화면과 하이의 답이 갈라진다. */
       const rw = K.t.run.txt + K.t.run.u;
-      return { t: K.srcKo + " 기준 현금 " + corpWon(K.cash.won) + "원 · 런웨이 " + rw + "입니다."
+      const cw = K.t.cash.txt + (K.t.cash.txt === "—" ? "" : K.t.cash.u);
+      return { t: K.srcKo + " 기준 현금 " + cw + " · 런웨이 " + rw + "입니다."
+          + (K.t.cash.warn ? " " + K.t.cash.warn + "." : "")
           + (K.t.run.warn ? " " + K.t.run.warn + "." : ""),
-        rows: [["현금 잔고", corpWon(K.cash.won) + "원"],
-               ["전월 말 대비", corpWon(K.cash.won - K.cashPrev.won) + "원"],
+        rows: [["현금 잔고", cw],
+               ["현금의 출처", K.t.cash.sub],
                /* 순유출이 음수면 그건 유출이 아니라 **유입**이다 — 「순유출 −245만원」이라 적지 않는다 */
                ["월 현금흐름", K.burn.burn === null ? K.burn.why
                  : (K.burn.burn > 0 ? "순유출 " + corpWon(K.burn.burn) : "순유입 " + corpWon(-K.burn.burn))

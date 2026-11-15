@@ -2047,11 +2047,18 @@ chk(Object.keys(KP.t).length === 4, "⑱분모   채울 칸이 네 개 다 선�
   chk(!!(A && A.ask.indexOf("런웨이") >= 0 && A.ask.indexOf("현금") >= 0),
     "⑱한벌   「현금」·「런웨이」로 물으면 그 도구가 잡힌다", A ? A.ask.join("·") : "없음");
   /* 러너는 브라우저 저장소가 없으므로 먼저 실린 전표를 본다 — 화면의 값과 글자까지 같아야 한다 */
-  const want = G("corpWon")(KP.cash.won) + "원";
+  /* 화면이 쓰는 그 칸을 여기서 다시 낸다 — 위 블록의 KOF 는 그 블록 안에서만 산다 */
+  const KOF = JSON.parse(G('JSON.stringify(corpKpiOf(null, "' + KDAY + '"))'));
+  /* ⚠️ 화면도 도구도 corpKpiOf 를 본다. 여기서 corpKpi(KP)와 견주면 **화면이 안 쓰는 값**과
+     대조하는 꼴이라, 은행 잔액이 현금 칸을 바꾸는 순간 조용히 어긋난다(2026-11-15 실증). */
+  const want = KOF.t.cash.txt + (KOF.t.cash.txt === "—" ? "" : KOF.t.cash.u);
   chk(!!(A && A.rows.some((r) => r[0] === "현금 잔고" && r[1] === want)),
     "⑱한벌   핀테크가 말하는 현금이 화면의 현금과 **같은 글자**다", A ? JSON.stringify(A.rows) : "없음");
-  chk(!!(A && A.rows.some((r) => r[0] === "런웨이" && r[1] === KP.t.run.txt + KP.t.run.u)),
+  chk(!!(A && A.rows.some((r) => r[0] === "런웨이" && r[1] === KOF.t.run.txt + KOF.t.run.u)),
     "⑱한벌   핀테크가 말하는 런웨이가 화면의 런웨이와 같다", A ? JSON.stringify(A.rows) : "없음");
+  /* 현금의 출처를 같이 말한다 — 「7백만원」만 적으면 은행인지 장부인지 모른다 */
+  chk(!!(A && A.rows.some((r) => r[0] === "현금의 출처" && r[1] === KOF.t.cash.sub)),
+    "⑱한벌   핀테크가 현금의 **출처**도 화면과 같은 글자로 말한다", A ? JSON.stringify(A.rows) : "없음");
   /* 앞 세 도구를 돌리는 인사말을 건드리지 않았는지 — 도구는 목록 **끝에** 붙어야 한다 */
   const first3 = JSON.parse(G('JSON.stringify((CORP_AG_TOOL||[]).filter(function(x){return x.ai==="핀테크";}).slice(0,3).map(function(x){return x.k;}))'));
   chk(first3.indexOf("cash") < 0, "⑱한벌   새 도구가 인사말의 앞 세 도구를 밀어내지 않았다", first3.join("·"));
@@ -2446,8 +2453,28 @@ chk(CLG.indexOf("덮고 되읽기") > 0 && CLG.indexOf("되돌릴 수 없습니�
 chk(VFSW.indexOf("사본의 모양이 장부가 아닙니다") > 0,
   "㉑사본   모양이 장부가 아니면 되읽지 않는다", "검사 없음");
 /* 쓰기 허락을 묻는 것은 사람이 누른 직후뿐이다 — 자동 사본은 이미 허락이 있을 때만 돈다 */
-chk(CLG.indexOf("R.on && R.h") > 0 && CLG.indexOf("cvfLedgerSave(R.h, next)") > 0,
+chk(CLG.indexOf("R.on && R.h") > 0 && CLG.indexOf("cvfLedgerSave(R.h, next, corpOpenRead())") > 0,
   "㉑사본   허락이 이미 있을 때만 묻지 않고 같이 남긴다", "없음");
+/* 장부와 기초를 따로 두면 하나만 살아남아 기초 없는 장부가 된다 — 출발선을 잃으면 현금·자본이 어긋난다 */
+chk(/async function cvfLedgerSave\(h, led, open\)/.test(VFSW) && VFSW.indexOf("led: led || null") > 0,
+  "㉑사본   한 벌에 장부와 기초를 같이 담는다", "따로 담음");
+chk(VFSW.indexOf("Array.isArray(raw.jv) ? raw : raw.led") > 0,
+  "㉑사본   옛 사본(장부만 담은 판)도 읽을 수 있다", "못 읽음");
+/* 「다시 열 때 없어지지 않도록」(조성래님 지시) — 비어 있을 때만. 들어 있는 장부는 사람이 누를 때만 덮는다 */
+chk(CLG.indexOf("if (!emptyLed && !emptyOpen) return;") > 0 && CLG.indexOf("이 브라우저가 비어 있어 저장소 사본에서 되읽었습니다") > 0,
+  "㉑사본   다시 열 때 비어 있으면 스스로 되읽는다(차 있으면 덮지 않는다)", "없음");
+/* 기초가 사라지면 출발선을 잃는다 — 전표와 같은 사본에 같이 남아야 한다 */
+chk(/const keep = function \(next\) \{[\s\S]{0,500}?cvfLedgerSave\(x\.h, corpLedgerRead\(\), next\)/.test(CLG),
+  "㉑사본   기초를 고치면 저장소 사본도 같이 뜬다", "기초는 브라우저에만 남음");
+/* ⚠️ 확인원은 여러 판이 있고 어느 것이 확정본인지는 사람만 안다 — 기계가 고르면 틀린 판으로 출발선이 선다 */
+chk(VFSW.indexOf("async function cvfFindConfirm(") > 0 && VFSW.indexOf("out.slice(0, 8)") > 0,
+  "㉑확인원   후보를 **여럿** 늘어놓는다(하나로 줄이지 않는다)", "없음");
+chk(/cvfFindConfirm[\s\S]{0,700}?indexOf\("~\$"\) === 0/.test(VFSW),
+  "㉑확인원   엑셀 임시 파일을 후보로 세우지 않는다", "거르지 않음");
+chk(CLG.indexOf("어느 것이 확정본인지는 조성래님만 아십니다") > 0,
+  "㉑확인원   고르는 것은 사람이라고 화면이 적는다", "없음");
+chk(CLG.indexOf("cvfFindConfirm(h)") > 0 && CLG.indexOf("저장소에서 9월말 확인원 찾기") > 0,
+  "㉑확인원   저장소에서 찾아 오는 길이 화면에 있다", "없음");
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);

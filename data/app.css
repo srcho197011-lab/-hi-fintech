@@ -199,6 +199,11 @@
   .tr{gap:10px;}
   .user{gap:7px;}
 }
+/* 확인원 후보 — 기초 확정선 지면 */
+.cl-cand{display:grid;gap:6px;margin-top:8px;}
+.cl-candrow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;text-align:left;width:100%;}
+.cl-candrow i{font-style:normal;color:var(--muted);font-size:11.5px;}
+.cl-candrow span{color:var(--muted);font-size:11px;}
 /* 장부 사본 — 회계 재무현황 검산 지면 */
 .cl-bak .bk-act{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:9px;}
 .cl-bak .cl-t{font-weight:600;}

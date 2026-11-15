@@ -703,7 +703,12 @@ async function cvfLedgerState() {
   return { on: true, h: h, why: "" };
 }
 
-async function cvfLedgerSave(h, data) {
+/* 사본 한 벌에 **장부와 기초를 같이** 담는다 (조성래님 지시 2026-11-15).
+   따로 두면 하나만 살아남아, 기초 없는 장부나 장부 없는 기초가 된다 — 둘 다 못 쓴다.
+   기초에는 9월말 재무제표확인원의 확정 숫자가 들어 있으므로, 그것이 사라지면
+   출발선을 잃고 현금·자본이 통째로 어긋난다. */
+async function cvfLedgerSave(h, led, open) {
+  const data = { led: led || null, open: open === undefined ? null : open };
   if (!h) throw new Error("이어 둔 폴더가 없습니다");
   const dir = await cvfDirOf(h, CVF_LEDGER_DIR, true);
   /* 덮어쓰기 전에 직전 사본을 한 벌 민다 — 사본이 하나뿐이면 잘못 쓴 순간 둘 다 잃는다 */
@@ -714,7 +719,7 @@ async function cvfLedgerSave(h, data) {
       await pw.write(new Blob([old], { type: "application/json" })); await pw.close();
     }
   } catch (e) { /* 첫 사본이면 직전이 없다 — 까닭이 아니다 */ }
-  const body = JSON.stringify({ v: 1, at: cvfDay(Date.now()), by: "회사 총괄운영 · 회계", d: data }, null, 1);
+  const body = JSON.stringify({ v: 2, at: cvfDay(Date.now()), by: "회사 총괄운영 · 회계", d: data }, null, 1);
   const w = await (await dir.getFileHandle(CVF_LEDGER, { create: true })).createWritable();
   await w.write(new Blob([body], { type: "application/json" })); await w.close();
   return { rel: CVF_LEDGER_DIR + "/" + CVF_LEDGER, bytes: body.length };
@@ -726,7 +731,50 @@ async function cvfLedgerLoad(h, prev) {
   const dir = await cvfDirOf(h, CVF_LEDGER_DIR, false);
   const f = await (await dir.getFileHandle(prev ? CVF_LEDGER_PREV : CVF_LEDGER)).getFile();
   const o = JSON.parse(await f.text());
-  const d = o && o.d;
-  if (!d || !Array.isArray(d.jv)) throw new Error("사본의 모양이 장부가 아닙니다 — 되읽지 않았습니다");
-  return { at: String(o.at || ""), jv: d.jv.length, bank: Array.isArray(d.bank) ? d.bank.length : 0, data: d };
+  const raw = o && o.d;
+  /* v1 은 장부만 담았다. 옛 사본도 읽을 수 있어야 한다 — 못 읽으면 사본이 아니다 */
+  const led = raw && (Array.isArray(raw.jv) ? raw : raw.led);
+  const open = raw && raw.open && Array.isArray(raw.open.list) ? raw.open : null;
+  if (!led || !Array.isArray(led.jv)) throw new Error("사본의 모양이 장부가 아닙니다 — 되읽지 않았습니다");
+  return { at: String(o.at || ""), ver: +o.v || 1,
+    jv: led.jv.length, bank: Array.isArray(led.bank) ? led.bank.length : 0,
+    opens: open ? open.list.length : 0, led: led, open: open, data: led };
+}
+
+/* ══════════════ ⑨ 확인원 찾기 — 출발선은 사람이 고르되, 찾는 수고는 덜어 준다 ══════════════
+   「9월말 확인원을 고정시켜 주고」(조성래님 지시 2026-11-15).
+
+   ⚠️ 기계가 확정본을 **고르지 않는다.** 확인원은 여러 판이 있고(10-07본 · 10-23본 ·
+   재무제표 xlsx 네 벌), 어느 것이 확정본인지는 사람만 안다. 그래서 여기서 하는 일은
+   **후보를 찾아 늘어놓는 것**까지다. 고르는 것도 승인하는 것도 사람이 한다.
+
+   숫자는 읽는 그 자리에서만 쓰인다 — 이 저장소(코드)에는 한 줄도 남지 않는다. */
+function cvfConfirmScore(rel, name) {
+  const p = String(rel || "").toLowerCase();
+  const n = String(name || "");
+  let s = 0;
+  if (/확인원/.test(n)) s += 3;
+  if (/재무제표|재무상태표/.test(n)) s += 2;
+  if (/결산/.test(p)) s += 1;
+  /* 9월말을 가리키는 꼴 — 폴더 이름(26.09)과 파일 이름(2026.09.30) 양쪽을 본다 */
+  if (/(^|[^0-9])(2026[.\-_]?09|26[.\-_]09)([^0-9]|$)/.test(p)) s += 3;
+  if (/09[.\-_]?30|0930/.test(p)) s += 2;
+  if (/최종/.test(p)) s += 1;
+  return s;
+}
+async function cvfFindConfirm(h, onTick) {
+  if (!h) throw new Error("이어 둔 폴더가 없습니다");
+  const S = await cvfScan(h, onTick);
+  const out = [];
+  (S.rows || []).forEach(function (r) {
+    const e = String(r.ext || "").toLowerCase();
+    if (e !== "xlsx" && e !== "xls" && e !== "xlsm") return;
+    if (String(r.name || "").indexOf("~$") === 0) return;      /* 엑셀 임시 파일 */
+    const sc = cvfConfirmScore(r.rel, r.name);
+    if (sc < 3) return;                                        /* 확인원으로 볼 만한 것만 */
+    out.push({ rel: r.rel, name: r.name, dir: r.dir, size: r.size, at: r.at, score: sc });
+  });
+  /* 점수 높은 순, 같으면 최근 것부터. **하나로 줄이지 않는다** — 고르는 것은 사람이다 */
+  out.sort(function (a, b) { return b.score - a.score || (a.at < b.at ? 1 : a.at > b.at ? -1 : 0); });
+  return { n: S.rows ? S.rows.length : 0, list: out.slice(0, 8) };
 }

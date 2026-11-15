@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="./data/app.css?v=73769b78b5" />
+<link rel="stylesheet" href="./data/app.css?v=aaff5e3cfa" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=73769b78b5"></script>
-<script src="./src/data/section_data.js?v=73769b78b5"></script>
-<script src="./src/data/demo_members.js?v=73769b78b5"></script>
+<script src="./src/data/dummy_data.js?v=aaff5e3cfa"></script>
+<script src="./src/data/section_data.js?v=aaff5e3cfa"></script>
+<script src="./src/data/demo_members.js?v=aaff5e3cfa"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -17295,13 +17295,31 @@ function corpKpiOf(st, today) {
   /* 「현금잔고는 그냥 은행거래내역서의 잔액을 표시해 줘」(조성래님 지시 2026-11-15).
      은행 잔액은 **바깥 사실**이다 — 장부보다 먼저 믿는다. 다만 장부 값을 지우지는
      않는다 — 밑줄에 나란히 적고, 차이가 있으면 그걸 경고로 세운다.
-     은행 내역이 없으면 장부 값을 그대로 두고 그 사실을 적는다(0 이라 적지 않는다). */
+     ⚠️ 2026-11-15 추가 지시: 「현금은 은행거래내역서를 저장하고 은행의 거래내역서의 잔액을
+     반드시 반영해 줘.」 그래서 은행 내역이 없으면 **장부 숫자를 현금인 척 띄우지 않는다.**
+     장부 값은 밑줄에 사실 그대로 적고, 현금 칸은 「—」로 둔다 — 없는 것을 있다고 적지 않는다. */
   K.gap = typeof corpBankGap === "function" ? corpBankGap(S, today) : null;
   if (K.gap && K.gap.ok && K.t && K.t.cash) {
     K.t.cash = { k: "현금 잔고", u: "원", txt: corpWon(K.gap.bank),
       sub: "은행 거래내역서 마지막 잔액 · 장부 " + corpWon(K.gap.book) + "원",
       warn: K.gap.diff ? "장부와 " + corpWon(K.gap.diff) + "원 차이 — " + (K.gap.why[0] || "까닭을 세지 못했습니다") : "" };
     K.cashSrc = "bank";
+  } else if (K.t && K.t.cash) {
+    /* 현금 칸의 주인은 은행 거래내역서다. 거래내역이 없으면 현금을 말할 수 없다 —
+       장부 잔액은 현금이 아니라 **장부가 그렇다고 말하는 값**이다. 그 차이를 적는다. */
+    const bk = K.gap ? corpWon(K.gap.book) : null;
+    /* 단위를 붙이면 「—원」이 된다. 없는 것에는 단위도 없다 */
+    K.t.cash = { k: "현금 잔고", u: "", txt: "—",
+      sub: "은행 거래내역서가 아직 없습니다" + (bk === null ? "" : " · 장부상 " + bk + "원"),
+      warn: "현금은 은행 거래내역서의 잔액으로만 적습니다 — 회계팀 「자료 반입」에서 거래내역을 올려 주세요" };
+    /* 현금을 모르면 몇 달 버틸지도 모른다. 장부로 센 개월수를 남겨 두면 그게 거짓이 된다 */
+    if (K.t.run) {
+      K.t.run = { k: "런웨이", u: "",
+        txt: "—",
+        sub: "현금 잔고를 은행 거래내역서로 정하므로, 거래내역이 없으면 몇 달 버틸지도 세지 못합니다",
+        warn: "" };
+    }
+    K.cashSrc = "none";
   } else { K.cashSrc = "book"; }
   K.open = typeof corpOpenPass === "function" ? corpOpenPass(null) : null;
   return K;
@@ -19185,11 +19203,15 @@ const CORP_AG_TOOL = [
       const today = typeof corpOpsToday === "function" ? corpOpsToday(now) : "";
       const K = corpKpiOf(null, today);
       if (!K || !K.ok) return { t: (K && K.why) || "장부를 읽지 못했습니다.", rows: [] };
+      /* ⚠️ 화면이 쓰는 칸(K.t)을 그대로 읽는다. K.cash.won 은 **장부 원시값**이라
+         은행 잔액을 반영하지 않는다 — 그걸 읽으면 화면과 하이의 답이 갈라진다. */
       const rw = K.t.run.txt + K.t.run.u;
-      return { t: K.srcKo + " 기준 현금 " + corpWon(K.cash.won) + "원 · 런웨이 " + rw + "입니다."
+      const cw = K.t.cash.txt + (K.t.cash.txt === "—" ? "" : K.t.cash.u);
+      return { t: K.srcKo + " 기준 현금 " + cw + " · 런웨이 " + rw + "입니다."
+          + (K.t.cash.warn ? " " + K.t.cash.warn + "." : "")
           + (K.t.run.warn ? " " + K.t.run.warn + "." : ""),
-        rows: [["현금 잔고", corpWon(K.cash.won) + "원"],
-               ["전월 말 대비", corpWon(K.cash.won - K.cashPrev.won) + "원"],
+        rows: [["현금 잔고", cw],
+               ["현금의 출처", K.t.cash.sub],
                /* 순유출이 음수면 그건 유출이 아니라 **유입**이다 — 「순유출 −245만원」이라 적지 않는다 */
                ["월 현금흐름", K.burn.burn === null ? K.burn.why
                  : (K.burn.burn > 0 ? "순유출 " + corpWon(K.burn.burn) : "순유입 " + corpWon(-K.burn.burn))
@@ -20432,7 +20454,12 @@ async function cvfLedgerState() {
   return { on: true, h: h, why: "" };
 }
 
-async function cvfLedgerSave(h, data) {
+/* 사본 한 벌에 **장부와 기초를 같이** 담는다 (조성래님 지시 2026-11-15).
+   따로 두면 하나만 살아남아, 기초 없는 장부나 장부 없는 기초가 된다 — 둘 다 못 쓴다.
+   기초에는 9월말 재무제표확인원의 확정 숫자가 들어 있으므로, 그것이 사라지면
+   출발선을 잃고 현금·자본이 통째로 어긋난다. */
+async function cvfLedgerSave(h, led, open) {
+  const data = { led: led || null, open: open === undefined ? null : open };
   if (!h) throw new Error("이어 둔 폴더가 없습니다");
   const dir = await cvfDirOf(h, CVF_LEDGER_DIR, true);
   /* 덮어쓰기 전에 직전 사본을 한 벌 민다 — 사본이 하나뿐이면 잘못 쓴 순간 둘 다 잃는다 */
@@ -20443,7 +20470,7 @@ async function cvfLedgerSave(h, data) {
       await pw.write(new Blob([old], { type: "application/json" })); await pw.close();
     }
   } catch (e) { /* 첫 사본이면 직전이 없다 — 까닭이 아니다 */ }
-  const body = JSON.stringify({ v: 1, at: cvfDay(Date.now()), by: "회사 총괄운영 · 회계", d: data }, null, 1);
+  const body = JSON.stringify({ v: 2, at: cvfDay(Date.now()), by: "회사 총괄운영 · 회계", d: data }, null, 1);
   const w = await (await dir.getFileHandle(CVF_LEDGER, { create: true })).createWritable();
   await w.write(new Blob([body], { type: "application/json" })); await w.close();
   return { rel: CVF_LEDGER_DIR + "/" + CVF_LEDGER, bytes: body.length };
@@ -20455,9 +20482,52 @@ async function cvfLedgerLoad(h, prev) {
   const dir = await cvfDirOf(h, CVF_LEDGER_DIR, false);
   const f = await (await dir.getFileHandle(prev ? CVF_LEDGER_PREV : CVF_LEDGER)).getFile();
   const o = JSON.parse(await f.text());
-  const d = o && o.d;
-  if (!d || !Array.isArray(d.jv)) throw new Error("사본의 모양이 장부가 아닙니다 — 되읽지 않았습니다");
-  return { at: String(o.at || ""), jv: d.jv.length, bank: Array.isArray(d.bank) ? d.bank.length : 0, data: d };
+  const raw = o && o.d;
+  /* v1 은 장부만 담았다. 옛 사본도 읽을 수 있어야 한다 — 못 읽으면 사본이 아니다 */
+  const led = raw && (Array.isArray(raw.jv) ? raw : raw.led);
+  const open = raw && raw.open && Array.isArray(raw.open.list) ? raw.open : null;
+  if (!led || !Array.isArray(led.jv)) throw new Error("사본의 모양이 장부가 아닙니다 — 되읽지 않았습니다");
+  return { at: String(o.at || ""), ver: +o.v || 1,
+    jv: led.jv.length, bank: Array.isArray(led.bank) ? led.bank.length : 0,
+    opens: open ? open.list.length : 0, led: led, open: open, data: led };
+}
+
+/* ══════════════ ⑨ 확인원 찾기 — 출발선은 사람이 고르되, 찾는 수고는 덜어 준다 ══════════════
+   「9월말 확인원을 고정시켜 주고」(조성래님 지시 2026-11-15).
+
+   ⚠️ 기계가 확정본을 **고르지 않는다.** 확인원은 여러 판이 있고(10-07본 · 10-23본 ·
+   재무제표 xlsx 네 벌), 어느 것이 확정본인지는 사람만 안다. 그래서 여기서 하는 일은
+   **후보를 찾아 늘어놓는 것**까지다. 고르는 것도 승인하는 것도 사람이 한다.
+
+   숫자는 읽는 그 자리에서만 쓰인다 — 이 저장소(코드)에는 한 줄도 남지 않는다. */
+function cvfConfirmScore(rel, name) {
+  const p = String(rel || "").toLowerCase();
+  const n = String(name || "");
+  let s = 0;
+  if (/확인원/.test(n)) s += 3;
+  if (/재무제표|재무상태표/.test(n)) s += 2;
+  if (/결산/.test(p)) s += 1;
+  /* 9월말을 가리키는 꼴 — 폴더 이름(26.09)과 파일 이름(2026.09.30) 양쪽을 본다 */
+  if (/(^|[^0-9])(2026[.\-_]?09|26[.\-_]09)([^0-9]|$)/.test(p)) s += 3;
+  if (/09[.\-_]?30|0930/.test(p)) s += 2;
+  if (/최종/.test(p)) s += 1;
+  return s;
+}
+async function cvfFindConfirm(h, onTick) {
+  if (!h) throw new Error("이어 둔 폴더가 없습니다");
+  const S = await cvfScan(h, onTick);
+  const out = [];
+  (S.rows || []).forEach(function (r) {
+    const e = String(r.ext || "").toLowerCase();
+    if (e !== "xlsx" && e !== "xls" && e !== "xlsm") return;
+    if (String(r.name || "").indexOf("~$") === 0) return;      /* 엑셀 임시 파일 */
+    const sc = cvfConfirmScore(r.rel, r.name);
+    if (sc < 3) return;                                        /* 확인원으로 볼 만한 것만 */
+    out.push({ rel: r.rel, name: r.name, dir: r.dir, size: r.size, at: r.at, score: sc });
+  });
+  /* 점수 높은 순, 같으면 최근 것부터. **하나로 줄이지 않는다** — 고르는 것은 사람이다 */
+  out.sort(function (a, b) { return b.score - a.score || (a.at < b.at ? 1 : a.at > b.at ? -1 : 0); });
+  return { n: S.rows ? S.rows.length : 0, list: out.slice(0, 8) };
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -21576,7 +21646,7 @@ function CorpLedgerSection() {
     /* 쓰기 허락이 이미 있으면 **묻지 않고** 회사 폴더에도 같이 남긴다 */
     const R = bakRef.current;
     if (R.on && R.h && typeof cvfLedgerSave === "function") {
-      cvfLedgerSave(R.h, next).then(function (r) {
+      cvfLedgerSave(R.h, next, corpOpenRead()).then(function (r) {
         setBak(function (v) { return Object.assign({}, v, { at: r && r.rel ? corpOpsToday() : v.at }); });
       }).catch(function () { /* 사본 실패가 저장을 되돌리지는 않는다 — 아래 블록이 상태를 적는다 */ });
     }
@@ -21597,7 +21667,7 @@ function CorpLedgerSection() {
     cvfHandle().then(async function (h) {
       try {
         if (!h) throw new Error("저장소 폴더가 이어지지 않았습니다");
-        const r = await cvfLedgerSave(h, st);
+        const r = await cvfLedgerSave(h, st, corpOpenRead());
         setMsg({ bad: false, t: "저장소에 사본을 두었습니다 — " + r.rel + " (" + (jvs.length) + "건)" });
         setBak(function (v) { return Object.assign({}, v, { at: corpOpsToday(), busy: false }); });
       } catch (e) {
@@ -21613,9 +21683,11 @@ function CorpLedgerSection() {
       try {
         if (!h) throw new Error("저장소 폴더가 이어지지 않았습니다");
         const r = await cvfLedgerLoad(h, false);
-        corpLedgerWrite(r.data);
-        setSt(Object.assign({}, r.data));
-        setMsg({ bad: false, t: "저장소 사본으로 되읽었습니다 — " + r.at + " 사본 · 전표 " + r.jv + "건 · 은행 " + r.bank + "줄" });
+        corpLedgerWrite(r.led);
+        setSt(Object.assign({}, r.led));
+        if (r.open) corpOpenWrite(r.open);
+        setMsg({ bad: false, t: "저장소 사본으로 되읽었습니다 — " + r.at + " 사본 · 전표 " + r.jv + "건 · 은행 " + r.bank + "줄"
+          + (r.open ? " · 기초 " + r.opens + "판" : " · 기초는 사본에 없습니다(옛 사본)") });
       } catch (e) {
         setMsg({ bad: true, t: "되읽지 못했습니다 — " + ((e && e.message) || "까닭 모름") });
       }
@@ -21625,10 +21697,27 @@ function CorpLedgerSection() {
   React.useEffect(function () {
     let gone = false;
     if (typeof cvfLedgerState !== "function") return;
-    cvfLedgerState().then(function (x) {
+    cvfLedgerState().then(async function (x) {
       if (gone) return;
       bakRef.current = { on: !!x.on, h: x.h || null };
       setBak(function (v) { return Object.assign({}, v, { on: !!x.on, why: x.why || "" }); });
+      /* ⚠️ 다시 열었을 때 이 브라우저가 비어 있으면 **스스로** 사본에서 되읽는다.
+         (조성래님 지시 2026-11-15 — 「다시 열 때 없어지지 않도록」)
+         비어 있을 때만 한다. 들어 있는 장부를 사본으로 덮는 일은 사람이 누를 때만이다. */
+      if (!x.h || typeof cvfLedgerLoad !== "function") return;
+      const cur = corpLedgerRead();
+      const cur0 = corpOpenRead();
+      const emptyLed = !(cur.jv || []).length && !(cur.bank || []).length;
+      const emptyOpen = !((cur0 && cur0.list) || []).length;
+      if (!emptyLed && !emptyOpen) return;
+      try {
+        const r = await cvfLedgerLoad(x.h, false);
+        if (gone) return;
+        const got = [];
+        if (emptyLed && r.led && (r.led.jv || []).length) { corpLedgerWrite(r.led); setSt(Object.assign({}, r.led)); got.push("전표 " + r.jv + "건 · 은행 " + r.bank + "줄"); }
+        if (emptyOpen && r.open) { corpOpenWrite(r.open); got.push("기초 " + r.opens + "판"); }
+        if (got.length) setMsg({ bad: false, t: "이 브라우저가 비어 있어 저장소 사본에서 되읽었습니다 — " + r.at + " 사본 · " + got.join(" · ") });
+      } catch (e2) { /* 사본이 없으면 처음 쓰시는 것이다 — 까닭이 아니다 */ }
     });
     return function () { gone = true; };
   }, []);
@@ -22605,7 +22694,16 @@ function ClOpen({ actor, A, setMsg }) {
   const list = (o.list || []).slice().sort(function (a, b) { return (+b.rev || 0) - (+a.rev || 0); });
   const won = function (v) { return corpWon(v); };
 
-  const keep = function (next) { corpOpenWrite(next); setO(next); };
+  const keep = function (next) {
+    corpOpenWrite(next); setO(next);
+    /* 기초가 사라지면 출발선을 잃는다 — 장부와 **같은 사본**에 같이 남긴다.
+       쓰기 허락이 이미 있을 때만이다(묻는 창은 사람이 누른 직후에만 뜬다). */
+    if (typeof cvfLedgerState === "function") {
+      cvfLedgerState().then(function (x) {
+        if (x && x.on && x.h) cvfLedgerSave(x.h, corpLedgerRead(), next).catch(function () {});
+      });
+    }
+  };
   const start = function () {
     setDraft({ asOf: (cur && cur.asOf) || "2026-09-30", src: "", bal: cur ? Object.assign({}, cur.bal) : {}, note: "" });
   };
@@ -22654,6 +22752,40 @@ function ClOpen({ actor, A, setMsg }) {
       setMsg({ bad: true, t: (err && err.message) || "엑셀을 읽지 못했습니다" }); setBusy(false);
     });
   };
+  /* 저장소에서 확인원 후보를 찾아 **늘어놓는다**. 고르는 것은 조성래님이 하신다 —
+     확인원은 여러 판이 있고 어느 것이 확정본인지는 사람만 안다. */
+  const [cand, setCand] = React.useState(null);
+  const findConfirm = function () {
+    setBusy(true); setCand(null);
+    cvfHandle().then(async function (h) {
+      try {
+        if (!h) throw new Error("먼저 팀 자료실에서 「저장소 폴더 잇기」를 해 주세요");
+        const R = await cvfFindConfirm(h);
+        setCand(R.list);
+        setMsg({ bad: R.list.length === 0, t: R.list.length
+          ? R.n + "개 파일을 훑어 확인원 후보 " + R.list.length + "건을 찾았습니다 — 어느 것이 확정본인지는 조성래님만 아십니다."
+          : R.n + "개 파일을 훑었지만 확인원으로 볼 만한 엑셀을 못 찾았습니다 — 아래에서 직접 고르실 수 있습니다." });
+      } catch (e) { setMsg({ bad: true, t: (e && e.message) || "찾지 못했습니다" }); }
+      setBusy(false);
+    });
+  };
+  const useCand = function (c) {
+    setBusy(true);
+    cvfHandle().then(async function (h) {
+      try {
+        const f = await cvfFile(h, c.rel);
+        const R = await cbxRead(f, "재무상태표");
+        const F = corpOpenFromRows(R.rows);
+        if (!F.hit.length) throw new Error("이 파일에서 알아볼 과목을 하나도 못 찾았습니다(읽은 시트: " + R.sheet + ")");
+        setDraft(Object.assign({}, draft || { asOf: "2026-09-30", note: "" }, { bal: F.bal, src: c.name }));
+        setGot(F); setCand(null);
+        setMsg({ bad: false, t: F.hit.length + "과목을 불러왔습니다(" + c.name + " · " + R.sheet + ") — "
+          + (F.sum.ok ? "차대가 맞습니다." : "차대가 " + corpWon(F.sum.gap) + "원 어긋납니다 — 확인원을 다시 봐 주세요.")
+          + " 숫자는 이 브라우저와 조성래님 폴더에만 있습니다." });
+      } catch (e) { setMsg({ bad: true, t: (e && e.message) || "읽지 못했습니다" }); }
+      setBusy(false);
+    });
+  };
   const dsum = draft ? corpOpenSum(draft.bal) : null;
 
   return (
@@ -22694,14 +22826,37 @@ function ClOpen({ actor, A, setMsg }) {
         )}
       </div>
 
+      {/* ── 확인원에서 받기 — **적기보다 먼저다.** 숫자의 출처는 확인원이지 손이 아니다
+          (조성래님 지시 2026-11-15 「9월말 확인원을 고정시켜 주고」) ── */}
+      <div className="cl-sec">
+        <div className="cl-h">9월말 확인원에서 받기
+          <span className="cl-t">숫자를 손으로 옮겨 적지 않습니다 — 확인원이 원천입니다</span></div>
+        <div className="bk-act">
+          <button className="cl-save" disabled={busy} onClick={findConfirm}>{busy ? "훑는 중…" : "저장소에서 9월말 확인원 찾기"}</button>
+          <label className="cl-rv">{busy ? "읽는 중…" : "파일에서 직접 고르기"}
+            <input type="file" accept=".xlsx" style={{ display: "none" }} onChange={pickFile} /></label>
+          <span className="cl-t">재무제표 엑셀의 「재무상태표」 시트를 읽습니다 — 숫자는 코드에 남지 않습니다</span>
+        </div>
+        {cand && cand.length > 0 && (
+          <div className="cl-cand">
+            <p className="cl-note">저장소에서 찾은 후보입니다. <b>어느 것이 확정본인지는 조성래님만 아십니다</b> —
+              기계가 고르지 않습니다. 누르시면 그 파일의 「재무상태표」 시트를 읽어 아래 칸을 채웁니다.</p>
+            {cand.map(function (c) {
+              return (
+                <button key={c.rel} className="cl-rv cl-candrow" disabled={busy} onClick={function () { useCand(c); }}>
+                  <b>{c.name}</b>
+                  <i>{c.dir || "(맨 위)"}</i>
+                  <span>{c.at}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {draft && (
         <div className="cl-sec">
           <div className="cl-h">새 판 적기 <span className="cl-t">차변은 그대로, 대변은 앞에 −</span></div>
-          <div className="bk-act">
-            <label className="cl-save">{busy ? "읽는 중…" : "확인원 엑셀에서 불러오기"}
-              <input type="file" accept=".xlsx" style={{ display: "none" }} onChange={pickFile} /></label>
-            <span className="cl-t">재무제표 엑셀의 「재무상태표」 시트를 읽습니다 — 숫자는 코드에 남지 않습니다</span>
-          </div>
           {got && got.hit.length > 0 && (
             <p className="cl-note">불러온 과목 {got.hit.length}개
               {got.hit.filter(function (h) { return h.why; }).map(function (h, i) {
@@ -44340,6 +44495,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-16", ver:"v6.0", ch:[9], feat:"현금은 은행 잔액으로 · 기초와 전표를 사본에 함께 남긴다", src:"회사 총괄운영 총괄·회계팀 재무현황", summary:"현금 칸이 은행 거래내역서가 없을 때 장부 잔액을 현금처럼 띄워 코드에 실린 개시 전표에서 온 구천사백만원이 계좌의 돈처럼 보이던 것을 고쳐 은행 내역이 없으면 숫자를 띄우지 않고 줄표로 두되 장부 값은 밑줄에 사실대로 적게 했고 현금을 모르는데 몇 달 버틸지를 세면 그 개월수가 거짓이 되므로 런웨이도 같이 줄표로 두었으며, 회계 인공지능 팀장 도구가 장부 원시값을 읽고 화면은 다른 칸을 읽어 둘이 갈라져 있었는데 한 벌 단언마저 화면이 쓰지 않는 함수와 견주고 있어 은행 잔액이 현금 칸을 바꾸는 순간 조용히 어긋날 자리였던 것을 화면과 도구와 단언 셋을 한 함수로 모아 막았고, 저장소 폴더에 두는 사본 한 벌에 장부와 기초를 같이 담아 따로 두면 하나만 살아남아 기초 없는 장부가 되는 것을 막되 장부만 담은 옛 사본도 읽게 했으며 기초를 고치거나 승인해도 사본이 같이 뜨게 했고, 다시 열었을 때 브라우저 저장소가 비어 있으면 사본에서 스스로 되읽되 들어 있는 장부를 덮는 일은 사람이 누를 때만 하도록 비어 있을 때로 한정했으며, 구월말 확인원을 저장소에서 찾아 후보를 늘어놓되 확인원이 여러 판이고 어느 것이 확정본인지는 사람만 알므로 하나로 줄이지 않고 고르는 것은 사람이라고 화면에 적었으며 엑셀 임시 파일은 후보로 세우지 않고, 숫자의 출처는 확인원이지 손이 아니므로 불러오기 지면을 새 판 적기 밖으로 꺼내 늘 보이게 했다", refs:[], status:"반영", hash:"f0e42e3", auto:true },
   { date:"2026-11-15", ver:"v5.9", ch:[9], feat:"장부 사본 — 저장소 폴더에 남기고 되읽는다", src:"회사 총괄운영 회계팀 재무현황 검산", summary:"반입해 두신 은행 전표가 통째로 사라져 화면이 코드에 실린 숫자로 되돌아간 사고를 먼저 코드 탓인지 데이터 탓인지 갈라 시험용 반입 한 건을 넣자 현금 칸이 은행 잔액으로 바뀌고 장부와의 차이가 서고 런웨이와 실적이 사라진 달을 그대로 적는 모양으로 정확히 복원되는 것을 확인해 코드는 멀쩡하고 이 브라우저의 저장소가 비었음을 밝혔으며, 반입분이 브라우저 저장소에만 있던 탓에 사이트 데이터 삭제나 다른 브라우저나 다른 주소나 용량 초과 어느 하나에도 비어 보이고 비면 되살릴 길이 코드에 없었으므로 저장소 폴더의 회계 칸에 장부 사본을 두어 쓰기 허락이 이미 있으면 전표를 고칠 때마다 묻지 않고 같이 남기게 했고 덮어쓰기 전에 직전 사본을 한 벌 밀어 사본이 하나뿐일 때 잘못 쓴 순간 원본까지 잃는 길을 막았으며, 되읽기는 지금 장부를 덮는 일이라 한 번 더 묻고 되돌릴 수 없다고 적으며 읽어 온 것이 장부 모양이 아니면 넣지 않게 했고, 아울러 저장 함수가 실패하면 거짓을 돌려주는데 아무도 받지 않아 저장되지 않았는데도 화면은 저장된 것처럼 보이고 새로고침하는 순간 사라지던 자리를 고쳐 실패하면 그렇게 말하고 회사 폴더에 먼저 내보내도록 안내하게 했다", refs:[], status:"반영", hash:"0dd6c98", auto:true },
   { date:"2026-11-15", ver:"v5.8", ch:[9], feat:"모양 정돈 — 모서리 눈금과 그림자·그라데이션 토큰", src:"전 화면 data/app.css + src 인라인", summary:"화면이 인공지능으로 찍어낸 것처럼 보이는 까닭을 세어 보니 그림자 이백열두 곳에 값이 백아흔네 종이고 그중 백쉰 곳이 검정이 아니라 브랜드색을 잉크로 써서 파란 카드 밑에 파란 그림자가 깔려 있었으며 백아흔한 곳은 두 겹 이상이었고 그라데이션 삼백서른여섯 곳 가운데 백쉰다섯 곳은 두 끝의 휘도차가 십이 퍼센트 미만이라 눈으로 구별조차 되지 않는 순수한 낭비였고 모서리는 스물한 종인데 아홉과 열과 열하나와 열둘이 모두 백 건을 넘어 의도가 아니라 표류였으므로, 사 픽셀 등간격 눈금 일곱 개를 뿌리에 세워 천오백일흔두 곳과 인라인 삼백마흔다섯 곳을 전부 보내되 얇은 요소는 반경이 높이의 절반으로 잘려 알약이 되므로 블록의 실제 높이를 읽어 따로 처리하고 네 모서리를 따로 준 열다섯 건은 뜻이 있어 두었으며, 그림자는 실제로 떠 있는 스물다섯 곳과 상태를 나르는 링만 남겨 값을 토큰 셋으로 통일하고 호버에서 카드가 들리는 효과와 번짐 없는 가짜 턱과 무한 반복 네온 맥동을 거두되 그림자가 유일한 경계였던 자리는 일 픽셀 선으로 바꿨고 잘못 지운 링 열세 건은 그중 넷이 포커스 링이라 원본과 대조해 되살렸으며, 그라데이션은 히어로 배너 열아홉 면에만 남기고 단색으로 접을 때 그 블록 글자색과의 대비를 잃지 않는 끝을 골랐으며 파랑과 보라 사이에서 보라로 내려앉은 아홉 곳은 보라가 생성형 제품의 상투색이므로 브랜드 파랑으로 돌렸고, 시인성은 느낌이 아니라 계산으로 고쳐 흰 바탕에서 이점오륙 대 일이라 글자색으로 쓸 수 없는 색이 이백한 곳에서 글자색이던 것을 옮기고 그 대신 쓸 색 자신도 바탕 위에서 기준 미달이라 한 단 내렸으며 그림자를 걷어낸 만큼 선이 일해야 하므로 테두리 색을 올리고 거의 같은 네이비 리터럴 백일흔일곱 곳을 변수로 접었고, 사람은 십점팔 픽셀이라고 적지 않으므로 소수점 크기를 반 픽셀 눈금으로 반올림하고 십 픽셀 하한을 걸었으되 행간은 브라우저에서 재 보니 이미 넉넉해 손대지 않았고, 로고 설명줄이 커지며 머리띠가 좁은 화면을 넘기자 글자를 다시 줄이는 대신 설명줄을 접게 했으며, 끝으로 눈금이 다시 흐트러지지 않도록 날모서리와 날그림자와 히어로 밖 그라데이션과 읽히지 않는 글자색과 십 픽셀 미만을 세어 커밋을 막는 가드를 세우고 훑은 양이 바닥 미만이면 통과가 아니라 실패로 치게 했다", refs:[], status:"반영", hash:"9520e48", auto:true },
   { date:"2026-11-15", ver:"v5.7", ch:[9], feat:"팀 문서 자료실 게시판과 저장소 직접 올리기", src:"회사 총괄운영 팀 자료실", summary:"각 팀에 문서 게시판과 업로드를 세우되 파일을 브라우저 저장소에 담으면 용량에 막히고 기기를 바꾸면 사라지며 백업도 팀 공유도 안 되므로 조성래님이 이어 두신 회사 저장소 폴더에 그대로 쓰게 했고 제목과 분류와 올린이 같은 글 정보도 브라우저가 아니라 그 팀 폴더 안에 함께 두어 파일과 글이 같이 다니게 했으며, 폴더가 읽기로 이어져 있으므로 묻지 않고 보기만 하는 길과 묻는 길을 갈라 사람이 올리기 허락을 누른 그 순간에만 브라우저가 묻고 허락을 못 받으면 쓰지 않고 그렇게 말하게 했고, 쓰기를 열기 전에 회사 저장소를 실제로 망가뜨릴 두 자리를 먼저 막아 부서 폴더를 직접 이었을 때 훑기가 덧붙인 접두를 떼지 않으면 빈 중첩 폴더가 실제로 생기는 것과 같은 이름 판정이 모든 예외를 없다로 읽어 권한 만료나 잠금 때 있는 파일을 잘라내고 덮어쓰는 것을 고쳐 모르면 멈추게 했으며, 올린 문서의 속은 피디에프와 한글에서 글자를 꺼낼 수 없어 주민번호가 들어 있어도 걸러내지 못하므로 걸러낸다고 적지 않고 못 한다고 적어 파일을 고르기 전에 읽히게 했고 쓴 자리도 이 컴퓨터 폴더까지만 단정하고 다른 분 화면은 동기화가 끝나야 닿는다고 적었으며 충돌 본에는 표를 달고 게시판 메모 파일은 목록에서 가렸다", refs:[], status:"반영", hash:"affd991", auto:true },
@@ -60029,7 +60185,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-15","seed":20260828,"inventory":{"version":1,"sourceHash":"b8d624cd5758e279","generatedAt":"2026-11-15","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.22,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-15","seed":20260828,"inventory":{"version":1,"sourceHash":"b8d624cd5758e279","generatedAt":"2026-11-15","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.64,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

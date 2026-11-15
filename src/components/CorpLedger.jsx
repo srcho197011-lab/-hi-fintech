@@ -35,7 +35,7 @@ function CorpLedgerSection() {
     /* 쓰기 허락이 이미 있으면 **묻지 않고** 회사 폴더에도 같이 남긴다 */
     const R = bakRef.current;
     if (R.on && R.h && typeof cvfLedgerSave === "function") {
-      cvfLedgerSave(R.h, next).then(function (r) {
+      cvfLedgerSave(R.h, next, corpOpenRead()).then(function (r) {
         setBak(function (v) { return Object.assign({}, v, { at: r && r.rel ? corpOpsToday() : v.at }); });
       }).catch(function () { /* 사본 실패가 저장을 되돌리지는 않는다 — 아래 블록이 상태를 적는다 */ });
     }
@@ -56,7 +56,7 @@ function CorpLedgerSection() {
     cvfHandle().then(async function (h) {
       try {
         if (!h) throw new Error("저장소 폴더가 이어지지 않았습니다");
-        const r = await cvfLedgerSave(h, st);
+        const r = await cvfLedgerSave(h, st, corpOpenRead());
         setMsg({ bad: false, t: "저장소에 사본을 두었습니다 — " + r.rel + " (" + (jvs.length) + "건)" });
         setBak(function (v) { return Object.assign({}, v, { at: corpOpsToday(), busy: false }); });
       } catch (e) {
@@ -72,9 +72,11 @@ function CorpLedgerSection() {
       try {
         if (!h) throw new Error("저장소 폴더가 이어지지 않았습니다");
         const r = await cvfLedgerLoad(h, false);
-        corpLedgerWrite(r.data);
-        setSt(Object.assign({}, r.data));
-        setMsg({ bad: false, t: "저장소 사본으로 되읽었습니다 — " + r.at + " 사본 · 전표 " + r.jv + "건 · 은행 " + r.bank + "줄" });
+        corpLedgerWrite(r.led);
+        setSt(Object.assign({}, r.led));
+        if (r.open) corpOpenWrite(r.open);
+        setMsg({ bad: false, t: "저장소 사본으로 되읽었습니다 — " + r.at + " 사본 · 전표 " + r.jv + "건 · 은행 " + r.bank + "줄"
+          + (r.open ? " · 기초 " + r.opens + "판" : " · 기초는 사본에 없습니다(옛 사본)") });
       } catch (e) {
         setMsg({ bad: true, t: "되읽지 못했습니다 — " + ((e && e.message) || "까닭 모름") });
       }
@@ -84,10 +86,27 @@ function CorpLedgerSection() {
   React.useEffect(function () {
     let gone = false;
     if (typeof cvfLedgerState !== "function") return;
-    cvfLedgerState().then(function (x) {
+    cvfLedgerState().then(async function (x) {
       if (gone) return;
       bakRef.current = { on: !!x.on, h: x.h || null };
       setBak(function (v) { return Object.assign({}, v, { on: !!x.on, why: x.why || "" }); });
+      /* ⚠️ 다시 열었을 때 이 브라우저가 비어 있으면 **스스로** 사본에서 되읽는다.
+         (조성래님 지시 2026-11-15 — 「다시 열 때 없어지지 않도록」)
+         비어 있을 때만 한다. 들어 있는 장부를 사본으로 덮는 일은 사람이 누를 때만이다. */
+      if (!x.h || typeof cvfLedgerLoad !== "function") return;
+      const cur = corpLedgerRead();
+      const cur0 = corpOpenRead();
+      const emptyLed = !(cur.jv || []).length && !(cur.bank || []).length;
+      const emptyOpen = !((cur0 && cur0.list) || []).length;
+      if (!emptyLed && !emptyOpen) return;
+      try {
+        const r = await cvfLedgerLoad(x.h, false);
+        if (gone) return;
+        const got = [];
+        if (emptyLed && r.led && (r.led.jv || []).length) { corpLedgerWrite(r.led); setSt(Object.assign({}, r.led)); got.push("전표 " + r.jv + "건 · 은행 " + r.bank + "줄"); }
+        if (emptyOpen && r.open) { corpOpenWrite(r.open); got.push("기초 " + r.opens + "판"); }
+        if (got.length) setMsg({ bad: false, t: "이 브라우저가 비어 있어 저장소 사본에서 되읽었습니다 — " + r.at + " 사본 · " + got.join(" · ") });
+      } catch (e2) { /* 사본이 없으면 처음 쓰시는 것이다 — 까닭이 아니다 */ }
     });
     return function () { gone = true; };
   }, []);
@@ -1064,7 +1083,16 @@ function ClOpen({ actor, A, setMsg }) {
   const list = (o.list || []).slice().sort(function (a, b) { return (+b.rev || 0) - (+a.rev || 0); });
   const won = function (v) { return corpWon(v); };
 
-  const keep = function (next) { corpOpenWrite(next); setO(next); };
+  const keep = function (next) {
+    corpOpenWrite(next); setO(next);
+    /* 기초가 사라지면 출발선을 잃는다 — 장부와 **같은 사본**에 같이 남긴다.
+       쓰기 허락이 이미 있을 때만이다(묻는 창은 사람이 누른 직후에만 뜬다). */
+    if (typeof cvfLedgerState === "function") {
+      cvfLedgerState().then(function (x) {
+        if (x && x.on && x.h) cvfLedgerSave(x.h, corpLedgerRead(), next).catch(function () {});
+      });
+    }
+  };
   const start = function () {
     setDraft({ asOf: (cur && cur.asOf) || "2026-09-30", src: "", bal: cur ? Object.assign({}, cur.bal) : {}, note: "" });
   };
@@ -1113,6 +1141,40 @@ function ClOpen({ actor, A, setMsg }) {
       setMsg({ bad: true, t: (err && err.message) || "엑셀을 읽지 못했습니다" }); setBusy(false);
     });
   };
+  /* 저장소에서 확인원 후보를 찾아 **늘어놓는다**. 고르는 것은 조성래님이 하신다 —
+     확인원은 여러 판이 있고 어느 것이 확정본인지는 사람만 안다. */
+  const [cand, setCand] = React.useState(null);
+  const findConfirm = function () {
+    setBusy(true); setCand(null);
+    cvfHandle().then(async function (h) {
+      try {
+        if (!h) throw new Error("먼저 팀 자료실에서 「저장소 폴더 잇기」를 해 주세요");
+        const R = await cvfFindConfirm(h);
+        setCand(R.list);
+        setMsg({ bad: R.list.length === 0, t: R.list.length
+          ? R.n + "개 파일을 훑어 확인원 후보 " + R.list.length + "건을 찾았습니다 — 어느 것이 확정본인지는 조성래님만 아십니다."
+          : R.n + "개 파일을 훑었지만 확인원으로 볼 만한 엑셀을 못 찾았습니다 — 아래에서 직접 고르실 수 있습니다." });
+      } catch (e) { setMsg({ bad: true, t: (e && e.message) || "찾지 못했습니다" }); }
+      setBusy(false);
+    });
+  };
+  const useCand = function (c) {
+    setBusy(true);
+    cvfHandle().then(async function (h) {
+      try {
+        const f = await cvfFile(h, c.rel);
+        const R = await cbxRead(f, "재무상태표");
+        const F = corpOpenFromRows(R.rows);
+        if (!F.hit.length) throw new Error("이 파일에서 알아볼 과목을 하나도 못 찾았습니다(읽은 시트: " + R.sheet + ")");
+        setDraft(Object.assign({}, draft || { asOf: "2026-09-30", note: "" }, { bal: F.bal, src: c.name }));
+        setGot(F); setCand(null);
+        setMsg({ bad: false, t: F.hit.length + "과목을 불러왔습니다(" + c.name + " · " + R.sheet + ") — "
+          + (F.sum.ok ? "차대가 맞습니다." : "차대가 " + corpWon(F.sum.gap) + "원 어긋납니다 — 확인원을 다시 봐 주세요.")
+          + " 숫자는 이 브라우저와 조성래님 폴더에만 있습니다." });
+      } catch (e) { setMsg({ bad: true, t: (e && e.message) || "읽지 못했습니다" }); }
+      setBusy(false);
+    });
+  };
   const dsum = draft ? corpOpenSum(draft.bal) : null;
 
   return (
@@ -1153,14 +1215,37 @@ function ClOpen({ actor, A, setMsg }) {
         )}
       </div>
 
+      {/* ── 확인원에서 받기 — **적기보다 먼저다.** 숫자의 출처는 확인원이지 손이 아니다
+          (조성래님 지시 2026-11-15 「9월말 확인원을 고정시켜 주고」) ── */}
+      <div className="cl-sec">
+        <div className="cl-h">9월말 확인원에서 받기
+          <span className="cl-t">숫자를 손으로 옮겨 적지 않습니다 — 확인원이 원천입니다</span></div>
+        <div className="bk-act">
+          <button className="cl-save" disabled={busy} onClick={findConfirm}>{busy ? "훑는 중…" : "저장소에서 9월말 확인원 찾기"}</button>
+          <label className="cl-rv">{busy ? "읽는 중…" : "파일에서 직접 고르기"}
+            <input type="file" accept=".xlsx" style={{ display: "none" }} onChange={pickFile} /></label>
+          <span className="cl-t">재무제표 엑셀의 「재무상태표」 시트를 읽습니다 — 숫자는 코드에 남지 않습니다</span>
+        </div>
+        {cand && cand.length > 0 && (
+          <div className="cl-cand">
+            <p className="cl-note">저장소에서 찾은 후보입니다. <b>어느 것이 확정본인지는 조성래님만 아십니다</b> —
+              기계가 고르지 않습니다. 누르시면 그 파일의 「재무상태표」 시트를 읽어 아래 칸을 채웁니다.</p>
+            {cand.map(function (c) {
+              return (
+                <button key={c.rel} className="cl-rv cl-candrow" disabled={busy} onClick={function () { useCand(c); }}>
+                  <b>{c.name}</b>
+                  <i>{c.dir || "(맨 위)"}</i>
+                  <span>{c.at}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {draft && (
         <div className="cl-sec">
           <div className="cl-h">새 판 적기 <span className="cl-t">차변은 그대로, 대변은 앞에 −</span></div>
-          <div className="bk-act">
-            <label className="cl-save">{busy ? "읽는 중…" : "확인원 엑셀에서 불러오기"}
-              <input type="file" accept=".xlsx" style={{ display: "none" }} onChange={pickFile} /></label>
-            <span className="cl-t">재무제표 엑셀의 「재무상태표」 시트를 읽습니다 — 숫자는 코드에 남지 않습니다</span>
-          </div>
           {got && got.hit.length > 0 && (
             <p className="cl-note">불러온 과목 {got.hit.length}개
               {got.hit.filter(function (h) { return h.why; }).map(function (h, i) {

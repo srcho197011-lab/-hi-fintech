@@ -782,13 +782,31 @@ function corpKpiOf(st, today) {
   /* 「현금잔고는 그냥 은행거래내역서의 잔액을 표시해 줘」(조성래님 지시 2026-11-15).
      은행 잔액은 **바깥 사실**이다 — 장부보다 먼저 믿는다. 다만 장부 값을 지우지는
      않는다 — 밑줄에 나란히 적고, 차이가 있으면 그걸 경고로 세운다.
-     은행 내역이 없으면 장부 값을 그대로 두고 그 사실을 적는다(0 이라 적지 않는다). */
+     ⚠️ 2026-11-15 추가 지시: 「현금은 은행거래내역서를 저장하고 은행의 거래내역서의 잔액을
+     반드시 반영해 줘.」 그래서 은행 내역이 없으면 **장부 숫자를 현금인 척 띄우지 않는다.**
+     장부 값은 밑줄에 사실 그대로 적고, 현금 칸은 「—」로 둔다 — 없는 것을 있다고 적지 않는다. */
   K.gap = typeof corpBankGap === "function" ? corpBankGap(S, today) : null;
   if (K.gap && K.gap.ok && K.t && K.t.cash) {
     K.t.cash = { k: "현금 잔고", u: "원", txt: corpWon(K.gap.bank),
       sub: "은행 거래내역서 마지막 잔액 · 장부 " + corpWon(K.gap.book) + "원",
       warn: K.gap.diff ? "장부와 " + corpWon(K.gap.diff) + "원 차이 — " + (K.gap.why[0] || "까닭을 세지 못했습니다") : "" };
     K.cashSrc = "bank";
+  } else if (K.t && K.t.cash) {
+    /* 현금 칸의 주인은 은행 거래내역서다. 거래내역이 없으면 현금을 말할 수 없다 —
+       장부 잔액은 현금이 아니라 **장부가 그렇다고 말하는 값**이다. 그 차이를 적는다. */
+    const bk = K.gap ? corpWon(K.gap.book) : null;
+    /* 단위를 붙이면 「—원」이 된다. 없는 것에는 단위도 없다 */
+    K.t.cash = { k: "현금 잔고", u: "", txt: "—",
+      sub: "은행 거래내역서가 아직 없습니다" + (bk === null ? "" : " · 장부상 " + bk + "원"),
+      warn: "현금은 은행 거래내역서의 잔액으로만 적습니다 — 회계팀 「자료 반입」에서 거래내역을 올려 주세요" };
+    /* 현금을 모르면 몇 달 버틸지도 모른다. 장부로 센 개월수를 남겨 두면 그게 거짓이 된다 */
+    if (K.t.run) {
+      K.t.run = { k: "런웨이", u: "",
+        txt: "—",
+        sub: "현금 잔고를 은행 거래내역서로 정하므로, 거래내역이 없으면 몇 달 버틸지도 세지 못합니다",
+        warn: "" };
+    }
+    K.cashSrc = "none";
   } else { K.cashSrc = "book"; }
   K.open = typeof corpOpenPass === "function" ? corpOpenPass(null) : null;
   return K;
