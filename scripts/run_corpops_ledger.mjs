@@ -2391,6 +2391,39 @@ chk(!OF.hit.some((h) => /총계/.test(h.n)),
   "⑳불러오기 소계·총계 줄은 잡지 않는다(두 번 세지 않는다)", OF.hit.map((h) => h.n).join(" "));
 chk(rd(BOARD).indexOf("cbxRead(f, " + String.fromCharCode(34) + "재무상태표" + String.fromCharCode(34) + ")") > 0,
   "⑳불러오기 화면이 확인원 엑셀을 읽는다(재무상태표 시트)", "없음");
+/* ⑳올리기 — 팀 문서 게시판 (조성래님 지시 2026-11-15).
+   「각 팀에 문서 자료실(게시판)을 설치하고 문서파일을 업로드하는 시스템」
+   「저장소 여기에 각 팀마다 저장하고 버튼을 누르면 바로 연결되어 파일을 볼 수 있도록」 */
+const VFSW = rd("src/data/corpVaultFs.js");
+chk(VFSW.indexOf("async function cvfPutFile(") > 0 && VFSW.indexOf("createWritable()") > 0,
+  "⑳올리기 파일을 저장소 폴더에 직접 쓴다(브라우저 저장소에 담지 않는다)", "없음");
+chk(VFSW.indexOf("async function cvfFreeName(") > 0,
+  "⑳올리기 같은 이름을 덮어쓰지 않는다(먼저 올린 자료가 사라지지 않게)", "없음");
+chk(VFSW.indexOf("CVF_BOARD = ") > 0 && VFSW.indexOf("cvfBoardWrite") > 0,
+  "⑳올리기 글 정보는 그 팀 폴더에 같이 둔다(기기를 바꿔도 남는다)", "없음");
+/* 쓰기는 사람이 한 번 더 허락해야 한다 — 묻지 않고 보기만 하는 길과 묻는 길을 갈라 둔다. */
+chk(VFSW.indexOf("async function cvfWriteState(") > 0 && VFSW.indexOf("async function cvfAskWrite(") > 0,
+  "⑳올리기 쓰기 허락을 묻지 않고 보는 길이 따로 있다", "없음");
+/* 올린 파일을 브라우저 저장소에 넣지 않는다 — 주석이 아니라 **쪽는 자리**를 본다. */
+chk(VFSW.indexOf("localStorage.setItem") < 0 && VFSW.indexOf("readAsDataURL") < 0,
+  "⑳올리기 올린 파일을 브라우저 저장소에 넣지 않는다", "브라우저 저장소에 추가");
+/* 부서 폴더를 직접 이으면 경로 앞에 그 이름이 붙는다. 안 떼고 create:true 를 걸면
+   실제 저장소에 「02.회계/02.회계」 같은 빈 폴더가 생긴다 — 읽기에서는 오류로 끝나던 실수다. */
+chk(/function cvfDirOf[\s\S]{0,700}?r\.indexOf\(rn \+ "\/"\) === 0/.test(VFSW),
+  "⑳올리기 부서 이름을 떼고 내려간다(빈 중첩 폴더를 만들지 않는다)", "가드 없음");
+/* 「없다」고 볼 수 있는 예외는 NotFoundError 하나뿐. 모두 삼키면 권한 만료·잠금을
+   「없다」로 읽고 있는 파일을 잘라낸다 — 덮어쓰지 않겠다는 약속이 거기서 샌다. */
+chk(/function cvfFreeName[\s\S]{0,900}?e\.name === "NotFoundError"/.test(VFSW),
+  "⑳올리기 있는지 몰라서 덮어쓰는 일은 없다(모르면 멈춘다)", "모든 예외를 「없다」로 읽음");
+chk(VFSW.indexOf("CORP_VFS_SKIPNAME") > 0 && VFSW.split("CORP_VFS_SKIPNAME").length - 1 >= 3,
+  "⑳올리기 게시판 메모는 자료실 목록에 서지 않는다", "걸러내지 않음");
+chk(vtBoard2.indexOf("폴더에 썼습니다") > 0 && vtBoard2.indexOf("OneDrive 동기화가 끝나야") > 0,
+  "⑳올리기 썼다고만 말하고 남에게 보인다고 단정하지 않는다", "없음");
+/* 못 하는 일을 적는다 — PDF · 한글은 속을 못 본다. 걸러낸다고 적으면 거짓이다. */
+chk(vtBoard2.indexOf("속을 이 시스템은 보지 못합니다") > 0,
+  "⑳올리기 문서 속을 검사하지 못한다고 적는다(주민번호 원칙과 닿는 자리)", "없음");
+chk(vtBoard2.indexOf("cvfPutFile(h, folder, f)") > 0,
+  "⑳올리기 그 팀 폴더로 들어간다(다른 팀 자료에 섞이지 않는다)", "없음");
 /* ── 보고 ───────────────────────────────────────────────────────────────── */
 const total = oks.length + fails.length;
 console.log(`[회계엔진] 전표 ${seedN}건(전기 ${postedN}) · 계정 ${G("CORP_ACCT.length")}과목 · 은행 ${R.lines.length}줄(대사 ${R.matched} · 미대사 ${R.bankOnly.length + R.bookOnly.length})`);

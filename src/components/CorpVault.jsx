@@ -268,6 +268,13 @@ function CorpVaultSection({ team }) {
     corpVaultWrite(next); setSt(next);
   }, []);
   const [why, setWhy] = React.useState("");
+  /* 올리기 — 저장소 팀 폴더에 직접 쓴다(조성래님 지시 2026-11-15) */
+  const [note, setNote] = React.useState("");
+  const [wrOk, setWrOk] = React.useState("");
+  const [wrWhy, setWrWhy] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [up, setUp] = React.useState({ ttl: "", kind: "", memo: "", files: [] });
+  const [board, setBoard] = React.useState({ v: 1, list: [] });
 
   /* 팀 보드에서는 **그 팀 자료만** 본다. 같은 함수가 인자만 달리 받는다 — 화면을 복제하지 않는다. */
   const all = React.useMemo(() => corpVaultRows(st), [st]);
@@ -289,6 +296,70 @@ function CorpVaultSection({ team }) {
     return Object.keys(g).sort().map((k) => ({ k: k, list: g[k] }));
   }, [rows]);
 
+  /* 쓰기가 되는지 **묻지 않고 보기만** 한다 — 묻는 창은 사람이 누른 직후에만 뜬다 */
+  React.useEffect(function () {
+    let gone = false;
+    if (typeof cvfHandle !== "function") return;
+    cvfHandle().then(function (h) {
+      if (gone || !h) return;
+      if (typeof cvfWriteState === "function") cvfWriteState(h).then(function (x) { if (!gone) setWrOk(x); });
+      if (folder && typeof cvfBoardRead === "function") cvfBoardRead(h, folder).then(function (x) { if (!gone) setBoard(x); });
+    });
+    return function () { gone = true; };
+  }, [folder, st]);
+
+  const askWrite = function () {
+    setWrWhy("");
+    cvfHandle().then(function (h) {
+      if (!h) { setWrWhy("먼저 위 「저장소 폴더 잇기」로 저장소를 이어 주세요."); return; }
+      cvfAskWrite(h).then(function (x) {
+        setWrOk(x);
+        if (x !== "granted") setWrWhy("허락을 받지 못했습니다 — 창이 떠 있는 동안 다른 창으로 옮기면 닫힙니다.");
+      });
+    });
+  };
+
+  const doUpload = function () {
+    setBusy(true); setWhy(""); setNote("");
+    cvfHandle().then(async function (h) {
+      try {
+        if (!h) throw new Error("이어 둔 폴더가 없습니다");
+        const made = [];
+        for (let i = 0; i < up.files.length; i++) {
+          const f = up.files[i];
+          const r = await cvfPutFile(h, folder, f);
+          made.push(r);
+        }
+        /* 글 정보는 **그 팀 폴더에 같이** 둔다 — 파일과 글이 같이 다녀야 기기를 바꿔도 남는다 */
+        const b0 = await cvfBoardRead(h, folder);
+        const who = typeof CORP_HEAD !== "undefined" ? CORP_HEAD.name : "";
+        const nb = { v: 1, list: (b0.list || []).concat(made.map(function (m, k) {
+          return { rel: m.rel, name: m.name, size: m.size, at: m.at, by: who,
+            ttl: (up.ttl || "").trim() || m.name, kind: up.kind, memo: (up.memo || "").trim() };
+        })) };
+        await cvfBoardWrite(h, folder, nb);
+        setBoard(nb);
+        const S = await cvfScan(h);
+        takeRows(S.rows);
+        setUp({ ttl: "", kind: "", memo: "", files: [] });
+        const rn = made.filter(function (m) { return m.renamed; });
+        setNote(made.length + "건을 폴더에 썼습니다 — " + made.map(function (m) { return m.name; }).join(" · ")
+          + (rn.length ? " (같은 이름이 있어 " + rn.length + "건은 이름 뒤에 번호를 붙였습니다)" : "")
+          /* 이 컴퓨터 폴더까지가 확실하다. 다른 분 화면까지는 OneDrive 가 올려야 닿는다 — 단정하지 않는다 */
+          + " · 다른 분 화면에는 OneDrive 동기화가 끝나야 보입니다.");
+      } catch (e) { setWhy((e && e.message) || "올리지 못했습니다"); }
+      setBusy(false);
+    });
+  };
+
+  /* 그 파일에 붙은 글 — 없으면 null. 글이 없다고 파일을 숨기지 않는다 */
+  const bOf = function (rel) {
+    return (board.list || []).filter(function (x) { return x.rel === rel; }).pop() || null;
+  };
+  const docKo = function (k) {
+    const d = (typeof CORP_DOC_CLASS !== "undefined" ? CORP_DOC_CLASS : []).filter(function (x) { return x.k === k; })[0];
+    return d ? d.ko : k;
+  };
   const kb = (n) => {
     const v = +n || 0;
     if (v >= 1048576) return (v / 1048576).toFixed(1) + " MB";
@@ -332,7 +403,57 @@ function CorpVaultSection({ team }) {
 
       <div className="cl-body">
         <CorpVaultFs onRows={takeRows} />
+        {/* ── 문서 올리기 — 저장소 팀 폴더에 **직접** 쓴다 (조성래님 지시 2026-11-15) ──
+            ⚠️ 브라우저 저장소에 담지 않는다. 담으면 용량에 막히고 기기를 바꾸면 사라진다.
+            올린 파일은 회사 폴더의 자료가 되고, OneDrive 백업·탐색기 검색이 그대로 걸린다. */}
+        {team && (
+          <div className="cl-sec vt-up">
+            <div className="cl-h">문서 올리기
+              <span className="cl-t">{folder || "팀 폴더"} 에 바로 저장됩니다</span>
+              {wrOk !== "granted" && (
+                <button className="cl-save" onClick={askWrite}>올리기 허락</button>
+              )}</div>
+            <p className="cl-note hold"><b>올리시는 문서의 속을 이 시스템은 보지 못합니다.</b>
+              PDF · 한글 처럼 글자를 꺼낼 수 없는 형식은 주민번호가 들어 있어도 걸러내지 못합니다 —
+              걸러낸다고 적으면 거짓이므로 못 한다고 적습니다. 주민번호가 든 문서는
+              <b>올리시기 전에</b> 가려 주셔야 합니다.</p>
+            {wrOk !== "granted" ? (
+              <p className="cl-note hold">
+                폴더는 <b>읽기</b>로 이어져 있습니다 — 쓰려면 한 번 더 허락이 필요합니다.
+                「올리기 허락」을 누르시면 브라우저가 묻고, 그 뒤로는 바로 올라갑니다.
+                {wrWhy ? <span> {wrWhy}</span> : null}</p>
+            ) : (
+              <React.Fragment>
+                <div className="cl-form">
+                  <label>제목<input value={up.ttl} placeholder="안 적으시면 파일 이름을 씁니다"
+                    onChange={(e) => setUp(Object.assign({}, up, { ttl: e.target.value }))} /></label>
+                  <label>분류
+                    <select value={up.kind} onChange={(e) => setUp(Object.assign({}, up, { kind: e.target.value }))}>
+                      <option value="">— 고르세요 —</option>
+                      {(typeof CORP_DOC_CLASS !== "undefined" ? CORP_DOC_CLASS : []).map((d) => (
+                        <option key={d.k} value={d.k}>{d.ko}{d.years ? " · " + d.years + "년 보존" : ""}</option>
+                      ))}
+                    </select></label>
+                  <label>설명<input value={up.memo} placeholder="나중에 찾으실 때 쓸 한 줄"
+                    onChange={(e) => setUp(Object.assign({}, up, { memo: e.target.value }))} /></label>
+                </div>
+                <div className="bk-act">
+                  <label className="cl-rv">{up.files.length ? up.files.length + "개 골랐습니다 — 다시 고르기" : "파일 고르기"}
+                    <input type="file" multiple style={{ display: "none" }}
+                      onChange={(e) => { setUp(Object.assign({}, up, { files: Array.prototype.slice.call(e.target.files || []) })); e.target.value = ""; }} /></label>
+                  <button className="cl-save" disabled={!up.files.length || busy} onClick={doUpload}>
+                    {busy ? "올리는 중…" : "올리기"}</button>
+                  {up.files.length > 0 && <span className="cl-t">{up.files.map((f) => f.name).join(" · ").slice(0, 90)}</span>}
+                </div>
+                <p className="cl-note">같은 이름이 있으면 <b>덮어쓰지 않고</b> 뒤에 (2)를 붙입니다 —
+                  덮어쓰면 먼저 올린 자료가 말없이 사라집니다.
+                  올린 뒤에는 아래 목록에서 눌러 바로 여실 수 있습니다.</p>
+              </React.Fragment>
+            )}
+          </div>
+        )}
         {why && <div className="cl-msg bad" onClick={() => setWhy("")}>{why}</div>}
+        {note && <div className="cl-msg" onClick={() => setNote("")}>{note}</div>}
 
         {rows.length > 0 && groups.map((g) => (
           <div key={g.k} className="cl-sec">
@@ -341,7 +462,12 @@ function CorpVaultSection({ team }) {
               {g.list.map((r) => (
                 <button key={r.rel} className="vt-row" onClick={() => show(r)}
                   title={r.ko + " · 회사 보존 " + r.keep + "년 · 파기 예정 " + (r.dispose || "—")}>
-                  <span className="nm">{r.name}</span>
+                  <span className="nm">{bOf(r.rel) ? bOf(r.rel).ttl : r.name}
+                    {bOf(r.rel) && bOf(r.rel).memo ? <i className="vt-memo">{bOf(r.rel).memo}</i> : null}</span>
+                  {bOf(r.rel) && bOf(r.rel).kind ? <i className="vt-k">{docKo(bOf(r.rel).kind)}</i> : null}
+                  {/* OneDrive 충돌 본 — 두 곳에서 같은 파일을 고치면 생긴다.
+                      가만히 두면 정상 문서 한 줄로 보여 엉뚱한 판을 보시게 된다 */}
+                  {r.name.indexOf("충돌 본") > 0 ? <i className="vt-k bad">충돌 본</i> : null}
                   {r.key ? <i className="vt-k">확정</i> : null}
                   <span className="sz">{kb(r.size)}</span>
                   <span className="dt">{r.at}</span>

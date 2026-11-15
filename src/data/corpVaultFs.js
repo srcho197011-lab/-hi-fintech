@@ -32,6 +32,9 @@ const CORP_VFS_KEY = "root";
 const CORP_VFS_MAXFILES = 5000;               /* 한 번에 훑는 상한 — 멈추지 않는 순회를 막는다 */
 const CORP_VFS_SKIPDIR = ["__pycache__", ".git", "node_modules", "$RECYCLE.BIN"];
 const CORP_VFS_SKIPPRE = ["~$", "."];         /* 엑셀 임시 파일 · 숨김 */
+/* 게시판 메모 — 자료실 목록에는 세우지 않는다. 세우면 팀마다 정체 모를 문서 한 줄이 생긴다. */
+const CVF_BOARD = "_게시판.json";
+const CORP_VFS_SKIPNAME = [CVF_BOARD];
 
 /* ── ① 할 수 있는가 — **실제로 만들어 본다** ────────────────────────────
    typeof 로 끝내면 있는데 막힌 경우를 놓친다. 그리고 못 하면 **고르기 전에** 말한다. */
@@ -146,6 +149,7 @@ function cvfFromInput(fileList) {
     const rel = f.webkitRelativePath || f.name;
     const nm = f.name;
     if (CORP_VFS_SKIPPRE.some(function (p) { return nm.indexOf(p) === 0; })) return;
+    if (CORP_VFS_SKIPNAME.indexOf(nm) >= 0) return;
     const parts = rel.split("/");
     if (parts.some(function (x) { return CORP_VFS_SKIPDIR.indexOf(x) >= 0; })) return;
     rows.push({ rel: rel, name: nm, dir: parts.slice(0, -1).join("/"), size: f.size, at: cvfDay(f.lastModified), ext: cvfExt(nm) });
@@ -204,6 +208,7 @@ async function cvfScan(h, onTick) {
       if (cut) return;
       const nm = ent.name;
       if (CORP_VFS_SKIPPRE.some(function (p) { return nm.indexOf(p) === 0; })) continue;
+      if (CORP_VFS_SKIPNAME.indexOf(nm) >= 0) continue;
       if (ent.kind === "directory") {
         if (CORP_VFS_SKIPDIR.indexOf(nm) >= 0) continue;
         await walk(ent, rel ? rel + "/" + nm : nm);
@@ -554,4 +559,121 @@ function cvfVerdict() {
   const zero = rows.filter(function (r) { return !(r.n > 0); });
   const fail = rows.filter(function (r) { return !r.ok; });
   return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
+}
+
+/* ══════════════ ⑦ 올리기 — 저장소 폴더에 **직접 쓴다** (조성래님 지시 2026-11-15) ══════════════
+   「각 팀에 문서 자료실(게시판)을 설치하고 문서파일을 업로드하는 시스템을 만들어 줘.
+    C:…\0.HI-fin 온톨로지하네스 여기에 각 팀마다 저장하고, 버튼을 누르면 그 저장소로
+    바로 연결되어 파일을 볼 수 있도록 해 줘.」
+
+   ⚠️ 서버가 없다. 그래서 파일을 **브라우저 저장소에 담지 않는다** —
+   담으면 용량에 막히고, 기기를 바꾸면 사라지고, 백업도 안 걸린다.
+   대신 조성래님이 이어 두신 **저장소 폴더에 그대로 쓴다.** 그러면
+   OneDrive 동기화·백업·탐색기 검색이 전부 그대로 걸린다. 올린 파일은 회사 자료가 되는 것이지
+   이 앱의 소유물이 되는 것이 아니다.
+
+   ⚠️ 폴더는 **읽기**로 이어져 있다. 쓰기는 사람이 한 번 더 허락해야 한다 —
+   누르신 그 순간에만 물을 수 있다(브라우저 규칙). 허락을 못 받으면 쓰지 않고 그렇게 말한다. */
+
+/* 지금 쓰기가 되는가 — **묻지 않고 보기만** 한다 */
+async function cvfWriteState(h) {
+  if (!h || typeof h.queryPermission !== "function") return "unknown";
+  try { return await h.queryPermission({ mode: "readwrite" }); } catch (e) { return "unknown"; }
+}
+/* 쓰기를 **묻는다** — 사람이 누른 직후에만 창이 뜬다 */
+async function cvfAskWrite(h) {
+  if (!h || typeof h.requestPermission !== "function") return "unknown";
+  try { return await h.requestPermission({ mode: "readwrite" }); } catch (e) { return "denied"; }
+}
+
+/* 파일 이름 — 폴더에 그대로 쓸 수 있게 다듬는다.
+   ⚠️ 이름을 **지어내지 않는다.** 금지 문자만 바꾸고 나머지는 조성래님이 주신 그대로 둔다. */
+const CVF_BADCH = /[\\/:*?"<>|\u0000-\u001f]/g;
+function cvfSafeName(nm) {
+  let s = String(nm || "").replace(CVF_BADCH, "_").replace(/^[.\s]+/, "").trim();
+  if (!s) s = "문서";
+  if (s.length > 120) {
+    const i = s.lastIndexOf(".");
+    const ext = i > 0 ? s.slice(i) : "";
+    s = s.slice(0, 120 - ext.length) + ext;
+  }
+  return s;
+}
+/* 같은 이름이 이미 있으면 **덮어쓰지 않는다** — 뒤에 (2) (3) 을 붙인다.
+   덮어쓰면 먼저 올린 사람의 자료가 말없이 사라진다. */
+async function cvfFreeName(dir, nm) {
+  const base = cvfSafeName(nm);
+  const i = base.lastIndexOf(".");
+  const stem = i > 0 ? base.slice(0, i) : base;
+  const ext = i > 0 ? base.slice(i) : "";
+  let name = base;
+  for (let n = 2; n <= 99; n++) {
+    let exists = true;
+    /* 「없다」고 볼 수 있는 예외는 NotFoundError **하나뿐**이다.
+       권한 만료·OneDrive 잠금을 「없다」로 읽으면 있는 파일을 잘라내고 덮어쓴다 —
+       바로 위에서 막겠다고 적은 그 사고다. 모르겠으면 쓰지 않고 멈춘다. */
+    try { await dir.getFileHandle(name); }
+    catch (e) {
+      if (e && e.name === "NotFoundError") exists = false;
+      else throw new Error("같은 이름이 있는지 확인하지 못했습니다 — 쓰지 않고 멈춥니다(" + ((e && e.name) || "까닭 모름") + ")");
+    }
+    if (!exists) return name;
+    name = stem + "(" + n + ")" + ext;
+  }
+  throw new Error("같은 이름이 너무 많습니다 — 파일 이름을 바꿔 주세요");
+}
+/* 하위 폴더를 따라 내려가며 **없으면 만든다** */
+async function cvfDirOf(h, rel, make) {
+  let dir = h;
+  /* 훑을 때 붙인 부서 이름은 **떼고** 내려간다(cvfFile 과 같은 규칙).
+     안 떼면 create:true 가 실제 저장소에 「02.회계/02.회계」 같은 빈 폴더를
+     말없이 만든다 — 읽기에서는 오류로 끝나던 실수가 쓰기에서는 회사 폴더를 더럽힌다. */
+  let r = String(rel || "");
+  const rn = String((h && h.name) || "");
+  if (rn && r.indexOf(rn + "/") === 0) r = r.slice(rn.length + 1);
+  else if (rn && r === rn) r = "";
+  const parts = r.split("/").filter(Boolean);
+  for (let i = 0; i < parts.length; i++) {
+    dir = await dir.getDirectoryHandle(parts[i], { create: !!make });
+  }
+  return dir;
+}
+/* 파일 한 장을 그 팀 폴더에 쓴다 — 돌려주는 것은 **저장소 기준 상대 경로**다 */
+async function cvfPutFile(h, relDir, file, nameOpt) {
+  if (!h) throw new Error("이어 둔 폴더가 없습니다");
+  if (!file) throw new Error("올릴 파일이 없습니다");
+  const st = await cvfWriteState(h);
+  if (st !== "granted") throw new Error("쓰기 허락을 아직 받지 못했습니다 — 「올리기 허락」을 먼저 눌러 주세요");
+  const dir = await cvfDirOf(h, relDir, true);
+  const name = await cvfFreeName(dir, nameOpt || file.name);
+  const fh = await dir.getFileHandle(name, { create: true });
+  const w = await fh.createWritable();
+  try { await w.write(file); await w.close(); }
+  catch (e) { try { await w.close(); } catch (e2) {} throw new Error("파일을 쓰지 못했습니다 — " + ((e && e.message) || "까닭 모름")); }
+  const rel = (relDir ? relDir + "/" : "") + name;
+  return { rel: rel, name: name, size: file.size, at: cvfDay(Date.now()),
+    renamed: name !== cvfSafeName(nameOpt || file.name) };
+}
+
+/* ── ⑦-2 게시판 — 글 정보는 **그 팀 폴더에 같이** 둔다 ──────────────────────
+   ⚠️ 브라우저 저장소에 두면 기기를 바꾸는 순간 제목도 올린이도 사라지고 파일만 남는다.
+   그래서 팀 폴더 안에 작은 목록 파일로 둔다 — 파일과 글이 **같이 다닌다**.
+   사람이 탐색기에서 봐도 읽히도록 들여쓴 JSON 으로 쓴다. */
+async function cvfBoardRead(h, relDir) {
+  try {
+    const dir = await cvfDirOf(h, relDir, false);
+    const fh = await dir.getFileHandle(CVF_BOARD);
+    const f = await fh.getFile();
+    const o = JSON.parse(await f.text());
+    return { v: 1, list: Array.isArray(o.list) ? o.list : [] };
+  } catch (e) { return { v: 1, list: [] }; }
+}
+async function cvfBoardWrite(h, relDir, data) {
+  const dir = await cvfDirOf(h, relDir, true);
+  const fh = await dir.getFileHandle(CVF_BOARD, { create: true });
+  const w = await fh.createWritable();
+  await w.write(new Blob([JSON.stringify({ v: 1, list: (data && data.list) || [] }, null, 2)],
+    { type: "application/json" }));
+  await w.close();
+  return true;
 }

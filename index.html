@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="stylesheet" href="./data/app.css?v=fb77ed4164" />
+<link rel="stylesheet" href="./data/app.css?v=3f824839f3" />
 <style>html,body{margin:0;padding:0;background:#EEF1F8;}#loading{font-family:sans-serif;padding:40px;color:#555;}.leaflet-container{font:inherit;}</style>
 <script type="importmap">
 {
@@ -41,9 +41,9 @@
 </head>
 <body>
 <div id="root"><div id="loading">로딩 중… (CDN에서 React/지도를 불러오는 중)</div></div>
-<script src="./src/data/dummy_data.js?v=fb77ed4164"></script>
-<script src="./src/data/section_data.js?v=fb77ed4164"></script>
-<script src="./src/data/demo_members.js?v=fb77ed4164"></script>
+<script src="./src/data/dummy_data.js?v=3f824839f3"></script>
+<script src="./src/data/section_data.js?v=3f824839f3"></script>
+<script src="./src/data/demo_members.js?v=3f824839f3"></script>
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot as __createRoot } from "react-dom/client";
 import { createPortal } from "react-dom";
@@ -19761,6 +19761,9 @@ const CORP_VFS_KEY = "root";
 const CORP_VFS_MAXFILES = 5000;               /* 한 번에 훑는 상한 — 멈추지 않는 순회를 막는다 */
 const CORP_VFS_SKIPDIR = ["__pycache__", ".git", "node_modules", "$RECYCLE.BIN"];
 const CORP_VFS_SKIPPRE = ["~$", "."];         /* 엑셀 임시 파일 · 숨김 */
+/* 게시판 메모 — 자료실 목록에는 세우지 않는다. 세우면 팀마다 정체 모를 문서 한 줄이 생긴다. */
+const CVF_BOARD = "_게시판.json";
+const CORP_VFS_SKIPNAME = [CVF_BOARD];
 
 /* ── ① 할 수 있는가 — **실제로 만들어 본다** ────────────────────────────
    typeof 로 끝내면 있는데 막힌 경우를 놓친다. 그리고 못 하면 **고르기 전에** 말한다. */
@@ -19875,6 +19878,7 @@ function cvfFromInput(fileList) {
     const rel = f.webkitRelativePath || f.name;
     const nm = f.name;
     if (CORP_VFS_SKIPPRE.some(function (p) { return nm.indexOf(p) === 0; })) return;
+    if (CORP_VFS_SKIPNAME.indexOf(nm) >= 0) return;
     const parts = rel.split("/");
     if (parts.some(function (x) { return CORP_VFS_SKIPDIR.indexOf(x) >= 0; })) return;
     rows.push({ rel: rel, name: nm, dir: parts.slice(0, -1).join("/"), size: f.size, at: cvfDay(f.lastModified), ext: cvfExt(nm) });
@@ -19933,6 +19937,7 @@ async function cvfScan(h, onTick) {
       if (cut) return;
       const nm = ent.name;
       if (CORP_VFS_SKIPPRE.some(function (p) { return nm.indexOf(p) === 0; })) continue;
+      if (CORP_VFS_SKIPNAME.indexOf(nm) >= 0) continue;
       if (ent.kind === "directory") {
         if (CORP_VFS_SKIPDIR.indexOf(nm) >= 0) continue;
         await walk(ent, rel ? rel + "/" + nm : nm);
@@ -20283,6 +20288,123 @@ function cvfVerdict() {
   const zero = rows.filter(function (r) { return !(r.n > 0); });
   const fail = rows.filter(function (r) { return !r.ok; });
   return { rows: rows, pass: fail.length === 0 && zero.length === 0, fail: fail, zero: zero };
+}
+
+/* ══════════════ ⑦ 올리기 — 저장소 폴더에 **직접 쓴다** (조성래님 지시 2026-11-15) ══════════════
+   「각 팀에 문서 자료실(게시판)을 설치하고 문서파일을 업로드하는 시스템을 만들어 줘.
+    C:…\0.HI-fin 온톨로지하네스 여기에 각 팀마다 저장하고, 버튼을 누르면 그 저장소로
+    바로 연결되어 파일을 볼 수 있도록 해 줘.」
+
+   ⚠️ 서버가 없다. 그래서 파일을 **브라우저 저장소에 담지 않는다** —
+   담으면 용량에 막히고, 기기를 바꾸면 사라지고, 백업도 안 걸린다.
+   대신 조성래님이 이어 두신 **저장소 폴더에 그대로 쓴다.** 그러면
+   OneDrive 동기화·백업·탐색기 검색이 전부 그대로 걸린다. 올린 파일은 회사 자료가 되는 것이지
+   이 앱의 소유물이 되는 것이 아니다.
+
+   ⚠️ 폴더는 **읽기**로 이어져 있다. 쓰기는 사람이 한 번 더 허락해야 한다 —
+   누르신 그 순간에만 물을 수 있다(브라우저 규칙). 허락을 못 받으면 쓰지 않고 그렇게 말한다. */
+
+/* 지금 쓰기가 되는가 — **묻지 않고 보기만** 한다 */
+async function cvfWriteState(h) {
+  if (!h || typeof h.queryPermission !== "function") return "unknown";
+  try { return await h.queryPermission({ mode: "readwrite" }); } catch (e) { return "unknown"; }
+}
+/* 쓰기를 **묻는다** — 사람이 누른 직후에만 창이 뜬다 */
+async function cvfAskWrite(h) {
+  if (!h || typeof h.requestPermission !== "function") return "unknown";
+  try { return await h.requestPermission({ mode: "readwrite" }); } catch (e) { return "denied"; }
+}
+
+/* 파일 이름 — 폴더에 그대로 쓸 수 있게 다듬는다.
+   ⚠️ 이름을 **지어내지 않는다.** 금지 문자만 바꾸고 나머지는 조성래님이 주신 그대로 둔다. */
+const CVF_BADCH = /[\\/:*?"<>|\u0000-\u001f]/g;
+function cvfSafeName(nm) {
+  let s = String(nm || "").replace(CVF_BADCH, "_").replace(/^[.\s]+/, "").trim();
+  if (!s) s = "문서";
+  if (s.length > 120) {
+    const i = s.lastIndexOf(".");
+    const ext = i > 0 ? s.slice(i) : "";
+    s = s.slice(0, 120 - ext.length) + ext;
+  }
+  return s;
+}
+/* 같은 이름이 이미 있으면 **덮어쓰지 않는다** — 뒤에 (2) (3) 을 붙인다.
+   덮어쓰면 먼저 올린 사람의 자료가 말없이 사라진다. */
+async function cvfFreeName(dir, nm) {
+  const base = cvfSafeName(nm);
+  const i = base.lastIndexOf(".");
+  const stem = i > 0 ? base.slice(0, i) : base;
+  const ext = i > 0 ? base.slice(i) : "";
+  let name = base;
+  for (let n = 2; n <= 99; n++) {
+    let exists = true;
+    /* 「없다」고 볼 수 있는 예외는 NotFoundError **하나뿐**이다.
+       권한 만료·OneDrive 잠금을 「없다」로 읽으면 있는 파일을 잘라내고 덮어쓴다 —
+       바로 위에서 막겠다고 적은 그 사고다. 모르겠으면 쓰지 않고 멈춘다. */
+    try { await dir.getFileHandle(name); }
+    catch (e) {
+      if (e && e.name === "NotFoundError") exists = false;
+      else throw new Error("같은 이름이 있는지 확인하지 못했습니다 — 쓰지 않고 멈춥니다(" + ((e && e.name) || "까닭 모름") + ")");
+    }
+    if (!exists) return name;
+    name = stem + "(" + n + ")" + ext;
+  }
+  throw new Error("같은 이름이 너무 많습니다 — 파일 이름을 바꿔 주세요");
+}
+/* 하위 폴더를 따라 내려가며 **없으면 만든다** */
+async function cvfDirOf(h, rel, make) {
+  let dir = h;
+  /* 훑을 때 붙인 부서 이름은 **떼고** 내려간다(cvfFile 과 같은 규칙).
+     안 떼면 create:true 가 실제 저장소에 「02.회계/02.회계」 같은 빈 폴더를
+     말없이 만든다 — 읽기에서는 오류로 끝나던 실수가 쓰기에서는 회사 폴더를 더럽힌다. */
+  let r = String(rel || "");
+  const rn = String((h && h.name) || "");
+  if (rn && r.indexOf(rn + "/") === 0) r = r.slice(rn.length + 1);
+  else if (rn && r === rn) r = "";
+  const parts = r.split("/").filter(Boolean);
+  for (let i = 0; i < parts.length; i++) {
+    dir = await dir.getDirectoryHandle(parts[i], { create: !!make });
+  }
+  return dir;
+}
+/* 파일 한 장을 그 팀 폴더에 쓴다 — 돌려주는 것은 **저장소 기준 상대 경로**다 */
+async function cvfPutFile(h, relDir, file, nameOpt) {
+  if (!h) throw new Error("이어 둔 폴더가 없습니다");
+  if (!file) throw new Error("올릴 파일이 없습니다");
+  const st = await cvfWriteState(h);
+  if (st !== "granted") throw new Error("쓰기 허락을 아직 받지 못했습니다 — 「올리기 허락」을 먼저 눌러 주세요");
+  const dir = await cvfDirOf(h, relDir, true);
+  const name = await cvfFreeName(dir, nameOpt || file.name);
+  const fh = await dir.getFileHandle(name, { create: true });
+  const w = await fh.createWritable();
+  try { await w.write(file); await w.close(); }
+  catch (e) { try { await w.close(); } catch (e2) {} throw new Error("파일을 쓰지 못했습니다 — " + ((e && e.message) || "까닭 모름")); }
+  const rel = (relDir ? relDir + "/" : "") + name;
+  return { rel: rel, name: name, size: file.size, at: cvfDay(Date.now()),
+    renamed: name !== cvfSafeName(nameOpt || file.name) };
+}
+
+/* ── ⑦-2 게시판 — 글 정보는 **그 팀 폴더에 같이** 둔다 ──────────────────────
+   ⚠️ 브라우저 저장소에 두면 기기를 바꾸는 순간 제목도 올린이도 사라지고 파일만 남는다.
+   그래서 팀 폴더 안에 작은 목록 파일로 둔다 — 파일과 글이 **같이 다닌다**.
+   사람이 탐색기에서 봐도 읽히도록 들여쓴 JSON 으로 쓴다. */
+async function cvfBoardRead(h, relDir) {
+  try {
+    const dir = await cvfDirOf(h, relDir, false);
+    const fh = await dir.getFileHandle(CVF_BOARD);
+    const f = await fh.getFile();
+    const o = JSON.parse(await f.text());
+    return { v: 1, list: Array.isArray(o.list) ? o.list : [] };
+  } catch (e) { return { v: 1, list: [] }; }
+}
+async function cvfBoardWrite(h, relDir, data) {
+  const dir = await cvfDirOf(h, relDir, true);
+  const fh = await dir.getFileHandle(CVF_BOARD, { create: true });
+  const w = await fh.createWritable();
+  await w.write(new Blob([JSON.stringify({ v: 1, list: (data && data.list) || [] }, null, 2)],
+    { type: "application/json" }));
+  await w.close();
+  return true;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -24280,6 +24402,13 @@ function CorpVaultSection({ team }) {
     corpVaultWrite(next); setSt(next);
   }, []);
   const [why, setWhy] = React.useState("");
+  /* 올리기 — 저장소 팀 폴더에 직접 쓴다(조성래님 지시 2026-11-15) */
+  const [note, setNote] = React.useState("");
+  const [wrOk, setWrOk] = React.useState("");
+  const [wrWhy, setWrWhy] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [up, setUp] = React.useState({ ttl: "", kind: "", memo: "", files: [] });
+  const [board, setBoard] = React.useState({ v: 1, list: [] });
 
   /* 팀 보드에서는 **그 팀 자료만** 본다. 같은 함수가 인자만 달리 받는다 — 화면을 복제하지 않는다. */
   const all = React.useMemo(() => corpVaultRows(st), [st]);
@@ -24301,6 +24430,70 @@ function CorpVaultSection({ team }) {
     return Object.keys(g).sort().map((k) => ({ k: k, list: g[k] }));
   }, [rows]);
 
+  /* 쓰기가 되는지 **묻지 않고 보기만** 한다 — 묻는 창은 사람이 누른 직후에만 뜬다 */
+  React.useEffect(function () {
+    let gone = false;
+    if (typeof cvfHandle !== "function") return;
+    cvfHandle().then(function (h) {
+      if (gone || !h) return;
+      if (typeof cvfWriteState === "function") cvfWriteState(h).then(function (x) { if (!gone) setWrOk(x); });
+      if (folder && typeof cvfBoardRead === "function") cvfBoardRead(h, folder).then(function (x) { if (!gone) setBoard(x); });
+    });
+    return function () { gone = true; };
+  }, [folder, st]);
+
+  const askWrite = function () {
+    setWrWhy("");
+    cvfHandle().then(function (h) {
+      if (!h) { setWrWhy("먼저 위 「저장소 폴더 잇기」로 저장소를 이어 주세요."); return; }
+      cvfAskWrite(h).then(function (x) {
+        setWrOk(x);
+        if (x !== "granted") setWrWhy("허락을 받지 못했습니다 — 창이 떠 있는 동안 다른 창으로 옮기면 닫힙니다.");
+      });
+    });
+  };
+
+  const doUpload = function () {
+    setBusy(true); setWhy(""); setNote("");
+    cvfHandle().then(async function (h) {
+      try {
+        if (!h) throw new Error("이어 둔 폴더가 없습니다");
+        const made = [];
+        for (let i = 0; i < up.files.length; i++) {
+          const f = up.files[i];
+          const r = await cvfPutFile(h, folder, f);
+          made.push(r);
+        }
+        /* 글 정보는 **그 팀 폴더에 같이** 둔다 — 파일과 글이 같이 다녀야 기기를 바꿔도 남는다 */
+        const b0 = await cvfBoardRead(h, folder);
+        const who = typeof CORP_HEAD !== "undefined" ? CORP_HEAD.name : "";
+        const nb = { v: 1, list: (b0.list || []).concat(made.map(function (m, k) {
+          return { rel: m.rel, name: m.name, size: m.size, at: m.at, by: who,
+            ttl: (up.ttl || "").trim() || m.name, kind: up.kind, memo: (up.memo || "").trim() };
+        })) };
+        await cvfBoardWrite(h, folder, nb);
+        setBoard(nb);
+        const S = await cvfScan(h);
+        takeRows(S.rows);
+        setUp({ ttl: "", kind: "", memo: "", files: [] });
+        const rn = made.filter(function (m) { return m.renamed; });
+        setNote(made.length + "건을 폴더에 썼습니다 — " + made.map(function (m) { return m.name; }).join(" · ")
+          + (rn.length ? " (같은 이름이 있어 " + rn.length + "건은 이름 뒤에 번호를 붙였습니다)" : "")
+          /* 이 컴퓨터 폴더까지가 확실하다. 다른 분 화면까지는 OneDrive 가 올려야 닿는다 — 단정하지 않는다 */
+          + " · 다른 분 화면에는 OneDrive 동기화가 끝나야 보입니다.");
+      } catch (e) { setWhy((e && e.message) || "올리지 못했습니다"); }
+      setBusy(false);
+    });
+  };
+
+  /* 그 파일에 붙은 글 — 없으면 null. 글이 없다고 파일을 숨기지 않는다 */
+  const bOf = function (rel) {
+    return (board.list || []).filter(function (x) { return x.rel === rel; }).pop() || null;
+  };
+  const docKo = function (k) {
+    const d = (typeof CORP_DOC_CLASS !== "undefined" ? CORP_DOC_CLASS : []).filter(function (x) { return x.k === k; })[0];
+    return d ? d.ko : k;
+  };
   const kb = (n) => {
     const v = +n || 0;
     if (v >= 1048576) return (v / 1048576).toFixed(1) + " MB";
@@ -24344,7 +24537,57 @@ function CorpVaultSection({ team }) {
 
       <div className="cl-body">
         <CorpVaultFs onRows={takeRows} />
+        {/* ── 문서 올리기 — 저장소 팀 폴더에 **직접** 쓴다 (조성래님 지시 2026-11-15) ──
+            ⚠️ 브라우저 저장소에 담지 않는다. 담으면 용량에 막히고 기기를 바꾸면 사라진다.
+            올린 파일은 회사 폴더의 자료가 되고, OneDrive 백업·탐색기 검색이 그대로 걸린다. */}
+        {team && (
+          <div className="cl-sec vt-up">
+            <div className="cl-h">문서 올리기
+              <span className="cl-t">{folder || "팀 폴더"} 에 바로 저장됩니다</span>
+              {wrOk !== "granted" && (
+                <button className="cl-save" onClick={askWrite}>올리기 허락</button>
+              )}</div>
+            <p className="cl-note hold"><b>올리시는 문서의 속을 이 시스템은 보지 못합니다.</b>
+              PDF · 한글 처럼 글자를 꺼낼 수 없는 형식은 주민번호가 들어 있어도 걸러내지 못합니다 —
+              걸러낸다고 적으면 거짓이므로 못 한다고 적습니다. 주민번호가 든 문서는
+              <b>올리시기 전에</b> 가려 주셔야 합니다.</p>
+            {wrOk !== "granted" ? (
+              <p className="cl-note hold">
+                폴더는 <b>읽기</b>로 이어져 있습니다 — 쓰려면 한 번 더 허락이 필요합니다.
+                「올리기 허락」을 누르시면 브라우저가 묻고, 그 뒤로는 바로 올라갑니다.
+                {wrWhy ? <span> {wrWhy}</span> : null}</p>
+            ) : (
+              <React.Fragment>
+                <div className="cl-form">
+                  <label>제목<input value={up.ttl} placeholder="안 적으시면 파일 이름을 씁니다"
+                    onChange={(e) => setUp(Object.assign({}, up, { ttl: e.target.value }))} /></label>
+                  <label>분류
+                    <select value={up.kind} onChange={(e) => setUp(Object.assign({}, up, { kind: e.target.value }))}>
+                      <option value="">— 고르세요 —</option>
+                      {(typeof CORP_DOC_CLASS !== "undefined" ? CORP_DOC_CLASS : []).map((d) => (
+                        <option key={d.k} value={d.k}>{d.ko}{d.years ? " · " + d.years + "년 보존" : ""}</option>
+                      ))}
+                    </select></label>
+                  <label>설명<input value={up.memo} placeholder="나중에 찾으실 때 쓸 한 줄"
+                    onChange={(e) => setUp(Object.assign({}, up, { memo: e.target.value }))} /></label>
+                </div>
+                <div className="bk-act">
+                  <label className="cl-rv">{up.files.length ? up.files.length + "개 골랐습니다 — 다시 고르기" : "파일 고르기"}
+                    <input type="file" multiple style={{ display: "none" }}
+                      onChange={(e) => { setUp(Object.assign({}, up, { files: Array.prototype.slice.call(e.target.files || []) })); e.target.value = ""; }} /></label>
+                  <button className="cl-save" disabled={!up.files.length || busy} onClick={doUpload}>
+                    {busy ? "올리는 중…" : "올리기"}</button>
+                  {up.files.length > 0 && <span className="cl-t">{up.files.map((f) => f.name).join(" · ").slice(0, 90)}</span>}
+                </div>
+                <p className="cl-note">같은 이름이 있으면 <b>덮어쓰지 않고</b> 뒤에 (2)를 붙입니다 —
+                  덮어쓰면 먼저 올린 자료가 말없이 사라집니다.
+                  올린 뒤에는 아래 목록에서 눌러 바로 여실 수 있습니다.</p>
+              </React.Fragment>
+            )}
+          </div>
+        )}
         {why && <div className="cl-msg bad" onClick={() => setWhy("")}>{why}</div>}
+        {note && <div className="cl-msg" onClick={() => setNote("")}>{note}</div>}
 
         {rows.length > 0 && groups.map((g) => (
           <div key={g.k} className="cl-sec">
@@ -24353,7 +24596,12 @@ function CorpVaultSection({ team }) {
               {g.list.map((r) => (
                 <button key={r.rel} className="vt-row" onClick={() => show(r)}
                   title={r.ko + " · 회사 보존 " + r.keep + "년 · 파기 예정 " + (r.dispose || "—")}>
-                  <span className="nm">{r.name}</span>
+                  <span className="nm">{bOf(r.rel) ? bOf(r.rel).ttl : r.name}
+                    {bOf(r.rel) && bOf(r.rel).memo ? <i className="vt-memo">{bOf(r.rel).memo}</i> : null}</span>
+                  {bOf(r.rel) && bOf(r.rel).kind ? <i className="vt-k">{docKo(bOf(r.rel).kind)}</i> : null}
+                  {/* OneDrive 충돌 본 — 두 곳에서 같은 파일을 고치면 생긴다.
+                      가만히 두면 정상 문서 한 줄로 보여 엉뚱한 판을 보시게 된다 */}
+                  {r.name.indexOf("충돌 본") > 0 ? <i className="vt-k bad">충돌 본</i> : null}
                   {r.key ? <i className="vt-k">확정</i> : null}
                   <span className="sz">{kb(r.size)}</span>
                   <span className="dt">{r.at}</span>
@@ -43937,6 +44185,7 @@ function analyzeConsults(m) {
 /* AUTO-GENERATED by scripts/gen_wp_log.py — 직접 편집 금지.
    커밋 메시지의 "WP-Log:" 트레일러에서 빌드/커밋 시 자동 생성됩니다. */
 const WP_AUTO_LOG = [
+  { date:"2026-11-15", ver:"v5.7", ch:[9], feat:"팀 문서 자료실 게시판과 저장소 직접 올리기", src:"회사 총괄운영 팀 자료실", summary:"각 팀에 문서 게시판과 업로드를 세우되 파일을 브라우저 저장소에 담으면 용량에 막히고 기기를 바꾸면 사라지며 백업도 팀 공유도 안 되므로 조성래님이 이어 두신 회사 저장소 폴더에 그대로 쓰게 했고 제목과 분류와 올린이 같은 글 정보도 브라우저가 아니라 그 팀 폴더 안에 함께 두어 파일과 글이 같이 다니게 했으며, 폴더가 읽기로 이어져 있으므로 묻지 않고 보기만 하는 길과 묻는 길을 갈라 사람이 올리기 허락을 누른 그 순간에만 브라우저가 묻고 허락을 못 받으면 쓰지 않고 그렇게 말하게 했고, 쓰기를 열기 전에 회사 저장소를 실제로 망가뜨릴 두 자리를 먼저 막아 부서 폴더를 직접 이었을 때 훑기가 덧붙인 접두를 떼지 않으면 빈 중첩 폴더가 실제로 생기는 것과 같은 이름 판정이 모든 예외를 없다로 읽어 권한 만료나 잠금 때 있는 파일을 잘라내고 덮어쓰는 것을 고쳐 모르면 멈추게 했으며, 올린 문서의 속은 피디에프와 한글에서 글자를 꺼낼 수 없어 주민번호가 들어 있어도 걸러내지 못하므로 걸러낸다고 적지 않고 못 한다고 적어 파일을 고르기 전에 읽히게 했고 쓴 자리도 이 컴퓨터 폴더까지만 단정하고 다른 분 화면은 동기화가 끝나야 닿는다고 적었으며 충돌 본에는 표를 달고 게시판 메모 파일은 목록에서 가렸다", refs:[], status:"반영", hash:"8dbb192", auto:true },
   { date:"2026-11-15", ver:"v5.7", ch:[9], feat:"기초 불러오기 — 확인원 엑셀에서 받되 숫자는 코드에 남기지 않는다", src:"회사 총괄운영 회계팀 재무현황 기초 확정선", summary:"확인원을 확정숫자로 넣었느냐는 물음에 아직 틀만 세웠고 숫자는 비어 있었음을 밝히고 조성래님이 가리키신 00본을 확인하니 앞서 본 네 벌이 모두 가지급금 천오백팔십이만원이 빠져 차대가 기울어 있던 것과 달리 그 값을 채워 차대 검증이 영이었으므로 그 한 벌을 쓰기로 했고, 확인원 숫자를 상수로 코드에 넣으려 했으나 권한 검사가 막았고 그것이 실제 회사 재무자료를 소스에 두면 공개 배포본에 실린다는 조성래님 규약 그대로라 옳은 차단이어서 다른 길로 갔으며, 은행 내역을 읽던 엑셀 읽개를 그대로 쓰고 코드에는 과목 이름과 계정코드의 대응만 두어 금액은 브라우저가 파일에서 읽어 폼을 채우게 했고, 부호는 부채와 자본을 뒤집되 감가상각누계액은 차감 자산이라 확인원이 이미 음수로 적으므로 그대로 두었으며 소계와 총계 줄은 같은 돈을 두 번 세지 않도록 잡지 않았고, 실제 파일로 스무 과목을 맞춰 차대가 맞음을 확인했으며, 확인원에 현금 및 현금등가물이 한 줄로만 있어 현금과 보통예금을 가를 근거가 없으므로 전액을 보통예금에 두고 쪼개지 않았다", refs:[], status:"반영", hash:"3554adc", auto:true },
   { date:"2026-11-15", ver:"v5.6", ch:[9], feat:"기초 확정선 — 출발선을 선언으로 세우고 판을 쌓는다", src:"회사 총괄운영 회계팀 재무현황", summary:"현금잔고 구십사백만원의 근거를 알 수 없다는 지적에 따라 그 숫자가 개시 전표의 일억이천만원에서 출발해 스무 줄을 거친 값이고 그 일억이천만원의 근거가 코드 어디에도 적혀 있지 않았음을 밝혔으며, 기초를 전표로 두면 반입 전표가 한 건이라도 생길 때 코드 전표와 함께 증발하고 출발선과 거래가 구별되지 않아 승인 규칙 밖에 놓이므로 기초를 별도 선언으로 옮겨 장부가 영이 아니라 거기서 출발하게 하되 기초가 줄에 섞이면 월별 현금흐름이 유입으로 삼켜 소모가 사라지므로 줄에는 넣지 않았고, 분기말 재조정을 위해 덮어쓰지 않고 판을 쌓아 판마다 기준일과 출처와 적은이와 승인자를 붙이고 승인된 판만 장부에 서게 했으며 적은 사람이 스스로 승인하지 못하게 해 기초도 전표와 같은 규칙을 지게 했고, 숫자는 확인원이 여러 판 있어 어느 것이 확정본인지 사람만 알므로 기계가 긁어 오지 않고 조성래님이 적으시게 했으며, 확정선 이전 날짜의 전표는 재무확인원이 이미 품고 있어 두 번 서므로 까닭을 적어 거부하고, 현금 잔고 칸은 은행 거래내역서의 잔액을 보이되 장부 값을 밑줄에 나란히 적고 차이가 있으면 경고로 세우며 은행 내역이 없으면 장부를 두고 그 사실을 적게 했다", refs:[], status:"반영", hash:"fb1bf0a", auto:true },
   { date:"2026-11-15", ver:"v5.5", ch:[9], feat:"은행 반입 — 보류 해소 · 승인 길 복구 · 통장 차이 상시 표시", src:"회사 총괄운영 회계팀 재무현황", summary:"계정이 분류된 은행 파일에서 보류 일곱 건이 난 까닭은 낱말이 갈려서가 아니라 사전에 매입비용과 수수료라는 이름이 아예 없어서였으므로 조성래님이 둘 다 831 지급수수료로 정하신 것을 근거와 함께 사전에 적고 사전에 든 낱말은 전부 사람이 정한 근거를 달아야 한다는 검사를 세워 기계는 고르지 않는다는 원칙을 지켰으며, 승인하면 전표 섹션으로 이관되어 재무제표에 반영되는 길은 이미 같은 키와 같은 배열로 돌고 있었으나 믿을 수 없게 만들던 세 가지를 고쳐 물리기가 승인 상태를 ov 가 아니라 jv 의 상태에서 읽어 승인한 전표까지 지우던 것과 물린 전표의 승인 기록이 남아 같은 파일을 다시 올리면 아무도 누르지 않은 승인이 붙던 것과 전표 탭의 물리기 버튼이 스코프 밖 함수를 불러 누르면 화면이 죽던 것을 바로잡았고, 현금잔액을 계좌와 맞추라는 지시는 덮어쓰기로 읽으면 차변만 바뀌고 대변이 없어 복식부기가 끝나므로 은행 마지막 잔액과 전기 기준 장부와 승인하면 될 장부와 차이를 나란히 두고 차이가 0이 아니면 무엇으로 이루어졌는지 적되 대조할 은행 내역이 없으면 차이 0이라 적지 않게 했으며 개시 잔액의 상대 계정은 조성래님 뜻대로 정하지 않고 차이로만 보였다", refs:[], status:"반영", hash:"82fe640", auto:true },
@@ -59623,7 +59872,7 @@ function hiEventStats() {
 }
 
 /* 자동 생성 - run_nav_regression.mjs. 직접 수정 금지 */
-const NAV_REG_SNAPSHOT = {"date":"2026-11-15","seed":20260828,"inventory":{"version":1,"sourceHash":"65e6f2f5e5fe3d37","generatedAt":"2026-11-14","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":2.06,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
+const NAV_REG_SNAPSHOT = {"date":"2026-11-15","seed":20260828,"inventory":{"version":1,"sourceHash":"65e6f2f5e5fe3d37","generatedAt":"2026-11-14","bypass":false},"total":14685,"accAdmin":100,"accMember":100,"leaks":0,"seconds":1.82,"pass":true,"nluTotal":12762,"nluAcc":99.22,"nluBaseline":99.22};
 
 /* ══════════════ 내비 라우팅(navRouting.js) — 설계 프롬프트 v2.1 §4 (P2) ══════════════
    라우팅 헌법 P1의 본 구현: navInventory(105항목·단일 소스) 기반 명시적 섹션·기능 지목 판정.

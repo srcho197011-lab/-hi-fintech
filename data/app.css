@@ -6402,3 +6402,9 @@ a.snav-link:hover{background:rgba(249,115,22,.14)}
 .bk-gap .cl-tbl td.n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;}
 .bk-gap .cl-tbl td.n i{font-weight:400;margin-left:6px;}
 .bk-gap .cl-tbl tr:last-child td{border-top:1px solid var(--cl2);}
+/* 문서 올리기 · 게시판 (조성래님 지시 2026-11-15) */
+.vt-up .cl-form{display:flex;gap:9px;flex-wrap:wrap;margin-top:7px;}
+.vt-up .cl-form label{display:flex;flex-direction:column;gap:3px;font-size:9.5px;color:var(--cd2);flex:1;min-width:150px;}
+.vt-up .cl-form input,.vt-up .cl-form select{font-size:11px;padding:5px 7px;background:var(--cb);
+  border:1px solid var(--cl2);border-radius:5px;color:var(--ct);font-family:inherit;}
+.vt-row .vt-memo{display:block;font-size:9px;color:var(--cd2);font-style:normal;margin-top:1px;}
