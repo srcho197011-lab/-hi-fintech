@@ -934,6 +934,35 @@ chk(GJ.filter((x) => x.ok).length === 1 && GJ.filter((x) => !x.ok).length === 1,
 const noMap = G("corpUpValidate")("jv", P.head, P.rows, { no: 0 });
 chk(noMap.missing.length > 0 && noMap.ok.length === 0, "⑪반입   필수 열이 비면 한 줄도 받지 않는다", noMap.missing.join(" "));
 
+/* ── 은행 반입 — 창구가 실제로 **끝까지** 도는가 ────────────────────────────
+   2026-11-16 실제 사고: 화면이 corpUpToBank 의 결과를 통째로 corpUpMergeBank 에 넘겨
+   `(add||[]).forEach is not a function` 으로 **반입이 터졌다**. 모양 검사만 있었고
+   길을 끝까지 걸어 본 단언이 없어 게이트가 녹색이었다. 그래서 여기서 걷는다. */
+const BKH = ["거래일시", "내용", "입금액", "출금액", "잔액"];
+const BKR = [["2026-11-10 09:00:00", "입금 가", "1000", "0", "1000"],
+             ["2026-11-10 10:00:00", "출금 나", "0", "400", "600"],
+             ["합계", "", "1000", "400", ""]];
+const BKM = G("corpUpSuggest")(BKH, G("corpUpSpec")("bank"));
+const BKV = G("corpUpValidate")("bank", BKH, BKR, BKM);
+const BKT = G("corpUpToBank")(BKV.ok);
+chk(Array.isArray(BKT.lines) && BKT.lines.length === 2,
+  "⑪은행   표에서 은행줄 두 건을 뽑는다", BKT.lines ? BKT.lines.length : typeof BKT.lines);
+chk(BKT.lines[0] && BKT.lines[0].a === 1000 && BKT.lines[1] && BKT.lines[1].a === -400,
+  "⑪은행   입금은 양수 · 출금은 음수", BKT.lines.map((x) => x.a).join(","));
+chk((BKT.dropped || []).length + (BKV.bad || []).length >= 1,
+  "⑪은행   거래가 아닌 줄(합계)을 **세어서** 뺀다", "뺀 줄 0건");
+const BKG = G("corpUpMergeBank")([], BKT.lines);
+chk(Array.isArray(BKG.lines) && BKG.added === 2, "⑪은행   합치기가 줄 배열을 받아 돈다", JSON.stringify({ a: BKG.added }));
+const BKG2 = G("corpUpMergeBank")(BKG.lines, BKT.lines);
+chk(BKG2.added === 0 && BKG2.dup === 2, "⑪은행   같은 파일을 두 번 받아도 잔액이 두 배가 되지 않는다",
+  "더한 " + BKG2.added + " · 겹친 " + BKG2.dup);
+/* 호출부가 **줄 배열**을 넘기는가 — 통째로 넘기면 브라우저에서만 터진다 */
+const UPSRC = rd("src/components/CorpUpload.jsx");
+chk(UPSRC.indexOf("corpUpMergeBank(st.bank || [], corpUpToBank(") < 0,
+  "⑪은행   합치기에 변환 결과를 **통째로** 넘기지 않는다(.lines 를 넘긴다)", "통째로 넘기고 있다");
+chk(/corpUpMergeBank\([^)]*\.lines\)/.test(UPSRC), "⑪은행   반입 화면이 .lines 를 넘긴다", "없음");
+chk(UPSRC.indexOf("dropped.length") > 0, "⑪은행   읽지 못해 뺀 줄을 화면이 적는다", "적지 않는다");
+
 /* ── AI 팀장 대화 ── */
 const AGV = G("corpAgPass")();
 AGV.rows.forEach((r) => {

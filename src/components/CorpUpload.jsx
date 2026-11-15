@@ -73,10 +73,15 @@ function CorpUploadSection() {
       n = add.length; note = "전표는 **기표 상태**로 들어갑니다 — 검토·승인을 거쳐야 장부에 올라갑니다.";
     } else if (kind === "bank") {
       const st = corpLedgerRead();
-      const M = corpUpMergeBank(st.bank || [], corpUpToBank(res.ok));
+      /* corpUpToBank 는 {lines, dropped} 를 준다 — 통째로 넘기면 forEach 가 없어 **반입이 터진다** */
+      const TB = corpUpToBank(res.ok);
+      const M = corpUpMergeBank(st.bank || [], TB.lines);
       corpLedgerWrite(Object.assign({}, st, { bank: M.lines }));
       n = M.added;
-      note = "은행 대사를 이 내역으로 돌립니다" + (M.dup ? " — 이미 받은 " + M.dup + "줄은 건너뛰었습니다(두 번 받으면 잔액이 두 배가 됩니다)." : ".");
+      note = "은행 대사를 이 내역으로 돌립니다" + (M.dup ? " — 이미 받은 " + M.dup + "줄은 건너뛰었습니다(두 번 받으면 잔액이 두 배가 됩니다)." : ".")
+        /* 버린 줄은 **반드시 적는다** — 조용히 빼면 장부가 은행보다 적어지고 아무도 모른다 */
+        + (TB.dropped.length ? " 읽지 못해 뺀 줄 " + TB.dropped.length + "건: "
+            + TB.dropped.slice(0, 3).map((d) => d.row + "행(" + d.why + ")").join(" · ") + "." : "");
     } else if (kind === "doc") {
       const list = corpUpToVault(res.ok);
       const before = (corpVaultRead().list || []).length;
